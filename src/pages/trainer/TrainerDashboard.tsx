@@ -11,6 +11,7 @@ import { useRealSession } from "@/services/session";
 import { fmtDateTimeAr } from "@/utils/format";
 import { countAr } from "@/application/text/count-ar";
 
+import { Panel, Card } from "@/components/ui/Surface";
 /* صيغةُ العدد لا تُرتجل في السطر: «و1 طالباً» نصبٌ في غير موضعه يقرؤه
    المدرّب في كلّ دخول. */
 const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" } as const;
@@ -82,9 +83,9 @@ function RealTrainerHome({ name }: { name: string }) {
 
   if (failed)
     return (
-      <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-muted-foreground">
+      <Card className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
         <ServerOff className="h-5 w-5" /> تعذر جلب شعبك — تأكد أن الخادم يعمل ثم حدّث الصفحة.
-      </div>
+      </Card>
     );
   if (!cohorts || !queue)
     return (
@@ -114,18 +115,18 @@ function RealTrainerHome({ name }: { name: string }) {
         <section className="mb-8 rounded-3xl border border-teal/30 bg-teal/[0.06] p-6">
           <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" /> بوابتك جاهزة — هذا ما يحدث تالياً</p>
           <div className="mt-4 grid gap-3 text-xs leading-6 text-foreground sm:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+            <Card className="bg-paper/20">
               <p className="font-black text-teal-light-ink">١ · الإسناد</p>
               <p className="mt-1">الإدارة تسند إليك شعبة من شاشة «الشعب» — يصلك إشعار فور الإسناد.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+            </Card>
+            <Card className="bg-paper/20">
               <p className="font-black text-teal-light-ink">٢ · الظهور التلقائي</p>
               <p className="mt-1">تظهر شعبتك وجلساتها وطلابها هنا وفي شاشة «شعبي» دون أي إجراء منك.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+            </Card>
+            <Card className="bg-paper/20">
               <p className="font-black text-teal-light-ink">٣ · بدء العمل</p>
               <p className="mt-1">تسجّل الحضور وتقيّم التسليمات وتدير الجلسات — كلها من «شعبي».</p>
-            </div>
+            </Card>
           </div>
           <p className="mt-4 text-[11px] text-muted-foreground">
             حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
@@ -176,7 +177,7 @@ function RealTrainerHome({ name }: { name: string }) {
         </section>
       )}
 
-      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-muted-foreground">
+      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-[11px] text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام البوّابة — لا رسمان في بطاقةٍ واحدة */}
         {[
@@ -195,7 +196,7 @@ function RealTrainerHome({ name }: { name: string }) {
             </Link>
           </span>
         ))}
-      </div>
+      </Card>
 
       {/* ف-١ · طابور العمل — أول ما يراه المدرب صار قابلا للتنفيذ لا مجرد أرقام */}
       {cohorts.length > 0 && <TrainerWorkQueue items={work} className="mb-6" />}
@@ -205,10 +206,10 @@ function RealTrainerHome({ name }: { name: string }) {
           <p className="flex items-center gap-2 text-xs text-muted-foreground"><GraduationCap className="h-4 w-4" /> شعبي</p>
           <p className="mt-2 text-3xl font-black">{cohorts.length}</p>
         </Link>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card>
           <p className="flex items-center gap-2 text-xs text-muted-foreground"><Users className="h-4 w-4" /> طلابي</p>
           <p className="mt-2 text-3xl font-black">{students}</p>
-        </div>
+        </Card>
         <Link to="/trainer/board" className={`rounded-2xl border p-5 transition hover:border-white/30 ${awaiting > 0 ? "border-gold/40 bg-gold/5" : "border-white/10 bg-white/[0.03]"}`}>
           <p className="flex items-center gap-2 text-xs text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
           <p className="mt-2 text-3xl font-black text-gold-ink">{awaiting}</p>
@@ -222,7 +223,7 @@ function RealTrainerHome({ name }: { name: string }) {
       {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
       {cohorts.length > 0 && <AtRiskList learners={atRisk} className="mt-6" />}
 
-      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+      <Panel as="section" className="mt-6">
         <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
         <div className="mt-3 space-y-2">
           {upcoming.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">لا جلسات قادمة مجدولة</p>}
@@ -238,7 +239,7 @@ function RealTrainerHome({ name }: { name: string }) {
             </Link>
           ))}
         </div>
-      </section>
+      </Panel>
 
       <p className="mt-6 text-center text-[11px] text-muted-foreground">
         كل بند أعلاه يقودك إلى مكان تنفيذه — والتفاصيل الكاملة لكل شعبة في شاشة «شعبي».

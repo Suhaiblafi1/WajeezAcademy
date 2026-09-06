@@ -18,6 +18,7 @@ import { BellOff, Loader2, Lock } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface Category {
   key: string;
   labelAr: string;
@@ -75,7 +76,7 @@ export default function NotificationPreferences() {
   }
 
   return (
-    <section aria-labelledby="prefs-h" className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+    <Panel as="section" aria-labelledby="prefs-h">
       <h2 id="prefs-h" className="flex items-center gap-2 text-base font-black">
         <BellOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         ما يصلني من إشعارات
@@ -84,7 +85,7 @@ export default function NotificationPreferences() {
 
       <ul className="mt-4 space-y-2">
         {prefs.categories.map((c) => (
-          <li key={c.key} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+          <Card as="li" key={c.key}>
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">
                 <p className="flex items-center gap-1.5 font-bold">
@@ -116,9 +117,9 @@ export default function NotificationPreferences() {
             {!c.silenceable && c.lockedWhyAr && (
               <p id={`what-${c.key}`} className="mt-2 text-fine leading-5 text-muted-foreground">{c.lockedWhyAr}</p>
             )}
-          </li>
+          </Card>
         ))}
       </ul>
-    </section>
+    </Panel>
   );
 }

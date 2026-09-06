@@ -33,6 +33,7 @@ import { referencesByIds } from "@/data/methodology";
 import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
 import type { LearnerRequest } from "@/services/learner-requests";
+import { Panel, Card } from "@/components/ui/Surface";
 import {
   latestSubmission, pendingAssessmentCount,
   type CohortAssessment, type EnrollmentDetail,
@@ -99,7 +100,7 @@ export default function StageWork({
   return (
     <div className="space-y-4">
       {/* ══ صندوقُ الدورة — ما يُنجَز ══ */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+      <Panel as="section" className="sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
           <div className="min-w-0">
             <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
@@ -190,10 +191,10 @@ export default function StageWork({
             />
           </div>
         )}
-      </section>
+      </Panel>
 
       {/* ══ صندوقُ المصادر — ما يُرجَع إليه ══ */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-4 sm:p-5">
+      <Panel as="section" className="sm:p-5">
         <h3 className="flex items-center gap-2 text-[13px] font-black text-foreground">
           <Library className="h-4 w-4 text-gold-ink" /> مصادر هذه المرحلة
         </h3>
@@ -267,7 +268,7 @@ export default function StageWork({
             )}
           </div>
         )}
-      </section>
+      </Panel>
     </div>
   );
 }
@@ -387,7 +388,7 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
       {detail.cohort.sessions.map((s) => {
         const mine = detail.attendance.find((a) => a.sessionId === s.id);
         return (
-          <div key={s.id} className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
+          <Card key={s.id} className="bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-bold leading-snug">{s.title}</p>
@@ -420,7 +421,7 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
                 رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span>
               </p>
             )}
-          </div>
+          </Card>
         );
       })}
     </div>
@@ -441,7 +442,7 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
         const meta = mine ? SUBMISSION_STATUS[mine.status] : null;
         const canSubmit = !mine || mine.status === "resubmit_requested";
         return (
-          <div key={a.id} className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
+          <Card key={a.id} className="bg-paper/20 p-3.5">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div className="min-w-0 flex-1">
                 <p className="text-[12.5px] font-bold leading-snug">{a.title}</p>
@@ -480,7 +481,7 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                 </button>
               </div>
             )}
-          </div>
+          </Card>
         );
       })}
     </div>

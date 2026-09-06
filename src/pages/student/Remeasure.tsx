@@ -16,6 +16,7 @@ import SkillDelta from "@/components/SkillDelta";
 import { apiGet, apiPost } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
 import { LEVEL_LABELS_AR, levelLabelAr } from "@/application/student/skills-profile";
+import { Panel, Card } from "@/components/ui/Surface";
 import {
   REMEASURE_MAX, REMEASURE_MIN, buildGrowthSummary, validateRemeasure,
   type GrowthSummary, type RemeasureRecord, type RemeasureRow,
@@ -103,10 +104,10 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
           { k: "مجموع الدرجات", v: `${c.netPoints > 0 ? "+" : ""}${c.netPoints}`, ltr: true },
           { k: "تراجعت", v: String(c.declined), ltr: false },
         ].map((t) => (
-          <div key={t.k} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <Card key={t.k} className="px-4 py-3">
             <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
-            <dt className="mt-0.5 text-fine text-muted-foreground">{t.k}</dt>
-          </div>
+            <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
+          </Card>
         ))}
       </dl>
       <ul className="mt-5">
@@ -224,7 +225,7 @@ export default function Remeasure() {
         </>
       ) : (
         <>
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+          <Panel as="section">
             <h1 className="flex items-center gap-2 text-lg font-black">
               <Ruler className="h-5 w-5 text-teal-light-ink" aria-hidden="true" />
               أعد قياس مهاراتك بعد «{courseTitle}»
@@ -247,10 +248,10 @@ export default function Remeasure() {
                 لا مهارات مصنّفة مرتبطة بهذه الدورة بعد — فلا قياس بعديّ لها.
               </p>
             )}
-          </section>
+          </Panel>
 
           {data.gate.open && data.form.measurable && (
-            <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+            <Panel as="section" className="mt-6 sm:p-6">
               <h2 className="text-sm font-black">
                 مستواك الآن في {rows.length} مهارة
                 <span className="ms-2 rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">
@@ -288,7 +289,7 @@ export default function Remeasure() {
                   </p>
                 )}
               </div>
-            </section>
+            </Panel>
           )}
         </>
       )}

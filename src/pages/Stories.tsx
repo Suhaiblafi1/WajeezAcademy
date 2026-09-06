@@ -6,6 +6,7 @@ import Modal from '@/components/Modal'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import StoryAvatar from '@/components/StoryAvatar'
+import { Card } from '@/components/ui/Surface'
 
 /* ───────────────── صفحة القصص: كل قصص المتعلمين + آراء تطبيق وجيز ─────────────────
 
@@ -178,13 +179,13 @@ export default function StoriesPage() {
               </div>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 {open.courses.map((c) => (
-                  <div key={c.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <Card key={c.id}>
                     <p className="text-sm font-bold leading-relaxed">{c.name}</p>
                     <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-muted-foreground">
                       <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                       {c.output}
                     </p>
-                  </div>
+                  </Card>
                 ))}
               </div>
             </div>
@@ -194,7 +195,7 @@ export default function StoriesPage() {
               <div className="flex items-center gap-2 text-xs text-teal-light-ink">
                 <Target className="h-4 w-4" /> قياس المهارة — قبل المسار وبعده
               </div>
-              <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+              <Card className="mt-4 overflow-hidden">
                 {open.measure.map((m, i) => (
                   <div
                     key={m.skill}
@@ -211,7 +212,7 @@ export default function StoriesPage() {
                     </p>
                   </div>
                 ))}
-              </div>
+              </Card>
             </div>
 
             <div className="border-t border-white/5 bg-gradient-to-l from-teal/10 to-transparent p-8 md:px-10">

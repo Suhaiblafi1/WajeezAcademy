@@ -9,6 +9,7 @@ import {
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
 
@@ -46,13 +47,13 @@ function MiniCard({ icon: Icon, title, children, defaultOpen = false }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-2xl border border-white/8 bg-paper/20 p-4">
+    <Card className="bg-paper/20">
       <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-xs font-black text-muted-foreground">
         <span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" /> {title}</span>
         <ChevronDown className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="mt-3">{children}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -415,7 +416,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
 
   return (
     <section className="mt-8 grid gap-4 lg:grid-cols-2">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+      <Panel>
         <h3 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-teal-ink" /> روبرك تقييم جديد — قابل لإعادة الاستخدام</h3>
         <input value={rubricTitle} aria-label="عنوان الروبرك" onChange={(e) => setRubricTitle(e.target.value)} placeholder="عنوان الروبرك" className={`${inputCls} mt-3`} />
         <div className="mt-2 space-y-2">
@@ -461,9 +462,9 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             أنشئ الروبرك
           </button>
         </div>
-      </div>
+      </Panel>
 
-      <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+      <Panel>
         <h3 className="flex items-center gap-2 text-sm font-black"><BadgeCheck className="h-4 w-4 text-teal-ink" /> قاعدة إكمال — لدورة عامة أو لشعبة محددة</h3>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <select value={ruleForm.courseId} onChange={(e) => setRuleForm({ ...ruleForm, courseId: e.target.value })} className={selectCls}>
@@ -497,7 +498,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           className="mt-3 cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
           احفظ القاعدة
         </button>
-      </div>
+      </Panel>
       {msg && <p className="text-xs font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
     </section>
   );

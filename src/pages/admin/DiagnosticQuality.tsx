@@ -6,6 +6,7 @@ import { apiGet, ApiError } from "@/services/api";
 import MeasurementCoverage from "@/components/MeasurementCoverage";
 import { fmtDateTime } from "@/application/text/format-ar";
 
+import { Card } from "@/components/ui/Surface";
 type PersonaResult = {
   persona: string; questions?: number; kind: string; top: string | null; tpl: string | null; conf?: number; match: boolean
 };
@@ -92,7 +93,7 @@ export default function DiagnosticQuality() {
         )}
         {!latest && <p className="mt-3 text-sm text-muted-foreground">لا تشغيلات بعد — شغّل المحاكاة من لوحة النشر.</p>}
         {latest && (
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-white/10">
+          <Card className="mt-4 overflow-x-auto">
             <table className="w-full text-right text-xs">
               <thead className="bg-white/[0.04] text-muted-foreground">
                 <tr>
@@ -114,7 +115,7 @@ export default function DiagnosticQuality() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         )}
       </section>
 
@@ -123,7 +124,7 @@ export default function DiagnosticQuality() {
         <div className="mt-4 space-y-2">
           {impacts.length === 0 && <p className="text-sm text-muted-foreground">لا تحليلات بعد.</p>}
           {impacts.map((r) => (
-            <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <Card key={r.id} className="px-4 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{r.changeRef}</p>
                 <p className="text-[11px] text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
@@ -132,7 +133,7 @@ export default function DiagnosticQuality() {
                 تغيّرت {r.summary.changedCount} من {r.summary.totalPersonas} شخصية
                 {r.summary.changed.length > 0 && <span className="text-amber-300"> — {r.summary.changed.map((c) => c.name).join("، ")}</span>}
               </p>
-            </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -145,10 +146,10 @@ export default function DiagnosticQuality() {
         ) : (
           <>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center">
+              <Card className="text-center">
                 <p className="text-2xl font-black">{feedback.total}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">إجمالي الآراء</p>
-              </div>
+              </Card>
               <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4 text-center">
                 <p className="text-2xl font-black text-emerald-300">{feedback.verdicts.yes}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">نعم — تصف وضعهم</p>
@@ -164,7 +165,7 @@ export default function DiagnosticQuality() {
             </div>
             <div className="mt-4 space-y-2">
               {feedback.recent.filter((r) => r.note).map((r) => (
-                <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                <Card key={r.id} className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-light-ink">
                       {VERDICT_AR[r.verdict] ?? r.verdict}
@@ -172,7 +173,7 @@ export default function DiagnosticQuality() {
                     <p className="text-[11px] text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-foreground">{r.note}</p>
-                </div>
+                </Card>
               ))}
             </div>
           </>

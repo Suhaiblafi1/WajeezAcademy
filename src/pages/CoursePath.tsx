@@ -40,6 +40,7 @@ import {
 } from "@/data/courses";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 
+import { Panel, Card } from "@/components/ui/Surface";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
@@ -306,13 +307,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         {/* التفاصيل الكاملة — لا مقتطف: هذا ما كانت النافذة تخفيه */}
         <section className="mt-6 grid gap-4 md:grid-cols-2">
           {full?.description && (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card>
               <h2 className="text-sm font-black text-foreground">عن الدورة</h2>
               <p className="mt-2 text-sm leading-loose text-muted-foreground">{full.description}</p>
-            </div>
+            </Card>
           )}
           {full?.targetAudience && (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card>
               <h2 className="text-sm font-black text-foreground">لمن هذه الدورة</h2>
               <p className="mt-2 text-sm leading-loose text-muted-foreground">{full.targetAudience}</p>
               {full.prerequisites && (
@@ -321,12 +322,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   {full.prerequisites}
                 </p>
               )}
-            </div>
+            </Card>
           )}
         </section>
 
         {full && full.learningOutcomes.length > 0 && (
-          <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section" className="mt-4">
             <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
               <Target className="h-4 w-4 text-gold-ink" /> ما ستقدر عليه بعدها
             </h2>
@@ -338,11 +339,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </li>
               ))}
             </ul>
-          </section>
+          </Card>
         )}
 
         {full && full.modules.length > 0 && (
-          <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section" className="mt-4">
             <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
               <ListChecks className="h-4 w-4 text-teal-light-ink" /> وحدات الدورة ({full.modules.length})
             </h2>
@@ -359,7 +360,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </li>
               ))}
             </ol>
-          </section>
+          </Card>
         )}
 
         {full?.practicalProject && (
@@ -379,7 +380,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             حين يكون هناك ما يُفصَّل (خصمُ بناءٍ أو كود)، ولا يُكرَّر الرقمُ
             نفسُه سطرين حين لا خصم. وحُشيَ مكانَ الفراغِ ما ينقص القرارَ فعلا:
             موعدُ الشعبة. */}
-        <section className="mt-10 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+        <Panel as="section" className="mt-10 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <h2 className="flex items-center gap-2 text-base font-black">
               <RouteIcon className="h-4 w-4 text-teal-light-ink" />
@@ -401,7 +402,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               const options = cohorts.get(c.id) ?? [];
               const chosenCohort = cohortOf(c.id);
               return (
-                <li key={c.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+                <Card as="li" key={c.id}>
                   <div className="flex items-start justify-between gap-2.5">
                     <span className="flex min-w-0 items-start gap-2.5">
                       <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-fine font-black text-teal-light-ink" dir="ltr">
@@ -445,7 +446,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       compact
                     />
                   </div>
-                </li>
+                </Card>
               );
             })}
           </ol>
@@ -454,7 +455,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               البناء بنسبته وقيمته، ثم الكود إن كان، ثم ما يدفعه — وكلُّ سطر
               يقابل قرارا اتخذه المتعلم بنفسه. وبلا خصمٍ ولا كود يبقى رقمٌ
               واحد: تكرارُه سطرين كان يُكبّر الصندوق ولا يُضيف علما. */}
-          <div className="mt-3.5 rounded-2xl border border-white/10 bg-white/[0.04] p-3.5">
+          <Card className="mt-3.5 p-3.5">
             {pricing.allPriced ? (
               <dl className="space-y-1 text-[12px]">
                 {hasBreakdown && (
@@ -647,8 +648,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </span>
               </p>
             )}
-          </div>
-        </section>
+          </Card>
+        </Panel>
         {/* ══ مرحلتك التالية ══ — ما اختاره بعد السقف، محفوظا لا مرفوضا */}
         {deferred.length > 0 && (
           <section className="mt-6 rounded-3xl border border-dashed border-gold/40 bg-gold/[0.05] p-4 sm:p-5">
@@ -685,7 +686,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
         {/* ══ ما يكمل مسارك ══ */}
         {suggestions.length > 0 && (
-          <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <Panel as="section" className="mt-6 sm:p-5">
             <h2 className="flex items-center gap-2 text-base font-black">
               <Layers className="h-4 w-4 text-teal-light-ink" />
               ما يكمل مسارك
@@ -719,7 +720,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 );
               })}
             </div>
-          </section>
+          </Panel>
         )}
 
         {/* ══ سمِّ مسارك ══ */}

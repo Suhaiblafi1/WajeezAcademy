@@ -17,6 +17,7 @@ import EmptyState from "@/components/EmptyState";
 import MyDeadlines from "@/components/MyDeadlines";
 import { fmtDate, fmtSession } from "@/application/text/format-ar";
 
+import { Panel, Card } from "@/components/ui/Surface";
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
    الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
    كحقيقة قبل توثيقه واعتماده.
@@ -279,7 +280,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
   return (
     <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
       {/* شريط التقدم العام الحقيقي */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+      <Panel as="section">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm text-muted-foreground">رحلتك الحقيقية</p>
@@ -307,7 +308,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
           <div className="h-full rounded-full bg-gradient-to-l from-teal to-teal-light transition-all" style={{ width: `${Math.max(3, pct)}%` }} />
         </div>
-      </section>
+      </Panel>
 
       {/* «مواعيدي» (المهمّة ٧٢) — أعلى الصفحة بعد شريط التقدّم مباشرةً:
           الموعدُ أعجلُ ما فيها، وكان أسفلَ «زخمك» أي تحت الطيّة. ومن لا موعدَ
@@ -345,7 +346,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         </section>
 
         {/* شعبي — ملخص سريع */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+        <Panel as="section">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <BookOpen className="h-4 w-4 text-teal-light-ink" /> شعبي
@@ -367,12 +368,12 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </div>
             ))}
           </div>
-        </section>
+        </Panel>
       </div>
 
       <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* جدولي الحقيقي */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 lg:col-span-2">
+        <Panel as="section" className="lg:col-span-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <CalendarDays className="h-4 w-4 text-gold-ink" /> جدولي — الجلسات القادمة
@@ -402,7 +403,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               />
             ) : (
               upcoming.map((s) => (
-                <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-paper/20 px-4 py-3">
+                <Card key={s.id} className="flex flex-wrap items-center justify-between gap-3 bg-paper/20 px-4 py-3">
                   <div className="flex items-center gap-3">
                     <span className="grid h-9 w-9 place-items-center rounded-xl bg-gold/15 text-gold-ink">
                       <Video className="h-4 w-4" />
@@ -433,7 +434,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                       </Link>
                     )}
                   </div>
-                </div>
+                </Card>
               ))
             )}
           </div>
@@ -455,10 +456,10 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </div>
             </div>
           )}
-        </section>
+        </Panel>
 
         {/* الإشعارات الحقيقية */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+        <Panel as="section">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-bold text-foreground">
               <Bell className="h-4 w-4 text-gold-ink" /> أحدثُ التنبيهات
@@ -474,8 +475,8 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </p>
             ))}
           </div>
-          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-fine font-bold text-teal-light-ink hover:text-foreground">كلُّ الرسائل والتنبيهات ←</Link>
-        </section>
+          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-[11px] font-bold text-teal-light-ink hover:text-foreground">كلُّ الرسائل والتنبيهات ←</Link>
+        </Panel>
       </div>
 
       {/* روابط سريعة */}

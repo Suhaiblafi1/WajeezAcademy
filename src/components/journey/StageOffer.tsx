@@ -19,6 +19,7 @@ import HeldSeatNotice, { type HeldSeat } from "@/components/HeldSeatNotice";
 import { formatCohortPrice, type CohortOption } from "@/services/cohort-prices";
 import type { JourneyStage } from "@/application/student/journey";
 
+import { Panel, Card } from "@/components/ui/Surface";
 export default function StageOffer({
   stage,
   options,
@@ -39,7 +40,7 @@ export default function StageOffer({
   const chosen = options.find((o) => o.id === selectedCohortId) ?? options[0] ?? null;
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+    <Panel as="section" className="sm:p-5">
       <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
       <p className="mt-0.5 text-fine text-muted-foreground">
         {stage.hours > 0 && `${stage.hours} ساعة · `}
@@ -54,7 +55,7 @@ export default function StageOffer({
       ) : options.length > 0 ? (
         <>
           {/* الموعدُ في موضع القرار — ومعه سعرُ الشعبة المختارة لا سعرٌ عامّ */}
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+          <Card className="mt-4 p-3.5">
             <CohortPicker
               cohorts={options}
               selectedId={chosen?.id ?? null}
@@ -67,7 +68,7 @@ export default function StageOffer({
                 <BuyCohort cohort={chosen} onBought={onChanged} />
               </div>
             )}
-          </div>
+          </Card>
           {!stage.inPlan && (
             <p className="mt-2.5 flex items-start gap-1.5 text-fine leading-5 text-muted-foreground">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
@@ -100,7 +101,7 @@ export default function StageOffer({
           </div>
         </>
       ) : (
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+        <Card className="mt-4">
           <p className="text-[12px] leading-6 text-muted-foreground">
             لم تُفتح شعبةٌ لهذه الدورة الآن. صفحتُها العامّة تعرض تفاصيلَها كاملةً، ونُعلمك فور فتح أوّل شعبة.
           </p>
@@ -110,8 +111,8 @@ export default function StageOffer({
           >
             <ShoppingCart className="h-3.5 w-3.5" /> افتح صفحة الدورة
           </Link>
-        </div>
+        </Card>
       )}
-    </section>
+    </Panel>
   );
 }

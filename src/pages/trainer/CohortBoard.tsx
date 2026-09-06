@@ -9,6 +9,7 @@ import TrainerLayout from "./TrainerLayout";
 import { fmtDateTimeAr } from "@/utils/format";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 const ATTENDANCE_OPTIONS = [
@@ -207,14 +208,14 @@ export default function CohortBoard() {
 
       <div className="mx-auto max-w-5xl px-5 py-8">
         {offline ? (
-          <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+          <Panel className="grid place-items-center py-20 text-center">
             <ServerOff className="h-12 w-12 text-muted-foreground/50" />
             <h2 className="mt-4 text-xl font-black">لا يمكن الوصول لشعبك</h2>
             <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
             <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
               <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
             </button>
-          </div>
+          </Panel>
         ) : loading ? (
           <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
         ) : (
@@ -231,7 +232,7 @@ export default function CohortBoard() {
                   {cohorts.map(({ role, cohort: c }) => {
                     const isOpen = expanded === c.id;
                     return (
-                      <div key={c.id} className="rounded-3xl border border-white/10 bg-white/[0.02]">
+                      <Panel key={c.id}>
                         <button onClick={() => setExpanded(isOpen ? null : c.id)} className="flex w-full cursor-pointer flex-wrap items-center gap-4 p-5 text-right">
                           <div className="min-w-0 flex-1">
                             <p className="font-black">{c.course.versions[0]?.titleAr ?? c.title}</p>
@@ -252,7 +253,7 @@ export default function CohortBoard() {
                               ) : (
                                 <div className="space-y-3">
                                   {c.sessions.map((s) => (
-                                    <div key={s.id} className="rounded-2xl border border-white/8 bg-paper/20 p-4">
+                                    <Card key={s.id} className="bg-paper/20">
                                       <div className="flex flex-wrap items-center gap-3">
                                         <div className="min-w-0 flex-1">
                                           <p className="text-sm font-bold">{s.title}</p>
@@ -355,7 +356,7 @@ export default function CohortBoard() {
                                           <p className="text-[11px] text-muted-foreground">لا متعلمين مسجلين بعد.</p>
                                         )}
                                       </div>
-                                    </div>
+                                    </Card>
                                   ))}
                                 </div>
                               )}
@@ -385,7 +386,7 @@ export default function CohortBoard() {
                                 الراجعة تُكتب على تسليم، ومن لم يُسلّم شيئا لا يبلغه
                                 شيء. والرسالة تُسجَّل ثم تُوصَّل — فالسجلّ هو الأثر
                                 الباقي، ومن مسح الإشعار لم يمسح الرسالة. */}
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                            <Card>
                               <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
                                 <MessageSquarePlus className="h-4 w-4 text-teal-light-ink" /> مخاطبة الشعبة
                               </h3>
@@ -443,12 +444,12 @@ export default function CohortBoard() {
                                   )
                                 )}
                               </div>
-                            </div>
+                            </Card>
 
                             {/* ── مواد الشعبة وتكاليفها ──
                                 كانت المواد معلَنة في نوع البيانات ولا تُعرض في الصفحة أصلا،
                                 والمدرب يصحّح تكليفا لا يستطيع تأليفه. الاثنان هنا. */}
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                            <Card>
                               <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
                                 <Upload className="h-4 w-4 text-teal-light-ink" /> مواد الشعبة
                               </h3>
@@ -539,10 +540,10 @@ export default function CohortBoard() {
                                   </button>
                                 </div>
                               </div>
-                            </div>
+                            </Card>
                           </div>
                         )}
-                      </div>
+                      </Panel>
                     );
                   })}
                 </div>

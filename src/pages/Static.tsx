@@ -5,6 +5,7 @@ import { staticPageBySlug, faqs } from "@/data/siteContent";
 import SeoHead from "@/components/SeoHead";
 import ThemeToggle from "@/components/ThemeToggle";
 
+import { Panel, Card } from "@/components/ui/Surface";
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
@@ -51,7 +52,7 @@ function StaticContent({ slug }: { slug: string }) {
       <p className="mt-4 text-lg leading-loose text-muted-foreground">{page.intro}</p>
       <div className="mt-10 space-y-8">
         {page.sections.map((s, i) => (
-          <section key={i} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+          <Panel as="section" key={i} className="md:p-8">
             {s.heading && (
               <h2 className="flex items-center gap-2 text-xl font-black text-teal-light-ink">
                 <CheckCircle2 className="h-5 w-5" />
@@ -71,7 +72,7 @@ function StaticContent({ slug }: { slug: string }) {
                 ))}
               </ul>
             )}
-          </section>
+          </Panel>
         ))}
       </div>
       <div className="mt-8 rounded-3xl border border-teal/40 bg-teal/10 p-6 text-center md:p-8">
@@ -103,7 +104,7 @@ function FaqPage() {
       <p className="mt-4 text-lg leading-loose text-muted-foreground">جمعنا ما يسألنا عنه الزوار فعلا — وأجبنا بلا مجاملة.</p>
       <div className="mt-10 space-y-3">
         {faqs.map((f, i) => (
-          <div key={i} className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
+          <Card key={i} className="overflow-hidden">
             <button
               onClick={() => setOpen(open === i ? null : i)}
               className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-bold"
@@ -116,7 +117,7 @@ function FaqPage() {
                 <p className="px-6 pb-6 leading-loose text-muted-foreground">{f.a}</p>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
       <div className="mt-10 text-center">

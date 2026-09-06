@@ -44,6 +44,7 @@ import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { CONTACT } from "@/data/stories";
 
+import { Panel, Card } from "@/components/ui/Surface";
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = safeGet("wajeez_user");
@@ -553,12 +554,12 @@ export default function PathwayPage() {
               كلّ بطاقة، وثلاثةَ عشرَ سطرا في المسار الكامل وحده — فيملأ
               الشاشةَ ولا يُقرأ منه القرار. والقرارُ سطران: كم تدفع، وماذا
               تأخذ. فالحشوُ نصفُه، والسعرُ أكبرُ ما فيه، وما عداه يخدمه. */}
-          <div id="buy" className="story-fade mt-10 scroll-mt-20 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+          <Panel id="buy" className="story-fade mt-10 scroll-mt-20 sm:p-5">
               <h3 className="text-base font-black">اختر طريقة شرائك</h3>
               <p className="mt-1 text-fine text-muted-foreground">قارن بهدوء — والقرار لك.</p>
               <div className="mt-4 grid gap-3.5 md:grid-cols-2">
                 {/* دورة أو أكثر — اختيار حر */}
-                <div className="flex flex-col rounded-2xl border border-white/12 bg-paper/25 p-4">
+                <Card className="flex flex-col bg-paper/25">
                   <p className="text-[13px] font-black">دورة أو أكثر من المسار</p>
                   <p className="mt-0.5 text-fine text-muted-foreground">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
                   <div className="mt-3 space-y-1.5">
@@ -645,7 +646,7 @@ export default function PathwayPage() {
                         ? "اشترِ هذه الدورة"
                         : `اشترِ (${picked.length} دورات)`}
                   </Button>
-                </div>
+                </Card>
                 {/* المسار كاملا */}
                 <div className="relative flex flex-col rounded-2xl border border-gold/35 bg-gold/[0.04] p-4">
                   <span className="absolute left-3 top-3.5 rounded-full bg-gold/20 px-2 py-0.5 text-fine font-black text-gold-ink">الأوفر</span>
@@ -775,10 +776,10 @@ export default function PathwayPage() {
                   </Link>
                 </p>
               )}
-          </div>
+          </Panel>
 
           {/* ما ستحصل عليه مع المسار — من عروض أكاديمية وجيز (نسخة مضغوطة: خانات أصغر ومتقاربة) */}
-          <div className="story-fade mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6">
+          <Panel className="story-fade mt-8 md:p-6">
             <h2 className="flex items-center gap-2 text-lg font-black">
               <Sparkles className="h-5 w-5 text-[#FABC05]" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
@@ -803,7 +804,7 @@ export default function PathwayPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Panel>
 
           {/* حُذف زرّ «ابدأ الآن لنسختك القادمة».
 

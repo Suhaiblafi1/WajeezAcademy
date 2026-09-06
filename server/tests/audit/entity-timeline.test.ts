@@ -17,7 +17,6 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
-import { auditActionAr, entityTypeAr } from '../../../src/application/audit/labels'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -59,37 +58,19 @@ beforeAll(async () => {
   expect(targetId, 'لم يُعرف معرّفُ الحساب المُنشأ').toBeTruthy()
 }, 240_000)
 
-describe('المعجمُ يغطّي كلَّ فعلٍ تكتبه الخدمات', () => {
-  /* لا مفتاحَ لاتينيٌّ يُعرض للموظّف: كلُّ فعلٍ إمّا له عبارةٌ كاملة، وإمّا
-     تُركَّب من مقاطعَ كلُّها في المعجم. وما سقط يُعرض بمفتاحه — فالاختبار
-     يمنع سقوطَ الجديد صامتا. */
-  it('كلُّ فعلٍ في شيفرة الخادم له اسمٌ عربيّ', async () => {
-    const { readFileSync, readdirSync, statSync } = await import('node:fs')
-    const { join } = await import('node:path')
-    const files: string[] = []
-    const walk = (dir: string) => {
-      for (const name of readdirSync(dir)) {
-        const full = join(dir, name)
-        if (statSync(full).isDirectory()) { if (name !== 'tests' && name !== 'node_modules') walk(full) }
-        else if (name.endsWith('.ts')) files.push(full)
-      }
-    }
-    walk('server')
-    const actions = new Set<string>()
-    for (const f of files) {
-      for (const m of readFileSync(f, 'utf8').matchAll(/action: '([a-z0-9._]+)'/g)) actions.add(m[1])
-    }
-    expect(actions.size, 'لم يُقرأ أيُّ فعلٍ من الشيفرة').toBeGreaterThan(100)
-    const untranslated = [...actions].filter((a) => auditActionAr(a) === a)
-    expect(untranslated, `أفعالٌ بلا اسمٍ عربيّ: ${untranslated.join(', ')}`).toEqual([])
-  })
+/* نُقل إلى `src/tests/audit-labels-coverage.test.ts` (٦ سبتمبر).
 
-  it('وكلُّ نوعِ كيانٍ كذلك', () => {
-    for (const t of ['user', 'cohort', 'enrollment', 'refund', 'trainer_application', 'support_ticket']) {
-      expect(entityTypeAr(t), t).not.toBe(t)
-    }
-  })
-})
+   كان هنا فحصان **نصّيّان محضان** — يقرآن ملفّاتِ `server/` ويطابقانها
+   بالمعجم، بلا قاعدةٍ ولا خادم. وزمنُهما أجزاءٌ من الثانية، وكانا محبوسَين
+   خلف `beforeAll` يُقلع Postgres ويبذر الأدوار ويستورد الكتالوج، داخل حزمةٍ
+   زمنُها اثنتا عشرة دقيقة.
+
+   فلم يُشغَّلا حين وجب: أُضيف `auth.founder.promoted` بلا اسمٍ عربيّ،
+   وشُغّلت `server/tests/auth` وحدَها، فوصل الخطأُ إلى `main`.
+
+   **وحارسٌ لا يُشغَّل ليس حارسا.** فما لا يحتاج قاعدةً يسكن حيث يُشغَّل في
+   كلّ تغيير. وما بقي في هذا الملفّ يحتاج القاعدةَ فعلا. */
+
 
 describe('تغطيةُ الأثر: أفعالُ السلطة لا تقع بلا تسجيل', () => {
   it('تعيينُ الأدوار يُسجَّل، بقائمةِ ما قبلَه وما بعده', async () => {

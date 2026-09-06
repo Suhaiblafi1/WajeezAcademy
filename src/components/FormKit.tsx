@@ -17,6 +17,7 @@
 
 import type { ReactNode } from 'react'
 import { Check } from 'lucide-react'
+import { Card } from '@/components/ui/Surface'
 
 /** قياسٌ واحد لكلّ حقلِ سطرٍ واحد — إدخالا كان أو قائمة */
 export const controlCls =
@@ -46,7 +47,7 @@ export function Question({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6">
+    <Card as="section" className="sm:p-6">
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"
@@ -65,7 +66,7 @@ export function Question({
         </div>
       </div>
       <div className="mt-5">{children}</div>
-    </section>
+    </Card>
   )
 }
 

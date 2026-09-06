@@ -13,6 +13,7 @@ import { X } from 'lucide-react'
 import { controlCls, Field, OptionGrid } from '@/components/FormKit'
 import { courses, courseDomain } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
+import { Card } from '@/components/ui/Surface'
 
 export default function TeachableCoursePicker({
   selected,
@@ -62,8 +63,8 @@ export default function TeachableCoursePicker({
           البيانات وعرض التوصيات» مقابل «دورة SQL»)، فالرصفُ بعرض النصّ يجعل
           بعضها يملأ السطر وبعضها كلمتين — وهو التبعثر الذي شُكي منه. */}
       {domain && (
-        <div className="rounded-2xl border border-white/10 bg-paper/20 p-3">
-          <p className="mb-3 text-fine leading-6 text-muted-foreground">
+        <Card className="bg-paper/20">
+          <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
             اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
           </p>
           <div className="max-h-64 overflow-y-auto pl-1">
@@ -75,7 +76,7 @@ export default function TeachableCoursePicker({
               name={`دورات ${domain}`}
             />
           </div>
-        </div>
+        </Card>
       )}
 
       {/* المختار يبقى مرئيا ولو غادر مجاله — وإلا ظنّ أنه فقده */}

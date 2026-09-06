@@ -6,6 +6,7 @@ import { pathways } from '@/data/pathways'
 import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
+import { Panel } from '@/components/ui/Surface'
 
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
@@ -204,7 +205,7 @@ export default function Trainers() {
               const families = [...familiesSet].map((f) => FAMILY_LABEL[f] ?? f)
               const pathwayCount = pathways.filter((p) => familiesSet.has(p.id.split('-')[1] ?? '')).length
               return (
-                <article key={role} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-teal/40">
+                <Panel as="article" key={role} className="transition hover:border-teal/40">
                   <div className="flex items-center gap-4">
                     <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-teal/15 text-xl font-black text-teal-light-ink">
                       <GraduationCap className="h-6 w-6" />
@@ -225,7 +226,7 @@ export default function Trainers() {
                     <Users className="h-3.5 w-3.5 text-teal-ink" />
                     يغطي {pathwayCount} {pathwayCount === 1 ? 'مسارا' : 'مسارات'} من كتالوج وجيز
                   </p>
-                </article>
+                </Panel>
               )
             })}
           </div>

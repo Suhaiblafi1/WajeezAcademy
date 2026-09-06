@@ -32,6 +32,7 @@ import {
 import SkillDelta from "@/components/SkillDelta";
 import { fmtWhen } from "@/utils/format";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const TARGET_NOTE = "المستهدف: ٤ من ٥ — «جيد عمليا»";
 
 /** صف مهارة مقاسة: الاسم · المقياس · المستوى نصا · الدورة التي تغطّيها */
@@ -78,7 +79,7 @@ function Section({
 }) {
   if (count === 0) return null;
   return (
-    <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+    <Panel as="section" className="mt-6 sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-black">
           <Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
@@ -88,7 +89,7 @@ function Section({
         <p className="text-fine text-muted-foreground">{note}</p>
       </div>
       <ul className="mt-3">{children}</ul>
-    </section>
+    </Panel>
   );
 }
 
@@ -193,15 +194,15 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
           { k: "مجموع الدرجات", v: `${summary.netPoints > 0 ? "+" : ""}${summary.netPoints}`, ltr: true },
           { k: "تراجعت", v: String(summary.declined), ltr: false },
         ].map((t) => (
-          <div key={t.k} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <Card key={t.k} className="px-4 py-3">
             <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
-            <dt className="mt-0.5 text-fine text-muted-foreground">{t.k}</dt>
-          </div>
+            <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
+          </Card>
         ))}
       </dl>
 
       {summary.courses.map((c) => (
-        <div key={c.courseId} className="mt-5 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+        <Card key={c.courseId} className="mt-5">
           <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
             <span className="font-bold text-foreground">{c.courseTitleAr ?? c.courseId}</span>
             {/* ‎/55 لا ‎/45: الأخيرة تقيس 4.45:1 على سطح البطاقة فتسقط دون 4.5 */}
@@ -212,7 +213,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
               <SkillDelta key={g.slug} g={g} />
             ))}
           </ul>
-        </div>
+        </Card>
       ))}
 
       {summary.firstMeasured > 0 && (
@@ -261,7 +262,7 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
       </p>
       <ul className="mt-3 flex flex-col gap-2">
         {invites.map((i) => (
-          <li key={i.enrollmentId} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <Card as="li" key={i.enrollmentId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <span className="min-w-0 truncate text-xs font-bold text-foreground">{i.cohortTitle}</span>
             <Link
               to={`/student/remeasure/${i.enrollmentId}`}
@@ -270,7 +271,7 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
               ابدأ القياس
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
-          </li>
+          </Card>
         ))}
       </ul>
     </section>
@@ -350,7 +351,7 @@ export default function MySkills() {
   if (!profile.hasData) {
     return (
       <PortalLayout title="ملف مهاراتي">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] px-6 py-20 text-center">
+        <Panel className="grid place-items-center px-6 py-20 text-center">
           <Sparkles className="h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
           <h2 className="mt-4 text-xl font-black">لا قياس بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
@@ -364,7 +365,7 @@ export default function MySkills() {
             ابدأ مؤشر وجيز
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
           </Link>
-        </div>
+        </Panel>
         <DueReviewStrip due={dueReview} />
         <GrowthInvites invites={growth.invites} />
         <GrowthPanel summary={summary} />

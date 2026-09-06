@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
+import { Panel, Card } from "@/components/ui/Surface";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
@@ -31,18 +32,20 @@ const CR_STATUS_AR: Record<string, string> = {
   published: "منشور", rejected: "مرفوض", withdrawn: "مسحوب", scheduled: "مجدول للنشر",
 };
 
-function Card({ icon: Icon, title, children, defaultOpen = false }: {
+/* «طيّة» لا «بطاقة»: البطاقةُ درجةٌ في سلّم الأسطح، وهذه عنصرٌ قابلٌ للطيّ
+   يبنيها. وتسميتُهما بالاسم نفسِه في ملفٍّ واحدٍ تظليلٌ يخفي أيَّهما يُقصَد. */
+function Fold({ icon: Icon, title, children, defaultOpen = false }: {
   icon: typeof Star; title: string; children: React.ReactNode; defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+    <Panel as="article">
       <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
         <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="mt-4">{children}</div>}
-    </article>
+    </Panel>
   );
 }
 
@@ -108,7 +111,7 @@ export function TrainerDetailOps({ app, onAction }: {
   return (
     <>
       {/* المقابلات */}
-      <Card icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
+      <Fold icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
         <div className="space-y-3">
           {app.interviews.map((iv) => (
             <div key={iv.id} className="rounded-xl border border-white/10 bg-paper/20 p-3 text-xs">
@@ -148,10 +151,10 @@ export function TrainerDetailOps({ app, onAction }: {
             جدولة مقابلة
           </button>
         </div>
-      </Card>
+      </Fold>
 
       {/* تقييم الديمو */}
-      <Card icon={Star} title="تقييم الدرس التجريبي (Demo)">
+      <Fold icon={Star} title="تقييم الدرس التجريبي (Demo)">
         <RubricInput scores={demoScores} onChange={setDemoScores} />
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
@@ -172,10 +175,10 @@ export function TrainerDetailOps({ app, onAction }: {
           className="mt-3 cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
           سجّل تقييم الديمو
         </button>
-      </Card>
+      </Fold>
 
       {/* المراجع المهنية */}
-      <Card icon={UserCheck} title="المراجع المهنية">
+      <Fold icon={UserCheck} title="المراجع المهنية">
         <div className="grid gap-2 sm:grid-cols-2">
           <input value={refForm.name} onChange={(e) => setRefForm({ ...refForm, name: e.target.value })} placeholder="اسم المرجع" className={inputCls} />
           <input value={refForm.relation} onChange={(e) => setRefForm({ ...refForm, relation: e.target.value })} placeholder="العلاقة (مدير سابق…)" className={inputCls} />
@@ -201,10 +204,10 @@ export function TrainerDetailOps({ app, onAction }: {
             توثيق
           </button>
         </div>
-      </Card>
+      </Fold>
 
       {/* العقد */}
-      <Card icon={FileSignature} title="العقد والتوقيع">
+      <Fold icon={FileSignature} title="العقد والتوقيع">
         <div className="flex flex-wrap gap-2">
           <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}
             placeholder="عنوان العقد — عقد تدريب 2026" className={`${inputCls} flex-1`} />
@@ -225,7 +228,7 @@ export function TrainerDetailOps({ app, onAction }: {
             سجّل التوقيع
           </button>
         </div>
-      </Card>
+      </Fold>
 
       {/* الشعبُ المؤهَّل لها — عرضٌ لا تحكّم.
 
@@ -242,7 +245,7 @@ export function TrainerDetailOps({ app, onAction }: {
           مؤهَّل**. وأمّا «مُسنَدٌ إلى ماذا» فيُقرأ من الشعبة نفسِها لا من
           ملفّه، فمصدرُ الإسناد هناك. */}
       {app.profile && (
-        <Card icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
+        <Fold icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
           {(app.summary?.qualifiedCourses?.length ?? 0) === 0 ? (
             <p className="text-[11px] leading-6 text-muted-foreground">
               لا دورة مؤهَّلا لها بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها — وموافقة المدير
@@ -262,7 +265,7 @@ export function TrainerDetailOps({ app, onAction }: {
               وله {app.summary!.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
             </p>
           )}
-        </Card>
+        </Fold>
       )}
     </>
   );
@@ -349,13 +352,13 @@ export function TrainerChangeRequests() {
     <div className="space-y-3">
       {msg && <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-foreground" role="status">{msg}</p>}
       {rows.length === 0 && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm text-muted-foreground">لا اقتراحات من المدربين بعد — تصل من بوابة المدرب ← «اقتراحاتي».</p>
-        </div>
+        </Panel>
       )}
       {rows.map((r) => (
-        <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card key={r.id}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -404,7 +407,7 @@ export function TrainerChangeRequests() {
               onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
             />
           )}
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -665,7 +668,7 @@ export function TrainerPayouts() {
       </div>
 
       {/* قاعدة الأتعاب — تحدد كيف تُحسب مستحقات كل مدرب تلقائياً */}
-      <Card icon={Settings2} title="قواعد الأتعاب — كيف يُحسب أجر كل مدرب">
+      <Fold icon={Settings2} title="قواعد الأتعاب — كيف يُحسب أجر كل مدرب">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <select value={ruleForm.profileId} onChange={(e) => setRuleForm({ ...ruleForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -712,10 +715,10 @@ export function TrainerPayouts() {
             مثال: معدل 40 وحد أدنى 5، سجّل 3 ← يُحتسب 5 × 40.
           </p>
         </div>
-      </Card>
+      </Fold>
 
       {/* التوليد التلقائي من الشعب المكتملة */}
-      <Card icon={Zap} title="توليد تلقائي من شعبة مكتملة">
+      <Fold icon={Zap} title="توليد تلقائي من شعبة مكتملة">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <select value={genCohortId} onChange={(e) => { setGenCohortId(e.target.value); setPreview(null); }} className={`${selectCls} flex-1`}>
@@ -756,19 +759,19 @@ export function TrainerPayouts() {
             </div>
           )}
           {batchResult && (
-            <div className="space-y-1 rounded-2xl border border-white/10 bg-paper/20 p-4 text-[11px] leading-6">
+            <Card className="space-y-1 bg-paper/20 text-[11px] leading-6">
               <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
               {batchResult.skipped.map((s, i) => (
                 <p key={i} className="text-muted-foreground">تُركت «{s.title}»: {s.reason}</p>
               ))}
-            </div>
+            </Card>
           )}
           <p className="text-micro leading-5 text-muted-foreground">
             اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
             وكلها تمنع التكرار: شعبة واحدة لا تُولّد كشفين لنفس المدرب أبداً.
           </p>
         </div>
-      </Card>
+      </Fold>
 
       {showCreate && (
         <div className="space-y-3 rounded-3xl border border-gold/25 bg-gold/5 p-5">
@@ -825,13 +828,13 @@ export function TrainerPayouts() {
               </p>
             )}
             {visibleRows.length === 0 && (
-              <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+              <Panel className="grid place-items-center py-16 text-center">
                 <Banknote className="h-10 w-10 text-muted-foreground/50" />
                 <p className="mt-3 text-sm text-muted-foreground">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
-              </div>
+              </Panel>
             )}
             {visibleRows.map((p) => (
-        <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card key={p.id}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -876,7 +879,7 @@ export function TrainerPayouts() {
               </button>
             </div>
           )}
-        </div>
+        </Card>
             ))}
           </>
         );

@@ -45,6 +45,7 @@ import {
 import { fmtDateAr } from "@/utils/format";
 import { track } from "@/services/analytics";
 
+import { Card } from "@/components/ui/Surface";
 export interface BuyLine {
   courseId: string;
   name: string;
@@ -394,7 +395,7 @@ export default function BuyPanel({
 
             {/* الحساب — كلُّ سطرٍ منه من الخادم */}
             {quote && !nothingLeft && (
-              <div className="mt-4 space-y-1.5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-[12px]">
+              <Card className="mt-4 space-y-1.5 text-[12px]">
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>مجموع الدورات</span>
                   <span dir="ltr">{money(quote.subtotal, quote.currency)}</span>
@@ -430,7 +431,7 @@ export default function BuyPanel({
                   <span className="text-xs font-bold">ما تدفعه الآن</span>
                   <span dir="ltr" className="text-2xl font-black">{shownTotal}</span>
                 </div>
-              </div>
+              </Card>
             )}
 
             {/* عملةُ البطاقة تُختار هنا وحدَها — والموقعُ كلُّه بالدولار */}

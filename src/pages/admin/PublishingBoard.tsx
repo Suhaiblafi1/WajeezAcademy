@@ -5,6 +5,7 @@ import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
+import { Card } from "@/components/ui/Surface";
 import ConfirmAction from '@/components/ConfirmAction'
 
 type Version = {
@@ -59,7 +60,7 @@ export default function PublishingBoard() {
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card as="section">
           <h2 className="flex items-center gap-2 font-black"><ShieldCheck className="h-5 w-5 text-gold-ink" /> 1 · التحقق البنيوي</h2>
           <button disabled={busy !== null} onClick={() => act("validate", async () => setValidation(await apiPost<Validation>("/api/admin/publishing/validate")))}
             className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-gold/60 disabled:opacity-40">
@@ -72,9 +73,9 @@ export default function PublishingBoard() {
                 : validation.errors.map((e, i) => <p key={i} className="text-red-300">• {e}</p>)}
             </div>
           )}
-        </section>
+        </Card>
 
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card as="section">
           <h2 className="flex items-center gap-2 font-black"><Activity className="h-5 w-5 text-gold-ink" /> 2 · تحليل الأثر</h2>
           <button disabled={busy !== null} onClick={() => act("impact", async () => setImpact(await apiPost<Impact>("/api/admin/publishing/impact", { changeRef: "تحليل من لوحة النشر" })))}
             className="mt-4 w-full cursor-pointer rounded-full border border-white/15 px-4 py-2 text-sm font-bold hover:border-gold/60 disabled:opacity-40">
@@ -89,9 +90,9 @@ export default function PublishingBoard() {
               {impact.changed.map((c) => <span key={c.name} className="block text-amber-300">• {c.name}</span>)}
             </p>
           )}
-        </section>
+        </Card>
 
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card as="section">
           <h2 className="flex items-center gap-2 font-black"><Rocket className="h-5 w-5 text-gold-ink" /> 3 · نشر إصدار</h2>
           <div className="mt-4 flex gap-2">
             <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="2026.08.16-01" dir="ltr"
@@ -105,14 +106,14 @@ export default function PublishingBoard() {
             </button>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
-        </section>
+        </Card>
       </div>
 
       <section className="mt-8">
         <h2 className="flex items-center gap-2 text-lg font-black"><History className="h-5 w-5 text-gold-ink" /> الإصدارات</h2>
         <div className="mt-4 space-y-2">
           {versions.map((v) => (
-            <div key={v.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <Card key={v.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div>
                 <p className="font-bold text-sm" dir="ltr">{v.label}</p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground" dir="ltr">{v.snapshots[0]?.payloadHash.slice(0, 12)}… · {v.events.map((e) => e.action).join(", ") || "—"}</p>
@@ -139,7 +140,7 @@ export default function PublishingBoard() {
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -155,12 +156,12 @@ export default function PublishingBoard() {
         <div className="mt-4 space-y-2">
           {runs.length === 0 && <p className="text-sm text-muted-foreground">لا تشغيلات بعد.</p>}
           {runs.map((r) => (
-            <div key={r.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <Card key={r.id} className="flex items-center justify-between px-4 py-3">
               <p className="text-xs text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
               <p className={`text-sm font-black ${r.passed ? "text-emerald-300" : "text-red-300"}`}>
                 {r.passed ? "✓ متطابق" : `✗ انحراف ${r.results.filter((x) => !x.match).length} شخصية`}
               </p>
-            </div>
+            </Card>
           ))}
         </div>
       </section>

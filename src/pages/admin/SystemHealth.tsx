@@ -17,6 +17,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
+import { Panel } from "@/components/ui/Surface";
 type Level = "ok" | "attention" | "broken" | "unknown";
 
 interface HealthItem {
@@ -90,9 +91,9 @@ export default function SystemHealth() {
       )}
 
       {data === null && !error && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 py-20">
+        <Panel className="grid place-items-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="تُقرأ الحالة" />
-        </div>
+        </Panel>
       )}
 
       {data && (

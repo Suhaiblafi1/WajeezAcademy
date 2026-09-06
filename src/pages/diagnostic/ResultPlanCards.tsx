@@ -26,6 +26,7 @@ import {
 } from "@/data/courses";
 import { pathways, type Pathway } from "@/data/pathways";
 
+import { Card } from "@/components/ui/Surface";
 /* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
 
    كانت الخطة المركّبة تُعرض بلا أي أداة تخصيص، بينما المسار القياسي يُمرَّر إليه
@@ -196,7 +197,7 @@ export function PlanCourses({
           onGiftToggle: giftToggle,
         }}
       />
-      <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+      <Card className="mt-4 px-5 py-4">
         <p className="text-xs font-bold text-muted-foreground">
           مسارك المخصص الآن:{" "}
           <span className="text-foreground">
@@ -211,7 +212,7 @@ export function PlanCourses({
             </span>
           ))}
         </div>
-      </div>
+      </Card>
     </>
   );
 }
@@ -366,7 +367,7 @@ export function WhyThisPathway({
       )}
 
       {confidence && (
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 md:p-5">
+        <Card className="mt-6 md:p-5">
           {/* ── الرقمُ شيءٌ والدرجةُ شيءٌ آخر ──
 
               كانا يُطبعان في سطرٍ واحد: «٩٧٪ — أفضل تطابق حالي». فيقرأ
@@ -438,7 +439,7 @@ export function WhyThisPathway({
             ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تقف حالتك بين مسارين متقاربين.
             فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
           </p>
-        </div>
+        </Card>
       )}
 
       {gapNote && (

@@ -15,6 +15,7 @@ import type { SkillMeasureState } from "@/application/catalog/skill-measurement"
 import { apiPost, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface PathwayOption { id: string; title: string }
 interface SkillRow {
   id: string; status: string; slug: string; nameAr: string; familyId: string | null;
@@ -66,7 +67,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
   };
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+    <Panel>
       {/* شريط الخطوات */}
       <ol className="mb-6 flex flex-wrap gap-2">
         {COURSE_WIZARD_STEPS.map((s, i) => {
@@ -194,12 +195,12 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {/* ٤ · المراجعة والإنشاء */}
       {key === "review" && (
         <div className="space-y-3 text-sm">
-          <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+          <Card className="bg-paper/20">
             <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-[11px] text-muted-foreground">({d.id})</span></p>
             <p className="mt-1 text-[11px] text-muted-foreground">
               المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
-          </div>
+          </Card>
           <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-foreground">
             تُنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تُنشر من هنا.
           </p>
@@ -234,6 +235,6 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           </button>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

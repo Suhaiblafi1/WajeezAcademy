@@ -14,6 +14,7 @@ import { Link } from "react-router";
 import { AlertTriangle, CheckCircle2, ChevronLeft, Clock, Inbox, Loader2, RefreshCw } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
 
+import { Card } from "@/components/ui/Surface";
 interface InboxItem {
   key: string;
   titleAr: string;
@@ -73,9 +74,9 @@ export default function StaffInbox() {
       )}
 
       {items === null && !error && (
-        <div className="grid place-items-center rounded-2xl border border-white/10 py-8">
+        <Card className="grid place-items-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-label="يُحمَّل" />
-        </div>
+        </Card>
       )}
 
       {items !== null && items.length === 0 && (

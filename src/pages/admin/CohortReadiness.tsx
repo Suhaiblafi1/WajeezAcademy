@@ -14,6 +14,7 @@ import { useState } from "react";
 import { AlertTriangle, CalendarCheck, CheckCircle2, Loader2, PlayCircle, Tags, Wallet } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 
+import { Card } from "@/components/ui/Surface";
 interface OpenResult {
   applied: boolean; publishedCourses: number; opened: number; prepared: number; alreadyLive: number;
   skippedNoListPrice: number; startsAt: string;
@@ -83,7 +84,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* ── فتح الشعب ── */}
-        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
+        <Card className="bg-paper/25">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <PlayCircle className="h-3.5 w-3.5 text-teal" /> فتحُ شعبةٍ لكلّ دورة بلا شعبة
           </p>
@@ -167,10 +168,10 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
             </div>
           )}
-        </div>
+        </Card>
 
         {/* ── محاذاة الأسعار ── */}
-        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
+        <Card className="bg-paper/25">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <Tags className="h-3.5 w-3.5 text-gold" /> توحيدُ أسعار الشعب على سعر القائمة
           </p>
@@ -222,9 +223,9 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
             </div>
           )}
-        </div>
+        </Card>
         {/* ── الحالةُ تتبع التواريخ ── */}
-        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4 lg:col-span-2">
+        <Card className="bg-paper/25 lg:col-span-2">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالاتٌ متأخّرةٌ عن تواريخها
           </p>
@@ -270,7 +271,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </section>
   );

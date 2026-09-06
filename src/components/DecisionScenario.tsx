@@ -14,6 +14,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, CornerDownLeft, Loader2, MapPin, RotateCcw, Save, Split, TriangleAlert } from "lucide-react";
 import { apiPost } from "@/services/api";
+import { Card } from "@/components/ui/Surface";
 import {
   entryOf, isTerminal, nodeOf, parseScenario, validateScenario,
   type ScenarioNode, type ScenarioStep,
@@ -118,7 +119,7 @@ export default function DecisionScenario({
       {taken.length > 0 && (
         <ol className="mt-5 space-y-2">
           {taken.map((t, i) => (
-            <li key={`${t.nodeTitle}-${i}`} className="rounded-2xl border border-white/8 bg-white/[0.02] px-4 py-3">
+            <Card as="li" key={`${t.nodeTitle}-${i}`} className="px-4 py-3">
               <p className="flex items-start gap-2 text-xs font-bold">
                 <CornerDownLeft className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
                 <span className="min-w-0">
@@ -127,13 +128,13 @@ export default function DecisionScenario({
                 </span>
               </p>
               {t.effectAr && <p className="mt-1.5 ps-6 text-[11px] leading-6 text-foreground">{t.effectAr}</p>}
-            </li>
+            </Card>
           ))}
         </ol>
       )}
 
       {/* العقدة الحالية */}
-      <div className="mt-5 rounded-2xl border border-white/10 bg-paper/20 p-4">
+      <Card className="mt-5 bg-paper/20">
         <p className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
           <MapPin className="h-3 w-3" aria-hidden="true" />
           {current.titleAr}
@@ -154,7 +155,7 @@ export default function DecisionScenario({
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* النهاية: التأمل ثم الحفظ */}
       {ended && (

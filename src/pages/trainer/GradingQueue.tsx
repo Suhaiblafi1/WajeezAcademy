@@ -23,6 +23,7 @@ import TrainerLayout from "./TrainerLayout";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
+import { Panel } from "@/components/ui/Surface";
 
 const SUBMISSION_STATUS: Record<string, string> = {
   submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
@@ -90,14 +91,14 @@ export default function GradingQueue() {
   if (offline) {
     return (
       <TrainerLayout title="طابور التصحيح">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للطابور</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </TrainerLayout>
     );
   }
@@ -115,7 +116,7 @@ export default function GradingQueue() {
   return (
     <TrainerLayout title="طابور التصحيح">
       {queue.length === 0 ? (
-        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center">
+        <Panel className="p-10 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-teal-light-ink" />
           <h2 className="mt-4 text-lg font-black">الطابور نظيف — لا تسليمات بانتظارك</h2>
           <p className="mt-2 text-sm text-muted-foreground">كل ما وصلك قيّمته. أحسنت.</p>
@@ -131,14 +132,14 @@ export default function GradingQueue() {
               اقترح تحسينا على المحتوى
             </Link>
           </div>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
             {queue.length} {queue.length === 1 ? "تسليمٌ" : "تسليماتٍ"} في طابورك — تُصحَّح هنا.
           </p>
           {queue.map((q) => (
-            <div key={q.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+            <Panel key={q.id}>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-black">{q.assessment.title}</p>
@@ -211,7 +212,7 @@ export default function GradingQueue() {
                   <MessageSquarePlus className="h-3 w-3" /> أرسل
                 </button>
               </div>
-            </div>
+            </Panel>
           ))}
         </div>
       )}

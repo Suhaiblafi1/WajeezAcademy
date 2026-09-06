@@ -24,6 +24,7 @@ import {
 } from "@/application/student/retrieval-schedule";
 import EmptyState from "@/components/EmptyState";
 
+import { Panel } from "@/components/ui/Surface";
 const HONESTY_NOTE =
   "الاسترجاع لا يرفع مستوى مهارتك ولا يخفضه — مستواك يأتي من القياس في مؤشر وجيز ومن إعادة القياس بعد الدورة. " +
   "هذه البطاقات لتثبيت ما تعلمته، لا لتقييمك.";
@@ -39,8 +40,8 @@ function ReviewCard({
 }) {
   const correct = chosen !== undefined && chosen === item.correctIndex;
   return (
-    <li className="rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-fine text-muted-foreground">
+    <Panel as="li" className="sm:p-6">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
         {item.skillNameAr && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 px-2.5 py-0.5 font-bold text-teal-light-ink">
             <Target className="h-3 w-3" aria-hidden="true" />
@@ -77,7 +78,7 @@ function ReviewCard({
           <>{correct ? `استرجعتها — تعود بعد ${item.nextIfCorrectAr}.` : `لم تسترجعها — تعود بعد ${item.nextIfWrongAr}.`}</>
         )}
       </p>
-    </li>
+    </Panel>
   );
 }
 

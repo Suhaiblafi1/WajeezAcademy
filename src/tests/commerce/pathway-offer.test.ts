@@ -82,8 +82,11 @@ describe('التصفح مفتوح للجميع — لا بوابة تسجيل ع
   it('الفريق التدريبي وقسم الشراء يُعرضان بلا شرط — لا خلف {user &&', () => {
     expect(SRC).toMatch(/<p id="trainers-reveal"/)
     expect(SRC).not.toMatch(/\{user && \(\s*\n\s*<p id="trainers-reveal"/)
-    expect(SRC).toMatch(/<div id="buy"/)
-    expect(SRC).not.toMatch(/\{user && \(\s*\n\s*<div id="buy"/)
+    /* المقيسُ وجودُ المرساة وأنّها بلا شرط — **لا اسمُ وسمِها**. كان الشرطُ
+       `<div id="buy"` فاحمرّ يوم صار السطحُ `Panel` في توحيد التصميم، وهو
+       تغييرٌ لا يمسّ ما يحرسه هذا السطر. فأيُّ وسمٍ يحملها يفي. */
+    expect(SRC).toMatch(/id="buy"/)
+    expect(SRC).not.toMatch(/\{user && \(\s*\n\s*<\w+ id="buy"/)
   })
 
   it('شارة «اعتمده تشخيصك» محذوفة — لا مخفيّة', () => {

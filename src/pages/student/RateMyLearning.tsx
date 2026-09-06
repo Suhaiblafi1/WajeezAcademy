@@ -11,6 +11,7 @@ import EmptyState from "@/components/EmptyState";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast } from '@/components/Toast';
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface Rateable {
   subjectType: "trainer" | "advisor" | "course";
   subjectId: string;
@@ -73,7 +74,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
   };
 
   return (
-    <article className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+    <Card as="article">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <span className="rounded-full border border-white/10 px-2 py-0.5 text-fine font-bold text-muted-foreground">
@@ -122,7 +123,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
         </button>
         {error && <span role="alert" className="text-fine font-bold text-red-300">{error}</span>}
       </div>
-    </article>
+    </Card>
   );
 }
 
@@ -159,10 +160,10 @@ export default function RateMyLearning() {
       </div>
 
       {offline && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <ServerOff className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-        </div>
+        </Panel>
       )}
 
       {!offline && loading && (

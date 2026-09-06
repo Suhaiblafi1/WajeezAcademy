@@ -17,6 +17,7 @@ import { parseRubric } from "@/application/content/rubric";
 import { safeGet, safeSet } from "@/services/safe-storage";
 import { fmtNum } from "@/application/text/format-ar";
 
+import { Card } from "@/components/ui/Surface";
 const KEY = (moduleId: string) => `wj.rubric.${moduleId}`;
 
 function readMarks(moduleId: string): Record<number, number> {
@@ -98,7 +99,7 @@ export default function RubricSelfReview({
 
       <div className="mt-4 space-y-4">
         {rubric.criteria.map((c, ci) => (
-          <div key={ci} className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+          <Card key={ci}>
             <p className="flex items-start gap-2 text-[13px] font-bold leading-6">
               <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
               {c.titleAr}
@@ -127,7 +128,7 @@ export default function RubricSelfReview({
                 );
               })}
             </ul>
-          </div>
+          </Card>
         ))}
       </div>
 

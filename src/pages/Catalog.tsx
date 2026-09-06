@@ -7,6 +7,7 @@ import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import CourseTitle from "@/components/CourseTitle";
+import { Panel, Card } from "@/components/ui/Surface";
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
@@ -235,10 +236,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       {isPathways ? (
         <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {shownPathways.map((p) => (
-            <article
-              key={p.id}
-              className="group flex min-w-0 flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6 transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
-            >
+            <Panel as="article" key={p.id} className="group flex min-w-0 flex-col transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]">
               {/* يلتف: صفٌّ لا يلتف يفرض عرض محتواه على البطاقة مهما ضاقت الشاشة،
                   فتخرج البطاقة خارج شبكتها ويظهر تمرير أفقي عند التكبير. */}
               <div className="flex flex-wrap items-center gap-2">
@@ -296,16 +294,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   تفاصيل المسار
                 </Link>
               </div>
-            </article>
+            </Panel>
           ))}
         </div>
       ) : (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {shownCourses.map((c) => (
-            <article
-              key={c.id}
-              className="group flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-gold/40"
-            >
+            <Card as="article" key={c.id} className="group flex flex-col transition hover:border-gold/40">
               <div className="flex items-center gap-2">
                 {bestsellerCourseIds.has(c.id) && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
@@ -354,7 +349,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   تفاصيل الدورة
                 </Link>
               </div>
-            </article>
+            </Card>
           ))}
         </div>
       )}

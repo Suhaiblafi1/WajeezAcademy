@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 
+import { Card } from "@/components/ui/Surface";
 /** شريط «سير العمل» — يعرض سلسلة الحالات بترتيبها ومن يحرّك كل خطوة.
    يظهر أعلى الشاشات التشغيلية ليجيب: ماذا يحدث الآن؟ ومن دوره التالي؟ */
 export default function FlowSteps({
@@ -10,7 +11,7 @@ export default function FlowSteps({
   current?: number;
 }) {
   return (
-    <div className="mb-6 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
+    <Card className="mb-6 overflow-x-auto px-4 py-3">
       <div className="flex min-w-max items-center gap-1">
         {steps.map((s, i) => (
           <div key={s.label} className="flex items-center gap-1">
@@ -31,6 +32,6 @@ export default function FlowSteps({
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }

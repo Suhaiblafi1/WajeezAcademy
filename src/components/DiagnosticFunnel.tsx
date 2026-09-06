@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { BarChart3 } from "lucide-react";
 import { apiGet } from "@/services/api";
 
+import { Panel } from "@/components/ui/Surface";
 interface FunnelRow {
   stage: string;
   users: number | string;
@@ -35,10 +36,7 @@ export default function DiagnosticFunnel() {
   const started = stages[0]?.users ?? 0;
 
   return (
-    <section
-      className="funnel rounded-3xl border border-white/10 bg-white/[0.03] p-6"
-      aria-labelledby="funnel-title"
-    >
+    <Panel as="section" className="funnel" aria-labelledby="funnel-title">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 id="funnel-title" className="flex items-center gap-2 text-sm font-black text-foreground">
           <BarChart3 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
@@ -98,6 +96,6 @@ export default function DiagnosticFunnel() {
       <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">
         أجهزة فريدة عند كل مرحلة — لا زيارات. النسبة المئوية بجانب كل مرحلة هي التسرّب عن سابقتها.
       </p>
-    </section>
+    </Panel>
   );
 }

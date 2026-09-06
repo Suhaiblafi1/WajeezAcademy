@@ -21,6 +21,7 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -116,20 +117,20 @@ interface AppDetail extends Record<string, unknown> {
 function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
   if (!summary) {
     return (
-      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-xs leading-6 text-muted-foreground">
+      <Panel as="article" className="text-xs leading-6 text-muted-foreground">
         لا ملفَّ مدرّبٍ بعد — الملفُّ يُنشأ مع «القبول المشروط»، وقبله لا دورات ولا شعب.
-      </article>
+      </Panel>
     );
   }
   const stat = (label: string, value: string) => (
-    <div className="rounded-2xl border border-white/10 bg-paper/20 p-3.5">
+    <Card className="bg-paper/20 p-3.5">
       <p className="text-micro font-bold text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-black tabular-nums text-foreground">{value}</p>
-    </div>
+    </Card>
   );
   return (
     <div className="space-y-4">
-      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+      <Panel as="article">
         <h4 className="flex items-center gap-2 text-sm font-black">
           <Star className="h-4 w-4 text-teal-light-ink" /> ملخّص المدرّب
         </h4>
@@ -148,9 +149,9 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
             {fmtDateTime(new Date(summary.nextSession.startsAt))}
           </p>
         )}
-      </article>
+      </Panel>
 
-      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+      <Panel as="article">
         <h4 className="text-sm font-black">الدورات المؤهَّل لها</h4>
         {summary.qualifiedCourses.length === 0 ? (
           <p className="mt-3 text-xs leading-6 text-muted-foreground">
@@ -171,9 +172,9 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
             وله {summary.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
           </p>
         )}
-      </article>
+      </Panel>
 
-      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+      <Panel as="article">
         <h4 className="text-sm font-black">شعبُه الحاليّة</h4>
         {/* «المُسنَدُ له فعليّا» يُقرأ من كائن الشعبة لا من ملفّ المدرّب:
             مصدرُ الإسناد هناك، وقراءتُه من هنا تُنشئ مصدرا ثانيا يشيخ. */}
@@ -196,7 +197,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
             ))}
           </ul>
         )}
-      </article>
+      </Panel>
     </div>
   );
 }
@@ -307,14 +308,14 @@ export default function TrainerApplications() {
   if (offline) {
     return (
       <AdminLayout title="طلبات انضمام المدربين">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -426,7 +427,7 @@ export default function TrainerApplications() {
               <TrainerCoursesTab summary={a.summary} />
             ) : (
             <>
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <Panel as="article">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-black">{a.fullName}</h3>
@@ -460,10 +461,10 @@ export default function TrainerApplications() {
               <div className="mt-5">
                 <ApplicationDossier a={a as unknown as Dossier} />
               </div>
-            </article>
+            </Panel>
 
             {/* الوثائق الخاصة */}
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <Panel as="article">
               <h4 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
               {a.documents.length === 0 ? (
                 <p className="mt-3 text-xs text-muted-foreground">لم يرفع المرشح وثائق بعد.</p>
@@ -481,10 +482,10 @@ export default function TrainerApplications() {
                   ))}
                 </ul>
               )}
-            </article>
+            </Panel>
 
             {/* سجل الحالات */}
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <Panel as="article">
               <h4 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
@@ -496,7 +497,7 @@ export default function TrainerApplications() {
                   </li>
                 ))}
               </ol>
-            </article>
+            </Panel>
 
             {/* عمليات متقدمة: مقابلات، ديمو، مراجع، عقود */}
             <TrainerDetailOps app={a} onAction={act} />
@@ -506,7 +507,7 @@ export default function TrainerApplications() {
 
           {/* عمود القرارات والروبرك */}
           <div className="space-y-4">
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+            <Panel as="article">
               <h4 className="text-sm font-black">الروبرك — تسعة محاور (١–٥)</h4>
               <div className="mt-3 space-y-2">
                 {RUBRIC_AXES.map((x) => (
@@ -541,9 +542,9 @@ export default function TrainerApplications() {
                 <Star className="h-3.5 w-3.5" /> سجّل التقييم
               </button>
               <p className="mt-2 text-center text-micro text-muted-foreground">{a.reviews.length} تقييم مسجل</p>
-            </article>
+            </Panel>
 
-            <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+            <Panel as="article">
               <h4 className="text-sm font-black">القرار — بشري بالكامل</h4>
               <div className="mt-3 space-y-2">
                 {available.length === 0 && <p className="text-xs text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</p>}
@@ -614,7 +615,7 @@ export default function TrainerApplications() {
                   <MailCheck className="h-3.5 w-3.5" /> الحساب مُنشأ ومرتبط بالملف
                 </p>
               )}
-            </article>
+            </Panel>
           </div>
         </div>
       </AdminLayout>
@@ -662,13 +663,13 @@ export default function TrainerApplications() {
       {mode === "apps" && (loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : apps.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <UserPlus className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بهذه الحالة</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             طلبات نموذج «انضم مدربا» تصل هنا مباشرة عبر قاعدة البيانات فور إرسالها.
           </p>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-3">
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"

@@ -16,6 +16,7 @@ import { apiPost, ApiError } from "@/services/api";
 import { useCourseCohorts } from "@/services/cohort-prices";
 import { fmtDateAr } from "@/utils/format";
 
+import { Card } from "@/components/ui/Surface";
 export default function SwitchCohort({
   enrollmentId,
   courseId,
@@ -64,7 +65,7 @@ export default function SwitchCohort({
   };
 
   return (
-    <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+    <Card className="mb-5">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full cursor-pointer items-center gap-2 text-right text-sm font-black text-foreground"
@@ -102,6 +103,6 @@ export default function SwitchCohort({
           {error && <p className="mt-2 text-fine leading-5 text-red-300">{error}</p>}
         </>
       )}
-    </div>
+    </Card>
   );
 }

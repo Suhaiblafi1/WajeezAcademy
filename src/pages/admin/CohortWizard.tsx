@@ -17,6 +17,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 
+import { Panel } from "@/components/ui/Surface";
 export interface WizardCourse {
   id: string;
   title: string;
@@ -224,7 +225,7 @@ export default function CohortWizard({
   const inputCls = "mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+    <Panel>
       {/* خطواتٌ مرقّمة — الرقمُ يقول أين أنت لا يزيّن */}
       <ol className="mb-5 flex flex-wrap items-center gap-x-2 gap-y-2 text-[11px]">
         {STEPS.map((label, i) => (
@@ -454,6 +455,6 @@ export default function CohortWizard({
           </div>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

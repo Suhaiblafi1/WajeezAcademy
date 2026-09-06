@@ -8,6 +8,7 @@ import { fmtWhen } from "@/utils/format";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
+import { Panel } from "@/components/ui/Surface";
 /* الخادم هو مصدر الحقيقة: POST/GET /api/learner/cv و POST /api/cv/:id/delete.
    كان هنا `@/data/cv` — محاكاةٌ كاملة للسلوك نفسه في localStorage، فيرفع
    المتعلم سيرته ويراها في صفحته ولا تصل إلى مستشاره أبدا. */
@@ -103,7 +104,7 @@ export default function MyCv() {
         </section>
       )}
       {fileUploads && (
-      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+      <Panel as="section">
         <h2 className="flex items-center gap-2 text-sm font-black"><Upload className="h-4 w-4 text-teal-ink" /> رفع سيرة جديدة</h2>
         <input
           ref={fileRef}
@@ -136,14 +137,14 @@ export default function MyCv() {
         {!consent && (
           <p className="mt-2 text-fine text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
         )}
-      </section>
+      </Panel>
       )}
 
       {/* سيري الفعالة */}
       <section className="mt-6 space-y-3">
         {cvs === null && <div className="grid place-items-center py-10"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>}
         {cvs?.length === 0 && (
-          <div className="rounded-3xl border border-dashed border-white/15 py-10 text-center">
+          <Panel className="border-dashed py-10 text-center">
             <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 text-sm font-bold text-muted-foreground">لا سير فعالة بعد</p>
             <p className="mx-auto mt-1 max-w-sm text-xs leading-6 text-muted-foreground">
@@ -157,10 +158,10 @@ export default function MyCv() {
                 ارفع أول سيرة
               </button>
             )}
-          </div>
+          </Panel>
         )}
         {cvs?.map((c) => (
-          <div key={c.id} className="flex flex-wrap items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+          <Panel key={c.id} className="flex flex-wrap items-center gap-4">
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/15 text-teal-light-ink">
               <FileText className="h-5 w-5" />
             </span>
@@ -182,7 +183,7 @@ export default function MyCv() {
             >
               <Trash2 className="h-3.5 w-3.5" /> حذف
             </button>
-          </div>
+          </Panel>
         ))}
       </section>
 

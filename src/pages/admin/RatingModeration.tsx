@@ -12,6 +12,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
@@ -99,10 +100,10 @@ export default function RatingModeration() {
 
 
       {offline && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <ServerOff className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-        </div>
+        </Panel>
       )}
 
       {!offline && loading && (
@@ -118,7 +119,7 @@ export default function RatingModeration() {
       {!offline && !loading && rows.length > 0 && (
         <ul className="space-y-3">
           {rows.map((r) => (
-            <li key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <Card as="li" key={r.id}>
               <div className="flex flex-wrap items-center gap-2 text-micro">
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-muted-foreground">{KIND_AR[r.subjectType]}</span>
                 <span className="font-black text-gold">{r.score} ★</span>
@@ -148,7 +149,7 @@ export default function RatingModeration() {
                   </button>
                 </div>
               )}
-            </li>
+            </Card>
           ))}
         </ul>
       )}

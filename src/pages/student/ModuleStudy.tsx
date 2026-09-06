@@ -38,6 +38,7 @@ import { track } from "@/services/analytics";
 import { countAr } from "@/application/text/count-ar";
 import { courseFullById } from "@/data/courses";
 
+import { Panel } from "@/components/ui/Surface";
 /** خطوةٌ في المشغّل: درسٌ، أو سيناريو، أو النشاط والمخرَج */
 type Step =
   | { kind: "lesson"; title: string; body: string; minutes: number; checks: Check[] }
@@ -115,13 +116,13 @@ export default function ModuleStudy() {
   if (!full || !mod) {
     return (
       <PortalLayout title="الوحدة">
-        <section className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.03] py-16 text-center">
+        <Panel as="section" className="grid place-items-center py-16 text-center">
           <BookOpen className="h-12 w-12 text-muted-foreground" />
           <p className="mt-5 text-sm text-muted-foreground">لم نجد هذه الوحدة في هذه الدورة.</p>
           <Link to={`/student/course/${courseId}`} className="mt-6 rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40">
             عُد إلى محطّات الدورة
           </Link>
-        </section>
+        </Panel>
       </PortalLayout>
     );
   }
@@ -191,8 +192,8 @@ export default function ModuleStudy() {
       )}
 
       {step?.kind === "lesson" && (
-        <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-9">
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-fine font-bold text-teal-light-ink">
+        <Panel as="article" className="md:p-9">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">الدرس {pos + 1} من {lessonCount}</span>
             {step.minutes > 0 && <span className="text-muted-foreground">{countAr(step.minutes, MIN_FORMS)} قراءة</span>}
           </p>
@@ -233,19 +234,19 @@ export default function ModuleStudy() {
               </div>
             </section>
           )}
-        </article>
+        </Panel>
       )}
 
       {step?.kind === "scenario" && (
-        <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-9">
-          <p className="text-fine font-bold text-teal-light-ink">
+        <Panel as="article" className="md:p-9">
+          <p className="text-[11px] font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">سيناريو قرار</span>
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             لا إجابةَ واحدة هنا. اختر ما كنت ستفعله فعلا، واقرأ ما يترتّب عليه.
           </p>
           <DecisionScenario raw={step.raw} moduleId={mod.id} className="mt-5" />
-        </article>
+        </Panel>
       )}
 
       {step?.kind === "apply" && (
@@ -276,12 +277,12 @@ export default function ModuleStudy() {
 
           {/* تمرينُ الوحدة كاملا مع الجدولة المتباعدة — مكانُه بعد الفهم لا قبله */}
           {mod.checks && (
-            <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+            <Panel className="md:p-8">
               <ModuleCheck raw={mod.checks} moduleId={mod.id} />
-            </div>
+            </Panel>
           )}
 
-          <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 text-center md:p-8">
+          <Panel className="text-center md:p-8">
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink" />
             <p className="mt-3 text-sm font-black">انتهت قراءةُ هذه الوحدة</p>
             <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted-foreground">
@@ -297,7 +298,7 @@ export default function ModuleStudy() {
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             )}
-          </div>
+          </Panel>
         </article>
       )}
 

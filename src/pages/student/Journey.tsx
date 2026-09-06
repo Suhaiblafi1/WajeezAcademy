@@ -37,6 +37,7 @@ import {
 import { courseFullById } from "@/data/courses";
 import { toast, toastError } from '@/components/Toast';
 
+import { Panel, Card } from "@/components/ui/Surface";
 /** الطلبُ كما يعرضه الشريطُ بعد العودة من صفحة الدفع */
 interface PaidOrder {
   id: string;
@@ -297,7 +298,7 @@ export default function Journey() {
         )}
 
         {offline ? (
-          <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+          <Panel className="grid place-items-center py-20 text-center">
             <ServerOff className="h-12 w-12 text-muted-foreground/50" />
             <h2 className="mt-4 text-xl font-black">لا يمكن الوصول لرحلتك</h2>
             <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
@@ -307,7 +308,7 @@ export default function Journey() {
             >
               <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
             </button>
-          </div>
+          </Panel>
         ) : rows === null ? (
           <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>
         ) : !activeTrack ? (
@@ -355,9 +356,9 @@ export default function Journey() {
                 <CapstonePanel track={activeTrack} requests={requests} onChanged={() => void load()} />
               ) : !stage ? null : stage.enrollmentId ? (
                 detailLoading || !detail ? (
-                  <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16">
+                  <Panel className="grid place-items-center py-16">
                     <Loader2 className="h-6 w-6 animate-spin text-teal-ink" aria-label="يُحمَّل" />
-                  </div>
+                  </Panel>
                 ) : (
                   <StageWork
                     stage={stage}
@@ -442,7 +443,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
     }
     if (awaiting === 0) return null;
     return (
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3">
+      <Card className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <p className="min-w-0 text-[12px] leading-6 text-muted-foreground">
           <span className="font-bold text-foreground">{awaiting} من دوراتك لم تُفتح لها شعبة بعد.</span>{" "}
           لا تُطلب ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو راجعها مع مستشارك.
@@ -452,7 +453,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
           label="مراجعة خطّتي"
           className="flex shrink-0 items-center gap-2 rounded-full border border-gold/40 px-4 py-2 text-[12px] font-bold text-gold-ink transition hover:bg-gold/10"
         />
-      </div>
+      </Card>
     );
   }
 
