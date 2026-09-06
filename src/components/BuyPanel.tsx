@@ -45,7 +45,7 @@ import {
 import { fmtDateAr } from "@/utils/format";
 import { track } from "@/services/analytics";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 export interface BuyLine {
   courseId: string;
   name: string;
@@ -252,7 +252,7 @@ export default function BuyPanel({
 
   return (
     <Modal onClose={onClose} label={`الشراء: ${title}`} panelClassName="w-full max-w-lg">
-      <div className="story-fade max-h-[86vh] overflow-y-auto rounded-3xl border border-white/10 bg-surface p-6 sm:p-7">
+      <Inset className="story-fade max-h-[86vh] overflow-y-auto bg-surface sm:p-7">
         <h3 className="text-lg font-black">إتمام الشراء</h3>
         <p className="mt-1 text-sm text-muted-foreground">{title}</p>
 
@@ -272,7 +272,7 @@ export default function BuyPanel({
           <>
             {/* شراءُ مسارٍ كاملٍ يُقال بصريح العبارة، لا يُترَك للعدّ. */}
             {kind === "pathway" && (
-              <div className="mt-5 rounded-2xl border border-gold/30 bg-gold/[0.05] p-4">
+              <Card tone="warn" className="mt-5">
                 <p className="flex items-center gap-1.5 text-sm font-black text-gold-ink">
                   <RouteIcon className="h-4 w-4" /> تشتري مسارا كاملا — لا دورات منفردة
                 </p>
@@ -286,7 +286,7 @@ export default function BuyPanel({
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Card>
             )}
 
             {/* البنودُ بشعبها — والموعدُ يُبدَّل هنا لا في شاشةٍ أخرى. أسماءٌ
@@ -505,7 +505,7 @@ export default function BuyPanel({
             )}
           </>
         )}
-      </div>
+      </Inset>
     </Modal>
   );
 }

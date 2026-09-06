@@ -41,7 +41,7 @@ function ReviewCard({
   const correct = chosen !== undefined && chosen === item.correctIndex;
   return (
     <Panel as="li" className="sm:p-6">
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-fine text-muted-foreground">
         {item.skillNameAr && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 px-2.5 py-0.5 font-bold text-teal-light-ink">
             <Target className="h-3 w-3" aria-hidden="true" />
@@ -150,7 +150,7 @@ export default function Review() {
         <p className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">{error}</p>
       )}
 
-      <section className="rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-6">
+      <Panel as="section" tone="accent" className="bg-teal-ink/[0.07]">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
             <p className="text-xs text-muted-foreground">بطاقات استحقّت الاسترجاع اليوم</p>
@@ -173,7 +173,7 @@ export default function Review() {
           </dl>
         </div>
         <p className="mt-4 text-fine leading-relaxed text-muted-foreground">{HONESTY_NOTE}</p>
-      </section>
+      </Panel>
 
       {queue.length === 0 ? (
         /* ط-٤ · حالتان لا واحدة: «لا بطاقات بعد» تحتاج بداية، و«لا شيء مستحق»
@@ -217,7 +217,7 @@ export default function Review() {
             })}
           </ul>
           {answeredAll && (
-            <div className="mt-6 flex flex-wrap items-center gap-3 rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-5">
+            <Panel tone="accent" className="mt-6 flex flex-wrap items-center gap-3 bg-teal-ink/[0.07]">
               <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
               <p className="min-w-0 flex-1 text-sm font-bold">
                 أنهيت مستحقّ اليوم. كل بطاقة جُدولت لموعدها المذكور تحتها.
@@ -230,7 +230,7 @@ export default function Review() {
                 <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                 حدّث القائمة
               </button>
-            </div>
+            </Panel>
           )}
         </>
       )}

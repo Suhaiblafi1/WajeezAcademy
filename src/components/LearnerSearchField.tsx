@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, Search, UserCheck, X } from "lucide-react";
 import { apiGet } from "@/services/api";
 
+import { Inset } from "@/components/ui/Surface";
 export interface LearnerHit {
   id: string;
   displayName: string;
@@ -55,7 +56,7 @@ export default function LearnerSearchField({
 
   if (value) {
     return (
-      <div className="flex flex-1 items-center gap-2 rounded-xl border border-teal/40 bg-teal/5 px-3 py-2">
+      <Inset tone="accent" className="flex flex-1 items-center gap-2 px-3 py-2">
         <UserCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span className="flex-1 truncate text-xs font-bold text-foreground">{value.displayName}</span>
         <span dir="ltr" className="truncate text-micro text-muted-foreground">{value.email}</span>
@@ -67,14 +68,14 @@ export default function LearnerSearchField({
         >
           <X className="h-3.5 w-3.5" />
         </button>
-      </div>
+      </Inset>
     );
   }
 
   return (
     <div className="relative flex-1">
       <label className="sr-only" htmlFor={`learner-search-${cohortId}`}>ابحث عن متعلّم بالاسم أو البريد</label>
-      <div className="flex items-center gap-2 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 focus-within:border-teal">
+      <Inset tone="accent" className="flex items-center gap-2 px-3 py-2 focus-within:border-teal">
         {busy ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground" aria-hidden="true" />
               : <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />}
         <input
@@ -86,7 +87,7 @@ export default function LearnerSearchField({
           autoComplete="off"
           className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/75 focus:outline-none"
         />
-      </div>
+      </Inset>
 
       {hits !== null && (
         <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#0F1A1D] p-1 shadow-2xl">

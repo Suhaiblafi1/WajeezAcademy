@@ -168,7 +168,7 @@ export default function StageWork({
         {/* آخرُ الدورة: قياسُ النمو ثمّ شهادتُها — بهذا الترتيب لا العكس */}
         {(detail.status === "completed" || percent >= 100 || detail.certificates.length > 0) && (
           <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] p-3.5">
+            <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 bg-teal-ink/[0.06] p-3.5">
               <p className="min-w-0 text-[12px] leading-5 text-foreground">
                 <span className="flex items-center gap-1.5 font-black text-foreground">
                   <Ruler className="h-3.5 w-3.5 text-teal-light-ink" /> قِس نموّك في مهارات هذه الدورة
@@ -181,7 +181,7 @@ export default function StageWork({
               >
                 افتح القياس
               </Link>
-            </div>
+            </Card>
             <CourseCertificate
               enrollmentId={detail.id}
               courseTitleAr={stage.titleAr}
@@ -366,12 +366,12 @@ function Lessons({
         الدرسُ يكتمل بدليل — تسليمٌ يقبله مدرّبك، أو تقييمٌ تجتازه، أو حضورُ جلسته. لا يُعلَّم مكتملا بضغطة.
       </p>
       {project && (
-        <div className="mt-4 rounded-2xl border border-gold/25 bg-gold/[0.05] p-4">
+        <Card tone="warn" className="mt-4">
           <p className="flex items-center gap-1.5 text-fine font-black text-gold-ink">
             <FileText className="h-3.5 w-3.5" /> مشروع هذه الدورة
           </p>
           <p className="mt-1.5 text-[12px] leading-6 text-foreground">{project}</p>
-        </div>
+        </Card>
       )}
     </>
   );

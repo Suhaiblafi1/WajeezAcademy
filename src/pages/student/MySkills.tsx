@@ -97,7 +97,7 @@ function Section({
 function Hero({ p }: { p: SkillsProfile }) {
   const pct = p.coverage === null ? null : Math.round(p.coverage * 100);
   return (
-    <section className="rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-6">
+    <Panel as="section" tone="accent" className="bg-teal-ink/[0.07]">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
           <p className="text-xs text-muted-foreground">{pct === null ? "مهارات قِيست لك" : "تغطية القياس على متطلبات مسارك"}</p>
@@ -132,14 +132,14 @@ function Hero({ p }: { p: SkillsProfile }) {
           </Link>
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
 function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
   if (rows.length === 0) return null;
   return (
-    <section className="mt-6 rounded-3xl border border-gold/30 bg-gold/[0.06] p-5 sm:p-6">
+    <Panel as="section" tone="warn" className="mt-6 sm:p-6">
       <h2 className="flex items-center gap-2 text-sm font-black">
         <HelpCircle className="h-4 w-4 text-gold-ink" aria-hidden="true" />
         لم تُقس بعد
@@ -163,7 +163,7 @@ function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
         أكمل جولة التعمق لقياسها
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
       </Link>
-    </section>
+    </Panel>
   );
 }
 
@@ -177,7 +177,7 @@ interface GrowthPayload {
 function GrowthPanel({ summary }: { summary: GrowthSummary }) {
   if (!summary.hasData) return null;
   return (
-    <section className="mt-6 rounded-3xl border border-teal/30 bg-teal-ink/[0.07] p-5 sm:p-6">
+    <Panel as="section" tone="accent" className="mt-6 bg-teal-ink/[0.07] sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="flex items-center gap-2 text-sm font-black">
           <Ruler className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
@@ -196,7 +196,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
         ].map((t) => (
           <Card key={t.k} className="px-4 py-3">
             <dd className="text-2xl font-black tabular-nums" dir={t.ltr ? "ltr" : undefined}>{t.v}</dd>
-            <dt className="mt-0.5 text-[11px] text-muted-foreground">{t.k}</dt>
+            <dt className="mt-0.5 text-fine text-muted-foreground">{t.k}</dt>
           </Card>
         ))}
       </dl>
@@ -221,7 +221,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
           {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة — بلا مرجع قبليّ، فلا تدخل حساب الفرق.
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
@@ -251,7 +251,7 @@ function DueReviewStrip({ due }: { due: number }) {
 function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
   if (invites.length === 0) return null;
   return (
-    <section className="mt-6 rounded-3xl border border-gold/30 bg-gold/[0.06] p-5 sm:p-6">
+    <Panel as="section" tone="warn" className="mt-6 sm:p-6">
       <h2 className="flex items-center gap-2 text-sm font-black">
         <Ruler className="h-4 w-4 text-gold-ink" aria-hidden="true" />
         أتممت دورة — قِس نموك فيها
@@ -274,7 +274,7 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
           </Card>
         ))}
       </ul>
-    </section>
+    </Panel>
   );
 }
 

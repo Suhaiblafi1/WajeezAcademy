@@ -11,6 +11,7 @@ import VerifyEmailNotice from "@/components/VerifyEmailNotice";
 import { usePublishedContent } from "@/services/public-content";
 import { getLibraryResources } from "@/data/core-catalog-source";
 
+import { Inset } from "@/components/ui/Surface";
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
 /** قسمٌ في التنقّل الرئيسي: عنوانه وسؤاله، وصفحاتُه تنقّلٌ ثانويّ تحته */
@@ -272,7 +273,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               {bellOpen && (
                 <>
                   <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-surface p-3 shadow-2xl">
+                  <Inset className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] bg-surface shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
                       <p className="text-xs font-black text-foreground">التنبيهات</p>
                       <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-fine font-bold text-teal-light-ink transition hover:text-foreground">
@@ -305,7 +306,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                     >
                       افتح «الرسائل والتنبيهات»
                     </Link>
-                  </div>
+                  </Inset>
                 </>
               )}
             </div>
@@ -330,7 +331,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               {accountOpen && (
                 <>
                   <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <div role="menu" className="absolute left-0 top-14 z-50 w-60 rounded-2xl border border-white/10 bg-surface p-2 shadow-2xl">
+                  <Inset role="menu" className="absolute left-0 top-14 z-50 w-60 bg-surface p-2 shadow-2xl">
                     <p className="px-3 pb-2 pt-1 text-fine text-muted-foreground">{user}</p>
                     {ACCOUNT_ITEMS.map((a) => (
                       <NavLink
@@ -356,7 +357,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                       <LogOut className="h-4 w-4" />
                       {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}
                     </button>
-                  </div>
+                  </Inset>
                 </>
               )}
             </div>

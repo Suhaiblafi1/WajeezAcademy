@@ -64,7 +64,7 @@ export default function TeachableCoursePicker({
           بعضها يملأ السطر وبعضها كلمتين — وهو التبعثر الذي شُكي منه. */}
       {domain && (
         <Card className="bg-paper/20">
-          <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
+          <p className="mb-3 text-fine leading-6 text-muted-foreground">
             اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
           </p>
           <div className="max-h-64 overflow-y-auto pl-1">

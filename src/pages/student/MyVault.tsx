@@ -71,7 +71,7 @@ export default function MyVault() {
 
   return (
     <PortalLayout title="أعمالي">
-      <section className="rounded-3xl border border-gold/25 bg-gradient-to-b from-warmglow/30 to-transparent p-6">
+      <Panel as="section" tone="warn" className="bg-gradient-to-b from-warmglow/30 to-transparent">
         <h2 className="flex items-center gap-2 text-lg font-black text-gold-ink">
           <Sparkles className="h-5 w-5" /> ما صنعتَه حتى الآن
         </h2>
@@ -81,7 +81,7 @@ export default function MyVault() {
             ? ` ${list.length} عملا سلّمتَه، منها ${accepted} معتمدا من مدرّبك.`
             : " تمتلئ مع أوّل تسليم."}
         </p>
-      </section>
+      </Panel>
 
       {list.length === 0 ? (
         <Panel as="section" className="mt-6 grid place-items-center border-dashed py-16 text-center">

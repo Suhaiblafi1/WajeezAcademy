@@ -78,7 +78,7 @@ export default function SubmissionFeedback({
     <div className={`space-y-2.5 ${className}`.trim()}>
       {hasRubric && (
         <Card className="bg-paper/20 p-3.5">
-          <p className="flex items-center gap-2 text-[11px] font-black text-foreground">
+          <p className="flex items-center gap-2 text-fine font-black text-foreground">
             <ScrollText className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
             من أين جاءت درجتك
           </p>
@@ -110,23 +110,23 @@ export default function SubmissionFeedback({
       )}
 
       {submission.reviewNote && (
-        <div className="rounded-2xl border border-teal/25 bg-teal-ink/[0.06] p-3.5">
+        <Card tone="accent" className="bg-teal-ink/[0.06] p-3.5">
           <p className="flex items-center gap-2 text-fine font-black text-teal-light-ink">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             {noteLabel}
           </p>
           <p className="mt-1.5 text-fine leading-6 text-foreground">{submission.reviewNote}</p>
-        </div>
+        </Card>
       )}
 
       {submission.feedback.map((f, i) => (
         <Card key={i} className="p-3.5">
-          <p className="flex flex-wrap items-center gap-2 text-[11px] font-black text-foreground">
+          <p className="flex flex-wrap items-center gap-2 text-fine font-black text-foreground">
             <MessageSquare className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
             تعليق مدربك
             <span className="font-medium text-muted-foreground">{fmtDate(f.createdAt)}</span>
           </p>
-          <p className="mt-1.5 whitespace-pre-line text-[11px] leading-6 text-foreground">{f.body}</p>
+          <p className="mt-1.5 whitespace-pre-line text-fine leading-6 text-foreground">{f.body}</p>
         </Card>
       ))}
     </div>

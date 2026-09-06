@@ -26,6 +26,7 @@ import EmptyState from "@/components/EmptyState";
 import { apiGet } from "@/services/api";
 import { fmtDateAr, daysLabelAr } from "@/utils/format";
 import { courseTitleAr } from "@/application/catalog/course-title";
+import { Panel, Card } from "@/components/ui/Surface";
 
 interface Entry {
   cohortId: string; courseId: string; titleAr: string;
@@ -113,19 +114,19 @@ export default function CalendarPage() {
             {data.months.map((m) => {
               const shown = m.entries.filter((e) => domain === "الكل" || e.domainAr === domain);
               return (
-                <section key={m.month} className="rounded-3xl border border-white/10 bg-white/[0.02] p-4">
+                <Panel as="section" key={m.month}>
                   <h2 className="flex items-center justify-between text-sm font-black">
                     {MONTH_LABEL[m.month - 1] ?? `الشهر ${m.month}`}
                     <span className="text-fine font-bold text-muted-foreground">{shown.length}</span>
                   </h2>
                   {shown.length === 0 ? (
-                    <p className="mt-4 rounded-2xl border border-white/8 py-8 text-center text-xs text-muted-foreground">
+                    <Card as="p" className="mt-4 py-8 text-center text-xs text-muted-foreground">
                       لا دورةَ في هذا الشهر ضمن ما اخترت.
-                    </p>
+                    </Card>
                   ) : (
                     <ul className="mt-3 space-y-2.5">
                       {shown.map((e) => (
-                        <li key={e.cohortId} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+                        <Card as="li" key={e.cohortId} className="p-3.5">
                           <Link to={`/build/${e.courseId}`} className="block">
                             <p className="text-[13px] font-bold leading-6 text-foreground">{courseTitleAr(e.titleAr)}</p>
                           </Link>
@@ -150,11 +151,11 @@ export default function CalendarPage() {
                               <span className="rounded-full bg-teal/20 px-2 py-0.5 text-fine font-black text-teal-light-ink">مسجَّلٌ فيها</span>
                             )}
                           </div>
-                        </li>
+                        </Card>
                       ))}
                     </ul>
                   )}
-                </section>
+                </Panel>
               );
             })}
           </div>

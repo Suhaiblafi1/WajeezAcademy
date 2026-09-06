@@ -40,7 +40,7 @@ import {
 } from "@/data/courses";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
@@ -278,7 +278,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
       <main className="mx-auto max-w-5xl px-5 pb-24 pt-8">
         {/* ترويسة: هذه دورة واحدة، وهي مسارك حتى الآن */}
-        <div className="rounded-3xl border border-teal/30 bg-teal/[0.05] p-6 md:p-8">
+        <Panel tone="accent" className="md:p-8">
           <span className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-fine font-bold text-teal-light-ink">
             {anchor.category}
           </span>
@@ -302,7 +302,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <User className="h-3.5 w-3.5 text-teal-light-ink" /> {details.trainer.name}
             </span>
           </div>
-        </div>
+        </Panel>
 
         {/* التفاصيل الكاملة — لا مقتطف: هذا ما كانت النافذة تخفيه */}
         <section className="mt-6 grid gap-4 md:grid-cols-2">
@@ -364,12 +364,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         )}
 
         {full?.practicalProject && (
-          <section className="mt-4 rounded-2xl border border-gold/30 bg-gold/[0.06] p-5">
+          <Card as="section" tone="warn" className="mt-4">
             <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
               <Target className="h-4 w-4" /> مشروعها العملي
             </h2>
             <p className="mt-2 text-sm leading-loose text-foreground">{full.practicalProject}</p>
-          </section>
+          </Card>
         )}
 
         {/* ══ مسارك حتى الآن ══
@@ -652,7 +652,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         </Panel>
         {/* ══ مرحلتك التالية ══ — ما اختاره بعد السقف، محفوظا لا مرفوضا */}
         {deferred.length > 0 && (
-          <section className="mt-6 rounded-3xl border border-dashed border-gold/40 bg-gold/[0.05] p-4 sm:p-5">
+          <Panel as="section" tone="warn" className="mt-6 border-dashed sm:p-5">
             <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
               <Save className="h-4.5 w-4.5" />
               مرحلتك التالية — محفوظة لك
@@ -665,7 +665,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 const c = courseById(id);
                 if (!c) return null;
                 return (
-                  <li key={id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2.5">
+                  <Inset as="li" key={id} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
                     <span className="min-w-0 text-sm font-bold leading-snug">{c.name}</span>
                     <span className="flex shrink-0 items-center gap-2">
                       <CoursePriceTag amount={priceOf(c.id)} money={money} className="text-xs font-black text-muted-foreground" />
@@ -677,11 +677,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </span>
-                  </li>
+                  </Inset>
                 );
               })}
             </ul>
-          </section>
+          </Panel>
         )}
 
         {/* ══ ما يكمل مسارك ══ */}
@@ -725,7 +725,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
         {/* ══ سمِّ مسارك ══ */}
         {picked.length >= 2 && (
-          <section className="mt-6 rounded-3xl border border-gold/30 bg-gold/[0.05] p-4 sm:p-5">
+          <Panel as="section" tone="warn" className="mt-6 sm:p-5">
             <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
               <Save className="h-4 w-4" />
               سمِّ مسارك
@@ -757,7 +757,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 تعذّر الحفظ الآن — مسارك أمامك كما هو ويمكنك الشراء، وأعد المحاولة لاحقا.
               </p>
             )}
-          </section>
+          </Panel>
         )}
 
         <p className="mt-8 text-center text-fine text-muted-foreground">
@@ -768,7 +768,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       {/* التسجيل يُطلب لحظة الدفع لا قبله */}
       {pending && (
         <Modal onClose={() => setPending(null)} label="التسجيل قبل الدفع" panelClassName="w-full max-w-md">
-          <div className="story-fade rounded-3xl border border-white/10 bg-surface p-6">
+          <Inset className="story-fade bg-surface">
             <p className="mb-4 text-center text-sm leading-relaxed text-foreground">
               خطوة واحدة قبل الدفع: حساب يحفظ مسارك وشهاداتك.
             </p>
@@ -781,7 +781,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               initialMode="signup"
               source="course_path_checkout"
             />
-          </div>
+          </Inset>
         </Modal>
       )}
 

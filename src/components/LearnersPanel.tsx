@@ -17,7 +17,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fmtDate } from "@/application/text/format-ar";
 import { toast, toastError } from './Toast';
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 interface LearnerEnrollment {
   id: string;
   cohortId: string;
@@ -153,7 +153,7 @@ export default function LearnersPanel() {
 
               <ul className="mt-3 space-y-1.5">
                 {l.enrollments.map((e) => (
-                  <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/8 bg-paper/20 px-3 py-2">
+                  <Inset as="li" key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                     <span className="min-w-0">
                       <span className="block text-[12px] font-bold text-foreground">{e.courseTitle}</span>
                       <span className="text-micro text-muted-foreground">
@@ -173,7 +173,7 @@ export default function LearnersPanel() {
                         <Trash2 className="h-3 w-3" /> أخرجه
                       </button>
                     )}
-                  </li>
+                  </Inset>
                 ))}
               </ul>
             </Card>
@@ -224,7 +224,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-paper/70 p-4" role="dialog" aria-label={`تعديل حساب ${row.user.displayName}`}>
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
+      <Inset className="w-full max-w-md bg-surface">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-black">تعديل حساب «{row.user.displayName}»</h3>
           <button onClick={onClose} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground">
@@ -291,7 +291,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
             تسجيلٌ إداريّ بلا فاتورة — يمرّ بحارس السعة نفسِه، والفائضُ يذهب لقائمة الانتظار.
           </p>
         </div>
-      </div>
+      </Inset>
     </div>
   );
 }

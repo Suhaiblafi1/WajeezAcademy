@@ -6,6 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
 
+import { Inset } from "@/components/ui/Surface";
 /** مقترح استبدال/إضافة/هدية — يحسبه المحرك من مجال المسار وفجوات المتعلم */
 export interface CourseSuggestion {
   id: string;
@@ -245,7 +246,7 @@ export default function CourseJourney({
 
                   {/* بدائل الاستبدال — تظهر تحت الدورة نفسها، والاختيار يحل مكانها فورا بكل تفاصيله */}
                   {edit && swapOpen && (
-                    <div className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.06] p-3">
+                    <Inset tone="accent" className="mt-3">
                       <p className="mb-2 text-fine font-bold text-teal-light-ink">
                         بدائل مقترحة لك خصيصا — تحل مكان «{c.title}» فورا بكل تفاصيلها:
                       </p>
@@ -261,7 +262,7 @@ export default function CourseJourney({
                           </button>
                         ))}
                       </div>
-                    </div>
+                    </Inset>
                   )}
                 </div>
               </div>
@@ -444,10 +445,7 @@ export default function CourseJourney({
 
               <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
                 {edit.pool.map((p) => (
-                  <li
-                    key={p.id}
-                    className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-1.5 pe-2 ps-3"
-                  >
+                  <Inset as="li" key={p.id} className="flex items-center justify-between gap-2 py-1.5 pe-2 ps-3">
                     <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground" title={p.name}>
                       {p.name}
                     </span>
@@ -462,7 +460,7 @@ export default function CourseJourney({
                         </button>
                       )}
                     </span>
-                  </li>
+                  </Inset>
                 ))}
               </ul>
               </CollapsibleContent>

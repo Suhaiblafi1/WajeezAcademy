@@ -2,7 +2,7 @@ import { Route as RouteIcon, CheckCircle2, ArrowUpRight } from "lucide-react";
 import { skillNamesAr } from "@/domain/diagnostic/catalog";
 import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Panel } from "@/components/ui/Surface";
 /* بطاقة الخطة المركّبة — تُعرض حين يقيّم المتعلم جوانبه.
 
    لماذا بطاقة مستقلة لا تعديل على CourseJourney: رحلة الدورات القائمة تخدم
@@ -95,7 +95,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
   const covered = plan.coveredGaps.length;
 
   return (
-    <section className="mt-8 rounded-3xl border border-teal/30 bg-teal/[0.04] p-5 md:p-7" aria-labelledby="cpc-title">
+    <Panel as="section" tone="accent" className="mt-8 md:p-7" aria-labelledby="cpc-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="cpc-title" className="flex items-center gap-2 text-lg font-black md:text-xl">
           <RouteIcon className="h-5 w-5 text-teal-light-ink" />
@@ -188,8 +188,8 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
           صريح: مرحلة تالية لا هذه. */}
       {courseList && (plan.deferred?.length ?? 0) > 0 && (
         <Card className="mt-4 border-dashed p-3.5 md:p-4">
-          <p className="text-[11.5px] font-black text-muted-foreground">وهذان لمرحلتك التالية — لا لهذه الخطة</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+          <p className="text-fine font-black text-muted-foreground">وهذان لمرحلتك التالية — لا لهذه الخطة</p>
+          <p className="mt-1 text-fine leading-relaxed text-muted-foreground">
             يناسبانك أيضا، لكن حشرهما هنا يطيل الخطة ويضعف إنهاءها. نعرضهما كي تعرف ما ينتظرك لا كي تشتريه الآن.
           </p>
           <ul className="mt-2.5 space-y-1.5">
@@ -217,6 +217,6 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
           </span>
         </p>
       )}
-    </section>
+    </Panel>
   );
 }

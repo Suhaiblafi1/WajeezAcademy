@@ -14,7 +14,7 @@ import { useRealSession } from "@/services/session";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import ConfirmAction from "@/components/ConfirmAction";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
   academic_coordinator: "منسّق أكاديميّ",
@@ -232,7 +232,7 @@ export default function Users() {
       </div>
 
       {creating && canManage && (
-        <div className="mb-5 rounded-2xl border border-gold/25 bg-gold/[0.04] p-5">
+        <Card tone="warn" className="mb-5">
           <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
           <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
             لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>سبعةَ أيّام</b>.
@@ -315,7 +315,7 @@ export default function Users() {
               ادعُ الدفعة
             </button>
           </details>
-        </div>
+        </Card>
       )}
 
       {loading ? (
@@ -565,7 +565,7 @@ export default function Users() {
               <EntityAuditTimeline entityType="user" entityId={u.id} labelAr="أثرُ هذا الحساب" />
 
               {editing === u.id && (
-                <div className="mt-4 rounded-xl border border-white/10 bg-paper/20 p-4">
+                <Inset className="mt-4">
                   <p className="mb-2 text-[11px] font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
                   <div className="flex flex-wrap gap-2">
                     {ALL_ROLES.map((r) => (
@@ -590,7 +590,7 @@ export default function Users() {
                     className="mt-3 cursor-pointer rounded-full bg-gold px-5 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
                     احفظ الأدوار
                   </button>
-                </div>
+                </Inset>
               )}
             </Card>
           ))}

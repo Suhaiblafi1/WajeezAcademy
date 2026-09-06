@@ -17,7 +17,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 export interface WizardCourse {
   id: string;
   title: string;
@@ -255,7 +255,7 @@ export default function CohortWizard({
             <label className="text-xs text-muted-foreground" htmlFor="wiz-course-filter">الدورة — المنشورة فقط</label>
             <input id="wiz-course-filter" value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}
               placeholder="ابحث بعنوان الدورة أو رمزها" className={inputCls} />
-            <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-white/10">
+            <Inset className="mt-2 max-h-64 overflow-y-auto">
               {shown.length === 0 && <p className="px-3 py-3 text-[11px] text-muted-foreground">لا دورةَ بهذا الاسم.</p>}
               {shown.map((c) => (
                 <button key={c.id} type="button" onClick={() => setCourseId(c.id)}
@@ -266,7 +266,7 @@ export default function CohortWizard({
                   <span dir="ltr" className="shrink-0 font-mono text-micro text-muted-foreground">{c.id}</span>
                 </button>
               ))}
-            </div>
+            </Inset>
           </div>
           <div>
             <label className="text-xs text-muted-foreground" htmlFor="wiz-title">عنوان الشعبة</label>
@@ -306,7 +306,7 @@ export default function CohortWizard({
               <input type="number" min={1} max={52} value={weeks} onChange={(e) => setWeeks(e.target.value)} className={inputCls} />
             </label>
           </div>
-          <div className="rounded-2xl border border-teal/25 bg-teal/[0.05] p-4">
+          <Card tone="accent">
             <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
               <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
               {`${preview.length} جلسة ستُنشأ`}
@@ -330,7 +330,7 @@ export default function CohortWizard({
             {preview.length > 40 && (
               <p className="mt-2 text-micro text-muted-foreground">…و{preview.length - 40} جلسةً أخرى</p>
             )}
-          </div>
+          </Card>
         </div>
       )}
 
@@ -413,14 +413,14 @@ export default function CohortWizard({
               </div>
             ))}
           </dl>
-          <div className="rounded-2xl border border-gold/25 bg-gold/[0.06] p-4 text-[11px] leading-6 text-foreground">
+          <Card tone="warn" className="text-[11px] leading-6 text-foreground">
             <p className="font-black text-gold-ink">قبل الفتح للتسجيل</p>
             <p className="mt-1">
               الشعبةُ تُنشأ مسودّةً. و«أنشئ وافتح» يفحص شروطَ الفتح الستّة أوّلا: خطّةُ تقديمٍ معتمدة، مدرّبٌ
               مؤهَّلٌ مسنَد، جدولٌ وجلسات، سعةٌ وسعرٌ، وإعدادٌ ماليّ. فإن نقص شيءٌ بقيت مسودّةً وقيل لك ما ينقص —
               ولا تُفتح شعبةٌ ناقصةٌ للمتعلّمين.
             </p>
-          </div>
+          </Card>
         </div>
       )}
 

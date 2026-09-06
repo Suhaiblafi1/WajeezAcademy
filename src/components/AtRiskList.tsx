@@ -4,6 +4,7 @@
 import { AlertTriangle, Mail, ShieldCheck } from "lucide-react";
 import { RISK_RULE_AR, type AtRiskLearner } from "@/application/trainer/at-risk";
 
+import { Card } from "@/components/ui/Surface";
 export default function AtRiskList({ learners, className = "" }: { learners: AtRiskLearner[]; className?: string }) {
   return (
     <section
@@ -28,10 +29,7 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
       ) : (
         <ul className="mt-4 space-y-2.5">
           {learners.map((l) => (
-            <li
-              key={l.enrollmentId}
-              className="flex flex-wrap items-start gap-3 rounded-2xl border border-gold/30 bg-gold/[0.05] px-4 py-3"
-            >
+            <Card as="li" tone="warn" key={l.enrollmentId} className="flex flex-wrap items-start gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold">{l.nameAr}</p>
                 <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{l.cohortTitleAr}</p>
@@ -55,7 +53,7 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
                   تواصل معه
                 </a>
               )}
-            </li>
+            </Card>
           ))}
         </ul>
       )}

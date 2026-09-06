@@ -6,7 +6,7 @@ import Modal from '@/components/Modal'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import StoryAvatar from '@/components/StoryAvatar'
-import { Card } from '@/components/ui/Surface'
+import { Card, Inset } from '@/components/ui/Surface'
 
 /* ───────────────── صفحة القصص: كل قصص المتعلمين + آراء تطبيق وجيز ─────────────────
 
@@ -111,7 +111,7 @@ export default function StoriesPage() {
       {/* نافذة القصة الكاملة */}
       {open && (
         <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
-          <div dir="rtl" className="overflow-hidden rounded-3xl border border-white/10 bg-surface">
+          <Inset dir="rtl" className="overflow-hidden bg-surface">
             {/* ─────────── لماذا يتوقّف التراكب عند الهاتف ───────────
 
                 كان الاسمُ والدورُ والشارةُ صفّا **مطلقا** أسفلَ الترويسة فوق
@@ -232,7 +232,7 @@ export default function StoriesPage() {
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </div>
-          </div>
+          </Inset>
         </Modal>
       )}
     </SiteShell>

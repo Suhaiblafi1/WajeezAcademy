@@ -200,7 +200,7 @@ export default function AdminCohorts() {
           يتبدّل عند المتعلّمين قبل الاعتماد، فما هنا ينتظر قرارا لا علما.
           وموضعه أعلى الصفحة لأنّ ما ينتظر قرارا يسبق ما يُنشأ. */}
       {reschedules.length > 0 && (
-        <div className="mb-6 rounded-3xl border border-gold/30 bg-gold/[0.05] p-5">
+        <Panel tone="warn" className="mb-6">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
             <CalendarClock className="h-4 w-4" /> اقتراحات تأجيل تنتظر قرارك ({reschedules.length})
           </h2>
@@ -241,7 +241,7 @@ export default function AdminCohorts() {
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
             الاعتماد يحرّك الموعد ويُخبر المتعلّمين. والردّ لا يحرّكه، ويصل المدرب بتعليقك.
           </p>
-        </div>
+        </Panel>
       )}
 
       {/* إنشاء شعبة — معالجٌ من خمس خطوات: الدورة، الجدول (وجلساتُه تُولَّد)،
@@ -367,7 +367,7 @@ export default function AdminCohorts() {
                         بابَ إليه، وكلُّ شعبةٍ يدويّةٍ عالقةٌ في المسوّدة أبدا.
                         وتُعرض هنا لا في شاشةٍ أخرى: مكانُ الشرط مكانُ إيفائه. */}
                     {check && !check.ready && check.missing.some((m) => m.startsWith("لا خطة تقديم")) && (
-                      <div className="rounded-2xl border border-gold/30 bg-gold/[0.05] p-4">
+                      <Card tone="warn">
                         <p className="text-xs font-black text-gold-ink">اكتب خطّةَ التقديم</p>
                         <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
                           كيف تُقدَّم هذه الشعبة فعلا: الأيّامُ والوقتُ وطريقةُ التقديم وما يلزم المتعلّمَ إحضارُه.
@@ -396,7 +396,7 @@ export default function AdminCohorts() {
                         {(planDraft[c.id] ?? "").trim().length > 0 && (planDraft[c.id] ?? "").trim().length < 20 && (
                           <p className="mt-1.5 text-micro text-muted-foreground">٢٠ حرفا فأكثر — خطّةٌ أقصرُ لا تُقرأ.</p>
                         )}
-                      </div>
+                      </Card>
                     )}
 
                     {/* إجراءات الحالة */}

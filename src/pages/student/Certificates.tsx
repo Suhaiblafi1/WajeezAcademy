@@ -12,6 +12,7 @@ import { buildGrowthSummary, type CourseGrowth, type RemeasureRecord } from "@/a
 import EmptyState from "@/components/EmptyState";
 import { fmtDate } from "@/application/text/format-ar";
 
+import { Card } from "@/components/ui/Surface";
 interface Cert {
   id: string; number: string; learnerName: string; courseId: string; courseVersion: number;
   enrollmentId: string;
@@ -32,7 +33,7 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
     );
   }
   return (
-    <div className="mt-3 rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-3 py-2">
+    <Card tone="accent" className="mt-3 bg-teal-ink/[0.06] px-3 py-2">
       <p className="flex items-center gap-2 text-fine font-bold text-teal-light-ink">
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         نمو مقيس بعد هذه الدورة
@@ -51,7 +52,7 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
       >
         التفصيل في ملف مهاراتي
       </Link>
-    </div>
+    </Card>
   );
 }
 

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
@@ -114,7 +114,7 @@ export function TrainerDetailOps({ app, onAction }: {
       <Fold icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
         <div className="space-y-3">
           {app.interviews.map((iv) => (
-            <div key={iv.id} className="rounded-xl border border-white/10 bg-paper/20 p-3 text-xs">
+            <Inset key={iv.id} className="text-xs">
               <p className="font-bold">{fmtDateTime(new Date(iv.scheduledAt))} — {iv.outcome ?? "بلا نتيجة"}</p>
               {!iv.outcome && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -128,7 +128,7 @@ export function TrainerDetailOps({ app, onAction }: {
                   ))}
                 </div>
               )}
-            </div>
+            </Inset>
           ))}
           <div className="grid gap-2 sm:grid-cols-3">
             <input type="datetime-local" value={interviewForm.scheduledAt}
@@ -735,7 +735,7 @@ export function TrainerPayouts() {
             </button>
           </div>
           {preview && (
-            <div className="space-y-2 rounded-2xl border border-teal/25 bg-teal/5 p-4">
+            <Card tone="accent" className="space-y-2">
               <p className="text-xs font-black">
                 {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}»
                 {preview.rule.scope !== "general" ? " (مخصصة لهذه الشعبة/الدورة)" : ""} بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
@@ -756,7 +756,7 @@ export function TrainerPayouts() {
                   توليد الكشف — بانتظار الاعتماد
                 </button>
               </div>
-            </div>
+            </Card>
           )}
           {batchResult && (
             <Card className="space-y-1 bg-paper/20 text-[11px] leading-6">
@@ -774,7 +774,7 @@ export function TrainerPayouts() {
       </Fold>
 
       {showCreate && (
-        <div className="space-y-3 rounded-3xl border border-gold/25 bg-gold/5 p-5">
+        <Panel tone="warn" className="space-y-3">
           <p className="text-sm font-black">كشف مستحقات جديد <span className="text-[11px] font-bold text-muted-foreground">— يولد بحالة «بانتظار الاعتماد»</span></p>
           <div className="flex flex-wrap gap-2">
             <select value={form.profileId} onChange={(e) => setForm({ ...form, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -814,7 +814,7 @@ export function TrainerPayouts() {
               إنشاء الكشف
             </button>
           </div>
-        </div>
+        </Panel>
       )}
 
       {(() => {

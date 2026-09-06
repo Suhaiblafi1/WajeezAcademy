@@ -13,6 +13,7 @@ import { apiGet, ApiError } from '@/services/api'
 import { courseById } from '@/data/courses'
 import { pathwayById } from '@/data/pathways'
 import { fmtDateTimeAr } from '@/utils/format'
+import { Inset } from '@/components/ui/Surface'
 
 interface Snapshot {
   hasAccount: boolean
@@ -81,7 +82,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
       {/* خلاصة تشخيصه — كانت سطورا تُبنى في متصفّح المتعلّم وحده ولا تصل
           المستشار أبدا؛ هذه من نتيجته المرفقة بحسابه فعلا. */}
       {snap.diagnostic && (
-        <div className="rounded-xl border border-teal/25 bg-teal/[0.04] p-3">
+        <Inset tone="accent">
           <p className="flex items-center gap-1.5 text-[11px] font-black text-teal-light-ink">
             <Compass className="h-3.5 w-3.5" /> خلاصة تشخيصه
           </p>
@@ -121,7 +122,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
               </ul>
             </div>
           )}
-        </div>
+        </Inset>
       )}
 
       {/* الخطّة */}
@@ -163,7 +164,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
               const pct = e.courseProgress?.percent ?? 0
               const doneModules = e.moduleProgress.filter((m) => m.status === 'completed').length
               return (
-                <li key={e.id} className="rounded-xl border border-white/10 bg-paper/20 p-3">
+                <Inset as="li" key={e.id}>
                   <p className="truncate text-xs font-bold">
                     {e.cohort?.course?.id ? courseById(e.cohort.course.id)?.name ?? e.cohort.title : e.cohort?.title ?? '—'}
                   </p>
@@ -175,7 +176,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
                     <span>· {doneModules} وحدة مكتملة</span>
                     {e.cohort?.title && <span>· {e.cohort.title}</span>}
                   </p>
-                </li>
+                </Inset>
               )
             })}
           </ul>
@@ -192,7 +193,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
         ) : (
           <ul className="mt-2 space-y-1.5">
             {snap.upcomingSessions.map((s) => (
-              <li key={s.id} className="flex items-start gap-2 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2">
+              <Inset as="li" key={s.id} className="flex items-start gap-2 px-3 py-2">
                 <BookOpen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0">
                   <span className="block truncate text-[11px] font-bold">{s.title}</span>
@@ -200,7 +201,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
                     {fmtDateTimeAr(s.startsAt)} · {s.cohort.title}
                   </span>
                 </span>
-              </li>
+              </Inset>
             ))}
           </ul>
         )}

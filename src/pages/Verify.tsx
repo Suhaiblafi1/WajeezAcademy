@@ -95,7 +95,7 @@ export default function Verify() {
         </form>
 
         {state.kind === "found" && state.cert.status === "active" && (
-          <div className="mt-6 rounded-2xl border border-teal/40 bg-teal/10 p-5 text-center">
+          <Card tone="accent" className="mt-6 text-center">
             <BadgeCheck className="mx-auto h-10 w-10 text-teal-ink" />
             <p className="mt-3 font-black text-teal-light-ink">شهادة صحيحة ومعتمدة</p>
             <div className="mt-3 space-y-1 text-sm text-muted-foreground">
@@ -107,11 +107,11 @@ export default function Verify() {
               </p>
               <p className="font-mono text-xs text-muted-foreground">{state.cert.number}</p>
             </div>
-          </div>
+          </Card>
         )}
 
         {state.kind === "found" && state.cert.status === "revoked" && (
-          <div className="mt-6 rounded-2xl border border-red-500/40 bg-red-500/10 p-5 text-center">
+          <Card tone="danger" className="mt-6 text-center">
             <ShieldX className="mx-auto h-10 w-10 text-red-400" />
             <p className="mt-3 font-black text-red-300">شهادة ملغاة</p>
             <div className="mt-3 space-y-1 text-sm text-muted-foreground">
@@ -124,15 +124,15 @@ export default function Verify() {
                 </p>
               )}
             </div>
-          </div>
+          </Card>
         )}
 
         {state.kind === "not_found" && (
-          <div className="mt-6 rounded-2xl border border-red-500/40 bg-red-500/10 p-5 text-center">
+          <Card tone="danger" className="mt-6 text-center">
             <ShieldX className="mx-auto h-10 w-10 text-red-400" />
             <p className="mt-3 font-black text-red-300">لا توجد شهادة بهذا الرقم</p>
             <p className="mt-1.5 text-xs text-muted-foreground">تأكد من الرقم، أو راسلنا إن ظننت أن هناك خطأ.</p>
-          </div>
+          </Card>
         )}
 
         {state.kind === "offline" && (

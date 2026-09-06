@@ -8,7 +8,7 @@ import { fmtWhen } from "@/utils/format";
 import { toast, toastError } from '@/components/Toast';
 import { FieldError, invalidProps } from "@/components/FormKit";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار ردك",
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
@@ -162,10 +162,10 @@ export default function StudentSupport() {
                 <div className="mt-4 border-t border-white/8 pt-4">
                   <ol className="space-y-2.5">
                     {t.messages.map((m) => (
-                      <li key={m.id} className="rounded-xl border border-white/8 bg-paper/20 p-3 text-xs leading-6 text-foreground">
+                      <Inset as="li" key={m.id} className="text-xs leading-6 text-foreground">
                         {m.body}
                         <span className="mt-1 block text-fine text-muted-foreground">{fmtWhen(m.createdAt)}</span>
-                      </li>
+                      </Inset>
                     ))}
                   </ol>
                   {!["closed"].includes(t.status) && (

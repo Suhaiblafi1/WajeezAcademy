@@ -150,18 +150,18 @@ export default function DiagnosticQuality() {
                 <p className="text-2xl font-black">{feedback.total}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">إجمالي الآراء</p>
               </Card>
-              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4 text-center">
+              <Card tone="positive" className="text-center">
                 <p className="text-2xl font-black text-emerald-300">{feedback.verdicts.yes}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">نعم — تصف وضعهم</p>
-              </div>
-              <div className="rounded-2xl border border-gold/30 bg-gold/5 p-4 text-center">
+              </Card>
+              <Card tone="warn" className="text-center">
                 <p className="text-2xl font-black text-gold-ink">{feedback.verdicts.somewhat}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">إلى حد ما</p>
-              </div>
-              <div className="rounded-2xl border border-red-400/30 bg-red-400/5 p-4 text-center">
+              </Card>
+              <Card tone="danger" className="text-center">
                 <p className="text-2xl font-black text-red-300">{feedback.verdicts.no}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">لا</p>
-              </div>
+              </Card>
             </div>
             <div className="mt-4 space-y-2">
               {feedback.recent.filter((r) => r.note).map((r) => (

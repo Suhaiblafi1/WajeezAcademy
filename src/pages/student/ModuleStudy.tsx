@@ -38,7 +38,7 @@ import { track } from "@/services/analytics";
 import { countAr } from "@/application/text/count-ar";
 import { courseFullById } from "@/data/courses";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Card } from "@/components/ui/Surface";
 /** خطوةٌ في المشغّل: درسٌ، أو سيناريو، أو النشاط والمخرَج */
 type Step =
   | { kind: "lesson"; title: string; body: string; minutes: number; checks: Check[] }
@@ -182,18 +182,18 @@ export default function ModuleStudy() {
           حسابه أو في المنصّة. والحقيقةُ أبسطُ وأصدق: الوحدةُ تُدرَّس مباشرةً
           مع مدرّبها، ومتنُها المكتوبُ قيد التأليف. **وقولُها خيرٌ من إخفائها.** */}
       {lessonCount === 0 && (
-        <p className="mb-6 flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.06] p-4 text-[12.5px] leading-7 text-gold-ink">
+        <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-[12.5px] leading-7 text-gold-ink">
           <BookOpen className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
             متنُ هذه الوحدة المكتوب <b>قيد التأليف</b> — وهي تُدرَّس مع مدرّبك في جلستها.
             ومخرَجُ الوحدة ونشاطُها والمخرَجُ المطلوبُ منك أدناه كما هي.
           </span>
-        </p>
+        </Card>
       )}
 
       {step?.kind === "lesson" && (
         <Panel as="article" className="md:p-9">
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-bold text-teal-light-ink">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-fine font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">الدرس {pos + 1} من {lessonCount}</span>
             {step.minutes > 0 && <span className="text-muted-foreground">{countAr(step.minutes, MIN_FORMS)} قراءة</span>}
           </p>
@@ -206,7 +206,7 @@ export default function ModuleStudy() {
 
           {/* استرجاعٌ بعد الدرس مباشرة — لا في آخر الوحدة وحدها */}
           {step.checks.length > 0 && (
-            <section className="mt-8 rounded-2xl border border-teal/25 bg-teal/[0.04] p-5">
+            <Card as="section" tone="accent" className="mt-8">
               <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                 <Sparkles className="h-3.5 w-3.5" /> استرجعْ قبل أن تمضي
               </p>
@@ -232,14 +232,14 @@ export default function ModuleStudy() {
                   );
                 })}
               </div>
-            </section>
+            </Card>
           )}
         </Panel>
       )}
 
       {step?.kind === "scenario" && (
         <Panel as="article" className="md:p-9">
-          <p className="text-[11px] font-bold text-teal-light-ink">
+          <p className="text-fine font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">سيناريو قرار</span>
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
@@ -257,18 +257,18 @@ export default function ModuleStudy() {
             <PracticeActivity raw={mod.practice} moduleId={mod.id} />
           ) : (
             <>
-              <div className="rounded-3xl border border-teal/30 bg-teal/[0.05] p-6 md:p-8">
+              <Panel tone="accent" className="md:p-8">
                 <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                   <Target className="h-4 w-4" /> نشاطك الآن
                 </p>
                 <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.activity}</p>
-              </div>
-              <div className="rounded-3xl border border-gold/25 bg-gold/[0.05] p-6 md:p-8">
+              </Panel>
+              <Panel tone="warn" className="md:p-8">
                 <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> ما تخرج به — ويدخل ملفّك
                 </p>
                 <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.artifact}</p>
-              </div>
+              </Panel>
             </>
           )}
 

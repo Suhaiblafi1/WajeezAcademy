@@ -305,7 +305,7 @@ export default function TrainerQualifications() {
               {terms.map((t) => {
                 const state = t.myStatus ? TERM_STATE[t.myStatus] : null;
                 return (
-                  <li key={t.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                  <Card as="li" key={t.id}>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <span className="text-sm font-black">{t.titleAr}</span>
                       <span className="text-xs text-muted-foreground">
@@ -345,7 +345,7 @@ export default function TrainerQualifications() {
                         أعتذر عنه
                       </button>
                     </div>
-                  </li>
+                  </Card>
                 );
               })}
             </ul>

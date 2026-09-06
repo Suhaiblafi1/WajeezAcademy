@@ -27,7 +27,7 @@ import {
 } from "@/services/learner-requests";
 import type { JourneyTrack } from "@/application/student/journey";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Panel, Inset } from "@/components/ui/Surface";
 export default function CapstonePanel({
   track,
   requests,
@@ -56,7 +56,7 @@ export default function CapstonePanel({
   return (
     <div className="space-y-4">
       {/* ══ المشروع الختاميّ ══ */}
-      <section className="rounded-3xl border border-gold/30 bg-gold/[0.05] p-4 sm:p-5">
+      <Panel as="section" tone="warn" className="sm:p-5">
         <h3 className="flex items-center gap-2 text-base font-black text-gold-ink">
           <Trophy className="h-4.5 w-4.5" /> مشروع تخرّجك
         </h3>
@@ -81,7 +81,7 @@ export default function CapstonePanel({
             className="flex shrink-0 items-center gap-2 rounded-full border border-gold/50 px-4 py-2 text-[12px] font-black text-gold-ink transition hover:bg-gold/10"
           />
         </div>
-      </section>
+      </Panel>
 
       {/* ══ إنجازُ المسار — عليه تقوم الشهادةُ والتوصية ══ */}
       {completion && (
@@ -171,7 +171,7 @@ function RequestCard({
       <p className="mt-1.5 text-fine leading-6 text-muted-foreground">{bodyAr}</p>
 
       {request || sent ? (
-        <div className="mt-3 rounded-xl border border-white/10 bg-paper/20 p-3">
+        <Inset className="mt-3">
           <span className={`inline-block rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
             {meta?.label ?? REQUEST_STATUS_AR.pending.label}
           </span>
@@ -181,7 +181,7 @@ function RequestCard({
             </p>
           )}
           {request?.decisionAr && <p className="mt-2 text-fine leading-5 text-muted-foreground">{request.decisionAr}</p>}
-        </div>
+        </Inset>
       ) : loading ? (
         <p className="mt-3 flex items-center gap-2 text-fine text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> نقرأ إنجازك…
@@ -228,7 +228,7 @@ function RequestCard({
           </button>
         </div>
       )}
-      {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
+      {error && <p className="mt-2 text-fine font-bold text-gold-ink">{error}</p>}
     </Card>
   );
 }

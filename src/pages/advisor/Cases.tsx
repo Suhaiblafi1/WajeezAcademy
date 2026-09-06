@@ -49,6 +49,8 @@ interface CaseDetail extends CaseRow {
 
 const INPUT = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 const LBL = "mb-1 block text-[11px] font-bold text-muted-foreground";
+/* زرُّ الإرسال في نماذجها الخمسة واحد — فيُكتب مرّةً كأختيه أعلاه */
+const SUBMIT = "mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40";
 
 /* `ar-SA` تُخرج تقويما **هجريّا**، فكان المستشار وحده يرى «١٥ ربيع الآخر»
    بينما الشعبةُ مجدولةٌ ميلاديّا في كل شاشةٍ أخرى — فيُقارن موعدين
@@ -349,8 +351,8 @@ export default function AdvisorCases() {
           موضعا يُدخله فيه: ينتظر أن يأتيَ الرجلُ ويُشخّص، ثمّ ينتظر إداريّا.
           والحالةُ التي تُدخلها تُسنَد إليك في الفعل نفسِه. */}
       {newOpen && (
-        <form
-          className="mb-5 rounded-2xl border border-teal/25 bg-teal/[0.04] p-4"
+        <Card as="form" tone="accent"
+          className="mb-5 p-4"
           onSubmit={(e) => {
             e.preventDefault();
             const fullName = newForm.fullName.trim();
@@ -400,7 +402,7 @@ export default function AdvisorCases() {
             className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-5 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:cursor-not-allowed disabled:opacity-40">
             <Plus className="h-3.5 w-3.5" /> افتح الحالة
           </button>
-        </form>
+        </Card>
       )}
 
 
@@ -484,7 +486,7 @@ function NextActionForm({ current, currentAt, onSubmit }: {
       <label className={`${LBL} mt-2`}>موعد المتابعة القادم (اختياري)</label>
       <input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} className={INPUT} dir="ltr" />
       <button type="submit" disabled={text.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+        className={SUBMIT}>
         <Send className="h-3 w-3" /> حفظ الإجراء
       </button>
     </form>
@@ -504,7 +506,7 @@ function ContactForm({ onSubmit }: { onSubmit: (channel: string, summary: string
         <input value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="ملخص التواصل…" className={INPUT} />
       </div>
       <button type="submit" disabled={summary.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+        className={SUBMIT}>
         <MessageSquarePlus className="h-3 w-3" /> تسجيل
       </button>
     </form>
@@ -526,7 +528,7 @@ function FollowUpForm({ onSubmit }: { onSubmit: (scheduledAt: string, channel: s
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ملاحظة (اختياري)" className={INPUT} />
       </div>
       <button type="submit" disabled={!at}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+        className={SUBMIT}>
         <CalendarClock className="h-3 w-3" /> جدولة
       </button>
     </form>
@@ -541,7 +543,7 @@ function TaskForm({ onSubmit }: { onSubmit: (title: string, dueAt: string) => vo
       <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان المهمة…" className={INPUT} />
       <input type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={`${INPUT} mt-2`} dir="ltr" />
       <button type="submit" disabled={title.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+        className={SUBMIT}>
         <ClipboardList className="h-3 w-3" /> إضافة مهمة
       </button>
     </form>
@@ -554,7 +556,7 @@ function NoteForm({ onSubmit }: { onSubmit: (body: string) => void }) {
     <form onSubmit={(e) => { e.preventDefault(); if (body.trim().length >= 3) { onSubmit(body.trim()); setBody(""); } }}>
       <textarea rows={2} value={body} onChange={(e) => setBody(e.target.value)} placeholder="ملاحظة داخلية…" className={INPUT} />
       <button type="submit" disabled={body.trim().length < 3}
-        className="mt-2 flex cursor-pointer items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal/90 disabled:opacity-40">
+        className={SUBMIT}>
         <StickyNote className="h-3 w-3" /> حفظ الملاحظة
       </button>
     </form>

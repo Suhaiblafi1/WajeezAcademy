@@ -25,6 +25,7 @@ import { courses } from '@/data/courses'
 import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
 import { courseTitleAr } from '@/application/catalog/course-title'
 import { usePublishedContent } from '@/services/public-content'
+import { Inset } from '@/components/ui/Surface'
 
 const MAX_PER_GROUP = 5
 
@@ -109,11 +110,7 @@ export default function PublicSearch() {
       className="fixed inset-0 z-[60] flex items-start justify-center bg-black/60 px-4 pt-[12vh] backdrop-blur-sm"
       onClick={close}
     >
-      <div
-        role="dialog" aria-modal="true" aria-label="ابحث في الكتالوج"
-        className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/12 bg-paper shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <Inset role="dialog" aria-modal="true" aria-label="ابحث في الكتالوج" className="w-full max-w-xl overflow-hidden bg-paper shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-white/8 px-4 py-3">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <input
@@ -175,7 +172,7 @@ export default function PublicSearch() {
             </ul>
           )}
         </div>
-      </div>
+      </Inset>
     </div>
   )
 }

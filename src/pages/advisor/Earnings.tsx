@@ -67,12 +67,12 @@ export default function AdvisorEarnings() {
           <p className="text-xs text-muted-foreground">إيراد عملائي الدافعين</p>
           <p className="mt-2 text-2xl font-black" dir="ltr">{fmtMoney(data.revenueFromReferrals, data.currency)}</p>
         </Card>
-        <div className="rounded-2xl border border-teal/30 bg-teal/5 p-5">
+        <Card tone="accent">
           <p className="text-xs text-teal-light-ink">عمولتي المستحقّة</p>
           <p className="mt-2 text-2xl font-black text-teal-light-ink" dir="ltr">
             {data.commissionOwed !== null ? fmtMoney(data.commissionOwed, data.currency) : "—"}
           </p>
-        </div>
+        </Card>
       </div>
 
       <Card className="mt-4 flex flex-wrap items-center gap-4">

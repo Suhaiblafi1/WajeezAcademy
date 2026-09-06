@@ -75,14 +75,14 @@ export default function RatingModeration() {
 
   return (
     <AdminLayout title="مراجعة تعليقات التقييم">
-      <div className="mb-5 flex items-start gap-3 rounded-2xl border border-teal/25 bg-teal/[0.05] p-4">
+      <Card tone="accent" className="mb-5 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
         <p className="text-[12px] leading-6 text-foreground">
           قرارك هنا يحكم <span className="font-black text-foreground">التعليق المكتوب</span> وحده:
           يُنشر علنا أو يُحجب. <span className="font-black text-foreground">الدرجة تدخل المعدّل في كل الأحوال</span> —
           فالرقم المعلَن يبقى قياسا لا اختيارا. والقائمة تصلك بلا اسم المُقيِّم عمدا: الحكم على النصّ.
         </p>
-      </div>
+      </Card>
 
       <div className="mb-5 flex flex-wrap gap-1.5">
         {TABS.map((t) => (

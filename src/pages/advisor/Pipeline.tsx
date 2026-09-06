@@ -21,6 +21,7 @@ import { AlertTriangle, CalendarClock } from 'lucide-react'
    و٦٫٤:‏١ في الفاتح)، فينقلب معهما. وهي القاعدةُ نفسُها التي أُصلح بها زرُّ
    تبديل المظهر. */
 import { CLOSED_STAGES, isOverdue, sinceAr, STAGES, type PipelineCase } from '@/application/advisor/pipeline'
+import { Card } from '@/components/ui/Surface'
 
 export default function Pipeline({
   cases,
@@ -41,7 +42,7 @@ export default function Pipeline({
     <div className="space-y-5">
       {/* ما فات موعدُه — قبل كلّ شيء */}
       {overdue.length > 0 && (
-        <section className="rounded-2xl border border-gold/35 bg-gold/[0.06] p-4">
+        <Card as="section" tone="warn">
           <h2 className="flex items-center gap-2 text-xs font-black text-gold-ink">
             <AlertTriangle className="h-4 w-4" />
             فات موعد متابعة {overdue.length} — الصفقة تُفقَد بالنسيان أكثر ممّا تُفقَد بالرفض
@@ -58,7 +59,7 @@ export default function Pipeline({
               </button>
             ))}
           </div>
-        </section>
+        </Card>
       )}
 
       {/* الأعمدة — تمريرٌ أفقيّ على الهاتف، وشبكةٌ على الشاشة */}

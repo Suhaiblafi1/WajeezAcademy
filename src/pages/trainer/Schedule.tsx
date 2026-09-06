@@ -22,7 +22,7 @@ import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Card } from "@/components/ui/Surface";
 interface Slot {
   sessionId: string;
   title: string;
@@ -217,7 +217,7 @@ export default function TrainerSchedule() {
           </p>
           <ul className="space-y-3">
             {reschedules.map((r) => (
-              <li key={r.id} className="rounded-2xl border border-white/8 bg-white/[0.02] p-4">
+              <Card as="li" key={r.id}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold">{r.session.title} — {r.session.cohort.title}</p>
@@ -238,7 +238,7 @@ export default function TrainerSchedule() {
                     </button>
                   )}
                 </div>
-              </li>
+              </Card>
             ))}
           </ul>
         </section>

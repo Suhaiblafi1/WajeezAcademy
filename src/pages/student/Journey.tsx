@@ -37,7 +37,7 @@ import {
 import { courseFullById } from "@/data/courses";
 import { toast, toastError } from '@/components/Toast';
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 /** الطلبُ كما يعرضه الشريطُ بعد العودة من صفحة الدفع */
 interface PaidOrder {
   id: string;
@@ -245,7 +245,7 @@ export default function Journey() {
     <PortalLayout title="رحلتي">
       <div className="mx-auto max-w-4xl">
         {cancelledOrder && (
-          <div className="mb-5 rounded-2xl border border-gold/40 bg-gold/[0.07] px-4 py-3.5">
+          <Card tone="warn" className="mb-5 px-4 py-3.5">
             <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
               <CircleSlash className="h-4 w-4 shrink-0" /> لم تكتمل دفعتك — ولم يُخصم منك شيء
             </p>
@@ -254,15 +254,15 @@ export default function Journey() {
               <Link to="/student/billing" className="font-bold text-gold-ink underline underline-offset-4">الفواتير</Link>
               {" "}— ولن تفقد مقعدك ما دامت الشعبة مفتوحة.
             </p>
-          </div>
+          </Card>
         )}
         {paidOrder && !cancelledOrder && (
-          <div className="mb-5 rounded-2xl border border-teal/40 bg-teal/10 px-4 py-3.5">
+          <Card tone="accent" className="mb-5 px-4 py-3.5">
             <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
               <CheckCircle2 className="h-4 w-4 shrink-0" /> شكرا لك — عدنا بك إلى رحلتك
             </p>
             {paid && (
-              <div className="mt-3 rounded-xl border border-white/10 bg-paper/20 p-3.5">
+              <Inset className="mt-3 p-3.5">
                 <ul className="space-y-1">
                   {paid.items.map((it) => (
                     <li key={it.id} className="flex items-start justify-between gap-3 text-[12px]">
@@ -282,13 +282,13 @@ export default function Journey() {
                     {Number(paid.total).toLocaleString("en-US")} {paid.currency}
                   </span>
                 </div>
-              </div>
+              </Inset>
             )}
             <p className="mt-2.5 text-[12px] leading-6 text-muted-foreground">
               نؤكّد دفعتك مع البنك، ومراحلُك تظهر أدناه فور تأكيدها — عادةً خلال دقائق.
               وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
             </p>
-          </div>
+          </Card>
         )}
 
         {looseHeld.length > 0 && (
@@ -388,7 +388,7 @@ export default function Journey() {
 
 function EmptyJourney() {
   return (
-    <section className="grid place-items-center rounded-3xl border border-teal/25 bg-gradient-to-b from-teal/[0.08] to-transparent py-16 text-center">
+    <Panel as="section" tone="accent" className="grid place-items-center bg-gradient-to-b from-teal/[0.08] to-transparent py-16 text-center">
       <BookOpen className="h-12 w-12 text-teal-light-ink" />
       <h2 className="mt-5 text-2xl font-black">رحلتك تبدأ بأوّل دورة</h2>
       <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
@@ -403,7 +403,7 @@ function EmptyJourney() {
           ابدأ التشخيص
         </Link>
       </div>
-    </section>
+    </Panel>
   );
 }
 
@@ -460,12 +460,12 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
   /* له شعبٌ مفتوحة: الشراءُ في بطاقة المرحلة نفسِها — حيث الموعدُ والسعر.
      ولا زرَّ ثانيا هنا يفتح مسارا آخر لنفس العمليّة. */
   return (
-    <p className="mt-3 rounded-2xl border border-teal/30 bg-teal/[0.06] px-4 py-3 text-[12px] leading-6 text-teal-light-ink">
+    <Card tone="accent" className="mt-3 px-4 py-3 text-[12px] leading-6 text-teal-light-ink">
       <span className="font-bold">
         {askable === 1 ? "دورةٌ من خطّتك مفتوحةٌ للتسجيل" : `${askable} من دوراتك مفتوحةٌ للتسجيل`}.
       </span>{" "}
       اختر مرحلتَها في الشريط أعلاه، ثمّ شعبتَها وموعدَها — والدفعُ فوريّ ويُسجّلك مباشرة.
       {awaiting > 0 && " وما لم تُفتح شعبتُه لا يُدفع ثمنه."}
-    </p>
+    </Card>
   );
 }

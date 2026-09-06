@@ -18,6 +18,7 @@ import { useState } from "react";
 import { AlertTriangle, ArrowLeftRight, Bell, BellOff, Loader2, Trash2, X } from "lucide-react";
 import { apiGet, apiPut, apiDelete, ApiError } from "@/services/api";
 
+import { Inset } from "@/components/ui/Surface";
 interface Alternative {
   courseId: string;
   titleAr: string;
@@ -121,7 +122,7 @@ export default function AwaitingCourseChoices({
 
       {/* ── تأكيد الحذف ── */}
       {mode === "remove" && (
-        <div className="mt-3 rounded-xl border border-red-500/25 bg-red-500/[0.06] p-3">
+        <Inset tone="danger" className="mt-3">
           <p className="text-fine leading-6 text-foreground">
             تُحذف «{courseTitle}» من خطّتك. تستطيع إضافتها لاحقا من الكتالوج.
           </p>
@@ -139,12 +140,12 @@ export default function AwaitingCourseChoices({
               تراجع
             </button>
           </div>
-        </div>
+        </Inset>
       )}
 
       {/* ── البدائل ── */}
       {mode === "replace" && (
-        <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+        <Inset className="mt-3">
           <div className="flex items-center justify-between">
             <p className="text-fine font-black text-foreground">بدائلُ لها شعبةٌ الآن</p>
             <button type="button" onClick={() => setMode(null)} aria-label="إغلاق البدائل" className="text-muted-foreground hover:text-foreground">
@@ -179,7 +180,7 @@ export default function AwaitingCourseChoices({
               ))}
             </ul>
           )}
-        </div>
+        </Inset>
       )}
     </div>
   );

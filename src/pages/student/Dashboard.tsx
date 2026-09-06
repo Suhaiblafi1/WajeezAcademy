@@ -326,7 +326,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
       <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* التالي الآن — حقيقي */}
-        <section className="rounded-3xl border border-teal/40 bg-gradient-to-b from-teal/10 to-transparent p-6 lg:col-span-2">
+        <Panel as="section" tone="accent" className="bg-gradient-to-b from-teal/10 to-transparent lg:col-span-2">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <Target className="h-4 w-4" /> التالي الآن
           </div>
@@ -343,7 +343,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               {next.cta} <ArrowLeft className="h-4 w-4" />
             </Link>
           )}
-        </section>
+        </Panel>
 
         {/* شعبي — ملخص سريع */}
         <Panel as="section">
@@ -475,7 +475,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </p>
             ))}
           </div>
-          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-[11px] font-bold text-teal-light-ink hover:text-foreground">كلُّ الرسائل والتنبيهات ←</Link>
+          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-fine font-bold text-teal-light-ink hover:text-foreground">كلُّ الرسائل والتنبيهات ←</Link>
         </Panel>
       </div>
 
@@ -549,7 +549,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
   if (held.length > 0) {
     return (
       <PortalLayout title={title}>
-        <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-14 text-center">
+        <Panel as="section" tone="accent" className="grid place-items-center bg-gradient-to-b from-teal/10 to-transparent py-14 text-center">
           <Clock3 className="h-11 w-11 text-teal-light-ink" />
           <h2 className="mt-5 text-2xl font-black">
             {held.length === 1 ? "مقعدُك محجوز — نؤكّد دفعتَك" : `${held.length} مقاعدَ محجوزة — نؤكّد دفعتَك`}
@@ -568,7 +568,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
           <Link to="/student/learning" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             تابع في رحلتي
           </Link>
-        </section>
+        </Panel>
       </PortalLayout>
     );
   }
@@ -576,7 +576,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
   if (unpaid.length > 0) {
     return (
       <PortalLayout title={title}>
-        <section className="grid place-items-center rounded-3xl border border-gold/35 bg-gradient-to-b from-gold/10 to-transparent py-14 text-center">
+        <Panel as="section" tone="warn" className="grid place-items-center bg-gradient-to-b from-gold/10 to-transparent py-14 text-center">
           <Clock3 className="h-11 w-11 text-gold-ink" />
           <h2 className="mt-5 text-2xl font-black">
             {unpaid.length === 1 ? "طلبُك لم يكتمل دفعُه" : `${unpaid.length} طلباتٍ لم يكتمل دفعُها`}
@@ -587,7 +587,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
           <Link to="/student/billing" className="mt-6 rounded-full bg-gold px-6 py-3 font-black text-on-gold transition hover:bg-gold/90">
             افتح فواتيري
           </Link>
-        </section>
+        </Panel>
       </PortalLayout>
     );
   }
@@ -595,7 +595,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
   if (plan && plan.items.length > 0) {
     return (
       <PortalLayout title={title}>
-        <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-14 text-center">
+        <Panel as="section" tone="accent" className="grid place-items-center bg-gradient-to-b from-teal/10 to-transparent py-14 text-center">
           <Target className="h-11 w-11 text-teal-light-ink" />
           <h2 className="mt-5 text-2xl font-black">خطّتُك جاهزة — بقيت شعبتُك الأولى</h2>
           <p className="mt-2 text-base font-bold text-teal-light-ink">{plan.nameAr}</p>
@@ -606,14 +606,14 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
           <Link to="/student/learning" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             اختر شعبتَك الأولى
           </Link>
-        </section>
+        </Panel>
       </PortalLayout>
     );
   }
 
   return (
-    <PortalLayout title={title}>
-      <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-16 text-center">
+    <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
+      <Panel as="section" tone="accent" className="grid place-items-center bg-gradient-to-b from-teal/10 to-transparent py-16 text-center">
         <BookOpen className="h-12 w-12 text-teal-light-ink" />
         <h2 className="mt-5 text-2xl font-black">حسابك جاهز — بقيت أوّل شعبة</h2>
         <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
@@ -628,7 +628,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             كتالوج الدورات
           </Link>
         </div>
-      </section>
+      </Panel>
     </PortalLayout>
   );
 }

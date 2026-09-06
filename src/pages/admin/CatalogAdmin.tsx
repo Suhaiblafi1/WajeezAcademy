@@ -16,7 +16,7 @@ import PathwayWizard from "@/components/PathwayWizard";
 import CourseWizard from "@/components/CourseWizard";
 import { fmtDateTime } from "@/application/text/format-ar";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
   templates: Record<string, number>; questions: Record<string, number>; changeRequests: Record<string, number>
@@ -240,12 +240,12 @@ export default function CatalogAdmin() {
         {browse === "pathways" && (
           <ul className="mt-3 space-y-2">
             {pathwayView.rows.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
+              <Inset as="li" key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
                 <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{p.id}</span>
                 <span className="font-bold">{p.title}</span>
                 <span className="text-[11px] text-muted-foreground">{p.courseCount} دورة</span>
                 <span className="mr-auto"><Pill v={p.status} /></span>
-              </li>
+              </Inset>
             ))}
             {pathways.length === 0 && <p className="text-sm text-muted-foreground">لا مسارات بعد.</p>}
           </ul>
@@ -253,12 +253,12 @@ export default function CatalogAdmin() {
         {browse === "courses" && (
           <ul className="mt-3 space-y-2">
             {courseView.rows.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
+              <Inset as="li" key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
                 <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{c.id}</span>
                 <span className="font-bold">{c.title}</span>
                 <span className="text-[11px] text-muted-foreground">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
                 <span className="mr-auto"><Pill v={c.status} /></span>
-              </li>
+              </Inset>
             ))}
             {courses.length === 0 && <p className="text-sm text-muted-foreground">لا دورات بعد.</p>}
           </ul>
@@ -274,7 +274,7 @@ export default function CatalogAdmin() {
             </p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {skillView.rows.map((s) => (
-                <li key={s.id} className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5">
+                <Inset as="li" key={s.id} className="px-4 py-2.5">
                   <div className="flex items-center gap-3 text-sm">
                     <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{s.id}</span>
                     <span className="min-w-0 flex-1 truncate font-bold">{s.nameAr}</span>
@@ -285,7 +285,7 @@ export default function CatalogAdmin() {
                       {s.measureNoteAr}
                     </p>
                   )}
-                </li>
+                </Inset>
               ))}
               {skills.length === 0 && <p className="text-sm text-muted-foreground">لا مهارات بعد.</p>}
             </ul>
@@ -294,12 +294,12 @@ export default function CatalogAdmin() {
         {browse === "questions" && (
           <ul className="mt-3 space-y-2">
             {questionView.rows.map((qq) => (
-              <li key={qq.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
+              <Inset as="li" key={qq.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
                 <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{qq.id}</span>
                 <span className="min-w-0 flex-1 font-bold">{qq.text || "—"}</span>
                 <span className="text-[11px] text-muted-foreground">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
                 <span className="mr-auto"><Pill v={qq.status} /></span>
-              </li>
+              </Inset>
             ))}
             {questions.length === 0 && <p className="text-sm text-muted-foreground">لا أسئلة بعد.</p>}
           </ul>
@@ -307,12 +307,12 @@ export default function CatalogAdmin() {
         {browse === "templates" && (
           <ul className="mt-3 space-y-2">
             {templateView.rows.map((t) => (
-              <li key={t.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
+              <Inset as="li" key={t.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
                 <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{t.id}</span>
                 <span className="font-bold">{t.name || "—"}</span>
                 <span className="text-[11px] text-muted-foreground">{t.courseCount} دورة مركبة</span>
                 <span className="mr-auto"><Pill v={t.status} /></span>
-              </li>
+              </Inset>
             ))}
             {templates.length === 0 && <p className="text-sm text-muted-foreground">لا قوالب بعد.</p>}
           </ul>

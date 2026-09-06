@@ -55,7 +55,7 @@ export default function CourseCertificate({
 
   if (issued) {
     return (
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-gold/30 bg-gold/[0.07] p-3.5">
+      <Card tone="warn" className="flex flex-wrap items-center gap-x-3 gap-y-2 p-3.5">
         <span className="flex items-center gap-1.5 text-[12px] font-black text-gold-ink">
           <Award className="h-4 w-4" /> صدرت شهادتك
         </span>
@@ -66,7 +66,7 @@ export default function CourseCertificate({
         >
           صفحة التحقق العامة
         </Link>
-      </div>
+      </Card>
     );
   }
 
@@ -133,7 +133,7 @@ export default function CourseCertificate({
           </ul>
         </>
       )}
-      {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
+      {error && <p className="mt-2 text-fine font-bold text-gold-ink">{error}</p>}
     </Card>
   );
 }

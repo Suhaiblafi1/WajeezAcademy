@@ -30,6 +30,7 @@ import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { apiGet, ApiError } from "@/services/api";
 import { matchesQuery } from "@/application/text/search-ar";
+import { Panel } from "@/components/ui/Surface";
 
 interface TrainerCohort {
   cohort: {
@@ -153,14 +154,14 @@ export default function TrainerMyLearners() {
   if (offline) {
     return (
       <TrainerLayout title="متعلّموني">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول لمتعلّميك</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </TrainerLayout>
     );
   }
@@ -186,7 +187,7 @@ export default function TrainerMyLearners() {
         />
       ) : (
         <>
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+          <Panel as="section">
             <h2 className="flex items-center gap-2 text-base font-black">
               <Users className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> {rows.length} متعلّما في شعبك
             </h2>
@@ -202,12 +203,12 @@ export default function TrainerMyLearners() {
                 className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
               />
             </label>
-          </section>
+          </Panel>
 
           {shown.length === 0 ? (
-            <p className="mt-5 rounded-3xl border border-white/10 bg-white/[0.02] py-12 text-center text-sm text-muted-foreground">
+            <Panel as="p" className="mt-5 py-12 text-center text-sm text-muted-foreground">
               لا متعلّمَ يطابق بحثك.
-            </p>
+            </Panel>
           ) : (
             <ul className="mt-5 space-y-3">
               {shown.map((r) => {

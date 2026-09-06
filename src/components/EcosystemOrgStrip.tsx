@@ -1,4 +1,5 @@
 import { displayedEcosystemOrgs } from '@/data/ecosystemOrganizations'
+import { Inset } from '@/components/ui/Surface'
 
 /* شريط «مؤسسات وثقت بمنظومة وجيز» — إثبات اجتماعي مؤسسي هادئ.
    - المصدر المركزي الوحيد: data/ecosystemOrganizations (لا نسخ في الصفحات).
@@ -34,7 +35,7 @@ export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean
           </p>
         </div>
 
-        <div className="reveal mt-8 rounded-2xl border border-white/5 bg-surface px-6 py-8 md:px-10">
+        <Inset className="reveal mt-8 bg-surface px-6 py-8 md:px-10">
           <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-7 md:gap-x-14">
             {orgs.map((o) => (
               <li key={o.name} className="flex items-center">
@@ -48,7 +49,7 @@ export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean
               </li>
             ))}
           </ul>
-        </div>
+        </Inset>
       </div>
     </Wrapper>
   )

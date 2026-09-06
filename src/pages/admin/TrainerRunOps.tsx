@@ -168,7 +168,7 @@ export default function TrainerRunOps() {
         ) : (
           <ul className="mt-3 space-y-3">
             {requests.map((r) => (
-              <li key={r.id} className="rounded-2xl border border-gold/25 bg-gold/[0.04] p-4">
+              <Card as="li" tone="warn" key={r.id}>
                 <p className="text-sm font-black">{r.profile.application.fullName}</p>
                 <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
                   للدورة: <b className="text-foreground">{r.course.versions[0]?.titleAr ?? courseName(r.courseId)}</b>
@@ -207,7 +207,7 @@ export default function TrainerRunOps() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </button>
                 </div>
-              </li>
+              </Card>
             ))}
           </ul>
         )}
@@ -246,8 +246,8 @@ export default function TrainerRunOps() {
             الطابور كان يملأ له النموذجَ العامّ بنفسه — أو يُنشئ حسابا بدور
             «مدرّب» فيصطدم صاحبُه بجدارِ «بلا ملفّ مدرّب». */}
         {addOpen && canAddTrainer && (
-          <form
-            className="mt-3 rounded-2xl border border-teal/25 bg-teal/[0.04] p-4"
+          <Card as="form" tone="accent"
+            className="mt-3 p-4"
             onSubmit={(e) => {
               e.preventDefault();
               const fullName = addForm.fullName.trim();
@@ -314,7 +314,7 @@ export default function TrainerRunOps() {
               {busy === "add-trainer" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
               عيّنه مدرّبا
             </button>
-          </form>
+          </Card>
         )}
 
         {shown.length === 0 ? (

@@ -25,6 +25,9 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
 import { Panel } from "@/components/ui/Surface";
 
+/* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
+const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-[11px] font-bold transition disabled:opacity-40";
+
 const SUBMISSION_STATUS: Record<string, string> = {
   submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
   resubmit_requested: "طُلبت إعادته", accepted: "مقبول", rejected: "مرفوض",
@@ -166,22 +169,22 @@ export default function GradingQueue() {
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {q.status === "submitted" && (
                   <button disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}
-                    className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-foreground transition hover:border-white/40">
+                    className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
                     ابدأ المراجعة
                   </button>
                 )}
                 {q.status === "under_review" && (
                   <>
                     <button disabled={busy} onClick={() => void reviewAction(q.id, "accept")}
-                      className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-[11px] font-black text-on-teal transition hover:bg-teal-light">
+                      className={`${ACT} border-transparent bg-teal font-black text-on-teal hover:bg-teal-light`}>
                       قبول
                     </button>
                     <button disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}
-                      className="cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-[11px] font-bold text-gold-ink transition hover:bg-gold/10">
+                      className={`${ACT} border-gold/40 text-gold-ink hover:bg-gold/10`}>
                       اطلب إعادة التسليم
                     </button>
                     <button disabled={busy} onClick={() => void reviewAction(q.id, "reject")}
-                      className="cursor-pointer rounded-full border border-red-500/40 px-4 py-1.5 text-[11px] font-bold text-red-400 transition hover:bg-red-500/10">
+                      className={`${ACT} border-red-500/40 text-red-400 hover:bg-red-500/10`}>
                       رفض
                     </button>
                   </>
@@ -195,7 +198,7 @@ export default function GradingQueue() {
                       aria-label={`درجةُ «${q.assessment.title}» من ${q.assessment.maxScore}`}
                       className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none" />
                     <button disabled={busy || !(gradeForm[q.id] ?? "").trim()} onClick={() => void grade(q.id, q.assessment.maxScore)}
-                      className="cursor-pointer rounded-full border border-white/20 px-3 py-1.5 text-[11px] font-bold text-foreground transition hover:border-white/40 disabled:opacity-40">
+                      className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
                       سجّل الدرجة
                     </button>
                   </span>

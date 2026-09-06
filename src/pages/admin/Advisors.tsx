@@ -8,7 +8,7 @@ import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPatch, ApiError, permissionMessage } from "@/services/api";
 import { fmtMoney, fmtDate } from "@/application/text/format-ar";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 interface AdvisorRow {
   userId: string; displayName: string; email: string; status: string;
   commissionPct: number | null; notesAr: string; activeCases: number;
@@ -156,7 +156,7 @@ export default function Advisors() {
                   </div>
 
                   {detailFor === r.userId && (
-                    <div className="mt-4 rounded-xl border border-white/10 bg-paper/25 p-4">
+                    <Inset className="mt-4">
                       {detailLoading ? (
                         <div className="grid place-items-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" /></div>
                       ) : !detail ? null : (
@@ -209,11 +209,11 @@ export default function Advisors() {
                           </div>
                         </div>
                       )}
-                    </div>
+                    </Inset>
                   )}
 
                   {editing === r.userId && (
-                    <div className="mt-4 grid gap-3 rounded-xl border border-gold/25 bg-paper/25 p-4 sm:grid-cols-[8rem_1fr_auto]">
+                    <Inset tone="warn" className="mt-4 grid gap-3 sm:grid-cols-[8rem_1fr_auto]">
                       <label className="text-[11px] text-muted-foreground">
                         النسبة %
                         <input type="number" min={0} max={100} step={0.5} value={form.commissionPct}
@@ -234,7 +234,7 @@ export default function Advisors() {
                           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "احفظ"}
                         </button>
                       </div>
-                    </div>
+                    </Inset>
                   )}
                 </Card>
               ))}

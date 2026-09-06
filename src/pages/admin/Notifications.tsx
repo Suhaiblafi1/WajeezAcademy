@@ -7,7 +7,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Inset } from "@/components/ui/Surface";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 const CHANNEL_AR: Record<string, string> = { in_app: "داخلي", email: "بريد", sms: "رسالة نصية", whatsapp: "واتساب" };
@@ -96,7 +96,7 @@ export default function Notifications() {
 
           <ul className="mt-4 space-y-2">
             {templates.map((t) => (
-              <li key={t.id} className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-xs">
+              <Inset as="li" key={t.id} className="px-3 py-2 text-xs">
                 <p className="flex items-center gap-2 font-bold">
                   <span dir="ltr" className="font-mono text-muted-foreground">{t.key}</span>
                   <span className="rounded-full border border-teal/40 px-2 py-0.5 text-micro text-teal-light-ink">{CHANNEL_AR[t.channel] ?? t.channel}</span>
@@ -104,7 +104,7 @@ export default function Notifications() {
                 </p>
                 <p className="mt-1 text-foreground">{t.titleAr}</p>
                 <p className="mt-0.5 line-clamp-1 text-muted-foreground">{t.bodyAr}</p>
-              </li>
+              </Inset>
             ))}
             {templates.length === 0 && !loading && <p className="text-xs text-muted-foreground">لا قوالب بعد.</p>}
           </ul>
@@ -125,7 +125,7 @@ export default function Notifications() {
           ) : (
             <ul className="mt-3 max-h-[32rem] space-y-2 overflow-y-auto">
               {log.map((n) => (
-                <li key={n.id} className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-xs">
+                <Inset as="li" key={n.id} className="px-3 py-2 text-xs">
                   <div className="flex items-center justify-between gap-2">
                     <p className="font-bold">{n.user.displayName} <span className="font-normal text-muted-foreground">{CHANNEL_AR[n.channel] ?? n.channel}</span></p>
                     <span className={`rounded-full border px-2 py-0.5 text-micro font-bold ${n.status === "failed" ? "border-red-500/40 text-red-400" : "border-emerald-400/30 text-emerald-300"}`}>
@@ -141,7 +141,7 @@ export default function Notifications() {
                       <RefreshCw className="h-3 w-3" /> إعادة المحاولة
                     </button>
                   )}
-                </li>
+                </Inset>
               ))}
               {log.length === 0 && <p className="text-xs text-muted-foreground">السجل فارغ بهذه الحالة.</p>}
             </ul>

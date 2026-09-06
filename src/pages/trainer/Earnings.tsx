@@ -58,14 +58,14 @@ function RealEarningsView() {
   return (
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-gold/30 bg-gold/5 p-5">
+        <Card tone="warn">
           <p className="text-xs text-gold-ink">بانتظار الاعتماد</p>
           <p className="mt-2 text-2xl font-black text-gold-ink">{fmt(summary.pending)} <span className="text-xs">{summary.currency}</span></p>
-        </div>
-        <div className="rounded-2xl border border-teal/30 bg-teal/5 p-5">
+        </Card>
+        <Card tone="accent">
           <p className="text-xs text-teal-light-ink">معتمدة للصرف</p>
           <p className="mt-2 text-2xl font-black text-teal-light-ink">{fmt(summary.approved)} <span className="text-xs">{summary.currency}</span></p>
-        </div>
+        </Card>
         <Card>
           <p className="text-xs text-muted-foreground">مدفوعة</p>
           <p className="mt-2 text-2xl font-black text-foreground">{fmt(summary.paid)} <span className="text-xs">{summary.currency}</span></p>
