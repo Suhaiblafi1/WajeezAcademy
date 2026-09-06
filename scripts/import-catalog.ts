@@ -9,9 +9,10 @@ import { seedRbac } from '../server/auth/rbac-seed'
 const prisma = await getPrisma()
 const url = process.env.DATABASE_URL!
 
-/* البناء على Vercel ينشر الهجرات بنفسه داخل حلقة إعادة محاولة، لأن كل دفع
-   يطلق بناءين يتزاحمان على القفل الاستشاري. فإعادة نشرها هنا تعيد إنتاج
-   السباق ذاته الذي كُتبت تلك الحلقة لتفاديه — فنتخطّاها حين ينادينا البناء. */
+/* سكربتُ النشر ينشر الهجرات في خطوةٍ سابقةٍ لهذه (`npx prisma migrate deploy`
+   في `scripts/deploy-cloudways.sh`)، فيمرّر هذا العلم. وإعادةُ نشرها هنا
+   عملٌ مكرَّرٌ بلا فائدة — وكانت على Vercel أسوأَ من ذلك: بناءان متزاحمان
+   على القفل الاستشاريّ، وهو السباقُ الذي كُتب هذا التخطّي لتفاديه. */
 if (process.env.CATALOG_IMPORT_SKIP_MIGRATE === '1') {
   console.log('① تخطّي نشر migrations — نُشرت في خطوة البناء')
 } else {

@@ -12,6 +12,7 @@
    رايةٍ واحدة تتخطّى الفحص كلَّه — فمرّت شعبةٌ ليست له. */
 
 import { ACADEMY_EMAILS } from '../integrations.service'
+import { publicSiteUrl } from '../notification.service'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
 import { buildIcs } from './ics'
@@ -25,7 +26,13 @@ const DEFAULT_MINUTES = 60
 export class CalendarService {
   private prisma: PrismaClient
   private siteUrl: string
-  constructor(prisma: PrismaClient, siteUrl = 'https://wajeez-academy.vercel.app') {
+  /* ⚠️ كان الاحتياطيُّ نطاقَ Vercel مكتوبا في الشيفرة، والمسارُ الوحيدُ الذي
+     ينشئ الخدمة (`calendar.routes.ts`) لا يمرّر شيئا — فكان يقع عليه دائما.
+     ولمّا انتقلت المنصّةُ إلى Cloudways مات ذلك النطاق، وبقيت كلُّ دعوةِ
+     تقويمٍ تُسلَّم للمتعلّم تحمل في حقل `URL` عنوانا لا يفتح عند أحد.
+     والمصدرُ الآن `publicSiteUrl()` نفسُه الذي تُبنى منه روابطُ الرسائل:
+     `APP_URL` في الإنتاج، والمحلّيُّ في التطوير. مصدرٌ واحدٌ لا اثنان. */
+  constructor(prisma: PrismaClient, siteUrl = publicSiteUrl()) {
     this.prisma = prisma
     this.siteUrl = siteUrl
   }

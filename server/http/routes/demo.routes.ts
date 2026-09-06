@@ -19,9 +19,20 @@ import type { AuthService } from '../../services/auth.service'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, type DemoRoleKey } from '../../db/seed-demo'
 import { SESSION_COOKIE } from '../auth-plugin'
 
-/** نشرٌ إنتاجيّ؟ VERCEL_ENV تحقنه المنصّة، وNODE_ENV يغطّي الاستضافة الذاتية */
+/** نشرٌ إنتاجيّ؟
+
+    ⚠️ كان هذا الحارسُ يسأل `VERCEL_ENV` أوّلا — تحقنه منصّةُ Vercel بنفسها بلا
+    ضبطٍ من أحد. فلمّا انتقلت المنصّةُ إلى Cloudways اختفى المتغيّرُ ولم يخلفه
+    شيء، وبقي السؤالُ معلّقا على `NODE_ENV` وحده — **وهو غيرُ مضبوطٍ على
+    الخادم**: `npm start` لا يضبطه، وضبطُه `production` في بيئة الخادم كلِّها
+    يكسر النشر (`npm ci` يُسقط حزمَ التطوير التي يحتاجها البناء). فصار الحارسُ
+    الثالثُ في الإنتاج يجيب «لست إنتاجا».
+
+    والبديلُ `APP_ENV` — اسمٌ محايدُ المضيف، يُضبط في بيئة تشغيل الخادم وحدَها
+    فلا يمسّ البناء (`docs/DEPLOYMENT.md` §٣). وهو نفسُه ما يقرؤه
+    `server/build-stamp.ts` لإعلان البيئة في `‎/api/version`. */
 const productionDeployment = () =>
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
+  process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production'
 
 /** الديمو مفعّل: علمٌ مضبوط **و** ليس نشرا إنتاجيّا. الشرطان معا لا أحدهما. */
 const demoEnabled = () => process.env.DEMO_MODE === 'true' && !productionDeployment()

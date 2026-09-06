@@ -151,7 +151,7 @@ export default function Integrations() {
                       الطلبُ وتبقى سجلّاتُنا خضراء والعطبُ عند المشتري وحدَه. */}
                   {!view.payment.siteUrlExplicit && (
                     <p className="rounded-xl border border-red-500/40 bg-red-500/[0.07] px-3 py-2 text-[11px] font-bold leading-5 text-red-300">
-                      اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في Vercel أولا — لن يُقبل التفعيل بدونه.
+                      اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في بيئة الخادم أولا — لن يُقبل التفعيل بدونه.
                       <span className="mt-1 block font-normal text-red-300/75">
                         العنوان المستعمل الآن: <span dir="ltr" className="font-mono">{view.payment.siteUrl}</span> — ومنه تُبنى صفحة عودة المشتري بعد الدفع.
                       </span>

@@ -22,7 +22,7 @@ beforeAll(async () => {
 
 afterEach(() => {
   delete process.env.DEMO_MODE
-  delete process.env.VERCEL_ENV
+  delete process.env.APP_ENV
   process.env.NODE_ENV = savedNodeEnv
 })
 
@@ -77,9 +77,9 @@ describe('مسار تبديل أدوار الديمو', () => {
      يستقبل على الإنترنت ستّة أيّام — ولو كانت حسابات الديمو مزروعةً هناك
      لسلّم جلسةَ super_admin لكلّ طارق. فالحارس لا يسأل من ضبط العلم. */
 
-  it('يرفض ٤٠٤ على نشر Vercel الإنتاجيّ رغم ضبط DEMO_MODE', async () => {
+  it('يرفض ٤٠٤ على نشرٍ إنتاجيٍّ بـAPP_ENV رغم ضبط DEMO_MODE', async () => {
     process.env.DEMO_MODE = 'true'
-    process.env.VERCEL_ENV = 'production'
+    process.env.APP_ENV = 'production'
     const res = await app.inject({ method: 'POST', url: '/api/demo/switch-role', payload: { role: 'superadmin' } })
     expect(res.statusCode).toBe(404)
     expect(res.headers['set-cookie']).toBeUndefined()
@@ -95,7 +95,7 @@ describe('مسار تبديل أدوار الديمو', () => {
 
   it('/status يصدُق: enabled=false في الإنتاج مهما ضُبط العلم', async () => {
     process.env.DEMO_MODE = 'true'
-    process.env.VERCEL_ENV = 'production'
+    process.env.APP_ENV = 'production'
     const res = await app.inject({ method: 'GET', url: '/api/demo/status' })
     expect(res.json()).toEqual({ enabled: false })
   })
