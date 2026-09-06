@@ -20,6 +20,16 @@ RUN npm ci
 
 COPY . .
 
+# ── بصمةُ الالتزام تدخل من الخارج ──
+# `.dockerignore` يستثني `.git` بقصد، فلا نسخةَ Git داخل البناء ولا يستطيع
+# `write-build-stamp.ts` قراءةَ الالتزام. وبلا هذين الوسيطَين يقول
+# `/api/version` «الالتزام: null» فلا يُعرف أهو آخرُ ما دُمج أم نشرةٌ لم تصل.
+# ويبقى البناءُ ناجحا بدونهما — الغيابُ يُعلَن ولا يُسقط شيئا.
+ARG GIT_COMMIT_SHA=""
+ARG GIT_COMMIT_REF=""
+ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA \
+    GIT_COMMIT_REF=$GIT_COMMIT_REF
+
 # توليد عميل Prisma ثم بناء الواجهة. dist تُنسخ عند الإقلاع إلى حجم
 # مشترك يقرؤه Caddy — انظر deploy/docker-entrypoint.sh
 RUN npx prisma generate && npm run build

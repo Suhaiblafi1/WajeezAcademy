@@ -28,6 +28,10 @@ const PHRASES: Record<string, string> = {
   'admin.permission.deny': 'نزعُ صلاحيّةٍ عن شخص',
   'admin.permission.clear': 'إلغاءُ استثناءِ صلاحيّة',
   'roles.set': 'تعيينُ أدوارِ حساب',
+  /* ترقيةٌ بلا فاعلٍ بشريّ — يكتبها الخادمُ عند الإقلاع من `FOUNDER_EMAILS`.
+     واسمُها يقول «تلقائيّا» صراحةً: من يقرأ السجلَّ يجب أن يعرف أنّ أعلى
+     رتبةٍ في النظام مُنحت بلا أن يمنحها أحد. */
+  'auth.founder.promoted': 'ترقيةُ مؤسِّسٍ إلى مديرِ نظامٍ تلقائيّا',
   'payment.record_manual': 'تسجيلُ دفعةٍ يدويّة',
   'payment.charge': 'استيفاءُ دفعة',
   'payment.webhook': 'إشعارُ دفعٍ من المزوّد',

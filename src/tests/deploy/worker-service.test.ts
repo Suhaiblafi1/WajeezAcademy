@@ -41,6 +41,18 @@ describe('خدمةُ العامل في منظومة الإنتاج', () => {
       'الخادمُ والعاملُ لا يشتركان في اسم صورةٍ واحد').toBe(2)
   })
 
+  it('ولها سياقُ بناءٍ لا اسمُ صورةٍ وحدَه — وإلّا انكسر النشرُ على من لا يبني `app` أوّلا', () => {
+    /* عطبٌ وقع فعلا: كُتبت الخدمةُ بـ`image:` بلا `build:`، على افتراض أنّ
+       الناشرَ يبني `app` قبلها فتوجد الصورة. وذلك يصحّ مع `deploy/deploy.sh`
+       وحدَه. أمّا ناشرٌ يفعل `docker compose pull` أو `up -d` بلا بناءٍ سابق
+       فيبحث عن `wajeez-app:latest` في سجلٍّ لا وجودَ لها فيه — **فيسقط النشرُ
+       كلُّه**، ويتوقّف الموقعُ عن استقبال أيّ تحديث. */
+    const block = code.slice(code.indexOf('\n  worker:'))
+    const mine = block.slice(0, block.indexOf('\n  caddy:'))
+    expect(mine, 'اسمُ صورةٍ بلا سياقِ بناءٍ يعتمد على ترتيبٍ في ناشرٍ بعينه')
+      .toMatch(/^\s+build:/m)
+  })
+
   it('ولا تنشر منفذا ولا تواجه الإنترنت', () => {
     const block = code.slice(code.indexOf('\n  worker:'))
     const mine = block.slice(0, block.indexOf('\n  caddy:'))
