@@ -49,6 +49,22 @@ function putFact(
 }
 
 /** يختزل إجابة واحدة إلى حقائق ويحدث المتجهات */
+/* عدّادُ البنود لكلّ بُعد، معلَّقٌ **بمتّجه الميول نفسِه**.
+
+   والسببُ في ربطه بالكائن لا بحالة المحرّك: المحرّكاتُ الثلاثةُ تعيد بناءَ
+   المتّجه من الصفر عند كلّ إعادة تشغيل (`interestVector = {}`)، فعدّادٌ معلَّقٌ
+   به يُولد معه ويموت بموته بلا سطرٍ واحدٍ في أيٍّ منها. وعدّادٌ في حالة المحرّك
+   كان سيحتاج ثلاثةَ تعديلاتٍ متطابقةٍ يُنسى أحدُها. */
+const INTEREST_COUNTS = new WeakMap<Record<string, number>, Record<string, number>>()
+function interestCounts(vector: Record<string, number>): Record<string, number> {
+  let c = INTEREST_COUNTS.get(vector)
+  if (!c) {
+    c = {}
+    INTEREST_COUNTS.set(vector, c)
+  }
+  return c
+}
+
 export function reduceAnswer(
   question: BankQuestion,
   answer: Answer,
@@ -103,7 +119,26 @@ export function reduceAnswer(
       const idx = ordinalOf(0)
       const score = idx >= 0 ? idx + 1 : 3
       const key = question.measures[0]
-      if (key) interestVector[key] = score
+      /* ── متوسّطٌ لا آخِرُ جواب (البند ٤٠) ──
+
+         كان `interestVector[key] = score` — إسنادا يمحو ما قبله. ولكلّ بُعدٍ
+         من أبعاد هولاند **ثلاثةُ بنودٍ في البنك**، فلو سُئل منها اثنان لأُلغي
+         الأوّلُ صامتا وحُسب البُعدُ من الأخير وحدَه.
+
+         وهو عطبٌ لا يظهر في تشخيصٍ نادرا ما يسأل بندَين من بُعدٍ واحد —
+         ويظهر يومَ تبذر «مرآةُ وجيز» ثمانيةَ عشرَ بندا دفعةً، فتصير الأبعادُ
+         الستّةُ محسوبةً من ستّةِ بنودٍ لا ثمانيةَ عشر. أي أنّ المرآةَ كانت
+         ستَعِد بثلاثةِ أضعافِ الثبات ولا تعطي منها شيئا.
+
+         فصار المتوسّطَ الجاري — **بلا تغييرٍ في المحرّك ولا في مستهلِك
+         الخريطة**: المفتاحُ نفسُه والمدى نفسُه. */
+      if (key) {
+        const counts = interestCounts(interestVector)
+        const seen = (counts[key] ?? 0) + 1
+        const prev = interestVector[key] ?? 0
+        counts[key] = seen
+        interestVector[key] = (prev * (seen - 1) + score) / seen
+      }
       return
     }
     case 'skill_level_5': {
