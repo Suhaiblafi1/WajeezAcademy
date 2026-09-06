@@ -379,7 +379,7 @@ export default function AdminCohorts() {
                           aria-label="خطة تقديم الشعبة"
                           className={`${areaCls} mt-2.5`}
                         />
-                        <Button tone="primary" type="button"
+                        <Button tone="confirm" type="button"
                           disabled={busy || (planDraft[c.id] ?? "").trim().length < 20}
                           onClick={() => act(async () => {
                             await apiPut(`/api/admin/cohorts/${c.id}/delivery-plan`, { notesAr: (planDraft[c.id] ?? "").trim() });

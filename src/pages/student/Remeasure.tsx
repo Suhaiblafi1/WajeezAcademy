@@ -275,7 +275,7 @@ export default function Remeasure() {
               {/* العدد المتبقي في سطر كامل التباين لا داخل زر معطَّل باهت:
                   التوجيه لا يُدفن في عنصر خامل. */}
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <Button tone="primary" type="button"
+                <Button tone="confirm" type="button"
                   onClick={() => void submit()}
                   disabled={!complete || saving} className="min-h-11 disabled:cursor-not-allowed">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <CheckCircle2 className="h-4 w-4" aria-hidden="true" />}

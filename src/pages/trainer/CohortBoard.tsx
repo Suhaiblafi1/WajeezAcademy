@@ -365,7 +365,7 @@ export default function CohortBoard() {
                                                 className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                                             </div>
                                           </div>
-                                          <Button tone="primary" size="sm" type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
+                                          <Button tone="confirm" size="sm" type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
                                             onClick={() => void proposeReschedule(s.id)} className="disabled:cursor-not-allowed">
                                             أرسل الاقتراح للإدارة
                                           </Button>
@@ -673,7 +673,7 @@ export default function CohortBoard() {
                             <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "accept")}>
                               قبول
                             </Button>
-                            <Button tone="primary" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")} className="text-gold-ink">
+                            <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")} className="text-gold-ink">
                               اطلب إعادة التسليم
                             </Button>
                             <Button tone="danger" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "reject")}>

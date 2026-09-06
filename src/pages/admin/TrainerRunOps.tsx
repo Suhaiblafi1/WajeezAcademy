@@ -181,7 +181,7 @@ export default function TrainerRunOps() {
                     aria-label="ملاحظة القرار"
                     className={`${controlCls} min-w-[16rem] flex-1`}
                   />
-                  <Button tone="primary" type="button" disabled={busy === r.id}
+                  <Button tone="confirm" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: true, note: note[r.id]?.trim() || undefined }),
                       "أُهِّل وأُسنِد إلى الشعبة")}>
@@ -300,7 +300,7 @@ export default function TrainerRunOps() {
                       <option value="">اختر دورة…</option>
                       {courses.map((c) => <option key={c.id} value={c.id}>{c.titleAr ?? c.title ?? c.id}</option>)}
                     </select>
-                    <Button tone="primary" type="button" disabled={!sel.courseId || busy === k("qual")}
+                    <Button tone="confirm" type="button" disabled={!sel.courseId || busy === k("qual")}
                       onClick={() => void act(k("qual"),
                         () => apiPost(`/api/admin/trainers/${t.profileId}/qualifications`, { courseId: sel.courseId }),
                         "أُهِّل للدورة")} className="px-3.5 text-gold-ink">

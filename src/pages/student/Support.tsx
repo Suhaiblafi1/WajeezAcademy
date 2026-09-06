@@ -202,7 +202,7 @@ export default function StudentSupport() {
                         </button>
                       </div>
                     ) : (
-                      <Button tone="primary" size="sm" disabled={busy}
+                      <Button tone="confirm" size="sm" disabled={busy}
                         onClick={() => { setReopenFor(t.id); setReopenNote(""); }} className="mt-3 text-gold-ink">
                         إعادة فتح التذكرة
                       </Button>

@@ -395,7 +395,7 @@ export default function Finance() {
               <input type="number" min={1} value={couponForm.maxUses} onChange={(e) => setCouponForm({ ...couponForm, maxUses: e.target.value })} placeholder="أقصى استخدام" className={inputCls} />
               <input type="date" value={couponForm.expiresAt} onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })} className={inputCls} />
             </div>
-            <Button tone="primary" disabled={busy || couponForm.code.length < 3 || (!couponForm.percentOff && !couponForm.amountOff)}
+            <Button tone="confirm" disabled={busy || couponForm.code.length < 3 || (!couponForm.percentOff && !couponForm.amountOff)}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/coupons", {
                   code: couponForm.code,
@@ -429,7 +429,7 @@ export default function Finance() {
               <input type="number" min={1} value={planForm.intervalMonths} onChange={(e) => setPlanForm({ ...planForm, intervalMonths: e.target.value })} placeholder="كل كم شهر" className={inputCls} />
               <input value={planForm.features} onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })} placeholder="مزايا مفصولة بفاصلة" className={`${inputCls} sm:col-span-2`} />
             </div>
-            <Button tone="primary" disabled={busy || planForm.code.length < 2 || planForm.nameAr.length < 3 || !planForm.price}
+            <Button tone="confirm" disabled={busy || planForm.code.length < 2 || planForm.nameAr.length < 3 || !planForm.price}
               onClick={() => act(async () => {
                 await apiPost("/api/admin/subscription-plans", {
                   code: planForm.code, nameAr: planForm.nameAr, price: Number(planForm.price),

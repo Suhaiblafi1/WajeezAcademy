@@ -383,7 +383,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
       {/* نشر عام */}
       {cohort.status === "open" && (
-        <Button tone="primary" disabled={busy}
+        <Button tone="confirm" disabled={busy}
           onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نُشرت الشعبة — إسنادات المدربين ظاهرة للعامة")} className="text-gold-ink">
           <Globe className="h-3.5 w-3.5" /> نشر عام لإسنادات المدربين
         </Button>
@@ -557,7 +557,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
                   </Button>
                 </>
               ) : r.eligible ? (
-                <Button tone="primary" disabled={busy}
+                <Button tone="confirm" disabled={busy}
                   onClick={() => act(
                     () => apiPost(`/api/admin/enrollments/${r.enrollmentId}/certificate`).then(load),
                     `أُصدرت شهادة «${r.learnerName}»`,

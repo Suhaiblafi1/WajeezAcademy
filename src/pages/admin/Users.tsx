@@ -390,7 +390,7 @@ export default function Users() {
                   {/* توثيقُ البريد بيد: لا يُعرض إلّا لمن لم يوثّق — وزرٌّ
                       يظهر لمن لا يحتاجه ضجيجٌ في صفٍّ مزدحم. */}
                   {canManage && !u.emailVerified && u.status !== "archived" && (
-                    <Button tone="primary" size="sm" disabled={busy}
+                    <Button tone="confirm" size="sm" disabled={busy}
                       onClick={() => setConfirming({ kind: "verifyEmail", user: u })} className="text-gold-ink">
                       <BadgeCheck className="h-3.5 w-3.5" /> وثّق بريده
                     </Button>
@@ -404,7 +404,7 @@ export default function Users() {
                   {/* إعادةُ الدعوة: لمن لم يدخل بعد، أو من انتهت دعوتُه.
                       وحين لا بريدَ يُعاد الرابطُ في الرسالة ليُسلَّم بيد. */}
                   {canManage && (u.status === "invited" || u.invite.state === "expired") && (
-                    <Button tone="primary" size="sm" disabled={busy}
+                    <Button tone="confirm" size="sm" disabled={busy}
                       onClick={() => act(
                         () => apiPost<{ sent: boolean; note: string; link?: string }>(`/api/admin/users/${u.id}/resend-invite`, {}),
                         /* الجملةُ من الخادم: هو وحده يعرف أوصلت أم لا، ويعيد
@@ -571,7 +571,7 @@ export default function Users() {
                       ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
                     </Inset>
                   )}
-                  <Button tone="primary" size="sm" disabled={busy || rolePick.length === 0}
+                  <Button tone="confirm" size="sm" disabled={busy || rolePick.length === 0}
                     onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حُدثت الأدوار")} className="mt-3">
                     احفظ الأدوار
                   </Button>

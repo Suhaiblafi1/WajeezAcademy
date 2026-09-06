@@ -652,7 +652,7 @@ export function TrainerPayouts() {
           <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-gold" />
           إظهار الملغاة الصفرية
         </label>
-        <Button tone="primary" onClick={() => setShowCreate(!showCreate)}>
+        <Button tone="secondary" onClick={() => setShowCreate(!showCreate)}>
           <Banknote className="h-3.5 w-3.5" /> كشف يدوي جديد
         </Button>
         {msg && <span className="text-xs font-bold text-teal-light-ink" role="status">{msg}</span>}
@@ -682,7 +682,7 @@ export function TrainerPayouts() {
               <option value="">عامة — كل الشعب</option>
               {allCohorts.map((c) => <option key={c.id} value={c.id}>خاصة: {c.title}</option>)}
             </select>
-            <Button tone="primary" size="sm" disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}>
+            <Button tone="confirm" size="sm" disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}>
               حفظ القاعدة
             </Button>
           </div>
@@ -794,7 +794,7 @@ export function TrainerPayouts() {
             <Button tone="secondary" size="sm" onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])} className="text-micro">
               + بند آخر
             </Button>
-            <Button tone="primary" size="sm" disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
+            <Button tone="confirm" size="sm" disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
               onClick={create}>
               إنشاء الكشف
             </Button>

@@ -139,7 +139,7 @@ export default function AdminTasks() {
                     {Object.entries(PRIORITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </div>
-                <Button tone="primary" disabled={busy || !form.assigneeId || form.title.trim().length < 3}
+                <Button tone="confirm" disabled={busy || !form.assigneeId || form.title.trim().length < 3}
                   onClick={() => act(
                     () => apiPost("/api/staff/tasks", {
                       assigneeId: form.assigneeId, title: form.title.trim(),
