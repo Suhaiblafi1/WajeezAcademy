@@ -612,7 +612,7 @@ export class TrainerReviewService {
 
   /** طلباتُ التأهيل المعلّقة — لمن يملك البتّ فيها */
   async pendingQualifications() {
-    return this.prisma.trainerCourseQualification.findMany({
+    const rows = await this.prisma.trainerCourseQualification.findMany({
       where: { status: 'pending' },
       include: {
         profile: { include: { application: { select: { fullName: true, status: true } } } },
@@ -620,6 +620,78 @@ export class TrainerReviewService {
       },
       orderBy: { requestedAt: 'asc' },
     })
+    /* الشعبةُ المطلوبةُ تُقرأ باسمها لا بمعرّفها: الموافقةُ **تؤهّل وتُسند
+       معا**، فمن يوقّع يستحقّ أن يرى في أيّ شعبةٍ يضع المدرّبَ وفي أيّ تاريخ
+       — لا أن يوافق على معرّفٍ سداسيّ عشر. */
+    const cohortIds = [...new Set(rows.map((r) => r.requestedCohortId).filter((id): id is string => Boolean(id)))]
+    const cohorts = cohortIds.length
+      ? await this.prisma.cohort.findMany({
+          where: { id: { in: cohortIds } },
+          select: { id: true, title: true, startsAt: true, status: true },
+        })
+      : []
+    const byId = new Map(cohorts.map((c) => [c.id, c]))
+    return rows.map((r) => ({
+      ...r,
+      requestedCohort: r.requestedCohortId ? byId.get(r.requestedCohortId) ?? null : null,
+    }))
+  }
+
+  /* ─────────── لوحُ التشغيل ───────────
+
+     خمسةُ مساراتٍ في هذا الملفّ كانت بلا شاشةٍ تصل إليها: البتُّ في طلبات
+     التأهيل، والتأهيلُ المباشر، والإسنادُ لشعبة، واعتمادُ الظهور العامّ،
+     والإيقاف. فالخادمُ يعرف كيف يفعلها كلَّها ولا أحدَ يستطيع أن يطلبها.
+
+     وبناءُ الشاشة كشف عطبا ثانيا: **قائمةُ المدرّبين نفسُها كانت وراء صلاحيةِ
+     المستحقّات** (`trainer-profiles` ← `trainer.compensation.manage`) — وهي
+     ليست للمدير الأكاديميّ. فمن يملك التأهيلَ والإسنادَ والإيقاف **لا يستطيع
+     أن يرى من يؤهّله**. وهو عطبُ «من يبدأ لا يستطيع أن ينهي» نفسُه في موضعٍ
+     آخر.
+
+     فهذه قائمةٌ بصلاحيةِ التأهيل، وحمولتُها ما يلزم القرارَ لا أكثر: لا
+     مبالغَ ولا قواعدَ تعويض. */
+  async listForOps() {
+    const profiles = await this.prisma.trainerProfile.findMany({
+      include: {
+        application: { select: { fullName: true, email: true, status: true } },
+        qualifications: {
+          include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } } },
+        },
+        assignments: {
+          where: { status: 'active' },
+          include: {
+            course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+            cohort: { select: { id: true, title: true, status: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    return profiles.map((p) => ({
+      profileId: p.id,
+      applicationId: p.applicationId,
+      name: p.application.fullName,
+      email: p.application.email,
+      applicationStatus: p.application.status,
+      /* حسابٌ مربوطٌ أم لا: «نشطٌ» بلا حسابٍ لا يفتح بوّابتَه ولا يُسنَد إليه */
+      hasAccount: Boolean(p.userId),
+      suspended: Boolean(p.suspendedAt),
+      publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
+      isVerified: p.isVerified,
+      qualifications: p.qualifications.map((q) => ({
+        courseId: q.courseId,
+        courseTitle: q.course.versions[0]?.titleAr ?? q.courseId,
+        status: q.status,
+      })),
+      assignments: p.assignments.map((a) => ({
+        courseId: a.courseId,
+        courseTitle: a.course.versions[0]?.titleAr ?? a.courseId,
+        cohortId: a.cohortId,
+        cohortTitle: a.cohort?.title ?? null,
+        cohortStatus: a.cohort?.status ?? null,
+      })),
+    }))
   }
 
   /* البتُّ في الطلب — والموافقةُ تؤهّل وتُسند في فعلٍ واحد.

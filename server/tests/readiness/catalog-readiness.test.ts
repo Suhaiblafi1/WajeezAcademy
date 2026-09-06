@@ -48,12 +48,26 @@ describe('فتح الشعب', () => {
     }
   })
 
-  it('والتنفيذُ يفتح فعلا، ثمّ لا يعيد فتحَ ما فُتح', async () => {
+  /* كان هذا الفحصُ يشترط `first.opened > 0` — أي **يوثّق العطب**: أنّ الزرّ
+     يفتح للبيع شعبا بلا مدرّبٍ ولا جدولٍ ولا خطّة، متخطّيا الشروطَ الستّة.
+     فصار يشترط ما هو صواب: أن تُهيَّأ، وأن تبقى مسوّدةً حتّى يستوفى شرطُها،
+     وأن يُقال نقصُها. */
+  it('والتنفيذُ يهيّئ ولا يفتح ما نقصه شرط — والنقصُ يُقال', async () => {
     const first = await openAllCohorts(prisma, { apply: true })
-    expect(first.opened).toBeGreaterThan(0)
+    expect(first.prepared, 'لم تُهيَّأ شعبةٌ واحدة').toBeGreaterThan(0)
+    /* لا مدرّبَ في قاعدة الفحص، فلا شعبةَ تُفتح — وهذا هو الصواب */
+    expect(first.opened).toBe(0)
+    for (const row of first.rows.filter((r) => !r.reason)) {
+      expect(row.blocked?.join(' '), `${row.titleAr}: لم يُذكر نقصُها`).toContain('مدرب')
+    }
+  })
+
+  it('ولا يُنشئ نسخةً ثانيةً لدورةٍ لها شعبةٌ قائمة — ولو كانت مسوّدة', async () => {
+    const before = await prisma.cohort.count()
     const second = await openAllCohorts(prisma, { apply: true })
-    expect(second.opened).toBe(0)
-    expect(second.alreadyLive).toBeGreaterThanOrEqual(first.opened)
+    expect(second.opened + second.prepared, 'أُنشئت نسخةٌ ثانية').toBe(0)
+    expect(second.alreadyLive).toBeGreaterThan(0)
+    expect(await prisma.cohort.count()).toBe(before)
   })
 })
 
