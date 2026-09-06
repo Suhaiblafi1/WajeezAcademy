@@ -19,6 +19,7 @@ import ToastHost from './components/Toast'
 /* محرك التشخيص وصفحة المسار ثقيلان — يُحمَّلان عند الطلب */
 const Methodology = lazy(() => import('./pages/Methodology'))
 const Diagnostic = lazy(() => import('./pages/Diagnostic'))
+const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 
@@ -156,6 +157,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/diagnostic" element={<Diagnostic />} />
+          <Route path="/mirror" element={<Mirror />} />
           <Route path="/pathways" element={<Catalog kind="pathways" />} />
           <Route path="/courses" element={<Catalog kind="courses" />} />
           {/* تقويمُ الفصل — سطحُ أرشفةٍ لمحرّكات البحث كذلك (البند ٥٠) */}
