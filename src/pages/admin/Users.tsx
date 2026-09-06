@@ -341,9 +341,9 @@ export default function Users() {
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
           placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
         {view.total === 0 ? (
-          <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
+          <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
             {q.trim() ? `لا حساب يطابق «${q.trim()}».` : `لا حسابات في هذه الخانة.`}
-          </p>
+          </Panel>
         ) : (
         <div className="space-y-3">
           {view.rows.map((u) => (
@@ -461,9 +461,9 @@ export default function Users() {
                           </p>
                           {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
                           {perms.rank.actor <= perms.rank.target && (
-                            <p className="mt-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-micro font-bold leading-6 text-[#FABC05]">
+                            <Inset as="p" className="mt-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-micro font-bold leading-6 text-[#FABC05]">
                               لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
-                            </p>
+                            </Inset>
                           )}
                         </div>
                         <div className="text-left">
@@ -565,11 +565,11 @@ export default function Users() {
                   {/* نزعُ «متعلّم» يُغلق بوابة تعلّم صاحب الحساب — ولا يظهر أثره
                       إلّا عنده لا هنا. فيُقال قبل الحفظ لا بعد الشكوى. */}
                   {u.roles.some((r) => r.id === "learner") && !rolePick.includes("learner") && (
-                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-micro font-bold leading-6 text-[#FABC05]">
+                    <Inset as="p" className="mt-3 flex items-start gap-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-micro font-bold leading-6 text-[#FABC05]">
                       <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       بنزع «متعلّم» تُغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
                       ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
-                    </p>
+                    </Inset>
                   )}
                   <Button tone="primary" size="sm" disabled={busy || rolePick.length === 0}
                     onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حُدثت الأدوار")} className="mt-3">

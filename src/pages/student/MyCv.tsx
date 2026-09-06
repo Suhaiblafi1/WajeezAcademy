@@ -8,7 +8,7 @@ import { fmtWhen } from "@/utils/format";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
-import { Panel, Inset } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 /* الخادم هو مصدر الحقيقة: POST/GET /api/learner/cv و POST /api/cv/:id/delete.
    كان هنا `@/data/cv` — محاكاةٌ كاملة للسلوك نفسه في localStorage، فيرفع
@@ -84,14 +84,14 @@ export default function MyCv() {
     <PortalLayout title="سيرتي الذاتية">
       {/* شرحُ الرفع لا يُقال حيث لا رفع — وإلّا نقض القسمَ الذي تحته */}
       {fileUploads && (
-        <p className="mb-5 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-muted-foreground">
+        <Card as="p" className="mb-5 max-w-2xl px-4 py-3 text-xs leading-6 text-muted-foreground">
           تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
           مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
-        </p>
+        </Card>
       )}
 
       {err && (
-        <p role="alert" className="mb-4 rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-300">{err}</p>
+        <Card as="p" tone="danger" role="alert" className="mb-4 px-4 py-3 text-sm font-semibold text-red-300">{err}</Card>
       )}
 
       {/* رفع جديد — لا يُعرض إلّا حين يستطيع الخادمُ حفظَ الملفّ */}
@@ -124,7 +124,7 @@ export default function MyCv() {
         >
           <FileText className="h-5 w-5" /> اختر ملف سيرتك — PDF أو Word حتى {CV_MAX_LABEL}
         </button>
-        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-gold/30 bg-gold/5 p-4">
+        <Card as="label" tone="warn" className="mt-4 flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
             checked={consent}
@@ -134,7 +134,7 @@ export default function MyCv() {
           <span className="text-xs leading-6 text-foreground">
             <span className="font-black text-gold-ink">موافقة صريحة (إلزامية):</span> أوافق على أن يرى مستشاري المسند وإدارة العمليات سيرتي الذاتية لغرض الإرشاد المهني فقط، وأعلم أن كل مشاهدة تُسجل وأنني أستطيع حذفها في أي وقت.
           </span>
-        </label>
+        </Card>
         {!consent && (
           <p className="mt-2 text-fine text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
         )}

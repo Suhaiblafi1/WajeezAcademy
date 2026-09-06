@@ -213,12 +213,12 @@ export default function Finance() {
       {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
           ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
       {readOnly && (
-        <p className="mb-5 flex items-start gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-4 py-3 text-micro font-bold leading-6 text-muted-foreground">
+        <Card as="p" className="mb-5 flex items-start gap-2 px-4 py-3 text-micro font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
           حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
           أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
           فصلٌ مقصود: من يسجّل التسجيلَ لا يسجّل دفعتَه.
-        </p>
+        </Card>
       )}
 
       {loading && <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>}

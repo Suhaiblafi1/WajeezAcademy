@@ -6,7 +6,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
@@ -287,14 +287,14 @@ export default function JoinTrainerComplete() {
             </div>
           </fieldset>
 
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-paper/20 p-3">
+          <Inset as="label" className="flex cursor-pointer items-start gap-2.5">
             <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal" />
             <span className="text-xs leading-6 text-muted-foreground">
               أوافق على تقديم درس تجريبي (Demo) قصير أمام اللجنة الأكاديمية كجزء من التقييم. *
             </span>
-          </label>
+          </Inset>
 
-          {error && <p className="rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs text-red-200" role="alert">{error}</p>}
+          {error && <Inset as="p" tone="danger" className="text-xs text-red-200" role="alert">{error}</Inset>}
 
           <Button tone="primary" type="submit" disabled={!valid || busy} className="w-full disabled:cursor-not-allowed">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}

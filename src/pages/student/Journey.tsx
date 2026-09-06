@@ -433,10 +433,10 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
   if (askable === 0) {
     if (pending > 0) {
       return (
-        <p className="mt-3 rounded-2xl border border-gold/30 bg-gold/[0.06] px-4 py-3 text-xs leading-6 text-gold-ink">
+        <Card as="p" tone="warn" className="mt-3 px-4 py-3 text-xs leading-6 text-gold-ink">
           طلبك على {pending === 1 ? "دورة واحدة" : `${pending} دورات`} قيد المراجعة. نحجز مقاعدك ثمّ تصلك
           فاتورةٌ واحدة للخطّة كلها — دفعةٌ واحدة لا أربع.
-        </p>
+        </Card>
       );
     }
     if (awaiting === 0) return null;

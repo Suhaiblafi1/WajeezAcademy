@@ -438,10 +438,10 @@ export default function CourseJourney({
                 حتى {MAX_PATHWAY_COURSES} دورات في المسار.
               </p>
               {edit.addReason && (
-                <p className="mt-2 flex items-start gap-1.5 rounded-xl border border-teal-light/25 bg-teal/[0.06] px-3 py-2 text-fine leading-5 text-teal-light-ink">
+                <Inset as="p" tone="accent" className="mt-2 flex items-start gap-1.5 border-teal-light/25 px-3 py-2 text-fine leading-5 text-teal-light-ink">
                   <Tag className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span className="min-w-0">{edit.addReason}</span>
-                </p>
+                </Inset>
               )}
 
               <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">

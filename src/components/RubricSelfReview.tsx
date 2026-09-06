@@ -133,10 +133,10 @@ export default function RubricSelfReview({
       </div>
 
       {answered === rubric.criteria.length && lowest !== undefined && lowest < 3 && (
-        <p className="mt-3 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-6 text-amber-100">
+        <Card as="p" tone="warn" className="mt-3 text-xs leading-6 text-amber-100">
           أدنى ما حكمتَ به على نفسك {fmtNum(lowest)} — وهذا موضعُ عملك قبل التسليم،
           لا بعد التقييم.
-        </p>
+        </Card>
       )}
     </section>
   );

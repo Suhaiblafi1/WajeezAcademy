@@ -297,13 +297,10 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                     </div>
                     {/* والجرسُ لا ينتهي عند ستّة: يقود إلى البابِ الواحد الذي
                         يجمع التنبيهاتَ وتعليقاتِ المدرّب وردودَ الدعم. */}
-                    <Link
-                      to="/student/inbox"
-                      onClick={() => setBellOpen(false)}
-                      className="mt-2 block rounded-xl border border-white/10 px-3 py-2 text-center text-fine font-bold text-teal-light-ink transition hover:border-white/30"
-                    >
+                    <Inset as={Link} tone="accent" interactive to="/student/inbox"
+                      onClick={() => setBellOpen(false)} className="mt-2 block px-3 py-2 text-center text-fine font-bold text-teal-light-ink transition hover:border-white/30">
                       افتح «الرسائل والتنبيهات»
-                    </Link>
+                    </Inset>
                   </Inset>
                 </>
               )}

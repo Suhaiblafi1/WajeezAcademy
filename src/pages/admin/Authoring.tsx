@@ -244,12 +244,12 @@ export default function Authoring() {
       )}
 
       {error && (
-        <p className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-xs leading-6 text-amber-200">{error}</p>
+        <Inset as="p" tone="warn" className="mb-4 px-4 py-3 text-xs leading-6 text-amber-200">{error}</Inset>
       )}
 
       <div className="grid gap-5 lg:grid-cols-[22rem_1fr]">
         {/* ── الطابور ── */}
-        <aside className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+        <Card as="aside">
           <div className="mb-3 flex items-center gap-2">
             <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
             {/* الاسمُ لا النصُّ النائب: النائبُ يزول عند الكتابة فلا يصلح
@@ -344,7 +344,7 @@ export default function Authoring() {
           <button type="button" onClick={() => void loadWork()} className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground hover:text-foreground">
             <RefreshCw className="h-3 w-3" /> تحديث الطابور
           </button>
-        </aside>
+        </Card>
 
         {/* ── المحرّر ── */}
         <Card as="section">
@@ -444,7 +444,7 @@ export default function Authoring() {
               </div>
 
               {notice && (
-                <p className="mt-4 rounded-xl border border-teal/30 bg-teal/10 px-4 py-2.5 text-xs leading-6 text-teal-ink">{notice}</p>
+                <Inset as="p" tone="accent" className="mt-4 px-4 py-2.5 text-xs leading-6 text-teal-ink">{notice}</Inset>
               )}
 
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
@@ -540,9 +540,9 @@ export default function Authoring() {
                       </button>
                     </Inset>
                   ) : (
-                    <p className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-micro leading-6 text-muted-foreground">
+                    <Inset as="p" className="w-full text-micro leading-6 text-muted-foreground">
                       اعتُمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّةِ صلاحيةٍ لا يملكها حسابك.
-                    </p>
+                    </Inset>
                   )
                 )}
               </div>

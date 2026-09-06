@@ -16,6 +16,7 @@ import EmptyState from "@/components/EmptyState";
 import { countAr } from "@/application/text/count-ar";
 
 import Button from "@/components/ui/Button";
+import { Inset } from "@/components/ui/Surface";
 const ICON: Record<InboxKind, typeof Bell> = {
   notification: Bell,
   trainer_feedback: MessageSquare,
@@ -109,7 +110,7 @@ export default function Inbox() {
         })}
       </div>
 
-      {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
+      {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {items === null ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" /></div>

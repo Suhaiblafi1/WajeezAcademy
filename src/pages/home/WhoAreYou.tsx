@@ -26,6 +26,7 @@ import { Link } from 'react-router'
 import { ArrowLeft, Compass } from 'lucide-react'
 import { STAGE_OPTIONS_AR, STAGE_PARAM } from '@/application/diagnostic/entry-stage'
 import SectionLabel from './SectionLabel'
+import { Card } from "@/components/ui/Surface";
 
 export function WhoAreYou() {
   return (
@@ -42,13 +43,14 @@ export function WhoAreYou() {
       <ul className="reveal mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {STAGE_OPTIONS_AR.map((stage) => (
           <li key={stage}>
-            <Link
+            <Card
+              as={Link} interactive
               to={`/diagnostic?${STAGE_PARAM}=${encodeURIComponent(stage)}`}
-              className="group flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-sm font-bold text-foreground transition hover:border-teal/50 hover:bg-teal/[0.06]"
+              className="group flex min-h-14 items-center justify-between gap-3 px-5 py-3.5 text-sm font-bold text-foreground"
             >
               <span className="min-w-0">{stage}</span>
               <ArrowLeft className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:text-teal-light-ink" aria-hidden="true" />
-            </Link>
+            </Card>
           </li>
         ))}
       </ul>

@@ -225,9 +225,9 @@ export default function CohortBoard() {
             <section>
               <h2 className="mb-4 flex items-center gap-2 text-lg font-black"><Users className="h-5 w-5 text-teal-light-ink" /> شعبي</h2>
               {cohorts.length === 0 ? (
-                <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-12 text-center text-sm text-muted-foreground">
+                <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
                   لا شعب مسندة إليك بعد — ستظهر هنا فور إسناد الإدارة لك.
-                </p>
+                </Panel>
               ) : (
                 <div className="space-y-4">
                   {cohorts.map(({ role, cohort: c }) => {
@@ -553,8 +553,8 @@ export default function CohortBoard() {
                 كانا قسمَين في هذا اللوح من ٧٢٤ سطرا، مدفونَين تحت الحضور
                 والموادّ والتكليفات والرسائل. فنُقل التصحيحُ إلى `GradingQueue`
                 — التبويبِ الذي يحمل اسمَه — واقتراحاتُ التأجيل إلى `Schedule`
-                حيث المواعيد. وأعادهما ترحيلُ الأسطح الآليُّ مرّةً، فيُحذفان
-                ثانيةً ويُكتب هنا لماذا. */}
+                حيث المواعيد. وأعادهما ترحيلُ الأسطح الآليُّ مرّتين، فيُحذفان
+                ثالثةً ويبقى هذا السطرُ يقول لمن يأتي بعدُ لماذا. */}
           </div>
         )}
       </div>

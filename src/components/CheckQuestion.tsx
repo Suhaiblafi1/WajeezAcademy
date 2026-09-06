@@ -5,6 +5,7 @@
 import { Check, X } from "lucide-react";
 import type { ModuleCheck } from "@/application/content/module-checks";
 
+import { Inset } from "@/components/ui/Surface";
 export default function CheckQuestion({
   check,
   index,
@@ -56,10 +57,10 @@ export default function CheckQuestion({
         })}
       </div>
       {shown && (
-        <p className="mt-2 rounded-xl border border-white/8 bg-paper/20 px-3.5 py-2.5 text-micro leading-6 text-foreground">
+        <Inset as="p" className="mt-2 px-3.5 py-2.5 text-micro leading-6 text-foreground">
           {chosen === check.correctIndex ? "صحيح. " : "غير صحيح. "}
           {check.explainAr ?? "الجواب الصحيح موضَّح أعلاه."}
-        </p>
+        </Inset>
       )}
     </div>
   );

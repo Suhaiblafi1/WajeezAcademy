@@ -32,6 +32,7 @@ import { apiGet, ApiError } from "@/services/api";
 import { matchesQuery } from "@/application/text/search-ar";
 import { Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { controlCls } from "@/components/FormKit";
 
 interface TrainerCohort {
   cohort: {
@@ -199,7 +200,7 @@ export default function TrainerMyLearners() {
               <span className="sr-only">ابحث في متعلّميك</span>
               <input
                 value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسمٍ أو شعبة"
-                className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+                className={controlCls}
               />
             </label>
           </Panel>

@@ -264,9 +264,9 @@ export default function BuyPanel({
         )}
 
         {loaded && buyable.length === 0 && (
-          <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm leading-6 text-muted-foreground">
+          <Card as="p" className="mt-6 text-sm leading-6 text-muted-foreground">
             لا شعبة مفتوحة لهذه الدورات الآن. افتح مسارك في منصّتك وسنُعلمك فور فتح أوّل شعبة.
-          </p>
+          </Card>
         )}
 
         {loaded && buyable.length > 0 && (
@@ -354,14 +354,14 @@ export default function BuyPanel({
             {/* ما استُبعد يُسمّى: الخادمُ «كلُّ شيءٍ أو لا شيء»، فإسقاطُه صامتا
                 يجعل المشتريَ يظنّ أنّه اشترى ما لم يشترِه. */}
             {withoutCohort.length > 0 && (
-              <p className="mt-3 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-fine leading-5 text-muted-foreground">
+              <Card as="p" className="mt-3 flex items-start gap-2 text-fine leading-5 text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
                   <span className="text-foreground">{withoutCohort.map((l) => l.name).join("، ")}</span>. تبقى في
                   مسارك، ونُعلمك فور فتح شعبتها.
                 </span>
-              </p>
+              </Card>
             )}
 
             {/* الكود — يُرسَل فعلا. وكان يُعرض على الشاشة ولا يُرسَل أصلا. */}
@@ -388,10 +388,10 @@ export default function BuyPanel({
             {/* لا شيء يُشترى: كلُّه مملوكٌ أو محجوز — يُقال صراحةً بدل صفٍّ
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
             {nothingLeft && (
-              <p className="mt-4 rounded-2xl border border-teal/35 bg-teal/[0.07] p-4 text-xs leading-6 text-teal-light-ink">
+              <Card as="p" tone="accent" className="mt-4 text-xs leading-6 text-teal-light-ink">
                 كلُّ ما في هذا الطلب لك بالفعل — لا شيء يُدفع ثمنُه مرّةً أخرى.
                 تجد شعبك ومقاعدك المحجوزة في «تعلّمي».
-              </p>
+              </Card>
             )}
 
             {/* الحساب — كلُّ سطرٍ منه من الخادم */}
@@ -484,9 +484,9 @@ export default function BuyPanel({
             )}
 
             {error && (
-              <p className="mt-3 rounded-xl border border-red-400/30 bg-red-400/[0.07] px-3 py-2 text-xs leading-5 text-red-200">
+              <Inset as="p" tone="danger" className="mt-3 px-3 py-2 text-xs leading-5 text-red-200">
                 {error}
-              </p>
+              </Inset>
             )}
 
             {!nothingLeft && (

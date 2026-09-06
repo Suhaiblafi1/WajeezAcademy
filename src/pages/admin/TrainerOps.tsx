@@ -10,6 +10,8 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
+import { Card, Inset, Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
 
@@ -31,20 +33,27 @@ const CR_STATUS_AR: Record<string, string> = {
   published: "منشور", rejected: "مرفوض", withdrawn: "مسحوب", scheduled: "مجدول للنشر",
 };
 
-/* «طيّة» لا «بطاقة»: البطاقةُ درجةٌ في سلّم الأسطح، وهذه عنصرٌ قابلٌ للطيّ
-   يبنيها. وتسميتُهما بالاسم نفسِه في ملفٍّ واحدٍ تظليلٌ يخفي أيَّهما يُقصَد. */
-function Fold({ icon: Icon, title, children, defaultOpen = false }: {
+/* قسمٌ يُطوى — كان اسمُه `Card`، وهو ليس بطاقةً بل قسمٌ له عنوانٌ ويُفتح
+   ويُغلق. والاسمُ الخاطئُ تعارض مع `Card` في سلّم الأسطح فأوقف ترحيلَ هذا
+   الملفّ كلِّه. فسُمّي بما هو.
+
+   وأُضيف ما كان ينقصه: `aria-expanded` و`aria-controls` — فمن يقرأ بأذنه كان
+   يسمع زرّا لا يعرف أمفتوحٌ هو أم مغلق، ولا ما الذي يفتحه. */
+function FoldSection({ icon: Icon, title, children, defaultOpen = false }: {
   icon: typeof Star; title: string; children: React.ReactNode; defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const bodyId = `fold-${title.replace(/\s+/g, "-")}`;
   return (
-    <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
-      <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
+    <Panel as="article">
+      <button type="button" onClick={() => setOpen(!open)}
+        aria-expanded={open} aria-controls={bodyId}
+        className="flex w-full cursor-pointer items-center justify-between text-sm font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-4 focus-visible:ring-offset-paper">
         <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
-      {open && <div className="mt-4">{children}</div>}
-    </article>
+      {open && <div id={bodyId} className="mt-4">{children}</div>}
+    </Panel>
   );
 }
 
@@ -110,24 +119,24 @@ export function TrainerDetailOps({ app, onAction }: {
   return (
     <>
       {/* المقابلات */}
-      <Fold icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
+      <FoldSection icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
         <div className="space-y-3">
           {app.interviews.map((iv) => (
-            <div key={iv.id} className="rounded-xl border border-white/10 bg-paper/20 p-3 text-xs">
+            <Inset key={iv.id} className="text-xs">
               <p className="font-bold">{fmtDateTime(new Date(iv.scheduledAt))} — {iv.outcome ?? "بلا نتيجة"}</p>
               {!iv.outcome && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {([["passed", "ناجح"], ["hold", "تعليق"], ["failed", "راسب"]] as const).map(([o, label]) => (
-                    <button key={o} onClick={() => void onAction(
+                    <Button tone="secondary" size="sm" key={o} onClick={() => void onAction(
                       () => apiPost(`/api/admin/trainer-interviews/${iv.id}/outcome`, { outcome: o }),
                       "سُجلت نتيجة المقابلة",
-                    )} className="cursor-pointer rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink">
+                    )} className="text-micro">
                       {label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
-            </div>
+            </Inset>
           ))}
           <div className="grid gap-2 sm:grid-cols-3">
             <input type="datetime-local" value={interviewForm.scheduledAt}
@@ -139,21 +148,20 @@ export function TrainerDetailOps({ app, onAction }: {
             <input value={interviewForm.notes} onChange={(e) => setInterviewForm({ ...interviewForm, notes: e.target.value })}
               placeholder="ملاحظات (اختياري)" className={inputCls} />
           </div>
-          <button disabled={!interviewForm.scheduledAt}
+          <Button tone="confirm" size="sm" disabled={!interviewForm.scheduledAt}
             onClick={() => void onAction(
               () => apiPost(`/api/admin/trainer-applications/${app.id}/interviews`, {
                 scheduledAt: new Date(interviewForm.scheduledAt), mode: interviewForm.mode, notes: interviewForm.notes || undefined,
               }),
               "جُدولت المقابلة وانتقل الطلب",
-            )}
-            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+            )}>
             جدولة مقابلة
-          </button>
+          </Button>
         </div>
-      </Fold>
+      </FoldSection>
 
       {/* تقييم الديمو */}
-      <Fold icon={Star} title="تقييم الدرس التجريبي (Demo)">
+      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)">
         <RubricInput scores={demoScores} onChange={setDemoScores} />
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
@@ -164,20 +172,19 @@ export function TrainerDetailOps({ app, onAction }: {
           ))}
         </div>
         <textarea value={demoNotes} onChange={(e) => setDemoNotes(e.target.value)} rows={2} placeholder="ملاحظات التقييم…" className={`${inputCls} mt-3`} />
-        <button disabled={!demoComplete}
+        <Button tone="confirm" size="sm" disabled={!demoComplete}
           onClick={() => void onAction(
             () => apiPost(`/api/admin/trainer-applications/${app.id}/demo-evaluations`, {
               scores: demoScores, decision: demoDecision, notes: demoNotes || undefined,
             }),
             "سُجل تقييم الديمو",
-          )}
-          className="mt-3 cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+          )} className="mt-3">
           سجّل تقييم الديمو
-        </button>
-      </Fold>
+        </Button>
+      </FoldSection>
 
       {/* المراجع المهنية */}
-      <Fold icon={UserCheck} title="المراجع المهنية">
+      <FoldSection icon={UserCheck} title="المراجع المهنية">
         <div className="grid gap-2 sm:grid-cols-2">
           <input value={refForm.name} onChange={(e) => setRefForm({ ...refForm, name: e.target.value })} placeholder="اسم المرجع" className={inputCls} />
           <input value={refForm.relation} onChange={(e) => setRefForm({ ...refForm, relation: e.target.value })} placeholder="العلاقة (مدير سابق…)" className={inputCls} />
@@ -185,49 +192,45 @@ export function TrainerDetailOps({ app, onAction }: {
           <input value={refForm.note} onChange={(e) => setRefForm({ ...refForm, note: e.target.value })} placeholder="ملاحظة" className={inputCls} />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button disabled={refForm.name.trim().length < 2}
+          <Button tone="confirm" size="sm" disabled={refForm.name.trim().length < 2}
             onClick={() => void onAction(
               () => apiPost(`/api/admin/trainer-applications/${app.id}/references`, {
                 name: refForm.name, relation: refForm.relation || undefined,
                 contact: refForm.contact || undefined, note: refForm.note || undefined,
               }),
               "أُضيف المرجع",
-            )}
-            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+            )}>
             أضف مرجعا
-          </button>
+          </Button>
           <input value={verifyId} onChange={(e) => setVerifyId(e.target.value)} placeholder="معرف مرجع للتوثيق (UUID)" dir="ltr" className={`${inputCls} max-w-56 font-mono`} />
-          <button disabled={!verifyId.trim()}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId.trim()}/verify`), "وُثق المرجع")}
-            className="cursor-pointer rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+          <Button tone="secondary" size="sm" disabled={!verifyId.trim()}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId.trim()}/verify`), "وُثق المرجع")}>
             توثيق
-          </button>
+          </Button>
         </div>
-      </Fold>
+      </FoldSection>
 
       {/* العقد */}
-      <Fold icon={FileSignature} title="العقد والتوقيع">
+      <FoldSection icon={FileSignature} title="العقد والتوقيع">
         <div className="flex flex-wrap gap-2">
           <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}
             placeholder="عنوان العقد — عقد تدريب 2026" className={`${inputCls} flex-1`} />
-          <button disabled={contractForm.title.trim().length < 3}
+          <Button tone="confirm" size="sm" disabled={contractForm.title.trim().length < 3}
             onClick={() => void onAction(async () => {
               const c = await apiPost<{ id: string }>(`/api/admin/trainer-applications/${app.id}/contracts`, { title: contractForm.title });
               setLastContractId(c.id);
-            }, "أُنشئ العقد وأُرسل — الطلب في contract_pending")}
-            className="cursor-pointer rounded-full bg-teal px-4 py-1.5 text-xs font-black text-on-teal hover:bg-teal-light disabled:opacity-40">
+            }, "أُنشئ العقد وأُرسل — الطلب في contract_pending")}>
             أنشئ وأرسل
-          </button>
+          </Button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           <input value={lastContractId} onChange={(e) => setLastContractId(e.target.value)} placeholder="معرف العقد (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-          <button disabled={!lastContractId.trim()}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId.trim()}/sign`), "سُجل التوقيع — الطلب في التهيئة")}
-            className="cursor-pointer rounded-full border border-emerald-400/40 px-4 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+          <Button tone="secondary" size="sm" disabled={!lastContractId.trim()}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId.trim()}/sign`), "سُجل التوقيع — الطلب في التهيئة")}>
             سجّل التوقيع
-          </button>
+          </Button>
         </div>
-      </Fold>
+      </FoldSection>
 
       {/* الشعبُ المؤهَّل لها — عرضٌ لا تحكّم.
 
@@ -244,7 +247,7 @@ export function TrainerDetailOps({ app, onAction }: {
           مؤهَّل**. وأمّا «مُسنَدٌ إلى ماذا» فيُقرأ من الشعبة نفسِها لا من
           ملفّه، فمصدرُ الإسناد هناك. */}
       {app.profile && (
-        <Fold icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
+        <FoldSection icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
           {(app.summary?.qualifiedCourses?.length ?? 0) === 0 ? (
             <p className="text-micro leading-6 text-muted-foreground">
               لا دورة مؤهَّلا لها بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها — وموافقة المدير
@@ -264,7 +267,7 @@ export function TrainerDetailOps({ app, onAction }: {
               وله {app.summary!.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
             </p>
           )}
-        </Fold>
+        </FoldSection>
       )}
     </>
   );
@@ -349,15 +352,15 @@ export function TrainerChangeRequests() {
 
   return (
     <div className="space-y-3">
-      {msg && <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-foreground" role="status">{msg}</p>}
+      {msg && <Inset as="p" className="text-xs font-bold text-foreground" role="status">{msg}</Inset>}
       {rows.length === 0 && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm text-muted-foreground">لا اقتراحات من المدربين بعد — تصل من بوابة المدرب ← «اقتراحاتي».</p>
-        </div>
+        </Panel>
       )}
       {rows.map((r) => (
-        <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card key={r.id}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -379,22 +382,18 @@ export function TrainerChangeRequests() {
               <input value={comment[r.id] ?? ""} onChange={(e) => setComment({ ...comment, [r.id]: e.target.value })}
                 placeholder="تعليق المراجع (اختياري)" className={inputCls} />
               <div className="flex flex-wrap gap-2">
-                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_cohort", comment: comment[r.id] || undefined }), "اعتُمد للشعبة")}
-                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_cohort", comment: comment[r.id] || undefined }), "اعتُمد للشعبة")}>
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للشعبة
-                </button>
-                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_catalog", comment: comment[r.id] || undefined }), "اعتُمد للكتالوج")}
-                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                </Button>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_catalog", comment: comment[r.id] || undefined }), "اعتُمد للكتالوج")}>
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للكتالوج
-                </button>
-                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "request_changes", comment: comment[r.id] || "راجع التفاصيل" }), "طُلب تعديل")}
-                  className="flex cursor-pointer items-center gap-1 rounded-full border border-amber-400/40 px-3 py-1.5 text-xs font-bold text-amber-300 disabled:opacity-40">
+                </Button>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "request_changes", comment: comment[r.id] || "راجع التفاصيل" }), "طُلب تعديل")}>
                   <XCircle className="h-3.5 w-3.5" /> طلب تعديل
-                </button>
-                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "reject", comment: comment[r.id] || "مرفوض" }), "رُفض الاقتراح")}
-                  className="flex cursor-pointer items-center gap-1 rounded-full border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
+                </Button>
+                <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "reject", comment: comment[r.id] || "مرفوض" }), "رُفض الاقتراح")}>
                   <XCircle className="h-3.5 w-3.5" /> رفض
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -406,7 +405,7 @@ export function TrainerChangeRequests() {
               onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
             />
           )}
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -459,15 +458,12 @@ function ImpactGate({
       {needsImpact && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
+            <Button tone="confirm" type="button"
               disabled={running}
-              onClick={() => void run()}
-              className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-4 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10 disabled:opacity-40"
-            >
+              onClick={() => void run()} className="min-h-11 text-teal-light-ink">
               {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Activity className="h-3.5 w-3.5" />}
               {running ? "يشغّل ١٢ شخصية…" : "افحص الأثر التشخيصي"}
-            </button>
+            </Button>
             {checked === false && !verdict && (
               <span className="text-micro font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
             )}
@@ -506,13 +502,10 @@ function ImpactGate({
         </>
       )}
 
-      <button
-        disabled={busy || (needsImpact && checked !== true)}
-        onClick={onPublish}
-        className="mt-2 flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 text-xs font-black text-on-gold disabled:cursor-not-allowed disabled:opacity-40"
-      >
+      <Button tone="primary" disabled={busy || (needsImpact && checked !== true)}
+        onClick={onPublish} className="mt-2 min-h-11 disabled:cursor-not-allowed">
         <Globe className="h-3.5 w-3.5" /> نشر في النطاق
-      </button>
+      </Button>
     </div>
   );
 }
@@ -659,15 +652,14 @@ export function TrainerPayouts() {
           <input type="checkbox" checked={showCancelledZero} onChange={(e) => setShowCancelledZero(e.target.checked)} className="accent-gold" />
           إظهار الملغاة الصفرية
         </label>
-        <button onClick={() => setShowCreate(!showCreate)}
-          className="flex cursor-pointer items-center gap-1.5 rounded-full bg-gold px-4 py-2 text-xs font-black text-on-gold">
+        <Button tone="primary" onClick={() => setShowCreate(!showCreate)}>
           <Banknote className="h-3.5 w-3.5" /> كشف يدوي جديد
-        </button>
+        </Button>
         {msg && <span className="text-xs font-bold text-teal-light-ink" role="status">{msg}</span>}
       </div>
 
       {/* قاعدة الأتعاب — تحدد كيف تُحسب مستحقات كل مدرب تلقائياً */}
-      <Fold icon={Settings2} title="قواعد الأتعاب — كيف يُحسب أجر كل مدرب">
+      <FoldSection icon={Settings2} title="قواعد الأتعاب — كيف يُحسب أجر كل مدرب">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <select value={ruleForm.profileId} onChange={(e) => setRuleForm({ ...ruleForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -690,23 +682,22 @@ export function TrainerPayouts() {
               <option value="">عامة — كل الشعب</option>
               {allCohorts.map((c) => <option key={c.id} value={c.id}>خاصة: {c.title}</option>)}
             </select>
-            <button disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}
-              className="cursor-pointer rounded-full bg-gold px-4 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
+            <Button tone="primary" size="sm" disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}>
               حفظ القاعدة
-            </button>
+            </Button>
           </div>
           {ruleForm.profileId && (() => {
             const active = rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo
               && !r.cohortId && !r.courseId && !ruleForm.cohortId)
               ?? rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo && r.cohortId === ruleForm.cohortId && ruleForm.cohortId);
             return (
-              <p className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-micro text-muted-foreground">
+              <Inset as="p" className="px-3 py-2 text-micro text-muted-foreground">
                 {active
                   ? <>القاعدة السارية{active.cohortId ? " لهذه الشعبة" : " (العامة)"}: <b className="text-foreground">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-foreground">{Number(active.rate)}</b> {active.currency}
                       {active.type === "per_seat" && active.minSeats > 0 ? <> · حد أدنى <b className="text-foreground">{active.minSeats}</b> مقاعد</> : null}
                       {" "}— حفظ قاعدة جديدة بنفس النطاق يغلقها تلقائياً دون مسح تاريخها.</>
                   : "لا قاعدة سارية بهذا النطاق بعد — بدونها لن يُولَّد أي كشف تلقائي."}
-              </p>
+              </Inset>
             );
           })()}
           <p className="text-micro leading-5 text-muted-foreground">
@@ -714,27 +705,25 @@ export function TrainerPayouts() {
             مثال: معدل 40 وحد أدنى 5، سجّل 3 ← يُحتسب 5 × 40.
           </p>
         </div>
-      </Fold>
+      </FoldSection>
 
       {/* التوليد التلقائي من الشعب المكتملة */}
-      <Fold icon={Zap} title="توليد تلقائي من شعبة مكتملة">
+      <FoldSection icon={Zap} title="توليد تلقائي من شعبة مكتملة">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <select value={genCohortId} onChange={(e) => { setGenCohortId(e.target.value); setPreview(null); }} className={`${selectCls} flex-1`}>
               <option value="">اختر شعبة مكتملة…</option>
               {allCohorts.filter((c) => c.status === "completed").map((c) => <option key={c.id} value={c.id}>{c.title} — {c.courseTitle}</option>)}
             </select>
-            <button disabled={busy || !genCohortId} onClick={() => void doPreview()}
-              className="cursor-pointer rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink disabled:opacity-40">
+            <Button tone="secondary" size="sm" disabled={busy || !genCohortId} onClick={() => void doPreview()} className="text-teal-light-ink">
               معاينة الحساب
-            </button>
-            <button disabled={busy} onClick={doBatch}
-              className="cursor-pointer rounded-full border border-gold/40 px-4 py-1.5 text-xs font-bold text-gold-ink disabled:opacity-40">
+            </Button>
+            <Button tone="secondary" size="sm" disabled={busy} onClick={doBatch} className="text-gold-ink">
               توليد كل المكتملة دفعة واحدة
-            </button>
+            </Button>
           </div>
           {preview && (
-            <div className="space-y-2 rounded-2xl border border-teal/25 bg-teal/5 p-4">
+            <Card tone="accent" className="space-y-2">
               <p className="text-xs font-black">
                 {preview.profile.fullName} · قاعدة «{RULE_TYPE_AR[preview.rule.type]}»
                 {preview.rule.scope !== "general" ? " (مخصصة لهذه الشعبة/الدورة)" : ""} بمعدل <span dir="ltr" className="font-mono">{preview.rule.rate}</span> {preview.rule.currency}
@@ -750,30 +739,29 @@ export function TrainerPayouts() {
               </ul>
               <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2">
                 <p className="text-sm font-black">الإجمالي: <span dir="ltr" className="font-mono">{preview.total.toLocaleString("en-US", { maximumFractionDigits: 2 })}</span> {preview.rule.currency}</p>
-                <button disabled={busy || preview.total <= 0} onClick={doGenerate}
-                  className="cursor-pointer rounded-full bg-emerald-500 px-4 py-1.5 text-xs font-black text-white disabled:opacity-40">
+                <Button tone="ghost" size="sm" disabled={busy || preview.total <= 0} onClick={doGenerate} className="bg-emerald-500 text-white">
                   توليد الكشف — بانتظار الاعتماد
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           )}
           {batchResult && (
-            <div className="space-y-1 rounded-2xl border border-white/10 bg-paper/20 p-4 text-micro leading-6">
+            <Inset className="space-y-1 text-micro leading-6">
               <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
               {batchResult.skipped.map((s, i) => (
                 <p key={i} className="text-muted-foreground">تُركت «{s.title}»: {s.reason}</p>
               ))}
-            </div>
+            </Inset>
           )}
           <p className="text-micro leading-5 text-muted-foreground">
             اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
             وكلها تمنع التكرار: شعبة واحدة لا تُولّد كشفين لنفس المدرب أبداً.
           </p>
         </div>
-      </Fold>
+      </FoldSection>
 
       {showCreate && (
-        <div className="space-y-3 rounded-3xl border border-gold/25 bg-gold/5 p-5">
+        <Panel tone="warn" className="space-y-3">
           <p className="text-sm font-black">كشف مستحقات جديد <span className="text-micro font-bold text-muted-foreground">— يولد بحالة «بانتظار الاعتماد»</span></p>
           <div className="flex flex-wrap gap-2">
             <select value={form.profileId} onChange={(e) => setForm({ ...form, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -803,17 +791,15 @@ export function TrainerPayouts() {
             </div>
           ))}
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])}
-              className="cursor-pointer rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground hover:border-white/40">
+            <Button tone="secondary" size="sm" onClick={() => setItems([...items, { description: "", amount: "", sourceRef: "" }])} className="text-micro">
               + بند آخر
-            </button>
-            <button disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
-              onClick={create}
-              className="cursor-pointer rounded-full bg-gold px-5 py-1.5 text-xs font-black text-on-gold disabled:opacity-40">
+            </Button>
+            <Button tone="primary" size="sm" disabled={busy || !form.profileId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(form.period) || items.some((i) => i.description.trim().length < 3 || !(Number(i.amount) > 0))}
+              onClick={create}>
               إنشاء الكشف
-            </button>
+            </Button>
           </div>
-        </div>
+        </Panel>
       )}
 
       {(() => {
@@ -827,13 +813,13 @@ export function TrainerPayouts() {
               </p>
             )}
             {visibleRows.length === 0 && (
-              <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+              <Panel className="grid place-items-center py-16 text-center">
                 <Banknote className="h-10 w-10 text-muted-foreground/50" />
                 <p className="mt-3 text-sm text-muted-foreground">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
-              </div>
+              </Panel>
             )}
             {visibleRows.map((p) => (
-        <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card key={p.id}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -858,27 +844,24 @@ export function TrainerPayouts() {
           {(p.status === "pending" || p.status === "approved") && (
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
               {p.status === "pending" && (
-                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتُمد الكشف")}
-                  className="flex cursor-pointer items-center gap-1 rounded-full border border-emerald-400/40 px-3 py-1.5 text-xs font-bold text-emerald-300 disabled:opacity-40">
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتُمد الكشف")}>
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد
-                </button>
+                </Button>
               )}
               {p.status === "approved" && (
-                <button disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سُجل الصرف")}
-                  className="flex cursor-pointer items-center gap-1 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-black text-white disabled:opacity-40">
+                <Button tone="ghost" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سُجل الصرف")} className="bg-emerald-500 text-white">
                   <CheckCircle2 className="h-3.5 w-3.5" /> تأكيد الصرف
-                </button>
+                </Button>
               )}
               <input value={cancelReason[p.id] ?? ""} onChange={(e) => setCancelReason({ ...cancelReason, [p.id]: e.target.value })}
                 placeholder="سبب الإلغاء…" className={`${inputCls} max-w-48`} />
-              <button disabled={busy || (cancelReason[p.id] ?? "").trim().length < 5}
-                onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/cancel`, { reason: cancelReason[p.id] }), "أُلغي الكشف")}
-                className="flex cursor-pointer items-center gap-1 rounded-full border border-red-500/40 px-3 py-1.5 text-xs font-bold text-red-400 disabled:opacity-40">
+              <Button tone="danger" size="sm" disabled={busy || (cancelReason[p.id] ?? "").trim().length < 5}
+                onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/cancel`, { reason: cancelReason[p.id] }), "أُلغي الكشف")}>
                 <XCircle className="h-3.5 w-3.5" /> إلغاء
-              </button>
+              </Button>
             </div>
           )}
-        </div>
+        </Card>
             ))}
           </>
         );

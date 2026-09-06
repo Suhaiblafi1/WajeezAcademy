@@ -68,7 +68,7 @@ export default function StaffInbox() {
       </div>
 
       {error && (
-        <p role="alert" className="rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-xs font-bold text-red-200">{error}</p>
+        <Card as="p" tone="danger" role="alert" className="px-4 py-3 text-xs font-bold text-red-200">{error}</Card>
       )}
 
       {items === null && !error && (
@@ -78,10 +78,10 @@ export default function StaffInbox() {
       )}
 
       {items !== null && items.length === 0 && (
-        <p className="flex items-center gap-2 rounded-2xl border border-teal/25 bg-teal/[0.05] px-4 py-3.5 text-xs font-bold text-teal-light-ink">
+        <Card as="p" tone="accent" className="flex items-center gap-2 px-4 py-3.5 text-xs font-bold text-teal-light-ink">
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           لا شيءَ ينتظرك الآن — لا اقتراحَ تأجيلٍ ولا طلبَ شهادةٍ ولا جلسةَ ناقصةٍ هذا الأسبوع.
-        </p>
+        </Card>
       )}
 
       {items !== null && items.length > 0 && (

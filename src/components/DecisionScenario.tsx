@@ -111,9 +111,9 @@ export default function DecisionScenario({
         <p className="text-micro text-muted-foreground">قرارك يفتح مسارا — والمسار يظهر أثره</p>
       </div>
 
-      <p className="mt-3 whitespace-pre-line rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-4 py-3 text-sm leading-7">
+      <Card as="p" tone="accent" className="mt-3 whitespace-pre-line bg-teal-ink/[0.06] px-4 py-3 text-sm leading-7">
         {scenario.situationAr}
-      </p>
+      </Card>
       <p className="mt-2 text-micro leading-6 text-muted-foreground">{NO_GRADE_NOTE}</p>
 
       {/* المسار المقطوع — القرار وأثره، فلا تأمل بلا تذكّر */}

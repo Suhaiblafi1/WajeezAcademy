@@ -7,7 +7,7 @@ import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import CourseTitle from "@/components/CourseTitle";
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
@@ -154,7 +154,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
 
       {/* شريط البحث والترتيب */}
       <div className="mt-10 flex flex-col gap-3 md:flex-row md:items-center">
-        <label className="flex flex-1 items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 transition focus-within:border-teal/60">
+        <Card as="label" tone="accent" className="flex flex-1 items-center gap-2.5 px-4 py-3 transition focus-within:border-teal/60">
           <Search className="h-4.5 w-4.5 shrink-0 text-muted-foreground" />
           <span className="sr-only">{isPathways ? 'ابحث في المسارات' : 'ابحث في الدورات'}</span>
           <input
@@ -164,8 +164,8 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             placeholder={isPathways ? 'ابحث باسم مسار أو مهارة…' : 'ابحث باسم دورة أو مهارة…'}
             className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/75"
           />
-        </label>
-        <label className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+        </Card>
+        <Card as="label" className="flex items-center gap-2.5 px-4 py-3">
           <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
           <span className="text-xs text-muted-foreground">الترتيب</span>
           <select
@@ -179,7 +179,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             <option value="longest">الأعمق زمنا</option>
             <option value="name">أبجدي</option>
           </select>
-        </label>
+        </Card>
       </div>
 
       {/* فلاتر المجال (مسارات) أو الفئة (دورات) والمستوى */}
@@ -286,13 +286,10 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                 {pathwaySizeAr(p)} · {p.weeklyHours} أسبوعيا
               </div>
               <div className="mt-auto pt-5">
-                <Link
-                  to={`/pathways/${p.id}`}
-                  onClick={() => track('pathway_viewed', { from: 'catalog' })}
-                  className="block rounded-xl border border-teal/40 py-2.5 text-center text-sm font-semibold text-teal-light-ink transition group-hover:bg-teal-deep group-hover:text-white"
-                >
+                <Inset as={Link} tone="accent" interactive to={`/pathways/${p.id}`}
+                  onClick={() => track('pathway_viewed', { from: 'catalog' })} className="block py-2.5 text-center text-sm font-semibold text-teal-light-ink transition group-hover:bg-teal-deep group-hover:text-white">
                   تفاصيل المسار
-                </Link>
+                </Inset>
               </div>
             </Panel>
           ))}

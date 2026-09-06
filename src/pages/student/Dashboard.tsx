@@ -17,7 +17,7 @@ import EmptyState from "@/components/EmptyState";
 import MyDeadlines from "@/components/MyDeadlines";
 import { fmtDate, fmtSession } from "@/application/text/format-ar";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
    الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
    كحقيقة قبل توثيقه واعتماده.
@@ -154,9 +154,9 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
           ))}
         </ul>
       ) : (
-        <p className="mt-4 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-fine leading-6 text-muted-foreground">
+        <Card as="p" className="mt-4 px-4 py-3 text-fine leading-6 text-muted-foreground">
           لا أثر مسجَّل في آخر {m.windowDays} يوما. وهذا ما تقوله السجلات — لا حكم فيه ولا عدّاد ينكسر.
-        </p>
+        </Card>
       )}
 
       {m.cohortPace && m.cohortPace.total > 0 && (
@@ -447,11 +447,10 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               </div>
               <div className="mt-3 space-y-2">
                 {pendingAssessments.slice(0, 3).map((a) => (
-                  <Link key={a.id} to="/student/learning"
-                    className="flex items-center justify-between gap-3 rounded-2xl border border-gold/25 bg-gold/5 px-4 py-2.5 transition hover:border-gold/50">
+                  <Card as={Link} tone="warn" interactive key={a.id} to="/student/learning" className="flex items-center justify-between gap-3 px-4 py-2.5 transition hover:border-gold/50">
                     <span className="text-xs font-bold text-foreground">{a.title} <span className="font-normal text-muted-foreground">· {a.cohortTitle}</span></span>
                     {a.dueAt && <span className="shrink-0 text-fine text-gold-ink">يستحق {fmtDate(new Date(a.dueAt))}</span>}
-                  </Link>
+                  </Card>
                 ))}
               </div>
             </div>
@@ -467,7 +466,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-fine font-black text-on-gold">{unread} جديد</span>}
           </div>
           <div className="mt-4 space-y-2.5">
-            {notifs.length === 0 && <p className="rounded-xl border border-white/5 px-3 py-6 text-center text-xs text-muted-foreground">لا إشعارات بعد</p>}
+            {notifs.length === 0 && <Inset as="p" className="px-3 py-6 text-center text-xs text-muted-foreground">لا إشعارات بعد</Inset>}
             {notifs.map((n) => (
               <p key={n.id} className={`rounded-xl border px-3 py-2.5 text-xs leading-6 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
                 <span className="block font-bold">{n.title}</span>
@@ -481,30 +480,30 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
       {/* روابط سريعة */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Link to="/student/skills" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+        <Panel as={Link} tone="accent" interactive to="/student/skills" className="block transition hover:border-teal/60">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <TrendingUp className="h-4 w-4" /> ملف مهاراتي
           </div>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">ما قِيس لك فعلا: فجواتك وما تُتقنه وما لم يُقس بعد</p>
-        </Link>
-        <Link to="/student/learning" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+        </Panel>
+        <Panel as={Link} tone="accent" interactive to="/student/learning" className="block transition hover:border-teal/60">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <CalendarDays className="h-4 w-4" /> مسارُ تعلّمي
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">مواعيد شعبك ووحداتُها وموادُّ كلِّ لقاء</p>
-        </Link>
-        <Link to="/student/certificates" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
+          <p className="mt-2 text-xs leading-6 text-muted-foreground">تصفح الشعب القادمة واطلب التسجيل فيما يناسبك</p>
+        </Panel>
+        <Panel as={Link} interactive to="/student/certificates" className="block transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
             <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine text-gold-ink">{certCount}</span>}
           </div>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">أرقام تحقق عامة تُشاركها مع أي جهة</p>
-        </Link>
-        <Link to="/student/support" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
+        </Panel>
+        <Panel as={Link} interactive to="/student/support" className="block transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
             <LifeBuoy className="h-4 w-4" /> الدعم
           </div>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">تذكرة دعم تصل لفريق العمليات مباشرة</p>
-        </Link>
+        </Panel>
       </div>
 
       <p className="mt-8 flex items-center justify-center gap-2 text-center text-fine text-muted-foreground">

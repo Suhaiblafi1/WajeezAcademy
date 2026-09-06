@@ -29,7 +29,6 @@ import {
   History,
   FileText,
 } from "lucide-react";
-import { Button } from "@/components/ui/legacy-button";
 import ThemeToggle from "@/components/ThemeToggle";
 import { track } from "@/services/analytics";
 import { apiPost } from "@/services/api";
@@ -77,6 +76,8 @@ import {
 } from "./diagnostic/ResultPlanCards";
 import { composedReason, templateCourseReason } from "./diagnostic/plan-reasons";
 
+import Button from "@/components/ui/Button";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 type DiagAnswers = Record<string, string>;
 type Stage = "intro" | "questions" | "skills" | "computing" | "result";
 
@@ -760,7 +761,7 @@ export default function Diagnostic() {
             ))}
           </div>
 
-          <Button
+          <Button tone="confirm"
             size="lg"
             onClick={begin}
             className="mt-8 h-14 rounded-full bg-gold px-10 text-lg font-black text-on-gold hover:bg-gold/90"
@@ -791,52 +792,51 @@ export default function Diagnostic() {
 
           {/* بطاقة الاستئناف — تشخيص غير مكتمل ينتظر صاحبه */}
           {savedProgress && (
-            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-teal/40 bg-teal/10 p-5">
+            <Card tone="accent" className="mx-auto mt-8 max-w-xl">
               <p className="flex items-center justify-center gap-2 text-sm font-bold text-teal-light-ink">
                 <History className="h-4 w-4" />
                 لديك تشخيص غير مكتمل — أجبت على {savedProgress.asked.length} من الأسئلة
               </p>
               <p className="mt-1.5 text-xs text-muted-foreground">إجاباتك محفوظة على جهازك — أكمل من حيث توقفت متى شئت</p>
               <div className="mt-4 flex flex-wrap justify-center gap-3">
-                <Button
+                <Button tone="confirm"
                   onClick={resume}
                   className="rounded-full bg-teal px-6 font-black text-on-teal hover:bg-teal/90"
                 >
                   أكمل من حيث توقفت
                   <ArrowLeft className="mr-2 h-4 w-4" />
                 </Button>
-                <Button
-                  variant="outline"
+                <Button tone="secondary"
                   onClick={discardSaved}
                   className="rounded-full border-white/20 text-foreground hover:bg-white/5"
                 >
                   احذفها وابدأ من جديد
                 </Button>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* نتيجة قديمة لم يمكن ترحيلها — حُذفت بأمان ونطلب إعادة التشخيص بوضوح */}
           {!savedProgress && !savedDone && discardedResultNotice && (
-            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-gold/40 bg-gold/[0.07] p-5">
+            <Card tone="warn" className="mx-auto mt-8 max-w-xl">
               <p className="flex items-center justify-center gap-2 text-sm font-bold text-gold-ink">
                 <History className="h-4 w-4" />
                 نتيجتك السابقة لم تعد صالحة
               </p>
               <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{discardedResultNotice}</p>
-            </div>
+            </Card>
           )}
 
           {/* نتيجة مكتملة محفوظة — لا نطلب المؤشر مرتين */}
           {!savedProgress && savedDone && (
-            <div className="mx-auto mt-8 max-w-xl rounded-2xl border border-teal/40 bg-teal/10 p-5">
+            <Card tone="accent" className="mx-auto mt-8 max-w-xl">
               <p className="flex items-center justify-center gap-2 text-sm font-bold text-teal-light-ink">
                 <History className="h-4 w-4" />
                 لديك نتيجة مؤشر محفوظة على جهازك
               </p>
               <p className="mt-1.5 text-xs text-muted-foreground">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
               <div className="mt-4 flex flex-wrap justify-center gap-3">
-                <Button
+                <Button tone="confirm"
                   onClick={showSavedResult}
                   className="rounded-full bg-teal px-6 font-black text-on-teal hover:bg-teal/90"
                 >
@@ -844,15 +844,15 @@ export default function Diagnostic() {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                 </Button>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* المرجعية العلمية — آخر الشاشة: تطمين هادئ لمن يريد، لا حاجز أمام البدء */}
-          <p className="mx-auto mt-10 max-w-lg rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-xs leading-relaxed text-muted-foreground">
+          <Card as="p" className="mx-auto mt-10 max-w-lg px-5 py-4 text-xs leading-relaxed text-muted-foreground">
             نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-teal-light-ink">RIASEC</span> للميول المهنية،
             و<span className="font-bold text-teal-light-ink">O*NET وESCO</span> لخرائط المهارات،
             و<span className="font-bold text-teal-light-ink">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
-          </p>
+          </Card>
         </section>
       )}
 
@@ -861,13 +861,13 @@ export default function Diagnostic() {
         /* حشو رأسي أقل على الهاتف: 96 بكسل من 844 كانت فراغا فوق السؤال وتحته */
         <section className="story-fade mx-auto max-w-2xl px-5 py-7 sm:py-10 md:py-10">
           {offline && (
-            <div role="status" className="mb-5 rounded-2xl border border-gold/40 bg-gold/10 px-5 py-3 text-center text-xs font-bold text-gold-ink">
+            <Card tone="warn" role="status" className="mb-5 px-5 py-3 text-center text-xs font-bold text-gold-ink">
               انقطع الاتصال بالشبكة — لا تقلق: تشخيصك يعمل على جهازك وإجاباتك محفوظة، أكمل بثقة
-            </div>
+            </Card>
           )}
           {/* شريط جولة التدقيق — يحل محل شريط المراحل أثناء «دقّق خطتك أكثر» */}
           {deepStep ? (
-            <div className="mb-6 rounded-2xl border border-teal/40 bg-teal/[0.07] p-4">
+            <Card tone="accent" className="mb-6">
               <div className="flex items-center justify-between gap-3">
                 <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
                   <Wand2 className="h-4 w-4" />
@@ -886,7 +886,7 @@ export default function Diagnostic() {
               {deepReason && (
                 <p className="mt-3 text-fine leading-relaxed text-muted-foreground">{deepReason}</p>
               )}
-            </div>
+            </Card>
           ) : (
           <>
           {/* مؤشر واحد: أين أنا، وكم بقي. كان هنا صف من خمس دوائر بتسمياتها فوق
@@ -950,10 +950,10 @@ export default function Diagnostic() {
                 إلا لأربعة خيارات ونصف — وقياسُ الاختيار أن ترى بدائلك مجتمعة. */}
             <h2 className="text-xl font-black leading-snug sm:text-2xl md:text-3xl">{qText}</h2>
             {(deepStep?.reasonAr ?? whyAr) && (
-              <p className="mt-3 w-fit rounded-xl border border-teal/30 bg-teal/[0.06] px-3.5 py-2 text-fine leading-relaxed text-muted-foreground">
+              <Inset as="p" tone="accent" className="mt-3 w-fit px-3.5 py-2 text-fine leading-relaxed text-muted-foreground">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
                 {deepStep?.reasonAr ?? whyAr}
-              </p>
+              </Inset>
             )}
             {/* المحرك يكشف التناقض بين إجابتين ويخفض به «اتساق إجاباتك» في قوة
                 الأدلة، وكان لا يُعرض منه شيء — فيمضي التشخيص يسأل من قال إنه لا
@@ -961,13 +961,13 @@ export default function Diagnostic() {
                 بسؤال، فيُعرض حيث يمكن حسمه: فوق الخيارات وبجوار «السؤال السابق».
                 ملاحظة لا حاجز: من رأى أن الوصفين يجتمعان في حاله فليمضِ. */}
             {contradictionAr && (
-              <p className="mt-3 flex w-fit items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.07] px-3.5 py-2 text-fine leading-relaxed text-foreground">
+              <Inset as="p" tone="warn" className="mt-3 flex w-fit items-start gap-2 px-3.5 py-2 text-fine leading-relaxed text-foreground">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                 <span>
                   {contradictionAr}
                   <span className="text-muted-foreground"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
                 </span>
-              </p>
+              </Inset>
             )}
             {qHint && <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{qHint}</p>}
 
@@ -1025,7 +1025,7 @@ export default function Diagnostic() {
                   >
                     تخطَّ هذا السؤال
                   </button>
-                  <Button
+                  <Button tone="confirm"
                     onClick={() => answer(question.id, textDraft.trim())}
                     disabled={textDraft.trim().length === 0}
                     className="rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
@@ -1041,7 +1041,7 @@ export default function Diagnostic() {
               <div className="mt-8">
                 <div className="grid gap-3">
                   {question.items.map((item) => (
-                    <div key={item.key} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <Card key={item.key}>
                       <p className="text-sm font-bold">{item.label}</p>
                       <div className="mt-3 flex items-center gap-2" dir="ltr">
                         {[1, 2, 3, 4, 5].map((n) => {
@@ -1067,14 +1067,14 @@ export default function Diagnostic() {
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
                           : "اختر مستواك — بصدق"}
                       </p>
-                    </div>
+                    </Card>
                   ))}
                 </div>
                 <div className="mt-6 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">
                     قيّمت {Object.keys(ratingsDraft).length} من {question.items.length}
                   </span>
-                  <Button
+                  <Button tone="confirm"
                     onClick={() =>
                       answer(
                         question.id,
@@ -1129,7 +1129,7 @@ export default function Diagnostic() {
                   <span className="text-xs text-muted-foreground">
                     {question.maxSelect ? `اختر حتى ${question.maxSelect} — ` : ""}اخترت {multiDraft.length}
                   </span>
-                  <Button
+                  <Button tone="confirm"
                     onClick={() => submitMulti(question)}
                     disabled={multiDraft.length === 0}
                     className="rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
@@ -1284,7 +1284,7 @@ export default function Diagnostic() {
                 )}
 
                 {isExploratory && (exploration?.evidence_suggestions_ar?.length ?? 0) > 0 && (
-                  <div className="mx-auto mt-7 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right">
+                  <Card className="mx-auto mt-7 max-w-md text-right">
                     <p className="text-xs font-black text-foreground">ما الذي يرفع دقة تشخيصك المرة القادمة؟</p>
                     <ul className="mt-3 space-y-2">
                       {exploration!.evidence_suggestions_ar!.slice(0, 4).map((s) => (
@@ -1294,7 +1294,7 @@ export default function Diagnostic() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </Card>
                 )}
 
                 {/* الخطوة التالية أولا، وإعادةُ التشخيص ثانية، والمستشار سطرا.
@@ -1308,7 +1308,7 @@ export default function Diagnostic() {
                     من زرٍّ غائب. ولمن استعاد نتيجته تبقى إعادةُ التشخيص. */}
                 {isExploratory && canDeepen && !deepUnavailable && (
                   <div className="mt-9">
-                    <Button
+                    <Button tone="confirm"
                       size="lg"
                       className="h-12 rounded-full bg-gold px-8 font-black text-on-gold hover:bg-gold/90"
                       onClick={startDeepeningRound}
@@ -1320,13 +1320,13 @@ export default function Diagnostic() {
                   </div>
                 )}
                 {isExploratory && canDeepen && deepUnavailable && (
-                  <p className="mx-auto mt-9 max-w-md rounded-2xl border border-gold/35 bg-gold/[0.07] px-5 py-3 text-xs leading-relaxed text-gold-ink">
+                  <Card as="p" tone="warn" className="mx-auto mt-9 max-w-md px-5 py-3 text-xs leading-relaxed text-gold-ink">
                     لا تكفي أسئلتنا المتبقية لاستبيان تفصيلي مفيد على إجاباتك الحالية — فإعادة التشخيص
                     بإجابات أدقّ أنفع لك من أسئلة لا تضيف.
-                  </p>
+                  </Card>
                 )}
                 <div className={`flex flex-wrap items-center justify-center gap-3 ${isExploratory && canDeepen ? "mt-5" : "mt-9"}`}>
-                  <Button
+                  <Button tone="confirm"
                     size="lg"
                     variant={isExploratory && canDeepen ? "outline" : "default"}
                     className={isExploratory && canDeepen
@@ -1338,7 +1338,7 @@ export default function Diagnostic() {
                     {isExploratory ? "أعد التشخيص السريع" : "ابدأ التشخيص من جديد"}
                   </Button>
                   {isExploratory && (
-                    <Button size="lg" variant="ghost" className="h-12 rounded-full px-6 font-bold text-muted-foreground" asChild>
+                    <Button tone="ghost" size="lg" className="h-12 rounded-full px-6 font-bold text-muted-foreground" asChild>
                       <Link to="/pathways">استعرض المسارات بنفسك</Link>
                     </Button>
                   )}
@@ -1389,9 +1389,8 @@ export default function Diagnostic() {
             {/* جولة التدقيق متاحة للجميع — لا حاجز تسجيل عليها، بلا علاقة بالشراء */}
             {deepeningOffered && (
               <div className="mt-7 print:hidden">
-                <Button
+                <Button tone="secondary"
                   size="lg"
-                  variant="outline"
                   onClick={startDeepeningRound}
                   className="h-12 rounded-full border-teal/50 px-8 font-black text-teal-light-ink hover:bg-teal/15"
                 >
@@ -1421,7 +1420,7 @@ export default function Diagnostic() {
             if (!cmp.changed) {
               /* النتيجة نفسها — سطر طمأنة واحد يكفي، بلا صندوق مقارنة مكرر */
               return (
-                <div className="mt-8 flex items-start gap-3 rounded-2xl border border-teal/40 bg-teal/[0.05] px-5 py-4 text-right">
+                <Card tone="accent" className="mt-8 flex items-start gap-3 px-5 py-4 text-right">
                   <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
                   <div>
                     <p className="text-sm font-black text-teal-light-ink">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
@@ -1430,7 +1429,7 @@ export default function Diagnostic() {
                       ويمكنك تخصيصها بنفسك: استبدالا أو حذفا أو هدية مجانية.
                     </p>
                   </div>
-                </div>
+                </Card>
               );
             }
             return (
@@ -1448,11 +1447,11 @@ export default function Diagnostic() {
                     <p className="mt-1.5 text-sm font-black leading-snug text-foreground">{cmp.before.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-muted-foreground">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
                   </div>
-                  <div className="rounded-xl border border-teal/30 bg-teal/[0.07] p-4">
+                  <Inset tone="accent">
                     <p className="text-fine font-bold text-teal-light-ink">بعد التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug">{cmp.after.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-foreground">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
-                  </div>
+                  </Inset>
                 </div>
                 <ul className="mt-4 space-y-1.5">
                   {cmp.reasons_ar.map((r) => (
@@ -1474,7 +1473,7 @@ export default function Diagnostic() {
 
           {/* بطاقة التوصية الأولى للمسار القياسي — لا قالب فاز ولا خطة مقررات */}
           {((result.resultJson.composite as CompositeView | null) ?? null) === null && !composedPrimary && (
-          <div className="mt-10 overflow-hidden rounded-3xl border border-[#38A7B4]/40 bg-gradient-to-b from-panel to-paper">
+          <Panel className="mt-10 overflow-hidden border-[#38A7B4]/40 bg-gradient-to-b from-panel to-paper">
             <div className="border-b border-white/10 bg-[#38A7B4]/10 px-6 py-3 text-sm font-bold text-[#6EC7D1]">
               التوصية الأولى
             </div>
@@ -1529,7 +1528,7 @@ export default function Diagnostic() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <Card className="mt-6">
                 <p className="text-sm font-black text-teal-light-ink">ماذا ستحصل عليه فعليا؟</p>
                 <p className="mt-1.5 text-xs leading-6 text-muted-foreground">
                   لا تحصل على قائمة دورات فقط؛ تحصل على ترتيب تعلم، ومتابعة، ومراجعة، ومخرجا تطبيقيا يثبت أنك تقدمت.
@@ -1545,20 +1544,20 @@ export default function Diagnostic() {
                     { icon: ShieldCheck, label: "شهادة إتمام", hint: "بمخرج يثبت جاهزيتك" },
                     { icon: Gift, label: "دورة إضافية مجانية", hint: "هدية فوق مسارك" },
                   ].map((f) => (
-                    <div key={f.label} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-3">
+                    <Inset key={f.label}>
                       <f.icon className="h-4 w-4 text-teal-light-ink" />
                       <p className="mt-1.5 text-xs font-bold leading-5">{f.label}</p>
                       <p className="mt-0.5 text-fine leading-5 text-muted-foreground">{f.hint}</p>
-                    </div>
+                    </Inset>
                   ))}
                 </div>
                 {/* السعر لم يعد هنا. أول ما يقرؤه المتعلم يجب أن يكون مسارَه لا
                     ثمنَه: البطاقة الأولى تعرّفه على المسار وحده، ثم يرى ما سيتعلمه،
                     ثم لماذا رُشّح له، ثم — وقد عرف ما يشتري — يأتي السعر أسفل
                     الصفحة قبل التسجيل مباشرة (ResultPriceCard). */}
-              </div>
+              </Card>
             </div>
-          </div>
+          </Panel>
           )}
 
           {/* عند فوز خطة مركبة: هي بطاقة التوصية الأولى — والمسار القياسي مرجع ثانوي صغير */}
@@ -1568,7 +1567,7 @@ export default function Diagnostic() {
             return (
               <>
                 <CompositePlan composite={compositeView} />
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+                <Card className="mt-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-bold text-foreground">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
                     {" "}— أقوى مسار مفرد ضمن خطتك، استُمدت منه دورات أساسية في تركيبتك.
@@ -1580,7 +1579,7 @@ export default function Diagnostic() {
                   >
                     استعرض المسار المفرد
                   </Link>
-                </div>
+                </Card>
               </>
             );
           })()}
@@ -1678,7 +1677,7 @@ export default function Diagnostic() {
           {/* «مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة» — إثبات قيمة مضغوط قبل الاعتماد،
               بنفس حجم خط القسم. حلّت محل ثلاثة أكورديونات كانت هنا بقرار المالك (2026-08-23):
               «لماذا هذا المسار؟» و«هل هناك معلومات لم نعرفها بعد؟» و«كيف بُنيت توصيتك؟» */}
-          <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6 print:hidden">
+          <Panel className="mt-8 md:p-6 print:hidden">
             <h3 className="flex items-center gap-2 text-base font-black">
               <Sparkles className="h-4 w-4 text-[#FABC05]" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
@@ -1701,11 +1700,11 @@ export default function Diagnostic() {
                 </p>
               ))}
             </div>
-          </div>
+          </Panel>
 
           {/* تقاطع الرصيد السابق مع دورات التوصية — لا يدفع ثمن ما يعرفه */}
           {result.priorOverlap.length > 0 && (
-            <div className="mt-8 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
+            <Panel tone="warn" className="mt-8 md:p-8">
               <h3 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <BookOpen className="h-5 w-5" />
                 انتبه — رصيدك السابق يتقاطع مع هذا المسار
@@ -1715,7 +1714,7 @@ export default function Diagnostic() {
                 راجع محاورها قبل الدفع — وإن كنت أتقنتها فعلا، اطلب من مستشارك استبدالها بدورة أعمق،
                 فوعدنا أنك لن تدفع ثمن ما تعرفه أصلا.
               </p>
-            </div>
+            </Panel>
           )}
 
           {/* السعر آخر ما يُقرأ قبل التسجيل — بعد أن عرف المسار ودوراته وسببه */}
@@ -1738,7 +1737,7 @@ export default function Diagnostic() {
             <div className="mt-6 flex flex-col items-center gap-3">
               {/* زرٌّ واحد للحالتين. كان اعتماد المسار الجاهز <Link> لا يكتب شيئا،
                   فتصل الصفحة بلا خطّة معتمَدة فتسقط على قائمة الكتالوج. */}
-              <Button
+              <Button tone="confirm"
                 size="lg"
                 onClick={adoptPlan}
                 className="h-auto min-h-14 max-w-full whitespace-normal rounded-full bg-gold px-8 py-3 text-center text-base font-black leading-snug text-on-gold hover:bg-gold/90 md:text-lg"
@@ -1806,7 +1805,7 @@ export default function Diagnostic() {
 
           {/* مهارات مهمة غير متوفرة حاليا — صدق كامل */}
           {result.unavailableSkills.length > 0 && (
-            <div className="mt-8 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
+            <Panel tone="warn" className="mt-8 md:p-8">
               <h3 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <BellRing className="h-5 w-5" />
                 مهارات تحتاجها ولا نغطيها بعد — ولن نخفي ذلك عنك
@@ -1815,14 +1814,14 @@ export default function Diagnostic() {
                 فجواتك في {result.unavailableSkills.join(" و")} مهمة لهدفك، لكن كتالوجنا الحالي لا يغطيها بعد.
                 نفضل أن تعرف الحقيقة كاملة على أن نبيعك مسارا ناقصا.
               </p>
-              <Button variant="outline" className="mt-4 border-gold/60 text-gold-ink hover:bg-gold/10" asChild>
+              <Button tone="secondary" className="mt-4 border-gold/60 text-gold-ink hover:bg-gold/10" asChild>
                 <a
                   href={`mailto:${ACADEMY_EMAILS.support}?subject=${encodeURIComponent("أشعرني عند توفر: " + result.unavailableSkills.join("، "))}`}
                 >
                   أشعِرني عند توفرها
                 </a>
               </Button>
-            </div>
+            </Panel>
           )}
 
           {/* حُذف أكورديونا «هل هناك معلومات لم نعرفها بعد؟» و«كيف بُنيت توصيتك؟» —
@@ -1830,7 +1829,7 @@ export default function Diagnostic() {
 
           {/* Advisor flag */}
           {result.needsAdvisor && (
-            <div className="mt-8 rounded-3xl border border-gold/40 bg-gold/5 p-6 md:p-8">
+            <Panel tone="warn" className="mt-8 md:p-8">
               <h3 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <UserCheck className="h-5 w-5" />
                 حالتك تستحق جلسة مع مستشار بشري
@@ -1845,7 +1844,7 @@ export default function Diagnostic() {
                 label="احجز جلسة مستشار عبر واتساب"
                 className="mt-4 inline-flex items-center gap-2 rounded-full border border-gold/60 px-5 py-2.5 text-sm font-bold text-gold-ink transition hover:bg-gold/10"
               />
-            </div>
+            </Panel>
           )}
 
           {/* البدائل في ميزان واحد — ضمن النتيجة الكاملة للموثق */}
@@ -1862,7 +1861,7 @@ export default function Diagnostic() {
               </p>
               <div className={`mt-6 grid gap-4 ${altCount === 2 ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
                 {/* الأساسي */}
-                <div className="flex flex-col rounded-2xl border border-teal/50 bg-teal/10 p-5">
+                <Card tone="accent" className="flex flex-col">
                   <span className="kicker">توصيتك الحالية</span>
                   <h4 className="mt-3 text-sm font-black leading-snug">{topPathway.name}</h4>
                   <dl className="mt-3 space-y-1.5 text-xs text-muted-foreground">
@@ -1879,10 +1878,10 @@ export default function Diagnostic() {
                     <CheckCircle2 className="h-4 w-4" />
                     هذا خيارك المعروض أعلاه
                   </span>
-                </div>
+                </Card>
                 {/* الأسرع */}
                 {result.faster && (
-                  <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <Card className="flex flex-col">
                     <span className="kicker">
                       <Zap className="h-3 w-3" /> بديل أسرع
                     </span>
@@ -1897,8 +1896,7 @@ export default function Diagnostic() {
                         <dd className="font-bold text-foreground">{result.faster.weeklyHours}</dd>
                       </div>
                     </dl>
-                    <Button
-                      variant="outline"
+                    <Button tone="secondary"
                       size="sm"
                       onClick={() => swapTop(result.faster!, "faster")}
                       className="mt-4 w-fit border-teal/50 text-teal-light-ink hover:bg-teal/15"
@@ -1906,11 +1904,11 @@ export default function Diagnostic() {
                       <RefreshCcw className="ml-2 h-3.5 w-3.5" />
                       اجعله توصيتي الأولى
                     </Button>
-                  </div>
+                  </Card>
                 )}
                 {/* الأوفر */}
                 {result.cheaper && (
-                  <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <Card className="flex flex-col">
                     <span className="kicker-amber">
                       <Wallet className="h-3 w-3" /> بديل أوفر
                     </span>
@@ -1925,8 +1923,7 @@ export default function Diagnostic() {
                         <dd className="font-bold text-foreground">{result.cheaper.p.weeklyHours}</dd>
                       </div>
                     </dl>
-                    <Button
-                      variant="outline"
+                    <Button tone="secondary"
                       size="sm"
                       onClick={() => swapTop(result.cheaper!.p, "cheaper")}
                       className="mt-4 w-fit border-teal/50 text-teal-light-ink hover:bg-teal/15"
@@ -1934,7 +1931,7 @@ export default function Diagnostic() {
                       <RefreshCcw className="ml-2 h-3.5 w-3.5" />
                       اجعله توصيتي الأولى
                     </Button>
-                  </div>
+                  </Card>
                 )}
               </div>
             </div>

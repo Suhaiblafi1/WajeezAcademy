@@ -230,10 +230,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
 function DueReviewStrip({ due }: { due: number }) {
   if (due <= 0) return null;
   return (
-    <Link
-      to="/student/review"
-      className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/30 bg-teal-ink/[0.07] px-5 py-4 transition hover:border-teal/60"
-    >
+    <Card as={Link} tone="accent" interactive to="/student/review" className="mt-6 flex flex-wrap items-center justify-between gap-3 bg-teal-ink/[0.07] px-5 py-4 transition hover:border-teal/60">
       <span className="flex items-center gap-2 text-sm font-bold">
         <Layers className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span className="tabular-nums text-teal-light-ink">{due}</span>
@@ -243,7 +240,7 @@ function DueReviewStrip({ due }: { due: number }) {
         اذهب إلى «تثبيتُ ما تعلّمت»
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
-    </Link>
+    </Card>
   );
 }
 
@@ -421,11 +418,11 @@ export default function MySkills() {
         ))}
       </Section>
 
-      <p className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-fine leading-relaxed text-muted-foreground">
+      <Card as="p" className="mt-6 px-5 py-4 text-fine leading-relaxed text-muted-foreground">
         سلّم القياس خمس درجات: لا يعرفها · مبتدئ · يستخدمها أحيانا · جيد عمليا · متقدم.
         وتُصنَّف المهارة فجوةً دون «يستخدمها أحيانا»، ومتقنةً من «جيد عمليا» — وهو الحدّ نفسه
         الذي يستعمله المؤشر في حساب الترشيح، فلا يختلف ما تراه عما احتُسب لك.
-      </p>
+      </Card>
     </PortalLayout>
   );
 }

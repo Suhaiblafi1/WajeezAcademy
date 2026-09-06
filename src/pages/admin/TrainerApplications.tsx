@@ -145,10 +145,10 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
             : "—")}
         </div>
         {summary.nextSession && (
-          <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.07] px-3.5 py-2.5 text-[11.5px] leading-6 text-teal-light-ink">
+          <Inset as="p" tone="accent" className="mt-3 px-3.5 py-2.5 text-[11.5px] leading-6 text-teal-light-ink">
             أقرب جلسة: <b>{summary.nextSession.title}</b> — شعبة «{summary.nextSession.cohortTitle}» ·{" "}
             {fmtDateTime(new Date(summary.nextSession.startsAt))}
-          </p>
+          </Inset>
         )}
       </Panel>
 
@@ -448,9 +448,9 @@ export default function TrainerApplications() {
               </div>
               {a.bio && <p className="mt-4 text-xs leading-6 text-foreground">{a.bio}</p>}
               {a.motivation && (
-                <p className="mt-3 rounded-xl border border-white/5 bg-paper/20 p-3 text-xs leading-6 text-foreground">
+                <Inset as="p" className="mt-3 text-xs leading-6 text-foreground">
                   <span className="font-bold text-muted-foreground">لماذا وجيز؟ </span>{a.motivation}
-                </p>
+                </Inset>
               )}
 
               {/* الملفّ كاملا — كان المراجع يقرّر على نصف الطلب.
@@ -571,9 +571,9 @@ export default function TrainerApplications() {
 
               {/* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه — فلا زرَّ دعوةٍ له */}
               {a.status === "onboarding" && !a.profile?.userId && a.userId && (
-                <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.05] p-3 text-micro leading-6 text-foreground">
+                <Inset as="p" tone="accent" className="mt-3 text-micro leading-6 text-foreground">
                   للمتقدّم حسابٌ منذ تقديمه — «فعّله مدرّبا نشطا» يربط حسابه بملفّه ويفتح له بوّابة المدربين مباشرة.
-                </p>
+                </Inset>
               )}
               {a.status === "onboarding" && !a.profile?.userId && !a.userId && (
                 <Button tone="confirm" disabled={busy}
@@ -687,9 +687,9 @@ export default function TrainerApplications() {
             ))}
           </BulkBar>
           {view.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
+            <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
               لا طلب يطابق «{q.trim()}».
-            </p>
+            </Panel>
           )}
           {view.rows.map((a) => (
             <div key={a.id}

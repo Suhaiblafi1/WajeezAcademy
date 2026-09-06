@@ -520,10 +520,10 @@ export default function JoinTrainer() {
             <CheckCircle2 className="h-8 w-8 text-teal-light-ink" />
           </span>
           <h1 className="mt-6 text-2xl font-black">وصل طلبك كاملا — شكرا لك</h1>
-          <p className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-4">
+          <Card as="p" tone="warn" className="mt-4">
             <span className="text-xs text-muted-foreground">رقم طلبك</span>
             <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
-          </p>
+          </Card>
 
           <div className="mt-6 space-y-4 text-right">
             {/* الحجزُ أوّلا لا الانتظار: كانت هذه البطاقةُ تَعِد بأن «نتواصل معك
@@ -743,10 +743,10 @@ export default function JoinTrainer() {
                     </FieldRow>
                   </Card>
                 ) : (
-                  <p className="mt-5 flex items-center gap-2 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4 text-xs font-bold text-teal-light-ink">
+                  <Card as="p" tone="accent" className="mt-5 flex items-center gap-2 text-xs font-bold text-teal-light-ink">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     حسابك جاهز ببريدك <span dir="ltr" className="text-foreground">{form.email.trim()}</span> — تدخل به بعد الإرسال لمتابعة طلبك.
-                  </p>
+                  </Card>
                 )}
               </Question>
 
@@ -1098,15 +1098,15 @@ export default function JoinTrainer() {
                   </div>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && normalizeDigits(form.phone) && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-fine leading-6 text-foreground">
+                  <Inset as="p" tone="accent" className="mt-4 flex items-center gap-2 text-fine leading-6 text-foreground">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
                     سنتواصل على <b dir="ltr" className="text-foreground">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
-                  </p>
+                  </Inset>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && !normalizeDigits(form.phone) && (
-                  <p className="mt-4 rounded-xl border border-gold/30 bg-gold/[0.06] p-3 text-fine leading-6 text-gold-ink">
+                  <Inset as="p" tone="warn" className="mt-4 text-fine leading-6 text-gold-ink">
                     لم تذكر رقم جوالك في القسم الأول. <button type="button" onClick={() => setStep(1)} className="cursor-pointer font-black underline">عد وأضفه</button> أو اختر البريد.
-                  </p>
+                  </Inset>
                 )}
               </Question>
 
@@ -1129,7 +1129,7 @@ export default function JoinTrainer() {
             </div>
           )}
 
-          {error && <p className="rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs text-red-200" role="alert">{error}</p>}
+          {error && <Inset as="p" tone="danger" className="text-xs text-red-200" role="alert">{error}</Inset>}
 
           {/* ما ينقص، بالاسم. زرٌّ مطفأ بلا سبب يجعل المتقدّم يفتّش النموذج
               بعينه؛ وهذه قائمةٌ تُقرأ في سطرين وتختفي حين تكتمل الخطوة.

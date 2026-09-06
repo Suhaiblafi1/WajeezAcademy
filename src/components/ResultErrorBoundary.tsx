@@ -2,10 +2,10 @@
    يتحول لحالة استعادة مفهومة بدل صفحة فارغة. */
 
 import { Component, type ReactNode } from "react";
-import { Button } from "@/components/ui/legacy-button";
 import { RotateCcw, Home } from "lucide-react";
 import { Link } from "react-router";
 
+import Button from "@/components/ui/Button";
 interface Props {
   children: ReactNode;
   onReset: () => void;
@@ -36,7 +36,7 @@ export class ResultErrorBoundary extends Component<Props, State> {
           وأعد التشخيص من جديد ولن يأخذ أكثر من دقائق.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Button
+          <Button tone="confirm"
             onClick={() => {
               this.setState({ hasError: false });
               this.props.onReset();
@@ -47,7 +47,7 @@ export class ResultErrorBoundary extends Component<Props, State> {
             أعد التشخيص من جديد
           </Button>
           <Link to="/">
-            <Button variant="outline" className="h-12 rounded-full border-white/20 px-8 font-black text-foreground hover:bg-white/5">
+            <Button tone="secondary" className="h-12 rounded-full border-white/20 px-8 font-black text-foreground hover:bg-white/5">
               <Home className="ml-2 h-4 w-4" />
               العودة للرئيسية
             </Button>

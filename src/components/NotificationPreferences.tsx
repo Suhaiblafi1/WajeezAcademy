@@ -64,10 +64,10 @@ export default function NotificationPreferences() {
 
   if (failed) {
     return (
-      <p className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 text-sm text-muted-foreground">
+      <Card as="p" className="text-sm text-muted-foreground">
         تعذّر تحميلُ تفضيلات الإشعارات.{" "}
         <button type="button" onClick={() => void load()} className="font-bold text-teal-light-ink underline">أعد المحاولة</button>
-      </p>
+      </Card>
     );
   }
 

@@ -148,11 +148,11 @@ export default function Contact() {
               </p>
             </Inset>
           </div>
-          <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-muted-foreground">
+          <Inset as="p" className="mt-5 px-4 py-3 text-xs leading-6 text-muted-foreground">
             إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
             <Link to="/diagnostic" className="font-semibold text-teal-light-ink underline-offset-4 hover:underline">التشخيص الذكي</Link>
             {' '}في دقائق، مجانا ودون التزام.
-          </p>
+          </Inset>
         </div>
 
         {/* النموذج */}
@@ -255,18 +255,18 @@ export default function Contact() {
                   placeholder={institutional ? 'اذكر عدد المتدربين المتوقع، والمجالات التي تهم جهتك…' : 'اكتب سؤالك أو طلبك بتفصيل يساعدنا نخدمك من أول رد…'}
                   className={`${FIELD} resize-none`} />
               </div>
-              <label htmlFor="ct-consent" className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <Inset as="label" htmlFor="ct-consent" className="mt-4 flex cursor-pointer items-start gap-2.5">
                 <input id="ct-consent" name="consent" type="checkbox" required checked={consent}
                   onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
                 <span className="text-xs leading-relaxed text-muted-foreground">
                   أوافق على معالجة بياناتي للرد على طلبي وفق{' '}
                   <Link to="/p/privacy" className="font-bold text-muted-foreground underline underline-offset-4 hover:text-teal-light-ink">سياسة الخصوصية</Link>
                 </span>
-              </label>
+              </Inset>
               {err && (
-                <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-center text-xs font-semibold text-red-300">
+                <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-center text-xs font-semibold text-red-300">
                   {err}
-                </p>
+                </Inset>
               )}
               <button type="submit" disabled={busy || !valid}
                 className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40">

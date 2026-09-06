@@ -30,6 +30,9 @@ import { pathwaySizeAr } from "@/data/courses"
 import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
 
+/* البابان يشتركان في هيئةٍ واحدة، ويفترق لونُهما وحدَه */
+const DOOR = "inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-bold transition"
+
 export function Bestsellers() {
   const catalogVersion = useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion)
 
@@ -114,14 +117,14 @@ export function Bestsellers() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             to="/pathways"
-            className="inline-flex items-center gap-2 rounded-2xl border border-teal/40 px-6 py-3 text-sm font-bold text-teal-light-ink transition hover:bg-teal-deep hover:text-white"
+            className={`${DOOR} border-teal/40 text-teal-light-ink hover:bg-teal-deep hover:text-white`}
           >
             تصفح كل المسارات
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <Link
             to="/courses"
-            className="inline-flex items-center gap-2 rounded-2xl border border-white/15 px-6 py-3 text-sm font-bold text-muted-foreground transition hover:border-gold/50 hover:text-gold-ink"
+            className={`${DOOR} border-white/15 text-muted-foreground hover:border-gold/50 hover:text-gold-ink`}
           >
             تصفح كل الدورات
             <ArrowLeft className="h-4 w-4" />

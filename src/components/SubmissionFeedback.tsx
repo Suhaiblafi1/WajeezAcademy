@@ -14,7 +14,7 @@
 import { CheckCircle2, History, MessageSquare, ScrollText } from "lucide-react";
 import { fmtDayMonth } from "@/application/text/format-ar";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 export interface RubricCriterionView { id: string; title: string; maxScore: number; sequence: number }
 export interface GradeView {
   score: string | number;
@@ -99,14 +99,14 @@ export default function SubmissionFeedback({
       )}
 
       {revision && (
-        <p className="flex items-start gap-2 rounded-xl border border-gold/30 bg-gold/[0.06] px-3.5 py-2.5 text-fine leading-6 text-foreground">
+        <Inset as="p" tone="warn" className="flex items-start gap-2 px-3.5 py-2.5 text-fine leading-6 text-foreground">
           <History className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
           <span>
             عُدِّلت درجتك من <span className="tabular-nums font-bold">{num(revision.oldScore)}</span> إلى{" "}
             <span className="tabular-nums font-bold">{num(revision.newScore)}</span>
             {revision.createdAt ? ` · ${fmtDate(revision.createdAt)}` : ""} — كل تعديل يُسجَّل ولا يُمحى.
           </span>
-        </p>
+        </Inset>
       )}
 
       {submission.reviewNote && (

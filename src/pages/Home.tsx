@@ -57,7 +57,7 @@ import StoryAvatar from '@/components/StoryAvatar'
 import RemoteImage from '@/components/RemoteImage'
 import { UpcomingTermLine } from '@/components/UpcomingTermNote'
 import ProofBand from '@/components/ProofBand'
-import { Card, Panel } from '@/components/ui/Surface'
+import { Card, Panel, Inset } from '@/components/ui/Surface'
 
 /* «مؤشر وجيز» — سؤالا وعيٍ مستقلّان (البند ٥٧): يُحفظان محليا على جهاز الزائر
    فقط، ولا يغذّيان التشخيص إلّا `m4` — وهو الذي يوفّر سؤالا في التشخيص فعلا
@@ -142,18 +142,15 @@ function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           {userName ? (
-            <Link to={portalHome} className="hidden items-center gap-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
+            <Inset as={Link} tone="accent" interactive to={portalHome} className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
               <User className="h-4 w-4" />
               {userName}
-            </Link>
+            </Inset>
           ) : (
-            <Link
-              to="/auth"
-              className="hidden items-center gap-2 rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex"
-            >
+            <Inset as={Link} tone="accent" interactive to="/auth" className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex">
               <User className="h-4 w-4" />
               دخول
-            </Link>
+            </Inset>
           )}
           <a
             href="#diagnostic"
@@ -179,17 +176,14 @@ function Nav() {
             renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light-ink', () => setOpen(false))
           )}
           {userName ? (
-            <Link to={portalHome} onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 rounded-xl border border-teal/40 px-5 py-3 font-semibold text-teal-light-ink">
+            <Inset as={Link} tone="accent" interactive to={portalHome} onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 px-5 py-3 font-semibold text-teal-light-ink">
               <User className="h-4 w-4" /> {userName}
-            </Link>
+            </Inset>
           ) : (
-            <Link
-              to="/auth"
-              onClick={() => setOpen(false)}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-semibold text-muted-foreground"
-            >
+            <Inset as={Link} interactive to="/auth"
+              onClick={() => setOpen(false)} className="mt-2 flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold text-muted-foreground">
               <User className="h-4 w-4" /> دخول / إنشاء حساب
-            </Link>
+            </Inset>
           )}
           <a href="#diagnostic" onClick={() => setOpen(false)} className="btn-teal mt-2 flex w-full px-5 py-3">
             ابدأ مؤشر وجيز
@@ -565,10 +559,7 @@ function Stories() {
         ))}
 
         {/* بطاقة ختامية تعيد للتشخيص */}
-        <Link
-          to="/diagnostic"
-          className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center rounded-3xl border border-dashed border-teal/30 bg-teal/5 p-6 text-center transition hover:border-teal/60 hover:bg-teal/10"
-        >
+        <Panel as={Link} tone="accent" interactive to="/diagnostic" className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center border-dashed text-center transition hover:border-teal/60 hover:bg-teal/10">
           <Compass className="h-7 w-7 text-teal-ink" />
           <p className="mt-3 text-sm font-bold leading-relaxed">وقصتك التالية؟</p>
           <p className="mt-1.5 text-xs leading-6 text-muted-foreground">تبدأ بثلاث دقائق من التشخيص</p>
@@ -576,7 +567,7 @@ function Stories() {
             ابدأ الآن
             <ArrowLeft className="h-3.5 w-3.5" />
           </span>
-        </Link>
+        </Panel>
       </div>
 
       {/* نافذة القصة الكاملة */}

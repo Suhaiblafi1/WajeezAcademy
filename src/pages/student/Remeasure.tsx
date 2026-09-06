@@ -198,7 +198,7 @@ export default function Remeasure() {
   if (loadError) {
     return (
       <PortalLayout title="قياس نموي">
-        <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">{loadError}</p>
+        <Card as="p" tone="danger" className="px-5 py-4 text-sm text-red-200">{loadError}</Card>
       </PortalLayout>
     );
   }
@@ -238,16 +238,16 @@ export default function Remeasure() {
               فاختر بصدق.
             </p>
             {!data.gate.open && (
-              <p className="mt-4 flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.07] px-4 py-3 text-xs leading-6 text-foreground">
+              <Card as="p" tone="warn" className="mt-4 flex items-start gap-2 px-4 py-3 text-xs leading-6 text-foreground">
                 <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
                 <span>{data.gate.reasonAr} — لأن فرقا بلا إتمام لا يدل على شيء.</span>
-              </p>
+              </Card>
             )}
             {!data.form.measurable && (
-              <p className="mt-4 flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-foreground">
+              <Card as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-xs leading-6 text-foreground">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
                 لا مهارات مصنّفة مرتبطة بهذه الدورة بعد — فلا قياس بعديّ لها.
-              </p>
+              </Card>
             )}
           </Panel>
 
@@ -270,7 +270,7 @@ export default function Remeasure() {
                 ))}
               </ul>
               {saveError && (
-                <p className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-xs text-red-200">{saveError}</p>
+                <Card as="p" tone="danger" className="mt-4 px-4 py-3 text-xs text-red-200">{saveError}</Card>
               )}
               {/* العدد المتبقي في سطر كامل التباين لا داخل زر معطَّل باهت:
                   التوجيه لا يُدفن في عنصر خامل. */}

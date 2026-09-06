@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { FileUp, CheckCircle2, Trash2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/legacy-button";
 import {
   CV_CONSENT_TEXT_AR,
   deleteCv,
@@ -10,6 +9,8 @@ import {
   type CvMeta,
 } from "@/application/cv/cv-store";
 
+import Button from "@/components/ui/Button";
+import { Card, Inset } from "@/components/ui/Surface";
 /* «أرسل سيرتك للمستشار» — اختياري تماما، لا يمنع رؤية النتيجة.
    الملف يُخزن خاصا على جهاز المستخدم (IndexedDB) في هذا الإصدار،
    ولا يُرسل لأي نموذج ذكاء اصطناعي — يقرأه المستشار البشري فقط. */
@@ -84,7 +85,7 @@ export default function CvUpload({
 
   if (saved) {
     return (
-      <div className="rounded-2xl border border-teal/40 bg-teal/[0.07] p-4">
+      <Card tone="accent">
         <p className="flex items-start gap-2.5 text-sm font-bold leading-relaxed text-teal-light-ink">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           تم استلام سيرتك، وسيتمكن المستشار من مراجعتها عند التواصل معك.
@@ -100,7 +101,7 @@ export default function CvUpload({
           <Trash2 className="h-3.5 w-3.5" />
           احذف سيرتي قبل مراجعتها
         </button>
-      </div>
+      </Card>
     );
   }
 
@@ -128,7 +129,7 @@ export default function CvUpload({
       )}
       {file && (
         <div className="story-fade mt-3">
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs leading-relaxed text-foreground">
+          <Inset as="label" className="flex cursor-pointer items-start gap-2.5 text-xs leading-relaxed text-foreground">
             <input
               type="checkbox"
               checked={consent}
@@ -136,8 +137,8 @@ export default function CvUpload({
               className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
             />
             {CV_CONSENT_TEXT_AR}
-          </label>
-          <Button
+          </Inset>
+          <Button tone="confirm"
             onClick={send}
             disabled={!consent || busy}
             className="mt-3 h-10 w-full rounded-full bg-teal font-black text-on-teal hover:bg-teal/90 disabled:opacity-40"

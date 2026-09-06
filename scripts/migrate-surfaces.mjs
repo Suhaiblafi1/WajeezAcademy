@@ -66,7 +66,7 @@ function levelFor(cls) {
 
 /* الوسومُ التي تُرحَّل. وغيرُ `div` يُحفظ في `as` — فالدلالةُ لا تُهدر:
    `article` عنصرٌ قائمٌ بذاته، و`li` صفٌّ في قائمة، وقارئُ الشاشة يقرؤها. */
-const TAGS = ['div', 'article', 'section', 'li']
+const TAGS = ['div', 'article', 'section', 'li', 'p', 'aside', 'label', 'pre', 'Link']
 
 /** ما يبقى في `className` بعد نزع ما صار من شأن السطح */
 function residue(cls) {
@@ -170,11 +170,15 @@ for (const file of files) {
     if (!close) { skipped.push(`سطر ${src.slice(0, m.index).split('\n').length}: لا وسمَ مغلقا`); continue }
     if (m.index < cursor) continue /* داخل سطحٍ رُحّل بالفعل — يُترك لدورةٍ ثانية */
 
-    const asAttr = m.name === 'div' ? '' : `as="${m.name}"`
+    /* `Link` مكوّنٌ لا وسمٌ — يُمرَّر تعبيرا لا نصّا. وما عداه اسمُ وسمٍ */
+    const asAttr = m.name === 'div' ? ''
+      : m.name === 'Link' ? 'as={Link}'
+        : `as="${m.name}"`
     const tone = toneFor(m.cls)
     const toneAttr = tone ? `tone="${tone}"` : ''
     const cls = residue(m.cls)
-    const rest = [asAttr, toneAttr, m.before, cls ? `className="${cls}"` : '', m.after]
+    const interactive = m.name === 'Link' ? 'interactive' : ''
+    const rest = [asAttr, toneAttr, interactive, m.before, cls ? `className="${cls}"` : '', m.after]
       .filter(Boolean).join(' ')
     out += src.slice(cursor, m.index)
     out += rest ? `<${tag} ${rest}>` : `<${tag}>`

@@ -21,7 +21,7 @@ import { pathwayById } from "@/data/pathways";
 import { areaCls } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 
-import { Panel } from "@/components/ui/Surface";
+import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface Row {
   id: string;
@@ -152,14 +152,14 @@ export default function LearnerRequests() {
 
                 {/* جهةُ التوصية بكلام صاحبها — عليها تُكتب، فلا تُكتب عامّة */}
                 {r.audienceAr && (
-                  <p className="mt-3 rounded-xl border border-teal/25 bg-teal/[0.06] px-4 py-3 text-xs leading-7 text-foreground">
+                  <Inset as="p" tone="accent" className="mt-3 px-4 py-3 text-xs leading-7 text-foreground">
                     <span className="font-bold text-muted-foreground">الجهةُ التي يريدها: </span>{r.audienceAr}
-                  </p>
+                  </Inset>
                 )}
                 {r.noteAr && (
-                  <p className="mt-2 rounded-xl border border-white/10 bg-paper/25 px-4 py-3 text-xs leading-7 text-foreground">
+                  <Inset as="p" className="mt-2 px-4 py-3 text-xs leading-7 text-foreground">
                     <span className="font-bold text-muted-foreground">ملاحظتُه: </span>{r.noteAr}
-                  </p>
+                  </Inset>
                 )}
 
                 <div className="mt-3">

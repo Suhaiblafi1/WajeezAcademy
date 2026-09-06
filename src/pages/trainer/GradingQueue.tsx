@@ -25,6 +25,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
 import { Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { areaCls, controlCls } from "@/components/FormKit";
 
 /* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
 const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-micro font-bold transition disabled:opacity-40";
@@ -163,7 +164,7 @@ export default function GradingQueue() {
                 onChange={(e) => setReviewNote((prev) => ({ ...prev, [q.id]: e.target.value }))}
                 placeholder="ملاحظة للمتعلم — إلزامية عند الرفض أو طلب الإعادة"
                 rows={2}
-                className="mt-3 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+                className={`mt-3 ${areaCls}`}
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {q.status === "submitted" && (
@@ -208,7 +209,7 @@ export default function GradingQueue() {
                   onChange={(e) => setFeedbackForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
                   placeholder="تغذية راجعة إضافية للمتعلم…"
                   aria-label={`تغذيةٌ راجعةٌ على «${q.assessment.title}»`}
-                  className="flex-1 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
+                  className={`flex-1 ${controlCls}`} />
                 <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
                   className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-micro font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
                   <MessageSquarePlus className="h-3 w-3" /> أرسل

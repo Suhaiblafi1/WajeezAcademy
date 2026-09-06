@@ -87,7 +87,7 @@ export default function LearnersPanel() {
   }
   if (error) {
     return (
-      <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm leading-7 text-muted-foreground">{error}</p>
+      <Card as="p" className="text-sm leading-7 text-muted-foreground">{error}</Card>
     );
   }
   if (!data) return null;

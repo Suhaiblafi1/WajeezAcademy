@@ -8,7 +8,7 @@ import PortalLayout from "./PortalLayout";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { clearLocalSession, readSession } from "@/services/auth";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
@@ -314,9 +314,9 @@ export default function StudentAccount() {
   return (
     <PortalLayout title="حسابي وملفي الشخصي">
       {mode === "local" && (
-        <p className="mb-5 rounded-xl border border-dashed border-gold/40 bg-gold/5 px-4 py-2 text-center text-xs text-gold-ink">
+        <Inset as="p" tone="warn" className="mb-5 border-dashed px-4 py-2 text-center text-xs text-gold-ink">
           {"جلسة الخادم غير فعالة — الحفظ محلي مؤقتا."}
-        </p>
+        </Inset>
       )}
 
       {/* بطاقة الهوية */}
@@ -466,8 +466,8 @@ export default function StudentAccount() {
 
       {/* حفظ */}
       <div className="mt-6 flex flex-col items-center gap-3">
-        {err && <p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{err}</p>}
-        {savedMsg && <p role="status" className="rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{savedMsg}</p>}
+        {err && <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-xs font-semibold text-red-300">{err}</Inset>}
+        {savedMsg && <Inset as="p" tone="accent" role="status" className="px-4 py-2.5 text-xs font-bold text-teal-light-ink">{savedMsg}</Inset>}
         {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
             خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
             عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
@@ -489,11 +489,11 @@ export default function StudentAccount() {
             { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
             { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة محفوظة وتقريرك الشخصي" },
           ].map((x) => (
-            <Link key={x.t} to={x.to} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-teal/50">
+            <Card as={Link} tone="accent" interactive key={x.t} to={x.to} className="transition hover:border-teal/50">
               <x.icon className="h-4 w-4 text-teal-light-ink" />
               <p className="mt-2 text-sm font-black">{x.t}</p>
               <p className="mt-1 text-fine leading-relaxed text-muted-foreground">{x.d}</p>
-            </Link>
+            </Card>
           ))}
         </div>
       </Panel>
@@ -553,8 +553,8 @@ export default function StudentAccount() {
             </div>
           </Card>
 
-          {secErr && <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{secErr}</p>}
-          {secMsg && <p role="status" className="mt-4 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{secMsg}</p>}
+          {secErr && <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-xs font-semibold text-red-300">{secErr}</Inset>}
+          {secMsg && <Inset as="p" tone="accent" role="status" className="mt-4 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{secMsg}</Inset>}
         </Panel>
       )}
     </PortalLayout>
