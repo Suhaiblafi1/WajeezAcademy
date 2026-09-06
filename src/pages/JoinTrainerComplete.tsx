@@ -4,6 +4,7 @@ import { CheckCircle2, FileUp, Loader2, ShieldCheck } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
+import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
@@ -34,6 +35,17 @@ export default function JoinTrainerComplete() {
   const [days, setDays] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [startFrom, setStartFrom] = useState("");
+  /* ── الموسمُ كان يسقط من هذا النموذج صامتا (البند ٥٣) ──
+
+     النموذجُ الجديد يجمع المواسمَ ويُرسلها؛ وهذا — وهو الرابطُ الذي ما زال
+     في بريد متقدّمين سابقين — كان يُرسل `availability` بلا `seasons` ولا
+     `periods`. والخادمُ يقبلهما اختياريّين، **فلا يشتكي أحد**: يُستكمَل
+     الطلبُ ويُعتمَد صاحبُه ولا موسمَ له في القاعدة.
+
+     وبعد أن صار الموسمُ فصلا يُربَط به المدرّب، صار السقوطُ الصامتُ أثقل:
+     من أكمل من هنا لا يظهر في «المدرّبون المتاحون لهذا الفصل» أبدا. */
+  const [seasons, setSeasons] = useState<string[]>([]);
+  const [periods, setPeriods] = useState<string[]>([]);
   const [demoConsent, setDemoConsent] = useState(false);
   const [uploads, setUploads] = useState<Record<string, UploadState>>({});
   const [busy, setBusy] = useState(false);
@@ -63,6 +75,8 @@ export default function JoinTrainerComplete() {
   const validLink = reference.trim().length >= 5 && candidateToken.trim().length >= 10;
   const valid =
     validLink && prevCourses.some((c) => c.title.trim()) &&
+    /* والموسمُ شرطٌ لا اختيار: من لا موسمَ له لا يُجدوَل في فصل */
+    seasons.length > 0 &&
     demoConsent && uploads.cv?.status === "done";
 
   const submit = async (e: React.FormEvent) => {
@@ -77,7 +91,11 @@ export default function JoinTrainerComplete() {
           year: c.year ? Number(c.year) : undefined,
           link: c.link || undefined,
         })),
-        availability: { days, hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined, startFrom: startFrom || undefined },
+        availability: {
+          days, seasons, periods,
+          hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined,
+          startFrom: startFrom || undefined,
+        },
         demoConsent,
       });
       setDone(true);
@@ -196,6 +214,46 @@ export default function JoinTrainerComplete() {
                   + أضف دورة أخرى
                 </button>
               )}
+            </div>
+          </fieldset>
+
+          {/* التوفر — والموسمُ أوّلُه لا آخرُه: الشعبةُ تُفتح في فصل،
+              فسؤالُ «أيَّ فصلٍ تستطيع؟» يسبق «أيَّ يومٍ منه؟». */}
+          <fieldset>
+            <legend className="text-sm font-black">
+              الفصول التي تستطيع التدريس فيها <span className="text-gold-ink">*</span>
+            </legend>
+            <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
+              الشعبُ تُفتح في فصولٍ لها مواعيد — واختيارُك هنا هو ما يضعك في قائمة
+              «المدرّبون المتاحون» لكلّ فصلٍ تختاره.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {TRAINING_SEASONS.map((s) => (
+                <button
+                  type="button" key={s.value}
+                  onClick={() => setSeasons(seasons.includes(s.value) ? seasons.filter((x) => x !== s.value) : [...seasons, s.value])}
+                  aria-pressed={seasons.includes(s.value)}
+                  className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
+                    seasons.includes(s.value) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
+                  }`}
+                >
+                  {s.label} <span className="text-muted-foreground">({s.months})</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[{ v: "morning", l: "صباحيّ" }, { v: "evening", l: "مسائيّ" }].map((p) => (
+                <button
+                  type="button" key={p.v}
+                  onClick={() => setPeriods(periods.includes(p.v) ? periods.filter((x) => x !== p.v) : [...periods, p.v])}
+                  aria-pressed={periods.includes(p.v)}
+                  className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
+                    periods.includes(p.v) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
+                  }`}
+                >
+                  {p.l}
+                </button>
+              ))}
             </div>
           </fieldset>
 

@@ -16,6 +16,7 @@ import { useState } from "react";
 import { CalendarDays, Check, ChevronDown, Users } from "lucide-react";
 import type { CohortOption } from "@/services/cohort-prices";
 import { daysLabelAr, fmtDateAr, untilLabelAr } from "@/utils/format";
+import { useUpcomingTerm } from "@/services/upcoming-term";
 
 /** سطرُ موعدٍ واحد — التاريخ ثمّ بُعده ثمّ أيّامه */
 function When({ c }: { c: CohortOption }) {
@@ -44,13 +45,30 @@ export default function CohortPicker({
   compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const term = useUpcomingTerm();
 
-  /* لا شعبة = لا تاريخ يُختلق. الصفحة تقول ذلك ولا تعرض زرّا لا يعمل. */
+  /* لا شعبة = لا تاريخ يُختلق — وهذا يبقى. لكنّ «يُعلن الموعد مع فتح الشعبة»
+     صادقةٌ ولا تفيد: يقرؤها الزائرُ فلا يعرف أينتظر أسبوعا أم فصلا. فإن كان
+     للفصل القادم كيانٌ بتواريخ قيلت التتمّة، وإلّا بقيت الجملةُ وحدَها. */
   if (cohorts.length === 0) {
     return (
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+      <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-bold text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-        يُعلن الموعد مع فتح الشعبة
+        {term ? (
+          <>
+            <span>تُفتح في <span className="text-teal-light-ink">{term.titleAr}</span></span>
+            <span className="font-normal">
+              ({fmtDateAr(term.startsOn)} — {fmtDateAr(term.endsOn)})
+            </span>
+            {term.registrationOpen ? (
+              <span className="font-normal text-teal-light-ink">والتسجيل مفتوح</span>
+            ) : term.registrationOpensAt ? (
+              <span className="font-normal">والتسجيل يبدأ {fmtDateAr(term.registrationOpensAt)}</span>
+            ) : null}
+          </>
+        ) : (
+          "يُعلن الموعد مع فتح الشعبة"
+        )}
       </span>
     );
   }
