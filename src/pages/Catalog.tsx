@@ -16,7 +16,13 @@ import { sortKeyAr } from '@/application/catalog/course-title'
 const LEVELS = ['الكل', 'أساسي', 'متوسط', 'متقدم'] as const
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
    بعد جعل الكتالوج المضمن كسولا صارت البيانات تصل لاحقا، فلا بد أن تُحسبا
-   داخل المكوّن مرتبطتين برقم نسخة الكتالوج وإلا بقيتا فارغتين للأبد. */
+   داخل المكوّن مرتبطتين برقم نسخة الكتالوج وإلا بقيتا فارغتين للأبد.
+
+   و`exhaustive-deps` يعدّ `catalogVersion` تبعيّةً زائدةً لأنّها لا تُقرأ في
+   الجسد — وهي **الإشارةُ الوحيدة**: لقطةُ API تُثبَّت بـ`splice` على المصفوفة
+   نفسِها (`data/pathways.ts:153`) فتبقى هويّتُها كما هي، ولا يرى React تغيّرا.
+   فحذفُها — وهو ما تقترحه القاعدة — يجمّد أوّلَ لقطةٍ إلى الأبد، وهو عينُ
+   العطب الذي وُصف أعلاه. فالقاعدةُ تُسكَت في مواضعها بسببها لا بخط أساس. */
 
 type Sort = 'featured' | 'shortest' | 'longest' | 'name'
 
@@ -25,7 +31,9 @@ type Sort = 'featured' | 'shortest' | 'longest' | 'name'
    عنوان الصفحة لتصبح النتيجة رابطا قابلا للمشاركة */
 export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   const catalogVersion = usePublishedContent()
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   const bestsellerIds = useMemo(() => new Set(bestsellers.map((b) => b.id)), [catalogVersion])
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   const bestsellerCourseIds = useMemo(() => new Set(bestsellerCourses.map((b) => b.id)), [catalogVersion])
   const [params, setParams] = useSearchParams()
 
@@ -78,6 +86,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
        يريد ما يحملها في اسمه أوّلا، ثمّ يبقى ترتيبُه فاصلا بين المتساويين. */
     if (q) list = [...list].sort((a, b) => pathwayRank(b) - pathwayRank(a))
     return list
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   }, [q, cat, level, sort, bestsellerIds, catalogVersion])
 
   const shownCourses = useMemo(() => {
@@ -100,11 +109,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     else list = [...list].sort((a, b) => Number(bestsellerCourseIds.has(b.id)) - Number(bestsellerCourseIds.has(a.id)))
     if (q) list = [...list].sort((a, b) => courseRank(b) - courseRank(a))
     return list
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   }, [q, cat, sort, bestsellerCourseIds, catalogVersion])
 
   /* الأسماءُ القصيرةُ بمعرِّفاتها — لفكّ الإحالات الداخليّة في «ليس لك إن…» */
   const nameById = useMemo(
     () => new Map(pathways.map((p) => [p.id, p.shortName])),
+    /* eslint-disable-next-line react-hooks/exhaustive-deps -- كسابقاتها: رقمُ النسخة هو إشارةُ الإبطال الوحيدة */
     [catalogVersion],
   )
 

@@ -17,6 +17,7 @@ import { getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
+import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
 
 /* اللبِناتُ المشتركةُ انتقلت إلى `commerce/cart-types` كي لا يصير الاستيرادُ
    حلقةً بين السلّة والخدمة. ويُعاد تصديرُها من هنا: مواضعُ الاستيراد القائمة
@@ -54,11 +55,16 @@ export class CommerceService {
       }
     }
 
-    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      include: { term: TERM_WINDOW_SELECT },
+    })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
-    if (!['open', 'full'].includes(cohort.status) || !cohort.registrationOpen) {
+    if (!['open', 'full'].includes(cohort.status)) {
       throw new AuthError('closed', 'التسجيل في هذه الشعبة غير مفتوح حاليا', 409)
     }
+    const window = cohortAcceptsRegistration(cohort)
+    if (!window.open) throw new AuthError('closed', window.reasonAr, 409)
     const existing = await this.prisma.enrollmentRequest.findUnique({ where: { userId_cohortId: { userId, cohortId } } })
     if (existing && !['rejected', 'cancelled'].includes(existing.status)) {
       throw new AuthError('already_requested', 'لديك طلب قائم لهذه الشعبة', 409)

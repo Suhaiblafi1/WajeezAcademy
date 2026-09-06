@@ -7,6 +7,7 @@
 
 import type { Prisma } from '@prisma/client'
 import { AuthError } from '../auth.service'
+import type { TermWindow } from '../registration-window'
 
 export const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
 
@@ -15,7 +16,11 @@ export const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?
    فلا يقرأ المشتري في الفاتورة اسما غيرَ الذي رآه على اللوح. */
 export type CartCohort = Prisma.CohortGetPayload<{
   include: { course: { include: { versions: true } } }
-}>
+}> & {
+  /* نافذةُ الفصل تُقرأ مع الشعبة لا بعدها: `cohortBlocker` يفحص صفّا صفّا
+     في حلقة، فقراءةُ الفصل داخلها استعلامٌ لكلّ بندٍ في السلّة. */
+  term: TermWindow | null
+}
 
 export const cartTitleOf = (c: CartCohort) =>
   `${c.course.versions[0]?.titleAr ?? c.courseId} — ${c.title}`

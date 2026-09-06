@@ -94,6 +94,7 @@ export default function PublicSearch() {
         to: `/build/${row.id}`, kind: 'course',
       }))
     return [...pw, ...cs]
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   }, [q, catalogVersion])
 
   const go = useCallback((to: string) => {

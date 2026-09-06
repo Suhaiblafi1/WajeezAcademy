@@ -18,6 +18,13 @@
    التشخيصَ ولا يُنبّه: يُبدأ من أوّله كما لو لم يُمرَّر شيء. */
 
 import { diagQuestionById } from './assessment-service'
+import type { DiagOption, DiagQuestion } from '../../data/diagnostic'
+
+/* خياراتُ `DiagQuestion` اتّحادٌ: مصفوفةٌ، أو دالّةٌ تبنيها من الأجوبة السابقة
+   (شرطيّاتُ بنك V1). وبنكُ V2.1 لا يبني دالّةً قطّ — `toDiagQuestion` يضع
+   مصفوفةً أو `undefined`. فالتضييقُ هنا صريحٌ لا افتراضٌ صامت. */
+const optionsOf = (q: DiagQuestion | null | undefined): DiagOption[] =>
+  Array.isArray(q?.options) ? q.options : []
 
 /** معرّف سؤال المرحلة في بنك V2.1 */
 export const STAGE_QUESTION_ID = 'QC-S1-001'
@@ -27,7 +34,7 @@ export const STAGE_PARAM = 'stage'
 
 /** خيارات المرحلة كما يسألها التشخيص — من البنك لا من جدولٍ ثانٍ */
 export const STAGE_OPTIONS_AR: readonly string[] =
-  diagQuestionById(STAGE_QUESTION_ID)?.options?.map((o) => o.label) ?? []
+  optionsOf(diagQuestionById(STAGE_QUESTION_ID)).map((o) => o.label)
 
 /** الخيارُ المطابق لما في العنوان — أو `null` لما لا يعرفه البنك */
 export function resolveEntryStage(
@@ -36,7 +43,7 @@ export function resolveEntryStage(
   const wanted = raw?.trim()
   if (!wanted) return null
   const question = diagQuestionById(STAGE_QUESTION_ID)
-  const match = question?.options?.find((o) => o.label === wanted)
+  const match = optionsOf(question).find((o) => o.label === wanted)
   if (!match) return null
   return { value: match.value, optionIds: match.optionId ? [match.optionId] : undefined }
 }
