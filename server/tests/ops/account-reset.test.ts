@@ -10,9 +10,9 @@
    ٤) والسببُ عشرون حرفا فأكثر.
    ٥) والأثرُ يُكتب **قبل** المحو، لأنّ الكيانَ بعده لا وجودَ له. */
 
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
-import { setupTestDb, testPrisma } from '../helpers/db'
+import { rebuildTestDb, setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { AccountResetService, MIN_REASON_LENGTH } from '../../services/account-reset.service'
 import { ATTESTATION_KEY, MAX_AGE_DAYS } from '../../services/backup-attestation'
@@ -57,6 +57,11 @@ beforeAll(async () => {
 }, 240_000)
 
 beforeEach(async () => { await clearAttestation() })
+
+/* ── هذا الملفُّ يمحو كلَّ حسابٍ غيرِ محميّ، والقاعدةُ مشتركةٌ بين الملفّات
+      في العامل الواحد. فمن يمحو جماعةً يعيد البناءَ بعده، وإلّا سقطت
+      ملفّاتٌ تليه برسالةٍ لا تدلّ على سببها. ── */
+afterAll(async () => { await rebuildTestDb() }, 240_000)
 
 describe('٦٥ · لا محوَ بلا استرجاعٍ مُثبَت', () => {
   it('بلا إثباتٍ إطلاقا: يمتنع، ويقول الأمرَ الذي يُشغَّل', async () => {
