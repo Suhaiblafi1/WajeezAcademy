@@ -87,5 +87,33 @@ else
   note "⚠️  varnishadm غيرُ متاحٍ لهذا المستخدم — فرّغه من لوحة Cloudways: Application ← Purge Varnish"
 fi
 
-printf '\n\033[1m✔ اكتملت النشرة — الالتزام %s\033[0m\n' "${DEPLOYED_SHA}"
-printf '  تحقّق: %s/api/version يجب أن يعرض «الالتزام: %s»\n\n' "${APP_URL:-https://www.wajeezacademy.com}" "${DEPLOYED_SHA}"
+# ─── ٧) التحقّق — النشرةُ تُعلَن ناجحةً حين يقولها الخادمُ لا حين ترجع الأوامر ───
+# يُسأل الخادمُ المحلّيُّ مباشرةً (127.0.0.1) لا النطاقُ العامّ: فالمقصودُ
+# «هل أعادت عمليّةُ Node الإقلاعَ على الشيفرة الجديدة؟» — لا «هل يعمل
+# النطاق؟». وسؤالُ النطاق يمرّ بـVarnish فقد يجيب من محفوظ.
+step "التحقّق من الالتزام العامل"
+API="http://127.0.0.1:${API_PORT:-7101}/api/version"
+LIVE=""
+for _ in 1 2 3 4 5 6; do
+  sleep 3
+  BODY="$(curl -fsS --max-time 15 "$API" 2>/dev/null || true)"
+  [ -n "$BODY" ] || continue
+  LIVE="$(printf '%s' "$BODY" | grep -o '"الالتزام":"[0-9a-f]\{7\}"' | head -1 | grep -o '[0-9a-f]\{7\}' || true)"
+  [ -n "$LIVE" ] && break
+done
+
+if [ -z "$BODY" ]; then
+  printf '\n\033[1;31m✖ الخادمُ لا يجيب على %s بعد إعادة التشغيل\033[0m\n' "$API"
+  note "النشرُ جرى والخادمُ ساقط — راجع سجلّ Supervisor فورا"
+  exit 1
+fi
+if [ -n "$LIVE" ] && [ "$LIVE" != "${DEPLOYED_SHA}" ]; then
+  printf '\n\033[1;31m✖ الخادمُ يعمل بالتزام %s لا %s\033[0m\n' "$LIVE" "${DEPLOYED_SHA}"
+  note "إعادةُ التشغيل لم تأخذ الشيفرةَ الجديدة — وهذا العطبُ بعينه الذي وقع من قبل"
+  exit 1
+fi
+if [ -z "$LIVE" ]; then
+  note "⚠ الخادمُ يجيب ولا يعلن التزامَه — راجع ختمَ البناء"
+fi
+
+printf '\n\033[1m✔ اكتملت النشرة — الالتزام %s، والخادمُ يعلنه\033[0m\n\n' "${DEPLOYED_SHA}"
