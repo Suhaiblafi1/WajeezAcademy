@@ -8,6 +8,7 @@ import PortalLayout from "./PortalLayout";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { clearLocalSession, readSession } from "@/services/auth";
 
+import { Panel } from "@/components/ui/Surface";
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
    - خادم حقيقي: جلسة API فعّالة → قراءة وحفظ في قاعدة البيانات.
@@ -282,7 +283,7 @@ export default function StudentAccount() {
       <PortalLayout title="حسابي">
         {/* هيكل تحميل بنفس شكل البطاقات — أهدأ للعين من السبينر */}
         <div aria-busy="true" aria-label="جاري تحميل ملفك" className="animate-pulse space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+          <Panel className="md:p-8">
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-2xl bg-white/10" />
               <div className="flex-1 space-y-2">
@@ -294,8 +295,8 @@ export default function StudentAccount() {
               <div className="h-12 rounded-xl bg-white/5" />
               <div className="h-12 rounded-xl bg-white/5" />
             </div>
-          </div>
-          <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+          </Panel>
+          <Panel className="md:p-8">
             <div className="h-4 w-32 rounded-full bg-white/10" />
             <div className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="h-12 rounded-xl bg-white/5" />
@@ -303,7 +304,7 @@ export default function StudentAccount() {
               <div className="h-12 rounded-xl bg-white/5" />
               <div className="h-12 rounded-xl bg-white/5" />
             </div>
-          </div>
+          </Panel>
         </div>
       </PortalLayout>
     );
@@ -318,7 +319,7 @@ export default function StudentAccount() {
       )}
 
       {/* بطاقة الهوية */}
-      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+      <Panel as="section" className="md:p-8">
         <div className="flex flex-wrap items-center gap-4">
           {form.avatarUrl ? (
             <img src={form.avatarUrl} alt="صورتك الشخصية" className="h-16 w-16 rounded-2xl border border-white/10 object-cover" />
@@ -347,10 +348,10 @@ export default function StudentAccount() {
             <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder="https://…" className={`${inputCls} text-left`} />
           </Field>
         </div>
-      </section>
+      </Panel>
 
       {/* المعلومات الشخصية */}
-      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+      <Panel as="section" className="mt-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><User className="h-4 w-4 text-teal-light-ink" /> معلومات شخصية</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="رقم الهاتف (واتساب)" name="phone" error={errOf("phone")}>
@@ -382,10 +383,10 @@ export default function StudentAccount() {
             </select>
           </Field>
         </div>
-      </section>
+      </Panel>
 
       {/* التعليم */}
-      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+      <Panel as="section" className="mt-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><BookOpen className="h-4 w-4 text-teal-light-ink" /> التعليم</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Field label="المؤهل العلمي">
@@ -401,10 +402,10 @@ export default function StudentAccount() {
             <input value={form.major} onChange={(e) => set("major", e.target.value)} className={inputCls} />
           </Field>
         </div>
-      </section>
+      </Panel>
 
       {/* الحياة المهنية */}
-      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+      <Panel as="section" className="mt-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><RouteIcon className="h-4 w-4 text-teal-light-ink" /> حياتك المهنية وهدفك</h2>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           <Field label="الوظيفة الحالية">
@@ -460,7 +461,7 @@ export default function StudentAccount() {
             </div>
           )}
         </div>
-      </section>
+      </Panel>
 
       {/* حفظ */}
       <div className="mt-6 flex flex-col items-center gap-3">
@@ -479,7 +480,7 @@ export default function StudentAccount() {
       </div>
 
       {/* روابط بقية أقسام الملف */}
-      <section className="mt-8 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+      <Panel as="section" className="mt-8 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك — في مكانها الطبيعي</h2>
         <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {[
@@ -497,21 +498,21 @@ export default function StudentAccount() {
             </Link>
           ))}
         </div>
-      </section>
+      </Panel>
 
       {/* بيانات الفوترة والطلبات */}
-      <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+      <Panel as="section" className="mt-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-teal-light-ink" /> الفوترة والطلبات</h2>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
           فواتيرك وطلباتك ودفعاتك — بأرقامها المرجعية وسجل مدفوعاتها — في صفحة{" "}
           <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
           لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
         </p>
-      </section>
+      </Panel>
 
       {/* الأمان والجلسات — إجراءات حقيقية على الخادم، تظهر فقط مع جلسة فعالة */}
       {mode === "server" && (
-        <section className="mt-6 rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+        <Panel as="section" className="mt-6 md:p-8">
           <h2 className="flex items-center gap-2 text-base font-black"><ShieldAlert className="h-4 w-4 text-teal-light-ink" /> الأمان والجلسات</h2>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
@@ -568,7 +569,7 @@ export default function StudentAccount() {
 
           {secErr && <p role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-2.5 text-xs font-semibold text-red-300">{secErr}</p>}
           {secMsg && <p role="status" className="mt-4 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{secMsg}</p>}
-        </section>
+        </Panel>
       )}
     </PortalLayout>
   );

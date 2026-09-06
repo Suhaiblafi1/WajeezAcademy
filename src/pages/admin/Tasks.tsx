@@ -14,6 +14,7 @@ import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDate } from "@/application/text/format-ar";
 
+import { Panel } from "@/components/ui/Surface";
 interface Task {
   id: string; title: string; bodyAr: string | null;
   dueAt: string | null; priority: string; status: string;
@@ -105,7 +106,7 @@ export default function AdminTasks() {
           <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" /></div>
         ) : (
           <>
-            <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+            <Panel as="section">
               <h2 className="flex items-center gap-2 text-sm font-black">
                 <ClipboardList className="h-4 w-4 text-teal-light-ink" /> مهامّي ({mine.filter((t) => t.status !== "done").length} مفتوحة)
               </h2>
@@ -114,7 +115,7 @@ export default function AdminTasks() {
               ) : (
                 <ul className="mt-3 space-y-2">{mine.map((t) => row(t, false))}</ul>
               )}
-            </section>
+            </Panel>
 
             {canAssign && (
               <section className="rounded-3xl border border-gold/25 bg-gold/[0.04] p-5">
@@ -159,18 +160,18 @@ export default function AdminTasks() {
             )}
 
             {canAssign && (
-              <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+              <Panel as="section">
                 <h2 className="text-sm font-black">ما كلّفتُ به غيري ({assigned.filter((t) => t.status !== "done").length} مفتوحة)</h2>
                 {assigned.length === 0 ? (
                   <p className="mt-3 text-xs text-muted-foreground">لم تكلّف أحدا بعد.</p>
                 ) : (
                   <ul className="mt-3 space-y-2">{assigned.map((t) => row(t, true))}</ul>
                 )}
-              </section>
+              </Panel>
             )}
 
             {canNotify && (
-              <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+              <Panel as="section">
                 <h2 className="flex items-center gap-2 text-sm font-black">
                   <Bell className="h-4 w-4 text-teal-light-ink" /> إشعارٌ بلا مهمّة
                 </h2>
@@ -209,7 +210,7 @@ export default function AdminTasks() {
                 >
                   <Send className="h-3.5 w-3.5" /> أرسِل
                 </button>
-              </section>
+              </Panel>
             )}
           </>
         )}

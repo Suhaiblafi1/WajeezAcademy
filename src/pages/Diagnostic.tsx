@@ -76,6 +76,7 @@ import {
 } from "./diagnostic/ResultPlanCards";
 import { composedReason, templateCourseReason } from "./diagnostic/plan-reasons";
 
+import { Panel, Card } from "@/components/ui/Surface";
 type DiagAnswers = Record<string, string>;
 type Stage = "intro" | "questions" | "skills" | "computing" | "result";
 
@@ -976,7 +977,7 @@ export default function Diagnostic() {
               <div className="mt-8">
                 <div className="grid gap-3">
                   {question.items.map((item) => (
-                    <div key={item.key} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <Card key={item.key}>
                       <p className="text-sm font-bold">{item.label}</p>
                       <div className="mt-3 flex items-center gap-2" dir="ltr">
                         {[1, 2, 3, 4, 5].map((n) => {
@@ -1002,7 +1003,7 @@ export default function Diagnostic() {
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
                           : "اختر مستواك — بصدق"}
                       </p>
-                    </div>
+                    </Card>
                   ))}
                 </div>
                 <div className="mt-6 flex items-center justify-between">
@@ -1219,7 +1220,7 @@ export default function Diagnostic() {
                 )}
 
                 {isExploratory && (exploration?.evidence_suggestions_ar?.length ?? 0) > 0 && (
-                  <div className="mx-auto mt-7 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right">
+                  <Card className="mx-auto mt-7 max-w-md text-right">
                     <p className="text-xs font-black text-foreground">ما الذي يرفع دقة تشخيصك المرة القادمة؟</p>
                     <ul className="mt-3 space-y-2">
                       {exploration!.evidence_suggestions_ar!.slice(0, 4).map((s) => (
@@ -1229,7 +1230,7 @@ export default function Diagnostic() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </Card>
                 )}
 
                 {/* الخطوة التالية أولا، وإعادةُ التشخيص ثانية، والمستشار سطرا.
@@ -1464,7 +1465,7 @@ export default function Diagnostic() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+              <Card className="mt-6">
                 <p className="text-sm font-black text-teal-light-ink">ماذا ستحصل عليه فعليا؟</p>
                 <p className="mt-1.5 text-xs leading-6 text-muted-foreground">
                   لا تحصل على قائمة دورات فقط؛ تحصل على ترتيب تعلم، ومتابعة، ومراجعة، ومخرجا تطبيقيا يثبت أنك تقدمت.
@@ -1491,7 +1492,7 @@ export default function Diagnostic() {
                     ثمنَه: البطاقة الأولى تعرّفه على المسار وحده، ثم يرى ما سيتعلمه،
                     ثم لماذا رُشّح له، ثم — وقد عرف ما يشتري — يأتي السعر أسفل
                     الصفحة قبل التسجيل مباشرة (ResultPriceCard). */}
-              </div>
+              </Card>
             </div>
           </div>
           )}
@@ -1503,7 +1504,7 @@ export default function Diagnostic() {
             return (
               <>
                 <CompositePlan composite={compositeView} />
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4">
+                <Card className="mt-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
                   <p className="text-xs leading-relaxed text-muted-foreground">
                     <span className="font-bold text-foreground">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
                     {" "}— أقوى مسار مفرد ضمن خطتك، استُمدت منه دورات أساسية في تركيبتك.
@@ -1515,7 +1516,7 @@ export default function Diagnostic() {
                   >
                     استعرض المسار المفرد
                   </Link>
-                </div>
+                </Card>
               </>
             );
           })()}
@@ -1606,7 +1607,7 @@ export default function Diagnostic() {
           {/* «مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة» — إثبات قيمة مضغوط قبل الاعتماد،
               بنفس حجم خط القسم. حلّت محل ثلاثة أكورديونات كانت هنا بقرار المالك (2026-08-23):
               «لماذا هذا المسار؟» و«هل هناك معلومات لم نعرفها بعد؟» و«كيف بُنيت توصيتك؟» */}
-          <div className="mt-8 rounded-3xl border border-white/10 bg-white/[0.03] p-5 md:p-6 print:hidden">
+          <Panel className="mt-8 md:p-6 print:hidden">
             <h3 className="flex items-center gap-2 text-base font-black">
               <Sparkles className="h-4 w-4 text-[#FABC05]" />
               مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة
@@ -1629,7 +1630,7 @@ export default function Diagnostic() {
                 </p>
               ))}
             </div>
-          </div>
+          </Panel>
 
           {/* تقاطع الرصيد السابق مع دورات التوصية — لا يدفع ثمن ما يعرفه */}
           {result.priorOverlap.length > 0 && (
@@ -1810,7 +1811,7 @@ export default function Diagnostic() {
                 </div>
                 {/* الأسرع */}
                 {result.faster && (
-                  <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <Card className="flex flex-col">
                     <span className="kicker">
                       <Zap className="h-3 w-3" /> بديل أسرع
                     </span>
@@ -1834,11 +1835,11 @@ export default function Diagnostic() {
                       <RefreshCcw className="ml-2 h-3.5 w-3.5" />
                       اجعله توصيتي الأولى
                     </Button>
-                  </div>
+                  </Card>
                 )}
                 {/* الأوفر */}
                 {result.cheaper && (
-                  <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                  <Card className="flex flex-col">
                     <span className="kicker-amber">
                       <Wallet className="h-3 w-3" /> بديل أوفر
                     </span>
@@ -1862,7 +1863,7 @@ export default function Diagnostic() {
                       <RefreshCcw className="ml-2 h-3.5 w-3.5" />
                       اجعله توصيتي الأولى
                     </Button>
-                  </div>
+                  </Card>
                 )}
               </div>
             </div>

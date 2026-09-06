@@ -30,6 +30,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsAssignment {
   courseId: string; courseTitle: string
@@ -123,11 +124,11 @@ export default function TrainerRunOps() {
 
   if (offline) {
     return (
-      <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+      <Panel className="grid place-items-center py-20 text-center">
         <ServerOff className="h-12 w-12 text-muted-foreground/50" />
         <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
         <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-      </div>
+      </Panel>
     );
   }
 
@@ -152,10 +153,10 @@ export default function TrainerRunOps() {
         </p>
 
         {requests.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-center">
+          <Card className="mt-3 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink/50" />
             <p className="mt-2 text-xs text-muted-foreground">لا طلبَ ينتظر قرارك.</p>
-          </div>
+          </Card>
         ) : (
           <ul className="mt-3 space-y-3">
             {requests.map((r) => (
@@ -221,13 +222,13 @@ export default function TrainerRunOps() {
         </div>
 
         {shown.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.02] p-8 text-center">
+          <Card className="mt-3 p-8 text-center">
             <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm font-black">لا مدرّبَ بعد</p>
             <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
               يظهر هنا كلُّ من أُنشئ له ملفُّ مدرّب — أي من اعتُمد من تبويب «الطلبات».
             </p>
-          </div>
+          </Card>
         ) : (
           <ul className="mt-3 space-y-3">
             {shown.map((t) => {
@@ -238,7 +239,7 @@ export default function TrainerRunOps() {
               const eligibleCohorts = cohorts.filter((c) => qualifiedIds.has(c.courseId));
               const k = (a: string) => `${t.profileId}:${a}`;
               return (
-                <li key={t.profileId} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <Card as="li" key={t.profileId}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
@@ -360,7 +361,7 @@ export default function TrainerRunOps() {
                       </button>
                     )}
                   </div>
-                </li>
+                </Card>
               );
             })}
           </ul>

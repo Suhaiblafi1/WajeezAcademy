@@ -9,6 +9,7 @@ import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { fmtDate } from "@/application/text/format-ar";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
   enrolled: "سجلت", not_interested: "غير مهتمة", closed: "مغلقة", converted: "تحولت",
@@ -58,13 +59,13 @@ export default function Exceptions() {
   if (offline) {
     return (
       <AdminLayout title="الاستثناءات">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -85,15 +86,15 @@ export default function Exceptions() {
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ShieldAlert className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا استثناءات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">كل حالات المستشارين النشطة مسندة — الحالات الجديدة من التشخيص تظهر هنا فور وصولها.</p>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-3">
           {rows.map((c) => (
-            <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{c.client?.displayName ?? c.lead?.name ?? "—"}</p>
                 <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{c.client?.email ?? c.lead?.email ?? ""}</p>
@@ -118,7 +119,7 @@ export default function Exceptions() {
                   <UserPlus className="h-3.5 w-3.5" /> إسناد
                 </button>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

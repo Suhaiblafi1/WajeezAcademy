@@ -10,6 +10,7 @@ import TrainerLayout from "./TrainerLayout";
 import { apiGet, ApiError } from "@/services/api";
 import { RatingsPanel, type MyRatingsResponse } from "@/components/RatingsPanel";
 
+import { Panel } from "@/components/ui/Surface";
 export default function MyRatings() {
   const [data, setData] = useState<MyRatingsResponse>({});
   const [loading, setLoading] = useState(true);
@@ -38,10 +39,10 @@ export default function MyRatings() {
       </p>
 
       {offline && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <ServerOff className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-        </div>
+        </Panel>
       )}
 
       {!offline && loading && (

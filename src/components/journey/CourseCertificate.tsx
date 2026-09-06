@@ -21,6 +21,7 @@ import {
 } from "@/services/learner-requests";
 import type { EnrollmentCertificate } from "@/services/enrollment-detail";
 
+import { Card } from "@/components/ui/Surface";
 export default function CourseCertificate({
   enrollmentId,
   courseTitleAr,
@@ -72,7 +73,7 @@ export default function CourseCertificate({
   if (request || sent) {
     const meta = REQUEST_STATUS_AR[request?.status ?? "pending"] ?? REQUEST_STATUS_AR.pending;
     return (
-      <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-3.5">
+      <Card className="p-3.5">
         <p className="flex flex-wrap items-center gap-2 text-[12px] font-black text-foreground">
           <Award className="h-4 w-4 text-gold-ink" /> شهادة «{courseTitleAr}»
           <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta.cls}`}>{meta.label}</span>
@@ -82,12 +83,12 @@ export default function CourseCertificate({
             ? request.decisionAr
             : "نراجع قواعد الإكمال ثم تُصدَر الشهادة برقم تحقّق، وتصلك في «شهاداتي»."}
         </p>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-3.5">
+    <Card className="p-3.5">
       <p className="flex items-center gap-1.5 text-[12px] font-black text-foreground">
         <Award className="h-4 w-4 text-gold-ink" /> شهادة هذه الدورة
       </p>
@@ -133,6 +134,6 @@ export default function CourseCertificate({
         </>
       )}
       {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
-    </div>
+    </Card>
   );
 }

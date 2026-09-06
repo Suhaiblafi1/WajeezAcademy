@@ -7,6 +7,7 @@ import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
 import { fmtShortDateTimeAr } from "@/utils/format";
 
+import { Panel } from "@/components/ui/Surface";
 interface RealQueueItem {
   id: string; status: string; submittedAt: string;
   assessment: { title: string; cohort: { title: string } };
@@ -29,7 +30,7 @@ function RealGradingQueue() {
           <Loader2 className="h-5 w-5 animate-spin" /> أحضر الطابور…
         </div>
       ) : actionable.length === 0 ? (
-        <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center">
+        <Panel className="p-10 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-teal-light-ink" />
           <h2 className="mt-4 text-lg font-black">الطابور نظيف — لا تسليمات بانتظارك</h2>
           <p className="mt-2 text-sm text-muted-foreground">كل ما وصلك قيّمته. أحسنت.</p>
@@ -54,7 +55,7 @@ function RealGradingQueue() {
               راجع مستحقاتي
             </Link>
           </div>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">لديك {actionable.length} {actionable.length === 1 ? "تسليم يحتاج" : "تسليمات تحتاج"} تقييمك:</p>

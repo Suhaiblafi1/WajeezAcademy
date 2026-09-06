@@ -14,6 +14,7 @@
 
 import { useMemo, useState } from "react";
 import { AlertTriangle, Check, CircleSlash, Plus, Search, TriangleAlert, X } from "lucide-react";
+import { Card } from "@/components/ui/Surface";
 import {
   STATE_LABEL_AR, assessSkillSelection, byStateThenName, skillStateOf,
   type SkillMeasureState, type SkillState,
@@ -168,7 +169,7 @@ export default function SkillPicker({
               قُدّم طلب المهارة للمراجعة — لا تُضاف قبل الاعتماد.
             </p>
           ) : askOpen ? (
-            <div className="rounded-2xl border border-white/12 bg-white/[0.03] p-3">
+            <Card>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[11px] font-black text-foreground">طلب مهارة غير موجودة</p>
                 <button type="button" onClick={() => setAskOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground">
@@ -205,7 +206,7 @@ export default function SkillPicker({
               >
                 قدّم الطلب للمراجعة
               </button>
-            </div>
+            </Card>
           ) : (
             <button
               type="button"

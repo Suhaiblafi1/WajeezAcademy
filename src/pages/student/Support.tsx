@@ -8,6 +8,7 @@ import { fmtWhen } from "@/utils/format";
 import { toast, toastError } from '@/components/Toast';
 import { FieldError, invalidProps } from "@/components/FormKit";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار ردك",
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
@@ -74,7 +75,7 @@ export default function StudentSupport() {
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {/* فتح تذكرة */}
-      <div className="mb-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+      <Panel className="mb-6">
         <button onClick={() => setCreateOpen(!createOpen)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
           <span className="flex items-center gap-2"><Plus className="h-4 w-4 text-teal-ink" /> تذكرة جديدة</span>
           <ChevronRight className={`h-4 w-4 transition ${createOpen ? "rotate-90" : ""}`} />
@@ -134,19 +135,19 @@ export default function StudentSupport() {
             </button>
           </div>
         )}
-      </div>
+      </Panel>
 
       {loading ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <LifeBuoy className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 text-sm text-muted-foreground">لا تذاكر — افتح أول تذكرة من الأعلى وسنرد عليك في نفس الخيط.</p>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-3">
           {rows.map((t) => (
-            <div key={t.id} className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+            <Card key={t.id}>
               <button onClick={() => setOpenId(openId === t.id ? null : t.id)} className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 text-right">
                 <div>
                   <p className="font-black">{t.subject}</p>
@@ -210,7 +211,7 @@ export default function StudentSupport() {
                   )}
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}

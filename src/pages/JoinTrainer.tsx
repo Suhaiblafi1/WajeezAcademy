@@ -60,6 +60,7 @@ import {
 } from "./join-trainer/options";
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
 
+import { Card } from "@/components/ui/Surface";
 /* الحدّان يُعاد تصديرُهما من هنا: الاختبارُ يقرؤهما من هذا الملفّ حرسا
    لتطابقهما مع الخادم، وموضعُ التعريف انتقل لا الضمان. */
 export { MAX_DOC_BYTES, MOTIVATION_MAX, MOTIVATION_MIN };
@@ -529,7 +530,7 @@ export default function JoinTrainer() {
                 لتحديد موعد»، فيقف المتقدّمُ بلا شيءٍ بيده. والموعدُ صار بيده. */}
             <BookInterview name={form.fullName.trim()} email={form.email.trim()} reference={result.reference} />
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card>
               <p className="flex items-center gap-2 text-sm font-black">
                 <BadgeCheck className="h-4 w-4 text-teal-light-ink" /> وفي أثناء ذلك
               </p>
@@ -538,7 +539,7 @@ export default function JoinTrainer() {
                 {" "}<b className="text-foreground">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
                 {channelValue && <> على <b dir="ltr" className="text-foreground">{channelValue}</b></>}.
               </p>
-            </div>
+            </Card>
 
             <div className={`rounded-2xl border p-5 ${mailSent ? "border-white/10 bg-white/[0.03]" : "border-gold/30 bg-gold/[0.07]"}`}>
               <p className="flex items-center gap-2 text-sm font-black">
@@ -553,7 +554,7 @@ export default function JoinTrainer() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card>
               <p className="flex items-center gap-2 text-sm font-black">
                 <KeyRound className="h-4 w-4 text-teal-light-ink" /> تابع حالة طلبك من حسابك
               </p>
@@ -567,7 +568,7 @@ export default function JoinTrainer() {
               >
                 سجّل الدخول <ArrowLeft className="h-4 w-4" />
               </Link>
-            </div>
+            </Card>
           </div>
           <div>
             <Link to="/" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-teal-light-ink transition hover:text-teal-ink">
@@ -613,10 +614,10 @@ export default function JoinTrainer() {
             { icon: Users, text: "طلاب جادون وصلوا عبر تشخيص" },
             { icon: Mic2, text: "مقابلة ودرس تجريبي قبل الاعتماد" },
           ].map((f) => (
-            <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card key={f.text}>
               <f.icon className="h-5 w-5 text-teal-light-ink" />
               <p className="mt-3 text-xs font-bold leading-6 text-foreground">{f.text}</p>
-            </div>
+            </Card>
           ))}
         </div>
 
@@ -812,7 +813,7 @@ export default function JoinTrainer() {
                     لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
                   </ConsentRow>
                   {form.hasAccreditation && (
-                    <div className="mt-3 rounded-2xl border border-white/10 bg-paper/20 p-4">
+                    <Card className="mt-3 bg-paper/20">
                       <FieldRow>
                         <Field label="جهة الاعتماد" htmlFor="jt-accred-body" required error={errOf("accredBody")}>
                           <select
@@ -848,7 +849,7 @@ export default function JoinTrainer() {
                       <p className="mt-4 text-[11px] leading-6 text-muted-foreground">
                         نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
                       </p>
-                    </div>
+                    </Card>
                   )}
                 </div>
               </Question>
@@ -1113,7 +1114,7 @@ export default function JoinTrainer() {
               </Question>
 
               {/* ملخّص ما سيصل المراجع — بلا مفاجآت */}
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+              <Card>
                 <p className="flex items-center gap-2 text-xs font-black text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
                 </p>
@@ -1127,7 +1128,7 @@ export default function JoinTrainer() {
                 <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-muted-foreground">
                   رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
                 </p>
-              </div>
+              </Card>
             </div>
           )}
 

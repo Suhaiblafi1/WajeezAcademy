@@ -6,6 +6,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { fmtWhen } from "@/utils/format";
 
+import { Panel } from "@/components/ui/Surface";
 interface Notif {
   id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string;
 }
@@ -54,10 +55,10 @@ export default function Notifications() {
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <Bell className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 text-sm text-muted-foreground">لا إشعارات بعد — قرارات التسجيل والجلسات والتصحيح تصل هنا فورا.</p>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-2">
           {rows.map((n) => (

@@ -15,6 +15,7 @@ import { countWindows, flowTrend, stockTrend, trendBadgeAr, type Trend } from "@
 import { fmtNum, fmtTime } from "@/application/text/format-ar";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
 
+import { Card } from "@/components/ui/Surface";
 /* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
    كل بطاقة تتحمل غياب الصلاحية (403) فتختفي بهدوء بدل كسر الصفحة. */
 
@@ -199,7 +200,7 @@ export default function AdminDashboard() {
       <StaffInbox />
 
       {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
-      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-muted-foreground">
+      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-[11px] text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام اللوحة — ورقمان مختلفا الرسم في
             البطاقة الواحدة يُقرآن واجهتين مركّبتين لا واجهةً واحدة */}
@@ -218,7 +219,7 @@ export default function AdminDashboard() {
             </Link>
           </span>
         ))}
-      </div>
+      </Card>
 
       {cards === null && !failed && (
         <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
@@ -227,9 +228,9 @@ export default function AdminDashboard() {
       )}
 
       {failed && (
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-muted-foreground">
+        <Card className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
           <ServerOff className="h-5 w-5" /> تعذر الوصول للخادم — تأكد أنه يعمل ثم حدّث الصفحة.
-        </div>
+        </Card>
       )}
 
       <DiagnosticFunnel />

@@ -62,7 +62,7 @@ export default function TeachableCoursePicker({
           البيانات وعرض التوصيات» مقابل «دورة SQL»)، فالرصفُ بعرض النصّ يجعل
           بعضها يملأ السطر وبعضها كلمتين — وهو التبعثر الذي شُكي منه. */}
       {domain && (
-        <div className="rounded-2xl border border-white/10 bg-paper/20 p-3">
+        <Card className="bg-paper/20">
           <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
             اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
           </p>
@@ -75,7 +75,7 @@ export default function TeachableCoursePicker({
               name={`دورات ${domain}`}
             />
           </div>
-        </div>
+        </Card>
       )}
 
       {/* المختار يبقى مرئيا ولو غادر مجاله — وإلا ظنّ أنه فقده */}

@@ -11,6 +11,7 @@ import { fmtDate } from "@/application/text/format-ar";
 import { APPLICANT_STATUS, BOOKABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
 import BookInterview from "@/components/BookInterview";
 
+import { Card } from "@/components/ui/Surface";
 /* بوّابةُ المتقدّم للتدريب — صفحةٌ واحدة تقول له أين طلبه.
 
    المتقدّم يدخل ببريده وكلمته التي اختارها عند التقديم، فيرى: حالةَ طلبه
@@ -181,7 +182,7 @@ export default function ApplicantStatus() {
 
             {/* البريد والتواصل */}
             <section className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <Card>
                 <p className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground"><Mail className="h-3.5 w-3.5" /> بريدك</p>
                 <p dir="ltr" className="mt-1 text-right text-sm text-muted-foreground">{mine.email}</p>
                 {mine.emailVerifiedAt ? (
@@ -197,8 +198,8 @@ export default function ApplicantStatus() {
                     </button>
                   </div>
                 ) : null}
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              </Card>
+              <Card>
                 <p className="flex items-center gap-2 text-[11px] font-bold text-muted-foreground"><Phone className="h-3.5 w-3.5" /> سنتواصل معك عبر</p>
                 {mine.contactChannel ? (
                   <>
@@ -212,11 +213,11 @@ export default function ApplicantStatus() {
                 ) : (
                   <p className="mt-1 text-xs text-muted-foreground">تختارها عند إكمال طلبك.</p>
                 )}
-              </div>
+              </Card>
             </section>
 
             {/* المسار */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card as="section">
               <h3 className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-teal-light-ink" /> ما مرّ به طلبك</h3>
               <ol className="mt-3 space-y-2">
                 {mine.statusHistory.map((h, i) => (
@@ -229,10 +230,10 @@ export default function ApplicantStatus() {
                   </li>
                 ))}
               </ol>
-            </section>
+            </Card>
 
             {/* المستندات */}
-            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card as="section">
               <h3 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> مستنداتك</h3>
               {mine.documents.length === 0 ? (
                 <p className="mt-2 text-xs text-muted-foreground">لم تُرفع مستندات بعد.</p>
@@ -246,11 +247,11 @@ export default function ApplicantStatus() {
                   ))}
                 </ul>
               )}
-            </section>
+            </Card>
 
             {/* السحب */}
             {canWithdraw && (
-              <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+              <Card as="section">
                 <p className="text-xs font-bold text-muted-foreground">غيّرت رأيك؟ يمكنك سحب طلبك نهائيا — والتقديم من جديد متى شئت.</p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <button
@@ -266,7 +267,7 @@ export default function ApplicantStatus() {
                     </button>
                   )}
                 </div>
-              </section>
+              </Card>
             )}
 
             <button type="button" onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-muted-foreground">

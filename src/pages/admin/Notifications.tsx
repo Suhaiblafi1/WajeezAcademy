@@ -7,6 +7,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
+import { Panel } from "@/components/ui/Surface";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 const CHANNEL_AR: Record<string, string> = { in_app: "داخلي", email: "بريد", sms: "رسالة نصية", whatsapp: "واتساب" };
@@ -52,13 +53,13 @@ export default function Notifications() {
   if (offline) {
     return (
       <AdminLayout title="الإشعارات">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -68,7 +69,7 @@ export default function Notifications() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         {/* قالب جديد / تحديث */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+        <Panel as="section">
           {/* h2 لا h3: قسمان تحت عنوان الصفحة مباشرةً، والقفزُ من h1 إلى h3
               يوهم قارئَ الشاشة بقسمٍ غائبٍ بينهما. */}
           <h2 className="flex items-center gap-2 text-sm font-black"><Bell className="h-4 w-4 text-gold-ink" /> قالب جديد أو تحديث — متغيرات {"{{key}}"}</h2>
@@ -107,10 +108,10 @@ export default function Notifications() {
             ))}
             {templates.length === 0 && !loading && <p className="text-xs text-muted-foreground">لا قوالب بعد.</p>}
           </ul>
-        </section>
+        </Panel>
 
         {/* سجل الإرسال */}
-        <section className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+        <Panel as="section">
           <div className="flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-gold-ink" /> سجل الإرسال</h2>
             <select value={logFilter} onChange={(e) => setLogFilter(e.target.value)} aria-label="رشّح بالحالة"
@@ -145,7 +146,7 @@ export default function Notifications() {
               {log.length === 0 && <p className="text-xs text-muted-foreground">السجل فارغ بهذه الحالة.</p>}
             </ul>
           )}
-        </section>
+        </Panel>
       </div>
     </AdminLayout>
   );

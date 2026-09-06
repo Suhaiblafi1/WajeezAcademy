@@ -5,6 +5,7 @@
 
 import { MessageSquareQuote, ShieldCheck, Star } from "lucide-react";
 
+import { Card } from "@/components/ui/Surface";
 export interface RatingsHidden { revealed: false; count: number; avg: null; noticeAr: string }
 export interface RatingsShown {
   revealed: true; count: number; avg: number | null;
@@ -17,18 +18,18 @@ export interface MyRatingsResponse { trainer?: RatingsSubjectView; advisor?: Rat
 export function RatingsPanel({ titleAr, view }: { titleAr: string; view: RatingsSubjectView }) {
   if (!view.revealed) {
     return (
-      <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+      <Card as="section">
         <h2 className="text-sm font-black">{titleAr}</h2>
         <p className="mt-3 flex items-start gap-2.5 text-[12px] leading-6 text-muted-foreground">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
           {view.noticeAr}
         </p>
-      </section>
+      </Card>
     );
   }
   const max = Math.max(1, ...view.distribution.map((d) => d.count));
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+    <Card as="section">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-sm font-black">{titleAr}</h2>
         <span className="text-[11px] text-muted-foreground">{view.count} تقييما</span>
@@ -65,6 +66,6 @@ export function RatingsPanel({ titleAr, view }: { titleAr: string; view: Ratings
           ))}
         </div>
       )}
-    </section>
+    </Card>
   );
 }

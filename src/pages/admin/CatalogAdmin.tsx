@@ -16,6 +16,7 @@ import PathwayWizard from "@/components/PathwayWizard";
 import CourseWizard from "@/components/CourseWizard";
 import { fmtDateTime } from "@/application/text/format-ar";
 
+import { Card } from "@/components/ui/Surface";
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
   templates: Record<string, number>; questions: Record<string, number>; changeRequests: Record<string, number>
@@ -184,7 +185,7 @@ export default function CatalogAdmin() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {([["المسارات", overview.pathways], ["الدورات", overview.courses], ["المهارات", overview.skills],
              ["القوالب", overview.templates], ["الأسئلة", overview.questions], ["طلبات التغيير", overview.changeRequests]] as const).map(([label, bag]) => (
-            <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <Card key={label}>
               <p className="text-xs font-bold text-muted-foreground">{label}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {Object.entries(bag).map(([s, n]) => (
@@ -192,7 +193,7 @@ export default function CatalogAdmin() {
                 ))}
                 {Object.keys(bag).length === 0 && <span className="text-[11px] text-muted-foreground">لا شيء بعد</span>}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -344,7 +345,7 @@ export default function CatalogAdmin() {
 
         <FormHead id="skill" icon={FilePlus2} title="مهارة جديدة (مسودة)" hint="وحدة قياس المحرك التشخيصي" />
         {openForm === "skill" && (
-          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
+          <Card className="border-gold/20">
             <div className="grid gap-3 sm:grid-cols-4">
               {([["id", "SK-X-XXX-000"], ["slug", "skill_slug"], ["nameAr", "الاسم العربي"], ["familyId", "رمز العائلة (COG…)"]] as const).map(([k, ph]) => (
                 <input key={k} value={skillForm[k]} onChange={(e) => setSkillForm({ ...skillForm, [k]: e.target.value })}
@@ -359,12 +360,12 @@ export default function CatalogAdmin() {
               className="mt-4 cursor-pointer rounded-full bg-gold px-5 py-2 text-sm font-black text-on-gold disabled:opacity-40">
               إنشاء المسودة
             </button>
-          </div>
+          </Card>
         )}
 
         <FormHead id="cr" icon={GitPullRequest} title="طلب تعديل على كيان موجود" hint="المسميات والأهداف والروابط — لا يطبق قبل اعتماد مراجع آخر" />
         {openForm === "cr" && (
-          <div className="rounded-2xl border border-gold/20 bg-white/[0.02] p-5">
+          <Card className="border-gold/20">
             <div className="grid gap-3 sm:grid-cols-2">
               <select value={crForm.entityType} onChange={(e) => setCrForm({ ...crForm, entityType: e.target.value, entityId: "" })} className={selectCls}>
                 {Object.entries(ENTITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -383,7 +384,7 @@ export default function CatalogAdmin() {
               className="mt-3 cursor-pointer rounded-full bg-gold px-6 py-2 text-sm font-black text-on-gold disabled:opacity-40">
               تقديم الطلب
             </button>
-          </div>
+          </Card>
         )}
       </section>
 
@@ -393,7 +394,7 @@ export default function CatalogAdmin() {
         <div className="mt-4 space-y-3">
           {crs.length === 0 && <p className="text-sm text-muted-foreground">لا طلبات بعد.</p>}
           {crs.map((cr) => (
-            <div key={cr.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <Card key={cr.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-bold text-sm">{ENTITY_AR[cr.entityType] ?? cr.entityType} · <span dir="ltr" className="font-mono text-xs">{cr.entityId}</span></p>
                 <p className="mt-1 text-xs text-muted-foreground">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
@@ -413,7 +414,7 @@ export default function CatalogAdmin() {
                   </>
                 )}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
         <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">

@@ -14,6 +14,7 @@ import { useRealSession } from "@/services/session";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import ConfirmAction from "@/components/ConfirmAction";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
   academic_coordinator: "منسّق أكاديميّ",
@@ -199,13 +200,13 @@ export default function Users() {
   if (offline) {
     return (
       <AdminLayout title="المستخدمون والأدوار">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -320,10 +321,10 @@ export default function Users() {
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <UsersIcon className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 text-sm text-muted-foreground">لا مستخدمون.</p>
-        </div>
+        </Panel>
       ) : (
         <>
         <div className="mb-3 flex flex-wrap rounded-full border border-white/15 p-1">
@@ -348,7 +349,7 @@ export default function Users() {
         ) : (
         <div className="space-y-3">
           {view.rows.map((u) => (
-            <div key={u.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card key={u.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-[11px] font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
@@ -458,7 +459,7 @@ export default function Users() {
                 </div>
               </div>
               {permFor === u.id && (
-                <div className="mt-4 rounded-2xl border border-teal/25 bg-paper/25 p-4">
+                <Card className="mt-4 border-teal/25 bg-paper/25">
                   {!perms ? (
                     <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" /></div>
                   ) : (
@@ -556,7 +557,7 @@ export default function Users() {
                       </p>
                     </>
                   )}
-                </div>
+                </Card>
               )}
 
               {/* أثرُ الحساب: من أنشأه، ومن أوقفه ولماذا، ومن منحه صلاحيّةً
@@ -591,7 +592,7 @@ export default function Users() {
                   </button>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </div>
         )}

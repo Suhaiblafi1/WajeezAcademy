@@ -39,6 +39,7 @@ import { validateRubric } from "@/application/content/rubric";
 import { fmtShortDateTimeAr } from "@/utils/format";
 import { fmtNum } from "@/application/text/format-ar";
 
+import { Card } from "@/components/ui/Surface";
 interface WorkRow {
   moduleId: string; courseId: string; courseTitleAr: string; titleAr: string; sequence: number;
   hasBody: boolean; hasChecks: boolean; hasVideo: boolean; hasScenario: boolean;
@@ -346,7 +347,7 @@ export default function Authoring() {
         </aside>
 
         {/* ── المحرّر ── */}
-        <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+        <Card as="section">
           {!selected ? (
             <p className="py-20 text-center text-sm leading-7 text-muted-foreground">
               اختر وحدةً من الطابور لتبدأ.
@@ -570,7 +571,7 @@ export default function Authoring() {
               )}
             </>
           )}
-        </section>
+        </Card>
       </div>
     </AdminLayout>
   );
@@ -582,10 +583,10 @@ function Stat({ label, value, tone }: { label: string; value: number; tone?: "go
      الذي عالجته المهمّةُ ٢٠ في ألفَي موضع، وبقي هنا لأنّ الشاشةَ لم تُفحَص. */
   const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold-ink" : "text-foreground";
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+    <Card>
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className={`mt-1 text-2xl font-black tabular-nums ${color}`}>{fmtNum(value)}</p>
-    </div>
+    </Card>
   );
 }
 

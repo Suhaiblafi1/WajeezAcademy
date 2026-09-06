@@ -21,6 +21,7 @@ import { pathwayById } from "@/data/pathways";
 import { areaCls } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 
+import { Panel } from "@/components/ui/Surface";
 interface Row {
   id: string;
   kind: string;
@@ -89,11 +90,11 @@ export default function LearnerRequests() {
   if (offline) {
     return (
       <AdminLayout title="طلبات المتعلّمين">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -103,14 +104,14 @@ export default function LearnerRequests() {
       {rows === null ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <CheckCircle2 className="h-12 w-12 text-teal-light-ink/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبَ ينتظر قرارك</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             حين يُنهي متعلّمٌ دورتَه أو مسارَه ويطلب شهادتَه أو توصيةً يظهر هنا — مستوفيا قواعدَ الإكمال، فحسابُ
             الأهليّة يقع قبل الطلب لا بعده.
           </p>
-        </div>
+        </Panel>
       ) : (
         <ul className="space-y-4">
           {rows.map((r) => {
@@ -123,7 +124,7 @@ export default function LearnerRequests() {
                   : "—";
             const reason = note[r.id] ?? "";
             return (
-              <li key={r.id} className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+              <Panel as="li" key={r.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
@@ -213,7 +214,7 @@ export default function LearnerRequests() {
                     الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشَّحو الشهادة، ثمّ سجّل الإنجاز هنا.
                   </p>
                 )}
-              </li>
+              </Panel>
             );
           })}
         </ul>

@@ -20,6 +20,7 @@ import { domainsV2 } from "@/domain/diagnostic/v2/data";
 import { apiPost, apiGet, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface CourseOption { id: string; title: string }
 
 interface Impact {
@@ -105,7 +106,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
   });
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+    <Panel>
       {/* شريط الخطوات — الحالة الحقيقية لكل خطوة لا ترقيم أعمى */}
       <ol className="mb-6 flex flex-wrap gap-2">
         {WIZARD_STEPS.map((s, i) => {
@@ -245,7 +246,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </p>
 
           {readiness && (
-            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+            <Card className="bg-paper/20">
               <p className="mb-3 flex items-center gap-2 text-xs font-black text-foreground">
                 <ShieldCheck className="h-4 w-4 text-gold-ink" aria-hidden="true" /> الجاهزية — نفس ما يفحصه حاجز النشر
               </p>
@@ -258,7 +259,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
 
           <button disabled={busy !== null} onClick={checkImpact}
@@ -267,7 +268,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </button>
 
           {impact && (
-            <div className="rounded-2xl border border-white/10 bg-paper/20 p-4 text-xs leading-6 text-foreground">
+            <Card className="bg-paper/20 text-xs leading-6 text-foreground">
               <p className="font-bold">تغيّرت توصية {impact.changedCount} من {impact.totalPersonas} شخصية.</p>
               {impact.changed.map((c) => <p key={c.name} className="text-amber-300">• {c.name}</p>)}
               {impact.changedCount === 0 && (
@@ -276,7 +277,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
                   والأثر يظهر حين يصبح منشورا ويدخل المنافسة.
                 </p>
               )}
-            </div>
+            </Card>
           )}
 
           <p className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-foreground">
@@ -329,6 +330,6 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           <span className="text-[11px] text-muted-foreground">افحص الأثر أولا — لا يُقدَّم مسار لم يُعرف أثره.</span>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

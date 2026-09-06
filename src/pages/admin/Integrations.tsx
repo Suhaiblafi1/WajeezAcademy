@@ -9,6 +9,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
 
+import { Panel } from "@/components/ui/Surface";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 const labelCls = "block text-micro font-bold text-muted-foreground";
 
@@ -88,13 +89,13 @@ export default function Integrations() {
   if (offline) {
     return (
       <AdminLayout title="التكاملات">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -109,7 +110,7 @@ export default function Integrations() {
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
           {/* ════ مزود الدفع ════ */}
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+          <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-gold-ink" /> مزود الدفع</p>
             <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبداً،
@@ -187,10 +188,10 @@ export default function Integrations() {
                 </button>
               </div>
             </div>
-          </section>
+          </Panel>
 
           {/* ════ البريد ════ */}
-          <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+          <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> قناة البريد (Resend)</p>
             <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
               فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
@@ -240,7 +241,7 @@ export default function Integrations() {
                 </div>
               </div>
             </div>
-          </section>
+          </Panel>
 
           {/* قاعدة الأمان */}
           <p className="flex items-start gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 text-[11px] leading-6 text-muted-foreground lg:col-span-2">

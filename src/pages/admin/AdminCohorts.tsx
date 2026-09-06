@@ -16,6 +16,7 @@ import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
 import { courseById } from "@/data/courses";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
   open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
@@ -161,14 +162,14 @@ export default function AdminCohorts() {
   if (offline) {
     return (
       <AdminLayout title="عمليات الشعب">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -205,7 +206,7 @@ export default function AdminCohorts() {
           </h2>
           <div className="mt-4 space-y-3">
             {reschedules.map((r) => (
-              <div key={r.id} className="rounded-2xl border border-white/10 bg-paper/25 p-4">
+              <Card key={r.id} className="bg-paper/25">
                 <p className="text-sm font-bold">{r.session.title}</p>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {r.session.cohort.title} · اقترحه {r.requester.displayName}
@@ -234,7 +235,7 @@ export default function AdminCohorts() {
                     لا أعتمده
                   </button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
           <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
@@ -265,7 +266,7 @@ export default function AdminCohorts() {
       </div>
 
       {!loading && rows.length > 0 && (
-        <div className="mb-4 rounded-3xl border border-white/10 bg-white/[0.02] p-4">
+        <Panel className="mb-4">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <label className="text-[11px] text-muted-foreground">
               الحالة
@@ -306,7 +307,7 @@ export default function AdminCohorts() {
               </button>
             </div>
           )}
-        </div>
+        </Panel>
       )}
 
       {loading ? (
@@ -325,7 +326,7 @@ export default function AdminCohorts() {
             const check = checklist[c.id];
             const isOpen = expanded === c.id;
             return (
-              <div key={c.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+              <Panel key={c.id}>
                 <button onClick={() => toggle(c.id)} className="flex w-full cursor-pointer flex-wrap items-center gap-4 text-right">
                   <div className="min-w-0 flex-1">
                     <p className="font-black">{c.title}</p>
@@ -428,7 +429,7 @@ export default function AdminCohorts() {
 
                     {/* إضافة جلسة */}
                     {!["completed", "cancelled"].includes(c.status) && (
-                      <div className="rounded-2xl border border-white/8 bg-paper/20 p-4">
+                      <Card className="bg-paper/20">
                         <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground"><CalendarPlus className="h-3.5 w-3.5" /> جلسة جديدة</p>
                         <div className="grid gap-2 sm:grid-cols-5">
                           <input placeholder="عنوان الجلسة" value={sessionForm.title} onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
@@ -448,7 +449,7 @@ export default function AdminCohorts() {
                             أضف
                           </button>
                         </div>
-                      </div>
+                      </Card>
                     )}
 
                     {/* توليدُ الجلسات من جدول الشعبة، وتكرارُ الشعبة لفصلٍ قادم.
@@ -456,7 +457,7 @@ export default function AdminCohorts() {
                         الأوّلُ يُغني عن إضافةِ ستّةَ عشرَ صفًّا بيدٍ واحدة،
                         والثاني يُغني عن إعادةِ الإعداد كلِّه في كلّ فصل. */}
                     {!["completed", "cancelled"].includes(c.status) && (
-                      <div className="rounded-2xl border border-white/8 bg-paper/20 p-4">
+                      <Card className="bg-paper/20">
                         <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground">
                           <Sparkles className="h-3.5 w-3.5" /> توليدُ الجلسات من الجدول
                         </p>
@@ -504,10 +505,10 @@ export default function AdminCohorts() {
                             </p>
                           </div>
                         )}
-                      </div>
+                      </Card>
                     )}
 
-                    <div className="rounded-2xl border border-white/8 bg-paper/20 p-4">
+                    <Card className="bg-paper/20">
                       <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground">
                         <CopyPlus className="h-3.5 w-3.5" /> تكرارُ الشعبة لفصلٍ قادم
                       </p>
@@ -547,10 +548,10 @@ export default function AdminCohorts() {
                           انسخ الجلساتَ أيضا بإزاحة الأسابيع (وإلّا فولّدها في النسخة بجدولها)
                         </label>
                       </div>
-                    </div>
+                    </Card>
 
                     {/* ربط Zoom يدوي لجلسة */}
-                    <div className="rounded-2xl border border-white/8 bg-paper/20 p-4">
+                    <Card className="bg-paper/20">
                       <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground"><Video className="h-3.5 w-3.5" /> ربط اجتماع Zoom يدوي</p>
                       <ZoomAttach cohortId={c.id} sessionsCount={c.sessionsCount}
                         value={zoomForm[c.id] ?? { sessionId: "", joinUrl: "", meetingId: "", passcode: "" }}
@@ -563,11 +564,11 @@ export default function AdminCohorts() {
                           });
                           setZoomForm((prev) => ({ ...prev, [c.id]: { sessionId: "", joinUrl: "", meetingId: "", passcode: "" } }));
                         }, "رُبط اجتماع Zoom بالجلسة")} />
-                    </div>
+                    </Card>
 
                     {/* تسجيل متعلم */}
                     {isLiveCohort(c.status) && c.registrationOpen && (
-                      <div className="rounded-2xl border border-white/8 bg-paper/20 p-4">
+                      <Card className="bg-paper/20">
                         <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
                         <div className="flex gap-2">
                           <LearnerSearchField cohortId={c.id} value={enrollLearner} onChange={setEnrollLearner} disabled={busy} />
@@ -582,7 +583,7 @@ export default function AdminCohorts() {
                             سجّل
                           </button>
                         </div>
-                      </div>
+                      </Card>
                     )}
 
                     {c.status === "draft" && check && !check.ready && (
@@ -602,7 +603,7 @@ export default function AdminCohorts() {
                     <EntityAuditTimeline entityType="cohort" entityId={c.id} labelAr="أثرُ هذه الشعبة" />
                   </div>
                 )}
-              </div>
+              </Panel>
             );
           })}
         </div>

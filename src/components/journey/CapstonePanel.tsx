@@ -27,6 +27,7 @@ import {
 } from "@/services/learner-requests";
 import type { JourneyTrack } from "@/application/student/journey";
 
+import { Card } from "@/components/ui/Surface";
 export default function CapstonePanel({
   track,
   requests,
@@ -84,7 +85,7 @@ export default function CapstonePanel({
 
       {/* ══ إنجازُ المسار — عليه تقوم الشهادةُ والتوصية ══ */}
       {completion && (
-        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+        <Card as="section" className="p-3.5">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <p className="text-[12px] font-black text-foreground">
               أنجزت <span className="tabular-nums">{completion.done}</span> من{" "}
@@ -95,7 +96,7 @@ export default function CapstonePanel({
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${Math.max(2, completion.percent)}%` }} />
           </div>
-        </section>
+        </Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -165,7 +166,7 @@ function RequestCard({
   const meta = request ? (REQUEST_STATUS_AR[request.status] ?? REQUEST_STATUS_AR.pending) : null;
 
   return (
-    <section className="flex flex-col rounded-2xl border border-white/12 bg-white/[0.03] p-4">
+    <Card as="section" className="flex flex-col">
       <p className="flex items-center gap-2 text-[13px] font-black">{icon}{title}</p>
       <p className="mt-1.5 text-[11.5px] leading-6 text-muted-foreground">{bodyAr}</p>
 
@@ -228,6 +229,6 @@ function RequestCard({
         </div>
       )}
       {error && <p className="mt-2 text-[11px] font-bold text-gold-ink">{error}</p>}
-    </section>
+    </Card>
   );
 }

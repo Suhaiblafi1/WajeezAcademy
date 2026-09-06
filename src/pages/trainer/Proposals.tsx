@@ -4,6 +4,7 @@ import { BookOpen, GitPullRequest, Loader2, Lock, Plus, ServerOff, Undo2, X } fr
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة", submitted: "مُقدَّم", under_review: "قيد المراجعة",
   changes_requested: "طُلبت تعديلات", approved_for_cohort: "معتمد للشعبة",
@@ -184,11 +185,11 @@ export default function TrainerProposals() {
   if (offline) {
     return (
       <TrainerLayout title="اقتراحات التعديل">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-        </div>
+        </Panel>
       </TrainerLayout>
     );
   }
@@ -316,7 +317,7 @@ export default function TrainerProposals() {
       )}
 
       {quals.length > 0 && (
-        <section className="mb-6 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+        <Panel as="section" className="mb-6">
           <h2 className="mb-3 text-sm font-black text-foreground">مخططات دوراتك المؤهلة — اطلع على البنية قبل أن تقترح</h2>
           <div className="flex flex-wrap gap-2">
             {quals.map((q) => (
@@ -328,7 +329,7 @@ export default function TrainerProposals() {
             ))}
           </div>
           {bpErr && <p role="alert" className="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs font-semibold text-red-300">{bpErr}</p>}
-        </section>
+        </Panel>
       )}
 
       {bp && bp.versions[0] && (
@@ -351,25 +352,25 @@ export default function TrainerProposals() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             {bp.versions[0].objectives.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+              <Card className="bg-paper/20">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">الأهداف التعليمية</h3>
                 <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-foreground">
                   {[...bp.versions[0].objectives].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
                 </ol>
-              </div>
+              </Card>
             )}
             {bp.versions[0].outcomes.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+              <Card className="bg-paper/20">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">المخرجات</h3>
                 <ol className="list-decimal space-y-1 pr-4 text-xs leading-6 text-foreground">
                   {[...bp.versions[0].outcomes].sort((a, b) => a.sequence - b.sequence).map((o, i) => <li key={i}>{o.textAr}</li>)}
                 </ol>
-              </div>
+              </Card>
             )}
           </div>
 
           {bp.modules.length > 0 && (
-            <div className="mt-4 rounded-2xl border border-white/10 bg-paper/20 p-4">
+            <Card className="mt-4 bg-paper/20">
               <h3 className="mb-2 text-xs font-black text-teal-light-ink">المحاور</h3>
               <div className="space-y-2">
                 {[...bp.modules]
@@ -384,7 +385,7 @@ export default function TrainerProposals() {
                     </div>
                   ))}
               </div>
-            </div>
+            </Card>
           )}
 
           {bp.versions[0].project && (
@@ -396,7 +397,7 @@ export default function TrainerProposals() {
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             {bp.versions[0].assessments.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+              <Card className="bg-paper/20">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">التقييمات</h3>
                 <ul className="space-y-1.5 text-xs leading-6 text-foreground">
                   {bp.versions[0].assessments.map((a, i) => (
@@ -408,10 +409,10 @@ export default function TrainerProposals() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Card>
             )}
             {bp.skillLinks.length > 0 && (
-              <div className="rounded-2xl border border-white/10 bg-paper/20 p-4">
+              <Card className="bg-paper/20">
                 <h3 className="mb-2 text-xs font-black text-teal-light-ink">المهارات المستهدفة</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {bp.skillLinks.map((s) => (
@@ -420,7 +421,7 @@ export default function TrainerProposals() {
                     </span>
                   ))}
                 </div>
-              </div>
+              </Card>
             )}
           </div>
         </section>
@@ -429,15 +430,15 @@ export default function TrainerProposals() {
       {loading ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : mine.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <GitPullRequest className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا اقتراحات بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين ترى تحسينا يخدم طلابك في دورة مؤهل لها — اقترحه هنا وسيراجعه المسؤول الأكاديمي.</p>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-3">
           {mine.map((r) => (
-            <article key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+            <Card as="article" key={r.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{r.course.versions[0]?.titleAr ?? r.courseId} <span className="text-micro text-muted-foreground" dir="ltr">{r.courseId}</span></p>
@@ -461,7 +462,7 @@ export default function TrainerProposals() {
                   )}
                 </div>
               </div>
-            </article>
+            </Card>
           ))}
         </div>
       )}

@@ -23,6 +23,7 @@ import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 
+import { Card } from "@/components/ui/Surface";
 interface Qualification { courseId: string; title: string; currentVersion: number; qualifiedAt: string }
 interface ScopeGate { allowed: boolean; basis: "earned" | "granted" | "none"; reasonAr: string }
 interface Window { weekday: number; startMinute: number; endMinute: number }
@@ -164,12 +165,12 @@ export default function TrainerQualifications() {
           ) : (
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
               {quals.map((q) => (
-                <li key={q.courseId} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                <Card as="li" key={q.courseId}>
                   <p className="font-bold">{q.title || q.courseId}</p>
                   <p className="mt-1 text-micro leading-5 text-muted-foreground">
                     <span className="font-mono">{q.courseId}</span> · النسخة {q.currentVersion} · أُهِّلت {fmtDate(q.qualifiedAt)}
                   </p>
-                </li>
+                </Card>
               ))}
             </ul>
           )}
@@ -177,13 +178,13 @@ export default function TrainerQualifications() {
 
         {/* ── نطاقي في الكتالوج ── */}
         {scope && (
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <Card as="section">
             <h2 className="flex items-center gap-2 text-sm font-black">
               <Lock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               نطاقُ اقتراحاتي
             </h2>
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{scope.reasonAr}</p>
-          </section>
+          </Card>
         )}
 
         {/* ── ساعاتي الأسبوعيّة ── */}
@@ -196,7 +197,7 @@ export default function TrainerQualifications() {
 
           <ul className="mt-4 space-y-2">
             {draft.map((w, i) => (
-              <li key={i} className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+              <Card as="li" key={i} className="flex flex-wrap items-center gap-2">
                 <label className="sr-only" htmlFor={`day-${i}`}>اليوم</label>
                 <select
                   id={`day-${i}`}
@@ -227,7 +228,7 @@ export default function TrainerQualifications() {
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
-              </li>
+              </Card>
             ))}
           </ul>
 
@@ -263,7 +264,7 @@ export default function TrainerQualifications() {
           {upcoming.length > 0 && (
             <ul className="mt-4 space-y-2">
               {upcoming.map((b) => (
-                <li key={b.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                <Card as="li" key={b.id} className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-bold">{fmtDate(b.startsAt)} — {fmtDate(b.endsAt)}</span>
                   {b.reason && <span className="text-xs text-muted-foreground">{b.reason}</span>}
                   <button
@@ -272,12 +273,12 @@ export default function TrainerQualifications() {
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> احذف
                   </button>
-                </li>
+                </Card>
               ))}
             </ul>
           )}
 
-          <div className="mt-4 grid gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
+          <Card className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
             <div>
               <label className="mb-1.5 block text-xs font-bold text-muted-foreground" htmlFor="leave-from">من</label>
               <input
@@ -315,7 +316,7 @@ export default function TrainerQualifications() {
             {leaveErr && (
               <p id="leave-err" role="alert" className="text-micro font-bold text-red-300 sm:col-span-4">{leaveErr}</p>
             )}
-          </div>
+          </Card>
         </section>
       </div>
     </TrainerLayout>

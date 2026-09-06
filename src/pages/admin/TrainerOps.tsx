@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
+import { Panel, Card } from "@/components/ui/Surface";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
@@ -36,13 +37,13 @@ function Card({ icon: Icon, title, children, defaultOpen = false }: {
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+    <Panel as="article">
       <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-sm font-black">
         <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <div className="mt-4">{children}</div>}
-    </article>
+    </Panel>
   );
 }
 
@@ -349,13 +350,13 @@ export function TrainerChangeRequests() {
     <div className="space-y-3">
       {msg && <p className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-foreground" role="status">{msg}</p>}
       {rows.length === 0 && (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm text-muted-foreground">لا اقتراحات من المدربين بعد — تصل من بوابة المدرب ← «اقتراحاتي».</p>
-        </div>
+        </Panel>
       )}
       {rows.map((r) => (
-        <div key={r.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card key={r.id}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -404,7 +405,7 @@ export function TrainerChangeRequests() {
               onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
             />
           )}
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -756,12 +757,12 @@ export function TrainerPayouts() {
             </div>
           )}
           {batchResult && (
-            <div className="space-y-1 rounded-2xl border border-white/10 bg-paper/20 p-4 text-[11px] leading-6">
+            <Card className="space-y-1 bg-paper/20 text-[11px] leading-6">
               <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
               {batchResult.skipped.map((s, i) => (
                 <p key={i} className="text-muted-foreground">تُركت «{s.title}»: {s.reason}</p>
               ))}
-            </div>
+            </Card>
           )}
           <p className="text-micro leading-5 text-muted-foreground">
             اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
@@ -825,13 +826,13 @@ export function TrainerPayouts() {
               </p>
             )}
             {visibleRows.length === 0 && (
-              <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+              <Panel className="grid place-items-center py-16 text-center">
                 <Banknote className="h-10 w-10 text-muted-foreground/50" />
                 <p className="mt-3 text-sm text-muted-foreground">لا كشوف بهذه الحالة — أنشئ أول كشف من زر «كشف جديد».</p>
-              </div>
+              </Panel>
             )}
             {visibleRows.map((p) => (
-        <div key={p.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card key={p.id}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
@@ -876,7 +877,7 @@ export function TrainerPayouts() {
               </button>
             </div>
           )}
-        </div>
+        </Card>
             ))}
           </>
         );

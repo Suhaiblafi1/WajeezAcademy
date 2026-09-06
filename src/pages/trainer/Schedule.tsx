@@ -20,6 +20,7 @@ import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { apiGet } from "@/services/api";
 
+import { Panel } from "@/components/ui/Surface";
 interface Slot {
   sessionId: string;
   title: string;
@@ -95,7 +96,7 @@ export default function TrainerSchedule() {
 
   return (
     <TrainerLayout title="جدولي">
-      <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
+      <Panel as="section">
         <h2 className="flex items-center gap-2 text-base font-black">
           <CalendarDays className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           {data.days} يوما القادمة
@@ -113,7 +114,7 @@ export default function TrainerSchedule() {
             </span>
           </p>
         )}
-      </section>
+      </Panel>
 
       {data.sessions.length === 0 ? (
         <EmptyState
@@ -125,7 +126,7 @@ export default function TrainerSchedule() {
       ) : (
         <div className="mt-5 space-y-5">
           {[...byDay.entries()].map(([day, slots]) => (
-            <section key={day} aria-labelledby={`d-${day}`} className="rounded-3xl border border-white/10 bg-white/[0.02] p-4">
+            <Panel as="section" key={day} aria-labelledby={`d-${day}`}>
               <h3 id={`d-${day}`} className="text-sm font-black">{day}</h3>
               <ul className="mt-3 space-y-2">
                 {slots.map((s) => {
@@ -158,7 +159,7 @@ export default function TrainerSchedule() {
                   );
                 })}
               </ul>
-            </section>
+            </Panel>
           ))}
         </div>
       )}

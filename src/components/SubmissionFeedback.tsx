@@ -14,6 +14,7 @@
 import { CheckCircle2, History, MessageSquare, ScrollText } from "lucide-react";
 import { fmtDayMonth } from "@/application/text/format-ar";
 
+import { Card } from "@/components/ui/Surface";
 export interface RubricCriterionView { id: string; title: string; maxScore: number; sequence: number }
 export interface GradeView {
   score: string | number;
@@ -76,7 +77,7 @@ export default function SubmissionFeedback({
   return (
     <div className={`space-y-2.5 ${className}`.trim()}>
       {hasRubric && (
-        <div className="rounded-2xl border border-white/8 bg-paper/20 p-3.5">
+        <Card className="bg-paper/20 p-3.5">
           <p className="flex items-center gap-2 text-[11px] font-black text-foreground">
             <ScrollText className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
             من أين جاءت درجتك
@@ -94,7 +95,7 @@ export default function SubmissionFeedback({
               );
             })}
           </ul>
-        </div>
+        </Card>
       )}
 
       {revision && (
@@ -119,14 +120,14 @@ export default function SubmissionFeedback({
       )}
 
       {submission.feedback.map((f, i) => (
-        <div key={i} className="rounded-2xl border border-white/8 bg-white/[0.03] p-3.5">
+        <Card key={i} className="p-3.5">
           <p className="flex flex-wrap items-center gap-2 text-[11px] font-black text-foreground">
             <MessageSquare className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
             تعليق مدربك
             <span className="font-medium text-muted-foreground">{fmtDate(f.createdAt)}</span>
           </p>
           <p className="mt-1.5 whitespace-pre-line text-[11px] leading-6 text-foreground">{f.body}</p>
-        </div>
+        </Card>
       ))}
     </div>
   );

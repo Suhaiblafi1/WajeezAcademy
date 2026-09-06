@@ -4,6 +4,7 @@ import { ArrowRight, BadgeCheck, Loader2, Search, ServerOff, ShieldX } from "luc
 import { apiGet, ApiError } from "@/services/api";
 import { fmtDateLong } from "@/application/text/format-ar";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface VerifyResult {
   number: string;
   learnerName: string;
@@ -64,7 +65,7 @@ export default function Verify() {
       <Link to="/" className="flex items-center gap-2 text-muted-foreground transition hover:text-foreground">
         <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
       </Link>
-      <div className="mt-8 w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.03] p-8">
+      <Panel className="mt-8 w-full max-w-md p-8">
         <h1 className="text-center text-2xl font-black">التحقق من شهادة</h1>
         <p className="mt-2 text-center text-xs leading-6 text-muted-foreground">
           أدخل رقم الشهادة (مثال: WJ-CERT-2026-00001) للتأكد من صحتها — دون كشف بيانات شخصية زائدة.
@@ -135,12 +136,12 @@ export default function Verify() {
         )}
 
         {state.kind === "offline" && (
-          <div className="mt-6 rounded-2xl border border-white/15 bg-white/[0.03] p-5 text-center">
+          <Card className="mt-6 text-center">
             <ServerOff className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm font-bold text-muted-foreground">{state.message}</p>
-          </div>
+          </Card>
         )}
-      </div>
+      </Panel>
     </div>
   );
 }

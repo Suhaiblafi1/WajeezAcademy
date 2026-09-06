@@ -17,6 +17,7 @@ import { usePublishedContent } from "@/services/public-content";
 import { courseFullById } from "@/data/courses";
 import { fmtWhen } from "@/utils/format";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface Artifact {
   id: string;
   status: string;
@@ -83,7 +84,7 @@ export default function MyVault() {
       </section>
 
       {list.length === 0 ? (
-        <section className="mt-6 grid place-items-center rounded-3xl border border-dashed border-white/15 py-16 text-center">
+        <Panel as="section" className="mt-6 grid place-items-center border-dashed py-16 text-center">
           <FileText className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-4 font-black">لا أعمال بعد</p>
           <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-muted-foreground">
@@ -93,7 +94,7 @@ export default function MyVault() {
           <Link to="/student/learning" className="mt-5 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light">
             دوراتي
           </Link>
-        </section>
+        </Panel>
       ) : (
         <ul className="mt-6 space-y-3">
           {list.map((a) => (
@@ -129,14 +130,14 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
       </div>
 
       {(a.grade || a.feedbackAr) && (
-        <div className="mt-4 rounded-2xl border border-white/10 bg-paper/20 p-4">
+        <Card className="mt-4 bg-paper/20">
           {a.grade && (
             <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
               <Award className="h-3.5 w-3.5" /> {a.grade.score} من {a.grade.maxScore}
             </p>
           )}
           {a.feedbackAr && <p className="mt-2 text-xs leading-6 text-foreground">{a.feedbackAr}</p>}
-        </div>
+        </Card>
       )}
 
       <Link

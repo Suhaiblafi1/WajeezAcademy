@@ -4,6 +4,7 @@ import TrainerLayout from "./TrainerLayout";
 import { apiGet, ApiError } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
 
+import { Panel, Card } from "@/components/ui/Surface";
 const PAYOUT_STATUS: Record<string, { label: string; cls: string; icon: typeof Clock3 }> = {
   pending: { label: "بانتظار الاعتماد", cls: "border-gold/40 text-gold-ink", icon: Clock3 },
   approved: { label: "معتمد — قيد الصرف", cls: "border-teal/40 text-teal-light-ink", icon: ShieldCheck },
@@ -65,25 +66,25 @@ function RealEarningsView() {
           <p className="text-xs text-teal-light-ink">معتمدة للصرف</p>
           <p className="mt-2 text-2xl font-black text-teal-light-ink">{fmt(summary.approved)} <span className="text-xs">{summary.currency}</span></p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <Card>
           <p className="text-xs text-muted-foreground">مدفوعة</p>
           <p className="mt-2 text-2xl font-black text-foreground">{fmt(summary.paid)} <span className="text-xs">{summary.currency}</span></p>
-        </div>
+        </Card>
       </div>
 
       <div className="mt-6 space-y-3">
         {payouts.length === 0 && (
-          <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+          <Panel className="grid place-items-center py-16 text-center">
             <Banknote className="h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
               لا كشوف بعد — عند اعتماد أول مستحقات لك من الإدارة المالية تظهر هنا تلقائياً ببنودها وحالتها.
             </p>
-          </div>
+          </Panel>
         )}
         {payouts.map((p) => {
           const meta = PAYOUT_STATUS[p.status] ?? PAYOUT_STATUS.pending;
           return (
-            <div key={p.id} className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+            <Panel key={p.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">كشف فترة <span dir="ltr" className="font-mono text-sm">{p.period}</span></p>
@@ -104,7 +105,7 @@ function RealEarningsView() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Panel>
           );
         })}
       </div>

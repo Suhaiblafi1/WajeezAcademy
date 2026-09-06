@@ -8,6 +8,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
 import { toast, toastError } from '@/components/Toast';
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface Payment { id: string; amount: string; status: string; method: string | null; refunds: { id: string; status: string; amount: string }[] }
 interface Invoice { id: string; total: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
 interface Order {
@@ -110,17 +111,17 @@ export default function Billing() {
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ReceiptText className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             عند موافقة العمليات على طلب تسجيلك تُنشأ فاتورة هنا — والدفع يفتح وصولك للمنصة تلقائيا.
           </p>
-        </div>
+        </Panel>
       ) : (
         <div className="space-y-4">
           {rows.map((o) => (
-            <article key={o.id} className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
+            <Panel as="article" key={o.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
@@ -162,7 +163,7 @@ export default function Billing() {
               )}
 
               {o.invoice && (
-                <div className="mt-4 rounded-2xl border border-white/8 bg-paper/20 p-4">
+                <Card className="mt-4 bg-paper/20">
                   <p className="flex items-center justify-between text-xs font-bold text-muted-foreground">
                     <span>الفاتورة — {INV_STATUS[o.invoice.status] ?? o.invoice.status}</span>
                     <span>{o.invoice.total} {o.invoice.currency}</span>
@@ -183,9 +184,9 @@ export default function Billing() {
                       ))}
                     </ul>
                   )}
-                </div>
+                </Card>
               )}
-            </article>
+            </Panel>
           ))}
         </div>
       )}

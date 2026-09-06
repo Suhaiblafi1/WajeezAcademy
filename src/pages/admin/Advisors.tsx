@@ -8,6 +8,7 @@ import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPatch, ApiError, permissionMessage } from "@/services/api";
 import { fmtMoney, fmtDate } from "@/application/text/format-ar";
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface AdvisorRow {
   userId: string; displayName: string; email: string; status: string;
   commissionPct: number | null; notesAr: string; activeCases: number;
@@ -83,13 +84,13 @@ export default function Advisors() {
   if (offline) {
     return (
       <AdminLayout title="المستشارون">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
           <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
-        </div>
+        </Panel>
       </AdminLayout>
     );
   }
@@ -104,12 +105,12 @@ export default function Advisors() {
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : rows.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <UserCheck className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">
             لا مستشارين بعد — يصير الحسابُ مستشارا بإسناد دور «مستشار» من شاشة المستخدمين.
           </p>
-        </div>
+        </Panel>
       ) : (
         <>
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="مستشارا"
@@ -121,7 +122,7 @@ export default function Advisors() {
           ) : (
             <div className="space-y-3">
               {view.rows.map((r) => (
-                <div key={r.userId} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <Card key={r.userId}>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="font-black">
@@ -235,7 +236,7 @@ export default function Advisors() {
                       </div>
                     </div>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
           )}

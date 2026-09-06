@@ -17,6 +17,7 @@ import { parsePractice } from "@/application/content/practice";
 import { safeGet, safeSet } from "@/services/safe-storage";
 import { fmtNum } from "@/application/text/format-ar";
 
+import { Card } from "@/components/ui/Surface";
 const KEY = (moduleId: string) => `wj.practice.${moduleId}`;
 
 function readDone(moduleId: string): number[] {
@@ -112,20 +113,20 @@ export default function PracticeActivity({
       </ol>
 
       <dl className="mt-4 space-y-3 text-[13px] leading-6">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+        <Card>
           <dt className="flex items-center gap-1.5 text-[11px] font-black text-teal-light-ink">
             <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
             المخرَج — وهو ما يُرفع
           </dt>
           <dd className="mt-1">{practice.artifactAr}</dd>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+        </Card>
+        <Card>
           <dt className="flex items-center gap-1.5 text-[11px] font-black text-muted-foreground">
             <UserRoundSearch className="h-3.5 w-3.5" aria-hidden="true" />
             لمن لا عمل له الآن
           </dt>
           <dd className="mt-1 text-foreground">{practice.alternativeAr}</dd>
-        </div>
+        </Card>
       </dl>
     </section>
   );

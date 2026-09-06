@@ -117,7 +117,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
           <Plus className="h-3.5 w-3.5" /> اطلب خصما أو تعديلا على الخطّة
         </button>
       ) : (
-        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
+        <Card className="bg-paper/25">
           <FieldRow>
             <Field label="نوع الطلب" htmlFor="req-kind" required>
               <select
@@ -216,7 +216,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
               <span className="text-micro text-gold-ink">اكتب سببا لا يقلّ عن ١٢ حرفا</span>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* الطلبات السابقة */}

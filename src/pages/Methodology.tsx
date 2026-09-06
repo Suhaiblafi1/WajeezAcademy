@@ -6,6 +6,7 @@ import { usePublishedContent } from "@/services/public-content";
 import { publicReferences } from "@/data/methodology";
 import { pathways } from "@/data/pathways";
 
+import { Panel, Card } from "@/components/ui/Surface";
 /* «منهجية وجيز» — المراجع المهنية والتعليمية التي استرشدت بها الأكاديمية.
    لا تُعرض هنا مراجع هندسية أو قانونية (تصميم الواجهة، حماية الملفات...) —
    تلك التزامات داخلية، وهذه الصفحة رسالة مهنية للعميل. */
@@ -17,7 +18,7 @@ function RefCard({ id }: { id: string }) {
   const ref = publicReferences().find((r) => r.id === id);
   if (!ref) return null;
   return (
-    <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+    <Card className="mt-4">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-black text-muted-foreground">{ref.name_ar}</p>
         <span className="text-[11px] text-muted-foreground" dir="ltr">
@@ -50,7 +51,7 @@ function RefCard({ id }: { id: string }) {
         المصدر الأصلي
         <ExternalLink className="h-3 w-3" />
       </a>
-    </div>
+    </Card>
   );
 }
 
@@ -116,7 +117,7 @@ export default function Methodology() {
 
         <div className="mt-10 space-y-8">
           {SECTIONS.map((s) => (
-            <section key={s.q} className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 md:p-8">
+            <Panel as="section" key={s.q} className="md:p-8">
               <h2 className="flex items-center gap-2.5 text-lg font-black">
                 <s.icon className="h-5 w-5 text-gold-ink" />
                 {s.q}
@@ -125,7 +126,7 @@ export default function Methodology() {
               {s.refs.map((id) => (
                 <RefCard key={id} id={id} />
               ))}
-            </section>
+            </Panel>
           ))}
         </div>
 

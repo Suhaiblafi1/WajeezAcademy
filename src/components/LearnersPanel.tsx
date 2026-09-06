@@ -17,6 +17,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fmtDate } from "@/application/text/format-ar";
 import { toast, toastError } from './Toast';
 
+import { Panel, Card } from "@/components/ui/Surface";
 interface LearnerEnrollment {
   id: string;
   cohortId: string;
@@ -113,7 +114,7 @@ export default function LearnersPanel() {
       </div>
 
       {data.learners.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-14 text-center">
+        <Panel className="grid place-items-center py-14 text-center">
           <GraduationCap className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm font-black">لا طلبة في نطاقك بعد</p>
           <p className="mt-1 max-w-sm text-xs leading-6 text-muted-foreground">
@@ -123,11 +124,11 @@ export default function LearnersPanel() {
                 ? "حين تُسنَد إليك حالةٌ لعميلٍ سجّل في شعبة، يظهر هنا."
                 : "لا تسجيلات بعد."}
           </p>
-        </div>
+        </Panel>
       ) : (
         <ul className="space-y-2.5">
           {data.learners.map((l) => (
-            <li key={l.user.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <Card as="li" key={l.user.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="flex items-center gap-2 text-sm font-black">
@@ -175,7 +176,7 @@ export default function LearnersPanel() {
                   </li>
                 ))}
               </ul>
-            </li>
+            </Card>
           ))}
         </ul>
       )}

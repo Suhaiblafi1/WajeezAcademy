@@ -13,6 +13,7 @@ import { parseChecks } from "@/application/content/module-checks";
 import { embedAt, parseVideo } from "@/application/content/module-video";
 import { track } from "@/services/analytics";
 
+import { Card } from "@/components/ui/Surface";
 export default function ModuleVideo({
   raw,
   checksRaw,
@@ -57,7 +58,7 @@ export default function ModuleVideo({
         </a>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-paper/40">
+      <Card className="mt-4 overflow-hidden bg-paper/40">
         <iframe
           key={at}
           src={embedAt(video, at)}
@@ -68,7 +69,7 @@ export default function ModuleVideo({
           allowFullScreen
           className="aspect-video w-full"
         />
-      </div>
+      </Card>
 
       {video.chapters.length > 0 && (
         <ol className="mt-4 space-y-1.5">
@@ -77,7 +78,7 @@ export default function ModuleVideo({
             const check = checkFor(no);
             const open = openCheck === no;
             return (
-              <li key={`${ch.atSec}-${i}`} className="rounded-2xl border border-white/8 bg-white/[0.02]">
+              <Card as="li" key={`${ch.atSec}-${i}`}>
                 <div className="flex flex-wrap items-center gap-2 px-3 py-2">
                   <button
                     type="button"
@@ -117,7 +118,7 @@ export default function ModuleVideo({
                     />
                   </div>
                 )}
-              </li>
+              </Card>
             );
           })}
         </ol>

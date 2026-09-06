@@ -13,6 +13,7 @@ import { STATUS_AR } from "@/application/advisor/pipeline";
 import { fmtDateWith } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
+import { Panel, Card } from "@/components/ui/Surface";
 /* أسماءُ المراحل من `pipeline` وحدَه — لا جدولَ ثانيا يفترق عن القِمع */
 const STATUS_LABELS = STATUS_AR;
 const CHANNEL_LABELS: Record<string, string> = { whatsapp: "واتساب", email: "بريد", phone: "اتصال", in_app: "داخل المنصة" };
@@ -116,11 +117,11 @@ export default function AdvisorCases() {
   if (offline) {
     return (
       <AdvisorLayout title="حالاتي — عملاء التشخيص">
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
+        <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
-        </div>
+        </Panel>
       </AdvisorLayout>
     );
   }
@@ -135,7 +136,7 @@ export default function AdvisorCases() {
 
         <div className="grid gap-5 lg:grid-cols-3">
           {/* العميل والتشخيص */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><UserRound className="h-4 w-4" /> العميل</h2>
             <p className="font-black">{partyOf(detail).name}</p>
             {partyOf(detail).email && <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{partyOf(detail).email}</p>}
@@ -152,10 +153,10 @@ export default function AdvisorCases() {
                 ))}
               </div>
             )}
-          </section>
+          </Card>
 
           {/* الحالة والإجراء التالي */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><CalendarClock className="h-4 w-4" /> الحالة والإجراء</h2>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {Object.entries(STATUS_LABELS).map(([k, v]) => (
@@ -173,25 +174,25 @@ export default function AdvisorCases() {
                 () => apiPost(`/api/advisor/cases/${detail.id}/next-action`, { nextAction, ...(nextFollowUpAt ? { nextFollowUpAt } : {}) }),
                 "حُفظ الإجراء التالي"
               )} />
-          </section>
+          </Card>
 
           {/* الوجه الأكاديميّ — أين وصل عميلي */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><GraduationCap className="h-4 w-4" /> أين وصل — قراءةٌ لا تعديل</h2>
             <LearnerPanel key={detail.id} caseId={detail.id} />
-          </section>
+          </Card>
 
           {/* ما لا يملكه المستشار وحده */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 lg:col-span-2">
+          <Card as="section" className="lg:col-span-2">
             <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلباتٌ تبتّ فيها الإدارة</h2>
             <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
               خصمٌ على فاتورته، أو تعديلٌ على خطّته. لا يُنفَّذ بطلبك وحده — ويبقى أثرُه مكتوبا.
             </p>
             <RequestsPanel key={detail.id} caseId={detail.id} />
-          </section>
+          </Card>
 
           {/* تسجيل تواصل */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><PhoneCall className="h-4 w-4" /> سجل التواصل</h2>
             <ContactForm onSubmit={(channel, summary) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/contact`, { channel, summary }),
@@ -207,10 +208,10 @@ export default function AdvisorCases() {
               ))}
               {detail.contactEvents.length === 0 && <li className="text-xs text-muted-foreground">لا تواصل مسجل بعد</li>}
             </ul>
-          </section>
+          </Card>
 
           {/* المتابعات */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><CalendarClock className="h-4 w-4" /> المتابعات</h2>
             <FollowUpForm onSubmit={(scheduledAt, channel, note) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/follow-ups`, { scheduledAt, channel, ...(note ? { note } : {}) }),
@@ -234,10 +235,10 @@ export default function AdvisorCases() {
               ))}
               {detail.followUps.length === 0 && <li className="text-xs text-muted-foreground">لا متابعات بعد</li>}
             </ul>
-          </section>
+          </Card>
 
           {/* المهام */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><ClipboardList className="h-4 w-4" /> المهام</h2>
             <TaskForm onSubmit={(title, dueAt) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/tasks`, { title, ...(dueAt ? { dueAt } : {}) }),
@@ -260,10 +261,10 @@ export default function AdvisorCases() {
               ))}
               {detail.tasks.length === 0 && <li className="text-xs text-muted-foreground">لا مهام بعد</li>}
             </ul>
-          </section>
+          </Card>
 
           {/* الملاحظات الداخلية */}
-          <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><StickyNote className="h-4 w-4" /> ملاحظات داخلية — لا يراها العميل</h2>
             <NoteForm onSubmit={(body) => void act(() => apiPost(`/api/advisor/cases/${detail.id}/notes`, { body }), "حُفظت الملاحظة")} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
@@ -275,7 +276,7 @@ export default function AdvisorCases() {
               ))}
               {detail.notes.length === 0 && <li className="text-xs text-muted-foreground">لا ملاحظات بعد</li>}
             </ul>
-          </section>
+          </Card>
         </div>
       </AdvisorLayout>
     );
@@ -302,11 +303,11 @@ export default function AdvisorCases() {
       {loading ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : cases.length === 0 ? (
-        <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
+        <Panel className="grid place-items-center py-16 text-center">
           <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا حالات مسندة هنا</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين يُسند إليك عميل من لوحة الأدمن (الاستثناءات) سيظهر هنا فورا.</p>
-        </div>
+        </Panel>
       ) : statusFilter ? (
         /* تصفيةٌ صريحة: قائمةٌ مسطّحة أنفعُ من قِمعٍ بعمودٍ واحد */
         <div className="space-y-3">

@@ -5,6 +5,7 @@ import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 
+import { Card } from "@/components/ui/Surface";
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
@@ -175,7 +176,7 @@ export default function JoinTrainerComplete() {
             </p>
             <div className="mt-3 space-y-3">
               {prevCourses.map((c, i) => (
-                <div key={i} className="grid gap-2 rounded-2xl border border-white/10 bg-paper/20 p-3 sm:grid-cols-4">
+                <Card key={i} className="grid gap-2 bg-paper/20 sm:grid-cols-4">
                   <input placeholder={`عنوان الدورة ${i + 1}`} value={c.title} aria-label={`عنوان الدورة ${i + 1}`}
                     onChange={(e) => setPrevCourses(prevCourses.map((x, j) => j === i ? { ...x, title: e.target.value } : x))}
                     className={`${inputCls} sm:col-span-2`} />
@@ -188,7 +189,7 @@ export default function JoinTrainerComplete() {
                   <input placeholder="رابط أو نموذج (اختياري)" dir="ltr" value={c.link} aria-label={`رابط الدورة ${i + 1}`}
                     onChange={(e) => setPrevCourses(prevCourses.map((x, j) => j === i ? { ...x, link: e.target.value } : x))}
                     className={`${inputCls} text-left sm:col-span-4`} />
-                </div>
+                </Card>
               ))}
               {prevCourses.length < 3 && (
                 <button type="button" onClick={() => setPrevCourses([...prevCourses, { title: "", org: "", year: "", link: "" }])}
