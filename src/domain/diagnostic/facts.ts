@@ -3,6 +3,7 @@
 
 import { keywordClassifiers, optionEffects, optionIdFromText, optionIndexOfId, questionById, skillSlugs } from './catalog'
 import type { Answer, BankQuestion, FactBag, FactValue } from './types'
+import { GOALS_NEEDING_EMPLOYMENT, stageToEmploymentState, type CareerStage } from './v2_1/maps'
 
 const UNCERTAIN_MARKERS = ['لست متأكدا', 'لا أعرف', 'غير متأكد', 'أفضل عدم الإجابة']
 
@@ -185,6 +186,33 @@ export function applyDerivedRules(facts: FactBag) {
   if (g('persona_type') === 'founder' && g('employment_state') === 'self_employed') {
     facts.persona_type = { ...facts.persona_type, value: 'freelancer' }
   }
+  /* اشتقاق employment_state من المرحلة — البند ٣٧.
+
+     السؤالُ لم يُحذف: ضاق موضعُه إلى حيث يُقرأ جوابُه (انظر
+     `STAGE_NEEDS_EMPLOYMENT_QUESTION`). وحيث لم يُسأل تُشتقّ الحالةُ من
+     المرحلة، **كي لا يسقط سطرُ «وضعك العمليّ» من التفسير**: توفيرُ مقعدٍ لا
+     يُشترى بإسقاط سطرٍ يقول للمتعلّم ما فُهم عنه.
+
+     ودليلُها أضعف: تُنسب إلى `derived` لا إلى سؤال، وجودتُها ٠٫٦ لا جودةُ
+     جوابٍ صريح — فمن يقرأ الأثرَ يعرف أنّها استُنتجت ولم تُقَل. */
+  const empStage = g('career_stage')
+  if (facts['employment_state'] === undefined && typeof empStage === 'string') {
+    /* الطالبُ الجامعيّ يُشتقّ **بعد** أن يُعرف هدفُه ويتبيّن أنّه ليس من
+       الثلاثة التي تقرأ حالتَه — وإلّا سبق الاشتقاقُ السؤالَ فأسكته. */
+    const goalV21 = g('goal_code_v21')
+    const studentPending =
+      empStage === 'university_student' &&
+      (typeof goalV21 !== 'string' || GOALS_NEEDING_EMPLOYMENT.includes(goalV21))
+    const derivedEmp = studentPending ? null : stageToEmploymentState(empStage as CareerStage)
+    if (derivedEmp) {
+      facts['employment_state'] = {
+        value: derivedEmp,
+        sourceQuestionId: 'derived',
+        evidenceQuality: 0.6,
+      }
+    }
+  }
+
   /* اشتقاق education_state من المرحلة المهنية — V2.1 المرحلة 4 (موثق):
      Career Stage يميز طالبًا جامعيًا من خريج حديث، فلا حاجة لسؤال تعليم مستقل.
      المطلوب الحقيقي لقالب «أول وظيفة» هو جاهزية أول وظيفة لا الشهادة بذاتها. */
