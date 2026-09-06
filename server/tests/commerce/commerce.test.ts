@@ -68,10 +68,18 @@ describe('التسجيل والدفع الاختباري', () => {
     const invoice = await prisma.invoice.findUnique({ where: { orderId } })
     invoiceId = invoice!.id
     expect(invoice!.number).toMatch(/^WJ-INV-\d{4}-\d{5}$/)
+    /* ── والمزوّدُ اختباريّ، فالموافقةُ تُسوّي ولا تترك دَينا ──
+
+       كان الفحصُ يشترط `seat_held` و«لا تسجيلَ قبل الدفع» — أي **يحرس أن يبقى
+       المتعلّمُ ينظر إلى «بانتظار الدفع» عن مالٍ لا وجودَ له**. ومسارُ موافقة
+       العمليّات صحيحٌ مع مزوّدٍ حقيقيّ (يدفع لاحقا)، وفي التجريبيّ لا معنى
+       لطلبٍ غيرِ مدفوعٍ إطلاقا: لا صفحةَ دفعٍ يُعاد منها ولا webhook يُسوّيه.
+
+       فصار يشترط ما هو صواب: سُوّي الطلبُ وصار الحجزُ تسجيلا. */
     const req = await prisma.enrollmentRequest.findUnique({ where: { id: requestId } })
-    expect(req?.status).toBe('seat_held')
-    /* لا تسجيل فعليا قبل الدفع */
-    expect(await prisma.enrollment.count({ where: { cohortId, userId: learnerId } })).toBe(0)
+    expect(req?.status, 'المزوّدُ اختباريٌّ ولم يُسوَّ الطلب').toBe('converted')
+    expect(await prisma.order.findUniqueOrThrow({ where: { id: orderId } }).then((o) => o.status)).toBe('paid')
+    expect(await prisma.enrollment.count({ where: { cohortId, userId: learnerId } })).toBe(1)
   })
 
   it('3) كوبون غير صالح مرفوض عند الموافقة', async () => {
@@ -82,10 +90,9 @@ describe('التسجيل والدفع الاختباري', () => {
     await commerce.rejectEnrollmentRequest(req2.id, managerId, 'اختبار الرفض بسبب مفهوم')
   })
 
-  it('4) الدفع الاختباري يسوّي الطلب ويحوّل الحجز إلى تسجيل فعلي', async () => {
-    const payment = await commerce.payOrder(orderId, learnerId, 'idem-key-0001')
+  it('4) الدفعُ الاختباريُّ سوّى الطلبَ وحوّل الحجزَ إلى تسجيلٍ فعليّ', async () => {
+    const payment = await prisma.payment.findFirstOrThrow({ where: { invoiceId, status: 'succeeded' } })
     paymentId = payment.id
-    expect(payment.status).toBe('succeeded')
     expect(payment.providerRef).toMatch(/^TEST-/)
     const order = await prisma.order.findUnique({ where: { id: orderId } })
     expect(order?.status).toBe('paid')
@@ -97,10 +104,16 @@ describe('التسجيل والدفع الاختباري', () => {
     expect(enrollment?.status).toBe('enrolled')
   })
 
-  it('5) نفس مفتاح idempotency يعيد الدفعة نفسها — لا ازدواج', async () => {
+  /* ونداءُ الدفع فوق طلبٍ سُوّي سلفا يعيد دفعتَه لا يرمي.
+
+     كان يردّ ٤٠٩ حين لا يجد دفعةً بمفتاح العميل — فيرى المشتري خطأً على طلبٍ
+     **نجح**، ويظنّ أنّ ماله ضاع. والتسويةُ التلقائيّةُ للمزوّد الاختباريّ
+     أشهرُ مصادر هذه الحالة. */
+  it('5) نداءُ الدفع فوق طلبٍ مسوًّى يعيد دفعتَه — ولا يرمي ولا يُنشئ ثانية', async () => {
+    const before = await prisma.payment.count({ where: { invoiceId } })
     const again = await commerce.payOrder(orderId, learnerId, 'idem-key-0001')
     expect(again?.id).toBe(paymentId)
-    expect(await prisma.payment.count({ where: { idempotencyKey: 'idem-key-0001' } })).toBe(1)
+    expect(await prisma.payment.count({ where: { invoiceId } }), 'أُنشئت دفعةٌ ثانية').toBe(before)
   })
 
   it('6) webhook بلا توقيع صالح مرفوض', async () => {
@@ -118,6 +131,14 @@ describe('التسجيل والدفع الاختباري', () => {
   })
 
   it('8) الدفعة اليدوية: مبلغ مختلف مرفوض، والمطابق يُسجل ويسوّي', async () => {
+    /* السائقُ اليدويُّ لا التجريبيّ: التحويلُ البنكيُّ يُسجَّل بيد المالية بعد
+       أن يصل فعلا، فالطلبُ يبقى غيرَ مدفوعٍ حتّى تُسجَّل الحوالة — وهذا صحيحٌ
+       هنا، بخلاف التجريبيّ الذي لا مالَ فيه ينتظر. */
+    await prisma.integrationSetting.upsert({
+      where: { provider: 'payment' },
+      update: { enabled: true, config: { driver: 'manual' } },
+      create: { provider: 'payment', enabled: true, config: { driver: 'manual' } },
+    })
     const l3 = await auth.register('com-learner3@test.local', 'Learner#12345', 'متعلم يدوي')
     const req3 = await commerce.requestEnrollment(l3.userId, cohortId)
     const order3 = await commerce.approveEnrollmentRequest(req3.id, managerId)
@@ -128,6 +149,7 @@ describe('التسجيل والدفع الاختباري', () => {
     expect(payment.provider).toBe('manual')
     const req3After = await prisma.enrollmentRequest.findUnique({ where: { id: req3.id } })
     expect(req3After?.status).toBe('converted')
+    await prisma.integrationSetting.deleteMany({ where: { provider: 'payment' } })
   })
 
   it('9) استرداد جزئي ثم كامل — الدفعة والطلب يتحدثان', async () => {

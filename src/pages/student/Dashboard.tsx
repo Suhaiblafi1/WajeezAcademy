@@ -38,6 +38,11 @@ interface RealEnrollment {
      دليلُ إنجاز، والملغاةُ ليست دليلا. */
   certificates?: { id: string; number: string; status: string }[];
 }
+/* إشاراتُ من لا تسجيلَ له — ثلاثةٌ فوق التسجيلات */
+interface HeldSeatLite { requestId: string; courseTitleAr: string; cohortTitle: string; startsAt: string | null }
+interface OrderLite { id: string; status: string; total: string | number; currency: string }
+interface EmptySignals { held: HeldSeatLite[]; unpaid: OrderLite[]; plan: JourneyPlan | null }
+
 interface RealSessionItem {
   id: string; title: string; startsAt: string; endsAt: string | null; status: string;
   zoom: { joinUrl: string; learnerUrl: string | null } | null;
@@ -69,6 +74,17 @@ export default function StudentDashboard() {
   const [fetched, setFetched] = useState<{ userId: string; rows: RealEnrollment[] | null } | null>(null);
   const rows = sessionUser && fetched?.userId === sessionUser.userId ? fetched.rows : null;
 
+  /* ── حالةُ من لا تسجيلَ له تُشتقّ من أربعة مصادر لا من واحد ──
+
+     كان الشرطُ يفحص شيئا واحدا: هل يوجد صفُّ تسجيل؟ وهو أضيقُ الإشارات
+     المتاحة. فطالبٌ **دفع للتوّ** وعنده مقعدٌ محجوزٌ وطلبٌ مدفوع كان يقرأ
+     «حسابك جاهز — بقيت أوّل شعبة». ومن اعتمد خطّةً بعد تشخيصه كان يقرأها
+     كذلك، وخطّتُه محفوظةٌ على الخادم لا يراها أحد.
+
+     وكلُّ نداءٍ منها يحتمل الفشلَ وحدَه: فشلُ واحدٍ لا يُفرِّغ اللوحةَ كلَّها،
+     بل يُسقط إشارتَه ويبقى ما سواها. */
+  const [signals, setSignals] = useState<EmptySignals | null>(null);
+
   useEffect(() => {
     if (!sessionUser) return;
     const userId = sessionUser.userId;
@@ -80,6 +96,18 @@ export default function StudentDashboard() {
          فشل طلبه، وإظهار خطأ صريح تحسينٌ يستحق تغييرا مستقلا لا يُدسّ في
          إصلاح تلويم. */
       .catch(() => { if (on) setFetched({ userId, rows: null }); });
+    void Promise.all([
+      apiGet<HeldSeatLite[]>("/api/learner/held-seats").catch(() => [] as HeldSeatLite[]),
+      apiGet<OrderLite[]>("/api/learner/orders").catch(() => [] as OrderLite[]),
+      apiGet<{ plan: JourneyPlan | null }>("/api/learner/plan").catch(() => ({ plan: null })),
+    ]).then(([held, orders, planRes]) => {
+      if (!on) return;
+      setSignals({
+        held,
+        unpaid: orders.filter((o) => o.status === "pending_payment"),
+        plan: planRes.plan,
+      });
+    });
     return () => { on = false; };
   }, [sessionUser]);
 
@@ -92,7 +120,7 @@ export default function StudentDashboard() {
     );
   }
   if (sessionUser && rows && rows.length > 0) return <RealDashboard name={sessionUser.displayName} rows={rows} />;
-  if (sessionUser && rows) return <EmptyRealDashboard name={sessionUser.displayName} />;
+  if (sessionUser && rows) return <EmptyRealDashboard name={sessionUser.displayName} signals={signals} />;
   return <PortalLayout title="لوحتي">{null}</PortalLayout>;
 }
 
@@ -369,7 +397,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                     ? [{ to: "/student/learning", labelAr: `تابع «${rows[0].cohort.course.versions[0]?.titleAr ?? rows[0].cohort.title}»`, hintAr: "الوحدات والمواد" }]
                     : []),
                   { to: "/student/review", labelAr: "ثبّت ما تعلّمته", hintAr: "بطاقاتُ تذكّرٍ تعود في موعدها" },
-                  { to: "/student/pathway", labelAr: "افتح مسارك", hintAr: "مواعيد دوراتك القادمة واختيارها" },
+                  { to: "/student/learning", labelAr: "افتح مسارك", hintAr: "مواعيد دوراتك القادمة ووحداتها" },
                 ]}
               />
             ) : (
@@ -458,11 +486,11 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           </div>
           <p className="mt-2 text-xs leading-6 text-muted-foreground">ما قِيس لك فعلا: فجواتك وما تُتقنه وما لم يُقس بعد</p>
         </Link>
-        <Link to="/student/pathway" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
+        <Link to="/student/learning" className="block rounded-3xl border border-teal/30 bg-teal/5 p-5 transition hover:border-teal/60">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
-            <CalendarDays className="h-4 w-4" /> الشعب المفتوحة
+            <CalendarDays className="h-4 w-4" /> مسارُ تعلّمي
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">تصفح الشعب القادمة واطلب التسجيل فيما يناسبك</p>
+          <p className="mt-2 text-xs leading-6 text-muted-foreground">مواعيد شعبك ووحداتُها وموادُّ كلِّ لقاء</p>
         </Link>
         <Link to="/student/certificates" className="block rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
@@ -488,21 +516,114 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
   );
 }
 
-/* ═══════════ حساب حقيقي بلا تسجيلات بعد — ترحيب يوجه لأول خطوة ═══════════ */
-function EmptyRealDashboard({ name }: { name: string }) {
+/* ═══════════ حسابٌ بلا تسجيلاتٍ بعد — والحالةُ من أربعة مصادر ═══════════
+
+   كانت شاشةً واحدةً لكلّ من لا صفَّ تسجيلٍ له: «حسابك جاهز — بقيت أوّل شعبة».
+   وهي تكذب على ثلاثة أصنافٍ من الطلبة:
+
+     · **من دفع للتوّ** وعنده مقعدٌ محجوزٌ ينتظر التسوية.
+     · **من بدأ شراءً ولم يكمله** — طلبٌ قائمٌ يستطيع إتمامَه أو إلغاءه.
+     · **من اعتمد خطّةً بعد تشخيصه** — مسارُه محفوظٌ على الخادم ولا يراه.
+
+   والترتيبُ ترتيبُ الأقربِ إلى المال: المدفوعُ أوّلا، ثمّ ما لم يكتمل دفعُه،
+   ثمّ الخطّة، ثمّ الفراغُ الحقيقيّ.
+
+   ── والنصُّ القديمُ كان يصف مسارا أُلغي ──
+
+   «واطلب التسجيل؛ عند موافقة العمليّات تصلك فاتورتك» — وقرارُ صاحب المنصّة
+   المسجَّل في الشيفرة أنّ الشراءَ مباشر. فكانت الشاشةُ توجّه كلَّ طالبٍ جديدٍ
+   إلى المسار الذي أُلغي.
+
+   ── والروابطُ تذهب إلى وجهتها لا إلى تحويل ──
+
+   كان زرُّ «تصفّح الشعب» يشير إلى `/student/pathway`، وهو **تحويلٌ** إلى
+   `/student/learning` — حيث رسالةُ فراغٍ ثانيةٌ مختلفة. رسالتا فراغٍ لحالةٍ
+   واحدة، إحداهما تحيل إلى الأخرى. */
+function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySignals | null }) {
+  const held = signals?.held ?? [];
+  const unpaid = signals?.unpaid ?? [];
+  const plan = signals?.plan ?? null;
+  const title = `${greeting()} يا ${name.split(" ")[0]}`;
+
+  if (held.length > 0) {
+    return (
+      <PortalLayout title={title}>
+        <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-14 text-center">
+          <Clock3 className="h-11 w-11 text-teal-light-ink" />
+          <h2 className="mt-5 text-2xl font-black">
+            {held.length === 1 ? "مقعدُك محجوز — نؤكّد دفعتَك" : `${held.length} مقاعدَ محجوزة — نؤكّد دفعتَك`}
+          </h2>
+          <ul className="mt-3 space-y-1 text-sm leading-7 text-muted-foreground">
+            {held.slice(0, 4).map((h) => (
+              <li key={h.requestId}>
+                <span className="font-bold text-foreground">{h.courseTitleAr}</span> — {h.cohortTitle}
+                {h.startsAt && ` · تبدأ ${fmtDate(h.startsAt)}`}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 max-w-md text-[12.5px] leading-7 text-muted-foreground">
+            يتحوّل الحجزُ إلى تسجيلٍ فور تأكيد الدفعة، وتفتح شعبتُك هنا تلقائيّا.
+          </p>
+          <Link to="/student/learning" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+            تابع في رحلتي
+          </Link>
+        </section>
+      </PortalLayout>
+    );
+  }
+
+  if (unpaid.length > 0) {
+    return (
+      <PortalLayout title={title}>
+        <section className="grid place-items-center rounded-3xl border border-gold/35 bg-gradient-to-b from-gold/10 to-transparent py-14 text-center">
+          <Clock3 className="h-11 w-11 text-gold-ink" />
+          <h2 className="mt-5 text-2xl font-black">
+            {unpaid.length === 1 ? "طلبُك لم يكتمل دفعُه" : `${unpaid.length} طلباتٍ لم يكتمل دفعُها`}
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
+            أتمم الدفعَ فتُفتح شعبتُك هنا مباشرة — أو ألغِ الطلبَ فيعود مقعدُك إلى غيرك.
+          </p>
+          <Link to="/student/billing" className="mt-6 rounded-full bg-gold px-6 py-3 font-black text-on-gold transition hover:bg-gold/90">
+            افتح فواتيري
+          </Link>
+        </section>
+      </PortalLayout>
+    );
+  }
+
+  if (plan && plan.items.length > 0) {
+    return (
+      <PortalLayout title={title}>
+        <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-14 text-center">
+          <Target className="h-11 w-11 text-teal-light-ink" />
+          <h2 className="mt-5 text-2xl font-black">خطّتُك جاهزة — بقيت شعبتُك الأولى</h2>
+          <p className="mt-2 text-base font-bold text-teal-light-ink">{plan.nameAr}</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
+            {plan.items.length === 1 ? "دورةٌ واحدة" : `${plan.items.length} دورات`} في مسارك.
+            اختر شعبةَ أولاها وموعدَها — والدفعُ فوريٌّ ويُسجّلك مباشرة.
+          </p>
+          <Link to="/student/learning" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+            اختر شعبتَك الأولى
+          </Link>
+        </section>
+      </PortalLayout>
+    );
+  }
+
   return (
-    <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
+    <PortalLayout title={title}>
       <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-16 text-center">
         <BookOpen className="h-12 w-12 text-teal-light-ink" />
-        <h2 className="mt-5 text-2xl font-black">حسابك جاهز — بقيت أول شعبة</h2>
+        <h2 className="mt-5 text-2xl font-black">حسابك جاهز — بقيت أوّل شعبة</h2>
         <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-          تصفح الشعب المفتوحة واطلب التسجيل؛ عند موافقة العمليات تصلك فاتورتك، وبالدفع تُفتح شعبتك هنا تلقائيا.
+          الأسعارُ معلَنةٌ والدفعُ مباشر: اختر دورةً وشعبتَها، وتُفتح هنا فورَ الدفع.
+          أو ابدأ بالتشخيص فنقترح عليك مسارا كاملا.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <Link to="/student/pathway" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
-            تصفح الشعب المفتوحة
+          <Link to="/diagnostic" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
+            ابدأ التشخيص
           </Link>
-          <Link to="/catalog" className="rounded-full border border-white/15 px-6 py-3 font-bold text-foreground hover:border-white/40">
+          <Link to="/courses" className="rounded-full border border-white/15 px-6 py-3 font-bold text-foreground hover:border-white/40">
             كتالوج الدورات
           </Link>
         </div>

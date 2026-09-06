@@ -348,12 +348,85 @@ export async function cleanupExpired(prisma: PrismaClient, now = new Date()): Pr
   }
 }
 
+/* ─────────── الطلباتُ المهجورة — ومقاعدُها ───────────
+
+   الشراءُ نداءان: إنشاءُ الطلب (يحجز المقعد) ثمّ الدفع. ومن أغلق متصفّحَه
+   بينهما — أو عدل عن الشراء في صفحة المزوّد — يترك طلبا «لم يُدفع» ومقعدا
+   محجوزا. ولا شيءَ كان يمسّهما: خمسُ وظائفَ في المُشغِّل، **لا واحدةَ منها
+   تعرف الطلبات ولا المقاعد**. فيعيش الطلبُ أبدا.
+
+   وثمنُه مضاعف: **المقعدُ المحجوزُ يمنع صاحبَه من إعادة الشراء** — الشرطُ في
+   `validatedCart` يردّ بـ٤٠٩ — فيبقى ينظر إلى «طلبٌ لم يكتمل دفعُه» في كلّ
+   شاشةٍ ولا يستطيع أن يشتري ما أراده. ويمنع غيرَه كذلك: مقعدٌ محجوزٌ يُحتسب
+   على السعة.
+
+   ── والمهلةُ تتجاوز أطولَ صفحةِ دفعٍ حقيقيّة ──
+
+   ساعةٌ لا دقائق: صفحاتُ المزوّدين المستضافة تحتمل تعثّرا وإعادةَ محاولةٍ
+   وتحقّقا بنكيّا (3-D Secure). وإلغاءُ طلبٍ يدفعه صاحبُه في هذه اللحظة
+   يسرق منه مقعدَه بعد أن دفع.
+
+   ── وما لا يُلمس ──
+
+   طلبٌ عليه **دفعةٌ ناجحة** لا يُلغى مهما طال: ماله وصل وإن تعثّرت التسوية،
+   وإلغاؤه يمحو أثرَ ما دُفع. تلك حالةٌ تُقرأ بيدٍ لا تُنظَّف آليّا. */
+const ABANDONED_ORDER_MS = HOUR
+
+export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const cutoff = new Date(now.getTime() - ABANDONED_ORDER_MS)
+  const stale = await prisma.order.findMany({
+    where: { status: 'pending_payment', createdAt: { lt: cutoff } },
+    include: { invoice: { include: { payments: { where: { status: 'succeeded' }, take: 1 } } } },
+    take: LIMITS.cleanup,
+    orderBy: { createdAt: 'asc' },
+  })
+
+  let done = 0
+  let failed = 0
+  let withPayment = 0
+  for (const order of stale) {
+    if ((order.invoice?.payments ?? []).length > 0) { withPayment++; continue }
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({ where: { id: order.id }, data: { status: 'cancelled' } })
+        if (order.invoice) await tx.invoice.update({ where: { id: order.invoice.id }, data: { status: 'void' } })
+        /* المقعدُ يعود إلى العدّ، والحجزُ يُفكّ عن الطلب فلا يبقى معلَّقا به */
+        await tx.enrollmentRequest.updateMany({
+          where: { orderId: order.id, status: 'seat_held' },
+          data: { status: 'cancelled', orderId: null },
+        })
+      })
+      await recordAudit(prisma, {
+        actorId: null, action: 'order.cancel', entityType: 'order', entityId: order.id,
+        meta: { userId: order.userId, total: String(order.total), currency: order.currency, ageMs: now.getTime() - order.createdAt.getTime() },
+        reason: 'طلبٌ مهجورٌ لم يُدفع — أُلغي آليّا وأُفرِج عن مقاعده',
+      })
+      done++
+    } catch {
+      /* صفٌّ تعذّر إلغاؤه لا يوقف أخواته — يُعدّ ويُقرأ في السجلّ */
+      failed++
+    }
+  }
+
+  const notes = withPayment > 0 ? ` · ${withPayment} عليه دفعةٌ ناجحة فلم يُمسّ` : ''
+  return {
+    job: 'reclaim_abandoned_orders',
+    summaryAr: done === 0 && failed === 0
+      ? `لا طلبَ مهجورا أقدمَ من ساعة${notes}`
+      : `أُلغي ${done} طلبا مهجورا وأُفرِج عن مقاعدها${notes}`,
+    done, failed, ms: Date.now() - started,
+  }
+}
+
 /** الوظائفُ بأسمائها ودوراتِها — الترتيبُ ترتيبُ الأهمّيّة */
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكيرُ الجلسات' },
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالاتُ الشعب بالتواريخ' },
   { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشرُ المجدول' },
+  /* كلَّ عشر دقائق: المقعدُ المحبوسُ يمنع شراءً الآن لا غدا */
+  { key: 'reclaim_abandoned_orders', everyMs: 10 * 60_000, run: reclaimAbandonedOrders, titleAr: 'تحريرُ مقاعدِ الطلبات المهجورة' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },

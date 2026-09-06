@@ -65,7 +65,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     await signOut();
     navigate("/", { replace: true });
   };
-  const { user: sessionUser, checked: sessionChecked } = useRealSession();
+  const { user: sessionUser, checked: sessionChecked, emailChannel } = useRealSession();
   /* كان useEffect يقلب allowed عند ظهور الجلسة، فيصيّر مرة بالمنع ثم مرة
      بالسماح — ومضة يراها المستخدم، وتحذير «setState داخل تأثير». العطف هنا
      يعطي النتيجة نفسها في تصيير واحد. */
@@ -370,8 +370,12 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">{title}</h1>
         </div>
-        {/* ١هـ — يظهر لغير الموثَّق وحده، ويزول بمجرّد التوثيق */}
-        {sessionUser && !sessionUser.emailVerified && (
+        {/* ١هـ — يظهر لغير الموثَّق وحده، ويزول بمجرّد التوثيق.
+
+            ولا يُعرض والقناةُ مغلقة: الحاجزُ غيرُ مفروضٍ حينها (الخادمُ يُسقطه)،
+            وزرُّ الإرسال لا يمكن أن ينجح. فالشريطُ يصير تحذيرا من قيدٍ لا وجودَ
+            له، ودعوةً إلى فعلٍ لا يقع. */}
+        {sessionUser && !sessionUser.emailVerified && emailChannel !== false && (
           <VerifyEmailNotice email={sessionUser.email} className="mb-6" />
         )}
         {/* التنقّل الثانوي داخل القسم — صفحاتُه هنا لا في الشريط الأعلى.

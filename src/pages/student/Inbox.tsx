@@ -121,7 +121,7 @@ export default function Inbox() {
             titleAr="صندوقك فارغ"
             reasonAr="قرارات التسجيل والجلسات وتعليقات مدربك وردود الدعم تصل هنا كلها في مكان واحد — ولم يصل شيء بعد."
             actions={[
-              { to: "/student/pathway", labelAr: "افتح مسارك", hintAr: "أول قرار تسجيل يصلك هنا" },
+              { to: "/student/learning", labelAr: "افتح مسارك", hintAr: "أول قرار تسجيل يصلك هنا" },
               { to: "/student/support", labelAr: "افتح تذكرة دعم", hintAr: "إن كان لديك سؤال" },
             ]}
           />

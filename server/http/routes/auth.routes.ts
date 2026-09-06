@@ -7,6 +7,7 @@ import { SESSION_COOKIE, requireAuth } from '../auth-plugin'
 import { sendPasswordResetEmail, sendVerifyEmail } from '../../services/account-mail'
 import { assertNotBot } from '../honeypot'
 import { getPrisma } from '../../db/client'
+import { getEmailConfig } from '../../services/integrations.service'
 
 const email = z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة')
 const password = z.string().min(8, 'كلمة المرور 8 أحرف على الأقل')
@@ -163,11 +164,20 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
      صلاحيّاتك» وهو داخلٌ فعلا (شُوهد في جولة ٢٠٢٦-٠٩: ٤٤ ردَّ 429، تسعةَ
      عشرَ منها على هذا المسار). فله سقفُه: واسعٌ لأنّه قراءةُ جلسةٍ قائمة،
      ومحدودٌ لأنّه ليس مفتوحا. */
+  /* ومعها حالةُ قناة البريد.
+
+     شريطُ «بريدُك غير موثَّق» يقول «الشراءُ والشهادةُ موقوفان حتّى تُوثّقه» —
+     **وهذا غيرُ صحيحٍ حين تكون القناةُ مغلقة**: الخادمُ يُسقط الحاجزَ صراحةً
+     حينها («قفلٌ بلا مفتاحٍ لا يُقفل»، `cart.service.ts`). فكان المتعلّمُ يقرأ
+     تحذيرا من قيدٍ غيرِ مفروض، وزرَّ إرسالٍ لا يمكن أن ينجح.
+
+     والخادمُ يعرف الحالةَ أصلا — تُكشَف للواجهة فقط. */
   app.get('/api/auth/me', {
     config: { rateLimit: { max: 3000, timeWindow: '1 minute' } },
-    schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها' },
+    schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها وحالةُ قناة البريد' },
   }, async (req) => {
-    return { user: req.auth }
+    const cfg = await getEmailConfig(await getPrisma())
+    return { user: req.auth, emailChannelEnabled: Boolean(cfg.enabled && cfg.apiKey && cfg.fromEmail) }
   })
 
   app.post('/api/auth/deactivate', { preHandler: requireAuth, schema: { tags: ['auth'], summary: 'إيقاف الحساب ذاتيا — يبطل الجلسات فورا' } }, async (req, reply) => {

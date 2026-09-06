@@ -177,7 +177,7 @@ export default function RateMyLearning() {
           titleAr="لا شيء تقيّمه بعد"
           reasonAr="التقييم يُفتح بعد أن تبدأ شعبتك فعلا — لا رأي فيما لم يُجرَّب. حين تبدأ، ستجد هنا دورتك ومدرّبها."
           tone="start"
-          actions={[{ to: "/student/pathway", labelAr: "افتح مسارك", hintAr: "اختر موعد دورتك القادمة" }]}
+          actions={[{ to: "/student/learning", labelAr: "افتح مسارك", hintAr: "اختر موعد دورتك القادمة" }]}
         />
       )}
 

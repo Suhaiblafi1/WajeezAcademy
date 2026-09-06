@@ -230,8 +230,10 @@ export default function BuyPanel({
         ...(usd ? { presentment: currency } : {}),
       });
       if (r.redirectUrl) { window.location.assign(r.redirectUrl); return; }
-      /* مزوّدٌ غير مستضاف: الدفعةُ سُجّلت، فالمنصّةُ تعرض ما دُفع */
-      window.location.assign("/student/learning");
+      /* مزوّدٌ غير مستضاف: الدفعةُ سُجّلت — ويُمرَّر معرّفُ الطلب فتعرض صفحةُ
+         التعلّم إيصالَه. كان يُرسَل بلا معرّف، فيصل الطالبُ بلا رقمِ فاتورةٍ
+         ولا مبلغ — ولا يستطيع أن يجيب «هل نجح دفعي؟». */
+      window.location.assign(`/student/learning?paid=${order.orderId}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذّر إتمام الشراء — أعد المحاولة");
       setPaying(false);

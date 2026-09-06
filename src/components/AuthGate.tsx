@@ -76,7 +76,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   const [agreed, setAgreed] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [resent, setResent] = useState(false);
+  const [resent, setResent] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState("");
 
   const emailValid = EMAIL_RE.test(email.trim());
@@ -122,8 +122,17 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
       }
       if (mode === "signup") {
         track("account_created", source ? { source } : {});
-        setView("verify");
-        setResent(false);
+        /* شاشةُ «تفقّد بريدك» لمن أُرسلت إليه رسالةٌ فعلا.
+
+           كانت تُعرض لكلّ من سجّل — وقناةُ البريد قد تكون مغلقةً بقرار — فينتهي
+           أوّلُ لقاءٍ لكلّ مستخدمٍ جديدٍ بانتظارِ رسالةٍ لن تصل، وزرُّه الرئيسُ
+           «أعد الإرسال». والخادمُ يقول في ردّ التسجيل هل خرجت الرسالةُ فعلا. */
+        if (result.verificationSent) {
+          setView("verify");
+          setResent(null);
+        } else {
+          onDone();
+        }
       } else {
         onDone();
       }
@@ -193,14 +202,12 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           </p>
           <div className="mt-6 space-y-3">
             <button
-              onClick={() => {
-                resendVerification(email);
-                setResent(true);
-              }}
-              disabled={resent}
+              onClick={() => void resendVerification().then((r) => setResent(r.message))}
+              disabled={resent !== null}
               className="h-11 w-full rounded-2xl border border-white/15 text-sm font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-50"
             >
-              {resent ? "أُعيد إرسال الرسالة — تفقد بريدك" : "لم تصلك؟ أعد إرسال رسالة التحقق"}
+              {/* رسالةُ الخادم كما هي — لا تأكيدٌ تكتبه الشاشةُ عن نداءٍ لم تنتظره */}
+              {resent ?? "لم تصلك؟ أعد إرسال رسالة التحقق"}
             </button>
             <button
               onClick={onDone}
