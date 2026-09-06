@@ -103,3 +103,72 @@ describe('٥١ · ٥٢ · النافذةُ والفصلُ القادم يبلغ�
     expect(svc).toContain('return true')
   })
 })
+
+describe('٤٩ · «افتح الفصل» — بمعاينةٍ قبل التطبيق وبالبوّابة نفسِها', () => {
+  const svc = read('server/services/term-planning.service.ts')
+  const routes = read('server/http/routes/term.routes.ts')
+
+  it('المعاينةُ هي الافتراضيّ — لا زرَّ ينفّذ قبل أن تُعرض النتيجة', () => {
+    expect(routes).toMatch(/apply: z\.boolean\(\)\.optional\(\)\.default\(false\)/)
+    expect(svc, 'يُطبَّق بلا طلبٍ صريح').toContain('if (!opts.apply) return result')
+  })
+
+  it('والفتحُ يمرّ بشروط الفتح الستّة — لا بابَ خلفيّ', () => {
+    expect(svc).toContain('openChecklist')
+    expect(svc, 'يُفتح بلا فحص').toMatch(/if \(check\.ready\)/)
+  })
+
+  it('وما نقصه شيءٌ يبقى مسوّدةً ونقصُه مكتوبٌ في صفّه', () => {
+    expect(svc).toMatch(/row\.blocked = check\.missing/)
+  })
+
+  it('ولا تُفتح دورةٌ بسعرٍ مُختلَق', () => {
+    expect(svc).toContain('بلا سعر قائمة')
+  })
+
+  it('وحدثُ أثرٍ واحدٌ بالخطّة كاملة — لا ثمانون حدثا يُقرأ منها لا شيء', () => {
+    expect(svc).toContain("action: 'term.plan_open'")
+    expect(svc).toMatch(/plan: rows\.map/)
+  })
+})
+
+describe('٥٠ · التقويمُ — ما يُعرض وما لا يُعرض', () => {
+  const svc = read('server/services/term-calendar.service.ts')
+  const page = read('src/pages/Calendar.tsx')
+
+  it('لا تقويمَ قبل نشره — الفصلُ المخطَّطُ ليس وعدا', () => {
+    expect(svc).toMatch(/if \(!term\.calendarPublishedAt\) return null/)
+  })
+
+  it('ولا اسمَ مدرّبٍ قبل اعتماد نشره — قاعدةُ المنصّة لا استثناء', () => {
+    expect(svc).toMatch(/publicVisibility && lead\.publishApprovedAt !== null/)
+    expect(svc, 'الاسمُ يُعرض بلا شرط').toMatch(/named \? lead\.application\.fullName : null/)
+  })
+
+  it('ولا جلساتٍ للزائر — مواعيدُها تفصيلُ من اشترى', () => {
+    expect(svc, 'الجلساتُ تُقرأ في التقويم العامّ').not.toMatch(/sessions:\s*(true|\{)/)
+  })
+
+  it('وشعبةٌ بلا شهرٍ تُلحق ولا تُحذف — الغيابُ أسوأُ من موضعٍ تقريبيّ', () => {
+    expect(svc).toMatch(/monthWithinTerm === null/)
+    expect(svc).toContain('months[0].entries.push')
+  })
+
+  it('والصفحةُ ثلاثةُ أعمدةٍ للأشهر لا قائمةٌ من ثمانين', () => {
+    expect(page).toMatch(/lg:grid-cols-3/)
+    expect(page).toContain('MONTH_LABEL')
+  })
+
+  it('والزائرُ يبلغها من القائمة — صفحةٌ لا رابطَ إليها ليست صفحة', () => {
+    const shell = read('src/components/SiteShell.tsx')
+    expect(shell).toMatch(/href: '\/calendar'/)
+    const app = read('src/App.tsx')
+    expect(app).toMatch(/path="\/calendar"/)
+  })
+
+  it('وللمسجَّل النسخةُ نفسُها موسومةً بما سُجِّل فيه', () => {
+    const routes = read('server/http/routes/term.routes.ts')
+    expect(routes).toContain('/api/learner/term-calendar')
+    expect(svc).toMatch(/enrolled/)
+  })
+})

@@ -54,6 +54,7 @@ function SiteNav() {
     { label: 'مؤشر وجيز', href: '/#diagnostic' },
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
+    { label: 'تقويم الفصل', href: '/calendar', route: true },
     { label: 'منهجية وجيز', href: '/methodology', route: true },
   ]
   const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
