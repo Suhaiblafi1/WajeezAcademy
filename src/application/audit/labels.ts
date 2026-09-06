@@ -23,6 +23,9 @@ const PHRASES: Record<string, string> = {
   'admin.user.unarchive': 'إعادةُ تنشيطِ حساب',
   'admin.user.purge': 'حذفُ حسابٍ نهائيّا',
   'admin.user.purge_with_history': 'محوُ حسابٍ بسجلّه كلّه',
+  /* البند ٦٦ — أخطرُ فعلين في السجلّ، ولذلك يُسمَّيان بما يفعلانه لا برمزهما */
+  'accounts.reset_purge': 'إعادةُ ضبط الحسابات — محوٌ نهائيّ',
+  'accounts.reset_archive': 'إعادةُ ضبط الحسابات — أرشفة',
   'admin.user.invite_resend': 'إعادةُ إرسال دعوة',
   'admin.permission.grant': 'منحُ صلاحيّةٍ لشخص',
   'admin.permission.deny': 'نزعُ صلاحيّةٍ عن شخص',
@@ -132,7 +135,7 @@ const WORDS: Record<string, string> = {
   admin: 'الإدارة', user: 'حساب', users: 'حسابات', permission: 'صلاحيّة', permissions: 'صلاحيّات',
   roles: 'أدوار', role: 'دور', advisor: 'مستشار', case: 'حالة', commission: 'عمولة',
   request: 'طلب', catalog: 'كتالوج', cohort: 'شعبة', cohorts: 'شعب', session: 'جلسة', sessions: 'جلسات',
-  term: 'فصل دراسيّ',
+  term: 'فصل دراسيّ', accounts: 'حسابات', platform: 'المنصّة',
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويضُ مدرّب',
   trainer_payout: 'مستحقُّ مدرّب', application: 'طلبُ انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّةٌ تجريبيّة', review: 'مراجعة',
