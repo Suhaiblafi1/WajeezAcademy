@@ -769,6 +769,18 @@ export default function Diagnostic() {
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
+          {/* ── بابُ المرآة (البند ٤٠) ──
+
+              صفحةٌ لا يصلها رابطٌ صفحةٌ لا وجودَ لها. وموضعُ الرابط هنا لا في
+              الرئيسة: من بلغ هذه الشاشةَ قرّر أن يُشخَّص، وهو وحدَه من يعنيه
+              أنّ ثلاثَ دقائقَ قبلها تختصر عليه أسئلةً بعدها. */}
+          <p className="mx-auto mt-4 max-w-md text-fine leading-6 text-muted-foreground">
+            أو ابدأ بـ
+            <Link to="/mirror" className="mx-1 font-bold text-teal-light-ink underline underline-offset-4 hover:text-foreground">
+              مرآة وجيز
+            </Link>
+            — ٢٤ عبارةً بلا حساب تقول ما تميل إليه، ويبدأ التشخيصُ بعدها بما عرفه عنك.
+          </p>
           {/* هذه شاشة إقناعٍ بالبدء، وثلاثة أسطر من الشروط قبل الخطوة الأولى
               تُقرأ عقبةً لا طمأنة. بقيت الدعوة، وزال سطرا الإقرار والسنّ.
 

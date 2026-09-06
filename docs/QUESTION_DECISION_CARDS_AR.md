@@ -3204,12 +3204,12 @@
 - **الحالة النهائية**: `active_b2c` — نشط في تشخيص B2C
 - **الطبقة الحالية (V2)**: QC · **الطبقة الجديدة**: الهدف والاحتياج
 - **المراحل المؤهلة**: الكل
-- **المجالات**: employment_readiness، career_direction، data_decision، project_management، people_leadership، communication_influence، ai_productivity، operations، operations، sales، marketing_growth، sales، communication_influence، product_mgmt، cyber_risk، operations، finance_mgmt، learning_design، entrepreneurship
+- **المجالات**: employment_readiness، career_direction، data_decision، project_management، people_leadership، communication_influence، ai_productivity، operations، operations، gov_services، sales، marketing_growth، sales، communication_influence، product_mgmt، cyber_risk، operations، finance_mgmt، learning_design، entrepreneurship
 - **يقيس**: need_id
 - **لماذا يوجد**: الاحتياج الحقيقي لا اسم المسار.
 - **الأثر القراري الدقيق**: يكتشف المجال — محرك التمييز الرئيس بين المسارات والقوالب.
 - **الجملة الحاسمة**: هذا السؤال موجود لأن إجابة مقابل أخرى تغيّر: يكتشف المجال — محرك التمييز الرئيس بين المسارات والقوالب.
-- **المرشحون القياسيون المتأثرون**: PW-AUT-001، PW-BIZ-001، PW-COM-001، PW-CYB-001، PW-EMP-003، PW-EMP-004، PW-EMP-005، PW-FIN-001، PW-FND-003، PW-HR-001، PW-LND-001، PW-MKT-001، PW-NEG-001، PW-OPS-001، PW-PRD-001، PW-SAL-001، PW-SCM-001، PW-STU-002، PW-STU-003
+- **المرشحون القياسيون المتأثرون**: PW-AUT-001، PW-BIZ-001، PW-COM-001، PW-CYB-001، PW-EMP-003، PW-EMP-004، PW-EMP-005، PW-FIN-001، PW-FND-003، PW-GOV-002، PW-HR-001، PW-LND-001، PW-MKT-001، PW-NEG-001، PW-OPS-001، PW-PRD-001، PW-SAL-001، PW-SCM-001، PW-STU-002، PW-STU-003
 - **المرشحون المركبون المتأثرون**: TPL-B2B-001، TPL-CX-001، TPL-CYBER-MANAGER-001، TPL-DIGITAL-TRAINER-001، TPL-DIGITAL-TRANSFORM-001، TPL-ECOM-001، TPL-FIN-DATA-001، TPL-FIRST-JOB-001، TPL-FREELANCE-001، TPL-NEW-MANAGER-001، TPL-PERSONAL-BRAND-001، TPL-PRODUCT-001، TPL-SMART-OPS-001، TPL-STRATEGY-001، TPL-SUPPLY-001، TPL-VENTURE-001
 - **ربط الإجابات**: كل خيار له أثر موثق (option effects أو مقياس ترتيبي)
 
