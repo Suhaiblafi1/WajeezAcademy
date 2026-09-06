@@ -25,14 +25,14 @@ function RealGradingQueue() {
   return (
     <TrainerLayout title="طابور التقييم">
       {realQueue === null ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-white/50">
+        <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" /> أحضر الطابور…
         </div>
       ) : actionable.length === 0 ? (
         <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-10 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-teal-light-ink" />
           <h2 className="mt-4 text-lg font-black">الطابور نظيف — لا تسليمات بانتظارك</h2>
-          <p className="mt-2 text-sm text-white/55">كل ما وصلك قيّمته. أحسنت.</p>
+          <p className="mt-2 text-sm text-muted-foreground">كل ما وصلك قيّمته. أحسنت.</p>
           {/* الفراغ فرصة توجيه لا مساحة ميتة — خطوات تالية نافعة بدل صفحة خالية */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
             <Link
@@ -43,13 +43,13 @@ function RealGradingQueue() {
             </Link>
             <Link
               to="/trainer/proposals"
-              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-white/80 transition hover:border-white/30 hover:text-white"
+              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30 hover:text-foreground"
             >
               اقترح تحسينا على المحتوى
             </Link>
             <Link
               to="/trainer/earnings"
-              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-white/80 transition hover:border-white/30 hover:text-white"
+              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30 hover:text-foreground"
             >
               راجع مستحقاتي
             </Link>
@@ -57,13 +57,13 @@ function RealGradingQueue() {
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-white/60">لديك {actionable.length} {actionable.length === 1 ? "تسليم يحتاج" : "تسليمات تحتاج"} تقييمك:</p>
+          <p className="text-sm text-muted-foreground">لديك {actionable.length} {actionable.length === 1 ? "تسليم يحتاج" : "تسليمات تحتاج"} تقييمك:</p>
           {actionable.map((q) => (
             <Link key={q.id} to="/trainer/board" className="flex items-center gap-3 rounded-2xl border border-gold/30 bg-gold/5 px-5 py-4 text-sm transition hover:border-gold/60">
               <FileText className="h-4 w-4 shrink-0 text-gold-ink" />
               <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-white/85">{q.assessment.title}</p>
-                <p className="mt-0.5 text-[11px] text-white/50">
+                <p className="truncate font-bold text-foreground">{q.assessment.title}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
                   {q.assessment.cohort.title} · أُرسل {fmtShortDateTimeAr(q.submittedAt)}
                 </p>
               </div>

@@ -47,7 +47,7 @@ export default function ResetPassword() {
           <div className="text-center">
             <ShieldCheck className="mx-auto h-12 w-12 text-emerald-400" />
             <h1 className="mt-5 text-2xl font-black">عُيّنت كلمة المرور</h1>
-            <p className="mt-3 text-sm leading-7 text-white/55">
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
               أُخرجت من كل الأجهزة — سجّل الدخول بكلمتك الجديدة.
             </p>
             <button
@@ -62,26 +62,26 @@ export default function ResetPassword() {
             <KeyRound className="h-10 w-10 text-[#FABC05]" />
             <h1 className="mt-4 text-2xl font-black">كلمة مرور جديدة</h1>
             {!token && (
-              <p className="mt-3 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-4 py-3 text-xs leading-6 text-white/70">
+              <p className="mt-3 rounded-2xl border border-[#FABC05]/30 bg-[#FABC05]/5 px-4 py-3 text-xs leading-6 text-muted-foreground">
                 الرابط بلا رمز — افتحه من رسالة الاستعادة كما وصلتك، أو اطلب رسالة جديدة.
               </p>
             )}
             <form onSubmit={submit} className="mt-6 space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-white/60">كلمة المرور الجديدة</span>
+                <span className="mb-1.5 block text-xs font-bold text-muted-foreground">كلمة المرور الجديدة</span>
                 <input
                   type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password" required
-                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-teal/60"
+                  className="w-full rounded-2xl border border-white/10 bg-paper/20 px-4 py-3 text-sm outline-none focus:border-teal/60"
                 />
                 {tooShort && <span className="mt-1.5 block text-[11px] text-[#FABC05]">٨ أحرف على الأقل</span>}
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-xs font-bold text-white/60">أعدها للتأكيد</span>
+                <span className="mb-1.5 block text-xs font-bold text-muted-foreground">أعدها للتأكيد</span>
                 <input
                   type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)}
                   autoComplete="new-password" required
-                  className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm outline-none focus:border-teal/60"
+                  className="w-full rounded-2xl border border-white/10 bg-paper/20 px-4 py-3 text-sm outline-none focus:border-teal/60"
                 />
                 {mismatch && <span className="mt-1.5 block text-[11px] text-[#FABC05]">الكلمتان غير متطابقتين</span>}
               </label>
@@ -96,7 +96,7 @@ export default function ResetPassword() {
               >
                 {busy ? "يُعيَّن…" : "تعيين كلمة المرور"}
               </button>
-              <p className="text-center text-[11px] text-white/40">
+              <p className="text-center text-[11px] text-muted-foreground">
                 تعيين كلمة جديدة يُخرجك من كل الأجهزة. · <Link to="/auth" className="text-teal-light-ink hover:underline">تسجيل الدخول</Link>
               </p>
             </form>

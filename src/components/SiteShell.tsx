@@ -64,7 +64,7 @@ function SiteNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/5 bg-paper/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
         <Link to="/" className="flex items-center gap-2.5">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
           <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
@@ -141,10 +141,10 @@ function SiteNav() {
 /* قالب الصفحات العامة الداخلية: ترويسة موحدة + محتوى + تذييل موحد */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SiteNav />
-      <div className="mx-auto max-w-6xl px-5 py-12 md:py-16">{children}</div>
-      <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-white/55">
+      <div className="mx-auto max-w-7xl px-5 py-12 md:py-16">{children}</div>
+      <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-muted-foreground">
         <div>© 2026 {ECOSYSTEM_NOTE}</div>
         <div className="mt-1">
           {CONTACT.email} ·{' '}
@@ -160,7 +160,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
           ))}
         </div>
         <div className="mt-2">
-          <Link to="/methodology" className="inline-flex min-h-[24px] items-center py-1 font-semibold text-white/50 transition hover:text-teal-light-ink">
+          <Link to="/methodology" className="inline-flex min-h-[24px] items-center py-1 font-semibold text-muted-foreground transition hover:text-teal-light-ink">
             منهجية وجيز
           </Link>
         </div>

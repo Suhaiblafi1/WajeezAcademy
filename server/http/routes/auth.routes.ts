@@ -5,14 +5,23 @@ import { z } from 'zod'
 import { AuthService } from '../../services/auth.service'
 import { SESSION_COOKIE, requireAuth } from '../auth-plugin'
 import { sendPasswordResetEmail, sendVerifyEmail } from '../../services/account-mail'
+import { assertNotBot } from '../honeypot'
 import { getPrisma } from '../../db/client'
 
 const email = z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة')
 const password = z.string().min(8, 'كلمة المرور 8 أحرف على الأقل')
 
 export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
+  /* سقفُ المسار هنا حاجزُ غَمرٍ لا حاجزُ إساءة، كما في الدخول (المهمّة ١٧).
+     كان **عشرةَ طلباتٍ لكلّ ٥ دقائق لكلّ شبكة** يعدُّ كلَّ طلب، فثلاثون
+     متعلّما يُنشئون حساباتهم أوّلَ يومٍ يُرَدُّ حادي عشرُهم. وما كان يحرسه
+     هذا الرقمُ عرَضا — إحصاءُ البريد — صار له سقفُه الخاصُّ وهو **أضيق**
+     (١٠ ارتداداتٍ لكلّ ربع ساعة في `auth.service.ts`)، ومعه سقفا الحجم
+     (٤٠ في الساعة و١٠٠ في اليوم). فرفعُ هذا لا يُوسّع الإحصاء. */
+  const registerRateMax = Number(process.env.REGISTER_RATE_MAX) || 120
+
   app.post('/api/auth/register', {
-    config: { rateLimit: { max: 10, timeWindow: '5 minutes' } },
+    config: { rateLimit: { max: registerRateMax, timeWindow: '5 minutes' } },
     schema: {
       tags: ['auth'], summary: 'إنشاء حساب متعلم',
       body: {
@@ -21,8 +30,9 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
       },
     },
   }, async (req, reply) => {
+    assertNotBot(req.body)
     const body = z.object({ email, password, displayName: z.string().trim().max(80).optional() }).parse(req.body)
-    const { userId } = await auth.register(body.email, body.password, body.displayName ?? '')
+    const { userId } = await auth.registerSelf(body.email, body.password, body.displayName ?? '', req.ip)
     /* رابط التوثيق يُرسل مع الإنشاء لا بعده بخطوة يدوية — ولا يُسقط التسجيل
        عند تعذّر الإرسال: الحساب أُنشئ فعلا، وردٌّ بخطأ يجعل المستخدم يظنّ أنه
        لم يُنشأ فيعيد المحاولة فيصطدم بـ«هذا البريد مسجل». */
@@ -35,8 +45,21 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
     })
   })
 
+  /* ═══ سقفُ المسار مقابل سقفِ الإخفاق (المهمّة ١٧) ═══
+     كان هذا السقفُ **عشرةَ طلباتٍ لكلّ ٥ دقائق لكلّ شبكة**، وهو يعدُّ كلَّ
+     طلبٍ لا الفاشلَ وحدَه: فثلاثون متعلّما في قاعةٍ يدخلون بكلماتٍ صحيحة
+     يُرَدُّ حادي عشرُهم. وهو أضيقُ من كلّ سقوف الإخفاق، فكان قرارُ صاحب
+     المنصّة (٤٠ إخفاقا للشبكة) لا يُبلَغ أصلا — يقفل هذا قبله.
+
+     فالعملُ قُسِّم: **الإخفاقُ** يحرسه المنطقُ في `auth.service.ts` بسقوفه
+     الثلاثة (٥ للشخص، ٤٠ للشبكة، ٢٥ للبريد)، **وهذا السقفُ** يبقى حاجزَ
+     غَمرٍ للمسار وحدَه — يحدّ عددَ النداءات لا صحّةَ كلماتِ المرور. ورقمُه
+     أعلى من أيّ قاعةٍ حقيقيّة (٣٠ متعلّما × ٣ محاولات = ٩٠)، والمكلفُ
+     (`bcrypt`) محدودٌ قبله بسقفِ الإخفاق: لا يُوزَن هاشٌ بعد الأربعين. */
+  const loginRateMax = Number(process.env.LOGIN_RATE_MAX) || 200
+
   app.post('/api/auth/login', {
-    config: { rateLimit: { max: 10, timeWindow: '5 minutes' } },
+    config: { rateLimit: { max: loginRateMax, timeWindow: '5 minutes' } },
     schema: {
       tags: ['auth'], summary: 'تسجيل الدخول — كوكي جلسة httpOnly',
       body: {
@@ -73,6 +96,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
       body: { type: 'object', required: ['email'], properties: { email: { type: 'string', format: 'email' } } },
     },
   }, async (req) => {
+    assertNotBot(req.body)
     const body = z.object({ email }).parse(req.body)
     const { tokenForDelivery } = await auth.requestPasswordReset(body.email)
     /* كان الرمز يُولَّد ثم يُسقَط: يُعاد في التطوير وحده، ولا يُرسَل في الإنتاج
@@ -133,7 +157,16 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService) {
     return { ok: true, alreadyVerified, message: alreadyVerified ? 'بريدك موثَّق أصلا' : 'وُثّق بريدك — الشراء والشهادة مفتوحان الآن' }
   })
 
-  app.get('/api/auth/me', { schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها' } }, async (req) => {
+  /* حارسُ كلّ بوّابةٍ في الواجهة ينادي هذا المسار عند كلّ انتقال، فوقوعُه
+     تحت السقف العامّ (٣٠٠/دقيقة لكلّ عنوان) يعني أنّ مكتبا أو قاعةً بعنوانٍ
+     واحدٍ تُطفئ الصلاحيّاتَ على نفسها: يرى المستخدم «تعذّر التحقّق من
+     صلاحيّاتك» وهو داخلٌ فعلا (شُوهد في جولة ٢٠٢٦-٠٩: ٤٤ ردَّ 429، تسعةَ
+     عشرَ منها على هذا المسار). فله سقفُه: واسعٌ لأنّه قراءةُ جلسةٍ قائمة،
+     ومحدودٌ لأنّه ليس مفتوحا. */
+  app.get('/api/auth/me', {
+    config: { rateLimit: { max: 3000, timeWindow: '1 minute' } },
+    schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها' },
+  }, async (req) => {
     return { user: req.auth }
   })
 

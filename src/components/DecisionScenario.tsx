@@ -60,10 +60,10 @@ export default function DecisionScenario({
   if (!scenario || !parsed.ok || !current) {
     return (
       <section className={`rounded-3xl border border-gold/30 bg-gold/[0.06] p-5 ${className}`.trim()}>
-        <p className="flex items-start gap-2 text-xs leading-6 text-white/75">
+        <p className="flex items-start gap-2 text-xs leading-6 text-foreground">
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
           سيناريو هذه الوحدة غير مكتمل، فلا يُعرض نصفه — نصف سيناريو يحبس من يمشي فيه.
-          {parsed.errorsAr.length > 0 && <span className="text-white/50"> ({parsed.errorsAr[0]})</span>}
+          {parsed.errorsAr.length > 0 && <span className="text-muted-foreground"> ({parsed.errorsAr[0]})</span>}
         </p>
       </section>
     );
@@ -106,13 +106,13 @@ export default function DecisionScenario({
           <Split className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           سيناريو قرار
         </h3>
-        <p className="text-[11px] text-white/55">قرارك يفتح مسارا — والمسار يظهر أثره</p>
+        <p className="text-[11px] text-muted-foreground">قرارك يفتح مسارا — والمسار يظهر أثره</p>
       </div>
 
       <p className="mt-3 whitespace-pre-line rounded-2xl border border-teal/25 bg-teal-ink/[0.06] px-4 py-3 text-sm leading-7">
         {scenario.situationAr}
       </p>
-      <p className="mt-2 text-[11px] leading-6 text-white/50">{NO_GRADE_NOTE}</p>
+      <p className="mt-2 text-[11px] leading-6 text-muted-foreground">{NO_GRADE_NOTE}</p>
 
       {/* المسار المقطوع — القرار وأثره، فلا تأمل بلا تذكّر */}
       {taken.length > 0 && (
@@ -122,19 +122,19 @@ export default function DecisionScenario({
               <p className="flex items-start gap-2 text-xs font-bold">
                 <CornerDownLeft className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
                 <span className="min-w-0">
-                  <span className="text-white/50">قرارك {i + 1}: </span>
+                  <span className="text-muted-foreground">قرارك {i + 1}: </span>
                   {t.labelAr}
                 </span>
               </p>
-              {t.effectAr && <p className="mt-1.5 ps-6 text-[11px] leading-6 text-white/70">{t.effectAr}</p>}
+              {t.effectAr && <p className="mt-1.5 ps-6 text-[11px] leading-6 text-foreground">{t.effectAr}</p>}
             </li>
           ))}
         </ol>
       )}
 
       {/* العقدة الحالية */}
-      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold text-white/45">
+      <div className="mt-5 rounded-2xl border border-white/10 bg-paper/20 p-4">
+        <p className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
           <MapPin className="h-3 w-3" aria-hidden="true" />
           {current.titleAr}
         </p>
@@ -171,7 +171,7 @@ export default function DecisionScenario({
               onChange={(e) => setReflection(e.target.value)}
               maxLength={4000}
               placeholder="اكتب تأملك — بأي قرار كنت ستبدأ لو أعدتها، ولماذا؟"
-              className="w-full rounded-2xl border border-white/12 bg-black/25 px-4 py-3 text-xs leading-7 placeholder:text-white/35 focus:border-teal/60 focus:outline-none"
+              className="w-full rounded-2xl border border-white/12 bg-paper/25 px-4 py-3 text-xs leading-7 placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
             />
           </label>
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -181,7 +181,7 @@ export default function DecisionScenario({
                 حُفظت جولتك وتأملك — تعود إليهما متى شئت.
               </p>
             ) : save === "unavailable" ? (
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-muted-foreground">
                 تُحفَظ الجولة لمن سُجّل في الدورة — تابع بلا حفظ، والسيناريو نفسه هو الفائدة.
               </p>
             ) : (

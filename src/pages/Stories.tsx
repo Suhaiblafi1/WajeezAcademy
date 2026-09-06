@@ -31,10 +31,10 @@ export default function StoriesPage() {
           رحلات التعلم
         </div>
         <h1 className="mt-5 text-2xl font-black sm:text-3xl md:text-4xl">هكذا تبدو الرحلة عندنا</h1>
-        <p className="mx-auto mt-3 max-w-xl leading-8 text-white/60">
+        <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — ومعها قياس لما تغير فعلا.
         </p>
-        <p className="mx-auto mt-3 max-w-lg text-[11px] leading-5 text-white/40">
+        <p className="mx-auto mt-3 max-w-lg text-[11px] leading-5 text-muted-foreground">
           نماذج توضيحية مركبة من أنماط شائعة بين المتعلمين — ليست شهادات لأشخاص حقيقيين.
           قصص المتعلمين الموثقة بموافقة أصحابها تُنشر هنا بعد اعتمادها.
         </p>
@@ -57,10 +57,10 @@ export default function StoriesPage() {
             </div>
             <div className="flex flex-1 flex-col p-5">
               <p className="text-sm font-bold">
-                {s.name} <span className="font-normal text-white/50">— {s.role}</span>
+                {s.name} <span className="font-normal text-muted-foreground">— {s.role}</span>
               </p>
-              <p className="mt-2 line-clamp-2 text-xs leading-6 text-white/55">{s.before}</p>
-              <p className="mt-2 line-clamp-2 text-xs leading-6 text-white/80">
+              <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted-foreground">{s.before}</p>
+              <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted-foreground">
                 <span className="font-bold text-gold-ink">النتيجة: </span>
                 {s.result}
               </p>
@@ -77,7 +77,7 @@ export default function StoriesPage() {
       <section className="mt-16 border-t border-white/5 pt-14">
         <div className="text-center">
           <h2 className="text-xl font-black sm:text-2xl md:text-3xl">ماذا يقول مستخدمو تطبيق وجيز عن تجربتهم مع العلامة</h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/55">
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground">
             هذه الآراء عن تطبيق وجيز للكتب والملخصات — المنصة الأم التي خرجت منها الأكاديمية — من تقييمات المستخدمين على المتجرين.
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function StoriesPage() {
               <div className="flex items-center gap-1 text-gold-ink">
                 {[...Array(5)].map((_, s) => <Star key={s} className="h-4 w-4 fill-current" />)}
               </div>
-              <blockquote className="mt-4 text-sm leading-8 text-white/85">"{r.text}"</blockquote>
+              <blockquote className="mt-4 text-sm leading-8 text-muted-foreground">"{r.text}"</blockquote>
               <figcaption className="mt-4 flex items-center gap-3">
                 <span className="grid h-9 w-9 place-items-center rounded-full bg-teal/15 text-sm font-bold text-teal-light-ink">
                   {r.name.charAt(0)}
@@ -129,20 +129,20 @@ export default function StoriesPage() {
               <button
                 onClick={() => setOpen(null)}
                 aria-label="إغلاق القصة"
-                className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-black/50 text-white/80 backdrop-blur transition hover:bg-black/70 hover:text-white"
+                className="absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-paper/50 text-muted-foreground backdrop-blur transition hover:bg-paper/70 hover:text-foreground"
               >
                 <X className="h-5 w-5" />
               </button>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-6 pb-1 pt-3 md:absolute md:bottom-4 md:right-6 md:p-0">
                 <span className="rounded-full bg-teal-deep px-4 py-1.5 text-sm font-bold text-white">{open.tag}</span>
-                <span className="text-sm text-white/80">{open.name} — {open.role}</span>
-                <span className="w-full text-[11px] font-normal text-white/50 md:w-auto">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
+                <span className="text-sm text-muted-foreground">{open.name} — {open.role}</span>
+                <span className="w-full text-[11px] font-normal text-muted-foreground md:w-auto">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
               </div>
             </div>
 
             <div className="border-b border-white/5 p-8 md:p-10">
               <Quote className="h-8 w-8 text-teal-ink/50" />
-              <p className="mt-5 text-lg leading-9 text-white/90 md:text-xl md:leading-10">
+              <p className="mt-5 text-lg leading-9 text-muted-foreground md:text-xl md:leading-10">
                 {open.before} {open.turn}
               </p>
             </div>
@@ -153,7 +153,7 @@ export default function StoriesPage() {
                   {open.entry === 'diagnostic' ? <Compass className="h-4 w-4" /> : <Route className="h-4 w-4" />}
                   {open.entry === 'diagnostic' ? 'بدأ بالتشخيص' : 'اشترى مسارا جاهزا'}
                 </div>
-                <div className="mt-2 text-sm leading-7 text-white/60">
+                <div className="mt-2 text-sm leading-7 text-muted-foreground">
                   {open.entry === 'diagnostic'
                     ? 'لم يكن يعرف من أين يبدأ — فرسم له التشخيص المسار.'
                     : 'كان يعرف وجهته، فبدأ المسار مباشرة.'}
@@ -162,7 +162,7 @@ export default function StoriesPage() {
               <div className="bg-surface p-6">
                 <div className="flex items-center gap-2 text-xs text-[#6EC7D1]"><Route className="h-4 w-4" /> المسار</div>
                 <div className="mt-2 font-bold leading-7">{open.pathway}</div>
-                <div className="mt-1 text-xs text-white/50">
+                <div className="mt-1 text-xs text-muted-foreground">
                   {open.weeks} أسبوعا · {open.weeklyHours} · {open.courses.length} دورات
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function StoriesPage() {
                 {open.courses.map((c) => (
                   <div key={c.id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                     <p className="text-sm font-bold leading-relaxed">{c.name}</p>
-                    <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-white/55">
+                    <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-muted-foreground">
                       <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                       {c.output}
                     </p>
@@ -201,12 +201,12 @@ export default function StoriesPage() {
                     className={`grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] sm:items-center ${i ? 'border-t border-white/10' : ''}`}
                   >
                     <p className="text-sm font-bold leading-relaxed">{m.skill}</p>
-                    <p className="flex items-start gap-2 text-xs leading-6 text-white/55">
-                      <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] font-bold">قبل</span>
+                    <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
+                      <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-micro font-bold">قبل</span>
                       {m.before}
                     </p>
-                    <p className="flex items-start gap-2 text-xs leading-6 text-white/90">
-                      <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-[10px] font-bold text-teal-light-ink">بعد</span>
+                    <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
+                      <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-micro font-bold text-teal-light-ink">بعد</span>
                       {m.after}
                     </p>
                   </div>
@@ -219,8 +219,8 @@ export default function StoriesPage() {
                 <Award className="mt-1 h-6 w-6 shrink-0 text-gold-ink" />
                 <div>
                   <div className="text-sm font-semibold text-gold-ink">وكيف انتهت القصة؟</div>
-                  <p className="mt-2 leading-8 text-white/90">{open.result}</p>
-                  <div className="mt-4 text-xs text-white/50">— {open.name}، {open.role}</div>
+                  <p className="mt-2 leading-8 text-muted-foreground">{open.result}</p>
+                  <div className="mt-4 text-xs text-muted-foreground">— {open.name}، {open.role}</div>
                 </div>
               </div>
             </div>

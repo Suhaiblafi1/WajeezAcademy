@@ -20,7 +20,7 @@
    منطق خالص بلا React ليُختبر وحده. */
 
 import { courseById, pathwayCourses, courses, type Course } from '../../data/courses'
-import { MAX_BUILT_COURSES, buildDiscountPct, nextBuildStep } from '../commerce/discount-policy'
+import { MAX_BUILT_COURSES, buildDiscountPct, bundlePayable, nextBuildStep } from '../commerce/discount-policy'
 
 /* من أين يأتي سعر الدورة؟ من الشعبة — تُمرَّر الدالة ولا تُستورَد.
 
@@ -52,12 +52,14 @@ export interface PathPricing {
   atCap: boolean
 }
 
-/** ما يدفعه على عدد ومجموع — السلّم وحده، ولا سقف فوقه (انظر discount-policy) */
-function payableFor(separate: number, count: number): number {
-  /* التقريب على المدفوع لا على الخصم: الفاتورة تُصدر بالمدفوع، فتقريبُ الخصم
-     ثم الطرح يُخرج قرشا لا يظهر في أي شاشة ويظهر في الفاتورة. */
-  return Math.round(separate * (1 - buildDiscountPct(count) / 100))
-}
+/** ما يدفعه على عدد ومجموع — السلّمُ ثمّ سقفُ المبلغ، من مصدرهما الواحد.
+
+    وكان السلّمَ وحدَه بلا سقف. ولمّا صار للمسار الجاهز سقفُ مبلغٍ (٦٠٠)
+    وبقي البناءُ الحرُّ بلا سقف، انقلب المعنى: خمسُ دوراتٍ غاليةٍ يبنيها
+    بنفسه = ٦٣٠، ومسارٌ جاهزٌ بستِّ دوراتٍ = ٦٠٠ — **فمن اشترى أقلَّ دفع
+    أكثر**. فالسقفُ على كلّ سلّة بقرار صاحب المنصّة، وموضعُه `bundlePayable`
+    فلا يفترق حسابُ الشاشة عن حساب الفاتورة. */
+const payableFor = bundlePayable
 
 export function pathPricing(courseIds: readonly string[], priceOf: PriceOf): PathPricing {
   const picked = courseIds.map((id) => courseById(id)).filter((c): c is Course => Boolean(c))

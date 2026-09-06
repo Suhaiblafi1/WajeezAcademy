@@ -11,7 +11,7 @@
    يكتب في قاعدةٍ حيّة فيها مدفوعات. */
 
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, PlayCircle, Tags, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CheckCircle2, Loader2, PlayCircle, Tags, Wallet } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 
 interface OpenResult {
@@ -25,14 +25,25 @@ interface AlignResult {
   rows: { cohortId: string; courseId: string; title: string; from: string; to: string; blocked?: string }[];
 }
 
+/** حالاتُ الشعبة بالعربيّة — الرموزُ في القاعدة، والعرضُ للناس */
+const STATUS_AR: Record<string, string> = {
+  draft: "مسودّة", open: "مفتوحة", full: "ممتلئة", active: "جارية", completed: "منتهية", cancelled: "ملغاة",
+};
+
+interface SyncResult {
+  applied: boolean; changed: number;
+  changes: { cohortId: string; title: string; from: string; to: string; reason: string }[];
+}
+
 export default function CohortReadiness({ onApplied }: { onApplied?: () => void }) {
   const [open, setOpen] = useState<OpenResult | null>(null);
   const [align, setAlign] = useState<AlignResult | null>(null);
+  const [sync, setSync] = useState<SyncResult | null>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
   const run = async (
-    what: "open" | "align",
+    what: "open" | "align" | "sync",
     apply: boolean,
   ) => {
     setBusy(`${what}-${apply ? "apply" : "preview"}`);
@@ -40,8 +51,10 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
     try {
       if (what === "open") {
         setOpen(await apiPost<OpenResult>("/api/admin/cohorts/open-all", { apply }));
-      } else {
+      } else if (what === "align") {
         setAlign(await apiPost<AlignResult>("/api/admin/cohorts/align-prices", { apply }));
+      } else {
+        setSync(await apiPost<SyncResult>("/api/admin/cohorts/sync-statuses", { apply }));
       }
       if (apply) onApplied?.();
     } catch (e) {
@@ -56,7 +69,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
       <h2 className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
         <Wallet className="h-4 w-4" /> جاهزيّة العرض — لماذا لا تظهر بعض الأسعار
       </h2>
-      <p className="mt-2 max-w-3xl text-[11.5px] leading-6 text-white/60">
+      <p className="mt-2 max-w-3xl text-[11.5px] leading-6 text-muted-foreground">
         السعر يُقرأ من الشعب لا من الكتالوج، فما لا شعبةَ مفتوحةً له لا يظهر له سعر —
         وهذا مقصود: رقمٌ لا تسنده شعبةٌ قابلة للتسجيل وعدٌ يفترق عن الفاتورة.
         اعرض أوّلا لترى ما سيتغيّر، ثمّ نفّذ.
@@ -70,11 +83,11 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {/* ── فتح الشعب ── */}
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <PlayCircle className="h-3.5 w-3.5 text-teal" /> فتحُ شعبةٍ لكلّ دورة بلا شعبة
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-white/45">
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
             تبدأ بعد ستّة أسابيع · ثلاثاء وخميس ٦ مساءً بتوقيت عمّان · سعة ٢٠ · بسعر قائمة دورتها.
           </p>
 
@@ -97,7 +110,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
           {open && (
             <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-[11px] leading-6 text-white/70">
+              <p className="text-[11px] leading-6 text-foreground">
                 دورات منشورة <b className="tabular-nums">{open.publishedCourses}</b> ·{" "}
                 {open.applied ? "فُتحت" : "ستُفتح"} <b className="tabular-nums text-teal-light-ink">{open.opened}</b> ·{" "}
                 لها شعبةٌ أصلا <b className="tabular-nums">{open.alreadyLive}</b>
@@ -112,12 +125,12 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
               {open.rows.some((r) => r.reason) && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[10.5px] text-gold">
+                  <summary className="cursor-pointer text-micro text-gold">
                     دوراتٌ لم تُفتح ({open.rows.filter((r) => r.reason).length}) — ولماذا
                   </summary>
                   <ul className="mt-1.5 space-y-1">
                     {open.rows.filter((r) => r.reason).map((r) => (
-                      <li key={r.courseId} className="text-[10.5px] leading-5 text-white/55">
+                      <li key={r.courseId} className="text-micro leading-5 text-muted-foreground">
                         {r.titleAr} — {r.reason}
                       </li>
                     ))}
@@ -129,11 +142,11 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
         </div>
 
         {/* ── محاذاة الأسعار ── */}
-        <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4">
           <p className="flex items-center gap-1.5 text-xs font-black">
             <Tags className="h-3.5 w-3.5 text-gold" /> توحيدُ أسعار الشعب على سعر القائمة
           </p>
-          <p className="mt-1 text-[11px] leading-5 text-white/45">
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
             شعبةٌ سعرُها يخالف كتالوجها تقول للصفحة رقما وتُطالب الفاتورة بغيره.
             والمقعدُ المحجوز أو المدفوع لا يُعاد تسعيره.
           </p>
@@ -157,7 +170,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
 
           {align && (
             <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-              <p className="text-[11px] leading-6 text-white/70">
+              <p className="text-[11px] leading-6 text-foreground">
                 شعب <b className="tabular-nums">{align.cohorts}</b> ·{" "}
                 {align.applied ? "وُحّدت" : "ستُوحَّد"} <b className="tabular-nums text-gold">{align.changed}</b> ·{" "}
                 مطابقة أصلا <b className="tabular-nums">{align.alreadyAligned}</b>
@@ -169,15 +182,63 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               )}
               {align.rows.length > 0 && (
                 <details className="mt-2">
-                  <summary className="cursor-pointer text-[10.5px] text-white/50">التفصيل ({align.rows.length})</summary>
+                  <summary className="cursor-pointer text-micro text-muted-foreground">التفصيل ({align.rows.length})</summary>
                   <ul className="mt-1.5 space-y-1">
                     {align.rows.slice(0, 40).map((r) => (
-                      <li key={r.cohortId} className="text-[10.5px] leading-5 text-white/55">
+                      <li key={r.cohortId} className="text-micro leading-5 text-muted-foreground">
                         {r.title} — {r.blocked ? <span className="text-gold">{r.blocked}</span> : <>{r.from} ← <b>{r.to}</b></>}
                       </li>
                     ))}
                   </ul>
                 </details>
+              )}
+            </div>
+          )}
+        </div>
+        {/* ── الحالةُ تتبع التواريخ ── */}
+        <div className="rounded-2xl border border-white/10 bg-paper/25 p-4 lg:col-span-2">
+          <p className="flex items-center gap-1.5 text-xs font-black">
+            <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالاتٌ متأخّرةٌ عن تواريخها
+          </p>
+          <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+            شعبةٌ بدأت جلساتُها تصير «جارية»، وشعبةٌ انتهت آخرُ جلساتها تصير «منتهية» — ومستحقّاتُ
+            مدرّبها تُولَّد عند الإكمال، فتأخّرُ الحالة يؤخّرها. ولا تُفتح شعبةٌ آليّا: الفتحُ يمرّ بشروطه وبقرارك.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button" onClick={() => void run("sync", false)} disabled={busy !== ""}
+              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-[11px] font-bold hover:bg-white/15 disabled:opacity-40"
+            >
+              {busy === "sync-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
+            </button>
+            {sync && !sync.applied && sync.changes.length > 0 && (
+              <button
+                type="button" onClick={() => void run("sync", true)} disabled={busy !== ""}
+                className="rounded-lg bg-teal px-3.5 py-1.5 text-[11px] font-black text-on-teal hover:brightness-110 disabled:opacity-40"
+              >
+                {busy === "sync-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `حرّك ${sync.changes.length} شعبة`}
+              </button>
+            )}
+          </div>
+          {sync && (
+            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              {sync.changes.length === 0 ? (
+                <p className="flex items-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
+                  <CheckCircle2 className="h-3 w-3" /> كلُّ الحالات مطابقةٌ لتواريخها.
+                </p>
+              ) : (
+                <>
+                  <p className="text-[11px] text-foreground">
+                    {sync.applied ? "حُرّكت" : "ستُحرَّك"} <b className="tabular-nums text-teal-light-ink">{sync.applied ? sync.changed : sync.changes.length}</b> شعبة
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {sync.changes.slice(0, 12).map((ch) => (
+                      <li key={ch.cohortId} className="text-micro leading-5 text-muted-foreground">
+                        <b className="text-foreground">{ch.title}</b> — {STATUS_AR[ch.from] ?? ch.from} ← {STATUS_AR[ch.to] ?? ch.to} · {ch.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </>
               )}
             </div>
           )}

@@ -34,27 +34,55 @@ export type TrainerStatus = (typeof TRAINER_STATUSES)[number]
 /** الحالات المنتهية التي يجوز حذفُ طلبها نهائيّا — وما عداها قيدُ نظرٍ أو تعاقد */
 export const PURGEABLE_STATUSES: TrainerStatus[] = ['draft', 'email_verification_pending', 'rejected', 'withdrawn']
 
-/* خريطة الانتقالات المشروعة — أي انتقال خارجها مرفوض */
+/* خريطة الانتقالات المشروعة — أي انتقال خارجها مرفوض.
+
+   ── ولماذا `active` مذكورةٌ في كلّ حالةٍ حيّة ──
+
+   كان الاعتمادُ سلسلةً من ثمانِ نقرات: مراجعة ← اختصار ← درسٌ تجريبيّ ←
+   مراجعةٌ أكاديميّة ← قبولٌ مشروط ← عقد ← تهيئة ← تفعيل. وكلُّ خطوةٍ حالةٌ
+   في القاعدة وزرٌّ في الشاشة، وكلُّ واحدةٍ **تُنسى** — فمن اجتاز التقييم يبقى
+   عالقا في منتصف السلسلة بلا أن يعلم أحد أين وقف.
+
+   وقرّر صاحبُ المنصّة أن يكون الاعتمادُ **بنقرةٍ واحدة** وأن يجري ما عداه
+   خارج المنصّة (مقابلةً ومراجعةً يُجريها هو). فصار `active` وجهةً مشروعةً من
+   كلّ حالةٍ حيّة، لا من `onboarding` وحدها.
+
+   **ولم تُحذف السلسلة**: من أراد أن يوثّق مقابلةً أو روبركا أو عقدا فالمسارُ
+   قائمٌ كما هو، والطلباتُ العالقةُ في منتصفه لا تنكسر. الفرقُ أنّ النقرةَ
+   الواحدة صارت ممكنةً من أيّ نقطة — لا أنّ التفصيلَ صار ممنوعا.
+
+   وما لم يتغيّر: **الرفضُ والسحبُ نهايةٌ لا رجعةَ منها**، والاعتمادُ لا يُبلَغ
+   من حالةٍ لم يُتحقّق فيها بريدُ صاحبها (`draft` و`email_verification_pending`)
+   — فمن لم يُثبت أنّ البريدَ بريدُه لا يُفتح له حساب. */
 export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   /* المسودّة: القسمُ الأوّل وصل ولم يُكمَل — تصير مقدَّمةً حين يُكمَل */
   draft: ['submitted', 'email_verification_pending', 'withdrawn'],
   email_verification_pending: ['submitted', 'withdrawn'],
-  submitted: ['under_review', 'waitlisted', 'rejected', 'withdrawn'],
-  under_review: ['information_requested', 'shortlisted', 'waitlisted', 'rejected', 'withdrawn'],
-  information_requested: ['under_review', 'rejected', 'withdrawn'],
-  shortlisted: ['interview_scheduled', 'demo_requested', 'waitlisted', 'rejected', 'withdrawn'],
-  interview_scheduled: ['demo_requested', 'waitlisted', 'rejected', 'withdrawn'],
-  demo_requested: ['academic_review', 'rejected', 'withdrawn'],
-  academic_review: ['conditionally_approved', 'waitlisted', 'rejected', 'withdrawn'],
-  conditionally_approved: ['contract_pending', 'rejected', 'withdrawn'],
-  contract_pending: ['onboarding', 'rejected', 'withdrawn'],
+  submitted: ['under_review', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  under_review: ['information_requested', 'shortlisted', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  information_requested: ['under_review', 'active', 'rejected', 'withdrawn'],
+  shortlisted: ['interview_scheduled', 'demo_requested', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  interview_scheduled: ['demo_requested', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  demo_requested: ['academic_review', 'active', 'rejected', 'withdrawn'],
+  academic_review: ['conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  conditionally_approved: ['contract_pending', 'active', 'rejected', 'withdrawn'],
+  contract_pending: ['onboarding', 'active', 'rejected', 'withdrawn'],
   onboarding: ['active', 'withdrawn'],
   active: ['suspended'],
-  waitlisted: ['under_review', 'rejected', 'withdrawn'],
+  waitlisted: ['under_review', 'active', 'rejected', 'withdrawn'],
   rejected: [],
   withdrawn: [],
   suspended: ['active'],
 }
+
+/** الحالاتُ التي تسمح الخريطةُ بالاعتماد منها فعلا — تُقابَل بالقائمة
+    المعلَنة في `src/application/trainer/approval.ts` في اختبارٍ واحد، فلا
+    تفترق شاشةٌ عن خادم. */
+export const APPROVABLE_BY_MAP: TrainerStatus[] = TRAINER_STATUSES.filter(
+  /* و`suspended` تصل إلى `active` كذلك، لكنّها ليست اعتمادا بل **رفعَ إيقافٍ**
+     لمن اعتُمد من قبل — فلها بابُها ولا تُعدّ هنا. */
+  (s) => s !== 'active' && s !== 'suspended' && ALLOWED_TRANSITIONS[s].includes('active'),
+)
 
 /* حالات يُقبل فيها استكمال الملف المهني.
 

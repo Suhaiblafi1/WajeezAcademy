@@ -52,7 +52,7 @@ export default function RemoteImage({
   if (failed) {
     return fallback === "label" ? (
       <span
-        className={`grid place-items-center rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-bold text-white/75 ${fallbackClassName || className}`}
+        className={`grid place-items-center rounded-xl border border-white/15 bg-white/[0.04] px-4 py-2 text-sm font-bold text-foreground ${fallbackClassName || className}`}
       >
         {alt}
       </span>

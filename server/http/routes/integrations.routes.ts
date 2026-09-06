@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
+import { SystemHealthService } from '../../services/system-health.service'
 import {
   getPaymentConfig, getEmailConfig, savePaymentConfig, saveEmailConfig, maskedIntegrationsView,
 } from '../../services/integrations.service'
@@ -13,6 +14,21 @@ import { sendEmail } from '../../services/mail'
 import { recordAudit } from '../../services/audit'
 
 export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaClient) {
+  /* ─────────── «هل النظامُ سليم؟» ───────────
+
+     سؤالٌ لم يكن له جوابٌ إلّا في سجلّات الخادم — ولم يكن للخادم سجلٌّ حتّى
+     هذا الفرع. والصفحةُ تقرأ الحالةَ القائمةَ في القاعدة وتقول ما تعنيه:
+     «٤٣ إشعارا في الطابور منذ يومَين ولا عاملَ يُرسلها» جوابٌ، و«٤٣» ليس.
+
+     وصلاحيّتُها `settings.manage` — أي مديرُ النظام وحدَه بعد فصل المال
+     (المرحلة ٢هـ): البنودُ تكشف حالةَ مزوّد الدفع والبريد وأرقامَ محاولات
+     الدخول الفاشلة، وهي شأنُ من يملك الإعدادات. */
+  const health = new SystemHealthService(prisma)
+  app.get('/api/admin/system-health', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'صحّةُ النظام — محسوبةٌ من حالة القاعدة الآن' },
+  }, async () => health.snapshot())
+
   /* عرض مقنَّع — مفاتيح بآخر 4 خانات فقط */
   app.get('/api/admin/integrations', {
     preHandler: requirePermission('settings.manage'),
@@ -36,15 +52,11 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
 
   app.put('/api/admin/integrations/email', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'حفظ إعدادات البريد SMTP' },
+    schema: { tags: ['admin-integrations'], summary: 'حفظ إعدادات البريد (Resend)' },
   }, async (req) => {
     const body = z.object({
       enabled: z.boolean(),
-      host: z.string().max(200).optional(),
-      port: z.number().int().min(1).max(65535).optional(),
-      secure: z.boolean().optional(),
-      user: z.string().max(200).optional(),
-      pass: z.string().max(200).optional(),
+      apiKey: z.string().max(200).optional(),
       fromName: z.string().max(120).optional(),
       fromEmail: z.string().email().max(200).optional(),
     }).parse(req.body)

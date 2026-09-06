@@ -108,6 +108,14 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return cohorts.eligibleTrainersFor(id)
   })
 
+  app.get('/api/admin/courses/:courseId/eligible-trainers', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'مؤهَّلو دورةٍ — يقرؤها معالجُ إنشاء الشعبة قبل وجودها' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string().min(3).max(40) }).parse(req.params)
+    return cohorts.eligibleTrainers(courseId)
+  })
+
   app.post('/api/admin/cohorts/:id/trainers', {
     preHandler: requirePermission('trainer.assign'),
     schema: { tags: ['admin-learning'], summary: 'تعيين مدرب للشعبة — تأهيل إلزامي ومنع تعارض جدول' },
@@ -115,6 +123,66 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ profileId: z.string().uuid(), role: z.enum(['lead', 'assistant']).default('lead') }).parse(req.body)
     return reply.status(201).send(await cohorts.assignTrainer(id, body.profileId, req.auth!.userId, body.role))
+  })
+
+  /* توليدُ الجلسات من النمط — والافتراضُ عرضٌ لا كتابة */
+  app.post('/api/admin/cohorts/:id/sessions/generate', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'يولّد جلساتِ الشعبة من جدولها الأسبوعيّ — apply=false يعرض أوّلا' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      weeks: z.coerce.number().int().min(1).max(52),
+      from: z.coerce.date().optional(),
+      durationMinutes: z.coerce.number().int().min(15).max(600).optional(),
+      daysOfWeek: z.array(z.string()).optional(),
+      startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+      titlePrefix: z.string().max(60).optional(),
+      apply: z.boolean().default(false),
+    }).parse(req.body ?? {})
+    return cohorts.generateSessions(req.auth!.userId, id, body)
+  })
+
+  /* تكرارُ شعبةٍ من فصلٍ سابق — بلا تسجيلاتٍ ولا حضورٍ ولا اجتماعات */
+  /* مزامنةُ الحالات بالتواريخ — عرضٌ أوّلا، ثمّ تطبيقٌ بطلبٍ صريح.
+     ويُنادى الآن من الشاشة، ومن العامل الخلفيّ يومَ يوجد. */
+  app.post('/api/admin/cohorts/sync-statuses', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'يُصلح حالاتَ الشعب المتأخّرةَ عن تواريخها — apply=false يعرض أوّلا' },
+  }, async (req) => {
+    const body = z.object({ apply: z.boolean().default(false) }).parse(req.body ?? {})
+    return cohorts.syncStatusesByDate(req.auth!.userId, { apply: body.apply })
+  })
+
+  app.post('/api/admin/cohorts/:id/duplicate', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'ينسخ إعدادَ الشعبة ومحتواها إلى مسودّةٍ جديدة' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      title: z.string().max(160).optional(),
+      shiftWeeks: z.coerce.number().int().min(0).max(104).optional(),
+      withSessions: z.boolean().default(false),
+      withMaterials: z.boolean().default(true),
+      withAssessments: z.boolean().default(true),
+    }).parse(req.body ?? {})
+    return reply.status(201).send(await cohorts.duplicate(req.auth!.userId, id, body))
+  })
+
+  app.get('/api/admin/cohorts/:id/sessions', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'جلساتُ الشعبة لاختيارها بالعنوان والتاريخ — بديلُ لصق المعرّف' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cohorts.sessionsFor(id)
+  })
+
+  app.get('/api/admin/learners/search', {
+    preHandler: requirePermission('enrollment.manage'),
+    schema: { tags: ['admin-learning'], summary: 'بحثُ متعلّمٍ بالاسم أو البريد للتسجيل — بديلُ لصق المعرّف' },
+  }, async (req) => {
+    const { q, cohortId } = z.object({ q: z.string().min(2).max(80), cohortId: z.string().uuid().optional() }).parse(req.query)
+    return cohorts.searchLearners(cohortId, q)
   })
 
   app.get('/api/admin/cohorts/:id/open-checklist', {

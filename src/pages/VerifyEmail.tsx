@@ -42,7 +42,7 @@ export default function VerifyEmail() {
         {state.kind === "working" && (
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-teal-light-ink" />
-            <p className="mt-5 text-sm text-white/55">يُوثَّق بريدك…</p>
+            <p className="mt-5 text-sm text-muted-foreground">يُوثَّق بريدك…</p>
           </>
         )}
 
@@ -50,14 +50,14 @@ export default function VerifyEmail() {
           <>
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-400" />
             <h1 className="mt-5 text-2xl font-black">{state.message}</h1>
-            <p className="mt-3 text-sm leading-7 text-white/55">
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
               لم يتغيّر شيء آخر في حسابك — التوثيق يفتح الشراء واستلام الشهادة فقط.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to={homePathForRoles(readRoles())} className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
                 إلى منصّتي
               </Link>
-              <Link to="/courses" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+              <Link to="/courses" className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
                 تصفّح الدورات
               </Link>
             </div>
@@ -68,15 +68,15 @@ export default function VerifyEmail() {
           <>
             <MailWarning className="mx-auto h-12 w-12 text-[#FABC05]" />
             <h1 className="mt-5 text-2xl font-black">تعذّر توثيق البريد</h1>
-            <p className="mt-3 text-sm leading-7 text-white/60">{state.message}</p>
-            <p className="mt-3 text-xs leading-6 text-white/40">
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">{state.message}</p>
+            <p className="mt-3 text-xs leading-6 text-muted-foreground">
               الروابط تنتهي بعد ٤٨ ساعة، وتُستهلك بعد أوّل فتح. اطلب رابطا جديدا من صفحة حسابك.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/student/account" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
                 اطلب رابطا جديدا
               </Link>
-              <Link to="/auth" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+              <Link to="/auth" className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
                 تسجيل الدخول
               </Link>
             </div>

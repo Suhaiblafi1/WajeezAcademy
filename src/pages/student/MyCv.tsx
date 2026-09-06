@@ -6,10 +6,13 @@ import PortalLayout from "./PortalLayout";
 import { toast } from "@/components/Toast";
 import { fmtWhen } from "@/utils/format";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
 /* الخادم هو مصدر الحقيقة: POST/GET /api/learner/cv و POST /api/cv/:id/delete.
    كان هنا `@/data/cv` — محاكاةٌ كاملة للسلوك نفسه في localStorage، فيرفع
    المتعلم سيرته ويراها في صفحته ولا تصل إلى مستشاره أبدا. */
+const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
+
 const CV_ACCEPT = "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png";
 const CV_MAX_LABEL = "10MB";
 
@@ -24,6 +27,7 @@ function cvKindLabel(mime: string): string {
 
 /** سيرتي الذاتية — رفع بموافقة صريحة إلزامية، تحقق نوع وحجم، حذف منطقي بسبب موثق */
 export default function MyCv() {
+  const { fileUploads } = usePlatformConfig();
   const [cvs, setCvs] = useState<Cv[] | null>(null);
   const [consent, setConsent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -37,10 +41,21 @@ export default function MyCv() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  /* كان هذا يسجّل الوصفَ ولا يرسل الملفَّ قطّ: نداءٌ واحدٌ بالاسم والحجم،
+     ثمّ «رُفعت» — والمستشارُ يفتحها فيجد «الملفّ لم يرفع بعد». والرابطُ
+     الموقّعُ الذي يعيده الخادمُ كان يُهمَل. شُوهد في جولة ٢٠٢٦-٠٩. */
   const onFile = async (f: File) => {
     setErr(null); setBusy(true);
     try {
-      await apiPost("/api/learner/cv", { originalName: f.name, mime: f.type, sizeBytes: f.size, consent });
+      const res = await apiPost<{ uploadUrl?: string }>("/api/learner/cv", { originalName: f.name, mime: f.type, sizeBytes: f.size, consent });
+      if (res.uploadUrl) {
+        const put = await fetch(`${API_BASE}${res.uploadUrl}`, {
+          method: "PUT", credentials: "include",
+          headers: { "content-type": "application/octet-stream" },
+          body: f,
+        });
+        if (!put.ok) throw new ApiError("upload_failed", "سُجّل طلبُك ولم يصل الملفّ — أبلغ الأكاديمية", put.status);
+      }
       toast(`رُفعت «${f.name}» — يراها مستشارك المسند فقط، وتُسجل كل مشاهدة.`);
       setConsent(false);
       load();
@@ -65,16 +80,29 @@ export default function MyCv() {
 
   return (
     <PortalLayout title="سيرتي الذاتية">
-      <p className="mb-5 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-white/55">
-        تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
-        مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
-      </p>
+      {/* شرحُ الرفع لا يُقال حيث لا رفع — وإلّا نقض القسمَ الذي تحته */}
+      {fileUploads && (
+        <p className="mb-5 max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs leading-6 text-muted-foreground">
+          تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
+          مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
+        </p>
+      )}
 
       {err && (
         <p role="alert" className="mb-4 rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-semibold text-red-300">{err}</p>
       )}
 
-      {/* رفع جديد */}
+      {/* رفع جديد — لا يُعرض إلّا حين يستطيع الخادمُ حفظَ الملفّ */}
+      {!fileUploads && (
+        <section className="rounded-3xl border border-gold/30 bg-gold/[0.06] p-6">
+          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink"><ShieldCheck className="h-4 w-4" /> رفعُ السيرة غيرُ مفعّلٍ بعد</h2>
+          <p className="mt-3 text-xs leading-7 text-foreground">
+            المنصّةُ لا تحفظ الملفّاتَ في هذه المرحلة، فلن نطلب منك ملفًّا لا يصل. أعطِ سيرتك لمستشارك في جلستكم الأولى،
+            أو تواصل مع الأكاديمية — ويظهر هذا القسمُ تلقائيّا يومَ يُفعَّل الرفع.
+          </p>
+        </section>
+      )}
+      {fileUploads && (
       <section className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
         <h2 className="flex items-center gap-2 text-sm font-black"><Upload className="h-4 w-4 text-teal-ink" /> رفع سيرة جديدة</h2>
         <input
@@ -90,7 +118,7 @@ export default function MyCv() {
         />
         <button
           onClick={() => fileRef.current?.click()}
-          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 py-8 text-sm font-bold text-white/60 transition hover:border-teal/60 hover:text-teal-light-ink"
+          className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-white/15 py-8 text-sm font-bold text-muted-foreground transition hover:border-teal/60 hover:text-teal-light-ink"
         >
           <FileText className="h-5 w-5" /> اختر ملف سيرتك — PDF أو Word حتى {CV_MAX_LABEL}
         </button>
@@ -101,31 +129,34 @@ export default function MyCv() {
             onChange={(e) => setConsent(e.target.checked)}
             className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-gold"
           />
-          <span className="text-xs leading-6 text-white/70">
+          <span className="text-xs leading-6 text-foreground">
             <span className="font-black text-gold-ink">موافقة صريحة (إلزامية):</span> أوافق على أن يرى مستشاري المسند وإدارة العمليات سيرتي الذاتية لغرض الإرشاد المهني فقط، وأعلم أن كل مشاهدة تُسجل وأنني أستطيع حذفها في أي وقت.
           </span>
         </label>
         {!consent && (
-          <p className="mt-2 text-[10px] text-white/50">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
+          <p className="mt-2 text-micro text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
         )}
       </section>
+      )}
 
       {/* سيري الفعالة */}
       <section className="mt-6 space-y-3">
         {cvs === null && <div className="grid place-items-center py-10"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>}
         {cvs?.length === 0 && (
           <div className="rounded-3xl border border-dashed border-white/15 py-10 text-center">
-            <FileText className="mx-auto h-8 w-8 text-white/50" />
-            <p className="mt-3 text-sm font-bold text-white/60">لا سير فعالة بعد</p>
-            <p className="mx-auto mt-1 max-w-sm text-xs leading-6 text-white/50">
+            <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
+            <p className="mt-3 text-sm font-bold text-muted-foreground">لا سير فعالة بعد</p>
+            <p className="mx-auto mt-1 max-w-sm text-xs leading-6 text-muted-foreground">
               سيرتك تساعد مستشارك على فهم خلفيتك المهنية قبل أول جلسة — وتُسجل كل مشاهدة لها في السجل.
             </p>
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="mt-4 cursor-pointer rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light"
-            >
-              ارفع أول سيرة
-            </button>
+            {fileUploads && (
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="mt-4 cursor-pointer rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light"
+              >
+                ارفع أول سيرة
+              </button>
+            )}
           </div>
         )}
         {cvs?.map((c) => (
@@ -135,14 +166,14 @@ export default function MyCv() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-black">{c.originalName}</p>
-              <p className="mt-0.5 text-[11px] text-white/50">
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
                 {cvKindLabel(c.mime)} · {Math.ceil(c.sizeBytes / 1024)} كيلوبايت · رُفعت {fmtWhen(c.createdAt)}
               </p>
             </div>
-            <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-[10px] font-black text-teal-light-ink">
+            <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
               <ShieldCheck className="h-3 w-3" /> فعالة
             </span>
-            <span className="flex items-center gap-1.5 text-[10px] text-white/50">
+            <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
               <Eye className="h-3 w-3" /> مشاهداتها مسجلة في سجل المستشار
             </span>
             <button
@@ -157,22 +188,22 @@ export default function MyCv() {
 
       {/* نافذة الحذف الموثق */}
       {delId && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-5 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 grid place-items-center bg-paper/70 p-5 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
             <div className="flex items-center justify-between">
               <h3 className="font-black">حذف السيرة — حذف منطقي بسبب موثق</h3>
-              <button onClick={() => setDelId(null)} className="cursor-pointer text-white/50 hover:text-white" aria-label="إغلاق"><X className="h-5 w-5" /></button>
+              <button onClick={() => setDelId(null)} className="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="إغلاق"><X className="h-5 w-5" /></button>
             </div>
-            <p className="mt-2 text-xs leading-6 text-white/55">
+            <p className="mt-2 text-xs leading-6 text-muted-foreground">
               وفق السياسة: الحذف منطقي لا فيزيائي، وسببك يُحفظ في السجل. بعدها لا يراها مستشارك ولا تظهر في ملفك.
             </p>
-            <label className="mt-4 block text-xs font-bold text-white/60">سبب الحذف *</label>
+            <label className="mt-4 block text-xs font-bold text-muted-foreground">سبب الحذف *</label>
             <textarea
               rows={2}
               value={delReason}
               onChange={(e) => setDelReason(e.target.value)}
               placeholder="مثال: رفعت نسخة أحدث وأريد إزالة القديمة"
-              className="mt-1.5 w-full resize-none rounded-xl border border-white/15 bg-paper px-3 py-2.5 text-sm text-white focus:border-red-400 focus:outline-none"
+              className="mt-1.5 w-full resize-none rounded-xl border border-white/15 bg-paper px-3 py-2.5 text-sm text-foreground focus:border-red-400 focus:outline-none"
             />
             <button
               onClick={() => void confirmDelete()}

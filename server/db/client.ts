@@ -14,7 +14,6 @@
 
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
-import { ensureEmbeddedPostgres } from './embedded'
 
 let connecting: Promise<PrismaClient> | null = null
 
@@ -35,9 +34,27 @@ const POOL = {
   idleTimeoutMillis: 30_000,
 }
 
+/* القاعدةُ المدمجةُ تُستورَد عند الحاجة لا عند الإقلاع.
+
+   كان الاستيرادُ ثابتا، فكان **كلُّ إقلاعٍ للخادم يحمّل `embedded-postgres`
+   ولو كانت `DATABASE_URL` مضبوطة**. وهي حزمةُ تطويرٍ (devDependency): فتثبيتٌ
+   إنتاجيٌّ رشيق (`npm ci --omit=dev`) يجعل الخادمَ يسقط عند السطر الأوّل
+   بـ«Cannot find module» — عطبٌ لا تكشفه اختباراتٌ ولا مراجعة، لأنّ بيئةَ
+   التطوير تثبّت كلَّ شيء.
+
+   والاستيرادُ الديناميكيُّ يجعل الحزمةَ لازمةً لمن يشغّل بلا `DATABASE_URL`
+   وحدَه — وهو المطوّر. ويحرسه `server/tests/ops/start-command.test.ts`. */
+async function resolveConnectionString(): Promise<string> {
+  const url = process.env.DATABASE_URL
+  if (url) return url
+  const { ensureEmbeddedPostgres } = await import('./embedded')
+  return ensureEmbeddedPostgres()
+}
+
 async function connect(): Promise<PrismaClient> {
-  const connectionString = process.env.DATABASE_URL ?? await ensureEmbeddedPostgres()
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString, ...POOL }) })
+  return new PrismaClient({
+    adapter: new PrismaPg({ connectionString: await resolveConnectionString(), ...POOL }),
+  })
 }
 
 /** عميل حي — يستخدم DATABASE_URL إن ضُبطت، وإلا يشغّل PostgreSQL المدمج */

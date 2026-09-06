@@ -99,7 +99,7 @@ export default function CourseJourney({
         <Target className="h-5 w-5 text-gold-ink" />
         ماذا ستحقق من خلال خطتك؟
       </Heading>
-      <p className="mt-2 text-xs leading-relaxed text-white/50">
+      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
         {!edit
           ? "رحلة تعليمية مرتبة تنقلك من احتياجك الحالي إلى نتائج عملية يمكنك استخدامها في عملك وحياتك."
           : edit.swapOnly
@@ -110,7 +110,7 @@ export default function CourseJourney({
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
           كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
           والشارة أدناه تبقى للمدرب المُعلَن، لأن اسمه معلومة تخص بطاقته وحدها. */}
-      <p className="mt-1.5 text-[11px] leading-relaxed text-white/40">
+      <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
         نُعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
       </p>
 
@@ -127,7 +127,7 @@ export default function CourseJourney({
                   <LifeBuoy className="h-4 w-4" />
                   دورات مساندة ({list.length - coreCount})
                 </p>
-                <p className="mt-1 text-[11px] leading-relaxed text-white/45">
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   مهارات من مسارات أخرى يحتاجها صاحب هذا المسار في عمله — تُكمل الرحلة ولا تُكرّرها.
                 </p>
               </div>
@@ -152,18 +152,18 @@ export default function CourseJourney({
                     aria-label={`تفاصيل دورة ${c.title}`}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-black leading-snug text-white/90">
+                      <span className="text-sm font-black leading-snug text-foreground">
                         {c.title}
                         {isGift && (
-                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-[10px] font-black text-on-gold">
+                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-micro font-black text-on-gold">
                             هدية مجانية
                           </span>
                         )}
                       </span>
-                      <ChevronDown className="h-4 w-4 shrink-0 text-white/40 transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-teal-light-ink" />
+                      <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-teal-light-ink" />
                     </span>
                     {c.shortPromise && (
-                      <span className="mt-1 block text-xs leading-relaxed text-white/55">{c.shortPromise}</span>
+                      <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">{c.shortPromise}</span>
                     )}
                   </CollapsibleTrigger>
                   {showSchedule && (
@@ -177,7 +177,7 @@ export default function CourseJourney({
                     </div>
                   )}
                   <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-white/60">
+                    <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       <Clock3 className="h-3 w-3 text-teal-light-ink" />
                       {weeksLabel(Math.max(1, Math.ceil(c.totalHours / 7)))}
                     </span>
@@ -192,13 +192,13 @@ export default function CourseJourney({
                     <CourseTrainer courseId={c.id} />
                   </div>
                   {reasons?.[c.id] && (
-                    <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                    <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                       <span className="font-bold text-gold-ink/80">لماذا هي في خطتك: </span>
                       {reasons[c.id]}
                     </p>
                   )}
                   {isSupport && supportReasons?.[c.id] && (
-                    <p className="mt-2 text-[11px] leading-relaxed text-white/45">
+                    <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
                       <span className="font-bold text-teal-light-ink">لماذا هي مساندة لهذا المسار: </span>
                       {supportReasons[c.id]}
                     </p>
@@ -223,7 +223,7 @@ export default function CourseJourney({
                         onClick={() => edit.onRemove(c.id)}
                         disabled={edit.minReached}
                         aria-label={`حذف ${c.title}`}
-                        className="flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-bold text-white/50 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-30"
+                        className="flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-bold text-muted-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-30"
                       >
                         <X className="h-3 w-3" />
                         حذفها
@@ -256,8 +256,8 @@ export default function CourseJourney({
                             onClick={() => edit.onSwapPick(c.id, p.id)}
                             className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-teal-light/50 hover:bg-white/[0.07]"
                           >
-                            <span className="block text-xs font-bold text-white/85">{p.name}</span>
-                            <span className="mt-0.5 block text-[10px] text-white/45">{p.note}</span>
+                            <span className="block text-xs font-bold text-foreground">{p.name}</span>
+                            <span className="mt-0.5 block text-micro text-muted-foreground">{p.note}</span>
                           </button>
                         ))}
                       </div>
@@ -268,9 +268,9 @@ export default function CourseJourney({
 
               <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
                 <div className="space-y-5 border-t border-white/10 px-4 py-5 pr-[3.25rem] text-xs leading-7">
-                  {c.description && <p className="text-white/60">{c.description}</p>}
+                  {c.description && <p className="text-muted-foreground">{c.description}</p>}
                   {c.targetAudience && (
-                    <p className="text-white/55">
+                    <p className="text-muted-foreground">
                       <span className="font-bold text-teal-light-ink">لمن صُممت؟ </span>
                       {c.targetAudience}
                     </p>
@@ -282,7 +282,7 @@ export default function CourseJourney({
                       </p>
                       <ul className="grid gap-1">
                         {c.learningObjectives.map((o) => (
-                          <li key={o} className="flex items-start gap-2 text-white/60">
+                          <li key={o} className="flex items-start gap-2 text-muted-foreground">
                             <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-teal" />
                             {o}
                           </li>
@@ -297,7 +297,7 @@ export default function CourseJourney({
                       </p>
                       <ul className="grid gap-1">
                         {c.learningOutcomes.map((o) => (
-                          <li key={o} className="flex items-start gap-2 text-white/60">
+                          <li key={o} className="flex items-start gap-2 text-muted-foreground">
                             <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gold" />
                             {o}
                           </li>
@@ -306,49 +306,49 @@ export default function CourseJourney({
                     </div>
                   )}
                   {c.practicalProject && (
-                    <p className="flex items-start gap-1.5 text-white/55">
+                    <p className="flex items-start gap-1.5 text-muted-foreground">
                       <FolderKanban className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                       <span>
-                        <span className="font-bold text-white/70">مخرجها العملي: </span>
+                        <span className="font-bold text-foreground">مخرجها العملي: </span>
                         {c.practicalProject}
                       </span>
                     </p>
                   )}
                   {c.modules.length > 0 && (
                     <div>
-                      <p className="mb-1.5 font-bold text-white/70">الوحدات والمحاور:</p>
+                      <p className="mb-1.5 font-bold text-foreground">الوحدات والمحاور:</p>
                       <ol className="space-y-1.5">
                         {c.modules.map((m, mi) => (
                           <li key={m.id} className="flex items-start gap-2.5 rounded-lg bg-white/[0.03] px-3 py-2">
-                            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-[10px] font-black text-white/55">
+                            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-micro font-black text-muted-foreground">
                               {mi + 1}
                             </span>
                             <span className="min-w-0 flex-1">
-                              <span className="block font-bold text-white/80">{m.title}</span>
-                              {m.outcome && <span className="mt-0.5 block text-white/45">{m.outcome}</span>}
+                              <span className="block font-bold text-foreground">{m.title}</span>
+                              {m.outcome && <span className="mt-0.5 block text-muted-foreground">{m.outcome}</span>}
                             </span>
-                            <span className="shrink-0 text-[10px] text-white/40">{m.hours} س</span>
+                            <span className="shrink-0 text-micro text-muted-foreground">{m.hours} س</span>
                           </li>
                         ))}
                       </ol>
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-white/[0.07] pt-3 text-[11px] text-white/50">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-white/[0.07] pt-3 text-[11px] text-muted-foreground">
                     {c.prerequisites && (
                       <span>
-                        <span className="font-bold text-white/65">المتطلبات السابقة: </span>
+                        <span className="font-bold text-foreground">المتطلبات السابقة: </span>
                         {c.prerequisites}
                       </span>
                     )}
                     {c.level && (
                       <span>
-                        <span className="font-bold text-white/65">المستوى: </span>
+                        <span className="font-bold text-foreground">المستوى: </span>
                         {c.level}
                       </span>
                     )}
                     {delivery && (
                       <span>
-                        <span className="font-bold text-white/65">طريقة التقديم: </span>
+                        <span className="font-bold text-foreground">طريقة التقديم: </span>
                         {delivery}
                       </span>
                     )}
@@ -367,7 +367,7 @@ export default function CourseJourney({
           </span>
           <div className="pt-1">
             <p className="text-sm font-black text-gold-ink">شهادة إتمام + تقرير إنجازك الشخصي</p>
-            <p className="mt-1 text-xs leading-relaxed text-white/50">
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
               تُعرض في ملفك ويشاركها أصحاب العمل عبر رابط تحقق — ومعها شهادات توصية من مدربيك المحترفين،
               ومن الجهات التي طُبّقت لديها مشاريعك إن وُجدت.
             </p>
@@ -383,9 +383,9 @@ export default function CourseJourney({
             </span>
             <div className="pt-1">
               <p className="text-sm font-black text-gold-ink">
-                مشروع التخرّج <span className="font-bold text-white/40">— إضافيّ، خارج دورات المسار</span>
+                مشروع التخرّج <span className="font-bold text-muted-foreground">— إضافيّ، خارج دورات المسار</span>
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-white/50">{graduationProjectAr}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{graduationProjectAr}</p>
             </div>
           </li>
         )}
@@ -424,15 +424,15 @@ export default function CourseJourney({
               className="rounded-2xl border border-white/10 bg-white/[0.02]"
             >
               <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 p-4 text-right">
-                <span className="flex min-w-0 flex-1 items-center gap-2 text-sm font-black text-white/70">
+                <span className="flex min-w-0 flex-1 items-center gap-2 text-sm font-black text-foreground">
                   <Plus className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 truncate">أضف دورة أخرى إلى مسارك</span>
                 </span>
-                <span className="shrink-0 text-[11px] font-bold text-white/40">{edit.pool.length}</span>
-                <ChevronDown className={`h-4 w-4 shrink-0 text-white/45 transition ${poolOpen ? "rotate-180" : ""}`} />
+                <span className="shrink-0 text-[11px] font-bold text-muted-foreground">{edit.pool.length}</span>
+                <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${poolOpen ? "rotate-180" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="px-4 pb-4">
-              <p className="text-[11px] leading-5 text-white/45">
+              <p className="text-[11px] leading-5 text-muted-foreground">
                 حتى {MAX_PATHWAY_COURSES} دورات في المسار.
               </p>
               {edit.addReason && (
@@ -448,7 +448,7 @@ export default function CourseJourney({
                     key={p.id}
                     className="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-1.5 pe-2 ps-3"
                   >
-                    <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/70" title={p.name}>
+                    <span className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground" title={p.name}>
                       {p.name}
                     </span>
                     <span className="flex shrink-0 items-center gap-1">
@@ -456,7 +456,7 @@ export default function CourseJourney({
                         <button
                           onClick={() => edit.onAdd(p.id)}
                           aria-label={`أضف «${p.name}» إلى مسارك`}
-                          className="grid h-6 w-6 cursor-pointer place-items-center rounded-full border border-white/15 text-white/55 transition hover:border-teal-light/60 hover:text-teal-light-ink"
+                          className="grid h-6 w-6 cursor-pointer place-items-center rounded-full border border-white/15 text-muted-foreground transition hover:border-teal-light/60 hover:text-teal-light-ink"
                         >
                           <Plus className="h-3 w-3" />
                         </button>

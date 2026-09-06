@@ -6,7 +6,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
+  "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 /** قبول دعوة المدرب — إنشاء الحساب عبر الرمز الآمن الذي أرسلته الإدارة بعد الاعتماد والعقد */
 export default function TrainerAcceptInvite() {
@@ -46,7 +46,7 @@ export default function TrainerAcceptInvite() {
           <div className="mt-6 text-center">
             <CheckCircle2 className="mx-auto h-10 w-10 text-teal-light-ink" />
             <h1 className="mt-4 text-2xl font-black">حسابك جاهز — أهلا بك مدربا في وجيز</h1>
-            <p className="mt-3 text-sm leading-8 text-white/60">سجّل الدخول الآن لتجد بوابتك ومهام تهيئتك.</p>
+            <p className="mt-3 text-sm leading-8 text-muted-foreground">سجّل الدخول الآن لتجد بوابتك ومهام تهيئتك.</p>
             <Link to="/auth" className="mt-6 inline-block rounded-full bg-gold px-7 py-3 font-black text-on-gold transition hover:bg-gold/90">
               تسجيل الدخول
             </Link>
@@ -54,12 +54,12 @@ export default function TrainerAcceptInvite() {
         ) : (
           <>
             <h1 className="mt-6 text-center text-2xl font-black">تفعيل حسابك التدريبي</h1>
-            <p className="mt-3 text-center text-sm leading-8 text-white/60">
+            <p className="mt-3 text-center text-sm leading-8 text-muted-foreground">
               هذه الدعوة صالحة ٧٢ ساعة وتُستخدم مرة واحدة. اختر كلمة مرورك لإنشاء الحساب.
             </p>
             <form onSubmit={submit} className="mt-6 space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
               <div>
-                <label htmlFor="ti-password" className="mb-1.5 block text-xs font-bold text-white/60">كلمة المرور * — ٨ أحرف على الأقل</label>
+                <label htmlFor="ti-password" className="mb-1.5 block text-xs font-bold text-muted-foreground">كلمة المرور * — ٨ أحرف على الأقل</label>
                 <input
                   id="ti-password" name="new-password" type={showPw ? "text" : "password"} autoComplete="new-password"
                   required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)}
@@ -67,7 +67,7 @@ export default function TrainerAcceptInvite() {
                 />
               </div>
               <div>
-                <label htmlFor="ti-confirm" className="mb-1.5 block text-xs font-bold text-white/60">تأكيد كلمة المرور *</label>
+                <label htmlFor="ti-confirm" className="mb-1.5 block text-xs font-bold text-muted-foreground">تأكيد كلمة المرور *</label>
                 <input
                   id="ti-confirm" name="confirm-password" type={showPw ? "text" : "password"} autoComplete="new-password"
                   required value={confirm} onChange={(e) => setConfirm(e.target.value)}
@@ -75,7 +75,7 @@ export default function TrainerAcceptInvite() {
                 />
                 {confirm && password !== confirm && <p className="mt-1.5 text-[11px] text-red-300">كلمتا المرور غير متطابقتين</p>}
               </div>
-              <label className="flex cursor-pointer items-center gap-2 text-xs text-white/55">
+              <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
                 <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} className="h-4 w-4 accent-teal" />
                 إظهار كلمة المرور
               </label>

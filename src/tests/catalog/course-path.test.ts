@@ -102,11 +102,17 @@ describe('حوارس التسعير — على الكتالوج كله', () => {
     }
   })
 
-  it('التوفير المعلن يساوي الفرق فعلا، والمدفوع صحيح لا كسر', () => {
+  /* كان هنا شرطٌ ثالث: «والمدفوع صحيح لا كسر» (`Number.isInteger`). وقد
+     سقط لأنّه كان **سببَ افتراقٍ لا حارسا منه**: الشاشةُ تقرّب إلى الدولار
+     والفاتورةُ إلى القرش، فمسارٌ مجموعه ٥٧٥ يُعرض ٤٠٣ ويُصدَر ٤٠٢٫٥٠.
+     ونيّةُ الشرط — «لا قرشَ يظهر في الفاتورة ولا يظهر على الشاشة» — تُحفظ
+     أصدقَ بالمطابقة نفسِها: `src/tests/commerce/pathway-price-parity.test.ts`
+     يقابل رقمَ الشاشة برقم `priceCart` على المسارات كلِّها. */
+  it('التوفير المعلن يساوي الفرق فعلا، والنسبةُ مشتقّةٌ من المدفوع', () => {
     const ids = byPrice(-1).slice(0, 4).map((c) => c.id)
     const p = pathPricing(ids, priceOf)
     expect(p.saving).toBe(p.separate - p.payable)
-    expect(Number.isInteger(p.payable)).toBe(true)
+    expect(p.payable, 'المدفوعُ بأكثر من خانتين — قرشٌ لا وجود له في عملة').toBe(Math.round(p.payable * 100) / 100)
     /* النسبة مشتقّة مما يدفع لا معلنة قبله — فلا تفترق عن السلّم */
     expect(p.discountPct).toBe(buildDiscountPct(4))
   })

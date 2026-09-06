@@ -21,7 +21,7 @@ import { chromium, type Page } from 'playwright'
 
 /** واقعة إتاحة واحدة — بصيغة واحدة كي تُقارن وتُعدّ. الشكل يقابل probe.browser.js */
 interface A11yFinding {
-  rule: 'name' | 'focus-visible' | 'focus-hidden' | 'tabindex-positive' | 'landmark' | 'reflow' | 'lang' | 'heading-order'
+  rule: 'name' | 'focus-visible' | 'focus-hidden' | 'tabindex-positive' | 'landmark' | 'reflow' | 'lang' | 'heading-order' | 'contrast' | 'target-size'
   /** ما يمنعه هذا الخلل على المستخدم — لا رقم قاعدة */
   impactAr: string
   target: string
@@ -49,7 +49,7 @@ interface PageSpec {
   path: string
   labelAr: string
   /** حساب يُدخَل قبل الزيارة — الصفحات العامة بلا حساب */
-  as?: 'learner' | 'admin'
+  as?: 'learner' | 'admin' | 'trainer' | 'advisor' | 'superadmin'
   /** مُنتقٍ يثبت أن المحتوى المُدار بالبيانات رُسم فعلا — انظر waitForContent */
   readySel?: string
 }
@@ -66,14 +66,109 @@ const PAGES: PageSpec[] = [
   { path: '/student/review', labelAr: 'مراجعتي', as: 'learner' },
   { path: '/admin/catalog', labelAr: 'إدارة الكتالوج', as: 'admin' },
   { path: '/admin/quality', labelAr: 'جودة التشخيص', as: 'admin' },
+  /* ═══ ما كان خارجَ الفحص: شاشاتُ العمل اليوميّ ═══
+
+     كان الفحصُ على تسعِ صفحاتٍ أكثرُها عامّة، وشاشتَي إدارةٍ اثنتَين. أمّا
+     الشاشاتُ التي يقضي فيها الفريقُ يومَه — الشعبُ والمستخدمون والمالية
+     والدعمُ ولوحُ المدرّب وحالاتُ المستشار — فلم تُفحَص مرّةً. وهي أكثفُ
+     الشاشات جداولَ ونماذجَ وأزرارا، أي أكثرُها احتمالا للخلل. */
+  { path: '/admin', labelAr: 'لوحة الإدارة', as: 'admin' },
+  { path: '/admin/cohorts', labelAr: 'الشعب', as: 'admin' },
+  { path: '/admin/finance', labelAr: 'المالية', as: 'admin' },
+  { path: '/admin/support', labelAr: 'تذاكر الدعم', as: 'admin' },
+  { path: '/admin/users', labelAr: 'المستخدمون والأدوار', as: 'superadmin' },
+  { path: '/admin/system-health', labelAr: 'صحّة النظام', as: 'superadmin' },
+  { path: '/trainer', labelAr: 'بوّابة المدرّب', as: 'trainer' },
+  /* شاشةٌ جديدةٌ بنماذجَ وحقولِ وقتٍ وتاريخ (المهمّة ٧١) — تُفحَص من أوّل يوم
+     لا بعد أن يشكو مدرّب: فيها منسدلاتٌ وأزرارُ حذفٍ صغيرةٌ وحقولُ `time`. */
+  { path: '/trainer/qualifications', labelAr: 'مؤهّلات المدرّب وإتاحته', as: 'trainer' },
+  /* «جدولي» (المهمّة ٧٢) — جداولُ زمنيّةٌ وشاراتُ تزاحمٍ بلونٍ ونصّ */
+  { path: '/trainer/schedule', labelAr: 'جدولُ المدرّب', as: 'trainer' },
+  /* شاشةُ إشعارات المتعلّم — ولوحُ التفضيلات فيها (المهمّة ٧٢): مربّعاتُ
+     اختيارٍ وشاراتٌ مقفلةٌ ونصوصُ سببٍ صغيرة، وهي أوّلُ شاشةٍ يفتحها من
+     أزعجه الجرس. */
+  { path: '/student/notifications', labelAr: 'إشعارات المتعلّم وتفضيلاتها', as: 'learner' },
+  { path: '/advisor', labelAr: 'بوّابة المستشار', as: 'advisor' },
+
+  /* ═══ وبقيّةُ الشاشات — والسببُ أنّ الحاجزَ يمسك ما في مجموعته وحدَها ═══
+
+     في المهمّة ٧٢ كتبتُ حبرَ خطرٍ غيرَ مقروءٍ على الورق، فأمسكه الفحصُ
+     **لأنّ الشاشةَ كانت في المجموعة**. وفي اليوم نفسِه أمسك حارسُ السمة
+     حالةً مثلَها في `PublishingBoard` — شاشةٌ **خارج المجموعة**، فبقيت
+     منذ كُتبت ولم يرها أحد. والدرسُ أنّ المجموعةَ الناقصةَ تُعطي طمأنينةً
+     بقدر ما تفحص لا بقدر ما في المنصّة.
+
+     فهذه بقيّةُ الشاشات: أربعون شاشةً كانت خارجَ الفحص، فصارت المجموعةُ
+     **ستّين** — أي كلَّ مسارٍ يفتحه إنسانٌ بحسابه. وما بقي خارجَها ثلاثةٌ
+     بعذر: مسارٌ يحتاج رمزا في الرابط (`/auth/reset`, `/verify` بنتيجة،
+     `/trainer/accept-invite`), ومسارٌ بمعرّفٍ متغيّر (`/student/course/:id`),
+     وإعادةُ توجيهٍ ليست شاشةً (`/for-business`, `/student/pathway`).
+
+     والمجموعةُ العامّةُ (بلا `as`) هي بوّابةُ CI — تعمل على بناء الإنتاج بلا
+     قاعدةٍ ولا حسابات. فما أُضيف إليها لا يعتمد على نداءٍ ينجح: الصفحةُ
+     تُفحَص بحالتها الفارغةِ الصادقة. */
+
+  /* ── العامّة (تدخل بوّابةَ CI) ── */
+  { path: '/courses', labelAr: 'الدورات', readySel: 'article' },
+  { path: '/methodology', labelAr: 'المنهجيّة' },
+  { path: '/stories', labelAr: 'قصصُ المتعلّمين' },
+  { path: '/trainers', labelAr: 'المدرّبون' },
+  { path: '/contact', labelAr: 'تواصلْ معنا' },
+
+  /* ── بوّابةُ المتعلّم ── */
+  { path: '/student/learning', labelAr: 'تعلّمي', as: 'learner' },
+  { path: '/student/skills', labelAr: 'مهاراتي', as: 'learner' },
+  { path: '/student/certificates', labelAr: 'شهاداتي', as: 'learner' },
+  { path: '/student/billing', labelAr: 'فواتيري', as: 'learner' },
+  { path: '/student/inbox', labelAr: 'صندوقُ المتعلّم', as: 'learner' },
+  { path: '/student/support', labelAr: 'دعمُ المتعلّم', as: 'learner' },
+  { path: '/student/account', labelAr: 'حسابي', as: 'learner' },
+  { path: '/student/cv', labelAr: 'سيرتي الذاتيّة', as: 'learner' },
+  { path: '/student/vault', labelAr: 'خزنتي', as: 'learner' },
+  { path: '/student/library', labelAr: 'المكتبة', as: 'learner' },
+  { path: '/student/rate', labelAr: 'تقييمُ تجربتي', as: 'learner' },
+
+  /* ── بوّابةُ المدرّب ── */
+  { path: '/trainer/board', labelAr: 'لوحُ شعبي', as: 'trainer' },
+  { path: '/trainer/grading', labelAr: 'طابورُ التقييم', as: 'trainer' },
+  { path: '/trainer/learners', labelAr: 'طلبةُ المدرّب', as: 'trainer' },
+  { path: '/trainer/proposals', labelAr: 'اقتراحاتُ المدرّب', as: 'trainer' },
+  { path: '/trainer/earnings', labelAr: 'مستحقّاتُ المدرّب', as: 'trainer' },
+  { path: '/trainer/ratings', labelAr: 'ما قيل عن المدرّب', as: 'trainer' },
+
+  /* ── بوّابةُ المستشار ── */
+  { path: '/advisor/learners', labelAr: 'متعلّمو المستشار', as: 'advisor' },
+  { path: '/advisor/ratings', labelAr: 'تقييماتُ المستشار', as: 'advisor' },
+  { path: '/advisor/earnings', labelAr: 'مستحقّاتُ المستشار', as: 'advisor' },
+
+  /* ── شاشاتُ الإدارة الباقية ── */
+  { path: '/admin/tasks', labelAr: 'ما ينتظرك', as: 'admin' },
+  { path: '/admin/publishing', labelAr: 'لوحُ النشر', as: 'admin' },
+  { path: '/admin/authoring', labelAr: 'التأليف', as: 'admin' },
+  { path: '/admin/learners', labelAr: 'المتعلّمون', as: 'admin' },
+  { path: '/admin/trainers', labelAr: 'طلباتُ المدرّبين', as: 'admin' },
+  { path: '/admin/exceptions', labelAr: 'الاستثناءات', as: 'admin' },
+  { path: '/admin/advisor-requests', labelAr: 'طلباتُ الاستشارة', as: 'admin' },
+  { path: '/admin/learner-requests', labelAr: 'طلباتُ المتعلّمين', as: 'admin' },
+  { path: '/admin/ratings', labelAr: 'مراجعةُ التقييمات', as: 'admin' },
+  { path: '/admin/notifications', labelAr: 'قوالبُ الإشعارات', as: 'admin' },
+  { path: '/admin/integrations', labelAr: 'التكاملات', as: 'admin' },
+  { path: '/admin/audit', labelAr: 'سجلُّ الأثر', as: 'admin' },
+  { path: '/admin/reports', labelAr: 'التقارير', as: 'admin' },
+  { path: '/admin/advisors', labelAr: 'المستشارون', as: 'superadmin' },
 ]
 
 const CREDS = {
   learner: { email: 'student.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
   admin: { email: 'admin.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+  /* بوّابتا المدرّب والمستشار كانتا خارجَ الفحص كلَّه — وهما بوّابتان كاملتان
+     يعمل فيهما فريقٌ يوميّا، لا شاشتان هامشيّتان. */
+  trainer: { email: 'trainer.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+  advisor: { email: 'consultant.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
+  superadmin: { email: 'superadmin.demo@wajeez.local', password: 'Wajeez-Demo-2026' },
 }
 
-async function login(page: Page, as: 'learner' | 'admin') {
+async function login(page: Page, as: keyof typeof CREDS) {
   await page.goto(`${BASE}/auth`, { waitUntil: 'networkidle' })
   await page.fill('input[type=email]', CREDS[as].email)
   await page.fill('input[type=password]', CREDS[as].password)
@@ -154,20 +249,115 @@ const results: Record<string, A11yFinding[]> = {}
 const MIN_TEXT = 400
 const CONTENT_TIMEOUT_MS = 25_000
 
+/* ولمَ صار الحدُّ شرطَين لا شرطا واحدا.
+
+   حدُّ النصّ وحدَه يمنع قياسَ هيكلٍ لم يُملأ — وهذا صحيح. لكنّه يخلط
+   حالتَين: صفحةً ما زالت تدور، وصفحةً **حالتُها الفارغةُ قصيرة**. ووقع
+   ذلك فعلا حين وُسّعت المجموعة: «طابورُ التقييم» و«طلبةُ المدرّب» سقطتا
+   بمهلةٍ منتهية، وسببُهما أنّ طابورَ المدرّب نظيفٌ فنصُّ الصفحة دون
+   الأربعِ مئة — وحالةُ الفراغ فيهما **جيّدةٌ ومكتوبة**، لا عطبٌ.
+
+   فالشرطُ صار: نصٌّ كافٍ **أو** (عنوانٌ ظاهرٌ ولا مؤشّرَ تحميلٍ يدور).
+   والثانيةُ تفرّق الفراغَ عن الانتظار بدليلٍ في الصفحة لا بتخمين: مؤشّراتُ
+   التحميل في المنصّة كلُّها `animate-spin` أو `aria-busy`. */
 async function waitForContent(page: Page, spec: PageSpec): Promise<void> {
   if (spec.readySel) {
     await page.waitForSelector(spec.readySel, { state: 'visible', timeout: CONTENT_TIMEOUT_MS })
   }
-  await page.waitForFunction(
-    (min) => (document.body?.innerText ?? '').trim().length >= min,
-    MIN_TEXT,
-    { timeout: CONTENT_TIMEOUT_MS },
-  )
+  try {
+    await page.waitForFunction(
+      (min) => (document.body?.innerText ?? '').trim().length >= min,
+      MIN_TEXT,
+      { timeout: CONTENT_TIMEOUT_MS },
+    )
+  } catch {
+    /* المهلةُ انتهت — والسؤالُ: هل الصفحةُ تدور، أم فراغُها قصير؟ الشرطُ
+       الثاني يُسأل **بعد** الأوّل لا بديلا عنه: لو كان بديلا لَعاد أسرعَ من
+       اكتمال الرسم في الصفحات الغنيّة فقيست أثناء انتقال الألوان — وهذا وقع
+       فعلا: الصفحةُ الرئيسيّة أعطت ٢٤ واقعةَ تباينٍ كاذبةً بقيمٍ وسيطةٍ
+       (٤٫١٦:‏١ حيث القياسُ المستقرّ ٦٫٩:‏١). فالأصلُ انتظارُ النصّ، وهذا
+       استدراكٌ عند تعذّره. */
+    await page.waitForFunction(
+      () => {
+        const spinning = document.querySelector('.animate-spin, [aria-busy="true"]')
+        const titled = document.querySelector('h1, h2')
+        return !spinning && !!titled && (document.body?.innerText ?? '').trim().length > 0
+      },
+      undefined,
+      { timeout: CONTENT_TIMEOUT_MS },
+    )
+  }
   /* هدأة قصيرة بعد ظهور المحتوى: التخطيط يستقر بعد الرسم الأول */
   await page.waitForTimeout(600)
 }
 
-const SELECTED = SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES
+/* ─────────── التباينُ في المظهرَين ───────────
+
+   المنصّةُ تفتح داكنةً دائما، والفاتحُ اختيارٌ يعيش الزيارةَ الحاليّة
+   (`sessionStorage`). وأكثرُ ألوانِ النصّ مبنيّةٌ على أرضيّةٍ داكنة
+   (`text-white/45` وأمثالُها) — فمن بقي منها في الفاتح صار أبيضَ باهتا على
+   ورقٍ فاتح. وقد وقع هذا في زرّ تبديل المظهر نفسِه (تعليقُ `ThemeToggle`)،
+   فالفحصُ في مظهرٍ واحدٍ يفوّت نصفَ المنصّة. */
+async function contrastBothThemes(page: Page, labelAr: string): Promise<A11yFinding[]> {
+  interface Hit { target: string; text: string; ratio: number; need: number; size: number }
+  const out: A11yFinding[] = []
+  for (const theme of ['dark', 'light'] as const) {
+    await page.evaluate((t) => {
+      document.documentElement.dataset.theme = t
+      try { sessionStorage.setItem('wajeez_theme', t) } catch { /* وضعٌ خاصٌّ بلا تخزين */ }
+    }, theme)
+    /* لحظةٌ لتستقرّ الأنماطُ المنتقلة قبل قراءة الألوان المحسوبة */
+    await page.waitForTimeout(180)
+    const hits = await page.evaluate('window.__a11y.contrast()') as Hit[]
+    for (const h of hits) {
+      out.push({
+        rule: 'contrast',
+        target: `[${theme}] ${h.target}`,
+        impactAr: `نصٌّ بتباين ${h.ratio}:1 والمطلوب ${h.need}:1 في المظهر ${theme === 'dark' ? 'الداكن' : 'الفاتح'} — «${h.text}» (${h.size}px)`,
+      })
+    }
+    if (hits.length > 0) {
+      console.log(`    · ${labelAr} · ${theme}: ${hits.length} نصّا دون الحدّ، أسوأُها ${hits[0].ratio}:1`)
+    }
+  }
+  /* تُعاد إلى الداكن كي لا يورَّث المظهرُ إلى فحصٍ تالٍ في السياق نفسِه */
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+  return out
+}
+
+/* ─────────── حجمُ الهدف على هاتف ───────────
+
+   الفحصُ كلُّه يعمل على منفذٍ عرضُه ١٢٨٠ — وأهدافُ اللمس تنكسر حيث لا
+   يُفحَص: على الهاتف. فالشريطُ `flex` يضغط علامةَ المنصّة إلى بكسلَين،
+   والحبّةُ التي تسع نصَّها على الحاسوب تلتفّ فيرقّ صفُّها.
+
+   فتُقاس مرّةً على ٣٩٠×٨٤٤ — عرضُ أضيقِ هاتفٍ شائع — بعد أن يستقرّ
+   التخطيط، ثمّ يُعاد المنفذُ كي لا يورَّث الضيقُ إلى قاعدةٍ تالية. */
+async function targetsOnPhone(page: Page): Promise<A11yFinding[]> {
+  interface Hit { target: string; text: string; w: number; h: number }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.waitForTimeout(500)
+  const hits = await page.evaluate('window.__a11y.targets()') as Hit[]
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.waitForTimeout(200)
+  return hits.map((h) => ({
+    rule: 'target-size' as const,
+    target: `[390px] ${h.target}`,
+    impactAr: `هدفُ لمسٍ ${h.w}×${h.h} والحدُّ ٢٤×٢٤ على هاتفٍ عرضُه ٣٩٠ — «${h.text}»`,
+  }))
+}
+
+/* المجموعةُ الكاملةُ تستغرق نحوَ نصف ساعة، فمن أضاف شاشةً واحدةً كان
+   أمامه أن يشغّل الكلَّ أو أن يتخطّى الفحص — والثاني هو ما يحدث فعلا.
+   فـ`A11Y_ONLY` يُرشِّح بمطابقةٍ جزئيّةٍ للمسار: شاشةٌ واحدةٌ في دقيقة.
+   وهو للتشغيل اليدويّ وحدَه؛ البوّابةُ في CI تبقى على المجموعة. */
+const ONLY = process.env.A11Y_ONLY?.trim()
+const SELECTED = (SET === 'public' ? PAGES.filter((p) => !p.as) : PAGES)
+  .filter((p) => !ONLY || p.path.includes(ONLY))
+if (ONLY && SELECTED.length === 0) {
+  console.error(`لا صفحةَ يطابق مسارُها «${ONLY}» — راجع قائمة PAGES`)
+  process.exit(1)
+}
 
 for (const spec of SELECTED) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } })
@@ -182,6 +372,8 @@ for (const spec of SELECTED) {
       ...(await page.evaluate('window.__a11y.names()') as A11yFinding[]),
       ...(await focusWalk(page)),
       ...(await reflow(page, spec.labelAr)),
+      ...(await contrastBothThemes(page, spec.labelAr)),
+      ...(await targetsOnPhone(page)),
     ]
     results[spec.labelAr] = findings
     const byRule = findings.reduce<Record<string, number>>((a, f) => ({ ...a, [f.rule]: (a[f.rule] ?? 0) + 1 }), {})

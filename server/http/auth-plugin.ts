@@ -3,7 +3,7 @@
 
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { AuthService, type AuthContext } from '../services/auth.service'
-import type { PermissionKey } from '../auth/permissions'
+import { permissionDescriptionAr, rolesWithPermissionAr, type PermissionKey } from '../auth/permissions'
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -31,7 +31,16 @@ export function requirePermission(key: PermissionKey) {
       return reply.status(401).send({ error: { code: 'unauthenticated', message_ar: 'سجّل الدخول أولا' } })
     }
     if (!req.auth.permissions.includes(key)) {
-      return reply.status(403).send({ error: { code: 'forbidden', message_ar: 'لا تملك الصلاحية المطلوبة لهذا الإجراء' } })
+      /* «لا تملك الصلاحية المطلوبة» لا يقول أيَّ صلاحيّة ولا من يملكها، فكانت
+         كلُّ شاشةٍ ممنوعةٍ تعرض النصَّ نفسَه — ولوحاتُ الواجهة تزيد عليه
+         «تتطلّب مدير النظام» وهو خطأٌ في صفحاتٍ تخصّ الماليّةَ أو الدعم.
+         والوصفُ موجودٌ في فهرس الصلاحيّات أصلا، فيُقال. */
+      const what = permissionDescriptionAr(key)
+      const who = rolesWithPermissionAr(key)
+      const message_ar = what
+        ? `هذا الإجراء يتطلّب صلاحيّة «${what}»${who.length ? ` — يملكها: ${who.join('، ')}` : ''}.`
+        : 'لا تملك الصلاحية المطلوبة لهذا الإجراء'
+      return reply.status(403).send({ error: { code: 'forbidden', message_ar, required: key } })
     }
   }
 }

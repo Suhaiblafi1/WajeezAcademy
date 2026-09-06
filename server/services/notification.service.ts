@@ -7,6 +7,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { getEmailConfig, type EmailConfig } from './integrations.service'
 import { sendEmail } from './mail'
+import { categoryForTemplate } from '../../src/application/notifications/categories'
 
 /* لأيّ بوابةٍ الإشعار — جرسُ كلٍّ يعرض جمهورَه وحده.
 
@@ -52,8 +53,8 @@ export class UnwiredExternalProvider implements NotificationProvider {
   }
 }
 
-/** مزود البريد الحقيقي — SMTP عبر إعدادات التكامل؛ يُرسل لبريد المستخدم المسجل */
-export class SmtpEmailProvider implements NotificationProvider {
+/** مزود البريد الحقيقي — Resend عبر إعدادات التكامل؛ يُرسل لبريد المستخدم المسجل */
+export class ResendEmailProvider implements NotificationProvider {
   readonly channel = 'email'
   private config: EmailConfig
   private toEmail: string
@@ -88,7 +89,7 @@ export async function sendDirectEmail(
 ): Promise<DirectMailResult> {
   try {
     const config = await getEmailConfig(prisma)
-    if (!config.enabled || !config.host || !config.fromEmail) return { status: 'not_configured' }
+    if (!config.enabled || !config.apiKey || !config.fromEmail) return { status: 'not_configured' }
     const res = await sendEmail(config, input)
     return res.ok ? { status: 'sent' } : { status: 'failed', error: res.error }
   } catch (e) {
@@ -98,15 +99,13 @@ export async function sendDirectEmail(
 
 /** أصل الموقع العام لبناء الروابط في الرسائل.
 
-    الترتيب مقصود: APP_URL أولا لأنه اختيار صريح، ثم نطاق الإنتاج الذي تحقنه
-    Vercel، ثم المحلي. وبلا الوسط كانت روابط تأكيد البريد ودعوة إنشاء الحساب
-    تُبنى على localhost:7100 في الإنتاج ما لم يُضبط المتغير يدويا — رسالة تصل
-    برابط لا يفتح عند أحد. */
+    APP_URL إلزاميٌّ على Cloudways (`docs/DEPLOYMENT.md`)، والمحلّيُّ احتياطيٌّ
+    للتطوير وحده. وبلا هذا الاحتياطي كانت روابط تأكيد البريد ودعوة إنشاء
+    الحساب تُبنى على localhost:7100 في الإنتاج ما لم يُضبط المتغير يدويا —
+    رسالة تصل برابط لا يفتح عند أحد. */
 export function publicSiteUrl(): string {
   const explicit = process.env.APP_URL?.trim()
   if (explicit) return explicit.replace(/\/+$/, '')
-  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim()
-  if (vercel) return `https://${vercel.replace(/\/+$/, '')}`
   return 'http://localhost:7100'
 }
 
@@ -118,7 +117,7 @@ export function publicSiteUrl(): string {
     يُسوّى (الـwebhook مستقلّ عن المتصفّح) — فيكون العطبُ صامتا في السجلّات
     صاخبا عند المشتري، وهو أسوأُ ترتيب. */
 export function hasExplicitSiteUrl(): boolean {
-  return Boolean(process.env.APP_URL?.trim() || process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim())
+  return Boolean(process.env.APP_URL?.trim())
 }
 
 const MAX_ATTEMPTS = 3
@@ -159,9 +158,9 @@ export class NotificationService {
     if (channel === 'in_app') return new InAppProvider()
     if (channel === 'email') {
       const config = await getEmailConfig(this.prisma)
-      if (config.enabled && config.host) {
+      if (config.enabled && config.apiKey) {
         const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
-        if (user?.email) return new SmtpEmailProvider(config, user.email)
+        if (user?.email) return new ResendEmailProvider(config, user.email)
       }
     }
     return new UnwiredExternalProvider(channel as 'email' | 'whatsapp' | 'sms')
@@ -175,8 +174,35 @@ export class NotificationService {
     return { title: fill(tpl.titleAr), body: fill(tpl.bodyAr) }
   }
 
-  /** إرسال (أو محاولة) إشعار — يسجل النتيجة دائما */
+  /* ═══ تفضيلُ صاحب الحساب — وحدُّه (المهمّة ٧٢) ═══
+
+     الكتمُ يقع **قبل الكتابة**: إشعارٌ مكتومٌ لا يُنشأ صفّا ثمّ يُخفى، فلا
+     جرسٌ يعدّ ما لن يُقرأ ولا جدولٌ ينمو بما لا يُرى.
+
+     والحدُّ يُفرَض هنا لا في الشاشة: صنفٌ غيرُ قابلٍ للكتم (المال · الشهادات ·
+     عملُ الموظّف) يمضي إشعارُه **مهما كان في القاعدة** — فلو حُفر صفُّ تفضيلٍ
+     بيدٍ لم يُسكِت خبرا يترتّب عليه حقٌّ أو واجب. وما لا صنفَ له بعد يمضي
+     أيضا: السهوُ في التصنيف لا يُسكِت أحدا.
+
+     ويُرجَع `null` عند الكتم، ولا قارئَ لناتج `notify` في المستودع كلِّه —
+     فُحص. */
+  private async suppressedFor(payload: NotificationPayload): Promise<boolean> {
+    const category = categoryForTemplate(payload.templateKey)
+    if (!category || !category.silenceable) return false
+    const pref = await this.prisma.notificationPreference.findUnique({
+      where: {
+        userId_category_channel: {
+          userId: payload.userId, category: category.key, channel: payload.channel,
+        },
+      },
+    })
+    /* الغيابُ يعني «مُفعَّل»: من لم يفتح الشاشةَ لا يتغيّر سلوكُه */
+    return pref ? !pref.enabled : false
+  }
+
+  /** إرسال (أو محاولة) إشعار — يسجل النتيجة دائما، إلّا ما كتَمَه صاحبُه */
   async notify(payload: NotificationPayload) {
+    if (await this.suppressedFor(payload)) return null
     const notification = await this.prisma.notification.create({
       data: {
         userId: payload.userId, channel: payload.channel, templateKey: payload.templateKey,

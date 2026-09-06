@@ -4,6 +4,23 @@ module.exports = {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      /* ── أصغرُ حجمٍ مسموحٍ في المنصّة ──
+
+         كانت الشاشاتُ تنزل إلى ٩ و١٠ بكسلا في ٢٧٥ موضعا — وأكثرُها في
+         شاشات الفريق، حيث تُقرأ الجداولُ والشارات يوما كاملا. والقياسُ
+         بالمتصفّح على هاتفٍ عرضُه ٣٩٠ بكسلا وجد نصوصا بتسعةِ بكسلات في
+         بوّابة المدرّب وشاشة الشعب.
+
+         فصار للحجم اسمٌ واحدٌ وحدٌّ واحد: `text-micro` بأحدَ عشرَ بكسلا،
+         وهو أصغرُ ما يُكتب. والاسمُ يفعل ما لا يفعله الرقمُ المكتوبُ في
+         مكانه: يمنع أن يعود التسعةُ والعشرةُ من باب النسخ، ويُحرَسُ ذلك
+         باختبار.
+
+         ولا يحمل ارتفاعَ سطرٍ معه — كما لا يحمله `text-[10px]` — فتبقى
+         أصنافُ `leading-*` في مواضعها تعمل كما كانت. */
+      fontSize: {
+        micro: '11px',
+      },
       colors: {
         /* توكنات الهوية (البند و-١) — bg-teal و text-teal-ink/70 وغيرها.
            تعبئة/حد: teal · teal-light · teal-deep · gold (ثابتة)
@@ -25,17 +42,29 @@ module.exports = {
         "on-gold": "rgb(var(--on-gold) / <alpha-value>)",
         "on-bright": "rgb(var(--on-bright) / <alpha-value>)",
         "zoom-ink": "rgb(var(--zoom-ink) / <alpha-value>)",
+        /* حبرُ الخطر — كان كلُّ لوحِ خطرٍ يكتب `text-rose-200` حرفيّا، وهي
+           مقروءةٌ على الداكن و**١٫٢٩:‏١ على الورق**. فصار رمزا ينقلب. */
+        "danger-ink": "rgb(var(--danger-ink) / <alpha-value>)",
         /* سلّم المخططات الترتيبي (إد-٢) */
         "ramp-1": "rgb(var(--ramp-1) / <alpha-value>)",
         "ramp-2": "rgb(var(--ramp-2) / <alpha-value>)",
         "ramp-3": "rgb(var(--ramp-3) / <alpha-value>)",
         "ramp-4": "rgb(var(--ramp-4) / <alpha-value>)",
         "ramp-5": "rgb(var(--ramp-5) / <alpha-value>)",
-        border: "hsl(var(--border))",
+        /* ── قناةُ الشفافيّة على رموز الحبر ──
+
+           كان `foreground` مسجّلا بلا `<alpha-value>`، فـ`text-foreground/45`
+           لا يُنتج صنفا. وهذا وحدَه هو ما سدّ بابَ الإصلاح: المنصّةُ فيها
+           ١٧٦٩ موضعا من `text-white/NN` — حبرٌ **مبنيٌّ على أنّ ما خلفه
+           داكن** — ولم يكن لها بديلٌ يقبل الدرجةَ نفسَها.
+
+           والإضافةُ لا تُغيّر شيئا قائما: تايلويند يُبدّل الشفافيّةَ بواحدٍ
+           حين لا مُعدِّل، فـ`text-foreground` كما كان. */
+        border: "hsl(var(--border) / <alpha-value>)",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -50,7 +79,7 @@ module.exports = {
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
         },
         accent: {
           DEFAULT: "hsl(var(--accent))",

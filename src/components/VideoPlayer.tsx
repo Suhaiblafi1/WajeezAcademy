@@ -62,7 +62,7 @@ export default function VideoPlayer({
         >
           {playing ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 -translate-x-0.5" />}
         </button>
-        <span className="absolute bottom-3 right-4 rounded-full bg-black/60 px-2.5 py-1 text-[11px] text-white/70">
+        <span className="absolute bottom-3 right-4 rounded-full bg-paper/60 px-2.5 py-1 text-[11px] text-foreground">
           معاينة تجريبية — يُعرض الفيديو الحقيقي هنا عند الربط
         </span>
         {pct >= 90 && (
@@ -85,7 +85,7 @@ export default function VideoPlayer({
           className="w-full accent-teal"
           aria-label="شريط التقدم"
         />
-        <div className="flex items-center justify-between text-xs text-white/55">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{fmt(sec)} / {fmt(totalSec)} · {pct}%</span>
           <div className="flex items-center gap-2">
             <button

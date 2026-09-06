@@ -54,7 +54,7 @@ export class ReportsService {
     return [
       {
         key: 'diagnostic-funnel', titleAr: 'قمع التشخيص وجدار التسجيل',
-        methodAr: 'أجهزة فريدة (anonId) عند كل مرحلة من جدول AnalyticsEvent: بدأ ← أكمل ← رأى نصف النتيجة ← رأى الجدار ← أنشأ حسابا من الجدار — نسبة التحويل = أنشأ حسابا ÷ رأى الجدار',
+        methodAr: 'أجهزة فريدة عند كل مرحلة — بدأ ← أكمل ← رأى نصف النتيجة ← رأى الجدار ← أنشأ حسابا من الجدار — نسبة التحويل = أنشأ حسابا ÷ رأى الجدار (من أحداث الاستخدام المجهولة)',
         run: async (f) => {
           const rows = await p.analyticsEvent.findMany({
             where: hasRange(f) ? { createdAt: dayRange(f) } : {},
@@ -82,7 +82,7 @@ export class ReportsService {
       },
       {
         key: 'diagnostic', titleAr: 'التشخيص',
-        methodAr: 'عدد نتائج التشخيص المرفقة بالحسابات مجمعة باليوم — المصدر: ملفات المتعلمين (attachedAt)',
+        methodAr: 'عدد نتائج التشخيص المرفقة بالحسابات مجمعة بيوم الإرفاق — من ملفات المتعلمين',
         run: async (f) => {
           const rows = await p.learnerProfile.findMany({ where: hasRange(f) ? { attachedAt: dayRange(f) } : { attachedAt: { not: null } }, select: { attachedAt: true } })
           const byDay = new Map<string, number>()
@@ -95,7 +95,7 @@ export class ReportsService {
       },
       {
         key: 'pathways-templates', titleAr: 'المسارات والقوالب',
-        methodAr: 'عدادات المسارات وقوالب التوصية المركبة بحالة النشر — المصدر: جدولي Pathway وCompositeTemplate',
+        methodAr: 'عدادات المسارات وقوالب التوصية المركبة بحالة النشر — من الكتالوج المنشور',
         run: async () => {
           const [pathways, templates] = await Promise.all([
             p.pathway.groupBy({ by: ['status'], _count: true }),
@@ -109,7 +109,7 @@ export class ReportsService {
       },
       {
         key: 'skill-gaps', titleAr: 'فجوات المهارات',
-        methodAr: 'توزيع التوصيات (مسار/قالب) في نتائج التشخيص المرفقة — من لقطات diagnosticSnapshot',
+        methodAr: 'توزيع التوصيات (مسار/قالب) في نتائج التشخيص المرفقة بالحسابات',
         run: async () => {
           const rows = await p.learnerProfile.findMany({ where: { diagnosticSnapshot: { not: undefined } }, select: { diagnosticSnapshot: true } })
           const byRec = new Map<string, number>()
@@ -123,7 +123,7 @@ export class ReportsService {
       },
       {
         key: 'conversion', titleAr: 'التحويل إلى تسجيل',
-        methodAr: 'طلبات التسجيل بحالتها — نسبة التحويل = converted ÷ الكل — المصدر: EnrollmentRequest',
+        methodAr: 'طلبات التسجيل بحالتها — نسبة التحويل = ما تحوّل إلى تسجيل ÷ الكل',
         run: async (f) => {
           const rows = await p.enrollmentRequest.groupBy({
             by: ['status'], _count: true,
@@ -134,7 +134,7 @@ export class ReportsService {
       },
       {
         key: 'advisor-performance', titleAr: 'أداء المستشار',
-        methodAr: 'لكل مستشار: الحالات النشطة المسندة، المتابعات المنجزة، الحالات المحولة لمسجلة — من AdvisorAssignment وAdvisorCase',
+        methodAr: 'لكل مستشار: الحالات النشطة المسندة، المتابعات المنجزة، الحالات المحولة لمسجلة — من إسنادات المستشارين وحالاتهم',
         run: async () => {
           const links = await p.advisorAssignment.findMany({
             where: { unassignedAt: null },
@@ -153,7 +153,7 @@ export class ReportsService {
       },
       {
         key: 'trainer-performance', titleAr: 'أداء المدرب',
-        methodAr: 'لكل مدرب: الشعب المسندة، الجلسات المنجزة، التسليمات المراجعة، متوسط الدرجات — من CohortTrainer وAssignmentSubmission وGrade',
+        methodAr: 'لكل مدرب: الشعب المسندة، الجلسات المنجزة، التسليمات المراجعة، متوسط الدرجات — من إسنادات الشعب والتسليمات والدرجات',
         run: async (f) => {
           const links = await p.cohortTrainer.findMany({
             where: { role: 'lead' },
@@ -186,7 +186,7 @@ export class ReportsService {
       },
       {
         key: 'enrollments', titleAr: 'التسجيلات',
-        methodAr: 'التسجيلات مجمعة بالشعبة والحالة — المصدر: Enrollment',
+        methodAr: 'التسجيلات مجمعة بالشعبة والحالة',
         run: async (f) => {
           const rows = await p.enrollment.groupBy({
             by: ['cohortId', 'status'], _count: true,
@@ -199,7 +199,7 @@ export class ReportsService {
       },
       {
         key: 'revenue', titleAr: 'الإيرادات',
-        methodAr: 'مجموع الفواتير المدفوعة بالعملة والشهر — المصدر: Invoice حيث status=paid',
+        methodAr: 'مجموع الفواتير المدفوعة فقط، بالعملة والشهر',
         run: async (f) => {
           const rows = await p.invoice.findMany({
             where: { status: 'paid', ...(hasRange(f) ? { paidAt: dayRange(f) } : {}) },
@@ -215,7 +215,7 @@ export class ReportsService {
       },
       {
         key: 'payments-refunds', titleAr: 'الدفعات والاسترداد',
-        methodAr: 'الدفعات بالمزود والحالة، والاستردادات المنفذة بمجاميعها — من Payment وRefund',
+        methodAr: 'الدفعات بالمزود والحالة، والاستردادات المنفذة بمجاميعها',
         run: async (f) => {
           const [payments, refunds] = await Promise.all([
             p.payment.groupBy({ by: ['provider', 'status'], _count: true, _sum: { amount: true }, where: hasRange(f) ? { createdAt: dayRange(f) } : undefined }),
@@ -229,7 +229,7 @@ export class ReportsService {
       },
       {
         key: 'attendance', titleAr: 'الحضور',
-        methodAr: 'سجلات الحضور بحالتها لكل شعبة — المصدر: Attendance',
+        methodAr: 'سجلات الحضور بحالتها لكل شعبة',
         run: async (f) => {
           const rows = await p.attendance.groupBy({ by: ['sessionId', 'status'], _count: true })
           const sessions = await p.cohortSession.findMany({ where: { id: { in: rows.map((r) => r.sessionId) } }, select: { id: true, cohortId: true, title: true } })
@@ -241,7 +241,7 @@ export class ReportsService {
       },
       {
         key: 'progress-completion', titleAr: 'التقدم والإكمال',
-        methodAr: 'توزيع نسب التقدم في فئات (0-24، 25-49، 50-74، 75-99، 100) — من CourseProgress، والإكمال من Enrollment.status=completed',
+        methodAr: 'توزيع نسب التقدم في فئات (0-24، 25-49، 50-74، 75-99، 100) من سجلات تقدم الدورات — والإكمال المؤكد من التسجيلات المكتملة',
         run: async () => {
           const rows = await p.courseProgress.findMany({ select: { percent: true } })
           const buckets = [0, 0, 0, 0, 0]
@@ -256,7 +256,7 @@ export class ReportsService {
       },
       {
         key: 'courses-cohorts', titleAr: 'الدورات والشعب',
-        methodAr: 'الشعب مجمعة بالدورة والحالة مع السعة والتسجيل — من Cohort',
+        methodAr: 'الشعب مجمعة بالدورة والحالة مع السعة والتسجيل',
         run: async (f) => {
           const rows = await p.cohort.findMany({
             where: f.courseId ? { courseId: f.courseId } : undefined,
@@ -270,7 +270,7 @@ export class ReportsService {
       },
       {
         key: 'certificates', titleAr: 'الشهادات',
-        methodAr: 'الشهادات المصدرة والملغاة بالشهر — المصدر: Certificate',
+        methodAr: 'الشهادات المصدرة والملغاة بالشهر',
         run: async (f) => {
           const rows = await p.certificate.findMany({
             where: hasRange(f) ? { issuedAt: dayRange(f) } : undefined,
@@ -289,7 +289,7 @@ export class ReportsService {
       },
       {
         key: 'recordings', titleAr: 'التسجيلات المرئية',
-        methodAr: 'عدد التسجيلات وحجمها ومدتها لكل شعبة وحالتها — المصدر: Recording',
+        methodAr: 'عدد تسجيلات الجلسات وحجمها ومدتها لكل شعبة وحالتها',
         run: async (f) => {
           const rows = await p.recording.findMany({
             include: { session: { select: { cohortId: true, cohort: { select: { title: true } } } } },
@@ -308,7 +308,7 @@ export class ReportsService {
       },
       {
         key: 'trainer-applications', titleAr: 'طلبات المدربين',
-        methodAr: 'طلبات انضمام المدربين بحالتها — المصدر: TrainerApplication',
+        methodAr: 'طلبات انضمام المدربين بحالتها',
         run: async (f) => {
           const rows = await p.trainerApplication.groupBy({
             by: ['status'], _count: true,
@@ -319,7 +319,7 @@ export class ReportsService {
       },
       {
         key: 'support-tickets', titleAr: 'تذاكر الدعم',
-        methodAr: 'التذاكر بالحالة والأولوية والتصنيف — المصدر: SupportTicket',
+        methodAr: 'تذاكر الدعم بالحالة والأولوية والتصنيف',
         run: async (f) => {
           const rows = await p.supportTicket.groupBy({
             by: ['status', 'priority', 'category'], _count: true,

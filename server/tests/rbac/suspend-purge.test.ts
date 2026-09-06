@@ -195,3 +195,46 @@ describe('الحذفُ النهائيّ', () => {
     expect(res.error?.code).toBe('self_purge')
   })
 })
+
+/* ═══ ورمزُ الحالة يقول ما قاله الجسم ═══
+
+   كانت هذه المساراتُ ترجع رفضَها بـ**٢٠٠** وجسمٍ فيه `error`: «لا حسابَ بهذا
+   المعرّف» و«لا تستطيع إيقافَ من فوقك» تصل كلُّها بحالةِ نجاح. فمن يفحص
+   `res.ok` — وهو الفحصُ الطبيعيُّ في `fetch` — يقرأ الرفضَ نجاحا، ويمضي
+   يعمل على ظنّ أنّ الحسابَ أُوقف. وشاشاتُنا نجت لأنّها تفحص `res.error`
+   بالاسم، وهو عقدٌ هشٌّ يخصّها ولا يُلزم غيرَها.
+
+   وقد ظهر هذا في تحقّقٍ بالمتصفّح لا في قراءةٍ: أرشفةُ معرّفٍ لا وجودَ له
+   ردّت ٢٠٠. */
+describe('رفضٌ برمزِ حالته لا بـ٢٠٠', () => {
+  it('المعرّفُ الذي لا وجودَ له ٤٠٤', async () => {
+    const ghost = '00000000-0000-4000-8000-000000000000'
+    for (const path of ['suspend', 'reinstate', 'archive', 'unarchive']) {
+      const res = await app.inject({
+        method: 'POST', url: `/api/admin/users/${ghost}/${path}`, headers: { cookie: superCookie },
+        payload: { reason: 'سببٌ مكتوبٌ يكفي طولا' },
+      })
+      expect(res.statusCode, path).toBe(404)
+      expect((res.json() as { error: { code: string } }).error.code).toBe('not_found')
+    }
+  })
+
+  it('ومن دون الرتبة ٤٠٣', async () => {
+    const res = await app.inject({ method: 'POST', url: `/api/admin/users/${superId}/suspend`, headers: { cookie: opsCookie } })
+    expect(res.statusCode).toBe(403)
+    expect((res.json() as { error: { code: string } }).error.code).toBe('rank_exceeded')
+  })
+
+  it('وما يمسّ حسابَ الفاعل نفسِه ٤٠٩', async () => {
+    const res = await app.inject({ method: 'POST', url: `/api/admin/users/${superId}/suspend`, headers: { cookie: superCookie } })
+    expect(res.statusCode).toBe(409)
+    expect((res.json() as { error: { code: string } }).error.code).toBe('self_suspend')
+  })
+
+  it('ورفعُ إيقافٍ عن حسابٍ نشطٍ ٤٠٩ — لا «تمّ» على لا شيء', async () => {
+    const id = await mkUser('status-contract')
+    const res = await app.inject({ method: 'POST', url: `/api/admin/users/${id}/reinstate`, headers: { cookie: superCookie } })
+    expect(res.statusCode).toBe(409)
+    expect((res.json() as { error: { code: string } }).error.code).toBe('not_suspended')
+  })
+})

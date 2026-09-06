@@ -28,12 +28,21 @@ interface Section {
 }
 
 /* شؤون الحساب لا تكون تبويبا في شريط التعلّم — مكانها قائمة الحساب أعلى
-   اليسار، كما في المنصّات التي يعرفها المتعلم. */
+   اليسار، كما في المنصّات التي يعرفها المتعلم.
+
+   ═══ وبابٌ واحدٌ للرسائل، باسمٍ يقول ما فيه ═══
+
+   كان هنا **صندوقان**: «صندوقي» يجمع التنبيهاتَ وتعليقاتِ المدرّب وملاحظاتِ
+   التسليم وردودَ الدعم، و«الإشعارات» تعرض التنبيهاتَ وحدَها — أي جزءا من
+   الأوّل. ومعهما جرسٌ في الشريط يعرضها ثالثةً. فثلاثةُ أبوابٍ لشيءٍ واحد،
+   واختيارُ البابِ صار قرارا على المتعلّم أن يتّخذه قبل أن يقرأ رسالة.
+
+   فبقي بابٌ واحد. وصفحةُ التنبيهات وحدَها باقيةٌ على مسارها — لا رابطَ
+   يُكسَر — ويقود إليها الجرسُ نفسُه. */
 const ACCOUNT_ITEMS: { to: string; label: string; icon: typeof LayoutDashboard }[] = [
   { to: "/student/account", label: "الملف الشخصي", icon: UserCircle },
   { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
-  { to: "/student/inbox", label: "صندوقي", icon: Inbox },
-  { to: "/student/notifications", label: "الإشعارات", icon: Bell },
+  { to: "/student/inbox", label: "الرسائل والتنبيهات", icon: Inbox },
   { to: "/student/support", label: "الدعم", icon: LifeBuoy },
 ]
 
@@ -108,7 +117,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   /* بوابة القفل لا تظهر قبل اكتمال فحص الجلسة — زائر الديمو يراها فورا، وصاحب الحساب لا يراها أبدا */
   if (!allowed && !sessionChecked) {
     return (
-      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-white">
+      <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-foreground">
         <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#38A7B4]" aria-label="يُحمَّل" />
       </div>
     );
@@ -122,11 +131,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
      ليس عطبا: حسابُه إداريّ بلا دور متعلّم، وهذا اختيارٌ مشروع. */
   if (sessionChecked && sessionUser && !sessionUser.permissions.includes("learner.portal")) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
-        <Lock className="h-12 w-12 text-white/25" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
+        <Lock className="h-12 w-12 text-muted-foreground/50" />
         <h1 className="mt-5 text-2xl font-black">هذا حسابٌ وظيفيّ — لا بوابة تعلّم له</h1>
-        <p className="mt-3 max-w-md text-center text-sm leading-7 text-white/60">
-          حسابك <span className="font-bold text-white/80">{sessionUser.email}</span> يحمل
+        <p className="mt-3 max-w-md text-center text-sm leading-7 text-muted-foreground">
+          حسابك <span className="font-bold text-foreground">{sessionUser.email}</span> يحمل
           {" "}{sessionUser.roles.length === 1 ? "دورا وظيفيّا" : "أدوارا وظيفيّة"} بلا دور «متعلّم»،
           وبوابة التعلّم تُفتح بذلك الدور. أضِفه للحساب من إدارة المستخدمين إن أردتَ أن
           تتعلّم به أيضا — أو ادخل ببوابتك الوظيفيّة.
@@ -135,7 +144,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           <Link to="/admin" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
             بوابتي الوظيفيّة
           </Link>
-          <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+          <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-foreground hover:border-white/40">
             الصفحة الرئيسة
           </Link>
         </div>
@@ -145,10 +154,10 @@ export default function PortalLayout({ children, title }: { children: React.Reac
 
   if (!allowed) {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
         <Lock className="h-12 w-12 text-[#FABC05]" />
         <h1 className="mt-5 text-2xl font-black">منصتك تُفتح بحسابك</h1>
-        <p className="mt-3 max-w-md text-center text-sm leading-7 text-white/60">
+        <p className="mt-3 max-w-md text-center text-sm leading-7 text-muted-foreground">
           سجّل دخولك إن كان لك حساب. وإن لم تكن سجّلت في شعبة بعد، فابدأ بالتشخيص
           ليُقترح عليك مسار، أو تصفّح الشعب المفتوحة واطلب التسجيل.
         </p>
@@ -156,7 +165,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
             تسجيل الدخول
           </Link>
-          <Link to="/diagnostic" className="rounded-full border border-white/15 px-6 py-3 font-bold text-white/80 hover:border-white/40">
+          <Link to="/diagnostic" className="rounded-full border border-white/15 px-6 py-3 font-bold text-foreground hover:border-white/40">
             ابدأ بالتشخيص
           </Link>
         </div>
@@ -183,7 +192,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
          مراحلَ واحد، وعملُ المرحلة أسفلَه، ومبدّلُ مساراتٍ عند تعدّدها. */
       items: [
         { to: "/student/learning", label: "رحلتي" },
-        { to: "/student/review", label: "مراجعتي" },
+        /* «مراجعتي» كانت اسمَ صفحةِ الاسترجاع المتباعد — و«مراجعة» في
+           المنصّة ثلاثةُ معانٍ: مراجعةُ المحتوى عند الموظّف، ومراجعةُ تعليقِ
+           التقييم، وهذه. والمتعلّمُ يقرؤها «ما سأراجعه» أو «رأيي»، لا
+           «تدريبا على التذكّر». فالاسمُ يقول الغرض. */
+        { to: "/student/review", label: "تثبيتُ ما تعلّمت" },
       ],
       /* صفحتا الوحدة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
       match: ["/student/learning", "/student/pathway", "/student/review", "/student/course", "/student/remeasure"],
@@ -191,11 +204,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     {
       id: "vault", label: "خزانتي", icon: Award, to: "/student/certificates",
       items: [
-        { to: "/student/vault", label: "نواتجي" },
+        /* «ناتج» مصطلحٌ داخليّ: مخرَجُ النشاطِ في الوحدة. والمتعلّمُ يسمّيه عملَه. */
+        { to: "/student/vault", label: "أعمالي" },
         { to: "/student/certificates", label: "شهاداتي" },
         { to: "/student/cv", label: "سيرتي" },
         { to: "/student/skills", label: "مهاراتي" },
-        { to: "/student/rate", label: "تقييمي" },
+        /* «تقييمي» كان يعني رأيَه في مدرّبه — و«تقييم» في المنصّة يعني أيضا
+           الواجبَ والاختبارَ والدرجة. فمن رآها بين «مهاراتي» و«شهاداتي»
+           قرأها «درجاتي». والاسمُ يقول من يُقيَّم. */
+        { to: "/student/rate", label: "رأيي في التدريب" },
       ],
       match: ["/student/vault", "/student/certificates", "/student/cv", "/student/skills", "/student/rate"],
     },
@@ -217,11 +234,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   const accountActive = ACCOUNT_ITEMS.some((a) => pathname.startsWith(a.to));
 
   return (
-    <div dir="rtl" className="min-h-screen bg-paper text-white">
+    <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
+          <Link to="/" className="flex shrink-0 items-center gap-2">
+            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">أكاديمية وجيز</span>
           </Link>
           <nav aria-label="أقسام المنصة" className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 md:flex">
@@ -231,7 +248,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 to={sec.to}
                 aria-current={activeSection?.id === sec.id ? "page" : undefined}
                 className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition ${
-                  activeSection?.id === sec.id ? "bg-teal text-on-teal" : "text-white/60 hover:text-white"
+                  activeSection?.id === sec.id ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <sec.icon className="h-3.5 w-3.5" />
@@ -239,17 +256,17 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2 text-xs text-white/55">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {/* جرس الإشعارات */}
             <div className="relative">
               <button
                 onClick={() => setBellOpen((v) => !v)}
                 aria-label="الإشعارات"
-                className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-white/10 text-white/45 transition hover:border-teal-light/50 hover:text-teal-light-ink"
+                className="relative grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-white/10 text-muted-foreground transition hover:border-teal-light/50 hover:text-teal-light-ink"
               >
                 <Bell className="h-3.5 w-3.5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-[9px] font-black text-on-gold">{unreadCount}</span>
+                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-micro font-black text-on-gold">{unreadCount}</span>
                 )}
               </button>
               {bellOpen && (
@@ -257,18 +274,18 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                   <div className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] rounded-2xl border border-white/10 bg-surface p-3 shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
-                      <p className="text-xs font-black text-white/80">الإشعارات</p>
-                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-[10px] font-bold text-teal-light-ink transition hover:text-white">
+                      <p className="text-xs font-black text-foreground">التنبيهات</p>
+                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink transition hover:text-foreground">
                         <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
                       </button>
                     </div>
                     <div className="max-h-72 space-y-1.5 overflow-y-auto">
                       {realNotifs ? (
                         <>
-                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-white/55">لا إشعارات بعد</p>}
+                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-[11px] text-muted-foreground">لا إشعارات بعد</p>}
                           {realNotifs.map((n) => (
                             <button key={n.id} onClick={() => markOneRead(n.id)}
-                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-[11px] leading-5 ${n.status === "read" ? "border-white/5 text-white/50" : "border-teal/25 bg-teal/5 text-white/75"}`}>
+                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-[11px] leading-5 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
                               <span className="block font-bold">{n.title}</span>
                               {n.body}
                             </button>
@@ -276,9 +293,18 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         </>
                       ) : (
                         /* تعذّر نداء الخادم — لا بديل محليّ يُعرض */
-                        <p className="px-2 py-6 text-center text-[11px] text-white/55">تعذّر جلب إشعاراتك الآن</p>
+                        <p className="px-2 py-6 text-center text-[11px] text-muted-foreground">تعذّر جلب إشعاراتك الآن</p>
                       )}
                     </div>
+                    {/* والجرسُ لا ينتهي عند ستّة: يقود إلى البابِ الواحد الذي
+                        يجمع التنبيهاتَ وتعليقاتِ المدرّب وردودَ الدعم. */}
+                    <Link
+                      to="/student/inbox"
+                      onClick={() => setBellOpen(false)}
+                      className="mt-2 block rounded-xl border border-white/10 px-3 py-2 text-center text-[11px] font-bold text-teal-light-ink transition hover:border-white/30"
+                    >
+                      افتح «الرسائل والتنبيهات»
+                    </Link>
                   </div>
                 </>
               )}
@@ -292,7 +318,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 aria-expanded={accountOpen}
                 aria-haspopup="menu"
                 className={`flex h-11 cursor-pointer items-center gap-2 rounded-full border px-3 text-xs font-bold transition ${
-                  accountActive || accountOpen ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-white/60 hover:border-white/25 hover:text-white"
+                  accountActive || accountOpen ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:border-white/25 hover:text-foreground"
                 }`}
               >
                 <span className="grid h-7 w-7 place-items-center rounded-full bg-teal/20 text-[11px] font-black text-teal-light-ink">
@@ -305,7 +331,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 <>
                   <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                   <div role="menu" className="absolute left-0 top-14 z-50 w-60 rounded-2xl border border-white/10 bg-surface p-2 shadow-2xl">
-                    <p className="px-3 pb-2 pt-1 text-[11px] text-white/45">{user}</p>
+                    <p className="px-3 pb-2 pt-1 text-[11px] text-muted-foreground">{user}</p>
                     {ACCOUNT_ITEMS.map((a) => (
                       <NavLink
                         key={a.to}
@@ -313,7 +339,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         onClick={() => setAccountOpen(false)}
                         className={({ isActive }) =>
                           `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold transition ${
-                            isActive ? "bg-teal/15 text-teal-light-ink" : "text-white/65 hover:bg-white/[0.04] hover:text-white"
+                            isActive ? "bg-teal/15 text-teal-light-ink" : "text-foreground hover:bg-white/[0.04] hover:text-foreground"
                           }`
                         }
                       >
@@ -325,7 +351,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                     <button
                       onClick={doSignOut}
                       disabled={signingOut}
-                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-white/65 transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
+                      className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
                     >
                       <LogOut className="h-4 w-4" />
                       {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}
@@ -358,7 +384,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 to={it.to}
                 className={({ isActive }) =>
                   `shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
-                    isActive ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-white/55 hover:border-white/30 hover:text-white"
+                    isActive ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:border-white/30 hover:text-foreground"
                   }`
                 }
               >
@@ -379,8 +405,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             key={sec.id}
             to={sec.to}
             aria-current={activeSection?.id === sec.id ? "page" : undefined}
-            className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
-              activeSection?.id === sec.id ? "text-teal-light-ink" : "text-white/50"
+            className={`flex flex-col items-center gap-1 py-2.5 text-micro font-bold transition ${
+              activeSection?.id === sec.id ? "text-teal-light-ink" : "text-muted-foreground"
             }`}
           >
             <sec.icon className="h-5 w-5" />
@@ -390,8 +416,8 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <button
           onClick={() => setAccountOpen(true)}
           aria-expanded={accountOpen}
-          className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-[10px] font-bold transition ${
-            accountActive ? "text-teal-light-ink" : "text-white/50"
+          className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-micro font-bold transition ${
+            accountActive ? "text-teal-light-ink" : "text-muted-foreground"
           }`}
         >
           <UserCircle className="h-5 w-5" />
@@ -402,11 +428,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       {/* ورقة الحساب للجوال — نفس عناصر قائمة سطح المكتب */}
       {accountOpen && (
         <>
-          <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-50 cursor-default bg-black/60 backdrop-blur-sm md:hidden" />
+          <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-50 cursor-default bg-paper/60 backdrop-blur-sm md:hidden" />
           <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-black">{user}</p>
-              <button onClick={() => setAccountOpen(false)} aria-label="إغلاق" className="cursor-pointer text-white/50 hover:text-white"><X className="h-5 w-5" /></button>
+              <button onClick={() => setAccountOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-1.5">
               {ACCOUNT_ITEMS.map((a) => (
@@ -416,7 +442,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   onClick={() => setAccountOpen(false)}
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
-                      isActive ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-white/70 hover:border-white/25"
+                      isActive ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-foreground hover:border-white/25"
                     }`
                   }
                 >
@@ -427,7 +453,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               <button
                 onClick={doSignOut}
                 disabled={signingOut}
-                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-bold text-white/70 transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-60"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-bold text-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-60"
               >
                 <LogOut className="h-4 w-4" />
                 {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}

@@ -69,10 +69,14 @@ beforeAll(async () => {
   prisma = await testPrisma()
   /* قناة بريدٍ مفعّلةٌ بمضيفٍ لا يستجيب — فتبقى بوّابةُ التحقّق قائمةً كما
      صُمّمت (قناةٌ غيرُ مفعّلة تتحقّق تلقائيا فيسقط مسار `verifyEmail`). */
+  /* إعدادُ Resend لا SMTP: انتقل الإرسالُ إلى Resend، فبقاءُ `host`/`port` هنا
+     يجعل القناةَ تُقرأ «غير مهيّأة» لا «مفعّلةً تخفق». والوجهةُ الميّتة تأتي من
+     `RESEND_BASE_URL` فلا يخرج الفحصُ إلى الشبكة. */
+  process.env.RESEND_BASE_URL = 'http://127.0.0.1:1'
   await prisma.integrationSetting.upsert({
     where: { provider: 'email' },
-    update: { enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
-    create: { provider: 'email', enabled: true, config: { host: '127.0.0.1', port: 1, secure: false, fromEmail: 'no-reply@test.local' } },
+    update: { enabled: true, config: { apiKey: 're_test_key', fromName: 'أكاديمية وجيز', fromEmail: 'no-reply@test.local' } },
+    create: { provider: 'email', enabled: true, config: { apiKey: 're_test_key', fromName: 'أكاديمية وجيز', fromEmail: 'no-reply@test.local' } },
   })
   auth = new AuthService(prisma)
   cohorts = new CohortService(prisma)

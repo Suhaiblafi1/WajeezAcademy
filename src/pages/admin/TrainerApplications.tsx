@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast, toastError } from "@/components/Toast";
 import {
   CalendarCheck, CheckCircle2, ChevronLeft, ClipboardList, FileText, KeyRound,
   Loader2, MailCheck, RefreshCw, ServerOff, Star, UserPlus, XCircle,
@@ -16,6 +17,8 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts, type TrainerSummary } from "./TrainerOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import { fmtDateTime } from "@/application/text/format-ar";
+import ConfirmAction from "@/components/ConfirmAction";
+import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
@@ -44,7 +47,16 @@ const RUBRIC_AXES: { key: string; label: string }[] = [
    لا يُجمَّع، ولو جُمّع لصار الاعتمادُ ختما لا مراجعة. */
 const BULK_ACTIONS = ["move_to_review", "waitlist", "reject"];
 
+/* القراران اللذان يُتَّخذان فعلا — وما عداهما توثيقٌ اختياريّ.
+
+   كان الاعتمادُ ثمانَ نقراتٍ لا تُتّخذ إلا بالترتيب، وكلُّ واحدةٍ تُنسى.
+   وبقرار صاحب المنصّة صار الاعتمادُ نقرةً واحدةً من أيّ حالة، وما عداه
+   يجري خارج المنصّة. فهذان بارزان، والسلسلةُ التفصيليّةُ خلف مطويّة —
+   لم يُحذف منها زرّ. */
+const PRIMARY_ACTIONS = ["approve", "reject"];
+
 const DECISIONS: { action: string; label: string; from: string[]; tone: "main" | "warn" | "danger" }[] = [
+  { action: "approve", label: "اعتمِدْه مدرّبا — بنقرة", from: [...ONE_CLICK_APPROVABLE_STATUSES], tone: "main" },
   { action: "move_to_review", label: "بدء المراجعة", from: ["submitted", "waitlisted"], tone: "main" },
   { action: "request_info", label: "اطلب معلومات إضافية", from: ["under_review"], tone: "warn" },
   { action: "shortlist", label: "اختصار أولي", from: ["under_review"], tone: "main" },
@@ -103,15 +115,15 @@ interface AppDetail extends Record<string, unknown> {
 function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
   if (!summary) {
     return (
-      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-xs leading-6 text-white/50">
+      <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 text-xs leading-6 text-muted-foreground">
         لا ملفَّ مدرّبٍ بعد — الملفُّ يُنشأ مع «القبول المشروط»، وقبله لا دورات ولا شعب.
       </article>
     );
   }
   const stat = (label: string, value: string) => (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-3.5">
-      <p className="text-[10.5px] font-bold text-white/45">{label}</p>
-      <p className="mt-1 text-lg font-black tabular-nums text-white">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-paper/20 p-3.5">
+      <p className="text-micro font-bold text-muted-foreground">{label}</p>
+      <p className="mt-1 text-lg font-black tabular-nums text-foreground">{value}</p>
     </div>
   );
   return (
@@ -140,7 +152,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
       <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
         <h4 className="text-sm font-black">الدورات المؤهَّل لها</h4>
         {summary.qualifiedCourses.length === 0 ? (
-          <p className="mt-3 text-xs leading-6 text-white/50">
+          <p className="mt-3 text-xs leading-6 text-muted-foreground">
             لا دورة بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها، وموافقةُ المدير الأكاديميّ
             تؤهّله وتُسنده في فعلٍ واحد.
           </p>
@@ -165,18 +177,18 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
         {/* «المُسنَدُ له فعليّا» يُقرأ من كائن الشعبة لا من ملفّ المدرّب:
             مصدرُ الإسناد هناك، وقراءتُه من هنا تُنشئ مصدرا ثانيا يشيخ. */}
         {summary.cohorts.length === 0 ? (
-          <p className="mt-3 text-xs text-white/50">لا شعبة مُسنَدة إليه الآن.</p>
+          <p className="mt-3 text-xs text-muted-foreground">لا شعبة مُسنَدة إليه الآن.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {summary.cohorts.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-black/20 px-3.5 py-2.5">
+              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-paper/20 px-3.5 py-2.5">
                 <span className="min-w-0">
-                  <span className="block text-[12px] font-bold text-white/85">{c.title}</span>
-                  <span className="text-[10.5px] text-white/45">
+                  <span className="block text-[12px] font-bold text-foreground">{c.title}</span>
+                  <span className="text-micro text-muted-foreground">
                     {c.courseTitle} · {c.role === "lead" ? "رئيسي" : "مساعد"} · {c.enrolled} متعلّم
                   </span>
                 </span>
-                <span className="shrink-0 text-[10.5px] text-white/40">
+                <span className="shrink-0 text-micro text-muted-foreground">
                   {c.startsAt ? fmtDateTime(new Date(c.startsAt)) : "بلا موعد"}
                 </span>
               </li>
@@ -198,13 +210,14 @@ export default function TrainerApplications() {
      على صفٍّ غاب عن العين بلا علمِ صاحب القرار. */
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [bulkProgress, setBulkProgress] = useState("");
+  /* رفضٌ أو انتظارٌ على دفعةٍ: كلاهما يصل صاحبَ الطلب، فسببُه يُكتب أوّلا */
+  const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [selected, setSelected] = useState<AppDetail | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
-  const [flash, setFlash] = useState("");
   const [purging, setPurging] = useState(false);
   const [purgeReason, setPurgeReason] = useState("");
   const [tab, setTab] = useState<DetailTab>("dossier");
@@ -236,20 +249,20 @@ export default function TrainerApplications() {
       setSelected(detail);
       setScores({}); setNote("");
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر فتح الطلب");
+      toastError(err instanceof ApiError ? err.message : "تعذر فتح الطلب");
     }
   };
 
   const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
     if (busy) return;
-    setBusy(true); setFlash("");
+    setBusy(true);
     try {
       await fn();
-      setFlash(doneMsg);
+      toast(doneMsg);
       if (selected) await openDetail(selected.id);
       await load();
     } catch (err) {
-      setFlash(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+      toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
     } finally {
       setBusy(false);
     }
@@ -272,25 +285,20 @@ export default function TrainerApplications() {
   const commonActions = selectedRows.length === 0 ? [] :
     DECISIONS.filter((d) => BULK_ACTIONS.includes(d.action) && selectedRows.every((a) => d.from.includes(a.status)));
 
-  const bulkDecide = async (action: string, labelAr: string) => {
+  /* السببُ يأتي من نافذة التأكيد لا من حوار متصفّح — و**لا يُقرأ من حالة
+     الصفحة**: `note` أعلاه هو نصُّ مراجعةِ طلبٍ واحدٍ في نموذجٍ آخر، وخلطُه
+     بالقرار الجماعيّ يُرسل ملاحظةَ مراجعٍ إلى عشراتٍ لم تُكتب لهم. */
+  const bulkDecide = async (action: string, labelAr: string, decisionNote?: string) => {
     if (busy || sel.size === 0) return;
-    /* الرفضُ يحتاج سببا يُكتب في الأثر ويصل صاحبَ الطلب — ولا يُجمَّع بلا سبب */
-    let note: string | undefined;
-    if (action === "reject" || action === "waitlist") {
-      const typed = window.prompt(`سببُ «${labelAr}» على ${sel.size} طلبا (يصل صاحبَ الطلب):`);
-      if (typed === null) return;
-      if (typed.trim().length < 5) { setFlash("السببُ أقصرُ من أن يُفهم — اكتب خمسةَ أحرفٍ فأكثر."); return; }
-      note = typed.trim();
-    }
-    setBusy(true); setFlash(""); setBulkProgress("");
+    setBusy(true); setBulkProgress("");
     const outcome = await runBulk(
       [...sel],
-      (id) => apiPost(`/api/admin/trainer-applications/${id}/decision`, { action, note }),
+      (id) => apiPost(`/api/admin/trainer-applications/${id}/decision`, { action, note: decisionNote }),
       (done, total) => setBulkProgress(`${done} من ${total}`),
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    setFlash(bulkMessage(outcome, `نُفّذ «${labelAr}»`));
+    toast(bulkMessage(outcome, `نُفّذ «${labelAr}»`));
     setBusy(false);
     await load();
   };
@@ -299,10 +307,10 @@ export default function TrainerApplications() {
     return (
       <AdminLayout title="طلبات انضمام المدربين">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -314,6 +322,25 @@ export default function TrainerApplications() {
   if (selected) {
     const a = selected;
     const available = DECISIONS.filter((d) => d.from.includes(a.status));
+    const primary = available.filter((d) => PRIMARY_ACTIONS.includes(d.action));
+    const detailed = available.filter((d) => !PRIMARY_ACTIONS.includes(d.action));
+    const decisionButton = (d: (typeof DECISIONS)[number]) => (
+      <button
+        key={d.action} disabled={busy}
+        onClick={() => void act(
+          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: note || undefined }),
+          "نُفذ القرار وسُجل في الأثر",
+        )}
+        className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full py-2.5 text-xs font-black transition disabled:opacity-40 ${
+          d.tone === "main" ? "bg-gold text-on-gold hover:bg-gold/90"
+            : d.tone === "warn" ? "border border-gold/50 text-gold-ink hover:bg-gold/10"
+            : "border border-white/15 text-muted-foreground hover:border-red-400/40 hover:text-red-300"
+        }`}
+      >
+        {d.tone === "danger" ? <XCircle className="h-3.5 w-3.5" /> : d.action === "request_demo" ? <CalendarCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+        {d.label}
+      </button>
+    );
     const rubricComplete = RUBRIC_AXES.every((x) => scores[x.key] >= 1);
     return (
       <AdminLayout title={`الطلب ${a.reference}`}>
@@ -321,7 +348,6 @@ export default function TrainerApplications() {
           <ChevronLeft className="h-4 w-4" /> كل الطلبات
         </button>
 
-        {flash && <p className="mb-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-xs font-bold text-white/80" role="status">{flash}</p>}
 
         {/* ── الحذف النهائيّ ──
 
@@ -332,7 +358,7 @@ export default function TrainerApplications() {
           && ["draft", "email_verification_pending", "rejected", "withdrawn"].includes(a.status) && (
           <details className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/[0.05] p-4">
             <summary className="cursor-pointer text-xs font-black text-red-300">حذفٌ نهائيّ لهذا الطلب</summary>
-            <p className="mt-2 text-[11.5px] leading-6 text-white/65">
+            <p className="mt-2 text-[11.5px] leading-6 text-foreground">
               يُحذف الطلبُ ومستنداتُه ومراجعاتُه ولا يُستردّ. ويبقى أثرُ الحذف في سجلّ
               التدقيق: من حذف، ومتى، ولماذا. ولا يُحذف طلبُ من صار مدرّبا.
             </p>
@@ -342,7 +368,7 @@ export default function TrainerApplications() {
                 onChange={(e) => setPurgeReason(e.target.value)}
                 placeholder="سبب الحذف (مطلوب)"
                 aria-label="سبب الحذف النهائي"
-                className="min-w-[18rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-white/30 focus:border-red-500/50"
+                className="min-w-[18rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-red-500/50"
               />
               <button
                 type="button"
@@ -353,10 +379,10 @@ export default function TrainerApplications() {
                     await apiDelete(`/api/admin/trainer-applications/${encodeURIComponent(a.reference)}`, { reasonAr: purgeReason.trim() });
                     setPurgeReason("");
                     setSelected(null);
-                    setFlash(`حُذف الطلب ${a.reference} نهائيّا.`);
+                    toast(`حُذف الطلب ${a.reference} نهائيّا.`);
                     await load();
                   } catch (e) {
-                    setFlash(e instanceof ApiError ? e.message : "تعذّر الحذف");
+                    toastError(e instanceof ApiError ? e.message : "تعذّر الحذف");
                   } finally {
                     setPurging(false);
                   }
@@ -387,7 +413,7 @@ export default function TrainerApplications() {
                   aria-selected={tab === key}
                   onClick={() => setTab(key)}
                   className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${
-                    tab === key ? "bg-gold text-on-gold" : "border border-white/12 text-white/55 hover:border-white/30 hover:text-white/80"
+                    tab === key ? "bg-gold text-on-gold" : "border border-white/12 text-muted-foreground hover:border-white/30 hover:text-foreground"
                   }`}
                 >
                   {label}
@@ -403,7 +429,7 @@ export default function TrainerApplications() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-black">{a.fullName}</h3>
-                  <p className="mt-1 text-xs text-white/50">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {a.jobTitle ?? "—"} · {a.country ?? "—"}
                     {(() => {
                       const labels: Record<string, string> = { employed: "موظف", own_business: "عمل خاص", full_time_training: "متفرغ للتدريب" };
@@ -411,16 +437,16 @@ export default function TrainerApplications() {
                       return emp ? ` · ${emp}` : "";
                     })()}
                   </p>
-                  <p className="mt-1 text-[11px] text-white/50" dir="ltr">{a.email}</p>
+                  <p className="mt-1 text-[11px] text-muted-foreground" dir="ltr">{a.email}</p>
                 </div>
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
               </div>
-              {a.bio && <p className="mt-4 text-xs leading-6 text-white/65">{a.bio}</p>}
+              {a.bio && <p className="mt-4 text-xs leading-6 text-foreground">{a.bio}</p>}
               {a.motivation && (
-                <p className="mt-3 rounded-xl border border-white/5 bg-black/20 p-3 text-xs leading-6 text-white/65">
-                  <span className="font-bold text-white/50">لماذا وجيز؟ </span>{a.motivation}
+                <p className="mt-3 rounded-xl border border-white/5 bg-paper/20 p-3 text-xs leading-6 text-foreground">
+                  <span className="font-bold text-muted-foreground">لماذا وجيز؟ </span>{a.motivation}
                 </p>
               )}
 
@@ -439,16 +465,16 @@ export default function TrainerApplications() {
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-6">
               <h4 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
               {a.documents.length === 0 ? (
-                <p className="mt-3 text-xs text-white/45">لم يرفع المرشح وثائق بعد.</p>
+                <p className="mt-3 text-xs text-muted-foreground">لم يرفع المرشح وثائق بعد.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {a.documents.map((d) => (
                     <li key={d.id}>
                       <a href={a.documentUrls[d.storageKey]} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/75 transition hover:border-teal/40">
+                        className="flex items-center gap-2 rounded-xl border border-white/10 bg-paper/20 p-3 text-xs text-foreground transition hover:border-teal/40">
                         <FileText className="h-4 w-4 text-teal-light-ink" />
                         <span className="font-bold">{d.kind}</span>
-                        <span dir="ltr" className="text-white/45">{d.originalName}</span>
+                        <span dir="ltr" className="text-muted-foreground">{d.originalName}</span>
                       </a>
                     </li>
                   ))}
@@ -461,11 +487,11 @@ export default function TrainerApplications() {
               <h4 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-[11px] text-white/55">
+                  <li key={i} className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
-                    <b className="text-white/80">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
+                    <b className="text-foreground">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
                     {h.note && <span>— {h.note}</span>}
-                    <span className="mr-auto text-white/30">{fmtDateTime(new Date(h.createdAt))}</span>
+                    <span className="mr-auto text-muted-foreground/50">{fmtDateTime(new Date(h.createdAt))}</span>
                   </li>
                 ))}
               </ol>
@@ -484,14 +510,14 @@ export default function TrainerApplications() {
               <div className="mt-3 space-y-2">
                 {RUBRIC_AXES.map((x) => (
                   <div key={x.key} className="flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-white/60">{x.label}</span>
+                    <span className="text-[11px] text-muted-foreground">{x.label}</span>
                     <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
                       {[1, 2, 3, 4, 5].map((v) => (
                         <button
                           key={v} type="button" onClick={() => setScores({ ...scores, [x.key]: v })}
                           aria-pressed={scores[x.key] === v}
                           className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border text-[11px] font-bold transition ${
-                            scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-white/50 hover:border-white/40"
+                            scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-muted-foreground hover:border-white/40"
                           }`}
                         >
                           {v}
@@ -504,7 +530,7 @@ export default function TrainerApplications() {
               <textarea
                 value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="ملاحظة المراجع…"
                 aria-label="ملاحظة المراجع"
-                className="mt-3 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white placeholder:text-white/30 focus:border-teal focus:outline-none"
+                className="mt-3 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
               />
               <button
                 disabled={!rubricComplete || busy}
@@ -513,35 +539,39 @@ export default function TrainerApplications() {
               >
                 <Star className="h-3.5 w-3.5" /> سجّل التقييم
               </button>
-              <p className="mt-2 text-center text-[10px] text-white/50">{a.reviews.length} تقييم مسجل</p>
+              <p className="mt-2 text-center text-micro text-muted-foreground">{a.reviews.length} تقييم مسجل</p>
             </article>
 
             <article className="rounded-3xl border border-white/10 bg-white/[0.03] p-5">
               <h4 className="text-sm font-black">القرار — بشري بالكامل</h4>
               <div className="mt-3 space-y-2">
-                {available.length === 0 && <p className="text-xs text-white/45">لا إجراءات متاحة في هذه الحالة.</p>}
-                {available.map((d) => (
-                  <button
-                    key={d.action} disabled={busy}
-                    onClick={() => void act(
-                      () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: note || undefined }),
-                      "نُفذ القرار وسُجل في الأثر",
-                    )}
-                    className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full py-2.5 text-xs font-black transition disabled:opacity-40 ${
-                      d.tone === "main" ? "bg-gold text-on-gold hover:bg-gold/90"
-                        : d.tone === "warn" ? "border border-gold/50 text-gold-ink hover:bg-gold/10"
-                        : "border border-white/15 text-white/55 hover:border-red-400/40 hover:text-red-300"
-                    }`}
-                  >
-                    {d.tone === "danger" ? <XCircle className="h-3.5 w-3.5" /> : d.action === "request_demo" ? <CalendarCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    {d.label}
-                  </button>
-                ))}
+                {available.length === 0 && <p className="text-xs text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</p>}
+                {primary.map((d) => decisionButton(d))}
+                {primary.some((d) => d.action === "approve") && (
+                  <p className="pt-0.5 text-center text-micro leading-5 text-muted-foreground">
+                    الاعتمادُ ينشئ ملفَّه، ويفتح بوّابتَه بحسابه نفسِه، ويُعلمه بالبريد.
+                  </p>
+                )}
               </div>
+
+              {/* السلسلةُ التفصيليّة — لمن أراد توثيقَ مقابلةٍ أو عقد.
+                  مطويّةٌ لا محذوفة: الطلباتُ العالقةُ في منتصفها تُكمَل منها. */}
+              {detailed.length > 0 && (
+                <details className="mt-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3">
+                  <summary className="cursor-pointer text-[11.5px] font-black text-muted-foreground">
+                    خطواتٌ تفصيليّة ({detailed.length}) — اختياريّة
+                  </summary>
+                  <p className="mt-2 text-micro leading-5 text-muted-foreground">
+                    لا يلزم شيءٌ منها للاعتماد. تُستعمل حين تريد أن يبقى أثرُ المقابلة
+                    أو الدرس التجريبيّ أو العقد في سجلّ الطلب.
+                  </p>
+                  <div className="mt-3 space-y-2">{detailed.map((d) => decisionButton(d))}</div>
+                </details>
+              )}
 
               {/* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه — فلا زرَّ دعوةٍ له */}
               {a.status === "onboarding" && !a.profile?.userId && a.userId && (
-                <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.05] p-3 text-[11px] leading-6 text-white/65">
+                <p className="mt-3 rounded-xl border border-teal/30 bg-teal/[0.05] p-3 text-[11px] leading-6 text-foreground">
                   للمتقدّم حسابٌ منذ تقديمه — «فعّله مدرّبا نشطا» يربط حسابه بملفّه ويفتح له بوّابة المدربين مباشرة.
                 </p>
               )}
@@ -572,10 +602,10 @@ export default function TrainerApplications() {
                         ? "قناة البريد غير مفعّلة — سلّم هذا الرابط للمدرب بنفسك"
                         : "تعذّر إرسال البريد — سلّم هذا الرابط للمدرب بنفسك"}
                   </p>
-                  <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-black/40 p-2 font-mono text-[10.5px] text-white/75">
+                  <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-paper/40 p-2 font-mono text-micro text-foreground">
                     {invite.url}
                   </code>
-                  <p className="mt-1.5 text-[10.5px] text-white/45">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
+                  <p className="mt-1.5 text-micro text-muted-foreground">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
                 </div>
               )}
               {a.profile?.userId && (
@@ -604,7 +634,7 @@ export default function TrainerApplications() {
         <div className="flex rounded-full border border-white/15 p-1">
           {([["apps", "الطلبات"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
             <button key={k} onClick={() => setMode(k)}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-gold text-on-gold" : "text-white/60 hover:text-white"}`}>
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
               {label}
             </button>
           ))}
@@ -613,28 +643,27 @@ export default function TrainerApplications() {
           <>
             <select
               value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة"
-              className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white [&>option]:bg-surface"
+              className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground [&>option]:bg-surface"
             >
               <option value="">كل الحالات</option>
               {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40">
+            <button onClick={() => void load()} className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40">
               <RefreshCw className="h-3.5 w-3.5" /> تحديث
             </button>
           </>
         )}
-        {flash && <span className="text-xs font-bold text-teal-light-ink" role="status">{flash}</span>}
       </div>
 
       {mode === "changes" && <TrainerChangeRequests />}
       {mode === "payouts" && <TrainerPayouts />}
       {mode === "apps" && (loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : apps.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <UserPlus className="h-12 w-12 text-white/20" />
+          <UserPlus className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بهذه الحالة</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             طلبات نموذج «انضم مدربا» تصل هنا مباشرة عبر قاعدة البيانات فور إرسالها.
           </p>
         </div>
@@ -644,11 +673,14 @@ export default function TrainerApplications() {
             placeholder="ابحث باسمٍ أو بريدٍ أو رقمِ طلبٍ أو تخصّص…" />
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
             {commonActions.length === 0 ? (
-              <span className="text-[11px] text-white/55">
+              <span className="text-[11px] text-muted-foreground">
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
               </span>
             ) : commonActions.map((d) => (
-              <button key={d.action} onClick={() => void bulkDecide(d.action, d.label)}
+              <button key={d.action}
+                onClick={() => (d.action === "reject" || d.action === "waitlist"
+                  ? setBulkDecision({ action: d.action, labelAr: d.label })
+                  : void bulkDecide(d.action, d.label))}
                 className={`cursor-pointer rounded-full px-4 py-1.5 text-[11px] font-black transition ${
                   d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
                 }`}>
@@ -657,7 +689,7 @@ export default function TrainerApplications() {
             ))}
           </BulkBar>
           {view.total === 0 && (
-            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-white/45">
+            <p className="rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center text-sm text-muted-foreground">
               لا طلب يطابق «{q.trim()}».
             </p>
           )}
@@ -667,18 +699,22 @@ export default function TrainerApplications() {
             >
               {/* المربّعُ خارج الزرّ لا داخله: زرٌّ في زرّ لا يصحّ، ونقرةٌ
                   على التحديد كانت تفتح الملفّ. */}
-              <input type="checkbox" checked={sel.has(a.id)} onChange={() => toggleSel(a.id)}
-                aria-label={`حدّد طلب ${a.fullName}`} className="h-4 w-4 shrink-0 cursor-pointer accent-gold" />
+              {/* الوسمُ حولَه هو الهدف: مربّعٌ بستّةَ عشرَ بكسلا يُخطئه الإصبع،
+                  والوسمُ يمنحه ٣٢×٣٢ بلا أن يُكبَّر المربّعُ نفسُه. */}
+              <label className="grid h-8 w-8 shrink-0 cursor-pointer place-items-center">
+                <input type="checkbox" checked={sel.has(a.id)} onChange={() => toggleSel(a.id)}
+                  aria-label={`حدّد طلب ${a.fullName}`} className="h-4 w-4 shrink-0 cursor-pointer accent-gold" />
+              </label>
             <button
               onClick={() => void openDetail(a.id)}
               className="flex flex-1 cursor-pointer flex-wrap items-center justify-between gap-3 text-right"
             >
               <div>
-                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-[10px] text-white/50" dir="ltr">{a.reference}</span></p>
-                <p className="mt-1 text-xs text-white/50">
+                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-micro text-muted-foreground" dir="ltr">{a.reference}</span></p>
+                <p className="mt-1 text-xs text-muted-foreground">
                   {a.specialties.join(" · ") || "—"} · خبرة مجال {a.domainYears ?? "—"} · {a.jobTitle ?? "—"}
                 </p>
-                <p className="mt-1 text-[11px] text-white/50">
+                <p className="mt-1 text-[11px] text-muted-foreground">
                   {a.emailVerified ? "بريد متحقق ✓" : "بريد غير متحقق"} · {a.documentsCount} وثيقة · {a.reviewsCount} تقييم · {a.interviewsCount} مقابلة
                   {a.phase2Done ? " · أكمل المرحلة الثانية" : ""}
                 </p>
@@ -691,6 +727,23 @@ export default function TrainerApplications() {
           ))}
         </div>
       ))}
+
+      {bulkDecision && (
+        <ConfirmAction
+          titleAr={`«${bulkDecision.labelAr}» على ${sel.size} طلبَ انضمام`}
+          confirmLabelAr={`${bulkDecision.labelAr} — على ${sel.size}`}
+          busy={busy}
+          reason={{ labelAr: "السببُ — يصل صاحبَ كلّ طلبٍ كما تكتبه، ويبقى في الأثر", minLength: 5 }}
+          onCancel={() => setBulkDecision(null)}
+          onConfirm={(reason) => {
+            const target = bulkDecision;
+            setBulkDecision(null);
+            void bulkDecide(target.action, target.labelAr, reason);
+          }}
+        >
+          <p>يُطبَّق القرارُ على المحدَّد كلِّه، ويُخبَر أصحابُه. والسببُ واحدٌ للجميع — فاكتبه عامّا يصلح لكلّ من يقرؤه.</p>
+        </ConfirmAction>
+      )}
     </AdminLayout>
   );
 }

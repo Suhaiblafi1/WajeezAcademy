@@ -27,6 +27,10 @@ import { registerStaffTaskRoutes } from './routes/staff-tasks.routes'
 import { registerPublicCatalogRoutes } from './routes/public.routes'
 import { registerPathDraftRoutes } from './routes/path-drafts.routes'
 import { registerOperationsRoutes } from './routes/operations.routes'
+/* «العمليّات» كانت أربعةَ مجالاتٍ في ملفٍّ واحد — فُصلت بحسب المجال */
+import { registerAdvisorRoutes } from './routes/advisor.routes'
+import { registerCalendarRoutes } from './routes/calendar.routes'
+import { registerCommerceRoutes } from './routes/commerce.routes'
 import { registerSupportRoutes } from './routes/support.routes'
 import { registerRatingRoutes } from './routes/rating.routes'
 import { registerPlanRoutes } from './routes/plan.routes'
@@ -37,9 +41,48 @@ import { registerSearchRoutes } from './routes/search.routes'
 import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
+import { buildStamp, runtimeEnvLabel } from '../build-stamp'
 
 export async function buildApp(prisma: PrismaClient) {
-  const app = Fastify({ logger: false })
+  /* ── السجلّ ──
+     كان `logger: false`، فلا سطرَ واحدَ عن أيّ طلب: لا رمزَ حالة، ولا مسارا،
+     ولا زمنا. وحين وُصف «الدخول بطيء ويتعطّل أحيانا» لم يكن في اليد ما يُقرأ،
+     فشُخِّص بقراءة الشيفرة لا بقياس. والاختبارُ وحده يبقى صامتا: ٦١٢ اختبارا
+     تطبع سجلَّ كلِّ طلبٍ تجعل الإخفاقَ الحقيقيّ لا يُرى.
+
+     والتنقيةُ صريحة: الكعكةُ تحمل رمزَ الجلسة، والترويسةُ قد تحمل توقيعَ
+     سترايب — وسجلٌّ يحفظ رمزَ جلسةٍ صالحة هو مفتاحُ حسابٍ في ملفّ نصّيّ. */
+  const quietLogs = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
+  const app = Fastify({
+    /* ═══ عنوانُ العميل الحقيقيّ (المهمّة ١٧) ═══
+       كلُّ سقفٍ في هذا الملفّ وفي خدمة المصادقة مفتاحُه «الشبكة»، و`request.ip`
+       بلا هذا الإعداد هو **عنوانُ المقبس** لا عنوانُ الزائر. والخادمُ لا يُرى
+       من الإنترنت مباشرةً في أيّ بيئة: على Vercel دالّةٌ خلف وسيطها
+       (`vercel-handler.ts` يُمرّر الطلبَ إلى Fastify)، وعلى Hetzner خادمٌ خلف
+       Caddy. فكان عنوانُ الوسيط هو المفتاحَ **لكلّ الزوّار معا**: سقفُ الدخول
+       (١٠ لكلّ ٥ دقائق) دلوٌ واحدٌ للعالم كلِّه، لا لكلّ شبكة.
+
+       و`1` تعني ثقةً بوسيطٍ واحدٍ فقط: يُقرأ العنوانُ الذي رآه الوسيطُ الموثوق،
+       فما يُلصقه الزائرُ في `X-Forwarded-For` يبقى إلى يساره ولا يصير مفتاحَه.
+       **وشرطُ صحّته أن لا يُنشَر منفذُ الخادم مكشوفا** — يُربَط على 127.0.0.1
+       ويُقدَّم من Caddy (مذكورٌ في خطّة النقل، المهمّة ٤٧). */
+    trustProxy: 1,
+    logger: quietLogs
+      ? false
+      : {
+          level: process.env.LOG_LEVEL ?? 'info',
+          redact: {
+            paths: [
+              'req.headers.cookie',
+              'req.headers.authorization',
+              'req.headers["stripe-signature"]',
+              'req.headers["x-zm-signature"]',
+              'res.headers["set-cookie"]',
+            ],
+            censor: '[محذوف]',
+          },
+        },
+  })
   const auth = new AuthService(prisma)
 
   /* الجسم الخام محفوظا مع الجسم المحلَّل — لتوقيع webhook الدفع.
@@ -86,7 +129,13 @@ export async function buildApp(prisma: PrismaClient) {
   /* تحديد معدل الطلبات — سقف عام لكل IP (يُسترخى في بيئة الاختبار الآلية فقط)،
      وتُشدَّد نقاط الهوية في مساراتها (10/5د للدخول والتسجيل، 5/15د للاستعادة) */
   const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
-  await app.register(rateLimit, { max: isTestEnv ? 100_000 : 300, timeWindow: '1 minute' })
+  /* السقفُ العامّ قابلٌ للضبط من البيئة (`RATE_LIMIT_MAX`) — لا لتعطيله بل
+     لأنّ ٣٠٠ طلبٍ في الدقيقة **لكلّ عنوان IP** رقمٌ يبلغه مكتبٌ خلف عنوانٍ
+     واحد في أوّل دقيقةٍ من جلسةٍ حيّة: ثلاثون متعلّما × عشرةُ نداءاتٍ لكلّ
+     صفحة. وحين يُرفض `/api/auth/me` يرى المستخدمُ «تعذّر التحقّق من
+     صلاحيّاتك» لا «أعد المحاولة» — فالمشغّلُ يحتاج مقبضا لا نشرَ شيفرة. */
+  const rateMax = Number(process.env.RATE_LIMIT_MAX) || 300
+  await app.register(rateLimit, { max: isTestEnv ? 100_000 : rateMax, timeWindow: '1 minute' })
   await app.register(swagger, {
     openapi: {
       info: {
@@ -96,7 +145,18 @@ export async function buildApp(prisma: PrismaClient) {
       },
     },
   })
-  await app.register(swaggerUi, { routePrefix: '/docs' })
+  /* واجهةُ التوثيق التفاعليّة — لا تُنشر للعموم.
+
+     كانت `/docs` مفتوحةً على الإنتاج تعرض سطحَ الواجهة كاملا: ٢٩٨ مسارا
+     بمعاملاتها وأشكال أجسامها، أي خريطةً جاهزةً لمن يبحث عن مدخل. والمخطَّطُ
+     نفسُه يبقى مولَّدا (يستفيد منه التوليدُ والاختبار)، والمحجوبُ هو الصفحة.
+
+     وتُفتَح عند الحاجة بـ`ENABLE_API_DOCS=true` — فحين يحتاجها مطوّرٌ على
+     الإنتاج تُفتَح بمتغيّرٍ ثمّ تُغلَق، لا بنشر شيفرة. */
+  const docsOpen = process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'true'
+  if (docsOpen) {
+    await app.register(swaggerUi, { routePrefix: '/docs' })
+  }
 
   app.setErrorHandler(errorHandler)
   registerAuth(app, auth)
@@ -107,17 +167,24 @@ export async function buildApp(prisma: PrismaClient) {
   })
 
   /* «كيف أعرف أن المنشور هو آخر نسخة؟» — سؤال كان جوابه تنقّلا بين لوحة
-     Vercel وGitHub ومقارنة بصمات بالعين. وهو سؤال يتكرر بعد كل دفعة.
+     المزوّد وGitHub ومقارنة بصمات بالعين. وهو سؤال يتكرر بعد كل دفعة.
 
      العنوان الواحد يجيبه: الالتزام الذي بُني منه الكود العامل، واللقطة التي
      يقرأها المحرك، وهل هما من نفس الالتزام. والمقارنة ممكنة أصلا لأن تسمية
      اللقطة الآلية تحمل بصمة التزامها (auto-<sha7>-<hash6>) — فالخادم يقارن
      نفسه بنفسه بلا مصدر خارجي.
 
+     ⚠ وكان يقرأ `VERCEL_GIT_COMMIT_SHA` مباشرة. فلمّا انتقلت المنصّة إلى
+     Cloudways لم يعد للمتغيّر وجود، فردّ على الإنتاج الحيّ: «الالتزام: null ·
+     البيئة: محلية» — وامتنع عن الحكم امتناعا صحيحا عن **سؤال صار أعمى**.
+     فصار مصدر البصمة `server/build-stamp.ts`: بيئةُ المضيف بأيّ اسم أعلنها،
+     وإلا فختمٌ يُكتب وقت البناء. ووقتُ البناء يُعرض معها، لأنه يفضح نشرةً لم
+     تصل ولو بقي الالتزام مجهولا.
+
      ولا يكشف شيئا ليس معلنا: بصمة التزام في مستودع، وتسمية لقطة منشورة. */
   app.get('/api/version', { schema: { tags: ['system'], summary: 'النسخة العاملة واللقطة المنشورة — هل هما من نفس الالتزام؟' } }, async () => {
-    const sha = process.env.VERCEL_GIT_COMMIT_SHA ?? null
-    const sha7 = sha ? sha.slice(0, 7) : null
+    const stamp = buildStamp()
+    const sha7 = stamp.commit ? stamp.commit.slice(0, 7) : null
     const { getActiveSnapshot } = await import('../catalog/snapshot-builder')
     const active = await getActiveSnapshot(prisma)
     const payload = active?.payload as
@@ -137,9 +204,11 @@ export async function buildApp(prisma: PrismaClient) {
     return {
       الكود: {
         الالتزام: sha7,
-        الفرع: process.env.VERCEL_GIT_COMMIT_REF ?? null,
-        رسالة_الالتزام: process.env.VERCEL_GIT_COMMIT_MESSAGE?.split('\n')[0] ?? null,
-        البيئة: process.env.VERCEL_ENV ?? 'محلية',
+        الفرع: stamp.ref,
+        رسالة_الالتزام: stamp.message,
+        البيئة: runtimeEnvLabel(),
+        وقت_البناء: stamp.builtAt,
+        مصدر_البصمة: stamp.source,
       },
       اللقطة_المنشورة: {
         التسمية: active?.label ?? null,
@@ -155,7 +224,9 @@ export async function buildApp(prisma: PrismaClient) {
          ولا يملك هذا المسار تاريخ الالتزامين ليرتّبهما، فيصف ما يراه ولا يخمّن. */
       متطابقان:
         inSync === null
-          ? 'لا يمكن الحكم — لقطة يدوية أو تشغيل محلي'
+          ? sha7
+            ? 'لا يمكن الحكم — اللقطة نُشرت بلا بصمة التزام (نشر يدوي أو بناء لا يعرف التزامه)'
+            : 'لا يمكن الحكم — البناء العامل بلا ختم التزام؛ انظر «وقت_البناء» وراجع خطوة ختم البناء في سكربت النشر'
           : inSync
             ? 'نعم — الكود واللقطة من نفس الالتزام'
             : 'لا — الكود واللقطة من التزامين مختلفين؛ الأرجح أن نشرا جاريا لم يكتمل بعد',
@@ -179,6 +250,9 @@ export async function buildApp(prisma: PrismaClient) {
   registerPublicCatalogRoutes(app, prisma)
   registerPathDraftRoutes(app, prisma)
   registerOperationsRoutes(app, prisma)
+  registerAdvisorRoutes(app, prisma)
+  registerCalendarRoutes(app, prisma)
+  registerCommerceRoutes(app, prisma)
   registerSupportRoutes(app, prisma)
   registerRatingRoutes(app, prisma)
   registerPlanRoutes(app, prisma)

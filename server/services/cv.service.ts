@@ -5,7 +5,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
+import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
 
 const MAX_CV_BYTES = 10 * 1024 * 1024 // 10MB
 const ALLOWED_MIMES = new Set([
@@ -29,6 +29,7 @@ export class CvService {
     if (!input.consent) {
       throw new AuthError('consent_required', 'رفع السيرة يتطلب موافقتك الصريحة على مشاركتها مع فريق وجيز')
     }
+    assertFileUploadsEnabled('سلّم سيرتك لمستشارك في جلستكم، أو تواصل مع الأكاديمية.')
     if (!ALLOWED_MIMES.has(input.mime)) {
       throw new AuthError('bad_type', 'صيغة غير مدعومة — المقبول: PDF أو Word أو صورة')
     }

@@ -49,8 +49,8 @@ const ENTITY_NOTE: Partial<Record<EntityId, string>> = {
 }
 
 const FIELD =
-  'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-teal'
-const LABEL = 'mb-1.5 block text-xs font-bold text-white/60'
+  'w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none transition focus:border-teal'
+const LABEL = 'mb-1.5 block text-xs font-bold text-muted-foreground'
 
 export default function Contact() {
   const [params] = useSearchParams()
@@ -123,30 +123,31 @@ export default function Contact() {
         {/* بيانات التواصل */}
         <div className="lg:col-span-2">
           <h1 className="text-3xl font-black md:text-4xl">تفضّل بالكلام</h1>
-          <p className="mt-4 text-base leading-8 text-white/65">
+          <p className="mt-4 text-base leading-8 text-muted-foreground">
             سؤال عن مسار؟ عرض تدريبي لجهتك؟ شراكة؟ فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.
           </p>
           <div className="mt-7 space-y-3">
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <Mail className="h-4 w-4 shrink-0 text-teal-light-ink" />
-              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="text-sm font-bold text-teal-light-ink underline-offset-4 hover:underline">
+              {/* ٢٤ نقطةً ارتفاعا: رابطٌ في سطرٍ وحدَه لا داخلَ جملة (WCAG 2.5.8) */}
+              <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex min-h-6 items-center text-sm font-bold text-teal-light-ink underline-offset-4 hover:underline">
                 {CONTACT.email}
               </a>
-              <span className="mr-auto text-xs text-white/45">نرد خلال يوم عمل</span>
+              <span className="mr-auto text-xs text-muted-foreground">نرد خلال يوم عمل</span>
             </div>
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <MapPin className="h-4 w-4 shrink-0 text-teal-light-ink" />
-              <p className="text-sm text-white/75">{CONTACT.address}</p>
+              <p className="text-sm text-muted-foreground">{CONTACT.address}</p>
             </div>
             <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
               <Building2 className="mt-1 h-4 w-4 shrink-0 text-gold-ink" />
-              <p className="text-xs leading-6 text-white/60">
-                <span className="font-bold text-white/80">تتواصل باسم جهة؟ </span>
+              <p className="text-xs leading-6 text-muted-foreground">
+                <span className="font-bold text-muted-foreground">تتواصل باسم جهة؟ </span>
                 حدد نوعها في النموذج — يظهر لك ما يهم جهتك فورا، ويصل طلبك لفريق الحلول المؤسسية مباشرة.
               </p>
             </div>
           </div>
-          <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-white/50">
+          <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-muted-foreground">
             إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
             <Link to="/diagnostic" className="font-semibold text-teal-light-ink underline-offset-4 hover:underline">التشخيص الذكي</Link>
             {' '}في دقائق، مجانا ودون التزام.
@@ -161,7 +162,7 @@ export default function Contact() {
                 <CheckCircle2 className="h-7 w-7 text-teal-light-ink" />
               </span>
               <h2 className="mt-5 text-2xl font-black">وصلت رسالتك</h2>
-              <p className="mt-3 max-w-sm text-sm leading-7 text-white/60">
+              <p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
                 رقمك المرجعي <span dir="ltr" className="font-bold text-teal-light-ink">{ref}</span> — احتفظ به لأي متابعة.
                 سيرد عليك فريقنا خلال يوم عمل واحد.
               </p>
@@ -184,7 +185,7 @@ export default function Contact() {
                       className={`cursor-pointer rounded-full border px-4 py-2 text-xs font-bold transition ${
                         entity === e.id
                           ? 'border-teal bg-teal/15 text-teal-light-ink'
-                          : 'border-white/10 text-white/55 hover:border-white/25'
+                          : 'border-white/10 text-muted-foreground hover:border-white/25'
                       }`}
                     >
                       {e.label}
@@ -199,19 +200,19 @@ export default function Contact() {
                   <p className="text-xs font-black text-teal-light-ink">كيف يظهر الأثر عند جهتك؟</p>
                   <ol className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                     {IMPACT_STEPS.map((s, i) => (
-                      <li key={s.t} className="relative rounded-xl border border-white/10 bg-black/20 p-3">
+                      <li key={s.t} className="relative rounded-xl border border-white/10 bg-paper/20 p-3">
                         <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15">
                           <s.icon className="h-4 w-4 text-teal-light-ink" />
                         </span>
                         <p className="mt-2 text-[11px] font-black leading-snug">
                           <span className="text-gold-ink">{i + 1}. </span>{s.t}
                         </p>
-                        <p className="mt-1 text-[10px] leading-4 text-white/50">{s.d}</p>
+                        <p className="mt-1 text-micro leading-4 text-muted-foreground">{s.d}</p>
                       </li>
                     ))}
                   </ol>
                   {ENTITY_NOTE[entity] && (
-                    <p className="mt-3 border-t border-white/5 pt-3 text-[11px] leading-5 text-white/60">
+                    <p className="mt-3 border-t border-white/5 pt-3 text-[11px] leading-5 text-muted-foreground">
                       {ENTITY_NOTE[entity]}
                     </p>
                   )}
@@ -256,9 +257,9 @@ export default function Contact() {
               <label htmlFor="ct-consent" className="mt-4 flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-white/[0.03] p-3">
                 <input id="ct-consent" name="consent" type="checkbox" required checked={consent}
                   onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
-                <span className="text-xs leading-relaxed text-white/60">
+                <span className="text-xs leading-relaxed text-muted-foreground">
                   أوافق على معالجة بياناتي للرد على طلبي وفق{' '}
-                  <Link to="/p/privacy" className="font-bold text-white/75 underline underline-offset-4 hover:text-teal-light-ink">سياسة الخصوصية</Link>
+                  <Link to="/p/privacy" className="font-bold text-muted-foreground underline underline-offset-4 hover:text-teal-light-ink">سياسة الخصوصية</Link>
                 </span>
               </label>
               {err && (
@@ -277,7 +278,7 @@ export default function Contact() {
       </div>
 
       {/* تهدئة للمتردد — التشخيص يجيب عن سؤال المسار دون رسالة */}
-      <div className="mt-10 flex items-center justify-center gap-2 text-xs text-white/55">
+      <div className="mt-10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <Compass className="h-3.5 w-3.5" />
         سؤالك «أي مسار يناسبني؟» — التشخيص الذكي يجيب عنه في دقائق دون أن ترسل شيئا
       </div>

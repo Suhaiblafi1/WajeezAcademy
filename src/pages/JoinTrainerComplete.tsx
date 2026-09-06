@@ -6,7 +6,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:border-teal focus:outline-none";
+  "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 const DOC_KINDS = [
   { kind: "cv", label: "السيرة الذاتية" },
@@ -95,7 +95,7 @@ export default function JoinTrainerComplete() {
         <div className="mx-auto max-w-lg py-16 text-center">
           <ShieldCheck className="mx-auto h-12 w-12 text-teal-light-ink" />
           <h1 className="mt-5 text-2xl font-black">هذه الصفحة للمرشحين فقط</h1>
-          <p className="mt-3 text-sm leading-8 text-white/60">
+          <p className="mt-3 text-sm leading-8 text-muted-foreground">
             تُفتح المرحلة الثانية برابط خاص يصلك بعد اختصار طلبك. لم يصلك؟ راجع حالة طلبك من{" "}
             <Link to="/join-trainer" className="text-teal-light-ink underline">صفحة الانضمام</Link>.
           </p>
@@ -113,7 +113,7 @@ export default function JoinTrainerComplete() {
             <CheckCircle2 className="h-8 w-8 text-teal-light-ink" />
           </span>
           <h1 className="mt-6 text-2xl font-black">ملفك المهني اكتمل</h1>
-          <p className="mt-3 text-sm leading-8 text-white/60">
+          <p className="mt-3 text-sm leading-8 text-muted-foreground">
             عاد طلبك <b className="font-mono" dir="ltr">{reference}</b> إلى المراجعة الأكاديمية بكل ما أرسلت.
             الخطوة التالية: مقابلة ثم درس تجريبي قصير — سنراسلك على بريدك.
           </p>
@@ -128,7 +128,7 @@ export default function JoinTrainerComplete() {
       <div className="mx-auto max-w-2xl">
         <span className="kicker">المرحلة الثانية — الاستكمال المهني</span>
         <h1 className="h-section mt-4">أثبت خبرتك — بالأدلة لا بالألقاب</h1>
-        <p className="mt-3 text-sm leading-8 text-white/60">
+        <p className="mt-3 text-sm leading-8 text-muted-foreground">
           طلبك <b className="font-mono" dir="ltr">{reference}</b> مُختار أوليًا. أكمل ملفك: سيرة، أدلة،
           والدورات التي تستطيع تدريسها فعلا من كتالوجنا.
         </p>
@@ -144,7 +144,7 @@ export default function JoinTrainerComplete() {
                   className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 transition ${
                     uploads[d.kind]?.status === "done"
                       ? "border-teal/50 bg-teal/10"
-                      : "border-white/10 bg-black/20 hover:border-white/25"
+                      : "border-white/10 bg-paper/20 hover:border-white/25"
                   }`}
                 >
                   <input
@@ -156,10 +156,10 @@ export default function JoinTrainerComplete() {
                     ? <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" />
                     : uploads[d.kind]?.status === "uploading" || uploads[d.kind]?.status === "registering"
                       ? <Loader2 className="h-5 w-5 shrink-0 animate-spin text-gold-ink" />
-                      : <FileUp className="h-5 w-5 shrink-0 text-white/40" />}
+                      : <FileUp className="h-5 w-5 shrink-0 text-muted-foreground" />}
                   <span className="text-xs">
-                    <b className="block text-white/85">{d.label}{d.kind === "cv" ? " *" : ""}</b>
-                    <span className="text-white/45" dir="ltr">{uploads[d.kind]?.name ?? "اختر ملفا"}</span>
+                    <b className="block text-muted-foreground">{d.label}{d.kind === "cv" ? " *" : ""}</b>
+                    <span className="text-muted-foreground" dir="ltr">{uploads[d.kind]?.name ?? "اختر ملفا"}</span>
                     {uploads[d.kind]?.status === "error" && <b className="block text-red-300">فشل الرفع — أعد المحاولة</b>}
                   </span>
                 </label>
@@ -170,12 +170,12 @@ export default function JoinTrainerComplete() {
           {/* الدورات السابقة */}
           <fieldset>
             <legend className="text-sm font-black">أبرز ثلاث دورات قدّمتها عبر الإنترنت</legend>
-            <p className="mt-1 text-[11px] leading-relaxed text-white/40">
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
               اذكر اسم الدورة، والجهة أو المنصة التي قدّمتها من خلالها، ورابطا أو نموذجا مختصرا إن توفّر.
             </p>
             <div className="mt-3 space-y-3">
               {prevCourses.map((c, i) => (
-                <div key={i} className="grid gap-2 rounded-2xl border border-white/10 bg-black/20 p-3 sm:grid-cols-4">
+                <div key={i} className="grid gap-2 rounded-2xl border border-white/10 bg-paper/20 p-3 sm:grid-cols-4">
                   <input placeholder={`عنوان الدورة ${i + 1}`} value={c.title} aria-label={`عنوان الدورة ${i + 1}`}
                     onChange={(e) => setPrevCourses(prevCourses.map((x, j) => j === i ? { ...x, title: e.target.value } : x))}
                     className={`${inputCls} sm:col-span-2`} />
@@ -208,7 +208,7 @@ export default function JoinTrainerComplete() {
                   type="button" key={d} onClick={() => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d])}
                   aria-pressed={days.includes(d)}
                   className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                    days.includes(d) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-white/55 hover:border-white/35"
+                    days.includes(d) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
                   }`}
                 >
                   {d}
@@ -217,19 +217,19 @@ export default function JoinTrainerComplete() {
             </div>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="p2-hours" className="mb-1.5 block text-xs font-bold text-white/60">ساعات أسبوعيا</label>
+                <label htmlFor="p2-hours" className="mb-1.5 block text-xs font-bold text-muted-foreground">ساعات أسبوعيا</label>
                 <input id="p2-hours" dir="ltr" inputMode="numeric" value={hoursPerWeek} onChange={(e) => setHoursPerWeek(e.target.value)} className={`${inputCls} text-left`} />
               </div>
               <div>
-                <label htmlFor="p2-start" className="mb-1.5 block text-xs font-bold text-white/60">يمكنك البدء من</label>
+                <label htmlFor="p2-start" className="mb-1.5 block text-xs font-bold text-muted-foreground">يمكنك البدء من</label>
                 <input id="p2-start" placeholder="مثال: مطلع الشهر القادم" value={startFrom} onChange={(e) => setStartFrom(e.target.value)} className={inputCls} />
               </div>
             </div>
           </fieldset>
 
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3">
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-white/10 bg-paper/20 p-3">
             <input type="checkbox" checked={demoConsent} onChange={(e) => setDemoConsent(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal" />
-            <span className="text-xs leading-6 text-white/60">
+            <span className="text-xs leading-6 text-muted-foreground">
               أوافق على تقديم درس تجريبي (Demo) قصير أمام اللجنة الأكاديمية كجزء من التقييم. *
             </span>
           </label>
@@ -244,7 +244,7 @@ export default function JoinTrainerComplete() {
             {busy ? "جاري الحفظ…" : "أكمل ملفي المهني"}
           </button>
           {!valid && (
-            <p className="text-center text-[11px] text-white/40">
+            <p className="text-center text-[11px] text-muted-foreground">
               يلزم: سيرة ذاتية مرفوعة + دورة سابقة واحدة على الأقل + دورة قابلة للتدريس + موافقة الديمو.
             </p>
           )}

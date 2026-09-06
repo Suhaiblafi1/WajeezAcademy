@@ -19,7 +19,7 @@ model User {
   email                String                     @unique
   passwordHash         String
   displayName          String
-  status               String                     @default("active") // active | suspended
+  status               String                     @default("active") // invited | active | suspended | archived
   createdAt            DateTime                   @default(now())
   updatedAt            DateTime                   @updatedAt
   suspendedAt          DateTime?
@@ -50,6 +50,7 @@ model User {
   subscriptions        Subscription[]
   orders               Order[]
   notifications        Notification[]
+  notificationPrefs    NotificationPreference[]
   staffTasks           StaffTask[]                @relation("StaffTaskAssignee")
   supportTickets       SupportTicket[]            @relation("TicketOwner")
   learnerRequests      LearnerRequest[]
@@ -139,10 +140,14 @@ model PasswordResetToken {
   id        String    @id @default(uuid()) @db.Uuid
   userId    String    @db.Uuid
   tokenHash String    @unique
+  /// reset | invite — الغرضُ يحدّد العمرَ والرسالة: استعادةٌ ساعة، ودعوةٌ سبعةَ أيّام
+  purpose   String    @default("reset")
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, usedAt])
 }
 
 model LoginAttempt {
@@ -153,6 +158,30 @@ model LoginAttempt {
   createdAt DateTime @default(now())
 
   @@index([email, createdAt])
+  /**
+   * سقفُ الشبكة (المهمّة ١٧) يعدُّ إخفاقاتِ عنوانٍ واحدٍ في نافذةِ ربعِ ساعة،
+   * فبلا هذا الفهرس يمسح كلَّ جدولِ المحاولات في كلّ دخول.
+   */
+  @@index([ip, createdAt])
+}
+
+/**
+ * سجلُّ محاولاتِ **التسجيل الذاتيّ** وحدَه (`POST /api/auth/register`) — لا ما
+ * تُنشئه الإدارةُ بصلاحيّة، فذاك فعلٌ مأذونٌ له سجلُّ أثرٍ لا سقفُ شبكة.
+ * وقيمتُه سقفان مختلفا الطبيعة (سقفُ التسجيل، قرارُ صاحب المنصّة ٤ سبتمبر):
+ * حجمُ ما أُنشئ فعلا من شبكةٍ واحدة (٤٠ في الساعة · ١٠٠ في اليوم) يمنع مصنعَ
+ * الحسابات الوهميّة، وعددُ ما ارتدّ بـ«البريد مسجَّل» (١٠ في ربع ساعة) يمنع
+ * **إحصاءَ البريد**: المسارُ يقول صراحةً إن كان البريدُ مسجَّلا، فمن جرّب ألفَ
+ * بريدٍ عرف أيُّها له حسابٌ عندنا.
+ * ولا يُخزَّن البريدُ المُجرَّب: قائمةُ أهدافِ من يُحصي بريدَنا لا تُحفظ عندنا.
+ */
+model RegistrationAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  ip        String?
+  outcome   String // created | taken — «taken» محاولةٌ ارتدّت لأنّ البريد مسجَّل
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
 }
 
 /**
@@ -1077,6 +1106,8 @@ model TrainerProfile {
   payouts               TrainerPayout[]
   cohortPlans           CohortDeliveryPlan[]
   cohortTrainers        CohortTrainer[]
+  availability          TrainerAvailability[]
+  blackouts             TrainerBlackout[]
 }
 
 model TrainerSkill {
@@ -1110,6 +1141,50 @@ model TrainerCourseQualification {
 
   @@unique([profileId, courseId])
   @@index([status])
+}
+
+/**
+ * ═══ إتاحةُ المدرّب: ساعاتٌ أسبوعيّةٌ يعلنها، وغيابٌ يسجّله (المهمّة ٧١) ═══
+ * الجدولُ يُحرَس أصلا من التعارض: `assertNoScheduleConflict` يرفض إسنادَ شعبةٍ
+ * تتداخل جلساتُها مع جلسةِ شعبةٍ أخرى للمدرّب نفسِه. لكنّه لا يعرف شيئا عن
+ * وقتِ المدرّب **خارج** المنصّة: من يعمل صباحا لا يستطيع شعبةً صباحيّة، ومن
+ * سيسافر أسبوعا لا يستطيع جلسةً فيه — ولا موضعَ يقول ذلك، فيُسأل في واتساب
+ * أو يُسنَد ثمّ يُعتذَر.
+ * والحكمان مختلفان بقصد:
+ * · **الغيابُ مانعٌ** (`TrainerBlackout`): المدرّبُ أعلن أنّه غيرُ موجودٍ في
+ * مدّةٍ بعينها، فالإسنادُ فيها يُردّ كما يُردّ التعارض. إعلانٌ صريحٌ يُحترَم.
+ * · **الساعاتُ الأسبوعيّةُ إرشادٌ** (`TrainerAvailability`): من لم يُعلن شيئا
+ * لا يُمنَع من شيء — وإلّا صار الحقلُ الفارغُ قفلا. ومن أعلن ساعاتِه ظهر
+ * للمُسنِد تنبيهٌ بعدد الجلسات الواقعة خارجَها، والقرارُ له.
+ */
+model TrainerAvailability {
+  id          String         @id @default(uuid()) @db.Uuid
+  profileId   String         @db.Uuid
+  /**
+   * ٠ الأحد … ٦ السبت — كما في `Date#getDay` وجدولِ الشعبة الأسبوعيّ
+   */
+  weekday     Int
+  /**
+   * دقائقُ من منتصف الليل بتوقيت الأكاديمية — ٥٤٠ = ٩:٠٠
+   */
+  startMinute Int
+  endMinute   Int
+  createdAt   DateTime       @default(now())
+  profile     TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, weekday])
+}
+
+model TrainerBlackout {
+  id        String         @id @default(uuid()) @db.Uuid
+  profileId String         @db.Uuid
+  startsAt  DateTime
+  endsAt    DateTime
+  reason    String?
+  createdAt DateTime       @default(now())
+  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, startsAt])
 }
 
 model TrainerCourseAssignment {
@@ -1751,7 +1826,19 @@ model Certificate {
   issuedAt      DateTime                  @default(now())
   issuedBy      String?                   @db.Uuid // null = إصدار نظامي بعد تحقق القواعد
   status        String                    @default("active") // active | revoked
-  enrollment    Enrollment                @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  /**
+   * ── لا سلسلةَ حذفٍ تبلغ شهادةً صادرة ──
+   * كانت `Cascade`: فحذفُ تسجيلٍ يمحو **شهادةً أُصدرت فعلا** ورقمُها معلَنٌ
+   * للناس ويُتحقَّق منه برابط. والشهادةُ ليست أثرا للتسجيل، بل دعوى
+   * مستقلّةٌ عن المنصّة على صاحبها — إن سقطت صار الرابطُ يقول «لا شهادةَ
+   * بهذا الرقم» عن شهادةٍ صحيحة.
+   * وطبقةُ الشيفرة تحرسه فعلا: بصمةُ الحساب في `account-purge.service`
+   * تعدّ الشهادات وترفض المحوَ إن وُجدت. لكنّ الحرسَ في الشيفرة وحدَها
+   * يسقط بأوّل مسارٍ جديدٍ أو استعلامٍ يدويّ — ولا يسقط `Restrict`.
+   * وسحبُ الشهادة له بابُه: `status: 'revoked'` مع `CertificateRevocation`
+   * التي تحمل السببَ ومن سحبها. فالسحبُ يُقال، والمحوُ يُخفي.
+   */
+  enrollment    Enrollment                @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
   verifications CertificateVerification[]
   revocation    CertificateRevocation?
 
@@ -2335,6 +2422,32 @@ model StaffTask {
 
   @@index([assigneeId, status])
   @@index([assignedBy, status])
+}
+
+/**
+ * ═══ تفضيلاتُ الإشعارات (المهمّة ٧٢) ═══
+ * صفٌّ واحدٌ لكلّ (حساب · صنف · قناة) **يُكتب فقط عند المخالفة**: الغيابُ يعني
+ * «مُفعَّل». فحسابٌ لم يفتح الشاشةَ قطّ لا صفوفَ له، ولا يتغيّر سلوكُه —
+ * والافتراضيُّ يبقى وصولَ الخبر لا كتمَه.
+ * والأصنافُ وحدُّ ما يُكتَم منها في `src/application/notifications/categories.ts`:
+ * التذكيرُ والتقدّمُ والإعلاناتُ تُكتَم، والمالُ والشهاداتُ وعملُ الموظّف لا.
+ * والحدُّ يُفرَض في الخادم لا في الشاشة: `notify` يتجاهل تفضيلا يُسكِت خبرا
+ * لا يجوز كتمُه، فلو وصله صفٌّ محفورٌ بيدٍ في القاعدة لم يُغيّر شيئا.
+ */
+model NotificationPreference {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  /**
+   * مفتاحُ صنفٍ من `NOTIFICATION_CATEGORIES` — لا مفتاحُ قالبٍ بعينه
+   */
+  category  String
+  channel   String   @default("in_app") // in_app | email
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category, channel])
+  @@index([userId])
 }
 
 model Notification {

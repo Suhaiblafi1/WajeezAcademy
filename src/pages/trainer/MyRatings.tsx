@@ -31,16 +31,16 @@ export default function MyRatings() {
 
   return (
     <TrainerLayout title="ما قيل عنّي">
-      <p className="mb-6 max-w-2xl text-[12px] leading-6 text-white/55">
-        التقييمات تصلك <span className="font-bold text-white/75">مجمّعة وبلا أسماء</span>، ولا يُعرض
+      <p className="mb-6 max-w-2xl text-[12px] leading-6 text-muted-foreground">
+        التقييمات تصلك <span className="font-bold text-foreground">مجمّعة وبلا أسماء</span>، ولا يُعرض
         منها شيء حتى تبلغ ثلاثة عن الهدف الواحد — في العدد القليل يُستدلّ على أصحاب
         الآراء مهما حُذفت الأسماء، وحمايتُهم شرطُ صدقهم معك.
       </p>
 
       {offline && (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-16 text-center">
-          <ServerOff className="h-10 w-10 text-white/20" />
-          <p className="mt-3 max-w-md text-sm leading-7 text-white/55">{offline}</p>
+          <ServerOff className="h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
         </div>
       )}
 

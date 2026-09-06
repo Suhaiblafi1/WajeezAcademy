@@ -71,20 +71,22 @@ describe('الحارسُ يعيد المحاولة ولا يُحوّل بلا ج
     /* الحالاتُ التي تُحوِّل ثنتان لا ثلاث: anon و forbidden */
     expect(GUARD.match(/<Navigate\b/g)?.length ?? 0).toBe(2)
   })
+
+  /* جولةُ ٢٠٢٦-٠٩: متعلّمٌ يفتح `/admin` فيُحوَّل إلى `/student` ويرى صفحةً
+     سوداء. الحرّاسُ إخوةٌ في الموضع نفسه فيُعاد استعمالُ النسخة، ولا يُعاد
+     التحقّقُ إن لم تكن `allow` في الاعتماديّات — فتبقى «ممنوع» إلى الأبد. */
+  it('ويُعيد التحقّقَ حين تتبدّل قائمةُ الأدوار — لا صفحةَ سوداءَ بعد التحويل', () => {
+    expect(GUARD).toMatch(/\}, \[attempt, allow\]\)/)
+    expect(GUARD).not.toMatch(/eslint-disable-next-line react-hooks\/exhaustive-deps/)
+  })
 })
 
 describe('إقلاعٌ واحد مهما تزامنت النداءات', () => {
-  /* دالّةُ Vercel تستقبل طلباتٍ متزامنة على النسخة الواحدة. وحارسُ الإقلاع
+  /* عمليّةُ Node تستقبل طلباتٍ متزامنة على النسخة الواحدة. وحارسُ الإقلاع
      كان على الناتج لا على الوعد، والإقلاعُ بينهما غيرُ ذرّيّ — فيُقلع كلُّ
      نداءٍ من الصفر: عدّةُ عملاء Prisma وعدّةُ برك اتّصال، ويفوز آخرُها
      ويبقى الباقي ممسكا ببركه. */
-  it('معالجُ Vercel يخزّن الوعد', () => {
-    const H = code('server/http/vercel-handler.ts')
-    expect(H).toMatch(/let booting: Promise<FastifyInstance> \| null/)
-    expect(H, 'الفشلُ يُخزَّن فيرثه كلُّ نداءٍ بعده').toMatch(/booting = null/)
-  })
-
-  it('وعميلُ Prisma كذلك — بركةٌ واحدة لا برك', () => {
+  it('عميلُ Prisma بركةٌ واحدة لا برك', () => {
     const C = code('server/db/client.ts')
     expect(C).toMatch(/let connecting: Promise<PrismaClient> \| null/)
     expect(C).toMatch(/connecting = null/)

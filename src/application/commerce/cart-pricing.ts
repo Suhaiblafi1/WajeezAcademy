@@ -15,12 +15,14 @@
    يُعرض على الشاشة، و`checkout` الذي يكتب الطلب. وهما نداءٌ واحد لدالّةٍ
    واحدة — فلا يفترق المعروضُ عن المُصدَر بنيةً لا باتّفاق.
 
-   والترتيبُ مقصود: **الباقةُ أوّلا ثمّ الكودُ على الباقي**، وهو ما تقوله
-   سياسةُ الخصومات حرفيّا: «كود واحد فوق الناتج».
+   والترتيبُ مقصود: **الباقةُ أوّلا، ثمّ سقفُ المبلغ، ثمّ الكودُ على الباقي**.
+   وهو ما تقوله سياسةُ الخصومات حرفيّا: «كود واحد فوق الناتج». والسقفُ قبل
+   الكود لا بعده: هو حدُّ **سعرِ المسار**، لا حدُّ ما يدفعه صاحبُ كودٍ — ولو
+   جاء بعده لَابتلع الكودَ كلَّه فوق السقف فصار الكودُ بلا أثرٍ لمن استحقّه.
 
    الحارس: server/tests/commerce/cart-pricing.test.ts */
 
-import { buildDiscountPct } from './discount-policy'
+import { buildDiscountPct, bundleCapDiscount, money, MAX_BUNDLE_TOTAL_CURRENCY } from './discount-policy'
 
 /** بندٌ في السلّة قبل الحساب — سعرُ القائمة كما في الشعبة */
 export interface CartLine {
@@ -51,18 +53,20 @@ export interface CartPricing {
   subtotal: number
   bundlePct: number
   bundleDiscount: number
+  /** ما اقتُطع بحكم سقف مبلغ السلّة — صفرٌ في السواد الأعظم من السلال */
+  capDiscount: number
   couponDiscount: number
   discount: number
   total: number
 }
 
-/** تقريبٌ إلى أصغر وحدةٍ في العملة — لا «تدوير جميل» في مبلغٍ يُقتطع */
-const money = (n: number) => Math.round(n * 100) / 100
-
 export function priceCart(
   lines: readonly CartLine[],
   giftCourseId: string | null,
   coupon: CartCoupon | null,
+  /* عملةُ السلّة — يمنعها الخادمُ أن تختلط، فهي واحدةٌ للسلّة كلِّها.
+     ويلزم هنا لأنّ السقفَ مبلغٌ لا نسبة: «٦٠٠» بلا عملةٍ رقمٌ بلا معنى. */
+  currency: string = MAX_BUNDLE_TOTAL_CURRENCY,
 ): CartPricing {
   /* الهديّةُ بندٌ بصفر لا بندٌ محذوف: تبقى في الفاتورة ليقرأ المشتري أنّه
      أخذها، ويقرأ الخادمُ أنّه استحقّها. وحذفُها من البنود يُخفي الوعدَ عن
@@ -80,7 +84,11 @@ export function priceCart(
      ما يُدفع بسببِ ما لا يُدفع — فيُخصم مرّتين عن شيءٍ واحد. */
   const bundlePct = buildDiscountPct(paid.length)
   const bundleDiscount = money((subtotal * bundlePct) / 100)
-  const afterBundle = money(subtotal - bundleDiscount)
+
+  /* سقفُ المبلغ بندٌ ثانٍ مستقلّ لا نسبةٌ ثالثة: «خصم الباقة ٣٠٪» و«حدّ سعر
+     المسار» سببان مختلفان يُقرآن في الفاتورة كلٌّ باسمه. */
+  const capDiscount = money(bundleCapDiscount(money(subtotal - bundleDiscount), currency))
+  const afterBundle = money(subtotal - bundleDiscount - capDiscount)
 
   let couponDiscount = 0
   if (coupon) {
@@ -90,7 +98,7 @@ export function priceCart(
     if (couponDiscount > afterBundle) couponDiscount = afterBundle
   }
 
-  const discount = money(bundleDiscount + couponDiscount)
+  const discount = money(bundleDiscount + capDiscount + couponDiscount)
   return {
     lines: priced,
     paidCount: paid.length,
@@ -98,6 +106,7 @@ export function priceCart(
     subtotal,
     bundlePct,
     bundleDiscount,
+    capDiscount,
     couponDiscount,
     discount,
     total: money(Math.max(0, subtotal - discount)),

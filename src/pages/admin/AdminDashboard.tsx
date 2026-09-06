@@ -5,6 +5,7 @@ import {
   Minus, RotateCcw, ServerOff, Users,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import StaffInbox from "@/components/StaffInbox";
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import DiagnosticFunnel from "@/components/DiagnosticFunnel";
@@ -12,6 +13,7 @@ import AdminCharts from "@/components/AdminCharts";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { countWindows, flowTrend, stockTrend, trendBadgeAr, type Trend } from "@/application/metrics/trend";
 import { fmtNum, fmtTime } from "@/application/text/format-ar";
+import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 /* اللوحة العليا — نظرة تنفيذية من مصادر الخادم الحقيقية فقط.
    كل بطاقة تتحمل غياب الصلاحية (403) فتختفي بهدوء بدل كسر الصفحة. */
@@ -51,9 +53,9 @@ const TREND_TONE: Record<Trend["direction"], string> = {
   new: "border-emerald-400/40 text-emerald-300",
   down: "border-amber-400/40 text-amber-300",
   gone: "border-amber-400/40 text-amber-300",
-  flat: "border-white/20 text-white/60",
-  quiet: "border-white/20 text-white/60",
-  none: "border-white/20 text-white/60",
+  flat: "border-white/20 text-muted-foreground",
+  quiet: "border-white/20 text-muted-foreground",
+  none: "border-white/20 text-muted-foreground",
 };
 
 function TrendArrow({ d }: { d: Trend["direction"] }) {
@@ -79,7 +81,7 @@ const TONE: Record<Card["tone"], string> = {
   gold: "border-gold/30 bg-gold/5 text-gold-ink",
   teal: "border-teal/30 bg-teal/5 text-teal-light-ink",
   red: "border-red-500/30 bg-red-500/5 text-red-400",
-  plain: "border-white/10 bg-white/[0.03] text-white",
+  plain: "border-white/10 bg-white/[0.03] text-foreground",
 };
 
 export default function AdminDashboard() {
@@ -147,7 +149,7 @@ export default function AdminDashboard() {
       });
     }
     if (cohorts) {
-      const n = cohorts.filter((c) => c.status === "open" || c.status === "running" || c.status === "full").length;
+      const n = cohorts.filter((c) => isLiveCohort(c.status)).length;
       /* رقمُ لحظة بلا سجل: لا نعرف كم كانت نشطة الأسبوع الماضي، فلا نخترع اتجاها */
       out.push({
         to: "/admin/cohorts", label: "شعب نشطة الآن", value: String(n),
@@ -191,11 +193,14 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout title="الرئيسية — نظرة عامة">
-      <p className="mb-6 text-sm text-white/60">{greet} يا {firstName} — هذا ما يحتاج انتباهك اليوم:</p>
+      <p className="mb-6 text-sm text-muted-foreground">{greet} يا {firstName} — هذا ما يحتاج انتباهك اليوم:</p>
+
+      {/* «ما ينتظرك» قبل العدّادات: العدّادُ يقول كم، وهذا يقول ما تعمله الآن */}
+      <StaffInbox />
 
       {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
-      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-white/55">
-        <span className="font-black text-white/75">من أين أبدأ؟</span>
+      <div className="mb-8 flex flex-wrap items-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 text-[11px] text-muted-foreground">
+        <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام اللوحة — ورقمان مختلفا الرسم في
             البطاقة الواحدة يُقرآن واجهتين مركّبتين لا واجهةً واحدة */}
         {[
@@ -205,9 +210,10 @@ export default function AdminDashboard() {
           { label: "راجع طلبات التسجيل", to: "/admin/finance" },
         ].map((s, i) => (
           <span key={s.to} className="flex items-center gap-2">
-            {i > 0 && <span aria-hidden="true" className="text-white/20">←</span>}
-            <Link to={s.to} className="flex items-center gap-1.5 rounded-full border border-white/10 px-3 py-1 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-[10px] text-gold-ink">{i + 1}</span>
+            {i > 0 && <span aria-hidden="true" className="text-muted-foreground/50">←</span>}
+            {/* `py-1` كان يعطي سبعا وعشرين بكسلا — قِيس على هاتفٍ عرضُه ٣٩٠ */}
+            <Link to={s.to} className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-bold transition hover:border-gold/60 hover:text-gold-ink">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-micro text-gold-ink">{i + 1}</span>
               {s.label}
             </Link>
           </span>
@@ -215,13 +221,13 @@ export default function AdminDashboard() {
       </div>
 
       {cards === null && !failed && (
-        <div className="flex items-center justify-center gap-2 py-16 text-white/50">
+        <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" /> أجمع لك الصورة من المصادر الحية…
         </div>
       )}
 
       {failed && (
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-white/50">
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-16 text-muted-foreground">
           <ServerOff className="h-5 w-5" /> تعذر الوصول للخادم — تأكد أنه يعمل ثم حدّث الصفحة.
         </div>
       )}
@@ -244,19 +250,19 @@ export default function AdminDashboard() {
                 <p className={`mt-3 flex flex-wrap items-center gap-2 rounded-xl border px-2.5 py-1.5 text-[11px] leading-5 ${TREND_TONE[c.trend.direction]}`}>
                   {c.trend.showArrow && <TrendArrow d={c.trend.direction} />}
                   {badge && <span dir="ltr" className="font-black">{badge}</span>}
-                  <span className="text-white/70">
+                  <span className="text-foreground">
                     {c.trendPrefixAr && `${c.trendPrefixAr}: `}{c.trend.sentenceAr}
                   </span>
                 </p>
 
-                <p className="mt-2 text-[11px] text-white/60">{c.hint}</p>
+                <p className="mt-2 text-[11px] text-muted-foreground">{c.hint}</p>
               </Link>
             );
           })}
         </div>
       )}
 
-      <p className="mt-8 text-center text-[11px] text-white/55">
+      <p className="mt-8 text-center text-[11px] text-muted-foreground">
         كل الأرقام هنا حية من قاعدة البيانات وتُحدَّث تلقائيا كل 45 ثانية
         {updatedAt && ` — آخر تحديث ${fmtTime(updatedAt)}`}.
         التقارير التفصيلية والتصدير في شاشة «التقارير».

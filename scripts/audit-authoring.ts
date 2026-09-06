@@ -24,12 +24,12 @@ import { checkLibraryRefs, type LibraryIndex } from '../src/application/content/
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
 const LIBRARY = join(process.cwd(), 'src/data/library/wajeez-library.json')
 
-interface Course {
+export interface Course {
   course_id: string
   skill_slugs?: string[]
 }
 
-interface Module {
+export interface Module {
   module_id: string
   course_id: string
   title_ar: string
@@ -104,13 +104,16 @@ function parseChecks(raw: string) {
       prompt: lines.find((l) => l.startsWith('س:'))?.slice(2).trim() ?? '',
       correct: lines.filter((l) => l.startsWith('+')).length,
       options: lines.filter((l) => l.startsWith('+') || l.startsWith('-')).length,
+      /* موضعُ الصحيح — واحدٌ أو اثنانِ أو ثلاثة، وصفرٌ إن لم يوجد */
+      correctAt:
+        lines.filter((l) => l.startsWith('+') || l.startsWith('-')).findIndex((l) => l.startsWith('+')) + 1,
       why: lines.find((l) => l.startsWith('ش:'))?.slice(2).trim() ?? '',
       skill: lines.find((l) => l.startsWith('م:'))?.slice(2).trim() ?? '',
     }
   })
 }
 
-function auditModule(m: Module, courseSkills: Map<string, string[]>, library: LibraryIndex): Violation[] {
+export function auditModule(m: Module, courseSkills: Map<string, string[]>, library: LibraryIndex): Violation[] {
   const v: Violation[] = []
   const add = (rule: string, detail: string) => v.push({ moduleId: m.module_id, rule, detail })
   const body = (m.module_body_ar ?? '').trim()
@@ -218,6 +221,21 @@ function auditModule(m: Module, courseSkills: Map<string, string[]>, library: Li
       else if (allowed.length > 0 && !allowed.includes(c.skill)) {
         add('مهارة مجهولة', `التمرين ${i + 1} مربوطٌ بـ«${c.skill}» وليست من مهارات الدورة (${allowed.join('، ')})`)
       }
+    }
+
+    /* موضعُ الجواب الصحيح يتنقّل — وإلّا فالوحدةُ تُجاب بلا قراءة.
+
+       قالبُ §٥ يعرض المثالَ بـ«+» في الوسط، فقُرئ موضعا لا مثالا: مئتانِ
+       وأربعون سؤالا من ثلاثِ مئةٍ وأربعةٍ وعشرين كان جوابُها في الخيار
+       الأوسط، واثنتانِ وأربعون وحدةً كلُّ أسئلتها فيه — فمن يختار الأوسطَ
+       دائما بلا أن يقرأ يُصيب خمسةً وتسعين في المئة. ولم يمسكه شيء: كلُّ
+       سؤالٍ على حدته سليمُ الصيغة، والعطبُ في التوزيع لا في السؤال.
+
+       والفحصُ على الوحدة لا على السؤال، ويُشترط ثلاثةُ أسئلةٍ فأكثرُ حتّى
+       لا يُنذر بالباطل في وحدةٍ صغيرة. */
+    const spots = checks.map((c) => c.correctAt).filter((n) => n > 0)
+    if (spots.length >= 3 && new Set(spots).size === 1) {
+      add('موضع الجواب', `جوابُ كلّ التمارين في الخيار ${spots[0]} — يُجاب بلا قراءة، فنوّع المواضع`)
     }
   }
 
@@ -347,4 +365,13 @@ function main() {
   if (check && violations.length > 0) process.exit(1)
 }
 
-main()
+/* لا يعمل إلّا تشغيلا مباشرا.
+
+   `check-authoring-files.ts` يستورد `auditModule` منه ليفحص ملفّاتِ التأليف
+   قبل تطبيقها **بالبوّابة نفسِها** لا بنسخةٍ منها. وكان الاستيرادُ يُشغّل
+   `main()` فتعمل البوّابةُ على الكتالوج ويظهر جوابُها مكانَ جواب الفاحص —
+   فيُقرأ «لا مخالفة» وفي الملفّات مخالفة. */
+const runDirect =
+  process.argv[1] !== undefined && import.meta.url.endsWith(process.argv[1].split('/').pop() ?? '\u0000')
+
+if (runDirect) main()

@@ -26,6 +26,7 @@ import { homePathForRoles, verifySession } from '../services/auth'
 export const ADMIN_ROLES = [
   'super_admin',
   'academic_manager',
+  'academic_coordinator',
   'diagnostic_manager',
   'operations_manager',
   'finance',
@@ -35,6 +36,13 @@ export const ADMIN_ROLES = [
 /** بوابتا المدرب والمستشار: دورهما + مدير النظام (يملك صلاحياتهما جميعا) */
 export const TRAINER_ROLES = ['trainer', 'super_admin'] as const
 export const ADVISOR_ROLES = ['advisor', 'super_admin'] as const
+/* بوابةُ المتعلّم — كانت مساراتها كلُّها خارج أيّ حارس.
+
+   والحمايةُ الحقيقيّة عند الخادم (كلُّ مسار في `learning-portal` بحارس
+   صلاحيّة)، فلم تكن ثغرةَ بيانات. لكنّ من يفتح `/student/learning` بدورٍ
+   آخر كان يرى هيكلَ الصفحة ثمّ أخطاءَ ٤٠٣ متفرّقة بدل أن يُوجَّه إلى
+   بوابته — وهو ما يقرأه المستخدم عطبا لا منعا. */
+export const LEARNER_ROLES = ['learner', 'super_admin'] as const
 /** صفحةُ حالة طلب الانضمام: للمتقدّم، وللمدرّب الذي كان متقدّما */
 export const APPLICANT_ROLES = ['trainer_applicant', 'trainer', 'super_admin'] as const
 
@@ -72,31 +80,34 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
     setState('loading')
     void run()
     return () => { alive = false }
-    // allow قائمة ثابتة من ثوابت الملف — لا تتغير بين التصييرات
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attempt])
+    /* `allow` في الاعتماديّات عمدا. الحرّاسُ الخمسة في App.tsx إخوةٌ في الموضع
+       نفسِه من شجرة المسارات، فحين يُحوَّل متعلّمٌ من `/admin` إلى `/student`
+       يُعيد React استعمالَ هذه النسخةِ نفسِها بقائمةٍ جديدة — ولو لم يُعَد
+       التحقّق لبقيت الحالةُ «ممنوع» و`<Navigate>` إلى الصفحةِ التي نحن فيها،
+       فتُعرض صفحةٌ سوداءُ بلا شيء (شُوهدت في جولة ٢٠٢٦-٠٩). */
+  }, [attempt, allow])
 
   if (state === 'loading') {
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5" aria-busy="true" aria-label="التحقق من الصلاحيات">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-[#38A7B4]" />
-        <p className="mt-4 text-sm font-semibold text-white/50">نتحقق من صلاحياتك…</p>
+        <p className="mt-4 text-sm font-semibold text-muted-foreground">نتحقق من صلاحياتك…</p>
       </div>
     )
   }
   /* لا تحويلَ على تعذُّرِ وصول: من يُحوَّل هنا يظنّ أنّ صلاحيّته سُحبت */
   if (state === 'unreachable') {
     return (
-      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-white">
-        <ServerOff className="h-12 w-12 text-white/25" />
+      <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
+        <ServerOff className="h-12 w-12 text-muted-foreground/50" />
         <h1 className="mt-5 text-xl font-black">تعذّر التحقّق من صلاحيّتك</h1>
-        <p className="mt-2 max-w-md text-center text-sm leading-7 text-white/55">
+        <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
           لم يصلنا ردٌّ من الخادم، ولا نُقرّر صلاحيّتك بلا ردّ — فلن نأخذك إلى بوابةٍ قد لا تكون بوابتك.
           جرّب مرّة أخرى بعد لحظة.
         </p>
         <button
           onClick={() => setAttempt((n) => n + 1)}
-          className="mt-6 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-white/75 transition hover:border-white/40"
+          className="mt-6 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-xs font-bold text-foreground transition hover:border-white/40"
         >
           <RefreshCw className="h-3.5 w-3.5" /> أعد المحاولة
         </button>

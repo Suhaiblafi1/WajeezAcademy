@@ -8,6 +8,7 @@ import {
   onCoreCatalogInstalled,
   type CoreCatalogRaw,
 } from './core-catalog-source'
+import { domainsOfPathway } from '@/domain/diagnostic/v2/data'
 
 export interface Pathway {
   id: string
@@ -39,28 +40,70 @@ function levelOf(level: string): Pathway['level'] {
   return 'متوسط'
 }
 
+/* الفئة المستهدفة — لمن هذا المسار، لا مجاله المعرفي (ذاك في pathwayDomain
+   أدناه). أربعُ فئاتٍ فقط: كانت سبعا، وتصفيةُ الدورات بها (courseCategories)
+   ترهق زائرا يقارن سبع رقاقاتٍ متقاربة — «موظفون» و«تخصصات وظيفية» و«قيادة»
+   كلّها تصف موظفا يتطوّر في عمله. فأُدمجت إلى ما يفرّقه الزائر فعلا: فردٌ
+   يبدأ، موظفٌ يتخصّص أو يقود، صاحبُ عملٍ أو مشروع، أو جهةٌ حكومية. */
 export function pathwayCategory(id: string): string {
   const fam = id.split('-')[1]
   switch (fam) {
     case 'FND':
-      return 'أساسيات'
     case 'STU':
-      return 'طلاب ومهنة'
-    case 'EMP':
-    case 'COM':
-    case 'NEG':
-      return 'موظفون'
+      return 'أفراد ومهن ناشئة'
     case 'GOV':
       return 'حكومي'
     case 'BIZ':
     case 'AUT':
-      return 'أعمال'
     case 'LND':
-      return 'قيادة'
+      return 'قيادة وريادة الأعمال'
     default:
-      return 'تخصصات وظيفية'
+      return 'موظفون ومختصون'
   }
 }
+
+/* القطاع/المجال — موضوعُ المسار المهنيّ، لا جمهورُه (نفس تمييز courseDomain
+   في data/courses.ts). المصدرُ خريطةُ مجالات التشخيص V2
+   (pathway-domains.v2.json عبر domainsOfPathway) — نفسُ ما يقرأه محرّك
+   التشخيص لكلّ مسار — مجمّعةً في عناقيدَ أوسعَ تصلح لأزرار تصفية بدل ثمانيةَ
+   عشرَ مجالا دقيقا. ومسارٌ بلا مجالٍ موثّق يقع في «تخصصات أخرى» — لا يختفي
+   بصمت (نفس قاعدة courseDomain). */
+const SECTOR_BY_DOMAIN: Record<string, string> = {
+  marketing_growth: 'التسويق والمبيعات',
+  sales: 'التسويق والمبيعات',
+  people_leadership: 'القيادة والموارد البشرية',
+  learning_design: 'القيادة والموارد البشرية',
+  project_management: 'إدارة المشاريع والعمليات',
+  operations: 'إدارة المشاريع والعمليات',
+  ai_productivity: 'التقنية والذكاء الاصطناعي',
+  data_decision: 'التقنية والذكاء الاصطناعي',
+  cyber_risk: 'التقنية والذكاء الاصطناعي',
+  finance_mgmt: 'المالية وريادة الأعمال',
+  entrepreneurship: 'المالية وريادة الأعمال',
+  product_mgmt: 'المالية وريادة الأعمال',
+  gov_services: 'القطاع الحكومي',
+  career_direction: 'التطوير المهني والتواصل',
+  employment_readiness: 'التطوير المهني والتواصل',
+  communication_influence: 'التطوير المهني والتواصل',
+  family_parenting: 'التطوير المهني والتواصل',
+  personal_development: 'التطوير المهني والتواصل',
+}
+
+export function pathwayDomain(id: string): string {
+  const [domainId] = domainsOfPathway(id)
+  return (domainId && SECTOR_BY_DOMAIN[domainId]) || 'تخصصات أخرى'
+}
+
+export const pathwayDomains = [
+  'الكل',
+  'التسويق والمبيعات',
+  'القيادة والموارد البشرية',
+  'إدارة المشاريع والعمليات',
+  'التقنية والذكاء الاصطناعي',
+  'المالية وريادة الأعمال',
+  'القطاع الحكومي',
+  'التطوير المهني والتواصل',
+]
 
 function skillsOf(raw: CoreCatalogRaw, courseIds: string[]): string[] {
   const seen: string[] = []

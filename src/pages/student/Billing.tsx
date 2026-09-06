@@ -6,6 +6,7 @@ import { CircleSlash, CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw, Sh
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
+import { toast, toastError } from '@/components/Toast';
 
 interface Payment { id: string; amount: string; status: string; method: string | null; refunds: { id: string; status: string; amount: string }[] }
 interface Invoice { id: string; total: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
@@ -47,7 +48,6 @@ export default function Billing() {
   const [provider, setProvider] = useState<PaymentProviderInfo>({ driver: "test" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [flash, setFlash] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -64,7 +64,7 @@ export default function Billing() {
 
   const pay = async (order: Order) => {
     if (busy) return;
-    setBusy(order.id); setFlash("");
+    setBusy(order.id);
     try {
       /* مفتاح idempotency للمحاولة لا للطلب.
 
@@ -81,9 +81,9 @@ export default function Billing() {
       });
       /* مزود مستضاف: نحوّل المتعلم لصفحة الدفع عند المزود — التسوية تصل بـ webhook */
       if (res.redirectUrl) { window.location.assign(res.redirectUrl); return; }
-      setFlash(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
+      toast(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "فشل الدفع"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الدفع"); }
     finally { setBusy(null); }
   };
 
@@ -94,27 +94,26 @@ export default function Billing() {
      مقعده. وبلا هذا يبقى طلبٌ متروكٌ قافلا شعبةً لا يشتريها ولا يتركها. */
   const cancel = async (order: Order) => {
     if (busy) return;
-    setBusy(order.id); setFlash("");
+    setBusy(order.id);
     try {
       await apiPost(`/api/learner/orders/${order.id}/cancel`, {});
-      setFlash("أُلغي طلبك وفُكّ حجزُ مقعدك — يمكنك الشراء من جديد متى شئت");
+      toast("أُلغي طلبك وفُكّ حجزُ مقعدك — يمكنك الشراء من جديد متى شئت");
       await load();
-    } catch (e) { setFlash(e instanceof ApiError ? e.message : "تعذّر إلغاء الطلب"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر إلغاء الطلب"); }
     finally { setBusy(null); }
   };
 
   return (
     <PortalLayout title="فواتيري وطلباتي">
-      {flash && <p className="mb-4 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3 text-sm font-bold text-teal-light-ink" role="status">{flash}</p>}
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ReceiptText className="h-12 w-12 text-white/20" />
+          <ReceiptText className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بعد</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-white/55">
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             عند موافقة العمليات على طلب تسجيلك تُنشأ فاتورة هنا — والدفع يفتح وصولك للمنصة تلقائيا.
           </p>
         </div>
@@ -125,10 +124,10 @@ export default function Billing() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
-                  <p className="mt-1 text-xs text-white/50">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-[10px]">{o.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-xs text-muted-foreground">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-micro">{o.id.slice(0, 8)}…</span></p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-white/50">{o.currency}</span></span>
+                  <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-muted-foreground">{o.currency}</span></span>
                   <span className={`rounded-full border px-3 py-1 text-[11px] font-bold ${o.status === "paid" ? "border-emerald-400/30 text-emerald-300" : "border-gold/40 text-gold-ink"}`}>
                     {ORDER_STATUS[o.status] ?? o.status}
                   </span>
@@ -143,7 +142,7 @@ export default function Billing() {
                     {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
                   </button>
                   {provider.driver !== "test" && (
-                    <p className="mt-2 flex items-center gap-1.5 text-[10px] text-white/45">
+                    <p className="mt-2 flex items-center gap-1.5 text-micro text-muted-foreground">
                       <ShieldCheck className="h-3 w-3 text-teal-ink" />
                       تُحوَّل لصفحة دفع مستضافة عند المزود — لا تمر بيانات بطاقتك بخوادمنا، ويُفتح وصولك فور تأكيد المزود.
                     </p>
@@ -152,7 +151,7 @@ export default function Billing() {
               )}
               {isUnpaid(o.status) && (
                 <button disabled={busy === o.id} onClick={() => void cancel(o)}
-                  className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/40 disabled:opacity-40">
+                  className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/40 disabled:opacity-40">
                   <CircleSlash className="h-3 w-3" /> ألغِ الطلب وافكّ حجز مقعدي
                 </button>
               )}
@@ -163,20 +162,20 @@ export default function Billing() {
               )}
 
               {o.invoice && (
-                <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-4">
-                  <p className="flex items-center justify-between text-xs font-bold text-white/60">
+                <div className="mt-4 rounded-2xl border border-white/8 bg-paper/20 p-4">
+                  <p className="flex items-center justify-between text-xs font-bold text-muted-foreground">
                     <span>الفاتورة — {INV_STATUS[o.invoice.status] ?? o.invoice.status}</span>
                     <span>{o.invoice.total} {o.invoice.currency}</span>
                   </p>
                   {o.invoice.payments.length > 0 && (
                     <ul className="mt-2 space-y-1.5">
                       {o.invoice.payments.map((p) => (
-                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-[11px] text-white/55">
-                          <CreditCard className="h-3 w-3 text-white/30" />
+                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                          <CreditCard className="h-3 w-3 text-muted-foreground/50" />
                           دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status === "pending" ? "بانتظار تأكيد المزود" : p.status}
-                          {p.method && <span className="text-white/40">({p.method})</span>}
+                          {p.method && <span className="text-muted-foreground">({p.method})</span>}
                           {p.refunds.map((r) => (
-                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-[10px] text-gold-ink">
+                            <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-micro text-gold-ink">
                               <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {r.status}
                             </span>
                           ))}
@@ -191,7 +190,7 @@ export default function Billing() {
         </div>
       )}
 
-      <button onClick={() => void load()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-white/50 hover:text-white">
+      <button onClick={() => void load()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
         <RefreshCw className="h-3.5 w-3.5" /> تحديث
       </button>
     </PortalLayout>

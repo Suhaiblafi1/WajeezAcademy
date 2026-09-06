@@ -9,6 +9,17 @@
    بالنسيان أكثر ممّا تُفقَد بالرفض. */
 
 import { AlertTriangle, CalendarClock } from 'lucide-react'
+
+/* ═══ الأحبارُ الشفّافةُ على الأبيض، ولماذا بُدِّلت ═══
+
+   `text-muted-foreground/50` و`/35` وأمثالُها ليست ألوانا بل **أبيضٌ بشفافيّة**: تفترض
+   أنّ ما خلفها داكن. فقياسُ التباين (`npm run a11y:audit`) وجد هنا نصّا
+   بـ**٢٫٢٢:‏١** في المظهر الداكن — والمطلوب ٤٫٥ — و**١٫٦٨:‏١** في الفاتح، أي
+   نصٌّ موجودٌ لا يُقرأ.
+
+   و`text-muted-foreground` رمزٌ يُعرَّف في المظهرَين معا (‏٨:‏١ في الداكن
+   و٦٫٤:‏١ في الفاتح)، فينقلب معهما. وهي القاعدةُ نفسُها التي أُصلح بها زرُّ
+   تبديل المظهر. */
 import { CLOSED_STAGES, isOverdue, sinceAr, STAGES, type PipelineCase } from '@/application/advisor/pipeline'
 
 export default function Pipeline({
@@ -40,7 +51,7 @@ export default function Pipeline({
               <button
                 key={c.id}
                 onClick={() => onOpen(c.id)}
-                className="cursor-pointer rounded-full border border-gold/40 bg-black/25 px-3.5 py-1.5 text-[11px] font-bold text-white/80 transition hover:border-gold"
+                className="cursor-pointer rounded-full border border-gold/40 bg-paper/25 px-3.5 py-1.5 text-[11px] font-bold text-foreground transition hover:border-gold"
               >
                 {renderName(c.id).name}
                 <span className="ms-2 text-gold-ink">{sinceAr(c.nextFollowUpAt!)}</span>
@@ -58,13 +69,13 @@ export default function Pipeline({
             <section key={s.key} className="w-[240px] shrink-0 lg:w-auto">
               <header className="flex items-baseline justify-between gap-2 rounded-t-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
                 <h2 className="truncate text-[11px] font-black">{s.label}</h2>
-                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black tabular-nums">
+                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-micro font-black tabular-nums">
                   {items.length}
                 </span>
               </header>
               <div className="min-h-24 space-y-2 rounded-b-2xl border border-t-0 border-white/10 bg-white/[0.015] p-2">
                 {items.length === 0 ? (
-                  <p className="px-1.5 py-4 text-center text-[10px] leading-5 text-white/25">{s.hint}</p>
+                  <p className="px-1.5 py-4 text-center text-micro leading-5 text-muted-foreground">{s.hint}</p>
                 ) : (
                   items.map((c) => {
                     const who = renderName(c.id)
@@ -74,13 +85,13 @@ export default function Pipeline({
                         key={c.id}
                         onClick={() => onOpen(c.id)}
                         className={`w-full cursor-pointer rounded-xl border p-3 text-right transition hover:-translate-y-0.5 ${
-                          late ? 'border-gold/45 bg-gold/[0.06]' : 'border-white/10 bg-black/25 hover:border-teal/40'
+                          late ? 'border-gold/45 bg-gold/[0.06]' : 'border-white/10 bg-paper/25 hover:border-teal/40'
                         }`}
                       >
                         <p className="truncate text-xs font-bold">{who.name}</p>
-                        {who.email && <p dir="ltr" className="mt-0.5 truncate text-right text-[10px] text-white/35">{who.email}</p>}
-                        {c.nextAction && <p className="mt-2 line-clamp-2 text-[10.5px] leading-5 text-white/55">{c.nextAction}</p>}
-                        <p className={`mt-2 flex items-center gap-1 text-[10px] ${late ? 'text-gold-ink' : 'text-white/35'}`}>
+                        {who.email && <p dir="ltr" className="mt-0.5 truncate text-right text-micro text-muted-foreground">{who.email}</p>}
+                        {c.nextAction && <p className="mt-2 line-clamp-2 text-micro leading-5 text-muted-foreground">{c.nextAction}</p>}
+                        <p className={`mt-2 flex items-center gap-1 text-micro ${late ? 'text-gold-ink' : 'text-muted-foreground'}`}>
                           <CalendarClock className="h-3 w-3" />
                           {c.nextFollowUpAt ? sinceAr(c.nextFollowUpAt) : `آخر تحديث ${sinceAr(c.updatedAt)}`}
                         </p>
@@ -97,7 +108,7 @@ export default function Pipeline({
       {/* الخارجون من القِمع */}
       {CLOSED_STAGES.some((s) => byStage(s.key).length > 0) && (
         <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <summary className="cursor-pointer text-[11px] font-bold text-white/50">
+          <summary className="cursor-pointer text-[11px] font-bold text-muted-foreground">
             خرجوا من القِمع ({CLOSED_STAGES.reduce((n, s) => n + byStage(s.key).length, 0)})
           </summary>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -106,9 +117,9 @@ export default function Pipeline({
                 <button
                   key={c.id}
                   onClick={() => onOpen(c.id)}
-                  className="cursor-pointer rounded-full border border-white/12 px-3.5 py-1.5 text-[11px] text-white/55 transition hover:border-white/30 hover:text-white/80"
+                  className="cursor-pointer rounded-full border border-white/12 px-3.5 py-1.5 text-[11px] text-muted-foreground transition hover:border-white/30 hover:text-foreground"
                 >
-                  {renderName(c.id).name} <span className="text-white/30">· {s.label}</span>
+                  {renderName(c.id).name} <span className="text-muted-foreground">· {s.label}</span>
                 </button>
               )),
             )}

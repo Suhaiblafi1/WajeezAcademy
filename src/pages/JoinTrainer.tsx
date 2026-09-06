@@ -5,7 +5,7 @@ import {
   FileUp, KeyRound, Loader2, Mail, MailCheck, MessageCircle, Mic2, Phone, RefreshCcw, Search, Send, Sparkles, Users,
 } from "lucide-react";
 import {
-  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, OptionGrid, Question,
+  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, invalidProps, OptionGrid, Question,
 } from "@/components/FormKit";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
@@ -31,132 +31,37 @@ import {
    يسأله كيف نصل إليه للاجتماع التعريفيّ، ثمّ يصله بريدُ تأكيدٍ بتفاصيل طلبه
    ورقمه، وفي البريد رابطٌ يوثّق عنوانه. */
 
-const DOMAIN_YEARS = [
-  { value: "1-3", label: "١–٣ سنوات" },
-  { value: "4-7", label: "٤–٧ سنوات" },
-  { value: "8-12", label: "٨–١٢ سنة" },
-  { value: "12+", label: "أكثر من ١٢ سنة" },
-];
+/* القوائمُ الثابتة (جهاتُ الاعتماد والدولُ ورموزُ الهاتف وصيغُ العدّ) في
+   ملفٍّ بجانب هذا — بياناتٌ لا واجهة، ومئةٌ وعشرون سطرا كانت تقف بين
+   قارئِ الصفحة وبين منطقِها. */
+import {
+  ACCREDITATION_BODIES,
+  ACCREDITATION_OTHER,
+  ALL_ARAB,
+  ARAB_COUNTRIES,
+  CHAR_FORMS,
+  COUNTRY_CODES,
+  COUNTRY_TIMEZONE,
+  DAYS,
+  DOC_KINDS,
+  DOMAIN_YEARS,
+  EMPLOYMENT_STATUS,
+  LANGUAGES,
+  MAX_DOC_BYTES,
+  MISSING_FORMS,
+  MOTIVATION_MAX,
+  MOTIVATION_MIN,
+  PERIODS,
+  STEPS,
+  TARGET_AUDIENCES,
+  TRAINING_YEARS,
+  type UploadState,
+} from "./join-trainer/options";
+import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
 
-const TRAINING_YEARS = [
-  { value: "none", label: "لم أدرّب بعد — لكني أتقن مجالي" },
-  { value: "informal", label: "تدريب غير رسمي (زملاء / فريقي)" },
-  { value: "workshops", label: "ورش ودورات قصيرة" },
-  { value: "formal_teaching", label: "تدريب منهجي معتاد (دورات/شعب)" },
-];
-
-const LANGUAGES = ["العربية", "الإنجليزية", "الفرنسية"];
-const COUNTRY_CODES = ["+962", "+966", "+971", "+20", "+965", "+974", "+968", "+973", "+964", "+218", "+249"];
-
-const ARAB_COUNTRIES = [
-  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
-  "العراق", "فلسطين", "لبنان", "سوريا", "ليبيا", "تونس", "الجزائر", "المغرب", "السودان", "اليمن", "موريتانيا",
-];
-const ALL_ARAB = "كل الدول العربية";
-
-/* المنطقة الزمنية تُشتق تلقائيا من دولة الإقامة — لا سؤال إضافي */
-const COUNTRY_TIMEZONE: Record<string, string> = {
-  "الأردن": "Asia/Amman", "السعودية": "Asia/Riyadh", "الإمارات": "Asia/Dubai", "مصر": "Africa/Cairo",
-  "الكويت": "Asia/Kuwait", "قطر": "Asia/Qatar", "عُمان": "Asia/Muscat", "البحرين": "Asia/Bahrain",
-  "العراق": "Asia/Baghdad", "فلسطين": "Asia/Hebron", "لبنان": "Asia/Beirut", "سوريا": "Asia/Damascus",
-  "ليبيا": "Africa/Tripoli", "تونس": "Africa/Tunis", "الجزائر": "Africa/Algiers", "المغرب": "Africa/Casablanca",
-  "السودان": "Africa/Khartoum", "اليمن": "Asia/Aden", "موريتانيا": "Africa/Nouakchott",
-};
-
-/* جهات الاعتماد الرسمية في الوطن العربي — قائمةٌ تُختار لا حقل نصٍّ حرّ.
-
-   «اسم الجهة» مكتوبا بالأيدي يصل المراجعَ بعشر صيغ للجهة الواحدة (ETEC،
-   «هيئة تقويم»، «تقويم التعليم والتدريب»)، فلا يُفرز ولا يُحصى ولا يُتحقّق
-   منه. والقائمة هنا وطنية حكومية — وهي ما يملكه المتقدّم العربي فعلا — و«أخرى»
-   تبقى مفتوحة لمن اعتمادُه دوليٌّ أو خاصّ فيكتبه كما هو. */
-const ACCREDITATION_BODIES: { country: string; bodies: string[] }[] = [
-  { country: "السعودية", bodies: [
-    "هيئة تقويم التعليم والتدريب (ETEC)",
-    "المؤسسة العامة للتدريب التقني والمهني (TVTC)",
-  ] },
-  { country: "الأردن", bodies: [
-    "هيئة تنمية وتطوير المهارات المهنية والتقنية (TVSDC)",
-    "هيئة الاعتماد وضمان الجودة للمؤسسات التعليمية",
-  ] },
-  { country: "الإمارات", bodies: [
-    "المركز الوطني للتأهيل المؤسسي والمهني (NQA)",
-    "هيئة المعرفة والتنمية البشرية — دبي (KHDA)",
-  ] },
-  { country: "مصر", bodies: [
-    "الهيئة القومية لضمان جودة التعليم والاعتماد",
-    "الأكاديمية المهنية للمعلمين",
-  ] },
-  { country: "قطر", bodies: ["وزارة التربية والتعليم والتعليم العالي — إدارة التدريب"] },
-  { country: "الكويت", bodies: ["الهيئة العامة للتعليم التطبيقي والتدريب"] },
-  { country: "عُمان", bodies: ["الهيئة العُمانية للاعتماد الأكاديمي وضمان جودة التعليم"] },
-  { country: "البحرين", bodies: ["هيئة جودة التعليم والتدريب (BQA)"] },
-  { country: "العراق", bodies: ["وزارة التعليم العالي والبحث العلمي — جهاز الإشراف والتقويم"] },
-  { country: "فلسطين", bodies: ["هيئة الاعتماد والجودة لمؤسسات التعليم العالي"] },
-  { country: "لبنان", bodies: ["المديرية العامة للتعليم المهني والتقني"] },
-  { country: "المغرب", bodies: ["مكتب التكوين المهني وإنعاش الشغل (OFPPT)"] },
-  { country: "تونس", bodies: ["الوكالة التونسية للتكوين المهني"] },
-  { country: "الجزائر", bodies: ["وزارة التكوين والتعليم المهنيين"] },
-  { country: "ليبيا", bodies: ["المركز الوطني لضمان جودة واعتماد المؤسسات التعليمية والتدريبية"] },
-  { country: "السودان", bodies: ["المجلس القومي للتدريب المهني والتلمذة"] },
-  { country: "اليمن", bodies: ["وزارة التعليم الفني والتدريب المهني"] },
-];
-const ACCREDITATION_OTHER = "أخرى — أكتبها بنفسي";
-
-const EMPLOYMENT_STATUS = [
-  { value: "employed", label: "موظف — أعمل لدى جهة" },
-  { value: "own_business", label: "لدي عملي الخاص" },
-  { value: "full_time_training", label: "متفرغ للتدريب" },
-];
-
-const TARGET_AUDIENCES = [
-  "طلاب المدارس والجامعات", "خريجون جدد", "موظفو القطاع الخاص", "موظفو القطاع الحكومي",
-  "رواد أعمال وأصحاب مشاريع", "قادة ومديرون", "مستقلون وأعمال حرة", "الباحثون عن عمل",
-];
-
-/* «بقي 2 أشياء» عربيةٌ مكسورة يقرؤها المتقدّم في أول احتكاك به */
-const MISSING_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" } as const;
-const CHAR_FORMS = { one: "حرف", two: "حرفان", few: "أحرف", many: "حرفا" } as const;
-
-/* ثلاثة أقسام في نموذج واحد لا مرحلتان بينهما بريد.
-
-   كان الطلب يُقسم مرحلتين: مرحلة أولى تُرسَل، ثم رابطٌ يصل بالبريد يفتح مرحلة
-   ثانية. وكلفة ذلك أن كل متقدّم يعبر بابين لا بابا، وأن قناة البريد صارت
-   شرطا لإكمال الطلب — من لم تصله الرسالة توقف طلبه عند نصفه.
-   والقسمان الأخيران يحتاجان مرجع الطلب (لرفع الملفات)، فيُرسَل القسم
-   الأول في الخلفية عند الانتقال إلى الثاني — والمتقدّم يرى نموذجا واحدا. */
-/* حدّ الدافع: ٧٥ حرفا. كان ١٥٠ فصار سطرين يُكتبان لا فقرةً تُستدرّ — والعشرة
-   الأولى («أحب التدريب») هي ما أُغلق، لا الإيجاز. والسقف ٥٠٠ يمنع سيرةً ذاتية
-   ثانية في حقل نصّ. الرقمان هنا مطابقان لما يفرضه الخادم — والعدّاد يقرأ منهما. */
-export const MOTIVATION_MIN = 75;
-export const MOTIVATION_MAX = 500;
-
-/* سقفٌ واحدٌ معلومٌ يُوفى: ٤MB. وكان المكتوب ١٠ و٢٠ و٣٠٠، وكلّها أرقام في
-   النصّ لا في الواقع — الدالة السحابية لا تستقبل جسما أكبر من ٤٫٥MB، فالفيديو
-   يُردّ قبل أن يبلغ الخادم. والفيديو صار رابطا في حقله أعلاه لا ملفّا. */
-export const MAX_DOC_BYTES = 4 * 1024 * 1024;
-
-const DOC_KINDS = [
-  { kind: "cv", label: "السيرة الذاتية", hint: "PDF · حتى ٤MB", accept: "application/pdf", required: true },
-  { kind: "evidence", label: "ملف أعمال أو نماذج تدريب سابقة", hint: "PDF أو صورة · حتى ٤MB", accept: "application/pdf,image/*", required: false },
-  { kind: "certificate", label: "شهادات واعتمادات", hint: "PDF أو صورة · حتى ٤MB", accept: "application/pdf,image/*", required: false },
-] as const;
-
-const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-const PERIODS = [
-  { value: "morning", label: "صباحي" },
-  { value: "evening", label: "مسائي" },
-] as const;
-
-interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
-
-/* ثلاث خطوات: من هو (وكلمةُ حسابه)، وأدلتُه وتوفّره، وكيف نصل إليه.
-   الحسابُ انتقل من الخطوة الأخيرة إلى الأولى: كان اختياريا يُنشأ بعد كلّ
-   شيء فلا يُنشئه أحد، وصار مع البريد — فمن يكتب بريده يكتب كلمته. */
-const STEPS = [
-  { n: 1, title: "معلوماتك وخبرتك", hint: "من أنت وماذا تُتقن" },
-  { n: 2, title: "نماذجك وأدلتك", hint: "سيرتك ودوراتك وتوفّرك" },
-  { n: 3, title: "التواصل والإرسال", hint: "كيف نصل إليك للاجتماع التعريفي" },
-] as const;
+/* الحدّان يُعاد تصديرُهما من هنا: الاختبارُ يقرؤهما من هذا الملفّ حرسا
+   لتطابقهما مع الخادم، وموضعُ التعريف انتقل لا الضمان. */
+export { MAX_DOC_BYTES, MOTIVATION_MAX, MOTIVATION_MIN };
 
 /** قائمة منسدلة متعددة الاختيار — مربع صح بجانب كل خيار، والمختار يظهر وسمًا صغيرًا قابلا للإزالة */
 function MultiPick({ id, label, options, selected, onChange }: {
@@ -188,7 +93,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
       <button
         type="button" id={id} aria-expanded={open} aria-haspopup="listbox"
         onClick={() => setOpen(!open)}
-        className={`${controlCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-white" : "text-white/40"}`}
+        className={`${controlCls} flex cursor-pointer items-center justify-between text-right ${selected.length ? "text-foreground" : "text-muted-foreground"}`}
       >
         <span>{label}</span>
         <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-teal-light-ink transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
@@ -200,7 +105,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
             const checked = selected.includes(o);
             return (
               <label key={o} role="option" aria-selected={checked}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-teal-light-ink" : "text-white/70"}`}>
+                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-teal-light-ink" : "text-foreground"}`}>
                 <input type="checkbox" checked={checked} onChange={() => toggleValue(o)} className="h-3.5 w-3.5 shrink-0 accent-teal" />
                 {o}
               </label>
@@ -213,7 +118,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
           {selected.map((s) => (
             <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-[11px] font-bold text-teal-light-ink">
               {s}
-              <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-white/50 transition hover:text-white">×</button>
+              <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-muted-foreground transition hover:text-foreground">×</button>
             </span>
           ))}
         </div>
@@ -252,6 +157,7 @@ const codeSelectCls = `${controlCls.replace("w-full", "")} w-28 shrink-0 px-2 [&
 
 /** صفحة انضمام المدربين — على API حقيقي: قسمٌ أوّل يُنشئ الطلب والحساب، وقسمٌ أخير يُكمله */
 export default function JoinTrainer() {
+  const hp = useHoneypot();
   const [params] = useSearchParams();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -384,6 +290,42 @@ export default function JoinTrainer() {
   /* من رفع العلامة يلزمه أن يسمّي الجهة — وإلّا فهي علامةٌ بلا خبر */
   const accreditationReady = !form.hasAccreditation || accreditationName.length >= 3;
 
+  /* ── الخطأُ عند الحقل، لا في ذيل النموذج وحدَه ──
+
+     قائمةُ النقص أسفلَ النموذج تقول ما بقي، ولا تقول أين هو: من أخطأ في
+     بريده يقرأ «بريد إلكتروني صحيح» ثمّ يصعد يمسح الحقولَ بعينه يبحث عن
+     المقصود. فهذه رسالةٌ ثانية عند الحقل نفسِه، موصولةٌ به لقارئ الشاشة
+     بـ`aria-invalid` و`aria-describedby`.
+
+     وشرطُها أن تأتي **بعد أن يُلمس الحقل** — لأنّ رسالةَ خطأٍ على حقلٍ فارغٍ
+     لم يُفتح بعد لومٌ لا إرشاد. فالحقلُ يُوسم «ملموسا» عند خروج المؤشّر منه
+     (`onBlur`)، وعندها فقط تُقرأ رسالتُه. */
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const touch = (k: string) => () => setTouched((t) => (t[k] ? t : { ...t, [k]: true }));
+
+  const fieldErrors = useMemo<Record<string, string | null>>(() => ({
+    name: form.fullName.trim().length >= 3 ? null : 'اكتب اسمك الكامل — ثلاثةُ أحرفٍ على الأقلّ',
+    email: /.+@.+\..+/.test(form.email) ? null : 'بريدٌ بصيغةٍ صحيحة، مثل name@example.com',
+    /* بعد إرسال القسم الأوّل الحسابُ قائم، فلا كلمةَ تُطلب ولا خطأَ يُقال */
+    password: result || password.length >= 8
+      ? null
+      : password.length === 0
+        ? 'كلمةُ مرورٍ لحسابك — ٨ أحرفٍ على الأقلّ'
+        : `بقي ${countAr(8 - password.length, CHAR_FORMS)}`,
+    password2: result || !passwordConfirm || passwordConfirm === password ? null : 'الكلمتان غير متطابقتين',
+    accredBody: !form.hasAccreditation || form.accreditationBody ? null : 'اختر جهةَ الاعتماد التي أشرت إليها',
+    accredOther: !form.hasAccreditation || form.accreditationBody !== ACCREDITATION_OTHER || accreditationName.length >= 3
+      ? null
+      : 'اكتب اسمَ الجهة كما هو في وثيقتك',
+    altEmail: contactChannel !== 'other_email' || /.+@.+\..+/.test(contactAltEmail)
+      ? null
+      : 'بريدٌ آخرُ بصيغةٍ صحيحة، مثل name@example.com',
+  }), [form.fullName, form.email, form.hasAccreditation, form.accreditationBody, accreditationName,
+      password, passwordConfirm, result, contactChannel, contactAltEmail]);
+
+  /** رسالةُ الحقل — تُكتم حتى يُلمس */
+  const errOf = (k: string) => (touched[k] ? fieldErrors[k] ?? null : null);
+
   /* ما ينقص الخطوة، بالاسم لا بزرٍّ مطفأ.
 
      كان «التالي» يُطفأ ولا يقول لماذا: أربعة عشر شرطا في تعبير واحد، والمتقدّم
@@ -514,6 +456,7 @@ export default function JoinTrainer() {
     setBusy(true); setError("");
     try {
       const res = await apiPost<SubmitResponse>("/api/v1/trainer-applications", {
+        ...(hp.value ? { [HONEYPOT_FIELD]: hp.value } : {}),
         fullName: form.fullName, email: form.email.trim().toLowerCase(), password,
         phoneCountryCode: form.phone ? form.phoneCountryCode || undefined : undefined,
         phone: normalizeDigits(form.phone) || undefined,
@@ -576,7 +519,7 @@ export default function JoinTrainer() {
           </span>
           <h1 className="mt-6 text-2xl font-black">وصل طلبك كاملا — شكرا لك</h1>
           <p className="mt-4 rounded-2xl border border-gold/30 bg-gold/5 p-4">
-            <span className="text-xs text-white/50">رقم طلبك</span>
+            <span className="text-xs text-muted-foreground">رقم طلبك</span>
             <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
           </p>
 
@@ -585,9 +528,9 @@ export default function JoinTrainer() {
               <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
                 <BadgeCheck className="h-4 w-4" /> ما التالي؟
               </p>
-              <p className="mt-2 text-sm leading-8 text-white/70">
-                سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم <b className="text-white">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
-                {channelValue && <> على <b dir="ltr" className="text-white">{channelValue}</b></>} لتحديد موعد
+              <p className="mt-2 text-sm leading-8 text-foreground">
+                سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم <b className="text-foreground">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
+                {channelValue && <> على <b dir="ltr" className="text-foreground">{channelValue}</b></>} لتحديد موعد
                 اجتماع تعريفي قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.
               </p>
             </div>
@@ -598,7 +541,7 @@ export default function JoinTrainer() {
                 {mailSent ? "أرسلنا بريد تأكيد إلى" : "تعذّر إرسال بريد التأكيد الآن"}
                 {mailSent && <b dir="ltr" className="text-teal-light-ink">{form.email.trim()}</b>}
               </p>
-              <p className="mt-2 text-[12px] leading-7 text-white/60">
+              <p className="mt-2 text-[12px] leading-7 text-muted-foreground">
                 {mailSent
                   ? "فيه رقم طلبك وتفاصيله والخطوة التالية — وفيه رابطٌ افتحه مرة واحدة ليُوثَّق بريدك. إن لم يصلك خلال دقائق راجع مجلد الرسائل غير المرغوبة، أو أعد إرساله من صفحة حالتك."
                   : "طلبك محفوظ ومقدَّم على أي حال. يمكنك طلب رسالة التأكيد مجددا من صفحة حالتك بعد الدخول."}
@@ -609,8 +552,8 @@ export default function JoinTrainer() {
               <p className="flex items-center gap-2 text-sm font-black">
                 <KeyRound className="h-4 w-4 text-teal-light-ink" /> تابع حالة طلبك من حسابك
               </p>
-              <p className="mt-2 text-[12px] leading-7 text-white/60">
-                سجّل الدخول ببريدك <b dir="ltr" className="text-white/85">{form.email.trim()}</b> وكلمة المرور التي اختَرتها.
+              <p className="mt-2 text-[12px] leading-7 text-muted-foreground">
+                سجّل الدخول ببريدك <b dir="ltr" className="text-foreground">{form.email.trim()}</b> وكلمة المرور التي اختَرتها.
                 سترى حالة طلبك في كل مرحلة، وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
               </p>
               <Link
@@ -654,7 +597,7 @@ export default function JoinTrainer() {
       <div className="mx-auto max-w-3xl">
         <span className="kicker">انضم إلى نخبة المدربين</span>
         <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>
-        <p className="mt-4 max-w-2xl text-base leading-8 text-white/65">
+        <p className="mt-4 max-w-2xl text-base leading-8 text-foreground">
           مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون واجبات، ويرافقون طلابا، ويقيمون مشاريع تخرج.
           نموذج واحد بثلاثة أقسام — يُحفظ تقدّمك كلما مضيت، ولا ينتظرك بريد بينها.
         </p>
@@ -667,7 +610,7 @@ export default function JoinTrainer() {
           ].map((f) => (
             <div key={f.text} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
               <f.icon className="h-5 w-5 text-teal-light-ink" />
-              <p className="mt-3 text-xs font-bold leading-6 text-white/85">{f.text}</p>
+              <p className="mt-3 text-xs font-bold leading-6 text-foreground">{f.text}</p>
             </div>
           ))}
         </div>
@@ -688,15 +631,15 @@ export default function JoinTrainer() {
                     <span
                       className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-[11px] font-black ${
                         state === "current" ? "bg-gold text-on-gold"
-                          : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-white/45"
+                          : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-muted-foreground"
                       }`}
                       dir="ltr"
                     >
                       {state === "done" ? <Check className="h-3.5 w-3.5" /> : s.n}
                     </span>
-                    <span className={`text-xs font-black ${state === "todo" ? "text-white/45" : "text-white"}`}>{s.title}</span>
+                    <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-foreground"}`}>{s.title}</span>
                   </span>
-                  <span className="mt-1.5 block text-[10.5px] leading-relaxed text-white/40">{s.hint}</span>
+                  <span className="mt-1.5 block text-micro leading-relaxed text-muted-foreground">{s.hint}</span>
                 </div>
               </li>
             );
@@ -713,7 +656,7 @@ export default function JoinTrainer() {
             </p>
             <button
               type="button" onClick={startOver}
-              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-white/60 transition hover:border-white/40 hover:text-white/85"
+              className="cursor-pointer rounded-full border border-white/20 px-4 py-1.5 text-[11px] font-bold text-muted-foreground transition hover:border-white/40 hover:text-foreground"
             >
               ابدأ من جديد
             </button>
@@ -721,16 +664,17 @@ export default function JoinTrainer() {
         )}
 
         <form onSubmit={submit} className="mt-5 space-y-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-9">
+          {hp.field}
           {/* ══ ١) من أنت ══ */}
           {step === 1 && (
             <div className="space-y-4">
               <Question n={1} title="من أنت؟" hint="نتواصل معك على هذين — فراجعهما قبل المضيّ.">
                 <FieldRow>
-                  <Field label="الاسم الكامل" htmlFor="jt-name" required>
-                    <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} className={controlCls} />
+                  <Field label="الاسم الكامل" htmlFor="jt-name" required error={errOf("name")}>
+                    <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} onBlur={touch("name")} {...invalidProps("jt-name-error", errOf("name"))} className={controlCls} />
                   </Field>
-                  <Field label="البريد الإلكتروني" htmlFor="jt-email" required>
-                    <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} className={`${controlCls} text-left`} />
+                  <Field label="البريد الإلكتروني" htmlFor="jt-email" required error={errOf("email")}>
+                    <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} onBlur={touch("email")} {...invalidProps("jt-email-error", errOf("email"))} className={`${controlCls} text-left`} />
                   </Field>
                   <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone" hint="بلا رمز الدولة وبلا صفر البداية — مثال: 791234567">
                     <div className="flex gap-2" dir="ltr">
@@ -763,31 +707,33 @@ export default function JoinTrainer() {
                     <p className="flex items-center gap-2 text-[12.5px] font-black text-teal-light-ink">
                       <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
                     </p>
-                    <p className="mt-1 text-[11px] leading-6 text-white/50">
+                    <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
                       تدخل بها ببريدك أعلاه لتتابع حالة طلبك في كل مرحلة — وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
                       إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
                     </p>
                     <FieldRow>
-                      <Field label="كلمة المرور" htmlFor="jt-password" required hint="٨ أحرف على الأقل">
+                      <Field label="كلمة المرور" htmlFor="jt-password" required hint="٨ أحرف على الأقل" error={errOf("password")}>
                         <div className="relative">
                           <input
                             id="jt-password" type={showPassword ? "text" : "password"} autoComplete="new-password" dir="ltr"
-                            value={password} onChange={(e) => setPassword(e.target.value)}
+                            value={password} onChange={(e) => setPassword(e.target.value)} onBlur={touch("password")}
+                            {...invalidProps("jt-password-error", errOf("password"))}
                             className={`${controlCls} pr-4 pl-11 text-left`}
                           />
                           <button
                             type="button" onClick={() => setShowPassword((v) => !v)}
                             aria-label={showPassword ? "أخفِ كلمة المرور" : "أظهر كلمة المرور"}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 cursor-pointer text-white/45 transition hover:text-white"
+                            className="absolute left-1 top-1/2 grid h-11 w-11 -translate-y-1/2 cursor-pointer place-items-center text-muted-foreground transition hover:text-foreground"
                           >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                           </button>
                         </div>
                       </Field>
-                      <Field label="تأكيد كلمة المرور" htmlFor="jt-password2" required>
+                      <Field label="تأكيد كلمة المرور" htmlFor="jt-password2" required error={errOf("password2")}>
                         <input
                           id="jt-password2" type={showPassword ? "text" : "password"} autoComplete="new-password" dir="ltr"
-                          value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+                          value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} onBlur={touch("password2")}
+                          {...invalidProps("jt-password2-error", errOf("password2"))}
                           className={`${controlCls} text-left ${passwordConfirm && passwordConfirm !== password ? "border-gold/60" : ""}`}
                         />
                       </Field>
@@ -796,7 +742,7 @@ export default function JoinTrainer() {
                 ) : (
                   <p className="mt-5 flex items-center gap-2 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4 text-[12px] font-bold text-teal-light-ink">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
-                    حسابك جاهز ببريدك <span dir="ltr" className="text-white/85">{form.email.trim()}</span> — تدخل به بعد الإرسال لمتابعة طلبك.
+                    حسابك جاهز ببريدك <span dir="ltr" className="text-foreground">{form.email.trim()}</span> — تدخل به بعد الإرسال لمتابعة طلبك.
                   </p>
                 )}
               </Question>
@@ -861,11 +807,12 @@ export default function JoinTrainer() {
                     لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
                   </ConsentRow>
                   {form.hasAccreditation && (
-                    <div className="mt-3 rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <div className="mt-3 rounded-2xl border border-white/10 bg-paper/20 p-4">
                       <FieldRow>
-                        <Field label="جهة الاعتماد" htmlFor="jt-accred-body" required>
+                        <Field label="جهة الاعتماد" htmlFor="jt-accred-body" required error={errOf("accredBody")}>
                           <select
-                            id="jt-accred-body" value={form.accreditationBody} onChange={set("accreditationBody")}
+                            id="jt-accred-body" value={form.accreditationBody} onChange={set("accreditationBody")} onBlur={touch("accredBody")}
+                            {...invalidProps("jt-accred-body-error", errOf("accredBody"))}
                             className={`${controlCls} [&>option]:bg-surface [&>optgroup]:bg-surface`}
                           >
                             <option value="" disabled>اختر الجهة</option>
@@ -884,15 +831,16 @@ export default function JoinTrainer() {
                           />
                         </Field>
                         {form.accreditationBody === ACCREDITATION_OTHER && (
-                          <Field label="اكتب اسم الجهة كما هو في وثيقتك" htmlFor="jt-accred-other" required wide>
+                          <Field label="اكتب اسم الجهة كما هو في وثيقتك" htmlFor="jt-accred-other" required wide error={errOf("accredOther")}>
                             <input
                               id="jt-accred-other" placeholder="مثال: Chartered Institute of Personnel and Development (CIPD)"
-                              value={form.accreditationOther} onChange={set("accreditationOther")} className={controlCls}
+                              value={form.accreditationOther} onChange={set("accreditationOther")} onBlur={touch("accredOther")}
+                              {...invalidProps("jt-accred-other-error", errOf("accredOther"))} className={controlCls}
                             />
                           </Field>
                         )}
                       </FieldRow>
-                      <p className="mt-4 text-[11px] leading-6 text-white/40">
+                      <p className="mt-4 text-[11px] leading-6 text-muted-foreground">
                         نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
                       </p>
                     </div>
@@ -956,12 +904,12 @@ export default function JoinTrainer() {
                   className={`${areaCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
                 />
                 <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                  <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-white/40"}>
+                  <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-muted-foreground"}>
                     {motivationLen < MOTIVATION_MIN
                       ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
                       : "شكرا — هذا يكفي."}
                   </span>
-                  <span className="shrink-0 tabular-nums text-white/45" dir="ltr">
+                  <span className="shrink-0 tabular-nums text-muted-foreground" dir="ltr">
                     {motivationLen} / {MOTIVATION_MAX}
                   </span>
                 </p>
@@ -988,18 +936,18 @@ export default function JoinTrainer() {
                     return (
                       <div key={d.kind} className={`rounded-xl border p-4 ${
                         st?.status === "done" ? "border-teal/45 bg-teal/[0.06]"
-                          : st?.status === "error" ? "border-gold/50 bg-gold/[0.06]" : "border-white/12 bg-black/25"
+                          : st?.status === "error" ? "border-gold/50 bg-gold/[0.06]" : "border-white/12 bg-paper/25"
                       }`}>
                         <label className="flex cursor-pointer items-start gap-3">
                           <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06]">
                             {st?.status === "done" ? <CheckCircle2 className="h-4 w-4 text-teal-light-ink" />
-                              : st?.status === "registering" || st?.status === "uploading" ? <Loader2 className="h-4 w-4 animate-spin text-white/60" />
-                              : <FileUp className="h-4 w-4 text-white/45" />}
+                              : st?.status === "registering" || st?.status === "uploading" ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              : <FileUp className="h-4 w-4 text-muted-foreground" />}
                           </span>
                           <span className="min-w-0 flex-1">
-                            <b className="block text-[12.5px] leading-6 text-white/85">{d.label}{d.required ? " *" : ""}</b>
-                            <span className="mt-0.5 block text-[11px] text-white/40">{d.hint}</span>
-                            {st?.name && <span className="mt-1 block truncate text-[11px] text-white/55">{st.name}</span>}
+                            <b className="block text-[12.5px] leading-6 text-foreground">{d.label}{d.required ? " *" : ""}</b>
+                            <span className="mt-0.5 block text-[11px] text-muted-foreground">{d.hint}</span>
+                            {st?.name && <span className="mt-1 block truncate text-[11px] text-muted-foreground">{st.name}</span>}
                           </span>
                           <input type="file" accept={d.accept} className="sr-only"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }} />
@@ -1117,15 +1065,15 @@ export default function JoinTrainer() {
                         onClick={() => setContactChannel(c.value)}
                         aria-pressed={on}
                         className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3.5 text-right transition-colors ${
-                          on ? "border-teal bg-teal/[0.12]" : "border-white/12 bg-black/25 hover:border-white/30"
+                          on ? "border-teal bg-teal/[0.12]" : "border-white/12 bg-paper/25 hover:border-white/30"
                         }`}
                       >
-                        <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${on ? "bg-teal/25 text-teal-light-ink" : "bg-white/[0.06] text-white/50"}`}>
+                        <span className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg ${on ? "bg-teal/25 text-teal-light-ink" : "bg-white/[0.06] text-muted-foreground"}`}>
                           <Icon className="h-4 w-4" />
                         </span>
                         <span className="min-w-0">
-                          <b className={`block text-[12.5px] ${on ? "text-teal-light-ink" : "text-white/85"}`}>{c.label}</b>
-                          <span className={`mt-0.5 block truncate text-[11px] ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-white/45"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
+                          <b className={`block text-[12.5px] ${on ? "text-teal-light-ink" : "text-foreground"}`}>{c.label}</b>
+                          <span className={`mt-0.5 block truncate text-[11px] ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-muted-foreground"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
                             {sub}
                           </span>
                         </span>
@@ -1136,19 +1084,20 @@ export default function JoinTrainer() {
 
                 {contactChannel === "other_email" && (
                   <div className="mt-4">
-                    <Field label="البريد الآخر الذي تفضّله" htmlFor="jt-alt-email" required hint="يُحفظ في طلبك بجانب بريد حسابك — والدخول يبقى ببريد الحساب.">
+                    <Field label="البريد الآخر الذي تفضّله" htmlFor="jt-alt-email" required hint="يُحفظ في طلبك بجانب بريد حسابك — والدخول يبقى ببريد الحساب." error={errOf("altEmail")}>
                       <input
                         id="jt-alt-email" type="email" dir="ltr" autoComplete="email" placeholder="name@example.com"
-                        value={contactAltEmail} onChange={(e) => setContactAltEmail(e.target.value)}
+                        value={contactAltEmail} onChange={(e) => setContactAltEmail(e.target.value)} onBlur={touch("altEmail")}
+                        {...invalidProps("jt-alt-email-error", errOf("altEmail"))}
                         className={`${controlCls} text-left`}
                       />
                     </Field>
                   </div>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && normalizeDigits(form.phone) && (
-                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-[11.5px] leading-6 text-white/70">
+                  <p className="mt-4 flex items-center gap-2 rounded-xl border border-teal/25 bg-teal/[0.05] p-3 text-[11.5px] leading-6 text-foreground">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
-                    سنتواصل على <b dir="ltr" className="text-white">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
+                    سنتواصل على <b dir="ltr" className="text-foreground">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
                   </p>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && !normalizeDigits(form.phone) && (
@@ -1160,18 +1109,18 @@ export default function JoinTrainer() {
 
               {/* ملخّص ما سيصل المراجع — بلا مفاجآت */}
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-                <p className="flex items-center gap-2 text-xs font-black text-white/75">
+                <p className="flex items-center gap-2 text-xs font-black text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
                 </p>
-                <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-white/60">
+                <ul className="mt-3 space-y-1.5 text-[11.5px] leading-6 text-muted-foreground">
                   <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
                   <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
                   {seasons.length > 0 && <li>{seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · ")}</li>}
                   <li>دافعك: {motivationLen} حرفا</li>
                 </ul>
-                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-white/50">
-                  رقم طلبك: <b className="font-mono text-white/80" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
+                <p className="mt-3 border-t border-white/10 pt-3 text-[11.5px] leading-6 text-muted-foreground">
+                  رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
                 </p>
               </div>
             </div>
@@ -1187,7 +1136,7 @@ export default function JoinTrainer() {
               <p className="text-xs font-black text-gold-ink">
                 بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
               </p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px] leading-6 text-white/65">
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-[11.5px] leading-6 text-foreground">
                 {missing[step as 1 | 2 | 3].map((m) => (
                   <li key={m} className="flex items-center gap-1.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
@@ -1200,7 +1149,7 @@ export default function JoinTrainer() {
           {/* التنقل — «التالي» معطّل حتى تكتمل الخطوة، لا حتى يكتمل النموذج كله */}
           <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-6">
             {step > 1 ? (
-              <button type="button" onClick={back} className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-white/70 transition hover:border-white/35">
+              <button type="button" onClick={back} className="flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-bold text-foreground transition hover:border-white/35">
                 <ArrowRight className="h-4 w-4" /> السابق
               </button>
             ) : <span />}
@@ -1242,7 +1191,7 @@ export default function JoinTrainer() {
           <summary className="flex cursor-pointer items-center gap-2 text-sm font-black">
             <Search className="h-4 w-4 text-teal-light-ink" /> قدّمت سابقا؟ تابع حالة طلبك
           </summary>
-          <p className="mt-4 text-[11.5px] leading-6 text-white/50">
+          <p className="mt-4 text-[11.5px] leading-6 text-muted-foreground">
             بريدك يكفي. ولتفاصيل أكثر — وسحب الطلب — <Link to="/auth" className="text-teal-light-ink underline">سجّل الدخول</Link> ببريدك وكلمة المرور التي اختَرتها عند التقديم.
           </p>
           <div className="mt-4 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
@@ -1260,8 +1209,8 @@ export default function JoinTrainer() {
           {lookupResult && (
             <div className="mt-3 rounded-xl border border-teal/30 bg-teal/5 p-4">
               <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>
-              <p className="mt-1 text-[11px] text-white/45" dir="ltr">{lookupResult.reference}</p>
-              {lookupResult.explain && <p className="mt-2 text-[11.5px] leading-6 text-white/65">{lookupResult.explain}</p>}
+              <p className="mt-1 text-[11px] text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
+              {lookupResult.explain && <p className="mt-2 text-[11.5px] leading-6 text-foreground">{lookupResult.explain}</p>}
             </div>
           )}
           {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}

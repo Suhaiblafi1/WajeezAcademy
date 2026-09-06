@@ -21,8 +21,8 @@ let freeCohortId: string
 
 /** يفعّل قناة البريد لهذا الاختبار وحده — عبر غشاء البيئة الذي تقرأه getEmailConfig */
 function withEmailChannel(on: boolean) {
-  if (on) process.env.SMTP_HOST = 'smtp.test.local'
-  else delete process.env.SMTP_HOST
+  if (on) process.env.RESEND_API_KEY = 're_test'
+  else delete process.env.RESEND_API_KEY
 }
 
 beforeAll(async () => {
@@ -176,5 +176,60 @@ describe('حاجز الشهادة', () => {
     const userId = await newLearner()
     const enrollment = await enrollmentPastCompletionRules(userId)
     await expect(certificates.issue(enrollment.id, null)).rejects.toMatchObject({ code: 'email_unverified' })
+  })
+})
+
+/* ═══════════ التوثيقُ بيدِ موظّف — البابُ الذي كان مسدودا ═══════════
+
+   ما تبيّن بالفحص: الحواجزُ المعتمدةُ على البريد تتصرّف تصرّفَين **بقصد**:
+   • طلبُ التسجيل والشراءُ يمرّان حين لا قناةَ بريد — قفلٌ بلا مفتاح لا يُقفل.
+   • **وإصدارُ الشهادة يبقى صارما ولو تعطّلت القناة**، لأنّ الشهادةَ تُنسب
+     إلى شخصٍ باسمه.
+
+   فالنتيجةُ أنّ **الشهادةَ وحدَها تعذّرت** في طور التجربة — لا الشراءُ. وكنتُ
+   قد قلتُ لصاحب المنصّة إنّ الشراءَ لا يكتمل بلا توثيقٍ، وهو خطأٌ صحّحه هذا
+   الفحص: الاختباراتُ أعلاه تُثبت أنّ الشراءَ يمرّ.
+
+   وهذا بابُ الشهادة: يوثّق موظّفٌ مسؤولٌ البريدَ بيده، بسببٍ مكتوبٍ وأثرٍ
+   يُقرأ. وثلاثةُ شروطٍ تجعله استثناءً منضبطا لا نقضا للحاجز — وهي ما يُحرَس
+   هنا: أنّه يفتح الشهادةَ فعلا، وأنّه لا يوثّق أحدٌ بريدَ نفسه، وأنّ ما وقع
+   يُسجَّل بسببه. */
+describe('التوثيقُ بيدِ موظّف', () => {
+  it('يفتح إصدارَ الشهادة — والحاجزُ كان يمنعه ولو تعطّلت القناة', async () => {
+    withEmailChannel(false)
+    const userId = await newLearner()
+    const staff = await auth.register(`verify-staff-${seq}@test.local`, 'Staff#12345', 'موظّفُ التوثيق')
+    const enrollment = await prisma.enrollment.create({
+      data: { userId, cohortId: freeCohortId, status: 'enrolled' },
+    })
+
+    /* قبله: يُرفض — والسببُ المعلَن البريدُ لا القواعد */
+    await expect(certificates.issue(enrollment.id, null)).rejects.toMatchObject({ code: 'email_unverified' })
+
+    const out = await auth.verifyEmailByStaff(userId, staff.userId)
+    expect(out.alreadyVerified).toBe(false)
+
+    /* وبعده: تُصدر */
+    const cert = await certificates.issue(enrollment.id, null)
+    expect(cert.number).toMatch(/^WJ-CERT-\d{4}-\d{5}$/)
+  })
+
+  it('ولا يوثّق أحدٌ بريدَ نفسه — استثناءٌ يمنحه صاحبُه لنفسه ليس استثناء', async () => {
+    const userId = await newLearner()
+    await expect(auth.verifyEmailByStaff(userId, userId)).rejects.toMatchObject({ code: 'self_verify' })
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).emailVerifiedAt).toBeNull()
+  })
+
+  it('والموثَّقُ أصلا يُقال عنه ذلك ولا يُعاد توثيقُه — لا أثرَ بلا فعل', async () => {
+    const userId = await newLearner()
+    const staff = await auth.register(`verify-staff2-${seq}@test.local`, 'Staff#12345', 'موظّفٌ آخر')
+    const issued = await auth.issueEmailVerification(userId)
+    await auth.verifyEmail(issued!.token)
+    const before = (await prisma.user.findUniqueOrThrow({ where: { id: userId } })).emailVerifiedAt
+
+    const out = await auth.verifyEmailByStaff(userId, staff.userId)
+    expect(out.alreadyVerified).toBe(true)
+    /* والتاريخُ الأوّلُ كما هو: توثيقٌ ثانٍ يُزيّف لحظةَ التوثيق */
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).emailVerifiedAt).toEqual(before)
   })
 })

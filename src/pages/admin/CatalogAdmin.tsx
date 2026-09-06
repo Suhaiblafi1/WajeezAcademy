@@ -46,11 +46,11 @@ const ENTITY_AR: Record<string, string> = {
 
 function Pill({ v }: { v: string }) {
   const color = v === "published" || v === "approved" || v === "applied" ? "text-emerald-300 border-emerald-400/30"
-    : v === "draft" ? "text-amber-300 border-amber-400/30" : "text-white/60 border-white/15";
+    : v === "draft" ? "text-amber-300 border-amber-400/30" : "text-muted-foreground border-white/15";
   return <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${color}`}>{STATUS_AR[v] ?? v}</span>;
 }
 
-const inputCls = "w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-[#FABC05]/60";
+const inputCls = "w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none focus:border-[#FABC05]/60";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 export default function CatalogAdmin() {
@@ -140,8 +140,8 @@ export default function CatalogAdmin() {
       className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-gold/40">
       <span className="flex items-center gap-2 text-lg font-black"><Icon className="h-5 w-5 text-gold-ink" /> {title}</span>
       <span className="flex items-center gap-3">
-        <span className="hidden text-[11px] text-white/50 sm:inline">{hint}</span>
-        <ChevronDown className={`h-4 w-4 text-white/50 transition ${openForm === id ? "rotate-180" : ""}`} />
+        <span className="hidden text-[11px] text-muted-foreground sm:inline">{hint}</span>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${openForm === id ? "rotate-180" : ""}`} />
       </span>
     </button>
   );
@@ -185,12 +185,12 @@ export default function CatalogAdmin() {
           {([["المسارات", overview.pathways], ["الدورات", overview.courses], ["المهارات", overview.skills],
              ["القوالب", overview.templates], ["الأسئلة", overview.questions], ["طلبات التغيير", overview.changeRequests]] as const).map(([label, bag]) => (
             <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs font-bold text-white/50">{label}</p>
+              <p className="text-xs font-bold text-muted-foreground">{label}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {Object.entries(bag).map(([s, n]) => (
-                  <span key={s} className="text-[11px] text-white/75">{n} <Pill v={s} /></span>
+                  <span key={s} className="text-[11px] text-foreground">{n} <Pill v={s} /></span>
                 ))}
-                {Object.keys(bag).length === 0 && <span className="text-[11px] text-white/55">لا شيء بعد</span>}
+                {Object.keys(bag).length === 0 && <span className="text-[11px] text-muted-foreground">لا شيء بعد</span>}
               </div>
             </div>
           ))}
@@ -203,7 +203,7 @@ export default function CatalogAdmin() {
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pathways", `المسارات (${pathways.length})`], ["courses", `الدورات (${courses.length})`], ["skills", `المهارات (${skills.length})`], ["questions", `بنك الأسئلة (${questions.length})`], ["templates", `قوالب التوصية (${templates.length})`]] as const).map(([k, label]) => (
             <button key={k} onClick={() => { setBrowse(browse === k ? null : k); setQ(""); setPage(1); setStatusPick(""); setPathPick(""); }}
-              className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${browse === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-white/60 hover:border-white/40"}`}>
+              className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${browse === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
               {label}
             </button>
           ))}
@@ -214,14 +214,14 @@ export default function CatalogAdmin() {
             <div className="mb-3 flex flex-wrap gap-2">
               <select value={statusPick} onChange={(e) => { setStatusPick(e.target.value); setPage(1); }}
                 aria-label="رشِّح بالحالة"
-                className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-gold focus:outline-none [&>option]:bg-surface">
+                className="rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-gold focus:outline-none [&>option]:bg-surface">
                 <option value="">كلّ الحالات</option>
                 {statusesOf(browseUi.rows).map((st) => <option key={st} value={st}>{STATUS_AR[st] ?? st}</option>)}
               </select>
               {browse === "courses" && (
                 <select value={pathPick} onChange={(e) => { setPathPick(e.target.value); setPage(1); }}
                   aria-label="رشِّح بالمسار"
-                  className="rounded-xl border border-white/12 bg-black/30 px-3 py-2 text-xs text-white focus:border-gold focus:outline-none [&>option]:bg-surface">
+                  className="rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-gold focus:outline-none [&>option]:bg-surface">
                   <option value="">كلّ المسارات</option>
                   {[...new Set(courses.flatMap((c) => c.pathways))].sort().map((pw) => <option key={pw} value={pw}>{pw}</option>)}
                 </select>
@@ -229,7 +229,7 @@ export default function CatalogAdmin() {
             </div>
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={browseUi.view} unit={browseUi.unit} placeholder={browseUi.ph} />
             {browseUi.view.total === 0 && (
-              <p className="rounded-2xl border border-white/10 bg-white/[0.02] py-10 text-center text-sm text-white/45">
+              <p className="rounded-2xl border border-white/10 bg-white/[0.02] py-10 text-center text-sm text-muted-foreground">
                 لا نتيجة بهذا الفرز — وسّعه أو امسح البحث.
               </p>
             )}
@@ -240,53 +240,53 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {pathwayView.rows.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/55" dir="ltr">{p.id}</span>
+                <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{p.id}</span>
                 <span className="font-bold">{p.title}</span>
-                <span className="text-[11px] text-white/50">{p.courseCount} دورة</span>
+                <span className="text-[11px] text-muted-foreground">{p.courseCount} دورة</span>
                 <span className="mr-auto"><Pill v={p.status} /></span>
               </li>
             ))}
-            {pathways.length === 0 && <p className="text-sm text-white/45">لا مسارات بعد.</p>}
+            {pathways.length === 0 && <p className="text-sm text-muted-foreground">لا مسارات بعد.</p>}
           </ul>
         )}
         {browse === "courses" && (
           <ul className="mt-3 space-y-2">
             {courseView.rows.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/55" dir="ltr">{c.id}</span>
+                <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{c.id}</span>
                 <span className="font-bold">{c.title}</span>
-                <span className="text-[11px] text-white/50">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
+                <span className="text-[11px] text-muted-foreground">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
                 <span className="mr-auto"><Pill v={c.status} /></span>
               </li>
             ))}
-            {courses.length === 0 && <p className="text-sm text-white/45">لا دورات بعد.</p>}
+            {courses.length === 0 && <p className="text-sm text-muted-foreground">لا دورات بعد.</p>}
           </ul>
         )}
         {browse === "skills" && (
           <>
             {/* ب-٤: الحصيلة أولا — «كم مهارة تُقاس فعلا» هو السؤال الذي يخفيه جدول من ٣٠٥ صفوف */}
-            <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11px] leading-6 text-white/70">
+            <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-[11px] leading-6 text-foreground">
               {skills.filter((s) => s.measureState === "measured").length} مقيسة ·{" "}
               {skills.filter((s) => s.measureState === "registered_unmeasured").length} مسجَّلة بلا سؤال ·{" "}
               {skills.filter((s) => s.measureState === "inactive").length} موقوفة تشخيصيا · من {skills.length}
-              <span className="text-white/45"> — غير المقيسة تدخل مقام تغطية القياس ولا تُقاس أبدا.</span>
+              <span className="text-muted-foreground"> — غير المقيسة تدخل مقام تغطية القياس ولا تُقاس أبدا.</span>
             </p>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {skillView.rows.map((s) => (
                 <li key={s.id} className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5">
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="font-mono text-[11px] text-white/55" dir="ltr">{s.id}</span>
+                    <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{s.id}</span>
                     <span className="min-w-0 flex-1 truncate font-bold">{s.nameAr}</span>
                     <Pill v={s.status} />
                   </div>
                   {s.measureNoteAr && (
-                    <p className={`mt-1 text-[10px] ${s.measureState === "measured" ? "text-teal-light-ink" : "text-white/50"}`}>
+                    <p className={`mt-1 text-micro ${s.measureState === "measured" ? "text-teal-light-ink" : "text-muted-foreground"}`}>
                       {s.measureNoteAr}
                     </p>
                   )}
                 </li>
               ))}
-              {skills.length === 0 && <p className="text-sm text-white/45">لا مهارات بعد.</p>}
+              {skills.length === 0 && <p className="text-sm text-muted-foreground">لا مهارات بعد.</p>}
             </ul>
           </>
         )}
@@ -294,26 +294,26 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {questionView.rows.map((qq) => (
               <li key={qq.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/55" dir="ltr">{qq.id}</span>
+                <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{qq.id}</span>
                 <span className="min-w-0 flex-1 font-bold">{qq.text || "—"}</span>
-                <span className="text-[11px] text-white/50">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
+                <span className="text-[11px] text-muted-foreground">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
                 <span className="mr-auto"><Pill v={qq.status} /></span>
               </li>
             ))}
-            {questions.length === 0 && <p className="text-sm text-white/45">لا أسئلة بعد.</p>}
+            {questions.length === 0 && <p className="text-sm text-muted-foreground">لا أسئلة بعد.</p>}
           </ul>
         )}
         {browse === "templates" && (
           <ul className="mt-3 space-y-2">
             {templateView.rows.map((t) => (
               <li key={t.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm">
-                <span className="font-mono text-[11px] text-white/55" dir="ltr">{t.id}</span>
+                <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{t.id}</span>
                 <span className="font-bold">{t.name || "—"}</span>
-                <span className="text-[11px] text-white/50">{t.courseCount} دورة مركبة</span>
+                <span className="text-[11px] text-muted-foreground">{t.courseCount} دورة مركبة</span>
                 <span className="mr-auto"><Pill v={t.status} /></span>
               </li>
             ))}
-            {templates.length === 0 && <p className="text-sm text-white/45">لا قوالب بعد.</p>}
+            {templates.length === 0 && <p className="text-sm text-muted-foreground">لا قوالب بعد.</p>}
           </ul>
         )}
       </section>
@@ -376,7 +376,7 @@ export default function CatalogAdmin() {
             </div>
             <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
               dir="ltr" className={`${inputCls} mt-3 font-mono text-xs`} />
-            <p className="mt-2 text-[11px] text-white/50">
+            <p className="mt-2 text-[11px] text-muted-foreground">
               أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تُدمج في إصدار جديد بعد الاعتماد والنشر.
             </p>
             <button disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest}
@@ -391,12 +391,12 @@ export default function CatalogAdmin() {
       <section className="mt-8">
         <h2 className="flex items-center gap-2 text-lg font-black"><GitPullRequest className="h-5 w-5 text-gold-ink" /> طلبات التغيير</h2>
         <div className="mt-4 space-y-3">
-          {crs.length === 0 && <p className="text-sm text-white/50">لا طلبات بعد.</p>}
+          {crs.length === 0 && <p className="text-sm text-muted-foreground">لا طلبات بعد.</p>}
           {crs.map((cr) => (
             <div key={cr.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
               <div>
                 <p className="font-bold text-sm">{ENTITY_AR[cr.entityType] ?? cr.entityType} · <span dir="ltr" className="font-mono text-xs">{cr.entityId}</span></p>
-                <p className="mt-1 text-xs text-white/45">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
+                <p className="mt-1 text-xs text-muted-foreground">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
               </div>
               <div className="flex items-center gap-2">
                 <Pill v={cr.status} />
@@ -416,12 +416,12 @@ export default function CatalogAdmin() {
             </div>
           ))}
         </div>
-        <p className="mt-3 flex items-center gap-1.5 text-[11px] text-white/50">
+        <p className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <BookMarked className="h-3.5 w-3.5" /> maker-checker: لا يستطيع صانع الطلب اعتماده بنفسه — الخادم يرفض ذلك.
         </p>
       </section>
 
-      <button onClick={() => void refresh()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-white/50 hover:text-white">
+      <button onClick={() => void refresh()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
         <RefreshCw className="h-3.5 w-3.5" /> تحديث
       </button>
     </AdminLayout>

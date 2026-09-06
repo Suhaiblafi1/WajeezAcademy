@@ -17,7 +17,7 @@ beforeAll(async () => {
   prisma = await testPrisma()
 }, 180_000)
 
-const ENV_KEYS = ['APP_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'SMTP_FROM_EMAIL'] as const
+const ENV_KEYS = ['APP_URL', 'VERCEL_PROJECT_PRODUCTION_URL', 'RESEND_FROM_EMAIL'] as const
 const saved: Record<string, string | undefined> = {}
 for (const k of ENV_KEYS) saved[k] = process.env[k]
 afterEach(() => {
@@ -31,10 +31,10 @@ describe('عنوان المرسِل', () => {
   it('يسقط على عنوان الأكاديمية لا على فراغ يمنع الإرسال', async () => {
     await prisma.integrationSetting.upsert({
       where: { provider: 'email' },
-      update: { enabled: true, config: { host: 'smtp.test', port: 465 } },
-      create: { provider: 'email', enabled: true, config: { host: 'smtp.test', port: 465 } },
+      update: { enabled: true, config: { apiKey: 're_test' } },
+      create: { provider: 'email', enabled: true, config: { apiKey: 're_test' } },
     })
-    delete process.env.SMTP_FROM_EMAIL
+    delete process.env.RESEND_FROM_EMAIL
     const c = await getEmailConfig(prisma)
     expect(c.fromEmail).toBe(ACADEMY_EMAIL)
     expect(c.fromEmail).not.toBe('')
@@ -43,14 +43,14 @@ describe('عنوان المرسِل', () => {
   it('إعداد صريح يغلب الافتراضي', async () => {
     await prisma.integrationSetting.update({
       where: { provider: 'email' },
-      data: { config: { host: 'smtp.test', port: 465, fromEmail: 'other@wajeez.co' } },
+      data: { config: { apiKey: 're_test', fromEmail: 'other@wajeez.co' } },
     })
-    delete process.env.SMTP_FROM_EMAIL
+    delete process.env.RESEND_FROM_EMAIL
     expect((await getEmailConfig(prisma)).fromEmail).toBe('other@wajeez.co')
   })
 
   it('متغير البيئة يغلب الاثنين', async () => {
-    process.env.SMTP_FROM_EMAIL = 'env@wajeez.co'
+    process.env.RESEND_FROM_EMAIL = 'env@wajeez.co'
     expect((await getEmailConfig(prisma)).fromEmail).toBe('env@wajeez.co')
   })
 })
@@ -61,15 +61,8 @@ describe('أصل روابط الرسائل', () => {
     expect(publicSiteUrl()).toBe('https://academy.example')
   })
 
-  it('نطاق إنتاج Vercel حين لا APP_URL — لا localhost', () => {
+  it('المحلي احتياطيٌّ حين لا APP_URL', () => {
     delete process.env.APP_URL
-    process.env.VERCEL_PROJECT_PRODUCTION_URL = 'wajeez-academy.vercel.app'
-    expect(publicSiteUrl()).toBe('https://wajeez-academy.vercel.app')
-  })
-
-  it('المحلي آخر الخيارات لا أولها', () => {
-    delete process.env.APP_URL
-    delete process.env.VERCEL_PROJECT_PRODUCTION_URL
     expect(publicSiteUrl()).toBe('http://localhost:7100')
   })
 })

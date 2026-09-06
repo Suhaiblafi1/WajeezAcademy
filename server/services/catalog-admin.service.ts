@@ -566,9 +566,28 @@ export class CatalogAdminService {
     } else if (entityType === 'course') {
       const e = await tx.course.update({ where: { id: entityId }, data: { status: to } })
       await tx.courseVersion.updateMany({ where: { courseId: entityId, version: e.currentVersion, status: from }, data: { status: to } })
-      /* الوحدات تتبع دورتها */
-      await tx.courseModule.updateMany({ where: { courseId: entityId, status: from }, data: { status: to } })
-      await tx.courseModuleVersion.updateMany({ where: { module: { courseId: entityId }, status: from }, data: { status: to } })
+      /* ── الوحدةُ تتبع دورتها، لكن ليس في كلّ حال ──
+
+         كان السطرُ يكتب حالةَ الدورة على وحداتها كما هي. ولدورةٍ ستُّ حالات
+         (`draft | in_review | approved | published | paused | archived`)،
+         وللوحدةِ ثلاثٌ (`draft | published | archived`) — فاعتمادُ دورةٍ كان
+         يكتب `approved` على كلّ وحداتها، **وهي حالةٌ لا تملكها الوحدة**.
+         والوحدةُ لا دورةَ مراجعةٍ لها أصلا: المراجَعةُ تقع على الدورة،
+         والوحدةُ تُنشر معها أو تُؤرشف معها.
+
+         ولم يشكُ أحد، لأنّ العمودَ كان بلا قيد — وهذا هو بعينه العطبُ الذي
+         تُزيله قيودُ الحالات: حالةٌ لا يعرفها أحدٌ تعيش في القاعدة سنينَ،
+         فتسقط الوحدةُ من كلّ استعلامٍ يُرشِّح بالحالة ولا يظهر خطأ.
+
+         فصار النقلُ يقع **حين تكون الحالةُ من حالات الوحدة** لا دائما. وشرطُ
+         الحالة السابقة يُقاس على الوحدة نفسِها (`not: to`) لا على الدورة —
+         فبعد أن تصير المراجعةُ لا تمسّ الوحدات، لم تبقَ وحدةٌ حالُها
+         `approved` ينتظرها النشر. */
+      const MODULE_STATES = new Set(['draft', 'published', 'archived'])
+      if (MODULE_STATES.has(to)) {
+        await tx.courseModule.updateMany({ where: { courseId: entityId, status: { not: to } }, data: { status: to } })
+        await tx.courseModuleVersion.updateMany({ where: { module: { courseId: entityId }, status: { not: to } }, data: { status: to } })
+      }
     } else if (entityType === 'skill') {
       const e = await tx.skill.update({ where: { id: entityId }, data: { status: to } })
       await tx.skillVersion.updateMany({ where: { skillId: entityId, version: e.currentVersion, status: from }, data: { status: to } })

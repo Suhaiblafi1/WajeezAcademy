@@ -62,8 +62,8 @@ export default function TeachableCoursePicker({
           البيانات وعرض التوصيات» مقابل «دورة SQL»)، فالرصفُ بعرض النصّ يجعل
           بعضها يملأ السطر وبعضها كلمتين — وهو التبعثر الذي شُكي منه. */}
       {domain && (
-        <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
-          <p className="mb-3 text-[11px] leading-6 text-white/45">
+        <div className="rounded-2xl border border-white/10 bg-paper/20 p-3">
+          <p className="mb-3 text-[11px] leading-6 text-muted-foreground">
             اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
           </p>
           <div className="max-h-64 overflow-y-auto pl-1">
@@ -81,7 +81,7 @@ export default function TeachableCoursePicker({
       {/* المختار يبقى مرئيا ولو غادر مجاله — وإلا ظنّ أنه فقده */}
       {picked.length > 0 && (
         <div>
-          <p className="mb-2 text-[11px] font-bold text-white/55">اخترت {picked.length} دورة:</p>
+          <p className="mb-2 text-[11px] font-bold text-muted-foreground">اخترت {picked.length} دورة:</p>
           <ul className="flex flex-wrap gap-2">
             {picked.map((c) => (
               <li key={c.id}>

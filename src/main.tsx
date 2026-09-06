@@ -1,4 +1,5 @@
 import { StrictMode } from 'react'
+import { loadPlatformConfig } from './services/platform-config'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import './index.css'
@@ -39,3 +40,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
     })
   })
 }
+
+/* قدراتُ المنصّة تُطلب مرّةً واحدةً مبكّرا: رسائلُ المنع وأزرارُ الرفع
+   تعتمد عليها، ولا يصحّ أن تنتظر كلُّ شاشةٍ جوابَها بنفسها. */
+void loadPlatformConfig()

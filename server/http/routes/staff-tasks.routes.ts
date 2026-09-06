@@ -11,11 +11,23 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requireAuth, requirePermission } from '../auth-plugin'
 import { StaffTaskService } from '../../services/staff-task.service'
+import { StaffInboxService } from '../../services/staff-inbox.service'
 
 export function registerStaffTaskRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const svc = new StaffTaskService(prisma)
+  const inbox = new StaffInboxService(prisma)
   const canAssign = requirePermission('staff.task.assign')
   const canNotify = requirePermission('staff.notify')
+
+  /* «ما ينتظرك» — لوحٌ واحدٌ يجمع عملَ الموظّف من عشرين شاشة.
+
+     بلا صلاحيّةٍ خاصّة: كلُّ صاحبِ جلسةٍ يرى ما يستطيع عملَه هو (الخدمةُ
+     ترشّح بنودَها بصلاحيّاته)، فلو حُرس اللوحُ بحبّةٍ لصار الموظّفُ عاجزا
+     عن رؤية عمله. */
+  app.get('/api/staff/inbox', {
+    preHandler: requireAuth,
+    schema: { tags: ['staff-tasks'], summary: 'ما ينتظر هذا الموظّف — مجموعا من كلّ الطوابير بحسب صلاحيّاته' },
+  }, async (req) => inbox.forStaff(req.auth!.userId, req.auth!.permissions))
 
   app.post('/api/staff/tasks', {
     preHandler: canAssign,

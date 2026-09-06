@@ -8,6 +8,7 @@ import type { PrismaClient } from '@prisma/client'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
+import { TrainerAvailabilityService } from '../../services/trainer-availability.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
 
@@ -15,6 +16,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const changes = new TrainerChangeService(prisma)
   const review = new TrainerReviewService(prisma)
   const earnings = new EarningsService(prisma)
+  const availability = new TrainerAvailabilityService(prisma)
 
   app.get('/api/trainer/earnings', {
     preHandler: requirePermission('trainer.portal'),
@@ -139,6 +141,49 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return changes.withdraw(req.auth!.userId, id)
+  })
+
+  /* ═══ إتاحتي: ساعاتٌ أسبوعيّةٌ وغياب (المهمّة ٧١) ═══
+     الصلاحيّةُ `trainer.portal` نفسُها: هذا إعلانُ المدرّبِ عن وقتِه، لا
+     تصرّفٌ في شعبةٍ ولا في مال. والحكمُ على ما يُعلنه في `cohort.service.ts`:
+     الغيابُ يردّ الإسناد، والساعاتُ تُعَدُّ للمُسنِد ولا تمنعه. */
+  app.get('/api/trainer/me/availability', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'ساعاتي المعلنة وفترات غيابي' },
+  }, async (req) => availability.mine(req.auth!.userId))
+
+  app.put('/api/trainer/me/availability', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'إعلانُ ساعات الأسبوع — استبدالٌ كامل لا إضافة' },
+  }, async (req) => {
+    const body = z.object({
+      windows: z.array(z.object({
+        weekday: z.number().int().min(0).max(6),
+        startMinute: z.number().int().min(0).max(1440),
+        endMinute: z.number().int().min(0).max(1440),
+      })).max(21),
+    }).parse(req.body)
+    return availability.replaceWindows(req.auth!.userId, body.windows)
+  })
+
+  app.post('/api/trainer/me/blackouts', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'تسجيلُ فترة غياب — تردُّ إسنادَ أيّ جلسةٍ تقع فيها' },
+  }, async (req, reply) => {
+    const body = z.object({
+      startsAt: z.coerce.date(), endsAt: z.coerce.date(),
+      reason: z.string().trim().max(120).optional(),
+    }).parse(req.body)
+    const created = await availability.addBlackout(req.auth!.userId, body)
+    return reply.status(201).send(created)
+  })
+
+  app.delete('/api/trainer/me/blackouts/:id', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'حذفُ فترة غياب سجّلها المدرّب' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return availability.removeBlackout(req.auth!.userId, id)
   })
 
   /* عام: صفحة المدربين بالموقع واسم مدرب الدورة */

@@ -16,7 +16,7 @@ export default function EcosystemOrgStrip() {
 
   return (
     <section aria-label="مؤسسات وثقت بمنظومة وجيز" className="py-12 md:py-14">
-      <div className="mx-auto max-w-6xl px-5">
+      <div className="mx-auto max-w-7xl px-5">
         <div className="reveal text-center">
           <h2 className="text-sm font-bold text-teal-light-ink md:text-base">مؤسسات وثقت بمنظومة وجيز</h2>
           <p className="mx-auto mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">

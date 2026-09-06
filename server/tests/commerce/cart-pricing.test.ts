@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { priceCart, type CartLine } from '../../../src/application/commerce/cart-pricing'
-import { buildDiscountPct, MAX_BUILT_COURSES } from '../../../src/application/commerce/discount-policy'
+import { buildDiscountPct, MAX_BUILT_COURSES, MAX_BUNDLE_TOTAL } from '../../../src/application/commerce/discount-policy'
 import { PATHWAY_BUNDLE_MAX_PCT } from '../../../src/application/commerce/pathway-offer'
 
 const lines = (n: number, price = 100): CartLine[] =>
@@ -108,5 +108,36 @@ describe('الكودُ فوق الناتج لا فوق الأصل', () => {
       const p = priceCart(lines(n, 133.33), n >= 3 ? 'C-0' : null, { percentOff: 10, amountOff: null })
       expect(Math.round((p.subtotal - p.discount) * 100) / 100, `العدد ${n}`).toBe(p.total)
     }
+  })
+})
+
+describe('سقفُ سعر المسار — بندٌ باسمه لا نسبةٌ مدموجة', () => {
+  /* «إمّا ٣٠٪ أو ٦٠٠، أيّهما أقلّ» بقرار صاحب المنصّة. وأهمُّ ما فيه أنّه
+     يبقى بندا مستقلّا: دمجُه في نسبة الباقة يُخرج رقما (٣٣٪ · ٤١٪) لا
+     يقابله شيءٌ في السياسة، فيقرؤه المشتري وعدا لا نفي به في سلّةٍ أخرى. */
+
+  it('سلّةٌ فوق السقف تُقصّ إليه، والقصُّ بندٌ منفصلٌ عن خصم الباقة', () => {
+    const p = priceCart(lines(9, 200), null, null)
+    expect(p.total).toBe(MAX_BUNDLE_TOTAL)
+    expect(p.capDiscount, 'القصُّ لم يظهر بندا').toBeGreaterThan(0)
+    /* ونسبةُ الباقة تبقى نسبةَ السلّم — لا تُرفع لتبتلع القصّ */
+    expect(p.bundlePct).toBe(buildDiscountPct(MAX_BUILT_COURSES))
+  })
+
+  it('وسلّةٌ دونه لا يمسّها — فلا قصَّ في جمهور السلال', () => {
+    const p = priceCart(lines(3), null, null)
+    expect(p.capDiscount).toBe(0)
+  })
+
+  it('والحسابُ يقفل: الأصلُ ناقصَ البنود الثلاثة هو المدفوع', () => {
+    const p = priceCart(lines(9, 200), null, { percentOff: 10, amountOff: null })
+    expect(p.discount).toBe(p.bundleDiscount + p.capDiscount + p.couponDiscount)
+    expect(p.total).toBe(p.subtotal - p.discount)
+  })
+
+  it('والكودُ فوق السقف لا تحته — وإلّا ضاع خصمُ من استحقّه', () => {
+    const p = priceCart(lines(9, 200), null, { percentOff: 10, amountOff: null })
+    expect(p.couponDiscount, 'الكودُ حُسب ثمّ ابتلعه السقف').toBe(MAX_BUNDLE_TOTAL / 10)
+    expect(p.total).toBe(MAX_BUNDLE_TOTAL - MAX_BUNDLE_TOTAL / 10)
   })
 })

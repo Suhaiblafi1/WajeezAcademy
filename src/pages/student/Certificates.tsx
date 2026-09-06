@@ -37,13 +37,18 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         نمو مقيس بعد هذه الدورة
       </p>
-      <p className="mt-1 text-[11px] leading-6 tabular-nums text-white/70">
+      <p className="mt-1 text-[11px] leading-6 tabular-nums text-foreground">
         ارتفعت {growth.improved} مهارة · بلغت المستهدف {growth.crossedTarget} · مجموع الدرجات{" "}
         {/* dir=ltr على الرقم المُوقَّع فلا يُقرأ «+4» بصورة «4+» */}
         <span dir="ltr">{growth.netPoints > 0 ? `+${growth.netPoints}` : growth.netPoints}</span>
         {growth.declined > 0 ? ` · تراجعت ${growth.declined}` : ""}
       </p>
-      <Link to="/student/skills" className="mt-1 inline-block text-[11px] font-bold text-teal-light-ink underline underline-offset-4">
+      {/* رابطٌ في سطرٍ وحدَه، لا داخلَ جملة — فلا يشمله استثناءُ المعيار،
+          ويلزمه ٢٤ نقطةً ارتفاعا (WCAG 2.5.8). */}
+      <Link
+        to="/student/skills"
+        className="mt-1 inline-flex min-h-6 items-center text-[11px] font-bold text-teal-light-ink underline underline-offset-4"
+      >
         التفصيل في ملف مهاراتي
       </Link>
     </div>
@@ -100,12 +105,14 @@ export default function Certificates() {
                   {c.status === "revoked" ? "ملغاة" : "سارية"}
                 </span>
               </div>
-              <h3 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h3>
-              <p className="mt-1 text-xs text-white/55">باسم: {c.learnerName}</p>
-              <p className="mt-1 text-xs text-white/55">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
-              {c.revocation && <p className="mt-2 rounded-xl border border-red-500/30 bg-black/20 p-2 text-[11px] text-red-300">سبب الإلغاء: {c.revocation.reason}</p>}
+              {/* h2 لا h3: البطاقةُ تحت عنوان الصفحة مباشرةً بلا قسمٍ بينهما،
+                  والقفزُ من h1 إلى h3 يوهم قارئَ الشاشة بقسمٍ غائب. */}
+              <h2 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h2>
+              <p className="mt-1 text-xs text-muted-foreground">باسم: {c.learnerName}</p>
+              <p className="mt-1 text-xs text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
+              {c.revocation && <p className="mt-2 rounded-xl border border-red-500/30 bg-paper/20 p-2 text-[11px] text-red-300">سبب الإلغاء: {c.revocation.reason}</p>}
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/8 pt-3">
-                <span className="font-mono text-[11px] text-white/50" dir="ltr">{c.number}</span>
+                <span className="font-mono text-[11px] text-muted-foreground" dir="ltr">{c.number}</span>
                 {c.status !== "revoked" && (
                   <Link to={`/verify/${c.number}`}
                     className="flex items-center gap-1.5 rounded-full border border-teal/40 px-3 py-1 text-[11px] font-bold text-teal-light-ink transition hover:bg-teal/10">
@@ -121,7 +128,7 @@ export default function Certificates() {
         </div>
       )}
 
-      <button onClick={() => void load()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-white/50 hover:text-white">
+      <button onClick={() => void load()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
         <RefreshCw className="h-3.5 w-3.5" /> تحديث
       </button>
     </PortalLayout>

@@ -5,7 +5,7 @@ import { BarChart3, Download, Loader2, Play, RefreshCw, ServerOff } from "lucide
 import AdminLayout from "./AdminLayout";
 import { apiGet, ApiError } from "@/services/api";
 
-const inputCls = "rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs text-white focus:border-teal focus:outline-none";
+const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 
 interface ReportDef { key: string; titleAr: string; methodAr: string }
 interface ReportResult { key: string; titleAr: string; methodAr: string; rows: Record<string, unknown>[]; columnsAr?: Record<string, string> }
@@ -72,9 +72,9 @@ export default function Reports() {
     return (
       <AdminLayout title="التقارير">
         <div className="grid place-items-center rounded-3xl border border-white/10 bg-white/[0.02] py-20 text-center">
-          <ServerOff className="h-12 w-12 text-white/20" />
-          <p className="mt-4 max-w-md text-sm text-white/55">{offline}</p>
-          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-white/70 hover:border-white/40">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
+          <button onClick={() => void load()} className="mt-5 flex cursor-pointer items-center gap-2 rounded-full border border-white/15 px-5 py-2 text-xs font-bold text-foreground hover:border-white/40">
             <RefreshCw className="h-3.5 w-3.5" /> إعادة المحاولة
           </button>
         </div>
@@ -89,7 +89,7 @@ export default function Reports() {
       {error && <p className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-200">{error}</p>}
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-white/30" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-3">
           {/* فهرس التقارير */}
@@ -98,9 +98,9 @@ export default function Reports() {
               <button key={d.key} onClick={() => { setSelected(d.key); setResult(null); }}
                 className={`w-full cursor-pointer rounded-2xl border p-4 text-right transition ${selected === d.key ? "border-gold/50 bg-gold/5" : "border-white/10 bg-white/[0.03] hover:border-white/25"}`}>
                 <p className="flex items-center gap-2 text-sm font-black">
-                  <BarChart3 className={`h-4 w-4 ${selected === d.key ? "text-gold-ink" : "text-white/40"}`} /> {d.titleAr}
+                  <BarChart3 className={`h-4 w-4 ${selected === d.key ? "text-gold-ink" : "text-muted-foreground"}`} /> {d.titleAr}
                 </p>
-                <p className="mt-1 text-[11px] leading-5 text-white/50">{d.methodAr}</p>
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">{d.methodAr}</p>
               </button>
             ))}
           </div>
@@ -109,16 +109,16 @@ export default function Reports() {
           <div className="lg:col-span-2">
             <div className="rounded-3xl border border-white/10 bg-white/[0.02] p-5">
               <div className="grid gap-2 sm:grid-cols-4">
-                <label className="text-[10px] text-white/50">من تاريخ
+                <label className="text-micro text-muted-foreground">من تاريخ
                   <input type="date" value={filter.from} onChange={(e) => setFilter({ ...filter, from: e.target.value })} className={`${inputCls} mt-1 w-full`} />
                 </label>
-                <label className="text-[10px] text-white/50">إلى تاريخ
+                <label className="text-micro text-muted-foreground">إلى تاريخ
                   <input type="date" value={filter.to} onChange={(e) => setFilter({ ...filter, to: e.target.value })} className={`${inputCls} mt-1 w-full`} />
                 </label>
-                <label className="text-[10px] text-white/50">معرف دورة (اختياري)
+                <label className="text-micro text-muted-foreground">معرف دورة (اختياري)
                   <input value={filter.courseId} onChange={(e) => setFilter({ ...filter, courseId: e.target.value })} dir="ltr" className={`${inputCls} mt-1 w-full font-mono`} />
                 </label>
-                <label className="text-[10px] text-white/50">معرف شعبة (اختياري)
+                <label className="text-micro text-muted-foreground">معرف شعبة (اختياري)
                   <input value={filter.cohortId} onChange={(e) => setFilter({ ...filter, cohortId: e.target.value })} dir="ltr" className={`${inputCls} mt-1 w-full font-mono`} />
                 </label>
               </div>
@@ -128,11 +128,11 @@ export default function Reports() {
                   {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />} شغّل التقرير
                 </button>
                 <button onClick={() => void download("csv")} disabled={!selected}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40 disabled:opacity-40">
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40 disabled:opacity-40">
                   <Download className="h-3.5 w-3.5" /> CSV
                 </button>
                 <button onClick={() => void download("xlsx")} disabled={!selected}
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-white/60 hover:border-white/40 disabled:opacity-40">
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-2 text-xs font-bold text-muted-foreground hover:border-white/40 disabled:opacity-40">
                   <Download className="h-3.5 w-3.5" /> XLSX
                 </button>
               </div>
@@ -140,24 +140,24 @@ export default function Reports() {
 
             {result && (
               <div className="mt-4 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
-                <h3 className="text-sm font-black">{result.titleAr} <span className="text-[11px] font-normal text-white/45">— {result.rows.length} صف</span></h3>
+                <h3 className="text-sm font-black">{result.titleAr} <span className="text-[11px] font-normal text-muted-foreground">— {result.rows.length} صف</span></h3>
                 {result.rows.length === 0 ? (
-                  <p className="mt-3 text-xs text-white/45">لا صفوف ضمن الفلاتر الحالية.</p>
+                  <p className="mt-3 text-xs text-muted-foreground">لا صفوف ضمن الفلاتر الحالية.</p>
                 ) : (
                   <div className="mt-3 overflow-x-auto">
                     <table className="w-full text-right text-xs">
                       <thead>
-                        <tr>{columns.map((c) => <th key={c} className="border-b border-white/10 px-3 py-2 font-bold text-white/50">{result.columnsAr?.[c] ?? c}</th>)}</tr>
+                        <tr>{columns.map((c) => <th key={c} className="border-b border-white/10 px-3 py-2 font-bold text-muted-foreground">{result.columnsAr?.[c] ?? c}</th>)}</tr>
                       </thead>
                       <tbody>
                         {result.rows.slice(0, 200).map((r, i) => (
                           <tr key={i} className="border-b border-white/5">
-                            {columns.map((c) => <td key={c} className="px-3 py-2 text-white/75">{String(r[c] ?? "—")}</td>)}
+                            {columns.map((c) => <td key={c} className="px-3 py-2 text-foreground">{String(r[c] ?? "—")}</td>)}
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    {result.rows.length > 200 && <p className="mt-2 text-[10px] text-white/40">يُعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
+                    {result.rows.length > 200 && <p className="mt-2 text-micro text-muted-foreground">يُعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
                   </div>
                 )}
               </div>
