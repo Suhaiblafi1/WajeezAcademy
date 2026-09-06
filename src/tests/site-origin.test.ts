@@ -90,3 +90,32 @@ describe('الأصل القانوني للموقع', () => {
     expect(siteOrigin()).not.toContain('localhost')
   })
 })
+
+/* ═══ نطاقُ المُرسِل — الحقلُ الذي يُسقط البريدَ كلَّه بصمت ═══
+
+   Resend يرفض كلَّ رسالةٍ من نطاقٍ لم يُوثَّق عنده. والرفضُ لا يظهر في شاشة:
+   يُكتب في `lastError` داخل صفّ الإشعار، فالمتعلّمُ ينتظر رسالةً لا تأتي ولا
+   أحدَ يعلم.
+
+   وقد كان القالبُ يقول `Academy@wajeez.co` — نطاقٌ غيرُ نطاق الموقع وغيرُ
+   الافتراض في الشيفرة (`ACADEMY_EMAIL`). ومتغيّرُ البيئة **يغلب شاشةَ
+   الإدارة**، فتصحيحُه من `/admin/integrations` كان سيبدو ناجحا ولا يفعل شيئا.
+
+   وهو الخطأُ نفسُه الذي كان في `SITE_DOMAIN` في هذا الملفّ بعينه: قيمةٌ من
+   عهدٍ مضى في قالبٍ يُنسَخ حرفا. */
+describe('نطاقُ المُرسِل في قالب الإنتاج', () => {
+  const read2 = (p: string) => readFileSync(join(root, p), 'utf8')
+  const live = read2('deploy/.env.production.example')
+    .split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
+
+  it.each(['RESEND_FROM_EMAIL', 'RESEND_REPLY_TO'])('«%s» على نطاق الموقع لا على نطاقٍ آخر', (key) => {
+    const m = live.match(new RegExp(`^${key}=(\\S+)`, 'm'))
+    expect(m, `${key} غائبٌ عن القالب`).not.toBeNull()
+    expect(m![1], 'نطاقٌ غيرُ موثَّقٍ في Resend يُسقط كلَّ رسالة، ورفضُه لا يظهر في شاشة')
+      .toContain('@' + new URL(CANONICAL_ORIGIN).hostname.replace(/^www\./, ''))
+  })
+
+  it('ولا يُترك المفتاحُ مملوءا في قالبٍ يُرفع إلى Git', () => {
+    expect(live, 'سرٌّ في المستودَع').toMatch(/^RESEND_API_KEY=\s*$/m)
+  })
+})
