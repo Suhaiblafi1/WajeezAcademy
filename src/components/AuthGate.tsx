@@ -77,15 +77,14 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   const [agreed, setAgreed] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [resent, setResent] = useState(false);
+  const [resent, setResent] = useState<string | null>(null);
   const [resetToken, setResetToken] = useState("");
 
   const emailValid = EMAIL_RE.test(email.trim());
   const passValid = pass.length >= 8;
-  const confirmValid = mode === "login" || confirm === pass;
   const nameValid = mode === "login" || name.trim().length >= 2;
   const consentValid = mode === "login" || agreed;
-  const formValid = emailValid && passValid && confirmValid && nameValid && consentValid;
+  const formValid = emailValid && passValid && nameValid && consentValid;
   const strength = strengthOf(pass);
   const locked = lockedMinutes();
 
@@ -104,9 +103,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             ? "صيغة البريد غير صحيحة — مثال: name@mail.com"
             : !passValid
               ? "كلمة المرور ٨ أحرف على الأقل — أضف رقما أو رمزا لتقويتها"
-              : !confirmValid
-                ? "تأكيد كلمة المرور لا يطابقها — أعد كتابتها"
-                : "نحتاج موافقتك على شروط الاستخدام وسياسة الخصوصية أولا"
+              : "نحتاج موافقتك على شروط الاستخدام وسياسة الخصوصية أولا"
       );
       return;
     }
@@ -123,8 +120,17 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
       }
       if (mode === "signup") {
         track("account_created", source ? { source } : {});
-        setView("verify");
-        setResent(false);
+        /* شاشةُ «تفقّد بريدك» لمن أُرسلت إليه رسالةٌ فعلا.
+
+           كانت تُعرض لكلّ من سجّل — وقناةُ البريد قد تكون مغلقةً بقرار — فينتهي
+           أوّلُ لقاءٍ لكلّ مستخدمٍ جديدٍ بانتظارِ رسالةٍ لن تصل، وزرُّه الرئيسُ
+           «أعد الإرسال». والخادمُ يقول في ردّ التسجيل هل خرجت الرسالةُ فعلا. */
+        if (result.verificationSent) {
+          setView("verify");
+          setResent(null);
+        } else {
+          onDone();
+        }
       } else {
         onDone();
       }
@@ -194,14 +200,12 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           </p>
           <div className="mt-6 space-y-3">
             <button
-              onClick={() => {
-                resendVerification(email);
-                setResent(true);
-              }}
-              disabled={resent}
+              onClick={() => void resendVerification().then((r) => setResent(r.message))}
+              disabled={resent !== null}
               className="h-11 w-full rounded-2xl border border-white/15 text-sm font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-50"
             >
-              {resent ? "أُعيد إرسال الرسالة — تفقد بريدك" : "لم تصلك؟ أعد إرسال رسالة التحقق"}
+              {/* رسالةُ الخادم كما هي — لا تأكيدٌ تكتبه الشاشةُ عن نداءٍ لم تنتظره */}
+              {resent ?? "لم تصلك؟ أعد إرسال رسالة التحقق"}
             </button>
             <button
               onClick={onDone}
@@ -210,7 +214,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               متابعة — سأؤكد بريدي لاحقا
             </button>
           </div>
-          <p className="mt-5 text-micro leading-relaxed text-muted-foreground">
+          <p className="mt-5 text-fine leading-relaxed text-muted-foreground">
             تفقد مجلد الرسائل غير المرغوبة إن لم تجدها خلال دقائق
           </p>
         </Panel>
@@ -249,7 +253,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               />
             </div>
             {!emailValid && email.length > 0 && (
-              <p className="mt-1.5 text-micro font-semibold text-red-300">صيغة البريد غير صحيحة — مثال: name@mail.com</p>
+              <p className="mt-1.5 text-fine font-semibold text-red-300">صيغة البريد غير صحيحة — مثال: name@mail.com</p>
             )}
             <button
               type="submit"
@@ -328,7 +332,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {pass.length > 0 && !passValid && (
-                <p className="mt-1.5 text-micro font-semibold text-red-300">كلمة المرور ٨ أحرف على الأقل</p>
+                <p className="mt-1.5 text-fine font-semibold text-red-300">كلمة المرور ٨ أحرف على الأقل</p>
               )}
             </div>
             <div>
@@ -349,7 +353,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {confirm.length > 0 && confirm !== pass && (
-                <p className="mt-1.5 text-micro font-semibold text-red-300">لا تطابق كلمة المرور — أعد كتابتها</p>
+                <p className="mt-1.5 text-fine font-semibold text-red-300">لا تطابق كلمة المرور — أعد كتابتها</p>
               )}
             </div>
             {err && (
@@ -425,7 +429,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   <Linkedin className="h-5 w-5" />
                   المتابعة بحساب لينكدإن
                 </button>
-                <p className="flex items-center justify-center gap-1.5 text-micro text-muted-foreground">
+                <p className="flex items-center justify-center gap-1.5 text-fine text-muted-foreground">
                   <ShieldCheck className="h-3.5 w-3.5 text-teal-ink" />
                   لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
                 </p>
@@ -481,7 +485,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {email.length > 0 && !emailValid && (
-                <p id="auth-email-hint" className="mt-1.5 text-micro font-semibold text-red-300">
+                <p id="auth-email-hint" className="mt-1.5 text-fine font-semibold text-red-300">
                   صيغة البريد غير صحيحة — مثال: name@mail.com
                 </p>
               )}
@@ -517,7 +521,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {mode === "signup" && (
-                <p className="mt-1.5 text-micro text-muted-foreground">
+                <p className="mt-1.5 text-fine text-muted-foreground">
                   ٨ أحرف فأكثر — ويُفضّل رقم أو رمز (! @ #) لتقويتها
                 </p>
               )}
@@ -535,39 +539,25 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                     />
                   ))}
                 </div>
-                <p className="mt-1.5 text-micro font-semibold" style={{ color: STRENGTH_META[strength].color }}>
+                <p className="mt-1.5 text-fine font-semibold" style={{ color: STRENGTH_META[strength].color }}>
                   كلمة مرور {STRENGTH_META[strength].label}
                 </p>
               </div>
             )}
 
-            {mode === "signup" && (
-              <div>
-                <label htmlFor="auth-confirm" className={LABEL_CLS}>تأكيد كلمة المرور</label>
-                <div className="relative">
-                  <Lock className="absolute right-3.5 top-3.5 h-4 w-4 text-muted-foreground" />
-                  {confirm.length > 0 && confirmValid && <Check className="absolute left-3.5 top-3.5 h-4 w-4 text-[#34A853]" />}
-                  <input
-                    id="auth-confirm"
-                    name="password-confirm"
-                    dir="ltr"
-                    type={showPass ? "text" : "password"}
-                    required
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    placeholder="أعد كتابتها للتأكيد"
-                    autoComplete="new-password"
-                    aria-describedby="auth-confirm-hint"
-                    className={FIELD_CLS}
-                  />
-                </div>
-                {confirm.length > 0 && !confirmValid && (
-                  <p id="auth-confirm-hint" className="mt-1.5 text-micro font-semibold text-red-300">
-                    لا تطابق كلمة المرور — أعد كتابتها
-                  </p>
-                )}
-              </div>
-            )}
+            {/* ــ حقلُ التأكيد حُذف من التسجيل (البند ٦١) ــ
+
+                خمسةُ حقولٍ لإنشاء حساب، خامسُها يطلب كتابةَ ما كُتب لتوّه.
+                وعلّةُ الحقل الأصليّةُ أنّ الكاتبَ لا يرى ما يكتب — **وزرُّ
+                الإظهارِ فوقَه يحلّها**: عينٌ واحدةٌ تُري الكلمةَ كاملةً، وهي
+                أوثقُ من كتابةٍ ثانيةٍ عمياءَ قد تحمل الخطأَ نفسَه مرّتين.
+
+                وبقي الحقلُ في **استعادة كلمة المرور** بقصد: لا زرَّ إظهارٍ
+                هناك (`type="password"` ثابت)، فالكاتبُ لا يرى شيئا — وحذفُ
+                التأكيد هناك يحبس صاحبَ الحساب خارجَ حسابه بحرفٍ لم يره.
+
+                وأعاده ترحيلُ الأسطح الآليُّ مرّةً؛ فيُحذف ثانيةً ويُكتب هنا
+                لماذا، كي لا يعود ثالثة. */}
 
             {mode === "login" && (
               <p className="text-left">
@@ -592,7 +582,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   onChange={(e) => setAgreed(e.target.checked)}
                   className="mt-0.5 h-4 w-4 shrink-0 accent-teal"
                 />
-                <span className="text-micro leading-relaxed text-muted-foreground">
+                <span className="text-fine leading-relaxed text-muted-foreground">
                   أوافق على{" "}
                   <Link to="/p/terms" className="font-bold text-foreground underline underline-offset-4 hover:text-teal-light-ink">
                     شروط الاستخدام
@@ -626,7 +616,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           </form>
 
           {mode === "login" && (
-            <p className="mt-4 text-center text-micro leading-relaxed text-muted-foreground">
+            <p className="mt-4 text-center text-fine leading-relaxed text-muted-foreground">
               لحمايتك: يُقفل الدخول مؤقتا بعد خمس محاولات خاطئة
             </p>
           )}

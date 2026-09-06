@@ -5,9 +5,33 @@
 
 import { pathwaySkills } from '../catalog'
 import { layersOfSkill, isDiagnosticSkillActive } from './data'
+import { measurableSkills } from '../v2_1/universe'
 import type { SkillState } from './types'
 
 export const TARGET_LEVEL = 4
+
+/* ═══════════ المسطرةُ التي يملكها المحرّك ═══════════
+
+   بنكُ الأسئلة يقيس **٣٩ مهارةً** من مئاتٍ في الكتالوج. ومعادلةُ الثقة كُتبت
+   كأنّه يقيسها كلَّها: مانعُ «التطابق القويّ» يشترط أن يُقاس **نصفُ مهارات
+   المسار**.
+
+   وحُسب السقف: لو أجاب المتعلّمُ عن **كلّ** سؤالٍ مهاريٍّ في المنصّة، فأعلى
+   تغطيةٍ يبلغها مسارٌ من العشرين **٤٤٪**، ومتوسّطُها **٢٦٪**، وأدناها ١٤٪.
+   **ولا مسارَ واحدٌ يبلغ الخمسين.** فالدرجةُ العليا ليست صعبةَ المنال — هي
+   **غيرُ موجودة**: صفرٌ من عشرة آلاف جلسةِ محاكاة.
+
+   وهذا ليس عيبَ معايرة، بل **قياسٌ بمسطرةٍ لا نملكها**. والعلاجُ ليس تخفيضَ
+   العتبة إرضاءً للرقم، بل تغييرَ ما تُقاس عليه: **ما نسبةُ ما قِسناه ممّا
+   نستطيع قياسَه؟** — سؤالٌ له جوابٌ صادق، وله سقفٌ يبلغ المئة.
+
+   ولا تُخفي هذه المسطرةُ الجهل: `measuredCoverage` (النسبةُ من كلّ المهارات)
+   تبقى كما هي، تُعرض للمتعلّم وتدخل حسابَ الثقة. والجديدةُ تجيب سؤالا آخرَ —
+   وهو سؤالُ **المانع** وحدَه: أَقِسنا ما نستطيع، أم فرّطنا فيما نملك؟
+
+   ومصدرُ «ما يمكن قياسُه» واحدٌ لا اثنان: `measurableSkills` في
+   `v2_1/universe` — وهي أدقُّ ممّا كنتُ سأكتب (تشترط سطحَ B2C ونوعَ الإجابة
+   `skill_level_5`). وجدولان يفترقان عاجلا أو آجلا. */
 
 /** يبني حالات المهارات من متجه القياس — ما لم يُقس يبقى مجهولًا صراحة */
 export function buildSkillStates(skillVector: Record<string, number>): Map<string, SkillState> {
@@ -31,6 +55,12 @@ export interface PathwaySkillAssessment {
   mastered: { slug: string; nameAr: string; level: number }[]
   /** measuredRequired / required — 0 إن لم يُقس شيء، 1 إن لم يتطلب المسار مهارات */
   measuredCoverage: number
+  /** مهاراتُ المسار التي يملك البنكُ سؤالا يقيسها */
+  measurableRequired: { slug: string; nameAr: string }[]
+  /** المقيسُ من المُمكن قياسُه — سقفُها المئة، وعليها يُعاير المانع وحدَه.
+      `1` حين لا يملك البنكُ سؤالا لأيّ مهارةٍ من مهارات المسار: لا يُعاقَب
+      المتعلّمُ على صمتٍ ليس منه، ولا يُدَّعى أنّه قِيس. */
+  measurableCoverage: number
   /** متوسط الفجوة على المقاس فقط — null إن لم تُقس أي مهارة */
   gapScore: number | null
 }
@@ -60,6 +90,11 @@ export function assessPathwaySkills(
   }
 
   const measuredCoverage = required.length === 0 ? 1 : measured.length / required.length
+  const canMeasure = measurableSkills()
+  const measurableRequired = required.filter((s) => canMeasure.has(s.slug))
+  const measurableMeasured = measured.filter((m) => canMeasure.has(m.slug)).length
+  const measurableCoverage =
+    measurableRequired.length === 0 ? 1 : measurableMeasured / measurableRequired.length
   let gapScore: number | null = null
   if (measured.length > 0) {
     let sum = 0
@@ -67,7 +102,7 @@ export function assessPathwaySkills(
     gapScore = sum / measured.length
   }
 
-  return { required, measured, unknown, gap, mastered, measuredCoverage, gapScore }
+  return { required, measured, unknown, gap, mastered, measuredCoverage, measurableRequired, measurableCoverage, gapScore }
 }
 
 /** ملاحظات التخصيص من المهارات الأربع المقاسة غير المغطاة — أثرها موثق ومحدود */

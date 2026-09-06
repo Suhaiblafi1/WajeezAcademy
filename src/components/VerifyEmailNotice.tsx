@@ -73,11 +73,11 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
         {sendButton}
         <Button tone="secondary" type="button"
           onClick={() => fold(false)}
-          aria-expanded={false} className="min-h-9 border-[#FABC05]/30 text-micro">
+          aria-expanded={false} className="min-h-9 border-[#FABC05]/30 text-fine">
           التفصيل <ChevronDown className="h-3 w-3" aria-hidden="true" />
         </Button>
         {result && (
-          <p role="status" className={`w-full text-micro leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
+          <p role="status" className={`w-full text-fine leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
             {result.text}
           </p>
         )}
@@ -96,7 +96,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
             <p className="text-sm font-black">بريدك غير موثَّق</p>
             <Button tone="secondary" type="button"
               onClick={() => fold(true)}
-              aria-expanded className="min-h-9 border-[#FABC05]/30 text-micro">
+              aria-expanded className="min-h-9 border-[#FABC05]/30 text-fine">
               اطوِه <ChevronUp className="h-3 w-3" aria-hidden="true" />
             </Button>
           </div>
@@ -111,7 +111,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           </p>
           <div className="mt-3">{sendButton}</div>
           {result && (
-            <p role="status" className={`mt-2.5 text-micro leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
+            <p role="status" className={`mt-2.5 text-fine leading-6 ${result.tone === "ok" ? "text-emerald-300" : "text-[#FABC05]"}`}>
               {result.text}
             </p>
           )}

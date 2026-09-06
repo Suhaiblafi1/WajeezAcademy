@@ -73,7 +73,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
   /* لا موعدَ عليه: سطرٌ واحدٌ يقول ذلك ويشير إلى المراجعة إن استُحقّت */
   if (data.items.length === 0) {
     return (
-      <p className={`flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-micro leading-6 text-muted-foreground ${className}`.trim()}>
+      <p className={`flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-fine leading-6 text-muted-foreground ${className}`.trim()}>
         <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {data.meaningAr}
         {data.retrievalDue > 0 && (
@@ -96,7 +96,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
           مواعيدي
         </h2>
         {data.overdue > 0 && (
-          <span className="rounded-full border border-rose-400/40 bg-rose-500/[0.08] px-3 py-1 text-micro font-black text-danger-ink">
+          <span className="rounded-full border border-rose-400/40 bg-rose-500/[0.08] px-3 py-1 text-fine font-black text-danger-ink">
             {data.overdue} فات موعدُه
           </span>
         )}
@@ -112,13 +112,13 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
                   <p className="truncate font-bold">
                     {TYPE_AR[d.type] ?? d.type}: {d.title}
                   </p>
-                  <p className="mt-0.5 text-micro text-muted-foreground">
+                  <p className="mt-0.5 text-fine text-muted-foreground">
                     {d.courseTitle} · {d.cohortTitle}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {d.resubmitRequested && (
-                    <span className="rounded-full border border-white/20 px-2 py-0.5 text-micro font-bold">
+                    <span className="rounded-full border border-white/20 px-2 py-0.5 text-fine font-bold">
                       طُلبت إعادةُ التسليم
                     </span>
                   )}
@@ -136,7 +136,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
 
       {/* البطاقاتُ تُذكَر ولا تُعرَض — أثرُها مختلف، وموضعُها شاشتُها */}
       {data.retrievalDue > 0 && (
-        <p className="mt-4 flex flex-wrap items-center gap-2 text-micro text-muted-foreground">
+        <p className="mt-4 flex flex-wrap items-center gap-2 text-fine text-muted-foreground">
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
           و{data.retrievalDue} بطاقةَ استرجاعٍ استُحقّت — لا موعدَ نهائيَّ لها، لكنّها تُنسى إن تباعدت.
           <Link to="/student/review" className="font-bold text-teal-light-ink underline">

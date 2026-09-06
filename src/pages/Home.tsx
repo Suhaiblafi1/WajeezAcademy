@@ -13,6 +13,7 @@ import { faqs } from '@/data/siteContent'
    وخمسَ مئةٍ وستّةً وستّين سطرا في عشرين قسما. */
 import SectionLabel from './home/SectionLabel'
 import { Bestsellers } from './home/Bestsellers'
+import { WhoAreYou } from './home/WhoAreYou'
 
 /** كم سؤالا يُعرض على الرئيسية — والباقي في `/p/faq` */
 const HOME_FAQ_COUNT = 4
@@ -54,10 +55,14 @@ function useReveal() {
 import { stories, partnerLogos, STORY_ILLUSTRATIVE_BADGE_AR } from '@/data/stories'
 import StoryAvatar from '@/components/StoryAvatar'
 import RemoteImage from '@/components/RemoteImage'
+import { UpcomingTermLine } from '@/components/UpcomingTermNote'
+import ProofBand from '@/components/ProofBand'
+import { Card, Panel, Inset } from '@/components/ui/Surface'
 
-import { Card, Inset, Panel } from "@/components/ui/Surface";
-/* «مؤشر وجيز» — خمسة أسئلة وعي مستقلة: تُحفظ محليا على جهاز الزائر فقط ولا تغذي التشخيص،
-   بل توقظ فيه السؤال الصحيح وتفتح شهيته لخدمتنا، ثم يبدأ التشخيص الكامل من الصفر باحترافية */
+/* «مؤشر وجيز» — سؤالا وعيٍ مستقلّان (البند ٥٧): يُحفظان محليا على جهاز الزائر
+   فقط، ولا يغذّيان التشخيص إلّا `m4` — وهو الذي يوفّر سؤالا في التشخيص فعلا
+   (`goal_clarity` في `teaser-bridge.ts`). كانا خمسةً، وثلاثةٌ منها لا يُقرأ
+   جوابُها في موضعٍ واحد — فطولٌ يُطلب من الزائر بلا مقابلٍ يُعطاه. */
 const mirrorQuestions = [
   {
     id: 'm1', moduleLabel: 'المؤشر',
@@ -65,24 +70,9 @@ const mirrorQuestions = [
     options: ['أكثر مما أعترف به لنفسي', 'مرة أو مرتين', 'بدأت فعلا لكني توقفت', 'لا — أنا منتظم غالبا'],
   },
   {
-    id: 'm2', moduleLabel: 'المؤشر',
-    text: 'لو سألنا مديرك أو أستاذك: ما المهارة التي تنقصك فعلا؟ — هل تعرف إجابته فورا؟',
-    options: ['نعم — أعرفها بالضبط', 'لدي تخمين لا أكثر', 'بصراحة؟ لا أعرف'],
-  },
-  {
-    id: 'm3', moduleLabel: 'المؤشر',
-    text: 'كم دورة إلكترونية بدأتها في حياتك... وأكملتها فعلا للنهاية؟',
-    options: ['أكملت معظمها', 'بعضها فقط', 'أبدأ بحماس وأتوقف — قصتي المعتادة'],
-  },
-  {
     id: 'm4', moduleLabel: 'المؤشر',
     text: 'عندما تفكر في وضعك المهني بعد سنتين — كيف تبدو الصورة؟',
     options: ['واضحة ومكتوبة', 'في رأسي تقريبا', 'ضبابية — وهذا يقلقني أحيانا'],
-  },
-  {
-    id: 'm5', moduleLabel: 'المؤشر',
-    text: 'وما الذي يمنعك اليوم من البدء فعلا؟',
-    options: ['لا أعرف من أين أبدأ', 'الخيارات كثيرة وتشتتني', 'أخاف أدفع ثمن شيء لا يناسبني', 'ظروفي لا تسمح الآن'],
   },
 ]
 
@@ -257,13 +247,22 @@ function Hero() {
             <Route className="h-3.5 w-3.5" />
             <span className="underline-offset-4 hover:underline">اختر مسارك بنفسك</span>
           </a>
+          {/* ── سطرٌ ثانٍ مؤرَّخ (البند ٥٢) ──
+
+              الدعوةُ فوقَه صحيحةٌ ولا يُمسّ ترتيبُها: التشخيصُ قِمعُ المنصّة.
+              لكنّها — كدعوات الرئيسة كلِّها — **بلا تاريخ**، ودعوةٌ بلا تاريخٍ
+              تُقرأ لافتةً لا نداء. فيُقال تحتها متى يبدأ الفصلُ ومتى تُغلق
+              نافذتُه، ولا شيءَ يُقال قبل أن يُنشأ فصل. */}
+          <p className="mt-4 text-xs font-bold leading-6 text-muted-foreground">
+            <UpcomingTermLine prefix="الفصل القادم:" />
+          </p>
         </div>
       </div>
     </section>
   )
 }
 
-/* ───────────────── مؤشر وجيز — خمسة أسئلة صدق مع النفس ───────────────── */
+/* ───────────────── مؤشر وجيز — سؤالا صدقٍ مع النفس ───────────────── */
 function DiagnosticTeaser() {
   /* استرجاع المحفوظ المحلي كحالة أولية كسولة — لا setState داخل تأثير */
   const [savedMirror] = useState(() => {
@@ -335,7 +334,7 @@ function DiagnosticTeaser() {
             قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد
           </h2>
           <p className="mx-auto mt-2.5 max-w-lg text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-8">
-            خمسة أسئلة صادقة يبني عليها التشخيص الكامل.
+            سؤالان صادقان يبني عليهما التشخيص الكامل.
           </p>
         </div>
 
@@ -473,7 +472,7 @@ function HowItWorks() {
                 </div>
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-bold">
-                    <span className="text-micro font-black text-teal-ink">{i + 1}</span>
+                    <span className="text-fine font-black text-teal-ink">{i + 1}</span>
                     {s.title}
                   </h3>
                   <p className="mt-1 text-xs leading-6 text-muted-foreground">{s.text}</p>
@@ -489,32 +488,6 @@ function HowItWorks() {
 
 /* ───────────────── منهجية وجيز — ثقة علمية بلا استعراض شعارات ───────────────── */
 /* ───────────────── visual band ───────────────── */
-function ImageBand() {
-  return (
-    <section className="relative overflow-hidden">
-      {/* الصورة محلية (public/) — CSP يمنع الصور الخارجية، والاستضافة الذاتية تضمن ظهورها دائما */}
-      <RemoteImage
-        src="/band-learners.jpg"
-        alt="متعلمون يتعاونون حول طاولة واحدة"
-        className="h-[340px] w-full object-cover md:h-[420px]"
-        fallbackClassName="h-[340px] w-full md:h-[420px]"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-paper via-paper/55 to-paper/25" />
-      <div className="absolute inset-0 flex items-end">
-        <div className="mx-auto w-full max-w-7xl px-5 pb-10">
-          <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
-            لا نقيس تعلمك بما شاهدت —
-            <span className="text-teal-light-ink"> بل بما أنجزت وأثبتّ.</span>
-          </p>
-          <p className="reveal mt-3 max-w-md text-sm leading-7 text-foreground">
-            مدرب يراجع عملك بيده، ومشروع تخرج يدخل ملفك المهني من أول يوم.
-          </p>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 /* ───────────────── stories (the heart) ───────────────── */
 function Stories() {
   const [open, setOpen] = useState<(typeof stories)[number] | null>(null)
@@ -530,7 +503,7 @@ function Stories() {
             كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — اختر نموذجا واقرأه كاملا.
           </p>
           {/* الصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
-          <p className="mx-auto mt-3 max-w-md text-micro leading-5 text-muted-foreground">
+          <p className="mx-auto mt-3 max-w-md text-fine leading-5 text-muted-foreground">
             نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
@@ -560,7 +533,7 @@ function Stories() {
                 <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-20 w-20" />
               </div>
               <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-              <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-micro font-bold">{s.tag}</span>
+              <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-fine font-bold">{s.tag}</span>
             </div>
             <div className="flex flex-1 flex-col p-5">
               <p className="text-sm font-bold">
@@ -617,7 +590,7 @@ function Stories() {
                 <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-foreground">{open.name} — {open.role}</span>
-                  <span className="text-micro font-normal text-muted-foreground">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
+                  <span className="text-fine font-normal text-muted-foreground">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
                 </div>
               </div>
 
@@ -695,11 +668,11 @@ function Stories() {
                     >
                       <p className="text-sm font-bold leading-relaxed">{m.skill}</p>
                       <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
-                        <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-micro font-bold">قبل</span>
+                        <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-fine font-bold">قبل</span>
                         {m.before}
                       </p>
                       <p className="flex items-start gap-2 text-xs leading-6 text-foreground/90">
-                        <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-micro font-bold text-teal-light-ink">بعد</span>
+                        <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-bold text-teal-light-ink">بعد</span>
                         {m.after}
                       </p>
                     </div>
@@ -807,7 +780,7 @@ function Faq() {
                       <p className="leading-8 text-muted-foreground">
                         توصية مبنية على منهجية، لا على التخمين: يحلل التشخيص الكامل ميولك وأهدافك وفجوات مهاراتك بأطر مهنية معروفة
                         (RIASEC وO*NET وESCO وDigComp)، وكل استنتاج مرتبط بإجابة قدّمتها — بلا صناديق سوداء، وبدرجة ثقة معلنة.
-                        أما «مؤشر وجيز» على هذه الصفحة فخمسة أسئلة تمهيدية عن علاقتك بالتعلّم، لا تحليل مهارات.
+                        أما «مؤشر وجيز» على هذه الصفحة فسؤالان تمهيديّان عن علاقتك بالتعلّم، لا تحليل مهارات.
                       </p>
                       <Link
                         to="/methodology"
@@ -856,7 +829,7 @@ function FinalCta() {
           امنحنا بضع دقائق من الوضوح، نمنحك خريطة طريق كاملة.
         </p>
         <div className="reveal mt-9">
-          {/* كان يعِد بخريطة طريق كاملة ثم يهبط بالزائر إلى مؤشّر الخمسة أسئلة في
+          {/* كان يعِد بخريطة طريق كاملة ثم يهبط بالزائر إلى المؤشّر التمهيديّ في
               الصفحة نفسها. الوعد المكتوب فوق الزر يقرر وجهته: التشخيص الكامل. */}
           <Link
             to="/diagnostic"
@@ -902,6 +875,8 @@ function Partners() {
             />
           ))}
         </div>
+        {/* الجدارُ الثاني تحت الأوّل لا بعد قسمين — البند ٥٦ */}
+        <EcosystemOrgStrip nested />
       </div>
     </section>
   )
@@ -1066,7 +1041,7 @@ function advisorHref() {
 function ChannelBadge() {
   const isWhatsApp = Boolean(CONTACT.whatsapp)
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-micro font-bold text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-fine font-bold text-muted-foreground">
       <span className={`h-1.5 w-1.5 rounded-full ${isWhatsApp ? 'bg-gradient-to-br from-emerald-300 to-teal' : 'bg-teal'}`} />
       {isWhatsApp ? 'واتساب' : 'بريد'}
     </span>
@@ -1099,7 +1074,7 @@ function AdvisorStrip() {
             <MessageCircle className="h-4 w-4" />
             احجز حديثك
           </a>
-          <p className="flex items-center gap-2 text-micro text-muted-foreground">
+          <p className="flex items-center gap-2 text-fine text-muted-foreground">
             مجاني · خمس عشرة دقيقة · بلا التزام
             <ChannelBadge />
           </p>
@@ -1134,15 +1109,16 @@ export default function Home() {
       <Nav />
       <div>
         <Hero />
+        {/* «أين أنت الآن؟» قبل شرحِ الرحلة وقبل الكتالوج: أوّلُ سؤالٍ يُطرح
+            على الزائر يجب أن يكون عمّا يعرفه عن نفسه، لا عن تصنيفٍ لم يضعه. */}
+        <WhoAreYou />
         <DiagnosticTeaser />
         <HowItWorks />
         {/* شريط الثقة — أرقام وجيز مهارات الموثقة فقط، بعد شرح الرحلة (مصدر مركزي: data/trustMetrics) */}
         <TrustMetricsBar />
         <Partners />
-        <ImageBand />
+        <ProofBand />
         <Bestsellers />
-        {/* إثبات مؤسسي — بعد المسارات والدورات مباشرة (مصدر مركزي: data/ecosystemOrganizations) */}
-        <EcosystemOrgStrip />
         <Stories />
         <AdvisorStrip />
         <Faq />

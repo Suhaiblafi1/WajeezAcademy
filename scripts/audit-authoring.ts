@@ -8,12 +8,26 @@
    فالتغطيةُ رقمٌ يُعرض لا حاجزٌ يُسقط. والحاجزُ على الجودة: من ألّف
    فليؤلّف على السياسة.
 
+   ─────────── ولمَ خطُّ أساسٍ ───────────
+
+   البوّابةُ كُتبت وتعمل، **ولم تكن تحرس شيئا**: `ci:authoring` في
+   `package.json` ولا يناديه أحد في CI. وسببُ ذلك ظاهر — لو وُصلت اليوم
+   لسقطت، فوحدةٌ واحدةٌ مؤلَّفةٌ ناقصة (`C-CAR-102-M4`: متنٌ بلا تمارينَ ولا
+   سيناريو ولا نشاطٍ ولا روبرك). وبوّابةٌ حمراءُ دائما تُعلّم القارئَ تجاهلَ
+   الأحمر، فتصير أسوأَ من لا بوّابة.
+
+   فالحلُّ هو حلُّ `lint-baseline.ts` نفسُه في هذا المستودَع: **خطُّ أساسٍ
+   ملتزَم**. تسقط البوّابةُ إن ازداد العددُ أو ظهرت مخالفةٌ في وحدةٍ جديدة،
+   ولا تسقط على ما هو مسجَّلٌ سلفا — بل تطلب شدَّ الحزام. فيُمنع الدينُ
+   الجديد بلا تجميد الإصلاح ولا تزييف الرقم بصفرٍ لا وجودَ له.
+
    الاستعمال:
      npx tsx scripts/audit-authoring.ts            تقرير
-     npx tsx scripts/audit-authoring.ts --check    يسقط عند أيّ مخالفة
+     npx tsx scripts/audit-authoring.ts --check    يسقط عند أيّ مخالفة جديدة
+     npx tsx scripts/audit-authoring.ts --update   يحدّث خط الأساس بعد إصلاحٍ مقصود
 */
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { validateChecks } from '../src/application/content/module-checks'
 import { validateScenario } from '../src/application/content/scenario'
@@ -23,6 +37,7 @@ import { checkLibraryRefs, type LibraryIndex } from '../src/application/content/
 
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
 const LIBRARY = join(process.cwd(), 'src/data/library/wajeez-library.json')
+const BASELINE = join(process.cwd(), 'authoring-baseline.json')
 
 export interface Course {
   course_id: string
@@ -362,7 +377,42 @@ function main() {
   const remaining = all.length - authored.length
   if (remaining > 0) console.log(`📋 بقي ${remaining} وحدةً بلا متن — تُؤلَّف على السياسة نفسِها.\n`)
 
-  if (check && violations.length > 0) process.exit(1)
+  /* ─── خطُّ الأساس: يُمنع الجديدُ ولا يُجمَّد الإصلاح ─── */
+  const live: Record<string, number> = {}
+  for (const v of violations) live[v.moduleId] = (live[v.moduleId] ?? 0) + 1
+  const sorted = Object.fromEntries(Object.entries(live).sort(([a], [b]) => a.localeCompare(b)))
+
+  if (process.argv.includes('--update')) {
+    writeFileSync(BASELINE, JSON.stringify({ modules: sorted }, null, 2) + '\n', 'utf8')
+    console.log(`✅ حُدّث خطُّ الأساس: ${violations.length} مخالفة في ${Object.keys(sorted).length} وحدة.\n`)
+    return
+  }
+
+  if (!check) return
+
+  if (!existsSync(BASELINE)) {
+    console.error(`❌ لا خطَّ أساسٍ في ${BASELINE} — شغّل الأمر بـ--update والتزم الناتج.\n`)
+    process.exit(1)
+  }
+  const base = (JSON.parse(readFileSync(BASELINE, 'utf8')) as { modules: Record<string, number> }).modules
+  const worse: string[] = []
+  for (const [id, n] of Object.entries(sorted)) {
+    const was = base[id] ?? 0
+    if (n > was) worse.push(was === 0 ? `${id}: مخالفةٌ جديدة (${n})` : `${id}: ${was} ← ${n}`)
+  }
+  const better = Object.entries(base).filter(([id, n]) => (sorted[id] ?? 0) < n)
+
+  if (worse.length > 0) {
+    console.error('❌ مخالفاتٌ فوق خطّ الأساس — تُصلَح قبل الدمج:\n')
+    for (const w of worse) console.error(`   · ${w}`)
+    console.error('')
+    process.exit(1)
+  }
+  if (better.length > 0) {
+    console.log(`✅ لا مخالفةَ جديدة — و${better.length} وحدةً تحسّنت. شُدَّ الحزام: --update\n`)
+  } else {
+    console.log('✅ لا مخالفةَ فوق خطّ الأساس.\n')
+  }
 }
 
 /* لا يعمل إلّا تشغيلا مباشرا.

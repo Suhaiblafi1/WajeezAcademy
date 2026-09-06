@@ -18,8 +18,8 @@ import type { ReactNode } from 'react'
 import { Award, BadgeCheck, BookOpen, Clock, Globe, Languages, Link2, Mail, Phone, Sparkles, UserRound } from 'lucide-react'
 import { courseById } from '@/data/courses'
 import { contactChannelLabel, seasonLabel } from '@/application/trainer/application-options'
+import { Card } from '@/components/ui/Surface'
 
-import { Card } from "@/components/ui/Surface";
 /** حقولٌ يُرسلها الخادم ولم تكن الشاشة تقرؤها */
 export interface Dossier extends Record<string, unknown> {
   fullName: string

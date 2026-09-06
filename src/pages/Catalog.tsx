@@ -10,11 +10,21 @@ import CourseTitle from "@/components/CourseTitle";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
+import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
+import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
+import { sortKeyAr } from '@/application/catalog/course-title'
+import { UpcomingTermBanner } from '@/components/UpcomingTermNote'
 
 const LEVELS = ['الكل', 'أساسي', 'متوسط', 'متقدم'] as const
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
    بعد جعل الكتالوج المضمن كسولا صارت البيانات تصل لاحقا، فلا بد أن تُحسبا
-   داخل المكوّن مرتبطتين برقم نسخة الكتالوج وإلا بقيتا فارغتين للأبد. */
+   داخل المكوّن مرتبطتين برقم نسخة الكتالوج وإلا بقيتا فارغتين للأبد.
+
+   و`exhaustive-deps` يعدّ `catalogVersion` تبعيّةً زائدةً لأنّها لا تُقرأ في
+   الجسد — وهي **الإشارةُ الوحيدة**: لقطةُ API تُثبَّت بـ`splice` على المصفوفة
+   نفسِها (`data/pathways.ts:153`) فتبقى هويّتُها كما هي، ولا يرى React تغيّرا.
+   فحذفُها — وهو ما تقترحه القاعدة — يجمّد أوّلَ لقطةٍ إلى الأبد، وهو عينُ
+   العطب الذي وُصف أعلاه. فالقاعدةُ تُسكَت في مواضعها بسببها لا بخط أساس. */
 
 type Sort = 'featured' | 'shortest' | 'longest' | 'name'
 
@@ -23,7 +33,9 @@ type Sort = 'featured' | 'shortest' | 'longest' | 'name'
    عنوان الصفحة لتصبح النتيجة رابطا قابلا للمشاركة */
 export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   const catalogVersion = usePublishedContent()
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   const bestsellerIds = useMemo(() => new Set(bestsellers.map((b) => b.id)), [catalogVersion])
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   const bestsellerCourseIds = useMemo(() => new Set(bestsellerCourses.map((b) => b.id)), [catalogVersion])
   const [params, setParams] = useSearchParams()
 
@@ -57,31 +69,57 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   }
 
   const shownPathways = useMemo(() => {
+    const pathwayRank = (p: (typeof pathways)[number]) =>
+      catalogRank(q, [[p.name, p.shortName], [...p.coreSkills], [p.audience, p.transformation, p.output]])
     let list = pathways.filter(
       (p) =>
         (cat === 'الكل' || pathwayDomain(p.id) === cat) &&
         (level === 'الكل' || p.level === level) &&
-        (!q || p.name.includes(q) || p.coreSkills.some((s) => s.includes(q)))
+        /* الحقولُ كلُّها لا حقلان: الاسمُ القصيرُ والمهاراتُ **والجمهورُ
+           والتحوّلُ والمخرَج** — وكلُّها مؤلَّفةٌ في الكتالوج اليوم ولم يكن
+           يبحث فيها أحد. */
+        matchesCatalogQuery(q, [p.name, p.shortName, p.audience, p.transformation, p.output, ...p.coreSkills])
     )
     if (sort === 'shortest') list = [...list].sort((a, b) => a.durationWeeks - b.durationWeeks)
     else if (sort === 'longest') list = [...list].sort((a, b) => b.durationWeeks - a.durationWeeks)
-    else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    else if (sort === 'name') list = [...list].sort((a, b) => sortKeyAr(a.name).localeCompare(sortKeyAr(b.name), 'ar'))
     else list = [...list].sort((a, b) => Number(bestsellerIds.has(b.id)) - Number(bestsellerIds.has(a.id)))
+    /* والصلةُ تتقدّم على الترتيب المختار حين يكون هناك بحث: من كتب كلمةً
+       يريد ما يحملها في اسمه أوّلا، ثمّ يبقى ترتيبُه فاصلا بين المتساويين. */
+    if (q) list = [...list].sort((a, b) => pathwayRank(b) - pathwayRank(a))
     return list
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   }, [q, cat, level, sort, bestsellerIds, catalogVersion])
 
   const shownCourses = useMemo(() => {
+    const courseRank = (c: (typeof courses)[number]) =>
+      catalogRank(q, [[c.name], [c.promise, ...c.skills], [c.audience, c.pathwayName]])
     let list = courses.filter(
       (c) =>
         (cat === 'الكل' || c.category === cat) &&
-        (!q || c.name.includes(q) || c.skill.includes(q) || c.pathwayName.includes(q))
+        matchesCatalogQuery(q, [c.name, c.promise, c.audience, c.pathwayName, ...c.skills])
     )
     if (sort === 'shortest') list = [...list].sort((a, b) => a.weeks - b.weeks)
     else if (sort === 'longest') list = [...list].sort((a, b) => b.weeks - a.weeks)
-    else if (sort === 'name') list = [...list].sort((a, b) => a.name.localeCompare(b.name, 'ar'))
+    /* ── والترتيبُ بالاسم يرتّب فعلا ──
+
+       ٨١ عنوانا من ٨١ يبدأ بكلمة «دورة» (وهي بقرار صاحب المنتج، تبقى)،
+       فكان «الترتيب: بالاسم» يضعها كلَّها تحت حرف الدال ثمّ يرتّب داخلها
+       بما لا يراه أحد. فالمفتاحُ يتجاوز السابقةَ المشتركة، والعنوانُ
+       المعروضُ لا يتغيّر. */
+    else if (sort === 'name') list = [...list].sort((a, b) => sortKeyAr(a.name).localeCompare(sortKeyAr(b.name), 'ar'))
     else list = [...list].sort((a, b) => Number(bestsellerCourseIds.has(b.id)) - Number(bestsellerCourseIds.has(a.id)))
+    if (q) list = [...list].sort((a, b) => courseRank(b) - courseRank(a))
     return list
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   }, [q, cat, sort, bestsellerCourseIds, catalogVersion])
+
+  /* الأسماءُ القصيرةُ بمعرِّفاتها — لفكّ الإحالات الداخليّة في «ليس لك إن…» */
+  const nameById = useMemo(
+    () => new Map(pathways.map((p) => [p.id, p.shortName])),
+    /* eslint-disable-next-line react-hooks/exhaustive-deps -- كسابقاتها: رقمُ النسخة هو إشارةُ الإبطال الوحيدة */
+    [catalogVersion],
+  )
 
   const isPathways = kind === 'pathways'
   const count = isPathways ? shownPathways.length : shownCourses.length
@@ -180,6 +218,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </div>
       )}
 
+      {/* ــ الفصلُ القادم: هاتان الصفحتان لا تعرضان تاريخا إطلاقا (البند ٥٢).
+             وموضعُه فوق النتائج لا تحتَها: من يتصفّح ثمانين بطاقةً لا يصل
+             إلى ذيل الصفحة، والتاريخُ يُقرأ قبل الاختيار لا بعده. */}
+      <UpcomingTermBanner className="mt-6" />
+
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
       <p className="mt-6 text-xs text-muted-foreground" aria-live="polite">
         {count === 0
@@ -198,24 +241,48 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   فتخرج البطاقة خارج شبكتها ويظهر تمرير أفقي عند التكبير. */}
               <div className="flex flex-wrap items-center gap-2">
                 {bestsellerIds.has(p.id) && (
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-micro font-bold text-gold-ink">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-gold/10 px-3 py-1 text-fine font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     من مختارات وجيز
                   </span>
                 )}
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-micro text-muted-foreground">{pathwayDomain(p.id)}</span>
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-micro text-muted-foreground">{p.level}</span>
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-fine text-muted-foreground">{pathwayDomain(p.id)}</span>
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-fine text-muted-foreground">{p.level}</span>
                 <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>
-              <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.name}</h2>
+              {/* ── الاسمُ القصيرُ في البطاقة، والكاملُ في الصفحة ──
+
+                  العنوانُ الكاملُ مكتوبٌ بلغة التحوّل — «ريادة الأعمال: من
+                  الفكرة إلى أوّل عميلٍ يدفع» — وهو صحيحٌ ويُحافَظ عليه. لكنّه
+                  يصلح للصفحة لا لبطاقةٍ في شبكةٍ من أربع: متوسّطُه ٤٥ حرفا،
+                  و١٦ من ٢٠ فيه نقطتان. و`short_title` مؤلَّفٌ لكلّ مسارٍ في
+                  الكتالوج ولم يكن يُعرض لأحد. */}
+              <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.shortName}</h2>
               <p className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">{p.transformation}</p>
+              {/* ── لمن هو، ولمن ليس ──
+
+                  الحقلان (`audience` و`not_for`) مؤلَّفان لكلّ مسارٍ من عشرين
+                  ولا يُعرض واحدٌ منهما. و«ليست لك إن…» أصدقُ سطرٍ في الكتالوج:
+                  يمنع شراءً خاطئا قبل وقوعه، **والمنعُ خدمةٌ لا خسارة** — ومن
+                  ردَّته الجملةُ عن مسارٍ لا يناسبه لم نخسره، بل كسبنا ثقتَه. */}
+              {p.audience && (
+                <p className="mt-3 line-clamp-2 text-fine leading-5 text-muted-foreground">
+                  <span className="font-bold text-foreground">لمن؟ </span>{p.audience}
+                </p>
+              )}
+              {p.notFor && (
+                <p className="mt-1.5 line-clamp-2 text-fine leading-5 text-muted-foreground">
+                  <span className="font-bold text-gold-ink">ليس لك إن: </span>
+                  {resolveCatalogRefsAr(p.notFor, (id) => nameById.get(id))}
+                </p>
+              )}
               {/* المخرَجُ الملموس مكانَ اسم مدرّبٍ لم يُعيَّن بعد — كان يظهر
                   مكرّرا بعدد مدرّبي المسار، فيملأ البطاقة بلا معلومة. */}
-              <div className="mt-3 flex items-start gap-1.5 text-micro leading-5 text-teal-light-ink">
+              <div className="mt-3 flex items-start gap-1.5 text-fine leading-5 text-teal-light-ink">
                 <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span className="line-clamp-2 min-w-0">تتخرّج بـ: {p.output}</span>
               </div>
-              <div className="mt-3 text-micro leading-5 text-muted-foreground">
+              <div className="mt-3 text-fine leading-5 text-muted-foreground">
                 {pathwaySizeAr(p)} · {p.weeklyHours} أسبوعيا
               </div>
               <div className="mt-auto pt-5">
@@ -233,7 +300,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             <Card as="article" key={c.id} className="group flex flex-col transition hover:border-gold/40">
               <div className="flex items-center gap-2">
                 {bestsellerCourseIds.has(c.id) && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-micro font-bold text-gold-ink">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     مختارة
                   </span>
@@ -258,10 +325,10 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               {c.promise && (
                 <p className="mt-1.5 line-clamp-2 text-xs leading-6 text-muted-foreground">{c.promise}</p>
               )}
-              <p className="mt-1.5 text-micro text-muted-foreground">
+              <p className="mt-1.5 text-fine text-muted-foreground">
                 {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
-              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-micro text-teal-light-ink">
+              <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                 {c.skill}
               </span>
               <div className="mt-auto pt-4">

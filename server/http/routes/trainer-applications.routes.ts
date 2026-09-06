@@ -178,8 +178,16 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
         startFrom: z.string().optional(),
         /* صباحيّ أو مسائيّ — اليوم وحده لا يقول متى هو متفرّغ فيه */
         periods: z.array(z.enum(['morning', 'evening'])).optional(),
-        /* والموسمُ: الشعبةُ تُفتح في موسمٍ، والمدرّبُ متفرّغ في بعضها لا كلّها */
-        seasons: z.array(z.enum(TRAINING_SEASON_VALUES)).max(4).optional(),
+        /* والموسمُ: الشعبةُ تُفتح في موسمٍ، والمدرّبُ متفرّغ في بعضها لا كلّها.
+
+           كان اختياريّا، فمرّ النموذجُ القديم (`JoinTrainerComplete`، ورابطُه
+           ما زال في بريد متقدّمين) **بلا موسمٍ ولا شكوى**: يُستكمَل الطلبُ
+           ويُعتمَد صاحبُه ولا موسمَ له في القاعدة. وبعد أن صار الموسمُ فصلا
+           يُربَط به المدرّب، صار من أكمل بلا موسمٍ لا يظهر في «المدرّبون
+           المتاحون لهذا الفصل» أبدا.
+
+           فصار شرطا: واحدٌ على الأقلّ. ومن لا يستطيع فصلا لا يُجدوَل. */
+        seasons: z.array(z.enum(TRAINING_SEASON_VALUES)).min(1, 'اختر فصلا واحدا على الأقلّ تستطيع التدريس فيه').max(4),
       }),
       demoConsent: z.literal(true),
       /* كيف نتواصل معه للاجتماع التعريفيّ */

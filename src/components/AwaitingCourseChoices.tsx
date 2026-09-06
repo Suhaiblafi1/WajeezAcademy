@@ -82,12 +82,12 @@ export default function AwaitingCourseChoices({
 
   return (
     <div className="w-full border-t border-white/8 pt-3">
-      <p className="text-micro leading-5 text-muted-foreground">
+      <p className="text-fine leading-5 text-muted-foreground">
         لا شعبةَ لها بعد. تستطيع أن تنتظرها، أو تستبدلها بما يخدم المهارات نفسَها الآن، أو تحذفها من خطّتك.
       </p>
 
       {error && (
-        <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-micro text-red-300">
+        <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-fine text-red-300">
           <AlertTriangle className="h-3 w-3 shrink-0" /> {error}
         </p>
       )}
@@ -95,21 +95,21 @@ export default function AwaitingCourseChoices({
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <button
           type="button" onClick={() => void openReplace()} disabled={busy !== ""}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
         >
           <ArrowLeftRight className="h-3 w-3" /> استبدلها
         </button>
 
         <button
           type="button" onClick={() => setMode(mode === "remove" ? null : "remove")} disabled={busy !== ""}
-          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-foreground transition hover:border-red-500/50 hover:text-red-300 disabled:opacity-40"
+          className="flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-foreground transition hover:border-red-500/50 hover:text-red-300 disabled:opacity-40"
         >
           <Trash2 className="h-3 w-3" /> احذفها من خطّتي
         </button>
 
         <button
           type="button" onClick={() => void act("notify")} disabled={busy !== ""}
-          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-micro font-bold transition disabled:opacity-40 ${
+          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-fine font-bold transition disabled:opacity-40 ${
             notifyOnCohort
               ? "border-teal/40 text-teal-light-ink hover:border-white/25 hover:text-foreground"
               : "border-white/15 text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink"}`}
@@ -129,13 +129,13 @@ export default function AwaitingCourseChoices({
           <div className="mt-2.5 flex items-center gap-2">
             <button
               type="button" onClick={() => void act("remove")} disabled={busy !== ""}
-              className="rounded-full bg-red-500/85 px-4 py-1.5 text-micro font-black text-white hover:bg-red-500 disabled:opacity-40"
+              className="rounded-full bg-red-500/85 px-4 py-1.5 text-fine font-black text-white hover:bg-red-500 disabled:opacity-40"
             >
               {busy === "remove" ? <Loader2 className="h-3 w-3 animate-spin" /> : "احذفها"}
             </button>
             <button
               type="button" onClick={() => setMode(null)}
-              className="rounded-full border border-white/15 px-4 py-1.5 text-micro font-bold text-muted-foreground hover:text-foreground"
+              className="rounded-full border border-white/15 px-4 py-1.5 text-fine font-bold text-muted-foreground hover:text-foreground"
             >
               تراجع
             </button>
@@ -147,7 +147,7 @@ export default function AwaitingCourseChoices({
       {mode === "replace" && (
         <Inset className="mt-3">
           <div className="flex items-center justify-between">
-            <p className="text-micro font-black text-foreground">بدائلُ لها شعبةٌ الآن</p>
+            <p className="text-fine font-black text-foreground">بدائلُ لها شعبةٌ الآن</p>
             <button type="button" onClick={() => setMode(null)} aria-label="إغلاق البدائل" className="text-muted-foreground hover:text-foreground">
               <X className="h-3.5 w-3.5" />
             </button>
@@ -156,7 +156,7 @@ export default function AwaitingCourseChoices({
           {busy === "alts" ? (
             <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
           ) : !alts || alts.length === 0 ? (
-            <p className="py-4 text-micro leading-6 text-muted-foreground">
+            <p className="py-4 text-fine leading-6 text-muted-foreground">
               لا بديلَ الآن يخدم مهاراتها وله شعبةٌ مفتوحة. أبقِها منتظرةً ونُعلمك عند فتحها.
             </p>
           ) : (
@@ -165,14 +165,14 @@ export default function AwaitingCourseChoices({
                 <li key={a.courseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-paper/20 px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold">{a.titleAr}</p>
-                    <p className="mt-0.5 text-micro text-muted-foreground">
+                    <p className="mt-0.5 text-fine text-muted-foreground">
                       تشترك في {a.sharedSkills} {a.sharedSkills === 1 ? "مهارة" : a.sharedSkills === 2 ? "مهارتين" : "مهارات"}
                       {a.price !== null && <> · {Number(a.price)} {a.currency}</>}
                     </p>
                   </div>
                   <button
                     type="button" onClick={() => void act("replace", a.courseId)} disabled={busy !== ""}
-                    className="shrink-0 rounded-full bg-teal px-3.5 py-1.5 text-micro font-black text-on-teal hover:bg-teal-light disabled:opacity-40"
+                    className="shrink-0 rounded-full bg-teal px-3.5 py-1.5 text-fine font-black text-on-teal hover:bg-teal-light disabled:opacity-40"
                   >
                     {busy === "replace" ? <Loader2 className="h-3 w-3 animate-spin" /> : "ضعها بدلها"}
                   </button>

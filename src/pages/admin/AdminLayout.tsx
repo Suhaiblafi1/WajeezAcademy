@@ -21,6 +21,13 @@ export default function AdminLayout({ children, title }: { children: React.React
   const location = useLocation();
   const navigate = useNavigate();
   const can = (key: string) => user?.permissions.includes(key) ?? false;
+  /* `need` واحدةٌ أو عدّة — و«عدّة» تعني **أيًّا منها**، لا كلَّها.
+
+     شاشةٌ تخدم صلاحيتين لا تُحرَس بواحدةٍ منهما: «الطلبات والفواتير» تحمل
+     طابورَ طلبات التسجيل والفواتيرَ معا، وكانت تُحرَس بـ`finance.view` وحدها
+     — فمن مُنح مراجعةَ طلبات التسجيل لا يرى طابورَه أصلا. */
+  const canAny = (need: string | string[]) =>
+    (Array.isArray(need) ? need : [need]).some(can);
 
   if (!checked) {
     return (
@@ -46,7 +53,7 @@ export default function AdminLayout({ children, title }: { children: React.React
      ولكلّ تبويبٍ صلاحيتُه المعلَنة، والقائمة تُرشَّح بها. كانت تُعرض كاملةً
      لكلّ إداريّ: ثلاثة عشر بابا يفتح من لا يملكها فيُردّ عند الخادم — الحارس
      يعمل، لكنّه يكتشف حدّه بالاصطدام لا بالقراءة. */
-  const allSections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; need?: string; open?: true }[] }[] = [
+  const allSections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; need?: string | string[]; open?: true }[] }[] = [
     {
       title: "الأكاديمية",
       items: [
@@ -64,7 +71,13 @@ export default function AdminLayout({ children, title }: { children: React.React
            فمن أنهى دورتَه في شعبةٍ لا أحدَ يفتحها بقي بلا شهادة. */
         { to: "/admin/learner-requests", label: "طلبات المتعلّمين", icon: Award , need: "certificate.issue"},
         { to: "/admin/advisors", label: "المستشارون والعمولة", icon: UserCheck , need: "advisor.manage"},
-        { to: "/admin/exceptions", label: "الاستثناءات", icon: ShieldAlert , need: "enrollment.request.review"},
+        /* «الاستثناءات» كان اسما لا يدلّ على شيء، وحارسا لا يحرس ما وراءه:
+           التبويبُ مشروطٌ بـ`enrollment.request.review` والشاشةُ تقرأ
+           `/api/admin/advisor-cases/unassigned` المحروسَ بـ`advisor.assign`.
+           فمن مُنح مراجعةَ طلبات التسجيل يرى بابا يفتحه فيُردّ عند الخادم،
+           **وطابورُه هو في شاشةٍ أخرى لا يراها أصلا**. والاسمُ الآن يقول
+           محتواه، والحارسُ هو حارسُ مساره. */
+        { to: "/admin/exceptions", label: "حالات بلا مستشار", icon: ShieldAlert , need: "advisor.assign"},
         { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical , need: "diagnostic.simulate"},
         { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star , need: "rating.moderate"},
       ],
@@ -72,7 +85,7 @@ export default function AdminLayout({ children, title }: { children: React.React
     {
       title: "الأمور الفنّية",
       items: [
-        { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet , need: "finance.view"},
+        { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet , need: ["finance.view", "enrollment.request.review"]},
         { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3 , need: "reports.view"},
         { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy , need: "support.operate"},
         { to: "/admin/notifications", label: "الإشعارات", icon: Bell , need: "notifications.manage"},
@@ -101,7 +114,7 @@ export default function AdminLayout({ children, title }: { children: React.React
   /* المفتوحُ (`open`) يمرّ بلا صلاحية: «الرئيسية» ليقف عليها من جاز حارسَ
      المسار، و«المهامّ» لأنّها لا تعرض إلّا ما يخصّ صاحبَها. */
   const sections = allSections
-    .map((sec) => ({ ...sec, items: sec.items.filter((it) => !it.need || can(it.need)) }))
+    .map((sec) => ({ ...sec, items: sec.items.filter((it) => !it.need || canAny(it.need)) }))
     .filter((sec) => sec.items.length > 0);
 
   /* من لا تبويبَ له لا يُترك في لوحةٍ فارغة يظنّها معطوبة */

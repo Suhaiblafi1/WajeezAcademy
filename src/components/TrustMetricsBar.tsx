@@ -24,7 +24,7 @@ export default function TrustMetricsBar() {
       <div className="mx-auto max-w-7xl px-5">
         <div className="reveal text-center">
           <h2 className="text-sm font-bold text-teal-light-ink md:text-base">وجيز مهارات بالأرقام</h2>
-          <p className="mx-auto mt-2 max-w-xl text-micro leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-xl text-fine leading-relaxed text-muted-foreground">
             أرقام موثقة من تجربة وجيز مهارات مع المؤسسات والمتعلمين — إحدى حلول منظومة وجيز.
           </p>
         </div>
@@ -40,7 +40,7 @@ export default function TrustMetricsBar() {
                 <dd className="order-2 mt-3 text-4xl font-black tabular-nums tracking-tight text-teal-light-ink md:text-[2.75rem]">
                   {m.display_value}
                 </dd>
-                <dt className="order-3 mt-2 text-micro leading-snug text-muted-foreground md:text-xs">
+                <dt className="order-3 mt-2 text-fine leading-snug text-muted-foreground md:text-xs">
                   {m.label_ar}
                 </dt>
               </div>

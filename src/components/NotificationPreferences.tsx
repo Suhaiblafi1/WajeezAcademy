@@ -81,7 +81,7 @@ export default function NotificationPreferences() {
         <BellOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         ما يصلني من إشعارات
       </h2>
-      <p className="mt-1 text-micro leading-5 text-muted-foreground">{prefs.emailNoteAr}</p>
+      <p className="mt-1 text-fine leading-5 text-muted-foreground">{prefs.emailNoteAr}</p>
 
       <ul className="mt-4 space-y-2">
         {prefs.categories.map((c) => (
@@ -92,7 +92,7 @@ export default function NotificationPreferences() {
                   {!c.silenceable && <Lock className="h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />}
                   {c.labelAr}
                 </p>
-                <p className="mt-0.5 text-micro leading-5 text-muted-foreground">{c.whatAr}</p>
+                <p className="mt-0.5 text-fine leading-5 text-muted-foreground">{c.whatAr}</p>
               </div>
 
               {c.silenceable ? (
@@ -107,7 +107,7 @@ export default function NotificationPreferences() {
                   <span>{c.enabled ? "يصلني" : "مكتوم"}</span>
                 </label>
               ) : (
-                <span className="rounded-full border border-gold/30 bg-gold/[0.06] px-3 py-1 text-micro font-black text-gold-ink">
+                <span className="rounded-full border border-gold/30 bg-gold/[0.06] px-3 py-1 text-fine font-black text-gold-ink">
                   يصلني دائما
                 </span>
               )}
@@ -115,7 +115,7 @@ export default function NotificationPreferences() {
 
             {/* سببُ القفل يُقال في موضعه — لا في صفحةِ مساعدةٍ ولا بالسكوت */}
             {!c.silenceable && c.lockedWhyAr && (
-              <p id={`what-${c.key}`} className="mt-2 text-micro leading-5 text-muted-foreground">{c.lockedWhyAr}</p>
+              <p id={`what-${c.key}`} className="mt-2 text-fine leading-5 text-muted-foreground">{c.lockedWhyAr}</p>
             )}
           </Card>
         ))}

@@ -80,7 +80,7 @@ export default function BuyCohort({
               onClick={() => setCurrency(c)}
               aria-pressed={currency === c}
               title={PRESENTMENT_CURRENCIES[c].labelAr}
-              className={`cursor-pointer rounded-full border px-2 py-0.5 text-micro font-bold transition ${
+              className={`cursor-pointer rounded-full border px-2 py-0.5 text-fine font-bold transition ${
                 currency === c
                   ? "border-gold/60 bg-gold/15 text-gold-ink"
                   : "border-white/12 text-muted-foreground hover:border-white/25 hover:text-foreground"
@@ -96,7 +96,7 @@ export default function BuyCohort({
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
         اشترِ الآن · <span dir="ltr">{shown}</span>
       </Button>
-      {error && <p className="max-w-[16rem] text-left text-micro leading-4 text-red-300">{error}</p>}
+      {error && <p className="max-w-[16rem] text-left text-fine leading-4 text-red-300">{error}</p>}
     </div>
   );
 }

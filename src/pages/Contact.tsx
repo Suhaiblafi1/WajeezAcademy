@@ -8,8 +8,8 @@ import { CONTACT } from '@/data/stories'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { track } from '@/services/analytics'
+import { Panel, Card, Inset } from '@/components/ui/Surface'
 
-import { Card, Inset, Panel } from "@/components/ui/Surface";
 /* ───────────── التواصل الموحد — بلا صفحات منفصلة للجهات ─────────────
    قرار المالك 2026-08-20: صفحة تواصل واحدة تكفي — الزائر يحدد «من هو»
    من النموذج نفسه، وترى الجهات المؤسسية مخطط الأثر المتوقع ولماذا نحن
@@ -205,15 +205,15 @@ export default function Contact() {
                         <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15">
                           <s.icon className="h-4 w-4 text-teal-light-ink" />
                         </span>
-                        <p className="mt-2 text-micro font-black leading-snug">
+                        <p className="mt-2 text-fine font-black leading-snug">
                           <span className="text-gold-ink">{i + 1}. </span>{s.t}
                         </p>
-                        <p className="mt-1 text-micro leading-4 text-muted-foreground">{s.d}</p>
+                        <p className="mt-1 text-fine leading-4 text-muted-foreground">{s.d}</p>
                       </Inset>
                     ))}
                   </ol>
                   {ENTITY_NOTE[entity] && (
-                    <p className="mt-3 border-t border-white/5 pt-3 text-micro leading-5 text-muted-foreground">
+                    <p className="mt-3 border-t border-white/5 pt-3 text-fine leading-5 text-muted-foreground">
                       {ENTITY_NOTE[entity]}
                     </p>
                   )}

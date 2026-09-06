@@ -6,8 +6,8 @@ import { pathways } from '@/data/pathways'
 import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
+import { Panel, Card } from '@/components/ui/Surface'
 
-import { Card, Panel } from "@/components/ui/Surface";
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
   country: string | null; specialties: string[]; assignedCourseIds: string[];
@@ -140,7 +140,7 @@ export default function Trainers() {
                       <BadgeCheck className="h-4 w-4 text-teal-ink" aria-label="مدرب موثق" />
                     </h3>
                     {t.headline && <p className="mt-0.5 text-xs text-muted-foreground">{t.headline}</p>}
-                    {t.country && <p className="mt-0.5 text-micro text-muted-foreground">{t.country}</p>}
+                    {t.country && <p className="mt-0.5 text-fine text-muted-foreground">{t.country}</p>}
                   </div>
                 </div>
 
@@ -175,11 +175,11 @@ export default function Trainers() {
                   <div className="mt-3 space-y-2">
                     {t.testimonials.map((c, i) => (
                       <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-paper/20 px-3 py-2">
-                        <span className="mb-0.5 block text-micro font-bold text-gold-ink">{c.score} ★</span>
-                        <p className="text-micro leading-6 text-muted-foreground">{c.commentAr}</p>
+                        <span className="mb-0.5 block text-fine font-bold text-gold-ink">{c.score} ★</span>
+                        <p className="text-fine leading-6 text-muted-foreground">{c.commentAr}</p>
                       </blockquote>
                     ))}
-                    <p className="text-micro text-muted-foreground/50">
+                    <p className="text-fine text-muted-foreground/50">
                       تعليقات متعلّمين، منشورة باعتماد الأكاديمية. والمتوسّط أعلاه من كل التقييمات لا من المعروض منها.
                     </p>
                   </div>
@@ -188,7 +188,7 @@ export default function Trainers() {
                 {t.bio && <p className="mt-3 text-xs leading-6 text-muted-foreground">{t.bio}</p>}
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {t.specialties.map((s) => (
-                    <span key={s} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-micro text-teal-light-ink">{s}</span>
+                    <span key={s} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">{s}</span>
                   ))}
                 </div>
               </Panel>
@@ -217,12 +217,12 @@ export default function Trainers() {
                   </div>
                   <div className="mt-4 flex flex-wrap gap-1.5">
                     {families.map((f) => (
-                      <span key={f} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-micro text-teal-light-ink">
+                      <span key={f} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                         {f}
                       </span>
                     ))}
                   </div>
-                  <p className="mt-4 flex items-center gap-1.5 text-micro text-muted-foreground">
+                  <p className="mt-4 flex items-center gap-1.5 text-fine text-muted-foreground">
                     <Users className="h-3.5 w-3.5 text-teal-ink" />
                     يغطي {pathwayCount} {pathwayCount === 1 ? 'مسارا' : 'مسارات'} من كتالوج وجيز
                   </p>

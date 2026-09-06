@@ -12,6 +12,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { openRegistrationWhere } from './registration-window'
 
 /** حالة الدورة داخل الخطّة — مشتقّة لا مخزَّنة */
 export type PlanItemState = 'enrolled' | 'schedulable' | 'awaiting_cohort'
@@ -123,7 +124,7 @@ export class PlanService {
         select: { cohort: { select: { courseId: true } } },
       }),
       this.prisma.cohort.findMany({
-        where: { courseId: { in: courseIds }, status: { in: ['open', 'full'] }, registrationOpen: true },
+        where: { courseId: { in: courseIds }, status: { in: ['open', 'full'] }, ...openRegistrationWhere() },
         orderBy: { startsAt: 'asc' },
         select: {
           id: true, title: true, courseId: true, startsAt: true, capacity: true, price: true, currency: true,
@@ -282,7 +283,7 @@ export class PlanService {
         courseId: { notIn: [...inPlan] },
         course: {
           status: 'published',
-          cohorts: { some: { status: { in: ['open', 'full'] }, registrationOpen: true } },
+          cohorts: { some: { status: { in: ['open', 'full'] }, ...openRegistrationWhere() } },
         },
       },
       select: { courseId: true, skillId: true },
@@ -297,7 +298,7 @@ export class PlanService {
       include: {
         versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } },
         cohorts: {
-          where: { status: { in: ['open', 'full'] }, registrationOpen: true },
+          where: { status: { in: ['open', 'full'] }, ...openRegistrationWhere() },
           orderBy: { startsAt: 'asc' }, take: 1,
           select: { startsAt: true, price: true, currency: true },
         },

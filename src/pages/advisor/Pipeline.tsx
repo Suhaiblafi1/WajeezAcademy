@@ -21,8 +21,8 @@ import { AlertTriangle, CalendarClock } from 'lucide-react'
    و٦٫٤:‏١ في الفاتح)، فينقلب معهما. وهي القاعدةُ نفسُها التي أُصلح بها زرُّ
    تبديل المظهر. */
 import { CLOSED_STAGES, isOverdue, sinceAr, STAGES, type PipelineCase } from '@/application/advisor/pipeline'
+import { Card } from '@/components/ui/Surface'
 
-import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 export default function Pipeline({
   cases,

@@ -67,7 +67,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     await signOut();
     navigate("/", { replace: true });
   };
-  const { user: sessionUser, checked: sessionChecked } = useRealSession();
+  const { user: sessionUser, checked: sessionChecked, emailChannel } = useRealSession();
   /* كان useEffect يقلب allowed عند ظهور الجلسة، فيصيّر مرة بالمنع ثم مرة
      بالسماح — ومضة يراها المستخدم، وتحذير «setState داخل تأثير». العطف هنا
      يعطي النتيجة نفسها في تصيير واحد. */
@@ -265,7 +265,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 aria-label="الإشعارات" className="relative grid h-11 w-11 place-items-center">
                 <Bell className="h-3.5 w-3.5" />
                 {unreadCount > 0 && (
-                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-micro font-black text-on-gold">{unreadCount}</span>
+                  <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-fine font-black text-on-gold">{unreadCount}</span>
                 )}
               </Button>
               {bellOpen && (
@@ -274,17 +274,17 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   <Inset className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] bg-surface shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
                       <p className="text-xs font-black text-foreground">التنبيهات</p>
-                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink transition hover:text-foreground">
+                      <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-fine font-bold text-teal-light-ink transition hover:text-foreground">
                         <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
                       </button>
                     </div>
                     <div className="max-h-72 space-y-1.5 overflow-y-auto">
                       {realNotifs ? (
                         <>
-                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-micro text-muted-foreground">لا إشعارات بعد</p>}
+                          {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-fine text-muted-foreground">لا إشعارات بعد</p>}
                           {realNotifs.map((n) => (
                             <button key={n.id} onClick={() => markOneRead(n.id)}
-                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-micro leading-5 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
+                              className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-fine leading-5 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
                               <span className="block font-bold">{n.title}</span>
                               {n.body}
                             </button>
@@ -292,13 +292,13 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         </>
                       ) : (
                         /* تعذّر نداء الخادم — لا بديل محليّ يُعرض */
-                        <p className="px-2 py-6 text-center text-micro text-muted-foreground">تعذّر جلب إشعاراتك الآن</p>
+                        <p className="px-2 py-6 text-center text-fine text-muted-foreground">تعذّر جلب إشعاراتك الآن</p>
                       )}
                     </div>
                     {/* والجرسُ لا ينتهي عند ستّة: يقود إلى البابِ الواحد الذي
                         يجمع التنبيهاتَ وتعليقاتِ المدرّب وردودَ الدعم. */}
                     <Inset as={Link} tone="accent" interactive to="/student/inbox"
-                      onClick={() => setBellOpen(false)} className="mt-2 block px-3 py-2 text-center text-micro font-bold text-teal-light-ink transition hover:border-white/30">
+                      onClick={() => setBellOpen(false)} className="mt-2 block px-3 py-2 text-center text-fine font-bold text-teal-light-ink transition hover:border-white/30">
                       افتح «الرسائل والتنبيهات»
                     </Inset>
                   </Inset>
@@ -317,7 +317,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                   accountActive || accountOpen ? "border-teal/50 bg-teal/10 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:border-white/25 hover:text-foreground"
                 }`}
               >
-                <span className="grid h-7 w-7 place-items-center rounded-full bg-teal/20 text-micro font-black text-teal-light-ink">
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-teal/20 text-fine font-black text-teal-light-ink">
                   {user.trim().charAt(0) || "و"}
                 </span>
                 <span className="max-w-[90px] truncate">{user.split(" ")[0]}</span>
@@ -327,7 +327,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 <>
                   <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
                   <Inset role="menu" className="absolute left-0 top-14 z-50 w-60 bg-surface p-2 shadow-2xl">
-                    <p className="px-3 pb-2 pt-1 text-micro text-muted-foreground">{user}</p>
+                    <p className="px-3 pb-2 pt-1 text-fine text-muted-foreground">{user}</p>
                     {ACCOUNT_ITEMS.map((a) => (
                       <NavLink
                         key={a.to}
@@ -366,8 +366,12 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-2xl font-black">{title}</h1>
         </div>
-        {/* ١هـ — يظهر لغير الموثَّق وحده، ويزول بمجرّد التوثيق */}
-        {sessionUser && !sessionUser.emailVerified && (
+        {/* ١هـ — يظهر لغير الموثَّق وحده، ويزول بمجرّد التوثيق.
+
+            ولا يُعرض والقناةُ مغلقة: الحاجزُ غيرُ مفروضٍ حينها (الخادمُ يُسقطه)،
+            وزرُّ الإرسال لا يمكن أن ينجح. فالشريطُ يصير تحذيرا من قيدٍ لا وجودَ
+            له، ودعوةً إلى فعلٍ لا يقع. */}
+        {sessionUser && !sessionUser.emailVerified && emailChannel !== false && (
           <VerifyEmailNotice email={sessionUser.email} className="mb-6" />
         )}
         {/* التنقّل الثانوي داخل القسم — صفحاتُه هنا لا في الشريط الأعلى.
@@ -401,7 +405,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             key={sec.id}
             to={sec.to}
             aria-current={activeSection?.id === sec.id ? "page" : undefined}
-            className={`flex flex-col items-center gap-1 py-2.5 text-micro font-bold transition ${
+            className={`flex flex-col items-center gap-1 py-2.5 text-fine font-bold transition ${
               activeSection?.id === sec.id ? "text-teal-light-ink" : "text-muted-foreground"
             }`}
           >
@@ -412,7 +416,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <button
           onClick={() => setAccountOpen(true)}
           aria-expanded={accountOpen}
-          className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-micro font-bold transition ${
+          className={`flex cursor-pointer flex-col items-center gap-1 py-2.5 text-fine font-bold transition ${
             accountActive ? "text-teal-light-ink" : "text-muted-foreground"
           }`}
         >

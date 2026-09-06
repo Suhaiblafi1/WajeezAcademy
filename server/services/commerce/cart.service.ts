@@ -24,6 +24,7 @@ import { priceCart } from '../../../src/application/commerce/cart-pricing'
 import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
 import { getEmailConfig } from '../integrations.service'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
+import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from '../registration-window'
 
 export class CartService {
   private prisma: PrismaClient
@@ -60,9 +61,11 @@ export class CartService {
     userId: string,
     c: CartCohort,
   ): Promise<{ reason: string; messageAr: string } | null> {
-    if (!['open', 'full', 'active'].includes(c.status) || !c.registrationOpen) {
+    if (!['open', 'full', 'active'].includes(c.status)) {
       return { reason: 'closed', messageAr: `التسجيل مغلق في «${c.title}»` }
     }
+    const window = cohortAcceptsRegistration(c)
+    if (!window.open) return { reason: window.code === 'flag_off' ? 'closed' : window.code, messageAr: window.reasonAr }
     if (c.price === null) return { reason: 'no_price', messageAr: `«${c.title}» بلا سعر معلن` }
 
     const already = await this.prisma.enrollment.findFirst({
@@ -127,7 +130,10 @@ export class CartService {
 
     const cohorts = await this.prisma.cohort.findMany({
       where: { id: { in: unique } },
-      include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },
+      include: {
+        course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
+        term: TERM_WINDOW_SELECT,
+      },
     })
     if (cohorts.length !== unique.length) throw new AuthError('not_found', 'شعبة غير موجودة ضمن طلبك', 404)
 

@@ -8,11 +8,12 @@ import { ACADEMY_EMAILS } from './integrations.service'
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
-import { AuthError } from './auth.service'
+import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
-import { sendDirectEmail, notifyRole, publicSiteUrl, type DirectMailStatus } from './notification.service'
+import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
+import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 
@@ -392,6 +393,179 @@ export class TrainerReviewService {
     })
   }
 
+  /* ═══════════ جرسُ المدرّب — ولمَ كان فارغا ═══════════
+
+     التعيينُ والتأهيلُ **لا يكتبان إشعارا**، وفي الخادم كلِّه مساران اثنان
+     يكتبان إشعارا للمدرّب. فالمدرّبُ يُؤهَّل لدورةٍ ويُسنَد إلى شعبةٍ ولا
+     يعلم — يكتشف شعبتَه حين يفتح بوّابتَه، إن فتحها.
+
+     وهذان خبران يترتّب عليهما **عمل**: من أُسنِد إلى شعبةٍ عليه أن يحضر.
+     فصنفُهما «عملي في الأكاديمية» ولا يُكتَم، وجمهورُهما `trainer` —
+     يقع الخبرُ في بوّابته التي يعمل فيها لا في بوّابةِ متعلّم.
+
+     ولا يُسقط إخفاقُ الإشعار الفعلَ: `safeNotify` يبتلع فشلَه، والتأهيلُ
+     والإسنادُ حقيقتان في القاعدة قبله. */
+  private async notifyTrainerUser(
+    profileId: string,
+    payload: { title: string; body: string; templateKey: string; data?: Record<string, unknown> },
+  ): Promise<void> {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId }, select: { userId: true },
+    })
+    /* «نشطٌ» بلا حسابٍ لا جرسَ له — ولا يُخترع له صفٌّ لا يقرؤه أحد */
+    if (!profile?.userId) return
+    await safeNotify(this.prisma, {
+      userId: profile.userId, channel: 'in_app', audience: 'trainer', ...payload,
+    })
+  }
+
+  /** عنوانُ الدورة بالعربية — أو معرِّفُها إن لم يكن لها إصدار */
+  private async courseTitleAr(courseId: string): Promise<string> {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } },
+    })
+    return course?.versions[0]?.titleAr ?? courseId
+  }
+
+  /* ═══════════ تعيينُ مدرّبٍ داخليّا — نقرةٌ واحدة ═══════════
+
+     كانت الخاصّيّةُ غيرَ موجودةٍ إطلاقا: **الموضعُ الوحيدُ** الذي يُنشأ فيه
+     ملفُّ مدرّبٍ في الخادم كلِّه داخلَ البتّ في طلبٍ عامّ، و**الموضعُ الوحيدُ**
+     الذي يُنشأ فيه طلبُ انضمامٍ هو النموذجُ العامُّ بلا مصادقة. فمن أراد
+     المديرُ تعيينَه — زميلٌ في الأكاديمية، أو مدرّبٌ تعاقَد معه خارجها —
+     لا طريقَ له إلّا أن يملأ نموذجَ التقدّم العامّ بنفسه.
+
+     وما كان يستطيعه المديرُ طريقٌ مسدود: يُنشئ مستخدما بدور «مدرّب» فيرى
+     صاحبُه جدارَ «حسابُك يحمل صلاحيّاتِ مدرّبٍ بلا ملفّ مدرّب» — ولا يُؤهَّل
+     ولا يُسنَد لأنّ كليهما يطلب معرِّفَ ملفٍّ غيرِ موجود.
+
+     فهذه معاملةٌ واحدةٌ تكتب الأربعةَ معا: الحسابَ، وطلبا بحالة «نشط»،
+     والملفَّ، والدور. ثلاثةُ حقولٍ ونقرة.
+
+     ── وثلاثةُ حدودٍ تُقال صراحةً ──
+
+     ١) **لا ظهورَ عامّا**: `publicVisibility` و`publishApprovedAt` تبقيان على
+        أصلهما — فلا اسمَ مدرّبٍ يُعرض للناس قبل موافقةِ نشرٍ صريحة.
+     ٢) **ولا توثيقَ بريدٍ يُدَّعى**: `emailVerifiedAt` تبقى فارغةً — المديرُ
+        يشهد بالشخص، لا بأنّ العنوانَ تحقّق من نفسه.
+     ٣) **ولا يُطمَس طلبٌ قائم**: من له طلبٌ في الطابور يُعتمَد من هناك،
+        فلا يُنشأ له ثانٍ يزاحمه. */
+  async createTrainerDirectly(actorId: string, input: {
+    fullName: string; email: string; headline?: string | null
+  }): Promise<{
+    applicationId: string; profileId: string; userId: string; reference: string
+    accountCreated: boolean; inviteSent: boolean; noteAr: string
+  }> {
+    const email = input.email.trim().toLowerCase()
+    const fullName = input.fullName.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new AuthError('invalid_email', 'صيغة البريد غير صحيحة', 400)
+    }
+    if (fullName.length < 2) throw new AuthError('bad_name', 'الاسم حرفان على الأقلّ', 400)
+
+    const existingApp = await this.prisma.trainerApplication.findFirst({ where: { email } })
+    if (existingApp) {
+      throw new AuthError(
+        'application_exists',
+        `لهذا البريد طلبٌ قائم (${existingApp.reference}) — اعتمِدْه من طابور الطلبات بدل إنشاء ثانٍ`,
+        409,
+      )
+    }
+
+    const existingUser = await this.prisma.user.findUnique({ where: { email } })
+    /* كلمةٌ عشوائيّةٌ لا يعرفها أحد — كما في إنشاء الحساب الإداريّ:
+       الدخولُ يبدأ بتعيينِ صاحبه كلمتَه من رابط الدعوة. */
+    const passwordHash = existingUser ? null : await bcrypt.hash(randomBytes(24).toString('hex'), 10)
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const userId = existingUser
+        ? existingUser.id
+        : (await tx.user.create({
+            data: { email, displayName: fullName, passwordHash: passwordHash!, status: 'invited' },
+          })).id
+
+      const year = new Date().getFullYear()
+      const count = await tx.trainerApplication.count()
+      const reference = `WJ-TR-${year}-${String(count + 1).padStart(5, '0')}`
+
+      const app = await tx.trainerApplication.create({
+        data: {
+          reference, email, fullName, userId,
+          status: 'active',
+          jobTitle: input.headline?.trim() || null,
+          statusHistory: {
+            create: { fromStatus: null, toStatus: 'active', note: 'تعيينٌ داخليٌّ من الإدارة — بلا نموذج تقدّم' },
+          },
+        },
+      })
+
+      const profile = await tx.trainerProfile.create({
+        data: { applicationId: app.id, userId, headline: input.headline?.trim() || null },
+      })
+      /* مهامُّ التهيئةِ نفسُها التي يبذرها الاعتمادُ العاديّ — فمن عُيّن
+         داخليّا يجد في بوّابته ما يجده المعتمَدُ من الطابور. */
+      for (const t of [
+        { key: 'sign_contract', title: 'توقيع العقد' },
+        { key: 'academy_orientation', title: 'التعريف بمنهجية الأكاديمية' },
+        { key: 'lms_setup', title: 'تهيئة حساب منصة التدريب' },
+        { key: 'first_cohort_brief', title: 'موجز الشعبة الأولى' },
+      ]) {
+        await tx.trainerOnboardingTask.create({ data: { profileId: profile.id, key: t.key, title: t.title } })
+      }
+
+      await tx.userRole.upsert({
+        where: { userId_roleId: { userId, roleId: 'trainer' } },
+        update: {}, create: { userId, roleId: 'trainer' },
+      })
+      await tx.userRole.deleteMany({ where: { userId, roleId: 'trainer_applicant' } })
+
+      await recordAudit(tx, {
+        actorId, action: 'trainer.create_direct', entityType: 'trainer_profile', entityId: profile.id,
+        meta: { applicationId: app.id, reference, email, userId, account: existingUser ? 'linked' : 'created' },
+      })
+      return { applicationId: app.id, profileId: profile.id, userId, reference }
+    })
+
+    /* الدعوةُ والبريدُ خارجَ المعاملة: المدرّبُ حقيقةٌ في القاعدة، والرسالةُ
+       إشعارٌ بها — فإخفاقُ البريد لا يمحو تعيينا وقع. */
+    let inviteSent = false
+    if (!existingUser) {
+      try {
+        const { token } = await new AuthService(this.prisma).issueInvite(created.userId)
+        const actor = await this.prisma.user.findUnique({
+          where: { id: actorId }, select: { displayName: true },
+        })
+        const mail = await sendStaffInviteEmail(this.prisma, {
+          to: email,
+          displayName: fullName,
+          token,
+          roleNamesAr: ['مدرّب'],
+          invitedByAr: actor?.displayName ?? 'مدير المنصّة',
+          dutiesAr: [
+            'شعبُك ومواعيدُ جلساتها',
+            'حضورُ متعلّميك وموادُّ كلِّ لقاء',
+            'طابورُ التصحيح وتقييماتُك',
+            'مستحقّاتُك',
+          ],
+        })
+        inviteSent = mail.status === 'sent'
+      } catch { /* الدعوةُ رفاهية — التعيينُ وقع، وتُعاد من قائمة المستخدمين */ }
+    }
+
+    return {
+      ...created,
+      accountCreated: !existingUser,
+      inviteSent,
+      /* لا يُقال «وصلته دعوة» حين لا بريد — انتظارُ رسالةٍ لن تصل أسوأُ من معرفة ذلك */
+      noteAr: existingUser
+        ? 'عُيّن مدرّبا على حسابه القائم — يفتح بوّابتَه بكلمة سرّه نفسِها.'
+        : inviteSent
+          ? 'عُيّن مدرّبا، ووصلته دعوةٌ يعيّن بها كلمةَ سرّه ويفتح بوّابته.'
+          : 'عُيّن مدرّبا، ولم تُرسَل الدعوة — قناةُ البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده.',
+    }
+  }
+
   /* ─────────── العقد ─────────── */
 
   async createContract(applicationId: string, actorId: string, input: { title: string; terms?: unknown }) {
@@ -543,6 +717,12 @@ export class TrainerReviewService {
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.qualify', entityType: 'trainer_profile', entityId: profile.id,
       meta: { courseId },
+    })
+    await this.notifyTrainerUser(profileId, {
+      templateKey: 'trainer.qualified',
+      title: 'أُهِّلتَ لتدريس دورة',
+      body: `صرتَ مؤهَّلا لتدريس «${await this.courseTitleAr(courseId)}» — وتصلك شعبُها حين تُسنَد إليك.`,
+      data: { courseId },
     })
     return q
   }
@@ -720,6 +900,13 @@ export class TrainerReviewService {
         actorId, action: 'trainer.qualify.reject', entityType: 'trainer_profile', entityId: q.profileId,
         meta: { courseId: q.courseId, note },
       })
+      /* والرفضُ خبرٌ أيضا: من طُلب تأهيلُه ولم يُقبل كان يبقى ينتظر بلا ردّ */
+      await this.notifyTrainerUser(q.profileId, {
+        templateKey: 'trainer.qualify.rejected',
+        title: 'لم يُقبل تأهيلُك لدورة',
+        body: `لم يُقبل تأهيلُك لتدريس «${await this.courseTitleAr(q.courseId)}» — والسبب: ${note}`,
+        data: { courseId: q.courseId },
+      })
       return { qualification: row, assigned: false, assignNote: null as string | null }
     }
 
@@ -730,6 +917,12 @@ export class TrainerReviewService {
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.qualify', entityType: 'trainer_profile', entityId: q.profileId,
       meta: { courseId: q.courseId, viaRequest: true, cohortId: q.requestedCohortId },
+    })
+    await this.notifyTrainerUser(q.profileId, {
+      templateKey: 'trainer.qualified',
+      title: 'أُهِّلتَ لتدريس دورة',
+      body: `صرتَ مؤهَّلا لتدريس «${await this.courseTitleAr(q.courseId)}» — وتصلك شعبُها حين تُسنَد إليك.`,
+      data: { courseId: q.courseId },
     })
 
     let assigned = false
@@ -780,6 +973,22 @@ export class TrainerReviewService {
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.assign', entityType: 'trainer_profile', entityId: profile.id,
       meta: { courseId, cohortId, cohortLinked: Boolean(cohortId) },
+    })
+    const courseTitle = await this.courseTitleAr(courseId)
+    const cohort = cohortId
+      ? await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true, startsAt: true } })
+      : null
+    await this.notifyTrainerUser(profileId, {
+      templateKey: 'trainer.assigned',
+      title: cohort ? 'أُسنِدت إليك شعبة' : 'أُسنِدت إليك دورة',
+      body: cohort
+        ? `أُسنِدت إليك شعبةُ «${cohort.title}» في دورة «${courseTitle}»` +
+          (cohort.startsAt
+          ? ` — تبدأ ${fmtDateWith(cohort.startsAt, { day: 'numeric', month: 'long', year: 'numeric' })}.`
+          : '.') +
+          ' تجد جلساتِها ومتعلّميها في بوّابتك.'
+        : `أُسنِدت إليك دورة «${courseTitle}» — وتصلك شعبُها حين تُجدوَل.`,
+      data: { courseId, cohortId },
     })
     return assignment
   }

@@ -5,6 +5,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
+import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
 
 export class EnrollmentService {
   private prisma: PrismaClient
@@ -16,11 +17,16 @@ export class EnrollmentService {
 
   /** تسجيل متعلم — يملأ السعة ثم يحوّل الفائض لقائمة انتظار؛ التجاوز يتطلب override موثقا */
   async enroll(cohortId: string, userId: string, actorId: string | null, opts: { overrideCapacity?: boolean } = {}) {
-    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      include: { term: TERM_WINDOW_SELECT },
+    })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
-    if (!['open', 'full', 'active'].includes(cohort.status) || !cohort.registrationOpen) {
+    if (!['open', 'full', 'active'].includes(cohort.status)) {
       throw new AuthError('closed', 'التسجيل في هذه الشعبة غير مفتوح', 409)
     }
+    const window = cohortAcceptsRegistration(cohort)
+    if (!window.open) throw new AuthError('closed', window.reasonAr, 409)
     /* حالاتُ الحساب التي يجوز التسجيلُ فيها.
 
        كان الشرطُ `status !== 'active'` فيرفض، فكان **المتعلّمُ المدعوُّ لا
@@ -122,14 +128,19 @@ export class EnrollmentService {
       throw new AuthError('has_activity', 'لك نشاطٌ مسجَّل في هذه الشعبة — راسلنا لترتيب نقلك', 409)
     }
 
-    const to = await this.prisma.cohort.findUnique({ where: { id: toCohortId } })
+    const to = await this.prisma.cohort.findUnique({
+      where: { id: toCohortId },
+      include: { term: TERM_WINDOW_SELECT },
+    })
     if (!to) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (to.courseId !== enrollment.cohort.courseId) {
       throw new AuthError('other_course', 'التبديل بين شعب الدورة نفسها — ولا يُغيَّر المسار بعد الدفع', 409)
     }
-    if (!['open', 'full'].includes(to.status) || !to.registrationOpen) {
+    if (!['open', 'full'].includes(to.status)) {
       throw new AuthError('closed', `التسجيل مغلق في «${to.title}»`, 409)
     }
+    const toWindow = cohortAcceptsRegistration(to, now)
+    if (!toWindow.open) throw new AuthError('closed', toWindow.reasonAr, 409)
     if (to.startsAt && to.startsAt <= now) {
       throw new AuthError('already_started', `«${to.title}» بدأت — اختر شعبةً لم تبدأ`, 409)
     }

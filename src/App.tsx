@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Verify from './pages/Verify'
 import StaticPage from './pages/Static'
 import Catalog from './pages/Catalog'
+import CalendarPage from './pages/Calendar'
 import StoriesPage from './pages/Stories'
 import Trainers from './pages/Trainers'
 import Contact from './pages/Contact'
@@ -157,6 +158,8 @@ export default function App() {
           <Route path="/diagnostic" element={<Diagnostic />} />
           <Route path="/pathways" element={<Catalog kind="pathways" />} />
           <Route path="/courses" element={<Catalog kind="courses" />} />
+          {/* تقويمُ الفصل — سطحُ أرشفةٍ لمحرّكات البحث كذلك (البند ٥٠) */}
+          <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/pathways/:id" element={<PathwayPage />} />
           {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
           <Route path="/build/:courseId" element={<CoursePathPage />} />

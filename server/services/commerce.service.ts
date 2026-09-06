@@ -12,11 +12,12 @@ import {
   convertFromUsd, isPresentmentCurrency, type PresentmentCurrency,
 } from '../../src/application/commerce/presentment'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
-import { getPaymentProvider, verifyPaymentWebhook } from './payments/provider'
+import { getPaymentProvider, isTestProviderActive, verifyPaymentWebhook } from './payments/provider'
 import { getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
+import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
 
 /* اللبِناتُ المشتركةُ انتقلت إلى `commerce/cart-types` كي لا يصير الاستيرادُ
    حلقةً بين السلّة والخدمة. ويُعاد تصديرُها من هنا: مواضعُ الاستيراد القائمة
@@ -54,11 +55,16 @@ export class CommerceService {
       }
     }
 
-    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      include: { term: TERM_WINDOW_SELECT },
+    })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
-    if (!['open', 'full'].includes(cohort.status) || !cohort.registrationOpen) {
+    if (!['open', 'full'].includes(cohort.status)) {
       throw new AuthError('closed', 'التسجيل في هذه الشعبة غير مفتوح حاليا', 409)
     }
+    const window = cohortAcceptsRegistration(cohort)
+    if (!window.open) throw new AuthError('closed', window.reasonAr, 409)
     const existing = await this.prisma.enrollmentRequest.findUnique({ where: { userId_cohortId: { userId, cohortId } } })
     if (existing && !['rejected', 'cancelled'].includes(existing.status)) {
       throw new AuthError('already_requested', 'لديك طلب قائم لهذه الشعبة', 409)
@@ -347,6 +353,15 @@ export class CommerceService {
       return { order: o, invoice }
     })
 
+    /* ولا يُسوَّى هنا ولو كان المزوّدُ اختباريّا.
+
+       جُرّب فسقط لسببٍ لم يكن ظاهرا: **عملةُ العرض تُختار في نداء الدفع لا
+       هنا**. فمن اختار الدرهمَ كانت تُسجَّل دفعتُه بالدولار — ويضيع الرقمُ
+       الذي يراه في كشف بطاقته، وهو أوّلُ ما يُسأل عنه عند نزاع.
+
+       والنافذةُ بين النداءين تُغلَق من الجهة الأخرى: `reclaim_abandoned_orders`
+       في المُشغِّل الخلفيّ يُلغي ما هُجر ويُفرج عن مقاعده. */
+
     await recordAudit(this.prisma, {
       actorId: userId, action: 'order.checkout', entityType: 'order', entityId: order.order.id,
       meta: {
@@ -431,14 +446,20 @@ export class CommerceService {
       })
       return o
     })
+    /* والموافقةُ الإداريّةُ تُسوَّى فورا كذلك حين لا مالَ في المزوّد — وإلّا
+       بقي المتعلّمُ ينظر إلى «بانتظار الدفع» عن مبلغٍ لا يُقتطع من أحد. */
+    const autoPaid = await this.settleIfTestProvider(order.id, actorId)
+
     await recordAudit(this.prisma, {
       actorId, action: 'enrollment_request.approve', entityType: 'enrollment_request', entityId: requestId,
-      meta: { orderId: order.id, total, discount },
+      meta: { orderId: order.id, total, discount, autoPaid },
     })
     await safeNotify(this.prisma, {
       userId: req.userId, channel: 'in_app',
-      title: 'قُبِل طلب تسجيلك — بقي الدفع',
-      body: `حُجز مقعدك في «${title} — ${req.cohort.title}». أتمم الدفع (${total} ${req.cohort.currency}) من صفحة الفواتير ليتحول حجزك إلى تسجيل فعلي.`,
+      title: autoPaid ? 'قُبِل طلبُك — وسُجّلت' : 'قُبِل طلب تسجيلك — بقي الدفع',
+      body: autoPaid
+        ? `سُجّلت في «${title} — ${req.cohort.title}». تجدها في «تعلّمي».`
+        : `حُجز مقعدك في «${title} — ${req.cohort.title}». أتمم الدفع (${total} ${req.cohort.currency}) من صفحة الفواتير ليتحول حجزك إلى تسجيل فعلي.`,
       templateKey: 'enrollment.approved',
       data: { requestId, orderId: order.id, total },
     })
@@ -482,6 +503,15 @@ export class CommerceService {
     if (order.status === 'paid') {
       const paid = await this.prisma.payment.findFirst({ where: { idempotencyKey } })
       if (paid) return paid
+      /* سُوّي الطلبُ بمفتاحٍ آخر — والتسويةُ التلقائيّةُ للمزوّد الاختباريّ
+         أشهرُ مصادره. وردُّ ٤٠٩ هنا يُري المشتريَ خطأً على طلبٍ **نجح**،
+         فتُعاد دفعتُه هو بدل أن يُرمى. */
+      const settled = order.invoice
+        ? await this.prisma.payment.findFirst({
+            where: { invoiceId: order.invoice.id, status: 'succeeded' }, orderBy: { createdAt: 'desc' },
+          })
+        : null
+      if (settled) return settled
       throw new AuthError('already_paid', 'الطلب مدفوع مسبقا', 409)
     }
     if (!order.invoice) throw new AuthError('no_invoice', 'لا فاتورة لهذا الطلب', 409)
@@ -606,6 +636,51 @@ export class CommerceService {
     })
     await recordAudit(this.prisma, { actorId: null, action: 'payment.webhook', entityType: 'payment_webhook_event', entityId: payload.eventId, meta: { provider, status: payload.status } })
     return { duplicate: false }
+  }
+
+  /* ─────────── «التجريبيُّ» يعني مدفوعا فورا — في كلّ مسار ───────────
+
+     شكوى صاحب المنصّة: دوراتٌ تبقى «لم تُدفع» والدفعُ تجريبيّ. والسببُ أنّ
+     المسارَ يُنشئ الطلبَ في نداءٍ ويدفعه في نداءٍ ثانٍ. ومع مزوّدٍ حقيقيٍّ
+     تُنقذ النافذةَ بينهما صفحةُ الدفع والـwebhook؛ **وفي التجريبيّ لا مُنقِذ**:
+     لا صفحةَ دفعٍ يُعاد منها، ولا webhook (التحقّقُ يردّ كاذبا بلا سرّ)، ولا
+     مهمّةَ تنظيفٍ كانت تمسّ الطلبات. فيبقى الطلبُ «لم يُدفع» والمقعدُ محجوزا
+     **إلى الأبد** — بل ويمنع المقعدُ المحجوزُ إعادةَ الشراء بـ٤٠٩.
+
+     ومسارُ موافقة العمليّات أسوأ: يُنشئ طلبا غيرَ مدفوعٍ **عمدا** ويقول
+     للمتعلّم «بقي الدفع» — عن مالٍ لا وجودَ له.
+
+     فمزوّدٌ لا مالَ فيه لا يترك دَينا: يُسوَّى الطلبُ في المعاملة نفسِها التي
+     أنشأته. ولا يُقاس على الإعداد المعلَن بل على **المزوّد المُستقرّ**
+     (`isTestProviderActive`) — فمزوّدٌ حقيقيٌّ بلا مفتاحٍ سرّيٍّ اختباريٌّ
+     فعلا، وإن قالت الشاشةُ غيرَ ذلك. */
+
+  /** يسوّي الطلبَ فورا إن كان المزوّدُ العاملُ اختباريّا — ويردّ هل فعل */
+  private async settleIfTestProvider(orderId: string, actorId: string | null): Promise<boolean> {
+    const config = await getPaymentConfig(this.prisma)
+    if (!isTestProviderActive(config)) return false
+    const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { invoice: true } })
+    if (!order?.invoice || order.status === 'paid') return false
+    const provider = getPaymentProvider(config)
+    const charge = await provider.createCharge({
+      invoiceNumber: order.invoice.number, amount: num(order.total),
+      currency: order.currency, descriptionAr: `طلب وجيز ${order.id}`,
+    })
+    /* مفتاحٌ اشتقاقيٌّ من الطلب — فإعادةُ النداء لا تُنشئ دفعةً ثانية */
+    await this.prisma.payment.create({
+      data: {
+        invoiceId: order.invoice.id, provider: provider.name, amount: num(order.total),
+        currency: order.currency, status: 'succeeded', providerRef: charge.providerRef,
+        idempotencyKey: `auto-test-${order.id}`, succeededAt: new Date(),
+      },
+    })
+    await this.settleOrder(orderId, actorId)
+    await recordAudit(this.prisma, {
+      actorId, action: 'payment.charge', entityType: 'order', entityId: orderId,
+      meta: { provider: provider.name, providerRef: charge.providerRef, mode: 'auto-test' },
+      reason: 'تسويةٌ فوريّة — المزوّدُ العاملُ اختباريّ، فلا طلبَ يبقى بلا دفع',
+    })
+    return true
   }
 
   /** تسوية الطلب بعد دفع مؤكد — فاتورة مدفوعة + طلب مدفوع + تحويل حجز المقعد إلى تسجيل فعلي */

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
 import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarClock, CalendarDays, CalendarPlus, ChevronDown, ClipboardCheck, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star, Upload, Users, Video,
+  CalendarClock, CalendarDays, CalendarPlus, ChevronDown, ClipboardCheck, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Upload, Users, Video,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
@@ -16,10 +17,6 @@ const ATTENDANCE_OPTIONS = [
   { value: "present", label: "حاضر" }, { value: "late", label: "متأخر" },
   { value: "absent", label: "غائب" }, { value: "excused", label: "معذور" },
 ] as const;
-const SUBMISSION_STATUS: Record<string, string> = {
-  submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
-  resubmit_requested: "طُلبت إعادته", accepted: "مقبول", rejected: "مرفوض",
-};
 
 interface TrainerCohort {
   role: string;
@@ -47,37 +44,17 @@ interface CohortMessage {
   enrollment: { user: { displayName: string } } | null;
 }
 
-interface QueueItem {
-  id: string; status: string; textAnswer: string | null; submittedAt: string; reviewNote: string | null;
-  assessment: { title: string; maxScore: number; cohort: { title: string } };
-  enrollment: { userId: string };
-  grades: { score: string; maxScore: string }[];
-  feedback: { body: string }[];
-}
 
-interface RescheduleItem {
-  id: string; status: string; proposedStartsAt: string; reason: string; createdAt: string;
-  reviewerComment: string | null;
-  session: { title: string; cohort: { title: string } };
-}
 
-const RESCHEDULE_STATUS_AR: Record<string, string> = {
-  pending: "بانتظار قرار الإدارة", approved: "اعتُمد", rejected: "رُفض", withdrawn: "سُحب",
-};
 
 /** قمرة الشعبة — بوابة المدرب التشغيلية: شعبي فقط، حضور، تسجيلات، مراجعة وتقدير */
 export default function CohortBoard() {
   const { fileUploads } = usePlatformConfig();
   const [cohorts, setCohorts] = useState<TrainerCohort[]>([]);
-  const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [reschedules, setReschedules] = useState<RescheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
-  const [gradeForm, setGradeForm] = useState<Record<string, string>>({});
-  const [feedbackForm, setFeedbackForm] = useState<Record<string, string>>({});
   /* أدوات الشعبة: رابط مادة، وعنوان تكليف ونوعه — لكل شعبة على حدة */
   const [materialLink, setMaterialLink] = useState<Record<string, { title: string; url: string }>>({});
   const [taskForm, setTaskForm] = useState<Record<string, { title: string; type: string }>>({});
@@ -90,14 +67,7 @@ export default function CohortBoard() {
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try {
-      const [c, q, r] = await Promise.all([
-        apiGet<TrainerCohort[]>("/api/trainer/my-cohorts"),
-        apiGet<QueueItem[]>("/api/trainer/grading-queue"),
-        apiGet<RescheduleItem[]>("/api/trainer/reschedules"),
-      ]);
-      setCohorts(c);
-      setQueue(q);
-      setReschedules(r);
+      setCohorts(await apiGet<TrainerCohort[]>("/api/trainer/my-cohorts"));
     } catch (err) {
       setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة مدرب حقيقية");
     } finally {
@@ -182,16 +152,7 @@ export default function CohortBoard() {
       }
     }, "سُجل التسجيل ورُفع — سيظهر للمسجلين في الشعبة");
 
-  const reviewAction = (submissionId: string, action: string) =>
-    act(() => apiPost(`/api/trainer/submissions/${submissionId}/review`, { action, note: reviewNote[submissionId] || undefined }),
-      action === "accept" ? "قُبل التسليم" : action === "reject" ? "رُفض التسليم مع السبب" : action === "request_resubmit" ? "طُلبت إعادة التسليم" : "بدأت المراجعة");
 
-  const grade = (submissionId: string, maxScore: number) =>
-    act(async () => {
-      const score = Number(gradeForm[submissionId]);
-      await apiPost("/api/trainer/grade", { submissionId, score, maxScore });
-      setGradeForm((prev) => ({ ...prev, [submissionId]: "" }));
-    }, "سُجلت الدرجة — وأي تعديل لاحق سيوثق في السجل");
 
   /* ── مخاطبة الشعبة ──
      الرسالة تُسجَّل ثم تُوصَّل، والسجلّ يُعاد تحميله فورا: من أرسل يرى أثره
@@ -229,14 +190,6 @@ export default function CohortBoard() {
       setRescheduleForm({ at: "", reason: "" });
     }, "وصل اقتراحك الإدارة — والموعد لا يتغيّر حتى تعتمده");
 
-  const withdrawReschedule = (id: string) =>
-    act(() => apiPost(`/api/trainer/reschedules/${id}/withdraw`), "سُحب اقتراحك");
-
-  const sendFeedback = (submissionId: string) =>
-    act(async () => {
-      await apiPost(`/api/trainer/submissions/${submissionId}/feedback`, { body: feedbackForm[submissionId] });
-      setFeedbackForm((prev) => ({ ...prev, [submissionId]: "" }));
-    }, "أُرسلت التغذية الراجعة للمتعلم");
 
   /* إطارُ البوابة نفسه، لا إطارٌ ثالثٌ خاصّ بها.
 
@@ -349,6 +302,7 @@ export default function CohortBoard() {
                                         <Card tone="warn" className="mt-3 space-y-2.5 p-3.5">
                                           <p className="text-micro leading-relaxed text-gold-ink">
                                             تقترح ولا تغيّر: الموعد يبقى كما هو عند متعلّميك حتى تعتمد الإدارة اقتراحك.
+                                            {" "}ومآلُ اقتراحك — وسحبُه — في <Link to="/trainer/schedule" className="font-black underline">جدولي</Link>.
                                           </p>
                                           <div className="grid gap-2.5 sm:grid-cols-2">
                                             <div>
@@ -594,121 +548,13 @@ export default function CohortBoard() {
               )}
             </section>
 
-            {/* ── اقتراحات التأجيل ──
-                كانت الشاشة تقترح ولا تعرض ما اقترحته من قبل ولا تسمح بسحبه —
-                المدرب يقترح موعدا ثم لا يعرف أين وقف اقتراحه إلا بسؤال الإدارة. */}
-            {reschedules.length > 0 && (
-              <section>
-                <h2 className="mb-4 flex items-center gap-2 text-lg font-black"><CalendarClock className="h-5 w-5 text-gold-ink" /> اقتراحات التأجيل</h2>
-                <div className="space-y-3">
-                  {reschedules.map((r) => (
-                    <Card key={r.id}>
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-bold">{r.session.title} — {r.session.cohort.title}</p>
-                          <p className="mt-0.5 text-micro text-muted-foreground">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{r.reason}</p>
-                          {r.reviewerComment && (
-                            <p className="mt-1 text-micro text-muted-foreground">ملاحظة الإدارة: {r.reviewerComment}</p>
-                          )}
-                        </div>
-                        <span className={`shrink-0 rounded-full border px-3 py-1 text-micro font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-muted-foreground" : "border-gold/40 text-gold-ink"}`}>
-                          {RESCHEDULE_STATUS_AR[r.status] ?? r.status}
-                        </span>
-                        {r.status === "pending" && (
-                          <Button tone="danger" size="sm" type="button" disabled={busy}
-                            onClick={() => void withdrawReschedule(r.id)} className="shrink-0">
-                            سحب الاقتراح
-                          </Button>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </section>
-            )}
+            {/* ── التأجيلُ والتصحيحُ ليسا هنا (البند ٢٣) ──
 
-            {/* ── طابور المراجعة ── */}
-            <section>
-              <h2 className="mb-4 flex items-center gap-2 text-lg font-black"><ClipboardCheck className="h-5 w-5 text-gold-ink" /> طابور المراجعة</h2>
-              {queue.length === 0 ? (
-                <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-                  لا تسليمات معلقة — كل شيء تحت السيطرة.
-                </Panel>
-              ) : (
-                <div className="space-y-4">
-                  {queue.map((q) => (
-                    <Panel key={q.id}>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-black">{q.assessment.title}</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
-                          </p>
-                        </div>
-                        {q.grades[0] && (
-                          <span className="rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
-                            {Number(q.grades[0].score)}/{Number(q.grades[0].maxScore)}
-                          </span>
-                        )}
-                      </div>
-                      {q.textAnswer && (
-                        <p className="mt-3 max-h-32 overflow-y-auto rounded-2xl bg-paper/30 p-4 text-sm leading-7 text-foreground">{q.textAnswer}</p>
-                      )}
-                      <textarea
-                        value={reviewNote[q.id] ?? ""}
-                        onChange={(e) => setReviewNote((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                        placeholder="ملاحظة للمتعلم — إلزامية عند الرفض أو طلب الإعادة"
-                        rows={2}
-                        className="mt-3 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
-                      />
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {q.status === "submitted" && (
-                          <Button tone="secondary" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}>
-                            ابدأ المراجعة
-                          </Button>
-                        )}
-                        {q.status === "under_review" && (
-                          <>
-                            <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "accept")}>
-                              قبول
-                            </Button>
-                            <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")} className="text-gold-ink">
-                              اطلب إعادة التسليم
-                            </Button>
-                            <Button tone="danger" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "reject")}>
-                              رفض
-                            </Button>
-                          </>
-                        )}
-                        {["under_review", "submitted"].includes(q.status) && (
-                          <span className="flex items-center gap-1.5">
-                            <Star className="h-3.5 w-3.5 text-gold-ink" />
-                            <input type="number" min={0} max={q.assessment.maxScore} value={gradeForm[q.id] ?? ""}
-                              onChange={(e) => setGradeForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                              placeholder={`من ${q.assessment.maxScore}`}
-                              className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none" />
-                            <Button tone="secondary" size="sm" disabled={busy || !(gradeForm[q.id] ?? "").trim()} onClick={() => void grade(q.id, q.assessment.maxScore)}>
-                              سجّل الدرجة
-                            </Button>
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-3 flex gap-2 border-t border-white/8 pt-3">
-                        <input value={feedbackForm[q.id] ?? ""}
-                          onChange={(e) => setFeedbackForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                          placeholder="تغذية راجعة إضافية للمتعلم…"
-                          className="flex-1 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
-                        <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
-                          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-micro font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
-                          <MessageSquarePlus className="h-3 w-3" /> أرسل
-                        </button>
-                      </div>
-                    </Panel>
-                  ))}
-                </div>
-              )}
-            </section>
+                كانا قسمَين في هذا اللوح من ٧٢٤ سطرا، مدفونَين تحت الحضور
+                والموادّ والتكليفات والرسائل. فنُقل التصحيحُ إلى `GradingQueue`
+                — التبويبِ الذي يحمل اسمَه — واقتراحاتُ التأجيل إلى `Schedule`
+                حيث المواعيد. وأعادهما ترحيلُ الأسطح الآليُّ ثلاثَ مرّات،
+                فيُحذفان رابعةً ويبقى هذا السطرُ يقول لمن يأتي بعدُ لماذا. */}
           </div>
         )}
       </div>

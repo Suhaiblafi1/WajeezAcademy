@@ -83,9 +83,9 @@ function Field({ label, hint, error, name, children }: {
         <span className={labelCls}>{label}</span>
         {children}
       </label>
-      {hint && <p className="mt-1 text-micro text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-1 text-fine text-muted-foreground">{hint}</p>}
       {name && error && (
-        <p id={`${name}-error`} role="alert" className="mt-1.5 text-micro font-bold leading-5 text-red-300">{error}</p>
+        <p id={`${name}-error`} role="alert" className="mt-1.5 text-fine font-bold leading-5 text-red-300">{error}</p>
       )}
     </div>
   );
@@ -336,7 +336,7 @@ export default function StudentAccount() {
             </p>
           </div>
           {mode === "server" && (
-            <span className="flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-micro font-bold text-teal-light-ink">
+            <span className="flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-fine font-bold text-teal-light-ink">
               <CheckCircle2 className="h-3.5 w-3.5" /> محفوظ في قاعدة البيانات
             </span>
           )}
@@ -447,12 +447,12 @@ export default function StudentAccount() {
             </span>
           </label>
           {interestMsg && (
-            <p role="alert" className="mt-1.5 text-micro font-bold leading-5 text-red-300">{interestMsg}</p>
+            <p role="alert" className="mt-1.5 text-fine font-bold leading-5 text-red-300">{interestMsg}</p>
           )}
           {form.interests.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
               {form.interests.map((i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-micro font-bold text-teal-light-ink">
+                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-fine font-bold text-teal-light-ink">
                   {i}
                   <Button tone="ghost" type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 place-items-center">
                     <X className="h-3 w-3" />
@@ -492,7 +492,7 @@ export default function StudentAccount() {
             <Card as={Link} tone="accent" interactive key={x.t} to={x.to} className="transition hover:border-teal/50">
               <x.icon className="h-4 w-4 text-teal-light-ink" />
               <p className="mt-2 text-sm font-black">{x.t}</p>
-              <p className="mt-1 text-micro leading-relaxed text-muted-foreground">{x.d}</p>
+              <p className="mt-1 text-fine leading-relaxed text-muted-foreground">{x.d}</p>
             </Card>
           ))}
         </div>
@@ -540,7 +540,7 @@ export default function StudentAccount() {
                 </Button>
               ) : (
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-micro font-bold text-red-300">متأكد؟ الإجراء فوري</span>
+                  <span className="text-fine font-bold text-red-300">متأكد؟ الإجراء فوري</span>
                   <Button tone="ghost" type="button" onClick={deactivate} disabled={!!secBusy} className="bg-red-500 text-white disabled:cursor-not-allowed">
                     {secBusy === "deactivate" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     نعم، عطّل حسابي

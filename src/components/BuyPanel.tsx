@@ -134,6 +134,13 @@ export default function BuyPanel({
   const [coupon, setCoupon] = useState(initialCoupon);
   const [applied, setApplied] = useState(initialCoupon);
   const [currency, setCurrency] = useState<PresentmentCurrency>("USD");
+  /* ــ مبدّلُ العملة يُطوى حتّى يُطلَب (البند ٦٠) ــ
+
+     كان ثلاثةَ أزرارٍ ظاهرةً **لكلّ مشترٍ** فوق السعر بلا عنوان، فيقرؤها من
+     لا شأنَ له بها قرارا رابعا في صفحةٍ فيها ثلاثةُ قرارات. والحسابُ كلُّه
+     بالدولار، والدولارُ هو الافتراض — فمن أراد غيرَه طلبه، ومن لم يُرد لم
+     يرَ شيئا. والعنوانُ يُقال حين يُفتح: «بأيّ عملةٍ تُقتطع بطاقتُك؟» */
+  const [currencyOpen, setCurrencyOpen] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -232,8 +239,10 @@ export default function BuyPanel({
         ...(usd ? { presentment: currency } : {}),
       });
       if (r.redirectUrl) { window.location.assign(r.redirectUrl); return; }
-      /* مزوّدٌ غير مستضاف: الدفعةُ سُجّلت، فالمنصّةُ تعرض ما دُفع */
-      window.location.assign("/student/learning");
+      /* مزوّدٌ غير مستضاف: الدفعةُ سُجّلت — ويُمرَّر معرّفُ الطلب فتعرض صفحةُ
+         التعلّم إيصالَه. كان يُرسَل بلا معرّف، فيصل الطالبُ بلا رقمِ فاتورةٍ
+         ولا مبلغ — ولا يستطيع أن يجيب «هل نجح دفعي؟». */
+      window.location.assign(`/student/learning?paid=${order.orderId}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذّر إتمام الشراء — أعد المحاولة");
       setPaying(false);
@@ -274,7 +283,7 @@ export default function BuyPanel({
                       <span className="grid h-5 w-5 shrink-0 place-items-center rounded-md bg-gold/15">
                         <perk.icon className="h-3 w-3 text-gold-ink" />
                       </span>
-                      <span className="text-micro leading-relaxed text-foreground">{perk.t}</span>
+                      <span className="text-fine leading-relaxed text-foreground">{perk.t}</span>
                     </li>
                   ))}
                 </ul>
@@ -295,7 +304,7 @@ export default function BuyPanel({
                     <div className="flex items-start justify-between gap-3">
                       <span className="min-w-0">
                         <span className={`block text-sm font-bold leading-snug ${out ? "text-muted-foreground" : ""}`}>{line.name}</span>
-                        <span className="mt-0.5 flex items-center gap-1 text-micro text-muted-foreground">
+                        <span className="mt-0.5 flex items-center gap-1 text-fine text-muted-foreground">
                           <CalendarDays className="h-3 w-3" /> {startsLabel(picked)}
                           {!out && picked.seatsLeft !== null && picked.seatsLeft <= 5 && (
                             <span className="text-gold-ink"> · بقي {picked.seatsLeft}</span>
@@ -306,17 +315,17 @@ export default function BuyPanel({
                           المستبعَدَ يُقال سببُه في موضعه — وإلّا بقي بندٌ في
                           القائمة لا يدخل المجموعَ بلا أن يُعرف لماذا. */}
                       {out ? (
-                        <span className="shrink-0 text-micro font-bold text-gold-ink">
+                        <span className="shrink-0 text-fine font-bold text-gold-ink">
                           {REASON_AR[out.reason] ?? "غير متاحة الآن"}
                         </span>
                       ) : item?.isGift ? (
-                        <span className="flex shrink-0 items-center gap-1 text-micro font-black text-gold-ink">
+                        <span className="flex shrink-0 items-center gap-1 text-fine font-black text-gold-ink">
                           <Gift className="h-3.5 w-3.5" /> هديّة
                         </span>
                       ) : null}
                     </div>
                     {out && (
-                      <p className="mt-1.5 text-micro leading-5 text-muted-foreground">
+                      <p className="mt-1.5 text-fine leading-5 text-muted-foreground">
                         {out.messageAr}
                         {options.length > 1 && " — أو اختر موعدا آخر أدناه."}
                       </p>
@@ -345,7 +354,7 @@ export default function BuyPanel({
             {/* ما استُبعد يُسمّى: الخادمُ «كلُّ شيءٍ أو لا شيء»، فإسقاطُه صامتا
                 يجعل المشتريَ يظنّ أنّه اشترى ما لم يشترِه. */}
             {withoutCohort.length > 0 && (
-              <Card as="p" className="mt-3 flex items-start gap-2 text-micro leading-5 text-muted-foreground">
+              <Card as="p" className="mt-3 flex items-start gap-2 text-fine leading-5 text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
@@ -428,22 +437,42 @@ export default function BuyPanel({
 
             {/* عملةُ البطاقة تُختار هنا وحدَها — والموقعُ كلُّه بالدولار */}
             {usd && !nothingLeft && (
-              <div className="mt-2.5 flex items-center justify-end gap-1" role="group" aria-label="عملة الدفع">
-                {PRESENTMENT_CODES.map((c) => (
+              <div className="mt-2.5 text-left">
+                {!currencyOpen ? (
                   <button
-                    key={c}
-                    onClick={() => setCurrency(c)}
-                    aria-pressed={currency === c}
-                    title={PRESENTMENT_CURRENCIES[c].labelAr}
-                    className={`cursor-pointer rounded-full border px-2.5 py-0.5 text-micro font-bold transition ${
-                      currency === c
-                        ? "border-gold/60 bg-gold/15 text-gold-ink"
-                        : "border-white/12 text-muted-foreground hover:border-white/25 hover:text-foreground"
-                    }`}
+                    type="button"
+                    onClick={() => setCurrencyOpen(true)}
+                    aria-expanded={false}
+                    className="cursor-pointer text-xs font-bold text-muted-foreground underline-offset-4 transition hover:text-teal-light-ink hover:underline"
                   >
-                    {c}
+                    {currency === "USD"
+                      ? "ادفع بعملة أخرى"
+                      : `تُقتطع بطاقتك بـ${PRESENTMENT_CURRENCIES[currency].labelAr} — غيّرها`}
                   </button>
-                ))}
+                ) : (
+                  <div role="group" aria-label="بأيّ عملة تُقتطع بطاقتك؟">
+                    <p className="mb-1.5 text-xs font-bold text-muted-foreground">
+                      بأيّ عملةٍ تُقتطع بطاقتُك؟
+                    </p>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {PRESENTMENT_CODES.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCurrency(c)}
+                          aria-pressed={currency === c}
+                          className={`min-h-[32px] cursor-pointer rounded-full border px-3 py-0.5 text-xs font-bold transition ${
+                            currency === c
+                              ? "border-gold/60 bg-gold/15 text-gold-ink"
+                              : "border-white/12 text-muted-foreground hover:border-white/25 hover:text-foreground"
+                          }`}
+                        >
+                          {PRESENTMENT_CURRENCIES[c].labelAr}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -467,7 +496,7 @@ export default function BuyPanel({
                   {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
                 </Button>
-                <p className="mt-2 text-center text-micro leading-5 text-muted-foreground">
+                <p className="mt-2 text-center text-fine leading-5 text-muted-foreground">
                   الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
                 </p>
               </>

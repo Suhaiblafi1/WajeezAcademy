@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { AuthError } from './auth.service'
+import { openRegistrationWhere } from './registration-window'
 
 export class PublicCatalogService {
   private prisma: PrismaClient
@@ -84,7 +85,7 @@ export class PublicCatalogService {
   /** الشعب المعروضة للزوار — مفتوحة أو ممتلئة أو جارية: السعر والموعد والمدرب */
   async cohorts() {
     const rows = await this.prisma.cohort.findMany({
-      where: { status: { in: ['open', 'full', 'active'] }, registrationOpen: true },
+      where: { status: { in: ['open', 'full', 'active'] }, ...openRegistrationWhere() },
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         trainers: {

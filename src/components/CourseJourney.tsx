@@ -112,7 +112,7 @@ export default function CourseJourney({
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
           كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
           والشارة أدناه تبقى للمدرب المُعلَن، لأن اسمه معلومة تخص بطاقته وحدها. */}
-      <p className="mt-1.5 text-micro leading-relaxed text-muted-foreground">
+      <p className="mt-1.5 text-fine leading-relaxed text-muted-foreground">
         نُعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
       </p>
 
@@ -129,7 +129,7 @@ export default function CourseJourney({
                   <LifeBuoy className="h-4 w-4" />
                   دورات مساندة ({list.length - coreCount})
                 </p>
-                <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
+                <p className="mt-1 text-fine leading-relaxed text-muted-foreground">
                   مهارات من مسارات أخرى يحتاجها صاحب هذا المسار في عمله — تُكمل الرحلة ولا تُكرّرها.
                 </p>
               </div>
@@ -157,7 +157,7 @@ export default function CourseJourney({
                       <span className="text-sm font-black leading-snug text-foreground">
                         {c.title}
                         {isGift && (
-                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-micro font-black text-on-gold">
+                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-fine font-black text-on-gold">
                             هدية مجانية
                           </span>
                         )}
@@ -179,14 +179,14 @@ export default function CourseJourney({
                     </div>
                   )}
                   <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-micro font-semibold text-muted-foreground">
+                    <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-fine font-semibold text-muted-foreground">
                       <Clock3 className="h-3 w-3 text-teal-light-ink" />
                       {weeksLabel(Math.max(1, Math.ceil(c.totalHours / 7)))}
                     </span>
                     {c.relatedSkills.slice(0, 3).map((s) => (
                       <span
                         key={s}
-                        className="rounded-full border border-teal/30 bg-teal/[0.08] px-2.5 py-0.5 text-micro font-semibold text-teal-light-ink"
+                        className="rounded-full border border-teal/30 bg-teal/[0.08] px-2.5 py-0.5 text-fine font-semibold text-teal-light-ink"
                       >
                         {s}
                       </span>
@@ -194,13 +194,13 @@ export default function CourseJourney({
                     <CourseTrainer courseId={c.id} />
                   </div>
                   {reasons?.[c.id] && (
-                    <p className="mt-2 text-micro leading-relaxed text-muted-foreground">
+                    <p className="mt-2 text-fine leading-relaxed text-muted-foreground">
                       <span className="font-bold text-gold-ink/80">لماذا هي في خطتك: </span>
                       {reasons[c.id]}
                     </p>
                   )}
                   {isSupport && supportReasons?.[c.id] && (
-                    <p className="mt-2 text-micro leading-relaxed text-muted-foreground">
+                    <p className="mt-2 text-fine leading-relaxed text-muted-foreground">
                       <span className="font-bold text-teal-light-ink">لماذا هي مساندة لهذا المسار: </span>
                       {supportReasons[c.id]}
                     </p>
@@ -211,7 +211,7 @@ export default function CourseJourney({
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => edit.onSwapToggle(swapOpen ? null : c.id)}
-                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-micro font-bold transition ${
+                        className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-fine font-bold transition ${
                           swapOpen
                             ? "border-teal-light bg-teal/20 text-teal-light-ink"
                             : "border-teal/40 text-teal-light-ink hover:bg-teal/15"
@@ -225,7 +225,7 @@ export default function CourseJourney({
                         onClick={() => edit.onRemove(c.id)}
                         disabled={edit.minReached}
                         aria-label={`حذف ${c.title}`}
-                        className="flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-micro font-bold text-muted-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-30"
+                        className="flex items-center gap-1 rounded-full border border-white/10 px-2.5 py-1 text-fine font-bold text-muted-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-30"
                       >
                         <X className="h-3 w-3" />
                         حذفها
@@ -237,7 +237,7 @@ export default function CourseJourney({
                     <div className="mt-3">
                       <button
                         onClick={() => edit.onGiftToggle(c.id)}
-                        className="flex items-center gap-1 rounded-full border border-gold/40 px-2.5 py-1 text-micro font-bold text-gold-ink transition hover:bg-gold/10"
+                        className="flex items-center gap-1 rounded-full border border-gold/40 px-2.5 py-1 text-fine font-bold text-gold-ink transition hover:bg-gold/10"
                       >
                         <X className="h-3 w-3" />
                         إلغاء الهدية
@@ -248,7 +248,7 @@ export default function CourseJourney({
                   {/* بدائل الاستبدال — تظهر تحت الدورة نفسها، والاختيار يحل مكانها فورا بكل تفاصيله */}
                   {edit && swapOpen && (
                     <Inset tone="accent" className="mt-3">
-                      <p className="mb-2 text-micro font-bold text-teal-light-ink">
+                      <p className="mb-2 text-fine font-bold text-teal-light-ink">
                         بدائل مقترحة لك خصيصا — تحل مكان «{c.title}» فورا بكل تفاصيلها:
                       </p>
                       <div className="grid gap-1.5">
@@ -259,7 +259,7 @@ export default function CourseJourney({
                             className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right transition hover:border-teal-light/50 hover:bg-white/[0.07]"
                           >
                             <span className="block text-xs font-bold text-foreground">{p.name}</span>
-                            <span className="mt-0.5 block text-micro text-muted-foreground">{p.note}</span>
+                            <span className="mt-0.5 block text-fine text-muted-foreground">{p.note}</span>
                           </button>
                         ))}
                       </div>
@@ -322,20 +322,20 @@ export default function CourseJourney({
                       <ol className="space-y-1.5">
                         {c.modules.map((m, mi) => (
                           <li key={m.id} className="flex items-start gap-2.5 rounded-lg bg-white/[0.03] px-3 py-2">
-                            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-micro font-black text-muted-foreground">
+                            <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/[0.06] text-fine font-black text-muted-foreground">
                               {mi + 1}
                             </span>
                             <span className="min-w-0 flex-1">
                               <span className="block font-bold text-foreground">{m.title}</span>
                               {m.outcome && <span className="mt-0.5 block text-muted-foreground">{m.outcome}</span>}
                             </span>
-                            <span className="shrink-0 text-micro text-muted-foreground">{m.hours} س</span>
+                            <span className="shrink-0 text-fine text-muted-foreground">{m.hours} س</span>
                           </li>
                         ))}
                       </ol>
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-white/[0.07] pt-3 text-micro text-muted-foreground">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1.5 border-t border-white/[0.07] pt-3 text-fine text-muted-foreground">
                     {c.prerequisites && (
                       <span>
                         <span className="font-bold text-foreground">المتطلبات السابقة: </span>
@@ -430,15 +430,15 @@ export default function CourseJourney({
                   <Plus className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 truncate">أضف دورة أخرى إلى مسارك</span>
                 </span>
-                <span className="shrink-0 text-micro font-bold text-muted-foreground">{edit.pool.length}</span>
+                <span className="shrink-0 text-fine font-bold text-muted-foreground">{edit.pool.length}</span>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${poolOpen ? "rotate-180" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="px-4 pb-4">
-              <p className="text-micro leading-5 text-muted-foreground">
+              <p className="text-fine leading-5 text-muted-foreground">
                 حتى {MAX_PATHWAY_COURSES} دورات في المسار.
               </p>
               {edit.addReason && (
-                <Inset as="p" tone="accent" className="mt-2 flex items-start gap-1.5 border-teal-light/25 px-3 py-2 text-micro leading-5 text-teal-light-ink">
+                <Inset as="p" tone="accent" className="mt-2 flex items-start gap-1.5 border-teal-light/25 px-3 py-2 text-fine leading-5 text-teal-light-ink">
                   <Tag className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span className="min-w-0">{edit.addReason}</span>
                 </Inset>
@@ -465,7 +465,7 @@ export default function CourseJourney({
             </Collapsible>
           )}
           {edit.minReached && !edit.swapOnly && (
-            <p className="text-micro text-gold-ink/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
+            <p className="text-fine text-gold-ink/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
           )}
         </div>
       )}
@@ -501,7 +501,7 @@ function CourseTrainer({ courseId }: { courseId: string }) {
 
   if (!label) return null;
   return (
-    <span className="flex items-center gap-1 rounded-full border border-gold/30 bg-gold/[0.07] px-2.5 py-0.5 text-micro font-semibold text-gold-ink/90">
+    <span className="flex items-center gap-1 rounded-full border border-gold/30 bg-gold/[0.07] px-2.5 py-0.5 text-fine font-semibold text-gold-ink/90">
       <UserRound className="h-3 w-3" />
       {label}
     </span>

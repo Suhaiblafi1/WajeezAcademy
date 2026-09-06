@@ -638,7 +638,7 @@ export class DiagnosticEngineV21 {
     const persona = derivePersonaV21(this.state.facts)
     const domains = assessDomainsV21(this.state.facts, this.state.interestVector)
     const skillStates = buildSkillStates(this.state.skillVector)
-    return { facts: this.state.facts, persona, domains, skillStates }
+    return { facts: this.state.facts, persona, domains, skillStates, familyRatings: this.familyRatings }
   }
 
   private stage(): CareerStage | null {
@@ -1611,6 +1611,10 @@ function toV2Candidate(c: EntityCandidate): V2Candidate {
     pathwayId: c.entity.entity_id,
     total: c.netFit,
     measuredSkillCoverage: c.skills.measuredCoverage,
+    measurableSkillCoverage: c.skills.measurableCoverage,
+    hasDirectSkillEvidence: c.skills.hasDirectSkillEvidence,
+    measurableRequiredCount: c.skills.measurableRequiredCount,
+    measurableMeasuredCount: c.skills.measurableMeasuredCount,
     gapSkillSlugs: c.skills.gapSkillSlugs,
     masteredSkillSlugs: c.skills.masteredSkillSlugs,
     unknownSkillSlugs: c.skills.unknownSkillSlugs,
@@ -1644,7 +1648,7 @@ function toLegacyCandidate(c: V2Candidate): PathwayCandidate {
 
 function toLegacyConfidence(c: ConfidenceV2) {
   const bandMap = {
-    strong_match: { band: 'strong', band_ar: 'قوية' },
+    strong_match: { band: 'strong', band_ar: 'قوية بما قِسناه' },
     best_current_match: { band: 'good', band_ar: 'جيدة' },
     exploratory_direction: { band: 'preliminary', band_ar: 'أولية' },
     advisor_review: { band: 'advisor_referral', band_ar: 'تحتاج مراجعة مستشار' },

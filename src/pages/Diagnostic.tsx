@@ -2,6 +2,7 @@ import { ACADEMY_EMAILS } from '@/data/academy-email'
 import { useEffect, useMemo, useRef, useState } from "react";
 import { safeGet, safeSet, safeRemove } from "@/services/safe-storage";
 import { Link, useNavigate, useSearchParams } from "react-router";
+import { STAGE_PARAM, STAGE_QUESTION_ID, resolveEntryStage } from "@/application/diagnostic/entry-stage";
 import {
   ArrowRight,
   ArrowLeft,
@@ -209,6 +210,17 @@ export default function Diagnostic() {
      والشريط تحته يقسم على ESTIMATE_MAX بصدق، فالمؤشران كانا يتناقضان على شاشة واحدة.
      المدى المعلن ثابت الآن ويطابق ما يفرضه المحرك: 8–14. */
   const progress = Math.min(100, Math.round(((asked.length + (question ? 1 : 0)) / ESTIMATE_MAX) * 100));
+  /* ── والشريطُ كان يكذب بقسمته على ١٤ وحدَها (البند ٥٨) ──
+
+     العدّادُ يقول «من ٨–١٤» والشريطُ يقسم على ١٤: فمن انتهت جولتُه عند الثامن
+     — وهو أقصرُ ما يفرضه المحرّك — رأى الشريطَ يقف عند ٥٧٪ ثمّ تنتهي الرحلةُ
+     فجأة. مؤشّران على شاشةٍ واحدة يتحرّكان بسرعتين.
+
+     ولا يُصلَح بمقامٍ أصدق: المحرّكُ **يتوقّف تكيّفيّا** حين تكفي الثقة، فلا
+     يعرف أحدٌ — لا هو ولا نحن — أين تنتهي هذه الجولةُ بعينها. فالكذبُ ليس في
+     الرقم بل في ادّعاء نقطةٍ حيث لا توجد إلّا **مدّة**. فيُعلَّم على الشريط
+     موضعُ أقصر رحلة: ما بعده نهايةٌ محتملةٌ في أيّ لحظة. */
+  const shortestMark = Math.round((ESTIMATE_MIN / ESTIMATE_MAX) * 100);
   const liveNow = stage === "questions" ? live : null;
   const understoodDims = liveNow ? (Object.keys(DIM_LABELS) as Dim[]).filter((d) => liveNow.dims[d] >= 0.6) : [];
   /* لا نشتق «التطابق الأولي» ولا نعرضه — اسم المسار/القالب يُكشف في النتيجة فقط */
@@ -312,8 +324,37 @@ export default function Diagnostic() {
     const session = createAssessment();
     sessionRef.current = session;
     setHistory([]);
+    /* ── من أجاب في الرئيسيّة لا يُسأل ثانيةً ──
+
+       شبكةُ «أين أنت الآن؟» تسأل سؤالَ المحرّك الأوّلَ بعينه. فإن جاء الزائرُ
+       منها بجوابٍ يعرفه البنك، سُلِّم للمحرّك قبل أوّل سؤالٍ يُعرض — فيبدأ
+       التشخيصُ من الثاني. وما لا يعرفه البنكُ يُتجاهَل بلا ضجّة: يُبدأ من
+       أوّله كما لو لم يُمرَّر شيء. */
+    const seeded = resolveEntryStage(searchParams.get(STAGE_PARAM));
+    if (seeded) {
+      const step = session.submit(STAGE_QUESTION_ID, seeded.value, seeded.optionIds);
+      const asked = diagQuestionById(STAGE_QUESTION_ID);
+      if (asked) setHistory([asked]);
+      applyStep(step);
+      return;
+    }
     applyStep(session.next());
   };
+
+  /* ── من نقر مرحلتَه في الرئيسيّة يبدأ فورا ──
+
+     لو وقف عند شاشة «ابدأ» بعد نقرةٍ صريحةٍ على مرحلته لكان قد نقر ولم يقع
+     شيء — والشبكةُ تَعِد بأنّها بدايةٌ لا إعلان. والشرطُ ضيّق: مرحلةٌ يعرفها
+     البنك، ولا نتيجةٌ محفوظةٌ مفتوحة، ولا جلسةٌ جارية. */
+  const stageParam = searchParams.get(STAGE_PARAM);
+  useEffect(() => {
+    if (!stageParam || openSaved || sessionRef.current) return;
+    if (!resolveEntryStage(stageParam)) return;
+    void start();
+    /* مرّةً واحدة لكلّ عنوان: الاعتمادُ على `stageParam` وحدَه مقصود —
+       `start` تُعاد بناؤها كلَّ تصيير، وإدراجُها يُعيد البدءَ بلا نهاية. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageParam]);
 
   /* استئناف تشخيص غير مكتمل — المحرك حتمي فيعيد نفس الأسئلة لنفس الإجابات */
   const doResume = async () => {
@@ -655,6 +696,9 @@ export default function Diagnostic() {
   const qText = question ? resolve(question.text, answers) : "";
   const qHint = question ? resolve(question.hint, answers) : undefined;
   const qOptions: DiagOption[] = question ? (resolve(question.options, answers) ?? []) : [];
+  /* أسئلةُ التعميق، وسببُ هذا السؤال — يُقرآن معا لأنّهما صارا لوحا واحدا */
+  const isDeepening = question ? question.level === "deep" || question.level === "conditional" : false;
+  const questionNote = deepStep?.reasonAr ?? whyAr;
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
@@ -710,7 +754,7 @@ export default function Diagnostic() {
               { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
               { icon: Clock3, text: "٣–٦ دقائق" },
             ].map((f) => (
-              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-micro font-bold text-foreground sm:px-3.5 sm:text-micro">
+              <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-fine font-bold text-foreground sm:px-3.5 sm:text-fine">
                 <f.icon className="h-3 w-3 shrink-0 text-teal-light-ink sm:h-3.5 sm:w-3.5" />
                 {f.text}
               </span>
@@ -840,7 +884,7 @@ export default function Diagnostic() {
                 />
               </div>
               {deepReason && (
-                <p className="mt-3 text-micro leading-relaxed text-muted-foreground">{deepReason}</p>
+                <p className="mt-3 text-fine leading-relaxed text-muted-foreground">{deepReason}</p>
               )}
             </Card>
           ) : (
@@ -865,10 +909,25 @@ export default function Diagnostic() {
                 سؤال {asked.length + 1} من {ESTIMATE_MIN}–{ESTIMATE_MAX}
               </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+            <div
+              role="progressbar"
+              aria-valuemin={1}
+              aria-valuemax={ESTIMATE_MAX}
+              aria-valuenow={asked.length + 1}
+              aria-valuetext={`سؤال ${asked.length + 1} من ${ESTIMATE_MIN} إلى ${ESTIMATE_MAX} — وقد تنتهي الجولةُ عند الثامن`}
+              className="relative h-1.5 overflow-hidden rounded-full bg-white/10"
+            >
               <div
                 className="h-full rounded-full bg-gradient-to-l from-teal to-gold transition-all duration-500"
                 style={{ width: `${progress}%` }}
+              />
+              {/* شعرةٌ لا لوح: العلامةُ لا تأخذ سطرا ولا تزيد عناصرَ الشرح
+                  التي يقصد هذا البندُ تقليلَها — و`inset-inline-start` تضعها
+                  في موضعها الصحيح في اتجاهٍ من اليمين إلى اليسار. */}
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 w-px bg-white/50"
+                style={{ insetInlineStart: `${shortestMark}%` }}
               />
             </div>
           </div>
@@ -876,7 +935,13 @@ export default function Diagnostic() {
           )}
 
           <div key={question.id} className="story-fade">
-            {(question.level === "deep" || question.level === "conditional") && (
+            {/* ــ شارةُ التعميق اندمجت في «لماذا هذا السؤال؟» (البند ٥٨) ــ
+
+                كانت لوحا فوق السؤال يقول «بناءً على إجاباتك تحديدا»، وتحته لوحٌ
+                ثانٍ يقول «لماذا هذا السؤال؟ …» — وهما الجوابُ نفسُه مرّتين، في
+                صندوقين بلونين فوق سؤالٍ واحد. فصارت سطرا داخلَ الصندوق الثاني،
+                ولا تُعرض وحدَها إلّا حين لا سببَ يُقال. */}
+            {isDeepening && !questionNote && (
               <p className="mb-4 w-fit rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold-ink">
                 سؤال تعميق — بناءً على إجاباتك تحديدا
               </p>
@@ -885,7 +950,7 @@ export default function Diagnostic() {
                 إلا لأربعة خيارات ونصف — وقياسُ الاختيار أن ترى بدائلك مجتمعة. */}
             <h2 className="text-xl font-black leading-snug sm:text-2xl md:text-3xl">{qText}</h2>
             {(deepStep?.reasonAr ?? whyAr) && (
-              <Inset as="p" tone="accent" className="mt-3 w-fit px-3.5 py-2 text-micro leading-relaxed text-muted-foreground">
+              <Inset as="p" tone="accent" className="mt-3 w-fit px-3.5 py-2 text-fine leading-relaxed text-muted-foreground">
                 <span className="font-bold text-teal-light-ink">لماذا هذا السؤال؟ </span>
                 {deepStep?.reasonAr ?? whyAr}
               </Inset>
@@ -896,7 +961,7 @@ export default function Diagnostic() {
                 بسؤال، فيُعرض حيث يمكن حسمه: فوق الخيارات وبجوار «السؤال السابق».
                 ملاحظة لا حاجز: من رأى أن الوصفين يجتمعان في حاله فليمضِ. */}
             {contradictionAr && (
-              <Inset as="p" tone="warn" className="mt-3 flex w-fit items-start gap-2 px-3.5 py-2 text-micro leading-relaxed text-foreground">
+              <Inset as="p" tone="warn" className="mt-3 flex w-fit items-start gap-2 px-3.5 py-2 text-fine leading-relaxed text-foreground">
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                 <span>
                   {contradictionAr}
@@ -997,7 +1062,7 @@ export default function Diagnostic() {
                           );
                         })}
                       </div>
-                      <p className="mt-2 text-left text-micro text-muted-foreground" dir="rtl">
+                      <p className="mt-2 text-left text-fine text-muted-foreground" dir="rtl">
                         {ratingsDraft[item.key]
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
                           : "اختر مستواك — بصدق"}
@@ -1118,14 +1183,14 @@ export default function Diagnostic() {
               <div className="mt-10 space-y-2.5 border-t border-white/[0.07] pt-5">
                 {understoodDims.length > 0 && (
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex items-center gap-1.5 text-micro font-bold text-muted-foreground">
+                    <span className="flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
                       <BrainCircuit className="h-3.5 w-3.5 text-teal-ink" />
                       يفهم الآن:
                     </span>
                     {understoodDims.map((d) => (
                       <span
                         key={d}
-                        className="rounded-full border border-teal/25 bg-teal/[0.08] px-2.5 py-0.5 text-micro font-semibold text-teal-light-ink"
+                        className="rounded-full border border-teal/25 bg-teal/[0.08] px-2.5 py-0.5 text-fine font-semibold text-teal-light-ink"
                       >
                         {DIM_LABELS[d]}
                       </span>
@@ -1133,7 +1198,7 @@ export default function Diagnostic() {
                   </div>
                 )}
                 {question.source && (
-                  <p className="text-micro leading-relaxed text-muted-foreground">
+                  <p className="text-fine leading-relaxed text-muted-foreground">
                     <span className="font-bold text-muted-foreground">المصدر العلمي: </span>
                     {question.source}
                   </p>
@@ -1251,7 +1316,7 @@ export default function Diagnostic() {
                       <ListChecks className="ml-2 h-4 w-4" />
                       ابدأ الاستبيان التفصيلي
                     </Button>
-                    <p className="mt-2.5 text-micro text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
+                    <p className="mt-2.5 text-fine text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
                   </div>
                 )}
                 {isExploratory && canDeepen && deepUnavailable && (
@@ -1292,7 +1357,7 @@ export default function Diagnostic() {
                     }
                   />
                 </p>
-                <p className="mt-4 text-micro leading-relaxed text-muted-foreground">
+                <p className="mt-4 text-fine leading-relaxed text-muted-foreground">
                   هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
                 </p>
                 {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
@@ -1333,14 +1398,14 @@ export default function Diagnostic() {
                   لديك دقيقة أخرى لنتأكد أكثر؟
                 </Button>
                 {!deepUnavailable && (
-                  <p className="mx-auto mt-2 max-w-md text-micro leading-relaxed text-muted-foreground">
+                  <p className="mx-auto mt-2 max-w-md text-fine leading-relaxed text-muted-foreground">
                     خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطَّها بلا أي أثر إن كانت الصورة واضحة لك.
                   </p>
                 )}
               </div>
             )}
             {deepUnavailable && (
-              <p className="mt-2 text-micro font-bold text-teal-light-ink print:hidden">
+              <p className="mt-2 text-fine font-bold text-teal-light-ink print:hidden">
                 صورتك مكتملة بما يكفي — لا أسئلة إضافية نافعة، توصيتك جاهزة بثقة.
               </p>
             )}
@@ -1378,12 +1443,12 @@ export default function Diagnostic() {
                 </p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl bg-white/[0.04] p-4">
-                    <p className="text-micro font-bold text-muted-foreground">قبل التدقيق</p>
+                    <p className="text-fine font-bold text-muted-foreground">قبل التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug text-foreground">{cmp.before.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-muted-foreground">مستوى الثبات: {cmp.before.confidenceBand_ar}</p>
                   </div>
                   <Inset tone="accent">
-                    <p className="text-micro font-bold text-teal-light-ink">بعد التدقيق</p>
+                    <p className="text-fine font-bold text-teal-light-ink">بعد التدقيق</p>
                     <p className="mt-1.5 text-sm font-black leading-snug">{cmp.after.topLabel_ar}</p>
                     <p className="mt-1 text-xs text-foreground">مستوى الثبات: {cmp.after.confidenceBand_ar}</p>
                   </Inset>
@@ -1482,7 +1547,7 @@ export default function Diagnostic() {
                     <Inset key={f.label}>
                       <f.icon className="h-4 w-4 text-teal-light-ink" />
                       <p className="mt-1.5 text-xs font-bold leading-5">{f.label}</p>
-                      <p className="mt-0.5 text-micro leading-5 text-muted-foreground">{f.hint}</p>
+                      <p className="mt-0.5 text-fine leading-5 text-muted-foreground">{f.hint}</p>
                     </Inset>
                   ))}
                 </div>
@@ -1598,6 +1663,13 @@ export default function Diagnostic() {
             reasons={result.reasons}
             confidence={result.resultJson.confidence as ConfidenceParts | undefined}
             bandAr={result.confidenceBand}
+            blockers={(result.resultJson.strong_blockers_ar as string[] | undefined) ?? []}
+            basis={
+              (result.resultJson.evidence_basis as
+                | { measured: number; measurable: number; unknown: number }
+                | null
+                | undefined) ?? null
+            }
             changeMakers={(result.resultJson.change_makers_ar as string[] | undefined) ?? []}
             gapNote={composedFold.gapNote}
           />
@@ -1711,7 +1783,7 @@ export default function Diagnostic() {
                         <td className="py-3 text-muted-foreground">{g.target}</td>
                         <td className="py-3">
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-micro font-bold ${
+                            className={`rounded-full px-2.5 py-0.5 text-fine font-bold ${
                               g.priority === "عالية"
                                 ? "bg-gold/15 text-gold-ink"
                                 : "bg-white/10 text-muted-foreground"
