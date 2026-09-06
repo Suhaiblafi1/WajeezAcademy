@@ -8,9 +8,9 @@
    وهذا الملفُّ **المنطقُ وحدَه**: دوالٌّ نقيّةٌ تأخذ القاعدةَ والوقتَ وتعمل
    وتُخبر بما عملت. التشغيلُ في `index.ts`، ولا يعمل إلّا بعلمٍ صريح
    (`WORKER_ENABLED=on`). وكان يُكتب ويُختبَر بلا موضعِ تشغيل — الدالّةُ على
-   Vercel تنام بعد الطلب. والخادمُ اليومَ حاويةٌ دائمة، فالمانعُ الباقي قناةُ
-   البريد — **وأنّ أحدا لم يشغّل العاملَ بعد**: `deploy/compose.prod.yml` لا
-   خدمةَ فيه له ولا `WORKER_ENABLED` (`docs/DEPLOYMENT.md` §١٠).
+   Vercel تنام بعد الطلب. والخادمُ اليومَ حاويةٌ دائمة، وللعامل خدمتُه إلى
+   جانبها في `deploy/compose.prod.yml`. ومانعُ البريد رُفع بالشيفرة: ما لا
+   قناةَ موصولةَ له لا يُحاوَل فلا يُحرَق (`docs/DEPLOYMENT.md` §١٠).
 
    وثلاثةُ شروطٍ في كلّ وظيفةٍ هنا، وبها تصلح للتشغيل بلا رقيب:
 
@@ -23,7 +23,7 @@
       صفحةُ صحّةِ النظام والسجلُّ يقرآن هذه الجملة. */
 
 import type { PrismaClient } from '@prisma/client'
-import { NotificationService } from '../services/notification.service'
+import { NotificationService, liveChannels } from '../services/notification.service'
 import { CohortService } from '../services/cohort.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
@@ -55,15 +55,26 @@ const REMINDERS = [
 
    الطابورُ يمتلئ ولا يُفرَّغ. و`attemptSend` نفسُها تحرس التكرار: ما أُرسل
    لا يُرسل، وما بلغ حدَّ المحاولات لا يُعاد. فالوظيفةُ هنا اختيارُ من
-   يُحاوَل وترتيبُه: الأقدمُ أوّلا — الوعدُ الأقدمُ أحقُّ بالوفاء. */
+   يُحاوَل وترتيبُه: الأقدمُ أوّلا — الوعدُ الأقدمُ أحقُّ بالوفاء.
+
+   **والاختيارُ يبدأ بالقناة لا بالصفّ.** صفٌّ على قناةٍ غيرِ موصولةٍ لا
+   يُحاوَل أصلا: محاولتُه تُعلّمه `failed` فيخرج من هذا الاستعلام إلى الأبد
+   ويقترب من حدّ المحاولات — بلا أن يكون أحدٌ حاول إرساله. فيبقى `queued`
+   ينتظر وصلَ قناته، ويُقال عددُه في الخبر فلا ينتظر صامتا
+   (`liveChannels` · `docs/DEPLOYMENT.md` §١٠). */
 export async function dispatchQueuedNotifications(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
   const notifications = new NotificationService(prisma)
+  const live = await liveChannels(prisma)
   const queued = await prisma.notification.findMany({
-    where: { status: 'queued' },
+    where: { status: 'queued', channel: { in: live } },
     orderBy: { queuedAt: 'asc' },
     take: LIMITS.notifications,
     select: { id: true, queuedAt: true },
+  })
+  /* المنتظرُ لقناةٍ لم تُوصَل — يُعدّ ولا يُمَسّ */
+  const waiting = await prisma.notification.count({
+    where: { status: 'queued', channel: { notIn: live } },
   })
   /* عمرُ الأقدم يُقال في الخبر: «حُوِّل ٤٣ إشعارا» لا يكشف أنّ أحدَها ينتظر
      يومَين — والانتظارُ هو العطبُ لا العدد. */
@@ -80,13 +91,15 @@ export async function dispatchQueuedNotifications(prisma: PrismaClient, now = ne
       failed += 1
     }
   }
+  const held = waiting > 0 ? ` · و${waiting} ينتظر قناةً لم تُوصَل بعد` : ''
   return {
     job: 'dispatch_notifications',
-    summaryAr: queued.length === 0
+    summaryAr: (queued.length === 0
       ? 'لا إشعارَ في الطابور'
       : `حُوِل ${queued.length} إشعارا: وصل ${done}، وسقط ${failed}`
-        + (failed > 0 ? ' (قناةُ البريد أو المزوّد)' : '')
-        + (oldest ? ` — أقدمُها انتظر ${Math.max(1, Math.round((now.getTime() - oldest.getTime()) / 60_000))} دقيقة` : ''),
+        + (failed > 0 ? ' (المزوّد)' : '')
+        + (oldest ? ` — أقدمُها انتظر ${Math.max(1, Math.round((now.getTime() - oldest.getTime()) / 60_000))} دقيقة` : ''))
+      + held,
     done, failed, ms: Date.now() - started,
   }
 }

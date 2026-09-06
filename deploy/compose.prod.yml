@@ -38,6 +38,10 @@ services:
     build:
       context: ..
       dockerfile: Dockerfile
+    # اسمٌ صريحٌ لأنّ العاملَ يتقاسمها: `deploy.sh` يبني `app` وحدَه، فلو تُركت
+    # التسميةُ للافتراض بنى العاملُ صورةً ثانيةً — وافترقت الشيفرتان بلا أن
+    # يلاحظ أحد.
+    image: wajeez-app:latest
     restart: unless-stopped
     depends_on:
       db:
@@ -62,6 +66,38 @@ services:
       - storage:/app/storage        # الملفات الخاصة — تبقى بين الإصدارات
       - web:/srv/web                # الواجهة المبنية، يقرؤها Caddy
     # لا ports: — Caddy وحده يواجه الإنترنت
+
+  # ── العامل الخلفيّ ──
+  #
+  # عمليّةٌ ثانيةٌ من الصورة نفسِها، بأمرٍ آخر. وبدونها كلُّ «سنُعلمك» في
+  # الواجهة وعدٌ لا يُنفَّذ: طابورُ الإشعارات يمتلئ ولا يُفرَّغ، وتذكيراتُ
+  # الجلسات لا تُرسَل، والنشرُ المجدول يمرّ موعدُه ولا يُنشَر عنده شيء.
+  #
+  # ولماذا حاويةٌ منفصلةٌ لا خيطٌ داخل الخادم: سقوطُ العامل لا يُسقط الموقع،
+  # وإعادةُ تشغيله لا تقطع طلبا. وسجلُّه منفصلٌ فيُقرأ.
+  #
+  # ولا `ports` ولا حجمَ الواجهة: لا يواجه الإنترنت، ولا يقرأ ملفّا — وظائفُه
+  # الستُّ كلُّها قاعدةٌ خالصة. ونقطةُ الدخول تتخطّى نسخَ الواجهة لغياب
+  # `/srv/web` عنده.
+  worker:
+    image: wajeez-app:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      NODE_ENV: production
+      APP_ENV: production
+      # العلمُ الصريح — بدونه يطبع سببَ توقّفه ويخرج بنجاح
+      WORKER_ENABLED: "on"
+    command: ["npx", "tsx", "server/worker/index.ts"]
+    # فحصُ صحّةِ الصورة يسأل `/api/version`، ولا خادمَ ويبٍ هنا — فيُطفأ كي
+    # لا تُعلَّم حاويةٌ سليمةٌ «غيرَ صحّيّة» فيُطارَد عطلٌ لا وجودَ له.
+    healthcheck:
+      disable: true
 
   caddy:
     image: caddy:2-alpine
