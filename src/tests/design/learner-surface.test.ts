@@ -145,6 +145,35 @@ describe('٥٦ · الرئيسةُ أقصر — جدارا الشعارات صا
     expect(home).toContain('تحدث عنا الإعلام')
     expect(read('src/components/EcosystemOrgStrip.tsx')).toContain('مؤسسات وثقت بمنظومة وجيز')
   })
+
+  /* ─── «المختارات»: بطاقةٌ وبابان لا كتالوجٌ ثانٍ (قرارُ صاحب المنصّة: «ب») ───
+
+     كان القسمُ خُمسَ الصفحة على الهاتف (٢١٩٩ من ١٠٨٨٢): فلترُ مجالاتٍ وشريطُ
+     مسارات، ثمّ عنوانٌ وفلترٌ وشريطٌ ثانٍ للدورات — ثمّ زرّان يحيلان إلى
+     `/pathways` و`/courses`، أي إلى ما يفعل ذلك كلَّه وأكثر.
+
+     والقياسُ بعده: ١٠١٣ بكسلا، والصفحةُ ٩٦٩٦ (١١٫٥ شاشةً بدل ١٢٫٩). */
+  describe('والمختاراتُ بطاقةٌ وبابان', () => {
+    const best = read('src/pages/home/Bestsellers.tsx')
+
+    it('لا فلترَ ولا شريطَ بطاقاتٍ — الكتالوجُ له صفحتُه', () => {
+      expect(best, 'عاد فلترُ المجالات').not.toContain('CategoryFilter')
+      expect(best, 'عاد شريطُ البطاقات').not.toMatch(/snap-x snap-mandatory/)
+      expect(best).not.toContain('top-courses')
+    })
+
+    it('ويبقى الدليلُ والبابان', () => {
+      expect(best, 'ذهبت البطاقةُ المميّزة معها').toContain('اختيار وجيز الأول')
+      expect(best).toContain('تتخرّج بـ')
+      expect(best).toContain('to="/pathways"')
+      expect(best).toContain('to="/courses"')
+    })
+
+    it('ومرساةُ الصدر لا تُكسر — «اختر مسارك بنفسك» تقصدها', () => {
+      expect(best).toContain('id="bestsellers"')
+      expect(home).toContain('href="#bestsellers"')
+    })
+  })
 })
 
 describe('٥٧ · المؤشّرُ سؤالان — ولكلٍّ عملٌ يؤدّيه', () => {
