@@ -9,7 +9,7 @@ import {
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
 
@@ -543,7 +543,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
   return (
     <ul className="space-y-1.5">
       {rows.map((r) => (
-        <li key={r.enrollmentId} className="rounded-xl border border-white/8 bg-paper/20 px-3 py-2.5">
+        <Inset as="li" key={r.enrollmentId} className="px-3 py-2.5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="min-w-0">
               <span className="block text-[12px] font-bold text-foreground">{r.learnerName}</span>
@@ -611,7 +611,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
               </button>
             </div>
           )}
-        </li>
+        </Inset>
       ))}
     </ul>
   );

@@ -112,7 +112,7 @@ function RealTrainerHome({ name }: { name: string }) {
 
       {/* بطاقة إرشاد المدرب الجديد — بوابة بلا شعب تشرح ما يحدث تاليا بدل أن تكتفي بأصفار */}
       {cohorts.length === 0 && (
-        <section className="mb-8 rounded-3xl border border-teal/30 bg-teal/[0.06] p-6">
+        <Panel as="section" tone="accent" className="mb-8">
           <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" /> بوابتك جاهزة — هذا ما يحدث تالياً</p>
           <div className="mt-4 grid gap-3 text-xs leading-6 text-foreground sm:grid-cols-3">
             <Card className="bg-paper/20">
@@ -132,12 +132,12 @@ function RealTrainerHome({ name }: { name: string }) {
             حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
             <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-foreground">«اقتراحاتي»</Link>.
           </p>
-        </section>
+        </Panel>
       )}
 
       {/* مهام تهيئتك — من ملفك عند الخادم لا من هذا الجهاز */}
       {tasks.length > 0 && tasks.some((t) => !t.doneAt) && (
-        <section className="mb-8 rounded-3xl border border-teal/25 bg-teal/[0.05] p-6">
+        <Panel as="section" tone="accent" className="mb-8">
           <div className="flex items-center justify-between">
             <p className="flex items-center gap-2 text-sm font-black">
               <ListChecks className="h-4 w-4 text-teal-light-ink" /> مهام تهيئتك كمدرب
@@ -174,7 +174,7 @@ function RealTrainerHome({ name }: { name: string }) {
               );
             })}
           </div>
-        </section>
+        </Panel>
       )}
 
       <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-[11px] text-muted-foreground">

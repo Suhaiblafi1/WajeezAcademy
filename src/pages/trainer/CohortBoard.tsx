@@ -8,7 +8,7 @@ import TrainerLayout from "./TrainerLayout";
 import { fmtDateTimeAr } from "@/utils/format";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 const ATTENDANCE_OPTIONS = [
@@ -346,7 +346,7 @@ export default function CohortBoard() {
                                       {/* الاقتراح لا يغيّر شيئا حتى تعتمده الإدارة — والنصّ يقولها
                                           قبل الضغط لا بعده، فلا يظنّ المدرب أن الموعد تبدّل. */}
                                       {rescheduleFor === s.id && (
-                                        <div className="mt-3 space-y-2.5 rounded-2xl border border-gold/30 bg-gold/[0.05] p-3.5">
+                                        <Card tone="warn" className="mt-3 space-y-2.5 p-3.5">
                                           <p className="text-[11px] leading-relaxed text-gold-ink">
                                             تقترح ولا تغيّر: الموعد يبقى كما هو عند متعلّميك حتى تعتمد الإدارة اقتراحك.
                                           </p>
@@ -370,7 +370,7 @@ export default function CohortBoard() {
                                             className="cursor-pointer rounded-full bg-gold px-5 py-1.5 text-[11px] font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40">
                                             أرسل الاقتراح للإدارة
                                           </button>
-                                        </div>
+                                        </Card>
                                       )}
                                       {s.zoom?.passcode && (
                                         <p className="mt-2 text-[11px] text-muted-foreground">رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span></p>
@@ -476,7 +476,7 @@ export default function CohortBoard() {
                                   ) : (
                                     <ul className="mt-2.5 space-y-2">
                                       {msgLog[c.id].map((m) => (
-                                        <li key={m.id} className="rounded-xl border border-white/8 bg-paper/20 p-3">
+                                        <Inset as="li" key={m.id}>
                                           <p className="text-micro text-muted-foreground">
                                             {m.audience === "cohort"
                                               ? `إلى الشعبة · ${m.recipients} متعلّما`
@@ -484,7 +484,7 @@ export default function CohortBoard() {
                                             {" · "}{fmtDateTimeAr(m.createdAt)}
                                           </p>
                                           <p className="mt-1.5 whitespace-pre-line text-xs leading-6 text-foreground">{m.body}</p>
-                                        </li>
+                                        </Inset>
                                       ))}
                                     </ul>
                                   )

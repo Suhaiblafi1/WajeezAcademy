@@ -149,7 +149,7 @@ export default function RateMyLearning() {
   return (
     <PortalLayout title="رأيي في التدريب">
       {/* حدود السرّية مكتوبة قبل النموذج لا بعده — تُقرأ قبل أن يُكتب شيء */}
-      <div className="mb-6 flex items-start gap-3 rounded-2xl border border-teal/25 bg-teal/[0.05] p-4">
+      <Card tone="accent" className="mb-6 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
         <p className="text-[12px] leading-6 text-foreground">
           <span className="font-black text-foreground">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
@@ -157,7 +157,7 @@ export default function RateMyLearning() {
           القليل يُستدلّ على أصحاب الآراء مهما حُذفت الأسماء. والإدارة ترى التعليقات
           فور وصولها، مجهولةَ صاحبها كذلك، لأن عليها أن تتصرّف إن كان في الأمر ما يستدعي.
         </p>
-      </div>
+      </Card>
 
       {offline && (
         <Panel className="grid place-items-center py-16 text-center">

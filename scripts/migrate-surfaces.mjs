@@ -31,16 +31,37 @@ if (files.length === 0) {
 const LEVEL = [
   { re: /\brounded-3xl\b/, tag: 'Panel' },
   { re: /\brounded-2xl\b/, tag: 'Card' },
+  /* الأضيقُ غاطسٌ: تفصيلٌ داخل عنصر. وأرضيّةُ الورق علامتُه في المستودَع */
+  { re: /\brounded-xl\b/, tag: 'Inset' },
 ]
+
+/* ═══ النبرة تُقرأ من اللون ═══
+
+   اللونُ في هذا المستودَع لغةٌ متّسقة: الأحمرُ خطأٌ، والذهبيُّ تنبيه،
+   والأخضرُ نجاح، والفيروزيُّ إبراز. فتُقرأ منه `tone` بدل أن تُكتب بيد.
+
+   ⚠️ وحدُّه: يقرأ **ما قصده الكاتبُ حين كتبه**. فإن كان اللونُ خطأً في
+   الأصل بقي خطأً بعد الترحيل — الأداةُ توحّد الصيغةَ لا تراجع الحكم. */
+const TONES = [
+  { re: /\b(?:border|bg|text)-(?:red|rose)-/, tone: 'danger' },
+  { re: /\b(?:border|bg|text)-(?:gold|amber)/, tone: 'warn' },
+  { re: /\b(?:border|bg|text)-(?:emerald|green)-/, tone: 'positive' },
+  { re: /\b(?:border|bg|text)-(?:teal|sky)/, tone: 'accent' },
+]
+
+function toneFor(cls) {
+  return TONES.find((t) => t.re.test(cls))?.tone ?? null
+}
 
 /** هل هذه الصيغةُ سطحٌ نُرحّله؟ — حدٌّ وانحناءٌ وأرضيّةٌ محايدة */
 function levelFor(cls) {
   if (!/\bborder\b/.test(cls)) return null
-  /* أرضيّةٌ محايدةٌ أو بلا أرضيّة. وما فيه لونُ حالةٍ يُترك ليُقرَّر `tone`
-     بالعين لا بالنمط — فالحمرةُ قد تكون خطأً وقد تكون تمييزا. */
-  if (/\bbg-(?!white\/\[0\.0\d\]|paper\/)/.test(cls)) return null
-  if (/\b(red|emerald|gold|teal|sky|amber)-/.test(cls)) return null
-  return LEVEL.find((l) => l.re.test(cls))?.tag ?? null
+  /* لا تُرحَّل صيغةٌ فيها شرطٌ: `${x ? "…" : "…"}` قرارٌ لا نمط */
+  if (cls.includes('${')) return null
+  let tag = LEVEL.find((l) => l.re.test(cls))?.tag ?? null
+  /* أرضيّةُ الورق غاطسةٌ مهما كان انحناؤها — هي التفصيلُ داخل العنصر */
+  if (tag && /\bbg-(?:paper|surface)/.test(cls)) tag = 'Inset'
+  return tag
 }
 
 /* الوسومُ التي تُرحَّل. وغيرُ `div` يُحفظ في `as` — فالدلالةُ لا تُهدر:
@@ -51,7 +72,10 @@ const TAGS = ['div', 'article', 'section', 'li']
 function residue(cls) {
   return cls
     .split(/\s+/)
-    .filter((c) => c && !/^(rounded-(xl|2xl|3xl)|border|border-white\/\d+|bg-white\/\[0\.0\d\]|p-[3-6])$/.test(c))
+    .filter((c) => c && !new RegExp(
+      '^(rounded-(xl|2xl|3xl)|border|border-\\w+(-\\d+)?\\/\\[?[\\d.]+\\]?'
+      + '|bg-\\w+(-\\d+)?\\/\\[?[\\d.]+\\]?|p-[3-6])$',
+    ).test(c))
     .join(' ')
 }
 
@@ -147,8 +171,11 @@ for (const file of files) {
     if (m.index < cursor) continue /* داخل سطحٍ رُحّل بالفعل — يُترك لدورةٍ ثانية */
 
     const asAttr = m.name === 'div' ? '' : `as="${m.name}"`
+    const tone = toneFor(m.cls)
+    const toneAttr = tone ? `tone="${tone}"` : ''
     const cls = residue(m.cls)
-    const rest = [asAttr, m.before, cls ? `className="${cls}"` : '', m.after].filter(Boolean).join(' ')
+    const rest = [asAttr, toneAttr, m.before, cls ? `className="${cls}"` : '', m.after]
+      .filter(Boolean).join(' ')
     out += src.slice(cursor, m.index)
     out += rest ? `<${tag} ${rest}>` : `<${tag}>`
     out += src.slice(m.end, close.start)

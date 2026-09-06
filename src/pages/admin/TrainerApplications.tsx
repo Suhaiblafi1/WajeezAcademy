@@ -21,7 +21,7 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -183,7 +183,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
         ) : (
           <ul className="mt-3 space-y-2">
             {summary.cohorts.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-white/10 bg-paper/20 px-3.5 py-2.5">
+              <Inset as="li" key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
                 <span className="min-w-0">
                   <span className="block text-[12px] font-bold text-foreground">{c.title}</span>
                   <span className="text-micro text-muted-foreground">
@@ -193,7 +193,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
                 <span className="shrink-0 text-micro text-muted-foreground">
                   {c.startsAt ? fmtDateTime(new Date(c.startsAt)) : "بلا موعد"}
                 </span>
-              </li>
+              </Inset>
             ))}
           </ul>
         )}
@@ -596,7 +596,7 @@ export default function TrainerApplications() {
                 </button>
               )}
               {invite && a.status === "onboarding" && !a.profile?.userId && !a.userId && (
-                <div className="mt-3 rounded-xl border border-teal/35 bg-teal/[0.06] p-3">
+                <Inset tone="accent" className="mt-3">
                   <p className="text-[11px] font-black text-teal-light-ink">
                     {invite.delivery === "sent"
                       ? "أُرسلت الدعوة إلى بريد المدرب — وهذه نسخة الرابط إن لم تصله"
@@ -608,7 +608,7 @@ export default function TrainerApplications() {
                     {invite.url}
                   </code>
                   <p className="mt-1.5 text-micro text-muted-foreground">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
-                </div>
+                </Inset>
               )}
               {a.profile?.userId && (
                 <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] font-bold text-teal-light-ink">

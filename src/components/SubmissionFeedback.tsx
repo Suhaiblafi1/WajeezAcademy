@@ -110,13 +110,13 @@ export default function SubmissionFeedback({
       )}
 
       {submission.reviewNote && (
-        <div className="rounded-2xl border border-teal/25 bg-teal-ink/[0.06] p-3.5">
+        <Card tone="accent" className="bg-teal-ink/[0.06] p-3.5">
           <p className="flex items-center gap-2 text-[11px] font-black text-teal-light-ink">
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
             {noteLabel}
           </p>
           <p className="mt-1.5 text-[11px] leading-6 text-foreground">{submission.reviewNote}</p>
-        </div>
+        </Card>
       )}
 
       {submission.feedback.map((f, i) => (

@@ -39,7 +39,7 @@ import { validateRubric } from "@/application/content/rubric";
 import { fmtShortDateTimeAr } from "@/utils/format";
 import { fmtNum } from "@/application/text/format-ar";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 interface WorkRow {
   moduleId: string; courseId: string; courseTitleAr: string; titleAr: string; sequence: number;
   hasBody: boolean; hasChecks: boolean; hasVideo: boolean; hasScenario: boolean;
@@ -415,7 +415,7 @@ export default function Authoring() {
                   )}
                 </div>
 
-                <div className="rounded-xl border border-white/10 bg-paper/20 p-3">
+                <Inset>
                   <p className="mb-2 flex items-center gap-1.5 text-micro font-black text-muted-foreground">
                     <Eye className="h-3 w-3" /> كما يراه المتعلّم
                   </p>
@@ -440,7 +440,7 @@ export default function Authoring() {
                       <DecisionScenario raw={value} moduleId={`preview-${selected.moduleId}`} />
                     )}
                   </div>
-                </div>
+                </Inset>
               </div>
 
               {notice && (
@@ -486,7 +486,7 @@ export default function Authoring() {
                     خطوتان: يكتب ويُنشر. وقرارُ صاحب المنصّة ثلاث — فصارت
                     الحلقةُ الوسطى تعتمد ولا تنشر، والأخيرةُ توقّع أو تُعيد. */}
                 {isReview && canDecide && (
-                  <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-gold/25 bg-gold/[0.05] p-3">
+                  <Inset tone="warn" className="flex w-full flex-wrap items-center gap-2">
                     <p className="flex w-full items-center gap-1.5 text-[11px] font-black text-gold">
                       <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — ولا يعتمد أحدٌ ما كتبه
                     </p>
@@ -511,12 +511,12 @@ export default function Authoring() {
                     <p className="w-full text-micro leading-5 text-muted-foreground">
                       الاعتمادُ لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّمٌ قبلها.
                     </p>
-                  </div>
+                  </Inset>
                 )}
 
                 {isAwaitingFinal && (
                   canFinalApprove ? (
-                    <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-teal/30 bg-teal/[0.06] p-3">
+                    <Inset tone="accent" className="flex w-full flex-wrap items-center gap-2">
                       <p className="flex w-full items-center gap-1.5 text-[11px] font-black text-teal-light-ink">
                         <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — ولا يوقّعها كاتبُها ولا مَن اعتمدها أكاديميّا
                       </p>
@@ -538,7 +538,7 @@ export default function Authoring() {
                       >
                         أعِدها للمدير الأكاديميّ
                       </button>
-                    </div>
+                    </Inset>
                   ) : (
                     <p className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[11px] leading-6 text-muted-foreground">
                       اعتُمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّةِ صلاحيةٍ لا يملكها حسابك.

@@ -119,7 +119,7 @@ export default function Trainers() {
           <h2 className="text-center text-2xl font-black">مدربون معتمدون</h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApproved.map((t) => (
-              <article key={t.id} className="rounded-3xl border border-teal/30 bg-teal/[0.06] p-6 transition hover:border-teal/50">
+              <Panel as="article" tone="accent" key={t.id} className="transition hover:border-teal/50">
                 <div className="flex items-center gap-3">
                   {t.photoUrl ? (
                     <img
@@ -190,7 +190,7 @@ export default function Trainers() {
                     <span key={s} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-[11px] text-teal-light-ink">{s}</span>
                   ))}
                 </div>
-              </article>
+              </Panel>
             ))}
           </div>
         </section>
@@ -248,7 +248,7 @@ export default function Trainers() {
         <p className="mt-12 text-center text-sm text-muted-foreground">لا نتائج مطابقة لـ«{query}» — جرّب اسما أو مجالا آخر.</p>
       )}
 
-      <div className="mt-14 rounded-3xl border border-teal/25 bg-teal/5 p-8 text-center">
+      <Panel tone="accent" className="mt-14 p-8 text-center">
         <p className="text-lg font-bold">هل أنت خبير وتريد التدريب معنا؟</p>
         <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted-foreground">
           نبحث دائما عن مدربين يقدّرون المخرج العملي مثلنا. قدّم طلبك وسيراجعه فريقنا.
@@ -257,7 +257,7 @@ export default function Trainers() {
           انضم كمدرب
           <ArrowLeft className="h-4 w-4" />
         </Link>
-      </div>
+      </Panel>
     </SiteShell>
   )
 }

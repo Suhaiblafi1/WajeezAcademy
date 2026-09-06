@@ -13,6 +13,7 @@ import {
 import { track } from "@/services/analytics";
 import { useHoneypot } from "./HoneypotField";
 
+import { Panel } from "@/components/ui/Surface";
 /* أيقونة قوقل الرسمية بألوانها الأربعة — جاهزة ليوم اكتمال ربط OAuth */
 function GoogleMark() {
   return (
@@ -182,7 +183,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   if (view === "verify") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper px-8 py-10 text-center shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+        <Panel className="overflow-hidden border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper px-8 py-10 text-center shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#38A7B4]/15">
             <Mail className="h-7 w-7 text-[#6EC7D1]" />
           </span>
@@ -212,7 +213,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           <p className="mt-5 text-[11px] leading-relaxed text-muted-foreground">
             تفقد مجلد الرسائل غير المرغوبة إن لم تجدها خلال دقائق
           </p>
-        </div>
+        </Panel>
       </div>
     );
   }
@@ -221,7 +222,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   if (view === "reset") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+        <Panel className="overflow-hidden border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-foreground">استعادة كلمة المرور</h2>
@@ -272,7 +273,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               وصلك الرمز؟ أدخله مباشرة لتعيين كلمة المرور
             </button>
           </form>
-        </div>
+        </Panel>
       </div>
     );
   }
@@ -281,7 +282,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   if (view === "resetConfirm") {
     return (
       <div className="mx-auto max-w-md">
-        <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+        <Panel className="overflow-hidden border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
           <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-foreground">تعيين كلمة مرور جديدة</h2>
@@ -371,7 +372,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               عودة — اطلب رمزا جديدا
             </button>
           </form>
-        </div>
+        </Panel>
       </div>
     );
   }
@@ -379,7 +380,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
   /* ── الشاشة الرئيسية: دخول / حساب جديد ── */
   return (
     <div className="mx-auto max-w-md">
-      <div className="overflow-hidden rounded-3xl border border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
+      <Panel className="overflow-hidden border-[#38A7B4]/25 bg-gradient-to-b from-panel to-paper shadow-[0_24px_80px_-24px_rgba(56,167,180,0.35)]">
         <div className="border-b border-white/5 px-8 pb-6 pt-8 text-center">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
           <h1 className="mt-4 text-2xl font-black text-foreground">
@@ -630,7 +631,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             </p>
           )}
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

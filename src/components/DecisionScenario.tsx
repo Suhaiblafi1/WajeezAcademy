@@ -159,7 +159,7 @@ export default function DecisionScenario({
 
       {/* النهاية: التأمل ثم الحفظ */}
       {ended && (
-        <div className="mt-5 rounded-2xl border border-teal/30 bg-teal-ink/[0.07] p-4">
+        <Card tone="accent" className="mt-5 bg-teal-ink/[0.07]">
           <p className="flex items-start gap-2 text-sm font-bold leading-7">
             <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
             {current.reflectAr}
@@ -207,7 +207,7 @@ export default function DecisionScenario({
               أعد من البداية بقرار آخر
             </button>
           </div>
-        </div>
+        </Card>
       )}
 
       {!ended && taken.length > 0 && (

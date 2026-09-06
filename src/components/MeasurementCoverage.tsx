@@ -12,6 +12,7 @@ import { Activity, ChevronDown, Gauge, HelpCircle, Target } from "lucide-react";
 import { buildCoverageReport, coverageHeadlineAr } from "@/application/catalog/measurement-coverage";
 import { countAr } from "@/application/text/count-ar";
 
+import { Card, Inset } from "@/components/ui/Surface";
 const PATHWAY_FORMS = { one: "مسارا", two: "مسارين", few: "مسارات", many: "مسارا" };
 
 /* شريط تغطية — لونٌ ونصٌّ معا، فلا يُقرأ باللون وحده */
@@ -45,7 +46,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
 
       {/* الأثر أولا: أرخص ثلاثة أسئلة وما تفتحه */}
       {topGaps.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-gold/25 bg-gold/[0.04] p-4">
+        <Card tone="warn" className="mt-4">
           <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
             <Target className="h-4 w-4" aria-hidden="true" /> أرخص طريق: سؤال واحد لكل مهارة
           </p>
@@ -55,17 +56,17 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
           </p>
           <ul className="mt-3 space-y-2">
             {topGaps.slice(0, 3).map((g) => (
-              <li key={g.slug} className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-[11px]">
+              <Inset as="li" key={g.slug} className="flex flex-wrap items-center gap-2 px-3 py-2 text-[11px]">
                 <span className="font-black text-foreground">{g.nameAr}</span>
                 <span dir="ltr" className="font-mono text-muted-foreground">{g.slug}</span>
                 <span className="rounded-full border border-emerald-400/40 px-2 py-0.5 font-bold text-emerald-300">
                   يفتح {countAr(g.unlocks.length, PATHWAY_FORMS)}
                 </span>
                 <span className="text-muted-foreground">يتطلبه {countAr(g.pathwayIds.length, PATHWAY_FORMS)}</span>
-              </li>
+              </Inset>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
 
       {/* المسارات — الأسوأ أولا */}
@@ -119,7 +120,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
 
       {/* الأسئلة المعلّقة */}
       {r.orphanQuestions.length > 0 && (
-        <div className="mt-6 rounded-2xl border border-amber-400/25 bg-amber-400/[0.04] p-4">
+        <Card tone="warn" className="mt-6">
           <button onClick={() => setOpenOrphans(!openOrphans)}
             className="flex w-full cursor-pointer items-center gap-2 text-start text-xs font-black text-amber-300">
             <HelpCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -148,7 +149,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       )}
 
       <p className="mt-4 flex items-start gap-2 text-[11px] leading-6 text-muted-foreground">

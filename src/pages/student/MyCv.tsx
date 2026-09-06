@@ -8,7 +8,7 @@ import { fmtWhen } from "@/utils/format";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Inset } from "@/components/ui/Surface";
 /* الخادم هو مصدر الحقيقة: POST/GET /api/learner/cv و POST /api/cv/:id/delete.
    كان هنا `@/data/cv` — محاكاةٌ كاملة للسلوك نفسه في localStorage، فيرفع
    المتعلم سيرته ويراها في صفحته ولا تصل إلى مستشاره أبدا. */
@@ -95,13 +95,13 @@ export default function MyCv() {
 
       {/* رفع جديد — لا يُعرض إلّا حين يستطيع الخادمُ حفظَ الملفّ */}
       {!fileUploads && (
-        <section className="rounded-3xl border border-gold/30 bg-gold/[0.06] p-6">
+        <Panel as="section" tone="warn">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink"><ShieldCheck className="h-4 w-4" /> رفعُ السيرة غيرُ مفعّلٍ بعد</h2>
           <p className="mt-3 text-xs leading-7 text-foreground">
             المنصّةُ لا تحفظ الملفّاتَ في هذه المرحلة، فلن نطلب منك ملفًّا لا يصل. أعطِ سيرتك لمستشارك في جلستكم الأولى،
             أو تواصل مع الأكاديمية — ويظهر هذا القسمُ تلقائيّا يومَ يُفعَّل الرفع.
           </p>
-        </section>
+        </Panel>
       )}
       {fileUploads && (
       <Panel as="section">
@@ -190,7 +190,7 @@ export default function MyCv() {
       {/* نافذة الحذف الموثق */}
       {delId && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-paper/70 p-5 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-surface p-6">
+          <Inset className="w-full max-w-md bg-surface">
             <div className="flex items-center justify-between">
               <h3 className="font-black">حذف السيرة — حذف منطقي بسبب موثق</h3>
               <button onClick={() => setDelId(null)} className="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="إغلاق"><X className="h-5 w-5" /></button>
@@ -213,7 +213,7 @@ export default function MyCv() {
             >
               تأكيد الحذف الموثق
             </button>
-          </div>
+          </Inset>
         </div>
       )}
     </PortalLayout>

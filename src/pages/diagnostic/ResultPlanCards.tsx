@@ -26,7 +26,7 @@ import {
 } from "@/data/courses";
 import { pathways, type Pathway } from "@/data/pathways";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Panel, Inset } from "@/components/ui/Surface";
 /* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
 
    كانت الخطة المركّبة تُعرض بلا أي أداة تخصيص، بينما المسار القياسي يُمرَّر إليه
@@ -261,7 +261,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
   if (courseIds.length === 0) return null;
 
   return (
-    <div className="story-fade mt-8 rounded-3xl border border-gold/35 bg-gradient-to-b from-gold/[0.07] to-transparent p-6 md:p-7">
+    <Panel tone="warn" className="story-fade mt-8 bg-gradient-to-b from-gold/[0.07] to-transparent md:p-7">
       <p className="text-[11px] font-black tracking-wide text-gold-ink">وبكم؟</p>
       {cheapest ? (
         <>
@@ -293,7 +293,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
         {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
       </p>
-    </div>
+    </Panel>
   );
 }
 
@@ -415,7 +415,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
     .map((id) => pathways.find((p) => p.id === id))
     .filter((p): p is Pathway => Boolean(p));
   return (
-    <div className="mt-10 overflow-hidden rounded-3xl border border-[#FABC05]/40 bg-gradient-to-b from-surface to-paper">
+    <Panel className="mt-10 overflow-hidden border-[#FABC05]/40 bg-gradient-to-b from-surface to-paper">
       {/* «التوصية الأولى» تركت المتعلم يرى ثلاثة كيانات مسمّاة على شاشة واحدة —
           الخطة المركّبة، وأقوى مسار مفرد، ونسخة الخطة — بلا جملة تقول أيّها خطته.
           والتسمية الصريحة هنا تحسمها، وما دونها يُوسم مرجعا. */}
@@ -468,7 +468,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
 
         {/* دورات أُزيلت بدليل إتقان موثق */}
         {composite.removed_courses.length > 0 && (
-          <div className="mt-5 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4">
+          <Card tone="accent" className="mt-5">
             <p className="text-sm font-black text-teal-light-ink">أزلناها لأنك تتقنها — لا تدفع ثمن ما تعرفه:</p>
             <ul className="mt-2 space-y-1.5">
               {composite.removed_courses.map((r) => (
@@ -477,27 +477,27 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </Card>
         )}
 
         {/* مشروع التخرج ومؤشر النجاح */}
         {(composite.capstone_ar || composite.success_metric_ar) && (
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {composite.capstone_ar && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <Inset>
                 <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> مشروع إثبات الجاهزية
                 </p>
                 <p className="mt-2 text-xs leading-6 text-foreground">{composite.capstone_ar}</p>
-              </div>
+              </Inset>
             )}
             {composite.success_metric_ar && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4">
+              <Inset>
                 <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                   <Gauge className="h-4 w-4" /> كيف تعرف أنك نجحت؟
                 </p>
                 <p className="mt-2 text-xs leading-6 text-foreground">{composite.success_metric_ar}</p>
-              </div>
+              </Inset>
             )}
           </div>
         )}
@@ -510,6 +510,6 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
           </p>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

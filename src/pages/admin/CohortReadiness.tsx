@@ -14,7 +14,7 @@ import { useState } from "react";
 import { AlertTriangle, CalendarCheck, CheckCircle2, Loader2, PlayCircle, Tags, Wallet } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Panel, Inset } from "@/components/ui/Surface";
 interface OpenResult {
   applied: boolean; publishedCourses: number; opened: number; prepared: number; alreadyLive: number;
   skippedNoListPrice: number; startsAt: string;
@@ -66,7 +66,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
   };
 
   return (
-    <section className="mb-6 rounded-3xl border border-teal/25 bg-teal/[0.04] p-5">
+    <Panel as="section" tone="accent" className="mb-6">
       <h2 className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
         <Wallet className="h-4 w-4" /> جاهزيّة العرض — لماذا لا تظهر بعض الأسعار
       </h2>
@@ -110,7 +110,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           </div>
 
           {open && (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <Inset className="mt-3">
               <p className="text-[11px] leading-6 text-foreground">
                 دورات منشورة <b className="tabular-nums">{open.publishedCourses}</b> ·{" "}
                 {open.applied ? "هُيّئت" : "ستُهيّأ"} <b className="tabular-nums">{open.applied ? open.opened + open.prepared : open.opened}</b>
@@ -166,7 +166,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                   </ul>
                 </details>
               )}
-            </div>
+            </Inset>
           )}
         </Card>
 
@@ -198,7 +198,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           </div>
 
           {align && (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <Inset className="mt-3">
               <p className="text-[11px] leading-6 text-foreground">
                 شعب <b className="tabular-nums">{align.cohorts}</b> ·{" "}
                 {align.applied ? "وُحّدت" : "ستُوحَّد"} <b className="tabular-nums text-gold">{align.changed}</b> ·{" "}
@@ -221,7 +221,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                   </ul>
                 </details>
               )}
-            </div>
+            </Inset>
           )}
         </Card>
         {/* ── الحالةُ تتبع التواريخ ── */}
@@ -250,7 +250,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             )}
           </div>
           {sync && (
-            <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+            <Inset className="mt-3">
               {sync.changes.length === 0 ? (
                 <p className="flex items-center gap-1.5 text-[11px] font-bold text-teal-light-ink">
                   <CheckCircle2 className="h-3 w-3" /> كلُّ الحالات مطابقةٌ لتواريخها.
@@ -269,10 +269,10 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                   </ul>
                 </>
               )}
-            </div>
+            </Inset>
           )}
         </Card>
       </div>
-    </section>
+    </Panel>
   );
 }

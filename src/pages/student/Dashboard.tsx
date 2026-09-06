@@ -298,7 +298,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
       <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
         {/* التالي الآن — حقيقي */}
-        <section className="rounded-3xl border border-teal/40 bg-gradient-to-b from-teal/10 to-transparent p-6 lg:col-span-2">
+        <Panel as="section" tone="accent" className="bg-gradient-to-b from-teal/10 to-transparent lg:col-span-2">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <Target className="h-4 w-4" /> التالي الآن
           </div>
@@ -315,7 +315,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               {next.cta} <ArrowLeft className="h-4 w-4" />
             </Link>
           )}
-        </section>
+        </Panel>
 
         {/* شعبي — ملخص سريع */}
         <Panel as="section">
@@ -493,7 +493,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 function EmptyRealDashboard({ name }: { name: string }) {
   return (
     <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
-      <section className="grid place-items-center rounded-3xl border border-teal/30 bg-gradient-to-b from-teal/10 to-transparent py-16 text-center">
+      <Panel as="section" tone="accent" className="grid place-items-center bg-gradient-to-b from-teal/10 to-transparent py-16 text-center">
         <BookOpen className="h-12 w-12 text-teal-light-ink" />
         <h2 className="mt-5 text-2xl font-black">حسابك جاهز — بقيت أول شعبة</h2>
         <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
@@ -507,7 +507,7 @@ function EmptyRealDashboard({ name }: { name: string }) {
             كتالوج الدورات
           </Link>
         </div>
-      </section>
+      </Panel>
     </PortalLayout>
   );
 }

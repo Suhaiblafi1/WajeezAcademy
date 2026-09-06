@@ -288,7 +288,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       )}
 
       {/* دعوة للتشخيص */}
-      <div className="mt-14 rounded-3xl border border-teal/25 bg-teal/5 p-8 text-center">
+      <Panel tone="accent" className="mt-14 p-8 text-center">
         <p className="text-lg font-bold">لم تجد ما يناسبك بالضبط؟</p>
         <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted-foreground">
           التشخيص يطابقك مع مساراتنا المصممة — أو يركّب لك مسارا مخصصا من عدة مسارات — ويشرح لك لماذا.
@@ -297,7 +297,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           ابدأ التشخيص مجانا
           <ArrowLeft className="h-4 w-4" />
         </Link>
-      </div>
+      </Panel>
 
     </SiteShell>
   )

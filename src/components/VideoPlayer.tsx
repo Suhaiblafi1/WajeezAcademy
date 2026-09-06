@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw } from "lucide-react";
 
+import { Card } from "@/components/ui/Surface";
 /**
  * مشغل فيديو تجريبي — يحاكي التشغيل الحقيقي:
  * تقدم بالثواني، سرعات تشغيل، استئناف من آخر نقطة، وإكمال عند 90%+.
@@ -49,7 +50,7 @@ export default function VideoPlayer({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/10 bg-black">
+    <Card className="overflow-hidden bg-black">
       {/* شاشة العرض */}
       <div className="relative grid h-52 place-items-center bg-gradient-to-br from-panel via-paper to-panelto sm:h-64">
         <button
@@ -107,6 +108,6 @@ export default function VideoPlayer({
         </div>
       </div>
       <p className="hidden">{lessonId}</p>
-    </div>
+    </Card>
   );
 }

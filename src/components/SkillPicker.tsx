@@ -120,10 +120,10 @@ export default function SkillPicker({
       {assessment.warningsAr.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {assessment.warningsAr.map((w) => (
-            <li key={w} className="flex items-start gap-2 rounded-2xl border border-gold/30 bg-gold/[0.07] px-3 py-2 text-[11px] leading-6 text-foreground">
+            <Card as="li" tone="warn" key={w} className="flex items-start gap-2 px-3 py-2 text-[11px] leading-6 text-foreground">
               <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
               <span>{w}</span>
-            </li>
+            </Card>
           ))}
         </ul>
       )}

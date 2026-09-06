@@ -24,6 +24,7 @@
 import { Check, Clock3, Plus, Trophy } from "lucide-react";
 import { STAGE_LABEL_AR, type JourneyStage, type JourneyTrack } from "@/application/student/journey";
 
+import { Panel } from "@/components/ui/Surface";
 export const CAPSTONE_ID = "__capstone__";
 
 /** رقمُ المرحلة يُحسب في الشريط لا في النموذج: هو موضعٌ في العرض لا صفةٌ للدورة */
@@ -78,7 +79,7 @@ export default function StageRail({
   const started = counts.owned > 0 || counts.completed > 0;
 
   return (
-    <section aria-label="شريط مسارك" className="rounded-3xl border border-teal/25 bg-teal-ink/[0.05] p-4 sm:p-5">
+    <Panel as="section" tone="accent" aria-label="شريط مسارك" className="bg-teal-ink/[0.05] sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
           <p className="text-[11px] text-muted-foreground">أين أنت من رحلتك</p>
@@ -202,6 +203,6 @@ export default function StageRail({
           </li>
         )}
       </ol>
-    </section>
+    </Panel>
   );
 }

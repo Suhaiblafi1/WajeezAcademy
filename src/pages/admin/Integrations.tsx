@@ -9,7 +9,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Inset } from "@/components/ui/Surface";
 const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
 const labelCls = "block text-micro font-bold text-muted-foreground";
 
@@ -159,7 +159,7 @@ export default function Integrations() {
                       </span>
                     </p>
                   )}
-                  <div className="rounded-xl border border-white/10 bg-paper/20 px-3 py-2 text-micro leading-5 text-muted-foreground">
+                  <Inset className="px-3 py-2 text-micro leading-5 text-muted-foreground">
                     <p className="font-bold text-foreground">عنوان الـ webhook — سجّله في لوحة المزود:</p>
                     <p dir="ltr" className="mt-0.5 select-all font-mono text-teal-light-ink">{webhookUrl}</p>
                     {/* كان هنا أنّ Stripe يحتاج «جسرا» يعيد إرسال التوقيع بترويسة
@@ -170,7 +170,7 @@ export default function Integrations() {
                         حارسُ الصيغة: server/tests/commerce/stripe-signature.test.ts */}
                     <p className="mt-1"><b className="text-foreground">Stripe:</b> صِلْ لوحتَه بهذا العنوان مباشرة وضع <span dir="ltr" className="font-mono">whsec_…</span> في «سر التوقيع» — لا جسرَ ولا رمزَ مشترك. والحدثُ المطلوب <span dir="ltr" className="font-mono">checkout.session.completed</span> وحدَه؛ غيرُه يُسجَّل ويُتجاهَل.</p>
                     <p className="mt-1"><b className="text-foreground">Moyasar:</b> سجّل «سر التوقيع» نفسَه رمزاً مشتركاً في لوحتهم.</p>
-                  </div>
+                  </Inset>
                 </>
               )}
               <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">

@@ -19,6 +19,7 @@ import { useState, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
 import Modal from "./Modal";
 
+import { Inset } from "@/components/ui/Surface";
 export interface ConfirmTyping {
   /** ما يُطلب كتابتُه بالحرف — بريدٌ أو رمزٌ يراه المستخدم أمامه */
   expected: string
@@ -70,7 +71,7 @@ export default function ConfirmAction({
     <Modal onClose={onCancel} label={titleAr} panelClassName="w-full max-w-lg">
       {/* أرضيّةُ اللوح على الطفل لا على `panelClassName` — كما في سائر
           النوافذ (`BuyPanel`): بلا أرضيّةٍ يطفو النصُّ فوق الصفحة المعتّمة. */}
-      <div dir="rtl" className="max-h-[86vh] overflow-y-auto rounded-3xl border border-white/10 bg-surface p-5 text-foreground sm:p-6">
+      <Inset dir="rtl" className="max-h-[86vh] overflow-y-auto bg-surface text-foreground sm:p-6">
         <h2 className="flex items-start gap-2 text-sm font-black">
           {tone === "danger" && <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />}
           {titleAr}
@@ -131,7 +132,7 @@ export default function ConfirmAction({
             تراجَع
           </button>
         </div>
-      </div>
+      </Inset>
     </Modal>
   );
 }

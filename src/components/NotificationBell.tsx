@@ -4,6 +4,7 @@ import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
 
+import { Inset } from "@/components/ui/Surface";
 interface InAppNotification {
   id: string; title: string; body: string; status: string;
   sentAt?: string | null; createdAt: string; readAt?: string | null;
@@ -98,7 +99,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       </button>
 
       {open && (
-        <div className="absolute left-0 top-11 z-50 w-80 overflow-hidden rounded-2xl border border-white/15 bg-surface shadow-2xl shadow-black/60 sm:w-96">
+        <Inset className="absolute left-0 top-11 z-50 w-80 overflow-hidden bg-surface shadow-2xl shadow-black/60 sm:w-96">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="text-xs font-black">الإشعارات</p>
             {items && items.some((n) => n.status === "sent") && (
@@ -130,7 +131,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
               </button>
             ))}
           </div>
-        </div>
+        </Inset>
       )}
     </div>
   );

@@ -15,7 +15,7 @@ import type { SkillMeasureState } from "@/application/catalog/skill-measurement"
 import { apiPost, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 interface PathwayOption { id: string; title: string }
 interface SkillRow {
   id: string; status: string; slug: string; nameAr: string; familyId: string | null;
@@ -118,7 +118,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {key === "modules" && (
         <div className="space-y-3">
           {d.modules.map((m, i) => (
-            <div key={i} className="rounded-xl border border-white/10 bg-paper/20 p-3">
+            <Inset key={i}>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-[11px] font-bold text-muted-foreground">الوحدة {i + 1}</span>
                 {d.modules.length > 1 && (
@@ -178,7 +178,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يُتحقَّق المسار كاملا عند الحفظ:
                 عقدة لا تُبلَغ أو مسار يدور بلا نهاية يُرفض.
               </p>
-            </div>
+            </Inset>
           ))}
           <button type="button" onClick={() => setD({ ...d, modules: [...d.modules, EMPTY_MODULE] })}
             className="flex cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-xs font-bold text-muted-foreground hover:border-white/40">

@@ -127,25 +127,25 @@ export default function Contact() {
             سؤال عن مسار؟ عرض تدريبي لجهتك؟ شراكة؟ فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.
           </p>
           <div className="mt-7 space-y-3">
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <Inset className="flex items-center gap-3 px-4 py-3">
               <Mail className="h-4 w-4 shrink-0 text-teal-light-ink" />
               {/* ٢٤ نقطةً ارتفاعا: رابطٌ في سطرٍ وحدَه لا داخلَ جملة (WCAG 2.5.8) */}
               <a href={`mailto:${CONTACT.email}`} dir="ltr" className="inline-flex min-h-6 items-center text-sm font-bold text-teal-light-ink underline-offset-4 hover:underline">
                 {CONTACT.email}
               </a>
               <span className="mr-auto text-xs text-muted-foreground">نرد خلال يوم عمل</span>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            </Inset>
+            <Inset className="flex items-center gap-3 px-4 py-3">
               <MapPin className="h-4 w-4 shrink-0 text-teal-light-ink" />
               <p className="text-sm text-muted-foreground">{CONTACT.address}</p>
-            </div>
-            <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            </Inset>
+            <Inset className="flex items-start gap-3 px-4 py-3">
               <Building2 className="mt-1 h-4 w-4 shrink-0 text-gold-ink" />
               <p className="text-xs leading-6 text-muted-foreground">
                 <span className="font-bold text-muted-foreground">تتواصل باسم جهة؟ </span>
                 حدد نوعها في النموذج — يظهر لك ما يهم جهتك فورا، ويصل طلبك لفريق الحلول المؤسسية مباشرة.
               </p>
-            </div>
+            </Inset>
           </div>
           <p className="mt-5 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-xs leading-6 text-muted-foreground">
             إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
@@ -157,7 +157,7 @@ export default function Contact() {
         {/* النموذج */}
         <div className="lg:col-span-3">
           {ref ? (
-            <div className="flex h-full flex-col items-center justify-center rounded-3xl border border-teal/30 bg-teal/5 p-10 text-center">
+            <Panel tone="accent" className="flex h-full flex-col items-center justify-center p-10 text-center">
               <span className="grid h-14 w-14 place-items-center rounded-2xl bg-teal/15">
                 <CheckCircle2 className="h-7 w-7 text-teal-light-ink" />
               </span>
@@ -169,7 +169,7 @@ export default function Contact() {
               <Link to="/" className="mt-6 text-sm font-semibold text-teal-light-ink underline-offset-4 hover:underline">
                 عودة للرئيسية
               </Link>
-            </div>
+            </Panel>
           ) : (
             <form onSubmit={submit} noValidate className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
               <div>
@@ -196,11 +196,11 @@ export default function Contact() {
 
               {/* مخطط الأثر للجهات — يظهر فقط عندما تكون الجهة مؤسسية */}
               {institutional && (
-                <div className="mt-5 rounded-2xl border border-teal/25 bg-teal/[0.05] p-5">
+                <Card tone="accent" className="mt-5">
                   <p className="text-xs font-black text-teal-light-ink">كيف يظهر الأثر عند جهتك؟</p>
                   <ol className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                     {IMPACT_STEPS.map((s, i) => (
-                      <li key={s.t} className="relative rounded-xl border border-white/10 bg-paper/20 p-3">
+                      <Inset as="li" key={s.t} className="relative">
                         <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15">
                           <s.icon className="h-4 w-4 text-teal-light-ink" />
                         </span>
@@ -208,7 +208,7 @@ export default function Contact() {
                           <span className="text-gold-ink">{i + 1}. </span>{s.t}
                         </p>
                         <p className="mt-1 text-micro leading-4 text-muted-foreground">{s.d}</p>
-                      </li>
+                      </Inset>
                     ))}
                   </ol>
                   {ENTITY_NOTE[entity] && (
@@ -216,7 +216,7 @@ export default function Contact() {
                       {ENTITY_NOTE[entity]}
                     </p>
                   )}
-                </div>
+                </Card>
               )}
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">

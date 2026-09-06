@@ -76,7 +76,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-40 cursor-default"
           />
-          <div role="menu" className="absolute left-0 top-12 z-50 w-72 rounded-2xl border border-white/10 bg-surface p-2 shadow-2xl">
+          <Inset role="menu" className="absolute left-0 top-12 z-50 w-72 bg-surface p-2 shadow-2xl">
             <div className="px-3 pb-3 pt-2">
               <p className="truncate text-sm font-black">{name}</p>
               <p dir="ltr" className="mt-0.5 truncate text-right text-[11px] text-muted-foreground">{user?.email ?? '—'}</p>
@@ -113,7 +113,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
                 {signingOut ? 'يُسجَّل الخروج…' : 'تسجيل الخروج'}
               </button>
             </div>
-          </div>
+          </Inset>
         </>
       )}
     </div>

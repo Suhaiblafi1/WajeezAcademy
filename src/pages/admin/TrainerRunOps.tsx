@@ -160,7 +160,7 @@ export default function TrainerRunOps() {
         ) : (
           <ul className="mt-3 space-y-3">
             {requests.map((r) => (
-              <li key={r.id} className="rounded-2xl border border-gold/25 bg-gold/[0.04] p-4">
+              <Card as="li" tone="warn" key={r.id}>
                 <p className="text-sm font-black">{r.profile.application.fullName}</p>
                 <p className="mt-1 text-[11.5px] leading-6 text-muted-foreground">
                   للدورة: <b className="text-foreground">{r.course.versions[0]?.titleAr ?? courseName(r.courseId)}</b>
@@ -199,7 +199,7 @@ export default function TrainerRunOps() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </button>
                 </div>
-              </li>
+              </Card>
             ))}
           </ul>
         )}

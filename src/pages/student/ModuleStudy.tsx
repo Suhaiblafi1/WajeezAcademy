@@ -38,7 +38,7 @@ import { track } from "@/services/analytics";
 import { countAr } from "@/application/text/count-ar";
 import { courseFullById } from "@/data/courses";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Card } from "@/components/ui/Surface";
 /** خطوةٌ في المشغّل: درسٌ، أو سيناريو، أو النشاط والمخرَج */
 type Step =
   | { kind: "lesson"; title: string; body: string; minutes: number; checks: Check[] }
@@ -186,7 +186,7 @@ export default function ModuleStudy() {
 
           {/* استرجاعٌ بعد الدرس مباشرة — لا في آخر الوحدة وحدها */}
           {step.checks.length > 0 && (
-            <section className="mt-8 rounded-2xl border border-teal/25 bg-teal/[0.04] p-5">
+            <Card as="section" tone="accent" className="mt-8">
               <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                 <Sparkles className="h-3.5 w-3.5" /> استرجعْ قبل أن تمضي
               </p>
@@ -212,7 +212,7 @@ export default function ModuleStudy() {
                   );
                 })}
               </div>
-            </section>
+            </Card>
           )}
         </Panel>
       )}
@@ -237,18 +237,18 @@ export default function ModuleStudy() {
             <PracticeActivity raw={mod.practice} moduleId={mod.id} />
           ) : (
             <>
-              <div className="rounded-3xl border border-teal/30 bg-teal/[0.05] p-6 md:p-8">
+              <Panel tone="accent" className="md:p-8">
                 <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                   <Target className="h-4 w-4" /> نشاطك الآن
                 </p>
                 <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.activity}</p>
-              </div>
-              <div className="rounded-3xl border border-gold/25 bg-gold/[0.05] p-6 md:p-8">
+              </Panel>
+              <Panel tone="warn" className="md:p-8">
                 <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> ما تخرج به — ويدخل ملفّك
                 </p>
                 <p className="mt-3 text-[15px] leading-9 text-foreground">{mod.artifact}</p>
-              </div>
+              </Panel>
             </>
           )}
 

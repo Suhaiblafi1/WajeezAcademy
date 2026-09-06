@@ -75,7 +75,7 @@ function StaticContent({ slug }: { slug: string }) {
           </Panel>
         ))}
       </div>
-      <div className="mt-8 rounded-3xl border border-teal/40 bg-teal/10 p-6 text-center md:p-8">
+      <Panel tone="accent" className="mt-8 text-center md:p-8">
         <h2 className="text-xl font-black">لم تجد إجابتك؟</h2>
         <p className="mt-2 text-sm text-muted-foreground">فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.</p>
         <Link
@@ -84,7 +84,7 @@ function StaticContent({ slug }: { slug: string }) {
         >
           صفحة التواصل
         </Link>
-      </div>
+      </Panel>
       <div className="mt-10 text-center">
         <Link to="/diagnostic" className="inline-flex items-center gap-2 rounded-2xl bg-teal px-8 py-4 font-black text-on-gold transition hover:bg-teal-light">
           ابدأ التشخيص الذكي مجانا

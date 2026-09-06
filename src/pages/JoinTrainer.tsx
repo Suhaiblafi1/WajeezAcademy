@@ -60,7 +60,7 @@ import {
 } from "./join-trainer/options";
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
 
-import { Card } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 /* الحدّان يُعاد تصديرُهما من هنا: الاختبارُ يقرؤهما من هذا الملفّ حرسا
    لتطابقهما مع الخادم، وموضعُ التعريف انتقل لا الضمان. */
 export { MAX_DOC_BYTES, MOTIVATION_MAX, MOTIVATION_MIN };
@@ -101,8 +101,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
         <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-teal-light-ink transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <div role="listbox" aria-labelledby={id} aria-multiselectable="true"
-          className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-surface p-1.5 shadow-xl shadow-black/40">
+        <Inset role="listbox" aria-labelledby={id} aria-multiselectable="true" className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto bg-surface p-1.5 shadow-xl shadow-black/40">
           {options.map((o) => {
             const checked = selected.includes(o);
             return (
@@ -113,7 +112,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
               </label>
             );
           })}
-        </div>
+        </Inset>
       )}
       {selected.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -655,7 +654,7 @@ export default function JoinTrainer() {
         {/* الاستئناف يُقال ولا يُفترض: من يرى حقولا مملوءة ولا يعرف من ملأها
             يرتاب. والباب مفتوح للبدء من جديد بضغطة. */}
         {resumed && (
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-teal/30 bg-teal/[0.06] px-5 py-3.5">
+          <Card tone="accent" className="mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
             <p className="flex items-center gap-2 text-xs font-bold text-teal-light-ink">
               <RefreshCcw className="h-3.5 w-3.5" />
               أكملنا من حيث توقّفت — إجاباتك محفوظة في هذا المتصفّح.
@@ -666,7 +665,7 @@ export default function JoinTrainer() {
             >
               ابدأ من جديد
             </button>
-          </div>
+          </Card>
         )}
 
         <form onSubmit={submit} className="mt-5 space-y-6 rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-9">
@@ -709,7 +708,7 @@ export default function JoinTrainer() {
                     طلبه — ولا رمزٌ يُنسخ من الشاشة. وبعد إرسال القسم الأوّل
                     الحسابُ قائم فلا تُطلب ثانية. */}
                 {!result ? (
-                  <div className="mt-5 rounded-2xl border border-teal/25 bg-teal/[0.04] p-4">
+                  <Card tone="accent" className="mt-5">
                     <p className="flex items-center gap-2 text-[12.5px] font-black text-teal-light-ink">
                       <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
                     </p>
@@ -744,7 +743,7 @@ export default function JoinTrainer() {
                         />
                       </Field>
                     </FieldRow>
-                  </div>
+                  </Card>
                 ) : (
                   <p className="mt-5 flex items-center gap-2 rounded-2xl border border-teal/30 bg-teal/[0.06] p-4 text-[12px] font-bold text-teal-light-ink">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -1138,7 +1137,7 @@ export default function JoinTrainer() {
               بعينه؛ وهذه قائمةٌ تُقرأ في سطرين وتختفي حين تكتمل الخطوة.
               aria-live كي يسمعها قارئ الشاشة وهي تتناقص. */}
           {missing[step as 1 | 2 | 3].length > 0 && (
-            <div className="rounded-2xl border border-gold/30 bg-gold/[0.06] p-4" aria-live="polite">
+            <Card tone="warn" aria-live="polite">
               <p className="text-xs font-black text-gold-ink">
                 بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
               </p>
@@ -1149,7 +1148,7 @@ export default function JoinTrainer() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
 
           {/* التنقل — «التالي» معطّل حتى تكتمل الخطوة، لا حتى يكتمل النموذج كله */}
@@ -1213,11 +1212,11 @@ export default function JoinTrainer() {
             {lookupBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} اعرض الحالة
           </button>
           {lookupResult && (
-            <div className="mt-3 rounded-xl border border-teal/30 bg-teal/5 p-4">
+            <Inset tone="accent" className="mt-3">
               <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>
               <p className="mt-1 text-[11px] text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
               {lookupResult.explain && <p className="mt-2 text-[11.5px] leading-6 text-foreground">{lookupResult.explain}</p>}
-            </div>
+            </Inset>
           )}
           {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}
         </details>

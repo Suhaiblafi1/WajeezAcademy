@@ -14,7 +14,7 @@ import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDate } from "@/application/text/format-ar";
 
-import { Panel } from "@/components/ui/Surface";
+import { Panel, Inset } from "@/components/ui/Surface";
 interface Task {
   id: string; title: string; bodyAr: string | null;
   dueAt: string | null; priority: string; status: string;
@@ -118,7 +118,7 @@ export default function AdminTasks() {
             </Panel>
 
             {canAssign && (
-              <section className="rounded-3xl border border-gold/25 bg-gold/[0.04] p-5">
+              <Panel as="section" tone="warn">
                 <h2 className="text-sm font-black text-gold-ink">كلّف موظّفا بمهمّة</h2>
                 {/* التكليفُ يُشعِر مكلَّفَه في الفعل نفسِه — لا خطوةَ إشعارٍ بعده */}
                 <p className="mt-1 text-[11px] text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
@@ -156,7 +156,7 @@ export default function AdminTasks() {
                 >
                   كلّفه
                 </button>
-              </section>
+              </Panel>
             )}
 
             {canAssign && (
@@ -182,7 +182,7 @@ export default function AdminTasks() {
                     placeholder="عنوان الإشعار" aria-label="عنوان الإشعار" className={field} />
                   <textarea value={announce.bodyAr} onChange={(e) => setAnnounce({ ...announce, bodyAr: e.target.value })}
                     rows={2} placeholder="نصّ الإشعار" aria-label="نص الإشعار" className={field} />
-                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-white/10 p-2">
+                  <Inset className="max-h-40 space-y-1 overflow-y-auto p-2">
                     {people.map((p) => (
                       <label key={p.id} className="flex cursor-pointer items-center gap-2 text-[11px] text-foreground">
                         <input
@@ -196,7 +196,7 @@ export default function AdminTasks() {
                         {p.displayName} <span className="text-muted-foreground" dir="ltr">{p.email}</span>
                       </label>
                     ))}
-                  </div>
+                  </Inset>
                 </div>
                 <button
                   disabled={busy || announce.to.length === 0 || announce.title.trim().length < 3 || announce.bodyAr.trim().length < 3}

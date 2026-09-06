@@ -14,6 +14,7 @@ import { ChevronDown, ChevronUp, History, Loader2 } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 
+import { Inset } from "@/components/ui/Surface";
 interface AuditEntityEvent {
   id: string;
   action: string;
@@ -78,7 +79,7 @@ export default function EntityAuditTimeline({
           {data && data.events.length > 0 && (
             <ol className="space-y-2">
               {data.events.map((e) => (
-                <li key={e.id} className="rounded-xl border border-white/8 bg-paper/20 px-3 py-2">
+                <Inset as="li" key={e.id} className="px-3 py-2">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <span className="text-[11px] font-black text-foreground">{e.actionAr}</span>
                     <span className="text-[11px] text-muted-foreground">— {e.actorAr}</span>
@@ -88,7 +89,7 @@ export default function EntityAuditTimeline({
                   {e.changed.length > 0 && (
                     <p className="mt-1 text-micro text-muted-foreground">تغيّر: {e.changed.join("، ")}</p>
                   )}
-                </li>
+                </Inset>
               ))}
               {data.total > data.events.length && (
                 <li className="text-micro text-muted-foreground">

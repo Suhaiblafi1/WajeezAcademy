@@ -131,14 +131,14 @@ export default function ApplicantStatus() {
           <p className="mt-8 flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> نجلب طلبك…</p>
         )}
         {error && !loading && (
-          <div className="mt-6 rounded-2xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200" role="alert">
+          <Card tone="danger" className="mt-6 text-sm text-red-200" role="alert">
             {error}
             {error.includes("لا طلب") && (
               <p className="mt-2 text-xs text-muted-foreground">
                 لم نجد طلبا مرتبطا بهذا الحساب. <Link to="/join-trainer" className="text-teal-light-ink underline">قدّم طلبك من هنا</Link>.
               </p>
             )}
-          </div>
+          </Card>
         )}
 
         {mine && st && (

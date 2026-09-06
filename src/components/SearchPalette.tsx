@@ -4,6 +4,7 @@ import { Banknote, BookMarked, CalendarCog, LifeBuoy, Search, UserPlus, Users } 
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
 
+import { Inset } from "@/components/ui/Surface";
 interface SearchHit { id: string; title: string; sub: string; to: string }
 type Groups = Record<"applications" | "users" | "cohorts" | "courses" | "tickets" | "payouts", SearchHit[]>;
 
@@ -86,8 +87,7 @@ export default function SearchPalette() {
   let rowIndex = -1;
   return (
     <div className="fixed inset-0 z-[90] flex items-start justify-center bg-paper/70 px-4 pt-24 backdrop-blur-sm" onClick={() => setOpen(false)}>
-      <div dir="rtl" className="w-full max-w-xl overflow-hidden rounded-3xl border border-white/15 bg-surface shadow-2xl"
-        onClick={(e) => e.stopPropagation()}>
+      <Inset dir="rtl" className="w-full max-w-xl overflow-hidden bg-surface shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
           <Search className="h-4 w-4 shrink-0 text-teal-light-ink" />
           <input
@@ -143,7 +143,7 @@ export default function SearchPalette() {
             );
           })}
         </div>
-      </div>
+      </Inset>
     </div>
   );
 }

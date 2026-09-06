@@ -472,7 +472,7 @@ function HowItWorks() {
           <div className="pointer-events-none absolute inset-x-10 top-5 hidden h-px bg-gradient-to-l from-transparent via-teal/25 to-transparent md:block" />
           <div className="grid gap-3 md:grid-cols-4">
             {steps.map((s, i) => (
-              <div key={s.title} className="reveal group relative flex items-start gap-3.5 rounded-2xl border border-white/10 bg-card px-4 py-4 transition hover:border-teal/40">
+              <Card tone="accent" key={s.title} className="reveal group relative flex items-start gap-3.5 bg-card px-4 py-4 transition hover:border-teal/40">
                 <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal/12 text-teal-ink transition group-hover:scale-105">
                   <s.icon className="h-5 w-5" />
                 </div>
@@ -483,7 +483,7 @@ function HowItWorks() {
                   </h3>
                   <p className="mt-1 text-xs leading-6 text-muted-foreground">{s.text}</p>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -608,7 +608,7 @@ function Stories() {
       {/* نافذة القصة الكاملة */}
       {open && (
         <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
-          <div dir="rtl" className="story-fade overflow-hidden rounded-3xl border border-white/10 bg-card">
+          <Panel dir="rtl" className="story-fade overflow-hidden bg-card">
               {/* رأس القصة */}
               <div className="relative h-52 overflow-hidden md:h-60">
                 <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
@@ -733,7 +733,7 @@ function Stories() {
                   <ArrowLeft className="h-4 w-4" />
                 </Link>
               </div>
-          </div>
+          </Panel>
         </Modal>
       )}
     </section>
@@ -762,7 +762,7 @@ function Faq() {
             الأربعةُ الأولى ونزل الباقي إلى موضعه، برابطٍ صريحٍ إليه. */}
         <div className="mt-12 space-y-3">
           {faqs.slice(0, HOME_FAQ_COUNT).map((f, i) => (
-            <div key={i} className="reveal overflow-hidden rounded-2xl border border-white/10 bg-card transition hover:border-teal/30" style={{ transitionDelay: `${i * 60}ms` }}>
+            <Card tone="accent" key={i} className="reveal overflow-hidden bg-card transition hover:border-teal/30" style={{ transitionDelay: `${i * 60}ms` }}>
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
@@ -783,14 +783,14 @@ function Faq() {
                   <p className="px-6 pb-6 leading-8 text-muted-foreground">{f.a}</p>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
 
           {/* سؤال المنهجية — مميز بإطار تركوازي وزر يقود لصفحة المنهجية */}
           {(() => {
             const i = faqs.length
             return (
-              <div className="reveal overflow-hidden rounded-2xl border-2 border-teal/50 bg-gradient-to-l from-panel/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
+              <Card tone="accent" className="reveal overflow-hidden border-2 bg-gradient-to-l from-panel/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
                 <button
                   onClick={() => setOpen(open === i ? null : i)}
                   aria-expanded={open === i}
@@ -827,7 +827,7 @@ function Faq() {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             )
           })()}
         </div>
@@ -1086,7 +1086,7 @@ function AdvisorStrip() {
   const isWhatsApp = Boolean(CONTACT.whatsapp)
   return (
     <section className="mx-auto max-w-7xl px-5 pb-4">
-      <div className="reveal flex flex-col items-center justify-between gap-5 rounded-3xl border border-teal/20 bg-gradient-to-l from-panel/80 to-card px-6 py-6 md:flex-row md:px-8">
+      <Panel tone="accent" className="reveal flex flex-col items-center justify-between gap-5 bg-gradient-to-l from-panel/80 to-card px-6 py-6 md:flex-row md:px-8">
         <div className="flex items-center gap-4 text-center md:text-right">
           <span className="relative hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/12 text-teal-ink md:grid">
             <Headset className="h-6 w-6" />
@@ -1112,7 +1112,7 @@ function AdvisorStrip() {
             <ChannelBadge />
           </p>
         </div>
-      </div>
+      </Panel>
     </section>
   )
 }

@@ -333,7 +333,7 @@ export default function TrainerProposals() {
       )}
 
       {bp && bp.versions[0] && (
-        <section className="mb-6 rounded-3xl border border-teal/25 bg-teal/[0.04] p-6">
+        <Panel as="section" tone="accent" className="mb-6">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-lg font-black text-foreground">{bp.versions[0].titleAr}</h2>
@@ -389,10 +389,10 @@ export default function TrainerProposals() {
           )}
 
           {bp.versions[0].project && (
-            <div className="mt-4 rounded-2xl border border-gold/25 bg-gold/5 p-4">
+            <Card tone="warn" className="mt-4">
               <h3 className="mb-1 text-xs font-black text-gold-ink">المشروع التطبيقي</h3>
               <p className="text-xs leading-6 text-foreground">{bp.versions[0].project.descriptionAr}</p>
-            </div>
+            </Card>
           )}
 
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -424,7 +424,7 @@ export default function TrainerProposals() {
               </Card>
             )}
           </div>
-        </section>
+        </Panel>
       )}
 
       {loading ? (

@@ -225,10 +225,7 @@ export function Bestsellers() {
         className="scrollbar-hide mt-8 flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4"
       >
         {railPathways.map(({ id, note, p }) => (
-          <article
-            key={id}
-            className="group flex w-[280px] shrink-0 snap-start flex-col rounded-3xl border border-white/10 bg-card p-6 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
-          >
+          <Panel as="article" tone="accent" key={id} className="group flex w-[280px] shrink-0 snap-start flex-col bg-card transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]">
             {/* وسمٌ واحد لا اثنان.
 
                 كان فوق كلّ بطاقةٍ وسمان: «الأنسب للخريجين» و«طلاب ومهنة».
@@ -269,7 +266,7 @@ export function Bestsellers() {
                 تفاصيل المسار
               </Link>
             </div>
-          </article>
+          </Panel>
         ))}
 
         {/* بطاقة ختامية تعيد للتشخيص */}
@@ -333,10 +330,7 @@ export function Bestsellers() {
         className="scrollbar-hide mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4"
       >
         {shownCourses.map(({ id, note, c }) => (
-          <article
-            key={id}
-            className="group flex w-[270px] shrink-0 snap-start flex-col rounded-2xl border border-white/10 bg-card p-5 transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
-          >
+          <Card as="article" tone="accent" key={id} className="group flex w-[270px] shrink-0 snap-start flex-col bg-card transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]">
             <div className="flex items-center gap-2">
               <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-teal/10 px-3 py-1 text-[11px] font-bold text-teal-light-ink">
                 <Flame className="h-3 w-3" />
@@ -357,7 +351,7 @@ export function Bestsellers() {
                 تفاصيل الدورة
               </Link>
             </div>
-          </article>
+          </Card>
         ))}
       </div>
       {/* أسهم التقليب — أسفل الشريط: يبقى السحب بالإصبع متاحا والأسهم بديل واضح */}
