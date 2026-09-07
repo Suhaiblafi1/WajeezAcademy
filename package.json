@@ -8,6 +8,8 @@
     "start": "tsx server/index.ts",
     "prebuild": "tsx scripts/write-build-stamp.ts || true",
     "build": "tsc -b && vite build",
+    "prebuild:image": "tsx scripts/write-build-stamp.ts || true",
+    "build:image": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
     "verify": "npm run typecheck && npx tsx scripts/lint-baseline.ts && vitest run src/tests",

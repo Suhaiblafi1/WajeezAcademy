@@ -50,9 +50,41 @@ describe('سلسلةُ بصمة الالتزام إلى داخل الصورة', 
     const d = read('Dockerfile')
     expect(d, 'ARG بلا ENV لا يراه السكربتُ وقتَ التشغيل').toMatch(/ARG GIT_COMMIT_SHA/)
     expect(d).toMatch(/ENV GIT_COMMIT_SHA=\$GIT_COMMIT_SHA/)
-    const argAt = d.indexOf('ARG GIT_COMMIT_SHA')
-    const buildAt = d.indexOf('npm run build')
+
+    /* والترتيبُ يُقاس على المتن لا على التعليقات — وتعليقٌ يذكر أمرَ البناء
+       فوق الـARG كان يُزحزح الموضعَ ويمرّ الحارسُ وهو لا يقيس شيئا. */
+    const body = bare(d)
+    const argAt = body.indexOf('ARG GIT_COMMIT_SHA')
+    const buildAt = body.search(/^RUN .*npm run build/m)
+    expect(buildAt, 'لا سطرَ بناءٍ في Dockerfile — تغيّرت بنيتُه').toBeGreaterThan(-1)
     expect(argAt, 'الوسيطُ بعد البناء لا يبلغ السكربت').toBeLessThan(buildAt)
+  })
+
+  it('وأمرُ البناء في الصورة يمرّ بخطّافٍ يكتب الختم', () => {
+    /* الحلقةُ الرابعة، ولم تكن محروسة. كان الحارسُ يبحث عن نصّ
+       `npm run build` حرفا، فيمرّ على `npm run build:image` **لأنّ الاسمَ
+       جزءٌ من اسم** — وهو بعينه العطبُ الذي تحذّر منه CLAUDE.md.
+
+       والكسرُ الحقيقيّ صامت: `npm run build` يجري `prebuild` تلقائيا فيُكتب
+       الختم. فمن استبدله بـ`vite build` مباشرةً، أو بسكربتٍ بلا `pre`، بنى
+       صورةً بلا ختم — **والبناءُ ناجح، والموقعُ يعمل، والاختباراتُ خضراء** —
+       ويعود `/api/version` إلى «الالتزام: null»، وهو السؤالُ الذي بُني له.
+
+       فيُقرأ الاسمُ من Dockerfile نفسِه لا يُكتب هنا: من غيّره وأبقى
+       السلسلةَ مرّ، ومن قطعها سقط. */
+    const m = bare(read('Dockerfile')).match(/^RUN .*\bnpm run (\S+)/m)
+    expect(m, 'لا أمرَ `npm run` للبناء في Dockerfile').toBeTruthy()
+    const script = m![1]
+
+    const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> }
+    expect(
+      pkg.scripts[script],
+      `Dockerfile ينادي «${script}» ولا وجودَ له في package.json`,
+    ).toBeTruthy()
+
+    const hook = pkg.scripts[`pre${script}`]
+    expect(hook, `«${script}» بلا خطّاف «pre${script}» — تُبنى صورةٌ بلا ختم`).toBeTruthy()
+    expect(hook, 'الخطّافُ موجودٌ ولا يكتب الختم').toMatch(/write-build-stamp/)
   })
 
   it('والاسمُ الذي يُصدَّر هو الذي يُقرأ — فلا حلقةٌ تسمّي غيرَ ما تسمّي الأخرى', () => {
