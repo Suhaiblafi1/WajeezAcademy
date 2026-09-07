@@ -29,3 +29,22 @@ export function courseTitleAr(name: string): string {
 export function hasTermEn(termEn: string | null | undefined): termEn is string {
   return typeof termEn === 'string' && termEn.trim().length > 1
 }
+
+/* ─────────── مفتاحُ الترتيب — السابقةُ المشتركة تُتجاوَز ───────────
+
+   «الترتيب: بالاسم» كان خيارا معروضا لا يفعل ما يتوقّعه المستخدم: ٨١ عنوانا
+   من ٨١ يبدأ بـ«دورة»، فتقع كلُّها تحت حرف الدال ويصير الفرزُ داخلَ سابقةٍ
+   لا يقرؤها أحد. وكذلك «مسار» في المسارات.
+
+   والسابقةُ **لا تُحذف من العرض** — بقاؤها قرارُ صاحب المنتج المسجَّلُ أعلاه،
+   وهو يخدم القارئَ الذي يعرف نوعَ ما أمامه قبل اسمه. فالتجاوزُ في المفتاح
+   وحدَه: يُرتَّب بما يميّز، ويُعرَض ما قُرّر. */
+
+const SORT_PREFIXES = ['دورة ', 'مسار ', 'برنامج ']
+
+/** العنوانُ بلا سابقتِه المشتركة — للفرز لا للعرض */
+export function sortKeyAr(name: string): string {
+  const t = name.trim()
+  const prefix = SORT_PREFIXES.find((p) => t.startsWith(p))
+  return prefix ? t.slice(prefix.length).trim() : t
+}

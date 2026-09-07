@@ -18,15 +18,6 @@
           ]
         },
         {
-          "questionId": "QC-S1-002",
-          "question_ar": "وماذا عن وضعك العملي الآن؟",
-          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
-          "answer_ar": "لا أعمل حاليًا",
-          "what_changed": [
-            "+employment_state"
-          ]
-        },
-        {
           "questionId": "QC-G2-001",
           "question_ar": "ما الذي تريد تحقيقه؟",
           "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
@@ -34,6 +25,15 @@
           "what_changed": [
             "+primary_goal",
             "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "لا أعمل حاليًا",
+          "what_changed": [
+            "+employment_state"
           ]
         },
         {
@@ -153,15 +153,6 @@
           ]
         },
         {
-          "questionId": "QC-S1-002",
-          "question_ar": "وماذا عن وضعك العملي الآن؟",
-          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
-          "answer_ar": "أبحث عن عمل",
-          "what_changed": [
-            "+employment_state"
-          ]
-        },
-        {
           "questionId": "QC-G2-001",
           "question_ar": "ما الذي تريد تحقيقه؟",
           "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
@@ -169,6 +160,15 @@
           "what_changed": [
             "+primary_goal",
             "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أبحث عن عمل",
+          "what_changed": [
+            "+employment_state"
           ]
         },
         {
@@ -269,15 +269,6 @@
           ]
         },
         {
-          "questionId": "QC-S1-002",
-          "question_ar": "وماذا عن وضعك العملي الآن؟",
-          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
-          "answer_ar": "أعمل لدى جهة",
-          "what_changed": [
-            "+employment_state"
-          ]
-        },
-        {
           "questionId": "QC-G2-001",
           "question_ar": "ما الذي تريد تحقيقه؟",
           "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
@@ -285,6 +276,15 @@
           "what_changed": [
             "+primary_goal",
             "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
           ]
         },
         {
@@ -413,15 +413,6 @@
           ]
         },
         {
-          "questionId": "QC-S1-002",
-          "question_ar": "وماذا عن وضعك العملي الآن؟",
-          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
-          "answer_ar": "أعمل لدى جهة",
-          "what_changed": [
-            "+employment_state"
-          ]
-        },
-        {
           "questionId": "QC-G2-001",
           "question_ar": "ما الذي تريد تحقيقه؟",
           "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
@@ -429,6 +420,15 @@
           "what_changed": [
             "+primary_goal",
             "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
           ]
         },
         {
@@ -503,15 +503,6 @@
           ]
         },
         {
-          "questionId": "QC-S1-002",
-          "question_ar": "وماذا عن وضعك العملي الآن؟",
-          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
-          "answer_ar": "أعمل لدى جهة",
-          "what_changed": [
-            "+employment_state"
-          ]
-        },
-        {
           "questionId": "QC-G2-001",
           "question_ar": "ما الذي تريد تحقيقه؟",
           "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
@@ -519,6 +510,15 @@
           "what_changed": [
             "+primary_goal",
             "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
           ]
         },
         {
@@ -932,15 +932,6 @@
           ]
         },
         {
-          "questionId": "QC-S1-002",
-          "question_ar": "وماذا عن وضعك العملي الآن؟",
-          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
-          "answer_ar": "أعمل لدى جهة",
-          "what_changed": [
-            "+employment_state"
-          ]
-        },
-        {
           "questionId": "QC-G2-001",
           "question_ar": "ما الذي تريد تحقيقه؟",
           "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
@@ -948,6 +939,15 @@
           "what_changed": [
             "+primary_goal",
             "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
           ]
         },
         {
@@ -1045,7 +1045,7 @@
     {
       "persona": "غير محسوم",
       "stage": "other_unsure",
-      "questionsCount": 11,
+      "questionsCount": 10,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -1055,15 +1055,6 @@
           "what_changed": [
             "+career_stage",
             "+persona_branch"
-          ]
-        },
-        {
-          "questionId": "QC-S1-002",
-          "question_ar": "وماذا عن وضعك العملي الآن؟",
-          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
-          "answer_ar": "لا أعمل حاليًا",
-          "what_changed": [
-            "+employment_state"
           ]
         },
         {
@@ -1142,8 +1133,8 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-003",
         "compositeTemplateId": null,
-        "confidence": 0.6013840829647688,
-        "outputKind_ar": "أفضل تطابق حالي"
+        "confidence": 0.5950815619563654,
+        "outputKind_ar": "اتجاه استكشافي"
       },
       "deterministic": true
     }

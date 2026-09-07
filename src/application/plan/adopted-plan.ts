@@ -166,6 +166,49 @@ export async function syncAdoptedPlan(
   }
 }
 
+/* ─────────── الخطّةُ تُرفَع فورَ الدخول ───────────
+
+   الزائرُ يُنهي تشخيصَه ويعتمد مسارا **قبل أن يكون له حساب**. فرفعُ الخطّة
+   يُردّ بـ٤٠١ (وهو صحيح: لا حسابَ لها) — **والفشلُ يُبتلع عمدا** فتبقى في
+   متصفّحه وحدَه. ثمّ ينشئ حسابا، **ولا شيءَ يعيد الرفعَ إطلاقا**: فيصل إلى
+   حسابه بلا خطّةٍ وبلا تسجيل، ويقرأ «حسابك جاهز — بقيت أوّل شعبة» وقد اختار
+   مسارَه قبل دقيقة.
+
+   فأوّلُ لحظةٍ يصير فيها للخطّة بيتٌ هي أوّلُ دخولٍ ناجح — وعندها تُرفَع.
+
+   وتبقى «أفضل جهد»: من رُفضت خطّتُه (اشترى مسارا آخر مثلا) أو انقطعت شبكتُه
+   لا يُمنَع من الدخول. والمحلّيّةُ تبقى كما هي، فلا يضيع شيء. */
+
+/** الخطّةُ المحفوظةُ محلّيّا أيّا كان مضيفُها — للرفع بعد الدخول */
+export function readPendingPlan(): AdoptedPlan | null {
+  const parse = (raw: string | null): AdoptedPlan | null => {
+    try {
+      const x = JSON.parse(raw ?? 'null')
+      return isPlan(x) ? x : null
+    } catch {
+      return null
+    }
+  }
+  try {
+    const fromLocal = parse(localStorage.getItem(ADOPTED_PLAN_KEY))
+    if (fromLocal) return fromLocal
+  } catch {
+    /* التخزين ممنوع — تبقى الجلسة */
+  }
+  try {
+    return parse(sessionStorage.getItem(ADOPTED_PLAN_KEY))
+  } catch {
+    return null
+  }
+}
+
+/** يرفع الخطّةَ المحفوظةَ محلّيّا إن وُجدت — بعد أوّل دخولٍ ناجح */
+export async function syncPendingPlan(): Promise<PlanSyncResult | null> {
+  const plan = readPendingPlan()
+  if (!plan) return null
+  return syncAdoptedPlan(plan)
+}
+
 /** يُنسي الخطّة من المخزنين معا — وإلّا عادت من القديم بعد مسحِ الجديد */
 export function clearAdoptedPlan(): void {
   try { localStorage.removeItem(ADOPTED_PLAN_KEY) } catch { /* القراءة تفشل بأمان */ }

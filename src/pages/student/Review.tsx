@@ -42,7 +42,7 @@ function ReviewCard({
   const correct = chosen !== undefined && chosen === item.correctIndex;
   return (
     <Panel as="li" className="sm:p-6">
-      <div className="mb-3 flex flex-wrap items-center gap-2 text-micro text-muted-foreground">
+      <div className="mb-3 flex flex-wrap items-center gap-2 text-fine text-muted-foreground">
         {item.skillNameAr && (
           <span className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 px-2.5 py-0.5 font-bold text-teal-light-ink">
             <Target className="h-3 w-3" aria-hidden="true" />
@@ -69,7 +69,7 @@ function ReviewCard({
         onPick={onPick}
       />
 
-      <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-micro text-muted-foreground">
+      <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-fine text-muted-foreground">
         <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {saved ? (
           <>تعود هذه البطاقة في {fmtWhen(saved.dueAt)}.</>
@@ -168,12 +168,12 @@ export default function Review() {
             ].map((t) => (
               <div key={t.k}>
                 <dd className="text-2xl font-black tabular-nums">{t.v}</dd>
-                <dt className="mt-0.5 text-micro text-muted-foreground">{t.k}</dt>
+                <dt className="mt-0.5 text-fine text-muted-foreground">{t.k}</dt>
               </div>
             ))}
           </dl>
         </div>
-        <p className="mt-4 text-micro leading-relaxed text-muted-foreground">{HONESTY_NOTE}</p>
+        <p className="mt-4 text-fine leading-relaxed text-muted-foreground">{HONESTY_NOTE}</p>
       </Panel>
 
       {queue.length === 0 ? (

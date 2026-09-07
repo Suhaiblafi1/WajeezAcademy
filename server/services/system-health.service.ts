@@ -127,13 +127,15 @@ export class SystemHealthService {
 
   /* ── المالُ ومزوّدوه ── */
   private async money(now: Date): Promise<HealthItem[]> {
-    const [payment, email, unprocessedHooks, oldestHook, pendingRefunds, unpaidInvoices] = await Promise.all([
+    const [payment, email, unprocessedHooks, oldestHook, pendingRefunds, unpaidInvoices, unverified] = await Promise.all([
       this.prisma.integrationSetting.findUnique({ where: { provider: 'payment' } }),
       this.prisma.integrationSetting.findUnique({ where: { provider: 'email' } }),
       this.prisma.paymentWebhookEvent.count({ where: { processedAt: null } }),
       this.prisma.paymentWebhookEvent.findFirst({ where: { processedAt: null }, orderBy: { createdAt: 'asc' }, select: { createdAt: true, provider: true } }),
       this.prisma.refund.count({ where: { status: 'requested' } }),
       this.prisma.invoice.count({ where: { status: 'issued' } }),
+      /* من يمنعه حاجزُ التوثيق من الشراء اليوم — نشِطون بلا بريدٍ موثَّق */
+      this.prisma.user.count({ where: { status: 'active', emailVerifiedAt: null } }),
     ])
     const driver = (payment?.config as { driver?: string } | null)?.driver ?? 'test'
     const emailDriver = (email?.config as { driver?: string } | null)?.driver ?? null
@@ -160,6 +162,29 @@ export class SystemHealthService {
         meaningAr: 'بلا بريدٍ: لا توثيقَ عنوانٍ، ولا استعادةَ كلمةِ مرور، ولا دعوةَ موظّفٍ تصل. وتوثيقُ البريد شرطٌ لشراء شعبةٍ واستلامِ شهادة.',
         actionAr: email?.enabled ? undefined : 'وصلُ مزوّدِ بريدٍ من شاشة التكاملات — أو زرُّ «وثّق البريد يدويّا» للموظّف حتّى ذلك الحين.',
         href: '/admin/integrations',
+      },
+      /* ── من أيقظه وصلُ البريد (البند ٦٧) ──
+
+         حواجزُ الشراء والشهادة الأربعةُ مشروطةٌ بـ`emailChannelEnabled()`:
+         تسقط والقناةُ مغلقة، وتعمل يومَ تُوصَل. فوصلُ البريد ليس فتحَ ميزةٍ
+         فحسب — هو **تفعيلُ حاجزٍ على من كان يشتري بلا مانع**.
+
+         والرقمُ يُعرض هنا لا في استعلامٍ يكتبه المالكُ بيده: تغييرٌ صامتٌ في
+         سلوك الإنتاج يجب أن يكون له عددٌ على شاشة. */
+      {
+        key: 'unverified_blocked',
+        titleAr: 'حساباتٌ نشطةٌ بلا بريدٍ موثَّق',
+        valueAr: unverified === 0
+          ? 'لا شيء'
+          : email?.enabled
+            ? `${unverified} — ممنوعون من الشراء الآن`
+            : `${unverified} — والحاجزُ ساقطٌ ما دامت القناةُ مغلقة`,
+        level: unverified === 0 || !email?.enabled ? 'ok' : 'attention',
+        meaningAr: 'حاجزُ التوثيق يعمل بوصل قناة البريد وحدَها. فمن كان يشتري أمسِ بلا مانعٍ قد يُردّ اليومَ حتّى يفتح رابطَ التوثيق — والشريطُ في بوّابته يعرض زرّ الإرسال تلقائيّا.',
+        actionAr: unverified === 0 || !email?.enabled
+          ? undefined
+          : 'لا إجراءَ لازم: من يدخل بوّابته يرى الشريطَ ويطلب الرابط. وراقب أن ينزل العدد — بقاؤه عاليا يعني أنّ الرسائل لا تصل.',
+        href: '/admin/users',
       },
       {
         key: 'payment_webhooks',

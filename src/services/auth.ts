@@ -9,6 +9,7 @@
    - تسجيل الخروج يبطل الجلسة عند الخادم ثم يمسح النسخة المحلية. */
 
 import { ApiError, apiGet, apiPost } from "./api";
+import { syncPendingPlan } from "@/application/plan/adopted-plan";
 import { HONEYPOT_FIELD } from "../components/HoneypotField";
 import { safeGet, safeSet, safeRemove } from "./safe-storage";
 
@@ -188,7 +189,12 @@ function clearFails(): void {
 
 /* ─────────── العمليات ─────────── */
 
-export type AuthResult = { ok: true } | { ok: false; error: string };
+export type AuthResult =
+  /** `verificationSent` يقول هل خرجت رسالةُ التوثيق فعلا — وبها وحدَها تُعرض
+      شاشةُ «تفقّد بريدك». وبدونها كانت تُعرض لكلّ من سجّل، فينتهي أوّلُ لقاءٍ
+      لكلّ مستخدمٍ جديدٍ بانتظارِ رسالةٍ لن تصل. */
+  | { ok: true; verificationSent?: boolean }
+  | { ok: false; error: string };
 
 const NETWORK_FAIL = "تعذر الاتصال بالخادم — تأكد أن خادم API يعمل ثم حاول مجددا";
 
@@ -205,13 +211,15 @@ export async function signUp(
   /* حقلُ الفخّ — يبقى فارغا عند الإنسان، ويردُّه الخادمُ إن جاء مملوءا */
   honeypot?: string,
 ): Promise<AuthResult> {
+  let verificationSent = false;
   try {
-    await apiPost("/api/auth/register", {
+    const res = await apiPost<{ verificationSent?: boolean }>("/api/auth/register", {
       email: email.trim().toLowerCase(),
       password: pass,
       displayName: name.trim(),
       ...(honeypot ? { [HONEYPOT_FIELD]: honeypot } : {}),
     });
+    verificationSent = res?.verificationSent === true;
   } catch (e) {
     if (e instanceof ApiError && e.code === "email_taken") {
       return { ok: false, error: "لديك حساب بهذا البريد بالفعل — انتقل لتبويب «دخول»" };
@@ -220,7 +228,7 @@ export async function signUp(
   }
   // ندخل المستخدم فورا ليحفظ تشخيصه ومساره دون خطوة إضافية
   const login = await signIn(email, pass);
-  return login;
+  return login.ok ? { ok: true, verificationSent } : login;
 }
 
 export async function signIn(email: string, pass: string): Promise<AuthResult> {
@@ -234,6 +242,9 @@ export async function signIn(email: string, pass: string): Promise<AuthResult> {
     );
     writeSession(user.displayName, user.email, user.roles, expiresAt);
     clearFails();
+    /* الخطّةُ المعتمَدةُ قبل الحساب تُرفَع الآن — أوّلُ لحظةٍ يصير لها فيها بيت.
+       ولا يُنتظَر ناتجُها ولا يُسقط الدخول: الرفعُ أفضلُ جهد، والمحلّيّةُ تبقى. */
+    void syncPendingPlan().catch(() => undefined);
     return { ok: true };
   } catch (e) {
     if (e instanceof ApiError && (e.status === 401 || e.status === 429)) recordFail();
@@ -281,6 +292,19 @@ export async function resetPassword(token: string, newPassword: string): Promise
 }
 
 /** إعادة إرسال رسالة التحقق — لا قناة بريد بعد في مرحلة التأسيس */
-export function resendVerification(email: string): void {
-  void email; // في الإنتاج: POST /auth/resend-verification
+/** إعادةُ إرسال رابط التوثيق — نداءٌ حقيقيٌّ يردّ رسالةَ الخادم كما هي.
+
+    كانت هذه الدالّةُ **لا تفعل شيئا** (`void email`)، والشاشةُ تقول بعدها
+    «أُعيد إرسال الرسالة — تفقّد بريدك». فالوعدُ يُقطع مرّتين: رسالةٌ لم
+    تُطلَب أصلا، وتأكيدٌ بأنّها أُرسلت.
+
+    والمسارُ موجودٌ في الخادم منذ البداية (`/api/auth/email/verify/request`)
+    ويردّ الحالةَ صادقةً: أُرسلت · أو القناةُ غيرُ مفعّلة · أو أخفق. */
+export async function resendVerification(): Promise<{ ok: boolean; message: string }> {
+  try {
+    const r = await apiPost<{ status: string; message: string }>("/api/auth/email/verify/request");
+    return { ok: r.status === "sent" || r.status === "already_verified", message: r.message };
+  } catch (e) {
+    return { ok: false, message: toMessage(e) };
+  }
 }

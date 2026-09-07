@@ -153,7 +153,7 @@ export default function StudentSupport() {
                   <p className="font-black">{t.subject}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{t.messages.length} رسالة · آخر تحديث {fmtWhen(t.updatedAt)}</p>
                 </div>
-                <span className={`rounded-full border px-3 py-1 text-micro font-bold ${t.status === "resolved" || t.status === "closed" ? "border-white/15 text-muted-foreground" : "border-teal/40 text-teal-light-ink"}`}>
+                <span className={`rounded-full border px-3 py-1 text-fine font-bold ${t.status === "resolved" || t.status === "closed" ? "border-white/15 text-muted-foreground" : "border-teal/40 text-teal-light-ink"}`}>
                   {STATUS_AR[t.status] ?? t.status}
                 </span>
               </button>
@@ -164,7 +164,7 @@ export default function StudentSupport() {
                     {t.messages.map((m) => (
                       <Inset as="li" key={m.id} className="text-xs leading-6 text-foreground">
                         {m.body}
-                        <span className="mt-1 block text-micro text-muted-foreground">{fmtWhen(m.createdAt)}</span>
+                        <span className="mt-1 block text-fine text-muted-foreground">{fmtWhen(m.createdAt)}</span>
                       </Inset>
                     ))}
                   </ol>

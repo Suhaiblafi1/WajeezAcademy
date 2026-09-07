@@ -23,6 +23,10 @@ export interface Course {
   skill: string
   /** ما يخرج به المتعلّم — وعدُ الدورة كما في الكتالوج، لا موضعُها في مسار */
   promise: string
+  /** لمن هذه الدورة (`target_audience_ar`) — مؤلَّفٌ ولا يُبحَث فيه */
+  audience: string
+  /** مهاراتُها كلُّها لا أوّلُها — البحثُ كان يرى واحدةً من ستّ */
+  skills: string[]
   /** سعر القائمة وعملته — معلنان في الكتالوج، ترثهما الشعبة عند فتحها */
   listPrice?: number | null
   listCurrency?: string
@@ -78,6 +82,8 @@ function buildCourses(raw: CoreCatalogRaw): Course[] {
     weeks: Math.max(1, Math.ceil(c.total_hours / 7)),
     skill: c.skill_names_ar[0] ?? '',
     promise: c.short_promise_ar ?? '',
+    audience: c.target_audience_ar ?? '',
+    skills: c.skill_names_ar ?? [],
     listPrice: c.list_price ?? null,
     listCurrency: c.list_currency ?? 'USD',
   }))

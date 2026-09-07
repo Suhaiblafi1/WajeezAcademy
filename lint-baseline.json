@@ -1,6 +1,4 @@
 {
   "errors": {},
-  "warnings": {
-    "react-hooks/exhaustive-deps": 4
-  }
+  "warnings": {}
 }

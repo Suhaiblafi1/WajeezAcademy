@@ -61,7 +61,7 @@ export default function CapstonePanel({
         <h3 className="flex items-center gap-2 text-base font-black text-gold-ink">
           <Trophy className="h-4.5 w-4.5" /> مشروع تخرّجك
         </h3>
-        <p className="mt-0.5 text-micro text-muted-foreground">
+        <p className="mt-0.5 text-fine text-muted-foreground">
           نهاية «{track.titleAr}» — بعد دوراته، لا مرحلةً فيه.
         </p>
         {track.capstoneAr ? (
@@ -72,7 +72,7 @@ export default function CapstonePanel({
           </p>
         )}
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gold/20 pt-3.5">
-          <p className="min-w-0 flex-1 text-micro leading-5 text-muted-foreground">
+          <p className="min-w-0 flex-1 text-fine leading-5 text-muted-foreground">
             تسليمُ المشروع يُرتَّب مع فريقنا الأكاديميّ: تراسله، فيُسنَد لك مقيّمٌ وموعد.
             {completion && !completion.eligible && " ويُقدَّم بعد إنجاز دورات المسار."}
           </p>
@@ -92,7 +92,7 @@ export default function CapstonePanel({
               أنجزت <span className="tabular-nums">{completion.done}</span> من{" "}
               <span className="tabular-nums">{completion.total}</span> دورات المسار
             </p>
-            <p className="text-micro tabular-nums text-muted-foreground">{completion.percent}٪</p>
+            <p className="text-fine tabular-nums text-muted-foreground">{completion.percent}٪</p>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${Math.max(2, completion.percent)}%` }} />
@@ -173,31 +173,31 @@ function RequestCard({
 
       {request || sent ? (
         <Inset className="mt-3">
-          <span className={`inline-block rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
+          <span className={`inline-block rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta?.cls ?? REQUEST_STATUS_AR.pending.cls}`}>
             {meta?.label ?? REQUEST_STATUS_AR.pending.label}
           </span>
           {request?.audienceAr && (
-            <p className="mt-2 text-micro leading-5 text-muted-foreground">
+            <p className="mt-2 text-fine leading-5 text-muted-foreground">
               <span className="font-bold text-foreground">الجهة: </span>{request.audienceAr}
             </p>
           )}
-          {request?.decisionAr && <p className="mt-2 text-micro leading-5 text-muted-foreground">{request.decisionAr}</p>}
+          {request?.decisionAr && <p className="mt-2 text-fine leading-5 text-muted-foreground">{request.decisionAr}</p>}
         </Inset>
       ) : loading ? (
-        <p className="mt-3 flex items-center gap-2 text-micro text-muted-foreground">
+        <p className="mt-3 flex items-center gap-2 text-fine text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" /> نقرأ إنجازك…
         </p>
       ) : !eligible ? (
         <ul className="mt-3 space-y-1 border-r-2 border-white/10 ps-3">
           {reasonsAr.map((r) => (
-            <li key={r} className="text-micro leading-5 text-muted-foreground">{r}</li>
+            <li key={r} className="text-fine leading-5 text-muted-foreground">{r}</li>
           ))}
         </ul>
       ) : (
         <div className="mt-3">
           {needsAudience && (
             <label className="block">
-              <span className="text-micro font-bold text-muted-foreground">لأيّ جهةٍ تريدها؟</span>
+              <span className="text-fine font-bold text-muted-foreground">لأيّ جهةٍ تريدها؟</span>
               <input
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}
@@ -226,7 +226,7 @@ function RequestCard({
           </Button>
         </div>
       )}
-      {error && <p className="mt-2 text-micro font-bold text-gold-ink">{error}</p>}
+      {error && <p className="mt-2 text-fine font-bold text-gold-ink">{error}</p>}
     </Card>
   );
 }

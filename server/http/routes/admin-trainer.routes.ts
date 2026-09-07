@@ -140,6 +140,33 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return { ok: true }
   })
 
+  /* ─────────── تعيينُ مدرّبٍ داخليّا ───────────
+
+     الحارسُ `admin.users.manage` — وهو للمدير الأعلى وحدَه — لأنّ هذا المسار
+     يُنشئ حسابا ويمنح دورا، وذاك بابُ الصلاحيّات لا بابُ الأكاديمية.
+
+     ويُشترط معه `trainer.applications.decide`: من يعيّن مدرّبا يجب أن يملك
+     قرارَ المدرّبين أصلا، فلا يصير البابُ طريقا جانبيّا حول الطابور. */
+  app.post('/api/admin/trainers/direct', {
+    preHandler: requirePermission('admin.users.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'تعيينُ مدرّبٍ داخليّا — حسابٌ وطلبٌ نشطٌ وملفٌّ ودورٌ في معاملةٍ واحدة' },
+  }, async (req, reply) => {
+    if (!req.auth!.permissions.includes('trainer.applications.decide')) {
+      return reply.status(403).send({
+        error: {
+          code: 'forbidden',
+          message_ar: 'تعيينُ مدرّبٍ يحتاج قرارَ المدرّبين أيضا — لا صلاحيةَ الحسابات وحدَها',
+        },
+      })
+    }
+    const body = z.object({
+      fullName: z.string().trim().min(2).max(120),
+      email: z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة'),
+      headline: z.string().trim().max(160).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await review.createTrainerDirectly(req.auth!.userId, body))
+  })
+
   app.post('/api/admin/trainer-applications/:id/contracts', {
     preHandler: requirePermission('trainer.compensation.manage'),
     schema: { tags: ['admin-trainers'], summary: 'إنشاء عقد وإرساله — ينقل الطلب إلى contract_pending' },

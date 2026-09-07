@@ -91,10 +91,34 @@ function runJourney(name: string, script: Journey): RunOutcome {
     if (step.stop.shouldStop || !step.question) break
     const q = step.question
     asked.push(q.question_id)
-    const byLabel = (l?: string): number => (l ? q.options_ar.indexOf(l) : -1)
+    /* المطابقةُ الحرفيّةُ وحدَها كانت تكذب صامتةً.
+
+       `answers['QB-M3B-001'] = 'حكومي'` مكتوبٌ في البحث منذ البداية ليفتح
+       المسارات الحكوميّة، ونصُّ الخيار «حكومي — جهة حكومية أو قطاع عام».
+       فـ`indexOf` يردّ ‎-1، ويسقط السطرُ إلى `idx = 0` — أي **«خاص»**. فبقي
+       `PW-GOV-002` يُعدُّ «غيرَ قابلٍ للفوز» وهو قابلٌ له، والسببُ في أداة
+       القياس لا في المنتَج.
+
+       فصارت المطابقةُ: حرفيّةً، ثمّ ببادئةٍ، ثمّ **تصرخ**. والصمتُ هو ما
+       أطال عمرَ العطب — لا الخطأُ نفسُه. */
+    const byLabel = (l?: string): number => {
+      if (!l) return -1
+      const exact = q.options_ar.indexOf(l)
+      if (exact >= 0) return exact
+      const prefix = q.options_ar.findIndex((o) => o.startsWith(l) || l.startsWith(o))
+      return prefix
+    }
     let idx = -1
     const explicit = script.answers?.[q.question_id]
-    if (explicit !== undefined) idx = byLabel(explicit)
+    if (explicit !== undefined) {
+      idx = byLabel(explicit)
+      if (idx < 0) {
+        throw new Error(
+          `جوابٌ صريحٌ لا يطابق خيارا في ${q.question_id}: «${explicit}»\n`
+          + `  الخيارات: ${q.options_ar.map((o) => `«${o}»`).join(' · ')}`,
+        )
+      }
+    }
     if (idx < 0) {
       if (q.question_id === Q.STAGE) idx = byLabel(STAGE_LABEL[script.stage])
       else if (q.question_id === Q.EMPLOYMENT) idx = byLabel(script.employment ?? 'أعمل لدى جهة')

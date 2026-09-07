@@ -9,6 +9,7 @@ import { TrainerChangeService } from '../../services/trainer-change.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerAvailabilityService } from '../../services/trainer-availability.service'
+import { TermService } from '../../services/term.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
 
@@ -17,6 +18,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const review = new TrainerReviewService(prisma)
   const earnings = new EarningsService(prisma)
   const availability = new TrainerAvailabilityService(prisma)
+  const terms = new TermService(prisma)
 
   app.get('/api/trainer/earnings', {
     preHandler: requirePermission('trainer.portal'),
@@ -184,6 +186,40 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return availability.removeBlackout(req.auth!.userId, id)
+  })
+
+  /* ═══ فصولي — الطرفُ الغائبُ من الجدول (البند ٥٣) ═══
+
+     `TrainerTermAvailability` لها ثلاثُ حالاتٍ منذ أُنشئت، والمسلكُ الوحيدُ
+     الذي يكتبها محروسٌ بـ`trainer.assign`: **الإدارةُ تُعلن نيابةً عن
+     المدرّب**، وهو لا يملك أن يؤكّد ولا أن يعتذر. فبقيت القائمةُ ما ورّثه
+     الترحيلُ من مواسمَ أعلنها في طلبه قبل شهور.
+
+     والصلاحيّةُ هنا `trainer.portal` كإعلان ساعاته وغيابه: هذا قولُ المدرّب
+     عن وقتِه، لا تصرّفٌ في شعبةٍ ولا في مال. **والملفُّ يُشتقّ من الجلسة لا
+     من الطلب** — فلا يُعلن أحدٌ نيابةً عن غيره من هنا. */
+  app.get('/api/trainer/me/terms', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'فصولي — موقفي من كلّ فصلٍ حيّ وما خُطِّط لي فيه' },
+  }, async (req) => {
+    const profile = await changes.profileForUser(req.auth!.userId)
+    return terms.trainerTerms(profile.id)
+  })
+
+  app.post('/api/trainer/me/terms/:termId', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'أتاحُ في هذا الفصل — أو أعتذر عنه' },
+  }, async (req) => {
+    const { termId } = z.object({ termId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      /* و`declared` ليست خيارا هنا: هي ما يكتبه الترحيلُ والإدارة. وما يقوله
+         المدرّبُ بنفسه تأكيدٌ أو اعتذار — لا حالةٌ ثالثةٌ ملتبسة. */
+      status: z.enum(['confirmed', 'declined']),
+      maxCohorts: z.number().int().min(1).max(20).nullable().optional(),
+      note: z.string().trim().max(500).nullable().optional(),
+    }).parse(req.body)
+    const profile = await changes.profileForUser(req.auth!.userId)
+    return terms.setTrainerAvailability(profile.id, termId, req.auth!.userId, body)
   })
 
   /* عام: صفحة المدربين بالموقع واسم مدرب الدورة */

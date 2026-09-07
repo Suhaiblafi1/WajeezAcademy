@@ -1,83 +1,224 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
-import {
-  CheckCircle2, FileText, Loader2,
-} from "lucide-react";
-import TrainerLayout from "./TrainerLayout";
-import { apiGet } from "@/services/api";
-import { fmtShortDateTimeAr } from "@/utils/format";
+/* طابورُ التصحيح — حيث يُصحَّح فعلا (البند ٢٣).
 
-import { Card, Panel } from "@/components/ui/Surface";
-interface RealQueueItem {
-  id: string; status: string; submittedAt: string;
-  assessment: { title: string; cohort: { title: string } };
+   ─────────── ما كان ───────────
+
+   كان التصحيحُ **في مكانين**: هذا التبويبُ يعرض قائمةَ تسليماتٍ لا يفعل بها
+   شيئا، وكلُّ سطرٍ فيها زرٌّ يقول «قيّمه من شعبي» — بينما أدواتُ التصحيح
+   كاملةً (المراجعة والدرجة والتغذية الراجعة) داخل لوحِ الشعب من ٧٢٤ سطرا،
+   مدفونةً تحت الحضور والموادّ والتكليفات والرسائل واقتراحات التأجيل.
+
+   فالمدرّبُ يفتح التبويبَ المسمّى باسم عمله، فيُحال منه إلى شاشةٍ أخرى
+   يبحث فيها عن التسليم بين ستّة أقسام. وتبويبٌ لا يفعل ما يحمل اسمَه ليس
+   اختصارا بل خطوةٌ زائدة.
+
+   ─────────── وما صار ───────────
+
+   الطابورُ هنا، والأدواتُ معه. ولوحُ الشعب لم يعد يحمله — فالتصحيحُ في
+   موضعٍ واحد لا في موضعين. */
+
+import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
+import { CheckCircle2, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star } from "lucide-react";
+import TrainerLayout from "./TrainerLayout";
+import { toast, toastError } from "@/components/Toast";
+import { apiGet, apiPost, ApiError } from "@/services/api";
+import { fmtDateTimeAr } from "@/utils/format";
+import { Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
+import { areaCls, controlCls } from "@/components/FormKit";
+
+/* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
+const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-micro font-bold transition disabled:opacity-40";
+
+const SUBMISSION_STATUS: Record<string, string> = {
+  submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
+  resubmit_requested: "طُلبت إعادته", accepted: "مقبول", rejected: "مرفوض",
+};
+
+interface QueueItem {
+  id: string; status: string; textAnswer: string | null; submittedAt: string; reviewNote: string | null;
+  assessment: { title: string; maxScore: number; cohort: { title: string } };
+  enrollment: { userId: string };
+  grades: { score: string; maxScore: string }[];
+  feedback: { body: string }[];
 }
 
+export default function GradingQueue() {
+  const [queue, setQueue] = useState<QueueItem[] | null>(null);
+  const [offline, setOffline] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
+  const [gradeForm, setGradeForm] = useState<Record<string, string>>({});
+  const [feedbackForm, setFeedbackForm] = useState<Record<string, string>>({});
 
-/** طابور تقييم الواجبات — US-09: قائمة submissions + rubric + filters + feedback + audit */
-/* حُذف `LocalGradingQueue`: طابورُ تقييمٍ كامل من تسليماتٍ مولَّدة في
-   المتصفّح، بدرجاتٍ وملاحظاتٍ تُكتب وتُحفظ محليا كأنها تقييمُ مدرّب. */
-function RealGradingQueue() {
-  const [realQueue, setRealQueue] = useState<RealQueueItem[] | null>(null);
-  useEffect(() => {
-    apiGet<RealQueueItem[]>("/api/trainer/grading-queue").then(setRealQueue).catch(() => setRealQueue([]));
+  const load = useCallback(async () => {
+    setOffline(null);
+    try {
+      setQueue(await apiGet<QueueItem[]>("/api/trainer/grading-queue"));
+    } catch (err) {
+      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة مدرب حقيقية");
+    }
   }, []);
-  const actionable = (realQueue ?? []).filter((q) => q.status === "submitted" || q.status === "under_review");
-  return (
-    <TrainerLayout title="طابور التقييم">
-      {realQueue === null ? (
+
+  useEffect(() => { void load(); }, [load]);
+
+  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fn();
+      toast(doneMsg);
+      await load();
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reviewAction = (submissionId: string, action: string) =>
+    act(() => apiPost(`/api/trainer/submissions/${submissionId}/review`, { action, note: reviewNote[submissionId] || undefined }),
+      action === "accept" ? "قُبل التسليم" : action === "reject" ? "رُفض التسليم مع السبب" : action === "request_resubmit" ? "طُلبت إعادة التسليم" : "بدأت المراجعة");
+
+  const grade = (submissionId: string, maxScore: number) =>
+    act(async () => {
+      const score = Number(gradeForm[submissionId]);
+      await apiPost("/api/trainer/grade", { submissionId, score, maxScore });
+      setGradeForm((prev) => ({ ...prev, [submissionId]: "" }));
+    }, "سُجلت الدرجة — وأي تعديل لاحق سيوثق في السجل");
+
+  const sendFeedback = (submissionId: string) =>
+    act(async () => {
+      await apiPost(`/api/trainer/submissions/${submissionId}/feedback`, { body: feedbackForm[submissionId] });
+      setFeedbackForm((prev) => ({ ...prev, [submissionId]: "" }));
+    }, "أُرسلت التغذية الراجعة للمتعلم");
+
+  if (offline) {
+    return (
+      <TrainerLayout title="طابور التصحيح">
+        <Panel className="grid place-items-center py-20 text-center">
+          <ServerOff className="h-12 w-12 text-muted-foreground/50" />
+          <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للطابور</h2>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
+          <Button onClick={() => void load()} icon={RefreshCw} className="mt-5">إعادة المحاولة</Button>
+        </Panel>
+      </TrainerLayout>
+    );
+  }
+
+  if (queue === null) {
+    return (
+      <TrainerLayout title="طابور التصحيح">
         <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" /> أحضر الطابور…
         </div>
-      ) : actionable.length === 0 ? (
+      </TrainerLayout>
+    );
+  }
+
+  return (
+    <TrainerLayout title="طابور التصحيح">
+      {queue.length === 0 ? (
         <Panel className="p-10 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-teal-light-ink" />
           <h2 className="mt-4 text-lg font-black">الطابور نظيف — لا تسليمات بانتظارك</h2>
           <p className="mt-2 text-sm text-muted-foreground">كل ما وصلك قيّمته. أحسنت.</p>
           {/* الفراغ فرصة توجيه لا مساحة ميتة — خطوات تالية نافعة بدل صفحة خالية */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-            <Link
-              to="/trainer/board"
-              className="inline-flex min-h-11 items-center rounded-full border border-teal/40 bg-teal/10 px-5 text-sm font-bold text-teal-light transition hover:bg-teal/20"
-            >
+            <Link to="/trainer/board" className="inline-flex min-h-11 items-center rounded-full border border-teal/40 bg-teal/10 px-5 text-sm font-bold text-teal-light transition hover:bg-teal/20">
               افتح شعبي وسجّل الحضور
             </Link>
-            <Link
-              to="/trainer/proposals"
-              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30 hover:text-foreground"
-            >
-              اقترح تحسينا على المحتوى
+            <Link to="/trainer/learners" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30">
+              تفقّد من تعثّر من متعلّميّ
             </Link>
-            <Link
-              to="/trainer/earnings"
-              className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30 hover:text-foreground"
-            >
-              راجع مستحقاتي
+            <Link to="/trainer/proposals" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30">
+              اقترح تحسينا على المحتوى
             </Link>
           </div>
         </Panel>
       ) : (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">لديك {actionable.length} {actionable.length === 1 ? "تسليم يحتاج" : "تسليمات تحتاج"} تقييمك:</p>
-          {actionable.map((q) => (
-            <Card as={Link} tone="warn" interactive key={q.id} to="/trainer/board" className="flex items-center gap-3 px-5 py-4 text-sm transition hover:border-gold/60">
-              <FileText className="h-4 w-4 shrink-0 text-gold-ink" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-foreground">{q.assessment.title}</p>
-                <p className="mt-0.5 text-micro text-muted-foreground">
-                  {q.assessment.cohort.title} · أُرسل {fmtShortDateTimeAr(q.submittedAt)}
-                </p>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {queue.length} {queue.length === 1 ? "تسليمٌ" : "تسليماتٍ"} في طابورك — تُصحَّح هنا.
+          </p>
+          {queue.map((q) => (
+            <Panel key={q.id}>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-black">{q.assessment.title}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
+                  </p>
+                </div>
+                {q.grades[0] && (
+                  <span className="rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
+                    {Number(q.grades[0].score)}/{Number(q.grades[0].maxScore)}
+                  </span>
+                )}
               </div>
-              <span className="shrink-0 rounded-full bg-gold px-3 py-1 text-micro font-black text-on-gold">قيّمه من «شعبي»</span>
-            </Card>
+              {q.textAnswer && (
+                <p className="mt-3 max-h-32 overflow-y-auto rounded-2xl bg-paper/30 p-4 text-sm leading-7 text-foreground">{q.textAnswer}</p>
+              )}
+              <textarea
+                value={reviewNote[q.id] ?? ""}
+                onChange={(e) => setReviewNote((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                placeholder="ملاحظة للمتعلم — إلزامية عند الرفض أو طلب الإعادة"
+                rows={2}
+                className={`mt-3 ${areaCls}`}
+              />
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {q.status === "submitted" && (
+                  <button disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}
+                    className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
+                    ابدأ المراجعة
+                  </button>
+                )}
+                {q.status === "under_review" && (
+                  <>
+                    <button disabled={busy} onClick={() => void reviewAction(q.id, "accept")}
+                      className={`${ACT} border-transparent bg-teal font-black text-on-teal hover:bg-teal-light`}>
+                      قبول
+                    </button>
+                    <button disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}
+                      className={`${ACT} border-gold/40 text-gold-ink hover:bg-gold/10`}>
+                      اطلب إعادة التسليم
+                    </button>
+                    <button disabled={busy} onClick={() => void reviewAction(q.id, "reject")}
+                      className={`${ACT} border-red-500/40 text-red-400 hover:bg-red-500/10`}>
+                      رفض
+                    </button>
+                  </>
+                )}
+                {["under_review", "submitted"].includes(q.status) && (
+                  <span className="flex items-center gap-1.5">
+                    <Star className="h-3.5 w-3.5 text-gold-ink" />
+                    <input type="number" min={0} max={q.assessment.maxScore} value={gradeForm[q.id] ?? ""}
+                      onChange={(e) => setGradeForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                      placeholder={`من ${q.assessment.maxScore}`}
+                      aria-label={`درجةُ «${q.assessment.title}» من ${q.assessment.maxScore}`}
+                      className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none" />
+                    <button disabled={busy || !(gradeForm[q.id] ?? "").trim()} onClick={() => void grade(q.id, q.assessment.maxScore)}
+                      className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
+                      سجّل الدرجة
+                    </button>
+                  </span>
+                )}
+              </div>
+              <div className="mt-3 flex gap-2 border-t border-white/8 pt-3">
+                <input value={feedbackForm[q.id] ?? ""}
+                  onChange={(e) => setFeedbackForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                  placeholder="تغذية راجعة إضافية للمتعلم…"
+                  aria-label={`تغذيةٌ راجعةٌ على «${q.assessment.title}»`}
+                  className={`flex-1 ${controlCls}`} />
+                <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
+                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-micro font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+                  <MessageSquarePlus className="h-3 w-3" /> أرسل
+                </button>
+              </div>
+            </Panel>
           ))}
         </div>
       )}
     </TrainerLayout>
   );
-}
-
-/** الغلاف: جلسة مدرب حقيقية بلا هوية استعراض → الطابور الحقيقي؛ وإلا النسخة المحلية */
-export default function GradingQueue() {
-  return <RealGradingQueue />;
 }

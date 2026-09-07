@@ -51,7 +51,7 @@ export default function BookInterview({ name, email, reference, className = '' }
         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
       </a>
 
-      <p className="mt-3 text-micro leading-6 text-muted-foreground">
+      <p className="mt-3 text-fine leading-6 text-muted-foreground">
         يفتح صفحةَ حجزٍ خارجيّة في لسانٍ جديد
         {reference && <> — ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مذكورٌ فيها</>}.
         ولو لم يناسبك أيُّ وقتٍ معروض، راسِلنا وسنرتّب غيرَه.

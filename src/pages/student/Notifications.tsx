@@ -72,7 +72,7 @@ export default function Notifications() {
                 {n.title}
               </p>
               <p className="mt-1 text-xs leading-6">{n.body}</p>
-              <p className="mt-1 text-micro text-muted-foreground">{fmtWhen(n.sentAt ?? n.queuedAt)}</p>
+              <p className="mt-1 text-fine text-muted-foreground">{fmtWhen(n.sentAt ?? n.queuedAt)}</p>
             </button>
           ))}
         </div>

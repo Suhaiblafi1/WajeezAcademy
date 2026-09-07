@@ -16,7 +16,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   BookOpen, CheckCircle2, CircleSlash, Loader2, RefreshCw, Route as RouteIcon,
-  Send, ServerOff,
+  ServerOff,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import StageRail, { CAPSTONE_ID } from "@/components/journey/StageRail";
@@ -47,12 +47,6 @@ interface PaidOrder {
   currency: string;
   items: { id: string; titleAr: string; unitPrice: string | number }[];
   invoice: { number: string; status: string } | null;
-}
-
-interface PlanRequestResult {
-  requested: { courseId: string }[];
-  awaiting: string[];
-  alreadyRequested: string[];
 }
 
 export default function Journey() {
@@ -282,7 +276,7 @@ export default function Journey() {
                   ))}
                 </ul>
                 <div className="mt-2.5 flex items-end justify-between border-t border-white/10 pt-2">
-                  <span className="text-micro text-muted-foreground">
+                  <span className="text-fine text-muted-foreground">
                     {paid.invoice ? <>فاتورة <span dir="ltr" className="font-mono">{paid.invoice.number}</span></> : "المجموع المدفوع"}
                   </span>
                   <span dir="ltr" className="text-lg font-black text-foreground">
@@ -347,13 +341,13 @@ export default function Journey() {
 
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <h2 className="text-lg font-black">{activeTrack.titleAr}</h2>
-              {activeTrack.subtitleAr && <p className="text-micro text-muted-foreground">{activeTrack.subtitleAr}</p>}
+              {activeTrack.subtitleAr && <p className="text-fine text-muted-foreground">{activeTrack.subtitleAr}</p>}
             </div>
 
             <StageRail track={activeTrack} selectedId={selectedId} onSelect={select} />
 
-            {/* طلبُ الخطّة كاملةً — فاتورةٌ واحدة لا أربع */}
-            {activeTrack.kind === "plan" && <PlanRequest track={activeTrack} onDone={() => void load()} />}
+            {/* حالةُ الخطّة — والشراءُ في بطاقة المرحلة لا في زرٍّ ثانٍ هنا */}
+            {activeTrack.kind === "plan" && <PlanRequest track={activeTrack} />}
 
             <div className="mt-4">
               {selectedId === CAPSTONE_ID ? (
@@ -411,30 +405,30 @@ function EmptyJourney() {
   );
 }
 
-/* طلبُ الخطّة كاملةً بنداءٍ واحد.
+/* حالةُ خطّته — ولا مسارَ شراءٍ ثانيا فيها.
 
-   كان على المتعلّم أن يطلب دورةً دورة فيدفع أربع فواتير، وفي كلٍّ منها فرصةٌ
-   للتوقّف. والخادمُ يقرأ خطّته: يطلب ما له شعبة، ويسمّي ما لا شعبةَ له بدل أن
-   يبيعه صامتا. */
-function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<PlanRequestResult | null>(null);
+   ── ما حُذف ولماذا ──
 
+   كان هنا زرٌّ رئيسٌ بعرض الشاشة: «اطلب تسجيلك في دوراتك الـN المتاحة». وهو
+   يفتح **مسارَ موافقة العمليّات**: يُنشئ طلبا غيرَ مدفوع، ينتظر بشرا يراجعه،
+   ثمّ فاتورةً يدفعها المتعلّم لاحقا. وبجانبه في الشاشة نفسِها زرُّ «اشترِ
+   الآن» الذي يدفع فورا.
+
+   **مساران متنافسان لعمليّةٍ واحدة، والأبرزُ منهما هو الذي يُنتج بالضبط حالةَ
+   «لم تُدفع»** التي اشتكى منها صاحبُ المنصّة: طلبٌ معلَّقٌ ومقعدٌ محجوزٌ يمنع
+   إعادةَ الشراء بـ٤٠٩. وقرارُ صاحب المنصّة المسجَّل في الشيفرة أنّ الشراءَ
+   مباشر: «الأسعارُ معلَنةٌ والدفعُ مباشرٌ بلا طلب».
+
+   **والمسارُ لم يُحذف من الخادم** — يبقى للحالات التي تبدأها الإدارة (تسجيلٌ
+   لمجموعةٍ، اتّفاقٌ مؤسّسيّ). ما حُذف بابُه من شاشة المتعلّم.
+
+   وما بقي هنا: الطلباتُ المعلّقةُ سلفا تُقرأ حتّى تُبتّ، ودوراتٌ بلا شعبةٍ
+   تُقال مع بابِ المستشار. والشراءُ في بطاقة كلّ مرحلةٍ حيث السعرُ والموعد. */
+function PlanRequest({ track }: { track: JourneyTrack }) {
   const askable = track.stages.filter((s) => s.state === "schedulable" && !s.requestPending).length;
   const pending = track.stages.filter((s) => s.requestPending).length;
   const awaiting = track.stages.filter((s) => s.state === "awaiting_cohort").length;
   const reviewMsg = `مرحبا، أنا صاحب «${track.titleAr}» وأريد مراجعة خطّتي (تبديل/إضافة دورة).`;
-
-  if (done) {
-    return (
-      <Card as="p" tone="accent" className="mt-3 px-4 py-3 text-xs leading-6 text-teal-light-ink">
-        وصلنا طلبك على {done.requested.length === 1 ? "دورة واحدة" : `${done.requested.length} دورات`}.
-        نراجعها ونحجز مقاعدك، ثمّ تصلك فاتورةٌ واحدة للخطّة كلها.
-        {done.awaiting.length > 0 && ` و${done.awaiting.length} من دوراتك تنتظر فتح شعبتها — لا تُحتسب عليك الآن.`}
-      </Card>
-    );
-  }
 
   if (askable === 0) {
     if (pending > 0) {
@@ -461,29 +455,15 @@ function PlanRequest({ track, onDone }: { track: JourneyTrack; onDone: () => voi
     );
   }
 
+  /* له شعبٌ مفتوحة: الشراءُ في بطاقة المرحلة نفسِها — حيث الموعدُ والسعر.
+     ولا زرَّ ثانيا هنا يفتح مسارا آخر لنفس العمليّة. */
   return (
-    <Card tone="accent" className="mt-3 px-4 py-3.5">
-      <Button tone="confirm" onClick={async () => {
-          setBusy(true);
-          setError(null);
-          try {
-            setDone(await apiPost<PlanRequestResult>("/api/learner/plan/enrollment-request"));
-            onDone();
-          } catch (e) {
-            setError(e instanceof ApiError ? e.message : "تعذّر إرسال الطلب — أعد المحاولة");
-          } finally {
-            setBusy(false);
-          }
-        }}
-        disabled={busy} className="text-xs disabled:opacity-50">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        اطلب تسجيلك في {askable === 1 ? "دورتك المتاحة" : `دوراتك الـ${askable} المتاحة`}
-      </Button>
-      <p className="mt-2 text-micro leading-5 text-muted-foreground">
-        طلبٌ واحد لخطّتك كلها، وفاتورةٌ واحدة بعد حجز مقاعدك — لا دورةً دورة.
-        {awaiting > 0 && " وما لم تُفتح شعبتُه لا يُطلب ولا يُدفع ثمنه."}
-      </p>
-      {error && <p className="mt-2 text-micro font-bold text-gold-ink">{error}</p>}
+    <Card tone="accent" className="mt-3 px-4 py-3 text-xs leading-6 text-teal-light-ink">
+      <span className="font-bold">
+        {askable === 1 ? "دورةٌ من خطّتك مفتوحةٌ للتسجيل" : `${askable} من دوراتك مفتوحةٌ للتسجيل`}.
+      </span>{" "}
+      اختر مرحلتَها في الشريط أعلاه، ثمّ شعبتَها وموعدَها — والدفعُ فوريّ ويُسجّلك مباشرة.
+      {awaiting > 0 && " وما لم تُفتح شعبتُه لا يُدفع ثمنه."}
     </Card>
   );
 }

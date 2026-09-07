@@ -15,15 +15,23 @@ export interface SessionUser {
   emailVerified: boolean;
 }
 
-/** يجلب جلسة الخادم مرة واحدة — user=null حتى يكتمل الفحص أو عند غياب جلسة */
+/** يجلب جلسة الخادم مرة واحدة — user=null حتى يكتمل الفحص أو عند غياب جلسة.
+
+    ومعها حالةُ قناة البريد: حاجزُ التوثيق **لا يُفرَض حين تكون مغلقة** (الخادمُ
+    يُسقطه صراحةً). فبدونها تقول الواجهةُ للمتعلّم إنّ شراءَه موقوفٌ وهو ليس
+    موقوفا، وتعرض عليه زرَّ إرسالٍ لا يمكن أن ينجح. */
 export function useRealSession() {
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [emailChannel, setEmailChannel] = useState<boolean | null>(null);
   const [checked, setChecked] = useState(false);
   useEffect(() => {
-    apiGet<{ user: SessionUser | null }>("/api/auth/me")
-      .then((r) => setUser(r.user ?? null))
+    apiGet<{ user: SessionUser | null; emailChannelEnabled?: boolean }>("/api/auth/me")
+      .then((r) => {
+        setUser(r.user ?? null);
+        setEmailChannel(r.emailChannelEnabled ?? null);
+      })
       .catch(() => setUser(null))
       .finally(() => setChecked(true));
   }, []);
-  return { user, checked };
+  return { user, checked, emailChannel };
 }

@@ -16,7 +16,7 @@ import type { SkillGrowth } from "@/application/student/skill-growth";
 
 /** شارة الفرق — نص ورمز، فلا تعتمد على اللون وحده */
 export function DeltaBadge({ g, className = "" }: { g: SkillGrowth; className?: string }) {
-  const base = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold tabular-nums";
+  const base = "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-fine font-bold tabular-nums";
   if (g.direction === "first") {
     return (
       <span className={`${base} border-gold/40 text-gold-ink ${className}`}>
@@ -55,7 +55,7 @@ export default function SkillDelta({ g }: { g: SkillGrowth }) {
     <li className="grid grid-cols-1 gap-2 border-t border-white/5 py-3 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4">
       <div className="min-w-0">
         <p className="truncate text-sm font-bold">{g.nameAr}</p>
-        <p className="mt-0.5 text-micro text-muted-foreground">
+        <p className="mt-0.5 text-fine text-muted-foreground">
           {g.beforeLevel === null
             ? `قِيست أول مرة بعد الدورة: ${levelLabelAr(g.afterLevel)}`
             : `${levelLabelAr(g.beforeLevel)} ← ${levelLabelAr(g.afterLevel)}`}
@@ -64,7 +64,7 @@ export default function SkillDelta({ g }: { g: SkillGrowth }) {
 
       <div className="flex items-center gap-2">
         {g.beforeLevel === null ? (
-          <span className="text-micro text-muted-foreground">لا قياس قبليّ</span>
+          <span className="text-fine text-muted-foreground">لا قياس قبليّ</span>
         ) : (
           <>
             <span className="w-20">

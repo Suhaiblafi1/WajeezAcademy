@@ -66,13 +66,13 @@ function PlanPrice({ courseIds }: { courseIds: string[] }) {
   if (courseIds.length === 0) return null;
   if (!cheapest) {
     return (
-      <p className="mt-2 text-micro leading-6 text-muted-foreground">
+      <p className="mt-2 text-fine leading-6 text-muted-foreground">
         {loaded ? "يُعلن سعر دورات هذه الخطة مع فتح شعبها. والدفع لا يُطلب الآن." : "يُقرأ السعر…"}
       </p>
     );
   }
   return (
-    <p className="mt-2 text-micro leading-6 text-muted-foreground">
+    <p className="mt-2 text-fine leading-6 text-muted-foreground">
       <span className="font-bold text-foreground">
         تبدأ من <span dir="ltr">{formatCohortPrice(cheapest)}</span> للدورة
       </span>
@@ -101,7 +101,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
           <RouteIcon className="h-5 w-5 text-teal-light-ink" />
           خطتك مرتَّبة على مقاسك
         </h2>
-        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-micro font-bold text-muted-foreground" dir="ltr">
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-fine font-bold text-muted-foreground" dir="ltr">
           {plan.courses.length} دورات · {plan.totalHours} ساعة
         </span>
       </div>
@@ -142,12 +142,12 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
                 <h3 className="flex flex-wrap items-center gap-2 text-sm font-black leading-snug md:text-base">
                   {c.title_ar}
                   {c.role && (
-                    <span className={`rounded-md px-1.5 py-0.5 text-micro font-black ${ROLE_AR[c.role].cls}`}>
+                    <span className={`rounded-md px-1.5 py-0.5 text-fine font-black ${ROLE_AR[c.role].cls}`}>
                       {ROLE_AR[c.role].label}
                     </span>
                   )}
                 </h3>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-micro text-muted-foreground">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-fine text-muted-foreground">
                   <span>{LEVEL_AR[c.level] ?? c.level}</span>
                   <span dir="ltr">{c.hours} ساعة</span>
                   <span>{levelNote(c.levelMatch)}</span>
@@ -189,7 +189,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
       {courseList && (plan.deferred?.length ?? 0) > 0 && (
         <Card className="mt-4 border-dashed p-3.5 md:p-4">
           <p className="text-xs font-black text-muted-foreground">وهذان لمرحلتك التالية — لا لهذه الخطة</p>
-          <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-fine leading-relaxed text-muted-foreground">
             يناسبانك أيضا، لكن حشرهما هنا يطيل الخطة ويضعف إنهاءها. نعرضهما كي تعرف ما ينتظرك لا كي تشتريه الآن.
           </p>
           <ul className="mt-2.5 space-y-1.5">
@@ -198,7 +198,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
                 <span className="font-bold text-foreground">{d.title_ar}</span>
                 <span className="text-muted-foreground" dir="ltr">{d.hours} ساعة</span>
                 {d.role && (
-                  <span className={`rounded-md px-1.5 py-0.5 text-micro font-black ${ROLE_AR[d.role].cls}`}>
+                  <span className={`rounded-md px-1.5 py-0.5 text-fine font-black ${ROLE_AR[d.role].cls}`}>
                     {ROLE_AR[d.role].label}
                   </span>
                 )}

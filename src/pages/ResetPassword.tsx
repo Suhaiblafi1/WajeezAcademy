@@ -73,7 +73,7 @@ export default function ResetPassword() {
                   autoComplete="new-password" required
                   className="w-full rounded-2xl border border-white/10 bg-paper/20 px-4 py-3 text-sm outline-none focus:border-teal/60"
                 />
-                {tooShort && <span className="mt-1.5 block text-micro text-[#FABC05]">٨ أحرف على الأقل</span>}
+                {tooShort && <span className="mt-1.5 block text-fine text-[#FABC05]">٨ أحرف على الأقل</span>}
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-xs font-bold text-muted-foreground">أعدها للتأكيد</span>
@@ -82,7 +82,7 @@ export default function ResetPassword() {
                   autoComplete="new-password" required
                   className="w-full rounded-2xl border border-white/10 bg-paper/20 px-4 py-3 text-sm outline-none focus:border-teal/60"
                 />
-                {mismatch && <span className="mt-1.5 block text-micro text-[#FABC05]">الكلمتان غير متطابقتين</span>}
+                {mismatch && <span className="mt-1.5 block text-fine text-[#FABC05]">الكلمتان غير متطابقتين</span>}
               </label>
               {error && (
                 <Card as="p" tone="danger" role="alert" className="px-4 py-3 text-xs leading-6 text-red-200">
@@ -92,7 +92,7 @@ export default function ResetPassword() {
               <Button tone="confirm" type="submit" disabled={!ready} className="w-full disabled:cursor-not-allowed">
                 {busy ? "يُعيَّن…" : "تعيين كلمة المرور"}
               </Button>
-              <p className="text-center text-micro text-muted-foreground">
+              <p className="text-center text-fine text-muted-foreground">
                 تعيين كلمة جديدة يُخرجك من كل الأجهزة. · <Link to="/auth" className="text-teal-light-ink hover:underline">تسجيل الدخول</Link>
               </p>
             </form>

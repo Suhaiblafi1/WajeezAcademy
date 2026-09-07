@@ -1,6 +1,9 @@
-/* الاستثناءات التشغيلية — API حقيقي: حالات المستشارين غير المسندة + إسناد.
+/* حالاتٌ بلا مستشار — API حقيقي: حالات المستشارين غير المسندة + إسناد.
    الإسناد يتطلب صلاحية advisor.assign؛ قائمة المستشارين من صلاحية admin.users.manage
-   وإن لم تتوفر يُدخل المعرف يدويا. */
+   وإن لم تتوفر يُدخل المعرف يدويا.
+
+   وكان اسمُها «الاستثناءات» في القائمة والشاشة — اسمٌ لا يدلّ على محتواه،
+   ومحروسٌ بصلاحيةِ مراجعةِ طلبات التسجيل التي لا تفتح شيئا هنا. */
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import { Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
@@ -59,7 +62,7 @@ export default function Exceptions() {
 
   if (offline) {
     return (
-      <AdminLayout title="الاستثناءات">
+      <AdminLayout title="حالات بلا مستشار">
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">{offline}</p>
@@ -72,7 +75,7 @@ export default function Exceptions() {
   }
 
   return (
-    <AdminLayout title="الاستثناءات — حالات بلا مستشار">
+    <AdminLayout title="حالات بلا مستشار">
       <FlowSteps steps={[
         { label: "حالة تصل بلا مستشار", actor: "النظام يرصدها" },
         { label: "مراجعة وإسناد", actor: "أنت هنا" },
@@ -89,7 +92,7 @@ export default function Exceptions() {
       ) : rows.length === 0 ? (
         <Panel className="grid place-items-center py-20 text-center">
           <ShieldAlert className="h-12 w-12 text-muted-foreground/50" />
-          <h2 className="mt-4 text-xl font-black">لا استثناءات</h2>
+          <h2 className="mt-4 text-xl font-black">لا حالةَ بلا مستشار</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">كل حالات المستشارين النشطة مسندة — الحالات الجديدة من التشخيص تظهر هنا فور وصولها.</p>
         </Panel>
       ) : (

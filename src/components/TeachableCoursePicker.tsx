@@ -13,8 +13,8 @@ import { X } from 'lucide-react'
 import { controlCls, Field, OptionGrid } from '@/components/FormKit'
 import { courses, courseDomain } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
+import { Card } from '@/components/ui/Surface'
 
-import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 export default function TeachableCoursePicker({
   selected,
@@ -65,7 +65,7 @@ export default function TeachableCoursePicker({
           بعضها يملأ السطر وبعضها كلمتين — وهو التبعثر الذي شُكي منه. */}
       {domain && (
         <Card className="bg-paper/20">
-          <p className="mb-3 text-micro leading-6 text-muted-foreground">
+          <p className="mb-3 text-fine leading-6 text-muted-foreground">
             اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
           </p>
           <div className="max-h-64 overflow-y-auto pl-1">
@@ -83,7 +83,7 @@ export default function TeachableCoursePicker({
       {/* المختار يبقى مرئيا ولو غادر مجاله — وإلا ظنّ أنه فقده */}
       {picked.length > 0 && (
         <div>
-          <p className="mb-2 text-micro font-bold text-muted-foreground">اخترت {picked.length} دورة:</p>
+          <p className="mb-2 text-fine font-bold text-muted-foreground">اخترت {picked.length} دورة:</p>
           <ul className="flex flex-wrap gap-2">
             {picked.map((c) => (
               <li key={c.id}>

@@ -12,6 +12,7 @@ import {
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
 import { inviteLink, sendStaffInviteEmail } from '../../services/account-mail'
+import { AccountResetService } from '../../services/account-reset.service'
 import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
@@ -614,5 +615,42 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     else await prisma.user.delete({ where: { id } })
     return { ok: true, purged: check.target.email, withHistory: blockers.length > 0 }
   })
+  /* ═══ إعادةُ ضبط الحسابات — البند ٦٦ ═══
+
+     أخطرُ بابٍ في المنصّة: محوُ حسابات الناس ومعاملاتِهم كلِّها. ولذلك
+     بابان لا واحد — معاينةٌ تُقرأ، ثمّ تنفيذٌ يشترط أن يُكتب ما قُرئ.
+
+     والصلاحيّةُ `admin.accounts.reset` للمدير الأعلى وحدَه، ولا تُفوَّض
+     (`NON_DELEGATABLE` في `auth/permissions.ts`) — فلا تُمنَح لمن دونه
+     مهما علت رتبتُه. */
+  app.get('/api/admin/accounts/reset/preview', {
+    preHandler: requirePermission('admin.accounts.reset'),
+    schema: { tags: ['admin-users'], summary: 'معاينةُ إعادة ضبط الحسابات — أعدادٌ وما يُحمى وما يبقى، بلا تنفيذ' },
+  }, async (req) => {
+    const { mode } = z.object({ mode: z.enum(['purge', 'archive']).optional().default('purge') })
+      .parse(req.query ?? {})
+    return new AccountResetService(prisma).preview(req.auth!.userId, mode)
+  })
+
+  app.post('/api/admin/accounts/reset', {
+    preHandler: requirePermission('admin.accounts.reset'),
+    schema: { tags: ['admin-users'], summary: 'تنفيذُ إعادة ضبط الحسابات — بعددٍ يُكتب وسببٍ يُحفظ، وبنسخةٍ مُثبَتة' },
+  }, async (req, reply) => {
+    const body = z.object({
+      mode: z.enum(['purge', 'archive']).default('purge'),
+      /* العددُ يُكتب رقما كما عُرض في المعاينة — لا «الكلّ» ولا تقريب */
+      expectedCount: z.number().int().min(1),
+      reason: z.string().trim().min(1),
+      /* والتنفيذُ لا يقع بلا طلبٍ صريح: الافتراضُ معاينة، كعقد «افتح الفصل» */
+      apply: z.literal(true),
+    }).parse(req.body ?? {})
+
+    const service = new AccountResetService(prisma)
+    const result = await service.execute(req.auth!.userId, {
+      mode: body.mode, expectedCount: body.expectedCount, reason: body.reason,
+    })
+    return reply.status(200).send(result)
+  })
+
 }
 

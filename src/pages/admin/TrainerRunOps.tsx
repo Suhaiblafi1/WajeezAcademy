@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BadgeCheck, CheckCircle2, Clock, GraduationCap, Loader2, Search,
-  ServerOff, ShieldAlert, UserCheck, Users, XCircle,
+  ServerOff, ShieldAlert, UserCheck, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -29,6 +29,7 @@ import { controlCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
+import { useRealSession } from "@/services/session";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -79,6 +80,13 @@ export default function TrainerRunOps() {
   const [note, setNote] = useState<Record<string, string>>({});
   const [pick, setPick] = useState<Record<string, { courseId: string; cohortId: string }>>({});
   const [suspendTarget, setSuspendTarget] = useState<OpsTrainer | null>(null);
+  /* تعيينُ مدرّبٍ داخليّا — ثلاثةُ حقولٍ ونقرة (البند ٢٢) */
+  const { user: sessionUser } = useRealSession();
+  const canAddTrainer =
+    (sessionUser?.permissions.includes("admin.users.manage") ?? false) &&
+    (sessionUser?.permissions.includes("trainer.applications.decide") ?? false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addForm, setAddForm] = useState({ fullName: "", email: "", headline: "" });
 
   const load = useCallback(async () => {
     try {
@@ -206,15 +214,99 @@ export default function TrainerRunOps() {
           <h3 className="flex items-center gap-2 text-sm font-black">
             <Users className="h-4 w-4 text-teal-light-ink" /> المدرّبون ({shown.length})
           </h3>
-          <label className="relative">
-            <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسمٍ أو بريد"
-              aria-label="ابحث في المدرّبين"
-              className={`${controlCls} w-64 pr-9`}
-            />
-          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            {canAddTrainer && (
+              <Button onClick={() => setAddOpen((v) => !v)} icon={UserPlus} className="text-teal-light-ink">
+                {addOpen ? "أغلق" : "أضف مدرّبا"}
+              </Button>
+            )}
+            <label className="relative">
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسمٍ أو بريد"
+                aria-label="ابحث في المدرّبين"
+                className={`${controlCls} w-64 pr-9`}
+              />
+            </label>
+          </div>
         </div>
+
+        {/* ── تعيينُ مدرّبٍ داخليّا ──
+
+            لم يكن للمدير طريقٌ إلى هذا أصلا: ملفُّ المدرّب لا يُنشأ إلّا من
+            البتّ في طلبٍ عامّ، فمن أراد تعيينَ زميلٍ أو متعاقدٍ من خارج
+            الطابور كان يملأ له النموذجَ العامّ بنفسه — أو يُنشئ حسابا بدور
+            «مدرّب» فيصطدم صاحبُه بجدارِ «بلا ملفّ مدرّب». */}
+        {addOpen && canAddTrainer && (
+          <Card as="form" tone="accent"
+            className="mt-3 p-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fullName = addForm.fullName.trim();
+              const email = addForm.email.trim();
+              if (fullName.length < 2 || !email) return;
+              /* الرسالةُ من الخادم لا من الشاشة: هو وحدَه يعلم أوصلت الدعوةُ
+                 أم أنّ قناةَ البريد مغلقة — و«أُرسلت» كاذبةً أسوأُ من صمت. */
+              void (async () => {
+                setBusy("add-trainer");
+                try {
+                  const res = await apiPost<{ noteAr: string }>("/api/admin/trainers/direct", {
+                    fullName, email, headline: addForm.headline.trim() || undefined,
+                  });
+                  setAddForm({ fullName: "", email: "", headline: "" });
+                  setAddOpen(false);
+                  toast(res.noteAr);
+                  await load();
+                } catch (err) {
+                  toastError(err instanceof ApiError ? err.message : "تعذّر تعيين المدرّب");
+                } finally {
+                  setBusy("");
+                }
+              })();
+            }}
+          >
+            <p className="text-xs leading-6 text-muted-foreground">
+              يُنشأ في خطوةٍ واحدة: <b className="text-foreground">حسابُه</b> و<b className="text-foreground">ملفُّ مدرّبٍ نشط</b> و<b className="text-foreground">دورُه</b> —
+              فيُؤهَّل ويُسنَد من هذه الشاشة مباشرة. ولا يظهر للعامّة حتّى تُعتمد صورتُه ونبذتُه.
+            </p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="mb-1 block text-micro font-bold text-muted-foreground">الاسم الكامل</span>
+                <input
+                  required minLength={2} maxLength={120}
+                  value={addForm.fullName}
+                  onChange={(e) => setAddForm((f) => ({ ...f, fullName: e.target.value }))}
+                  className={`${controlCls} w-full`}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-micro font-bold text-muted-foreground">البريد</span>
+                <input
+                  required type="email" dir="ltr"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm((f) => ({ ...f, email: e.target.value }))}
+                  className={`${controlCls} w-full text-right`}
+                />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-micro font-bold text-muted-foreground">المسمّى (اختياريّ)</span>
+                <input
+                  maxLength={160}
+                  value={addForm.headline}
+                  onChange={(e) => setAddForm((f) => ({ ...f, headline: e.target.value }))}
+                  className={`${controlCls} w-full`}
+                />
+              </label>
+            </div>
+            <Button
+              type="submit" tone="confirm" icon={UserPlus} loading={busy === "add-trainer"}
+              disabled={addForm.fullName.trim().length < 2 || !addForm.email.trim()}
+              className="mt-3"
+            >
+              عيّنه مدرّبا
+            </Button>
+          </Card>
+        )}
 
         {shown.length === 0 ? (
           <Card className="mt-3 p-8 text-center">

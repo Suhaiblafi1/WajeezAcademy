@@ -48,7 +48,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
             ? "مقعدك محجوز — دفعتك لم تكتمل"
             : "طلبك قيد المراجعة — مقعدك محفوظ"}
       </p>
-      <p className="mt-1.5 text-micro leading-6 text-muted-foreground">
+      <p className="mt-1.5 text-fine leading-6 text-muted-foreground">
         {paid ? (
           <>
             استلمنا دفعتك عن «{seat.courseTitleAr}» ({seat.cohortTitle}) ولا تدفع مرّةً أخرى.
@@ -77,7 +77,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
       {(paid || unpaid) && (
         <Link
           to="/student/billing"
-          className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-micro font-bold text-foreground transition hover:border-white/40"
+          className="mt-2 inline-flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-4 py-1.5 text-fine font-bold text-foreground transition hover:border-white/40"
         >
           {paid ? "تفاصيل الفاتورة" : "أكمل الدفع من الفواتير"}
         </Link>

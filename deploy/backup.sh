@@ -56,6 +56,27 @@ if [ "$MODE" = "--verify" ]; then
 
   echo "✓ استُرجعت النسخة: $USERS مستخدما · $ORDERS طلبا"
   [ "$USERS" -gt 0 ] || { echo "✗ النسخة استُرجعت فارغة — هذه ليست نسخة" >&2; exit 1; }
+
+  # ── الإثباتُ يُكتب حيث يقرؤه التطبيق (البند ٦٥) ──
+  #
+  # كان نجاحُ هذا الاختبار سطرا في طرفيّةٍ يراه من شغّله ثمّ يذهب. ولا شيءَ
+  # في المنصّة يعرف أنّه جرى — فبقي «نسخٌ محقَّقةٌ بالاستعادة» شرطا في وثيقةٍ
+  # يُوعَد به، لا شرطا يُفرَض.
+  #
+  # فيُكتب صفٌّ في `SystemSetting` (جدولٌ كان في المخطَّط بلا مستعمِل).
+  # ويقرؤه `server/services/backup-attestation.ts`، فتمنع **إعادةُ ضبط
+  # الحسابات** (البند ٦٦) نفسَها إن لم يكن ثمّ استرجاعٌ مُثبَتٌ حديث.
+  #
+  # والقيمةُ تحمل ما يجعلها قابلةً للحكم لا مجرّدَ «نعم»: متى، وأيُّ ملفّ،
+  # وكم صفّا استُرجع. فمن يقرؤها يعرف أهي إثباتٌ أم لقطةٌ فارغةٌ نجحت شكلا.
+  ATTEST=$(printf '{"at":"%s","file":"%s","users":%s,"orders":%s,"remote":"%s"}' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$LATEST" "$USERS" "$ORDERS" "$BACKUP_REMOTE")
+  $COMPOSE exec -T db psql -q -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+    "INSERT INTO \"SystemSetting\" (key, value, \"updatedAt\") VALUES ('backup.lastVerifiedRestore', '$ATTEST'::jsonb, now())
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, \"updatedAt\" = now()" \
+    && echo "✓ كُتب إثباتُ الاسترجاع — تقرؤه المنصّةُ وتشترطه إعادةُ ضبط الحسابات" \
+    || echo "⚠ تعذّر كتابةُ الإثبات في القاعدة — الاسترجاعُ نجح، لكنّ المنصّةَ لن تعرف" >&2
+
   echo "✓ النسخ الاحتياطي مُثبَت. أعد هذا الاختبار شهريا."
   exit 0
 fi

@@ -4,9 +4,11 @@ import { CheckCircle2, FileUp, Loader2, ShieldCheck } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
+import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import type { ReactNode } from "react";
 const inputCls =
   "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
@@ -27,6 +29,21 @@ interface UploadState { status: "idle" | "registering" | "uploading" | "done" | 
    سابقين، وكسرُها يوقف طلبا في منتصفه ولا يعلم صاحبه. فتبقى تعمل بالعقد
    الجديد نفسه: بلا «إجمالي المتدربين» ولا «جهات عملت معها» ولا «أدلة
    وتوصيات» — حقولٌ حُذفت لأن المتقدّم يكتبها عن نفسه بلا تحقق. */
+/* اختيارٌ متعدّدٌ يُضغط — ثلاثُ مجموعاتٍ في هذه الشاشة تشترك في هيئته.
+   وكانت الصيغةُ مكتوبةً ثلاثَ مرّاتٍ حرفا بحرف، فتتغيّر واحدةٌ ويبقى أختاها. */
+function Choice({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button" onClick={onClick} aria-pressed={on}
+      className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
+        on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
 export default function JoinTrainerComplete() {
   const [params] = useSearchParams();
   const reference = params.get("ref") ?? "";
@@ -36,6 +53,17 @@ export default function JoinTrainerComplete() {
   const [days, setDays] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [startFrom, setStartFrom] = useState("");
+  /* ── الموسمُ كان يسقط من هذا النموذج صامتا (البند ٥٣) ──
+
+     النموذجُ الجديد يجمع المواسمَ ويُرسلها؛ وهذا — وهو الرابطُ الذي ما زال
+     في بريد متقدّمين سابقين — كان يُرسل `availability` بلا `seasons` ولا
+     `periods`. والخادمُ يقبلهما اختياريّين، **فلا يشتكي أحد**: يُستكمَل
+     الطلبُ ويُعتمَد صاحبُه ولا موسمَ له في القاعدة.
+
+     وبعد أن صار الموسمُ فصلا يُربَط به المدرّب، صار السقوطُ الصامتُ أثقل:
+     من أكمل من هنا لا يظهر في «المدرّبون المتاحون لهذا الفصل» أبدا. */
+  const [seasons, setSeasons] = useState<string[]>([]);
+  const [periods, setPeriods] = useState<string[]>([]);
   const [demoConsent, setDemoConsent] = useState(false);
   const [uploads, setUploads] = useState<Record<string, UploadState>>({});
   const [busy, setBusy] = useState(false);
@@ -65,6 +93,8 @@ export default function JoinTrainerComplete() {
   const validLink = reference.trim().length >= 5 && candidateToken.trim().length >= 10;
   const valid =
     validLink && prevCourses.some((c) => c.title.trim()) &&
+    /* والموسمُ شرطٌ لا اختيار: من لا موسمَ له لا يُجدوَل في فصل */
+    seasons.length > 0 &&
     demoConsent && uploads.cv?.status === "done";
 
   const submit = async (e: React.FormEvent) => {
@@ -79,7 +109,11 @@ export default function JoinTrainerComplete() {
           year: c.year ? Number(c.year) : undefined,
           link: c.link || undefined,
         })),
-        availability: { days, hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined, startFrom: startFrom || undefined },
+        availability: {
+          days, seasons, periods,
+          hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined,
+          startFrom: startFrom || undefined,
+        },
         demoConsent,
       });
       setDone(true);
@@ -172,7 +206,7 @@ export default function JoinTrainerComplete() {
           {/* الدورات السابقة */}
           <fieldset>
             <legend className="text-sm font-black">أبرز ثلاث دورات قدّمتها عبر الإنترنت</legend>
-            <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-fine leading-relaxed text-muted-foreground">
               اذكر اسم الدورة، والجهة أو المنصة التي قدّمتها من خلالها، ورابطا أو نموذجا مختصرا إن توفّر.
             </p>
             <div className="mt-3 space-y-3">
@@ -201,20 +235,49 @@ export default function JoinTrainerComplete() {
             </div>
           </fieldset>
 
+          {/* التوفر — والموسمُ أوّلُه لا آخرُه: الشعبةُ تُفتح في فصل،
+              فسؤالُ «أيَّ فصلٍ تستطيع؟» يسبق «أيَّ يومٍ منه؟». */}
+          <fieldset>
+            <legend className="text-sm font-black">
+              الفصول التي تستطيع التدريس فيها <span className="text-gold-ink">*</span>
+            </legend>
+            <p className="mt-1 text-fine leading-6 text-muted-foreground">
+              الشعبُ تُفتح في فصولٍ لها مواعيد — واختيارُك هنا هو ما يضعك في قائمة
+              «المدرّبون المتاحون» لكلّ فصلٍ تختاره.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {TRAINING_SEASONS.map((s) => (
+                <Choice
+                  key={s.value} on={seasons.includes(s.value)}
+                  onClick={() => setSeasons(seasons.includes(s.value) ? seasons.filter((x) => x !== s.value) : [...seasons, s.value])}
+                >
+                  {s.label} <span className="text-muted-foreground">({s.months})</span>
+                </Choice>
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[{ v: "morning", l: "صباحيّ" }, { v: "evening", l: "مسائيّ" }].map((p) => (
+                <Choice
+                  key={p.v} on={periods.includes(p.v)}
+                  onClick={() => setPeriods(periods.includes(p.v) ? periods.filter((x) => x !== p.v) : [...periods, p.v])}
+                >
+                  {p.l}
+                </Choice>
+              ))}
+            </div>
+          </fieldset>
+
           {/* التوفر */}
           <fieldset>
             <legend className="text-sm font-black">توفرك الأسبوعي</legend>
             <div className="mt-3 flex flex-wrap gap-2">
               {DAYS.map((d) => (
-                <button
-                  type="button" key={d} onClick={() => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d])}
-                  aria-pressed={days.includes(d)}
-                  className={`cursor-pointer rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                    days.includes(d) ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/15 text-muted-foreground hover:border-white/35"
-                  }`}
+                <Choice
+                  key={d} on={days.includes(d)}
+                  onClick={() => setDays(days.includes(d) ? days.filter((x) => x !== d) : [...days, d])}
                 >
                   {d}
-                </button>
+                </Choice>
               ))}
             </div>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -243,7 +306,7 @@ export default function JoinTrainerComplete() {
             {busy ? "جاري الحفظ…" : "أكمل ملفي المهني"}
           </Button>
           {!valid && (
-            <p className="text-center text-micro text-muted-foreground">
+            <p className="text-center text-fine text-muted-foreground">
               يلزم: سيرة ذاتية مرفوعة + دورة سابقة واحدة على الأقل + دورة قابلة للتدريس + موافقة الديمو.
             </p>
           )}

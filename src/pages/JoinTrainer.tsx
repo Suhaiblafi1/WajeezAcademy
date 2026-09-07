@@ -118,7 +118,7 @@ function MultiPick({ id, label, options, selected, onChange }: {
       {selected.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {selected.map((s) => (
-            <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-micro font-bold text-teal-light-ink">
+            <span key={s} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-fine font-bold text-teal-light-ink">
               {s}
               <button type="button" onClick={() => toggleValue(s)} aria-label={`أزل ${s}`} className="cursor-pointer text-muted-foreground transition hover:text-foreground">×</button>
             </span>
@@ -635,7 +635,7 @@ export default function JoinTrainer() {
                 >
                   <span className="flex items-center gap-2">
                     <span
-                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-micro font-black ${
+                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-fine font-black ${
                         state === "current" ? "bg-gold text-on-gold"
                           : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-muted-foreground"
                       }`}
@@ -645,7 +645,7 @@ export default function JoinTrainer() {
                     </span>
                     <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-foreground"}`}>{s.title}</span>
                   </span>
-                  <span className="mt-1.5 block text-micro leading-relaxed text-muted-foreground">{s.hint}</span>
+                  <span className="mt-1.5 block text-fine leading-relaxed text-muted-foreground">{s.hint}</span>
                 </div>
               </li>
             );
@@ -710,7 +710,7 @@ export default function JoinTrainer() {
                     <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                       <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
                     </p>
-                    <p className="mt-1 text-micro leading-6 text-muted-foreground">
+                    <p className="mt-1 text-fine leading-6 text-muted-foreground">
                       تدخل بها ببريدك أعلاه لتتابع حالة طلبك في كل مرحلة — وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
                       إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
                     </p>
@@ -843,7 +843,7 @@ export default function JoinTrainer() {
                           </Field>
                         )}
                       </FieldRow>
-                      <p className="mt-4 text-micro leading-6 text-muted-foreground">
+                      <p className="mt-4 text-fine leading-6 text-muted-foreground">
                         نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
                       </p>
                     </Card>
@@ -906,7 +906,7 @@ export default function JoinTrainer() {
                   aria-describedby="jt-why-count"
                   className={`${areaCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
                 />
-                <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-micro">
+                <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-fine">
                   <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-muted-foreground"}>
                     {motivationLen < MOTIVATION_MIN
                       ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
@@ -949,14 +949,14 @@ export default function JoinTrainer() {
                           </span>
                           <span className="min-w-0 flex-1">
                             <b className="block text-xs leading-6 text-foreground">{d.label}{d.required ? " *" : ""}</b>
-                            <span className="mt-0.5 block text-micro text-muted-foreground">{d.hint}</span>
-                            {st?.name && <span className="mt-1 block truncate text-micro text-muted-foreground">{st.name}</span>}
+                            <span className="mt-0.5 block text-fine text-muted-foreground">{d.hint}</span>
+                            {st?.name && <span className="mt-1 block truncate text-fine text-muted-foreground">{st.name}</span>}
                           </span>
                           <input type="file" accept={d.accept} className="sr-only"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }} />
                         </label>
                         {st?.status === "error" && (
-                          <p className="mt-2 flex items-center gap-1.5 text-micro text-gold-ink">
+                          <p className="mt-2 flex items-center gap-1.5 text-fine text-gold-ink">
                             <RefreshCcw className="h-3 w-3" /> {st.error ?? "تعذّر الرفع"} — اختر الملف مجددا
                           </p>
                         )}
@@ -1076,7 +1076,7 @@ export default function JoinTrainer() {
                         </span>
                         <span className="min-w-0">
                           <b className={`block text-xs ${on ? "text-teal-light-ink" : "text-foreground"}`}>{c.label}</b>
-                          <span className={`mt-0.5 block truncate text-micro ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-muted-foreground"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
+                          <span className={`mt-0.5 block truncate text-fine ${c.needsPhone && !phoneShown ? "text-gold-ink" : "text-muted-foreground"}`} dir={c.value === "other_email" ? "rtl" : "ltr"}>
                             {sub}
                           </span>
                         </span>
@@ -1203,7 +1203,7 @@ export default function JoinTrainer() {
           {lookupResult && (
             <Inset tone="accent" className="mt-3">
               <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>
-              <p className="mt-1 text-micro text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
+              <p className="mt-1 text-fine text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
               {lookupResult.explain && <p className="mt-2 text-xs leading-6 text-foreground">{lookupResult.explain}</p>}
             </Inset>
           )}

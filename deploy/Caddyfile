@@ -21,7 +21,14 @@
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+		# `worker-src 'self'` معلنةٌ صراحةً بقصد — لا زيادةً تجميليّة.
+		# تركُها يجعل سفاري يرتدّ في سلسلة (worker-src ← child-src ← script-src)
+		# ومعالجتُها معروفةٌ بثقوبها عنده، فيُرفض عاملُ الخدمة (`public/sw.js`)
+		# بلا سببٍ ظاهر. وهو عطبٌ عولج مرّةً في `public/.htaccess` (طلبُ السحب ١٢)
+		# ثمّ عاد حيّا هنا: `.htaccess` ملفُّ Apache و**Caddy لا يقرؤه**، فلمّا
+		# صار الخادمُ على Hetzner خلف Caddy بقي العلاجُ في ملفٍّ لا يخدم شيئا.
+		# والحارس: `src/tests/deploy/serving-headers.test.ts`
+		Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		-Server
 	}

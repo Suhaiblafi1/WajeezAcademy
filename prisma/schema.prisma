@@ -330,6 +330,14 @@ model Course {
    */
   listPrice             Decimal?                     @db.Decimal(10, 2)
   listCurrency          String                       @default("USD")
+  /// مجالُ الدورة المعرفيّ — كان يُشتقّ من نصّ المعرِّف **في المتصفّح وحدَه**
+  /// (`C-CYB-101` ← الأمن السيبراني)، والخادمُ لا يحسبه أبدا. فمخطِّطُ الفصل
+  /// لا يستطيع أن يسأل «أهاتان الدورتان في مجالٍ واحد؟» — وهي الفجوةُ التي
+  /// تمنع الخوارزميّةَ من العمل أصلا. يُملأ في الترحيل من العائلة نفسِها.
+  domainAr              String?
+  /// مجموعةُ التزاحم — دوراتٌ لا يُستحسن أن تبدأ متقاربةً ولو اختلفت مجالاتُها.
+  /// تُملأ يدويّا عند الحاجة، وفارغةٌ تعني «لا قيدَ زائدٌ على المجال».
+  collisionGroup        String?
   createdBy             String?                      @db.Uuid
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
@@ -1108,6 +1116,7 @@ model TrainerProfile {
   cohortTrainers        CohortTrainer[]
   availability          TrainerAvailability[]
   blackouts             TrainerBlackout[]
+  termAvailability      TrainerTermAvailability[]
 }
 
 model TrainerSkill {
@@ -1364,6 +1373,71 @@ model TrainerPayoutItem {
  * يمكن اعتماد اقتراح لشعبة واحدة دون تغيير الكتالوج.
  */
 
+/// الفصلُ الدراسيّ — العمودُ الفقريُّ للجدولة (البند ٤٦).
+///
+/// ─────────── ولمَ كيانٌ مستقلٌّ لا حقلٌ على الشعبة ───────────
+///
+/// السببُ الحاسم: **قائمةُ «المدرّبون المتاحون لهذا الفصل» يجب أن توجد قبل
+/// أن توجد الشعب.** وحقلٌ على الشعبة لا يمكن الربطُ به حين لا شعبةَ بعد.
+/// وهذا ليس افتراضا: الدالّةُ التي تجيب «من يصلح لهذه الشعبة؟» تتخطّى قراءةَ
+/// التوفّر والإجازات كلَّها حين لا تكون هناك جلساتٌ بعد — فالسؤالُ «من يستطيع
+/// التدريسَ في فصل الربيع؟» لا جوابَ له اليوم **بالبناء، لا بالنقص**.
+///
+/// وحالةُ الفصل نفسِه — نافذةُ التسجيل، ونشرُ التقويم، ومن فتحه ومتى — لا
+/// مكانَ لها على الشعبة إلّا أن تُكرَّر ثمانين مرّة. وهنا صفٌّ واحد.
+///
+/// ─────────── والمواسمُ الأربعةُ ليست جديدةً ───────────
+///
+/// هي في المنصّة منذ زمنٍ بحدودها الأربعة (`TRAINING_SEASONS`)، تُعرض على
+/// المتقدّم ويتحقّق منها الخادم — **لكنّها تُخزَّن في عمود JSON**، فلا تُربَط
+/// ولا يُستعلَم عنها ولا تعرف الشعبةُ عنها شيئا. فهذه فكرةٌ نصفُ مبنيّة
+/// يُصحَّح تخزينُها، لا مصطلحٌ يُخترع ثانيا.
+model Term {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  year                 Int
+  /// رمزُ الموسم — القيمُ نفسُها في `TRAINING_SEASONS` لا جدولٌ ثانٍ يفترق عنها
+  season               String // nov_jan | feb_apr | may_jul | aug_oct
+  titleAr              String
+  startsOn             DateTime                  @db.Date
+  endsOn               DateTime                  @db.Date
+  /// نافذةُ التسجيل — بديلُ الدعوة الدائمة. فارغةٌ تعني «لم تُحدَّد بعد»
+  registrationOpensAt  DateTime?
+  registrationClosesAt DateTime?
+  status               String                    @default("planned") // planned | open | active | closed | cancelled
+  /// متى نُشر تقويمُ الفصل للعامّة — قبله لا يُعرض للزائر
+  calendarPublishedAt  DateTime?
+  openedAt             DateTime?
+  openedBy             String?                   @db.Uuid
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+  cohorts              Cohort[]
+  trainerAvailability  TrainerTermAvailability[]
+
+  @@unique([year, season])
+  @@index([status, startsOn])
+}
+
+/// إتاحةُ المدرّب بالفصل — **هذا هو الجدولُ الذي يجعل السؤالَ ممكنا**.
+///
+/// كانت المواسمُ تُعلَن في طلب الانضمام وتُدفن في JSON: يقرؤها المراجعُ بعينه
+/// ولا يستطيع أحدٌ أن يسأل عنها. وهنا تصير صفوفا تُستعلَم، ويستطيع المدرّبُ
+/// أن يؤكّد أو يعتذر عن فصلٍ بعينه بعد اعتماده.
+model TrainerTermAvailability {
+  profileId  String         @db.Uuid
+  termId     String         @db.Uuid
+  status     String         @default("declared") // declared | confirmed | declined
+  /// سقفُ ما يقبله في هذا الفصل — فارغٌ يعني «بلا سقفٍ معلَن»
+  maxCohorts Int?
+  note       String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  term       Term           @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, termId])
+  @@index([termId, status])
+}
+
 model Cohort {
   id                 String                    @id @default(uuid()) @db.Uuid
   courseId           String
@@ -1385,8 +1459,16 @@ model Cohort {
   deliveryMode       String                    @default("remote") // remote | in_person | hybrid
   registrationOpen   Boolean                   @default(false)
   financialReady     Boolean                   @default(false) // إعداد مالي مكتمل — شرط فتح الشعبة
+  /// الفصلُ الذي تنتمي إليه — **قابلٌ للإفراغ عمدا**: المسوّداتُ تُنشأ قبل أن
+  /// يُقرَّر فصلُها، وشعبُ ما قبل نظام الفصول لا فصلَ لها ولا تُلفَّق لها واحد.
+  termId             String?                   @db.Uuid
+  /// الشهرُ داخل الفصل (1 أو 2 أو 3) — يكتبه المخطِّط ويقرؤه التقويم
+  plannedMonth       Int?
+  /// ثبّته إنسانٌ فلا يزحزحه المخطِّط — التجاوزُ البشريُّ يُسجَّل لا يُفترض
+  scheduleLockedAt   DateTime?
   createdAt          DateTime                  @default(now())
   course             Course                    @relation(fields: [courseId], references: [id])
+  term               Term?                     @relation(fields: [termId], references: [id], onDelete: SetNull)
   plans              CohortDeliveryPlan[]
   assignments        TrainerCourseAssignment[]
   changeRequests     TrainerChangeRequest[]
@@ -1832,9 +1914,15 @@ model Certificate {
    * للناس ويُتحقَّق منه برابط. والشهادةُ ليست أثرا للتسجيل، بل دعوى
    * مستقلّةٌ عن المنصّة على صاحبها — إن سقطت صار الرابطُ يقول «لا شهادةَ
    * بهذا الرقم» عن شهادةٍ صحيحة.
-   * وطبقةُ الشيفرة تحرسه فعلا: بصمةُ الحساب في `account-purge.service`
-   * تعدّ الشهادات وترفض المحوَ إن وُجدت. لكنّ الحرسَ في الشيفرة وحدَها
-   * يسقط بأوّل مسارٍ جديدٍ أو استعلامٍ يدويّ — ولا يسقط `Restrict`.
+   * وطبقةُ الشيفرة تحرسه في المسار العاديّ: بصمةُ الحساب في
+   * `account-purge.service` تعدّ الشهادات وترفض المحوَ إن وُجدت. لكنّ الحرسَ
+   * في الشيفرة وحدَها يسقط بأوّل مسارٍ جديدٍ أو استعلامٍ يدويّ — ولا يسقط
+   * `Restrict`.
+   * وللمحوِ بالسجلّ (البند ٦٤) بابٌ واحدٌ صريح: `purgeAccountWithHistory`
+   * تحذف الشهادةَ **بنفسها** قبل التسجيل، داخلَ معاملتها. وكانت قبل ذلك
+   * تحذف التسجيلَ مباشرةً ظنّا أنّ الشهادةَ تسلسل معه — فكان كلُّ متعلّمٍ
+   * له شهادةٌ يُجهض المعاملةَ كلَّها. فالقيدُ باقٍ، والاستثناءُ مكتوبٌ في
+   * موضعٍ واحدٍ يُقرأ.
    * وسحبُ الشهادة له بابُه: `status: 'revoked'` مع `CertificateRevocation`
    * التي تحمل السببَ ومن سحبها. فالسحبُ يُقال، والمحوُ يُخفي.
    */

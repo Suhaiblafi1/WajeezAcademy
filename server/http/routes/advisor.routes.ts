@@ -135,6 +135,21 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     return advisors.learnerSnapshot(req.auth!.userId, id)
   })
 
+  /* إنشاءُ حالةٍ بنفسه — من قابله المستشارُ خارج المنصّة يدخل بيده،
+     ويُسنَد إليه في الفعل نفسِه. */
+  app.post('/api/advisor/cases', {
+    preHandler: requirePermission('advisor.cases.operate'),
+    schema: { tags: ['advisor-portal'], summary: 'إدخالُ عميلٍ محتمَل وفتحُ حالته — تُسنَد لمن أدخلها' },
+  }, async (req, reply) => {
+    const body = z.object({
+      fullName: z.string().trim().min(2).max(120),
+      email: z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة').optional(),
+      phone: z.string().trim().min(5).max(30).optional(),
+      note: z.string().trim().max(2000).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await advisors.createOwnCase(req.auth!.userId, body))
+  })
+
   /* ── ما لا يملكه المستشار وحده: خصمٌ وتعديلُ خطّة ── */
   app.get('/api/advisor/cases/:id/requests', {
     preHandler: requirePermission('advisor.request.submit'),

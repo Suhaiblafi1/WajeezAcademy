@@ -33,7 +33,31 @@ export const CAREER_STAGE_LABELS_AR: Record<CareerStage, string> = {
   other_unsure: 'غير ذلك / غير متأكد',
 }
 
-/* المراحل التي تُسأل عن حالة العمل — المؤسس والمستقل تُشتق حالتهما من مرحلتهما */
+/* المراحل التي تُسأل عن حالة العمل.
+ *
+ * ── لماذا خرجت منها ثلاث، وبقيت خمسٌ بلا نقاش (البند ٣٧) ──
+ *
+ * قِيس هذا السؤال مضادّا للواقع على ٣٠٠ جلسة، **مفصَّلا بالمرحلة** — والتفصيلُ
+ * يقلب الحكمَ الإجماليّ رأسا على عقب. الرقمُ الكلّيُّ «٢٧٪ هدر» يُغري بتقاعده،
+ * وهو خطأ: الهدرُ ليس موزّعا، بل **محصورٌ في مرحلتين ونصف**:
+ *
+ *   early_career · experienced · manager · senior_manager · trainer_ld
+ *     ← ١٤٨ مقعدا، **صفرٌ ميّت**. كلُّ جوابٍ فيها يغيّر شيئا.
+ *   other_unsure        ← ٢٧ مقعدا، **٢٧ ميّتا (١٠٠٪)**
+ *   fresh_graduate      ← ٣٨ مقعدا، ٢٣ ميّتا (٦١٪)
+ *   university_student  ← ٢٨ مقعدا، ١٤ ميّتا (٥٠٪)
+ *
+ * فتقاعدُه جملةً كان سيُتلف ١٤٨ مقعدا حيّا ليوفّر ٦٤. وهذا بعينه ما يخفيه
+ * المتوسّط: سؤالٌ حاسمٌ لخمسِ مراحلَ وميّتٌ لواحدة يُقرأ «متوسّطَ الفائدة».
+ *
+ * ── ولماذا يبقى حيّا حيث يبقى ──
+ *
+ * ليس لأنّه يغيّر الشخصيّة — لا يغيّرها إلّا لـ`fresh_graduate`. بل لأنّ
+ * `contradictions.ts` يقرؤه للمراحل الخمس: من وصف نفسه موظّفا ثمّ قال إنّه لا
+ * يعمل **بينهما**، وذاك أصدقُ ما في جلسته. فحذفُ السؤال يُعمي المنصّةَ عن
+ * حالةِ من هو بين وظيفتين — وهو من أحوجِ الناس إلى توصيةٍ صادقة.
+ *
+ * والمؤسّسُ والمستقلُّ خارجَها أصلا: حالتُهما تُشتقّ من مرحلتهما. */
 export const STAGE_NEEDS_EMPLOYMENT_QUESTION: CareerStage[] = [
   'university_student',
   'fresh_graduate',
@@ -42,8 +66,44 @@ export const STAGE_NEEDS_EMPLOYMENT_QUESTION: CareerStage[] = [
   'manager',
   'senior_manager',
   'trainer_ld',
-  'other_unsure',
 ]
+
+/* الأهدافُ التي تجعل حالةَ العمل حاسمةً لطالبٍ جامعيّ — وهي الثلاثةُ التي
+   تقرؤها قاعدةُ حسم الهدف في `facts.ts` («أوّلُ وظيفة» أم «ترقية»). وما عداها
+   لا يقرأ حالتَه أحد، فلا يُسأل عنها. */
+export const GOALS_NEEDING_EMPLOYMENT: readonly string[] = [
+  'first_job',
+  'promotion',
+  'improve_performance',
+]
+
+/* حالةُ العمل حين لا تُسأل — تُشتقّ من المرحلة كما يُشتقّ `education_state`.
+   والغرضُ أن يبقى سطرُ «وضعك العمليّ» في التفسير قائما: البندُ ٣٧ يوفّر مقعدا
+   ولا يُسقط سطرا شخصيّا من شرحِ ما فُهم عن المتعلّم. */
+export function stageToEmploymentState(stage: CareerStage): EmploymentStateV21 | null {
+  switch (stage) {
+    case 'founder':
+      return 'business_owner'
+    case 'freelancer':
+      return 'self_employed'
+    case 'university_student':
+      return 'not_working'
+    /* والمراحلُ الخمسُ العاملةُ **لا تُشتقّ**، وهذا شرطُ صحّةٍ لا تفصيلَ ذوق.
+       اشتقاقُ «موظّف» منها يبدو بديهيّا، وهو يُبطل البندَ الذي وُضع له
+       السؤال: `contradictions.ts` يقارن ما **قاله** المتعلّم بمرحلته، فمن
+       وصف نفسه موظّفا ثمّ قال إنّه لا يعمل يُسأل أيُّ الوصفين أقربُ إليه.
+       والاشتقاقُ يملأ الحقلَ بـ«موظّف» فلا يبقى شيءٌ يناقضه — فيصمت النظامُ
+       عمّن هو بين وظيفتين. وقد وقعتُ في هذا فعلا في أوّل صياغة، وأمسكه
+       القياس: هبطت مقاعدُ السؤال من ٢٤١ إلى ٣٨، أي أنّه صمت في الخمس
+       العاملة التي هدرُها **صفر**.
+
+       و«غير متأكّد» و«خرّيج حديث» لا يُشتقّان كذلك: الأوّلُ لا يقول شيئا عن
+       عمله (ويُملأ من مرحلته لا يصحّ)، والثاني يُسأل فعلا لأنّ جوابَه يفصل
+       الباحثَ عن العمل عن الخرّيج. */
+    default:
+      return null
+  }
+}
 
 /* مرحلة → رمز شخصية V2 (للأهلية والتفسير) */
 export function stageToPersonaKey(stage: CareerStage, facts: { employment_state?: string; business_stage?: string; sector?: string }): PersonaKey {
@@ -134,7 +194,22 @@ export const NEEDS_V21: NeedDefV21[] = [
   { code: 'need_operations', label_ar: 'العمليات وتحسين الإجراءات', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations'] },
   /* مدخل قالب تجربة العميل (TPL-CX-001): الاحتياج ينتج حقيقة current_pain القابلة للاستخدام
      عبر قاعدة اشتقاق موثقة (facts.ts) — لا سؤال «ما ألمك؟» نصي عام */
-  { code: 'need_customer_experience', label_ar: 'تجربة العميل / المستفيد وجودة الخدمة', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations'] },
+  /* ── «المستفيد» في العنوان، و«gov_services» لا يصل إليه أحد (البند ٣٩) ──
+
+     هذا الاحتياجُ يقول «تجربة العميل / **المستفيد**» — و«المستفيد» كلمةُ
+     القطاع العامّ بعينها. ومجالُ `gov_services` كان يصل إليه **صفرُ
+     احتياجات**، فبقي `PW-GOV-002` الكيانَ الوحيدَ في الفضاء النشط الذي لا
+     تفوز له توليفةٌ واحدة: جرّبت حزمةُ الذهب ٢٨ توليفةً فردّته كلَّها
+     بـ«الكيان خارج مجال حاجتك».
+
+     والخريطةُ القديمةُ (`pathway-domains.v2.json`) تقول الصوابَ منذ البداية:
+     `improve_customer_experience` ← `['gov_services', 'communication_influence']`.
+     فالسطرُ هنا كان يُسقط ما تقوله الخريطةُ نفسُها.
+
+     والعلاجُ توجيهُ إشارةٍ لا محتوًى جديد: المسارُ مؤلَّفٌ ودوراتُه قائمة،
+     وينقصه طريقٌ يصل إليه. ولا يُفتح لغير أهله: بوّابةُ `sector: public`
+     تبقى كما هي، فلا يراه إلّا من قال إنّه في القطاع العامّ. */
+  { code: 'need_customer_experience', label_ar: 'تجربة العميل / المستفيد وجودة الخدمة', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations', 'gov_services'] },
   { code: 'need_sales', label_ar: 'المبيعات والتعامل مع العملاء', stages: [...EMPLOYED_LIKE, 'founder', 'freelancer'], domains: ['sales'] },
   { code: 'need_marketing', label_ar: 'التسويق والنمو', stages: ['early_career', 'experienced', 'manager', 'founder', 'freelancer', 'other_unsure'], domains: ['marketing_growth'] },
   { code: 'need_negotiation', label_ar: 'التفاوض وإغلاق الصفقات', stages: ['experienced', 'manager', 'senior_manager', 'founder', 'freelancer'], domains: ['sales', 'communication_influence'] },

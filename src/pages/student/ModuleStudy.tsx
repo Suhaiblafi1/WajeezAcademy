@@ -147,9 +147,9 @@ export default function ModuleStudy() {
             متنُها يُكتب الآن، ويظهر هنا قبل موعد جلستها في جدولك. وما عداها من وحدات الدورة مفتوحٌ لك.
           </p>
           {mod.outcome && (
-            <p className="mx-auto mt-4 max-w-md rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-micro leading-6 text-muted-foreground">
+            <Card as="p" className="mx-auto mt-4 max-w-md px-4 py-3 text-fine leading-6 text-muted-foreground">
               <span className="font-bold text-foreground">ما ستخرج به منها: </span>{mod.outcome}
-            </p>
+            </Card>
           )}
           <Link
             to={`/student/course/${courseId}`}
@@ -185,10 +185,10 @@ export default function ModuleStudy() {
       {/* شريطُ الموضع — أين أنا، وكم بقي */}
       <nav aria-label="خطوات الوحدة" className="sticky top-16 z-20 -mx-5 mb-6 border-b border-white/10 bg-paper/95 px-5 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <Link to={`/student/course/${courseId}`} className="flex shrink-0 items-center gap-1.5 text-micro font-bold text-muted-foreground transition hover:text-foreground">
+          <Link to={`/student/course/${courseId}`} className="flex shrink-0 items-center gap-1.5 text-fine font-bold text-muted-foreground transition hover:text-foreground">
             <ArrowRight className="h-3.5 w-3.5" /> محطّات الدورة
           </Link>
-          <span className="truncate text-micro text-muted-foreground">
+          <span className="truncate text-fine text-muted-foreground">
             الوحدة {modIndex + 1} من {full.modules.length} · خطوة {pos + 1} من {steps.length}
             {totalMinutes > 0 && <> · <Clock className="mb-0.5 inline h-3 w-3" /> {countAr(totalMinutes, MIN_FORMS)}</>}
           </span>
@@ -206,9 +206,29 @@ export default function ModuleStudy() {
         </ol>
       </nav>
 
+      {/* ── وحدةٌ لم يُكتب متنُها بعد ──
+
+          ٣٠٨ وحداتٍ من ٤٠٤ بلا متنِ دراسةٍ ذاتيّة (والعنوانُ والمخرَجُ
+          والنشاطُ والمخرَجُ المطلوبُ مؤلَّفةٌ في الأربعِ مئةٍ كلِّها). فكان
+          المشغّلُ يُسقط خطوةَ الدرس صامتا ويهبط بالمتعلّم إلى «نشاطك
+          ومخرَجك» مباشرةً — **بلا كلمةٍ تقول لماذا**.
+
+          فيقرأ من دفع ثمنَ دورةٍ وحدةً من خطوةٍ واحدة، ويظنّ العطبَ في
+          حسابه أو في المنصّة. والحقيقةُ أبسطُ وأصدق: الوحدةُ تُدرَّس مباشرةً
+          مع مدرّبها، ومتنُها المكتوبُ قيد التأليف. **وقولُها خيرٌ من إخفائها.** */}
+      {lessonCount === 0 && (
+        <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-xs leading-7 text-gold-ink">
+          <BookOpen className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>
+            متنُ هذه الوحدة المكتوب <b>قيد التأليف</b> — وهي تُدرَّس مع مدرّبك في جلستها.
+            ومخرَجُ الوحدة ونشاطُها والمخرَجُ المطلوبُ منك أدناه كما هي.
+          </span>
+        </Card>
+      )}
+
       {step?.kind === "lesson" && (
         <Panel as="article" className="md:p-9">
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-micro font-bold text-teal-light-ink">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-fine font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">الدرس {pos + 1} من {lessonCount}</span>
             {step.minutes > 0 && <span className="text-muted-foreground">{countAr(step.minutes, MIN_FORMS)} قراءة</span>}
           </p>
@@ -225,7 +245,7 @@ export default function ModuleStudy() {
               <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
                 <Sparkles className="h-3.5 w-3.5" /> استرجعْ قبل أن تمضي
               </p>
-              <p className="mt-1 text-micro leading-6 text-muted-foreground">
+              <p className="mt-1 text-fine leading-6 text-muted-foreground">
                 لا درجةَ لهذا ولا وزن — الغرضُ أن تُخرِج الفكرة من رأسك لا أن تعيد قراءتها.
               </p>
               <div className="mt-4 space-y-5">
@@ -254,7 +274,7 @@ export default function ModuleStudy() {
 
       {step?.kind === "scenario" && (
         <Panel as="article" className="md:p-9">
-          <p className="text-micro font-bold text-teal-light-ink">
+          <p className="text-fine font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">سيناريو قرار</span>
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">

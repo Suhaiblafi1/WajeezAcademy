@@ -3,6 +3,7 @@
 
 import { keywordClassifiers, optionEffects, optionIdFromText, optionIndexOfId, questionById, skillSlugs } from './catalog'
 import type { Answer, BankQuestion, FactBag, FactValue } from './types'
+import { GOALS_NEEDING_EMPLOYMENT, stageToEmploymentState, type CareerStage } from './v2_1/maps'
 
 const UNCERTAIN_MARKERS = ['لست متأكدا', 'لا أعرف', 'غير متأكد', 'أفضل عدم الإجابة']
 
@@ -48,6 +49,22 @@ function putFact(
 }
 
 /** يختزل إجابة واحدة إلى حقائق ويحدث المتجهات */
+/* عدّادُ البنود لكلّ بُعد، معلَّقٌ **بمتّجه الميول نفسِه**.
+
+   والسببُ في ربطه بالكائن لا بحالة المحرّك: المحرّكاتُ الثلاثةُ تعيد بناءَ
+   المتّجه من الصفر عند كلّ إعادة تشغيل (`interestVector = {}`)، فعدّادٌ معلَّقٌ
+   به يُولد معه ويموت بموته بلا سطرٍ واحدٍ في أيٍّ منها. وعدّادٌ في حالة المحرّك
+   كان سيحتاج ثلاثةَ تعديلاتٍ متطابقةٍ يُنسى أحدُها. */
+const INTEREST_COUNTS = new WeakMap<Record<string, number>, Record<string, number>>()
+function interestCounts(vector: Record<string, number>): Record<string, number> {
+  let c = INTEREST_COUNTS.get(vector)
+  if (!c) {
+    c = {}
+    INTEREST_COUNTS.set(vector, c)
+  }
+  return c
+}
+
 export function reduceAnswer(
   question: BankQuestion,
   answer: Answer,
@@ -102,7 +119,26 @@ export function reduceAnswer(
       const idx = ordinalOf(0)
       const score = idx >= 0 ? idx + 1 : 3
       const key = question.measures[0]
-      if (key) interestVector[key] = score
+      /* ── متوسّطٌ لا آخِرُ جواب (البند ٤٠) ──
+
+         كان `interestVector[key] = score` — إسنادا يمحو ما قبله. ولكلّ بُعدٍ
+         من أبعاد هولاند **ثلاثةُ بنودٍ في البنك**، فلو سُئل منها اثنان لأُلغي
+         الأوّلُ صامتا وحُسب البُعدُ من الأخير وحدَه.
+
+         وهو عطبٌ لا يظهر في تشخيصٍ نادرا ما يسأل بندَين من بُعدٍ واحد —
+         ويظهر يومَ تبذر «مرآةُ وجيز» ثمانيةَ عشرَ بندا دفعةً، فتصير الأبعادُ
+         الستّةُ محسوبةً من ستّةِ بنودٍ لا ثمانيةَ عشر. أي أنّ المرآةَ كانت
+         ستَعِد بثلاثةِ أضعافِ الثبات ولا تعطي منها شيئا.
+
+         فصار المتوسّطَ الجاري — **بلا تغييرٍ في المحرّك ولا في مستهلِك
+         الخريطة**: المفتاحُ نفسُه والمدى نفسُه. */
+      if (key) {
+        const counts = interestCounts(interestVector)
+        const seen = (counts[key] ?? 0) + 1
+        const prev = interestVector[key] ?? 0
+        counts[key] = seen
+        interestVector[key] = (prev * (seen - 1) + score) / seen
+      }
       return
     }
     case 'skill_level_5': {
@@ -185,6 +221,33 @@ export function applyDerivedRules(facts: FactBag) {
   if (g('persona_type') === 'founder' && g('employment_state') === 'self_employed') {
     facts.persona_type = { ...facts.persona_type, value: 'freelancer' }
   }
+  /* اشتقاق employment_state من المرحلة — البند ٣٧.
+
+     السؤالُ لم يُحذف: ضاق موضعُه إلى حيث يُقرأ جوابُه (انظر
+     `STAGE_NEEDS_EMPLOYMENT_QUESTION`). وحيث لم يُسأل تُشتقّ الحالةُ من
+     المرحلة، **كي لا يسقط سطرُ «وضعك العمليّ» من التفسير**: توفيرُ مقعدٍ لا
+     يُشترى بإسقاط سطرٍ يقول للمتعلّم ما فُهم عنه.
+
+     ودليلُها أضعف: تُنسب إلى `derived` لا إلى سؤال، وجودتُها ٠٫٦ لا جودةُ
+     جوابٍ صريح — فمن يقرأ الأثرَ يعرف أنّها استُنتجت ولم تُقَل. */
+  const empStage = g('career_stage')
+  if (facts['employment_state'] === undefined && typeof empStage === 'string') {
+    /* الطالبُ الجامعيّ يُشتقّ **بعد** أن يُعرف هدفُه ويتبيّن أنّه ليس من
+       الثلاثة التي تقرأ حالتَه — وإلّا سبق الاشتقاقُ السؤالَ فأسكته. */
+    const goalV21 = g('goal_code_v21')
+    const studentPending =
+      empStage === 'university_student' &&
+      (typeof goalV21 !== 'string' || GOALS_NEEDING_EMPLOYMENT.includes(goalV21))
+    const derivedEmp = studentPending ? null : stageToEmploymentState(empStage as CareerStage)
+    if (derivedEmp) {
+      facts['employment_state'] = {
+        value: derivedEmp,
+        sourceQuestionId: 'derived',
+        evidenceQuality: 0.6,
+      }
+    }
+  }
+
   /* اشتقاق education_state من المرحلة المهنية — V2.1 المرحلة 4 (موثق):
      Career Stage يميز طالبًا جامعيًا من خريج حديث، فلا حاجة لسؤال تعليم مستقل.
      المطلوب الحقيقي لقالب «أول وظيفة» هو جاهزية أول وظيفة لا الشهادة بذاتها. */

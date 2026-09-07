@@ -7,7 +7,11 @@
 export interface CoreCatalogPathway {
   id: string
   title: string
+  /* الاسمُ القصير و«ليس لمن» كانا في `core-catalog.v2.json` ولم يكونا في هذه
+     الواجهة، فقرأهما `buildPathways` عبر خطأ نوعٍ لا يوقفه إلّا `tsc`. */
+  short_title?: string
   audience: string
+  not_for?: string
   after: string
   capstone: string
   duration_weeks: number

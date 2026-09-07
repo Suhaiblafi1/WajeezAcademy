@@ -48,6 +48,11 @@ export const PERMISSIONS = [
      الإيقاف في حبّةٍ واحدة، وإلّا مَلَك من يوقِف أن يمحوَ. */
   { key: 'admin.users.purge', description: 'حذفُ حسابٍ نهائيّا من قاعدة البيانات — لا رجعةَ فيه' },
   { key: 'admin.users.purge_history', description: 'محوُ حسابٍ بسجلّه كلّه (تسجيلاته وطلباته وفواتيره) — لحسابات الديمو والتجربة وحدها' },
+  /* ── البند ٦٦: إعادةُ ضبط الحسابات ──
+     أخطرُ حبّةٍ في المنصّة: محوُ **كلّ** حسابات الناس ومعاملاتِهم. فهي
+     للمدير الأعلى وحدَه (`ROLE_PERMISSIONS.super_admin` يأخذ الكلَّ)، و
+     `NON_DELEGATABLE` تمنع تفويضَها لمن دونه مهما كانت رتبتُه. */
+  { key: 'admin.accounts.reset', description: 'إعادةُ ضبط الحسابات — محوُ حسابات الناس ومعاملاتِهم كلِّها استعدادا للإطلاق. لا رجعةَ فيه' },
   /* التكليفُ والإشعار — حبّتان لا واحدة.
 
      من يوزّع المهامّ ليس بالضرورة من يبثّ الإعلانات: الأولى تُتابَع وتُغلَق،
@@ -338,11 +343,26 @@ export function refuseRoleAssignment(
 
 export interface DelegationRefusal { code: string; message_ar: string }
 
+/* ── حبّاتٌ لا تُفوَّض بحالٍ (البند ٦٦) ──
+
+   المنصّةُ فيها تفويضُ صلاحيّات بقصد: المديرُ يمنح فريقَه ما يحتاجه. وهذه
+   تُستثنى صراحةً — لا لأنّ التفويضَ سيّئ، بل لأنّ هذه الحبّة **تمحو
+   المنصّةَ كلَّها ولا رجعةَ فيها**. فمن ملكها يجب أن يملكها بدوره لا بمنحةٍ
+   من غيره، وتبقى في `super_admin` وحدَه حيث يراها Git ويراجعها. */
+const NON_DELEGATABLE: readonly string[] = ['admin.accounts.reset']
+
 /** أيجوز لهذا أن يمنح تلك الصلاحية لذاك؟ — أو لماذا لا يجوز */
 export function refuseDelegation(actor: {
   roles: readonly string[]
   permissions: readonly string[]
 }, target: { roles: readonly string[] }, permissionKey: string): DelegationRefusal | null {
+  /* ولا تُفوَّض المحرَّمةُ ولو كان الفاعلُ أعلى الرتب — تُملَك بالدور لا بالمنحة */
+  if (NON_DELEGATABLE.includes(permissionKey)) {
+    return {
+      code: 'never_delegatable',
+      message_ar: 'هذه الصلاحية لا تُفوَّض لأحد — تُملَك بدور مدير النظام الأعلى وحدَه',
+    }
+  }
   const families = actor.roles.flatMap((r) => DELEGATABLE_FAMILIES[r] ?? [])
   if (families.length === 0) {
     return { code: 'not_delegator', message_ar: 'حسابك لا يفوّض الصلاحيات' }

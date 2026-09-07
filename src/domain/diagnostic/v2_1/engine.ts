@@ -64,6 +64,7 @@ import {
   Q,
   RETIRED_IN_CODE,
   STAGE_NEEDS_EMPLOYMENT_QUESTION,
+  GOALS_NEEDING_EMPLOYMENT,
   RIASEC_DIMS,
   RIASEC_DOMAINS,
   type CareerStage,
@@ -219,17 +220,33 @@ export const CORE_FLOW_V21: CoreStepV21[] = [
     reason_ar: 'المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.',
   },
   {
-    questionId: Q.EMPLOYMENT,
-    neededWhen: (f) => {
-      const stage = f['career_stage']?.value as CareerStage | undefined
-      return Boolean(stage && STAGE_NEEDS_EMPLOYMENT_QUESTION.includes(stage)) && !has(f, 'employment_state')
-    },
-    reason_ar: 'حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».',
-  },
-  {
     questionId: Q.GOAL,
     neededWhen: (f) => !has(f, 'primary_goal'),
     reason_ar: 'ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.',
+  },
+  /* ── حالةُ العمل بعد الهدف لا قبله (البند ٣٧) ──
+
+     كانت تُسأل ثانيةً، قبل أن يُعرف الهدف. وهي لطالبٍ جامعيٍّ لا تُقرأ إلّا
+     في قاعدةٍ واحدة: حسمُ «أوّلِ وظيفة» عن «الترقية» — وتلك لا تعمل إلّا مع
+     ثلاثة أهداف. فسؤالُها قبل الهدف يعني سؤالَها **دائما** ثمّ إهمالَ جوابها
+     في أكثر الحالات: ١٤ مقعدا ميّتا من ٢٨ مقيسة.
+
+     وتأخيرُها خطوةً واحدةً لا يكلّف شيئا: خياراتُ الهدف تُرشَّح بالمرحلة
+     وحدَها، لا بحالة العمل. فالترتيبُ هنا قرارُ توفيرٍ لا قرارُ منطق. */
+  {
+    questionId: Q.EMPLOYMENT,
+    neededWhen: (f) => {
+      const stage = f['career_stage']?.value as CareerStage | undefined
+      if (!stage || !STAGE_NEEDS_EMPLOYMENT_QUESTION.includes(stage)) return false
+      if (has(f, 'employment_state')) return false
+      /* الطالبُ الجامعيّ: تُسأل حين يقرؤها أحدٌ فعلا لا قبل ذلك */
+      if (stage === 'university_student') {
+        const goal = f['goal_code_v21']?.value
+        return typeof goal === 'string' && GOALS_NEEDING_EMPLOYMENT.includes(goal)
+      }
+      return true
+    },
+    reason_ar: 'حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».',
   },
   {
     questionId: Q.NEED,
@@ -638,7 +655,7 @@ export class DiagnosticEngineV21 {
     const persona = derivePersonaV21(this.state.facts)
     const domains = assessDomainsV21(this.state.facts, this.state.interestVector)
     const skillStates = buildSkillStates(this.state.skillVector)
-    return { facts: this.state.facts, persona, domains, skillStates }
+    return { facts: this.state.facts, persona, domains, skillStates, familyRatings: this.familyRatings }
   }
 
   private stage(): CareerStage | null {
@@ -1611,6 +1628,10 @@ function toV2Candidate(c: EntityCandidate): V2Candidate {
     pathwayId: c.entity.entity_id,
     total: c.netFit,
     measuredSkillCoverage: c.skills.measuredCoverage,
+    measurableSkillCoverage: c.skills.measurableCoverage,
+    hasDirectSkillEvidence: c.skills.hasDirectSkillEvidence,
+    measurableRequiredCount: c.skills.measurableRequiredCount,
+    measurableMeasuredCount: c.skills.measurableMeasuredCount,
     gapSkillSlugs: c.skills.gapSkillSlugs,
     masteredSkillSlugs: c.skills.masteredSkillSlugs,
     unknownSkillSlugs: c.skills.unknownSkillSlugs,
@@ -1644,7 +1665,7 @@ function toLegacyCandidate(c: V2Candidate): PathwayCandidate {
 
 function toLegacyConfidence(c: ConfidenceV2) {
   const bandMap = {
-    strong_match: { band: 'strong', band_ar: 'قوية' },
+    strong_match: { band: 'strong', band_ar: 'قوية بما قِسناه' },
     best_current_match: { band: 'good', band_ar: 'جيدة' },
     exploratory_direction: { band: 'preliminary', band_ar: 'أولية' },
     advisor_review: { band: 'advisor_referral', band_ar: 'تحتاج مراجعة مستشار' },

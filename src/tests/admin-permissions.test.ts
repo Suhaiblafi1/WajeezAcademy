@@ -60,7 +60,11 @@ describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
         declaredOpen.push(to)
         continue
       }
-      expect(item, `${to} بلا صلاحية معلَنة ولا إعلانِ فتح — يراه من لا يملكه`).toMatch(/need: "[a-z.]+"/)
+      /* واحدةٌ أو عدّة — و«عدّة» تعني **أيًّا منها**: شاشةٌ تخدم صلاحيتين
+         لا تُحرَس بواحدةٍ منهما، وكانت «الطلبات والفواتير» تحمل طابورَ طلبات
+         التسجيل والفواتيرَ معا وتُحرَس بـ`finance.view` وحدها. */
+      expect(item, `${to} بلا صلاحية معلَنة ولا إعلانِ فتح — يراه من لا يملكه`)
+        .toMatch(/need: (?:"[a-z.]+"|\["[a-z.]+"(?:, "[a-z.]+")*\])/)
     }
     expect(declaredOpen.sort(), 'تبويبٌ مفتوحٌ خارج المأذون به').toEqual([...OPEN].sort())
   })
@@ -69,13 +73,20 @@ describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
     const perms = read('server/auth/permissions.ts')
     const known = new Set([...perms.matchAll(/\{ key: '([^']+)'/g)].map((m) => m[1]))
     expect(known.size, 'سجلّ الصلاحيات لم يُقرأ').toBeGreaterThan(30)
-    for (const m of src.matchAll(/need: "([^"]+)"/g)) {
-      expect(known.has(m[1]), `التبويب يشترط صلاحيةً لا وجود لها: ${m[1]}`).toBe(true)
+    /* ويُقرأ ما في القوائم أيضا — وإلّا مرّ مفتاحٌ مخترَعٌ داخل قائمةٍ بلا فحص */
+    const declared = [...src.matchAll(/need: (?:"([^"]+)"|\[([^\]]+)\])/g)]
+      .flatMap((m) => (m[1] ? [m[1]] : [...m[2].matchAll(/"([^"]+)"/g)].map((x) => x[1])))
+    expect(declared.length, 'لم تُقرأ أيُّ صلاحيةٍ من القائمة').toBeGreaterThan(10)
+    for (const key of declared) {
+      expect(known.has(key), `التبويب يشترط صلاحيةً لا وجود لها: ${key}`).toBe(true)
     }
   })
 
   it('الترشيح يقع فعلا — ومن لا تبويبَ له يُقال له', () => {
-    expect(src, 'التبويبات لا تُرشَّح بالصلاحيات').toMatch(/\.filter\(\(it\) => !it\.need \|\| can\(it\.need\)\)/)
+    expect(src, 'التبويبات لا تُرشَّح بالصلاحيات').toMatch(/\.filter\(\(it\) => !it\.need \|\| canAny\(it\.need\)\)/)
+    /* و«أيًّا منها» تُقاس: `some` لا `every` — وإلّا صار الجمعُ تضييقا لا توسعة */
+    expect(src, '«عدّة صلاحيات» تعني أيًّا منها لا كلَّها')
+      .toMatch(/\(Array\.isArray\(need\) \? need : \[need\]\)\.some\(can\)/)
     expect(src, 'من لا صلاحية له يُترك في لوحةٍ فارغة').toContain('لا صلاحيات مفعّلة لحسابك')
   })
 })
