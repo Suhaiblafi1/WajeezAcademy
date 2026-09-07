@@ -2,8 +2,9 @@
 
 > # ⚠️ تنبيهٌ قبل كلّ شيء — هذا الملفّ مصوَّبٌ على Cloudways وSupervisor
 >
-> **وخادمُ الإنتاج ليس كذلك.** `www.wajeezacademy.com` يُحلّ إلى `5.9.82.49`
-> (Hetzner)، والخادمُ حاويات **Docker + Caddy** — لا Supervisor ولا
+> **وخادمُ الإنتاج ليس كذلك.** `www.wajeezacademy.com` يُحلّ إلى خادمٍ على
+> Hetzner (**والعنوانُ يُقاس لا يُكتب**: `dig +short www.wajeezacademy.com` —
+> فقد تغيّر مرّةً بالفعل)، والخادمُ حاويات **Docker + Caddy** — لا Supervisor ولا
 > `/etc/supervisor/conf.d` ولا `npm start` على المضيف. الإعدادُ الحقيقيُّ في
 > [`deploy/`](../deploy/)، والواقعُ موصوفٌ في [`DEPLOYMENT.md`](DEPLOYMENT.md) §١.
 >

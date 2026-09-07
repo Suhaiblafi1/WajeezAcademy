@@ -6,8 +6,8 @@
 > على الورق: بُني عليه `edc7576` (#25) فحذف `deploy/` — **وهو إعدادُ الخادم
 > الذي يخدم النطاق فعلا**.
 >
-> **والقياسُ هو الحَكَم:** `www.wajeezacademy.com` يُحلّ إلى **`5.9.82.49`**،
-> وهو في نطاق Hetzner؛ وCloudways لا تقدّم Hetzner. وأكّده من يملك الخادم:
+> **والقياسُ هو الحَكَم** (٥ سبتمبر ٢٠٢٦): `www.wajeezacademy.com` كان يُحلّ
+> يومَها إلى عنوانٍ في نطاق Hetzner؛ وCloudways لا تقدّم Hetzner. وأكّده من يملك الخادم:
 > حاويات Docker وCaddy، ولا وجودَ لـ`/etc/supervisor/conf.d` عنده. والتسجيلاتُ
 > الأربعةُ وخطّافُ Stripe كلُّها تصل إلى ذلك الخادم.
 >
@@ -44,7 +44,7 @@
 
 | | |
 |---|---|
-| **النطاق** | `https://www.wajeezacademy.com` → **`5.9.82.49`** (Hetzner) |
+| **النطاق** | `https://www.wajeezacademy.com` → خادمٌ على Hetzner. **والعنوانُ يُقاس ولا يُكتب**: `dig +short www.wajeezacademy.com` — انظر §١-أ |
 | **الاستضافة** | **خادمٌ ذاتيٌّ على Hetzner** — حاويات Docker: Postgres · خادم وجيز · Caddy. الإعدادُ في [`deploy/`](../deploy/) |
 | **الـAPI** | خادم Fastify في حاوية، خلف Caddy — لا ينشر منفذا إلى المضيف |
 | **الترويسات** | ⚠️ **[`deploy/Caddyfile`](../deploy/Caddyfile)** — CSP وHSTS و`nosniff`. **و`public/.htaccess` لا يُقرأ هنا**: هو ملفُّ Apache وCaddy لا يعرفه |
