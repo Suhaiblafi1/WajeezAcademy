@@ -38,6 +38,7 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { JOBS, runJob, type JobResult } from './jobs'
+import { recordBeat } from './heartbeat'
 
 /** رقمُ القفل — ثابتٌ لهذا العامل وحدَه */
 const LOCK_KEY = 918_273_645
@@ -73,6 +74,22 @@ export async function tick(
   return out
 }
 
+/* ═══ النبضة — بعد الدورة لا قبلها ═══
+
+   «نبضَ» تعني **دورةً اكتملت**، لا عمليّةً موجودة. وعمليّةٌ حيّةٌ حلقتُها
+   معلَّقةٌ على استعلامٍ لا يعود ساقطةٌ عمليّا، ونبضةٌ تُكتب قبل الدورة تُخفي
+   ذلك بالضبط: تقول «حيّ» كلَّ دقيقةٍ ولا شيءَ يُنجَز.
+
+   وإخفاقُ الكتابة لا يُسقط العامل: النبضةُ تصف العملَ ولا تكون شرطَه. لكنّه
+   يُسجَّل — فقاعدةٌ لا تُكتب اليومَ عطبٌ يُقرأ في السجلّ لا يُبتلَع. */
+export async function beat(prisma: PrismaClient, startedAt: Date, now = new Date()): Promise<void> {
+  try {
+    await recordBeat(prisma, { startedAt, tickMs: TICK_MS, jobs: JOBS.length, now })
+  } catch (e) {
+    log(`⚠ تعذّرت كتابةُ النبضة: ${e instanceof Error ? e.message : String(e)}`)
+  }
+}
+
 async function main(): Promise<void> {
   if (process.env.WORKER_ENABLED !== 'on') {
     log('غيرُ مفعَّل — يُشغَّل بـ WORKER_ENABLED=on على خادمٍ دائم. لا شيءَ يعمل الآن.')
@@ -95,12 +112,14 @@ async function main(): Promise<void> {
   }
 
   const lastRun = new Map<string, number>()
+  const startedAt = new Date()
   const once = process.argv.includes('--once')
   log(`يعمل: ${JOBS.length} وظيفةً، نبضُ الحلقة ${TICK_MS / 1000} ثانية${once ? ' — دورةٌ واحدةٌ ثمّ خروج' : ''}`)
 
   if (once) {
     const results = await tick(prisma, lastRun)
     for (const r of results) log(`${r.job}: ${r.summaryAr}`)
+    await beat(prisma, startedAt)
     await prisma.$queryRaw`SELECT pg_advisory_unlock(${LOCK_KEY}::bigint)`
     await prisma.$disconnect()
     return
@@ -123,9 +142,12 @@ async function main(): Promise<void> {
     /* لا دورتان متراكبتان: دورةٌ طويلةٌ لا تُستبق بأخرى */
     if (running || stopping) return
     running = true
-    void tick(prisma, lastRun).finally(() => { running = false })
+    void tick(prisma, lastRun)
+      .then(() => beat(prisma, startedAt))
+      .finally(() => { running = false })
   }, TICK_MS)
   await tick(prisma, lastRun)
+  await beat(prisma, startedAt)
 }
 
 /* لا يُقلَع عند الاستيراد — كي تُختبَر الوظائفُ والدورةُ بلا تشغيلِ حلقة */

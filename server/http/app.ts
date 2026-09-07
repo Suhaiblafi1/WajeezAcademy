@@ -42,6 +42,7 @@ import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
 import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
+import { beatReport } from '../worker/heartbeat'
 
 export async function buildApp(prisma: PrismaClient) {
   /* ── السجلّ ──
@@ -200,6 +201,14 @@ export async function buildApp(prisma: PrismaClient) {
     const labelSha = commitOfSnapshotLabel(active?.label)
     const inSync = snapshotInSync(stamp.commit, active?.label)
 
+    /* ── والطرفُ الثالث: العاملُ الخلفيّ ──
+
+       كان هذا المسارُ يصف طرفَين (الكودَ واللقطة) ومنظومةُ الإنتاج ثلاثة.
+       والثالثُ **أصمتُهم سقوطا**: لا منفذَ له ولا فحصَ صحّة، فإذا مات لم
+       يتغيّر شيءٌ ممّا يُقاس هنا — ويبقى طابورُ الإشعارات يمتلئ بلا مُفرِّغ.
+       والحكمُ في `worker/heartbeat.ts` مع كتابتها، تعريفا واحدا لا نسختَين. */
+    const worker = await beatReport(prisma, { appCommit: stamp.commit })
+
     return {
       الكود: {
         الالتزام: sha7,
@@ -217,6 +226,7 @@ export async function buildApp(prisma: PrismaClient) {
         مسارات: payload?.coreCatalog?.launch_pathways?.length ?? null,
         دورات: payload?.coreCatalog?.courses?.length ?? null,
       },
+      العامل_الخلفي: worker,
       /* الاختلاف وحده لا يقول أيّهما أقدم. وكانت العبارة تجزم بأن اللقطة «من
          التزام أقدم» في كل اختلاف — ورُصدت تكذب أثناء نشر متعثّر: اللقطة كانت
          من الالتزام الجديد والدالة ما زالت تخدم القديم، فقالت العكس تماما.
