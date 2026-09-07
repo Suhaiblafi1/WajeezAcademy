@@ -27,7 +27,9 @@ export default function TrustMetricsBar({ nested = false }: { nested?: boolean }
   return (
     <Wrapper
       aria-label="وجيز مهارات بالأرقام"
-      className={nested ? 'mt-12' : 'border-y border-white/5 bg-white/[0.02] py-10 md:py-12'}
+      /* داخلَ قسمٍ قائم: خيطٌ شعريٌّ ومسافةٌ تفصله عمّا فوقه. وبلا الخيط كانت
+         ثلاثُ كتلٍ معنونةٍ تتلاصق على ٤٨ بكسلا في قسمٍ محشوٍّ لواحدة. */
+      className={nested ? 'mt-12 border-t border-white/5 pt-12 md:mt-16 md:pt-16' : 'border-y border-white/5 bg-white/[0.02] py-10 md:py-12'}
     >
       <div className={nested ? '' : 'mx-auto max-w-7xl px-5'}>
         <div className="reveal text-center">
