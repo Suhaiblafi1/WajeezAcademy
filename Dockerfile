@@ -32,7 +32,23 @@ ENV GIT_COMMIT_SHA=$GIT_COMMIT_SHA \
 
 # توليد عميل Prisma ثم بناء الواجهة. dist تُنسخ عند الإقلاع إلى حجم
 # مشترك يقرؤه Caddy — انظر deploy/docker-entrypoint.sh
-RUN npx prisma generate && npm run build
+#
+# ⚠️ ولماذا `build:image` لا `build`: الفرقُ `tsc -b` وحدَه.
+#
+# `build` هو `tsc -b && vite build`، و`tsc -b` **لا يُخرج ملفّا**: كلا
+# `tsconfig.app.json` و`tsconfig.node.json` فيهما `noEmit: true`، فهو فحصُ
+# أنواعٍ خالص وvite يترجم بنفسه. فلا يعتمد على ناتجه شيءٌ في الصورة.
+#
+# وقد قِيس على هذا الخادم: من ٨٧ ثانيةِ نشرةٍ كاملة، `tsc -b` وحدَه ~٤٠.
+# أي نصفُ زمن النشر في فحصٍ **جرى بالفعل** — CI يشغّل `tsc --noEmit` على
+# الملفَّين قبل أيّ دمج، وخضرتُها هي إذنُ الدمج (CLAUDE.md).
+#
+# ⚠️ وحدُّه صريح: من دفع إلى `main` بلا مرورٍ بـCI لا يُمسك خطؤه هنا.
+# والحاجزُ إذن حاجزُ CI لا حاجزُ الصورة — فلا يُضعَّف ذاك.
+#
+# و`prebuild:image` يبقى: خطّافُ npm يكتب ختمَ البناء قبل البناء، وبلا الختم
+# يقول `/api/version` «الالتزام: null» فلا يُعرف أوصلت النشرةُ أم لا.
+RUN npx prisma generate && npm run build:image
 
 ENV NODE_ENV=production \
     API_HOST=0.0.0.0 \
