@@ -49,17 +49,39 @@ export const SEMESTER_FIRST_DAY = '2026-10-04'
 const MIN_LEAD_DAYS = 14
 /** كم دورةً تبدأ في الأسبوع الواحد */
 const COURSES_PER_WAVE = 6
-/** جلستان لكلّ وحدة — والأسابيعُ تتبع عددَ الوحدات */
-const SESSIONS_PER_MODULE = 2
+/* ─────────── إيقاعُ الجلسات المباشرة — قرارُ صاحب المنصّة (٨ سبتمبر) ───────────
+ *
+ * كان الحسابُ «جلستان لكلّ وحدة»، فدورةٌ بستّ وحداتٍ تأخذ اثنتَي عشرةَ جلسةً
+ * مباشرة، أسبوعيّا بيومَين. **وهذا يقلب ترتيبَ التعلّم**: اللقاءُ يسبق العمل،
+ * فيحضر المتدرّبُ ولم يقرأ المادّةَ ولا ملخّصاتِ وجيز ولا شاهد المسجَّل ولا
+ * أدّى مهامَّه — فتصير الجلسةُ محاضرةً تُعاد لا لقاءً يُبنى على ما سبقه.
+ *
+ * فصارت **ثلاثا أو أربعا لا أكثر**، بينها أسبوعان. والأسبوعان ليسا فراغا: هما
+ * موضعُ المادّة والملخّصات والمسجَّل والمهامّ. واللقاءُ المباشر لما لا يُغني
+ * عنه تسجيل — سؤالٌ يُجاب، وعملٌ يُراجَع، وتصويبٌ يُرى.
+ *
+ * والعددُ يتبع عمقَ الدورة لا طولَها: أربعٌ لما تجاوزت أربعَ وحدات، وثلاثٌ لما
+ * دونها. ولا تُزاد بزيادة الوحدات — فما لا يُغطّى في أربعٍ يُغطّى في المادّة.
+ */
+const LIVE_SESSIONS_DEEP = 4
+const LIVE_SESSIONS_SHORT = 3
+/** حدُّ الوحدات الذي يرفع الدورةَ من ثلاث جلساتٍ إلى أربع */
+const DEEP_COURSE_MODULES = 5
+/** أسبوعان بين جلسةٍ وأخرى — مساحةُ العمل لا فراغ */
+const SESSION_INTERVAL_WEEKS = 2
 
-/** المواعيدُ الستّةُ المتناوبة — يومان وساعةٌ لكلّ شعبة */
+/** المواعيدُ الستّةُ المتناوبة — يومٌ واحدٌ وساعةٌ لكلّ شعبة.
+ *
+ *  ويومٌ واحدٌ لا يومان: الجلساتُ ثلاثٌ أو أربعٌ متباعدةٌ بأسبوعين، فلا معنى
+ *  لحجز يومَين في الأسبوع لشعبةٍ لا تلتقي فيه. والستّةُ تفرّق الشعبَ على
+ *  الأسبوع فلا تتكدّس على مساء واحد. */
 const SLOTS: { daysOfWeek: string[]; startTime: string }[] = [
-  { daysOfWeek: ['sun', 'tue'], startTime: '18:00' },
-  { daysOfWeek: ['mon', 'wed'], startTime: '18:00' },
-  { daysOfWeek: ['tue', 'thu'], startTime: '18:00' },
-  { daysOfWeek: ['sun', 'wed'], startTime: '20:00' },
-  { daysOfWeek: ['mon', 'thu'], startTime: '20:00' },
-  { daysOfWeek: ['tue', 'thu'], startTime: '20:00' },
+  { daysOfWeek: ['sun'], startTime: '18:00' },
+  { daysOfWeek: ['mon'], startTime: '18:00' },
+  { daysOfWeek: ['tue'], startTime: '18:00' },
+  { daysOfWeek: ['wed'], startTime: '20:00' },
+  { daysOfWeek: ['mon'], startTime: '20:00' },
+  { daysOfWeek: ['thu'], startTime: '20:00' },
 ]
 
 /** أوّلُ أحدٍ في أو بعد التاريخ المعطى، عند ٠٠:٠٠ عالميّا */
@@ -267,9 +289,10 @@ export async function openAllCohorts(
     placed++
     const startsAt = new Date(anchor.getTime() + wave * 7 * 86_400_000)
     const moduleCount = readiness.get(c.id)!.modules
-    const sessionWeeks = moduleCount > 0
-      ? Math.max(1, Math.ceil((moduleCount * SESSIONS_PER_MODULE) / slot.daysOfWeek.length))
-      : DEFAULT_SESSION_WEEKS
+    /* عددُ اللقاءات يتبع عمقَ الدورة، ثمّ يقف عند أربع. والمدى يتبعه:
+       ثلاثٌ بتباعد أسبوعين تمتدّ خمسةَ أسابيع، وأربعٌ سبعة. */
+    const liveSessions = moduleCount >= DEEP_COURSE_MODULES ? LIVE_SESSIONS_DEEP : LIVE_SESSIONS_SHORT
+    const spanWeeks = (liveSessions - 1) * SESSION_INTERVAL_WEEKS + 1
 
     const row: OpenCohortsResult['rows'][number] = {
       courseId: c.id, titleAr, price, currency, startsAt: startsAt.toISOString(),
@@ -291,10 +314,10 @@ export async function openAllCohorts(
        هنا بلا اختلاق: النمطُ معلَنٌ في الصفّ نفسِه، والخطّةُ تصف ما يقع فعلا. */
     const actor = opts.actorId ?? null
     await service.generateSessions(actor, cohort.id, {
-      weeks: sessionWeeks, from: startsAt, apply: true,
+      weeks: liveSessions, intervalWeeks: SESSION_INTERVAL_WEEKS, from: startsAt, apply: true,
     }).catch(() => undefined)
     await service.setDeliveryPlan(cohort.id, actor, {
-      notesAr: `تقديمٌ عن بُعد عبر زوم، ${dayNames(slot.daysOfWeek)} الساعة ${amman(slot.startTime)} بتوقيت عمّان، ${sessionWeeks} أسابيع بجلستين أسبوعيّا. أوّلُ جلسةٍ ${startsAt.toISOString().slice(0, 10)}. المدرّبُ يُعيَّن قريبا، ويُعدَّل الجدولُ من بطاقة الشعبة بموافقة الإدارة.`,
+      notesAr: `تقديمٌ عن بُعد عبر زوم. ${liveSessions} جلساتٍ مباشرة، ${dayNames(slot.daysOfWeek)} الساعة ${amman(slot.startTime)} بتوقيت عمّان، بين كلِّ جلستين أسبوعان — تمتدّ ${spanWeeks} أسابيع. أوّلُ جلسةٍ ${startsAt.toISOString().slice(0, 10)}. وما بين اللقاءات مقصود: فيه المادّةُ وملخّصاتُ وجيز والجلساتُ المسجَّلة والمهامّ. المدرّبُ يُعيَّن قريبا، ويُعدَّل الجدولُ من بطاقة الشعبة بموافقة الإدارة.`,
       deliveryMode: 'remote',
     }).catch(() => undefined)
 

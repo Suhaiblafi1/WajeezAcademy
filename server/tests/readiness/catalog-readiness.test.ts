@@ -116,3 +116,41 @@ describe('محاذاة الأسعار', () => {
     await prisma.user.delete({ where: { id: learner.id } })
   })
 })
+
+/* إيقاعُ اللقاءات — قرارُ صاحب المنصّة: ثلاثٌ أو أربعٌ **لا أكثر**، متباعدة.
+
+   وكان الحسابُ «جلستان لكلّ وحدة»، فدورةٌ بستّ وحداتٍ تأخذ اثنتَي عشرة. وهو
+   انحدارٌ صامت: تُضاف وحدةٌ إلى دورةٍ فيزيد لقاؤها المباشر، بلا قرارٍ من أحد.
+   فيُقاس العددُ نفسُه هنا لا الحسابُ الذي أنتجه. */
+describe('إيقاعُ الجلسات المباشرة', () => {
+  it('لا شعبةَ تتجاوز أربعَ جلساتٍ مباشرة، ولا تقلّ عن ثلاث', async () => {
+    await openAllCohorts(prisma, { apply: true })
+    const cohorts = await prisma.cohort.findMany({
+      where: { sessions: { some: {} } },
+      select: { id: true, title: true, sessions: { select: { startsAt: true } } },
+    })
+    expect(cohorts.length, 'لا شعبةَ ذاتَ جلسات — لم يُفتح شيء').toBeGreaterThan(0)
+    for (const c of cohorts) {
+      expect(
+        c.sessions.length,
+        `«${c.title}» فيها ${c.sessions.length} جلسة — والحدُّ أربع`,
+      ).toBeLessThanOrEqual(4)
+      expect(c.sessions.length, `«${c.title}» فيها ${c.sessions.length} جلسة — والأدنى ثلاث`)
+        .toBeGreaterThanOrEqual(3)
+    }
+  })
+
+  it('وبين كلِّ جلستين أسبوعان — مساحةُ المادّة والمهامّ لا فراغ', async () => {
+    const cohort = await prisma.cohort.findFirst({
+      where: { sessions: { some: {} } },
+      select: { title: true, sessions: { select: { startsAt: true }, orderBy: { startsAt: 'asc' } } },
+    })
+    expect(cohort, 'لا شعبةَ ذاتَ جلسات').toBeTruthy()
+    const times = cohort!.sessions.map((s) => s.startsAt.getTime())
+    expect(times.length).toBeGreaterThan(1)
+    for (let i = 1; i < times.length; i += 1) {
+      const days = Math.round((times[i] - times[i - 1]) / 86_400_000)
+      expect(days, `«${cohort!.title}»: بين الجلستين ${i} و${i + 1} ${days} يوما لا ١٤`).toBe(14)
+    }
+  })
+})

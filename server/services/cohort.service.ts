@@ -560,6 +560,16 @@ export class CohortService {
      ولا يُكتب شيءٌ إلّا بطلبٍ صريح: `preview` يعرض ما سيُنشأ أوّلا. */
   async generateSessions(actorId: string | null, cohortId: string, input: {
     weeks: number
+    /**
+     * التباعدُ بين موجةٍ وأخرى بالأسابيع — الافتراضُ ١، أي أسبوعيّا كما كان.
+     *
+     * وأُضيف لأنّ الجلسةَ المباشرة ليست كلَّ التعلّم: بينها يقرأ المتدرّبُ
+     * المادّةَ وملخّصاتِ وجيز، ويشاهد المسجَّل، ويؤدّي مهامَّه. فجدولٌ
+     * أسبوعيٌّ متلاحقٌ يجعل اللقاءَ يسبق العمل، ويحضر المتدرّبُ ولم يعمل.
+     *
+     * ولا يغيّر شيئا لمن لم يمرّره: `weeks` تبقى عددَ الموجات، والتباعدُ ١.
+     */
+    intervalWeeks?: number
     /** أوّلُ أسبوعٍ يُولَّد منه — الافتراضُ بدايةُ الشعبة أو اليوم */
     from?: Date
     durationMinutes?: number
@@ -581,6 +591,15 @@ export class CohortService {
     const time = input.startTime ?? cohort.startTime
     if (!time || !/^\d{2}:\d{2}$/.test(time)) throw new AuthError('no_time', 'وقتُ البدء غير محدّد — اضبطه بصيغة 18:00')
     if (input.weeks < 1 || input.weeks > 52) throw new AuthError('bad_weeks', 'عددُ الأسابيع بين ١ و٥٢')
+    /* التباعدُ يُحدُّ كما تُحدُّ الأسابيع — ولا يُقبل كسرٌ ولا صفرٌ ولا مدًى
+       يقذف آخرَ جلسةٍ إلى سنةٍ أخرى. */
+    const gap = input.intervalWeeks ?? 1
+    if (!Number.isInteger(gap) || gap < 1 || gap > 8) {
+      throw new AuthError('bad_interval', 'التباعدُ بين الجلسات أسبوعٌ إلى ثمانية')
+    }
+    if ((input.weeks - 1) * gap + 1 > 52) {
+      throw new AuthError('bad_span', 'الجدولُ بهذا التباعد يتجاوز ٥٢ أسبوعا')
+    }
 
     const [hh, mm] = time.split(':').map(Number)
     const duration = input.durationMinutes && input.durationMinutes > 0 ? input.durationMinutes : 120
@@ -595,7 +614,7 @@ export class CohortService {
     for (let w = 0; w < input.weeks; w += 1) {
       for (const day of [...days].sort((a, b) => DAY_INDEX[a] - DAY_INDEX[b])) {
         const startsAt = new Date(weekStart)
-        startsAt.setUTCDate(weekStart.getUTCDate() + w * 7 + DAY_INDEX[day])
+        startsAt.setUTCDate(weekStart.getUTCDate() + w * 7 * gap + DAY_INDEX[day])
         startsAt.setUTCHours(hh, mm, 0, 0)
         /* ما مضى لا يُجدَّل: الأسبوعُ الأوّلُ قد يبدأ بعد يومٍ فات */
         if (startsAt < from) continue
