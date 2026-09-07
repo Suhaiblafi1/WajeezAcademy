@@ -316,12 +316,35 @@ export class AuthService {
     if (!row || row.usedAt || row.expiresAt < new Date()) throw new AuthError('invalid_token', 'رابط الاستعادة غير صالح أو منتهي', 400)
     /* تعيينُ الكلمة من دعوةٍ يُفعّل الحساب: «مدعوّ» حالةُ من لم يدخل بعد،
        وهي تنتهي بأوّل كلمةِ مرورٍ يضعها صاحبُه — لا بقرارِ موظّف. */
-    const user = await this.prisma.user.findUnique({ where: { id: row.userId }, select: { status: true } })
+    const user = await this.prisma.user.findUnique({
+      where: { id: row.userId }, select: { status: true, emailVerifiedAt: true },
+    })
     const activate = row.purpose === 'invite' && user?.status === 'invited'
+
+    /* ── ومن فتح رابطا وصله بالبريد فقد أثبت أنّ العنوان يبلغه (البند ٦٧) ──
+
+       التوثيقُ في هذا الملفّ معرَّفٌ بسطرٍ صريحٍ أسفلَه: «دليلٌ على أنّ العنوان
+       يصل صاحبَه». ورمزُ الدعوة (ورمزُ الاستعادة) **لا يُولَّد إلّا ليُرسَل إلى
+       ذلك العنوان بعينه**، ولا يُعاد في الردّ خارج التطوير. فمن جاء به فقد قرأ
+       الصندوق — وهو الدليلُ نفسُه الذي يطلبه رابطُ التوثيق، لا أضعفُ منه.
+
+       ولم يكن هذا يظهر: حواجزُ الشراء والشهادة **تسقط تلقائيّا وقناةُ البريد
+       مغلقة** («قفلٌ بلا مفتاحٍ لا يُقفل»). فيومَ وُصلت القناة استيقظت أربعةُ
+       حواجزَ دفعةً واحدة، وصار كلُّ من دخل بدعوةٍ — وهو من أثبت عنوانَه فعلا —
+       ممنوعا من الشراء حتّى يطلب رابطا ثانيا يُثبت ما أثبته.
+
+       وأخصُّ من يمسّه: العميلُ الذي يُدخله المستشارُ بنفسه (البند ٢٥). يُدعى،
+       ويضع كلمتَه، ثمّ يُردّ عند أوّل شراء. */
+    const proved = user?.emailVerifiedAt == null ? { emailVerifiedAt: new Date() } : {}
+
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: row.userId },
-        data: { passwordHash: await bcrypt.hash(newPassword, 10), ...(activate ? { status: 'active' } : {}) },
+        data: {
+          passwordHash: await bcrypt.hash(newPassword, 10),
+          ...(activate ? { status: 'active' } : {}),
+          ...proved,
+        },
       }),
       this.prisma.passwordResetToken.update({ where: { id: row.id }, data: { usedAt: new Date() } }),
       /* أمن: تغيير كلمة المرور يبطل كل الجلسات القائمة */
