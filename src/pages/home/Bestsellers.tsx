@@ -21,10 +21,11 @@
    `#top-courses` (لم تكن مقصودةً من رابطٍ واحدٍ في المشروع). وبقيت مرساةُ
    `#bestsellers` — يقصدها زرُّ «اختر مسارك بنفسك» في الصدر. */
 
-import { useMemo, useSyncExternalStore } from "react"
+import { useMemo, useState, useSyncExternalStore } from "react"
 import { Link } from "react-router"
-import { ArrowLeft, Flame, Route, Target } from "lucide-react"
-import { bestsellers, pathwayById } from "@/data/pathways"
+import { ArrowLeft, ChevronDown, Flame, Route, Target } from "lucide-react"
+import { bestsellers, pathwayById, pathwayDomain } from "@/data/pathways"
+import { resolveCatalogRefsAr } from "@/application/catalog/visitor-text"
 import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-source"
 import { bestsellerCourses, courseById, pathwaySizeAr } from "@/data/courses"
 import CourseTitle from "@/components/CourseTitle"
@@ -34,6 +35,75 @@ import SectionLabel from "./SectionLabel"
 
 /* البابان يشتركان في هيئةٍ واحدة، ويفترق لونُهما وحدَه */
 const DOOR = "inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-bold transition"
+
+
+/* مرشِّحُ المجالات — أُعيد بطلب صاحب المنصّة (٧ سبتمبر ٢٠٢٦).
+
+   كان قد ذهب مع البند ٥٦ لأنّه جعل القسمَ خُمسَ الصفحة. وقد أُعيدت البطاقاتُ
+   وحدَها أوّلا، فسأل: «ولا يوجد فلاتر للدورات أو المسارات؟».
+
+   والصفُّ واحدٌ يُمرَّر على الهاتف لا ثلاثةُ صفوفٍ ملتفّة — وهي العلّةُ التي
+   جعلته ثقيلا أوّلَ مرّة: من جاء يتصفّح المسارات يرى المرشِّحات لا المسارات.
+   والالتفافُ يعود من `sm:` فلا يفقد سطحُ المكتب شيئا. */
+function CategoryFilter({
+  counts, active, onChange, label,
+}: {
+  counts: [string, number][]
+  active: string
+  onChange: (c: string) => void
+  label: string
+}) {
+  const [more, setMore] = useState(false)
+  const TOP = 5
+  const total = counts.reduce((sum, [, n]) => sum + n, 0)
+  const rest = counts.slice(TOP)
+  const activeInRest = rest.some(([c]) => c === active)
+  const shown: [string, number][] = [['الكل', total], ...counts.slice(0, TOP), ...(more || activeInRest ? rest : [])]
+  const chip = 'inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition sm:px-4 sm:py-2'
+
+  return (
+    <div
+      className="scrollbar-hide -mx-5 mt-4 flex snap-x items-center gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+      role="group"
+      aria-label={label}
+    >
+      {shown.map(([c, n]) => (
+        <button
+          key={c}
+          onClick={() => onChange(c)}
+          aria-pressed={active === c}
+          className={`${chip} ${
+            active === c
+              ? 'border-teal bg-teal-deep text-white'
+              : 'border-border bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink'
+          }`}
+        >
+          {c}
+          <span className={`rounded-full px-1.5 text-fine font-black tabular-nums ${active === c ? 'bg-black/25' : 'bg-foreground/[0.07] text-muted-foreground'}`}>
+            {n}
+          </span>
+        </button>
+      ))}
+      {rest.length > 0 && (
+        <button
+          onClick={() => setMore((m) => !m)}
+          aria-expanded={more || activeInRest}
+          className={`${chip} border-dashed border-border text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink`}
+        >
+          {more || activeInRest ? 'أقل' : `المزيد (${rest.length})`}
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${more || activeInRest ? 'rotate-180' : ''}`} />
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** عدُّ التكرار مرتَّبا تنازليّا — بلا «الكل»، يضيفه المرشِّح */
+function countBy(values: string[]): [string, number][] {
+  const m = new Map<string, number>()
+  for (const v of values) m.set(v, (m.get(v) ?? 0) + 1)
+  return [...m].sort((a, b) => b[1] - a[1])
+}
 
 export function Bestsellers() {
   const catalogVersion = useSyncExternalStore(onCoreCatalogInstalled, getCatalogVersion)
@@ -48,12 +118,32 @@ export function Bestsellers() {
     [catalogVersion],
   )
   const spotlight = picks[0]
-  /* بقيّةُ المختارات — ستٌّ تكفي شريطا ولا تُعيد الكتالوج */
-  const morePaths = picks.slice(1, 7)
-  const moreCourses = useMemo(
-    () => bestsellerCourses.map((b) => ({ ...b, c: courseById(b.id)! })).filter((b) => b.c).slice(0, 6),
+  const [pwCat, setPwCat] = useState('الكل')
+  const [crCat, setCrCat] = useState('الكل')
+
+  /* أسماءُ المسارات لفكّ إحالات «ليس لك إن» — الحقلُ يشير إلى مساراتٍ بمعرّفها */
+  const nameById = useMemo(
+    () => new Map(picks.map((b) => [b.p.id, b.p.shortName])),
+    [picks],
+  )
+
+  /* بقيّةُ المختارات بعد المميّزة — تُصفّى ثمّ تُقتطع بستّ */
+  const restPaths = useMemo(() => picks.slice(1), [picks])
+  const pwCounts = useMemo(() => countBy(restPaths.map((b) => pathwayDomain(b.p.id))), [restPaths])
+  const morePaths = useMemo(
+    () => restPaths.filter((b) => pwCat === 'الكل' || pathwayDomain(b.p.id) === pwCat).slice(0, 6),
+    [restPaths, pwCat],
+  )
+
+  const allCourses = useMemo(
+    () => bestsellerCourses.map((b) => ({ ...b, c: courseById(b.id)! })).filter((b) => b.c),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- كما فوقه: الكتالوجُ يُستبدل وقت التشغيل
     [catalogVersion],
+  )
+  const crCounts = useMemo(() => countBy(allCourses.map((b) => b.c.category)), [allCourses])
+  const moreCourses = useMemo(
+    () => allCourses.filter((b) => crCat === 'الكل' || b.c.category === crCat).slice(0, 6),
+    [allCourses, crCat],
   )
 
   return (
@@ -138,6 +228,7 @@ export function Bestsellers() {
         {morePaths.length > 0 && (
           <div className="reveal mt-12">
             <h3 className="text-lg font-bold md:text-xl">مسارات أخرى من اختيارنا</h3>
+            <CategoryFilter counts={pwCounts} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {morePaths.map((b) => (
                 <Card
@@ -146,11 +237,30 @@ export function Bestsellers() {
                   to={`/pathways/${b.id}`}
                   tone="accent"
                   interactive
-                  className="flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5"
+                  className="flex w-[280px] shrink-0 snap-start flex-col gap-2 p-5"
                 >
                   <span className="kicker text-teal-light-ink">{b.note}</span>
-                  <h4 className="text-base font-black leading-snug">{b.p.name}</h4>
-                  <p className="line-clamp-2 text-xs leading-6 text-muted-foreground">{b.p.transformation}</p>
+                  {/* الاسمُ **القصير** كبطاقة الكتالوج: الكاملُ متوسّطُه ٤٥ حرفا
+                      وفيه نقطتان — يصلح لصفحةٍ لا لبطاقةٍ في شريط. */}
+                  <h4 className="text-base font-black leading-snug">{b.p.shortName}</h4>
+                  {/* «لمن» و«ليس لك إن» — الحقلان المؤلَّفان اللذان لم يكونا
+                      يُعرضان (البند ٣٠). و«ليس لك إن» أصدقُ سطرٍ في الكتالوج:
+                      يمنع شراءً خاطئا قبل وقوعه، والمنعُ خدمةٌ لا خسارة. */}
+                  {b.p.audience && (
+                    <p className="line-clamp-2 text-fine leading-5 text-muted-foreground">
+                      <span className="font-bold text-foreground">لمن؟ </span>{b.p.audience}
+                    </p>
+                  )}
+                  {b.p.notFor && (
+                    <p className="line-clamp-2 text-fine leading-5 text-muted-foreground">
+                      <span className="font-bold text-gold-ink">ليس لك إن: </span>
+                      {resolveCatalogRefsAr(b.p.notFor, (id) => nameById.get(id))}
+                    </p>
+                  )}
+                  <p className="flex items-start gap-1.5 text-fine leading-5 text-teal-light-ink">
+                    <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span className="line-clamp-2 min-w-0">تتخرّج بـ: {b.p.output}</span>
+                  </p>
                   <span className="mt-auto pt-2 text-fine text-muted-foreground">{pathwaySizeAr(b.p)}</span>
                 </Card>
               ))}
@@ -161,18 +271,35 @@ export function Bestsellers() {
         {moreCourses.length > 0 && (
           <div className="reveal mt-10">
             <h3 className="text-lg font-bold md:text-xl">ودوراتٌ مفردة</h3>
+            <CategoryFilter counts={crCounts} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {moreCourses.map((b) => (
+                /* ⚠️ `‎/build/:courseId` لا `‎/courses/:id`.
+                   الثاني **ليس مسارا في التطبيق** — كتبتُه في #46 فكانت كلُّ
+                   بطاقةِ دورةٍ رابطا مكسورا على الإنتاج. والكتالوجُ يقصد
+                   `‎/build/` نفسَه: صفحةٌ من هذه الدورة وحدَها. */
                 <Card
                   key={b.id}
                   as={Link}
-                  to={`/courses/${b.id}`}
+                  to={`/build/${b.id}`}
                   interactive
-                  className="flex w-[240px] shrink-0 snap-start flex-col gap-2 p-5"
+                  className="flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5"
                 >
-                  <span className="kicker text-gold-ink">{b.note}</span>
-                  <CourseTitle as="h4" name={b.c.name} termEn={b.c.termEn} className="text-base font-black leading-snug" />
-                  <span className="mt-auto pt-2 text-fine text-muted-foreground">{b.c.weeks} أسابيع</span>
+                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
+                    <Flame className="h-3 w-3" />
+                    {b.note}
+                  </span>
+                  <CourseTitle as="h4" name={b.c.name} termEn={b.c.termEn} className="font-bold leading-relaxed" />
+                  {/* الوعدُ — ما يخرج به المتعلّم، وهو ما يُشترى */}
+                  {b.c.promise && (
+                    <p className="line-clamp-2 text-xs leading-6 text-muted-foreground">{b.c.promise}</p>
+                  )}
+                  <p className="text-fine text-muted-foreground">
+                    {b.c.weeks} {b.c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
+                  </p>
+                  <span className="mt-auto w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
+                    {b.c.skill}
+                  </span>
                 </Card>
               ))}
             </div>
