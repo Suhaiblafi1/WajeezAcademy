@@ -1,5 +1,6 @@
 /* خدمة الشعب — إنشاء، جدولة، فتح مشروط، منع تعارض المدرب، سعة.
-   شروط الفتح الستة: دورة منشورة + مدرب معتمد مؤهل + جدول + سعة + خطة تقديم + إعداد مالي.
+   شروط الفتح الخمسة: دورة منشورة + جدول + سعة + خطة تقديم + إعداد مالي.
+   (والمدرّب ليس منها — يُسنَد دفعةً واحدةً لاحقا؛ التعليل عند `openChecklist`.)
    الحالات: draft | open | full | active | completed | cancelled. */
 
 import { notifyPlanWaiters } from './catalog-readiness.service'
@@ -349,17 +350,30 @@ export class CohortService {
     }
   }
 
-  /** فحص شروط الفتح الستة — يعيد قائمة النواقص دون تغيير حالة */
+  /* ═══ شروطُ الفتح — والمدرّبُ ليس منها ═══
+
+     كان المدرّبُ المؤهَّلُ شرطا سادسا يمنع الفتح، وكان صوابا حين تُسنَد
+     الأسماءُ واحدا واحدا. وقرارُ صاحب الأكاديميّة أن تُفتح الشعبُ كلُّها
+     الآن على الفصل الأوّل، وأن يُسنَد المدرّبون **دفعةً واحدةً لاحقا** —
+     فبقاءُ الشرط يعني كتالوجا كاملا محبوسا في المسوّدة بانتظار إسنادٍ
+     لم يحن، ومتعلّما لا يستطيع الحجزَ لفصلٍ يبدأ بعد أسابيع.
+
+     وما يُحفظ مقابلَ ذلك أن **لا يُوعَد بما لا يوجد**: الشعبةُ تُفتح بجدولها
+     وسعرها ومقاعدها، والمدرّبُ يُقال عنه في وجه المتعلّم «سيتم تعيين المدرب
+     قريبا» لا اسمٌ مختلَق ولا صمت. وحين تُسنَد الأسماء تظهر مكانَها.
+
+     والشروطُ الخمسةُ الباقيةُ على حالها: دورةٌ منشورة، جدولُ جلسات، سعة،
+     خطّةُ تقديم، وإعدادٌ ماليّ. فما يُباع له موعدٌ وسعرٌ ومقعد. */
+
+  /** فحص شروط الفتح الخمسة — يعيد قائمة النواقص دون تغيير حالة */
   async openChecklist(cohortId: string) {
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
-      include: { course: true, trainers: true, sessions: true, plans: true },
+      include: { course: true, sessions: true, plans: true },
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     const missing: string[] = []
     if (cohort.course.status !== 'published') missing.push('الدورة ليست منشورة')
-    const leadOk = await this.hasQualifiedLead(cohort)
-    if (!leadOk) missing.push('لا مدرب معتمدا ومؤهلا للدورة')
     if (!cohort.sessions.length) missing.push('لا جدول جلسات')
     if (!cohort.capacity || cohort.capacity < 1) missing.push('لا سعة محددة')
     if (!cohort.plans.some((p) => ['approved', 'published'].includes(p.status)) && !cohort.plans.length) {
@@ -369,23 +383,9 @@ export class CohortService {
     return { ready: missing.length === 0, missing }
   }
 
-  private async hasQualifiedLead(cohort: { courseId: string; trainers: { profileId: string; role: string }[] }): Promise<boolean> {
-    for (const t of cohort.trainers.filter((x) => x.role === 'lead')) {
-      const profile = await this.prisma.trainerProfile.findUnique({
-        where: { id: t.profileId }, include: { application: true },
-      })
-      if (!profile || profile.suspendedAt || profile.application.status !== 'active') continue
-      const qual = await this.prisma.trainerCourseQualification.findUnique({
-        where: { profileId_courseId: { profileId: t.profileId, courseId: cohort.courseId } },
-      })
-      if (qual?.status === 'qualified') return true
-    }
-    return false
-  }
-
   /* ─────────── خطّةُ التقديم — الشرطُ الذي لم يكن يُوفَّى ───────────
 
-     من شروط الفتح الستّة «خطّةُ تقديمٍ للشعبة». وصفوفُ `CohortDeliveryPlan`
+     من شروط الفتح الخمسة «خطّةُ تقديمٍ للشعبة». وصفوفُ `CohortDeliveryPlan`
      كانت تُكتب **في موضعٍ واحدٍ في المستودَع كلِّه**: حين يُنشر اقتراحُ تعديلٍ
      من مدرّبٍ بنطاق شعبة. فلا مسارَ إداريّ ولا شاشة.
 
@@ -463,7 +463,7 @@ export class CohortService {
      «منتهية». فهذه الدالّةُ تُصلح ما تأخّر، وتُنادى من الشاشة الآن ومن
      العامل الخلفيّ يومَ يوجد (المهمّة ٥٤ في خطّة التنفيذ).
 
-     وما لا تفعله بقصد: لا تفتح شعبةً — الفتحُ يمرّ بشروطه الستّة وبقرار
+     وما لا تفعله بقصد: لا تفتح شعبةً — الفتحُ يمرّ بشروطه الخمسة وبقرار
      إنسان؛ ولا تلمس ملغاةً؛ ولا تُنهي شعبةً بلا جلسة. */
   async syncStatusesByDate(actorId: string | null, options: { apply?: boolean; now?: Date } = {}) {
     const now = options.now ?? new Date()

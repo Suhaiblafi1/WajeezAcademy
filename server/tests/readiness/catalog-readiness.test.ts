@@ -48,18 +48,20 @@ describe('فتح الشعب', () => {
     }
   })
 
-  /* كان هذا الفحصُ يشترط `first.opened > 0` — أي **يوثّق العطب**: أنّ الزرّ
-     يفتح للبيع شعبا بلا مدرّبٍ ولا جدولٍ ولا خطّة، متخطّيا الشروطَ الستّة.
-     فصار يشترط ما هو صواب: أن تُهيَّأ، وأن تبقى مسوّدةً حتّى يستوفى شرطُها،
-     وأن يُقال نقصُها. */
-  it('والتنفيذُ يهيّئ ولا يفتح ما نقصه شرط — والنقصُ يُقال', async () => {
+  /* والفتحُ اليوم يستوفي شروطَه كلَّها هنا: المدرّبُ خرج منها (يُسنَد دفعةً
+     واحدةً لاحقا)، والأربعةُ الباقيةُ — جدولٌ وسعةٌ وخطّةٌ وسعر — تُكتب مع
+     الشعبة. فما يُحرَس أن تُفتح **كاملةً** لا أن تبقى محبوسة. */
+  it('والتنفيذُ يفتح الشعبَ بجدولٍ موزّعٍ على الفصل', async () => {
     const first = await openAllCohorts(prisma, { apply: true })
-    expect(first.prepared, 'لم تُهيَّأ شعبةٌ واحدة').toBeGreaterThan(0)
-    /* لا مدرّبَ في قاعدة الفحص، فلا شعبةَ تُفتح — وهذا هو الصواب */
-    expect(first.opened).toBe(0)
-    for (const row of first.rows.filter((r) => !r.reason)) {
-      expect(row.blocked?.join(' '), `${row.titleAr}: لم يُذكر نقصُها`).toContain('مدرب')
-    }
+    expect(first.opened, 'لم تُفتح شعبةٌ واحدة').toBeGreaterThan(0)
+    expect(first.prepared, `بقيت مسوّدات: ${JSON.stringify(first.rows.filter((r) => r.blocked))}`).toBe(0)
+
+    /* ولكلّ صفٍّ موعدُ بدءٍ معلَن، والمواعيدُ متفاوتة */
+    const dates = first.rows.filter((r) => !r.reason).map((r) => r.startsAt)
+    expect(dates.every(Boolean), 'صفٌّ بلا موعدِ بدء').toBe(true)
+    expect(new Set(dates).size, 'كلُّ الشعب في يومٍ واحد').toBeGreaterThan(1)
+    /* ولا موعدَ في الماضي — الفتحُ يسبق أوّلَ جلسةٍ بمهلةٍ للتسجيل */
+    for (const d of dates) expect(new Date(d!).getTime()).toBeGreaterThan(Date.now())
   })
 
   it('ولا يُنشئ نسخةً ثانيةً لدورةٍ لها شعبةٌ قائمة — ولو كانت مسوّدة', async () => {

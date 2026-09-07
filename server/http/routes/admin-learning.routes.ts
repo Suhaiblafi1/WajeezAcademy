@@ -50,7 +50,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      و`apply=false` هو الافتراض: تُعرض النتيجة أوّلا ولا يُكتب شيء. */
   app.post('/api/admin/cohorts/open-all', {
     preHandler: requirePermission('cohort.open'),
-    schema: { tags: ['admin-cohorts'], summary: 'يفتح شعبةً لكلّ دورة منشورة بلا شعبةٍ حيّة' },
+    schema: { tags: ['admin-cohorts'], summary: 'يفتح شعبةً لكلّ دورة منشورة بلا شعبةٍ حيّة — موزّعةً على الفصل الأوّل (weeks = أقلّ مهلةٍ للتسجيل بالأسابيع)' },
   }, async (req) => {
     const b = (req.body ?? {}) as { apply?: boolean; weeks?: number; capacity?: number }
     return openAllCohorts(prisma, {
@@ -212,7 +212,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/cohorts/:id/open-checklist', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'فحص شروط الفتح الستة — يعيد النواقص دون تغيير حالة' },
+    schema: { tags: ['admin-learning'], summary: 'فحص شروط الفتح الخمسة — يعيد النواقص دون تغيير حالة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return cohorts.openChecklist(id)
