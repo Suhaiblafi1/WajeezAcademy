@@ -7,6 +7,7 @@ import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
 
 import Button from "@/components/ui/Button";
+import BuildStampLine from "@/components/BuildStampLine";
 /** إطار لوحة الإدارة والعمليات — هويّة الإداريّ من جلسته وحدها.
 
     حُذفت شاشة «من أنت؟» التي كانت تعرض ثلاثة أسماء إداريّين مختلَقين
@@ -209,6 +210,8 @@ export default function AdminLayout({ children, title }: { children: React.React
         <div className="min-w-0 flex-1 py-8">
           <h1 className="mb-6 text-2xl font-black">{title}</h1>
           {children}
+          {/* البند ٦: أيَّ نسخةٍ تنظر إليها؟ — الجوابُ في الشاشة لا في curl */}
+          <BuildStampLine />
         </div>
       </div>
     </div>

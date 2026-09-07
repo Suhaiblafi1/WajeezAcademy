@@ -41,7 +41,7 @@ import { registerSearchRoutes } from './routes/search.routes'
 import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
-import { buildStamp, runtimeEnvLabel } from '../build-stamp'
+import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
 
 export async function buildApp(prisma: PrismaClient) {
   /* ── السجلّ ──
@@ -194,15 +194,11 @@ export async function buildApp(prisma: PrismaClient) {
       | { questions?: { questions?: unknown[] }; coreCatalog?: { launch_pathways?: unknown[]; courses?: unknown[] } }
       | undefined
 
-    /* التسمية الآلية شكلان: auto-<sha7>-<hash6> حين يعرف البناء التزامه،
-       وauto-<hash12> حين لا يعرفه (نشر محلي). والثاني لا يحمل بصمة التزام،
-       فالحكم عليه بعدم التطابق كذبٌ صريح — وهو ما فعله أول تنفيذ لهذا المسار
-       حتى كشفه الاختبار: قارن sha7 بأول ١٢ حرفا من بصمة المحتوى فأعلن اختلافا
-       لا وجود له. لا يُحكم إلا حين توجد بصمة التزام فعلا. */
+    /* التسميةُ تُقرأ والحكمُ يُصدَر في `build-stamp.ts` — تعريفٌ واحدٌ تقرؤه
+       هذه الشاشةُ و«صحّةُ النظام» معا، فلا تنحرف نسخةٌ عن أخرى بصمت. */
     const auto = active?.label?.startsWith('auto-') ?? false
-    const withCommit = active?.label?.match(/^auto-([0-9a-f]{7})-[0-9a-f]{6}(?:-\d+)?$/)
-    const labelSha = withCommit ? withCommit[1] : null
-    const inSync = sha7 && labelSha ? sha7 === labelSha : null
+    const labelSha = commitOfSnapshotLabel(active?.label)
+    const inSync = snapshotInSync(stamp.commit, active?.label)
 
     return {
       الكود: {

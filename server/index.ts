@@ -4,6 +4,7 @@ import { getPrisma } from './db/client'
 import { ensureRbacSeeded } from './auth/rbac-seed'
 import { ensureFoundersPromoted } from './auth/founders'
 import { buildApp } from './http/app'
+import { buildStamp, runtimeEnvLabel } from './build-stamp'
 
 const main = async () => {
   const prisma = await getPrisma()
@@ -11,6 +12,8 @@ const main = async () => {
   await announceFounders(prisma)
   const app = await buildApp(prisma)
   warnOnDerivedStorageSecret(app)
+  announceRunningBuild()
+  warnOnMissingSiteUrl(app)
   const port = Number(process.env.API_PORT ?? 7101)
   /* العنوان قابل للضبط، وافتراضه المغلق لا المفتوح.
      على الجهاز 127.0.0.1 هو الصواب: لا يُنصت الخادم على الشبكة بلا قصد.
@@ -50,6 +53,46 @@ function warnOnDerivedStorageSecret(app: { log: { warn: (msg: string) => void } 
   app.log.warn(
     'STORAGE_SECRET غير مضبوط — مفتاحُ توقيع الروابط مشتقٌّ من DATABASE_URL. ' +
     'اضبطه بقيمةٍ ثابتةٍ قبل أيّ تغييرٍ لعنوان القاعدة (نقلُ الاستضافة)، وإلّا صارت الوثائقُ المخزَّنةُ غيرَ قابلةٍ للفتح.',
+  )
+}
+
+/* ما الذي يعمل الآن — سطرٌ في أوّل السجلّ (البند ٦).
+
+   ذهبت جلسةٌ كاملةٌ في تشخيصِ «لماذا أرى موقعا قديما؟» على بيئةٍ خاطئة،
+   والجوابُ كان في `‎/api/version` — مسارٌ صحيحٌ لا يفتحه أحد. ومن يقرأ سجلَّ
+   الحاوية بعد نشرةٍ يريد سطرا واحدا: **أيَّ التزامٍ يخدم هذا الذي أقلع؟**
+
+   ولا يُسقط شيئا ولا يحذّر: الجهلُ بالالتزام حالةٌ عاديّةٌ في التطوير. */
+function announceRunningBuild(): void {
+  const stamp = buildStamp()
+  const who = stamp.commit
+    ? `${stamp.commit.slice(0, 7)}${stamp.ref ? ` · ${stamp.ref}` : ''}`
+    : 'التزامٌ مجهول'
+  const when = stamp.builtAt ? ` · بُني ${stamp.builtAt}` : ''
+  console.log(`🏷️  النسخة: ${who}${when} · البيئة: ${runtimeEnvLabel()} · مصدرُ البصمة: ${stamp.source}`)
+}
+
+/* عنوانُ الموقع غيرُ مضبوطٍ في الإنتاج — عطبٌ صامتٌ في السجلّ صاخبٌ عند المشتري.
+
+   `publicSiteUrl()` يسقط إلى `http://localhost:7100` حين يغيب `APP_URL`. وهو
+   الصوابُ في التطوير، وفي الإنتاج يعني شيئَين معا:
+
+     · روابطُ الرسائل كلُّها (تأكيدُ البريد · الدعوة · استعادةُ الكلمة) تصل
+       بعنوانٍ لا يفتح عند أحد.
+     · وبوّابةُ الدفع تأخذ `success_url` وقتَ إنشاء الجلسة، فيعود المشتري بعد
+       دفعٍ **ناجح** إلى عنوانٍ لا يفتح — والمالُ يُقبض والتسجيلُ يُسوّى، لأنّ
+       الـwebhook مستقلٌّ عن المتصفّح. فالعطبُ لا أثرَ له في السجلّات وكلُّ
+       أثرِه عند المشتري، وهو أسوأُ ترتيب.
+
+   ولا يُقرأ `VITE_SITE_ORIGIN` هنا: هو متغيّرُ **بناء** تخبزه Vite في حزمة
+   الواجهة، فبيئةُ الخادم لا تعرفه ولو ضُبط — وحارسٌ يقول «غيرُ مضبوط» في كلّ
+   إقلاعٍ يُعلّم قارئَه تجاهلَه. فيُختم وقتَ البناء ويُعرض في «صحّة النظام». */
+function warnOnMissingSiteUrl(app: { log: { warn: (msg: string) => void } }): void {
+  if (process.env.APP_URL?.trim()) return
+  if (process.env.NODE_ENV !== 'production') return
+  app.log.warn(
+    'APP_URL غير مضبوط — روابطُ الرسائل وعنوانُ العودة بعد الدفع تُبنى على http://localhost:7100. ' +
+    'اضبطه في deploy/.env.production بعنوان الموقع وأعد النشر.',
   )
 }
 

@@ -22,7 +22,7 @@ import { execFileSync } from 'node:child_process'
 import { rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { BUILD_STAMP_FILE, commitFromEnv, refFromEnv, messageFromEnv } from '../server/build-stamp'
+import { BUILD_STAMP_FILE, commitFromEnv, refFromEnv, messageFromEnv, siteOriginFromEnv } from '../server/build-stamp'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const out = join(root, BUILD_STAMP_FILE)
@@ -42,11 +42,18 @@ const commit = commitFromEnv() ?? git('rev-parse', 'HEAD')
 const ref = refFromEnv() ?? git('rev-parse', '--abbrev-ref', 'HEAD')
 const message = (messageFromEnv() ?? git('log', '-1', '--pretty=%s'))?.split('\n')[0]
 
+/* وأصلُ الموقع يُختم هنا لأنّه لا يُقرأ في موضعٍ آخر أبدا.
+
+   `VITE_SITE_ORIGIN` متغيّرُ **بناء**: تخبزه Vite في حزمة الواجهة ثمّ يختفي.
+   فبيئةُ الخادم لا تعرفه ولو ضُبط، وأيُّ حارسٍ يسأل `process.env` عنه وقتَ
+   التشغيل يجيب «غيرُ مضبوط» **دائما** — حارسٌ يكذب في كلّ مرّة أسوأُ من
+   لا حارس. فيُسجَّل في اللحظة الوحيدة التي يكون فيها معروفا: البناء. */
 const stamp = {
   commit: commit ?? null,
   ref: ref && ref !== 'HEAD' ? ref : null,
   message: message ?? null,
   builtAt: new Date().toISOString(),
+  siteOrigin: siteOriginFromEnv() ?? null,
 }
 
 writeFileSync(out, JSON.stringify(stamp, null, 2) + '\n', 'utf8')
