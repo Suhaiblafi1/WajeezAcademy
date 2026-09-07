@@ -15,13 +15,21 @@ const METRIC_ICON: Record<string, typeof Building2> = {
    - لا نسبة للأكاديمية: الإطار النصي «وجيز مهارات بالأرقام» + subcopy يوضح أنها
      أرقام تجربة وجيز مهارات ضمن منظومة وجيز — صغير لكنه غير مضلل.
    - الرقم هو العنصر البصري الأساسي؛ الوصف تحته مختصر جداً. */
-export default function TrustMetricsBar() {
+/* `nested`: يُعرض داخلَ قسمٍ قائمٍ (تحت «شركاؤنا» وفوق «مؤسسات وثقت») بقرار
+   صاحب المنصّة (٧ سبتمبر ٢٠٢٦). فيصير `div` لا `section` — قسمٌ داخل قسمٍ
+   يضاعف معالمَ الصفحة على قارئ الشاشة — ويترك العرضَ والحشوَ لمضيفه.
+   والنمطُ نفسُه في `EcosystemOrgStrip` المجاور له، ولا يُخترع ثانٍ. */
+export default function TrustMetricsBar({ nested = false }: { nested?: boolean } = {}) {
   const metrics = homeTrustMetrics()
   if (metrics.length === 0) return null
 
+  const Wrapper = nested ? 'div' : 'section'
   return (
-    <section aria-label="وجيز مهارات بالأرقام" className="border-y border-white/5 bg-white/[0.02] py-10 md:py-12">
-      <div className="mx-auto max-w-7xl px-5">
+    <Wrapper
+      aria-label="وجيز مهارات بالأرقام"
+      className={nested ? 'mt-12' : 'border-y border-white/5 bg-white/[0.02] py-10 md:py-12'}
+    >
+      <div className={nested ? '' : 'mx-auto max-w-7xl px-5'}>
         <div className="reveal text-center">
           <h2 className="text-sm font-bold text-teal-light-ink md:text-base">وجيز مهارات بالأرقام</h2>
           <p className="mx-auto mt-2 max-w-xl text-fine leading-relaxed text-muted-foreground">
@@ -48,6 +56,6 @@ export default function TrustMetricsBar() {
           })}
         </dl>
       </div>
-    </section>
+    </Wrapper>
   )
 }
