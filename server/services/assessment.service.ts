@@ -79,11 +79,48 @@ export class AssessmentService {
       const exp = Date.now() + SIGNED_URL_TTL_MS
       uploadUrl = `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}`
     }
+    /* الطابورُ قبل الإضافة — الخبرُ عند انتقاله من فارغٍ إلى غيرِ فارغ */
+    const pendingBefore = await this.prisma.assignmentSubmission.count({
+      where: { assessmentId, status: { in: ['submitted', 'under_review'] } },
+    })
     const submission = await this.prisma.assignmentSubmission.create({
       data: { assessmentId, enrollmentId: enrollment.id, textAnswer: input.textAnswer, storageKey },
     })
     await recordAudit(this.prisma, { actorId: userId, action: 'submission.create', entityType: 'assignment_submission', entityId: submission.id, meta: { assessmentId } })
+    if (pendingBefore === 0) await this.notifyTrainersOfQueue(assessment)
     return { submission, uploadUrl }
+  }
+
+  /* ═══ التسليمُ يصل، والمدرّبُ لا يعلم ═══
+
+     للمدرّب طابورُ تقييمٍ يعمل، ولم يكن شيءٌ يُخبره أنّ شيئا دخله. فالمتعلّمُ
+     ينتظر جوابا والمدرّبُ لا يعرف أنّ أحدا ينتظره — ويُقرأ الصمتُ إهمالا وهو
+     جهل.
+
+     ── ولماذا مرّةً واحدةً لا مع كلّ تسليم ──
+
+     شعبةٌ من ثلاثين تُرسل ثلاثين إشعارا عن عملٍ واحد، فيتعلّم المدرّبُ أن
+     يتجاوزها كلَّها — وهو أسوأُ من الصمت. فالخبرُ عند **انتقال الطابور من
+     فارغٍ إلى غيرِ فارغ** لهذا التكليف: «ثمّ عملٌ ينتظرك» يُقال مرّةً، ثمّ
+     يحمل العدّادُ في القائمة الرقمَ الحيَّ بلا ضجيج. ويعود الخبرُ إن فرغ
+     الطابورُ ثمّ امتلأ — ومنه إعادةُ التسليم بعد طلبِه. */
+  private async notifyTrainersOfQueue(assessment: { id: string; cohortId: string; title: string }) {
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: assessment.cohortId },
+      select: { title: true, trainers: { select: { profile: { select: { userId: true } } } } },
+    })
+    if (!cohort) return
+    for (const t of cohort.trainers) {
+      /* ملفٌّ بلا حسابٍ مربوطٍ لا صندوقَ له — لا يُخترع له صفّ */
+      if (!t.profile.userId) continue
+      await safeNotify(this.prisma, {
+        userId: t.profile.userId, channel: 'in_app', audience: 'trainer',
+        templateKey: 'submission.queued',
+        title: `تسليمٌ ينتظر تصحيحَك: ${cohort.title}`,
+        body: `بدأ التسليمُ على «${assessment.title}». افتح «طابور التقييم».`,
+        data: { assessmentId: assessment.id, cohortId: assessment.cohortId },
+      })
+    }
   }
 
   /** إعادة التسليم بعد طلب المراجعة — محاولة جديدة والقديمة تبقى في الأثر */

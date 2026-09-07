@@ -38,7 +38,18 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
         contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
     })
-    return full
+    /* ── عددُ ما ينتظر تصحيحَه ──
+
+       الإشعارُ يُقرأ مرّةً ثمّ يُنسى؛ والرقمُ في القائمة يبقى ما بقي العمل.
+       فهو الإشارةُ الأولى لا الثانية: يُرى بلا فتحِ شيء، ويصير صفرا وحدَه
+       حين يفرغ الطابور. */
+    const pendingGrading = await prisma.assignmentSubmission.count({
+      where: {
+        status: { in: ['submitted', 'under_review'] },
+        assessment: { cohort: { trainers: { some: { profileId: profile.id } } } },
+      },
+    })
+    return { ...full, pendingGrading }
   })
 
   /* مهام التهيئة تُكمَل من صاحبها.

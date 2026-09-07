@@ -50,6 +50,35 @@ function walk(dir: string, out: string[] = []): string[] {
 const JOBS = readFileSync(join(root, 'server/worker/jobs.ts'), 'utf8')
 const REMINDERS_BLOCK = JOBS.match(/const REMINDERS = \[([\s\S]*?)\] as const/)
 
+/* ═══ وبابٌ ثالثٌ: مفاتيحُ تُبنى وقتَ التنفيذ ═══
+
+   ستّةُ مفاتيحَ كانت تُرسَل ولا يراها أحد، لأنّها تُكتب بقالبٍ نصّيٍّ لا
+   بحرفٍ بين علامتَي اقتباس — فلا يقرؤها مسحٌ يبحث عن الحرف. وهي الثغرةُ
+   نفسُها التي أُصلحت في هذا الحارس مرّتَين، عادت من صيغةٍ ثالثة.
+
+   **فالبابُ يُغلق لا يُرقَّع:** كلُّ مفتاحٍ يُبنى بقالبٍ نصّيٍّ يُرفَض حتّى
+   تُسمَّى توسّعاتُه هنا صراحةً. فمن أضاف موضعا رابعا تحمرّ عنده البوّابةُ
+   وتقول له ماذا يكتب — لا يمرّ صامتا كما مرّ هؤلاء. */
+const DYNAMIC: Record<string, readonly string[]> = {
+  'submission.@action@': [
+    'submission.start_review', 'submission.request_resubmit',
+    'submission.accept', 'submission.reject',
+  ],
+  'grade.@kind@': ['grade.create', 'grade.update'],
+}
+
+/** ما وُجد مبنيّا بقالبٍ نصّيّ في الخادم — بنصّه كما كُتب */
+const DYNAMIC_FOUND = (() => {
+  const found = new Set<string>()
+  for (const f of walk('server')) {
+    for (const m of readFileSync(join(root, f), 'utf8').matchAll(/templateKey:\s*`([^`]+)`/g)) {
+      /* يُطبَّع شكلُ الإقحام حتّى يُكتب مفتاحُ الخريطة أعلاه بلا قالبٍ فعليّ */
+      found.add(m[1].replace(/\$\{([^}]+)\}/g, '@$1@'))
+    }
+  }
+  return [...found].sort()
+})()
+
 const KEYS = (() => {
   const found = new Set<string>()
   /* ١) ما يُمرَّر حرفا في موضعه */
@@ -62,6 +91,8 @@ const KEYS = (() => {
   for (const m of (REMINDERS_BLOCK?.[1] ?? '').matchAll(/(?:key|trainerKey):\s*'([^']+)'/g)) {
     found.add(m[1])
   }
+  /* ٣) وتوسّعاتُ ما يُبنى وقتَ التنفيذ */
+  for (const expansions of Object.values(DYNAMIC)) for (const k of expansions) found.add(k)
   return [...found].sort()
 })()
 
@@ -80,6 +111,19 @@ describe('أصنافُ الإشعارات تغطّي ما يُرسَل فعلا'
     ).not.toBeNull()
     expect(KEYS).toContain('session.reminder.1h')
     expect(KEYS).toContain('session.reminder.trainer.24h')
+  })
+
+  it('وكلُّ مفتاحٍ يُبنى بقالبٍ نصّيٍّ مُسمّى التوسّعات — فلا بابَ رابع', () => {
+    const unnamed = DYNAMIC_FOUND.filter((raw) => !DYNAMIC[raw])
+    expect(
+      unnamed,
+      `مفتاحٌ يُبنى وقتَ التنفيذ ولم تُسمَّ توسّعاتُه: ${unnamed.join('، ')}.\n`
+      + 'أضفه إلى «DYNAMIC» في هذا الملفّ بتوسّعاته كلِّها، ثمّ سجّلها في '
+      + '«categories.ts». وبلا ذلك تُرسَل ولا تظهر في شاشة التفضيلات — '
+      + 'لا مفتوحةً ولا مقفلة.',
+    ).toEqual([])
+    /* والعكسُ كذلك: صيغةٌ سُمّيت هنا ثمّ حُذفت من الشيفرة تبقى تُفحَص بلا داعٍ */
+    expect(Object.keys(DYNAMIC).sort()).toEqual(DYNAMIC_FOUND)
   })
 
   it.each(KEYS)('«%s» له صنف', (key) => {
