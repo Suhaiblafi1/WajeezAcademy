@@ -23,6 +23,13 @@
   متّفقٍ عليها. والمشغّلُ اليومَ **تجريبيّ** بأمرِ صاحب المنصّة حتّى يُتحقَّق
   من كلّ شيء.
 
+- **Claude replies in English.** Decision of the platform owner (7 September
+  2026). This governs **conversation only** — chat replies, explanations,
+  questions. It does **not** change what is written into the repository:
+  documentation, commit messages, code comments, and test names stay Arabic,
+  as the whole history is. Two different things, and conflating them would
+  rewrite the repo by accident.
+
 ## أعرافٌ تقنيّةٌ يُبنى عليها
 
 - **الحارسُ يُثبَت سقوطُه.** كلُّ اختبارٍ جديدٍ يُنقض ما يحرسه مرّةً ليُرى
