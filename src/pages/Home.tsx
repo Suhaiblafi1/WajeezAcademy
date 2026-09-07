@@ -119,7 +119,7 @@ function Nav() {
     { label: 'مؤشر وجيز', href: '#diagnostic' },
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
-    { label: 'منهجية وجيز', href: '/methodology', route: true },
+    { label: 'المنهجية', href: '/methodology', route: true },
   ]
   const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
     l.route ? (
@@ -901,7 +901,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
     icon: User,
     links: [
       { label: 'من نحن', to: '/p/about' },
-      { label: 'منهجية وجيز', to: '/methodology' },
+      { label: 'المنهجية', to: '/methodology' },
       { label: 'شركاؤنا', to: '#partners' },
       { label: 'انضم كمدرب', to: '/join-trainer' },
     ],
