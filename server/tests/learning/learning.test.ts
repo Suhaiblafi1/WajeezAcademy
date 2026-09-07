@@ -296,3 +296,57 @@ describe('التشغيل التعليمي الكامل', () => {
       .rejects.toMatchObject({ code: 'bad_state' })
   })
 })
+
+/* ═══ التسليمُ يصل، والمدرّبُ يعلم ═══
+
+   كان للمدرّب طابورُ تقييمٍ يعمل ولا شيءَ يُخبره أنّ شيئا دخله: المتعلّمُ
+   ينتظر جوابا، والمدرّبُ لا يعرف أنّ أحدا ينتظره. */
+describe('طابورُ التصحيح يُنادي صاحبَه', () => {
+  let queueCohort = ''
+  let queueAssessment = ''
+
+  beforeAll(async () => {
+    const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةُ الطابور', capacity: 5, price: 40 })
+    queueCohort = c.id
+    await cohorts.assignTrainer(queueCohort, profileId, managerId, 'lead')
+    await prisma.cohort.update({ where: { id: queueCohort }, data: { status: 'active' } })
+    await prisma.enrollment.create({ data: { userId: learnerId, cohortId: queueCohort, status: 'enrolled' } })
+    const a = await assessments.createAssessment(managerId, {
+      cohortId: queueCohort, title: 'تكليفُ الطابور', type: 'assignment',
+    })
+    queueAssessment = a.id
+  })
+
+  it('أوّلُ تسليمٍ يُخبر المدرّب — والطابورُ انتقل من فارغٍ إلى غيرِ فارغ', async () => {
+    const before = await prisma.notification.count({ where: { userId: trainerUserId, templateKey: 'submission.queued' } })
+    await assessments.submitAssignment(learnerId, queueAssessment, { textAnswer: 'أوّلُ حلّ' })
+    const notes = await prisma.notification.findMany({
+      where: { userId: trainerUserId, templateKey: 'submission.queued' },
+      select: { audience: true, body: true },
+    })
+    expect(notes.length, 'لم يُخبَر المدرّبُ بأنّ عملا دخل طابورَه').toBe(before + 1)
+    expect(notes[notes.length - 1].audience).toBe('trainer')
+    expect(notes[notes.length - 1].body).toContain('تكليفُ الطابور')
+  })
+
+  it('ولا يُعاد مع كلّ تسليم — ثلاثون إشعارا عن عملٍ واحدٍ تُعلِّم التجاهل', async () => {
+    const other = await auth.register('queue-second@test.local', 'Queue#12345', 'متعلّمٌ ثانٍ')
+    await prisma.enrollment.create({ data: { userId: other.userId, cohortId: queueCohort, status: 'enrolled' } })
+    const before = await prisma.notification.count({ where: { userId: trainerUserId, templateKey: 'submission.queued' } })
+    await assessments.submitAssignment(other.userId, queueAssessment, { textAnswer: 'حلٌّ ثانٍ' })
+    expect(
+      await prisma.notification.count({ where: { userId: trainerUserId, templateKey: 'submission.queued' } }),
+      'أُعيد الخبرُ والطابورُ لم يكن فارغا',
+    ).toBe(before)
+  })
+
+  it('والعدّادُ يقول ما ينتظر تصحيحَه', async () => {
+    const pending = await prisma.assignmentSubmission.count({
+      where: {
+        status: { in: ['submitted', 'under_review'] },
+        assessment: { cohort: { trainers: { some: { profileId } } } },
+      },
+    })
+    expect(pending, 'العدّادُ لا يرى تسليمَي هذه الشعبة').toBeGreaterThanOrEqual(2)
+  })
+})

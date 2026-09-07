@@ -195,6 +195,66 @@ describe('تذكيرُ الجلسات: مرّةً واحدةً لكلّ متعل
     })).map((n) => n.templateKey)
     expect(new Set(keys)).toEqual(new Set(['session.reminder.24h', 'session.reminder.1h']))
   })
+
+  /* ═══ والمدرّبُ كان الوحيدَ في القاعة بلا تذكير ═══
+
+     الوظيفةُ كانت تمرّ على `cohort.enrollments` وحدَها. ومن يُدرّس لا يُسجَّل
+     في شعبتِه، فلا يبلغه شيء — بينما غيابُه يُعطّل صفّا كاملا دفع مقاعدَه. */
+  it('المدرّبُ يُذكَّر بحصّتِه، بمفتاحٍ غيرِ مفتاح المتعلّم', async () => {
+    const t = await auth.register('worker-trainer@test.local', 'Worker#12345', 'مدرّبُ التذكير')
+    await auth.setRoles(t.userId, ['trainer'])
+    const app = await prisma.trainerApplication.create({
+      data: { reference: 'WJ-TR-REMIND-1', email: 'worker-trainer@test.local', fullName: 'مدرّبُ التذكير', status: 'active' },
+    })
+    const profile = await prisma.trainerProfile.create({ data: { applicationId: app.id, userId: t.userId } })
+
+    const taught = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةٌ لها مدرّب', capacity: 5, price: 50 })
+    await prisma.cohort.update({ where: { id: taught.id }, data: { status: 'active' } })
+    await cohorts.addSession(managerId, taught.id, {
+      title: 'حصّةُ المدرّب',
+      startsAt: new Date(Date.now() + 10 * 3_600_000),
+      endsAt: new Date(Date.now() + 12 * 3_600_000),
+    })
+    /* الصفُّ يُكتب مباشرةً: المقصودُ سلوكُ التذكير لا مسارُ الإسناد وشروطُه */
+    await prisma.cohortTrainer.create({ data: { cohortId: taught.id, profileId: profile.id, role: 'lead' } })
+
+    const out = await sendSessionReminders(prisma)
+    expect(out.done, 'لم يُذكَّر المدرّبُ بحصّتِه').toBe(1)
+
+    const notes = await prisma.notification.findMany({
+      where: { userId: t.userId }, select: { templateKey: true, audience: true, title: true },
+    })
+    expect(notes.length).toBe(1)
+    expect(notes[0].templateKey, 'مفتاحُ المدرّب لا يُخلط بمفتاح المتعلّم').toBe('session.reminder.trainer.24h')
+    expect(notes[0].audience).toBe('trainer')
+    expect(notes[0].title).toContain('تدرّسها')
+  })
+
+  it('ولا يُعاد في الدورة التالية — الحارسُ سؤالُ القاعدة نفسُه', async () => {
+    const out = await sendSessionReminders(prisma)
+    expect(out.done).toBe(0)
+  })
+
+  it('وملفُّ مدرّبٍ بلا حسابٍ لا يُنادى — لا صندوقَ يصله فيه شيء', async () => {
+    const before = await prisma.notification.count()
+    const app = await prisma.trainerApplication.create({
+      data: { reference: 'WJ-TR-REMIND-2', email: 'orphan-trainer@test.local', fullName: 'ملفٌّ بلا حساب', status: 'active' },
+    })
+    const orphan = await prisma.trainerProfile.create({ data: { applicationId: app.id } })
+
+    const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةُ ملفٍّ بلا حساب', capacity: 5, price: 50 })
+    await prisma.cohort.update({ where: { id: c.id }, data: { status: 'active' } })
+    await cohorts.addSession(managerId, c.id, {
+      title: 'حصّةٌ بلا مُبلَّغ',
+      startsAt: new Date(Date.now() + 11 * 3_600_000),
+      endsAt: new Date(Date.now() + 13 * 3_600_000),
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId: orphan.id, role: 'lead' } })
+
+    const out = await sendSessionReminders(prisma)
+    expect(out.done, 'أُنشئ صفٌّ لا يقرؤه أحد').toBe(0)
+    expect(await prisma.notification.count()).toBe(before)
+  })
 })
 
 describe('حالاتُ الشعب والتنظيف', () => {

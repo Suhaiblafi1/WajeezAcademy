@@ -37,7 +37,14 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     labelAr: 'تذكيرُ الجلسات',
     whatAr: 'قبل الجلسة بيومٍ وقبلها بساعة',
     silenceable: true,
-    templateKeys: ['session.reminder', 'session.reminder.24h'],
+    /* ── ثغرةٌ كانت هنا: `session.reminder.1h` بلا صنف ──
+
+       المفتاحان اللذان تُرسلهما الوظيفةُ فعلا هما `.24h` و`.1h`. وكان
+       المسجَّل `session.reminder` (لا تستعمله إلّا بذرةُ الديمو) و`.24h`
+       وحدَهما — فتذكيرُ الساعة بلا صنف، و`isSilenceable` تردّ عليه
+       `false`. أي أنّ من كتم «تذكيرَ الجلسات» كان يكتم تذكيرَ اليوم
+       ويبقى تذكيرُ الساعة يصله. صمتٌ نصفيٌّ يبدو عطلا. */
+    templateKeys: ['session.reminder', 'session.reminder.24h', 'session.reminder.1h'],
   },
   {
     key: 'progress',
@@ -47,6 +54,28 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     templateKeys: [
       'enrollment.approved', 'enrollment.confirmed', 'enrollment.rejected',
       'enrollment.waitlist.promoted', 'learner.request_decided', 'plan.requested', 'plan.seats_held',
+    ],
+  },
+  {
+    /* ── ستّةُ مفاتيحَ كانت تُرسَل ولا صنفَ لها ──
+
+       «وصلت درجتك» و«مدرّبُك يطلب إعادةَ التسليم» لم يكونا في أيّ صنف. وأثرُه
+       أنّهما **لا يظهران في الشاشة إطلاقا** — لا مفتوحَين ولا مقفلَين. وهو
+       نقضٌ للقاعدة المكتوبة في رأس هذا الملفّ: ما لا يُكتَم يُعرَض مقفلا
+       ومعه سببُه، لا يُخفى.
+
+       وسببُ خفائها أنّها تُبنى وقتَ التنفيذ (`` `submission.${action}` ``)
+       فلا يراها مسحٌ يقرأ الحرف. والحارسُ يرفض اليوم كلَّ مفتاحٍ يُبنى هكذا
+       حتّى تُسمَّى توسّعاتُه. */
+    key: 'grading',
+    labelAr: 'تصحيحُ عملي',
+    whatAr: 'بدءُ مراجعةِ تسليمك · طلبُ إعادته · قبولُه أو رفضُه · وصولُ درجتك أو تعديلُها',
+    silenceable: false,
+    lockedWhyAr: '«أعد التسليم» يحمل مهلةً — وكتمُه يُضيّع مهلةً لا خبرا. والدرجةُ يُبنى عليها إكمالُ المسار، فبلوغُها شرطُ أن تُراجَع.',
+    templateKeys: [
+      'submission.start_review', 'submission.request_resubmit',
+      'submission.accept', 'submission.reject',
+      'grade.create', 'grade.update',
     ],
   },
   {
@@ -86,6 +115,12 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.qualified', 'trainer.qualify.rejected', 'trainer.assigned',
       /* والمستشارُ مثلُه: حالةٌ أُسنِدت إليه عملٌ ينتظره، وكان يكتشفها بإعادة التحميل */
       'advisor.case.assigned',
+      /* وتذكيرُ المدرّب بحصّتِه هنا لا في «الجلسات»: حصّةُ المتعلّم موعدٌ
+         له، وحصّةُ المدرّب موعدٌ عليه. ومن يكتمها يُغيّب صفّا دفع مقاعدَه. */
+      'session.reminder.trainer.24h', 'session.reminder.trainer.1h',
+      /* وأنّ عملا دخل طابورَ تصحيحه: المتعلّمُ ينتظر جوابا، والصمتُ يُقرأ
+         إهمالا وهو جهل. */
+      'submission.queued',
     ],
   },
 ]

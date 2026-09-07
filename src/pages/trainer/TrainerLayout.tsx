@@ -7,6 +7,7 @@ import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
 import { useEffect, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
+import { apiGet } from "@/services/api";
 
 import Button from "@/components/ui/Button";
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
@@ -19,6 +20,20 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   useEffect(() => {
     let alive = true;
     void loadMyPortals().then((p) => { if (alive) setHasProfile(p.trainer); });
+    return () => { alive = false };
+  }, []);
+
+  /* ---- عددُ ما ينتظر تصحيحَه، في القائمة نفسِها ----
+
+     كان المدرّبُ لا يعرف أنّ أحدا ينتظره حتّى يفتح الطابورَ بيده. والرقمُ
+     هنا أنفعُ من إشعارٍ: يُرى بلا فتحِ شيء، ويبقى ما بقي العمل، ويصير صفرا
+     وحدَه حين يفرغ. والسقوطُ يُبتلع — عدّادٌ لم يصل لا يمنع أحدا من عمله. */
+  const [pending, setPending] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    void apiGet<{ pendingGrading?: number }>("/api/trainer/me")
+      .then((me) => { if (alive) setPending(me.pendingGrading ?? 0); })
+      .catch(() => { /* لا رقمَ خيرٌ من رقمٍ كاذب */ });
     return () => { alive = false };
   }, []);
   const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
@@ -62,7 +77,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     { to: "/trainer", label: "الرئيسية", icon: LayoutDashboard, end: true },
     { to: "/trainer/board", label: "شعبي", icon: Users },
     { to: "/trainer/learners", label: "طلبتي", icon: GraduationCap },
-    { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck },
+    { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck, count: pending },
     { to: "/trainer/schedule", label: "جدولي", icon: CalendarDays },
     { to: "/trainer/qualifications", label: "مؤهّلاتي وإتاحتي", icon: Award },
     { to: "/trainer/proposals", label: "اقتراحاتي", icon: GitPullRequest },
@@ -111,6 +126,12 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
               >
                 <t.icon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{t.label}</span>
+                {/* العددُ يُقرأ للعين وللقارئ معا: الرقمُ وحدَه لا يقول ماذا يعدّ */}
+                {!!t.count && (
+                  <span className="rounded-full bg-gold px-1.5 text-micro font-black text-on-gold">
+                    <span className="sr-only">ينتظر تصحيحَك: </span>{t.count}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>

@@ -47,8 +47,8 @@ const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_0
 
 /** تذكيرتان لكلّ جلسة: قبل يومٍ وقبل ساعة. المفتاحُ هو ما يمنع التكرار. */
 const REMINDERS = [
-  { key: 'session.reminder.24h', withinMs: DAY, labelAr: 'غدا' },
-  { key: 'session.reminder.1h', withinMs: HOUR, labelAr: 'بعد ساعة' },
+  { key: 'session.reminder.24h', trainerKey: 'session.reminder.trainer.24h', withinMs: DAY, labelAr: 'غدا' },
+  { key: 'session.reminder.1h', trainerKey: 'session.reminder.trainer.1h', withinMs: HOUR, labelAr: 'بعد ساعة' },
 ] as const
 
 /* ═══════════ ١ · إرسالُ ما في الطابور ═══════════
@@ -147,6 +147,15 @@ export async function sendSessionReminders(prisma: PrismaClient, now = new Date(
                والمقصودُ من له مقعدٌ قائم: المسجَّلُ والمُكمِل — لا المنتظرُ
                في القائمة ولا من ترك. */
             enrollments: { where: { status: { in: ['enrolled', 'completed'] } }, select: { userId: true } },
+            /* ── ومدرّبُ الشعبة ──
+
+               كانت الوظيفةُ تمرّ على المسجَّلين وحدَهم: **الوحيدُ في القاعة
+               الذي لا يُذكَّر هو من يُدرّسها.** ومَن ينسى حصّتَه يُغيّب معه
+               كلَّ من دفع مقعدَه، فالكلفةُ عليه أكبرُ لا أصغر.
+
+               و`userId` في ملفّ المدرّب اختياريّ: ملفٌّ بلا حسابٍ مربوطٍ
+               لا يُنادى — لا صندوقَ له يصله فيه شيء. */
+            trainers: { select: { profile: { select: { userId: true } } } },
           },
         },
       },
@@ -165,6 +174,36 @@ export async function sendSessionReminders(prisma: PrismaClient, now = new Date(
             body: `«${s.title}» تبدأ ${window.labelAr}.${s.zoom?.joinUrl ? ' رابطُ الانضمام في صفحة الجلسة.' : ' ولا رابطَ انضمامٍ بعد — راجع الأكاديمية.'}`,
             data: { sessionId: s.id, cohortId: s.cohort.id, startsAt: s.startsAt.toISOString() },
             audience: 'learner',
+          })
+          sent += 1
+          done += 1
+        } catch {
+          failed += 1
+        }
+      }
+
+      /* والمدرّبُ بمفتاحٍ آخر — لا بمفتاح المتعلّم ──
+
+         المفتاحُ مستقلٌّ لأنّ الصنفَ مستقلّ: تذكيرُ المتعلّم يُكتَم بإرادته
+         (صنف «الجلسات»)، وتذكيرُ المدرّب عملٌ لا يُكتَم (صنف «عملي في
+         الأكاديمية») — كما تقول القاعدةُ المكتوبةُ في
+         `src/application/notifications/categories.ts`: «تكليفٌ لا يعلم به
+         صاحبُه ليس تكليفا». ولو تقاسما مفتاحا واحدا لأسكت المدرّبُ حصّتَه
+         وهو يظنّ أنّه يُسكت إشعارا عن نفسه. */
+      for (const t of s.cohort.trainers) {
+        const trainerId = t.profile.userId
+        if (!trainerId) continue
+        const already = await prisma.notification.count({
+          where: { userId: trainerId, templateKey: window.trainerKey, data: { path: ['sessionId'], equals: s.id } },
+        })
+        if (already > 0) continue
+        try {
+          await notifications.notify({
+            userId: trainerId, channel: 'in_app', templateKey: window.trainerKey,
+            title: `جلستُك التي تدرّسها ${window.labelAr}: ${s.cohort.title}`,
+            body: `«${s.title}» تبدأ ${window.labelAr}.${s.zoom?.joinUrl ? ' رابطُ الانضمام في صفحة الجلسة.' : ' ولا رابطَ انضمامٍ بعد — راجع الأكاديمية قبل موعدها.'}`,
+            data: { sessionId: s.id, cohortId: s.cohort.id, startsAt: s.startsAt.toISOString() },
+            audience: 'trainer',
           })
           sent += 1
           done += 1
