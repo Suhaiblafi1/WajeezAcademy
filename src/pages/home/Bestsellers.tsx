@@ -26,7 +26,9 @@ import { Link } from "react-router"
 import { ArrowLeft, Flame, Route, Target } from "lucide-react"
 import { bestsellers, pathwayById } from "@/data/pathways"
 import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-source"
-import { pathwaySizeAr } from "@/data/courses"
+import { bestsellerCourses, courseById, pathwaySizeAr } from "@/data/courses"
+import CourseTitle from "@/components/CourseTitle"
+import { Card } from "@/components/ui/Surface"
 import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
 
@@ -40,9 +42,17 @@ export function Bestsellers() {
      على مستوى الوحدة يُستبدل وقت التشغيل، فلا يذكر المتغير نصّا — ومن هنا يظنّه
      القاعدة زائدا. وحذفه يحفظ مصفوفات فارغة إلى الأبد في الإنتاج، وهو العطل
      الذي أُضيف الاشتراك أصلا لإصلاحه. نفس النمط في Catalog.tsx. */
-  const spotlight = useMemo(
-    () => bestsellers.map((b) => ({ ...b, p: pathwayById(b.id)! })).filter((b) => b.p)[0],
+  const picks = useMemo(
+    () => bestsellers.map((b) => ({ ...b, p: pathwayById(b.id)! })).filter((b) => b.p),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- إبطال ذاكرة عند تبديل الكتالوج
+    [catalogVersion],
+  )
+  const spotlight = picks[0]
+  /* بقيّةُ المختارات — ستٌّ تكفي شريطا ولا تُعيد الكتالوج */
+  const morePaths = picks.slice(1, 7)
+  const moreCourses = useMemo(
+    () => bestsellerCourses.map((b) => ({ ...b, c: courseById(b.id)! })).filter((b) => b.c).slice(0, 6),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- كما فوقه: الكتالوجُ يُستبدل وقت التشغيل
     [catalogVersion],
   )
 
@@ -113,7 +123,63 @@ export function Bestsellers() {
           </article>
         )}
 
-        {/* البابان — وهما ما كان الفلتران والشريطان يقلّدانه */}
+
+        {/* ── الشريطان: مساراتٌ ودوراتٌ تُرى، بلا فلترٍ يعيد الكتالوج ──
+
+            أُعيدا بقرار صاحب المنصّة (٧ سبتمبر ٢٠٢٦) بعد أن رأى الرئيسةَ
+            حيّة: «لا يظهر إلّا مسارٌ واحد — أين مختاراتُ وجيز؟».
+
+            والذي عاد **المحتوى** لا الكتالوج: بطاقاتٌ تُرى وتُنقر. أمّا
+            فلترا المجالات بعدّاداتهما و«المزيد» فلم يعودا — هما ما جعل
+            القسمَ خُمسَ الصفحة (٢١٩٩ بكسلا)، والتصفيةُ عملُ صفحةِ الكتالوج
+            لا الرئيسة. فبقي قرارُ البند ٥٦ في جوهره: **دليلٌ لا كتالوجٌ ثانٍ.**
+
+            والعددُ ستٌّ لكلٍّ: يملأ الشريطَ ولا يُغري بالتمرير بلا نهاية. */}
+        {morePaths.length > 0 && (
+          <div className="reveal mt-12">
+            <h3 className="text-lg font-bold md:text-xl">مسارات أخرى من اختيارنا</h3>
+            <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
+              {morePaths.map((b) => (
+                <Card
+                  key={b.id}
+                  as={Link}
+                  to={`/pathways/${b.id}`}
+                  tone="accent"
+                  interactive
+                  className="flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5"
+                >
+                  <span className="kicker text-teal-light-ink">{b.note}</span>
+                  <h4 className="text-base font-black leading-snug">{b.p.name}</h4>
+                  <p className="line-clamp-2 text-xs leading-6 text-muted-foreground">{b.p.transformation}</p>
+                  <span className="mt-auto pt-2 text-fine text-muted-foreground">{pathwaySizeAr(b.p)}</span>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {moreCourses.length > 0 && (
+          <div className="reveal mt-10">
+            <h3 className="text-lg font-bold md:text-xl">ودوراتٌ مفردة</h3>
+            <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
+              {moreCourses.map((b) => (
+                <Card
+                  key={b.id}
+                  as={Link}
+                  to={`/courses/${b.id}`}
+                  interactive
+                  className="flex w-[240px] shrink-0 snap-start flex-col gap-2 p-5"
+                >
+                  <span className="kicker text-gold-ink">{b.note}</span>
+                  <CourseTitle as="h4" name={b.c.name} termEn={b.c.termEn} className="text-base font-black leading-snug" />
+                  <span className="mt-auto pt-2 text-fine text-muted-foreground">{b.c.weeks} أسابيع</span>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* البابان — إلى الكتالوج كاملا */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             to="/pathways"
