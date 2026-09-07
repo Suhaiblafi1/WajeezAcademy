@@ -34,11 +34,17 @@ export interface BuildStamp {
   message: string | null
   /** وقتُ البناء بصيغة ISO — يكشف نشرةً لم تصل ولو جُهل الالتزام */
   builtAt: string | null
+  /** `VITE_SITE_ORIGIN` كما كان وقتَ البناء — أو null حين لم يُمرَّر.
+
+      ولا يُقرأ وقتَ التشغيل: هو متغيّرُ **بناء** يُخبز في حزمة الواجهة، فبيئةُ
+      الخادم لا تعرفه ولو ضُبط. فمن أراد أن يعرف على أيّ أصلٍ بُنيت الواجهةُ
+      العاملةُ الآن، لا موضعَ يقوله إلّا ختمُ بنائها. */
+  siteOrigin: string | null
   /** من أين عُرف: البيئةُ أسبق، فهي أصدقُ من ملفٍّ قد يبقى من بناءٍ سابق */
   source: 'بيئة' | 'ملفّ' | 'مجهول'
 }
 
-const EMPTY: BuildStamp = { commit: null, ref: null, message: null, builtAt: null, source: 'مجهول' }
+const EMPTY: BuildStamp = { commit: null, ref: null, message: null, builtAt: null, siteOrigin: null, source: 'مجهول' }
 
 const clean = (v: string | undefined) => {
   const s = v?.trim()
@@ -65,6 +71,11 @@ export function refFromEnv(): string | undefined {
 
 export function messageFromEnv(): string | undefined {
   return fromEnv('GIT_COMMIT_MESSAGE', 'VERCEL_GIT_COMMIT_MESSAGE')
+}
+
+/** أصلُ الموقع كما مُرِّر وقتَ البناء — يُقرأ في **البناء** لا في التشغيل */
+export function siteOriginFromEnv(): string | undefined {
+  return fromEnv('VITE_SITE_ORIGIN')
 }
 
 /** اسمُ الملفّ الذي يكتبه البناءُ ويقرؤه التشغيل */
@@ -112,6 +123,7 @@ export function buildStamp(): BuildStamp {
       ref: refFromEnv() ?? null,
       message: messageFromEnv()?.split('\n')[0] ?? null,
       builtAt: readStampFile()?.builtAt ?? null,
+      siteOrigin: readStampFile()?.siteOrigin ?? null,
       source: 'بيئة',
     }
     return cached
@@ -123,9 +135,14 @@ export function buildStamp(): BuildStamp {
         ref: file.ref ? String(file.ref) : null,
         message: file.message ? String(file.message).split('\n')[0] : null,
         builtAt: file.builtAt ? String(file.builtAt) : null,
+        siteOrigin: file.siteOrigin ? String(file.siteOrigin) : null,
         source: 'ملفّ',
       }
-    : { ...EMPTY, builtAt: file?.builtAt ? String(file.builtAt) : null }
+    : {
+        ...EMPTY,
+        builtAt: file?.builtAt ? String(file.builtAt) : null,
+        siteOrigin: file?.siteOrigin ? String(file.siteOrigin) : null,
+      }
   return cached
 }
 
@@ -137,4 +154,30 @@ export function resetBuildStampCache(): void {
 /** البيئةُ المُعلَنة — بأيّ اسمٍ أعلنها المضيف، ولا يُفترض مضيفٌ بعينه */
 export function runtimeEnvLabel(): string {
   return fromEnv('APP_ENV', 'VERCEL_ENV', 'NODE_ENV') ?? 'محلية'
+}
+
+/* ═══════════ الحكمُ على التطابق — تعريفٌ واحدٌ لا نسختان ═══════════
+
+   «هل الكودُ العاملُ واللقطةُ المنشورةُ من التزامٍ واحد؟» كان محبوسا في جسم
+   مسار `/api/version` — وهو مسارٌ يُقرأ بـcurl ولا يفتحه أحد. فلمّا لزم
+   الجوابُ نفسُه في «صحّةِ النظام» كان أمامي أن أنسخه، والنسخةُ الثانيةُ تنحرف
+   عن الأولى بلا أن يحمرّ شيء.
+
+   فصار هنا. ودقّتُه في `null`: **«لا يمكن الحكم» ليست «مختلفان»** — وقد وقع
+   هذا خطأً مرّةً وأمسكه اختبار: قُورنت بصمةُ الالتزام بأوّل اثنَي عشرَ حرفا
+   من بصمةِ المحتوى فأُعلن اختلافٌ لا وجودَ له. */
+
+/** تسميةُ اللقطة الآليّة شكلان: `auto-<sha7>-<hash6>` حين عرف البناءُ التزامَه،
+    و`auto-<hash12>` حين لم يعرفه (نشرٌ محلّيّ). والثاني لا يحمل بصمةَ التزامٍ
+    أصلا، فلا يُنتزع منه شيء. */
+export function commitOfSnapshotLabel(label: string | null | undefined): string | null {
+  const m = label?.match(/^auto-([0-9a-f]{7})-[0-9a-f]{6}(?:-\d+)?$/)
+  return m ? m[1] : null
+}
+
+/** `true` متطابقان · `false` مختلفان · **`null` لا يمكن الحكم** */
+export function snapshotInSync(commit: string | null, label: string | null | undefined): boolean | null {
+  const sha7 = commit ? commit.slice(0, 7) : null
+  const labelSha = commitOfSnapshotLabel(label)
+  return sha7 && labelSha ? sha7 === labelSha : null
 }

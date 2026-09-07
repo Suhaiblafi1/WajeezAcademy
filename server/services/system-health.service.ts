@@ -17,6 +17,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { fileUploadsEnabled } from './storage.service'
 import { PERMISSIONS, ROLE_PERMISSIONS } from '../auth/permissions'
+import { buildStamp, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
+import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
 
 export type HealthLevel = 'ok' | 'attention' | 'broken' | 'unknown'
 
@@ -63,6 +65,7 @@ export class SystemHealthService {
       { titleAr: 'الأمنُ والدخول', items: await this.security(now) },
       { titleAr: 'الصلاحيّاتُ والأدوار', items: await this.rbac() },
       { titleAr: 'التخزينُ والقاعدة', items: await this.storage() },
+      { titleAr: 'النسخةُ العاملةُ والبيئة', items: await this.deployment(now) },
     ]
     const order: HealthLevel[] = ['broken', 'attention', 'unknown', 'ok']
     const all = groups.flatMap((g) => g.items)
@@ -339,6 +342,96 @@ export class SystemHealthService {
         valueAr: last ? `${last.migration_name} — ${last.finished_at ? agoAr(last.finished_at, new Date()) : 'بلا وقت'}` : 'لم يُقرأ',
         level: last ? 'ok' : 'unknown',
         meaningAr: 'بنيةُ القاعدة الحاليّة. ويُقرأ هنا كي يُعرف أنّ آخرَ نشرٍ طبّق ترحيلاتِه فعلا.',
+      },
+    ]
+  }
+
+  /* ── ما الذي يعمل الآن، وعلى أيّ عنوان (البند ٦) ──
+
+     الجوابُ كان موجودا في `‎/api/version` — مسارُ JSON يُقرأ بـcurl ولا يفتحه
+     أحد. **ومعلومةٌ لا شاشةَ لها معلومةٌ غيرُ موجودة**: بقي سؤالُ «لماذا أرى
+     موقعا قديما؟» مفتوحا أسبوعا، وذهبت جلسةٌ كاملةٌ في تشخيصٍ على بيئةٍ
+     خاطئة، والجوابُ في مسارٍ لم يُفتح.
+
+     فيُعرض هنا، حيث ينظر صاحبُ المنصّة حين يشكّ. */
+  private async deployment(now: Date): Promise<HealthItem[]> {
+    const stamp = buildStamp()
+    const sha7 = stamp.commit ? stamp.commit.slice(0, 7) : null
+    /* التسميةُ وحدَها — لا حمولةُ اللقطة. `getActiveSnapshot` تجلب المخطَّطَ
+       كاملا (أسئلةً ودوراتٍ ومسارات) وهو مِيغابايتاتٌ لا لزومَ لها لسطرٍ يقول
+       «متطابقان». والتسميةُ على `catalogVersion` لا على اللقطة. */
+    const active = await this.prisma.catalogVersion.findFirst({
+      where: { status: 'published' },
+      orderBy: { publishedAt: 'desc' },
+      select: { label: true },
+    })
+    const inSync = snapshotInSync(stamp.commit, active?.label)
+    const prod = process.env.NODE_ENV === 'production'
+    const explicitUrl = hasExplicitSiteUrl()
+
+    return [
+      {
+        key: 'running_build',
+        titleAr: 'النسخةُ التي يخدمها الخادمُ الآن',
+        valueAr: sha7
+          ? `${sha7}${stamp.ref ? ` · ${stamp.ref}` : ''}${stamp.builtAt ? ` · بُني ${agoAr(new Date(stamp.builtAt), now)}` : ''}`
+          : stamp.builtAt
+            ? `التزامٌ مجهول — بُني ${agoAr(new Date(stamp.builtAt), now)}`
+            : 'مجهولةٌ تماما — لا ختمَ بناءٍ هنا',
+        level: sha7 ? 'ok' : 'unknown',
+        meaningAr:
+          `البيئةُ المُعلَنة: ${runtimeEnvLabel()} · مصدرُ البصمة: ${stamp.source}. `
+          + 'وهذا جوابُ «هل وصلت نشرتي؟» بلا لوحةِ مزوّد: قارن البصمةَ بآخر التزامٍ دُمج إلى `main`. '
+          + 'ووقتُ البناء يفضح نشرةً لم تصل ولو جُهل الالتزام.',
+        actionAr: sha7
+          ? undefined
+          : 'البناءُ لم يعرف التزامَه — يُمرَّر `GIT_COMMIT_SHA` وسيطَ بناءٍ في `deploy/deploy.sh`. والخادمُ يعمل، لكنّه أعمى عن نفسِه.',
+      },
+      {
+        key: 'snapshot_sync',
+        titleAr: 'الكودُ واللقطةُ المنشورةُ — أمن التزامٍ واحد؟',
+        valueAr:
+          inSync === null
+            ? 'لا يمكن الحكم'
+            : inSync
+              ? 'نعم — من التزامٍ واحد'
+              : 'لا — من التزامَين مختلفَين',
+        /* والاختلافُ **ليس عطبا بذاته**: نشرٌ جارٍ يمرّ بهذه الحالة دقيقةً أو
+           دقيقتَين. فهو «يحتاج نظرة» لا «معطَّل» — وبقاؤه ساعةً هو الخبر. */
+        level: inSync === null ? 'unknown' : inSync ? 'ok' : 'attention',
+        meaningAr:
+          'المحرّكُ يقرأ اللقطةَ المنشورةَ لا ملفّاتِ الكتالوج. فاختلافُهما يعني أنّ شاشاتِ الكتالوج والتشخيص تعرض محتوى نسخةٍ أخرى غير التي يخدمها الخادم. '
+          + 'ولا يُقال أيُّهما أقدم: هذا المسارُ لا يملك تاريخَ الالتزامَين، وقد كذبت العبارةُ الجازمةُ مرّةً في نشرٍ متعثّر.',
+        actionAr:
+          inSync === false
+            ? 'إن بقي على حاله بعد دقائقَ فالنشرُ لم يكتمل — أعد النشرَ أو انشر لقطةً جديدةً من شاشة النشر.'
+            : undefined,
+        href: inSync === false ? '/admin/publishing' : undefined,
+      },
+      {
+        key: 'site_url',
+        titleAr: 'عنوانُ الموقع الذي تُبنى عليه الروابطُ الخارجة',
+        valueAr: explicitUrl ? publicSiteUrl() : `${publicSiteUrl()} — احتياطيٌّ لا مضبوط`,
+        /* الاحتياطيُّ `localhost` صوابٌ في التطوير وعطبٌ في الإنتاج — والمستوى
+           يقول ذلك، فلا يحمرّ جهازُ مطوّرٍ بلا سبب. */
+        level: explicitUrl ? 'ok' : prod ? 'broken' : 'ok',
+        meaningAr:
+          'منه تُبنى روابطُ رسائل البريد (تأكيدُ الحساب، الدعوة، استعادةُ الكلمة) وعنوانُ العودة بعد الدفع. '
+          + 'وبلا ضبطِه في الإنتاج تصل الرسائلُ برابطٍ لا يفتح عند أحد، ويعود المشتري بعد دفعٍ **ناجح** إلى `localhost` — '
+          + 'والمالُ يُقبض والتسجيلُ يُسوّى، فيكون العطبُ صامتا في السجلّات صاخبا عند المشتري.',
+        actionAr: explicitUrl ? undefined : 'اضبط `APP_URL` في `deploy/.env.production` بعنوان الموقع، ثمّ أعد النشر.',
+        href: explicitUrl ? undefined : '/admin/integrations',
+      },
+      {
+        key: 'built_site_origin',
+        titleAr: 'الأصلُ القانونيُّ الذي بُنيت عليه الواجهة',
+        valueAr: stamp.siteOrigin ?? 'لم يُمرَّر — فالوقوعُ على النطاق الحيّ من الاحتياطيّ',
+        /* ولا يحمرّ لغيابه: احتياطيُّ `origin.ts` هو **النطاقُ الحيُّ نفسُه**،
+           فالغيابُ يقع على الصواب. والخبرُ هو أن يُمرَّر أصلٌ **آخر**. */
+        level: 'ok',
+        meaningAr:
+          'منه تُبنى `canonical` و`og:url` وخريطةُ الموقع — وهي ما يقرؤه زاحفُ الفهرسة ومعاينةُ الرابط في واتساب وتويتر (البوتاتُ لا تشغّل React). '
+          + 'و`VITE_SITE_ORIGIN` متغيّرُ بناءٍ تخبزه Vite في الحزمة ثمّ يختفي، فلا يُقرأ من بيئة الخادم أبدا — ولهذا يُختم وقتَ البناء ويُقرأ من ختمِه.',
       },
     ]
   }
