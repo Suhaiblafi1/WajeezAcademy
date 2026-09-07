@@ -2,8 +2,9 @@
 
 > # ⚠️ تنبيهٌ قبل كلّ شيء — هذا الملفّ مصوَّبٌ على Cloudways وSupervisor
 >
-> **وخادمُ الإنتاج ليس كذلك.** `www.wajeezacademy.com` يُحلّ إلى `5.9.82.49`
-> (Hetzner)، والخادمُ حاويات **Docker + Caddy** — لا Supervisor ولا
+> **وخادمُ الإنتاج ليس كذلك.** `www.wajeezacademy.com` يُحلّ إلى خادمٍ على
+> Hetzner (**والعنوانُ يُقاس لا يُكتب**: `dig +short www.wajeezacademy.com` —
+> فقد تغيّر مرّةً بالفعل)، والخادمُ حاويات **Docker + Caddy** — لا Supervisor ولا
 > `/etc/supervisor/conf.d` ولا `npm start` على المضيف. الإعدادُ الحقيقيُّ في
 > [`deploy/`](../deploy/)، والواقعُ موصوفٌ في [`DEPLOYMENT.md`](DEPLOYMENT.md) §١.
 >
@@ -30,7 +31,7 @@
 | | |
 |---|---|
 | النطاق | `https://www.wajeezacademy.com` |
-| الاستضافة | **خادمٌ نملكه** — `5.9.82.49` (Hetzner) · حاويات Docker خلف Caddy |
+| الاستضافة | **خادمٌ نملكه** على Hetzner · حاويات Docker خلف Caddy. والعنوانُ من `dig +short www.wajeezacademy.com` |
 | المستودَع | `Suhaiblafi1/WajeezAcademy` — الفرع `main` |
 | الواجهة | ملفّاتٌ ساكنةٌ يخدمها خادمُ الويب من `dist/` |
 | الـAPI | **عمليّةُ Node** (خادم Fastify) خلف وسيطٍ عكسيّ على `/api` |
