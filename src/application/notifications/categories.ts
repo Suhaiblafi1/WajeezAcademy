@@ -37,7 +37,14 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     labelAr: 'تذكيرُ الجلسات',
     whatAr: 'قبل الجلسة بيومٍ وقبلها بساعة',
     silenceable: true,
-    templateKeys: ['session.reminder', 'session.reminder.24h'],
+    /* ── ثغرةٌ كانت هنا: `session.reminder.1h` بلا صنف ──
+
+       المفتاحان اللذان تُرسلهما الوظيفةُ فعلا هما `.24h` و`.1h`. وكان
+       المسجَّل `session.reminder` (لا تستعمله إلّا بذرةُ الديمو) و`.24h`
+       وحدَهما — فتذكيرُ الساعة بلا صنف، و`isSilenceable` تردّ عليه
+       `false`. أي أنّ من كتم «تذكيرَ الجلسات» كان يكتم تذكيرَ اليوم
+       ويبقى تذكيرُ الساعة يصله. صمتٌ نصفيٌّ يبدو عطلا. */
+    templateKeys: ['session.reminder', 'session.reminder.24h', 'session.reminder.1h'],
   },
   {
     key: 'progress',
@@ -86,6 +93,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.qualified', 'trainer.qualify.rejected', 'trainer.assigned',
       /* والمستشارُ مثلُه: حالةٌ أُسنِدت إليه عملٌ ينتظره، وكان يكتشفها بإعادة التحميل */
       'advisor.case.assigned',
+      /* وتذكيرُ المدرّب بحصّتِه هنا لا في «الجلسات»: حصّةُ المتعلّم موعدٌ
+         له، وحصّةُ المدرّب موعدٌ عليه. ومن يكتمها يُغيّب صفّا دفع مقاعدَه. */
+      'session.reminder.trainer.24h', 'session.reminder.trainer.1h',
     ],
   },
 ]
