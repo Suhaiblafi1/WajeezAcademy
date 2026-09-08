@@ -11,10 +11,11 @@
    يكتب في قاعدةٍ حيّة فيها مدفوعات. */
 
 import { useState } from "react";
-import { AlertTriangle, CalendarCheck, CheckCircle2, Loader2, PlayCircle, Tags, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CheckCircle2, PlayCircle, Tags, Wallet } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 
 import { Card, Panel, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface OpenResult {
   applied: boolean; publishedCourses: number; opened: number; prepared: number; alreadyLive: number;
   skippedNoListPrice: number; startsAt: string;
@@ -95,19 +96,17 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button" onClick={() => void run("open", false)} disabled={busy !== ""}
-              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-fine font-bold hover:bg-white/15 disabled:opacity-40"
-            >
-              {busy === "open-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
-            </button>
+            <Button tone="secondary" size="sm" type="button"
+              onClick={() => void run("open", false)}
+              disabled={busy !== ""} loading={busy === "open-preview"}>
+              اعرض ما سيتغيّر
+            </Button>
             {open && !open.applied && open.opened > 0 && (
-              <button
-                type="button" onClick={() => void run("open", true)} disabled={busy !== ""}
-                className="rounded-lg bg-teal px-3.5 py-1.5 text-fine font-black text-on-teal hover:brightness-110 disabled:opacity-40"
-              >
-                {busy === "open-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `هيّئ ${open.opened} شعبة`}
-              </button>
+              <Button tone="confirm" size="sm" type="button"
+                onClick={() => void run("open", true)}
+                disabled={busy !== ""} loading={busy === "open-apply"}>
+                {`هيّئ ${open.opened} شعبة`}
+              </Button>
             )}
           </div>
 
@@ -183,19 +182,17 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button" onClick={() => void run("align", false)} disabled={busy !== ""}
-              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-fine font-bold hover:bg-white/15 disabled:opacity-40"
-            >
-              {busy === "align-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
-            </button>
+            <Button tone="secondary" size="sm" type="button"
+              onClick={() => void run("align", false)}
+              disabled={busy !== ""} loading={busy === "align-preview"}>
+              اعرض ما سيتغيّر
+            </Button>
             {align && !align.applied && align.changed > 0 && (
-              <button
-                type="button" onClick={() => void run("align", true)} disabled={busy !== ""}
-                className="rounded-lg bg-gold px-3.5 py-1.5 text-fine font-black text-on-gold hover:brightness-110 disabled:opacity-40"
-              >
-                {busy === "align-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `وحّد ${align.changed} شعبة`}
-              </button>
+              <Button tone="confirm" size="sm" type="button"
+                onClick={() => void run("align", true)}
+                disabled={busy !== ""} loading={busy === "align-apply"}>
+                {`وحّد ${align.changed} شعبة`}
+              </Button>
             )}
           </div>
 
@@ -236,19 +233,17 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             مدرّبها تُولَّد عند الإكمال، فتأخّرُ الحالة يؤخّرها. ولا تُفتح شعبةٌ آليّا: الفتحُ يمرّ بشروطه وبقرارك.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button" onClick={() => void run("sync", false)} disabled={busy !== ""}
-              className="rounded-lg bg-white/10 px-3.5 py-1.5 text-fine font-bold hover:bg-white/15 disabled:opacity-40"
-            >
-              {busy === "sync-preview" ? <Loader2 className="h-3 w-3 animate-spin" /> : "اعرض ما سيتغيّر"}
-            </button>
+            <Button tone="secondary" size="sm" type="button"
+              onClick={() => void run("sync", false)}
+              disabled={busy !== ""} loading={busy === "sync-preview"}>
+              اعرض ما سيتغيّر
+            </Button>
             {sync && !sync.applied && sync.changes.length > 0 && (
-              <button
-                type="button" onClick={() => void run("sync", true)} disabled={busy !== ""}
-                className="rounded-lg bg-teal px-3.5 py-1.5 text-fine font-black text-on-teal hover:brightness-110 disabled:opacity-40"
-              >
-                {busy === "sync-apply" ? <Loader2 className="h-3 w-3 animate-spin" /> : `حرّك ${sync.changes.length} شعبة`}
-              </button>
+              <Button tone="confirm" size="sm" type="button"
+                onClick={() => void run("sync", true)}
+                disabled={busy !== ""} loading={busy === "sync-apply"}>
+                {`حرّك ${sync.changes.length} شعبة`}
+              </Button>
             )}
           </div>
           {sync && (

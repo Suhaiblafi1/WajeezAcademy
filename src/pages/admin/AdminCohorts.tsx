@@ -269,11 +269,14 @@ export default function AdminCohorts() {
           المقاعد والسعر، المدرّب، ثمّ مراجعةٌ قبل الإنشاء. استعاض عن نموذجٍ
           واحدٍ كانت شروطُه الستّةُ تُكتشَف بعد الحفظ. */}
       <div className="mb-6">
-        <button onClick={() => setCreateOpen(!createOpen)}
-          className="mb-3 flex w-full cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-3.5 text-sm font-black">
+        {/* سطحٌ يُضغط لا زرٌّ: `Card interactive` تحمل حلقةَ التركيز
+            والتحويمَ من أصلها، فلا تُكتب في مكانها ولا تُنسى. */}
+        <Card as="button" interactive onClick={() => setCreateOpen(!createOpen)}
+          aria-expanded={createOpen}
+          className="mb-3 flex w-full items-center justify-between text-sm font-black">
           <span>شعبة جديدة</span>
           <ChevronDown className={`h-4 w-4 transition ${createOpen ? "rotate-180" : ""}`} />
-        </button>
+        </Card>
         {createOpen && (
           <CohortWizard
             courses={courses.map((c) => {
@@ -349,7 +352,8 @@ export default function AdminCohorts() {
             const isOpen = expanded === c.id;
             return (
               <Panel key={c.id}>
-                <button onClick={() => toggle(c.id)} className="flex w-full cursor-pointer flex-wrap items-center gap-4 text-right">
+                <button onClick={() => toggle(c.id)} aria-expanded={isOpen}
+                  className="flex w-full cursor-pointer flex-wrap items-center gap-4 rounded-xl text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper">
                   <div className="min-w-0 flex-1">
                     <p className="font-black">{c.title}</p>
                     <p className="mt-0.5 text-read text-muted-foreground">
@@ -499,16 +503,15 @@ export default function AdminCohorts() {
                             className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
                           <input type="time" value={sessionForm.time} onChange={(e) => setSessionForm({ ...sessionForm, time: e.target.value })}
                             className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
-                          <button disabled={busy || sessionForm.title.length < 2 || !sessionForm.date}
+                          <Button tone="confirm" disabled={busy || sessionForm.title.length < 2 || !sessionForm.date}
                             onClick={() => act(async () => {
                               const startsAt = new Date(`${sessionForm.date}T${sessionForm.time}:00`);
                               const endsAt = new Date(startsAt.getTime() + Number(sessionForm.hours || 2) * 3600_000);
                               await apiPost(`/api/admin/cohorts/${c.id}/sessions`, { title: sessionForm.title, startsAt, endsAt });
                               setSessionForm({ title: "", date: "", time: "18:00", hours: "2" });
-                            }, "أُضيفت الجلسة — وفُحص تعارض المدربين")}
-                            className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+                            }, "أُضيفت الجلسة — وفُحص تعارض المدربين")}>
                             أضف
-                          </button>
+                          </Button>
                         </div>
                       </Card>
                     )}
@@ -559,7 +562,7 @@ export default function AdminCohorts() {
                                 className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
                             </label>
                             <div className="flex items-end gap-2">
-                              <button disabled={busy || Number(genForm.duration) < 15 || Number(genForm.weeks) < 1}
+                              <Button tone="confirm" disabled={busy || Number(genForm.duration) < 15 || Number(genForm.weeks) < 1}
                                 onClick={() => act(async () => {
                                   const r = await apiPost<{ created: number; skipped: number }>(`/api/admin/cohorts/${c.id}/sessions/generate`, {
                                     weeks: Number(genForm.weeks),
@@ -568,10 +571,9 @@ export default function AdminCohorts() {
                                     apply: true,
                                   });
                                   setFlash({ kind: "ok", text: `وُلِّدت ${r.created} جلسة${r.skipped ? ` · وتُخطّيت ${r.skipped} موجودةً أصلا` : ""}` });
-                                }, "")}
-                                className="flex-1 cursor-pointer rounded-xl bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light disabled:opacity-40">
+                                }, "")} className="flex-1">
                                 ولّد
-                              </button>
+                              </Button>
                             </div>
                             <p className="text-read leading-5 text-muted-foreground sm:col-span-4">
                               الجدول: {daysLabelAr(c.daysOfWeek)} · {c.startTime}. الموجودُ لا يُكرَّر، وبدايةُ الشعبة ونهايتُها تتبعان جلساتِها.
@@ -599,7 +601,7 @@ export default function AdminCohorts() {
                             className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
                         </label>
                         <div className="flex items-end">
-                          <button disabled={busy}
+                          <Button tone="secondary" disabled={busy}
                             onClick={() => act(async () => {
                               await apiPost(`/api/admin/cohorts/${c.id}/duplicate`, {
                                 title: dupForm.title.trim() || undefined,
@@ -610,9 +612,9 @@ export default function AdminCohorts() {
                               });
                               setDupForm({ title: "", shiftWeeks: "8", withSessions: true });
                             }, "أُنشئت نسخةٌ مسودّةً — بجدولها وموادّها وتكاليفها، بلا تسجيلاتٍ ولا حضور")}
-                            className="w-full cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+                            className="w-full">
                             كرّرها
-                          </button>
+                          </Button>
                         </div>
                         <label className="flex cursor-pointer items-center gap-2 text-fine text-muted-foreground sm:col-span-4">
                           <input type="checkbox" checked={dupForm.withSessions}
@@ -660,16 +662,15 @@ export default function AdminCohorts() {
                         <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
                         <div className="flex gap-2">
                           <LearnerSearchField cohortId={c.id} value={enrollLearner} onChange={setEnrollLearner} disabled={busy} />
-                          <button disabled={busy || !enrollLearner}
+                          <Button tone="confirm" className="shrink-0" disabled={busy || !enrollLearner}
                             onClick={() => act(async () => {
                               const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollLearner!.id });
                               const name = enrollLearner!.displayName;
                               setEnrollLearner(null);
                               setFlash({ kind: "ok", text: res.status === "waitlisted" ? `الشعبة ممتلئة — أُدرج ${name} في قائمة الانتظار` : `سُجل ${name} بنجاح` });
-                            }, "")}
-                            className="shrink-0 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+                            }, "")}>
                             سجّل
-                          </button>
+                          </Button>
                         </div>
                       </Card>
                     )}
@@ -829,10 +830,10 @@ function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }
       <div className="flex gap-2">
         <input placeholder="رمز المرور" dir="ltr" value={value.passcode} onChange={(e) => onChange({ ...value, passcode: e.target.value })}
           className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
-        <button disabled={busy || !value.sessionId || !/^https:\/\/.+/.test(value.joinUrl)} onClick={onSubmit}
-          className="shrink-0 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+        <Button tone="confirm" className="shrink-0"
+          disabled={busy || !value.sessionId || !/^https:\/\/.+/.test(value.joinUrl)} onClick={onSubmit}>
           اربط
-        </button>
+        </Button>
       </div>
     </div>
   );

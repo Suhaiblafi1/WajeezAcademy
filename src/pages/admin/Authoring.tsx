@@ -40,6 +40,7 @@ import { fmtShortDateTimeAr } from "@/utils/format";
 import { fmtNum } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface WorkRow {
   moduleId: string; courseId: string; courseTitleAr: string; titleAr: string; sequence: number;
   hasBody: boolean; hasChecks: boolean; hasVideo: boolean; hasScenario: boolean;
@@ -341,9 +342,10 @@ export default function Authoring() {
               ))}
             </ul>
           )}
-          <button type="button" onClick={() => void loadWork()} className="mt-3 flex items-center gap-1.5 text-fine text-muted-foreground hover:text-foreground">
-            <RefreshCw className="h-3 w-3" /> تحديث الطابور
-          </button>
+          <Button tone="ghost" size="sm" type="button" icon={RefreshCw}
+            onClick={() => void loadWork()} className="mt-3">
+            تحديث الطابور
+          </Button>
         </Card>
 
         {/* ── المحرّر ── */}
@@ -450,21 +452,19 @@ export default function Authoring() {
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
                 {isDraft && (
                   <>
-                    <button
-                      type="button" onClick={() => void act("save")} disabled={busy !== "" || liveErrors.length > 0}
-                      className="flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
+                    <Button tone="secondary" type="button" icon={Save}
+                      onClick={() => void act("save")} disabled={busy !== "" || liveErrors.length > 0}
+                      loading={busy === "save"}
                     >
-                      {busy === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                       حفظ المسوّدة
-                    </button>
-                    <button
-                      type="button" onClick={() => void act("submit")}
+                    </Button>
+                    <Button tone="confirm" type="button" icon={Send}
+                      onClick={() => void act("submit")}
                       disabled={busy !== "" || liveErrors.length > 0 || !draft.bodyAr?.trim()}
-                      className="flex items-center gap-1.5 rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
+                      loading={busy === "submit"}
                     >
-                      {busy === "submit" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                       رفعٌ للمراجعة
-                    </button>
+                    </Button>
                     {!draft.bodyAr?.trim() && (
                       <span className="text-fine text-muted-foreground">لا تُرفع وحدةٌ بلا متن.</span>
                     )}
@@ -472,12 +472,10 @@ export default function Authoring() {
                 )}
 
                 {isReview && (
-                  <button
-                    type="button" onClick={() => void act("withdraw")} disabled={busy !== ""}
-                    className="flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
-                  >
-                    <Undo2 className="h-3.5 w-3.5" /> سحبٌ للتعديل
-                  </button>
+                  <Button tone="secondary" type="button" icon={Undo2}
+                    onClick={() => void act("withdraw")} disabled={busy !== ""}>
+                    سحبٌ للتعديل
+                  </Button>
                 )}
 
                 {/* ─────────── حلقتا القرار ───────────
@@ -496,18 +494,14 @@ export default function Authoring() {
                       placeholder="ما الذي يُعدَّل؟ (مطلوبٌ عند الإعادة)"
                       className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-gold/50"
                     />
-                    <button
-                      type="button" onClick={() => void act("approve")} disabled={busy !== ""}
-                      className="rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
-                    >
+                    <Button tone="confirm" type="button"
+                      onClick={() => void act("approve")} disabled={busy !== ""}>
                       اعتمِدها أكاديميّا
-                    </button>
-                    <button
-                      type="button" onClick={() => void act("changes")} disabled={busy !== "" || note.trim().length < 5}
-                      className="rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
-                    >
+                    </Button>
+                    <Button tone="secondary" type="button"
+                      onClick={() => void act("changes")} disabled={busy !== "" || note.trim().length < 5}>
                       إعادةٌ إلى الكاتب مع ملاحظة
-                    </button>
+                    </Button>
                     <p className="w-full text-read leading-5 text-muted-foreground">
                       الاعتمادُ لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّمٌ قبلها.
                     </p>
@@ -526,18 +520,14 @@ export default function Authoring() {
                         placeholder="سببُ الإعادة (مطلوبٌ عند الإعادة)"
                         className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-teal/50"
                       />
-                      <button
-                        type="button" onClick={() => void act("publish")} disabled={busy !== ""}
-                        className="rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
-                      >
+                      <Button tone="confirm" type="button"
+                        onClick={() => void act("publish")} disabled={busy !== ""}>
                         وافِق وانشر
-                      </button>
-                      <button
-                        type="button" onClick={() => void act("return")} disabled={busy !== "" || note.trim().length < 5}
-                        className="rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
-                      >
+                      </Button>
+                      <Button tone="secondary" type="button"
+                        onClick={() => void act("return")} disabled={busy !== "" || note.trim().length < 5}>
                         أعِدها للمدير الأكاديميّ
-                      </button>
+                      </Button>
                     </Inset>
                   ) : (
                     <Inset as="p" className="w-full text-read leading-6 text-muted-foreground">

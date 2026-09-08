@@ -139,25 +139,23 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             <option value="assistant">مساعد</option>
           </select>
           {picked?.qualification === "qualified" ? (
-            <button disabled={busy}
+            <Button tone="confirm" disabled={busy}
               onClick={() => act(
                 () => apiPost(`/api/admin/cohorts/${cohort.id}/trainers`, assignForm).then(loadTrainers),
                 "عُيّن المدرب للشعبة",
-              )}
-              className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground hover:bg-white/15 disabled:opacity-40">
+              )}>
               أسنده
-            </button>
+            </Button>
           ) : (
-            <button disabled={busy || !picked || picked.qualification === "pending"}
+            <Button tone="primary" disabled={busy || !picked || picked.qualification === "pending"}
               onClick={() => act(
                 () => apiPost(`/api/admin/cohorts/${cohort.id}/qualification-requests`, {
                   profileId: assignForm.profileId, courseId: cohort.courseId,
                 }).then(loadTrainers),
                 "رُفع طلبُ التأهيل — الموافقة تؤهّله وتُسنده معا",
-              )}
-              className="cursor-pointer rounded-xl bg-gold/85 px-4 py-2 text-xs font-black text-on-gold hover:bg-gold disabled:opacity-40">
+              )}>
               أهّله وأسنده الآن
-            </button>
+            </Button>
           )}
         </div>
 
@@ -306,7 +304,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             </>
           )}
         </div>
-        <button
+        <Button tone="confirm" className="mt-3"
           disabled={busy || materialForm.title.length < 2 || (materialForm.kind === "link" ? !/^https?:\/\/.+/.test(materialForm.externalUrl) : !materialForm.originalName || !materialForm.sizeBytes)}
           onClick={() => act(async () => {
             await apiPost(`/api/admin/cohorts/${cohort.id}/materials`, {
@@ -316,10 +314,9 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 ? { originalName: materialForm.originalName, mime: materialForm.mime, sizeBytes: Number(materialForm.sizeBytes) } : undefined,
             });
             setMaterialForm({ title: "", kind: "link", externalUrl: "", originalName: "", mime: "application/pdf", sizeBytes: "" });
-          }, "سُجلت المادة")}
-          className="mt-3 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground hover:bg-white/15 disabled:opacity-40">
+          }, "سُجلت المادة")}>
           سجّل المادة
-        </button>
+        </Button>
       </Section>
       )}
 
@@ -349,9 +346,10 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 <input type="number" min={1} value={it.maxScore} onChange={(e) => setItems(items.map((x, j) => (j === i ? { ...x, maxScore: e.target.value } : x)))}
                   placeholder="درجة" className={`${inputCls} w-20`} />
                 {items.length > 1 && (
-                  <button type="button" onClick={() => setItems(items.filter((_, j) => j !== i))} className="cursor-pointer text-muted-foreground hover:text-red-300">
+                  <Button tone="ghost" size="sm" type="button" aria-label={`احذف البند ${i + 1}`}
+                    onClick={() => setItems(items.filter((_, j) => j !== i))} className="hover:text-red-300">
                     <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
@@ -360,7 +358,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             <Button tone="secondary" size="sm" type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])} className="text-fine">
               <Plus className="h-3 w-3" /> بند
             </Button>
-            <button disabled={busy || assessForm.title.length < 3}
+            <Button tone="confirm" disabled={busy || assessForm.title.length < 3}
               onClick={() => act(async () => {
                 await apiPost(`/api/admin/cohorts/${cohort.id}/assessments`, {
                   title: assessForm.title, type: assessForm.type,
@@ -372,10 +370,9 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 });
                 setAssessForm({ title: "", type: "assignment", maxScore: "100", passScore: "", dueAt: "" });
                 setItems([{ prompt: "", kind: "text", maxScore: "" }]);
-              }, "أُنشئ التقييم وأتاح للمتعلمين")}
-              className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground hover:bg-white/15 disabled:opacity-40">
+              }, "أُنشئ التقييم وأتاح للمتعلمين")}>
               أنشئ التقييم
-            </button>
+            </Button>
           </div>
         </Section>
       )}
@@ -424,7 +421,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           <input type="number" min={1} value={recForm.sizeBytes} onChange={(e) => setRecForm({ ...recForm, sizeBytes: e.target.value })} placeholder="الحجم (بايت)" dir="ltr" className={inputCls} />
           <input type="number" min={1} value={recForm.durationSec} onChange={(e) => setRecForm({ ...recForm, durationSec: e.target.value })} placeholder="المدة (ثانية، اختياري)" dir="ltr" className={inputCls} />
         </div>
-        <button disabled={busy || !recForm.sessionId.trim() || recForm.title.length < 2 || !recForm.sizeBytes}
+        <Button tone="confirm" className="mt-2" disabled={busy || !recForm.sessionId.trim() || recForm.title.length < 2 || !recForm.sizeBytes}
           onClick={() => act(async () => {
             await apiPost(`/api/admin/sessions/${recForm.sessionId.trim()}/recordings`, {
               title: recForm.title, mime: recForm.mime, sizeBytes: Number(recForm.sizeBytes),
@@ -432,10 +429,9 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               durationSec: recForm.durationSec ? Number(recForm.durationSec) : undefined,
             });
             setRecForm({ sessionId: "", title: "", moduleId: "", mime: "video/mp4", sizeBytes: "", durationSec: "" });
-          }, "سُجل التسجيل وأُنشئ رابط رفعه الموقع")}
-          className="mt-2 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground hover:bg-white/15 disabled:opacity-40">
+          }, "سُجل التسجيل وأُنشئ رابط رفعه الموقع")}>
           سجّل التسجيل
-        </button>
+        </Button>
 
         <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-read font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
         <div className="flex flex-wrap gap-2">
@@ -449,11 +445,10 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             <option value="archived">مؤرشف</option>
             <option value="disabled">معطل</option>
           </select>
-          <button disabled={busy || !contentForm.id.trim()}
-            onClick={() => act(() => apiPost(`/api/admin/content/${contentForm.kind}/${contentForm.id.trim()}/status`, { status: contentForm.status }), "حُدثت حالة المحتوى")}
-            className="cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground hover:bg-white/15 disabled:opacity-40">
+          <Button tone="confirm" disabled={busy || !contentForm.id.trim()}
+            onClick={() => act(() => apiPost(`/api/admin/content/${contentForm.kind}/${contentForm.id.trim()}/status`, { status: contentForm.status }), "حُدثت حالة المحتوى")}>
             طبّق الحالة
-          </button>
+          </Button>
         </div>
       </Section>
       )}
@@ -667,11 +662,10 @@ export function LearningSettings({ courses, cohorts, onDone }: {
                 onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, maxScore: e.target.value } : x)))}
                 className={`${inputCls} w-20`} />
               {criteria.length > 1 && (
-                <button type="button" onClick={() => setCriteria(criteria.filter((_, j) => j !== i))}
-                  aria-label={`احذف المعيار ${i + 1}`}
-                  className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg text-muted-foreground hover:bg-red-400/10 hover:text-red-300">
+                <Button tone="ghost" size="sm" type="button" aria-label={`احذف المعيار ${i + 1}`}
+                  onClick={() => setCriteria(criteria.filter((_, j) => j !== i))} className="shrink-0 hover:text-red-300">
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </Button>
               )}
             </div>
           ))}
@@ -820,17 +814,16 @@ function CertificateCandidates({ cohortId, busy, act }: {
                 placeholder="سببُ الإلغاء — يبقى في السجلّ (٥ أحرف فأكثر)"
                 className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-fine outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
               />
-              <button
+              <Button tone="danger" size="sm"
                 disabled={busy || reason.trim().length < 5}
                 onClick={() => act(
                   () => apiPost(`/api/admin/certificates/${r.certificate!.id}/revoke`, { reason: reason.trim() })
                     .then(() => { setRevoking(null); setReason(""); load(); }),
                   "أُلغيت الشهادة ووُثّق السبب",
                 )}
-                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-fine font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
               >
                 أكّد الإلغاء
-              </button>
+              </Button>
             </div>
           )}
         </Inset>
