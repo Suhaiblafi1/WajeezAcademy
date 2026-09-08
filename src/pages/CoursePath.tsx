@@ -44,6 +44,10 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
+/** ترتيبُ الدورة المضافة بالكلمة: «أضف دورة ثالثة» لا «أضف الدورة ٣» —
+    والسلّمُ خمسٌ فلا يتجاوز الفهرسُ الخامسة، و`?? 'أخرى'` لما بعدها احتياطا. */
+const ORDINAL_AR: readonly string[] = ["", "أولى", "ثانية", "ثالثة", "رابعة", "خامسة"];
+
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
   if (amount === null) return <span className="text-fine font-bold text-muted-foreground">مع الشعبة</span>;
   return <span dir="ltr" className={className}>{money(amount)}</span>;
@@ -623,13 +627,18 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ (${picked.length} دورات)`}
             </Button>
 
-            {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
+            {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن.
+
+                كان جملتين بثلاثة أرقام: «ترفع خصمك إلى ٨٪: تصير الـ٣ بـ٢٧٦.
+                أي أنّ الإضافية تكلّفك ١٠١ بدل ١٢٥» — فطلب صاحبُ المنصّة
+                اختصارَها (٨ سبتمبر ٢٠٢٦). والمجموعُ الجديد لا يُقال: يراه في
+                بطاقة السعر فور الإضافة، وما يقرّر به هو كلفةُ الدورة وحدَها. */}
             {nudge && (
               <Inset as="p" tone="warn" className="mt-3 flex items-start gap-2 px-3.5 py-2.5 text-read font-semibold leading-5 text-gold-ink">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ<span dir="ltr">{money(nudge.nextPayable)}</span>.
-                  {" "}أي أن الدورة الإضافية تكلّفك <span dir="ltr">{money(nudge.marginal)}</span> بدل <span dir="ltr">{money(nudge.listPrice)}</span>.
+                  أضف دورة {ORDINAL_AR[nudge.nextCount] ?? 'أخرى'} يرتفع خصمك إلى {nudge.nextPct}٪ — تكلّفك{" "}
+                  <span dir="ltr">{money(nudge.marginal)}</span> بدل <span dir="ltr">{money(nudge.listPrice)}</span>.
                 </span>
               </Inset>
             )}

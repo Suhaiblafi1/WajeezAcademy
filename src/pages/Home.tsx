@@ -198,7 +198,7 @@ function Nav() {
 
 function Hero() {
   return (
-    <section id="top" className="relative overflow-hidden pt-20 pb-0 md:pt-36 md:pb-2">
+    <section id="top" className="relative overflow-hidden pt-20 pb-2 md:pt-36 md:pb-10">
       {/* ─────────── إيقاع الهيرو على الهاتف ───────────
 
           كانت `pt-28` (١١٢px) والترويسةُ ٦٤px، فيبقى نحوُ ٥٠px فراغا ميتا فوق
@@ -207,7 +207,10 @@ function Hero() {
 
           والعلاج ليس قصَّ المساحة السوداء بل أن ينتهي القسم حيث ينتهي محتواه:
           حشوٌ علويّ يكفي الترويسةَ وقليلا، وسُلَّمٌ طباعيّ يهبط درجةً على
-          الهاتف ويعود على الشاشات الأوسع. */}
+          الهاتف ويعود على الشاشات الأوسع.
+
+          أمّا الشاشاتُ الأوسع فكان «اختر مسارك بنفسك» يلتصق بعنوان القسم
+          الذي يليه — فحشوٌ سفليّ على `md` وحدَه (٨ سبتمبر ٢٠٢٦). */}
       {/* ambient glows */}
       <div className="pointer-events-none absolute -top-40 right-1/4 h-[480px] w-[480px] rounded-full bg-teal/15 blur-[140px] animate-pulse-glow" />
       <div className="pointer-events-none absolute top-40 left-0 h-[380px] w-[380px] rounded-full bg-teal-deep/20 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
@@ -216,15 +219,17 @@ function Hero() {
         <div className="reveal is-visible">
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
-        {/* الشارةُ ثمّ سطرا العنوان ثلاثةُ أسطرٍ متلاصقةٍ على الهاتف، وهي أوّلُ
-            ما تقع عليه العين. فالمسافةُ تزيد على الضيّق وحدَه: الشاشاتُ الأوسع
-            تضرب كلَّ مقاسٍ في معامل التكبير (‏`--app-scale`‏) فتأخذ نصيبَها
-            منه أصلا، وزيادةٌ مسطّحةٌ هناك تصير فجوة. */}
-        <h1 className="reveal is-visible mx-auto mt-5 max-w-3xl md:mt-3">
-          <span className="block text-xl font-semibold leading-snug text-foreground/80 sm:text-2xl md:text-3xl">
+        {/* الشارةُ ثمّ سطرا العنوان ثلاثةُ أسطرٍ، وهي أوّلُ ما تقع عليه العين.
+            كانت المسافةُ تزيد على الضيّق وحدَه بحجّة أنّ معاملَ التكبير
+            (‏`--app-scale`‏) يعطي الشاشاتِ الأوسعَ نصيبَها — ورآها صاحبُ
+            المنصّة على اللابتوب «شبهَ متلاصقة» (٨ سبتمبر ٢٠٢٦). فالتكبيرُ يضرب
+            الحجمَ والمسافةَ معا ولا يغيّر نسبتَهما، والنسبةُ هي ما كان ضيّقا.
+            فزادت المسافةُ على كلّ المقاسات. */}
+        <h1 className="reveal is-visible mx-auto mt-7 max-w-3xl md:mt-6">
+          <span className="block text-xl font-semibold leading-relaxed text-foreground/80 sm:text-2xl md:text-3xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
-          <span className="mt-3 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text md:mt-2 text-3xl font-bold leading-[1.3] text-transparent sm:text-4xl md:text-6xl md:leading-[1.2]">
+          <span className="mt-5 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text md:mt-4 text-3xl font-bold leading-[1.3] text-transparent sm:text-4xl md:text-6xl md:leading-[1.2]">
             يبدأ بفهم هدفك.
           </span>
         </h1>
@@ -267,7 +272,7 @@ function Hero() {
               و`:empty` تُطابق العنصرَ الذي لا عقدةَ فيه، وهو حالُها حين تُعيد
               المكوّنةُ `null`. فتُخفى الفقرةُ بحشوها، وتعود كما كانت متى وُجد
               فصل — بلا نداءٍ ثانٍ للخطّاف ولا شرطٍ يُكتب في موضعين. */}
-          <p className="mt-4 text-read font-bold leading-6 text-muted-foreground empty:hidden">
+          <p className="mt-7 text-read font-bold leading-6 text-muted-foreground empty:hidden">
             <UpcomingTermLine prefix="الفصل القادم:" />
           </p>
         </div>
@@ -329,8 +334,12 @@ function DiagnosticTeaser() {
        بين نهاية الصدر وأوّل كلمةٍ هنا ١٩٠ بكسل بيضاء على اللابتوب (٤٠ فوق
        الملاحظة + ٣٦ تحتها + ٩٦ هنا) — وهي «المساحة البيضاء الكبيرة بالأسفل».
        والهاتفُ ليس فيه هذا: حشوُه ٤٨ فالمجموع ١٢٤، وهو معقول. فخُفّض العلويُّ
-       على `md` وحدَه وبقي السفليُّ كما هو، فلا يتحرّك شيءٌ على الهاتف. */
-    <section id="diagnostic" className="scroll-mt-24 relative py-12 sm:py-16 md:pb-24 md:pt-14">
+       على `md` وحدَه وبقي السفليُّ كما هو، فلا يتحرّك شيءٌ على الهاتف.
+
+       ثمّ هبط السفليُّ أيضا (٨ سبتمبر ٢٠٢٦): كان ٩٦ يليه حشوُ «شركاؤنا» ٩٦،
+       فيتضاعف بمعامل التكبير إلى نحو ٢٥٠ بكسلا بيضاءَ فوق شارة الشركاء —
+       وهي «الفراغُ الكبيرُ جدّا» الذي أراه صاحبُ المنصّة في لقطته. */
+    <section id="diagnostic" className="scroll-mt-24 relative py-12 sm:py-14 md:pb-14 md:pt-14">
       {/* ─────────── لماذا ضاق رأسُ هذا القسم ───────────
 
           على الهاتف كان الزائر يضغط «مؤشر وجيز» فيهبط إلى قسمٍ رأسُه ثلاثةُ
@@ -344,15 +353,18 @@ function DiagnosticTeaser() {
       <div className="shell">
         <div className="reveal text-center">
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
-          <h2 className="mt-4 text-xl font-bold leading-snug sm:text-2xl md:text-4xl">
+          <h2 className="mt-4 text-xl font-bold leading-snug sm:text-2xl md:text-3xl">
             قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد
           </h2>
         </div>
 
-        <div className="reveal mt-6 overflow-hidden sm:mt-10 rounded-[2rem] border border-white/[0.08] bg-card/90 shadow-[0_24px_90px_-40px_rgba(56,167,180,0.35)] backdrop-blur-sm">
+        {/* الصندوقُ في الوسط بعرضٍ محدود لا بعرض الصفحة: سؤالٌ وثلاثةُ خياراتٍ
+            لا يحتاجان ألفَ بكسل، وكان الصندوقُ يمتدّ بعرض الشاشة فيبدو «كبيرا
+            جدّا» على اللابتوب (٨ سبتمبر ٢٠٢٦). */}
+        <div className="reveal mx-auto mt-6 max-w-2xl overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-card/90 shadow-[0_24px_90px_-40px_rgba(56,167,180,0.35)] backdrop-blur-sm sm:mt-8">
           {/* مؤشر التقدم */}
           <div
-            className="flex gap-2 px-8 pt-7"
+            className="flex gap-2 px-6 pt-5"
             role="progressbar"
             aria-label={`التقدم: أجبت عن ${Math.min(step, mirrorQuestions.length)} من ${mirrorQuestions.length} أسئلة`}
             aria-valuemin={0}
@@ -369,7 +381,7 @@ function DiagnosticTeaser() {
             {!done ? `سؤال ${step + 1} من ${mirrorQuestions.length}: ${current.text}` : 'اكتملت المؤشر — تظهر خلاصتك الآن'}
           </p>
 
-          <div className="p-5 sm:p-8 md:p-10" key={step}>
+          <div className="p-5 sm:p-6 md:p-7" key={step}>
             {!done ? (
               <div className="story-fade">
                 <div className="flex items-center justify-between">
@@ -393,8 +405,8 @@ function DiagnosticTeaser() {
                     </button>
                   </div>
                 </div>
-                <h3 className="mt-3 text-lg font-bold leading-8 sm:text-2xl sm:leading-relaxed">{current.text}</h3>
-                <div className="mt-7 grid gap-3" role="group" aria-label={`خيارات السؤال ${step + 1}`}>
+                <h3 className="mt-3 text-lg font-bold leading-8 sm:text-xl sm:leading-relaxed">{current.text}</h3>
+                <div className="mt-5 grid gap-2.5" role="group" aria-label={`خيارات السؤال ${step + 1}`}>
                   {current.options.map((opt) => {
                     const selected = picked === opt || (!picked && answers[current.id] === opt)
                     return (
@@ -455,8 +467,8 @@ function DiagnosticTeaser() {
 
 /* ───────────────── how it works ───────────────── */
 const steps = [
-  { icon: Compass, title: 'نفهمك', text: 'أسئلة متكيفة عن هدفك وواقعك ووقتك — لا عن ذوقك في الدورات.' },
-  { icon: Target, title: 'نوصي ونشرح', text: 'مسار واحد واضح، مع السبب ودرجة الثقة. أو مستشار بشري إن احتاج الأمر.' },
+  { icon: Compass, title: 'نفهمك', text: 'أسئلة متكيفة عن هدفك وواقعك ووقتك.' },
+  { icon: Target, title: 'نوصي ونشرح', text: 'مسار واحد واضح بثقة، أو تحويل لخبير بشري.' },
   { icon: Route, title: 'تتعلم بترابط', text: 'كل دورة تبني على التي قبلها، ومدرب ومستشار يرافقانك فعليا.' },
   { icon: BadgeCheck, title: 'تُثبت بمخرج', text: 'مشروع حقيقي يُراجَع ويُقيَّم. القيمة بالإنجاز، لا بالمشاهدة.' },
 ]
@@ -465,9 +477,11 @@ function HowItWorks() {
   return (
     <section id="how" className="scroll-mt-24 border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
       <div className="shell">
-        <div className="reveal flex flex-wrap items-center justify-center gap-3 text-center md:justify-between md:text-right">
-          <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك — أربع خطوات لا أكثر</h2>
-          <SectionLabel>من أول سؤال إلى مخرج مُثبت</SectionLabel>
+        {/* عنوانٌ واحدٌ في الوسط بلا شارة — بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦):
+            «أربع خطوات لا أكثر» تكرّر ما تقوله البطاقاتُ الأربعُ تحته، والشارةُ
+            كانت تجرّ العنوانَ إلى طرفٍ وتترك الوسطَ فارغا. */}
+        <div className="reveal text-center">
+          <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك</h2>
         </div>
         <div className="relative mt-8">
           {/* خط واصل يلمّ المراحل على الشاشات الكبيرة */}
@@ -501,17 +515,16 @@ function Stories() {
   const [open, setOpen] = useState<(typeof stories)[number] | null>(null)
 
   return (
-    <section id="stories" className="scroll-mt-24 relative py-20 md:py-24">
+    <section id="stories" className="scroll-mt-24 relative py-12 md:py-16">
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-teal/8 blur-[130px]" />
       <div className="shell">
         <div className="reveal text-center">
           <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
-          <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            من التشخيص إلى مشروع تخرّج يدخل ملفك — اختر نموذجا واقرأه كاملا.
-          </p>
-          {/* الصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
-          <p className="mx-auto mt-3 max-w-md text-read leading-5 text-muted-foreground">
+          {/* كان تحت العنوان سطرٌ يشرحه («من التشخيص إلى مشروع تخرّج…») —
+              حُذف بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦): البطاقاتُ تحته تقوله.
+              والصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
+          <p className="mx-auto mt-4 max-w-md text-read leading-5 text-muted-foreground">
             نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
           </p>
         </div>
@@ -857,16 +870,17 @@ function FinalCta() {
 
 /* ───────────────── partners (شعارات من موقع وجيز الأم — من المصدر المشترك) ─────────────────
 
-   ⚠️ الحشوُ `py-20 md:py-24` كحشو الأقسام الكبرى لا `py-14` كقسمٍ لكتلةٍ واحدة:
-   هذا القسمُ صار يحمل **ثلاثَ كتلٍ معنونة** — الشعاراتُ ثمّ «وجيز مهارات
-   بالأرقام» ثمّ «مؤسسات وثقت بمنظومة وجيز». وكانت تتلاصق على ٤٨ بكسلا داخل
-   حشوٍ مقاسٍ لواحدة، فتُقرأ كتلةً واحدةً مزدحمة.
+   هذا القسمُ يحمل **ثلاثَ كتلٍ معنونة** — الشعاراتُ ثمّ «وجيز مهارات
+   بالأرقام» ثمّ «مؤسسات وثقت بمنظومة وجيز». والفصلُ بينها خيطٌ شعريٌّ
+   (`border-white/5`) لا مسافةٌ وحدَها: الخيطُ يفصل بأقلّ مساحة.
 
-   والفصلُ بينها خيطٌ شعريٌّ (`border-white/5`) لا مسافةٌ وحدَها: الخيطُ يفصل
-   بأقلّ مساحة، وهو الإيقاعُ نفسُه في قسم «كيف تعمل الرحلة» المجاور. */
+   وحشوُه كان `py-20 md:py-24` كحشو الأقسام الكبرى، فاجتمع مع حشو المؤشّر
+   فوقَه في نحو ٢٥٠ بكسلا بيضاءَ على اللابتوب — «الفراغُ فوق شركاؤنا كبيرٌ
+   جدّا» (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦). فهبط إلى حشوِ كتلةٍ واحدة، والخيوطُ
+   بين كتله الثلاث باقيةٌ تفصلها. */
 function Partners() {
   return (
-    <section id="partners" className="scroll-mt-24 py-20 md:py-24">
+    <section id="partners" className="scroll-mt-24 py-12 md:py-14">
       <div className="shell text-center">
         <div className="reveal">
           <SectionLabel>شركاؤنا</SectionLabel>

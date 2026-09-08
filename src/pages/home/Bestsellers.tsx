@@ -147,7 +147,7 @@ export function Bestsellers() {
   )
 
   return (
-    <section id="bestsellers" className="scroll-mt-20 pb-16 pt-10 md:pb-20 md:pt-14">
+    <section id="bestsellers" className="scroll-mt-20 pb-10 pt-10 md:pb-12 md:pt-14">
       <div className="shell">
         <div className="reveal">
           <SectionLabel>مختارات وجيز</SectionLabel>
@@ -170,24 +170,34 @@ export function Bestsellers() {
             في هذا البند ذهبت معهما **كلُّ** عناصر `article` من الصفحة، فوقف
             الفحصُ ٢٥ ثانيةً ثمّ عدّها واقعةَ إتاحة: `landmark: 0 ← 1`.
             وأمسكها CI لا أنا. */}
+        {/* ── ولماذا صغُرت (٨ سبتمبر ٢٠٢٦) ──
+
+            كانت لوحةً من خمسة أعمدة: عمودان لأيقونةٍ وحدَها، وثلاثةٌ لحشوٍ
+            أربعين بكسلا وعنوانٍ من ثلاثين. ومعاملُ التكبير على اللابتوب يجعلها
+            ثلثَ الشاشة لمسارٍ واحد. فوصفها صاحبُ المنصّة بأنّها «كبيرةٌ جدّا»
+            واختار ضغطَها لا حذفَها: المحتوى نفسُه، في نصف الارتفاع — عمودٌ
+            رفيعٌ للأيقونة، وشارةُ «اختيار وجيز» في صفّ العنوان لا معلّقةً فوق
+            فراغ. */}
         {spotlight && (
           <article className="reveal relative mt-8">
             <Link
               to={`/pathways/${spotlight.id}`}
-              className="group grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-5"
+              className="group grid overflow-hidden rounded-3xl border border-teal/30 bg-gradient-to-l from-panel to-card transition hover:border-teal/60 hover:shadow-[0_30px_80px_-40px_rgba(56,167,180,0.5)] md:grid-cols-6"
             >
-              <div className="relative flex min-h-[104px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-2 md:min-h-[190px]">
-                <Route className="h-10 w-10 text-teal-light-ink/70 md:h-16 md:w-16" />
-                <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-fine font-black text-on-gold md:right-5 md:top-5 md:gap-1.5 md:px-3.5 md:py-1.5 md:text-xs">
-                  <Flame className="h-3.5 w-3.5" />
-                  {spotlight.note}
-                </span>
+              <div className="relative flex min-h-[64px] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_70%_30%,rgba(56,167,180,0.4),transparent_65%)] md:col-span-1 md:min-h-0">
+                <Route className="h-8 w-8 text-teal-light-ink/70 md:h-9 md:w-9" />
               </div>
-              <div className="p-5 md:col-span-3 md:p-10">
-                <span className="kicker">اختيار وجيز الأول</span>
-                <h3 className="mt-3 text-2xl font-black leading-snug md:text-3xl">{spotlight.p.name}</h3>
-                <p className="mt-3 max-w-lg text-sm leading-8 text-muted-foreground">{spotlight.p.transformation}</p>
-                <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+              <div className="p-5 md:col-span-5 md:px-7 md:py-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="kicker">اختيار وجيز الأول</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold px-2.5 py-1 text-fine font-black text-on-gold">
+                    <Flame className="h-3 w-3" />
+                    {spotlight.note}
+                  </span>
+                </div>
+                <h3 className="mt-2.5 text-xl font-black leading-snug md:text-2xl">{spotlight.p.name}</h3>
+                <p className="mt-2 max-w-xl text-sm leading-7 text-muted-foreground">{spotlight.p.transformation}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
                   <span>{spotlight.p.level}</span>
                   <span className="text-muted-foreground/50">•</span>
                   {/* الحجم كلّه في عبارةٍ واحدة: دوراتٌ وساعاتٌ وأسابيع. وكان
@@ -197,11 +207,11 @@ export function Bestsellers() {
                   <span>{spotlight.p.weeklyHours} أسبوعيا</span>
                 </div>
                 {/* المخرَج الملموس — لا اسمُ مدرّبٍ لم يُعيَّن بعد */}
-                <p className="mt-3 flex items-start gap-1.5 text-read leading-6 text-teal-light-ink">
+                <p className="mt-2 flex items-start gap-1.5 text-read leading-6 text-teal-light-ink">
                   <Target className="mt-1 h-3.5 w-3.5 shrink-0" />
                   <span>تتخرّج بـ: {spotlight.p.output}</span>
                 </p>
-                <span className="mt-6 inline-flex items-center gap-2 rounded-full bg-teal-deep px-6 py-2.5 text-sm font-bold text-white transition group-hover:bg-teal-darker">
+                <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal-deep px-5 py-2 text-sm font-bold text-white transition group-hover:bg-teal-darker">
                   افتح المسار
                   <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
                 </span>
@@ -237,7 +247,7 @@ export function Bestsellers() {
                   to={`/pathways/${b.id}`}
                   tone="accent"
                   interactive
-                  className="flex w-[280px] shrink-0 snap-start flex-col gap-2 p-5"
+                  className="group flex w-[280px] shrink-0 snap-start flex-col gap-2 p-5"
                 >
                   <span className="kicker text-teal-light-ink">{b.note}</span>
                   {/* الاسمُ **القصير** كبطاقة الكتالوج: الكاملُ متوسّطُه ٤٥ حرفا
@@ -261,9 +271,28 @@ export function Bestsellers() {
                     <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span className="line-clamp-2 min-w-0">تتخرّج بـ: {b.p.output}</span>
                   </p>
-                  <span className="mt-auto pt-2 text-fine text-muted-foreground">{pathwaySizeAr(b.p)}</span>
+                  {/* سطرُ الذيل: الحجمُ يمينا، و«تفاصيل المسار» يسارا — لافتةٌ
+                      خافتةٌ تقول إنّ البطاقةَ تُفتح، لا زرٌّ يزاحم المحتوى.
+                      كانت البطاقةُ بلا أيّ إشارةٍ إلى أنّها رابط (٨ سبتمبر ٢٠٢٦). */}
+                  <span className="mt-auto flex items-center justify-between gap-2 pt-2 text-fine text-muted-foreground">
+                    <span>{pathwaySizeAr(b.p)}</span>
+                    <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-teal-light-ink/75 transition group-hover:text-teal-light-ink">
+                      تفاصيل المسار
+                      <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
+                    </span>
+                  </span>
                 </Card>
               ))}
+            </div>
+            {/* البابُ تحت شريطه لا في ذيل القسم — بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦) */}
+            <div className="mt-2 flex justify-center">
+              <Link
+                to="/pathways"
+                className={`${DOOR} border-teal/40 text-teal-light-ink hover:bg-teal-deep hover:text-white`}
+              >
+                تصفح كل المسارات
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         )}
@@ -283,7 +312,7 @@ export function Bestsellers() {
                   as={Link}
                   to={`/build/${b.id}`}
                   interactive
-                  className="flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5"
+                  className="group flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5"
                 >
                   <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
@@ -297,32 +326,29 @@ export function Bestsellers() {
                   <p className="text-read text-muted-foreground">
                     {b.c.weeks} {b.c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
                   </p>
-                  <span className="mt-auto w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
-                    {b.c.skill}
+                  <span className="mt-auto flex items-center justify-between gap-2">
+                    <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
+                      {b.c.skill}
+                    </span>
+                    <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink/75 transition group-hover:text-teal-light-ink">
+                      تفاصيل الدورة
+                      <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
+                    </span>
                   </span>
                 </Card>
               ))}
             </div>
+            <div className="mt-2 flex justify-center">
+              <Link
+                to="/courses"
+                className={`${DOOR} border-white/15 text-muted-foreground hover:border-gold/50 hover:text-gold-ink`}
+              >
+                تصفح كل الدورات
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
         )}
-
-        {/* البابان — إلى الكتالوج كاملا */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            to="/pathways"
-            className={`${DOOR} border-teal/40 text-teal-light-ink hover:bg-teal-deep hover:text-white`}
-          >
-            تصفح كل المسارات
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-          <Link
-            to="/courses"
-            className={`${DOOR} border-white/15 text-muted-foreground hover:border-gold/50 hover:text-gold-ink`}
-          >
-            تصفح كل الدورات
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </div>
       </div>
     </section>
   )
