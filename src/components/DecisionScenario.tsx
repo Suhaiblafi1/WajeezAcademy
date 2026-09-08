@@ -187,7 +187,13 @@ export default function DecisionScenario({
                 تُحفَظ الجولة لمن سُجّل في الدورة — تابع بلا حفظ، والسيناريو نفسه هو الفائدة.
               </p>
             ) : (
-              <Button tone="primary" type="button"
+              /* `confirm` لا `primary`: حفظُ الجولة **فعلٌ مُثبِتٌ داخل قسم**، لا
+                 فعلَ الصفحة الأوّل — والسطرُ الملاصقُ له يقولها بنفسه: «تابع بلا
+                 حفظ، والسيناريو نفسه هو الفائدة». وكان ذهبيّا فحمل شاشتَين معا
+                 فوق حدِّ «رئيسيٌّ واحدٌ في الشاشة»: `/student/module` التي لا
+                 ذهبيَّ لها غيرُه، و`/admin/authoring` بعد أن أعطاها الالتزامُ
+                 `109aaf2` ذهبيَّها الأوّل «ابدأ بأوّلها». */
+              <Button tone="confirm" type="button"
                 onClick={() => void saveRun()}
                 disabled={save === "busy"} className="min-h-11 disabled:cursor-not-allowed">
                 {save === "busy"
