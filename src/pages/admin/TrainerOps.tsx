@@ -94,16 +94,36 @@ export interface TrainerSummary {
   suspendedAt: string | null;
 }
 
+const CONTRACT_STATUS_AR: Record<string, string> = {
+  draft: "مسودة", sent: "أُرسل", signed: "موقَّع", expired: "منتهٍ", terminated: "مفسوخ",
+};
+
 /** بطاقات التفاصيل المتقدمة لطلب مدرب — تُركب داخل صفحة التفاصيل */
 export function TrainerDetailOps({ app, onAction }: {
+  /* ── المراجعُ والعقودُ كانت تصل ولا تُعرَض ──
+
+     `getApplication` في الخادم يضمّ `references: true` و`contracts: true`
+     منذ كُتب. فالقائمتان كانتا في يد الشاشة، وهي مع ذلك تطلب من الإنسان أن
+     يلصق معرّفَ المرجع ومعرّفَ العقد — أي أنّ العطبَ في نوعِ الخاصّيّة لا
+     في البيانات: ما لم يُعلَن لا يُرى، وما لا يُرى يُطلَب لصقُه.
+
+     فالإصلاحُ هنا **إعلانُ ما يصل**، ولا مسارَ جديدٌ ولا نداءَ ثانٍ. */
   app: {
     id: string; status: string;
     interviews: { id: string; scheduledAt: string; outcome: string | null }[];
-    profile: { id: string; userId: string | null } | null;
+    profile: {
+      id: string; userId: string | null;
+      contracts?: { id: string; title: string; status: string; signedAt: string | null }[];
+    } | null;
+    references?: { id: string; name: string; relation: string | null; verifiedAt: string | null }[];
     summary?: TrainerSummary;
   };
   onAction: (fn: () => Promise<unknown>, doneMsg: string) => Promise<void>;
 }) {
+  /* ما لم يُوثَّق بعد، وما لم يُوقَّع بعد — فالقائمةُ تعرض ما يُعمل لا كلَّ شيء */
+  const unverifiedRefs = (app.references ?? []).filter((r) => !r.verifiedAt);
+  const unsignedContracts = (app.profile?.contracts ?? []).filter((c) => !c.signedAt);
+
   const [interviewForm, setInterviewForm] = useState({ scheduledAt: "", mode: "remote", notes: "" });
   const [demoScores, setDemoScores] = useState<Record<string, number>>({});
   const [demoDecision, setDemoDecision] = useState("pass");
@@ -201,9 +221,23 @@ export function TrainerDetailOps({ app, onAction }: {
             )}>
             أضف مرجعا
           </Button>
-          <input value={verifyId} onChange={(e) => setVerifyId(e.target.value)} placeholder="معرف مرجع للتوثيق (UUID)" dir="ltr" className={`${inputCls} max-w-56 font-mono`} />
-          <Button tone="secondary" size="sm" disabled={!verifyId.trim()}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId.trim()}/verify`), "وُثق المرجع")}>
+          {/* والمراجعُ تُضاف في هذه البطاقة نفسِها فوقُ — فطلبُ معرّفِ ما
+              أضفتَه قبل سطرَين أغربُ من طلبِ معرّفٍ من شاشةٍ أخرى.
+              والموثَّقُ يُعلَّم فلا يُوثَّق مرّتَين. */}
+          <label className="sr-only" htmlFor={`ref-verify-${app.id}`}>المرجعُ المراد توثيقُه</label>
+          <select id={`ref-verify-${app.id}`} value={verifyId} onChange={(e) => setVerifyId(e.target.value)}
+            disabled={unverifiedRefs.length === 0} className={`${selectCls} max-w-64`}>
+            <option value="">
+              {(app.references?.length ?? 0) === 0
+                ? "لا مراجعَ بعد — أضِف واحدا أوّلا"
+                : unverifiedRefs.length === 0 ? "وُثّقت المراجعُ كلُّها" : "اختر مرجعا لتوثيقه…"}
+            </option>
+            {unverifiedRefs.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}{r.relation ? ` — ${r.relation}` : ""}</option>
+            ))}
+          </select>
+          <Button tone="secondary" size="sm" disabled={!verifyId}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId}/verify`), "وُثق المرجع")}>
             توثيق
           </Button>
         </div>
@@ -223,9 +257,22 @@ export function TrainerDetailOps({ app, onAction }: {
           </Button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
-          <input value={lastContractId} onChange={(e) => setLastContractId(e.target.value)} placeholder="معرف العقد (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-          <Button tone="secondary" size="sm" disabled={!lastContractId.trim()}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId.trim()}/sign`), "سُجل التوقيع — الطلب في التهيئة")}>
+          {/* كان يُملأ آليّا بعد الإنشاء فوقُ — فيعمل في الجلسة التي أُنشئ
+              فيها العقد، ويصير حقلَ لصقٍ لمن عاد إلى الطلب بعد يوم. */}
+          <label className="sr-only" htmlFor={`contract-sign-${app.id}`}>العقدُ المراد تسجيلُ توقيعه</label>
+          <select id={`contract-sign-${app.id}`} value={lastContractId} onChange={(e) => setLastContractId(e.target.value)}
+            disabled={unsignedContracts.length === 0} className={`${selectCls} flex-1`}>
+            <option value="">
+              {(app.profile?.contracts?.length ?? 0) === 0
+                ? "لا عقودَ بعد — أنشئ عقدا أوّلا"
+                : unsignedContracts.length === 0 ? "وُقّعت العقودُ كلُّها" : "اختر العقد…"}
+            </option>
+            {unsignedContracts.map((c) => (
+              <option key={c.id} value={c.id}>{c.title} — {CONTRACT_STATUS_AR[c.status] ?? c.status}</option>
+            ))}
+          </select>
+          <Button tone="secondary" size="sm" disabled={!lastContractId}
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId}/sign`), "سُجل التوقيع — الطلب في التهيئة")}>
             سجّل التوقيع
           </Button>
         </div>
