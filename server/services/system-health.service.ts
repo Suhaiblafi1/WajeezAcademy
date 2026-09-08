@@ -17,7 +17,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { fileUploadsEnabled } from './storage.service'
 import { PERMISSIONS, ROLE_PERMISSIONS } from '../auth/permissions'
-import { buildStamp, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
+import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
+import { lastVerifiedCommit } from '../catalog/snapshot-verified'
 import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
 
 export type HealthLevel = 'ok' | 'attention' | 'broken' | 'unknown'
@@ -365,7 +366,11 @@ export class SystemHealthService {
       orderBy: { publishedAt: 'desc' },
       select: { label: true },
     })
-    const inSync = snapshotInSync(stamp.commit, active?.label)
+    /* والالتزامُ الذي تحقّق آخرا يُقرأ معها — وإلّا أعلنت هذه الشاشةُ تأخّرا
+       بعد كلّ نشرةٍ لا تمسّ الكتالوج. والتعريفُ واحدٌ لها ولـ`/api/version`. */
+    const verifiedBy = await lastVerifiedCommit(this.prisma)
+    const inSync = snapshotInSync(stamp.commit, active?.label, verifiedBy)
+    const labelSha = commitOfSnapshotLabel(active?.label)
     const prod = process.env.NODE_ENV === 'production'
     const explicitUrl = hasExplicitSiteUrl()
 
@@ -394,8 +399,10 @@ export class SystemHealthService {
           inSync === null
             ? 'لا يمكن الحكم'
             : inSync
-              ? 'نعم — من التزامٍ واحد'
-              : 'لا — من التزامَين مختلفَين',
+              ? labelSha === sha7
+                ? 'نعم — من التزامٍ واحد'
+                : `نعم — اللقطةُ من ${labelSha} ولم يتغيّر الكتالوجُ بعده، وهذا الالتزامُ تحقّق منها`
+              : 'لا — لم يتحقّق هذا الالتزامُ من تطابقهما',
         /* والاختلافُ **ليس عطبا بذاته**: نشرٌ جارٍ يمرّ بهذه الحالة دقيقةً أو
            دقيقتَين. فهو «يحتاج نظرة» لا «معطَّل» — وبقاؤه ساعةً هو الخبر. */
         level: inSync === null ? 'unknown' : inSync ? 'ok' : 'attention',

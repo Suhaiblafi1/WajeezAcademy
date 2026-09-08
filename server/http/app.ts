@@ -42,6 +42,7 @@ import { registerIntegrationRoutes } from './routes/integrations.routes'
 import { registerDemoRoutes } from './routes/demo.routes'
 import { registerAnalyticsRoutes } from './routes/analytics.routes'
 import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
+import { lastVerifiedCommit } from '../catalog/snapshot-verified'
 import { beatReport } from '../worker/heartbeat'
 
 export async function buildApp(prisma: PrismaClient) {
@@ -199,7 +200,10 @@ export async function buildApp(prisma: PrismaClient) {
        هذه الشاشةُ و«صحّةُ النظام» معا، فلا تنحرف نسخةٌ عن أخرى بصمت. */
     const auto = active?.label?.startsWith('auto-') ?? false
     const labelSha = commitOfSnapshotLabel(active?.label)
-    const inSync = snapshotInSync(stamp.commit, active?.label)
+    /* والتزامُ آخرِ تحقّقٍ يُقرأ معها: لقطةٌ من التزامٍ أقدمَ ليست تأخّرا حين
+       يكون هذا الالتزامُ نفسُه قد قارن الجداولَ بها ووجدهما سواء. */
+    const verifiedBy = await lastVerifiedCommit(prisma)
+    const inSync = snapshotInSync(stamp.commit, active?.label, verifiedBy)
 
     /* ── والطرفُ الثالث: العاملُ الخلفيّ ──
 
@@ -237,8 +241,10 @@ export async function buildApp(prisma: PrismaClient) {
             ? 'لا يمكن الحكم — اللقطة نُشرت بلا بصمة التزام (نشر يدوي أو بناء لا يعرف التزامه)'
             : 'لا يمكن الحكم — البناء العامل بلا ختم التزام؛ انظر «وقت_البناء» وراجع خطوة ختم البناء في سكربت النشر'
           : inSync
-            ? 'نعم — الكود واللقطة من نفس الالتزام'
-            : 'لا — الكود واللقطة من التزامين مختلفين؛ الأرجح أن نشرا جاريا لم يكتمل بعد',
+            ? labelSha === sha7
+              ? 'نعم — الكود واللقطة من نفس الالتزام'
+              : `نعم — اللقطة من التزام أقدم (${labelSha}) لأن الكتالوج لم يتغيّر بعده، وهذا الالتزام قارن الجداول بها ووجدهما سواء`
+            : 'لا — لم يتحقّق هذا الالتزام من تطابق الجداول واللقطة؛ نشر جارٍ لم يكتمل، أو أخفقت خطوة الكتالوج فيه',
       الوقت: new Date().toISOString(),
     }
   })

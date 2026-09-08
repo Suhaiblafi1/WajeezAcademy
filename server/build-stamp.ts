@@ -175,9 +175,23 @@ export function commitOfSnapshotLabel(label: string | null | undefined): string 
   return m ? m[1] : null
 }
 
-/** `true` متطابقان · `false` مختلفان · **`null` لا يمكن الحكم** */
-export function snapshotInSync(commit: string | null, label: string | null | undefined): boolean | null {
+/** `true` متطابقان · `false` مختلفان · **`null` لا يمكن الحكم**
+
+    و`verifiedCommit` هو آخرُ التزامٍ قارن الجداولَ باللقطة ووجدهما سواء
+    (`catalog/snapshot-verified.ts`). ولولاه لَقال هذا الحكمُ «مختلفان» بعد
+    كلّ نشرةٍ لا تمسّ الكتالوج: النشرُ الآليُّ لا ينشر حين لا جديد، فتبقى
+    تسميةُ اللقطة على آخر التزامٍ **غيّر المحتوى** والكودُ يتقدّم دونها.
+
+    فاتّفاقُ التسمية دليلٌ كافٍ، وليس شرطا: التزامٌ تحقَّق بنفسِه من تطابق
+    الجداول واللقطة متطابقٌ كذلك ولو حملت التسميةُ بصمةَ من سبقه. */
+export function snapshotInSync(
+  commit: string | null,
+  label: string | null | undefined,
+  verifiedCommit?: string | null,
+): boolean | null {
   const sha7 = commit ? commit.slice(0, 7) : null
   const labelSha = commitOfSnapshotLabel(label)
+  if (sha7 && labelSha && sha7 === labelSha) return true
+  if (sha7 && verifiedCommit && sha7 === verifiedCommit.slice(0, 7)) return true
   return sha7 && labelSha ? sha7 === labelSha : null
 }

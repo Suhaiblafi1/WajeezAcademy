@@ -17,6 +17,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { buildSnapshotFromDb, getActiveSnapshot } from '../catalog/snapshot-builder'
+import { recordSnapshotVerified } from '../catalog/snapshot-verified'
 import { PublishingService } from './publishing.service'
 import { analyzeImpact } from './impact.service'
 
@@ -51,6 +52,11 @@ export async function publishSnapshotIfChanged(
   if (active && active.hash === candidate.hash) {
     log('لا جديد لينشر — بصمة الجداول تطابق اللقطة المنشورة.')
     log(`  اللقطة الفعالة: «${active.label}» · ${active.hash.slice(0, 16)}…`)
+    /* ويُسجَّل أنّ هذا الالتزام قارن ووجدهما سواء — وإلا قال `/api/version`
+       «مختلفان» لأنّ التسمية بقيت على آخر التزام غيّر المحتوى. والكتابة لا
+       تُسقط شيئا: هي تحسين تشخيصٍ لا شرطُ نشر. */
+    await recordSnapshotVerified(prisma, { commit: opts.commit, hash: candidate.hash })
+      .catch(() => log('⚠️  تعذّر تسجيل التحقّق — لا أثر على النشر'))
     return { ...base, published: false, skippedAr: 'لا فرق بين الجداول واللقطة المنشورة' }
   }
 
@@ -82,6 +88,11 @@ export async function publishSnapshotIfChanged(
   await pub.publish(version.id, null) // فعل نظامي — لا مشغّل بشري خلفه
   log(`✅ نُشرت «${label}»`)
   log('   والتراجع متاح من /admin/publishing إن ساء شيء.')
+
+  /* ويُسجَّل بعد النشر كذلك لا عند التخطّي وحدَه: فالتسمية هنا تحمل بصمة هذا
+     الالتزام، فيتّفق الصفُّ والتسمية — ولا يبقى الصفُّ على التزامٍ سابق. */
+  await recordSnapshotVerified(prisma, { commit: opts.commit, hash: candidate.hash })
+    .catch(() => log('⚠️  تعذّر تسجيل التحقّق — واللقطة منشورة'))
 
   return {
     ...base,

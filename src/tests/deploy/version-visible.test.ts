@@ -60,6 +60,33 @@ describe('١ · الحكمُ على التطابق — تعريفٌ واحدٌ �
     expect(snapshotInSync(SHA, 'auto-0000000-9f8e7d')).toBe(false)
   })
 
+  /* ⚠️ العطبُ الذي وقع فعلا في ٨ سبتمبر ٢٠٢٦ بعد نشرة `2127e8b`:
+
+     النشرُ الآليُّ لا ينشر حين لا يتغيّر الكتالوج — وهو صواب. فتبقى تسميةُ
+     اللقطة على آخر التزامٍ **غيّر المحتوى**، ويتقدّم الكودُ دونها. فكان
+     الحكمُ يقول «لا — الأرجحُ أنّ نشرا جاريا لم يكتمل» بعد **كلّ** نشرةٍ
+     لا تمسّ الكتالوج، ولا نشرَ جارٍ ولا شيءَ ناقص.
+
+     وإنذارٌ كاذبٌ بالعطب يُدرَّب على الإهمال، فيمرّ اليومُ الذي يصدق فيه
+     ولا يقرؤه أحد. */
+  it('ولقطةٌ من التزامٍ أقدمَ ليست تأخّرا إذا تحقَّق منها الالتزامُ العامل', () => {
+    const OLD = 'auto-0000000-9f8e7d'
+    expect(snapshotInSync(SHA, OLD), 'بلا سجلِّ تحقّقٍ: الحكمُ اختلاف').toBe(false)
+    expect(snapshotInSync(SHA, OLD, SHA), 'وقد تحقَّق هذا الالتزامُ نفسُه').toBe(true)
+  })
+
+  it('ولا يُبيّض سجلُّ تحقّقٍ من التزامٍ آخر — ولا سجلٌّ غائب', () => {
+    /* وإلّا صار الحقلُ ختما يُمنح لأيّ تحقّقٍ قديم، فيُخفي نشرةً لم تكتمل. */
+    const OLD = 'auto-0000000-9f8e7d'
+    expect(snapshotInSync(SHA, OLD, 'ffffffffffff'), 'تحقّقٌ من التزامٍ غيرِ العامل').toBe(false)
+    expect(snapshotInSync(SHA, OLD, null)).toBe(false)
+    expect(snapshotInSync(SHA, OLD, undefined)).toBe(false)
+  })
+
+  it('ولا يُنشئ حكما من عدم: بناءٌ بلا ختمٍ يبقى «لا يمكن الحكم» ولو تحقَّق أحد', () => {
+    expect(snapshotInSync(null, 'auto-a1b2c3d-9f8e7d', SHA)).toBeNull()
+  })
+
   it('والمسارُ والشاشةُ يقرآن التعريفَ نفسَه — لا نسخةَ ثانيةً تنحرف', () => {
     /* بنيةٌ لا نصّ: يُفحص أنّ كليهما **يستورد** الدالّة، لا أنّ حرفا ورد. */
     const app = read('server/http/app.ts')
@@ -100,5 +127,50 @@ describe('٣ · والجوابُ يبلغ شاشةً لا curl', () => {
        لكلّ شاشةٍ = عشراتُ الطلبات على معلومةٍ لا تتغيّر ما دامت العمليّةُ حيّة. */
     const c = read('src/components/BuildStampLine.tsx')
     expect(c, 'بلا خزنِ الوعد يُطلب المسارُ في كلّ انتقال').toMatch(/pending\s*\?\?=/)
+  })
+})
+
+/* والدالّةُ الصادقةُ لا تنفع إن لم يكتب أحدٌ ما تقرؤه. فالحكمُ أعلاه يتّكئ
+   على صفٍّ يكتبه النشرُ الآليّ، ولو سقطت الكتابةُ من أحد فرعَيه عاد الإنذارُ
+   الكاذبُ **والاختباراتُ خضراء**: الدالّةُ سليمةٌ ومدخلُها لا يصل. */
+describe('٤ · والنشرُ الآليُّ يسجّل تحقّقَه — في الفرعَين معا', () => {
+  const svc = () => read('server/services/auto-publish.service.ts')
+
+  it('يستورد المسجِّلَ من مصدره', () => {
+    expect(svc()).toMatch(
+      /import\s*\{[^}]*\brecordSnapshotVerified\b[^}]*\}\s*from\s*['"][^'"]*snapshot-verified['"]/,
+    )
+  })
+
+  it('ويسجّل حين لا فرق — وهو الفرعُ الذي وُلد منه العطب', () => {
+    /* فرعُ «لا جديد لينشر» هو الغالبُ: كلُّ نشرةٍ لا تمسّ الكتالوج تمرّ به.
+       فسقوطُ التسجيل منه يعيد العطبَ كما كان بالضبط. */
+    const branch = svc().match(/active\.hash === candidate\.hash\)\s*\{([\s\S]*?)\n {2}\}/)
+    expect(branch, 'فرعُ «لا فرق» غير موجود — تغيّرت بنيةُ الخدمة').toBeTruthy()
+    expect(branch![1], 'لا تسجيلَ في فرع «لا فرق» — يعود «مختلفان» بعد كلّ نشرةٍ لا تمسّ الكتالوج')
+      .toMatch(/recordSnapshotVerified/)
+  })
+
+  it('ويسجّل بعد النشر كذلك — فلا يبقى الصفُّ على التزامٍ سابق', () => {
+    const afterPublish = svc().split('نُشرت').slice(1).join('نُشرت')
+    expect(afterPublish, 'لا تسجيلَ بعد النشر').toMatch(/recordSnapshotVerified/)
+  })
+
+  it('ولا يُسقط التسجيلُ نشرا — إخفاقُه يُلتقط', () => {
+    /* الكتابةُ تحسينُ تشخيصٍ لا شرطُ نشر. فرميُها يُسقط نشرةً سليمةً لأنّ
+       صفّا في جدولٍ جانبيٍّ لم يُكتب. */
+    const calls = [...svc().matchAll(/recordSnapshotVerified\([\s\S]{0,200}?\)\s*([\s\S]{0,40})/g)]
+    expect(calls.length, 'لا نداءَ للمسجِّل').toBeGreaterThanOrEqual(2)
+    for (const c of calls) {
+      expect(c[1], `نداءٌ بلا التقاطِ إخفاق: ${c[0].slice(0, 60)}…`).toMatch(/\.catch\(/)
+    }
+  })
+
+  it('والقراءةُ لا ترمي — فالمسارُ فحصُ صحّةِ الحاوية', () => {
+    /* خطأٌ يخرج من القراءة يجعل Docker يعيد تشغيلَ موقعٍ سليم. */
+    const mod = read('server/catalog/snapshot-verified.ts')
+    const reader = mod.match(/export async function lastVerifiedCommit[\s\S]*?\n\}/)
+    expect(reader, 'لا دالّةَ قراءة').toBeTruthy()
+    expect(reader![0], 'القراءةُ بلا try/catch — عطبُ صفٍّ يُسقط الموقع').toMatch(/try\s*\{[\s\S]*catch/)
   })
 })
