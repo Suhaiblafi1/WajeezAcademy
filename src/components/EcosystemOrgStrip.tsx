@@ -27,7 +27,7 @@ export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean
   const Wrapper = nested ? 'div' : 'section'
   return (
     <Wrapper aria-label="مؤسسات وثقت بمنظومة وجيز" className={nested ? 'mt-12 border-t border-white/5 pt-12 md:mt-16 md:pt-16' : 'py-12 md:py-14'}>
-      <div className={nested ? '' : 'mx-auto max-w-7xl px-5'}>
+      <div className={nested ? '' : 'shell'}>
         <div className="reveal text-center">
           <h2 className="text-sm font-bold text-teal-light-ink md:text-base">مؤسسات وثقت بمنظومة وجيز</h2>
           <p className="mx-auto mt-2 max-w-xl text-read leading-relaxed text-muted-foreground">

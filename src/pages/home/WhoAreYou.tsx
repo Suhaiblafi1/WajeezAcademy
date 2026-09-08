@@ -30,7 +30,7 @@ import { Card } from "@/components/ui/Surface";
 
 export function WhoAreYou() {
   return (
-    <section id="who" className="scroll-mt-24 mx-auto max-w-7xl px-5 py-14 md:py-16">
+    <section id="who" className="shell scroll-mt-24 py-14 md:py-16">
       <div className="reveal text-center">
         <SectionLabel icon={Compass}>ابدأ من نفسك</SectionLabel>
         <h2 className="mt-4 text-2xl font-black md:text-3xl">أين أنت الآن؟</h2>

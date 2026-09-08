@@ -148,7 +148,7 @@ export function Bestsellers() {
 
   return (
     <section id="bestsellers" className="scroll-mt-20 pb-16 pt-10 md:pb-20 md:pt-14">
-      <div className="mx-auto max-w-7xl px-5">
+      <div className="shell">
         <div className="reveal">
           <SectionLabel>مختارات وجيز</SectionLabel>
           <h2 className="mt-4 text-3xl font-bold md:text-4xl">مسارات ودورات من اختيارنا</h2>

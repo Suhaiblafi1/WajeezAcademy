@@ -56,7 +56,7 @@ export default function ProofBand() {
           على ٣٩٠×٨٤٤ قال إنّ القسمَ بلغ ٥٣٣ بكسلا — أطولَ من الصورة التي حلّ
           محلَّها (٣٤٠). فيُقيَّد عرضُ الرسم على الهاتف ويُخفَّف الحشو: المشهدُ
           حجّةٌ تُرى في لمحة، لا لوحةٌ تُتأمَّل. */}
-      <div className="mx-auto grid max-w-7xl items-center gap-5 px-5 py-10 md:gap-8 md:py-16 md:grid-cols-[1.05fr_1fr]">
+      <div className="shell grid items-center gap-5 py-10 md:gap-8 md:py-16 md:grid-cols-[1.05fr_1fr]">
         <div>
           <p className="reveal max-w-xl text-2xl font-bold leading-relaxed md:text-3xl">
             لا نقيس تعلمك بما شاهدت —

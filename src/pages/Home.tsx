@@ -128,7 +128,7 @@ function Nav() {
     )
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/5 bg-paper/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
+      <div className="shell flex h-16 items-center justify-between">
         <a href="#top" className="flex items-center gap-2.5">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
           <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
@@ -212,7 +212,7 @@ function Hero() {
       <div className="pointer-events-none absolute -top-40 right-1/4 h-[480px] w-[480px] rounded-full bg-teal/15 blur-[140px] animate-pulse-glow" />
       <div className="pointer-events-none absolute top-40 left-0 h-[380px] w-[380px] rounded-full bg-teal-deep/20 blur-[120px] animate-pulse-glow" style={{ animationDelay: '2s' }} />
 
-      <div className="relative mx-auto max-w-7xl px-5 text-center">
+      <div className="shell relative text-center">
         <div className="reveal is-visible">
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
@@ -326,7 +326,7 @@ function DiagnosticTeaser() {
           والعنوان والفقرة كانا يقولان الشيء نفسَه بصيغتين: «اعرف لماذا لم
           تبدأ» ثمّ «تكشف ما يعطّلك فعلا». فدُمجا في جملةٍ واحدة تحمل الوعد
           كاملا، وهبط الحشوُ على الهاتف وحده — والشاشات الأوسع كما كانت. */}
-      <div className="mx-auto max-w-4xl px-5">
+      <div className="shell">
         <div className="reveal text-center">
           <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
           <h2 className="mt-4 text-xl font-bold leading-snug sm:text-2xl md:text-4xl">
@@ -455,7 +455,7 @@ const steps = [
 function HowItWorks() {
   return (
     <section id="how" className="scroll-mt-24 border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
-      <div className="mx-auto max-w-7xl px-5">
+      <div className="shell">
         <div className="reveal flex flex-wrap items-center justify-center gap-3 text-center md:justify-between md:text-right">
           <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك — أربع خطوات لا أكثر</h2>
           <SectionLabel>من أول سؤال إلى مخرج مُثبت</SectionLabel>
@@ -494,7 +494,7 @@ function Stories() {
   return (
     <section id="stories" className="scroll-mt-24 relative py-20 md:py-24">
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-teal/8 blur-[130px]" />
-      <div className="mx-auto max-w-7xl px-5">
+      <div className="shell">
         <div className="reveal text-center">
           <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
@@ -713,7 +713,7 @@ function Faq() {
   const [open, setOpen] = useState<number | null>(0)
   return (
     <section id="faq" className="scroll-mt-24 py-20 md:py-24">
-      <div className="mx-auto max-w-3xl px-5">
+      <div className="shell">
         <div className="reveal text-center">
           <SectionLabel>أسئلة تصلنا كثيرا</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">قبل أن تسأل — أجبنا</h2>
@@ -818,7 +818,7 @@ function FinalCta() {
     <section id="cta" className="scroll-mt-24 relative overflow-hidden py-24 md:py-28">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-teal/10 to-transparent" />
       <div className="pointer-events-none absolute right-1/2 top-1/2 h-[420px] w-[420px] -translate-y-1/2 translate-x-1/2 rounded-full bg-teal/20 blur-[140px] animate-pulse-glow" />
-      <div className="relative mx-auto max-w-3xl px-5 text-center">
+      <div className="shell relative text-center">
         <h2 className="reveal text-3xl font-bold leading-snug md:text-5xl md:leading-tight">
           نسختك القادمة تستحق
           <br />
@@ -858,7 +858,7 @@ function FinalCta() {
 function Partners() {
   return (
     <section id="partners" className="scroll-mt-24 py-20 md:py-24">
-      <div className="mx-auto max-w-5xl px-5 text-center">
+      <div className="shell text-center">
         <div className="reveal">
           <SectionLabel>شركاؤنا</SectionLabel>
           <h2 className="mt-4 text-2xl font-bold md:text-3xl">تحدث عنا الإعلام — وشركاء نجاح نفخر بهم</h2>
@@ -951,7 +951,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
 function Footer() {
   return (
     <footer className="border-t border-white/5 bg-surface3">
-      <div className="mx-auto max-w-7xl px-5 py-9">
+      <div className="shell py-9">
         <div className="grid gap-x-6 gap-y-7 md:grid-cols-5">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
@@ -1062,7 +1062,7 @@ function ChannelBadge() {
 function AdvisorStrip() {
   const isWhatsApp = Boolean(CONTACT.whatsapp)
   return (
-    <section className="mx-auto max-w-7xl px-5 pb-4">
+    <section className="shell pb-4">
       <Panel tone="accent" className="reveal flex flex-col items-center justify-between gap-5 bg-gradient-to-l from-panel/80 to-card px-6 py-6 md:flex-row md:px-8">
         <div className="flex items-center gap-4 text-center md:text-right">
           <span className="relative hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-teal/12 text-teal-ink md:grid">
