@@ -8,6 +8,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { areaCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
+import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
 import CohortReadiness from "./CohortReadiness";
 import CohortWizard from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
@@ -60,6 +61,19 @@ export default function AdminCohorts() {
   const [flash, setFlash] = useState<Flash>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  /* ــ أربعةُ ألسنةٍ بدل سبعِ طيّاتٍ متداخلة ــ
+
+     كانت البطاقةُ طيًّا داخلَ طيّ: الصفحةُ قائمةُ شُعَب، والشعبةُ بطاقةٌ
+     تُطوى، وفيها سبعُ بطاقاتٍ تُطوى. فبلوغُ «أرشفةِ مادّة» ثلاثُ نقراتٍ في
+     ثلاثة مستويات، ولا شيءَ يقول إنّ المستوى الثالث موجود.
+
+     ووصفه صاحبُ المنصّة: «معقّدة… فيها أمورٌ كثيرةٌ لا داعي لها».
+
+     والفرزُ بالعمل لا بالجدول: كلُّ لسانٍ **شغلٌ واحدٌ يعمله شخصٌ واحدٌ في
+     وقتٍ واحد**. ولذلك انفصلت «تعديلُ الشعبة» التي كانت تجمع العنوانَ
+     والجدولَ والسعرَ وبوّابتَي الفتح في نموذجٍ واحد — وهي ثلاثةُ أعمالٍ لا
+     تُعمل معا ولا يعملها الشخصُ نفسُه. */
+  const [tab, setTab] = useState<CohortTab>("identity");
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
   const [planDraft, setPlanDraft] = useState<Record<string, string>>({});
 
@@ -135,6 +149,8 @@ export default function AdminCohorts() {
   const toggle = (id: string) => {
     const next = expanded === id ? null : id;
     setExpanded(next);
+    /* شعبةٌ جديدةٌ تُفتح على لسانها الأوّل — لا على اللسان الذي تُرك فيه غيرُها */
+    setTab("identity");
     if (next) void loadChecklist(next);
   };
 
@@ -333,6 +349,32 @@ export default function AdminCohorts() {
 
                 {isOpen && (
                   <div className="mt-5 space-y-5 border-t border-white/8 pt-5">
+                    {/* شريطُ الألسنة — الأربعةُ ظاهرةٌ دائما، فيُعرف ما في
+                        الشعبة بلا فتحِ طيّاتٍ واحدةً واحدة. ووصفُ اللسان تحت
+                        اسمه: «الجدول واللقاءات» لا تقول ماذا فيها لمن لم
+                        يفتحها من قبل. */}
+                    <div role="tablist" aria-label="أقسام الشعبة" className="flex flex-wrap gap-1.5">
+                      {/* واللسانُ زرٌّ من السلّم لا صيغةٌ تُكتب في مكانها:
+                          `confirm` للمختار و`secondary` لغيره — فحلقةُ
+                          التركيز تأتي معه ولا تُنسى. */}
+                      {COHORT_TABS.map((t) => (
+                        <Button
+                          key={t.id} role="tab" aria-selected={tab === t.id}
+                          tone={tab === t.id ? "confirm" : "secondary"}
+                          onClick={() => setTab(t.id)}
+                          title={t.hint}
+                          className="text-read"
+                        >
+                          {t.label}
+                        </Button>
+                      ))}
+                    </div>
+                    <p className="-mt-2 text-read text-muted-foreground">
+                      {COHORT_TABS.find((t) => t.id === tab)?.hint}
+                    </p>
+
+                    {/* ══════ ① الهُويّة والحالة ══════ */}
+                    {tab === "identity" && (<>
                     {/* شروط الفتح الستة */}
                     <div>
                       <p className="mb-2 text-read font-black text-muted-foreground">شروط الفتح</p>
@@ -411,6 +453,15 @@ export default function AdminCohorts() {
                       )}
                     </div>
 
+                    {c.status === "draft" && check && !check.ready && (
+                      <p className="flex items-center gap-1.5 text-read text-red-300">
+                        <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها قبل استيفاء الشروط أعلاه
+                      </p>
+                    )}
+                    </>)}
+
+                    {/* ══════ ② الجدول واللقاءات ══════ */}
+                    {tab === "schedule" && (<>
                     {/* إضافة جلسة */}
                     {!["completed", "cancelled"].includes(c.status) && (
                       <Card className="bg-paper/20">
@@ -573,6 +624,10 @@ export default function AdminCohorts() {
                         }, "رُبط اجتماع Zoom بالجلسة")} />
                     </Card>
 
+                    </>)}
+
+                    {/* ══════ ③ التسجيل والمال ══════ */}
+                    {tab === "enrollment" && (<>
                     {/* تسجيل متعلم */}
                     {isLiveCohort(c.status) && c.registrationOpen && (
                       <Card className="bg-paper/20">
@@ -593,21 +648,23 @@ export default function AdminCohorts() {
                       </Card>
                     )}
 
-                    {c.status === "draft" && check && !check.ready && (
-                      <p className="flex items-center gap-1.5 text-read text-red-300">
-                        <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها قبل استيفاء الشروط أعلاه
-                      </p>
-                    )}
                     <p className="flex items-center gap-1.5 text-read text-muted-foreground">
                       <Users className="h-3 w-3" /> المسجلون الفعليون: {c.enrolled} — السعة {c.capacity ?? "غير محددة"}
                     </p>
+                    </>)}
 
-                    {/* عمليات متقدمة: مدرب، تعديل، مواد، تقييمات، شهادات، نشر عام */}
-                    <CohortOps cohort={c} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
+                    {/* ══════ ④ المحتوى والشهادات ══════ */}
+
+                    {/* وأقسامُ `CohortOps` تُفرَّق على الألسنة الأربعة — لا
+                        تُعرض كلُّها في كلّ لسان. فهي تعرف لسانَها وتصمت في
+                        غيره. */}
+                    <CohortOps cohort={c} tab={tab} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
 
                     {/* «من غيّر هذه الشعبة؟» — يُسأل هنا، فيُقرأ هنا. وكان
                         الجوابُ يقتضي فتحَ «سجلّ الأثر» ومعرفةَ معرّفِ الشعبة. */}
-                    <EntityAuditTimeline entityType="cohort" entityId={c.id} labelAr="أثرُ هذه الشعبة" />
+                    {tab === "identity" && (
+                      <EntityAuditTimeline entityType="cohort" entityId={c.id} labelAr="أثرُ هذه الشعبة" />
+                    )}
                   </div>
                 )}
               </Panel>

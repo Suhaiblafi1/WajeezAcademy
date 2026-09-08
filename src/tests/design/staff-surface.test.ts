@@ -247,3 +247,67 @@ describe('شاشاتُ الفريق · أرضيّةُ الخطّ', () => {
     expect(local, `صيغةُ حقلٍ مكتوبةٌ في مكانها — استورد staffControlCls:\n${local.join('\n')}`).toEqual([])
   })
 })
+
+/* ═════════ بطاقةُ الشعبة — أربعةُ ألسنةٍ لا سبعُ طيّات ═════════
+
+   قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦) بعد وصفِه إيّاها بـ«معقّدة… فيها أمورٌ
+   كثيرةٌ لا داعي لها».
+
+   وما يُحرَس هنا **بنيةٌ لا نصّ**: أن يبقى لكلّ قسمٍ لسانٌ يقع فيه. فقسمٌ
+   يُضاف بلا بوّابةٍ يظهر في الألسنة الأربعة معا — وهو بعينه الانبساطُ الذي
+   أُزيل، يعود من باب النسخ بلا أن يحمرّ شيء. */
+describe('بطاقةُ الشعبة · كلُّ قسمٍ في لسانه', () => {
+  const ops = readFileSync(join(root, 'src/pages/admin/CohortOps.tsx'), 'utf8')
+  const list = readFileSync(join(root, 'src/pages/admin/AdminCohorts.tsx'), 'utf8')
+  const tabsFile = readFileSync(join(root, 'src/pages/admin/cohort-tabs.ts'), 'utf8')
+
+  it('الألسنةُ أربعةٌ معرَّفةٌ في موضعٍ واحد، والاتّحادُ يطابق القائمة', () => {
+    const union = [...tabsFile.matchAll(/"(identity|schedule|enrollment|content)"/g)].map((m) => m[1])
+    /* أربعةٌ في الاتّحاد وأربعةٌ في القائمة = ثمانيةُ ورودات */
+    expect(new Set(union).size).toBe(4)
+    expect((tabsFile.match(/\{ id: "/g) ?? []).length).toBe(4)
+  })
+
+  it('لا قسمَ بلا لسان — كلُّ `<Section` مسبوقٌ ببوّابةِ لسانه', () => {
+    /* ── ولماذا لا يُعَدّ عدًّا ──
+
+       أوّلُ صياغةٍ قارنت عددَ الأقسام بعدد البوّابات (`gates >= sections`).
+       ونُقضت فمرّت: في الملفّ بوّابةٌ زائدةٌ لا تخصّ قسما (زرُّ النشر)، فحين
+       نُزعت بوّابةُ قسمٍ بقي العددان متساويَين وخضرّ الحارسُ على عطبٍ قائم.
+
+       وهو العطبُ الذي يحذّر منه المستودَع: حارسٌ يخضرّ لسببٍ خاطئ. فالفحصُ
+       الآن **على الموضع**: لكلّ `<Section` يُنظر إلى ما قبله حتّى نهايةِ
+       القسم السابق — فإن لم تقع فيه بوّابةُ لسانٍ فالقسمُ مكشوفٌ في الأربعة. */
+    const positions = [...ops.matchAll(/<Section /g)].map((m) => m.index!)
+    expect(positions.length, 'اختفت الأقسامُ — تعطّل الفحصُ نفسُه').toBeGreaterThan(5)
+
+    const ungated: string[] = []
+    for (const at of positions) {
+      const prevEnd = ops.lastIndexOf('</Section>', at)
+      const window = ops.slice(prevEnd < 0 ? 0 : prevEnd, at)
+      if (!/tab === "/.test(window)) {
+        const line = ops.slice(0, at).split('\n').length
+        ungated.push(`CohortOps.tsx:${line}`)
+      }
+    }
+    expect(
+      ungated,
+      `قسمٌ بلا بوّابةِ لسان — يظهر في الألسنة الأربعة معا:\n${ungated.join('\n')}`,
+    ).toEqual([])
+  })
+
+  it('ولكلّ لسانٍ ما يملؤه — لا لسانٌ يُفتح على فراغ', () => {
+    for (const t of ['identity', 'schedule', 'enrollment', 'content']) {
+      const inOps = (ops.match(new RegExp(`tab === "${t}"`, 'g')) ?? []).length
+      const inList = (list.match(new RegExp(`tab === "${t}"`, 'g')) ?? []).length
+      expect(inOps + inList, `اللسانُ «${t}» بلا محتوى`).toBeGreaterThan(0)
+    }
+  })
+
+  it('ولا طيَّ داخلَ لسان — `MiniCard` أُزيلت فلا تعود', () => {
+    /* الفحصُ على الاستعمال لا على ورود الحرف: التعليقُ الذي يشرح ما أُزيل
+       يذكر اسمَها، وهو شرحٌ لا طيّة. */
+    expect(ops).not.toMatch(/<MiniCard/)
+    expect(ops).not.toMatch(/function MiniCard/)
+  })
+})
