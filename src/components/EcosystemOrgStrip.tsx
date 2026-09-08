@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { displayedEcosystemOrgs } from '@/data/ecosystemOrganizations'
 import { Inset } from '@/components/ui/Surface'
 
@@ -20,8 +21,24 @@ import { Inset } from '@/components/ui/Surface'
 
    فصار صفّا ثانيا تحت الأوّل: الادّعاءان مختلفان (تغطيةٌ إعلاميّة · ثقةٌ
    مؤسسيّة) فيبقى لكلٍّ عنوانُه، والوقفةُ واحدة. */
+/* ــ ثمانيةٌ على الهاتف، والأربعةُ والعشرون كما هي على الأوسع ــ
+
+   الجدارُ أربعٌ وعشرون مؤسسة. وعلى الحواسيب يلتفّ في صفَّين أو ثلاثة فيُقرأ
+   دفعةً واحدة، وذاك المقصود: كثرةُ الأسماء هي الحجّة. أمّا على هاتفٍ عرضُه
+   ٣٩٠ فيصير اثنَي عشرَ صفًّا — أطولَ كتلةٍ في الصفحة كلِّها، يمرّرها الزائر
+   ولا يقرأ منها شيئا. والحجّةُ التي تُملأ بها شاشةٌ كاملةٌ لم تعد حجّة.
+
+   فثمانيةٌ تُعرض، وزرٌّ يكشف الباقي لمن أراد. ولا يُحذف أحد: من فتح الزرَّ
+   رأى الأربعةَ والعشرين، ومن قرأ على حاسوبٍ رآها بلا زرٍّ أصلا — فالإخفاءُ
+   `md:` وحدَه، والحدُّ لا يبلغ الشاشاتِ الأوسعَ إطلاقا.
+
+   والزرُّ هادئُ النبرة عمدا: `tone="primary"` فعلُ الصفحة لا فعلُ قسمٍ
+   مساند، وحارسُ «رئيسيٌّ واحدٌ في الشاشة» يعدّه ويسقط على الثاني. */
+const MOBILE_VISIBLE = 8
+
 export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean } = {}) {
   const orgs = displayedEcosystemOrgs()
+  const [showAll, setShowAll] = useState(false)
   if (orgs.length === 0) return null
 
   const Wrapper = nested ? 'div' : 'section'
@@ -37,8 +54,11 @@ export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean
 
         <Inset className="reveal mt-8 bg-surface px-6 py-8 md:px-10">
           <ul className="flex flex-wrap items-center justify-center gap-x-10 gap-y-7 md:gap-x-14">
-            {orgs.map((o) => (
-              <li key={o.name} className="flex items-center">
+            {orgs.map((o, i) => (
+              <li
+                key={o.name}
+                className={`items-center ${!showAll && i >= MOBILE_VISIBLE ? 'hidden md:flex' : 'flex'}`}
+              >
                 <img
                   src={o.logo}
                   alt={o.name}
@@ -49,6 +69,18 @@ export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean
               </li>
             ))}
           </ul>
+
+          {/* على الهاتف وحدَه، وما دام فيها ما لم يُعرض */}
+          {!showAll && orgs.length > MOBILE_VISIBLE && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              aria-expanded={false}
+              className="btn-outline-brand mx-auto mt-7 flex md:hidden"
+            >
+              عرض الكل ({orgs.length})
+            </button>
+          )}
         </Inset>
       </div>
     </Wrapper>

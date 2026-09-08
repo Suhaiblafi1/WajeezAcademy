@@ -216,11 +216,15 @@ function Hero() {
         <div className="reveal is-visible">
           <SectionLabel>منصة تفهمك قبل أن تعلّمك</SectionLabel>
         </div>
-        <h1 className="reveal is-visible mx-auto mt-3 max-w-3xl">
+        {/* الشارةُ ثمّ سطرا العنوان ثلاثةُ أسطرٍ متلاصقةٍ على الهاتف، وهي أوّلُ
+            ما تقع عليه العين. فالمسافةُ تزيد على الضيّق وحدَه: الشاشاتُ الأوسع
+            تضرب كلَّ مقاسٍ في معامل التكبير (‏`--app-scale`‏) فتأخذ نصيبَها
+            منه أصلا، وزيادةٌ مسطّحةٌ هناك تصير فجوة. */}
+        <h1 className="reveal is-visible mx-auto mt-5 max-w-3xl md:mt-3">
           <span className="block text-xl font-semibold leading-snug text-foreground/80 sm:text-2xl md:text-3xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
-          <span className="mt-2 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text text-3xl font-bold leading-[1.3] text-transparent sm:text-4xl md:text-6xl md:leading-[1.2]">
+          <span className="mt-3 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text md:mt-2 text-3xl font-bold leading-[1.3] text-transparent sm:text-4xl md:text-6xl md:leading-[1.2]">
             يبدأ بفهم هدفك.
           </span>
         </h1>
@@ -252,7 +256,18 @@ function Hero() {
               لكنّها — كدعوات الرئيسة كلِّها — **بلا تاريخ**، ودعوةٌ بلا تاريخٍ
               تُقرأ لافتةً لا نداء. فيُقال تحتها متى يبدأ الفصلُ ومتى تُغلق
               نافذتُه، ولا شيءَ يُقال قبل أن يُنشأ فصل. */}
-          <p className="mt-4 text-read font-bold leading-6 text-muted-foreground">
+          {/* `empty:hidden` — لأنّ الفقرةَ تبقى وإن لم يكن فصل.
+
+              `UpcomingTermLine` تُعيد `null` متى لم يُنشأ فصلٌ بعد (وذاك عقدُها
+              المقصود، وتعتمده خمسةُ أسطحٍ أخرى). لكنّ الفقرةَ الحاملةَ لها
+              تُصيَّر على كلّ حال: ارتفاعُها صفرٌ بلا محتوى، و`mt-4` تبقى —
+              ستّةَ عشرَ بكسلا ميتةً أسفلَ الهيرو على الهاتف حيث الشاشةُ أضيق ما
+              تكون.
+
+              و`:empty` تُطابق العنصرَ الذي لا عقدةَ فيه، وهو حالُها حين تُعيد
+              المكوّنةُ `null`. فتُخفى الفقرةُ بحشوها، وتعود كما كانت متى وُجد
+              فصل — بلا نداءٍ ثانٍ للخطّاف ولا شرطٍ يُكتب في موضعين. */}
+          <p className="mt-4 text-read font-bold leading-6 text-muted-foreground empty:hidden">
             <UpcomingTermLine prefix="الفصل القادم:" />
           </p>
         </div>
@@ -332,9 +347,6 @@ function DiagnosticTeaser() {
           <h2 className="mt-4 text-xl font-bold leading-snug sm:text-2xl md:text-4xl">
             قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد
           </h2>
-          <p className="mx-auto mt-2.5 max-w-lg text-sm leading-6 text-muted-foreground sm:mt-4 sm:text-base sm:leading-8">
-            سؤالان صادقان يبني عليهما التشخيص الكامل.
-          </p>
         </div>
 
         <div className="reveal mt-6 overflow-hidden sm:mt-10 rounded-[2rem] border border-white/[0.08] bg-card/90 shadow-[0_24px_90px_-40px_rgba(56,167,180,0.35)] backdrop-blur-sm">
@@ -436,9 +448,6 @@ function DiagnosticTeaser() {
             )}
           </div>
         </div>
-        <p className="reveal mt-4 text-center text-read leading-5 text-muted-foreground">
-          نسترشد بأطر مهنية وتعليمية معروفة: RIASEC للميول المهنية · O*NET وESCO للمهارات · DigComp للجاهزية الرقمية
-        </p>
       </div>
     </section>
   )
