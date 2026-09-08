@@ -256,14 +256,26 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* ── الجلسات وZoom ── */
   app.post('/api/admin/cohorts/:id/sessions', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'إضافة جلسة — تفحص تعارض مدربي الشعبة' },
+    schema: { tags: ['admin-learning'], summary: 'إضافة جلسة — واجتماعُها وتبليغُ المسجَّلين معها' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       title: z.string().min(2), startsAt: z.coerce.date(), endsAt: z.coerce.date().optional(),
       timezone: z.string().optional(), moduleId: z.string().optional(),
+      /* `withZoom` يُنشئ اجتماعا حقيقيّا على Zoom — وغيابُه يُبقي السلوكَ القديم
+         حرفيّا: جلسةٌ بلا اجتماعٍ وبلا تبليغ، كما تعتمده الشاشاتُ القائمة. */
+      withZoom: z.boolean().optional(),
     }).parse(req.body)
-    return reply.status(201).send(await cohorts.addSession(req.auth!.userId, id, body))
+    return reply.status(201).send(await cohorts.addSessionWithMeeting(req.auth!.userId, id, body))
+  })
+
+  /* اجتماعٌ حقيقيٌّ لجلسةٍ قائمة — للجلسات التي وُلّدت مع الشعبة بلا اجتماع */
+  app.post('/api/admin/sessions/:sessionId/zoom/create', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'إنشاءُ اجتماع Zoom حقيقيٍّ لجلسةٍ قائمة' },
+  }, async (req, reply) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    return reply.status(201).send(await cohorts.attachApiZoom(req.auth!.userId, sessionId))
   })
 
   app.post('/api/admin/sessions/:sessionId/zoom', {

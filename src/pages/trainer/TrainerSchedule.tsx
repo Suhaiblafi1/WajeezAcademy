@@ -26,7 +26,7 @@ interface ScheduleWindow {
 
 export default function TrainerSchedule({ cohortId, onDone }: { cohortId: string; onDone: () => void }) {
   const [win, setWin] = useState<ScheduleWindow | null>(null);
-  const [form, setForm] = useState({ title: "", date: "", time: "18:00", hours: "2" });
+  const [form, setForm] = useState({ title: "", date: "", time: "18:00", hours: "2", withZoom: true });
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(() => {
@@ -85,11 +85,15 @@ export default function TrainerSchedule({ cohortId, onDone }: { cohortId: string
               try {
                 const startsAt = new Date(`${form.date}T${form.time}:00`);
                 const endsAt = new Date(startsAt.getTime() + Number(form.hours || 2) * 3600_000);
-                await apiPost(`/api/trainer/cohorts/${cohortId}/sessions`, {
-                  title: form.title.trim(), startsAt, endsAt,
-                });
-                setForm({ title: "", date: "", time: "18:00", hours: "2" });
-                toast("أُضيف اللقاء إلى جدول الشعبة");
+                const r = await apiPost<{ notified: number; zoom: { joinUrl: string } | null }>(
+                  `/api/trainer/cohorts/${cohortId}/sessions`,
+                  { title: form.title.trim(), startsAt, endsAt, withZoom: form.withZoom },
+                );
+                setForm({ title: "", date: "", time: "18:00", hours: "2", withZoom: form.withZoom });
+                /* العددُ يُقال لا يُخمَّن: من جدول لقاءً يريد أن يعرف أنّ طلبتَه عرفوا */
+                toast(r.zoom
+                  ? `أُضيف اللقاء واجتماعُه — وبُلِّغ ${r.notified} متعلّما`
+                  : `أُضيف اللقاء — وبُلِّغ ${r.notified} متعلّما`);
                 load();
                 onDone();
               } catch (e) {
@@ -100,6 +104,16 @@ export default function TrainerSchedule({ cohortId, onDone }: { cohortId: string
             }}>
             أضِف
           </Button>
+          {/* المدرّبُ ينشئ اجتماعَه بنفسه — لا ينتظر مديرا يفتح Zoom ويلصق رابطا */}
+          <label className="flex items-start gap-2 text-read leading-5 text-muted-foreground sm:col-span-4">
+            <input type="checkbox" checked={form.withZoom}
+              onChange={(e) => setForm({ ...form, withZoom: e.target.checked })}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
+            <span>
+              <b className="text-foreground">أنشئ اجتماعَ Zoom وبلّغ طلبتي</b> — يصل الرابطُ كلَّ مسجَّلٍ
+              في هذه الشعبة داخل المنصّة. وأطفئه للّقاء الحضوريّ.
+            </span>
+          </label>
         </div>
       )}
     </Card>

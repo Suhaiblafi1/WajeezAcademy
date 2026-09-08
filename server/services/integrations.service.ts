@@ -7,6 +7,7 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
+import { getZoomConfig, zoomMissing, zoomReady } from './zoom.service'
 
 export type PaymentDriver = 'test' | 'manual' | 'moyasar' | 'stripe'
 
@@ -151,6 +152,38 @@ export async function saveEmailConfig(prisma: PrismaClient, actorId: string, inp
   return row
 }
 
+/* إعدادُ Zoom — كبقيّة المزوّدين: البيئةُ تغلب، والسرُّ يُكتب ولا يُقرأ.
+   وقراءتُه وفحصُه في `zoom.service.ts` كي تبقى نداءاتُ Zoom في موضعٍ واحد. */
+export async function saveZoomConfig(
+  prisma: PrismaClient, actorId: string,
+  input: Partial<{ enabled: boolean; accountId: string; clientId: string; clientSecret: string; hostEmail: string }>,
+) {
+  const current = await getRawConfig(prisma, 'zoom')
+  const next: Record<string, unknown> = {
+    ...current,
+    hostEmail: input.hostEmail ?? current.hostEmail ?? 'me',
+  }
+  /* المعرّفان ليسا سرّا لكنّهما يُقنَّعان في العرض، فيُعامَلان معاملتَه:
+     لا يُكتب فوق المخزَّن بقيمةٍ مقنَّعةٍ عادت من الشاشة. */
+  for (const k of ['accountId', 'clientId', 'clientSecret'] as const) {
+    const v = input[k]
+    if (v && !MASK.test(v)) next[k] = v
+  }
+  const row = await prisma.integrationSetting.upsert({
+    where: { provider: 'zoom' },
+    update: { config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
+    create: { provider: 'zoom', config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
+  })
+  await recordAudit(prisma, {
+    actorId, action: 'integration.zoom.save', entityType: 'integration_setting', entityId: 'zoom',
+    meta: {
+      enabled: row.enabled, hostEmail: next.hostEmail,
+      keysRotated: (['accountId', 'clientId', 'clientSecret'] as const).filter((k) => input[k] && !MASK.test(String(input[k]))),
+    },
+  })
+  return row
+}
+
 async function getRawConfig(prisma: PrismaClient, provider: string): Promise<Record<string, unknown>> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider } })
   return (row?.config as Record<string, unknown>) ?? {}
@@ -159,8 +192,14 @@ async function getRawConfig(prisma: PrismaClient, provider: string): Promise<Rec
 /* ── عرض مقنَّع لشاشة الإدارة — لا سر كامل يغادر الخادم ── */
 
 export async function maskedIntegrationsView(prisma: PrismaClient) {
-  const [pay, mail] = await Promise.all([getPaymentConfig(prisma), getEmailConfig(prisma)])
-  const envSourced = { payment: !!process.env.PAYMENT_DRIVER, email: !!process.env.RESEND_API_KEY }
+  const [pay, mail, zoom] = await Promise.all([
+    getPaymentConfig(prisma), getEmailConfig(prisma), getZoomConfig(prisma),
+  ])
+  const envSourced = {
+    payment: !!process.env.PAYMENT_DRIVER,
+    email: !!process.env.RESEND_API_KEY,
+    zoom: !!process.env.ZOOM_ACCOUNT_ID,
+  }
   return {
     payment: {
       enabled: pay.enabled, driver: pay.driver, envSourced: envSourced.payment,
@@ -174,6 +213,15 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
       enabled: mail.enabled, envSourced: envSourced.email,
       apiKey: mask(mail.apiKey),
       fromName: mail.fromName, fromEmail: mail.fromEmail, hasApiKey: !!mail.apiKey,
+    },
+    zoom: {
+      enabled: zoom.enabled, envSourced: envSourced.zoom,
+      accountId: mask(zoom.accountId), clientId: mask(zoom.clientId), clientSecret: mask(zoom.clientSecret),
+      hostEmail: zoom.hostEmail,
+      hasAccountId: !!zoom.accountId, hasClientId: !!zoom.clientId, hasClientSecret: !!zoom.clientSecret,
+      /* `ready` تُقال للشاشة صراحةً: «مفعّل» بلا مفاتيحَ ليس جاهزا، وهو الفرقُ
+         الذي يجعل مديرا يظنّ التكاملَ قائما ثمّ يفشل أوّلُ لقاءٍ يُنشأ. */
+      ready: zoomReady(zoom), missing: zoomMissing(zoom),
     },
   }
 }

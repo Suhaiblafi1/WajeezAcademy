@@ -441,8 +441,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       endsAt: z.coerce.date().optional(),
       timezone: z.string().max(64).optional(),
       moduleId: z.string().max(64).optional(),
+      /* المدرّبُ ينشئ اجتماعَه بنفسه — لا ينتظر مديرا يلصق رابطا */
+      withZoom: z.boolean().optional(),
     }).parse(req.body)
-    return reply.status(201).send(await cohorts.trainerAddSession(req.auth!.userId, id, body))
+    return reply.status(201).send(await cohorts.trainerAddSessionWithMeeting(req.auth!.userId, id, body))
   })
 
   app.patch('/api/trainer/sessions/:sessionId', {
