@@ -38,6 +38,7 @@ import { validatePractice } from "@/application/content/practice";
 import { validateRubric } from "@/application/content/rubric";
 import { fmtShortDateTimeAr } from "@/utils/format";
 import { fmtNum } from "@/application/text/format-ar";
+import { countAr } from "@/application/text/count-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -60,6 +61,9 @@ interface Worklist {
    «التركيز على الناقص فقط يصعّب الوصول لمتنٍ مكتمل تريد تعديله» — وهو حقّ:
    من يريد مراجعةَ ما كُتب يبحث عنه وسط أربعمائةِ فارغة. */
 type BodyFilter = "all" | "missing" | "written";
+
+/* «١ وحدة» و«٣ وحدةً» خطأٌ يُقرأ في كلّ مرّة — والعددُ هنا يُقرأ لا يُحسب */
+const MODULE_FORMS = { one: "وحدةٌ", two: "وحدتان", few: "وحدات", many: "وحدةً" };
 
 const BODY_FILTERS: { id: BodyFilter; label: string }[] = [
   { id: "all", label: "الكلّ" },
@@ -236,12 +240,41 @@ export default function Authoring() {
 
   return (
     <AdminLayout title="تأليف متون الوحدات">
+      {/* ── رأسُ الشاشة يبدأ بالعمل لا بالعدد ──
+
+          كانت ثلاثَ بطاقاتِ عددٍ متساويةِ الوزن: «٤٠٤ وحدة» و«١٢٨ لها متن»
+          و«٢٧٦ بلا متن». **والرقمُ الأخيرُ هو العملُ كلُّه**، ويُعرض بالحجم
+          نفسِه الذي يُعرض به مجموعٌ لا يفعل به أحدٌ شيئا. فالشاشةُ تقول
+          «هذه أرقامُك» ولا تقول «ابدأ من هنا».
+
+          فصار الباقي عنوانا وزرًّا، والمجموعُ سطرا تحته. ولوحةُ التشغيل
+          تُقاس بما يُنجَز فيها لا بما يُعرض. */}
       {work && (
-        <div className="mb-5 grid gap-3 sm:grid-cols-3">
-          <Stat label="وحدات الكتالوج" value={work.total} />
-          <Stat label="لها متن" value={work.withBody} tone="good" />
-          <Stat label="بلا متن" value={work.missing} tone="warn" />
-        </div>
+        work.missing > 0 ? (
+          <Card tone="warn" className="mb-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-2xl font-black tabular-nums text-gold-ink">
+                {countAr(work.missing, MODULE_FORMS)} بلا متن
+              </p>
+              <p className="mt-1 text-read text-muted-foreground">
+                من {fmtNum(work.total)} في الكتالوج · {fmtNum(work.withBody)} لها متنُها
+              </p>
+            </div>
+            <Button tone="primary" size="lg" disabled={loading || (bodyFilter === "missing" && rows.length === 0)}
+              onClick={() => {
+                /* اللسانُ يُضبط أوّلا كي يكون الطابورُ طابورَ ما بلا متن،
+                   ثمّ يُفتح أوّلُه إن كان معروضا الآن. */
+                if (bodyFilter !== "missing") { setBodyFilter("missing"); return; }
+                if (rows[0]) void open(rows[0]);
+              }}>
+              {bodyFilter === "missing" ? "ابدأ بأوّلها" : "اعرِضها"}
+            </Button>
+          </Card>
+        ) : (
+          <Card tone="positive" as="p" className="mb-5 text-read leading-6 text-emerald-200">
+            كلُّ وحدات الكتالوج لها متنُها — {fmtNum(work.total)} وحدة. لا عملَ منتظرا هنا.
+          </Card>
+        )
       )}
 
       {error && (
@@ -567,18 +600,6 @@ export default function Authoring() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: "good" | "warn" }) {
-  /* `text-gold` تعبئةٌ لا حبر: قياسُها ١٫٧١:‏١ على الورق والمطلوب ٣ لنصٍّ
-     كبير. والحبرُ الذهبيُّ رمزٌ ينقلب (`--gold-ink`) — وهذا هو الخطأُ نفسُه
-     الذي عالجته المهمّةُ ٢٠ في ألفَي موضع، وبقي هنا لأنّ الشاشةَ لم تُفحَص. */
-  const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold-ink" : "text-foreground";
-  return (
-    <Card>
-      <p className="text-read text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-black tabular-nums ${color}`}>{fmtNum(value)}</p>
-    </Card>
-  );
-}
 
 function Chip({ on, label }: { on: boolean; label: string }) {
   return (
