@@ -301,13 +301,44 @@ async function waitForContent(page: Page, spec: PageSpec): Promise<void> {
 async function contrastBothThemes(page: Page, labelAr: string): Promise<A11yFinding[]> {
   interface Hit { target: string; text: string; ratio: number; need: number; size: number }
   const out: A11yFinding[] = []
+  /* الانتقالُ يُرفَع قبل القياس، ولا يُنتظَر بالساعة.
+
+     تبديلُ المظهر يقلب لونَ النصّ في اللحظة، وأرضيّاتُ البطاقات والأزرار
+     تنتقل إليه عبر `transition-all duration-200` وأخواتِها. فمن قرأ الألوانَ
+     المحسوبةَ قبل أن تستقرّ رأى نصّا بلونه الجديد على أرضيّةٍ في منتصف
+     طريقها — نسبةً لا يراها مستخدمٌ قطّ.
+
+     وكانت الحراسةُ مهلةً ثابتةً (١٨٠ملّي) — وهي أقصرُ من ٢٠٠ الذي تعلنه
+     البطاقاتُ نفسُها. فمرّت على جهازٍ سريعٍ وسقطت على عدّاءٍ محمَّل: في CI
+     (#50) عشرون واقعةَ تباينٍ في المظهر الفاتح وحدَه على تعديلٍ لا يمسّ
+     لونا، والشيفرةُ نفسُها خضراءُ محلّيّا. فالحكمُ كان رهنَ حِمل العدّاء.
+
+     ورقمٌ أكبرُ يؤجّل السقوطَ ولا يمنعه. فتُرفع الانتقالاتُ كلُّها أثناء
+     القياس ثمّ تُعاد: يُقاس المستقرُّ بحكم البناء لا بحكم التوقيت.
+
+     ⚠️ `transition` وحدَها — لا `animation` ولا `opacity`: شبكةُ الظهور
+     (`.reveal`) تبقى على حالها، فما لم يظهر بعدُ يبقى شفّافا ويُتخطّى كما
+     كان. ورفعُ الحركة كلِّها (`reducedMotion`) كان يجعلها ظاهرةً جميعا،
+     فيتغيّر **ما يُقاس** لا توقيتُ قياسه — وذلك بابٌ آخر. */
+  const FREEZE_ID = '__a11y_freeze_transitions'
+  await page.evaluate((id) => {
+    const el = document.createElement('style')
+    el.id = id
+    el.textContent = '*, *::before, *::after { transition: none !important; }'
+    document.head.appendChild(el)
+  }, FREEZE_ID)
+
   for (const theme of ['dark', 'light'] as const) {
     await page.evaluate((t) => {
       document.documentElement.dataset.theme = t
       try { sessionStorage.setItem('wajeez_theme', t) } catch { /* وضعٌ خاصٌّ بلا تخزين */ }
     }, theme)
-    /* لحظةٌ لتستقرّ الأنماطُ المنتقلة قبل قراءة الألوان المحسوبة */
-    await page.waitForTimeout(180)
+    /* إطاران رسوميّان لا مهلةٌ بالمللي: الأوّلُ يُنهي التخطيطَ بعد قلب
+       المتغيّرات، والثاني يضمن أنّ المقروءَ هو المرسوم. شرطٌ على الصفحة
+       لا على الساعة. */
+    await page.evaluate(
+      () => new Promise<void>((done) => requestAnimationFrame(() => requestAnimationFrame(() => done()))),
+    )
     const hits = await page.evaluate('window.__a11y.contrast()') as Hit[]
     for (const h of hits) {
       out.push({
@@ -320,8 +351,12 @@ async function contrastBothThemes(page: Page, labelAr: string): Promise<A11yFind
       console.log(`    · ${labelAr} · ${theme}: ${hits.length} نصّا دون الحدّ، أسوأُها ${hits[0].ratio}:1`)
     }
   }
-  /* تُعاد إلى الداكن كي لا يورَّث المظهرُ إلى فحصٍ تالٍ في السياق نفسِه */
-  await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+  /* تُعاد إلى الداكن كي لا يورَّث المظهرُ إلى فحصٍ تالٍ في السياق نفسِه،
+     ويُرفع تجميدُ الانتقالات كي لا يورَّث إلى فحص حجم الهدف بعده */
+  await page.evaluate((id) => {
+    document.documentElement.dataset.theme = 'dark'
+    document.getElementById(id)?.remove()
+  }, FREEZE_ID)
   return out
 }
 
