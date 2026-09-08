@@ -324,6 +324,76 @@ export function zoomUrlValidationReply(secret: string, plainToken: string) {
   }
 }
 
+/* ══════════ تقريرُ من حضر ══════════
+
+   يُقرأ بعد انتهاء اللقاء لا من أحداث الدخول والخروج المتفرّقة: تلك تصل
+   مبعثرةً ويُخطئ رصفُها حين ينقطع اتّصالُ أحدهم ويعود، والتقريرُ يعطيها
+   مجموعةً بمجاميعِ الدقائق.
+
+   ── ولمَ يُرمَّز المعرّفُ مرّتَين ──
+
+   معرّفُ اللقاء المنتهي (`uuid`) قد يبدأ بشَرطةٍ مائلة أو يحوي `//`، وهي
+   في المسار تُقرأ فواصلَ لا حروفا — فيردّ Zoom ٤٠٤ على لقاءٍ موجود. وهو
+   شرطٌ يذكره Zoom في وثيقته، ويُنسى فيُشخَّص «اللقاءُ غيرُ موجود». */
+
+export interface ZoomParticipant {
+  name: string
+  email: string | null
+  joinedAt: Date
+  leftAt: Date | null
+  minutes: number
+}
+
+/** يُرمَّز مرّتَين متى احتاج — وإلّا فمرّةً واحدة */
+export function encodeMeetingUuid(uuid: string): string {
+  const once = encodeURIComponent(uuid)
+  return uuid.startsWith('/') || uuid.includes('//') ? encodeURIComponent(once) : once
+}
+
+export async function fetchZoomParticipants(c: ZoomConfig, meetingUuid: string): Promise<ZoomParticipant[]> {
+  const token = await zoomToken(c)
+  const out: ZoomParticipant[] = []
+  let pageToken = ''
+  /* سقفٌ للصفحات: حلقةٌ لا تنتهي على ردٍّ يعيد الرمزَ نفسَه تُعلّق العاملَ */
+  for (let page = 0; page < 20; page++) {
+    const q = new URLSearchParams({ page_size: '300' })
+    if (pageToken) q.set('next_page_token', pageToken)
+    const res = await fetch(
+      `${ZOOM_API_BASE_URL}/past_meetings/${encodeMeetingUuid(meetingUuid)}/participants?${q}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    if (!res.ok) {
+      throw new AuthError(
+        'zoom_report_failed',
+        res.status === 404
+          ? 'لا تقريرَ لهذا اللقاء عند Zoom — قد يكون انتهى قبل أن يدخله أحد'
+          : `تعذّرت قراءةُ تقرير الحضور من Zoom (HTTP ${res.status})`,
+        502,
+      )
+    }
+    const j = (await res.json()) as {
+      participants?: { name?: string; user_email?: string; join_time?: string; leave_time?: string; duration?: number }[]
+      next_page_token?: string
+    }
+    for (const p of j.participants ?? []) {
+      const joinedAt = p.join_time ? new Date(p.join_time) : null
+      if (!joinedAt || Number.isNaN(joinedAt.getTime())) continue
+      const leftAt = p.leave_time ? new Date(p.leave_time) : null
+      out.push({
+        name: p.name?.trim() || 'مشارِكٌ بلا اسم',
+        email: p.user_email?.trim().toLowerCase() || null,
+        joinedAt,
+        leftAt: leftAt && !Number.isNaN(leftAt.getTime()) ? leftAt : null,
+        /* `duration` بالثواني في تقرير Zoom — تُحوَّل هنا مرّةً واحدة */
+        minutes: Math.max(0, Math.round((p.duration ?? 0) / 60)),
+      })
+    }
+    pageToken = j.next_page_token ?? ''
+    if (!pageToken) break
+  }
+  return out
+}
+
 export async function zoomProbe(c: ZoomConfig): Promise<{ ok: boolean; message: string }> {
   if (!c.enabled) return { ok: false, message: 'تكاملُ Zoom غير مفعّل — فعّله واحفظ أوّلا' }
   const missing = zoomMissing(c)

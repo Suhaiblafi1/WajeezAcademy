@@ -65,6 +65,7 @@ const PHRASES: Record<string, string> = {
   'zoom.attach_manual': 'ربطُ رابطِ اجتماعٍ يدويّا',
   'zoom.create_api': 'إنشاءُ اجتماعِ Zoom من المنصّة',
   'zoom.create_failed': 'تعذّر إنشاءُ اجتماعِ Zoom — وأُلغيت جلستُه',
+  'zoom.attendance_sync': 'احتُسب الحضورُ من تقرير Zoom',
   'attendance.mark': 'تسجيلُ حضور',
   'certificate.issue': 'إصدارُ شهادة',
   'certificate.revoke': 'إلغاءُ شهادة',
