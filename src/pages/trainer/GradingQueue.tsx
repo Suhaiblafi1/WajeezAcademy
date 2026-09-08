@@ -18,17 +18,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Star } from "lucide-react";
+import { ClipboardCheck, MessageSquarePlus, RefreshCw, ServerOff, Star } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
 import { Panel } from "@/components/ui/Surface";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 import Button from "@/components/ui/Button";
 import { areaCls, controlCls } from "@/components/FormKit";
 
 /* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
-const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-fine font-bold transition disabled:opacity-40";
+
+/* «١ تسليمٌ» و«٢ تسليمان» و«٣ تسليمات» و«١١ تسليما» — والعددُ يُقرأ لا يُحسب */
+const SUBMISSION_FORMS = { one: "تسليمٌ", two: "تسليمان", few: "تسليمات", many: "تسليما" };
 
 const SUBMISSION_STATUS: Record<string, string> = {
   submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
@@ -45,6 +52,10 @@ interface QueueItem {
 
 export default function GradingQueue() {
   const [queue, setQueue] = useState<QueueItem[] | null>(null);
+  /* اسمُه `query` لا `q`: صفُّ الطابور في التصيير أدناه اسمُه `q`، وحرفٌ
+     واحدٌ لمعنيَين في ملفٍّ واحدٍ يُقرأ خطأً قبل أن يُترجَم خطأً. */
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
@@ -106,25 +117,44 @@ export default function GradingQueue() {
     );
   }
 
-  if (queue === null) {
-    return (
-      <TrainerLayout title="طابور التصحيح">
-        <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" /> أحضر الطابور…
-        </div>
-      </TrainerLayout>
-    );
-  }
+  /* الطابورُ يطول بطول ما يُسلَّم: مدرّبٌ في ثلاث شعبٍ يستقبل عشراتِ
+     التسليمات في الأسبوع، ولم يكن فيه ما يُبلَغ به تسليمٌ بعينه — من أراد
+     تسليمَ متعلّمٍ سأل عنه مرّره بعينه. */
+  const matched = (queue ?? []).filter((s2) => matchesQuery(query, [
+    s2.assessment.title, s2.assessment.cohort.title, s2.textAnswer,
+  ]));
+  const view = paginate(matched, page, 20);
 
   return (
     <TrainerLayout title="طابور التصحيح">
-      {queue.length === 0 ? (
+      {/* ── العملُ قبل القائمة ──
+
+          كانت الشاشةُ تفتح بسطرٍ رماديٍّ يقول «١٢ تسليماتٍ في طابورك» بحجم
+          المتن، ثمّ بالقائمة. والعددُ هنا هو العملُ كلُّه. فصار جملةً في
+          الرأس وزرًّا يبلغ أوّلَ التسليمات ويضع التركيزَ عليه.
+
+          والدوّامةُ صارت هيكلا: مساحةٌ بقياس ما سيحلّ محلَّها فلا تقفز
+          الصفحةُ عند وصوله. */}
+      <WorkHeader
+        loading={queue === null}
+        icon={ClipboardCheck}
+        count={queue?.length ?? 0}
+        forms={SUBMISSION_FORMS}
+        waitingAr="تنتظر تصحيحَك"
+        stats={queue ? [`${queue.filter((q) => q.status === "under_review").length} بدأتَ مراجعتَها`] : []}
+        actionAr="ابدأ بأوّلها"
+        disabledReasonAr={queue && queue.length > 0 && view.total === 0
+          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          : undefined}
+        onAction={() => { if (view.rows[0]) revealRow(`submission-${view.rows[0].id}`); }}
+        doneAr="الطابورُ نظيف — كلُّ ما وصلك قيّمتَه. أحسنت."
+      />
+
+      {queue !== null && queue.length === 0 ? (
         <Panel className="p-10 text-center">
-          <CheckCircle2 className="mx-auto h-10 w-10 text-teal-light-ink" />
-          <h2 className="mt-4 text-lg font-black">الطابور نظيف — لا تسليمات بانتظارك</h2>
-          <p className="mt-2 text-sm text-muted-foreground">كل ما وصلك قيّمته. أحسنت.</p>
           {/* الفراغ فرصة توجيه لا مساحة ميتة — خطوات تالية نافعة بدل صفحة خالية */}
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <p className="text-sm text-muted-foreground">وهذه وجهاتٌ تنفع الآن:</p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <Link to="/trainer/board" className="inline-flex min-h-11 items-center rounded-full border border-teal/40 bg-teal/10 px-5 text-sm font-bold text-teal-light transition hover:bg-teal/20">
               افتح شعبي وسجّل الحضور
             </Link>
@@ -138,11 +168,18 @@ export default function GradingQueue() {
         </Panel>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {queue.length} {queue.length === 1 ? "تسليمٌ" : "تسليماتٍ"} في طابورك — تُصحَّح هنا.
-          </p>
-          {queue.map((q) => (
-            <Panel key={q.id}>
+          {/* العددُ في الرأس لا هنا: كان يُقال مرّتين بصيغتَين — والصيغةُ
+              هنا كانت تُخطئ المثنّى والجمعَ («٢ تسليماتٍ»). */}
+          <ListToolbar q={query} onQ={setQuery} onPage={setPage} view={view} unit="تسليما"
+            placeholder="ابحث بعنوان التقييم أو الشعبة أو نصّ الإجابة…" />
+          {view.total === 0 && (
+            <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+              لا تسليمَ يطابق «{query.trim()}» — امسح الكلمة أو جرّب غيرها.
+            </Panel>
+          )}
+          {view.rows.map((q) => (
+            /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+            <Panel key={q.id} id={`submission-${q.id}`} tabIndex={-1} className="outline-none">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-black">{q.assessment.title}</p>
@@ -168,25 +205,23 @@ export default function GradingQueue() {
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {q.status === "submitted" && (
-                  <button disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}
-                    className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
+                  <Button size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}>
                     ابدأ المراجعة
-                  </button>
+                  </Button>
                 )}
                 {q.status === "under_review" && (
                   <>
-                    <button disabled={busy} onClick={() => void reviewAction(q.id, "accept")}
-                      className={`${ACT} border-transparent bg-teal font-black text-on-teal hover:bg-teal-light`}>
+                    {/* القبولُ فعلٌ مُثبِتٌ في القسم: نبرتُه `confirm` — وكان
+                        ممتلئا بالفيروزيّ مكتوبا بيده، أي `confirm` بلا اسمه. */}
+                    <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "accept")}>
                       قبول
-                    </button>
-                    <button disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}
-                      className={`${ACT} border-gold/40 text-gold-ink hover:bg-gold/10`}>
+                    </Button>
+                    <Button size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}>
                       اطلب إعادة التسليم
-                    </button>
-                    <button disabled={busy} onClick={() => void reviewAction(q.id, "reject")}
-                      className={`${ACT} border-red-500/40 text-red-400 hover:bg-red-500/10`}>
+                    </Button>
+                    <Button tone="danger" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "reject")}>
                       رفض
-                    </button>
+                    </Button>
                   </>
                 )}
                 {["under_review", "submitted"].includes(q.status) && (
@@ -197,10 +232,10 @@ export default function GradingQueue() {
                       placeholder={`من ${q.assessment.maxScore}`}
                       aria-label={`درجةُ «${q.assessment.title}» من ${q.assessment.maxScore}`}
                       className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none" />
-                    <button disabled={busy || !(gradeForm[q.id] ?? "").trim()} onClick={() => void grade(q.id, q.assessment.maxScore)}
-                      className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
+                    <Button size="sm" disabled={busy || !(gradeForm[q.id] ?? "").trim()}
+                      onClick={() => void grade(q.id, q.assessment.maxScore)}>
                       سجّل الدرجة
-                    </button>
+                    </Button>
                   </span>
                 )}
               </div>
@@ -210,10 +245,11 @@ export default function GradingQueue() {
                   placeholder="تغذية راجعة إضافية للمتعلم…"
                   aria-label={`تغذيةٌ راجعةٌ على «${q.assessment.title}»`}
                   className={`flex-1 ${controlCls}`} />
-                <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
-                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-fine font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
-                  <MessageSquarePlus className="h-3 w-3" /> أرسل
-                </button>
+                <Button size="sm" icon={MessageSquarePlus} className="shrink-0"
+                  disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3}
+                  onClick={() => void sendFeedback(q.id)}>
+                  أرسل
+                </Button>
               </div>
             </Panel>
           ))}

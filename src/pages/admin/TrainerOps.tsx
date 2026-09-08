@@ -546,7 +546,10 @@ function ImpactGate({
         </>
       )}
 
-      <Button tone="primary" disabled={busy || (needsImpact && checked !== true)}
+      {/* فعلٌ مُثبِتٌ داخل قسمٍ لا فعلُ الشاشة: الذهبيُّ في «طلبات المدرّبين»
+          صار زرَّ الرأس (ما ينتظر الفرزَ الأوّليّ)، وهذا نشرُ اقتراحٍ بعينه
+          في لوحه. وذهبيّان على شاشةٍ يُلغيان بعضَهما. */}
+      <Button tone="confirm" disabled={busy || (needsImpact && checked !== true)}
         onClick={onPublish} className="mt-2 min-h-11 disabled:cursor-not-allowed">
         <Globe className="h-3.5 w-3.5" /> نشر في النطاق
       </Button>
@@ -827,10 +830,8 @@ export function TrainerPayouts() {
                 onChange={(e) => setItems(items.map((x, i) => i === idx ? { ...x, sourceRef: e.target.value } : x))}
                 className={`${inputCls} w-32 font-mono`} />
               {items.length > 1 && (
-                <button onClick={() => setItems(items.filter((_, i) => i !== idx))}
-                  className="cursor-pointer text-muted-foreground hover:text-red-400" aria-label="حذف البند">
-                  <XCircle className="h-4 w-4" />
-                </button>
+                <Button tone="ghost" size="sm" icon={XCircle} className="px-0 hover:text-red-400"
+                  onClick={() => setItems(items.filter((_, i) => i !== idx))} aria-label="حذف البند" />
               )}
             </div>
           ))}

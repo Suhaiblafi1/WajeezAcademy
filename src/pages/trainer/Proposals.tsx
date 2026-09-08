@@ -5,6 +5,9 @@ import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 import Button from "@/components/ui/Button";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة", submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -77,6 +80,10 @@ export default function TrainerProposals() {
   const [quals, setQuals] = useState<Qualification[]>([]);
   const [offline, setOffline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  /* الاقتراحاتُ تتراكم ولا تُحذف: ما اعتُمد وما رُدّ وما سُحب يبقى سجلًّا،
+     ومدرّبٌ مضى عليه فصلٌ يقرأ عشراتٍ ليجد واحدا. */
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     courseId: "", reason: "", changeType: "module_title_edit", targetKey: "", newValue: "",
@@ -194,6 +201,11 @@ export default function TrainerProposals() {
       </TrainerLayout>
     );
   }
+
+  const matched = mine.filter((r) => matchesQuery(query, [
+    r.course.versions[0]?.titleAr, r.courseId, r.reason, STATUS_LABELS[r.status],
+  ]));
+  const view = paginate(matched, page, 20);
 
   return (
     <TrainerLayout title="اقتراحات تعديل دوراتي">
@@ -430,7 +442,14 @@ export default function TrainerProposals() {
         </Panel>
       ) : (
         <div className="space-y-3">
-          {mine.map((r) => (
+          <ListToolbar q={query} onQ={setQuery} onPage={setPage} view={view} unit="اقتراحا"
+            placeholder="ابحث بعنوان الدورة أو سببِ الاقتراح أو حاله…" />
+          {view.total === 0 && (
+            <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+              لا اقتراحَ يطابق «{query.trim()}» — امسح الكلمة أو جرّب غيرها.
+            </Panel>
+          )}
+          {view.rows.map((r) => (
             <Card as="article" key={r.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>

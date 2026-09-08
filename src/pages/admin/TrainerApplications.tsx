@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
 import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -32,6 +33,9 @@ const STATUS_LABELS: Record<string, string> = {
   contract_pending: "عقد قيد التوقيع", onboarding: "تهيئة", active: "نشط",
   waitlisted: "انتظار", rejected: "مرفوض", withdrawn: "مسحوب", suspended: "موقوف",
 };
+
+/* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
+const APP_FORMS = { one: "طلبٌ", two: "طلبان", few: "طلبات", many: "طلبا" };
 
 const RUBRIC_AXES: { key: string; label: string }[] = [
   { key: "domain_expertise", label: "خبرة المجال" },
@@ -270,6 +274,15 @@ export default function TrainerApplications() {
       setBusy(false);
     }
   };
+
+  /* ما ينتظر الفرزَ الأوّليَّ: `submitted` وحدَها — وهي الخطوةُ التي يقول
+     شريطُ المسار فيها «أنت هنا». وما بعدها بيد اللجنة الأكاديميّة، فعدُّه
+     في الرأس يَعِد بعملٍ ليس لصاحب هذه الشاشة.
+
+     والأقدمُ أوّلا: صاحبُه أطولُ انتظارا، وترتيبُ الخادم ليس مضمونا. */
+  const triage = apps
+    .filter((a) => a.status === "submitted")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل */
   const view = paginate(
@@ -626,10 +639,36 @@ export default function TrainerApplications() {
         { label: "درس تجريبي وتقييمه", actor: "اللجنة الأكاديمية" },
         { label: "اعتماد أو اعتذار", actor: "أنت — ويُبلَّغ تلقائياً" },
       ]} />
+      {/* ── العملُ قبل الألسنة ──
+
+          كانت الشاشةُ تفتح بأربعة ألسنةٍ ثمّ قائمةٍ طويلة، وما ينتظر الفرزَ
+          الأوّليَّ مبثوثٌ فيها لا يُعرف عددُه إلّا بالعدّ. فصار جملةً في
+          الرأس وزرًّا يفتح أقدمَها — والأقدمُ أوّلا لأنّ صاحبَه أطولُ انتظارا.
+
+          ولا يُعرض الرأسُ إلّا بلا ترشيحِ حالة: المحمَّلُ حينَها الطابورُ
+          كلُّه. ومع ترشيحٍ يكون المحمَّلُ حالةً واحدةً، فعددٌ يُحسب منه
+          يسمّي طابورا ليس هو. */}
+      {mode === "apps" && filter === "" && (
+        <WorkHeader
+          loading={loading}
+          icon={ClipboardList}
+          count={triage.length}
+          forms={APP_FORMS}
+          waitingAr="تنتظر الفرزَ الأوّليّ"
+          stats={[`${apps.length} في الطابور كلِّه`, `${apps.filter((a) => a.interviewsCount > 0).length} أُجريت مقابلتُه`]}
+          actionAr="ابدأ بأقدمها"
+          onAction={() => { if (triage[0]) void openDetail(triage[0].id); }}
+          doneAr="لا طلبَ ينتظر الفرزَ الأوّليّ — وما يصل منها يظهر هنا فورا."
+        />
+      )}
+
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex rounded-full border border-white/15 p-1">
           {([["apps", "الطلبات"], ["run", "التأهيل والإسناد"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
-            <Button key={k} tone={mode === k ? "primary" : "ghost"} onClick={() => setMode(k)}>
+            /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
+               الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
+               يتنازعان العين — وهو ما استقرّ عليه لسانُ الشعبة قبله. */
+            <Button key={k} tone={mode === k ? "confirm" : "ghost"} onClick={() => setMode(k)}>
               {label}
             </Button>
           ))}
@@ -673,15 +712,14 @@ export default function TrainerApplications() {
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
               </span>
             ) : commonActions.map((d) => (
-              <button key={d.action}
+              /* فعلٌ جماعيٌّ في شريطِه لا فعلُ الصفحة — وكان ممتلئا بالذهبيّ
+                 مكتوبا بيده، أي رئيسيٌّ ثانٍ إلى جانب زرِّ الرأس. */
+              <Button key={d.action} size="sm" tone={d.tone === "danger" ? "danger" : "confirm"}
                 onClick={() => (d.action === "reject" || d.action === "waitlist"
                   ? setBulkDecision({ action: d.action, labelAr: d.label })
-                  : void bulkDecide(d.action, d.label))}
-                className={`cursor-pointer rounded-full px-4 py-1.5 text-fine font-black transition ${
-                  d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
-                }`}>
+                  : void bulkDecide(d.action, d.label))}>
                 {d.label} — على {sel.size}
-              </button>
+              </Button>
             ))}
           </BulkBar>
           {view.total === 0 && (

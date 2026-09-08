@@ -24,6 +24,7 @@ import { toast, toastError } from "@/components/Toast";
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 
 import { Card } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface Qualification { courseId: string; title: string; currentVersion: number; qualifiedAt: string }
 interface ScopeGate { allowed: boolean; basis: "earned" | "granted" | "none"; reasonAr: string }
 interface Window { weekday: number; startMinute: number; endMinute: number }
@@ -258,33 +259,27 @@ export default function TrainerQualifications() {
                   onChange={(e) => setDraft(draft.map((x, j) => j === i ? { ...x, endMinute: toMinutes(e.target.value) } : x))}
                   className="min-h-[44px] rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
                 />
-                <button
-                  type="button"
+                <Button
+                  type="button" icon={Trash2} className="ms-auto"
                   onClick={() => setDraft(draft.filter((_, j) => j !== i))}
-                  className="ms-auto grid h-11 w-11 place-items-center rounded-xl border border-white/15 text-muted-foreground hover:text-foreground"
                   aria-label={`احذف نافذة ${DAYS[w.weekday]}`}
-                >
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </button>
+                />
               </Card>
             ))}
           </ul>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setDraft([...draft, { weekday: 0, startMinute: 540, endMinute: 720 }])}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/15 px-4 text-sm font-bold hover:border-white/40"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" /> أضف نافذة
-            </button>
-            <button
-              type="button" disabled={busy} onClick={() => void saveWindows()}
-              className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-teal px-5 text-sm font-black text-on-teal disabled:opacity-60"
-            >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+            <Button type="button" icon={Plus}
+              onClick={() => setDraft([...draft, { weekday: 0, startMinute: 540, endMinute: 720 }])}>
+              أضف نافذة
+            </Button>
+            {/* حفظُ ساعاتِ المدرّب فعلٌ مُثبِتٌ في قسمِه — وكان ممتلئا
+                بالفيروزيّ مكتوبا بيده، أي `confirm` بلا اسمه. و`loading`
+                يُعلن الانتظارَ لقارئ الشاشة، والدوّامةُ كانت تُرى ولا تُقال. */}
+            <Button type="button" tone="confirm"
+              loading={busy} onClick={() => void saveWindows()}>
               احفظ ساعاتي
-            </button>
+            </Button>
             {dirty && <span className="text-fine font-bold text-gold-ink">تغييراتٌ لم تُحفظ</span>}
           </div>
         </section>
@@ -330,20 +325,20 @@ export default function TrainerQualifications() {
                     )}
 
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button" disabled={busy || t.myStatus === "confirmed"}
+                      <Button
+                        type="button" tone="confirm"
+                        disabled={busy || t.myStatus === "confirmed"}
                         onClick={() => void answerTerm(t.id, "confirmed")}
-                        className="inline-flex min-h-[44px] items-center gap-2 rounded-full bg-teal px-5 text-sm font-black text-on-teal disabled:opacity-50"
                       >
                         أنا متاحٌ فيه
-                      </button>
-                      <button
-                        type="button" disabled={busy || t.myStatus === "declined"}
+                      </Button>
+                      <Button
+                        type="button"
+                        disabled={busy || t.myStatus === "declined"}
                         onClick={() => void answerTerm(t.id, "declined")}
-                        className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-white/15 px-5 text-sm font-bold text-muted-foreground transition hover:text-foreground disabled:opacity-50"
                       >
                         أعتذر عنه
-                      </button>
+                      </Button>
                     </div>
                   </Card>
                 );
@@ -368,12 +363,10 @@ export default function TrainerQualifications() {
                 <Card as="li" key={b.id} className="flex flex-wrap items-center gap-3">
                   <span className="text-sm font-bold">{fmtDate(b.startsAt)} — {fmtDate(b.endsAt)}</span>
                   {b.reason && <span className="text-xs text-muted-foreground">{b.reason}</span>}
-                  <button
-                    type="button" disabled={busy} onClick={() => void removeLeave(b.id)}
-                    className="ms-auto inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-white/15 px-3 text-xs font-bold text-muted-foreground hover:text-foreground disabled:opacity-60"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> احذف
-                  </button>
+                  <Button type="button" icon={Trash2} size="sm" className="ms-auto"
+                    disabled={busy} onClick={() => void removeLeave(b.id)}>
+                    احذف
+                  </Button>
                 </Card>
               ))}
             </ul>
@@ -408,12 +401,10 @@ export default function TrainerQualifications() {
                 className="min-h-[44px] w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
               />
             </div>
-            <button
-              type="button" disabled={busy} onClick={() => void addLeave()}
-              className="mt-auto inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-teal px-5 text-sm font-black text-on-teal disabled:opacity-60"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" /> سجّل
-            </button>
+            <Button type="button" tone="confirm" icon={Plus} className="mt-auto"
+              loading={busy} onClick={() => void addLeave()}>
+              سجّل
+            </Button>
             {leaveErr && (
               <p id="leave-err" role="alert" className="text-read font-bold text-red-300 sm:col-span-4">{leaveErr}</p>
             )}

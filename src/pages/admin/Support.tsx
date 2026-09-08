@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
@@ -24,6 +25,17 @@ const STATUS_AR: Record<string, string> = {
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
 };
 const PRIORITY_AR: Record<string, string> = { low: "منخفضة", normal: "عادية", high: "عالية", urgent: "عاجلة" };
+
+/* «١ تذكرةٌ» و«٢ تذكرتان» و«٣ تذاكر» و«١١ تذكرةً» — والعددُ يُقرأ لا يُحسب */
+const TICKET_FORMS = { one: "تذكرةٌ", two: "تذكرتان", few: "تذاكر", many: "تذكرةً" };
+
+/* ما ينتظر ردًّا فعلا: المفتوحةُ وقيدُ المعالجة وما أُعيد فتحُه. و«بانتظار
+   العميل» ليست منها — الكرةُ عنده، وعدُّها في الرأس يَعِد بعملٍ لا يقع. */
+const AWAITING = ["open", "in_progress", "reopened"];
+
+/* والأعجلُ أوّلا: الأولويّةُ ثمّ الأقدمُ تحديثا — فزرُّ الرأس يفتح ما يُبدأ
+   به لا أوّلَ ما وصل. */
+const PRIORITY_RANK: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 
 interface TicketRow {
   id: string; subject: string; category: string; status: string; priority: string; updatedAt: string;
@@ -88,6 +100,10 @@ export default function Support() {
 
   /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل — والاثنان يتراكبان */
   const matched = rows.filter((t) => matchesQuery(q, [t.subject, t.category, t.user.displayName, t.user.email]));
+  const awaiting = rows
+    .filter((t) => AWAITING.includes(t.status))
+    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9)
+      || a.updatedAt.localeCompare(b.updatedAt));
   const view = paginate(matched, page, 20);
 
   if (offline) {
@@ -162,11 +178,10 @@ export default function Support() {
               <h4 className="text-sm font-black">تحويل الحالة</h4>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {Object.entries(STATUS_AR).filter(([k]) => k !== t.status).map(([k, v]) => (
-                  <button key={k} disabled={busy}
-                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}
-                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-fine font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
+                  <Button key={k} size="sm" disabled={busy}
+                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}>
                     {v}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <p className="mt-2 text-read text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
@@ -248,9 +263,33 @@ export default function Support() {
         </Button>
       </div>
 
-      {loading ? (
+      {/* ── العملُ قبل القائمة ──
+
+          ولا يُعرض إلّا بلا ترشيحِ حالة: المحمَّلُ حينَها التذاكرُ كلُّها،
+          فيُحسب منه ما ينتظر ردّا. ومع ترشيحٍ يكون المحمَّلُ حالةً واحدةً،
+          فعددٌ يُحسب منه يسمّي طابورا ليس هو. */}
+      {statusFilter === "" && (
+        <WorkHeader
+          loading={loading}
+          icon={LifeBuoy}
+          count={awaiting.length}
+          forms={TICKET_FORMS}
+          waitingAr="تنتظر ردَّك"
+          stats={[
+            `${awaiting.filter((t) => t.assignments.length === 0).length} غير مسنَدة`,
+            `${awaiting.filter((t) => t.priority === "urgent" || t.priority === "high").length} عاجلةٌ أو عالية`,
+          ]}
+          actionAr="افتح أعجلَها"
+          onAction={() => { if (awaiting[0]) void openDetail(awaiting[0].id); }}
+          doneAr="لا تذكرةَ تنتظر ردَّك — وتذاكرُ المتعلّمين تصل هنا فورَ فتحها من بوّابتهم."
+        />
+      )}
+
+      {/* والفراغُ يُقال مرّةً لا مرّتين: بلا ترشيحٍ يقوله الرأسُ بحالِ «تمّ»،
+          ومع ترشيحٍ يقوله هذا اللوحُ لأنّ الرأسَ لا يُعرض حينَها. */}
+      {loading && statusFilter !== "" ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      ) : rows.length === 0 ? (
+      ) : loading ? null : (rows.length === 0 && statusFilter !== "") ? (
         <EmptyState
           icon={LifeBuoy}
           titleAr={statusFilter ? `لا تذاكر بحالة «${STATUS_AR[statusFilter]}»` : "لا تذاكر بعد"}
@@ -260,7 +299,7 @@ export default function Support() {
             ? [{ onClick: () => setStatusFilter(""), labelAr: "اعرض كلَّ الحالات", hintAr: "يُزال المرشّحُ الحاليّ" }]
             : []}
         />
-      ) : (
+      ) : rows.length === 0 ? null : (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تذكرة"
           placeholder="ابحث بعنوانٍ أو صاحبِ تذكرةٍ أو تصنيف…" />

@@ -38,7 +38,7 @@ import { validatePractice } from "@/application/content/practice";
 import { validateRubric } from "@/application/content/rubric";
 import { fmtShortDateTimeAr } from "@/utils/format";
 import { fmtNum } from "@/application/text/format-ar";
-import { countAr } from "@/application/text/count-ar";
+import WorkHeader from "@/components/admin/WorkHeader";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -242,39 +242,32 @@ export default function Authoring() {
     <AdminLayout title="تأليف متون الوحدات">
       {/* ── رأسُ الشاشة يبدأ بالعمل لا بالعدد ──
 
-          كانت ثلاثَ بطاقاتِ عددٍ متساويةِ الوزن: «٤٠٤ وحدة» و«١٢٨ لها متن»
-          و«٢٧٦ بلا متن». **والرقمُ الأخيرُ هو العملُ كلُّه**، ويُعرض بالحجم
-          نفسِه الذي يُعرض به مجموعٌ لا يفعل به أحدٌ شيئا. فالشاشةُ تقول
-          «هذه أرقامُك» ولا تقول «ابدأ من هنا».
-
-          فصار الباقي عنوانا وزرًّا، والمجموعُ سطرا تحته. ولوحةُ التشغيل
-          تُقاس بما يُنجَز فيها لا بما يُعرض. */}
-      {work && (
-        work.missing > 0 ? (
-          <Card tone="warn" className="mb-5 flex flex-wrap items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-2xl font-black tabular-nums text-gold-ink">
-                {countAr(work.missing, MODULE_FORMS)} بلا متن
-              </p>
-              <p className="mt-1 text-read text-muted-foreground">
-                من {fmtNum(work.total)} في الكتالوج · {fmtNum(work.withBody)} لها متنُها
-              </p>
-            </div>
-            <Button tone="primary" size="lg" disabled={loading || (bodyFilter === "missing" && rows.length === 0)}
-              onClick={() => {
-                /* اللسانُ يُضبط أوّلا كي يكون الطابورُ طابورَ ما بلا متن،
-                   ثمّ يُفتح أوّلُه إن كان معروضا الآن. */
-                if (bodyFilter !== "missing") { setBodyFilter("missing"); return; }
-                if (rows[0]) void open(rows[0]);
-              }}>
-              {bodyFilter === "missing" ? "ابدأ بأوّلها" : "اعرِضها"}
-            </Button>
-          </Card>
-        ) : (
-          <Card tone="positive" as="p" className="mb-5 text-read leading-6 text-emerald-200">
-            كلُّ وحدات الكتالوج لها متنُها — {fmtNum(work.total)} وحدة. لا عملَ منتظرا هنا.
-          </Card>
-        )
+          كان هذا الرأسُ مكتوبا هنا بيده، ثمّ تكرّر ما يشبهه في أربعِ شاشات.
+          فانتقل إلى `WorkHeader` مكوَّنا واحدا: حالاتُه الثلاثُ وسطحُه
+          ومقاسُ خطّه تُقرَّر مرّةً لا خمسا. وما كان هنا خاصًّا بقي هنا —
+          العددُ والفعلُ والسببُ حين يُعطَّل. */}
+      {(loading || work) && (
+        <WorkHeader
+          loading={loading && !work}
+          icon={FileText}
+          count={work?.missing ?? 0}
+          forms={MODULE_FORMS}
+          waitingAr="تنتظر متنَها"
+          stats={work ? [`من ${fmtNum(work.total)} في الكتالوج`, `${fmtNum(work.withBody)} لها متنُها`] : []}
+          actionAr={bodyFilter === "missing" ? "ابدأ بأوّلها" : "اعرِضها"}
+          /* السببُ يُقال ولا يُترك بهتانا صامتا: الزرُّ يبهت لأنّ اللسانَ
+             على ما بلا متنٍ والبحثُ لا يُظهر منها شيئا — وهذا ما يُقرأ. */
+          disabledReasonAr={bodyFilter === "missing" && rows.length === 0
+            ? "اللسانُ على ما بلا متنٍ ولا يُظهر البحثُ منها شيئا — امسحه لتبدأ."
+            : undefined}
+          onAction={() => {
+            /* اللسانُ يُضبط أوّلا كي يكون الطابورُ طابورَ ما بلا متن،
+               ثمّ يُفتح أوّلُه إن كان معروضا الآن. */
+            if (bodyFilter !== "missing") { setBodyFilter("missing"); return; }
+            if (rows[0]) void open(rows[0]);
+          }}
+          doneAr={<>كلُّ وحدات الكتالوج لها متنُها — {fmtNum(work?.total ?? 0)} وحدة. لا عملَ منتظرا هنا.</>}
+        />
       )}
 
       {error && (

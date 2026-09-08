@@ -15,6 +15,8 @@ import ConfirmAction from "@/components/ConfirmAction";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 interface QueueItem {
@@ -32,6 +34,9 @@ interface QueueItem {
 const KIND_AR: Record<QueueItem["subjectType"], string> = {
   trainer: "مدرّب", advisor: "مستشار", course: "دورة",
 };
+/* «١ تعليقٌ» و«٢ تعليقان» و«٣ تعليقات» و«١١ تعليقا» — والعددُ يُقرأ لا يُحسب */
+const COMMENT_FORMS = { one: "تعليقٌ", two: "تعليقان", few: "تعليقات", many: "تعليقا" };
+
 const TABS: { key: string; label: string }[] = [
   { key: "pending", label: "بانتظار المراجعة" },
   { key: "approved", label: "معتمَدة" },
@@ -120,11 +125,32 @@ export default function RatingModeration() {
         </Panel>
       )}
 
-      {!offline && loading && (
+      {/* ── العملُ قبل القائمة ──
+
+          ولا يُعرض الرأسُ إلّا على لسان «بانتظار المراجعة»: المحمَّلُ حينَها
+          ما ينتظر فعلا. والمعتمَدُ والمحجوبُ سجلٌّ يُقرأ لا عملٌ يُبدأ به،
+          فرأسُ عملٍ فوقهما يَعِد بما ليس فيهما. */}
+      {!offline && status === "pending" && (
+        <WorkHeader
+          loading={loading}
+          icon={ShieldCheck}
+          count={rows.length}
+          forms={COMMENT_FORMS}
+          waitingAr="تنتظر مراجعتَك"
+          actionAr="ابدأ بأوّلها"
+          disabledReasonAr={rows.length > 0 && view.total === 0
+            ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+            : undefined}
+          onAction={() => { if (view.rows[0]) revealRow(`rating-${view.rows[0].id}`); }}
+          doneAr="لا تعليقَ ينتظر مراجعتَك — وما يُكتب بعدها يصل هذا اللسانَ فورا، والدرجةُ تدخل المعدّلَ في كلّ حال."
+        />
+      )}
+
+      {!offline && loading && status !== "pending" && (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div>
       )}
 
-      {!offline && !loading && rows.length === 0 && (
+      {!offline && !loading && rows.length === 0 && status !== "pending" && (
         <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">
           لا تعليقات في هذه الحالة.
         </Card>
@@ -141,7 +167,8 @@ export default function RatingModeration() {
         ) : (
         <ul className="space-y-3">
           {view.rows.map((r) => (
-            <Card as="li" key={r.id}>
+            /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+            <Card as="li" key={r.id} id={`rating-${r.id}`} tabIndex={-1} className="outline-none">
               <div className="flex flex-wrap items-center gap-2 text-fine">
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-muted-foreground">{KIND_AR[r.subjectType]}</span>
                 <span className="font-black text-gold">{r.score} ★</span>
