@@ -273,10 +273,14 @@ export function Bestsellers() {
                   </p>
                   {/* سطرُ الذيل: الحجمُ يمينا، و«تفاصيل المسار» يسارا — لافتةٌ
                       خافتةٌ تقول إنّ البطاقةَ تُفتح، لا زرٌّ يزاحم المحتوى.
-                      كانت البطاقةُ بلا أيّ إشارةٍ إلى أنّها رابط (٨ سبتمبر ٢٠٢٦). */}
+                      كانت البطاقةُ بلا أيّ إشارةٍ إلى أنّها رابط (٨ سبتمبر ٢٠٢٦).
+
+                      والخفوتُ بالحجم لا بالشفافيّة: `text-teal-light-ink/75`
+                      أسقط التباينَ إلى ٣٫٨:١ على الورق الفاتح (فحصُ الإتاحة في
+                      CI)، والحبرُ كاملا ينقلب إلى `#1F6E77` هناك فيبلغ ٤٫٥:١. */}
                   <span className="mt-auto flex items-center justify-between gap-2 pt-2 text-fine text-muted-foreground">
                     <span>{pathwaySizeAr(b.p)}</span>
-                    <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-teal-light-ink/75 transition group-hover:text-teal-light-ink">
+                    <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
                       تفاصيل المسار
                       <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
                     </span>
@@ -330,7 +334,7 @@ export function Bestsellers() {
                     <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                       {b.c.skill}
                     </span>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink/75 transition group-hover:text-teal-light-ink">
+                    <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
                       تفاصيل الدورة
                       <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
                     </span>
