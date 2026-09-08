@@ -38,6 +38,7 @@
    من رفضٍ مفهوم. */
 
 import type { PrismaClient } from '@prisma/client'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { AuthError } from './auth.service'
 
 /** نقطتا Zoom الرسميّتان — الرمزُ من `zoom.us` والواجهةُ من `api.zoom.us` */
@@ -54,6 +55,8 @@ export interface ZoomConfig {
   clientSecret?: string
   /** بريدُ مضيف الاجتماعات في حساب Zoom — `me` يعني صاحبَ التطبيق */
   hostEmail: string
+  /** سرُّ التحقّق من الـwebhook — يأتي من لوحة Zoom مع نقطة الاستقبال */
+  webhookSecret?: string
 }
 
 export interface ZoomMeetingResult {
@@ -75,12 +78,14 @@ export async function getZoomConfig(prisma: PrismaClient): Promise<ZoomConfig> {
     clientId: c.clientId || undefined,
     clientSecret: c.clientSecret || undefined,
     hostEmail: c.hostEmail || 'me',
+    webhookSecret: c.webhookSecret || undefined,
   }
   const env = process.env
   if (env.ZOOM_ACCOUNT_ID) { base.accountId = env.ZOOM_ACCOUNT_ID; base.enabled = true }
   if (env.ZOOM_CLIENT_ID) base.clientId = env.ZOOM_CLIENT_ID
   if (env.ZOOM_CLIENT_SECRET) base.clientSecret = env.ZOOM_CLIENT_SECRET
   if (env.ZOOM_HOST_EMAIL) base.hostEmail = env.ZOOM_HOST_EMAIL
+  if (env.ZOOM_WEBHOOK_SECRET) base.webhookSecret = env.ZOOM_WEBHOOK_SECRET
   return base
 }
 
@@ -276,6 +281,47 @@ export async function registerZoomParticipant(
     return { ok: false, reason: 'سجّل Zoom المتعلّمَ بلا رابطٍ خاصٍّ به' }
   }
   return { ok: true, registrant: { registrantId: j.registrant_id, joinUrl: j.join_url } }
+}
+
+/* ══════════ الـwebhook: ما يقوله Zoom بعد اللقاء ══════════
+
+   ── ولمَ انتقل التحقّقُ إلى هنا ──
+
+   كان في `server/services/zoom/provider.ts` — ملفٌّ **لا يستورده أحد**:
+   `ApiZoomProvider` فيه يرمي `zoom_api_not_wired`، و`getZoomProvider()`
+   تقرأ البيئةَ وحدَها. فصار في المستودَع جوابان مختلفان لسؤالٍ واحد «أمُهيَّأٌ
+   Zoom؟» — أحدُهما ميّتٌ يقرأ البيئة، والآخرُ حيٌّ يقرأ البيئةَ والقاعدة.
+
+   ومصدران لحقيقةٍ واحدة هو بعينه العطبُ الذي جعل معالجَ الشعبة يعرض سعرا
+   ويُنشئ شعبةً بسعرٍ آخر. فنُقل التحقّقُ إلى المزوّد الحيّ وحُذف الميّت،
+   وصار السرُّ يُقرأ من حيث تُقرأ بقيّةُ الاعتمادات: القاعدةُ أو البيئة.
+
+   ── والتحقّقُ بمقارنةٍ ثابتةِ الزمن ──
+
+   `timingSafeEqual` لا `===`: المقارنةُ الساذجة تخرج عند أوّل حرفٍ مختلف،
+   فزمنُها يُفشي كم حرفا صحّ. */
+
+/** بصمةُ الطلب كما يحسبها Zoom: `v0:<الطابع>:<الجسم الخام>` */
+export function zoomWebhookSignature(secret: string, rawBody: string, timestamp: string): string {
+  return `v0=${createHmac('sha256', secret).update(`v0:${timestamp}:${rawBody}`).digest('hex')}`
+}
+
+export function verifyZoomWebhook(
+  c: ZoomConfig, rawBody: string, signature: string, timestamp: string,
+): boolean {
+  /* بلا سرٍّ لا يُقبل شيء: نقطةٌ مفتوحةٌ تقبل أيَّ جسمٍ تكتب حضورا مختلَقا */
+  if (!c.webhookSecret) return false
+  const expected = Buffer.from(zoomWebhookSignature(c.webhookSecret, rawBody, timestamp))
+  const got = Buffer.from(signature)
+  return expected.length === got.length && timingSafeEqual(expected, got)
+}
+
+/** ردُّ تحدّي إثبات الملكيّة الذي يرسله Zoom عند حفظ النقطة في لوحته */
+export function zoomUrlValidationReply(secret: string, plainToken: string) {
+  return {
+    plainToken,
+    encryptedToken: createHmac('sha256', secret).update(plainToken).digest('hex'),
+  }
 }
 
 export async function zoomProbe(c: ZoomConfig): Promise<{ ok: boolean; message: string }> {
