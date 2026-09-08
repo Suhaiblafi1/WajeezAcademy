@@ -9,6 +9,9 @@ export interface MailInput {
   to: string
   subject: string
   text: string
+  /** الصيغةُ المهيّأة. والنصُّ يبقى معها دائما: بعضُ العملاء يعرضه، وقارئُ
+      الشاشة يفضّله، وفلاترُ البريد تعدّ رسالةً بلا نصٍّ علامةً على الإزعاج. */
+  html?: string
   /* دعوةُ تقويم تُرفَق بالرسالة — يفتحها قوقل وآبل وأوتلوك بلا حساب.
      والاسمُ `.ics` والنوعُ `text/calendar` كلاهما لازم: بعضُ العملاء
      يقرأ النوعَ وبعضُهم اللاحقة. */
@@ -30,6 +33,7 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
       replyTo: config.replyTo || ACADEMY_EMAILS.support,
       subject: input.subject,
       text: input.text,
+      ...(input.html ? { html: input.html } : {}),
       attachments: input.icsContent
         ? [{
             filename: input.icsFilename ?? 'wajeez-event.ics',

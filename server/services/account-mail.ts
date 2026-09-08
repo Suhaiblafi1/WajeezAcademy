@@ -9,6 +9,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { sendDirectEmail, publicSiteUrl, type DirectMailResult } from './notification.service'
+import { renderMail } from './mail-template'
 
 export function verifyEmailLink(token: string): string {
   return `${publicSiteUrl()}/auth/verify?token=${encodeURIComponent(token)}`
@@ -31,12 +32,17 @@ export async function sendVerifyEmail(
   return sendDirectEmail(prisma, {
     to: input.to,
     subject: 'وثّق بريدك — أكاديمية وجيز',
-    text:
-      `مرحبا ${input.displayName.trim() || 'بك'},\n\n` +
-      `لتفعيل الشراء واستلام الشهادة نحتاج أن نتأكّد أن هذا البريد يصلك.\n` +
-      `افتح هذا الرابط خلال ٤٨ ساعة:\n${link}\n\n` +
-      `يمكنك الدخول وتصفّح المنصّة والتشخيص من غير هذه الخطوة — التوثيق مطلوب للشراء والشهادة فقط.\n\n` +
-      `إن لم تكن أنت من أنشأ الحساب فتجاهل هذه الرسالة.\n— أكاديمية وجيز`,
+    ...renderMail({
+      greetingName: input.displayName,
+      heading: 'خطوةٌ واحدة لتوثيق بريدك',
+      blocks: [
+        { kind: 'p', text: 'لتفعيل الشراء واستلام الشهادة نحتاج أن نتأكّد أن هذا البريد يصلك.' },
+        { kind: 'cta', label: 'وثّق بريدي الآن', href: link, caption: 'أو انسخ الرابط:' },
+        { kind: 'callout', text: 'الرابط صالحٌ ثمانيَ وأربعين ساعة.' },
+        { kind: 'p', text: 'ويمكنك الدخول وتصفّح المنصّة والتشخيص من غير هذه الخطوة — التوثيق مطلوبٌ للشراء والشهادة فقط.' },
+        { kind: 'note', text: 'إن لم تكن أنت من أنشأ الحساب فتجاهل هذه الرسالة.' },
+      ],
+    }),
   })
 }
 
@@ -48,11 +54,15 @@ export async function sendPasswordResetEmail(
   return sendDirectEmail(prisma, {
     to: input.to,
     subject: 'استعادة كلمة المرور — أكاديمية وجيز',
-    text:
-      `وصلنا طلب استعادة كلمة المرور لحسابك.\n\n` +
-      `عيّن كلمة مرور جديدة من هذا الرابط خلال ساعة:\n${link}\n\n` +
-      `تعيين كلمة مرور جديدة يُخرجك من كل الأجهزة.\n` +
-      `إن لم تطلب هذا فتجاهل الرسالة — كلمتك الحالية باقية كما هي.\n— أكاديمية وجيز`,
+    ...renderMail({
+      heading: 'استعادةُ كلمة المرور',
+      blocks: [
+        { kind: 'p', text: 'وصلنا طلبُ استعادة كلمة المرور لحسابك.' },
+        { kind: 'cta', label: 'عيّن كلمة مرور جديدة', href: link, caption: 'أو انسخ الرابط:' },
+        { kind: 'callout', text: 'الرابط صالحٌ ساعةً واحدة، وتعيينُ كلمةٍ جديدة يُخرجك من كلّ الأجهزة.' },
+        { kind: 'note', text: 'إن لم تطلب هذا فتجاهل الرسالة — كلمتك الحالية باقيةٌ كما هي.' },
+      ],
+    }),
   })
 }
 
@@ -74,18 +84,24 @@ export async function sendStaffInviteEmail(
 ): Promise<DirectMailResult> {
   const link = resetPasswordLink(input.token)
   const roles = input.roleNamesAr.join('، ')
-  const duties = input.dutiesAr.length > 0
-    ? `\nوهذا ما يفتحه لك:\n${input.dutiesAr.map((d) => `· ${d}`).join('\n')}\n`
-    : ''
   return sendDirectEmail(prisma, {
     to: input.to,
     subject: `حسابك في أكاديمية وجيز — ${roles}`,
-    text:
-      `مرحبا ${input.displayName.trim() || 'بك'},\n\n` +
-      `أنشأ لك ${input.invitedByAr} حسابا في منصّة أكاديمية وجيز بدور: ${roles}.\n` +
-      duties +
-      `\nلتفعيل حسابك عيّن كلمة مرورك من هذا الرابط:\n${link}\n\n` +
-      `الرابط صالحٌ سبعةَ أيّام. فإن انتهى فاطلب من مُنشئ حسابك إعادةَ إرسال الدعوة، أو استعمل «نسيت كلمة المرور» ببريدك هذا.\n\n` +
-      `إن لم تكن تتوقّع هذه الدعوة فلا تفتح الرابط، وأبلغ من أرسلها إليك.\n— أكاديمية وجيز`,
+    ...renderMail({
+      greetingName: input.displayName,
+      heading: `أُنشئ لك حسابٌ في منصّة أكاديمية وجيز`,
+      blocks: [
+        { kind: 'facts', rows: [
+          { label: 'من أنشأه', value: input.invitedByAr },
+          { label: 'دورك', value: roles },
+        ] },
+        ...(input.dutiesAr.length > 0
+          ? ([{ kind: 'h', text: 'وهذا ما يفتحه لك' }, { kind: 'list', items: input.dutiesAr }] as const)
+          : []),
+        { kind: 'cta', label: 'فعّل حسابك وعيّن كلمتك', href: link, caption: 'أو انسخ الرابط:' },
+        { kind: 'callout', text: 'الرابط صالحٌ سبعةَ أيّام. فإن انتهى فاطلب إعادةَ إرسال الدعوة، أو استعمل «نسيت كلمة المرور» ببريدك هذا.' },
+        { kind: 'note', text: 'ولا كلمةَ مرورٍ في هذه الرسالة: تختارها بنفسك من الرابط. وإن لم تكن تتوقّع الدعوة فلا تفتحه، وأبلغ من أرسلها إليك.' },
+      ],
+    }),
   })
 }

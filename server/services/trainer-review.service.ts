@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
+import { renderMail } from './mail-template'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
 import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
@@ -187,17 +188,19 @@ export class TrainerReviewService {
       const res = await sendDirectEmail(this.prisma, {
         to: app.email,
         subject: 'موعد مقابلتك مع أكاديمية وجيز',
-        text: [
-          `مرحبا ${app.fullName}،`,
-          '',
-          `حدّدنا موعد مقابلتك بشأن طلبك رقم ${app.reference}:`,
-          `${when} (بتوقيت عمّان)`,
-          remote ? 'المقابلة عن بُعد، ويصلك رابطها قبل الموعد.' : 'المقابلة حضوريّة.',
-          '',
-          'أرفقنا دعوة تقويم — افتحها لتُضاف إلى تقويمك مباشرة.',
-          '',
-          'وإن لم يناسبك الموعد فأخبرنا بالردّ على هذه الرسالة.',
-        ].join('\n'),
+        ...renderMail({
+          greetingName: app.fullName,
+          heading: 'حدّدنا موعد مقابلتك',
+          blocks: [
+            { kind: 'facts', rows: [
+              { label: 'رقم الطلب', value: app.reference },
+              { label: 'الموعد', value: `${when} (بتوقيت عمّان)` },
+              { label: 'المكان', value: remote ? 'عن بُعد — يصلك الرابط قبل الموعد' : 'حضوريّة' },
+            ] },
+            { kind: 'p', text: 'أرفقنا دعوةَ تقويمٍ مع هذه الرسالة — افتحها لتُضاف إلى تقويمك مباشرة.' },
+            { kind: 'note', text: 'وإن لم يناسبك الموعد فأخبرنا بالردّ على هذه الرسالة.' },
+          ],
+        }),
         icsContent: ics,
         icsFilename: `wajeez-interview-${interview.id}.ics`,
       })
@@ -381,11 +384,15 @@ export class TrainerReviewService {
     const mail = await sendDirectEmail(this.prisma, {
       to,
       subject: 'اعتُمدتَ مدرّبا في أكاديمية وجيز',
-      text:
-        `مرحبا ${fullName},\n\n` +
-        `اعتُمد طلبك (${reference}) — أهلا بك مدرّبا في أكاديمية وجيز.\n` +
-        `بوّابتك مفتوحة الآن بالحساب نفسه الذي تابعتَ به طلبك:\n${portalUrl}\n\n` +
-        `تجد فيها ملفَّك ومهامَّ التهيئة، وتصلك الشعبُ حين تُسنَد إليك.\n— أكاديمية وجيز`,
+      ...renderMail({
+        greetingName: fullName,
+        heading: `اعتُمد طلبك (${reference}) — أهلا بك مدرّبا في أكاديمية وجيز`,
+        blocks: [
+          { kind: 'p', text: 'بوّابتك مفتوحةٌ الآن بالحساب نفسِه الذي تابعتَ به طلبك.' },
+          { kind: 'cta', label: 'افتح بوّابة المدرّب', href: portalUrl, caption: 'أو انسخ الرابط:' },
+          { kind: 'p', text: 'تجد فيها ملفَّك ومهامَّ التهيئة، وتصلك الشعبُ حين تُسنَد إليك.' },
+        ],
+      }),
     })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.approved.notify', entityType: 'trainer_application', entityId: applicationId,
@@ -637,11 +644,15 @@ export class TrainerReviewService {
     const mail = await sendDirectEmail(this.prisma, {
       to: app.email,
       subject: 'دعوتك لإنشاء حساب مدرب — أكاديمية وجيز',
-      text:
-        `مرحبا ${app.fullName},\n\n` +
-        `اكتمل اعتماد طلبك (${app.reference}) — وهذه دعوتك لإنشاء حسابك على منصة المدربين.\n` +
-        `افتح الرابط واختر كلمة مرورك خلال 72 ساعة:\n${acceptUrl}\n\n` +
-        `الرابط يُستخدم مرة واحدة. إن انتهى فاطلب من فريقنا إعادة إرساله.\n— أكاديمية وجيز`,
+      ...renderMail({
+        greetingName: app.fullName,
+        heading: `اكتمل اعتماد طلبك (${app.reference}) — وهذه دعوتك لإنشاء حسابك`,
+        blocks: [
+          { kind: 'cta', label: 'أنشئ حسابك واختر كلمتك', href: acceptUrl, caption: 'أو انسخ الرابط:' },
+          { kind: 'callout', text: 'الرابط صالحٌ اثنتين وسبعين ساعة، ويُستخدم مرّةً واحدة.' },
+          { kind: 'note', text: 'فإن انتهى فاطلب من فريقنا إعادةَ إرساله.' },
+        ],
+      }),
     })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.invitation.create', entityType: 'trainer_application', entityId: applicationId,

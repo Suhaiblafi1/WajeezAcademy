@@ -508,7 +508,7 @@ function Stories() {
           <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
           <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
           <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — اختر نموذجا واقرأه كاملا.
+            من التشخيص إلى مشروع تخرّج يدخل ملفك — اختر نموذجا واقرأه كاملا.
           </p>
           {/* الصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
           <p className="mx-auto mt-3 max-w-md text-read leading-5 text-muted-foreground">

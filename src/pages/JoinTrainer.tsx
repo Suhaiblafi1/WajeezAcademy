@@ -1129,13 +1129,21 @@ export default function JoinTrainer() {
                   إلا مساء، والشعبةُ تُجدوَل بالساعة لا باليوم. */}
               <Question n={3} title="متى تستطيع أن تُدرّب؟" hint="الشعبة تُجدوَل بالساعة لا باليوم — فقل متى من اليوم، لا اليوم وحده.">
                 <FieldRow>
-                  <Field label="ساعات أسبوعيا تستطيع تخصيصها" htmlFor="jt-hours">
-                    <input id="jt-hours" type="number" min={1} max={80} dir="ltr" value={hoursPerWeek}
+                  {/* حقلُ `number` لا يقبل «٧» العربيّةَ الهنديّة: يبتلعها بلا
+                      رسالةٍ فيظنّ الكاتبُ أنّه كتب ولم يُكتب شيء. فالتلميحُ
+                      يقولها قبل أن تقع، والمثالُ يُريها. */}
+                  <Field label="ساعات أسبوعيا تستطيع تخصيصها" htmlFor="jt-hours" hint="بالأرقام الإنجليزية (1–80).">
+                    <input id="jt-hours" type="number" min={1} max={80} dir="ltr" inputMode="numeric" placeholder="10"
+                      value={hoursPerWeek}
                       onChange={(e) => setHoursPerWeek(e.target.value)} className={`${controlCls} text-left`} />
                   </Field>
                   <Field label="يمكنك البدء من" htmlFor="jt-start">
+                    {/* التقويمُ كان يبقى مفتوحا بعد اختيار اليوم، فيحجب ما تحته
+                        ولا يعرف المتقدّمُ أنّ اختيارَه وقع. و`blur` بعد الاختيار
+                        يطويه — وهي الطريقةُ الوحيدةُ لطيّ منتقي المتصفّح. */}
                     <input id="jt-start" type="date" dir="ltr" value={startFrom}
-                      onChange={(e) => setStartFrom(e.target.value)} className={`${controlCls} text-left`} />
+                      onChange={(e) => { setStartFrom(e.target.value); e.target.blur(); }}
+                      className={`${controlCls} text-left`} />
                   </Field>
                   <FieldSet legend="أيامك المتاحة" wide>
                     <ChoiceGrid options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} cols={3} name="أيامك المتاحة" />

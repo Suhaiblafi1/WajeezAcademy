@@ -11,6 +11,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
+import { renderMail } from './mail-template'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
@@ -304,23 +305,33 @@ export class TrainerApplicationService {
     const mail = await sendDirectEmail(this.prisma, {
       to: app.email,
       subject: `وصل طلب انضمامك — ${app.reference}`,
-      text:
-        `مرحبا ${app.fullName},\n\n` +
-        `وصلنا طلبك للانضمام إلى نخبة مدربي أكاديمية وجيز — وهذه تفاصيله:\n` +
-        `· رقم الطلب: ${app.reference}\n` +
-        `· تاريخ التقديم: ${fmtDateLong(app.createdAt)}\n` +
-        `· التخصصات: ${app.specialties.map((x) => x.specialty).join('، ') || '—'}\n` +
-        `· نمط التدريب: ${delivery}\n` +
-        `· وسيلة التواصل التي اختَرتها: ${channel}${channelValue ? ` — ${channelValue}` : ''}\n\n` +
-        `ما التالي؟\n` +
-        `سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثم نتواصل معك عبر ${channel} لتحديد موعد اجتماع تعريفي قصير ` +
-        `نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.\n\n` +
-        `تابع حالة طلبك في أي وقت:\n` +
-        `· بالدخول إلى ${site}/auth ببريدك هذا وكلمة المرور التي اختَرتها عند التقديم.\n` +
-        `· أو من صفحة الانضمام ${site}/join-trainer بإدخال بريدك.\n\n` +
-        `هذه الرسالة تؤكد بريدك أيضا — افتح الرابط التالي مرة واحدة ليُوثَّق عنوانك:\n${link}\n` +
-        `(الرابط صالح سبعة أيام.)\n\n` +
-        `إن لم تكن أنت من قدّم الطلب فتجاهل هذه الرسالة.\n— أكاديمية وجيز`,
+      /* التوثيقُ أوّلَ المتن لا في ذيله: هو الفعلُ الوحيدُ المطلوبُ من
+         المتقدّم في هذه الرسالة، وكان يُذكَر بعد سبع فقراتٍ فلا يُرى. */
+      ...renderMail({
+        greetingName: app.fullName,
+        heading: 'وصلنا طلبك للانضمام إلى مدربي أكاديمية وجيز',
+        blocks: [
+          { kind: 'p', text: 'وقبل أن نبدأ مراجعته، نحتاج أن نتأكّد أنّ هذا البريد يصلك — فعليه وحدَه نتواصل معك.' },
+          { kind: 'cta', label: 'وثّق بريدك', href: link, caption: 'أو انسخ الرابط:' },
+          { kind: 'callout', text: 'الرابط صالحٌ سبعةَ أيّام، ويُفتح مرّةً واحدة.' },
+          { kind: 'h', text: 'تفاصيل طلبك' },
+          { kind: 'facts', rows: [
+            { label: 'رقم الطلب', value: app.reference },
+            { label: 'تاريخ التقديم', value: fmtDateLong(app.createdAt) },
+            { label: 'التخصصات', value: app.specialties.map((x) => x.specialty).join('، ') || '—' },
+            { label: 'نمط التدريب', value: delivery },
+            { label: 'وسيلة التواصل', value: `${channel}${channelValue ? ` — ${channelValue}` : ''}` },
+          ] },
+          { kind: 'h', text: 'ما التالي' },
+          { kind: 'p', text: `سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثمّ نتواصل معك عبر ${channel} لتحديد موعد اجتماعٍ تعريفيٍّ قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.` },
+          { kind: 'h', text: 'تابع حالة طلبك في أيّ وقت' },
+          { kind: 'list', items: [
+            `بالدخول إلى ${site}/auth ببريدك هذا وكلمة المرور التي اختَرتها عند التقديم.`,
+            `أو من صفحة الانضمام ${site}/join-trainer بإدخال بريدك.`,
+          ] },
+          { kind: 'note', text: 'إن لم تكن أنت من قدّم الطلب فتجاهل هذه الرسالة.' },
+        ],
+      }),
     })
     return mail.status
   }
