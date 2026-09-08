@@ -19,6 +19,8 @@ import { fmtDateTimeAr } from "@/utils/format";
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 interface Row {
@@ -45,6 +47,9 @@ const KIND_AR: Record<string, string> = {
   plan_add: "إضافة دورة إلى الخطّة",
   plan_remove: "إلغاء دورة من الخطّة",
 };
+
+/* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
+const REQ_FORMS = { one: "طلبٌ", two: "طلبان", few: "طلبات", many: "طلبا" };
 
 /** أقلُّ سببٍ يُقرأ — مطابقٌ لما يفرضه الخادم */
 const MIN_REASON = 12;
@@ -107,17 +112,35 @@ export default function AdvisorRequests() {
   return (
     <AdminLayout title="طلبات المستشارين — خصمٌ وتعديلُ خطّة">
 
-      {rows === null ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      ) : rows.length === 0 ? (
-        <Panel className="grid place-items-center py-16 text-center">
-          <CheckCircle2 className="h-12 w-12 text-teal-light-ink/50" />
-          <h2 className="mt-4 text-xl font-black">لا طلبَ ينتظر قرارك</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            حين يطلب مستشارٌ خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا.
-          </p>
-        </Panel>
-      ) : (
+      {/* ── العملُ قبل القائمة ──
+
+          كانت الشاشةُ تفتح بالقائمة نفسِها: من أراد أن يعرف كم ينتظره عدّ،
+          ومن أراد أن يبدأ نزل بعينه إلى أوّل صفّ. فصار العددُ جملةً وللبدء
+          زرٌّ يبلغ أوّلَ الطابور ويضع التركيزَ عليه.
+
+          والحالاتُ الثلاثُ صارت من المكوَّن: الهيكلُ بدل الدوّامة، و«تمّ»
+          تقول ما يصل هذه الشاشةَ ومن أين — لا «لا شيءَ هنا». */}
+      <WorkHeader
+        loading={rows === null}
+        icon={BadgePercent}
+        count={rows?.length ?? 0}
+        forms={REQ_FORMS}
+        waitingAr="تنتظر قرارَك"
+        stats={rows ? [
+          `${rows.filter((r) => r.kind === "discount").length} خصما على فاتورة`,
+          `${rows.filter((r) => r.kind !== "discount").length} تعديلَ خطّة`,
+        ] : []}
+        actionAr="ابدأ بأقدمها"
+        /* الطابورُ أقدمُه أوّلا كما يردّه الخادم — فأوّلُ المعروض أقدمُ ما
+           لم يُبتّ فيه. والبحثُ قد يُخفيه، فيُقال السببُ ولا يبهت الزرُّ صامتا. */
+        disabledReasonAr={rows && rows.length > 0 && view.total === 0
+          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          : undefined}
+        onAction={() => { if (view.rows[0]) revealRow(`advisor-req-${view.rows[0].id}`); }}
+        doneAr="لا طلبَ ينتظر قرارَك — وحين يطلب مستشارٌ خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا."
+      />
+
+      {rows !== null && rows.length > 0 && (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
           placeholder="ابحث باسم المستشار أو العميل أو بالسبب…" />
@@ -133,7 +156,8 @@ export default function AdvisorRequests() {
             const email = r.case.client?.email ?? r.case.lead?.email ?? "";
             const reason = note[r.id] ?? "";
             return (
-              <Panel as="li" key={r.id}>
+              /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+              <Panel as="li" key={r.id} id={`advisor-req-${r.id}`} tabIndex={-1} className="outline-none">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">

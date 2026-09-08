@@ -5,7 +5,7 @@ import { Link } from "react-router";
 import { AlertTriangle, ClipboardCheck, ClipboardList, ListChecks, Radio, Video, Upload, ArrowLeft } from "lucide-react";
 import type { QueueItem, QueueKind } from "@/application/trainer/work-queue";
 
-import { Inset } from "@/components/ui/Surface";
+import WorkHeader from "@/components/admin/WorkHeader";
 const ICON: Record<QueueKind, typeof Video> = {
   session_now: Radio,
   session_soon: Video,
@@ -25,31 +25,46 @@ const TONE: Record<QueueKind, string> = {
   recording_missing: "border-white/10 bg-white/[0.03]",
 };
 
+/* «١ بندٌ» و«٢ بندان» و«٣ بنود» و«١١ بندا» — والبنودُ مختلفةُ الأجناس
+   (جلسةٌ وحضورٌ وتقييم)، فالجامعُ بينها «بند» لا اسمُ أحدها. */
+const ITEM_FORMS = { one: "بندٌ", two: "بندان", few: "بنود", many: "بندا" };
+
 export default function TrainerWorkQueue({ items, className = "" }: { items: QueueItem[]; className?: string }) {
+  /* أعجلُها أوّلا — والقائمةُ تصل مرتَّبةً بالإلحاح، فأوّلُها هو المقصود */
+  const first = items[0];
   return (
+    /* والقسمُ يسمّيه رأسُه لا عنوانٌ فوقه: كان «ما ينتظرك الآن» عنوانا ثمّ
+       صارت الجملةُ تقولها بعددها، وعنوانان بالمعنى نفسِه فوق بعضهما حشو.
+       فالاسمُ لقارئ الشاشة في `aria-label`، والمرئيُّ هو الجملة. */
     <section
-      aria-labelledby="work-queue-title"
+      aria-label="ما ينتظرك الآن"
       className={`rounded-3xl border border-white/10 bg-white/[0.02] p-5 sm:p-6 ${className}`.trim()}
     >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="work-queue-title" className="flex items-center gap-2 text-sm font-black">
-          <ListChecks className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
-          ما ينتظرك الآن
-          {items.length > 0 && (
-            <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">{items.length}</span>
-          )}
-        </h2>
-        <p className="text-read text-muted-foreground">مرتّبة بالإلحاح — لكل سطر إجراء واحد</p>
-      </div>
+      {/* ── العملُ قبل العنوان ──
 
-      {items.length === 0 ? (
-        <Inset as="p" className="mt-4 px-4 py-6 text-center text-read leading-6 text-muted-foreground">
-          لا شيء ينتظرك الآن — الحضور مسجَّل والتسليمات مقيَّمة ولا جلسة قريبة.
-          <br />
-          يظهر هنا كل ما يحتاج إجراءً منك فور حدوثه.
-        </Inset>
-      ) : (
-        <ul className="mt-4 space-y-2.5">
+          كان عنوانا («ما ينتظرك الآن») ولصيقةَ عددٍ فوق قائمةٍ متساويةِ
+          الوزن: بنودٌ بلا أوّل. فصار العددُ جملةً وأعجلُ البنود مُسمًّى
+          تحتها، وللزرِّ وجهةٌ واحدة — كما صار في لوحة الإدارة.
+
+          والوجهةُ الخارجيّةُ تُفتح في لسانٍ جديدٍ لا بـ`Link`: رابطُ
+          الاجتماع يخرج من المنصّة، و`Link` يحاول مطابقتَه بمسارٍ داخليّ. */}
+      <WorkHeader
+        icon={ListChecks}
+        count={items.length}
+        forms={ITEM_FORMS}
+        waitingAr="تنتظرك الآن"
+        stats={first ? [`أعجلُها: ${first.titleAr}`] : []}
+        actionAr={first?.actionAr ?? "ابدأ"}
+        {...(first && !first.external
+          ? { to: first.href }
+          : { onAction: () => { if (first) window.open(first.href, "_blank", "noreferrer") } })}
+        doneAr="لا شيءَ ينتظرك الآن — الحضورُ مسجَّلٌ والتسليماتُ مقيَّمةٌ ولا جلسةَ قريبة. ويظهر هنا كلُّ ما يحتاج إجراءً منك فورَ حدوثه."
+      />
+
+      {items.length === 0 ? null : (
+        <>
+        <p className="text-read text-muted-foreground">مرتّبة بالإلحاح — لكل سطر إجراء واحد</p>
+        <ul className="mt-3 space-y-2.5">
           {items.map((it, i) => {
             const Icon = ICON[it.kind];
             const cta = (
@@ -89,6 +104,7 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
             );
           })}
         </ul>
+        </>
       )}
     </section>
   );

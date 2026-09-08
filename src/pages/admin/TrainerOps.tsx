@@ -546,7 +546,10 @@ function ImpactGate({
         </>
       )}
 
-      <Button tone="primary" disabled={busy || (needsImpact && checked !== true)}
+      {/* فعلٌ مُثبِتٌ داخل قسمٍ لا فعلُ الشاشة: الذهبيُّ في «طلبات المدرّبين»
+          صار زرَّ الرأس (ما ينتظر الفرزَ الأوّليّ)، وهذا نشرُ اقتراحٍ بعينه
+          في لوحه. وذهبيّان على شاشةٍ يُلغيان بعضَهما. */}
+      <Button tone="confirm" disabled={busy || (needsImpact && checked !== true)}
         onClick={onPublish} className="mt-2 min-h-11 disabled:cursor-not-allowed">
         <Globe className="h-3.5 w-3.5" /> نشر في النطاق
       </Button>
