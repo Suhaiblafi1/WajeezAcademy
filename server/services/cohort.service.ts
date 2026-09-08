@@ -179,6 +179,34 @@ export class CohortService {
     }))
   }
 
+  /* مسجَّلو الشعبة — بديلُ حقلِ «معرف التسجيل للإسقاط (UUID)».
+
+     الإسقاطُ كان يطلب معرّفَ تسجيلٍ من ستّةٍ وثلاثين حرفا لا يظهر على أيّ
+     شاشة، فوق زرٍّ أحمرَ اسمُه «إسقاط». فخطأُ لصقٍ واحدٌ يُسقط الطالبَ
+     الخطأ، **ولا اسمَ في الشاشة يُراجَع قبل الضغط**.
+
+     والقائمةُ تُرجع المسجَّلين وقائمةَ الانتظار وحدَهم: المُسقَطُ سابقا لا
+     يُسقَط مرّتين، والمكتملُ إسقاطُه محوُ إنجازٍ لا تصحيحُ قيد. */
+  async roster(cohortId: string) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true } })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    const rows = await this.prisma.enrollment.findMany({
+      where: { cohortId, status: { in: ['enrolled', 'waitlisted'] } },
+      orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+      select: {
+        id: true, status: true, createdAt: true,
+        user: { select: { displayName: true, email: true } },
+      },
+    })
+    return rows.map((r) => ({
+      enrollmentId: r.id,
+      learnerName: r.user.displayName,
+      email: r.user.email,
+      status: r.status,
+      enrolledAt: r.createdAt,
+    }))
+  }
+
   /* بحثُ متعلّمٍ بالاسم أو البريد — بديلُ حقلِ «معرف المستخدم (UUID)».
 
      يُقصَر على المتعلّمين النشطين، ويقول من هو مسجَّلٌ في هذه الشعبة أصلا
@@ -803,6 +831,43 @@ export class CohortService {
   }
 
   /** أرشفة/تعطيل مادة أو تسجيل */
+  /* محتوى الشعبة — الموادُّ والتسجيلاتُ بأسمائها وحالاتها.
+
+     الأرشفةُ كانت تطلب «معرّف المحتوى (UUID)» ونوعَه، ولا شاشةَ تعرض
+     محتوى الشعبة أصلا: فالإداريُّ يضيف مادّةً ولا يراها بعدها أبدا، ولا
+     سبيلَ إلى أرشفةِ واحدةٍ إلّا بمعرّفٍ يُستخرج من القاعدة.
+
+     والتسجيلاتُ تُقرأ عبر جلساتها لأنّها معلَّقةٌ بالجلسة لا بالشعبة —
+     ويُذكَر معها عنوانُ جلستها كي يُعرف أيُّ لقاءٍ هو. */
+  async contentFor(cohortId: string) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true } })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    const [materials, recordings] = await Promise.all([
+      this.prisma.learningMaterial.findMany({
+        where: { cohortId },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, title: true, kind: true, status: true, createdAt: true },
+      }),
+      this.prisma.recording.findMany({
+        where: { session: { cohortId } },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, title: true, status: true, durationSec: true, createdAt: true,
+          session: { select: { title: true, startsAt: true } },
+        },
+      }),
+    ])
+    return {
+      materials: materials.map((m) => ({
+        id: m.id, title: m.title, kind: m.kind, status: m.status, createdAt: m.createdAt,
+      })),
+      recordings: recordings.map((r) => ({
+        id: r.id, title: r.title, status: r.status, durationSec: r.durationSec,
+        createdAt: r.createdAt, sessionTitle: r.session.title, sessionStartsAt: r.session.startsAt,
+      })),
+    }
+  }
+
   async setContentStatus(actorId: string, kind: 'material' | 'recording', id: string, status: 'active' | 'archived' | 'disabled') {
     if (kind === 'material') await this.prisma.learningMaterial.update({ where: { id }, data: { status } })
     else await this.prisma.recording.update({ where: { id }, data: { status } })

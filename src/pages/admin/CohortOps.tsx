@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
+import { fmtDateTimeAr } from "@/utils/format";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -310,16 +311,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
       {/* التسجيل والشهادات */}
       <MiniCard icon={Award} title="التسجيل والشهادات — إسقاط / إصدار / إلغاء">
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <input value={dropForm.enrollmentId} onChange={(e) => setDropForm({ ...dropForm, enrollmentId: e.target.value })}
-              placeholder="معرف التسجيل للإسقاط (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-            <input value={dropForm.note} onChange={(e) => setDropForm({ ...dropForm, note: e.target.value })} placeholder="ملاحظة (اختياري)" className={inputCls} />
-            <button disabled={busy || !dropForm.enrollmentId.trim()}
-              onClick={() => act(() => apiPost(`/api/admin/enrollments/${dropForm.enrollmentId.trim()}/drop`, { note: dropForm.note || undefined }), "أُسقط التسجيل")}
-              className="flex cursor-pointer items-center gap-1 rounded-xl border border-red-500/40 px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
-              <UserMinus className="h-3.5 w-3.5" /> إسقاط
-            </button>
-          </div>
+          <DropEnrollment cohortId={cohort.id} busy={busy} form={dropForm} onForm={setDropForm} act={act} />
           {/* ─────────── الشهادات: قائمةٌ لا معرّفاتٌ تُلصق ───────────
 
               كان الإصدارُ يطلب «معرّف التسجيل (UUID)» والإلغاءُ «معرّف
@@ -338,8 +330,8 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
       <MiniCard icon={BookOpen} title="تسجيلات الجلسات وأرشفة المحتوى — ملفات خاصة موقعة">
         <p className="mb-2 text-micro font-bold text-muted-foreground">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
         <div className="grid gap-2 sm:grid-cols-3">
-          <input value={recForm.sessionId} onChange={(e) => setRecForm({ ...recForm, sessionId: e.target.value })}
-            placeholder="معرف الجلسة (UUID)" dir="ltr" className={`${inputCls} font-mono`} />
+          <SessionSelect cohortId={cohort.id} value={recForm.sessionId}
+            onChange={(sessionId) => setRecForm({ ...recForm, sessionId })} />
           <input value={recForm.title} onChange={(e) => setRecForm({ ...recForm, title: e.target.value })} placeholder="عنوان التسجيل" className={inputCls} />
           <input value={recForm.moduleId} onChange={(e) => setRecForm({ ...recForm, moduleId: e.target.value })}
             placeholder="معرف الوحدة (اختياري)" dir="ltr" className={`${inputCls} font-mono`} />
@@ -362,12 +354,11 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
         <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-micro font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
         <div className="flex flex-wrap gap-2">
-          <select value={contentForm.kind} onChange={(e) => setContentForm({ ...contentForm, kind: e.target.value })} className={selectCls}>
-            <option value="material">مادة</option>
-            <option value="recording">تسجيل</option>
-          </select>
-          <input value={contentForm.id} onChange={(e) => setContentForm({ ...contentForm, id: e.target.value })}
-            placeholder="معرف المحتوى (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
+          <ContentSelect cohortId={cohort.id} value={contentForm.kind && contentForm.id ? `${contentForm.kind}:${contentForm.id}` : ""}
+            onChange={(picked) => {
+              const [kind, id] = picked.split(":");
+              setContentForm({ ...contentForm, kind: kind || "material", id: id || "" });
+            }} />
           <select value={contentForm.status} onChange={(e) => setContentForm({ ...contentForm, status: e.target.value })} className={selectCls}>
             <option value="active">نشط</option>
             <option value="archived">مؤرشف</option>
@@ -390,6 +381,161 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
       )}
       {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />}
     </div>
+  );
+}
+
+/* ═══════ ثلاثةُ منتقياتٍ تُزيل لصقَ المعرّفات ═══════
+
+   كانت هذه البطاقةُ تطلب ثلاثةَ معرّفاتِ UUID: معرّفَ التسجيل للإسقاط،
+   ومعرّفَ الجلسة للتسجيل، ومعرّفَ المحتوى للأرشفة. وثلاثتُها **قيمٌ لا تظهر
+   على أيّ شاشةٍ في المنصّة** — فلا سبيلَ إلى تعبئتها إلّا بفتح قاعدة
+   البيانات.
+
+   وأخطرُها الأوّل: ستّةٌ وثلاثون حرفا تُلصق فوق زرٍّ أحمرَ اسمُه «إسقاط»،
+   بلا اسمٍ يُراجَع. فخطأُ لصقٍ واحدٌ يُخرج الطالبَ الخطأ من شعبته.
+
+   والنمطُ ليس جديدا على المنصّة: `LearnerSearchField` و`ZoomAttach`
+   و`CertificateCandidates` تفعله منذ جولةٍ سابقة. وهذه تعميمُه على ما بقي. */
+
+/** مسجَّلٌ في الشعبة — يُختار باسمه لا بمعرّفه */
+interface RosterRow {
+  enrollmentId: string; learnerName: string; email: string;
+  status: string; enrolledAt: string;
+}
+
+const ROSTER_LABEL: Record<string, string> = { enrolled: "مسجَّل", waitlisted: "قائمةُ انتظار" };
+
+/** إسقاطُ تسجيل — الاسمُ يُقرأ قبل الضغط، والمُسقَطُ يُسمّى في زرّه */
+function DropEnrollment({ cohortId, busy, form, onForm, act }: {
+  cohortId: string;
+  busy: boolean;
+  form: { enrollmentId: string; note: string };
+  onForm: (v: { enrollmentId: string; note: string }) => void;
+  act: (fn: () => Promise<unknown>, msg: string) => void;
+}) {
+  const [rows, setRows] = useState<RosterRow[] | null>(null);
+  const load = useCallback(() => {
+    apiGet<RosterRow[]>(`/api/admin/cohorts/${cohortId}/enrollments`)
+      .then(setRows)
+      .catch(() => setRows([]));
+  }, [cohortId]);
+  useEffect(() => { load(); }, [load]);
+
+  const picked = rows?.find((r) => r.enrollmentId === form.enrollmentId) ?? null;
+
+  if (rows !== null && rows.length === 0) {
+    return <p className="text-micro text-muted-foreground">لا مسجَّلين في هذه الشعبة — لا شيءَ يُسقَط.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <label className="sr-only" htmlFor={`drop-${cohortId}`}>المتعلّمُ المراد إسقاطُ تسجيله</label>
+        <select id={`drop-${cohortId}`} value={form.enrollmentId} disabled={rows === null}
+          onChange={(e) => onForm({ ...form, enrollmentId: e.target.value })}
+          className={`${selectCls} flex-1`}>
+          <option value="">{rows === null ? "يُقرأ المسجَّلون…" : "اختر المتعلّم…"}</option>
+          {rows?.map((r) => (
+            <option key={r.enrollmentId} value={r.enrollmentId}>
+              {r.learnerName} — {r.email}{r.status !== "enrolled" ? ` · ${ROSTER_LABEL[r.status] ?? r.status}` : ""}
+            </option>
+          ))}
+        </select>
+        <input value={form.note} onChange={(e) => onForm({ ...form, note: e.target.value })}
+          aria-label="ملاحظةُ الإسقاط" placeholder="ملاحظة (اختياري)" className={inputCls} />
+      </div>
+
+      {/* الزرُّ يسمّي من يُسقطه — فلا يُضغط «إسقاط» مجرَّدا على قائمةٍ فيها عشرون اسما */}
+      <Button tone="danger" disabled={busy || !picked}
+        onClick={() => act(
+          () => apiPost(`/api/admin/enrollments/${form.enrollmentId}/drop`, { note: form.note || undefined })
+            .then(() => { onForm({ enrollmentId: "", note: "" }); load(); }),
+          `أُسقط تسجيلُ «${picked?.learnerName ?? ""}»`,
+        )}>
+        <UserMinus className="h-3.5 w-3.5" />
+        {picked ? `أسقِط تسجيلَ ${picked.learnerName}` : "أسقِط التسجيل"}
+      </Button>
+    </div>
+  );
+}
+
+interface SessionOpt { id: string; title: string; startsAt: string }
+
+/** جلسةُ الشعبة تُختار بعنوانها وتاريخها — لا بمعرّفها */
+function SessionSelect({ cohortId, value, onChange }: {
+  cohortId: string; value: string; onChange: (id: string) => void;
+}) {
+  const [rows, setRows] = useState<SessionOpt[] | null>(null);
+  useEffect(() => {
+    apiGet<SessionOpt[]>(`/api/admin/cohorts/${cohortId}/sessions`)
+      .then(setRows)
+      .catch(() => setRows([]));
+  }, [cohortId]);
+
+  return (
+    <>
+      <label className="sr-only" htmlFor={`rec-session-${cohortId}`}>الجلسة</label>
+      <select id={`rec-session-${cohortId}`} value={value} disabled={rows === null}
+        onChange={(e) => onChange(e.target.value)} className={selectCls}>
+        <option value="">
+          {rows === null ? "تُحمَّل الجلسات…" : rows.length === 0 ? "لا جلسات بعد" : "اختر الجلسة…"}
+        </option>
+        {rows?.map((sn) => (
+          <option key={sn.id} value={sn.id}>{sn.title} — {fmtDateTimeAr(sn.startsAt)}</option>
+        ))}
+      </select>
+    </>
+  );
+}
+
+interface CohortContent {
+  materials: { id: string; title: string; kind: string; status: string }[];
+  recordings: { id: string; title: string; status: string; sessionTitle: string }[];
+}
+
+const CONTENT_STATUS: Record<string, string> = { active: "نشط", archived: "مؤرشف", disabled: "معطل" };
+
+/** المحتوى يُختار بعنوانه، ونوعُه يُشتقّ من اختياره لا يُسأل عنه مرّتين */
+function ContentSelect({ cohortId, value, onChange }: {
+  cohortId: string; value: string; onChange: (picked: string) => void;
+}) {
+  const [data, setData] = useState<CohortContent | null>(null);
+  useEffect(() => {
+    apiGet<CohortContent>(`/api/admin/cohorts/${cohortId}/content`)
+      .then(setData)
+      .catch(() => setData({ materials: [], recordings: [] }));
+  }, [cohortId]);
+
+  const empty = data !== null && data.materials.length === 0 && data.recordings.length === 0;
+
+  return (
+    <>
+      <label className="sr-only" htmlFor={`content-${cohortId}`}>المادّةُ أو التسجيل</label>
+      <select id={`content-${cohortId}`} value={value} disabled={data === null || empty}
+        onChange={(e) => onChange(e.target.value)} className={`${selectCls} flex-1`}>
+        <option value="">
+          {data === null ? "يُقرأ المحتوى…" : empty ? "لا محتوى في هذه الشعبة بعد" : "اختر المادّة أو التسجيل…"}
+        </option>
+        {data && data.materials.length > 0 && (
+          <optgroup label="المواد">
+            {data.materials.map((m) => (
+              <option key={m.id} value={`material:${m.id}`}>
+                {m.title} · {CONTENT_STATUS[m.status] ?? m.status}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {data && data.recordings.length > 0 && (
+          <optgroup label="التسجيلات">
+            {data.recordings.map((r) => (
+              <option key={r.id} value={`recording:${r.id}`}>
+                {r.title} — {r.sessionTitle} · {CONTENT_STATUS[r.status] ?? r.status}
+              </option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+    </>
   );
 }
 

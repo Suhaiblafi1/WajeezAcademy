@@ -414,7 +414,18 @@ export default function AdminCohorts() {
                     {/* إضافة جلسة */}
                     {!["completed", "cancelled"].includes(c.status) && (
                       <Card className="bg-paper/20">
-                        <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground"><CalendarPlus className="h-3.5 w-3.5" /> جلسة جديدة</p>
+                        {/* «جلسة جديدة» كان عنوانا لا يقول ماذا يفعل.
+
+                            سأل صاحبُ المنصّة: «ما معنى جلسة جديدة؟» — وهو من
+                            بناها. و«جلسة» في العربيّة الرقميّة تسبق إلى الذهن
+                            بمعنى جلسةِ الدخول، والمنصّةُ تستعملها للمعنيين.
+                            فالعنوانُ يسمّيها **لقاءً**، والسطرُ تحته يقول
+                            أثرَها: أين تظهر، وما الذي يُبنى عليها. */}
+                        <p className="flex items-center gap-1.5 text-xs font-black text-foreground"><CalendarPlus className="h-3.5 w-3.5" /> لقاءٌ واحد — يُضاف بيده</p>
+                        <p className="mb-3 mt-1 text-micro leading-5 text-muted-foreground">
+                          موعدُ لقاءٍ حيٍّ واحد (محاضرةُ يومٍ بعينه). يظهر في تقويم المتعلّم وتقويم المدرّب،
+                          ويُرصد فيه الحضور، ويُربط به تسجيلُه ورابطُ اجتماعه.
+                        </p>
                         <div className="grid gap-2 sm:grid-cols-5">
                           <input placeholder="عنوان الجلسة" value={sessionForm.title} onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
                             className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none sm:col-span-2" />
@@ -442,8 +453,20 @@ export default function AdminCohorts() {
                         والثاني يُغني عن إعادةِ الإعداد كلِّه في كلّ فصل. */}
                     {!["completed", "cancelled"].includes(c.status) && (
                       <Card className="bg-paper/20">
-                        <p className="mb-3 flex items-center gap-1.5 text-xs font-black text-muted-foreground">
-                          <Sparkles className="h-3.5 w-3.5" /> توليدُ الجلسات من الجدول
+                        {/* ولماذا هذه البطاقةُ هنا أصلا؟ — سؤالُ صاحب المنصّة.
+
+                            لأنّ معالجَ الإنشاء يولّد لقاءاتِ الشعبة عند
+                            إنشائها (`CohortWizard`). فهذه لا تلزم إلّا حين
+                            **يتغيّر الجدولُ بعد ذلك** — حالةٌ نادرةٌ كانت
+                            تُعرض كأنّها يوميّة. فيُقال ذلك صراحةً، ويُقال
+                            كم لقاءً في الشعبة الآن كي يُعرف أثمّةَ ما يُولَّد. */}
+                        <p className="flex items-center gap-1.5 text-xs font-black text-foreground">
+                          <Sparkles className="h-3.5 w-3.5" /> توليدُ اللقاءات من الجدول الأسبوعيّ
+                        </p>
+                        <p className="mb-3 mt-1 text-micro leading-5 text-muted-foreground">
+                          {c.sessionsCount > 0
+                            ? `في الشعبة ${c.sessionsCount} لقاءً مجدولا — وُلِّدت عند إنشائها. ولا حاجةَ لهذا إلّا إن تغيّر الجدولُ بعد ذلك؛ والموجودُ لا يُكرَّر.`
+                            : "لا لقاءات بعد. يقرأ أيّامَ الشعبة ووقتَها، ويُنشئ لقاءات الأسابيع دفعةً واحدة بدل إضافتها لقاءً لقاءً."}
                         </p>
                         {c.daysOfWeek.length === 0 || !c.startTime ? (
                           <p className="text-micro text-muted-foreground">

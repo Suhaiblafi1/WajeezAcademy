@@ -287,6 +287,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await cohorts.registerRecording(req.auth!.userId, sessionId, body))
   })
 
+  /* محتوى الشعبة بأسمائه — يُقرأ قبل الأرشفة لا بعدها */
+  app.get('/api/admin/cohorts/:id/content', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'موادُّ الشعبة وتسجيلاتُها بأسمائها — بديلُ لصق معرّف المحتوى' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cohorts.contentFor(id)
+  })
+
   app.post('/api/admin/content/:kind/:id/status', {
     preHandler: requirePermission('material.manage'),
     schema: { tags: ['admin-learning'], summary: 'أرشفة أو تعطيل مادة/تسجيل' },
@@ -309,6 +318,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
       return reply.status(403).send({ error: { code: 'forbidden', message_ar: 'تجاوز السعة يتطلب صلاحية مستقلة' } })
     }
     return reply.status(201).send(await enrollments.enroll(id, body.userId, req.auth!.userId, { overrideCapacity: body.overrideCapacity }))
+  })
+
+  /* مسجَّلو الشعبة بأسمائهم — تُقرأ قبل الإسقاط لا بعده */
+  app.get('/api/admin/cohorts/:id/enrollments', {
+    preHandler: requirePermission('enrollment.manage'),
+    schema: { tags: ['admin-learning'], summary: 'مسجَّلو الشعبة لاختيارهم بالاسم — بديلُ لصق معرّف التسجيل' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cohorts.roster(id)
   })
 
   app.post('/api/admin/enrollments/:id/drop', {
