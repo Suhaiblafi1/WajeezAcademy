@@ -12,6 +12,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
+import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { createZoomMeeting, getZoomConfig, zoomMissing, zoomReady } from './zoom.service'
@@ -947,6 +948,57 @@ export class CohortService {
     })
     await recordAudit(this.prisma, { actorId, action: 'zoom.attach_manual', entityType: 'cohort_session', entityId: sessionId })
     return zoom
+  }
+
+  /** تذكرةُ دخولٍ إلى الجلسة داخلَ الموقع — والدورُ يُشتقّ هنا لا يُطلب.
+
+     الحدُّ نفسُه الذي في رأس مسارات البوّابة: «المتعلّم لا يرى محتوى شعبةٍ غير
+     مسجَّلٍ فيها، والمدرّب لا يرى شعبا خارجَ شعبه». فمن ليس مدرّبَ الشعبة ولا
+     متعلّمَها المسجَّل لا يُوقَّع له شيء.
+
+     ولا يُقبل دورٌ من جسم الطلب: لو قُبل لصار كلُّ متعلّمٍ مضيفا بتعديل حقلٍ
+     في متصفّحه — يُخرج غيرَه ويفتح الاجتماعَ قبل مدرّبه. */
+  async meetingSdkTicket(userId: string, sessionId: string) {
+    assertMeetingSdkEnabled()
+
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        zoom: true,
+        cohort: {
+          select: {
+            id: true,
+            trainers: { select: { profile: { select: { userId: true } } } },
+            enrollments: { where: { userId }, select: { status: true } },
+          },
+        },
+      },
+    })
+    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
+    if (session.status === 'cancelled') throw new AuthError('session_cancelled', 'هذه الجلسة ملغاة', 409)
+    if (!session.zoom) throw new AuthError('no_meeting', 'الجلسة بلا اجتماع بعد', 409)
+
+    /* التضمينُ يحتاج رقمَ الاجتماع لا رابطَه. والربطُ اليدويُّ قد يُدخل الرابطَ
+       بلا رقم — فتلك جلسةٌ تُفتح في تطبيق Zoom لا داخلَ الموقع، ويقال ذلك. */
+    if (!session.zoom.meetingId) {
+      throw new AuthError('no_meeting_number', 'هذه الجلسة بلا رقم اجتماع — افتح رابطها في تطبيق Zoom', 409)
+    }
+
+    const isTrainer = session.cohort.trainers.some((t) => t.profile.userId === userId)
+    const enrollment = session.cohort.enrollments[0]
+    const isActiveLearner = enrollment !== undefined && (enrollment.status === 'enrolled' || enrollment.status === 'completed')
+    if (!isTrainer && !isActiveLearner) {
+      throw new AuthError('forbidden', 'هذه الجلسة ليست من شعبك', 403)
+    }
+
+    const role: ZoomSdkRole = isTrainer ? 1 : 0
+    return {
+      signature: signMeetingSdkJwt({ meetingNumber: session.zoom.meetingId, role }),
+      sdkKey: meetingSdkKey(),
+      meetingNumber: session.zoom.meetingId.replace(/[\s-]/g, ''),
+      passcode: session.zoom.passcodeEnc ?? '',
+      role,
+    }
   }
 
   /* ═══════════ اللقاءُ يُنشأ من هنا لا من موقع Zoom ═══════════

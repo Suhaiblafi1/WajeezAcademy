@@ -106,6 +106,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return { ...view, cohort: signCohortContent(view.cohort, cohorts, { revealPasscode: true }) }
   })
 
+  /* تذكرةُ فتحِ الجلسة داخلَ الموقع.
+
+     `learner.portal` تفتح البابَ، والخدمةُ تقرّر الدور: مدرّبُ الشعبة مضيف
+     ومتعلّمُها المسجَّل مشارك، ومن سواهما يُردّ ٤٠٣. ولا يُقبل دورٌ من الجسم.
+
+     وهي POST لا GET بقصد: التوقيعُ سرٌّ قصيرُ العمر، وGET يستقرّ في سجلّات
+     الوسطاء وتاريخِ المتصفّح. */
+  app.post('/api/learner/sessions/:sessionId/meeting-ticket', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'تذكرةُ Meeting SDK لفتح جلسة شعبتي داخل الموقع' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    return cohorts.meetingSdkTicket(req.auth!.userId, sessionId)
+  })
+
   /* تبديلُ الشعبة قبل أن تبدأ.
 
      قرارُ صاحب المنصّة: «لا يحقّ له تغيير مساره بعد الدفع. فقط التنقّل بين
