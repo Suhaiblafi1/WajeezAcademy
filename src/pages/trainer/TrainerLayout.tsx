@@ -5,9 +5,10 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
+import { GRADING_CHANGED } from "@/services/grading-signal";
 
 import Button from "@/components/ui/Button";
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
@@ -29,13 +30,19 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
      هنا أنفعُ من إشعارٍ: يُرى بلا فتحِ شيء، ويبقى ما بقي العمل، ويصير صفرا
      وحدَه حين يفرغ. والسقوطُ يُبتلع — عدّادٌ لم يصل لا يمنع أحدا من عمله. */
   const [pending, setPending] = useState(0);
-  useEffect(() => {
-    let alive = true;
+  /* والعددُ يُعاد جلبُه بعد فعلِ المدرّب لا بإعادة تحميل الصفحة: كان يقبل
+     آخرَ تسليمٍ فيصير المتنُ «الطابورُ نظيف» والشارةُ فوقه «١». والإطارُ
+     لا يرى ما يفعله ابنُه، فيسمع إشارتَه (`GRADING_CHANGED`). */
+  const refreshPending = useCallback(() => {
     void apiGet<{ pendingGrading?: number }>("/api/trainer/me")
-      .then((me) => { if (alive) setPending(me.pendingGrading ?? 0); })
+      .then((me) => setPending(me.pendingGrading ?? 0))
       .catch(() => { /* لا رقمَ خيرٌ من رقمٍ كاذب */ });
-    return () => { alive = false };
   }, []);
+  useEffect(() => {
+    refreshPending();
+    window.addEventListener(GRADING_CHANGED, refreshPending);
+    return () => window.removeEventListener(GRADING_CHANGED, refreshPending);
+  }, [refreshPending]);
   const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
 
   if (!checked) {
