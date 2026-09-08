@@ -176,6 +176,24 @@ export function TrainerDetailOps({ app, onAction }: {
             )}>
             جدولة مقابلة
           </Button>
+
+          {/* ═══ ودعوةٌ إلى موعدٍ آخر بنقرةٍ واحدة ═══
+
+              الجدولةُ فوقَها تفرض ساعةً وترسلها، وهي تصلح للأوّل. أمّا اللقاءُ
+              الثاني فلا نعرف فيه فراغَه ولا يعرف فراغَنا — فتذهب ثلاثُ رسائلَ
+              قبل أن يُتّفق على ساعة. وهذه تدعوه ليختار من التقويم نفسِه. */}
+          <div className="border-t border-white/10 pt-3">
+            <Button tone="secondary" size="sm"
+              onClick={() => void onAction(
+                () => apiPost(`/api/admin/trainer-applications/${app.id}/interview-invite`, {}),
+                "أُرسلت الدعوة — يختار موعده ويصلنا حين يحجز",
+              )}>
+              <CalendarCheck className="h-3.5 w-3.5" /> ادعُه ليحجز موعدا بنفسه
+            </Button>
+            <p className="mt-1.5 text-read leading-5 text-muted-foreground">
+              رسالةٌ فيها رابطُ التقويم — يختار وقتَه، ويُكتب الموعدُ هنا حين يحجز.
+            </p>
+          </div>
         </div>
       </FoldSection>
 

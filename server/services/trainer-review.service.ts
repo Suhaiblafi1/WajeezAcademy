@@ -11,6 +11,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { renderMail } from './mail-template'
+import { TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
 import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
@@ -358,6 +359,47 @@ export class TrainerReviewService {
     if (action === 'request_info') {
       await this.notifyInfoRequested(app.email, app.fullName, app.reference, note, actorId, applicationId)
     }
+  }
+
+  /* ═══ دعوةٌ إلى حجزِ موعدٍ آخر — بنقرةٍ واحدة ═══
+
+     الجدولةُ اليدويّةُ فوقَها تفرض موعدا وترسله. وهي تصلح للأوّل، ولا تصلح
+     حين نريد لقاءً ثانيا: فالمُقابِلُ لا يعرف فراغَ المتقدّم، والمتقدّمُ لا
+     يعرف فراغَنا — فتذهب رسالتان أو ثلاث قبل أن يُتّفق على ساعة.
+
+     فهذه تدعوه ليختار هو من التقويم نفسِه الذي يحجب ما حُجز. ولا تنقل حالةَ
+     الطلب: هي دعوةٌ لا قرار، والحالةُ تتغيّر حين يُحجَز فعلا. */
+  async inviteToBookInterview(applicationId: string, actorId: string): Promise<{ emailDelivery: string }> {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: { email: true, fullName: true, reference: true },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+
+    const link = trainerInterviewUrl({ name: app.fullName, email: app.email, reference: app.reference })
+    const mail = await sendDirectEmail(this.prisma, {
+      to: app.email,
+      subject: `موعدٌ آخر معنا — اختر ما يناسبك (${app.reference})`,
+      ...renderMail({
+        greetingName: app.fullName,
+        heading: 'نودّ أن نلتقيك مرّةً أخرى',
+        blocks: [
+          { kind: 'p', text: 'اخترْ من التقويم الوقتَ الذي يناسبك — تظهر لك الأوقاتُ المتاحةُ وحدَها، ويصلك التأكيدُ ودعوةُ التقويم فورَ اختيارك.' },
+          { kind: 'cta', label: 'اختر موعدك', href: link, caption: 'أو انسخ الرابط:' },
+          { kind: 'facts', rows: [
+            { label: 'رقم الطلب', value: app.reference },
+            { label: 'المدّة', value: `${TRAINER_INTERVIEW.minutes} دقيقة` },
+            { label: 'المكان', value: `عن بُعد عبر ${TRAINER_INTERVIEW.platformAr}` },
+          ] },
+          { kind: 'note', text: 'ولو لم يناسبك أيُّ وقتٍ معروض، ردَّ على هذه الرسالة وسنرتّب غيرَه.' },
+        ],
+      }),
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.interview.invite', entityType: 'trainer_application', entityId: applicationId,
+      meta: { sentTo: app.email, emailDelivery: mail.status },
+    })
+    return { emailDelivery: mail.status }
   }
 
   /** بريدُ «نحتاج منك» — يحمل السؤالَ نفسَه ورابطَ التعديل */

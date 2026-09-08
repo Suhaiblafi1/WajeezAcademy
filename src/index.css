@@ -470,9 +470,21 @@
     background: #ffffff !important;
     color: #111111 !important;
   }
+  /* الأدواتُ لا تُطبع: الرأسُ، والقائمةُ الجانبيّةُ للإدارة، وكلُّ ما وُسم
+     `print:hidden` — شريطُ القرار، وعارضُ الوثائق، وأزرارُ التنقّل. فالمطبوعُ
+     ملفُّ المتقدّم لا صورةُ الشاشة. */
   header,
+  aside,
+  nav,
   .print\:hidden {
     display: none !important;
+  }
+
+  /* ولا تُقطع بطاقةٌ بين صفحتين — المراجعُ يقرأ الكتلةَ مجتمعةً أو لا يقرؤها */
+  section,
+  article {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   section,
   div,

@@ -42,6 +42,12 @@ export const staffControlCls =
 /** والقائمةُ هي الحقلُ نفسُه، وخياراتُها تحتاج أرضيّةً تُرى على الداكن */
 export const staffSelectCls = `${staffControlCls} [&>option]:bg-surface`
 
+/** والنصُّ الطويل في شاشات الفريق — كان يُكتب في كلّ شاشةٍ بيدها، فتفترق
+    الحقولُ ويُعدّ كلُّ واحدٍ منها سطحا مكتوبا بيده في سقفِ الأسطح. */
+export const staffAreaCls =
+  'w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-read leading-7 text-foreground '
+  + 'placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
+
 /** والنصُّ الطويل يشترك في كلّ شيءٍ إلّا الارتفاع */
 export const areaCls =
   'w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm leading-7 text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'

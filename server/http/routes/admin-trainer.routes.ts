@@ -65,6 +65,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(r)
   })
 
+  /* دعوةٌ إلى الحجز — لا جدولةٌ تفرض ساعة. تُستعمل حين نريد لقاءً ثانيا
+     ولا نعرف فراغَه: يختار هو من التقويم الذي يحجب ما حُجز. */
+  app.post('/api/admin/trainer-applications/:id/interview-invite', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'دعوةُ المتقدّم إلى حجز موعدِ مقابلةٍ بنفسه' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return reply.status(201).send(await review.inviteToBookInterview(id, req.auth!.userId))
+  })
+
   app.post('/api/admin/trainer-applications/:id/interviews', {
     preHandler: requirePermission('trainer.applications.review'),
     schema: { tags: ['admin-trainers'], summary: 'جدولة مقابلة — تنقل الطلب إلى interview_scheduled' },

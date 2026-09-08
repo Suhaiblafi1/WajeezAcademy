@@ -174,6 +174,32 @@ export default function ApplicantStatus() {
               )}
             </section>
 
+            {/* ═══ التوثيقُ أوّلَ ما يُرى، لا في بطاقةٍ أسفلَ الصفحة ═══
+
+                كان تنبيهُ «غير موثَّق» سطرا في بطاقةٍ صغيرةٍ بين البريد وقناة
+                التواصل، أسفلَ شاشةٍ طويلة. وهو **الشيءُ الوحيدُ الذي يمنع
+                طلبَه من المضيّ** — فموضعُه أن يكون أوّلَ ما تقع عليه العين،
+                لا آخرَه.
+
+                ويختفي تماما متى وُثّق: لا يبقى في الصفحة أثرٌ لخطوةٍ انتهت. */}
+            {!mine.emailVerifiedAt && mine.status !== "draft" && (
+              <Card tone="warn">
+                <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
+                  <MailWarning className="h-4 w-4" /> وثّق بريدك — وهي الخطوةُ الباقية
+                </p>
+                <p className="mt-2 text-read leading-6 text-foreground">
+                  أرسلنا رابطَ التأكيد إلى <b dir="ltr" className="font-mono">{mine.email}</b>. افتحه مرّةً واحدة،
+                  فعلى هذا البريد وحدَه نتواصل معك — ولا يُعتمد طلبٌ ببريدٍ لم يُوثَّق.
+                </p>
+                <button
+                  type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
+                  className="mt-2 cursor-pointer text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
+                >
+                  {resent === "done" ? "أُعيد الإرسال — راجع بريدك" : resent === "error" ? "تعذّر — حاول بعد قليل" : "لم تصلك الرسالة؟ أعد الإرسال"}
+                </button>
+              </Card>
+            )}
+
             {/* ما طُلب منه، بنصّه.
 
                 كانت الشاشةُ تقول «نحتاج معلوماتٍ إضافية» ولا تقول أيَّها —
@@ -220,17 +246,9 @@ export default function ApplicantStatus() {
                 <p dir="ltr" className="mt-1 text-right text-sm text-muted-foreground">{mine.email}</p>
                 {mine.emailVerifiedAt ? (
                   <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثَّق</p>
-                ) : mine.status !== "draft" ? (
-                  <div className="mt-2">
-                    <p className="flex items-center gap-1.5 text-read font-bold text-gold-ink"><MailWarning className="h-3.5 w-3.5" /> غير موثَّق — افتح رابط التأكيد في بريدك</p>
-                    <button
-                      type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
-                      className="mt-1.5 cursor-pointer text-fine font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
-                    >
-                      {resent === "done" ? "أُعيد الإرسال — راجع بريدك" : resent === "error" ? "تعذّر — حاول بعد قليل" : "لم تصلك الرسالة؟ أعد الإرسال"}
-                    </button>
-                  </div>
                 ) : null}
+                {/* ولا يُعاد التنبيهُ هنا: هو في أعلى الصفحة بنصّه وزرّه.
+                    وتنبيهان في شاشةٍ واحدةٍ يُقرأ أوّلُهما ويُهمَل ثانيهما. */}
               </Card>
               <Card>
                 <p className="flex items-center gap-2 text-read font-bold text-muted-foreground"><Phone className="h-3.5 w-3.5" /> سنتواصل معك عبر</p>
