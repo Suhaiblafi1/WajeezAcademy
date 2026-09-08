@@ -203,7 +203,7 @@ export async function resolveStorageOwner(
     where: { storageKey }, select: { mime: true, title: true },
   })
   if (rec) {
-    return { kind: 'recording', maxBytes: MAX_UPLOAD_ANY, mime: rec.mime, originalName: rec.title }
+    return { kind: 'recording', maxBytes: MAX_UPLOAD_ANY, mime: rec.mime ?? undefined, originalName: rec.title }
   }
 
   const mat = await prisma.learningMaterial.findUnique({

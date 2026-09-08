@@ -44,6 +44,15 @@ const QUALIFICATION_LABEL: Record<EligibleTrainer["qualification"], string> = {
 };
 
 type Done = (msg: string) => void;
+interface TrainerPlan {
+  id: string; status: string; reviewerNote: string | null; trainerName: string | null;
+  submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
+  content: { summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[] } | null;
+}
+const PLAN_AR: Record<string, string> = {
+  draft: "مسودّةٌ عند المدرّب", submitted: "بانتظار اعتمادك", changes_requested: "رُدّت إليه بتعديلات",
+  approved: "معتمَدة", published: "منشورة", superseded: "نسخةٌ قديمة",
+};
 
 /* ── من طيّةٍ تُفتح إلى قسمٍ يُرى ──
 
@@ -101,6 +110,15 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
      الأكاديميّ» وهو يملك كلَّ صلاحيّةٍ فيها، فيظنّ أنّ عليه أن يحيل وينتظر. */
   const { user: viewer } = useRealSession();
   const canQualify = viewer?.permissions.includes("trainer.qualify") ?? false;
+  /* خطّةُ المدرّب لهذه الشعبة — يعتمدها من يملك `cohort.plan.approve` (الأكاديميُّ
+     والأعلى)، ويذكّره بها من يدير الشعبة. */
+  const canApprovePlan = viewer?.permissions.includes("cohort.plan.approve") ?? false;
+  const [trainerPlan, setTrainerPlan] = useState<TrainerPlan | null>(null);
+  const loadPlan = useCallback(async () => {
+    try { setTrainerPlan(await apiGet<TrainerPlan | null>(`/api/admin/cohorts/${cohort.id}/trainer-plan`)); }
+    catch { setTrainerPlan(null); }
+  }, [cohort.id]);
+  useEffect(() => { void loadPlan(); }, [loadPlan]);
   const picked = trainers.find((t) => t.profileId === assignForm.profileId) ?? null;
 
   const act = useCallback(async (fn: () => Promise<unknown>, msg: string) => {
@@ -313,6 +331,65 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       )}
 
       {/* مادة تعليمية */}
+      {/* ═══ خطّةُ المدرّب — «ليس اقتراحا بل واجبٌ عليه» ═══
+
+          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): المدرّبُ يجهّز شعبتَه ويقول «أوافق»،
+          والأكاديميُّ أو الأعلى يعتمد — أيُّهما سبق. وهنا يُقرأ ما أرسله ويُقرَّر
+          فيه، ويُذكَّر إن تأخّر. */}
+      {tab === "content" && (
+      <Section icon={BookOpen} title="خطّةُ المدرّب — تجهيزُ الشعبة واعتمادُها">
+        {!trainerPlan ? (
+          <p className="text-read leading-6 text-muted-foreground">لم يبدأ المدرّبُ تجهيزَ الشعبة بعد.</p>
+        ) : (
+          <>
+            <p className="text-read leading-6">
+              <b>{PLAN_AR[trainerPlan.status] ?? trainerPlan.status}</b>
+              {trainerPlan.trainerName ? <> · {trainerPlan.trainerName}</> : null}
+              {trainerPlan.submittedAt ? <> · أُرسلت {fmtDateTimeAr(trainerPlan.submittedAt)}</> : null}
+              {trainerPlan.trainerConfirmedAt ? <> · وأكّد موافقتَه على كلّ ما فيها</> : null}
+            </p>
+            {trainerPlan.content?.summaryAr && <p className="mt-2 text-read leading-6 text-muted-foreground">{trainerPlan.content.summaryAr}</p>}
+            {(trainerPlan.content?.modules?.length ?? 0) > 0 && (
+              <ol className="mt-2 space-y-1 text-read text-foreground">
+                {trainerPlan.content!.modules!.map((m, i) => <li key={m.moduleId}>{i + 1}. {m.titleAr}</li>)}
+              </ol>
+            )}
+            {(trainerPlan.content?.resources?.length ?? 0) > 0 && (
+              <p className="mt-2 text-read text-muted-foreground">{trainerPlan.content!.resources!.length} مصدرا.</p>
+            )}
+            {trainerPlan.reviewerNote && <Inset tone="warn" className="mt-2 text-read leading-6">{trainerPlan.reviewerNote}</Inset>}
+          </>
+        )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          {trainerPlan?.status === "submitted" && canApprovePlan && (
+            <>
+              <Button tone="confirm" size="sm" disabled={busy}
+                onClick={() => act(() => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true }).then(loadPlan), "اعتُمدت خطّةُ المدرّب — وأُخبر")}>
+                اعتمدها
+              </Button>
+              <Button tone="danger" size="sm" disabled={busy}
+                onClick={() => {
+                  const note = window.prompt("ما الذي يُعدَّل؟ يصله بنصّه:");
+                  if (!note?.trim()) return;
+                  void act(() => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: note.trim() }).then(loadPlan), "رُدّت إليه بالتعديلات");
+                }}>
+                اطلب تعديلات
+              </Button>
+            </>
+          )}
+          {trainerPlan?.status !== "submitted" && trainerPlan?.status !== "approved" && (
+            <Button tone="secondary" size="sm" disabled={busy}
+              onClick={() => {
+                const note = window.prompt("كلمةٌ تُضاف إلى التذكير (اختياريّ):") ?? "";
+                void act(() => apiPost(`/api/admin/cohorts/${cohort.id}/remind-trainer`, { note: note.trim() || undefined }), "ذُكِّر المدرّب — جرسٌ وبريد");
+              }}>
+              ذكّر المدرّب بإكمال التجهيز
+            </Button>
+          )}
+        </div>
+      </Section>
+      )}
+
       {tab === "content" && (
       <Section icon={FilePlus2} title="مادة تعليمية — رابط خارجي أو ملف خاص برفع موقَّع">
         <div className="grid gap-2 sm:grid-cols-4">

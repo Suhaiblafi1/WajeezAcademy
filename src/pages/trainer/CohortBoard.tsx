@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { toast, toastError } from "@/components/Toast";
-import {
+import { ClipboardList,
   CalendarClock, CalendarDays, CalendarPlus, ChevronDown, ClipboardCheck, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Upload, Users, Video,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -248,6 +248,12 @@ export default function CohortBoard() {
                           </div>
                           <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} />
                         </button>
+                        {/* الورشةُ: ماذا بقي عليّ في هذه الشعبة، وأين أفعله */}
+                        <div className="border-t border-white/8 px-5 py-3">
+                          <Link to={`/trainer/cohort/${c.id}`} className="inline-flex items-center gap-2 text-read font-black text-teal-light-ink hover:text-foreground">
+                            <ClipboardList className="h-4 w-4" aria-hidden="true" /> ورشة الشعبة — ماذا أفعل فيها؟
+                          </Link>
+                        </div>
 
                         {isOpen && (
                           <div className="space-y-6 border-t border-white/8 p-5">

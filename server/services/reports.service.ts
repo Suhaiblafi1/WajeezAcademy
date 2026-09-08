@@ -300,7 +300,7 @@ export class ReportsService {
             const cur = byCohort.get(r.session.cohortId) ?? { cohort: r.session.cohort.title, count: 0, minutes: 0, mb: 0 }
             cur.count += 1
             cur.minutes += Math.round((r.durationSec ?? 0) / 60)
-            cur.mb += Math.round(r.sizeBytes / 1024 / 1024)
+            cur.mb += Math.round((r.sizeBytes ?? 0) / 1024 / 1024)
             byCohort.set(r.session.cohortId, cur)
           }
           return [...byCohort.values()]

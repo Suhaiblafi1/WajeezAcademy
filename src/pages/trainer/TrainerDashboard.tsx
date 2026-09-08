@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CalendarClock, ClipboardCheck, GitPullRequest, GraduationCap, Loader2, ServerOff, Users, Video } from "lucide-react";
+import { CalendarClock, ClipboardCheck, GraduationCap, Loader2, ServerOff, Users, Video } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
 import { trainerInterviewUrl } from "@/application/trainer/application-options";
@@ -118,8 +118,9 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
             </Card>
           </div>
           <p className="mt-4 text-read text-muted-foreground">
-            حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
-            <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-foreground">«اقتراحاتي»</Link>.
+            وحين تُسنَد إليك شعبة تجد في{" "}
+            <Link to="/trainer/board" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-foreground">«شعبي»</Link>
+            {" "}ورشتَها: تجهّزها كلَّها — الاسمَ والمواعيدَ والمحاورَ والمصادرَ — ثمّ ترسلها للاعتماد.
           </p>
         </Panel>
       )}
@@ -187,8 +188,8 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
           <p className="flex items-center gap-2 text-read text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
           <p className="mt-2 text-3xl font-black text-gold-ink">{awaiting}</p>
         </Card>
-        <Card as={Link} tone="accent" interactive to="/trainer/proposals" className="transition hover:border-teal/60">
-          <p className="flex items-center gap-2 text-read text-teal-light-ink"><GitPullRequest className="h-4 w-4" /> اقتراحاتي على المحتوى</p>
+        <Card as={Link} tone="accent" interactive to="/trainer/board" className="transition hover:border-teal/60">
+          <p className="flex items-center gap-2 text-read text-teal-light-ink"><Users className="h-4 w-4" /> ورشُ شعبي — ماذا بقي عليّ</p>
           <p className="mt-2 text-3xl font-black text-teal-light-ink">↗</p>
         </Card>
       </div>

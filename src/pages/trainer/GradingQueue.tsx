@@ -166,8 +166,8 @@ export default function GradingQueue() {
             <Link to="/trainer/learners" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30">
               تفقّد من تعثّر من متعلّميّ
             </Link>
-            <Link to="/trainer/proposals" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30">
-              اقترح تحسينا على المحتوى
+            <Link to="/trainer/board" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30">
+              جهّز شعبتك من ورشتها
             </Link>
           </div>
         </Panel>
