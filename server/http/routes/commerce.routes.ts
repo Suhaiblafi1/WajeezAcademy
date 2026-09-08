@@ -69,8 +69,10 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
     const body = z.object({
       cohortIds: z.array(z.string().uuid()).min(1).max(10),
       couponCode: z.string().trim().min(2).max(40).optional(),
+      /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل بلا خطأ */
+      referralCode: z.string().max(40).optional(),
     }).parse(req.body)
-    return reply.status(201).send(await commerce.checkout(req.auth!.userId, body.cohortIds, body.couponCode))
+    return reply.status(201).send(await commerce.checkout(req.auth!.userId, body.cohortIds, body.couponCode, body.referralCode))
   })
 
   /* تسعيرٌ بلا كتابة — الرقمُ الذي يراه المشتري قبل أن يضغط.

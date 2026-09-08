@@ -481,6 +481,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       currency: z.string().length(3).optional(),
       effectiveFrom: z.coerce.date().optional(),
       minSeats: z.number().int().min(0).max(10000).optional(),
+      referralRate: z.number().positive().optional(),
       courseId: z.string().min(1).optional(),
       cohortId: z.string().uuid().optional(),
     }).parse(req.body)

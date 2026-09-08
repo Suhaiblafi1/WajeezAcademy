@@ -12,7 +12,8 @@
    وله أن يسمّي تركيبته — تُحفظ عندنا لعلّها تصير مسارا معتمدا للعامة. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
+import { REFERRAL_KEY } from "@/application/commerce/referral";
 import {
   ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, Layers, ListChecks,
   Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles,
@@ -92,6 +93,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      يقرأ التخزين المحلّيّ وحدَه فقد يخالف كعكةَ الخادم. */
   const { user: session } = useRealSession();
   const [checkout, setCheckout] = useState<Intent | null>(null);
+  /* رمزُ دعوة المدرّب في الرابط — يُحفظ في الجلسة ليصل إلى الدفع ولو تنقّل
+     الزائرُ أو سجّل حسابا بينهما. والمفتاحُ يقرؤه `BuyPanel` وحدَه. */
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const ref = searchParams.get("ref")?.trim();
+    if (!ref) return;
+    try { sessionStorage.setItem(REFERRAL_KEY, ref); } catch { /* تخزينٌ معطَّل — يمرّ الشراءُ عامّا */ }
+  }, [searchParams]);
   const [pending, setPending] = useState<Intent | null>(null);
   const [name, setName] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");

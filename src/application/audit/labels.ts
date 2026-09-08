@@ -99,6 +99,8 @@ const PHRASES: Record<string, string> = {
   'cohort.trainer_update': 'تعديلُ مدرّبٍ بياناتِ شعبته',
   'cohort.remind_trainer': 'تذكيرُ مدرّبٍ بتجهيز شعبته',
   'session.recording.link': 'إضافةُ تسجيلِ جلسةٍ من رابط',
+  'referral.link.create': 'إنشاءُ رابطِ دعوةِ مدرّبٍ لشعبة',
+  'checkout.referral_ignored': 'إهمالُ رمزِ دعوةٍ لا يخصّ الشراء',
   'trainer.suspend': 'إيقافُ مدرّب',
   'trainer.reinstate': 'رفعُ إيقافٍ عن مدرّب',
   'catalog.cohorts.open_all': 'تهيئةُ الشعب جملةً',

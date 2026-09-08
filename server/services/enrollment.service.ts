@@ -24,7 +24,11 @@ export class EnrollmentService {
   }
 
   /** تسجيل متعلم — يملأ السعة ثم يحوّل الفائض لقائمة انتظار؛ التجاوز يتطلب override موثقا */
-  async enroll(cohortId: string, userId: string, actorId: string | null, opts: { overrideCapacity?: boolean } = {}) {
+  async enroll(cohortId: string, userId: string, actorId: string | null, opts: { overrideCapacity?: boolean; referralCode?: string } = {}) {
+    /* مصدرُ التسجيل يُختم مرّةً: رمزٌ صحيحٌ يخصّ هذه الشعبةَ — وإلّا عامّ */
+    const referral = opts.referralCode
+      ? await this.prisma.trainerReferralLink.findFirst({ where: { code: opts.referralCode, cohortId }, select: { profileId: true, code: true } })
+      : null
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
       include: { term: TERM_WINDOW_SELECT },
@@ -67,10 +71,15 @@ export class EnrollmentService {
       else override = true
     }
 
+    const stamp = referral ? { referralProfileId: referral.profileId, referralCode: referral.code } : {}
     const enrollment = existing
-      ? await this.prisma.enrollment.update({ where: { id: existing.id }, data: { status, overrideCapacity: override, enrolledBy: actorId } })
+      ? await this.prisma.enrollment.update({
+          where: { id: existing.id },
+          /* ولا يُكتب فوق مصدرٍ مختوم: أوّلُ ختمٍ هو الحجّة */
+          data: { status, overrideCapacity: override, enrolledBy: actorId, ...(existing.referralProfileId ? {} : stamp) },
+        })
       : await this.prisma.enrollment.create({
-          data: { cohortId, userId, status, overrideCapacity: override, enrolledBy: actorId },
+          data: { cohortId, userId, status, overrideCapacity: override, enrolledBy: actorId, ...stamp },
         })
 
     /* امتلاء السعة يقلب حالة الشعبة إلى full */
@@ -451,6 +460,14 @@ export class EnrollmentService {
         },
       },
     })
-    return links.map((l) => ({ role: l.role, cohort: l.cohort }))
+    /* «ليتأكّد أنّنا لم نغشّ»: كلُّ متعلّمٍ يحمل علامةَ مصدره — عبر رابط هذا
+       المدرّب أو عامّ. والمعرّفُ نفسُه لا يخرج؛ العلامةُ وحدَها. */
+    return links.map((l) => ({
+      role: l.role,
+      cohort: {
+        ...l.cohort,
+        enrollments: l.cohort.enrollments.map((e) => ({ ...e, referredByMe: e.referralProfileId === profile.id, referralProfileId: undefined })),
+      },
+    }))
   }
 }

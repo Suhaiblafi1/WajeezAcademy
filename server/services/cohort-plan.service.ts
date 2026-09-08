@@ -197,6 +197,8 @@ export class CohortPlanService {
       /* الاسمُ والتقدّم — لا بريدَ ولا رقما: المنصّةُ هي القناة */
       learners: cohort.enrollments.map((e) => ({
         enrollmentId: e.id, name: e.user.displayName, status: e.status, progress: e.courseProgress?.percent ?? 0,
+        /* العلامةُ لا المعرّف: من جاء عبر رابط هذا المدرّب */
+        referredByMe: e.referralProfileId === profile.id,
       })),
       checklist,
     }

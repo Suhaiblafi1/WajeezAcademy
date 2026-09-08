@@ -5,6 +5,7 @@
 import { randomUUID } from 'node:crypto'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { ReferralService } from './referral.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { safeNotify, publicSiteUrl } from './notification.service'
@@ -25,12 +26,14 @@ import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-wi
 export { assertCouponUsable, type UsableCoupon } from './commerce/cart-types'
 
 export class CommerceService {
+  private referrals: ReferralService
   private prisma: PrismaClient
   private enrollments: EnrollmentService
   /* السلّةُ تُركَّب لا تُورَث: «بكم هذه وأيجوز شراؤها؟» سؤالٌ يُسأل، وهذه
      الخدمةُ تُحرّك المالَ بعد جوابه. */
   private cart: CartService
   constructor(prisma: PrismaClient) {
+    this.referrals = new ReferralService(prisma)
     this.prisma = prisma
     this.enrollments = new EnrollmentService(prisma)
     this.cart = new CartService(prisma)
@@ -315,8 +318,10 @@ export class CommerceService {
      ولا يُبنى مسلكُ تسويةٍ ثانٍ: تُكتب `enrollmentRequest` مباشرةً بحالة
      `seat_held` مربوطةً بالطلب، فتعمل `settleOrder` القائمة كما هي. «الطلب»
      هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
-  async checkout(userId: string, cohortIds: string[], couponCode?: string) {
+  async checkout(userId: string, cohortIds: string[], couponCode?: string, referralCode?: string) {
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds, true)
+    /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
+    const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
     const { pricing, couponId } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
     const { subtotal, discount, total } = pricing
 
@@ -344,10 +349,11 @@ export class CommerceService {
       if (couponId) await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } })
       /* حجزُ المقعد فورا — لا حالة `pending` تنتظر بشرا */
       for (const c of cohorts) {
+        const referralCode = referral?.cohortId === c.id ? referral.code : undefined
         await tx.enrollmentRequest.upsert({
           where: { userId_cohortId: { userId, cohortId: c.id } },
-          update: { status: 'seat_held', orderId: o.id, decidedBy: null, decidedAt: new Date() },
-          create: { userId, cohortId: c.id, status: 'seat_held', orderId: o.id, decidedAt: new Date() },
+          update: { status: 'seat_held', orderId: o.id, decidedBy: null, decidedAt: new Date(), ...(referralCode ? { referralCode } : {}) },
+          create: { userId, cohortId: c.id, status: 'seat_held', orderId: o.id, decidedAt: new Date(), referralCode: referralCode ?? null },
         })
       }
       return { order: o, invoice }
@@ -707,12 +713,12 @@ export class CommerceService {
        فبنودُ الطلب (وهي ما دُفع ثمنُه فعلا) تُضاف إلى الحجوز: كلُّ بندٍ من
        نوع `cohort` يُسجَّل صاحبُ الطلب فيه، حُفظ حجزُه أو ضاع. والهديّةُ بندٌ
        بصفر فتُسجَّل كأختها — فهي مشتراةٌ داخل الخطّة لا ممنوحةٌ خارجها. */
-    const targets = new Map<string, { cohortId: string; userId: string; requestId: string | null }>()
-    for (const req of reqs) targets.set(req.cohortId, { cohortId: req.cohortId, userId: req.userId, requestId: req.id })
+    const targets = new Map<string, { cohortId: string; userId: string; requestId: string | null; referralCode: string | null }>()
+    for (const req of reqs) targets.set(req.cohortId, { cohortId: req.cohortId, userId: req.userId, requestId: req.id, referralCode: req.referralCode ?? null })
     if (order) {
       for (const item of order.items) {
         if (item.kind !== 'cohort' || targets.has(item.refId)) continue
-        targets.set(item.refId, { cohortId: item.refId, userId: order.userId, requestId: null })
+        targets.set(item.refId, { cohortId: item.refId, userId: order.userId, requestId: null, referralCode: null })
       }
     }
 
@@ -720,7 +726,8 @@ export class CommerceService {
     const failed: { cohortId: string; reason: string }[] = []
     for (const target of targets.values()) {
       try {
-        await this.enrollments.enroll(target.cohortId, target.userId, actorId, {})
+        /* المصدرُ يُختم هنا — عند التسوية، من الرمز الذي حُمل مع الحجز */
+        await this.enrollments.enroll(target.cohortId, target.userId, actorId, { referralCode: target.referralCode ?? undefined })
       } catch (err) {
         /* مسجل مسبقا (مثل إعادة معالجة) — لا يمنع التحويل */
         if (!(err instanceof AuthError && err.code === 'already_enrolled')) {
