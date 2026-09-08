@@ -13,6 +13,9 @@ import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
+import { safeNotify } from './notification.service'
+import { fmtDateWith } from '../../src/application/text/format-ar'
+import { createZoomMeeting, getZoomConfig, zoomMissing, zoomReady } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 
@@ -996,6 +999,136 @@ export class CohortService {
       passcode: session.zoom.passcodeEnc ?? '',
       role,
     }
+  }
+
+  /* ═══════════ اللقاءُ يُنشأ من هنا لا من موقع Zoom ═══════════
+
+     ثلاثةُ أفعالٍ كانت تُفعل في ثلاثة أمكنة — تُنشأ الجلسةُ هنا، ويُنشأ
+     الاجتماعُ في تبويبِ Zoom، ويُبلَّغ الطلبةُ في واتساب أو لا يُبلَّغون —
+     صارت فعلا واحدا. ومن أخطأ في أحدها لم يكن شيءٌ يقابله بالآخرَين.
+
+     **ولا يُبلَّغ أحدٌ من `addSession` نفسِها**: مولّدُ الجدول ينشئ ستَّ عشرةَ
+     جلسةً دفعةً واحدة، فإشعارٌ في كلّ واحدةٍ ستَّ عشرةَ رسالةً في ثانية. فالتبليغُ
+     هنا وحدَه — حيث يُجدوَل **لقاءٌ واحدٌ بقصد**. */
+
+  /** اللقاءُ واجتماعُه وتبليغُ المسجَّلين — فعلٌ واحدٌ للإدارة */
+  async addSessionWithMeeting(actorId: string, cohortId: string, input: {
+    title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string; withZoom?: boolean
+  }) {
+    /* الجاهزيّةُ تُفحص **قبل** أن تُنشأ الجلسة: فمن طلب اجتماعا ولا مفاتيحَ
+       للمنصّة يُردّ ولا يجد جلسةً نصفَ مجدولةٍ بلا رابط. */
+    const config = input.withZoom ? await getZoomConfig(this.prisma) : null
+    if (config && !zoomReady(config)) {
+      throw new AuthError(
+        'zoom_not_configured',
+        `تكاملُ Zoom غير مكتمل — ينقصه: ${zoomMissing(config).join(' · ')}. `
+        + 'اضبطه من «التكاملات»، أو أنشئ اللقاءَ بلا اجتماعٍ وألصق رابطا يدويّا.',
+        409,
+      )
+    }
+    const session = await this.addSession(actorId, cohortId, input)
+
+    let zoom: Awaited<ReturnType<typeof this.attachApiZoom>> | null = null
+    if (config) {
+      try {
+        zoom = await this.attachApiZoom(actorId, session.id, config)
+      } catch (e) {
+        /* تعويضٌ صريح: الجلسةُ وُلدت قبل لحظةٍ ولا شيءَ معلَّقٌ بها، فتُحذف كي
+           لا يبقى في الجدول لقاءٌ طُلب له اجتماعٌ ولم يُنشأ — وهو ما يراه
+           الطالبُ موعدا بلا باب. */
+        await this.prisma.cohortSession.delete({ where: { id: session.id } }).catch(() => {})
+        await recordAudit(this.prisma, {
+          actorId, action: 'zoom.create_failed', entityType: 'cohort', entityId: cohortId,
+          meta: { reason: e instanceof AuthError ? e.message : 'خطأ غير متوقّع', rolledBack: true },
+        })
+        throw e
+      }
+    }
+    const notified = await this.notifyCohortOfSession(cohortId, session, zoom)
+    return { session, zoom, notified }
+  }
+
+  /** المدرّبُ يجدول لقاءه واجتماعَه — بالحدّ نفسِه الذي تُفحص به جدولةُ الإدارة */
+  async trainerAddSessionWithMeeting(userId: string, cohortId: string, input: {
+    title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string; withZoom?: boolean
+  }) {
+    if (!(await this.isCohortTrainer(userId, cohortId))) {
+      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+    }
+    await this.assertWithinWindow(cohortId, input, { counts: true })
+    return this.addSessionWithMeeting(userId, cohortId, input)
+  }
+
+  /** اجتماعٌ حقيقيٌّ على Zoom لجلسةٍ قائمة — `zoom_api` لا `manual` */
+  async attachApiZoom(actorId: string, sessionId: string, preloaded?: Awaited<ReturnType<typeof getZoomConfig>>) {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      include: { zoom: true, cohort: { select: { title: true, timezone: true } } },
+    })
+    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
+    if (session.zoom) throw new AuthError('already_linked', 'الجلسة مرتبطة باجتماع مسبقا', 409)
+
+    const config = preloaded ?? await getZoomConfig(this.prisma)
+    if (!zoomReady(config)) {
+      throw new AuthError('zoom_not_configured', `تكاملُ Zoom غير مكتمل — ينقصه: ${zoomMissing(config).join(' · ')}`, 409)
+    }
+    /* المدّةُ من الجلسة نفسِها، وساعتان حين لا نهايةَ لها — لا رقمٌ يُخمَّن في Zoom */
+    const durationMinutes = session.endsAt
+      ? Math.max(15, Math.round((session.endsAt.getTime() - session.startsAt.getTime()) / 60_000))
+      : 120
+    const meeting = await createZoomMeeting(config, {
+      topic: `${session.cohort.title} — ${session.title}`,
+      startsAt: session.startsAt,
+      durationMinutes,
+      timezone: session.timezone ?? session.cohort.timezone ?? undefined,
+    })
+    const zoom = await this.prisma.zoomMeeting.create({
+      data: {
+        sessionId, provider: 'zoom_api',
+        joinUrl: meeting.joinUrl,
+        meetingId: meeting.meetingId || null,
+        passcodeEnc: meeting.passcode,
+        /* `startUrl` **لا يُحفظ**: من يملكه يبدأ الاجتماعَ مضيفا، وهو أخطرُ من
+           الرمز. والمضيفُ يبدأ من حسابه أو من الرابط نفسِه بصلاحيّته. */
+        learnerUrl: null,
+        createdBy: actorId,
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'zoom.create_api', entityType: 'cohort_session', entityId: sessionId,
+      meta: { meetingId: meeting.meetingId, durationMinutes },
+    })
+    return zoom
+  }
+
+  /** يُبلَّغ كلُّ مسجَّلٍ في الشعبة — والعددُ يعود كي تقوله الشاشةُ لا تخمّنه */
+  private async notifyCohortOfSession(
+    cohortId: string,
+    session: { id: string; title: string; startsAt: Date },
+    zoom: { joinUrl: string } | null,
+  ): Promise<number> {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
+    const recipients = await this.prisma.enrollment.findMany({
+      where: { cohortId, status: { not: 'dropped' } },
+      select: { userId: true },
+    })
+    /* التنسيقُ من الطبقة المشتركة لا بلغةٍ تُسمّى هنا — وبوّابةُ `audit-locale`
+       تمنع أن يعود الاختيارُ إلى الملفّات، وقد أمسكت هذا السطرَ بعينه. */
+    const when = fmtDateWith(session.startsAt, {
+      weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit',
+    })
+    for (const r of recipients) {
+      await safeNotify(this.prisma, {
+        userId: r.userId, channel: 'in_app', audience: 'learner',
+        templateKey: 'cohort.session.scheduled',
+        title: `لقاءٌ جديدٌ في ${cohort?.title ?? 'شعبتك'}`,
+        body: zoom
+          ? `${session.title} — ${when}. رابطُ الانضمام في صفحة رحلتك.`
+          : `${session.title} — ${when}.`,
+        data: { cohortId, sessionId: session.id, hasMeeting: Boolean(zoom) },
+      })
+    }
+    return recipients.length
   }
 
   /* ── المواد والتسجيلات — تخزين خاص وروابط موقعة ── */

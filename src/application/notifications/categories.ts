@@ -34,8 +34,8 @@ export interface NotificationCategory {
 export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'sessions',
-    labelAr: 'تذكيرُ الجلسات',
-    whatAr: 'قبل الجلسة بيومٍ وقبلها بساعة',
+    labelAr: 'مواعيدُ الجلسات',
+    whatAr: 'جدولةُ لقاءٍ جديدٍ في شعبتك · وقبل الجلسة بيومٍ وقبلها بساعة',
     silenceable: true,
     /* ── ثغرةٌ كانت هنا: `session.reminder.1h` بلا صنف ──
 
@@ -44,7 +44,14 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        وحدَهما — فتذكيرُ الساعة بلا صنف، و`isSilenceable` تردّ عليه
        `false`. أي أنّ من كتم «تذكيرَ الجلسات» كان يكتم تذكيرَ اليوم
        ويبقى تذكيرُ الساعة يصله. صمتٌ نصفيٌّ يبدو عطلا. */
-    templateKeys: ['session.reminder', 'session.reminder.24h', 'session.reminder.1h'],
+    /* و`cohort.session.scheduled` هنا لا في صنفٍ مقفل: هو **خبرُ موعد**
+       كالتذكير، ومن كتم مواعيدَ الجلسات كتمها كلَّها لا نصفَها. وجدولُ
+       الشعبة يبقى معروضا في صفحة رحلته على كلّ حال — فالكتمُ يُسكت الجرسَ
+       ولا يُخفي الموعد. */
+    templateKeys: [
+      'cohort.session.scheduled',
+      'session.reminder', 'session.reminder.24h', 'session.reminder.1h',
+    ],
   },
   {
     key: 'progress',

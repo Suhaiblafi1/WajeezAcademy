@@ -106,12 +106,6 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return { ...view, cohort: signCohortContent(view.cohort, cohorts, { revealPasscode: true }) }
   })
 
-  /* تبديلُ الشعبة قبل أن تبدأ.
-
-     قرارُ صاحب المنصّة: «لا يحقّ له تغيير مساره بعد الدفع. فقط التنقّل بين
-     الشعب ما دامت لم تبدأ بالفعل». والقيدان يُطبَّقان في الخدمة:
-     الدورةُ نفسُها (فلا يصير التبديلُ بابا خلفيّا لتغيير المسار)، وقبل
-     البدء (وقبل أيّ أثرٍ في الشعبة المغادَرة). */
   /* تذكرةُ فتحِ الجلسة داخلَ الموقع.
 
      `learner.portal` تفتح البابَ، والخدمةُ تقرّر الدور: مدرّبُ الشعبة مضيف
@@ -127,6 +121,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return cohorts.meetingSdkTicket(req.auth!.userId, sessionId)
   })
 
+  /* تبديلُ الشعبة قبل أن تبدأ.
+
+     قرارُ صاحب المنصّة: «لا يحقّ له تغيير مساره بعد الدفع. فقط التنقّل بين
+     الشعب ما دامت لم تبدأ بالفعل». والقيدان يُطبَّقان في الخدمة:
+     الدورةُ نفسُها (فلا يصير التبديلُ بابا خلفيّا لتغيير المسار)، وقبل
+     البدء (وقبل أيّ أثرٍ في الشعبة المغادَرة). */
   app.post('/api/learner/enrollments/:id/switch-cohort', {
     preHandler: requirePermission('learner.portal'),
     schema: { tags: ['learner-portal'], summary: 'تبديل شعبتي إلى شعبةٍ أخرى من الدورة نفسها لم تبدأ بعد' },
@@ -456,8 +456,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       endsAt: z.coerce.date().optional(),
       timezone: z.string().max(64).optional(),
       moduleId: z.string().max(64).optional(),
+      /* المدرّبُ ينشئ اجتماعَه بنفسه — لا ينتظر مديرا يلصق رابطا */
+      withZoom: z.boolean().optional(),
     }).parse(req.body)
-    return reply.status(201).send(await cohorts.trainerAddSession(req.auth!.userId, id, body))
+    return reply.status(201).send(await cohorts.trainerAddSessionWithMeeting(req.auth!.userId, id, body))
   })
 
   app.patch('/api/trainer/sessions/:sessionId', {

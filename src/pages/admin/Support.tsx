@@ -178,11 +178,10 @@ export default function Support() {
               <h4 className="text-sm font-black">تحويل الحالة</h4>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {Object.entries(STATUS_AR).filter(([k]) => k !== t.status).map(([k, v]) => (
-                  <button key={k} disabled={busy}
-                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}
-                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-fine font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
+                  <Button key={k} size="sm" disabled={busy}
+                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}>
                     {v}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <p className="mt-2 text-read text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>

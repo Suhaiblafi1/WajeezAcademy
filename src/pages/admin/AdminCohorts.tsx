@@ -22,6 +22,7 @@ import Button from "@/components/ui/Button";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
+import TabBar from "@/components/ui/TabBar";
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
   open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
@@ -84,7 +85,9 @@ export default function AdminCohorts() {
 
   /* نماذج — والإنشاءُ صار في المعالج (CohortWizard)، وسعرُ الدورة وعملتُها
      يُمرَّران إليه من الكتالوج لأنّهما ما يرثه الخادمُ فعلا. */
-  const [sessionForm, setSessionForm] = useState({ title: "", date: "", time: "18:00", hours: "2" });
+  const [sessionForm, setSessionForm] = useState({ title: "", date: "", time: "18:00", hours: "2", withZoom: true });
+  /* آخرُ لقاءٍ أُنشئ — ليُقال عددُ من بُلِّغ فعلا لا «تمّ» */
+  const [lastSession, setLastSession] = useState<{ notified: number; zoom: { joinUrl: string } | null } | null>(null);
   const [genForm, setGenForm] = useState({ weeks: "8", from: "", duration: "120" });
   const [dupForm, setDupForm] = useState({ title: "", shiftWeeks: "8", withSessions: true });
   const [zoomForm, setZoomForm] = useState<Record<string, { sessionId: string; joinUrl: string; meetingId: string; passcode: string }>>({});
@@ -372,22 +375,15 @@ export default function AdminCohorts() {
                         الشعبة بلا فتحِ طيّاتٍ واحدةً واحدة. ووصفُ اللسان تحت
                         اسمه: «الجدول واللقاءات» لا تقول ماذا فيها لمن لم
                         يفتحها من قبل. */}
-                    <div role="tablist" aria-label="أقسام الشعبة" className="flex flex-wrap gap-1.5">
-                      {/* واللسانُ زرٌّ من السلّم لا صيغةٌ تُكتب في مكانها:
-                          `confirm` للمختار و`secondary` لغيره — فحلقةُ
-                          التركيز تأتي معه ولا تُنسى. */}
-                      {COHORT_TABS.map((t) => (
-                        <Button
-                          key={t.id} role="tab" aria-selected={tab === t.id}
-                          tone={tab === t.id ? "confirm" : "secondary"}
-                          onClick={() => setTab(t.id)}
-                          title={t.hint}
-                          className="text-read"
-                        >
-                          {t.label}
-                        </Button>
-                      ))}
-                    </div>
+                    {/* كان `Button` بنبرتَين — وهو أقربُ ما وصلت إليه الألسنةُ
+                        السّتُّ قبل أن تصير درجةً. والفرقُ ليس شكلا: الشريطُ
+                        وقفةٌ واحدةٌ في التنقّل، والأسهمُ تمشي بين ألسنته. */}
+                    <TabBar
+                      ariaLabel="أقسام الشعبة"
+                      value={tab}
+                      onChange={setTab}
+                      items={COHORT_TABS.map((t) => ({ id: t.id, label: t.label, hint: t.hint }))}
+                    />
                     <p className="-mt-2 text-read text-muted-foreground">
                       {COHORT_TABS.find((t) => t.id === tab)?.hint}
                     </p>
@@ -507,12 +503,36 @@ export default function AdminCohorts() {
                             onClick={() => act(async () => {
                               const startsAt = new Date(`${sessionForm.date}T${sessionForm.time}:00`);
                               const endsAt = new Date(startsAt.getTime() + Number(sessionForm.hours || 2) * 3600_000);
-                              await apiPost(`/api/admin/cohorts/${c.id}/sessions`, { title: sessionForm.title, startsAt, endsAt });
-                              setSessionForm({ title: "", date: "", time: "18:00", hours: "2" });
-                            }, "أُضيفت الجلسة — وفُحص تعارض المدربين")}>
+                              const r = await apiPost<{ notified: number; zoom: { joinUrl: string } | null }>(
+                                `/api/admin/cohorts/${c.id}/sessions`,
+                                { title: sessionForm.title, startsAt, endsAt, withZoom: sessionForm.withZoom },
+                              );
+                              setSessionForm({ title: "", date: "", time: "18:00", hours: "2", withZoom: sessionForm.withZoom });
+                              setLastSession(r);
+                            }, "أُضيف اللقاء")}>
                             أضف
                           </Button>
                         </div>
+                        {/* الاجتماعُ يُنشأ من هنا لا من موقع Zoom — والمفتاحُ
+                            مضاءٌ افتراضا لأنّه المقصود، ومن أراد لقاءً حضوريّا
+                            يُطفئه. ولو لم يكن التكاملُ مضبوطا قال الخادمُ ما
+                            ينقصه بالاسم بدل أن يسقط الطلبُ صامتا. */}
+                        <label className="mt-3 flex items-start gap-2 text-read leading-5 text-muted-foreground">
+                          <input type="checkbox" checked={sessionForm.withZoom}
+                            onChange={(e) => setSessionForm({ ...sessionForm, withZoom: e.target.checked })}
+                            className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
+                          <span>
+                            <b className="text-foreground">أنشئ اجتماعَ Zoom وبلّغ المسجَّلين</b> — يُنشأ الاجتماعُ
+                            باسم الأكاديميّة ويصل رابطُه كلَّ متعلّمٍ في هذه الشعبة داخل المنصّة.
+                          </span>
+                        </label>
+                        {lastSession && (
+                          <Inset as="p" tone="positive" className="mt-3 text-read leading-6 text-emerald-200">
+                            {lastSession.zoom
+                              ? `أُنشئ اللقاءُ واجتماعُه، وبُلِّغ ${lastSession.notified} متعلّما.`
+                              : `أُنشئ اللقاءُ بلا اجتماع، وبُلِّغ ${lastSession.notified} متعلّما.`}
+                          </Inset>
+                        )}
                       </Card>
                     )}
 

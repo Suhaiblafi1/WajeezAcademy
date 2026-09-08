@@ -432,10 +432,10 @@ export default function CohortBoard() {
                               </div>
 
                               <div className="mt-4 border-t border-white/8 pt-3">
-                                <button type="button" onClick={() => void loadMessages(c.id)}
-                                  className="cursor-pointer text-fine font-bold text-teal-light-ink transition hover:text-teal-ink">
+                                <Button type="button" tone="ghost" size="sm" className="px-0 text-teal-light-ink"
+                                  onClick={() => void loadMessages(c.id)}>
                                   {msgLog[c.id] ? "حدّث السجلّ" : "اعرض سجلّ ما أُرسل"}
-                                </button>
+                                </Button>
                                 {msgLog[c.id] && (
                                   msgLog[c.id].length === 0 ? (
                                     <p className="mt-2 text-read text-muted-foreground">لم تُرسل شيئا في هذه الشعبة بعد.</p>

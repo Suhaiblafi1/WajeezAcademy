@@ -8,8 +8,9 @@ import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { SystemHealthService } from '../../services/system-health.service'
 import {
-  getPaymentConfig, getEmailConfig, savePaymentConfig, saveEmailConfig, maskedIntegrationsView,
+  getPaymentConfig, getEmailConfig, savePaymentConfig, saveEmailConfig, saveZoomConfig, maskedIntegrationsView,
 } from '../../services/integrations.service'
+import { getZoomConfig, zoomProbe, forgetZoomToken } from '../../services/zoom.service'
 import { sendEmail } from '../../services/mail'
 import { recordAudit } from '../../services/audit'
 
@@ -62,6 +63,36 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     }).parse(req.body)
     await saveEmailConfig(prisma, req.auth!.userId, body)
     return maskedIntegrationsView(prisma)
+  })
+
+  app.put('/api/admin/integrations/zoom', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'حفظ إعدادات Zoom (Server-to-Server OAuth)' },
+  }, async (req) => {
+    const body = z.object({
+      enabled: z.boolean(),
+      accountId: z.string().max(200).optional(),
+      clientId: z.string().max(200).optional(),
+      clientSecret: z.string().max(200).optional(),
+      hostEmail: z.string().max(200).optional(),
+    }).parse(req.body)
+    await saveZoomConfig(prisma, req.auth!.userId, body)
+    /* المفاتيحُ تبدّلت فالرمزُ المحفوظُ في الذاكرة صار لحسابٍ آخر — يُنسى */
+    forgetZoomToken()
+    return maskedIntegrationsView(prisma)
+  })
+
+  /* فحصُ Zoom — يطلب رمزا فعلا، فلا يُقال «سليم» لمفاتيحَ لم تُجرَّب */
+  app.post('/api/admin/integrations/zoom/test', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'فحص حي لمفاتيح Zoom' },
+  }, async (req) => {
+    const result = await zoomProbe(await getZoomConfig(prisma))
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'integration.zoom.test', entityType: 'integration_setting', entityId: 'zoom',
+      meta: { ok: result.ok },
+    })
+    return result
   })
 
   /* فحص اتصال الدفع — استعلام خفيف حقيقي على واجهة المزود */
