@@ -24,6 +24,7 @@ import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EnrollmentService } from '../../services/enrollment.service'
+import { PublicCatalogService } from '../../services/public-catalog.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 
@@ -149,6 +150,38 @@ describe('سلسلةُ تشغيل المدرّب', () => {
     })
     expect(res.statusCode).toBe(200)
     expect((await review.listPublicTrainers()).map((p) => p.id)).not.toContain(profileId)
+  })
+
+  /* ═══ البوّابةُ واحدةٌ على السطوح كلِّها (٨ سبتمبر ٢٠٢٦) ═══
+
+     كانت بطاقةُ الدورة تكتفي بعلم الظهور بلا اعتمادِ نشر، والشعبُ العامّة
+     تكتفي باعتماد النشر بلا إيقاف. فالفحصُ يقلب كلَّ علمٍ وحدَه ويرى أنّ
+     السطحين يخفيان ما تخفيه الصفحةُ العامّة. */
+  it('وبطاقةُ الدورة لا تُظهر اسما لم يُعتمَد نشرُه — ولو أُشعل علمُ الظهور بيد', async () => {
+    await prisma.trainerProfile.update({
+      where: { id: profileId }, data: { publicVisibility: true, suspendedAt: null, publishApprovedAt: null },
+    })
+    expect((await review.publicCourseTrainer(courseId)).announced, 'ظهر على بطاقة الدورة بلا اعتمادِ نشر').toBe(false)
+    const row = (await new PublicCatalogService(prisma).cohorts()).find((c) => c.id === cohortId)
+    expect(row, 'الشعبةُ المفتوحةُ ليست في القائمة العامّة').toBeTruthy()
+    expect(row!.trainers).toEqual([])
+  })
+
+  it('والشعبُ العامّة لا تحمل اسمَ موقوفٍ اعتُمد نشرُه قبل إيقافه', async () => {
+    await prisma.trainerProfile.update({
+      where: { id: profileId }, data: { publicVisibility: false, suspendedAt: new Date(), publishApprovedAt: new Date() },
+    })
+    const row = (await new PublicCatalogService(prisma).cohorts()).find((c) => c.id === cohortId)
+    expect(row!.trainers, 'اسمُ الموقوف في بيانات الشعبة').toEqual([])
+  })
+
+  it('ورفعُ الإيقاف يعيده كما كان — ظاهرا لأنّ نشرَه معتمَد', async () => {
+    const { applicationId } = await prisma.trainerProfile.findUniqueOrThrow({ where: { id: profileId }, select: { applicationId: true } })
+    await review.decide(applicationId, managerId, 'reinstate', 'انتهى سببُ الإيقاف')
+    expect((await review.listPublicTrainers()).map((p) => p.id), 'رُفع إيقافُه وبقي مخفيّا').toContain(profileId)
+    expect((await review.publicCourseTrainer(courseId)).announced).toBe(true)
+    const row = (await new PublicCatalogService(prisma).cohorts()).find((c) => c.id === cohortId)
+    expect(row!.trainers).toContain('سلمى المدرّبة')
   })
 })
 

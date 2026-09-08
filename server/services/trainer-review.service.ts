@@ -18,6 +18,7 @@ import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMail
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
+import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
@@ -333,8 +334,13 @@ export class TrainerReviewService {
     if (action === 'reinstate') {
       const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId } })
       if (profile) {
+        /* الإيقافُ يطفئ `publicVisibility` (suspendTrainer أدناه) ورفعُه لم يكن
+           يعيدها — فيعود المدرّبُ «نشطا» ويبقى مخفيّا من الصفحة العامّة
+           والتقويم حتّى يُضغط «اعتمِد ظهورَه العامّ» ثانيةً، ولا أحدَ يعلم أنّ
+           ذلك مطلوب. فيعود إلى ما كان عليه: ظاهرا إن كان نشرُه معتمَدا. */
         await this.prisma.trainerProfile.update({
-          where: { id: profile.id }, data: { suspendedAt: null, suspendedBy: null },
+          where: { id: profile.id },
+          data: { suspendedAt: null, suspendedBy: null, publicVisibility: profile.publishApprovedAt !== null },
         })
         if (profile.userId) {
           await this.prisma.user.update({ where: { id: profile.userId }, data: { status: 'active', suspendedAt: null } })
@@ -1168,13 +1174,10 @@ export class TrainerReviewService {
     }
   }
 
-  /** القائمة العامة — active + موثق + publicVisibility + موافقة نشر، أو معيّن بشعبة منشورة */
+  /** القائمة العامة — بوّابةُ الظهور الواحدة (`trainer-visibility.ts`) + طلبٌ نشط */
   async listPublicTrainers() {
     const profiles = await this.prisma.trainerProfile.findMany({
-      where: {
-        publicVisibility: true, isVerified: true, publishApprovedAt: { not: null }, suspendedAt: null,
-        application: { status: 'active' },
-      },
+      where: { ...PUBLIC_TRAINER_WHERE, application: { status: 'active' } },
       include: {
         application: { select: { fullName: true, country: true, specialties: true } },
         assignments: { where: { status: 'active' }, select: { courseId: true, cohortId: true } },
@@ -1223,8 +1226,9 @@ export class TrainerReviewService {
         },
       },
     })
-    const visible = assignments.filter((a) =>
-      a.profile.publicVisibility && a.profile.isVerified && !a.profile.suspendedAt)
+    /* البوّابةُ نفسُها التي تحكم الصفحةَ العامّة — كانت هنا بلا شرط اعتمادِ
+       النشر، فبطاقةُ الدورة تُظهر ما تخفيه الصفحةُ العامّة عند أوّل افتراق. */
+    const visible = assignments.filter((a) => trainerPubliclyVisible(a.profile))
     if (!visible.length) return { announced: false, messageAr: 'سيتم تعيين المدرب قريبا', trainers: [] }
     return {
       announced: true,

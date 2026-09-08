@@ -106,7 +106,8 @@ const EXEMPT = join('src', 'components', 'ui')
    نموَّها. */
 const CEILING = {
   /** مستطيلٌ بحدٍّ وانحناء — مكانُه `Panel` أو `Card` أو `Inset` */
-  surface: 151,
+  /* ١٥١ ← ١٥٠: اقتباساتُ صفحة المدرّبين صارت `Inset` (٨ سبتمبر ٢٠٢٦) */
+  surface: 150,
   /** زرٌّ بصيغةٍ كاملةٍ مكتوبةٍ في مكانها */
   button: 23,
 } as const

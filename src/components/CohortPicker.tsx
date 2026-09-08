@@ -28,6 +28,10 @@ function When({ c }: { c: CohortOption }) {
       <span className="font-bold text-foreground">{fmtDateAr(c.startsAt)}</span>
       {until && <span className="text-muted-foreground"> · {until}</span>}
       {days && <span className="text-muted-foreground"> · {days}{c.startTime ? ` ${c.startTime}` : ""}</span>}
+      {/* المدرّبُ جزءٌ من القرار: «أكثر من شعبة لأكثر من مدرّب وتواريخ مختلفة
+          فيختار ما يشاء» (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦). ولا يُعرض اسمٌ لم
+          يُعتمَد نشرُه — الخادمُ يرشّح قبل أن يصل. */}
+      {c.trainers.length > 0 && <span className="text-teal-light-ink"> · مع {c.trainers.join("، ")}</span>}
     </span>
   );
 }

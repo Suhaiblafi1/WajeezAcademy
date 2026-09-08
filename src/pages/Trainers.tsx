@@ -1,12 +1,14 @@
 import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, BadgeCheck, GraduationCap, Users, ShieldCheck, Search, Star, Clock, ChevronDown } from 'lucide-react'
-import { TRAINER_POOLS, TRAINER_PENDING_AR } from '@/data/courses'
-import { pathways } from '@/data/pathways'
+import {
+  ArrowLeft, BadgeCheck, GraduationCap, Users, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen,
+} from 'lucide-react'
+import { TRAINER_POOLS, TRAINER_PENDING_AR, courseById } from '@/data/courses'
+import { pathways, pathwayById } from '@/data/pathways'
 import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
-import { Panel, Card } from '@/components/ui/Surface'
+import { Panel, Card, Inset } from '@/components/ui/Surface'
 
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
@@ -27,6 +29,70 @@ const FAMILY_LABEL: Record<string, string> = {
 
 const SPECIALTIES_PREVIEW = 6
 
+/* ───────────────── ما يقدّمه المدرّب — دوراتُه ومسارُه ─────────────────
+
+   قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): في نبذة كلّ مدرّبٍ «كلُّ الدورات التي
+   سيقدّمها وأُسندت له، ليصل الناسُ إلى دوراته أو مساره إن كان له مسار،
+   فيشتري المشتري مباشرةً من هناك».
+
+   والمسارُ **يُشتقّ** من دوراته لا يُكتب بيد: لا رابطَ في البيانات بين مدرّبٍ
+   ومسار، وكلُّ دورةٍ لها مسارُها الأمّ. فمسارُ المدرّب هو ما تجتمع فيه دوراتُه
+   المسنَدة — واحدٌ غالبا، وقد يكون اثنين لمن يدرّس في مسارين. */
+function TrainerOffer({ ids }: { ids: string[] }) {
+  const courses = useMemo(
+    () => [...new Set(ids)].map((id) => courseById(id)).filter((c): c is NonNullable<typeof c> => Boolean(c)),
+    [ids],
+  )
+  const offeredPathways = useMemo(
+    () => [...new Set(courses.map((c) => c.pathwayId))].map((id) => pathwayById(id)).filter((p): p is NonNullable<typeof p> => Boolean(p)),
+    [courses],
+  )
+
+  if (courses.length === 0) {
+    return (
+      <p className="text-read leading-6 text-muted-foreground">
+        لم تُسنَد إليه شعبةٌ منشورةٌ بعد — تظهر دوراتُه هنا فور إسنادها.
+      </p>
+    )
+  }
+
+  return (
+    <div>
+      {offeredPathways.length > 0 && (
+        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-read leading-6 text-foreground">
+          <Route className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
+          <span className="font-bold">{offeredPathways.length === 1 ? 'يقدّم في مسار:' : 'يقدّم في مسارات:'}</span>
+          {offeredPathways.map((p, i) => (
+            <span key={p.id}>
+              <Link to={`/pathways/${p.id}`} className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 transition hover:text-foreground">
+                {p.shortName}
+              </Link>
+              {i < offeredPathways.length - 1 && '،'}
+            </span>
+          ))}
+        </p>
+      )}
+      <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-foreground">
+        <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
+        دوراتُه — تُشترى من صفحتها
+      </p>
+      <ul className="mt-1.5 grid gap-1.5">
+        {courses.map((c) => (
+          <li key={c.id}>
+            <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-2 px-3 py-2">
+              <span className="min-w-0 truncate text-read font-bold text-foreground">{c.name}</span>
+              <span className="inline-flex shrink-0 items-center gap-1 text-read font-semibold text-teal-light-ink">
+                تفاصيل الدورة
+                <ArrowLeft className="h-3 w-3" />
+              </span>
+            </Inset>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 /* ───────────────── صفحة الفريق التدريبي ─────────────────
    نزاهة تسويقية: لا يُنشر اسم مدرب إلا بعد اعتماده رسميا وامتلاكه
    public_visibility وبيانات حقيقية. التقييمات والساعات والخريجون
@@ -36,6 +102,15 @@ export default function Trainers() {
   const [approved, setApproved] = useState<PublicTrainer[]>([])
   const [q, setQ] = useState('')
   const [showAllSpecialties, setShowAllSpecialties] = useState(false)
+  /* المفتوحُ من النبذات — أكثرُ من واحدةٍ معا: من يقارن مدرّبَين يفتحهما جنبا إلى جنب */
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set())
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   useEffect(() => {
     apiGet<PublicTrainer[]>('/api/trainers/public').then(setApproved).catch(() => setApproved([]))
   }, [])
@@ -55,14 +130,15 @@ export default function Trainers() {
     return [...map.entries()]
   }, [])
 
-  /* ترشيح المدربين المعتمدين: بالاسم أو التعريف أو التخصص */
+  /* ترشيح المدربين المعتمدين: بالاسم أو التعريف أو التخصص أو اسم دورةٍ يقدّمها */
   const filteredApproved = useMemo(() => {
     if (!query) return approved
     const needle = query.toLowerCase()
     return approved.filter((t) =>
       t.name.toLowerCase().includes(needle) ||
       (t.headline ?? '').toLowerCase().includes(needle) ||
-      t.specialties.some((s) => s.toLowerCase().includes(needle))
+      t.specialties.some((s) => s.toLowerCase().includes(needle)) ||
+      t.assignedCourseIds.some((id) => (courseById(id)?.name ?? '').toLowerCase().includes(needle))
     )
   }, [approved, query])
 
@@ -100,99 +176,135 @@ export default function Trainers() {
           {TRAINER_PENDING_AR} — لا ننشر اسما قبل اعتماده رسميا.
         </Card>
 
-        {/* البحث بالاسم أو المجال */}
+        {/* البحث بالاسم أو المجال أو الدورة */}
         <div className="relative mx-auto mt-6 max-w-md">
           <Search className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="ابحث بالاسم أو المجال…"
-            aria-label="ابحث بالاسم أو المجال"
+            placeholder="ابحث بالاسم أو المجال أو الدورة…"
+            aria-label="ابحث بالاسم أو المجال أو الدورة"
             className="w-full rounded-2xl border border-white/15 bg-white/[0.04] py-3 pl-4 pr-11 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal/60 focus:outline-none"
           />
         </div>
       </div>
 
-      {/* المدربون المعتمدون رسميا — يظهرون أولا وفقط بعد اكتمال الاعتماد والموافقة */}
+      {/* المدربون المعتمدون رسميا — يظهرون أولا وفقط بعد اكتمال الاعتماد والموافقة.
+
+          البطاقةُ رأسٌ ثابت (الاسمُ والتعريفُ والتخصّصات) ونبذةٌ تنسدل بزرّ:
+          السيرةُ والأرقامُ والتعليقاتُ ودوراتُه ومسارُه. قرارُ صاحب المنصّة
+          (٨ سبتمبر ٢٠٢٦) — والطيُّ معلَنٌ لقارئ الشاشة بـ`aria-expanded` و
+          `aria-controls`، لا `details` لأنّ الرأسَ يحمل روابطَ وصورةً لا
+          تصلح داخل `summary`. */}
       {filteredApproved.length > 0 && (
         <section className="mt-12">
           <h2 className="text-center text-2xl font-black">مدربون معتمدون</h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredApproved.map((t) => (
-              <Panel as="article" tone="accent" key={t.id} className="transition hover:border-teal/50">
-                <div className="flex items-center gap-3">
-                  {t.photoUrl ? (
-                    <img
-                      src={t.photoUrl}
-                      alt={`صورة ${t.name}`}
-                      className="h-14 w-14 shrink-0 rounded-full border border-teal/40 object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-teal/20 text-xl font-black text-teal-light-ink">
-                      {t.name.slice(0, 1)}
-                    </span>
-                  )}
-                  <div>
-                    <h3 className="flex items-center gap-1.5 font-black">
-                      {t.name}
-                      <BadgeCheck className="h-4 w-4 text-teal-ink" aria-label="مدرب موثق" />
-                    </h3>
-                    {t.headline && <p className="mt-0.5 text-read leading-5 text-muted-foreground">{t.headline}</p>}
-                    {t.country && <p className="mt-0.5 text-read text-muted-foreground">{t.country}</p>}
+            {filteredApproved.map((t) => {
+              const open = expanded.has(t.id)
+              const panelId = `trainer-bio-${t.id}`
+              return (
+                <Panel as="article" tone="accent" key={t.id} className="flex flex-col transition hover:border-teal/50">
+                  <div className="flex items-center gap-3">
+                    {t.photoUrl ? (
+                      <img
+                        src={t.photoUrl}
+                        alt={`صورة ${t.name}`}
+                        className="h-14 w-14 shrink-0 rounded-full border border-teal/40 object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-teal/20 text-xl font-black text-teal-light-ink">
+                        {t.name.slice(0, 1)}
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <h3 className="flex items-center gap-1.5 font-black">
+                        {t.name}
+                        <BadgeCheck className="h-4 w-4 shrink-0 text-teal-ink" aria-label="مدرب موثق" />
+                      </h3>
+                      {t.headline && <p className="mt-0.5 text-read leading-5 text-muted-foreground">{t.headline}</p>}
+                      {t.country && <p className="mt-0.5 text-read text-muted-foreground">{t.country}</p>}
+                    </div>
                   </div>
-                </div>
 
-                {/* الإحصاءات — تُعرض فقط عند وجود بيانات حقيقية مسجلة */}
-                {(t.ratingAvg != null || t.hoursTaught != null || t.graduatesCount != null) && (
-                  <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-white/10 pt-3 text-xs text-muted-foreground">
-                    {t.ratingAvg != null && (
-                      <span className="inline-flex items-center gap-1 font-bold text-gold-ink">
-                        <Star className="h-3.5 w-3.5 fill-gold" />
-                        {t.ratingAvg.toFixed(1)}
-                        {t.ratingCount != null && <span className="font-normal text-muted-foreground">({t.ratingCount} تقييما)</span>}
-                      </span>
-                    )}
-                    {t.hoursTaught != null && (
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-teal-ink" />
-                        {t.hoursTaught} ساعة تدريب معنا
-                      </span>
-                    )}
-                    {t.graduatesCount != null && (
-                      <span className="inline-flex items-center gap-1">
-                        <GraduationCap className="h-3.5 w-3.5 text-teal-ink" />
-                        {t.graduatesCount} خريجا
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* ١و — التعليقات المعتمَدة للنشر. المتوسّط أعلاه محسوبٌ على كل
-                    التقييمات لا على المعروض منها، فلا يُقرأ الاقتباس رقما. */}
-                {t.testimonials && t.testimonials.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {t.testimonials.map((c, i) => (
-                      <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-paper/20 px-3 py-2">
-                        <span className="mb-0.5 block text-fine font-bold text-gold-ink">{c.score} ★</span>
-                        <p className="text-read leading-6 text-muted-foreground">{c.commentAr}</p>
-                      </blockquote>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {t.specialties.map((s) => (
+                      <span key={s} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">{s}</span>
                     ))}
-                    <p className="text-read text-muted-foreground/50">
-                      تعليقات متعلّمين، منشورة باعتماد الأكاديمية. والمتوسّط أعلاه من كل التقييمات لا من المعروض منها.
-                    </p>
                   </div>
-                )}
 
-                {t.bio && <p className="mt-3 text-read leading-6 text-muted-foreground">{t.bio}</p>}
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {t.specialties.map((s) => (
-                    <span key={s} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">{s}</span>
-                  ))}
-                </div>
-              </Panel>
-            ))}
+                  {/* عددُ الدورات في الرأس: يقول إنّ في النبذة ما يُشترى قبل أن تُفتح */}
+                  <button
+                    type="button"
+                    onClick={() => toggle(t.id)}
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    className="mt-3 flex min-h-11 w-full items-center justify-between gap-2 border-t border-white/10 pt-3 text-sm font-bold text-teal-light-ink transition hover:text-foreground"
+                  >
+                    <span>
+                      نبذةٌ ودوراتُه
+                      {t.assignedCourseIds.length > 0 && (
+                        <span className="ms-2 rounded-full bg-teal/15 px-2 py-0.5 text-read font-black text-teal-light-ink">
+                          {new Set(t.assignedCourseIds).size}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  </button>
+
+                  {open && (
+                    <div id={panelId} className="mt-3 space-y-3">
+                      {/* الإحصاءات — تُعرض فقط عند وجود بيانات حقيقية مسجلة */}
+                      {(t.ratingAvg != null || t.hoursTaught != null || t.graduatesCount != null) && (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+                          {t.ratingAvg != null && (
+                            <span className="inline-flex items-center gap-1 font-bold text-gold-ink">
+                              <Star className="h-3.5 w-3.5 fill-gold" />
+                              {t.ratingAvg.toFixed(1)}
+                              {t.ratingCount != null && <span className="font-normal text-muted-foreground">({t.ratingCount} تقييما)</span>}
+                            </span>
+                          )}
+                          {t.hoursTaught != null && (
+                            <span className="inline-flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5 text-teal-ink" />
+                              {t.hoursTaught} ساعة تدريب معنا
+                            </span>
+                          )}
+                          {t.graduatesCount != null && (
+                            <span className="inline-flex items-center gap-1">
+                              <GraduationCap className="h-3.5 w-3.5 text-teal-ink" />
+                              {t.graduatesCount} خريجا
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {t.bio && <p className="text-read leading-6 text-muted-foreground">{t.bio}</p>}
+
+                      {/* ١و — التعليقات المعتمَدة للنشر. المتوسّط أعلاه محسوبٌ على كل
+                          التقييمات لا على المعروض منها، فلا يُقرأ الاقتباس رقما. */}
+                      {t.testimonials && t.testimonials.length > 0 && (
+                        <div className="space-y-2">
+                          {t.testimonials.map((c, i) => (
+                            <Inset as="blockquote" key={i} className="px-3 py-2">
+                              <span className="mb-0.5 block text-fine font-bold text-gold-ink">{c.score} ★</span>
+                              <p className="text-read leading-6 text-muted-foreground">{c.commentAr}</p>
+                            </Inset>
+                          ))}
+                          <p className="text-read text-muted-foreground/50">
+                            تعليقات متعلّمين، منشورة باعتماد الأكاديمية. والمتوسّط أعلاه من كل التقييمات لا من المعروض منها.
+                          </p>
+                        </div>
+                      )}
+
+                      <TrainerOffer ids={t.assignedCourseIds} />
+                    </div>
+                  )}
+                </Panel>
+              )
+            })}
           </div>
         </section>
       )}
@@ -246,7 +358,7 @@ export default function Trainers() {
       )}
 
       {query && filteredApproved.length === 0 && visibleRoles.length === 0 && (
-        <p className="mt-12 text-center text-sm text-muted-foreground">لا نتائج مطابقة لـ«{query}» — جرّب اسما أو مجالا آخر.</p>
+        <p className="mt-12 text-center text-sm text-muted-foreground">لا نتائج مطابقة لـ«{query}» — جرّب اسما أو مجالا أو دورة.</p>
       )}
 
       <Panel tone="accent" className="mt-14 p-8 text-center">
