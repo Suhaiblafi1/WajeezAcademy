@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { Bell, CheckCircle2, ClipboardList, Loader2, Send } from "lucide-react";
+import { Bell, CheckCircle2, ClipboardList, Send } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { useRealSession } from "@/services/session";
@@ -17,6 +17,8 @@ import { fmtDate } from "@/application/text/format-ar";
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { matchesQuery } from "@/application/text/search-ar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
 import { staffControlCls } from "@/components/FormKit";
 interface Task {
   id: string; title: string; bodyAr: string | null;
@@ -28,6 +30,9 @@ interface Task {
 interface StaffUser { id: string; displayName: string; email: string; roles: { nameAr: string }[] }
 
 const PRIORITY_AR: Record<string, string> = { normal: "عادية", high: "عاجلة" };
+
+/* «١ مهمّةٌ» و«٢ مهمّتان» و«٣ مهامّ» و«١١ مهمّةً» — والعددُ يُقرأ لا يُحسب */
+const TASK_FORMS = { one: "مهمّةٌ", two: "مهمّتان", few: "مهامَّ", many: "مهمّةً" };
 
 export default function AdminTasks() {
   const { user } = useRealSession();
@@ -75,8 +80,16 @@ export default function AdminTasks() {
   const mineShown = mine.filter(hit);
   const assignedShown = assigned.filter(hit);
 
+  /* ما ينتظر إنجازَك أنت — لا ما كلّفتَ به غيرَك. والأعجلُ أوّلا، ثمّ
+     الأقربُ موعدا؛ وما لا موعدَ له يأتي بعد المؤقَّت لا قبلَه. */
+  const open = mine
+    .filter((t) => t.status !== "done")
+    .sort((a, b) => (a.priority === b.priority ? 0 : a.priority === "high" ? -1 : 1)
+      || (a.dueAt ?? "\uffff").localeCompare(b.dueAt ?? "\uffff"));
+
   const row = (t: Task, showAssignee: boolean) => (
-    <li key={t.id} className={`rounded-2xl border p-4 ${
+    /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+    <li key={t.id} id={`task-${t.id}`} tabIndex={-1} className={`rounded-2xl border p-4 outline-none ${
       t.status === "done" ? "border-white/8 bg-white/[0.02]" : "border-white/12 bg-white/[0.04]"
     }`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -109,9 +122,28 @@ export default function AdminTasks() {
     <AdminLayout title="المهامّ والتكليفات">
       <div className="mx-auto max-w-4xl space-y-5">
 
-        {loading ? (
-          <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" /></div>
-        ) : (
+        {/* ── العملُ قبل الألواح الثلاثة ──
+
+            كانت الشاشةُ تفتح بثلاثة ألواحٍ متساوية: مهامّي، وتكليفُ موظّف،
+            وما كلّفتُ به غيري. وأوّلُها وحدَه عملٌ عليّ اليوم، والعددُ فيه
+            بين قوسين في عنوانٍ بحجم عنوانَي جارَيه. فصار جملةً في الرأس
+            وزرًّا يبلغ أعجلَها. */}
+        <WorkHeader
+          loading={loading}
+          icon={ClipboardList}
+          count={open.length}
+          forms={TASK_FORMS}
+          waitingAr="تنتظر إنجازَك"
+          /* «٠ عاجلة» ليست خبرا — فلا يُعرض المجموعُ إلّا حين يعني شيئا */
+          stats={open.some((t) => t.priority === "high")
+            ? [`${open.filter((t) => t.priority === "high").length} منها عاجلة`]
+            : []}
+          actionAr="ابدأ بأعجلها"
+          onAction={() => { if (open[0]) revealRow(`task-${open[0].id}`); }}
+          doneAr="لا مهمّةَ مكلَّفا بها تنتظر — وما يُكلَّف به يصل هنا مع إشعارٍ فورَ تكليفه."
+        />
+
+        {loading ? null : (
           <>
             {/* بحثٌ واحدٌ للقائمتَين: من يبحث عن مهمّةٍ لا يعرف سلفا أفي
                 «مهامّي» هي أم فيما كلّف به غيرَه. */}
@@ -123,11 +155,11 @@ export default function AdminTasks() {
             )}
             <Panel as="section">
               <h2 className="flex items-center gap-2 text-sm font-black">
-                <ClipboardList className="h-4 w-4 text-teal-light-ink" /> مهامّي ({mine.filter((t) => t.status !== "done").length} مفتوحة)
+                {/* العددُ في الرأس لا هنا: رقمان لشيءٍ واحدٍ في شاشةٍ واحدةٍ
+                    يُقرآن رقمَين مختلفَين حتّى يُتحقَّق منهما. */}
+                <ClipboardList className="h-4 w-4 text-teal-light-ink" /> مهامّي
               </h2>
-              {mine.length === 0 ? (
-                <p className="mt-3 text-read text-muted-foreground">لا مهامَّ مكلَّفا بها.</p>
-              ) : (
+              {mine.length === 0 ? null : (
                 <ul className="mt-3 space-y-2">{mineShown.map((t) => row(t, false))}</ul>
               )}
               {mine.length > 0 && mineShown.length === 0 && (

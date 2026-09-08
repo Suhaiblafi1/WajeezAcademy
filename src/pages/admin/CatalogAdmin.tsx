@@ -8,6 +8,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -177,17 +178,6 @@ export default function CatalogAdmin() {
      لا عمل، وعدُّهما في الرأس يَعِد بعملٍ لا وجودَ له. */
   const pendingCrs = crs.filter((cr) => cr.status === "in_review").length;
 
-  /* الانتقالُ داخل الصفحة يُتبعه تركيزٌ لا انزلاقٌ وحدَه: من يتنقّل بلوحة
-     المفاتيح لا ينتقل معه شيءٌ إن حُرّك المشهدُ فقط. والحركةُ تُلغى لمن
-     طلب تقليلَها في نظامه. */
-  const goToChangeRequests = () => {
-    const el = document.getElementById("change-requests");
-    if (!el) return;
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
-    el.focus({ preventScroll: true });
-  };
-
   /* مسارٌ واحدٌ لكلّ مرشِّحٍ يُعرض — فلا يُنسى ترشيحٌ ظاهرٌ على قائمةٍ لا تعنيه */
   const browseUi = browse === null ? null
     : browse === "pathways" ? { view: pathwayView, rows: pathways, unit: "مسارا", ph: "ابحث بمعرّفٍ أو عنوان…" }
@@ -219,7 +209,7 @@ export default function CatalogAdmin() {
           `${questions.length} سؤالا`, `${templates.length} قالبا`,
         ]}
         actionAr="راجِعها"
-        onAction={goToChangeRequests}
+        onAction={() => revealRow("change-requests")}
         doneAr="لا طلبَ تغييرٍ ينتظر قرارَك — وما يُقدَّم منها يصل هذه الشاشةَ فورا."
       />
 
