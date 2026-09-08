@@ -26,6 +26,9 @@ import { fmtDateTimeAr } from "@/utils/format";
 import { Panel } from "@/components/ui/Surface";
 import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 import Button from "@/components/ui/Button";
 import { areaCls, controlCls } from "@/components/FormKit";
 
@@ -50,6 +53,10 @@ interface QueueItem {
 
 export default function GradingQueue() {
   const [queue, setQueue] = useState<QueueItem[] | null>(null);
+  /* اسمُه `query` لا `q`: صفُّ الطابور في التصيير أدناه اسمُه `q`، وحرفٌ
+     واحدٌ لمعنيَين في ملفٍّ واحدٍ يُقرأ خطأً قبل أن يُترجَم خطأً. */
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
@@ -111,6 +118,14 @@ export default function GradingQueue() {
     );
   }
 
+  /* الطابورُ يطول بطول ما يُسلَّم: مدرّبٌ في ثلاث شعبٍ يستقبل عشراتِ
+     التسليمات في الأسبوع، ولم يكن فيه ما يُبلَغ به تسليمٌ بعينه — من أراد
+     تسليمَ متعلّمٍ سأل عنه مرّره بعينه. */
+  const matched = (queue ?? []).filter((s2) => matchesQuery(query, [
+    s2.assessment.title, s2.assessment.cohort.title, s2.textAnswer,
+  ]));
+  const view = paginate(matched, page, 20);
+
   return (
     <TrainerLayout title="طابور التصحيح">
       {/* ── العملُ قبل القائمة ──
@@ -129,7 +144,10 @@ export default function GradingQueue() {
         waitingAr="تنتظر تصحيحَك"
         stats={queue ? [`${queue.filter((q) => q.status === "under_review").length} بدأتَ مراجعتَها`] : []}
         actionAr="ابدأ بأوّلها"
-        onAction={() => { if (queue?.[0]) revealRow(`submission-${queue[0].id}`); }}
+        disabledReasonAr={queue && queue.length > 0 && view.total === 0
+          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          : undefined}
+        onAction={() => { if (view.rows[0]) revealRow(`submission-${view.rows[0].id}`); }}
         doneAr="الطابورُ نظيف — كلُّ ما وصلك قيّمتَه. أحسنت."
       />
 
@@ -153,7 +171,14 @@ export default function GradingQueue() {
         <div className="space-y-4">
           {/* العددُ في الرأس لا هنا: كان يُقال مرّتين بصيغتَين — والصيغةُ
               هنا كانت تُخطئ المثنّى والجمعَ («٢ تسليماتٍ»). */}
-          {queue?.map((q) => (
+          <ListToolbar q={query} onQ={setQuery} onPage={setPage} view={view} unit="تسليما"
+            placeholder="ابحث بعنوان التقييم أو الشعبة أو نصّ الإجابة…" />
+          {view.total === 0 && (
+            <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+              لا تسليمَ يطابق «{query.trim()}» — امسح الكلمة أو جرّب غيرها.
+            </Panel>
+          )}
+          {view.rows.map((q) => (
             /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
             <Panel key={q.id} id={`submission-${q.id}`} tabIndex={-1} className="outline-none">
               <div className="flex flex-wrap items-center gap-3">
