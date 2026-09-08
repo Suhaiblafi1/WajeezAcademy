@@ -16,6 +16,8 @@ import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { matchesQuery } from "@/application/text/search-ar";
+import { staffControlCls } from "@/components/FormKit";
 interface Task {
   id: string; title: string; bodyAr: string | null;
   dueAt: string | null; priority: string; status: string;
@@ -34,6 +36,9 @@ export default function AdminTasks() {
 
   const [mine, setMine] = useState<Task[]>([]);
   const [assigned, setAssigned] = useState<Task[]>([]);
+  /* المهامُّ تتراكم ولا تُحذف عند الإنجاز — فقائمةُ من عمل شهرا تطول.
+     ولا ترقيمَ هنا: القائمتان قصيرتان في العادة، والبحثُ وحدَه يكفي. */
+  const [q, setQ] = useState("");
   const [people, setPeople] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -65,6 +70,10 @@ export default function AdminTasks() {
   };
 
   const field = "w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
+
+  const hit = (t: Task) => matchesQuery(q, [t.title, t.bodyAr, t.assignee?.displayName, t.assignee?.email]);
+  const mineShown = mine.filter(hit);
+  const assignedShown = assigned.filter(hit);
 
   const row = (t: Task, showAssignee: boolean) => (
     <li key={t.id} className={`rounded-2xl border p-4 ${
@@ -104,6 +113,14 @@ export default function AdminTasks() {
           <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" /></div>
         ) : (
           <>
+            {/* بحثٌ واحدٌ للقائمتَين: من يبحث عن مهمّةٍ لا يعرف سلفا أفي
+                «مهامّي» هي أم فيما كلّف به غيرَه. */}
+            {(mine.length > 0 || assigned.length > 0) && (
+              <input value={q} onChange={(e) => setQ(e.target.value)}
+                aria-label="ابحث في المهامّ"
+                placeholder="ابحث بعنوان المهمّة أو نصّها أو اسم المكلَّف…"
+                className={staffControlCls} />
+            )}
             <Panel as="section">
               <h2 className="flex items-center gap-2 text-sm font-black">
                 <ClipboardList className="h-4 w-4 text-teal-light-ink" /> مهامّي ({mine.filter((t) => t.status !== "done").length} مفتوحة)
@@ -111,7 +128,10 @@ export default function AdminTasks() {
               {mine.length === 0 ? (
                 <p className="mt-3 text-read text-muted-foreground">لا مهامَّ مكلَّفا بها.</p>
               ) : (
-                <ul className="mt-3 space-y-2">{mine.map((t) => row(t, false))}</ul>
+                <ul className="mt-3 space-y-2">{mineShown.map((t) => row(t, false))}</ul>
+              )}
+              {mine.length > 0 && mineShown.length === 0 && (
+                <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ تطابق بحثَك.</p>
               )}
             </Panel>
 
@@ -160,7 +180,10 @@ export default function AdminTasks() {
                 {assigned.length === 0 ? (
                   <p className="mt-3 text-read text-muted-foreground">لم تكلّف أحدا بعد.</p>
                 ) : (
-                  <ul className="mt-3 space-y-2">{assigned.map((t) => row(t, true))}</ul>
+                  <ul className="mt-3 space-y-2">{assignedShown.map((t) => row(t, true))}</ul>
+                )}
+                {assigned.length > 0 && assignedShown.length === 0 && (
+                  <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ تطابق بحثَك.</p>
                 )}
               </Panel>
             )}

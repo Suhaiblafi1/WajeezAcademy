@@ -19,6 +19,9 @@ import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
   open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
@@ -92,6 +95,11 @@ export default function AdminCohorts() {
      الحالة». والقائمةُ تطول بطول الكتالوج (٨١ دورة)، فبلا فرزٍ يُقرأ الجدولُ
      بالتمرير لا بالسؤال. */
   const [filters, setFilters] = useState({ status: "", pathway: "", trainer: "", from: "", to: "" });
+  /* الفلاترُ الأربعةُ تُضيّق، والبحثُ يجد. وهما شيئان: من يعرف اسمَ الشعبة
+     يكتبه، ومن يريد «شعبَ فلانٍ في نوفمبر» يفرز. وكان الأوّلُ غائبا،
+     فالوصولُ إلى شعبةٍ بعينها تمريرٌ في قائمةٍ بطول الكتالوج. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [rsComment, setRsComment] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
@@ -175,8 +183,11 @@ export default function AdminCohorts() {
       if (filters.to && day > filters.to) return false;
     }
     return true;
-  });
+  }).filter((c) => matchesQuery(q, [c.title, c.courseTitle, ...c.trainers.map((t) => t.name)]));
   const filtering = Object.values(filters).some(Boolean);
+  /* الشعبُ صفحاتٌ: بطاقةٌ واحدةٌ تُفتح في كلّ حين، وعشرُ بطاقاتٍ في الصفحة
+     تكفي للمسح بالعين. */
+  const view = paginate(filtered, page, 10);
 
   if (offline) {
     return (
@@ -330,7 +341,9 @@ export default function AdminCohorts() {
         </Panel>
       ) : (
         <div className="space-y-4">
-          {filtered.map((c) => {
+          <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="شعبة"
+            placeholder="ابحث باسم الشعبة أو دورتها أو مدرّبها…" />
+          {view.rows.map((c) => {
             const meta = STATUS_META[c.status] ?? STATUS_META.draft;
             const check = checklist[c.id];
             const isOpen = expanded === c.id;

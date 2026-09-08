@@ -315,3 +315,63 @@ describe('بطاقةُ الشعبة · كلُّ قسمٍ في لسانه', () =>
     expect(ops).not.toMatch(/function MiniCard/)
   })
 })
+
+/* ═════════ طوابيرُ العمل — لكلِّ قائمةٍ تطول ما يُبلَغ به صفٌّ بعينه ═════════
+
+   البندُ السابعُ من تقييم لوحة الإدارة. وأوّلُ قياسٍ له كان **مضلِّلا**: قال
+   «ستٌّ من تسعٍ وعشرين فيها أداةُ فرز» فقُرئت «ثلاثٌ وعشرون بلا وسيلةِ
+   وصول» — وهي ليست كذلك. فمنها ما له فلترٌ خاصٌّ به (`AuditLog` مرقَّمٌ من
+   الخادم بوجوهٍ إحصائيّة)، ومنها لوحاتٌ وتفاصيلُ لا قوائمُ أصلا.
+
+   والعدُّ الصحيح: **ثمانيةُ طوابيرَ تنمو ولا بحثَ فيها ولا ترقيم**. وهي ما
+   أُصلح.
+
+   ── وما يُحرَس ──
+
+   الشاشةُ التي تقرأ **مصفوفةً من الخادم** تعرض قائمةً تنمو بنموّ العمل.
+   فيلزمها ما يُبلَغ به صفٌّ بعينه: `ListToolbar` أو `matchesQuery`.
+
+   والمستثنى يُسمّى واحدا واحدا بسببه — لا يُعَدّ عدًّا. */
+describe('طوابيرُ الإدارة · لا قائمةَ تطول بلا وسيلةِ وصول', () => {
+  /* لكلٍّ سببُه، ونوعُه لا رأيُنا فيه:
+
+     لوحةٌ لا قائمة      · AdminDashboard  — أرقامٌ ومداخل، لا صفوفٌ تُبحث
+     تفصيلُ كيانٍ واحد   · CohortOps · CohortWizard · TrainerOps
+     مجموعةٌ محدودة      · Notifications (قوالبُ الإشعارات) · Reports (تعاريفُ التقارير)
+     تشخيصٌ فنّيّ محدود  · DiagnosticQuality — شخصيّاتُ آخرِ جولةٍ وعددُها ثابت */
+  const EXEMPT = new Set([
+    'AdminDashboard', 'CohortOps', 'CohortWizard', 'TrainerOps',
+    'Notifications', 'Reports', 'DiagnosticQuality',
+  ])
+
+  const screens = readdirSync(join(root, 'src/pages/admin'))
+    .filter((f) => f.endsWith('.tsx'))
+    .map((f) => ({ name: f.replace(/\.tsx$/, ''), src: readFileSync(join(root, 'src/pages/admin', f), 'utf8') }))
+    /* تقرأ مصفوفةً من الخادم = تعرض قائمةً تنمو */
+    .filter((x) => /apiGet<[A-Za-z]+\[\]>/.test(x.src))
+
+  it('المسحُ يجد الطوابيرَ فعلا — فلا يمرّ بصفرٍ كاذب', () => {
+    expect(screens.length, 'تعطّل المسحُ نفسُه').toBeGreaterThan(15)
+    expect(screens.map((x) => x.name)).toContain('AdvisorRequests')
+  })
+
+  it('كلُّ طابورٍ يُبحث فيه — أو يُسمّى في المستثنى بسببه', () => {
+    const bare = screens
+      .filter((x) => !EXEMPT.has(x.name))
+      .filter((x) => !/matchesQuery|ListToolbar/.test(x.src))
+      .map((x) => x.name)
+    expect(
+      bare,
+      'قائمةٌ تنمو بلا بحث. استعمل `ListToolbar` مع `paginate` و`matchesQuery` '
+      + `— أو سَمِّها في المستثنى بسببها:\n${bare.join('\n')}`,
+    ).toEqual([])
+  })
+
+  it('والمستثنى لا يتضخّم — كلُّ اسمٍ فيه يقابل ملفّا قائما', () => {
+    /* نقضُه: اسمٌ يُترك في المستثنى بعد حذف ملفّه، فيصير البابُ مفتوحا
+       لشاشةٍ جديدةٍ تحمل الاسمَ نفسَه وتمرّ بلا بحث. */
+    const names = new Set(screens.map((x) => x.name))
+    const stale = [...EXEMPT].filter((n) => !names.has(n))
+    expect(stale, `أسماءٌ في المستثنى بلا ملفّ:\n${stale.join('\n')}`).toEqual([])
+  })
+})

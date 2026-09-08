@@ -14,6 +14,9 @@ import ConfirmAction from "@/components/ConfirmAction";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
@@ -38,6 +41,10 @@ const TABS: { key: string; label: string }[] = [
 export default function RatingModeration() {
   const [status, setStatus] = useState("pending");
   const [rows, setRows] = useState<QueueItem[]>([]);
+  /* الحالةُ تُرشِّح، والبحثُ يجد: خانةٌ فيها مئةُ تعليقٍ لا يُبلَغ فيها
+     تعليقٌ بعينه إلّا بالتمرير. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -55,6 +62,12 @@ export default function RatingModeration() {
   }, [status]);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* يُبحث بنصّ التعليق وبمن قيل فيه — لا بمعرّفه */
+  const matched = rows.filter((r) => matchesQuery(q, [
+    r.commentAr, r.subjectNameAr, KIND_AR[r.subjectType], r.moderationReason,
+  ]));
+  const view = paginate(matched, page, 20);
 
   /* الحجبُ يحتاج سببا يُقرأ في الأثر — يُكتب في نافذة المنصّة لا في حوار
      متصفّحٍ يملك المستخدمُ كتمَه. والاعتمادُ لا يحتاج تأكيدا: يُراجَع بالحجب. */
@@ -118,8 +131,16 @@ export default function RatingModeration() {
       )}
 
       {!offline && !loading && rows.length > 0 && (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تعليقا"
+          placeholder="ابحث في نصّ التعليق أو باسم من قيل فيه…" />
+        {view.rows.length === 0 ? (
+          <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">
+            لا تعليقَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Card>
+        ) : (
         <ul className="space-y-3">
-          {rows.map((r) => (
+          {view.rows.map((r) => (
             <Card as="li" key={r.id}>
               <div className="flex flex-wrap items-center gap-2 text-fine">
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-muted-foreground">{KIND_AR[r.subjectType]}</span>
@@ -147,6 +168,8 @@ export default function RatingModeration() {
             </Card>
           ))}
         </ul>
+        )}
+        </>
       )}
 
       {blocking && (

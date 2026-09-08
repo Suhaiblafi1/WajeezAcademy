@@ -8,6 +8,9 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ConfirmAction from '@/components/ConfirmAction'
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 
 type Version = {
   id: string; label: string; status: string; createdAt: string; publishedAt: string | null
@@ -21,6 +24,10 @@ const STATUS_AR: Record<string, string> = { draft: "مسودة", published: "م�
 
 export default function PublishingBoard() {
   const [versions, setVersions] = useState<Version[]>([]);
+  /* الإصداراتُ تتراكم ولا تُحذف — فهي أطولُ ما في اللوحة نموّا، وكانت
+     تُصبّ دفعةً واحدةً بلا بحثٍ ولا ترقيم. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [runs, setRuns] = useState<RegressionRun[]>([]);
   const [validation, setValidation] = useState<Validation | null>(null);
   const [impact, setImpact] = useState<Impact | null>(null);
@@ -43,6 +50,9 @@ export default function PublishingBoard() {
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  const matched = versions.filter((v) => matchesQuery(q, [v.label, STATUS_AR[v.status], v.status]));
+  const view = paginate(matched, page, 20);
 
   const act = async (key: string, fn: () => Promise<unknown>) => {
     setBusy(key); setError(null);
@@ -110,8 +120,12 @@ export default function PublishingBoard() {
 
       <section className="mt-8">
         <h2 className="flex items-center gap-2 text-lg font-black"><History className="h-5 w-5 text-gold-ink" /> الإصدارات</h2>
-        <div className="mt-4 space-y-2">
-          {versions.map((v) => (
+        <div className="mt-4">
+          <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="إصدارا"
+            placeholder="ابحث بوسم الإصدار أو حاله…" />
+        </div>
+        <div className="space-y-2">
+          {view.rows.map((v) => (
             <Card key={v.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div>
                 <p className="font-bold text-sm" dir="ltr">{v.label}</p>
