@@ -24,6 +24,7 @@ import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import TabBar from "@/components/ui/TabBar";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -420,21 +421,17 @@ export default function TrainerApplications() {
 
                 وسببُه ظاهرٌ في الشاشة: من يبتّ يقرأ سبعةَ صناديق متتالية
                 ليجد ما يخصّ سؤاله، وأكثرُها لا يخصّه. */}
-            <div className="flex gap-1.5" role="tablist" aria-label="أقسام الملفّ">
-              {([["dossier", "الملفّ والمعلومات"], ["courses", "الدورات والشعب"]] as const).map(([key, label]) => (
-                <button
-                  key={key}
-                  role="tab"
-                  aria-selected={tab === key}
-                  onClick={() => setTab(key)}
-                  className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${
-                    tab === key ? "bg-gold text-on-gold" : "border border-white/12 text-muted-foreground hover:border-white/30 hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {/* وكان المختارُ **ذهبيّا صمّاء** إلى جانب أزرار القرار الذهبيّة
+                في الشاشة نفسِها — ذهبيّان يتنازعان العين. */}
+            <TabBar
+              ariaLabel="أقسام الملفّ"
+              value={tab}
+              onChange={setTab}
+              items={[
+                { id: "dossier", label: "الملفّ والمعلومات" },
+                { id: "courses", label: "الدورات والشعب" },
+              ]}
+            />
 
             {tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} />

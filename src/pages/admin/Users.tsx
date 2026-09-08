@@ -16,6 +16,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import TabBar from "@/components/ui/TabBar";
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
   academic_coordinator: "منسّق أكاديميّ",
@@ -327,21 +328,18 @@ export default function Users() {
         </Panel>
       ) : (
         <>
-        <div className="mb-3 flex flex-wrap rounded-full border border-white/15 p-1">
-          {([
-            ["active", `النشطة (${countOf("active")})`],
-            ["invited", `المدعوّة (${countOf("invited")})`],
-            ["suspended", `الموقوفة (${countOf("suspended")})`],
-            ["archived", `المؤرشَفة (${countOf("archived")})`],
-          ] as const).map(([k, label]) => (
-            /* اللسانُ المختارُ فيروزيٌّ لا ذهبيّ: الذهبيُّ فعلُ الصفحة، ولسانٌ
-               ممتلئٌ به يُقرأ فعلا. وهو ما استقرّ عليه لسانُ الشعبة والمالية. */
-            <button key={k} onClick={() => { setBox(k); setQ(""); setPage(1); setEditing(null); setPermFor(null); }}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${box === k ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
+        <TabBar
+          className="mb-3"
+          ariaLabel="خاناتُ الحسابات"
+          value={box}
+          onChange={(k) => { setBox(k); setQ(""); setPage(1); setEditing(null); setPermFor(null); }}
+          items={[
+            { id: "active", label: `النشطة (${countOf("active")})` },
+            { id: "invited", label: `المدعوّة (${countOf("invited")})` },
+            { id: "suspended", label: `الموقوفة (${countOf("suspended")})` },
+            { id: "archived", label: `المؤرشَفة (${countOf("archived")})` },
+          ]}
+        />
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
           placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
         {view.total === 0 ? (

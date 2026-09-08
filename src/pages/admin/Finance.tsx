@@ -10,6 +10,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
+import TabBar from "@/components/ui/TabBar";
 import { revealRow } from "@/components/admin/reveal";
 import EmptyState from "@/components/EmptyState";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -233,17 +234,15 @@ export default function Finance() {
       />
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <div className="flex flex-wrap rounded-full border border-white/15 p-1">
-          {tabs.map(([k, label, n]) => (
-            <button key={k} onClick={() => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
-              /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
-                 الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
-                 يتنازعان العين. وهو ما استقرّ عليه لسانُ الشعبة قبله. */
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"}`}>
-              {label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}
-            </button>
-          ))}
-        </div>
+        <TabBar
+          ariaLabel="أقسام المالية"
+          value={tab}
+          onChange={(k) => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
+          items={tabs.map(([k, label, n]) => ({
+            id: k,
+            label: <>{label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}</>,
+          }))}
+        />
         <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </Button>

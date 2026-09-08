@@ -19,6 +19,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
+import TabBar from "@/components/ui/TabBar";
 interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
@@ -103,19 +104,13 @@ export default function RatingModeration() {
         </p>
       </Card>
 
-      <div className="mb-5 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setStatus(t.key)}
-            className={`cursor-pointer rounded-full border px-4 py-1.5 text-xs font-bold transition ${
-              status === t.key ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:border-white/30"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <TabBar
+        className="mb-5"
+        ariaLabel="حالُ التعليقات"
+        value={status}
+        onChange={setStatus}
+        items={TABS.map((t) => ({ id: t.key, label: t.label }))}
+      />
 
 
       {offline && (
