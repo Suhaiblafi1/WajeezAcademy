@@ -22,6 +22,7 @@ import Button from "@/components/ui/Button";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
+import TabBar from "@/components/ui/TabBar";
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
   open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
@@ -374,22 +375,15 @@ export default function AdminCohorts() {
                         الشعبة بلا فتحِ طيّاتٍ واحدةً واحدة. ووصفُ اللسان تحت
                         اسمه: «الجدول واللقاءات» لا تقول ماذا فيها لمن لم
                         يفتحها من قبل. */}
-                    <div role="tablist" aria-label="أقسام الشعبة" className="flex flex-wrap gap-1.5">
-                      {/* واللسانُ زرٌّ من السلّم لا صيغةٌ تُكتب في مكانها:
-                          `confirm` للمختار و`secondary` لغيره — فحلقةُ
-                          التركيز تأتي معه ولا تُنسى. */}
-                      {COHORT_TABS.map((t) => (
-                        <Button
-                          key={t.id} role="tab" aria-selected={tab === t.id}
-                          tone={tab === t.id ? "confirm" : "secondary"}
-                          onClick={() => setTab(t.id)}
-                          title={t.hint}
-                          className="text-read"
-                        >
-                          {t.label}
-                        </Button>
-                      ))}
-                    </div>
+                    {/* كان `Button` بنبرتَين — وهو أقربُ ما وصلت إليه الألسنةُ
+                        السّتُّ قبل أن تصير درجةً. والفرقُ ليس شكلا: الشريطُ
+                        وقفةٌ واحدةٌ في التنقّل، والأسهمُ تمشي بين ألسنته. */}
+                    <TabBar
+                      ariaLabel="أقسام الشعبة"
+                      value={tab}
+                      onChange={setTab}
+                      items={COHORT_TABS.map((t) => ({ id: t.id, label: t.label, hint: t.hint }))}
+                    />
                     <p className="-mt-2 text-read text-muted-foreground">
                       {COHORT_TABS.find((t) => t.id === tab)?.hint}
                     </p>
