@@ -186,6 +186,19 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
         meeting_authentication: false,
         mute_upon_entry: true,
         auto_recording: 'none',
+        /* ── التسجيلُ المسبق: صفرٌ = يُقبل تلقائيّا ──
+
+           وهو شرطُ رابطٍ لكلّ متعلّم، والرابطُ لكلّ متعلّمٍ شرطُ حضورٍ
+           يُقاس: Zoom يبلّغ عن المشاركين ببريد **المسجَّل**، فبلا تسجيلٍ
+           تعود قائمةُ أسماءٍ كتبها أصحابُها بأيديهم — «أحمد» و«Ahmed»
+           و«iPhone» ثلاثةُ صفوفٍ لشخصٍ واحد، ولا تُطابَق بمسجَّل.
+
+           والبريدُ من Zoom مطفأ: من يُبلّغ المتعلّمَ هي المنصّة، ورسالتان
+           عن لقاءٍ واحدٍ إحداهما بلغةٍ أخرى تُربك لا تُعين. */
+        approval_type: 0,
+        registration_type: 1,
+        registrants_email_notification: false,
+        registrants_confirmation_email: false,
       },
     }),
   })
@@ -210,6 +223,61 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
 }
 
 /** فحصٌ حيٌّ للمفاتيح — يطلب رمزا فعلا ولا يكتفي بوجود القيم */
+/* ── تسجيلُ متعلّمٍ في اجتماع ──
+
+   يردّ رابطا خاصًّا به. وقيمتُه ليست في الرابط بل في **المطابقة**: تقريرُ
+   المشاركين بعد اللقاء يحمل بريدَ المسجَّل، فيُعرف من حضر بلا تخمينٍ في
+   الأسماء.
+
+   ── ولمَ لا يرمي هذا فيُسقط الجلسة ──
+
+   التسجيلُ المسبق ليس متاحا في كلّ حساب: الحساباتُ المجّانيّة لا تملكه،
+   وبعضُ أنواع الاجتماعات ترفضه. والاجتماعُ حينئذٍ **قائمٌ وصالح** — رابطُه
+   المشترك يعمل ويدخل به الطلبة. فإسقاطُ الجلسة كلِّها لأنّ المطابقةَ الآليّة
+   تعذّرت عقوبةٌ على الخطأ الصغير بالخطأ الكبير.
+
+   فيردّ `null` ومعه سببُه، ويُكتب السببُ في `ZoomMeeting.syncError` كي يُقرأ
+   في الشاشة: «الحضورُ يُسجَّل يدويّا في هذه الجلسة، وهذا سببه» — لا صمتٌ
+   يُظنّ معه أنّ العدّ يجري وهو لا يجري. */
+export interface ZoomRegistrant {
+  registrantId: string
+  joinUrl: string
+}
+
+export async function registerZoomParticipant(
+  c: ZoomConfig,
+  meetingId: string,
+  who: { email: string; firstName: string; lastName?: string },
+): Promise<{ ok: true; registrant: ZoomRegistrant } | { ok: false; reason: string }> {
+  const token = await zoomToken(c)
+  const res = await fetch(`${ZOOM_API_BASE_URL}/meetings/${encodeURIComponent(meetingId)}/registrants`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: who.email,
+      first_name: who.firstName.slice(0, 64),
+      /* Zoom يشترط اسما أخيرا في بعض الحسابات، والأسماءُ العربيّةُ تصل
+         كلمةً واحدةً كثيرا — فنقطةٌ خيرٌ من رفضِ التسجيل كلِّه. */
+      last_name: (who.lastName || '.').slice(0, 64),
+    }),
+  })
+  if (!res.ok) {
+    const reason = res.status === 400
+      ? 'لا يقبل هذا الاجتماعُ تسجيلا مسبقا — أُنشئ قبل تفعيله أو لا يتيحه نوعُه'
+      : res.status === 401 || res.status === 403
+        ? 'رفض Zoom التسجيل — تأكّد من صلاحيّة `meeting:write:admin`'
+        : res.status === 404
+          ? 'لا اجتماعَ بهذا الرقم عند Zoom — رُبّما حُذف من لوحته'
+          : `ردُّ Zoom غير متوقّع عند التسجيل (HTTP ${res.status})`
+    return { ok: false, reason }
+  }
+  const j = (await res.json()) as { registrant_id?: string; join_url?: string }
+  if (!j.join_url || !j.registrant_id) {
+    return { ok: false, reason: 'سجّل Zoom المتعلّمَ بلا رابطٍ خاصٍّ به' }
+  }
+  return { ok: true, registrant: { registrantId: j.registrant_id, joinUrl: j.join_url } }
+}
+
 export async function zoomProbe(c: ZoomConfig): Promise<{ ok: boolean; message: string }> {
   if (!c.enabled) return { ok: false, message: 'تكاملُ Zoom غير مفعّل — فعّله واحفظ أوّلا' }
   const missing = zoomMissing(c)

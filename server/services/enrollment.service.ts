@@ -6,10 +6,18 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
 import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
+import { CohortService } from './cohort.service'
 
 export class EnrollmentService {
   private prisma: PrismaClient
   private notifications: NotificationService
+  /* كسولٌ لا في الباني: `CohortService` يستورد هذه الخدمة، فبناؤها هنا
+     مباشرةً حلقةُ استيرادٍ تُفرغ أحدَ الطرفَين وقتَ التحميل. */
+  private _cohorts: CohortService | null = null
+  private get cohorts(): CohortService {
+    if (!this._cohorts) this._cohorts = new CohortService(this.prisma)
+    return this._cohorts
+  }
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.notifications = new NotificationService(prisma)
@@ -82,6 +90,25 @@ export class EnrollmentService {
       actorId, action: 'enrollment.create', entityType: 'enrollment', entityId: enrollment.id,
       meta: { cohortId, userId, status, overrideCapacity: override },
     })
+
+    /* ── ورابطُ دخولٍ في كلّ جلسةٍ لم تُعقد بعد ──
+
+       الروابطُ تُنشأ حين يُنشأ الاجتماع، ومن التحق **بعد** ذلك لا رابطَ له —
+       فيدخل بالرابط المشترك ولا يُطابَق في تقرير الحضور، ويُقرأ غائبا وهو
+       حاضر. فيؤخذ له رابطُه هنا.
+
+       والملتحقُ وحدَه: من في قائمة الانتظار لم يستحقّ مقعدا بعد. والسقوطُ
+       يُبتلع — التحاقٌ يسقط لأنّ Zoom لم يردّ عطبٌ أكبرُ من غياب الرابط،
+       والسببُ مكتوبٌ في `syncState` على كلّ حال. */
+    if (status === 'enrolled') {
+      const upcoming = await this.prisma.cohortSession.findMany({
+        where: { cohortId, startsAt: { gte: new Date() }, zoom: { provider: 'zoom_api' } },
+        select: { id: true },
+      })
+      for (const s of upcoming) {
+        await this.cohorts.ensureSessionJoinLinks(s.id).catch(() => { /* الرابطُ رفاهيةٌ لا شرطُ التحاق */ })
+      }
+    }
     return enrollment
   }
 
