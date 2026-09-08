@@ -101,7 +101,7 @@ export default function CourseJourney({
         <Target className="h-5 w-5 text-gold-ink" />
         ماذا ستحقق من خلال خطتك؟
       </Heading>
-      <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-2 text-read leading-relaxed text-muted-foreground">
         {!edit
           ? "رحلة تعليمية مرتبة تنقلك من احتياجك الحالي إلى نتائج عملية يمكنك استخدامها في عملك وحياتك."
           : edit.swapOnly
@@ -112,7 +112,7 @@ export default function CourseJourney({
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
           كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
           والشارة أدناه تبقى للمدرب المُعلَن، لأن اسمه معلومة تخص بطاقته وحدها. */}
-      <p className="mt-1.5 text-fine leading-relaxed text-muted-foreground">
+      <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
         نُعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
       </p>
 
@@ -125,11 +125,11 @@ export default function CourseJourney({
           <li key={c.id} className="relative pb-5 last:pb-0">
             {isSupport && i === firstSupport && (
               <div className="mb-4 border-t border-dashed border-white/15 pt-4">
-                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+                <p className="flex items-center gap-2 text-read leading-5 font-black text-teal-light-ink">
                   <LifeBuoy className="h-4 w-4" />
                   دورات مساندة ({list.length - coreCount})
                 </p>
-                <p className="mt-1 text-fine leading-relaxed text-muted-foreground">
+                <p className="mt-1 text-read leading-relaxed text-muted-foreground">
                   مهارات من مسارات أخرى يحتاجها صاحب هذا المسار في عمله — تُكمل الرحلة ولا تُكرّرها.
                 </p>
               </div>
@@ -194,13 +194,13 @@ export default function CourseJourney({
                     <CourseTrainer courseId={c.id} />
                   </div>
                   {reasons?.[c.id] && (
-                    <p className="mt-2 text-fine leading-relaxed text-muted-foreground">
+                    <p className="mt-2 text-read leading-relaxed text-muted-foreground">
                       <span className="font-bold text-gold-ink/80">لماذا هي في خطتك: </span>
                       {reasons[c.id]}
                     </p>
                   )}
                   {isSupport && supportReasons?.[c.id] && (
-                    <p className="mt-2 text-fine leading-relaxed text-muted-foreground">
+                    <p className="mt-2 text-read leading-relaxed text-muted-foreground">
                       <span className="font-bold text-teal-light-ink">لماذا هي مساندة لهذا المسار: </span>
                       {supportReasons[c.id]}
                     </p>
@@ -248,7 +248,7 @@ export default function CourseJourney({
                   {/* بدائل الاستبدال — تظهر تحت الدورة نفسها، والاختيار يحل مكانها فورا بكل تفاصيله */}
                   {edit && swapOpen && (
                     <Inset tone="accent" className="mt-3">
-                      <p className="mb-2 text-fine font-bold text-teal-light-ink">
+                      <p className="mb-2 text-read font-bold text-teal-light-ink">
                         بدائل مقترحة لك خصيصا — تحل مكان «{c.title}» فورا بكل تفاصيلها:
                       </p>
                       <div className="grid gap-1.5">
@@ -269,7 +269,7 @@ export default function CourseJourney({
               </div>
 
               <CollapsibleContent className="overflow-hidden transition-all data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
-                <div className="space-y-5 border-t border-white/10 px-4 py-5 pr-[3.25rem] text-xs leading-7">
+                <div className="space-y-5 border-t border-white/10 px-4 py-5 pr-[3.25rem] text-read leading-7">
                   {c.description && <p className="text-muted-foreground">{c.description}</p>}
                   {c.targetAudience && (
                     <p className="text-muted-foreground">
@@ -369,7 +369,7 @@ export default function CourseJourney({
           </span>
           <div className="pt-1">
             <p className="text-sm font-black text-gold-ink">شهادة إتمام + تقرير إنجازك الشخصي</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-read leading-relaxed text-muted-foreground">
               تُعرض في ملفك ويشاركها أصحاب العمل عبر رابط تحقق — ومعها شهادات توصية من مدربيك المحترفين،
               ومن الجهات التي طُبّقت لديها مشاريعك إن وُجدت.
             </p>
@@ -387,7 +387,7 @@ export default function CourseJourney({
               <p className="text-sm font-black text-gold-ink">
                 مشروع التخرّج <span className="font-bold text-muted-foreground">— إضافيّ، خارج دورات المسار</span>
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{graduationProjectAr}</p>
+              <p className="mt-1 text-read leading-relaxed text-muted-foreground">{graduationProjectAr}</p>
             </div>
           </li>
         )}
@@ -434,11 +434,11 @@ export default function CourseJourney({
                 <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${poolOpen ? "rotate-180" : ""}`} />
               </CollapsibleTrigger>
               <CollapsibleContent className="px-4 pb-4">
-              <p className="text-fine leading-5 text-muted-foreground">
+              <p className="text-read leading-5 text-muted-foreground">
                 حتى {MAX_PATHWAY_COURSES} دورات في المسار.
               </p>
               {edit.addReason && (
-                <Inset as="p" tone="accent" className="mt-2 flex items-start gap-1.5 border-teal-light/25 px-3 py-2 text-fine leading-5 text-teal-light-ink">
+                <Inset as="p" tone="accent" className="mt-2 flex items-start gap-1.5 border-teal-light/25 px-3 py-2 text-read leading-5 text-teal-light-ink">
                   <Tag className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span className="min-w-0">{edit.addReason}</span>
                 </Inset>
@@ -465,7 +465,7 @@ export default function CourseJourney({
             </Collapsible>
           )}
           {edit.minReached && !edit.swapOnly && (
-            <p className="text-fine text-gold-ink/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
+            <p className="text-read text-gold-ink/80">وصلت للحد الأدنى — {MIN_PATHWAY_COURSES} دورات هي نواة المسار.</p>
           )}
         </div>
       )}

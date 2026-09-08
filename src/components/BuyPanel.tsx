@@ -325,7 +325,7 @@ export default function BuyPanel({
                       ) : null}
                     </div>
                     {out && (
-                      <p className="mt-1.5 text-fine leading-5 text-muted-foreground">
+                      <p className="mt-1.5 text-read leading-5 text-muted-foreground">
                         {out.messageAr}
                         {options.length > 1 && " — أو اختر موعدا آخر أدناه."}
                       </p>
@@ -354,7 +354,7 @@ export default function BuyPanel({
             {/* ما استُبعد يُسمّى: الخادمُ «كلُّ شيءٍ أو لا شيء»، فإسقاطُه صامتا
                 يجعل المشتريَ يظنّ أنّه اشترى ما لم يشترِه. */}
             {withoutCohort.length > 0 && (
-              <Card as="p" className="mt-3 flex items-start gap-2 text-fine leading-5 text-muted-foreground">
+              <Card as="p" className="mt-3 flex items-start gap-2 text-read leading-5 text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
@@ -388,7 +388,7 @@ export default function BuyPanel({
             {/* لا شيء يُشترى: كلُّه مملوكٌ أو محجوز — يُقال صراحةً بدل صفٍّ
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
             {nothingLeft && (
-              <Card as="p" tone="accent" className="mt-4 text-xs leading-6 text-teal-light-ink">
+              <Card as="p" tone="accent" className="mt-4 text-read leading-6 text-teal-light-ink">
                 كلُّ ما في هذا الطلب لك بالفعل — لا شيء يُدفع ثمنُه مرّةً أخرى.
                 تجد شعبك ومقاعدك المحجوزة في «تعلّمي».
               </Card>
@@ -451,7 +451,7 @@ export default function BuyPanel({
                   </button>
                 ) : (
                   <div role="group" aria-label="بأيّ عملة تُقتطع بطاقتك؟">
-                    <p className="mb-1.5 text-xs font-bold text-muted-foreground">
+                    <p className="mb-1.5 text-read leading-5 font-bold text-muted-foreground">
                       بأيّ عملةٍ تُقتطع بطاقتُك؟
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -484,7 +484,7 @@ export default function BuyPanel({
             )}
 
             {error && (
-              <Inset as="p" tone="danger" className="mt-3 px-3 py-2 text-xs leading-5 text-red-200">
+              <Inset as="p" tone="danger" className="mt-3 px-3 py-2 text-read leading-5 text-red-200">
                 {error}
               </Inset>
             )}
@@ -496,7 +496,7 @@ export default function BuyPanel({
                   {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
                 </Button>
-                <p className="mt-2 text-center text-fine leading-5 text-muted-foreground">
+                <p className="mt-2 text-center text-read leading-5 text-muted-foreground">
                   الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
                 </p>
               </>

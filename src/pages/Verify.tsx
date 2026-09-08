@@ -67,7 +67,7 @@ export default function Verify() {
       </Link>
       <Panel className="mt-8 w-full max-w-md p-8">
         <h1 className="text-center text-2xl font-black">التحقق من شهادة</h1>
-        <p className="mt-2 text-center text-xs leading-6 text-muted-foreground">
+        <p className="mt-2 text-center text-read leading-6 text-muted-foreground">
           أدخل رقم الشهادة (مثال: WJ-CERT-2026-00001) للتأكد من صحتها — دون كشف بيانات شخصية زائدة.
         </p>
         <form
@@ -101,11 +101,11 @@ export default function Verify() {
             <div className="mt-3 space-y-1 text-sm text-muted-foreground">
               <p className="font-bold">{state.cert.learnerName}</p>
               <p>{state.cert.courseTitle}</p>
-              <p className="text-xs text-muted-foreground">إصدار المنهج: {state.cert.courseVersion}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-read leading-5 text-muted-foreground">إصدار المنهج: {state.cert.courseVersion}</p>
+              <p className="text-read leading-5 text-muted-foreground">
                 تاريخ الإصدار: {fmtDateLong(new Date(state.cert.issuedAt))}
               </p>
-              <p className="font-mono text-xs text-muted-foreground">{state.cert.number}</p>
+              <p className="font-mono text-read leading-5 text-muted-foreground">{state.cert.number}</p>
             </div>
           </Card>
         )}
@@ -117,9 +117,9 @@ export default function Verify() {
             <div className="mt-3 space-y-1 text-sm text-muted-foreground">
               <p className="font-bold">{state.cert.learnerName}</p>
               <p>{state.cert.courseTitle}</p>
-              <p className="font-mono text-xs text-muted-foreground">{state.cert.number}</p>
+              <p className="font-mono text-read leading-5 text-muted-foreground">{state.cert.number}</p>
               {state.cert.revokedReason && (
-                <p className="mt-2 rounded-xl bg-paper/30 px-3 py-2 text-xs leading-6 text-red-200/80">
+                <p className="mt-2 rounded-xl bg-paper/30 px-3 py-2 text-read leading-6 text-red-200/80">
                   سبب الإلغاء: {state.cert.revokedReason}
                 </p>
               )}
@@ -131,7 +131,7 @@ export default function Verify() {
           <Card tone="danger" className="mt-6 text-center">
             <ShieldX className="mx-auto h-10 w-10 text-red-400" />
             <p className="mt-3 font-black text-red-300">لا توجد شهادة بهذا الرقم</p>
-            <p className="mt-1.5 text-xs text-muted-foreground">تأكد من الرقم، أو راسلنا إن ظننت أن هناك خطأ.</p>
+            <p className="mt-1.5 text-read leading-5 text-muted-foreground">تأكد من الرقم، أو راسلنا إن ظننت أن هناك خطأ.</p>
           </Card>
         )}
 

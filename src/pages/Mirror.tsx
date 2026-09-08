@@ -69,7 +69,7 @@ export default function Mirror() {
           تُحفظ إجاباتُك على جهازك وحدَه، ومن أخذها لا يُسأل عنها ثانيةً في التشخيص.
         </p>
 
-        <p className="mt-6 text-fine font-bold text-muted-foreground" role="status" aria-live="polite">
+        <p className="mt-6 text-read font-bold text-muted-foreground" role="status" aria-live="polite">
           {result.answered} من {result.total}
         </p>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/8">
@@ -107,7 +107,7 @@ export default function Mirror() {
             <h2 id="mirror-result" className="text-xl font-black">مرآتك</h2>
 
             <Panel tone="accent" className="mt-4">
-              <p className="text-fine font-black text-teal-light-ink">رمزُك الثلاثيّ</p>
+              <p className="text-read font-black text-teal-light-ink">رمزُك الثلاثيّ</p>
               <p className="mt-2 text-lg font-black text-foreground">
                 {result.code.map((d) => DIM_LABEL_AR[d]).join(' · ')}
               </p>
@@ -128,10 +128,10 @@ export default function Mirror() {
             </Panel>
 
             <Panel className="mt-4">
-              <p className="text-fine font-black text-muted-foreground">جاهزيّتُك للتعلّم</p>
+              <p className="text-read font-black text-muted-foreground">جاهزيّتُك للتعلّم</p>
               <ul className="mt-3 space-y-2.5">
                 {(['goal_clarity', 'application_readiness', 'completion_pattern'] as ReadinessKey[]).map((k) => (
-                  <li key={k} className="flex items-baseline justify-between gap-3 text-fine">
+                  <li key={k} className="flex items-baseline justify-between gap-3 text-read">
                     <span className="font-bold text-foreground">{READINESS_LABEL_AR[k]}</span>
                     <span className="text-muted-foreground" dir="ltr">{result.readiness[k]?.toFixed(1)} / 5</span>
                   </li>
@@ -141,10 +141,10 @@ export default function Mirror() {
 
             {/* ── اللوحُ الإلزاميّ ── */}
             <Panel tone="warn" className="mt-4">
-              <p className="flex items-center gap-2 text-fine font-black text-gold-ink">
+              <p className="flex items-center gap-2 text-read font-black text-gold-ink">
                 <Info className="h-3.5 w-3.5" aria-hidden="true" /> ما لا يقوله هذا الاختبار
               </p>
-              <ul className="mt-2.5 space-y-1.5 text-fine leading-6 text-muted-foreground">
+              <ul className="mt-2.5 space-y-1.5 text-read leading-6 text-muted-foreground">
                 <li>يقيس <b className="text-foreground">ما تميل إليه</b>، لا ما تتقنه — الميلُ ليس قدرة.</li>
                 <li>لا يقول لك أيَّ مسارٍ تختار: الميلُ يرجّح ولا يحسم، والاحتياجُ هو الذي يحسم.</li>
                 <li>ومن مقاييس الجاهزيّة الثلاثة، <b className="text-foreground">وضوحُ الهدف وحدَه</b> يصل إلى التشخيص — والآخران لك أنت، لأنّ المحرّك لا يملك ما يفعله بهما اليوم.</li>
@@ -158,7 +158,7 @@ export default function Mirror() {
               </Button>
               <Button onClick={reset} icon={RotateCcw}>أعِد من البداية</Button>
             </div>
-            <p className="mt-3 text-fine leading-5 text-muted-foreground">
+            <p className="mt-3 text-read leading-5 text-muted-foreground">
               التشخيصُ يبدأ بما عرفناه هنا، فلا يُسأل عمّا أجبتَ عنه.
             </p>
           </section>

@@ -547,7 +547,7 @@ export default function JoinTrainer() {
                 {mailSent ? "أرسلنا بريد تأكيد إلى" : "تعذّر إرسال بريد التأكيد الآن"}
                 {mailSent && <b dir="ltr" className="text-teal-light-ink">{form.email.trim()}</b>}
               </p>
-              <p className="mt-2 text-xs leading-7 text-muted-foreground">
+              <p className="mt-2 text-read leading-7 text-muted-foreground">
                 {mailSent
                   ? "فيه رقم طلبك وتفاصيله والخطوة التالية — وفيه رابطٌ افتحه مرة واحدة ليُوثَّق بريدك. إن لم يصلك خلال دقائق راجع مجلد الرسائل غير المرغوبة، أو أعد إرساله من صفحة حالتك."
                   : "طلبك محفوظ ومقدَّم على أي حال. يمكنك طلب رسالة التأكيد مجددا من صفحة حالتك بعد الدخول."}
@@ -558,7 +558,7 @@ export default function JoinTrainer() {
               <p className="flex items-center gap-2 text-sm font-black">
                 <KeyRound className="h-4 w-4 text-teal-light-ink" /> تابع حالة طلبك من حسابك
               </p>
-              <p className="mt-2 text-xs leading-7 text-muted-foreground">
+              <p className="mt-2 text-read leading-7 text-muted-foreground">
                 سجّل الدخول ببريدك <b dir="ltr" className="text-foreground">{form.email.trim()}</b> وكلمة المرور التي اختَرتها.
                 سترى حالة طلبك في كل مرحلة، وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
               </p>
@@ -616,7 +616,7 @@ export default function JoinTrainer() {
           ].map((f) => (
             <Card key={f.text}>
               <f.icon className="h-5 w-5 text-teal-light-ink" />
-              <p className="mt-3 text-xs font-bold leading-6 text-foreground">{f.text}</p>
+              <p className="mt-3 text-read font-bold leading-6 text-foreground">{f.text}</p>
             </Card>
           ))}
         </div>
@@ -656,7 +656,7 @@ export default function JoinTrainer() {
             يرتاب. والباب مفتوح للبدء من جديد بضغطة. */}
         {resumed && (
           <Card tone="accent" className="mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
-            <p className="flex items-center gap-2 text-xs font-bold text-teal-light-ink">
+            <p className="flex items-center gap-2 text-read leading-5 font-bold text-teal-light-ink">
               <RefreshCcw className="h-3.5 w-3.5" />
               أكملنا من حيث توقّفت — إجاباتك محفوظة في هذا المتصفّح.
             </p>
@@ -707,10 +707,10 @@ export default function JoinTrainer() {
                     الحسابُ قائم فلا تُطلب ثانية. */}
                 {!result ? (
                   <Card tone="accent" className="mt-5">
-                    <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+                    <p className="flex items-center gap-2 text-read leading-5 font-black text-teal-light-ink">
                       <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
                     </p>
-                    <p className="mt-1 text-fine leading-6 text-muted-foreground">
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
                       تدخل بها ببريدك أعلاه لتتابع حالة طلبك في كل مرحلة — وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
                       إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
                     </p>
@@ -743,7 +743,7 @@ export default function JoinTrainer() {
                     </FieldRow>
                   </Card>
                 ) : (
-                  <Card as="p" tone="accent" className="mt-5 flex items-center gap-2 text-xs font-bold text-teal-light-ink">
+                  <Card as="p" tone="accent" className="mt-5 flex items-center gap-2 text-read leading-5 font-bold text-teal-light-ink">
                     <CheckCircle2 className="h-4 w-4 shrink-0" />
                     حسابك جاهز ببريدك <span dir="ltr" className="text-foreground">{form.email.trim()}</span> — تدخل به بعد الإرسال لمتابعة طلبك.
                   </Card>
@@ -843,7 +843,7 @@ export default function JoinTrainer() {
                           </Field>
                         )}
                       </FieldRow>
-                      <p className="mt-4 text-fine leading-6 text-muted-foreground">
+                      <p className="mt-4 text-read leading-6 text-muted-foreground">
                         نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا يُنشر ولا يُعرض للمتعلمين قبل توثيقه.
                       </p>
                     </Card>
@@ -906,7 +906,7 @@ export default function JoinTrainer() {
                   aria-describedby="jt-why-count"
                   className={`${areaCls} ${motivationLen > 0 && motivationLen < MOTIVATION_MIN ? "border-gold/50" : ""}`}
                 />
-                <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-fine">
+                <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-read">
                   <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-muted-foreground"}>
                     {motivationLen < MOTIVATION_MIN
                       ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
@@ -956,7 +956,7 @@ export default function JoinTrainer() {
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadFile(d.kind, f); }} />
                         </label>
                         {st?.status === "error" && (
-                          <p className="mt-2 flex items-center gap-1.5 text-fine text-gold-ink">
+                          <p className="mt-2 flex items-center gap-1.5 text-read text-gold-ink">
                             <RefreshCcw className="h-3 w-3" /> {st.error ?? "تعذّر الرفع"} — اختر الملف مجددا
                           </p>
                         )}
@@ -1098,13 +1098,13 @@ export default function JoinTrainer() {
                   </div>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && normalizeDigits(form.phone) && (
-                  <Inset as="p" tone="accent" className="mt-4 flex items-center gap-2 text-xs leading-6 text-foreground">
+                  <Inset as="p" tone="accent" className="mt-4 flex items-center gap-2 text-read leading-6 text-foreground">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-light-ink" />
                     سنتواصل على <b dir="ltr" className="text-foreground">{form.phoneCountryCode}{normalizeDigits(form.phone)}</b> — إن لم يكن رقمك، عد إلى القسم الأول وصحّحه.
                   </Inset>
                 )}
                 {(contactChannel === "phone" || contactChannel === "whatsapp") && !normalizeDigits(form.phone) && (
-                  <Inset as="p" tone="warn" className="mt-4 text-xs leading-6 text-gold-ink">
+                  <Inset as="p" tone="warn" className="mt-4 text-read leading-6 text-gold-ink">
                     لم تذكر رقم جوالك في القسم الأول. <button type="button" onClick={() => setStep(1)} className="cursor-pointer font-black underline">عد وأضفه</button> أو اختر البريد.
                   </Inset>
                 )}
@@ -1112,34 +1112,34 @@ export default function JoinTrainer() {
 
               {/* ملخّص ما سيصل المراجع — بلا مفاجآت */}
               <Card>
-                <p className="flex items-center gap-2 text-xs font-black text-foreground">
+                <p className="flex items-center gap-2 text-read leading-5 font-black text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
                 </p>
-                <ul className="mt-3 space-y-1.5 text-xs leading-6 text-muted-foreground">
+                <ul className="mt-3 space-y-1.5 text-read leading-6 text-muted-foreground">
                   <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
                   <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
                   {seasons.length > 0 && <li>{seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · ")}</li>}
                   <li>دافعك: {motivationLen} حرفا</li>
                 </ul>
-                <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-6 text-muted-foreground">
+                <p className="mt-3 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
                   رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
                 </p>
               </Card>
             </div>
           )}
 
-          {error && <Inset as="p" tone="danger" className="text-xs text-red-200" role="alert">{error}</Inset>}
+          {error && <Inset as="p" tone="danger" className="text-read leading-5 text-red-200" role="alert">{error}</Inset>}
 
           {/* ما ينقص، بالاسم. زرٌّ مطفأ بلا سبب يجعل المتقدّم يفتّش النموذج
               بعينه؛ وهذه قائمةٌ تُقرأ في سطرين وتختفي حين تكتمل الخطوة.
               aria-live كي يسمعها قارئ الشاشة وهي تتناقص. */}
           {missing[step as 1 | 2 | 3].length > 0 && (
             <Card tone="warn" aria-live="polite">
-              <p className="text-xs font-black text-gold-ink">
+              <p className="text-read leading-5 font-black text-gold-ink">
                 بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
               </p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-xs leading-6 text-foreground">
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-read leading-6 text-foreground">
                 {missing[step as 1 | 2 | 3].map((m) => (
                   <li key={m} className="flex items-center gap-1.5">
                     <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
@@ -1188,7 +1188,7 @@ export default function JoinTrainer() {
           <summary className="flex cursor-pointer items-center gap-2 text-sm font-black">
             <Search className="h-4 w-4 text-teal-light-ink" /> قدّمت سابقا؟ تابع حالة طلبك
           </summary>
-          <p className="mt-4 text-xs leading-6 text-muted-foreground">
+          <p className="mt-4 text-read leading-6 text-muted-foreground">
             بريدك يكفي. ولتفاصيل أكثر — وسحب الطلب — <Link to="/auth" className="text-teal-light-ink underline">سجّل الدخول</Link> ببريدك وكلمة المرور التي اختَرتها عند التقديم.
           </p>
           <div className="mt-4 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
@@ -1202,12 +1202,12 @@ export default function JoinTrainer() {
           </Button>
           {lookupResult && (
             <Inset tone="accent" className="mt-3">
-              <p className="text-xs font-black text-teal-light-ink">{lookupResult.label}</p>
-              <p className="mt-1 text-fine text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
-              {lookupResult.explain && <p className="mt-2 text-xs leading-6 text-foreground">{lookupResult.explain}</p>}
+              <p className="text-read leading-5 font-black text-teal-light-ink">{lookupResult.label}</p>
+              <p className="mt-1 text-read text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
+              {lookupResult.explain && <p className="mt-2 text-read leading-6 text-foreground">{lookupResult.explain}</p>}
             </Inset>
           )}
-          {lookupError && <p className="mt-3 text-xs text-red-300" role="alert">{lookupError}</p>}
+          {lookupError && <p className="mt-3 text-read leading-5 text-red-300" role="alert">{lookupError}</p>}
         </details>
       </div>
     </SiteShell>

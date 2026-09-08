@@ -96,7 +96,7 @@ export default function BuyCohort({
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
         اشترِ الآن · <span dir="ltr">{shown}</span>
       </Button>
-      {error && <p className="max-w-[16rem] text-left text-fine leading-4 text-red-300">{error}</p>}
+      {error && <p className="max-w-[16rem] text-left text-read leading-4 text-red-300">{error}</p>}
     </div>
   );
 }

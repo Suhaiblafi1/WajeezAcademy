@@ -76,7 +76,7 @@ export default function JoinTrainerVerify() {
             <MailWarning className="mx-auto h-12 w-12 text-[#FABC05]" />
             <h1 className="mt-5 text-2xl font-black">تعذّر توثيق البريد</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">{state.message}</p>
-            <p className="mt-3 text-xs leading-6 text-muted-foreground">
+            <p className="mt-3 text-read leading-6 text-muted-foreground">
               الروابط تنتهي بعد سبعة أيام. اطلب رسالة جديدة من صفحة الانضمام بإدخال بريدك في «تابع حالة طلبك».
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

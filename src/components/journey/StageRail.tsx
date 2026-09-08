@@ -82,7 +82,7 @@ export default function StageRail({
     <Panel as="section" tone="accent" aria-label="شريط مسارك" className="bg-teal-ink/[0.05] sm:p-5">
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div className="min-w-0">
-          <p className="text-fine text-muted-foreground">أين أنت من رحلتك</p>
+          <p className="text-read text-muted-foreground">أين أنت من رحلتك</p>
           <p className="mt-0.5 text-lg font-black leading-tight text-teal-light-ink">
             {currentIndex === -1
               ? "أنجزت مراحلك كلها"

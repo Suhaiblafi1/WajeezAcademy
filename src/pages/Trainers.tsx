@@ -95,7 +95,7 @@ export default function Trainers() {
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           كل دورة بمدرب متخصص يراجع مخرجك بيده، وكل مسار يجمع اثنين إلى ثلاثة مدربين.
         </p>
-        <Card as="p" tone="warn" className="mx-auto mt-3 flex max-w-md items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold leading-6 text-gold-ink">
+        <Card as="p" tone="warn" className="mx-auto mt-3 flex max-w-md items-center justify-center gap-2 px-4 py-2.5 text-read font-bold leading-6 text-gold-ink">
           <ShieldCheck className="h-4 w-4 shrink-0" />
           {TRAINER_PENDING_AR} — لا ننشر اسما قبل اعتماده رسميا.
         </Card>
@@ -139,8 +139,8 @@ export default function Trainers() {
                       {t.name}
                       <BadgeCheck className="h-4 w-4 text-teal-ink" aria-label="مدرب موثق" />
                     </h3>
-                    {t.headline && <p className="mt-0.5 text-xs text-muted-foreground">{t.headline}</p>}
-                    {t.country && <p className="mt-0.5 text-fine text-muted-foreground">{t.country}</p>}
+                    {t.headline && <p className="mt-0.5 text-read leading-5 text-muted-foreground">{t.headline}</p>}
+                    {t.country && <p className="mt-0.5 text-read text-muted-foreground">{t.country}</p>}
                   </div>
                 </div>
 
@@ -176,16 +176,16 @@ export default function Trainers() {
                     {t.testimonials.map((c, i) => (
                       <blockquote key={i} className="rounded-xl border border-white/[0.07] bg-paper/20 px-3 py-2">
                         <span className="mb-0.5 block text-fine font-bold text-gold-ink">{c.score} ★</span>
-                        <p className="text-fine leading-6 text-muted-foreground">{c.commentAr}</p>
+                        <p className="text-read leading-6 text-muted-foreground">{c.commentAr}</p>
                       </blockquote>
                     ))}
-                    <p className="text-fine text-muted-foreground/50">
+                    <p className="text-read text-muted-foreground/50">
                       تعليقات متعلّمين، منشورة باعتماد الأكاديمية. والمتوسّط أعلاه من كل التقييمات لا من المعروض منها.
                     </p>
                   </div>
                 )}
 
-                {t.bio && <p className="mt-3 text-xs leading-6 text-muted-foreground">{t.bio}</p>}
+                {t.bio && <p className="mt-3 text-read leading-6 text-muted-foreground">{t.bio}</p>}
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {t.specialties.map((s) => (
                     <span key={s} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">{s}</span>
@@ -212,7 +212,7 @@ export default function Trainers() {
                     </span>
                     <div>
                       <h2 className="font-bold leading-relaxed">{role}</h2>
-                      <p className="mt-1 text-xs text-muted-foreground">{TRAINER_PENDING_AR}</p>
+                      <p className="mt-1 text-read leading-5 text-muted-foreground">{TRAINER_PENDING_AR}</p>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-1.5">
@@ -222,7 +222,7 @@ export default function Trainers() {
                       </span>
                     ))}
                   </div>
-                  <p className="mt-4 flex items-center gap-1.5 text-fine text-muted-foreground">
+                  <p className="mt-4 flex items-center gap-1.5 text-read text-muted-foreground">
                     <Users className="h-3.5 w-3.5 text-teal-ink" />
                     يغطي {pathwayCount} {pathwayCount === 1 ? 'مسارا' : 'مسارات'} من كتالوج وجيز
                   </p>

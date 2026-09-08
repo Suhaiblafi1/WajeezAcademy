@@ -55,7 +55,7 @@ export default function SkillDelta({ g }: { g: SkillGrowth }) {
     <li className="grid grid-cols-1 gap-2 border-t border-white/5 py-3 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-4">
       <div className="min-w-0">
         <p className="truncate text-sm font-bold">{g.nameAr}</p>
-        <p className="mt-0.5 text-fine text-muted-foreground">
+        <p className="mt-0.5 text-read text-muted-foreground">
           {g.beforeLevel === null
             ? `قِيست أول مرة بعد الدورة: ${levelLabelAr(g.afterLevel)}`
             : `${levelLabelAr(g.beforeLevel)} ← ${levelLabelAr(g.afterLevel)}`}

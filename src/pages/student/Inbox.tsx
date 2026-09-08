@@ -151,8 +151,8 @@ export default function Inbox() {
                       {KIND_LABEL_AR[i.kind]}
                     </span>
                   </p>
-                  <p className="mt-1.5 whitespace-pre-line text-xs leading-6 text-foreground">{i.bodyAr}</p>
-                  <p className="mt-1.5 text-fine text-muted-foreground">{fmtWhen(i.at)}</p>
+                  <p className="mt-1.5 whitespace-pre-line text-read leading-6 text-foreground">{i.bodyAr}</p>
+                  <p className="mt-1.5 text-read text-muted-foreground">{fmtWhen(i.at)}</p>
                 </Card>
               </li>
             );

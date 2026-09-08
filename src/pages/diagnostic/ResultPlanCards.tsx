@@ -198,7 +198,7 @@ export function PlanCourses({
         }}
       />
       <Card className="mt-4 px-5 py-4">
-        <p className="text-xs font-bold text-muted-foreground">
+        <p className="text-read leading-5 font-bold text-muted-foreground">
           مسارك المخصص الآن:{" "}
           <span className="text-foreground">
             {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
@@ -270,7 +270,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
             <span dir="ltr" className="text-3xl font-black text-foreground md:text-4xl">{formatCohortPrice(cheapest)}</span>
             <span className="text-sm text-muted-foreground">للدورة</span>
           </div>
-          <p className="mt-1.5 text-xs text-teal-light-ink">
+          <p className="mt-1.5 text-read leading-5 text-teal-light-ink">
             وخصمٌ كبير على خطتك كاملة ({courseIds.length} دورات) مقابل شرائها دورةً دورة
           </p>
         </>
@@ -282,14 +282,14 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
       {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
           له — البريدُ يُكتب عند الشراء أصلا، فطلبُه مرّتين حاجزٌ بلا مقابل.
           والكودُ يُقال سطرا واحدا: هو لأوّل شراءٍ لكلّ أحد. */}
-      <Inset as="p" tone="warn" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 px-3.5 py-2.5 text-xs leading-5">
+      <Inset as="p" tone="warn" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 px-3.5 py-2.5 text-read leading-5">
         <span className="font-bold text-gold-ink">خصم {FIRST_TIME_PROMO.percentOff}٪ لأول عملية شراء بالكود</span>
         <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-fine font-black text-gold-ink">
           {FIRST_TIME_PROMO.code}
         </code>
         <span className="text-muted-foreground">— يُكتب في صفحة الدفع.</span>
       </Inset>
-      <p className="mt-3 text-fine leading-5 text-muted-foreground">
+      <p className="mt-3 text-read leading-5 text-muted-foreground">
         سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
         {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
       </p>
@@ -352,7 +352,7 @@ export function WhyThisPathway({
 
       {evidence.length > 0 && (
         <>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-2 text-read leading-relaxed text-muted-foreground">
             لم نخمّن — هذه هي إجاباتك التي بُنيت عليها التوصية:
           </p>
           <ul className="mt-4 space-y-2.5">
@@ -386,20 +386,20 @@ export function WhyThisPathway({
           </div>
           {bandAr && (
             <Inset className="mt-2 px-3 py-2">
-              <p className="text-xs font-bold text-foreground">
+              <p className="text-read leading-5 font-bold text-foreground">
                 صنفُ النتيجة: <span className="text-teal-light-ink">{bandAr}</span>
               </p>
               {blockers.length > 0 ? (
                 <ul className="mt-1.5 space-y-1">
                   {blockers.map((b) => (
-                    <li key={b} className="flex items-start gap-1.5 text-fine leading-5 text-muted-foreground">
+                    <li key={b} className="flex items-start gap-1.5 text-read leading-5 text-muted-foreground">
                       <span aria-hidden="true" className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gold-ink" />
                       {b}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-1 text-fine leading-5 text-muted-foreground">
+                <p className="mt-1 text-read leading-5 text-muted-foreground">
                   لا مانعَ قائم — قِسنا ما تسمح المنصّة بقياسه، والباقي يبقى مجهولا لا مفترَضا.
                 </p>
               )}
@@ -409,7 +409,7 @@ export function WhyThisPathway({
                   لا يُهمَلان: كم مهارةً قِيست من كم يمكن قياسُها، وكم بقي
                   مجهولا. فيقرأ المتعلّمُ **حدَّ ما نعرفه عنه** لا وصفَه. */}
               {basis && basis.measurable > 0 && (
-                <p className="mt-2 border-t border-white/8 pt-2 text-fine leading-5 text-muted-foreground">
+                <p className="mt-2 border-t border-white/8 pt-2 text-read leading-5 text-muted-foreground">
                   قِسنا <b className="text-foreground">{basis.measured}</b> من{" "}
                   <b className="text-foreground">{basis.measurable}</b> مهارةٍ تسمح المنصّةُ بقياسها في هذا المسار
                   {basis.unknown > 0 && (
@@ -435,7 +435,7 @@ export function WhyThisPathway({
               </div>
             ))}
           </div>
-          <p className="mt-4 border-t border-white/10 pt-3 text-fine leading-relaxed text-muted-foreground">
+          <p className="mt-4 border-t border-white/10 pt-3 text-read leading-relaxed text-muted-foreground">
             ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تقف حالتك بين مسارين متقاربين.
             فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
           </p>
@@ -450,7 +450,7 @@ export function WhyThisPathway({
       )}
 
       {changeMakers.length > 0 && (
-        <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-4 text-read leading-relaxed text-muted-foreground">
           <span className="font-bold text-foreground">وما الذي يغيّر هذه التوصية؟ </span>
           {changeMakers[0]}
         </p>
@@ -481,7 +481,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
 
         {/* المسارات التي استُمدت منها الخطة */}
         {represented.length > 0 && (
-          <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-3 text-read leading-relaxed text-muted-foreground">
             رُكّبت من: {represented.map((p) => p.name).join(" + ")}
           </p>
         )}
@@ -491,7 +491,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
           <div className="rounded-xl bg-white/[0.05] p-4">
             <p className="text-sm text-muted-foreground">نسخة خطتك</p>
             <p className="font-black text-gold-ink">{variant.label}</p>
-            <p className="mt-1 text-fine leading-5 text-muted-foreground">{variant.hint}</p>
+            <p className="mt-1 text-read leading-5 text-muted-foreground">{variant.hint}</p>
           </div>
           <div className="rounded-xl bg-white/[0.05] p-4">
             <p className="text-sm text-muted-foreground">إجمالي ساعات الخطة</p>
@@ -499,7 +499,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
             {/* كان مكتوبًا هنا «موزعة على إيقاعك الأسبوعي الذي أخبرتنا به» — وهو ادعاء
                 لا يقع: الرقم مجموع ساعات الدورات الثابتة، لا يُقسَّم على أي إيقاع.
                 والوقت الأسبوعي لم يعد يُسأل عنه أصلًا. */}
-            <p className="mt-1 text-fine leading-5 text-muted-foreground">مجموع ساعات دورات خطتك</p>
+            <p className="mt-1 text-read leading-5 text-muted-foreground">مجموع ساعات دورات خطتك</p>
           </div>
         </div>
 
@@ -523,7 +523,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
             <p className="text-sm font-black text-teal-light-ink">أزلناها لأنك تتقنها — لا تدفع ثمن ما تعرفه:</p>
             <ul className="mt-2 space-y-1.5">
               {composite.removed_courses.map((r) => (
-                <li key={r.courseId} className="text-xs leading-relaxed text-muted-foreground">
+                <li key={r.courseId} className="text-read leading-relaxed text-muted-foreground">
                   <span className="font-bold text-foreground">{r.titleAr}</span> — {r.reason_ar}
                 </li>
               ))}
@@ -536,18 +536,18 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {composite.capstone_ar && (
               <Inset>
-                <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
+                <p className="flex items-center gap-2 text-read leading-5 font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> مشروع إثبات الجاهزية
                 </p>
-                <p className="mt-2 text-xs leading-6 text-foreground">{composite.capstone_ar}</p>
+                <p className="mt-2 text-read leading-6 text-foreground">{composite.capstone_ar}</p>
               </Inset>
             )}
             {composite.success_metric_ar && (
               <Inset>
-                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+                <p className="flex items-center gap-2 text-read leading-5 font-black text-teal-light-ink">
                   <Gauge className="h-4 w-4" /> كيف تعرف أنك نجحت؟
                 </p>
-                <p className="mt-2 text-xs leading-6 text-foreground">{composite.success_metric_ar}</p>
+                <p className="mt-2 text-read leading-6 text-foreground">{composite.success_metric_ar}</p>
               </Inset>
             )}
           </div>
@@ -555,7 +555,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
 
         {/* أقرب بديل ولماذا لم يُختر */}
         {composite.nearest_alternative && (
-          <Inset as="p" className="mt-5 text-xs leading-6 text-muted-foreground">
+          <Inset as="p" className="mt-5 text-read leading-6 text-muted-foreground">
             <span className="font-bold text-foreground">أقرب خطة بديلة كانت «{composite.nearest_alternative.nameAr}»</span>
             {" "}— {composite.nearest_alternative.whyNot_ar}
           </Inset>

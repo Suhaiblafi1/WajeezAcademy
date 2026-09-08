@@ -89,7 +89,7 @@ export default function ResultFeedback({ sessionId, pathwayId }: { sessionId: st
           />
 
           {error && (
-            <Inset as="p" tone="danger" role="alert" className="mt-3 px-4 py-2.5 text-xs font-bold text-red-200">
+            <Inset as="p" tone="danger" role="alert" className="mt-3 px-4 py-2.5 text-read leading-5 font-bold text-red-200">
               {error}
             </Inset>
           )}

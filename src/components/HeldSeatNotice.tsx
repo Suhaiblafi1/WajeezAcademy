@@ -40,7 +40,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
 
   return (
     <div className={`rounded-2xl border px-4 py-3 ${tone} ${className}`}>
-      <p className="flex items-center gap-2 text-xs font-black">
+      <p className="flex items-center gap-2 text-read leading-5 font-black">
         {unpaid ? <CreditCard className="h-3.5 w-3.5 shrink-0" /> : <Clock className="h-3.5 w-3.5 shrink-0" />}
         {paid
           ? "مقعدك محجوز — نؤكّد دفعتك مع البنك"
@@ -48,7 +48,7 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
             ? "مقعدك محجوز — دفعتك لم تكتمل"
             : "طلبك قيد المراجعة — مقعدك محفوظ"}
       </p>
-      <p className="mt-1.5 text-fine leading-6 text-muted-foreground">
+      <p className="mt-1.5 text-read leading-6 text-muted-foreground">
         {paid ? (
           <>
             استلمنا دفعتك عن «{seat.courseTitleAr}» ({seat.cohortTitle}) ولا تدفع مرّةً أخرى.

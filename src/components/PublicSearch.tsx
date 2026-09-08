@@ -133,14 +133,14 @@ export default function PublicSearch() {
 
         <div className="max-h-[52vh] overflow-y-auto p-2">
           {!q.trim() ? (
-            <p className="px-3 py-8 text-center text-xs leading-6 text-muted-foreground">
+            <p className="px-3 py-8 text-center text-read leading-6 text-muted-foreground">
               اكتب ما تريد تعلّمَه — أو ما تريد تغييرَه في عملك.
               <br />
               ونفهم «اكسل» و«موارد بشرية» و«ai» كما تكتبها.
             </p>
           ) : hits.length === 0 ? (
             <div className="px-3 py-8 text-center">
-              <p className="text-xs leading-6 text-muted-foreground">لا نتيجةَ لـ«{q}».</p>
+              <p className="text-read leading-6 text-muted-foreground">لا نتيجةَ لـ«{q}».</p>
               <Link
                 to="/#diagnostic" onClick={close}
                 className="mt-3 inline-flex rounded-full border border-teal/40 px-4 py-2 text-fine font-bold text-teal-light-ink hover:bg-teal/10"

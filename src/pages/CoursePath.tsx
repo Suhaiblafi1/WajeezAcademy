@@ -317,7 +317,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <h2 className="text-sm font-black text-foreground">لمن هذه الدورة</h2>
               <p className="mt-2 text-sm leading-loose text-muted-foreground">{full.targetAudience}</p>
               {full.prerequisites && (
-                <p className="mt-3 border-t border-white/10 pt-3 text-xs leading-relaxed text-muted-foreground">
+                <p className="mt-3 border-t border-white/10 pt-3 text-read leading-relaxed text-muted-foreground">
                   <span className="font-bold text-muted-foreground">ما يُفترض أن تعرفه قبلها: </span>
                   {full.prerequisites}
                 </p>
@@ -504,23 +504,23 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             ) : (
               /* دورةٌ واحدة بلا شعبةٍ مسعَّرة تُبطل المجموع كله: مجموعُ ثلاثٍ
                  يُقرأ ثمنَ أربع. فلا رقم — ويُقال السبب. */
-              <div className="space-y-1 text-xs">
+              <div className="space-y-1 text-read leading-5">
                 <p className="text-sm font-black text-foreground">
                   {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
                 </p>
-                <p className="text-fine leading-5 text-muted-foreground">
+                <p className="text-read leading-5 text-muted-foreground">
                   {pricesLoaded && pricing.priced > 0
                     ? `${pricing.priced} من ${pricing.count} من دوراتك لها شعبة مسعَّرة، والباقي لم تُفتح شعبته بعد. ولا نعرض مجموعا ناقصا.`
                     : "نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه."}
                 </p>
                 {pricing.discountPct > 0 && (
-                  <p className="text-fine font-bold text-teal-light-ink">
+                  <p className="text-read font-bold text-teal-light-ink">
                     وخصم بناء المسار عند {pricing.count} دورات — {pricing.discountPct}٪ — قائمٌ لك حين تُفتح الشعب.
                   </p>
                 )}
                 {/* «حين تُفتح الشعب» — ومتى تُفتح؟ (البند ٥٢) */}
                 {pricesLoaded && (
-                  <p className="text-fine font-bold leading-5 text-foreground">
+                  <p className="text-read font-bold leading-5 text-foreground">
                     <UpcomingTermLine />
                   </p>
                 )}
@@ -551,10 +551,10 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </Button>
               </div>
               {promoApplied && (
-                <p className="mt-1.5 text-fine font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
+                <p className="mt-1.5 text-read font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
               )}
               {promoError && (
-                <p className="mt-1.5 text-fine text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
+                <p className="mt-1.5 text-read text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
               )}
               {/* الفئات من مصدر السياسة لا من نصٍّ مكتوب هنا: نسبةٌ تُذكر في
                   صفحة الشراء وتُخالف ما يُصدره الإداري كودا هي وعدٌ مكسور.
@@ -568,7 +568,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 {/* خصمُ أوّل شراء أوّلَ القائمة وكودُه معلَنٌ بجانبه: لكلّ أحدٍ
                     في أوّل مرّة، فلا إثباتَ له ولا سرَّ فيه. */}
                 <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
-                  <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-fine leading-5">
+                  <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-read leading-5">
                     <span className="font-bold text-foreground">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
                     <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-fine font-black text-gold-ink">
                       {FIRST_TIME_PROMO.code}
@@ -576,7 +576,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     <span className="text-muted-foreground">· بلا إثبات</span>
                   </li>
                   {DISCOUNT_CATEGORIES.map((cat) => (
-                    <li key={cat.id} className="text-fine leading-5 text-muted-foreground">
+                    <li key={cat.id} className="text-read leading-5 text-muted-foreground">
                       <span className="font-bold text-foreground">{cat.label_ar} — {cat.percentOff}٪</span>
                       <span className="text-muted-foreground"> · {cat.evidence_ar}</span>
                     </li>
@@ -592,7 +592,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     وواتساب المستشارين هو القناة الرسميّة المعتمدة أصلا
                     (`CONTACT.whatsapp` في data/stories.ts)، فلا قناةَ جديدة
                     تُفتح هنا بل تُستعمل القائمة. */}
-                <p className="mt-2 text-fine leading-5 text-muted-foreground">
+                <p className="mt-2 text-read leading-5 text-muted-foreground">
                   <a
                     href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
                     target="_blank"
@@ -616,7 +616,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن */}
             {nudge && (
-              <Inset as="p" tone="warn" className="mt-3 flex items-start gap-2 px-3.5 py-2.5 text-fine font-semibold leading-5 text-gold-ink">
+              <Inset as="p" tone="warn" className="mt-3 flex items-start gap-2 px-3.5 py-2.5 text-read font-semibold leading-5 text-gold-ink">
                 <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   دورة واحدة أخرى ترفع خصمك إلى {nudge.nextPct}٪: تصير الـ{nudge.nextCount} بـ<span dir="ltr">{money(nudge.nextPayable)}</span>.
@@ -627,7 +627,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
             {/* السقف — يُقال بسببه لا بمنعٍ صامت */}
             {pricing.atCap && (
-              <Inset as="p" className="mt-2.5 flex items-start gap-2 px-3.5 py-2.5 text-fine leading-5 text-muted-foreground">
+              <Inset as="p" className="mt-2.5 flex items-start gap-2 px-3.5 py-2.5 text-read leading-5 text-muted-foreground">
                 <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                 <span>
                   بلغتَ {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حمايةٌ لإنهائه:
@@ -637,7 +637,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             )}
 
             {matchesPathway && (
-              <p className="mt-2.5 flex items-start gap-2 text-fine leading-5 text-teal-light-ink">
+              <p className="mt-2.5 flex items-start gap-2 text-read leading-5 text-teal-light-ink">
                 <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
                   اخترت دورات مسار «{anchor.pathwayName}» كلها — فتأخذ شهادته كما هي.{" "}
@@ -656,7 +656,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <Save className="h-4.5 w-4.5" />
               مرحلتك التالية — محفوظة لك
             </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
               اخترتها بعد بلوغ الحد، فحفظناها بدل رفضها. أنهِ مسارك الأول ثم ابنِ هذه — أو احذف واحدة من الخمس أعلاه وأدخِلها مكانها.
             </p>
             <ul className="mt-3.5 space-y-2">
@@ -690,7 +690,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <Layers className="h-4 w-4 text-teal-light-ink" />
               ما يكمل مسارك
             </h2>
-            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
               مرتّبة لا معروضة: تبدأ ببقية المسار الذي بدأت منه بترتيبه المصمَّم، ثم ما يبني على المهارة نفسها،
               ثم ما يوسّعها خارج مجالك. ولكل واحدة سببها مكتوبا.
             </p>
@@ -752,14 +752,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               </Button>
             </div>
             {saveState === "failed" && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-read leading-5 text-muted-foreground">
                 تعذّر الحفظ الآن — مسارك أمامك كما هو ويمكنك الشراء، وأعد المحاولة لاحقا.
               </p>
             )}
           </Panel>
         )}
 
-        <p className="mt-8 text-center text-fine text-muted-foreground">
+        <p className="mt-8 text-center text-read text-muted-foreground">
           دفع آمن — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك
         </p>
       </main>

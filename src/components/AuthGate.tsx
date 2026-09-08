@@ -214,7 +214,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               متابعة — سأؤكد بريدي لاحقا
             </button>
           </div>
-          <p className="mt-5 text-fine leading-relaxed text-muted-foreground">
+          <p className="mt-5 text-read leading-relaxed text-muted-foreground">
             تفقد مجلد الرسائل غير المرغوبة إن لم تجدها خلال دقائق
           </p>
         </Panel>
@@ -253,7 +253,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               />
             </div>
             {!emailValid && email.length > 0 && (
-              <p className="mt-1.5 text-fine font-semibold text-red-300">صيغة البريد غير صحيحة — مثال: name@mail.com</p>
+              <p className="mt-1.5 text-read font-semibold text-red-300">صيغة البريد غير صحيحة — مثال: name@mail.com</p>
             )}
             <button
               type="submit"
@@ -332,7 +332,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {pass.length > 0 && !passValid && (
-                <p className="mt-1.5 text-fine font-semibold text-red-300">كلمة المرور ٨ أحرف على الأقل</p>
+                <p className="mt-1.5 text-read font-semibold text-red-300">كلمة المرور ٨ أحرف على الأقل</p>
               )}
             </div>
             <div>
@@ -353,11 +353,11 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {confirm.length > 0 && confirm !== pass && (
-                <p className="mt-1.5 text-fine font-semibold text-red-300">لا تطابق كلمة المرور — أعد كتابتها</p>
+                <p className="mt-1.5 text-read font-semibold text-red-300">لا تطابق كلمة المرور — أعد كتابتها</p>
               )}
             </div>
             {err && (
-              <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
+              <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-center text-read font-semibold leading-relaxed text-red-300">
                 {err}
               </Inset>
             )}
@@ -429,7 +429,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                   <Linkedin className="h-5 w-5" />
                   المتابعة بحساب لينكدإن
                 </button>
-                <p className="flex items-center justify-center gap-1.5 text-fine text-muted-foreground">
+                <p className="flex items-center justify-center gap-1.5 text-read text-muted-foreground">
                   <ShieldCheck className="h-3.5 w-3.5 text-teal-ink" />
                   لن ننشر شيئا باسمك أبدا — حسابك لحفظ مسارك ونتيجتك فقط
                 </p>
@@ -485,7 +485,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {email.length > 0 && !emailValid && (
-                <p id="auth-email-hint" className="mt-1.5 text-fine font-semibold text-red-300">
+                <p id="auth-email-hint" className="mt-1.5 text-read font-semibold text-red-300">
                   صيغة البريد غير صحيحة — مثال: name@mail.com
                 </p>
               )}
@@ -521,7 +521,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                 />
               </div>
               {mode === "signup" && (
-                <p className="mt-1.5 text-fine text-muted-foreground">
+                <p className="mt-1.5 text-read text-muted-foreground">
                   ٨ أحرف فأكثر — ويُفضّل رقم أو رمز (! @ #) لتقويتها
                 </p>
               )}
@@ -539,7 +539,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
                     />
                   ))}
                 </div>
-                <p className="mt-1.5 text-fine font-semibold" style={{ color: STRENGTH_META[strength].color }}>
+                <p className="mt-1.5 text-read font-semibold" style={{ color: STRENGTH_META[strength].color }}>
                   كلمة مرور {STRENGTH_META[strength].label}
                 </p>
               </div>
@@ -596,12 +596,12 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             )}
 
             {notice && (
-              <Inset as="p" tone="accent" className="px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-teal-light-ink">
+              <Inset as="p" tone="accent" className="px-4 py-2.5 text-center text-read font-semibold leading-relaxed text-teal-light-ink">
                 {notice}
               </Inset>
             )}
             {err && (
-              <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-center text-xs font-semibold leading-relaxed text-red-300">
+              <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-center text-read font-semibold leading-relaxed text-red-300">
                 {err}
               </Inset>
             )}
@@ -616,7 +616,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
           </form>
 
           {mode === "login" && (
-            <p className="mt-4 text-center text-fine leading-relaxed text-muted-foreground">
+            <p className="mt-4 text-center text-read leading-relaxed text-muted-foreground">
               لحمايتك: يُقفل الدخول مؤقتا بعد خمس محاولات خاطئة
             </p>
           )}

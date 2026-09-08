@@ -84,7 +84,7 @@ export default function MyCv() {
     <PortalLayout title="سيرتي الذاتية">
       {/* شرحُ الرفع لا يُقال حيث لا رفع — وإلّا نقض القسمَ الذي تحته */}
       {fileUploads && (
-        <Card as="p" className="mb-5 max-w-2xl px-4 py-3 text-xs leading-6 text-muted-foreground">
+        <Card as="p" className="mb-5 max-w-2xl px-4 py-3 text-read leading-6 text-muted-foreground">
           تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
           مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
         </Card>
@@ -98,7 +98,7 @@ export default function MyCv() {
       {!fileUploads && (
         <Panel as="section" tone="warn">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink"><ShieldCheck className="h-4 w-4" /> رفعُ السيرة غيرُ مفعّلٍ بعد</h2>
-          <p className="mt-3 text-xs leading-7 text-foreground">
+          <p className="mt-3 text-read leading-7 text-foreground">
             المنصّةُ لا تحفظ الملفّاتَ في هذه المرحلة، فلن نطلب منك ملفًّا لا يصل. أعطِ سيرتك لمستشارك في جلستكم الأولى،
             أو تواصل مع الأكاديمية — ويظهر هذا القسمُ تلقائيّا يومَ يُفعَّل الرفع.
           </p>
@@ -136,7 +136,7 @@ export default function MyCv() {
           </span>
         </Card>
         {!consent && (
-          <p className="mt-2 text-fine text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
+          <p className="mt-2 text-read text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
         )}
       </Panel>
       )}
@@ -148,7 +148,7 @@ export default function MyCv() {
           <Panel className="border-dashed py-10 text-center">
             <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 text-sm font-bold text-muted-foreground">لا سير فعالة بعد</p>
-            <p className="mx-auto mt-1 max-w-sm text-xs leading-6 text-muted-foreground">
+            <p className="mx-auto mt-1 max-w-sm text-read leading-6 text-muted-foreground">
               سيرتك تساعد مستشارك على فهم خلفيتك المهنية قبل أول جلسة — وتُسجل كل مشاهدة لها في السجل.
             </p>
             {fileUploads && (
@@ -165,7 +165,7 @@ export default function MyCv() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="truncate font-black">{c.originalName}</p>
-              <p className="mt-0.5 text-fine text-muted-foreground">
+              <p className="mt-0.5 text-read text-muted-foreground">
                 {cvKindLabel(c.mime)} · {Math.ceil(c.sizeBytes / 1024)} كيلوبايت · رُفعت {fmtWhen(c.createdAt)}
               </p>
             </div>
@@ -190,7 +190,7 @@ export default function MyCv() {
               <h3 className="font-black">حذف السيرة — حذف منطقي بسبب موثق</h3>
               <button onClick={() => setDelId(null)} className="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="إغلاق"><X className="h-5 w-5" /></button>
             </div>
-            <p className="mt-2 text-xs leading-6 text-muted-foreground">
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
               وفق السياسة: الحذف منطقي لا فيزيائي، وسببك يُحفظ في السجل. بعدها لا يراها مستشارك ولا تظهر في ملفك.
             </p>
             <label className="mt-4 block text-xs font-bold text-muted-foreground">سبب الحذف *</label>

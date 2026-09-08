@@ -132,7 +132,7 @@ export default function ApplicantStatus() {
           <Card tone="danger" className="mt-6 text-sm text-red-200" role="alert">
             {error}
             {error.includes("لا طلب") && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-read leading-5 text-muted-foreground">
                 لم نجد طلبا مرتبطا بهذا الحساب. <Link to="/join-trainer" className="text-teal-light-ink underline">قدّم طلبك من هنا</Link>.
               </p>
             )}
@@ -143,7 +143,7 @@ export default function ApplicantStatus() {
           <div className="mt-6 space-y-4">
             {/* الحالة — بلغة صاحب الطلب */}
             <section className={`rounded-3xl border p-6 ${TONE_CLS[st.tone]}`}>
-              <p className="text-fine font-bold opacity-70">رقم طلبك</p>
+              <p className="text-read font-bold opacity-70">رقم طلبك</p>
               <p className="mt-1 font-mono text-lg font-black tracking-wide" dir="ltr">{mine.reference}</p>
               <h2 className="mt-4 text-xl font-black">{st.label}</h2>
               <p className="mt-2 text-sm leading-7 opacity-90">{st.explain}</p>
@@ -178,13 +178,13 @@ export default function ApplicantStatus() {
             {/* البريد والتواصل */}
             <section className="grid gap-3 sm:grid-cols-2">
               <Card>
-                <p className="flex items-center gap-2 text-fine font-bold text-muted-foreground"><Mail className="h-3.5 w-3.5" /> بريدك</p>
+                <p className="flex items-center gap-2 text-read font-bold text-muted-foreground"><Mail className="h-3.5 w-3.5" /> بريدك</p>
                 <p dir="ltr" className="mt-1 text-right text-sm text-muted-foreground">{mine.email}</p>
                 {mine.emailVerifiedAt ? (
-                  <p className="mt-2 flex items-center gap-1.5 text-fine font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثَّق</p>
+                  <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثَّق</p>
                 ) : mine.status !== "draft" ? (
                   <div className="mt-2">
-                    <p className="flex items-center gap-1.5 text-fine font-bold text-gold-ink"><MailWarning className="h-3.5 w-3.5" /> غير موثَّق — افتح رابط التأكيد في بريدك</p>
+                    <p className="flex items-center gap-1.5 text-read font-bold text-gold-ink"><MailWarning className="h-3.5 w-3.5" /> غير موثَّق — افتح رابط التأكيد في بريدك</p>
                     <button
                       type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
                       className="mt-1.5 cursor-pointer text-fine font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
@@ -195,18 +195,18 @@ export default function ApplicantStatus() {
                 ) : null}
               </Card>
               <Card>
-                <p className="flex items-center gap-2 text-fine font-bold text-muted-foreground"><Phone className="h-3.5 w-3.5" /> سنتواصل معك عبر</p>
+                <p className="flex items-center gap-2 text-read font-bold text-muted-foreground"><Phone className="h-3.5 w-3.5" /> سنتواصل معك عبر</p>
                 {mine.contactChannel ? (
                   <>
                     <p className="mt-1 text-sm font-bold text-muted-foreground">{contactChannelLabel(mine.contactChannel)}</p>
-                    <p dir="ltr" className="mt-0.5 text-right text-xs text-muted-foreground">
+                    <p dir="ltr" className="mt-0.5 text-right text-read leading-5 text-muted-foreground">
                       {mine.contactChannel === "other_email" ? mine.contactAltEmail
                         : mine.contactChannel === "email" ? mine.email
                         : phone ?? "—"}
                     </p>
                   </>
                 ) : (
-                  <p className="mt-1 text-xs text-muted-foreground">تختارها عند إكمال طلبك.</p>
+                  <p className="mt-1 text-read leading-5 text-muted-foreground">تختارها عند إكمال طلبك.</p>
                 )}
               </Card>
             </section>
@@ -216,7 +216,7 @@ export default function ApplicantStatus() {
               <h3 className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-teal-light-ink" /> ما مرّ به طلبك</h3>
               <ol className="mt-3 space-y-2">
                 {mine.statusHistory.map((h, i) => (
-                  <li key={`${h.toStatus}-${i}`} className="flex items-center justify-between gap-3 text-xs">
+                  <li key={`${h.toStatus}-${i}`} className="flex items-center justify-between gap-3 text-read leading-5">
                     <span className="flex items-center gap-2 text-muted-foreground">
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${i === mine.statusHistory.length - 1 ? "bg-teal" : "bg-white/30"}`} />
                       {APPLICANT_STATUS[h.toStatus]?.label ?? h.toStatus}
@@ -231,9 +231,9 @@ export default function ApplicantStatus() {
             <Card as="section">
               <h3 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> مستنداتك</h3>
               {mine.documents.length === 0 ? (
-                <p className="mt-2 text-xs text-muted-foreground">لم تُرفع مستندات بعد.</p>
+                <p className="mt-2 text-read leading-5 text-muted-foreground">لم تُرفع مستندات بعد.</p>
               ) : (
-                <ul className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+                <ul className="mt-3 space-y-1.5 text-read leading-5 text-muted-foreground">
                   {mine.documents.map((d, i) => (
                     <li key={`${d.kind}-${i}`} className="flex items-center justify-between gap-3">
                       <span>{DOC_AR[d.kind] ?? d.kind} · <span className="text-muted-foreground">{d.originalName}</span></span>
@@ -247,7 +247,7 @@ export default function ApplicantStatus() {
             {/* السحب */}
             {canWithdraw && (
               <Card as="section">
-                <p className="text-xs font-bold text-muted-foreground">غيّرت رأيك؟ يمكنك سحب طلبك نهائيا — والتقديم من جديد متى شئت.</p>
+                <p className="text-read leading-5 font-bold text-muted-foreground">غيّرت رأيك؟ يمكنك سحب طلبك نهائيا — والتقديم من جديد متى شئت.</p>
                 <div className="mt-3 flex flex-wrap items-center gap-3">
                   <Button tone="danger" type="button" onClick={withdraw} disabled={withdrawing}>
                     {withdrawing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}

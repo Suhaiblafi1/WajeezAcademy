@@ -135,13 +135,13 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
         <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
           <Activity className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> زخمك
         </h3>
-        <p className="text-fine text-muted-foreground">آخر {m.windowDays} يوما</p>
+        <p className="text-read text-muted-foreground">آخر {m.windowDays} يوما</p>
       </div>
 
       <p className="mt-3 text-sm font-black">
         {m.last ? m.last.labelAr : "لا أثر مسجَّل بعد"}
       </p>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 text-read leading-5 text-muted-foreground">
         {m.last ? `${KIND_LABEL_AR[m.last.kind]} · ${sinceLabelAr(m.daysSince)}` : "يبدأ الزخم بأول حضور أو تسليم أو وحدة مُقرّة"}
       </p>
 
@@ -154,13 +154,13 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
           ))}
         </ul>
       ) : (
-        <Card as="p" className="mt-4 px-4 py-3 text-fine leading-6 text-muted-foreground">
+        <Card as="p" className="mt-4 px-4 py-3 text-read leading-6 text-muted-foreground">
           لا أثر مسجَّل في آخر {m.windowDays} يوما. وهذا ما تقوله السجلات — لا حكم فيه ولا عدّاد ينكسر.
         </Card>
       )}
 
       {m.cohortPace && m.cohortPace.total > 0 && (
-        <p className="mt-4 border-t border-white/8 pt-3 text-fine leading-6 text-muted-foreground">
+        <p className="mt-4 border-t border-white/8 pt-3 text-read leading-6 text-muted-foreground">
           إيقاع شعبتك: انتهت{" "}
           <span className="font-bold tabular-nums text-foreground">{m.cohortPace.done}</span> من{" "}
           <span className="tabular-nums">{m.cohortPace.total}</span> جلسة
@@ -170,7 +170,7 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
 
       {/* ‎/55 لا ‎/40: الأخيرة تقيس 3.83:1 على سطح البطاقة — والقاعدة المعلنة
           أولى النصوص بأن تُقرأ */}
-      <p className="mt-3 text-fine leading-5 text-muted-foreground">{NO_STREAK_NOTE}</p>
+      <p className="mt-3 text-read leading-5 text-muted-foreground">{NO_STREAK_NOTE}</p>
     </section>
   );
 }
@@ -285,7 +285,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           <div>
             <p className="text-sm text-muted-foreground">رحلتك الحقيقية</p>
             <h2 className="mt-1 text-xl font-black">{activeCount} {activeCount === 1 ? "شعبة نشطة" : "شعب نشطة"} · {rows.length} إجمالا</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-read leading-5 text-muted-foreground">
               {certCount > 0 ? `${certCount} ${certCount === 1 ? "شهادة صادرة" : "شهادات صادرة"} · ` : ""}تقدمك يُحسب من حضورك وتسليماتك الفعلية
             </p>
           </div>
@@ -356,8 +356,8 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           <div className="mt-4 space-y-3">
             {rows.slice(0, 3).map((r) => (
               <div key={r.id}>
-                <p className="truncate text-xs font-bold text-foreground">{r.cohort.course.versions[0]?.titleAr ?? r.cohort.title}</p>
-                <p className="mt-0.5 truncate text-fine text-muted-foreground">
+                <p className="truncate text-read leading-5 font-bold text-foreground">{r.cohort.course.versions[0]?.titleAr ?? r.cohort.title}</p>
+                <p className="mt-0.5 truncate text-read text-muted-foreground">
                   {/* الشعبُ تُفتح على الفصل الأوّل والمدرّبون يُسنَدون دفعةً
                       واحدة، فبينهما فراغٌ يُقال ولا يُترك عنوانا مكرّرا. */}
                   {r.cohort.trainers.length > 0 ? `المدرب: ${r.cohort.trainers.map((t) => t.profile.application.fullName).join("، ")}` : "سيتم تعيين المدرب قريبا"}
@@ -412,7 +412,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                     </span>
                     <div>
                       <p className="text-sm font-bold">{s.title}</p>
-                      <p className="text-fine text-muted-foreground">{s.cohortTitle} · {fmtWhen(s.startsAt)}</p>
+                      <p className="text-read text-muted-foreground">{s.cohortTitle} · {fmtWhen(s.startsAt)}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -468,9 +468,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
             {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-fine font-black text-on-gold">{unread} جديد</span>}
           </div>
           <div className="mt-4 space-y-2.5">
-            {notifs.length === 0 && <Inset as="p" className="px-3 py-6 text-center text-xs text-muted-foreground">لا إشعارات بعد</Inset>}
+            {notifs.length === 0 && <Inset as="p" className="px-3 py-6 text-center text-read leading-5 text-muted-foreground">لا إشعارات بعد</Inset>}
             {notifs.map((n) => (
-              <Inset as="p" tone={n.status === "read" ? "default" : "accent"} key={n.id} className={`px-3 py-2.5 text-xs leading-6 ${n.status === "read" ? "text-muted-foreground" : "text-foreground"}`}>
+              <Inset as="p" tone={n.status === "read" ? "default" : "accent"} key={n.id} className={`px-3 py-2.5 text-read leading-6 ${n.status === "read" ? "text-muted-foreground" : "text-foreground"}`}>
                 <span className="block font-bold">{n.title}</span>
                 {n.body}
               </Inset>
@@ -486,29 +486,29 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <TrendingUp className="h-4 w-4" /> ملف مهاراتي
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">ما قِيس لك فعلا: فجواتك وما تُتقنه وما لم يُقس بعد</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">ما قِيس لك فعلا: فجواتك وما تُتقنه وما لم يُقس بعد</p>
         </Panel>
         <Panel as={Link} tone="accent" interactive to="/student/learning" className="block transition hover:border-teal/60">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <CalendarDays className="h-4 w-4" /> مسارُ تعلّمي
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">تصفح الشعب القادمة واطلب التسجيل فيما يناسبك</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">تصفح الشعب القادمة واطلب التسجيل فيما يناسبك</p>
         </Panel>
         <Panel as={Link} interactive to="/student/certificates" className="block transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
             <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine text-gold-ink">{certCount}</span>}
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">أرقام تحقق عامة تُشاركها مع أي جهة</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">أرقام تحقق عامة تُشاركها مع أي جهة</p>
         </Panel>
         <Panel as={Link} interactive to="/student/support" className="block transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
             <LifeBuoy className="h-4 w-4" /> الدعم
           </div>
-          <p className="mt-2 text-xs leading-6 text-muted-foreground">تذكرة دعم تصل لفريق العمليات مباشرة</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">تذكرة دعم تصل لفريق العمليات مباشرة</p>
         </Panel>
       </div>
 
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-fine text-muted-foreground">
+      <p className="mt-8 flex items-center justify-center gap-2 text-center text-read text-muted-foreground">
         <Sparkles className="h-3.5 w-3.5" />
         <Clock3 className="h-3.5 w-3.5" />
         تقدمك يُحفظ في الخادم تلقائيا — أكمل من أي جهاز
@@ -563,7 +563,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
               </li>
             ))}
           </ul>
-          <p className="mt-3 max-w-md text-xs leading-7 text-muted-foreground">
+          <p className="mt-3 max-w-md text-read leading-7 text-muted-foreground">
             يتحوّل الحجزُ إلى تسجيلٍ فور تأكيد الدفعة، وتفتح شعبتُك هنا تلقائيّا.
           </p>
           <Link to="/student/learning" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
@@ -656,11 +656,11 @@ function JourneyGlance({ track, className = "" }: { track: JourneyTrack; classNa
     >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs text-muted-foreground">أين أنت من رحلتك</p>
+          <p className="text-read leading-5 text-muted-foreground">أين أنت من رحلتك</p>
           <p className="mt-1 text-xl font-black leading-tight text-teal-light-ink">
             {currentIndex === -1 ? "أنجزت مراحلك كلها" : `المرحلة ${currentIndex + 1} من ${counts.total}`}
           </p>
-          <p className="mt-1 truncate text-xs text-muted-foreground">
+          <p className="mt-1 truncate text-read leading-5 text-muted-foreground">
             {track.titleAr}
             {here && ` · ${here.titleAr}`}
           </p>

@@ -151,7 +151,7 @@ export default function StudentSupport() {
               <button onClick={() => setOpenId(openId === t.id ? null : t.id)} className="flex w-full cursor-pointer flex-wrap items-center justify-between gap-3 text-right">
                 <div>
                   <p className="font-black">{t.subject}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.messages.length} رسالة · آخر تحديث {fmtWhen(t.updatedAt)}</p>
+                  <p className="mt-1 text-read leading-5 text-muted-foreground">{t.messages.length} رسالة · آخر تحديث {fmtWhen(t.updatedAt)}</p>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-fine font-bold ${t.status === "resolved" || t.status === "closed" ? "border-white/15 text-muted-foreground" : "border-teal/40 text-teal-light-ink"}`}>
                   {STATUS_AR[t.status] ?? t.status}
