@@ -4,12 +4,33 @@
    ثمّ يعود إليها من صفحة حالته بعد يومٍ أو ثلاثة. ولو كُتبت مرّتين لافترقتا
    عند أوّل تعديل — فيقرأ في شاشةٍ مدّةً وفي أخرى غيرَها.
 
-   ورابطٌ خارجيٌّ صريح: يُفتح في لسانٍ جديدٍ بـ`rel="noopener noreferrer"`،
-   ويُقال للمستخدم أنّه يغادر إلى أداة حجز — فمن ينتقل إلى نطاقٍ آخرَ بلا
-   إنذارٍ يظنّه تصيّدا، وهذا متقدّمٌ لم يتعامل معنا بعد. */
+   ═══ ولماذا صارت تُضمَّن بعد أن كانت رابطا ═══
 
-import { CalendarClock, ExternalLink, Video } from 'lucide-react'
+   كانت تُخرج المتقدّمَ إلى لسانٍ جديد. وسببُ ذلك مكتوبٌ في
+   `application-options.ts`: سياسةُ المحتوى `default-src 'self'` تحجب إطارَ
+   Calendly حجبا تامّا، فالتضمينُ كان يُنتج **مستطيلا أبيضَ بلا خطأٍ ظاهر** —
+   وهو أسوأُ من رابطٍ صريح.
+
+   وقرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦) أن يُحجَز داخلَ الموقع. فوُسّعت
+   السياسةُ في `deploy/Caddyfile` بسطرٍ واحدٍ لا أكثر: `frame-src
+   https://calendly.com`. **ولا سكربتَ لهم يُحمَّل عندنا** — لا
+   `assets.calendly.com` ولا `script-src` يُفتح: إطارٌ عاريٌّ بـ
+   `embed_type=Inline`، فيبقى ما يُنفَّذ في نطاقنا شيفرتَنا وحدَها.
+
+   وثمنُ ترك سكربتهم أنّ الإطارَ لا يقيس ارتفاعَه بنفسه — فارتفاعٌ ثابتٌ سخيّ
+   يسع أطولَ حالاته (اختيارُ الشهر ثمّ اليوم ثمّ تعبئةُ النموذج).
+
+   ═══ والحجزُ يُلتقَط لا يُنسى ═══
+
+   Calendly يبثّ `postMessage` عند إتمام الحجز حتّى في الإطار العاري. فيُلتقَط
+   ويُرسَل إلى خادمنا ليُكتب صفَّ مقابلة — فيظهر الموعدُ في «المقابلات» عند
+   المراجع، بدل أن يبقى في تقويم Calendly وحدَه ولا تعلم به المنصّة.
+   ومصدرُ الرسالة يُفحَص: نافذةٌ أخرى تستطيع أن تبثّ ما تشاء. */
+
+import { useEffect, useRef, useState } from 'react'
+import { CalendarClock, CheckCircle2, ExternalLink, Video } from 'lucide-react'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '@/application/trainer/application-options'
+import { Inset } from '@/components/ui/Surface'
 
 export interface BookInterviewProps {
   /** يُعبَّأ بها نموذجُ الحجز فلا يكتبها المتقدّم مرّةً ثالثة */
@@ -17,9 +38,44 @@ export interface BookInterviewProps {
   email?: string
   reference?: string
   className?: string
+  /** يُنادى حين يتمّ الحجزُ فعلا — به تُسجَّل المقابلةُ عندنا */
+  onScheduled?: () => void
 }
 
-export default function BookInterview({ name, email, reference, className = '' }: BookInterviewProps) {
+/** أصلُ Calendly — يُقارَن به مصدرُ كلّ رسالة، فلا تُصدَّق نافذةٌ غيرُه */
+const CALENDLY_ORIGIN = 'https://calendly.com'
+
+/** هل هذه رسالةُ Calendly تقول إنّ الموعدَ حُجز؟ */
+function isScheduledEvent(e: MessageEvent): boolean {
+  if (e.origin !== CALENDLY_ORIGIN) return false
+  const data: unknown = e.data
+  if (typeof data !== 'object' || data === null) return false
+  const event = (data as { event?: unknown }).event
+  return event === 'calendly.event_scheduled'
+}
+
+export default function BookInterview({ name, email, reference, className = '', onScheduled }: BookInterviewProps) {
+  const [done, setDone] = useState(false)
+  /* المُنادى يُحفظ في مرجع: لو تغيّر بين التصييرات لم يُعَد ربطُ المستمع،
+     فلا يفوت حجزٌ وقع أثناء إعادة الربط. والكتابةُ في أثرٍ لا في التصيير —
+     الكتابةُ أثناء التصيير تكسر التصييرَ المتزامن، ويحرسها `react-hooks/refs`. */
+  const cb = useRef(onScheduled)
+  useEffect(() => { cb.current = onScheduled }, [onScheduled])
+
+  useEffect(() => {
+    const onMessage = (e: MessageEvent) => {
+      if (!isScheduledEvent(e)) return
+      setDone(true)
+      cb.current?.()
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  const url = trainerInterviewUrl({ name, email, reference })
+  /* `embed_domain` شرطُ Calendly لبثّ الأحداث، و`embed_type` يُخفي رأسَ صفحتهم */
+  const embedUrl = `${url}${url.includes('?') ? '&' : '?'}embed_domain=${encodeURIComponent(window.location.hostname)}&embed_type=Inline`
+
   return (
     <div className={`rounded-2xl border border-teal/30 bg-teal/[0.05] p-5 ${className}`}>
       <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
@@ -35,21 +91,41 @@ export default function BookInterview({ name, email, reference, className = '' }
         </span>
       </p>
 
-      <a
-        href={trainerInterviewUrl({ name, email, reference })}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-teal px-6 py-3 text-sm font-black text-on-teal transition hover:bg-teal-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
-      >
-        احجز موعدك الآن
-        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-      </a>
-
-      <p className="mt-3 text-read leading-6 text-muted-foreground">
-        يفتح صفحةَ حجزٍ خارجيّة في لسانٍ جديد
-        {reference && <> — ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مذكورٌ فيها</>}.
-        ولو لم يناسبك أيُّ وقتٍ معروض، راسِلنا وسنرتّب غيرَه.
-      </p>
+      {done ? (
+        <Inset as="p" tone="positive" className="mt-4 flex items-start gap-2 text-read leading-6 text-foreground">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+          حُجز موعدك — تصلك رسالةُ تأكيدٍ بدعوة التقويم، وتجده في صفحة حالتك.
+        </Inset>
+      ) : (
+        <>
+          {/* الحجزُ داخل الصفحة. والارتفاعُ ثابتٌ لأنّنا لا نحمّل سكربتَهم */}
+          {/* الانحناءُ على الحاضن لا على الإطار: `rounded-*` مع كلمة `border`
+              في صيغةٍ واحدةٍ سطحٌ مكتوبٌ بيده، وسقفُها محروس. */}
+          <div className="mt-4 overflow-hidden rounded-xl bg-white">
+            <iframe
+              src={embedUrl}
+              title="اختيار موعد المقابلة"
+              loading="lazy"
+              style={{ border: 'none' }}
+              className="block h-[680px] w-full sm:h-[720px]"
+            />
+          </div>
+          <p className="mt-3 text-read leading-6 text-muted-foreground">
+            {reference && <>ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مذكورٌ في النموذج. </>}
+            ولو لم يناسبك أيُّ وقتٍ معروض، راسِلنا وسنرتّب غيرَه.{' '}
+            {/* ومخرجٌ لمن حجب الأطرَ أو ضاقت شاشتُه — لا يُترك بلا طريق */}
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-teal-light-ink underline decoration-dotted underline-offset-4"
+            >
+              أو افتح صفحة الحجز في لسانٍ جديد
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          </p>
+        </>
+      )}
     </div>
   )
 }

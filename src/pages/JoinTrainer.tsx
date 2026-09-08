@@ -608,7 +608,14 @@ export default function JoinTrainer() {
           <div className="mt-6 space-y-4 text-right">
             {/* الحجزُ أوّلا لا الانتظار: كانت هذه البطاقةُ تَعِد بأن «نتواصل معك
                 لتحديد موعد»، فيقف المتقدّمُ بلا شيءٍ بيده. والموعدُ صار بيده. */}
-            <BookInterview name={form.fullName.trim()} email={form.email.trim()} reference={result.reference} />
+            <BookInterview
+              name={form.fullName.trim()} email={form.email.trim()} reference={result.reference}
+              onScheduled={() => {
+                void apiPost(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/self-booked-interview`,
+                  { email: form.email.trim().toLowerCase() })
+                  .catch(() => {})
+              }}
+            />
 
             <Card>
               <p className="flex items-center gap-2 text-sm font-black">

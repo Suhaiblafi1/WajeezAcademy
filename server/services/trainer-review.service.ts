@@ -345,6 +345,49 @@ export class TrainerReviewService {
     if (action === 'approve') {
       await this.notifyApproved(app.email, app.fullName, app.reference, actorId, applicationId)
     }
+
+    /* ═══ ولا يُطلب من أحدٍ شيءٌ في صمت ═══
+
+       «اطلب معلومات إضافية» كانت تنقل الحالةَ ولا ترسل شيئا. فالمتقدّمُ يقف
+       في `information_requested` لا يعلم أنّ شيئا طُلب منه — إلّا أن يفتح
+       صفحةَ حالته من تلقاء نفسه ويقرأ اسمَ الحالة. وقد وقع ذلك فعلا.
+
+       والرسالةُ تحمل **نصَّ ما نريده** لا اسمَ الحالة: الملاحظةُ التي يكتبها
+       المراجعُ هي السؤال، وبدونها الرسالةُ «نحتاج معلوماتٍ إضافية» — وهي لا
+       تقول شيئا. ولذلك تُطلب الملاحظةُ في الشاشة قبل الضغط. */
+    if (action === 'request_info') {
+      await this.notifyInfoRequested(app.email, app.fullName, app.reference, note, actorId, applicationId)
+    }
+  }
+
+  /** بريدُ «نحتاج منك» — يحمل السؤالَ نفسَه ورابطَ التعديل */
+  private async notifyInfoRequested(
+    to: string, fullName: string, reference: string, note: string | undefined,
+    actorId: string, applicationId: string,
+  ): Promise<void> {
+    const statusUrl = `${publicSiteUrl()}/join-trainer`
+    const asked = note?.trim()
+    const mail = await sendDirectEmail(this.prisma, {
+      to,
+      subject: `نحتاج منك إضافةً على طلبك — ${reference}`,
+      ...renderMail({
+        greetingName: fullName,
+        heading: 'قرأنا طلبك، ونحتاج منك إضافةً قبل أن نُكمل',
+        blocks: [
+          ...(asked
+            ? ([{ kind: 'h', text: 'وهذا ما نحتاجه' }, { kind: 'callout', text: asked }] as const)
+            : ([{ kind: 'p', text: 'راجعْ طلبك وأكمل ما تراه ناقصا فيه — ومستنداتُك أوّلُ ما يُنظَر فيه.' }] as const)),
+          { kind: 'p', text: 'طلبك ما زال مفتوحا للتعديل: افتح صفحة حالتك، عدّل ما يلزم، ثمّ أرسله من جديد. ولا يلزمك تعبئتُه من أوّله — يُفتح على ما كتبتَه.' },
+          { kind: 'cta', label: 'عدّل طلبك الآن', href: statusUrl, caption: 'أو انسخ الرابط:' },
+          { kind: 'facts', rows: [{ label: 'رقم الطلب', value: reference }] },
+          { kind: 'note', text: 'ولو كان في السؤال ما يحتاج توضيحا، ردَّ على هذه الرسالة.' },
+        ],
+      }),
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.info_requested.notify', entityType: 'trainer_application', entityId: applicationId,
+      meta: { sentTo: to, emailDelivery: mail.status, asked: asked ?? null },
+    })
   }
 
   /** ملفُّ المدرّب — يُنشأ مرّةً بمهامّ تهيئته، ويُعاد إن كان موجودا */

@@ -95,8 +95,17 @@ export const APPROVABLE_BY_MAP: TrainerStatus[] = TRAINER_STATUSES.filter(
    والنموذج صار واحدا بأربعة أقسام (2026-08-28): يعطي المتقدّم كل شيء مرة
    واحدة، والإدارة تقرأ طلبا مكتملا لا نصفه. فأُضيف submitted إلى القائمة —
    والحالات القديمة باقية كي لا ينكسر طلبٌ في منتصف الدورة القديمة. */
+/* ═══ التعديلُ مفتوحٌ طولَ الانتظار ═══
+
+   قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «اسمح له بتعديل طلب الانضمام طيلة فترة
+   انتظاره حتى تتم الموافقة». وكانت `under_review` و`waitlisted` خارجَ القائمة
+   — وهما أطولُ ما يقف فيه المتقدّم. فمن تذكّر شهادةً نسيها بعد أن صار طلبُه
+   «قيد المراجعة» لا يملك إلّا أن يراسل ويطلب.
+
+   ولا يُفتح بعد القرار: المقبولُ صار مدرّبا يعدّل ملفَّه لا طلبَه، والمردودُ
+   والمسحوبُ بابُهما طلبٌ جديد لا تعديلُ قديم. */
 const PHASE2_OPEN_STATUSES: TrainerStatus[] = [
-  'draft', 'submitted',
+  'draft', 'submitted', 'under_review', 'waitlisted',
   'information_requested', 'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
 ]
 
@@ -336,6 +345,51 @@ export class TrainerApplicationService {
     return mail.status
   }
 
+  /* ═══ مقابلةٌ حجزها المتقدّمُ بنفسه ═══
+
+     Calendly كان يحتفظ بالموعد وحدَه: يُحجَز فيصل بريدُ تأكيدٍ منه، ولا تعلم
+     المنصّةُ شيئا — فتبقى خانةُ «المقابلات» عند المراجع صفرا وهو ينظر إلى
+     متقدّمٍ له موعدٌ بعد يومين. فيراسله ليرتّب موعدا له موعد.
+
+     والصفُّ يُكتب هنا حين يبثّ الإطارُ حدثَه. ولا يُصدَّق ما يصل بلا سند:
+     البريدُ والرقمُ المرجعيّ يجب أن يتطابقا مع الطلب — كما في `getPublicStatus`
+     — وإلّا فمن عرف رقما مرجعيّا كتب مقابلةً في طلب غيره.
+
+     ولا يُكتب موعدان لطلبٍ واحدٍ في دقيقة: الإطارُ قد يبثّ حدثَه مرّتين إن
+     أُعيد تصييرُ الصفحة، فيُفحَص آخرُ صفٍّ قبل الكتابة. */
+  async recordSelfBookedInterview(
+    email: string, reference: string, scheduledAt: Date | null,
+  ): Promise<{ recorded: boolean }> {
+    const app = await this.prisma.trainerApplication.findFirst({
+      where: { reference, email: email.trim().toLowerCase() },
+      select: { id: true },
+    })
+    /* لا يُقال «غيرُ موجود» ولا «غيرُ مطابق»: كلاهما يُعلِم من يجرّب أرقاما */
+    if (!app) return { recorded: false }
+
+    const when = scheduledAt ?? new Date()
+    const recent = await this.prisma.trainerInterview.findFirst({
+      where: { applicationId: app.id, createdAt: { gt: new Date(Date.now() - 60_000) } },
+      select: { id: true },
+    })
+    if (recent) return { recorded: true }
+
+    await this.prisma.trainerInterview.create({
+      data: {
+        applicationId: app.id,
+        scheduledAt: when,
+        mode: 'remote',
+        notes: 'حجزها المتقدّم بنفسه من صفحة الحجز المضمَّنة',
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.interview.self_booked',
+      entityType: 'trainer_application', entityId: app.id,
+      meta: { reference, scheduledAt: when.toISOString() },
+    })
+    return { recorded: true }
+  }
+
   /** قيمةُ قناة التواصل كما تُقرأ: رقمٌ أو بريد */
   private contactValue(app: { email: string; phone: string | null; phoneCountryCode: string | null; contactChannel: string | null; contactAltEmail: string | null }): string {
     switch (app.contactChannel) {
@@ -484,7 +538,10 @@ export class TrainerApplicationService {
         contactChannel: true, contactAltEmail: true,
         createdAt: true, phase2CompletedAt: true, emailVerifiedAt: true, teachableCourseIds: true,
         documents: { select: { kind: true, originalName: true, uploadedAt: true } },
-        statusHistory: { select: { toStatus: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
+        /* والملاحظةُ تُقرأ: هي نصُّ «ما المعلوماتُ التي نريدها منك» حين تُطلب،
+           وكانت تُكتب في القرار ولا تخرج إلى صاحب الطلب أبدا — فيقرأ «نحتاج
+           معلوماتٍ إضافية» ولا يعرف أيَّها. */
+        statusHistory: { select: { toStatus: true, note: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
         profile: { select: { userId: true } },
       },
     })
