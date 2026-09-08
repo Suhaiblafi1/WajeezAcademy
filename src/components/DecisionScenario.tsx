@@ -187,6 +187,8 @@ export default function DecisionScenario({
                 تُحفَظ الجولة لمن سُجّل في الدورة — تابع بلا حفظ، والسيناريو نفسه هو الفائدة.
               </p>
             ) : (
+              /* حفظٌ داخل قسمٍ لا فعلَ صفحة — وهو العطبُ الذي سمّاه
+                 حارسُ «رئيسيٌّ واحدٌ في الشاشة» بعينه. */
               <Button tone="confirm" type="button"
                 onClick={() => void saveRun()}
                 disabled={save === "busy"} className="min-h-11 disabled:cursor-not-allowed">

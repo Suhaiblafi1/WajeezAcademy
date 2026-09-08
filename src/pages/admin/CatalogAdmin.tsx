@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -36,6 +37,9 @@ type SkillRow = {
 };
 type QuestionRow = { id: string; status: string; active: boolean; module: string; text: string; optionCount: number };
 type TemplateRow = { id: string; status: string; name: string; courseCount: number };
+
+/* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
+const CR_FORMS = { one: "طلبُ تغييرٍ", two: "طلبا تغييرٍ", few: "طلباتِ تغييرٍ", many: "طلبَ تغييرٍ" };
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودة", approved: "معتمد", published: "منشور", in_review: "قيد المراجعة",
@@ -169,6 +173,21 @@ export default function CatalogAdmin() {
     templates.filter((t) => (!statusPick || t.status === statusPick) && matchesQuery(q, [t.id, t.name])),
     page, 25);
 
+  /* ما ينتظر قرارا فعلا: `in_review` وحدَها — والمعتمَدُ والمرفوضُ تاريخٌ
+     لا عمل، وعدُّهما في الرأس يَعِد بعملٍ لا وجودَ له. */
+  const pendingCrs = crs.filter((cr) => cr.status === "in_review").length;
+
+  /* الانتقالُ داخل الصفحة يُتبعه تركيزٌ لا انزلاقٌ وحدَه: من يتنقّل بلوحة
+     المفاتيح لا ينتقل معه شيءٌ إن حُرّك المشهدُ فقط. والحركةُ تُلغى لمن
+     طلب تقليلَها في نظامه. */
+  const goToChangeRequests = () => {
+    const el = document.getElementById("change-requests");
+    if (!el) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+    el.focus({ preventScroll: true });
+  };
+
   /* مسارٌ واحدٌ لكلّ مرشِّحٍ يُعرض — فلا يُنسى ترشيحٌ ظاهرٌ على قائمةٍ لا تعنيه */
   const browseUi = browse === null ? null
     : browse === "pathways" ? { view: pathwayView, rows: pathways, unit: "مسارا", ph: "ابحث بمعرّفٍ أو عنوان…" }
@@ -180,6 +199,29 @@ export default function CatalogAdmin() {
   return (
     <AdminLayout title="إدارة الكتالوج الأكاديمي">
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
+
+      {/* ── العملُ قبل العدد ──
+
+          كانت الشاشةُ تفتح بستِّ بطاقاتِ عددٍ متساويةِ الوزن، وفيها بطاقةُ
+          «طلبات التغيير» — وهي وحدَها ما ينتظر قرارا. فكان الذي يُعمل معروضا
+          بحجم الذي لا يُعمل، والقارئُ يعدّ ستًّا ليجد واحدةً تخصّه.
+
+          فصار ما ينتظر القرارَ جملةً في الرأس وزرًّا يبلغه، والمجاميعُ
+          سطرا تحته. والبطاقاتُ باقيةٌ لأنّها تفصّل الحالاتِ لا تكرّر الرقم. */}
+      <WorkHeader
+        loading={overview === null && !error}
+        icon={GitPullRequest}
+        count={pendingCrs}
+        forms={CR_FORMS}
+        waitingAr="تنتظر قرارَك"
+        stats={[
+          `${pathways.length} مسارا`, `${courses.length} دورة`, `${skills.length} مهارة`,
+          `${questions.length} سؤالا`, `${templates.length} قالبا`,
+        ]}
+        actionAr="راجِعها"
+        onAction={goToChangeRequests}
+        doneAr="لا طلبَ تغييرٍ ينتظر قرارَك — وما يُقدَّم منها يصل هذه الشاشةَ فورا."
+      />
 
       {overview && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -390,8 +432,8 @@ export default function CatalogAdmin() {
         )}
       </section>
 
-      {/* طلبات التغيير */}
-      <section className="mt-8">
+      {/* طلبات التغيير — وهي هدفُ زرِّ الرأس، فتقبل التركيزَ لتُقرأ حين تُبلَغ */}
+      <section id="change-requests" tabIndex={-1} className="mt-8 outline-none">
         <h2 className="flex items-center gap-2 text-lg font-black"><GitPullRequest className="h-5 w-5 text-gold-ink" /> طلبات التغيير</h2>
         <div className="mt-4 space-y-3">
           {crs.length === 0 && <p className="text-sm text-muted-foreground">لا طلبات بعد.</p>}

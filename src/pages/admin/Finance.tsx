@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
 import EmptyState from "@/components/EmptyState";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Chip from "@/components/ui/Chip";
@@ -39,6 +40,9 @@ interface Invoice {
 }
 interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; invoice: { id: string } } }
 interface Coupon { id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null }
+
+/* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
+const REQ_FORMS = { one: "طلبُ تسجيلٍ", two: "طلبا تسجيلٍ", few: "طلباتِ تسجيلٍ", many: "طلبَ تسجيلٍ" };
 
 const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", converted: "تحوّل إلى تسجيل ✓", rejected: "مرفوض", expired: "منتهي" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة", void: "ملغاة" };
@@ -196,11 +200,50 @@ export default function Finance() {
         { label: "الدفع يُسجَّل", actor: "أنت أو بوابة الدفع" },
         { label: "المنصة تُفتح للطالب", actor: "تلقائي فور الدفع" },
       ]} />
+      {/* ── العملُ قبل الألسنة ──
+
+          كانت الشاشةُ تفتح بأربعة ألسنةٍ متساويةِ الوزن، عددُ المعلَّق في
+          كلٍّ منها بين قوسين بحجم النصّ نفسِه. والذي ينتظر قرارا اليومَ
+          طلبُ التسجيل، والباقي سجلٌّ يُقرأ. فصار ما ينتظر جملةً في الرأس،
+          والفواتيرُ والاستردادُ سطرا تحته يُقال ولا ينازع. */}
+      <WorkHeader
+        loading={loading}
+        icon={Inbox}
+        count={selectable.length}
+        forms={REQ_FORMS}
+        waitingAr="تنتظر مراجعتَك"
+        stats={canViewMoney
+          ? [`${invoices.filter((i) => i.status !== "paid").length} فاتورةً غير مدفوعة`,
+             `${refunds.filter((r) => r.status === "requested").length} استرداد ينتظر التنفيذ`]
+          : []}
+        actionAr={tab === "requests" ? "ابدأ بأوّلها" : "اعرِضها"}
+        /* والسببُ يُقال: البحثُ قد يُخفي الطابورَ كلَّه، فيبهت الزرُّ بلا
+           أن يُعرف لماذا. */
+        disabledReasonAr={tab === "requests" && reqView.total === 0
+          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          : undefined}
+        onAction={() => {
+          /* اللسانُ أوّلا، ثمّ أوّلُ معلَّقٍ معروضٍ يُبلَغ ويُركَّز عليه */
+          if (tab !== "requests") { setTab("requests"); setQ(""); setPage(1); return; }
+          const first = reqView.rows.find((r) => r.status === "pending") ?? reqView.rows[0];
+          if (!first) return;
+          const el = document.getElementById(`enroll-req-${first.id}`);
+          if (!el) return;
+          const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          el.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "center" });
+          el.focus({ preventScroll: true });
+        }}
+        doneAr="لا طلبَ تسجيلٍ ينتظر مراجعتَك — وما يصل منها يظهر هنا فورا."
+      />
+
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap rounded-full border border-white/15 p-1">
           {tabs.map(([k, label, n]) => (
             <button key={k} onClick={() => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
+              /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
+                 الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
+                 يتنازعان العين. وهو ما استقرّ عليه لسانُ الشعبة قبله. */
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"}`}>
               {label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}
             </button>
           ))}
@@ -258,7 +301,8 @@ export default function Finance() {
               actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]} />
           )}
           {reqView.rows.map((r) => (
-            <Card key={r.id}>
+            /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+            <Card key={r.id} id={`enroll-req-${r.id}`} tabIndex={-1} className="outline-none">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{r.user.displayName} <span className="text-fine font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
