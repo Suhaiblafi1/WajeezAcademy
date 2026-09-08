@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CheckCircle2, Circle, ClipboardCheck, GitPullRequest, GraduationCap, ListChecks, Loader2, ServerOff, Users, Video } from "lucide-react";
+import { CalendarClock, ClipboardCheck, GitPullRequest, GraduationCap, Loader2, ServerOff, Users, Video } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
-import { apiGet, apiPost } from "@/services/api";
+import { apiGet } from "@/services/api";
+import { trainerInterviewUrl } from "@/application/trainer/application-options";
 import TrainerWorkQueue from "@/components/TrainerWorkQueue";
 import AtRiskList from "@/components/AtRiskList";
 import { buildWorkQueue } from "@/application/trainer/work-queue";
@@ -46,14 +47,12 @@ interface RealCohort {
 }
 interface RealQueueItem { id: string; status: string }
 
-function RealTrainerHome({ name }: { name: string }) {
+function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const [cohorts, setCohorts] = useState<RealCohort[] | null>(null);
   const [queue, setQueue] = useState<RealQueueItem[] | null>(null);
   const [failed, setFailed] = useState(false);
-  /* مهام التهيئة الحقيقية من ملف المدرب. كانت الصفحة تعرض مهاما من localStorage
-     (بيانات استعراض) بينما مهامه الفعلية في TrainerOnboardingTask لا يقرؤها أحد
-     ولا يملك أحد طريقا لإغلاقها — أربع مهام تُزرع عند القبول وتبقى معلّقة أبدا. */
-  const [tasks, setTasks] = useState<{ key: string; title: string; doneAt: string | null }[]>([]);
+  /* طلبُ اجتماعٍ مع الإدارة — يُطوى حتّى يُطلب، فالإطارُ ثقيلٌ على لوحةٍ تُفتح كلَّ يوم */
+  const [meetingOpen, setMeetingOpen] = useState(false);
   /* نبضة كل دقيقة: «جلستك الآن» تتغيّر مع الوقت بلا إعادة تحميل.
      القيمة في حالة لا في الرسم — Date.now() في الرسم غير نقي. */
   const [now, setNow] = useState(() => Date.now());
@@ -69,17 +68,7 @@ function RealTrainerHome({ name }: { name: string }) {
     ])
       .then(([c, q]) => { setCohorts(c); setQueue(q); })
       .catch(() => setFailed(true));
-    apiGet<{ onboardingTasks?: { key: string; title: string; doneAt: string | null }[] }>("/api/trainer/me")
-      .then((me) => setTasks(me.onboardingTasks ?? []))
-      .catch(() => { /* المهام رفاهية — غيابها لا يمنع الشعب */ });
   }, []);
-
-  const completeTask = async (key: string) => {
-    try {
-      await apiPost(`/api/trainer/me/onboarding-tasks/${encodeURIComponent(key)}/complete`, {});
-      setTasks((prev) => prev.map((t) => (t.key === key ? { ...t, doneAt: new Date().toISOString() } : t)));
-    } catch { /* الرسالة تظهر عند إعادة التحميل — لا نخترع نجاحا */ }
-  };
 
   if (failed)
     return (
@@ -135,47 +124,31 @@ function RealTrainerHome({ name }: { name: string }) {
         </Panel>
       )}
 
-      {/* مهام تهيئتك — من ملفك عند الخادم لا من هذا الجهاز */}
-      {tasks.length > 0 && tasks.some((t) => !t.doneAt) && (
-        <Panel as="section" tone="accent" className="mb-8">
-          <div className="flex items-center justify-between">
-            <p className="flex items-center gap-2 text-sm font-black">
-              <ListChecks className="h-4 w-4 text-teal-light-ink" /> مهام تهيئتك كمدرب
-            </p>
-            <span className="text-xs font-bold text-teal-light-ink">
-              {tasks.filter((t) => t.doneAt).length} / {tasks.length}
-            </span>
+      {/* ═══ اجتماعٌ مع الإدارة — بنقرة، داخل الصفحة ═══
+
+          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): لا مهامَّ تهيئةٍ هنا — ما يلزم
+          المدرّبَ يُقال له في كلّ شعبةٍ في موضعها. وبدلَها بابٌ يسأل منه: من
+          لم يفهم شيئا يحجز موعدا من التقويم نفسِه الذي يحجز منه المتقدّمون،
+          فلا يكتب رسالةً وينتظر من يقرؤها. */}
+      <Panel as="section" className="mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-teal-light-ink" /> تريد أن تسأل أو تفهم شيئا؟ احجز اجتماعا مع الإدارة</p>
+          <button type="button" aria-expanded={meetingOpen} onClick={() => setMeetingOpen((v) => !v)} className="btn-outline-brand h-10 px-5">
+            {meetingOpen ? "أغلق التقويم" : "اختر موعدا"}
+          </button>
+        </div>
+        {meetingOpen && (
+          <div className="mt-4 overflow-hidden rounded-xl bg-white">
+            <iframe
+              src={`${trainerInterviewUrl({ name, email })}${trainerInterviewUrl({ name, email }).includes("?") ? "&" : "?"}embed_domain=${encodeURIComponent(window.location.hostname)}&embed_type=Inline`}
+              title="حجز اجتماع مع الإدارة"
+              loading="lazy"
+              style={{ border: "none" }}
+              className="block h-[680px] w-full"
+            />
           </div>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-teal transition-all"
-              style={{ width: `${(tasks.filter((t) => t.doneAt).length / tasks.length) * 100}%` }} />
-          </div>
-          <div className="mt-4 space-y-2">
-            {tasks.map((t) => {
-              /* توقيع العقد يُغلق بواقعة موثقة لا بإقرار صاحبه — فلا زر له */
-              const selfCompletable = t.key !== "sign_contract" && !t.doneAt;
-              return (
-                <button
-                  key={t.key}
-                  onClick={selfCompletable ? () => void completeTask(t.key) : undefined}
-                  disabled={!selfCompletable}
-                  className={`flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-paper/20 px-4 py-3 text-right transition ${
-                    selfCompletable ? "cursor-pointer hover:border-teal/40" : "cursor-default"
-                  }`}
-                >
-                  {t.doneAt
-                    ? <CheckCircle2 className="h-4.5 w-4.5 shrink-0 text-teal-ink" />
-                    : <Circle className="h-4.5 w-4.5 shrink-0 text-muted-foreground/50" />}
-                  <span className={`text-sm ${t.doneAt ? "text-muted-foreground line-through" : "font-bold text-foreground"}`}>{t.title}</span>
-                  {!t.doneAt && t.key === "sign_contract" && (
-                    <span className="mr-auto text-fine font-bold text-muted-foreground">يُغلق بتوقيع العقد</span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </Panel>
-      )}
+        )}
+      </Panel>
 
       <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-fine text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
@@ -263,7 +236,7 @@ export default function TrainerDashboard() {
   return (
     <TrainerLayout title="الرئيسية">
       {checked
-        ? <RealTrainerHome name={user?.displayName ?? ""} />
+        ? <RealTrainerHome name={user?.displayName ?? ""} email={user?.email ?? ""} />
         : <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>}
     </TrainerLayout>
   );

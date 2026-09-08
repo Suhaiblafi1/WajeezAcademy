@@ -5,6 +5,7 @@ import { apiGet, ApiError } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 const PAYOUT_STATUS: Record<string, { label: string; cls: string; icon: typeof Clock3 }> = {
   pending: { label: "بانتظار الاعتماد", cls: "border-gold/40 text-gold-ink", icon: Clock3 },
   approved: { label: "معتمد — قيد الصرف", cls: "border-teal/40 text-teal-light-ink", icon: ShieldCheck },
@@ -17,9 +18,16 @@ interface RealPayout {
   paidAt?: string | null;
   items: { id: string; description: string; amount: string | number; sourceRef?: string | null }[];
 }
+interface Rule {
+  id: string; type: string; rate: string | number; currency: string; minSeats: number;
+  courseId: string | null; cohortId: string | null; effectiveFrom: string; effectiveTo: string | null;
+}
 interface RealEarnings {
   payouts: RealPayout[];
   summary: { pending: number; approved: number; paid: number; currency: string };
+  /* الاتفاقُ نفسُه — كان الكشفُ وحدَه يصل، فيقرأ المدرّبُ رقما لا يعرف أساسَه */
+  agreement: Rule | null;
+  rules: Rule[];
 }
 
 const fmt = (n: string | number) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -54,9 +62,43 @@ function RealEarningsView() {
     );
   }
 
-  const { summary, payouts } = data;
+  const { summary, payouts, agreement, rules } = data;
+  const scoped = (rules ?? []).filter((r) => (r.cohortId || r.courseId) && !r.effectiveTo);
   return (
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
+      {/* ═══ اتفاقُك المسبق — قبل أيّ رقم ═══
+
+          كانت الصفحةُ تعرض ما قُبض وما يُنتظر ولا تعرض على أيّ أساس. والاتفاقُ
+          الذي أكّدته الإدارةُ حقُّ المدرّب أن يراه قبل أن يُحسب له شيء —
+          وإلّا فكيف يتأكّد أنّ ما وصله هو ما اتُّفق عليه. */}
+      <Panel as="section" tone="accent" className="mb-6">
+        <p className="flex items-center gap-2 text-sm font-black"><ShieldCheck className="h-4 w-4 text-teal-light-ink" /> اتفاقُك المسبق</p>
+        {agreement ? (
+          <>
+            <p className="mt-2 text-lg font-black text-foreground">
+              {RULE_TYPE_AR[agreement.type] ?? agreement.type} — <span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency}
+              {agreement.type === "per_seat" && " عن كلّ متعلّم"}
+              {agreement.type === "revenue_share" && " من إيراد الشعبة"}
+            </p>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">
+              {agreement.minSeats > 0 && <>يُحسب لك {agreement.minSeats} مقاعدَ على الأقلّ ولو سجّل أقلّ. </>}
+              ساريةٌ منذ {fmtDateAr(agreement.effectiveFrom)}. وكلُّ كشفٍ أدناه يُحسب على هذا الأساس — فإن رأيت غيرَه فقل لنا.
+            </p>
+            {scoped.length > 0 && (
+              <ul className="mt-3 space-y-1 text-read text-muted-foreground">
+                {scoped.map((r) => (
+                  <li key={r.id}>· اتفاقٌ خاصٌّ {r.cohortId ? "بشعبةٍ بعينها" : "بدورةٍ بعينها"}: {RULE_TYPE_AR[r.type] ?? r.type} — <span dir="ltr" className="font-mono">{Number(r.rate)}</span> {r.currency}</li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <p className="mt-2 text-read leading-6 text-muted-foreground">
+            لم تُسجَّل قاعدةُ أتعابٍ لك بعد — تحدّدها الإدارةُ قبل أوّل شعبة، وتظهر هنا فورَ حفظها. ولا يُحسب لك كشفٌ قبلها.
+          </p>
+        )}
+      </Panel>
+
       <div className="grid grid-cols-3 gap-4">
         <Card tone="warn">
           <p className="text-read text-gold-ink">بانتظار الاعتماد</p>

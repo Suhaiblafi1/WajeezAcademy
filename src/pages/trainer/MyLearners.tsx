@@ -41,7 +41,7 @@ interface TrainerCohort {
     sessions: { id: string; title: string; startsAt: string; status: string }[];
     enrollments: {
       id: string; userId: string; status: string;
-      user: { displayName: string; email: string };
+      user: { displayName: string };
       courseProgress: { percent: number } | null;
       attendance: { sessionId: string; status: string }[];
     }[];
@@ -59,7 +59,6 @@ interface Row {
      يُظهر «٠ ينتظر تصحيحك» لمن ينتظر. */
   userId: string;
   name: string;
-  email: string;
   cohortTitle: string;
   courseTitle: string;
   enrollmentStatus: string;
@@ -110,7 +109,6 @@ function buildRows(cohorts: TrainerCohort[]): Row[] {
         enrollmentId: e.id,
         userId: e.userId,
         name: e.user.displayName,
-        email: e.user.email,
         cohortTitle: cohort.title,
         courseTitle,
         enrollmentStatus: e.status,
@@ -174,7 +172,7 @@ export default function TrainerMyLearners() {
     );
   }
 
-  const shown = rows.filter((r) => matchesQuery(q, [r.name, r.email, r.cohortTitle, r.courseTitle]));
+  const shown = rows.filter((r) => matchesQuery(q, [r.name, r.cohortTitle, r.courseTitle]));
   const needing = rows.filter((r) => r.concern > 0).length;
 
   return (

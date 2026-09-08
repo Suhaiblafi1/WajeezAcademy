@@ -18,7 +18,6 @@ export interface RiskReason {
 export interface AtRiskLearner {
   enrollmentId: string
   nameAr: string
-  email: string | null
   cohortId: string
   cohortTitleAr: string
   reasons: RiskReason[]
@@ -47,7 +46,7 @@ export interface AREnrollment {
   status: string
   courseProgress?: { percent?: number } | null
   attendance?: ARAttendance[] | null
-  user?: { displayName?: string; email?: string } | null
+  user?: { displayName?: string } | null
 }
 export interface ARCohort {
   id: string
@@ -135,7 +134,6 @@ export function findAtRisk(rows: unknown, now: number): AtRiskLearner[] {
       out.push({
         enrollmentId: e.id,
         nameAr: e.user?.displayName?.trim() || 'متعلم بلا اسم معروض',
-        email: e.user?.email ?? null,
         cohortId: c.id,
         cohortTitleAr: c.title,
         reasons,

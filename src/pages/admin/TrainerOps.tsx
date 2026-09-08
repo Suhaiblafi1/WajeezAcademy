@@ -3,6 +3,7 @@
    كلها API حقيقي من admin-trainer.routes. */
 import { useCallback, useEffect, useState } from "react";
 import {
+  Wallet,
   Activity, AlertTriangle, BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
   Globe, Info, Loader2, Settings2, Star, UserCheck, XCircle, Zap,
 } from "lucide-react";
@@ -10,6 +11,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
+import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
@@ -593,11 +595,13 @@ interface PayoutRow {
   items: { id: string; description: string; amount: string | number; sourceRef?: string | null }[];
   profile: { application?: { fullName: string; reference: string } | null };
 }
-interface ProfileOpt { id: string; fullName: string; reference: string }
+interface ProfileOpt { id: string; fullName: string; reference: string; status?: string }
+interface TrainerSummaryRow {
+  id: string; fullName: string; reference: string; status: string;
+  rule: { type: string; rate: number; currency: string; minSeats: number } | null;
+  pending: number; approved: number; paid: number; currency: string;
+}
 
-const RULE_TYPE_AR: Record<string, string> = {
-  per_seat: "لكل متعلم", fixed_per_cohort: "ثابت لكل شعبة", revenue_share: "نسبة من الإيراد",
-};
 
 interface RuleRow {
   id: string; profileId: string; type: string; rate: string | number; currency: string;
@@ -634,6 +638,9 @@ export function TrainerPayouts() {
   ]);
   /* قواعد الأتعاب والتوليد */
   const [ruleForm, setRuleForm] = useState({ profileId: "", type: "per_seat", rate: "", minSeats: "", cohortId: "" });
+  /* سطرٌ لكلّ مدرّب: قاعدتُه وما يُنتظر له وما اعتُمد وما دُفع — كان الاسمُ
+     يختفي بعد تأكيد التكلفة لأنّ لا موضعَ يجمعه بحالته الماليّة. */
+  const [summary, setSummary] = useState<TrainerSummaryRow[]>([]);
   const [genCohortId, setGenCohortId] = useState("");
   const [preview, setPreview] = useState<CohortPreview | null>(null);
   const [batchResult, setBatchResult] = useState<{ generated: { title: string; total: number }[]; skipped: { title: string; reason: string }[] } | null>(null);
@@ -641,16 +648,17 @@ export function TrainerPayouts() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [p, profs, r, cohorts] = await Promise.all([
+      const [p, profs, r, sum, cohorts] = await Promise.all([
         apiGet<PayoutRow[]>(`/api/admin/trainer-payouts${filter ? `?status=${filter}` : ""}`),
         apiGet<ProfileOpt[]>("/api/admin/trainer-profiles"),
         apiGet<RuleRow[]>("/api/admin/trainer-compensation-rules"),
+        apiGet<TrainerSummaryRow[]>("/api/admin/trainer-compensation/summary").catch(() => [] as TrainerSummaryRow[]),
         /* لا `‎/api/admin/cohorts`: هي وراء `cohort.manage` ولا تملكها
            المالية، فكان `Promise.all` يسقط كلُّه بـ٤٠٣ — فتموت الشاشةُ
            بتمامها لا حقلُ الشعب وحدَه. وهذه وراء صلاحيّة الأتعاب نفسِها. */
         apiGet<CohortOpt[]>("/api/admin/trainer-payouts/cohort-options"),
       ]);
-      setRows(p); setProfiles(profs); setRules(r); setAllCohorts(cohorts);
+      setRows(p); setProfiles(profs); setRules(r); setAllCohorts(cohorts); setSummary(sum);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذر تحميل الكشوف"); }
     finally { setLoading(false); }
   }, [filter]);
@@ -725,6 +733,50 @@ export function TrainerPayouts() {
         </Button>
         {msg && <span className="text-xs font-bold text-teal-light-ink" role="status">{msg}</span>}
       </div>
+
+      {/* ═══ المدرّبون سطرا سطرا — الاسمُ وقاعدتُه وحالتُه الماليّة ═══
+
+          «أكّدتُ التكلفةَ ولم يظهر اسمُهم ولا حالتُهم»: كانت الشاشةُ كشوفا
+          (ولا كشفَ بعد) وقواعدَ (بلا مجاميع)، ولا سطرَ يجمع المدرّبَ بما اتُّفق
+          معه وما يُنتظر له. */}
+      <Panel as="section">
+        <h4 className="flex items-center gap-2 text-sm font-black"><Wallet className="h-4 w-4 text-teal-light-ink" /> المدرّبون — القاعدةُ والحالةُ الماليّة</h4>
+        {summary.length === 0 ? (
+          <p className="mt-3 text-read text-muted-foreground">لا مدرّبين معتمَدين بعد.</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-read">
+              <thead>
+                <tr className="text-right text-muted-foreground">
+                  <th className="pb-2 pl-3 font-bold">المدرّب</th>
+                  <th className="pb-2 pl-3 font-bold">القاعدة السارية</th>
+                  <th className="pb-2 pl-3 font-bold">بانتظار الاعتماد</th>
+                  <th className="pb-2 pl-3 font-bold">معتمَد</th>
+                  <th className="pb-2 font-bold">مدفوع</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.map((t) => (
+                  <tr key={t.id} className="border-t border-white/10 align-top">
+                    <td className="py-2.5 pl-3">
+                      <p className="font-bold text-foreground">{t.fullName}</p>
+                      <p className="font-mono text-muted-foreground" dir="ltr">{t.reference}</p>
+                    </td>
+                    <td className="py-2.5 pl-3">
+                      {t.rule
+                        ? <>{RULE_TYPE_AR[t.rule.type] ?? t.rule.type} · <b dir="ltr" className="font-mono">{t.rule.rate}</b> {t.rule.currency}{t.rule.minSeats > 0 ? ` · حدٌّ أدنى ${t.rule.minSeats}` : ""}</>
+                        : <span className="font-bold text-gold-ink">لا قاعدة — عيّنها أدناه</span>}
+                    </td>
+                    <td className="py-2.5 pl-3 tabular-nums" dir="ltr">{t.pending.toLocaleString("en-US")} {t.currency}</td>
+                    <td className="py-2.5 pl-3 tabular-nums" dir="ltr">{t.approved.toLocaleString("en-US")} {t.currency}</td>
+                    <td className="py-2.5 tabular-nums" dir="ltr">{t.paid.toLocaleString("en-US")} {t.currency}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
 
       {/* قاعدة الأتعاب — تحدد كيف تُحسب مستحقات كل مدرب تلقائياً */}
       <FoldSection icon={Settings2} title="قواعد الأتعاب — كيف يُحسب أجر كل مدرب">

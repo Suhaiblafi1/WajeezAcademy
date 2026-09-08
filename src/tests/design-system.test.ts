@@ -106,7 +106,7 @@ const EXEMPT = join('src', 'components', 'ui')
    نموَّها. */
 const CEILING = {
   /** مستطيلٌ بحدٍّ وانحناء — مكانُه `Panel` أو `Card` أو `Inset` */
-  surface: 161,
+  surface: 160,
   /** زرٌّ بصيغةٍ كاملةٍ مكتوبةٍ في مكانها */
   button: 23,
 } as const

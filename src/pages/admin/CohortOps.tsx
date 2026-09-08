@@ -7,6 +7,7 @@ import {
   Loader2, Pencil, Plus, Trash2, UserMinus, UserPlus,
 } from "lucide-react";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { fmtDateTimeAr } from "@/utils/format";
 import type { CohortTab } from "./cohort-tabs";
@@ -95,6 +96,11 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
   }, [cohort.id]);
   useEffect(() => { loadTrainers(); }, [loadTrainers]);
 
+  /* من يملك `trainer.qualify` — وهو المديرُ الأعلى والمديرُ الأكاديميّ معا —
+     يقرّر من هنا. وكانت الشاشةُ تقول للمدير الأعلى «بانتظار قرار المدير
+     الأكاديميّ» وهو يملك كلَّ صلاحيّةٍ فيها، فيظنّ أنّ عليه أن يحيل وينتظر. */
+  const { user: viewer } = useRealSession();
+  const canQualify = viewer?.permissions.includes("trainer.qualify") ?? false;
   const picked = trainers.find((t) => t.profileId === assignForm.profileId) ?? null;
 
   const act = useCallback(async (fn: () => Promise<unknown>, msg: string) => {
@@ -177,11 +183,34 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             {picked.qualification === "qualified"
               ? "مؤهَّل لهذه الدورة — الإسناد يقع الآن، ويُفحص تعارضُ جدوله قبل وقوعه."
               : picked.qualification === "pending"
-                ? "له طلبُ تأهيلٍ قائم على هذه الدورة — بانتظار قرار المدير الأكاديميّ."
+                ? (canQualify ? "له طلبُ تأهيلٍ قائم على هذه الدورة — والقرارُ بيدك: أهّله فيُسنَد، أو رُدَّه بسبب." : "له طلبُ تأهيلٍ قائم على هذه الدورة — بانتظار من يملك التأهيل.")
                 : picked.qualification === "rejected"
                   ? "سبق أن رُدَّ تأهيلُه لهذه الدورة. رفعُ طلبٍ جديد يُعيدها إلى طاولة القرار."
-                  : "غير مؤهَّل لهذه الدورة بعد — الطلب يذهب إلى المدير الأكاديميّ، وموافقتُه تؤهّله وتُسنده معا."}
+                  : (canQualify ? "غير مؤهَّل لهذه الدورة بعد — طلبُ التأهيل يعود إليك، وموافقتُك تؤهّله وتُسنده معا." : "غير مؤهَّل لهذه الدورة بعد — الطلب يذهب إلى من يملك التأهيل، وموافقتُه تؤهّله وتُسنده معا.")}
           </p>
+        )}
+        {/* القرارُ في موضعه: من يملك الصلاحيّةَ لا يُحال إلى شاشةٍ أخرى ولا ينتظر أحدا */}
+        {picked?.qualification === "pending" && picked.qualificationId && canQualify && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Button tone="confirm" size="sm" disabled={busy}
+              onClick={() => act(
+                () => apiPost(`/api/admin/qualification-requests/${picked.qualificationId}/decide`, { approve: true }).then(loadTrainers),
+                "أُهِّل وأُسند للشعبة",
+              )}>
+              أهّله وأسنده الآن
+            </Button>
+            <Button tone="danger" size="sm" disabled={busy}
+              onClick={() => {
+                const note = window.prompt("سببُ الردّ — يُقرأ في ملفّ المدرّب:");
+                if (!note?.trim()) return;
+                void act(
+                  () => apiPost(`/api/admin/qualification-requests/${picked.qualificationId}/decide`, { approve: false, note: note.trim() }).then(loadTrainers),
+                  "رُدَّ طلبُ التأهيل",
+                );
+              }}>
+              رُدَّه بسبب
+            </Button>
+          </div>
         )}
         {trainers.length === 0 && (
           <p className="mt-2 text-read text-muted-foreground">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
