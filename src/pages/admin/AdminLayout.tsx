@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { Activity, Award, BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { Activity, Award, BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, HandCoins, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -87,6 +87,10 @@ export default function AdminLayout({ children, title }: { children: React.React
       title: "الأمور الفنّية",
       items: [
         { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet , need: ["finance.view", "enrollment.request.review"]},
+        /* بابُ الأتعاب هنا لا في «طلبات المدربين»: تلك محروسةٌ
+           بـ`trainer.applications.view` ولا تملكها المالية، فكانت تملك
+           المفتاحَ ولا تملك الباب — وبلا قاعدةِ أتعابٍ لا يُولَّد كشفٌ أصلا. */
+        { to: "/admin/trainer-compensation", label: "أتعاب المدربين", icon: HandCoins , need: "trainer.compensation.manage"},
         { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3 , need: "reports.view"},
         { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy , need: "support.operate"},
         { to: "/admin/notifications", label: "الإشعارات", icon: Bell , need: "notifications.manage"},

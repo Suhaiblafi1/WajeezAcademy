@@ -22,6 +22,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { fmtDateWith } from "@/application/text/format-ar";
 
 interface VersionReply {
   الكود?: { الالتزام?: string | null; الفرع?: string | null; وقت_البناء?: string | null; البيئة?: string | null };
@@ -54,9 +55,7 @@ export default function BuildStampLine() {
   /* التاريخُ يُعرض بالتقويم الميلاديّ صراحةً: هذا سطرُ تشخيصٍ يُقارن بسجلّ
      GitHub، والمقارنةُ تفسد إن اختلف التقويم. */
   const built = builtAt
-    ? new Date(builtAt).toLocaleString("ar", {
-        calendar: "gregory", dateStyle: "medium", timeStyle: "short",
-      })
+    ? fmtDateWith(builtAt, { dateStyle: "medium", timeStyle: "short" })
     : null;
 
   return (

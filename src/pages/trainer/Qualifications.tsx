@@ -25,6 +25,7 @@ import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { fmtDateLong } from "@/application/text/format-ar";
 interface Qualification { courseId: string; title: string; currentVersion: number; qualifiedAt: string }
 interface ScopeGate { allowed: boolean; basis: "earned" | "granted" | "none"; reasonAr: string }
 interface Window { weekday: number; startMinute: number; endMinute: number }
@@ -60,8 +61,7 @@ const toMinutes = (t: string) => {
   return (h || 0) * 60 + (m || 0);
 };
 
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("ar", { year: "numeric", month: "long", day: "numeric" });
+const fmtDate = fmtDateLong;
 
 export default function TrainerQualifications() {
   const [quals, setQuals] = useState<Qualification[] | null>(null);

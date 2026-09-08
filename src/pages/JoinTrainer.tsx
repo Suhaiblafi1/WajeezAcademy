@@ -367,6 +367,11 @@ export default function JoinTrainer() {
     if (teachable.length === 0 && teachableOther.trim().length < 10) {
       m[2].push("دورة واحدة تستطيع تقديمها — من القائمة أو بقلمك");
     }
+    /* الموسمُ شرطٌ عند الخادم (`min(1)`) منذ أوّل يوم، ولم تكن الواجهةُ تذكره —
+       فالزرُّ يُفعَّل والطلبُ يُردّ ٤٢٢ ويبقى `draft` أبدا، والمتقدّمُ يملك
+       حسابا ولا يملك طلبا. جولةُ البند ③ قاست ذلك: بلا موسمٍ ٤٢٢، وبموسمٍ
+       واحدٍ `submitted` — والفرقُ نقرة. */
+    if (seasons.length === 0) m[2].push("موسمٌ واحدٌ تستطيع التدريس فيه");
     if (!demoConsent) m[2].push("الموافقة على الدرس التجريبي والمقابلة");
     /* كيف نصل إليه — ووسيلةٌ تحتاج رقما بلا رقم لا تُقبل */
     const channel = CONTACT_CHANNELS.find((c) => c.value === contactChannel);
@@ -376,7 +381,7 @@ export default function JoinTrainer() {
       if (channel.needsAltEmail && !/.+@.+\..+/.test(contactAltEmail)) m[3].push("البريد الآخر بصيغة صحيحة");
     }
     return m;
-  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent,
+  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent, seasons,
       password, passwordConfirm, result, contactChannel, contactAltEmail]);
 
   const stepValid = useMemo(() => ({
@@ -1059,7 +1064,7 @@ export default function JoinTrainer() {
                   </FieldSet>
                   {/* الموسمُ: الشعبةُ تُفتح في موسمٍ، والمدرّبُ متفرّغٌ في بعضها
                       لا كلّها — فيختار ما يشاء منها، واحدا أو أكثر. */}
-                  <FieldSet legend="وفي أي مواسم السنة؟" hint="اختر موسما أو أكثر — الشعب تُفتح في مواسم لا طول السنة." wide>
+                  <FieldSet legend="وفي أي مواسم السنة؟" required hint="اختر موسما أو أكثر — الشعب تُفتح في مواسم لا طول السنة." wide>
                     <OptionGrid
                       items={TRAINING_SEASONS.map((sn) => ({ value: sn.value, label: `${sn.label} · ${sn.months} (${sn.monthNums})` }))}
                       isOn={(v) => seasons.includes(v)}

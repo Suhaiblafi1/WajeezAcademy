@@ -22,6 +22,7 @@ import { ClipboardCheck, MessageSquarePlus, RefreshCw, ServerOff, Star } from "l
 import TrainerLayout from "./TrainerLayout";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { signalGradingChanged } from "@/services/grading-signal";
 import { fmtDateTimeAr } from "@/utils/format";
 import { Panel } from "@/components/ui/Surface";
 import WorkHeader from "@/components/admin/WorkHeader";
@@ -80,6 +81,10 @@ export default function GradingQueue() {
       await fn();
       toast(doneMsg);
       await load();
+      /* الشارةُ في الإطار فوق هذه الصفحة، ولا تعرف أنّ الطابورَ تغيّر —
+         فكانت تبقى «١» بعد قبول آخرِ تسليم. تُبلَّغ هنا مرّةً واحدة، بعد
+         كلّ فعلٍ ينجح، فيصير العددان قولا واحدا. */
+      signalGradingChanged();
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
     } finally {
@@ -224,18 +229,29 @@ export default function GradingQueue() {
                     </Button>
                   </>
                 )}
+                {/* ── الدرجةُ بعد المراجعة لا قبلها ──
+
+                    الخادمُ يشترط `under_review` أو `accepted`
+                    (`assessment.service.ts` — «راجع التسليم أولا قبل
+                    الدرجة»، ٤٠٩). وكان الحقلُ والزرُّ مفعَّلَين على
+                    `submitted` كذلك، فيكتب المدرّبُ الرقمَ ويضغط ويُردّ.
+                    والحالةُ معروفةٌ في الشاشة، فالشرطُ يُقال قبل الضغط. */}
                 {["under_review", "submitted"].includes(q.status) && (
                   <span className="flex items-center gap-1.5">
                     <Star className="h-3.5 w-3.5 text-gold-ink" />
                     <input type="number" min={0} max={q.assessment.maxScore} value={gradeForm[q.id] ?? ""}
+                      disabled={q.status !== "under_review"}
                       onChange={(e) => setGradeForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
                       placeholder={`من ${q.assessment.maxScore}`}
                       aria-label={`درجةُ «${q.assessment.title}» من ${q.assessment.maxScore}`}
-                      className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none" />
-                    <Button size="sm" disabled={busy || !(gradeForm[q.id] ?? "").trim()}
+                      className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none disabled:cursor-not-allowed disabled:opacity-45" />
+                    <Button size="sm" disabled={busy || q.status !== "under_review" || !(gradeForm[q.id] ?? "").trim()}
                       onClick={() => void grade(q.id, q.assessment.maxScore)}>
                       سجّل الدرجة
                     </Button>
+                    {q.status !== "under_review" && (
+                      <span className="text-fine text-muted-foreground">اضغط «ابدأ المراجعة» أوّلا</span>
+                    )}
                   </span>
                 )}
               </div>

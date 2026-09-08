@@ -67,12 +67,29 @@ export class CatalogAdminService {
   async listCourses() {
     const rows = await this.prisma.course.findMany({
       orderBy: { id: 'asc' },
-      include: { versions: { orderBy: { version: 'desc' }, take: 1 }, skillLinks: true, pathwayLinks: true },
+      include: {
+        versions: { orderBy: { version: 'desc' }, take: 1 },
+        skillLinks: true,
+        /* اسمُ المسار لا معرّفُه: مرشِّحُ «المجال» في شاشة الشعب يُبنى منه،
+           وكان يقرؤه من الكتالوج المضمَّن — فيخرج فارغا دائما. */
+        pathwayLinks: {
+          include: { pathway: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },
+        },
+      },
     })
     return rows.map((c) => ({
       id: c.id, status: c.status, title: c.versions[0]?.titleAr ?? '',
       hours: c.versions[0]?.totalHours ?? 0, skillCount: c.skillLinks.length,
       pathways: c.pathwayLinks.map((l) => l.pathwayId),
+      pathwayNames: c.pathwayLinks
+        .map((l) => l.pathway?.versions[0]?.title)
+        .filter((t): t is string => Boolean(t)),
+      /* السعرُ يُعاد من هنا لأنّ هذا هو المصدرُ الذي يرثه `createCohort`
+         (`cohort.service.ts` → `course.listPrice`). وكانت الشاشةُ تقرؤه من
+         الكتالوج المضمَّن، وهو لا يُملأ في لوحة الإدارة أصلا — فتقول «بلا
+         سعر» ثمّ تُنشئ شعبةً بـ١٢٥ دولارا. */
+      listPrice: c.listPrice != null ? Number(c.listPrice) : null,
+      listCurrency: c.listCurrency ?? 'USD',
     }))
   }
 

@@ -24,6 +24,7 @@ import { fmtDateTimeAr } from "@/utils/format";
 
 import { Card, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { fmtDateWith, fmtTime } from "@/application/text/format-ar";
 interface Slot {
   sessionId: string;
   title: string;
@@ -45,11 +46,11 @@ interface Payload {
   meaningAr: string;
 }
 
-const dayKey = (iso: string) => new Date(iso).toLocaleDateString("ar", {
+const dayKey = (iso: string) => fmtDateWith(iso, {
   weekday: "long", year: "numeric", month: "long", day: "numeric",
 });
 
-const time = (iso: string) => new Date(iso).toLocaleTimeString("ar", { hour: "2-digit", minute: "2-digit" });
+const time = fmtTime;
 
 const ROLE_AR: Record<string, string> = { lead: "مدرّبٌ رئيس", assistant: "مساعد" };
 

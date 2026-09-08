@@ -5,9 +5,10 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
+import { GRADING_CHANGED } from "@/services/grading-signal";
 
 import Button from "@/components/ui/Button";
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
@@ -29,13 +30,19 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
      هنا أنفعُ من إشعارٍ: يُرى بلا فتحِ شيء، ويبقى ما بقي العمل، ويصير صفرا
      وحدَه حين يفرغ. والسقوطُ يُبتلع — عدّادٌ لم يصل لا يمنع أحدا من عمله. */
   const [pending, setPending] = useState(0);
-  useEffect(() => {
-    let alive = true;
+  /* والعددُ يُعاد جلبُه بعد فعلِ المدرّب لا بإعادة تحميل الصفحة: كان يقبل
+     آخرَ تسليمٍ فيصير المتنُ «الطابورُ نظيف» والشارةُ فوقه «١». والإطارُ
+     لا يرى ما يفعله ابنُه، فيسمع إشارتَه (`GRADING_CHANGED`). */
+  const refreshPending = useCallback(() => {
     void apiGet<{ pendingGrading?: number }>("/api/trainer/me")
-      .then((me) => { if (alive) setPending(me.pendingGrading ?? 0); })
+      .then((me) => setPending(me.pendingGrading ?? 0))
       .catch(() => { /* لا رقمَ خيرٌ من رقمٍ كاذب */ });
-    return () => { alive = false };
   }, []);
+  useEffect(() => {
+    refreshPending();
+    window.addEventListener(GRADING_CHANGED, refreshPending);
+    return () => window.removeEventListener(GRADING_CHANGED, refreshPending);
+  }, [refreshPending]);
   const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
 
   if (!checked) {
@@ -107,25 +114,46 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        {/* ── الشريطُ يأخذ سطرَه ──
+
+            كان تسعةَ رموزٍ **بلا كلمة** بعرض ٣٩٠: النصُّ `hidden sm:inline`،
+            فيصير كلُّ عنصرٍ ٣٨×٤٤ بكسلا يُميَّز بالرمز وحدَه. والعرضُ فوق ٢٤
+            التي تشترطها WCAG 2.5.8 فليس مخالفةً — لكنّ تسعةَ أهدافٍ متشابهةٍ
+            بلا اسمٍ ليست تنقّلا، والمراجعُ توصي بخمسةٍ فأقلَّ في شريطٍ أوّل.
+
+            والجوابُ الأسماءُ لا الحذف: تسعةُ تبويباتٍ كلُّها عملٌ يفعله
+            المدرّب، ومن حذف منها أخفى عملا لا زحاما.
+
+            **وامتدادٌ أفقيٌّ كان قبل هذا ولم يره التقرير:** التسعةُ بأسمائها
+            ٨٦٧ بكسلا في صفٍّ واحدٍ مع الشعار والأدوات، فكانت `body.scrollWidth`
+            تفوق إطارَ العرض عند ٣٩٠ و٨٢٠ و١٤٤٠ **جميعا** (قِيس بالمتصفّح).
+            ويشتدّ على الحاسوب بمعامل التكبير ١٫٣ (`--app-scale` في `#80`):
+            إطارُ ١٤٤٠ يصير ١١٠٨ فعليّا، فلا يتّسع الصفُّ لثلاثةٍ منها.
+
+            فالشريطُ يأخذ سطرَه في كلّ المقاسات — عرضُ الحاوية كلِّه لا فضلةُ
+            ما تركه الشعارُ والأدوات. وهو أصدقُ من صفٍّ يُخفي ثلاثةَ تبويباتٍ
+            خلف تمريرٍ بلا علامةٍ تدلّ عليه. */}
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-5 py-2">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">وجيز — بوابة المدرب</span>
           </Link>
-          <nav className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+          <nav className="scrollbar-hide order-last flex w-full items-center justify-start gap-1 overflow-x-auto rounded-full border border-white/10 bg-white/[0.03] p-1">
             {tabs.map((t) => (
               <NavLink
                 key={t.to}
                 to={t.to}
                 end={t.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 ${
+                  /* `shrink-0` كي لا ينضغط النصُّ حين يُمرَّر الشريط،
+                     و`min-h-11` هدفُ لمسٍ مريحٌ على الهاتف. */
+                  `flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 ${
                     isActive ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"
                   }`
                 }
               >
                 <t.icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{t.label}</span>
+                <span>{t.label}</span>
                 {/* العددُ يُقرأ للعين وللقارئ معا: الرقمُ وحدَه لا يقول ماذا يعدّ */}
                 {!!t.count && (
                   <span className="rounded-full bg-gold px-1.5 text-fine font-black text-on-gold">

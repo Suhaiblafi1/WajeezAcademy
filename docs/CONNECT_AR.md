@@ -318,6 +318,26 @@ ZOOM_HOST_EMAIL=lessons@wajeezacademy.com   # اختياريّ
 > وهذا عكسُ ما كان يفعله مزوّدُ الدفع قبل تصويبه: «بلا مفتاح سرّي يعود النظام
 > إلى المزوّد الاختباري **صامتا**». الصمتُ هناك كلّف مالا، فلا يُكرَّر هنا.
 
+### ⚠️ فخُّ الاسم — نفسُ المتغيّرَين لتطبيقَين مختلفَين
+
+Zoom نفسُها تستعمل `ZOOM_CLIENT_ID` و`ZOOM_CLIENT_SECRET` في **موضعَين
+لتطبيقَين لا يتبادلان**:
+
+| المتغيّران | من أيّ تطبيق | لماذا |
+|---|---|---|
+| ما نستعمله هنا | **Server-to-Server OAuth** | إنشاءُ الاجتماعات باسم الأكاديميّة (ومعه `ZOOM_ACCOUNT_ID`) |
+| ما تطلبه مكتبةُ العرض | **Meeting SDK app** | توقيعُ الانضمام داخل الصفحة |
+
+فمن أنشأ تطبيقَ Meeting SDK ولصق اعتمادَه في حقول هذه الشاشة **لن يعمل شيء**،
+والخطأُ الذي يردّه Zoom مضلِّل: `3704 — API Key is invalid`، وسببُه الحقيقيُّ
+«معرّفٌ من نوع تطبيقٍ آخر» لا خطأً في النسخ.
+
+**والعلامةُ الفارقة: `ZOOM_ACCOUNT_ID`.** ما نطلبه هنا ثلاثةٌ لا اثنان — ومن
+لم يجد «Account ID» في صفحة تطبيقه فهو في التطبيق الخطأ.
+
+> ويومَ يُبنى الانضمامُ داخل الصفحة سيُسمّى اعتمادُه صراحةً
+> `ZOOM_SDK_CLIENT_ID` و`ZOOM_SDK_CLIENT_SECRET` — فلا يلتبس بهذا.
+
 ### والمراجعُ الرسميّة
 
 | ما هو | الرابط |
@@ -327,6 +347,7 @@ ZOOM_HOST_EMAIL=lessons@wajeezacademy.com   # اختياريّ
 | Server-to-Server OAuth | <https://developers.zoom.us/docs/internal-apps/s2s-oauth/> |
 | مرجعُ واجهة REST (وفيه `POST /users/{userId}/meetings`) | <https://developers.zoom.us/docs/api/> |
 | مثالُ Zoom الرسميّ لـS2S (منه أُخذ شكلُ طلب الرمز) | <https://github.com/zoom/server-to-server-oauth-starter-api> |
+| مهاراتُ Zoom الرسميّة للوكلاء (وفيها `meeting-sdk` و`oauth`) | <https://github.com/zoom/skills> |
 | **Meeting SDK للويب** — للانضمام **داخل الصفحة** لا في تبويب Zoom | <https://developers.zoom.us/docs/meeting-sdk/web/> |
 | حزمةُ الـSDK على npm | <https://www.npmjs.com/package/@zoom/meetingsdk> |
 

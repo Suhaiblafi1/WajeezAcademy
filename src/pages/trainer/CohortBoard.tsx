@@ -7,6 +7,7 @@ import {
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
+import CohortAssignments, { type CohortAssessment } from "./CohortAssignments";
 import { fmtDateTimeAr } from "@/utils/format";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
@@ -36,6 +37,9 @@ interface TrainerCohort {
       attendance: { sessionId: string; status: string }[];
     }[];
     materials: { id: string; title: string; readUrl: string | null }[];
+    /* تصل من `trainerCohorts` منذ البداية، ولم يكن هذا النوعُ يعلنها —
+       فيؤلّف المدرّبُ تكليفا ولا يراه في لوحه ولا بعد إعادة التحميل. */
+    assessments: CohortAssessment[];
   };
 }
 
@@ -350,8 +354,15 @@ export default function CohortBoard() {
                                             <div key={e.id} className="flex items-center gap-3">
                                               <p className="min-w-0 flex-1 truncate text-read text-foreground">{e.user.displayName}</p>
                                               <div className="flex gap-1">
+                                                {/* الحالةُ كانت تُقال باللون وحدَه: لا `aria-pressed`
+                                                    ولا اسمٌ يربط الزرَّ بصاحبه، فيسمع قارئُ الشاشة
+                                                    «حاضر» أربعَ مرّاتٍ لا يعرف لمن ولا أيُّها مختار.
+                                                    و`ChoiceGrid` في `FormKit` يضبطهما — فهذا عُرفُ
+                                                    المستودَع لا اجتهادٌ هنا. */}
                                                 {ATTENDANCE_OPTIONS.map((opt) => (
                                                   <button key={opt.value} disabled={busy}
+                                                    aria-pressed={current === opt.value}
+                                                    aria-label={`${e.user.displayName}: ${opt.label}`}
                                                     onClick={() => void markAttendance(s.id, e.id, opt.value)}
                                                     className={`cursor-pointer rounded-full border px-2.5 py-1 text-fine font-bold transition disabled:opacity-40 ${
                                                       current === opt.value
@@ -518,6 +529,11 @@ export default function CohortBoard() {
                                   أضف رابطا
                                 </button>
                               </div>
+
+                              <CohortAssignments
+                                items={c.assessments}
+                                learners={c.enrollments.filter((e) => e.status !== "waitlisted").length}
+                              />
 
                               <div className="mt-5 border-t border-white/10 pt-4">
                                 <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
