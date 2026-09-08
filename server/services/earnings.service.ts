@@ -53,10 +53,7 @@ export class EarningsService {
     ])
     const cohorts = await Promise.all(cohortRows.map(async (ct) => {
       const rule = await this.activeRule(profile.id, { cohortId: ct.cohort.id, courseId: ct.cohort.courseId })
-      const [referred, general] = await Promise.all([
-        this.prisma.enrollment.count({ where: { cohortId: ct.cohort.id, status: { in: ['enrolled', 'completed'] }, referralProfileId: profile.id } }),
-        this.prisma.enrollment.count({ where: { cohortId: ct.cohort.id, status: { in: ['enrolled', 'completed'] }, NOT: { referralProfileId: profile.id } } }),
-      ])
+      const { referred, general } = await this.seatsBySource(ct.cohort.id, profile.id)
       const rate = rule && rule.type === 'per_seat' ? Number(rule.rate) : null
       const referralRate = rule && rule.type === 'per_seat' ? (rule.referralRate === null ? rate : Number(rule.referralRate)) : null
       return {
@@ -341,6 +338,20 @@ export class EarningsService {
   }
 
   /* مدرب الشعبة الرئيسي — CohortTrainer lead أولاً ثم أي إسناد نشط */
+  /** مقاعدُ الشعبة بمصدرها: ما جاء عبر رابط هذا المدرّب، وما عداه.
+
+     والعامُّ يُحسب طرحا لا بشرط `NOT`: في SQL لا يُطابق `NOT (x = y)` الصفَّ
+     الذي `x` فيه فارغ — وأكثرُ المقاعد فارغةُ الإحالة، فكان العامُّ يُقرأ صفرا.
+     والطرحُ يقرأ الجملةَ مرّةً ويأخذ الباقيَ، فلا يضيع صفٌّ بين الشرطين. */
+  private async seatsBySource(cohortId: string, profileId: string) {
+    const where = { cohortId, status: { in: ['enrolled', 'completed'] } }
+    const [total, referred] = await Promise.all([
+      this.prisma.enrollment.count({ where }),
+      this.prisma.enrollment.count({ where: { ...where, referralProfileId: profileId } }),
+    ])
+    return { referred, general: total - referred }
+  }
+
   private async cohortLeadTrainer(cohortId: string) {
     const lead = await this.prisma.cohortTrainer.findFirst({
       where: { cohortId }, orderBy: { role: 'asc' }, // lead قبل assistant أبجدياً
@@ -377,10 +388,7 @@ export class EarningsService {
          كم جاءه من رابطه وكم عامّا، لا رقما واحدا يظنّ فيه الظنون. وبلا
          `referralRate` يُحسب الكلُّ بـ`rate` كما كان. والحدُّ الأدنى يُطبَّق على
          المجموع ويُكمَّل من العامّ. */
-      const [referred, general] = await Promise.all([
-        this.prisma.enrollment.count({ where: { cohortId, status: { in: ['enrolled', 'completed'] }, referralProfileId: profileId } }),
-        this.prisma.enrollment.count({ where: { cohortId, status: { in: ['enrolled', 'completed'] }, NOT: { referralProfileId: profileId } } }),
-      ])
+      const { referred, general } = await this.seatsBySource(cohortId, profileId)
       const actual = referred + general
       const generalSeats = Math.max(general, rule.minSeats - referred)
       const minNote = rule.minSeats > 0 && actual < rule.minSeats
