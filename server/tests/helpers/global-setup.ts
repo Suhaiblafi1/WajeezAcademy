@@ -11,9 +11,13 @@
    العوامل متصلةً فقط. */
 
 import { ensureEmbeddedPostgres, stopEmbeddedPostgres } from '../../db/embedded'
+import { buildTemplateDb } from './db'
 
 export async function setup(): Promise<void> {
   await ensureEmbeddedPostgres()
+  /* والقالبُ المبذورُ معها: يُبنى مرّةً هنا، ثمّ يأخذ كلُّ ملفٍّ نسخةً عنه
+     في أقلَّ من ثانية بدل أن يبنيَه في أربعَ عشرةَ. التعليلُ في `db.ts`. */
+  await buildTemplateDb()
 }
 
 export async function teardown(): Promise<void> {
