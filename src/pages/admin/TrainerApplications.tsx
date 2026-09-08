@@ -327,29 +327,29 @@ export default function TrainerApplications() {
     const available = DECISIONS.filter((d) => d.from.includes(a.status));
     const primary = available.filter((d) => PRIMARY_ACTIONS.includes(d.action));
     const detailed = available.filter((d) => !PRIMARY_ACTIONS.includes(d.action));
+    /* نبرةُ القرار تُترجَم إلى سلّم النظام: الرئيسُ ذهبيّ، والتحذيرُ بديلٌ
+       متاح، وما لا يُتراجَع عنه أحمر. */
     const decisionButton = (d: (typeof DECISIONS)[number]) => (
-      <button
+      <Button
         key={d.action} disabled={busy}
+        tone={d.tone === "main" ? "primary" : d.tone === "warn" ? "secondary" : "danger"}
+        icon={d.tone === "danger" ? XCircle : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
         onClick={() => void act(
           () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: note || undefined }),
           "نُفذ القرار وسُجل في الأثر",
         )}
-        className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-full py-2.5 text-xs font-black transition disabled:opacity-40 ${
-          d.tone === "main" ? "bg-gold text-on-gold hover:bg-gold/90"
-            : d.tone === "warn" ? "border border-gold/50 text-gold-ink hover:bg-gold/10"
-            : "border border-white/15 text-muted-foreground hover:border-red-400/40 hover:text-red-300"
-        }`}
+        className="w-full"
       >
-        {d.tone === "danger" ? <XCircle className="h-3.5 w-3.5" /> : d.action === "request_demo" ? <CalendarCheck className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
         {d.label}
-      </button>
+      </Button>
     );
     const rubricComplete = RUBRIC_AXES.every((x) => scores[x.key] >= 1);
     return (
       <AdminLayout title={`الطلب ${a.reference}`}>
-        <button onClick={() => setSelected(null)} className="mb-4 flex cursor-pointer items-center gap-1.5 text-xs font-bold text-teal-light-ink hover:text-teal-ink">
-          <ChevronLeft className="h-4 w-4" /> كل الطلبات
-        </button>
+        <Button tone="ghost" icon={ChevronLeft} onClick={() => setSelected(null)}
+          className="mb-4 text-teal-light-ink hover:text-teal-ink">
+          كل الطلبات
+        </Button>
 
 
         {/* ── الحذف النهائيّ ──
@@ -373,8 +373,7 @@ export default function TrainerApplications() {
                 aria-label="سبب الحذف النهائي"
                 className="min-w-[18rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-red-500/50"
               />
-              <button
-                type="button"
+              <Button tone="danger" size="sm" type="button"
                 disabled={purging || purgeReason.trim().length < 5}
                 onClick={async () => {
                   setPurging(true);
@@ -390,10 +389,10 @@ export default function TrainerApplications() {
                     setPurging(false);
                   }
                 }}
-                className="rounded-lg bg-red-500/85 px-4 py-1.5 text-fine font-black text-white hover:bg-red-500 disabled:opacity-40"
+                loading={purging}
               >
-                {purging ? "يُحذف…" : "احذفه نهائيّا"}
-              </button>
+                احذفه نهائيّا
+              </Button>
             </div>
           </details>
         )}
@@ -630,10 +629,9 @@ export default function TrainerApplications() {
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex rounded-full border border-white/15 p-1">
           {([["apps", "الطلبات"], ["run", "التأهيل والإسناد"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
-            <button key={k} onClick={() => setMode(k)}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${mode === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
+            <Button key={k} tone={mode === k ? "primary" : "ghost"} onClick={() => setMode(k)}>
               {label}
-            </button>
+            </Button>
           ))}
         </div>
         {mode === "apps" && (
