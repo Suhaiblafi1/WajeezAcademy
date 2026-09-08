@@ -1,9 +1,20 @@
 #!/usr/bin/env bash
-# نسخة احتياطية للقاعدة — إلى خارج الخادم، أو لا تعمل أصلا.
+# نسخة احتياطية — القاعدةُ **وحجمُ الملفّات** — إلى خارج الخادم، أو لا تعمل.
 #
 #   bash deploy/backup.sh              النسخة الليلية (يشغّلها المؤقّت)
 #   bash deploy/backup.sh --pre-deploy نسخةٌ قبل الهجرة (يشغّلها deploy.sh)
 #   bash deploy/backup.sh --verify     ينزّل آخر نسخة ويسترجعها في قاعدة خدش
+#
+# ── ولماذا صارت شيئَين (البند ⑤) ──
+#
+# كانت الوثائقُ بايتاتٍ في عمودِ قاعدة، فنسخةُ القاعدة تحملها ضمنا. ثمّ صارت
+# على حجم `storage` — وعندها **انقسم ما يجب حفظُه إلى نصفَين**: صفٌّ يقول
+# «هذه سيرةُ فلان» في القاعدة، وبايتاتُها على الحجم. ونسخةٌ تأخذ أحدَهما
+# تُنتج بعد الاسترجاع منصّةً تعرض وثائقَ لا محتوى لها — وهو أسوأُ من فقدها
+# معا، لأنّه يبدو سليما.
+#
+# فالحجمُ يدخل هنا **في الالتزام نفسِه** الذي نقل البايتاتِ إليه. مخزنُ
+# ملفّاتٍ بلا نسخةٍ احتياطيّةٍ عطبٌ أسوأُ من غيابه.
 #
 # لماذا يرفض العمل بلا BACKUP_REMOTE: نسخةٌ على القرص نفسه ليست نسخة
 # احتياطية. عطبُ القرص أو حذفُ الخادم يأخذ الأصل والنسخة معا. والسكربت الذي
@@ -57,6 +68,24 @@ if [ "$MODE" = "--verify" ]; then
   echo "✓ استُرجعت النسخة: $USERS مستخدما · $ORDERS طلبا"
   [ "$USERS" -gt 0 ] || { echo "✗ النسخة استُرجعت فارغة — هذه ليست نسخة" >&2; exit 1; }
 
+  # ── وأرشيفُ التخزين يُثبَت كما تُثبَت القاعدة ──
+  #
+  # نسخةٌ لا تُفتح ليست نسخة. فيُنزَّل أحدثُ أرشيفٍ ويُفكّ في مجلّدٍ مؤقّتٍ
+  # وتُعدّ كائناتُه — لا يُكتفى بوجود الملفّ في الوجهة.
+  STORE_LATEST="$(rclone lsf "$BACKUP_REMOTE" --include '*-storage.tar.gz' | sort | tail -1)"
+  if [ -n "$STORE_LATEST" ]; then
+    rclone copyto "$BACKUP_REMOTE/$STORE_LATEST" "$WORK/store.tar.gz"
+    mkdir -p "$WORK/store"
+    tar -xzf "$WORK/store.tar.gz" -C "$WORK/store" \
+      || { echo "✗ أرشيفُ التخزين لا يُفكّ — هذه ليست نسخة" >&2; exit 1; }
+    OBJECTS=$(find "$WORK/store" -type f ! -name '*.meta.json' | wc -l)
+    echo "✓ فُكّ أرشيفُ التخزين $STORE_LATEST: $OBJECTS كائنا"
+  else
+    # لا أرشيفَ بعد = لم تجرِ نسخةٌ ليليّةٌ منذ وصول المخزن. يُقال ولا يُسكَت
+    # عنه، ولا يُعدّ إخفاقا: قد يكون المخزنُ نُشر قبل ساعة.
+    echo "⚠ لا أرشيفَ تخزينٍ في الوجهة بعد — شغّل bash deploy/backup.sh مرّةً" >&2
+  fi
+
   # ── الإثباتُ يُكتب حيث يقرؤه التطبيق (البند ٦٥) ──
   #
   # كان نجاحُ هذا الاختبار سطرا في طرفيّةٍ يراه من شغّله ثمّ يذهب. ولا شيءَ
@@ -94,7 +123,27 @@ SIZE=$(stat -c%s "$WORK/$FILE")
 rclone copy "$WORK/$FILE" "$BACKUP_REMOTE" || { echo "✗ أخفق الرفع إلى $BACKUP_REMOTE" >&2; exit 1; }
 echo "✓ رُفعت $FILE ($(numfmt --to=iec "$SIZE" 2>/dev/null || echo "$SIZE bytes")) إلى $BACKUP_REMOTE"
 
+# ── وحجمُ الملفّات معها ──
+#
+# يُقرأ من داخل حاوية التطبيق: الحجمُ مركوبٌ هناك على `/app/storage`، ولا
+# يُفترض مسارُه على المضيف (أحجامُ Docker مسمّاةٌ لا مسارات — قرارٌ مكتوبٌ في
+# `compose.prod.yml`). و`tar` يقرأ ويكتب إلى المخرَج القياسيّ، فلا يحتاج
+# مساحةً على قرص الحاوية.
+STORE_FILE="wajeez-${LABEL}-${STAMP}-storage.tar.gz"
+$COMPOSE exec -T app tar -czf - -C /app/storage . > "$WORK/$STORE_FILE" \
+  || { echo "✗ تعذّرت أرشفةُ حجم التخزين" >&2; exit 1; }
+STORE_SIZE=$(stat -c%s "$WORK/$STORE_FILE")
+
+# أرشيفُ tar فارغٍ نحوَ ٤٥ بايتا — وذلك مقبولٌ ما دام لا ملفّاتٍ بعد. لكنّ
+# **صفرا** يعني أنّ الأمرَ نفسَه أخفق، وتلك لا تُرفع فتزيح نسخةً صالحة.
+[ "$STORE_SIZE" -gt 0 ] || { echo "✗ أرشيفُ التخزين صفرُ بايت — فشلٌ صامت" >&2; exit 1; }
+
+rclone copy "$WORK/$STORE_FILE" "$BACKUP_REMOTE" \
+  || { echo "✗ أخفق رفعُ أرشيف التخزين إلى $BACKUP_REMOTE" >&2; exit 1; }
+echo "✓ رُفع $STORE_FILE ($(numfmt --to=iec "$STORE_SIZE" 2>/dev/null || echo "$STORE_SIZE bytes")) إلى $BACKUP_REMOTE"
+
 # ── التقليم ──
 KEEP="${BACKUP_KEEP_DAYS:-30}"
 rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*.sql.gz' --min-age "${KEEP}d" || true
-echo "✓ حُذف ما تجاوز ${KEEP} يوما من النسخ الليلية"
+rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*-storage.tar.gz' --min-age "${KEEP}d" || true
+echo "✓ حُذف ما تجاوز ${KEEP} يوما من النسخ الليلية (القاعدةُ والتخزينُ معا)"
