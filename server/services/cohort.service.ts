@@ -1,3 +1,6 @@
+/* صيغةُ يومٍ في رسائل الرفض — الرسالةُ تقول الحدَّ لا «ممنوع» مجرَّدةً */
+const fmtDay = (d: Date) => d.toISOString().slice(0, 10)
+
 /* خدمة الشعب — إنشاء، جدولة، فتح مشروط، منع تعارض المدرب، سعة.
    شروط الفتح الخمسة: دورة منشورة + جدول + سعة + خطة تقديم + إعداد مالي.
    (والمدرّب ليس منها — يُسنَد دفعةً واحدةً لاحقا؛ التعليل عند `openChecklist`.)
@@ -49,6 +52,9 @@ export class CohortService {
       price: c.price, currency: c.currency, language: c.language, deliveryMode: c.deliveryMode,
       registrationOpen: c.registrationOpen, financialReady: c.financialReady,
       sessionsCount: c.sessions.length,
+      /* نافذةُ جدولةِ المدرّب — تُقرأ في الشاشة لتُعرَض مفتوحةً أو مغلقة */
+      scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
+      maxSessions: c.maxSessions,
       trainers: c.trainers.map((t) => ({ profileId: t.profileId, name: t.profile.application.fullName, role: t.role })),
     }))
   }
@@ -576,6 +582,165 @@ export class CohortService {
     })
     await recordAudit(this.prisma, { actorId, action: 'cohort.session.add', entityType: 'cohort', entityId: cohortId, meta: { sessionId: session.id } })
     return session
+  }
+
+  /* ═════════ نافذةُ جدولةِ المدرّب ═════════
+
+     العطبُ الذي تزيله، بنصّه: في `src/pages/trainer/CohortBoard.tsx` كان
+     يُقال للمدرّب «لا جلسات مجدولة — **الإدارة تضيف الجدول**». فمن يقف في
+     اللقاء ويعرف متى يستطيع ومتى لا، يُمنع من جدولة لقاءاته ويُقال له
+     انتظر. وما يملكه بدلا منها أن **يقترح** تأجيلا لجلسةٍ قائمة، فيصير
+     الاقتراحُ صفًّا في طابورٍ على شاشة الإدارة يُقبل أو يُردّ.
+
+     أي أنّ المنصّةَ بنت طابورَ موافقاتٍ لتعويض صلاحيّةٍ لم تُمنح، والإداريُّ
+     يقضي يومَه في عملٍ كتابيّ لا قرارَ فيه.
+
+     وقرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): **يملك المدرّبُ جدولَ شعبته ضمن
+     حدودٍ تضعها الإدارة**، وتبقى الإدارةُ على الاستثناء لا على الروتين.
+
+     والحدُّ ثلاثةٌ تُقرأ معا — مدًى يبدأ، ومدًى ينتهي، وسقفُ لقاءات. وغيابُ
+     أيٍّ منها **بابٌ مغلَق** لا بابٌ بلا حدّ: فالشعبُ القائمةُ كلُّها تبقى
+     على ما كانت عليه حتّى تُفتح نافذتُها صراحةً. */
+
+  /** الإدارةُ تفتح النافذة أو تغلقها — والإغلاق بإفراغ الثلاثة */
+  async setScheduleWindow(actorId: string, cohortId: string, input: {
+    start?: Date | null; end?: Date | null; maxSessions?: number | null
+  }) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true } })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    if (input.start && input.end && input.start >= input.end) {
+      throw new AuthError('bad_request', 'نهايةُ النافذة قبل بدايتها', 400)
+    }
+    if (input.maxSessions != null && input.maxSessions < 1) {
+      throw new AuthError('bad_request', 'سقفُ اللقاءات واحدٌ فأكثر', 400)
+    }
+    const updated = await this.prisma.cohort.update({
+      where: { id: cohortId },
+      data: {
+        scheduleWindowStart: input.start ?? null,
+        scheduleWindowEnd: input.end ?? null,
+        maxSessions: input.maxSessions ?? null,
+      },
+      select: { scheduleWindowStart: true, scheduleWindowEnd: true, maxSessions: true },
+    })
+    const opened = updated.scheduleWindowStart && updated.scheduleWindowEnd && updated.maxSessions
+    await recordAudit(this.prisma, {
+      actorId,
+      action: opened ? 'cohort.schedule_window.open' : 'cohort.schedule_window.close',
+      entityType: 'cohort',
+      entityId: cohortId,
+      meta: { ...updated },
+    })
+    return updated
+  }
+
+  /** ما يراه المدرّبُ عن حدوده — يُقرأ قبل المحاولة لا بعد الرفض */
+  async scheduleWindowFor(userId: string, cohortId: string) {
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      select: {
+        id: true, status: true, scheduleWindowStart: true, scheduleWindowEnd: true,
+        maxSessions: true, trainers: { select: { profileId: true } },
+        _count: { select: { sessions: true } },
+      },
+    })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    const mine = await this.isCohortTrainer(userId, cohortId)
+    const open = Boolean(cohort.scheduleWindowStart && cohort.scheduleWindowEnd && cohort.maxSessions)
+    return {
+      mine,
+      open,
+      start: cohort.scheduleWindowStart,
+      end: cohort.scheduleWindowEnd,
+      maxSessions: cohort.maxSessions,
+      used: cohort._count.sessions,
+      remaining: cohort.maxSessions ? Math.max(0, cohort.maxSessions - cohort._count.sessions) : 0,
+    }
+  }
+
+  /** أهذا مدرّبُ الشعبة فعلا؟ — الإسنادُ لا الدور */
+  private async isCohortTrainer(userId: string, cohortId: string) {
+    const link = await this.prisma.cohortTrainer.findFirst({
+      where: { cohortId, profile: { userId } },
+      select: { id: true },
+    })
+    return link !== null
+  }
+
+  /* الحدُّ يُفحص في موضعٍ واحد — فلا يفترق فحصُ الإضافة عن فحص النقل */
+  private async assertWithinWindow(cohortId: string, when: { startsAt: Date; endsAt?: Date | null }, opts: { counts: boolean }) {
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      select: {
+        status: true, scheduleWindowStart: true, scheduleWindowEnd: true, maxSessions: true,
+        _count: { select: { sessions: true } },
+      },
+    })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    if (['completed', 'cancelled'].includes(cohort.status)) {
+      throw new AuthError('bad_state', 'لا جدولةَ لشعبةٍ منتهية', 409)
+    }
+    const { scheduleWindowStart: from, scheduleWindowEnd: to, maxSessions: cap } = cohort
+    if (!from || !to || !cap) {
+      throw new AuthError('forbidden', 'لم تفتح الإدارةُ نافذةَ جدولةٍ لهذه الشعبة بعد', 403)
+    }
+    if (when.startsAt < from || when.startsAt > to) {
+      throw new AuthError('forbidden', `الموعدُ خارجَ نافذة الجدولة (${fmtDay(from)} — ${fmtDay(to)})`, 403)
+    }
+    if (when.endsAt && when.endsAt > to) {
+      throw new AuthError('forbidden', `نهايةُ اللقاء بعد نافذة الجدولة (${fmtDay(to)})`, 403)
+    }
+    if (opts.counts && cohort._count.sessions >= cap) {
+      throw new AuthError('forbidden', `بلغتَ سقفَ اللقاءات (${cap}) — احذف لقاءً أو راجع الإدارة`, 403)
+    }
+  }
+
+  /** المدرّبُ يضيف لقاءً في شعبته — بالحدّ نفسِه الذي تُفحص به إضافةُ الإدارة */
+  async trainerAddSession(userId: string, cohortId: string, input: {
+    title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
+  }) {
+    if (!(await this.isCohortTrainer(userId, cohortId))) {
+      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+    }
+    await this.assertWithinWindow(cohortId, input, { counts: true })
+    /* وفحصُ التعارض هو فحصُ الإدارة نفسُه — `addSession` تحمله */
+    return this.addSession(userId, cohortId, input)
+  }
+
+  /** المدرّبُ ينقل لقاءَه — لا يقترح نقله */
+  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, cohortId: true, title: true, startsAt: true },
+    })
+    if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
+    if (!(await this.isCohortTrainer(userId, session.cohortId))) {
+      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+    }
+    /* النقلُ لا يزيد العددَ فلا يُفحص السقف — يُفحص المدى وحدَه */
+    await this.assertWithinWindow(session.cohortId, input, { counts: false })
+
+    const trainers = await this.prisma.cohortTrainer.findMany({
+      where: { cohortId: session.cohortId }, select: { profileId: true },
+    })
+    for (const t of trainers) {
+      /* `ignoreCohortId` يستثني الشعبةَ كلَّها، فاللقاءُ المنقولُ لا يتعارض
+         مع نفسِه ولا مع إخوته — والتعارضُ المقصودُ ما في شعبةٍ أخرى. */
+      await this.assertNoScheduleConflict(
+        t.profileId,
+        [{ startsAt: input.startsAt, endsAt: input.endsAt ?? null }],
+        session.cohortId,
+      )
+    }
+    const moved = await this.prisma.cohortSession.update({
+      where: { id: sessionId },
+      data: { startsAt: input.startsAt, endsAt: input.endsAt },
+    })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'cohort.session.move', entityType: 'cohort_session', entityId: sessionId,
+      meta: { from: session.startsAt, to: input.startsAt, cohortId: session.cohortId },
+    })
+    return moved
   }
 
   /* ═══ توليدُ الجلسات من الجدول الأسبوعيّ ═══

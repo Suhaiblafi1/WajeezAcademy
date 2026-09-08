@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
-import { areaCls, staffSelectCls } from "@/components/FormKit";
+import { areaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
 import CohortReadiness from "./CohortReadiness";
@@ -42,6 +42,8 @@ interface CohortRow {
   timezone: string | null; capacity: number | null; enrolled: number;
   price: string | null; currency: string; language: string; deliveryMode: string;
   registrationOpen: boolean; financialReady: boolean; sessionsCount: number;
+  /* نافذةُ جدولةِ المدرّب — الثلاثةُ تُقرأ معا، وغيابُ أيٍّ منها بابٌ مغلَق */
+  scheduleWindowStart: string | null; scheduleWindowEnd: string | null; maxSessions: number | null;
   trainers: { profileId: string; name: string; role: string }[];
 }
 
@@ -608,6 +610,17 @@ export default function AdminCohorts() {
                       </div>
                     </Card>
 
+                    {/* ── مَن يجدول لقاءات هذه الشعبة؟ ──
+
+                        سؤالُ صاحب المنصّة: «لماذا الأدمن يقوم بها؟» وجوابُه
+                        أنّه لا ينبغي. فالمدرّبُ يعرف متى يستطيع، وبوّابتُه
+                        كانت تقول له «الإدارة تضيف الجدول» ولا تعطيه إلّا أن
+                        **يقترح** تأجيلا يُرفع إلى طابور موافقات.
+
+                        فهنا تضع الإدارةُ الحدَّ — مدًى وسقفَ لقاءات — ويقرّر
+                        المدرّبُ داخله. والثلاثةُ تُفتح معا أو لا تُفتح. */}
+                    <ScheduleWindowCard cohort={c} busy={busy} act={act} />
+
                     {/* ربط Zoom يدوي لجلسة */}
                     <Card className="bg-paper/20">
                       <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground"><Video className="h-3.5 w-3.5" /> ربط اجتماع Zoom يدوي</p>
@@ -688,6 +701,78 @@ export default function AdminCohorts() {
    كان الحقلُ الأوّلُ «معرف الجلسة (UUID)»: قيمةٌ لا تظهر على أيّ شاشةٍ في
    المنصّة، فلا سبيلَ لتعبئتها إلّا من قاعدة البيانات. وجلساتُ الشعبة معروفةٌ
    للخادم، فتُقرأ وتُعرض. ومن رُبطت جلستُه يظهر معلَّما كي لا يُربط مرّتين. */
+/* نافذةُ جدولةِ المدرّب — تُفتح بالثلاثة، وتُغلق بإفراغها.
+
+   ولا حالةَ ثالثة: نصفُ نافذةٍ لا يفتح بابا، ولذلك يُعطَّل الحفظُ حتّى
+   تكتمل الثلاثةُ أو تفرغ كلُّها. */
+function ScheduleWindowCard({ cohort, busy, act }: {
+  cohort: CohortRow;
+  busy: boolean;
+  act: (fn: () => Promise<unknown>, msg: string) => Promise<void>;
+}) {
+  const day = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
+  const [form, setForm] = useState({
+    start: day(cohort.scheduleWindowStart),
+    end: day(cohort.scheduleWindowEnd),
+    max: cohort.maxSessions?.toString() ?? "",
+  });
+  const filled = [form.start, form.end, form.max].filter(Boolean).length;
+  const complete = filled === 3;
+  const cleared = filled === 0;
+  const isOpen = Boolean(cohort.scheduleWindowStart && cohort.scheduleWindowEnd && cohort.maxSessions);
+
+  return (
+    <Card className="bg-paper/20">
+      <p className="flex items-center gap-1.5 text-read font-black text-foreground">
+        <CalendarClock className="h-4 w-4 shrink-0 text-teal-ink" /> نافذةُ جدولةِ المدرّب
+      </p>
+      <p className="mt-1 text-read leading-6 text-muted-foreground">
+        {isOpen
+          ? "مفتوحة — يضيف مدرّبُ الشعبة لقاءاتِها وينقلها داخلَ هذا الحدّ بلا طابور موافقات. وما يقع خارجَه يبقى اقتراحا يُرفع إليك."
+          : "مغلقة — الجدولةُ إليك وحدَك، والمدرّبُ لا يملك إلّا اقتراحَ تأجيلٍ يُرفع إلى طابورك. افتحها ليقرّر داخلَ حدّك."}
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+        <label className="text-fine text-muted-foreground">
+          من تاريخ
+          <input type="date" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })}
+            className={`${staffControlCls} mt-1`} />
+        </label>
+        <label className="text-fine text-muted-foreground">
+          إلى تاريخ
+          <input type="date" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })}
+            className={`${staffControlCls} mt-1`} />
+        </label>
+        <label className="text-fine text-muted-foreground">
+          سقفُ اللقاءات
+          <input type="number" min={1} max={200} value={form.max} onChange={(e) => setForm({ ...form, max: e.target.value })}
+            placeholder="مثال: 16" className={`${staffControlCls} mt-1`} />
+        </label>
+      </div>
+      {!complete && !cleared && (
+        <p className="mt-2 text-read text-gold-ink">
+          الثلاثةُ تُفتح معا — املأ ما نقص، أو أفرغها كلَّها لإغلاق النافذة.
+        </p>
+      )}
+      <Button tone="confirm" disabled={busy || (!complete && !cleared)} className="mt-3"
+        onClick={() => act(
+          () => apiPut(`/api/admin/cohorts/${cohort.id}/schedule-window`, {
+            start: form.start ? new Date(`${form.start}T00:00:00.000Z`).toISOString() : null,
+            end: form.end ? new Date(`${form.end}T23:59:59.000Z`).toISOString() : null,
+            maxSessions: form.max ? Number(form.max) : null,
+          }),
+          complete ? "فُتحت نافذةُ الجدولة — المدرّبُ يقرّر داخلَ حدّك" : "أُغلقت نافذةُ الجدولة — الجدولةُ إليك وحدَك",
+        )}>
+        {complete ? "افتح النافذة" : "أغلق النافذة"}
+      </Button>
+      {isOpen && (
+        <p className="mt-2 text-read text-muted-foreground">
+          استُهلك {cohort.sessionsCount} من {cohort.maxSessions} لقاءً.
+        </p>
+      )}
+    </Card>
+  );
+}
+
 function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }: {
   cohortId: string; sessionsCount: number;
   value: { sessionId: string; joinUrl: string; meetingId: string; passcode: string };

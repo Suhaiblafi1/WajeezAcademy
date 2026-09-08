@@ -1439,47 +1439,63 @@ model TrainerTermAvailability {
 }
 
 model Cohort {
-  id                 String                    @id @default(uuid()) @db.Uuid
-  courseId           String
-  pathwayId          String?
-  title              String
-  status             String                    @default("draft") // draft | open | full | active | completed | cancelled
-  startsAt           DateTime?
-  endsAt             DateTime?
+  id                  String                    @id @default(uuid()) @db.Uuid
+  courseId            String
+  pathwayId           String?
+  title               String
+  status              String                    @default("draft") // draft | open | full | active | completed | cancelled
+  startsAt            DateTime?
+  endsAt              DateTime?
   /**
    * جدولة وسعة وتقديم — تُدار من الإدارة فقط
    */
-  daysOfWeek         String[]                  @default([])
-  startTime          String? // مثل 18:00
-  timezone           String?
-  capacity           Int?
-  price              Decimal?                  @db.Decimal(10, 2)
-  currency           String                    @default("USD")
-  language           String                    @default("العربية")
-  deliveryMode       String                    @default("remote") // remote | in_person | hybrid
-  registrationOpen   Boolean                   @default(false)
-  financialReady     Boolean                   @default(false) // إعداد مالي مكتمل — شرط فتح الشعبة
+  daysOfWeek          String[]                  @default([])
+  startTime           String? // مثل 18:00
+  timezone            String?
+  capacity            Int?
+  price               Decimal?                  @db.Decimal(10, 2)
+  currency            String                    @default("USD")
+  language            String                    @default("العربية")
+  deliveryMode        String                    @default("remote") // remote | in_person | hybrid
+  registrationOpen    Boolean                   @default(false)
+  financialReady      Boolean                   @default(false) // إعداد مالي مكتمل — شرط فتح الشعبة
   /// الفصلُ الذي تنتمي إليه — **قابلٌ للإفراغ عمدا**: المسوّداتُ تُنشأ قبل أن
   /// يُقرَّر فصلُها، وشعبُ ما قبل نظام الفصول لا فصلَ لها ولا تُلفَّق لها واحد.
-  termId             String?                   @db.Uuid
+  termId              String?                   @db.Uuid
   /// الشهرُ داخل الفصل (1 أو 2 أو 3) — يكتبه المخطِّط ويقرؤه التقويم
-  plannedMonth       Int?
+  plannedMonth        Int?
   /// ثبّته إنسانٌ فلا يزحزحه المخطِّط — التجاوزُ البشريُّ يُسجَّل لا يُفترض
-  scheduleLockedAt   DateTime?
-  createdAt          DateTime                  @default(now())
-  course             Course                    @relation(fields: [courseId], references: [id])
-  term               Term?                     @relation(fields: [termId], references: [id], onDelete: SetNull)
-  plans              CohortDeliveryPlan[]
-  assignments        TrainerCourseAssignment[]
-  changeRequests     TrainerChangeRequest[]
-  trainers           CohortTrainer[]
-  sessions           CohortSession[]
-  enrollments        Enrollment[]
-  messages           CohortMessage[]
-  enrollmentRequests EnrollmentRequest[]
-  materials          LearningMaterial[]
-  assessments        CohortAssessment[]
-  completionRules    CompletionRule[]
+  scheduleLockedAt    DateTime?
+  /// ═══ نافذةُ جدولةِ المدرّب — حدودُ الإدارة، والقرارُ داخلها للمدرّب ═══
+  ///
+  /// كان جدولُ اللقاءات بيد الإدارة وحدَها، وبوّابةُ المدرّب تقول له صراحةً:
+  /// «لا جلسات مجدولة — الإدارة تضيف الجدول». فمن يقف في اللقاء ويعرف متى
+  /// يستطيع لا يملك أن يجدوله، وما يملكه أن **يقترح** تأجيلا فيصير صفًّا في
+  /// طابور موافقاتٍ على شاشة الإدارة. فبُني طابورٌ ليعوّض صلاحيّةً لم تُمنح.
+  ///
+  /// وقرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): يملك المدرّبُ جدولَ شعبته **ضمن
+  /// حدودٍ تضعها الإدارة**، وتحتفظ الإدارةُ بالاستثناء لا بالروتين.
+  ///
+  /// والحدُّ ثلاثةٌ معا، ولا يُفتح البابُ إلّا بها جميعا: مدًى يبدأ، ومدًى
+  /// ينتهي، وسقفٌ لعدد اللقاءات. فغيابُ أيٍّ منها **يعني أنّ الإدارة لم تفتح
+  /// النافذة بعد** — لا أنّها فتحتها بلا حدّ.
+  scheduleWindowStart DateTime?
+  scheduleWindowEnd   DateTime?
+  maxSessions         Int?
+  createdAt           DateTime                  @default(now())
+  course              Course                    @relation(fields: [courseId], references: [id])
+  term                Term?                     @relation(fields: [termId], references: [id], onDelete: SetNull)
+  plans               CohortDeliveryPlan[]
+  assignments         TrainerCourseAssignment[]
+  changeRequests      TrainerChangeRequest[]
+  trainers            CohortTrainer[]
+  sessions            CohortSession[]
+  enrollments         Enrollment[]
+  messages            CohortMessage[]
+  enrollmentRequests  EnrollmentRequest[]
+  materials           LearningMaterial[]
+  assessments         CohortAssessment[]
+  completionRules     CompletionRule[]
 
   @@index([courseId, status])
 }

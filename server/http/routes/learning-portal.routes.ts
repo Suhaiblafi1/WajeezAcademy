@@ -413,6 +413,51 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return messages.list(id)
   })
 
+  /* ══════ جدولةُ المدرّب — داخلَ نافذة الإدارة ══════
+
+     كان المدرّبُ يملك `reschedule` وحدَه: **اقتراحا** يُرفع إلى طابور
+     موافقاتٍ على شاشة الإدارة. وهو طابورٌ بُني ليعوّض صلاحيّةً لم تُمنح.
+
+     فصار له بابان: هذان — يقعان الآن داخلَ حدّ الإدارة — وذاك الاقتراحُ
+     الباقي أسفلَه لما يقع **خارجَ** الحدّ. فالإدارةُ على الاستثناء لا
+     على الروتين. */
+
+  app.get('/api/trainer/cohorts/:id/schedule-window', {
+    preHandler: requirePermission('trainer.cohort.schedule'),
+    schema: { tags: ['trainer-ops'], summary: 'حدودي في هذه الشعبة — تُقرأ قبل المحاولة لا بعد الرفض' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cohorts.scheduleWindowFor(req.auth!.userId, id)
+  })
+
+  app.post('/api/trainer/cohorts/:id/sessions', {
+    preHandler: requirePermission('trainer.cohort.schedule'),
+    schema: { tags: ['trainer-ops'], summary: 'إضافةُ لقاءٍ في شعبتي — داخلَ نافذة الإدارة وسقفِها' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      title: z.string().min(2).max(160),
+      startsAt: z.coerce.date(),
+      endsAt: z.coerce.date().optional(),
+      timezone: z.string().max(64).optional(),
+      moduleId: z.string().max(64).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await cohorts.trainerAddSession(req.auth!.userId, id, body))
+  })
+
+  app.patch('/api/trainer/sessions/:sessionId', {
+    preHandler: requirePermission('trainer.cohort.schedule'),
+    schema: { tags: ['trainer-ops'], summary: 'نقلُ لقاءٍ في شعبتي — داخلَ النافذة، بلا طابور موافقات' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      startsAt: z.coerce.date(),
+      endsAt: z.coerce.date().optional(),
+    }).parse(req.body)
+    return cohorts.trainerMoveSession(req.auth!.userId, sessionId, body)
+  })
+
+  /* والاقتراحُ باقٍ لما يقع خارجَ النافذة — لا بديلا عمّا صار داخلها */
   app.post('/api/trainer/sessions/:sessionId/reschedule', {
     preHandler: requirePermission('trainer.cohort.operate'),
     schema: { tags: ['trainer-ops'], summary: 'اقتراح موعد جديد لجلسة من شعبي — الإدارة تعتمد' },

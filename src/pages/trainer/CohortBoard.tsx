@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
+import TrainerSchedule from "./TrainerSchedule";
 import { fmtDateTimeAr } from "@/utils/format";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
@@ -246,11 +247,24 @@ export default function CohortBoard() {
 
                         {isOpen && (
                           <div className="space-y-6 border-t border-white/8 p-5">
+                            {/* ── جدولةُ اللقاءات — صارت بيدك ──
+
+                                كان هنا: «لا جلسات مجدولة — **الإدارة تضيف
+                                الجدول**». فمن يقف في اللقاء ويعرف متى يستطيع
+                                يُقال له انتظر، وما يملكه أن يقترح تأجيلا
+                                يُرفع إلى طابور موافقات.
+
+                                وقرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): يجدول
+                                المدرّبُ داخلَ نافذةٍ تفتحها الإدارة. فإن لم
+                                تُفتح بقي الأمرُ كما كان — ويُقال ذلك صراحةً
+                                لا بغياب زرّ. */}
+                            <TrainerSchedule cohortId={c.id} onDone={() => void load()} />
+
                             {/* الجلسات والحضور */}
                             <div>
-                              <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> الجلسات والحضور</h3>
+                              <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> اللقاءات والحضور</h3>
                               {c.sessions.length === 0 ? (
-                                <p className="text-read text-muted-foreground">لا جلسات مجدولة — الإدارة تضيف الجدول.</p>
+                                <p className="text-read text-muted-foreground">لا لقاءات مجدولة بعد.</p>
                               ) : (
                                 <div className="space-y-3">
                                   {c.sessions.map((s) => (

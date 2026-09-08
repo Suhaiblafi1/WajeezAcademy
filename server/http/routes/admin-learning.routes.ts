@@ -194,6 +194,23 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await cohorts.duplicate(req.auth!.userId, id, body))
   })
 
+  /* ── نافذةُ جدولةِ المدرّب: تفتحها الإدارة، ويجدول المدرّبُ داخلها ──
+
+     وإفراغُ الثلاثة إغلاقٌ صريح: تعود الشعبةُ إلى أن تُجدوَل من الإدارة
+     وحدَها. ولا حالةَ ثالثة — نصفُ نافذةٍ لا يُفتح بابا. */
+  app.put('/api/admin/cohorts/:id/schedule-window', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'فتحُ نافذةِ جدولةٍ للمدرّب أو إغلاقُها — مدًى وسقفُ لقاءات' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      start: z.coerce.date().nullish(),
+      end: z.coerce.date().nullish(),
+      maxSessions: z.coerce.number().int().min(1).max(200).nullish(),
+    }).parse(req.body ?? {})
+    return cohorts.setScheduleWindow(req.auth!.userId, id, body)
+  })
+
   app.get('/api/admin/cohorts/:id/sessions', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-learning'], summary: 'جلساتُ الشعبة لاختيارها بالعنوان والتاريخ — بديلُ لصق المعرّف' },
