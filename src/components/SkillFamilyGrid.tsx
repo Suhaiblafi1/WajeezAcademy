@@ -129,7 +129,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
           تخطَّ هذه الخطوة
         </button>
       </div>
-      <p className="mt-3 text-center text-fine text-muted-foreground">
+      <p className="mt-3 text-center text-read text-muted-foreground">
         {answered > 0
           ? `قيّمت ${answered} من ${families.length} — كل جانب تقيّمه يجعل خطتك أدق.`
           : "هذه الخطوة هي ما يحوّل الترشيح من مسار جاهز إلى خطة مبنية لك — وتخطّيها يعطيك أقرب مسار في الكتالوج."}

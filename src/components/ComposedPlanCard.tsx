@@ -66,13 +66,13 @@ function PlanPrice({ courseIds }: { courseIds: string[] }) {
   if (courseIds.length === 0) return null;
   if (!cheapest) {
     return (
-      <p className="mt-2 text-fine leading-6 text-muted-foreground">
+      <p className="mt-2 text-read leading-6 text-muted-foreground">
         {loaded ? "يُعلن سعر دورات هذه الخطة مع فتح شعبها. والدفع لا يُطلب الآن." : "يُقرأ السعر…"}
       </p>
     );
   }
   return (
-    <p className="mt-2 text-fine leading-6 text-muted-foreground">
+    <p className="mt-2 text-read leading-6 text-muted-foreground">
       <span className="font-bold text-foreground">
         تبدأ من <span dir="ltr">{formatCohortPrice(cheapest)}</span> للدورة
       </span>
@@ -120,7 +120,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
       </p>
 
       {!courseList && (
-        <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-3 text-read leading-relaxed text-muted-foreground">
           وتفصيل كل دورة — ما تخرج به منها ولماذا هي فيها — أدناه، ولك أن تستبدل أيّها شئت.
         </p>
       )}
@@ -166,7 +166,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
                   const named = skillNamesAr(c.closesGaps);
                   if (named.length === 0) return null;
                   return (
-                    <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-relaxed text-teal-light-ink">
+                    <p className="mt-1.5 flex items-start gap-1.5 text-read leading-relaxed text-teal-light-ink">
                       <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       <span>
                         تسدّ ما قلت إنك دونه في: {named.slice(0, 3).join("، ")}
@@ -188,13 +188,13 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
           صريح: مرحلة تالية لا هذه. */}
       {courseList && (plan.deferred?.length ?? 0) > 0 && (
         <Card className="mt-4 border-dashed p-3.5 md:p-4">
-          <p className="text-xs font-black text-muted-foreground">وهذان لمرحلتك التالية — لا لهذه الخطة</p>
-          <p className="mt-1 text-fine leading-relaxed text-muted-foreground">
+          <p className="text-read leading-5 font-black text-muted-foreground">وهذان لمرحلتك التالية — لا لهذه الخطة</p>
+          <p className="mt-1 text-read leading-relaxed text-muted-foreground">
             يناسبانك أيضا، لكن حشرهما هنا يطيل الخطة ويضعف إنهاءها. نعرضهما كي تعرف ما ينتظرك لا كي تشتريه الآن.
           </p>
           <ul className="mt-2.5 space-y-1.5">
             {plan.deferred!.map((d) => (
-              <li key={d.courseId} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+              <li key={d.courseId} className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-read leading-5 text-muted-foreground">
                 <span className="font-bold text-foreground">{d.title_ar}</span>
                 <span className="text-muted-foreground" dir="ltr">{d.hours} ساعة</span>
                 {d.role && (
@@ -209,7 +209,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
       )}
 
       {plan.uncoveredGaps.length > 0 && (
-        <Inset as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+        <Inset as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-read leading-relaxed text-muted-foreground">
           <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span>
             وتبقى <b className="text-foreground">{plan.uncoveredGaps.length}</b> جوانب خارج هذه الخطة — لا نخفيها عنك:

@@ -87,7 +87,7 @@ export default function MyVault() {
         <Panel as="section" className="mt-6 grid place-items-center border-dashed py-16 text-center">
           <FileText className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-4 font-black">لا أعمال بعد</p>
-          <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-sm text-read leading-6 text-muted-foreground">
             أوّلُ عملٍ لك يظهر هنا فور تسليمه. افتح محطات دورتك وابدأ بالتطبيق
             العملي — فهو ما يُراجعه مدرّبك ويبقى في سيرتك.
           </p>
@@ -120,7 +120,7 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-black leading-snug">{mod?.artifact ?? a.assessmentTitle}</p>
-          <p className="mt-1 text-fine text-muted-foreground">
+          <p className="mt-1 text-read text-muted-foreground">
             {mod ? `${mod.title} · ` : ""}دورة {a.courseTitleAr} · سُلِّم {fmtWhen(a.submittedAt)}
           </p>
         </div>
@@ -132,11 +132,11 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
       {(a.grade || a.feedbackAr) && (
         <Card className="mt-4 bg-paper/20">
           {a.grade && (
-            <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+            <p className="flex items-center gap-2 text-read leading-5 font-black text-teal-light-ink">
               <Award className="h-3.5 w-3.5" /> {a.grade.score} من {a.grade.maxScore}
             </p>
           )}
-          {a.feedbackAr && <p className="mt-2 text-xs leading-6 text-foreground">{a.feedbackAr}</p>}
+          {a.feedbackAr && <p className="mt-2 text-read leading-6 text-foreground">{a.feedbackAr}</p>}
         </Card>
       )}
 

@@ -112,7 +112,7 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
         ))}
       </ul>
       {c.firstMeasured > 0 && (
-        <p className="mt-4 text-fine leading-relaxed text-muted-foreground">
+        <p className="mt-4 text-read leading-relaxed text-muted-foreground">
           {c.firstMeasured} مهارة قِيست هنا أول مرة — لا مرجع قبليّ لها، فلا تدخل حساب الفرق.
           لو أكملت جولة التعمق في المؤشر قبل دورتك القادمة، صار لها فرق يُقاس.
         </p>
@@ -216,7 +216,7 @@ export default function Remeasure() {
         <>
           <Result summary={summary} courseTitle={courseTitle} />
           {data.measuredAt && !saved && (
-            <p className="mt-4 text-fine text-muted-foreground">قِيس هذا النمو في {fmtWhen(data.measuredAt)} — ويُقاس مرة واحدة لكل دورة.</p>
+            <p className="mt-4 text-read text-muted-foreground">قِيس هذا النمو في {fmtWhen(data.measuredAt)} — ويُقاس مرة واحدة لكل دورة.</p>
           )}
         </>
       ) : (
@@ -233,13 +233,13 @@ export default function Remeasure() {
               فاختر بصدق.
             </p>
             {!data.gate.open && (
-              <Card as="p" tone="warn" className="mt-4 flex items-start gap-2 px-4 py-3 text-xs leading-6 text-foreground">
+              <Card as="p" tone="warn" className="mt-4 flex items-start gap-2 px-4 py-3 text-read leading-6 text-foreground">
                 <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
                 <span>{data.gate.reasonAr} — لأن فرقا بلا إتمام لا يدل على شيء.</span>
               </Card>
             )}
             {!data.form.measurable && (
-              <Card as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-xs leading-6 text-foreground">
+              <Card as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-read leading-6 text-foreground">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
                 لا مهارات مصنّفة مرتبطة بهذه الدورة بعد — فلا قياس بعديّ لها.
               </Card>
@@ -265,7 +265,7 @@ export default function Remeasure() {
                 ))}
               </ul>
               {saveError && (
-                <Card as="p" tone="danger" className="mt-4 px-4 py-3 text-xs text-red-200">{saveError}</Card>
+                <Card as="p" tone="danger" className="mt-4 px-4 py-3 text-read leading-5 text-red-200">{saveError}</Card>
               )}
               {/* العدد المتبقي في سطر كامل التباين لا داخل زر معطَّل باهت:
                   التوجيه لا يُدفن في عنصر خامل. */}
@@ -277,7 +277,7 @@ export default function Remeasure() {
                   احفظ القياس واعرض الفرق
                 </Button>
                 {!complete && (
-                  <p className="text-xs font-bold text-foreground">
+                  <p className="text-read leading-5 font-bold text-foreground">
                     بقيت {rows.length - Object.keys(levels).length} مهارة بلا جواب
                   </p>
                 )}

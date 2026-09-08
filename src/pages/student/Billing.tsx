@@ -126,7 +126,7 @@ export default function Billing() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-fine">{o.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-read leading-5 text-muted-foreground">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-fine">{o.id.slice(0, 8)}…</span></p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-muted-foreground">{o.currency}</span></span>
@@ -143,7 +143,7 @@ export default function Billing() {
                     {PAY_LABEL[provider.driver] ?? PAY_LABEL.test}
                   </Button>
                   {provider.driver !== "test" && (
-                    <p className="mt-2 flex items-center gap-1.5 text-fine text-muted-foreground">
+                    <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
                       <ShieldCheck className="h-3 w-3 text-teal-ink" />
                       تُحوَّل لصفحة دفع مستضافة عند المزود — لا تمر بيانات بطاقتك بخوادمنا، ويُفتح وصولك فور تأكيد المزود.
                     </p>
@@ -156,21 +156,21 @@ export default function Billing() {
                 </Button>
               )}
               {isUnpaid(o.status) && provider.driver === "manual" && (
-                <Inset as="p" tone="warn" className="mt-4 px-4 py-2.5 text-xs font-bold text-gold-ink">
+                <Inset as="p" tone="warn" className="mt-4 px-4 py-2.5 text-read leading-5 font-bold text-gold-ink">
                   {PAY_LABEL.manual}
                 </Inset>
               )}
 
               {o.invoice && (
                 <Card className="mt-4 bg-paper/20">
-                  <p className="flex items-center justify-between text-xs font-bold text-muted-foreground">
+                  <p className="flex items-center justify-between text-read leading-5 font-bold text-muted-foreground">
                     <span>الفاتورة — {INV_STATUS[o.invoice.status] ?? o.invoice.status}</span>
                     <span>{o.invoice.total} {o.invoice.currency}</span>
                   </p>
                   {o.invoice.payments.length > 0 && (
                     <ul className="mt-2 space-y-1.5">
                       {o.invoice.payments.map((p) => (
-                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-fine text-muted-foreground">
+                        <li key={p.id} className="flex flex-wrap items-center gap-2 text-read text-muted-foreground">
                           <CreditCard className="h-3 w-3 text-muted-foreground/50" />
                           دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status === "pending" ? "بانتظار تأكيد المزود" : p.status}
                           {p.method && <span className="text-muted-foreground">({p.method})</span>}

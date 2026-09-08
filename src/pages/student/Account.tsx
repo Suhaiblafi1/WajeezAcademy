@@ -83,9 +83,9 @@ function Field({ label, hint, error, name, children }: {
         <span className={labelCls}>{label}</span>
         {children}
       </label>
-      {hint && <p className="mt-1 text-fine text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-1 text-read text-muted-foreground">{hint}</p>}
       {name && error && (
-        <p id={`${name}-error`} role="alert" className="mt-1.5 text-fine font-bold leading-5 text-red-300">{error}</p>
+        <p id={`${name}-error`} role="alert" className="mt-1.5 text-read font-bold leading-5 text-red-300">{error}</p>
       )}
     </div>
   );
@@ -314,7 +314,7 @@ export default function StudentAccount() {
   return (
     <PortalLayout title="حسابي وملفي الشخصي">
       {mode === "local" && (
-        <Inset as="p" tone="warn" className="mb-5 border-dashed px-4 py-2 text-center text-xs text-gold-ink">
+        <Inset as="p" tone="warn" className="mb-5 border-dashed px-4 py-2 text-center text-read leading-5 text-gold-ink">
           {"جلسة الخادم غير فعالة — الحفظ محلي مؤقتا."}
         </Inset>
       )}
@@ -331,7 +331,7 @@ export default function StudentAccount() {
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-lg font-black">{form.displayName || "—"}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground" dir="ltr">
+            <p className="mt-0.5 flex items-center gap-1.5 text-read leading-5 text-muted-foreground" dir="ltr">
               <Mail className="h-3.5 w-3.5" /> {email || "—"}
             </p>
           </div>
@@ -447,7 +447,7 @@ export default function StudentAccount() {
             </span>
           </label>
           {interestMsg && (
-            <p role="alert" className="mt-1.5 text-fine font-bold leading-5 text-red-300">{interestMsg}</p>
+            <p role="alert" className="mt-1.5 text-read font-bold leading-5 text-red-300">{interestMsg}</p>
           )}
           {form.interests.length > 0 && (
             <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -466,8 +466,8 @@ export default function StudentAccount() {
 
       {/* حفظ */}
       <div className="mt-6 flex flex-col items-center gap-3">
-        {err && <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-xs font-semibold text-red-300">{err}</Inset>}
-        {savedMsg && <Inset as="p" tone="accent" role="status" className="px-4 py-2.5 text-xs font-bold text-teal-light-ink">{savedMsg}</Inset>}
+        {err && <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-read leading-5 font-semibold text-red-300">{err}</Inset>}
+        {savedMsg && <Inset as="p" tone="accent" role="status" className="px-4 py-2.5 text-read leading-5 font-bold text-teal-light-ink">{savedMsg}</Inset>}
         {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
             خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
             عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
@@ -492,7 +492,7 @@ export default function StudentAccount() {
             <Card as={Link} tone="accent" interactive key={x.t} to={x.to} className="transition hover:border-teal/50">
               <x.icon className="h-4 w-4 text-teal-light-ink" />
               <p className="mt-2 text-sm font-black">{x.t}</p>
-              <p className="mt-1 text-fine leading-relaxed text-muted-foreground">{x.d}</p>
+              <p className="mt-1 text-read leading-relaxed text-muted-foreground">{x.d}</p>
             </Card>
           ))}
         </div>
@@ -516,7 +516,7 @@ export default function StudentAccount() {
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
-              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+              <p className="mt-1 text-read leading-6 text-muted-foreground">
                 سجّلت دخولك على جهاز آخر؟ أنهِ كل الجلسات دفعة واحدة — ستحتاج الدخول من جديد على هذا الجهاز أيضا.
               </p>
             </div>
@@ -530,7 +530,7 @@ export default function StudentAccount() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
-                <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
                   يوقف حسابك فورا ويبطل جلساتك — بياناتك وتقدمك محفوظة، وإعادة التفعيل عبر التواصل معنا.
                 </p>
               </div>
@@ -553,8 +553,8 @@ export default function StudentAccount() {
             </div>
           </Card>
 
-          {secErr && <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-xs font-semibold text-red-300">{secErr}</Inset>}
-          {secMsg && <Inset as="p" tone="accent" role="status" className="mt-4 px-4 py-2.5 text-xs font-bold text-teal-light-ink">{secMsg}</Inset>}
+          {secErr && <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-read leading-5 font-semibold text-red-300">{secErr}</Inset>}
+          {secMsg && <Inset as="p" tone="accent" role="status" className="mt-4 px-4 py-2.5 text-read leading-5 font-bold text-teal-light-ink">{secMsg}</Inset>}
         </Panel>
       )}
     </PortalLayout>

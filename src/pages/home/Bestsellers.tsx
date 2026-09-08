@@ -197,7 +197,7 @@ export function Bestsellers() {
                   <span>{spotlight.p.weeklyHours} أسبوعيا</span>
                 </div>
                 {/* المخرَج الملموس — لا اسمُ مدرّبٍ لم يُعيَّن بعد */}
-                <p className="mt-3 flex items-start gap-1.5 text-xs leading-6 text-teal-light-ink">
+                <p className="mt-3 flex items-start gap-1.5 text-read leading-6 text-teal-light-ink">
                   <Target className="mt-1 h-3.5 w-3.5 shrink-0" />
                   <span>تتخرّج بـ: {spotlight.p.output}</span>
                 </p>
@@ -247,17 +247,17 @@ export function Bestsellers() {
                       يُعرضان (البند ٣٠). و«ليس لك إن» أصدقُ سطرٍ في الكتالوج:
                       يمنع شراءً خاطئا قبل وقوعه، والمنعُ خدمةٌ لا خسارة. */}
                   {b.p.audience && (
-                    <p className="line-clamp-2 text-fine leading-5 text-muted-foreground">
+                    <p className="line-clamp-2 text-read leading-5 text-muted-foreground">
                       <span className="font-bold text-foreground">لمن؟ </span>{b.p.audience}
                     </p>
                   )}
                   {b.p.notFor && (
-                    <p className="line-clamp-2 text-fine leading-5 text-muted-foreground">
+                    <p className="line-clamp-2 text-read leading-5 text-muted-foreground">
                       <span className="font-bold text-gold-ink">ليس لك إن: </span>
                       {resolveCatalogRefsAr(b.p.notFor, (id) => nameById.get(id))}
                     </p>
                   )}
-                  <p className="flex items-start gap-1.5 text-fine leading-5 text-teal-light-ink">
+                  <p className="flex items-start gap-1.5 text-read leading-5 text-teal-light-ink">
                     <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span className="line-clamp-2 min-w-0">تتخرّج بـ: {b.p.output}</span>
                   </p>
@@ -292,9 +292,9 @@ export function Bestsellers() {
                   <CourseTitle as="h4" name={b.c.name} termEn={b.c.termEn} className="font-bold leading-relaxed" />
                   {/* الوعدُ — ما يخرج به المتعلّم، وهو ما يُشترى */}
                   {b.c.promise && (
-                    <p className="line-clamp-2 text-xs leading-6 text-muted-foreground">{b.c.promise}</p>
+                    <p className="line-clamp-2 text-read leading-6 text-muted-foreground">{b.c.promise}</p>
                   )}
-                  <p className="text-fine text-muted-foreground">
+                  <p className="text-read text-muted-foreground">
                     {b.c.weeks} {b.c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
                   </p>
                   <span className="mt-auto w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">

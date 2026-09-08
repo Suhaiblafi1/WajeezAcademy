@@ -42,14 +42,14 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
       <div className="min-w-0">
         <p className="truncate text-sm font-bold">{s.nameAr}</p>
         {s.coveredBy.length > 0 && (
-          <p className="mt-0.5 flex items-start gap-1.5 truncate text-fine text-muted-foreground">
+          <p className="mt-0.5 flex items-start gap-1.5 truncate text-read text-muted-foreground">
             <BookOpen className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">تُدرّسها: {s.coveredBy.map((c) => c.titleAr).join(" · ")}</span>
           </p>
         )}
       </div>
       <SkillMeter level={s.level} />
-      <p className="flex flex-wrap items-center gap-2 text-xs tabular-nums text-foreground">
+      <p className="flex flex-wrap items-center gap-2 text-read leading-5 tabular-nums text-foreground">
         <span>{levelLabelAr(s.level)}</span>
         {/* شارة النمو (ح-٧): تُعرض لمن أُعيد قياسه فقط، ولا تُصطنع لغيره */}
         {s.growth && s.growth.delta !== null && s.growth.delta !== 0 && (
@@ -86,7 +86,7 @@ function Section({
           {title}
           <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">{count}</span>
         </h2>
-        <p className="text-fine text-muted-foreground">{note}</p>
+        <p className="text-read text-muted-foreground">{note}</p>
       </div>
       <ul className="mt-3">{children}</ul>
     </Panel>
@@ -100,12 +100,12 @@ function Hero({ p }: { p: SkillsProfile }) {
     <Panel as="section" tone="accent" className="bg-teal-ink/[0.07]">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-xs text-muted-foreground">{pct === null ? "مهارات قِيست لك" : "تغطية القياس على متطلبات مسارك"}</p>
+          <p className="text-read leading-5 text-muted-foreground">{pct === null ? "مهارات قِيست لك" : "تغطية القياس على متطلبات مسارك"}</p>
           <p className="mt-1 text-5xl font-black leading-none text-teal-light-ink">
             {pct === null ? p.measuredCount : `${pct}٪`}
           </p>
           {pct !== null && (
-            <p className="mt-2 text-xs tabular-nums text-muted-foreground">
+            <p className="mt-2 text-read leading-5 tabular-nums text-muted-foreground">
               قِيست {p.requiredCount - p.unmeasured.length} من {p.requiredCount} مهارة يتطلبها المسار
             </p>
           )}
@@ -124,7 +124,7 @@ function Hero({ p }: { p: SkillsProfile }) {
         </dl>
       </div>
       {p.pathwayTitleAr && (
-        <p className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <p className="mt-4 flex flex-wrap items-center gap-2 text-read leading-5 text-muted-foreground">
           <Compass className="h-3.5 w-3.5" aria-hidden="true" />
           مقيسة على متطلبات
           <Link to={`/pathways/${p.pathwayId}`} className="font-bold text-teal-light-ink underline-offset-4 hover:underline">
@@ -145,7 +145,7 @@ function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
         لم تُقس بعد
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{rows.length}</span>
       </h2>
-      <p className="mt-2 text-xs leading-6 text-foreground">
+      <p className="mt-2 text-read leading-6 text-foreground">
         هذه مهارات يتطلبها مسارك ولم يسألك المؤشر عنها. لا نفترض لك فيها مستوى — لا مرتفعا ولا منخفضا.
         وكلما قِيس أكثر، ارتفعت ثقة التوصية.
       </p>
@@ -183,7 +183,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
           <Ruler className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           نموك المقيس بعد الدورات
         </h2>
-        <p className="text-fine text-muted-foreground">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
+        <p className="text-read text-muted-foreground">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -203,7 +203,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
 
       {summary.courses.map((c) => (
         <Card key={c.courseId} className="mt-5">
-          <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs">
+          <p className="flex flex-wrap items-baseline justify-between gap-2 text-read leading-5">
             <span className="font-bold text-foreground">{c.courseTitleAr ?? c.courseId}</span>
             {/* ‎/55 لا ‎/45: الأخيرة تقيس 4.45:1 على سطح البطاقة فتسقط دون 4.5 */}
             <span className="text-muted-foreground">قِيس في {fmtWhen(c.measuredAt)}</span>
@@ -217,7 +217,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
       ))}
 
       {summary.firstMeasured > 0 && (
-        <p className="mt-4 text-fine leading-relaxed text-muted-foreground">
+        <p className="mt-4 text-read leading-relaxed text-muted-foreground">
           {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة — بلا مرجع قبليّ، فلا تدخل حساب الفرق.
         </p>
       )}
@@ -254,7 +254,7 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
         أتممت دورة — قِس نموك فيها
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{invites.length}</span>
       </h2>
-      <p className="mt-2 text-xs leading-6 text-foreground">
+      <p className="mt-2 text-read leading-6 text-foreground">
         قِيست مهاراتك قبل الدورة. أعد القياس الآن بالسلّم نفسه ليُحفظ الفرق — مرة واحدة لكل دورة.
       </p>
       <ul className="mt-3 flex flex-col gap-2">
@@ -418,7 +418,7 @@ export default function MySkills() {
         ))}
       </Section>
 
-      <Card as="p" className="mt-6 px-5 py-4 text-fine leading-relaxed text-muted-foreground">
+      <Card as="p" className="mt-6 px-5 py-4 text-read leading-relaxed text-muted-foreground">
         سلّم القياس خمس درجات: لا يعرفها · مبتدئ · يستخدمها أحيانا · جيد عمليا · متقدم.
         وتُصنَّف المهارة فجوةً دون «يستخدمها أحيانا»، ومتقنةً من «جيد عمليا» — وهو الحدّ نفسه
         الذي يستعمله المؤشر في حساب الترشيح، فلا يختلف ما تراه عما احتُسب لك.

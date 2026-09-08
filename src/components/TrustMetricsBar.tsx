@@ -32,7 +32,7 @@ export default function TrustMetricsBar({ nested = false }: { nested?: boolean }
       <div className={nested ? '' : 'mx-auto max-w-7xl px-5'}>
         <div className="reveal text-center">
           <h2 className="text-sm font-bold text-teal-light-ink md:text-base">وجيز مهارات بالأرقام</h2>
-          <p className="mx-auto mt-2 max-w-xl text-fine leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-xl text-read leading-relaxed text-muted-foreground">
             أرقام موثقة من تجربة وجيز مهارات مع المؤسسات والمتعلمين — إحدى حلول منظومة وجيز.
           </p>
         </div>

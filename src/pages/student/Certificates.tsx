@@ -31,11 +31,11 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
   }
   return (
     <Card tone="accent" className="mt-3 bg-teal-ink/[0.06] px-3 py-2">
-      <p className="flex items-center gap-2 text-fine font-bold text-teal-light-ink">
+      <p className="flex items-center gap-2 text-read font-bold text-teal-light-ink">
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         نمو مقيس بعد هذه الدورة
       </p>
-      <p className="mt-1 text-fine leading-6 tabular-nums text-foreground">
+      <p className="mt-1 text-read leading-6 tabular-nums text-foreground">
         ارتفعت {growth.improved} مهارة · بلغت المستهدف {growth.crossedTarget} · مجموع الدرجات{" "}
         {/* dir=ltr على الرقم المُوقَّع فلا يُقرأ «+4» بصورة «4+» */}
         <span dir="ltr">{growth.netPoints > 0 ? `+${growth.netPoints}` : growth.netPoints}</span>
@@ -106,9 +106,9 @@ export default function Certificates() {
               {/* h2 لا h3: البطاقةُ تحت عنوان الصفحة مباشرةً بلا قسمٍ بينهما،
                   والقفزُ من h1 إلى h3 يوهم قارئَ الشاشة بقسمٍ غائب. */}
               <h2 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">باسم: {c.learnerName}</p>
-              <p className="mt-1 text-xs text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
-              {c.revocation && <Inset as="p" tone="danger" className="mt-2 p-2 text-fine text-red-300">سبب الإلغاء: {c.revocation.reason}</Inset>}
+              <p className="mt-1 text-read leading-5 text-muted-foreground">باسم: {c.learnerName}</p>
+              <p className="mt-1 text-read leading-5 text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
+              {c.revocation && <Inset as="p" tone="danger" className="mt-2 p-2 text-read text-red-300">سبب الإلغاء: {c.revocation.reason}</Inset>}
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/8 pt-3">
                 <span className="font-mono text-fine text-muted-foreground" dir="ltr">{c.number}</span>
                 {c.status !== "revoked" && (

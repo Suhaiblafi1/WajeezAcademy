@@ -75,13 +75,13 @@ export default function TrainerAcceptInvite() {
                   required value={confirm} onChange={(e) => setConfirm(e.target.value)}
                   className={inputCls} dir="ltr"
                 />
-                {confirm && password !== confirm && <p className="mt-1.5 text-fine text-red-300">كلمتا المرور غير متطابقتين</p>}
+                {confirm && password !== confirm && <p className="mt-1.5 text-read text-red-300">كلمتا المرور غير متطابقتين</p>}
               </div>
               <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
                 <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} className="h-4 w-4 accent-teal" />
                 إظهار كلمة المرور
               </label>
-              {error && <Inset as="p" tone="danger" className="text-xs text-red-200" role="alert">{error}</Inset>}
+              {error && <Inset as="p" tone="danger" className="text-read leading-5 text-red-200" role="alert">{error}</Inset>}
               <Button tone="primary" type="submit" disabled={!valid || busy} className="w-full">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
                 فعّل حسابي

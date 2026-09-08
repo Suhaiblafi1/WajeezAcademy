@@ -76,7 +76,7 @@ export default function SwitchCohort({
       </button>
       {open && (
         <>
-          <p className="mt-2 text-fine leading-5 text-muted-foreground">
+          <p className="mt-2 text-read leading-5 text-muted-foreground">
             مواعيد الدورة نفسها. مقعدك ينتقل معك بلا دفعٍ جديد.
           </p>
           <ul className="mt-3 space-y-1.5">
@@ -100,7 +100,7 @@ export default function SwitchCohort({
               </li>
             ))}
           </ul>
-          {error && <p className="mt-2 text-fine leading-5 text-red-300">{error}</p>}
+          {error && <p className="mt-2 text-read leading-5 text-red-300">{error}</p>}
         </>
       )}
     </Card>

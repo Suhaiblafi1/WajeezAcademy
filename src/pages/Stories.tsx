@@ -35,7 +35,7 @@ export default function StoriesPage() {
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — ومعها قياس لما تغير فعلا.
         </p>
-        <p className="mx-auto mt-3 max-w-lg text-fine leading-5 text-muted-foreground">
+        <p className="mx-auto mt-3 max-w-lg text-read leading-5 text-muted-foreground">
           نماذج توضيحية مركبة من أنماط شائعة بين المتعلمين — ليست شهادات لأشخاص حقيقيين.
           قصص المتعلمين الموثقة بموافقة أصحابها تُنشر هنا بعد اعتمادها.
         </p>
@@ -60,8 +60,8 @@ export default function StoriesPage() {
               <p className="text-sm font-bold">
                 {s.name} <span className="font-normal text-muted-foreground">— {s.role}</span>
               </p>
-              <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted-foreground">{s.before}</p>
-              <p className="mt-2 line-clamp-2 text-xs leading-6 text-muted-foreground">
+              <p className="mt-2 line-clamp-2 text-read leading-6 text-muted-foreground">{s.before}</p>
+              <p className="mt-2 line-clamp-2 text-read leading-6 text-muted-foreground">
                 <span className="font-bold text-gold-ink">النتيجة: </span>
                 {s.result}
               </p>
@@ -181,7 +181,7 @@ export default function StoriesPage() {
                 {open.courses.map((c) => (
                   <Card key={c.id}>
                     <p className="text-sm font-bold leading-relaxed">{c.name}</p>
-                    <p className="mt-2 flex items-start gap-1.5 text-xs leading-6 text-muted-foreground">
+                    <p className="mt-2 flex items-start gap-1.5 text-read leading-6 text-muted-foreground">
                       <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                       {c.output}
                     </p>
@@ -202,11 +202,11 @@ export default function StoriesPage() {
                     className={`grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1.2fr)] sm:items-center ${i ? 'border-t border-white/10' : ''}`}
                   >
                     <p className="text-sm font-bold leading-relaxed">{m.skill}</p>
-                    <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
+                    <p className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
                       <span className="mt-0.5 shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-fine font-bold">قبل</span>
                       {m.before}
                     </p>
-                    <p className="flex items-start gap-2 text-xs leading-6 text-muted-foreground">
+                    <p className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
                       <span className="mt-0.5 shrink-0 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-bold text-teal-light-ink">بعد</span>
                       {m.after}
                     </p>

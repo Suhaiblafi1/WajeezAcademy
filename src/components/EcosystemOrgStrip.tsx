@@ -30,7 +30,7 @@ export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean
       <div className={nested ? '' : 'mx-auto max-w-7xl px-5'}>
         <div className="reveal text-center">
           <h2 className="text-sm font-bold text-teal-light-ink md:text-base">مؤسسات وثقت بمنظومة وجيز</h2>
-          <p className="mx-auto mt-2 max-w-xl text-fine leading-relaxed text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-xl text-read leading-relaxed text-muted-foreground">
             خبرة مؤسسية تراكمت عبر حلول منظومة وجيز — منها وجيز مهارات — في تطوير فرق العمل وبناء ثقافة التعلّم.
           </p>
         </div>

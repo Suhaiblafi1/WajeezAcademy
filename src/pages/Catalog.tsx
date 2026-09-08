@@ -224,7 +224,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       <UpcomingTermBanner className="mt-6" />
 
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
-      <p className="mt-6 text-xs text-muted-foreground" aria-live="polite">
+      <p className="mt-6 text-read leading-5 text-muted-foreground" aria-live="polite">
         {count === 0
           ? 'لا نتائج مطابقة — جرّب توسيع البحث'
           : isPathways
@@ -258,7 +258,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   و١٦ من ٢٠ فيه نقطتان. و`short_title` مؤلَّفٌ لكلّ مسارٍ في
                   الكتالوج ولم يكن يُعرض لأحد. */}
               <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.shortName}</h2>
-              <p className="mt-2 line-clamp-3 text-xs leading-6 text-muted-foreground">{p.transformation}</p>
+              <p className="mt-2 line-clamp-3 text-read leading-6 text-muted-foreground">{p.transformation}</p>
               {/* ── لمن هو، ولمن ليس ──
 
                   الحقلان (`audience` و`not_for`) مؤلَّفان لكلّ مسارٍ من عشرين
@@ -266,12 +266,12 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   يمنع شراءً خاطئا قبل وقوعه، **والمنعُ خدمةٌ لا خسارة** — ومن
                   ردَّته الجملةُ عن مسارٍ لا يناسبه لم نخسره، بل كسبنا ثقتَه. */}
               {p.audience && (
-                <p className="mt-3 line-clamp-2 text-fine leading-5 text-muted-foreground">
+                <p className="mt-3 line-clamp-2 text-read leading-5 text-muted-foreground">
                   <span className="font-bold text-foreground">لمن؟ </span>{p.audience}
                 </p>
               )}
               {p.notFor && (
-                <p className="mt-1.5 line-clamp-2 text-fine leading-5 text-muted-foreground">
+                <p className="mt-1.5 line-clamp-2 text-read leading-5 text-muted-foreground">
                   <span className="font-bold text-gold-ink">ليس لك إن: </span>
                   {resolveCatalogRefsAr(p.notFor, (id) => nameById.get(id))}
                 </p>
@@ -323,9 +323,9 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   والمسارُ لم يُحذف من البحث: `pathwayName` ما زال ضمن ما
                   يُطابَق عليه في المرشِّح — يُبحث به ولا يُزاحم به المخرَج. */}
               {c.promise && (
-                <p className="mt-1.5 line-clamp-2 text-xs leading-6 text-muted-foreground">{c.promise}</p>
+                <p className="mt-1.5 line-clamp-2 text-read leading-6 text-muted-foreground">{c.promise}</p>
               )}
-              <p className="mt-1.5 text-fine text-muted-foreground">
+              <p className="mt-1.5 text-read text-muted-foreground">
                 {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">

@@ -250,7 +250,7 @@ export default function Journey() {
             <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
               <CircleSlash className="h-4 w-4 shrink-0" /> لم تكتمل دفعتك — ولم يُخصم منك شيء
             </p>
-            <p className="mt-1.5 text-xs leading-6 text-muted-foreground">
+            <p className="mt-1.5 text-read leading-6 text-muted-foreground">
               طلبك محفوظ كما تركته. أكمل الدفع متى شئت من{" "}
               <Link to="/student/billing" className="font-bold text-gold-ink underline underline-offset-4">الفواتير</Link>
               {" "}— ولن تفقد مقعدك ما دامت الشعبة مفتوحة.
@@ -266,7 +266,7 @@ export default function Journey() {
               <Inset className="mt-3 p-3.5">
                 <ul className="space-y-1">
                   {paid.items.map((it) => (
-                    <li key={it.id} className="flex items-start justify-between gap-3 text-xs">
+                    <li key={it.id} className="flex items-start justify-between gap-3 text-read leading-5">
                       <span className="min-w-0 text-foreground">{it.titleAr}</span>
                       {/* الهديّةُ تُقرأ هديّةً لا صفرا — صفرٌ في فاتورةٍ يُقرأ عطبا */}
                       <span dir="ltr" className="shrink-0 font-bold text-muted-foreground">
@@ -285,7 +285,7 @@ export default function Journey() {
                 </div>
               </Inset>
             )}
-            <p className="mt-2.5 text-xs leading-6 text-muted-foreground">
+            <p className="mt-2.5 text-read leading-6 text-muted-foreground">
               نؤكّد دفعتك مع البنك، ومراحلُك تظهر أدناه فور تأكيدها — عادةً خلال دقائق.
               وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
             </p>
@@ -341,7 +341,7 @@ export default function Journey() {
 
             <div className="mb-1 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
               <h2 className="text-lg font-black">{activeTrack.titleAr}</h2>
-              {activeTrack.subtitleAr && <p className="text-fine text-muted-foreground">{activeTrack.subtitleAr}</p>}
+              {activeTrack.subtitleAr && <p className="text-read text-muted-foreground">{activeTrack.subtitleAr}</p>}
             </div>
 
             <StageRail track={activeTrack} selectedId={selectedId} onSelect={select} />
@@ -433,7 +433,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
   if (askable === 0) {
     if (pending > 0) {
       return (
-        <Card as="p" tone="warn" className="mt-3 px-4 py-3 text-xs leading-6 text-gold-ink">
+        <Card as="p" tone="warn" className="mt-3 px-4 py-3 text-read leading-6 text-gold-ink">
           طلبك على {pending === 1 ? "دورة واحدة" : `${pending} دورات`} قيد المراجعة. نحجز مقاعدك ثمّ تصلك
           فاتورةٌ واحدة للخطّة كلها — دفعةٌ واحدة لا أربع.
         </Card>
@@ -442,7 +442,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
     if (awaiting === 0) return null;
     return (
       <Card className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <p className="min-w-0 text-xs leading-6 text-muted-foreground">
+        <p className="min-w-0 text-read leading-6 text-muted-foreground">
           <span className="font-bold text-foreground">{awaiting} من دوراتك لم تُفتح لها شعبة بعد.</span>{" "}
           لا تُطلب ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو راجعها مع مستشارك.
         </p>

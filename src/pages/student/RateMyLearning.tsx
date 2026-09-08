@@ -92,7 +92,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
       <div className="mt-4">
         <Stars value={score} onPick={(v) => { setScore(v); setNeedsScore(false); }} disabled={busy} />
         {needsScore && score < 1 && (
-          <p role="alert" className="mt-2 text-fine font-bold leading-5 text-red-300">
+          <p role="alert" className="mt-2 text-read font-bold leading-5 text-red-300">
             اختر عددَ النجوم أوّلا — التعليقُ وحدَه لا يُرسَل تقييما.
           </p>
         )}
@@ -149,7 +149,7 @@ export default function RateMyLearning() {
       {/* حدود السرّية مكتوبة قبل النموذج لا بعده — تُقرأ قبل أن يُكتب شيء */}
       <Card tone="accent" className="mb-6 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-xs leading-6 text-foreground">
+        <p className="text-read leading-6 text-foreground">
           <span className="font-black text-foreground">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
           ولا يرى أيٌّ منهما تقييما حتى تبلغ التقييمات الواردة عنه ثلاثة — في العدد
           القليل يُستدلّ على أصحاب الآراء مهما حُذفت الأسماء. والإدارة ترى التعليقات

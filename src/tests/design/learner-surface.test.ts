@@ -104,6 +104,145 @@ describe('٥٤ · أرضيّةُ الخطّ في شاشات المتعلّم', (
   })
 })
 
+/* ═════════ ② · أرضيّةُ **نصّ المتن**: ١٢ ← ١٤ ═════════
+
+   البندُ ٥٤ رفع الأرضيّةَ إلى اثنَي عشر. والقياسُ بعده قال إنّ ذلك لم يكفِ:
+   ٧٩٢ موضعا في نطاق المتعلّم بحجم ١١–١٢ مقابل ٣٢٧ بأربعةَ عشر — أي أنّ
+   المتعلّمَ يقرأ **نتيجةَ تشخيصِه** بالحجم الذي تُكتب به حواشي الجداول.
+
+   ── و«المتن» تقوله البنيةُ لا العين ──
+
+   قاعدةٌ تقول «ارفع ما يبدو متنا» ليست قاعدةً: تُطبَّق مرّةً بيدٍ وتُنسى.
+   فالحدُّ على **دلالة HTML نفسِها**: الفقرةُ (`<p>`) وعنصرُ القائمة (`<li>`)
+   متنٌ، وما سواهما لصيقةٌ أو شارةٌ أو زرّ — وتلك تبقى على ١١–١٢ بقصد، كما
+   يقول القرار: «١١–١٢ تبقى للّصيقات وحدَها».
+
+   واستثناءٌ في الاتّجاه الآخر: `<p>` مُغلَّفٌ في حبّةٍ مستديرة (`rounded-full`)
+   شارةٌ ولو كان فقرةً — وضخُّها يُفسد الشاشةَ لا يُصلحها. وقد وقع هذا فعلا
+   في أوّل تشغيلٍ للكنس: `<li className="rounded-full … text-fine">` وهي حبّةُ
+   عدٍّ صريحة، ضُخّمت لأنّ الفحصَ كان على فتحة الوسم دون قائمة الأصناف. */
+describe('② · نصُّ المتن أربعةَ عشرَ — واللصيقاتُ وحدَها دونه', () => {
+  /* ═══ قراءةُ سمةِ الأصناف — والبابُ الذي كاد يبقى مفتوحا ═══
+
+     أوّلُ صياغةٍ قرأت خمسةَ أشكال: نصّا بين علامتَين، وقالبا بين قوسَين
+     معقوفَين. **وفاتَها ثمانيةٌ وستّون سمة** — لأنّ الأصنافَ تُركَّب: قالبٌ
+     يليه `.trim()`، ودالّةٌ تُستدعى، وقالبٌ يُبنى من حالة. ومنها ثمانيةٌ
+     تحمل حجما صغيرا، فيها `EcosystemNote` وهي **فقرةٌ في تذييل كلِّ صفحةِ
+     زائر** — أي أنّ الحارسَ كان سيخضرّ وهي دون أربعةَ عشر.
+
+     وهو البابُ الثالثُ نفسُه الذي أُغلق في `notification-category-coverage`:
+     ما يُبنى وقتَ التنفيذ لا يراه مسحٌ يقرأ الحرف. فالقراءةُ هنا **على
+     البنية**: يُؤخَذ ما بين القوسَين موازنةً، ثمّ تُنتزع منه كلُّ قطعةٍ
+     نصّيّةٍ أيّا كان ما يلفّها. */
+  function classAttrs(src: string): { index: number; cls: string }[] {
+    const out: { index: number; cls: string }[] = []
+    const head = /class(?:Name)?\s*=\s*/g
+    for (const m of src.matchAll(head)) {
+      const i = m.index! + m[0].length
+      const q = src[i]
+      if (q === '"' || q === "'") {
+        const end = src.indexOf(q, i + 1)
+        if (end > 0) out.push({ index: m.index!, cls: src.slice(i + 1, end) })
+        continue
+      }
+      if (q !== '{') continue
+      let depth = 0, end = -1
+      for (let j = i; j < src.length && j - i < 4000; j++) {
+        if (src[j] === '{') depth++
+        else if (src[j] === '}') { depth--; if (depth === 0) { end = j; break } }
+      }
+      if (end < 0) continue
+      const expr = src.slice(i + 1, end)
+      const parts = [...expr.matchAll(/`([^`]*)`|'([^']*)'|"([^"]*)"/g)]
+        .map((x) => x[1] ?? x[2] ?? x[3] ?? '')
+      if (parts.length > 0) out.push({ index: m.index!, cls: parts.join(' ') })
+    }
+    return out
+  }
+  /** الوسمُ ونصُّ فتحتِه — رجوعا إلى أقرب `<` مفتوح */
+  function openTag(src: string, idx: number): { name: string; head: string } {
+    for (let i = idx; i > 0 && idx - i < 3000; i--) {
+      if (src[i] === '<' && /[A-Za-z]/.test(src[i + 1] ?? '')) {
+        return { name: src.slice(i + 1).match(/^[A-Za-z][\w.]*/)?.[0] ?? '?', head: src.slice(i, idx) }
+      }
+    }
+    return { name: '?', head: '' }
+  }
+  const SMALL = /\btext-(fine|xs|micro)\b/
+  const LABELISH = /rounded-full|uppercase|tracking-|sr-only/
+  const AS_P = /\bas\s*=\s*(?:"p"|'p'|\{"p"\}|\{'p'\})/
+
+  interface Hit { file: string; line: number; cls: string; tag: string }
+  const { body, label } = (() => {
+    const body: Hit[] = []
+    const label: Hit[] = []
+    for (const f of LEARNER_ONLY) {
+      if (f.startsWith('src/components/ui/')) continue /* مصدرُ الأحجام لا مستهلكُها */
+      const src = read(f)
+      for (const m of classAttrs(src)) {
+        const cls = m.cls
+        if (!SMALL.test(cls)) continue
+        const tag = openTag(src, m.index)
+        const hit = { file: f, line: src.slice(0, m.index).split('\n').length, cls, tag: tag.name }
+        const isBody = !LABELISH.test(cls) && !LABELISH.test(tag.head)
+          && (/^(p|li)$/.test(tag.name) || AS_P.test(tag.head))
+        ;(isBody ? body : label).push(hit)
+      }
+    }
+    return { body, label }
+  })()
+
+  it('والقارئُ يرى الأصنافَ المركَّبة — لا النصَّ الحرفيَّ وحدَه', () => {
+    /* نقضُه: ردُّ `classAttrs` إلى الشكل الحرفيّ يُخفي هذه الفقرةَ فيخضرّ
+       الحارسُ وهي دون أربعةَ عشر. فيُفحص موضعٌ معلومٌ بعينه — تذييلُ كلِّ
+       صفحةِ زائر، وصنفُه قالبٌ يليه استدعاء. */
+    const note = classAttrs(read('src/components/EcosystemNote.tsx'))
+    expect(note.some((a) => /text-read/.test(a.cls)), 'قالبٌ يليه استدعاءٌ لم يُقرأ').toBe(true)
+  })
+
+  it('المسحُ يقرأ الشاشاتِ فعلا — فلا يمرّ الحارسُ بصفرٍ كاذب', () => {
+    /* حارسُ الحارس: خطأٌ في الاشتقاق أو في التعبير يجعل القائمتَين فارغتَين
+       فيمرّ كلُّ شيء. واللصيقاتُ باقيةٌ بقصد، فوجودُها هو دليلُ أنّ المسحَ يعمل. */
+    expect(label.length, 'لم يُقرأ موضعٌ واحد — تعطّل المسحُ نفسُه').toBeGreaterThan(100)
+  })
+
+  it('لا فقرةَ ولا عنصرَ قائمةٍ بحجمِ لصيقة', () => {
+    const lines = body.map((h) => `${h.file}:${h.line}  <${h.tag}>  ${h.cls}`)
+    expect(
+      lines,
+      'نصُّ متنٍ دون أربعةَ عشر. استعمل `text-read` — وإن كان شارةً فعلا '
+      + 'فألبِسه `rounded-full` أو انقله إلى `<span>`:\n' + lines.slice(0, 12).join('\n'),
+    ).toEqual([])
+  })
+
+  it('و«read» حجمٌ معرَّفٌ بلا ارتفاعِ سطر — كما `micro` و`fine` بالقرار نفسِه', () => {
+    const cfg = read('tailwind.config.js')
+    expect(cfg).toMatch(/fontSize:\s*\{[^}]*read:\s*'14px'/s)
+    /* ولو حملته لصار الكنسُ يغيّر شيئين: الحجمَ وارتفاعَ السطر — وهو بعينه
+       ما مُنع حين رُفض تبديلُ `fine` بـ`text-sm` (وهي ١٤px تحمل ٢٠px معها). */
+    expect(cfg, 'حملت `read` ارتفاعا فصار التبديلُ يغيّر شيئين').not.toMatch(/read:\s*\[/)
+  })
+
+  /* ═══ وسقفٌ على ما بقي — يهبط ولا يرتفع ═══
+
+     اللصيقاتُ والشاراتُ والأزرارُ تبقى دون أربعةَ عشرَ بقصد، فلا تُمنع.
+     لكنّها **لا تنمو**: بلا سقفٍ يعود الحجمُ الصغيرُ من باب النسخ في
+     `<span>` بدل `<p>`، ويُلتفّ على القاعدة بلا أن يحمرّ شيء.
+
+     قِيس في ٧ سبتمبر ٢٠٢٦ بعد الكنس: ٧٩٢ ← ٣٦٨. ومن رحّل مزيدا خفض الرقمَ
+     في الالتزام نفسِه. **ولا يُرفع إلّا بتراجعٍ مكتوبٍ هنا.** */
+  const LABEL_CEILING = 368
+
+  it(`وما بقي لصيقاتٌ لا تنمو — سقفُها ${LABEL_CEILING}`, () => {
+    expect(
+      label.length,
+      `اللصيقاتُ دون أربعةَ عشرَ صارت ${label.length} والسقفُ ${LABEL_CEILING}.\n`
+      + 'إن كان الجديدُ متنا فاستعمل `text-read`؛ وإن كان لصيقةً بحقّ فاخفض '
+      + 'السقفَ بترحيلٍ يقابله، ولا تُرفع الأرقامُ لتمرّ.',
+    ).toBeLessThanOrEqual(LABEL_CEILING)
+  })
+})
+
 describe('٥٥ · الشريطُ يعرض ما تقوله الجملةُ فوقه', () => {
   const band = read('src/components/ProofBand.tsx')
 

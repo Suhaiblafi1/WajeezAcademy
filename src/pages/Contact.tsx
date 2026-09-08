@@ -142,13 +142,13 @@ export default function Contact() {
             </Inset>
             <Inset className="flex items-start gap-3 px-4 py-3">
               <Building2 className="mt-1 h-4 w-4 shrink-0 text-gold-ink" />
-              <p className="text-xs leading-6 text-muted-foreground">
+              <p className="text-read leading-6 text-muted-foreground">
                 <span className="font-bold text-muted-foreground">تتواصل باسم جهة؟ </span>
                 حدد نوعها في النموذج — يظهر لك ما يهم جهتك فورا، ويصل طلبك لفريق الحلول المؤسسية مباشرة.
               </p>
             </Inset>
           </div>
-          <Inset as="p" className="mt-5 px-4 py-3 text-xs leading-6 text-muted-foreground">
+          <Inset as="p" className="mt-5 px-4 py-3 text-read leading-6 text-muted-foreground">
             إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
             <Link to="/diagnostic" className="font-semibold text-teal-light-ink underline-offset-4 hover:underline">التشخيص الذكي</Link>
             {' '}في دقائق، مجانا ودون التزام.
@@ -198,22 +198,22 @@ export default function Contact() {
               {/* مخطط الأثر للجهات — يظهر فقط عندما تكون الجهة مؤسسية */}
               {institutional && (
                 <Card tone="accent" className="mt-5">
-                  <p className="text-xs font-black text-teal-light-ink">كيف يظهر الأثر عند جهتك؟</p>
+                  <p className="text-read leading-5 font-black text-teal-light-ink">كيف يظهر الأثر عند جهتك؟</p>
                   <ol className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
                     {IMPACT_STEPS.map((s, i) => (
                       <Inset as="li" key={s.t} className="relative">
                         <span className="grid h-8 w-8 place-items-center rounded-lg bg-teal/15">
                           <s.icon className="h-4 w-4 text-teal-light-ink" />
                         </span>
-                        <p className="mt-2 text-fine font-black leading-snug">
+                        <p className="mt-2 text-read font-black leading-snug">
                           <span className="text-gold-ink">{i + 1}. </span>{s.t}
                         </p>
-                        <p className="mt-1 text-fine leading-4 text-muted-foreground">{s.d}</p>
+                        <p className="mt-1 text-read leading-4 text-muted-foreground">{s.d}</p>
                       </Inset>
                     ))}
                   </ol>
                   {ENTITY_NOTE[entity] && (
-                    <p className="mt-3 border-t border-white/5 pt-3 text-fine leading-5 text-muted-foreground">
+                    <p className="mt-3 border-t border-white/5 pt-3 text-read leading-5 text-muted-foreground">
                       {ENTITY_NOTE[entity]}
                     </p>
                   )}
@@ -264,7 +264,7 @@ export default function Contact() {
                 </span>
               </Inset>
               {err && (
-                <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-center text-xs font-semibold text-red-300">
+                <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-center text-read leading-5 font-semibold text-red-300">
                   {err}
                 </Inset>
               )}

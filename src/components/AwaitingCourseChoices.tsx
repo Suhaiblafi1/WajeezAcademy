@@ -82,12 +82,12 @@ export default function AwaitingCourseChoices({
 
   return (
     <div className="w-full border-t border-white/8 pt-3">
-      <p className="text-fine leading-5 text-muted-foreground">
+      <p className="text-read leading-5 text-muted-foreground">
         لا شعبةَ لها بعد. تستطيع أن تنتظرها، أو تستبدلها بما يخدم المهارات نفسَها الآن، أو تحذفها من خطّتك.
       </p>
 
       {error && (
-        <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-fine text-red-300">
+        <p className="mt-2 flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1.5 text-read text-red-300">
           <AlertTriangle className="h-3 w-3 shrink-0" /> {error}
         </p>
       )}
@@ -123,7 +123,7 @@ export default function AwaitingCourseChoices({
       {/* ── تأكيد الحذف ── */}
       {mode === "remove" && (
         <Inset tone="danger" className="mt-3">
-          <p className="text-xs leading-6 text-foreground">
+          <p className="text-read leading-6 text-foreground">
             تُحذف «{courseTitle}» من خطّتك. تستطيع إضافتها لاحقا من الكتالوج.
           </p>
           <div className="mt-2.5 flex items-center gap-2">
@@ -147,7 +147,7 @@ export default function AwaitingCourseChoices({
       {mode === "replace" && (
         <Inset className="mt-3">
           <div className="flex items-center justify-between">
-            <p className="text-fine font-black text-foreground">بدائلُ لها شعبةٌ الآن</p>
+            <p className="text-read font-black text-foreground">بدائلُ لها شعبةٌ الآن</p>
             <button type="button" onClick={() => setMode(null)} aria-label="إغلاق البدائل" className="text-muted-foreground hover:text-foreground">
               <X className="h-3.5 w-3.5" />
             </button>
@@ -156,7 +156,7 @@ export default function AwaitingCourseChoices({
           {busy === "alts" ? (
             <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
           ) : !alts || alts.length === 0 ? (
-            <p className="py-4 text-fine leading-6 text-muted-foreground">
+            <p className="py-4 text-read leading-6 text-muted-foreground">
               لا بديلَ الآن يخدم مهاراتها وله شعبةٌ مفتوحة. أبقِها منتظرةً ونُعلمك عند فتحها.
             </p>
           ) : (
@@ -164,8 +164,8 @@ export default function AwaitingCourseChoices({
               {alts.map((a) => (
                 <li key={a.courseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/10 bg-paper/20 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-bold">{a.titleAr}</p>
-                    <p className="mt-0.5 text-fine text-muted-foreground">
+                    <p className="truncate text-read leading-5 font-bold">{a.titleAr}</p>
+                    <p className="mt-0.5 text-read text-muted-foreground">
                       تشترك في {a.sharedSkills} {a.sharedSkills === 1 ? "مهارة" : a.sharedSkills === 2 ? "مهارتين" : "مهارات"}
                       {a.price !== null && <> · {Number(a.price)} {a.currency}</>}
                     </p>

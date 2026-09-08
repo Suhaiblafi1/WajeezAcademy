@@ -120,7 +120,7 @@ export default function CalendarPage() {
                     <span className="text-fine font-bold text-muted-foreground">{shown.length}</span>
                   </h2>
                   {shown.length === 0 ? (
-                    <Card as="p" className="mt-4 py-8 text-center text-xs text-muted-foreground">
+                    <Card as="p" className="mt-4 py-8 text-center text-read leading-5 text-muted-foreground">
                       لا دورةَ في هذا الشهر ضمن ما اخترت.
                     </Card>
                   ) : (
@@ -130,7 +130,7 @@ export default function CalendarPage() {
                           <Link to={`/build/${e.courseId}`} className="block">
                             <p className="text-sm font-bold leading-6 text-foreground">{courseTitleAr(e.titleAr)}</p>
                           </Link>
-                          <p className="mt-1 text-fine leading-5 text-muted-foreground">
+                          <p className="mt-1 text-read leading-5 text-muted-foreground">
                             {e.startsAt && <>تبدأ {fmtDateAr(e.startsAt)}</>}
                             {e.daysOfWeek.length > 0 && <> · {daysLabelAr(e.daysOfWeek)}{e.startTime ? ` ${e.startTime}` : ""}</>}
                           </p>

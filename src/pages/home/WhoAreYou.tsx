@@ -55,7 +55,7 @@ export function WhoAreYou() {
         ))}
       </ul>
 
-      <p className="reveal mt-5 text-center text-fine leading-6 text-muted-foreground">
+      <p className="reveal mt-5 text-center text-read leading-6 text-muted-foreground">
         تعرف ما تريد بالضبط؟{' '}
         <Link to="/courses" className="font-bold text-teal-light-ink hover:underline">تصفّح الكتالوج كاملا</Link>
         {' '}أو ابحث فيه بـ<kbd className="rounded border border-white/15 px-1.5 py-0.5 text-fine">Ctrl</kbd>

@@ -25,8 +25,8 @@ function RefCard({ id }: { id: string }) {
           {ref.name_en}
         </span>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">الجهة الناشرة: {ref.organization}</p>
-      <div className="mt-3 space-y-2 text-xs leading-6">
+      <p className="mt-1 text-read leading-5 text-muted-foreground">الجهة الناشرة: {ref.organization}</p>
+      <div className="mt-3 space-y-2 text-read leading-6">
         <p className="text-muted-foreground">
           <span className="font-bold text-teal-light-ink">كيف تستخدمه وجيز: </span>
           {ref.purpose_ar}
@@ -130,7 +130,7 @@ export default function Methodology() {
           ))}
         </div>
 
-        <Card as="p" tone="warn" className="mt-10 text-xs leading-loose text-muted-foreground">
+        <Card as="p" tone="warn" className="mt-10 text-read leading-loose text-muted-foreground">
           {DISCLAIMER_METHODOLOGY_AR} الأسماء تُذكر نصيا فقط دون شعارات، التزاما بتراخيص الجهات الناشرة.
         </Card>
 
@@ -142,7 +142,7 @@ export default function Methodology() {
             جرّب المنهجية على نفسك — ابدأ التشخيص
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="mt-3 text-read leading-5 text-muted-foreground">
             {pathways.length} مسارا في الكتالوج، كلها مبنية بهذه المنهجية.
           </p>
         </div>

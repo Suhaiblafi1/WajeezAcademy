@@ -143,11 +143,11 @@ export default function ModuleStudy() {
         <Panel as="section" className="py-14 text-center">
           <PenLine className="mx-auto h-10 w-10 text-gold-ink" />
           <p className="mt-5 text-sm font-black text-foreground">هذه الوحدة قيد التأليف</p>
-          <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted-foreground">
+          <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
             متنُها يُكتب الآن، ويظهر هنا قبل موعد جلستها في جدولك. وما عداها من وحدات الدورة مفتوحٌ لك.
           </p>
           {mod.outcome && (
-            <Card as="p" className="mx-auto mt-4 max-w-md px-4 py-3 text-fine leading-6 text-muted-foreground">
+            <Card as="p" className="mx-auto mt-4 max-w-md px-4 py-3 text-read leading-6 text-muted-foreground">
               <span className="font-bold text-foreground">ما ستخرج به منها: </span>{mod.outcome}
             </Card>
           )}
@@ -217,7 +217,7 @@ export default function ModuleStudy() {
           حسابه أو في المنصّة. والحقيقةُ أبسطُ وأصدق: الوحدةُ تُدرَّس مباشرةً
           مع مدرّبها، ومتنُها المكتوبُ قيد التأليف. **وقولُها خيرٌ من إخفائها.** */}
       {lessonCount === 0 && (
-        <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-xs leading-7 text-gold-ink">
+        <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-read leading-7 text-gold-ink">
           <BookOpen className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
             متنُ هذه الوحدة المكتوب <b>قيد التأليف</b> — وهي تُدرَّس مع مدرّبك في جلستها.
@@ -228,7 +228,7 @@ export default function ModuleStudy() {
 
       {step?.kind === "lesson" && (
         <Panel as="article" className="md:p-9">
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-fine font-bold text-teal-light-ink">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-read font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">الدرس {pos + 1} من {lessonCount}</span>
             {step.minutes > 0 && <span className="text-muted-foreground">{countAr(step.minutes, MIN_FORMS)} قراءة</span>}
           </p>
@@ -242,10 +242,10 @@ export default function ModuleStudy() {
           {/* استرجاعٌ بعد الدرس مباشرة — لا في آخر الوحدة وحدها */}
           {step.checks.length > 0 && (
             <Card as="section" tone="accent" className="mt-8">
-              <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+              <p className="flex items-center gap-2 text-read leading-5 font-black text-teal-light-ink">
                 <Sparkles className="h-3.5 w-3.5" /> استرجعْ قبل أن تمضي
               </p>
-              <p className="mt-1 text-fine leading-6 text-muted-foreground">
+              <p className="mt-1 text-read leading-6 text-muted-foreground">
                 لا درجةَ لهذا ولا وزن — الغرضُ أن تُخرِج الفكرة من رأسك لا أن تعيد قراءتها.
               </p>
               <div className="mt-4 space-y-5">
@@ -274,7 +274,7 @@ export default function ModuleStudy() {
 
       {step?.kind === "scenario" && (
         <Panel as="article" className="md:p-9">
-          <p className="text-fine font-bold text-teal-light-ink">
+          <p className="text-read font-bold text-teal-light-ink">
             <span className="rounded-full bg-teal/15 px-2.5 py-1">سيناريو قرار</span>
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
@@ -293,13 +293,13 @@ export default function ModuleStudy() {
           ) : (
             <>
               <Panel tone="accent" className="md:p-8">
-                <p className="flex items-center gap-2 text-xs font-black text-teal-light-ink">
+                <p className="flex items-center gap-2 text-read leading-5 font-black text-teal-light-ink">
                   <Target className="h-4 w-4" /> نشاطك الآن
                 </p>
                 <p className="mt-3 text-base leading-9 text-foreground">{mod.activity}</p>
               </Panel>
               <Panel tone="warn" className="md:p-8">
-                <p className="flex items-center gap-2 text-xs font-black text-gold-ink">
+                <p className="flex items-center gap-2 text-read leading-5 font-black text-gold-ink">
                   <FileText className="h-4 w-4" /> ما تخرج به — ويدخل ملفّك
                 </p>
                 <p className="mt-3 text-base leading-9 text-foreground">{mod.artifact}</p>
@@ -320,7 +320,7 @@ export default function ModuleStudy() {
           <Panel className="text-center md:p-8">
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink" />
             <p className="mt-3 text-sm font-black">انتهت قراءةُ هذه الوحدة</p>
-            <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted-foreground">
+            <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
               وإكمالُها يحتاج دليلا: تسليمٌ مقبول، أو تقييمٌ مجتاز، أو حضورُ جلستها.
               فلا زرَّ «أنهيتُها» تضغطه على نفسك.
             </p>

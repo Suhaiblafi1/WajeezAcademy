@@ -69,7 +69,7 @@ function ReviewCard({
         onPick={onPick}
       />
 
-      <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-fine text-muted-foreground">
+      <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-read text-muted-foreground">
         <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {saved ? (
           <>تعود هذه البطاقة في {fmtWhen(saved.dueAt)}.</>
@@ -154,10 +154,10 @@ export default function Review() {
       <Panel as="section" tone="accent" className="bg-teal-ink/[0.07]">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="text-xs text-muted-foreground">بطاقات استحقّت الاسترجاع اليوم</p>
+            <p className="text-read leading-5 text-muted-foreground">بطاقات استحقّت الاسترجاع اليوم</p>
             <p className="mt-1 text-5xl font-black leading-none text-teal-light-ink tabular-nums">{summary?.due ?? 0}</p>
             {summary && summary.due === 0 && summary.nextDueAt && (
-              <p className="mt-2 text-xs text-muted-foreground">التالية في {fmtWhen(summary.nextDueAt)}</p>
+              <p className="mt-2 text-read leading-5 text-muted-foreground">التالية في {fmtWhen(summary.nextDueAt)}</p>
             )}
           </div>
           <dl className="grid grid-cols-3 gap-5 text-center">
@@ -173,7 +173,7 @@ export default function Review() {
             ))}
           </dl>
         </div>
-        <p className="mt-4 text-fine leading-relaxed text-muted-foreground">{HONESTY_NOTE}</p>
+        <p className="mt-4 text-read leading-relaxed text-muted-foreground">{HONESTY_NOTE}</p>
       </Panel>
 
       {queue.length === 0 ? (
