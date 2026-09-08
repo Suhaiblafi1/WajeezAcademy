@@ -78,11 +78,6 @@ jobs:
         # ومنها موضعٌ أضافته جولةُ البند ③ نفسُها وهي تكتب تقريرَها عنها.
         run: npm run ci:locale
 
-      - name: قيودُ الحالات مولَّدةٌ لا مكتوبةٌ بيد
-        # تُولَّد بـscripts/status-checks.ts — والبوّابة تمنع انحرافَ
-        # القيد عن تعليقه. كانت خضراءَ بلا حارسٍ يُبقيها خضراء.
-        run: npm run ci:status-checks
-
       - name: اختبارات المتصفح والمحرك
         run: npx vitest run src/tests
 
@@ -170,6 +165,13 @@ jobs:
 
       - name: توليد عميل Prisma
         run: npx prisma generate
+
+      - name: قيودُ الحالات مولَّدةٌ لا مكتوبةٌ بيد
+        # موضعُها هنا لا في وظيفة المتصفّح: السكربت **يتّصل بقاعدة** ليقرأ
+        # القيودَ القائمةَ ويقابلها بالمخطَّط (status-checks.ts:95)، ووظيفةُ
+        # المتصفّح بلا قاعدة. و`with-db` يشغّل PostgreSQL المدمجة ويمرّر
+        # DATABASE_URL — فلا يُفترض عنوانٌ ولا منفذ.
+        run: npx tsx scripts/with-db.ts npx tsx scripts/status-checks.ts --check
 
       - name: اختبارات الخادم
         # test:e2e يحمل --no-file-parallelism أصلا: كل ملف يعيد بناء قاعدة
