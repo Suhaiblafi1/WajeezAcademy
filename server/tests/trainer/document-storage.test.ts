@@ -1,4 +1,6 @@
-/* وثائق المتقدّم تعيش في القاعدة لا على القرص.
+/* وثائقُ المتقدّم: أين يستقرّ محتواها — والجوابُ تغيّر مرّتَين.
+
+   ── الأولى: من القرص إلى القاعدة ──
 
    كانت على القرص، وسقط بها رفعُ السيرة الذاتية في الإنتاج سقوطا صامتا: الحزمة
    تُشغَّل من `/var/task/api/index.js`، ووحدةُ التخزين كانت تحسب جذرها بالصعود
@@ -6,10 +8,17 @@
    للقراءة فقط. ولم يمسكه اختبارٌ واحد: الاختبارات تشغّل الملفات في مواضعها،
    حيث المسار موجود وقابل للكتابة، فيمرّ الرفع أخضرَ وهو ميّت عند المستخدم.
 
-   ولا يكفي تصحيح العمق: `/var/task` للقراءة فقط، و`/tmp` يذهب مع الاستدعاء —
-   فتُكتب الوثيقة ولا يجدها المراجع. فالحارس هنا لا يفحص «هل نجح الرفع» (نجح
-   قبلا وهو معطوب)، بل يفحص أين استقرّ المحتوى: في عمود القاعدة، وبلا أثرٍ
-   لقرصٍ في مسار الطلب أصلا. */
+   ── والثانية: من القاعدة إلى حجمٍ دائم (البند ⑤) ──
+
+   ذلك المانعُ كان **مانعَ مضيفٍ لا مانعَ تصميم**، وقد زال بزوال Vercel:
+   للخادم اليومَ حجمُ `storage` يبقى بين النشرات. فعادت البايتاتُ إلى القرص —
+   لا إلى قرصٍ يُحسب مسارُه من موضع الوحدة، بل إلى جذرٍ يُقرأ من `STORAGE_ROOT`
+   أو من مجلّد التشغيل.
+
+   ⚠️ **وهذا الملفُّ كان سيبقى أخضرَ والقرارُ انقلب**: كان يفحص منعَ
+   `createReadStream` و`import.meta.url` في وحدةِ التخزين ومسارِها، والمخزنُ
+   الجديدُ وحدةٌ ثالثةٌ لا تمسّها تلك الفحوص. فحارسٌ يقيس ما لم يعد الموضعَ
+   يطمئنّ بلا حقّ — ولذلك نُقل الفحصُ إلى حيث انتقل المحتوى. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -22,6 +31,7 @@ import { buildApp } from '../../http/app'
 import {
   MAX_UPLOAD_ANY, MAX_UPLOAD_BYTES, signKey, verifySignature, resetSecretCacheForTests,
 } from '../../services/storage.service'
+import { getObject } from '../../services/object-store'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -60,7 +70,7 @@ describe('تخزين وثائق المتقدّم', () => {
     expect(candidateToken).not.toBe('')
   })
 
-  it('المحتوى يستقرّ في عمود القاعدة، ويُقرأ منه كما رُفع', async () => {
+  it('المحتوى يستقرّ على الحجم الدائم، ويُقرأ منه كما رُفع', async () => {
     const content = Buffer.from('%PDF-1.4 سيرة ذاتية — محتوى خاص لا يُقدَّم إلا برابط موقّع')
     const doc = await apps.requestDocumentUpload(reference, candidateToken, {
       kind: 'cv', originalName: 'سيرتي.pdf', mime: 'application/pdf', sizeBytes: content.length,
@@ -74,12 +84,18 @@ describe('تخزين وثائق المتقدّم', () => {
     expect(put.statusCode).toBe(200)
 
     /* هنا الفحص الذي كان غائبا: أين استقرّ المحتوى */
+    const stored = await getObject(doc.storageKey)
+    expect(stored, 'المحتوى ليس على الحجم — فأين ذهب؟').not.toBeNull()
+    expect(stored!.equals(content)).toBe(true)
+
+    /* ولا يُكتب في العمود بعد اليوم: نسخةُ القاعدة كانت تحمل البايتاتِ كلَّها،
+       وكلُّ `pg_dump` ينفخ بها. فالعمودُ يبقى لما لم يُهاجر لا لما يُكتب. */
     const row = await prisma.trainerApplicationDocument.findUniqueOrThrow({
       where: { storageKey: doc.storageKey },
       select: { content: true, sizeBytes: true },
     })
-    expect(row.content, 'المحتوى ليس في القاعدة — فهو على قرصٍ لا يوجد في الإنتاج').not.toBeNull()
-    expect(Buffer.from(row.content!).equals(content)).toBe(true)
+    expect(row.content, 'البايتاتُ عادت إلى عمود القاعدة').toBeNull()
+    /* والحجمُ يبقى في السجلّ — تقرؤه شاشةُ المراجعة */
     expect(row.sizeBytes).toBe(content.length)
 
     const urls = apps.signedDocumentUrls([{ storageKey: doc.storageKey }])
@@ -133,17 +149,19 @@ describe('تخزين وثائق المتقدّم', () => {
     }
   })
 
-  it('لا قرصَ في مسار الوثيقة — ولا مسارَ يُحسب من موضع الوحدة', () => {
-    const svc = read('server/services/storage.service.ts')
+  it('ولا مسارَ يُحسب من موضع الوحدة — وهو عينُ ما أسقط الرفعَ أوّلَ مرّة', () => {
     /* التعليقات تشرح العطل فتذكر أسماءه — والفحص على الشيفرة لا على شرحها */
-    const code = svc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
-    for (const banned of ['createWriteStream', 'createReadStream', 'import.meta.url', 'STORAGE_DIR']) {
-      expect(code, `${banned} عاد إلى مسار الوثيقة`).not.toContain(banned)
-    }
-    const routes = read('server/http/routes/trainer-applications.routes.ts')
-      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
-    for (const banned of ['createReadStream', 'createWriteStream', 'filePathFor', 'existsSync']) {
-      expect(routes, `${banned} عاد إلى مسار الوثيقة`).not.toContain(banned)
+    const strip = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
+    /* ⚠️ الفحصُ على **المخزن** لا على وحدةِ التوقيع: المحتوى انتقل إليه.
+       وهذا هو السطرُ الذي كان سيبقى يفحص بيتا هُجر. */
+    const store = strip(read('server/services/object-store.ts'))
+    expect(store, 'الجذرُ يُحسب من موضع الوحدة — وهو ما قصد `/var/storage` في الإنتاج')
+      .not.toContain('import.meta.url')
+    expect(store, 'الجذرُ لا يُقرأ من البيئة ولا من مجلّد التشغيل').toContain('process.cwd()')
+
+    for (const f of ['server/services/storage.service.ts', 'server/http/routes/trainer-applications.routes.ts']) {
+      expect(strip(read(f)), `مسارُ ملفٍّ يُبنى في ${f} — مكانُه المخزن`).not.toContain('import.meta.url')
     }
   })
 
