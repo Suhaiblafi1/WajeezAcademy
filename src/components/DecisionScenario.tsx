@@ -187,7 +187,7 @@ export default function DecisionScenario({
                 تُحفَظ الجولة لمن سُجّل في الدورة — تابع بلا حفظ، والسيناريو نفسه هو الفائدة.
               </p>
             ) : (
-              <Button tone="primary" type="button"
+              <Button tone="confirm" type="button"
                 onClick={() => void saveRun()}
                 disabled={save === "busy"} className="min-h-11 disabled:cursor-not-allowed">
                 {save === "busy"
