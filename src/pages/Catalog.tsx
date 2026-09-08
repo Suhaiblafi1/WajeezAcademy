@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { ArrowLeft, BookOpen, Flame, Route, Search, SlidersHorizontal, Target } from 'lucide-react'
 import { bestsellers, pathwayDomain, pathwayDomains, pathways } from '@/data/pathways'
-import { bestsellerCourses, courseCategories, courses, pathwaySizeAr } from '@/data/courses'
+import { bestsellerCourses, courses, pathwaySizeAr } from '@/data/courses'
 import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
@@ -15,7 +15,6 @@ import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
 import { UpcomingTermBanner } from '@/components/UpcomingTermNote'
 
-const LEVELS = ['الكل', 'أساسي', 'متوسط', 'متقدم'] as const
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
    بعد جعل الكتالوج المضمن كسولا صارت البيانات تصل لاحقا، فلا بد أن تُحسبا
    داخل المكوّن مرتبطتين برقم نسخة الكتالوج وإلا بقيتا فارغتين للأبد.
@@ -52,15 +51,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
      معا أبدا: لو بقيت «أساسيات» افتراضيّةً هناك لصارت رقاقتُها غيرَ قابلةٍ
      للاختيار — تُحذف من العنوان فيرتدّ المعروضُ إلى «الكل». */
   const cat = params.get('cat') ?? 'الكل'
-  const level = params.get('level') ?? 'الكل'
   const sort = (params.get('sort') ?? 'featured') as Sort
 
   const patch = (key: string, value: string) => {
     const next = new URLSearchParams(params)
-    /* القيمة الافتراضية تحذف من العنوان: الكل للمجال والمستوى، featured للترتيب */
+    /* القيمة الافتراضية تحذف من العنوان: الكل للمجال، featured للترتيب */
     const isDefault =
       (key === 'cat' && value === 'الكل') ||
-      (key === 'level' && value === 'الكل') ||
       (key === 'sort' && value === 'featured') ||
       (key === 'q' && !value)
     if (!isDefault && value) next.set(key, value)
@@ -74,7 +71,6 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     let list = pathways.filter(
       (p) =>
         (cat === 'الكل' || pathwayDomain(p.id) === cat) &&
-        (level === 'الكل' || p.level === level) &&
         /* الحقولُ كلُّها لا حقلان: الاسمُ القصيرُ والمهاراتُ **والجمهورُ
            والتحوّلُ والمخرَج** — وكلُّها مؤلَّفةٌ في الكتالوج اليوم ولم يكن
            يبحث فيها أحد. */
@@ -89,14 +85,18 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     if (q) list = [...list].sort((a, b) => pathwayRank(b) - pathwayRank(a))
     return list
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
-  }, [q, cat, level, sort, bestsellerIds, catalogVersion])
+  }, [q, cat, sort, bestsellerIds, catalogVersion])
 
   const shownCourses = useMemo(() => {
     const courseRank = (c: (typeof courses)[number]) =>
       catalogRank(q, [[c.name], [c.promise, ...c.skills], [c.audience, c.pathwayName]])
+    /* المجالُ لا الفئة — بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «للدورات أريد
+       البحث يكون بالمجال مثل المسارات وليس الفئة المستهدفة». والمجالُ يُشتقّ
+       من مسار الدورة الأمّ بالدالّة المركزيّة نفسِها التي تصنّف المسارات،
+       فالرقاقاتُ السبعُ واحدةٌ في الصفحتين ولا رقاقةَ بلا دورات. */
     let list = courses.filter(
       (c) =>
-        (cat === 'الكل' || c.category === cat) &&
+        (cat === 'الكل' || pathwayDomain(c.pathwayId) === cat) &&
         matchesCatalogQuery(q, [c.name, c.promise, c.audience, c.pathwayName, ...c.skills])
     )
     if (sort === 'shortest') list = [...list].sort((a, b) => a.weeks - b.weeks)
@@ -130,7 +130,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         title={isPathways ? 'كل المسارات' : 'كل الدورات'}
         description={
           isPathways
-            ? 'تصفح كتالوج مسارات أكاديمية وجيز كاملا — ابحث وصفِّ حسب المجال والمستوى والمدة.'
+            ? 'تصفح كتالوج مسارات أكاديمية وجيز كاملا — ابحث وصفِّ حسب المجال والمدة.'
             : 'تصفح دورات أكاديمية وجيز المنفردة — ابحث وصفِّ حسب المجال والمدة.'
         }
         path={isPathways ? '/pathways' : '/courses'}
@@ -147,7 +147,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </h1>
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           {isPathways
-            ? 'ابحث وصفِّ حسب المجال والمستوى. وإن حارت، التشخيص يطابقك مع الأنسب ويشرح لك لماذا.'
+            ? 'ابحث أو صفِّ حسب المجال. وإن حرتَ، فالتشخيص يختار لك ويشرح لماذا.'
             : 'دورة واحدة تكفي أحيانا. وإن أكملت لاحقا لمسارها الكامل، خُصم ما دفعته من سعره.'}
         </p>
       </div>
@@ -182,9 +182,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </Card>
       </div>
 
-      {/* فلاتر المجال (مسارات) أو الفئة (دورات) والمستوى */}
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={isPathways ? 'تصفية حسب المجال' : 'تصفية حسب الفئة'}>
-        {(isPathways ? pathwayDomains : courseCategories).map((c) => (
+      {/* رقاقاتُ المجال — واحدةٌ للمسارات والدورات. ولا صفَّ للمستوى: المستوى
+          مكتوبٌ على بطاقة كلّ مسار، وصفٌّ يكرّره فوق النتائج حشوٌ لا تصفية
+          (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦). */}
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="تصفية حسب المجال">
+        {pathwayDomains.map((c) => (
           <button
             key={c}
             onClick={() => patch('cat', c)}
@@ -199,24 +201,6 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           </button>
         ))}
       </div>
-      {isPathways && (
-        <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label="تصفية حسب المستوى">
-          {LEVELS.map((l) => (
-            <button
-              key={l}
-              onClick={() => patch('level', l)}
-              aria-pressed={level === l}
-              className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
-                level === l
-                  ? 'border-gold/60 bg-gold/10 text-gold-ink'
-                  : 'border-white/10 text-muted-foreground hover:border-gold/40 hover:text-gold-ink'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* ــ الفصلُ القادم: هاتان الصفحتان لا تعرضان تاريخا إطلاقا (البند ٥٢).
              وموضعُه فوق النتائج لا تحتَها: من يتصفّح ثمانين بطاقةً لا يصل

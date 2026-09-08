@@ -254,14 +254,17 @@ export default function BuyPanel({
 
   const startsLabel = (o: CohortOption) => (o.startsAt ? fmtDateAr(o.startsAt) : "يُعلن الموعد");
 
+  /* اللوحُ أضيقُ وأقلُّ حشوا (`max-w-md` و`sm:p-5`): شاشةُ الدفع في صفحة
+     الدورة كانت «كبيرةً» في عين صاحب المنصّة (٨ سبتمبر ٢٠٢٦)، وما فيها
+     بنودٌ ومجموعٌ وزرّ — لا تحتاج عرضَ مقالة. */
   return (
-    <Modal onClose={onClose} label={`الشراء: ${title}`} panelClassName="w-full max-w-lg">
-      <Inset className="story-fade max-h-[86vh] overflow-y-auto bg-surface sm:p-7">
-        <h3 className="text-lg font-black">إتمام الشراء</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{title}</p>
+    <Modal onClose={onClose} label={`الشراء: ${title}`} panelClassName="w-full max-w-md">
+      <Inset className="story-fade max-h-[86vh] overflow-y-auto bg-surface sm:p-5">
+        <h3 className="text-base font-black">إتمام الشراء</h3>
+        <p className="mt-1 text-read text-muted-foreground">{title}</p>
 
         {!loaded && (
-          <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+          <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> نقرأ الشعب المتاحة…
           </p>
         )}
