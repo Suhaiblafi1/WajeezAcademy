@@ -44,6 +44,7 @@ import {
   COUNTRY_CODES,
   COUNTRY_TIMEZONE,
   DAYS,
+  DIGIT_FORMS,
   DOC_KINDS,
   DOMAIN_YEARS,
   EMPLOYMENT_STATUS,
@@ -53,6 +54,7 @@ import {
   MOTIVATION_MAX,
   MOTIVATION_MIN,
   PERIODS,
+  PHONE_MIN_DIGITS,
   STEPS,
   TARGET_AUDIENCES,
   TRAINING_YEARS,
@@ -308,6 +310,12 @@ export default function JoinTrainer() {
   const fieldErrors = useMemo<Record<string, string | null>>(() => ({
     name: form.fullName.trim().length >= 3 ? null : 'اكتب اسمك الكامل — ثلاثةُ أحرفٍ على الأقلّ',
     email: /.+@.+\..+/.test(form.email) ? null : 'بريدٌ بصيغةٍ صحيحة، مثل name@example.com',
+    /* الرقمُ شرطٌ من أوّل قسمٍ لا من آخره — انظر تعليقَ الحقل نفسِه */
+    phone: normalizeDigits(form.phone).length >= PHONE_MIN_DIGITS
+      ? null
+      : normalizeDigits(form.phone).length === 0
+        ? 'رقمُ جوالك — عليه نتواصل معك'
+        : `رقمٌ قصير — ${countAr(PHONE_MIN_DIGITS, DIGIT_FORMS)} على الأقلّ بلا رمز الدولة`,
     /* بعد إرسال القسم الأوّل الحسابُ قائم، فلا كلمةَ تُطلب ولا خطأَ يُقال */
     password: result || password.length >= 8
       ? null
@@ -322,7 +330,7 @@ export default function JoinTrainer() {
     altEmail: contactChannel !== 'other_email' || /.+@.+\..+/.test(contactAltEmail)
       ? null
       : 'بريدٌ آخرُ بصيغةٍ صحيحة، مثل name@example.com',
-  }), [form.fullName, form.email, form.hasAccreditation, form.accreditationBody, accreditationName,
+  }), [form.fullName, form.email, form.phone, form.hasAccreditation, form.accreditationBody, accreditationName,
       password, passwordConfirm, result, contactChannel, contactAltEmail]);
 
   /** رسالةُ الحقل — تُكتم حتى يُلمس */
@@ -337,6 +345,7 @@ export default function JoinTrainer() {
     const m: Record<1 | 2 | 3, string[]> = { 1: [], 2: [], 3: [] };
     if (form.fullName.trim().length < 3) m[1].push("اسمك الكامل");
     if (!/.+@.+\..+/.test(form.email)) m[1].push("بريد إلكتروني صحيح");
+    if (normalizeDigits(form.phone).length < PHONE_MIN_DIGITS) m[1].push("رقم جوالك");
     /* كلمةُ الحساب تُفحص قبل أن يُرسَل القسمُ الأوّل — فالحسابُ يُنشأ معه.
        وبعد الإرسال لا تُطلب ثانية: الحسابُ قائم. */
     if (!result) {
@@ -363,7 +372,7 @@ export default function JoinTrainer() {
     const channel = CONTACT_CHANNELS.find((c) => c.value === contactChannel);
     if (!channel) m[3].push("وسيلة التواصل التي تفضّلها");
     else {
-      if (channel.needsPhone && normalizeDigits(form.phone).length < 6) m[3].push("رقم جوالك في القسم الأول — أو اختر البريد");
+      if (channel.needsPhone && normalizeDigits(form.phone).length < PHONE_MIN_DIGITS) m[3].push("رقم جوالك في القسم الأول — أو اختر البريد");
       if (channel.needsAltEmail && !/.+@.+\..+/.test(contactAltEmail)) m[3].push("البريد الآخر بصيغة صحيحة");
     }
     return m;
@@ -399,6 +408,11 @@ export default function JoinTrainer() {
           seasons: seasons.length ? seasons : undefined,
         },
         demoConsent,
+        /* الرقمُ يُرسَل هنا أيضا لا في القسم الأوّل وحدَه: ذاك أُرسل قبل هذه
+           الشاشة، فتصحيحُ الرقم بعده كان يبقى في المتصفّح ولا يبلغ الخادم —
+           والشاشةُ تَعِد صراحةً بأنّ «العودةَ إلى القسم الأول» تُصحّحه. */
+        phoneCountryCode: normalizeDigits(form.phone) ? form.phoneCountryCode || undefined : undefined,
+        phone: normalizeDigits(form.phone) || undefined,
         contact: {
           channel: contactChannel,
           altEmail: contactChannel === "other_email" ? contactAltEmail.trim().toLowerCase() : undefined,
@@ -679,16 +693,36 @@ export default function JoinTrainer() {
                   <Field label="البريد الإلكتروني" htmlFor="jt-email" required error={errOf("email")}>
                     <input id="jt-email" name="email" type="email" autoComplete="email" required dir="ltr" value={form.email} onChange={set("email")} onBlur={touch("email")} {...invalidProps("jt-email-error", errOf("email"))} className={`${controlCls} text-left`} />
                   </Field>
-                  <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone" hint="بلا رمز الدولة وبلا صفر البداية — مثال: 791234567">
+                  {/* الرقمُ شرطٌ هنا لا في القسم الثالث.
+
+                      كان اختياريّا، والقسمُ الثالثُ وحدَه يطلبه إن اختار
+                      المتقدّمُ الهاتفَ أو واتساب. وبينهما بابٌ لا يُرى: القسمُ
+                      الأوّل **يُرسَل إلى الخادم** عند المضيّ منه (كي يوجد
+                      مرجعٌ تُرفع عليه الملفّات)، فمن تركه فارغا أُنشئ طلبُه
+                      بلا رقم.
+
+                      ثمّ يعود من القسم الثالث فيكتبه — فتراه الشاشةُ وتقول
+                      «سنتواصل على…» وتُمرّره، لأنّ الفحصَ على الحالة في
+                      المتصفّح. والخادمُ لا يعلم به: لا نداءَ يحمله بعد القسم
+                      الأوّل. فيُردّ الإرسالُ بـ«لم تذكر رقمك في القسم الأول —
+                      عد وأضفه»، ويعود فيجده مكتوبا، فيرسل فيُردّ. حلقةٌ لا
+                      مخرجَ منها إلّا اختيارُ البريد.
+
+                      فالرقمُ يُطلب قبل أن يُنشأ الطلبُ أصلا، ويُرسَل مع القسم
+                      الأخير كذلك (`submit`) كي يصلَ تصحيحُه بعد الإنشاء. */}
+                  <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone" required error={errOf("phone")} hint="بلا رمز الدولة وبلا صفر البداية — مثال: 791234567">
                     <div className="flex gap-2" dir="ltr">
                       <select id="jt-cc" aria-label="رمز الدولة" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={codeSelectCls}>
                         {COUNTRY_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
                       <input
                         id="jt-phone" name="tel" type="tel" inputMode="tel" autoComplete="tel-national" dir="ltr"
+                        required
                         placeholder="791234567"
                         value={form.phone}
                         onChange={(e) => setForm({ ...form, phone: normalizeDigits(e.target.value) })}
+                        onBlur={touch("phone")}
+                        {...invalidProps("jt-phone-error", errOf("phone"))}
                         className={`${controlCls} min-w-0 flex-1 text-left`}
                       />
                     </div>
@@ -1120,7 +1154,6 @@ export default function JoinTrainer() {
                   <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
                   <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
                   {seasons.length > 0 && <li>{seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · ")}</li>}
-                  <li>دافعك: {motivationLen} حرفا</li>
                 </ul>
                 <p className="mt-3 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
                   رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.

@@ -191,6 +191,10 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
         seasons: z.array(z.enum(TRAINING_SEASON_VALUES)).min(1, 'اختر فصلا واحدا على الأقلّ تستطيع التدريس فيه').max(4),
       }),
       demoConsent: z.literal(true),
+      /* الرقمُ يُقبل هنا كما يُقبل في القسم الأوّل — وإلّا فتصحيحُه بعد إنشاء
+         الطلب لا يبلغ الخادمَ أبدا: لا نداءَ بينهما يحمله. والحدُّ نفسُه. */
+      phoneCountryCode: z.string().max(6).optional(),
+      phone: z.string().max(20).optional(),
       /* كيف نتواصل معه للاجتماع التعريفيّ */
       contact: z.object({
         channel: z.enum(CONTACT_CHANNEL_VALUES),

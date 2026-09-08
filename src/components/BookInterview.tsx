@@ -26,12 +26,6 @@ export default function BookInterview({ name, email, reference, className = '' }
         <CalendarClock className="h-4 w-4" /> احجز مقابلتك — اختر الوقت الذي يناسبك
       </p>
 
-      <p className="mt-2 text-sm leading-8 text-foreground">
-        الخطوةُ التالية اجتماعٌ تعريفيٌّ قصير: نعرّفك بمنهجيّة الأكاديميّة ونسمع منك.
-        ولا تنتظر مكالمةً منّا — <b className="text-foreground">اختر موعدك بنفسك الآن</b>،
-        وتصلك دعوةُ الاجتماع على بريدك فورَ الحجز.
-      </p>
-
       <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-read leading-5 text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
           <CalendarClock className="h-3.5 w-3.5" /> {TRAINER_INTERVIEW.minutes} دقيقة

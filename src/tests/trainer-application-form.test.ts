@@ -199,6 +199,63 @@ describe('نموذج انضمام المدرب', () => {
     expect(src, 'عادت عناوين الحقول المكتوبة بيدها').not.toContain('mb-1.5 block text-xs font-bold text-white/60')
   })
 
+  /* حلقةُ «لم تذكر رقمك» — رقمٌ يراه المتقدّمُ ولا يراه الخادم.
+
+     القسمُ الأوّل يُرسَل إلى الخادم عند المضيّ منه (كي يوجد مرجعٌ تُرفع عليه
+     الملفّات)، وكان الرقمُ اختياريّا فيه. فمن مضى بلا رقمٍ أُنشئ طلبُه بلا
+     رقم، ثمّ اختار واتساب في القسم الثالث فقيل له «عد إلى القسم الأول
+     وأضفه» — فعاد وكتبه، فرأته الشاشةُ ومرّرته، ولم يره الخادم: لا نداءَ
+     بعد القسم الأوّل كان يحمله. فيُردّ الإرسالُ فيعود فيجده مكتوبا فيرسل
+     فيُردّ. وقد وقعت على متقدّمٍ حقيقيّ (WJ-TR-2026-00001).
+
+     والبابان اللذان أُغلقا يُحرسان هنا معا — وإغلاقُ أحدهما وحدَه لا يكفي:
+     الأوّلُ يمنع الحلقةَ على من يأتي، والثاني يُخرج منها من هو فيها. */
+  it('رقمُ الجوال شرطٌ في القسم الأوّل — لا في الثالث وحدَه', () => {
+    const src = FORM()
+    const list = /const missing = useMemo\(\(\) => \{[\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(src)?.[0] ?? ''
+    expect(list, 'كتلة قائمة النقص مفقودة').toBeTruthy()
+
+    /* والفحصُ على `m[1]` بعينها لا على ورودِ `form.phone` في الكتلة: القسمُ
+       الثالثُ يذكره أيضا، فحارسٌ يكتفي بوجود الاسم يخضرّ وهو لا يحرس شيئا. */
+    const step1 = list.match(/m\[1\]\.push\([^\n]*/g) ?? []
+    const phoneLine = list
+      .split('\n')
+      .find((l) => l.includes('m[1].push') && l.includes('form.phone'))
+    expect(step1.length, 'قائمة نقص القسم الأوّل فارغة').toBeGreaterThan(0)
+    expect(phoneLine, 'الرقم ليس شرطا في القسم الأوّل — فيُنشأ طلبٌ بلا رقم').toBeTruthy()
+
+    /* وحدٌّ واحدٌ يحكم القسمَين: لو افترقا قَبِل قسمٌ ما يردّه الآخر */
+    expect(/export const PHONE_MIN_DIGITS = (\d+);/.exec(src)?.[1], 'لا حدَّ معلَن للرقم').toBeTruthy()
+    const uses = src.match(/normalizeDigits\(form\.phone\)\.length < PHONE_MIN_DIGITS/g) ?? []
+    expect(uses.length, 'القسمان لا يقيسان الرقمَ بالحدّ نفسِه').toBeGreaterThanOrEqual(2)
+
+    /* والحقلُ نفسُه يقول إنّه مطلوب — وإلّا فالنجمةُ غائبةٌ والقائمةُ تتّهم */
+    const field = /<Field label="رقم الجوال[^>]*>/.exec(src)?.[0] ?? ''
+    expect(field, 'حقل رقم الجوال مفقود').toBeTruthy()
+    expect(field, 'الحقل لا يُعلن أنّه مطلوب').toContain('required')
+    expect(field, 'الحقل بلا رسالة خطأ').toContain('error={errOf("phone")}')
+  })
+
+  it('الرقمُ يعبر إلى الخادم مع القسم الأخير — لا مع الأوّل وحدَه', () => {
+    /* الطرفُ الثاني من الإغلاق: من أُنشئ طلبُه بلا رقمٍ قبل اليوم ما زال
+       مفتوحا، وتصحيحُه لا يصل إلّا إن حمله نداءُ `phase-2`. */
+    const submit = /const submit = async \(e: React\.FormEvent\) => \{[\s\S]*?\n {2}\};/.exec(read(PAGE))?.[0] ?? ''
+    expect(submit, 'دالة الإرسال مفقودة').toBeTruthy()
+    expect(submit, 'الإرسال الأخير لا يحمل الرقم — فتصحيحُه لا يصل').toMatch(/phone: normalizeDigits\(form\.phone\)/)
+
+    /* والخادمُ يقبله ويكتبه — وإلّا فالنداءُ يحمله ويُرمى */
+    expect(read(ROUTES), 'مخطط القسم الأخير لا يقبل الرقم').toMatch(/phone: z\.string\(\)\.max\(20\)\.optional\(\)/)
+    const svc = read(SERVICE)
+    const phase2 = /async completePhase2\([\s\S]*?\n {2}\}\n/.exec(svc)?.[0] ?? ''
+    expect(phase2, 'دالة القسم الأخير مفقودة').toBeTruthy()
+    expect(phase2, 'الخدمة لا تقرأ الرقم الواصل').toContain('input.phone')
+    expect(phase2, 'الرقم الواصل لا يُكتب في القاعدة').toMatch(/sentPhone \? \{ phone/)
+    /* وحارسُ الوسيلة يقيس الرقمَ الفعليّ لا المحفوظَ وحدَه — وإلّا بقيت
+       الحلقةُ قائمةً ولو وصل الرقمُ في النداء نفسِه. */
+    expect(phase2, 'الحارس ما زال يقرأ المحفوظ وحدَه').not.toContain('def.needsPhone && !app.phone')
+    expect(phase2, 'الحارس لا يقيس الرقم الفعليّ').toContain('def.needsPhone && !phone')
+  })
+
   it('الشبكة تُسوّي الخلايا فعلا — لا تكتفي بالاسم', () => {
     const kit = read('src/components/FormKit.tsx')
     /* خليّةٌ بعرضٍ كامل وارتفاعٍ أدنى موحّد: هذا ما يجعلها متساوية */
