@@ -18,6 +18,7 @@ import { ScenarioService } from '../../services/scenario.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
+import { ReferralService } from '../../services/referral.service'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -323,6 +324,15 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      «أوافق» ويرسلها، فيعتمدها الأكاديميُّ أو الأعلى. الخدمةُ في
      `cohort-plan.service.ts`، وهذه أبوابُها. */
   const plans = new CohortPlanService(prisma)
+  const referrals = new ReferralService(prisma)
+
+  app.get('/api/trainer/cohorts/:id/referral-link', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'رابطُ دعوتي لهذه الشعبة — يُنشأ مرّةً ويبقى' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return referrals.linkFor(req.auth!.userId, id)
+  })
   const planContent = z.object({
     kind: z.literal('trainer'),
     summaryAr: z.string().max(2000).nullish(),

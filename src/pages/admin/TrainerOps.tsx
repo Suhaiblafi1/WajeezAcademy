@@ -598,7 +598,7 @@ interface PayoutRow {
 interface ProfileOpt { id: string; fullName: string; reference: string; status?: string }
 interface TrainerSummaryRow {
   id: string; fullName: string; reference: string; status: string;
-  rule: { type: string; rate: number; currency: string; minSeats: number } | null;
+  rule: { type: string; rate: number; currency: string; minSeats: number; referralRate: number | null } | null;
   pending: number; approved: number; paid: number; currency: string;
 }
 
@@ -637,7 +637,7 @@ export function TrainerPayouts() {
     { description: "", amount: "", sourceRef: "" },
   ]);
   /* قواعد الأتعاب والتوليد */
-  const [ruleForm, setRuleForm] = useState({ profileId: "", type: "per_seat", rate: "", minSeats: "", cohortId: "" });
+  const [ruleForm, setRuleForm] = useState({ profileId: "", type: "per_seat", rate: "", minSeats: "", referralRate: "", cohortId: "" });
   /* سطرٌ لكلّ مدرّب: قاعدتُه وما يُنتظر له وما اعتُمد وما دُفع — كان الاسمُ
      يختفي بعد تأكيد التكلفة لأنّ لا موضعَ يجمعه بحالته الماليّة. */
   const [summary, setSummary] = useState<TrainerSummaryRow[]>([]);
@@ -677,9 +677,11 @@ export function TrainerPayouts() {
     await apiPost("/api/admin/trainer-compensation-rules", {
       profileId: ruleForm.profileId, type: ruleForm.type, rate: Number(ruleForm.rate),
       minSeats: ruleForm.type === "per_seat" && ruleForm.minSeats !== "" ? Number(ruleForm.minSeats) : undefined,
+      /* أجرُ المقعد الذي جاء عبر رابط المدرّب — للمقعد وحدَه، والسعرُ على الطالب واحد */
+      referralRate: ruleForm.type === "per_seat" && ruleForm.referralRate !== "" ? Number(ruleForm.referralRate) : undefined,
       cohortId: ruleForm.cohortId || undefined,
     });
-    setRuleForm({ ...ruleForm, rate: "", minSeats: "", cohortId: "" });
+    setRuleForm({ ...ruleForm, rate: "", minSeats: "", referralRate: "", cohortId: "" });
   }, "حُفظت القاعدة — صارت سارية من الآن");
 
   const doPreview = async () => {
@@ -764,7 +766,7 @@ export function TrainerPayouts() {
                     </td>
                     <td className="py-2.5 pl-3">
                       {t.rule
-                        ? <>{RULE_TYPE_AR[t.rule.type] ?? t.rule.type} · <b dir="ltr" className="font-mono">{t.rule.rate}</b> {t.rule.currency}{t.rule.minSeats > 0 ? ` · حدٌّ أدنى ${t.rule.minSeats}` : ""}</>
+                        ? <>{RULE_TYPE_AR[t.rule.type] ?? t.rule.type} · <b dir="ltr" className="font-mono">{t.rule.rate}</b> {t.rule.currency}{t.rule.minSeats > 0 ? ` · حدٌّ أدنى ${t.rule.minSeats}` : ""}{t.rule.referralRate != null ? <> · عبر رابطه <b dir="ltr" className="font-mono">{t.rule.referralRate}</b></> : ""}</>
                         : <span className="font-bold text-gold-ink">لا قاعدة — عيّنها أدناه</span>}
                     </td>
                     <td className="py-2.5 pl-3 tabular-nums" dir="ltr">{t.pending.toLocaleString("en-US")} {t.currency}</td>
@@ -796,6 +798,11 @@ export function TrainerPayouts() {
               <input value={ruleForm.minSeats} onChange={(e) => setRuleForm({ ...ruleForm, minSeats: e.target.value })}
                 placeholder="حد أدنى للمقاعد" dir="ltr" inputMode="numeric" title="يُحاسب المدرب على هذا العدد حتى لو قلّ التسجيل الفعلي"
                 className={`${inputCls} w-32 font-mono`} />
+            )}
+            {ruleForm.type === "per_seat" && (
+              <input value={ruleForm.referralRate} onChange={(e) => setRuleForm({ ...ruleForm, referralRate: e.target.value })}
+                placeholder="أجر المقعد عبر رابطه" dir="ltr" inputMode="decimal" title="ما يقبضه عن كلّ متعلّمٍ جاء عبر رابط دعوته — والسعرُ على الطالب واحد"
+                className={`${inputCls} w-40 font-mono`} />
             )}
             <select value={ruleForm.cohortId} onChange={(e) => setRuleForm({ ...ruleForm, cohortId: e.target.value })}
               title="اتركها «عامة» لتسري على كل الشعب، أو خصصها لشعبة واحدة" className={`${selectCls} w-48`}>

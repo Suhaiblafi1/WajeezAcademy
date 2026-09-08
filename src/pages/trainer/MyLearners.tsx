@@ -42,6 +42,7 @@ interface TrainerCohort {
     enrollments: {
       id: string; userId: string; status: string;
       user: { displayName: string };
+      referredByMe?: boolean;
       courseProgress: { percent: number } | null;
       attendance: { sessionId: string; status: string }[];
     }[];
@@ -59,6 +60,7 @@ interface Row {
      يُظهر «٠ ينتظر تصحيحك» لمن ينتظر. */
   userId: string;
   name: string;
+  referredByMe: boolean;
   cohortTitle: string;
   courseTitle: string;
   enrollmentStatus: string;
@@ -109,6 +111,7 @@ function buildRows(cohorts: TrainerCohort[]): Row[] {
         enrollmentId: e.id,
         userId: e.userId,
         name: e.user.displayName,
+        referredByMe: Boolean(e.referredByMe),
         cohortTitle: cohort.title,
         courseTitle,
         enrollmentStatus: e.status,
@@ -228,6 +231,8 @@ export default function TrainerMyLearners() {
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-2 text-fine font-black">
                         <span className="rounded-full bg-teal/15 px-3 py-1 text-teal-light-ink">تقدّمُه {r.progress}٪</span>
+                        {/* من أين جاء — «ليتأكّد أنّنا لم نغشّ» */}
+                        {r.referredByMe && <span className="rounded-full bg-gold/15 px-3 py-1 font-bold text-gold-ink">عبر رابطك</span>}
                         <span className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground">
                           {r.attendedOf
                             ? `حضر ${r.attendedOf.attended} من ${r.attendedOf.countable}`

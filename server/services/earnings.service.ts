@@ -39,11 +39,34 @@ export class EarningsService {
        كانت الصفحةُ تعرض ما قُبض وما يُنتظر، ولا تعرض **على أيّ أساس**: القاعدةُ
        التي أكّدتها الإدارةُ تبقى في شاشة الإدارة، فيقرأ المدرّبُ رقما لا يعرف
        من أين جاء. والاتفاقُ المسبقُ حقُّه أن يراه قبل أن يُحسب له شيء. */
-    const [agreement, rules] = await Promise.all([
+    const [agreement, rules, cohortRows] = await Promise.all([
       this.activeRule(profile.id),
       this.listRules(profile.id),
+      /* ═══ شعبةً شعبة: كم عامّا وكم عبر رابطك، وبأيّ أجر ═══
+
+         «ليعرف ماذا سيحصل على كلّ طالبٍ عامّ وكلّ طالبٍ من الرابط» — فلا يكفي
+         مجموع؛ يرى الأعدادَ والأجرَ لكلّ شعبةٍ قبل أن يُولَّد كشفُها. */
+      this.prisma.cohortTrainer.findMany({
+        where: { profileId: profile.id },
+        include: { cohort: { select: { id: true, title: true, courseId: true, status: true } } },
+      }),
     ])
-    return { payouts, summary, agreement, rules }
+    const cohorts = await Promise.all(cohortRows.map(async (ct) => {
+      const rule = await this.activeRule(profile.id, { cohortId: ct.cohort.id, courseId: ct.cohort.courseId })
+      const [referred, general] = await Promise.all([
+        this.prisma.enrollment.count({ where: { cohortId: ct.cohort.id, status: { in: ['enrolled', 'completed'] }, referralProfileId: profile.id } }),
+        this.prisma.enrollment.count({ where: { cohortId: ct.cohort.id, status: { in: ['enrolled', 'completed'] }, NOT: { referralProfileId: profile.id } } }),
+      ])
+      const rate = rule && rule.type === 'per_seat' ? Number(rule.rate) : null
+      const referralRate = rule && rule.type === 'per_seat' ? (rule.referralRate === null ? rate : Number(rule.referralRate)) : null
+      return {
+        cohortId: ct.cohort.id, title: ct.cohort.title, status: ct.cohort.status,
+        general, referred, rate, referralRate, currency: rule?.currency ?? LEDGER_CURRENCY,
+        ruleType: rule?.type ?? null,
+        projected: rate === null ? null : general * rate + referred * (referralRate ?? rate),
+      }
+    }))
+    return { payouts, summary, agreement, rules, cohorts }
   }
 
   /* ═══ ملخّصُ كلّ مدرّبٍ في سطر — للإدارة ═══
@@ -61,7 +84,7 @@ export class EarningsService {
       const sum = (st: string) => payouts.filter((x) => x.status === st).reduce((a, x) => a + Number(x.total), 0)
       return {
         ...p,
-        rule: rule ? { type: rule.type, rate: Number(rule.rate), currency: rule.currency, minSeats: rule.minSeats } : null,
+        rule: rule ? { type: rule.type, rate: Number(rule.rate), currency: rule.currency, minSeats: rule.minSeats, referralRate: rule.referralRate === null ? null : Number(rule.referralRate) } : null,
         pending: sum('pending'), approved: sum('approved'), paid: sum('paid'),
         currency: payouts[0]?.currency ?? rule?.currency ?? LEDGER_CURRENCY,
       }
@@ -271,6 +294,7 @@ export class EarningsService {
   async setRule(actorId: string, input: {
     profileId: string; type: string; rate: number; currency?: string; effectiveFrom?: Date
     minSeats?: number; courseId?: string; cohortId?: string
+    referralRate?: number
   }) {
     if (!['per_seat', 'fixed_per_cohort', 'revenue_share'].includes(input.type)) {
       throw new AuthError('bad_type', 'نوع القاعدة يجب أن يكون per_seat أو fixed_per_cohort أو revenue_share', 400)
@@ -303,6 +327,7 @@ export class EarningsService {
       const created = await tx.trainerCompensationRule.create({
         data: {
           profileId: input.profileId, type: input.type, rate: input.rate,
+          referralRate: input.type === 'per_seat' && input.referralRate !== undefined ? input.referralRate : null,
           currency: input.currency ?? LEDGER_CURRENCY, minSeats, ...scope, effectiveFrom, createdBy: actorId,
         },
       })
@@ -345,18 +370,34 @@ export class EarningsService {
     const items: { description: string; amount: number; sourceRef?: string }[] = []
 
     if (rule.type === 'per_seat') {
-      const actual = await this.prisma.enrollment.count({
-        where: { cohortId, status: { in: ['enrolled', 'completed'] } },
-      })
-      /* الحد الأدنى للمقاعد: يُحاسب المدرب عليه حتى لو قلّ العدد الفعلي — من إعداد الإدارة */
-      const seats = Math.max(actual, rule.minSeats)
+      /* ═══ المقعدُ العامُّ والمقعدُ بالإحالة — بندان لا بند ═══
+
+         قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): من جاء برابط المدرّب يُحسب له بأجرٍ
+         مختلف. فيُعدّ الصنفان على حدة ويُكتبان بندين — ليقرأ المدرّبُ في كشفه
+         كم جاءه من رابطه وكم عامّا، لا رقما واحدا يظنّ فيه الظنون. وبلا
+         `referralRate` يُحسب الكلُّ بـ`rate` كما كان. والحدُّ الأدنى يُطبَّق على
+         المجموع ويُكمَّل من العامّ. */
+      const [referred, general] = await Promise.all([
+        this.prisma.enrollment.count({ where: { cohortId, status: { in: ['enrolled', 'completed'] }, referralProfileId: profileId } }),
+        this.prisma.enrollment.count({ where: { cohortId, status: { in: ['enrolled', 'completed'] }, NOT: { referralProfileId: profileId } } }),
+      ])
+      const actual = referred + general
+      const generalSeats = Math.max(general, rule.minSeats - referred)
       const minNote = rule.minSeats > 0 && actual < rule.minSeats
         ? ` (فعلي ${actual} — طُبق الحد الأدنى ${rule.minSeats})` : ''
       items.push({
-        description: `تدريب «${courseTitle}» — ${seats} متعلماً × ${Number(rule.rate)} ${rule.currency}${minNote}`,
-        amount: seats * Number(rule.rate),
+        description: `تدريب «${courseTitle}» — ${generalSeats} متعلماً عامّا × ${Number(rule.rate)} ${rule.currency}${minNote}`,
+        amount: generalSeats * Number(rule.rate),
         sourceRef: `cohort:${cohortId}`,
       })
+      if (referred > 0) {
+        const r = rule.referralRate === null ? Number(rule.rate) : Number(rule.referralRate)
+        items.push({
+          description: `منهم عبر رابطك — ${referred} متعلماً × ${r} ${rule.currency}`,
+          amount: referred * r,
+          sourceRef: `cohort:${cohortId}:referral`,
+        })
+      }
     } else if (rule.type === 'fixed_per_cohort') {
       items.push({
         description: `أتعاب ثابتة — شعبة «${cohort.title}» (${courseTitle})`,
@@ -386,6 +427,7 @@ export class EarningsService {
       profile: { id: profileId, fullName: profile?.application.fullName ?? '—' },
       rule: {
         type: rule.type, rate: Number(rule.rate), currency: rule.currency, minSeats: rule.minSeats,
+        referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
         scope: rule.cohortId ? 'cohort' : rule.courseId ? 'course' : 'general',
       },
       items, total,

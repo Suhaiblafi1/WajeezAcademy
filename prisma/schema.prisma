@@ -1111,6 +1111,7 @@ model TrainerProfile {
   changeRequests        TrainerChangeRequest[]
   onboardingTasks       TrainerOnboardingTask[]
   contracts             TrainerContract[]
+  referralLinks         TrainerReferralLink[]
   compensationRules     TrainerCompensationRule[]
   payouts               TrainerPayout[]
   cohortPlans           CohortDeliveryPlan[]
@@ -1329,6 +1330,9 @@ model TrainerCompensationRule {
   rate          Decimal        @db.Decimal(10, 2)
   currency      String         @default("USD")
   minSeats      Int            @default(0) // حد أدنى للمقاعد المحتسبة في per_seat — يُدفع حتى لو قلّ العدد الفعلي
+  /// أجرُ المقعد الذي جاء عبر رابط المدرّب — يغلب `rate` لذلك المقعد وحدَه. وبلا
+  /// قيمةٍ يُحسب كلُّ مقعدٍ بـ`rate` كما كان. لنوع `per_seat` وحدَه.
+  referralRate  Decimal?       @db.Decimal(10, 2)
   courseId      String? // نطاق اختياري: قاعدة خاصة بدورة
   cohortId      String?        @db.Uuid // نطاق اختياري: قاعدة خاصة بشعبة — الأعلى أولوية
   effectiveFrom DateTime       @default(now())
@@ -1497,8 +1501,26 @@ model Cohort {
   materials           LearningMaterial[]
   assessments         CohortAssessment[]
   completionRules     CompletionRule[]
+  referralLinks       TrainerReferralLink[]
 
   @@index([courseId, status])
+}
+
+/// ═══ رابطُ دعوةِ المدرّب — لكلّ شعبةٍ رابطٌ لا يشترك فيه غيرُه ═══
+///
+/// قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): للمدرّب رابطٌ لكلّ شعبةٍ ينشره حيث
+/// شاء، وكلُّ من سجّل منه يُحسب له بأجرٍ مختلف — والسعرُ على الطالب واحد.
+/// والرمزُ يُنشأ مرّةً ويبقى: لو تغيّر ضاع ما نُشر.
+model TrainerReferralLink {
+  id        String         @id @default(uuid()) @db.Uuid
+  cohortId  String         @db.Uuid
+  profileId String         @db.Uuid
+  code      String         @unique
+  createdAt DateTime       @default(now())
+  cohort    Cohort         @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([cohortId, profileId])
 }
 
 model CohortDeliveryPlan {
@@ -1703,6 +1725,10 @@ model Enrollment {
   status           String                 @default("enrolled") // enrolled | waitlisted | completed | dropped
   enrolledBy       String?                @db.Uuid
   overrideCapacity Boolean                @default(false) // تجاوز سعة موثق بصلاحية
+  /// من أين جاء: عبر رابطِ مدرّبٍ (يُحسب له بأجر الإحالة) أو عامّ. يُختم عند
+  /// التسجيل من رمزٍ حُمل مع الحجز، ولا يُغيَّر بعدها — فهو حجّةُ الأجر.
+  referralProfileId String?               @db.Uuid
+  referralCode      String?
   createdAt        DateTime               @default(now())
   cohort           Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   user             User                   @relation("EnrollmentUser", fields: [userId], references: [id])
@@ -2373,6 +2399,8 @@ model EnrollmentRequest {
   orderId   String?   @db.Uuid
   /// خطّة المتعلّم التي وُلد منها هذا الطلب — تجمع طلباتِ خطّةٍ واحدة في طلب شراء واحد وفاتورة واحدة
   planId    String?   @db.Uuid
+  /// رمزُ الدعوة الذي جاء به إلى الدفع — يُحمل حتّى التسوية فيُختم على التسجيل
+  referralCode String?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   cohort    Cohort    @relation(fields: [cohortId], references: [id])

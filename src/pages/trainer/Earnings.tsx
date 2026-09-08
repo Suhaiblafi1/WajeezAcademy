@@ -19,7 +19,7 @@ interface RealPayout {
   items: { id: string; description: string; amount: string | number; sourceRef?: string | null }[];
 }
 interface Rule {
-  id: string; type: string; rate: string | number; currency: string; minSeats: number;
+  id: string; type: string; rate: string | number; currency: string; minSeats: number; referralRate?: string | number | null;
   courseId: string | null; cohortId: string | null; effectiveFrom: string; effectiveTo: string | null;
 }
 interface RealEarnings {
@@ -28,6 +28,8 @@ interface RealEarnings {
   /* الاتفاقُ نفسُه — كان الكشفُ وحدَه يصل، فيقرأ المدرّبُ رقما لا يعرف أساسَه */
   agreement: Rule | null;
   rules: Rule[];
+  /* شعبةً شعبة: كم عامّا وكم عبر رابطك وبأيّ أجر — قبل أن يُولَّد الكشف */
+  cohorts: { cohortId: string; title: string; status: string; general: number; referred: number; rate: number | null; referralRate: number | null; currency: string; ruleType: string | null; projected: number | null }[];
 }
 
 const fmt = (n: string | number) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
@@ -62,7 +64,7 @@ function RealEarningsView() {
     );
   }
 
-  const { summary, payouts, agreement, rules } = data;
+  const { summary, payouts, agreement, rules, cohorts } = data;
   const scoped = (rules ?? []).filter((r) => (r.cohortId || r.courseId) && !r.effectiveTo);
   return (
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
@@ -77,7 +79,8 @@ function RealEarningsView() {
           <>
             <p className="mt-2 text-lg font-black text-foreground">
               {RULE_TYPE_AR[agreement.type] ?? agreement.type} — <span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency}
-              {agreement.type === "per_seat" && " عن كلّ متعلّم"}
+              {agreement.type === "per_seat" && " عن كلّ متعلّمٍ عامّ"}
+              {agreement.type === "per_seat" && agreement.referralRate != null && <> · و<span dir="ltr" className="font-mono">{Number(agreement.referralRate)}</span> {agreement.currency} عن كلّ متعلّمٍ جاء عبر رابطك</>}
               {agreement.type === "revenue_share" && " من إيراد الشعبة"}
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
@@ -98,6 +101,35 @@ function RealEarningsView() {
           </p>
         )}
       </Panel>
+
+      {/* ═══ شعبةً شعبة — من أين جاء طلابك وماذا يُحسب لك عنهم ═══ */}
+      {(cohorts ?? []).length > 0 && (
+        <Panel as="section" className="mb-6">
+          <p className="text-sm font-black">شعبك — عامٌّ وعبر رابطك</p>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-read">
+              <thead>
+                <tr className="text-right text-muted-foreground">
+                  <th className="pb-2 pl-3 font-bold">الشعبة</th>
+                  <th className="pb-2 pl-3 font-bold">عامّ</th>
+                  <th className="pb-2 pl-3 font-bold">عبر رابطك</th>
+                  <th className="pb-2 font-bold">المتوقَّع</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cohorts.map((c) => (
+                  <tr key={c.cohortId} className="border-t border-white/10">
+                    <td className="py-2 pl-3 font-bold">{c.title}</td>
+                    <td className="py-2 pl-3 tabular-nums">{c.general}{c.rate != null && <span className="text-muted-foreground"> × {c.rate}</span>}</td>
+                    <td className="py-2 pl-3 tabular-nums">{c.referred}{c.referralRate != null && <span className="text-muted-foreground"> × {c.referralRate}</span>}</td>
+                    <td className="py-2 tabular-nums" dir="ltr">{c.projected == null ? "—" : `${fmt(c.projected)} ${c.currency}`}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         <Card tone="warn">

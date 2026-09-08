@@ -35,6 +35,7 @@ import { CalendarDays, CreditCard, Gift, Info, Loader2, Route as RouteIcon, Tag 
 import Modal from "@/components/Modal";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
 import { apiPost, ApiError } from "@/services/api";
+import { readReferral } from "@/application/commerce/referral";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
@@ -233,6 +234,8 @@ export default function BuyPanel({
       const order = await apiPost<CheckoutResult>("/api/learner/checkout", {
         cohortIds: payableIds,
         ...(applied ? { couponCode: applied } : {}),
+        /* رمزُ دعوة المدرّب إن هبط الزائرُ برابطه — والخادمُ يقرّر قبولَه */
+        ...(readReferral() ? { referralCode: readReferral()! } : {}),
       });
       const r = await apiPost<PayResult>(`/api/learner/orders/${order.orderId}/pay`, {
         idempotencyKey: `buy-${order.orderId}-${currency}`,

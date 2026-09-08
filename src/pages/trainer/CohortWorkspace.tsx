@@ -54,7 +54,7 @@ interface Workspace {
   } | null;
   sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
   materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
-  learners: { enrollmentId: string; name: string; status: string; progress: number }[];
+  learners: { enrollmentId: string; name: string; status: string; progress: number; referredByMe: boolean }[];
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
 }
 
@@ -92,12 +92,16 @@ export default function CohortWorkspace() {
   const [identity, setIdentity] = useState({ title: "", startsAt: "", endsAt: "", daysOfWeek: [] as string[], startTime: "", language: "", deliveryMode: "remote" });
   const [confirm, setConfirm] = useState(false);
   const [recLink, setRecLink] = useState<Record<string, { title: string; url: string }>>({});
+  /* رابطُ دعوتي لهذه الشعبة — يُنشأ مرّةً عند أوّل طلبٍ ويبقى */
+  const [referral, setReferral] = useState<{ code: string; url: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
       setWs(w);
+      apiGet<{ code: string; url: string }>(`/api/trainer/cohorts/${id}/referral-link`).then(setReferral).catch(() => setReferral(null));
       setContent(w.plan?.content ?? { kind: "trainer", summaryAr: "", modules: w.course.baseModules, resources: [], liveNoteAr: "" });
       setIdentity({
         title: w.cohort.title, startsAt: toDateInput(w.cohort.startsAt), endsAt: toDateInput(w.cohort.endsAt),
@@ -186,6 +190,23 @@ export default function CohortWorkspace() {
           ))}
         </ol>
       </Panel>
+
+      {/* ═══ رابطُ دعوتك — لهذه الشعبة وحدَك ═══
+
+          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): تنشره في صفحاتك، وكلُّ من سجّل منه
+          يُحسب لك بأجر الإحالة. والسعرُ على الطالب واحد. */}
+      {referral && (
+        <Panel as="section" className="mb-6">
+          <p className="flex items-center gap-2 text-sm font-black"><Link2 className="h-4 w-4 text-teal-light-ink" /> رابطُ دعوتك لهذه الشعبة</p>
+          <p className="mt-1 text-read leading-6 text-muted-foreground">انشره حيث شئت — كلُّ من سجّل منه يُحسب لك، وتراه بعلامة «عبر رابطك» عند اسمه وفي «مستحقاتي».</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input readOnly dir="ltr" value={referral.url} aria-label="رابط الدعوة" onFocus={(e) => e.currentTarget.select()} className={`${controlCls} min-w-0 flex-1 text-left font-mono`} />
+            <Button tone="secondary" onClick={() => { void navigator.clipboard?.writeText(referral.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}>
+              {copied ? "نُسخ" : "انسخ الرابط"}
+            </Button>
+          </div>
+        </Panel>
+      )}
 
       {/* ═══ الألسنة ═══ */}
       {/* الألسنةُ من `ui/TabBar` — معها `aria-selected` ووقفةٌ واحدةٌ في التنقّل وأسهمٌ تمشي بينها */}
@@ -373,7 +394,10 @@ export default function CohortWorkspace() {
             <ul className="mt-4 space-y-2">
               {ws.learners.map((l) => (
                 <Inset as="li" key={l.enrollmentId} className="flex items-center justify-between gap-3 text-read">
-                  <span className="font-bold">{l.name}</span>
+                  <span className="font-bold">
+                    {l.name}
+                    {l.referredByMe && <span className="mr-2 rounded-full bg-gold/15 px-2.5 py-0.5 text-read font-bold text-gold-ink">عبر رابطك</span>}
+                  </span>
                   <span className="text-muted-foreground" dir="ltr">{l.progress}%</span>
                 </Inset>
               ))}
