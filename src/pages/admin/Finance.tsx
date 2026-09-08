@@ -10,6 +10,7 @@ import {
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
 import EmptyState from "@/components/EmptyState";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Chip from "@/components/ui/Chip";
@@ -226,12 +227,7 @@ export default function Finance() {
           /* اللسانُ أوّلا، ثمّ أوّلُ معلَّقٍ معروضٍ يُبلَغ ويُركَّز عليه */
           if (tab !== "requests") { setTab("requests"); setQ(""); setPage(1); return; }
           const first = reqView.rows.find((r) => r.status === "pending") ?? reqView.rows[0];
-          if (!first) return;
-          const el = document.getElementById(`enroll-req-${first.id}`);
-          if (!el) return;
-          const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-          el.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "center" });
-          el.focus({ preventScroll: true });
+          if (first) revealRow(`enroll-req-${first.id}`);
         }}
         doneAr="لا طلبَ تسجيلٍ ينتظر مراجعتَك — وما يصل منها يظهر هنا فورا."
       />

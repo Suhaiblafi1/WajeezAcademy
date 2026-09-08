@@ -6,7 +6,7 @@
    ومحروسٌ بصلاحيةِ مراجعةِ طلبات التسجيل التي لا تفتح شيئا هنا. */
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
+import { RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
@@ -16,8 +16,13 @@ import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffSelectCls } from "@/components/FormKit";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
+/* «١ حالةٌ» و«٢ حالتان» و«٣ حالات» و«١١ حالةً» — والعددُ يُقرأ لا يُحسب */
+const CASE_FORMS = { one: "حالةٌ", two: "حالتان", few: "حالات", many: "حالةً" };
+
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
   enrolled: "سجلت", not_interested: "غير مهتمة", closed: "مغلقة", converted: "تحولت",
@@ -99,21 +104,37 @@ export default function Exceptions() {
         { label: "مراجعة وإسناد", actor: "أنت هنا" },
         { label: "المستشار يستلمها", actor: "تظهر في بوابته فوراً" },
       ]} />
+      {/* ── العملُ قبل القائمة ──
+
+          الحالةُ بلا مستشارٍ تتراكم كلَّ يومٍ حتّى تُسنَد، وصاحبُها ينتظر بلا
+          أن يعرف أحدٌ منذ متى. فصار العددُ جملةً، وللإسناد زرٌّ يبلغ أوّلَها
+          ويضع التركيزَ على منتقي المستشار مباشرةً — لا على الصفّ وحدَه. */}
+      <WorkHeader
+        loading={loading}
+        icon={ShieldAlert}
+        count={rows.length}
+        forms={CASE_FORMS}
+        waitingAr="تنتظر إسنادَ مستشار"
+        actionAr="أسنِد أوّلَها"
+        /* والعجزُ يُقال في موضعه: قائمةٌ فارغةٌ من المستشارين تعني أنّ لا
+           أحدَ نشطٌ يُسنَد إليه — وهو سببٌ يُعالَج في شاشةٍ أخرى، فلا يُترك
+           الزرُّ باهتا بلا كلمة. */
+        disabledReasonAr={advisors.length === 0
+          ? "لا مستشارَ نشطا يُسنَد إليه — فعِّل مستشارا في «المستشارون» أوّلا."
+          : rows.length > 0 && view.total === 0
+            ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+            : undefined}
+        onAction={() => { if (view.rows[0]) revealRow(`advisor-${view.rows[0].id}`); }}
+        doneAr="لا حالةَ بلا مستشار — كلُّ حالات المستشارين النشطة مسنَدة، والجديدةُ من التشخيص تظهر هنا فورَ وصولها."
+      />
+
       <div className="mb-5 flex items-center gap-3">
         <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </Button>
       </div>
 
-      {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      ) : rows.length === 0 ? (
-        <Panel className="grid place-items-center py-20 text-center">
-          <ShieldAlert className="h-12 w-12 text-muted-foreground/50" />
-          <h2 className="mt-4 text-xl font-black">لا حالةَ بلا مستشار</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">كل حالات المستشارين النشطة مسندة — الحالات الجديدة من التشخيص تظهر هنا فور وصولها.</p>
-        </Panel>
-      ) : (
+      {!loading && rows.length > 0 && (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حالة"
           placeholder="ابحث باسم العميل أو بريده…" />
