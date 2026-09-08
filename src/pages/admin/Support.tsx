@@ -18,7 +18,7 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import Button from "@/components/ui/Button";
-import { staffControlCls as inputCls } from "@/components/FormKit";
+import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
@@ -49,6 +49,14 @@ export default function Support() {
   const [reply, setReply] = useState("");
   const [internal, setInternal] = useState(false);
   const [agentId, setAgentId] = useState("");
+  /* وكلاءُ الدعم — يُقرؤون مرّةً بحارسِ الإسناد نفسِه، لا من شاشة المستخدمين */
+  const [agents, setAgents] = useState<{ id: string; displayName: string; email: string }[]>([]);
+
+  useEffect(() => {
+    apiGet<{ id: string; displayName: string; email: string }[]>("/api/admin/support/agents")
+      .then(setAgents)
+      .catch(() => setAgents([]));
+  }, []);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
@@ -180,13 +188,26 @@ export default function Support() {
             <Card as="article">
               <h4 className="flex items-center gap-2 text-sm font-black"><UserPlus className="h-4 w-4 text-teal-light-ink" /> إسناد لوكيل دعم</h4>
               <div className="mt-3 flex gap-2">
-                <input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="معرف الوكيل (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-                <Button tone="confirm" disabled={busy || !agentId.trim()}
-                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId: agentId.trim() }), "أُسندت التذكرة")}>
+                {/* «الوكيلون بدور support من صفحة المستخدمين» كان نصَّ
+                    الشاشة تحت الحقل — أي أنّها تُحيل الإنسانَ إلى شاشةٍ أخرى
+                    ليستخرج منها معرّفا من ستّةٍ وثلاثين حرفا ويعود فيلصقه.
+                    فصارت القائمةُ هنا، بحارسِ الإسناد نفسِه. */}
+                <label className="sr-only" htmlFor={`agent-${t.id}`}>وكيلُ الدعم</label>
+                <select id={`agent-${t.id}`} value={agentId} disabled={agents.length === 0}
+                  onChange={(e) => setAgentId(e.target.value)} className={`${selectCls} flex-1`}>
+                  <option value="">{agents.length === 0 ? "لا وكلاءَ نشطين" : "اختر وكيلا…"}</option>
+                  {agents.map((g) => <option key={g.id} value={g.id}>{g.displayName} ({g.email})</option>)}
+                </select>
+                <Button tone="confirm" disabled={busy || !agentId}
+                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId }), "أُسندت التذكرة")}>
                   إسناد
                 </Button>
               </div>
-              <p className="mt-2 text-read text-muted-foreground">الوكيلون بدور «support» من صفحة المستخدمين.</p>
+              {agents.length === 0 && (
+                <p className="mt-2 text-read text-muted-foreground">
+                  لا حسابَ نشطا بدور «support» — يُمنح الدورُ من «المستخدمون والأدوار».
+                </p>
+              )}
             </Card>
 
             <Card as="article">

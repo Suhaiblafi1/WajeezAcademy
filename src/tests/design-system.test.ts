@@ -56,7 +56,7 @@ const EXEMPT = join('src', 'components', 'ui')
    السقفَ في الالتزام نفسِه — وإلّا فُتح البابُ لصيغةٍ جديدةٍ مكانَ المُرحَّلة. */
 const CEILING = {
   /** مستطيلٌ بحدٍّ وانحناء — مكانُه `Panel` أو `Card` أو `Inset` */
-  surface: 171,
+  surface: 169,
   /** زرٌّ بصيغةٍ كاملةٍ مكتوبةٍ في مكانها */
   button: 30,
 } as const

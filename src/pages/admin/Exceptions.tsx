@@ -14,6 +14,7 @@ import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { staffSelectCls } from "@/components/FormKit";
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
   enrolled: "سجلت", not_interested: "غير مهتمة", closed: "مغلقة", converted: "تحولت",
@@ -24,11 +25,12 @@ interface UnassignedCase {
   lead: { id: string; name?: string | null; email?: string | null } | null;
   client: { displayName: string; email: string } | null;
 }
-interface UserRow { id: string; displayName: string; email: string; roles: { id: string }[] }
+/** مستشارٌ متاحٌ للإسناد — الخادمُ يرشّح بالدور، فلا تُقرأ الأدوارُ هنا */
+interface AdvisorOption { id: string; displayName: string; email: string }
 
 export default function Exceptions() {
   const [rows, setRows] = useState<UnassignedCase[]>([]);
-  const [advisors, setAdvisors] = useState<UserRow[]>([]);
+  const [advisors, setAdvisors] = useState<AdvisorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,10 +40,15 @@ export default function Exceptions() {
     setLoading(true); setOffline(null);
     try { setRows(await apiGet<UnassignedCase[]>("/api/admin/advisor-cases/unassigned")); }
     catch (e) { setOffline(permissionMessage(e, "الخادم غير متصل")); }
-    /* قائمة المستشارين اختيارية — تتطلب صلاحية المستخدمين */
+    /* ── لماذا لا تُقرأ من `/api/admin/users` ──
+
+       كانت تُقرأ منه وتُرشَّح بدور المستشار، وذاك محروسٌ بـ`admin.users.view`.
+       فمن مُنح إسنادَ الحالات ولم يُمنح إدارةَ المستخدمين تسقط عنه القائمةُ
+       صامتةً وتنكشف تحتها خانةُ «معرف المستشار (UUID)» — قيمةٌ لا تعرضها
+       شاشةٌ يملكها. فحقلُ اللصق لم يكن خيارَ تصميم بل أثرَ حارسٍ لا يطابق
+       الفعل. والمسارُ الآن محروسٌ بـ`advisor.assign` نفسِها. */
     try {
-      const users = await apiGet<UserRow[]>("/api/admin/users");
-      setAdvisors(users.filter((u) => u.roles.some((r) => r.id === "advisor")));
+      setAdvisors(await apiGet<AdvisorOption[]>("/api/admin/advisor-cases/assignable-advisors"));
     } catch { setAdvisors([]); }
     setLoading(false);
   }, []);
@@ -107,17 +114,14 @@ export default function Exceptions() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {advisors.length > 0 ? (
-                  <select value={pick[c.id] ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}
-                    className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground [&>option]:bg-surface">
-                    <option value="">اختر مستشارا…</option>
-                    {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
-                  </select>
-                ) : (
-                  <input value={pick[c.id] ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}
-                    placeholder="معرف المستشار (UUID)" dir="ltr"
-                    className="w-56 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
-                )}
+                {/* والفراغُ يُقال ولا يُلتفّ عليه بحقلِ لصق: قائمةٌ فارغةٌ
+                    تعني أن لا مستشارَ نشطا، ومعرّفٌ يُكتب يدا لا يُنشئ واحدا. */}
+                <label className="sr-only" htmlFor={`advisor-${c.id}`}>المستشارُ المسنَد إليه</label>
+                <select id={`advisor-${c.id}`} value={pick[c.id] ?? ""} disabled={advisors.length === 0}
+                  onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
+                  <option value="">{advisors.length === 0 ? "لا مستشارين نشطين" : "اختر مستشارا…"}</option>
+                  {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
+                </select>
                 <Button tone="confirm" disabled={busy || !(pick[c.id] ?? "").trim()} onClick={() => void assign(c.id)}>
                   <UserPlus className="h-3.5 w-3.5" /> إسناد
                 </Button>
