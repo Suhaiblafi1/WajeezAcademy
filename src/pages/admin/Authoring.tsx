@@ -42,6 +42,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import TabBar from "@/components/ui/TabBar";
 interface WorkRow {
   moduleId: string; courseId: string; courseTitleAr: string; titleAr: string; sequence: number;
   hasBody: boolean; hasChecks: boolean; hasVideo: boolean; hasScenario: boolean;
@@ -399,22 +400,25 @@ export default function Authoring() {
                 </p>
               </header>
 
-              <nav className="mb-3 flex flex-wrap gap-1.5">
-                {TABS.map((t) => {
-                  const filled = Boolean((draft[t.field] as string | null)?.trim());
-                  return (
-                    <button
-                      key={t.id} type="button" onClick={() => setTab(t.id)}
-                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-fine font-bold transition ${
-                        tab === t.id ? "border-teal/50 bg-teal/10 text-teal-ink" : "border-white/10 text-muted-foreground hover:border-white/25"}`}
-                    >
-                      <t.icon className="h-3.5 w-3.5" />
+              {/* الأيقونةُ وعلامةُ الاكتمال داخلَ الاسم: `label` عقدةٌ لا نصّ،
+                  فلا يحتاج الشريطُ خانةً لكلِّ زينةٍ في لسان. */}
+              <TabBar
+                className="mb-3"
+                ariaLabel="أجزاءُ الوحدة"
+                value={tab}
+                onChange={setTab}
+                items={TABS.map((t) => ({
+                  id: t.id,
+                  label: (
+                    <span className="flex items-center gap-1.5">
+                      <t.icon className="h-3.5 w-3.5" aria-hidden="true" />
                       {t.label}
-                      {filled && <CheckCircle2 className="h-3 w-3 text-teal" />}
-                    </button>
-                  );
-                })}
-              </nav>
+                      {Boolean((draft?.[t.field] as string | null)?.trim())
+                        && <CheckCircle2 className="h-3 w-3" aria-label="مكتمل" />}
+                    </span>
+                  ),
+                }))}
+              />
 
               <div className="grid gap-4 xl:grid-cols-2">
                 <div>

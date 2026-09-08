@@ -36,6 +36,41 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | `seo-aeo-best-practices` · `content-experimentation-best-practices` | [sanity-io/agent-toolkit](https://github.com/sanity-io/agent-toolkit) · `skills/` | `e447ef1` | MIT |
 | تسعُ مهارات بريد (`onboarding-emails` · `email-sequences` · `transactional-email` · `notification-design` · `email-copywriting` · `domain-authentication` · `inbox-placement` · `bounce-handling` · `email-compliance`) | [chunkydotdev/email-skills](https://github.com/chunkydotdev/email-skills) · `skills/` | `dca18fc` | MIT |
 | `email-marketing-bible` | [CosmoBlk/email-marketing-bible](https://github.com/CosmoBlk/email-marketing-bible) · الجذر | `b6dd8b4` | MIT |
+| `mobbin-ux` | [rohunvora/cool-claude-skills](https://github.com/rohunvora/cool-claude-skills) · `skills/mobbin-ux/` | `8b7c17f` | MIT — **معلَنةٌ في README وحدَه، ولا ملفَّ رخصةٍ في المستودَع** |
+| `quick-view` | المصدر نفسُه · `skills/quick-view/` | `8b7c17f` | MIT — بالشرط نفسِه |
+
+> **و`mobbin-ux` لا تعمل اليوم — تُستورد جاهزةً لغدٍ.** جُلبت بطلب صاحب المنصّة
+> (٨ سبتمبر ٢٠٢٦)، وثلاثةُ شروطٍ لها غيرُ متحقّقة، وكلُّها فُحصت لا خُمِّنت:
+>
+> ١) تشترط في وصفها أتمتةَ متصفّح (`claude-in-chrome` MCP) لتقود `mobbin.com`
+> بحسابٍ مُسجَّلٍ دخولُه. ولا خادمَ متصفّحٍ في جلسات هذا المستودع.
+>
+> ٢) و`mobbin.com` محجوبٌ عن جلسات الوكيل السحابيّة ببروكسي الخروج (قِيس: `000`)
+> — كحال `21st.dev` و`pinterest.com`. فهي مهارةُ جهازٍ محلّيٍّ بطبعها.
+>
+> ٣) وخطوتُها الرابعة تنادي `/quick-view` — **وقد استُوردت بعدها بطلبٍ ثانٍ**،
+> فسقط هذا الشرطُ وبقي الأوّلان.
+>
+> ولا سكربتَ فيها ولا ملفَّ ثانٍ: ملفٌّ واحدٌ في ٩٦ سطرا، قُرئ كاملا قبل النقل.
+> وخادمُ Mobbin عبر MCP — وهو طريقٌ آخرُ غيرُ طريقها — يشترط اشتراكا مدفوعا
+> (`Mobbin MCP requires a paid plan`)، جُرّب في الوضعين `deep` و`standard`.
+
+> **و`quick-view` تعمل هنا، وبابُها أُغلق قبل أن يُفتح.** مهارةُ عرضٍ لا شبكةَ
+> فيها: تولّد HTML بسيطا ليُقرأ مخرَجٌ في متصفّح. وقُرئت كاملةً (٣٩٣ سطرا،
+> ملفٌّ واحدٌ بلا سكربت)، وثلاثةُ أشياءَ قيلت فيها:
+>
+> · تكتب إلى `_private/views/` بلا أن تسأل، ولم يكن مُهمَلا. فأُضيف إلى
+>   `.gitignore` في الالتزام نفسِه — وإلّا دخلت صفحاتُ المعاينة المستودَعَ،
+>   وهو عينُ ما وقع في ١٢٥ لقطةً بـ١٣ ميغابايت.
+>
+> · وتفتح الملفَّ بـ`open`، وهو أمرُ macOS. فعلى Linux تُكتب الصفحةُ ولا تُفتح.
+>
+> · وقالبُها للاتينيّة يسارا-إلى-يمين بخطّ النظام ولونٍ أزرق. وهو **مخرَجُ
+>   قراءةٍ لعملٍ جارٍ لا واجهةُ منتَج**: لا تُبنى به شاشةٌ يراها متعلّمٌ ولا
+>   مدرّب — فتلك لها توكناتُ المنصّة و`docs/` ودستورُ الرسم.
+>
+> وإسنادُها في ذيلها محفوظٌ كما كتبه صاحبُها: نمطُ الاقتطاع ومتغيّراتُ CSS
+> مقتبسةٌ من `simonw/claude-code-transcripts`.
 
 نصوص الرخص محفوظة: `LICENSE-superpowers.txt` و`webapp-testing/LICENSE.txt`
 و`LICENSE-education-skills.txt` و`frontend-design/LICENSE.txt`

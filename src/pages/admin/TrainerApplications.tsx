@@ -24,6 +24,7 @@ import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import TabBar from "@/components/ui/TabBar";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -420,21 +421,17 @@ export default function TrainerApplications() {
 
                 وسببُه ظاهرٌ في الشاشة: من يبتّ يقرأ سبعةَ صناديق متتالية
                 ليجد ما يخصّ سؤاله، وأكثرُها لا يخصّه. */}
-            <div className="flex gap-1.5" role="tablist" aria-label="أقسام الملفّ">
-              {([["dossier", "الملفّ والمعلومات"], ["courses", "الدورات والشعب"]] as const).map(([key, label]) => (
-                <button
-                  key={key}
-                  role="tab"
-                  aria-selected={tab === key}
-                  onClick={() => setTab(key)}
-                  className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${
-                    tab === key ? "bg-gold text-on-gold" : "border border-white/12 text-muted-foreground hover:border-white/30 hover:text-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {/* وكان المختارُ **ذهبيّا صمّاء** إلى جانب أزرار القرار الذهبيّة
+                في الشاشة نفسِها — ذهبيّان يتنازعان العين. */}
+            <TabBar
+              ariaLabel="أقسام الملفّ"
+              value={tab}
+              onChange={setTab}
+              items={[
+                { id: "dossier", label: "الملفّ والمعلومات" },
+                { id: "courses", label: "الدورات والشعب" },
+              ]}
+            />
 
             {tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} />
@@ -712,15 +709,14 @@ export default function TrainerApplications() {
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
               </span>
             ) : commonActions.map((d) => (
-              <button key={d.action}
+              /* فعلٌ جماعيٌّ في شريطِه لا فعلُ الصفحة — وكان ممتلئا بالذهبيّ
+                 مكتوبا بيده، أي رئيسيٌّ ثانٍ إلى جانب زرِّ الرأس. */
+              <Button key={d.action} size="sm" tone={d.tone === "danger" ? "danger" : "confirm"}
                 onClick={() => (d.action === "reject" || d.action === "waitlist"
                   ? setBulkDecision({ action: d.action, labelAr: d.label })
-                  : void bulkDecide(d.action, d.label))}
-                className={`cursor-pointer rounded-full px-4 py-1.5 text-fine font-black transition ${
-                  d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
-                }`}>
+                  : void bulkDecide(d.action, d.label))}>
                 {d.label} — على {sel.size}
-              </button>
+              </Button>
             ))}
           </BulkBar>
           {view.total === 0 && (

@@ -12,6 +12,9 @@ import RequestsPanel from "./RequestsPanel";
 import { STATUS_AR } from "@/application/advisor/pipeline";
 import { fmtDateWith } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -82,6 +85,12 @@ export default function AdvisorCases() {
   const [closingFollowUp, setClosingFollowUp] = useState<{ id: string; whenAr: string } | null>(null);
   const [openingCv, setOpeningCv] = useState<string | null>(null);
   /* إدخالُ عميلٍ قابله المستشارُ خارج المنصّة (البند ٢٥) */
+  /* الحالاتُ تتراكم بتراكم العمل ولا تُحذف — ومستشارٌ مضى عليه فصلٌ يحمل
+     عشراتٍ منها. وكان الوصولُ إلى حالةٍ بعينها بالتمرير: القِمعُ يفرز
+     بالمرحلة لا بالاسم، ومن يذكر اسمَ عميلِه لا مرحلتَه لا يجد له بابا. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+
   const [newOpen, setNewOpen] = useState(false);
   const [newForm, setNewForm] = useState({ fullName: "", email: "", phone: "", note: "" });
 
@@ -148,9 +157,9 @@ export default function AdvisorCases() {
   if (detail) {
     return (
       <AdvisorLayout title={`ملف الحالة — ${partyOf(detail).name}`}>
-        <button onClick={() => setDetail(null)} className="mb-4 flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> عودة للقائمة
-        </button>
+        <Button tone="ghost" icon={ChevronLeft} className="mb-4 px-0" onClick={() => setDetail(null)}>
+          عودة للقائمة
+        </Button>
 
         <div className="grid gap-5 lg:grid-cols-3">
           {/* العميل والتشخيص */}
@@ -319,6 +328,14 @@ export default function AdvisorCases() {
   }
 
   /* ══ قائمة الحالات ══ */
+  const matched = cases.filter((c) => matchesQuery(q, [
+    partyOf(c).name, partyOf(c).email, c.nextAction, STATUS_LABELS[c.status],
+  ]));
+  const view = paginate(matched, page, 20);
+  /* والبحثُ يكشف القائمةَ المسطّحة ولو لم تُفرز مرحلةٌ: القِمعُ يُقرأ
+     بالمرحلة، ومن كتب اسما يريد الاسمَ لا العمودَ الذي هو فيه. */
+  const flat = Boolean(statusFilter) || q.trim().length > 0;
+
   return (
     <AdvisorLayout title="حالاتي — عملاء التشخيص المسندون إليّ">
       {/* القِمع أوّلا — «أين أنا؟» في نظرة، ثمّ التصفية لمن أرادها */}
@@ -407,12 +424,21 @@ export default function AdvisorCases() {
           <h2 className="mt-4 text-xl font-black">لا حالات مسندة هنا</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين تُسنَد إليك حالةٌ من لوحة الإدارة تظهر هنا فورا — ويصلك جرسُها. أو <b className="text-foreground">أدخِل عميلا قابلتَه</b> بنفسك من الزرّ أعلاه.</p>
         </Panel>
-      ) : statusFilter ? (
-        /* تصفيةٌ صريحة: قائمةٌ مسطّحة أنفعُ من قِمعٍ بعمودٍ واحد */
+      ) : flat ? (
+        /* تصفيةٌ صريحةٌ أو بحث: قائمةٌ مسطّحة أنفعُ من قِمعٍ بعمودٍ واحد */
         <div className="space-y-3">
-          {cases.map((c) => (
-            <button key={c.id} onClick={() => void openCase(c.id)}
-              className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/50">
+          <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حالة"
+            placeholder="ابحث باسم العميل أو بريده أو الإجراء التالي…" />
+          {view.total === 0 && (
+            <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+              لا حالةَ تطابق «{q.trim()}» — امسح الكلمة أو جرّب غيرها.
+            </Panel>
+          )}
+          {view.rows.map((c) => (
+            /* البطاقةُ من النظام لا مكتوبةً بيدها: الحدُّ والحشوُ والانحناءُ
+               كانت تُعاد كتابتُها هنا بالقيم نفسِها التي يحملها `Card`. */
+            <Card as="button" interactive key={c.id} onClick={() => void openCase(c.id)}
+              className="block w-full text-right">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{partyOf(c).name} <span className="text-fine font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
@@ -430,10 +456,14 @@ export default function AdvisorCases() {
                   </span>
                 </div>
               </div>
-            </button>
+            </Card>
           ))}
         </div>
       ) : (
+        <>
+        {/* والبحثُ متاحٌ فوق القِمع أيضا — من كتب فيه انكشفت له القائمة */}
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حالة"
+          placeholder="ابحث باسم العميل أو بريده أو الإجراء التالي…" />
         <Pipeline
           cases={cases}
           onOpen={(id) => void openCase(id)}
@@ -442,6 +472,7 @@ export default function AdvisorCases() {
             return c ? partyOf(c) : { name: "—", email: "" };
           }}
         />
+        </>
       )}
 
       {closingFollowUp && (

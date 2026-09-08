@@ -111,13 +111,9 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
     <div>
 
       {!open ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal/40 bg-teal/[0.06] px-4 py-2.5 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
-        >
-          <Plus className="h-3.5 w-3.5" /> اطلب خصما أو تعديلا على الخطّة
-        </button>
+        <Button type="button" icon={Plus} className="w-full" onClick={() => setOpen(true)}>
+          اطلب خصما أو تعديلا على الخطّة
+        </Button>
       ) : (
         <Card className="bg-paper/25">
           <FieldRow>
@@ -244,23 +240,19 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
               {r.coupon && (
                 <div className="mt-2 flex items-center gap-2 rounded-lg border border-teal/30 bg-paper/30 px-2.5 py-1.5">
                   <code dir="ltr" className="flex-1 font-mono text-fine text-teal-light-ink">{r.coupon.code}</code>
-                  <button
-                    type="button"
+                  <Button
+                    type="button" tone="ghost" size="sm" className="shrink-0 px-1"
+                    icon={copied === r.id ? Check : Copy}
                     onClick={() => { void navigator.clipboard?.writeText(r.coupon!.code); setCopied(r.id) }}
                     aria-label="انسخ رمز الخصم"
-                    className="shrink-0 cursor-pointer text-muted-foreground transition hover:text-foreground"
-                  >
-                    {copied === r.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                  </button>
+                  />
                 </div>
               )}
               {r.status === 'pending' && (
-                <button
-                  type="button" onClick={() => void cancel(r.id)} disabled={busy}
-                  className="mt-2 flex cursor-pointer items-center gap-1 text-fine font-bold text-muted-foreground transition hover:text-foreground"
-                >
-                  <X className="h-3 w-3" /> اسحب الطلب
-                </button>
+                <Button type="button" tone="ghost" size="sm" icon={X} className="mt-2 px-0"
+                  onClick={() => void cancel(r.id)} disabled={busy}>
+                  اسحب الطلب
+                </Button>
               )}
             </li>
           ))}
