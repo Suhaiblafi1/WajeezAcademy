@@ -379,7 +379,11 @@ export default function CatalogAdmin() {
             <p className="mt-2 text-read text-muted-foreground">
               أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تُدمج في إصدار جديد بعد الاعتماد والنشر.
             </p>
-            <Button tone="primary" disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest} className="mt-3">
+            {/* `confirm` لا `primary`: هذا الزرُّ حفظُ **قسمٍ** في صفحةٍ فيها
+                ثلاثةُ أقسامِ إنشاءٍ متوازية (دورة · مسار · طلبُ تعديل) — فليس
+                فعلَ الصفحة الأوّل. وهو النمطُ نفسُه الذي صُوّب في شاشتَي
+                التكاملات والمالية حين هبط الذهبيُّ من ٤٨ إلى ٢٣. */}
+            <Button tone="confirm" disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest} className="mt-3">
               تقديم الطلب
             </Button>
           </Card>
