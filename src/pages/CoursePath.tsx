@@ -15,8 +15,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import { REFERRAL_KEY } from "@/application/commerce/referral";
 import {
-  ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, Layers, ListChecks,
-  Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles,
+  ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, ClipboardCheck, Headset, Layers, Library, ListChecks,
+  MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
@@ -47,6 +47,15 @@ import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 /** ترتيبُ الدورة المضافة بالكلمة: «أضف دورة ثالثة» لا «أضف الدورة ٣» —
     والسلّمُ خمسٌ فلا يتجاوز الفهرسُ الخامسة، و`?? 'أخرى'` لما بعدها احتياطا. */
 const ORDINAL_AR: readonly string[] = ["", "أولى", "ثانية", "ثالثة", "رابعة", "خامسة"];
+
+/** ما يرافق كلَّ دورة — الأربعةُ التي اختارها صاحبُ المنصّة (٨ سبتمبر ٢٠٢٦)
+    من «منظومة كاملة» في صفحة المسار، وحلّت محلَّ بطاقة «مشروعها العملي». */
+const COURSE_COMPANIONS = [
+  { icon: MonitorPlay, t: "وحدات مسجّلة وجلسات مباشرة", d: "فيديو لكلّ وحدة، وجلسة حيّة مع المدرّب، ومهمّة تطبيقيّة." },
+  { icon: ClipboardCheck, t: "واجبات يراجعها مدرّب بشري", d: "يقرأ عملك ويردّ بتغذيةٍ راجعة عمليّة — لا تصحيحا آليّا." },
+  { icon: Library, t: "ملخّصات وجيز", d: "ملخّصاتٌ من مكتبة المنصّة تُكمل موضوع الدورة." },
+  { icon: Headset, t: "مستشار تراسله", d: "قبل الشراء وبعده — يجيب أسئلتك ويرشدك لخطوتك التالية." },
+] as const;
 
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
   if (amount === null) return <span className="text-fine font-bold text-muted-foreground">مع الشعبة</span>;
@@ -289,17 +298,17 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-5 pb-24 pt-8">
+      <main className="mx-auto max-w-4xl px-5 pb-24 pt-8">
         {/* ترويسة: هذه دورة واحدة، وهي مسارك حتى الآن */}
-        <Panel tone="accent" className="md:p-8">
+        <Panel tone="accent" className="md:p-6">
           <span className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-fine font-bold text-teal-light-ink">
             {anchor.category}
           </span>
-          <CourseTitle as="h1" name={anchor.name} termEn={anchor.termEn} className="mt-3 text-2xl font-black leading-snug md:text-3xl" termClassName="text-xs text-muted-foreground" />
-          <p className="mt-2 text-sm text-muted-foreground">من مسار «{anchor.pathwayName}»</p>
-          {full?.shortPromise && <p className="mt-4 leading-loose text-foreground">{full.shortPromise}</p>}
+          <CourseTitle as="h1" name={anchor.name} termEn={anchor.termEn} className="mt-3 text-xl font-black leading-snug md:text-2xl" termClassName="text-xs text-muted-foreground" />
+          <p className="mt-1.5 text-read text-muted-foreground">من مسار «{anchor.pathwayName}»</p>
+          {full?.shortPromise && <p className="mt-3 text-sm leading-relaxed text-foreground">{full.shortPromise}</p>}
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 text-xs">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
             <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground">
               <Clock3 className="h-3.5 w-3.5 text-teal-light-ink" /> {weeksLabel(anchor.weeks)}
             </span>
@@ -317,58 +326,71 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </div>
         </Panel>
 
-        {/* التفاصيل الكاملة — لا مقتطف: هذا ما كانت النافذة تخفيه */}
-        <section className="mt-6 grid gap-4 md:grid-cols-2">
-          {full?.description && (
-            <Card>
-              <h2 className="text-sm font-black text-foreground">عن الدورة</h2>
-              <p className="mt-2 text-sm leading-loose text-muted-foreground">{full.description}</p>
-            </Card>
-          )}
-          {full?.targetAudience && (
-            <Card>
-              <h2 className="text-sm font-black text-foreground">لمن هذه الدورة</h2>
-              <p className="mt-2 text-sm leading-loose text-muted-foreground">{full.targetAudience}</p>
-              {full.prerequisites && (
-                <p className="mt-3 border-t border-white/10 pt-3 text-read leading-relaxed text-muted-foreground">
-                  <span className="font-bold text-muted-foreground">ما يُفترض أن تعرفه قبلها: </span>
-                  {full.prerequisites}
-                </p>
-              )}
-            </Card>
-          )}
-        </section>
+        {/* ══ التفاصيل في ثلاث بطاقات لا خمس ══
 
-        {full && full.learningOutcomes.length > 0 && (
-          <Card as="section" className="mt-4">
-            <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
-              <Target className="h-4 w-4 text-gold-ink" /> ما ستقدر عليه بعدها
-            </h2>
-            <ul className="mt-3 grid gap-2 md:grid-cols-2">
-              {full.learningOutcomes.map((o) => (
-                <li key={o} className="flex items-start gap-2 text-sm leading-relaxed text-foreground">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
-                  {o}
-                </li>
-              ))}
-            </ul>
+            كانت خمسا: «عن الدورة» و«لمن» و«ما ستقدر عليه» و«وحداتها»
+            و«مشروعها العملي» — لكلٍّ حشوُها وعنوانُها، فتتناثر المعلومةُ
+            وتأخذ حيّزا لا يوازي قيمتَها (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦).
+            فاجتمعت الثلاثُ الأولى في بطاقةٍ واحدة، وبقيت الوحداتُ في بطاقتها
+            بعمودين، وسقط «مشروعها العملي» بقراره، ودخل مكانَه «ما يرافق
+            الدورة». والبطاقاتُ الثلاثُ تُطبَّق على الدورات كلِّها: القالبُ
+            واحد. */}
+        {full && (full.description || full.targetAudience || full.learningOutcomes.length > 0) && (
+          <Card as="section" className="mt-5">
+            {full.description && (
+              <>
+                <h2 className="text-sm font-black text-foreground">عن الدورة</h2>
+                <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">{full.description}</p>
+              </>
+            )}
+            <div className={`grid gap-4 md:grid-cols-2 ${full.description ? "mt-4 border-t border-white/10 pt-4" : ""}`}>
+              {full.targetAudience && (
+                <div>
+                  <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">
+                    <User className="h-3.5 w-3.5 text-teal-light-ink" /> لمن هذه الدورة
+                  </h3>
+                  <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">{full.targetAudience}</p>
+                  {full.prerequisites && (
+                    <p className="mt-2 text-read leading-relaxed text-muted-foreground">
+                      <span className="font-bold">تعرفه قبلها: </span>
+                      {full.prerequisites}
+                    </p>
+                  )}
+                </div>
+              )}
+              {full.learningOutcomes.length > 0 && (
+                <div>
+                  <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">
+                    <Target className="h-3.5 w-3.5 text-gold-ink" /> ما ستقدر عليه بعدها
+                  </h3>
+                  <ul className="mt-1.5 space-y-1">
+                    {full.learningOutcomes.map((o) => (
+                      <li key={o} className="flex items-start gap-1.5 text-read leading-relaxed text-foreground">
+                        <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
+                        {o}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </Card>
         )}
 
         {full && full.modules.length > 0 && (
-          <Card as="section" className="mt-4">
+          <Card as="section" className="mt-3">
             <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
               <ListChecks className="h-4 w-4 text-teal-light-ink" /> وحدات الدورة ({full.modules.length})
             </h2>
-            <ol className="mt-3 space-y-2.5">
+            <ol className="mt-2.5 grid gap-x-5 gap-y-2 md:grid-cols-2">
               {full.modules.map((m, i) => (
-                <li key={m.id} className="flex items-start gap-3">
-                  <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-fine font-black text-teal-light-ink" dir="ltr">
+                <li key={m.id} className="flex items-start gap-2.5 text-read">
+                  <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md bg-teal/15 text-fine font-black text-teal-light-ink" dir="ltr">
                     {i + 1}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-bold leading-snug">{m.title}</span>
-                    {m.outcome && <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{m.outcome}</span>}
+                    <span className="block font-bold leading-snug">{m.title}</span>
+                    {m.outcome && <span className="mt-0.5 block text-fine leading-relaxed text-muted-foreground">{m.outcome}</span>}
                   </span>
                 </li>
               ))}
@@ -376,14 +398,25 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </Card>
         )}
 
-        {full?.practicalProject && (
-          <Card as="section" tone="warn" className="mt-4">
-            <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
-              <Target className="h-4 w-4" /> مشروعها العملي
-            </h2>
-            <p className="mt-2 text-sm leading-loose text-foreground">{full.practicalProject}</p>
-          </Card>
-        )}
+        {/* ══ ما يرافق الدورة ══ — الأربعةُ ثابتةٌ لكلّ دورة، فلا شرطَ عليها */}
+        <Card as="section" tone="accent" className="mt-3">
+          <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
+            <Sparkles className="h-4 w-4 text-gold-ink" /> ما يرافق الدورة
+          </h2>
+          <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+            {COURSE_COMPANIONS.map((b) => (
+              <Inset key={b.t} className="flex items-start gap-2.5 p-2.5">
+                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-teal/15">
+                  <b.icon className="h-3.5 w-3.5 text-teal-light-ink" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-read font-bold text-foreground">{b.t}</span>
+                  <span className="mt-0.5 block text-fine leading-relaxed text-muted-foreground">{b.d}</span>
+                </span>
+              </Inset>
+            ))}
+          </div>
+        </Card>
 
         {/* ══ مسارك حتى الآن ══
 
@@ -393,7 +426,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             حين يكون هناك ما يُفصَّل (خصمُ بناءٍ أو كود)، ولا يُكرَّر الرقمُ
             نفسُه سطرين حين لا خصم. وحُشيَ مكانَ الفراغِ ما ينقص القرارَ فعلا:
             موعدُ الشعبة. */}
-        <Panel as="section" className="mt-10 sm:p-5">
+        <Panel as="section" className="mt-6 sm:p-4">
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <h2 className="flex items-center gap-2 text-base font-black">
               <RouteIcon className="h-4 w-4 text-teal-light-ink" />
@@ -415,7 +448,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               const options = cohorts.get(c.id) ?? [];
               const chosenCohort = cohortOf(c.id);
               return (
-                <Card as="li" key={c.id}>
+                <Card as="li" key={c.id} className="p-3.5">
                   <div className="flex items-start justify-between gap-2.5">
                     <span className="flex min-w-0 items-start gap-2.5">
                       <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-teal/15 text-fine font-black text-teal-light-ink" dir="ltr">
@@ -468,7 +501,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               البناء بنسبته وقيمته، ثم الكود إن كان، ثم ما يدفعه — وكلُّ سطر
               يقابل قرارا اتخذه المتعلم بنفسه. وبلا خصمٍ ولا كود يبقى رقمٌ
               واحد: تكرارُه سطرين كان يُكبّر الصندوق ولا يُضيف علما. */}
-          <Card className="mt-3.5 p-3.5">
+          <Card className="mt-3 p-3">
             {pricing.allPriced ? (
               <dl className="space-y-1 text-xs">
                 {hasBreakdown && (
@@ -669,7 +702,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         </Panel>
         {/* ══ مرحلتك التالية ══ — ما اختاره بعد السقف، محفوظا لا مرفوضا */}
         {deferred.length > 0 && (
-          <Panel as="section" tone="warn" className="mt-6 border-dashed sm:p-5">
+          <Panel as="section" tone="warn" className="mt-4 border-dashed sm:p-4">
             <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
               <Save className="h-4.5 w-4.5" />
               مرحلتك التالية — محفوظة لك
@@ -701,16 +734,21 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </Panel>
         )}
 
-        {/* ══ ما يكمل مسارك ══ */}
+        {/* ══ ابنِ مسارك بنفسك ══
+
+            كان العنوان «ما يكمل مسارك» وتحته فقرةٌ تشرح خوارزميّةَ الترتيب
+            (بقيّةُ المسار ثمّ ما يبني على المهارة ثمّ ما يوسّعها). والشرحُ
+            صحيحٌ وموضعُه رأسُ `suggestNext` لا الشاشة: القارئُ يريد أن يعرف
+            ماذا يفعل هنا، لا كيف رُتّب له. فعنوانٌ فعلٌ وسطرٌ واحد (صاحب
+            المنصّة، ٨ سبتمبر ٢٠٢٦) — والسببُ يبقى مكتوبا على كلّ بطاقة. */}
         {suggestions.length > 0 && (
-          <Panel as="section" className="mt-6 sm:p-5">
+          <Panel as="section" className="mt-4 sm:p-4">
             <h2 className="flex items-center gap-2 text-base font-black">
               <Layers className="h-4 w-4 text-teal-light-ink" />
-              ما يكمل مسارك
+              ابنِ مسارك بنفسك
             </h2>
             <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
-              مرتّبة لا معروضة: تبدأ ببقية المسار الذي بدأت منه بترتيبه المصمَّم، ثم ما يبني على المهارة نفسها،
-              ثم ما يوسّعها خارج مجالك. ولكل واحدة سببها مكتوبا.
+              أضف دورات أخرى قريبة من اهتمامك.
             </p>
             <div className="mt-4 grid gap-2.5 md:grid-cols-2">
               {suggestions.map((s) => {
@@ -742,7 +780,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
         {/* ══ سمِّ مسارك ══ */}
         {picked.length >= 2 && (
-          <Panel as="section" tone="warn" className="mt-6 sm:p-5">
+          <Panel as="section" tone="warn" className="mt-4 sm:p-4">
             <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
               <Save className="h-4 w-4" />
               سمِّ مسارك
