@@ -16,6 +16,13 @@ import {
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
+/* الشيفرةُ بلا تعليقاتها.
+
+   وهذا لازمٌ لا تجميل: حارسٌ يقول «لا `assets.calendly.com` في الملفّ» يسقط
+   على **تعليقٍ يشرح لماذا لا يُحمَّل** — فيُقاس ورودُ حرفٍ لا بنيةُ الشيفرة،
+   وهو العطبُ الذي مرّ في هذا المستودَع ثلاث مرّات. */
+const code = (p: string) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
 describe('رابطُ الحجز', () => {
   it('https وإلى Calendly — ولا يُترك فارغا', () => {
     expect(TRAINER_INTERVIEW.url).toMatch(/^https:\/\/calendly\.com\/.+/)
@@ -88,9 +95,42 @@ describe('البطاقةُ في الشاشتين — لا في واحدةٍ تُ
       .toMatch(/rel="noopener noreferrer"/)
   })
 
-  it('ولا يُضمَّن كإطار — سياسةُ المحتوى تحجبه بصمت', () => {
-    const card = read('src/components/BookInterview.tsx')
-    expect(card, "default-src 'self' يحجب إطارَ Calendly فيُنتج مستطيلا أبيضَ بلا خطأ")
-      .not.toMatch(/<iframe|calendly\.com\/assets|data-url=/)
+  /* ═══ انقلب هذا الحارس، ولم يُحذف ═══
+
+     كان يمنع التضمينَ لأنّ `default-src 'self'` يحجب إطارَ Calendly فيُنتج
+     مستطيلا أبيضَ بلا خطأٍ ظاهر. وقرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦) أن
+     يُحجَز الموعدُ داخلَ الموقع، فوُسّعت السياسةُ سطرا واحدا.
+
+     فصار الحارسُ يحرس ما بقي خطرا: أنّ الإطارَ **مسموحٌ في السياسة فعلا**
+     (وإلّا عاد المستطيلُ الأبيض)، وأنّه **عارٍ بلا سكربتِهم** — فما يُنفَّذ
+     في نطاقنا شيفرتُنا وحدَها. وهذا أضيقُ من الأوّل لا أوسع. */
+  it('يُضمَّن كإطار، والسياسةُ تسمح به فعلا', () => {
+    const card = code('src/components/BookInterview.tsx')
+    expect(card, 'لا إطارَ — والقرارُ أن يُحجَز داخل الموقع').toMatch(/<iframe/)
+    expect(card, 'الإطارُ بلا `embed_domain` لا يبثّ أحداثَه').toContain('embed_domain=')
+    const caddy = read('deploy/Caddyfile')
+    const csp = /Content-Security-Policy "([^"]*)"/.exec(caddy)?.[1] ?? ''
+    expect(csp, 'كتلةُ السياسة مفقودة').toBeTruthy()
+    expect(csp, "الإطارُ مضمَّنٌ والسياسةُ تحجبه — مستطيلٌ أبيضُ بلا خطأ")
+      .toMatch(/frame-src[^;]*https:\/\/calendly\.com/)
+  })
+
+  it('ولا سكربتَ لهم يُحمَّل عندنا — إطارٌ عارٍ لا وحدةٌ تُنفَّذ', () => {
+    const card = code('src/components/BookInterview.tsx')
+    expect(card, 'سكربتُ Calendly يُنفَّذ في نطاقنا — والإطارُ يُغني عنه')
+      .not.toMatch(/assets\.calendly\.com|<script/)
+    const caddy = read('deploy/Caddyfile')
+    const csp = /Content-Security-Policy "([^"]*)"/.exec(caddy)?.[1] ?? ''
+    const scriptSrc = /script-src ([^;]*)/.exec(csp)?.[1] ?? ''
+    expect(scriptSrc, 'فُتح `script-src` لطرفٍ ثالث — والتضمينُ لا يحتاجه')
+      .not.toMatch(/calendly/)
+  })
+
+  it('وحجزُ الموعد يُلتقَط ولا يبقى في تقويمهم وحدَه', () => {
+    const card = code('src/components/BookInterview.tsx')
+    expect(card, 'لا يُلتقَط حدثُ الحجز — فلا تعلم المنصّةُ أنّ موعدا حُجز')
+      .toContain('calendly.event_scheduled')
+    expect(card, 'رسالةٌ تُصدَّق بلا فحص مصدرها — أيُّ نافذةٍ تستطيع بثَّها')
+      .toMatch(/e\.origin !== CALENDLY_ORIGIN|origin !== CALENDLY_ORIGIN/)
   })
 })

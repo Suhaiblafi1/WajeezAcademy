@@ -179,3 +179,13 @@ export const WITHDRAWABLE_STATUSES = [
 export const BOOKABLE_STATUSES: readonly string[] = [
   'submitted', 'under_review', 'information_requested', 'shortlisted',
 ]
+
+/** الحالاتُ التي يجوز لصاحب الطلب أن يعدّله فيها.
+
+    قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «اسمح له بتعديل طلب الانضمام طيلة
+    فترة انتظاره حتى تتم الموافقة». وهي مطابقةٌ لـ`PHASE2_OPEN_STATUSES` في
+    الخادم — ولو افترقتا لَأظهرت الشاشةُ زرّا يردّه الخادمُ ٤٠٩. */
+export const EDITABLE_STATUSES: readonly string[] = [
+  'draft', 'submitted', 'under_review', 'waitlisted',
+  'information_requested', 'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
+]

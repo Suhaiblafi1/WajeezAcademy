@@ -8,7 +8,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { readRoles, signOut } from "@/services/auth";
 import { fmtDate } from "@/application/text/format-ar";
-import { APPLICANT_STATUS, BOOKABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
+import { APPLICANT_STATUS, BOOKABLE_STATUSES, EDITABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
 import BookInterview from "@/components/BookInterview";
 
 import { Card } from "@/components/ui/Surface";
@@ -33,7 +33,7 @@ interface Mine {
   phase2CompletedAt: string | null;
   emailVerifiedAt: string | null;
   documents: { kind: string; originalName: string; uploadedAt: string }[];
-  statusHistory: { toStatus: string; createdAt: string }[];
+  statusHistory: { toStatus: string; note: string | null; createdAt: string }[];
   profile: { userId: string | null } | null;
 }
 
@@ -69,6 +69,12 @@ export default function ApplicantStatus() {
     }
   };
   useEffect(() => { void load(); }, []);
+
+  /* نصُّ ما طُلب منه — آخرُ تحوّلٍ إلى «طُلبت معلومات» يحمل ملاحظتَه. وآخرُ
+     لا أوّل: قد يُطلب منه مرّتين، والثانيةُ هي القائمة. */
+  const infoAsked = mine?.statusHistory
+    .filter((h) => h.toStatus === "information_requested" && h.note?.trim())
+    .at(-1)?.note?.trim() ?? null;
 
   /* استئنافُ مسودّة: مفتاحٌ جديد يفتح النموذج من حيث توقّف */
   const resume = async () => {
@@ -148,9 +154,14 @@ export default function ApplicantStatus() {
               <h2 className="mt-4 text-xl font-black">{st.label}</h2>
               <p className="mt-2 text-sm leading-7 opacity-90">{st.explain}</p>
 
-              {mine.status === "draft" && (
+              {/* التعديلُ مفتوحٌ طولَ الانتظار لا للمسوّدة وحدَها.
+
+                  كان الزرُّ يظهر لـ`draft` فقط، فمن تذكّر شهادةً نسيها بعد أن
+                  صار طلبُه «قيد المراجعة» لا يملك إلّا أن يراسل ويطلب — والخادمُ
+                  كان يسمح بالتعديل في تلك الحالات أصلا. فالنقصُ كان في الشاشة. */}
+              {EDITABLE_STATUSES.includes(mine.status) && (
                 <Button tone="primary" type="button" onClick={resume} className="mt-4">
-                  أكمل طلبك <ArrowLeft className="h-4 w-4" />
+                  {mine.status === "draft" ? "أكمل طلبك" : "عدّل طلبك"} <ArrowLeft className="h-4 w-4" />
                 </Button>
               )}
               {(mine.status === "active" || isTrainer) && (
@@ -163,6 +174,51 @@ export default function ApplicantStatus() {
               )}
             </section>
 
+            {/* ═══ التوثيقُ أوّلَ ما يُرى، لا في بطاقةٍ أسفلَ الصفحة ═══
+
+                كان تنبيهُ «غير موثَّق» سطرا في بطاقةٍ صغيرةٍ بين البريد وقناة
+                التواصل، أسفلَ شاشةٍ طويلة. وهو **الشيءُ الوحيدُ الذي يمنع
+                طلبَه من المضيّ** — فموضعُه أن يكون أوّلَ ما تقع عليه العين،
+                لا آخرَه.
+
+                ويختفي تماما متى وُثّق: لا يبقى في الصفحة أثرٌ لخطوةٍ انتهت. */}
+            {!mine.emailVerifiedAt && mine.status !== "draft" && (
+              <Card tone="warn">
+                <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
+                  <MailWarning className="h-4 w-4" /> وثّق بريدك — وهي الخطوةُ الباقية
+                </p>
+                <p className="mt-2 text-read leading-6 text-foreground">
+                  أرسلنا رابطَ التأكيد إلى <b dir="ltr" className="font-mono">{mine.email}</b>. افتحه مرّةً واحدة،
+                  فعلى هذا البريد وحدَه نتواصل معك — ولا يُعتمد طلبٌ ببريدٍ لم يُوثَّق.
+                </p>
+                <button
+                  type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
+                  className="mt-2 cursor-pointer text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
+                >
+                  {resent === "done" ? "أُعيد الإرسال — راجع بريدك" : resent === "error" ? "تعذّر — حاول بعد قليل" : "لم تصلك الرسالة؟ أعد الإرسال"}
+                </button>
+              </Card>
+            )}
+
+            {/* ما طُلب منه، بنصّه.
+
+                كانت الشاشةُ تقول «نحتاج معلوماتٍ إضافية» ولا تقول أيَّها —
+                والملاحظةُ التي كتبها المراجعُ موجودةٌ في سجلّ الحالة ولم تكن
+                تخرج إليه. فيقف لا يعرف ما المطلوب، ولا رسالةَ وصلته. */}
+            {mine.status === "information_requested" && infoAsked && (
+              <Card tone="warn">
+                <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
+                  <FileText className="h-4 w-4" /> ما نحتاجه منك
+                </p>
+                <p className="mt-2 whitespace-pre-line text-read leading-7 text-foreground">{infoAsked}</p>
+                {/* ولا زرَّ ثانٍ هنا: «عدّل طلبك» في بطاقة الحالة فوقَه، وذهبيّان
+                    في شاشةٍ واحدةٍ يُلغيان بعضَهما — يحرسه `one-primary-per-screen`. */}
+                <p className="mt-2 text-read leading-6 text-muted-foreground">
+                  عدّلْ طلبك من زرّ «عدّل طلبك» أعلاه، ثمّ أرسله من جديد.
+                </p>
+              </Card>
+            )}
+
             {/* الحجزُ يبقى في متناوله ما دام الطلبُ قبل القرار.
 
                 رآه مرّةً في «وصل طلبك» ثمّ أغلق الصفحة. ولو لم يُعرض هنا لَما
@@ -172,7 +228,15 @@ export default function ApplicantStatus() {
                 مقابلة. والمسوّدةُ وانتظارُ توثيق البريد قبلَ ذلك — يُكمل طلبَه
                 أوّلا فلا يحجز موعدا لطلبٍ لم يصل. */}
             {BOOKABLE_STATUSES.includes(mine.status) && (
-              <BookInterview name={mine.fullName} email={mine.email} reference={mine.reference} />
+              <BookInterview
+                name={mine.fullName} email={mine.email} reference={mine.reference}
+                /* والحجزُ يُكتب عندنا فورا، ثمّ تُعاد قراءةُ الحالة ليظهر أثرُه */
+                onScheduled={() => {
+                  void apiPost(`/api/v1/trainer-applications/${encodeURIComponent(mine.reference)}/self-booked-interview`,
+                    { email: mine.email })
+                    .catch(() => {})
+                }}
+              />
             )}
 
             {/* البريد والتواصل */}
@@ -182,17 +246,9 @@ export default function ApplicantStatus() {
                 <p dir="ltr" className="mt-1 text-right text-sm text-muted-foreground">{mine.email}</p>
                 {mine.emailVerifiedAt ? (
                   <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثَّق</p>
-                ) : mine.status !== "draft" ? (
-                  <div className="mt-2">
-                    <p className="flex items-center gap-1.5 text-read font-bold text-gold-ink"><MailWarning className="h-3.5 w-3.5" /> غير موثَّق — افتح رابط التأكيد في بريدك</p>
-                    <button
-                      type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
-                      className="mt-1.5 cursor-pointer text-fine font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
-                    >
-                      {resent === "done" ? "أُعيد الإرسال — راجع بريدك" : resent === "error" ? "تعذّر — حاول بعد قليل" : "لم تصلك الرسالة؟ أعد الإرسال"}
-                    </button>
-                  </div>
                 ) : null}
+                {/* ولا يُعاد التنبيهُ هنا: هو في أعلى الصفحة بنصّه وزرّه.
+                    وتنبيهان في شاشةٍ واحدةٍ يُقرأ أوّلُهما ويُهمَل ثانيهما. */}
               </Card>
               <Card>
                 <p className="flex items-center gap-2 text-read font-bold text-muted-foreground"><Phone className="h-3.5 w-3.5" /> سنتواصل معك عبر</p>

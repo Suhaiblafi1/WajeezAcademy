@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarCheck, CheckCircle2, ChevronLeft, ClipboardList, FileText, KeyRound,
-  Loader2, MailCheck, RefreshCw, ServerOff, Star, UserPlus, XCircle,
+  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
+  Loader2, MailCheck, Printer, RefreshCw, ServerOff, Star, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -10,6 +10,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
+import { staffAreaCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
@@ -225,6 +226,13 @@ export default function TrainerApplications() {
   const [selected, setSelected] = useState<AppDetail | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
+  /* خانةُ «ما الذي نريده منه» — منفصلةٌ عن ملاحظة المراجع: تلك تُكتب لنا،
+     وهذه تصل المتقدّمَ بنصّها في رسالةٍ وفي صفحة حالته. وخلطُهما يُرسل إليه
+     ما كُتب عنه. */
+  const [askNote, setAskNote] = useState("");
+  const [askOpen, setAskOpen] = useState(false);
+  /* الوثيقةُ المفتوحةُ داخل الشاشة — لا لسانٌ ثانٍ يُفقِد المراجعُ موضعَه */
+  const [openDoc, setOpenDoc] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [purging, setPurging] = useState(false);
   const [purgeReason, setPurgeReason] = useState("");
@@ -358,12 +366,82 @@ export default function TrainerApplications() {
       </Button>
     );
     const rubricComplete = RUBRIC_AXES.every((x) => scores[x.key] >= 1);
+    /* زرُّ القرار في الشريط اللاصق: أضيقُ وبلا عرضٍ كامل، فالشريطُ صفٌّ لا عمود */
+    const barButton = (d: (typeof DECISIONS)[number]) => (
+      <Button
+        key={`bar-${d.action}`} disabled={busy}
+        tone={d.tone === "main" ? "primary" : d.tone === "warn" ? "secondary" : "danger"}
+        icon={d.tone === "danger" ? XCircle : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
+        onClick={() => void act(
+          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: askNote || note || undefined }),
+          "نُفذ القرار وسُجل في الأثر",
+        )}
+      >
+        {d.label}
+      </Button>
+    );
     return (
       <AdminLayout title={`الطلب ${a.reference}`}>
         <Button tone="ghost" icon={ChevronLeft} onClick={() => setSelected(null)}
-          className="mb-4 text-teal-light-ink hover:text-teal-ink">
+          className="mb-4 text-teal-light-ink hover:text-teal-ink print:hidden">
           كل الطلبات
         </Button>
+
+        {/* ═══ شريطُ القرار — لاصقٌ أعلى الشاشة ═══
+
+            كان القرارُ في عمودٍ جانبيٍّ أسفلَ الروبرك، فمن قرأ الملفَّ كلَّه
+            (وهو طويل) يصعد يبحث عن الأزرار أو ينزل. وقرارُ صاحب المنصّة أن
+            يكون الفعلُ في متناول اليد دائما.
+
+            و`print:hidden`: الشريطُ أداةٌ لا محتوى، فلا يُطبع. */}
+        <Card className="sticky top-0 z-20 -mx-1 mb-4 bg-paper/95 !px-4 !py-3 backdrop-blur-xl print:hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-black">{a.fullName}</p>
+              <p className="truncate font-mono text-read text-muted-foreground" dir="ltr">{a.reference}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {available.length === 0
+                ? <span className="text-read text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</span>
+                : primary.map((d) => barButton(d))}
+              {/* ⑦ «اطلب معلومات إضافية» يفتح خانةً تقول ما المطلوب — وكانت
+                  تُرسَل بلا سؤالٍ أصلا، فيقرأ المتقدّمُ اسمَ حالةٍ لا طلبا. */}
+              {available.some((d) => d.action === "request_info") && (
+                <Button tone="secondary" disabled={busy} icon={FileText} onClick={() => setAskOpen((v) => !v)}>
+                  اطلب معلومات إضافية
+                </Button>
+              )}
+              <Button tone="ghost" icon={Printer} onClick={() => window.print()}>اطبع الملفّ</Button>
+            </div>
+          </div>
+
+          {askOpen && (
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <label htmlFor="ask-note" className="text-read font-bold text-muted-foreground">
+                ما الذي تريده منه؟ يصله بنصّه في رسالةٍ وفي صفحة حالته.
+              </label>
+              <textarea
+                id="ask-note" rows={3} value={askNote} onChange={(e) => setAskNote(e.target.value)}
+                placeholder="مثال: نحتاج شهادة اعتمادك من الوكالة التونسية، وفيديو تدريبي واحد لا يقلّ عن عشر دقائق."
+                className={`${staffAreaCls} mt-2`}
+              />
+              <div className="mt-2 flex items-center gap-2">
+                <Button
+                  tone="secondary" disabled={busy || askNote.trim().length < 10}
+                  onClick={() => void act(
+                    () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: "request_info", note: askNote.trim() }),
+                    "أُرسل الطلب إليه — ونصُّه في صفحة حالته",
+                  ).then(() => { setAskNote(""); setAskOpen(false); })}
+                >
+                  أرسل الطلب إليه
+                </Button>
+                <span className="text-read text-muted-foreground">
+                  {askNote.trim().length < 10 ? "اكتب ما تريده — عشرةُ أحرفٍ على الأقلّ." : "يصله بريدٌ بنصّه، ويبقى طلبه مفتوحا للتعديل."}
+                </span>
+              </div>
+            </div>
+          )}
+        </Card>
 
 
         {/* ── الحذف النهائيّ ──
@@ -480,16 +558,40 @@ export default function TrainerApplications() {
                 <p className="mt-3 text-read text-muted-foreground">لم يرفع المرشح وثائق بعد.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
-                  {a.documents.map((d) => (
-                    <li key={d.id}>
-                      <a href={a.documentUrls[d.storageKey]} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-2 rounded-xl border border-white/10 bg-paper/20 p-3 text-xs text-foreground transition hover:border-teal/40">
-                        <FileText className="h-4 w-4 text-teal-light-ink" />
-                        <span className="font-bold">{d.kind}</span>
-                        <span dir="ltr" className="text-muted-foreground">{d.originalName}</span>
-                      </a>
-                    </li>
-                  ))}
+                  {a.documents.map((d) => {
+                    const url = a.documentUrls[d.storageKey];
+                    const isOpen = openDoc === d.id;
+                    return (
+                      <li key={d.id}>
+                        {/* تُفتح في مكانها لا في لسانٍ ثانٍ: المراجعُ يقارن السيرةَ
+                            بما كُتب في الملفّ، وفتحُها خارجا يُفقده الاثنين معا. */}
+                        <button
+                          type="button" aria-expanded={isOpen}
+                          onClick={() => setOpenDoc(isOpen ? null : d.id)}
+                          className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-paper/20 p-3 text-right text-xs text-foreground transition hover:border-teal/40"
+                        >
+                          <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" />
+                          <span className="font-bold">{d.kind}</span>
+                          <span dir="ltr" className="min-w-0 flex-1 truncate text-muted-foreground">{d.originalName}</span>
+                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                        </button>
+                        {isOpen && (
+                          <div className="mt-2 overflow-hidden rounded-xl bg-white/5 print:hidden">
+                            <iframe
+                              src={url} title={d.originalName}
+                              style={{ border: "none" }}
+                              className="block h-[70vh] w-full bg-white"
+                            />
+                            {/* ومخرجٌ لمن لا يعرض متصفّحُه النوع — لا يُترك بلا طريق */}
+                            <a href={url} target="_blank" rel="noreferrer"
+                              className="block px-3 py-2 text-fine text-teal-light-ink underline decoration-dotted underline-offset-4">
+                              افتحها في لسانٍ جديد إن لم تُعرَض هنا
+                            </a>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Panel>
@@ -542,7 +644,7 @@ export default function TrainerApplications() {
               <textarea
                 value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="ملاحظة المراجع…"
                 aria-label="ملاحظة المراجع"
-                className="mt-3 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+                className={`${staffAreaCls} mt-3`}
               />
               <Button tone="confirm" disabled={!rubricComplete || busy}
                 onClick={() => void act(() => apiPost(`/api/admin/trainer-applications/${a.id}/reviews`, { scores, overallNote: note || undefined }), "سُجل التقييم")} className="mt-3 w-full">
