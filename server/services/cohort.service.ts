@@ -13,6 +13,7 @@ import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { safeNotify } from './notification.service'
+import { fmtDateWith } from '../../src/application/text/format-ar'
 import { createZoomMeeting, getZoomConfig, zoomMissing, zoomReady } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
@@ -1059,7 +1060,9 @@ export class CohortService {
       where: { cohortId, status: { not: 'dropped' } },
       select: { userId: true },
     })
-    const when = session.startsAt.toLocaleString('ar-u-nu-latn-ca-gregory', {
+    /* التنسيقُ من الطبقة المشتركة لا بلغةٍ تُسمّى هنا — وبوّابةُ `audit-locale`
+       تمنع أن يعود الاختيارُ إلى الملفّات، وقد أمسكت هذا السطرَ بعينه. */
+    const when = fmtDateWith(session.startsAt, {
       weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit',
     })
     for (const r of recipients) {
