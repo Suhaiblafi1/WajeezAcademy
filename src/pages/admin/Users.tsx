@@ -254,7 +254,10 @@ export default function Users() {
             >
               {ALL_ROLES.map((r) => <option key={r} value={r}>{ROLE_NAMES_AR[r]}</option>)}
             </select>
-            <button
+            {/* إنشاءُ حسابٍ فعلٌ مُثبِتٌ في نموذجِه لا فعلُ الصفحة — وكان
+                ممتلئا بالذهبيّ مكتوبا بيده، أي رئيسيٌّ ثانٍ بلا اسمه. */}
+            <Button
+              tone="confirm"
               disabled={busy || !newUser.email.trim() || newUser.displayName.trim().length < 2}
               onClick={() => act(
                 async () => {
@@ -268,10 +271,9 @@ export default function Users() {
                 /* الجملةُ كاملةٌ من الخادم: هو وحده يعرف أوصلت الدعوةُ أم لا */
                 (res) => (res as { inviteNote?: string } | undefined)?.inviteNote ?? "أُنشئ الحساب.",
               )}
-              className="cursor-pointer rounded-xl bg-gold px-5 py-2 text-xs font-black text-on-gold transition hover:bg-gold/90 disabled:opacity-40"
             >
               أنشئ
-            </button>
+            </Button>
           </div>
 
           {/* دفعةٌ واحدةٌ لفريقٍ كامل — سطرٌ لكلّ شخص «بريد, اسم».
@@ -288,7 +290,8 @@ export default function Users() {
               placeholder={"sara@example.com, سارة العامري\nomar@example.com, عمر الشمري"}
               className="mt-2 w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-gold/50 focus:outline-none"
             />
-            <button
+            <Button
+              className="mt-2"
               disabled={busy || bulk.trim() === ""}
               onClick={() => act(async () => {
                 /* النتيجةُ تُبنى من جواب الخادم وتُعاد لـ`act` — لا تُضبط هنا،
@@ -308,10 +311,9 @@ export default function Users() {
                 const failures = r.results.filter((x) => !x.ok).map((x) => `${x.email}: ${x.reasonAr ?? "تعذّر"}`);
                 return `أُنشئ ${r.created} حسابا · وصلت ${r.sent} دعوة${r.failed ? ` · تعذّر ${r.failed}: ${failures.join(" · ")}` : ""}`;
               })}
-              className="mt-2 cursor-pointer rounded-xl border border-gold/45 px-5 py-2 text-xs font-black text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
             >
               ادعُ الدفعة
-            </button>
+            </Button>
           </details>
         </Card>
       )}
@@ -332,8 +334,10 @@ export default function Users() {
             ["suspended", `الموقوفة (${countOf("suspended")})`],
             ["archived", `المؤرشَفة (${countOf("archived")})`],
           ] as const).map(([k, label]) => (
+            /* اللسانُ المختارُ فيروزيٌّ لا ذهبيّ: الذهبيُّ فعلُ الصفحة، ولسانٌ
+               ممتلئٌ به يُقرأ فعلا. وهو ما استقرّ عليه لسانُ الشعبة والمالية. */
             <button key={k} onClick={() => { setBox(k); setQ(""); setPage(1); setEditing(null); setPermFor(null); }}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${box === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${box === k ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"}`}>
               {label}
             </button>
           ))}

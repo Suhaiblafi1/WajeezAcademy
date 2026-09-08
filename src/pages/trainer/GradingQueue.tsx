@@ -33,7 +33,6 @@ import Button from "@/components/ui/Button";
 import { areaCls, controlCls } from "@/components/FormKit";
 
 /* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
-const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-fine font-bold transition disabled:opacity-40";
 
 /* «١ تسليمٌ» و«٢ تسليمان» و«٣ تسليمات» و«١١ تسليما» — والعددُ يُقرأ لا يُحسب */
 const SUBMISSION_FORMS = { one: "تسليمٌ", two: "تسليمان", few: "تسليمات", many: "تسليما" };
@@ -206,25 +205,23 @@ export default function GradingQueue() {
               />
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {q.status === "submitted" && (
-                  <button disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}
-                    className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
+                  <Button size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "start_review")}>
                     ابدأ المراجعة
-                  </button>
+                  </Button>
                 )}
                 {q.status === "under_review" && (
                   <>
-                    <button disabled={busy} onClick={() => void reviewAction(q.id, "accept")}
-                      className={`${ACT} border-transparent bg-teal font-black text-on-teal hover:bg-teal-light`}>
+                    {/* القبولُ فعلٌ مُثبِتٌ في القسم: نبرتُه `confirm` — وكان
+                        ممتلئا بالفيروزيّ مكتوبا بيده، أي `confirm` بلا اسمه. */}
+                    <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "accept")}>
                       قبول
-                    </button>
-                    <button disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}
-                      className={`${ACT} border-gold/40 text-gold-ink hover:bg-gold/10`}>
+                    </Button>
+                    <Button size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}>
                       اطلب إعادة التسليم
-                    </button>
-                    <button disabled={busy} onClick={() => void reviewAction(q.id, "reject")}
-                      className={`${ACT} border-red-500/40 text-red-400 hover:bg-red-500/10`}>
+                    </Button>
+                    <Button tone="danger" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "reject")}>
                       رفض
-                    </button>
+                    </Button>
                   </>
                 )}
                 {["under_review", "submitted"].includes(q.status) && (
@@ -235,10 +232,10 @@ export default function GradingQueue() {
                       placeholder={`من ${q.assessment.maxScore}`}
                       aria-label={`درجةُ «${q.assessment.title}» من ${q.assessment.maxScore}`}
                       className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none" />
-                    <button disabled={busy || !(gradeForm[q.id] ?? "").trim()} onClick={() => void grade(q.id, q.assessment.maxScore)}
-                      className={`${ACT} border-white/20 text-foreground hover:border-white/40`}>
+                    <Button size="sm" disabled={busy || !(gradeForm[q.id] ?? "").trim()}
+                      onClick={() => void grade(q.id, q.assessment.maxScore)}>
                       سجّل الدرجة
-                    </button>
+                    </Button>
                   </span>
                 )}
               </div>
@@ -248,10 +245,11 @@ export default function GradingQueue() {
                   placeholder="تغذية راجعة إضافية للمتعلم…"
                   aria-label={`تغذيةٌ راجعةٌ على «${q.assessment.title}»`}
                   className={`flex-1 ${controlCls}`} />
-                <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
-                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-fine font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
-                  <MessageSquarePlus className="h-3 w-3" /> أرسل
-                </button>
+                <Button size="sm" icon={MessageSquarePlus} className="shrink-0"
+                  disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3}
+                  onClick={() => void sendFeedback(q.id)}>
+                  أرسل
+                </Button>
               </div>
             </Panel>
           ))}

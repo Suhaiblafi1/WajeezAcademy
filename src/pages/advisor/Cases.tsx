@@ -157,9 +157,9 @@ export default function AdvisorCases() {
   if (detail) {
     return (
       <AdvisorLayout title={`ملف الحالة — ${partyOf(detail).name}`}>
-        <button onClick={() => setDetail(null)} className="mb-4 flex cursor-pointer items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> عودة للقائمة
-        </button>
+        <Button tone="ghost" icon={ChevronLeft} className="mb-4 px-0" onClick={() => setDetail(null)}>
+          عودة للقائمة
+        </Button>
 
         <div className="grid gap-5 lg:grid-cols-3">
           {/* العميل والتشخيص */}
@@ -435,8 +435,10 @@ export default function AdvisorCases() {
             </Panel>
           )}
           {view.rows.map((c) => (
-            <button key={c.id} onClick={() => void openCase(c.id)}
-              className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/50">
+            /* البطاقةُ من النظام لا مكتوبةً بيدها: الحدُّ والحشوُ والانحناءُ
+               كانت تُعاد كتابتُها هنا بالقيم نفسِها التي يحملها `Card`. */
+            <Card as="button" interactive key={c.id} onClick={() => void openCase(c.id)}
+              className="block w-full text-right">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{partyOf(c).name} <span className="text-fine font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
@@ -454,7 +456,7 @@ export default function AdvisorCases() {
                   </span>
                 </div>
               </div>
-            </button>
+            </Card>
           ))}
         </div>
       ) : (

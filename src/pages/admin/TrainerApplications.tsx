@@ -712,15 +712,14 @@ export default function TrainerApplications() {
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
               </span>
             ) : commonActions.map((d) => (
-              <button key={d.action}
+              /* فعلٌ جماعيٌّ في شريطِه لا فعلُ الصفحة — وكان ممتلئا بالذهبيّ
+                 مكتوبا بيده، أي رئيسيٌّ ثانٍ إلى جانب زرِّ الرأس. */
+              <Button key={d.action} size="sm" tone={d.tone === "danger" ? "danger" : "confirm"}
                 onClick={() => (d.action === "reject" || d.action === "waitlist"
                   ? setBulkDecision({ action: d.action, labelAr: d.label })
-                  : void bulkDecide(d.action, d.label))}
-                className={`cursor-pointer rounded-full px-4 py-1.5 text-fine font-black transition ${
-                  d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
-                }`}>
+                  : void bulkDecide(d.action, d.label))}>
                 {d.label} — على {sel.size}
-              </button>
+              </Button>
             ))}
           </BulkBar>
           {view.total === 0 && (
