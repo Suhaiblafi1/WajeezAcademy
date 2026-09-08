@@ -25,7 +25,7 @@ import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import Button from "@/components/ui/Button";
-const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
+import { staffControlCls as inputCls } from "@/components/FormKit";
 
 interface EnrollReq {
   id: string; status: string; note: string | null; createdAt: string;
@@ -213,7 +213,7 @@ export default function Finance() {
       {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
           ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
       {readOnly && (
-        <Card as="p" className="mb-5 flex items-start gap-2 px-4 py-3 text-micro font-bold leading-6 text-muted-foreground">
+        <Card as="p" className="mb-5 flex items-start gap-2 px-4 py-3 text-read font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
           حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
           أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
@@ -236,7 +236,7 @@ export default function Finance() {
               placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
           )}
           {selectable.length > 0 && (
-            <div className="flex items-center gap-2 text-micro text-muted-foreground">
+            <div className="flex items-center gap-2 text-fine text-muted-foreground">
               <input type="checkbox"
                 checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
                 onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
@@ -261,11 +261,11 @@ export default function Finance() {
             <Card key={r.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.user.displayName} <span className="text-micro font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="font-black">{r.user.displayName} <span className="text-fine font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
+                  <p className="mt-1 text-read text-muted-foreground">
                     {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>
-                  {r.note && <p className="mt-1 text-micro text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
+                  {r.note && <p className="mt-1 text-read text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
                 </div>
                 <div className="flex items-center gap-3">
                   <Chip tone="accent" srPrefixAr="الحالة">{ER_STATUS[r.status] ?? r.status}</Chip>
@@ -316,8 +316,8 @@ export default function Finance() {
             <Card key={inv.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-micro font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
-                  <p className="mt-1 text-xs text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
+                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-fine font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-read text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
                 <Chip tone="accent" srPrefixAr="حالةُ الفاتورة">{INV_STATUS[inv.status] ?? inv.status}</Chip>
               </div>
@@ -341,7 +341,7 @@ export default function Finance() {
                   <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
                     placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
                   <Button tone="secondary" size="sm" disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
-                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")} className="text-micro text-gold-ink">
+                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")} className="text-fine text-gold-ink">
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
                   </Button>
                   </>)}
@@ -363,7 +363,7 @@ export default function Finance() {
             <Card key={rf.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
-                <p className="mt-1 text-micro text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
+                <p className="mt-1 text-read text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Chip tone="accent" srPrefixAr="حالةُ الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
@@ -440,7 +440,7 @@ export default function Finance() {
               }, "أُنشئت الخطة وأصبحت عامة فورا")} className="mt-3">
               أنشئ الخطة
             </Button>
-            <p className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground">
+            <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
               <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
             </p>
           </Panel>

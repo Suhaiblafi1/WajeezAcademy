@@ -74,7 +74,7 @@ export default function ModuleCheck({
           <Sparkles className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           تمرين استرجاع — {checks.length} {checks.length === 1 ? "سؤال" : "أسئلة"}
         </h3>
-        <p className="text-micro text-muted-foreground">بلا درجة ولا وزن — الاسترجاع نفسه هو الفائدة</p>
+        <p className="text-fine text-muted-foreground">بلا درجة ولا وزن — الاسترجاع نفسه هو الفائدة</p>
       </div>
 
       <ol className="mt-5 space-y-5">
@@ -106,7 +106,7 @@ export default function ModuleCheck({
 
           {/* الاسترجاع المتباعد (ح-٤) — طلب صريح، وموعد معلَن قبل الضغط */}
           {sched === "done" ? (
-            <Card as="p" tone="accent" className="mt-3 flex flex-wrap items-center gap-2 bg-teal-ink/[0.07] px-4 py-3 text-micro leading-6 text-foreground">
+            <Card as="p" tone="accent" className="mt-3 flex flex-wrap items-center gap-2 bg-teal-ink/[0.07] px-4 py-3 text-fine leading-6 text-foreground">
               <CalendarClock className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
               جُدولت عودة هذه الأسئلة: بعد {spacingLabelAr(0)}، ثم يتباعد الموعد كلما استرجعتها.
               <Link to="/student/review" className="font-bold text-teal-light-ink underline underline-offset-4">

@@ -33,6 +33,64 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const SCREENS = [...walk('src/pages'), ...walk('src/components')]
 
+/* ═══ من هي «شاشةُ الفريق»؟ — تُشتقّ كما تُشتقّ شاشةُ المتعلّم ═══
+
+   القائمةُ المكتوبةُ باليد تشيخ عند أوّل ملفّ. فالجذورُ بموضعها (الإدارة
+   والمدرّب والمستشار)، ثمّ يُتبَع رسمُ الاستيرادات. والمشترَكُ مع المتعلّم
+   يُستثنى: حدُّه في حارسِه هناك، وتغييرُه من هنا يغيّر شاشتَين بقرارٍ واحد. */
+const SRC = [...walk('src')].filter((f) => !f.startsWith('src/tests/'))
+
+const isLearnerRoot = (f: string) =>
+  /^src\/pages\/[^/]+\.tsx$/.test(f) || /^src\/pages\/(student|diagnostic|home)\//.test(f)
+const isStaffRoot = (f: string) => /^src\/pages\/(admin|trainer|advisor)\//.test(f)
+
+function resolveImport(from: string, spec: string): string | null {
+  let base: string
+  if (spec.startsWith('@/')) base = 'src/' + spec.slice(2)
+  else if (spec.startsWith('.')) {
+    const parts = from.split('/').slice(0, -1)
+    for (const seg of spec.split('/')) {
+      if (seg === '.') continue
+      else if (seg === '..') parts.pop()
+      else parts.push(seg)
+    }
+    base = parts.join('/')
+  } else return null
+  for (const c of [base, `${base}.tsx`, `${base}.ts`, `${base}/index.tsx`, `${base}/index.ts`]) {
+    if (SRC.includes(c)) return c
+  }
+  return null
+}
+
+const IMPORTS = new Map(
+  SRC.map((f) => [
+    f,
+    [...readFileSync(join(root, f), 'utf8').matchAll(/from\s+['"]([^'"]+)['"]/g)]
+      .map((m) => resolveImport(f, m[1]))
+      .filter((x): x is string => x !== null),
+  ]),
+)
+
+function reachable(roots: string[]): Set<string> {
+  const seen = new Set<string>()
+  const stack = [...roots]
+  while (stack.length) {
+    const f = stack.pop()!
+    if (seen.has(f)) continue
+    seen.add(f)
+    for (const d of IMPORTS.get(f) ?? []) stack.push(d)
+  }
+  return seen
+}
+
+const STAFF_ONLY = (() => {
+  const learner = reachable(SRC.filter(isLearnerRoot))
+  const staff = reachable(SRC.filter(isStaffRoot))
+  return [...staff]
+    .filter((f) => !learner.has(f) && !f.startsWith('src/components/ui/'))
+    .sort()
+})()
+
 /* الفحصُ على **النصِّ النائب** لا على ورود الحرف: تعليقٌ يشرح ما أُزيل يذكر
    «UUID» ولا يطلب من أحدٍ شيئا. وهي الثغرةُ التي مرّ منها ثلاثةُ حرّاسٍ
    خضراءَ في هذه المنصّة — «طابقوا نصّا في تعليق».
@@ -78,5 +136,114 @@ describe('شاشاتُ الفريق · لا يُطلب معرّفٌ لا تعر�
 
   it('والباقي لا يزيد — يُسمّى واحدا واحدا وينقص مع كلّ إحلال', () => {
     expect(uuidPrompts()).toEqual(REMAINING)
+  })
+})
+
+/* ═════════ أرضيّةُ الخطّ في شاشات الفريق — قرارُ ٨ سبتمبر ٢٠٢٦ ═════════
+
+   قِيس قبل الكنس: ٣٣٠ موضعا بأحدَ عشرَ بكسلا في `src/pages/admin` وحدَها،
+   و١٩٢ باثنَي عشر، و**صفرٌ بستّةَ عشر** — أي أنّ ٧٨٪ من نصوص اللوحة دون
+   الحدّ الأدنى الذي تقوله مراجعُ الواجهات العربيّة (١٤).
+
+   وكان ذلك قرارا مكتوبا («جداولُ الفريق كثيفةٌ بقصد») نقضه صاحبُ المنصّة.
+
+   والقاعدةُ هي قاعدةُ شاشات المتعلّم نفسُها، لا ثانيةٌ تفترق عنها: **المتنُ
+   تقوله البنيةُ لا العين** — `<p>` و`<li>` و`as="p"` متن، وما لُفّ في حبّةٍ
+   مستديرة أو حمل `uppercase`/`tracking-` شارةٌ ولو كان فقرة. */
+
+/** سمةُ الأصناف — تُقرأ مركَّبةً لا حرفيّةً وحدَها */
+function classAttrs(src: string): { index: number; cls: string }[] {
+  const out: { index: number; cls: string }[] = []
+  for (const m of src.matchAll(/class(?:Name)?\s*=\s*/g)) {
+    const i = m.index! + m[0].length
+    const q = src[i]
+    if (q === '"' || q === "'") {
+      const end = src.indexOf(q, i + 1)
+      if (end > 0) out.push({ index: m.index!, cls: src.slice(i + 1, end) })
+      continue
+    }
+    if (q !== '{') continue
+    let depth = 0, end = -1
+    for (let j = i; j < src.length && j - i < 4000; j++) {
+      if (src[j] === '{') depth++
+      else if (src[j] === '}') { depth--; if (depth === 0) { end = j; break } }
+    }
+    if (end < 0) continue
+    const parts = [...src.slice(i + 1, end).matchAll(/`([^`]*)`|'([^']*)'|"([^"]*)"/g)]
+      .map((x) => x[1] ?? x[2] ?? x[3] ?? '')
+    if (parts.length > 0) out.push({ index: m.index!, cls: parts.join(' ') })
+  }
+  return out
+}
+
+function openTag(src: string, idx: number): { name: string; head: string } {
+  for (let i = idx; i > 0 && idx - i < 3000; i--) {
+    if (src[i] === '<' && /[A-Za-z]/.test(src[i + 1] ?? '')) {
+      return { name: src.slice(i + 1).match(/^[A-Za-z][\w.]*/)?.[0] ?? '?', head: src.slice(i, idx) }
+    }
+  }
+  return { name: '?', head: '' }
+}
+
+const SMALL = /\btext-(fine|xs|micro)\b/
+const LABELISH = /rounded-full|uppercase|tracking-|sr-only/
+const AS_P = /\bas\s*=\s*(?:"p"|'p'|\{"p"\}|\{'p'\})/
+
+const { body, label } = (() => {
+  const body: string[] = []
+  const label: string[] = []
+  for (const f of STAFF_ONLY) {
+    const src = readFileSync(join(root, f), 'utf8')
+    for (const a of classAttrs(src)) {
+      if (!SMALL.test(a.cls)) continue
+      const tag = openTag(src, a.index)
+      const line = src.slice(0, a.index).split('\n').length
+      const isBody = !LABELISH.test(a.cls) && !LABELISH.test(tag.head)
+        && (/^(p|li)$/.test(tag.name) || AS_P.test(tag.head))
+      ;(isBody ? body : label).push(`${f}:${line}  <${tag.name}>  ${a.cls}`)
+    }
+  }
+  return { body, label }
+})()
+
+describe('شاشاتُ الفريق · أرضيّةُ الخطّ', () => {
+  it('الاشتقاقُ يعمل — ولو انكسر لخضرّ ما بعده بلا معنى', () => {
+    expect(STAFF_ONLY.length).toBeGreaterThan(40)
+    expect(STAFF_ONLY).toContain('src/pages/admin/CohortOps.tsx')
+    expect(STAFF_ONLY).not.toContain('src/pages/CoursePath.tsx')
+    /* اللصيقاتُ باقيةٌ بقصد، فوجودُها دليلُ أنّ المسحَ يقرأ فعلا */
+    expect(label.length, 'لم يُقرأ موضعٌ واحد — تعطّل المسحُ').toBeGreaterThan(50)
+  })
+
+  it('لا فقرةَ ولا عنصرَ قائمةٍ بحجمِ لصيقة — المتنُ أربعةَ عشر', () => {
+    expect(
+      body,
+      'نصُّ متنٍ دون أربعةَ عشر في شاشة فريق. استعمل `text-read` — وإن كان '
+      + 'شارةً فعلا فألبِسه `rounded-full` أو انقله إلى `<span>`:\n'
+      + body.slice(0, 12).join('\n'),
+    ).toEqual([])
+  })
+
+  it('ولا أحدَ عشرَ في المستودَع كلِّه — أرضيّةُ اللصيقة اثنا عشر', () => {
+    const offenders: string[] = []
+    for (const f of SRC.filter((x) => /\.tsx?$/.test(x))) {
+      const src = readFileSync(join(root, f), 'utf8')
+      for (const m of src.matchAll(/text-micro|text-\[(\d+(?:\.\d+)?)px\]/g)) {
+        if (m[0] === 'text-micro' || Number(m[1]) < 12) offenders.push(`${f}: ${m[0]}`)
+      }
+    }
+    expect(offenders, `استعمل text-fine (١٢px):\n${offenders.join('\n')}`).toEqual([])
+  })
+
+  it('وحقلُ الفريق واحدٌ لا تسعة — الصيغةُ في `FormKit` لا في كلّ صفحة', () => {
+    const kit = readFileSync(join(root, 'src/components/FormKit.tsx'), 'utf8')
+    expect(kit).toMatch(/staffControlCls[\s\S]{0,200}text-read/)
+    /* ونقضُه: صفحةٌ تُعيد كتابةَ صيغةِ حقلٍ كاملةٍ في مكانها */
+    const local: string[] = []
+    for (const f of STAFF_ONLY.filter((x) => x.startsWith('src/pages/'))) {
+      const src = readFileSync(join(root, f), 'utf8')
+      if (/^const (input|select)Cls = (?:"|`)[^"`]*rounded-xl/m.test(src)) local.push(f)
+    }
+    expect(local, `صيغةُ حقلٍ مكتوبةٌ في مكانها — استورد staffControlCls:\n${local.join('\n')}`).toEqual([])
   })
 })

@@ -125,7 +125,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
   }
   const stat = (label: string, value: string) => (
     <Card className="bg-paper/20 p-3.5">
-      <p className="text-micro font-bold text-muted-foreground">{label}</p>
+      <p className="text-read font-bold text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-black tabular-nums text-foreground">{value}</p>
     </Card>
   );
@@ -145,7 +145,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
             : "—")}
         </div>
         {summary.nextSession && (
-          <Inset as="p" tone="accent" className="mt-3 px-3.5 py-2.5 text-xs leading-6 text-teal-light-ink">
+          <Inset as="p" tone="accent" className="mt-3 px-3.5 py-2.5 text-read leading-6 text-teal-light-ink">
             أقرب جلسة: <b>{summary.nextSession.title}</b> — شعبة «{summary.nextSession.cohortTitle}» ·{" "}
             {fmtDateTime(new Date(summary.nextSession.startsAt))}
           </Inset>
@@ -155,21 +155,21 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
       <Panel as="article">
         <h4 className="text-sm font-black">الدورات المؤهَّل لها</h4>
         {summary.qualifiedCourses.length === 0 ? (
-          <p className="mt-3 text-xs leading-6 text-muted-foreground">
+          <p className="mt-3 text-read leading-6 text-muted-foreground">
             لا دورة بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها، وموافقةُ المدير الأكاديميّ
             تؤهّله وتُسنده في فعلٍ واحد.
           </p>
         ) : (
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {summary.qualifiedCourses.map((c) => (
-              <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-micro font-bold text-teal-light-ink">
+              <li key={c.courseId} className="rounded-full border border-teal/35 bg-teal/[0.08] px-3 py-1 text-fine font-bold text-teal-light-ink">
                 {c.titleAr}
               </li>
             ))}
           </ul>
         )}
         {summary.pendingQualifications > 0 && (
-          <p className="mt-3 text-micro text-gold-ink">
+          <p className="mt-3 text-read text-gold-ink">
             وله {summary.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
           </p>
         )}
@@ -180,18 +180,18 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
         {/* «المُسنَدُ له فعليّا» يُقرأ من كائن الشعبة لا من ملفّ المدرّب:
             مصدرُ الإسناد هناك، وقراءتُه من هنا تُنشئ مصدرا ثانيا يشيخ. */}
         {summary.cohorts.length === 0 ? (
-          <p className="mt-3 text-xs text-muted-foreground">لا شعبة مُسنَدة إليه الآن.</p>
+          <p className="mt-3 text-read text-muted-foreground">لا شعبة مُسنَدة إليه الآن.</p>
         ) : (
           <ul className="mt-3 space-y-2">
             {summary.cohorts.map((c) => (
               <Inset as="li" key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
                 <span className="min-w-0">
                   <span className="block text-xs font-bold text-foreground">{c.title}</span>
-                  <span className="text-micro text-muted-foreground">
+                  <span className="text-fine text-muted-foreground">
                     {c.courseTitle} · {c.role === "lead" ? "رئيسي" : "مساعد"} · {c.enrolled} متعلّم
                   </span>
                 </span>
-                <span className="shrink-0 text-micro text-muted-foreground">
+                <span className="shrink-0 text-fine text-muted-foreground">
                   {c.startsAt ? fmtDateTime(new Date(c.startsAt)) : "بلا موعد"}
                 </span>
               </Inset>
@@ -361,7 +361,7 @@ export default function TrainerApplications() {
           && ["draft", "email_verification_pending", "rejected", "withdrawn"].includes(a.status) && (
           <details className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/[0.05] p-4">
             <summary className="cursor-pointer text-xs font-black text-red-300">حذفٌ نهائيّ لهذا الطلب</summary>
-            <p className="mt-2 text-xs leading-6 text-foreground">
+            <p className="mt-2 text-read leading-6 text-foreground">
               يُحذف الطلبُ ومستنداتُه ومراجعاتُه ولا يُستردّ. ويبقى أثرُ الحذف في سجلّ
               التدقيق: من حذف، ومتى، ولماذا. ولا يُحذف طلبُ من صار مدرّبا.
             </p>
@@ -390,7 +390,7 @@ export default function TrainerApplications() {
                     setPurging(false);
                   }
                 }}
-                className="rounded-lg bg-red-500/85 px-4 py-1.5 text-micro font-black text-white hover:bg-red-500 disabled:opacity-40"
+                className="rounded-lg bg-red-500/85 px-4 py-1.5 text-fine font-black text-white hover:bg-red-500 disabled:opacity-40"
               >
                 {purging ? "يُحذف…" : "احذفه نهائيّا"}
               </button>
@@ -432,7 +432,7 @@ export default function TrainerApplications() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-black">{a.fullName}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="mt-1 text-read text-muted-foreground">
                     {a.jobTitle ?? "—"} · {a.country ?? "—"}
                     {(() => {
                       const labels: Record<string, string> = { employed: "موظف", own_business: "عمل خاص", full_time_training: "متفرغ للتدريب" };
@@ -440,15 +440,15 @@ export default function TrainerApplications() {
                       return emp ? ` · ${emp}` : "";
                     })()}
                   </p>
-                  <p className="mt-1 text-micro text-muted-foreground" dir="ltr">{a.email}</p>
+                  <p className="mt-1 text-read text-muted-foreground" dir="ltr">{a.email}</p>
                 </div>
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
+                <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
               </div>
-              {a.bio && <p className="mt-4 text-xs leading-6 text-foreground">{a.bio}</p>}
+              {a.bio && <p className="mt-4 text-read leading-6 text-foreground">{a.bio}</p>}
               {a.motivation && (
-                <Inset as="p" className="mt-3 text-xs leading-6 text-foreground">
+                <Inset as="p" className="mt-3 text-read leading-6 text-foreground">
                   <span className="font-bold text-muted-foreground">لماذا وجيز؟ </span>{a.motivation}
                 </Inset>
               )}
@@ -468,7 +468,7 @@ export default function TrainerApplications() {
             <Panel as="article">
               <h4 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
               {a.documents.length === 0 ? (
-                <p className="mt-3 text-xs text-muted-foreground">لم يرفع المرشح وثائق بعد.</p>
+                <p className="mt-3 text-read text-muted-foreground">لم يرفع المرشح وثائق بعد.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {a.documents.map((d) => (
@@ -490,7 +490,7 @@ export default function TrainerApplications() {
               <h4 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-micro text-muted-foreground">
+                  <li key={i} className="flex items-center gap-2 text-read text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-foreground">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
                     {h.note && <span>— {h.note}</span>}
@@ -513,13 +513,13 @@ export default function TrainerApplications() {
               <div className="mt-3 space-y-2">
                 {RUBRIC_AXES.map((x) => (
                   <div key={x.key} className="flex items-center justify-between gap-2">
-                    <span className="text-micro text-muted-foreground">{x.label}</span>
+                    <span className="text-fine text-muted-foreground">{x.label}</span>
                     <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
                       {[1, 2, 3, 4, 5].map((v) => (
                         <button
                           key={v} type="button" onClick={() => setScores({ ...scores, [x.key]: v })}
                           aria-pressed={scores[x.key] === v}
-                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border text-micro font-bold transition ${
+                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border text-fine font-bold transition ${
                             scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-muted-foreground hover:border-white/40"
                           }`}
                         >
@@ -539,16 +539,16 @@ export default function TrainerApplications() {
                 onClick={() => void act(() => apiPost(`/api/admin/trainer-applications/${a.id}/reviews`, { scores, overallNote: note || undefined }), "سُجل التقييم")} className="mt-3 w-full">
                 <Star className="h-3.5 w-3.5" /> سجّل التقييم
               </Button>
-              <p className="mt-2 text-center text-micro text-muted-foreground">{a.reviews.length} تقييم مسجل</p>
+              <p className="mt-2 text-center text-read text-muted-foreground">{a.reviews.length} تقييم مسجل</p>
             </Panel>
 
             <Panel as="article">
               <h4 className="text-sm font-black">القرار — بشري بالكامل</h4>
               <div className="mt-3 space-y-2">
-                {available.length === 0 && <p className="text-xs text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</p>}
+                {available.length === 0 && <p className="text-read text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</p>}
                 {primary.map((d) => decisionButton(d))}
                 {primary.some((d) => d.action === "approve") && (
-                  <p className="pt-0.5 text-center text-micro leading-5 text-muted-foreground">
+                  <p className="pt-0.5 text-center text-read leading-5 text-muted-foreground">
                     الاعتمادُ ينشئ ملفَّه، ويفتح بوّابتَه بحسابه نفسِه، ويُعلمه بالبريد.
                   </p>
                 )}
@@ -561,7 +561,7 @@ export default function TrainerApplications() {
                   <summary className="cursor-pointer text-xs font-black text-muted-foreground">
                     خطواتٌ تفصيليّة ({detailed.length}) — اختياريّة
                   </summary>
-                  <p className="mt-2 text-micro leading-5 text-muted-foreground">
+                  <p className="mt-2 text-read leading-5 text-muted-foreground">
                     لا يلزم شيءٌ منها للاعتماد. تُستعمل حين تريد أن يبقى أثرُ المقابلة
                     أو الدرس التجريبيّ أو العقد في سجلّ الطلب.
                   </p>
@@ -571,7 +571,7 @@ export default function TrainerApplications() {
 
               {/* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه — فلا زرَّ دعوةٍ له */}
               {a.status === "onboarding" && !a.profile?.userId && a.userId && (
-                <Inset as="p" tone="accent" className="mt-3 text-micro leading-6 text-foreground">
+                <Inset as="p" tone="accent" className="mt-3 text-read leading-6 text-foreground">
                   للمتقدّم حسابٌ منذ تقديمه — «فعّله مدرّبا نشطا» يربط حسابه بملفّه ويفتح له بوّابة المدربين مباشرة.
                 </Inset>
               )}
@@ -592,21 +592,21 @@ export default function TrainerApplications() {
               )}
               {invite && a.status === "onboarding" && !a.profile?.userId && !a.userId && (
                 <Inset tone="accent" className="mt-3">
-                  <p className="text-micro font-black text-teal-light-ink">
+                  <p className="text-read font-black text-teal-light-ink">
                     {invite.delivery === "sent"
                       ? "أُرسلت الدعوة إلى بريد المدرب — وهذه نسخة الرابط إن لم تصله"
                       : invite.delivery === "not_configured"
                         ? "قناة البريد غير مفعّلة — سلّم هذا الرابط للمدرب بنفسك"
                         : "تعذّر إرسال البريد — سلّم هذا الرابط للمدرب بنفسك"}
                   </p>
-                  <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-paper/40 p-2 font-mono text-micro text-foreground">
+                  <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-paper/40 p-2 font-mono text-fine text-foreground">
                     {invite.url}
                   </code>
-                  <p className="mt-1.5 text-micro text-muted-foreground">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
+                  <p className="mt-1.5 text-read text-muted-foreground">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
                 </Inset>
               )}
               {a.profile?.userId && (
-                <p className="mt-3 flex items-center justify-center gap-1.5 text-micro font-bold text-teal-light-ink">
+                <p className="mt-3 flex items-center justify-center gap-1.5 text-read font-bold text-teal-light-ink">
                   <MailCheck className="h-3.5 w-3.5" /> الحساب مُنشأ ومرتبط بالملف
                 </p>
               )}
@@ -671,7 +671,7 @@ export default function TrainerApplications() {
             placeholder="ابحث باسمٍ أو بريدٍ أو رقمِ طلبٍ أو تخصّص…" />
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
             {commonActions.length === 0 ? (
-              <span className="text-micro text-muted-foreground">
+              <span className="text-fine text-muted-foreground">
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
               </span>
             ) : commonActions.map((d) => (
@@ -679,7 +679,7 @@ export default function TrainerApplications() {
                 onClick={() => (d.action === "reject" || d.action === "waitlist"
                   ? setBulkDecision({ action: d.action, labelAr: d.label })
                   : void bulkDecide(d.action, d.label))}
-                className={`cursor-pointer rounded-full px-4 py-1.5 text-micro font-black transition ${
+                className={`cursor-pointer rounded-full px-4 py-1.5 text-fine font-black transition ${
                   d.tone === "danger" ? "border border-red-400/40 text-red-300 hover:bg-red-400/10" : "bg-gold text-on-gold hover:bg-gold/90"
                 }`}>
                 {d.label} — على {sel.size}
@@ -706,16 +706,16 @@ export default function TrainerApplications() {
               className="flex flex-1 cursor-pointer flex-wrap items-center justify-between gap-3 text-right"
             >
               <div>
-                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-micro text-muted-foreground" dir="ltr">{a.reference}</span></p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-fine text-muted-foreground" dir="ltr">{a.reference}</span></p>
+                <p className="mt-1 text-read text-muted-foreground">
                   {a.specialties.join(" · ") || "—"} · خبرة مجال {a.domainYears ?? "—"} · {a.jobTitle ?? "—"}
                 </p>
-                <p className="mt-1 text-micro text-muted-foreground">
+                <p className="mt-1 text-read text-muted-foreground">
                   {a.emailVerified ? "بريد متحقق ✓" : "بريد غير متحقق"} · {a.documentsCount} وثيقة · {a.reviewsCount} تقييم · {a.interviewsCount} مقابلة
                   {a.phase2Done ? " · أكمل المرحلة الثانية" : ""}
                 </p>
               </div>
-              <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
+              <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                 {STATUS_LABELS[a.status] ?? a.status}
               </span>
             </button>

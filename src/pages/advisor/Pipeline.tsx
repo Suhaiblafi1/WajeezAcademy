@@ -67,14 +67,14 @@ export default function Pipeline({
           return (
             <section key={s.key} className="w-[240px] shrink-0 lg:w-auto">
               <header className="flex items-baseline justify-between gap-2 rounded-t-2xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-                <h2 className="truncate text-micro font-black">{s.label}</h2>
-                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-micro font-black tabular-nums">
+                <h2 className="truncate text-fine font-black">{s.label}</h2>
+                <span className="shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-fine font-black tabular-nums">
                   {items.length}
                 </span>
               </header>
               <div className="min-h-24 space-y-2 rounded-b-2xl border border-t-0 border-white/10 bg-white/[0.015] p-2">
                 {items.length === 0 ? (
-                  <p className="px-1.5 py-4 text-center text-micro leading-5 text-muted-foreground">{s.hint}</p>
+                  <p className="px-1.5 py-4 text-center text-read leading-5 text-muted-foreground">{s.hint}</p>
                 ) : (
                   items.map((c) => {
                     const who = renderName(c.id)
@@ -87,10 +87,10 @@ export default function Pipeline({
                           late ? 'border-gold/45 bg-gold/[0.06]' : 'border-white/10 bg-paper/25 hover:border-teal/40'
                         }`}
                       >
-                        <p className="truncate text-xs font-bold">{who.name}</p>
-                        {who.email && <p dir="ltr" className="mt-0.5 truncate text-right text-micro text-muted-foreground">{who.email}</p>}
-                        {c.nextAction && <p className="mt-2 line-clamp-2 text-micro leading-5 text-muted-foreground">{c.nextAction}</p>}
-                        <p className={`mt-2 flex items-center gap-1 text-micro ${late ? 'text-gold-ink' : 'text-muted-foreground'}`}>
+                        <p className="truncate text-read font-bold">{who.name}</p>
+                        {who.email && <p dir="ltr" className="mt-0.5 truncate text-right text-read text-muted-foreground">{who.email}</p>}
+                        {c.nextAction && <p className="mt-2 line-clamp-2 text-read leading-5 text-muted-foreground">{c.nextAction}</p>}
+                        <p className={`mt-2 flex items-center gap-1 text-read ${late ? 'text-gold-ink' : 'text-muted-foreground'}`}>
                           <CalendarClock className="h-3 w-3" />
                           {c.nextFollowUpAt ? sinceAr(c.nextFollowUpAt) : `آخر تحديث ${sinceAr(c.updatedAt)}`}
                         </p>
@@ -107,7 +107,7 @@ export default function Pipeline({
       {/* الخارجون من القِمع */}
       {CLOSED_STAGES.some((s) => byStage(s.key).length > 0) && (
         <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-          <summary className="cursor-pointer text-micro font-bold text-muted-foreground">
+          <summary className="cursor-pointer text-fine font-bold text-muted-foreground">
             خرجوا من القِمع ({CLOSED_STAGES.reduce((n, s) => n + byStage(s.key).length, 0)})
           </summary>
           <div className="mt-3 flex flex-wrap gap-2">

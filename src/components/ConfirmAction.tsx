@@ -81,7 +81,7 @@ export default function ConfirmAction({
         <div className="mt-3 space-y-2 text-xs leading-6 text-foreground">{children}</div>
 
         {typing && (
-          <label className="mt-4 block text-micro font-bold text-muted-foreground">
+          <label className="mt-4 block text-fine font-bold text-muted-foreground">
             {typing.labelAr}
             <input
               value={typed}
@@ -97,7 +97,7 @@ export default function ConfirmAction({
         )}
 
         {reason && (
-          <label className="mt-4 block text-micro font-bold text-muted-foreground">
+          <label className="mt-4 block text-fine font-bold text-muted-foreground">
             {reason.labelAr}
             <textarea
               value={why}

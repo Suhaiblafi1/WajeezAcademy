@@ -43,7 +43,7 @@ const STATE_TONE: Record<SkillMeasureState, string> = {
 function StateBadge({ state }: { state: SkillMeasureState }) {
   const Icon = STATE_ICON[state];
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-micro font-bold ${STATE_TONE[state]}`}>
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-fine font-bold ${STATE_TONE[state]}`}>
       <Icon className="h-3 w-3" aria-hidden="true" />
       {STATE_LABEL_AR[state]}
     </span>
@@ -96,7 +96,7 @@ export default function SkillPicker({
   return (
     <div className={className}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-black text-muted-foreground">
+        <p className="text-read font-black text-muted-foreground">
           المهارات المرتبطة ({assessment.total})
           {assessment.total > 0 && (
             <span className="ms-2 font-medium text-muted-foreground">
@@ -121,7 +121,7 @@ export default function SkillPicker({
       {assessment.warningsAr.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {assessment.warningsAr.map((w) => (
-            <Card as="li" tone="warn" key={w} className="flex items-start gap-2 px-3 py-2 text-micro leading-6 text-foreground">
+            <Card as="li" tone="warn" key={w} className="flex items-start gap-2 px-3 py-2 text-fine leading-6 text-foreground">
               <AlertTriangle className="mt-1 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
               <span>{w}</span>
             </Card>
@@ -147,7 +147,7 @@ export default function SkillPicker({
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-xs font-bold">{r.nameAr}</span>
-                  <span className="block truncate text-micro text-muted-foreground">{r.st.noteAr}</span>
+                  <span className="block truncate text-fine text-muted-foreground">{r.st.noteAr}</span>
                 </span>
                 <StateBadge state={r.st.state} />
               </button>
@@ -155,7 +155,7 @@ export default function SkillPicker({
           );
         })}
         {shown.length === 0 && (
-          <li className="px-3 py-6 text-center text-micro text-muted-foreground">
+          <li className="px-3 py-6 text-center text-read text-muted-foreground">
             {rows.length === 0 ? "لا مهارات في الكتالوج بعد." : `لا مهارة تطابق «${query}».`}
           </li>
         )}
@@ -165,14 +165,14 @@ export default function SkillPicker({
       {onRequestSkill && (
         <div className="mt-2">
           {asked ? (
-            <p className="flex items-center gap-2 text-micro font-bold text-teal-light-ink">
+            <p className="flex items-center gap-2 text-read font-bold text-teal-light-ink">
               <Check className="h-3.5 w-3.5" aria-hidden="true" />
               قُدّم طلب المهارة للمراجعة — لا تُضاف قبل الاعتماد.
             </p>
           ) : askOpen ? (
             <Card>
               <div className="flex items-center justify-between gap-2">
-                <p className="text-micro font-black text-foreground">طلب مهارة غير موجودة</p>
+                <p className="text-read font-black text-foreground">طلب مهارة غير موجودة</p>
                 <button type="button" onClick={() => setAskOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground">
                   <X className="h-4 w-4" />
                 </button>

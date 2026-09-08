@@ -23,6 +23,25 @@ import { Card } from '@/components/ui/Surface'
 export const controlCls =
   'h-12 w-full rounded-xl border border-white/15 bg-paper/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
 
+/* ── حقلُ شاشات الفريق — واحدٌ بدل تسعة ──
+
+   كان في صفحات الإدارة **تسعُ صيغِ حقلٍ متطابقةٍ تقريبا**، كلُّ صفحةٍ تكتب
+   `inputCls` خاصًّا بها. فحقلُ التسجيل في شاشةٍ أقصرُ وأصغرُ خطًّا من حقل
+   التسجيل في شاشةٍ أخرى، والاثنان في المنصّة نفسِها. وهذا هو السببُ
+   الميكانيكيّ لقول صاحب المنصّة «التصاميم لم تتغيّر»: تتغيّر في مكانٍ ولا
+   تتغيّر في مثلَيه.
+
+   ولماذا لا يُكتفى بـ`controlCls`: ذاك `h-12` — ارتفاعُ نموذجٍ يُملأ مرّةً
+   (انضمامُ مدرّب). وشاشاتُ التشغيل تُقرأ صفًّا صفًّا يوما كاملا، فتحتاج
+   كثافةً أعلى. والكثافةُ تُشترى **بالحشو** لا بتصغير الحرف تحت حدّ القراءة:
+   الحشوُ `py-2` والحجمُ `read` (١٤px) — وهو أرضيّةُ العربيّة لا سقفُها. */
+export const staffControlCls =
+  'w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-read text-foreground '
+  + 'placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
+
+/** والقائمةُ هي الحقلُ نفسُه، وخياراتُها تحتاج أرضيّةً تُرى على الداكن */
+export const staffSelectCls = `${staffControlCls} [&>option]:bg-surface`
+
 /** والنصُّ الطويل يشترك في كلّ شيءٍ إلّا الارتفاع */
 export const areaCls =
   'w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm leading-7 text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
@@ -92,7 +111,7 @@ export function FieldRow({ children }: { children: ReactNode }) {
 export function FieldError({ id, children }: { id: string; children?: string | null }) {
   if (!children) return null
   return (
-    <p id={id} role="alert" className="mt-1.5 text-micro font-bold leading-5 text-red-300">
+    <p id={id} role="alert" className="mt-1.5 text-fine font-bold leading-5 text-red-300">
       {children}
     </p>
   )
@@ -131,7 +150,7 @@ export function Field({
         {label}
         {required && <Req />}
       </label>
-      {hint && <p className="mt-0.5 text-micro leading-5 text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-0.5 text-fine leading-5 text-muted-foreground">{hint}</p>}
       <div className="mt-2">{children}</div>
       {errorId && <FieldError id={errorId}>{error}</FieldError>}
     </div>
@@ -164,7 +183,7 @@ export function FieldSet({
         {legend}
         {required && <Req />}
       </legend>
-      {hint && <p className="mt-0.5 text-micro leading-5 text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-0.5 text-fine leading-5 text-muted-foreground">{hint}</p>}
       <div className="mt-2">{children}</div>
       {errorId && <FieldError id={errorId}>{error}</FieldError>}
     </fieldset>

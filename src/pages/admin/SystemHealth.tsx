@@ -75,7 +75,7 @@ export default function SystemHealth() {
   return (
     <AdminLayout title="صحّة النظام">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs leading-6 text-muted-foreground">
+        <p className="text-read leading-6 text-muted-foreground">
           محسوبةٌ من حالة القاعدة عند فتح الصفحة — لا رقمَ محفوظا هنا.
           {data && <span className="mr-2 text-muted-foreground">آخرُ قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
         </p>
@@ -85,7 +85,7 @@ export default function SystemHealth() {
       </div>
 
       {error && (
-        <Card as="p" tone="danger" role="alert" className="px-4 py-3 text-xs font-bold leading-6 text-red-200">{error}</Card>
+        <Card as="p" tone="danger" role="alert" className="px-4 py-3 text-read font-bold leading-6 text-red-200">{error}</Card>
       )}
 
       {data === null && !error && (
@@ -101,7 +101,7 @@ export default function SystemHealth() {
             <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
             <p className="text-sm font-black">{HEADLINE[worst]}</p>
             {notOk > 0 && (
-              <span className={`rounded-full px-3 py-0.5 text-micro font-black tabular-nums ${tone.chip}`}>
+              <span className={`rounded-full px-3 py-0.5 text-fine font-black tabular-nums ${tone.chip}`}>
                 {notOk} بندا
               </span>
             )}
@@ -111,7 +111,7 @@ export default function SystemHealth() {
           <div className="space-y-8">
             {data.groups.map((g) => (
               <section key={g.titleAr}>
-                <h2 className="mb-3 text-micro font-black tracking-wide text-muted-foreground">{g.titleAr}</h2>
+                <h2 className="mb-3 text-fine font-black tracking-wide text-muted-foreground">{g.titleAr}</h2>
                 <ul className="grid gap-3 lg:grid-cols-2">
                   {g.items.map((item) => {
                     const t = TONE[item.level];
@@ -119,20 +119,20 @@ export default function SystemHealth() {
                     return (
                       <li key={item.key} className={`flex h-full flex-col rounded-2xl border bg-white/[0.02] p-4 ${t.box}`}>
                         <div className="flex items-start justify-between gap-3">
-                          <p className="flex items-center gap-2 text-xs font-black text-foreground">
+                          <p className="flex items-center gap-2 text-read font-black text-foreground">
                             <ItemIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {item.titleAr}
                           </p>
-                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-micro font-black ${t.chip}`}>{t.labelAr}</span>
+                          <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-fine font-black ${t.chip}`}>{t.labelAr}</span>
                         </div>
                         <p className="mt-2 text-sm font-bold leading-6 text-foreground">{item.valueAr}</p>
-                        <p className="mt-1.5 text-micro leading-5 text-muted-foreground">{item.meaningAr}</p>
+                        <p className="mt-1.5 text-read leading-5 text-muted-foreground">{item.meaningAr}</p>
                         {item.actionAr && (
-                          <Inset as="p" className="mt-2 px-3 py-2 text-micro leading-5 text-foreground">
+                          <Inset as="p" className="mt-2 px-3 py-2 text-read leading-5 text-foreground">
                             {item.actionAr}
                           </Inset>
                         )}
                         {item.href && (
-                          <Link to={item.href} className="mt-3 flex items-center gap-1 text-micro font-bold text-teal-light-ink hover:underline">
+                          <Link to={item.href} className="mt-3 flex items-center gap-1 text-fine font-bold text-teal-light-ink hover:underline">
                             افتح الشاشة <ChevronLeft className="h-3 w-3" aria-hidden="true" />
                           </Link>
                         )}

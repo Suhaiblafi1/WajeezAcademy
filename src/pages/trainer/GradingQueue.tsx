@@ -28,7 +28,7 @@ import Button from "@/components/ui/Button";
 import { areaCls, controlCls } from "@/components/FormKit";
 
 /* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
-const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-micro font-bold transition disabled:opacity-40";
+const ACT = "cursor-pointer rounded-full border px-4 py-1.5 text-fine font-bold transition disabled:opacity-40";
 
 const SUBMISSION_STATUS: Record<string, string> = {
   submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
@@ -146,12 +146,12 @@ export default function GradingQueue() {
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="font-black">{q.assessment.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
+                  <p className="mt-0.5 text-read text-muted-foreground">
                     {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
                   </p>
                 </div>
                 {q.grades[0] && (
-                  <span className="rounded-full bg-teal/15 px-3 py-1 text-micro font-black text-teal-light-ink">
+                  <span className="rounded-full bg-teal/15 px-3 py-1 text-fine font-black text-teal-light-ink">
                     {Number(q.grades[0].score)}/{Number(q.grades[0].maxScore)}
                   </span>
                 )}
@@ -211,7 +211,7 @@ export default function GradingQueue() {
                   aria-label={`تغذيةٌ راجعةٌ على «${q.assessment.title}»`}
                   className={`flex-1 ${controlCls}`} />
                 <button disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3} onClick={() => void sendFeedback(q.id)}
-                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-micro font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
+                  className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-xl bg-white/10 px-4 py-2 text-fine font-black text-foreground transition hover:bg-white/15 disabled:opacity-40">
                   <MessageSquarePlus className="h-3 w-3" /> أرسل
                 </button>
               </div>

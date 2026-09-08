@@ -95,7 +95,7 @@ export default function LearnersPanel() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted-foreground">{SCOPE_NOTE[data.scope]}</p>
+        <p className="text-read text-muted-foreground">{SCOPE_NOTE[data.scope]}</p>
         <form
           onSubmit={(e) => { e.preventDefault(); void load(q); }}
           className="flex items-center gap-2 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-1.5"
@@ -118,7 +118,7 @@ export default function LearnersPanel() {
         <Panel className="grid place-items-center py-14 text-center">
           <GraduationCap className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm font-black">لا طلبة في نطاقك بعد</p>
-          <p className="mt-1 max-w-sm text-xs leading-6 text-muted-foreground">
+          <p className="mt-1 max-w-sm text-read leading-6 text-muted-foreground">
             {data.scope === "trainer"
               ? "حين تُسنَد إليك شعبةٌ ويُسجَّل فيها متعلّمون، يظهرون هنا."
               : data.scope === "advisor"
@@ -135,10 +135,10 @@ export default function LearnersPanel() {
                   <p className="flex items-center gap-2 text-sm font-black">
                     {l.user.displayName}
                     {l.user.status !== "active" && (
-                      <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">موقوف</span>
+                      <span className="rounded-full border border-red-400/40 px-2 py-0.5 text-fine font-bold text-red-300">موقوف</span>
                     )}
                   </p>
-                  <p dir="ltr" className="mt-0.5 text-left text-micro text-muted-foreground">{l.user.email}</p>
+                  <p dir="ltr" className="mt-0.5 text-left text-read text-muted-foreground">{l.user.email}</p>
                 </div>
                 {data.canWrite && (
                   <div className="flex shrink-0 gap-1.5">
@@ -154,7 +154,7 @@ export default function LearnersPanel() {
                   <Inset as="li" key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                     <span className="min-w-0">
                       <span className="block text-xs font-bold text-foreground">{e.courseTitle}</span>
-                      <span className="text-micro text-muted-foreground">
+                      <span className="text-fine text-muted-foreground">
                         {e.cohortTitle} · {ENROLL_STATUS[e.status] ?? e.status} · {e.percent}٪
                         {e.startsAt ? ` · ${fmtDate(new Date(e.startsAt))}` : ""}
                       </span>
@@ -164,7 +164,7 @@ export default function LearnersPanel() {
                           () => apiDelete(`/api/staff/learners/enrollments/${e.id}`, { note: "إخراجٌ من شاشة الطلبة" }),
                           `أُخرج «${l.user.displayName}» من «${e.cohortTitle}» — والسجلّ باقٍ`,
                         )}
-                        disabled={busy} className="shrink-0 px-2.5 text-micro">
+                        disabled={busy} className="shrink-0 px-2.5 text-fine">
                         <Trash2 className="h-3 w-3" /> أخرجه
                       </Button>
                     )}
@@ -227,17 +227,17 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
           </button>
         </div>
 
-        <label className="mt-4 block text-micro font-bold text-muted-foreground">
+        <label className="mt-4 block text-fine font-bold text-muted-foreground">
           الاسم
           <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={`${field} mt-1`} />
         </label>
-        <label className="mt-3 block text-micro font-bold text-muted-foreground">
+        <label className="mt-3 block text-fine font-bold text-muted-foreground">
           البريد
           <input value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className={`${field} mt-1 text-left`} />
           {/* يُقال قبل الحفظ لا بعده: تبديلُ البريد يُسقط توثيقَه، والشراءُ
               والشهادةُ موقوفان على التوثيق. */}
           {email !== row.user.email && (
-            <span className="mt-1 block text-micro font-normal leading-5 text-gold-ink">
+            <span className="mt-1 block text-fine font-normal leading-5 text-gold-ink">
               تبديلُ البريد يُسقط توثيقَه — سيحتاج أن يوثّق العنوان الجديد قبل الشراء والشهادة.
             </span>
           )}
@@ -265,7 +265,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
         </div>
 
         <div className="mt-5 border-t border-white/10 pt-4">
-          <p className="text-micro font-bold text-muted-foreground">سجّله في شعبة</p>
+          <p className="text-read font-bold text-muted-foreground">سجّله في شعبة</p>
           <div className="mt-2 flex gap-2">
             <select value={cohortId} onChange={(e) => setCohortId(e.target.value)} className={`${field} flex-1 [&>option]:bg-surface`}>
               <option value="">اختر شعبة…</option>
@@ -276,7 +276,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
               <UserPlus className="h-3.5 w-3.5" /> سجّله
             </Button>
           </div>
-          <p className="mt-2 text-micro leading-5 text-muted-foreground">
+          <p className="mt-2 text-read leading-5 text-muted-foreground">
             تسجيلٌ إداريّ بلا فاتورة — يمرّ بحارس السعة نفسِه، والفائضُ يذهب لقائمة الانتظار.
           </p>
         </div>

@@ -12,8 +12,7 @@ import { fmtDateTimeAr } from "@/utils/format";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
-const selectCls = `${inputCls} [&>option]:bg-surface`;
+import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 
 interface CohortLite {
   id: string; title: string; status: string; courseId: string; daysOfWeek: string[];
@@ -100,7 +99,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
   return (
     <div className="space-y-3">
-      {localMsg && <p className="text-micro font-bold text-teal-light-ink" role="status">{localMsg}</p>}
+      {localMsg && <p className="text-read font-bold text-teal-light-ink" role="status">{localMsg}</p>}
 
       {/* تعيين مدرب — خطوةٌ واحدة للمؤهَّل، وطلبٌ واحد لغيره.
 
@@ -153,18 +152,18 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
         {/* الغيابُ يُقال أوّلا لأنّه **مانعٌ** لا تنبيه: الزرُّ سيُردّ بـ409،
             فمن حقّ المُسنِد أن يعرف قبل أن يضغط. والساعاتُ تنبيهٌ بعده. */}
         {picked?.onLeave && (
-          <Inset as="p" tone="danger" className="mt-2 p-2 text-micro font-bold leading-5 text-red-200" role="status">
+          <Inset as="p" tone="danger" className="mt-2 p-2 text-read font-bold leading-5 text-red-200" role="status">
             المدرّبُ أعلن غيابَه في مدّةٍ تقع فيها جلسةٌ من جلسات هذه الشعبة — الإسنادُ سيُردّ. اختر غيرَه، أو راجعه ليحدّث إتاحته.
           </Inset>
         )}
         {!picked?.onLeave && picked?.outsideDeclaredHours ? (
-          <Inset as="p" tone="warn" className="mt-2 p-2 text-micro font-bold leading-5 text-gold-ink" role="status">
+          <Inset as="p" tone="warn" className="mt-2 p-2 text-read font-bold leading-5 text-gold-ink" role="status">
             {picked.outsideDeclaredHours} من جلسات هذه الشعبة تقع خارجَ ساعاته المعلنة — الإسنادُ جائزٌ، والقرارُ لك.
           </Inset>
         ) : null}
 
         {picked && (
-          <p className="mt-2 text-micro leading-5 text-muted-foreground">
+          <p className="mt-2 text-read leading-5 text-muted-foreground">
             {picked.qualification === "qualified"
               ? "مؤهَّل لهذه الدورة — الإسناد يقع الآن، ويُفحص تعارضُ جدوله قبل وقوعه."
               : picked.qualification === "pending"
@@ -175,7 +174,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           </p>
         )}
         {trainers.length === 0 && (
-          <p className="mt-2 text-micro text-muted-foreground">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
+          <p className="mt-2 text-read text-muted-foreground">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
         )}
       </MiniCard>
 
@@ -188,7 +187,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             <input type="time" value={editForm.startTime} onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })} className={inputCls} />
             <input type="number" min={1} value={editForm.capacity} onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} placeholder="السعة" className={inputCls} />
             <input type="number" min={0} value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} placeholder={`السعر (${cohort.currency})`} className={inputCls} />
-            <div className="flex items-center gap-4 text-micro text-muted-foreground">
+            <div className="flex items-center gap-4 text-fine text-muted-foreground">
               <label className="flex cursor-pointer items-center gap-1.5">
                 <input type="checkbox" checked={editForm.registrationOpen} onChange={(e) => setEditForm({ ...editForm, registrationOpen: e.target.checked })} className="accent-teal" />
                 التسجيل مفتوح
@@ -285,7 +284,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             ))}
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <Button tone="secondary" size="sm" type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])} className="text-micro">
+            <Button tone="secondary" size="sm" type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])} className="text-fine">
               <Plus className="h-3 w-3" /> بند
             </Button>
             <button disabled={busy || assessForm.title.length < 3}
@@ -328,7 +327,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
       {/* تسجيلات الجلسات وأرشفة المحتوى */}
       <MiniCard icon={BookOpen} title="تسجيلات الجلسات وأرشفة المحتوى — ملفات خاصة موقعة">
-        <p className="mb-2 text-micro font-bold text-muted-foreground">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
+        <p className="mb-2 text-read font-bold text-muted-foreground">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <SessionSelect cohortId={cohort.id} value={recForm.sessionId}
             onChange={(sessionId) => setRecForm({ ...recForm, sessionId })} />
@@ -352,7 +351,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           سجّل التسجيل
         </button>
 
-        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-micro font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
+        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-read font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
         <div className="flex flex-wrap gap-2">
           <ContentSelect cohortId={cohort.id} value={contentForm.kind && contentForm.id ? `${contentForm.kind}:${contentForm.id}` : ""}
             onChange={(picked) => {
@@ -424,7 +423,7 @@ function DropEnrollment({ cohortId, busy, form, onForm, act }: {
   const picked = rows?.find((r) => r.enrollmentId === form.enrollmentId) ?? null;
 
   if (rows !== null && rows.length === 0) {
-    return <p className="text-micro text-muted-foreground">لا مسجَّلين في هذه الشعبة — لا شيءَ يُسقَط.</p>;
+    return <p className="text-read text-muted-foreground">لا مسجَّلين في هذه الشعبة — لا شيءَ يُسقَط.</p>;
   }
 
   return (
@@ -591,7 +590,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           ))}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <Button tone="secondary" size="sm" type="button" onClick={() => setCriteria([...criteria, { title: "", maxScore: "10" }])} className="text-micro">
+          <Button tone="secondary" size="sm" type="button" onClick={() => setCriteria([...criteria, { title: "", maxScore: "10" }])} className="text-fine">
             <Plus className="h-3 w-3" /> معيار
           </Button>
           <Button tone="confirm" size="sm" disabled={busy || rubricTitle.length < 3 || criteria.some((c) => c.title.trim().length < 2)}
@@ -629,7 +628,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             onChange={(e) => setRuleForm({ ...ruleForm, threshold: e.target.value })}
             placeholder="العتبة" className={inputCls} />
         </div>
-        <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
+        <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-fine text-muted-foreground">
           <input type="checkbox" checked={ruleForm.required} onChange={(e) => setRuleForm({ ...ruleForm, required: e.target.checked })} className="accent-teal" />
           قاعدة إلزامية للشهادة
         </label>
@@ -641,7 +640,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           احفظ القاعدة
         </Button>
       </Panel>
-      {msg && <p className="text-xs font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
+      {msg && <p className="text-read font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
     </section>
   );
 }
@@ -678,9 +677,9 @@ function CertificateCandidates({ cohortId, busy, act }: {
   }, [cohortId]);
   useEffect(() => { load(); }, [load]);
 
-  if (error) return <p className="text-micro leading-6 text-muted-foreground">{error}</p>;
-  if (!rows) return <p className="text-micro text-muted-foreground">نقرأ المرشَّحين…</p>;
-  if (rows.length === 0) return <p className="text-micro text-muted-foreground">لا مسجَّلين في هذه الشعبة بعد.</p>;
+  if (error) return <p className="text-read leading-6 text-muted-foreground">{error}</p>;
+  if (!rows) return <p className="text-read text-muted-foreground">نقرأ المرشَّحين…</p>;
+  if (rows.length === 0) return <p className="text-read text-muted-foreground">لا مسجَّلين في هذه الشعبة بعد.</p>;
 
   return (
     <ul className="space-y-1.5">
@@ -689,16 +688,16 @@ function CertificateCandidates({ cohortId, busy, act }: {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="min-w-0">
               <span className="block text-xs font-bold text-foreground">{r.learnerName}</span>
-              <span dir="ltr" className="block text-left text-micro text-muted-foreground">{r.email}</span>
+              <span dir="ltr" className="block text-left text-fine text-muted-foreground">{r.email}</span>
             </span>
             <span className="flex shrink-0 items-center gap-2">
-              <span className="text-micro tabular-nums text-muted-foreground">{r.percent}٪</span>
+              <span className="text-fine tabular-nums text-muted-foreground">{r.percent}٪</span>
               {r.certificate ? (
                 <>
-                  <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-micro text-teal-light-ink">
+                  <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-fine text-teal-light-ink">
                     {r.certificate.number}
                   </span>
-                  <Button tone="danger" onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }} className="px-2.5 text-micro">
+                  <Button tone="danger" onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }} className="px-2.5 text-fine">
                     ألغِها
                   </Button>
                 </>
@@ -707,11 +706,11 @@ function CertificateCandidates({ cohortId, busy, act }: {
                   onClick={() => act(
                     () => apiPost(`/api/admin/enrollments/${r.enrollmentId}/certificate`).then(load),
                     `أُصدرت شهادة «${r.learnerName}»`,
-                  )} className="text-micro text-gold-ink">
+                  )} className="text-fine text-gold-ink">
                   <BadgeCheck className="h-3 w-3" /> أصدِر
                 </Button>
               ) : (
-                <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-micro font-bold text-muted-foreground">
+                <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
                   لم يُنهِ بعد
                 </span>
               )}
@@ -722,7 +721,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
           {!r.eligible && !r.certificate && r.failures.length > 0 && (
             <ul className="mt-1.5 space-y-0.5">
               {r.failures.map((f, i) => (
-                <li key={i} className="text-micro leading-4 text-muted-foreground">— {f}</li>
+                <li key={i} className="text-read leading-4 text-muted-foreground">— {f}</li>
               ))}
             </ul>
           )}
@@ -732,7 +731,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
               <input
                 value={reason} onChange={(e) => setReason(e.target.value)}
                 placeholder="سببُ الإلغاء — يبقى في السجلّ (٥ أحرف فأكثر)"
-                className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-micro outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
+                className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-fine outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
               />
               <button
                 disabled={busy || reason.trim().length < 5}
@@ -741,7 +740,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
                     .then(() => { setRevoking(null); setReason(""); load(); }),
                   "أُلغيت الشهادة ووُثّق السبب",
                 )}
-                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-micro font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-fine font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
               >
                 أكّد الإلغاء
               </button>

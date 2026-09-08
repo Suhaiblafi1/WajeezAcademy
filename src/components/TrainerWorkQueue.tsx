@@ -36,14 +36,14 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
           <ListChecks className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           ما ينتظرك الآن
           {items.length > 0 && (
-            <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-micro tabular-nums text-teal-light-ink">{items.length}</span>
+            <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">{items.length}</span>
           )}
         </h2>
-        <p className="text-micro text-muted-foreground">مرتّبة بالإلحاح — لكل سطر إجراء واحد</p>
+        <p className="text-read text-muted-foreground">مرتّبة بالإلحاح — لكل سطر إجراء واحد</p>
       </div>
 
       {items.length === 0 ? (
-        <Inset as="p" className="mt-4 px-4 py-6 text-center text-xs leading-6 text-muted-foreground">
+        <Inset as="p" className="mt-4 px-4 py-6 text-center text-read leading-6 text-muted-foreground">
           لا شيء ينتظرك الآن — الحضور مسجَّل والتسليمات مقيَّمة ولا جلسة قريبة.
           <br />
           يظهر هنا كل ما يحتاج إجراءً منك فور حدوثه.
@@ -65,8 +65,8 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
               >
                 <Icon className="h-4 w-4 shrink-0 text-foreground" aria-hidden="true" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold leading-5">{it.titleAr}</p>
-                  <p className="mt-0.5 truncate text-micro text-muted-foreground">{it.detailAr}</p>
+                  <p className="text-read font-bold leading-5">{it.titleAr}</p>
+                  <p className="mt-0.5 truncate text-read text-muted-foreground">{it.detailAr}</p>
                 </div>
                 {it.external ? (
                   <a

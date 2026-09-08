@@ -174,7 +174,7 @@ export default function AdminLayout({ children, title }: { children: React.React
             <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
               aria-label="بحث سريع — Ctrl+K"
               title="بحث سريع — Ctrl+K" className="hidden bg-white/[0.03] sm:flex">
-              بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
+              بحث… <kbd className="rounded border border-white/15 px-1.5 text-fine">Ctrl K</kbd>
             </Button>
             <NotificationBell audience="staff" />
             <ThemeToggle />
@@ -188,7 +188,7 @@ export default function AdminLayout({ children, title }: { children: React.React
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-l border-white/10 py-8 pl-5 lg:block">
           {sections.map((s) => (
             <div key={s.title} className="mb-7">
-              <p className="mb-2 px-3 text-micro font-black tracking-wide text-muted-foreground">{s.title}</p>
+              <p className="mb-2 px-3 text-fine font-black tracking-wide text-muted-foreground">{s.title}</p>
               <nav className="space-y-1">
                 {s.items.map((t) => (
                   <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => linkCls(isActive)}>

@@ -75,16 +75,16 @@ export default function AdminTasks() {
           <p className={`text-sm font-black ${t.status === "done" ? "text-muted-foreground line-through" : ""}`}>
             {t.title}
             {t.priority === "high" && t.status !== "done" && (
-              <span className="mr-2 rounded-full border border-red-400/40 px-2 py-0.5 text-micro font-bold text-red-300">عاجلة</span>
+              <span className="mr-2 rounded-full border border-red-400/40 px-2 py-0.5 text-fine font-bold text-red-300">عاجلة</span>
             )}
           </p>
-          {t.bodyAr && <p className="mt-1 text-xs leading-6 text-muted-foreground">{t.bodyAr}</p>}
-          <p className="mt-1 text-micro text-muted-foreground">
+          {t.bodyAr && <p className="mt-1 text-read leading-6 text-muted-foreground">{t.bodyAr}</p>}
+          <p className="mt-1 text-read text-muted-foreground">
             {showAssignee && t.assignee ? `${t.assignee.displayName} · ` : ""}
             {t.dueAt ? `الموعد ${fmtDate(new Date(t.dueAt))}` : "بلا موعد"}
             {t.status === "done" && t.doneAt ? ` · أُنجزت ${fmtDate(new Date(t.doneAt))}` : ""}
           </p>
-          {t.doneNoteAr && <p className="mt-1 text-micro text-teal-light-ink">{t.doneNoteAr}</p>}
+          {t.doneNoteAr && <p className="mt-1 text-read text-teal-light-ink">{t.doneNoteAr}</p>}
         </div>
         {t.status !== "done" && (
           <Button tone="confirm" size="sm" disabled={busy}
@@ -109,7 +109,7 @@ export default function AdminTasks() {
                 <ClipboardList className="h-4 w-4 text-teal-light-ink" /> مهامّي ({mine.filter((t) => t.status !== "done").length} مفتوحة)
               </h2>
               {mine.length === 0 ? (
-                <p className="mt-3 text-xs text-muted-foreground">لا مهامَّ مكلَّفا بها.</p>
+                <p className="mt-3 text-read text-muted-foreground">لا مهامَّ مكلَّفا بها.</p>
               ) : (
                 <ul className="mt-3 space-y-2">{mine.map((t) => row(t, false))}</ul>
               )}
@@ -119,7 +119,7 @@ export default function AdminTasks() {
               <Panel as="section" tone="warn">
                 <h2 className="text-sm font-black text-gold-ink">كلّف موظّفا بمهمّة</h2>
                 {/* التكليفُ يُشعِر مكلَّفَه في الفعل نفسِه — لا خطوةَ إشعارٍ بعده */}
-                <p className="mt-1 text-micro text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
+                <p className="mt-1 text-read text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}
                     aria-label="المكلَّف" className={`${field} cursor-pointer [&>option]:bg-surface`}>
@@ -158,7 +158,7 @@ export default function AdminTasks() {
               <Panel as="section">
                 <h2 className="text-sm font-black">ما كلّفتُ به غيري ({assigned.filter((t) => t.status !== "done").length} مفتوحة)</h2>
                 {assigned.length === 0 ? (
-                  <p className="mt-3 text-xs text-muted-foreground">لم تكلّف أحدا بعد.</p>
+                  <p className="mt-3 text-read text-muted-foreground">لم تكلّف أحدا بعد.</p>
                 ) : (
                   <ul className="mt-3 space-y-2">{assigned.map((t) => row(t, true))}</ul>
                 )}
@@ -171,7 +171,7 @@ export default function AdminTasks() {
                   <Bell className="h-4 w-4 text-teal-light-ink" /> إشعارٌ بلا مهمّة
                 </h2>
                 {/* إعلانٌ يصل ولا يُتابَع ولا يُغلَق — وحبّتُه منفصلة عن التكليف */}
-                <p className="mt-1 text-micro text-muted-foreground">يصل ولا يُتابَع ولا يُغلَق. للتكليف الذي يُتابَع استعمل اللوح أعلاه.</p>
+                <p className="mt-1 text-read text-muted-foreground">يصل ولا يُتابَع ولا يُغلَق. للتكليف الذي يُتابَع استعمل اللوح أعلاه.</p>
                 <div className="mt-3 space-y-2">
                   <input value={announce.title} onChange={(e) => setAnnounce({ ...announce, title: e.target.value })}
                     placeholder="عنوان الإشعار" aria-label="عنوان الإشعار" className={field} />
@@ -179,7 +179,7 @@ export default function AdminTasks() {
                     rows={2} placeholder="نصّ الإشعار" aria-label="نص الإشعار" className={field} />
                   <Inset className="max-h-40 space-y-1 overflow-y-auto p-2">
                     {people.map((p) => (
-                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-micro text-foreground">
+                      <label key={p.id} className="flex cursor-pointer items-center gap-2 text-fine text-foreground">
                         <input
                           type="checkbox" className="accent-teal"
                           checked={announce.to.includes(p.id)}

@@ -58,17 +58,17 @@ export default function AdvisorEarnings() {
     <AdvisorLayout title="عمولتي">
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
-          <p className="text-xs text-muted-foreground">نسبة عمولتي</p>
+          <p className="text-read text-muted-foreground">نسبة عمولتي</p>
           <p className="mt-2 text-2xl font-black">
             {data.commissionPct !== null ? `${data.commissionPct}%` : "لم تُتّفق بعد"}
           </p>
         </Card>
         <Card>
-          <p className="text-xs text-muted-foreground">إيراد عملائي الدافعين</p>
+          <p className="text-read text-muted-foreground">إيراد عملائي الدافعين</p>
           <p className="mt-2 text-2xl font-black" dir="ltr">{fmtMoney(data.revenueFromReferrals, data.currency)}</p>
         </Card>
         <Card tone="accent">
-          <p className="text-xs text-teal-light-ink">عمولتي المستحقّة</p>
+          <p className="text-read text-teal-light-ink">عمولتي المستحقّة</p>
           <p className="mt-2 text-2xl font-black text-teal-light-ink" dir="ltr">
             {data.commissionOwed !== null ? fmtMoney(data.commissionOwed, data.currency) : "—"}
           </p>
@@ -76,19 +76,19 @@ export default function AdvisorEarnings() {
       </div>
 
       <Card className="mt-4 flex flex-wrap items-center gap-4">
-        <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <p className="flex items-center gap-2 text-read text-muted-foreground">
           <Banknote className="h-4 w-4 text-muted-foreground" /> {data.activeCases} حالة نشطة مسندة إليّ
         </p>
         {data.ratingAvg !== null ? (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-read text-muted-foreground">
             <Star className="h-4 w-4 fill-gold text-gold" /> {data.ratingAvg.toFixed(1)} من ٥ — {data.ratingCount} تقييما
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">لا يظهر تقييمك بعد — يُحسب من ثلاثة تقييمات فأكثر</p>
+          <p className="text-read text-muted-foreground">لا يظهر تقييمك بعد — يُحسب من ثلاثة تقييمات فأكثر</p>
         )}
       </Card>
 
-      <Card as="p" className="mt-6 px-5 py-4 text-center text-micro leading-6 text-muted-foreground">
+      <Card as="p" className="mt-6 px-5 py-4 text-center text-read leading-6 text-muted-foreground">
         الإيراد محسوب من الطلبات المدفوعة فعلا لعملائك ضمن حالاتك النشطة، والعمولة نسبةٌ تُعيّنها الإدارة —
         لأي استفسار عن الرقم أو النسبة تواصل مع منسّقك.
       </Card>

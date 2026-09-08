@@ -85,7 +85,7 @@ export default function DiagnosticQuality() {
         {counts && (
           <div className="mt-3 flex flex-wrap gap-2">
             {Object.entries(counts).map(([k, v]) => (
-              <span key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-micro text-muted-foreground">
+              <span key={k} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1 text-fine text-muted-foreground">
                 <span className="font-black text-foreground">{v}</span> {COUNT_AR[k] ?? k}
               </span>
             ))}
@@ -127,9 +127,9 @@ export default function DiagnosticQuality() {
             <Card key={r.id} className="px-4 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold">{r.changeRef}</p>
-                <p className="text-micro text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
+                <p className="text-read text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-read text-muted-foreground">
                 تغيّرت {r.summary.changedCount} من {r.summary.totalPersonas} شخصية
                 {r.summary.changed.length > 0 && <span className="text-amber-300"> — {r.summary.changed.map((c) => c.name).join("، ")}</span>}
               </p>
@@ -140,7 +140,7 @@ export default function DiagnosticQuality() {
 
       <section className="mt-8">
         <h2 className="text-lg font-black">آراء المتعلمين في نتائجهم</h2>
-        <p className="mt-1 text-xs text-muted-foreground">بطاقة «هل تصف هذه النتيجة وضعك؟» أسفل النتيجة الكاملة — مربوطة بجلسة التشخيص والمسار.</p>
+        <p className="mt-1 text-read text-muted-foreground">بطاقة «هل تصف هذه النتيجة وضعك؟» أسفل النتيجة الكاملة — مربوطة بجلسة التشخيص والمسار.</p>
         {!feedback || feedback.total === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">لا آراء بعد — تصل هنا فور إرسال أول متعلم رأيه.</p>
         ) : (
@@ -148,31 +148,31 @@ export default function DiagnosticQuality() {
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
               <Card className="text-center">
                 <p className="text-2xl font-black">{feedback.total}</p>
-                <p className="mt-1 text-micro text-muted-foreground">إجمالي الآراء</p>
+                <p className="mt-1 text-read text-muted-foreground">إجمالي الآراء</p>
               </Card>
               <Card tone="positive" className="text-center">
                 <p className="text-2xl font-black text-emerald-300">{feedback.verdicts.yes}</p>
-                <p className="mt-1 text-micro text-muted-foreground">نعم — تصف وضعهم</p>
+                <p className="mt-1 text-read text-muted-foreground">نعم — تصف وضعهم</p>
               </Card>
               <Card tone="warn" className="text-center">
                 <p className="text-2xl font-black text-gold-ink">{feedback.verdicts.somewhat}</p>
-                <p className="mt-1 text-micro text-muted-foreground">إلى حد ما</p>
+                <p className="mt-1 text-read text-muted-foreground">إلى حد ما</p>
               </Card>
               <Card tone="danger" className="text-center">
                 <p className="text-2xl font-black text-red-300">{feedback.verdicts.no}</p>
-                <p className="mt-1 text-micro text-muted-foreground">لا</p>
+                <p className="mt-1 text-read text-muted-foreground">لا</p>
               </Card>
             </div>
             <div className="mt-4 space-y-2">
               {feedback.recent.filter((r) => r.note).map((r) => (
                 <Card key={r.id} className="px-4 py-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">
+                    <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
                       {VERDICT_AR[r.verdict] ?? r.verdict}
                     </span>
-                    <p className="text-micro text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
+                    <p className="text-read text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
                   </div>
-                  <p className="mt-2 text-xs leading-relaxed text-foreground">{r.note}</p>
+                  <p className="mt-2 text-read leading-relaxed text-foreground">{r.note}</p>
                 </Card>
               ))}
             </div>

@@ -87,7 +87,7 @@ export default function RubricSelfReview({
           <ClipboardCheck className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           راجع مخرَجك قبل أن تُسلّمه
         </h3>
-        <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-micro tabular-nums text-teal-light-ink">
+        <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">
           {fmtNum(rubric.criteria.length)} معايير
         </span>
       </div>
@@ -119,7 +119,7 @@ export default function RubricSelfReview({
                           : "border-white/10 bg-transparent hover:bg-white/[0.04]"
                       }`}
                     >
-                      <span className="shrink-0 rounded-md bg-white/10 px-1.5 py-0.5 text-micro font-black tabular-nums">
+                      <span className="shrink-0 rounded-md bg-white/10 px-1.5 py-0.5 text-fine font-black tabular-nums">
                         {fmtNum(l.level)}
                       </span>
                       <span>{l.textAr}</span>

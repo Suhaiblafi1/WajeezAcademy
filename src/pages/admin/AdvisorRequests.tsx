@@ -118,22 +118,22 @@ export default function AdvisorRequests() {
                       {r.amountOff && <span className="text-gold-ink">{r.amountOff} {r.currency}</span>}
                       {r.courseId && <span className="font-normal text-foreground">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
                     </p>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
+                    <p className="mt-1.5 text-read text-muted-foreground">
                       للعميل <b className="text-foreground">{who}</b>
                       {email && <span dir="ltr" className="ms-2 text-muted-foreground">{email}</span>}
                     </p>
-                    <p className="mt-0.5 text-micro text-muted-foreground">
+                    <p className="mt-0.5 text-read text-muted-foreground">
                       رفعه {r.advisor.displayName} · <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                     </p>
                   </div>
                 </div>
 
-                <Inset as="p" className="mt-3 px-4 py-3 text-xs leading-7 text-foreground">
+                <Inset as="p" className="mt-3 px-4 py-3 text-read leading-7 text-foreground">
                   <span className="font-bold text-muted-foreground">سببُه: </span>{r.reasonAr}
                 </Inset>
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-micro font-bold text-muted-foreground">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الرفض، يقرؤه المستشار
                   </label>
                   <textarea
@@ -154,7 +154,7 @@ export default function AdvisorRequests() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-micro text-muted-foreground">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
+                    <span className="text-fine text-muted-foreground">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
                   )}
                 </div>
               </Panel>

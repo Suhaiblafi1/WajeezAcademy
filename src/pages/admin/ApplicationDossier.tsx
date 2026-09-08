@@ -79,7 +79,7 @@ function Row({ icon: Icon, label, children }: { icon: typeof UserRound; label: s
     <div className="flex items-start gap-2.5">
       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
       <div className="min-w-0">
-        <p className="text-micro font-bold text-muted-foreground">{label}</p>
+        <p className="text-read font-bold text-muted-foreground">{label}</p>
         <div className="mt-0.5 text-xs leading-6 text-foreground">{children}</div>
       </div>
     </div>
@@ -89,7 +89,7 @@ function Row({ icon: Icon, label, children }: { icon: typeof UserRound; label: s
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
     <Card as="section" className="bg-paper/20">
-      <h4 className="mb-3 text-micro font-black text-teal-light-ink">{title}</h4>
+      <h4 className="mb-3 text-fine font-black text-teal-light-ink">{title}</h4>
       <div className="space-y-3">{children}</div>
     </Card>
   )
@@ -108,9 +108,9 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
         <Row icon={Mail} label="البريد">
           <span dir="ltr" className="block text-right">{a.email}</span>
           {a.emailVerifiedAt ? (
-            <span className="text-micro text-teal-light-ink">متحقَّق ✓</span>
+            <span className="text-fine text-teal-light-ink">متحقَّق ✓</span>
           ) : (
-            <span className="text-micro text-gold-ink">غير متحقَّق</span>
+            <span className="text-fine text-gold-ink">غير متحقَّق</span>
           )}
         </Row>
         <Row icon={Phone} label="الجوال (واتساب)">
@@ -154,7 +154,7 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
           <Row icon={BookOpen} label="تخصّصاته">
             <span className="flex flex-wrap gap-1.5">
               {a.specialties!.map((s) => (
-                <span key={s.specialty} className="rounded-full border border-white/12 px-2 py-0.5 text-micro">{s.specialty}</span>
+                <span key={s.specialty} className="rounded-full border border-white/12 px-2 py-0.5 text-fine">{s.specialty}</span>
               ))}
             </span>
           </Row>
@@ -164,13 +164,13 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
       {/* أهمُّ ما في الطلب: على هذا يُسنَد إلى شعبة بعد الاعتماد */}
       <Block title="ما يستطيع تدريسه — وعليه يُسنَد بعد الاعتماد">
         {teachable.length === 0 && !a.teachableOther ? (
-          <p className="text-xs text-muted-foreground">لم يختر شيئا من الكتالوج ولم يكتب بديلا.</p>
+          <p className="text-read text-muted-foreground">لم يختر شيئا من الكتالوج ولم يكتب بديلا.</p>
         ) : (
           <>
             {teachable.length > 0 && (
               <ul className="space-y-1.5">
                 {teachable.map((id) => (
-                  <li key={id} className="flex items-start gap-2 text-xs leading-6">
+                  <li key={id} className="flex items-start gap-2 text-read leading-6">
                     <BookOpen className="mt-1 h-3 w-3 shrink-0 text-teal-ink" />
                     <span className="min-w-0">{courseById(id)?.name ?? id}</span>
                   </li>
@@ -205,7 +205,7 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
           {has(av?.seasons) && (
             <span className="mt-1 flex flex-wrap gap-1.5">
               {av!.seasons!.map((s) => (
-                <span key={s} className="rounded-full border border-gold/30 bg-gold/[0.06] px-2 py-0.5 text-micro text-gold-ink">{seasonLabel(s)}</span>
+                <span key={s} className="rounded-full border border-gold/30 bg-gold/[0.06] px-2 py-0.5 text-fine text-gold-ink">{seasonLabel(s)}</span>
               ))}
             </span>
           )}
