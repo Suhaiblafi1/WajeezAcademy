@@ -57,10 +57,10 @@ const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
-const TrainerProposals = lazy(() => import('./pages/trainer/Proposals'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
+const CohortWorkspace = lazy(() => import('./pages/trainer/CohortWorkspace'))
 const Exceptions = lazy(() => import('./pages/admin/Exceptions'))
 const AdminAdvisorRequests = lazy(() => import('./pages/admin/AdvisorRequests'))
 const AdminLearnerRequests = lazy(() => import('./pages/admin/LearnerRequests'))
@@ -240,11 +240,12 @@ export default function App() {
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
-            {/* حُذفت `CohortView`: شعبةٌ كاملة بطلابها وجلساتها وحضورهم من `data/trainer`،
-                بلا نداء خادمٍ واحد. لوحة «شعبي» تقرأ /api/trainer/my-cohorts. */}
-            <Route path="/trainer/cohort/:id" element={<Navigate to="/trainer" replace />} />
+            {/* ورشةُ الشعبة — ملكُ مدرّبها: يجهّزها ويقول «أوافق» وتعتمدها الإدارة.
+                قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦). */}
+            <Route path="/trainer/cohort/:id" element={<CohortWorkspace />} />
             <Route path="/trainer/earnings" element={<Earnings />} />
-            <Route path="/trainer/proposals" element={<TrainerProposals />} />
+            {/* «اقتراحاتي» حُذفت: «ليس اقتراحا بل واجبٌ عليه» — الشعبةُ تُجهَّز من ورشتها */}
+            <Route path="/trainer/proposals" element={<Navigate to="/trainer/board" replace />} />
             <Route path="/trainer/board" element={<CohortBoard />} />
             <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
           </Route>

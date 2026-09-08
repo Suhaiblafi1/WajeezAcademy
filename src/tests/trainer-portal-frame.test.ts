@@ -28,7 +28,7 @@ const SCREENS = [
   'src/pages/trainer/TrainerDashboard.tsx',
   'src/pages/trainer/CohortBoard.tsx',
   'src/pages/trainer/GradingQueue.tsx',
-  'src/pages/trainer/Proposals.tsx',
+  'src/pages/trainer/CohortWorkspace.tsx',
   'src/pages/trainer/Earnings.tsx',
   'src/pages/trainer/MyRatings.tsx',
 ]
@@ -57,7 +57,7 @@ describe('إطار بوابة المدرب', () => {
     const tabs = [...layout.matchAll(/\{ to: "(\/trainer[^"]*)"/g)].map((m) => m[1])
     expect(tabs, 'التبويبات مفقودة').not.toHaveLength(0)
     /* ورشةُ عمله الفعليّة كانت خارجها */
-    for (const path of ['/trainer', '/trainer/board', '/trainer/grading', '/trainer/proposals', '/trainer/earnings', '/trainer/ratings']) {
+    for (const path of ['/trainer', '/trainer/board', '/trainer/grading', '/trainer/earnings', '/trainer/ratings']) {
       expect(tabs, `${path} خارج التبويبات — لا يبلغها إلا بكتابة مسارها`).toContain(path)
     }
   })

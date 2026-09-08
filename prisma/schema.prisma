@@ -1505,8 +1505,20 @@ model CohortDeliveryPlan {
   id                    String          @id @default(uuid()) @db.Uuid
   cohortId              String          @db.Uuid
   trainerId             String?         @db.Uuid
-  content               Json // {schedule, examples, extraMaterials, activities, ordering}
-  status                String          @default("draft") // draft | approved | published | superseded
+  content               Json // {schedule, examples, extraMaterials, activities, ordering} — أو {kind:'trainer', modules, resources, ...}
+  /// ═══ خطّةُ المدرّب تُرسَل وتُعتمَد — لا تُقترَح ═══
+  ///
+  /// قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): الشعبةُ ملكُ مدرّبها. يجهّزها كلَّها عدا
+  /// السعر، ثمّ يقول «أوافق على كلّ ما فيها» ويرسلها، فيعتمدها المديرُ الأكاديميُّ
+  /// أو الأعلى — أيُّهما سبق. `submitted` بانتظار القرار، و`changes_requested`
+  /// رُدّت بنصٍّ في `reviewerNote`، و`approved` توفي شرطَ فتح الشعبة.
+  status                String          @default("draft") // draft | submitted | changes_requested | approved | published | superseded
+  submittedAt           DateTime?
+  /// «أوافق على كلّ ما في الشعبة ومواعيدها وجلساتها ومصادرها» — توقيعُ المدرّب
+  trainerConfirmedAt    DateTime?
+  reviewedBy            String?         @db.Uuid
+  reviewedAt            DateTime?
+  reviewerNote          String?
   sourceChangeRequestId String?         @db.Uuid // إن نُشرت من اقتراح مدرب بنطاق شعبة
   createdBy             String?         @db.Uuid
   createdAt             DateTime        @default(now())
@@ -1669,9 +1681,12 @@ model Recording {
   sessionId   String        @db.Uuid
   moduleId    String?
   title       String
-  storageKey  String        @unique
-  mime        String
-  sizeBytes   Int
+  /// ملفٌّ مرفوع (`storageKey`) **أو** رابطٌ خارجيّ (`externalUrl`) — أحدُهما لا كلاهما.
+  /// قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): المدرّبُ يرفع الجلساتِ المسجّلةَ من رابط.
+  storageKey  String?       @unique
+  externalUrl String?
+  mime        String?
+  sizeBytes   Int?
   durationSec Int?
   status      String        @default("active") // active | archived | disabled
   createdBy   String?       @db.Uuid

@@ -83,6 +83,7 @@ export const PERMISSIONS = [
   // التشغيل الأكاديمي — الإدارة
   { key: 'cohort.manage', description: 'إنشاء الشعب وجدولتها وإدارة جلساتها وروابطها' },
   { key: 'cohort.open', description: 'فتح شعبة بعد تحقق شروط الفتح' },
+  { key: 'cohort.plan.approve', description: 'اعتمادُ خطّة المدرّب لشعبته أو ردُّها بتعديلات' },
   { key: 'cohort.override_capacity', description: 'تجاوز سعة شعبة بشكل موثق' },
   { key: 'enrollment.manage', description: 'تسجيل المتعلمين في الشعب وإدارة تسجيلهم' },
   { key: 'material.manage', description: 'إدارة المواد والتسجيلات الخاصة' },
@@ -99,6 +100,7 @@ export const PERMISSIONS = [
      والصلاحيّةُ لا تكفي وحدَها: لا بابَ إلّا إن فتحت الإدارةُ نافذةَ الشعبة
      (مدًى وسقفُ لقاءات). فهي إذنُ الدور، والنافذةُ إذنُ الشعبة. */
   { key: 'trainer.cohort.schedule', description: 'جدولةُ لقاءات شعبه داخلَ النافذة التي تفتحها الإدارة' },
+  { key: 'trainer.cohort.plan', description: 'تجهيزُ الشعبة: محتواها ومواعيدها ومصادرها وتسجيلاتها، وإرسالُها للاعتماد — كلُّ شيءٍ عدا السعر' },
   // المتعلم
   { key: 'learner.portal', description: 'دخول بوابة المتعلم وعرض مساره وتقدمه' },
   { key: 'learner.submit', description: 'تسليم الواجبات ومحاولات التقييم' },
@@ -158,7 +160,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'trainer.applications.purge',
     'trainer.invite', 'trainer.qualify', 'trainer.assign', 'trainer.publish', 'trainer.suspend',
     'trainer.change.review',
-    'cohort.manage', 'cohort.open', 'cohort.override_capacity', 'enrollment.manage',
+    'cohort.manage', 'cohort.open', 'cohort.plan.approve', 'cohort.override_capacity', 'enrollment.manage',
     'material.manage', 'certificate.issue', 'certificate.revoke',
     'advisor.assign', 'advisor.request.review', 'advisor.learner.view', 'cv.manage', 'cv.view',
     'enrollment.request.review',
@@ -228,7 +230,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'reports.view', 'reports.export',
   ],
   advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'advisor.learner.view', 'advisor.request.submit', 'cv.view', 'rating.view.subject'],
-  trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate', 'trainer.cohort.schedule', 'rating.view.subject'],
+  trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate', 'trainer.cohort.schedule', 'trainer.cohort.plan', 'rating.view.subject'],
   /* حساب التقديم — لا بوابة متعلم ولا بوابة مدرب. يصير مدربا بالدعوة بعد
      الاعتماد (trainer.invite)، وحتى ذلك الحين لا يملك إلا رؤية طلبه. */
   trainer_applicant: ['trainer.application.own'],

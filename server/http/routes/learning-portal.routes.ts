@@ -17,6 +17,7 @@ import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
+import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -41,6 +42,7 @@ function signCohortContent<T extends {
           }
         : null,
       recordings: s.recordings.map((r) => ({
+        externalUrl: (r as { externalUrl?: string | null }).externalUrl ?? null,
         ...r,
         readUrl: sign(r.storageKey),
         storageKey: undefined,
@@ -314,6 +316,73 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   })
 
   /* ══════════ بوابة المدرب التشغيلية — شعبه فقط ══════════ */
+
+  /* ═══ ورشةُ الشعبة — ملكُ مدرّبها ═══
+
+     قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): يعدّل كلَّ شيءٍ عدا السعر، ويقول
+     «أوافق» ويرسلها، فيعتمدها الأكاديميُّ أو الأعلى. الخدمةُ في
+     `cohort-plan.service.ts`، وهذه أبوابُها. */
+  const plans = new CohortPlanService(prisma)
+  const planContent = z.object({
+    kind: z.literal('trainer'),
+    summaryAr: z.string().max(2000).nullish(),
+    modules: z.array(z.object({
+      moduleId: z.string().max(64), titleAr: z.string().min(2).max(200),
+      outcomeAr: z.string().max(1000).nullish(), activityAr: z.string().max(2000).nullish(),
+      artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(6000).nullish(),
+    })).max(40),
+    resources: z.array(z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), noteAr: z.string().max(500).nullish() })).max(60),
+    liveNoteAr: z.string().max(2000).nullish(),
+  })
+
+  app.get('/api/trainer/cohorts/:id/workspace', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'ورشةُ شعبتي — كلُّ ما أعدّله وقائمةُ ما بقي عليّ' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return plans.workspace(req.auth!.userId, id)
+  })
+
+  app.put('/api/trainer/cohorts/:id/plan', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'حفظُ محتوى شعبتي مسودّةً: المحاورُ والتطبيقُ والمصادر' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return plans.savePlan(req.auth!.userId, id, planContent.parse(req.body))
+  })
+
+  app.patch('/api/trainer/cohorts/:id', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'تعديلُ بيانات شعبتي — الاسمُ والمواعيدُ واللغةُ والنمط، لا السعر' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    /* لا `strict`: المفتاحُ الماليُّ يصل الخدمةَ فتردّه باسمه، لا يُبتلع بصمت */
+    const body = z.object({
+      title: z.string().min(3).max(200).optional(), startsAt: z.coerce.date().optional(), endsAt: z.coerce.date().optional(),
+      daysOfWeek: z.array(z.string()).optional(), startTime: z.string().max(5).optional(), timezone: z.string().max(64).optional(),
+      language: z.string().max(40).optional(), deliveryMode: z.enum(['remote', 'in_person', 'hybrid']).optional(),
+    }).passthrough().parse(req.body)
+    void TRAINER_EDITABLE_COHORT_FIELDS
+    return plans.updateCohort(req.auth!.userId, id, body as Record<string, unknown>)
+  })
+
+  app.post('/api/trainer/cohorts/:id/plan/submit', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: '«أوافق على كلّ ما في الشعبة» — وتُرسَل للاعتماد' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { confirm } = z.object({ confirm: z.boolean() }).parse(req.body ?? {})
+    return reply.status(201).send(await plans.submit(req.auth!.userId, id, confirm))
+  })
+
+  app.post('/api/trainer/sessions/:sessionId/recording-link', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'تسجيلُ جلسةٍ من رابط — لا ملفَّ يُرفع' },
+  }, async (req, reply) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), moduleId: z.string().max(64).optional() }).parse(req.body)
+    return reply.status(201).send(await plans.addRecordingLink(req.auth!.userId, sessionId, body))
+  })
 
   app.get('/api/trainer/my-cohorts', {
     preHandler: requirePermission('trainer.cohort.operate'),

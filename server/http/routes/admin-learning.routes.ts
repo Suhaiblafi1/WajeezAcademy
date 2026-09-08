@@ -12,6 +12,7 @@ import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
 import { LearnerRequestService } from '../../services/learner-request.service'
+import { CohortPlanService } from '../../services/cohort-plan.service'
 import { requirePermission } from '../auth-plugin'
 
 /* الأيّامُ رموزٌ معروفةٌ لا نصٌّ حرّ.
@@ -71,6 +72,40 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      صفوفُ `CohortDeliveryPlan` كانت تُكتب في موضعٍ واحدٍ فقط: نشرُ اقتراحِ
      تعديلٍ من مدرّبٍ بنطاق شعبة. فكلُّ شعبةٍ يدويّةٍ عالقةٌ في المسوّدة أبدا،
      لأنّ الشرطَ قائمٌ ولا بابَ إليه. */
+  /* ═══ خطّةُ المدرّب — اعتمادٌ أو ردٌّ بتعديلات، وتذكير ═══ */
+  const plans = new CohortPlanService(prisma)
+
+  app.get('/api/admin/cohort-plans/pending', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'خططُ المدرّبين بانتظار الاعتماد' },
+  }, async () => plans.pending())
+
+  app.get('/api/admin/cohorts/:cohortId/trainer-plan', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'آخرُ خطّةِ مدرّبٍ لهذه الشعبة — حالتُها ومحتواها' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    return plans.latestForCohort(cohortId)
+  })
+
+  app.post('/api/admin/cohort-plans/:id/decide', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ أو ردُّها بتعديلاتٍ مكتوبة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
+    return plans.decide(req.auth!.userId, id, body.approve, body.note)
+  })
+
+  app.post('/api/admin/cohorts/:cohortId/remind-trainer', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'تذكيرُ مدرّب الشعبة بإكمال تجهيزها — جرسٌ وبريد' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ note: z.string().max(1000).optional() }).parse(req.body ?? {})
+    return plans.remindTrainer(req.auth!.userId, cohortId, body.note)
+  })
+
   app.get('/api/admin/cohorts/:cohortId/delivery-plans', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-learning'], summary: 'خطط تقديم الشعبة — الأساسية وما جاء من اقتراحات المدربين' },
