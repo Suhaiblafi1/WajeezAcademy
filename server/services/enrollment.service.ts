@@ -470,4 +470,11 @@ export class EnrollmentService {
       },
     }))
   }
+
+  /** شعبةٌ واحدةٌ من شعبه — لصفحة الشعبة، بالشكل نفسِه الذي يعطيه `trainerCohorts` */
+  async trainerCohort(userId: string, cohortId: string) {
+    const row = (await this.trainerCohorts(userId)).find((r) => r.cohort.id === cohortId)
+    if (!row) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مُسنَدةً إليك', 403)
+    return row
+  }
 }

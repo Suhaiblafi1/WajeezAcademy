@@ -402,6 +402,22 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return rows.map((r) => ({ role: r.role, cohort: signCohortContent(r.cohort, cohorts, { revealPasscode: true }) }))
   })
 
+  /* صفحةُ الشعبة الواحدة (٨ سبتمبر ٢٠٢٦): التجهيزُ من الورشة، والتشغيلُ من
+     هنا — الشعبةُ بعينها لا القائمةُ كلُّها. والبطاقاتُ في «شعبي» من الموجز. */
+  app.get('/api/trainer/cohorts/summary', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'شعبي موجزةً — حالةُ كلٍّ وما أُنجز من تجهيزها وما يليه' },
+  }, async (req) => plans.summaries(req.auth!.userId))
+
+  app.get('/api/trainer/cohorts/:id/ops', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'تشغيلُ شعبةٍ واحدة — جلساتُها ومسجَّلوها وموادُّها وتكاليفُها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const r = await enrollments.trainerCohort(req.auth!.userId, id)
+    return { role: r.role, cohort: signCohortContent(r.cohort, cohorts, { revealPasscode: true }) }
+  })
+
   /* جدولي عبر شعبي — خطٌّ زمنيٌّ واحدٌ ومعه التزاحمُ بين شعبه هو.
      وحارسُ الإسناد يمنع الجديدَ المتعارض، ولا يمنع جلستَين أُضيفتا بعد
      الإسناد إلى شعبتَين قائمتَين — فهذه الشاشةُ هي التي تُظهرهما. */

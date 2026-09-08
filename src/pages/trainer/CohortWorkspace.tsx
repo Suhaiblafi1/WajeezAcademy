@@ -1,16 +1,26 @@
-/* ورشةُ الشعبة — ملكُ مدرّبها، وفيها يعرف ماذا يفعل.
+/* صفحةُ الشعبة — ملكُ مدرّبها، بمرحلتين: التجهيزُ ثمّ التشغيل.
 
    ═══ ما كان ═══
 
    للمدرّب أن **يقترح** تعديلا من صفحة «اقتراحاتي»، فينتظر في طابورٍ عند
-   الإدارة. ولا صفحةَ تقول له: هذه شعبتك، وهذا ما بقي عليك فيها.
+   الإدارة. ثمّ صارت «ورشةً» يعدّل فيها كلَّ شيءٍ عدا السعر ويرسلها للاعتماد
+   (٨ سبتمبر ٢٠٢٦) — لكنّ تشغيلَها (الحضورُ والموادُّ والتكاليفُ والرسائل)
+   بقي في شاشة «شعبي»، فسأل صاحبُ المنصّة: «أين المصادر وأين تفاصيل
+   الواجبات؟ أرى فقط عنوانا».
 
-   ═══ القرار ═══
+   ═══ القرار (٨ سبتمبر ٢٠٢٦) ═══
 
-   قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): الشعبةُ ملكُه — يعدّل كلَّ شيءٍ عدا
-   السعر، ثمّ يقول «أوافق على كلّ ما فيها» ويرسلها، فتعتمدها الإدارة. «ليس
-   اقتراحا بل واجبٌ عليه». وهذه الشاشةُ تقول له في أوّلها ما بقي عليه، وفي
-   ألسنتها كيف يفعله.
+   صفحةٌ واحدةٌ للشعبة، ومراحلُ ينجزها المدرّبُ واحدةً بعد الأخرى على خطٍّ
+   يمتلئ — لا قائمةُ تحقّقٍ مسطّحة:
+
+     التجهيز:  ① الاسمُ والمواعيد → ② المحاور → ③ المصادر → ④ اللقاءات
+               → ⑤ التكاليف → ⑥ الاعتماد
+     التشغيل:  الحضورُ والاجتماعُ والتسجيلاتُ والرسائلُ والموادُّ والتسليمات
+
+   والحلقةُ في الرأس تقول كم أُنجز، والمرحلةُ التالية مضاءةٌ بالذهبيّ،
+   والمكتملةُ بعلامة، وباعتماد الإدارة تستقرّ شارةُ «شعبةٌ معتمَدة» بحركةٍ
+   واحدةٍ هادئة. أسلوبٌ مؤسّسيّ: لا نقاطَ ولا أوسمةَ ولا مقارنةَ بغيره —
+   الشعبةُ نفسُها هي اللعبة، وإتمامُها هو الفوز.
 
    ═══ ثلاثةُ حرّاسٍ تحكم الشكل ═══
 
@@ -21,18 +31,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CalendarDays, CheckCircle2, Circle, ClipboardList, FileText, Link2, Loader2, Lock, Send, Users, Video,
+  ArrowRight, BookOpen, CalendarDays, Check, ClipboardCheck, ClipboardList, FileText, Link2, Loader2, Lock, Send, Sparkles, Video,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
+import CohortOps from "./CohortOps";
 import { apiGet, apiPatch, apiPost, apiPut, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
+import ProgressRing from "@/components/ui/ProgressRing";
 import { controlCls, areaCls } from "@/components/FormKit";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
-import { fmtDateTimeAr } from "@/utils/format";
+import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 
 /* ─────────── ما يصل من الخادم ─────────── */
 
@@ -55,6 +67,7 @@ interface Workspace {
   sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
   materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
   learners: { enrollmentId: string; name: string; status: string; progress: number; referredByMe: boolean }[];
+  assessments: { id: string; title: string; type: string; maxScore: number; dueAt: string | null; status: string; submissions: number }[];
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
 }
 
@@ -67,15 +80,20 @@ const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent"
   superseded: { label: "نسخةٌ قديمة", tone: "default" },
 };
 
-type Tab = "identity" | "modules" | "resources" | "sessions" | "learners" | "approval";
-const TABS: { key: Tab; label: string; icon: typeof BookOpen }[] = [
+/* المراحلُ الستّ — بترتيبها على الخطّ. ومفاتيحُها مفاتيحُ قائمة الخادم، فحالةُ
+   كلٍّ (تمّ / لم يتمّ) تُقرأ من هناك لا تُخمَّن هنا. و«التسجيلات» الاختياريّةُ
+   تُطوى داخل «اللقاءات»: مرحلةٌ واحدةٌ لهما. */
+type Stage = "identity" | "modules" | "resources" | "sessions" | "assignments" | "approval";
+const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
   { key: "identity", label: "الاسم والمواعيد", icon: ClipboardList },
-  { key: "modules", label: "المحاور والتطبيق", icon: BookOpen },
+  { key: "modules", label: "المحاور", icon: BookOpen },
   { key: "resources", label: "المصادر", icon: FileText },
-  { key: "sessions", label: "اللقاءات والتسجيلات", icon: CalendarDays },
-  { key: "learners", label: "من التحق", icon: Users },
-  { key: "approval", label: "الموافقة والإرسال", icon: Send },
+  { key: "sessions", label: "اللقاءات", icon: CalendarDays },
+  { key: "assignments", label: "التكاليف", icon: ClipboardCheck },
+  { key: "approval", label: "الاعتماد", icon: Send },
 ];
+type Phase = "prepare" | "run";
+const ASSESSMENT_TYPES: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع تخرج" };
 
 /** التاريخُ كما يقبله `<input type="date">` */
 const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
@@ -84,7 +102,8 @@ export default function CohortWorkspace() {
   const { id } = useParams();
   const [ws, setWs] = useState<Workspace | null>(null);
   const [err, setErr] = useState("");
-  const [tab, setTab] = useState<Tab>("identity");
+  const [phase, setPhase] = useState<Phase>("prepare");
+  const [stage, setStage] = useState<Stage>("identity");
   const [busy, setBusy] = useState(false);
 
   /* النسخةُ التي يحرّرها — تبدأ من الخطّة إن كانت، وإلّا من محاور الكتالوج */
@@ -92,11 +111,12 @@ export default function CohortWorkspace() {
   const [identity, setIdentity] = useState({ title: "", startsAt: "", endsAt: "", daysOfWeek: [] as string[], startTime: "", language: "", deliveryMode: "remote" });
   const [confirm, setConfirm] = useState(false);
   const [recLink, setRecLink] = useState<Record<string, { title: string; url: string }>>({});
+  const [taskForm, setTaskForm] = useState({ title: "", type: "assignment", maxScore: 100, dueAt: "" });
   /* رابطُ دعوتي لهذه الشعبة — يُنشأ مرّةً عند أوّل طلبٍ ويبقى */
   const [referral, setReferral] = useState<{ code: string; url: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (first = false) => {
     if (!id) return;
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
@@ -107,9 +127,18 @@ export default function CohortWorkspace() {
         title: w.cohort.title, startsAt: toDateInput(w.cohort.startsAt), endsAt: toDateInput(w.cohort.endsAt),
         daysOfWeek: w.cohort.daysOfWeek, startTime: w.cohort.startTime ?? "", language: w.cohort.language, deliveryMode: w.cohort.deliveryMode,
       });
-    } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح ورشة الشعبة"); }
+      /* أوّلُ فتح: المعتمَدةُ تُفتح على التشغيل، وغيرُها على أوّل مرحلةٍ لم تتمّ */
+      if (first) {
+        const status = w.plan?.status ?? "draft";
+        if (status === "approved" || status === "published") setPhase("run");
+        else {
+          const next = w.checklist.find((c) => !c.done && !c.optional && STAGES.some((s) => s.key === c.key));
+          setStage((next?.key as Stage) ?? "identity");
+        }
+      }
+    } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح صفحة الشعبة"); }
   }, [id]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(true); }, [load]);
 
   const act = async (fn: () => Promise<unknown>, done: string) => {
     if (busy) return;
@@ -121,7 +150,7 @@ export default function CohortWorkspace() {
 
   if (err) {
     return (
-      <TrainerLayout title="ورشة الشعبة">
+      <TrainerLayout title="صفحة الشعبة">
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
         <Link to="/trainer/board" className="mt-4 inline-flex items-center gap-2 text-read font-bold text-teal-light-ink"><ArrowRight className="h-4 w-4" /> إلى شعبي</Link>
       </TrainerLayout>
@@ -129,8 +158,8 @@ export default function CohortWorkspace() {
   }
   if (!ws || !content) {
     return (
-      <TrainerLayout title="ورشة الشعبة">
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
+      <TrainerLayout title="صفحة الشعبة">
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>
       </TrainerLayout>
     );
   }
@@ -138,8 +167,17 @@ export default function CohortWorkspace() {
   const planStatus = ws.plan?.status ?? "draft";
   const st = PLAN_STATUS_AR[planStatus] ?? PLAN_STATUS_AR.draft;
   const locked = planStatus === "submitted";
-  const remaining = ws.checklist.filter((c) => !c.done && !c.optional).length;
+  const approved = planStatus === "approved" || planStatus === "published";
+  /* حالةُ كلّ مرحلةٍ من قائمة الخادم — والمفتاحُ واحدٌ هنا وهناك */
+  const byKey = new Map(ws.checklist.map((c) => [c.key, c]));
+  const required = ws.checklist.filter((c) => !c.optional);
+  const doneCount = required.filter((c) => c.done).length;
+  const remaining = required.length - doneCount;
+  const ready = required.length ? Math.round((doneCount / required.length) * 100) : 0;
+  const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
+  const recordingsDone = byKey.get("recordings")?.done ?? false;
 
+  const openStage = (s: Stage) => { setPhase("prepare"); setStage(s); };
   const savePlan = () => act(() => apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content), "حُفظت مسودّتك");
   const saveIdentity = () => act(() => apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, {
     title: identity.title.trim(),
@@ -149,27 +187,58 @@ export default function CohortWorkspace() {
     language: identity.language, deliveryMode: identity.deliveryMode,
   }), "حُفظت بياناتُ الشعبة");
   const submit = () => act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
+  const createAssessment = () => act(async () => {
+    await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, {
+      title: taskForm.title.trim(), type: taskForm.type, maxScore: taskForm.maxScore,
+      ...(taskForm.dueAt ? { dueAt: new Date(taskForm.dueAt).toISOString() } : {}),
+    });
+    setTaskForm({ title: "", type: "assignment", maxScore: 100, dueAt: "" });
+  }, "أُنشئ التكليف — يظهر للمسجلين ويعود إليك تسليمهم في طابور المراجعة");
 
   const setModule = (i: number, patch: Partial<PlanModule>) =>
     setContent({ ...content, modules: content.modules.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
 
+  const whenLine = [
+    ws.cohort.startsAt ? `تبدأ ${fmtDateAr(ws.cohort.startsAt)}` : "بلا موعدِ بدءٍ بعد",
+    daysLabelAr(ws.cohort.daysOfWeek) || null,
+    ws.cohort.startTime ? `الساعة ${ws.cohort.startTime}` : null,
+  ].filter(Boolean).join(" · ");
+
   return (
-    <TrainerLayout title={`ورشة «${ws.cohort.title}»`}>
+    <TrainerLayout title={`شعبة «${ws.cohort.title}»`}>
+      <style>{`
+        @keyframes stage-seal { 0% { opacity: 0; transform: scale(.85) } 60% { opacity: 1; transform: scale(1.04) } 100% { opacity: 1; transform: scale(1) } }
+        .stage-seal { animation: stage-seal .7s cubic-bezier(.2,.9,.3,1.2) both; }
+        .stage-fill { transition: width .8s cubic-bezier(.22,1,.36,1); }
+      `}</style>
+
       <Link to="/trainer/board" className="mb-4 inline-flex items-center gap-2 text-read font-bold text-teal-light-ink hover:text-foreground">
         <ArrowRight className="h-4 w-4" /> شعبي
       </Link>
 
-      {/* ═══ ماذا بقي عليّ — أوّلُ ما يُرى ═══ */}
-      <Panel as="section" tone={st.tone} className="mb-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
+      {/* ═══ الرأس: أين وصلت الشعبة ═══ */}
+      <Panel as="section" tone={st.tone} className="mb-5">
+        <div className="flex flex-wrap items-start gap-5">
+          <ProgressRing value={ready} label={`${doneCount}/${required.length}`} caption="تجهيز" size={76} />
+          <div className="min-w-0 flex-1">
             <p className="text-read font-bold text-muted-foreground">{ws.course.titleAr}</p>
-            <h2 className="mt-1 text-xl font-black">{ws.cohort.title}</h2>
-            <p className="mt-1 text-read font-bold">{st.label}</p>
+            <h2 className="mt-0.5 text-xl font-black leading-snug">{ws.cohort.title}</h2>
+            <p className="mt-1 text-read text-muted-foreground">{whenLine} · {ws.learners.length} التحقوا · {ws.sessions.length} لقاء</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {approved ? (
+                <span className="stage-seal inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-read font-black text-emerald-300">
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> شعبةٌ معتمَدة
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-read font-bold text-foreground">{st.label}</span>
+              )}
+              {!approved && nextStage && (
+                <Button tone="secondary" size="sm" type="button" onClick={() => openStage(nextStage.key)}>
+                  التالي: {nextStage.label}
+                </Button>
+              )}
+            </div>
           </div>
-          <p className="text-read text-muted-foreground">
-            {remaining === 0 ? "كلُّ ما يلزم مكتمل." : `بقي ${remaining} ممّا يلزم قبل الإرسال.`}
-          </p>
         </div>
         {ws.plan?.reviewerNote && planStatus === "changes_requested" && (
           <Inset tone="warn" className="mt-4">
@@ -177,59 +246,69 @@ export default function CohortWorkspace() {
             <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{ws.plan.reviewerNote}</p>
           </Inset>
         )}
-        <ol className="mt-4 grid gap-2 sm:grid-cols-2">
-          {ws.checklist.map((c, i) => (
-            <li key={c.key} className="flex items-start gap-2.5 text-read leading-6">
-              {c.done
-                ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
-                : <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/50" aria-hidden="true" />}
-              <span className={c.done ? "text-muted-foreground line-through" : "font-bold text-foreground"}>
-                {i + 1}. {c.labelAr}{c.optional && <span className="text-muted-foreground"> (اختياريّ)</span>}
-              </span>
-            </li>
-          ))}
-        </ol>
+
+        {/* ═══ خطُّ المراحل — يمتلئ بقدر ما أُنجز، والمرحلةُ التالية مضاءة ═══ */}
+        <div className="relative mt-5">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-[8.3%] top-5 hidden h-1 rounded-full bg-white/10 md:block">
+            <div className="stage-fill h-full rounded-full bg-teal" style={{ width: `${ready}%` }} />
+          </div>
+          <ol className="grid gap-2 md:grid-cols-6">
+            {STAGES.map((s, i) => {
+              const item = byKey.get(s.key);
+              const done = item?.done ?? false;
+              const optional = item?.optional ?? false;
+              const isNext = nextStage?.key === s.key;
+              const selected = phase === "prepare" && stage === s.key;
+              return (
+                <li key={s.key} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => openStage(s.key)}
+                    aria-current={selected ? "step" : undefined}
+                    className={`group flex w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-start transition md:flex-col md:items-center md:gap-2 md:text-center ${selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"}`}
+                  >
+                    <span className={`relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 text-sm font-black transition ${
+                      done ? "border-teal bg-teal text-on-teal"
+                        : isNext ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_4px_rgba(250,188,5,0.15)]"
+                        : "border-white/15 bg-surface text-muted-foreground"
+                    }`}>
+                      {done ? <Check className="h-4 w-4" aria-hidden="true" /> : i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className={`block text-read font-bold leading-5 ${done || isNext || selected ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</span>
+                      <span className="block text-fine leading-4 text-muted-foreground">
+                        {done ? "تمّ" : isNext ? "التالي" : optional ? "اختياريّ" : "لم يتمّ بعد"}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       </Panel>
 
-      {/* ═══ رابطُ دعوتك — لهذه الشعبة وحدَك ═══
-
-          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): تنشره في صفحاتك، وكلُّ من سجّل منه
-          يُحسب لك بأجر الإحالة. والسعرُ على الطالب واحد. */}
-      {referral && (
-        <Panel as="section" className="mb-6">
-          <p className="flex items-center gap-2 text-sm font-black"><Link2 className="h-4 w-4 text-teal-light-ink" /> رابطُ دعوتك لهذه الشعبة</p>
-          <p className="mt-1 text-read leading-6 text-muted-foreground">انشره حيث شئت — كلُّ من سجّل منه يُحسب لك، وتراه بعلامة «عبر رابطك» عند اسمه وفي «مستحقاتي».</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <input readOnly dir="ltr" value={referral.url} aria-label="رابط الدعوة" onFocus={(e) => e.currentTarget.select()} className={`${controlCls} min-w-0 flex-1 text-left font-mono`} />
-            <Button tone="secondary" onClick={() => { void navigator.clipboard?.writeText(referral.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}>
-              {copied ? "نُسخ" : "انسخ الرابط"}
-            </Button>
-          </div>
-        </Panel>
-      )}
-
-      {/* ═══ الألسنة ═══ */}
-      {/* الألسنةُ من `ui/TabBar` — معها `aria-selected` ووقفةٌ واحدةٌ في التنقّل وأسهمٌ تمشي بينها */}
+      {/* ═══ المرحلتان ═══ */}
       <TabBar
-        ariaLabel="أقسام الورشة"
+        ariaLabel="مرحلتا الشعبة"
         className="mb-5"
-        items={TABS.map((t) => ({
-          id: t.key,
-          label: <span className="inline-flex items-center gap-2"><t.icon className="h-4 w-4" aria-hidden="true" />{t.label}</span>,
-        }))}
-        value={tab}
-        onChange={setTab}
+        items={[
+          { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
+          { id: "run", label: <span className="inline-flex items-center gap-2"><Video className="h-4 w-4" aria-hidden="true" />التشغيل</span> },
+        ]}
+        value={phase}
+        onChange={setPhase}
       />
 
-      {locked && tab !== "learners" && tab !== "approval" && (
+      {phase === "prepare" && locked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           خطّتك بانتظار الاعتماد — لا تُعدَّل حتّى يصل القرار. ولو أردت تعديلها الآن، اطلب من الإدارة ردَّها إليك.
         </Inset>
       )}
 
-      {/* ─────────── الاسم والمواعيد ─────────── */}
-      {tab === "identity" && (
+      {/* ─────────── ① الاسم والمواعيد ─────────── */}
+      {phase === "prepare" && stage === "identity" && (
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> اسمُ الشعبة ومواعيدُها</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -278,8 +357,8 @@ export default function CohortWorkspace() {
         </Panel>
       )}
 
-      {/* ─────────── المحاور والتطبيق ─────────── */}
-      {tab === "modules" && (
+      {/* ─────────── ② المحاور والتطبيق ─────────── */}
+      {phase === "prepare" && stage === "modules" && (
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black"><BookOpen className="h-4 w-4 text-teal-light-ink" /> المحاور والتطبيق العمليّ</h3>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
@@ -289,6 +368,9 @@ export default function CohortWorkspace() {
             <span className="mb-1.5 block text-read font-bold text-muted-foreground">وصفٌ موجزٌ للشعبة (يقرؤه المتعلّم)</span>
             <textarea rows={2} value={content.summaryAr ?? ""} onChange={(e) => setContent({ ...content, summaryAr: e.target.value })} disabled={locked} className={areaCls} />
           </label>
+          {content.modules.length === 0 && (
+            <Inset tone="warn" className="mt-4 text-read leading-6 text-gold-ink">لا محاورَ لهذه الدورة في الكتالوج بعد — أضف محورا أدناه وابدأ منه.</Inset>
+          )}
           <ol className="mt-4 space-y-3">
             {content.modules.map((m, i) => (
               <Card as="li" key={m.moduleId}>
@@ -303,19 +385,22 @@ export default function CohortWorkspace() {
               </Card>
             ))}
           </ol>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, modules: [...content.modules, { moduleId: `${ws.course.id}-T${content.modules.length + 1}`, titleAr: "" }] })}>+ محور</Button>
+          </div>
           <label className="mt-4 block">
             <span className="mb-1.5 block text-read font-bold text-muted-foreground">ملاحظاتٌ عن اللقاءات المباشرة (اختياريّ)</span>
             <textarea rows={2} value={content.liveNoteAr ?? ""} onChange={(e) => setContent({ ...content, liveNoteAr: e.target.value })} disabled={locked} className={areaCls} />
           </label>
-          <Button tone="confirm" disabled={busy || locked} onClick={savePlan} className="mt-4">احفظ المحاور</Button>
+          <Button tone="confirm" disabled={busy || locked || content.modules.some((m) => m.titleAr.trim().length < 2)} onClick={savePlan} className="mt-4">احفظ المحاور</Button>
         </Panel>
       )}
 
-      {/* ─────────── المصادر ─────────── */}
-      {tab === "resources" && (
+      {/* ─────────── ③ المصادر ─────────── */}
+      {phase === "prepare" && stage === "resources" && (
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> المصادر</h3>
-          <p className="mt-1 text-read leading-6 text-muted-foreground">روابطُ ما يحتاجه المتعلّم — كرّاسة، أو مقال، أو فيديو. وما ترفعه ملفّا من «شعبي» يظهر تحتها.</p>
+          <p className="mt-1 text-read leading-6 text-muted-foreground">روابطُ ما يحتاجه المتعلّم — كرّاسة، أو مقال، أو فيديو. وما ترفعه ملفّا من «التشغيل» يظهر تحتها.</p>
           <ul className="mt-4 space-y-3">
             {content.resources.map((r, i) => (
               <Card as="li" key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
@@ -342,13 +427,13 @@ export default function CohortWorkspace() {
         </Panel>
       )}
 
-      {/* ─────────── اللقاءات والتسجيلات ─────────── */}
-      {tab === "sessions" && (
+      {/* ─────────── ④ اللقاءات والتسجيلات ─────────── */}
+      {phase === "prepare" && stage === "sessions" && (
         <div className="space-y-5">
-          {/* الجدولةُ بيده داخلَ نافذة الإدارة — المكوّنُ نفسُه الذي في «شعبي» */}
+          {/* الجدولةُ بيده داخلَ نافذة الإدارة */}
           <TrainerSchedule cohortId={ws.cohort.id} onDone={() => void load()} />
           <Panel as="section">
-            <h3 className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-light-ink" /> الجلسات المسجّلة — من رابط</h3>
+            <h3 className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-light-ink" /> الجلسات المسجّلة — من رابط <span className="text-read font-bold text-muted-foreground">({recordingsDone ? "أُضيفت" : "اختياريّ"})</span></h3>
             <p className="mt-1 text-read leading-6 text-muted-foreground">ألصق رابطَ التسجيل (يوتيوب، أو درايف، أو زووم) على لقائه — لا حاجةَ لرفع ملفّ.</p>
             {ws.sessions.length === 0 ? (
               <p className="mt-3 text-read text-muted-foreground">لا لقاءاتٍ بعد — أضفها أعلاه أوّلا.</p>
@@ -383,48 +468,81 @@ export default function CohortWorkspace() {
         </div>
       )}
 
-      {/* ─────────── من التحق ─────────── */}
-      {tab === "learners" && (
+      {/* ─────────── ⑤ التكاليف ─────────── */}
+      {phase === "prepare" && stage === "assignments" && (
         <Panel as="section">
-          <h3 className="flex items-center gap-2 text-sm font-black"><Users className="h-4 w-4 text-teal-light-ink" /> من التحق بالشعبة ({ws.learners.length})</h3>
-          {/* الاسمُ والتقدّم — لا بريدَ ولا رقما: تراسلهم من رسائل الشعبة في «شعبي» */}
-          {ws.learners.length === 0 ? (
-            <p className="mt-3 text-read text-muted-foreground">لم يلتحق أحدٌ بعد — يظهرون هنا فورَ تسجيلهم.</p>
+          <h3 className="flex items-center gap-2 text-sm font-black"><ClipboardCheck className="h-4 w-4 text-gold-ink" /> تكاليفُ الشعبة — واجباتُها ومشروعُها</h3>
+          <p className="mt-1 text-read leading-6 text-muted-foreground">
+            ما تؤلّفه هنا يصل المسجّلين، ويعود إليك تسليمُهم في طابور المراجعة. مرحلةٌ اختياريّةٌ عند الإرسال — وتُنصح بواحدٍ على الأقلّ يُسلَّم.
+          </p>
+          {ws.assessments.length === 0 ? (
+            <p className="mt-3 text-read text-muted-foreground">لا تكليفَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
           ) : (
-            <ul className="mt-4 space-y-2">
-              {ws.learners.map((l) => (
-                <Inset as="li" key={l.enrollmentId} className="flex items-center justify-between gap-3 text-read">
-                  <span className="font-bold">
-                    {l.name}
-                    {l.referredByMe && <span className="mr-2 rounded-full bg-gold/15 px-2.5 py-0.5 text-read font-bold text-gold-ink">عبر رابطك</span>}
-                  </span>
-                  <span className="text-muted-foreground" dir="ltr">{l.progress}%</span>
+            <ul className="mt-3 space-y-2">
+              {ws.assessments.map((a) => (
+                <Inset as="li" key={a.id} className="flex flex-wrap items-center gap-2">
+                  <p className="min-w-0 flex-1 text-read font-bold text-foreground">{a.title}</p>
+                  <p className="shrink-0 text-read text-muted-foreground">
+                    {ASSESSMENT_TYPES[a.type] ?? a.type} · من {a.maxScore}
+                    {a.dueAt && <> · يُسلَّم قبل {fmtDateTimeAr(a.dueAt)}</>}
+                    {" · "}سلّم {a.submissions}
+                  </p>
                 </Inset>
               ))}
             </ul>
           )}
+          <div className="mt-4 grid gap-3 border-t border-white/10 pt-4 sm:grid-cols-[1fr_auto_auto_auto]">
+            <input aria-label="عنوان التكليف" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
+              onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} className={controlCls} />
+            <select aria-label="نوع التكليف" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
+              {Object.entries(ASSESSMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <input type="date" dir="ltr" aria-label="آخر موعد للتسليم" value={taskForm.dueAt} onChange={(e) => setTaskForm({ ...taskForm, dueAt: e.target.value })} className={`${controlCls} text-left`} />
+            <Button tone="confirm" disabled={busy || taskForm.title.trim().length < 3} onClick={createAssessment}>أنشئ التكليف</Button>
+          </div>
         </Panel>
       )}
 
-      {/* ─────────── الموافقة والإرسال ─────────── */}
-      {tab === "approval" && (
+      {/* ─────────── ⑥ الاعتماد ─────────── */}
+      {phase === "prepare" && stage === "approval" && (
         <Panel as="section" tone={st.tone}>
           <h3 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-teal-light-ink" /> الموافقة والإرسال للاعتماد</h3>
           <p className="mt-2 text-read leading-7 text-foreground">
-            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
+            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، وتكاليفَها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
-          {remaining > 0 && planStatus !== "approved" && (
-            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">بقي {remaining} ممّا يلزم في القائمة أعلاه — أكمله قبل الإرسال.</Inset>
+          {remaining > 0 && !approved && (
+            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">بقي {remaining} من المراحل قبل الإرسال — المضاءةُ بالذهبيّ على الخطّ أعلاه هي التالية.</Inset>
           )}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
-            <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || planStatus === "approved"} className="mt-1 h-4 w-4 accent-teal" />
-            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
+            <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
+            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها وتكاليفَها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
           </label>
-          <Button tone="primary" disabled={busy || locked || !confirm || remaining > 0 || planStatus === "approved"} onClick={submit} className="mt-4">
+          <Button tone="primary" disabled={busy || locked || !confirm || remaining > 0 || approved} onClick={submit} className="mt-4">
             <Send className="h-4 w-4" /> أرسلها للاعتماد
           </Button>
         </Panel>
+      )}
+
+      {/* ═══ التشغيل ═══ */}
+      {phase === "run" && (
+        <div className="space-y-5">
+          {/* رابطُ دعوتك — لهذه الشعبة وحدَك: تنشره في صفحاتك، وكلُّ من سجّل منه
+              يُحسب لك بأجر الإحالة، وتراه بعلامة «عبر رابطك» عند اسمه. */}
+          {referral && (
+            <Panel as="section">
+              <p className="flex items-center gap-2 text-sm font-black"><Link2 className="h-4 w-4 text-teal-light-ink" /> رابطُ دعوتك لهذه الشعبة</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">انشره حيث شئت — كلُّ من سجّل منه يُحسب لك، وتراه بعلامة «عبر رابطك» عند اسمه وفي «مستحقاتي».</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <input readOnly dir="ltr" value={referral.url} aria-label="رابط الدعوة" onFocus={(e) => e.currentTarget.select()} className={`${controlCls} min-w-0 flex-1 text-left font-mono`} />
+                <Button tone="secondary" onClick={() => { void navigator.clipboard?.writeText(referral.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}>
+                  {copied ? "نُسخ" : "انسخ الرابط"}
+                </Button>
+              </div>
+            </Panel>
+          )}
+          <CohortOps cohortId={ws.cohort.id} onAuthorAssignment={() => openStage("assignments")} />
+        </div>
       )}
     </TrainerLayout>
   );

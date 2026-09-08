@@ -17,7 +17,9 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
-const BOARD = 'src/pages/trainer/CohortBoard.tsx'
+/* التشغيلُ انتقل من «شعبي» إلى مرحلة «التشغيل» في صفحة الشعبة الواحدة
+   (٨ سبتمبر ٢٠٢٦) — والحارسُ يتبع الشيفرةَ إلى موضعها الجديد بحمولته نفسِها. */
+const BOARD = 'src/pages/trainer/CohortOps.tsx'
 const ADMIN = 'src/pages/admin/AdminCohorts.tsx'
 const ROUTES = 'server/http/routes/learning-portal.routes.ts'
 

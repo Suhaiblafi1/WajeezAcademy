@@ -35,6 +35,8 @@ import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 /* ─────────── ما يعدّله المدرّب في محتوى الشعبة ─────────── */
 
@@ -69,6 +71,77 @@ const ADMIN_ONLY_FIELDS = ['price', 'currency', 'capacity', 'registrationOpen', 
 
 export const PLAN_STATUSES = ['draft', 'submitted', 'changes_requested', 'approved', 'published', 'superseded'] as const
 export type PlanStatus = (typeof PLAN_STATUSES)[number]
+
+/* ═══ محاورُ الكتالوج الثابت — حين لا محاورَ للدورة في القاعدة ═══
+
+   ورشةُ الشعبة تبدأ من محاور الدورة في القاعدة. فإن لم تكن الدورةُ قد
+   استُوردت بمحاورها (أو أُرشفت) فتح المدرّبُ لسانَ «المحاور» على فراغٍ لا
+   يعرف سببَه — وهو ما رآه صاحبُ المنصّة: «أرى فقط عنوانا وغيره»
+   (٨ سبتمبر ٢٠٢٦). والكتالوجُ الثابتُ يحمل ٤٠٤ محاور لـ٨١ دورة، فمنه تُقرأ
+   البدايةُ حين تخلو القاعدة. ولا يمسّ الكتالوجَ ولا القاعدة: بدايةٌ للمسودّة
+   لا غير. */
+interface StaticModule {
+  module_id: string; course_id: string; sequence: number; title_ar: string
+  module_outcome_ar?: string | null; practice_activity_ar?: string | null
+  evidence_artifact_ar?: string | null; module_body_ar?: string | null
+}
+let staticModules: Promise<StaticModule[]> | null = null
+function loadStaticModules(): Promise<StaticModule[]> {
+  if (!staticModules) {
+    staticModules = readFile(join(process.cwd(), 'src/data/catalog/core-catalog.v2.json'), 'utf8')
+      .then((raw) => (JSON.parse(raw) as { modules?: StaticModule[] }).modules ?? [])
+      .catch(() => [])
+  }
+  return staticModules
+}
+/** محاورُ دورةٍ من الكتالوج الثابت بترتيبها — أو لا شيء إن لم تكن فيه */
+export async function staticModulesFor(courseId: string): Promise<TrainerPlanModule[]> {
+  const all = await loadStaticModules()
+  return all
+    .filter((m) => m.course_id === courseId)
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((m) => ({
+      moduleId: m.module_id, titleAr: m.title_ar,
+      outcomeAr: m.module_outcome_ar ?? null, activityAr: m.practice_activity_ar ?? null,
+      artifactAr: m.evidence_artifact_ar ?? null, bodyAr: m.module_body_ar ?? null,
+    }))
+}
+
+/* ═══ قائمةُ «ماذا أفعل» — تُحسب لا تُكتب ═══
+
+   كلُّ بندٍ حالتُه من الواقع: العنوانُ والمواعيدُ من صفّ الشعبة، والمحاورُ
+   والمصادرُ من الخطّة، واللقاءاتُ من الجدول، والتكاليفُ من جدولها. فلا يُقال
+   «تمّ» عن شيءٍ لم يقع، ولا يبقى «لم يتمّ» عن شيءٍ وقع. وهي دالّةٌ واحدة
+   تقرؤها الورشةُ وبطاقاتُ «شعبي» معا — فلا تفترق النسبةُ التي يراها المدرّب
+   على البطاقة عن القائمة التي يراها داخل الشعبة. */
+export interface ChecklistItem { key: string; labelAr: string; done: boolean; optional: boolean }
+export function buildChecklist(input: {
+  cohort: { title: string; startsAt: Date | null; daysOfWeek: string[]; startTime: string | null }
+  content: TrainerPlanContent | null
+  sessions: { recordings: unknown[] }[]
+  assessmentsCount: number
+  planStatus: PlanStatus
+}): ChecklistItem[] {
+  const c = input.cohort
+  const identityDone = c.title.trim().length >= 3 && Boolean(c.startsAt) && c.daysOfWeek.length > 0 && Boolean(c.startTime)
+  const modulesDone = (input.content?.modules?.length ?? 0) > 0
+  const resourcesDone = (input.content?.resources?.length ?? 0) > 0
+  const sessionsDone = input.sessions.length > 0
+  const recordingsDone = input.sessions.some((s) => s.recordings.length > 0)
+  const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
+  return [
+    { key: 'identity', labelAr: 'راجع اسمَ الشعبة ومواعيدها', done: identityDone, optional: false },
+    { key: 'modules', labelAr: 'رتّب المحاورَ والتطبيقَ العمليّ', done: modulesDone, optional: false },
+    { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم', done: resourcesDone, optional: false },
+    { key: 'sessions', labelAr: 'حدّد مواعيدَ اللقاءات المباشرة', done: sessionsDone, optional: false },
+    { key: 'recordings', labelAr: 'ارفع الجلساتِ المسجّلة — إن وُجدت', done: recordingsDone, optional: true },
+    /* التكاليفُ في التجهيز لا في التشغيل وحدَه: «أين تفاصيل الواجبات؟»
+       (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦). اختياريّةٌ عند الإرسال — قد تُؤلَّف
+       أثناء الشعبة — لكنّها مرحلةٌ تُرى وتُعدّ. */
+    { key: 'assignments', labelAr: 'ألّف تكاليفَ الشعبة — واجبٌ أو مشروعٌ يُسلَّم', done: input.assessmentsCount > 0, optional: true },
+    { key: 'approval', labelAr: 'أكّد أنّك توافق على كلّ ما فيها وأرسلها للاعتماد', done: approvalDone, optional: false },
+  ]
+}
 
 export class CohortPlanService {
   private prisma: PrismaClient
@@ -129,13 +202,17 @@ export class CohortPlanService {
           where: { status: { not: 'dropped' } },
           include: { user: { select: { displayName: true } }, courseProgress: { select: { percent: true } } },
         },
+        assessments: {
+          where: { status: { not: 'closed' } }, orderBy: { createdAt: 'asc' },
+          select: { id: true, title: true, type: true, maxScore: true, dueAt: true, status: true, _count: { select: { submissions: true } } },
+        },
       },
     })
     const plan = await this.latestTrainerPlan(cohortId)
     const content = (plan?.content ?? null) as TrainerPlanContent | null
 
-    /* المحاورُ الأساسيّة من الكتالوج — يبدأ منها المدرّبُ إن لم يكتب بعد */
-    const baseModules: TrainerPlanModule[] = cohort.course.modules.map((m) => {
+    /* المحاورُ الأساسيّة من القاعدة — وإن خلت، من الكتالوج الثابت */
+    const dbModules: TrainerPlanModule[] = cohort.course.modules.map((m) => {
       const v = m.versions[0]
       return {
         moduleId: m.id, titleAr: v?.titleAr ?? m.id,
@@ -143,27 +220,10 @@ export class CohortPlanService {
         artifactAr: v?.artifactAr ?? null, bodyAr: v?.bodyAr ?? null,
       }
     })
+    const baseModules = dbModules.length > 0 ? dbModules : await staticModulesFor(cohort.course.id)
 
-    /* ═══ قائمةُ «ماذا أفعل» — تُحسب لا تُكتب ═══
-
-       كلُّ بندٍ حالتُه من الواقع: العنوانُ والمواعيدُ من صفّ الشعبة، والمحاورُ
-       والمصادرُ من الخطّة، واللقاءاتُ من الجدول. فلا يُقال «تمّ» عن شيءٍ لم
-       يقع، ولا يبقى «لم يتمّ» عن شيءٍ وقع. */
-    const identityDone = cohort.title.trim().length >= 3 && Boolean(cohort.startsAt) && cohort.daysOfWeek.length > 0 && Boolean(cohort.startTime)
-    const modulesDone = (content?.modules?.length ?? 0) > 0
-    const resourcesDone = (content?.resources?.length ?? 0) > 0
-    const sessionsDone = cohort.sessions.length > 0
-    const recordingsDone = cohort.sessions.some((s) => s.recordings.length > 0)
     const status = (plan?.status ?? 'draft') as PlanStatus
-    const approvalDone = status === 'approved' || status === 'published'
-    const checklist = [
-      { key: 'identity', labelAr: 'راجع اسمَ الشعبة ومواعيدها', done: identityDone, optional: false },
-      { key: 'modules', labelAr: 'رتّب المحاورَ والتطبيقَ العمليّ', done: modulesDone, optional: false },
-      { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم', done: resourcesDone, optional: false },
-      { key: 'sessions', labelAr: 'حدّد مواعيدَ اللقاءات المباشرة', done: sessionsDone, optional: false },
-      { key: 'recordings', labelAr: 'ارفع الجلساتِ المسجّلة — إن وُجدت', done: recordingsDone, optional: true },
-      { key: 'approval', labelAr: 'أكّد أنّك توافق على كلّ ما فيها وأرسلها للاعتماد', done: approvalDone, optional: false },
-    ]
+    const checklist = buildChecklist({ cohort, content, sessions: cohort.sessions, assessmentsCount: cohort.assessments.length, planStatus: status })
 
     return {
       role: link.role,
@@ -200,8 +260,58 @@ export class CohortPlanService {
         /* العلامةُ لا المعرّف: من جاء عبر رابط هذا المدرّب */
         referredByMe: e.referralProfileId === profile.id,
       })),
+      /* التكاليفُ مع عدد ما سُلّم — لمرحلة «التكاليف» في التجهيز */
+      assessments: cohort.assessments.map((a) => ({
+        id: a.id, title: a.title, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
+        submissions: a._count.submissions,
+      })),
       checklist,
     }
+  }
+
+  /* ─────────── بطاقاتُ «شعبي» — كلُّ شعبةٍ بحلقة تقدّمها ─────────── */
+
+  /** موجزُ كلّ شعبةٍ مُسنَدةٍ للمدرّب: حالتُها وما أُنجز من تجهيزها وما يليه */
+  async summaries(userId: string) {
+    const profile = await this.profileOf(userId)
+    const links = await this.prisma.cohortTrainer.findMany({
+      where: { profileId: profile.id },
+      include: {
+        cohort: {
+          include: {
+            course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+            sessions: { select: { id: true, recordings: { where: { status: 'active' }, select: { id: true } } } },
+            plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1 },
+            _count: {
+              select: {
+                enrollments: { where: { status: { not: 'dropped' } } },
+                assessments: { where: { status: { not: 'closed' } } },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { cohort: { startsAt: 'asc' } },
+    })
+    return links.map((l) => {
+      const c = l.cohort
+      const plan = c.plans[0] ?? null
+      const planStatus = (plan?.status ?? 'draft') as PlanStatus
+      const checklist = buildChecklist({
+        cohort: c, content: (plan?.content ?? null) as TrainerPlanContent | null,
+        sessions: c.sessions, assessmentsCount: c._count.assessments, planStatus,
+      })
+      const required = checklist.filter((i) => !i.optional)
+      const done = required.filter((i) => i.done).length
+      const next = checklist.find((i) => !i.done && !i.optional) ?? checklist.find((i) => !i.done) ?? null
+      return {
+        id: c.id, title: c.title, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
+        status: c.status, startsAt: c.startsAt, endsAt: c.endsAt,
+        learners: c._count.enrollments, sessions: c.sessions.length,
+        planStatus, done, total: required.length,
+        next: next ? { key: next.key, labelAr: next.labelAr } : null,
+      }
+    })
   }
 
   /* ─────────── الكتابة ─────────── */
