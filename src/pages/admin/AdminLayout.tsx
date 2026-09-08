@@ -142,7 +142,7 @@ export default function AdminLayout({ children, title }: { children: React.React
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SearchPalette />
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
+        <div className="shell flex h-16 items-center justify-between">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">وجيز — الإدارة والعمليات</span>
@@ -183,7 +183,7 @@ export default function AdminLayout({ children, title }: { children: React.React
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-7xl items-start gap-6 px-5">
+      <div className="shell flex items-start gap-6">
         {/* الشريط الجانبي — شاشات كبيرة */}
         <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-l border-white/10 py-8 pl-5 lg:block">
           {sections.map((s) => (

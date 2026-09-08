@@ -511,6 +511,8 @@ export class TrainerApplicationService {
     teachableOther?: string
     availability: AvailabilityInput
     demoConsent: boolean
+    phoneCountryCode?: string
+    phone?: string
     contact?: ContactPreference
   }): Promise<{ phase2CompletedAt: Date; status: TrainerStatus; emailDelivery: DirectMailStatus | null }> {
     const app = await this.resolveCandidate(reference, token)
@@ -519,6 +521,17 @@ export class TrainerApplicationService {
     }
     if (!input.demoConsent) throw new AuthError('demo_consent_required', 'الموافقة على درس تجريبي (Demo) إلزامية للاستكمال')
     if (input.previousCourses.length > 3) throw new AuthError('too_many_courses', 'ثلاث دورات سابقة كحد أقصى')
+
+    /* الرقمُ الفعليّ: ما وصل مع هذا النداء، وإلّا فالمحفوظُ من القسم الأوّل.
+
+       والترتيبُ مقصود. القسمُ الأوّل يُرسَل إلى الخادم عند المضيّ منه، فمن
+       تركه بلا رقمٍ أُنشئ طلبُه بلا رقم. ثمّ يعود من القسم الثالث فيكتبه —
+       فيراه في شاشته ولا يراه الخادم، إذ لا نداءَ بينهما كان يحمله. فيُردّ
+       إرسالُه بـ«لم تذكر رقمك»، ويعود فيجده مكتوبا، فيرسل فيُردّ. حلقةٌ
+       أُغلقت من طرفَيها: الرقمُ صار شرطا في القسم الأوّل، ويصل هنا كذلك. */
+    const sentPhone = input.phone?.trim() || null
+    const phone = sentPhone ?? app.phone
+    const phoneCountryCode = sentPhone ? (input.phoneCountryCode?.trim() || null) : app.phoneCountryCode
 
     /* وسيلةُ التواصل: مطلوبةٌ عند الإكمال الأوّل، ومحفوظةٌ بعده إن لم تُرسَل */
     const contact = input.contact
@@ -529,7 +542,7 @@ export class TrainerApplicationService {
     if (contact) {
       const def = CONTACT_CHANNELS.find((c) => c.value === contact.channel)
       if (!def) throw new AuthError('bad_contact', 'وسيلة تواصل غير معروفة')
-      if (def.needsPhone && !app.phone) {
+      if (def.needsPhone && !phone) {
         throw new AuthError('phone_required', 'اختَرت الهاتف أو واتساب ولم تذكر رقمك في القسم الأول — عد وأضفه أو اختر البريد')
       }
       if (def.needsAltEmail) {
@@ -569,6 +582,7 @@ export class TrainerApplicationService {
           teachableOther: input.teachableOther?.trim() || null,
           availability: input.availability as unknown as Prisma.InputJsonValue,
           demoConsent: input.demoConsent,
+          ...(sentPhone ? { phone, phoneCountryCode } : {}),
           ...(contact ? { contactChannel: contact.channel, contactAltEmail } : {}),
           /* رمزُ التأكيد يُصدَر مع أوّل إكمال — وبريدُه يحمله */
           ...(firstCompletion && !app.emailVerifiedAt
