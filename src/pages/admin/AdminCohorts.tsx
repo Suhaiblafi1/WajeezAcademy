@@ -14,7 +14,6 @@ import CohortWizard from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
-import { courseById } from "@/data/courses";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -51,7 +50,10 @@ interface CohortRow {
   trainers: { profileId: string; name: string; role: string }[];
 }
 
-interface CourseOption { id: string; status: string; title: string }
+interface CourseOption {
+  id: string; status: string; title: string;
+  listPrice: number | null; listCurrency: string; pathwayNames: string[];
+}
 /** لافتةُ نتيجةٍ تعرف نجاحَها من رفضها */
 type Flash = { kind: "ok" | "error"; text: string } | null
 interface SessionOption { id: string; title: string; startsAt: string; hasZoom: boolean }
@@ -168,7 +170,11 @@ export default function AdminCohorts() {
   };
 
   /* خياراتُ الفلاتر من الصفوف نفسِها لا من قائمةٍ ثانية تبلى */
-  const pathwayOf = (courseId: string) => courseById(courseId)?.pathwayName ?? "";
+  /* اسمُ المجال من الـAPI: `courseById` تقرأ الكتالوجَ المضمَّن، وهو لا
+     يُثبَّت في لوحة الإدارة — فكان مرشِّحُ «المجال» فارغا دائما، لا لأنّ
+     الشعبَ بلا مجال بل لأنّ الاسمَ لم يصل. */
+  const pathwayOf = (courseId: string) =>
+    courses.find((c) => c.id === courseId)?.pathwayNames[0] ?? "";
   const pathways = [...new Set(rows.map((c) => pathwayOf(c.courseId)).filter(Boolean))].sort();
   const trainerNames = [...new Set(rows.flatMap((c) => c.trainers.map((t) => t.name)))].sort();
   const statuses = [...new Set(rows.map((c) => c.status))];
@@ -282,10 +288,14 @@ export default function AdminCohorts() {
         </Card>
         {createOpen && (
           <CohortWizard
-            courses={courses.map((c) => {
-              const meta = courseById(c.id);
-              return { id: c.id, title: c.title, currency: meta?.listCurrency ?? "USD", listPrice: meta?.listPrice ?? null };
-            })}
+            /* من الـAPI لا من الكتالوج المضمَّن: هذه الشاشةُ لا تطلب
+               `/api/public/core-catalog` أصلا، فـ`courseById` كانت تردّ
+               `undefined` للدوراتِ كلِّها — فيُعرض «—» ثمّ تُفتح الشعبةُ
+               بسعرٍ لم يره أحد. */
+            courses={courses.map((c) => ({
+              id: c.id, title: c.title,
+              currency: c.listCurrency, listPrice: c.listPrice,
+            }))}
             onDone={(msg) => { setFlash({ kind: "ok", text: msg }); setCreateOpen(false); void load(); }}
             onError={(msg) => setFlash({ kind: "error", text: msg })}
           />
