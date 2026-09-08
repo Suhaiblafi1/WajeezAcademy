@@ -189,17 +189,27 @@ export async function resolveStorageOwner(
   })
   if (cv) return { kind: 'cv', maxBytes: MAX_UPLOAD_ANY, mime: cv.mime, originalName: cv.originalName }
 
+  /* ⚠️ والتسجيلُ والمادّةُ لا يأخذان `MAX_COHORT_MEDIA_BYTES` (٣٠٠MB) هنا.
+
+     المسارُ يقرأ الجسمَ **كاملا في الذاكرة** (`req.body as Buffer`) وحدُّه
+     `bodyLimit: MAX_UPLOAD_ANY`. فلو أعلنّا ثلاثَمئةٍ لَردّ Fastify الطلبَ
+     عند أربعةٍ قبل أن يبلغ فحصُنا أصلا: رسالةٌ عامّةٌ بدل رسالتنا، وسقفٌ
+     معلَنٌ لا يُوفى — وهو أسوأُ من سقفٍ صغيرٍ معلوم، بنصّ ما هو مكتوبٌ أعلاه.
+
+     ورفعُ الحدّ ليس رفعَ رقم: ثلاثُمئةٍ في الذاكرة لكلّ طلبٍ متزامن تُسقط
+     الحاوية. فالطريقُ **البثُّ إلى القرص** لا مخزنٌ أكبر — وذلك بندٌ مستقلٌّ
+     يُفتح حين تُطلب محاضرةٌ كاملة، لا اليوم. والفيديو رابطٌ أصلا بقرار. */
   const rec = await prisma.recording.findUnique({
     where: { storageKey }, select: { mime: true, title: true },
   })
   if (rec) {
-    return { kind: 'recording', maxBytes: MAX_COHORT_MEDIA_BYTES, mime: rec.mime, originalName: rec.title }
+    return { kind: 'recording', maxBytes: MAX_UPLOAD_ANY, mime: rec.mime, originalName: rec.title }
   }
 
   const mat = await prisma.learningMaterial.findUnique({
     where: { storageKey }, select: { title: true },
   })
-  if (mat) return { kind: 'material', maxBytes: MAX_COHORT_MEDIA_BYTES, originalName: mat.title }
+  if (mat) return { kind: 'material', maxBytes: MAX_UPLOAD_ANY, originalName: mat.title }
 
   const sub = await prisma.assignmentSubmission.findFirst({ where: { storageKey }, select: { id: true } })
   if (sub) return { kind: 'submission', maxBytes: MAX_UPLOAD_ANY }

@@ -140,6 +140,43 @@ describe('كلُّ نموذجٍ يحمل مفتاحَ تخزينٍ يعرفه ا
   })
 })
 
+/* ═══ ولا سقفَ يُعلَن فوقَ ما يمرّ فعلا ═══
+
+   المسارُ يقرأ الجسمَ كاملا في الذاكرة، وحدُّه `bodyLimit: MAX_UPLOAD_ANY`.
+   فسقفٌ يعلنه المُحلِّلُ فوقَه يردّه Fastify قبل أن يبلغ فحصُنا: رسالةٌ عامّةٌ
+   بدل رسالتنا، ووعدٌ لا يُوفى.
+
+   ووقع هذا فعلا في أوّل صياغةٍ لهذا البند: أُعلن ٣٠٠MB للتسجيل والمادّة
+   و`bodyLimit` أربعة. فالحارسُ يمنع عودتَه — ويُقاس على **ما يردّه المُحلِّل
+   فعلا** لا على قائمةِ ثوابتَ تُكتب بجانبه. */
+describe('السقفُ المعلَنُ يمرّ فعلا', () => {
+  it('لا مالكَ يُعلن سقفا فوق حدّ جسم الطلب', async () => {
+    const routes = read('server/http/routes/trainer-applications.routes.ts')
+    expect(routes, 'حدُّ الجسم لم يعد مشتقّا من الثابت').toContain('bodyLimit: MAX_UPLOAD_ANY')
+
+    /* يُبنى صفٌّ من كلّ نوعٍ يملك مفتاحا؟ لا — يُقرأ ما يردّه المُحلِّلُ
+       لكلّ فرعٍ من فروعه، والفروعُ تُعدّ من المخطَّط. فيُفحص الثابتُ الذي
+       يُعلَن: أيُّ `maxBytes` يتجاوز `MAX_UPLOAD_ANY` يُمسَك. */
+    const svc = read('server/services/storage.service.ts')
+    const body = svc.slice(svc.indexOf('export async function resolveStorageOwner'))
+    const declared = [...body.matchAll(/maxBytes:\s*([^,}\n]+)/g)].map((m) => m[1].trim())
+    expect(declared.length, 'لم يُقرأ سقفٌ واحد — تعطّل المسح').toBeGreaterThan(3)
+    for (const d of declared) {
+      expect(
+        d,
+        `المُحلِّلُ يعلن «${d}» — وهو فوق ما يقبله جسمُ الطلب. `
+        + 'ورفعُ الحدّ يحتاج بثّا إلى القرص لا رقما أكبر: ٣٠٠MB في الذاكرة '
+        + 'لكلّ طلبٍ متزامن تُسقط الحاوية.',
+      ).not.toContain('MAX_COHORT_MEDIA_BYTES')
+    }
+  })
+
+  it('والثابتُ الكبيرُ يبقى معرَّفا — لكنّه لا يُعلَن سقفا لمسارٍ يبتلع', () => {
+    /* لا يُحذف: يصف قرارَ منتَجٍ قائما (حجمُ محاضرة)، ويُستعمل يومَ يوجد بثّ */
+    expect(read('server/services/storage.service.ts')).toContain('MAX_COHORT_MEDIA_BYTES = 300')
+  })
+})
+
 describe('وحجمُ التخزين يدخل النسخةَ الاحتياطيّة', () => {
   const backup = read('deploy/backup.sh')
 
