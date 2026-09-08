@@ -24,6 +24,7 @@
     "pathway:audit": "tsx scripts/audit-pathways.ts",
     "ci:lint-baseline": "tsx scripts/lint-baseline.ts",
     "ci:journeys-baseline": "tsx scripts/v2_1/sim-journeys.ts --check",
+    "storage:migrate": "tsx scripts/migrate-documents-to-disk.ts",
     "catalog:import": "tsx scripts/import-catalog.ts",
     "catalog:publish": "tsx scripts/publish-catalog-snapshot.ts",
     "audit:diagnostic": "tsx scripts/audit-diagnostic-data.ts",
