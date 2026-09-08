@@ -315,6 +315,16 @@ export class TrainerReviewService {
           )
         }
       }
+      /* ═══ ويُؤهَّل لما قال إنّه يُتقنه ═══
+
+         كان الاعتمادُ يُنشئ ملفّا بلا تأهيلٍ واحد، فيفتح المدرّبُ بوّابتَه
+         ويقرأ: «لا تأهيلَ بعد — التأهيلُ يقع من الإدارة». وهو قد كتب في طلبه
+         الدوراتِ التي يستطيع تدريسَها، وقرأها المراجعُ واعتمده عليها. فسؤالُه
+         عنها مرّةً ثانيةً في طابورِ طلباتٍ تكرارٌ لقرارٍ وقع.
+
+         قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): المعتمَدُ مؤهَّلٌ لكلّ ما ذكره في
+         طلبه، وتضيف الإدارةُ فوقَه ما تراه. */
+      await this.syncQualificationsFromApplication(profile.id, actorId)
     }
 
     await this.apps.transition(applicationId, targets[action], actorId, note)
@@ -430,6 +440,43 @@ export class TrainerReviewService {
       actorId, action: 'trainer.info_requested.notify', entityType: 'trainer_application', entityId: applicationId,
       meta: { sentTo: to, emailDelivery: mail.status, asked: asked ?? null },
     })
+  }
+
+  /* ═══ مطابقةُ التأهيل بما في الطلب — تُنادى عند الاعتماد وعند كلّ قراءة ═══
+
+     تعمل على ما يُقبل: `skipDuplicates` على القيد `(profileId, courseId)`،
+     فمن أُهِّل يدويّا لا يُكرَّر، ومن رُدّ تأهيلُه لدورةٍ يبقى مردودا — الصفُّ
+     موجودٌ فلا يُلمَس. ودورةٌ ذكرها ولم تعد في الكتالوج تُهمَل بصمت.
+
+     ولا أثرَ يُكتب إلّا حين يُضاف شيءٌ فعلا: تُنادى مع كلّ فتحٍ لصفحة
+     المؤهّلات كي يلحق من اعتُمد قبل هذا التغيير، فلو كُتب أثرٌ في كلّ نداء
+     لامتلأ السجلّ بـ«لا شيء». */
+  async syncQualificationsFromApplication(profileId: string, actorId: string | null): Promise<{ added: string[] }> {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId },
+      select: { application: { select: { teachableCourseIds: true } } },
+    })
+    const wanted = profile?.application.teachableCourseIds ?? []
+    if (wanted.length === 0) return { added: [] }
+    const known = await this.prisma.course.findMany({ where: { id: { in: wanted } }, select: { id: true } })
+    const existing = await this.prisma.trainerCourseQualification.findMany({
+      where: { profileId, courseId: { in: known.map((c) => c.id) } }, select: { courseId: true },
+    })
+    const have = new Set(existing.map((q) => q.courseId))
+    const added = known.map((c) => c.id).filter((id) => !have.has(id))
+    if (added.length === 0) return { added: [] }
+    await this.prisma.trainerCourseQualification.createMany({
+      data: added.map((courseId) => ({
+        profileId, courseId, status: 'qualified', qualifiedBy: actorId,
+        note: 'من طلب الانضمام — الدوراتُ التي قال إنّه يستطيع تدريسَها', decidedAt: new Date(),
+      })),
+      skipDuplicates: true,
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.qualify.auto', entityType: 'trainer_profile', entityId: profileId,
+      meta: { courseIds: added },
+    })
+    return { added }
   }
 
   /** ملفُّ المدرّب — يُنشأ مرّةً بمهامّ تهيئته، ويُعاد إن كان موجودا */

@@ -440,7 +440,9 @@ export class EnrollmentService {
               where: { status: { not: 'dropped' } },
               include: {
                 courseProgress: true, attendance: true,
-                user: { select: { displayName: true, email: true } },
+                /* الاسمُ وحدَه: المدرّبُ يراسل متعلّمَه من رسائل الشعبة لا من
+                   بريده — فالبريدُ والرقمُ ملكُ المتعلّم، والمنصّةُ هي القناة. */
+                user: { select: { displayName: true } },
               },
             },
             materials: true,

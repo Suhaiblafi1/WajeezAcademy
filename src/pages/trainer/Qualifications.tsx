@@ -190,7 +190,7 @@ export default function TrainerQualifications() {
             <span className="text-xs font-bold text-muted-foreground">({quals.length})</span>
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            التأهيلُ للدورة لا للشعبة — فمن أُهِّل لدورةٍ يجوز إسنادُه لأيّ شعبةٍ منها.
+            من طلبك مباشرةً: ما قلتَ إنّك تستطيع تدريسَه صرتَ مؤهَّلا له حين اعتُمدت. والتأهيلُ للدورة لا للشعبة — فمن أُهِّل لدورةٍ يجوز إسنادُه لأيّ شعبةٍ منها.
           </p>
 
           {quals.length === 0 ? (
@@ -198,7 +198,7 @@ export default function TrainerQualifications() {
               className="mt-4"
               icon={Award}
               titleAr="لا تأهيلَ بعد"
-              reasonAr="التأهيلُ يقع من الإدارة: تُطلبه شعبةٌ تحتاجك، أو يُمنح بعد مراجعة ملفّك. ولا تستطيع أن تؤهّل نفسك — وهذا مقصود."
+              reasonAr="تُؤهَّل تلقائيّا لكلّ دورةٍ ذكرتَ في طلبك أنّك تستطيع تدريسَها، وتضيف الإدارةُ فوقَها ما تراه. فإن كان طلبُك بلا دورةٍ من الكتالوج، فأخبرنا بما تُتقنه."
               actions={[{ to: "/trainer/board", labelAr: "شعبي", hintAr: "ما أُسند إليك فعلا" }]}
             />
           ) : (

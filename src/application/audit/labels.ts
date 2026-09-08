@@ -91,6 +91,7 @@ const PHRASES: Record<string, string> = {
   'term.plan_open': 'توزيعُ شعب الفصل وفتحُ ما استوفى',
   'term.calendar_publish': 'نشرُ تقويم الفصل',
   'trainer.qualify': 'تأهيلُ مدرّبٍ لدورة',
+  'trainer.qualify.auto': 'تأهيلُ مدرّبٍ تلقائيّا لما ذكره في طلبه',
   'trainer.suspend': 'إيقافُ مدرّب',
   'trainer.reinstate': 'رفعُ إيقافٍ عن مدرّب',
   'catalog.cohorts.open_all': 'تهيئةُ الشعب جملةً',

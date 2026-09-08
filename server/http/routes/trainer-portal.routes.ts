@@ -84,6 +84,8 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['trainer-portal'], summary: 'الدورات المؤهل لها مع عناوينها' },
   }, async (req) => {
     const profile = await changes.profileForUser(req.auth!.userId)
+    /* من اعتُمد قبل التأهيل التلقائيّ يلحق هنا — والنداءُ لا يكتب شيئا إن لم يكن ما يُضاف */
+    await review.syncQualificationsFromApplication(profile.id, null)
     const quals = await prisma.trainerCourseQualification.findMany({
       where: { profileId: profile.id, status: 'qualified' },
       include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },

@@ -34,7 +34,38 @@ export class EarningsService {
       else if (p.status === 'approved') summary.approved += Number(p.total)
       else if (p.status === 'paid') summary.paid += Number(p.total)
     }
-    return { payouts, summary }
+    /* ═══ والاتفاقُ نفسُه يُقرأ — كان الكشفُ وحدَه يصل ═══
+
+       كانت الصفحةُ تعرض ما قُبض وما يُنتظر، ولا تعرض **على أيّ أساس**: القاعدةُ
+       التي أكّدتها الإدارةُ تبقى في شاشة الإدارة، فيقرأ المدرّبُ رقما لا يعرف
+       من أين جاء. والاتفاقُ المسبقُ حقُّه أن يراه قبل أن يُحسب له شيء. */
+    const [agreement, rules] = await Promise.all([
+      this.activeRule(profile.id),
+      this.listRules(profile.id),
+    ])
+    return { payouts, summary, agreement, rules }
+  }
+
+  /* ═══ ملخّصُ كلّ مدرّبٍ في سطر — للإدارة ═══
+
+     «أكّدتُ التكلفةَ ولم يظهر اسمُهم ولا حالتُهم الماليّة»: كانت الشاشةُ
+     تعرض الكشوفَ (ولا كشفَ بعد) والقواعدَ (بلا مجاميع) — ولا موضعَ يقول عن
+     مدرّبٍ بعينه: هذه قاعدتُه، وهذا ما يُنتظر له وما اعتُمد وما دُفع. */
+  async trainerSummaries() {
+    const profiles = await this.listProfiles()
+    return Promise.all(profiles.map(async (p) => {
+      const [rule, payouts] = await Promise.all([
+        this.activeRule(p.id),
+        this.prisma.trainerPayout.findMany({ where: { profileId: p.id }, select: { status: true, total: true, currency: true } }),
+      ])
+      const sum = (st: string) => payouts.filter((x) => x.status === st).reduce((a, x) => a + Number(x.total), 0)
+      return {
+        ...p,
+        rule: rule ? { type: rule.type, rate: Number(rule.rate), currency: rule.currency, minSeats: rule.minSeats } : null,
+        pending: sum('pending'), approved: sum('approved'), paid: sum('paid'),
+        currency: payouts[0]?.currency ?? rule?.currency ?? LEDGER_CURRENCY,
+      }
+    }))
   }
 
   /* كل الكشوف للإدارة — مع اسم المدرب، بفلتر حالة اختياري */
@@ -55,12 +86,14 @@ export class EarningsService {
   /* قائمة ملفات المدربين النشطين — لنموذج إنشاء كشف جديد */
   async listProfiles() {
     const profiles = await this.prisma.trainerProfile.findMany({
-      where: { suspendedAt: null, application: { status: 'active' } },
-      include: { application: { select: { fullName: true, reference: true } } },
+      /* المعتمَدُ الذي لم يُفعَّل بعد يحتاج قاعدةً قبل أوّل شعبة — فلو قُصرت
+         القائمةُ على «نشط» غاب عنها من أكّدت الإدارةُ تكلفتَه للتوّ. */
+      where: { suspendedAt: null, application: { status: { in: ['active', 'onboarding', 'conditionally_approved', 'contract_pending'] } } },
+      include: { application: { select: { fullName: true, reference: true, status: true } } },
       orderBy: { createdAt: 'asc' },
     })
     return profiles.map((p) => ({
-      id: p.id, fullName: p.application.fullName, reference: p.application.reference,
+      id: p.id, fullName: p.application.fullName, reference: p.application.reference, status: p.application.status,
     }))
   }
 

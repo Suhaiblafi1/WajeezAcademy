@@ -457,6 +457,11 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   /* ── قواعد الأتعاب والتوليد التلقائي من الشعب المكتملة ── */
 
+  app.get('/api/admin/trainer-compensation/summary', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'كلُّ مدرّبٍ في سطر: قاعدتُه السارية وما يُنتظر له وما اعتُمد وما دُفع' },
+  }, async () => earnings.trainerSummaries())
+
   app.get('/api/admin/trainer-compensation-rules', {
     preHandler: requirePermission('trainer.compensation.manage'),
     schema: { tags: ['admin-trainers'], summary: 'قواعد أتعاب المدربين — كلها أو لمدرب محدد' },

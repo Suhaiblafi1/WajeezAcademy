@@ -1,7 +1,8 @@
 /* إنذار المتعثرين (ف-٢) — أسباب مقروءة لا درجة خطر.
    القاعدة معروضة أسفل القائمة دائما: المدرب يجب أن يعرف بأي معيار صُنّف طالبه. */
 
-import { AlertTriangle, Mail, ShieldCheck } from "lucide-react";
+import { Link } from "react-router";
+import { AlertTriangle, MessageSquare, ShieldCheck } from "lucide-react";
 import { RISK_RULE_AR, type AtRiskLearner } from "@/application/trainer/at-risk";
 
 import { Card, Inset } from "@/components/ui/Surface";
@@ -44,15 +45,15 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
                   ))}
                 </ul>
               </div>
-              {l.email && (
-                <a
-                  href={`mailto:${l.email}?subject=${encodeURIComponent(`متابعة تقدمك في ${l.cohortTitleAr}`)}`}
-                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold transition hover:border-teal/60 hover:text-teal-light-ink"
-                >
-                  <Mail className="h-3.5 w-3.5" aria-hidden="true" />
-                  تواصل معه
-                </a>
-              )}
+              {/* لا بريدَ ولا رقما: المدرّبُ يراسل من الشعبة، والمنصّةُ هي
+                  القناة — فالبريدُ ملكُ المتعلّم ولا يُعرض لغيره. */}
+              <Link
+                to="/trainer/board"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold transition hover:border-teal/60 hover:text-teal-light-ink"
+              >
+                <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+                راسله من الشعبة
+              </Link>
             </Card>
           ))}
         </ul>
