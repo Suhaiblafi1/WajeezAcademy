@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { safeGet, safeSet, safeRemove } from '@/services/safe-storage'
-import { Link } from 'react-router'
+import { Link, useNavigationType } from 'react-router'
 import {
   Sparkles, Compass, Route, BadgeCheck, Network, Target,
   FileCheck, Quote, ChevronDown, Menu, X, ArrowLeft,
@@ -725,7 +725,7 @@ function Faq() {
       <div className="shell">
         <div className="reveal text-center">
           <SectionLabel>أسئلة تصلنا كثيرا</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">قبل أن تسأل — أجبنا</h2>
+          <h2 className="mt-5 text-2xl font-bold md:text-3xl">قبل أن تسأل — أجبنا</h2>
         </div>
         {/* أربعةٌ هنا، وبقيّتُها في صفحتها.
 
@@ -733,15 +733,15 @@ function Faq() {
             — فمن بلغه قد قرأ ألفي كلمةٍ قبله. والأسئلةُ الشائعة صفحةٌ قائمة
             (`/p/faq`) تُفتح بنيّة السؤال، والرئيسيةُ تُمسح بنيّة القرار. فبقيت
             الأربعةُ الأولى ونزل الباقي إلى موضعه، برابطٍ صريحٍ إليه. */}
-        <div className="mt-12 space-y-3">
+        <div className="mt-9 space-y-2 md:mt-10">
           {faqs.slice(0, HOME_FAQ_COUNT).map((f, i) => (
-            <Card tone="accent" key={i} className="reveal overflow-hidden bg-card transition hover:border-teal/30" style={{ transitionDelay: `${i * 60}ms` }}>
+            <Card tone="accent" key={i} className="reveal overflow-hidden !p-0 bg-card transition hover:border-teal/30" style={{ transitionDelay: `${i * 60}ms` }}>
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
                 aria-controls={`faq-answer-${i}`}
                 id={`faq-question-${i}`}
-                className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-semibold"
+                className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-right text-sm font-semibold md:px-5 md:py-4 md:text-base"
               >
                 {f.q}
                 <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 text-teal-light-ink transition-transform duration-300 ${open === i ? 'rotate-180' : ''}`} />
@@ -753,7 +753,7 @@ function Faq() {
                 className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
               >
                 <div className="overflow-hidden">
-                  <p className="px-6 pb-6 leading-8 text-muted-foreground">{f.a}</p>
+                  <p className="px-4 pb-4 text-read leading-7 text-muted-foreground md:px-5 md:pb-5">{f.a}</p>
                 </div>
               </div>
             </Card>
@@ -763,13 +763,13 @@ function Faq() {
           {(() => {
             const i = faqs.length
             return (
-              <Card tone="accent" className="reveal overflow-hidden border-2 bg-gradient-to-l from-panel/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
+              <Card tone="accent" className="reveal overflow-hidden !p-0 border-2 bg-gradient-to-l from-panel/50 to-card transition hover:border-teal/70" style={{ transitionDelay: `${i * 60}ms` }}>
                 <button
                   onClick={() => setOpen(open === i ? null : i)}
                   aria-expanded={open === i}
                   aria-controls={`faq-answer-${i}`}
                   id={`faq-question-${i}`}
-                  className="flex w-full items-center justify-between gap-4 px-6 py-5 text-right font-semibold"
+                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-right text-sm font-semibold md:px-5 md:py-4 md:text-base"
                 >
                   <span className="flex items-center gap-2.5">
                     <Sparkles className="h-4.5 w-4.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
@@ -784,8 +784,8 @@ function Faq() {
                   className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
                 >
                   <div className="overflow-hidden">
-                    <div className="px-6 pb-6">
-                      <p className="leading-8 text-muted-foreground">
+                    <div className="px-4 pb-4 md:px-5 md:pb-5">
+                      <p className="text-read leading-7 text-muted-foreground">
                         توصية مبنية على منهجية، لا على التخمين: يحلل التشخيص الكامل ميولك وأهدافك وفجوات مهاراتك بأطر مهنية معروفة
                         (RIASEC وO*NET وESCO وDigComp)، وكل استنتاج مرتبط بإجابة قدّمتها — بلا صناديق سوداء، وبدرجة ثقة معلنة.
                         أما «مؤشر وجيز» على هذه الصفحة فسؤالان تمهيديّان عن علاقتك بالتعلّم، لا تحليل مهارات.
@@ -961,7 +961,7 @@ function Footer() {
   return (
     <footer className="border-t border-white/5 bg-surface3">
       <div className="shell py-9">
-        <div className="grid gap-x-6 gap-y-7 md:grid-cols-5">
+        <div className="grid gap-x-8 gap-y-7 md:grid-cols-3">
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5">
               <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 object-contain" />
@@ -989,25 +989,34 @@ function Footer() {
               ))}
             </div>
           </div>
-          {footerCols.map((col) => (
-            <div key={col.title}>
-              <div className="mb-2 flex items-center gap-1.5 text-sm font-bold">
-                <col.icon className="h-3.5 w-3.5 text-teal-ink" />
-                {col.title}
+          {/* أعمدةُ الروابط صارت صفوفا: خمسةُ أعمدةٍ رأسيّةٍ تصير على الهاتف
+              خمسَ قوائمَ متتاليةٍ فوق بعضها — نحوَ عشرين سطرا لا يقرؤها أحد.
+              فصفٌّ واحدٌ لكلّ مجموعة، وروابطُها جنبا إلى جنبٍ يفصلها «|» كي
+              يبين أنّها منفصلةٌ لا جملةٌ واحدة. */}
+          <div className="grid gap-x-8 gap-y-4 md:col-span-2 md:grid-cols-2">
+            {footerCols.map((col) => (
+              <div key={col.title}>
+                <div className="mb-1.5 flex items-center gap-1.5 text-sm font-bold">
+                  <col.icon className="h-3.5 w-3.5 text-teal-ink" />
+                  {col.title}
+                </div>
+                <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-read leading-6 text-muted-foreground">
+                  {col.links.map((l, i) => (
+                    <li key={l.label} className="flex items-center gap-x-2">
+                      {l.to.startsWith('#') ? (
+                        <a href={l.to} className="transition hover:text-teal-light-ink">{l.label}</a>
+                      ) : (
+                        <Link to={l.to} className="transition hover:text-teal-light-ink">{l.label}</Link>
+                      )}
+                      {i < col.links.length - 1 && (
+                        <span aria-hidden="true" className="select-none text-white/25">|</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-1 text-read leading-6 text-muted-foreground">
-                {col.links.map((l) => (
-                  <li key={l.label}>
-                    {l.to.startsWith('#') ? (
-                      <a href={l.to} className="transition hover:text-teal-light-ink">{l.label}</a>
-                    ) : (
-                      <Link to={l.to} className="transition hover:text-teal-light-ink">{l.label}</Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
         <div className="mt-7 flex flex-col items-center justify-between gap-2 border-t border-white/5 pt-5 text-xs text-muted-foreground md:flex-row">
           <div>© 2026 أكاديمية وجيز — جميع الحقوق محفوظة</div>
@@ -1112,13 +1121,34 @@ export default function Home() {
   useReveal()
   usePublishedContent()
   const topRef = useRef<HTMLDivElement>(null)
-  /* الوصول من صفحة داخلية مع مرساة (/#diagnostic): المتصفح يحاول التمرير قبل تركيب React،
-     فنمرّر للقسم المطلوب بعد التركيب */
+  const navType = useNavigationType()
+  /* ── الرئيسةُ تُفتح من أعلاها ──
+
+     كانت تُفتح عند المؤشّر على الهاتف، والسببُ مرساةٌ تعلق في العنوان: دعوةُ
+     الهيرو وشريطُ الهاتف الثابت كلاهما `href="#diagnostic"`. فمن ضغط إحداهما
+     مرّةً صار عنوانُه `‏/#diagnostic‏`، ومن فتح الموقعَ بعدها من تاريخه أو من
+     علامته المحفوظة هبط إلى المؤشّر رأسا — لا يرى الهيرو ولا يعرف أنّ فوقه
+     شيئا.
+
+     والمرساةُ تبقى تعمل حيث يُقصد بها الانتقال: `PUSH` هو نقرُ رابطٍ داخل
+     التطبيق (من `SiteShell` مثلا إلى `‏/#diagnostic‏`)، وذاك يُحترم. و`POP`
+     هو فتحٌ باردٌ أو رجوعٌ بالتاريخ — فيبدأ من الأعلى، ويُمسح الجزءُ من
+     العنوان كي لا يعود في الزيارة التالية.
+
+     ونقرُ «اعرف من أين تبدأ» داخل الصفحة لا يمرّ من هنا أصلا: هو رابطُ مرساةٍ
+     يتولّاه المتصفّح، فينزل كما كان. */
   useEffect(() => {
+    if (navType === 'POP') {
+      if (window.location.hash) {
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
+      window.scrollTo(0, 0)
+      return
+    }
     if (!window.location.hash) return
     const el = document.querySelector(window.location.hash)
     el?.scrollIntoView({ behavior: 'smooth' })
-  }, [])
+  }, [navType])
   return (
     <div ref={topRef} dir="rtl" className="min-h-screen bg-background text-foreground">
       <SeoHead
@@ -1132,8 +1162,11 @@ export default function Home() {
         {/* شبكةُ «أين أنت الآن؟» رُفعت من الرئيسة بقرار صاحب المنصّة
             (٧ سبتمبر ٢٠٢٦): أوّلُ سؤالِ التشخيص لا يُعرض هنا. والمكوّنُ باقٍ
             و`?stage=` ما زال يُقرأ في التشخيص — فرابطٌ يحمله يعمل كما كان. */}
-        <DiagnosticTeaser />
+        {/* «كيف تسير الرحلة» قبل المؤشّر بقرار صاحب المنصّة: كان الهيرو يسلّم
+            إلى التشخيص مباشرةً، فيقع سؤالٌ على الزائر قبل أن يعرف إلامَ يُفضي.
+            والخطواتُ الأربعُ تفصل بينهما وتُجيب «ثمّ ماذا؟» قبل أن تُسأل. */}
         <HowItWorks />
+        <DiagnosticTeaser />
         <Partners />
         <ProofBand />
         <Bestsellers />

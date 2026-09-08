@@ -37,13 +37,25 @@
 
 import type { ElementType, HTMLAttributes, ReactNode } from 'react'
 
-export type SurfaceTone = 'default' | 'accent' | 'positive' | 'warn' | 'danger'
+export type SurfaceTone = 'default' | 'solid' | 'accent' | 'positive' | 'warn' | 'danger'
 
 /* الأرضيّةُ والحدُّ لكلّ حالة. والفصلُ بين «تعبئة» و«حبر» مقصودٌ ومكتوبٌ في
    `index.css`: `teal` للحدّ والتعبئة، و`teal-ink` للنصّ. وخلطُهما يقلب سطحا
    هادئا إلى لوحةٍ ساطعة. */
 const TONE: Record<SurfaceTone, string> = {
   default: 'border-white/10 bg-white/[0.03]',
+  /* ═══ ولماذا نغمةٌ صلبةٌ أصلا ═══
+
+     أرضيّاتُ الأسطح كلُّها شفّافة، وهو الصوابُ لسطحٍ يجلس داخلَ حاضنه. لكنّ
+     ما **يطفو فوق** غيره — قائمةٌ منسدلةٌ فوق حقلٍ وسؤالٍ بعده — لا يجوز أن
+     يكون شفّافا: يُقرأ ما تحته من خلاله فيبدو مبعثرا، وأشدُّ ما يكون على
+     المظهر النهاريّ حيث `bg-black/20` تُغمّق الورقَ ولا تحجبه.
+
+     وكان الحلُّ المتداولُ إضافةَ `bg-surface` في `className`. وهي حيلةٌ لا
+     تثبت: الصنفان من فصيلةٍ واحدةٍ وأسبقيّةٍ واحدة، فالفائزُ منهما يقرّره
+     ترتيبُهما في ورقة الأنماط المولَّدة لا ترتيبُهما في الوسم. فالنغمةُ هنا
+     تحسمه مرّةً لكلّ من يطفو. */
+  solid: 'border-white/10 bg-surface',
   accent: 'border-teal/30 bg-teal/[0.06]',
   positive: 'border-emerald-400/25 bg-emerald-400/[0.05]',
   warn: 'border-gold/30 bg-gold/[0.05]',

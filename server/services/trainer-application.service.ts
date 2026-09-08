@@ -121,6 +121,7 @@ export interface Phase1Input {
   linkedinUrl?: string
   youtubeUrl?: string
   instagramUrl?: string
+  facebookUrl?: string
   hasAccreditation?: boolean
   accreditationDetails?: string
   targetCountries?: string[]
@@ -219,7 +220,7 @@ export class TrainerApplicationService {
       employmentStatus: input.employmentStatus, jobTitle: input.jobTitle,
       domainYears: input.domainYears, trainingYears: input.trainingYears,
       bio: input.bio, linkedinUrl: input.linkedinUrl,
-      youtubeUrl: input.youtubeUrl, instagramUrl: input.instagramUrl,
+      youtubeUrl: input.youtubeUrl, instagramUrl: input.instagramUrl, facebookUrl: input.facebookUrl,
       hasAccreditation: input.hasAccreditation, accreditationDetails: input.accreditationDetails,
       targetCountries: input.targetCountries ?? [], targetAudiences: input.targetAudiences ?? [],
       trainingLanguages: input.trainingLanguages, deliveryMode: input.deliveryMode,

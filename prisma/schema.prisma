@@ -918,6 +918,7 @@ model TrainerApplication {
   // حضور رقمي واعتماد — تساعد المراجعة الأكاديمية على التقييم
   youtubeUrl           String? // قناة أو فيديو تدريبي
   instagramUrl         String?
+  facebookUrl          String? // صفحةٌ مهنيّةٌ أو مجموعةُ تدريب
   hasAccreditation     Boolean? // اعتماد/ترخيص رسمي من جهة أو هيئة تدريب
   accreditationDetails String? // اسم الجهة ورقم الاعتماد إن وُجد
   targetCountries      String[]                      @default([]) // الدول التي يستهدفها بالتدريب

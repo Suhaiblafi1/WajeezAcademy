@@ -98,6 +98,14 @@ export const TARGET_AUDIENCES = [
 export const MISSING_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" } as const;
 export const CHAR_FORMS = { one: "حرف", two: "حرفان", few: "أحرف", many: "حرفا" } as const;
 export const DIGIT_FORMS = { one: "رقم", two: "رقمان", few: "أرقام", many: "رقما" } as const;
+export const WORD_FORMS = { one: "كلمة", two: "كلمتان", few: "كلمات", many: "كلمة" } as const;
+
+/* سقفُ النبذة بالكلمات — ستّون.
+
+   والنبذةُ ليست حقلا داخليّا: هي ما يُعرض في بطاقة المدرّب على صفحةٍ عامّة،
+   يقرؤه من يفكّر في التسجيل قبل أن يسجّل. فالسقفُ حمايةٌ للقارئ لا للقاعدة —
+   والقاعدةُ تقبل ٢٠٠٠ حرفٍ وتبقى كما هي، لأنّ الطلباتِ القائمةَ كُتبت قبله. */
+export const BIO_MAX_WORDS = 60;
 
 /* أقصرُ رقمِ جوّالٍ مقبول — ستّةُ أرقامٍ بلا رمز الدولة.
 
