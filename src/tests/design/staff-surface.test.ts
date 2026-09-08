@@ -31,6 +31,10 @@ function walk(dir: string, out: string[] = []): string[] {
   return out
 }
 
+/* التعليقاتُ تشرح فتذكر الأسماء — والفحصُ على الشيفرة لا على شرحها.
+   (وهي القاعدةُ نفسُها التي يعمل بها `one-primary-per-screen`.) */
+const strip = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+
 const SCREENS = [...walk('src/pages'), ...walk('src/components')]
 
 /* ═══ من هي «شاشةُ الفريق»؟ — تُشتقّ كما تُشتقّ شاشةُ المتعلّم ═══
@@ -332,33 +336,53 @@ describe('بطاقةُ الشعبة · كلُّ قسمٍ في لسانه', () =>
    فيلزمها ما يُبلَغ به صفٌّ بعينه: `ListToolbar` أو `matchesQuery`.
 
    والمستثنى يُسمّى واحدا واحدا بسببه — لا يُعَدّ عدًّا. */
-describe('طوابيرُ الإدارة · لا قائمةَ تطول بلا وسيلةِ وصول', () => {
+describe('طوابيرُ الفريق · لا قائمةَ تطول بلا وسيلةِ وصول', () => {
   /* لكلٍّ سببُه، ونوعُه لا رأيُنا فيه:
 
-     لوحةٌ لا قائمة      · AdminDashboard  — أرقامٌ ومداخل، لا صفوفٌ تُبحث
-     تفصيلُ كيانٍ واحد   · CohortOps · CohortWizard · TrainerOps
+     لوحةٌ لا قائمة      · AdminDashboard · TrainerDashboard — أرقامٌ ومداخل
+     تفصيلُ كيانٍ واحد   · CohortOps · CohortWizard · TrainerOps · RequestsPanel
+                          (طلباتُ حالةٍ واحدةٍ بعينها، لا طابورُ حالات)
      مجموعةٌ محدودة      · Notifications (قوالبُ الإشعارات) · Reports (تعاريفُ التقارير)
-     تشخيصٌ فنّيّ محدود  · DiagnosticQuality — شخصيّاتُ آخرِ جولةٍ وعددُها ثابت */
+                          · Qualifications (دوراتُ مدرّبٍ واحدٍ يؤهَّل لها)
+     تشخيصٌ فنّيّ محدود  · DiagnosticQuality — شخصيّاتُ آخرِ جولةٍ وعددُها ثابت
+     له وسيلةُ وصولٍ أخرى · CohortBoard (شعبُ مدرّبٍ معدودةٌ، وكلٌّ تُطوى)
+                          · Schedule (تقويمٌ مجموعٌ باليوم — واليومُ هو الفهرس)
+
+     ⚠️ والاستثناءُ يُسمّى واحدا واحدا بسببه، ولا يُعَدّ عدًّا: قائمةٌ تُضاف
+     بعد اليوم تُحاسَب ما لم يُكتب لها سبب. */
   const EXEMPT = new Set([
     'AdminDashboard', 'CohortOps', 'CohortWizard', 'TrainerOps',
     'Notifications', 'Reports', 'DiagnosticQuality',
+    'TrainerDashboard', 'CohortBoard', 'Schedule', 'Qualifications', 'RequestsPanel',
   ])
 
-  const screens = readdirSync(join(root, 'src/pages/admin'))
+  /* ولا تُقاس لوحةُ الإدارة وحدَها: المدرّبُ والمستشارُ يقرآن طوابيرَ تطول
+     كما يقرؤها الإداريّ — وطابورُ التصحيح ينمو بأسرعَ منها كلِّها. */
+  const DIRS = ['src/pages/admin', 'src/pages/trainer', 'src/pages/advisor']
+
+  const screens = DIRS.flatMap((dir) => readdirSync(join(root, dir))
     .filter((f) => f.endsWith('.tsx'))
-    .map((f) => ({ name: f.replace(/\.tsx$/, ''), src: readFileSync(join(root, 'src/pages/admin', f), 'utf8') }))
+    .map((f) => ({ name: f.replace(/\.tsx$/, ''), src: readFileSync(join(root, dir, f), 'utf8') })))
     /* تقرأ مصفوفةً من الخادم = تعرض قائمةً تنمو */
     .filter((x) => /apiGet<[A-Za-z]+\[\]>/.test(x.src))
 
-  it('المسحُ يجد الطوابيرَ فعلا — فلا يمرّ بصفرٍ كاذب', () => {
-    expect(screens.length, 'تعطّل المسحُ نفسُه').toBeGreaterThan(15)
-    expect(screens.map((x) => x.name)).toContain('AdvisorRequests')
+  it('المسحُ يجد الطوابيرَ فعلا في الأدوار الثلاثة — فلا يمرّ بصفرٍ كاذب', () => {
+    expect(screens.length, 'تعطّل المسحُ نفسُه').toBeGreaterThan(20)
+    for (const name of ['AdvisorRequests', 'GradingQueue', 'Cases']) {
+      expect(screens.map((x) => x.name), `غاب عن المسح: ${name}`).toContain(name)
+    }
   })
 
   it('كلُّ طابورٍ يُبحث فيه — أو يُسمّى في المستثنى بسببه', () => {
     const bare = screens
       .filter((x) => !EXEMPT.has(x.name))
-      .filter((x) => !/matchesQuery|ListToolbar/.test(x.src))
+      /* ⚠️ كان الفحصُ على ورودِ الاسم في الملفّ — أيًّا كان موضعُه. ونُقض
+         فمرّ: نُزع سطرُ الاستيراد وبقي النداءُ، فبقي الاسمُ فبقي الحارسُ
+         أخضر. بل كان تعليقٌ فيه «TODO: أضف matchesQuery» يكفي لإخضراره.
+
+         فصار على **البنية**: نداءٌ فعليٌّ `matchesQuery(` أو عنصرٌ مصيَّرٌ
+         `<ListToolbar` — بعد نزع التعليقات، كما يفعل حارسُ الذهبيّ. */
+      .filter((x) => !/matchesQuery\s*\(|<ListToolbar/.test(strip(x.src)))
       .map((x) => x.name)
     expect(
       bare,

@@ -7,6 +7,7 @@ import MeasurementCoverage from "@/components/MeasurementCoverage";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 type PersonaResult = {
   persona: string; questions?: number; kind: string; top: string | null; tpl: string | null; conf?: number; match: boolean
 };
@@ -180,9 +181,9 @@ export default function DiagnosticQuality() {
         )}
       </section>
 
-      <button onClick={() => void refresh()} className="mt-6 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-        <RefreshCw className="h-3.5 w-3.5" /> تحديث
-      </button>
+      <Button tone="ghost" size="sm" icon={RefreshCw} className="mt-6 px-0" onClick={() => void refresh()}>
+        تحديث
+      </Button>
     </AdminLayout>
   );
 }
