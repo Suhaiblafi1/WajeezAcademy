@@ -26,6 +26,8 @@ import {
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import SwitchCohort from "@/components/SwitchCohort";
 import CourseCertificate from "@/components/journey/CourseCertificate";
+import SessionEmbed from "@/components/journey/SessionEmbed";
+import { readUserName } from "@/services/auth";
 import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks } from "@/application/content/module-checks";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
@@ -389,6 +391,8 @@ function Lessons({
 /* ─────────── الجلسات ─────────── */
 
 function Sessions({ detail }: { detail: EnrollmentDetail }) {
+  /* قبل الخروج المبكّر: خطّافٌ بعد `return` يكسر ترتيبَ الخطّافات */
+  const [openHere, setOpenHere] = useState<string | null>(null);
   if (detail.cohort.sessions.length === 0) {
     return <p className="text-read leading-6 text-muted-foreground">لم تُجدول جلسات هذه الشعبة بعد — تظهر هنا بمواعيدها فور جدولتها.</p>;
   }
@@ -424,11 +428,33 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
                   <Video className="h-3 w-3" /> ادخل الجلسة
                 </a>
               )}
+              {/* «هنا» إضافةٌ هادئةٌ بجانب الفعل لا بديلٌ عنه: من ضغطها بقيَ في
+                  صفحته، ومن لم يضغطها فتطبيقُ Zoom كما كان. ولا تظهر لجلسةٍ
+                  بلا رقمِ اجتماعٍ لأنّ التضمينَ يحتاج الرقمَ لا الرابط. */}
+              {s.zoom?.meetingId && (
+                <Button
+                  tone="secondary"
+                  size="sm"
+                  icon={Video}
+                  onClick={() => setOpenHere((cur) => (cur === s.id ? null : s.id))}
+                  aria-expanded={openHere === s.id}
+                  className="min-h-9 shrink-0"
+                >
+                  {openHere === s.id ? "أغلِق هنا" : "افتح هنا"}
+                </Button>
+              )}
             </div>
             {s.zoom?.passcode && (
               <p className="mt-2 text-read text-muted-foreground">
                 رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span>
               </p>
+            )}
+            {openHere === s.id && (
+              <SessionEmbed
+                sessionId={s.id}
+                userName={readUserName() ?? "متعلم وجيز"}
+                onClose={() => setOpenHere(null)}
+              />
             )}
           </Card>
         );

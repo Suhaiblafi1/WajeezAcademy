@@ -112,6 +112,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      الشعب ما دامت لم تبدأ بالفعل». والقيدان يُطبَّقان في الخدمة:
      الدورةُ نفسُها (فلا يصير التبديلُ بابا خلفيّا لتغيير المسار)، وقبل
      البدء (وقبل أيّ أثرٍ في الشعبة المغادَرة). */
+  /* تذكرةُ فتحِ الجلسة داخلَ الموقع.
+
+     `learner.portal` تفتح البابَ، والخدمةُ تقرّر الدور: مدرّبُ الشعبة مضيف
+     ومتعلّمُها المسجَّل مشارك، ومن سواهما يُردّ ٤٠٣. ولا يُقبل دورٌ من الجسم.
+
+     وهي POST لا GET بقصد: التوقيعُ سرٌّ قصيرُ العمر، وGET يستقرّ في سجلّات
+     الوسطاء وتاريخِ المتصفّح. */
+  app.post('/api/learner/sessions/:sessionId/meeting-ticket', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'تذكرةُ Meeting SDK لفتح جلسة شعبتي داخل الموقع' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    return cohorts.meetingSdkTicket(req.auth!.userId, sessionId)
+  })
+
   app.post('/api/learner/enrollments/:id/switch-cohort', {
     preHandler: requirePermission('learner.portal'),
     schema: { tags: ['learner-portal'], summary: 'تبديل شعبتي إلى شعبةٍ أخرى من الدورة نفسها لم تبدأ بعد' },
