@@ -16,13 +16,13 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
           <AlertTriangle className="h-4 w-4 text-gold-ink" aria-hidden="true" />
           من يحتاج تدخلك
           {learners.length > 0 && (
-            <span className="rounded-full bg-gold/15 px-2 py-0.5 text-micro tabular-nums text-gold-ink">{learners.length}</span>
+            <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{learners.length}</span>
           )}
         </h2>
       </div>
 
       {learners.length === 0 ? (
-        <Inset as="p" className="mt-4 flex items-center justify-center gap-2 px-4 py-6 text-center text-xs text-muted-foreground">
+        <Inset as="p" className="mt-4 flex items-center justify-center gap-2 px-4 py-6 text-center text-read text-muted-foreground">
           <ShieldCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
           لا متعثر بالمعايير أدناه — الحضور والتسليمات في نطاقها المتوقع.
         </Inset>
@@ -31,13 +31,13 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
           {learners.map((l) => (
             <Card as="li" tone="warn" key={l.enrollmentId} className="flex flex-wrap items-start gap-3 px-4 py-3">
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-bold">{l.nameAr}</p>
-                <p className="mt-0.5 truncate text-micro text-muted-foreground">{l.cohortTitleAr}</p>
+                <p className="text-read font-bold">{l.nameAr}</p>
+                <p className="mt-0.5 truncate text-read text-muted-foreground">{l.cohortTitleAr}</p>
                 <ul className="mt-1.5 flex flex-wrap gap-1.5">
                   {l.reasons.map((r) => (
                     <li
                       key={r.kind}
-                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-micro leading-5 text-foreground"
+                      className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-fine leading-5 text-foreground"
                     >
                       {r.textAr}
                     </li>
@@ -58,7 +58,7 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
         </ul>
       )}
 
-      <Inset as="p" className="mt-4 px-4 py-3 text-micro leading-relaxed text-muted-foreground">
+      <Inset as="p" className="mt-4 px-4 py-3 text-read leading-relaxed text-muted-foreground">
         {RISK_RULE_AR}
       </Inset>
     </section>

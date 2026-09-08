@@ -78,7 +78,7 @@ export default function RatingModeration() {
     <AdminLayout title="مراجعة تعليقات التقييم">
       <Card tone="accent" className="mb-5 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-xs leading-6 text-foreground">
+        <p className="text-read leading-6 text-foreground">
           قرارك هنا يحكم <span className="font-black text-foreground">التعليق المكتوب</span> وحده:
           يُنشر علنا أو يُحجب. <span className="font-black text-foreground">الدرجة تدخل المعدّل في كل الأحوال</span> —
           فالرقم المعلَن يبقى قياسا لا اختيارا. والقائمة تصلك بلا اسم المُقيِّم عمدا: الحكم على النصّ.
@@ -121,7 +121,7 @@ export default function RatingModeration() {
         <ul className="space-y-3">
           {rows.map((r) => (
             <Card as="li" key={r.id}>
-              <div className="flex flex-wrap items-center gap-2 text-micro">
+              <div className="flex flex-wrap items-center gap-2 text-fine">
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-muted-foreground">{KIND_AR[r.subjectType]}</span>
                 <span className="font-black text-gold">{r.score} ★</span>
                 {r.subjectNameAr
@@ -130,7 +130,7 @@ export default function RatingModeration() {
               </div>
               <p className="mt-3 text-sm leading-7 text-foreground">{r.commentAr}</p>
               {r.moderationReason && (
-                <p className="mt-2 text-micro text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
+                <p className="mt-2 text-read text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
               )}
               {r.publishStatus === "pending" && (
                 <div className="mt-4 flex flex-wrap gap-2">

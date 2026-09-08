@@ -98,7 +98,7 @@ export default function Advisors() {
 
   return (
     <AdminLayout title="المستشارون — العمولة وشروط العمل">
-      <p className="mb-5 max-w-2xl text-xs leading-6 text-muted-foreground">
+      <p className="mb-5 max-w-2xl text-read leading-6 text-muted-foreground">
         نسبةُ العمولة تُكتب هنا لا تُتذكَّر، ويُسجَّل كلُّ تغييرٍ فيها بصاحبه ووقته والرقمين معا.
         وإسنادُ الحالات من «حالات بلا مستشار»، والبتُّ في طلبات الخصم من «طلبات المستشارين».
       </p>
@@ -128,16 +128,16 @@ export default function Advisors() {
                     <div>
                       <p className="font-black">
                         {r.displayName || "—"}
-                        <span className="mr-2 text-micro font-normal text-muted-foreground" dir="ltr">{r.email}</span>
+                        <span className="mr-2 text-fine font-normal text-muted-foreground" dir="ltr">{r.email}</span>
                       </p>
-                      <p className="mt-1 flex flex-wrap items-center gap-2 text-micro text-muted-foreground">
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-read text-muted-foreground">
                         <span className={`rounded-full border px-2.5 py-0.5 font-bold ${r.commissionPct === null ? "border-white/20 text-muted-foreground" : "border-gold/45 text-gold-ink"}`}>
                           {r.commissionPct === null ? "لم تُتّفق العمولة بعد" : `عمولة ${r.commissionPct}%`}
                         </span>
                         <span>{r.activeCases} حالةً مسندة</span>
                         {r.status !== "active" && <span className="text-red-400">موقوف</span>}
                       </p>
-                      {r.notesAr && <p className="mt-1.5 text-micro leading-6 text-muted-foreground">{r.notesAr}</p>}
+                      {r.notesAr && <p className="mt-1.5 text-read leading-6 text-muted-foreground">{r.notesAr}</p>}
                     </div>
                     <div className="flex shrink-0 gap-2">
                       <Button tone="secondary" size="sm" onClick={() => void toggleDetail(r.userId)}>
@@ -158,7 +158,7 @@ export default function Advisors() {
                         <div className="grid place-items-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" /></div>
                       ) : !detail ? null : (
                         <div className="space-y-4">
-                          <div className="flex flex-wrap gap-4 text-micro">
+                          <div className="flex flex-wrap gap-4 text-fine">
                             <span className="text-muted-foreground">
                               إيراد العملاء المحوَّلين: <b className="text-foreground">{fmtMoney(detail.revenueFromReferrals, detail.currency)}</b>
                             </span>
@@ -174,13 +174,13 @@ export default function Advisors() {
                           </div>
 
                           <div>
-                            <p className="mb-1.5 text-micro font-black text-muted-foreground">الحالات المسندة ({detail.cases.length})</p>
+                            <p className="mb-1.5 text-read font-black text-muted-foreground">الحالات المسندة ({detail.cases.length})</p>
                             {detail.cases.length === 0 ? (
-                              <p className="text-micro text-muted-foreground">لا حالات مسندة له حاليا.</p>
+                              <p className="text-read text-muted-foreground">لا حالات مسندة له حاليا.</p>
                             ) : (
                               <ul className="space-y-1">
                                 {detail.cases.map((c) => (
-                                  <li key={c.caseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-micro">
+                                  <li key={c.caseId} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-read">
                                     <span>{c.clientName} {c.clientEmail && <span dir="ltr" className="text-muted-foreground">— {c.clientEmail}</span>}</span>
                                     <span className="text-muted-foreground">{c.status} · {fmtDate(new Date(c.assignedAt))}</span>
                                   </li>
@@ -190,13 +190,13 @@ export default function Advisors() {
                           </div>
 
                           <div>
-                            <p className="mb-1.5 text-micro font-black text-muted-foreground">طلباته ({detail.requests.length})</p>
+                            <p className="mb-1.5 text-read font-black text-muted-foreground">طلباته ({detail.requests.length})</p>
                             {detail.requests.length === 0 ? (
-                              <p className="text-micro text-muted-foreground">لم يرفع أي طلب خصم أو تعديل خطّة بعد.</p>
+                              <p className="text-read text-muted-foreground">لم يرفع أي طلب خصم أو تعديل خطّة بعد.</p>
                             ) : (
                               <ul className="space-y-1">
                                 {detail.requests.map((req) => (
-                                  <li key={req.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-micro">
+                                  <li key={req.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/8 bg-white/[0.02] px-3 py-1.5 text-read">
                                     <span>{REQUEST_KIND_AR[req.kind] ?? req.kind} — {req.reasonAr}</span>
                                     <span className="text-muted-foreground">{REQUEST_STATUS_AR[req.status] ?? req.status} · {fmtDate(new Date(req.createdAt))}</span>
                                   </li>
@@ -211,14 +211,14 @@ export default function Advisors() {
 
                   {editing === r.userId && (
                     <Inset tone="warn" className="mt-4 grid gap-3 sm:grid-cols-[8rem_1fr_auto]">
-                      <label className="text-micro text-muted-foreground">
+                      <label className="text-fine text-muted-foreground">
                         النسبة %
                         <input type="number" min={0} max={100} step={0.5} value={form.commissionPct}
                           onChange={(e) => setForm({ ...form, commissionPct: e.target.value })}
                           aria-label="نسبة العمولة"
                           className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground focus:border-gold focus:outline-none" />
                       </label>
-                      <label className="text-micro text-muted-foreground">
+                      <label className="text-fine text-muted-foreground">
                         ملاحظة (اختيارية)
                         <input value={form.notesAr} onChange={(e) => setForm({ ...form, notesAr: e.target.value })}
                           placeholder="شرطٌ أو استثناءٌ متّفقٌ عليه"

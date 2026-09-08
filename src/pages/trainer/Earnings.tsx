@@ -59,15 +59,15 @@ function RealEarningsView() {
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
       <div className="grid grid-cols-3 gap-4">
         <Card tone="warn">
-          <p className="text-xs text-gold-ink">بانتظار الاعتماد</p>
+          <p className="text-read text-gold-ink">بانتظار الاعتماد</p>
           <p className="mt-2 text-2xl font-black text-gold-ink">{fmt(summary.pending)} <span className="text-xs">{summary.currency}</span></p>
         </Card>
         <Card tone="accent">
-          <p className="text-xs text-teal-light-ink">معتمدة للصرف</p>
+          <p className="text-read text-teal-light-ink">معتمدة للصرف</p>
           <p className="mt-2 text-2xl font-black text-teal-light-ink">{fmt(summary.approved)} <span className="text-xs">{summary.currency}</span></p>
         </Card>
         <Card>
-          <p className="text-xs text-muted-foreground">مدفوعة</p>
+          <p className="text-read text-muted-foreground">مدفوعة</p>
           <p className="mt-2 text-2xl font-black text-foreground">{fmt(summary.paid)} <span className="text-xs">{summary.currency}</span></p>
         </Card>
       </div>
@@ -88,18 +88,18 @@ function RealEarningsView() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">كشف فترة <span dir="ltr" className="font-mono text-sm">{p.period}</span></p>
-                  {p.paidAt && <p className="mt-0.5 text-micro text-muted-foreground">صُرف {fmtDateAr(p.paidAt)}</p>}
+                  {p.paidAt && <p className="mt-0.5 text-read text-muted-foreground">صُرف {fmtDateAr(p.paidAt)}</p>}
                 </div>
                 <div className="text-left">
                   <p className="text-xl font-black">{fmt(p.total)} <span className="text-xs text-muted-foreground">{p.currency}</span></p>
-                  <p className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-micro font-bold ${meta.cls}`}>
+                  <p className={`mt-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta.cls}`}>
                     <meta.icon className="h-3 w-3" /> {meta.label}
                   </p>
                 </div>
               </div>
               <ul className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
                 {p.items.map((i) => (
-                  <li key={i.id} className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                  <li key={i.id} className="flex items-center justify-between gap-3 text-read text-muted-foreground">
                     <span>{i.description}</span>
                     <span dir="ltr" className="font-mono font-bold text-foreground">{fmt(i.amount)} {p.currency}</span>
                   </li>
@@ -110,7 +110,7 @@ function RealEarningsView() {
         })}
       </div>
 
-      <Card as="p" className="mt-8 px-5 py-4 text-center text-micro leading-6 text-muted-foreground">
+      <Card as="p" className="mt-8 px-5 py-4 text-center text-read leading-6 text-muted-foreground">
         الكشف يمر بثلاث مراحل: إنشاء من الإدارة المالية ← اعتماد ← صرف. كل بند مرتبط بمصدره لمنع الازدواج —
         ولأي استفسار عن بند تواصل مع منسقك قبل موعد الصرف.
       </Card>

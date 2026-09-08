@@ -107,25 +107,25 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
             aria-label={conf.placeholder}
             className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/75 focus:outline-none"
           />
-          <kbd className="rounded-md border border-white/15 px-2 py-0.5 text-micro text-muted-foreground">Esc</kbd>
+          <kbd className="rounded-md border border-white/15 px-2 py-0.5 text-fine text-muted-foreground">Esc</kbd>
         </div>
 
         <div className="max-h-[55vh] overflow-y-auto p-2">
           {q.trim() === "" && (
-            <p className="px-4 py-8 text-center text-xs leading-6 text-muted-foreground">
+            <p className="px-4 py-8 text-center text-read leading-6 text-muted-foreground">
               {conf.emptyHint}<br />الأسهم ↑↓ للتنقل و Enter للقفز
             </p>
           )}
-          {searching && <p className="px-4 py-6 text-center text-xs text-muted-foreground">يُبحث…</p>}
+          {searching && <p className="px-4 py-6 text-center text-read text-muted-foreground">يُبحث…</p>}
           {!searching && groups && flat.length === 0 && (
-            <p className="px-4 py-8 text-center text-xs text-muted-foreground">لا نتائج لـ «{q}» ضمن نطاقك</p>
+            <p className="px-4 py-8 text-center text-read text-muted-foreground">لا نتائج لـ «{q}» ضمن نطاقك</p>
           )}
           {groups && conf.groups.map((g) => {
             const hits = groups[g.key] ?? [];
             if (hits.length === 0) return null;
             return (
               <div key={g.key} className="mb-1">
-                <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-micro font-black text-muted-foreground">
+                <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-read font-black text-muted-foreground">
                   <g.icon className="h-3 w-3" /> {g.label}
                 </p>
                 {hits.map((h) => {
@@ -142,9 +142,9 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-xs font-black text-foreground">{h.title}</span>
-                        <span className="block truncate text-micro text-muted-foreground">{h.sub}</span>
+                        <span className="block truncate text-fine text-muted-foreground">{h.sub}</span>
                       </span>
-                      <span className="shrink-0 text-micro font-bold text-teal-light-ink">Enter ↵</span>
+                      <span className="shrink-0 text-fine font-bold text-teal-light-ink">Enter ↵</span>
                     </button>
                   );
                 })}

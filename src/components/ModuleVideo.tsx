@@ -42,7 +42,7 @@ export default function ModuleVideo({
           <ListVideo className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           فيديو الوحدة
           {video.chapters.length > 0 && (
-            <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-micro tabular-nums text-teal-light-ink">
+            <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">
               {video.chapters.length} فصول
             </span>
           )}
@@ -51,7 +51,7 @@ export default function ModuleVideo({
           href={video.url}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-micro font-bold text-teal-light-ink hover:underline"
+          className="inline-flex items-center gap-1.5 text-fine font-bold text-teal-light-ink hover:underline"
         >
           افتحه في تبويب جديد
           <ExternalLink className="h-3 w-3" aria-hidden="true" />
@@ -87,14 +87,14 @@ export default function ModuleVideo({
                   >
                     <PlayCircle className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate font-bold">{ch.titleAr}</span>
-                    <span dir="ltr" className="shrink-0 font-mono text-micro tabular-nums text-muted-foreground">{ch.atAr}</span>
+                    <span dir="ltr" className="shrink-0 font-mono text-fine tabular-nums text-muted-foreground">{ch.atAr}</span>
                   </button>
                   {check && (
                     <button
                       type="button"
                       onClick={() => setOpenCheck(open ? null : no)}
                       aria-expanded={open}
-                      className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-micro font-bold transition ${
+                      className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 text-fine font-bold transition ${
                         open ? "border-teal/60 text-teal-light-ink" : "border-gold/40 text-gold-ink hover:border-gold/70"
                       }`}
                     >
@@ -124,7 +124,7 @@ export default function ModuleVideo({
         </ol>
       )}
 
-      <p className="mt-4 text-micro leading-relaxed text-muted-foreground">
+      <p className="mt-4 text-fine leading-relaxed text-muted-foreground">
         الفصول تفتح الفيديو من موضعها. ولا نقيس مشاهدتك — التفتيش بعد كل فصل هو ما يثبّت ما شاهدته.
       </p>
     </section>

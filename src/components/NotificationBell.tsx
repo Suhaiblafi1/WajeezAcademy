@@ -90,7 +90,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
         aria-label={`الإشعارات — ${unread} غير مقروءة`} className="relative grid h-9 w-9 place-items-center bg-white/[0.03]">
         <Bell className="h-4 w-4" />
         {unread > 0 && (
-          <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-micro font-black text-on-gold">
+          <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-fine font-black text-on-gold">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -99,17 +99,17 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       {open && (
         <Inset className="absolute left-0 top-11 z-50 w-80 overflow-hidden bg-surface shadow-2xl shadow-black/60 sm:w-96">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
-            <p className="text-xs font-black">الإشعارات</p>
+            <p className="text-read font-black">الإشعارات</p>
             {items && items.some((n) => n.status === "sent") && (
               <button onClick={() => void markAll()}
-                className="flex cursor-pointer items-center gap-1 text-micro font-bold text-teal-light-ink hover:text-foreground">
+                className="flex cursor-pointer items-center gap-1 text-fine font-bold text-teal-light-ink hover:text-foreground">
                 <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
               </button>
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {items === null && <p className="p-6 text-center text-xs text-muted-foreground">يُحمَّل…</p>}
-            {items?.length === 0 && <p className="p-6 text-center text-xs text-muted-foreground">لا إشعارات بعد — تصلك هنا مستحقاتك وشعبك فور حدوثها.</p>}
+            {items === null && <p className="p-6 text-center text-read text-muted-foreground">يُحمَّل…</p>}
+            {items?.length === 0 && <p className="p-6 text-center text-read text-muted-foreground">لا إشعارات بعد — تصلك هنا مستحقاتك وشعبك فور حدوثها.</p>}
             {items?.map((n) => (
               <button
                 key={n.id}
@@ -118,12 +118,12 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                   n.status === "sent" ? "bg-teal/[0.06]" : ""
                 }`}
               >
-                <p className="flex items-center gap-2 text-xs font-black">
+                <p className="flex items-center gap-2 text-read font-black">
                   {n.status === "sent" && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />}
                   {n.title}
                 </p>
-                <p className="mt-1 text-micro leading-5 text-muted-foreground">{n.body}</p>
-                <p className="mt-1 text-micro text-muted-foreground">
+                <p className="mt-1 text-read leading-5 text-muted-foreground">{n.body}</p>
+                <p className="mt-1 text-read text-muted-foreground">
                   {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
                 </p>
               </button>

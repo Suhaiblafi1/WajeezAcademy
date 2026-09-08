@@ -36,7 +36,7 @@ interface Readiness {
 const inputCls = "w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none focus:border-gold/60";
 
 const CHIP = (on: boolean) =>
-  `cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition ${
+  `cursor-pointer rounded-full border px-3 py-1 text-fine font-bold transition ${
     on ? "border-gold bg-gold/15 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"
   }`;
 
@@ -116,7 +116,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           return (
             <li key={s.key} className="flex items-center gap-2">
               {i > 0 && <ArrowLeft className="h-3 w-3 text-muted-foreground/50" aria-hidden="true" />}
-              <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-micro font-bold ${
+              <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-fine font-bold ${
                 now ? "border-gold bg-gold/15 text-gold-ink"
                   : done ? "border-emerald-400/40 text-emerald-300"
                   : "border-white/12 text-muted-foreground"
@@ -128,7 +128,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           );
         })}
       </ol>
-      <p className="mb-4 text-micro text-muted-foreground">{WIZARD_STEPS[step].hintAr}</p>
+      <p className="mb-4 text-read text-muted-foreground">{WIZARD_STEPS[step].hintAr}</p>
 
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
@@ -151,7 +151,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {/* ٢ · الدورات */}
       {key === "courses" && (
         <>
-          <p className="mb-2 text-xs font-black text-foreground">دورات المسار ({d.courseIds.length}) — بالترتيب الذي تختاره به</p>
+          <p className="mb-2 text-read font-black text-foreground">دورات المسار ({d.courseIds.length}) — بالترتيب الذي تختاره به</p>
           <div className="flex max-h-72 flex-wrap gap-2 overflow-y-auto">
             {courses.map((c) => (
               <button key={c.id} type="button" onClick={() => setD({ ...d, courseIds: toggle(d.courseIds, c.id) })}
@@ -160,7 +160,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
                 {c.title} <span className="font-mono text-muted-foreground" dir="ltr">({c.id})</span>
               </button>
             ))}
-            {courses.length === 0 && <span className="text-micro text-muted-foreground">أنشئ دورات أولا من نموذج الدورة.</span>}
+            {courses.length === 0 && <span className="text-fine text-muted-foreground">أنشئ دورات أولا من نموذج الدورة.</span>}
           </div>
         </>
       )}
@@ -169,8 +169,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {key === "profile" && (
         <div className="space-y-5">
           <div>
-            <p className="mb-1 text-xs font-black text-foreground">الشخصيات ({d.personas.length}) — إلزامي</p>
-            <p className="mb-2 text-micro leading-6 text-muted-foreground">
+            <p className="mb-1 text-read font-black text-foreground">الشخصيات ({d.personas.length}) — إلزامي</p>
+            <p className="mb-2 text-read leading-6 text-muted-foreground">
               الشخصية تفتح المراحل المهنية التي يُرشَّح لها المسار. والفراغ لا يعني «الكل بحذر» — يعني أن المسار
               يطابق كل شخصية بلا قيد، فينافس من لا يناسبه.
             </p>
@@ -183,7 +183,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
               ))}
             </div>
             {stages.length > 0 && (
-              <Inset as="p" className="mt-2 px-3 py-2 text-micro leading-6 text-foreground">
+              <Inset as="p" className="mt-2 px-3 py-2 text-read leading-6 text-foreground">
                 <Target className="mb-0.5 me-1 inline h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
                 يفتح {stages.length} مرحلة مهنية: <span dir="ltr" className="font-mono">{stages.join(" · ")}</span>
               </Inset>
@@ -191,8 +191,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </div>
 
           <div>
-            <p className="mb-1 text-xs font-black text-foreground">الأهداف ({d.goals.length}) — إلزامي</p>
-            <p className="mb-2 text-micro leading-6 text-muted-foreground">
+            <p className="mb-1 text-read font-black text-foreground">الأهداف ({d.goals.length}) — إلزامي</p>
+            <p className="mb-2 text-read leading-6 text-muted-foreground">
               الأهداف المعروضة هي ما يستطيع تدفق التشخيص إنتاجه فعلا — مشتقة من المحرك لا مكتوبة يدويا.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -204,7 +204,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
               ))}
             </div>
             {unreachable.length > 0 && (
-              <Inset as="p" tone="warn" className="mt-2 flex items-start gap-2 px-3 py-2 text-micro leading-6 text-amber-300">
+              <Inset as="p" tone="warn" className="mt-2 flex items-start gap-2 px-3 py-2 text-read leading-6 text-amber-300">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>أهداف لا يُنتجها التدفق الحالي: <span dir="ltr" className="font-mono">{unreachable.join(" · ")}</span> — تُحفظ ولا تمنع، لكن المسار لن يُرشَّح منها؛ يبقى المجال والمهارة والمرحلة.</span>
               </Inset>
@@ -221,8 +221,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {/* ٤ · المجال */}
       {key === "domains" && (
         <>
-          <p className="mb-1 text-xs font-black text-foreground">مجالات المسار ({d.domainIds.length}) — إلزامي</p>
-          <p className="mb-2 text-micro leading-6 text-muted-foreground">
+          <p className="mb-1 text-read font-black text-foreground">مجالات المسار ({d.domainIds.length}) — إلزامي</p>
+          <p className="mb-2 text-read leading-6 text-muted-foreground">
             المجال هو الباب الذي يدخل منه المسار إلى التوصية: يُطابَق بهدف المتعلم ووظيفته.
             بلا مجال يُنشر المسار ولا يُوصى به أبدا — ولذلك لا يجتاز حاجز النشر.
             {d.domainIds.length > 1 && " الأول في اختيارك هو الأقرب."}
@@ -242,18 +242,18 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {/* ٥ · الأثر والمراجعة */}
       {key === "review" && (
         <div className="space-y-4">
-          <Inset as="p" tone="positive" className="px-4 py-3 text-xs leading-6 text-emerald-300">
+          <Inset as="p" tone="positive" className="px-4 py-3 text-read leading-6 text-emerald-300">
             أُنشئ المسار <span dir="ltr" className="font-mono">{createdId}</span> كمسودة بجمهوره ومجالاته ودوراته.
           </Inset>
 
           {readiness && (
             <Card className="bg-paper/20">
-              <p className="mb-3 flex items-center gap-2 text-xs font-black text-foreground">
+              <p className="mb-3 flex items-center gap-2 text-read font-black text-foreground">
                 <ShieldCheck className="h-4 w-4 text-gold-ink" aria-hidden="true" /> الجاهزية — نفس ما يفحصه حاجز النشر
               </p>
               <ul className="space-y-1.5">
                 {readiness.steps.map((s) => (
-                  <li key={s.key} className="flex items-start gap-2 text-micro leading-6">
+                  <li key={s.key} className="flex items-start gap-2 text-read leading-6">
                     <span className={s.ok ? "text-emerald-300" : "text-amber-300"} aria-hidden="true">{s.ok ? "✓" : "•"}</span>
                     <span className="font-bold text-foreground">{s.labelAr}:</span>
                     <span className={s.ok ? "text-muted-foreground" : "text-amber-300"}>{s.reasonAr}</span>
@@ -280,7 +280,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
             </Card>
           )}
 
-          <Inset as="p" className="px-4 py-3 text-micro leading-6 text-foreground">
+          <Inset as="p" className="px-4 py-3 text-read leading-6 text-foreground">
             لا يُنشر المسار من هنا: كل كيان معتمد يحتاج طلب تغيير يعتمده <strong>شخص آخر</strong>
             {" "}(maker-checker) — واعتماد الذات مرفوض. الزر التالي يقدّمه للاعتماد، ثم يَنشره
             المعتمد من «النشر والإصدارات» بعد اجتياز البوابة كاملة.
@@ -292,7 +292,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {blockers.length > 0 && (
         <ul className="mt-4 space-y-1 rounded-xl border border-amber-400/30 bg-amber-400/5 px-4 py-3">
           {blockers.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-micro leading-6 text-amber-300">
+            <li key={b} className="flex items-start gap-2 text-read leading-6 text-amber-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {b}
             </li>
           ))}
@@ -324,7 +324,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </Button>
         )}
         {step === 4 && !impact && (
-          <span className="text-micro text-muted-foreground">افحص الأثر أولا — لا يُقدَّم مسار لم يُعرف أثره.</span>
+          <span className="text-fine text-muted-foreground">افحص الأثر أولا — لا يُقدَّم مسار لم يُعرف أثره.</span>
         )}
       </div>
     </Panel>

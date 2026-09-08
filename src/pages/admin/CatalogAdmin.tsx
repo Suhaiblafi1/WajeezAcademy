@@ -18,6 +18,7 @@ import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
   templates: Record<string, number>; questions: Record<string, number>; changeRequests: Record<string, number>
@@ -49,11 +50,9 @@ const ENTITY_AR: Record<string, string> = {
 function Pill({ v }: { v: string }) {
   const color = v === "published" || v === "approved" || v === "applied" ? "text-emerald-300 border-emerald-400/30"
     : v === "draft" ? "text-amber-300 border-amber-400/30" : "text-muted-foreground border-white/15";
-  return <span className={`rounded-full border px-2 py-0.5 text-micro font-bold ${color}`}>{STATUS_AR[v] ?? v}</span>;
+  return <span className={`rounded-full border px-2 py-0.5 text-fine font-bold ${color}`}>{STATUS_AR[v] ?? v}</span>;
 }
 
-const inputCls = "w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none focus:border-[#FABC05]/60";
-const selectCls = `${inputCls} [&>option]:bg-surface`;
 
 export default function CatalogAdmin() {
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -142,7 +141,7 @@ export default function CatalogAdmin() {
       className="flex w-full cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-gold/40">
       <span className="flex items-center gap-2 text-lg font-black"><Icon className="h-5 w-5 text-gold-ink" /> {title}</span>
       <span className="flex items-center gap-3">
-        <span className="hidden text-micro text-muted-foreground sm:inline">{hint}</span>
+        <span className="hidden text-fine text-muted-foreground sm:inline">{hint}</span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${openForm === id ? "rotate-180" : ""}`} />
       </span>
     </button>
@@ -187,12 +186,12 @@ export default function CatalogAdmin() {
           {([["المسارات", overview.pathways], ["الدورات", overview.courses], ["المهارات", overview.skills],
              ["القوالب", overview.templates], ["الأسئلة", overview.questions], ["طلبات التغيير", overview.changeRequests]] as const).map(([label, bag]) => (
             <Card key={label}>
-              <p className="text-xs font-bold text-muted-foreground">{label}</p>
+              <p className="text-read font-bold text-muted-foreground">{label}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {Object.entries(bag).map(([s, n]) => (
-                  <span key={s} className="text-micro text-foreground">{n} <Pill v={s} /></span>
+                  <span key={s} className="text-fine text-foreground">{n} <Pill v={s} /></span>
                 ))}
-                {Object.keys(bag).length === 0 && <span className="text-micro text-muted-foreground">لا شيء بعد</span>}
+                {Object.keys(bag).length === 0 && <span className="text-fine text-muted-foreground">لا شيء بعد</span>}
               </div>
             </Card>
           ))}
@@ -242,9 +241,9 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {pathwayView.rows.map((p) => (
               <Inset as="li" key={p.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
-                <span className="font-mono text-micro text-muted-foreground" dir="ltr">{p.id}</span>
+                <span className="font-mono text-fine text-muted-foreground" dir="ltr">{p.id}</span>
                 <span className="font-bold">{p.title}</span>
-                <span className="text-micro text-muted-foreground">{p.courseCount} دورة</span>
+                <span className="text-fine text-muted-foreground">{p.courseCount} دورة</span>
                 <span className="mr-auto"><Pill v={p.status} /></span>
               </Inset>
             ))}
@@ -255,9 +254,9 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {courseView.rows.map((c) => (
               <Inset as="li" key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
-                <span className="font-mono text-micro text-muted-foreground" dir="ltr">{c.id}</span>
+                <span className="font-mono text-fine text-muted-foreground" dir="ltr">{c.id}</span>
                 <span className="font-bold">{c.title}</span>
-                <span className="text-micro text-muted-foreground">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
+                <span className="text-fine text-muted-foreground">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
                 <span className="mr-auto"><Pill v={c.status} /></span>
               </Inset>
             ))}
@@ -267,7 +266,7 @@ export default function CatalogAdmin() {
         {browse === "skills" && (
           <>
             {/* ب-٤: الحصيلة أولا — «كم مهارة تُقاس فعلا» هو السؤال الذي يخفيه جدول من ٣٠٥ صفوف */}
-            <Card as="p" className="mt-3 px-4 py-3 text-micro leading-6 text-foreground">
+            <Card as="p" className="mt-3 px-4 py-3 text-read leading-6 text-foreground">
               {skills.filter((s) => s.measureState === "measured").length} مقيسة ·{" "}
               {skills.filter((s) => s.measureState === "registered_unmeasured").length} مسجَّلة بلا سؤال ·{" "}
               {skills.filter((s) => s.measureState === "inactive").length} موقوفة تشخيصيا · من {skills.length}
@@ -277,12 +276,12 @@ export default function CatalogAdmin() {
               {skillView.rows.map((s) => (
                 <Inset as="li" key={s.id} className="px-4 py-2.5">
                   <div className="flex items-center gap-3 text-sm">
-                    <span className="font-mono text-micro text-muted-foreground" dir="ltr">{s.id}</span>
+                    <span className="font-mono text-fine text-muted-foreground" dir="ltr">{s.id}</span>
                     <span className="min-w-0 flex-1 truncate font-bold">{s.nameAr}</span>
                     <Pill v={s.status} />
                   </div>
                   {s.measureNoteAr && (
-                    <p className={`mt-1 text-micro ${s.measureState === "measured" ? "text-teal-light-ink" : "text-muted-foreground"}`}>
+                    <p className={`mt-1 text-read ${s.measureState === "measured" ? "text-teal-light-ink" : "text-muted-foreground"}`}>
                       {s.measureNoteAr}
                     </p>
                   )}
@@ -296,9 +295,9 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {questionView.rows.map((qq) => (
               <Inset as="li" key={qq.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
-                <span className="font-mono text-micro text-muted-foreground" dir="ltr">{qq.id}</span>
+                <span className="font-mono text-fine text-muted-foreground" dir="ltr">{qq.id}</span>
                 <span className="min-w-0 flex-1 font-bold">{qq.text || "—"}</span>
-                <span className="text-micro text-muted-foreground">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
+                <span className="text-fine text-muted-foreground">{qq.module} · {qq.optionCount} خيار{!qq.active && " · موقوف"}</span>
                 <span className="mr-auto"><Pill v={qq.status} /></span>
               </Inset>
             ))}
@@ -309,9 +308,9 @@ export default function CatalogAdmin() {
           <ul className="mt-3 space-y-2">
             {templateView.rows.map((t) => (
               <Inset as="li" key={t.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
-                <span className="font-mono text-micro text-muted-foreground" dir="ltr">{t.id}</span>
+                <span className="font-mono text-fine text-muted-foreground" dir="ltr">{t.id}</span>
                 <span className="font-bold">{t.name || "—"}</span>
-                <span className="text-micro text-muted-foreground">{t.courseCount} دورة مركبة</span>
+                <span className="text-fine text-muted-foreground">{t.courseCount} دورة مركبة</span>
                 <span className="mr-auto"><Pill v={t.status} /></span>
               </Inset>
             ))}
@@ -377,7 +376,7 @@ export default function CatalogAdmin() {
             </div>
             <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
               dir="ltr" className={`${inputCls} mt-3 font-mono text-xs`} />
-            <p className="mt-2 text-micro text-muted-foreground">
+            <p className="mt-2 text-read text-muted-foreground">
               أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تُدمج في إصدار جديد بعد الاعتماد والنشر.
             </p>
             <Button tone="primary" disabled={busy || !crForm.entityId.trim()} onClick={submitChangeRequest} className="mt-3">
@@ -396,7 +395,7 @@ export default function CatalogAdmin() {
             <Card key={cr.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-bold text-sm">{ENTITY_AR[cr.entityType] ?? cr.entityType} · <span dir="ltr" className="font-mono text-xs">{cr.entityId}</span></p>
-                <p className="mt-1 text-xs text-muted-foreground">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
+                <p className="mt-1 text-read text-muted-foreground">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
               </div>
               <div className="flex items-center gap-2">
                 <Pill v={cr.status} />
@@ -414,7 +413,7 @@ export default function CatalogAdmin() {
             </Card>
           ))}
         </div>
-        <p className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground">
+        <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
           <BookMarked className="h-3.5 w-3.5" /> maker-checker: لا يستطيع صانع الطلب اعتماده بنفسه — الخادم يرفض ذلك.
         </p>
       </section>

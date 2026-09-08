@@ -90,6 +90,15 @@ export const PERMISSIONS = [
   { key: 'certificate.revoke', description: 'إلغاء شهادة مع سبب موثق' },
   // التشغيل الأكاديمي — المدرب على شعبه فقط
   { key: 'trainer.cohort.operate', description: 'تشغيل شعبه: حضور وتقييم وتغذية وتسجيلات' },
+  /* جدولةُ لقاءاتِ شعبه — داخلَ نافذةٍ تفتحها الإدارة، لا مطلقة.
+
+     كان الجدولُ بيد الإدارة وحدَها، والمدرّبُ يقترح تأجيلا فيصير صفًّا في
+     طابور موافقات: طابورٌ بُني ليعوّض صلاحيّةً لم تُمنح. وقرارُ صاحب
+     المنصّة (٨ سبتمبر ٢٠٢٦) أن يملكها المدرّبُ ضمن حدود الإدارة.
+
+     والصلاحيّةُ لا تكفي وحدَها: لا بابَ إلّا إن فتحت الإدارةُ نافذةَ الشعبة
+     (مدًى وسقفُ لقاءات). فهي إذنُ الدور، والنافذةُ إذنُ الشعبة. */
+  { key: 'trainer.cohort.schedule', description: 'جدولةُ لقاءات شعبه داخلَ النافذة التي تفتحها الإدارة' },
   // المتعلم
   { key: 'learner.portal', description: 'دخول بوابة المتعلم وعرض مساره وتقدمه' },
   { key: 'learner.submit', description: 'تسليم الواجبات ومحاولات التقييم' },
@@ -219,7 +228,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'reports.view', 'reports.export',
   ],
   advisor: ['catalog.view', 'advisor.cases.view', 'advisor.cases.operate', 'advisor.learner.view', 'advisor.request.submit', 'cv.view', 'rating.view.subject'],
-  trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate', 'rating.view.subject'],
+  trainer: ['trainer.portal', 'trainer.change.submit', 'trainer.cohort.operate', 'trainer.cohort.schedule', 'rating.view.subject'],
   /* حساب التقديم — لا بوابة متعلم ولا بوابة مدرب. يصير مدربا بالدعوة بعد
      الاعتماد (trainer.invite)، وحتى ذلك الحين لا يملك إلا رؤية طلبه. */
   trainer_applicant: ['trainer.application.own'],

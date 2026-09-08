@@ -101,8 +101,8 @@ export default function Exceptions() {
             <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{c.client?.displayName ?? c.lead?.name ?? "—"}</p>
-                <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{c.client?.email ?? c.lead?.email ?? ""}</p>
-                <p className="mt-1 text-micro text-muted-foreground">
+                <p className="mt-1 text-read text-muted-foreground" dir="ltr">{c.client?.email ?? c.lead?.email ?? ""}</p>
+                <p className="mt-1 text-read text-muted-foreground">
                   الحالة: {CASE_STATUS_AR[c.status] ?? c.status} · منذ {fmtDate(new Date(c.createdAt))}
                 </p>
               </div>

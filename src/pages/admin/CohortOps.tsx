@@ -3,16 +3,17 @@
    كلها API حقيقي من admin-learning وadmin-trainer. */
 import { useCallback, useEffect, useState } from "react";
 import {
-  Award, BadgeCheck, BookOpen, CalendarPlus, ChevronDown, FilePlus2, Globe,
+  Award, BadgeCheck, BookOpen, CalendarPlus, FilePlus2, Globe,
   Loader2, Pencil, Plus, Trash2, UserMinus, UserPlus,
 } from "lucide-react";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
+import { fmtDateTimeAr } from "@/utils/format";
+import type { CohortTab } from "./cohort-tabs";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-const inputCls = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-[#38A7B4] focus:outline-none";
-const selectCls = `${inputCls} [&>option]:bg-surface`;
+import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 
 interface CohortLite {
   id: string; title: string; status: string; courseId: string; daysOfWeek: string[];
@@ -43,22 +44,29 @@ const QUALIFICATION_LABEL: Record<EligibleTrainer["qualification"], string> = {
 
 type Done = (msg: string) => void;
 
-function MiniCard({ icon: Icon, title, children, defaultOpen = false }: {
-  icon: typeof UserPlus; title: string; children: React.ReactNode; defaultOpen?: boolean;
+/* ── من طيّةٍ تُفتح إلى قسمٍ يُرى ──
+
+   كانت هذه `MiniCard` طيّةً: عنوانٌ وسهمٌ ومحتوًى مخبوء. وسبعٌ منها داخلَ
+   بطاقةٍ هي نفسُها طيّةٌ داخلَ قائمةٍ — ثلاثةُ مستوياتٍ من الإخفاء، وأدناها
+   لا شيءَ يقول إنّه موجود.
+
+   والألسنةُ تكفلت بالكشف التدريجيّ: اللسانُ يخفي ما ليس من شغلِك الآن.
+   فالطيُّ داخله إخفاءٌ ثانٍ بلا فائدة — وأقسامُ اللسان الواحد قليلةٌ تُرى
+   معا وتُقرأ بالتمرير لا بالنقر. */
+function Section({ icon: Icon, title, children }: {
+  icon: typeof UserPlus; title: string; children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
   return (
     <Card className="bg-paper/20">
-      <button onClick={() => setOpen(!open)} className="flex w-full cursor-pointer items-center justify-between text-xs font-black text-muted-foreground">
-        <span className="flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" /> {title}</span>
-        <ChevronDown className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && <div className="mt-3">{children}</div>}
+      <p className="flex items-center gap-1.5 text-read font-black text-foreground">
+        <Icon className="h-4 w-4 shrink-0 text-teal-ink" /> {title}
+      </p>
+      <div className="mt-3">{children}</div>
     </Card>
   );
 }
 
-export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done }) {
+export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: CohortTab; onDone: Done }) {
   const [busy, setBusy] = useState(false);
   const [localMsg, setLocalMsg] = useState("");
   /* المدرّبون بحالِ تأهيل كلٍّ منهم لدورة **هذه الشعبة** — لا قائمةُ المعلَنين.
@@ -97,9 +105,12 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
     finally { setBusy(false); }
   }, [busy, onDone]);
 
+  /* الشعبةُ المكتملةُ أو الملغاةُ لا تُعدَّل — والشرطُ كان يُكتب ثلاث مرّات */
+  const editable = !["completed", "cancelled"].includes(cohort.status);
+
   return (
     <div className="space-y-3">
-      {localMsg && <p className="text-micro font-bold text-teal-light-ink" role="status">{localMsg}</p>}
+      {localMsg && <p className="text-read font-bold text-teal-light-ink" role="status">{localMsg}</p>}
 
       {/* تعيين مدرب — خطوةٌ واحدة للمؤهَّل، وطلبٌ واحد لغيره.
 
@@ -110,7 +121,8 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
 
           وبوّابةُ نزاهة التأهيل باقية: هذا الزرُّ **يطلب** ولا يقرّر. يبتّ
           فيه المديرُ الأكاديميّ، وموافقتُه تؤهّل وتُسند في فعلٍ واحد. */}
-      <MiniCard icon={UserPlus} title="مدرّب الشعبة — إسنادٌ مباشر للمؤهَّل، وطلبُ تأهيلٍ لغيره">
+      {tab === "identity" && (
+      <Section icon={UserPlus} title="مدرّب الشعبة — إسنادٌ مباشر للمؤهَّل، وطلبُ تأهيلٍ لغيره">
         <div className="flex flex-wrap gap-2">
           <select value={assignForm.profileId} onChange={(e) => setAssignForm({ ...assignForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
             <option value="">اختر مدربا…</option>
@@ -152,18 +164,18 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
         {/* الغيابُ يُقال أوّلا لأنّه **مانعٌ** لا تنبيه: الزرُّ سيُردّ بـ409،
             فمن حقّ المُسنِد أن يعرف قبل أن يضغط. والساعاتُ تنبيهٌ بعده. */}
         {picked?.onLeave && (
-          <Inset as="p" tone="danger" className="mt-2 p-2 text-micro font-bold leading-5 text-red-200" role="status">
+          <Inset as="p" tone="danger" className="mt-2 p-2 text-read font-bold leading-5 text-red-200" role="status">
             المدرّبُ أعلن غيابَه في مدّةٍ تقع فيها جلسةٌ من جلسات هذه الشعبة — الإسنادُ سيُردّ. اختر غيرَه، أو راجعه ليحدّث إتاحته.
           </Inset>
         )}
         {!picked?.onLeave && picked?.outsideDeclaredHours ? (
-          <Inset as="p" tone="warn" className="mt-2 p-2 text-micro font-bold leading-5 text-gold-ink" role="status">
+          <Inset as="p" tone="warn" className="mt-2 p-2 text-read font-bold leading-5 text-gold-ink" role="status">
             {picked.outsideDeclaredHours} من جلسات هذه الشعبة تقع خارجَ ساعاته المعلنة — الإسنادُ جائزٌ، والقرارُ لك.
           </Inset>
         ) : null}
 
         {picked && (
-          <p className="mt-2 text-micro leading-5 text-muted-foreground">
+          <p className="mt-2 text-read leading-5 text-muted-foreground">
             {picked.qualification === "qualified"
               ? "مؤهَّل لهذه الدورة — الإسناد يقع الآن، ويُفحص تعارضُ جدوله قبل وقوعه."
               : picked.qualification === "pending"
@@ -174,48 +186,108 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           </p>
         )}
         {trainers.length === 0 && (
-          <p className="mt-2 text-micro text-muted-foreground">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
+          <p className="mt-2 text-read text-muted-foreground">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
         )}
-      </MiniCard>
+      </Section>
+      )}
 
-      {/* تعديل الشعبة */}
-      {!["completed", "cancelled"].includes(cohort.status) && (
-        <MiniCard icon={Pencil} title="تعديل الشعبة — جدولة وسعة وسعر وبوابات الفتح">
-          <div className="grid gap-2 sm:grid-cols-3">
-            <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} placeholder="العنوان" className={inputCls} />
-            <DayOfWeekPicker value={editForm.days} onChange={(days) => setEditForm({ ...editForm, days })} label="الأيّام" />
-            <input type="time" value={editForm.startTime} onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })} className={inputCls} />
-            <input type="number" min={1} value={editForm.capacity} onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })} placeholder="السعة" className={inputCls} />
-            <input type="number" min={0} value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} placeholder={`السعر (${cohort.currency})`} className={inputCls} />
-            <div className="flex items-center gap-4 text-micro text-muted-foreground">
-              <label className="flex cursor-pointer items-center gap-1.5">
-                <input type="checkbox" checked={editForm.registrationOpen} onChange={(e) => setEditForm({ ...editForm, registrationOpen: e.target.checked })} className="accent-teal" />
-                التسجيل مفتوح
-              </label>
-              <label className="flex cursor-pointer items-center gap-1.5">
-                <input type="checkbox" checked={editForm.financialReady} onChange={(e) => setEditForm({ ...editForm, financialReady: e.target.checked })} className="accent-teal" />
-                جاهزة ماليا
-              </label>
-            </div>
+      {/* ── ما كان نموذجا واحدا صار ثلاثةً، كلٌّ في لسانه ──
+
+          «تعديل الشعبة — جدولة وسعة وسعر وبوابات الفتح»: سبعةُ حقولٍ وزرُّ
+          حفظٍ واحد. وهي **ثلاثةُ أعمالٍ لا تُعمل معا ولا يعملها الشخصُ
+          نفسُه**: تسميةُ الشعبة قرارٌ أكاديميّ، وجدولُها قرارُ تقديم، وسعرُها
+          وبوّابتاها قرارُ تسجيلٍ ومال. فمن جاء ليصحّح سعرا كان يمرّ على
+          جدولٍ لا شأن له به، ويحفظ الكلَّ بزرٍّ واحد.
+
+          والحفظُ الآن جزئيّ: كلُّ نموذجٍ يُرسل حقولَه وحدَها. */}
+
+      {/* ① الاسم — الهُويّة */}
+      {editable && tab === "identity" && (
+        <Section icon={Pencil} title="اسمُ الشعبة">
+          <div className="flex flex-wrap gap-2">
+            <input value={editForm.title} aria-label="اسمُ الشعبة"
+              onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+              placeholder="اسمُ الشعبة" className={`${inputCls} flex-1`} />
+            <Button tone="confirm" disabled={busy || editForm.title.trim().length < 3}
+              onClick={() => act(() => apiPatch(`/api/admin/cohorts/${cohort.id}`, {
+                title: editForm.title.trim(),
+              }), "حُدث اسمُ الشعبة")}>
+              احفظ الاسم
+            </Button>
           </div>
-          <button disabled={busy || editForm.title.length < 3}
+        </Section>
+      )}
+
+      {/* ② الجدول الأسبوعيّ — منه تُولَّد اللقاءات */}
+      {editable && tab === "schedule" && (
+        <Section icon={Pencil} title="الجدول الأسبوعيّ — الأيّامُ والوقت">
+          <p className="mb-3 text-read leading-6 text-muted-foreground">
+            هذا جدولُ الشعبة لا لقاءاتُها. وتغييرُه لا ينقل اللقاءاتِ المولَّدةَ من قبل —
+            بل يصير الأساسَ لما يُولَّد بعده.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <DayOfWeekPicker value={editForm.days} onChange={(days) => setEditForm({ ...editForm, days })} label="الأيّام" />
+            <label className="text-fine text-muted-foreground">
+              وقتُ البدء
+              <input type="time" value={editForm.startTime}
+                onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                className={`${inputCls} mt-1`} />
+            </label>
+          </div>
+          <Button tone="confirm" disabled={busy || editForm.days.length === 0} className="mt-3"
             onClick={() => act(() => apiPatch(`/api/admin/cohorts/${cohort.id}`, {
-              title: editForm.title,
               daysOfWeek: editForm.days,
               startTime: editForm.startTime || undefined,
+            }), "حُدث جدولُ الشعبة")}>
+            احفظ الجدول
+          </Button>
+        </Section>
+      )}
+
+      {/* ③ السعة والسعر وبوّابتا الفتح — التسجيل والمال */}
+      {editable && tab === "enrollment" && (
+        <Section icon={Pencil} title="السعة والسعر وبوّابتا الفتح">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="text-fine text-muted-foreground">
+              السعة
+              <input type="number" min={1} value={editForm.capacity}
+                onChange={(e) => setEditForm({ ...editForm, capacity: e.target.value })}
+                placeholder="غير محددة" className={`${inputCls} mt-1`} />
+            </label>
+            <label className="text-fine text-muted-foreground">
+              {`السعر (${cohort.currency})`}
+              <input type="number" min={0} value={editForm.price}
+                onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                placeholder="0" className={`${inputCls} mt-1`} />
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-fine text-muted-foreground">
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input type="checkbox" checked={editForm.registrationOpen}
+                onChange={(e) => setEditForm({ ...editForm, registrationOpen: e.target.checked })} className="accent-teal" />
+              التسجيل مفتوح
+            </label>
+            <label className="flex cursor-pointer items-center gap-1.5">
+              <input type="checkbox" checked={editForm.financialReady}
+                onChange={(e) => setEditForm({ ...editForm, financialReady: e.target.checked })} className="accent-teal" />
+              جاهزة ماليا
+            </label>
+          </div>
+          <Button tone="confirm" disabled={busy} className="mt-3"
+            onClick={() => act(() => apiPatch(`/api/admin/cohorts/${cohort.id}`, {
               capacity: editForm.capacity ? Number(editForm.capacity) : undefined,
               price: editForm.price ? Number(editForm.price) : undefined,
               registrationOpen: editForm.registrationOpen,
               financialReady: editForm.financialReady,
-            }), "حُدثت الشعبة")}
-            className="mt-3 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground hover:bg-white/15 disabled:opacity-40">
-            احفظ التعديل
-          </button>
-        </MiniCard>
+            }), "حُدثت السعةُ والسعرُ والبوّابتان")}>
+            احفظ
+          </Button>
+        </Section>
       )}
 
       {/* مادة تعليمية */}
-      <MiniCard icon={FilePlus2} title="مادة تعليمية — رابط خارجي أو ملف خاص برفع موقَّع">
+      {tab === "content" && (
+      <Section icon={FilePlus2} title="مادة تعليمية — رابط خارجي أو ملف خاص برفع موقَّع">
         <div className="grid gap-2 sm:grid-cols-4">
           <input value={materialForm.title} onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })} placeholder="عنوان المادة" className={inputCls} />
           <select value={materialForm.kind} onChange={(e) => setMaterialForm({ ...materialForm, kind: e.target.value })} className={selectCls}>
@@ -248,11 +320,12 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           className="mt-3 cursor-pointer rounded-xl bg-white/10 px-4 py-2 text-xs font-black text-foreground hover:bg-white/15 disabled:opacity-40">
           سجّل المادة
         </button>
-      </MiniCard>
+      </Section>
+      )}
 
       {/* تقييم جديد */}
-      {!["completed", "cancelled"].includes(cohort.status) && (
-        <MiniCard icon={BookOpen} title="تقييم جديد — واجب / اختبار / مشروع مع بنود">
+      {editable && tab === "content" && (
+        <Section icon={BookOpen} title="تقييم جديد — واجب / اختبار / مشروع مع بنود">
           <div className="grid gap-2 sm:grid-cols-5">
             <input value={assessForm.title} onChange={(e) => setAssessForm({ ...assessForm, title: e.target.value })} placeholder="عنوان التقييم" className={`${inputCls} sm:col-span-2`} />
             <select value={assessForm.type} onChange={(e) => setAssessForm({ ...assessForm, type: e.target.value })} className={selectCls}>
@@ -284,7 +357,7 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             ))}
           </div>
           <div className="mt-2 flex items-center gap-2">
-            <Button tone="secondary" size="sm" type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])} className="text-micro">
+            <Button tone="secondary" size="sm" type="button" onClick={() => setItems([...items, { prompt: "", kind: "text", maxScore: "" }])} className="text-fine">
               <Plus className="h-3 w-3" /> بند
             </Button>
             <button disabled={busy || assessForm.title.length < 3}
@@ -304,22 +377,25 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
               أنشئ التقييم
             </button>
           </div>
-        </MiniCard>
+        </Section>
       )}
 
-      {/* التسجيل والشهادات */}
-      <MiniCard icon={Award} title="التسجيل والشهادات — إسقاط / إصدار / إلغاء">
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <input value={dropForm.enrollmentId} onChange={(e) => setDropForm({ ...dropForm, enrollmentId: e.target.value })}
-              placeholder="معرف التسجيل للإسقاط (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-            <input value={dropForm.note} onChange={(e) => setDropForm({ ...dropForm, note: e.target.value })} placeholder="ملاحظة (اختياري)" className={inputCls} />
-            <button disabled={busy || !dropForm.enrollmentId.trim()}
-              onClick={() => act(() => apiPost(`/api/admin/enrollments/${dropForm.enrollmentId.trim()}/drop`, { note: dropForm.note || undefined }), "أُسقط التسجيل")}
-              className="flex cursor-pointer items-center gap-1 rounded-xl border border-red-500/40 px-4 py-2 text-xs font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40">
-              <UserMinus className="h-3.5 w-3.5" /> إسقاط
-            </button>
-          </div>
+      {/* ── «التسجيل والشهادات» كانا قسما واحدا، وهما عملان ──
+
+          الإسقاطُ إخراجُ متعلّمٍ من شعبته — شأنُ التسجيل. وإصدارُ الشهادة
+          إقرارٌ بأنّه أنهاها — شأنُ ما سُلِّم فيها. ولا يقع الفعلان في يومٍ
+          واحدٍ ولا يعملهما الشخصُ نفسُه، فافترقا إلى لسانَيهما. */}
+
+      {/* إسقاطُ تسجيل — التسجيلُ والمال */}
+      {tab === "enrollment" && (
+        <Section icon={UserMinus} title="إسقاطُ تسجيلِ متعلّم">
+          <DropEnrollment cohortId={cohort.id} busy={busy} form={dropForm} onForm={setDropForm} act={act} />
+        </Section>
+      )}
+
+      {/* الشهادات — المحتوى وما يُسلَّم */}
+      {tab === "content" && (
+        <Section icon={Award} title="الشهادات — إصدارٌ لمن أنهى، وإلغاءٌ بسببٍ يبقى">
           {/* ─────────── الشهادات: قائمةٌ لا معرّفاتٌ تُلصق ───────────
 
               كان الإصدارُ يطلب «معرّف التسجيل (UUID)» والإلغاءُ «معرّف
@@ -331,15 +407,16 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
               والأهليّةُ محسوبةٌ في الخادم بالقواعد نفسِها التي يفحصها
               الإصدار — فلا تقول القائمةُ «مؤهَّل» ثمّ يرفض الزرّ. */}
           <CertificateCandidates cohortId={cohort.id} busy={busy} act={act} />
-        </div>
-      </MiniCard>
+        </Section>
+      )}
 
       {/* تسجيلات الجلسات وأرشفة المحتوى */}
-      <MiniCard icon={BookOpen} title="تسجيلات الجلسات وأرشفة المحتوى — ملفات خاصة موقعة">
-        <p className="mb-2 text-micro font-bold text-muted-foreground">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
+      {tab === "content" && (
+      <Section icon={BookOpen} title="تسجيلات اللقاءات وأرشفة المحتوى — ملفات خاصة موقعة">
+        <p className="mb-2 text-read font-bold text-muted-foreground">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
         <div className="grid gap-2 sm:grid-cols-3">
-          <input value={recForm.sessionId} onChange={(e) => setRecForm({ ...recForm, sessionId: e.target.value })}
-            placeholder="معرف الجلسة (UUID)" dir="ltr" className={`${inputCls} font-mono`} />
+          <SessionSelect cohortId={cohort.id} value={recForm.sessionId}
+            onChange={(sessionId) => setRecForm({ ...recForm, sessionId })} />
           <input value={recForm.title} onChange={(e) => setRecForm({ ...recForm, title: e.target.value })} placeholder="عنوان التسجيل" className={inputCls} />
           <input value={recForm.moduleId} onChange={(e) => setRecForm({ ...recForm, moduleId: e.target.value })}
             placeholder="معرف الوحدة (اختياري)" dir="ltr" className={`${inputCls} font-mono`} />
@@ -360,14 +437,13 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
           سجّل التسجيل
         </button>
 
-        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-micro font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
+        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-read font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
         <div className="flex flex-wrap gap-2">
-          <select value={contentForm.kind} onChange={(e) => setContentForm({ ...contentForm, kind: e.target.value })} className={selectCls}>
-            <option value="material">مادة</option>
-            <option value="recording">تسجيل</option>
-          </select>
-          <input value={contentForm.id} onChange={(e) => setContentForm({ ...contentForm, id: e.target.value })}
-            placeholder="معرف المحتوى (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
+          <ContentSelect cohortId={cohort.id} value={contentForm.kind && contentForm.id ? `${contentForm.kind}:${contentForm.id}` : ""}
+            onChange={(picked) => {
+              const [kind, id] = picked.split(":");
+              setContentForm({ ...contentForm, kind: kind || "material", id: id || "" });
+            }} />
           <select value={contentForm.status} onChange={(e) => setContentForm({ ...contentForm, status: e.target.value })} className={selectCls}>
             <option value="active">نشط</option>
             <option value="archived">مؤرشف</option>
@@ -379,10 +455,11 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
             طبّق الحالة
           </button>
         </div>
-      </MiniCard>
+      </Section>
+      )}
 
-      {/* نشر عام */}
-      {cohort.status === "open" && (
+      {/* نشر عام — فعلُ حالةٍ لا فعلُ محتوًى، فمكانُه لسانُ الهُويّة */}
+      {tab === "identity" && cohort.status === "open" && (
         <Button tone="confirm" disabled={busy}
           onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نُشرت الشعبة — إسنادات المدربين ظاهرة للعامة")} className="text-gold-ink">
           <Globe className="h-3.5 w-3.5" /> نشر عام لإسنادات المدربين
@@ -390,6 +467,161 @@ export function CohortOps({ cohort, onDone }: { cohort: CohortLite; onDone: Done
       )}
       {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />}
     </div>
+  );
+}
+
+/* ═══════ ثلاثةُ منتقياتٍ تُزيل لصقَ المعرّفات ═══════
+
+   كانت هذه البطاقةُ تطلب ثلاثةَ معرّفاتِ UUID: معرّفَ التسجيل للإسقاط،
+   ومعرّفَ الجلسة للتسجيل، ومعرّفَ المحتوى للأرشفة. وثلاثتُها **قيمٌ لا تظهر
+   على أيّ شاشةٍ في المنصّة** — فلا سبيلَ إلى تعبئتها إلّا بفتح قاعدة
+   البيانات.
+
+   وأخطرُها الأوّل: ستّةٌ وثلاثون حرفا تُلصق فوق زرٍّ أحمرَ اسمُه «إسقاط»،
+   بلا اسمٍ يُراجَع. فخطأُ لصقٍ واحدٌ يُخرج الطالبَ الخطأ من شعبته.
+
+   والنمطُ ليس جديدا على المنصّة: `LearnerSearchField` و`ZoomAttach`
+   و`CertificateCandidates` تفعله منذ جولةٍ سابقة. وهذه تعميمُه على ما بقي. */
+
+/** مسجَّلٌ في الشعبة — يُختار باسمه لا بمعرّفه */
+interface RosterRow {
+  enrollmentId: string; learnerName: string; email: string;
+  status: string; enrolledAt: string;
+}
+
+const ROSTER_LABEL: Record<string, string> = { enrolled: "مسجَّل", waitlisted: "قائمةُ انتظار" };
+
+/** إسقاطُ تسجيل — الاسمُ يُقرأ قبل الضغط، والمُسقَطُ يُسمّى في زرّه */
+function DropEnrollment({ cohortId, busy, form, onForm, act }: {
+  cohortId: string;
+  busy: boolean;
+  form: { enrollmentId: string; note: string };
+  onForm: (v: { enrollmentId: string; note: string }) => void;
+  act: (fn: () => Promise<unknown>, msg: string) => void;
+}) {
+  const [rows, setRows] = useState<RosterRow[] | null>(null);
+  const load = useCallback(() => {
+    apiGet<RosterRow[]>(`/api/admin/cohorts/${cohortId}/enrollments`)
+      .then(setRows)
+      .catch(() => setRows([]));
+  }, [cohortId]);
+  useEffect(() => { load(); }, [load]);
+
+  const picked = rows?.find((r) => r.enrollmentId === form.enrollmentId) ?? null;
+
+  if (rows !== null && rows.length === 0) {
+    return <p className="text-read text-muted-foreground">لا مسجَّلين في هذه الشعبة — لا شيءَ يُسقَط.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <label className="sr-only" htmlFor={`drop-${cohortId}`}>المتعلّمُ المراد إسقاطُ تسجيله</label>
+        <select id={`drop-${cohortId}`} value={form.enrollmentId} disabled={rows === null}
+          onChange={(e) => onForm({ ...form, enrollmentId: e.target.value })}
+          className={`${selectCls} flex-1`}>
+          <option value="">{rows === null ? "يُقرأ المسجَّلون…" : "اختر المتعلّم…"}</option>
+          {rows?.map((r) => (
+            <option key={r.enrollmentId} value={r.enrollmentId}>
+              {r.learnerName} — {r.email}{r.status !== "enrolled" ? ` · ${ROSTER_LABEL[r.status] ?? r.status}` : ""}
+            </option>
+          ))}
+        </select>
+        <input value={form.note} onChange={(e) => onForm({ ...form, note: e.target.value })}
+          aria-label="ملاحظةُ الإسقاط" placeholder="ملاحظة (اختياري)" className={inputCls} />
+      </div>
+
+      {/* الزرُّ يسمّي من يُسقطه — فلا يُضغط «إسقاط» مجرَّدا على قائمةٍ فيها عشرون اسما */}
+      <Button tone="danger" disabled={busy || !picked}
+        onClick={() => act(
+          () => apiPost(`/api/admin/enrollments/${form.enrollmentId}/drop`, { note: form.note || undefined })
+            .then(() => { onForm({ enrollmentId: "", note: "" }); load(); }),
+          `أُسقط تسجيلُ «${picked?.learnerName ?? ""}»`,
+        )}>
+        <UserMinus className="h-3.5 w-3.5" />
+        {picked ? `أسقِط تسجيلَ ${picked.learnerName}` : "أسقِط التسجيل"}
+      </Button>
+    </div>
+  );
+}
+
+interface SessionOpt { id: string; title: string; startsAt: string }
+
+/** جلسةُ الشعبة تُختار بعنوانها وتاريخها — لا بمعرّفها */
+function SessionSelect({ cohortId, value, onChange }: {
+  cohortId: string; value: string; onChange: (id: string) => void;
+}) {
+  const [rows, setRows] = useState<SessionOpt[] | null>(null);
+  useEffect(() => {
+    apiGet<SessionOpt[]>(`/api/admin/cohorts/${cohortId}/sessions`)
+      .then(setRows)
+      .catch(() => setRows([]));
+  }, [cohortId]);
+
+  return (
+    <>
+      <label className="sr-only" htmlFor={`rec-session-${cohortId}`}>الجلسة</label>
+      <select id={`rec-session-${cohortId}`} value={value} disabled={rows === null}
+        onChange={(e) => onChange(e.target.value)} className={selectCls}>
+        <option value="">
+          {rows === null ? "تُحمَّل الجلسات…" : rows.length === 0 ? "لا جلسات بعد" : "اختر الجلسة…"}
+        </option>
+        {rows?.map((sn) => (
+          <option key={sn.id} value={sn.id}>{sn.title} — {fmtDateTimeAr(sn.startsAt)}</option>
+        ))}
+      </select>
+    </>
+  );
+}
+
+interface CohortContent {
+  materials: { id: string; title: string; kind: string; status: string }[];
+  recordings: { id: string; title: string; status: string; sessionTitle: string }[];
+}
+
+const CONTENT_STATUS: Record<string, string> = { active: "نشط", archived: "مؤرشف", disabled: "معطل" };
+
+/** المحتوى يُختار بعنوانه، ونوعُه يُشتقّ من اختياره لا يُسأل عنه مرّتين */
+function ContentSelect({ cohortId, value, onChange }: {
+  cohortId: string; value: string; onChange: (picked: string) => void;
+}) {
+  const [data, setData] = useState<CohortContent | null>(null);
+  useEffect(() => {
+    apiGet<CohortContent>(`/api/admin/cohorts/${cohortId}/content`)
+      .then(setData)
+      .catch(() => setData({ materials: [], recordings: [] }));
+  }, [cohortId]);
+
+  const empty = data !== null && data.materials.length === 0 && data.recordings.length === 0;
+
+  return (
+    <>
+      <label className="sr-only" htmlFor={`content-${cohortId}`}>المادّةُ أو التسجيل</label>
+      <select id={`content-${cohortId}`} value={value} disabled={data === null || empty}
+        onChange={(e) => onChange(e.target.value)} className={`${selectCls} flex-1`}>
+        <option value="">
+          {data === null ? "يُقرأ المحتوى…" : empty ? "لا محتوى في هذه الشعبة بعد" : "اختر المادّة أو التسجيل…"}
+        </option>
+        {data && data.materials.length > 0 && (
+          <optgroup label="المواد">
+            {data.materials.map((m) => (
+              <option key={m.id} value={`material:${m.id}`}>
+                {m.title} · {CONTENT_STATUS[m.status] ?? m.status}
+              </option>
+            ))}
+          </optgroup>
+        )}
+        {data && data.recordings.length > 0 && (
+          <optgroup label="التسجيلات">
+            {data.recordings.map((r) => (
+              <option key={r.id} value={`recording:${r.id}`}>
+                {r.title} — {r.sessionTitle} · {CONTENT_STATUS[r.status] ?? r.status}
+              </option>
+            ))}
+          </optgroup>
+        )}
+      </select>
+    </>
   );
 }
 
@@ -445,7 +677,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           ))}
         </div>
         <div className="mt-3 flex items-center gap-2">
-          <Button tone="secondary" size="sm" type="button" onClick={() => setCriteria([...criteria, { title: "", maxScore: "10" }])} className="text-micro">
+          <Button tone="secondary" size="sm" type="button" onClick={() => setCriteria([...criteria, { title: "", maxScore: "10" }])} className="text-fine">
             <Plus className="h-3 w-3" /> معيار
           </Button>
           <Button tone="confirm" size="sm" disabled={busy || rubricTitle.length < 3 || criteria.some((c) => c.title.trim().length < 2)}
@@ -483,7 +715,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             onChange={(e) => setRuleForm({ ...ruleForm, threshold: e.target.value })}
             placeholder="العتبة" className={inputCls} />
         </div>
-        <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
+        <label className="mt-2 flex cursor-pointer items-center gap-1.5 text-fine text-muted-foreground">
           <input type="checkbox" checked={ruleForm.required} onChange={(e) => setRuleForm({ ...ruleForm, required: e.target.checked })} className="accent-teal" />
           قاعدة إلزامية للشهادة
         </label>
@@ -495,7 +727,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           احفظ القاعدة
         </Button>
       </Panel>
-      {msg && <p className="text-xs font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
+      {msg && <p className="text-read font-bold text-teal-light-ink lg:col-span-2" role="status">{msg}</p>}
     </section>
   );
 }
@@ -532,9 +764,9 @@ function CertificateCandidates({ cohortId, busy, act }: {
   }, [cohortId]);
   useEffect(() => { load(); }, [load]);
 
-  if (error) return <p className="text-micro leading-6 text-muted-foreground">{error}</p>;
-  if (!rows) return <p className="text-micro text-muted-foreground">نقرأ المرشَّحين…</p>;
-  if (rows.length === 0) return <p className="text-micro text-muted-foreground">لا مسجَّلين في هذه الشعبة بعد.</p>;
+  if (error) return <p className="text-read leading-6 text-muted-foreground">{error}</p>;
+  if (!rows) return <p className="text-read text-muted-foreground">نقرأ المرشَّحين…</p>;
+  if (rows.length === 0) return <p className="text-read text-muted-foreground">لا مسجَّلين في هذه الشعبة بعد.</p>;
 
   return (
     <ul className="space-y-1.5">
@@ -543,16 +775,16 @@ function CertificateCandidates({ cohortId, busy, act }: {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="min-w-0">
               <span className="block text-xs font-bold text-foreground">{r.learnerName}</span>
-              <span dir="ltr" className="block text-left text-micro text-muted-foreground">{r.email}</span>
+              <span dir="ltr" className="block text-left text-fine text-muted-foreground">{r.email}</span>
             </span>
             <span className="flex shrink-0 items-center gap-2">
-              <span className="text-micro tabular-nums text-muted-foreground">{r.percent}٪</span>
+              <span className="text-fine tabular-nums text-muted-foreground">{r.percent}٪</span>
               {r.certificate ? (
                 <>
-                  <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-micro text-teal-light-ink">
+                  <span dir="ltr" className="rounded-full border border-teal/35 px-2 py-0.5 font-mono text-fine text-teal-light-ink">
                     {r.certificate.number}
                   </span>
-                  <Button tone="danger" onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }} className="px-2.5 text-micro">
+                  <Button tone="danger" onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }} className="px-2.5 text-fine">
                     ألغِها
                   </Button>
                 </>
@@ -561,11 +793,11 @@ function CertificateCandidates({ cohortId, busy, act }: {
                   onClick={() => act(
                     () => apiPost(`/api/admin/enrollments/${r.enrollmentId}/certificate`).then(load),
                     `أُصدرت شهادة «${r.learnerName}»`,
-                  )} className="text-micro text-gold-ink">
+                  )} className="text-fine text-gold-ink">
                   <BadgeCheck className="h-3 w-3" /> أصدِر
                 </Button>
               ) : (
-                <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-micro font-bold text-muted-foreground">
+                <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
                   لم يُنهِ بعد
                 </span>
               )}
@@ -576,7 +808,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
           {!r.eligible && !r.certificate && r.failures.length > 0 && (
             <ul className="mt-1.5 space-y-0.5">
               {r.failures.map((f, i) => (
-                <li key={i} className="text-micro leading-4 text-muted-foreground">— {f}</li>
+                <li key={i} className="text-read leading-4 text-muted-foreground">— {f}</li>
               ))}
             </ul>
           )}
@@ -586,7 +818,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
               <input
                 value={reason} onChange={(e) => setReason(e.target.value)}
                 placeholder="سببُ الإلغاء — يبقى في السجلّ (٥ أحرف فأكثر)"
-                className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-micro outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
+                className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-fine outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
               />
               <button
                 disabled={busy || reason.trim().length < 5}
@@ -595,7 +827,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
                     .then(() => { setRevoking(null); setReason(""); load(); }),
                   "أُلغيت الشهادة ووُثّق السبب",
                 )}
-                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-micro font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+                className="cursor-pointer rounded-lg border border-red-500/40 px-3 py-1.5 text-fine font-bold text-red-400 hover:bg-red-500/10 disabled:opacity-40"
               >
                 أكّد الإلغاء
               </button>

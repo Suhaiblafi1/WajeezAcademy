@@ -18,6 +18,7 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import Button from "@/components/ui/Button";
+import { staffControlCls as inputCls } from "@/components/FormKit";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
@@ -35,7 +36,6 @@ interface TicketDetail extends TicketRow {
   statusHistory: { fromStatus: string | null; toStatus: string; createdAt: string }[];
 }
 
-const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 export default function Support() {
   const [rows, setRows] = useState<TicketRow[]>([]);
@@ -110,7 +110,7 @@ export default function Support() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="font-black">{t.subject}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.user.displayName} · <span dir="ltr">{t.user.email}</span> · {t.category}</p>
+                  <p className="mt-1 text-read text-muted-foreground">{t.user.displayName} · <span dir="ltr">{t.user.email}</span> · {t.category}</p>
                 </div>
                 <div className="flex gap-2">
                   <Chip tone="accent" srPrefixAr="الحالة">{STATUS_AR[t.status] ?? t.status}</Chip>
@@ -125,7 +125,7 @@ export default function Support() {
               <ol className="mt-5 space-y-3">
                 {t.messages.map((m) => (
                   <Inset as="li" key={m.id} tone={m.internal ? "warn" : "default"} className="text-xs leading-6">
-                    <p className="mb-1 flex items-center gap-2 text-micro font-bold text-muted-foreground">
+                    <p className="mb-1 flex items-center gap-2 text-read font-bold text-muted-foreground">
                       {fmtDateTime(new Date(m.createdAt))}
                       {m.internal && <span className="flex items-center gap-1 text-gold-ink"><EyeOff className="h-3 w-3" /> داخلية — لا يراها العميل</span>}
                     </p>
@@ -136,7 +136,7 @@ export default function Support() {
               <div className="mt-4 border-t border-white/8 pt-4">
                 <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3} placeholder="اكتب ردا…" className={`${inputCls} w-full`} />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <label className="flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
+                  <label className="flex cursor-pointer items-center gap-1.5 text-fine text-muted-foreground">
                     <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} className="accent-gold" />
                     رد داخلي (مخفي عن العميل)
                   </label>
@@ -156,12 +156,12 @@ export default function Support() {
                 {Object.entries(STATUS_AR).filter(([k]) => k !== t.status).map(([k, v]) => (
                   <button key={k} disabled={busy}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}
-                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-micro font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
+                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-fine font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
                     {v}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-micro text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
+              <p className="mt-2 text-read text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
             </Card>
 
             <Card as="article">
@@ -170,7 +170,7 @@ export default function Support() {
                 {Object.entries(PRIORITY_AR).map(([k, v]) => (
                   <button key={k} disabled={busy || t.priority === k}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/priority`, { priority: k }), `الأولوية: ${v}`)}
-                    className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
+                    className={`cursor-pointer rounded-full border px-3 py-1 text-fine font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                     {v}
                   </button>
                 ))}
@@ -186,14 +186,14 @@ export default function Support() {
                   إسناد
                 </Button>
               </div>
-              <p className="mt-2 text-micro text-muted-foreground">الوكيلون بدور «support» من صفحة المستخدمين.</p>
+              <p className="mt-2 text-read text-muted-foreground">الوكيلون بدور «support» من صفحة المستخدمين.</p>
             </Card>
 
             <Card as="article">
               <h4 className="text-sm font-black">سجل الحالات</h4>
               <ol className="mt-3 space-y-1.5">
                 {t.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-micro text-muted-foreground">
+                  <li key={i} className="flex items-center gap-2 text-read text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-foreground">{STATUS_AR[h.toStatus] ?? h.toStatus}</b>
                     <span className="mr-auto text-muted-foreground/50">{fmtDateTime(new Date(h.createdAt))}</span>
@@ -263,7 +263,7 @@ export default function Support() {
             >
               <div>
                 <p className="font-black">{t.subject}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-read text-muted-foreground">
                   {t.user.displayName} · {t._count.messages} رسالة · {t.assignments.length ? "مسندة" : "غير مسندة"} · {fmtDateTime(new Date(t.updatedAt))}
                 </p>
               </div>

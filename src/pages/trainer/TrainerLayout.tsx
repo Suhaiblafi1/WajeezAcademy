@@ -94,7 +94,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
           حسابُك يملك صلاحيّاتِ المدرّب، لكن لا ملفَّ مدرّبٍ مرتبطا به — والشعبُ والتقييماتُ والمستحقّاتُ كلُّها تُقرأ من ذلك الملفّ. فلا شيءَ هنا لنعرضه لك.
         </p>
-        <p className="mt-3 max-w-md text-center text-xs leading-6 text-muted-foreground">
+        <p className="mt-3 max-w-md text-center text-read leading-6 text-muted-foreground">
           وهذا متوقَّعٌ لمدير النظام: بوّابةُ المدرّب لمن يُدرِّس فعلا. لمعاينتها، ادخل بحساب مدرّب.
         </p>
         <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-foreground transition hover:border-white/40">
@@ -128,7 +128,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
                 <span className="hidden sm:inline">{t.label}</span>
                 {/* العددُ يُقرأ للعين وللقارئ معا: الرقمُ وحدَه لا يقول ماذا يعدّ */}
                 {!!t.count && (
-                  <span className="rounded-full bg-gold px-1.5 text-micro font-black text-on-gold">
+                  <span className="rounded-full bg-gold px-1.5 text-fine font-black text-on-gold">
                     <span className="sr-only">ينتظر تصحيحَك: </span>{t.count}
                   </span>
                 )}
@@ -140,8 +140,8 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             {realTrainer && (
               <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
                 aria-label="بحث سريع — Ctrl+K"
-                title="بحث سريع — Ctrl+K" className="hidden text-micro md:flex">
-                بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
+                title="بحث سريع — Ctrl+K" className="hidden text-fine md:flex">
+                بحث… <kbd className="rounded border border-white/15 px-1.5 text-fine">Ctrl K</kbd>
               </Button>
             )}
             <NotificationBell audience="trainer" />

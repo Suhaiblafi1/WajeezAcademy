@@ -52,6 +52,11 @@ const PHRASES: Record<string, string> = {
   'cohort.status': 'تغييرُ حالةِ شعبة',
   'cohort.status.sync': 'مواءمةُ حالاتِ الشعب بالتواريخ',
   'cohort.session.add': 'إضافةُ جلسةٍ إلى شعبة',
+  /* نقلُ المدرّب لقاءَه داخلَ نافذته — لا اقتراحٌ يُرفع إلى الإدارة.
+     ويُفرَّق عن `session.reschedule.*` عمدا: ذاك طلبٌ يُبَتّ، وهذا فعلٌ وقع. */
+  'cohort.session.move': 'نقلُ موعدِ لقاءٍ داخلَ نافذة الجدولة',
+  'cohort.schedule_window.open': 'فتحُ نافذةِ جدولةٍ للمدرّب',
+  'cohort.schedule_window.close': 'إغلاقُ نافذةِ جدولةِ المدرّب',
   'cohort.sessions.generate': 'توليدُ جلساتِ شعبةٍ من الجدول',
   'cohort.trainer.assign': 'إسنادُ مدرّبٍ إلى شعبة',
   'cohort.message.send': 'رسالةٌ إلى شعبة',

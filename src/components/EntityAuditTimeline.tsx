@@ -62,7 +62,7 @@ export default function EntityAuditTimeline({
         type="button"
         onClick={() => { const next = !open; setOpen(next); if (next && !data) void load(); }}
         aria-expanded={open}
-        className="flex cursor-pointer items-center gap-1.5 text-micro font-bold text-muted-foreground transition hover:text-foreground"
+        className="flex cursor-pointer items-center gap-1.5 text-fine font-bold text-muted-foreground transition hover:text-foreground"
       >
         <History className="h-3.5 w-3.5" aria-hidden="true" /> {labelAr}
         {data && <span className="tabular-nums text-muted-foreground">({data.total})</span>}
@@ -72,27 +72,27 @@ export default function EntityAuditTimeline({
       {open && (
         <div className="mt-2.5">
           {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="يُحمَّل" />}
-          {error && <p role="alert" className="text-micro font-bold text-red-300">{error}</p>}
+          {error && <p role="alert" className="text-read font-bold text-red-300">{error}</p>}
           {data && data.events.length === 0 && (
-            <p className="text-micro text-muted-foreground">لا أثرَ مسجّلا على هذا العنصر بعد.</p>
+            <p className="text-read text-muted-foreground">لا أثرَ مسجّلا على هذا العنصر بعد.</p>
           )}
           {data && data.events.length > 0 && (
             <ol className="space-y-2">
               {data.events.map((e) => (
                 <Inset as="li" key={e.id} className="px-3 py-2">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="text-micro font-black text-foreground">{e.actionAr}</span>
-                    <span className="text-micro text-muted-foreground">— {e.actorAr}</span>
-                    <span className="text-micro tabular-nums text-muted-foreground">{fmtDateTime(new Date(e.createdAt))}</span>
+                    <span className="text-fine font-black text-foreground">{e.actionAr}</span>
+                    <span className="text-fine text-muted-foreground">— {e.actorAr}</span>
+                    <span className="text-fine tabular-nums text-muted-foreground">{fmtDateTime(new Date(e.createdAt))}</span>
                   </div>
-                  {e.reason && <p className="mt-1 text-micro leading-5 text-muted-foreground">السبب: {e.reason}</p>}
+                  {e.reason && <p className="mt-1 text-read leading-5 text-muted-foreground">السبب: {e.reason}</p>}
                   {e.changed.length > 0 && (
-                    <p className="mt-1 text-micro text-muted-foreground">تغيّر: {e.changed.join("، ")}</p>
+                    <p className="mt-1 text-read text-muted-foreground">تغيّر: {e.changed.join("، ")}</p>
                   )}
                 </Inset>
               ))}
               {data.total > data.events.length && (
-                <li className="text-micro text-muted-foreground">
+                <li className="text-read text-muted-foreground">
                   وأقدمُ من ذلك {data.total - data.events.length} حدثا — تُقرأ كاملةً في «سجلّ الأثر».
                 </li>
               )}

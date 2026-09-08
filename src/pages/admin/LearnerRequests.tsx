@@ -133,37 +133,37 @@ export default function LearnerRequests() {
                       {meta.label}
                       <span className="font-normal text-foreground">— {subject}</span>
                     </p>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
+                    <p className="mt-1.5 text-read text-muted-foreground">
                       للمتعلّم <b className="text-foreground">{r.user.displayName}</b>
                       {" · "}
                       {/* الفاصلُ نصٌّ لا هامش: هامشُ عنصرٍ `dir=ltr` داخل سطرٍ
                           عربيّ يقع على الجهة المقابلة، فيلتصق البريدُ بالاسم. */}
                       <span dir="ltr" className="text-muted-foreground">{r.user.email}</span>
                     </p>
-                    <p className="mt-0.5 text-micro text-muted-foreground">
+                    <p className="mt-0.5 text-read text-muted-foreground">
                       <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                       {r.enrollment && <> · شعبة «{r.enrollment.cohort.title}»</>}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground">
+                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-fine font-bold text-muted-foreground">
                     {STATUS_AR[r.status] ?? r.status}
                   </span>
                 </div>
 
                 {/* جهةُ التوصية بكلام صاحبها — عليها تُكتب، فلا تُكتب عامّة */}
                 {r.audienceAr && (
-                  <Inset as="p" tone="accent" className="mt-3 px-4 py-3 text-xs leading-7 text-foreground">
+                  <Inset as="p" tone="accent" className="mt-3 px-4 py-3 text-read leading-7 text-foreground">
                     <span className="font-bold text-muted-foreground">الجهةُ التي يريدها: </span>{r.audienceAr}
                   </Inset>
                 )}
                 {r.noteAr && (
-                  <Inset as="p" className="mt-2 px-4 py-3 text-xs leading-7 text-foreground">
+                  <Inset as="p" className="mt-2 px-4 py-3 text-read leading-7 text-foreground">
                     <span className="font-bold text-muted-foreground">ملاحظتُه: </span>{r.noteAr}
                   </Inset>
                 )}
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-micro font-bold text-muted-foreground">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الاعتذار، يقرؤه المتعلّم في بوابته
                   </label>
                   <textarea
@@ -196,13 +196,13 @@ export default function LearnerRequests() {
                     <XCircle className="h-3.5 w-3.5" /> اعتذر
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-micro text-muted-foreground">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
+                    <span className="text-fine text-muted-foreground">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
                   )}
                 </div>
 
                 {/* إصدارُ الشهادة نفسِها في شاشة الشعبة — هي حاملةُ القواعد */}
                 {r.enrollment && (
-                  <p className="mt-2.5 text-micro leading-5 text-muted-foreground">
+                  <p className="mt-2.5 text-read leading-5 text-muted-foreground">
                     الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشَّحو الشهادة، ثمّ سجّل الإنجاز هنا.
                   </p>
                 )}

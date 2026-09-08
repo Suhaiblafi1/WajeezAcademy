@@ -223,12 +223,12 @@ export default function TrainerMyLearners() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-black">{r.name}</p>
-                        <p className="mt-0.5 text-micro text-muted-foreground">
+                        <p className="mt-0.5 text-read text-muted-foreground">
                           {r.courseTitle} · {r.cohortTitle}
                           {r.enrollmentStatus !== "active" && ` · ${ENROLLMENT_AR[r.enrollmentStatus] ?? r.enrollmentStatus}`}
                         </p>
                       </div>
-                      <div className="flex shrink-0 flex-wrap items-center gap-2 text-micro font-black">
+                      <div className="flex shrink-0 flex-wrap items-center gap-2 text-fine font-black">
                         <span className="rounded-full bg-teal/15 px-3 py-1 text-teal-light-ink">تقدّمُه {r.progress}٪</span>
                         <span className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground">
                           {r.attendedOf
@@ -243,12 +243,12 @@ export default function TrainerMyLearners() {
                       </div>
                     </div>
                     {r.concernsAr.length > 0 && (
-                      <p className="mt-2.5 flex items-start gap-1.5 text-micro leading-6 text-gold-ink">
+                      <p className="mt-2.5 flex items-start gap-1.5 text-read leading-6 text-gold-ink">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                         {r.concernsAr.join(" · ")}
                       </p>
                     )}
-                    <div className="mt-2.5 flex flex-wrap gap-2 text-micro font-bold">
+                    <div className="mt-2.5 flex flex-wrap gap-2 text-fine font-bold">
                       <Link to="/trainer/board" className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground transition hover:border-teal/50 hover:text-foreground">
                         افتح شعبتَه وخاطبه
                       </Link>

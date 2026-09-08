@@ -205,7 +205,7 @@ export default function TrainerQualifications() {
               {quals.map((q) => (
                 <Card as="li" key={q.courseId}>
                   <p className="font-bold">{q.title || q.courseId}</p>
-                  <p className="mt-1 text-micro leading-5 text-muted-foreground">
+                  <p className="mt-1 text-read leading-5 text-muted-foreground">
                     <span className="font-mono">{q.courseId}</span> · النسخة {q.currentVersion} · أُهِّلت {fmtDate(q.qualifiedAt)}
                   </p>
                 </Card>
@@ -285,7 +285,7 @@ export default function TrainerQualifications() {
               {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
               احفظ ساعاتي
             </button>
-            {dirty && <span className="text-micro font-bold text-gold-ink">تغييراتٌ لم تُحفظ</span>}
+            {dirty && <span className="text-fine font-bold text-gold-ink">تغييراتٌ لم تُحفظ</span>}
           </div>
         </section>
 
@@ -312,7 +312,7 @@ export default function TrainerQualifications() {
                         {fmtDate(t.startsOn)} — {fmtDate(t.endsOn)}
                       </span>
                       <span
-                        className={`rounded-full border px-2.5 py-0.5 text-micro font-black ${
+                        className={`rounded-full border px-2.5 py-0.5 text-fine font-black ${
                           state ? state.cls : "border-white/15 text-muted-foreground"
                         }`}
                       >
@@ -322,7 +322,7 @@ export default function TrainerQualifications() {
 
                     {/* ما خُطِّط له فيه — فالاعتذارُ عن فصلٍ فيه ثلاثُ شعبٍ قرارٌ آخر */}
                     {t.assignedCohorts.length > 0 && (
-                      <p className="mt-2 text-xs leading-6 text-gold-ink">
+                      <p className="mt-2 text-read leading-6 text-gold-ink">
                         مُسنَدٌ إليك فيه {t.assignedCohorts.length}{" "}
                         {t.assignedCohorts.length === 1 ? "شعبة" : t.assignedCohorts.length === 2 ? "شعبتان" : "شعب"} —{" "}
                         {t.assignedCohorts.map((c) => c.title).join(" · ")}
@@ -415,7 +415,7 @@ export default function TrainerQualifications() {
               <Plus className="h-4 w-4" aria-hidden="true" /> سجّل
             </button>
             {leaveErr && (
-              <p id="leave-err" role="alert" className="text-micro font-bold text-red-300 sm:col-span-4">{leaveErr}</p>
+              <p id="leave-err" role="alert" className="text-read font-bold text-red-300 sm:col-span-4">{leaveErr}</p>
             )}
           </Card>
         </section>

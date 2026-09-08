@@ -153,10 +153,10 @@ export default function TrainerRunOps() {
           <Clock className="h-4 w-4 text-gold-ink" />
           طلباتُ التأهيل المعلّقة
           {requests.length > 0 && (
-            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-micro font-black text-gold-ink">{requests.length}</span>
+            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-fine font-black text-gold-ink">{requests.length}</span>
           )}
         </h3>
-        <p className="mt-1 text-xs leading-6 text-muted-foreground">
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
           يُقدَّمها من يجدول الشعبة، ويبتّ فيها من يملك التأهيل — <b>فمن يطلب ليس من يقرّر</b>.
           والموافقةُ <b>تؤهّل وتُسند إلى الشعبة المطلوبة في فعلٍ واحد</b>.
         </p>
@@ -164,14 +164,14 @@ export default function TrainerRunOps() {
         {requests.length === 0 ? (
           <Card className="mt-3 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink/50" />
-            <p className="mt-2 text-xs text-muted-foreground">لا طلبَ ينتظر قرارك.</p>
+            <p className="mt-2 text-read text-muted-foreground">لا طلبَ ينتظر قرارك.</p>
           </Card>
         ) : (
           <ul className="mt-3 space-y-3">
             {requests.map((r) => (
               <Card as="li" tone="warn" key={r.id}>
                 <p className="text-sm font-black">{r.profile.application.fullName}</p>
-                <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
                   للدورة: <b className="text-foreground">{r.course.versions[0]?.titleAr ?? courseName(r.courseId)}</b>
                   {r.requestedCohort && (
                     <> · للشعبة: <b className="text-foreground">{r.requestedCohort.title}</b>
@@ -180,7 +180,7 @@ export default function TrainerRunOps() {
                   )}
                   {r.requestedAt && <> · طُلب {fmtDateTime(new Date(r.requestedAt))}</>}
                 </p>
-                {r.note && <p className="mt-2 rounded-xl bg-paper/30 p-2.5 text-xs leading-6">{r.note}</p>}
+                {r.note && <p className="mt-2 rounded-xl bg-paper/30 p-2.5 text-read leading-6">{r.note}</p>}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <input
                     value={note[r.id] ?? ""}
@@ -265,13 +265,13 @@ export default function TrainerRunOps() {
               })();
             }}
           >
-            <p className="text-xs leading-6 text-muted-foreground">
+            <p className="text-read leading-6 text-muted-foreground">
               يُنشأ في خطوةٍ واحدة: <b className="text-foreground">حسابُه</b> و<b className="text-foreground">ملفُّ مدرّبٍ نشط</b> و<b className="text-foreground">دورُه</b> —
               فيُؤهَّل ويُسنَد من هذه الشاشة مباشرة. ولا يظهر للعامّة حتّى تُعتمد صورتُه ونبذتُه.
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <label className="block">
-                <span className="mb-1 block text-micro font-bold text-muted-foreground">الاسم الكامل</span>
+                <span className="mb-1 block text-fine font-bold text-muted-foreground">الاسم الكامل</span>
                 <input
                   required minLength={2} maxLength={120}
                   value={addForm.fullName}
@@ -280,7 +280,7 @@ export default function TrainerRunOps() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-micro font-bold text-muted-foreground">البريد</span>
+                <span className="mb-1 block text-fine font-bold text-muted-foreground">البريد</span>
                 <input
                   required type="email" dir="ltr"
                   value={addForm.email}
@@ -289,7 +289,7 @@ export default function TrainerRunOps() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1 block text-micro font-bold text-muted-foreground">المسمّى (اختياريّ)</span>
+                <span className="mb-1 block text-fine font-bold text-muted-foreground">المسمّى (اختياريّ)</span>
                 <input
                   maxLength={160}
                   value={addForm.headline}
@@ -312,7 +312,7 @@ export default function TrainerRunOps() {
           <Card className="mt-3 p-8 text-center">
             <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm font-black">لا مدرّبَ بعد</p>
-            <p className="mt-1 text-xs leading-6 text-muted-foreground">
+            <p className="mt-1 text-read leading-6 text-muted-foreground">
               يظهر هنا كلُّ من أُنشئ له ملفُّ مدرّب — أي من اعتُمد من تبويب «الطلبات».
             </p>
           </Card>
@@ -331,20 +331,20 @@ export default function TrainerRunOps() {
                     <div className="min-w-0">
                       <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
                         {t.name}
-                        {t.suspended && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-micro font-black text-red-300">موقوف</span>}
+                        {t.suspended && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-fine font-black text-red-300">موقوف</span>}
                         {t.publiclyVisible && (
-                          <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-micro font-black text-teal-light-ink">
+                          <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">
                             <BadgeCheck className="h-3 w-3" /> ظاهرٌ للعامّة
                           </span>
                         )}
                       </p>
-                      <p dir="ltr" className="mt-0.5 text-right text-micro text-muted-foreground">{t.email}</p>
+                      <p dir="ltr" className="mt-0.5 text-right text-read text-muted-foreground">{t.email}</p>
                     </div>
                   </div>
 
                   {/* ما يمنع الخطوةَ التالية — يُقال قبل الضغط لا بعده */}
                   {!t.hasAccount && (
-                    <Inset as="p" tone="warn" className="mt-2.5 flex items-start gap-1.5 p-2.5 text-micro leading-6 text-gold-ink">
+                    <Inset as="p" tone="warn" className="mt-2.5 flex items-start gap-1.5 p-2.5 text-read leading-6 text-gold-ink">
                       <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       لا حسابَ مربوطٌ بهذا الملفّ — فلا تُفتح له بوّابتُه ولو أُسنِد. اعتمِدْه من تبويب «الطلبات».
                     </Inset>
@@ -352,11 +352,11 @@ export default function TrainerRunOps() {
 
                   <div className="mt-2.5 grid gap-3 md:grid-cols-2">
                     <div>
-                      <p className="text-micro font-black text-muted-foreground">مؤهَّلٌ لـ</p>
+                      <p className="text-read font-black text-muted-foreground">مؤهَّلٌ لـ</p>
                       {t.qualifications.length === 0 ? (
-                        <p className="mt-1 text-micro text-muted-foreground">لا تأهيلَ بعد — وبلا تأهيلٍ لا يُسنَد إلى شعبة.</p>
+                        <p className="mt-1 text-read text-muted-foreground">لا تأهيلَ بعد — وبلا تأهيلٍ لا يُسنَد إلى شعبة.</p>
                       ) : (
-                        <ul className="mt-1 space-y-0.5 text-micro leading-6">
+                        <ul className="mt-1 space-y-0.5 text-fine leading-6">
                           {t.qualifications.map((x) => (
                             <li key={x.courseId}>
                               {x.courseTitle}
@@ -367,11 +367,11 @@ export default function TrainerRunOps() {
                       )}
                     </div>
                     <div>
-                      <p className="text-micro font-black text-muted-foreground">مُسنَدٌ إلى</p>
+                      <p className="text-read font-black text-muted-foreground">مُسنَدٌ إلى</p>
                       {t.assignments.length === 0 ? (
-                        <p className="mt-1 text-micro text-muted-foreground">لا إسنادَ نشط.</p>
+                        <p className="mt-1 text-read text-muted-foreground">لا إسنادَ نشط.</p>
                       ) : (
-                        <ul className="mt-1 space-y-0.5 text-micro leading-6">
+                        <ul className="mt-1 space-y-0.5 text-fine leading-6">
                           {t.assignments.map((a, i) => (
                             <li key={`${a.courseId}-${a.cohortId ?? i}`}>
                               {a.courseTitle}{a.cohortTitle ? ` — ${a.cohortTitle}` : " — بلا شعبة"}

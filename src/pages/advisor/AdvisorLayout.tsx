@@ -68,7 +68,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
           حسابُك يملك صلاحيّاتِ المستشار، لكن لا ملفَّ مستشارٍ مرتبطا به — والحالاتُ والعمولةُ والتقييماتُ كلُّها تُقرأ من ذلك الملفّ. فلا شيءَ هنا لنعرضه لك.
         </p>
-        <p className="mt-3 max-w-md text-center text-xs leading-6 text-muted-foreground">
+        <p className="mt-3 max-w-md text-center text-read leading-6 text-muted-foreground">
           وهذا متوقَّعٌ لمدير النظام: بوّابةُ المستشار لمن يُرشد فعلا. لمعاينتها، ادخل بحساب مستشار.
         </p>
         <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-foreground transition hover:border-white/40">
@@ -108,8 +108,8 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
             {realAdvisor && (
               <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
                 aria-label="بحث سريع — Ctrl+K"
-                title="بحث سريع — Ctrl+K" className="hidden text-micro md:flex">
-                بحث… <kbd className="rounded border border-white/15 px-1.5 text-micro">Ctrl K</kbd>
+                title="بحث سريع — Ctrl+K" className="hidden text-fine md:flex">
+                بحث… <kbd className="rounded border border-white/15 px-1.5 text-fine">Ctrl K</kbd>
               </Button>
             )}
             <NotificationBell audience="staff" />
