@@ -89,7 +89,9 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             <PlayCircle className="h-3.5 w-3.5 text-teal" /> فتحُ شعبةٍ لكلّ دورة بلا شعبة
           </p>
           <p className="mt-1 text-micro leading-5 text-muted-foreground">
-            تبدأ بعد ستّة أسابيع · ثلاثاء وخميس ٦ مساءً بتوقيت عمّان · سعة ٢٠ · بسعر قائمة دورتها.
+            تبدأ من مبدأ الفصل (٤ أكتوبر ٢٠٢٦) أو بعد أسبوعين، أيّهما أبعد · ستّةُ مواعيدَ
+            تتناوب: يومٌ واحدٌ لكلّ شعبة، ٦ أو ٨ مساءً بتوقيت عمّان (الأحد–الخميس) ·
+            ٣ أو ٤ جلساتٍ مباشرة بينها أسبوعان · سعة ٢٠ · بسعر قائمة دورتها.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
