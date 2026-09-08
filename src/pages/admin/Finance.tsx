@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
 import EmptyState from "@/components/EmptyState";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Chip from "@/components/ui/Chip";
@@ -25,7 +27,7 @@ import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 
 import Button from "@/components/ui/Button";
-const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
+import { staffControlCls as inputCls } from "@/components/FormKit";
 
 interface EnrollReq {
   id: string; status: string; note: string | null; createdAt: string;
@@ -39,6 +41,9 @@ interface Invoice {
 }
 interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; invoice: { id: string } } }
 interface Coupon { id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null }
+
+/* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
+const REQ_FORMS = { one: "طلبُ تسجيلٍ", two: "طلبا تسجيلٍ", few: "طلباتِ تسجيلٍ", many: "طلبَ تسجيلٍ" };
 
 const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", converted: "تحوّل إلى تسجيل ✓", rejected: "مرفوض", expired: "منتهي" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة", void: "ملغاة" };
@@ -196,11 +201,45 @@ export default function Finance() {
         { label: "الدفع يُسجَّل", actor: "أنت أو بوابة الدفع" },
         { label: "المنصة تُفتح للطالب", actor: "تلقائي فور الدفع" },
       ]} />
+      {/* ── العملُ قبل الألسنة ──
+
+          كانت الشاشةُ تفتح بأربعة ألسنةٍ متساويةِ الوزن، عددُ المعلَّق في
+          كلٍّ منها بين قوسين بحجم النصّ نفسِه. والذي ينتظر قرارا اليومَ
+          طلبُ التسجيل، والباقي سجلٌّ يُقرأ. فصار ما ينتظر جملةً في الرأس،
+          والفواتيرُ والاستردادُ سطرا تحته يُقال ولا ينازع. */}
+      <WorkHeader
+        loading={loading}
+        icon={Inbox}
+        count={selectable.length}
+        forms={REQ_FORMS}
+        waitingAr="تنتظر مراجعتَك"
+        stats={canViewMoney
+          ? [`${invoices.filter((i) => i.status !== "paid").length} فاتورةً غير مدفوعة`,
+             `${refunds.filter((r) => r.status === "requested").length} استرداد ينتظر التنفيذ`]
+          : []}
+        actionAr={tab === "requests" ? "ابدأ بأوّلها" : "اعرِضها"}
+        /* والسببُ يُقال: البحثُ قد يُخفي الطابورَ كلَّه، فيبهت الزرُّ بلا
+           أن يُعرف لماذا. */
+        disabledReasonAr={tab === "requests" && reqView.total === 0
+          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          : undefined}
+        onAction={() => {
+          /* اللسانُ أوّلا، ثمّ أوّلُ معلَّقٍ معروضٍ يُبلَغ ويُركَّز عليه */
+          if (tab !== "requests") { setTab("requests"); setQ(""); setPage(1); return; }
+          const first = reqView.rows.find((r) => r.status === "pending") ?? reqView.rows[0];
+          if (first) revealRow(`enroll-req-${first.id}`);
+        }}
+        doneAr="لا طلبَ تسجيلٍ ينتظر مراجعتَك — وما يصل منها يظهر هنا فورا."
+      />
+
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap rounded-full border border-white/15 p-1">
           {tabs.map(([k, label, n]) => (
             <button key={k} onClick={() => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
-              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"}`}>
+              /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
+                 الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
+                 يتنازعان العين. وهو ما استقرّ عليه لسانُ الشعبة قبله. */
+              className={`cursor-pointer rounded-full px-4 py-1.5 text-xs font-black transition ${tab === k ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"}`}>
               {label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}
             </button>
           ))}
@@ -213,7 +252,7 @@ export default function Finance() {
       {/* ولا يُترك القارئُ يظنّ الشاشةَ معطوبةً لخلوّها من الأزرار: يُقال له
           ما يستطيع وما لا يستطيع ومن يستطيعه — صراحةً، مرّةً في أعلى الصفحة. */}
       {readOnly && (
-        <Card as="p" className="mb-5 flex items-start gap-2 px-4 py-3 text-micro font-bold leading-6 text-muted-foreground">
+        <Card as="p" className="mb-5 flex items-start gap-2 px-4 py-3 text-read font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
           حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
           أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
@@ -236,7 +275,7 @@ export default function Finance() {
               placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
           )}
           {selectable.length > 0 && (
-            <div className="flex items-center gap-2 text-micro text-muted-foreground">
+            <div className="flex items-center gap-2 text-fine text-muted-foreground">
               <input type="checkbox"
                 checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
                 onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
@@ -258,14 +297,15 @@ export default function Finance() {
               actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]} />
           )}
           {reqView.rows.map((r) => (
-            <Card key={r.id}>
+            /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+            <Card key={r.id} id={`enroll-req-${r.id}`} tabIndex={-1} className="outline-none">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{r.user.displayName} <span className="text-micro font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="font-black">{r.user.displayName} <span className="text-fine font-normal text-muted-foreground" dir="ltr">{r.user.email}</span></p>
+                  <p className="mt-1 text-read text-muted-foreground">
                     {r.cohort.course.versions[0]?.titleAr ?? "—"} · {r.cohort.title} · {r.cohort.price ? `${r.cohort.price} ${r.cohort.currency}` : "بلا سعر"}
                   </p>
-                  {r.note && <p className="mt-1 text-micro text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
+                  {r.note && <p className="mt-1 text-read text-muted-foreground">ملاحظة المتعلم: {r.note}</p>}
                 </div>
                 <div className="flex items-center gap-3">
                   <Chip tone="accent" srPrefixAr="الحالة">{ER_STATUS[r.status] ?? r.status}</Chip>
@@ -316,8 +356,8 @@ export default function Finance() {
             <Card key={inv.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-micro font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
-                  <p className="mt-1 text-xs text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
+                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-fine font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-read text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
                 <Chip tone="accent" srPrefixAr="حالةُ الفاتورة">{INV_STATUS[inv.status] ?? inv.status}</Chip>
               </div>
@@ -341,7 +381,7 @@ export default function Finance() {
                   <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
                     placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
                   <Button tone="secondary" size="sm" disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
-                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")} className="text-micro text-gold-ink">
+                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")} className="text-fine text-gold-ink">
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
                   </Button>
                   </>)}
@@ -363,7 +403,7 @@ export default function Finance() {
             <Card key={rf.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
-                <p className="mt-1 text-micro text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
+                <p className="mt-1 text-read text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Chip tone="accent" srPrefixAr="حالةُ الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
@@ -440,7 +480,7 @@ export default function Finance() {
               }, "أُنشئت الخطة وأصبحت عامة فورا")} className="mt-3">
               أنشئ الخطة
             </Button>
-            <p className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground">
+            <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
               <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
             </p>
           </Panel>

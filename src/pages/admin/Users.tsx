@@ -232,7 +232,7 @@ export default function Users() {
       {creating && canManage && (
         <Card tone="warn" className="mb-5">
           <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
-          <p className="mt-1 text-micro leading-6 text-muted-foreground">
+          <p className="mt-1 text-read leading-6 text-muted-foreground">
             لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>سبعةَ أيّام</b>.
             ويبقى «مدعوّا» حتّى يدخل، فلا يُحسب فريقا عاملا قبل ذلك.
           </p>
@@ -277,8 +277,8 @@ export default function Users() {
           {/* دفعةٌ واحدةٌ لفريقٍ كامل — سطرٌ لكلّ شخص «بريد, اسم».
               تأهيلُ ستّةٍ كان ستَّ رحلاتٍ في النموذج نفسِه. */}
           <details className="mt-4 border-t border-white/10 pt-3">
-            <summary className="cursor-pointer text-micro font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
-            <p className="mt-2 text-micro leading-6 text-muted-foreground">
+            <summary className="cursor-pointer text-fine font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
               سطرٌ لكلّ شخص: <span dir="ltr" className="font-mono">name@example.com, الاسم الكامل</span> — بالدور المختار أعلاه.
               وما يفشل من الأسطر يُقال وحدَه، فلا تتوقّف الدفعةُ عند أوّل خطأ.
             </p>
@@ -350,30 +350,30 @@ export default function Users() {
             <Card key={u.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-micro font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
+                  <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-fine font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {u.roles.map((r) => (
-                      <span key={r.id} className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">{r.nameAr}</span>
+                      <span key={r.id} className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">{r.nameAr}</span>
                     ))}
-                    <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${(STATUS_META[u.status] ?? STATUS_META.suspended).cls}`}>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-fine font-bold ${(STATUS_META[u.status] ?? STATUS_META.suspended).cls}`}>
                       {(STATUS_META[u.status] ?? { label: u.status }).label}
                     </span>
                     {u.invite.state === "pending" && (
-                      <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">
+                      <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
                         دعوةٌ سارية حتّى {fmtDateAr(u.invite.expiresAt)}
                       </span>
                     )}
                     {u.invite.state === "expired" && (
-                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-micro font-bold text-gold-ink">دعوةٌ انتهت</span>
+                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">دعوةٌ انتهت</span>
                     )}
                     {/* بلا توثيقٍ لا تُصدر شهادة — فالشارةُ تقول سببَ التوقّف
                         قبل أن يُفتح الحساب، ولا تُذكر لمن وثّق. */}
                     {!u.emailVerified && (
-                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-micro font-bold text-gold-ink">بريدٌ غيرُ موثَّق</span>
+                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">بريدٌ غيرُ موثَّق</span>
                     )}
                     {/* من له استثناءٌ يُعرف من القائمة قبل فتحه */}
-                    {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-micro font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
-                    {u.denies > 0 && <span className="rounded-full border border-red-400/40 px-2.5 py-0.5 text-micro font-bold text-red-300">−{u.denies} ممنوعة</span>}
+                    {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
+                    {u.denies > 0 && <span className="rounded-full border border-red-400/40 px-2.5 py-0.5 text-fine font-bold text-red-300">−{u.denies} ممنوعة</span>}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -456,18 +456,18 @@ export default function Users() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
                           <p className="text-sm font-black">صلاحيات {perms.user.displayName}</p>
-                          <p className="mt-0.5 text-micro leading-relaxed text-muted-foreground">
+                          <p className="mt-0.5 text-read leading-relaxed text-muted-foreground">
                             الدور حزمةٌ، وهذا استثناءٌ لشخصه: منحٌ زائدٌ عليه، أو منعٌ ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
                           </p>
                           {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
                           {perms.rank.actor <= perms.rank.target && (
-                            <Inset as="p" className="mt-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-micro font-bold leading-6 text-[#FABC05]">
+                            <Inset as="p" className="mt-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-read font-bold leading-6 text-[#FABC05]">
                               لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
                             </Inset>
                           )}
                         </div>
                         <div className="text-left">
-                          <p className="text-micro text-muted-foreground">صلاحيّاته الفعليّة</p>
+                          <p className="text-read text-muted-foreground">صلاحيّاته الفعليّة</p>
                           <p className="text-lg font-black text-teal-light-ink">{perms.permissions.filter((p) => p.effective).length}</p>
                         </div>
                       </div>
@@ -494,7 +494,7 @@ export default function Users() {
                             }, {}),
                         ).map(([group, list]) => (
                           <div key={group}>
-                            <p className="mb-1.5 text-micro font-black text-muted-foreground">{GROUP_AR[group] ?? group}</p>
+                            <p className="mb-1.5 text-read font-black text-muted-foreground">{GROUP_AR[group] ?? group}</p>
                             <div className="space-y-1.5">
                               {list.map((p) => (
                                 <div key={p.key} className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 ${
@@ -503,12 +503,12 @@ export default function Users() {
                                     : p.fromRole ? "border-white/10 bg-white/[0.02]" : "border-white/[0.07]"
                                 }`}>
                                   <div className="min-w-0">
-                                    <p className={`text-xs font-bold ${p.effective ? "text-foreground" : "text-muted-foreground line-through"}`}>{p.description}</p>
-                                    <p className="text-micro text-muted-foreground" dir="ltr">{p.key}</p>
-                                    {p.reason && <p className="mt-0.5 text-micro text-muted-foreground">السبب: {p.reason}</p>}
+                                    <p className={`text-read font-bold ${p.effective ? "text-foreground" : "text-muted-foreground line-through"}`}>{p.description}</p>
+                                    <p className="text-read text-muted-foreground" dir="ltr">{p.key}</p>
+                                    {p.reason && <p className="mt-0.5 text-read text-muted-foreground">السبب: {p.reason}</p>}
                                   </div>
                                   <div className="flex shrink-0 items-center gap-1.5">
-                                    <span className={`rounded-full border px-2.5 py-0.5 text-micro font-bold ${
+                                    <span className={`rounded-full border px-2.5 py-0.5 text-fine font-bold ${
                                       p.effect === "deny" ? "border-red-400/45 text-red-300"
                                         : p.effect === "grant" ? "border-teal/45 text-teal-light-ink"
                                         : p.fromRole ? "border-white/15 text-muted-foreground" : "border-white/10 text-muted-foreground/50"
@@ -516,17 +516,17 @@ export default function Users() {
                                       {p.effect === "deny" ? "مُنعت عنه" : p.effect === "grant" ? "مُنحت له" : p.fromRole ? "من دوره" : "خارج دوره"}
                                     </span>
                                     {!p.delegatable ? (
-                                      <span className="max-w-[11rem] text-left text-micro leading-4 text-muted-foreground">{p.refusal}</span>
+                                      <span className="max-w-[11rem] text-left text-fine leading-4 text-muted-foreground">{p.refusal}</span>
                                     ) : p.effect ? (
-                                      <Button tone="secondary" size="sm" disabled={busy} onClick={() => void setPerm(u.id, p.key, "clear")} className="text-micro">
+                                      <Button tone="secondary" size="sm" disabled={busy} onClick={() => void setPerm(u.id, p.key, "clear")} className="text-fine">
                                         أزل الاستثناء
                                       </Button>
                                     ) : p.fromRole ? (
-                                      <Button tone="danger" size="sm" disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "deny")} className="text-micro">
+                                      <Button tone="danger" size="sm" disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "deny")} className="text-fine">
                                         <Minus className="h-3 w-3" /> امنعها
                                       </Button>
                                     ) : (
-                                      <Button tone="confirm" size="sm" disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "grant")} className="text-micro text-teal-light-ink">
+                                      <Button tone="confirm" size="sm" disabled={busy || permReason.trim().length < 5} onClick={() => void setPerm(u.id, p.key, "grant")} className="text-fine text-teal-light-ink">
                                         <Plus className="h-3 w-3" /> امنحها
                                       </Button>
                                     )}
@@ -538,7 +538,7 @@ export default function Users() {
                         ))}
                       </div>
 
-                      <p className="mt-3 border-t border-white/8 pt-3 text-micro leading-relaxed text-muted-foreground">
+                      <p className="mt-3 border-t border-white/8 pt-3 text-read leading-relaxed text-muted-foreground">
                         كلّ منحٍ ومنعٍ يُقيَّد في سجلّ التدقيق باسمك وسببه، وتُبطَل جلسات صاحبه فورا — فلا يعمل بصلاحيةٍ نُزعت ولا ينتظر ليعمل بما مُنح.
                       </p>
                     </>
@@ -552,12 +552,12 @@ export default function Users() {
 
               {editing === u.id && (
                 <Inset className="mt-4">
-                  <p className="mb-2 text-micro font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
+                  <p className="mb-2 text-read font-bold text-muted-foreground">تعيين الأدوار — يستبدل القائمة كاملة:</p>
                   <div className="flex flex-wrap gap-2">
                     {ALL_ROLES.map((r) => (
                       <button key={r} type="button"
                         onClick={() => setRolePick(rolePick.includes(r) ? rolePick.filter((x) => x !== r) : [...rolePick, r])}
-                        className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
+                        className={`cursor-pointer rounded-full border px-3 py-1 text-fine font-bold transition ${rolePick.includes(r) ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                         {ROLE_NAMES_AR[r]}
                       </button>
                     ))}
@@ -565,7 +565,7 @@ export default function Users() {
                   {/* نزعُ «متعلّم» يُغلق بوابة تعلّم صاحب الحساب — ولا يظهر أثره
                       إلّا عنده لا هنا. فيُقال قبل الحفظ لا بعد الشكوى. */}
                   {u.roles.some((r) => r.id === "learner") && !rolePick.includes("learner") && (
-                    <Inset as="p" className="mt-3 flex items-start gap-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-micro font-bold leading-6 text-[#FABC05]">
+                    <Inset as="p" className="mt-3 flex items-start gap-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-read font-bold leading-6 text-[#FABC05]">
                       <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                       بنزع «متعلّم» تُغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
                       ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.

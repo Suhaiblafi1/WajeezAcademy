@@ -207,6 +207,12 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     schema: { tags: ['admin-operations'], summary: 'الحالات بلا مستشار — للإسناد' },
   }, async () => advisors.listUnassigned())
 
+  /* من يُسنَد إليه — يُقرأ بمن يملك الإسناد، لا بمن يملك إدارةَ المستخدمين */
+  app.get('/api/admin/advisor-cases/assignable-advisors', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'المستشارون النشطون للإسناد — بديلُ لصق المعرّف' },
+  }, async () => advisors.assignableAdvisors())
+
   app.post('/api/admin/advisor-cases/:id/assign', {
     preHandler: requirePermission('advisor.assign'),
     schema: { tags: ['admin-operations'], summary: 'إسناد حالة لمستشار — تاريخ الإسناد محفوظ' },

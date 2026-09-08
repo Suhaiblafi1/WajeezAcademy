@@ -23,6 +23,11 @@ import { fmtDateTimeAr } from "@/utils/format";
 
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 interface Row {
   id: string;
   kind: string;
@@ -46,6 +51,9 @@ const STATUS_AR: Record<string, string> = {
   in_review: "قيد المراجعة",
 };
 
+/* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
+const REQ_FORMS = { one: "طلبٌ", two: "طلبان", few: "طلبات", many: "طلبا" };
+
 /** أقلُّ سببٍ يُقرأ — مطابقٌ لما يفرضه الخادم عند الاعتذار */
 const MIN_REASON = 5;
 
@@ -53,6 +61,10 @@ export default function LearnerRequests() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
+  /* الطابورُ يطول ولا شيءَ فيه يُبحث به — والبحثُ على الطابور كلِّه لا على
+     الصفحة المعروضة، وإلّا لم يجد الباحثُ إلّا ما كان أمامه. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [busy, setBusy] = useState("");
 
   const load = useCallback(async () => {
@@ -65,6 +77,13 @@ export default function LearnerRequests() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* يُبحث بصاحب الطلب وبشعبته — وهما ما يُسأل بهما */
+  const matched = (rows ?? []).filter((r) => matchesQuery(q, [
+    r.user.displayName, r.user.email, r.audienceAr, r.noteAr,
+    r.enrollment?.cohort.title,
+  ]));
+  const view = paginate(matched, page, 20);
 
   const decide = async (id: string, status: "in_review" | "fulfilled" | "declined") => {
     setBusy(id);
@@ -102,20 +121,40 @@ export default function LearnerRequests() {
 
   return (
     <AdminLayout title="طلبات المتعلّمين — شهادةٌ وتوصية">
-      {rows === null ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      ) : rows.length === 0 ? (
-        <Panel className="grid place-items-center py-16 text-center">
-          <CheckCircle2 className="h-12 w-12 text-teal-light-ink/50" />
-          <h2 className="mt-4 text-xl font-black">لا طلبَ ينتظر قرارك</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            حين يُنهي متعلّمٌ دورتَه أو مسارَه ويطلب شهادتَه أو توصيةً يظهر هنا — مستوفيا قواعدَ الإكمال، فحسابُ
-            الأهليّة يقع قبل الطلب لا بعده.
-          </p>
-        </Panel>
-      ) : (
+      {/* ── العملُ قبل القائمة ──
+
+          الطابورُ هنا كلُّه عملٌ ينتظر — والشاشةُ كانت تفتح به مسرودا. فصار
+          العددُ جملةً وللبدء زرٌّ يبلغ أوّلَه ويضع التركيزَ عليه، والصنفُ
+          سطرا تحته (شهادةٌ أم توصية) فيُعرف ما ينتظر بلا فتح. */}
+      <WorkHeader
+        loading={rows === null}
+        icon={Award}
+        count={rows?.length ?? 0}
+        forms={REQ_FORMS}
+        waitingAr="تنتظر قرارَك"
+        stats={rows ? [
+          `${rows.filter((r) => r.kind !== "recommendation").length} شهادةً`,
+          `${rows.filter((r) => r.kind === "recommendation").length} توصيةً مهنيّة`,
+        ] : []}
+        actionAr="ابدأ بأقدمها"
+        disabledReasonAr={rows && rows.length > 0 && view.total === 0
+          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          : undefined}
+        onAction={() => { if (view.rows[0]) revealRow(`learner-req-${view.rows[0].id}`); }}
+        doneAr="لا طلبَ ينتظر قرارَك — وحين يُنهي متعلّمٌ دورتَه أو مسارَه ويطلب شهادتَه أو توصيةً يظهر هنا، مستوفيا قواعدَ الإكمال: فحسابُ الأهليّة يقع قبل الطلب لا بعده."
+      />
+
+      {rows !== null && rows.length > 0 && (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
+          placeholder="ابحث باسم المتعلّم أو بريده أو شعبته…" />
+        {view.rows.length === 0 ? (
+          <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+            لا طلبَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Panel>
+        ) : (
         <ul className="space-y-4">
-          {rows.map((r) => {
+          {view.rows.map((r) => {
             const meta = KIND_AR[r.kind] ?? { label: r.kind, icon: Award };
             const subject =
               r.enrollment
@@ -125,7 +164,8 @@ export default function LearnerRequests() {
                   : "—";
             const reason = note[r.id] ?? "";
             return (
-              <Panel as="li" key={r.id}>
+              /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+              <Panel as="li" key={r.id} id={`learner-req-${r.id}`} tabIndex={-1} className="outline-none">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
@@ -133,37 +173,37 @@ export default function LearnerRequests() {
                       {meta.label}
                       <span className="font-normal text-foreground">— {subject}</span>
                     </p>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
+                    <p className="mt-1.5 text-read text-muted-foreground">
                       للمتعلّم <b className="text-foreground">{r.user.displayName}</b>
                       {" · "}
                       {/* الفاصلُ نصٌّ لا هامش: هامشُ عنصرٍ `dir=ltr` داخل سطرٍ
                           عربيّ يقع على الجهة المقابلة، فيلتصق البريدُ بالاسم. */}
                       <span dir="ltr" className="text-muted-foreground">{r.user.email}</span>
                     </p>
-                    <p className="mt-0.5 text-micro text-muted-foreground">
+                    <p className="mt-0.5 text-read text-muted-foreground">
                       <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                       {r.enrollment && <> · شعبة «{r.enrollment.cohort.title}»</>}
                     </p>
                   </div>
-                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-muted-foreground">
+                  <span className="shrink-0 rounded-full border border-white/15 px-3 py-1 text-fine font-bold text-muted-foreground">
                     {STATUS_AR[r.status] ?? r.status}
                   </span>
                 </div>
 
                 {/* جهةُ التوصية بكلام صاحبها — عليها تُكتب، فلا تُكتب عامّة */}
                 {r.audienceAr && (
-                  <Inset as="p" tone="accent" className="mt-3 px-4 py-3 text-xs leading-7 text-foreground">
+                  <Inset as="p" tone="accent" className="mt-3 px-4 py-3 text-read leading-7 text-foreground">
                     <span className="font-bold text-muted-foreground">الجهةُ التي يريدها: </span>{r.audienceAr}
                   </Inset>
                 )}
                 {r.noteAr && (
-                  <Inset as="p" className="mt-2 px-4 py-3 text-xs leading-7 text-foreground">
+                  <Inset as="p" className="mt-2 px-4 py-3 text-read leading-7 text-foreground">
                     <span className="font-bold text-muted-foreground">ملاحظتُه: </span>{r.noteAr}
                   </Inset>
                 )}
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-micro font-bold text-muted-foreground">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الاعتذار، يقرؤه المتعلّم في بوابته
                   </label>
                   <textarea
@@ -196,13 +236,13 @@ export default function LearnerRequests() {
                     <XCircle className="h-3.5 w-3.5" /> اعتذر
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-micro text-muted-foreground">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
+                    <span className="text-fine text-muted-foreground">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
                   )}
                 </div>
 
                 {/* إصدارُ الشهادة نفسِها في شاشة الشعبة — هي حاملةُ القواعد */}
                 {r.enrollment && (
-                  <p className="mt-2.5 text-micro leading-5 text-muted-foreground">
+                  <p className="mt-2.5 text-read leading-5 text-muted-foreground">
                     الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشَّحو الشهادة، ثمّ سجّل الإنجاز هنا.
                   </p>
                 )}
@@ -210,6 +250,8 @@ export default function LearnerRequests() {
             );
           })}
         </ul>
+        )}
+        </>
       )}
     </AdminLayout>
   );

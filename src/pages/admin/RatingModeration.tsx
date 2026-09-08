@@ -14,6 +14,11 @@ import ConfirmAction from "@/components/ConfirmAction";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
@@ -29,6 +34,9 @@ interface QueueItem {
 const KIND_AR: Record<QueueItem["subjectType"], string> = {
   trainer: "مدرّب", advisor: "مستشار", course: "دورة",
 };
+/* «١ تعليقٌ» و«٢ تعليقان» و«٣ تعليقات» و«١١ تعليقا» — والعددُ يُقرأ لا يُحسب */
+const COMMENT_FORMS = { one: "تعليقٌ", two: "تعليقان", few: "تعليقات", many: "تعليقا" };
+
 const TABS: { key: string; label: string }[] = [
   { key: "pending", label: "بانتظار المراجعة" },
   { key: "approved", label: "معتمَدة" },
@@ -38,6 +46,10 @@ const TABS: { key: string; label: string }[] = [
 export default function RatingModeration() {
   const [status, setStatus] = useState("pending");
   const [rows, setRows] = useState<QueueItem[]>([]);
+  /* الحالةُ تُرشِّح، والبحثُ يجد: خانةٌ فيها مئةُ تعليقٍ لا يُبلَغ فيها
+     تعليقٌ بعينه إلّا بالتمرير. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -55,6 +67,12 @@ export default function RatingModeration() {
   }, [status]);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* يُبحث بنصّ التعليق وبمن قيل فيه — لا بمعرّفه */
+  const matched = rows.filter((r) => matchesQuery(q, [
+    r.commentAr, r.subjectNameAr, KIND_AR[r.subjectType], r.moderationReason,
+  ]));
+  const view = paginate(matched, page, 20);
 
   /* الحجبُ يحتاج سببا يُقرأ في الأثر — يُكتب في نافذة المنصّة لا في حوار
      متصفّحٍ يملك المستخدمُ كتمَه. والاعتمادُ لا يحتاج تأكيدا: يُراجَع بالحجب. */
@@ -78,7 +96,7 @@ export default function RatingModeration() {
     <AdminLayout title="مراجعة تعليقات التقييم">
       <Card tone="accent" className="mb-5 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
-        <p className="text-xs leading-6 text-foreground">
+        <p className="text-read leading-6 text-foreground">
           قرارك هنا يحكم <span className="font-black text-foreground">التعليق المكتوب</span> وحده:
           يُنشر علنا أو يُحجب. <span className="font-black text-foreground">الدرجة تدخل المعدّل في كل الأحوال</span> —
           فالرقم المعلَن يبقى قياسا لا اختيارا. والقائمة تصلك بلا اسم المُقيِّم عمدا: الحكم على النصّ.
@@ -107,21 +125,51 @@ export default function RatingModeration() {
         </Panel>
       )}
 
-      {!offline && loading && (
+      {/* ── العملُ قبل القائمة ──
+
+          ولا يُعرض الرأسُ إلّا على لسان «بانتظار المراجعة»: المحمَّلُ حينَها
+          ما ينتظر فعلا. والمعتمَدُ والمحجوبُ سجلٌّ يُقرأ لا عملٌ يُبدأ به،
+          فرأسُ عملٍ فوقهما يَعِد بما ليس فيهما. */}
+      {!offline && status === "pending" && (
+        <WorkHeader
+          loading={loading}
+          icon={ShieldCheck}
+          count={rows.length}
+          forms={COMMENT_FORMS}
+          waitingAr="تنتظر مراجعتَك"
+          actionAr="ابدأ بأوّلها"
+          disabledReasonAr={rows.length > 0 && view.total === 0
+            ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+            : undefined}
+          onAction={() => { if (view.rows[0]) revealRow(`rating-${view.rows[0].id}`); }}
+          doneAr="لا تعليقَ ينتظر مراجعتَك — وما يُكتب بعدها يصل هذا اللسانَ فورا، والدرجةُ تدخل المعدّلَ في كلّ حال."
+        />
+      )}
+
+      {!offline && loading && status !== "pending" && (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div>
       )}
 
-      {!offline && !loading && rows.length === 0 && (
+      {!offline && !loading && rows.length === 0 && status !== "pending" && (
         <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">
           لا تعليقات في هذه الحالة.
         </Card>
       )}
 
       {!offline && !loading && rows.length > 0 && (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تعليقا"
+          placeholder="ابحث في نصّ التعليق أو باسم من قيل فيه…" />
+        {view.rows.length === 0 ? (
+          <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">
+            لا تعليقَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Card>
+        ) : (
         <ul className="space-y-3">
-          {rows.map((r) => (
-            <Card as="li" key={r.id}>
-              <div className="flex flex-wrap items-center gap-2 text-micro">
+          {view.rows.map((r) => (
+            /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+            <Card as="li" key={r.id} id={`rating-${r.id}`} tabIndex={-1} className="outline-none">
+              <div className="flex flex-wrap items-center gap-2 text-fine">
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-muted-foreground">{KIND_AR[r.subjectType]}</span>
                 <span className="font-black text-gold">{r.score} ★</span>
                 {r.subjectNameAr
@@ -130,7 +178,7 @@ export default function RatingModeration() {
               </div>
               <p className="mt-3 text-sm leading-7 text-foreground">{r.commentAr}</p>
               {r.moderationReason && (
-                <p className="mt-2 text-micro text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
+                <p className="mt-2 text-read text-muted-foreground">سبب الحجب: {r.moderationReason}</p>
               )}
               {r.publishStatus === "pending" && (
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -147,6 +195,8 @@ export default function RatingModeration() {
             </Card>
           ))}
         </ul>
+        )}
+        </>
       )}
 
       {blocking && (

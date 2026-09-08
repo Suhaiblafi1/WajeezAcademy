@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
+import TrainerSchedule from "./TrainerSchedule";
 import { fmtDateTimeAr } from "@/utils/format";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 
@@ -237,7 +238,7 @@ export default function CohortBoard() {
                         <button onClick={() => setExpanded(isOpen ? null : c.id)} className="flex w-full cursor-pointer flex-wrap items-center gap-4 p-5 text-right">
                           <div className="min-w-0 flex-1">
                             <p className="font-black">{c.course.versions[0]?.titleAr ?? c.title}</p>
-                            <p className="mt-0.5 text-xs text-muted-foreground">
+                            <p className="mt-0.5 text-read text-muted-foreground">
                               {c.title} · دورك: {role === "lead" ? "مدرب رئيس" : "مساعد"} · {c.enrollments.length} متعلما · {c.sessions.length} جلسة
                             </p>
                           </div>
@@ -246,11 +247,24 @@ export default function CohortBoard() {
 
                         {isOpen && (
                           <div className="space-y-6 border-t border-white/8 p-5">
+                            {/* ── جدولةُ اللقاءات — صارت بيدك ──
+
+                                كان هنا: «لا جلسات مجدولة — **الإدارة تضيف
+                                الجدول**». فمن يقف في اللقاء ويعرف متى يستطيع
+                                يُقال له انتظر، وما يملكه أن يقترح تأجيلا
+                                يُرفع إلى طابور موافقات.
+
+                                وقرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): يجدول
+                                المدرّبُ داخلَ نافذةٍ تفتحها الإدارة. فإن لم
+                                تُفتح بقي الأمرُ كما كان — ويُقال ذلك صراحةً
+                                لا بغياب زرّ. */}
+                            <TrainerSchedule cohortId={c.id} onDone={() => void load()} />
+
                             {/* الجلسات والحضور */}
                             <div>
-                              <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> الجلسات والحضور</h3>
+                              <h3 className="mb-3 flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> اللقاءات والحضور</h3>
                               {c.sessions.length === 0 ? (
-                                <p className="text-xs text-muted-foreground">لا جلسات مجدولة — الإدارة تضيف الجدول.</p>
+                                <p className="text-read text-muted-foreground">لا لقاءات مجدولة بعد.</p>
                               ) : (
                                 <div className="space-y-3">
                                   {c.sessions.map((s) => (
@@ -258,14 +272,14 @@ export default function CohortBoard() {
                                       <div className="flex flex-wrap items-center gap-3">
                                         <div className="min-w-0 flex-1">
                                           <p className="text-sm font-bold">{s.title}</p>
-                                          <p className="mt-0.5 text-micro text-muted-foreground">
+                                          <p className="mt-0.5 text-read text-muted-foreground">
                                             {fmtDateTimeAr(s.startsAt)}
                                             {s.status === "done" && " · انتهت"}
                                           </p>
                                         </div>
                                         {s.zoom && (
                                           <a href={s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                                            className="flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-micro font-black text-on-teal transition hover:bg-teal-light">
+                                            className="flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-fine font-black text-on-teal transition hover:bg-teal-light">
                                             <Video className="h-3 w-3" /> افتح الاجتماع
                                           </a>
                                         )}
@@ -274,7 +288,7 @@ export default function CohortBoard() {
                                         {s.status !== "done" && (
                                           <a
                                             href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                                            className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
+                                            className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
                                           >
                                             <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
                                           </a>
@@ -282,7 +296,7 @@ export default function CohortBoard() {
                                         {/* الزرُّ يظهر حين يستطيع الخادمُ تخزينَ الملفّ — لا قبله.
                                             كان يفشل بعد الضغط، وهو أسوأُ من غيابه. */}
                                         {fileUploads && (
-                                          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-micro font-bold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
+                                          <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
                                             <Upload className="h-3 w-3" /> ارفع التسجيل
                                             <input type="file" accept="video/*" className="hidden"
                                               onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
@@ -300,19 +314,19 @@ export default function CohortBoard() {
                                           قبل الضغط لا بعده، فلا يظنّ المدرب أن الموعد تبدّل. */}
                                       {rescheduleFor === s.id && (
                                         <Card tone="warn" className="mt-3 space-y-2.5 p-3.5">
-                                          <p className="text-micro leading-relaxed text-gold-ink">
+                                          <p className="text-read leading-relaxed text-gold-ink">
                                             تقترح ولا تغيّر: الموعد يبقى كما هو عند متعلّميك حتى تعتمد الإدارة اقتراحك.
                                             {" "}ومآلُ اقتراحك — وسحبُه — في <Link to="/trainer/schedule" className="font-black underline">جدولي</Link>.
                                           </p>
                                           <div className="grid gap-2.5 sm:grid-cols-2">
                                             <div>
-                                              <label htmlFor={`rs-at-${s.id}`} className="mb-1 block text-micro font-bold text-muted-foreground">الموعد المقترح</label>
+                                              <label htmlFor={`rs-at-${s.id}`} className="mb-1 block text-fine font-bold text-muted-foreground">الموعد المقترح</label>
                                               <input id={`rs-at-${s.id}`} type="datetime-local" dir="ltr" value={rescheduleForm.at}
                                                 onChange={(e) => setRescheduleForm((f) => ({ ...f, at: e.target.value }))}
                                                 className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-left text-xs text-foreground focus:border-teal focus:outline-none" />
                                             </div>
                                             <div>
-                                              <label htmlFor={`rs-why-${s.id}`} className="mb-1 block text-micro font-bold text-muted-foreground">السبب — تقرؤه الإدارة لتقرّر</label>
+                                              <label htmlFor={`rs-why-${s.id}`} className="mb-1 block text-fine font-bold text-muted-foreground">السبب — تقرؤه الإدارة لتقرّر</label>
                                               <input id={`rs-why-${s.id}`} value={rescheduleForm.reason}
                                                 onChange={(e) => setRescheduleForm((f) => ({ ...f, reason: e.target.value }))}
                                                 placeholder="مثال: سفر في موعد الجلسة"
@@ -326,7 +340,7 @@ export default function CohortBoard() {
                                         </Card>
                                       )}
                                       {s.zoom?.passcode && (
-                                        <p className="mt-2 text-micro text-muted-foreground">رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span></p>
+                                        <p className="mt-2 text-read text-muted-foreground">رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span></p>
                                       )}
                                       {/* شبكة الحضور */}
                                       <div className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
@@ -334,12 +348,12 @@ export default function CohortBoard() {
                                           const current = e.attendance.find((a) => a.sessionId === s.id)?.status;
                                           return (
                                             <div key={e.id} className="flex items-center gap-3">
-                                              <p className="min-w-0 flex-1 truncate text-xs text-foreground">{e.user.displayName}</p>
+                                              <p className="min-w-0 flex-1 truncate text-read text-foreground">{e.user.displayName}</p>
                                               <div className="flex gap-1">
                                                 {ATTENDANCE_OPTIONS.map((opt) => (
                                                   <button key={opt.value} disabled={busy}
                                                     onClick={() => void markAttendance(s.id, e.id, opt.value)}
-                                                    className={`cursor-pointer rounded-full border px-2.5 py-1 text-micro font-bold transition disabled:opacity-40 ${
+                                                    className={`cursor-pointer rounded-full border px-2.5 py-1 text-fine font-bold transition disabled:opacity-40 ${
                                                       current === opt.value
                                                         ? "border-teal bg-teal/15 text-teal-light-ink"
                                                         : "border-white/12 text-muted-foreground hover:border-white/30 hover:text-foreground"
@@ -352,7 +366,7 @@ export default function CohortBoard() {
                                           );
                                         })}
                                         {c.enrollments.filter((e) => e.status !== "waitlisted").length === 0 && (
-                                          <p className="text-micro text-muted-foreground">لا متعلمين مسجلين بعد.</p>
+                                          <p className="text-read text-muted-foreground">لا متعلمين مسجلين بعد.</p>
                                         )}
                                       </div>
                                     </Card>
@@ -368,11 +382,11 @@ export default function CohortBoard() {
                                 <div className="space-y-2">
                                   {c.enrollments.map((e) => (
                                     <div key={e.id} className="flex items-center gap-3">
-                                      <p className="w-36 truncate text-xs text-foreground">{e.user.displayName}</p>
+                                      <p className="w-36 truncate text-read text-foreground">{e.user.displayName}</p>
                                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
                                         <div className="h-full rounded-full bg-teal" style={{ width: `${e.courseProgress?.percent ?? 0}%` }} />
                                       </div>
-                                      <p className="w-10 text-left text-micro text-muted-foreground">{e.courseProgress?.percent ?? 0}٪</p>
+                                      <p className="w-10 text-left text-read text-muted-foreground">{e.courseProgress?.percent ?? 0}٪</p>
                                     </div>
                                   ))}
                                 </div>
@@ -389,7 +403,7 @@ export default function CohortBoard() {
                               <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
                                 <MessageSquarePlus className="h-4 w-4 text-teal-light-ink" /> مخاطبة الشعبة
                               </h3>
-                              <p className="mt-1 text-micro leading-relaxed text-muted-foreground">
+                              <p className="mt-1 text-read leading-relaxed text-muted-foreground">
                                 إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه. وكلاهما يبقى في السجلّ أدناه.
                               </p>
                               <div className="mt-3 space-y-2.5">
@@ -419,23 +433,23 @@ export default function CohortBoard() {
 
                               <div className="mt-4 border-t border-white/8 pt-3">
                                 <button type="button" onClick={() => void loadMessages(c.id)}
-                                  className="cursor-pointer text-micro font-bold text-teal-light-ink transition hover:text-teal-ink">
+                                  className="cursor-pointer text-fine font-bold text-teal-light-ink transition hover:text-teal-ink">
                                   {msgLog[c.id] ? "حدّث السجلّ" : "اعرض سجلّ ما أُرسل"}
                                 </button>
                                 {msgLog[c.id] && (
                                   msgLog[c.id].length === 0 ? (
-                                    <p className="mt-2 text-micro text-muted-foreground">لم تُرسل شيئا في هذه الشعبة بعد.</p>
+                                    <p className="mt-2 text-read text-muted-foreground">لم تُرسل شيئا في هذه الشعبة بعد.</p>
                                   ) : (
                                     <ul className="mt-2.5 space-y-2">
                                       {msgLog[c.id].map((m) => (
                                         <Inset as="li" key={m.id}>
-                                          <p className="text-micro text-muted-foreground">
+                                          <p className="text-read text-muted-foreground">
                                             {m.audience === "cohort"
                                               ? `إلى الشعبة · ${m.recipients} متعلّما`
                                               : `إلى ${m.enrollment?.user.displayName ?? "متعلّم"}`}
                                             {" · "}{fmtDateTimeAr(m.createdAt)}
                                           </p>
-                                          <p className="mt-1.5 whitespace-pre-line text-xs leading-6 text-foreground">{m.body}</p>
+                                          <p className="mt-1.5 whitespace-pre-line text-read leading-6 text-foreground">{m.body}</p>
                                         </Inset>
                                       ))}
                                     </ul>
@@ -454,7 +468,7 @@ export default function CohortBoard() {
                               {c.materials.length > 0 ? (
                                 <ul className="mt-3 space-y-1.5">
                                   {c.materials.map((m) => (
-                                    <li key={m.id} className="flex items-center justify-between gap-3 text-xs text-foreground">
+                                    <li key={m.id} className="flex items-center justify-between gap-3 text-read text-foreground">
                                       <span className="min-w-0 truncate">{m.title}</span>
                                       {m.readUrl && (
                                         <a href={`${API_BASE}${m.readUrl}`} target="_blank" rel="noreferrer"
@@ -466,18 +480,18 @@ export default function CohortBoard() {
                                   ))}
                                 </ul>
                               ) : (
-                                <p className="mt-2 text-micro text-muted-foreground">لا مواد بعد — {fileUploads ? "ارفع كرّاسة أو أضف رابطا." : "أضف رابطا أدناه."}</p>
+                                <p className="mt-2 text-read text-muted-foreground">لا مواد بعد — {fileUploads ? "ارفع كرّاسة أو أضف رابطا." : "أضف رابطا أدناه."}</p>
                               )}
 
                               <div className="mt-4 flex flex-wrap items-center gap-2">
                                 {fileUploads ? (
-                                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-micro font-bold text-teal-light-ink transition hover:bg-teal/10">
+                                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-fine font-bold text-teal-light-ink transition hover:bg-teal/10">
                                     <Upload className="h-3 w-3" /> ارفع ملفا (كرّاسة أو فيديو)
                                     <input type="file" className="hidden" disabled={busy}
                                       onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMaterialFile(c.id, f); e.target.value = ""; }} />
                                   </label>
                                 ) : (
-                                  <p className="text-micro leading-6 text-muted-foreground">
+                                  <p className="text-read leading-6 text-muted-foreground">
                                     رفعُ الملفّات لم يُفعَّل على هذه المنصّة بعد — <span className="font-bold text-foreground">أضف المادّةَ برابطٍ أدناه</span> (Drive أو YouTube أو أيّ رابطٍ يفتحه طلبتُك).
                                   </p>
                                 )}
@@ -499,7 +513,7 @@ export default function CohortBoard() {
                                 <button
                                   disabled={busy || !materialLink[c.id]?.title?.trim() || !materialLink[c.id]?.url?.trim()}
                                   onClick={() => void addMaterialLink(c.id)}
-                                  className="cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-micro font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
+                                  className="cursor-pointer rounded-lg border border-white/15 px-4 py-2 text-fine font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40"
                                 >
                                   أضف رابطا
                                 </button>
@@ -509,7 +523,7 @@ export default function CohortBoard() {
                                 <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
                                   <ClipboardCheck className="h-4 w-4 text-gold-ink" /> تكليف جديد
                                 </h3>
-                                <p className="mt-1 text-micro text-muted-foreground">
+                                <p className="mt-1 text-read text-muted-foreground">
                                   ما تؤلّفه هنا يصل المسجلين، ويعود إليك تسليمهم في طابور المراجعة أدناه.
                                 </p>
                                 <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
@@ -532,7 +546,7 @@ export default function CohortBoard() {
                                   <button
                                     disabled={busy || !taskForm[c.id]?.title?.trim()}
                                     onClick={() => void createAssessment(c.id)}
-                                    className="cursor-pointer rounded-lg border border-gold/50 px-4 py-2 text-micro font-bold text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
+                                    className="cursor-pointer rounded-lg border border-gold/50 px-4 py-2 text-fine font-bold text-gold-ink transition hover:bg-gold/10 disabled:opacity-40"
                                   >
                                     أنشئ
                                   </button>

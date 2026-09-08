@@ -38,8 +38,10 @@ import { validatePractice } from "@/application/content/practice";
 import { validateRubric } from "@/application/content/rubric";
 import { fmtShortDateTimeAr } from "@/utils/format";
 import { fmtNum } from "@/application/text/format-ar";
+import WorkHeader from "@/components/admin/WorkHeader";
 
 import { Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
 interface WorkRow {
   moduleId: string; courseId: string; courseTitleAr: string; titleAr: string; sequence: number;
   hasBody: boolean; hasChecks: boolean; hasVideo: boolean; hasScenario: boolean;
@@ -59,6 +61,9 @@ interface Worklist {
    «التركيز على الناقص فقط يصعّب الوصول لمتنٍ مكتمل تريد تعديله» — وهو حقّ:
    من يريد مراجعةَ ما كُتب يبحث عنه وسط أربعمائةِ فارغة. */
 type BodyFilter = "all" | "missing" | "written";
+
+/* «١ وحدة» و«٣ وحدةً» خطأٌ يُقرأ في كلّ مرّة — والعددُ هنا يُقرأ لا يُحسب */
+const MODULE_FORMS = { one: "وحدةٌ", two: "وحدتان", few: "وحدات", many: "وحدةً" };
 
 const BODY_FILTERS: { id: BodyFilter; label: string }[] = [
   { id: "all", label: "الكلّ" },
@@ -235,16 +240,38 @@ export default function Authoring() {
 
   return (
     <AdminLayout title="تأليف متون الوحدات">
-      {work && (
-        <div className="mb-5 grid gap-3 sm:grid-cols-3">
-          <Stat label="وحدات الكتالوج" value={work.total} />
-          <Stat label="لها متن" value={work.withBody} tone="good" />
-          <Stat label="بلا متن" value={work.missing} tone="warn" />
-        </div>
+      {/* ── رأسُ الشاشة يبدأ بالعمل لا بالعدد ──
+
+          كان هذا الرأسُ مكتوبا هنا بيده، ثمّ تكرّر ما يشبهه في أربعِ شاشات.
+          فانتقل إلى `WorkHeader` مكوَّنا واحدا: حالاتُه الثلاثُ وسطحُه
+          ومقاسُ خطّه تُقرَّر مرّةً لا خمسا. وما كان هنا خاصًّا بقي هنا —
+          العددُ والفعلُ والسببُ حين يُعطَّل. */}
+      {(loading || work) && (
+        <WorkHeader
+          loading={loading && !work}
+          icon={FileText}
+          count={work?.missing ?? 0}
+          forms={MODULE_FORMS}
+          waitingAr="تنتظر متنَها"
+          stats={work ? [`من ${fmtNum(work.total)} في الكتالوج`, `${fmtNum(work.withBody)} لها متنُها`] : []}
+          actionAr={bodyFilter === "missing" ? "ابدأ بأوّلها" : "اعرِضها"}
+          /* السببُ يُقال ولا يُترك بهتانا صامتا: الزرُّ يبهت لأنّ اللسانَ
+             على ما بلا متنٍ والبحثُ لا يُظهر منها شيئا — وهذا ما يُقرأ. */
+          disabledReasonAr={bodyFilter === "missing" && rows.length === 0
+            ? "اللسانُ على ما بلا متنٍ ولا يُظهر البحثُ منها شيئا — امسحه لتبدأ."
+            : undefined}
+          onAction={() => {
+            /* اللسانُ يُضبط أوّلا كي يكون الطابورُ طابورَ ما بلا متن،
+               ثمّ يُفتح أوّلُه إن كان معروضا الآن. */
+            if (bodyFilter !== "missing") { setBodyFilter("missing"); return; }
+            if (rows[0]) void open(rows[0]);
+          }}
+          doneAr={<>كلُّ وحدات الكتالوج لها متنُها — {fmtNum(work?.total ?? 0)} وحدة. لا عملَ منتظرا هنا.</>}
+        />
       )}
 
       {error && (
-        <Inset as="p" tone="warn" className="mb-4 px-4 py-3 text-xs leading-6 text-amber-200">{error}</Inset>
+        <Inset as="p" tone="warn" className="mb-4 px-4 py-3 text-read leading-6 text-amber-200">{error}</Inset>
       )}
 
       <div className="grid gap-5 lg:grid-cols-[22rem_1fr]">
@@ -262,7 +289,7 @@ export default function Authoring() {
             />
           </div>
           {/* الدورةُ أوّلا — ثمّ وحداتُها تحتها بترتيبها */}
-          <label className="mb-2.5 block text-micro font-bold text-muted-foreground">
+          <label className="mb-2.5 block text-fine font-bold text-muted-foreground">
             الدورة
             <select
               value={courseId}
@@ -284,7 +311,7 @@ export default function Authoring() {
                 key={f.id}
                 onClick={() => setBodyFilter(f.id)}
                 aria-pressed={bodyFilter === f.id}
-                className={`flex-1 cursor-pointer rounded-lg border px-2 py-1 text-micro font-bold transition ${
+                className={`flex-1 cursor-pointer rounded-lg border px-2 py-1 text-fine font-bold transition ${
                   bodyFilter === f.id
                     ? "border-teal/60 bg-teal/15 text-teal-light-ink"
                     : "border-white/10 text-muted-foreground hover:border-white/25 hover:text-foreground"
@@ -298,7 +325,7 @@ export default function Authoring() {
           {loading ? (
             <div className="grid place-items-center py-10"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
           ) : rows.length === 0 ? (
-            <p className="py-8 text-center text-xs leading-6 text-muted-foreground">
+            <p className="py-8 text-center text-read leading-6 text-muted-foreground">
               {bodyFilter === "missing"
                 ? "لا وحدةَ بلا متن هنا — اكتمل ما اخترتَه."
                 : bodyFilter === "written"
@@ -317,7 +344,7 @@ export default function Authoring() {
                         : "border-white/10 bg-white/[0.02] hover:border-white/25"}`}
                   >
                     <span className="block text-xs font-bold leading-5">{r.titleAr}</span>
-                    <span className="mt-0.5 block text-micro text-muted-foreground">{r.courseTitleAr || r.courseId}</span>
+                    <span className="mt-0.5 block text-fine text-muted-foreground">{r.courseTitleAr || r.courseId}</span>
                     <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <Chip on={r.hasBody} label="متن" />
                       <Chip on={r.hasChecks} label="تمرين" />
@@ -326,12 +353,12 @@ export default function Authoring() {
                       <Chip on={r.hasPractice} label="نشاط" />
                       <Chip on={r.hasRubric} label="روبرك" />
                       {r.draftStatus && (
-                        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-micro font-bold text-gold">
+                        <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine font-bold text-gold">
                           {STATUS_AR[r.draftStatus] ?? r.draftStatus}
                         </span>
                       )}
                       {r.learnersWaiting > 0 && (
-                        <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-micro font-bold text-teal-ink">
+                        <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-bold text-teal-ink">
                           <Users className="h-2.5 w-2.5" /> {r.learnersWaiting} ينتظر
                         </span>
                       )}
@@ -341,9 +368,10 @@ export default function Authoring() {
               ))}
             </ul>
           )}
-          <button type="button" onClick={() => void loadWork()} className="mt-3 flex items-center gap-1.5 text-micro text-muted-foreground hover:text-foreground">
-            <RefreshCw className="h-3 w-3" /> تحديث الطابور
-          </button>
+          <Button tone="ghost" size="sm" type="button" icon={RefreshCw}
+            onClick={() => void loadWork()} className="mt-3">
+            تحديث الطابور
+          </Button>
         </Card>
 
         {/* ── المحرّر ── */}
@@ -361,12 +389,12 @@ export default function Authoring() {
               <header className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
                 <div>
                   <h2 className="text-sm font-black">{selected.titleAr}</h2>
-                  <p className="mt-1 text-micro text-muted-foreground">
+                  <p className="mt-1 text-read text-muted-foreground">
                     {selected.courseTitleAr || selected.courseId} · إصدار {draft.version} ·{" "}
                     <span className={isReview ? "text-gold" : "text-muted-foreground"}>{STATUS_AR[draft.status] ?? draft.status}</span>
                   </p>
                 </div>
-                <p className="max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-micro leading-5 text-muted-foreground">
+                <p className="max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-read leading-5 text-muted-foreground">
                   يُنشر باسم الأكاديمية — لا يظهر اسم كاتبه للمتعلّم.
                 </p>
               </header>
@@ -377,7 +405,7 @@ export default function Authoring() {
                   return (
                     <button
                       key={t.id} type="button" onClick={() => setTab(t.id)}
-                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-micro font-bold transition ${
+                      className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-fine font-bold transition ${
                         tab === t.id ? "border-teal/50 bg-teal/10 text-teal-ink" : "border-white/10 text-muted-foreground hover:border-white/25"}`}
                     >
                       <t.icon className="h-3.5 w-3.5" />
@@ -400,14 +428,14 @@ export default function Authoring() {
                       isDraft ? "" : "opacity-60"}`}
                   />
                   {!isDraft && (
-                    <p className="mt-2 text-micro leading-5 text-gold">
+                    <p className="mt-2 text-read leading-5 text-gold">
                       المسوّدة قيد المراجعة — اسحبها لتعديلها.
                     </p>
                   )}
                   {liveErrors.length > 0 && (
                     <ul className="mt-2 space-y-1 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3">
                       {liveErrors.map((e, i) => (
-                        <li key={i} className="flex gap-2 text-micro leading-5 text-amber-200">
+                        <li key={i} className="flex gap-2 text-read leading-5 text-amber-200">
                           <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" /> {e}
                         </li>
                       ))}
@@ -416,16 +444,16 @@ export default function Authoring() {
                 </div>
 
                 <Inset>
-                  <p className="mb-2 flex items-center gap-1.5 text-micro font-black text-muted-foreground">
+                  <p className="mb-2 flex items-center gap-1.5 text-read font-black text-muted-foreground">
                     <Eye className="h-3 w-3" /> كما يراه المتعلّم
                   </p>
                   <div className="max-h-[26rem] overflow-y-auto">
                     {!value.trim() ? (
-                      <p className="py-10 text-center text-micro text-muted-foreground">لا شيء بعد.</p>
+                      <p className="py-10 text-center text-read text-muted-foreground">لا شيء بعد.</p>
                     ) : tab === "body" ? (
                       <LessonBody body={value} />
                     ) : liveErrors.length > 0 ? (
-                      <p className="py-10 text-center text-micro leading-6 text-muted-foreground">
+                      <p className="py-10 text-center text-read leading-6 text-muted-foreground">
                         تُعرض المعاينة حين تصحّ الصيغة.
                       </p>
                     ) : tab === "checks" ? (
@@ -444,40 +472,36 @@ export default function Authoring() {
               </div>
 
               {notice && (
-                <Inset as="p" tone="accent" className="mt-4 px-4 py-2.5 text-xs leading-6 text-teal-ink">{notice}</Inset>
+                <Inset as="p" tone="accent" className="mt-4 px-4 py-2.5 text-read leading-6 text-teal-ink">{notice}</Inset>
               )}
 
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-white/10 pt-4">
                 {isDraft && (
                   <>
-                    <button
-                      type="button" onClick={() => void act("save")} disabled={busy !== "" || liveErrors.length > 0}
-                      className="flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
+                    <Button tone="secondary" type="button" icon={Save}
+                      onClick={() => void act("save")} disabled={busy !== "" || liveErrors.length > 0}
+                      loading={busy === "save"}
                     >
-                      {busy === "save" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                       حفظ المسوّدة
-                    </button>
-                    <button
-                      type="button" onClick={() => void act("submit")}
+                    </Button>
+                    <Button tone="confirm" type="button" icon={Send}
+                      onClick={() => void act("submit")}
                       disabled={busy !== "" || liveErrors.length > 0 || !draft.bodyAr?.trim()}
-                      className="flex items-center gap-1.5 rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
+                      loading={busy === "submit"}
                     >
-                      {busy === "submit" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                       رفعٌ للمراجعة
-                    </button>
+                    </Button>
                     {!draft.bodyAr?.trim() && (
-                      <span className="text-micro text-muted-foreground">لا تُرفع وحدةٌ بلا متن.</span>
+                      <span className="text-fine text-muted-foreground">لا تُرفع وحدةٌ بلا متن.</span>
                     )}
                   </>
                 )}
 
                 {isReview && (
-                  <button
-                    type="button" onClick={() => void act("withdraw")} disabled={busy !== ""}
-                    className="flex items-center gap-1.5 rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
-                  >
-                    <Undo2 className="h-3.5 w-3.5" /> سحبٌ للتعديل
-                  </button>
+                  <Button tone="secondary" type="button" icon={Undo2}
+                    onClick={() => void act("withdraw")} disabled={busy !== ""}>
+                    سحبٌ للتعديل
+                  </Button>
                 )}
 
                 {/* ─────────── حلقتا القرار ───────────
@@ -487,7 +511,7 @@ export default function Authoring() {
                     الحلقةُ الوسطى تعتمد ولا تنشر، والأخيرةُ توقّع أو تُعيد. */}
                 {isReview && canDecide && (
                   <Inset tone="warn" className="flex w-full flex-wrap items-center gap-2">
-                    <p className="flex w-full items-center gap-1.5 text-micro font-black text-gold">
+                    <p className="flex w-full items-center gap-1.5 text-read font-black text-gold">
                       <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — ولا يعتمد أحدٌ ما كتبه
                     </p>
                     <input
@@ -496,19 +520,15 @@ export default function Authoring() {
                       placeholder="ما الذي يُعدَّل؟ (مطلوبٌ عند الإعادة)"
                       className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-gold/50"
                     />
-                    <button
-                      type="button" onClick={() => void act("approve")} disabled={busy !== ""}
-                      className="rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
-                    >
+                    <Button tone="confirm" type="button"
+                      onClick={() => void act("approve")} disabled={busy !== ""}>
                       اعتمِدها أكاديميّا
-                    </button>
-                    <button
-                      type="button" onClick={() => void act("changes")} disabled={busy !== "" || note.trim().length < 5}
-                      className="rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
-                    >
+                    </Button>
+                    <Button tone="secondary" type="button"
+                      onClick={() => void act("changes")} disabled={busy !== "" || note.trim().length < 5}>
                       إعادةٌ إلى الكاتب مع ملاحظة
-                    </button>
-                    <p className="w-full text-micro leading-5 text-muted-foreground">
+                    </Button>
+                    <p className="w-full text-read leading-5 text-muted-foreground">
                       الاعتمادُ لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّمٌ قبلها.
                     </p>
                   </Inset>
@@ -517,7 +537,7 @@ export default function Authoring() {
                 {isAwaitingFinal && (
                   canFinalApprove ? (
                     <Inset tone="accent" className="flex w-full flex-wrap items-center gap-2">
-                      <p className="flex w-full items-center gap-1.5 text-micro font-black text-teal-light-ink">
+                      <p className="flex w-full items-center gap-1.5 text-read font-black text-teal-light-ink">
                         <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — ولا يوقّعها كاتبُها ولا مَن اعتمدها أكاديميّا
                       </p>
                       <input
@@ -526,21 +546,17 @@ export default function Authoring() {
                         placeholder="سببُ الإعادة (مطلوبٌ عند الإعادة)"
                         className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-teal/50"
                       />
-                      <button
-                        type="button" onClick={() => void act("publish")} disabled={busy !== ""}
-                        className="rounded-lg bg-teal px-4 py-2 text-xs font-black text-on-teal hover:brightness-110 disabled:opacity-40"
-                      >
+                      <Button tone="confirm" type="button"
+                        onClick={() => void act("publish")} disabled={busy !== ""}>
                         وافِق وانشر
-                      </button>
-                      <button
-                        type="button" onClick={() => void act("return")} disabled={busy !== "" || note.trim().length < 5}
-                        className="rounded-lg bg-white/10 px-4 py-2 text-xs font-bold hover:bg-white/15 disabled:opacity-40"
-                      >
+                      </Button>
+                      <Button tone="secondary" type="button"
+                        onClick={() => void act("return")} disabled={busy !== "" || note.trim().length < 5}>
                         أعِدها للمدير الأكاديميّ
-                      </button>
+                      </Button>
                     </Inset>
                   ) : (
-                    <Inset as="p" className="w-full text-micro leading-6 text-muted-foreground">
+                    <Inset as="p" className="w-full text-read leading-6 text-muted-foreground">
                       اعتُمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّةِ صلاحيةٍ لا يملكها حسابك.
                     </Inset>
                   )
@@ -549,20 +565,20 @@ export default function Authoring() {
 
               {history.length > 0 && (
                 <details className="mt-5 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                  <summary className="cursor-pointer text-micro font-black text-muted-foreground">
+                  <summary className="cursor-pointer text-fine font-black text-muted-foreground">
                     سجلّ الإصدارات ({history.length})
                   </summary>
                   <ul className="mt-3 space-y-2">
                     {history.map((h) => (
                       <li key={h.id} className="rounded-lg border border-white/10 px-3 py-2">
-                        <p className="flex flex-wrap items-center gap-2 text-micro">
+                        <p className="flex flex-wrap items-center gap-2 text-read">
                           <span className="font-black">إصدار {h.version}</span>
-                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro">{STATUS_AR[h.status] ?? h.status}</span>
+                          <span className="rounded-full bg-white/10 px-2 py-0.5 text-fine">{STATUS_AR[h.status] ?? h.status}</span>
                           <span className="text-muted-foreground">{fmtShortDateTimeAr(h.reviewedAt ?? h.submittedAt ?? h.createdAt)}</span>
                           <span className="text-muted-foreground">{fmtNum(h.bodyAr?.length ?? 0)} حرفا</span>
                         </p>
                         {h.reviewNoteAr && (
-                          <p className="mt-1 text-micro leading-5 text-gold/80">ملاحظة المراجع: {h.reviewNoteAr}</p>
+                          <p className="mt-1 text-read leading-5 text-gold/80">ملاحظة المراجع: {h.reviewNoteAr}</p>
                         )}
                       </li>
                     ))}
@@ -577,25 +593,13 @@ export default function Authoring() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: "good" | "warn" }) {
-  /* `text-gold` تعبئةٌ لا حبر: قياسُها ١٫٧١:‏١ على الورق والمطلوب ٣ لنصٍّ
-     كبير. والحبرُ الذهبيُّ رمزٌ ينقلب (`--gold-ink`) — وهذا هو الخطأُ نفسُه
-     الذي عالجته المهمّةُ ٢٠ في ألفَي موضع، وبقي هنا لأنّ الشاشةَ لم تُفحَص. */
-  const color = tone === "good" ? "text-teal-ink" : tone === "warn" ? "text-gold-ink" : "text-foreground";
-  return (
-    <Card>
-      <p className="text-micro text-muted-foreground">{label}</p>
-      <p className={`mt-1 text-2xl font-black tabular-nums ${color}`}>{fmtNum(value)}</p>
-    </Card>
-  );
-}
 
 function Chip({ on, label }: { on: boolean; label: string }) {
   return (
     /* قناةُ شفافيّةٍ على حبرٍ خافتٍ أصلا: ٢٫٧٣:‏١ داكنا و٢٫٥٣:‏١ فاتحا.
        والتفرقةُ بين «موجود» و«غائب» تحملها التعبئةُ والحبرُ الفيروزيّ —
        فلا حاجةَ إلى إضعافِ الخافت حتّى يخرج من الحدّ. */
-    <span className={`rounded-full px-1.5 py-0.5 text-micro font-bold ${
+    <span className={`rounded-full px-1.5 py-0.5 text-fine font-bold ${
       on ? "bg-teal/15 text-teal-ink" : "bg-white/[0.06] text-muted-foreground"}`}>
       {label}
     </span>

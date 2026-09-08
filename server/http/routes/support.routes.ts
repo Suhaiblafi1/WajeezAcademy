@@ -64,6 +64,21 @@ export function registerSupportRoutes(app: FastifyInstance, prisma: PrismaClient
     return support.ticketDetail(id)
   })
 
+  /* وكلاءُ الدعم للإسناد — والشاشةُ كانت تقول «الوكيلون بدور support من
+     صفحة المستخدمين»: أي أنّها تُحيل الإنسانَ إلى شاشةٍ أخرى ليستخرج منها
+     معرّفا ويعود فيلصقه. فصارت القائمةُ هنا، بحارسِ الإسناد نفسِه. */
+  app.get('/api/admin/support/agents', {
+    preHandler: requirePermission('support.assign'),
+    schema: { tags: ['support-admin'], summary: 'وكلاءُ الدعم النشطون — بديلُ لصق معرّف الوكيل' },
+  }, async () => {
+    const rows = await prisma.user.findMany({
+      where: { status: 'active', roles: { some: { roleId: 'support' } } },
+      orderBy: { displayName: 'asc' },
+      select: { id: true, displayName: true, email: true },
+    })
+    return rows
+  })
+
   app.post('/api/admin/support/tickets/:id/assign', {
     preHandler: requirePermission('support.assign'),
     schema: { tags: ['support-admin'], summary: 'إسناد التذكرة لوكيل بدور support' },

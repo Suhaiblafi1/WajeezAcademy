@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
@@ -18,11 +19,23 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import Button from "@/components/ui/Button";
+import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
   resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
 };
 const PRIORITY_AR: Record<string, string> = { low: "منخفضة", normal: "عادية", high: "عالية", urgent: "عاجلة" };
+
+/* «١ تذكرةٌ» و«٢ تذكرتان» و«٣ تذاكر» و«١١ تذكرةً» — والعددُ يُقرأ لا يُحسب */
+const TICKET_FORMS = { one: "تذكرةٌ", two: "تذكرتان", few: "تذاكر", many: "تذكرةً" };
+
+/* ما ينتظر ردًّا فعلا: المفتوحةُ وقيدُ المعالجة وما أُعيد فتحُه. و«بانتظار
+   العميل» ليست منها — الكرةُ عنده، وعدُّها في الرأس يَعِد بعملٍ لا يقع. */
+const AWAITING = ["open", "in_progress", "reopened"];
+
+/* والأعجلُ أوّلا: الأولويّةُ ثمّ الأقدمُ تحديثا — فزرُّ الرأس يفتح ما يُبدأ
+   به لا أوّلَ ما وصل. */
+const PRIORITY_RANK: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 
 interface TicketRow {
   id: string; subject: string; category: string; status: string; priority: string; updatedAt: string;
@@ -35,7 +48,6 @@ interface TicketDetail extends TicketRow {
   statusHistory: { fromStatus: string | null; toStatus: string; createdAt: string }[];
 }
 
-const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
 
 export default function Support() {
   const [rows, setRows] = useState<TicketRow[]>([]);
@@ -49,6 +61,14 @@ export default function Support() {
   const [reply, setReply] = useState("");
   const [internal, setInternal] = useState(false);
   const [agentId, setAgentId] = useState("");
+  /* وكلاءُ الدعم — يُقرؤون مرّةً بحارسِ الإسناد نفسِه، لا من شاشة المستخدمين */
+  const [agents, setAgents] = useState<{ id: string; displayName: string; email: string }[]>([]);
+
+  useEffect(() => {
+    apiGet<{ id: string; displayName: string; email: string }[]>("/api/admin/support/agents")
+      .then(setAgents)
+      .catch(() => setAgents([]));
+  }, []);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
@@ -80,6 +100,10 @@ export default function Support() {
 
   /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل — والاثنان يتراكبان */
   const matched = rows.filter((t) => matchesQuery(q, [t.subject, t.category, t.user.displayName, t.user.email]));
+  const awaiting = rows
+    .filter((t) => AWAITING.includes(t.status))
+    .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9)
+      || a.updatedAt.localeCompare(b.updatedAt));
   const view = paginate(matched, page, 20);
 
   if (offline) {
@@ -110,7 +134,7 @@ export default function Support() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h3 className="font-black">{t.subject}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.user.displayName} · <span dir="ltr">{t.user.email}</span> · {t.category}</p>
+                  <p className="mt-1 text-read text-muted-foreground">{t.user.displayName} · <span dir="ltr">{t.user.email}</span> · {t.category}</p>
                 </div>
                 <div className="flex gap-2">
                   <Chip tone="accent" srPrefixAr="الحالة">{STATUS_AR[t.status] ?? t.status}</Chip>
@@ -125,7 +149,7 @@ export default function Support() {
               <ol className="mt-5 space-y-3">
                 {t.messages.map((m) => (
                   <Inset as="li" key={m.id} tone={m.internal ? "warn" : "default"} className="text-xs leading-6">
-                    <p className="mb-1 flex items-center gap-2 text-micro font-bold text-muted-foreground">
+                    <p className="mb-1 flex items-center gap-2 text-read font-bold text-muted-foreground">
                       {fmtDateTime(new Date(m.createdAt))}
                       {m.internal && <span className="flex items-center gap-1 text-gold-ink"><EyeOff className="h-3 w-3" /> داخلية — لا يراها العميل</span>}
                     </p>
@@ -136,7 +160,7 @@ export default function Support() {
               <div className="mt-4 border-t border-white/8 pt-4">
                 <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={3} placeholder="اكتب ردا…" className={`${inputCls} w-full`} />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
-                  <label className="flex cursor-pointer items-center gap-1.5 text-micro text-muted-foreground">
+                  <label className="flex cursor-pointer items-center gap-1.5 text-fine text-muted-foreground">
                     <input type="checkbox" checked={internal} onChange={(e) => setInternal(e.target.checked)} className="accent-gold" />
                     رد داخلي (مخفي عن العميل)
                   </label>
@@ -156,12 +180,12 @@ export default function Support() {
                 {Object.entries(STATUS_AR).filter(([k]) => k !== t.status).map(([k, v]) => (
                   <button key={k} disabled={busy}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/transition`, { to: k }), `الحالة الآن: ${v}`)}
-                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-micro font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
+                    className="cursor-pointer rounded-xl border border-white/15 px-3 py-2 text-fine font-bold text-muted-foreground hover:border-teal/50 hover:text-teal-light-ink disabled:opacity-40">
                     {v}
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-micro text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
+              <p className="mt-2 text-read text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
             </Card>
 
             <Card as="article">
@@ -170,7 +194,7 @@ export default function Support() {
                 {Object.entries(PRIORITY_AR).map(([k, v]) => (
                   <button key={k} disabled={busy || t.priority === k}
                     onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/priority`, { priority: k }), `الأولوية: ${v}`)}
-                    className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
+                    className={`cursor-pointer rounded-full border px-3 py-1 text-fine font-bold transition disabled:opacity-40 ${t.priority === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-white/40"}`}>
                     {v}
                   </button>
                 ))}
@@ -180,20 +204,33 @@ export default function Support() {
             <Card as="article">
               <h4 className="flex items-center gap-2 text-sm font-black"><UserPlus className="h-4 w-4 text-teal-light-ink" /> إسناد لوكيل دعم</h4>
               <div className="mt-3 flex gap-2">
-                <input value={agentId} onChange={(e) => setAgentId(e.target.value)} placeholder="معرف الوكيل (UUID)" dir="ltr" className={`${inputCls} flex-1 font-mono`} />
-                <Button tone="confirm" disabled={busy || !agentId.trim()}
-                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId: agentId.trim() }), "أُسندت التذكرة")}>
+                {/* «الوكيلون بدور support من صفحة المستخدمين» كان نصَّ
+                    الشاشة تحت الحقل — أي أنّها تُحيل الإنسانَ إلى شاشةٍ أخرى
+                    ليستخرج منها معرّفا من ستّةٍ وثلاثين حرفا ويعود فيلصقه.
+                    فصارت القائمةُ هنا، بحارسِ الإسناد نفسِه. */}
+                <label className="sr-only" htmlFor={`agent-${t.id}`}>وكيلُ الدعم</label>
+                <select id={`agent-${t.id}`} value={agentId} disabled={agents.length === 0}
+                  onChange={(e) => setAgentId(e.target.value)} className={`${selectCls} flex-1`}>
+                  <option value="">{agents.length === 0 ? "لا وكلاءَ نشطين" : "اختر وكيلا…"}</option>
+                  {agents.map((g) => <option key={g.id} value={g.id}>{g.displayName} ({g.email})</option>)}
+                </select>
+                <Button tone="confirm" disabled={busy || !agentId}
+                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId }), "أُسندت التذكرة")}>
                   إسناد
                 </Button>
               </div>
-              <p className="mt-2 text-micro text-muted-foreground">الوكيلون بدور «support» من صفحة المستخدمين.</p>
+              {agents.length === 0 && (
+                <p className="mt-2 text-read text-muted-foreground">
+                  لا حسابَ نشطا بدور «support» — يُمنح الدورُ من «المستخدمون والأدوار».
+                </p>
+              )}
             </Card>
 
             <Card as="article">
               <h4 className="text-sm font-black">سجل الحالات</h4>
               <ol className="mt-3 space-y-1.5">
                 {t.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-micro text-muted-foreground">
+                  <li key={i} className="flex items-center gap-2 text-read text-muted-foreground">
                     <span className="h-1.5 w-1.5 rounded-full bg-teal" />
                     <b className="text-foreground">{STATUS_AR[h.toStatus] ?? h.toStatus}</b>
                     <span className="mr-auto text-muted-foreground/50">{fmtDateTime(new Date(h.createdAt))}</span>
@@ -227,9 +264,33 @@ export default function Support() {
         </Button>
       </div>
 
-      {loading ? (
+      {/* ── العملُ قبل القائمة ──
+
+          ولا يُعرض إلّا بلا ترشيحِ حالة: المحمَّلُ حينَها التذاكرُ كلُّها،
+          فيُحسب منه ما ينتظر ردّا. ومع ترشيحٍ يكون المحمَّلُ حالةً واحدةً،
+          فعددٌ يُحسب منه يسمّي طابورا ليس هو. */}
+      {statusFilter === "" && (
+        <WorkHeader
+          loading={loading}
+          icon={LifeBuoy}
+          count={awaiting.length}
+          forms={TICKET_FORMS}
+          waitingAr="تنتظر ردَّك"
+          stats={[
+            `${awaiting.filter((t) => t.assignments.length === 0).length} غير مسنَدة`,
+            `${awaiting.filter((t) => t.priority === "urgent" || t.priority === "high").length} عاجلةٌ أو عالية`,
+          ]}
+          actionAr="افتح أعجلَها"
+          onAction={() => { if (awaiting[0]) void openDetail(awaiting[0].id); }}
+          doneAr="لا تذكرةَ تنتظر ردَّك — وتذاكرُ المتعلّمين تصل هنا فورَ فتحها من بوّابتهم."
+        />
+      )}
+
+      {/* والفراغُ يُقال مرّةً لا مرّتين: بلا ترشيحٍ يقوله الرأسُ بحالِ «تمّ»،
+          ومع ترشيحٍ يقوله هذا اللوحُ لأنّ الرأسَ لا يُعرض حينَها. */}
+      {loading && statusFilter !== "" ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      ) : rows.length === 0 ? (
+      ) : loading ? null : (rows.length === 0 && statusFilter !== "") ? (
         <EmptyState
           icon={LifeBuoy}
           titleAr={statusFilter ? `لا تذاكر بحالة «${STATUS_AR[statusFilter]}»` : "لا تذاكر بعد"}
@@ -239,7 +300,7 @@ export default function Support() {
             ? [{ onClick: () => setStatusFilter(""), labelAr: "اعرض كلَّ الحالات", hintAr: "يُزال المرشّحُ الحاليّ" }]
             : []}
         />
-      ) : (
+      ) : rows.length === 0 ? null : (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تذكرة"
           placeholder="ابحث بعنوانٍ أو صاحبِ تذكرةٍ أو تصنيف…" />
@@ -263,7 +324,7 @@ export default function Support() {
             >
               <div>
                 <p className="font-black">{t.subject}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 text-read text-muted-foreground">
                   {t.user.displayName} · {t._count.messages} رسالة · {t.assignments.length ? "مسندة" : "غير مسندة"} · {fmtDateTime(new Date(t.updatedAt))}
                 </p>
               </div>

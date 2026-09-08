@@ -49,7 +49,7 @@ export default function DiagnosticFunnel() {
             بيانات**، وبينهما فرقٌ يُبنى عليه قرار: الأوّلُ يقول «الجدارُ يطرد
             الناسَ كلَّهم» والثاني يقول «لم يمرّ أحدٌ بعد». */}
         {conversion && started > 0 && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-read text-muted-foreground">
             نسبة التحويل عند الجدار:{" "}
             <span className="text-lg font-black tabular-nums text-gold-ink">{String(conversion.users)}</span>
           </p>
@@ -70,7 +70,7 @@ export default function DiagnosticFunnel() {
               ? Math.round(((stages[i - 1].users - s.users) / stages[i - 1].users) * 100)
               : 0;
             return (
-              <li key={s.stage} className="grid grid-cols-[9.5rem_1fr_auto] items-center gap-3 text-xs sm:grid-cols-[11rem_1fr_auto]">
+              <li key={s.stage} className="grid grid-cols-[9.5rem_1fr_auto] items-center gap-3 text-read sm:grid-cols-[11rem_1fr_auto]">
                 <span className="text-foreground">{s.stage}</span>
                 <span
                   className="relative h-3 rounded-full bg-white/[0.06]"
@@ -93,7 +93,7 @@ export default function DiagnosticFunnel() {
         </ol>
       )}
 
-      <p className="mt-5 text-micro leading-relaxed text-muted-foreground">
+      <p className="mt-5 text-read leading-relaxed text-muted-foreground">
         أجهزة فريدة عند كل مرحلة — لا زيارات. النسبة المئوية بجانب كل مرحلة هي التسرّب عن سابقتها.
       </p>
     </Panel>

@@ -81,7 +81,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 type="button"
                 disabled={i > step}
                 onClick={() => { if (i < step) setStep(i); }}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-micro font-bold ${
+                className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-fine font-bold ${
                   i < step ? "cursor-pointer" : "cursor-default"
                 } ${
                   now ? "border-gold bg-gold/15 text-gold-ink"
@@ -95,7 +95,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           );
         })}
       </ol>
-      <p className="mb-4 text-micro text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
+      <p className="mb-4 text-read text-muted-foreground">{COURSE_WIZARD_STEPS[step].hintAr}</p>
 
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
@@ -121,7 +121,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
           {d.modules.map((m, i) => (
             <Inset key={i}>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-micro font-bold text-muted-foreground">الوحدة {i + 1}</span>
+                <span className="text-fine font-bold text-muted-foreground">الوحدة {i + 1}</span>
                 {d.modules.length > 1 && (
                   <button type="button" onClick={() => setD({ ...d, modules: d.modules.filter((_, j) => j !== i) })} className="cursor-pointer text-muted-foreground hover:text-red-300">
                     <Trash2 className="h-3.5 w-3.5" />
@@ -142,7 +142,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder="متن الدرس (اختياري) — # عنوان · - قائمة · > اقتباس · **عريض** · [نص](رابط) · ```كود```"
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-muted-foreground">
+              <p className="mt-1 text-read leading-5 text-muted-foreground">
                 ما يُكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يُعدَّل على إصدار منشور بأثر رجعي.
               </p>
               <textarea
@@ -152,7 +152,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder={"تمرين استرجاع (اختياري)\nس: نص السؤال\n- خيار\n+ الخيار الصحيح\nش: شرح الخطأ"}
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-muted-foreground">
+              <p className="mt-1 text-read leading-5 text-muted-foreground">
                 ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تُتحقَّق عند الحفظ.
                 ولربط سؤال بفصل فيديو أضف سطر <span dir="ltr" className="font-mono">ف: 2</span> داخله فيصير نقطة تفتيش بعد الفصل الثاني.
               </p>
@@ -164,7 +164,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 dir="ltr"
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-muted-foreground">
+              <p className="mt-1 text-read leading-5 text-muted-foreground">
                 السطر الأول رابط YouTube أو Vimeo عبر https — لا مضيف آخر. ثم سطر لكل فصل بصيغة «د:ث عنوان الفصل».
               </p>
               <textarea
@@ -174,7 +174,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
                 placeholder={"سيناريو قرار (اختياري)\nموقف: وصف الموقف المهني\n\nعقدة: البداية\nنص: ما أول ما تفعله؟\n> خيار: نص الخيار\n  أثر: ما ترتب عليه\n  إلى: عنوان العقدة التالية\n\nعقدة: عنوان العقدة التالية\nنص: النتيجة\nتأمل: سؤال التأمل"}
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
-              <p className="mt-1 text-micro leading-5 text-muted-foreground">
+              <p className="mt-1 text-read leading-5 text-muted-foreground">
                 كل عقدة غير نهائية تحتاج خيارين على الأقل، و«إلى:» لا تشير إلا إلى عقدة موجودة،
                 والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يُتحقَّق المسار كاملا عند الحفظ:
                 عقدة لا تُبلَغ أو مسار يدور بلا نهاية يُرفض.
@@ -196,12 +196,12 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {key === "review" && (
         <div className="space-y-3 text-sm">
           <Card className="bg-paper/20">
-            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-micro text-muted-foreground">({d.id})</span></p>
-            <p className="mt-1 text-micro text-muted-foreground">
+            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-fine text-muted-foreground">({d.id})</span></p>
+            <p className="mt-1 text-read text-muted-foreground">
               المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
           </Card>
-          <Inset as="p" className="px-4 py-3 text-micro leading-6 text-foreground">
+          <Inset as="p" className="px-4 py-3 text-read leading-6 text-foreground">
             تُنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تُنشر من هنا.
           </Inset>
         </div>
@@ -210,7 +210,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
       {blockers.length > 0 && (
         <ul className="mt-4 space-y-1 rounded-xl border border-amber-400/30 bg-amber-400/5 px-4 py-3">
           {blockers.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-micro leading-6 text-amber-300">
+            <li key={b} className="flex items-start gap-2 text-read leading-6 text-amber-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {b}
             </li>
           ))}

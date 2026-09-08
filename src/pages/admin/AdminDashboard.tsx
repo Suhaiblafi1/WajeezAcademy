@@ -200,7 +200,7 @@ export default function AdminDashboard() {
       <StaffInbox />
 
       {/* من أين أبدأ؟ — التسلسل التشغيلي الصحيح: محتوى ← نشر ← شعبة ← تسجيلات */}
-      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-micro text-muted-foreground">
+      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-fine text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام اللوحة — ورقمان مختلفا الرسم في
             البطاقة الواحدة يُقرآن واجهتين مركّبتين لا واجهةً واحدة */}
@@ -214,7 +214,7 @@ export default function AdminDashboard() {
             {i > 0 && <span aria-hidden="true" className="text-muted-foreground/50">←</span>}
             {/* `py-1` كان يعطي سبعا وعشرين بكسلا — قِيس على هاتفٍ عرضُه ٣٩٠ */}
             <Link to={s.to} className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-micro text-gold-ink">{i + 1}</span>
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-fine text-gold-ink">{i + 1}</span>
               {s.label}
             </Link>
           </span>
@@ -243,12 +243,12 @@ export default function AdminDashboard() {
             const badge = trendBadgeAr(c.trend);
             return (
               <Link key={c.label} to={c.to} className={`${spanOf(i, cards.length)} rounded-3xl border p-6 transition hover:scale-[1.01] hover:border-white/30 ${TONE[c.tone]}`}>
-                <p className="flex items-center gap-2 text-xs font-bold opacity-80"><c.icon className="h-4 w-4" aria-hidden="true" /> {c.label}</p>
+                <p className="flex items-center gap-2 text-read font-bold opacity-80"><c.icon className="h-4 w-4" aria-hidden="true" /> {c.label}</p>
                 <p className="mt-3 text-4xl font-black">{c.value}</p>
 
                 {/* إد-١ · سطر الاتجاه: شارة وسهم ونص «كذا مقابل كذا».
                     الرقم الموقَّع داخل dir="ltr" — «+3» في سياق عربي يُقلب «3+». */}
-                <p className={`mt-3 flex flex-wrap items-center gap-2 rounded-xl border px-2.5 py-1.5 text-micro leading-5 ${TREND_TONE[c.trend.direction]}`}>
+                <p className={`mt-3 flex flex-wrap items-center gap-2 rounded-xl border px-2.5 py-1.5 text-read leading-5 ${TREND_TONE[c.trend.direction]}`}>
                   {c.trend.showArrow && <TrendArrow d={c.trend.direction} />}
                   {badge && <span dir="ltr" className="font-black">{badge}</span>}
                   <span className="text-foreground">
@@ -256,14 +256,14 @@ export default function AdminDashboard() {
                   </span>
                 </p>
 
-                <p className="mt-2 text-micro text-muted-foreground">{c.hint}</p>
+                <p className="mt-2 text-read text-muted-foreground">{c.hint}</p>
               </Link>
             );
           })}
         </div>
       )}
 
-      <p className="mt-8 text-center text-micro text-muted-foreground">
+      <p className="mt-8 text-center text-read text-muted-foreground">
         كل الأرقام هنا حية من قاعدة البيانات وتُحدَّث تلقائيا كل 45 ثانية
         {updatedAt && ` — آخر تحديث ${fmtTime(updatedAt)}`}.
         التقارير التفصيلية والتصدير في شاشة «التقارير».

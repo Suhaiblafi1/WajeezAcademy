@@ -146,7 +146,7 @@ export default function TrainerSchedule() {
         <p className="mt-1 text-sm leading-7 text-muted-foreground">{data.meaningAr}</p>
 
         {data.clashing > 0 && (
-          <Card as="p" tone="danger" className="mt-3 flex items-start gap-2 text-xs leading-6 text-danger-ink">
+          <Card as="p" tone="danger" className="mt-3 flex items-start gap-2 text-read leading-6 text-danger-ink">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
               جلساتٌ من شعبَتين تتزاحم في وقتٍ واحد. حارسُ الإسناد يمنع الشعبةَ المتعارضةَ عند إسنادها،
@@ -178,13 +178,13 @@ export default function TrainerSchedule() {
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="truncate font-bold">{s.title}</p>
-                          <p className="mt-0.5 text-micro text-muted-foreground">
+                          <p className="mt-0.5 text-read text-muted-foreground">
                             {s.courseTitle} · {s.cohortTitle} · {ROLE_AR[s.role] ?? s.role}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2 text-xs font-black">
                           {clash && (
-                            <span className="rounded-full border border-rose-400/40 px-2 py-0.5 text-micro text-danger-ink">
+                            <span className="rounded-full border border-rose-400/40 px-2 py-0.5 text-fine text-danger-ink">
                               تتزاحم مع {s.clashesWith.length === 1 ? "جلسةٍ أخرى" : `${s.clashesWith.length} جلسات`}
                             </span>
                           )}
@@ -209,7 +209,7 @@ export default function TrainerSchedule() {
           <h2 className="mb-3 flex items-center gap-2 text-base font-black">
             <CalendarClock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> اقتراحاتُ التأجيل
           </h2>
-          <p className="mb-3 text-xs leading-6 text-muted-foreground">
+          <p className="mb-3 text-read leading-6 text-muted-foreground">
             تُقترَح من بطاقة الجلسة في <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link> —
             و<b className="text-foreground">الموعدُ لا يتغيّر عند المتعلّمين حتّى تعتمده الإدارة</b>.
           </p>
@@ -219,13 +219,13 @@ export default function TrainerSchedule() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold">{r.session.title} — {r.session.cohort.title}</p>
-                    <p className="mt-0.5 text-micro text-muted-foreground">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{r.reason}</p>
+                    <p className="mt-0.5 text-read text-muted-foreground">موعد مقترح: {fmtDateTimeAr(r.proposedStartsAt)}</p>
+                    <p className="mt-1 text-read text-muted-foreground">{r.reason}</p>
                     {r.reviewerComment && (
-                      <p className="mt-1 text-micro text-muted-foreground">ملاحظة الإدارة: {r.reviewerComment}</p>
+                      <p className="mt-1 text-read text-muted-foreground">ملاحظة الإدارة: {r.reviewerComment}</p>
                     )}
                   </div>
-                  <span className={`shrink-0 rounded-full border px-3 py-1 text-micro font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-muted-foreground" : "border-gold/40 text-gold-ink"}`}>
+                  <span className={`shrink-0 rounded-full border px-3 py-1 text-fine font-bold ${r.status === "approved" ? "border-teal/40 text-teal-light-ink" : r.status === "rejected" ? "border-red-400/40 text-red-300" : r.status === "withdrawn" ? "border-white/15 text-muted-foreground" : "border-gold/40 text-gold-ink"}`}>
                     {RESCHEDULE_STATUS_AR[r.status] ?? r.status}
                   </span>
                   {r.status === "pending" && (

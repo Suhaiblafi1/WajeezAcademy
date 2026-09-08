@@ -128,7 +128,7 @@ function RealTrainerHome({ name }: { name: string }) {
               <p className="mt-1">تسجّل الحضور وتقيّم التسليمات وتدير الجلسات — كلها من «شعبي».</p>
             </Card>
           </div>
-          <p className="mt-4 text-micro text-muted-foreground">
+          <p className="mt-4 text-read text-muted-foreground">
             حتى يصلك أول إسناد يمكنك مراجعة المحتوى واقتراح تحسينات عليه من{" "}
             <Link to="/trainer/proposals" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-foreground">«اقتراحاتي»</Link>.
           </p>
@@ -168,7 +168,7 @@ function RealTrainerHome({ name }: { name: string }) {
                     : <Circle className="h-4.5 w-4.5 shrink-0 text-muted-foreground/50" />}
                   <span className={`text-sm ${t.doneAt ? "text-muted-foreground line-through" : "font-bold text-foreground"}`}>{t.title}</span>
                   {!t.doneAt && t.key === "sign_contract" && (
-                    <span className="mr-auto text-micro font-bold text-muted-foreground">يُغلق بتوقيع العقد</span>
+                    <span className="mr-auto text-fine font-bold text-muted-foreground">يُغلق بتوقيع العقد</span>
                   )}
                 </button>
               );
@@ -177,7 +177,7 @@ function RealTrainerHome({ name }: { name: string }) {
         </Panel>
       )}
 
-      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-micro text-muted-foreground">
+      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-fine text-muted-foreground">
         <span className="font-black text-foreground">من أين أبدأ؟</span>
         {/* الترقيمُ لاتينيّ كبقيّة أرقام البوّابة — لا رسمان في بطاقةٍ واحدة */}
         {[
@@ -191,7 +191,7 @@ function RealTrainerHome({ name }: { name: string }) {
                 الهاتف. والحدُّ المتعارف عليه أربعٌ وأربعون، وستٌّ وثلاثون
                 أقلُّ ما يُقبل في شريطٍ داخليّ. */}
             <Link to={s.to} className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-micro text-gold-ink">{i + 1}</span>
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-fine text-gold-ink">{i + 1}</span>
               {s.label}
             </Link>
           </span>
@@ -203,19 +203,19 @@ function RealTrainerHome({ name }: { name: string }) {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Card as={Link} interactive to="/trainer/board" className="transition hover:border-white/30">
-          <p className="flex items-center gap-2 text-xs text-muted-foreground"><GraduationCap className="h-4 w-4" /> شعبي</p>
+          <p className="flex items-center gap-2 text-read text-muted-foreground"><GraduationCap className="h-4 w-4" /> شعبي</p>
           <p className="mt-2 text-3xl font-black">{cohorts.length}</p>
         </Card>
         <Card>
-          <p className="flex items-center gap-2 text-xs text-muted-foreground"><Users className="h-4 w-4" /> طلابي</p>
+          <p className="flex items-center gap-2 text-read text-muted-foreground"><Users className="h-4 w-4" /> طلابي</p>
           <p className="mt-2 text-3xl font-black">{students}</p>
         </Card>
         <Card as={Link} tone={awaiting > 0 ? "warn" : "default"} interactive to="/trainer/board" className="transition hover:border-white/30">
-          <p className="flex items-center gap-2 text-xs text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
+          <p className="flex items-center gap-2 text-read text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
           <p className="mt-2 text-3xl font-black text-gold-ink">{awaiting}</p>
         </Card>
         <Card as={Link} tone="accent" interactive to="/trainer/proposals" className="transition hover:border-teal/60">
-          <p className="flex items-center gap-2 text-xs text-teal-light-ink"><GitPullRequest className="h-4 w-4" /> اقتراحاتي على المحتوى</p>
+          <p className="flex items-center gap-2 text-read text-teal-light-ink"><GitPullRequest className="h-4 w-4" /> اقتراحاتي على المحتوى</p>
           <p className="mt-2 text-3xl font-black text-teal-light-ink">↗</p>
         </Card>
       </div>
@@ -226,14 +226,14 @@ function RealTrainerHome({ name }: { name: string }) {
       <Panel as="section" className="mt-6">
         <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
         <div className="mt-3 space-y-2">
-          {upcoming.length === 0 && <p className="py-3 text-center text-xs text-muted-foreground">لا جلسات قادمة مجدولة</p>}
+          {upcoming.length === 0 && <p className="py-3 text-center text-read text-muted-foreground">لا جلسات قادمة مجدولة</p>}
           {upcoming.map((s) => (
             <Card as={Link} interactive key={s.id} to="/trainer/board" className="flex items-center gap-3 px-4 py-2.5 text-xs transition hover:border-white/30">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-bold text-foreground">{s.title}</p>
-                <p className="mt-0.5 truncate text-micro text-muted-foreground">{s.cohortTitle}</p>
+                <p className="mt-0.5 truncate text-read text-muted-foreground">{s.cohortTitle}</p>
               </div>
-              <span className="shrink-0 text-micro font-bold text-muted-foreground">
+              <span className="shrink-0 text-fine font-bold text-muted-foreground">
                 {fmtDateTimeAr(s.startsAt)}
               </span>
             </Card>
@@ -241,7 +241,7 @@ function RealTrainerHome({ name }: { name: string }) {
         </div>
       </Panel>
 
-      <p className="mt-6 text-center text-micro text-muted-foreground">
+      <p className="mt-6 text-center text-read text-muted-foreground">
         كل بند أعلاه يقودك إلى مكان تنفيذه — والتفاصيل الكاملة لكل شعبة في شاشة «شعبي».
       </p>
     </div>

@@ -58,7 +58,7 @@ export default function BarChartCard({
       </h2>
 
       {failed ? (
-        <p className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
+        <p className="mt-5 flex items-center gap-2 text-read text-muted-foreground">
           <ServerOff className="h-4 w-4 shrink-0" aria-hidden="true" />
           تعذّر جلب هذا المخطط — حدّث الصفحة.
         </p>
@@ -67,11 +67,11 @@ export default function BarChartCard({
           <Loader2 className="h-6 w-6 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
         </div>
       ) : rows.length === 0 ? (
-        <p className="mt-5 text-xs leading-6 text-muted-foreground">{emptyAr}</p>
+        <p className="mt-5 text-read leading-6 text-muted-foreground">{emptyAr}</p>
       ) : (
         <ol className="mt-5 space-y-2.5">
           {rows.map((b, i) => (
-            <li key={`${b.labelAr}-${i}`} className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-3 text-xs sm:grid-cols-[10rem_1fr_auto]">
+            <li key={`${b.labelAr}-${i}`} className="grid grid-cols-[7.5rem_1fr_auto] items-center gap-3 text-read sm:grid-cols-[10rem_1fr_auto]">
               <span className="truncate text-foreground" title={b.labelAr}>{b.labelAr}</span>
               <span className="relative h-3 rounded-full bg-white/[0.06]">
                 <span
@@ -89,7 +89,7 @@ export default function BarChartCard({
         </ol>
       )}
 
-      <p className="mt-5 text-micro leading-relaxed text-muted-foreground">{methodAr}</p>
+      <p className="mt-5 text-read leading-relaxed text-muted-foreground">{methodAr}</p>
     </section>
   );
 }

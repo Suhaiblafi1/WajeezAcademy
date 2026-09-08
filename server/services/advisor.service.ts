@@ -128,6 +128,24 @@ export class AdvisorService {
     return link
   }
 
+  /* المستشارون المتاحون للإسناد — بصلاحيّة الإسناد نفسِها.
+
+     كانت الشاشةُ تقرأ `/api/admin/users` وترشّح منه ذوي دور المستشار،
+     وذاك محروسٌ بـ`admin.users.view`. فمن مُنح إسنادَ الحالات ولم يُمنح
+     إدارةَ المستخدمين تسقط عنه القائمةُ صامتةً، **فتنكشف تحتها خانةُ
+     «معرف المستشار (UUID)»** — قيمةٌ لا تعرضها شاشةٌ يملكها.
+
+     أي أنّ حقلَ اللصق لم يكن خيارَ تصميم، بل أثرَ حارسٍ لا يطابق الفعل.
+     فالقائمةُ الآن محروسةٌ بما يحرس الإسنادَ نفسَه. */
+  async assignableAdvisors() {
+    const rows = await this.prisma.user.findMany({
+      where: { status: 'active', roles: { some: { roleId: 'advisor' } } },
+      orderBy: { displayName: 'asc' },
+      select: { id: true, displayName: true, email: true },
+    })
+    return rows
+  }
+
   async listUnassigned() {
     return this.prisma.advisorCase.findMany({
       where: { assignments: { none: { unassignedAt: null } }, status: { notIn: ['closed', 'enrolled', 'not_interested'] } },

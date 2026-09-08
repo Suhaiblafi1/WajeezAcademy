@@ -8,6 +8,9 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ConfirmAction from '@/components/ConfirmAction'
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 
 type Version = {
   id: string; label: string; status: string; createdAt: string; publishedAt: string | null
@@ -21,6 +24,10 @@ const STATUS_AR: Record<string, string> = { draft: "مسودة", published: "م�
 
 export default function PublishingBoard() {
   const [versions, setVersions] = useState<Version[]>([]);
+  /* الإصداراتُ تتراكم ولا تُحذف — فهي أطولُ ما في اللوحة نموّا، وكانت
+     تُصبّ دفعةً واحدةً بلا بحثٍ ولا ترقيم. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [runs, setRuns] = useState<RegressionRun[]>([]);
   const [validation, setValidation] = useState<Validation | null>(null);
   const [impact, setImpact] = useState<Impact | null>(null);
@@ -43,6 +50,9 @@ export default function PublishingBoard() {
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  const matched = versions.filter((v) => matchesQuery(q, [v.label, STATUS_AR[v.status], v.status]));
+  const view = paginate(matched, page, 20);
 
   const act = async (key: string, fn: () => Promise<unknown>) => {
     setBusy(key); setError(null);
@@ -81,7 +91,7 @@ export default function PublishingBoard() {
             {busy === "impact" ? "يحاكي 12 شخصية…" : "محاكاة قبل/بعد (12 شخصية)"}
           </Button>
           {impact && (
-            <p className="mt-3 text-xs leading-6 text-foreground">
+            <p className="mt-3 text-read leading-6 text-foreground">
               تغيّرت توصية {impact.changedCount} من {impact.totalPersonas} شخصية.
               {/* الرقم بلا مرجعه يُقرأ خطأ: «صفر» عن قياسٍ على الجداول لا على
                   اللقطة الحية يعني «لا معتمد ينتظر»، لا «النشر بلا أثر». */}
@@ -104,21 +114,25 @@ export default function PublishingBoard() {
               {busy === "create" || busy === "publish" ? "ينشر…" : "أنشئ وانشر"}
             </Button>
           </div>
-          <p className="mt-2 text-micro text-muted-foreground">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
+          <p className="mt-2 text-read text-muted-foreground">النشر ذري: يرفض عند أي نقص ولا ينشر شيئًا جزئيًا.</p>
         </Card>
       </div>
 
       <section className="mt-8">
         <h2 className="flex items-center gap-2 text-lg font-black"><History className="h-5 w-5 text-gold-ink" /> الإصدارات</h2>
-        <div className="mt-4 space-y-2">
-          {versions.map((v) => (
+        <div className="mt-4">
+          <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="إصدارا"
+            placeholder="ابحث بوسم الإصدار أو حاله…" />
+        </div>
+        <div className="space-y-2">
+          {view.rows.map((v) => (
             <Card key={v.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <div>
                 <p className="font-bold text-sm" dir="ltr">{v.label}</p>
-                <p className="mt-0.5 text-micro text-muted-foreground" dir="ltr">{v.snapshots[0]?.payloadHash.slice(0, 12)}… · {v.events.map((e) => e.action).join(", ") || "—"}</p>
+                <p className="mt-0.5 text-read text-muted-foreground" dir="ltr">{v.snapshots[0]?.payloadHash.slice(0, 12)}… · {v.events.map((e) => e.action).join(", ") || "—"}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`rounded-full border px-2 py-0.5 text-micro font-bold ${v.status === "published" ? "border-emerald-400/30 text-emerald-300" : "border-white/15 text-muted-foreground"}`}>
+                <span className={`rounded-full border px-2 py-0.5 text-fine font-bold ${v.status === "published" ? "border-emerald-400/30 text-emerald-300" : "border-white/15 text-muted-foreground"}`}>
                   {STATUS_AR[v.status] ?? v.status}
                 </span>
                 {v.status !== "published" && v.snapshots.length > 0 && (
@@ -153,7 +167,7 @@ export default function PublishingBoard() {
           {runs.length === 0 && <p className="text-sm text-muted-foreground">لا تشغيلات بعد.</p>}
           {runs.map((r) => (
             <Card key={r.id} className="flex items-center justify-between px-4 py-3">
-              <p className="text-xs text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
+              <p className="text-read text-muted-foreground">{fmtDateTime(new Date(r.createdAt))}</p>
               <p className={`text-sm font-black ${r.passed ? "text-emerald-300" : "text-red-300"}`}>
                 {r.passed ? "✓ متطابق" : `✗ انحراف ${r.results.filter((x) => !x.match).length} شخصية`}
               </p>

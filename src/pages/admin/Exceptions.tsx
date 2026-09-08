@@ -6,7 +6,7 @@
    ومحروسٌ بصلاحيةِ مراجعةِ طلبات التسجيل التي لا تفتح شيئا هنا. */
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { Loader2, RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
+import { RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
@@ -14,6 +14,15 @@ import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { staffSelectCls } from "@/components/FormKit";
+import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
+/* «١ حالةٌ» و«٢ حالتان» و«٣ حالات» و«١١ حالةً» — والعددُ يُقرأ لا يُحسب */
+const CASE_FORMS = { one: "حالةٌ", two: "حالتان", few: "حالات", many: "حالةً" };
+
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
   enrolled: "سجلت", not_interested: "غير مهتمة", closed: "مغلقة", converted: "تحولت",
@@ -24,29 +33,43 @@ interface UnassignedCase {
   lead: { id: string; name?: string | null; email?: string | null } | null;
   client: { displayName: string; email: string } | null;
 }
-interface UserRow { id: string; displayName: string; email: string; roles: { id: string }[] }
+/** مستشارٌ متاحٌ للإسناد — الخادمُ يرشّح بالدور، فلا تُقرأ الأدوارُ هنا */
+interface AdvisorOption { id: string; displayName: string; email: string }
 
 export default function Exceptions() {
   const [rows, setRows] = useState<UnassignedCase[]>([]);
-  const [advisors, setAdvisors] = useState<UserRow[]>([]);
+  const [advisors, setAdvisors] = useState<AdvisorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pick, setPick] = useState<Record<string, string>>({});
+  /* الحالاتُ بلا مستشارٍ تتراكم كلَّ يومٍ حتّى تُسنَد — والطابورُ بلا بحث */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try { setRows(await apiGet<UnassignedCase[]>("/api/admin/advisor-cases/unassigned")); }
     catch (e) { setOffline(permissionMessage(e, "الخادم غير متصل")); }
-    /* قائمة المستشارين اختيارية — تتطلب صلاحية المستخدمين */
+    /* ── لماذا لا تُقرأ من `/api/admin/users` ──
+
+       كانت تُقرأ منه وتُرشَّح بدور المستشار، وذاك محروسٌ بـ`admin.users.view`.
+       فمن مُنح إسنادَ الحالات ولم يُمنح إدارةَ المستخدمين تسقط عنه القائمةُ
+       صامتةً وتنكشف تحتها خانةُ «معرف المستشار (UUID)» — قيمةٌ لا تعرضها
+       شاشةٌ يملكها. فحقلُ اللصق لم يكن خيارَ تصميم بل أثرَ حارسٍ لا يطابق
+       الفعل. والمسارُ الآن محروسٌ بـ`advisor.assign` نفسِها. */
     try {
-      const users = await apiGet<UserRow[]>("/api/admin/users");
-      setAdvisors(users.filter((u) => u.roles.some((r) => r.id === "advisor")));
+      setAdvisors(await apiGet<AdvisorOption[]>("/api/admin/advisor-cases/assignable-advisors"));
     } catch { setAdvisors([]); }
     setLoading(false);
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  const matched = rows.filter((c) => matchesQuery(q, [
+    c.client?.displayName, c.client?.email, c.lead?.name, c.lead?.email,
+  ]));
+  const view = paginate(matched, page, 20);
 
   const assign = async (caseId: string) => {
     const advisorId = (pick[caseId] ?? "").trim();
@@ -81,43 +104,64 @@ export default function Exceptions() {
         { label: "مراجعة وإسناد", actor: "أنت هنا" },
         { label: "المستشار يستلمها", actor: "تظهر في بوابته فوراً" },
       ]} />
+      {/* ── العملُ قبل القائمة ──
+
+          الحالةُ بلا مستشارٍ تتراكم كلَّ يومٍ حتّى تُسنَد، وصاحبُها ينتظر بلا
+          أن يعرف أحدٌ منذ متى. فصار العددُ جملةً، وللإسناد زرٌّ يبلغ أوّلَها
+          ويضع التركيزَ على منتقي المستشار مباشرةً — لا على الصفّ وحدَه. */}
+      <WorkHeader
+        loading={loading}
+        icon={ShieldAlert}
+        count={rows.length}
+        forms={CASE_FORMS}
+        waitingAr="تنتظر إسنادَ مستشار"
+        actionAr="أسنِد أوّلَها"
+        /* والعجزُ يُقال في موضعه: قائمةٌ فارغةٌ من المستشارين تعني أنّ لا
+           أحدَ نشطٌ يُسنَد إليه — وهو سببٌ يُعالَج في شاشةٍ أخرى، فلا يُترك
+           الزرُّ باهتا بلا كلمة. */
+        disabledReasonAr={advisors.length === 0
+          ? "لا مستشارَ نشطا يُسنَد إليه — فعِّل مستشارا في «المستشارون» أوّلا."
+          : rows.length > 0 && view.total === 0
+            ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+            : undefined}
+        onAction={() => { if (view.rows[0]) revealRow(`advisor-${view.rows[0].id}`); }}
+        doneAr="لا حالةَ بلا مستشار — كلُّ حالات المستشارين النشطة مسنَدة، والجديدةُ من التشخيص تظهر هنا فورَ وصولها."
+      />
+
       <div className="mb-5 flex items-center gap-3">
         <Button tone="secondary" onClick={() => void load()}>
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </Button>
       </div>
 
-      {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      ) : rows.length === 0 ? (
-        <Panel className="grid place-items-center py-20 text-center">
-          <ShieldAlert className="h-12 w-12 text-muted-foreground/50" />
-          <h2 className="mt-4 text-xl font-black">لا حالةَ بلا مستشار</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">كل حالات المستشارين النشطة مسندة — الحالات الجديدة من التشخيص تظهر هنا فور وصولها.</p>
-        </Panel>
-      ) : (
+      {!loading && rows.length > 0 && (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حالة"
+          placeholder="ابحث باسم العميل أو بريده…" />
+        {view.rows.length === 0 ? (
+          <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+            لا حالةَ تطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Panel>
+        ) : (
         <div className="space-y-3">
-          {rows.map((c) => (
+          {view.rows.map((c) => (
             <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{c.client?.displayName ?? c.lead?.name ?? "—"}</p>
-                <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{c.client?.email ?? c.lead?.email ?? ""}</p>
-                <p className="mt-1 text-micro text-muted-foreground">
+                <p className="mt-1 text-read text-muted-foreground" dir="ltr">{c.client?.email ?? c.lead?.email ?? ""}</p>
+                <p className="mt-1 text-read text-muted-foreground">
                   الحالة: {CASE_STATUS_AR[c.status] ?? c.status} · منذ {fmtDate(new Date(c.createdAt))}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                {advisors.length > 0 ? (
-                  <select value={pick[c.id] ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}
-                    className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground [&>option]:bg-surface">
-                    <option value="">اختر مستشارا…</option>
-                    {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
-                  </select>
-                ) : (
-                  <input value={pick[c.id] ?? ""} onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })}
-                    placeholder="معرف المستشار (UUID)" dir="ltr"
-                    className="w-56 rounded-xl border border-white/15 bg-paper/30 px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
-                )}
+                {/* والفراغُ يُقال ولا يُلتفّ عليه بحقلِ لصق: قائمةٌ فارغةٌ
+                    تعني أن لا مستشارَ نشطا، ومعرّفٌ يُكتب يدا لا يُنشئ واحدا. */}
+                <label className="sr-only" htmlFor={`advisor-${c.id}`}>المستشارُ المسنَد إليه</label>
+                <select id={`advisor-${c.id}`} value={pick[c.id] ?? ""} disabled={advisors.length === 0}
+                  onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
+                  <option value="">{advisors.length === 0 ? "لا مستشارين نشطين" : "اختر مستشارا…"}</option>
+                  {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
+                </select>
                 <Button tone="confirm" disabled={busy || !(pick[c.id] ?? "").trim()} onClick={() => void assign(c.id)}>
                   <UserPlus className="h-3.5 w-3.5" /> إسناد
                 </Button>
@@ -125,6 +169,8 @@ export default function Exceptions() {
             </Card>
           ))}
         </div>
+        )}
+        </>
       )}
     </AdminLayout>
   );

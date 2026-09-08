@@ -60,7 +60,7 @@ export default function LearnerSearchField({
       <Inset tone="accent" className="flex flex-1 items-center gap-2 px-3 py-2">
         <UserCheck className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span className="flex-1 truncate text-xs font-bold text-foreground">{value.displayName}</span>
-        <span dir="ltr" className="truncate text-micro text-muted-foreground">{value.email}</span>
+        <span dir="ltr" className="truncate text-fine text-muted-foreground">{value.email}</span>
         <Button tone="ghost" type="button"
           onClick={() => { onChange(null); setTerm(""); }}
           aria-label="اختر متعلّما آخر" className="shrink-0 p-1">
@@ -90,7 +90,7 @@ export default function LearnerSearchField({
       {hits !== null && (
         <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#0F1A1D] p-1 shadow-2xl">
           {hits.length === 0 && (
-            <li className="px-3 py-2 text-micro text-muted-foreground">لا متعلّمَ بهذا الاسم أو البريد.</li>
+            <li className="px-3 py-2 text-read text-muted-foreground">لا متعلّمَ بهذا الاسم أو البريد.</li>
           )}
           {hits.map((h) => (
             <li key={h.id}>
@@ -102,8 +102,8 @@ export default function LearnerSearchField({
               >
                 <span className="truncate text-xs font-bold text-foreground">{h.displayName}</span>
                 <span className="flex shrink-0 items-center gap-2">
-                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-micro font-bold text-muted-foreground">مسجَّلٌ هنا</span>}
-                  <span dir="ltr" className="text-micro text-muted-foreground">{h.email}</span>
+                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-fine font-bold text-muted-foreground">مسجَّلٌ هنا</span>}
+                  <span dir="ltr" className="text-fine text-muted-foreground">{h.email}</span>
                 </span>
               </button>
             </li>

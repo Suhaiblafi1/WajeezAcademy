@@ -18,6 +18,11 @@ import { fmtDateTimeAr } from "@/utils/format";
 
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import ListToolbar from "@/components/admin/ListToolbar";
+import WorkHeader from "@/components/admin/WorkHeader";
+import { revealRow } from "@/components/admin/reveal";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 interface Row {
   id: string;
   kind: string;
@@ -43,6 +48,9 @@ const KIND_AR: Record<string, string> = {
   plan_remove: "إلغاء دورة من الخطّة",
 };
 
+/* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
+const REQ_FORMS = { one: "طلبٌ", two: "طلبان", few: "طلبات", many: "طلبا" };
+
 /** أقلُّ سببٍ يُقرأ — مطابقٌ لما يفرضه الخادم */
 const MIN_REASON = 12;
 
@@ -50,6 +58,11 @@ export default function AdvisorRequests() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
+  /* الطابورُ يطول بطول العمل، ولم يكن فيه ما يُبحث به: من أراد طلبَ مستشارٍ
+     بعينه مرّره بعينه. والبحثُ يقع على الطابور كلِّه لا على الصفحة المعروضة
+     — وإلّا لم يجد الباحثُ إلّا ما كان أمامه أصلا. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [busy, setBusy] = useState("");
 
   const load = useCallback(async () => {
@@ -62,6 +75,14 @@ export default function AdvisorRequests() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* يُبحث بمن طلب وبمن طُلب له وبالسبب — وهي الحقولُ التي يُسأل بها فعلا */
+  const matched = (rows ?? []).filter((r) => matchesQuery(q, [
+    r.advisor.displayName, r.advisor.email, r.reasonAr,
+    r.case.client?.displayName, r.case.client?.email,
+    r.case.lead?.fullName, r.case.lead?.email,
+  ]));
+  const view = paginate(matched, page, 20);
 
   const decide = async (id: string, decision: "approved" | "rejected") => {
     setBusy(id);
@@ -91,24 +112,52 @@ export default function AdvisorRequests() {
   return (
     <AdminLayout title="طلبات المستشارين — خصمٌ وتعديلُ خطّة">
 
-      {rows === null ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      ) : rows.length === 0 ? (
-        <Panel className="grid place-items-center py-16 text-center">
-          <CheckCircle2 className="h-12 w-12 text-teal-light-ink/50" />
-          <h2 className="mt-4 text-xl font-black">لا طلبَ ينتظر قرارك</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            حين يطلب مستشارٌ خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا.
-          </p>
-        </Panel>
-      ) : (
+      {/* ── العملُ قبل القائمة ──
+
+          كانت الشاشةُ تفتح بالقائمة نفسِها: من أراد أن يعرف كم ينتظره عدّ،
+          ومن أراد أن يبدأ نزل بعينه إلى أوّل صفّ. فصار العددُ جملةً وللبدء
+          زرٌّ يبلغ أوّلَ الطابور ويضع التركيزَ عليه.
+
+          والحالاتُ الثلاثُ صارت من المكوَّن: الهيكلُ بدل الدوّامة، و«تمّ»
+          تقول ما يصل هذه الشاشةَ ومن أين — لا «لا شيءَ هنا». */}
+      <WorkHeader
+        loading={rows === null}
+        icon={BadgePercent}
+        count={rows?.length ?? 0}
+        forms={REQ_FORMS}
+        waitingAr="تنتظر قرارَك"
+        stats={rows ? [
+          `${rows.filter((r) => r.kind === "discount").length} خصما على فاتورة`,
+          `${rows.filter((r) => r.kind !== "discount").length} تعديلَ خطّة`,
+        ] : []}
+        actionAr="ابدأ بأقدمها"
+        /* الطابورُ أقدمُه أوّلا كما يردّه الخادم — فأوّلُ المعروض أقدمُ ما
+           لم يُبتّ فيه. والبحثُ قد يُخفيه، فيُقال السببُ ولا يبهت الزرُّ صامتا. */
+        disabledReasonAr={rows && rows.length > 0 && view.total === 0
+          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          : undefined}
+        onAction={() => { if (view.rows[0]) revealRow(`advisor-req-${view.rows[0].id}`); }}
+        doneAr="لا طلبَ ينتظر قرارَك — وحين يطلب مستشارٌ خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا."
+      />
+
+      {rows !== null && rows.length > 0 && (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
+          placeholder="ابحث باسم المستشار أو العميل أو بالسبب…" />
+        {view.rows.length === 0 ? (
+          /* «لا نتائج» غيرُ «لا طلبات»: الأولى تُمسح كلمتُها، والثانية تُنتظر */
+          <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+            لا طلبَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Panel>
+        ) : (
         <ul className="space-y-4">
-          {rows.map((r) => {
+          {view.rows.map((r) => {
             const who = r.case.client?.displayName ?? r.case.lead?.fullName ?? "عميل بلا اسم";
             const email = r.case.client?.email ?? r.case.lead?.email ?? "";
             const reason = note[r.id] ?? "";
             return (
-              <Panel as="li" key={r.id}>
+              /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+              <Panel as="li" key={r.id} id={`advisor-req-${r.id}`} tabIndex={-1} className="outline-none">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
@@ -118,22 +167,22 @@ export default function AdvisorRequests() {
                       {r.amountOff && <span className="text-gold-ink">{r.amountOff} {r.currency}</span>}
                       {r.courseId && <span className="font-normal text-foreground">— {courseById(r.courseId)?.name ?? r.courseId}</span>}
                     </p>
-                    <p className="mt-1.5 text-xs text-muted-foreground">
+                    <p className="mt-1.5 text-read text-muted-foreground">
                       للعميل <b className="text-foreground">{who}</b>
                       {email && <span dir="ltr" className="ms-2 text-muted-foreground">{email}</span>}
                     </p>
-                    <p className="mt-0.5 text-micro text-muted-foreground">
+                    <p className="mt-0.5 text-read text-muted-foreground">
                       رفعه {r.advisor.displayName} · <Clock className="mb-0.5 inline h-3 w-3" /> {fmtDateTimeAr(r.createdAt)}
                     </p>
                   </div>
                 </div>
 
-                <Inset as="p" className="mt-3 px-4 py-3 text-xs leading-7 text-foreground">
+                <Inset as="p" className="mt-3 px-4 py-3 text-read leading-7 text-foreground">
                   <span className="font-bold text-muted-foreground">سببُه: </span>{r.reasonAr}
                 </Inset>
 
                 <div className="mt-3">
-                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-micro font-bold text-muted-foreground">
+                  <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
                     ردُّك — إلزاميٌّ عند الرفض، يقرؤه المستشار
                   </label>
                   <textarea
@@ -154,13 +203,15 @@ export default function AdvisorRequests() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-micro text-muted-foreground">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
+                    <span className="text-fine text-muted-foreground">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
                   )}
                 </div>
               </Panel>
             );
           })}
         </ul>
+        )}
+        </>
       )}
     </AdminLayout>
   );

@@ -21,6 +21,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { getObject } from './object-store'
 
 /* التطوير وحده يبلغ هذا المسار. وcwd لا import.meta.url: الأخير يصير
    `/var/task/api` في الحزمة فيصعد فوق النشر. */
@@ -93,18 +94,27 @@ export function verifySignature(storageKey: string, exp: number, sig: string, pu
    معلَنٌ لا يُوفى أسوأ من سقفٍ صغير معلوم. والفيديو له طريقه: حقلُ الرابط. */
 /* ─────────── رفعُ الملفّات: مفتاحٌ واحدٌ يقول الحقيقة ───────────
 
-   `writeDocumentContent` أدناه يكتب في `trainerApplicationDocument` وحدَه —
-   وهو النموذجُ الوحيدُ في المخطّط الذي يحمل عمودَ `content Bytes?`. وستّةُ
-   نماذجَ أُخرى تحمل `storageKey` (موادُّ الشعبة، التسجيلات، ملفّاتُ التسليم،
-   إجاباتُ التقييم، السِّيَرُ الذاتيّة) — فأيُّ رابطِ رفعٍ يُصدَر لها يقود إلى
-   ‏404 «الوثيقة غير مسجلة»: لا مكانَ تُكتب فيه بايتاتُها.
+   ── ما كان، ولماذا أُطفئ ──
 
-   وقد ثبت هذا في جولة ٢٠٢٦-٠٩ لا استُنتج: رفعُ تسجيلِ جلسةٍ رُدّ فعلا، ورفعُ
-   السيرة الذاتيّة لم يُرسل الملفَّ أصلا وقال للطالب «رُفعت».
+   كان التخزينُ عمودَ `Bytes` بجانب سجلّ وثيقةِ المتقدّم، وهو **النموذجُ
+   الوحيدُ** الذي يحمل ذلك العمود. وستّةُ نماذجَ تُصدر روابطَ رفعٍ إلى المسار
+   نفسِه (موادُّ الشعبة، والتسجيلات، وملفُّ التسليم، وإجابةُ التقييم، والسيرةُ
+   الذاتيّة) — فكلُّ رابطٍ منها كان يقود إلى ٤٠٤ «الوثيقة غير مسجلة»: لا
+   مكانَ تُكتب فيه بايتاتُها. وثبت ذلك بالتجربة لا بالاستنتاج: رفعُ تسجيلِ
+   جلسةٍ رُدّ فعلا، ورفعُ السيرة الذاتيّة لم يُرسل الملفَّ وقال للطالب «رُفعت».
 
-   فحتّى يُبنى مخزنُ الكائنات (الوثيقة ٠٢ §٥، المهمّة ٥٥): لا نُصدر وعدا لا
-   نُوفيه. المفتاحُ مطفأٌ افتراضيّا، ويُشعَل بـ`FILE_UPLOADS=on` يومَ يوجد
-   مخزنٌ حقيقيّ — لا قبله. ووثائقُ طلب الانضمام مستثناةٌ لأنّها تعمل فعلا. */
+   فأُطفئ المفتاحُ كي لا نُصدر وعدا لا نُوفيه.
+
+   ── وما صار (البند ⑤) ──
+
+   المانعُ زال: للخادم حجمُ `storage` دائم، والبايتاتُ تُكتب عليه
+   (`object-store.ts`)، و`resolveStorageOwner` أدناه يعرف مالكَ أيِّ مفتاحٍ من
+   **الستّة جميعا** — فلم يبقَ رابطٌ يقود إلى لا شيء.
+
+   ⚠️ **والمفتاحُ يبقى مطفأً افتراضيّا بقصد.** لا لأنّ المخزنَ ناقصٌ بل لأنّ
+   إشعالَه قرارُ تشغيلٍ لا قرارُ شيفرة: يُضبط `FILE_UPLOADS=on` في
+   `deploy/.env.production` **بعد** أن تجريَ هجرةُ الوثائق القائمة
+   (`npm run storage:migrate`) وبعد أن تُؤخذ نسخةٌ يدخلها حجمُ التخزين. */
 export function fileUploadsEnabled(): boolean {
   return process.env.FILE_UPLOADS === 'on'
 }
@@ -137,20 +147,98 @@ export function newStorageKey(): string {
   return randomBytes(24).toString('base64url')
 }
 
-/* المحتوى يُكتب بجانب سجلّه ويُقرأ منه — لا قرص في مسار الطلب أصلا */
-export async function writeDocumentContent(
-  prisma: PrismaClient, storageKey: string, content: Buffer,
-): Promise<number> {
-  await prisma.trainerApplicationDocument.update({
-    where: { storageKey },
-    data: { content: new Uint8Array(content), sizeBytes: content.length },
-  })
-  return content.length
+/* ═══ من يملك هذا المفتاح؟ — ستّةُ نماذجَ ومساران ═══
+
+   المساران (`PUT /api/v1/uploads/:key` و`GET /api/v1/documents/:key`) كانا
+   يسألان `trainerApplicationDocument` وحدَه، فيردّان ٤٠٤ «الوثيقة غير مسجلة»
+   لكلّ ما سواه. وستّةُ نماذجَ تُصدر روابطَ رفعٍ إليهما فعلا: موادُّ الشعبة
+   وتسجيلاتُها وملفُّ التسليم وإجابةُ التقييم والسيرةُ الذاتيّة ووثيقةُ
+   المتقدّم. أي أنّ خمسةً منها كانت **تَعِد برابطٍ لا يقود إلى شيء**.
+
+   والتحقّقُ من أنّ المفتاحَ مسجَّلٌ في نموذجٍ ما ليس تزيّدا على التوقيع:
+   التوقيعُ يُثبت أنّ المنصّةَ أصدرت الرابط، وهذا يمنع أن يُكتب كائنٌ لا
+   يملكه سجلٌّ — فلا يبقى على القرص ما لا يعرفه أحد ولا يحذفه أحد. */
+export type StorageOwnerKind =
+  | 'trainer_document' | 'cv' | 'recording' | 'material' | 'submission' | 'assessment_response'
+
+export interface StorageOwner {
+  kind: StorageOwnerKind
+  maxBytes: number
+  /* ما تعرفه القاعدةُ عنه — وثلاثةٌ من الستّة لا تعرف نوعا ولا اسما */
+  mime?: string
+  originalName?: string
 }
 
+export async function resolveStorageOwner(
+  prisma: PrismaClient, storageKey: string,
+): Promise<StorageOwner | null> {
+  const doc = await prisma.trainerApplicationDocument.findUnique({
+    where: { storageKey }, select: { kind: true, mime: true, originalName: true },
+  })
+  if (doc) {
+    return {
+      kind: 'trainer_document',
+      maxBytes: MAX_UPLOAD_BYTES[doc.kind] ?? MAX_UPLOAD_ANY,
+      mime: doc.mime, originalName: doc.originalName,
+    }
+  }
+
+  /* السيرةُ الذاتيّةُ لا تحمل `@unique` على المفتاح — كالتسليم والإجابة */
+  const cv = await prisma.cvSubmission.findFirst({
+    where: { storageKey }, select: { mime: true, originalName: true },
+  })
+  if (cv) return { kind: 'cv', maxBytes: MAX_UPLOAD_ANY, mime: cv.mime, originalName: cv.originalName }
+
+  /* ⚠️ والتسجيلُ والمادّةُ لا يأخذان `MAX_COHORT_MEDIA_BYTES` (٣٠٠MB) هنا.
+
+     المسارُ يقرأ الجسمَ **كاملا في الذاكرة** (`req.body as Buffer`) وحدُّه
+     `bodyLimit: MAX_UPLOAD_ANY`. فلو أعلنّا ثلاثَمئةٍ لَردّ Fastify الطلبَ
+     عند أربعةٍ قبل أن يبلغ فحصُنا أصلا: رسالةٌ عامّةٌ بدل رسالتنا، وسقفٌ
+     معلَنٌ لا يُوفى — وهو أسوأُ من سقفٍ صغيرٍ معلوم، بنصّ ما هو مكتوبٌ أعلاه.
+
+     ورفعُ الحدّ ليس رفعَ رقم: ثلاثُمئةٍ في الذاكرة لكلّ طلبٍ متزامن تُسقط
+     الحاوية. فالطريقُ **البثُّ إلى القرص** لا مخزنٌ أكبر — وذلك بندٌ مستقلٌّ
+     يُفتح حين تُطلب محاضرةٌ كاملة، لا اليوم. والفيديو رابطٌ أصلا بقرار. */
+  const rec = await prisma.recording.findUnique({
+    where: { storageKey }, select: { mime: true, title: true },
+  })
+  if (rec) {
+    return { kind: 'recording', maxBytes: MAX_UPLOAD_ANY, mime: rec.mime, originalName: rec.title }
+  }
+
+  const mat = await prisma.learningMaterial.findUnique({
+    where: { storageKey }, select: { title: true },
+  })
+  if (mat) return { kind: 'material', maxBytes: MAX_UPLOAD_ANY, originalName: mat.title }
+
+  const sub = await prisma.assignmentSubmission.findFirst({ where: { storageKey }, select: { id: true } })
+  if (sub) return { kind: 'submission', maxBytes: MAX_UPLOAD_ANY }
+
+  const res = await prisma.assessmentResponse.findFirst({ where: { storageKey }, select: { id: true } })
+  if (res) return { kind: 'assessment_response', maxBytes: MAX_UPLOAD_ANY }
+
+  return null
+}
+
+/* الحجمُ يبقى في سجلّ وثيقة المتقدّم — تقرؤه شاشةُ المراجعة. والبايتاتُ
+   لم تعد معه: صارت على القرص (`object-store.ts`)، والعمودُ يخلو بالهجرة. */
+export async function recordDocumentSize(
+  prisma: PrismaClient, storageKey: string, sizeBytes: number,
+): Promise<void> {
+  await prisma.trainerApplicationDocument.update({ where: { storageKey }, data: { sizeBytes } })
+}
+
+/* ═══ القراءةُ: القرصُ أوّلا، ثمّ العمودُ لما لم يُهاجر بعد ═══
+
+   وثائقُ المتقدّمين المكتوبةُ قبل المخزن تسكن عمودَ `content`. والهجرةُ
+   (`scripts/migrate-documents-to-disk.ts`) تنقلها، لكنّ التراجعَ إلى العمود
+   يبقى **حتّى تجريَ الهجرةُ على الإنتاج** — فنشرةٌ تسبق الهجرةَ لا تُخفي
+   وثيقةً عن مراجعها. ويُحذف هذا التراجعُ يومَ يخلو العمود. */
 export async function readDocumentContent(
   prisma: PrismaClient, storageKey: string,
 ): Promise<Buffer | null> {
+  const onDisk = await getObject(storageKey)
+  if (onDisk) return onDisk
   const row = await prisma.trainerApplicationDocument.findUnique({
     where: { storageKey }, select: { content: true },
   })

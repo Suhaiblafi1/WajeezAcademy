@@ -49,7 +49,7 @@ interface CaseDetail extends CaseRow {
 }
 
 const INPUT = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
-const LBL = "mb-1 block text-micro font-bold text-muted-foreground";
+const LBL = "mb-1 block text-fine font-bold text-muted-foreground";
 
 /* `ar-SA` تُخرج تقويما **هجريّا**، فكان المستشار وحده يرى «١٥ ربيع الآخر»
    بينما الشعبةُ مجدولةٌ ميلاديّا في كل شاشةٍ أخرى — فيُقارن موعدين
@@ -157,10 +157,10 @@ export default function AdvisorCases() {
           <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><UserRound className="h-4 w-4" /> العميل</h2>
             <p className="font-black">{partyOf(detail).name}</p>
-            {partyOf(detail).email && <p className="mt-1 text-xs text-muted-foreground" dir="ltr">{partyOf(detail).email}</p>}
-            {partyOf(detail).phone && <p className="text-xs text-muted-foreground" dir="ltr">{partyOf(detail).phone}</p>}
-            <p className="mt-2 text-micro text-muted-foreground">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
-            <p className="mt-3 rounded-xl bg-white/[0.04] p-3 text-xs leading-6 text-foreground">
+            {partyOf(detail).email && <p className="mt-1 text-read text-muted-foreground" dir="ltr">{partyOf(detail).email}</p>}
+            {partyOf(detail).phone && <p className="text-read text-muted-foreground" dir="ltr">{partyOf(detail).phone}</p>}
+            <p className="mt-2 text-read text-muted-foreground">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
+            <p className="mt-3 rounded-xl bg-white/[0.04] p-3 text-read leading-6 text-foreground">
               {snapshotSummary(detail.client?.learnerProfile?.diagnosticSnapshot ?? detail.diagnosticSnapshot)}
             </p>
             {/* ── سيرةُ العميل: تُقرأ لا تُعدّ ──
@@ -188,7 +188,7 @@ export default function AdvisorCases() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-1.5 text-micro leading-5 text-muted-foreground">كلُّ فتحةٍ تُسجَّل في سجلّ الأثر باسمك.</p>
+                <p className="mt-1.5 text-read leading-5 text-muted-foreground">كلُّ فتحةٍ تُسجَّل في سجلّ الأثر باسمك.</p>
               </div>
             )}
           </Card>
@@ -200,7 +200,7 @@ export default function AdvisorCases() {
               {Object.entries(STATUS_LABELS).map(([k, v]) => (
                 <button key={k} disabled={detail.status === k}
                   onClick={() => void act(() => apiPost(`/api/advisor/cases/${detail.id}/status`, { status: k }), `انتقلت الحالة إلى «${v}»`)}
-                  className={`cursor-pointer rounded-full border px-3 py-1 text-micro font-bold transition disabled:cursor-default ${
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-fine font-bold transition disabled:cursor-default ${
                     detail.status === k ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground hover:border-teal/50 hover:text-foreground"
                   }`}>
                   {v}
@@ -223,7 +223,7 @@ export default function AdvisorCases() {
           {/* ما لا يملكه المستشار وحده */}
           <Card as="section" className="lg:col-span-2">
             <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلباتٌ تبتّ فيها الإدارة</h2>
-            <p className="mb-3 text-micro leading-6 text-muted-foreground">
+            <p className="mb-3 text-read leading-6 text-muted-foreground">
               خصمٌ على فاتورته، أو تعديلٌ على خطّته. لا يُنفَّذ بطلبك وحده — ويبقى أثرُه مكتوبا.
             </p>
             <RequestsPanel key={detail.id} caseId={detail.id} />
@@ -238,13 +238,13 @@ export default function AdvisorCases() {
             )} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.contactEvents.map((c) => (
-                <li key={c.id} className="rounded-xl bg-white/[0.04] p-2.5 text-xs leading-5 text-foreground">
+                <li key={c.id} className="rounded-xl bg-white/[0.04] p-2.5 text-read leading-5 text-foreground">
                   <span className="font-bold text-foreground">{CHANNEL_LABELS[c.channel] ?? c.channel}</span>
                   {c.direction === "in" ? " (واردة)" : ""} — {c.summary}
-                  <span className="block text-micro text-muted-foreground">{fmt(c.createdAt)}</span>
+                  <span className="block text-fine text-muted-foreground">{fmt(c.createdAt)}</span>
                 </li>
               ))}
-              {detail.contactEvents.length === 0 && <li className="text-xs text-muted-foreground">لا تواصل مسجل بعد</li>}
+              {detail.contactEvents.length === 0 && <li className="text-read text-muted-foreground">لا تواصل مسجل بعد</li>}
             </ul>
           </Card>
 
@@ -257,11 +257,11 @@ export default function AdvisorCases() {
             )} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.followUps.map((f) => (
-                <li key={f.id} className="flex items-start justify-between gap-2 rounded-xl bg-white/[0.04] p-2.5 text-xs">
+                <li key={f.id} className="flex items-start justify-between gap-2 rounded-xl bg-white/[0.04] p-2.5 text-read">
                   <span className="leading-5 text-foreground">
                     {CHANNEL_LABELS[f.channel] ?? f.channel} — {fmt(f.scheduledAt)}
                     {f.note ? ` — ${f.note}` : ""}
-                    {f.doneAt && <span className="block text-micro text-[#34A853]">أُنجزت: {f.outcome}</span>}
+                    {f.doneAt && <span className="block text-fine text-[#34A853]">أُنجزت: {f.outcome}</span>}
                   </span>
                   {!f.doneAt && (
                     <Button tone="secondary" onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
@@ -270,7 +270,7 @@ export default function AdvisorCases() {
                   )}
                 </li>
               ))}
-              {detail.followUps.length === 0 && <li className="text-xs text-muted-foreground">لا متابعات بعد</li>}
+              {detail.followUps.length === 0 && <li className="text-read text-muted-foreground">لا متابعات بعد</li>}
             </ul>
           </Card>
 
@@ -283,10 +283,10 @@ export default function AdvisorCases() {
             )} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.tasks.map((t) => (
-                <li key={t.id} className="flex items-start justify-between gap-2 rounded-xl bg-white/[0.04] p-2.5 text-xs">
+                <li key={t.id} className="flex items-start justify-between gap-2 rounded-xl bg-white/[0.04] p-2.5 text-read">
                   <span className={`leading-5 ${t.status === "done" ? "text-muted-foreground line-through" : "text-foreground"}`}>
                     {t.title}
-                    {t.dueAt && <span className="block text-micro text-muted-foreground">تستحق: {fmt(t.dueAt)}</span>}
+                    {t.dueAt && <span className="block text-fine text-muted-foreground">تستحق: {fmt(t.dueAt)}</span>}
                   </span>
                   {t.status !== "done" && (
                     <Button tone="secondary" onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أُنجزت المهمة")} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المهمة">
@@ -295,7 +295,7 @@ export default function AdvisorCases() {
                   )}
                 </li>
               ))}
-              {detail.tasks.length === 0 && <li className="text-xs text-muted-foreground">لا مهام بعد</li>}
+              {detail.tasks.length === 0 && <li className="text-read text-muted-foreground">لا مهام بعد</li>}
             </ul>
           </Card>
 
@@ -305,12 +305,12 @@ export default function AdvisorCases() {
             <NoteForm onSubmit={(body) => void act(() => apiPost(`/api/advisor/cases/${detail.id}/notes`, { body }), "حُفظت الملاحظة")} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.notes.map((n) => (
-                <li key={n.id} className="rounded-xl bg-white/[0.04] p-2.5 text-xs leading-5 text-foreground">
+                <li key={n.id} className="rounded-xl bg-white/[0.04] p-2.5 text-read leading-5 text-foreground">
                   {n.body}
-                  <span className="block text-micro text-muted-foreground">{fmt(n.createdAt)}</span>
+                  <span className="block text-fine text-muted-foreground">{fmt(n.createdAt)}</span>
                 </li>
               ))}
-              {detail.notes.length === 0 && <li className="text-xs text-muted-foreground">لا ملاحظات بعد</li>}
+              {detail.notes.length === 0 && <li className="text-read text-muted-foreground">لا ملاحظات بعد</li>}
             </ul>
           </Card>
         </div>
@@ -365,7 +365,7 @@ export default function AdvisorCases() {
             }, "فُتحت الحالة وأُسندت إليك");
           }}
         >
-          <p className="text-xs leading-6 text-muted-foreground">
+          <p className="text-read leading-6 text-muted-foreground">
             بريدٌ أو هاتفٌ على الأقلّ — <b className="text-foreground">حالةٌ بلا سبيلٍ إلى صاحبها لا تُفتح</b>.
             ولا تشخيصَ يُنسب إليه قبل أن يُقاس.
           </p>
@@ -415,17 +415,17 @@ export default function AdvisorCases() {
               className="block w-full cursor-pointer rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-right transition hover:border-teal/50">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{partyOf(c).name} <span className="text-micro font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
-                  <p className="mt-1 text-xs text-muted-foreground">{snapshotSummary(c.diagnosticSnapshot)}</p>
-                  {c.nextAction && <p className="mt-1 text-micro text-gold-ink">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
+                  <p className="font-black">{partyOf(c).name} <span className="text-fine font-normal text-muted-foreground" dir="ltr">{partyOf(c).email}</span></p>
+                  <p className="mt-1 text-read text-muted-foreground">{snapshotSummary(c.diagnosticSnapshot)}</p>
+                  {c.nextAction && <p className="mt-1 text-read text-gold-ink">التالي: {c.nextAction}{c.nextFollowUpAt ? ` — ${fmt(c.nextFollowUpAt)}` : ""}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   {c.followUps[0] && (
-                    <span className="rounded-full border border-teal/40 px-3 py-1 text-micro font-bold text-teal-light-ink">
+                    <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                       متابعة {fmt(c.followUps[0].scheduledAt)}
                     </span>
                   )}
-                  <span className="rounded-full border border-white/15 px-3 py-1 text-micro font-bold text-foreground">
+                  <span className="rounded-full border border-white/15 px-3 py-1 text-fine font-bold text-foreground">
                     {STATUS_LABELS[c.status] ?? c.status}
                   </span>
                 </div>

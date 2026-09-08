@@ -60,7 +60,7 @@ export default function BuildStampLine() {
     : null;
 
   return (
-    <p className="mt-10 border-t border-white/10 pt-4 text-micro text-muted-foreground">
+    <p className="mt-10 border-t border-white/10 pt-4 text-read text-muted-foreground">
       <span className="font-mono">{sha}</span>
       {ref ? <> · {ref}</> : null}
       {built ? <> · بُني {built}</> : null}

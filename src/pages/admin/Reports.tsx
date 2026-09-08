@@ -7,7 +7,7 @@ import { apiGet, ApiError } from "@/services/api";
 
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-const inputCls = "rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none";
+import { staffControlCls as inputCls } from "@/components/FormKit";
 
 interface ReportDef { key: string; titleAr: string; methodAr: string }
 interface ReportResult { key: string; titleAr: string; methodAr: string; rows: Record<string, unknown>[]; columnsAr?: Record<string, string> }
@@ -102,7 +102,7 @@ export default function Reports() {
                 <p className="flex items-center gap-2 text-sm font-black">
                   <BarChart3 className={`h-4 w-4 ${selected === d.key ? "text-gold-ink" : "text-muted-foreground"}`} /> {d.titleAr}
                 </p>
-                <p className="mt-1 text-micro leading-5 text-muted-foreground">{d.methodAr}</p>
+                <p className="mt-1 text-read leading-5 text-muted-foreground">{d.methodAr}</p>
               </button>
             ))}
           </div>
@@ -111,16 +111,16 @@ export default function Reports() {
           <div className="lg:col-span-2">
             <Panel>
               <div className="grid gap-2 sm:grid-cols-4">
-                <label className="text-micro text-muted-foreground">من تاريخ
+                <label className="text-fine text-muted-foreground">من تاريخ
                   <input type="date" value={filter.from} onChange={(e) => setFilter({ ...filter, from: e.target.value })} className={`${inputCls} mt-1 w-full`} />
                 </label>
-                <label className="text-micro text-muted-foreground">إلى تاريخ
+                <label className="text-fine text-muted-foreground">إلى تاريخ
                   <input type="date" value={filter.to} onChange={(e) => setFilter({ ...filter, to: e.target.value })} className={`${inputCls} mt-1 w-full`} />
                 </label>
-                <label className="text-micro text-muted-foreground">معرف دورة (اختياري)
+                <label className="text-fine text-muted-foreground">معرف دورة (اختياري)
                   <input value={filter.courseId} onChange={(e) => setFilter({ ...filter, courseId: e.target.value })} dir="ltr" className={`${inputCls} mt-1 w-full font-mono`} />
                 </label>
-                <label className="text-micro text-muted-foreground">معرف شعبة (اختياري)
+                <label className="text-fine text-muted-foreground">معرف شعبة (اختياري)
                   <input value={filter.cohortId} onChange={(e) => setFilter({ ...filter, cohortId: e.target.value })} dir="ltr" className={`${inputCls} mt-1 w-full font-mono`} />
                 </label>
               </div>
@@ -139,9 +139,9 @@ export default function Reports() {
 
             {result && (
               <Panel className="mt-4">
-                <h3 className="text-sm font-black">{result.titleAr} <span className="text-micro font-normal text-muted-foreground">— {result.rows.length} صف</span></h3>
+                <h3 className="text-sm font-black">{result.titleAr} <span className="text-fine font-normal text-muted-foreground">— {result.rows.length} صف</span></h3>
                 {result.rows.length === 0 ? (
-                  <p className="mt-3 text-xs text-muted-foreground">لا صفوف ضمن الفلاتر الحالية.</p>
+                  <p className="mt-3 text-read text-muted-foreground">لا صفوف ضمن الفلاتر الحالية.</p>
                 ) : (
                   <div className="mt-3 overflow-x-auto">
                     <table className="w-full text-right text-xs">
@@ -156,7 +156,7 @@ export default function Reports() {
                         ))}
                       </tbody>
                     </table>
-                    {result.rows.length > 200 && <p className="mt-2 text-micro text-muted-foreground">يُعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
+                    {result.rows.length > 200 && <p className="mt-2 text-read text-muted-foreground">يُعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
                   </div>
                 )}
               </Panel>

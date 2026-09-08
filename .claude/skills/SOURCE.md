@@ -33,6 +33,9 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | `find-skills` | [vercel-labs/skills](https://github.com/vercel-labs/skills) · `skills/find-skills/` | `435076e` | MIT |
 | `task-observer` | [rebelytics/one-skill-to-rule-them-all](https://github.com/rebelytics/one-skill-to-rule-them-all) · الجذر و`references/` و`scripts/` | `510caad` | CC BY 4.0 |
 | `impeccable` (١٦٣ ملفا) وأربعةُ وكلاءَ في `.claude/agents/` | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) · `.claude/skills/impeccable/` و`.claude/agents/` | `fcc271c` | Apache 2.0 |
+| `seo-aeo-best-practices` · `content-experimentation-best-practices` | [sanity-io/agent-toolkit](https://github.com/sanity-io/agent-toolkit) · `skills/` | `e447ef1` | MIT |
+| تسعُ مهارات بريد (`onboarding-emails` · `email-sequences` · `transactional-email` · `notification-design` · `email-copywriting` · `domain-authentication` · `inbox-placement` · `bounce-handling` · `email-compliance`) | [chunkydotdev/email-skills](https://github.com/chunkydotdev/email-skills) · `skills/` | `dca18fc` | MIT |
+| `email-marketing-bible` | [CosmoBlk/email-marketing-bible](https://github.com/CosmoBlk/email-marketing-bible) · الجذر | `b6dd8b4` | MIT |
 | `mobbin-ux` | [rohunvora/cool-claude-skills](https://github.com/rohunvora/cool-claude-skills) · `skills/mobbin-ux/` | `8b7c17f` | MIT — **معلَنةٌ في README وحدَه، ولا ملفَّ رخصةٍ في المستودَع** |
 | `quick-view` | المصدر نفسُه · `skills/quick-view/` | `8b7c17f` | MIT — بالشرط نفسِه |
 
@@ -74,7 +77,9 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 و`mcp-builder/LICENSE.txt` و`ui-ux-pro-max/LICENSE`
 و`shared-references/LICENSE-knowledge-spaces.txt` و`LICENSE-school-skills.txt`
 و`LICENSE-marketingskills.txt` و`LICENSE-vercel-skills.txt`
-و`LICENSE-task-observer.txt` و`impeccable/LICENSE` (ومعه `impeccable/NOTICE.md`،
+و`LICENSE-task-observer.txt` و`LICENSE-sanity-agent-toolkit.txt` و
+`LICENSE-email-skills.txt` و`LICENSE-email-marketing-bible.txt`
+و`impeccable/LICENSE` (ومعه `impeccable/NOTICE.md`،
 وهو إشعارُ الأصلِ نفسِه عن مادّةٍ اقتبسها من `ehmo/platform-design-skills`).
 وSuperpowers تُغطّيها `LICENSE-superpowers.txt` الموجودة: الالتزامُ لم يتغيَّر
 (`b36e082` نفسه)، فالإحدى عشرةُ الجديدةُ من الشجرة عينِها. كلُّها تشترط بقاء
@@ -269,3 +274,120 @@ ai-berkshire، public-apis، awesomeclaude.ai، PERSONALIZED-LEARNING-PLATFORM)�
 تحرّك المستودع. ولم يُفحص التحديث عبر GitHub API لأنه محجوبٌ عن مستودعاتٍ
 خارج نطاق الجلسة؛ استُخدم `git ls-remote` و`git diff` على نسخةٍ مستنسخة في
 مجلّد عملٍ مؤقّت بدلا من ذلك.
+
+## دفعة 2026-09-08 — مهاراتُ SEO والبريد، من دليلِ `awesome-growth-hacking-skills`
+
+طُلب استيرادُ مهاراتِ SEO ومهاراتِ «البريد ودورةِ حياة العميل» من دليلٍ
+مُجمِّع: [`mikiarlo3/awesome-growth-hacking-skills`](https://github.com/mikiarlo3/awesome-growth-hacking-skills).
+والدليلُ **ليس مستودعَ مهارات**: ملفُّ `README.md` واحدٌ فيه سبعون رابطا إلى
+مستودعاتِ آخرين، بلا رخصةٍ ولا مراجعة. فلم يُستورد منه شيء؛ استُوردت من
+المستودعاتِ التي يشير إليها، بعد قراءتها.
+
+جُلبت التسعةُ المرشّحةُ استنساخا سطحيّا (`--depth 1`) إلى مجلَّدٍ مؤقّتٍ
+**خارج** المستودع، وقُرئت منه، ونُقل المثبَّتُ نسخا حرفيّا — وقد قُوبل بعد
+النقل بـ`diff` على الأصل: **الاثنتا عشرةَ مطابقةٌ بايتا ببايت**.
+
+### ما استُورد — اثنتا عشرةَ مهارة
+
+- **SEO (اثنتان)**: `seo-aeo-best-practices` و`content-experimentation-best-practices`
+  من `sanity-io/agent-toolkit`. قائمتان بذاتهما: خمسةُ ملفّاتٍ لكلٍّ منهما،
+  بلا سكربتات، وبلا إشارةٍ واحدةٍ خارجَ مجلَّدهما (فُحص).
+- **البريد (تسعٌ)**: من `chunkydotdev/email-skills` — ماركداون خالص، ملفٌّ
+  واحدٌ لكلِّ مهارة. أُخذت التسعُ التي تمسُّ دورةَ حياةِ متدرّبٍ عندنا فعلا،
+  وتُركت سبعَ عشرةَ (البريدُ البارد، والوارد، وتصنيفُ الردود، وأمنُ البريد،
+  والتسخين، واختبارُ A/B، وتصميمُ القوالب، وسواها) — خارجَ ما طُلب.
+- **البريد (واحدة)**: `email-marketing-bible` من `CosmoBlk/email-marketing-bible`
+  — ملفٌّ واحدٌ ٢٨ كيلوبايت، مقروءٌ كاملا.
+
+وتحديدا: المستودعُ يرسل بـ`resend` (`package.json`) عبر
+`server/services/mail.ts`، و`bounce-handling` توثّق صيغةَ خطّافِ Resend
+بعينها — فالمهاراتُ تمسُّ ما نبنيه لا ما نتخيّله.
+
+### ما استُثني ولماذا
+
+| المستودع | ما هو فعلا | القرار |
+|---|---|---|
+| `Bhanunamikaze/Agentic-SEO-Skill` | مهارةُ SEO واحدةٌ تقودُ ٨٩ سكربتَ بايثون (١٠٠ ملفَّ `.py`)، تعتمد `beautifulsoup4` و`lxml` و`requests` | **لا**. الاعتمادياتُ غيرُ مثبّتةٍ هنا (`ModuleNotFoundError: No module named 'bs4'`) — وهي عينُ العلَّةِ التي مُنع بها جلبُ سكربتات `webapp-testing`. ومئةُ ملفِّ بايثون لا تُقرأ قراءةً مفيدةً قبل الإدخال، وقاعدةُ المراجعة تمنع الإدخالَ بلا قراءة |
+| `aaron-he-zhu/aaron-marketing-skills` (ثلاثُ مهاراتٍ سُمّيت في الدليل) | ليست مهاراتٍ قائمةً بذاتها بل **أجزاءُ إضافةٍ** حجمُها ٢٢ ميغابايت: طبقةُ مراجعَ مشتركةٍ ٥٫٤ ميغابايت (١٠٥ ملفّات) و٣٠ سكربتَ وصلٍ | **لا**. في الثلاثِ نحوُ ثلاثين إشارةً معلّقةً لكلٍّ منها (`../../../references/skill-contract.md` و`CONNECTORS.md` و`${CLAUDE_PLUGIN_ROOT}/scripts/connectors/*.py` وسلاسلُ تسليمٍ إلى ثلاثَ عشرةَ مهارةً شقيقة). ونسخُها يضع في المستودع تعليماتٍ تشير إلى ما لا وجودَ له — علّةُ `claude-mem` نفسُها. وفي سكربتاتها `indexpush.py` يدفع إلى فهارس محرّكات البحث بمفاتيحَ من البيئة |
+| `AgriciDaniel/claude-email` | إضافةٌ فيها خطّافانِ وثلاثةُ سكربتاتِ بايثون تعتمد `beautifulsoup4` و`lxml` و`checkdmarc` | **لا**. الاعتمادياتُ غائبة، والخطّافانِ غيرُ موصولين |
+| `jacquescorbytuech/email-marketing-skill` | مهارةٌ واحدةٌ في أحدَ عشرَ ملفَّ ماركداون | **لا**. متنُها مغطّى بما استُورد (`email-marketing-bible` أوسع، والتسعُ أعمق)، فلا تضيف |
+
+### ملفّانِ من عندنا
+
+- `WAJEEZ-EMAIL-VENDOR-DISCLOSURE.md` — مهاراتُ البريد العشرُ **كتبها
+  بائعان** يذكران منتجَيهما فيها (`molted.email` في ستّةِ مواضعَ من التسع،
+  و`Nitrosend` في جدول اختيار المنصّة). الملفُّ يُحصي المواضعَ بأعيانها،
+  ويبيّن أنّ مسألةَ المزوّد محسومةٌ عندنا بـResend فلا أثرَ عمليّا للتوصية.
+- `WAJEEZ-SEO-STACK.md` — أمثلةُ مهارتَي SEO مكتوبةٌ لـNext.js وSanity
+  Studio وGROQ، ونحن React ١٩ على Vite بلا نظامِ محتوى. الملفُّ يفصل المبدأَ
+  عن الشيفرة، ويسجّل ما هو مبنيٌّ عندنا فعلا (robots.txt · sitemap.xml ·
+  JSON-LD `@graph` · Open Graph) وفجوةَ التصيير في المتصفّح.
+
+ولم يُعدَّل من الأصل حرف، كما هي القاعدة.
+
+### إضافةُ `aaron-marketing` — قِيست ولم تُثبَّت (2026-09-08)
+
+بعد رفضِ نسخِ ثلاثِ مهاراتٍ منها (أعلاه)، طُلب تثبيتُها **إضافةً** بدل النسخ —
+على سابقةِ `claude-mem`. وهي إضافةٌ صحيحةُ البنية فعلا: فيها
+`.claude-plugin/marketplace.json` باسم السوق `aaron`، وإضافةٌ واحدةٌ اسمُها
+`aaron-marketing` نسخة `20.1.0` برخصة Apache-2.0. والأمران:
+
+```
+claude plugin marketplace add aaron-he-zhu/aaron-marketing-skills
+claude plugin install aaron-marketing@aaron
+```
+
+**ولم تُثبَّت.** حاولتُ فمَنَع المُصنِّفُ الأمرَ في هذه الجلسة، ولم يُلتَفّ
+عليه: الكتابةُ بيدٍ في `~/.claude/settings.json` تسجيلا للسوق التفافٌ على
+البوّابةِ نفسِها الموضوعةِ لجلبِ شيفرةِ غيرِنا وتشغيلِها. فالقرارُ لصاحب
+المنصّة، وهذه أرقامُه.
+
+**أولا: لا تُجزَّأ.** إضافةٌ واحدةٌ تحمل **١٢٠ مهارة**؛ لا سبيلَ إلى تثبيت
+طبقة `seo-geo` وحدَها (١٦). فمعها تأتي السرديّةُ والاجتماعيُّ والإعلاناتُ
+والمؤثّرون والإطلاقُ والبروتوكول، **وستَّ عشرةَ مهارةَ بريدٍ** تتقاطع مع
+التسعِ المستوردة.
+
+**ثانيا: الكلفةُ الدائمةُ ~٣٣ ألف رمزٍ في كلّ جلسة** — تُقاس من ترويسات
+المهارات (`name` و`description` و`when_to_use`) وهي تُحمَّل كلُّها دائما:
+
+| الطبقة | المهارات | ~الرموز |
+|---|---|---|
+| **seo-geo** (المطلوبة) | ١٦ | **٣٬٠٠٩** |
+| email | ١٦ | ٤٬٩٧٥ |
+| narrative | ١٦ | ٥٬٣٩٧ |
+| social | ١٦ | ٥٬٦٤٥ |
+| launch | ١٦ | ٥٬٠٢٤ |
+| ad | ١٦ | ٤٬٠٢١ |
+| influencer | ١٦ | ٣٬٧٥٢ |
+| protocol | ٨ | ١٬٢٩٩ |
+| **المجموع** | **١٢٠** | **~٣٣٬١٢٥** |
+
+أي **ثلاثةٌ وثلاثون ألفا تُدفع في كلّ جلسةٍ للوصول إلى ثلاثة آلاف**. وللمقارنة:
+`claude-mem` مسجَّلةٌ أعلاه بنحو ١٧٥٥ رمزا — فهذه نحوُ تسعةَ عشرَ ضعفَها.
+
+**ثالثا: خطّافاتُها تقف أمام كلّ نداءِ أداةٍ تقريبا، وتسقط مغلَقة.**
+`hooks/hooks.json` يسجّل سبعةً: `SessionStart` و`UserPromptSubmit`
+و`PreToolUse` و`PostToolUse` و`PostToolUseFailure` و`PostToolBatch` و`Stop`،
+بمُطابِقٍ `Write|Edit|NotebookEdit|Bash|PowerShell|Monitor|mcp__.*`. وفي
+`PreToolUse` يستطيع السكربتُ أن يُرجع `permissionDecision: "deny"`.
+
+والمخرجُ المبكِّرُ مشروطٌ باثنَين معا (`pfp && dnp`)، و`dnp` لا تصدق إلّا على
+`Write|Edit|NotebookEdit` خارجَ `memory/` — أي أنّ **كلَّ نداءِ `Bash` وكلَّ
+`mcp__*` يفوته المخرجُ المبكّر** فيمرّ على مُدقِّقَي بايثون. وإن غاب مُدقِّقٌ،
+أو تعذّر حلُّ جذرِ المشروع، أو غابت `python3` في مسار `memory/` — فالجوابُ
+**منعٌ صريح** لا تمرير.
+
+وإنصافا للسكربت، قُرئ كاملا: **لا نداءَ شبكةٍ فيه ولا كتابةَ من عنده**،
+والمُدقِّقاتُ الثلاثةُ (`check-memory-private.py` · `validate-audit-artifact.py`
+· `profile-resolver.py`) موجودةٌ في الحزمة. فهو مغلَقٌ بقصدٍ لا بإهمال. لكنّ
+المعنى يبقى: **سكربتُ صدفةٍ من طرفٍ ثالثٍ يجلس أمام كلّ نداءٍ مُغيِّرٍ في
+مستودعٍ فيه مدفوعات**. وفي الحزمة إحدى وتسعون سكربتَ بايثون و٢٢ ميغابايت،
+ومنها `indexpush.py` يدفع إلى فهارس محرّكات البحث بمفاتيحَ من البيئة.
+
+**رابعا: في الجلسات البعيدة لا تبقى** — `~/.claude/` داخل حاويةٍ تُستعاد، كما
+هو مسجَّلٌ أعلاه في `claude-mem`. فالتثبيتُ الدائمُ على جهاز صاحب المنصّة.
+
+**والتوصية: لا تُثبَّت.** ثلاثةٌ وثلاثون ألفَ رمزٍ في كلّ جلسةٍ ومَنْعٌ ممكنٌ
+على كلّ `Bash` ثمنٌ غالٍ لثلاثةِ آلافٍ من إرشاد SEO. وإن أُريدت رغم ذلك،
+فعلى جهازٍ واحدٍ بنطاق `user` — **لا `--scope project` أبدا**: ذاك يفرضها على
+كلّ من يستنسخ المستودَع ويُدخلها CI.
