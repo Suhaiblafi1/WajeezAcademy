@@ -37,6 +37,7 @@ export interface Dossier extends Record<string, unknown> {
   linkedinUrl?: string | null
   youtubeUrl?: string | null
   instagramUrl?: string | null
+  facebookUrl?: string | null
   hasAccreditation?: boolean | null
   accreditationDetails?: string | null
   targetCountries?: string[]
@@ -224,7 +225,7 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
         </Block>
       )}
 
-      {(a.linkedinUrl || a.youtubeUrl || a.instagramUrl) && (
+      {(a.linkedinUrl || a.youtubeUrl || a.instagramUrl || a.facebookUrl) && (
         <Block title="أدلّته على الشبكة">
           {a.linkedinUrl && (
             <Row icon={Link2} label="لينكدإن أو ملفّ أعمال">
@@ -247,6 +248,14 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
               <a href={a.instagramUrl} target="_blank" rel="noreferrer nofollow" dir="ltr"
                 className="block break-all text-right text-teal-light-ink underline decoration-dotted underline-offset-4">
                 {a.instagramUrl}
+              </a>
+            </Row>
+          )}
+          {a.facebookUrl && (
+            <Row icon={Link2} label="فيسبوك">
+              <a href={a.facebookUrl} target="_blank" rel="noreferrer nofollow" dir="ltr"
+                className="block break-all text-right text-teal-light-ink underline decoration-dotted underline-offset-4">
+                {a.facebookUrl}
               </a>
             </Row>
           )}

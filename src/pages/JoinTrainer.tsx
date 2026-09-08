@@ -40,6 +40,7 @@ import {
   ACCREDITATION_OTHER,
   ALL_ARAB,
   ARAB_COUNTRIES,
+  BIO_MAX_WORDS,
   CHAR_FORMS,
   COUNTRY_CODES,
   COUNTRY_TIMEZONE,
@@ -58,6 +59,7 @@ import {
   STEPS,
   TARGET_AUDIENCES,
   TRAINING_YEARS,
+  WORD_FORMS,
   type UploadState,
 } from "./join-trainer/options";
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
@@ -104,12 +106,20 @@ function MultiPick({ id, label, options, selected, onChange }: {
         <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 text-teal-light-ink transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
       </button>
       {open && (
-        <Inset role="listbox" aria-labelledby={id} aria-multiselectable="true" className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto bg-surface p-1.5 shadow-xl shadow-black/40">
+        /* لونٌ صلبٌ من السطح نفسِه لا `bg-surface` يُضاف في `className`:
+           أرضيّةُ الغاطس الافتراضيّة `bg-black/20` شفّافة، وكان الصنفان
+           يتنازعان في ورقة الأنماط لا في الوسم — فيفوز الشفّافُ أحيانا،
+           فتُقرأ الخياراتُ فوق ما تحتها في المظهر النهاريّ ويبدو أنّها غيرُ
+           مرتّبة. و`tone="solid"` يقطع التنازع من أصله. */
+        <Inset
+          tone="solid" role="listbox" aria-labelledby={id} aria-multiselectable="true"
+          className="absolute z-30 mt-1.5 max-h-56 w-full overflow-y-auto p-1.5 shadow-xl shadow-black/20"
+        >
           {options.map((o) => {
             const checked = selected.includes(o);
             return (
               <label key={o} role="option" aria-selected={checked}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-white/5 ${checked ? "text-teal-light-ink" : "text-foreground"}`}>
+                className={`flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-teal/10 ${checked ? "text-teal-light-ink" : "text-foreground"}`}>
                 <input type="checkbox" checked={checked} onChange={() => toggleValue(o)} className="h-3.5 w-3.5 shrink-0 accent-teal" />
                 {o}
               </label>
@@ -167,7 +177,7 @@ export default function JoinTrainer() {
   const [form, setForm] = useState({
     fullName: "", email: "", phoneCountryCode: "+962", phone: "", country: "",
     jobTitle: "", employmentStatus: "", domainYears: "", trainingYears: "", bio: "", linkedinUrl: "",
-    youtubeUrl: "", instagramUrl: "", hasAccreditation: false,
+    youtubeUrl: "", instagramUrl: "", facebookUrl: "", hasAccreditation: false,
     accreditationBody: "", accreditationOther: "", accreditationRef: "",
     deliveryMode: "", motivation: "", privacyConsent: false,
   });
@@ -287,6 +297,24 @@ export default function JoinTrainer() {
      والمتقدّم يظن أنه مضى. */
   const motivationLen = form.motivation.trim().length;
 
+  /* الاسمُ كاملا: ثلاثةُ أحرفٍ كانت تقبل «أحمد» وحدَه، والشهادةُ تُطبع بما
+     يُكتب هنا. فالمقياسُ كلمتان لا حروف. */
+  const nameWords = form.fullName.trim().split(/\s+/).filter((w) => w.length >= 2);
+
+  /* النبذةُ تُعرض علنا في بطاقة المدرّب قبل أن يسجّل أحدٌ في دورته — فسقفٌ
+     بالكلمات لا بالحروف، لأنّ المعروضَ سطران لا صفحة. */
+  const bioWords = form.bio.trim() ? form.bio.trim().split(/\s+/).length : 0;
+
+  /* أدلّتُك: أربعةُ حقولٍ ورابطٌ واحدٌ منها شرط. والصيغةُ تُفحص هنا لأنّ
+     الخادمَ يشترط `z.string().url()` — فرابطٌ بلا بروتوكولٍ يُردّ ٤٠٠ بعد
+     أن يظنّ المتقدّمُ أنّه مضى. */
+  const EVIDENCE_URL = /^https?:\/\/[^\s.]+\.[^\s]{2,}$/;
+  const evidenceLinks = [form.linkedinUrl, form.youtubeUrl, form.instagramUrl, form.facebookUrl]
+    .map((v) => v.trim())
+    .filter(Boolean);
+  const evidenceValid = evidenceLinks.filter((v) => EVIDENCE_URL.test(v));
+  const evidenceMalformed = evidenceLinks.length > evidenceValid.length;
+
   /* الاعتماد يُركَّب من قائمةٍ ورقمٍ اختياريّ، ويصل الخادمَ سطرا واحدا كما كان */
   const accreditationName =
     form.accreditationBody === ACCREDITATION_OTHER ? form.accreditationOther.trim() : form.accreditationBody;
@@ -307,8 +335,20 @@ export default function JoinTrainer() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const touch = (k: string) => () => setTouched((t) => (t[k] ? t : { ...t, [k]: true }));
 
+  /* ── قائمةُ النقص لا تُفتح إلّا بعد أن يضغط ──
+
+     كانت تُعرض من أوّل نظرةٍ إلى النموذج: من فتح الصفحة قبل أن يكتب حرفا
+     واحدا استقبلته أربعةَ عشرَ بندا حمراء يقال له فيها ما ينقصه — وهو لم
+     يبدأ. فصارت تنتظر ضغطةَ «التالي»؛ وقبلها لا يرى إلّا ما لمسه بنفسه.
+
+     ويلزم لذلك أن يُفعَّل الزرُّ ولو كانت الخطوةُ ناقصة: زرٌّ مطفأٌ لا يُضغط،
+     ولو أُخفيت القائمةُ معه لبقي المتقدّمُ أمام بابٍ مغلقٍ بلا بيان. فالفحصُ
+     انتقل من إطفاء الزرّ إلى فعل الضغط. */
+  const [attempted, setAttempted] = useState<Record<number, boolean>>({});
+  const missingRef = useRef<HTMLDivElement>(null);
+
   const fieldErrors = useMemo<Record<string, string | null>>(() => ({
-    name: form.fullName.trim().length >= 3 ? null : 'اكتب اسمك الكامل — ثلاثةُ أحرفٍ على الأقلّ',
+    name: nameWords.length >= 2 ? null : 'اكتب اسمك كاملا — اسمُك واسمُ عائلتك، لا كلمةً واحدة',
     email: /.+@.+\..+/.test(form.email) ? null : 'بريدٌ بصيغةٍ صحيحة، مثل name@example.com',
     /* الرقمُ شرطٌ من أوّل قسمٍ لا من آخره — انظر تعليقَ الحقل نفسِه */
     phone: normalizeDigits(form.phone).length >= PHONE_MIN_DIGITS
@@ -330,7 +370,7 @@ export default function JoinTrainer() {
     altEmail: contactChannel !== 'other_email' || /.+@.+\..+/.test(contactAltEmail)
       ? null
       : 'بريدٌ آخرُ بصيغةٍ صحيحة، مثل name@example.com',
-  }), [form.fullName, form.email, form.phone, form.hasAccreditation, form.accreditationBody, accreditationName,
+  }), [nameWords.length, form.email, form.phone, form.hasAccreditation, form.accreditationBody, accreditationName,
       password, passwordConfirm, result, contactChannel, contactAltEmail]);
 
   /** رسالةُ الحقل — تُكتم حتى يُلمس */
@@ -343,7 +383,10 @@ export default function JoinTrainer() {
      تُقرأ — وكلُّ عنصرٍ فيها بصيغة ما يُفعل لا ما يَنقص. */
   const missing = useMemo(() => {
     const m: Record<1 | 2 | 3, string[]> = { 1: [], 2: [], 3: [] };
-    if (form.fullName.trim().length < 3) m[1].push("اسمك الكامل");
+    /* الكلماتُ تُحسب هنا لا خارجَه: الحارسُ يقرأ هذه الكتلةَ ليتأكّد أنّ لكلّ
+       إلزامٍ سطرا يُسمّى فيها، والاسمُ إلزام. */
+    const fullNameWords = form.fullName.trim().split(/\s+/).filter((w) => w.length >= 2);
+    if (fullNameWords.length < 2) m[1].push("اسمك كاملا — اسمُك واسمُ عائلتك");
     if (!/.+@.+\..+/.test(form.email)) m[1].push("بريد إلكتروني صحيح");
     if (normalizeDigits(form.phone).length < PHONE_MIN_DIGITS) m[1].push("رقم جوالك");
     /* كلمةُ الحساب تُفحص قبل أن يُرسَل القسمُ الأوّل — فالحسابُ يُنشأ معه.
@@ -359,6 +402,11 @@ export default function JoinTrainer() {
     if (!accreditationReady) m[1].push("جهة الاعتماد التي أشرت إليها");
     if (languages.length === 0) m[1].push("لغة تدريب واحدة على الأقل");
     if (!form.deliveryMode) m[1].push("نمط التدريب");
+    /* النبذةُ اختياريّة، فلا يُطلب كتبُها — ويُطلب ألّا تتجاوز السقف متى كُتبت */
+    if (bioWords > BIO_MAX_WORDS) m[1].push(`نبذتك أطول من ${BIO_MAX_WORDS} كلمة — احذف ${countAr(bioWords - BIO_MAX_WORDS, WORD_FORMS)}`);
+    /* دليلٌ واحدٌ على الأقلّ — وصيغتُه صحيحة، لأنّ الخادمَ يفحصها */
+    if (evidenceValid.length === 0) m[1].push("رابطٌ واحدٌ على الأقلّ في «أدلتك»");
+    else if (evidenceMalformed) m[1].push("رابطٌ في «أدلتك» بلا https:// — أكمله أو احذفه");
     if (motivationLen < MOTIVATION_MIN) m[1].push(`دافعك — بقي ${countAr(MOTIVATION_MIN - motivationLen, CHAR_FORMS)}`);
     if (!form.privacyConsent) m[1].push("الموافقة على سياسة الخصوصية");
     if (uploads.cv?.status !== "done") m[2].push("رفع سيرتك الذاتية");
@@ -381,7 +429,8 @@ export default function JoinTrainer() {
       if (channel.needsAltEmail && !/.+@.+\..+/.test(contactAltEmail)) m[3].push("البريد الآخر بصيغة صحيحة");
     }
     return m;
-  }, [form, specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent, seasons,
+  }, [form, bioWords, evidenceValid.length, evidenceMalformed,
+      specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent, seasons,
       password, passwordConfirm, result, contactChannel, contactAltEmail]);
 
   const stepValid = useMemo(() => ({
@@ -398,7 +447,18 @@ export default function JoinTrainer() {
     /* حزامٌ ثانٍ مع المفتاحين: النموذج يلتقط Enter من أي حقل في أي خطوة،
        وإرسالٌ من خطوةٍ غير خطوته يقفز بالمتقدّم فوق شاشة حسابه. */
     if (step !== 3) return;
-    if (!valid || busy || !result || !candidateToken || !contactChannel) return;
+    if (busy) return;
+    /* والإرسالُ يفحص كما يفحص «التالي»: يفتح قوائمَ النقص الثلاث ويردّ
+       المتقدّمَ إلى أوّل خطوةٍ ناقصة، بدل زرٍّ مطفأٍ لا يقول لماذا. */
+    if (!valid) {
+      setAttempted({ 1: true, 2: true, 3: true });
+      setTouched((t) => ({ ...t, ...Object.fromEntries(Object.keys(fieldErrors).map((k) => [k, true])) }));
+      const firstBad = ([1, 2, 3] as const).find((n) => !stepValid[n]);
+      if (firstBad && firstBad !== 3) setStep(firstBad);
+      requestAnimationFrame(() => missingRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      return;
+    }
+    if (!result || !candidateToken || !contactChannel) return;
     setBusy(true); setError("");
     try {
       const res = await apiPost<CompleteResponse>(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/phase-2`, {
@@ -487,6 +547,7 @@ export default function JoinTrainer() {
         specialties, domainYears: form.domainYears, trainingYears: form.trainingYears,
         bio: form.bio || undefined, linkedinUrl: form.linkedinUrl || undefined,
         youtubeUrl: form.youtubeUrl || undefined, instagramUrl: form.instagramUrl || undefined,
+        facebookUrl: form.facebookUrl || undefined,
         hasAccreditation: form.hasAccreditation,
         accreditationDetails: form.hasAccreditation ? accreditationDetails || undefined : undefined,
         targetCountries: targetCountries.length ? targetCountries : undefined,
@@ -603,6 +664,13 @@ export default function JoinTrainer() {
      عليه مستنداتُ القسم الثالث. وإن أخفق البدء بقي المتقدّم مكانه مع الخطأ،
      ولم يمضِ إلى قسمٍ لا يعمل. */
   const next = async () => {
+    if (!stepValid[step as 1 | 2 | 3]) {
+      setAttempted((a) => ({ ...a, [step]: true }));
+      /* وكلُّ حقلٍ يُعدّ ملموسا عندئذٍ، فتظهر رسالتُه عنده لا في الذيل وحدَه */
+      setTouched((t) => ({ ...t, ...Object.fromEntries(Object.keys(fieldErrors).map((k) => [k, true])) }));
+      requestAnimationFrame(() => missingRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+      return;
+    }
     if (step === 1 && !result) {
       const ok = await startApplication();
       if (!ok) return;
@@ -809,10 +877,25 @@ export default function JoinTrainer() {
                     wide
                     hint="ثلاثة أسطر تكفي: أين تعمل اليوم وماذا تُتقن، وأبرز ما أنجزته في مجالك، ولمن دربت من قبل."
                   >
+                    {/* ثلاثةُ أسطرٍ كان الحقلُ يعرضها والمثالُ فيه أربعة — فمن
+                        كتب نبذتَه لم يرَ أوّلها وهو يراجع آخرها. خمسةٌ تعرض
+                        المكتوبَ كلَّه، والعدّادُ تحته يقول أين السقف. */}
                     <textarea
-                      id="jt-bio" rows={3} value={form.bio} onChange={set("bio")} className={areaCls}
+                      id="jt-bio" rows={5} value={form.bio} onChange={set("bio")}
+                      aria-describedby="jt-bio-count"
+                      className={`${areaCls} ${bioWords > BIO_MAX_WORDS ? "border-gold/60" : ""}`}
                       placeholder="مثال: أعمل مديرا لتحليل البيانات في شركة اتصالات منذ ٦ سنوات، بنيت فيها وحدة التقارير من الصفر. دربت أكثر من ٢٠٠ موظف على Power BI داخل الشركة وفي ورش خارجية."
                     />
+                    <p id="jt-bio-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-read">
+                      <span className={bioWords > BIO_MAX_WORDS ? "text-gold-ink" : "text-muted-foreground"}>
+                        {bioWords > BIO_MAX_WORDS
+                          ? `أطولُ من السقف — احذف ${countAr(bioWords - BIO_MAX_WORDS, WORD_FORMS)}.`
+                          : "تُعرض هذه النبذة في بطاقتك العامّة قبل أن يسجّل أحدٌ في دورتك."}
+                      </span>
+                      <span className="shrink-0 tabular-nums text-muted-foreground" dir="ltr">
+                        {bioWords} / {BIO_MAX_WORDS}
+                      </span>
+                    </p>
                   </Field>
                 </FieldRow>
               </Question>
@@ -917,10 +1000,14 @@ export default function JoinTrainer() {
                 </FieldRow>
               </Question>
 
+              {/* كانت الأربعةُ اختياريّةً كلَّها، فيصل المراجعَ طلبٌ بلا شيءٍ
+                  يتحقّق منه. فواحدٌ منها شرط — أيُّها كان — وفيسبوك معها لأنّ
+                  كثيرا من مدرّبي المنطقة يدرّبون فيه فعلا ولا يملكون سواه. */}
               <Question
                 n={7}
+                required
                 title="أدلتك"
-                hint="اختيارية كلها، لكنها ما يقرؤه المراجع قبل غيره. تُمنح الأولوية للطلبات التي تعرض خبرة قابلة للتحقق ونماذج حقيقية من العمل أو التدريب."
+                hint="رابطٌ واحدٌ على الأقلّ — أيُّها كان. وهي ما يقرؤه المراجع قبل غيره، وتُمنح الأولوية للطلبات التي تعرض خبرة قابلة للتحقق ونماذج حقيقية من العمل أو التدريب."
               >
                 <FieldRow>
                   <Field label="لينكدإن أو ملف أعمال" htmlFor="jt-links">
@@ -931,6 +1018,9 @@ export default function JoinTrainer() {
                   </Field>
                   <Field label="حساب إنستغرام المهني" htmlFor="jt-instagram">
                     <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${controlCls} text-left`} />
+                  </Field>
+                  <Field label="صفحة فيسبوك المهنية" htmlFor="jt-facebook">
+                    <input id="jt-facebook" dir="ltr" placeholder="https://facebook.com/..." value={form.facebookUrl} onChange={set("facebookUrl")} className={`${controlCls} text-left`} />
                   </Field>
                 </FieldRow>
               </Question>
@@ -1172,22 +1262,25 @@ export default function JoinTrainer() {
           {/* ما ينقص، بالاسم. زرٌّ مطفأ بلا سبب يجعل المتقدّم يفتّش النموذج
               بعينه؛ وهذه قائمةٌ تُقرأ في سطرين وتختفي حين تكتمل الخطوة.
               aria-live كي يسمعها قارئ الشاشة وهي تتناقص. */}
-          {missing[step as 1 | 2 | 3].length > 0 && (
-            <Card tone="warn" aria-live="polite">
-              <p className="text-read leading-5 font-black text-gold-ink">
-                بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
-              </p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-read leading-6 text-foreground">
-                {missing[step as 1 | 2 | 3].map((m) => (
-                  <li key={m} className="flex items-center gap-1.5">
-                    <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
-                  </li>
-                ))}
-              </ul>
-            </Card>
+          {attempted[step] && missing[step as 1 | 2 | 3].length > 0 && (
+            <div ref={missingRef}>
+              <Card tone="warn" aria-live="polite">
+                <p className="text-read leading-5 font-black text-gold-ink">
+                  بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
+                </p>
+                <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-read leading-6 text-foreground">
+                  {missing[step as 1 | 2 | 3].map((m) => (
+                    <li key={m} className="flex items-center gap-1.5">
+                      <span className="h-1 w-1 shrink-0 rounded-full bg-gold-ink" /> {m}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </div>
           )}
 
-          {/* التنقل — «التالي» معطّل حتى تكتمل الخطوة، لا حتى يكتمل النموذج كله */}
+          {/* التنقل — «التالي» يُضغط دائما ويفحص خطوتَه عند الضغط، فيُظهر نقصَها
+              بالاسم. والإرسالُ مثلُه: يفحص الخطوات الثلاث ويردّ إلى أوّل ناقصة. */}
           <div className="flex items-center justify-between gap-3 border-t border-white/5 pt-6">
             {step > 1 ? (
               <Button tone="secondary" type="button" onClick={back}>
@@ -1204,14 +1297,14 @@ export default function JoinTrainer() {
                 كلها. عطبٌ صامت: المتقدّم لا يرى شاشة حسابه أصلا. */}
             {step < 3 ? (
               <Button tone="confirm" key="next"
-                type="button" onClick={next} disabled={!stepValid[step as 1 | 2 | 3] || busy} className="disabled:cursor-not-allowed">
+                type="button" onClick={next} disabled={busy} className="disabled:cursor-not-allowed">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {busy ? "نحفظ قسمك الأول…" : "التالي"}
                 {!busy && <ArrowLeft className="h-4 w-4" />}
               </Button>
             ) : (
               <Button tone="primary" key="send"
-                type="submit" disabled={!valid || busy} className="disabled:cursor-not-allowed">
+                type="submit" disabled={busy} className="disabled:cursor-not-allowed">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 {busy ? "جاري الإرسال…" : "أرسل طلب الانضمام"}
               </Button>

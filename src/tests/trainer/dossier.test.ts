@@ -34,7 +34,7 @@ describe('ملفّ المتقدّم في شاشة المراجعة', () => {
       'phone', 'employmentStatus', 'trainingYears', 'domainYears',
       'teachableCourseIds', 'teachableOther', 'availability', 'demoConsent',
       'trainingLanguages', 'deliveryMode', 'hasAccreditation',
-      'targetCountries', 'targetAudiences', 'youtubeUrl', 'instagramUrl',
+      'targetCountries', 'targetAudiences', 'youtubeUrl', 'instagramUrl', 'facebookUrl',
     ]
     for (const field of mustShow) {
       expect(d, `الحقل ${field} لا يُعرض للمراجع`).toContain(field)

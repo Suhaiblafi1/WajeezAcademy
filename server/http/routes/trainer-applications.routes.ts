@@ -55,6 +55,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       bio: z.string().max(2000).optional(), linkedinUrl: z.string().url().max(300).optional().or(z.literal('')),
       youtubeUrl: z.string().url().max(300).optional().or(z.literal('')),
       instagramUrl: z.string().url().max(300).optional().or(z.literal('')),
+      facebookUrl: z.string().url().max(300).optional().or(z.literal('')),
       hasAccreditation: z.boolean().optional(),
       accreditationDetails: z.string().max(300).optional(),
       targetCountries: z.array(z.string().min(2)).max(25).optional(),
@@ -72,6 +73,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       linkedinUrl: body.linkedinUrl || undefined,
       youtubeUrl: body.youtubeUrl || undefined,
       instagramUrl: body.instagramUrl || undefined,
+      facebookUrl: body.facebookUrl || undefined,
     })
     /* رمزُ المتابعة يُعاد دائما: به تُرفع الوثائق ويُكمَل الطلب في الجلسة
        نفسها. وصاحبُ الحساب يستعيده لاحقا من /mine/resume بجلسته. */
