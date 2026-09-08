@@ -3,13 +3,14 @@
    وما يخصّ صاحبَ الحساب: طلبه، واستئنافه، وسحبه. */
 
 import type { FastifyInstance } from 'fastify'
+import { getObjectMeta, putObject } from '../../services/object-store'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import {
-  verifySignature, writeDocumentContent, readDocumentContent,
-  MAX_UPLOAD_BYTES, MAX_UPLOAD_ANY, UPLOADABLE_KINDS,
+  verifySignature, recordDocumentSize, readDocumentContent, resolveStorageOwner,
+  MAX_UPLOAD_ANY, UPLOADABLE_KINDS,
 } from '../../services/storage.service'
 import { requirePermission } from '../auth-plugin'
 import { CONTACT_CHANNEL_VALUES, TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
@@ -236,17 +237,24 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     if (!verifySignature(storageKey, exp, sig, 'write')) {
       return reply.status(403).send({ error: { code: 'bad_signature', message_ar: 'رابط الرفع غير صالح أو منتهي' } })
     }
-    /* الوثيقة المسجلة تحدد سقف الحجم */
-    const doc = await prisma.trainerApplicationDocument.findUnique({ where: { storageKey } })
-    if (!doc) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الوثيقة غير مسجلة' } })
-    const max = MAX_UPLOAD_BYTES[doc.kind] ?? MAX_UPLOAD_BYTES.other
+    /* السجلُّ المالكُ يحدّد السقف — أيَّ نموذجٍ من الستّة كان */
+    const owner = await resolveStorageOwner(prisma, storageKey)
+    if (!owner) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الوثيقة غير مسجلة' } })
+    const max = owner.maxBytes
     const buffer = req.body as Buffer
     if (!buffer || !buffer.length) return reply.status(400).send({ error: { code: 'empty', message_ar: 'الملف فارغ' } })
     if (buffer.length > max) {
       const mb = Math.floor(max / (1024 * 1024))
       return reply.status(413).send({ error: { code: 'too_large', message_ar: `الملف يتجاوز ${mb}MB` } })
     }
-    await writeDocumentContent(prisma, storageKey, buffer)
+    /* النوعُ والاسمُ من السجلّ حيث يعرفهما، وإلّا فمن الطلب نفسِه: ثلاثةٌ من
+       النماذج الستّة لا تحمل عمودَ نوعٍ ولا اسمٍ أصليّ. */
+    await putObject(storageKey, buffer, {
+      mime: owner.mime || String(req.headers['content-type'] ?? '').split(';')[0].trim() || 'application/octet-stream',
+      originalName: owner.originalName || storageKey,
+    })
+    /* ووثيقةُ المتقدّم تحفظ حجمَها في سجلّها كما كانت — تقرؤه شاشاتُ المراجعة */
+    if (owner.kind === 'trainer_document') await recordDocumentSize(prisma, storageKey, buffer.length)
     return { ok: true, storageKey, sizeBytes: buffer.length }
   })
 
@@ -258,14 +266,19 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     if (!verifySignature(storageKey, exp, sig, 'read')) {
       return reply.status(403).send({ error: { code: 'bad_signature', message_ar: 'الرابط غير صالح أو منتهي' } })
     }
-    const doc = await prisma.trainerApplicationDocument.findUnique({ where: { storageKey } })
-    if (!doc) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الوثيقة غير موجودة' } })
+    const owner = await resolveStorageOwner(prisma, storageKey)
+    if (!owner) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الوثيقة غير موجودة' } })
     const content = await readDocumentContent(prisma, storageKey)
     if (!content) {
       return reply.status(404).send({ error: { code: 'not_uploaded', message_ar: 'الملف لم يرفع بعد' } })
     }
-    reply.header('content-type', doc.mime)
-    reply.header('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(doc.originalName)}`)
+    /* الترويسةُ من مجاورِ الكائن حيث وُجد — وهو الموضعُ الذي يعرف نوعَ ما
+       خُزّن فعلا؛ ثمّ من السجلّ، ثمّ نوعٌ محايدٌ لا يدّعي ما لا يُعرف. */
+    const meta = await getObjectMeta(storageKey)
+    const mime = meta?.mime || owner.mime || 'application/octet-stream'
+    const name = meta?.originalName || owner.originalName || storageKey
+    reply.header('content-type', mime)
+    reply.header('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(name)}`)
     return reply.send(content)
   })
 }
