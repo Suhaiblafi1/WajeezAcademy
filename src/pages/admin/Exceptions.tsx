@@ -15,6 +15,9 @@ import { fmtDate } from "@/application/text/format-ar";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffSelectCls } from "@/components/FormKit";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 const CASE_STATUS_AR: Record<string, string> = {
   new: "جديدة", contacted: "تم التواصل", qualified: "مؤهلة", follow_up: "متابعة",
   enrolled: "سجلت", not_interested: "غير مهتمة", closed: "مغلقة", converted: "تحولت",
@@ -35,6 +38,9 @@ export default function Exceptions() {
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pick, setPick] = useState<Record<string, string>>({});
+  /* الحالاتُ بلا مستشارٍ تتراكم كلَّ يومٍ حتّى تُسنَد — والطابورُ بلا بحث */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -54,6 +60,11 @@ export default function Exceptions() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  const matched = rows.filter((c) => matchesQuery(q, [
+    c.client?.displayName, c.client?.email, c.lead?.name, c.lead?.email,
+  ]));
+  const view = paginate(matched, page, 20);
 
   const assign = async (caseId: string) => {
     const advisorId = (pick[caseId] ?? "").trim();
@@ -103,8 +114,16 @@ export default function Exceptions() {
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">كل حالات المستشارين النشطة مسندة — الحالات الجديدة من التشخيص تظهر هنا فور وصولها.</p>
         </Panel>
       ) : (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حالة"
+          placeholder="ابحث باسم العميل أو بريده…" />
+        {view.rows.length === 0 ? (
+          <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+            لا حالةَ تطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Panel>
+        ) : (
         <div className="space-y-3">
-          {rows.map((c) => (
+          {view.rows.map((c) => (
             <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-black">{c.client?.displayName ?? c.lead?.name ?? "—"}</p>
@@ -129,6 +148,8 @@ export default function Exceptions() {
             </Card>
           ))}
         </div>
+        )}
+        </>
       )}
     </AdminLayout>
   );

@@ -23,6 +23,9 @@ import { fmtDateTimeAr } from "@/utils/format";
 
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 interface Row {
   id: string;
   kind: string;
@@ -53,6 +56,10 @@ export default function LearnerRequests() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
+  /* الطابورُ يطول ولا شيءَ فيه يُبحث به — والبحثُ على الطابور كلِّه لا على
+     الصفحة المعروضة، وإلّا لم يجد الباحثُ إلّا ما كان أمامه. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [busy, setBusy] = useState("");
 
   const load = useCallback(async () => {
@@ -65,6 +72,13 @@ export default function LearnerRequests() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* يُبحث بصاحب الطلب وبشعبته — وهما ما يُسأل بهما */
+  const matched = (rows ?? []).filter((r) => matchesQuery(q, [
+    r.user.displayName, r.user.email, r.audienceAr, r.noteAr,
+    r.enrollment?.cohort.title,
+  ]));
+  const view = paginate(matched, page, 20);
 
   const decide = async (id: string, status: "in_review" | "fulfilled" | "declined") => {
     setBusy(id);
@@ -114,8 +128,16 @@ export default function LearnerRequests() {
           </p>
         </Panel>
       ) : (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
+          placeholder="ابحث باسم المتعلّم أو بريده أو شعبته…" />
+        {view.rows.length === 0 ? (
+          <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+            لا طلبَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Panel>
+        ) : (
         <ul className="space-y-4">
-          {rows.map((r) => {
+          {view.rows.map((r) => {
             const meta = KIND_AR[r.kind] ?? { label: r.kind, icon: Award };
             const subject =
               r.enrollment
@@ -210,6 +232,8 @@ export default function LearnerRequests() {
             );
           })}
         </ul>
+        )}
+        </>
       )}
     </AdminLayout>
   );

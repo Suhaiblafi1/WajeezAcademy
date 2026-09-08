@@ -18,6 +18,9 @@ import { fmtDateTimeAr } from "@/utils/format";
 
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 interface Row {
   id: string;
   kind: string;
@@ -50,6 +53,11 @@ export default function AdvisorRequests() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [note, setNote] = useState<Record<string, string>>({});
+  /* الطابورُ يطول بطول العمل، ولم يكن فيه ما يُبحث به: من أراد طلبَ مستشارٍ
+     بعينه مرّره بعينه. والبحثُ يقع على الطابور كلِّه لا على الصفحة المعروضة
+     — وإلّا لم يجد الباحثُ إلّا ما كان أمامه أصلا. */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
   const [busy, setBusy] = useState("");
 
   const load = useCallback(async () => {
@@ -62,6 +70,14 @@ export default function AdvisorRequests() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  /* يُبحث بمن طلب وبمن طُلب له وبالسبب — وهي الحقولُ التي يُسأل بها فعلا */
+  const matched = (rows ?? []).filter((r) => matchesQuery(q, [
+    r.advisor.displayName, r.advisor.email, r.reasonAr,
+    r.case.client?.displayName, r.case.client?.email,
+    r.case.lead?.fullName, r.case.lead?.email,
+  ]));
+  const view = paginate(matched, page, 20);
 
   const decide = async (id: string, decision: "approved" | "rejected") => {
     setBusy(id);
@@ -102,8 +118,17 @@ export default function AdvisorRequests() {
           </p>
         </Panel>
       ) : (
+        <>
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
+          placeholder="ابحث باسم المستشار أو العميل أو بالسبب…" />
+        {view.rows.length === 0 ? (
+          /* «لا نتائج» غيرُ «لا طلبات»: الأولى تُمسح كلمتُها، والثانية تُنتظر */
+          <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
+            لا طلبَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+          </Panel>
+        ) : (
         <ul className="space-y-4">
-          {rows.map((r) => {
+          {view.rows.map((r) => {
             const who = r.case.client?.displayName ?? r.case.lead?.fullName ?? "عميل بلا اسم";
             const email = r.case.client?.email ?? r.case.lead?.email ?? "";
             const reason = note[r.id] ?? "";
@@ -161,6 +186,8 @@ export default function AdvisorRequests() {
             );
           })}
         </ul>
+        )}
+        </>
       )}
     </AdminLayout>
   );
