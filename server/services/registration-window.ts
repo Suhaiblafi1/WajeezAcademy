@@ -27,6 +27,7 @@
      التسجيل في…» غيرُ «أُغلق التسجيل». */
 
 import type { Prisma } from '@prisma/client'
+import { fmtDateLong } from '../../src/application/text/format-ar'
 
 /** حالةُ نافذة الفصل — تُقرأ من صفّه لا تُشتقّ من تواريخ الشعب */
 export interface TermWindow {
@@ -45,7 +46,7 @@ export function termWindowVerdict(term: TermWindow | null, now = new Date()): Wi
   if (term.registrationOpensAt && now < term.registrationOpensAt) {
     return {
       open: false, code: 'not_yet',
-      reasonAr: `التسجيل في ${term.titleAr} يبدأ ${term.registrationOpensAt.toLocaleDateString('ar-u-ca-gregory', { day: 'numeric', month: 'long', year: 'numeric' })}`,
+      reasonAr: `التسجيل في ${term.titleAr} يبدأ ${fmtDateLong(term.registrationOpensAt)}`,
     }
   }
   if (term.registrationClosesAt && now > term.registrationClosesAt) {

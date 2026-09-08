@@ -19,6 +19,7 @@ import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { fmtDateWith } from "@/application/text/format-ar";
 export interface WizardCourse {
   id: string;
   title: string;
@@ -82,7 +83,7 @@ export default function CohortWizard({
   /* العنوانُ يُقترَح من الدورة والشهر — ويبقى قابلا للتغيير */
   useEffect(() => {
     if (!course || title) return;
-    const month = new Date(from).toLocaleDateString("ar", { month: "long", year: "numeric" });
+    const month = fmtDateWith(from, { month: "long", year: "numeric" });
     setTitle(`${course.title} — ${month}`);
   }, [course, from, title]);
 
