@@ -33,6 +33,23 @@ GitHub» ولا «من الفرع الرئيسي». وأي تحديث لاحق �
 | `find-skills` | [vercel-labs/skills](https://github.com/vercel-labs/skills) · `skills/find-skills/` | `435076e` | MIT |
 | `task-observer` | [rebelytics/one-skill-to-rule-them-all](https://github.com/rebelytics/one-skill-to-rule-them-all) · الجذر و`references/` و`scripts/` | `510caad` | CC BY 4.0 |
 | `impeccable` (١٦٣ ملفا) وأربعةُ وكلاءَ في `.claude/agents/` | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) · `.claude/skills/impeccable/` و`.claude/agents/` | `fcc271c` | Apache 2.0 |
+| `mobbin-ux` | [rohunvora/cool-claude-skills](https://github.com/rohunvora/cool-claude-skills) · `skills/mobbin-ux/` | `8b7c17f` | MIT — **معلَنةٌ في README وحدَه، ولا ملفَّ رخصةٍ في المستودَع** |
+
+> **و`mobbin-ux` لا تعمل اليوم — تُستورد جاهزةً لغدٍ.** جُلبت بطلب صاحب المنصّة
+> (٨ سبتمبر ٢٠٢٦)، وثلاثةُ شروطٍ لها غيرُ متحقّقة، وكلُّها فُحصت لا خُمِّنت:
+>
+> ١) تشترط في وصفها أتمتةَ متصفّح (`claude-in-chrome` MCP) لتقود `mobbin.com`
+> بحسابٍ مُسجَّلٍ دخولُه. ولا خادمَ متصفّحٍ في جلسات هذا المستودع.
+>
+> ٢) و`mobbin.com` محجوبٌ عن جلسات الوكيل السحابيّة ببروكسي الخروج (قِيس: `000`)
+> — كحال `21st.dev` و`pinterest.com`. فهي مهارةُ جهازٍ محلّيٍّ بطبعها.
+>
+> ٣) وخطوتُها الرابعة تنادي `/quick-view` — وهي مهارةٌ شقيقةٌ في مستودَعها لم
+> تُستورد معها. فمن شغّلها اليومَ وقف عند توليد المواصفة.
+>
+> ولا سكربتَ فيها ولا ملفَّ ثانٍ: ملفٌّ واحدٌ في ٩٦ سطرا، قُرئ كاملا قبل النقل.
+> وخادمُ Mobbin عبر MCP — وهو طريقٌ آخرُ غيرُ طريقها — يشترط اشتراكا مدفوعا
+> (`Mobbin MCP requires a paid plan`)، جُرّب في الوضعين `deep` و`standard`.
 
 نصوص الرخص محفوظة: `LICENSE-superpowers.txt` و`webapp-testing/LICENSE.txt`
 و`LICENSE-education-skills.txt` و`frontend-design/LICENSE.txt`
