@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck } from "lucide-react";
+import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck, Video } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
@@ -22,6 +22,11 @@ interface IntegrationsView {
   };
   email: {
     enabled: boolean; envSourced: boolean; apiKey: string; fromName: string; fromEmail: string; hasApiKey: boolean;
+  };
+  zoom: {
+    enabled: boolean; envSourced: boolean; ready: boolean; missing: string[];
+    accountId: string; clientId: string; clientSecret: string; hostEmail: string;
+    hasAccountId: boolean; hasClientId: boolean; hasClientSecret: boolean;
   };
 }
 
@@ -41,6 +46,8 @@ export default function Integrations() {
   const [payForm, setPayForm] = useState({ enabled: false, driver: "test", publishableKey: "", secretKey: "", webhookSecret: "" });
   const [mailForm, setMailForm] = useState({ enabled: false, apiKey: "", fromName: "", fromEmail: "" });
   const [testTo, setTestTo] = useState("");
+  const [zoomForm, setZoomForm] = useState({ enabled: false, accountId: "", clientId: "", clientSecret: "", hostEmail: "" });
+  const [zoomProbe, setZoomProbe] = useState<{ ok: boolean; message: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -53,6 +60,10 @@ export default function Integrations() {
       });
       setMailForm({
         enabled: v.email.enabled, apiKey: v.email.apiKey, fromName: v.email.fromName, fromEmail: v.email.fromEmail,
+      });
+      setZoomForm({
+        enabled: v.zoom.enabled, accountId: v.zoom.accountId, clientId: v.zoom.clientId,
+        clientSecret: v.zoom.clientSecret, hostEmail: v.zoom.hostEmail === "me" ? "" : v.zoom.hostEmail,
       });
     } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
@@ -237,6 +248,74 @@ export default function Integrations() {
                   </Button>
                 </div>
               </div>
+            </div>
+          </Panel>
+
+          {/* ════ Zoom ════ */}
+          <Panel as="section">
+            <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> اجتماعات Zoom</p>
+            <p className="mt-1 text-read leading-5 text-muted-foreground">
+              فور اكتماله يُنشئ المدرّبُ والإدارةُ اجتماعَ اللقاء <b className="text-foreground">من داخل المنصّة</b>،
+              ويصل رابطُه كلَّ مسجَّلٍ في الشعبة إشعارا. وبدونه يبقى البابُ اليدويّ: رابطٌ يُلصق بيده لكلّ لقاء.
+            </p>
+            {/* «مفعّل» ليس «جاهز» — والفرقُ يُقال قبل أن يفشل أوّلُ لقاء */}
+            {view.zoom.enabled && !view.zoom.ready && (
+              <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read font-bold text-gold-ink">
+                مفعَّلٌ وغيرُ مكتمل — ينقصه: {view.zoom.missing.join(" · ")}
+              </Inset>
+            )}
+            {view.zoom.envSourced && (
+              <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read font-bold text-gold-ink">
+                هذا التكامل يُدار من متغيرات البيئة (ZOOM_ACCOUNT_ID…) — الحفظ هنا لن يؤثر حتى تُزال.
+              </Inset>
+            )}
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className={labelCls}>معرّف الحساب — Account ID</label>
+                <input dir="ltr" value={zoomForm.accountId} onChange={(e) => setZoomForm({ ...zoomForm, accountId: e.target.value })}
+                  placeholder={view.zoom.hasAccountId ? view.zoom.accountId : "abcd…"} className={`${inputCls} mt-1 w-full font-mono`} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className={labelCls}>معرّف التطبيق — Client ID</label>
+                  <input dir="ltr" value={zoomForm.clientId} onChange={(e) => setZoomForm({ ...zoomForm, clientId: e.target.value })}
+                    placeholder={view.zoom.hasClientId ? view.zoom.clientId : "…"} className={`${inputCls} mt-1 w-full font-mono`} />
+                </div>
+                <div>
+                  <label className={labelCls}>سرّ التطبيق — يُخزَّن ولا يُعرض</label>
+                  <input dir="ltr" type="password" value={zoomForm.clientSecret} onChange={(e) => setZoomForm({ ...zoomForm, clientSecret: e.target.value })}
+                    placeholder={view.zoom.hasClientSecret ? view.zoom.clientSecret : "…"} className={`${inputCls} mt-1 w-full font-mono`} />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>بريدُ مضيف الاجتماعات — اتركه فارغا لصاحب التطبيق</label>
+                <input dir="ltr" value={zoomForm.hostEmail} onChange={(e) => setZoomForm({ ...zoomForm, hostEmail: e.target.value })}
+                  placeholder="lessons@wajeezacademy.com" className={`${inputCls} mt-1 w-full font-mono`} />
+              </div>
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">
+                <input type="checkbox" checked={zoomForm.enabled} onChange={(e) => setZoomForm({ ...zoomForm, enabled: e.target.checked })} className="accent-gold" />
+                تفعيل إنشاء الاجتماعات من المنصّة
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Button tone="confirm" disabled={busy}
+                  onClick={() => act(() => apiPut("/api/admin/integrations/zoom", { ...zoomForm, hostEmail: zoomForm.hostEmail.trim() || undefined }), "حُفظت إعدادات Zoom")}>
+                  حفظ إعدادات Zoom
+                </Button>
+                <Button tone="secondary" disabled={busy} className="text-teal-light-ink"
+                  onClick={async () => {
+                    setZoomProbe(null);
+                    try { setZoomProbe(await apiPost<{ ok: boolean; message: string }>("/api/admin/integrations/zoom/test", {})); }
+                    catch (e) { setZoomProbe({ ok: false, message: e instanceof ApiError ? e.message : "تعذّر الفحص" }); }
+                  }}>
+                  <Send className="h-3.5 w-3.5" /> فحص الاتصال
+                </Button>
+              </div>
+              {zoomProbe && (
+                <Inset as="p" tone={zoomProbe.ok ? "positive" : "danger"}
+                  className={`text-read leading-6 ${zoomProbe.ok ? "text-emerald-200" : "text-red-200"}`}>
+                  {zoomProbe.message}
+                </Inset>
+              )}
             </div>
           </Panel>
 
