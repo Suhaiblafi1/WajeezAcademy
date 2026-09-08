@@ -51,6 +51,7 @@ const Earnings = lazy(() => import('./pages/trainer/Earnings'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
+const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
@@ -258,6 +259,11 @@ export default function App() {
                 `data/admin`. سير المحتوى الحقيقي في «الكتالوج» و«النشر والإصدارات». */}
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />
             <Route path="/admin/trainers" element={<AdminTrainerApps />} />
+            {/* الأتعابُ شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك محروسٌ
+                بـ`trainer.applications.view` والأتعابُ بـ`trainer.compensation.manage`،
+                ولا تلتقيان إلّا في `super_admin` — فكانت الماليةُ تملك المفتاحَ
+                ولا تملك الباب. */}
+            <Route path="/admin/trainer-compensation" element={<AdminTrainerCompensation />} />
             <Route path="/admin/catalog" element={<CatalogAdmin />} />
             <Route path="/admin/authoring" element={<AdminAuthoring />} />
             <Route path="/admin/publishing" element={<PublishingBoard />} />

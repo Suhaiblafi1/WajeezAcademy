@@ -15,7 +15,7 @@ import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
-import { TrainerDetailOps, TrainerChangeRequests, TrainerPayouts, type TrainerSummary } from "./TrainerOps";
+import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
 import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -232,7 +232,7 @@ export default function TrainerApplications() {
   const { user } = useRealSession();
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
-  const [mode, setMode] = useState<"apps" | "run" | "changes" | "payouts">("apps");
+  const [mode, setMode] = useState<"apps" | "run" | "changes">("apps");
 
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
@@ -661,7 +661,7 @@ export default function TrainerApplications() {
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <div className="flex rounded-full border border-white/15 p-1">
-          {([["apps", "الطلبات"], ["run", "التأهيل والإسناد"], ["changes", "اقتراحات تعديل الدورات"], ["payouts", "مستحقات المدربين"]] as const).map(([k, label]) => (
+          {([["apps", "الطلبات"], ["run", "التأهيل والإسناد"], ["changes", "اقتراحات تعديل الدورات"]] as const).map(([k, label]) => (
             /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
                الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
                يتنازعان العين — وهو ما استقرّ عليه لسانُ الشعبة قبله. */
@@ -688,7 +688,11 @@ export default function TrainerApplications() {
 
       {mode === "run" && <TrainerRunOps />}
       {mode === "changes" && <TrainerChangeRequests />}
-      {mode === "payouts" && <TrainerPayouts />}
+      {/* ونُقلت «مستحقات المدربين» إلى شاشتها (`/admin/trainer-compensation`):
+          بابُ هذه الشاشة `trainer.applications.view` والأتعابُ محروسةٌ
+          بـ`trainer.compensation.manage`، ولا تلتقيان إلّا في `super_admin`.
+          فكانت الماليةُ تُردّ على الباب، والمديرُ الأكاديميُّ يبلغ اللسانَ
+          ويُردّ عند أوّل فعل. */}
       {mode === "apps" && (loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : apps.length === 0 ? (

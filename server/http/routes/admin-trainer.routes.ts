@@ -386,6 +386,14 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'ملفات المدربين النشطين — لنماذج الإنشاء' },
   }, async () => earnings.listProfiles())
 
+  /* الشعبُ لنماذج الأتعاب — قراءةٌ ضيّقةٌ خلف صلاحيّة الأتعاب نفسِها.
+     و`‎/api/admin/cohorts` وراء `cohort.manage` ولا تملكها المالية، فكان
+     الطلبُ يُردّ ٤٠٣ ويُسقط الشاشةَ كلَّها. */
+  app.get('/api/admin/trainer-payouts/cohort-options', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'الشعبُ باختصار — لقصر قاعدة الأتعاب وتوليد الكشف' },
+  }, async () => earnings.listCohortOptions())
+
   app.get('/api/admin/trainer-payouts', {
     preHandler: requirePermission('trainer.compensation.manage'),
     schema: { tags: ['admin-trainers'], summary: 'كل كشوف المستحقات مع أسماء المدربين — فلتر حالة اختياري' },

@@ -627,7 +627,10 @@ export function TrainerPayouts() {
         apiGet<PayoutRow[]>(`/api/admin/trainer-payouts${filter ? `?status=${filter}` : ""}`),
         apiGet<ProfileOpt[]>("/api/admin/trainer-profiles"),
         apiGet<RuleRow[]>("/api/admin/trainer-compensation-rules"),
-        apiGet<CohortOpt[]>("/api/admin/cohorts"),
+        /* لا `‎/api/admin/cohorts`: هي وراء `cohort.manage` ولا تملكها
+           المالية، فكان `Promise.all` يسقط كلُّه بـ٤٠٣ — فتموت الشاشةُ
+           بتمامها لا حقلُ الشعب وحدَه. وهذه وراء صلاحيّة الأتعاب نفسِها. */
+        apiGet<CohortOpt[]>("/api/admin/trainer-payouts/cohort-options"),
       ]);
       setRows(p); setProfiles(profs); setRules(r); setAllCohorts(cohorts);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذر تحميل الكشوف"); }

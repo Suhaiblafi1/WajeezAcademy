@@ -64,6 +64,34 @@ export class EarningsService {
     }))
   }
 
+  /* ── قائمةُ الشعب لنماذج الأتعاب ──
+
+     شاشةُ المستحقّات تحتاج الشعبَ في موضعَين: قصرُ قاعدةِ أتعابٍ على شعبةٍ
+     بعينها، واختيارُ شعبةٍ ليُولَّد كشفُها. وكانت تقرؤها من
+     `‎/api/admin/cohorts` — وهي وراء `cohort.manage`.
+
+     و**المالية لا تملكها**: صلاحيّاتُها `trainer.compensation.manage`
+     و`commerce.manage` و`finance.*` و`reports.*` لا غير. فكان الطلبُ
+     يُردّ ٤٠٣، ويسقط `Promise.all` كلُّه — فتموت الشاشةُ بتمامها لا حقلُ
+     الشعب وحدَه: «تعذر تحميل الكشوف»، ولا كشفَ ولا قاعدةَ ولا مدرّب.
+
+     ومنحُ الماليّةِ `cohort.manage` جوابٌ أوسعُ من السؤال: تصير تُنشئ
+     الشعبَ وتفتحها وتعدّل سعتَها. فالمطلوبُ قراءةٌ ضيّقةٌ بقدر الحاجة —
+     معرّفٌ وعنوانٌ وحالةٌ ونهاية، بلا مسجَّلين ولا مدرّبين ولا عدّادات. */
+  async listCohortOptions() {
+    const rows = await this.prisma.cohort.findMany({
+      select: {
+        id: true, title: true, status: true, endsAt: true,
+        course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+    return rows.map((c) => ({
+      id: c.id, title: c.title, status: c.status, endsAt: c.endsAt,
+      courseTitle: c.course.versions[0]?.titleAr ?? '',
+    }))
+  }
+
   async create(actorId: string, input: {
     profileId: string; period: string; currency?: string
     items: { description: string; amount: number; sourceRef?: string }[]
