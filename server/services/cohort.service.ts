@@ -15,7 +15,7 @@ import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MA
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { createZoomMeeting, getZoomConfig, zoomMissing, zoomReady } from './zoom.service'
+import { createZoomMeeting, getZoomConfig, registerZoomParticipant, zoomMissing, zoomReady } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 
@@ -1098,7 +1098,70 @@ export class CohortService {
       actorId, action: 'zoom.create_api', entityType: 'cohort_session', entityId: sessionId,
       meta: { meetingId: meeting.meetingId, durationMinutes },
     })
+    /* ورابطٌ لكلّ مسجَّلٍ بعد الإنشاء — لا يُسقط الجلسةَ إن تعذّر */
+    if (meeting.meetingId) await this.linkRegistrants(sessionId, meeting.meetingId, config)
     return zoom
+  }
+
+  /* ── رابطُ دخولٍ لكلّ متعلّم ──
+
+     وهو ما يجعل الحضورَ قابلا للقياس: تقريرُ Zoom بعد اللقاء يحمل بريدَ
+     **المسجَّل**، فيُطابَق بصاحبه. وبلا تسجيلٍ يعود اسمٌ كتبه صاحبُه بيده
+     ولا يُطابَق بأحد.
+
+     ولا يرمي: التسجيلُ المسبق ليس في كلّ حساب، والاجتماعُ قائمٌ يعمل بلا.
+     فيُكتب ما جرى في `syncState` و`syncError` — والشاشةُ تقول «الحضورُ هنا
+     يدويّ، وهذا سببه» بدل صمتٍ يُظنّ معه أنّ العدّ يجري. */
+  /** يُنادى بعد إنشاء الاجتماع، وبعد كلّ التحاقٍ جديدٍ بشعبةٍ لها جلساتٌ قائمة */
+  async ensureSessionJoinLinks(sessionId: string) {
+    const zoom = await this.prisma.zoomMeeting.findUnique({ where: { sessionId } })
+    /* لا اجتماعَ آليّا: لا مسجَّلين أصلا — واليدويُّ رابطٌ واحدٌ مشترك */
+    if (!zoom || zoom.provider !== 'zoom_api' || !zoom.meetingId) return { linked: 0, reason: null }
+    const config = await getZoomConfig(this.prisma)
+    if (!zoomReady(config)) return { linked: 0, reason: null }
+    return this.linkRegistrants(sessionId, zoom.meetingId, config)
+  }
+
+  private async linkRegistrants(
+    sessionId: string, meetingId: string, config: Awaited<ReturnType<typeof getZoomConfig>>,
+  ): Promise<{ linked: number; reason: string | null }> {
+    const learners = await this.prisma.enrollment.findMany({
+      where: { cohort: { sessions: { some: { id: sessionId } } }, status: { notIn: ['dropped', 'waitlisted'] } },
+      select: { id: true, user: { select: { email: true, displayName: true } } },
+    })
+    let linked = 0
+    let reason: string | null = null
+    for (const e of learners) {
+      if (!e.user?.email) continue
+      /* الموجودُ لا يُعاد تسجيلُه: تُستدعى هذه عند الإنشاء وعند كلّ التحاقٍ جديد */
+      const already = await this.prisma.sessionJoinLink.findUnique({
+        where: { sessionId_enrollmentId: { sessionId, enrollmentId: e.id } },
+      })
+      if (already) continue
+      const r = await registerZoomParticipant(config, meetingId, {
+        email: e.user.email,
+        firstName: e.user.displayName || e.user.email.split('@')[0],
+      })
+      if (!r.ok) {
+        /* أوّلُ سببٍ يكفي: الرفضُ من نوع الحساب لا من هذا المتعلّم، فمحاولةُ
+           الثلاثين تعطي ثلاثين نداءً وسببا واحدا مكرَّرا. */
+        reason = r.reason
+        break
+      }
+      await this.prisma.sessionJoinLink.create({
+        data: {
+          sessionId, enrollmentId: e.id,
+          registrantId: r.registrant.registrantId,
+          joinUrl: r.registrant.joinUrl,
+        },
+      })
+      linked += 1
+    }
+    await this.prisma.zoomMeeting.update({
+      where: { sessionId },
+      data: reason ? { syncState: 'failed', syncError: reason } : { syncState: 'synced', syncError: null },
+    })
+    return { linked, reason }
   }
 
   /** يُبلَّغ كلُّ مسجَّلٍ في الشعبة — والعددُ يعود كي تقوله الشاشةُ لا تخمّنه */

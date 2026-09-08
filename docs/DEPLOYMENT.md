@@ -660,7 +660,7 @@ docker compose -f deploy/compose.prod.yml --env-file deploy/.env.production up -
 
 ### المفاتيحُ زوجٌ ثانٍ لا الأوّل
 
-في `server/services/zoom/provider.ts` مفاتيحُ **إنشاء** اجتماعٍ من الخادم
+في `server/services/zoom.service.ts` مفاتيحُ **إنشاء** اجتماعٍ من الخادم
 (`ZOOM_ACCOUNT_ID` · `ZOOM_CLIENT_ID` · `ZOOM_CLIENT_SECRET`) — تطبيقُ
 Server-to-Server OAuth. وهذه مفاتيحُ **دخولِ متصفّحٍ** إلى اجتماعٍ قائم:
 

@@ -38,6 +38,7 @@
    من رفضٍ مفهوم. */
 
 import type { PrismaClient } from '@prisma/client'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 import { AuthError } from './auth.service'
 
 /** نقطتا Zoom الرسميّتان — الرمزُ من `zoom.us` والواجهةُ من `api.zoom.us` */
@@ -54,6 +55,8 @@ export interface ZoomConfig {
   clientSecret?: string
   /** بريدُ مضيف الاجتماعات في حساب Zoom — `me` يعني صاحبَ التطبيق */
   hostEmail: string
+  /** سرُّ التحقّق من الـwebhook — يأتي من لوحة Zoom مع نقطة الاستقبال */
+  webhookSecret?: string
 }
 
 export interface ZoomMeetingResult {
@@ -75,12 +78,14 @@ export async function getZoomConfig(prisma: PrismaClient): Promise<ZoomConfig> {
     clientId: c.clientId || undefined,
     clientSecret: c.clientSecret || undefined,
     hostEmail: c.hostEmail || 'me',
+    webhookSecret: c.webhookSecret || undefined,
   }
   const env = process.env
   if (env.ZOOM_ACCOUNT_ID) { base.accountId = env.ZOOM_ACCOUNT_ID; base.enabled = true }
   if (env.ZOOM_CLIENT_ID) base.clientId = env.ZOOM_CLIENT_ID
   if (env.ZOOM_CLIENT_SECRET) base.clientSecret = env.ZOOM_CLIENT_SECRET
   if (env.ZOOM_HOST_EMAIL) base.hostEmail = env.ZOOM_HOST_EMAIL
+  if (env.ZOOM_WEBHOOK_SECRET) base.webhookSecret = env.ZOOM_WEBHOOK_SECRET
   return base
 }
 
@@ -186,6 +191,19 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
         meeting_authentication: false,
         mute_upon_entry: true,
         auto_recording: 'none',
+        /* ── التسجيلُ المسبق: صفرٌ = يُقبل تلقائيّا ──
+
+           وهو شرطُ رابطٍ لكلّ متعلّم، والرابطُ لكلّ متعلّمٍ شرطُ حضورٍ
+           يُقاس: Zoom يبلّغ عن المشاركين ببريد **المسجَّل**، فبلا تسجيلٍ
+           تعود قائمةُ أسماءٍ كتبها أصحابُها بأيديهم — «أحمد» و«Ahmed»
+           و«iPhone» ثلاثةُ صفوفٍ لشخصٍ واحد، ولا تُطابَق بمسجَّل.
+
+           والبريدُ من Zoom مطفأ: من يُبلّغ المتعلّمَ هي المنصّة، ورسالتان
+           عن لقاءٍ واحدٍ إحداهما بلغةٍ أخرى تُربك لا تُعين. */
+        approval_type: 0,
+        registration_type: 1,
+        registrants_email_notification: false,
+        registrants_confirmation_email: false,
       },
     }),
   })
@@ -210,6 +228,172 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
 }
 
 /** فحصٌ حيٌّ للمفاتيح — يطلب رمزا فعلا ولا يكتفي بوجود القيم */
+/* ── تسجيلُ متعلّمٍ في اجتماع ──
+
+   يردّ رابطا خاصًّا به. وقيمتُه ليست في الرابط بل في **المطابقة**: تقريرُ
+   المشاركين بعد اللقاء يحمل بريدَ المسجَّل، فيُعرف من حضر بلا تخمينٍ في
+   الأسماء.
+
+   ── ولمَ لا يرمي هذا فيُسقط الجلسة ──
+
+   التسجيلُ المسبق ليس متاحا في كلّ حساب: الحساباتُ المجّانيّة لا تملكه،
+   وبعضُ أنواع الاجتماعات ترفضه. والاجتماعُ حينئذٍ **قائمٌ وصالح** — رابطُه
+   المشترك يعمل ويدخل به الطلبة. فإسقاطُ الجلسة كلِّها لأنّ المطابقةَ الآليّة
+   تعذّرت عقوبةٌ على الخطأ الصغير بالخطأ الكبير.
+
+   فيردّ `null` ومعه سببُه، ويُكتب السببُ في `ZoomMeeting.syncError` كي يُقرأ
+   في الشاشة: «الحضورُ يُسجَّل يدويّا في هذه الجلسة، وهذا سببه» — لا صمتٌ
+   يُظنّ معه أنّ العدّ يجري وهو لا يجري. */
+export interface ZoomRegistrant {
+  registrantId: string
+  joinUrl: string
+}
+
+export async function registerZoomParticipant(
+  c: ZoomConfig,
+  meetingId: string,
+  who: { email: string; firstName: string; lastName?: string },
+): Promise<{ ok: true; registrant: ZoomRegistrant } | { ok: false; reason: string }> {
+  const token = await zoomToken(c)
+  const res = await fetch(`${ZOOM_API_BASE_URL}/meetings/${encodeURIComponent(meetingId)}/registrants`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: who.email,
+      first_name: who.firstName.slice(0, 64),
+      /* Zoom يشترط اسما أخيرا في بعض الحسابات، والأسماءُ العربيّةُ تصل
+         كلمةً واحدةً كثيرا — فنقطةٌ خيرٌ من رفضِ التسجيل كلِّه. */
+      last_name: (who.lastName || '.').slice(0, 64),
+    }),
+  })
+  if (!res.ok) {
+    const reason = res.status === 400
+      ? 'لا يقبل هذا الاجتماعُ تسجيلا مسبقا — أُنشئ قبل تفعيله أو لا يتيحه نوعُه'
+      : res.status === 401 || res.status === 403
+        ? 'رفض Zoom التسجيل — تأكّد من صلاحيّة `meeting:write:admin`'
+        : res.status === 404
+          ? 'لا اجتماعَ بهذا الرقم عند Zoom — رُبّما حُذف من لوحته'
+          : `ردُّ Zoom غير متوقّع عند التسجيل (HTTP ${res.status})`
+    return { ok: false, reason }
+  }
+  const j = (await res.json()) as { registrant_id?: string; join_url?: string }
+  if (!j.join_url || !j.registrant_id) {
+    return { ok: false, reason: 'سجّل Zoom المتعلّمَ بلا رابطٍ خاصٍّ به' }
+  }
+  return { ok: true, registrant: { registrantId: j.registrant_id, joinUrl: j.join_url } }
+}
+
+/* ══════════ الـwebhook: ما يقوله Zoom بعد اللقاء ══════════
+
+   ── ولمَ انتقل التحقّقُ إلى هنا ──
+
+   كان في `server/services/zoom/provider.ts` — ملفٌّ **لا يستورده أحد**:
+   `ApiZoomProvider` فيه يرمي `zoom_api_not_wired`، و`getZoomProvider()`
+   تقرأ البيئةَ وحدَها. فصار في المستودَع جوابان مختلفان لسؤالٍ واحد «أمُهيَّأٌ
+   Zoom؟» — أحدُهما ميّتٌ يقرأ البيئة، والآخرُ حيٌّ يقرأ البيئةَ والقاعدة.
+
+   ومصدران لحقيقةٍ واحدة هو بعينه العطبُ الذي جعل معالجَ الشعبة يعرض سعرا
+   ويُنشئ شعبةً بسعرٍ آخر. فنُقل التحقّقُ إلى المزوّد الحيّ وحُذف الميّت،
+   وصار السرُّ يُقرأ من حيث تُقرأ بقيّةُ الاعتمادات: القاعدةُ أو البيئة.
+
+   ── والتحقّقُ بمقارنةٍ ثابتةِ الزمن ──
+
+   `timingSafeEqual` لا `===`: المقارنةُ الساذجة تخرج عند أوّل حرفٍ مختلف،
+   فزمنُها يُفشي كم حرفا صحّ. */
+
+/** بصمةُ الطلب كما يحسبها Zoom: `v0:<الطابع>:<الجسم الخام>` */
+export function zoomWebhookSignature(secret: string, rawBody: string, timestamp: string): string {
+  return `v0=${createHmac('sha256', secret).update(`v0:${timestamp}:${rawBody}`).digest('hex')}`
+}
+
+export function verifyZoomWebhook(
+  c: ZoomConfig, rawBody: string, signature: string, timestamp: string,
+): boolean {
+  /* بلا سرٍّ لا يُقبل شيء: نقطةٌ مفتوحةٌ تقبل أيَّ جسمٍ تكتب حضورا مختلَقا */
+  if (!c.webhookSecret) return false
+  const expected = Buffer.from(zoomWebhookSignature(c.webhookSecret, rawBody, timestamp))
+  const got = Buffer.from(signature)
+  return expected.length === got.length && timingSafeEqual(expected, got)
+}
+
+/** ردُّ تحدّي إثبات الملكيّة الذي يرسله Zoom عند حفظ النقطة في لوحته */
+export function zoomUrlValidationReply(secret: string, plainToken: string) {
+  return {
+    plainToken,
+    encryptedToken: createHmac('sha256', secret).update(plainToken).digest('hex'),
+  }
+}
+
+/* ══════════ تقريرُ من حضر ══════════
+
+   يُقرأ بعد انتهاء اللقاء لا من أحداث الدخول والخروج المتفرّقة: تلك تصل
+   مبعثرةً ويُخطئ رصفُها حين ينقطع اتّصالُ أحدهم ويعود، والتقريرُ يعطيها
+   مجموعةً بمجاميعِ الدقائق.
+
+   ── ولمَ يُرمَّز المعرّفُ مرّتَين ──
+
+   معرّفُ اللقاء المنتهي (`uuid`) قد يبدأ بشَرطةٍ مائلة أو يحوي `//`، وهي
+   في المسار تُقرأ فواصلَ لا حروفا — فيردّ Zoom ٤٠٤ على لقاءٍ موجود. وهو
+   شرطٌ يذكره Zoom في وثيقته، ويُنسى فيُشخَّص «اللقاءُ غيرُ موجود». */
+
+export interface ZoomParticipant {
+  name: string
+  email: string | null
+  joinedAt: Date
+  leftAt: Date | null
+  minutes: number
+}
+
+/** يُرمَّز مرّتَين متى احتاج — وإلّا فمرّةً واحدة */
+export function encodeMeetingUuid(uuid: string): string {
+  const once = encodeURIComponent(uuid)
+  return uuid.startsWith('/') || uuid.includes('//') ? encodeURIComponent(once) : once
+}
+
+export async function fetchZoomParticipants(c: ZoomConfig, meetingUuid: string): Promise<ZoomParticipant[]> {
+  const token = await zoomToken(c)
+  const out: ZoomParticipant[] = []
+  let pageToken = ''
+  /* سقفٌ للصفحات: حلقةٌ لا تنتهي على ردٍّ يعيد الرمزَ نفسَه تُعلّق العاملَ */
+  for (let page = 0; page < 20; page++) {
+    const q = new URLSearchParams({ page_size: '300' })
+    if (pageToken) q.set('next_page_token', pageToken)
+    const res = await fetch(
+      `${ZOOM_API_BASE_URL}/past_meetings/${encodeMeetingUuid(meetingUuid)}/participants?${q}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    )
+    if (!res.ok) {
+      throw new AuthError(
+        'zoom_report_failed',
+        res.status === 404
+          ? 'لا تقريرَ لهذا اللقاء عند Zoom — قد يكون انتهى قبل أن يدخله أحد'
+          : `تعذّرت قراءةُ تقرير الحضور من Zoom (HTTP ${res.status})`,
+        502,
+      )
+    }
+    const j = (await res.json()) as {
+      participants?: { name?: string; user_email?: string; join_time?: string; leave_time?: string; duration?: number }[]
+      next_page_token?: string
+    }
+    for (const p of j.participants ?? []) {
+      const joinedAt = p.join_time ? new Date(p.join_time) : null
+      if (!joinedAt || Number.isNaN(joinedAt.getTime())) continue
+      const leftAt = p.leave_time ? new Date(p.leave_time) : null
+      out.push({
+        name: p.name?.trim() || 'مشارِكٌ بلا اسم',
+        email: p.user_email?.trim().toLowerCase() || null,
+        joinedAt,
+        leftAt: leftAt && !Number.isNaN(leftAt.getTime()) ? leftAt : null,
+        /* `duration` بالثواني في تقرير Zoom — تُحوَّل هنا مرّةً واحدة */
+        minutes: Math.max(0, Math.round((p.duration ?? 0) / 60)),
+      })
+    }
+    pageToken = j.next_page_token ?? ''
+    if (!pageToken) break
+  }
+  return out
+}
+
 export async function zoomProbe(c: ZoomConfig): Promise<{ ok: boolean; message: string }> {
   if (!c.enabled) return { ok: false, message: 'تكاملُ Zoom غير مفعّل — فعّله واحفظ أوّلا' }
   const missing = zoomMissing(c)

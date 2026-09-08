@@ -1556,36 +1556,95 @@ model CohortTrainer {
 }
 
 model CohortSession {
-  id          String                     @id @default(uuid()) @db.Uuid
-  cohortId    String                     @db.Uuid
-  moduleId    String? // الوحدة المرتبطة من مخطط الدورة
-  title       String
-  startsAt    DateTime
-  endsAt      DateTime?
-  timezone    String?
-  status      String                     @default("scheduled") // scheduled | live | done | cancelled
-  createdAt   DateTime                   @default(now())
-  cohort      Cohort                     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
-  zoom        ZoomMeeting?
-  recordings  Recording[]
-  attendance  Attendance[]
-  reschedules SessionRescheduleRequest[]
+  id             String                     @id @default(uuid()) @db.Uuid
+  cohortId       String                     @db.Uuid
+  moduleId       String? // الوحدة المرتبطة من مخطط الدورة
+  title          String
+  startsAt       DateTime
+  endsAt         DateTime?
+  timezone       String?
+  status         String                     @default("scheduled") // scheduled | live | done | cancelled
+  createdAt      DateTime                   @default(now())
+  cohort         Cohort                     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  zoom           ZoomMeeting?
+  recordings     Recording[]
+  participations SessionParticipation[]
+  attendance     Attendance[]
+  reschedules    SessionRescheduleRequest[]
 
   @@index([cohortId, startsAt])
 }
 
 model ZoomMeeting {
-  id            String        @id @default(uuid()) @db.Uuid
-  sessionId     String        @unique @db.Uuid
-  provider      String        @default("manual") // manual | zoom_api — لا اجتماع حقيقي دون مفاتيح
+  id            String   @id @default(uuid()) @db.Uuid
+  sessionId     String   @unique @db.Uuid
+  provider      String   @default("manual") // manual | zoom_api — لا اجتماع حقيقي دون مفاتيح
   joinUrl       String
   meetingId     String?
   passcodeEnc   String? // محمي — لا يُعرض إلا لصاحب الحق
   learnerUrl    String? // رابط المتعلم إن اختلف
-  hostProfileId String?       @db.Uuid // صلاحية المدرب على الاجتماع
-  createdBy     String?       @db.Uuid
-  createdAt     DateTime      @default(now())
-  session       CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  hostProfileId String?  @db.Uuid // صلاحية المدرب على الاجتماع
+  createdBy     String?  @db.Uuid
+  createdAt     DateTime @default(now())
+
+  // ما وقع فعلا — يملؤه webhook لا يدٌ. والمجدولُ نيّةٌ، وهذا خبر.
+  actualStartAt    DateTime?
+  actualEndAt      DateTime?
+  durationMin      Int?
+  hostJoinedAt     DateTime? // متى دخل المضيف — تُقرأ منه «تأخّر المدرّب»
+  participantCount Int?
+  /**
+   * حالةُ المزامنة مع Zoom. ولا قيدَ `CHECK` مولَّدا عليها ولا على
+   * `Attendance.source`: `scripts/status-checks.ts` يطابق الاسمَ **تامّا**
+   * (`^(status|state|kind|type|level|result|outcome)$`)، فلا يشمل
+   * `syncState` ولا `source` — والسابقةُ ظنَنتُها مشمولةً بـ`state` فلم تكن.
+   * وتوسيعُ القائمة يجرّ قيدا على `Lead.source`: جدولٌ لا شأنَ له بهذا العمل
+   * وفيه بياناتُ إنتاج، فيسقط الترحيلُ عند النشر على أوّل قيمةٍ خارج القائمة.
+   * فتُرك للعمل الذي يخصّه، وسُمّي السببُ هنا كي لا يُظنَّ سهوا.
+   */
+  syncState        String    @default("pending") // pending | synced | failed
+  syncError        String?
+
+  session   CohortSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  joinLinks SessionJoinLink[]
+}
+
+/**
+ * رابطُ دخولٍ لكلّ متعلّمٍ في كلّ جلسة.
+ * وهو ما يجعل الحضورَ قابلا للقياس: Zoom يبلّغ عن المشاركين **ببريد المسجَّل**
+ * لا بالاسم الذي كتبه بيده في خانة العرض. فرابطٌ واحدٌ مشتركٌ يعطي قائمةَ
+ * أسماءٍ لا تُطابَق بأحد — و«أحمد» و«Ahmed» و«iPhone» ثلاثةُ صفوفٍ لشخصٍ واحد.
+ */
+model SessionJoinLink {
+  id           String      @id @default(uuid()) @db.Uuid
+  sessionId    String      @db.Uuid
+  enrollmentId String      @db.Uuid
+  registrantId String // معرّفُ المسجَّل عند Zoom
+  joinUrl      String
+  createdAt    DateTime    @default(now())
+  meeting      ZoomMeeting @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+  enrollment   Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, enrollmentId])
+}
+
+/**
+ * وقائعُ المشاركة كما أبلغ عنها Zoom — خامًّا بلا حكم.
+ * والحضورُ (`Attendance`) حكمٌ يُشتقّ منها، ويبقى للمدرّب أن يخالفه. فتُحفظ
+ * الواقعةُ منفصلةً عن الحكم: من راجع بعد شهرٍ رأى على أيّ دقائقَ بُني.
+ */
+model SessionParticipation {
+  id           String        @id @default(uuid()) @db.Uuid
+  sessionId    String        @db.Uuid
+  enrollmentId String?       @db.Uuid // فارغٌ لمن لم يُطابَق — ضيفٌ أو المدرّب
+  email        String?
+  displayName  String
+  joinedAt     DateTime
+  leftAt       DateTime?
+  minutes      Int
+  session      CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }
 
 model LearningMaterial {
@@ -1631,6 +1690,7 @@ model Enrollment {
   createdAt        DateTime               @default(now())
   cohort           Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   user             User                   @relation("EnrollmentUser", fields: [userId], references: [id])
+  joinLinks        SessionJoinLink[]
   attendance       Attendance[]
   attempts         AssessmentAttempt[]
   submissions      AssignmentSubmission[]
@@ -1652,6 +1712,12 @@ model Attendance {
   enrollmentId String        @db.Uuid
   status       String // present | late | absent | excused
   markedBy     String?       @db.Uuid // مدرب الشعبة فقط
+  /**
+   * من حكم: يدُ المدرّب أم دقائقُ Zoom. ويُقرأ قبل الكتابة — فالمشتقُّ
+   * لا يمسح ما وضعه إنسان. (ولا قيدَ مولَّدا عليه — السببُ عند
+   * `ZoomMeeting.syncState`.)
+   */
+  source       String        @default("manual") // manual | zoom
   note         String?
   createdAt    DateTime      @default(now())
   session      CohortSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
