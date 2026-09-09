@@ -13,6 +13,7 @@ import { fmtDateTimeAr } from "@/utils/format";
 import { countAr } from "@/application/text/count-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
+import ProgressRing from "@/components/ui/ProgressRing";
 /* صيغةُ العدد لا تُرتجل في السطر: «و1 طالباً» نصبٌ في غير موضعه يقرؤه
    المدرّب في كلّ دخول. */
 const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" } as const;
@@ -46,10 +47,16 @@ interface RealCohort {
   };
 }
 interface RealQueueItem { id: string; status: string }
+/** موجزُ الشعبة كما يعطيه `/api/trainer/cohorts/summary` — الدالّةُ نفسُها التي تحسب قائمةَ صفحة الشعبة */
+interface CohortSummary {
+  id: string; title: string; courseTitle: string; planStatus: string; done: number; total: number;
+  next: { key: string; labelAr: string } | null;
+}
 
 function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const [cohorts, setCohorts] = useState<RealCohort[] | null>(null);
   const [queue, setQueue] = useState<RealQueueItem[] | null>(null);
+  const [summary, setSummary] = useState<CohortSummary[]>([]);
   const [failed, setFailed] = useState(false);
   /* طلبُ اجتماعٍ مع الإدارة — يُطوى حتّى يُطلب، فالإطارُ ثقيلٌ على لوحةٍ تُفتح كلَّ يوم */
   const [meetingOpen, setMeetingOpen] = useState(false);
@@ -65,8 +72,10 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
     Promise.all([
       apiGet<RealCohort[]>("/api/trainer/my-cohorts"),
       apiGet<RealQueueItem[]>("/api/trainer/grading-queue"),
+      /* الموجزُ رفاهيةٌ فوق الأساس: غيابُه لا يُسقط اللوحة */
+      apiGet<CohortSummary[]>("/api/trainer/cohorts/summary").catch(() => [] as CohortSummary[]),
     ])
-      .then(([c, q]) => { setCohorts(c); setQueue(q); })
+      .then(([c, q, s]) => { setCohorts(c); setQueue(q); setSummary(s); })
       .catch(() => setFailed(true));
   }, []);
 
@@ -91,13 +100,37 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const awaiting = queue.filter((q) => q.status === "submitted" || q.status === "under_review").length;
   const nowIso = new Date(now).toISOString();
   const upcoming = cohorts
-    .flatMap((c) => c.cohort.sessions.filter((s) => s.startsAt > nowIso && s.status !== "done").map((s) => ({ ...s, cohortTitle: c.cohort.title })))
+    .flatMap((c) => c.cohort.sessions.filter((s) => s.startsAt > nowIso && s.status !== "done").map((s) => ({ ...s, cohortTitle: c.cohort.title, cohortId: c.cohort.id })))
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     .slice(0, 4);
 
+  /* جلساتُ الأسبوع — رقمٌ في الشريط لا قائمةٌ ثانية */
+  const weekEnd = new Date(now + 7 * 86_400_000).toISOString();
+  const weekSessions = cohorts.reduce((n, c) => n + c.cohort.sessions.filter((s) => s.startsAt > nowIso && s.startsAt < weekEnd && s.status !== "done").length, 0);
+
   return (
     <div>
-      <p className="mb-6 text-sm text-muted-foreground">أهلاً {name} — {cohorts.length > 0 ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.` : "لم تُسند إليك شعب بعد."}</p>
+      {/* ═══ الرأس: تحيّةٌ وأربعةُ أرقامٍ في شريطٍ واحد ═══
+
+          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «بطاقاتُ الشعب أوّلا» — فالأرقامُ
+          شريطٌ رفيعٌ في الرأس، والشعبُ بحلقاتها تحته مباشرة، ثمّ ما ينتظر عمله. */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">أهلاً {name} — {cohorts.length > 0 ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.` : "لم تُسند إليك شعب بعد."}</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { icon: GraduationCap, label: "شعبي", value: cohorts.length, to: "/trainer/board", warn: false },
+            { icon: Users, label: "طلابي", value: students, to: "/trainer/learners", warn: false },
+            { icon: ClipboardCheck, label: "تنتظر تقييمي", value: awaiting, to: "/trainer/grading", warn: awaiting > 0 },
+            { icon: Video, label: "جلسات هذا الأسبوع", value: weekSessions, to: "/trainer/schedule", warn: false },
+          ].map((k) => (
+            <Card as={Link} interactive key={k.label} to={k.to} tone={k.warn ? "warn" : "default"} className="flex items-center gap-2.5 px-3.5 py-2">
+              <k.icon className={`h-4 w-4 ${k.warn ? "text-gold-ink" : "text-teal-light-ink"}`} aria-hidden="true" />
+              <span className={`text-lg font-black tabular-nums ${k.warn ? "text-gold-ink" : "text-foreground"}`}>{k.value}</span>
+              <span className="text-read text-muted-foreground">{k.label}</span>
+            </Card>
+          ))}
+        </div>
+      </div>
 
       {/* بطاقة إرشاد المدرب الجديد — بوابة بلا شعب تشرح ما يحدث تاليا بدل أن تكتفي بأصفار */}
       {cohorts.length === 0 && (
@@ -109,29 +142,75 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
               <p className="mt-1">الإدارة تسند إليك شعبة من شاشة «الشعب» — يصلك إشعار فور الإسناد.</p>
             </Card>
             <Card className="bg-paper/20">
-              <p className="font-black text-teal-light-ink">٢ · الظهور التلقائي</p>
-              <p className="mt-1">تظهر شعبتك وجلساتها وطلابها هنا وفي شاشة «شعبي» دون أي إجراء منك.</p>
+              <p className="font-black text-teal-light-ink">٢ · التجهيز على مراحل</p>
+              <p className="mt-1">تفتح صفحةَ الشعبة فتجد مراحلَها على خطّ: الاسمُ والمواعيد، والمحاور، والمصادر، واللقاءات، والتكاليف، ثمّ الاعتماد.</p>
             </Card>
             <Card className="bg-paper/20">
-              <p className="font-black text-teal-light-ink">٣ · بدء العمل</p>
-              <p className="mt-1">تسجّل الحضور وتقيّم التسليمات وتدير الجلسات — كلها من «شعبي».</p>
+              <p className="font-black text-teal-light-ink">٣ · التشغيل</p>
+              <p className="mt-1">باعتماد الإدارة تنتقل إلى التشغيل: الحضورُ والموادُّ والتسليمات والرسائل — من الصفحة نفسِها.</p>
             </Card>
           </div>
-          <p className="mt-4 text-read text-muted-foreground">
-            وحين تُسنَد إليك شعبة تجد في{" "}
-            <Link to="/trainer/board" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 hover:text-foreground">«شعبي»</Link>
-            {" "}ورشتَها: تجهّزها كلَّها — الاسمَ والمواعيدَ والمحاورَ والمصادرَ — ثمّ ترسلها للاعتماد.
-          </p>
         </Panel>
       )}
 
-      {/* ═══ اجتماعٌ مع الإدارة — بنقرة، داخل الصفحة ═══
+      {/* ═══ شعبي — بطاقةٌ لكلٍّ بحلقة تجهيزها وخطوتها التالية ═══ */}
+      {summary.length > 0 && (
+        <section className="mb-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-base font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> شعبي</h2>
+            <Link to="/trainer/board" className="text-read font-bold text-teal-light-ink hover:text-foreground">كلُّها</Link>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {summary.map((c) => {
+              const ready = c.total > 0 ? Math.round((c.done / c.total) * 100) : 0;
+              const approved = c.planStatus === "approved" || c.planStatus === "published";
+              return (
+                <Card as={Link} interactive key={c.id} to={`/trainer/cohort/${c.id}`} tone={approved ? "positive" : c.planStatus === "changes_requested" ? "warn" : "default"} className="flex items-center gap-3.5">
+                  <ProgressRing value={ready} label={`${c.done}/${c.total}`} size={56} stroke={5} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-read font-black text-foreground">{c.title}</span>
+                    <span className="block truncate text-read text-muted-foreground">{c.courseTitle}</span>
+                    <span className="mt-1 block text-read leading-5 text-teal-light-ink">
+                      {approved ? "معتمَدة — في التشغيل" : c.next ? `التالي: ${c.next.labelAr}` : "التجهيزُ مكتمل"}
+                    </span>
+                  </span>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ف-١ · طابور العمل — أول ما يراه المدرب صار قابلا للتنفيذ لا مجرد أرقام */}
+      {cohorts.length > 0 && <TrainerWorkQueue items={work} className="mb-6" />}
+
+      {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
+      {cohorts.length > 0 && <AtRiskList learners={atRisk} className="mb-6" />}
+
+      <Panel as="section">
+        <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
+        <div className="mt-3 space-y-2">
+          {upcoming.length === 0 && <p className="py-3 text-center text-read text-muted-foreground">لا جلسات قادمة مجدولة</p>}
+          {upcoming.map((s) => (
+            <Card as={Link} interactive key={s.id} to={`/trainer/cohort/${s.cohortId}`} className="flex items-center gap-3 px-4 py-2.5 text-xs transition hover:border-white/30">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold text-foreground">{s.title}</p>
+                <p className="mt-0.5 truncate text-read text-muted-foreground">{s.cohortTitle}</p>
+              </div>
+              <span className="shrink-0 text-fine font-bold text-muted-foreground">
+                {fmtDateTimeAr(s.startsAt)}
+              </span>
+            </Card>
+          ))}
+        </div>
+      </Panel>
+
+      {/* ═══ اجتماعٌ مع الإدارة — بنقرة، داخل الصفحة، وفي الذيل لا الصدر ═══
 
           قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): لا مهامَّ تهيئةٍ هنا — ما يلزم
           المدرّبَ يُقال له في كلّ شعبةٍ في موضعها. وبدلَها بابٌ يسأل منه: من
-          لم يفهم شيئا يحجز موعدا من التقويم نفسِه الذي يحجز منه المتقدّمون،
-          فلا يكتب رسالةً وينتظر من يقرؤها. */}
-      <Panel as="section" className="mb-8">
+          لم يفهم شيئا يحجز موعدا من التقويم نفسِه الذي يحجز منه المتقدّمون. */}
+      <Panel as="section" className="mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-teal-light-ink" /> تريد أن تسأل أو تفهم شيئا؟ احجز اجتماعا مع الإدارة</p>
           <button type="button" aria-expanded={meetingOpen} onClick={() => setMeetingOpen((v) => !v)} className="btn-outline-brand h-10 px-5">
@@ -151,72 +230,8 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
         )}
       </Panel>
 
-      <Card className="mb-8 flex flex-wrap items-center gap-2 border-dashed px-4 py-3 text-fine text-muted-foreground">
-        <span className="font-black text-foreground">من أين أبدأ؟</span>
-        {/* الترقيمُ لاتينيّ كبقيّة أرقام البوّابة — لا رسمان في بطاقةٍ واحدة */}
-        {[
-          { key: "open", label: "افتح شعبتك", to: "/trainer/board" },
-          { key: "attend", label: "سجّل حضور الجلسة", to: "/trainer/board" },
-          { key: "grade", label: "قيّم التسليمات", to: "/trainer/grading" },
-        ].map((s, i) => (
-          <span key={s.key} className="flex items-center gap-2">
-            {i > 0 && <span aria-hidden="true" className="text-muted-foreground/50">←</span>}
-            {/* `py-1` كان يعطي سبعا وعشرين بكسلا — هدفٌ يُخطئه الإصبعُ على
-                الهاتف. والحدُّ المتعارف عليه أربعٌ وأربعون، وستٌّ وثلاثون
-                أقلُّ ما يُقبل في شريطٍ داخليّ. */}
-            <Link to={s.to} className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 font-bold transition hover:border-gold/60 hover:text-gold-ink">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-gold/15 text-fine text-gold-ink">{i + 1}</span>
-              {s.label}
-            </Link>
-          </span>
-        ))}
-      </Card>
-
-      {/* ف-١ · طابور العمل — أول ما يراه المدرب صار قابلا للتنفيذ لا مجرد أرقام */}
-      {cohorts.length > 0 && <TrainerWorkQueue items={work} className="mb-6" />}
-
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card as={Link} interactive to="/trainer/board" className="transition hover:border-white/30">
-          <p className="flex items-center gap-2 text-read text-muted-foreground"><GraduationCap className="h-4 w-4" /> شعبي</p>
-          <p className="mt-2 text-3xl font-black">{cohorts.length}</p>
-        </Card>
-        <Card>
-          <p className="flex items-center gap-2 text-read text-muted-foreground"><Users className="h-4 w-4" /> طلابي</p>
-          <p className="mt-2 text-3xl font-black">{students}</p>
-        </Card>
-        <Card as={Link} tone={awaiting > 0 ? "warn" : "default"} interactive to="/trainer/board" className="transition hover:border-white/30">
-          <p className="flex items-center gap-2 text-read text-gold-ink"><ClipboardCheck className="h-4 w-4" /> تسليمات بانتظار تقييمي</p>
-          <p className="mt-2 text-3xl font-black text-gold-ink">{awaiting}</p>
-        </Card>
-        <Card as={Link} tone="accent" interactive to="/trainer/board" className="transition hover:border-teal/60">
-          <p className="flex items-center gap-2 text-read text-teal-light-ink"><Users className="h-4 w-4" /> ورشُ شعبي — ماذا بقي عليّ</p>
-          <p className="mt-2 text-3xl font-black text-teal-light-ink">↗</p>
-        </Card>
-      </div>
-
-      {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
-      {cohorts.length > 0 && <AtRiskList learners={atRisk} className="mt-6" />}
-
-      <Panel as="section" className="mt-6">
-        <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
-        <div className="mt-3 space-y-2">
-          {upcoming.length === 0 && <p className="py-3 text-center text-read text-muted-foreground">لا جلسات قادمة مجدولة</p>}
-          {upcoming.map((s) => (
-            <Card as={Link} interactive key={s.id} to="/trainer/board" className="flex items-center gap-3 px-4 py-2.5 text-xs transition hover:border-white/30">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-foreground">{s.title}</p>
-                <p className="mt-0.5 truncate text-read text-muted-foreground">{s.cohortTitle}</p>
-              </div>
-              <span className="shrink-0 text-fine font-bold text-muted-foreground">
-                {fmtDateTimeAr(s.startsAt)}
-              </span>
-            </Card>
-          ))}
-        </div>
-      </Panel>
-
       <p className="mt-6 text-center text-read text-muted-foreground">
-        كل بند أعلاه يقودك إلى مكان تنفيذه — والتفاصيل الكاملة لكل شعبة في شاشة «شعبي».
+        كل بند أعلاه يقودك إلى مكان تنفيذه — وصفحةُ كلّ شعبةٍ تحمل تجهيزَها وتشغيلَها معا.
       </p>
     </div>
   );

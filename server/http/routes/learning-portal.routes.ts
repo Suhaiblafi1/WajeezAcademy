@@ -343,6 +343,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     })).max(40),
     resources: z.array(z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), noteAr: z.string().max(500).nullish() })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
+    /* اقتراحُ اسمٍ للدورة أو المسار — يركب مع الخطّة ويُقرَّر فيه عند الاعتماد */
+    proposals: z.object({ courseTitleAr: z.string().max(200).nullish(), pathwayTitleAr: z.string().max(200).nullish() }).nullish(),
   })
 
   app.get('/api/trainer/cohorts/:id/workspace', {

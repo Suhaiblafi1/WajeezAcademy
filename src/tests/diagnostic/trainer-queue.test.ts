@@ -52,14 +52,14 @@ describe('طابور عمل المدرب — ف-١', () => {
     expect(items[0].href).toBe('https://zoom.test/x')
   })
 
-  it('جلسة بلا رابط تقود لشعبتي داخليا لا لرابط فارغ', () => {
+  it('جلسة بلا رابط تقود إلى صفحة شعبتها داخليا لا لرابط فارغ', () => {
     const items = buildWorkQueue(
       [cohort({ sessions: [{ id: 'S1', title: 'ج', startsAt: iso(-5 * 60_000), endsAt: iso(HOUR), status: 'scheduled', zoom: null, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled' }] })],
       0, NOW,
     )
     const s = items.find((i) => i.kind === 'session_now')!
     expect(s.external).toBe(false)
-    expect(s.href).toBe('/trainer/board')
+    expect(s.href).toBe('/trainer/cohort/CO-1')
   })
 
   it('جلسة خارج نافذة ٢٤ ساعة لا تظهر', () => {

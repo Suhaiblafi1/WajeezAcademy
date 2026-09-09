@@ -47,7 +47,10 @@ type Done = (msg: string) => void;
 interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
   submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
-  content: { summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[] } | null;
+  content: {
+    summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
+    proposals?: { courseTitleAr?: string | null; pathwayTitleAr?: string | null } | null;
+  } | null;
 }
 const PLAN_AR: Record<string, string> = {
   draft: "مسودّةٌ عند المدرّب", submitted: "بانتظار اعتمادك", changes_requested: "رُدّت إليه بتعديلات",
@@ -113,6 +116,8 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
   /* خطّةُ المدرّب لهذه الشعبة — يعتمدها من يملك `cohort.plan.approve` (الأكاديميُّ
      والأعلى)، ويذكّره بها من يدير الشعبة. */
   const canApprovePlan = viewer?.permissions.includes("cohort.plan.approve") ?? false;
+  /* ما يُقبل من اقتراحات المدرّب على الاسم — مختارٌ افتراضا، ويُلغى بنقرة */
+  const [applyProposals, setApplyProposals] = useState({ courseTitle: true, pathwayTitle: true });
   const [trainerPlan, setTrainerPlan] = useState<TrainerPlan | null>(null);
   const loadPlan = useCallback(async () => {
     try { setTrainerPlan(await apiGet<TrainerPlan | null>(`/api/admin/cohorts/${cohort.id}/trainer-plan`)); }
@@ -358,13 +363,31 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               <p className="mt-2 text-read text-muted-foreground">{trainerPlan.content!.resources!.length} مصدرا.</p>
             )}
             {trainerPlan.reviewerNote && <Inset tone="warn" className="mt-2 text-read leading-6">{trainerPlan.reviewerNote}</Inset>}
+            {/* اقتراحُ المدرّب على الاسم — يُقرأ هنا ويُقبل بالاختيار لا بالاعتماد وحدَه (٨ سبتمبر ٢٠٢٦) */}
+            {(trainerPlan.content?.proposals?.courseTitleAr?.trim() || trainerPlan.content?.proposals?.pathwayTitleAr?.trim()) && (
+              <Inset tone="accent" className="mt-3">
+                <p className="text-read font-black text-foreground">يقترح المدرّبُ اسما آخر — اختر ما تقبله مع الاعتماد:</p>
+                {trainerPlan.content?.proposals?.courseTitleAr?.trim() && (
+                  <label className="mt-2 flex cursor-pointer items-start gap-2 text-read leading-6">
+                    <input type="checkbox" checked={applyProposals.courseTitle} onChange={(e) => setApplyProposals({ ...applyProposals, courseTitle: e.target.checked })} className="mt-1 h-4 w-4 accent-teal" disabled={trainerPlan.status !== "submitted"} />
+                    <span>الدورة: <b>{trainerPlan.content.proposals.courseTitleAr}</b></span>
+                  </label>
+                )}
+                {trainerPlan.content?.proposals?.pathwayTitleAr?.trim() && (
+                  <label className="mt-2 flex cursor-pointer items-start gap-2 text-read leading-6">
+                    <input type="checkbox" checked={applyProposals.pathwayTitle} onChange={(e) => setApplyProposals({ ...applyProposals, pathwayTitle: e.target.checked })} className="mt-1 h-4 w-4 accent-teal" disabled={trainerPlan.status !== "submitted"} />
+                    <span>المسار: <b>{trainerPlan.content.proposals.pathwayTitleAr}</b></span>
+                  </label>
+                )}
+              </Inset>
+            )}
           </>
         )}
         <div className="mt-3 flex flex-wrap gap-2">
           {trainerPlan?.status === "submitted" && canApprovePlan && (
             <>
               <Button tone="confirm" size="sm" disabled={busy}
-                onClick={() => act(() => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true }).then(loadPlan), "اعتُمدت خطّةُ المدرّب — وأُخبر")}>
+                onClick={() => act(() => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true, applyProposals }).then(loadPlan), "اعتُمدت خطّةُ المدرّب — وأُخبر")}>
                 اعتمدها
               </Button>
               <Button tone="danger" size="sm" disabled={busy}
