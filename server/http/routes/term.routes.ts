@@ -81,6 +81,14 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
     return reply.status(201).send(await terms.create(req.auth!.userId, body))
   })
 
+  app.delete('/api/admin/terms/:id', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-terms'], summary: 'حذفُ فصلٍ لم يُنشر ولا شعبَ فيه — والمنشورُ وذو الشعب يُردّان' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return terms.delete(req.auth!.userId, id)
+  })
+
   /* نافذةُ التسجيل — بديلُ الدعوة الدائمة (البند ٥١) */
   app.post('/api/admin/terms/:id/registration-window', {
     preHandler: requirePermission('cohort.open'),

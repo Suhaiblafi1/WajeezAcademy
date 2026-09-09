@@ -39,6 +39,15 @@ describe('شاشةُ المواسم', () => {
     expect(screen).toMatch(/season: form\.season/)
   })
 
+  it('والحذفُ لموسمٍ لم يُنشر ولا شعبَ فيه — بتأكيدٍ ثانٍ لا بضغطةٍ واحدة', () => {
+    expect(screen).toContain('apiDelete(`/api/admin/terms/${t.id}`)')
+    const at = screen.indexOf('apiDelete(`/api/admin/terms/${t.id}`)')
+    expect(at).toBeGreaterThan(0)
+    /* الزرُّ لا يظهر إلّا لغير المنشور الخالي من الشعب، ويطلب تأكيدا */
+    expect(screen).toMatch(/\{!published && t\._count\.cohorts === 0 && \(/)
+    expect(screen).toMatch(/confirmDelete === t\.id/)
+  })
+
   it('والذهبيُّ الواحدُ للنشر', () => {
     const golds = screen.match(/tone="primary"/g) ?? []
     expect(golds).toHaveLength(1)

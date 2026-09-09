@@ -90,6 +90,7 @@ const PHRASES: Record<string, string> = {
   'term.trainer_availability': 'إتاحةُ مدرّبٍ في فصل',
   'term.plan_open': 'توزيعُ شعب الفصل وفتحُ ما استوفى',
   'term.calendar_publish': 'نشرُ تقويم الفصل',
+  'term.delete': 'حذفُ فصلٍ لم يُنشر ولا شعبَ فيه',
   'trainer.qualify': 'تأهيلُ مدرّبٍ لدورة',
   'trainer.qualify.auto': 'تأهيلُ مدرّبٍ تلقائيّا لما ذكره في طلبه',
   'cohort.plan.save': 'حفظُ مدرّبٍ خطّةَ شعبته',
