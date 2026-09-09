@@ -253,14 +253,10 @@ export function Bestsellers() {
                   {/* الاسمُ **القصير** كبطاقة الكتالوج: الكاملُ متوسّطُه ٤٥ حرفا
                       وفيه نقطتان — يصلح لصفحةٍ لا لبطاقةٍ في شريط. */}
                   <h4 className="text-base font-black leading-snug">{b.p.shortName}</h4>
-                  {/* «لمن» و«ليس لك إن» — الحقلان المؤلَّفان اللذان لم يكونا
-                      يُعرضان (البند ٣٠). و«ليس لك إن» أصدقُ سطرٍ في الكتالوج:
-                      يمنع شراءً خاطئا قبل وقوعه، والمنعُ خدمةٌ لا خسارة. */}
-                  {b.p.audience && (
-                    <p className="line-clamp-2 text-read leading-5 text-muted-foreground">
-                      <span className="font-bold text-foreground">لمن؟ </span>{b.p.audience}
-                    </p>
-                  )}
+                  {/* «لمن؟» حُذفت من البطاقة (٩ سبتمبر ٢٠٢٦، قرارُ صاحب المنصّة
+                      — عكسُ البند ٣٠): بطاقةٌ أهدأ وأقلّ ازدحاما. و«ليس لك
+                      إن» يبقى — أصدقُ سطرٍ في الكتالوج: يمنع شراءً خاطئا قبل
+                      وقوعه، والمنعُ خدمةٌ لا خسارة. */}
                   {b.p.notFor && (
                     <p className="line-clamp-2 text-read leading-5 text-muted-foreground">
                       <span className="font-bold text-gold-ink">ليس لك إن: </span>

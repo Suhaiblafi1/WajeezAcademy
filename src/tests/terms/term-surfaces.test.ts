@@ -171,9 +171,21 @@ describe('٥٠ · التقويمُ — ما يُعرض وما لا يُعرض', 
     expect(page).toContain('MONTH_LABEL')
   })
 
-  it('والزائرُ يبلغها من القائمة — صفحةٌ لا رابطَ إليها ليست صفحة', () => {
-    const shell = read('src/components/SiteShell.tsx')
-    expect(shell).toMatch(/href: '\/calendar'/)
+  /* ⚠️ صُحّح في ٩ سبتمبر ٢٠٢٦ — الرابطُ الثابتُ في القائمة رُفع
+
+     كان الحارسُ يشترط `href: '/calendar'` في قائمة `SiteShell` الثابتة.
+     وقرارُ صاحب المنصّة: لا فصلَ منشورًا الآن ولا موعدَ يُعلَن للعوام قبل
+     الفصل الأوّل (نوفمبر ٢٠٢٦) — فرابطٌ ثابتٌ إلى تقويمٍ فارغ إعلانٌ لموسمٍ
+     لا يوجد. فرُفع من القائمة، وارتفع مكانَه «انضم كمدرب» (فترةُ التعيين
+     الحاليّة تخصّ المدرّبين لا موعدَ فصل).
+
+     والصفحةُ تبقى صفحةً حقّا: `UpcomingTermBanner` (‏`UpcomingTermNote.tsx`‏)
+     يفتح رابطها فعلا حين يُنشر تقويمُ فصلٍ (`term.calendarPublished`) —
+     فتُبلَغ حين يكون لها ما تُبلَّغ به، لا قبل. */
+  it('والزائرُ يبلغها حين يُنشر فصلٌ فعلا — لا برابطٍ ثابتٍ لموسمٍ لا يوجد', () => {
+    const note = read('src/components/UpcomingTermNote.tsx')
+    expect(note).toMatch(/term\.calendarPublished/)
+    expect(note).toMatch(/href="\/calendar"/)
     const app = read('src/App.tsx')
     expect(app).toMatch(/path="\/calendar"/)
   })
