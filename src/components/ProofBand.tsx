@@ -3,40 +3,45 @@
    ═══ ما كان (البند ٥٥) ═══
 
    رسمٌ متجهيّ يُبنى ويُراجَع ويُختَم: ورقةٌ وسطورٌ ومخطَّطٌ وعلامةٌ وخاتم.
-   كان حجّةً صحيحة — يقول ما تقوله الجملةُ فوقه — لكنّ صاحبَ المنصّة رآه
-   «تقليديّا جدّا وليس إبداعيّا» وطلب «شيئا يمثّل المنصّة بشكل عام»
-   (٨ سبتمبر ٢٠٢٦).
+   ثمّ (٨ سبتمبر ٢٠٢٦) ورقةٌ برأسيّةٍ وسطورٍ يطير إليها قلمٌ فيكتب جملةَ
+   المنصّة بخطٍّ نسخيّ ويوقّع. فرآها صاحبُ المنصّة «طفوليّة: أسطرٌ كأنّها
+   مدرسة» وطلب خطّا كالتوقيع، مائلا، «كأنّ شخصا كتبها بطريقةٍ عشوائيّةٍ
+   جميلة»، بقلمٍ أجمل، وبلا إطار: الكتابةُ على الشريط نفسِه بخلفيّته.
 
-   ═══ القرار ═══
+   ═══ القرار (٩ سبتمبر ٢٠٢٦) ═══
 
-   ورقةٌ برأسيّة الأكاديمية، وقلمٌ يطير إليها فيكتب جملةَ المنصّة كلمةً
-   كلمة — «تعلّم أسرع. طبّق أكثر. تقدّم أبعد.» — ثمّ يوقّع تحتها «وجيز» ويرسم
-   خطَّ التوقيع. الخطُّ نسخيٌّ (Amiri) بقرار صاحب المنصّة، والورقةُ تميل
-   ميلا خفيفا مع الفأرة (ثلاثيُّ الأبعاد بلا صخب). والأسلوبُ مؤسّسيّ:
-   لا ألوانَ صارخة، لا قفزات — حركةٌ واحدةٌ تُروى مرّةً وتثبت.
+   · **لا ورقةَ ولا إطارَ ولا أسطر**: الحبرُ على خلفيّة الشريط مباشرة.
+   · **الخطُّ رقعة** — خطُّ اليد اليوميُّ في العالم العربيّ، لا نسخُ الكتب —
+     بنسخته الحبريّة (Aref Ruqaa Ink): خطٌّ ملوَّنٌ (COLRv1) يحمل تدرّجَ الحبر
+     في حروفه، ولوحتُه الأصليّةُ حمراءُ فتُبدَّل بـ`font-palette` إلى حبرٍ
+     عاجيٍّ ونقاطٍ فيروزيّةٍ على الداكن، وحبرٍ داكنٍ على الفاتح. ومن لا
+     يرسم الخطوطَ الملوَّنةَ (Safari) يرى الحروفَ نفسَها بلون النصّ — مقروءةً
+     لا مكسورة.
+   · **الميلُ**: الجملةُ ترتفع نحو اليسار (٣٫٥°)، ولكلّ كلمةٍ انحرافٌ صغيرٌ
+     ثابتٌ (لا عشوائيٌّ عند كلّ زيارة) فتبدو مكتوبةً لا منضَّدة.
+   · **القلم**: قلمُ حبرٍ سائلٍ نحيلٌ بريشةٍ فولاذيّة، يسير عند حافّة الحبر.
+   · **التوقيع** «وجيز» أكبرَ وبلون المنصّة، يُكتب آخرا ثمّ يُرسم خطُّه.
+   · وشارةُ «مخرَجٌ يُراجَع ويُعتمَد» باقيةٌ تحت التوقيع.
+   · وميلُ الورقة مع الفأرة ذهب مع الورقة — لا سطحَ يميل.
 
    ═══ كيف يُكتب بالقلم في HTML ═══
 
    الكلماتُ نصٌّ في DOM (تُقرأ وتُترجَم وتُفهرَس — شرطُ البند ٥٥ باقٍ)،
    وكلُّ كلمةٍ داخل `clip-path: inset()` يفتح من اليمين إلى اليسار على مهل،
-   وقلمٌ صغير (SVG) يسير عند حافّة الانفتاح بالتوقيت نفسِه. فالعينُ ترى
-   الكلمةَ تُكتب حيث يمرّ القلم. والتوقيعُ بالآليّة نفسِها، ثمّ خطُّه يُرسم
-   بـ`stroke-dashoffset`.
+   والقلمُ (SVG) يسير عند حافّة الانفتاح بالتوقيت نفسِه. والتوقيعُ بالآليّة
+   نفسِها، ثمّ خطُّه يُرسم بـ`stroke-dashoffset`.
 
    ═══ الشروطُ غيرُ القابلة للتفاوض (كما كانت) ═══
 
    · **`prefers-reduced-motion`**: كلُّ حركةٍ `forwards` وتنتهي على الحالة
-     التامّة — فمن طلب تقليلَ الحركة يرى الورقةَ مكتوبةً موقَّعة لا فارغة.
-     (قاعدةُ `index.css` تختصر المدّةَ إلى ٠٫٠١ms.) والميلُ لا يُطبَّق له.
-   · **لا نصَّ داخل SVG**: القلمُ وخطُّ التوقيع رسمان `aria-hidden`؛ الجملةُ
-     والتوقيعُ نصّان.
+     التامّة — فمن طلب تقليلَ الحركة يرى الجملةَ مكتوبةً موقَّعة لا فارغة.
+   · **لا نصَّ داخل SVG**: القلمُ وخطُّ التوقيع رسمان `aria-hidden`.
    · **ولا أصلَ خارجيّا**: لا صورة، والخطُّ من مصدر الخطوط المسموح في CSP.
 
    وأسماءُ الحركات باقية (`proof-rise` · `proof-draw` · `proof-stamp`) —
-   يحرسها `learner-surface.test.ts` — وقد تبدّل ما تفعله لا ما تُسمّى به. */
+   يحرسها `learner-surface.test.ts`. */
 
-import { useCallback, useRef } from 'react'
-import { Card } from '@/components/ui/Surface'
+import { useId } from 'react'
 
 /** جملةُ المنصّة — ثلاثُ كلماتٍ تُكتب واحدةً واحدة، ثمّ التوقيع */
 const PHRASES = ['تعلّم أسرع.', 'طبّق أكثر.', 'تقدّم أبعد.'] as const
@@ -44,47 +49,73 @@ const SIGNATURE = 'وجيز'
 /** زمنُ كتابة الكلمة الواحدة والفاصلُ بينها — يُقرأ من CSS بالمتغيّر نفسِه */
 const WORD_SECONDS = 1.5
 const GAP_SECONDS = 0.45
+/** انحرافُ كلّ كلمةٍ عن الخطّ (درجة، بكسل) — ثابتٌ عمدا: يدٌ واحدةٌ لا نردٌ يُرمى */
+const HAND: ReadonlyArray<readonly [number, number]> = [[0, 0], [1.1, 2], [-1.3, -3]]
 
-const NASKH = '"Amiri", "Scheherazade New", "Noto Naskh Arabic", serif'
-
-/** قلمُ حبرٍ صغير — جسمٌ وريشة، بلون الحبر */
+/** قلمُ حبرٍ سائل — جسمٌ نحيلٌ داكن، وحلقةٌ ذهبيّة، وريشةٌ فولاذيّة */
 function Pen() {
+  const id = useId()
+  const steel = `${id}-steel`
+  const barrel = `${id}-barrel`
   return (
-    <svg viewBox="0 0 40 40" aria-hidden="true" focusable="false" className="h-8 w-8 md:h-9 md:w-9">
-      <g transform="rotate(-38 20 20)">
-        <rect x="16" y="2" width="8" height="22" rx="2.5" fill="rgb(var(--teal-deep, 31 110 119))" />
-        <rect x="16" y="10" width="8" height="2.2" fill="rgb(var(--gold, 250 188 5))" opacity="0.9" />
-        <path d="M16 24h8l-4 12z" fill="rgb(var(--teal-light, 110 199 209))" />
-        <path d="M20 26v7" stroke="rgb(var(--teal-deep, 31 110 119))" strokeWidth="1" strokeLinecap="round" />
+    <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" className="h-10 w-10 md:h-11 md:w-11">
+      <defs>
+        <linearGradient id={steel} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f6f8f8" />
+          <stop offset=".5" stopColor="#b9c4c6" />
+          <stop offset="1" stopColor="#6f7d80" />
+        </linearGradient>
+        <linearGradient id={barrel} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#3a4649" />
+          <stop offset=".45" stopColor="#0f1a1c" />
+          <stop offset="1" stopColor="#2a3538" />
+        </linearGradient>
+      </defs>
+      <g transform="rotate(-42 24 24)">
+        <rect x="20" y="1" width="8" height="24" rx="3" fill={`url(#${barrel})`} />
+        <rect x="20" y="22" width="8" height="1.6" fill="rgb(var(--gold, 250 188 5))" opacity=".9" />
+        <path d="M20.6 24h6.8l-.9 6h-5z" fill="#1d2a2d" />
+        <path d="M21 30h6l-3 14z" fill={`url(#${steel})`} />
+        <path d="M24 33.5v8.5" stroke="#4a5659" strokeWidth=".8" strokeLinecap="round" />
+        <circle cx="24" cy="33" r=".9" fill="#4a5659" />
       </g>
     </svg>
   )
 }
 
 export default function ProofBand() {
-  const cardRef = useRef<HTMLDivElement>(null)
-
-  /* الميلُ مع الفأرة — على المؤشّرات الدقيقة وحدَها، ولمن لم يطلب تقليلَ الحركة */
-  const tilt = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const el = cardRef.current
-    if (!el) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    if (!window.matchMedia('(pointer: fine)').matches) return
-    const r = e.currentTarget.getBoundingClientRect()
-    const dx = ((e.clientX - r.left) / r.width - 0.5) * 2
-    const dy = ((e.clientY - r.top) / r.height - 0.5) * 2
-    el.style.transform = `rotateX(${(-dy * 5).toFixed(2)}deg) rotateY(${(dx * 7).toFixed(2)}deg)`
-  }, [])
-  const untilt = useCallback(() => {
-    if (cardRef.current) cardRef.current.style.transform = ''
-  }, [])
-
   const signAt = PHRASES.length * (WORD_SECONDS + GAP_SECONDS) + 0.3
 
   return (
     <section className="relative overflow-hidden border-y border-white/[0.06] bg-surface">
       <style>{`
-        .proof-card { transform-style: preserve-3d; transition: transform .25s ease-out; }
+        /* لوحةُ الحبر — الخطُّ الملوَّنُ يحمل خمسةَ ألوان: حبرٌ (٠ باهت، ١ كامل)
+           ونقاطٌ (٢ و٤ كاملة، ٣ باهتة). تُبدَّل هنا بألوان المنصّة على الوجهين. */
+        @font-palette-values --proof-ink {
+          font-family: "Aref Ruqaa Ink"; base-palette: 0;
+          override-colors: 0 rgb(250 250 250 / .45), 1 #fafafa, 2 #6ec7d1, 3 rgb(110 199 209 / .5), 4 #6ec7d1;
+        }
+        @font-palette-values --proof-ink-light {
+          font-family: "Aref Ruqaa Ink"; base-palette: 0;
+          override-colors: 0 rgb(22 34 32 / .45), 1 #162220, 2 #1a5c64, 3 rgb(26 92 100 / .5), 4 #1a5c64;
+        }
+        @font-palette-values --proof-sig {
+          font-family: "Aref Ruqaa Ink"; base-palette: 0;
+          override-colors: 0 rgb(110 199 209 / .7), 1 #6ec7d1, 2 #6ec7d1, 3 rgb(110 199 209 / .7), 4 #6ec7d1;
+        }
+        @font-palette-values --proof-sig-light {
+          font-family: "Aref Ruqaa Ink"; base-palette: 0;
+          override-colors: 0 rgb(26 92 100 / .7), 1 #1a5c64, 2 #1a5c64, 3 rgb(26 92 100 / .7), 4 #1a5c64;
+        }
+        .proof-hand { font-family: "Aref Ruqaa Ink", "Aref Ruqaa", serif; font-palette: --proof-ink; }
+        .proof-sig { font-palette: --proof-sig; }
+        html[data-theme="light"] .proof-hand { font-palette: --proof-ink-light; }
+        html[data-theme="light"] .proof-sig { font-palette: --proof-sig-light; }
+
+        /* الميلُ: الجملةُ ترتفع نحو اليسار، ولكلّ كلمةٍ انحرافُها الثابت */
+        .proof-slant { transform: rotate(-3.5deg); transform-origin: right center; }
+        .proof-word { display: inline-block; transform: rotate(var(--tilt, 0deg)) translateY(var(--lift, 0px)); }
+
         .proof-ink { clip-path: inset(0 0 0 100%); }
         .proof-pen { position: absolute; top: 50%; right: 0; opacity: 0; transform: translate(45%, -78%); }
         .proof-swash [data-draw] { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
@@ -132,43 +163,22 @@ export default function ProofBand() {
           </p>
         </div>
 
-        {/* الورقةُ — تميل مع الفأرة، وتُكتب حين تُرى.
-            الميلُ على غلافٍ بلا شكل، والورقةُ نفسُها `Card` من سلّم الأسطح
-            (لا سطحَ مكتوبا بيده — حارسُ `design-system.test.ts`). */}
-        <div
-          className="mx-auto w-full max-w-md [perspective:1100px]"
-          onMouseMove={tilt}
-          onMouseLeave={untilt}
-        >
-          <div ref={cardRef} className="proof-card reveal">
-          <Card
-            tone="solid"
-            className="relative overflow-hidden px-6 pb-6 pt-5 shadow-[0_30px_70px_-40px_rgba(56,167,180,0.45)] md:px-8"
-            dir="rtl"
-          >
-            {/* سطورُ الورقة — باهتةٌ تحت الكتابة */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-6 top-[4.6rem] bottom-6 bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_47px,rgba(56,167,180,0.14)_47px,rgba(56,167,180,0.14)_48px)] md:inset-x-8"
-            />
-
-            {/* رأسيّةُ الورقة */}
-            <div className="relative flex items-center justify-between border-b border-white/10 pb-3">
-              <span className="text-read font-bold tracking-wide text-muted-foreground">أكاديمية وجيز</span>
-              <span className="h-1.5 w-1.5 rounded-full bg-teal" />
-            </div>
-
+        {/* الكتابةُ على الشريط نفسِه — لا ورقةَ ولا إطار. تُكتب حين تُرى.
+            والشارةُ خارجَ `proof-hand` كي لا ترث خطَّ اليد. */}
+        <div className="reveal mx-auto w-full max-w-md py-4" dir="rtl">
+          <div className="proof-hand proof-slant" lang="ar">
             {/* الجملةُ — تُكتب كلمةً كلمة */}
-            <p
-              className="relative mt-5 text-[1.9rem] font-bold leading-[3rem] text-foreground md:text-[2.2rem]"
-              style={{ fontFamily: NASKH }}
-              lang="ar"
-            >
+            <p className="text-[2rem] font-normal leading-[1.45] text-foreground md:text-[2.5rem]">
               {PHRASES.map((ph, i) => (
                 <span
                   key={ph}
-                  className="relative inline-block whitespace-nowrap"
-                  style={{ ['--at' as string]: (i * (WORD_SECONDS + GAP_SECONDS)).toFixed(2), marginInlineEnd: '0.45em' }}
+                  className="proof-word relative whitespace-nowrap"
+                  style={{
+                    ['--at' as string]: (i * (WORD_SECONDS + GAP_SECONDS)).toFixed(2),
+                    ['--tilt' as string]: `${HAND[i][0]}deg`,
+                    ['--lift' as string]: `${HAND[i][1]}px`,
+                    marginInlineEnd: '0.4em',
+                  }}
                 >
                   <span className="proof-ink inline-block">{ph}</span>
                   <span aria-hidden="true" className="proof-pen"><Pen /></span>
@@ -177,12 +187,11 @@ export default function ProofBand() {
             </p>
 
             {/* التوقيع — في الزاوية اليسرى كما تُوقَّع الورقةُ العربيّة (`justify-end` في RTL) */}
-            <div className="relative mt-4 flex justify-end pe-2">
+            <div className="relative mt-3 flex justify-end pe-4">
               <span className="relative inline-block" style={{ ['--at' as string]: signAt.toFixed(2) }}>
                 <span
-                  className="proof-ink inline-block text-3xl font-bold text-teal-ink"
-                  style={{ fontFamily: NASKH, transform: 'skewX(-7deg)', display: 'inline-block' }}
-                  lang="ar"
+                  className="proof-ink proof-sig inline-block text-[2.6rem] font-normal text-teal-light-ink md:text-[3.2rem]"
+                  style={{ transform: 'rotate(-8deg)', display: 'inline-block' }}
                 >
                   {SIGNATURE}
                 </span>
@@ -191,30 +200,31 @@ export default function ProofBand() {
                   viewBox="0 0 120 16"
                   aria-hidden="true"
                   focusable="false"
-                  className="proof-swash absolute -bottom-2 right-0 h-4 w-[120%]"
+                  className="proof-swash absolute -bottom-1 right-0 h-4 w-[130%]"
                   style={{ ['--at' as string]: (signAt + WORD_SECONDS * 0.8).toFixed(2) }}
                 >
                   <path
                     data-draw
-                    d="M116 6C96 -2 74 14 56 8 40 3 26 4 4 12"
+                    d="M116 10C96 -2 74 14 56 8 40 3 26 6 4 14"
                     fill="none"
-                    stroke="rgb(var(--teal))"
-                    strokeWidth="1.8"
+                    stroke="rgb(var(--teal-light-ink))"
+                    strokeWidth="1.9"
                     strokeLinecap="round"
                     style={{ ['--len' as string]: 130 }}
                   />
                 </svg>
               </span>
             </div>
+          </div>
 
-            {/* ختمُ الاعتماد الصغير — يستقرّ آخرَ الكلّ، بلا ضجيج */}
+          {/* ختمُ الاعتماد الصغير — يستقرّ آخرَ الكلّ، بلا ضجيج، وبخطّ الموقع لا خطّ اليد */}
+          <div className="mt-9 flex justify-end pe-2 md:mt-10">
             <span
-              className="proof-seal absolute bottom-6 right-6 inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-fine font-black text-gold-ink md:right-8"
+              className="proof-seal inline-flex items-center gap-1.5 rounded-full border border-gold/40 bg-gold/10 px-2.5 py-1 text-fine font-black text-gold-ink"
               style={{ ['--at' as string]: (signAt + WORD_SECONDS + 0.6).toFixed(2) }}
             >
               مخرَجٌ يُراجَع ويُعتمَد
             </span>
-          </Card>
           </div>
         </div>
       </div>
