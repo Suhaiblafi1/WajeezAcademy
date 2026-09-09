@@ -30,6 +30,7 @@ import { registerOperationsRoutes } from './routes/operations.routes'
 /* «العمليّات» كانت أربعةَ مجالاتٍ في ملفٍّ واحد — فُصلت بحسب المجال */
 import { registerAdvisorRoutes } from './routes/advisor.routes'
 import { registerCalendarRoutes } from './routes/calendar.routes'
+import { registerTermRoutes } from './routes/term.routes'
 import { registerCommerceRoutes } from './routes/commerce.routes'
 import { registerZoomWebhookRoutes } from './routes/zoom-webhook.routes'
 import { registerSupportRoutes } from './routes/support.routes'
@@ -269,6 +270,10 @@ export async function buildApp(prisma: PrismaClient) {
   registerOperationsRoutes(app, prisma)
   registerAdvisorRoutes(app, prisma)
   registerCalendarRoutes(app, prisma)
+  /* مساراتُ الفصول كانت مكتوبةً كاملةً — ولا تُسجَّل هنا. فالتقويمُ العامّ
+     و«الفصل القادم» وشاشةُ المواسم كلُّها كانت تُردّ ٤٠٤، والتقويمُ فارغا في
+     الإنتاج بلا أن يشتكي أحد. (٨ سبتمبر ٢٠٢٦) ويحرسه `server/tests/terms/term-routes.test.ts`. */
+  registerTermRoutes(app, prisma)
   registerCommerceRoutes(app, prisma)
   registerSupportRoutes(app, prisma)
   registerRatingRoutes(app, prisma)

@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { Activity, Award, BadgePercent, CalendarCog, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, HandCoins, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
+import { Activity, Award, BadgePercent, CalendarCog, CalendarRange, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, HandCoins, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -63,6 +63,7 @@ export default function AdminLayout({ children, title }: { children: React.React
         { to: "/admin/authoring", label: "تأليف المتون", icon: PenLine , need: "catalog.course.edit"},
         { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch , need: "catalog.impact.view"},
         { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog , need: "cohort.manage"},
+        { to: "/admin/terms", label: "المواسم والتقويم", icon: CalendarRange , need: "cohort.manage"},
         /* الطلبةُ المسجَّلون — نطاقُ كلِّ دورٍ يُشتقّ في الخادم، واللوحُ نفسُه
            يُركَّب في بوابتَي المدرّب والمستشار. */
         { to: "/admin/learners", label: "الطلبة المسجَّلون", icon: GraduationCap , need: "enrollment.manage"},

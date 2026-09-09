@@ -354,6 +354,8 @@ describe('طوابيرُ الفريق · لا قائمةَ تطول بلا وس�
     'AdminDashboard', 'CohortOps', 'CohortWizard', 'TrainerOps',
     'Notifications', 'Reports', 'DiagnosticQuality',
     'TrainerDashboard', 'CohortBoard', 'Schedule', 'Qualifications', 'RequestsPanel',
+    /* مجموعةٌ محدودة · Terms — مواسمُ السنة أربعة، والقائمةُ لا تطول (٨ سبتمبر ٢٠٢٦) */
+    'Terms',
   ])
 
   /* ولا تُقاس لوحةُ الإدارة وحدَها: المدرّبُ والمستشارُ يقرآن طوابيرَ تطول
