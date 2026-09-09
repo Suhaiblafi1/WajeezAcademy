@@ -476,6 +476,21 @@ const steps = [
 function HowItWorks() {
   return (
     <section id="how" className="scroll-mt-24 border-y border-white/5 bg-white/[0.02] py-14 md:py-16">
+      {/* ── الخطُّ الواصل يُرسم، والمحطّاتُ تُضاء بالترتيب ──
+
+          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «خطواتٌ أفقيّة بخطٍّ واصلٍ
+          متحرّك» — وأسلوبٌ مؤسّسيّ لا استعراض. فالحركةُ واحدة: حين يُرى
+          القسمُ يُرسم الخطُّ من اليمين إلى اليسار (اتّجاهُ القراءة)، وتُضاء
+          أرقامُ المحطّات الأربع واحدةً بعد الأخرى. ولا يتكرّر شيء. ومن طلب
+          تقليلَ الحركة يرى الخطَّ تامّا والمحطّاتِ مضاءةً (`forwards`). */}
+      <style>{`
+        .how-rail { transform-origin: right center; transform: scaleX(0); }
+        .how-node { opacity: 0; transform: scale(.6); }
+        .how-steps.is-visible .how-rail { animation: how-rail 1.3s cubic-bezier(.25,.7,.2,1) .15s forwards; }
+        .how-steps.is-visible .how-node { animation: how-node .45s cubic-bezier(.2,.9,.3,1.25) forwards; animation-delay: calc(.3s + var(--i) * .28s); }
+        @keyframes how-rail { to { transform: scaleX(1); } }
+        @keyframes how-node { to { opacity: 1; transform: scale(1); } }
+      `}</style>
       <div className="shell">
         {/* عنوانٌ واحدٌ في الوسط بلا شارة — بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦):
             «أربع خطوات لا أكثر» تكرّر ما تقوله البطاقاتُ الأربعُ تحته، والشارةُ
@@ -483,25 +498,28 @@ function HowItWorks() {
         <div className="reveal text-center">
           <h2 className="text-xl font-bold md:text-2xl">كيف تسير رحلتك</h2>
         </div>
-        <div className="relative mt-8">
-          {/* خط واصل يلمّ المراحل على الشاشات الكبيرة */}
-          <div className="pointer-events-none absolute inset-x-10 top-5 hidden h-px bg-gradient-to-l from-transparent via-teal/25 to-transparent md:block" />
-          <div className="grid gap-3 md:grid-cols-4">
-            {steps.map((s, i) => (
-              <Card tone="accent" key={s.title} className="reveal group relative flex items-start gap-3.5 bg-card px-4 py-4 transition hover:border-teal/40">
-                <div className="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal/12 text-teal-ink transition group-hover:scale-105">
-                  <s.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="flex items-center gap-2 text-sm font-bold">
-                    <span className="text-fine font-black text-teal-ink">{i + 1}</span>
-                    {s.title}
-                  </h3>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground">{s.text}</p>
-                </div>
-              </Card>
-            ))}
+        <div className="reveal how-steps relative mt-10">
+          {/* الخطُّ بين مركزَي المحطّة الأولى والأخيرة: المحطّاتُ في وسط أعمدةٍ
+              أربعة، فمراكزُها عند ١٢٫٥٪ و٨٧٫٥٪ من العرض. */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-[12.5%] top-5 hidden h-px md:block">
+            <div className="how-rail h-full w-full bg-gradient-to-l from-teal/70 via-teal/35 to-teal/70" />
           </div>
+          <ol className="grid gap-4 md:grid-cols-4">
+            {steps.map((s, i) => (
+              <li key={s.title} className="relative flex flex-col items-center text-center" style={{ ['--i' as string]: i }}>
+                <span className="how-node relative z-10 grid h-10 w-10 place-items-center rounded-full border border-teal/50 bg-card text-sm font-black text-teal-ink">
+                  {i + 1}
+                </span>
+                <Card tone="accent" className="mt-4 flex w-full flex-1 flex-col items-center bg-card px-4 py-5 transition hover:border-teal/40">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-teal/12 text-teal-ink">
+                    <s.icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-3 text-sm font-bold">{s.title}</h3>
+                  <p className="mt-1.5 text-read leading-6 text-muted-foreground">{s.text}</p>
+                </Card>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     </section>
