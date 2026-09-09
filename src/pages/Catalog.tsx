@@ -248,17 +248,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   الكتالوج ولم يكن يُعرض لأحد. */}
               <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.shortName}</h2>
               <p className="mt-2 line-clamp-3 text-read leading-6 text-muted-foreground">{p.transformation}</p>
-              {/* ── لمن هو، ولمن ليس ──
+              {/* ── ولمن ليس ──
 
-                  الحقلان (`audience` و`not_for`) مؤلَّفان لكلّ مسارٍ من عشرين
-                  ولا يُعرض واحدٌ منهما. و«ليست لك إن…» أصدقُ سطرٍ في الكتالوج:
-                  يمنع شراءً خاطئا قبل وقوعه، **والمنعُ خدمةٌ لا خسارة** — ومن
-                  ردَّته الجملةُ عن مسارٍ لا يناسبه لم نخسره، بل كسبنا ثقتَه. */}
-              {p.audience && (
-                <p className="mt-3 line-clamp-2 text-read leading-5 text-muted-foreground">
-                  <span className="font-bold text-foreground">لمن؟ </span>{p.audience}
-                </p>
-              )}
+                  «لمن؟» (`p.audience`) حُذفت من البطاقة (٩ سبتمبر ٢٠٢٦، قرارُ
+                  صاحب المنصّة): بطاقةٌ أهدأ وأقلّ ازدحاما، وتفصيلُ الجمهور
+                  موجودٌ في صفحة المسار نفسِها لمن أراده. أمّا «ليست لك
+                  إن…» فتبقى — أصدقُ سطرٍ في الكتالوج: يمنع شراءً خاطئا قبل
+                  وقوعه، **والمنعُ خدمةٌ لا خسارة**. */}
               {p.notFor && (
                 <p className="mt-1.5 line-clamp-2 text-read leading-5 text-muted-foreground">
                   <span className="font-bold text-gold-ink">ليس لك إن: </span>

@@ -119,6 +119,7 @@ function Nav() {
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
     { label: 'المنهجية', href: '/methodology', route: true },
+    { label: 'انضم كمدرب', href: '/join-trainer', route: true },
   ]
   const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
     l.route ? (
