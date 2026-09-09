@@ -14,7 +14,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService, type AvailabilityInput } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
-import { CohortPlanService, type TrainerPlanContent } from '../../services/cohort-plan.service'
+import { CohortPlanService, staticModulesFor, type TrainerPlanContent } from '../../services/cohort-plan.service'
 import { CohortService } from '../../services/cohort.service'
 
 let prisma: PrismaClient
@@ -82,6 +82,39 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(ws.course.baseModules.length).toBeGreaterThan(0)
     const required = ws.checklist.filter((c) => !c.optional)
     expect(required.every((c) => !c.done)).toBe(true)
+  })
+
+  /* ═══ صفحةُ الشعبة الواحدة (٨ سبتمبر ٢٠٢٦) ═══ */
+  it('التكاليفُ مرحلةٌ في التجهيز — اختياريّةٌ، وتتمّ بأوّل تكليف', async () => {
+    const before = (await plans.workspace(trainerUserId, cohortId)).checklist.find((c) => c.key === 'assignments')
+    expect(before, 'لا مرحلةَ للتكاليف').toBeTruthy()
+    expect(before!.optional).toBe(true)
+    expect(before!.done).toBe(false)
+    await prisma.cohortAssessment.create({ data: { cohortId, title: 'واجبُ الوحدة الأولى', type: 'assignment', maxScore: 100 } })
+    const ws = await plans.workspace(trainerUserId, cohortId)
+    expect(ws.checklist.find((c) => c.key === 'assignments')!.done).toBe(true)
+    expect(ws.assessments.map((a) => a.title)).toContain('واجبُ الوحدة الأولى')
+  })
+
+  it('وموجزُ «شعبي» يقرأ القائمةَ نفسَها — فلا تفترق الحلقةُ عن الورشة', async () => {
+    const rows = await plans.summaries(trainerUserId)
+    const me = rows.find((r) => r.id === cohortId)
+    expect(me, 'الشعبةُ ليست في الموجز').toBeTruthy()
+    const ws = await plans.workspace(trainerUserId, cohortId)
+    const required = ws.checklist.filter((c) => !c.optional)
+    expect(me!.total).toBe(required.length)
+    expect(me!.done).toBe(required.filter((c) => c.done).length)
+    expect(me!.next?.key).toBe(required.find((c) => !c.done)!.key)
+    /* ومدرّبٌ آخرُ لا يرى شعبةَ غيره في موجزه */
+    expect((await plans.summaries(otherTrainerUserId)).map((r) => r.id)).not.toContain(cohortId)
+  })
+
+  it('ومحاورُ الكتالوج الثابت تسند الورشةَ حين تخلو القاعدة', async () => {
+    const mods = await staticModulesFor('C-AI-103')
+    expect(mods.length).toBe(4)
+    expect(mods[0].moduleId).toBe('C-AI-103-M1')
+    expect(mods.every((m) => m.titleAr.length > 2)).toBe(true)
+    expect(await staticModulesFor('C-NOPE-000')).toEqual([])
   })
 
   it('يعدّل الاسمَ — والسعرُ يُردّ باسمه لا يُبتلع', async () => {

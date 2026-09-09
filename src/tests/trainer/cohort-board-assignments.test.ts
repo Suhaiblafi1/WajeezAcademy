@@ -32,7 +32,9 @@ const readCode = (p: string) => readFileSync(join(root, p), 'utf8')
   .replace(/\/\*[\s\S]*?\*\//g, ' ')
   .replace(/^\s*\/\/.*$/gm, ' ')
 
-const BOARD = 'src/pages/trainer/CohortBoard.tsx'
+/* التشغيلُ انتقل من «شعبي» إلى مرحلة «التشغيل» في صفحة الشعبة الواحدة
+   (٨ سبتمبر ٢٠٢٦) — والحارسُ يتبع الشيفرةَ إلى موضعها الجديد بحمولته نفسِها. */
+const BOARD = 'src/pages/trainer/CohortOps.tsx'
 const LIST = 'src/pages/trainer/CohortAssignments.tsx'
 const QUEUE = 'src/pages/trainer/GradingQueue.tsx'
 
