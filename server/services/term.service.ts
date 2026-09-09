@@ -185,10 +185,15 @@ export class TermService {
 
      صفحتا الدورات والمسارات لا تعرضان تواريخَ إطلاقا، والجوابُ الصادقُ اليوم
      عن «متى تبدأ؟» هو «يُعلَن الموعدُ مع فتح الشعبة». وهذا يجعل له جوابا:
-     اسمُ الفصل وأشهرُه ونافذةُ تسجيله. */
+     اسمُ الفصل وأشهرُه ونافذةُ تسجيله.
+
+     والمنشورُ يسبق الأقرب: إن كان بين الفصول القادمة فصلٌ نُشر تقويمُه فهو
+     «القادم» ولو سبقه فصلٌ أقربُ لم يُنشر — فالإدارةُ حين تنشر تقويما تقصد
+     أن يُرى، والتقويمُ العامّ كان يعرض «لا تقويمَ منشورٌ بعد» والمنشورُ خلفه
+     لأنّ الاختيارَ كان بالتاريخ وحدَه. (٨ سبتمبر ٢٠٢٦) */
   async upcoming(now = new Date()) {
     const current = termOf(now)
-    return this.prisma.term.findFirst({
+    const candidates = await this.prisma.term.findMany({
       where: {
         status: { in: [...LIVE_TERM_STATUSES] },
         endsOn: { gte: now },
@@ -196,6 +201,7 @@ export class TermService {
       },
       orderBy: [{ startsOn: 'asc' }],
     })
+    return candidates.find((t) => t.calendarPublishedAt !== null) ?? candidates[0] ?? null
   }
 
   /** الفصلُ للعرض العامّ — ولا يُعرض تقويمُه قبل نشره */

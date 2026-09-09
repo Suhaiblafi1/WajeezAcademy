@@ -50,6 +50,7 @@ const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
 const Earnings = lazy(() => import('./pages/trainer/Earnings'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
+const AdminTerms = lazy(() => import('./pages/admin/Terms'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
@@ -253,6 +254,7 @@ export default function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/ratings" element={<AdminRatingModeration />} />
             <Route path="/admin/cohorts" element={<AdminCohorts />} />
+            <Route path="/admin/terms" element={<AdminTerms />} />
             <Route path="/admin/exceptions" element={<Exceptions />} />
             <Route path="/admin/advisor-requests" element={<AdminAdvisorRequests />} />
             <Route path="/admin/learner-requests" element={<AdminLearnerRequests />} />

@@ -14,6 +14,8 @@ import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-
 import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
 import { UpcomingTermBanner } from '@/components/UpcomingTermNote'
+import { useCourseCohorts } from '@/services/cohort-prices'
+import { fmtDateAr } from '@/utils/format'
 
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
    بعد جعل الكتالوج المضمن كسولا صارت البيانات تصل لاحقا، فلا بد أن تُحسبا
@@ -37,6 +39,9 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   const bestsellerCourseIds = useMemo(() => new Set(bestsellerCourses.map((b) => b.id)), [catalogVersion])
   const [params, setParams] = useSearchParams()
+  /* الشعبُ المفتوحةُ لكلّ دورة — لتقول البطاقةُ «تبدأ في كذا» (٨ سبتمبر ٢٠٢٦):
+     بطاقةٌ بلا موعدٍ تُقرأ كتالوجا لا دعوة. والمصدرُ نداءٌ واحد مشترك. */
+  const { cohorts: openCohorts } = useCourseCohorts()
 
   const q = params.get('q') ?? ''
   /* «الكل» هي الافتراضيّة — والعنوانُ يقول «كلّ الدورات».
@@ -312,6 +317,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               <p className="mt-1.5 text-read text-muted-foreground">
                 {c.weeks} {c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
               </p>
+              {/* أقربُ شعبةٍ مفتوحة — أصدقُ من اسم موسم: تاريخٌ يُشترى. وما لا شعبةَ له
+                  يكفيه لوحُ «الفصل القادم» فوق النتائج. */}
+              {openCohorts.get(c.id)?.[0]?.startsAt && (
+                <p className="mt-1.5 text-read font-bold text-teal-light-ink">شعبةٌ مفتوحة · تبدأ {fmtDateAr(openCohorts.get(c.id)![0].startsAt)}</p>
+              )}
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                 {c.skill}
               </span>
