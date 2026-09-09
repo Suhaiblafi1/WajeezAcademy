@@ -180,4 +180,35 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'recordings')?.done).toBe(true)
   })
+
+  /* آخرَ السلسلة: يُرسل خطّةً جديدةً ويعتمدها، فلا يغيّر حالةَ ما قبله */
+  it('واقتراحُ اسم الدورة أو المسار يركب مع الخطّة ويُطبَّق باعتماد الإدارة وحدَه', async () => {
+    /* خطّةٌ جديدة باقتراحين — تُرسل، فلا يتغيّر اسمٌ حتّى تُعتمَد */
+    await plans.savePlan(trainerUserId, cohortId, {
+      ...content,
+      proposals: { courseTitleAr: 'دورة تحليل الأعمال — كما يراها المدرّب', pathwayTitleAr: 'مسارُ محلّل الأعمال' },
+    })
+    const sent = await plans.submit(trainerUserId, cohortId, true)
+    const course = await prisma.course.findUniqueOrThrow({ where: { id: 'C-BIZ-101' }, select: { currentVersion: true, homePathwayId: true } })
+    const titleBefore = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId: 'C-BIZ-101', version: course.currentVersion } })).titleAr
+    expect(titleBefore).not.toContain('كما يراها المدرّب')
+
+    /* اعتمادٌ يقبل اسمَ الدورة ويرفض اسمَ المسار */
+    const res = await plans.decide(adminId, sent.id, true, undefined, { courseTitle: true, pathwayTitle: false })
+    expect(res.status).toBe('approved')
+    const applied: Record<string, string> = ('applied' in res && res.applied) ? res.applied : {}
+    expect(applied.courseTitleAr).toBe('دورة تحليل الأعمال — كما يراها المدرّب')
+    expect(applied.pathwayTitleAr).toBeUndefined()
+    const titleAfter = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId: 'C-BIZ-101', version: course.currentVersion } })).titleAr
+    expect(titleAfter).toBe('دورة تحليل الأعمال — كما يراها المدرّب')
+    if (course.homePathwayId) {
+      const pw = await prisma.pathway.findUniqueOrThrow({ where: { id: course.homePathwayId }, select: { currentVersion: true } })
+      const pv = await prisma.pathwayVersion.findFirstOrThrow({ where: { pathwayId: course.homePathwayId, version: pw.currentVersion } })
+      expect(pv.title, 'اسمُ المسار تغيّر بلا قبول').not.toBe('مسارُ محلّل الأعمال')
+    }
+    /* والأثرُ مسجَّلٌ باسم من اعتمد */
+    const audit = await prisma.auditEvent.findFirst({ where: { action: 'cohort.plan.proposal_applied', entityId: cohortId }, orderBy: { createdAt: 'desc' } })
+    expect(audit?.actorId).toBe(adminId)
+  })
+
 })

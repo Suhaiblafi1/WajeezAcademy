@@ -96,6 +96,7 @@ const PHRASES: Record<string, string> = {
   'cohort.plan.submit': 'إرسالُ مدرّبٍ خطّةَ شعبته للاعتماد',
   'cohort.plan.approve': 'اعتمادُ خطّة شعبة',
   'cohort.plan.changes_requested': 'ردُّ خطّة شعبةٍ بتعديلات',
+  'cohort.plan.proposal_applied': 'تطبيقُ اقتراح مدرّبٍ على اسم دورةٍ أو مسار',
   'cohort.trainer_update': 'تعديلُ مدرّبٍ بياناتِ شعبته',
   'cohort.remind_trainer': 'تذكيرُ مدرّبٍ بتجهيز شعبته',
   'session.recording.link': 'إضافةُ تسجيلِ جلسةٍ من رابط',

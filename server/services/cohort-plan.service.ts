@@ -49,13 +49,18 @@ export interface TrainerPlanModule {
   bodyAr?: string | null
 }
 export interface TrainerPlanResource { title: string; url: string; noteAr?: string | null }
+/** ما يقترحه المدرّبُ على الإدارة مع خطّته — ويُطبَّق باعتمادها إن شاءت (٨ سبتمبر ٢٠٢٦) */
+export interface TrainerPlanProposals { courseTitleAr?: string | null; pathwayTitleAr?: string | null }
 export interface TrainerPlanContent {
   kind: 'trainer'
   summaryAr?: string | null
   modules: TrainerPlanModule[]
   resources: TrainerPlanResource[]
   liveNoteAr?: string | null
+  proposals?: TrainerPlanProposals | null
 }
+/** أيُّ الاقتراحين تقبله الإدارة عند الاعتماد */
+export interface ApplyProposals { courseTitle?: boolean; pathwayTitle?: boolean }
 
 /** ما يجوز للمدرّب تعديلُه في صفّ الشعبة نفسِه — والباقي بيد الإدارة */
 export const TRAINER_EDITABLE_COHORT_FIELDS = [
@@ -418,10 +423,13 @@ export class CohortPlanService {
     }
   }
 
-  async decide(actorId: string, planId: string, approve: boolean, note?: string) {
+  async decide(actorId: string, planId: string, approve: boolean, note?: string, applyProposals?: ApplyProposals) {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({
       where: { id: planId },
-      include: { cohort: { select: { id: true, title: true } }, trainer: { include: { application: { select: { fullName: true, email: true } } } } },
+      include: {
+        cohort: { select: { id: true, title: true, pathwayId: true, course: { select: { id: true, currentVersion: true, homePathwayId: true } } } },
+        trainer: { include: { application: { select: { fullName: true, email: true } } } },
+      },
     })
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     if (plan.status !== 'submitted') throw new AuthError('not_submitted', 'هذه الخطّة ليست بانتظار قرار', 409)
@@ -457,13 +465,51 @@ export class CohortPlanService {
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.plan.approve', entityType: 'cohort', entityId: plan.cohort.id, meta: { planId },
     })
+
+    /* ═══ اقتراحُ اسم الدورة أو المسار — يُطبَّق باعتماد الإدارة لا بإرسال المدرّب ═══
+
+       قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): للمدرّب أن يغيّر «حتّى عنوان الدورة،
+       واسمَ المسار إن كان له مسارٌ كامل — وكلُّه يحتاج موافقةَ الإدارة». فالاقتراحُ
+       يركب مع الخطّة، والمعتمِدُ يختار ما يقبله. ويُكتب على النسخة الحاليّة من
+       الدورة والمسار — الاسمُ وحدَه — ويُسجَّل أثرا باسم من اعتمده. */
+    const proposals = (plan.content as TrainerPlanContent | null)?.proposals ?? null
+    const applied: Record<string, string> = {}
+    if (proposals && applyProposals) {
+      const courseTitle = proposals.courseTitleAr?.trim()
+      if (applyProposals.courseTitle && courseTitle) {
+        await this.prisma.courseVersion.updateMany({
+          where: { courseId: plan.cohort.course.id, version: plan.cohort.course.currentVersion },
+          data: { titleAr: courseTitle },
+        })
+        applied.courseTitleAr = courseTitle
+      }
+      const pathwayTitle = proposals.pathwayTitleAr?.trim()
+      const pathwayId = plan.cohort.pathwayId ?? plan.cohort.course.homePathwayId
+      if (applyProposals.pathwayTitle && pathwayTitle && pathwayId) {
+        const pathway = await this.prisma.pathway.findUnique({ where: { id: pathwayId }, select: { currentVersion: true } })
+        if (pathway) {
+          await this.prisma.pathwayVersion.updateMany({
+            where: { pathwayId, version: pathway.currentVersion },
+            data: { title: pathwayTitle },
+          })
+          applied.pathwayTitleAr = pathwayTitle
+          applied.pathwayId = pathwayId
+        }
+      }
+      if (Object.keys(applied).length > 0) {
+        await recordAudit(this.prisma, {
+          actorId, action: 'cohort.plan.proposal_applied', entityType: 'cohort', entityId: plan.cohort.id, meta: { planId, ...applied },
+        })
+      }
+    }
+
     await this.tellTrainer(plan.trainer, plan.cohort, {
       title: `اعتُمدت خطّةُ «${plan.cohort.title}»`,
       body: note?.trim() || 'شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.',
       heading: 'اعتُمدت خطّةُ شعبتك — وهي جاهزةٌ الآن',
       cta: 'افتح شعبتك',
     })
-    return { status: 'approved' as const }
+    return { status: 'approved' as const, applied }
   }
 
   /** تذكيرُ المدرّب بأن يُكمل تجهيزَ شعبته — إشعارٌ وبريدٌ معا */

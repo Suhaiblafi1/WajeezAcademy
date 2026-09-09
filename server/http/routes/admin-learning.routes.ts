@@ -93,8 +93,12 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ أو ردُّها بتعديلاتٍ مكتوبة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
-    return plans.decide(req.auth!.userId, id, body.approve, body.note)
+    const body = z.object({
+      approve: z.boolean(), note: z.string().max(2000).optional(),
+      /* ما يُقبل من اقتراحات المدرّب على الاسم — لا يُطبَّق شيءٌ بلا اختيارٍ صريح */
+      applyProposals: z.object({ courseTitle: z.boolean().optional(), pathwayTitle: z.boolean().optional() }).optional(),
+    }).parse(req.body)
+    return plans.decide(req.auth!.userId, id, body.approve, body.note, body.applyProposals)
   })
 
   app.post('/api/admin/cohorts/:cohortId/remind-trainer', {

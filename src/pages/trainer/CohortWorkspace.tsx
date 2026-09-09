@@ -50,7 +50,8 @@ import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 
 interface PlanModule { moduleId: string; titleAr: string; outcomeAr?: string | null; activityAr?: string | null; artifactAr?: string | null; bodyAr?: string | null }
 interface PlanResource { title: string; url: string; noteAr?: string | null }
-interface PlanContent { kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null }
+interface PlanProposals { courseTitleAr?: string | null; pathwayTitleAr?: string | null }
+interface PlanContent { kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: PlanProposals | null }
 interface Workspace {
   role: string;
   trainer: { name: string };
@@ -354,6 +355,32 @@ export default function CohortWorkspace() {
             </span>
           </Inset>
           <Button tone="confirm" disabled={busy || locked || identity.title.trim().length < 3} onClick={saveIdentity} className="mt-4">احفظ البيانات</Button>
+
+          {/* ═══ اقتراحٌ على اسم الدورة أو المسار — يُقرَّر فيه عند الاعتماد ═══
+
+              قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): للمدرّب أن يغيّر «حتّى عنوان
+              الدورة، واسمَ المسار إن كان له مسار — وكلُّه يحتاج موافقةَ الإدارة».
+              فالاقتراحُ يركب مع الخطّة ويُعرض على المعتمِد، ولا يمسّ الكتالوجَ
+              حتّى تقبله الإدارة. */}
+          <Inset className="mt-5">
+            <p className="text-read font-black text-foreground">اقتراحٌ للإدارة (اختياريّ)</p>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">إن رأيتَ اسما أدقَّ للدورة أو لمسارها فاكتبه هنا — يصل المعتمِدَ مع خطّتك، ويُطبَّق إن قبله.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label>
+                <span className="mb-1.5 block text-read font-bold text-muted-foreground">اسمٌ مقترحٌ للدورة</span>
+                <input value={content.proposals?.courseTitleAr ?? ""} disabled={locked} maxLength={200}
+                  onChange={(e) => setContent({ ...content, proposals: { ...(content.proposals ?? {}), courseTitleAr: e.target.value } })}
+                  placeholder={ws.course.titleAr} className={controlCls} />
+              </label>
+              <label>
+                <span className="mb-1.5 block text-read font-bold text-muted-foreground">اسمٌ مقترحٌ للمسار</span>
+                <input value={content.proposals?.pathwayTitleAr ?? ""} disabled={locked} maxLength={200}
+                  onChange={(e) => setContent({ ...content, proposals: { ...(content.proposals ?? {}), pathwayTitleAr: e.target.value } })}
+                  placeholder="كما هو في الكتالوج" className={controlCls} />
+              </label>
+            </div>
+            <Button tone="secondary" size="sm" disabled={busy || locked} onClick={savePlan} className="mt-3">احفظ الاقتراح مع الخطّة</Button>
+          </Inset>
         </Panel>
       )}
 
