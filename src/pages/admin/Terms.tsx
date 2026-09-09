@@ -20,10 +20,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CalendarCheck, CalendarPlus, CalendarRange, Loader2, Play, Users } from "lucide-react";
+import { CalendarCheck, CalendarPlus, CalendarRange, Loader2, Play, Users, Trash2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
-import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
+import { apiGet, apiPost, apiDelete, ApiError, permissionMessage } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -59,6 +59,8 @@ export default function Terms() {
   const [windows, setWindows] = useState<Record<string, { opensAt: string; closesAt: string }>>({});
   const [plans, setPlans] = useState<Record<string, PlanResult>>({});
   const [trainers, setTrainers] = useState<Record<string, AvailableTrainer[]>>({});
+  /* الحذفُ بضغطتين: الأولى تكشف زرَّ التأكيد، والثانية تحذف — لا حوارَ متصفّح */
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -96,6 +98,10 @@ export default function Terms() {
     setPlans((p) => ({ ...p, [t.id]: r }));
   }, "وُزّعت شعبُ الموسم وفُتحت");
   const publish = (t: Term) => act(`publish-${t.id}`, () => apiPost(`/api/admin/terms/${t.id}/publish-calendar`, {}), "نُشر التقويم — يراه الزائرُ الآن");
+  const remove = (t: Term) => act(`delete-${t.id}`, async () => {
+    await apiDelete(`/api/admin/terms/${t.id}`);
+    setConfirmDelete(null);
+  }, "حُذف الموسم");
   const loadTrainers = (t: Term) => act(`trainers-${t.id}`, async () => {
     const rows = await apiGet<AvailableTrainer[]>(`/api/admin/terms/${t.id}/available-trainers`);
     setTrainers((x) => ({ ...x, [t.id]: rows }));
@@ -232,6 +238,15 @@ export default function Terms() {
                     </Button>
                   )}
                   {!published && t._count.cohorts === 0 && <span className="text-read text-muted-foreground">وزّع الشعبَ أوّلا — تقويمٌ بلا شعب لا يُنشر.</span>}
+                  {/* الحذفُ لما لم يُنشر ولا شعبَ فيه — والخادمُ يحرس الشرطين أيضا */}
+                  {!published && t._count.cohorts === 0 && (
+                    confirmDelete === t.id
+                      ? <span className="inline-flex items-center gap-2">
+                          <Button tone="danger" size="sm" disabled={busy !== null} onClick={() => remove(t)}>أكّد الحذف — لا رجعة</Button>
+                          <Button tone="ghost" size="sm" disabled={busy !== null} onClick={() => setConfirmDelete(null)}>تراجع</Button>
+                        </span>
+                      : <Button tone="ghost" size="sm" disabled={busy !== null} onClick={() => setConfirmDelete(t.id)}><Trash2 className="h-3.5 w-3.5" /> احذف الموسم</Button>
+                  )}
                   <Link to="/calendar" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">التقويمُ العامّ</Link>
                   <Link to="/admin/cohorts" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">شعبُ الموسم في «الشعب»</Link>
                 </div>

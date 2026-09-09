@@ -83,6 +83,39 @@ describe('مساراتُ الفصول مسجَّلةٌ في التطبيق', () 
     expect((cal.json() as { calendar: unknown }).calendar, 'التقويمُ العامّ فارغٌ والمنشورُ خلفه').not.toBeNull()
   })
 
+  it('وفصلٌ لم يُنشر ولا شعبَ فيه يُحذف — والمنشورُ وذو الشعب لا', async () => {
+    const mk = async (year: number, season: string) => {
+      const res = await app.inject({ method: 'POST', url: '/api/admin/terms', headers: { cookie: adminCookie }, payload: { year, season } })
+      expect(res.statusCode, res.body).toBe(201)
+      return (res.json() as { id: string }).id
+    }
+    /* ١· فارغٌ وغيرُ منشور — يُحذف ويختفي من القائمة */
+    const empty = await mk(2033, 'may_jul')
+    const del = await app.inject({ method: 'DELETE', url: `/api/admin/terms/${empty}`, headers: { cookie: adminCookie } })
+    expect(del.statusCode, del.body).toBe(200)
+    const list = await app.inject({ method: 'GET', url: '/api/admin/terms?all=true', headers: { cookie: adminCookie } })
+    expect((list.json() as { id: string }[]).map((t) => t.id)).not.toContain(empty)
+
+    /* ٢· منشورٌ — يُردّ، فالزائرُ رآه */
+    const published = await mk(2033, 'aug_oct')
+    await app.inject({ method: 'POST', url: `/api/admin/terms/${published}/publish-calendar`, headers: { cookie: adminCookie }, payload: {} })
+    const delPublished = await app.inject({ method: 'DELETE', url: `/api/admin/terms/${published}`, headers: { cookie: adminCookie } })
+    expect(delPublished.statusCode).toBe(409)
+
+    /* ٣· فيه شعبة — يُردّ، فالشعبةُ تفقد فصلَها بصمت */
+    const withCohort = await mk(2033, 'nov_jan')
+    const course = await prisma.course.findFirst({ select: { id: true } })
+    await prisma.cohort.create({
+      data: {
+        courseId: course!.id, title: 'شعبةٌ تمنع الحذف', status: 'open', registrationOpen: true, financialReady: true,
+        price: 100, currency: 'USD', capacity: 10, startsAt: new Date('2033-11-10'), termId: withCohort,
+      },
+    })
+    const delWithCohort = await app.inject({ method: 'DELETE', url: `/api/admin/terms/${withCohort}`, headers: { cookie: adminCookie } })
+    expect(delWithCohort.statusCode).toBe(409)
+    expect(await prisma.term.findUnique({ where: { id: withCohort } })).not.toBeNull()
+  })
+
   it('وبلا جلسةٍ يُردّ الطلبُ لا يُهمَل — ٤٠١ لا ٤٠٤', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/admin/terms' })
     expect(res.statusCode).toBe(401)

@@ -53,6 +53,27 @@ export class TermService {
     return term
   }
 
+  /* ─────────── الحذفُ — لما لم يُنشر ولا شعبَ فيه ───────────
+
+     قرارُ صاحب المنصّة (٩ سبتمبر ٢٠٢٦): «نبدأ من الشتاء» — وفي الإنتاج فصلُ
+     خريفٍ أُنشئ ولم يُنشر، وهو الأقربُ تاريخا فيُعلَن في الكتالوج «الفصلَ
+     القادم». ولم يكن للفصل حذفٌ. والشرطان حرفيّان لا تقديريّان: المنشورُ رآه
+     الزائر فلا يُمحى، وذو الشعب تفقد شعبُه فصلَها بصمت (`onDelete: SetNull`). */
+  async delete(actorId: string, id: string) {
+    const term = await this.prisma.term.findUnique({
+      where: { id }, include: { _count: { select: { cohorts: true } } },
+    })
+    if (!term) throw new AuthError('term_not_found', 'الفصلُ غيرُ موجود', 404)
+    if (term.calendarPublishedAt) throw new AuthError('term_published', 'فصلٌ نُشر تقويمُه لا يُحذف — رآه الزائر', 409)
+    if (term._count.cohorts > 0) throw new AuthError('term_has_cohorts', `في الفصل ${term._count.cohorts} شعبة — انقلها أو ألغِها أوّلا`, 409)
+    await this.prisma.term.delete({ where: { id } })
+    await recordAudit(this.prisma, {
+      actorId, action: 'term.delete', entityType: 'term', entityId: id,
+      meta: { titleAr: term.titleAr, year: term.year, season: term.season },
+    })
+    return { deleted: true, id }
+  }
+
   /* ─────────── نافذةُ التسجيل — بديلُ الدعوة الدائمة (البند ٥١) ───────────
 
      التسجيلُ اليوم قيمةٌ منطقيّةٌ بلا تواريخ: متى وُجدت شعبةٌ مفتوحة فالدعوةُ
