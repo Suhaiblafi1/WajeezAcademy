@@ -7,6 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { AuthError } from './auth.service'
 import { openRegistrationWhere } from './registration-window'
+import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 
 export class PublicCatalogService {
   private prisma: PrismaClient
@@ -89,7 +90,7 @@ export class PublicCatalogService {
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         trainers: {
-          include: { profile: { select: { publishApprovedAt: true, application: { select: { fullName: true } } } } },
+          include: { profile: { select: { ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
         },
         sessions: { orderBy: { startsAt: 'asc' }, select: { startsAt: true, endsAt: true, title: true } },
         /* المقعدُ المحجوز مقعدٌ مشغول.
@@ -116,8 +117,10 @@ export class PublicCatalogService {
       timezone: c.timezone, price: c.price, currency: c.currency, language: c.language,
       deliveryMode: c.deliveryMode,
       seatsLeft: c.capacity ? Math.max(0, c.capacity - c._count.enrollments - c._count.enrollmentRequests) : null,
+      /* البوّابةُ الواحدة — كان الشرطُ هنا اعتمادَ النشر وحدَه، فالموقوفُ الذي
+         اعتُمد نشرُه قبل إيقافه يبقى اسمُه في بيانات الشعبة. */
       trainers: c.trainers
-        .filter((t) => t.profile.publishApprovedAt)
+        .filter((t) => trainerPubliclyVisible(t.profile))
         .map((t) => t.profile.application.fullName),
       nextSession: c.sessions[0] ?? null,
     }))

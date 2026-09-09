@@ -34,6 +34,8 @@ interface PublicCohort {
   startTime?: string | null
   timezone?: string | null
   seatsLeft?: number | null
+  /** أسماءُ المدرّبين المعتمَدِ نشرُهم — الخادمُ يرشّحهم ببوّابة الظهور */
+  trainers?: string[] | null
 }
 
 /** شعبةٌ يستطيع المتعلّم أن يختارها — بموعدها وسعرها ومقاعدها */
@@ -48,6 +50,8 @@ export interface CohortOption {
   amount: number
   currency: string
   seatsLeft: number | null
+  /** من يقدّم هذه الشعبة — فارغةٌ حتّى يُعتمَد نشرُ اسمه */
+  trainers: string[]
 }
 
 /* الحالات التي يستطيع المتعلّم أن يلتحق بها — وهي عينها التي تعدّها
@@ -91,6 +95,8 @@ export function useCourseCohorts(): { cohorts: Map<string, CohortOption[]>; load
             startTime: c.startTime ?? null, timezone: c.timezone ?? null,
             amount, currency: c.currency,
             seatsLeft: typeof c.seatsLeft === 'number' ? c.seatsLeft : null,
+            /* الاسمُ كان يصل ولا يُقرأ — فشعبتان لمدرّبَين تختلفان بموعدهما وحدَه */
+            trainers: Array.isArray(c.trainers) ? c.trainers : [],
           })
           map.set(c.courseId, list)
         }
