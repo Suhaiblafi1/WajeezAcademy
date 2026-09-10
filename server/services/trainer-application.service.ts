@@ -59,11 +59,11 @@ export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   /* المسودّة: القسمُ الأوّل وصل ولم يُكمَل — تصير مقدَّمةً حين يُكمَل */
   draft: ['submitted', 'email_verification_pending', 'withdrawn'],
   email_verification_pending: ['submitted', 'withdrawn'],
-  submitted: ['under_review', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  under_review: ['information_requested', 'shortlisted', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  information_requested: ['under_review', 'active', 'rejected', 'withdrawn'],
+  submitted: ['under_review', 'interview_scheduled', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  under_review: ['information_requested', 'shortlisted', 'interview_scheduled', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  information_requested: ['under_review', 'interview_scheduled', 'active', 'rejected', 'withdrawn'],
   shortlisted: ['interview_scheduled', 'demo_requested', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  interview_scheduled: ['demo_requested', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  interview_scheduled: ['submitted', 'under_review', 'information_requested', 'shortlisted', 'demo_requested', 'active', 'waitlisted', 'rejected', 'withdrawn'],
   demo_requested: ['academic_review', 'active', 'rejected', 'withdrawn'],
   academic_review: ['conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
   conditionally_approved: ['contract_pending', 'active', 'rejected', 'withdrawn'],
@@ -345,51 +345,6 @@ export class TrainerApplicationService {
     return mail.status
   }
 
-  /* ═══ مقابلةٌ حجزها المتقدّمُ بنفسه ═══
-
-     Calendly كان يحتفظ بالموعد وحدَه: يُحجَز فيصل بريدُ تأكيدٍ منه، ولا تعلم
-     المنصّةُ شيئا — فتبقى خانةُ «المقابلات» عند المراجع صفرا وهو ينظر إلى
-     متقدّمٍ له موعدٌ بعد يومين. فيراسله ليرتّب موعدا له موعد.
-
-     والصفُّ يُكتب هنا حين يبثّ الإطارُ حدثَه. ولا يُصدَّق ما يصل بلا سند:
-     البريدُ والرقمُ المرجعيّ يجب أن يتطابقا مع الطلب — كما في `getPublicStatus`
-     — وإلّا فمن عرف رقما مرجعيّا كتب مقابلةً في طلب غيره.
-
-     ولا يُكتب موعدان لطلبٍ واحدٍ في دقيقة: الإطارُ قد يبثّ حدثَه مرّتين إن
-     أُعيد تصييرُ الصفحة، فيُفحَص آخرُ صفٍّ قبل الكتابة. */
-  async recordSelfBookedInterview(
-    email: string, reference: string, scheduledAt: Date | null,
-  ): Promise<{ recorded: boolean }> {
-    const app = await this.prisma.trainerApplication.findFirst({
-      where: { reference, email: email.trim().toLowerCase() },
-      select: { id: true },
-    })
-    /* لا يُقال «غيرُ موجود» ولا «غيرُ مطابق»: كلاهما يُعلِم من يجرّب أرقاما */
-    if (!app) return { recorded: false }
-
-    const when = scheduledAt ?? new Date()
-    const recent = await this.prisma.trainerInterview.findFirst({
-      where: { applicationId: app.id, createdAt: { gt: new Date(Date.now() - 60_000) } },
-      select: { id: true },
-    })
-    if (recent) return { recorded: true }
-
-    await this.prisma.trainerInterview.create({
-      data: {
-        applicationId: app.id,
-        scheduledAt: when,
-        mode: 'remote',
-        notes: 'حجزها المتقدّم بنفسه من صفحة الحجز المضمَّنة',
-      },
-    })
-    await recordAudit(this.prisma, {
-      actorId: null, action: 'trainer.interview.self_booked',
-      entityType: 'trainer_application', entityId: app.id,
-      meta: { reference, scheduledAt: when.toISOString() },
-    })
-    return { recorded: true }
-  }
-
   /** قيمةُ قناة التواصل كما تُقرأ: رقمٌ أو بريد */
   private contactValue(app: { email: string; phone: string | null; phoneCountryCode: string | null; contactChannel: string | null; contactAltEmail: string | null }): string {
     switch (app.contactChannel) {
@@ -538,6 +493,11 @@ export class TrainerApplicationService {
         contactChannel: true, contactAltEmail: true,
         createdAt: true, phase2CompletedAt: true, emailVerifiedAt: true, teachableCourseIds: true,
         documents: { select: { kind: true, originalName: true, uploadedAt: true } },
+        interviews: {
+          where: { canceledAt: null },
+          select: { id: true, scheduledAt: true, mode: true, canceledAt: true },
+          orderBy: { scheduledAt: 'asc' },
+        },
         /* والملاحظةُ تُقرأ: هي نصُّ «ما المعلوماتُ التي نريدها منك» حين تُطلب،
            وكانت تُكتب في القرار ولا تخرج إلى صاحب الطلب أبدا — فيقرأ «نحتاج
            معلوماتٍ إضافية» ولا يعرف أيَّها. */

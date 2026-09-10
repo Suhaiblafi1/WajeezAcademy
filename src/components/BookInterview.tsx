@@ -22,12 +22,12 @@
 
    ═══ والحجزُ يُلتقَط لا يُنسى ═══
 
-   Calendly يبثّ `postMessage` عند إتمام الحجز حتّى في الإطار العاري. فيُلتقَط
-   ويُرسَل إلى خادمنا ليُكتب صفَّ مقابلة — فيظهر الموعدُ في «المقابلات» عند
-   المراجع، بدل أن يبقى في تقويم Calendly وحدَه ولا تعلم به المنصّة.
-   ومصدرُ الرسالة يُفحَص: نافذةٌ أخرى تستطيع أن تبثّ ما تشاء. */
+   Calendly يبثّ `postMessage` عند إتمام الحجز حتّى في الإطار العاري. نلتقطه
+   لنؤكّد النجاح في الشاشة فحسب؛ أمّا صفُّ المقابلة ووقتُه الحقيقيُّ فيأتيان
+   من webhook موقّع، لأنّ رسالةَ المتصفّح لا تحمل الوقت ولا تصلح دليلا للكتابة.
+   ومصدرُ الرسالة يُفحَص مع ذلك: نافذةٌ أخرى تستطيع أن تبثّ ما تشاء. */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CalendarClock, CheckCircle2, ExternalLink, Video } from 'lucide-react'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '@/application/trainer/application-options'
 import { Inset } from '@/components/ui/Surface'
@@ -38,8 +38,6 @@ export interface BookInterviewProps {
   email?: string
   reference?: string
   className?: string
-  /** يُنادى حين يتمّ الحجزُ فعلا — به تُسجَّل المقابلةُ عندنا */
-  onScheduled?: () => void
 }
 
 /** أصلُ Calendly — يُقارَن به مصدرُ كلّ رسالة، فلا تُصدَّق نافذةٌ غيرُه */
@@ -54,19 +52,13 @@ function isScheduledEvent(e: MessageEvent): boolean {
   return event === 'calendly.event_scheduled'
 }
 
-export default function BookInterview({ name, email, reference, className = '', onScheduled }: BookInterviewProps) {
+export default function BookInterview({ name, email, reference, className = '' }: BookInterviewProps) {
   const [done, setDone] = useState(false)
-  /* المُنادى يُحفظ في مرجع: لو تغيّر بين التصييرات لم يُعَد ربطُ المستمع،
-     فلا يفوت حجزٌ وقع أثناء إعادة الربط. والكتابةُ في أثرٍ لا في التصيير —
-     الكتابةُ أثناء التصيير تكسر التصييرَ المتزامن، ويحرسها `react-hooks/refs`. */
-  const cb = useRef(onScheduled)
-  useEffect(() => { cb.current = onScheduled }, [onScheduled])
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       if (!isScheduledEvent(e)) return
       setDone(true)
-      cb.current?.()
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
@@ -94,7 +86,7 @@ export default function BookInterview({ name, email, reference, className = '', 
       {done ? (
         <Inset as="p" tone="positive" className="mt-4 flex items-start gap-2 text-read leading-6 text-foreground">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
-          حُجز موعدك — تصلك رسالةُ تأكيدٍ بدعوة التقويم، وتجده في صفحة حالتك.
+          حُجز موعدك — تصلك رسالةُ تأكيدٍ بدعوة التقويم، ويظهر في صفحة حالتك بعد لحظات.
         </Inset>
       ) : (
         <>
@@ -111,7 +103,7 @@ export default function BookInterview({ name, email, reference, className = '', 
             />
           </div>
           <p className="mt-3 text-read leading-6 text-muted-foreground">
-            {reference && <>ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مذكورٌ في النموذج. </>}
+            {reference && <>ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مرفقٌ بالحجز. </>}
             ولو لم يناسبك أيُّ وقتٍ معروض، راسِلنا وسنرتّب غيرَه.{' '}
             {/* ومخرجٌ لمن حجب الأطرَ أو ضاقت شاشتُه — لا يُترك بلا طريق */}
             <a

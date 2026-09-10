@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url'
 import {
   APPLICANT_STATUS, BOOKABLE_STATUSES, TRAINER_INTERVIEW, trainerInterviewUrl,
 } from '@/application/trainer/application-options'
+import { verifyCalendlyWebhookSignature } from '../../server/services/calendly-webhook.service'
+import { createHmac } from 'node:crypto'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -29,16 +31,19 @@ describe('رابطُ الحجز', () => {
   })
 
   it('ومدّتُه ومنصّتُه معلنتان، فتُقرآن في الشاشة لا تُخمَّنان', () => {
-    expect(TRAINER_INTERVIEW.minutes).toBe(30)
-    expect(TRAINER_INTERVIEW.platformAr).toBe('Zoom')
+    expect(TRAINER_INTERVIEW.minutes).toBe(45)
+    expect(TRAINER_INTERVIEW.platformAr).toBe('اجتماع مرئي')
   })
 
   it('ويُعبَّأ بالاسم والبريد ورقم الطلب — فلا يكتبها ثالثةً', () => {
-    const url = trainerInterviewUrl({ name: 'سلمى العمري', email: 's@x.com', reference: 'WJ-T-2026-0041' })
+    const url = trainerInterviewUrl({ name: 'سلمى العمري', email: 's@x.com', reference: 'WJ-TR-2026-00041' })
     const q = new URL(url).searchParams
     expect(q.get('name')).toBe('سلمى العمري')
     expect(q.get('email')).toBe('s@x.com')
-    expect(q.get('a1')).toBe('WJ-T-2026-0041')
+    expect(q.get('a1')).toBe('WJ-TR-2026-00041')
+    expect(q.get('utm_source')).toBe('wajeezacademy')
+    expect(q.get('utm_medium')).toBe('trainer_application')
+    expect(q.get('utm_content')).toBe('WJ-TR-2026-00041')
   })
 
   it('ويبقى صالحا بلا تعبئة — فلا يُنتَج رابطٌ بعلامة استفهامٍ عارية', () => {
@@ -113,6 +118,10 @@ describe('البطاقةُ في الشاشتين — لا في واحدةٍ تُ
     expect(csp, 'كتلةُ السياسة مفقودة').toBeTruthy()
     expect(csp, "الإطارُ مضمَّنٌ والسياسةُ تحجبه — مستطيلٌ أبيضُ بلا خطأ")
       .toMatch(/frame-src[^;]*https:\/\/calendly\.com/)
+    const apache = read('public/.htaccess')
+    const apacheCsp = /Content-Security-Policy "([^"]*)"/.exec(apache)?.[1] ?? ''
+    expect(apacheCsp, 'المضيفُ الذي يقرأ .htaccess يحجب إطار Calendly')
+      .toMatch(/frame-src[^;]*https:\/\/calendly\.com/)
   })
 
   it('ولا سكربتَ لهم يُحمَّل عندنا — إطارٌ عارٍ لا وحدةٌ تُنفَّذ', () => {
@@ -132,5 +141,31 @@ describe('البطاقةُ في الشاشتين — لا في واحدةٍ تُ
       .toContain('calendly.event_scheduled')
     expect(card, 'رسالةٌ تُصدَّق بلا فحص مصدرها — أيُّ نافذةٍ تستطيع بثَّها')
       .toMatch(/e\.origin !== CALENDLY_ORIGIN|origin !== CALENDLY_ORIGIN/)
+  })
+
+  it('ولا يكتب المتصفّحُ موعدا بلا توقيع — الكتابةُ من webhook وحدَه', () => {
+    expect(code('src/pages/JoinTrainer.tsx')).not.toContain('self-booked-interview')
+    expect(code('src/pages/ApplicantStatus.tsx')).not.toContain('self-booked-interview')
+    expect(code('server/http/routes/trainer-applications.routes.ts')).not.toContain('self-booked-interview')
+    const webhook = code('server/http/routes/calendly-webhook.routes.ts')
+    expect(webhook).toContain('calendly-webhook-signature')
+    expect(webhook).toContain('rawBody')
+  })
+})
+
+describe('توقيعُ Calendly', () => {
+  const secret = 'سرّ-اختبار-لا-يخرج'
+  const raw = '{"event":"invitee.created"}'
+  const now = 1_800_000_000
+  const signature = createHmac('sha256', secret).update(`${now}.${raw}`).digest('hex')
+
+  it('يقبل الجسمَ الأصليَّ في نافذة الثلاث دقائق', () => {
+    expect(verifyCalendlyWebhookSignature(raw, `t=${now},v1=${signature}`, secret, now + 120)).toBe(true)
+  })
+
+  it('ويرفض الجسمَ المعدّل والتوقيعَ القديم والمفتاحَ الغائب', () => {
+    expect(verifyCalendlyWebhookSignature(`${raw} `, `t=${now},v1=${signature}`, secret, now)).toBe(false)
+    expect(verifyCalendlyWebhookSignature(raw, `t=${now},v1=${signature}`, secret, now + 181)).toBe(false)
+    expect(verifyCalendlyWebhookSignature(raw, `t=${now},v1=${signature}`, undefined, now)).toBe(false)
   })
 })

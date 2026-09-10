@@ -610,11 +610,6 @@ export default function JoinTrainer() {
                 لتحديد موعد»، فيقف المتقدّمُ بلا شيءٍ بيده. والموعدُ صار بيده. */}
             <BookInterview
               name={form.fullName.trim()} email={form.email.trim()} reference={result.reference}
-              onScheduled={() => {
-                void apiPost(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/self-booked-interview`,
-                  { email: form.email.trim().toLowerCase() })
-                  .catch(() => {})
-              }}
             />
 
             <Card>

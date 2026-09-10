@@ -7,7 +7,7 @@ import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { readRoles, signOut } from "@/services/auth";
-import { fmtDate } from "@/application/text/format-ar";
+import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { APPLICANT_STATUS, BOOKABLE_STATUSES, EDITABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
 import BookInterview from "@/components/BookInterview";
 
@@ -33,6 +33,7 @@ interface Mine {
   phase2CompletedAt: string | null;
   emailVerifiedAt: string | null;
   documents: { kind: string; originalName: string; uploadedAt: string }[];
+  interviews: { id: string; scheduledAt: string; mode: string; canceledAt: string | null }[];
   statusHistory: { toStatus: string; note: string | null; createdAt: string }[];
   profile: { userId: string | null } | null;
 }
@@ -227,16 +228,24 @@ export default function ApplicantStatus() {
                 ولا يُعرض بعد القرار: من قُبل صار مدرّبا، ومن رُدّ لا يُدعى إلى
                 مقابلة. والمسوّدةُ وانتظارُ توثيق البريد قبلَ ذلك — يُكمل طلبَه
                 أوّلا فلا يحجز موعدا لطلبٍ لم يصل. */}
-            {BOOKABLE_STATUSES.includes(mine.status) && (
+            {BOOKABLE_STATUSES.includes(mine.status) && mine.interviews.length === 0 && (
               <BookInterview
                 name={mine.fullName} email={mine.email} reference={mine.reference}
-                /* والحجزُ يُكتب عندنا فورا، ثمّ تُعاد قراءةُ الحالة ليظهر أثرُه */
-                onScheduled={() => {
-                  void apiPost(`/api/v1/trainer-applications/${encodeURIComponent(mine.reference)}/self-booked-interview`,
-                    { email: mine.email })
-                    .catch(() => {})
-                }}
               />
+            )}
+
+            {mine.interviews[0] && (
+              <Card tone="positive">
+                <p className="flex items-center gap-2 text-sm font-black text-emerald-300">
+                  <CalendarClock className="h-4 w-4" /> موعد مقابلتك
+                </p>
+                <p className="mt-2 text-sm leading-7 text-foreground">
+                  {fmtDateTime(new Date(mine.interviews[0].scheduledAt))} — عن بُعد
+                </p>
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  أرسل Calendly تفاصيل الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
+                </p>
+              </Card>
             )}
 
             {/* البريد والتواصل */}
