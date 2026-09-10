@@ -42,7 +42,7 @@
   # وscript-src هنا 'unsafe-inline' لا بصمات: البصماتُ تُحسب على كلّ بناء،
   # وهذا ملفٌّ ساكنٌ لا يُعاد توليدُه — فبصمةٌ ثابتةٌ هنا تبطل بأوّل تغييرٍ
   # في index.html فتُحجب سكربتات الصفحة بصمتٍ تامّ.
-  Header always set Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+  Header always set Content-Security-Policy "default-src 'self'; worker-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; frame-src 'self' https://calendly.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
 
   # عاملُ الخدمة لا يُخزَّن — وهذا شرطُ أن يصل مفتاحُ إطفائه.
   #

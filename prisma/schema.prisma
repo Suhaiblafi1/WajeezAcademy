@@ -1003,6 +1003,9 @@ model TrainerInterview {
   applicationId String             @db.Uuid
   scheduledAt   DateTime
   mode          String             @default("remote") // remote | in_person
+  provider      String             @default("manual") // manual | calendly
+  externalId    String?            @unique // Calendly invitee URI — idempotency + cancellation
+  canceledAt    DateTime?
   interviewerId String?            @db.Uuid
   outcome       String? // passed | hold | failed
   notes         String?

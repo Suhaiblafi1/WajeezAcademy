@@ -33,6 +33,7 @@ import { registerCalendarRoutes } from './routes/calendar.routes'
 import { registerTermRoutes } from './routes/term.routes'
 import { registerCommerceRoutes } from './routes/commerce.routes'
 import { registerZoomWebhookRoutes } from './routes/zoom-webhook.routes'
+import { registerCalendlyWebhookRoutes } from './routes/calendly-webhook.routes'
 import { registerSupportRoutes } from './routes/support.routes'
 import { registerRatingRoutes } from './routes/rating.routes'
 import { registerPlanRoutes } from './routes/plan.routes'
@@ -81,6 +82,7 @@ export async function buildApp(prisma: PrismaClient) {
               'req.headers.authorization',
               'req.headers["stripe-signature"]',
               'req.headers["x-zm-signature"]',
+              'req.headers["calendly-webhook-signature"]',
               'res.headers["set-cookie"]',
             ],
             censor: '[محذوف]',
@@ -263,6 +265,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerAdminLearningRoutes(app, prisma)
   registerLearningPortalRoutes(app, prisma)
   registerZoomWebhookRoutes(app, prisma)
+  registerCalendlyWebhookRoutes(app, prisma)
   registerLearnerRoutes(app, prisma)
   registerStaffTaskRoutes(app, prisma)
   registerPublicCatalogRoutes(app, prisma)

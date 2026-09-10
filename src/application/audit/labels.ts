@@ -82,6 +82,7 @@ const PHRASES: Record<string, string> = {
   'trainer.approved.notify': 'إشعارُ مدرّبٍ باعتماده',
   'trainer.info_requested.notify': 'إشعارُ متقدّمٍ بطلبِ معلوماتٍ إضافية',
   'trainer.interview.self_booked': 'حجزُ متقدّمٍ موعدَ مقابلته بنفسه',
+  'trainer.interview.self_canceled': 'إلغاءُ متقدّمٍ موعدَ مقابلته',
   'trainer.interview.invite': 'دعوةُ متقدّمٍ إلى حجزِ موعدِ مقابلة',
   'trainer.create_direct': 'تعيينُ مدرّبٍ داخليّا — بلا نموذجِ تقدّم',
   'advisor.case.create_own': 'إدخالُ المستشارِ عميلا وفتحُ حالته',

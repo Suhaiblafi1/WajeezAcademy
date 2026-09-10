@@ -112,7 +112,7 @@ export function TrainerDetailOps({ app, onAction }: {
      فالإصلاحُ هنا **إعلانُ ما يصل**، ولا مسارَ جديدٌ ولا نداءَ ثانٍ. */
   app: {
     id: string; status: string;
-    interviews: { id: string; scheduledAt: string; outcome: string | null }[];
+    interviews: { id: string; scheduledAt: string; outcome: string | null; canceledAt: string | null }[];
     profile: {
       id: string; userId: string | null;
       contracts?: { id: string; title: string; status: string; signedAt: string | null }[];
@@ -144,8 +144,10 @@ export function TrainerDetailOps({ app, onAction }: {
         <div className="space-y-3">
           {app.interviews.map((iv) => (
             <Inset key={iv.id} className="text-xs">
-              <p className="font-bold">{fmtDateTime(new Date(iv.scheduledAt))} — {iv.outcome ?? "بلا نتيجة"}</p>
-              {!iv.outcome && (
+              <p className="font-bold">
+                {fmtDateTime(new Date(iv.scheduledAt))} — {iv.canceledAt ? "ملغاة" : iv.outcome ?? "بلا نتيجة"}
+              </p>
+              {!iv.outcome && !iv.canceledAt && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {([["passed", "ناجح"], ["hold", "تعليق"], ["failed", "راسب"]] as const).map(([o, label]) => (
                     <Button tone="secondary" size="sm" key={o} onClick={() => void onAction(

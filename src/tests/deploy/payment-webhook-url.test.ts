@@ -55,10 +55,11 @@ describe('عنوانُ خطّاف الدفع — الوثيقةُ تطابق ا�
       if (!existsSync(join(root, doc))) continue
       const text = read(doc)
 
-      /* كلُّ ما يشبه مسارَ خطّافٍ تحت `/api`. والاقتباسُ التاريخيُّ يُكتب
-         نثرا لا مسارا — فما بدا مسارا فهو أمرٌ للقارئ. */
+      /* كلُّ ما يشبه مسارَ **دفعٍ** وخطّافٍ تحت `/api`. وللمنصّة خطّافاتٌ
+         أخرى (Zoom وCalendly)، فلا يجوز لحارس سترايب أن يطالبها بمساره. */
       const mentioned = [...text.matchAll(/\/api\/[A-Za-z0-9/_:.-]*webhook[A-Za-z0-9/_:.-]*/gi)]
         .map((m) => m[0])
+        .filter((path) => /payments?/i.test(path))
 
       for (const p of [...new Set(mentioned)]) {
         expect(

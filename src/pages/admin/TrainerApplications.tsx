@@ -105,7 +105,7 @@ interface AppDetail extends Record<string, unknown> {
   documents: { id: string; kind: string; originalName: string; storageKey: string }[];
   documentUrls: Record<string, string>;
   reviews: { id: string; scores: Record<string, number>; overallNote: string | null; createdAt: string }[];
-  interviews: { id: string; scheduledAt: string; outcome: string | null }[];
+  interviews: { id: string; scheduledAt: string; outcome: string | null; canceledAt: string | null }[];
   statusHistory: { fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }[];
   profile: { id: string; userId: string | null } | null;
   /** حسابُ المتقدّم — يُنشأ مع القسم الأوّل */

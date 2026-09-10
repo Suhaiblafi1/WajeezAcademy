@@ -124,25 +124,6 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     return svc.getPublicStatus(email, reference)
   })
 
-  /* المقابلةُ التي حجزها المتقدّم بنفسه تُكتب عندنا.
-
-     بلا هذا يبقى الموعدُ في تقويم Calendly وحدَه، فيرى المراجعُ «المقابلات
-     (0)» لمتقدّمٍ له موعدٌ بعد يومين — فيراسله ليرتّب ما هو مرتَّب.
-
-     والبريدُ مع الرقم المرجعيّ سندُ الملكيّة، كما في `status` تماما. والحدُّ
-     ضيّق: الحدثُ يقع مرّةً لكلّ حجز. */
-  app.post('/api/v1/trainer-applications/:reference/self-booked-interview', {
-    config: { rateLimit: { max: 6, timeWindow: '10 minutes' } },
-    schema: { tags: ['trainer-applications'], summary: 'تسجيلُ مقابلةٍ حجزها المتقدّم بنفسه' },
-  }, async (req) => {
-    const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
-    const { email, scheduledAt } = z.object({
-      email: z.string().email(),
-      scheduledAt: z.string().datetime().optional(),
-    }).parse(req.body)
-    return svc.recordSelfBookedInterview(email, reference, scheduledAt ? new Date(scheduledAt) : null)
-  })
-
   /* حساب «متقدّم مدرب» لطلبٍ قديم بلا حساب — الطلباتُ الجديدة تُنشئه في
      القسم الأوّل. الرمز شرطٌ لإنشائه: بدونه يستطيع من عرف رقما مرجعيا أن
      يربط طلب غيره بحسابه. والبريد يأتي من الطلب لا من الطلبِ الوارد. */

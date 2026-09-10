@@ -48,13 +48,13 @@ export function contactChannelLabel(value: string): string {
    المنصّةُ اليوم (لا قناةَ بريدٍ فعّالة أصلا). فتُستعمل الأداةُ لما تحسنه،
    ولا يُبنى نصفُ مُجدوِلٍ لا يُرسل شيئا.
 
-   ورابطٌ لا وحدةٌ مضمَّنة: سياسةُ المحتوى `default-src 'self'` تحجب إطارَ
-   Calendly وسكربتَه حجبا تامّا — فالتضمينُ يُنتج مستطيلا أبيضَ بلا خطأٍ ظاهر. */
+   ويُضمَّن الرابطُ داخل الصفحة مع مخرجٍ يفتحه في لسانٍ جديد. وسياسةُ المحتوى
+   في كلّ مضيفٍ تسمح بإطار Calendly وحدَه، ولا تسمح بسكربتاته في نطاقنا. */
 export const TRAINER_INTERVIEW = {
   /** يُغيَّر من هنا وحدَه — تقرؤه الشاشتان معا */
   url: 'https://calendly.com/hadeel-7/wajeez-academy',
-  minutes: 30,
-  platformAr: 'Zoom',
+  minutes: 45,
+  platformAr: 'اجتماع مرئي',
 } as const
 
 /** الرابطُ معبَّأً سلفا باسم المتقدّم وبريده ورقم طلبه.
@@ -66,7 +66,16 @@ export function trainerInterviewUrl(input: { name?: string; email?: string; refe
   const q = new URLSearchParams()
   if (input.name?.trim()) q.set('name', input.name.trim())
   if (input.email?.trim()) q.set('email', input.email.trim())
-  if (input.reference?.trim()) q.set('a1', input.reference.trim())
+  if (input.reference?.trim()) {
+    const reference = input.reference.trim()
+    q.set('a1', reference)
+    /* لا يعتمد ربطُ webhook على سؤالٍ مخصّص قد يُحذَف من Calendly: معرّفُ
+       الطلب يسافر كذلك في حقل التتبّع الرسميّ ويعود في جسم الحدث. */
+    q.set('utm_source', 'wajeezacademy')
+    q.set('utm_medium', 'trainer_application')
+    q.set('utm_campaign', 'trainer_interview')
+    q.set('utm_content', reference)
+  }
   const s = q.toString()
   return s ? `${TRAINER_INTERVIEW.url}?${s}` : TRAINER_INTERVIEW.url
 }
