@@ -19,6 +19,12 @@ export function registerCalendlyWebhookRoutes(app: FastifyInstance, prisma: Pris
     if (!verifyCalendlyWebhookSignature(rawBody, signature, process.env.CALENDLY_WEBHOOK_SIGNING_KEY)) {
       return reply.status(401).send({ error: 'bad_signature' })
     }
-    return calendly.handle((req.body ?? {}) as CalendlyWebhookEvent)
+    const result = await calendly.handle((req.body ?? {}) as CalendlyWebhookEvent)
+    /* حدثٌ موقّعٌ لم يُطابَق يُقال في السجلّ — الصمتُ يجعل أوّلَ ضبطٍ خاطئ
+       لغزا: Calendly يقول «سُلِّم» ووجيز لا موعدَ فيه ولا سبب. */
+    if (result.ignored && result.reason !== 'other_event') {
+      req.log.warn({ reason: result.reason }, 'حدثُ Calendly موقَّعٌ ولم يُطابق طلبا')
+    }
+    return result
   })
 }

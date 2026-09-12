@@ -100,6 +100,34 @@ describe('حدثُ الحجز الموقّع', () => {
     expect(await prisma.trainerInterview.count({ where: { externalId: INVITEE_URI } })).toBe(1)
   })
 
+  /* ⚠️ أُضيف في ١٢ سبتمبر ٢٠٢٦ — التجاهلُ الصامتُ يجعل أوّلَ ضبطٍ خاطئ لغزا
+
+     حدثٌ موقّعٌ لا يُطابق طلبا كان يُردّ `{ignored:true}` بلا سبب: سجلُّ
+     Calendly يقول «سُلِّم ٢٠٠»، ووجيز بلا موعد، ولا شيءَ يقول لماذا. وأرجحُ
+     أسبابه بريدٌ غيّره المدعوّ في نموذج Calendly عن بريد طلبه. فالسببُ
+     يُسمَّى ويُكتب في السجلّ. */
+  it('وحدثٌ ببريدٍ لا يطابق الطلبَ يُتجاهَل بسببٍ مسمّى لا بصمت', async () => {
+    const response = await post('invitee.created', {
+      ...payload(),
+      uri: `${INVITEE_URI}-other-email`,
+      email: 'someone-else@test.local',
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ ignored: true, reason: 'no_application' })
+  })
+
+  it('وحدثٌ بلا رقم طلبٍ يُسمّى سببُه كذلك', async () => {
+    const base = payload()
+    /* بلا `tracking` ولا سؤالٍ مخصّص — لا مصدرَ لرقم الطلب البتّة */
+    const response = await post('invitee.created', {
+      uri: `${INVITEE_URI}-no-ref`,
+      email: base.email,
+      scheduled_event: base.scheduled_event,
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ ignored: true, reason: 'no_reference' })
+  })
+
   it('والتوقيعُ الخاطئ مرفوضٌ بلا كتابة', async () => {
     const response = await post('invitee.created', { ...payload(), uri: `${INVITEE_URI}-forged` }, 'wrong-secret')
     expect(response.statusCode).toBe(401)

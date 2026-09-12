@@ -109,21 +109,33 @@ export class CalendlyWebhookService {
     this.apps = new TrainerApplicationService(prisma)
   }
 
-  async handle(input: CalendlyWebhookEvent): Promise<{ recorded?: boolean; canceled?: boolean; duplicate?: boolean; ignored?: boolean }> {
+  /* ─────────── ولماذا للتجاهل سببٌ مسمّى ───────────
+
+     حدثٌ موقّعٌ لا نطابقه كان يُردّ ٢٠٠ و`ignored` صامتة: سجلُّ Calendly يقول
+     «سُلِّم»، ووجيز لا يعرف موعدا، ولا أثرَ يقول لماذا. وهذا أرجحُ ما يقع عند
+     أوّل ضبط — بريدٌ غيّره المدعوّ عن بريد طلبه، أو سؤالٌ مخصّصٌ حُذف من
+     Calendly فذهب معه رقمُ الطلب. فيُسمَّى السببُ ويُكتب في سجلّ الخادم،
+     فيُشخَّص العطبُ في دقيقةٍ بدل يوم. */
+  async handle(input: CalendlyWebhookEvent): Promise<{
+    recorded?: boolean; canceled?: boolean; duplicate?: boolean; ignored?: boolean; reason?: string
+  }> {
     const event = input.event
-    if (event !== 'invitee.created' && event !== 'invitee.canceled') return { ignored: true }
+    if (event !== 'invitee.created' && event !== 'invitee.canceled') {
+      return { ignored: true, reason: 'other_event' }
+    }
 
     const payload = input.payload ?? {}
     const reference = trainerReference(payload)
     const email = typeof payload.email === 'string' ? payload.email.trim().toLowerCase() : ''
     const externalId = typeof payload.uri === 'string' ? payload.uri : ''
-    if (!reference || !email || !externalId) return { ignored: true }
+    if (!reference) return { ignored: true, reason: 'no_reference' }
+    if (!email || !externalId) return { ignored: true, reason: 'incomplete_payload' }
 
     const application = await this.prisma.trainerApplication.findFirst({
       where: { reference, email },
       select: { id: true, status: true },
     })
-    if (!application) return { ignored: true }
+    if (!application) return { ignored: true, reason: 'no_application' }
 
     if (event === 'invitee.created') {
       const scheduledAt = parsedDate(payload.scheduled_event?.start_time)
@@ -167,7 +179,7 @@ export class CalendlyWebhookService {
 
     return this.prisma.$transaction(async (tx) => {
       const interview = await tx.trainerInterview.findUnique({ where: { externalId } })
-      if (!interview) return { ignored: true }
+      if (!interview) return { ignored: true, reason: 'no_interview' }
       if (interview.canceledAt) return { duplicate: true }
       await tx.trainerInterview.update({ where: { id: interview.id }, data: { canceledAt: new Date() } })
       await recordAudit(tx, {
