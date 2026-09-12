@@ -6,7 +6,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { getEmailConfig, type EmailConfig } from './integrations.service'
-import { sendEmail } from './mail'
+import { sendEmail, type MailAttachment } from './mail'
 import { categoryForTemplate } from '../../src/application/notifications/categories'
 
 /* لأيّ بوابةٍ الإشعار — جرسُ كلٍّ يعرض جمهورَه وحده.
@@ -85,7 +85,12 @@ export interface DirectMailResult {
 
 export async function sendDirectEmail(
   prisma: PrismaClient,
-  input: { to: string; subject: string; text: string; html?: string; icsContent?: string; icsFilename?: string },
+  input: {
+    to: string; subject: string; text: string; html?: string
+    icsContent?: string; icsFilename?: string
+    /** مرفقاتٌ تُسلَّم كما هي — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه */
+    attachments?: MailAttachment[]
+  },
 ): Promise<DirectMailResult> {
   try {
     const config = await getEmailConfig(prisma)

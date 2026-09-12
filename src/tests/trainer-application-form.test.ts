@@ -27,7 +27,11 @@ const PAGE = 'src/pages/JoinTrainer.tsx'
    مئةِ سطر). والضمانُ لم يتغيّر — تغيّر بيتُه؛ فيُقرأ الاثنان معا كي لا
    يفلت شيءٌ بحجّة أنّه هناك لا هنا. */
 const OPTIONS = 'src/pages/join-trainer/options.ts'
-const FORM = () => read(PAGE) + read(OPTIONS)
+/* وأوصافُ الخبرة والعمل والنمط ووقتِ اليوم انتقلت إلى الوحدة المشتركة يومَ
+   صار ملفُّ المتقدّم يُبنى في الخادم (فلا يقرأ ملفَّ صفحة). فتُقرأ الثلاثةُ
+   معا — الضمانُ لم يتغيّر، تغيّر بيتُه. */
+const SHARED = 'src/application/trainer/application-options.ts'
+const FORM = () => read(PAGE) + read(OPTIONS) + read(SHARED)
 const ROUTES = 'server/http/routes/trainer-applications.routes.ts'
 const SERVICE = 'server/services/trainer-application.service.ts'
 
@@ -151,7 +155,7 @@ describe('نموذج انضمام المدرب', () => {
 
   it('التوفّر يقول متى من اليوم لا اليوم وحده', () => {
     const src = FORM()
-    expect(src).toMatch(/const PERIODS = \[[\s\S]*?value: "morning"[\s\S]*?value: "evening"[\s\S]*?\] as const;/)
+    expect(src).toMatch(/const PERIODS = \[[\s\S]*?value: 'morning'[\s\S]*?value: 'evening'[\s\S]*?\] as const/)
     expect(src, 'الفترات لا تُرسَل مع التوفّر').toContain('periods: periods.length ? periods : undefined')
     /* والخادم يقبلها — وإلّا سقط الطلب كلّه عند الإرسال */
     expect(read(ROUTES), 'المخطط لا يعرف الفترات').toContain("periods: z.array(z.enum(['morning', 'evening'])).optional()")

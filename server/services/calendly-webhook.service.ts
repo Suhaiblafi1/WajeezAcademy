@@ -14,6 +14,7 @@ import {
   TrainerApplicationService,
   type TrainerStatus,
 } from './trainer-application.service'
+import { sendInterviewDossier } from './trainer-dossier.service'
 
 export const CALENDLY_TIMESTAMP_TOLERANCE_S = 180
 
@@ -130,7 +131,7 @@ export class CalendlyWebhookService {
       if (!scheduledAt) throw new AuthError('bad_calendly_payload', 'حدث Calendly بلا موعد صالح', 400)
       const scheduledEventUri = typeof payload.scheduled_event?.uri === 'string' ? payload.scheduled_event.uri : null
 
-      return this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         /* `find` ثمّ `create` يتسابقان عند تسليمَين متزامنَين: كلاهما يرى
            الفراغَ، والثاني يصطدم بالمفتاح الفريد ويردّ ٥٠٠. أمّا الإدخالُ
            المتجاهلُ للتكرار فذريٌّ، فيبقى ردُّ الإعادة ٢٠٠ كما يطلب Calendly. */
@@ -163,6 +164,23 @@ export class CalendlyWebhookService {
         })
         return { recorded: true }
       })
+
+      /* ═══ ملفُّ المتقدّم يُرسَل بعد المعاملة لا داخلَها ═══
+
+         التوليدُ يفتح متصفّحا والإرسالُ ينادي Resend: ثوانٍ تُمسك فيها
+         معاملةَ قاعدةٍ مفتوحةً بلا سبب، وفشلُ أيٍّ منهما يُرجِع المقابلةَ
+         المكتوبةَ. فالحجزُ يُثبَّت أوّلا، ثمّ يُرسَل الملفّ.
+
+         ولا يُرسَل عند التكرار: Calendly يعيد التسليمَ حتّى يرى ٢٠٠، ورسالةٌ
+         بمرفقَين تتكرّر على لجنة المراجعة أسوأُ من ألّا تصل. */
+      if (result.recorded) {
+        /* وفشلُه لا يردّ ٥٠٠: الحجزُ مكتوب، وإعادةُ التسليم ستُعدّ تكرارا
+           فلا تُرسل شيئا. فيُبتلع هنا بعد أن سُجّل في الأثر داخلَ الخدمة. */
+        try {
+          await sendInterviewDossier(this.prisma, application.id, scheduledAt)
+        } catch { /* الملفُّ رفاهيةٌ — والمقابلةُ هي الواجب */ }
+      }
+      return result
     }
 
     return this.prisma.$transaction(async (tx) => {

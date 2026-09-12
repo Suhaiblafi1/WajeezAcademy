@@ -14,19 +14,12 @@
 
 import { ARAB_COUNTRY_NAMES } from "@/data/countries";
 
-export const DOMAIN_YEARS = [
-  { value: "1-3", label: "١–٣ سنوات" },
-  { value: "4-7", label: "٤–٧ سنوات" },
-  { value: "8-12", label: "٨–١٢ سنة" },
-  { value: "12+", label: "أكثر من ١٢ سنة" },
-];
-
-export const TRAINING_YEARS = [
-  { value: "none", label: "لم أدرّب بعد — لكني أتقن مجالي" },
-  { value: "informal", label: "تدريب غير رسمي (زملاء / فريقي)" },
-  { value: "workshops", label: "ورش ودورات قصيرة" },
-  { value: "formal_teaching", label: "تدريب منهجي معتاد (دورات/شعب)" },
-];
+/* سنواتُ الخبرة وحالتُه المهنيّةُ ونمطُ تدريبه ووقتُ يومه: بيتُها الوحدةُ
+   المشتركة، لأنّ ملفَّ المتقدّم يُبنى في الخادم بالأسماء نفسِها. وتُصدَّر
+   من هنا كما كانت — فلا تتغيّر مواضعُ الاستيراد في الصفحة. */
+export {
+  DELIVERY_MODES, DOMAIN_YEARS, EMPLOYMENT_STATUS, PERIODS, TRAINING_YEARS,
+} from "@/application/trainer/application-options";
 
 export const LANGUAGES = ["العربية", "الإنجليزية", "الفرنسية"];
 
@@ -80,12 +73,6 @@ export const ACCREDITATION_BODIES: { country: string; bodies: string[] }[] = [
 ];
 export const ACCREDITATION_OTHER = "أخرى — أكتبها بنفسي";
 
-export const EMPLOYMENT_STATUS = [
-  { value: "employed", label: "موظف — أعمل لدى جهة" },
-  { value: "own_business", label: "لدي عملي الخاص" },
-  { value: "full_time_training", label: "متفرغ للتدريب" },
-];
-
 export const TARGET_AUDIENCES = [
   "طلاب المدارس والجامعات", "خريجون جدد", "موظفو القطاع الخاص", "موظفو القطاع الحكومي",
   "رواد أعمال وأصحاب مشاريع", "قادة ومديرون", "مستقلون وأعمال حرة", "الباحثون عن عمل",
@@ -137,11 +124,6 @@ export const DOC_KINDS = [
 ] as const;
 
 export const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-export const PERIODS = [
-  { value: "morning", label: "صباحي" },
-  { value: "evening", label: "مسائي" },
-] as const;
-
 export interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
 
 /* ثلاث خطوات: من هو (وكلمةُ حسابه)، وأدلتُه وتوفّره، وكيف نصل إليه.

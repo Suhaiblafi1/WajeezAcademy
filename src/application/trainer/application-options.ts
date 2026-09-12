@@ -22,6 +22,58 @@ export function seasonLabel(value: string): string {
   return s ? `${s.label} (${s.months})` : value
 }
 
+/* ═══ أوصافُ الخبرة والعمل والنمط — بيتُها هنا لا في صفحة النموذج ═══
+
+   كانت هذه القوائمُ في `src/pages/join-trainer/options.ts`: يقرؤها النموذجُ
+   وحدَه، والقاعدةُ تحفظ قيمتَها (`4-7`, `own_business`, `remote`) لا اسمَها.
+   فلمّا صار **ملفُّ المتقدّم** يُبنى في الخادم ويُرسَل PDF إلى لجنة
+   المراجعة، احتاج الخادمُ الأسماءَ نفسَها — ولا سبيلَ له إلى ملفِّ صفحة.
+
+   والبديلُ نسخُها هناك: فيقرأ المتقدّمُ «٤–٧ سنوات» ويقرأ المراجعُ عنه
+   شيئا آخرَ بعد أوّل تعديل. فنُقلت إلى الوحدة المشتركة — وهي وحدةٌ نقيّةٌ
+   بلا React ولا Prisma، تُستورد من الطرفين — والصفحةُ تصدّرها كما كانت. */
+
+/** سنواتُ الخبرة في المجال — القيمةُ تُخزَّن والاسمُ يُقرأ */
+export const DOMAIN_YEARS = [
+  { value: '1-3', label: '١–٣ سنوات' },
+  { value: '4-7', label: '٤–٧ سنوات' },
+  { value: '8-12', label: '٨–١٢ سنة' },
+  { value: '12+', label: 'أكثر من ١٢ سنة' },
+]
+
+/** خبرةُ التدريب — منفصلةٌ عن خبرة المجال: يُتقن مجالَه ولم يدرّب بعد */
+export const TRAINING_YEARS = [
+  { value: 'none', label: 'لم أدرّب بعد — لكني أتقن مجالي' },
+  { value: 'informal', label: 'تدريب غير رسمي (زملاء / فريقي)' },
+  { value: 'workshops', label: 'ورش ودورات قصيرة' },
+  { value: 'formal_teaching', label: 'تدريب منهجي معتاد (دورات/شعب)' },
+]
+
+export const EMPLOYMENT_STATUS = [
+  { value: 'employed', label: 'موظف — أعمل لدى جهة' },
+  { value: 'own_business', label: 'لدي عملي الخاص' },
+  { value: 'full_time_training', label: 'متفرغ للتدريب' },
+]
+
+/** نمطُ التدريب — كان مكتوبا في الوسم نفسِه (`<option value="remote">`) */
+export const DELIVERY_MODES = [
+  { value: 'remote', label: 'عن بعد' },
+  { value: 'in_person', label: 'حضوري' },
+  { value: 'both', label: 'عن بعد وحضوري' },
+]
+
+/** وقتُ اليوم — اليومُ وحدَه لا يقول متى هو متفرّغ فيه */
+export const PERIODS = [
+  { value: 'morning', label: 'صباحي' },
+  { value: 'evening', label: 'مسائي' },
+] as const
+
+/** اسمُ القيمة من قائمتها — وما لا اسمَ له يُعرض كما هو لا يُبتلع */
+export function labelOf(list: readonly { value: string; label: string }[], value: string | null | undefined): string {
+  if (!value) return ''
+  return list.find((x) => x.value === value)?.label ?? value
+}
+
 /** كيف نتواصل معه للاجتماع التعريفيّ — أربعُ قنوات، واحدةٌ تُختار */
 export const CONTACT_CHANNELS = [
   { value: 'phone', label: 'مكالمة هاتفية', needsPhone: true, needsAltEmail: false },
