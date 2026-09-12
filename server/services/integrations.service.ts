@@ -193,6 +193,19 @@ export async function saveZoomConfig(
 export interface CalendlyConfig {
   enabled: boolean
   signingKey?: string
+  /* ═══ ولماذا صار الرمزُ يُخزَّن بعد أن كان يُنسى ═══
+
+     كُتب أوّلا ألّا يُخزَّن (١٢ سبتمبر ٢٠٢٦): كان يلزم للحظةِ تسجيلِ الاشتراك
+     وحدَها، ومفتاحُ حسابِ Calendly كلِّه لا يُترك في قاعدةٍ بلا حاجة.
+
+     ونُقض في اليوم نفسِه لسببٍ لم يكن معروفا حينها: الاشتراكُ خلفَ خطّةٍ
+     مدفوعةٍ لا يملكها الحساب، فصارت المزامنةُ سؤالا دوريّا لا انتظارَ دفعٍ —
+     والسؤالُ الدوريُّ يقتضي رمزا باقيا، إذ يسأل العاملُ الخلفيُّ كلَّ خمس
+     دقائق بلا إنسانٍ يلصقه.
+
+     فيُحفظ كما يُحفظ سرُّ Zoom وسرُّ الدفع: يُكتب ولا يُقرأ إلّا مقنَّعا،
+     والبيئةُ تغلبه. وهذه كلفةُ ألّا يُدفع — سرٌّ زائدٌ ساكن. */
+  token?: string
 }
 
 export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyConfig> {
@@ -201,22 +214,27 @@ export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyC
   const base: CalendlyConfig = {
     enabled: row?.enabled ?? false,
     signingKey: c.signingKey || undefined,
+    token: c.token || undefined,
   }
   const env = process.env
   if (env.CALENDLY_WEBHOOK_SIGNING_KEY) {
     base.signingKey = env.CALENDLY_WEBHOOK_SIGNING_KEY
     base.enabled = true
   }
+  if (env.CALENDLY_PAT) base.token = env.CALENDLY_PAT
   return base
 }
 
 export async function saveCalendlyConfig(
-  prisma: PrismaClient, actorId: string, input: Partial<{ enabled: boolean; signingKey: string }>,
+  prisma: PrismaClient, actorId: string, input: Partial<{ enabled: boolean; signingKey: string; token: string }>,
 ) {
   const current = await getRawConfig(prisma, 'calendly')
   const next: Record<string, unknown> = { ...current }
   /* لا يُكتب فوق السرّ المخزَّن بقيمةٍ مقنَّعةٍ عادت من الشاشة */
-  if (input.signingKey && !MASK.test(input.signingKey)) next.signingKey = input.signingKey
+  for (const k of ['signingKey', 'token'] as const) {
+    const v = input[k]
+    if (v && !MASK.test(v)) next[k] = v
+  }
   const row = await prisma.integrationSetting.upsert({
     where: { provider: 'calendly' },
     update: { config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
@@ -224,7 +242,10 @@ export async function saveCalendlyConfig(
   })
   await recordAudit(prisma, {
     actorId, action: 'integration.calendly.save', entityType: 'integration_setting', entityId: 'calendly',
-    meta: { enabled: row.enabled, keyRotated: !!(input.signingKey && !MASK.test(input.signingKey)) },
+    meta: {
+      enabled: row.enabled,
+      keysRotated: (['signingKey', 'token'] as const).filter((k) => input[k] && !MASK.test(String(input[k]))),
+    },
   })
   return row
 }
@@ -276,9 +297,14 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
          عنوان الموقع نفسِه الذي تبني منه بوّابةُ الدفع روابطَ عودتها. */
       callbackUrl: `${publicSiteUrl()}/api/webhooks/calendly`,
       siteUrlExplicit: hasExplicitSiteUrl(),
-      /* «مفعّل» بلا مفتاحٍ ليس جاهزا — كما في Zoom تماما: يردّ المستقبِلُ
-         ٤٠١ على كلّ حدثٍ ولا يُسجَّل موعد. */
+      token: mask(calendly.token), hasToken: !!calendly.token,
+      /* ═══ طريقان للمزامنة، والشاشةُ تقول أيُّهما قائم ═══
+
+         `ready` مستقبِلٌ جاهزٌ للدفع (يقتضي اشتراكا، والاشتراكُ يقتضي خطّةً
+         مدفوعة)، و`polling` سؤالٌ دوريٌّ يعمل على المجّانيّة. وأحدُهما يكفي —
+         ولو اجتمعا فلا ازدواج: الإدخالُ يتجاهل التكرار. */
       ready: !!calendly.signingKey,
+      polling: !!calendly.token && calendly.enabled,
     },
   }
 }

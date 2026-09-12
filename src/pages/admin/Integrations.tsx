@@ -8,6 +8,7 @@ import { CalendarClock, CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, Ser
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
+import { TRAINER_INTERVIEW } from "@/application/trainer/application-options";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -29,8 +30,9 @@ interface IntegrationsView {
     hasAccountId: boolean; hasClientId: boolean; hasClientSecret: boolean;
   };
   calendly: {
-    enabled: boolean; envSourced: boolean; ready: boolean;
+    enabled: boolean; envSourced: boolean; ready: boolean; polling: boolean;
     signingKey: string; hasSigningKey: boolean; callbackUrl: string; siteUrlExplicit: boolean;
+    token: string; hasToken: boolean;
   };
 }
 
@@ -58,10 +60,9 @@ export default function Integrations() {
   const [testTo, setTestTo] = useState("");
   const [zoomForm, setZoomForm] = useState({ enabled: false, accountId: "", clientId: "", clientSecret: "", hostEmail: "" });
   const [zoomProbe, setZoomProbe] = useState<{ ok: boolean; message: string } | null>(null);
-  const [calForm, setCalForm] = useState({ enabled: false, signingKey: "" });
-  /* الرمزُ الشخصيُّ في حالةِ الشاشة وحدَها: يُرسل لحظةَ التسجيل ولا يُحفظ
-     عندنا — لا في القاعدة ولا في الرد. ويُمحى من الحقل بعد نجاحه. */
-  const [calToken, setCalToken] = useState("");
+  /* الرمزُ الشخصيُّ صار محفوظا مع المفتاح: المزامنةُ الدوريّةُ تسأل Calendly
+     كلَّ خمس دقائق بلا إنسانٍ يلصقه. وعلّةُ النقض في `CalendlyConfig`. */
+  const [calForm, setCalForm] = useState({ enabled: false, signingKey: "", token: "" });
   const [calProbe, setCalProbe] = useState<CalendlyRegisterReply | null>(null);
 
   const load = useCallback(async () => {
@@ -80,7 +81,7 @@ export default function Integrations() {
         enabled: v.zoom.enabled, accountId: v.zoom.accountId, clientId: v.zoom.clientId,
         clientSecret: v.zoom.clientSecret, hostEmail: v.zoom.hostEmail === "me" ? "" : v.zoom.hostEmail,
       });
-      setCalForm({ enabled: v.calendly.enabled, signingKey: v.calendly.signingKey });
+      setCalForm({ enabled: v.calendly.enabled, signingKey: v.calendly.signingKey, token: v.calendly.token });
     } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
   }, []);
@@ -95,18 +96,18 @@ export default function Integrations() {
     finally { setBusy(false); }
   };
 
-  /* الفحصُ والتسجيلُ نداءٌ واحدٌ يفرّقه `apply` — والرمزُ يُمحى بعد نجاح
-     التسجيل فلا يبقى في الشاشة بلا حاجة. */
+  /* الفحصُ والتسجيلُ نداءٌ واحدٌ يفرّقه `apply` — والرمزُ يُقرأ من المحفوظ،
+     فما في الحقل مقنَّعٌ لا يصلح للإرسال. */
   const probeCalendly = async (apply: boolean) => {
     if (busy) return;
     setBusy(true);
     setCalProbe(null);
     try {
       const r = await apiPost<CalendlyRegisterReply>(
-        "/api/admin/integrations/calendly/register", { token: calToken.trim(), apply },
+        "/api/admin/integrations/calendly/register", { apply },
       );
       setCalProbe(r);
-      if (r.ok && r.outcome === "created") { setCalToken(""); await load(); }
+      if (r.ok && r.outcome === "created") await load();
     } catch (e) {
       setCalProbe({ ok: false, message: e instanceof ApiError ? e.message : "تعذّر الاتصال بـCalendly" });
     } finally { setBusy(false); }
@@ -362,11 +363,16 @@ export default function Integrations() {
               <CalendarClock className="h-4 w-4 text-teal-ink" /> مقابلاتُ Calendly
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              يكتب موعدَ المقابلة عندنا حين يحجزه المتقدّم، ويُلغيه حين يُلغي — بحدثٍ موقَّع.
+              يكتب موعدَ المقابلة عندنا حين يحجزه المتقدّم، ويُلغيه حين يُلغي.
             </p>
-            {view.calendly.enabled && !view.calendly.ready && (
+            {view.calendly.enabled && !view.calendly.ready && !view.calendly.polling && (
               <Inset as="p" tone="danger" className="mt-3 text-read leading-6 text-red-200">
-                مفعَّلٌ بلا مفتاحِ توقيع — يردّ المستقبِلُ ٤٠١ على كلّ حدثٍ ولا يُسجَّل موعد.
+                مفعَّلٌ بلا رمزٍ ولا مفتاحِ توقيع — لا يُسجَّل موعدٌ البتّة.
+              </Inset>
+            )}
+            {view.calendly.polling && !view.calendly.ready && (
+              <Inset as="p" tone="positive" className="mt-3 text-read leading-6 text-emerald-200">
+                المزامنةُ بالسؤال الدوريّ — يسأل الخادمُ Calendly كلَّ خمس دقائق. تعمل على الخطّة المجّانيّة.
               </Inset>
             )}
             {view.calendly.envSourced && (
@@ -376,24 +382,33 @@ export default function Integrations() {
             )}
             <div className="mt-4 space-y-3">
               <div>
-                <label className={labelCls}>مفتاحُ التوقيع — يُخزَّن ولا يُعرض</label>
+                <label className={labelCls}>الرمزُ الشخصيُّ — به يسأل الخادمُ عن الحجوزات</label>
+                <input dir="ltr" type="password" value={calForm.token}
+                  onChange={(e) => setCalForm({ ...calForm, token: e.target.value })}
+                  placeholder={view.calendly.hasToken ? view.calendly.token : "eyJraWQ…"}
+                  className={`${inputCls} mt-1 w-full font-mono`} />
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  من Calendly ← Integrations &amp; apps ← API &amp; webhooks. ويكفي وحدَه: القراءةُ تعمل على الخطّة المجّانيّة.
+                </p>
+                {/* ═══ ومن أيِّ حسابٍ يُؤخَذ ═══
+
+                    الرمزُ لا يرى إلّا مواعيدَ حسابِه. ورابطُ الحجز قد يكون على
+                    حسابٍ غيرِ حسابِ المدير، فيُزامن رمزُه صفرا أبدا — ولا يقول
+                    شيءٌ إنّه صفر، لأنّ السؤالَ ينجح ويعود فارغا. فيُقال هنا. */}
+                <Inset as="p" className="mt-2 text-read leading-6 text-muted-foreground">
+                  ويلزم أن يكون من الحساب المضيفِ للمقابلات — <span dir="ltr">{TRAINER_INTERVIEW.url}</span> —
+                  فالرمزُ لا يرى مواعيدَ حسابٍ آخر، ويُزامن صفرا بلا خطأٍ يظهر.
+                </Inset>
+              </div>
+              <div>
+                <label className={labelCls}>مفتاحُ التوقيع — للمستقبِل الفوريّ وحدَه</label>
                 <input dir="ltr" type="password" value={calForm.signingKey}
                   onChange={(e) => setCalForm({ ...calForm, signingKey: e.target.value })}
                   placeholder={view.calendly.hasSigningKey ? view.calendly.signingKey : "سرٌّ طويلٌ تختاره…"}
                   className={`${inputCls} mt-1 w-full font-mono`} />
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  تختاره أنت، ويُمرَّر إلى Calendly عند التسجيل. ليس رمزَ API.
+                  تختاره أنت، ويُمرَّر إلى Calendly عند التسجيل. اتركه فارغا إن اكتفيتَ بالسؤال الدوريّ.
                 </p>
-              </div>
-              <div>
-                <label className={labelCls}>عنوانُ المستقبِل — يُسجَّل عند Calendly</label>
-                <input dir="ltr" readOnly value={view.calendly.callbackUrl}
-                  className={`${inputCls} mt-1 w-full font-mono opacity-70`} />
-                {!view.calendly.siteUrlExplicit && (
-                  <p className="mt-1 text-read leading-6 text-gold-ink">
-                    ‏APP_URL غيرُ مضبوطٍ صراحةً — العنوانُ أعلاه مشتقٌّ، راجعه قبل التسجيل.
-                  </p>
-                )}
               </div>
               <label className="flex items-center gap-2 text-read text-muted-foreground">
                 <input type="checkbox" checked={calForm.enabled}
@@ -406,20 +421,32 @@ export default function Integrations() {
               </Button>
             </div>
 
+            {/* ════ المستقبِلُ الفوريُّ — اختياريٌّ ويحتاج خطّةً مدفوعة ════
+
+                يُترك مطويّا عن الطريق الأوّل: من لا خطّةَ له لا يعنيه، ومن
+                له خطّةٌ يجده حيث يتوقّعه — بعد أن يحفظ رمزَه. */}
             <div className="mt-5 border-t border-white/10 pt-4">
-              <label className={labelCls}>الرمزُ الشخصيُّ من Calendly — يُستعمل مرّةً ولا يُحفظ</label>
-              <input dir="ltr" type="password" value={calToken} onChange={(e) => setCalToken(e.target.value)}
-                placeholder="eyJraWQ…" className={`${inputCls} mt-1 w-full font-mono`} />
+              <p className={labelCls}>المستقبِلُ الفوريُّ — يحتاج خطّةً مدفوعة</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                من Calendly ← Integrations &amp; apps ← API &amp; webhooks. والاشتراكاتُ تحتاج خطّةً مدفوعة.
+                يُغني عن انتظار دقائقِ السؤال. والاشتراكاتُ ليست في الخطّة المجّانيّة — فافحص أوّلا، والفحصُ لا يُنشئ شيئا.
               </p>
+              <div>
+                <label className={labelCls}>عنوانُ المستقبِل — يُسجَّل عند Calendly</label>
+                <input dir="ltr" readOnly value={view.calendly.callbackUrl}
+                  className={`${inputCls} mt-1 w-full font-mono opacity-70`} />
+                {!view.calendly.siteUrlExplicit && (
+                  <p className="mt-1 text-read leading-6 text-gold-ink">
+                    ‏APP_URL غيرُ مضبوطٍ صراحةً — العنوانُ أعلاه مشتقٌّ، راجعه قبل التسجيل.
+                  </p>
+                )}
+              </div>
               {/* معاينةٌ ثمّ تطبيق — لا يُسجَّل مستقبِلٌ حيٌّ قبل أن تُعرض النتيجة */}
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button tone="secondary" size="sm" disabled={busy || !calToken.trim()}
+                <Button tone="secondary" size="sm" disabled={busy || !view.calendly.hasToken}
                   onClick={() => void probeCalendly(false)}>
                   <Send className="h-3.5 w-3.5" /> افحص الاشتراك
                 </Button>
-                <Button tone="confirm" size="sm" disabled={busy || !calToken.trim()}
+                <Button tone="confirm" size="sm" disabled={busy || !view.calendly.hasToken}
                   onClick={() => void probeCalendly(true)}>
                   سجّل الاشتراك
                 </Button>
