@@ -413,3 +413,51 @@ describe('نقرةٌ واحدةٌ، وعنوانٌ لا يفترض، ووعدٌ 
     expect(card, 'يُعرض لمن حجز سلفا').toContain('!lookupResult.hasInterview')
   })
 })
+
+/* ═══ أربعُ شكاوى من الهاتف (١٢ سبتمبر ٢٠٢٦) ═══ */
+describe('الحقولُ لا تُكبّر iOS، والمثالُ يتبع الدولة، والتقويمُ يُرى وهو يُحمَّل', () => {
+  const page = read(PAGE).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+
+  it('⚠️ حقولُ النماذج ١٦ بكسلا — دونَها يُكبّر iOS الصفحةَ عند التركيز فتُسحب', () => {
+    /* شكوى «القسم الثاني وما بعده يتحرّك يمينا ويسارا» على iPhone. ولا
+       امتدادَ أفقيّا في الصفحة — قِيست على ٣٦٠ و٣٩٠ و٤١٢ فلم يتجاوز شيء،
+       ولا عنصرَ يُسحب. والسببُ تكبيرُ iOS التلقائيُّ تحت ستّةَ عشر. */
+    const kit = readFileSync(join(root, 'src/components/FormKit.tsx'), 'utf8')
+    const ctl = /export const controlCls\s*=\s*\n?\s*'([^']*)'/.exec(kit)?.[1] ?? ''
+    const area = /export const areaCls\s*=\s*\n?\s*'([^']*)'/.exec(kit)?.[1] ?? ''
+    expect(ctl, 'صنفُ الحقل غيرُ موجود').toBeTruthy()
+    for (const [name, cls] of [['controlCls', ctl], ['areaCls', area]] as const) {
+      expect(cls, `${name} ما زال دون ١٦ بكسلا — يُكبّر iOS الصفحةَ عند التركيز`).not.toMatch(/\btext-sm\b/)
+      expect(cls, `${name} بلا حجمٍ صريح`).toMatch(/\btext-base\b/)
+    }
+  })
+
+  it('ومثالُ الجوال وتحقّقُه يتبعان رمزَ الدولة — لا مثالٌ أردنيٌّ للجميع', () => {
+    expect(page, 'المثالُ ما زال ثابتا').not.toContain('placeholder="791234567"')
+    expect(page, 'المثالُ لا يُشتقّ من الرمز المختار').toContain('mobileFormatByDial(form.phoneCountryCode)')
+    /* والجدولُ يحمل صيغا حقيقيّة، ولا يدّعي معرفةَ ما لا يُعرف */
+    const data = readFileSync(join(root, 'src/data/countries.ts'), 'utf8')
+    expect(data).toMatch(/SA:\s*\{\s*digits:\s*\[9\]/)
+    expect(data, 'لا مهربَ لما لا نعرف صيغتَه').toMatch(/export function mobileFormatByDial/)
+  })
+
+  it('وتقويمُ Calendly يبدأ فورا ويُرى لوحُه قبل أن يجيب', () => {
+    const card = readFileSync(join(root, 'src/components/BookInterview.tsx'), 'utf8')
+      .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    expect(card, 'ما زال يؤجَّل تحميلُه حتّى يقترب من الشاشة').not.toMatch(/loading="lazy"/)
+    expect(card, 'لا لوحَ يُرى ريثما يجيب — فيبقى مستطيلا فارغا').toContain('يُحمَّل تقويمُ المواعيد')
+    expect(card, 'لا يُعرف متى جاء فيُرفع اللوح').toContain('onLoad')
+  })
+
+  it('وتعذُّرُ حفظ المسودّة يُقال — والصفحةُ تَعِد بأنّ الإجابات محفوظة', () => {
+    /* المسودّةُ تعمل (جُرّبت في متصفّحٍ حقيقيّ: تُكتب وتُستعاد ويظهر إشعارُها).
+       والعطبُ الباقي أنّ تعذُّرَها كان صامتا — تصفّحٌ خاصّ أو متصفّحٌ داخل
+       تطبيقٍ يرمي `setItem`، فيُوعَد المتقدّمُ بحفظٍ لا يقع. */
+    const draft = readFileSync(join(root, 'src/application/trainer/application-draft.ts'), 'utf8')
+    /* على سطر التوقيع وحدَه: `[^]*?` كانت تعبر إلى دالّةٍ أخرى في الملفّ
+       تردّ `boolean` — فمرّ الحارسُ وهو منقوض. ولا نقطةَ تعبر السطر. */
+    expect(draft, 'الحفظُ لا يُخبر بنتيجته').toMatch(/export function saveDraft\(.*\): boolean/)
+    expect(page, 'الصفحةُ لا تقرأ نتيجةَ الحفظ').toContain('setDraftBlocked')
+    expect(page, 'لا يُقال للمتقدّم إنّ الحفظَ تعذّر').toContain('تعذّر حفظُ إجاباتك')
+  })
+})

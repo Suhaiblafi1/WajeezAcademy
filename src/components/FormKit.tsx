@@ -20,8 +20,21 @@ import { Check } from 'lucide-react'
 import { Card } from '@/components/ui/Surface'
 
 /** قياسٌ واحد لكلّ حقلِ سطرٍ واحد — إدخالا كان أو قائمة */
+/* ═══ ولماذا ١٦ لا ١٤ في الحقول ═══
+
+   iOS يُكبّر الصفحةَ **تلقائيّا** عند التركيز في حقلٍ حجمُ نصّه دون ستّةَ
+   عشرَ بكسلا — ثمّ تبقى مكبَّرةً فتُسحب يمينا ويسارا. وهذا ما شكا منه صاحبُ
+   المنصّة في القسمين الثاني والثالث من طلب الانضمام (١٢ سبتمبر ٢٠٢٦): «ليست
+   ثابتة وتتحرّك». ولا امتدادَ أفقيّا في الصفحة — قِيست على ٣٦٠ و٣٩٠ و٤١٢
+   بكسلا فلم يتجاوز شيء؛ التكبيرُ هو الذي يُحرّكها.
+
+   ولا يُعالَج بـ`user-scalable=no`: يتجاهله iOS منذ سنوات، وهو حجبٌ لمن
+   يحتاج التكبير. والعلاجُ أن يُرفع الحجمُ فيزول السبب.
+
+   والرفعُ في محلّه ابتداءً: نصُّ الواجهات العربيّة أربعةَ عشرَ حدًّا أدنى،
+   وما يُكتب فيه بالإصبع أولى بالستّةَ عشر. */
 export const controlCls =
-  'h-12 w-full rounded-xl border border-white/15 bg-paper/30 px-4 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
+  'h-12 w-full rounded-xl border border-white/15 bg-paper/30 px-4 text-base text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
 
 /* ── حقلُ شاشات الفريق — واحدٌ بدل تسعة ──
 
@@ -64,7 +77,7 @@ export const staffAreaCls =
 
 /** والنصُّ الطويل يشترك في كلّ شيءٍ إلّا الارتفاع */
 export const areaCls =
-  'w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm leading-7 text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
+  'w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-base leading-7 text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
 
 /** نجمةُ الإلزام — بلونٍ واحدٍ في الصفحة كلّها */
 function Req() {
