@@ -461,3 +461,34 @@ describe('الحقولُ لا تُكبّر iOS، والمثالُ يتبع ال�
     expect(page, 'لا يُقال للمتقدّم إنّ الحفظَ تعذّر').toContain('تعذّر حفظُ إجاباتك')
   })
 })
+
+describe('الحجزُ يُرى لصاحبه، والإطارُ لا يُمرَّر داخلَه', () => {
+  const card = () => readFileSync(join(root, 'src/components/BookInterview.tsx'), 'utf8')
+  const clean = (x: string) => x.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+
+  it('ومتابعةُ الحالة العامّةُ تعرض الموعدَ المحجوز لا زرَّ حجزٍ ثانٍ', () => {
+    /* صفحةُ المسجَّل تعرضه منذ مدّة، وشاشةُ الإدارة كذلك (TrainerOps).
+       والعامّةُ — بالبريد وحدَه — كانت تعرض الزرَّ أو لا شيء. */
+    const page = read(PAGE)
+    const block = page.slice(page.indexOf('lookupResult &&'))
+    /* على **الشرط** لا على ورودِ الاسم: تعطيلُ الشرط يُبقي الاسمَ في الوسم
+       الميّت، فمرّ الحارسُ وهو منقوض قبل أن يُشدّ. */
+    expect(block, 'عرضُ الموعد غيرُ مشروطٍ بوجوده — أو حُذف الشرط')
+      .toMatch(/lookupResult\.hasInterview && lookupResult\.interviewAt/)
+    expect(block, 'لا يُسمّى الموعدُ لصاحبه').toContain('موعدُ مقابلتك')
+    const svc = readFileSync(join(root, 'server/services/trainer-application.service.ts'), 'utf8')
+    expect(svc, 'الخادمُ لا يردّ موعدَ المقابلة').toMatch(/interviewAt: app\.interviews\[0\]\?\.scheduledAt/)
+  })
+
+  it('⚠️ وارتفاعُ الإطار يتبع محتوى Calendly — لا تمريرٌ داخلَ تمرير', () => {
+    /* ارتفاعٌ ثابتٌ أقصرُ من المحتوى يُنتج تمريرَين متداخلَين: داخلَ الإطار
+       لقراءة أعلاه، وخارجَه لتمرير الصفحة. */
+    const c = clean(card())
+    expect(c, 'لا يُقرأ ارتفاعُ المحتوى المبثوث').toContain('calendly.page_height')
+    expect(c, 'الارتفاعُ ما زال ثابتا في الصنف').toMatch(/height: frameHeight/)
+  })
+
+  it('ويُقال له أن يتحقّق قبل حجزٍ ثانٍ — فالمزامنةُ قد لا تكون قائمة', () => {
+    expect(clean(card()), 'لا تنبيهَ لمن حجز سابقا').toContain('حجزتَ موعدا سابقا؟')
+  })
+})
