@@ -169,3 +169,67 @@ describe('توقيعُ Calendly', () => {
     expect(verifyCalendlyWebhookSignature(raw, `t=${now},v1=${signature}`, undefined, now)).toBe(false)
   })
 })
+
+/* ═══ ملفُّ المتقدّم يلحق بالحجز ═══
+
+   قرارُ صاحب المنصّة (١٢ سبتمبر ٢٠٢٦): حين يحجز المتقدّمُ مقابلتَه يصل
+   لجنةَ المراجعة ملفُّه PDF ومعه سيرتُه ملفًّا منفصلا. وكان يصلها اسمٌ
+   وبريدٌ في دعوة تقويمٍ لا أكثر، فتُقرأ الأوراقُ قبل الاجتماع بدقائق أو لا
+   تُقرأ. وأربعةُ أشياءَ هنا تنكسر صامتةً — لا شاشةَ خطأٍ لواحدٍ منها. */
+describe('ملفُّ المتقدّم عند الحجز', () => {
+  const HOOK = 'server/services/calendly-webhook.service.ts'
+  const DOSSIER = 'server/services/trainer-dossier.service.ts'
+
+  it('يُرسَل عند الحجز وحدَه — لا عند إعادة التسليم', () => {
+    const src = code(HOOK)
+    expect(src, 'الحجزُ لا يُرسل ملفّا أصلا').toContain('sendInterviewDossier')
+    /* Calendly يعيد التسليمَ حتّى يرى ٢٠٠: بلا هذا الشرط تصل اللجنةَ
+       الرسالةُ بمرفقَيها مرّةً بعد مرّة. */
+    expect(src, 'الإرسالُ بلا شرطِ «سُجّل الآن» — فيتكرّر مع كلّ إعادة تسليم')
+      .toMatch(/if \(result\.recorded\)[\s\S]{0,200}sendInterviewDossier/)
+    /* وبعد المعاملة لا داخلَها: التوليدُ يفتح متصفّحا والإرسالُ ينادي شبكةً،
+       وإمساكُ معاملةِ قاعدةٍ طولَ ذلك يُرجِع المقابلةَ المكتوبةَ عند أيّ فشل. */
+    const tx = /\$transaction\(async \(tx\) => \{[\s\S]*?\n {6}\}\)/.exec(src)?.[0] ?? ''
+    expect(tx, 'كتلةُ المعاملة مفقودة').toBeTruthy()
+    expect(tx, 'الإرسالُ داخلَ المعاملة — يُمسكها ثوانيَ ويُرجِعها عند فشله')
+      .not.toContain('sendInterviewDossier')
+    /* وفشلُه لا يردّ ٥٠٠ على Calendly: الحجزُ مكتوبٌ والملفُّ رفاهية */
+    expect(src, 'فشلُ الملفّ يُسقط الحجزَ المكتوب').toMatch(/try \{\s*await sendInterviewDossier[\s\S]{0,80}\} catch/)
+  })
+
+  it('ويحمل ما يكتبه المتقدّم نصّا لا وسما', () => {
+    const src = code(DOSSIER)
+    /* الاسمُ والنبذةُ والدافعُ يكتبها إنسانٌ من خارج المنصّة، وتدخل HTML */
+    expect(src, 'لا تهريبَ لما يكتبه المتقدّم').toMatch(/replace\(\/&\/g, '&amp;'\)/)
+    expect(src, 'لا تهريبَ للأقواس').toMatch(/replace\(\/</)
+  })
+
+  it('والسيرةُ ملفٌّ منفصلٌ بجانب الملفّ — لا رابطٌ موقَّتٌ في متنِ رسالة', () => {
+    const src = code(DOSSIER)
+    expect(src, 'السيرةُ لا تُقرأ من مخزنها').toContain('readDocumentContent')
+    expect(src, 'المرفقان لا يُسلَّمان للبريد').toMatch(/attachments/)
+    /* والبريدُ يمرّرها فعلا إلى Resend — قائمةٌ تُبنى ولا تُرسَل عطبٌ صامت */
+    expect(code('server/services/mail.ts'), 'Resend لا يتلقّى المرفقات')
+      .toMatch(/attachments: attachmentsOf\(input\)/)
+    expect(code('server/services/notification.service.ts'), 'البريدُ المباشر لا يقبل مرفقات')
+      .toContain('attachments?: MailAttachment[]')
+  })
+
+  it('والصورةُ تحمل متصفّحا وخطًّا عربيّا — وإلّا خرج الملفُّ مربّعاتٍ فارغة', () => {
+    const dockerfile = read('Dockerfile')
+    /* متصفّحٌ من apk لا من Playwright: متصفّحاتُه مبنيّةٌ على glibc والصورةُ musl */
+    expect(dockerfile, 'لا متصفّحَ في الصورة — فلا ملفَّ يُطبع').toMatch(/apk add[^\n]*\bchromium\b/)
+    /* والخطُّ لازمٌ بقدره: صورةُ node بلا خطوطٍ البتّة */
+    expect(dockerfile, 'لا خطَّ عربيّا في الصورة').toMatch(/font-noto-arabic/)
+    expect(dockerfile, 'تُنزَّل متصفّحاتُ Playwright بلا أن تُستعمل').toContain('PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1')
+    /* والمولّدُ يبحث عن متصفّحِ النظام — لا يفترض متصفّحَ Playwright */
+    expect(code('server/services/pdf.ts'), 'المولّدُ لا يعرف أين متصفّحُ النظام').toContain('/usr/bin/chromium')
+  })
+
+  it('وغيابُ المتصفّح لا يُسقط الحجز — يُعاد السببُ ولا يُرمى', () => {
+    const src = code('server/services/pdf.ts')
+    const render = /export async function renderPdf[\s\S]*$/.exec(src)?.[0] ?? ''
+    expect(render, 'دالّةُ التوليد مفقودة').toBeTruthy()
+    expect(render, 'التوليدُ يرمي فيُسقط ما ناداه').toMatch(/catch \(e\)[\s\S]*?return \{ pdf: null/)
+  })
+})

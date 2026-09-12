@@ -10,11 +10,30 @@ FROM node:22-alpine
 
 # openssl يحتاجها محرك Prisma · tini يجعل PID 1 يمرّر الإشارات فيتوقف
 # الخادم بنظافة عند إعادة النشر بدل أن يُقتل بعد مهلة
-RUN apk add --no-cache openssl tini
+#
+# ── وchromium وخطُّ نوتو العربيّ: ملفُّ المتقدّم يُطبع بهما ──
+#
+# حين يحجز متقدّمٌ مقابلتَه يصل لجنةَ المراجعة ملفُّه PDF (`server/services/
+# trainer-dossier.service.ts`). والعربيّةُ تُكتب متّصلةً — ومكتباتُ PDF في
+# JavaScript تكتبها منفصلةً معكوسة. فالطباعةُ في متصفّحٍ بلا نافذة، وهو
+# يحسن ذلك لأنّه عملُه.
+#
+# وchromium **من apk لا من Playwright**: متصفّحاتُ Playwright المنزَّلة
+# مبنيّةٌ على glibc، وهذه الصورةُ musl — فلا تعمل عندنا أصلا. ولهذا
+# يُمنع تنزيلُها أدناه.
+#
+# والخطُّ لازمٌ بقدر المتصفّح: صورةُ node الأساسُ **بلا خطوطٍ البتّة**،
+# ومتصفّحٌ بلا خطٍّ عربيٍّ يطبع مربّعاتٍ فارغة — ملفًّا يُفتح ولا يُقرأ.
+RUN apk add --no-cache openssl tini chromium font-noto font-noto-arabic
 
 WORKDIR /app
 
 # طبقة الاعتماديات وحدها أولا: تعديل الشيفرة لا يُبطل ذاكرة npm ci
+#
+# ولا تُنزَّل متصفّحاتُ Playwright: المستعمَلُ chromium الذي ثُبّت أعلاه من
+# apk (والسببُ مكتوبٌ هناك). وبلا هذا المتغيّر يُنزَّل نحوُ ١٥٠MB في كلّ
+# بناءٍ لتُهمَل كلُّها.
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 COPY package.json package-lock.json ./
 RUN npm ci
 

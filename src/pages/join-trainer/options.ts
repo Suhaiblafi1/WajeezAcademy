@@ -12,37 +12,27 @@
    نفسَهما، والاختبارُ يقابل الثلاثةَ (الواجهةَ والمخطّطَ والخدمة) كي لا
    يفترقوا — فبيتُ الرقم واحدٌ لا ثلاثة. */
 
-export const DOMAIN_YEARS = [
-  { value: "1-3", label: "١–٣ سنوات" },
-  { value: "4-7", label: "٤–٧ سنوات" },
-  { value: "8-12", label: "٨–١٢ سنة" },
-  { value: "12+", label: "أكثر من ١٢ سنة" },
-];
+import { ARAB_COUNTRY_NAMES } from "@/data/countries";
 
-export const TRAINING_YEARS = [
-  { value: "none", label: "لم أدرّب بعد — لكني أتقن مجالي" },
-  { value: "informal", label: "تدريب غير رسمي (زملاء / فريقي)" },
-  { value: "workshops", label: "ورش ودورات قصيرة" },
-  { value: "formal_teaching", label: "تدريب منهجي معتاد (دورات/شعب)" },
-];
+/* سنواتُ الخبرة وحالتُه المهنيّةُ ونمطُ تدريبه ووقتُ يومه: بيتُها الوحدةُ
+   المشتركة، لأنّ ملفَّ المتقدّم يُبنى في الخادم بالأسماء نفسِها. وتُصدَّر
+   من هنا كما كانت — فلا تتغيّر مواضعُ الاستيراد في الصفحة. */
+export {
+  DELIVERY_MODES, DOMAIN_YEARS, EMPLOYMENT_STATUS, PERIODS, TRAINING_YEARS,
+} from "@/application/trainer/application-options";
 
 export const LANGUAGES = ["العربية", "الإنجليزية", "الفرنسية"];
-export const COUNTRY_CODES = ["+962", "+966", "+971", "+20", "+965", "+974", "+968", "+973", "+964", "+218", "+249"];
 
-export const ARAB_COUNTRIES = [
-  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
-  "العراق", "فلسطين", "لبنان", "سوريا", "ليبيا", "تونس", "الجزائر", "المغرب", "السودان", "اليمن", "موريتانيا",
-];
+/* الدولُ كلُّها في `src/data/countries.ts` — اسما ورمزَ هاتفٍ ومنطقةً زمنيّة.
+
+   وكان هنا ثلاثُ قوائمَ تصف الشيءَ نفسَه: أحدَ عشرَ رمزَ هاتف، وتسعَ عشرةَ
+   دولةَ إقامة، وخريطةُ مناطقَ زمنيّةٍ لهنّ. فمن أضاف دولةً أضافها في ثلاثةِ
+   مواضعَ أو نسي أحدَها — ومن سكن خارجَهنّ لم يجد بلدَه أصلا.
+
+   والباقي هنا «أين تريد أن تُدرّب»: سوقٌ مستهدَفةٌ لا موطنَ سكن، وهي عربيّةٌ
+   بحكم المنصّة — فتُقرأ من المصدر الواحد ولا تُكتب ثانية. */
+export const ARAB_COUNTRIES: string[] = ARAB_COUNTRY_NAMES;
 export const ALL_ARAB = "كل الدول العربية";
-
-/* المنطقة الزمنية تُشتق تلقائيا من دولة الإقامة — لا سؤال إضافي */
-export const COUNTRY_TIMEZONE: Record<string, string> = {
-  "الأردن": "Asia/Amman", "السعودية": "Asia/Riyadh", "الإمارات": "Asia/Dubai", "مصر": "Africa/Cairo",
-  "الكويت": "Asia/Kuwait", "قطر": "Asia/Qatar", "عُمان": "Asia/Muscat", "البحرين": "Asia/Bahrain",
-  "العراق": "Asia/Baghdad", "فلسطين": "Asia/Hebron", "لبنان": "Asia/Beirut", "سوريا": "Asia/Damascus",
-  "ليبيا": "Africa/Tripoli", "تونس": "Africa/Tunis", "الجزائر": "Africa/Algiers", "المغرب": "Africa/Casablanca",
-  "السودان": "Africa/Khartoum", "اليمن": "Asia/Aden", "موريتانيا": "Africa/Nouakchott",
-};
 
 /* جهات الاعتماد الرسمية في الوطن العربي — قائمةٌ تُختار لا حقل نصٍّ حرّ.
 
@@ -82,12 +72,6 @@ export const ACCREDITATION_BODIES: { country: string; bodies: string[] }[] = [
   { country: "اليمن", bodies: ["وزارة التعليم الفني والتدريب المهني"] },
 ];
 export const ACCREDITATION_OTHER = "أخرى — أكتبها بنفسي";
-
-export const EMPLOYMENT_STATUS = [
-  { value: "employed", label: "موظف — أعمل لدى جهة" },
-  { value: "own_business", label: "لدي عملي الخاص" },
-  { value: "full_time_training", label: "متفرغ للتدريب" },
-];
 
 export const TARGET_AUDIENCES = [
   "طلاب المدارس والجامعات", "خريجون جدد", "موظفو القطاع الخاص", "موظفو القطاع الحكومي",
@@ -140,11 +124,6 @@ export const DOC_KINDS = [
 ] as const;
 
 export const DAYS = ["السبت", "الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"];
-export const PERIODS = [
-  { value: "morning", label: "صباحي" },
-  { value: "evening", label: "مسائي" },
-] as const;
-
 export interface UploadState { status: "idle" | "registering" | "uploading" | "done" | "error"; name?: string; error?: string }
 
 /* ثلاث خطوات: من هو (وكلمةُ حسابه)، وأدلتُه وتوفّره، وكيف نصل إليه.

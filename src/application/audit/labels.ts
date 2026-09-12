@@ -83,6 +83,7 @@ const PHRASES: Record<string, string> = {
   'trainer.info_requested.notify': 'إشعارُ متقدّمٍ بطلبِ معلوماتٍ إضافية',
   'trainer.interview.self_booked': 'حجزُ متقدّمٍ موعدَ مقابلته بنفسه',
   'trainer.interview.self_canceled': 'إلغاءُ متقدّمٍ موعدَ مقابلته',
+  'trainer.interview.dossier_sent': 'إرسالُ ملفِّ المتقدّم إلى لجنة المراجعة',
   'trainer.interview.invite': 'دعوةُ متقدّمٍ إلى حجزِ موعدِ مقابلة',
   'trainer.create_direct': 'تعيينُ مدرّبٍ داخليّا — بلا نموذجِ تقدّم',
   'advisor.case.create_own': 'إدخالُ المستشارِ عميلا وفتحُ حالته',

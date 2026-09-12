@@ -17,6 +17,35 @@ export interface MailInput {
      يقرأ النوعَ وبعضُهم اللاحقة. */
   icsContent?: string
   icsFilename?: string
+  /* مرفقاتٌ أخرى — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه.
+
+     ولماذا حقلٌ عامٌّ بجانب `icsContent` لا بدلا عنه: الدعوةُ مرفقٌ بشروط
+     (اسمُها ونوعُها ومَعلمةُ `method` كلُّها لازمة، ومكتوبٌ فوقُ لماذا)،
+     وتوحيدُهما يجعل كلَّ مُنادٍ يتذكّر تلك الشروط. فيبقى الخاصُّ خاصًّا،
+     ويُضاف العامُّ لما سواه — ويجتمعان في رسالةٍ واحدةٍ إن اجتمعا. */
+  attachments?: MailAttachment[]
+}
+
+export interface MailAttachment {
+  filename: string
+  content: Buffer
+  contentType?: string
+}
+
+/* المرفقاتُ كلُّها في قائمةٍ واحدةٍ تُسلَّم لـResend — أو `undefined` إن
+   لم يكن ثمّ مرفق: قائمةٌ فارغةٌ تُقبل، لكنّ الغيابَ أصدقُ من فراغٍ يُرسَل. */
+function attachmentsOf(input: MailInput) {
+  const list = [
+    ...(input.icsContent
+      ? [{
+          filename: input.icsFilename ?? 'wajeez-event.ics',
+          content: Buffer.from(input.icsContent, 'utf-8'),
+          contentType: 'text/calendar; charset=utf-8; method=REQUEST',
+        }]
+      : []),
+    ...(input.attachments ?? []),
+  ]
+  return list.length > 0 ? list : undefined
 }
 
 export async function sendEmail(config: EmailConfig, input: MailInput): Promise<{ ok: boolean; error?: string }> {
@@ -34,13 +63,7 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
       subject: input.subject,
       text: input.text,
       ...(input.html ? { html: input.html } : {}),
-      attachments: input.icsContent
-        ? [{
-            filename: input.icsFilename ?? 'wajeez-event.ics',
-            content: Buffer.from(input.icsContent, 'utf-8'),
-            contentType: 'text/calendar; charset=utf-8; method=REQUEST',
-          }]
-        : undefined,
+      attachments: attachmentsOf(input),
     })
     if (error) {
       /* أخطاء Resend الشائعة بصياغة مفهومة لمن يراجع السجل */
