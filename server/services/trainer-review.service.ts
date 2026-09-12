@@ -55,7 +55,12 @@ export class TrainerReviewService {
     const rows = await this.prisma.trainerApplication.findMany({
       where: status ? { status } : undefined,
       orderBy: { createdAt: 'desc' },
-      include: { specialties: true, _count: { select: { documents: true, reviews: true, interviews: true } } },
+      /* الملغاةُ لا تُعَدّ مقابلةً: ترويسةُ الطابور تقول «أُجريت مقابلتُه» عن
+         هذا العدد، ومن ألغى موعدَه عبر Calendly لم يجلس إليه أحد. */
+      include: {
+        specialties: true,
+        _count: { select: { documents: true, reviews: true, interviews: { where: { canceledAt: null } } } },
+      },
     })
     return rows.map((a) => ({
       id: a.id, reference: a.reference, status: a.status, fullName: a.fullName, email: a.email,

@@ -173,6 +173,17 @@ rm /tmp/neon.sql.gz
 ١. أنشئ مفتاحا عشوائيّا طويلا، وضعه في `CALENDLY_WEBHOOK_SIGNING_KEY`.
 ٢. أنشئ اشتراك Calendly على `https://<نطاقك>/api/webhooks/calendly` بالحدثين
    `invitee.created` و`invitee.canceled`، ومرّر المفتاحَ نفسَه `signing_key`.
+   ولا تُنشئه لوحةُ Calendly بالضغط — يُنشأ من واجهتها البرمجيّة، ويكفيه
+   `scripts/calendly-webhook-setup.ts` برمزٍ شخصيٍّ من إعدادات Calendly:
+
+   ```bash
+   CALENDLY_PAT=… CALENDLY_WEBHOOK_SIGNING_KEY=… APP_URL=https://<نطاقك> \
+     npm run calendly:webhook              # معاينة: يقول ما سيقع ولا ينشئ
+   … npm run calendly:webhook -- --apply    # الإنشاء فعلا
+   ```
+
+   يقرأ الاشتراكاتِ أوّلا فلا يُنشئ ثانيا فوق أوّل، ولا يطبع الرمزَ ولا
+   المفتاح. وإعادةُ تشغيله بعد كلّ نشرٍ آمنة.
 ٣. أعد النشر، ثمّ نفّذ حجزَ اختبارٍ وتحقّق أن صفحةَ حالة المتقدّم تعرض وقتَه
    الفعليَّ وأن الإلغاء يعيد زرَّ الحجز.
 

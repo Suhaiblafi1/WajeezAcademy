@@ -10,6 +10,7 @@ import type { FastifyInstance } from 'fastify'
 import type { PrismaClient } from '@prisma/client'
 import { buildApp } from '../../http/app'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
+import { TrainerReviewService } from '../../services/trainer-review.service'
 import { setupTestDb, testPrisma } from '../helpers/db'
 
 const SECRET = 'calendly-hook-secret-for-tests'
@@ -99,6 +100,34 @@ describe('حدثُ الحجز الموقّع', () => {
     expect(await prisma.trainerInterview.count({ where: { externalId: INVITEE_URI } })).toBe(1)
   })
 
+  /* ⚠️ أُضيف في ١٢ سبتمبر ٢٠٢٦ — التجاهلُ الصامتُ يجعل أوّلَ ضبطٍ خاطئ لغزا
+
+     حدثٌ موقّعٌ لا يُطابق طلبا كان يُردّ `{ignored:true}` بلا سبب: سجلُّ
+     Calendly يقول «سُلِّم ٢٠٠»، ووجيز بلا موعد، ولا شيءَ يقول لماذا. وأرجحُ
+     أسبابه بريدٌ غيّره المدعوّ في نموذج Calendly عن بريد طلبه. فالسببُ
+     يُسمَّى ويُكتب في السجلّ. */
+  it('وحدثٌ ببريدٍ لا يطابق الطلبَ يُتجاهَل بسببٍ مسمّى لا بصمت', async () => {
+    const response = await post('invitee.created', {
+      ...payload(),
+      uri: `${INVITEE_URI}-other-email`,
+      email: 'someone-else@test.local',
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ ignored: true, reason: 'no_application' })
+  })
+
+  it('وحدثٌ بلا رقم طلبٍ يُسمّى سببُه كذلك', async () => {
+    const base = payload()
+    /* بلا `tracking` ولا سؤالٍ مخصّص — لا مصدرَ لرقم الطلب البتّة */
+    const response = await post('invitee.created', {
+      uri: `${INVITEE_URI}-no-ref`,
+      email: base.email,
+      scheduled_event: base.scheduled_event,
+    })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toEqual({ ignored: true, reason: 'no_reference' })
+  })
+
   it('والتوقيعُ الخاطئ مرفوضٌ بلا كتابة', async () => {
     const response = await post('invitee.created', { ...payload(), uri: `${INVITEE_URI}-forged` }, 'wrong-secret')
     expect(response.statusCode).toBe(401)
@@ -118,5 +147,18 @@ describe('حدثُ الإلغاء الموقّع', () => {
     expect(application.status).toBe('shortlisted')
     const mine = await new TrainerApplicationService(prisma).myApplication(userId)
     expect(mine.interviews).toEqual([])
+  })
+
+  /* ⚠️ أُضيف في ١٢ سبتمبر ٢٠٢٦ — الطابورُ كان يعدّ الملغاةَ مقابلةً أُجريت
+
+     صفحةُ حالة المتقدّم كانت تصفّي `canceledAt: null`، وطابورُ الإدارة لا
+     يصفّي: `_count.interviews` يعدّ الصفَّ الملغى، فتقول ترويسةُ الطابور
+     «أُجريت مقابلتُه» لمن ألغى موعدَه قبل أن يجلس إليه أحد — وذاك رقمٌ
+     يُقرأ قرارا. فالعدُّ على الأحياء وحدَهم. */
+  it('ولا يُعَدّ الموعدُ الملغى مقابلةً في طابور الإدارة', async () => {
+    const rows = await new TrainerReviewService(prisma).listApplications()
+    const row = rows.find((r) => r.reference === REFERENCE)
+    expect(row, 'الطلبُ غائبٌ عن الطابور').toBeDefined()
+    expect(row?.interviewsCount, 'عُدَّت الملغاةُ مقابلةً أُجريت').toBe(0)
   })
 })
