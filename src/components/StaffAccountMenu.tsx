@@ -12,7 +12,7 @@
    وما فيها غير الخروج: من أنت، وبأيّ بريد، وبأيّ أدوار — فالإداريّ يرى
    لماذا يُفتح له بابٌ ويُغلق آخر بدل أن يصطدم بالمنع فيظنّه عطبا. */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { ChevronDown, LogOut, UserCog } from 'lucide-react'
 import { signOut } from '@/services/auth'
@@ -38,6 +38,33 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
   const [open, setOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const navigate = useNavigate()
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  /* ═══ ولماذا مستمعٌ على المستند لا ستارةٌ `fixed` ═══
+
+     كانت القائمةُ تُغلَق بزرِّ ستارةٍ `fixed inset-0` — ولم يكن يغلقها.
+     والعلّةُ أنّ ترويسةَ البوّابات الأربع تحمل `backdrop-blur`، و
+     `backdrop-filter` يجعل حاملَه **كتلةً حاضنةً** لكلّ `position: fixed`
+     في ذرّيّته. فالستارةُ لم تكن تمتدّ على الشاشة بل على الترويسة وحدَها
+     (أربعةُ أرباعٍ من بوصة: `h-16`)، فمن نقر في متن الصفحة لم يصب شيئا
+     وبقيت القائمةُ مفتوحة.
+
+     والمستمعُ على `document` لا تحبسه كتلةٌ حاضنة. وهو نفسُه ما يعمل في
+     `NotificationBell` في هذه الترويسة بعينها. ومعه `Escape` — فالقائمةُ
+     التي تُفتح بلوحة المفاتيح تُغلَق بها. */
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   /* الخروج ينتظر مسح الجلسة عند الخادم قبل التنقّل — وإلّا سبق التنقّلُ
      المسحَ فعاد الداخلُ داخلا وهو يظنّ أنّه خرج. */
@@ -52,7 +79,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
   const roles = (user?.roles ?? []).map((r) => ROLE_NAMES_AR[r] ?? r)
 
   return (
-    <div className="relative">
+    <div ref={boxRef} className="relative">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -71,13 +98,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
       </button>
 
       {open && (
-        <>
-          <button
-            aria-label="إغلاق قائمة الحساب"
-            onClick={() => setOpen(false)}
-            className="fixed inset-0 z-40 cursor-default"
-          />
-          <Inset role="menu" className="absolute left-0 top-12 z-50 w-72 bg-surface p-2 shadow-2xl">
+        <Inset role="menu" tone="solid" className="absolute left-0 top-12 z-50 w-72 p-2 shadow-2xl">
             <div className="px-3 pb-3 pt-2">
               <p className="truncate text-sm font-black">{name}</p>
               <p dir="ltr" className="mt-0.5 truncate text-right text-read text-muted-foreground">{user?.email ?? '—'}</p>
@@ -114,8 +135,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
                 {signingOut ? 'يُسجَّل الخروج…' : 'تسجيل الخروج'}
               </button>
             </div>
-          </Inset>
-        </>
+        </Inset>
       )}
     </div>
   )

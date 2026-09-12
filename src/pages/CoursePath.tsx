@@ -824,7 +824,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       {/* التسجيل يُطلب لحظة الدفع لا قبله */}
       {pending && (
         <Modal onClose={() => setPending(null)} label="التسجيل قبل الدفع" panelClassName="w-full max-w-md">
-          <Inset className="story-fade bg-surface">
+          <Inset tone="solid" className="story-fade">
             <p className="mb-4 text-center text-sm leading-relaxed text-foreground">
               خطوة واحدة قبل الدفع: حساب يحفظ مسارك وشهاداتك.
             </p>

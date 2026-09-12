@@ -219,7 +219,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-paper/70 p-4" role="dialog" aria-label={`تعديل حساب ${row.user.displayName}`}>
-      <Inset className="w-full max-w-md bg-surface">
+      <Inset tone="solid" className="w-full max-w-md">
         <div className="flex items-start justify-between gap-3">
           <h3 className="text-sm font-black">تعديل حساب «{row.user.displayName}»</h3>
           <button onClick={onClose} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground">

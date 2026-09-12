@@ -260,7 +260,7 @@ export default function BuyPanel({
      بنودٌ ومجموعٌ وزرّ — لا تحتاج عرضَ مقالة. */
   return (
     <Modal onClose={onClose} label={`الشراء: ${title}`} panelClassName="w-full max-w-md">
-      <Inset className="story-fade max-h-[86vh] overflow-y-auto bg-surface sm:p-5">
+      <Inset tone="solid" className="story-fade max-h-[86vh] overflow-y-auto sm:p-5">
         <h3 className="text-base font-black">إتمام الشراء</h3>
         <p className="mt-1 text-read text-muted-foreground">{title}</p>
 

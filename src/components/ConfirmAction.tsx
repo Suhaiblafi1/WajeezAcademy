@@ -72,7 +72,7 @@ export default function ConfirmAction({
     <Modal onClose={onCancel} label={titleAr} panelClassName="w-full max-w-lg">
       {/* أرضيّةُ اللوح على الطفل لا على `panelClassName` — كما في سائر
           النوافذ (`BuyPanel`): بلا أرضيّةٍ يطفو النصُّ فوق الصفحة المعتّمة. */}
-      <Inset dir="rtl" className="max-h-[86vh] overflow-y-auto bg-surface text-foreground sm:p-6">
+      <Inset dir="rtl" tone="solid" className="max-h-[86vh] overflow-y-auto text-foreground sm:p-6">
         <h2 className="flex items-start gap-2 text-sm font-black">
           {tone === "danger" && <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-300" aria-hidden="true" />}
           {titleAr}
