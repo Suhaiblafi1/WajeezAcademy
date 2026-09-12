@@ -25,6 +25,12 @@ const sh = readFileSync(join(root, 'deploy/deploy.sh'), 'utf8')
 /** بلا التعليقات — فذِكرُ الأمر في شرحٍ ليس تنفيذا له */
 const code = (s: string) => s.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
 
+/* ولا الرسائلُ كذلك: `echo "جرّب: restart caddy"` نصيحةٌ للمشغّل لا أمرٌ
+   يُنفَّذ. وقد مرّ حارسُ إعادةِ التحميل خضراءَ على نصيحةٍ كهذه قبل أن
+   يُشدَّ — فيُقصَر الفحصُ على ما يُنفَّذ فعلا. */
+const commands = (s: string) =>
+  code(s).split('\n').filter((l) => !/^\s*(echo|printf)\b/.test(l)).join('\n')
+
 describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => {
   it('يتوقّف عند أوّل فشل — لا يمضي على خطوةٍ سقطت', () => {
     expect(sh).toMatch(/set -euo pipefail/)
@@ -65,5 +71,35 @@ describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => 
   it('يقرأ إعدادَه من deploy/ لا من مسارٍ خارج المستودَع', () => {
     expect(code(sh)).toMatch(/deploy\/compose\.prod\.yml/)
     expect(code(sh)).toMatch(/deploy\/\.env\.production/)
+  })
+
+  /* ═══ العطبُ الذي كُتب له الحارسان التاليان ═══
+
+     `Caddyfile` مربوطٌ لا مبنيّ، و`up -d` لا يُبدّل حاويةً إلا إن تغيّر
+     **وصفُها** — وتحريرُ ملفٍّ مربوطٍ ليس تغييرا في الوصف. وCaddy يقرأ
+     إعدادَه عند الإقلاع ولا يراقب الملفّ.
+
+     فبقي `frame-src https://calendly.com` أربعةَ أيّامٍ في المستودَع لا في
+     الترويسة، وبقي إطارُ الحجز مستطيلا أبيضَ للمتقدّمين. ولم يكشفه حارسٌ:
+     الحارسُ القائم يقرأ `deploy/Caddyfile` — أي النيّةَ لا ما أُرسل. */
+
+  it('⚠️ يعيد تحميلَ Caddy بعد التبديل — فالملفُّ المربوطُ لا يُقرأ بنفسه', () => {
+    /* على ما يُنفَّذ لا على ما يُطبَع: النصيحةُ في رسالة خطأٍ ليست إعادةَ تحميل */
+    const c = commands(sh)
+    expect(c, 'لا إعادةَ تحميلٍ ولا إعادةَ تشغيل — تعديلُ السياسة يبقى على القرص بلا أثر')
+      .toMatch(/caddy reload|restart caddy/)
+    /* وبعد التبديل لا قبلَه: إعادةُ تحميلٍ ثمّ `up -d` تُلغيها الحاويةُ الجديدة */
+    const up = c.indexOf('up -d --remove-orphans')
+    const reload = Math.max(c.indexOf('caddy reload'), c.indexOf('restart caddy'))
+    expect(up, 'أمرُ التبديل غائب').toBeGreaterThan(-1)
+    expect(reload, 'إعادةُ التحميل يجب أن تلي تبديلَ الحاويات').toBeGreaterThan(up)
+  })
+
+  it('⚠️ يفحص الترويسةَ كما أُرسلت لا كما كُتبت — وإلّا اختبأ الفرقُ بينهما', () => {
+    const c = code(sh)
+    /* الفحصُ على الخادم الحيّ: `-I` يقرأ الترويسةَ وحدَها، والبحثُ فيها عن
+       `frame-src` لـCalendly. وهذا ما كان غائبا فمرّ العطبُ صامتا. */
+    expect(c, 'لا يُقرأ ترويسةَ الخادم الحيّ').toMatch(/curl[^\n]*-[a-zA-Z]*I[^\n]*SITE_DOMAIN/)
+    expect(c, 'لا يفحص frame-src في المُرسَل').toMatch(/frame-src\*calendly\.com|frame-src[^\n]*calendly\.com/)
   })
 })
