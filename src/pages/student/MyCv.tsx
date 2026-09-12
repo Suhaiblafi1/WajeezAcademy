@@ -185,7 +185,7 @@ export default function MyCv() {
       {/* نافذة الحذف الموثق */}
       {delId && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-paper/70 p-5 backdrop-blur-sm">
-          <Inset className="w-full max-w-md bg-surface">
+          <Inset tone="solid" className="w-full max-w-md">
             <div className="flex items-center justify-between">
               <h3 className="font-black">حذف السيرة — حذف منطقي بسبب موثق</h3>
               <button onClick={() => setDelId(null)} className="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="إغلاق"><X className="h-5 w-5" /></button>

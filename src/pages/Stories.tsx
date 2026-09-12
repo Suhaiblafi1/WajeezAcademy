@@ -111,7 +111,7 @@ export default function StoriesPage() {
       {/* نافذة القصة الكاملة */}
       {open && (
         <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
-          <Inset dir="rtl" className="overflow-hidden bg-surface">
+          <Inset dir="rtl" tone="solid" className="overflow-hidden">
             {/* ─────────── لماذا يتوقّف التراكب عند الهاتف ───────────
 
                 كان الاسمُ والدورُ والشارةُ صفّا **مطلقا** أسفلَ الترويسة فوق

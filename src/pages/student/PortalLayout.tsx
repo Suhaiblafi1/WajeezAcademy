@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, Award, Lock, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox, Library } from "lucide-react";
 import { signOut } from "@/services/auth";
@@ -56,6 +56,53 @@ export default function PortalLayout({ children, title }: { children: React.Reac
      الخادم. ولمّا زالت البيانات المحاكاة لم يبق للمعاينة ما تعرضه. */
   const [bellOpen, setBellOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const bellRef = useRef<HTMLDivElement>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
+  const accountSheetRef = useRef<HTMLDivElement>(null);
+
+  /* ═══ ولماذا مستمعٌ على المستند لا ستارةٌ `fixed` ═══
+
+     كانت المنسدلتان — الجرسُ وقائمةُ الحساب — تُغلقان بزرِّ ستارةٍ
+     `fixed inset-0`، ولم يكن يغلقهما. والعلّةُ أنّ الترويسةَ تحمل
+     `backdrop-blur`، و`backdrop-filter` يجعل حاملَه **كتلةً حاضنةً**
+     لكلّ `position: fixed` في ذرّيّته — فلم تكن الستارةُ تمتدّ على
+     الشاشة بل على الترويسة وحدَها، ومن نقر في متن الصفحة لم يصب شيئا.
+
+     والمستمعُ على `document` لا تحبسه كتلةٌ حاضنة. وهو نفسُه ما يعمل في
+     `NotificationBell` و`StaffAccountMenu`. */
+  useEffect(() => {
+    if (!bellOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) setBellOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setBellOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [bellOpen]);
+
+  /* والحسابُ سطحان لا سطح: منسدلةٌ على الحاسوب وورقةٌ سفليّةٌ على الجوال،
+     تتقاسمان `accountOpen`. فلا يُغلَق إلّا إذا وقع النقرُ خارجهما معا —
+     وإلّا أغلق نقرٌ داخلَ ورقة الجوال ما هو داخلُها. */
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (accountRef.current?.contains(t)) return;
+      if (accountSheetRef.current?.contains(t)) return;
+      setAccountOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setAccountOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [accountOpen]);
   const [signingOut, setSigningOut] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -260,7 +307,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           </nav>
           <div className="flex items-center gap-2 text-read leading-5 text-muted-foreground">
             {/* جرس الإشعارات */}
-            <div className="relative">
+            <div ref={bellRef} className="relative">
               <Button tone="secondary" onClick={() => setBellOpen((v) => !v)}
                 aria-label="الإشعارات" className="relative grid h-11 w-11 place-items-center">
                 <Bell className="h-3.5 w-3.5" />
@@ -269,9 +316,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 )}
               </Button>
               {bellOpen && (
-                <>
-                  <button aria-label="إغلاق الإشعارات" onClick={() => setBellOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <Inset className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] bg-surface shadow-2xl">
+                <Inset tone="solid" className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
                       <p className="text-read leading-5 font-black text-foreground">التنبيهات</p>
                       <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-fine font-bold text-teal-light-ink transition hover:text-foreground">
@@ -301,14 +346,13 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                       onClick={() => setBellOpen(false)} className="mt-2 block px-3 py-2 text-center text-fine font-bold text-teal-light-ink transition hover:border-white/30">
                       افتح «الرسائل والتنبيهات»
                     </Inset>
-                  </Inset>
-                </>
+                </Inset>
               )}
             </div>
             <ThemeToggle />
             {/* قائمة الحساب — شؤون الحساب كلها هنا لا تبويباتٍ في شريط التعلّم.
                 وفيها زرُّ الخروج نصّا صريحا: كان أيقونةَ سهمٍ في الشريط. */}
-            <div className="relative hidden md:block">
+            <div ref={accountRef} className="relative hidden md:block">
               <button
                 onClick={() => setAccountOpen((v) => !v)}
                 aria-expanded={accountOpen}
@@ -324,9 +368,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 <ChevronDown className={`h-3 w-3 transition ${accountOpen ? "rotate-180" : ""}`} />
               </button>
               {accountOpen && (
-                <>
-                  <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-40 cursor-default" />
-                  <Inset role="menu" className="absolute left-0 top-14 z-50 w-60 bg-surface p-2 shadow-2xl">
+                <Inset role="menu" tone="solid" className="absolute left-0 top-14 z-50 w-60 p-2 shadow-2xl">
                     <p className="px-3 pb-2 pt-1 text-read text-muted-foreground">{user}</p>
                     {ACCOUNT_ITEMS.map((a) => (
                       <NavLink
@@ -352,8 +394,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                       <LogOut className="h-4 w-4" />
                       {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}
                     </button>
-                  </Inset>
-                </>
+                </Inset>
               )}
             </div>
           </div>
@@ -429,7 +470,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
       {accountOpen && (
         <>
           <button aria-label="إغلاق قائمة الحساب" onClick={() => setAccountOpen(false)} className="fixed inset-0 z-50 cursor-default bg-paper/60 backdrop-blur-sm md:hidden" />
-          <div dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
+          <div ref={accountSheetRef} dir="rtl" className="fixed inset-x-0 bottom-0 z-50 rounded-t-3xl border-t border-white/10 bg-surface p-5 pb-[max(env(safe-area-inset-bottom),1rem)] md:hidden">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm font-black">{user}</p>
               <button onClick={() => setAccountOpen(false)} aria-label="إغلاق" className="cursor-pointer text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>

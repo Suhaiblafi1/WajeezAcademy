@@ -158,9 +158,27 @@ export default function AdminLayout({ children, title }: { children: React.React
               الشريط الجانبيّ الثلاثة تختفي على الهاتف ويصير الاختيارُ قراءةَ
               عشرين سطرا بحثا عن واحد. و`optgroup` يُعيد التقسيمَ نفسَه —
               الأقسامُ هي أقسامُ الشريط لا تقسيمٌ ثانٍ يفترق عنه. */}
+          {/* ─────────── سقفُ عرضِ القائمة — تخفيفُ ضغطٍ لا إصلاحُ عطبٍ مُثبَت ───────────
+
+              شُكي (١٢ سبتمبر ٢٠٢٦) أنّ الترويسةَ تُقَصُّ من يسارها على
+              الهاتف فيغيب طرفُها. **ولم يُعَد إنتاجُ القصّ** في متصفّحٍ بلا
+              رأسٍ عند ٣٢٠ و٣٦٠ و٣٩٠: قيست حوافُّ بنود الصفّ فوقعت كلُّها
+              داخلَ الإطار. والفرضيّةُ الأولى — أنّ `<select>` يرفض
+              الانضغاطَ لأنّ مقاسَه الأصغرَ عرضُ أطولِ خياراته — **سقطت
+              بالقياس**: انضغطت إلى ١٩٦ بكسلا من تلقائها.
+
+              ولا يُقاس القصُّ بـ`scrollWidth`: `body` عليه `overflow-x: clip`
+              (في `index.css`)، فالفائضُ يُقَصُّ ولا يصير تمريرا — ولذلك
+              كان القياسُ على حوافّ البنود لا على عرض المستند.
+
+              فما بقي هنا **احتياطٌ لا تشخيص**: القائمةُ أوسعُ بندٍ مرنٍ في
+              الصفّ، وسقفُها يفرّغ نحوَ ٧٦ بكسلا لمن ضاقت شاشتُه أو كبّر
+              خطَّه — ولا تخسر شيئا، فخياراتُها تُقرأ كاملةً حين تُفتح.
+              وإن عاد القصُّ فالعلّةُ في غير هذا الموضع، ويُطلب معها اسمُ
+              الشاشة والجهاز. */}
           <select
             aria-label="التنقل بين شاشات الإدارة"
-            className="rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs font-bold text-foreground lg:hidden"
+            className="min-w-0 max-w-[7.5rem] truncate rounded-xl border border-white/15 bg-paper px-3 py-2 text-xs font-bold text-foreground sm:max-w-[12rem] lg:hidden"
             value={location.pathname}
             onChange={(e) => navigate(e.target.value)}
           >
@@ -175,7 +193,7 @@ export default function AdminLayout({ children, title }: { children: React.React
           {/* ب-٣: min-w-0 يسمح للصفّ بالتقلّص عند التكبير ٤٠٠٪ (٣٢٠ بكسل CSS).
               بلا ذلك كان اسم الحساب يفيض ٣٨ بكسل خارج الشاشة فيظهر تمرير أفقي
               على مستوى المستند — والقراءة تصير سطرا سطرا بتمرير يمينا ويسارا. */}
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
               aria-label="بحث سريع — Ctrl+K"
               title="بحث سريع — Ctrl+K" className="hidden bg-white/[0.03] sm:flex">

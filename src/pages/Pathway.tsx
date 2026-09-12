@@ -531,7 +531,7 @@ export default function PathwayPage() {
 
           {trainersOpen && (
             <Modal onClose={() => setTrainersOpen(false)} label={`الفريق التدريبي لمسار ${pathway.name}`} panelClassName="w-full max-w-md">
-              <Inset className="story-fade bg-surface">
+              <Inset tone="solid" className="story-fade">
                 <h3 className="flex items-center gap-2 text-base font-black">
                   <User className="h-4 w-4 text-teal-light-ink" />
                   الفريق التدريبي لهذا المسار

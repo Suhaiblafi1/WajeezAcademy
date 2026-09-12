@@ -497,18 +497,35 @@ function HowItWorks() {
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-[12.5%] top-5 hidden h-px md:block">
             <div className="how-rail h-full w-full bg-gradient-to-l from-teal/70 via-teal/35 to-teal/70" />
           </div>
-          <ol className="grid gap-4 md:grid-cols-4">
+          {/* ─────────── لماذا عمودان على الهاتف لا عمودٌ واحد ───────────
+
+              كانت الشبكةُ عمودا واحدا على الهاتف، فتصير المحطّاتُ الأربعُ
+              نحوَ ألفِ بكسلٍ من التمرير: لا يرى الزائرُ منها إلّا واحدةً
+              ونصفا في الشاشة الواحدة. وقسمٌ عنوانُه «كيف تسير رحلتك» لا
+              يؤدّي معناه إن لم تُرَ رحلتُه مجتمعةً — فأربعُ محطّاتٍ
+              تُقرأ واحدةً واحدةً هي أربعُ بطاقاتٍ لا رحلة.
+
+              فصارت ٢×٢ على الهاتف بقرار صاحب المنصّة (١٢ سبتمبر ٢٠٢٦)،
+              ومعها ضغطُ المقاسات — الحلقةُ والأيقونةُ والحشوةُ والسطرُ —
+              حتّى تسع الأربعُ شاشةً واحدة. و`md:` يبقى كما كان بحرفه:
+              أربعةُ أعمدةٍ تحت الخطّ الواصل.
+
+              **والضغطُ من الحشوة والمقاسات لا من الحرف:** جُرّب `text-fine`
+              للسطر الشارح فأسقطه حارسُ `learner-surface` عن حقّ — متنٌ دون
+              أربعةَ عشرَ لا يُقرأ، والقاعدةُ أنّ `text-fine` للّصيقات
+              وحدَها. فبقي المتنُ `text-read` كما كان. */}
+          <ol className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
             {steps.map((s, i) => (
               <li key={s.title} className="relative flex flex-col items-center text-center" style={{ ['--i' as string]: i }}>
-                <span className="how-node relative z-10 grid h-10 w-10 place-items-center rounded-full border border-teal/50 bg-card text-sm font-black text-teal-ink">
+                <span className="how-node relative z-10 grid h-8 w-8 place-items-center rounded-full border border-teal/50 bg-card text-sm font-black text-teal-ink md:h-10 md:w-10">
                   {i + 1}
                 </span>
-                <Card tone="accent" className="mt-4 flex w-full flex-1 flex-col items-center bg-card px-4 py-5 transition hover:border-teal/40">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-teal/12 text-teal-ink">
-                    <s.icon className="h-5 w-5" />
+                <Card tone="accent" className="mt-3 flex w-full flex-1 flex-col items-center bg-card px-3 py-4 transition hover:border-teal/40 md:mt-4 md:px-4 md:py-5">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-teal/12 text-teal-ink md:h-10 md:w-10">
+                    <s.icon className="h-4 w-4 md:h-5 md:w-5" />
                   </span>
-                  <h3 className="mt-3 text-sm font-bold">{s.title}</h3>
-                  <p className="mt-1.5 text-read leading-6 text-muted-foreground">{s.text}</p>
+                  <h3 className="mt-2.5 text-sm font-bold md:mt-3">{s.title}</h3>
+                  <p className="mt-1 text-read leading-6 text-muted-foreground md:mt-1.5">{s.text}</p>
                 </Card>
               </li>
             ))}
@@ -605,13 +622,26 @@ function Stories() {
       {/* نافذة القصة الكاملة */}
       {open && (
         <Modal onClose={() => setOpen(null)} label={`قصة ${open.name} كاملة`} panelClassName="my-8 w-full max-w-3xl">
-          <Panel dir="rtl" className="story-fade overflow-hidden bg-card">
+          <Panel dir="rtl" tone="solid" className="story-fade overflow-hidden">
               {/* رأس القصة */}
-              <div className="relative h-52 overflow-hidden md:h-60">
-                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+              {/* ─────────── لماذا يتوقّف التراكب عند الهاتف ───────────
+
+                  العطبُ نفسُه الذي عولج في `Stories.tsx`، وبقي هنا: الاسمُ
+                  والدورُ والشارةُ صفٌّ **مطلقٌ** أسفلَ الترويسة فوق الظِّلّ.
+                  وعلى شاشة الهاتف يلتفّ هذا الصفُّ إلى ثلاثة أسطر فيصعد
+                  داخل الترويسة — فيقع الكلامُ فوق الصورة المرسومة ويُقرأ
+                  الاثنان معا كطبقتين متضاربتين، ويبلغ الاسمُ الطويل
+                  («نوف — طالبة سنة أخيرة — القاهرة») حافّةَ الشاشة.
+
+                  فصار على الهاتف: ظِلٌّ في الأعلى، ثمّ الاسمُ تحته في
+                  السياق العاديّ — لا تراكبَ ولا التفافَ فوق صورة.
+                  والتراكبُ يعود من `md:` حيث العرضُ يتّسع للصفّ في سطرٍ
+                  واحد. وهو نصّا ما تفعله نافذةُ `Stories.tsx`. */}
+              <div className="relative overflow-hidden md:h-60">
+                <div className="grid h-40 w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)] md:h-full">
                   <StoryAvatar id={open.id} name={open.name} look={open.look} className="h-28 w-28 md:h-32 md:w-32" />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+                <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-t from-surface via-surface/40 to-transparent md:h-full" />
                 <button
                   onClick={() => setOpen(null)}
                   aria-label="إغلاق القصة"
@@ -619,10 +649,10 @@ function Stories() {
                 >
                   <X className="h-5 w-5" />
                 </button>
-                <div className="absolute bottom-4 right-6 flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-6 pb-1 pt-3 md:absolute md:bottom-4 md:right-6 md:p-0">
                   <span className="tag-teal rounded-full px-4 py-1.5 text-sm font-bold">{open.tag}</span>
                   <span className="text-sm text-foreground">{open.name} — {open.role}</span>
-                  <span className="text-fine font-normal text-muted-foreground">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
+                  <span className="w-full text-fine font-normal text-muted-foreground md:w-auto">{STORY_ILLUSTRATIVE_BADGE_AR}</span>
                 </div>
               </div>
 
@@ -641,7 +671,7 @@ function Stories() {
                   شعبته، فكان العمودُ يعرض الجملةَ المؤقّتة نفسَها في خمس بطاقات.
                   ومكانَه دخل ما يُقنع فعلا: كيف دخل، ومشروعُ تخرّجه. */}
               <div className="grid gap-px bg-white/5 md:grid-cols-3">
-                <div className="bg-card p-6">
+                <div className="bg-surface p-6">
                   <div className="flex items-center gap-2 text-xs text-teal-light-ink">
                     {open.entry === 'diagnostic' ? <Compass className="h-4 w-4" /> : <Route className="h-4 w-4" />}
                     {open.entry === 'diagnostic' ? 'بدأ بالتشخيص' : 'اشترى مسارا جاهزا'}
@@ -652,14 +682,14 @@ function Stories() {
                       : 'كان يعرف وجهته، فبدأ المسار مباشرة.'}
                   </div>
                 </div>
-                <div className="bg-card p-6">
+                <div className="bg-surface p-6">
                   <div className="flex items-center gap-2 text-xs text-teal-light-ink"><Route className="h-4 w-4" /> المسار</div>
                   <div className="mt-2 font-bold leading-7">{open.pathway}</div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     {open.weeks} أسبوعا · {open.weeklyHours} · {open.courses.length} دورات
                   </div>
                 </div>
-                <div className="bg-card p-6">
+                <div className="bg-surface p-6">
                   <div className="flex items-center gap-2 text-xs text-teal-light-ink"><FileCheck className="h-4 w-4" /> مشروع التخرّج</div>
                   <div className="mt-2 text-sm font-bold leading-7">{open.capstone}</div>
                 </div>
@@ -871,7 +901,7 @@ function FinalCta() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <p className="mt-4 text-read leading-5 text-muted-foreground">
-            مجاني · بدون حساب · إجاباتك على جهازك — لا نُرسل إلا أنك بدأت وأكملت
+            مجاني · بدون حساب · إجاباتك على جهازك
           </p>
         </div>
       </div>

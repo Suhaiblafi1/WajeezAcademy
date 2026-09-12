@@ -97,7 +97,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       </Button>
 
       {open && (
-        <Inset className="absolute left-0 top-11 z-50 w-80 overflow-hidden bg-surface shadow-2xl shadow-black/60 sm:w-96">
+        <Inset tone="solid" className="absolute left-0 top-11 z-50 w-80 overflow-hidden shadow-2xl shadow-black/60 sm:w-96">
           <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
             <p className="text-read font-black">الإشعارات</p>
             {items && items.some((n) => n.status === "sent") && (
