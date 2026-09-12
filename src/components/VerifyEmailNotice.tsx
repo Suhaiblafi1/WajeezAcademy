@@ -53,9 +53,18 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
     }
   };
 
+  /* ─── حبرُ الزرّ (صاحب المنصّة، ١٢ سبتمبر ٢٠٢٦): «غيرُ واضح، ليكن أسودَ» ───
+
+     `tone="ghost"` يرسم حبرَه بلون النصّ العاديّ — وهو **فاتحٌ** في الثيمة
+     الداكنة. فحين وُضعت عليه تعبئةٌ ذهبيّةٌ صريحةً (`bg-[#FABC05]`) اجتمع
+     حبرٌ فاتحٌ على أرضيّةٍ ساطعة: نصٌّ يكاد يذوب في زرّه.
+
+     و`text-on-gold` هو حبرُ المنصّة فوق الذهبيّ (‏`--on-gold`‏، ‎#0D0D0D‎) —
+     أسودُ فعلا، ولا ينقلب مع الثيمة كما ينقلب حبرُ النصّ. فالزرُّ يُقرأ
+     في الوضعين، ولا يُخترع له لونٌ خارج المعجم. */
   const sendButton = (
     <Button tone="ghost" onClick={send}
-      disabled={busy} className="min-h-9 bg-[#FABC05] disabled:opacity-60">
+      disabled={busy} className="min-h-9 bg-[#FABC05] text-on-gold hover:bg-[#FABC05]/90 hover:text-on-gold disabled:opacity-60">
       <MailCheck className="h-3.5 w-3.5" />
       {busy ? "يُرسَل…" : "أرسل لي رابط التوثيق"}
     </Button>

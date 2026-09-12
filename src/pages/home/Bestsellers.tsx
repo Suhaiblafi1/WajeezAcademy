@@ -59,11 +59,20 @@ function CategoryFilter({
   const rest = counts.slice(TOP)
   const activeInRest = rest.some(([c]) => c === active)
   const shown: [string, number][] = [['الكل', total], ...counts.slice(0, TOP), ...(more || activeInRest ? rest : [])]
-  const chip = 'inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition sm:px-4 sm:py-2'
+  /* ─── الرقاقةُ صغُرت (صاحب المنصّة، ١٢ سبتمبر ٢٠٢٦): «اجعلها أصغر بكثير» ───
+
+     كانت `text-sm` بحشوِ ‎14×6‎ يرتفع إلى ‎16×8‎ على الشاشات الأوسع — فصفُّ
+     المرشِّحات يعلو ٤٠ بكسلا فوق البطاقات التي جاء الزائرُ ليراها، وهي
+     أداةٌ تخدم القائمةَ لا تزاحمها. فنزلت إلى `text-fine` بحشوِ ‎10×4‎،
+     ولم تعد تكبر على `sm:` — الأداةُ أداةٌ في كلّ عرض.
+
+     والارتفاعُ الملموسُ باقٍ: `min-h-8` تحفظ للإصبع هدفا يُضغط بعد أن
+     صار الحشوُ أصغرَ من أن يصنعه وحدَه. */
+  const chip = 'inline-flex min-h-8 shrink-0 snap-start items-center gap-1 rounded-full border px-2.5 py-1 text-fine font-semibold transition'
 
   return (
     <div
-      className="scrollbar-hide -mx-5 mt-4 flex snap-x items-center gap-2 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+      className="scrollbar-hide -mx-5 mt-3 flex snap-x items-center gap-1.5 overflow-x-auto px-5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
       role="group"
       aria-label={label}
     >
@@ -79,7 +88,7 @@ function CategoryFilter({
           }`}
         >
           {c}
-          <span className={`rounded-full px-1.5 text-fine font-black tabular-nums ${active === c ? 'bg-black/25' : 'bg-foreground/[0.07] text-muted-foreground'}`}>
+          <span className={`rounded-full px-1 text-fine font-black leading-4 tabular-nums ${active === c ? 'bg-black/25' : 'bg-foreground/[0.07] text-muted-foreground'}`}>
             {n}
           </span>
         </button>
@@ -91,7 +100,7 @@ function CategoryFilter({
           className={`${chip} border-dashed border-border text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink`}
         >
           {more || activeInRest ? 'أقل' : `المزيد (${rest.length})`}
-          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${more || activeInRest ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-3 w-3 transition-transform ${more || activeInRest ? 'rotate-180' : ''}`} />
         </button>
       )}
     </div>
@@ -249,7 +258,13 @@ export function Bestsellers() {
                   interactive
                   className="group flex w-[280px] shrink-0 snap-start flex-col gap-2 p-5"
                 >
-                  <span className="kicker text-teal-light-ink">{b.note}</span>
+                  {/* ذهبيّةٌ كبطاقة الدورة المجاورة (صاحب المنصّة، ١٢ سبتمبر
+                      ٢٠٢٦): الوسمُ واحدٌ في معناه — «هذه مختارةٌ ولمن» —
+                      فلونان له في شريطين متجاورين يقولان فرقا لا وجود له. */}
+                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
+                    <Flame className="h-3 w-3" />
+                    {b.note}
+                  </span>
                   {/* الاسمُ **القصير** كبطاقة الكتالوج: الكاملُ متوسّطُه ٤٥ حرفا
                       وفيه نقطتان — يصلح لصفحةٍ لا لبطاقةٍ في شريط. */}
                   <h4 className="text-base font-black leading-snug">{b.p.shortName}</h4>

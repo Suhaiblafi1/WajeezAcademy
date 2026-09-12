@@ -263,6 +263,23 @@
     align-items: center;
   }
 
+  /* ─── خريطةُ التذييل: حدُّ AA لا حدُّ AAA (١٢ سبتمبر ٢٠٢٦) ───
+
+     طلبُ صاحب المنصّة: أعمدةٌ «أصغرُ ما يكون بأقلّ فراغٍ بين الأسطر».
+     والذي كان يصنع الفراغَ ليس حشوَ الرابط بل `min-height: 44px` فوقه —
+     فصفٌّ نصُّه اثنا عشرَ بكسلا كان يشغل سبعةً وخمسين.
+
+     و٤٤ هو حدُّ **AAA** (‏2.5.5‏). أمّا AA الذي يعلنه رأسُ هذا القسم وتقيسه
+     بوّابتُنا فهو **٢٤×٢٤** (‏2.5.8‏) — وهو ما يفحصه `scripts/a11y-audit.ts`
+     على هاتفٍ عرضُه ٣٩٠. فالتذييلُ ينزل إلى الحدّ المقيس لا دونه.
+
+     ⚠ ومحصورٌ في قوائم الخريطة (`footer nav ul a`) وحدَها: روابطُ الرأس
+     والتنقّل الرئيسيّ تبقى ٤٤، فهي ما يُضغط أثناء المشي. وهذه خريطةُ موقعٍ
+     تُقرأ في آخر الصفحة. */
+  footer nav ul a {
+    min-height: 24px;
+  }
+
   /* مربّعُ الاختيار والدائرة: القياسُ على هاتفٍ عرضُه ٣٩٠ بكسلا وجدهما
      ١٣×١٣ — مقاسُ المتصفّح الافتراضيّ، لا مقاسٌ مقصود. والوسمُ الذي يلفّهما
      أوسعُ فالضغطةُ تصيب، لكنّ الرؤيةَ نفسَها تشقّ على من بصرُه ضعيف.
@@ -469,6 +486,38 @@
   body {
     background: #ffffff !important;
     color: #111111 !important;
+  }
+
+  /* ─── ورقةُ المستشار: تُطبع وحدَها، لا الصفحةُ خلفها ───
+
+     نافذةُ `AdvisorBrief` تُرسم ببوّابةٍ إلى `body`، فهي **أختُ** `#root`
+     لا ابنتُه. وبلا هذه القاعدة يطبع المتصفّح الصفحةَ كلَّها تحت الورقة —
+     صفحةُ مسارٍ من عشرة أقسامٍ خلف ملخّصٍ من نصف صفحة.
+
+     والوسمُ يضعه المكوّنُ عند فتحه ويرفعه عند إغلاقه، فلا تتأثّر طباعةٌ
+     أخرى في الموقع (ملفُّ المتقدّم، نتيجةُ التشخيص) بشيءٍ ممّا هنا. */
+  body[data-printing="advisor-brief"] #root {
+    display: none !important;
+  }
+  body[data-printing="advisor-brief"] [role="dialog"] {
+    max-width: none !important;
+  }
+  body[data-printing="advisor-brief"] [aria-modal="true"] * {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  /* والنافذةُ تُوسَّط رأسيّا على الشاشة (`items-center` و`min-h-full`) —
+     وهو صوابٌ هناك وهدرٌ هنا: ثلثُ الورقة الأوّلُ يخرج أبيضَ فارغا. فتُرفع
+     التوسيطُ والأرضيّةُ المعتّمةُ في الطباعة وحدَها. */
+  body[data-printing="advisor-brief"] [aria-modal="true"],
+  body[data-printing="advisor-brief"] div:has([aria-modal="true"]) {
+    position: static !important;
+    display: block !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    overflow: visible !important;
   }
   /* الأدواتُ لا تُطبع: الرأسُ، والقائمةُ الجانبيّةُ للإدارة، وكلُّ ما وُسم
      `print:hidden` — شريطُ القرار، وعارضُ الوثائق، وأزرارُ التنقّل. فالمطبوعُ

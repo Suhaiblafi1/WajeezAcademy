@@ -53,7 +53,6 @@ function useReveal() {
    القصص والشعارات انتقلت إلى مصدر مشترك تتقاسمه صفحة القصص المستقلة */
 import { stories, partnerLogos, STORY_ILLUSTRATIVE_BADGE_AR } from '@/data/stories'
 import StoryAvatar from '@/components/StoryAvatar'
-import RemoteImage from '@/components/RemoteImage'
 import { UpcomingTermLine } from '@/components/UpcomingTermNote'
 import ProofBand from '@/components/ProofBand'
 import { Card, Panel, Inset } from '@/components/ui/Surface'
@@ -353,7 +352,7 @@ function DiagnosticTeaser() {
           كاملا، وهبط الحشوُ على الهاتف وحده — والشاشات الأوسع كما كانت. */}
       <div className="shell">
         <div className="reveal text-center">
-          <SectionLabel>مؤشر وجيز — دقيقة واحدة</SectionLabel>
+          <SectionLabel>مؤشر وجيز</SectionLabel>
           <h2 className="mt-4 text-xl font-bold leading-snug sm:text-2xl md:text-3xl">
             قبل أن تختار دورة… اعرف لماذا لم تبدأ بعد
           </h2>
@@ -909,18 +908,33 @@ function Partners() {
           </p>
         </div>
         <div className="reveal mt-10 flex flex-wrap items-center justify-center gap-10 md:gap-16">
-          {/* و-٢: الشعار يحمل معنى (اسم الجهة) فبديله نصُّه لا فراغ.
-              كانت الثلاثة تُستضاف على مُحسِّن صور الموقع الأم ولا تُحمَّل،
-              فيقرأ الزائر «تحدث عنا الإعلام» ولا يرى تحته شيئا. */}
+          {/* ─── ولماذا `img` عاريةٌ بعد `RemoteImage` (١٢ سبتمبر ٢٠٢٦) ───
+
+              العطبُ الذي أبلغ عنه صاحبُ المنصّة: «لا تظهر إلّا إذا حدّثتُ
+              الصفحة». وسببُه مهلةُ `RemoteImage`: ستُّ ثوانٍ ثمّ `failed`
+              إن لم تكن الصورةُ قد حُمّلت. وهي مهلةٌ وُضعت لصورٍ **خارجيّة**
+              كانت تُستضاف على مُحسِّن صور الموقع الأمّ فيعلّقها CSP بلا أن
+              تفشل. وهذه الثلاثةُ نُقلت إلى `public/` منذ ذلك الحين.
+
+              فصار اجتماعُ `loading="lazy"` بالمهلة يعمل ضدّ نفسه: القسمُ
+              أسفلَ الطيّة، فالمتصفّح لا يطلب الصورةَ أصلا حتّى يقترب منها
+              الزائر، والمهلةُ تنقضي وهو لم يصل بعد — فتُستبدل بنصِّ البديل
+              ولا تعود. ومن حدّث الصفحةَ وهو عندها رآها لأنّها طُلبت فورا.
+
+              والصورةُ المحلّيّةُ من أصلنا نفسِه لا تحتاج حارسَ فشلٍ أصلا:
+              إن لم تصل فقد سقط البناءُ كلُّه. فبقي `alt` وحدَه بديلا —
+              وهو ما يقوله المعيار. */}
           {partnerLogos.map((p) => (
-            <RemoteImage
+            <img
               key={p.name}
               src={p.src}
               alt={p.name}
-              fallback="label"
               loading="lazy"
-              className="partner-logo h-10 w-auto opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 md:h-12"
-              fallbackClassName="h-10 md:h-12"
+              decoding="async"
+              /* ولا `grayscale`: طُلبت بألوانها (صاحب المنصّة، ١٢ سبتمبر
+                 ٢٠٢٦). والعتامةُ كاملةٌ للسبب نفسِه — شعارٌ بسبعين في المئة
+                 شعارٌ باهت. */
+              className="partner-logo h-10 w-auto transition md:h-12"
             />
           ))}
         </div>
@@ -943,6 +957,10 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
       { label: 'كل المسارات', to: '/pathways' },
       { label: 'كل الدورات', to: '/courses' },
       { label: 'مؤشر وجيز والتشخيص', to: '/diagnostic' },
+      /* بابُ المرآة (البند ٤٠) — نزل إلى هنا حين رُفعت دعوتُه من شاشة بدء
+         التشخيص (١٢ سبتمبر ٢٠٢٦). وصفحةٌ لا يصلها رابطٌ صفحةٌ لا وجودَ لها،
+         فالحذفُ من موضعٍ لا يعني الحذفَ من المنصّة. */
+      { label: 'مرآة وجيز', to: '/mirror' },
       { label: 'قصص المتعلمين', to: '/stories' },
       { label: 'المدربون والمستشارون', to: '/trainers' },
       { label: 'التحقق من شهادة', to: '/verify' },
@@ -1022,34 +1040,37 @@ function Footer() {
               ))}
             </div>
           </div>
-          {/* أعمدةُ الروابط صارت صفوفا: خمسةُ أعمدةٍ رأسيّةٍ تصير على الهاتف
-              خمسَ قوائمَ متتاليةٍ فوق بعضها — نحوَ عشرين سطرا لا يقرؤها أحد.
-              فصفٌّ واحدٌ لكلّ مجموعة، وروابطُها جنبا إلى جنبٍ يفصلها «|» كي
-              يبين أنّها منفصلةٌ لا جملةٌ واحدة. */}
-          <div className="grid gap-x-8 gap-y-4 md:col-span-2 md:grid-cols-2">
+          {/* ─── وعادت أعمدةً (صاحب المنصّة، ١٢ سبتمبر ٢٠٢٦) ───
+
+              كانت صفوفا أفقيّةً يفصل روابطَها «|»، وقد صِيغت كذلك خوفا من
+              طولٍ على الهاتف. والقرارُ ينسخها: «اجعلها كلَّها أعمدةً لا
+              جنبا إلى جنب، وأصغرَ ما يكون بأقلّ فراغٍ بين الأسطر».
+
+              والخوفُ القديمُ يُعالَج بالحجم لا بالاتّجاه: أربعةُ أعمدةٍ على
+              الهاتف بدل عمودين، ورابطٌ `text-fine` بارتفاعِ سطرٍ ‎16px‎
+              وبلا فجوةٍ بينها — فالقائمةُ كلُّها أقصرُ ممّا كانت أفقيّةً،
+              وكلُّ رابطٍ يُقرأ وحدَه لا في جملةٍ تفصلها شُرَط. */}
+          <nav aria-label="خريطة الموقع" className="grid grid-cols-2 gap-x-5 gap-y-4 md:col-span-2 md:grid-cols-4">
             {footerCols.map((col) => (
               <div key={col.title}>
-                <div className="mb-1.5 flex items-center gap-1.5 text-sm font-bold">
-                  <col.icon className="h-3.5 w-3.5 text-teal-ink" />
+                <div className="mb-1 flex items-center gap-1 text-fine font-bold">
+                  <col.icon className="h-3 w-3 shrink-0 text-teal-ink" />
                   {col.title}
                 </div>
-                <ul className="flex flex-wrap items-center gap-x-2 gap-y-1 text-read leading-6 text-muted-foreground">
-                  {col.links.map((l, i) => (
-                    <li key={l.label} className="flex items-center gap-x-2">
+                <ul className="flex flex-col text-fine leading-4 text-muted-foreground">
+                  {col.links.map((l) => (
+                    <li key={l.label}>
                       {l.to.startsWith('#') ? (
-                        <a href={l.to} className="transition hover:text-teal-light-ink">{l.label}</a>
+                        <a href={l.to} className="block py-0.5 transition hover:text-teal-light-ink">{l.label}</a>
                       ) : (
-                        <Link to={l.to} className="transition hover:text-teal-light-ink">{l.label}</Link>
-                      )}
-                      {i < col.links.length - 1 && (
-                        <span aria-hidden="true" className="select-none text-white/25">|</span>
+                        <Link to={l.to} className="block py-0.5 transition hover:text-teal-light-ink">{l.label}</Link>
                       )}
                     </li>
                   ))}
                 </ul>
               </div>
             ))}
-          </div>
+          </nav>
         </div>
         <div className="mt-7 flex flex-col items-center justify-between gap-2 border-t border-white/5 pt-5 text-xs text-muted-foreground md:flex-row">
           <div>© 2026 أكاديمية وجيز — جميع الحقوق محفوظة</div>
@@ -1082,7 +1103,7 @@ function MobileCtaBar() {
       className={`fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-paper/90 px-5 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-3 backdrop-blur-xl transition-transform duration-300 md:hidden ${visible ? 'translate-y-0' : 'translate-y-full'}`}
     >
       <a href="#diagnostic" className="btn-teal w-full py-3.5">
-        مؤشر وجيز — دقيقة واحدة
+        مؤشر وجيز
         <ArrowLeft className="h-4 w-4" />
       </a>
     </div>

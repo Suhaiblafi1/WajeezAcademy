@@ -15,7 +15,8 @@
  *     المرآة يُحيي عقوبةً من بابٍ خلفيّ — فالنفيُ مفحوصٌ لا موصوف. */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, sep } from 'node:path'
 import { questionById } from '../../domain/diagnostic/catalog'
 import { RIASEC_DIMS } from '../../domain/diagnostic/v2_1/maps'
 import { RIASEC_ITEM_IDS, mirrorItems } from '../../domain/diagnostic/mirror/items'
@@ -126,11 +127,36 @@ describe('٤٠ · لوحُ «ما لا يقوله» شرطُ نشرٍ لا زي�
     expect(page, 'لم يُقل أيُّ المقاييس يصل إلى التشخيص').toContain('وضوحُ الهدف وحدَه')
   })
 
+  /* ⚠️ عُمّم في ١٢ سبتمبر ٢٠٢٦ — البابُ بابٌ أينما كان
+
+     كان يشترط الرابطَ في `Diagnostic.tsx` بعينه، لأنّ موضعَه يومَ كُتب كان
+     شاشةَ بدء التشخيص. ثمّ رُفعت دعوةُ المرآة من تلك الشاشة (قرارُ صاحب
+     المنصّة) ونزلت إلى تذييل الموقع — فسقط الحارسُ على **انتقالٍ** لا على
+     عطب.
+
+     والذي يحرسه الحارسُ في نصّه: «صفحةٌ بلا رابطٍ صفحةٌ لا وجودَ لها». وهذا
+     يُقاس بمسحِ الواجهة كلِّها لا ملفّا واحدا — فصار أقوى لا أضعف: يمسك
+     الآن يُتمَ الصفحة من أيّ جهةٍ جاء، لا من جهةِ التشخيص وحدَها. */
   it('وللمرآة بابٌ يصلها — صفحةٌ بلا رابطٍ صفحةٌ لا وجودَ لها', () => {
-    const diag = readFileSync('src/pages/Diagnostic.tsx', 'utf8')
-    expect(diag, 'لا رابطَ إلى المرآة من شاشة البدء').toMatch(/to="\/mirror"/)
     const app = readFileSync('src/App.tsx', 'utf8')
     expect(app, 'المسارُ غيرُ مسجَّل').toMatch(/path="\/mirror"/)
+
+    /* مسحُ `src` كلِّه عدا `App.tsx` نفسَه: تسجيلُ المسار ليس بابا إليه. */
+    const doors: string[] = []
+    const walk = (dir: string) => {
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name)
+        if (statSync(full).isDirectory()) { walk(full); continue }
+        if (!name.endsWith('.tsx') && !name.endsWith('.ts')) continue
+        if (full.endsWith(`src${sep}App.tsx`)) continue
+        if (full.includes(`${sep}tests${sep}`)) continue
+        /* الصيغتان معا: خاصّيّةٌ في JSX (‏`to="/mirror"`‏) وقيمةٌ في جدول
+           روابطَ يُرسَم منه (‏`to: '/mirror'`‏) — والتذييلُ من الثاني. */
+        if (/(?:to|href)\s*[=:]\s*["'`]\/mirror["'`]/.test(readFileSync(full, 'utf8'))) doors.push(full)
+      }
+    }
+    walk('src')
+    expect(doors, 'لا رابطَ إلى المرآة في الواجهة كلِّها — الصفحةُ يتيمة').not.toEqual([])
   })
 
   it('ولا يُطلب بريدٌ ولا حساب', () => {

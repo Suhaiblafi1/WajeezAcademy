@@ -22,6 +22,7 @@ import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
 import BuyPanel from "@/components/BuyPanel";
+import { couponFieldCls } from "@/components/FormKit";
 import CohortPicker from "@/components/CohortPicker";
 import { useRealSession } from "@/services/session";
 import CourseTitle from "@/components/CourseTitle";
@@ -585,7 +586,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   aria-label="كود الخصم"
                   dir="ltr"
                   maxLength={24}
-                  className={`min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2 text-left text-xs tracking-widest placeholder:tracking-normal placeholder:text-muted-foreground/75 focus:outline-none ${
+                  className={`${couponFieldCls} tracking-widest placeholder:tracking-normal ${
                     promoApplied ? "border-teal-light text-teal-light-ink" : promoError ? "border-gold/60" : "border-white/15 focus:border-teal-light"
                   }`}
                 />

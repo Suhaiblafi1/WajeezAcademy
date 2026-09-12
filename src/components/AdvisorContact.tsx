@@ -8,11 +8,18 @@ export default function AdvisorContact({
   label,
   className,
   icon,
+  onNavigate,
 }: {
   text: string
   label: string
   className?: string
   icon?: React.ReactNode
+  /** يعترض النقرة قبل مغادرة الصفحة — لنافذةٍ تُجهّز شيئا يُرفق في المحادثة.
+
+      ويبقى `href` موضوعا على أيّ حال: الرابطُ يُفتح بالزرّ الأوسط وبقائمة
+      السياق و«انسخ الرابط»، ويعمل لو سقطت جافاسكربت. فالاعتراضُ تحسينٌ فوق
+      رابطٍ صحيح لا بديلٌ عنه. */
+  onNavigate?: () => void
 }) {
   const hasWhatsApp = Boolean(CONTACT.whatsapp)
   const href = hasWhatsApp
@@ -23,6 +30,17 @@ export default function AdvisorContact({
       href={href}
       target={hasWhatsApp ? '_blank' : undefined}
       rel={hasWhatsApp ? 'noreferrer' : undefined}
+      onClick={
+        onNavigate
+          ? (e) => {
+              /* نقرةٌ بمِفتاحٍ أو بزرٍّ غيرِ الأيسر تعني «افتحه كما هو» —
+                 فلا تُعترَض، وإلّا سُلب المستخدمُ فتحَه في لسانٍ جديد. */
+              if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+              e.preventDefault()
+              onNavigate()
+            }
+          : undefined
+      }
       className={className}
     >
       {icon ?? (hasWhatsApp ? <MessageCircle className="h-4 w-4" /> : <Mail className="h-4 w-4" />)}

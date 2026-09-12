@@ -13,7 +13,6 @@ import { usePublishedContent } from '@/services/public-content'
 import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
 import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
-import { UpcomingTermBanner } from '@/components/UpcomingTermNote'
 import { useCourseCohorts } from '@/services/cohort-prices'
 import { fmtDateAr } from '@/utils/format'
 
@@ -190,13 +189,19 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       {/* رقاقاتُ المجال — واحدةٌ للمسارات والدورات. ولا صفَّ للمستوى: المستوى
           مكتوبٌ على بطاقة كلّ مسار، وصفٌّ يكرّره فوق النتائج حشوٌ لا تصفية
           (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦). */}
-      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="تصفية حسب المجال">
+      {/* ─── الرقاقةُ صغُرت (صاحب المنصّة، ١٢ سبتمبر ٢٠٢٦) ───
+
+          صفُّ المجالات أداةٌ فوق ثمانين بطاقة، وكان بحجم نصِّ البطاقات نفسِه
+          (`text-sm` وحشوِ ‎16×8‎) — فيُقرأ صفَّ عناوينَ لا مرشِّحا، ويدفع أوّلَ
+          بطاقةٍ تحت حافّة الشاشة على اللابتوب. فنزل إلى `text-fine` بحشوِ
+          ‎10×4‎ مع `min-h-8` تحفظ هدفَ الإصبع. */}
+      <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="تصفية حسب المجال">
         {pathwayDomains.map((c) => (
           <button
             key={c}
             onClick={() => patch('cat', c)}
             aria-pressed={cat === c}
-            className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
+            className={`min-h-8 rounded-full border px-2.5 py-1 text-fine font-semibold transition ${
               cat === c
                 ? 'border-teal bg-teal-deep text-white'
                 : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-teal/40 hover:text-teal-light-ink'
@@ -207,10 +212,12 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         ))}
       </div>
 
-      {/* ــ الفصلُ القادم: هاتان الصفحتان لا تعرضان تاريخا إطلاقا (البند ٥٢).
-             وموضعُه فوق النتائج لا تحتَها: من يتصفّح ثمانين بطاقةً لا يصل
-             إلى ذيل الصفحة، والتاريخُ يُقرأ قبل الاختيار لا بعده. */}
-      <UpcomingTermBanner className="mt-6" />
+      {/* ــ لوحُ «الفصلُ القادم» رُفع من هاتين الصفحتين (قرارُ صاحب المنصّة،
+             ١٢ سبتمبر ٢٠٢٦): «احذف هذه الجملة من كلّ موضعٍ تظهر فيه».
+
+             وما بقي منه في مكانه: بطاقةُ الدورة تقول «شعبةٌ مفتوحة · تبدأ
+             كذا» من شعبتها هي — تاريخٌ يخصّ ما يُنظر إليه لا إعلانَ موسمٍ
+             فوق ثمانين بطاقة. والمكوّنُ نفسُه باقٍ لأسطحٍ أخرى تناديه. */}
 
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
       <p className="mt-6 text-read leading-5 text-muted-foreground" aria-live="polite">
@@ -236,7 +243,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   </span>
                 )}
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-fine text-muted-foreground">{pathwayDomain(p.id)}</span>
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-fine text-muted-foreground">{p.level}</span>
+                {/* المستوى نزل تحت العنوان (صاحب المنصّة، ١٢ سبتمبر ٢٠٢٦):
+                    صفُّ الوسوم فوقَ العنوان كان يحمل ثلاثةً — «من مختارات
+                    وجيز» والمجالَ والمستوى — فيلتفّ سطرين على البطاقة الضيّقة
+                    ويهبط العنوانُ عن رأسها. والمستوى صفةُ المسار نفسِه لا
+                    تصنيفَه، فموضعُه مع اسمه. */}
                 <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
               </div>
               {/* ── الاسمُ القصيرُ في البطاقة، والكاملُ في الصفحة ──
@@ -247,6 +258,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                   و١٦ من ٢٠ فيه نقطتان. و`short_title` مؤلَّفٌ لكلّ مسارٍ في
                   الكتالوج ولم يكن يُعرض لأحد. */}
               <h2 className="mt-4 text-lg font-bold leading-relaxed">{p.shortName}</h2>
+              <span className="mt-1.5 w-fit rounded-full border border-white/10 px-2.5 py-0.5 text-fine text-muted-foreground">{p.level}</span>
               <p className="mt-2 line-clamp-3 text-read leading-6 text-muted-foreground">{p.transformation}</p>
               {/* ── ولمن ليس ──
 
