@@ -31,6 +31,7 @@ import { Card, Inset } from "@/components/ui/Surface";
 import { loadLastResult } from "@/application/diagnostic/session-store";
 import type { DiagResult } from "@/data/diagnostic";
 import { CONTACT } from "@/data/stories";
+import { fmtDateLong } from "@/application/text/format-ar";
 
 /** ما يُطلب من المرسِل — مكتوبٌ مرّةً ويُقرأ في الورقة وفي الرسالة معا */
 export const BRIEF_ATTACH_NOTE_AR =
@@ -70,7 +71,10 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
     return () => document.body.removeAttribute("data-printing");
   }, []);
 
-  const today = new Date().toLocaleDateString("ar", { year: "numeric", month: "long", day: "numeric" });
+  /* `fmtDateLong` لا `toLocaleDateString("ar", …)`: اللغةُ تُسمّى في موضعٍ
+     واحدٍ (`application/text/format-ar`) وتحرسه بوّابةُ `ci:locale`. وصيغتُه
+     هي هذه بعينها — «٣١ أغسطس ٢٠٢٦». */
+  const today = fmtDateLong(new Date());
 
   return (
     <Modal onClose={onClose} label="ملخّصك لمستشار وجيز" panelClassName="w-full max-w-2xl">
