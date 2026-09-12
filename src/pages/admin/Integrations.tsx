@@ -32,7 +32,7 @@ interface IntegrationsView {
   calendly: {
     enabled: boolean; envSourced: boolean; ready: boolean; polling: boolean;
     signingKey: string; hasSigningKey: boolean; callbackUrl: string; siteUrlExplicit: boolean;
-    token: string; hasToken: boolean;
+    token: string; hasToken: boolean; bookingUrl: string;
   };
 }
 
@@ -62,7 +62,7 @@ export default function Integrations() {
   const [zoomProbe, setZoomProbe] = useState<{ ok: boolean; message: string } | null>(null);
   /* الرمزُ الشخصيُّ صار محفوظا مع المفتاح: المزامنةُ الدوريّةُ تسأل Calendly
      كلَّ خمس دقائق بلا إنسانٍ يلصقه. وعلّةُ النقض في `CalendlyConfig`. */
-  const [calForm, setCalForm] = useState({ enabled: false, signingKey: "", token: "" });
+  const [calForm, setCalForm] = useState({ enabled: false, signingKey: "", token: "", bookingUrl: "" });
   const [calProbe, setCalProbe] = useState<CalendlyRegisterReply | null>(null);
 
   const load = useCallback(async () => {
@@ -81,7 +81,10 @@ export default function Integrations() {
         enabled: v.zoom.enabled, accountId: v.zoom.accountId, clientId: v.zoom.clientId,
         clientSecret: v.zoom.clientSecret, hostEmail: v.zoom.hostEmail === "me" ? "" : v.zoom.hostEmail,
       });
-      setCalForm({ enabled: v.calendly.enabled, signingKey: v.calendly.signingKey, token: v.calendly.token });
+      setCalForm({
+        enabled: v.calendly.enabled, signingKey: v.calendly.signingKey,
+        token: v.calendly.token, bookingUrl: v.calendly.bookingUrl,
+      });
     } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
   }, []);
@@ -381,6 +384,21 @@ export default function Integrations() {
               </Inset>
             )}
             <div className="mt-4 space-y-3">
+              {/* ═══ رابطُ الحجز أوّلا — هو ما يراه المتقدّم ═══
+
+                  ويُقبل بأيّ صورةٍ صحيحة: اسمُ المستخدم وحدَه، أو المسارُ،
+                  أو الرابطُ كاملا بـwww أو بدونها. وما لا يصحّ يُردّ بسببه
+                  مكتوبا لا بـ«رابطٌ غيرُ صالح». */}
+              <div>
+                <label className={labelCls}>رابطُ الحجز — ما يفتحه المتقدّم</label>
+                <input dir="ltr" value={calForm.bookingUrl}
+                  onChange={(e) => setCalForm({ ...calForm, bookingUrl: e.target.value })}
+                  placeholder="hadeel-7/wajeez-academy"
+                  className={`${inputCls} mt-1 w-full font-mono`} />
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  اسمُ المستخدم يكفي، والرابطُ كاملا يصحّ. واتركه فارغا للعودة إلى المضمَّن في الموقع.
+                </p>
+              </div>
               <div>
                 <label className={labelCls}>الرمزُ الشخصيُّ — به يسأل الخادمُ عن الحجوزات</label>
                 <input dir="ltr" type="password" value={calForm.token}

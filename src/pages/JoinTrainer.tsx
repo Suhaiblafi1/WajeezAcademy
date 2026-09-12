@@ -18,7 +18,7 @@ import { timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
-  APPLICANT_STATUS, CONTACT_CHANNELS, TRAINING_SEASONS, type ContactChannel,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, TRAINING_SEASONS, type ContactChannel,
 } from "@/application/trainer/application-options";
 
 /* صفحة انضمام المدربين.
@@ -214,7 +214,9 @@ export default function JoinTrainer() {
 
   /* متابعة حالة طلب سابق — البريدُ يكفي، والرقمُ اختياريّ */
   const [lookup, setLookup] = useState({ reference: "", email: "" });
-  const [lookupResult, setLookupResult] = useState<{ reference: string; label: string; explain: string } | null>(null);
+  const [lookupResult, setLookupResult] = useState<
+    { reference: string; label: string; explain: string; status: string; hasInterview: boolean } | null
+  >(null);
   const [lookupError, setLookupError] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
 
@@ -600,9 +602,14 @@ export default function JoinTrainer() {
     try {
       const q = new URLSearchParams({ email: lookup.email.trim().toLowerCase() });
       if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
-      const res = await apiGet<{ reference: string; status: string }>(`/api/v1/trainer-applications/status?${q.toString()}`);
+      const res = await apiGet<{ reference: string; status: string; hasInterview: boolean }>(
+        `/api/v1/trainer-applications/status?${q.toString()}`,
+      );
       const st = APPLICANT_STATUS[res.status];
-      setLookupResult({ reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "" });
+      setLookupResult({
+        reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "",
+        status: res.status, hasInterview: res.hasInterview,
+      });
     } catch (err) {
       setLookupError(err instanceof ApiError ? err.message : "تعذر جلب الحالة");
     } finally {
@@ -1089,14 +1096,27 @@ export default function JoinTrainer() {
               </Question>
 
               <Question n={6} title="من تستهدف بتدريبك؟" hint="اختياريّ — ويساعدنا على ترشيحك لشعبةٍ تناسبك.">
-                <FieldRow>
-                  <Field label="الدول التي تستهدفها بتدريبك" htmlFor="jt-target-countries">
-                    <MultiPick id="jt-target-countries" label="اختر من القائمة" options={[ALL_ARAB, ...ARAB_COUNTRIES]} selected={targetCountries} onChange={setTargetCountries} />
-                  </Field>
-                  <Field label="الفئات التي تستهدفها" htmlFor="jt-target-audiences">
-                    <MultiPick id="jt-target-audiences" label="اختر من القائمة" options={TARGET_AUDIENCES} selected={targetAudiences} onChange={setTargetAudiences} />
-                  </Field>
-                </FieldRow>
+                {/* ═══ ولماذا فئةٌ تُنقر ودولةٌ تُنسدل ═══
+
+                    كانت الفئاتُ الثمانُ خلفَ منسدلةٍ كالدول: نقرةٌ لتُفتح
+                    وأخرى لتُختار. وثمانيةٌ تسع الشاشةَ ظاهرةً، وأخواتُها في
+                    هذا النموذج (التخصّصات · اللغات · الأيّام · المواسم)
+                    كلُّها شبكةٌ تُنقر نقرةً واحدة — فكانت وحدَها الشاذّة.
+
+                    والدولُ اثنتان وعشرون فأكثر: شبكتُها جدارٌ يبتلع الصفحة،
+                    فتبقى منسدلةً. والفرقُ في العدد لا في النوع. */}
+                <Field label="الدول التي تستهدفها بتدريبك" htmlFor="jt-target-countries">
+                  <MultiPick id="jt-target-countries" label="اختر من القائمة" options={[ALL_ARAB, ...ARAB_COUNTRIES]} selected={targetCountries} onChange={setTargetCountries} />
+                </Field>
+                <FieldSet legend="الفئات التي تستهدفها" wide>
+                  <ChoiceGrid
+                    options={TARGET_AUDIENCES}
+                    selected={targetAudiences}
+                    onToggle={(v) => toggle(targetAudiences, v, setTargetAudiences)}
+                    cols={2}
+                    name="الفئات التي تستهدفها"
+                  />
+                </FieldSet>
               </Question>
 
               {/* كانت الأربعةُ اختياريّةً كلَّها، فيصل المراجعَ طلبٌ بلا شيءٍ
@@ -1115,10 +1135,10 @@ export default function JoinTrainer() {
                   <Field label="فيديو تدريبي أو قناة" htmlFor="jt-youtube">
                     <input id="jt-youtube" dir="ltr" placeholder="https://youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} className={`${controlCls} text-left`} />
                   </Field>
-                  <Field label="حساب إنستغرام المهني" htmlFor="jt-instagram">
+                  <Field label="حساب إنستغرام" htmlFor="jt-instagram">
                     <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${controlCls} text-left`} />
                   </Field>
-                  <Field label="صفحة فيسبوك المهنية" htmlFor="jt-facebook">
+                  <Field label="صفحة فيسبوك" htmlFor="jt-facebook">
                     <input id="jt-facebook" dir="ltr" placeholder="https://facebook.com/..." value={form.facebookUrl} onChange={set("facebookUrl")} className={`${controlCls} text-left`} />
                   </Field>
                 </FieldRow>
@@ -1461,11 +1481,26 @@ export default function JoinTrainer() {
             {lookupBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />} اعرض الحالة
           </Button>
           {lookupResult && (
-            <Inset tone="accent" className="mt-3">
-              <p className="text-read leading-5 font-black text-teal-light-ink">{lookupResult.label}</p>
-              <p className="mt-1 text-read text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
-              {lookupResult.explain && <p className="mt-2 text-read leading-6 text-foreground">{lookupResult.explain}</p>}
-            </Inset>
+            <>
+              <Inset tone="accent" className="mt-3">
+                <p className="text-read leading-5 font-black text-teal-light-ink">{lookupResult.label}</p>
+                <p className="mt-1 text-read text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
+                {lookupResult.explain && <p className="mt-2 text-read leading-6 text-foreground">{lookupResult.explain}</p>}
+              </Inset>
+              {/* ═══ والزرُّ الذي وعد به النصُّ يكون تحته فعلا ═══
+
+                  «احجز موعدَ اجتماعك التعريفيّ من الزرّ أدناه» كانت تُقال هنا
+                  ولا زرَّ تحتها: يُغلق المتقدّمُ الصفحةَ ولا يحجز، ونظنّه
+                  تأخّر. والشرطُ هو شرطُ صفحة الحالة نفسُه — الحالةُ تقبل
+                  الحجز، ولم يحجز بعد. */}
+              {BOOKABLE_STATUSES.includes(lookupResult.status) && !lookupResult.hasInterview && (
+                <BookInterview
+                  email={lookup.email.trim()}
+                  reference={lookupResult.reference}
+                  className="mt-3"
+                />
+              )}
+            </>
           )}
           {lookupError && <p className="mt-3 text-read leading-5 text-red-300" role="alert">{lookupError}</p>}
         </details>

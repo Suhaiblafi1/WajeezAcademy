@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { PublicCatalogService } from '../../services/public-catalog.service'
 import { fileUploadsEnabled } from '../../services/storage.service'
+import { getCalendlyConfig } from '../../services/integrations.service'
 
 export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const catalog = new PublicCatalogService(prisma)
@@ -16,7 +17,16 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
      تكرار المعرفة في الواجهة، يقولها الخادمُ مرّةً واحدة. */
   app.get('/api/config', {
     schema: { tags: ['public-catalog'], summary: 'قدراتُ المنصّة المفعّلة — تقرؤها الواجهة لتخفي ما لا يعمل' },
-  }, async () => ({ fileUploads: fileUploadsEnabled(), demoMode: process.env.DEMO_MODE === 'true' }))
+  }, async () => ({
+    fileUploads: fileUploadsEnabled(),
+    demoMode: process.env.DEMO_MODE === 'true',
+    /* ═══ رابطُ الحجز: `null` تعني «استعمل المضمَّن» ═══
+
+       الأصلُ في `src/application/trainer/application-options.ts`، ولا يستورد
+       الخادمُ من `src/`. فبدل نسخِ الرابط هنا ونسخةٍ تفترق عن أختها، لا
+       يُرسَل شيءٌ إلّا حين يُضبط بديلٌ من الشاشة — فيبقى مصدرٌ واحدٌ لا اثنان. */
+    interviewBookingUrl: (await getCalendlyConfig(prisma)).bookingUrl ?? null,
+  }))
 
   app.get('/api/public/pathways', {
     schema: { tags: ['public-catalog'], summary: 'المسارات المنشورة مع دوراتها مرتبة' },

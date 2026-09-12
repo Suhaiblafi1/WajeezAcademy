@@ -31,6 +31,7 @@ import { useEffect, useState } from 'react'
 import { CalendarClock, CheckCircle2, ExternalLink, Video } from 'lucide-react'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '@/application/trainer/application-options'
 import { Inset } from '@/components/ui/Surface'
+import { usePlatformConfig } from '@/hooks/usePlatformConfig'
 
 export interface BookInterviewProps {
   /** يُعبَّأ بها نموذجُ الحجز فلا يكتبها المتقدّم مرّةً ثالثة */
@@ -64,7 +65,10 @@ export default function BookInterview({ name, email, reference, className = '' }
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
-  const url = trainerInterviewUrl({ name, email, reference })
+  /* الأصلُ من الخادم إن ضُبط، وإلّا المضمَّن — بلا حالةِ تحميلٍ ظاهرة:
+     تُرسم البطاقةُ بالمضمَّن ثمّ تُبدَّل إن جاء بديل. */
+  const { interviewBookingUrl } = usePlatformConfig()
+  const url = trainerInterviewUrl({ name, email, reference }, interviewBookingUrl ?? undefined)
   /* `embed_domain` شرطُ Calendly لبثّ الأحداث، و`embed_type` يُخفي رأسَ صفحتهم */
   const embedUrl = `${url}${url.includes('?') ? '&' : '?'}embed_domain=${encodeURIComponent(window.location.hostname)}&embed_type=Inline`
 

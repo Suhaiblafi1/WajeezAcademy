@@ -114,7 +114,12 @@ export const TRAINER_INTERVIEW = {
     ولماذا التعبئة: من يفتح صفحةَ الحجز بعد نموذجٍ من أربعة أقسام لا يكتب
     اسمَه وبريدَه مرّةً ثالثة. و`a1` أوّلُ سؤالٍ مخصّصٍ في Calendly — يُملأ
     برقم الطلب إن وُجد السؤال، ويُتجاهَل بلا ضررٍ إن لم يوجد. */
-export function trainerInterviewUrl(input: { name?: string; email?: string; reference?: string }): string {
+export function trainerInterviewUrl(
+  input: { name?: string; email?: string; reference?: string },
+  /* الأصلُ البديلُ من شاشة التكاملات — و`TRAINER_INTERVIEW.url` حين لا بديل.
+     ويصل مطبَّعا بلا معاملات، فإلحاقُ `?` أدناه يبقى سليما. */
+  base: string = TRAINER_INTERVIEW.url,
+): string {
   const q = new URLSearchParams()
   if (input.name?.trim()) q.set('name', input.name.trim())
   if (input.email?.trim()) q.set('email', input.email.trim())
@@ -129,7 +134,7 @@ export function trainerInterviewUrl(input: { name?: string; email?: string; refe
     q.set('utm_content', reference)
   }
   const s = q.toString()
-  return s ? `${TRAINER_INTERVIEW.url}?${s}` : TRAINER_INTERVIEW.url
+  return s ? `${base}?${s}` : base
 }
 
 /** حالاتُ الطلب كما تُقال لصاحبه — لا كما تُقال للمراجع.
