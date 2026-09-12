@@ -16,6 +16,7 @@ import {
   FolderKanban,
   BadgeCheck,
   Briefcase,
+  Tag,
 } from "lucide-react";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
@@ -24,6 +25,7 @@ import AuthGate from "@/components/AuthGate";
 import FavoriteButton from "@/components/FavoriteButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
+import AdvisorBrief from "@/components/AdvisorBrief";
 import BuyPanel from "@/components/BuyPanel";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
@@ -40,7 +42,9 @@ import EcosystemNote from "@/components/EcosystemNote";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
-import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
+import { DISCOUNT_CATEGORIES, nextBuildStep } from "@/application/commerce/discount-policy";
+import { priceCart } from "@/application/commerce/cart-pricing";
+import { couponFieldCls } from "@/components/FormKit";
 import { CONTACT } from "@/data/stories";
 
 import Button from "@/components/ui/Button";
@@ -145,6 +149,12 @@ export default function PathwayPage() {
   const giftId = edits ? edits.giftId : custom ? custom.giftId : (courseIds.length > 0 ? courseIds[courseIds.length - 1] : null);
   const [swapForId, setSwapForId] = useState<string | null>(null);
   const [trainersOpen, setTrainersOpen] = useState(false);
+  /* نافذةُ ملخّص المستشار — `wa.me` لا يحمل مرفقا، فالورقةُ تُحفظ هنا ثمّ
+     يُرفقها المرسِل بيده. والشرحُ كاملا في رأس `AdvisorBrief`. */
+  const [briefOpen, setBriefOpen] = useState(false);
+  /* كودُ الخصم يُكتب في صندوق الاختيار ويُحمل إلى لوح الدفع — والخادمُ
+     وحدَه يحكم بصحّته (`initialCoupon`). */
+  const [coupon, setCoupon] = useState("");
   const commit = (ids: string[], gift: string | null) => {
     setEdits({ courseIds: ids, giftId: gift });
     if (adopted) saveAdoptedPlan({ ...adopted, courseIds: ids, giftId: gift });
@@ -251,6 +261,41 @@ export default function PathwayPage() {
       : null;
   const togglePick = (cid: string) =>
     setPickedIds(pickedIds.includes(cid) ? pickedIds.filter((x) => x !== cid) : [...pickedIds, cid]);
+
+  /* ─── حسابُ المختارات، حيًّا في مكان الاختيار (١٢ سبتمبر ٢٠٢٦) ───
+
+     كان المشتري يرى مجموعا أصمَّ هنا، ولا يرى خصمَ الباقة إلّا بعد أن يضغط
+     «اشترِ» ويُفتح لوحُ الدفع — أي **بعد** أن يُقفل عددَ دوراته. فالقرارُ
+     الذي يريد الخصمُ أن يؤثّر فيه كان قد وقع قبل أن يُعرض. وقرارُ صاحب
+     المنصّة: «ليظهر الحساب في صفحة الاختيار ليعرف ما يكسبه حين يزيد دورة».
+
+     و`priceCart` نفسُها التي يناديها الخادم — لا نسخةٌ ثانيةٌ منها هنا.
+     فما يُعرض في هذا الصندوق هو ما تُصدره الفاتورة بنيةً، لا تقديرا يقارَب:
+     الوحدةُ مشتركةٌ بين `src/application/commerce` والخادم (‏`cart.service`‏).
+
+     والكوبونُ ليس منها: لا يُحسب هنا لأنّ صحّته لا تُعرف في المتصفّح. يُكتب
+     هنا ويُحمل إلى اللوح فيُطبّقه الخادمُ ويُظهره في الحساب. */
+  /* ⚠ بلا `useMemo`: هذا الموضعُ **بعد** الخروج المبكّر (‏`if (!pathway)`‏)،
+     فخطّافٌ هنا يُنادى في رسمةٍ ولا يُنادى في أخرى — وهو ما يمسكه
+     `react-hooks/rules-of-hooks`. والحسابُ ستُّ عمليّاتٍ على مصفوفةٍ من
+     أربعة، فحفظُه أغلى من إعادته. */
+  const pickedQuote = (() => {
+    if (picked.length === 0 || !pickedTotal) return null;
+    const lines = picked
+      .map((c) => ({
+        cohortId: prices.get(c.id)?.cohortId ?? "",
+        courseId: c.id,
+        titleAr: c.name,
+        listPrice: prices.get(c.id)?.amount ?? 0,
+      }))
+      .filter((l) => l.listPrice > 0);
+    if (lines.length !== picked.length) return null;
+    return priceCart(lines, null, null, pickedTotal.currency);
+  })();
+
+  /* «أضف دورةً أخرى فيصير الخصم ٢٨٪» — الخطوةُ التالية من السلّم نفسِه،
+     و`null` عند السقف فلا يُوعَد بما لا يزيد. */
+  const nextStep = pickedQuote ? nextBuildStep(pickedQuote.paidCount) : null;
   const totalWeeks = pathwayCoursesList.reduce((s, c) => s + c.weeks, 0);
 
   /* اسمُ ما يُشترى — من الخطّة المعتمَدة لا من المسار المضيف.
@@ -399,18 +444,14 @@ export default function PathwayPage() {
                 الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تُدار وتُتابع عبر مسار «{pathway.name}» المضيف.
               </p>
             </Card>
-          ) : custom ? (
-            <Card tone="accent" className="story-fade mt-6 border-teal-light/40 px-5 py-4">
-              <p className="flex items-center gap-1.5 text-sm font-black text-teal-light-ink">
-                <Sparkles className="h-4 w-4 shrink-0" />
-                خطّتك من مؤشر وجيز
-              </p>
-              <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-                هذه ليست صفحة كتالوج — بل الخطّة التي رشّحها تشخيصك واعتمدتها أنت.
-                والدورات أدناه لك: تستبدل وتحذف وتختار هديّتك، ويُحفظ التغيير فور وقوعه.
-              </p>
-            </Card>
           ) : null}
+          {/* صندوقُ «خطّتك من مؤشر وجيز» حُذف (قرارُ صاحب المنصّة، ١٢ سبتمبر
+              ٢٠٢٦). كان يشرح أنّ القائمةَ خطّةٌ تُملَك وتُعدَّل — وهو شرحٌ
+              تُغني عنه الرحلةُ نفسُها تحته: أزرارُ الاستبدال والحذف واختيارِ
+              الهديّة ظاهرةٌ فيها، والتغييرُ يُحفظ فور وقوعه فيراه فاعلُه.
+
+              وصندوقُ الخطّة **المركّبة** فوقَه باقٍ: ذاك يقول ما لا يُرى —
+              أنّ الدوراتِ من أكثرَ من مجالٍ وأنّ مسارَ كذا مضيفُها. */}
 
           {/* «ماذا ستحقق من خلال خطتك؟» — رحلة الدورات بأكورديون، بلا قائمة مكررة فوقها */}
           <CourseJourney
@@ -478,6 +519,16 @@ export default function PathwayPage() {
             </button>
           </p>
 
+          {/* نافذةُ ملخّص المستشار — تُجهّز ورقةً تُرفق في واتساب */}
+          {briefOpen && (
+            <AdvisorBrief
+              pathwayName={pathway.name}
+              courseNames={pathwayCoursesList.map((c) => c.name)}
+              message={advisorMsg}
+              onClose={() => setBriefOpen(false)}
+            />
+          )}
+
           {trainersOpen && (
             <Modal onClose={() => setTrainersOpen(false)} label={`الفريق التدريبي لمسار ${pathway.name}`} panelClassName="w-full max-w-md">
               <Inset className="story-fade bg-surface">
@@ -494,9 +545,9 @@ export default function PathwayPage() {
                     </Inset>
                   ))}
                 </div>
-                <p className="mt-4 text-read leading-relaxed text-muted-foreground">
-                  كل دورة يقدمها المدرب الأعمق في موضوعها — وينسّقون معا حتى تتكامل المهارات لا أن تتكرر. والشعبُ مفتوحةٌ للتسجيل الآن، ويُعيَّن مدرّبُ كلّ شعبةٍ قريبا ويُعلن اسمُه على بطاقتها.
-                </p>
+                {/* الفقرةُ تحت أسماء المدرّبين حُذفت (١٢ سبتمبر ٢٠٢٦): القائمةُ
+                    فوقها تقول من يُدرّس ماذا، وموعدُ الشعبة وحالُ تعيينِ مدرّبها
+                    مكتوبان على بطاقتها حيث يُشترى — لا في نافذةٍ تُفتح وتُغلق. */}
               </Inset>
             </Modal>
           )}
@@ -604,17 +655,55 @@ export default function PathwayPage() {
                     })}
                   </div>
 
-                  {/* المجموع الحي والتلميح الذكي */}
+                  {/* ─── الحسابُ الحيّ: كلُّ بندٍ باسمه، ويتحرّك مع كلّ نقرة ─── */}
                   {picked.length > 0 && (
-                    <Inset className="mt-3 flex items-end justify-between gap-2 px-3.5 py-2.5">
-                      <span className="text-fine text-muted-foreground">
-                        اخترت {picked.length === 1 ? "دورة" : `${picked.length} دورات`} من {buyableCourses.length}
-                      </span>
-                      {pickedTotal ? (
-                        <span dir="ltr" className="text-xl font-black text-foreground">{formatCohortPrice(pickedTotal)}</span>
-                      ) : (
-                        <span className="text-fine text-muted-foreground">يُعلن السعر مع الشعبة</span>
+                    <Inset className="mt-3 space-y-1.5 px-3.5 py-2.5">
+                      <div className="flex items-center justify-between gap-2 text-read leading-6 text-muted-foreground">
+                        <span>
+                          اخترت {picked.length === 1 ? "دورة" : `${picked.length} دورات`} من {buyableCourses.length}
+                        </span>
+                        {pickedQuote && (
+                          <span dir="ltr">{formatCohortPrice({ amount: pickedQuote.subtotal, currency: pickedTotal!.currency })}</span>
+                        )}
+                      </div>
+
+                      {pickedQuote && pickedQuote.bundleDiscount > 0 && (
+                        <div className="flex items-center justify-between gap-2 text-read leading-6 text-teal-light-ink">
+                          <span>خصم الباقة — {pickedQuote.bundlePct}٪</span>
+                          <span dir="ltr">−{formatCohortPrice({ amount: pickedQuote.bundleDiscount, currency: pickedTotal!.currency })}</span>
+                        </div>
                       )}
+                      {/* سقفُ سعر المسار بندٌ باسمه لا نسبةٌ تُدمج — كما في اللوح */}
+                      {pickedQuote && pickedQuote.capDiscount > 0 && (
+                        <div className="flex items-center justify-between gap-2 text-read leading-6 text-teal-light-ink">
+                          <span>حدُّ سعر المسار</span>
+                          <span dir="ltr">−{formatCohortPrice({ amount: pickedQuote.capDiscount, currency: pickedTotal!.currency })}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-end justify-between gap-2 border-t border-white/10 pt-1.5">
+                        <span className="text-read font-bold leading-6 text-foreground">
+                          {pickedQuote && pickedQuote.discount > 0 ? "بعد الخصم" : "المجموع"}
+                        </span>
+                        {pickedQuote ? (
+                          <span dir="ltr" className="text-xl font-black text-foreground">
+                            {formatCohortPrice({ amount: pickedQuote.total, currency: pickedTotal!.currency })}
+                          </span>
+                        ) : (
+                          <span className="text-read leading-6 text-muted-foreground">يُعلن السعر مع الشعبة</span>
+                        )}
+                      </div>
+                    </Inset>
+                  )}
+
+                  {/* ─── ماذا يكسب بدورةٍ أخرى — الرقمُ قبل القرار لا بعده ───
+
+                      وهو **ما طلبه صاحبُ المنصّة بنصّه**: «ليعرف ما الخصم الذي
+                      يحصل عليه حين يضيف دوراتٍ أخرى». والسلّمُ هو مصدرُ الرقم
+                      (`nextBuildStep`)، فلا وعدَ يفترق عن الفاتورة. */}
+                  {nextStep && (
+                    <Inset as="p" tone="accent" className="mt-2 px-3.5 py-2 text-read font-semibold leading-5 text-teal-light-ink">
+                      أضف دورةً أخرى ({nextStep.count} دورات) فيصير خصمُ الباقة {nextStep.pct}٪.
                     </Inset>
                   )}
                   {picked.length > 0 && (
@@ -623,6 +712,28 @@ export default function PathwayPage() {
                     <Inset as="p" tone="warn" className="mt-2 px-3.5 py-2 text-read font-semibold leading-5 text-gold-ink">
                       المسار كاملا أوفر — خصمُه {offer.bundleMaxPct}٪، ويشمل التشخيص والمتابعة.
                     </Inset>
+                  )}
+
+                  {/* ─── حقلُ الكود، هنا لا في اللوح وحدَه ───
+
+                      طلبُ صاحب المنصّة: «وحقلُ الكود يجب أن يظهر». وهو يُكتب
+                      هنا ويُحمل إلى اللوح (`initialCoupon`) فيُطبّقه **الخادم**
+                      — لا يُحسب في المتصفّح: صحّةُ الكود لا تُعرف هنا، وخصمٌ
+                      يُعرض ثمّ يسقط عند الدفع أسوأُ من خصمٍ يُعرض متأخّرا. */}
+                  {picked.length > 0 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Tag className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      {/* `aria-label` لا `<span class="sr-only">` داخل `<label>`:
+                          الاسمُ المحسوب واحدٌ في الحالتين، وهذا عنصرٌ أقلّ. */}
+                      <input
+                        value={coupon}
+                        onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+                        placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
+                        aria-label="كود الخصم"
+                        dir="ltr"
+                        className={`${couponFieldCls} border-white/12 focus:border-gold/50`}
+                      />
+                    </div>
                   )}
                   <Button tone="confirm"
                     onClick={() =>
@@ -637,8 +748,15 @@ export default function PathwayPage() {
                       })
                     }
                     disabled={picked.length === 0}
-                    variant="outline"
-                    className="mt-3 h-10 rounded-full border-teal/60 bg-transparent text-sm font-black text-teal-light-ink hover:bg-teal/10 hover:text-teal-light-ink disabled:opacity-40"
+                    /* ─── زرٌّ مملوءٌ لا مفرَّغ (صاحب المنصّة، ١٢ سبتمبر ٢٠٢٦) ───
+
+                       كان `variant="outline"` بحبرٍ فيروزيٍّ على شفّاف، بجانب
+                       زرٍّ ذهبيٍّ مملوءٍ في البطاقة المقابلة. فكان الصندوقان
+                       يعرضان قرارين متكافئين بزرَّين غيرِ متكافئين — وزرٌّ
+                       مفرَّغٌ يُقرأ «الخيارُ الثانوي» قبل أن يُقرأ سعرُه.
+                       فصار مملوءا بلون بابه (الفيروزيُّ للدورات، والذهبيُّ
+                       للمسار كاملا) — يتكافآن في الوزن ويفترقان في اللون. */
+                    className="mt-3 h-10 rounded-full bg-teal-deep text-sm font-black text-on-teal hover:bg-teal-darker disabled:opacity-40"
                   >
                     {picked.length === 0
                       ? "اختر دورة واحدة على الأقل"
@@ -761,10 +879,27 @@ export default function PathwayPage() {
                 </Card>
               </div>
 
-              {/* كان النصّ «طلبك يُراجَع، ثم تصلك فاتورتك» — وهو ما كان يقع فعلا
-                  يوم كان الشراء طلبا. وقد صار الدفعُ مباشرا، فيصف النصُّ ما
-                  يقع الآن: تُختار الشعبة، ويُدفع، ثمّ تُفتح المنصّة. */}
-              <p className="mt-3.5 text-center text-read text-muted-foreground">تدفع الآن، ثم تُفتح منصّتك على ما اشتريت</p>
+              {/* ── تحت زرَّي الشراء: بابُ المستشار، لا وصفُ ما سيقع ──
+
+                  كان هنا «تدفع الآن، ثمّ تُفتح منصّتك على ما اشتريت» — جملةٌ
+                  صادقةٌ تصف آليّةً لا يسأل عنها أحدٌ عند لحظة القرار. وقرارُ
+                  صاحب المنصّة (١٢ سبتمبر ٢٠٢٦): مكانُها دعوةُ المتردّد.
+
+                  وهي **نقلٌ لا نسخة**: كان هذا السطرُ أسفل الصفحة بعد أقسامٍ
+                  لا يبلغها المتردّدُ أصلا — فصعِد إلى حيث يقع التردّد، ولم
+                  يبقَ منه هناك شيء. */}
+              <p className="mt-3.5 text-center text-read leading-relaxed text-muted-foreground">
+                ما زلت مترددا؟{" "}
+                <AdvisorContact
+                  text={advisorMsg}
+                  label="راسل مستشار وجيز قبل الدفع"
+                  onNavigate={() => setBriefOpen(true)}
+                  /* شذرة فارغة لا null: التوقيع يسقط عند null إلى أيقونة افتراضية،
+                     وهذه دعوةٌ داخل جملة لا زرّ — أيقونةٌ فيها ضجيج. */
+                  icon={<></>}
+                  className="font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-[#6EC7D1]"
+                />
+              </p>
               {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
                   الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
                   يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}
@@ -824,17 +959,8 @@ export default function PathwayPage() {
               فريقٌ قائم ادّعاء — وهو ما تمنعه قاعدةُ «لا اسم يُعرض كحقيقة قبل
               توثيقه». فبقي الباب مفتوحا وسقط الادّعاء: قناة الاتصال نفسها، بلا
               اسم ولا صورة ولا إلحاح. */}
-          <p className="story-fade mt-6 text-center text-read leading-relaxed text-muted-foreground">
-            ما زلت مترددا؟{" "}
-            <AdvisorContact
-              text={advisorMsg}
-              label="راسل مستشار وجيز قبل الدفع"
-              /* شذرة فارغة لا null: التوقيع يسقط عند null إلى أيقونة افتراضية،
-                 وهذه دعوةٌ داخل جملة لا زرّ — أيقونةٌ فيها ضجيج. */
-              icon={<></>}
-              className="font-bold text-muted-foreground underline underline-offset-4 transition hover:text-[#6EC7D1]"
-            />
-          </p>
+          {/* وسطرُ المستشار صعِد إلى لوح الشراء (`#buy`) — حيث يقع التردّد
+              فعلا، لا بعد أقسامٍ لا يبلغها المتردّد. ولا نسخةَ ثانيةَ له. */}
 
           <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" />
@@ -872,6 +998,7 @@ export default function PathwayPage() {
           title={checkout.title}
           email={session?.email ?? ""}
           kind={checkout.kind}
+          initialCoupon={coupon}
           lines={(checkout.courseIds ?? courseIds)
             .map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid }))}
           onClose={() => setCheckout(null)}

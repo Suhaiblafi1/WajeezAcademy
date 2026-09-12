@@ -28,6 +28,7 @@ import {
   Wallet,
   History,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { track } from "@/services/analytics";
@@ -756,9 +757,10 @@ export default function Diagnostic() {
             بضع دقائق من الوضوح
             <span className="text-teal-light-ink"> تختصر عليك شهورا من التشتت</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl leading-8 text-muted-foreground">
-            حديث قصير عن يومك وهدفك — كل إجابة تشكّل سؤالك التالي، وتنتهي بمسارك الواضح.
-          </p>
+          {/* الفقرةُ تحت العنوان («حديث قصير عن يومك وهدفك…») حُذفت بقرار
+              صاحب المنصّة (١٢ سبتمبر ٢٠٢٦). والعنوانُ فوقها يحمل الوعدَ كاملا،
+              والشارتان تحته تقولان الزمنَ والطبيعة — فكانت سطرا ثالثا يقول
+              ما قيل مرّتين، ويُبعد الزرَّ عن أوّل شاشة. */}
 
           {/* شارتان لا ثلاث — والثالثة نزلت إلى سطور الإفصاح.
 
@@ -789,18 +791,14 @@ export default function Diagnostic() {
             ابدأ الحديث
             <ArrowLeft className="mr-2 h-5 w-5" />
           </Button>
-          {/* ── بابُ المرآة (البند ٤٠) ──
+          {/* ── بابُ المرآة (البند ٤٠) — رُفع من هذه الشاشة ──
 
-              صفحةٌ لا يصلها رابطٌ صفحةٌ لا وجودَ لها. وموضعُ الرابط هنا لا في
-              الرئيسة: من بلغ هذه الشاشةَ قرّر أن يُشخَّص، وهو وحدَه من يعنيه
-              أنّ ثلاثَ دقائقَ قبلها تختصر عليه أسئلةً بعدها. */}
-          <p className="mx-auto mt-4 max-w-md text-read leading-6 text-muted-foreground">
-            أو ابدأ بـ
-            <Link to="/mirror" className="mx-1 font-bold text-teal-light-ink underline underline-offset-4 hover:text-foreground">
-              مرآة وجيز
-            </Link>
-            — ٢٤ عبارةً بلا حساب تقول ما تميل إليه، ويبدأ التشخيصُ بعدها بما عرفه عنك.
-          </p>
+              كان سطرا تحت الزرّ يعرض بابا ثانيا («أو ابدأ بمرآة وجيز…»)، وحُذف
+              بقرار صاحب المنصّة (١٢ سبتمبر ٢٠٢٦): شاشةُ البدء تعرض **قرارا
+              واحدا**، وبابان متجاوران يُبطّئان الأوّلَ ولا يُسرعان الثاني.
+
+              و`/mirror` صفحةٌ قائمةٌ يصلها رابطُها من غير هذا الموضع — فلم
+              يُحذف المسار، بل الدعوةُ إليه من لحظة البدء. */}
           {/* هذه شاشة إقناعٍ بالبدء، وثلاثة أسطر من الشروط قبل الخطوة الأولى
               تُقرأ عقبةً لا طمأنة. بقيت الدعوة، وزال سطرا الإقرار والسنّ.
 
@@ -866,7 +864,9 @@ export default function Diagnostic() {
                 <History className="h-4 w-4" />
                 لديك نتيجة مؤشر محفوظة على جهازك
               </p>
-              <p className="mt-1.5 text-read leading-5 text-muted-foreground">أكملت التشخيص سابقا — لا حاجة لإعادته إلا إذا تغيرت ظروفك</p>
+              {/* «أكملت التشخيص سابقا — لا حاجة لإعادته…» حُذف (١٢ سبتمبر
+                  ٢٠٢٦): العنوانُ فوقه يقول الخبرَ كاملا، والزرُّ تحته يقول
+                  الإجراء — والسطرُ بينهما كان ينصح بتركِ ما لم يُطلَب أصلا. */}
               <div className="mt-4 flex flex-wrap justify-center gap-3">
                 <Button tone="confirm"
                   onClick={showSavedResult}
@@ -879,12 +879,31 @@ export default function Diagnostic() {
             </Card>
           )}
 
-          {/* المرجعية العلمية — آخر الشاشة: تطمين هادئ لمن يريد، لا حاجز أمام البدء */}
-          <Card as="p" className="mx-auto mt-10 max-w-lg px-5 py-4 text-read leading-relaxed text-muted-foreground">
-            نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-teal-light-ink">RIASEC</span> للميول المهنية،
-            و<span className="font-bold text-teal-light-ink">O*NET وESCO</span> لخرائط المهارات،
-            و<span className="font-bold text-teal-light-ink">DigComp</span> للجاهزية الرقمية — وتُعرض عليك تفاصيلها في صفحة المنهجية.
-          </Card>
+          {/* المرجعية العلمية — كلمتان تُطوى تحتهما الفقرة (١٢ سبتمبر ٢٠٢٦).
+
+              كانت فقرةً من ثلاثة أسطر بأربعة أسماءٍ لاتينيّةٍ في آخر شاشة
+              البدء. وأربعةُ أسماءٍ لا يعرفها من جاء يُشخَّص لا تطمئنه — تُقرأ
+              ضجيجا وتُزاحم الزرَّ فوقها. والذي يعنيه الاسمُ يفتحها بنقرة،
+              ويمضي إلى صفحة المنهجية إن أراد التفصيل.
+
+              و`<details>` لا حالةُ React: الطيُّ سلوكُ متصفّحٍ أصيل، يعمل بلا
+              جافاسكربت ويُعلنه قارئُ الشاشة من نفسه. */}
+          <details className="group mx-auto mt-10 max-w-lg text-center">
+            {/* `rounded-xl` لا `rounded-full`: هذا سطرُ طيٍّ يفتح فقرةً تحته،
+                لا زرٌّ يُنفّذ فعلا. والحبّةُ المستديرةُ تَعِد بالثاني. */}
+            <summary className="inline-flex cursor-pointer list-none items-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-teal/40 hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
+              المرجعية العلمية لأسئلتنا
+              <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            <Card as="p" className="mt-2.5 px-5 py-4 text-right text-read leading-relaxed text-muted-foreground">
+              نسترشد في بناء أسئلتنا بأطر مهنية وتعليمية معروفة: <span className="font-bold text-teal-light-ink">RIASEC</span> للميول المهنية،
+              و<span className="font-bold text-teal-light-ink">O*NET وESCO</span> لخرائط المهارات،
+              و<span className="font-bold text-teal-light-ink">DigComp</span> للجاهزية الرقمية —{" "}
+              <Link to="/methodology" className="font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-foreground">
+                وتفاصيلها في صفحة المنهجية
+              </Link>.
+            </Card>
+          </details>
         </section>
       )}
 

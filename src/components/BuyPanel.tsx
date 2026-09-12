@@ -31,8 +31,9 @@
    المتصفّح ليس دليلا. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, CreditCard, Gift, Info, Loader2, Route as RouteIcon, Tag } from "lucide-react";
+import { CalendarDays, ChevronDown, CreditCard, Gift, Info, Loader2, Route as RouteIcon, Tag } from "lucide-react";
 import Modal from "@/components/Modal";
+import { couponFieldCls } from "@/components/FormKit";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
 import { apiPost, ApiError } from "@/services/api";
 import { readReferral } from "@/application/commerce/referral";
@@ -380,7 +381,7 @@ export default function BuyPanel({
                 onChange={(e) => setCoupon(e.target.value.toUpperCase())}
                 placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
                 dir="ltr"
-                className="min-w-0 flex-1 rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-left text-xs font-mono text-foreground outline-none transition focus:border-gold/50"
+                className={`${couponFieldCls} border-white/12 focus:border-gold/50`}
               />
               <button
                 onClick={() => setApplied(coupon.trim())}
@@ -400,9 +401,31 @@ export default function BuyPanel({
               </Card>
             )}
 
-            {/* الحساب — كلُّ سطرٍ منه من الخادم */}
+            {/* ─── الحساب: المبلغُ ظاهرٌ، وتفصيلُه مطويٌّ (١٢ سبتمبر ٢٠٢٦) ───
+
+                قرارُ صاحب المنصّة: «الحسابُ يظهر في صفحة الاختيار… وشاشةُ
+                الدفع يكون فيها المبلغُ المطلوبُ دفعُه فقط». وقد صار المجموعُ
+                وخصمُ الباقة يُعرضان حيّين في صندوق الاختيار (صفحة المسار)،
+                فتكرارُهما هنا يُعيد على المشتري حسابا أنهاه.
+
+                وما طُوي لم يُحذف: `<details>` بنقرةٍ واحدة. إخفاءُ بنود
+                الفاتورة عن دافعها ليس تبسيطا — البنودُ حقُّه، والطيُّ يرتّب
+                ما يراه أوّلا لا ما يستطيع رؤيته.
+
+                ⚠ والطيُّ **مغلقٌ افتراضا ولا يُقفَل**: لوحُ الدفع يُفتح من
+                صفحة الدورة المفردة أيضا، ومن جاء منها لم يرَ حسابا قبلَه —
+                فسطرُ «تفصيل الحساب» هو بابُه الوحيد إليه. */}
             {quote && !nothingLeft && (
               <Card className="mt-4 space-y-1.5 text-xs">
+                <details className="group">
+                  {/* `text-read` لا `text-fine`: هذا البابُ الوحيدُ إلى بنود
+                      الفاتورة لمن جاء من صفحة الدورة المفردة، وبابٌ بحجم
+                      الحاشية يُقرأ حاشيةً فلا يُفتح. */}
+                  <summary className="flex cursor-pointer list-none items-center gap-1 text-read font-bold leading-6 text-muted-foreground transition hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
+                    تفصيل الحساب
+                    <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" aria-hidden="true" />
+                  </summary>
+                  <div className="mt-1.5 space-y-1.5">
                 <div className="flex items-center justify-between text-muted-foreground">
                   <span>مجموع الدورات</span>
                   <span dir="ltr">{money(quote.subtotal, quote.currency)}</span>
@@ -434,6 +457,8 @@ export default function BuyPanel({
                     <span dir="ltr">−{money(quote.listTotal - quote.subtotal, quote.currency)}</span>
                   </div>
                 )}
+                  </div>
+                </details>
                 <div className="flex items-end justify-between border-t border-white/10 pt-2 text-foreground">
                   <span className="text-xs font-bold">ما تدفعه الآن</span>
                   <span dir="ltr" className="text-2xl font-black">{shownTotal}</span>

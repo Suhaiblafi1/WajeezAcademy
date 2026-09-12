@@ -39,6 +39,20 @@ export const staffControlCls =
   'w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-read text-foreground '
   + 'placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none'
 
+/* ── حقلُ كود الخصم — واحدٌ بدل ثلاثة (١٢ سبتمبر ٢٠٢٦) ──
+
+   كُتب ثلاثَ مرّاتٍ بيده: في `BuyPanel` وفي صفحة الدورة، ثمّ أُضيف ثالثٌ في
+   صندوق الشراء بصفحة المسار حين طُلب أن يظهر الحقلُ قبل الدفع. وثلاثُ نسخٍ
+   من حقلٍ واحدٍ تفترق عند أوّل تعديل — وهي العلّةُ التي وُلد منها
+   `controlCls` نفسُه.
+
+   ولماذا لا يكفيه `controlCls`: ذاك `h-12` بنصٍّ عربيٍّ يُقرأ يمينا. والكودُ
+   لاتينيٌّ قصيرٌ يُكتب في صفٍّ مع زرِّه، فحشوُه أصغرُ واتّجاهُه `ltr` —
+   وحدُّه يتلوّن بحاله (مطبَّقٌ · مرفوضٌ · محايد) فيبقى من نصيب مكانه. */
+export const couponFieldCls =
+  'min-w-0 flex-1 rounded-xl border bg-white/[0.04] px-3 py-2 text-left font-mono text-fine '
+  + 'text-foreground placeholder:font-sans placeholder:text-muted-foreground/75 focus:outline-none'
+
 /** والقائمةُ هي الحقلُ نفسُه، وخياراتُها تحتاج أرضيّةً تُرى على الداكن */
 export const staffSelectCls = `${staffControlCls} [&>option]:bg-surface`
 
