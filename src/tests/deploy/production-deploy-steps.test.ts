@@ -86,11 +86,13 @@ describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => 
   it('⚠️ يعيد تحميلَ Caddy بعد التبديل — فالملفُّ المربوطُ لا يُقرأ بنفسه', () => {
     /* على ما يُنفَّذ لا على ما يُطبَع: النصيحةُ في رسالة خطأٍ ليست إعادةَ تحميل */
     const c = commands(sh)
-    expect(c, 'لا إعادةَ تحميلٍ ولا إعادةَ تشغيل — تعديلُ السياسة يبقى على القرص بلا أثر')
-      .toMatch(/caddy reload|restart caddy/)
-    /* وبعد التبديل لا قبلَه: إعادةُ تحميلٍ ثمّ `up -d` تُلغيها الحاويةُ الجديدة */
+    expect(c, 'لا إعادةَ إنشاءٍ ولا تحميلٍ ولا تشغيل — تعديلُ السياسة يبقى على القرص بلا أثر')
+      .toMatch(/force-recreate caddy|caddy reload|restart caddy/)
+    /* وبعد التبديل لا قبلَه: إعادةٌ ثمّ `up -d` تُلغيها الحاويةُ الجديدة */
     const up = c.indexOf('up -d --remove-orphans')
-    const reload = Math.max(c.indexOf('caddy reload'), c.indexOf('restart caddy'))
+    const reload = Math.max(
+      c.indexOf('force-recreate caddy'), c.indexOf('caddy reload'), c.indexOf('restart caddy'),
+    )
     expect(up, 'أمرُ التبديل غائب').toBeGreaterThan(-1)
     expect(reload, 'إعادةُ التحميل يجب أن تلي تبديلَ الحاويات').toBeGreaterThan(up)
   })
