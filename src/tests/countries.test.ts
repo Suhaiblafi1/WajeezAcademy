@@ -25,6 +25,16 @@ describe('دولُ العالم', () => {
     }
   })
 
+  it('فلسطين في القائمة برمزها — ولا صفَّ لإسرائيل', () => {
+    /* قرارُ صاحب المنصّة (١٢ سبتمبر ٢٠٢٦). وحارسُه هنا لأنّ نقضَه لا يُرى:
+       من يعيد توليدَ القائمة من مصدرٍ قياسيّ يعيد الصفَّ بلا أن ينتبه. */
+    const palestine = countryByName('فلسطين')
+    expect(palestine?.dial, 'فلسطين غائبةٌ أو بلا رمزها').toBe('+970')
+    expect(palestine?.arab, 'فلسطين ليست في الدول العربيّة').toBe(true)
+    expect(COUNTRIES.some((c) => c.iso2 === 'IL'), 'عاد صفُّ إسرائيل إلى القائمة').toBe(false)
+    expect(searchCountries('Israel'), 'يوجدها البحثُ ولو بلا صفٍّ باسمها').toEqual([])
+  })
+
   it('لكلّ دولةٍ رمزٌ ومنطقةٌ زمنيّةٌ صالحان، ولا صفَّ مكرَّر', () => {
     const seen = new Set<string>()
     for (const c of COUNTRIES) {

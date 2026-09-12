@@ -21,7 +21,15 @@
    ادّعاءُ دقّة.
 
    ولا يُكتب اسمُ دولةٍ في شيفرةٍ أخرى: من أراد الإضافةَ أو التصحيحَ يفتح
-   هذا الملفَّ وحدَه. */
+   هذا الملفَّ وحدَه.
+
+   ═══ وفلسطين وحدَها على أرضها ═══
+
+   قرارُ صاحب المنصّة (١٢ سبتمبر ٢٠٢٦): فلسطين في القائمة برمزها `+970`،
+   ولا صفَّ لإسرائيل. وهو قرارٌ **مكتوبٌ هنا لا محذوفٌ صامتا**: من يولّد
+   القائمةَ يوما من مصدرٍ قياسيّ (ISO 3166 وأمثالِه) يعيدها بلا أن ينتبه،
+   فيُنقض القرارُ في تحديثٍ روتينيّ. ويحرسه اختبارٌ في
+   `src/tests/countries.test.ts`. */
 
 export interface Country {
   /** رمز ISO 3166-1 alpha-2 — مفتاحُ الصفّ ومصدرُ عَلَمه */
@@ -102,7 +110,6 @@ export const COUNTRIES: Country[] = [
   { iso2: 'AM', ar: 'أرمينيا', en: 'Armenia', dial: '+374', tz: 'Asia/Yerevan' },
   { iso2: 'GE', ar: 'جورجيا', en: 'Georgia', dial: '+995', tz: 'Asia/Tbilisi' },
   { iso2: 'CY', ar: 'قبرص', en: 'Cyprus', dial: '+357', tz: 'Asia/Nicosia' },
-  { iso2: 'IL', ar: 'إسرائيل', en: 'Israel', dial: '+972', tz: 'Asia/Jerusalem' },
 
   { iso2: 'NG', ar: 'نيجيريا', en: 'Nigeria', dial: '+234', tz: 'Africa/Lagos' },
   { iso2: 'KE', ar: 'كينيا', en: 'Kenya', dial: '+254', tz: 'Africa/Nairobi' },
