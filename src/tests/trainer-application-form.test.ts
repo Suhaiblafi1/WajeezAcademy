@@ -267,3 +267,109 @@ describe('نموذج انضمام المدرب', () => {
     expect(kit, 'لا قياس موحّد للحقول').toMatch(/export const controlCls =\s*\n\s*'h-12 w-full/)
   })
 })
+
+/* ═══ جولةُ ١٢ سبتمبر ٢٠٢٦ — ما طلبه صاحبُ المنصّة في النموذج ═══
+
+   ستّةُ أعطابٍ في أوّل احتكاكٍ بالمنصّة، وكلُّها تعود إن لم تُحرَس:
+
+   ١) الشرطُ يُكتب داخلَ الصندوق لا تحته — التلميحُ تحت الحقل يُقرأ بعد أن
+      يُكتب الخطأ، وداخلُه يُقرأ قبله.
+   ٢) الدولُ كلُّها ويُبحث فيها بالاسم — لا أحدَ عشرَ رمزا في قائمةٍ منسدلة.
+   ٣) المضيُّ إلى القسم التالي يريه رأسَه لا ذيلَه.
+   ٤) والملخّصُ يسمّي ما سيصل المراجعَ ولا يعدّه. */
+describe('نموذج انضمام المدرب — جولةُ الطلبات', () => {
+  it('الشرطُ داخلَ الصندوق: كلمةُ المرور والساعاتُ والهاتف', () => {
+    const src = read(PAGE)
+    /* الجملةُ المحذوفةُ بعينها — عادت إن ظهرت */
+    expect(src, 'جملةُ «بلا رمز الدولة» عادت تحت حقل الهاتف').not.toContain('بلا رمز الدولة وبلا صفر البداية')
+
+    const phone = /<Field label="رقم الجوال[^>]*>/.exec(src)?.[0] ?? ''
+    expect(phone, 'حقل الهاتف مفقود').toBeTruthy()
+    expect(phone, 'عاد التلميحُ تحت حقل الهاتف').not.toContain('hint=')
+
+    const password = /<Field label="كلمة المرور"[^>]*>/.exec(src)?.[0] ?? ''
+    expect(password, 'حقل كلمة المرور مفقود').toBeTruthy()
+    expect(password, 'حدُّ كلمة المرور عاد تحت الصندوق').not.toContain('hint=')
+    /* والحدُّ داخلَ الصندوق فعلا — لا محذوفا بحجّة النقل */
+    const passwordInput = /<input\s+id="jt-password"[\s\S]*?\/>/.exec(src)?.[0] ?? ''
+    expect(passwordInput, 'صندوقُ كلمة المرور بلا حدٍّ مكتوبٍ فيه').toContain('placeholder="٨ أحرف على الأقل"')
+
+    const hours = /<Field label="ساعات أسبوعيا[^>]*>/.exec(src)?.[0] ?? ''
+    expect(hours, 'حقل الساعات مفقود').toBeTruthy()
+    expect(hours, 'شرطُ الساعات عاد تحت الصندوق').not.toContain('hint=')
+    const hoursInput = /<input id="jt-hours"[\s\S]*?\/>/.exec(src)?.[0] ?? ''
+    expect(hoursInput, 'صندوقُ الساعات بلا شرطٍ مكتوبٍ فيه').toContain('placeholder="بالأرقام الإنجليزية (1–80)"')
+  })
+
+  it('الدولُ كلُّها من مصدرٍ واحدٍ يُبحث فيه — لا قائمةٌ مكتوبةٌ بيد', () => {
+    const src = FORM()
+    /* القائمةُ اليدويّةُ لا تعود — لا بالاسم ولا بمحتواها */
+    expect(src, 'عادت قائمةُ رموزِ الهاتف المكتوبةُ بيد').not.toContain('COUNTRY_CODES')
+    expect(src, 'عادت خريطةُ المناطق الزمنيّة المكتوبةُ بيد').not.toContain('COUNTRY_TIMEZONE')
+    expect(src, 'الدولُ العربيّةُ لم تعد تُشتقّ من المصدر الواحد').toContain('ARAB_COUNTRY_NAMES')
+
+    /* ومنتقيان يُبحث فيهما لا `<select>` — والقديمان لا يعودان */
+    expect(src, 'منتقي رمز الدولة غائب').toContain('<PhoneCodePicker id="jt-cc"')
+    expect(src, 'منتقي دولة الإقامة غائب').toContain('<CountryPicker id="jt-country"')
+    expect(src, 'عادت القائمةُ المنسدلةُ لرمز الدولة').not.toMatch(/<select id="jt-cc"/)
+    expect(src, 'عادت القائمةُ المنسدلةُ لدولة الإقامة').not.toMatch(/<select id="jt-country"/)
+
+    /* والمنتقي يُبحث فيه فعلا: صندوقُ بحثٍ ودورٌ معلَن، لا زينةُ اسم */
+    const picker = read('src/components/CountryPicker.tsx')
+    expect(picker, 'المنتقي بلا صندوق بحث').toContain("role=\"combobox\"")
+    expect(picker, 'المنتقي بلا قائمةٍ معلَنةٍ لقارئ الشاشة').toContain("role=\"listbox\"")
+    expect(picker, 'المنتقي لا يستعمل بحثَ القائمة').toContain('searchCountries')
+    /* ولوحةُ المفاتيح: أسهمٌ واختيارٌ وطيّ — من يملأ نموذجا لا يرفع يدَه للفأرة */
+    for (const key of ['ArrowDown', 'ArrowUp', 'Enter', 'Escape']) {
+      expect(picker, `المنتقي لا يستجيب لـ${key}`).toContain(`'${key}'`)
+    }
+    /* والمنطقةُ الزمنيّةُ تُشتقّ من القائمة العالميّة لا من تسعَ عشرةَ دولة */
+    expect(read(PAGE), 'المنطقةُ الزمنيّةُ لم تعد تُشتقّ').toContain('timezone: timezoneOf(form.country)')
+  })
+
+  it('المضيُّ يُري رأسَ القسم لا ذيلَه — وبعد الرسم لا معه', () => {
+    const src = read(PAGE)
+    const next = /const next = async \(\) => \{[\s\S]*?\n {2}\};/.exec(src)?.[0] ?? ''
+    expect(next, 'دالة المضيّ مفقودة').toBeTruthy()
+    /* التمريرُ داخلَ المعالِج يبدأ على القسم القديم ويُقطع حين يُستبدل */
+    expect(next, 'عاد التمريرُ إلى معالِج الزرّ — يقع قبل الرسم فيُلقى المتقدّم في الذيل')
+      .not.toContain('window.scrollTo')
+
+    /* والأثرُ يُلتقط بمرساته لا بأوّل `useEffect` في الملفّ: تعبيرٌ جشعٌ
+       يبدأ من أثرٍ آخرَ فيحرس ما لم يُقصد. فالبدايةُ إعلانُ المرساة. */
+    const effect = /const stepsRef[\s\S]*?\}, \[step\]\);/.exec(src)?.[0] ?? ''
+    expect(effect, 'لا أثرَ يمرّر بعد تبدّل القسم').toBeTruthy()
+    /* ووثبةٌ لا رحلة: «الناعم» يُقطع في منتصفه حين يتبدّل المحتوى */
+    expect(effect, 'التمريرُ عاد ناعما فيُقطع في منتصفه').not.toContain('smooth')
+    /* والتركيزُ ينتقل معه — وإلّا بقي على زرٍّ اختفى */
+    expect(effect, 'التركيزُ لا ينتقل إلى القسم الجديد').toContain('focus(')
+    expect(src, 'مرساةُ القسم بلا `tabIndex` فلا تقبل التركيز').toMatch(/ref=\{stepsRef\}[^>]*tabIndex=\{-1\}/)
+    /* والترويسةُ لاصقةٌ فوق الصفحة — فبلا هامشِ تمريرٍ تحجب ما وُثب إليه */
+    expect(src, 'المرساةُ تحت الترويسة اللاصقة بلا هامش').toMatch(/ref=\{stepsRef\}[\s\S]{0,160}scroll-mt-/)
+  })
+
+  it('الملخّصُ يسمّي ما سيصل المراجعَ ولا يعدّه', () => {
+    const src = read(PAGE)
+    /* والفحصُ على البنية لا على ورودِ حرف: الجملةُ القديمةُ تُذكر في تعليقٍ
+       يشرح ما كان، فحارسٌ يفتّش عن حروفها يحمرّ على شرحه لا على عودته.
+       فالمحروسُ **التعبيرُ الذي كان يعدّ**. */
+    expect(src, 'عاد عدُّ المستندات بلا اسم')
+      .not.toMatch(/Object\.values\(uploads\)\.filter\([^)]*\)\.length/)
+    /* من `uploadedDocs` إلى آخر الجدول: المستنداتُ تُسمّى قبله والصفوفُ تقرؤه */
+    const rows = /const uploadedDocs[\s\S]*?\n {2}\];/.exec(src)?.[0] ?? ''
+    expect(rows, 'جدولُ الملخّص مفقود').toBeTruthy()
+    /* المستنداتُ باسم نوعِها واسمِ ملفِّها — «١ مستندا» لا يُراجَع */
+    expect(rows, 'المستنداتُ لا تُسمّى بنوعها').toContain('DOC_KINDS')
+    expect(rows, 'اسمُ الملفّ المرفوع لا يُعرض').toMatch(/uploads\[d\.kind\]\?\.name/)
+    /* وما يُتواصَل به معه أمامَه — أكثرُ ما يُخطئ فيه الناسُ */
+    for (const key of ['form.email', 'form.phone', 'contactChannel']) {
+      expect(rows, `الملخّصُ لا يعرض ${key} — وهو ما سيُتواصَل به`).toContain(key)
+    }
+    /* وخبرتُه واعتمادُه وتوفّرُه — لا سطرٌ عامٌّ واحد */
+    for (const k of ['خبرتك', 'اعتمادك', 'توفّرك', 'مستنداتك', 'ما تستطيع تدريسه']) {
+      expect(rows, `الملخّصُ بلا سطرِ «${k}»`).toContain(k)
+    }
+    /* وما لم يُملأ يُقال ولا يُسكت عنه: السكوتُ يُقرأ رضا */
+    expect(src, 'الحقلُ الفارغ يُسكت عنه فيظنّ المتقدّمُ أنّه مملوء').toContain('لم تذكره')
+  })
+})

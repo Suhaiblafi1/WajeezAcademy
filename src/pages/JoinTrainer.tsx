@@ -13,6 +13,8 @@ import { apiPost, apiGet, ApiError } from "@/services/api";
 import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
 import { countAr } from "@/application/text/count-ar";
 import TeachableCoursePicker from "@/components/TeachableCoursePicker";
+import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
+import { timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
@@ -42,8 +44,6 @@ import {
   ARAB_COUNTRIES,
   BIO_MAX_WORDS,
   CHAR_FORMS,
-  COUNTRY_CODES,
-  COUNTRY_TIMEZONE,
   DAYS,
   DIGIT_FORMS,
   DOC_KINDS,
@@ -167,7 +167,7 @@ function normalizeDigits(v: string): string {
    `w-full` (يأتي بعده في ورقة الأنماط) ويأخذ الرمزُ الصفَّ كلَّه — فيبقى
    لحقل الرقم ٣٤ بكسلا لا تُرى ولا تُنقر. وهذا ما وُصف بـ«إدخال الرقم لا
    يعمل، فقط رمز الدولة». الحلُّ صنفٌ بلا `w-full` أصلا. */
-const codeSelectCls = `${controlCls.replace("w-full", "")} w-28 shrink-0 px-2 [&>option]:bg-surface`;
+const codeSelectCls = `${controlCls.replace("w-full", "")} w-32 shrink-0 px-2`;
 
 /** صفحة انضمام المدربين — على API حقيقي: قسمٌ أوّل يُنشئ الطلب والحساب، وقسمٌ أخير يُكمله */
 export default function JoinTrainer() {
@@ -346,6 +346,33 @@ export default function JoinTrainer() {
      انتقل من إطفاء الزرّ إلى فعل الضغط. */
   const [attempted, setAttempted] = useState<Record<number, boolean>>({});
   const missingRef = useRef<HTMLDivElement>(null);
+
+  /* ═══ رأسُ القسم الجديد يُرى — وكان المتقدّمُ يُلقى في ذيله ═══
+
+     كان «التالي» ينادي `setStep` ثمّ `window.scrollTo({top:0, behavior:"smooth"})`
+     في النَّفَس نفسِه. وثلاثةُ أشياءَ تجتمع على إفساده:
+
+     ١) `setStep` لا يُغيّر الشاشةَ فورا — React يرسم بعد انتهاء المعالِج،
+        فالتمريرُ يبدأ على **القسم القديم** بطوله.
+     ٢) والتمريرُ «الناعم» رحلةٌ تمتدّ مئاتِ الأجزاء من الثانية، تُقطع في
+        منتصفها حين يُستبدل المحتوى — فيقف المتصفّح حيث انقطع، وهو وسطُ
+        الصفحة أو ذيلُها.
+     ٣) والقسمُ الأوّل أسوأ: بينه وبين التالي `await` إلى الخادم، فالوعدُ
+        يعود بعد أن رحلت النافذة.
+
+     فالتمريرُ انتقل إلى أثرٍ يقع **بعد الرسم**، ووثبةً واحدةً لا رحلة. وإلى
+     مؤشّر الأقسام لا إلى رأس الصفحة: هناك يقرأ المتقدّمُ في أيّ قسمٍ صار،
+     وفوقه ترويسةٌ لاصقة تحجب ما تحتها مباشرة.
+
+     والتركيزُ ينتقل معه: من يتنقّل بلوحة المفاتيح أو يسمع الشاشةَ كان يبقى
+     تركيزُه على زرٍّ اختفى، فيعود Tab به إلى أوّل الصفحة. */
+  const stepsRef = useRef<HTMLOListElement>(null);
+  const firstPaint = useRef(true);
+  useEffect(() => {
+    if (firstPaint.current) { firstPaint.current = false; return; }
+    stepsRef.current?.scrollIntoView({ block: "start" });
+    stepsRef.current?.focus({ preventScroll: true });
+  }, [step]);
 
   const fieldErrors = useMemo<Record<string, string | null>>(() => ({
     name: nameWords.length >= 2 ? null : 'اكتب اسمك كاملا — اسمُك واسمُ عائلتك، لا كلمةً واحدة',
@@ -541,7 +568,7 @@ export default function JoinTrainer() {
         fullName: form.fullName, email: form.email.trim().toLowerCase(), password,
         phoneCountryCode: form.phone ? form.phoneCountryCode || undefined : undefined,
         phone: normalizeDigits(form.phone) || undefined,
-        country: form.country || undefined, timezone: COUNTRY_TIMEZONE[form.country] ?? undefined,
+        country: form.country || undefined, timezone: timezoneOf(form.country),
         employmentStatus: (form.employmentStatus || undefined) as "employed" | "own_business" | "full_time_training" | undefined,
         jobTitle: form.jobTitle || undefined,
         specialties, domainYears: form.domainYears, trainingYears: form.trainingYears,
@@ -662,6 +689,73 @@ export default function JoinTrainer() {
     );
   }
 
+  /* ═══ ملخّصُ ما سيقرؤه المراجع — بالاسم لا بالعدد ═══
+
+     كان أربعةَ أسطرٍ تعدّ ولا تسمّي: «١ مستندا مرفوعا»، «٣ تخصصا». والعددُ
+     لا يُراجَع: من رفع سيرتَه ونسي شهاداتِه يقرأ «١ مستندا» فيطمئنّ، ولا
+     يعرف أيَّ واحدٍ هو الذي وصل. ومن أخطأ في بريده أو رقمه لا يراهما هنا
+     أصلا — وهما ما سيُتواصَل به معه.
+
+     فالملخّصُ الآن يسمّي كلَّ ما سيصل المراجعَ فعلا: من هو، وبأيّ شيءٍ
+     يُتواصَل معه، وما خبرتُه واعتمادُه، وماذا يستطيع أن يدرّب، ومتى، وأيُّ
+     ملفٍّ وصل **باسمه**. وما لم يُملأ يُقال «لم تذكره» ولا يُسكت عنه —
+     السكوتُ يُقرأ رضا. */
+  const uploadedDocs = DOC_KINDS
+    .map((d) => ({ label: d.label, name: uploads[d.kind]?.name, status: uploads[d.kind]?.status }))
+    .filter((d) => d.status === "done");
+  const reviewRows: { k: string; v: string }[] = [
+    { k: "من أنت", v: [form.fullName.trim(), form.jobTitle.trim(), form.country].filter(Boolean).join(" · ") },
+    {
+      k: "نتواصل معك",
+      v: [
+        form.email.trim(),
+        normalizeDigits(form.phone) ? `${form.phoneCountryCode}${normalizeDigits(form.phone)}` : "",
+        contactChannel ? `الوسيلة المفضّلة: ${CONTACT_CHANNELS.find((c) => c.value === contactChannel)?.label ?? contactChannel}` : "",
+        contactChannel === "other_email" ? contactAltEmail.trim() : "",
+      ].filter(Boolean).join(" · "),
+    },
+    {
+      k: "خبرتك",
+      v: [
+        DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ? `${DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label} في المجال` : "",
+        TRAINING_YEARS.find((y) => y.value === form.trainingYears)?.label,
+        EMPLOYMENT_STATUS.find((s) => s.value === form.employmentStatus)?.label,
+      ].filter(Boolean).join(" · "),
+    },
+    { k: "تخصصاتك", v: specialties.join(" · ") },
+    { k: "اعتمادك", v: form.hasAccreditation ? accreditationDetails : "لا اعتماد رسمي — وهو ليس شرطا" },
+    {
+      k: "ما تستطيع تدريسه",
+      v: [
+        teachable.length ? `${teachable.slice(0, 3).join(" · ")}${teachable.length > 3 ? ` وغيرها (${teachable.length} بالمجمل)` : ""}` : "",
+        teachableOther.trim() ? "ودورة اقترحتَها بقلمك" : "",
+      ].filter(Boolean).join(" · "),
+    },
+    {
+      k: "لمن وكيف",
+      v: [
+        targetAudiences.join(" · "),
+        languages.join(" · "),
+        form.deliveryMode === "remote" ? "عن بعد" : form.deliveryMode === "in_person" ? "حضوري" : form.deliveryMode === "both" ? "عن بعد وحضوري" : "",
+      ].filter(Boolean).join(" · "),
+    },
+    {
+      k: "توفّرك",
+      v: [
+        days.join(" · "),
+        periods.map((v) => PERIODS.find((p) => p.value === v)?.label ?? v).join(" و"),
+        hoursPerWeek ? `${hoursPerWeek} ساعة أسبوعيا` : "",
+        startFrom ? `تبدأ من ${startFrom}` : "",
+        seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · "),
+      ].filter(Boolean).join(" · "),
+    },
+    {
+      k: "مستنداتك",
+      v: uploadedDocs.map((d) => `${d.label}${d.name ? ` (${d.name})` : ""}`).join(" · "),
+    },
+    { k: "درسك التجريبي", v: demoConsent ? "موافق على تقديم درس تجريبي قصير" : "" },
+  ];
+
   /* المضيّ من القسم الأول يبدأ الطلب في الخادم أولا — فبدونه لا مرجع تُرفع
      عليه مستنداتُ القسم الثالث. وإن أخفق البدء بقي المتقدّم مكانه مع الخطأ،
      ولم يمضِ إلى قسمٍ لا يعمل. */
@@ -678,9 +772,8 @@ export default function JoinTrainer() {
       if (!ok) return;
     }
     setStep((n) => Math.min(4, n + 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const back = () => { setStep((n) => Math.max(1, n - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const back = () => setStep((n) => Math.max(1, n - 1));
 
   return (
     <SiteShell>
@@ -711,7 +804,7 @@ export default function JoinTrainer() {
         </div>
 
         {/* مؤشر الخطوات — ثلاث محطات قصيرة بدل جدار واحد */}
-        <ol className="mt-10 grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="أقسام الطلب">
+        <ol ref={stepsRef} tabIndex={-1} className="mt-10 grid scroll-mt-24 grid-cols-1 gap-2 outline-none sm:grid-cols-3" aria-label="أقسام الطلب">
           {STEPS.map((s) => {
             const state = s.n === step ? "current" : s.n < step ? "done" : "todo";
             return (
@@ -785,11 +878,13 @@ export default function JoinTrainer() {
 
                       فالرقمُ يُطلب قبل أن يُنشأ الطلبُ أصلا، ويُرسَل مع القسم
                       الأخير كذلك (`submit`) كي يصلَ تصحيحُه بعد الإنشاء. */}
-                  <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone" required error={errOf("phone")} hint="بلا رمز الدولة وبلا صفر البداية — مثال: 791234567">
+                  <Field label="رقم الجوال (واتساب)" htmlFor="jt-phone" required error={errOf("phone")}>
                     <div className="flex gap-2" dir="ltr">
-                      <select id="jt-cc" aria-label="رمز الدولة" value={form.phoneCountryCode} onChange={set("phoneCountryCode")} className={codeSelectCls}>
-                        {COUNTRY_CODES.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </select>
+                      {/* رمزُ الدولة يُبحث فيه بالاسم لا بالرمز — قرارُ صاحب
+                          المنصّة (١٢ سبتمبر ٢٠٢٦). وكانت أحدَ عشرَ رمزا
+                          عربيّا في قائمةٍ منسدلة، فمن يقدّم من تركيا أو
+                          ماليزيا لا يجد رمزَه أصلا. */}
+                      <PhoneCodePicker id="jt-cc" value={form.phoneCountryCode} onChange={(dial) => setForm({ ...form, phoneCountryCode: dial })} className={codeSelectCls} />
                       <input
                         id="jt-phone" name="tel" type="tel" inputMode="tel" autoComplete="tel-national" dir="ltr"
                         required
@@ -802,12 +897,11 @@ export default function JoinTrainer() {
                       />
                     </div>
                   </Field>
+                  {/* ودولةُ الإقامة من القائمة نفسِها: منها تُشتقّ المنطقةُ
+                      الزمنيّة، وكانت تسعَ عشرةَ دولةً عربيّة — فمن سكن خارجَها
+                      أُنشئ طلبُه بلا منطقة، والمقابلةُ تُجدوَل بالساعة. */}
                   <Field label="دولة الإقامة" htmlFor="jt-country">
-                    <select id="jt-country" value={form.country} onChange={set("country")} className={`${controlCls} [&>option]:bg-surface`}>
-                      <option value="" disabled>اختر دولتك</option>
-                      {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                      <option value="أخرى">أخرى</option>
-                    </select>
+                    <CountryPicker id="jt-country" value={form.country} onChange={(name) => setForm({ ...form, country: name })} />
                   </Field>
                 </FieldRow>
 
@@ -824,10 +918,13 @@ export default function JoinTrainer() {
                       إن كان لك حساب على وجيز بهذا البريد فأدخل كلمتَه الحالية.
                     </p>
                     <FieldRow>
-                      <Field label="كلمة المرور" htmlFor="jt-password" required hint="٨ أحرف على الأقل" error={errOf("password")}>
+                      {/* الحدُّ داخلَ الصندوق لا تحته: سطرٌ تحت الحقل يُقرأ
+                          بعد أن يُكتب، والداخلُ يُقرأ قبله. */}
+                      <Field label="كلمة المرور" htmlFor="jt-password" required error={errOf("password")}>
                         <div className="relative">
                           <input
                             id="jt-password" type={showPassword ? "text" : "password"} autoComplete="new-password" dir="ltr"
+                            placeholder="٨ أحرف على الأقل"
                             value={password} onChange={(e) => setPassword(e.target.value)} onBlur={touch("password")}
                             {...invalidProps("jt-password-error", errOf("password"))}
                             className={`${controlCls} pr-4 pl-11 text-left`}
@@ -1132,10 +1229,10 @@ export default function JoinTrainer() {
               <Question n={3} title="متى تستطيع أن تُدرّب؟" hint="الشعبة تُجدوَل بالساعة لا باليوم — فقل متى من اليوم، لا اليوم وحده.">
                 <FieldRow>
                   {/* حقلُ `number` لا يقبل «٧» العربيّةَ الهنديّة: يبتلعها بلا
-                      رسالةٍ فيظنّ الكاتبُ أنّه كتب ولم يُكتب شيء. فالتلميحُ
-                      يقولها قبل أن تقع، والمثالُ يُريها. */}
-                  <Field label="ساعات أسبوعيا تستطيع تخصيصها" htmlFor="jt-hours" hint="بالأرقام الإنجليزية (1–80).">
-                    <input id="jt-hours" type="number" min={1} max={80} dir="ltr" inputMode="numeric" placeholder="10"
+                      رسالةٍ فيظنّ الكاتبُ أنّه كتب ولم يُكتب شيء. فالشرطُ
+                      داخلَ الصندوق حيث تقع اليدُ لا تحته حيث يُقرأ بعد فوات. */}
+                  <Field label="ساعات أسبوعيا تستطيع تخصيصها" htmlFor="jt-hours">
+                    <input id="jt-hours" type="number" min={1} max={80} dir="ltr" inputMode="numeric" placeholder="بالأرقام الإنجليزية (1–80)"
                       value={hoursPerWeek}
                       onChange={(e) => setHoursPerWeek(e.target.value)} className={`${controlCls} text-left`} />
                   </Field>
@@ -1254,14 +1351,36 @@ export default function JoinTrainer() {
                 <p className="flex items-center gap-2 text-read leading-5 font-black text-foreground">
                   <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
                 </p>
-                <ul className="mt-3 space-y-1.5 text-read leading-6 text-muted-foreground">
-                  <li>{form.fullName.trim() || "—"} · {specialties.length} تخصصا · {DOMAIN_YEARS.find((y) => y.value === form.domainYears)?.label ?? "—"} في المجال</li>
-                  <li>{teachable.length} دورة من الكتالوج تستطيع تدريسها{teachableOther.trim() ? " · وأخرى بقلمك" : ""}</li>
-                  <li>{Object.values(uploads).filter((u) => u.status === "done").length} مستندا مرفوعا</li>
-                  {seasons.length > 0 && <li>{seasons.map((v) => TRAINING_SEASONS.find((x) => x.value === v)?.label ?? v).join(" · ")}</li>}
-                </ul>
-                <p className="mt-3 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
+                <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+                  هذا ملفُّك كما سيصل لجنةَ المراجعة — راجعه سطرا سطرا، فبعد الإرسال يُعدّل من حسابك لا من هنا.
+                </p>
+                <dl className="mt-4 space-y-2.5 border-t border-white/10 pt-3.5">
+                  {reviewRows.map((row) => (
+                    <div key={row.k} className="grid gap-0.5 sm:grid-cols-[8.5rem_1fr] sm:gap-3">
+                      <dt className="text-read font-black leading-6 text-teal-light-ink">{row.k}</dt>
+                      <dd className={`text-read leading-6 ${row.v ? "text-foreground" : "text-muted-foreground"}`}>
+                        {row.v || "لم تذكره — وهو اختياري"}
+                      </dd>
+                    </div>
+                  ))}
+                  {/* النبذةُ والدافعُ نصَّان يُقرآن كما كُتبا لا يُعدّان: المراجع
+                      يقرؤهما أوّلَ شيء، فيراهما المتقدّم كما سيراهما. */}
+                  {form.bio.trim() && (
+                    <div className="grid gap-0.5 sm:grid-cols-[8.5rem_1fr] sm:gap-3">
+                      <dt className="text-read font-black leading-6 text-teal-light-ink">نبذتك</dt>
+                      <dd className="text-read leading-6 text-foreground">{form.bio.trim()}</dd>
+                    </div>
+                  )}
+                  {form.motivation.trim() && (
+                    <div className="grid gap-0.5 sm:grid-cols-[8.5rem_1fr] sm:gap-3">
+                      <dt className="text-read font-black leading-6 text-teal-light-ink">دافعك</dt>
+                      <dd className="text-read leading-6 text-foreground">{form.motivation.trim()}</dd>
+                    </div>
+                  )}
+                </dl>
+                <p className="mt-3.5 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
                   رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
+                  وحين تحجز مقابلتك يصل هذا الملفُّ نفسُه إلى المراجع في ملفّ PDF ومعه سيرتُك.
                 </p>
               </Card>
             </div>
