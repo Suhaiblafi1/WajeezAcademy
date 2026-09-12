@@ -61,9 +61,30 @@ export default function BookInterview({ name, email, reference, className = '' }
      يقترب من الشاشة، ثمّ يبقى مستطيلا فارغا حتّى يجيب Calendly. فيرى
      المتقدّمُ فراغا ويظنّ العطبَ — وهو أوّلُ ما يراه في هذه البطاقة. */
   const [frameReady, setFrameReady] = useState(false)
+  /* ═══ ارتفاعٌ يتبع محتوى Calendly لا رقمٌ نقدّره ═══
+
+     كان الارتفاعُ ثابتا (٦٨٠ على الهاتف)، ومحتوى التقويم أطولُ منه — فيصير
+     في الصفحة تمريران متداخلان: يُمرّر المتقدّمُ داخلَ الإطار ليقرأ أعلاه،
+     ثمّ يبحث عن موضعٍ خارجَه ليُمرّر الصفحةَ نفسَها. وشكا صاحبُ المنصّة منه
+     صراحةً (١٢ سبتمبر ٢٠٢٦): «طويلة والانتقال فيها من الأعلى للأسفل متعب».
+
+     وCalendly يبثّ `calendly.page_height` في الإطار العاري متى ضُبط
+     `embed_domain` — فيُقاس الارتفاعُ منه ولا يُقدَّر. وإن لم يصل (تغيّرت
+     صيغتُهم مثلا) بقي الاحتياطيُّ سخيّا: تمريرٌ داخليٌّ نادرٌ خيرٌ من إطارٍ
+     مقطوع. */
+  const [frameHeight, setFrameHeight] = useState<number | null>(null)
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
+      if (e.origin !== CALENDLY_ORIGIN) return
+      const data = e.data as { event?: unknown; payload?: { height?: unknown } } | null
+      if (data && typeof data === 'object' && data.event === 'calendly.page_height') {
+        /* يصل نصّا مثل `"1024px"` — ويُقبل الرقمُ كذلك احتياطا */
+        const raw = data.payload?.height
+        const px = typeof raw === 'number' ? raw : Number.parseInt(String(raw ?? ''), 10)
+        if (Number.isFinite(px) && px > 320 && px < 4000) setFrameHeight(px)
+        return
+      }
       if (!isScheduledEvent(e)) return
       setDone(true)
     }
@@ -104,7 +125,13 @@ export default function BookInterview({ name, email, reference, className = '' }
           {/* الانحناءُ على الحاضن لا على الإطار: `rounded-*` مع كلمة `border`
               في صيغةٍ واحدةٍ سطحٌ مكتوبٌ بيده، وسقفُها محروس. */}
           <div className="mt-4 overflow-hidden rounded-xl bg-white">
-            <div className="relative h-[680px] w-full sm:h-[720px]">
+            <div
+              className="relative w-full"
+              /* الاحتياطيُّ سخيٌّ على الهاتف: محتوى Calendly هناك أطولُ منه
+                 على الحاسوب، وقِصَرُه هو الذي أنتج التمريرَ المتداخل. */
+              style={{ height: frameHeight ?? undefined }}
+            >
+              <div className={frameHeight ? 'hidden' : 'h-[1040px] sm:h-[760px]'} aria-hidden="true" />
               {/* اللوحُ خلفَ الإطار لا مكانَه: يُغطّى حين يجيب Calendly، فلا
                   وميضَ ولا قفزةٌ في الارتفاع. */}
               {!frameReady && (
@@ -131,10 +158,23 @@ export default function BookInterview({ name, email, reference, className = '' }
                    البدء حتّى يقترب من الشاشة تأخيرٌ بلا مقابل. */
                 onLoad={() => setFrameReady(true)}
                 style={{ border: 'none' }}
-                className="relative block h-full w-full"
+                className="absolute inset-0 block h-full w-full"
               />
             </div>
           </div>
+          {/* ═══ ولماذا يُطلب منه أن يتحقّق بنفسه ═══
+
+              وجيز لا تعرف بالحجز إلّا بعد أن تُزامَن مواعيدُ Calendly. وحتّى
+              يُضبط ذلك، من حجز ثمّ عاد إلى هذه الصفحة يراها كأنّه لم يحجز —
+              فيحجز ثانيا ويجد المُقابِلُ موعدَين لشخصٍ واحد.
+
+              فيُقال له صراحةً أن يتحقّق من بريده: رسالةُ تأكيد Calendly هي
+              الدليلُ الذي بيده الآن. وهذا سطرٌ يُحذف يومَ تعمل المزامنة —
+              وبقاؤه بعدها لا يضرّ، فالتحقّقُ قبل الحجز الثاني صوابٌ دائما. */}
+          <Inset as="p" className="mt-3 text-read leading-6 text-muted-foreground">
+            حجزتَ موعدا سابقا؟ تحقّق من بريدك أوّلا — يصلك من Calendly تأكيدٌ فيه موعدُك
+            وروابطُ إعادة الجدولة والإلغاء. ولا تحجز موعدا ثانيا قبل أن تُلغي الأوّل.
+          </Inset>
           <p className="mt-3 text-read leading-6 text-muted-foreground">
             {reference && <>ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مرفقٌ بالحجز. </>}
             ولو لم يناسبك أيُّ وقتٍ معروض، راسِلنا وسنرتّب غيرَه.{' '}

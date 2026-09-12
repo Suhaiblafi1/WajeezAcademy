@@ -413,7 +413,10 @@ export class TrainerApplicationService {
      أن تُقاس الحالةُ وحدَها: من حجز يبقى `submitted` حتّى تصل المزامنة، فلو
      عُرض الزرُّ بالحالة وحدَها لدُعي إلى حجزِ ما حجزه. */
   async getPublicStatus(email: string, reference?: string | null): Promise<{
-    reference: string; status: TrainerStatus; createdAt: Date; completed: boolean; hasInterview: boolean
+    reference: string; status: TrainerStatus; createdAt: Date; completed: boolean
+    hasInterview: boolean
+    /** موعدُ أقربِ مقابلةٍ قائمة — يُعرض لصاحبه في صفحة المتابعة العامّة */
+    interviewAt: Date | null
   }> {
     const normalized = email.trim().toLowerCase()
     const ref = reference?.trim().toUpperCase() || null
@@ -421,7 +424,15 @@ export class TrainerApplicationService {
       where: ref ? { email: normalized, reference: ref } : { email: normalized },
       orderBy: { createdAt: 'desc' },
       /* الملغاةُ لا تُعَدّ حجزا — من ألغى موعدَه يُدعى إلى حجزٍ جديد */
-      include: { _count: { select: { interviews: { where: { canceledAt: null } } } } },
+      include: {
+        _count: { select: { interviews: { where: { canceledAt: null } } } },
+        interviews: {
+          where: { canceledAt: null },
+          orderBy: { scheduledAt: 'asc' },
+          take: 1,
+          select: { scheduledAt: true },
+        },
+      },
     })
     if (!app) {
       throw new AuthError('not_found', ref ? 'لا يوجد طلب بهذا الرقم والبريد معا' : 'لا يوجد طلب بهذا البريد', 404)
@@ -429,6 +440,7 @@ export class TrainerApplicationService {
     return {
       reference: app.reference, status: app.status as TrainerStatus, createdAt: app.createdAt,
       completed: !!app.phase2CompletedAt, hasInterview: app._count.interviews > 0,
+      interviewAt: app.interviews[0]?.scheduledAt ?? null,
     }
   }
 

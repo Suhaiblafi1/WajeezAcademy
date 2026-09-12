@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import {
+import { CalendarClock,
   ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
   FileUp, KeyRound, Loader2, Mail, MailCheck, MessageCircle, Mic2, Phone, RefreshCcw, Search, Send, Sparkles, Users,
 } from "lucide-react";
@@ -63,6 +63,7 @@ import {
   type UploadState,
 } from "./join-trainer/options";
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -215,7 +216,10 @@ export default function JoinTrainer() {
   /* متابعة حالة طلب سابق — البريدُ يكفي، والرقمُ اختياريّ */
   const [lookup, setLookup] = useState({ reference: "", email: "" });
   const [lookupResult, setLookupResult] = useState<
-    { reference: string; label: string; explain: string; status: string; hasInterview: boolean } | null
+    {
+      reference: string; label: string; explain: string; status: string
+      hasInterview: boolean; interviewAt: string | null
+    } | null
   >(null);
   const [lookupError, setLookupError] = useState("");
   const [lookupBusy, setLookupBusy] = useState(false);
@@ -620,13 +624,15 @@ export default function JoinTrainer() {
     try {
       const q = new URLSearchParams({ email: lookup.email.trim().toLowerCase() });
       if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
-      const res = await apiGet<{ reference: string; status: string; hasInterview: boolean }>(
+      const res = await apiGet<{
+        reference: string; status: string; hasInterview: boolean; interviewAt: string | null
+      }>(
         `/api/v1/trainer-applications/status?${q.toString()}`,
       );
       const st = APPLICANT_STATUS[res.status];
       setLookupResult({
         reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "",
-        status: res.status, hasInterview: res.hasInterview,
+        status: res.status, hasInterview: res.hasInterview, interviewAt: res.interviewAt,
       });
     } catch (err) {
       setLookupError(err instanceof ApiError ? err.message : "تعذر جلب الحالة");
@@ -1518,6 +1524,24 @@ export default function JoinTrainer() {
                   ولا زرَّ تحتها: يُغلق المتقدّمُ الصفحةَ ولا يحجز، ونظنّه
                   تأخّر. والشرطُ هو شرطُ صفحة الحالة نفسُه — الحالةُ تقبل
                   الحجز، ولم يحجز بعد. */}
+              {/* ═══ ومن حجز يرى موعدَه، لا زرَّ حجزٍ ثانٍ ═══
+
+                  صفحةُ الحالة للمسجَّل تعرضه منذ مدّة؛ وهذه — العامّةُ
+                  بالبريد وحدَه — كانت تعرض الزرَّ أو لا شيء. فمن حجز ثمّ عاد
+                  ليطمئنّ لا يجد موعدَه، فيحجز ثانيا. */}
+              {lookupResult.hasInterview && lookupResult.interviewAt && (
+                <Inset tone="positive" className="mt-3">
+                  <p className="flex items-center gap-2 text-read leading-5 font-black text-emerald-300">
+                    <CalendarClock className="h-4 w-4" /> موعدُ مقابلتك
+                  </p>
+                  <p className="mt-2 text-read leading-6 text-foreground">
+                    {fmtDateTime(new Date(lookupResult.interviewAt))} — عن بُعد
+                  </p>
+                  <p className="mt-1 text-read leading-6 text-muted-foreground">
+                    أرسل Calendly تفاصيلَ الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
+                  </p>
+                </Inset>
+              )}
               {BOOKABLE_STATUSES.includes(lookupResult.status) && !lookupResult.hasInterview && (
                 <BookInterview
                   email={lookup.email.trim()}
