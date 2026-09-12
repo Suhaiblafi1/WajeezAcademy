@@ -28,7 +28,7 @@
    ومصدرُ الرسالة يُفحَص مع ذلك: نافذةٌ أخرى تستطيع أن تبثّ ما تشاء. */
 
 import { useEffect, useState } from 'react'
-import { CalendarClock, CheckCircle2, ExternalLink, Video } from 'lucide-react'
+import { CalendarClock, CheckCircle2, ExternalLink, Loader2, Video } from 'lucide-react'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '@/application/trainer/application-options'
 import { Inset } from '@/components/ui/Surface'
 import { usePlatformConfig } from '@/hooks/usePlatformConfig'
@@ -55,6 +55,12 @@ function isScheduledEvent(e: MessageEvent): boolean {
 
 export default function BookInterview({ name, email, reference, className = '' }: BookInterviewProps) {
   const [done, setDone] = useState(false)
+  /* ═══ ولماذا لوحٌ يُرى قبل التقويم ═══
+
+     كان الإطارُ `loading="lazy"` بلا شيءٍ خلفه: فلا يبدأ تحميلُه أصلا حتّى
+     يقترب من الشاشة، ثمّ يبقى مستطيلا فارغا حتّى يجيب Calendly. فيرى
+     المتقدّمُ فراغا ويظنّ العطبَ — وهو أوّلُ ما يراه في هذه البطاقة. */
+  const [frameReady, setFrameReady] = useState(false)
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -98,13 +104,36 @@ export default function BookInterview({ name, email, reference, className = '' }
           {/* الانحناءُ على الحاضن لا على الإطار: `rounded-*` مع كلمة `border`
               في صيغةٍ واحدةٍ سطحٌ مكتوبٌ بيده، وسقفُها محروس. */}
           <div className="mt-4 overflow-hidden rounded-xl bg-white">
-            <iframe
-              src={embedUrl}
-              title="اختيار موعد المقابلة"
-              loading="lazy"
-              style={{ border: 'none' }}
-              className="block h-[680px] w-full sm:h-[720px]"
-            />
+            <div className="relative h-[680px] w-full sm:h-[720px]">
+              {/* اللوحُ خلفَ الإطار لا مكانَه: يُغطّى حين يجيب Calendly، فلا
+                  وميضَ ولا قفزةٌ في الارتفاع. */}
+              {!frameReady && (
+                <div className="absolute inset-0 grid place-items-center gap-3 bg-white text-center">
+                  <div>
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin text-teal-ink" aria-hidden="true" />
+                    <p className="mt-3 text-read leading-6 text-slate-600">يُحمَّل تقويمُ المواعيد…</p>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 text-read text-teal-ink underline decoration-dotted underline-offset-4"
+                    >
+                      أو افتحه في لسانٍ جديد
+                      <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                    </a>
+                  </div>
+                </div>
+              )}
+              <iframe
+                src={embedUrl}
+                title="اختيار موعد المقابلة"
+                /* ولا `lazy`: البطاقةُ لا تُعرض إلّا لمن جاء ليحجز، فتأخيرُ
+                   البدء حتّى يقترب من الشاشة تأخيرٌ بلا مقابل. */
+                onLoad={() => setFrameReady(true)}
+                style={{ border: 'none' }}
+                className="relative block h-full w-full"
+              />
+            </div>
           </div>
           <p className="mt-3 text-read leading-6 text-muted-foreground">
             {reference && <>ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مرفقٌ بالحجز. </>}

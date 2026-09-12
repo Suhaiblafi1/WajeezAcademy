@@ -14,7 +14,7 @@ import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
 import { countAr } from "@/application/text/count-ar";
 import TeachableCoursePicker from "@/components/TeachableCoursePicker";
 import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
-import { timezoneOf } from "@/data/countries";
+import { mobileFormatByDial, timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
@@ -222,6 +222,8 @@ export default function JoinTrainer() {
 
   /* المسودّة: تُقرأ مرّة عند الفتح، وتُكتب مع كل تغيير */
   const [resumed, setResumed] = useState(false);
+  /* تعذّر الحفظ — يُقال ولا يُسكت عنه: الصفحةُ تَعِد بأنّ الإجابات محفوظة */
+  const [draftBlocked, setDraftBlocked] = useState(false);
   const draftLoaded = useRef(false);
 
   /* ── المسودّة ──
@@ -271,12 +273,13 @@ export default function JoinTrainer() {
 
   useEffect(() => {
     if (!draftLoaded.current || phase2Done) return;
-    saveDraft({
+    const written = saveDraft({
       step, form, specialties, languages, targetCountries, targetAudiences,
       teachable, teachableOther, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
       contactChannel: contactChannel || undefined, contactAltEmail: contactAltEmail || undefined,
       reference: result?.reference, candidateToken: candidateToken || undefined,
     });
+    setDraftBlocked(!written);
   }, [step, form, specialties, languages, targetCountries, targetAudiences,
       teachable, teachableOther, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
       contactChannel, contactAltEmail, result, candidateToken, phase2Done]);
@@ -380,11 +383,23 @@ export default function JoinTrainer() {
     name: nameWords.length >= 2 ? null : 'اكتب اسمك كاملا — اسمُك واسمُ عائلتك، لا كلمةً واحدة',
     email: /.+@.+\..+/.test(form.email) ? null : 'بريدٌ بصيغةٍ صحيحة، مثل name@example.com',
     /* الرقمُ شرطٌ من أوّل قسمٍ لا من آخره — انظر تعليقَ الحقل نفسِه */
-    phone: normalizeDigits(form.phone).length >= PHONE_MIN_DIGITS
-      ? null
-      : normalizeDigits(form.phone).length === 0
-        ? 'رقمُ جوالك — عليه نتواصل معك'
-        : `رقمٌ قصير — ${countAr(PHONE_MIN_DIGITS, DIGIT_FORMS)} على الأقلّ بلا رمز الدولة`,
+    /* ═══ والقياسُ على الدولة المختارة لا على حدٍّ واحدٍ للجميع ═══
+
+       ما عُرف طولُه يقينا يُقاس به ويُقال مثالُه؛ وما لم يُعرف يبقى على
+       الحدّ الأدنى العامّ — فلا يُرفض رقمٌ صحيحٌ لدولةٍ لا نملك صيغتَها. */
+    phone: (() => {
+      const digits = normalizeDigits(form.phone)
+      if (digits.length === 0) return 'رقمُ جوالك — عليه نتواصل معك'
+      const known = mobileFormatByDial(form.phoneCountryCode)
+      if (known) {
+        if (known.format.digits.includes(digits.length)) return null
+        const lens = known.format.digits.join(' أو ')
+        return `أرقامُ ${known.country.ar} ${lens} خانات بعد ${form.phoneCountryCode} — مثال ${known.format.example}`
+      }
+      return digits.length >= PHONE_MIN_DIGITS
+        ? null
+        : `رقمٌ قصير — ${countAr(PHONE_MIN_DIGITS, DIGIT_FORMS)} على الأقلّ بلا رمز الدولة`
+    })(),
     /* بعد إرسال القسم الأوّل الحسابُ قائم، فلا كلمةَ تُطلب ولا خطأَ يُقال */
     password: result || password.length >= 8
       ? null
@@ -399,7 +414,10 @@ export default function JoinTrainer() {
     altEmail: contactChannel !== 'other_email' || /.+@.+\..+/.test(contactAltEmail)
       ? null
       : 'بريدٌ آخرُ بصيغةٍ صحيحة، مثل name@example.com',
-  }), [nameWords.length, form.email, form.phone, form.hasAccreditation, form.accreditationBody, accreditationName,
+  /* و`phoneCountryCode` بينها: رسالةُ الجوال تُقاس بصيغة الدولة المختارة،
+     فلو غابت لبقيت الرسالةُ على دولةٍ سابقةٍ بعد تغيير الرمز. */
+  }), [nameWords.length, form.email, form.phone, form.phoneCountryCode, form.hasAccreditation,
+      form.accreditationBody, accreditationName,
       password, passwordConfirm, result, contactChannel, contactAltEmail]);
 
   /** رسالةُ الحقل — تُكتم حتى يُلمس */
@@ -843,6 +861,13 @@ export default function JoinTrainer() {
 
         {/* الاستئناف يُقال ولا يُفترض: من يرى حقولا مملوءة ولا يعرف من ملأها
             يرتاب. والباب مفتوح للبدء من جديد بضغطة. */}
+        {/* ووعدُ الحفظ يُنقض صراحةً حين يتعذّر — لا يُترك المتقدّمُ يظنّه قائما */}
+        {draftBlocked && (
+          <Inset as="p" tone="danger" className="mt-5 text-read leading-6 text-red-200">
+            تعذّر حفظُ إجاباتك في هذا المتصفّح — تصفّحٌ خاصّ أو متصفّحٌ داخل تطبيق.
+            أكمل الطلبَ في جلسةٍ واحدة، ولا تُحدّث الصفحةَ قبل إرساله.
+          </Inset>
+        )}
         {resumed && (
           <Card tone="accent" className="mt-5 flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
             <p className="flex items-center gap-2 text-read leading-5 font-bold text-teal-light-ink">
@@ -895,7 +920,7 @@ export default function JoinTrainer() {
                       <input
                         id="jt-phone" name="tel" type="tel" inputMode="tel" autoComplete="tel-national" dir="ltr"
                         required
-                        placeholder="791234567"
+                        placeholder={mobileFormatByDial(form.phoneCountryCode)?.format.example ?? "رقمك بلا رمز الدولة"}
                         value={form.phone}
                         onChange={(e) => setForm({ ...form, phone: normalizeDigits(e.target.value) })}
                         onBlur={touch("phone")}

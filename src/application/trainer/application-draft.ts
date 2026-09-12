@@ -50,11 +50,20 @@ export function serializeDraft(d: Omit<TrainerDraft, 'savedAt'>, now: number = D
   return JSON.stringify({ ...d, form, savedAt: now })
 }
 
-export function saveDraft(d: Omit<TrainerDraft, 'savedAt'>, now: number = Date.now()): void {
+/** يردّ `false` حين يتعذّر الحفظ — والصمتُ عن ذلك هو العطب.
+
+    ═══ لماذا صار يُخبر بعد أن كان يبتلع ═══
+
+    كان يبتلع الاستثناءَ ولا يقول: فمن كان في تصفّحٍ خاصّ أو في متصفّحٍ داخل
+    تطبيق (يرمي `setItem`) يظنّ إجاباتِه محفوظةً — والصفحةُ تَعِده بذلك
+    صراحةً — ثمّ يحدّثها فيجدها ذهبت. والمسودّةُ رفاهيةٌ لا تُسقط النموذج،
+    لكنّ **الوعدَ بها وهي لا تعمل** ليس رفاهية. */
+export function saveDraft(d: Omit<TrainerDraft, 'savedAt'>, now: number = Date.now()): boolean {
   try {
     localStorage.setItem(DRAFT_KEY, serializeDraft(d, now))
+    return true
   } catch {
-    /* وضعٌ خاصّ أو تخزينٌ ممتلئ — المسودّة رفاهية لا تُسقط النموذج */
+    return false
   }
 }
 

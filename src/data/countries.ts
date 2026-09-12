@@ -48,6 +48,69 @@ export interface Country {
 
 /* الترتيبُ هنا هو ترتيبُ العرض: العربيّةُ أوّلا (جمهورُ المنصّة)، ثمّ سائرُ
    الدول مرتَّبةً بالعربيّة في المنتقي نفسِه. */
+/* ─────────── أطوالُ أرقام الجوّال وأمثلتُها ───────────
+
+   ═══ العطبُ الذي كُتبت له ═══
+
+   كان حقلُ الجوال يعرض مثالا أردنيّا واحدا (`791234567`) مهما اختير رمزُ
+   الدولة، ويقبل أيَّ طولٍ فوق ستّ خانات. فمن يكتب رقمَه السعوديَّ لا يجد ما
+   يقيس عليه، ولا يقول له شيءٌ إن نقصت خانة — ولا يُكتشف الخطأ إلّا حين
+   يُحاوَل الاتّصالُ به ولا يُرَدّ (١٢ سبتمبر ٢٠٢٦).
+
+   ═══ ولماذا جدولٌ منفصلٌ لا حقلٌ في كلّ صفّ ═══
+
+   الدولُ هنا مئةٌ وتسعٌ وتسعون، ولا أعرف أطوالَ جوّالِ أكثرِها يقينا. وحشوُ
+   الصفوف بأرقامٍ مظنونةٍ أسوأُ من تركها: رفضٌ لرقمٍ صحيحٍ يمنع تقديمَ طلب.
+   فما عُرف يقينا يُكتب هنا، وما لم يُعرف يبقى على الحدّ الأدنى العامّ —
+   يُقبل كما كان، بلا مثالٍ كاذبٍ ولا رفضٍ في غير محلّه.
+
+   والأطوالُ للرقم الوطنيّ بلا صفرِ البداية وبلا رمز الدولة. */
+export interface MobileFormat {
+  /** الأطوالُ المقبولة للرقم الوطنيّ — أكثرُها واحد، وبعضُها اثنان */
+  digits: number[]
+  /** مثالٌ حقيقيُّ الصيغة يُعرض في الحقل */
+  example: string
+}
+
+export const MOBILE_FORMATS: Record<string, MobileFormat> = {
+  JO: { digits: [9], example: '791234567' },
+  SA: { digits: [9], example: '512345678' },
+  AE: { digits: [9], example: '501234567' },
+  EG: { digits: [10], example: '1012345678' },
+  KW: { digits: [8], example: '51234567' },
+  QA: { digits: [8], example: '33123456' },
+  OM: { digits: [8], example: '92123456' },
+  BH: { digits: [8], example: '36123456' },
+  IQ: { digits: [10], example: '7912345678' },
+  PS: { digits: [9], example: '599123456' },
+  LB: { digits: [7, 8], example: '71123456' },
+  SY: { digits: [9], example: '944567890' },
+  LY: { digits: [9], example: '912345678' },
+  TN: { digits: [8], example: '20123456' },
+  DZ: { digits: [9], example: '551234567' },
+  MA: { digits: [9], example: '612345678' },
+  SD: { digits: [9], example: '911234567' },
+  YE: { digits: [9], example: '712345678' },
+  MR: { digits: [8], example: '22123456' },
+  TR: { digits: [10], example: '5321234567' },
+  PK: { digits: [10], example: '3012345678' },
+  IN: { digits: [10], example: '9812345678' },
+  GB: { digits: [10], example: '7400123456' },
+  FR: { digits: [9], example: '612345678' },
+  US: { digits: [10], example: '2025550123' },
+  CA: { digits: [10], example: '4165550123' },
+}
+
+/** صيغةُ الجوال لرمز اتّصالٍ — و`null` لما لا نعرفه يقينا */
+export function mobileFormatByDial(dial: string): { country: Country; format: MobileFormat } | null {
+  for (const country of COUNTRIES) {
+    if (country.dial !== dial) continue
+    const format = MOBILE_FORMATS[country.iso2]
+    if (format) return { country, format }
+  }
+  return null
+}
+
 export const COUNTRIES: Country[] = [
   { iso2: 'JO', ar: 'الأردن', en: 'Jordan', dial: '+962', tz: 'Asia/Amman', arab: true },
   { iso2: 'SA', ar: 'السعودية', en: 'Saudi Arabia', dial: '+966', tz: 'Asia/Riyadh', arab: true },
