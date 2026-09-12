@@ -13,6 +13,8 @@
    حاجةَ بنا إليه إلّا لحظةَ التسجيل. أمّا مفتاحُ التوقيع فيُحفظ، لأنّ الخادمَ
    يتحقّق به من كلّ حدثٍ يصل. */
 
+import type { CalendlyWebhookEvent } from './calendly-webhook.service'
+
 const API = 'https://api.calendly.com'
 
 /** الحدثان اللذان تعتمد عليهما مزامنةُ المقابلات */
@@ -143,5 +145,77 @@ export async function registerCalendlyWebhook(input: {
   return {
     applied: true, account, callbackUrl, outcome: 'created',
     subscription: created, missingEvents: missingCalendlyEvents(created),
+  }
+}
+
+/* ─────────── القراءةُ الدوريّة: بديلُ المستقبِل حين لا اشتراك ───────────
+
+   ═══ العطبُ الذي كُتبت له ═══
+
+   اشتراكاتُ webhook في Calendly خلفَ خطّةٍ مدفوعة، وحسابُ الأكاديميّة اليومَ
+   على المجّانيّة (١٢ سبتمبر ٢٠٢٦). والقراءةُ ليست خلفَها: `/scheduled_events`
+   و`/scheduled_events/{uuid}/invitees` تعملان على المجّانيّة. فما كان يصل
+   دَفعا صار يُسأل عنه كلَّ خمس دقائق، والفارقُ دقائقُ في ظهور الموعد لا أكثر.
+
+   ═══ ولماذا الشكلُ شكلُ الحدث ═══
+
+   المدعوُّ المقروءُ يحمل ما يحمله جسمُ webhook نفسَه: البريدَ، ورقمَ الطلب في
+   `tracking` أو في سؤالٍ مخصّص، وعنوانَ الموعد. فيُلبَس شكلَ الحدث ويُسلَّم
+   إلى `CalendlyWebhookService.handle` نفسِها — فلا مطابقةَ ثانيةٌ تفترق عن
+   الأولى عند أوّل تعديل، ولا ازدواجَ: `handle` تُدخل متجاهلةً التكرار. */
+
+export interface CalendlyScheduledEvent {
+  uri?: string
+  start_time?: string
+  /** `active` أو `canceled` */
+  status?: string
+}
+
+export interface CalendlyInvitee {
+  uri?: string
+  email?: string
+  status?: string
+  canceled_at?: string | null
+  questions_and_answers?: { answer?: unknown }[]
+  tracking?: { utm_source?: unknown; utm_medium?: unknown; utm_content?: unknown }
+}
+
+/** المواعيدُ التي تبدأ بعد `minStartTime` — النشطةُ والملغاةُ معا */
+export async function listCalendlyEvents(
+  token: string, input: { organization: string; minStartTime: Date; count?: number },
+): Promise<CalendlyScheduledEvent[]> {
+  const params = new URLSearchParams({
+    organization: input.organization,
+    min_start_time: input.minStartTime.toISOString(),
+    count: String(input.count ?? 100),
+    sort: 'start_time:asc',
+  })
+  const res = await call<{ collection?: CalendlyScheduledEvent[] }>(`/scheduled_events?${params}`, token)
+  return res.collection ?? []
+}
+
+export async function listCalendlyInvitees(token: string, eventUri: string): Promise<CalendlyInvitee[]> {
+  const uuid = eventUri.split('/').pop() ?? ''
+  if (!uuid) return []
+  const res = await call<{ collection?: CalendlyInvitee[] }>(
+    `/scheduled_events/${encodeURIComponent(uuid)}/invitees?count=100`, token,
+  )
+  return res.collection ?? []
+}
+
+/** المدعوُّ المقروءُ في ثوب الحدث — ليقرأه مطابِقُ webhook بلا تغيير */
+export function calendlyInviteeAsEvent(
+  scheduled: CalendlyScheduledEvent, invitee: CalendlyInvitee,
+): CalendlyWebhookEvent {
+  const canceled = invitee.status === 'canceled' || !!invitee.canceled_at || scheduled.status === 'canceled'
+  return {
+    event: canceled ? 'invitee.canceled' : 'invitee.created',
+    payload: {
+      uri: invitee.uri,
+      email: invitee.email,
+      questions_and_answers: invitee.questions_and_answers,
+      tracking: invitee.tracking,
+      scheduled_event: { uri: scheduled.uri, start_time: scheduled.start_time },
+    },
   }
 }

@@ -87,11 +87,14 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
 
   app.put('/api/admin/integrations/calendly', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'حفظ مفتاح توقيع Calendly' },
+    schema: { tags: ['admin-integrations'], summary: 'حفظ مفتاح توقيع Calendly ورمزِه الشخصيّ' },
   }, async (req) => {
     const body = z.object({
       enabled: z.boolean(),
       signingKey: z.string().max(400).optional(),
+      /* الرمزُ يُحفظ منذ صارت المزامنةُ سؤالا دوريّا — يسأل العاملُ الخلفيُّ
+         بلا إنسانٍ يلصقه كلَّ مرّة. وعلّةُ النقض في `CalendlyConfig`. */
+      token: z.string().max(400).optional(),
     }).parse(req.body)
     await saveCalendlyConfig(prisma, req.auth!.userId, body)
     return maskedIntegrationsView(prisma)
@@ -110,16 +113,20 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     schema: { tags: ['admin-integrations'], summary: 'تسجيلُ اشتراك Calendly — معاينةٌ افتراضا' },
   }, async (req) => {
     const body = z.object({
-      token: z.string().trim().min(10).max(400),
+      /* الرمزُ صار محفوظا للمزامنة الدوريّة، فلا يُلصَق ثانيةً هنا. ويبقى
+         تمريرُه ممكنا لفحص رمزٍ قبل حفظه. */
+      token: z.string().trim().min(10).max(400).optional(),
       apply: z.boolean().optional().default(false),
     }).parse(req.body)
     const config = await getCalendlyConfig(prisma)
     if (!config.signingKey) {
       return { ok: false, message: 'احفظ مفتاحَ التوقيع أوّلا — به يتحقّق الخادمُ من كلّ حدث' }
     }
+    const token = body.token ?? config.token
+    if (!token) return { ok: false, message: 'لا رمزَ شخصيٌّ محفوظ — احفظه أوّلا ثمّ افحص' }
     try {
       const result = await registerCalendlyWebhook({
-        token: body.token, signingKey: config.signingKey, siteUrl: publicSiteUrl(), apply: body.apply,
+        token, signingKey: config.signingKey, siteUrl: publicSiteUrl(), apply: body.apply,
       })
       if (result.applied) {
         /* الرمزُ لا يُسجَّل ولا طرفٌ منه — والمسجَّلُ أنّ اشتراكا أُنشئ */

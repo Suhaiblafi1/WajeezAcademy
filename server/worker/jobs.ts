@@ -27,6 +27,16 @@ import { NotificationService, liveChannels } from '../services/notification.serv
 import { CohortService } from '../services/cohort.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
+import { getCalendlyConfig } from '../services/integrations.service'
+import { CalendlyWebhookService } from '../services/calendly-webhook.service'
+import {
+  CalendlyApiError,
+  type CalendlyScheduledEvent,
+  calendlyAccount,
+  calendlyInviteeAsEvent,
+  listCalendlyEvents,
+  listCalendlyInvitees,
+} from '../services/calendly-api.service'
 
 export interface JobResult {
   job: string
@@ -474,6 +484,86 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
 }
 
 /** الوظائفُ بأسمائها ودوراتِها — الترتيبُ ترتيبُ الأهمّيّة */
+/* ─────────── مقابلاتُ Calendly: تُسأل ولا تُنتظَر ───────────
+
+   ═══ العطبُ الذي كُتبت له ═══
+
+   المزامنةُ كانت تنتظر webhook، والاشتراكُ فيه خلفَ خطّةٍ مدفوعةٍ لا يملكها
+   حسابُ الأكاديميّة (١٢ سبتمبر ٢٠٢٦). فمن حجز مقابلتَه لم يظهر حجزُه في
+   طابور المراجعة أصلا — لا تأخّرا، بل انقطاعا تامّا.
+
+   والقراءةُ ليست خلفَ الخطّة، فصار العاملُ يسأل كلَّ خمس دقائق. والفارقُ عن
+   الدفع دقائقُ في الظهور، لا أكثر — وحجزُ مقابلةٍ ليس فيه ما يُستعجَل.
+
+   ═══ وثلاثةُ شروطِ هذا الملفّ محفوظة ═══
+
+   ١) **تُعاد بلا ضرر**: لا علمَ يُخزَّن هنا. `handle` تُدخل متجاهلةً التكرار،
+      والسؤالُ يُقصَر على ما لا نعرفه — فالاستقرارُ سؤالان لا أكثر.
+   ٢) **محدودةُ الأثر**: سقفُ مواعيدَ في الدورة، ونافذةٌ ليومين لا للأبد.
+   ٣) **تُخبر بالعربيّة**: وتقول حين يسقط النداءُ برمزه، فالرمزُ المنتهي
+      صمتٌ تامٌّ لولا هذا السطر. */
+const CALENDLY_LOOKBACK_MS = 2 * DAY
+const CALENDLY_EVENT_CAP = 50
+
+export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const job = 'calendly_interview_sync'
+  const config = await getCalendlyConfig(prisma)
+  /* ولا يكفي `enabled`: مفعَّلٌ بلا رمزٍ يعني سؤالا برمزٍ فارغٍ يردّ ٤٠١
+     كلَّ خمس دقائقَ إلى الأبد — وهي الحالةُ التي يقع فيها من فعّل ثمّ نسي. */
+  if (!config.enabled || !config.token) {
+    return { job, summaryAr: 'لا رمزَ Calendly محفوظا — لا سؤالَ يُرسل', done: 0, failed: 0, ms: Date.now() - started }
+  }
+
+  const since = new Date(now.getTime() - CALENDLY_LOOKBACK_MS)
+  let events: CalendlyScheduledEvent[]
+  try {
+    const account = await calendlyAccount(config.token)
+    events = await listCalendlyEvents(config.token, { organization: account.organization, minStartTime: since })
+  } catch (e) {
+    /* رمزٌ منتهٍ أو شبكةٌ ساقطة: يُقال ولا يُرمى — دورةٌ ساقطةٌ لا توقف
+       العاملَ عن بقيّة وظائفه، وصفحةُ صحّةِ النظام تقرأ هذا السطر. */
+    const why = e instanceof CalendlyApiError ? `ردّ ${e.status}` : 'خطأُ شبكة'
+    return { job, summaryAr: `تعذّر سؤالُ Calendly (${why}) — لا مقابلةَ زِيدت`, done: 0, failed: 1, ms: Date.now() - started }
+  }
+
+  /* ما نعرفه سلفا لا يُسأل عن مدعوّيه. وعنوانُ المدعوّ يبدأ بعنوان موعده
+     (`…/scheduled_events/{ev}/invitees/{inv}`) فالمطابقةُ بالبادئة تكفي. */
+  const known = await prisma.trainerInterview.findMany({
+    where: { provider: 'calendly', scheduledAt: { gte: since } },
+    select: { externalId: true, canceledAt: true },
+  })
+
+  let done = 0
+  let failed = 0
+  const calendly = new CalendlyWebhookService(prisma)
+  for (const event of events.slice(0, CALENDLY_EVENT_CAP)) {
+    const uri = typeof event.uri === 'string' ? event.uri : ''
+    if (!uri) continue
+    const record = known.find((k) => k.externalId?.startsWith(`${uri}/`))
+    const canceled = event.status === 'canceled'
+    /* معروفٌ وحالتُه مطابقة: لا سؤال. وما اختلفت حالتُه يُسأل — وبه يصل
+       الإلغاءُ الذي وقع بعد الحجز. */
+    if (record && (canceled ? !!record.canceledAt : !record.canceledAt)) continue
+    try {
+      for (const invitee of await listCalendlyInvitees(config.token, uri)) {
+        const result = await calendly.handle(calendlyInviteeAsEvent(event, invitee))
+        if (result.recorded || result.canceled) done += 1
+      }
+    } catch { failed += 1 }
+  }
+
+  return {
+    job,
+    summaryAr: done > 0
+      ? `مزامنةُ Calendly: ${done} مقابلةً حُدّثت من ${events.length} موعدا`
+      : `مزامنةُ Calendly: لا جديدَ في ${events.length} موعدا`,
+    done,
+    failed,
+    ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكيرُ الجلسات' },
@@ -481,6 +571,9 @@ export const JOBS = [
   { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشرُ المجدول' },
   /* كلَّ عشر دقائق: المقعدُ المحبوسُ يمنع شراءً الآن لا غدا */
   { key: 'reclaim_abandoned_orders', everyMs: 10 * 60_000, run: reclaimAbandonedOrders, titleAr: 'تحريرُ مقاعدِ الطلبات المهجورة' },
+  /* كلَّ خمس دقائق: من حجز مقابلتَه يظهر حجزُه في طابور المراجعة بعد دقائق
+     لا بعد يوم — وهي نافذةُ ردٍّ مقبولةٌ على حجزِ موعد. */
+  { key: 'calendly_interview_sync', everyMs: 5 * 60_000, run: syncCalendlyInterviews, titleAr: 'مزامنةُ مقابلات Calendly' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },
