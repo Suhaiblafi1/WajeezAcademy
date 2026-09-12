@@ -184,6 +184,51 @@ export async function saveZoomConfig(
   return row
 }
 
+/* ─────────── Calendly — مفتاحُ التوقيع من الشاشة لا من الخادم ───────────
+
+   كان يُقرأ من `process.env` وحدَه، فضبطُه يقتضي SSH وتحريرَ
+   `deploy/.env.production` وإعادةَ نشر — وسائرُ التكاملات في هذه المنصّة
+   تُضبط من شاشةٍ واحدة. فصار كأخواته: يُحفظ في القاعدة، والبيئةُ غشاءٌ
+   يغلبه حين تُضبط (فما ضُبط بيئيّا في الإنتاج يبقى سيّدَ الموقف). */
+export interface CalendlyConfig {
+  enabled: boolean
+  signingKey?: string
+}
+
+export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyConfig> {
+  const row = await prisma.integrationSetting.findUnique({ where: { provider: 'calendly' } })
+  const c = (row?.config ?? {}) as Partial<CalendlyConfig>
+  const base: CalendlyConfig = {
+    enabled: row?.enabled ?? false,
+    signingKey: c.signingKey || undefined,
+  }
+  const env = process.env
+  if (env.CALENDLY_WEBHOOK_SIGNING_KEY) {
+    base.signingKey = env.CALENDLY_WEBHOOK_SIGNING_KEY
+    base.enabled = true
+  }
+  return base
+}
+
+export async function saveCalendlyConfig(
+  prisma: PrismaClient, actorId: string, input: Partial<{ enabled: boolean; signingKey: string }>,
+) {
+  const current = await getRawConfig(prisma, 'calendly')
+  const next: Record<string, unknown> = { ...current }
+  /* لا يُكتب فوق السرّ المخزَّن بقيمةٍ مقنَّعةٍ عادت من الشاشة */
+  if (input.signingKey && !MASK.test(input.signingKey)) next.signingKey = input.signingKey
+  const row = await prisma.integrationSetting.upsert({
+    where: { provider: 'calendly' },
+    update: { config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
+    create: { provider: 'calendly', config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
+  })
+  await recordAudit(prisma, {
+    actorId, action: 'integration.calendly.save', entityType: 'integration_setting', entityId: 'calendly',
+    meta: { enabled: row.enabled, keyRotated: !!(input.signingKey && !MASK.test(input.signingKey)) },
+  })
+  return row
+}
+
 async function getRawConfig(prisma: PrismaClient, provider: string): Promise<Record<string, unknown>> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider } })
   return (row?.config as Record<string, unknown>) ?? {}
@@ -192,13 +237,14 @@ async function getRawConfig(prisma: PrismaClient, provider: string): Promise<Rec
 /* ── عرض مقنَّع لشاشة الإدارة — لا سر كامل يغادر الخادم ── */
 
 export async function maskedIntegrationsView(prisma: PrismaClient) {
-  const [pay, mail, zoom] = await Promise.all([
-    getPaymentConfig(prisma), getEmailConfig(prisma), getZoomConfig(prisma),
+  const [pay, mail, zoom, calendly] = await Promise.all([
+    getPaymentConfig(prisma), getEmailConfig(prisma), getZoomConfig(prisma), getCalendlyConfig(prisma),
   ])
   const envSourced = {
     payment: !!process.env.PAYMENT_DRIVER,
     email: !!process.env.RESEND_API_KEY,
     zoom: !!process.env.ZOOM_ACCOUNT_ID,
+    calendly: !!process.env.CALENDLY_WEBHOOK_SIGNING_KEY,
   }
   return {
     payment: {
@@ -222,6 +268,17 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
       /* `ready` تُقال للشاشة صراحةً: «مفعّل» بلا مفاتيحَ ليس جاهزا، وهو الفرقُ
          الذي يجعل مديرا يظنّ التكاملَ قائما ثمّ يفشل أوّلُ لقاءٍ يُنشأ. */
       ready: zoomReady(zoom), missing: zoomMissing(zoom),
+    },
+    calendly: {
+      enabled: calendly.enabled, envSourced: envSourced.calendly,
+      signingKey: mask(calendly.signingKey), hasSigningKey: !!calendly.signingKey,
+      /* عنوانُ المستقبِل يُعرض ليُنسخ إلى Calendly عند الحاجة، ويُبنى من
+         عنوان الموقع نفسِه الذي تبني منه بوّابةُ الدفع روابطَ عودتها. */
+      callbackUrl: `${publicSiteUrl()}/api/webhooks/calendly`,
+      siteUrlExplicit: hasExplicitSiteUrl(),
+      /* «مفعّل» بلا مفتاحٍ ليس جاهزا — كما في Zoom تماما: يردّ المستقبِلُ
+         ٤٠١ على كلّ حدثٍ ولا يُسجَّل موعد. */
+      ready: !!calendly.signingKey,
     },
   }
 }

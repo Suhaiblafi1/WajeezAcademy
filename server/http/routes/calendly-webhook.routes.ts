@@ -7,6 +7,7 @@ import {
   type CalendlyWebhookEvent,
   verifyCalendlyWebhookSignature,
 } from '../../services/calendly-webhook.service'
+import { getCalendlyConfig } from '../../services/integrations.service'
 
 export function registerCalendlyWebhookRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const calendly = new CalendlyWebhookService(prisma)
@@ -16,7 +17,10 @@ export function registerCalendlyWebhookRoutes(app: FastifyInstance, prisma: Pris
   }, async (req, reply) => {
     const rawBody = (req as unknown as { rawBody?: string }).rawBody ?? JSON.stringify(req.body ?? {})
     const signature = String(req.headers['calendly-webhook-signature'] ?? '')
-    if (!verifyCalendlyWebhookSignature(rawBody, signature, process.env.CALENDLY_WEBHOOK_SIGNING_KEY)) {
+    /* المفتاحُ من شاشة التكاملات لا من البيئة وحدَها — والبيئةُ تغلبه حين
+       تُضبط (`getCalendlyConfig`). فضبطُ Calendly لا يقتضي SSH ولا إعادةَ نشر. */
+    const { signingKey } = await getCalendlyConfig(prisma)
+    if (!verifyCalendlyWebhookSignature(rawBody, signature, signingKey)) {
       return reply.status(401).send({ error: 'bad_signature' })
     }
     const result = await calendly.handle((req.body ?? {}) as CalendlyWebhookEvent)

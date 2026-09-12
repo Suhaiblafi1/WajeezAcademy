@@ -113,6 +113,8 @@ const PHRASES: Record<string, string> = {
   'integration.email.save': 'حفظُ إعدادِ البريد',
   'integration.email.test': 'اختبارُ إرسالِ بريد',
   'integration.zoom.save': 'حفظُ إعدادِ Zoom',
+  'integration.calendly.save': 'حفظُ مفتاحِ توقيع Calendly',
+  'integration.calendly.register': 'تسجيلُ اشتراك Calendly للمقابلات',
   'integration.zoom.test': 'اختبارُ اتّصالِ Zoom',
   'staff.task.assign': 'تكليفُ موظّفٍ بمهمّة',
   'staff.task.complete': 'إغلاقُ مهمّة',

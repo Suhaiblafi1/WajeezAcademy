@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck, Video } from "lucide-react";
+import { CalendarClock, CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck, Video } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
@@ -28,6 +28,16 @@ interface IntegrationsView {
     accountId: string; clientId: string; clientSecret: string; hostEmail: string;
     hasAccountId: boolean; hasClientId: boolean; hasClientSecret: boolean;
   };
+  calendly: {
+    enabled: boolean; envSourced: boolean; ready: boolean;
+    signingKey: string; hasSigningKey: boolean; callbackUrl: string; siteUrlExplicit: boolean;
+  };
+}
+
+interface CalendlyRegisterReply {
+  ok: boolean;
+  message: string;
+  outcome?: "existing" | "created" | "would_create";
 }
 
 const DRIVER_AR: Record<string, string> = {
@@ -48,6 +58,11 @@ export default function Integrations() {
   const [testTo, setTestTo] = useState("");
   const [zoomForm, setZoomForm] = useState({ enabled: false, accountId: "", clientId: "", clientSecret: "", hostEmail: "" });
   const [zoomProbe, setZoomProbe] = useState<{ ok: boolean; message: string } | null>(null);
+  const [calForm, setCalForm] = useState({ enabled: false, signingKey: "" });
+  /* الرمزُ الشخصيُّ في حالةِ الشاشة وحدَها: يُرسل لحظةَ التسجيل ولا يُحفظ
+     عندنا — لا في القاعدة ولا في الرد. ويُمحى من الحقل بعد نجاحه. */
+  const [calToken, setCalToken] = useState("");
+  const [calProbe, setCalProbe] = useState<CalendlyRegisterReply | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -65,6 +80,7 @@ export default function Integrations() {
         enabled: v.zoom.enabled, accountId: v.zoom.accountId, clientId: v.zoom.clientId,
         clientSecret: v.zoom.clientSecret, hostEmail: v.zoom.hostEmail === "me" ? "" : v.zoom.hostEmail,
       });
+      setCalForm({ enabled: v.calendly.enabled, signingKey: v.calendly.signingKey });
     } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
   }, []);
@@ -77,6 +93,23 @@ export default function Integrations() {
     try { await fn(); toast(doneMsg); await load(); }
     catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(false); }
+  };
+
+  /* الفحصُ والتسجيلُ نداءٌ واحدٌ يفرّقه `apply` — والرمزُ يُمحى بعد نجاح
+     التسجيل فلا يبقى في الشاشة بلا حاجة. */
+  const probeCalendly = async (apply: boolean) => {
+    if (busy) return;
+    setBusy(true);
+    setCalProbe(null);
+    try {
+      const r = await apiPost<CalendlyRegisterReply>(
+        "/api/admin/integrations/calendly/register", { token: calToken.trim(), apply },
+      );
+      setCalProbe(r);
+      if (r.ok && r.outcome === "created") { setCalToken(""); await load(); }
+    } catch (e) {
+      setCalProbe({ ok: false, message: e instanceof ApiError ? e.message : "تعذّر الاتصال بـCalendly" });
+    } finally { setBusy(false); }
   };
 
   const testPayment = async () => {
@@ -314,6 +347,87 @@ export default function Integrations() {
                 <Inset as="p" tone={zoomProbe.ok ? "positive" : "danger"}
                   className={`text-read leading-6 ${zoomProbe.ok ? "text-emerald-200" : "text-red-200"}`}>
                   {zoomProbe.message}
+                </Inset>
+              )}
+            </div>
+          </Panel>
+
+          {/* ════ Calendly — مقابلاتُ المتقدّمين ════
+
+              الرابطُ وحدَه يعرض التقويم، ولا يُدخل الموعدَ عندنا. الذي يُدخله
+              اشتراكُ webhook موقَّع — ولا تُنشئه لوحةُ Calendly بالضغط، بل
+              واجهتُها البرمجيّة. فالزرُّ هنا يغني عن SSH وسطرِ الأوامر. */}
+          <Panel>
+            <p className="flex items-center gap-2 text-sm font-black">
+              <CalendarClock className="h-4 w-4 text-teal-ink" /> مقابلاتُ Calendly
+            </p>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">
+              يكتب موعدَ المقابلة عندنا حين يحجزه المتقدّم، ويُلغيه حين يُلغي — بحدثٍ موقَّع.
+            </p>
+            {view.calendly.enabled && !view.calendly.ready && (
+              <Inset as="p" tone="danger" className="mt-3 text-read leading-6 text-red-200">
+                مفعَّلٌ بلا مفتاحِ توقيع — يردّ المستقبِلُ ٤٠١ على كلّ حدثٍ ولا يُسجَّل موعد.
+              </Inset>
+            )}
+            {view.calendly.envSourced && (
+              <Inset as="p" className="mt-3 text-read leading-6 text-muted-foreground">
+                المفتاحُ مضبوطٌ من بيئة الخادم — وهي تغلب الشاشة. غيِّره في <code dir="ltr">deploy/.env.production</code>.
+              </Inset>
+            )}
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className={labelCls}>مفتاحُ التوقيع — يُخزَّن ولا يُعرض</label>
+                <input dir="ltr" type="password" value={calForm.signingKey}
+                  onChange={(e) => setCalForm({ ...calForm, signingKey: e.target.value })}
+                  placeholder={view.calendly.hasSigningKey ? view.calendly.signingKey : "سرٌّ طويلٌ تختاره…"}
+                  className={`${inputCls} mt-1 w-full font-mono`} />
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  تختاره أنت، ويُمرَّر إلى Calendly عند التسجيل. ليس رمزَ API.
+                </p>
+              </div>
+              <div>
+                <label className={labelCls}>عنوانُ المستقبِل — يُسجَّل عند Calendly</label>
+                <input dir="ltr" readOnly value={view.calendly.callbackUrl}
+                  className={`${inputCls} mt-1 w-full font-mono opacity-70`} />
+                {!view.calendly.siteUrlExplicit && (
+                  <p className="mt-1 text-read leading-6 text-gold-ink">
+                    ‏APP_URL غيرُ مضبوطٍ صراحةً — العنوانُ أعلاه مشتقٌّ، راجعه قبل التسجيل.
+                  </p>
+                )}
+              </div>
+              <label className="flex items-center gap-2 text-read text-muted-foreground">
+                <input type="checkbox" checked={calForm.enabled}
+                  onChange={(e) => setCalForm({ ...calForm, enabled: e.target.checked })} className="accent-gold" />
+                مفعَّل
+              </label>
+              <Button tone="confirm" disabled={busy}
+                onClick={() => act(() => apiPut("/api/admin/integrations/calendly", calForm), "حُفظت إعدادات Calendly")}>
+                حفظ إعدادات Calendly
+              </Button>
+            </div>
+
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <label className={labelCls}>الرمزُ الشخصيُّ من Calendly — يُستعمل مرّةً ولا يُحفظ</label>
+              <input dir="ltr" type="password" value={calToken} onChange={(e) => setCalToken(e.target.value)}
+                placeholder="eyJraWQ…" className={`${inputCls} mt-1 w-full font-mono`} />
+              <p className="mt-1 text-read leading-6 text-muted-foreground">
+                من Calendly ← Integrations &amp; apps ← API &amp; webhooks. والاشتراكاتُ تحتاج خطّةً مدفوعة.
+              </p>
+              {/* معاينةٌ ثمّ تطبيق — لا يُسجَّل مستقبِلٌ حيٌّ قبل أن تُعرض النتيجة */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button tone="secondary" size="sm" disabled={busy || !calToken.trim()}
+                  onClick={() => void probeCalendly(false)}>
+                  <Send className="h-3.5 w-3.5" /> افحص الاشتراك
+                </Button>
+                <Button tone="confirm" size="sm" disabled={busy || !calToken.trim()}
+                  onClick={() => void probeCalendly(true)}>
+                  سجّل الاشتراك
+                </Button>
+              </div>
+              {calProbe && (
+                <Inset as="p" tone={calProbe.ok ? "positive" : "danger"}
+                  className={`mt-3 text-read leading-6 ${calProbe.ok ? "text-emerald-200" : "text-red-200"}`}>
+                  {calProbe.message}
                 </Inset>
               )}
             </div>

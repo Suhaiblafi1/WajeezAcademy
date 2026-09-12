@@ -5,12 +5,13 @@
    ثمّ الإلغاء وعودةُ الطلب إلى حالته السابقة. */
 
 import { createHmac } from 'node:crypto'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
 import type { PrismaClient } from '@prisma/client'
 import { buildApp } from '../../http/app'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { saveCalendlyConfig } from '../../services/integrations.service'
 import { setupTestDb, testPrisma } from '../helpers/db'
 
 const SECRET = 'calendly-hook-secret-for-tests'
@@ -160,5 +161,41 @@ describe('حدثُ الإلغاء الموقّع', () => {
     const row = rows.find((r) => r.reference === REFERENCE)
     expect(row, 'الطلبُ غائبٌ عن الطابور').toBeDefined()
     expect(row?.interviewsCount, 'عُدَّت الملغاةُ مقابلةً أُجريت').toBe(0)
+  })
+})
+
+/* ⚠️ أُضيف في ١٢ سبتمبر ٢٠٢٦ — المفتاحُ من الشاشة لا من الخادم
+
+   كان المستقبِلُ يقرأ `process.env.CALENDLY_WEBHOOK_SIGNING_KEY` وحدَه، فضبطُ
+   Calendly يقتضي SSH وتحريرَ `deploy/.env.production` وإعادةَ نشر — وسائرُ
+   تكاملات المنصّة (Zoom والدفع والبريد) تُضبط من شاشةٍ واحدة. فصار يقرأ
+   إعدادَ التكامل من القاعدة، والبيئةُ غشاءٌ يغلبه حين تُضبط.
+
+   وهذا الحارسُ يمشي الطريقَ الجديدَ كلَّه: بلا متغيّرِ بيئةٍ البتّة، ومفتاحٌ
+   محفوظٌ كما تحفظه الشاشةُ — يُقبل الحدثُ ويُكتب الموعد. ويُثبَّت الغشاءُ
+   كذلك: متغيّرُ البيئة يغلب المحفوظَ حين يعودان معا. */
+describe('مفتاحُ التوقيع من شاشة التكاملات', () => {
+  const DB_KEY = 'calendly-key-saved-from-the-admin-screen'
+
+  afterAll(() => { process.env.CALENDLY_WEBHOOK_SIGNING_KEY = SECRET })
+
+  it('يُقبل الحدثُ بمفتاحٍ محفوظٍ في القاعدة بلا متغيّرِ بيئة', async () => {
+    delete process.env.CALENDLY_WEBHOOK_SIGNING_KEY
+    await saveCalendlyConfig(prisma, userId, { enabled: true, signingKey: DB_KEY })
+
+    const response = await post('invitee.created', {
+      ...payload(), uri: `${INVITEE_URI}-from-screen`,
+    }, DB_KEY)
+    expect(response.statusCode, response.body).toBe(200)
+    expect(response.json()).toEqual({ recorded: true })
+  })
+
+  it('ومتغيّرُ البيئة يغلب المحفوظَ حين يجتمعان', async () => {
+    process.env.CALENDLY_WEBHOOK_SIGNING_KEY = SECRET
+    /* موقَّعٌ بمفتاح القاعدة والبيئةُ مضبوطةٌ بغيره — تغلب البيئةُ فيُردّ */
+    const response = await post('invitee.created', {
+      ...payload(), uri: `${INVITEE_URI}-env-wins`,
+    }, DB_KEY)
+    expect(response.statusCode).toBe(401)
   })
 })

@@ -9,8 +9,11 @@ import { requirePermission } from '../auth-plugin'
 import { SystemHealthService } from '../../services/system-health.service'
 import {
   getPaymentConfig, getEmailConfig, savePaymentConfig, saveEmailConfig, saveZoomConfig, maskedIntegrationsView,
+  getCalendlyConfig, saveCalendlyConfig,
 } from '../../services/integrations.service'
 import { getZoomConfig, zoomProbe, forgetZoomToken } from '../../services/zoom.service'
+import { registerCalendlyWebhook, CalendlyApiError } from '../../services/calendly-api.service'
+import { publicSiteUrl } from '../../services/notification.service'
 import { sendEmail } from '../../services/mail'
 import { recordAudit } from '../../services/audit'
 
@@ -80,6 +83,64 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     /* المفاتيحُ تبدّلت فالرمزُ المحفوظُ في الذاكرة صار لحسابٍ آخر — يُنسى */
     forgetZoomToken()
     return maskedIntegrationsView(prisma)
+  })
+
+  app.put('/api/admin/integrations/calendly', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'حفظ مفتاح توقيع Calendly' },
+  }, async (req) => {
+    const body = z.object({
+      enabled: z.boolean(),
+      signingKey: z.string().max(400).optional(),
+    }).parse(req.body)
+    await saveCalendlyConfig(prisma, req.auth!.userId, body)
+    return maskedIntegrationsView(prisma)
+  })
+
+  /* ─────────── تسجيلُ اشتراك Calendly من الشاشة ───────────
+
+     لا تُنشئ لوحةُ Calendly الاشتراكَ بالضغط — يُنشأ من واجهتها البرمجيّة.
+     فكان يلزم SSH وسطرُ أوامر؛ وصار زرّا هنا.
+
+     والرمزُ الشخصيُّ يُمرَّر ولا يُخزَّن: هو مفتاحُ حساب Calendly كلِّه، ولا
+     حاجةَ به بعد النداء. والمعاينةُ هي الافتراضيّ — `apply` صريحةٌ تُنشئ. */
+  app.post('/api/admin/integrations/calendly/register', {
+    preHandler: requirePermission('settings.manage'),
+    config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
+    schema: { tags: ['admin-integrations'], summary: 'تسجيلُ اشتراك Calendly — معاينةٌ افتراضا' },
+  }, async (req) => {
+    const body = z.object({
+      token: z.string().trim().min(10).max(400),
+      apply: z.boolean().optional().default(false),
+    }).parse(req.body)
+    const config = await getCalendlyConfig(prisma)
+    if (!config.signingKey) {
+      return { ok: false, message: 'احفظ مفتاحَ التوقيع أوّلا — به يتحقّق الخادمُ من كلّ حدث' }
+    }
+    try {
+      const result = await registerCalendlyWebhook({
+        token: body.token, signingKey: config.signingKey, siteUrl: publicSiteUrl(), apply: body.apply,
+      })
+      if (result.applied) {
+        /* الرمزُ لا يُسجَّل ولا طرفٌ منه — والمسجَّلُ أنّ اشتراكا أُنشئ */
+        await recordAudit(prisma, {
+          actorId: req.auth!.userId, action: 'integration.calendly.register',
+          entityType: 'integration_setting', entityId: 'calendly',
+          meta: { callbackUrl: result.callbackUrl, subscription: result.subscription?.uri ?? null },
+        })
+      }
+      const message = result.outcome === 'existing'
+        ? (result.missingEvents.length > 0
+          ? `اشتراكٌ قائمٌ على عنواننا — لكن ينقصه: ${result.missingEvents.join(' · ')}. احذفه من Calendly ثمّ سجّل من جديد.`
+          : 'اشتراكٌ قائمٌ على عنواننا بالحدثين — لا حاجةَ لإنشاءِ ثانٍ.')
+        : result.outcome === 'created'
+          ? `أُنشئ الاشتراك — ${result.account.name} · جرّب حجزا حقيقيّا الآن.`
+          : `لا اشتراكَ على عنواننا بعد (${result.callbackUrl}) — اضغط «سجّل الاشتراك» لإنشائه.`
+      return { ok: true, ...result, message }
+    } catch (e) {
+      if (e instanceof CalendlyApiError) return { ok: false, message: e.message }
+      throw e
+    }
   })
 
   /* فحصُ Zoom — يطلب رمزا فعلا، فلا يُقال «سليم» لمفاتيحَ لم تُجرَّب */
