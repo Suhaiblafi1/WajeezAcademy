@@ -63,6 +63,19 @@ $COMPOSE run --rm --no-deps app npx prisma migrate deploy \
 step "٦/٧ · تبديل الحاويات"
 $COMPOSE up -d --remove-orphans
 
+# ── وإعادةُ تحميل Caddy صراحةً ──
+#
+# `Caddyfile` مربوطٌ لا مبنيٌّ في الصورة (`./Caddyfile:/etc/caddy/Caddyfile:ro`).
+# و`up -d` لا يُبدّل حاويةً إلا إن تغيّر **وصفُها**، وتحريرُ ملفٍّ مربوطٍ ليس
+# تغييرا في الوصف. وCaddy يقرأ إعدادَه مرّةً عند الإقلاع ولا يراقب الملفّ.
+#
+# فكانت النتيجةُ صامتة: يُدمج تعديلُ السياسة ويصل الخادمَ على القرص، ويبقى
+# Caddy على إعدادِ ما قبله إلى أن يُعاد تشغيلُ الحاوية لسببٍ آخر. وهكذا بقي
+# `frame-src https://calendly.com` أربعةَ أيّامٍ في المستودَع لا في الترويسة،
+# وبقي إطارُ الحجز مستطيلا أبيضَ للمتقدّمين (١٢ سبتمبر ٢٠٢٦).
+$COMPOSE exec -T caddy caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile 2>/dev/null \
+  || $COMPOSE restart caddy
+
 step "٧/٧ · الكتالوج ثم الفحص الصحي"
 # الكتالوج لا يُسقط النشر: المحرّك يقرأ اللقطة المنشورة، فإخفاق الاستيراد
 # لا يغيّر حرفا لدى المستخدم — بينما إسقاط النشر يمنع الموقع كله.
@@ -105,6 +118,20 @@ for i in $(seq 1 20); do
 done
 
 if [ "$public" = 1 ]; then
+  # ── والترويسةُ تُقرأ كما تُرسَل، لا كما كُتبت في الملفّ ──
+  #
+  # حارسُ `frame-src` في `src/tests` يفحص `deploy/Caddyfile` — أي النيّةَ لا
+  # الواقع. فبقي أخضرَ وCaddy يرسل سياسةً بلا `frame-src`، والإطارُ محجوب.
+  # وهذا الفحصُ يسأل الخادمَ الحيَّ عمّا أرسله فعلا، فلا يختبئ فرقٌ بينهما.
+  csp="$(curl -fsSI --max-time 5 "https://${SITE_DOMAIN}/" 2>/dev/null | tr -d '\r' | grep -i '^content-security-policy:' || true)"
+  case "$csp" in
+    *frame-src*calendly.com*) : ;;
+    "") printf '\033[33m⚠️  لم تُقرأ ترويسةُ السياسة — افحصها يدويّا\033[0m\n' ;;
+    *) printf '\033[31m⚠️  السياسةُ المُرسَلة بلا frame-src لـCalendly — إطارُ الحجز سيظهر أبيضَ للمتقدّمين\033[0m\n' >&2
+       printf '    المُرسَل: %s\n' "$csp" >&2
+       printf '    جرّب: %s restart caddy\n' "$COMPOSE" >&2 ;;
+  esac
+
   printf '\n\033[32m✓ نُشر الإصدار %s على https://%s\033[0m\n' "$COMMIT" "$SITE_DOMAIN"
   echo
   echo "لم يبقَ إلا التحقّق اليدويّ من المال:"
