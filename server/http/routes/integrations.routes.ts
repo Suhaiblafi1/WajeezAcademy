@@ -95,6 +95,8 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
       /* الرمزُ يُحفظ منذ صارت المزامنةُ سؤالا دوريّا — يسأل العاملُ الخلفيُّ
          بلا إنسانٍ يلصقه كلَّ مرّة. وعلّةُ النقض في `CalendlyConfig`. */
       token: z.string().max(400).optional(),
+      /* يُقبل بأيّ صورةٍ صحيحة ويُطبَّع في الخدمة — والرفضُ يحمل سببَه نصّا */
+      bookingUrl: z.string().max(400).optional(),
     }).parse(req.body)
     await saveCalendlyConfig(prisma, req.auth!.userId, body)
     return maskedIntegrationsView(prisma)

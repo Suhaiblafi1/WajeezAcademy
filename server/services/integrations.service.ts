@@ -206,6 +206,84 @@ export interface CalendlyConfig {
      فيُحفظ كما يُحفظ سرُّ Zoom وسرُّ الدفع: يُكتب ولا يُقرأ إلّا مقنَّعا،
      والبيئةُ تغلبه. وهذه كلفةُ ألّا يُدفع — سرٌّ زائدٌ ساكن. */
   token?: string
+  /** رابطُ الحجز العامّ — فارغٌ يعني «استعمل المضمَّنَ في الواجهة» */
+  bookingUrl?: string
+}
+
+/* ─────────── رابطُ الحجز: يُقبل بأيّ صورةٍ صحيحة، ويُشرَح حين لا يصحّ ───────────
+
+   ═══ لماذا متساهلٌ عمدا ═══
+
+   من يضبط هذا يلصق ما نسخه: مرّةً `hadeel-7/wajeez-academy`، ومرّةً الرابطَ
+   كاملا، ومرّةً باسم المستخدم وحدَه، ومرّةً بـ`www` أو بشرطةٍ زائدةٍ في آخره.
+   وكلُّها تعني الشيءَ نفسَه — فرفضُ أيٍّ منها تعنّتٌ لا تدقيق (قرارُ صاحب
+   المنصّة، ١٢ سبتمبر ٢٠٢٦: «لا ترفض أيّ رابطٍ يعتبر صحيحا لنفس المنصّة،
+   وأبلغه ما الخطأ إن كان هناك خطأ»).
+
+   ═══ وما يُرفض يُسمّى سببُه ═══
+
+   لا «رابطٌ غيرُ صالح» — بل أيُّ شيءٍ فيه، فيُصلحه اللاصقُ في ثانية. وأكثرُ
+   الأخطاء وقوعا نسخُ عنوانِ **لوحة التحكّم** (`/event_types/…`) بدل رابط
+   الحجز العامّ، وهما يتشابهان في الشريط ويفترقان تماما في ما يفتحه الزائر.
+
+   ═══ ولماذا تُطرح المعاملات ═══
+
+   `trainerInterviewUrl` تُلحق `?name=…&utm_content=…` بما يُخزَّن هنا. فلو
+   بقي في المخزَّن `?month=2026-09` لصار الناتجُ `?month=…?name=…` — ويسقط
+   معه رقمُ الطلب الذي تُطابَق به الحجوزات، بلا خطأٍ يظهر. */
+
+const CALENDLY_HOST = 'calendly.com'
+
+/** مساراتٌ في calendly.com ليست روابطَ حجز — لوحةُ التحكّم لا صفحةُ الزائر */
+const CALENDLY_APP_PATHS = new Set(['app', 'event_types', 'events', 'login', 'signup', 'pages'])
+
+export type CalendlyUrlCheck =
+  | { ok: true; url: string }
+  | { ok: false; messageAr: string }
+
+export function normalizeCalendlyBookingUrl(input: string): CalendlyUrlCheck {
+  /* علاماتُ الاتّجاه تُنسخ مع النصّ العربيّ ولا تُرى — وتُفسد المطابقة */
+  const raw = input.replace(/[\u200e\u200f\u202a-\u202e]/g, '').trim()
+  if (!raw) return { ok: false, messageAr: 'الحقلُ فارغ — الصقِ الرابطَ أو اسمَ المستخدم.' }
+  if (/\s/.test(raw)) {
+    return { ok: false, messageAr: 'في الرابط فراغ — لعلّه نُسخ ناقصا أو معه نصٌّ آخر.' }
+  }
+
+  /* اسمُ المستخدم وحدَه أو مسارٌ بلا مضيف: يُكمَّل لا يُرفض */
+  const withHost = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw)
+    ? raw
+    : raw.startsWith(CALENDLY_HOST) || raw.startsWith(`www.${CALENDLY_HOST}`)
+      ? `https://${raw}`
+      : `https://${CALENDLY_HOST}/${raw.replace(/^\/+/, '')}`
+
+  let parsed: URL
+  try {
+    parsed = new URL(withHost)
+  } catch {
+    return { ok: false, messageAr: 'تعذّرت قراءةُ الرابط — راجع صيغتَه.' }
+  }
+
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
+  if (host !== CALENDLY_HOST) {
+    return {
+      ok: false,
+      messageAr: `المضيفُ «${host}» ليس Calendly — والحجزُ يُضمَّن في الصفحة، ولا تسمح سياسةُ المحتوى بغيره.`,
+    }
+  }
+
+  const segments = parsed.pathname.split('/').filter(Boolean).map((x) => decodeURIComponent(x))
+  if (segments.length === 0) {
+    return { ok: false, messageAr: 'هذا عنوانُ Calendly نفسِه بلا اسمِ مستخدم — أضف اسمَك أو نوعَ الموعد.' }
+  }
+  if (CALENDLY_APP_PATHS.has(segments[0].toLowerCase())) {
+    return {
+      ok: false,
+      messageAr: 'هذا عنوانُ لوحة تحكّم Calendly لا رابطُ الحجز. افتح نوعَ الموعد واختر «Copy link» — يبدأ باسم المستخدم.',
+    }
+  }
+
+  /* المعاملاتُ والمرساةُ تُطرحان: نحن نُلحق معاملاتِنا بعدها */
+  return { ok: true, url: `https://${CALENDLY_HOST}/${segments.join('/')}` }
 }
 
 export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyConfig> {
@@ -215,6 +293,7 @@ export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyC
     enabled: row?.enabled ?? false,
     signingKey: c.signingKey || undefined,
     token: c.token || undefined,
+    bookingUrl: c.bookingUrl || undefined,
   }
   const env = process.env
   if (env.CALENDLY_WEBHOOK_SIGNING_KEY) {
@@ -222,14 +301,28 @@ export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyC
     base.enabled = true
   }
   if (env.CALENDLY_PAT) base.token = env.CALENDLY_PAT
+  if (env.TRAINER_INTERVIEW_URL) base.bookingUrl = env.TRAINER_INTERVIEW_URL
   return base
 }
 
 export async function saveCalendlyConfig(
-  prisma: PrismaClient, actorId: string, input: Partial<{ enabled: boolean; signingKey: string; token: string }>,
+  prisma: PrismaClient, actorId: string,
+  input: Partial<{ enabled: boolean; signingKey: string; token: string; bookingUrl: string }>,
 ) {
   const current = await getRawConfig(prisma, 'calendly')
   const next: Record<string, unknown> = { ...current }
+  /* الرابطُ ليس سرّا فلا يُقنَّع — لكنّه يُطبَّع، ويُردّ سببُ الرفض إلى
+     الشاشة نصّا يقرؤه إنسان. والفراغُ الصريحُ يعني العودةَ إلى المضمَّن. */
+  if (input.bookingUrl !== undefined) {
+    const trimmed = input.bookingUrl.trim()
+    if (!trimmed) {
+      delete next.bookingUrl
+    } else {
+      const checked = normalizeCalendlyBookingUrl(trimmed)
+      if (!checked.ok) throw new AuthError('bad_booking_url', checked.messageAr, 422)
+      next.bookingUrl = checked.url
+    }
+  }
   /* لا يُكتب فوق السرّ المخزَّن بقيمةٍ مقنَّعةٍ عادت من الشاشة */
   for (const k of ['signingKey', 'token'] as const) {
     const v = input[k]
@@ -305,6 +398,7 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
          ولو اجتمعا فلا ازدواج: الإدخالُ يتجاهل التكرار. */
       ready: !!calendly.signingKey,
       polling: !!calendly.token && calendly.enabled,
+      bookingUrl: calendly.bookingUrl ?? '',
     },
   }
 }

@@ -12,10 +12,14 @@ export interface PlatformConfig {
   fileUploads: boolean;
   /** بيئةُ عرضٍ بحساباتِ ديمو — تُقال تلميحاتُها للمستخدم، ولا تُقال في الإنتاج */
   demoMode: boolean;
+  /* رابطُ حجز المقابلة إن ضُبط بديلٌ من شاشة التكاملات، و`null` إن لم يُضبط.
+     ولا يُنسخ المضمَّنُ هنا: `null` تعني «الافتراضُ في الواجهة» فيبقى مصدرٌ
+     واحد — ويُغيَّر المضيفُ من الشاشة بلا نشرِ واجهة. */
+  interviewBookingUrl: string | null;
 }
 
 /* الافتراضُ عند تعذُّر السؤال: «لا» — فلا نعرض زرّا قد لا يعمل. */
-const FALLBACK: PlatformConfig = { fileUploads: false, demoMode: false };
+const FALLBACK: PlatformConfig = { fileUploads: false, demoMode: false, interviewBookingUrl: null };
 
 let cached: Promise<PlatformConfig> | null = null;
 let snapshot: PlatformConfig | null = null;
