@@ -10,6 +10,7 @@ import type { FastifyInstance } from 'fastify'
 import type { PrismaClient } from '@prisma/client'
 import { buildApp } from '../../http/app'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
+import { TrainerReviewService } from '../../services/trainer-review.service'
 import { setupTestDb, testPrisma } from '../helpers/db'
 
 const SECRET = 'calendly-hook-secret-for-tests'
@@ -118,5 +119,18 @@ describe('حدثُ الإلغاء الموقّع', () => {
     expect(application.status).toBe('shortlisted')
     const mine = await new TrainerApplicationService(prisma).myApplication(userId)
     expect(mine.interviews).toEqual([])
+  })
+
+  /* ⚠️ أُضيف في ١٢ سبتمبر ٢٠٢٦ — الطابورُ كان يعدّ الملغاةَ مقابلةً أُجريت
+
+     صفحةُ حالة المتقدّم كانت تصفّي `canceledAt: null`، وطابورُ الإدارة لا
+     يصفّي: `_count.interviews` يعدّ الصفَّ الملغى، فتقول ترويسةُ الطابور
+     «أُجريت مقابلتُه» لمن ألغى موعدَه قبل أن يجلس إليه أحد — وذاك رقمٌ
+     يُقرأ قرارا. فالعدُّ على الأحياء وحدَهم. */
+  it('ولا يُعَدّ الموعدُ الملغى مقابلةً في طابور الإدارة', async () => {
+    const rows = await new TrainerReviewService(prisma).listApplications()
+    const row = rows.find((r) => r.reference === REFERENCE)
+    expect(row, 'الطلبُ غائبٌ عن الطابور').toBeDefined()
+    expect(row?.interviewsCount, 'عُدَّت الملغاةُ مقابلةً أُجريت').toBe(0)
   })
 })
