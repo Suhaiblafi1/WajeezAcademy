@@ -74,3 +74,44 @@ export function termOf(date: Date): { year: number; season: TrainingSeason } {
   /* لا يقع — الأربعةُ تغطّي الاثني عشر شهرا. والحارسُ يُثبت ذلك. */
   return { year: y, season: 'nov_jan' }
 }
+
+/* ═══ أفقُ العرض: الموسمُ الجاري وما يليه ═══
+
+   شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) من شاشة «المواسم والتقويم»: «ضع
+   الموسمَ القادمَ والذي يليه فقط، وأنا أنشئ البقيةَ لاحقا». وكانت تعرض
+   ثمانيةً دفعةً واحدة — سنتَين كاملتَين من بطاقاتٍ لكلٍّ منها نافذةُ تسجيلٍ
+   وتوزيعُ شعبٍ وزرُّ نشر.
+
+   ولا تُخفى الجاريةُ مع المخفيّ: فيها الشعبُ التي تعمل اليومَ، ومن أخفاها
+   أخفى عملَه القائم. فالمعروضُ افتراضا: ما نحن فيه، ثمّ ما بعده بعددٍ
+   معلوم — وما سواه يبقى موجودا خلفَ إفصاح، لا يُحذف.
+
+   والحسابُ على `startsOn` لا على الحالة: حالةُ الفصل يضبطها الإنسانُ
+   فتتأخّر عن الواقع، وتاريخُ بدايته لا يكذب. */
+
+/** فصلٌ كما يكفي لترتيبه — التاريخُ نصّا كان أو `Date` */
+export interface HasTermSpan { startsOn: string | Date; endsOn: string | Date }
+
+const ms = (d: string | Date): number => (d instanceof Date ? d : new Date(d)).getTime()
+
+/**
+ * يقسم الفصولَ إلى ما يُعرض افتراضا وما يُطوى خلفَ إفصاح.
+ *
+ * `ahead` عددُ المواسم المستقبليّة المعروضة بعد الجاري (٢ افتراضا:
+ * «القادم والذي يليه»). والجاري — إن وُجد — يُعرض معها دائما.
+ */
+export function termHorizon<T extends HasTermSpan>(
+  terms: readonly T[], now: Date, ahead = 2,
+): { shown: T[]; hidden: T[] } {
+  const t = now.getTime()
+  const byStart = [...terms].sort((a, b) => ms(a.startsOn) - ms(b.startsOn))
+  const shown: T[] = []
+  let taken = 0
+  for (const term of byStart) {
+    /* الجاري: بدأ ولم ينته — يُعرض ولا يُعدّ من نصيب المستقبل */
+    if (ms(term.startsOn) <= t && t <= ms(term.endsOn)) { shown.push(term); continue }
+    if (ms(term.startsOn) > t && taken < ahead) { shown.push(term); taken += 1 }
+  }
+  const keep = new Set(shown)
+  return { shown, hidden: byStart.filter((x) => !keep.has(x)) }
+}

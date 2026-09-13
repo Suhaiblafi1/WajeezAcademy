@@ -134,4 +134,40 @@ describe('صندوقُ الحجز — يكبر ولا يصغر', () => {
     expect(card, 'رقمُ ارتفاعٍ مفروضٌ باليد عاد إلى الصندوق').not.toMatch(/className="[^"]*\sh-\[\d{3,4}px\]/)
     expect(card, 'قرارُ الارتفاع رجع إلى داخل المكوّن فلا يُفحص').toContain('nextFrameHeight')
   })
+  /* ═══ ولماذا يُفحص الأثرُ بمصفوفةِ اعتماده ═══
+
+     المردُّ إلى البطاقة بعد الحجز صحيحٌ في أثرٍ معلَّقٍ بـ`done`، وعطبٌ داخلَ
+     مستمعِ الرسائل: ذاك يُنادى مرارا بـ`page_height` ما دام المتقدّم يقلّب
+     المواعيد. فالحارسُ على **موضع** النداء لا على وروده. */
+  const effectsByDeps = (src: string) => {
+    const out = new Map<string, string>()
+    for (const m of src.matchAll(/useEffect\(\s*\(\)\s*=>\s*\{([\s\S]*?)\n\s*\}, \[([^\]]*)\]\)/g)) {
+      out.set(m[2].trim(), m[1])
+    }
+    return out
+  }
+
+  it('⚠️ وبعد الحجز تُردّ الصفحةُ إلى البطاقة — وإلّا بقي المتقدّمُ في أسفلها', () => {
+    /* الإطارُ يملأ الشاشةَ ثمّ يختفي، فيهبط ما تحته ألفَ بكسل ويبقى الناظرُ
+       حيث كان: أمام تذييل الصفحة، والتأكيدُ فوقه لا يراه. */
+    const effects = effectsByDeps(code('src/components/BookInterview.tsx'))
+    const onDone = effects.get('done')
+    expect(onDone, 'لا أثرَ معلَّقٌ بـ`done` — فلا شيءَ يحدث حين يُحجز الموعد').toBeTruthy()
+    expect(onDone, 'الأثرُ لا يردّ الصفحةَ إلى موضعٍ').toMatch(/scrollIntoView/)
+  })
+
+  it('⚠️ والمردُّ إلى البطاقة لا إلى رأس الصفحة — فهي تُركَّب داخلَ نموذجٍ طويل', () => {
+    /* `window.scrollTo(0,0)` يسلب المتقدّمَ موضعَه من نموذج الانضمام كلِّه */
+    const onDone = effectsByDeps(code('src/components/BookInterview.tsx')).get('done') ?? ''
+    expect(onDone, 'رُدّ إلى رأس الصفحة فضاع موضعُه من النموذج').not.toMatch(/window\.scrollTo/)
+    expect(onDone, 'رُدّ إلى غير البطاقة').toMatch(/cardRef\.current\?\.scrollIntoView/)
+  })
+
+  it('⚠️ ولا يُردّ من مستمع الرسائل — فيُنتزع التقويمُ من تحت من يقلّب مواعيده', () => {
+    /* `page_height` يُبثّ مع كلِّ خطوةٍ في التقويم: مردٌّ هناك يعني صفحةً
+       ترتجّ تحت إصبعِ من لم يحجز بعد. */
+    const listener = effectsByDeps(code('src/components/BookInterview.tsx')).get('') ?? ''
+    expect(listener, 'مستمعُ الرسائل غيرُ موجود — تغيّرت بنيةُ المكوّن').toMatch(/addEventListener\('message'/)
+    expect(listener, 'المردُّ انتقل إلى مستمع الرسائل').not.toMatch(/scrollIntoView/)
+  })
 })

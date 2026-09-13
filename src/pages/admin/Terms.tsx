@@ -29,6 +29,7 @@ import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { TRAINING_SEASONS } from "@/application/trainer/application-options";
+import { termHorizon } from "@/application/terms/season";
 import { toast, toastError } from "@/components/Toast";
 
 interface Term {
@@ -58,6 +59,7 @@ export default function Terms() {
   const [form, setForm] = useState({ year: new Date().getFullYear(), season: "nov_jan" });
   const [windows, setWindows] = useState<Record<string, { opensAt: string; closesAt: string }>>({});
   const [plans, setPlans] = useState<Record<string, PlanResult>>({});
+  const [showAllTerms, setShowAllTerms] = useState(false);
   const [trainers, setTrainers] = useState<Record<string, AvailableTrainer[]>>({});
   /* الحذفُ بضغطتين: الأولى تكشف زرَّ التأكيد، والثانية تحذف — لا حوارَ متصفّح */
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -109,6 +111,18 @@ export default function Terms() {
 
   const seasonLabel = (s: string) => TRAINING_SEASONS.find((x) => x.value === s)?.months ?? s;
 
+  /* ═══ ولماذا لا تُعرض المواسمُ كلُّها ═══
+
+     شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «ضع الموسمَ القادمَ والذي يليه فقط،
+     وأنا أنشئ البقيةَ لاحقا». وكانت الشاشةُ تعرض ثمانيةً — سنتَين من بطاقاتٍ
+     لكلٍّ منها نافذةُ تسجيلٍ وتوزيعُ شعبٍ وزرُّ نشر، فلا يُعرف أيُّها يعنيه.
+
+     والقسمةُ في `application/terms/season` لا هنا: هي قرارٌ يُفحص، وحارسُها
+     يمنع أن يُخفى الموسمُ الجاري مع المخفيّ — وفيه الشعبُ التي تعمل اليوم.
+     ولا يُحذف شيء: ما طُوي يبقى خلفَ إفصاحٍ ينادي عددَه. */
+  const { shown: visibleTerms, hidden: foldedTerms } = termHorizon(terms ?? [], new Date());
+  const listed = showAllTerms ? [...visibleTerms, ...foldedTerms] : visibleTerms;
+
   return (
     <AdminLayout title="المواسم والتقويم">
       <FlowSteps steps={[
@@ -147,7 +161,7 @@ export default function Terms() {
         <Panel as="p" className="py-10 text-center text-read text-muted-foreground">لا مواسمَ بعد — أنشئ أوّلَها أعلاه، فيصير للدورات موعدٌ يُعلَن.</Panel>
       ) : (
         <div className="space-y-5">
-          {terms.map((t) => {
+          {listed.map((t) => {
             const plan = plans[t.id];
             const w = windows[t.id] ?? { opensAt: "", closesAt: "" };
             const published = Boolean(t.calendarPublishedAt);
@@ -253,6 +267,19 @@ export default function Terms() {
               </Panel>
             );
           })}
+          {/* ما طُوي يبقى موجودا: إفصاحٌ ينادي عددَه، لا حذفٌ صامت */}
+          {foldedTerms.length > 0 && (
+            <Button
+              tone="ghost"
+              onClick={() => setShowAllTerms((v) => !v)}
+              aria-expanded={showAllTerms}
+              className="w-full justify-center"
+            >
+              {showAllTerms
+                ? "اطوِ المواسمَ البعيدة"
+                : `اعرض المواسمَ الأخرى (${foldedTerms.length}) — ماضيةً وأبعدَ من موسمين`}
+            </Button>
+          )}
         </div>
       )}
     </AdminLayout>

@@ -258,7 +258,7 @@ export function Bestsellers() {
                   to={`/pathways/${b.id}`}
                   tone="accent"
                   interactive
-                  className="group flex w-[280px] shrink-0 snap-start flex-col gap-2 p-5"
+                  className="group flex w-[280px] shrink-0 snap-start flex-col gap-2 p-5 md:w-[330px] md:gap-2.5 md:p-6"
                 >
                   {/* ذهبيّةٌ كبطاقة الدورة المجاورة (صاحب المنصّة، ١٢ سبتمبر
                       ٢٠٢٦): الوسمُ واحدٌ في معناه — «هذه مختارةٌ ولمن» —
@@ -275,14 +275,14 @@ export function Bestsellers() {
                       إن» يبقى — أصدقُ سطرٍ في الكتالوج: يمنع شراءً خاطئا قبل
                       وقوعه، والمنعُ خدمةٌ لا خسارة. */}
                   {b.p.notFor && (
-                    <p className="line-clamp-2 text-read leading-5 text-muted-foreground">
+                    <p className="line-clamp-2 text-read leading-5 text-muted-foreground md:line-clamp-3">
                       <span className="font-bold text-gold-ink">ليس لك إن: </span>
                       {resolveCatalogRefsAr(b.p.notFor, (id) => nameById.get(id))}
                     </p>
                   )}
                   <p className="flex items-start gap-1.5 text-read leading-5 text-teal-light-ink">
                     <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span className="line-clamp-2 min-w-0">تتخرّج بـ: {b.p.output}</span>
+                    <span className="line-clamp-2 min-w-0 md:line-clamp-3">تتخرّج بـ: {b.p.output}</span>
                   </p>
                   {/* سطرُ الذيل: الحجمُ يمينا، و«تفاصيل المسار» يسارا — لافتةٌ
                       خافتةٌ تقول إنّ البطاقةَ تُفتح، لا زرٌّ يزاحم المحتوى.
@@ -329,7 +329,7 @@ export function Bestsellers() {
                   as={Link}
                   to={`/build/${b.id}`}
                   interactive
-                  className="group flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5"
+                  className="group flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5 md:w-[310px] md:gap-2.5 md:p-6"
                 >
                   <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
@@ -338,7 +338,7 @@ export function Bestsellers() {
                   <CourseTitle as="h4" name={b.c.name} termEn={b.c.termEn} className="font-bold leading-relaxed" />
                   {/* الوعدُ — ما يخرج به المتعلّم، وهو ما يُشترى */}
                   {b.c.promise && (
-                    <p className="line-clamp-2 text-read leading-6 text-muted-foreground">{b.c.promise}</p>
+                    <p className="line-clamp-2 text-read leading-6 text-muted-foreground md:line-clamp-3">{b.c.promise}</p>
                   )}
                   <p className="text-read text-muted-foreground">
                     {b.c.weeks} {b.c.weeks === 1 ? 'أسبوع' : 'أسابيع'}

@@ -132,7 +132,9 @@ function Nav() {
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
           <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
         </a>
-        <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
+        {/* المقاسُ نفسُه في `SiteShell` — رأسان لصفحةٍ واحدةٍ في المعنى،
+            ويحرس تطابقَهما `src/tests/site-nav-size.test.ts`. */}
+        <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex lg:gap-9 lg:text-base">
           {links.map((l) =>
             renderLink(l, 'transition hover:text-teal-light-ink')
           )}

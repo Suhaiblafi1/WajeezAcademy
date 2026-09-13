@@ -75,7 +75,15 @@ function SiteNav() {
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
           <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
         </Link>
-        <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
+        {/* ═══ ولماذا يكبر الشريطُ على الحاسوب وحدَه ═══
+
+            شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) من صغر التبويبات على الشاشة
+            العريضة. وكانت ١٤px بفراغٍ ثابتٍ مهما اتّسعت الشاشة: مقاسٌ وُلد
+            للّوح فبقي على الحاسوب، فيبدو الشريطُ هامشا لا طريقا.
+
+            والكِبَرُ من `lg` لا من `md`: على اللّوح تتزاحم الخمسةُ مع العلامة
+            وأزرارِ اليمين، فما يُصلح الحاسوبَ يكسر ما دونه. */}
+        <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex lg:gap-9 lg:text-base">
           {links.map((l) =>
             renderLink(l, 'transition hover:text-teal-light-ink')
           )}

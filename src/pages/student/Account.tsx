@@ -288,7 +288,7 @@ export default function StudentAccount() {
 
   if (mode === "loading") {
     return (
-      <PortalFrame title="حسابي">
+      <PortalFrame title="إعدادات الحساب">
         {/* هيكل تحميل بنفس شكل البطاقات — أهدأ للعين من السبينر */}
         <div aria-busy="true" aria-label="جاري تحميل ملفك" className="animate-pulse space-y-6">
           <Panel className="md:p-8">
@@ -319,7 +319,7 @@ export default function StudentAccount() {
   }
 
   return (
-    <PortalFrame title="حسابي وملفي الشخصي">
+    <PortalFrame title="إعدادات الحساب">
       {mode === "local" && (
         <Inset as="p" tone="warn" className="mb-5 border-dashed px-4 py-2 text-center text-read leading-5 text-gold-ink">
           {"جلسة الخادم غير فعالة — الحفظ محلي مؤقتا."}
