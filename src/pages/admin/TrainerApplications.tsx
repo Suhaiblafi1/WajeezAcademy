@@ -539,8 +539,17 @@ export default function TrainerApplications() {
           </details>
         )}
 
-        <div className="grid gap-5 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
+        {/* ═══ الروبرك أسفلَ الملفّ لا في جانبه ═══
+
+            كان عمودا ثالثا يقتطع ثلثَ العرض، فيُقرأ ملفُّ المتقدّم في ثلثَين:
+            صفوفُ التسمية/القيمة تنكسر، وشبكةُ الكتل تصير عمودا واحدا، وشريطُ
+            الحقائق يزدحم. وقرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «لا تجعل
+            الروبرك في يسار الصفحة وإنّما أسفلها لتتّسع المساحة».
+
+            والقراءةُ تسبق الحكمَ في العمل نفسِه: يُقرأ الملفُّ كاملا ثمّ
+            يُعطى الدرجات. فترتيبُ الصفحة صار ترتيبَ الفعل. */}
+        <div className="space-y-5">
+          <div className="space-y-4">
             {/* تبويبان لا عمودٌ طويل.
 
                 قرارُ صاحب المنصّة: «أعد بناء الصفحة كتبويبين: (أ) الملفّ
@@ -561,6 +570,35 @@ export default function TrainerApplications() {
               ]}
             />
 
+            {/* ═══ فهرسُ الأقسام — شريطٌ لا عمود ═══
+
+                قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): تمريرةٌ واحدةٌ بفهرسٍ على
+                التبويبات — فمن يبتّ في طلبٍ يقرؤه كلَّه.
+
+                ⚠ وكُتب أوّلا عمودا لاصقا في جانب الصفحة، فوقع عطبان معا:
+                سرق عرضا من الملفّ نفسِه، **وطفا شفّافا فوق الروبرك فتداخل
+                النصّان** — وهو ما تحذّر منه نغمةُ `solid` في سلّم الأسطح
+                بالحرف: «ما يطفو فوق غيره لا يجوز أن يكون شفّافا». فصار شريطا
+                أفقيّا صلبا: لا عرضَ يُسرق، ولا شيءَ تحته ليُقرأ من خلاله.
+
+                ولا يُطبع: أداةُ تنقّلٍ لا محتوى. */}
+            {tab === "dossier" && (
+              <nav aria-label="أقسام الملفّ" className="sticky top-20 z-10 print:hidden">
+                <Panel as="section" tone="solid" className="!px-3 !py-2">
+                  <ul className="flex flex-wrap items-center gap-1">
+                    {DOSSIER_SECTIONS.map((sc) => (
+                      <li key={sc.id}>
+                        <a href={`#${sc.id}`}
+                          className="block rounded-lg px-2.5 py-1 text-read leading-6 text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground">
+                          {sc.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </Panel>
+              </nav>
+            )}
+
             {tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} />
             ) : (
@@ -568,7 +606,7 @@ export default function TrainerApplications() {
             <Panel as="article" id="sec-profile" className="scroll-mt-28">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-black">{a.fullName}</h3>
+                  <h3 className="text-lg font-black print:hidden">{a.fullName}</h3>
                   <p className="mt-1 text-read text-muted-foreground">
                     {a.jobTitle ?? "—"} · {a.country ?? "—"}
                     {(() => {
@@ -579,7 +617,7 @@ export default function TrainerApplications() {
                   </p>
                   <p className="mt-1 text-read text-muted-foreground" dir="ltr">{a.email}</p>
                 </div>
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
+                <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink print:hidden">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
               </div>
@@ -695,33 +733,12 @@ export default function TrainerApplications() {
             )}
           </div>
 
-          {/* عمود القرارات والروبرك */}
-          <div className="space-y-4">
-            {/* ═══ فهرسُ الأقسام — تمريرةٌ واحدةٌ ويُقفَز فيها ═══
-
-                قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «الصفحة غير مرتّبة وغير
-                سهلة التعامل»، واختار تمريرةً واحدةً بفهرسٍ جانبيٍّ على
-                التبويبات — ومعه حقّ: من يبتّ في طلبٍ يقرؤه كلَّه، والتبويبُ
-                يخبّئ عنه ما يحتاج أن يوازن به.
-
-                ولا يُطبع: أداةُ تنقّلٍ لا محتوى. */}
-            {tab === "dossier" && (
-              <nav aria-label="أقسام الملفّ" className="sticky top-24 z-10 print:hidden">
-                <Panel as="section" className="!px-3 !py-3">
-                  <p className="px-1 pb-2 text-read font-black text-muted-foreground">في هذا الملفّ</p>
-                  <ul className="space-y-0.5">
-                    {DOSSIER_SECTIONS.map((sc) => (
-                      <li key={sc.id}>
-                        <a href={`#${sc.id}`}
-                          className="block rounded-lg px-2 py-1.5 text-read leading-5 text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground">
-                          {sc.label}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </Panel>
-              </nav>
-            )}
+          {/* والحكمُ في الذيل، عريضا: الروبركُ والقرارُ جنبا إلى جنبٍ على الشاشات
+              الواسعة بدل عمودٍ واحدٍ طويلٍ يُمرَّر فيه. */}
+          {/* ولا يُطبعان: حقلا إدخالٍ لا محتوى ملفّ. وإخفاءُ المربّعات وحدَها
+              كان يترك أسماءَ المحاور معلّقةً بلا درجات — عنوانٌ بلا شيءٍ تحته،
+              وهو العطبُ الذي أُصلح في الأقسام المطويّة نفسِه. */}
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start print:hidden">
             <Panel as="article">
               <h4 id="sec-rubric" className="scroll-mt-28 text-sm font-black">الروبرك — تسعة محاور (١–٥)</h4>
               <div className="mt-3 space-y-2">
