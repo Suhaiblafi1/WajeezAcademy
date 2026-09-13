@@ -18,12 +18,14 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { buildApp } from '../../http/app'
+import { SESSION_COOKIE } from '../../http/auth-plugin'
 
 let prisma: PrismaClient
 let app: FastifyInstance
 let svc: TrainerDossierLinkService
 let applicationId = ''
 let adminId = ''
+let adminCookie = ''
 
 /* قيمٌ لا تتشابه مع شيءٍ آخرَ في الردّ — فظهورُها ظهورُها هي لا مصادفة */
 const SECRET_EMAIL = 'redaction-probe-9f3a@secret.invalid'
@@ -62,6 +64,8 @@ beforeAll(async () => {
   const admin = await auth.register('dossier-link-admin@test.local', 'Admin#12345', 'المديرُ الأكاديميّ')
   adminId = admin.userId
   await auth.setRoles(adminId, ['academic_manager'])
+  const { token } = await auth.login('dossier-link-admin@test.local', 'Admin#12345')
+  adminCookie = `${SESSION_COOKIE}=${token}`
 
   const created = await prisma.trainerApplication.create({
     data: {
@@ -216,5 +220,53 @@ describe('الروبرك في الصفحة المشتركة', () => {
       /* ٤٢٢ من حاجز zod، و٤٠٠ لو ردّته الخدمةُ — والمقصودُ أنّه رُدّ، لا أيُّهما */
       expect([400, 422], `قُبل ما لا يصحّ: ${JSON.stringify(scores)} (${r.statusCode})`).toContain(r.statusCode)
     }
+  })
+})
+
+/* ═══ بابُ الإدارة: يُنشئ ويسرد ويُلغي ═══
+
+   والرمزُ يُردّ **مرّةً واحدةً عند الإنشاء**: لا يُحفظ منه إلّا هاشُه، فلا
+   سبيلَ إلى إظهاره في السرد ولو أردنا. وحارسُه أنّ السردَ لا يحمله. */
+describe('روابطُ القُرّاء من شاشة الإدارة', () => {
+  it('تُنشأ فتُردّ مرّةً، وتُسرد بحالها، وتُلغى', async () => {
+    const made = await app.inject({
+      method: 'POST', url: `/api/admin/trainer-applications/${applicationId}/dossier-links`,
+      headers: { cookie: adminCookie }, payload: { reviewerName: 'قارئٌ من الشاشة' },
+    })
+    expect(made.statusCode).toBe(201)
+    const { url, link } = made.json() as { url: string; link: { id: string } }
+    expect(url).toContain('/r/')
+
+    const listed = await app.inject({
+      method: 'GET', url: `/api/admin/trainer-applications/${applicationId}/dossier-links`,
+      headers: { cookie: adminCookie },
+    })
+    expect(listed.statusCode).toBe(200)
+    const rows = listed.json() as { id: string; reviewerName: string }[]
+    expect(rows.some((r) => r.id === link.id)).toBe(true)
+
+    /* ⚠ ولا رمزَ ولا هاشَ في السرد — من فتح الشاشةَ لا يحوز روابطَ غيره */
+    const body = listed.body
+    expect(body, 'تسرّب الرمزُ إلى السرد').not.toContain(url.split('/r/')[1])
+    expect(body, 'تسرّب الهاشُ إلى السرد').not.toContain('tokenHash')
+
+    const gone = await app.inject({
+      method: 'DELETE', url: `/api/admin/trainer-applications/${applicationId}/dossier-links/${link.id}`,
+      headers: { cookie: adminCookie },
+    })
+    expect(gone.statusCode).toBe(200)
+
+    /* وبعد الإلغاء لا يُفتح */
+    const token = url.split('/r/')[1]
+    expect((await app.inject({ method: 'GET', url: `/api/r/${token}` })).statusCode).toBe(401)
+  })
+
+  it('ولا يُنشئها من لا جلسةَ له', async () => {
+    const res = await app.inject({
+      method: 'POST', url: `/api/admin/trainer-applications/${applicationId}/dossier-links`,
+      payload: { reviewerName: 'دخيل' },
+    })
+    expect(res.statusCode).toBeGreaterThanOrEqual(401)
+    expect(res.statusCode).toBeLessThan(404)
   })
 })

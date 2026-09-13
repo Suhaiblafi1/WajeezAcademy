@@ -157,7 +157,9 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'catalog.skill.edit', 'catalog.skill.approve',
     'catalog.impact.view', 'catalog.rollback',
     'trainer.applications.view', 'trainer.applications.review', 'trainer.applications.decide',
-    'trainer.applications.purge',
+    /* والمحوُ ليس هنا بقرار صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «حذفُ طلبِ المدرّب
+       للسوبر أدمن فقط». والمديرُ الأكاديميُّ يراجع ويقرّر ويوقف — ولا يمحو.
+       وهي في حزمة `super_admin` بحكم أنّها تشمل الصلاحيّاتِ كلَّها. */
     'trainer.invite', 'trainer.qualify', 'trainer.assign', 'trainer.publish', 'trainer.suspend',
     'trainer.change.review',
     'cohort.manage', 'cohort.open', 'cohort.plan.approve', 'cohort.override_capacity', 'enrollment.manage',

@@ -13,6 +13,8 @@ import { recordAudit } from './audit'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { renderMail } from './mail-template'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
+import { deleteObject } from './object-store'
+import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/trainer/purgeable'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
 import { fmtDateLong } from '../../src/application/text/format-ar'
@@ -32,8 +34,10 @@ export const TRAINER_STATUSES = [
 ] as const
 export type TrainerStatus = (typeof TRAINER_STATUSES)[number]
 
-/** الحالات المنتهية التي يجوز حذفُ طلبها نهائيّا — وما عداها قيدُ نظرٍ أو تعاقد */
-export const PURGEABLE_STATUSES: TrainerStatus[] = ['draft', 'email_verification_pending', 'rejected', 'withdrawn']
+/* الحالاتُ المنتهيةُ التي يجوز حذفُ طلبها — والمصدرُ في `src/application`
+   لأنّ الشاشةَ تقرأها كذلك (تعرض «احذفه» أو «ارفضه ثمّ احذفه»). ونسختان
+   تفترقان تعني زرّا يَعِد بما يرفضه الخادم. */
+export const PURGEABLE_STATUSES: readonly TrainerStatus[] = SHARED_PURGEABLE
 
 /* خريطة الانتقالات المشروعة — أي انتقال خارجها مرفوض.
 
@@ -774,7 +778,15 @@ export class TrainerApplicationService {
   async purge(
     /** فارغٌ أو null = فعلٌ نظاميّ من سكربت صيانة، لا إنسانٌ في اللوحة */
     reference: string, actorId: string | null, reasonAr: string,
-  ): Promise<{ reference: string; deletedDocuments: number }> {
+  ): Promise<{
+    reference: string
+    /** ما مُحي من القرص فعلا — لا عددُ الصفوف */
+    deletedDocuments: number
+    /** وما أبى أن يُمحى، بمفاتيحه: «تمّ» لا تُقال عن نصفِ فعل */
+    unremovedFiles: string[]
+    deletedAccount: boolean
+    keptAccountReason: string | null
+  }> {
     const reason = (reasonAr ?? '').trim()
     if (reason.length < 5) {
       throw new AuthError('reason_required', 'اكتب سبب الحذف — الحذف النهائيّ لا يُترك بلا أثر', 422)
@@ -782,7 +794,12 @@ export class TrainerApplicationService {
 
     const app = await this.prisma.trainerApplication.findUnique({
       where: { reference },
-      include: { profile: { select: { id: true } }, documents: { select: { id: true } } },
+      include: {
+        profile: { select: { id: true } },
+        /* ويلزم `storageKey`: بايتاتُ الوثيقة على القرص لا في الصفّ، ولا
+           يعرف القرصَ إلّا هذا المفتاح. */
+        documents: { select: { id: true, storageKey: true } },
+      },
     })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
 
@@ -813,8 +830,78 @@ export class TrainerApplicationService {
       },
     })
 
+    /* ═══ الملفّاتُ على القرص تُمحى بيدنا — لا يمحوها التتالي ═══
+
+       كان هذا السطرُ وحدَه: `prisma.delete`. فيتهاوى الصفُّ وأبناؤه، **وتبقى
+       السيرةُ الذاتيّةُ في `storage/private/objects/` إلى الأبد** — لأنّ
+       القرصَ ليس في القاعدة فلا يبلغه تتاليها.
+
+       وكان الردُّ يقول `deletedDocuments: 3` فيُصدَّق أنّ ثلاثا مُحيت، وإنّما
+       مُحيت ثلاثةُ صفوفٍ وبقيت ثلاثةُ ملفّات. فعطبٌ صامتٌ في ميزةٍ اسمُها
+       الحذفُ النهائيّ، وأسوأُ ما فيه أنّه يطمئن.
+
+       والمحوُ قبل الصفوف: لو أخفق القرصُ بقي الصفُّ دليلا على ما لم يُمحَ.
+       و`deleteObject` لا تسقط على غياب، فالوثيقةُ التي لم تُرفع لا تُعطّل. */
+    let deletedFiles = 0
+    const unremovedFiles: string[] = []
+    for (const d of app.documents) {
+      /* ═══ ولا يُستَرهَن المحوُ بملفٍّ واحدٍ يأبى ═══
+
+         `deleteObject` تتحقّق من شكل المفتاح وترمي على المخالف. وأوّلُ ما
+         يُحذف بهذا الباب طلباتُ التجربة — وهي أولى ما يحمل مفتاحا قديما أو
+         مشوّها. فرميةٌ واحدةٌ هنا تعني **طلبا لا يُحذف أبدا**، وهو نقيضُ ما
+         بُني له الباب.
+
+         فيُحاوَل كلٌّ على حدة، ويُعَدّ ما أخفق ويُردّ في الجواب: الصفوفُ
+         تذهب، والماحي يعرف أنّ ملفّا بقي وأيَّه — فلا يُقال «تمّ» عن نصفِ فعل. */
+      try {
+        await deleteObject(d.storageKey)
+        deletedFiles += 1
+      } catch {
+        unremovedFiles.push(d.storageKey)
+      }
+    }
+
     await this.prisma.trainerApplication.delete({ where: { id: app.id } })
-    return { reference: app.reference, deletedDocuments: app.documents.length }
+
+    /* ═══ وحسابُه: يزول إن كان حسابَ تجربةٍ، ويبقى إن كان فيه أثرُ إنسان ═══
+
+       طلباتُ الاختبار تُنشئ حساباتِ اختبار، وتركُها يملأ قائمةَ الحسابات بما
+       لا معنى له. لكنّ الحسابَ قد يكون لإنسانٍ اشترى أو تعلّم ثمّ تقدّم
+       للتدريب — فحذفُه معه يمحو ما لا علاقةَ له بالطلب.
+
+       فالشرطُ ثلاثة: لا دورَ له غيرُ «متقدّم مدرّب»، ولا تسجيلَ، ولا طلبَ
+       شراء. وما عدا ذلك يبقى، **ويُقال إنّه بقي** — فلا يظنّ الماحي أنّه
+       محا ما لم يُمحَ. */
+    let deletedAccount = false
+    let keptAccountReason: string | null = null
+    if (app.userId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: app.userId },
+        select: {
+          email: true, roles: { select: { roleId: true } },
+          _count: { select: { enrollments: true, orders: true } },
+        },
+      })
+      if (user) {
+        const onlyApplicant = user.roles.every((r) => r.roleId === 'trainer_applicant')
+        if (!onlyApplicant) keptAccountReason = 'له أدوارٌ أخرى على المنصّة'
+        else if (user._count.enrollments > 0) keptAccountReason = 'له تسجيلاتٌ في شعب'
+        else if (user._count.orders > 0) keptAccountReason = 'له طلباتُ شراء'
+        if (!keptAccountReason) {
+          await this.prisma.user.delete({ where: { id: app.userId } })
+          deletedAccount = true
+        }
+      }
+    }
+
+    return {
+      reference: app.reference,
+      deletedDocuments: deletedFiles,
+      unremovedFiles,
+      deletedAccount,
+      keptAccountReason,
+    }
   }
 
 }
