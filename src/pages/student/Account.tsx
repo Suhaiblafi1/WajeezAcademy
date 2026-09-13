@@ -9,6 +9,7 @@ import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { clearLocalSession, readSession } from "@/services/auth";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
+import DateField from "@/components/ui/DateField";
 import Button from "@/components/ui/Button";
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
@@ -16,6 +17,10 @@ import Button from "@/components/ui/Button";
    - معاينة محلية: بلا جلسة خادم → حفظ محلي موسوم حتى يُربط الحساب. */
 
 const LOCAL_KEY = "wajeez_profile";
+
+/* أقدمُ سنةِ ميلادٍ في القائمة — ومن وُلد قبلها فحالٌ لا يُخدَم بقائمةٍ أطول:
+   تطويلُها إلى ١٩٠٠ يزيد ثلاثين سطرا يمرّ عليها كلُّ متعلّمٍ ولا يختارها أحد. */
+const BIRTH_YEAR_FLOOR = 1930;
 
 const ARAB_COUNTRIES = [
   "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
@@ -367,8 +372,14 @@ export default function StudentAccount() {
           <Field label="المدينة">
             <input value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
           </Field>
+          {/* ثلاثُ قوائمَ لا منتقي المتصفّح: العودةُ إلى سنةِ ميلادٍ فيه
+              تنقّلٌ شهرا شهرا — و`ui/DateField.tsx` يشرح لماذا. */}
           <Field label="تاريخ الميلاد" hint="اختياري — يستخدم لشهاداتك والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
-            <input type="date" dir="ltr" max={new Date().toISOString().slice(0, 10)} value={form.birthDate} onChange={(e) => set("birthDate", e.target.value)} onBlur={touch("birthDate")} {...bad("birthDate", errOf("birthDate"))} className={`${inputCls} text-left`} />
+            <DateField
+              value={form.birthDate} onChange={(v) => set("birthDate", v)} onBlur={touch("birthDate")}
+              fromYear={BIRTH_YEAR_FLOOR} toYear={new Date().getFullYear()} yearOrder="desc"
+              selectClassName={inputCls} {...bad("birthDate", errOf("birthDate"))}
+            />
           </Field>
           <Field label="الجنس" hint="اختياري تماما">
             <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>

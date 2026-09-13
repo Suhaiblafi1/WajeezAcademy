@@ -16,6 +16,7 @@ import TeachableCoursePicker from "@/components/TeachableCoursePicker";
 import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
 import { mobileFormatByDial, timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
+import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
   APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, TRAINING_SEASONS, type ContactChannel,
@@ -1290,12 +1291,13 @@ export default function JoinTrainer() {
                       onChange={(e) => setHoursPerWeek(e.target.value)} className={`${controlCls} text-left`} />
                   </Field>
                   <Field label="يمكنك البدء من" htmlFor="jt-start">
-                    {/* التقويمُ كان يبقى مفتوحا بعد اختيار اليوم، فيحجب ما تحته
-                        ولا يعرف المتقدّمُ أنّ اختيارَه وقع. و`blur` بعد الاختيار
-                        يطويه — وهي الطريقةُ الوحيدةُ لطيّ منتقي المتصفّح. */}
-                    <input id="jt-start" type="date" dir="ltr" value={startFrom}
-                      onChange={(e) => { setStartFrom(e.target.value); e.target.blur(); }}
-                      className={`${controlCls} text-left`} />
+                    {/* كان منتقي المتصفّح، وله عطبان: يبقى مفتوحا بعد الاختيار
+                        فيحجب ما تحته، ومن كتب الرقمَ بيده لم يعرف أيُّ مقطعٍ
+                        السنة. والقوائمُ الثلاثُ بلا الاثنين — و`ui/DateField.tsx`
+                        يشرح لماذا رُحّل هذا الحقلُ دون شاشات الفريق. */}
+                    <DateField id="jt-start" value={startFrom} onChange={setStartFrom}
+                      fromYear={new Date().getFullYear()} toYear={new Date().getFullYear() + 2}
+                      yearOrder="asc" selectClassName={controlCls} />
                   </Field>
                   <FieldSet legend="أيامك المتاحة" wide>
                     <ChoiceGrid options={DAYS} selected={days} onToggle={(v) => toggle(days, v, setDays)} cols={3} name="أيامك المتاحة" />
