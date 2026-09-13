@@ -21,14 +21,6 @@
      ونقطة — يُرسم بعد الجملة بـ`stroke-dashoffset`.
    · والميلُ باقٍ: الجملةُ ترتفع نحو اليسار ولكلّ كلمةٍ انحرافٌ صغيرٌ ثابت.
 
-   ═══ ثمّ (١٣ سبتمبر ٢٠٢٦) ═══
-
-   رأى صاحبُ المنصّة الخربشةَ في الإنتاج: «توقيعٌ غيرُ لائق». وبعد جولةِ
-   بدائلَ (توقيعاتٌ تنفيذيّةٌ مجرّدة، وخطٌّ متّصلٌ يرسم «وجيز») قال: «نفسُ
-   الحاليّ المرفوع، ولكن تبدو الجملةُ باسم وجيز فقط بدون أكاديمية». فالتوقيعُ
-   كلمةُ «وجيز» وحدَها بخطّ الجملة نفسِه وبلون الشعار، مائلةً كتوقيع، تحتها
-   سحبةٌ تُرسم ونقطة. لا «أكاديمية» ولا خربشة.
-
    ═══ الشروطُ غيرُ القابلة للتفاوض (كما كانت) ═══
 
    · **`prefers-reduced-motion`**: كلُّ حركةٍ `forwards` وتنتهي على الحالة
@@ -48,34 +40,33 @@ const GAP_SECONDS = 0.1
 /** انحرافُ كلّ مقطعٍ عن الخطّ (درجة، بكسل) — ثابتٌ عمدا: يدٌ واحدةٌ لا نردٌ يُرمى */
 const HAND: ReadonlyArray<readonly [number, number]> = [[0, 0], [1.1, 2], [-1.3, -3]]
 
-const SIGNATURE = 'وجيز'
-
-/** سحبةُ التوقيع ونقطتُه — رسمان بلا حروف؛ الكلمةُ نفسُها نصٌّ في DOM */
-function Swash({ at }: { at: number }) {
+/** التوقيعُ — حلقةٌ عن اليمين، موجٌ إلى اليسار، سحبةٌ تحته، ونقطة. لا حروف. */
+function Signature({ at }: { at: number }) {
   return (
     <svg
-      viewBox="0 0 120 18"
+      viewBox="0 0 220 72"
       aria-hidden="true"
       focusable="false"
-      className="proof-swash absolute -bottom-1 right-0 h-4 w-[130%]"
+      className="proof-swash h-16 w-52 md:h-[4.5rem] md:w-60"
       style={{ ['--at' as string]: at.toFixed(2) }}
     >
       <path
         data-draw
         pathLength={1}
-        d="M116 10C96 -2 74 14 56 8 40 3 26 6 4 14"
+        d="M206 46c-4-24-24-34-28-10-3 20 20 22 30 4-9 3-20 2-28 9-7 6-10-10-20-4-8 5-2 24-16 18-9-4-9-16-18-14-3 1-6 22-7 22-1 0-4-20-6-24-6-8-16 0-22 8-6 8-12 4-20 6-8 2-10 8-18 12M198 63c-32 4-96 11-164 4-9-1-6-9 5-9"
         fill="none"
         stroke="rgb(var(--teal-light-ink))"
-        strokeWidth="1.9"
+        strokeWidth="2.4"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <circle
         className="proof-seal"
-        cx="2"
-        cy="8"
-        r="1.6"
+        cx="16"
+        cy="44"
+        r="2.6"
         fill="rgb(var(--teal-light-ink))"
-        style={{ ['--at' as string]: (at + 0.6).toFixed(2) }}
+        style={{ ['--at' as string]: (at + 0.75).toFixed(2) }}
       />
     </svg>
   )
@@ -149,17 +140,9 @@ export default function ProofBand() {
               ))}
             </p>
 
-            {/* التوقيع «وجيز» — في الزاوية اليسرى كما تُوقَّع الورقةُ العربيّة (`justify-end` في RTL) */}
-            <div className="mt-3 flex justify-end pe-6">
-              <span className="relative inline-block" style={{ ['--at' as string]: signAt.toFixed(2) }}>
-                <span
-                  className="proof-ink inline-block text-[2.6rem] font-bold leading-none text-teal-light-ink md:text-[3.2rem]"
-                  style={{ transform: 'rotate(-8deg)', display: 'inline-block' }}
-                >
-                  {SIGNATURE}
-                </span>
-                <Swash at={signAt + 0.4} />
-              </span>
+            {/* التوقيع — في الزاوية اليسرى كما تُوقَّع الورقةُ العربيّة (`justify-end` في RTL) */}
+            <div className="mt-2 flex justify-end pe-6">
+              <Signature at={signAt} />
             </div>
           </div>
         </div>
