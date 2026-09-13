@@ -18,9 +18,10 @@
    نصٌّ في تعليق — فالتعليقاتُ تُنزع قبل الفحص، وقد مرّ في هذه المنصّة حارسٌ
    أخضرُ لأنّه طابق شرحا عربيّا لا شيفرة. */
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { RUBRIC_AXES } from '@/application/trainer/rubric'
 
 const root = process.cwd()
 /** الشيفرةُ بلا تعليقاتها — فلا يُطابَق شرحٌ يذكر ما يحرسه */
@@ -57,8 +58,19 @@ describe('فهرسُ الأقسام: كلُّ مدخلٍ يقابل مرساةً
      ولا يُكتشف إلّا بالنقر على كلّ مدخلٍ بعد كلّ تعديل. */
   const ids = [...(/const DOSSIER_SECTIONS[\s\S]*?\n\];/.exec(screen)?.[0] ?? '')
     .matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1])
+  /* ═══ والمراسي تُمسح من الشجرة لا من ملفَّين ═══
+
+     كانت تُقرأ من `TrainerApplications` و`TrainerOps` وحدَهما. فلمّا خرجت
+     «أسئلةُ المقابلة» إلى ملفٍّ ثالثٍ صار مدخلُها بلا مرساةٍ في نظر الحارس
+     وهو سليم — قائمةٌ مكتوبةٌ باليد تُخطئ في الاتّجاهَين. */
+  const adminTsx = (dir: string): string[] =>
+    readdirSync(dir).flatMap((e) => {
+      const full = join(dir, e)
+      return statSync(full).isDirectory() ? adminTsx(full) : full.endsWith('.tsx') ? [full] : []
+    })
   const anchors = new Set(
-    [...`${screen}${ops}`.matchAll(/id="([^"]+)"/g)].map((m) => m[1]),
+    adminTsx(join(root, 'src/pages/admin'))
+      .flatMap((f) => [...code(f.slice(root.length + 1)).matchAll(/id="([^"]+)"/g)].map((m) => m[1])),
   )
 
   it('الفهرسُ ليس فارغا ولا يُقرأ من فراغ', () => {
@@ -146,5 +158,82 @@ describe('ترويسةُ المطبوع وذيلُه', () => {
   it('وبصمةُ البناء لا تُطبع — أداةُ تشخيصٍ لا سطرٌ في مستندِ لجنة', () => {
     const stamp = code('src/components/BuildStampLine.tsx')
     expect(stamp, 'بصمةُ البناء تُطبع في ذيل الملفّ').toMatch(/<p className="[^"]*print:hidden/)
+  })
+})
+
+describe('ورقةُ المقابلة: تُسأل بمحاور التقييم، وتُملأ باليد، ثمّ تُنقل', () => {
+  const sheet = code('src/pages/admin/InterviewSheet.tsx')
+  const rubric = code('src/application/trainer/rubric.ts')
+  const server = readFileSync(join(root, 'server/services/trainer-review.service.ts'), 'utf8')
+
+  /* مفاتيحُ الخادم — وهو الحَكَم: يتحقّق منها عند الحفظ ويرفض ما نقص */
+  const serverKeys = (/export const RUBRIC_CRITERIA = \[([\s\S]*?)\] as const/.exec(server)?.[1] ?? '')
+    .match(/'([a-z_]+)'/g)?.map((q) => q.slice(1, -1)) ?? []
+
+  it('⚠️ محاورُ الورقة هي محاورُ الخادم — مفتاحا مفتاحا وترتيبا', () => {
+    /* ═══ ولماذا هذا أخطرُ من فرقٍ تجميليّ ═══
+
+       النموذجُ يُطبع ليُملأ باليد في المقابلة ثمّ تُنقل درجاتُه إلى الشاشة.
+       فلو زاد الخادمُ محورا ولم تزده الورقة، جلس المديرُ بثمانيةٍ ثمّ وجد في
+       الشاشة تسعةً لا يملك للتاسع جوابا — ولا شيءَ يقول له إنّ ورقتَه قديمة. */
+    expect(serverKeys.length, 'لم تُقرأ محاورُ الخادم').toBe(9)
+    expect(RUBRIC_AXES.map((x) => x.key)).toEqual(serverKeys)
+  })
+
+  it('ولا نسخةَ ثانيةً للمحاور في الشاشات — مصدرٌ واحدٌ لا ثلاثة', () => {
+    for (const p of ['src/pages/admin/TrainerApplications.tsx', 'src/pages/admin/TrainerOps.tsx']) {
+      expect(code(p), `${p}: يعرّف المحاورَ بنفسه بدل قراءتها من مصدرها`)
+        .not.toMatch(/const RUBRIC_AXES\s*[:=]/)
+    }
+  })
+
+  it('وكلُّ محورٍ له سؤالٌ أو سببٌ مكتوبٌ لغيابه — لا محورَ يُترك صامتا', () => {
+    for (const axis of RUBRIC_AXES) {
+      const covered = axis.questions.length > 0 || Boolean(axis.laterAr)
+      expect(covered, `محور «${axis.label}» بلا أسئلةٍ وبلا سببٍ لغيابها`).toBe(true)
+    }
+    /* وأكثرُها يُسأل فعلا: ورقةٌ فيها محورٌ واحدٌ مسؤولٌ عنه ليست ورقةَ مقابلة */
+    expect(RUBRIC_AXES.filter((x) => x.questions.length > 0).length).toBeGreaterThanOrEqual(7)
+  })
+
+  it('⚠️ والنموذجُ يُرسَم ولا يُبنى بحقول — فالحقلُ لا يُطبع أصلا', () => {
+    /* قاعدةُ الطباعة تُخفي `input` و`select` و`textarea` و`button` كلَّها.
+       فنموذجٌ مبنيٌّ بها يخرج ورقةً بيضاءَ بعناوينَ بلا خانات. */
+    expect(sheet, 'النموذجُ يستعمل حقلَ إدخالٍ لن يُطبع').not.toMatch(/<(input|select|textarea|button)\b/)
+    expect(sheet, 'لا خاناتِ درجاتٍ تُدوَّر باليد').toContain('Scale')
+    expect(sheet, 'لا سطورَ تُكتب عليها الملاحظة').toContain('Ruled')
+  })
+
+  it('والنموذجُ يعدّ المحاورَ كلَّها لا بعضَها، ويبقى للورق وحدَه', () => {
+    const form = /<div className="hidden print:block">[\s\S]*$/.exec(sheet)?.[0] ?? ''
+    expect(form, 'لا نموذجَ مخصَّصٌ للطباعة').not.toBe('')
+    expect(form, 'النموذجُ يعدّ محاورَ منتقاةً لا كلَّها').toMatch(/RUBRIC_AXES\.map/)
+    expect(form, 'لا موضعَ لقرار المقابلة').toContain('INTERVIEW_VERDICTS')
+  })
+
+  it('⚠️ ولا صيغةَ ماركداون في نصٍّ يُرسَم كما هو — النجمتان تُطبعان نجمتَين', () => {
+    /* وقع هذا مرّتَين في يومٍ واحد: مرّةً في صفّ صحّة النظام، ومرّةً في سؤال
+       «التوفر» — فخرجت «تستطيع **فعلا**» بنجمتَيها على الورق. والواجهةُ هنا
+       لا تفسّر ماركداون في شيء. */
+    for (const axis of RUBRIC_AXES) {
+      for (const q of axis.questions) {
+        expect(q, `سؤالُ «${axis.label}» فيه صيغةُ ماركداون تُطبع كما هي`).not.toMatch(/\*\*|`|^- /)
+      }
+      if (axis.laterAr) expect(axis.laterAr, `تفسيرُ «${axis.label}» فيه صيغةُ ماركداون`).not.toMatch(/\*\*|`/)
+    }
+  })
+
+  it('وأسئلةٌ تخصُّ هذا الطلبَ وحدَه تُشتقّ منه — لا قائمةٌ عامّةٌ للجميع', () => {
+    expect(rubric, 'لا محاورَ ذاتُ أسئلة').toContain('questions')
+    expect(sheet, 'لا سؤالَ مشتقٌّ من الطلب نفسِه').toContain('personalAsks')
+    /* والادّعاءُ غيرُ الموثَّق أوّلُ ما يُسأل عنه */
+    expect(sheet, 'اعتمادٌ بلا جهةٍ لا يُسأل عنه').toContain('hasAccreditation')
+  })
+
+  it('وسجلُّ الحالة عاد إلى المطبوع بطلب صاحب المنصّة', () => {
+    const panel = /\{\/\* سجل الحالات[\s\S]{0,400}?<Panel as="article"[^>]*>/.exec(screen)?.[0]
+      ?? /<Panel as="article"[^>]*>\s*<h4 id="sec-history"/.exec(screen)?.[0] ?? ''
+    expect(panel, 'لم يُعثر على بطاقة سجلّ الحالة').not.toBe('')
+    expect(panel, 'سجلُّ الحالة ما زال محجوبا عن الطباعة').not.toContain('print:hidden')
   })
 })
