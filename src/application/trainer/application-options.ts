@@ -262,3 +262,14 @@ export const EDITABLE_STATUSES: readonly string[] = [
   'draft', 'submitted', 'under_review', 'waitlisted',
   'information_requested', 'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
 ]
+
+/** سنواتُ الخبرة كما تُقرأ — يقرؤها ملفُّ المتقدّم وشريطُ الحقائق معا */
+const YEARS_AR: Record<string, string> = {
+  '1-3': '١–٣ سنوات', '4-7': '٤–٧ سنوات', '8-12': '٨–١٢ سنة', '12+': 'أكثر من ١٢ سنة',
+  none: 'لا خبرة تدريب', under_1: 'أقلّ من سنة', '1_3': '١–٣ سنوات', '3_5': '٣–٥ سنوات',
+  '5_10': '٥–١٠ سنوات', '10_plus': 'أكثر من ١٠ سنوات',
+}
+
+export function yearsLabel(v?: string | null): string {
+  return v ? YEARS_AR[v] ?? v : '—'
+}

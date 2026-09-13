@@ -539,13 +539,19 @@
     display: none !important;
   }
 
-  /* ولا تُقطع بطاقةٌ بين صفحتين — المراجعُ يقرأ الكتلةَ مجتمعةً أو لا يقرؤها */
-  section,
-  article {
-    break-inside: avoid;
-    page-break-inside: avoid;
+  /* ─────────── الورقة ───────────
+
+     بلا `@page` يطبع المتصفّح بهوامشه الافتراضيّة (نصفُ بوصةٍ عادةً)، فتخرج
+     أسطرٌ عربيّةٌ طويلةٌ تكاد تلمس الحافّة. و١٦مم جانبيّا مقاسُ مستندٍ يُقرأ
+     ويُحفظ في ملفّ، لا لقطةُ شاشة. */
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
   }
+
+  /* والسطحُ يُسطَّح: الواجهةُ داكنةٌ، ولو طُبعت كما هي لخرجت صفحاتٌ سوداء */
   section,
+  article,
   div,
   p,
   h1,
@@ -559,12 +565,85 @@
     background-color: transparent !important;
     background-image: none !important;
     color: #111111 !important;
-    border-color: #dddddd !important;
+    border-color: #d7dbe0 !important;
     box-shadow: none !important;
   }
+
+  /* ─────────── ثمّ يُعاد الحبر ───────────
+
+     التسطيحُ وحدَه كان يجعل كلَّ شيءٍ `#111`: عنوانُ القسم كنصّه، والتسميةُ
+     كالقيمة، والحالةُ كأيّ كلمة. فخرج التقريرُ كتلةً رماديّةً واحدةً لا يُهتدى
+     فيها إلى شيء (بلاغُ صاحب المنصّة، ١٣ سبتمبر ٢٠٢٦: «غير مرتّب وغير سهل»).
+
+     فتُعاد المراتبُ بعد التسطيح — بألوانٍ داكنةٍ تبقى مقروءةً بالأبيض والأسود
+     كذلك، فمن طبع بلا ألوانٍ يرى تدرّجَ رماديٍّ لا لونا ضائعا. */
+  .text-muted-foreground,
+  .text-muted-foreground\/75,
+  .text-muted-foreground\/50 {
+    color: #5b6470 !important;
+  }
+  .text-teal-light-ink,
+  .text-teal-ink {
+    color: #0f5f5c !important;
+  }
+  .text-gold-ink {
+    color: #7d6118 !important;
+  }
+  .text-red-300,
+  .text-red-200 {
+    color: #9b2c2c !important;
+  }
+
+  /* عنوانُ القسم يُفصَل بخطٍّ ولا يُترك وحيدا في ذيل صفحة */
+  h3,
+  h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  article > h4,
+  section > h4,
+  article > button {
+    display: block;
+    width: 100%;
+    margin-bottom: 8pt;
+    padding-bottom: 4pt;
+    border-bottom: 1px solid #c8ced5;
+    font-size: 11.5pt;
+    letter-spacing: 0.2pt;
+  }
+
+  /* والأقسامُ تتنفّس: كانت بطاقاتٍ متلاصقةً بحدودٍ ملوّنة، فصارت كتلا يفصلها
+     بياضٌ وخطٌّ خفيف. ولا `break-inside: avoid` على القسم كلِّه — بعضُها صفحةٌ
+     كاملةٌ بعد أن صار المطويُّ يُطبع، فمنعُ القطع فيه يُخرج صفحاتٍ نصفَ بيضاء. */
+  article,
+  section {
+    margin: 0 0 14pt !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+  li,
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* الوسمُ يبقى محاطا — وإلّا صار «معتمد» كلمةً في جملة */
+  .rounded-full {
+    border: 1px solid #c8ced5 !important;
+    padding: 1pt 6pt !important;
+  }
+
+  /* والرابطُ يُقرأ ولا يُقطع عبر الهامش */
   a {
-    color: #111111 !important;
+    color: #0f5f5c !important;
     text-decoration: none !important;
+    word-break: break-word;
+  }
+
+  /* والشبكةُ ذاتُ العمودَين تبقى عمودَين على A4 — الورقةُ أعرضُ من الهاتف */
+  .grid {
+    gap: 10pt !important;
   }
 }
 
