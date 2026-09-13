@@ -7,7 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { AuthError } from './auth.service'
 import { openRegistrationWhere } from './registration-window'
-import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
+import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 
 export class PublicCatalogService {
   private prisma: PrismaClient
@@ -85,8 +85,18 @@ export class PublicCatalogService {
 
   /** الشعب المعروضة للزوار — مفتوحة أو ممتلئة أو جارية: السعر والموعد والمدرب */
   async cohorts() {
+    return this.openCohorts({})
+  }
+
+  /* الشعبُ المفتوحةُ للتسجيل، بترشيحٍ إضافيٍّ يضيفه النداء.
+
+     كانت هذه الاستعلامةُ في `cohorts()` وحدَها، فلمّا لزمت صفحةَ المدرّب
+     العامّةَ كان البديلُ نسخَها. ونسختان تفترقان: عدُّ المقاعد هنا يجمع
+     المحجوزَ مع المسجَّل (وأوّلُ من ينسخ ينسى)، والبوّابةُ تُطبَّق على اسم
+     المدرّب. فالترشيحُ وسيطٌ والجسدُ واحد. */
+  private async openCohorts(extraWhere: Record<string, unknown>) {
     const rows = await this.prisma.cohort.findMany({
-      where: { status: { in: ['open', 'full', 'active'] }, ...openRegistrationWhere() },
+      where: { status: { in: ['open', 'full', 'active'] }, ...openRegistrationWhere(), ...extraWhere },
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         trainers: {
@@ -124,6 +134,46 @@ export class PublicCatalogService {
         .map((t) => t.profile.application.fullName),
       nextSession: c.sessions[0] ?? null,
     }))
+  }
+
+  /* صفحةُ المدرّب العامّة — `/t/<slug>`.
+
+     قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «يظهر مسارٌ خاصٌّ باسم المدرّب
+     للعامّة في الرابط ليقوموا بالتسجيل فيه». وهي بابٌ جديدٌ على شعبٍ قائمة:
+     لا يُباع فيها جديد، ولا سعرَ يختلف — ما يتغيّر أنّ من دخل منها يُحسب
+     لصاحبها.
+
+     والبوّابةُ بوّابةُ المستودَع نفسُها: لا اسمَ مدرّبٍ يُعرض قبل اعتماد
+     نشره. فالمسارُ الذي لم يُعتمد نشرُ صاحبه **غيرُ موجود** (404) لا
+     «موجودٌ فارغ» — إذ الثاني يقرّ بوجوده ويُخبر عن حالته. */
+  async trainerPublicPage(slug: string) {
+    const profile = await this.prisma.trainerProfile.findFirst({
+      where: { publicSlug: slug, ...PUBLIC_TRAINER_WHERE, application: { status: 'active' } },
+      include: {
+        application: { select: { fullName: true, country: true, specialties: true } },
+        referralLinks: { where: { cohortId: null }, select: { code: true } },
+      },
+    })
+    if (!profile) throw new AuthError('not_found', 'لا مدرّبَ بهذا المسار', 404)
+
+    const cohorts = await this.openCohorts({ trainers: { some: { profileId: profile.id } } })
+    return {
+      slug,
+      name: profile.application.fullName,
+      headline: profile.headline,
+      bio: profile.bioPublic,
+      photoUrl: profile.photoUrl,
+      country: profile.application.country,
+      specialties: profile.application.specialties.map((s) => s.specialty),
+      ratingAvg: profile.ratingAvg,
+      ratingCount: profile.ratingCount,
+      hoursTaught: profile.hoursTaught,
+      graduatesCount: profile.graduatesCount,
+      /* رمزُه الواسعُ يخرج مع الصفحة: من دخل من بابه يُسجَّل له بلا أن
+         يحمل الزائرُ شيئا في العنوان. */
+      referralCode: profile.referralLinks[0]?.code ?? null,
+      cohorts,
+    }
   }
 
   /** المراجع العلمية للمنهجية — الملف نفسه مصدر واحد، يقدمه الخادم */
