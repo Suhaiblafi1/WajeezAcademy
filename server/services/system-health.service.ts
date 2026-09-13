@@ -20,6 +20,7 @@ import { PERMISSIONS, ROLE_PERMISSIONS } from '../auth/permissions'
 import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
 import { lastVerifiedCommit } from '../catalog/snapshot-verified'
 import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
+import { getCalendlyConfig, getCalendlySync } from './integrations.service'
 
 export type HealthLevel = 'ok' | 'attention' | 'broken' | 'unknown'
 
@@ -72,6 +73,95 @@ export class SystemHealthService {
     const all = groups.flatMap((g) => g.items)
     const worst = order.find((lvl) => all.some((i) => i.level === lvl)) ?? 'ok'
     return { groups, worst, checkedAt: now }
+  }
+
+  /* ─────────── مزامنةُ Calendly: أتعمل فعلا؟ ───────────
+
+     ═══ العطبُ الذي كُتب له ═══
+
+     التكاملُ كان يُظهر نفسَه سليما وهو لا يعمل: يُحفظ الرمزُ فتُقال «مفعَّل»،
+     وتسأل الوظيفةُ كلَّ خمس دقائق حسابا لا حجزَ فيه، فلا تجد شيئا ولا تكتب
+     شيئا — و`runJob` لا تسجّل دورةً لم تعمل ولم يسقط لها شيء. فيبقى صمتٌ
+     يُقرأ سلامةً، وحجوزٌ حقيقيّةٌ لا تصل طابورَ المراجعة (١٣ سبتمبر ٢٠٢٦).
+
+     والسؤالُ الذي يُجاب هنا ليس «أمفعَّلٌ؟» بل **«أقرأ شيئا؟»**: رمزٌ على
+     حسابٍ غيرِ المضيف صحيحٌ تماما ويردّ صفرا أبدا. فالصفرُ يُقال ويُسمّى
+     احتمالُه، لا يُترك ليُقرأ هدوءا. */
+  private async calendlySync(now: Date): Promise<HealthItem> {
+    const [config, sync] = await Promise.all([
+      getCalendlyConfig(this.prisma),
+      getCalendlySync(this.prisma),
+    ])
+    const base = {
+      key: 'calendly_sync',
+      titleAr: 'مزامنةُ مواعيد Calendly',
+      href: '/admin/integrations',
+    }
+
+    if (!config.enabled || !config.token) {
+      return {
+        ...base,
+        valueAr: 'لم تُضبط',
+        level: 'attention' as const,
+        meaningAr: 'بطاقةُ الحجز معروضةٌ للمتقدّمين، ومن يحجز لا يصل حجزُه إلى طابور المراجعة — يُسجَّل يدويّا أو لا يُعرف.',
+        actionAr: 'الصق الرمزَ الشخصيَّ من الحساب المضيف للمقابلات نفسِه، وفعِّله في بطاقة Calendly.',
+      }
+    }
+
+    if (!sync) {
+      return {
+        ...base,
+        valueAr: 'مضبوطةٌ ولم تعمل دورةٌ بعد',
+        level: 'unknown' as const,
+        meaningAr: 'الرمزُ محفوظٌ ولم يُسجَّل نبضٌ من العامل — إمّا لم تمرّ خمسُ دقائقَ بعد، وإمّا العاملُ الخلفيُّ متوقّف.',
+        actionAr: 'انتظر دورةً واحدة، فإن بقيت الحالُ فراجع تشغيلَ العامل الخلفيّ.',
+      }
+    }
+
+    const at = new Date(sync.at)
+    const staleMs = now.getTime() - at.getTime()
+
+    if (sync.errorAr) {
+      return {
+        ...base,
+        valueAr: `آخرُ دورةٍ سقطت (${sync.errorAr}) — ${agoAr(at, now)}`,
+        level: 'broken' as const,
+        meaningAr: 'لا يُقرأ حجزٌ ما دام النداءُ يسقط. و«ردّ 401» يعني رمزا مرفوضا: انتهى أو أُبطل أو نُسخ ناقصا.',
+        actionAr: 'أعِد توليدَ الرمز من الحساب المضيف والصقه من جديد.',
+      }
+    }
+
+    /* أكثرُ من ثلاث دورات بلا نبض: العاملُ متوقّفٌ لا التكامل */
+    if (staleMs > 16 * 60_000) {
+      return {
+        ...base,
+        valueAr: `آخرُ نبضٍ ${agoAr(at, now)}`,
+        level: 'broken' as const,
+        meaningAr: 'الدورةُ كلَّ خمس دقائق، وانقطاعُها هذه المدّةَ يعني أنّ العاملَ الخلفيَّ لا يعمل — لا أنّ Calendly صامتة.',
+        actionAr: 'راجع خدمةَ العامل الخلفيّ (worker في deploy/compose.prod.yml).',
+      }
+    }
+
+    if (sync.events === 0) {
+      return {
+        ...base,
+        valueAr: `تعمل — وقرأت 0 موعدا (${agoAr(at, now)})`,
+        level: 'attention' as const,
+        meaningAr: 'النداءُ ينجح والحسابُ لا حجزَ فيه. وهذا متوقَّعٌ إن لم يحجز أحدٌ بعد — وإن كان ثمّ حجوزٌ فالرمزُ على حسابٍ غيرِ المضيف، وهو يردّ فراغا بلا خطأ.',
+        actionAr: 'إن كنتَ تعلم بحجزٍ قائم: تأكّد أنّ الرمزَ من حساب المضيف نفسِه لا من حسابٍ آخر.',
+      }
+    }
+
+    const skipped = sync.skipped > 0 ? ` · تُجووز ${sync.skipped}` : ''
+    return {
+      ...base,
+      valueAr: `تعمل — قرأت ${sync.events} موعدا${skipped} (${agoAr(at, now)})`,
+      level: sync.skipped > 0 ? ('attention' as const) : ('ok' as const),
+      meaningAr: sync.skipped > 0
+        ? 'قُرئ حجزٌ ولم يُطابَق طلبا — أرجحُه بريدٌ مختلفٌ عند الحجز، أو حجزٌ من Calendly مباشرةً بلا رقم الطلب.'
+        : 'الحجوزاتُ تصل طابورَ المراجعة وحدَها.',
+      actionAr: sync.skipped > 0 ? 'السببُ مكتوبٌ في سجلّ الأثر تحت worker.calendly_interview_sync.' : undefined,
+    }
   }
 
   /* ── ما وُعد به ولم يُنفَّذ لغياب العامل الخلفيّ ── */
@@ -158,6 +248,7 @@ export class SystemHealthService {
         actionAr: driver === 'test' ? 'يُبدَّل في آخرِ خطوةٍ قبل الإطلاق للعموم — قرارُ المالك.' : undefined,
         href: '/admin/integrations',
       },
+      await this.calendlySync(now),
       {
         key: 'email_channel',
         titleAr: 'قناةُ البريد',

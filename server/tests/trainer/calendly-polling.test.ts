@@ -12,6 +12,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { JOBS, syncCalendlyInterviews } from '../../worker/jobs'
 import { maskedIntegrationsView, saveCalendlyConfig, getCalendlyConfig } from '../../services/integrations.service'
+import { SystemHealthService } from '../../services/system-health.service'
 import { setupTestDb, testPrisma } from '../helpers/db'
 
 const TOKEN = 'calendly-pat-for-tests-0000'
@@ -34,6 +35,8 @@ let eventUri = EVENT_URI
 let inviteeEmail = EMAIL
 let inviteeCanceled = false
 let failWith = 0
+/* حسابٌ لا موعدَ فيه — صورةُ الرمزِ على حسابٍ غيرِ المضيف */
+let noEvents = false
 
 const invitee = () => ({
   uri: `${eventUri}/invitees/poll-invitee-1`,
@@ -90,7 +93,7 @@ beforeEach(() => {
       return {
         ok: true, status: 200,
         text: async () => JSON.stringify({
-          collection: [{ uri: eventUri, start_time: START, status: eventStatus }],
+          collection: noEvents ? [] : [{ uri: eventUri, start_time: START, status: eventStatus }],
         }),
       }
     }
@@ -219,5 +222,76 @@ describe('الحجزُ الذي لا يُطابَق يُقال سببُه ويُ
        يبلغ طابورَ المراجعة. */
     expect(result.failed, 'المتجاوَزُ لا يُعَدّ — فلا أثرَ يُكتب ولا خبرَ يُقرأ').toBe(1)
     expect(result.summaryAr, 'الخبرُ لا يقول سببَ التجاوز').toContain('لا يطابقان طلبا')
+  })
+})
+
+describe('نبضُ الدورة يُقرأ في صحّة النظام — فالصمتُ لا يُقرأ سلامة', () => {
+  /* ═══ العطبُ الذي كُتب له ═══
+
+     `runJob` لا تكتب أثرا إلّا إن عمِلت الدورةُ شيئا أو سقط لها شيء. ورمزٌ
+     صحيحٌ على حسابٍ **غيرِ المضيف** يردّ صفرَ مواعيدَ بلا خطأ: صفرٌ عُمل
+     وصفرٌ سقط، فلا سطرَ في السجلّ ولا خبرَ في شاشة. تعمل الوظيفةُ كلَّ خمس
+     دقائقَ على حسابٍ فارغ، والمشغّلُ يرى هدوءا فيحسبه سلامة — وهو بعينه ما
+     ضاع فيه تشخيصُ حجزٍ حقيقيٍّ (١٣ سبتمبر ٢٠٢٦).
+
+     فصارت الدورةُ تكتب نبضَها فوق سابقه في صفّ التكامل، وصحّةُ النظام تقرؤه.
+     والحارسُ على **البند في اللقطة** — مفتاحِه ومستواه ومعناه — لا على ورودِ
+     نصٍّ في ملفّ. */
+  const health = () => new SystemHealthService(prisma)
+
+  const row = async (now: Date) => {
+    const snap = await health().snapshot(now)
+    const found = snap.groups.flatMap((g) => g.items).find((i) => i.key === 'calendly_sync')
+    expect(found, 'لا بندَ لمزامنة Calendly في صحّة النظام').toBeDefined()
+    return found!
+  }
+
+  it('دورةٌ تجاوزت حجزا: يُقال العددُ والمتجاوَزُ، ويُدَلُّ على موضع العمل', async () => {
+    /* الحالُ الموروثةُ من الحارس قبله: موعدٌ ببريدٍ لا يطابق طلبا */
+    const result = await syncCalendlyInterviews(prisma, new Date('2026-09-24T08:00:00.000Z'))
+    expect(result.done).toBe(0)
+
+    const item = await row(new Date('2026-09-24T08:01:00.000Z'))
+    expect(item.level, 'حجزٌ تُجووز يُقرأ سلامةً').toBe('attention')
+    expect(item.valueAr, 'لا يقول إنّ حجزا تُجووز').toContain('تُجووز')
+    expect(item.href, 'لا يدلّ على موضع العمل').toBe('/admin/integrations')
+  })
+
+  it('⚠️ ودورةٌ قرأت صفرَ مواعيدَ تُقال — وهي الصورةُ الوحيدةُ لرمزٍ على حسابٍ غيرِ المضيف', async () => {
+    noEvents = true
+    const result = await syncCalendlyInterviews(prisma, new Date('2026-09-24T09:00:00.000Z'))
+    noEvents = false
+    /* صفرٌ عُمل وصفرٌ سقط: لا أثرَ يُكتب، فلا شيءَ في `/admin/audit` البتّة */
+    expect(result.done).toBe(0)
+    expect(result.failed).toBe(0)
+
+    const item = await row(new Date('2026-09-24T09:01:00.000Z'))
+    expect(item.level, 'الصفرُ يُقرأ سلامةً — وهو الصمتُ الذي ضاع فيه التشخيص').toBe('attention')
+    expect(item.valueAr, 'لا يقول كم موعدا قُرئ').toContain('قرأت 0 موعدا')
+    expect(item.meaningAr, 'لا يُسمّي احتمالَ الرمزِ على حسابٍ آخر').toContain('حساب')
+  })
+
+  it('وانقطاعُ النبض يُقرأ عطبا في العامل لا صمتا من Calendly', async () => {
+    /* النبضُ الأخيرُ كُتب في التاسعة، ويُقرأ بعد أربعين دقيقة: ثمانِ دوراتٍ
+       لم تقع. والفرقُ بينهما عمليٌّ — تُراجَع خدمةُ العامل لا الرمز. */
+    const item = await row(new Date('2026-09-24T09:40:00.000Z'))
+    expect(item.level).toBe('broken')
+    expect(item.meaningAr, 'لا يفرّق بين عاملٍ متوقّفٍ وتكاملٍ صامت').toContain('العاملَ الخلفيَّ')
+  })
+
+  it('ودورةٌ ساقطةٌ تبقى مقروءةً في الشاشة لا في السجلّ وحدَه', async () => {
+    failWith = 401
+    await syncCalendlyInterviews(prisma, new Date('2026-09-25T09:00:00.000Z'))
+    failWith = 0
+
+    const item = await row(new Date('2026-09-25T09:01:00.000Z'))
+    expect(item.level).toBe('broken')
+    expect(item.valueAr, 'لا يقول رمزَ الردّ').toContain('401')
+  })
+
+  it('ونبضُ الدورة لا يمحو الرمزَ المحفوظ — فهو يُدمج ولا يُعيد الكتابة', async () => {
+    /* الكتابةُ على `config` نفسِه، ولو كُتب النبضُ بديلا عن الإعداد لمُحي
+       الرمزُ في أوّل دورة، فتوقّف المزامنةُ بنفسِ ما جاء يراقبها. */
+    expect((await getCalendlyConfig(prisma)).token).toBe(TOKEN)
   })
 })

@@ -27,7 +27,7 @@ import { NotificationService, liveChannels } from '../services/notification.serv
 import { CohortService } from '../services/cohort.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
-import { getCalendlyConfig } from '../services/integrations.service'
+import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
 import { CalendlyWebhookService } from '../services/calendly-webhook.service'
 import {
   CalendlyApiError,
@@ -543,6 +543,7 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
     /* رمزٌ منتهٍ أو شبكةٌ ساقطة: يُقال ولا يُرمى — دورةٌ ساقطةٌ لا توقف
        العاملَ عن بقيّة وظائفه، وصفحةُ صحّةِ النظام تقرأ هذا السطر. */
     const why = e instanceof CalendlyApiError ? `ردّ ${e.status}` : 'خطأُ شبكة'
+    await recordCalendlySync(prisma, { at: now.toISOString(), events: 0, done: 0, skipped: 0, errorAr: why })
     return { job, summaryAr: `تعذّر سؤالُ Calendly (${why}) — لا مقابلةَ زِيدت`, done: 0, failed: 1, ms: Date.now() - started }
   }
 
@@ -578,6 +579,12 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
   }
 
   const skippedTotal = [...skipped.values()].reduce((a, b) => a + b, 0)
+  /* النبضُ يُكتب في كلّ دورةٍ ناجحة — حتّى الفارغةَ منها. فدورةٌ تقرأ صفرَ
+     مواعيدَ هي الإشارةُ إلى رمزٍ على حسابٍ غيرِ المضيف، ولا أثرَ لها في
+     السجلّ لأنّها لم تعمل شيئا ولم يسقط لها شيء. */
+  await recordCalendlySync(prisma, {
+    at: now.toISOString(), events: events.length, done, skipped: skippedTotal,
+  })
   const parts: string[] = []
   if (done > 0) parts.push(`${done} مقابلةً حُدّثت`)
   if (skippedTotal > 0) {
