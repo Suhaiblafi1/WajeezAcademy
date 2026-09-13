@@ -8,11 +8,12 @@ import TrainerWorkQueue from "@/components/TrainerWorkQueue";
 import AtRiskList from "@/components/AtRiskList";
 import { buildWorkQueue } from "@/application/trainer/work-queue";
 import { findAtRisk } from "@/application/trainer/at-risk";
+import { buildUpcoming } from "@/application/trainer/upcoming";
 import { useRealSession } from "@/services/session";
-import { fmtDateTimeAr } from "@/utils/format";
+import { fmtDayMonth, fmtTime } from "@/application/text/format-ar";
 import { countAr } from "@/application/text/count-ar";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 import ProgressRing from "@/components/ui/ProgressRing";
 /* صيغةُ العدد لا تُرتجل في السطر: «و1 طالباً» نصبٌ في غير موضعه يقرؤه
    المدرّب في كلّ دخول. */
@@ -99,10 +100,9 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const students = cohorts.reduce((n, c) => n + c.cohort.enrollments.length, 0);
   const awaiting = queue.filter((q) => q.status === "submitted" || q.status === "under_review").length;
   const nowIso = new Date(now).toISOString();
-  const upcoming = cohorts
-    .flatMap((c) => c.cohort.sessions.filter((s) => s.startsAt > nowIso && s.status !== "done").map((s) => ({ ...s, cohortTitle: c.cohort.title, cohortId: c.cohort.id })))
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-    .slice(0, 4);
+  /* التخطيطُ لا العمل: ما بَعُد عن نافذة الطابور وحدَه — والقسمةُ محروسةٌ في
+     `src/tests/trainer/upcoming.test.ts` كي لا تعود جلسةٌ تظهر في اللوحتين. */
+  const planAhead = buildUpcoming(cohorts, now);
 
   /* جلساتُ الأسبوع — رقمٌ في الشريط لا قائمةٌ ثانية */
   const weekEnd = new Date(now + 7 * 86_400_000).toISOString();
@@ -187,22 +187,52 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
       {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
       {cohorts.length > 0 && <AtRiskList learners={atRisk} className="mb-6" />}
 
+      {/* ═══ جلساتي القادمة — للتخطيط لا للعمل ═══
+
+          كانت تعيد ما في الطابور أعلاه بصيغةٍ أضعف: الجلسةُ نفسُها بسطرين،
+          ومعها في الطابور زرُّ دخولٍ وهنا رابطٌ إلى الشعبة. فصارت لما بَعُد
+          عن نافذته وحدَه: أيّامٌ معنونةٌ يُخطَّط عليها، بلا رابطِ اجتماعٍ —
+          فلا أحدَ يدخل جلسةً بعد ثلاثةِ أيّام، والرابطُ فعلٌ عاجلٌ مكانُه
+          الطابور. والقاعدةُ تُقال للمدرّب تحت العنوان كي يعرف لمَ لا يرى
+          جلسةَ الغد هنا. */}
       <Panel as="section">
-        <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> جلساتي القادمة</p>
-        <div className="mt-3 space-y-2">
-          {upcoming.length === 0 && <p className="py-3 text-center text-read text-muted-foreground">لا جلسات قادمة مجدولة</p>}
-          {upcoming.map((s) => (
-            <Card as={Link} interactive key={s.id} to={`/trainer/cohort/${s.cohortId}`} className="flex items-center gap-3 px-4 py-2.5 text-xs transition hover:border-white/30">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-foreground">{s.title}</p>
-                <p className="mt-0.5 truncate text-read text-muted-foreground">{s.cohortTitle}</p>
-              </div>
-              <span className="shrink-0 text-fine font-bold text-muted-foreground">
-                {fmtDateTimeAr(s.startsAt)}
-              </span>
-            </Card>
-          ))}
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" aria-hidden="true" /> جلساتي القادمة</p>
+          <Link to="/trainer/schedule" className="text-read font-bold text-teal-light-ink hover:text-foreground">جدولي كاملا</Link>
         </div>
+        <p className="mt-1 text-read text-muted-foreground">ما هو أبعدُ من يوم — وأقربُ منه تجده في «ما ينتظرك الآن» أعلاه بزرِّ دخوله.</p>
+
+        {planAhead.length === 0 ? (
+          <Inset as="p" className="mt-4 px-4 py-6 text-center text-read text-muted-foreground">
+            لا جلساتٍ مجدولةً بعد يومك — وما كان خلال يومٍ فمكانُه الطابورُ أعلاه.
+          </Inset>
+        ) : (
+          <div className="mt-4 space-y-4">
+            {planAhead.map((d) => (
+              <div key={d.dayOffset}>
+                <p className="mb-2 flex flex-wrap items-baseline gap-x-2 text-read font-black text-teal-light-ink">
+                  {d.labelAr}
+                  <span className="font-bold text-muted-foreground">{fmtDayMonth(d.sessions[0].startsAt)}</span>
+                </p>
+                <ul className="space-y-2">
+                  {d.sessions.map((s) => (
+                    <Card as="li" key={s.id} className="p-0">
+                      <Link to={`/trainer/cohort/${s.cohortId}`} className="flex items-center gap-3 px-4 py-2.5 text-xs transition hover:text-teal-light-ink">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-bold text-foreground">{s.titleAr}</span>
+                          <span className="mt-0.5 block truncate text-read text-muted-foreground">{s.cohortTitleAr}</span>
+                        </span>
+                        <span className="shrink-0 text-fine font-bold tabular-nums text-muted-foreground">
+                          {fmtTime(s.startsAt)}
+                        </span>
+                      </Link>
+                    </Card>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </Panel>
 
       {/* ═══ اجتماعٌ مع الإدارة — بنقرة، داخل الصفحة، وفي الذيل لا الصدر ═══
