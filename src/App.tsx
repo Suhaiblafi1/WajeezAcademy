@@ -22,6 +22,7 @@ const Diagnostic = lazy(() => import('./pages/Diagnostic'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
+const TrainerPublicPage = lazy(() => import('./pages/TrainerPublic'))
 
 /* البوابات الداخلية تُحمَّل عند الطلب فقط — لا تبطئ الصفحات العامة */
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
@@ -171,6 +172,8 @@ export default function App() {
           <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />
           <Route path="/trainers" element={<Trainers />} />
+          {/* بابُ المدرّب باسمه — من دخل منه يُحسب له (المرحلة «أ» من مسار المدرّب) */}
+          <Route path="/t/:slug" element={<TrainerPublicPage />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}

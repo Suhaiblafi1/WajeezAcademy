@@ -333,6 +333,20 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return referrals.linkFor(req.auth!.userId, id)
   })
+  /* رابطُه الواسعُ وأثرُه — نداءٌ واحدٌ للوحة: الرابطُ وكم سجّل منه.
+     وهما معا لأنّ الرابطَ بلا رقمٍ دعوةٌ لا يُعرف أنفعت، والرقمُ بلا رابطٍ
+     خبرٌ لا يُعمل به. */
+  app.get('/api/trainer/me/referral', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'رابطي العامُّ على كامل ما أدرّب، ومن سجّل عبره' },
+  }, async (req) => {
+    const [link, reach] = await Promise.all([
+      referrals.wideLinkFor(req.auth!.userId),
+      referrals.reachOf(req.auth!.userId),
+    ])
+    return { ...link, ...reach }
+  })
+
   const planContent = z.object({
     kind: z.literal('trainer'),
     summaryAr: z.string().max(2000).nullish(),

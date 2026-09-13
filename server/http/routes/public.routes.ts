@@ -64,6 +64,14 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['public-catalog'], summary: 'الشعب المفتوحة للتسجيل — سعر وموعد ومقاعد متبقية ومدربون منشورون' },
   }, async () => catalog.cohorts())
 
+  /* صفحةُ المدرّب باسمه — بابٌ عامٌّ على شعبه المفتوحة (المرحلة «أ») */
+  app.get('/api/public/trainers/:slug', {
+    schema: { tags: ['public-catalog'], summary: 'صفحةُ مدرّبٍ منشورٍ باسمه — تعريفُه وشعبُه المفتوحةُ ورمزُ دعوته' },
+  }, async (req) => {
+    const { slug } = z.object({ slug: z.string().min(1).max(80) }).parse(req.params)
+    return catalog.trainerPublicPage(slug)
+  })
+
   app.get('/api/public/methodology', {
     schema: { tags: ['public-catalog'], summary: 'المراجع العلمية للمنهجية — من ملف المصدر الوحيد' },
   }, async () => catalog.methodology())
