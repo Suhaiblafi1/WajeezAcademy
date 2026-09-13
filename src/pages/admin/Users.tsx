@@ -6,6 +6,7 @@ import { toast, toastError } from "@/components/Toast";
 import { Archive, BadgeCheck, KeyRound, Loader2, Minus, Plus, RefreshCw, Send, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
+import { ACCOUNT_KINDS, filterByKind, type AccountKind } from "@/application/admin/account-kind";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
@@ -83,6 +84,8 @@ export default function Users() {
      وحذفٌ نهائيّ لا إيقافٌ وأدوار)، وخلطُهما في قائمةٍ واحدة يجعل زرَّ
      الإيقاف يقع بجوار حسابٍ موقوفٍ أصلا. */
   const [box, setBox] = useState<"active" | "invited" | "suspended" | "archived">("active");
+  /** نوعُ الحساب المرشَّح — و`null` تعني كلَّ الأنواع (ع-٩) */
+  const [kind, setKind] = useState<AccountKind | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -196,7 +199,15 @@ export default function Users() {
      وخلطُ «مدعوّ» بـ«نشط» كان يجعل فريقا من ستّةٍ يبدو عاملا وهو لم يدخل. */
   const countOf = (st: string) => rows.filter((u) => u.status === st).length;
   const inBox = rows.filter((u) => (box === "active" ? u.status === "active" : u.status === box));
-  const matched = inBox.filter((u) => matchesQuery(q, [u.displayName, u.email, ...u.roles.map((r) => r.nameAr)]));
+  /* ═══ ولماذا النوعُ ترشيحٌ والحالةُ خانات ═══
+
+     للحساب حالةٌ واحدة (نشطٌ أو مدعوٌّ أو موقوفٌ أو مؤرشف) فتصحّ قسمتُها
+     خانات؛ وله **أدوارٌ عدّة** فلا تصحّ. ومن قسَم الأنواعَ خانات اضطرّ إلى
+     أسبقيّةٍ يخترعها — أمديرٌ أكاديميٌّ يدرّب هو «فريقٌ» أم «مدرّب»؟ — وأيُّ
+     جوابٍ اختير أخفاه عمّن يبحث عنه بالوجه الآخر. والقرارُ نفسُه في
+     `application/admin/account-kind` فيُفحَص. */
+  const byKind = filterByKind(inBox, kind);
+  const matched = byKind.filter((u) => matchesQuery(q, [u.displayName, u.email, ...u.roles.map((r) => r.nameAr)]));
   const view = paginate(matched, page, 20);
 
   if (offline) {
@@ -340,11 +351,39 @@ export default function Users() {
             { id: "archived", label: `المؤرشَفة (${countOf("archived")})` },
           ]}
         />
+        {/* شريطُ الأنواع تحت خانات الحالة: الحالةُ تقول «أين هو» والنوعُ
+            يقول «من هو»، وهما سؤالان يُسألان معا لا بدلا من بعضهما. ويبقى
+            النوعُ مختارا حين تُبدَّل الخانة — فمن يتتبّع المدرّبين من النشطة
+            إلى الموقوفة لا يُعيد اختيارَهم في كلّ خانة. */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="text-read font-bold text-muted-foreground">النوع:</span>
+          <Button
+            tone={kind === null ? "secondary" : "ghost"} size="sm"
+            aria-pressed={kind === null}
+            onClick={() => { setKind(null); setPage(1); }}
+          >
+            كلُّ الأنواع ({inBox.length})
+          </Button>
+          {ACCOUNT_KINDS.map((k) => (
+            <Button
+              key={k.value}
+              tone={kind === k.value ? "secondary" : "ghost"} size="sm"
+              aria-pressed={kind === k.value}
+              onClick={() => { setKind(k.value); setPage(1); }}
+            >
+              {k.labelAr} ({filterByKind(inBox, k.value).length})
+            </Button>
+          ))}
+        </div>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
           placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
         {view.total === 0 ? (
           <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
-            {q.trim() ? `لا حساب يطابق «${q.trim()}».` : `لا حسابات في هذه الخانة.`}
+            {q.trim()
+              ? `لا حساب يطابق «${q.trim()}»${kind ? ` في ${ACCOUNT_KINDS.find((k) => k.value === kind)?.labelAr}` : ""}.`
+              : kind
+                ? `لا حساب من ${ACCOUNT_KINDS.find((k) => k.value === kind)?.labelAr} في هذه الخانة.`
+                : `لا حسابات في هذه الخانة.`}
           </Panel>
         ) : (
         <div className="space-y-3">
