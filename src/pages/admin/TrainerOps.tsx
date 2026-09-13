@@ -15,18 +15,8 @@ import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
+import { RUBRIC_AXES } from "@/application/trainer/rubric";
 
-const RUBRIC_AXES: { key: string; label: string }[] = [
-  { key: "domain_expertise", label: "خبرة المجال" },
-  { key: "evidence_of_expertise", label: "أدلة الخبرة" },
-  { key: "explanation_facilitation", label: "الشرح والتيسير" },
-  { key: "demo_quality", label: "جودة الديمو" },
-  { key: "activity_assessment_design", label: "تصميم الأنشطة والتقييمات" },
-  { key: "feedback_skill", label: "التغذية الراجعة" },
-  { key: "digital_training", label: "التدريب الرقمي" },
-  { key: "values_fit", label: "التوافق مع قيم وجيز" },
-  { key: "availability", label: "التوفر" },
-];
 
 const CR_STATUS_AR: Record<string, string> = {
   submitted: "مُقدم", in_review: "قيد المراجعة", changes_requested: "مطلوب تعديل",

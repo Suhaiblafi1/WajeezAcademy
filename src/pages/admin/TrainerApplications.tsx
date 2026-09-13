@@ -19,6 +19,7 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
 import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
+import InterviewSheet from "./InterviewSheet";
 import { yearsLabel } from "@/application/trainer/application-options";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -27,6 +28,7 @@ import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
+import { RUBRIC_AXES } from "@/application/trainer/rubric";
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -46,6 +48,7 @@ const DOSSIER_SECTIONS: { id: string; label: string }[] = [
   { id: "sec-profile", label: "المتقدّم وملفّه" },
   { id: "sec-docs", label: "الوثائق" },
   { id: "sec-history", label: "سجلّ الحالة" },
+  { id: "sec-questions", label: "أسئلةُ المقابلة" },
   { id: "sec-interviews", label: "المقابلات" },
   { id: "sec-demo", label: "الدرس التجريبيّ" },
   { id: "sec-references", label: "المراجع المهنيّة" },
@@ -53,17 +56,6 @@ const DOSSIER_SECTIONS: { id: string; label: string }[] = [
   { id: "sec-rubric", label: "الروبرك والقرار" },
 ];
 
-const RUBRIC_AXES: { key: string; label: string }[] = [
-  { key: "domain_expertise", label: "خبرة المجال" },
-  { key: "evidence_of_expertise", label: "أدلة الخبرة" },
-  { key: "explanation_facilitation", label: "الشرح والتيسير" },
-  { key: "demo_quality", label: "جودة الديمو" },
-  { key: "activity_assessment_design", label: "تصميم الأنشطة والتقييمات" },
-  { key: "feedback_skill", label: "التغذية الراجعة" },
-  { key: "digital_training", label: "التدريب الرقمي" },
-  { key: "values_fit", label: "التوافق مع قيم وجيز" },
-  { key: "availability", label: "التوفر" },
-];
 
 /* ما يصلح جماعيّا: قراراتُ الفرز التي تتكرّر على عشراتٍ في جلسةٍ واحدة.
    وما بعدها (المقابلة والدرس التجريبيّ والعقد) قرارٌ فرديّ بملفٍّ يُقرأ —
@@ -711,10 +703,9 @@ export default function TrainerApplications() {
               )}
             </Panel>
 
-            {/* سجل الحالات — ولا يُطبع: أثرُ إجراءٍ داخليٍّ («مسودة» ثمّ «مُقدَّم»)
-                لا معلومةٌ عن المتقدّم. ومن يقرأ الورقةَ ليحكم لا يعنيه متى
-                انتقل الصفُّ من حالةٍ إلى حالة. */}
-            <Panel as="article" className="print:hidden">
+            {/* سجل الحالات — ويُطبع بطلب صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) بعد أن
+                قُطع: من يجلس إلى المتقدّم يحتاج أن يعرف متى قدّم وأين وقف. */}
+            <Panel as="article">
               <h4 id="sec-history" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
@@ -727,6 +718,9 @@ export default function TrainerApplications() {
                 ))}
               </ol>
             </Panel>
+
+            {/* ورقةُ المقابلة: ما يُسأل وما يُملأ — تُقرأ على الشاشة وتُطبع */}
+            <InterviewSheet a={a as unknown as Dossier} />
 
             {/* عمليات متقدمة: مقابلات، ديمو، مراجع، عقود */}
             <TrainerDetailOps app={a} onAction={act} />
