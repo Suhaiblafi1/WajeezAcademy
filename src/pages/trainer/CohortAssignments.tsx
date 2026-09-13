@@ -41,11 +41,11 @@ export default function CohortAssignments({ items, learners }: {
   return (
     <div className="mt-5 border-t border-white/10 pt-4">
       <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
-        <ClipboardCheck className="h-4 w-4 text-gold-ink" /> تكاليفُ هذه الشعبة
+        <ClipboardCheck className="h-4 w-4 text-gold-ink" /> مهامُّ هذه الشعبة
       </h3>
       {items.length === 0 ? (
         <p className="mt-2 text-read text-muted-foreground">
-          لا تكليفَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.
+          لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.
         </p>
       ) : (
         <ul className="mt-3 space-y-2">

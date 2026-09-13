@@ -147,26 +147,14 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
         </div>
       </div>
 
-      {/* بطاقة إرشاد المدرب الجديد — بوابة بلا شعب تشرح ما يحدث تاليا بدل أن تكتفي بأصفار */}
-      {cohorts.length === 0 && (
-        <Panel as="section" tone="accent" className="mb-8">
-          <p className="flex items-center gap-2 text-sm font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" /> بوابتك جاهزة — هذا ما يحدث تالياً</p>
-          <div className="mt-4 grid gap-3 text-xs leading-6 text-foreground sm:grid-cols-3">
-            <Card className="bg-paper/20">
-              <p className="font-black text-teal-light-ink">١ · الإسناد</p>
-              <p className="mt-1">الإدارة تسند إليك شعبة من شاشة «الشعب» — يصلك إشعار فور الإسناد.</p>
-            </Card>
-            <Card className="bg-paper/20">
-              <p className="font-black text-teal-light-ink">٢ · التجهيز على مراحل</p>
-              <p className="mt-1">تفتح صفحةَ الشعبة فتجد مراحلَها على خطّ: الاسمُ والمواعيد، والمحاور، والمصادر، واللقاءات، والتكاليف، ثمّ الاعتماد.</p>
-            </Card>
-            <Card className="bg-paper/20">
-              <p className="font-black text-teal-light-ink">٣ · التشغيل</p>
-              <p className="mt-1">باعتماد الإدارة تنتقل إلى التشغيل: الحضورُ والموادُّ والتسليمات والرسائل — من الصفحة نفسِها.</p>
-            </Card>
-          </div>
-        </Panel>
-      )}
+      {/* ═══ ولماذا سقطت بطاقاتُ «بوّابتك جاهزة» ═══
+
+          كانت ثلاثَ بطاقاتٍ تشرح ما يحدث تاليا (الإسنادُ · التجهيزُ على مراحل
+          · التشغيل) لمن لم تُسند إليه شعبةٌ بعد. وقرارُ صاحب المنصّة (١٣
+          سبتمبر ٢٠٢٦): تُحذف وتبقى الصفحة. فالشرحُ يسبق العمل، ومن لا شعبةَ
+          له لا ينفعه شرحُ مراحلِ شعبةٍ لا يراها — ومن أُسندت إليه يجدها في
+          «شعبي» أدناه فيتعلّمها منها. وسطرُ «لم تُسند إليك شعب بعد» أعلاه
+          يقول حالَه بلا ثلاث بطاقات. */}
 
       {/* ═══ شعبي — بطاقةٌ لكلٍّ بحلقة تجهيزها وخطوتها التالية ═══ */}
       {summary.length > 0 && (

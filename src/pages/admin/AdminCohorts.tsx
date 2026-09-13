@@ -641,7 +641,7 @@ export default function AdminCohorts() {
                                 withAssessments: true,
                               });
                               setDupForm({ title: "", shiftWeeks: "8", withSessions: true });
-                            }, "أُنشئت نسخةٌ مسودّةً — بجدولها وموادّها وتكاليفها، بلا تسجيلاتٍ ولا حضور")}
+                            }, "أُنشئت نسخةٌ مسودّةً — بجدولها وموادّها ومهامّها، بلا تسجيلاتٍ ولا حضور")}
                             className="w-full">
                             كرّرها
                           </Button>

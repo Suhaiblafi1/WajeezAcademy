@@ -95,8 +95,8 @@ const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
   { key: "identity", label: "الاسم والمواعيد", icon: ClipboardList },
   { key: "modules", label: "المحاور", icon: BookOpen },
   { key: "resources", label: "المصادر", icon: FileText },
-  { key: "sessions", label: "اللقاءات", icon: CalendarDays },
-  { key: "assignments", label: "التكاليف", icon: ClipboardCheck },
+  { key: "sessions", label: "لقاءات مباشرة", icon: CalendarDays },
+  { key: "assignments", label: "المهامّ والتطبيق العمليّ", icon: ClipboardCheck },
   { key: "approval", label: "الاعتماد", icon: Send },
 ];
 type Phase = "prepare" | "run";
@@ -130,7 +130,7 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
     minutes: "نحو ٧ دقائق",
   },
   assignments: {
-    title: "تكاليفُ الشعبة",
+    title: "المهامّ والتطبيق العمليّ",
     purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم. خطوةٌ اختياريّة — ويُنصح بواحدٍ على الأقلّ.",
     minutes: "نحو ٥ دقائق",
   },
@@ -337,11 +337,11 @@ export default function CohortWorkspace() {
     if (editingId) await apiPatch(`/api/trainer/assessments/${editingId}`, payload);
     else await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined });
     cancelEdit();
-  }, editingId ? "حُفظ التعديل — يراه المسجّلون كما هو الآن" : "أُنشئ التكليف — يظهر للمسجلين ويعود إليك تسليمهم في طابور المراجعة");
+  }, editingId ? "حُفظ التعديل — يراه المسجّلون كما هو الآن" : "أُنشئت المهمّة — تظهر للمسجّلين ويعود إليك تسليمُهم في طابور المراجعة");
   const deleteAssessment = (a: Workspace["assessments"][number]) => act(async () => {
     await apiDelete(`/api/trainer/assessments/${a.id}`);
     if (editingId === a.id) cancelEdit();
-  }, "حُذف التكليف");
+  }, "حُذفت المهمّة");
 
   const setModule = (i: number, patch: Partial<PlanModule>) =>
     setContent({ ...content, modules: content.modules.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
@@ -603,7 +603,7 @@ export default function CohortWorkspace() {
                   <StaffField label="التطبيق العمليّ" hint="ما يفعله بيده في هذا المحور. إن لم يكن فيه شيءٌ يفعله فهو محاضرةٌ لا محور.">
                     <textarea rows={2} value={m.activityAr ?? ""} onChange={(e) => setModule(i, { activityAr: e.target.value })} disabled={locked} aria-label={`تطبيق المحور ${i + 1}`} className={areaCls} />
                   </StaffField>
-                  <StaffField label="ما يُسلّمه المتعلّم (اختياريّ)" hint="إن ذكرتَ مُسلَّما هنا فاجعل له تكليفا في خطوة «التكاليف» — وإلّا فلا سبيل لتسليمه.">
+                  <StaffField label="ما يُسلّمه المتعلّم (اختياريّ)" hint="إن ذكرتَ مُسلَّما هنا فاجعل له مهمّةً في خطوة «المهامّ والتطبيق العمليّ» — وإلّا فلا سبيل لتسليمه.">
                     <input value={m.artifactAr ?? ""} onChange={(e) => setModule(i, { artifactAr: e.target.value })} disabled={locked} aria-label={`مُسلَّم المحور ${i + 1}`} className={controlCls} />
                   </StaffField>
                   <StaffField label="متن المحور (اختياريّ)" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة — ابدأ كلَّ درسٍ بعنوانٍ من الشريط، فالمتنُ يُقسَّم عنده دروسا. و«عايِنْ» تريكه كما يراه هو. والروابطُ والملفّاتُ موضعُها «المصادر».">
@@ -730,7 +730,7 @@ export default function CohortWorkspace() {
         <Panel as="section">
           <StageIntro stage="assignments" />
           {ws.assessments.length === 0 ? (
-            <p className="mt-3 text-read text-muted-foreground">لا تكليفَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
+            <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {ws.assessments.map((a) => (
@@ -768,19 +768,19 @@ export default function CohortWorkspace() {
           {/* ── نموذجٌ واحدٌ: يؤلّف تكليفا أو يعدّل واحدا قائما ── */}
           <div className="mt-5 border-t border-white/10 pt-4">
             <p className="text-read font-black text-foreground">
-              {editingId ? "تعديلُ التكليف" : "تكليفٌ جديد"}
+              {editingId ? "تعديلُ المهمّة" : "مهمّةٌ جديدة"}
             </p>
             <div className="mt-3 grid gap-3">
               <label className="block">
                 <span className="block text-read font-bold text-foreground">العنوان</span>
                 <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">يظهر في قائمة مهامّ المتعلّم وفي طابور تقييمك.</span>
-                <input aria-label="عنوان التكليف" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
+                <input aria-label="عنوان المهمّة" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
                   onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} className={controlCls} />
               </label>
               <label className="block">
                 <span className="block text-read font-bold text-foreground">التعليمات</span>
                 <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">ما يفعله بالضبط، ومقدارُه، وما يُسلَّم. العنوانُ وحدَه لا يكفي للعمل.</span>
-                <textarea rows={3} aria-label="تعليمات التكليف" value={taskForm.briefAr}
+                <textarea rows={3} aria-label="تعليمات المهمّة" value={taskForm.briefAr}
                   placeholder="اذكر المطلوبَ ومقدارَه وما يُسلَّم — فالعنوانُ وحدَه لا يكفي للعمل."
                   onChange={(e) => setTaskForm({ ...taskForm, briefAr: e.target.value })} className={areaCls} />
               </label>
@@ -810,7 +810,7 @@ export default function CohortWorkspace() {
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">النوع</span>
                     <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يُسلَّم مرّة، و«اختبار» له درجة، و«مشروع تخرّج» يُحتسب في الإكمال.</span>
-                  <select aria-label="نوع التكليف" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
+                  <select aria-label="نوع المهمّة" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
                     {Object.entries(ASSESSMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </label>
@@ -830,7 +830,7 @@ export default function CohortWorkspace() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button tone="confirm" disabled={busy || taskForm.title.trim().length < 3} onClick={saveAssessment}>
-                  {editingId ? "احفظ التعديل" : "أنشئ التكليف"}
+                  {editingId ? "احفظ التعديل" : "أنشئ المهمّة"}
                 </Button>
                 {editingId && <Button tone="ghost" disabled={busy} onClick={cancelEdit}>أَلْغِ التعديل</Button>}
               </div>
@@ -864,7 +864,7 @@ export default function CohortWorkspace() {
 
       {pendingDelete && (
         <ConfirmAction
-          titleAr="حذفُ التكليف"
+          titleAr="حذفُ المهمّة"
           confirmLabelAr="احذفه"
           busy={busy}
           onCancel={() => setPendingDelete(null)}
@@ -881,7 +881,7 @@ export default function CohortWorkspace() {
         <Panel as="section" tone={st.tone}>
           <StageIntro stage="approval" />
           <p className="mt-2 text-read leading-7 text-foreground">
-            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، وتكاليفَها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
+            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، ومهامَّها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
           {remaining > 0 && !approved && (
@@ -889,7 +889,7 @@ export default function CohortWorkspace() {
           )}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
             <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
-            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها وتكاليفَها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
+            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها ومهامَّها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
           </label>
           <Button tone="primary" disabled={busy || locked || !confirm || remaining > 0 || approved} onClick={submit} className="mt-4">
             <Send className="h-4 w-4" /> أرسلها للاعتماد
