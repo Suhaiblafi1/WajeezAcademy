@@ -31,13 +31,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CalendarDays, Check, ClipboardCheck, ClipboardList, FileText, Link2, Loader2, Lock, Send, Sparkles, Video,
+  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Link2, Loader2, Lock, Send, Sparkles, Video,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import CohortOps from "./CohortOps";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
+import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -125,6 +126,8 @@ export default function CohortWorkspace() {
   const [editingId, setEditingId] = useState<string | null>(null);
   /* التكليفُ المطلوبُ حذفُه — الحذفُ لا يقع بنقرةٍ واحدة */
   const [pendingDelete, setPendingDelete] = useState<Workspace["assessments"][number] | null>(null);
+  /* والمحورُ المطلوبُ حذفُه — ومعه موضعُه، فالعناوينُ تتكرّر */
+  const [pendingModule, setPendingModule] = useState<{ index: number; module: PlanModule } | null>(null);
   /* بصمةُ آخرِ ما حُفظ — يُقاس عليها «فيه تغييرٌ لم يُحفظ» لكلّ مرحلةٍ وحدَها.
      كانت المرحلةُ تُغادَر بتعديلٍ في يدها فيضيع بلا كلمة. */
   const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "" });
@@ -465,7 +468,25 @@ export default function CohortWorkspace() {
           <ol className="mt-4 space-y-3">
             {content.modules.map((m, i) => (
               <Card as="li" key={m.moduleId}>
-                <p className="text-read font-black text-teal-light-ink">المحور {i + 1} <span className="font-mono text-muted-foreground">{m.moduleId}</span></p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="min-w-0 flex-1 text-read font-black text-teal-light-ink">المحور {i + 1} <span className="font-mono text-muted-foreground">{m.moduleId}</span></p>
+                  {/* الترتيبُ بزرَّين لا بسحب: يعمل باللمس وبلوحة المفاتيح،
+                      ويُقرأ لقارئ الشاشة، ولا ينقلب في الاتّجاه العربيّ. */}
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button tone="ghost" size="sm" disabled={locked || i === 0}
+                      aria-label={`انقل «${m.titleAr || `المحور ${i + 1}`}» إلى أعلى`}
+                      onClick={() => setContent({ ...content, modules: moveModule(content.modules, i, -1) })}
+                    ><ChevronUp className="h-4 w-4" aria-hidden="true" /></Button>
+                    <Button tone="ghost" size="sm" disabled={locked || i === content.modules.length - 1}
+                      aria-label={`انقل «${m.titleAr || `المحور ${i + 1}`}» إلى أسفل`}
+                      onClick={() => setContent({ ...content, modules: moveModule(content.modules, i, 1) })}
+                    ><ChevronDown className="h-4 w-4" aria-hidden="true" /></Button>
+                    <Button tone="ghost" size="sm" disabled={locked}
+                      aria-label={`احذف «${m.titleAr || `المحور ${i + 1}`}»`}
+                      onClick={() => setPendingModule({ index: i, module: m })}
+                    >احذف</Button>
+                  </div>
+                </div>
                 <div className="mt-3 grid gap-3">
                   <input value={m.titleAr} onChange={(e) => setModule(i, { titleAr: e.target.value })} disabled={locked} placeholder="عنوان المحور" aria-label={`عنوان المحور ${i + 1}`} className={controlCls} />
                   <textarea rows={2} value={m.outcomeAr ?? ""} onChange={(e) => setModule(i, { outcomeAr: e.target.value })} disabled={locked} placeholder="ما يخرج به المتعلّم من هذا المحور" aria-label={`مخرج المحور ${i + 1}`} className={areaCls} />
@@ -477,7 +498,9 @@ export default function CohortWorkspace() {
             ))}
           </ol>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, modules: [...content.modules, { moduleId: `${ws.course.id}-T${content.modules.length + 1}`, titleAr: "" }] })}>+ محور</Button>
+            {/* المعرّفُ من أكبرِ ما أُعطي لا من الطول — فلا يرث محورٌ جديدٌ
+                معرّفَ محذوف. الشرحُ في `application/trainer/plan-modules`. */}
+            <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, modules: [...content.modules, { moduleId: nextTrainerModuleId(ws.course.id, content.modules), titleAr: "" }] })}>+ محور</Button>
           </div>
           <label className="mt-4 block">
             <span className="mb-1.5 block text-read font-bold text-muted-foreground">ملاحظاتٌ عن اللقاءات المباشرة (اختياريّ)</span>
@@ -647,6 +670,29 @@ export default function CohortWorkspace() {
             </div>
           </div>
         </Panel>
+      )}
+
+      {pendingModule && (
+        <ConfirmAction
+          titleAr="حذفُ المحور"
+          confirmLabelAr="احذفه من خطّتي"
+          onCancel={() => setPendingModule(null)}
+          onConfirm={() => {
+            setContent({ ...content, modules: content.modules.filter((_, j) => j !== pendingModule.index) });
+            setPendingModule(null);
+          }}
+        >
+          <p className="text-read leading-7">
+            يُرفع «{pendingModule.module.titleAr || `المحور ${pendingModule.index + 1}`}» من خطّة هذه الشعبة،
+            ومعه مخرَجُه وتطبيقُه ومتنُه. ولا يقع شيءٌ حتّى تحفظ المحاور.
+          </p>
+          {/* محورُ الكتالوج يبقى في الدورة — والفرقُ يُقال كي لا يُظنَّ محوَه منها */}
+          {isCatalogModule(pendingModule.module.moduleId, ws.course.baseModules) && (
+            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
+              هذا محورٌ من الكتالوج — حذفُه من خطّتك لا يحذفه من الدورة نفسِها، ويظلّ محسوبا في تقدّم المتعلّم.
+            </Inset>
+          )}
+        </ConfirmAction>
       )}
 
       {pendingDelete && (

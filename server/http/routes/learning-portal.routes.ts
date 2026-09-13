@@ -336,11 +336,29 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const planContent = z.object({
     kind: z.literal('trainer'),
     summaryAr: z.string().max(2000).nullish(),
+    /* المعرّفُ لا يتكرّر في خطّةٍ واحدة.
+
+       كان المعرّفُ يُشتقُّ من الموضع في الواجهة (`T${length + 1}`)، فمع
+       الحذفِ يُعاد رقمٌ قائمٌ ويصير في الخطّة محوران بمعرّفٍ واحد — والخادمُ
+       يقبلهما. والواجهةُ صارت تشتقّه من أكبرِ ما أُعطي، لكنّ الحدَّ يُثبَّت
+       هنا أيضا: عميلٌ قديمٌ أو طلبٌ يدويٌّ لا يكسر خطّةً بصمت. */
     modules: z.array(z.object({
       moduleId: z.string().max(64), titleAr: z.string().min(2).max(200),
       outcomeAr: z.string().max(1000).nullish(), activityAr: z.string().max(2000).nullish(),
       artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(6000).nullish(),
-    })).max(40),
+    })).max(40).superRefine((mods, ctx) => {
+      const seen = new Set<string>()
+      for (const [i, m] of mods.entries()) {
+        if (seen.has(m.moduleId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [i, 'moduleId'],
+            message: `معرّفُ المحور «${m.moduleId}» مكرّرٌ في الخطّة`,
+          })
+        }
+        seen.add(m.moduleId)
+      }
+    }),
     resources: z.array(z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), noteAr: z.string().max(500).nullish() })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
     /* اقتراحُ اسمٍ للدورة أو المسار — يركب مع الخطّة ويُقرَّر فيه عند الاعتماد */
