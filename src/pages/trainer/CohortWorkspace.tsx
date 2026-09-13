@@ -39,8 +39,9 @@ import CohortOps from "./CohortOps";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
-import { RESOURCE_KINDS, resourceKind } from "@/application/trainer/plan-overlay";
+import { RESOURCE_KINDS, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
+import BodyEditor from "@/components/BodyEditor";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -73,7 +74,7 @@ interface Workspace {
   sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
   materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
   learners: { enrollmentId: string; name: string; status: string; progress: number; referredByMe: boolean }[];
-  assessments: { id: string; title: string; briefAr: string | null; type: string; maxScore: number; dueAt: string | null; status: string; submissions: number }[];
+  assessments: { id: string; title: string; briefAr: string | null; attachments?: unknown; type: string; maxScore: number; dueAt: string | null; status: string; submissions: number }[];
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
 }
 
@@ -184,6 +185,9 @@ export default function CohortWorkspace() {
   /* نموذجُ التكليف — واحدٌ للإنشاء والتعديل. `editingId` يقرّر أيَّهما:
      فارغٌ فإنشاء، وفيه معرّفٌ فتعديلُ ذاك التكليف بعينه. */
   const [taskForm, setTaskForm] = useState({ title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "" });
+  /* مرفقاتُ التكليف تحت اليد — منفصلةٌ عن `taskForm` لأنّها مصفوفةٌ تُضاف
+     ويُحذف منها، لا حقلٌ نصّيّ. */
+  const [taskAttachments, setTaskAttachments] = useState<PlanResource[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   /* التكليفُ المطلوبُ حذفُه — الحذفُ لا يقع بنقرةٍ واحدة */
   const [pendingDelete, setPendingDelete] = useState<Workspace["assessments"][number] | null>(null);
@@ -313,10 +317,11 @@ export default function CohortWorkspace() {
      النموذجُ واحدٌ للفعلين: ما كُتب فيه يُرسَل `POST` إن لم يكن تحت اليد
      تكليفٌ يُعدَّل، و`PATCH` إن كان. فلا شاشةٌ ثانيةٌ ولا حقولٌ تُكرَّر. */
   const blankTask = { title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "" };
-  const cancelEdit = () => { setEditingId(null); setTaskForm(blankTask); };
+  const cancelEdit = () => { setEditingId(null); setTaskForm(blankTask); setTaskAttachments([]); };
   const editAssessment = (a: Workspace["assessments"][number]) => {
     setEditingId(a.id);
     setTaskForm({ title: a.title, briefAr: a.briefAr ?? "", type: a.type, maxScore: a.maxScore, dueAt: toDateInput(a.dueAt) });
+    setTaskAttachments(readTypedLinks(a.attachments));
   };
   const saveAssessment = () => act(async () => {
     const payload = {
@@ -324,6 +329,10 @@ export default function CohortWorkspace() {
       /* الفراغُ يعني «بلا تعليمات» — يُرسَل `null` عند التعديل كي يُمحى ما كان */
       briefAr: taskForm.briefAr.trim() || null,
       dueAt: taskForm.dueAt ? new Date(taskForm.dueAt).toISOString() : null,
+      /* الناقصُ يُسقَط لا يُرسَل نصفَ مرفق — والمصفوفةُ الفارغةُ محوٌ مقصود */
+      attachments: taskAttachments
+        .filter((r) => r.title.trim() && /^https?:\/\//.test(r.url.trim()))
+        .map((r) => ({ title: r.title.trim(), url: r.url.trim(), kind: resourceKind(r.kind) })),
     };
     if (editingId) await apiPatch(`/api/trainer/assessments/${editingId}`, payload);
     else await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined });
@@ -597,8 +606,13 @@ export default function CohortWorkspace() {
                   <StaffField label="ما يُسلّمه المتعلّم (اختياريّ)" hint="إن ذكرتَ مُسلَّما هنا فاجعل له تكليفا في خطوة «التكاليف» — وإلّا فلا سبيل لتسليمه.">
                     <input value={m.artifactAr ?? ""} onChange={(e) => setModule(i, { artifactAr: e.target.value })} disabled={locked} aria-label={`مُسلَّم المحور ${i + 1}`} className={controlCls} />
                   </StaffField>
-                  <StaffField label="متن المحور (اختياريّ)" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة. والروابطُ والملفّاتُ موضعُها «المصادر».">
-                    <textarea rows={3} value={m.bodyAr ?? ""} onChange={(e) => setModule(i, { bodyAr: e.target.value })} disabled={locked} aria-label={`متن المحور ${i + 1}`} className={areaCls} />
+                  <StaffField label="متن المحور (اختياريّ)" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة — ابدأ كلَّ درسٍ بعنوانٍ من الشريط، فالمتنُ يُقسَّم عنده دروسا. و«عايِنْ» تريكه كما يراه هو. والروابطُ والملفّاتُ موضعُها «المصادر».">
+                    <BodyEditor
+                      value={m.bodyAr ?? ""}
+                      onChange={(next) => setModule(i, { bodyAr: next })}
+                      disabled={locked}
+                      ariaLabel={`متن المحور ${i + 1}`}
+                    />
                   </StaffField>
                 </div>
                 )}
@@ -770,6 +784,28 @@ export default function CohortWorkspace() {
                   placeholder="اذكر المطلوبَ ومقدارَه وما يُسلَّم — فالعنوانُ وحدَه لا يكفي للعمل."
                   onChange={(e) => setTaskForm({ ...taskForm, briefAr: e.target.value })} className={areaCls} />
               </label>
+              {/* مرفقاتُ التكليف — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */}
+              <div className="block">
+                <span className="block text-read font-bold text-foreground">المرفقات</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">نموذجٌ يملؤه، أو مرجعٌ يقرؤه قبل التسليم. يراها المتعلّمُ تحت التعليمات بنوعِ كلٍّ منها.</span>
+                <ul className="space-y-2">
+                  {taskAttachments.map((att, i) => {
+                    const patch = (next: Partial<PlanResource>) =>
+                      setTaskAttachments(taskAttachments.map((x, j) => (j === i ? { ...x, ...next } : x)));
+                    return (
+                      <li key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+                        <input value={att.title} onChange={(e) => patch({ title: e.target.value })} placeholder="اسم المرفق" aria-label={`اسم المرفق ${i + 1}`} className={controlCls} />
+                        <input dir="ltr" value={att.url} onChange={(e) => patch({ url: e.target.value })} placeholder="https://…" aria-label={`رابط المرفق ${i + 1}`} className={`${controlCls} text-left`} />
+                        <select value={resourceKind(att.kind)} onChange={(e) => patch({ kind: e.target.value })} aria-label={`نوع المرفق ${i + 1}`} className={controlCls}>
+                          {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
+                        </select>
+                        <Button tone="ghost" size="sm" onClick={() => setTaskAttachments(taskAttachments.filter((_, j) => j !== i))}>أزل</Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button tone="ghost" size="sm" className="mt-2" onClick={() => setTaskAttachments([...taskAttachments, { title: "", url: "", kind: "link" }])}>+ مرفق</Button>
+              </div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">النوع</span>

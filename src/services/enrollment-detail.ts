@@ -34,6 +34,10 @@ export interface CohortMaterial {
 export interface CohortAssessment {
   id: string
   title: string
+  /* تعليماتُ التكليف — ما يفعله المتعلّم. كانت تُكتب ولا تُعرض له. */
+  briefAr: string | null
+  /* مرفقاتُه — عمودُ JSON، فيُقرأ بـ`readTypedLinks` لا يُصدَّق كما هو */
+  attachments: unknown
   type: string
   dueAt: string | null
   maxScore: number

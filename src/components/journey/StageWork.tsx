@@ -32,7 +32,7 @@ import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks } from "@/application/content/module-checks";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { referencesByIds } from "@/data/methodology";
-import { overlayModules, resourceKind } from "@/application/trainer/plan-overlay";
+import { overlayModules, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
@@ -542,6 +542,36 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                 </span>
               )}
             </div>
+            {/* ═══ التعليماتُ والمرفقات ═══
+
+                كان المتعلّمُ يُطالَب بتسليمٍ ويرى عنوانا ودرجةً وموعدا لا
+                غير: `briefAr` — ما يكتبه مدرّبُه من تعليمات — لم يكن يُعرض
+                له أصلا. فهو يُسأل عملا بلا أن يُقال له ما المطلوب.
+
+                والتعليماتُ نصٌّ كما كُتبت لا Markdown مصيَّرا: هذه الشاشةُ
+                خريطةٌ لا مشغّل، وحارسُ `lesson-split.test.ts` يمنع تفريغَ
+                المتن فيها — وهو محقّ، فالجدارُ الذي شُكي منه عاد منه. وهي
+                تُعرض كما يراها مدرّبُها في شاشته حرفا بحرف. */}
+            {a.briefAr && <p className="mt-3 whitespace-pre-line text-read leading-6 text-foreground">{a.briefAr}</p>}
+            {readTypedLinks(a.attachments).length > 0 && (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {readTypedLinks(a.attachments).map((att, i) => {
+                  const meta = RESOURCE_META[resourceKind(att.kind)];
+                  return (
+                    <li key={`${att.url}-${i}`}>
+                      <a
+                        href={att.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-read font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
+                      >
+                        <meta.icon className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" /> {att.title}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
             {mine && <SubmissionFeedback submission={mine} criteria={a.rubric?.criteria} className="mt-3" />}
             {canSubmit && a.type === "quiz" && a.items.length > 0 && (
               <QuizAttemptForm items={a.items} busy={busy === a.id} onSubmit={(r) => onSubmitQuiz(a.id, r)} />

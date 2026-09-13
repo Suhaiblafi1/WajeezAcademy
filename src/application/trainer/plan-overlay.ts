@@ -43,6 +43,40 @@ export function resourceKind(v: string | null | undefined): ResourceKind {
   return (RESOURCE_KINDS as readonly string[]).includes(v ?? '') ? (v as ResourceKind) : 'link'
 }
 
+/** مرفقٌ أو مصدرٌ — الشكلُ واحدٌ في خطّة الشعبة وفي التكليف */
+export interface TypedLink {
+  title: string
+  url: string
+  kind?: string | null
+  noteAr?: string | null
+}
+
+/**
+ * قراءةُ مرفقاتٍ محفوظةٍ في عمود JSON — دفاعيّةٌ بقصد.
+ *
+ * العمودُ `Json?`، فما فيه ما كتبه أيُّ إصدارٍ من الخادم: `null` لما سبق
+ * العمود، ومصفوفةٌ صحيحةٌ اليوم، وأيُّ شيءٍ لو كُتب بيدٍ في قاعدةٍ يوما.
+ * وصفٌّ واحدٌ مشوّهٌ لا يُسقط شاشةَ تكليفٍ على متعلّمٍ ينتظر موعدَ تسليم.
+ */
+export function readTypedLinks(raw: unknown): TypedLink[] {
+  if (!Array.isArray(raw)) return []
+  const out: TypedLink[] = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const r = item as Record<string, unknown>
+    const title = typeof r.title === 'string' ? r.title.trim() : ''
+    const url = typeof r.url === 'string' ? r.url.trim() : ''
+    if (!title || !url) continue
+    out.push({
+      title,
+      url,
+      kind: resourceKind(typeof r.kind === 'string' ? r.kind : null),
+      noteAr: typeof r.noteAr === 'string' && r.noteAr.trim() ? r.noteAr.trim() : null,
+    })
+  }
+  return out
+}
+
 /** ما يلزم من وحدة الكتالوج — والزائدُ يمرّ كما هو */
 export interface CatalogModuleLike {
   id: string

@@ -530,6 +530,11 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       title: z.string().min(3), type: z.enum(['assignment', 'quiz', 'project']),
       moduleId: z.string().optional(), briefAr: z.string().max(4000).optional(), maxScore: z.number().int().min(1).optional(),
       passScore: z.number().int().optional(), dueAt: z.coerce.date().optional(), rubricId: z.string().uuid().optional(),
+      /* المرفقات — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */
+      attachments: z.array(z.object({
+        title: z.string().min(2).max(200), url: z.string().url().max(500),
+        kind: z.enum(RESOURCE_KINDS).nullish(),
+      })).max(10).optional(),
       items: z.array(z.object({ prompt: z.string().min(2), kind: z.enum(['text', 'choice', 'file']).optional(), maxScore: z.number().int().optional() })).optional(),
     }).parse(req.body)
     await enrollments.assertCohortTrainer(req.auth!.userId, id)
@@ -554,6 +559,11 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       type: z.enum(['assignment', 'quiz', 'project']).optional(),
       maxScore: z.number().int().min(1).optional(),
       dueAt: z.coerce.date().nullable().optional(),
+      /* المصفوفةُ الفارغةُ تعني «امحُ المرفقات» — كالنصّ الفارغ للتعليمات */
+      attachments: z.array(z.object({
+        title: z.string().min(2).max(200), url: z.string().url().max(500),
+        kind: z.enum(RESOURCE_KINDS).nullish(),
+      })).max(10).optional(),
     }).parse(req.body)
     return assessments.updateAssessment(req.auth!.userId, assessmentId, body)
   })
