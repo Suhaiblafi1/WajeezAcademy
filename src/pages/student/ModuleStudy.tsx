@@ -15,7 +15,7 @@
    هنا. فما يُحفظ محلّيّا موضعُ القراءة وحده. */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, FileText,
   Loader2, PenLine, Sparkles, Target,
@@ -37,6 +37,9 @@ import { safeGet, safeSet } from "@/services/safe-storage";
 import { track } from "@/services/analytics";
 import { countAr } from "@/application/text/count-ar";
 import { courseFullById } from "@/data/courses";
+import { overlayModule, overlayModules } from "@/application/trainer/plan-overlay";
+import { fetchEnrollmentDetail } from "@/services/enrollment-detail";
+import type { LearnerPlanView } from "@/application/trainer/plan-overlay";
 
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -59,14 +62,39 @@ function readPos(moduleId: string): number {
 
 export default function ModuleStudy() {
   const { courseId = "", moduleId = "" } = useParams();
+  const [params] = useSearchParams();
   const catalogVersion = usePublishedContent();
   const { user, checked } = useRealSession();
   const navigate = useNavigate();
 
   const full = useMemo(() => { void catalogVersion; return courseFullById(courseId); }, [courseId, catalogVersion]);
-  const mod = full?.modules.find((m) => m.id === moduleId) ?? null;
-  const modIndex = full?.modules.findIndex((m) => m.id === moduleId) ?? -1;
-  const next = full && modIndex >= 0 ? full.modules[modIndex + 1] ?? null : null;
+
+  /* ═══ متنُ الشعبة لا متنُ الكتالوج ═══
+
+     هذه الشاشةُ بمعرّف **الدورة**، فمتعلّمو شعبتين يفتحان العنوانَ نفسَه.
+     والخطّةُ خطّةُ شعبةٍ بعينها، فيصحبها معرّفُ التسجيل في العنوان (`?e=`)
+     تضعه صفحةُ الرحلة. والخادمُ يردّ ٤٠٣ لمن ليس صاحبَ التسجيل، فلا يُقرأ
+     بهذا الباب متنُ شعبةِ غيره.
+
+     وبلا `?e=` — رابطٌ نُسخ أو حُفظ — يُقرأ متنُ الكتالوج كما كان. */
+  const enrollmentId = params.get("e")?.trim() ?? "";
+  const [plan, setPlan] = useState<LearnerPlanView | null>(null);
+  useEffect(() => {
+    if (!enrollmentId) return;
+    let alive = true;
+    fetchEnrollmentDetail(enrollmentId)
+      .then((d) => { if (alive) setPlan(d.cohort.trainerPlan); })
+      .catch(() => { /* تعذّرت الخطّةُ — يُقرأ الكتالوجُ ولا تسقط الشاشة */ });
+    return () => { alive = false; };
+  }, [enrollmentId]);
+
+  const modules = useMemo(() => overlayModules(full?.modules ?? [], plan), [full?.modules, plan]);
+  const mod = useMemo(
+    () => overlayModule(full?.modules.find((m) => m.id === moduleId) ?? null, plan, moduleId),
+    [full?.modules, plan, moduleId],
+  );
+  const modIndex = modules.findIndex((m) => m.id === moduleId);
+  const next = modIndex >= 0 ? modules[modIndex + 1] ?? null : null;
 
   /* الأسئلة تُوزَّع على الدروس بالترتيب: سؤالٌ (أو اثنان) بعد كلّ درس بدل
      أن تنهال خمسةً في آخر الوحدة. والباقي — إن زاد عن قسمة الدروس — يُعرض
@@ -326,7 +354,7 @@ export default function ModuleStudy() {
             </p>
             {next && (
               <Link
-                to={`/student/course/${courseId}/module/${next.id}`}
+                to={`/student/course/${courseId}/module/${next.id}${enrollmentId ? `?e=${encodeURIComponent(enrollmentId)}` : ""}`}
                 className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 text-sm font-black text-on-teal transition hover:bg-teal-light"
               >
                 الوحدة التالية: {next.title}

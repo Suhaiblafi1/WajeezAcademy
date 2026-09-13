@@ -5,6 +5,7 @@
    تغييرٍ في الخادم. فصار مصدرا واحدا يُستورد. */
 
 import { apiGet } from './api'
+import type { LearnerPlanView } from '@/application/trainer/plan-overlay'
 
 export interface EnrollmentCertificate {
   id: string
@@ -33,6 +34,10 @@ export interface CohortMaterial {
 export interface CohortAssessment {
   id: string
   title: string
+  /* تعليماتُ التكليف — ما يفعله المتعلّم. كانت تُكتب ولا تُعرض له. */
+  briefAr: string | null
+  /* مرفقاتُه — عمودُ JSON، فيُقرأ بـ`readTypedLinks` لا يُصدَّق كما هو */
+  attachments: unknown
   type: string
   dueAt: string | null
   maxScore: number
@@ -67,6 +72,10 @@ export interface EnrollmentDetail {
     sessions: CohortSession[]
     materials: CohortMaterial[]
     assessments: CohortAssessment[]
+    /* خطّةُ مدرّب الشعبة المعتمَدة، مشروعةً — تعلو وحداتِ الكتالوج في
+       شاشة الدروس، ومصادرُها تنضمّ إلى «مصادر هذه المرحلة». `null` حين لا
+       خطّةَ معتمَدة. انظر `src/application/trainer/plan-overlay.ts`. */
+    trainerPlan: LearnerPlanView | null
   }
   attendance: { sessionId: string; status: string }[]
   submissions: MySubmission[]

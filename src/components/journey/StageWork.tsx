@@ -32,6 +32,8 @@ import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks } from "@/application/content/module-checks";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { referencesByIds } from "@/data/methodology";
+import { overlayModules, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
+import { RESOURCE_META } from "@/components/resource-kind-meta";
 import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
 import type { LearnerRequest } from "@/services/learner-requests";
@@ -86,13 +88,22 @@ export default function StageWork({
     () => new Set(detail.moduleProgress.filter((m) => m.status === "completed").map((m) => m.moduleId)),
     [detail.moduleProgress],
   );
-  const modules = full?.modules ?? [];
+  /* ═══ خطّةُ المدرّب تعلو الكتالوج ═══
+
+     كان `full.modules` وحدَها — وحداتُ الكتالوج — فما يؤلّفه مدرّبُ الشعبة
+     ويُعتمَد لا يصل متعلّميه. قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦). */
+  const modules = useMemo(
+    () => overlayModules(full?.modules ?? [], detail.cohort.trainerPlan),
+    [full?.modules, detail.cohort.trainerPlan],
+  );
   const nextModuleIndex = modules.findIndex((m) => !doneModules.has(m.id));
   const percent = detail.courseProgress?.percent ?? stage.percent ?? 0;
   const trainers = detail.cohort.trainers.map((t) => t.profile.application.fullName);
   const recordings = detail.cohort.sessions.flatMap((s) => s.recordings);
   const references = useMemo(() => referencesByIds(full?.referenceIds ?? []), [full?.referenceIds]);
-  const hasResources = detail.cohort.materials.length > 0 || recordings.length > 0 || references.length > 0;
+  const planResources = detail.cohort.trainerPlan?.resources ?? [];
+  const hasResources =
+    detail.cohort.materials.length > 0 || recordings.length > 0 || references.length > 0 || planResources.length > 0;
 
   const TABS: { id: Tab; label: string; count: number; icon: typeof BookOpen }[] = [
     { id: "lessons", label: "الدروس", count: modules.length, icon: BookOpen },
@@ -161,6 +172,7 @@ export default function StageWork({
               doneModules={doneModules}
               nextIndex={nextModuleIndex}
               courseId={stage.courseId}
+              enrollmentId={detail.id}
               project={full?.practicalProject ?? null}
             />
           )}
@@ -203,10 +215,39 @@ export default function StageWork({
         </h3>
         {!hasResources ? (
           <p className="mt-2 text-read leading-6 text-muted-foreground">
-            لم تُرفَع موادُّ هذه الشعبة بعد. ما يرفعه مدرّبك يظهر هنا، ومعه تسجيلاتُ الجلسات فور جهوزها.
+            لم تُضَف موادُّ هذه الشعبة بعد. ما يختاره مدرّبك أو يرفعه يظهر هنا، ومعه تسجيلاتُ الجلسات فور جهوزها.
           </p>
         ) : (
           <div className="mt-3 space-y-4">
+            {/* ما اختاره مدرّبُك — من خطّته المعتمَدة، بنوعِ كلِّ مصدرٍ
+                معلَنا: كتابٌ وكتابٌ صوتيٌّ وفيديو لا تُقرأ من الرابط. */}
+            {planResources.length > 0 && (
+              <div>
+                <p className="text-read font-bold text-muted-foreground">اختارها مدرّبُك</p>
+                <ul className="mt-2 space-y-1.5">
+                  {planResources.map((r, i) => {
+                    const meta = RESOURCE_META[resourceKind(r.kind)];
+                    return (
+                      <li key={`${r.url}-${i}`}>
+                        <a
+                          href={r.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-start gap-2 text-read leading-6 text-foreground transition hover:text-teal-light-ink"
+                        >
+                          <meta.icon className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                          <span className="min-w-0">
+                            <span className="font-bold">{r.title}</span>
+                            <span className="text-muted-foreground"> · {meta.label}</span>
+                            {r.noteAr && <span className="mt-0.5 block text-muted-foreground">{r.noteAr}</span>}
+                          </span>
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
             {detail.cohort.materials.length > 0 && (
               <div>
                 <p className="text-read font-bold text-muted-foreground">موادُّ الشعبة</p>
@@ -283,12 +324,17 @@ function Lessons({
   doneModules,
   nextIndex,
   courseId,
+  enrollmentId,
   project,
 }: {
-  modules: CourseFull["modules"];
+  modules: (CourseFull["modules"][number] & { fromTrainer: boolean })[];
   doneModules: Set<string>;
   nextIndex: number;
   courseId: string;
+  /* شاشةُ الدراسة بمعرّف الدورة لا الشعبة، فلا تعرف أيَّ خطّةٍ تعلو متنَها.
+     والمعرّفُ يُمرَّر في العنوان: المتعلّمُ نفسُه صاحبُ هذا التسجيل،
+     والخادمُ يردّ ٤٠٣ لمن ليس صاحبَه — فلا يُقرأ به متنُ شعبةِ غيره. */
+  enrollmentId: string;
   project: string | null;
 }) {
   if (modules.length === 0) {
@@ -326,7 +372,10 @@ function Lessons({
                     {m.title}
                   </span>
                   <span className="mt-0.5 block text-fine leading-4 text-muted-foreground">
-                    {m.hours} ساعة
+                    {/* محورٌ أضافه المدرّبُ ليس في الكتالوج، فلا ساعاتٍ له
+                        مقرَّرة — و«ساعة» بلا عددٍ أسوأُ من لا شيء. */}
+                    {m.hours ? `${m.hours} ساعة` : "من مدرّبك"}
+                    {m.hours && m.fromTrainer ? " · من مدرّبك" : ""}
                     {lessons.length > 0 && ` · ${lessons.length} درسا`}
                     {checks > 0 && ` · ${checks} تمرين استرجاع`}
                     {m.scenario && " · سيناريو قرار"}
@@ -355,7 +404,7 @@ function Lessons({
                 )}
                 {lessons.length > 0 && (
                   <Link
-                    to={`/student/course/${courseId}/module/${m.id}`}
+                    to={`/student/course/${courseId}/module/${m.id}?e=${encodeURIComponent(enrollmentId)}`}
                     className="shrink-0 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
                   >
                     {done ? "راجعها" : "افتحها"}
@@ -493,6 +542,36 @@ function Assessments({ detail, handlers }: { detail: EnrollmentDetail; handlers:
                 </span>
               )}
             </div>
+            {/* ═══ التعليماتُ والمرفقات ═══
+
+                كان المتعلّمُ يُطالَب بتسليمٍ ويرى عنوانا ودرجةً وموعدا لا
+                غير: `briefAr` — ما يكتبه مدرّبُه من تعليمات — لم يكن يُعرض
+                له أصلا. فهو يُسأل عملا بلا أن يُقال له ما المطلوب.
+
+                والتعليماتُ نصٌّ كما كُتبت لا Markdown مصيَّرا: هذه الشاشةُ
+                خريطةٌ لا مشغّل، وحارسُ `lesson-split.test.ts` يمنع تفريغَ
+                المتن فيها — وهو محقّ، فالجدارُ الذي شُكي منه عاد منه. وهي
+                تُعرض كما يراها مدرّبُها في شاشته حرفا بحرف. */}
+            {a.briefAr && <p className="mt-3 whitespace-pre-line text-read leading-6 text-foreground">{a.briefAr}</p>}
+            {readTypedLinks(a.attachments).length > 0 && (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {readTypedLinks(a.attachments).map((att, i) => {
+                  const meta = RESOURCE_META[resourceKind(att.kind)];
+                  return (
+                    <li key={`${att.url}-${i}`}>
+                      <a
+                        href={att.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-read font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
+                      >
+                        <meta.icon className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" /> {att.title}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
             {mine && <SubmissionFeedback submission={mine} criteria={a.rubric?.criteria} className="mt-3" />}
             {canSubmit && a.type === "quiz" && a.items.length > 0 && (
               <QuizAttemptForm items={a.items} busy={busy === a.id} onSubmit={(r) => onSubmitQuiz(a.id, r)} />

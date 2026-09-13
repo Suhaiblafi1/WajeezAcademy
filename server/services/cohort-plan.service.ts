@@ -48,7 +48,8 @@ export interface TrainerPlanModule {
   artifactAr?: string | null
   bodyAr?: string | null
 }
-export interface TrainerPlanResource { title: string; url: string; noteAr?: string | null }
+/** `kind` من `RESOURCE_KINDS` — وغيابُه يعني «رابط» (ما حُفظ قبل العمود) */
+export interface TrainerPlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
 /** ما يقترحه المدرّبُ على الإدارة مع خطّته — ويُطبَّق باعتمادها إن شاءت (٨ سبتمبر ٢٠٢٦) */
 export interface TrainerPlanProposals { courseTitleAr?: string | null; pathwayTitleAr?: string | null }
 export interface TrainerPlanContent {
@@ -209,7 +210,7 @@ export class CohortPlanService {
         },
         assessments: {
           where: { status: { not: 'closed' } }, orderBy: { createdAt: 'asc' },
-          select: { id: true, title: true, briefAr: true, type: true, maxScore: true, dueAt: true, status: true, _count: { select: { submissions: true } } },
+          select: { id: true, title: true, briefAr: true, attachments: true, type: true, maxScore: true, dueAt: true, status: true, _count: { select: { submissions: true } } },
         },
       },
     })
@@ -267,7 +268,7 @@ export class CohortPlanService {
       })),
       /* التكاليفُ مع عدد ما سُلّم — لمرحلة «التكاليف» في التجهيز */
       assessments: cohort.assessments.map((a) => ({
-        id: a.id, title: a.title, briefAr: a.briefAr, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
+        id: a.id, title: a.title, briefAr: a.briefAr, attachments: a.attachments, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
         submissions: a._count.submissions,
       })),
       checklist,
