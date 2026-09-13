@@ -13,16 +13,17 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { calendlyCardNotice } from '../../lib/calendly-card'
 
 const root = process.cwd()
 const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('بطاقةُ Calendly في شاشة التكاملات', () => {
-  const screen = code('src/pages/admin/Integrations.tsx')
-  const routes = code('server/http/routes/integrations.routes.ts')
-  const service = code('server/services/integrations.service.ts')
+const screen = code('src/pages/admin/Integrations.tsx')
+const routes = code('server/http/routes/integrations.routes.ts')
+const service = code('server/services/integrations.service.ts')
 
+describe('بطاقةُ Calendly في شاشة التكاملات', () => {
   it('تنادي مسارَي الحفظ والتسجيل، وهما مسجَّلان في الخادم', () => {
     expect(screen, 'لا تنادي حفظَ الإعداد').toContain('/api/admin/integrations/calendly"')
     expect(screen, 'لا تنادي التسجيل').toContain('/api/admin/integrations/calendly/register')
@@ -62,5 +63,57 @@ describe('بطاقةُ Calendly في شاشة التكاملات', () => {
     expect(hook).toContain('getCalendlyConfig(prisma)')
     /* والغشاءُ في الخدمة: البيئةُ تغلب المحفوظَ حين تُضبط */
     expect(service).toMatch(/env\.CALENDLY_WEBHOOK_SIGNING_KEY/)
+  })
+})
+
+describe('وما تقوله البطاقةُ عن حالها يُنادى ويُفحص — لا يُطابَق نصُّه', () => {
+  /* ═══ العطبُ الذي كُتب له ═══
+
+     كان التحذيرُ مشروطا بـ`!ready`، و`ready` تعني «مفتاحُ توقيعٍ محفوظ» لا
+     غير. فمن لصق رمزَه الشخصيَّ في حقل مفتاحِ التوقيع — والحقلان متجاوران
+     وكلاهما مقنَّعٌ لا يُقرأ — صارت `ready` صادقةً عنده ولا رمزَ، فسكتت
+     البطاقةُ سكوتَ السليم وبقيت الحجوزاتُ لا تصل. ووقع هذا فعلا، وضاع به
+     يومٌ في البحث عن سببٍ لا تقوله الشاشة (١٣ سبتمبر ٢٠٢٦).
+
+     والحارسُ ينادي الدالّةَ بالحالات الأربع كلِّها — فلا حالَ تُنسى، ولا
+     شرطٌ في JSX يُفحص بمطابقة نصِّ ملفّ. */
+
+  it('⚠️ مفتاحُ التوقيع لا يكتم تحذيرَ «لا رمز» — وهو العطبُ بعينه', () => {
+    const n = calendlyCardNotice({ enabled: true, hasToken: false, hasSigningKey: true })
+    expect(n, 'البطاقةُ صامتةٌ ولا رمزَ محفوظ').not.toBeNull()
+    expect(n!.tone).toBe('danger')
+    expect(n!.textAr, 'لا يقول إنّ الرمزَ هو الغائب').toContain('لا رمزَ شخصيّ')
+    /* ويُدَلُّ على الحقل الصحيح: الخطأُ الواقعُ كان اللصقَ في الحقل الآخر */
+    expect(n!.textAr, 'لا يدلّ على حقل الرمز').toContain('الصق الرمزَ في حقله')
+  })
+
+  it('ومفعَّلٌ بلا مفتاحٍ ولا رمزٍ يُحذَّر كذلك', () => {
+    const n = calendlyCardNotice({ enabled: true, hasToken: false, hasSigningKey: false })
+    expect(n?.tone).toBe('danger')
+    expect(n!.textAr).toContain('لا يصل حجزٌ')
+  })
+
+  it('ورمزٌ محفوظٌ وتكاملٌ مطفأ يُقال — لا يُقرأ سلامةً ولا يُخلط بغياب الرمز', () => {
+    const n = calendlyCardNotice({ enabled: false, hasToken: true, hasSigningKey: false })
+    expect(n?.tone).toBe('danger')
+    expect(n!.textAr, 'لا يدلّ على مربّع التفعيل').toContain('مفعَّل')
+    expect(n!.textAr, 'يخلطه بغياب الرمز').not.toContain('لا رمزَ')
+  })
+
+  it('والعاملُ يُبشَّر به: رمزٌ ومفعَّلٌ معا سؤالٌ دوريٌّ قائم', () => {
+    const n = calendlyCardNotice({ enabled: true, hasToken: true, hasSigningKey: false })
+    expect(n?.tone).toBe('positive')
+    expect(n!.textAr).toContain('كلَّ خمس دقائق')
+  })
+
+  it('ولا شيءَ مضبوطٌ ولا مفعَّل: لا خبرَ ولا تحذير', () => {
+    expect(calendlyCardNotice({ enabled: false, hasToken: false, hasSigningKey: false })).toBeNull()
+  })
+
+  it('والشاشةُ تناديها فعلا، ولم تعد تسأل عن `ready` المضلّلة', () => {
+    /* دالّةٌ صحيحةٌ لا يناديها أحدٌ هي الحالةُ التي كان فيها هذا العطبُ أصلا */
+    expect(screen, 'البطاقةُ لا تنادي القرار').toContain('calendlyCardNotice(')
+    expect(screen, 'ما زالت تقرأ `ready` وهي مفتاحُ توقيعٍ لا جاهزيّة').not.toMatch(/calendly\.ready/)
+    expect(service, 'الخادمُ ما زال يرسل `ready` المضلّلة').not.toMatch(/ready: !!calendly\.signingKey/)
   })
 })

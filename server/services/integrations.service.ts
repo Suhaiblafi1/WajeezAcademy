@@ -441,12 +441,17 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
       callbackUrl: `${publicSiteUrl()}/api/webhooks/calendly`,
       siteUrlExplicit: hasExplicitSiteUrl(),
       token: mask(calendly.token), hasToken: !!calendly.token,
-      /* ═══ طريقان للمزامنة، والشاشةُ تقول أيُّهما قائم ═══
+      /* ═══ ولا `ready` هنا بعدَ اليوم ═══
 
-         `ready` مستقبِلٌ جاهزٌ للدفع (يقتضي اشتراكا، والاشتراكُ يقتضي خطّةً
-         مدفوعة)، و`polling` سؤالٌ دوريٌّ يعمل على المجّانيّة. وأحدُهما يكفي —
-         ولو اجتمعا فلا ازدواج: الإدخالُ يتجاهل التكرار. */
-      ready: !!calendly.signingKey,
+         كانت `ready: !!signingKey` تُقرأ في الشاشة «جاهز»، فتكتم تحذيرَ
+         «لا رمزَ محفوظ». ومفتاحُ التوقيع لا يُزامن شيئا وحدَه: هو للمستقبِل
+         الفوريّ، واشتراكُه خلفَ خطّةٍ مدفوعةٍ لا يملكها الحساب. فمن لصق رمزَه
+         في حقل المفتاح خطأً رأى بطاقةً صامتةً وحجوزا لا تصل (١٣ سبتمبر ٢٠٢٦).
+
+         والقرارُ كلُّه صار في `src/lib/calendly-card.ts` — دالّةٌ خالصةٌ تُنادى
+         بالحالات الأربع وتُفحص، لا شرطٌ في JSX يُطابَق نصُّه.
+
+         و`polling` تبقى: هي الطريقُ العاملُ على الخطّة المجّانيّة. */
       polling: !!calendly.token && calendly.enabled,
       bookingUrl: calendly.bookingUrl ?? '',
     },
