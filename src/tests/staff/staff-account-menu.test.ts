@@ -51,7 +51,15 @@ describe('لا بوّابةَ بلا باب خروج', () => {
     const src = read(MENU)
     expect(src, 'البريد لا يُعرض').toContain('user?.email')
     expect(src, 'الأدوار لا تُعرض — فالإداريّ يصطدم بالمنع ولا يعرف لماذا').toContain('user?.roles')
-    expect(src, 'رابط صفحة الحساب مفقود').toContain('to="/student/account"')
+    /* ── ورابطُ الحساب صار يُشتقّ لا يُكتب (١٣ سبتمبر ٢٠٢٦) ──
+
+       كان هذا السطرُ يشترط `to="/student/account"` حرفا. وهو الذي ثبَّت
+       العطبَ: مديرُ النظام يفتح حسابَه فينقلب إلى إطار بوّابة المتعلّم
+       (شكوى صاحب المنصّة). فالشرطُ الآن أن يُشتقَّ من البوّابة التي فُتحت
+       منها القائمةُ — والاشتقاقُ نفسُه مفحوصٌ في
+       `src/tests/account-frame-and-session.test.ts`. */
+    expect(src, 'رابط صفحة الحساب مفقود').toContain('to={accountPath}')
+    expect(src, 'الرابطُ عاد مكتوبا إلى بوّابة المتعلّم').not.toContain('to="/student/account"')
   })
 
   it('٤) و`signOut` نفسُها تنادي مسلك الخادم', () => {

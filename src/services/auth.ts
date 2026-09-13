@@ -8,7 +8,8 @@
    - القفل بعد المحاولات الفاشلة يفرضه الخادم (15 دقيقة) + تلميح محلي.
    - تسجيل الخروج يبطل الجلسة عند الخادم ثم يمسح النسخة المحلية. */
 
-import { ApiError, apiGet, apiPost } from "./api";
+import { ApiError, apiPost } from "./api";
+import { fetchMe, forgetMe } from "./me";
 import { syncPendingPlan } from "@/application/plan/adopted-plan";
 import { HONEYPOT_FIELD } from "../components/HoneypotField";
 import { safeGet, safeSet, safeRemove } from "./safe-storage";
@@ -125,7 +126,9 @@ export type SessionCheck =
 
 export async function verifySession(): Promise<SessionCheck> {
   try {
-    const { user } = await apiGet<{ user: ServerUser | null }>("/api/auth/me");
+    /* النداءُ مشتركٌ مع إطار البوّابة وجرسِها ولوحِ بحثها (`services/me.ts`):
+       كانت البوّابةُ الواحدة تسأل «من أنت؟» خمس مرّاتٍ قبل أن تُرسَم. */
+    const { user } = await fetchMe();
     if (!user) {
       safeRemove(USER_KEY);
       return { status: "anon" };
@@ -242,6 +245,10 @@ export async function signIn(email: string, pass: string): Promise<AuthResult> {
     );
     writeSession(user.displayName, user.email, user.roles, expiresAt);
     clearFails();
+    /* والجوابُ المحفوظُ يُنسى عند الدخول كما يُنسى عند الخروج — وإلّا بقي
+       جوابُ «لا جلسة» المحفوظُ من الصفحة العامّة (ثوانيَ قبل الدخول) هو ما
+       يقرؤه حارسُ المسار، فيردّ الداخلَ إلى شاشة الدخول وهو داخل. */
+    forgetMe();
     /* الخطّةُ المعتمَدةُ قبل الحساب تُرفَع الآن — أوّلُ لحظةٍ يصير لها فيها بيت.
        ولا يُنتظَر ناتجُها ولا يُسقط الدخول: الرفعُ أفضلُ جهد، والمحلّيّةُ تبقى. */
     void syncPendingPlan().catch(() => undefined);
@@ -259,12 +266,16 @@ export async function signOut(): Promise<void> {
     // حتى لو تعذر النداء نمسح نسخة العرض — الكوكي منتهي الصلاحية عند الخادم
   }
   safeRemove(USER_KEY);
+  /* والجوابُ المحفوظُ يُنسى معها: لولاه لبقي الخارجُ يُرى داخلا ثوانيَ في
+     كلّ مكوّنٍ يقرأ الجلسةَ من المحفوظ. */
+  forgetMe();
 }
 
 /** مسح نسخة العرض المحلية دون نداء خادم — تُستخدم بعد logout-all / deactivate
    اللذين أبطلا الجلسات عند الخادم أصلا */
 export function clearLocalSession(): void {
   safeRemove(USER_KEY);
+  forgetMe();
 }
 
 /** طلب استعادة كلمة المرور — رسالة الخادم آمنة ولا تكشف وجود الحساب */

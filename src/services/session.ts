@@ -1,19 +1,14 @@
 /* جلسة الخادم الحقيقية — جسر واحد بين تسجيل الدخول عبر API وبوابات المنصات.
    كل بوابة كانت تعتمد هوية محلية تجريبية؛ هذا الخطاف يتيح لها التعرف على
-   الحساب الحقيقي فتتجاوز شاشة «من أنت؟» لمن سجّل دخوله فعلا. */
+   الحساب الحقيقي فتتجاوز شاشة «من أنت؟» لمن سجّل دخوله فعلا.
+
+   والجلبُ نفسُه ليس هنا: هو في `services/me.ts` — نداءٌ واحدٌ تتقاسمه
+   الشاشةُ كلُّها. وهذا الخطّافُ واجهتُه في React لا مصدرُه. */
 
 import { useEffect, useState } from "react";
-import { apiGet } from "./api";
+import { fetchMe, freshMe, type SessionUser } from "./me";
 
-export interface SessionUser {
-  userId: string;
-  email: string;
-  displayName: string;
-  roles: string[];
-  permissions: string[];
-  /* توثيق البريد (١هـ) — يحجب الشراء والشهادة فقط، لا الدخول ولا التصفّح */
-  emailVerified: boolean;
-}
+export type { SessionUser };
 
 /** يجلب جلسة الخادم مرة واحدة — user=null حتى يكتمل الفحص أو عند غياب جلسة.
 
@@ -21,17 +16,23 @@ export interface SessionUser {
     يُسقطه صراحةً). فبدونها تقول الواجهةُ للمتعلّم إنّ شراءَه موقوفٌ وهو ليس
     موقوفا، وتعرض عليه زرَّ إرسالٍ لا يمكن أن ينجح. */
 export function useRealSession() {
-  const [user, setUser] = useState<SessionUser | null>(null);
-  const [emailChannel, setEmailChannel] = useState<boolean | null>(null);
-  const [checked, setChecked] = useState(false);
+  /* جوابٌ طازجٌ محفوظٌ يُقرأ في أوّل تصيير — فلا يمرّ المكوّنُ بلوحِ تحميلٍ
+     ولا يرتعش، وهو ما يحدث في كلّ انتقالٍ بين شاشات البوّابة. */
+  const seed = freshMe();
+  const [user, setUser] = useState<SessionUser | null>(seed?.user ?? null);
+  const [emailChannel, setEmailChannel] = useState<boolean | null>(seed?.emailChannelEnabled ?? null);
+  const [checked, setChecked] = useState(seed != null);
   useEffect(() => {
-    apiGet<{ user: SessionUser | null; emailChannelEnabled?: boolean }>("/api/auth/me")
+    let alive = true;
+    fetchMe()
       .then((r) => {
-        setUser(r.user ?? null);
-        setEmailChannel(r.emailChannelEnabled ?? null);
+        if (!alive) return;
+        setUser(r.user);
+        setEmailChannel(r.emailChannelEnabled);
       })
-      .catch(() => setUser(null))
-      .finally(() => setChecked(true));
+      .catch(() => { if (alive) setUser(null); })
+      .finally(() => { if (alive) setChecked(true); });
+    return () => { alive = false };
   }, []);
   return { user, checked, emailChannel };
 }
