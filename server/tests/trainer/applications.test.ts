@@ -197,9 +197,20 @@ describe('دورة طلب المدرب', () => {
     await app.close()
   })
 
-  it('8) روبريك ناقص المحاور مرفوض، والكامل يُسجل', async () => {
-    await expect(review.addReview(applicationId, adminId, { domain_expertise: 4 } as never))
+  /* كان هذا الفحصُ يشترط المحاورَ التسعة. ونُقض الشرطُ عمدا (١٣ سبتمبر ٢٠٢٦):
+     `demo_quality` لا يُقاس في المقابلة أصلا، ومن حفظ نصفَ الورقة رُدّ حفظُه.
+     فصار الناقصُ يُقبل — ويبقى المدى والمفتاحُ محروسَين. */
+  it('8) روبريك ناقصُ المحاور يُقبل، والخارجُ عن المدى والمفتاحُ المجهولُ يُرَدّان', async () => {
+    const partial = await review.addReview(applicationId, adminId, { domain_expertise: 4 } as never)
+    expect(partial.id).toBeTruthy()
+
+    await expect(review.addReview(applicationId, adminId, { domain_expertise: 9 } as never))
       .rejects.toMatchObject({ code: 'bad_rubric' })
+    await expect(review.addReview(applicationId, adminId, { domain_expertise: 2.5 } as never))
+      .rejects.toMatchObject({ code: 'bad_rubric' })
+    await expect(review.addReview(applicationId, adminId, { domain_expertize: 4 } as never))
+      .rejects.toMatchObject({ code: 'bad_rubric' })
+
     const r = await review.addReview(applicationId, adminId, scores(), 'مرشح واعد')
     expect(r.id).toBeTruthy()
   })

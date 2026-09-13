@@ -23,7 +23,8 @@ import { Card } from '@/components/ui/Surface'
 /** حقولٌ يُرسلها الخادم ولم تكن الشاشة تقرؤها */
 export interface Dossier extends Record<string, unknown> {
   fullName: string
-  email: string
+  /** اختياريٌّ منذ صارت الصفحةُ المشتركةُ تعرض الملفَّ بلا بريدٍ ولا هاتف */
+  email?: string
   phoneCountryCode?: string | null
   phone?: string | null
   country?: string | null
@@ -101,7 +102,14 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
 
 const has = (a?: string[] | null) => Array.isArray(a) && a.length > 0
 
-export default function ApplicationDossier({ a }: { a: Dossier }) {
+/* ═══ ولماذا يُقال «محجوب» ولا تُطوى الصفوف ═══
+
+   الصفحةُ المشتركةُ لا يصلها بريدٌ ولا هاتف. ولو حُذفت صفوفُها لقرأ القارئُ
+   «الجوال: — لم يذكره» — وهي **كذبةٌ**: ذكره المتقدّمُ ونحن الذين حجبناه.
+   ومن قرأها ظنّ الطلبَ ناقصا فحسبها عليه في تقييمه.
+
+   فيُقال ما وقع: محجوبٌ عن الرابط المشترك، وموضعُه الأدمن. */
+export default function ApplicationDossier({ a, showContact = true }: { a: Dossier; showContact?: boolean }) {
   const av = a.availability ?? null
   const teachable = a.teachableCourseIds ?? []
   const phone = a.phone ? `${a.phoneCountryCode ?? ''}${a.phone}` : null
@@ -109,34 +117,47 @@ export default function ApplicationDossier({ a }: { a: Dossier }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
       <Block title="من هو">
-        <Row label="البريد">
-          <span dir="ltr" className="block text-right">{a.email}</span>
-          {a.emailVerifiedAt ? (
-            <span className="text-fine text-teal-light-ink">متحقَّق ✓</span>
-          ) : (
-            <span className="text-fine text-gold-ink">غير متحقَّق</span>
-          )}
-        </Row>
-        <Row label="الجوال (واتساب)">
-          {phone ? <span dir="ltr" className="block text-right">{phone}</span> : '— لم يذكره'}
-        </Row>
-        {/* كيف طلب أن نتواصل معه — قبل أن يُتَّصل بمن لا يجيب المجهول */}
-        <Row label="يفضّل التواصل عبر">
-          {a.contactChannel ? (
-            <>
-              <span className="font-bold text-teal-light-ink">{contactChannelLabel(a.contactChannel)}</span>
-              {a.contactChannel === 'other_email' && a.contactAltEmail && (
-                <span dir="ltr" className="block text-right text-muted-foreground">{a.contactAltEmail}</span>
+        {showContact ? (
+          <>
+            <Row label="البريد">
+              <span dir="ltr" className="block text-right">{a.email}</span>
+              {a.emailVerifiedAt ? (
+                <span className="text-fine text-teal-light-ink">متحقَّق ✓</span>
+              ) : (
+                <span className="text-fine text-gold-ink">غير متحقَّق</span>
               )}
-              {(a.contactChannel === 'phone' || a.contactChannel === 'whatsapp') && phone && (
-                <span dir="ltr" className="block text-right text-muted-foreground">{phone}</span>
-              )}
-            </>
-          ) : '— لم يختر (طلبٌ قديم)'}
-        </Row>
-        <Row label="حسابه على المنصّة">
-          {a.userId ? <span className="text-teal-light-ink">له حساب — يتابع حالته بنفسه</span> : 'بلا حساب'}
-        </Row>
+            </Row>
+            <Row label="الجوال (واتساب)">
+              {phone ? <span dir="ltr" className="block text-right">{phone}</span> : '— لم يذكره'}
+            </Row>
+            {/* كيف طلب أن نتواصل معه — قبل أن يُتَّصل بمن لا يجيب المجهول */}
+            <Row label="يفضّل التواصل عبر">
+              {a.contactChannel ? (
+                <>
+                  <span className="font-bold text-teal-light-ink">{contactChannelLabel(a.contactChannel)}</span>
+                  {a.contactChannel === 'other_email' && a.contactAltEmail && (
+                    <span dir="ltr" className="block text-right text-muted-foreground">{a.contactAltEmail}</span>
+                  )}
+                  {(a.contactChannel === 'phone' || a.contactChannel === 'whatsapp') && phone && (
+                    <span dir="ltr" className="block text-right text-muted-foreground">{phone}</span>
+                  )}
+                </>
+              ) : '— لم يختر (طلبٌ قديم)'}
+            </Row>
+            <Row label="حسابه على المنصّة">
+              {a.userId ? <span className="text-teal-light-ink">له حساب — يتابع حالته بنفسه</span> : 'بلا حساب'}
+            </Row>
+          </>
+        ) : (
+          <Row label="التواصل معه">
+            <span className="text-muted-foreground">
+              محجوبٌ عن الرابط المشترك — بريدُه وهاتفُه في ملفّه داخل الإدارة.
+            </span>
+            {a.emailVerifiedAt && (
+              <span className="block text-fine text-teal-light-ink">بريدُه متحقَّق ✓</span>
+            )}
+          </Row>
+        )}
         <Row label="الإقامة والتوقيت">
           {a.country ?? '—'}{a.timezone ? ` · ${a.timezone}` : ''}
         </Row>

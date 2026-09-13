@@ -22,6 +22,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { RUBRIC_AXES } from '@/application/trainer/rubric'
+import { DOMAIN_YEARS, TRAINING_YEARS, yearsLabel } from '@/application/trainer/application-options'
 
 const root = process.cwd()
 /** الشيفرةُ بلا تعليقاتها — فلا يُطابَق شرحٌ يذكر ما يحرسه */
@@ -167,6 +168,9 @@ describe('ترويسةُ المطبوع وذيلُه', () => {
 
 describe('ورقةُ المقابلة: تُسأل بمحاور التقييم، وتُملأ باليد، ثمّ تُنقل', () => {
   const sheet = code('src/pages/admin/InterviewSheet.tsx')
+  /* انتقلت الأسئلةُ إلى وحدتها لمّا صار لها قارئان: شاشةُ الأدمن
+     والصفحةُ المشتركة. والحارسُ يتبعها ولا يبقى على ملفٍّ لم تعد فيه. */
+  const asks = code('src/pages/admin/InterviewQuestions.tsx')
   const rubric = code('src/application/trainer/rubric.ts')
   const server = readFileSync(join(root, 'server/services/trainer-review.service.ts'), 'utf8')
 
@@ -229,9 +233,28 @@ describe('ورقةُ المقابلة: تُسأل بمحاور التقييم، 
 
   it('وأسئلةٌ تخصُّ هذا الطلبَ وحدَه تُشتقّ منه — لا قائمةٌ عامّةٌ للجميع', () => {
     expect(rubric, 'لا محاورَ ذاتُ أسئلة').toContain('questions')
-    expect(sheet, 'لا سؤالَ مشتقٌّ من الطلب نفسِه').toContain('personalAsks')
+    expect(asks, 'لا سؤالَ مشتقٌّ من الطلب نفسِه').toContain('personalAsks')
     /* والادّعاءُ غيرُ الموثَّق أوّلُ ما يُسأل عنه */
-    expect(sheet, 'اعتمادٌ بلا جهةٍ لا يُسأل عنه').toContain('hasAccreditation')
+    expect(asks, 'اعتمادٌ بلا جهةٍ لا يُسأل عنه').toContain('hasAccreditation')
+    /* ويقرؤها الاثنان من مصدرٍ واحد — نسختان تتفقان اليومَ لا تتفقان غدا */
+    expect(sheet, 'ورقةُ المقابلة لا تعرض الأسئلة').toContain('InterviewQuestions')
+    expect(code('src/pages/SharedDossier.tsx'), 'الصفحةُ المشتركةُ بلا أسئلة').toContain('InterviewQuestions')
+  })
+
+  /* ═══ كُشف بالنظر في الصفحة لا بالشيفرة ═══
+
+     `yearsLabel` تردّ المفتاحَ كما هو عند العجز، وقيمُ `TRAINING_YEARS`
+     لم تكن في معجمها. فظهر `formal_teaching` نصّا لاتينيّا في صفّ «خبرة
+     التدريب» — ولا يُحمّر ذلك شيئا: الصفحةُ تعمل والقيمةُ تُعرض.
+
+     والفحصُ على القوائم نفسِها لا على مفتاحٍ بعينه: قيمةٌ تُضاف غدا إلى
+     أيٍّ منهما بلا ترجمةٍ يجب أن تُسقط هذا الحارسَ وحدَها. */
+  it('⚠️ وكلُّ قيمةِ خبرةٍ تُترجَم — ولا يظهر مفتاحُ قاعدةٍ لمن يقرأ الملفّ', () => {
+    for (const list of [TRAINING_YEARS, DOMAIN_YEARS]) {
+      for (const { value } of list) {
+        expect(yearsLabel(value), `القيمة «${value}» تُعرض مفتاحا لاتينيّا كما هي`).not.toBe(value)
+      }
+    }
   })
 
   it('وسجلُّ الحالة عاد إلى المطبوع بطلب صاحب المنصّة', () => {

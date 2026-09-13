@@ -30,15 +30,45 @@ export const RUBRIC_CRITERIA = [
 ] as const
 export type RubricKey = (typeof RUBRIC_CRITERIA)[number]
 
+/** الناقصُ جائز — فالقيمةُ قد تغيب، ونوعُها يقول ذلك بدل أن يُكتَم بتحويل */
+export type RubricScores = Record<string, number | undefined>
+
 const INVITATION_TTL_MS = 72 * 3600_000 // 72 ساعة
 
-function assertRubric(scores: Record<string, number>) {
-  for (const key of RUBRIC_CRITERIA) {
-    const v = scores[key]
+/* ═══ الناقصُ يُقبل، والمجهولُ يُرَدّ ═══
+
+   كان يشترط المحاورَ التسعةَ كلَّها من ١ إلى ٥. وفيه خطآن ظهرا حين صار
+   التقييمُ يُملأ في صفحةٍ مشتركةٍ تُحفَظ مرّاتٍ، لا في نموذجٍ يُرسَل دفعةً:
+
+   ١) `demo_quality` **لا يُقاس في المقابلة** — و`rubric.ts` يقول ذلك صراحةً
+      في `laterAr`. فكان المُقابِلُ يخترع له درجةً ليمرّ حفظُه، فتدخل القاعدةَ
+      درجةٌ لا أصلَ لها.
+
+   ٢) ومن حفظ نصفَ الورقة ليُتمّها بعد ساعةٍ رُدَّ حفظُه كلُّه.
+
+   فصار: ما أُرسل يُتحقَّق منه، والنقصُ جائز.
+
+   **والمفتاحُ المجهولُ يُرَدّ ولا يُتجاهَل** — وهذا مقصود: خطأٌ مطبعيٌّ في
+   اسم محورٍ يُقبل صامتا يضيع، فيظنّ القارئُ أنّه قيّم وهو لم يفعل. */
+export function assertRubric(scores: RubricScores) {
+  for (const [key, v] of Object.entries(scores)) {
+    /* المفتاحُ يُفحص قبل قيمته: مجهولٌ بلا قيمةٍ مجهولٌ كذلك */
+    if (!(RUBRIC_CRITERIA as readonly string[]).includes(key)) {
+      throw new AuthError('bad_rubric', `لا محورَ في الروبرك اسمُه «${key}»`)
+    }
+    /* ومفتاحٌ حاضرٌ بلا قيمةٍ = محورٌ لم يُقيَّم، لا محورٌ قيمتُه خاطئة */
+    if (v === undefined) continue
     if (!Number.isInteger(v) || v < 1 || v > 5) {
       throw new AuthError('bad_rubric', `محور «${key}» يجب أن يكون تقييما صحيحا من 1 إلى 5`)
     }
   }
+}
+
+/** يُسقَط ما لم يُقيَّم — فلا يدخل القاعدةَ مفتاحٌ بلا درجة */
+export function cleanRubric(scores: RubricScores): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(scores).filter((e): e is [string, number] => e[1] !== undefined),
+  )
 }
 
 export class TrainerReviewService {
@@ -145,8 +175,9 @@ export class TrainerReviewService {
 
   /* ─────────── أدوات المراجعة البشرية ─────────── */
 
-  async addReview(applicationId: string, reviewerId: string, scores: Record<string, number>, overallNote?: string) {
-    assertRubric(scores)
+  async addReview(applicationId: string, reviewerId: string, input: RubricScores, overallNote?: string) {
+    assertRubric(input)
+    const scores = cleanRubric(input)
     await this.requireStatus(applicationId, ['under_review', 'academic_review', 'shortlisted', 'interview_scheduled', 'demo_requested', 'information_requested'])
     const review = await this.prisma.trainerApplicationReview.create({
       data: { applicationId, reviewerId, scores: scores as unknown as Prisma.InputJsonValue, overallNote },
@@ -228,8 +259,9 @@ export class TrainerReviewService {
     return updated
   }
 
-  async recordDemoEvaluation(applicationId: string, evaluatorId: string, scores: Record<string, number>, decision: 'pass' | 'retry' | 'fail', notes?: string) {
-    assertRubric(scores)
+  async recordDemoEvaluation(applicationId: string, evaluatorId: string, input: RubricScores, decision: 'pass' | 'retry' | 'fail', notes?: string) {
+    assertRubric(input)
+    const scores = cleanRubric(input)
     await this.requireStatus(applicationId, ['demo_requested', 'academic_review', 'interview_scheduled'])
     const demo = await this.prisma.trainerDemoEvaluation.create({
       data: { applicationId, evaluatorId, scores: scores as unknown as Prisma.InputJsonValue, decision, notes },
