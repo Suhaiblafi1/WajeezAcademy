@@ -253,6 +253,24 @@ export default function BuyPanel({
     }
   };
 
+  /* ═══ البنودُ تُطوى — ولا يُطوى تحذيرٌ معها ═══
+
+     قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «اجعل قائمة الدورات منسدلةً لتقليل
+     حجم الصندوق». وستُّ دوراتٍ كانت تدفع المجموعَ وزرَّ الدفع خارجَ الشاشة،
+     فيُمرَّر إليهما بعد أن قُرئ ما لا يُقرأ مرّتين — الأسماءُ رآها المشتري
+     قبل أن يصل هنا.
+
+     **ولا تُطوى إن كان فيها ما استُبعد.** فالبندُ المستبعَدُ ليس اسما يُعاد،
+     بل تحذيرٌ يقول «هذه لن تُشترى» — وطيُّه يجعل المشتريَ يظنّ أنّه اشترى
+     ما لم يشترِه، وهو العطبُ نفسُه الذي كُتب له `withoutCohort` أسفلَه. */
+  const [listOpen, setListOpen] = useState(false);
+  const hasExcluded = useMemo(
+    () => buyable.some(({ line, options }) =>
+      excludedOf.has(chosen[line.courseId] ?? options[0]?.id ?? "")),
+    [buyable, chosen, excludedOf],
+  );
+  const listShown = listOpen || hasExcluded;
+
   const startsLabel = (o: CohortOption) => (o.startsAt ? fmtDateAr(o.startsAt) : "يُعلن الموعد");
 
   /* اللوحُ أضيقُ وأقلُّ حشوا (`max-w-md` و`sm:p-5`): شاشةُ الدفع في صفحة
@@ -301,7 +319,29 @@ export default function BuyPanel({
                 وتواريخ بلا أسعار: رآها المشتري قبل أن يصل هنا، ولا تتكرر —
                 المجموعُ وحده أسفل اللوح. قائمةٌ واحدة بفواصل، لا صندوقٌ
                 مستقلٌّ لكلّ بند. */}
-            <ul className="mt-3 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+            <button
+              type="button"
+              onClick={() => setListOpen((v) => !v)}
+              aria-expanded={listShown}
+              aria-controls="buy-lines"
+              /* ولا يُطفأ الزرُّ حين يُقسَر الفتح: زرٌّ معطَّلٌ لا يقول لماذا.
+                 بل يُقال في متنه إنّ فيها ما يستحقّ النظر. */
+              /* صفٌّ لا صندوق: القائمةُ تحته محاطةٌ أصلا، وصندوقان متلاصقان
+                 يضاعفان الحدودَ بلا معنى — ويزيدان سقفَ الصيغ المكتوبة بيدها. */
+              className="mt-3 flex w-full items-center justify-between gap-3 py-1.5 text-right text-muted-foreground transition hover:text-foreground"
+            >
+              <span className="text-sm font-bold">
+                {buyable.length === 1 ? "الدورة وموعدها" : `الدورات ومواعيدها (${buyable.length})`}
+                {hasExcluded && <span className="text-gold-ink"> — فيها ما استُبعد</span>}
+              </span>
+              <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${listShown ? "rotate-180" : ""}`} />
+            </button>
+
+            <ul
+              id="buy-lines"
+              hidden={!listShown}
+              className="mt-2 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]"
+            >
               {buyable.map(({ line, options }) => {
                 const item = quote?.items.find((i) => i.courseId === line.courseId);
                 const picked = options.find((o) => o.id === chosen[line.courseId]) ?? options[0];
