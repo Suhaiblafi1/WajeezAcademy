@@ -19,6 +19,7 @@ import {
   Tag,
 } from "lucide-react";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
+import FreeNowPerks from "@/components/FreeNowPerks";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
@@ -876,6 +877,16 @@ export default function PathwayPage() {
                       </li>
                     ))}
                   </ul>
+
+                  {/* ═══ والمجّانيُّ تحتها بعنوانه، لا مدسوسا بينها ═══
+
+                      قائمةُ المسار غرضُها «فرقُ الشراءَين»، ومجّانيٌّ للجميع
+                      داخلها يُفقد القارئَ سببَ الشراء. فعنوانٌ يفصله.
+
+                      وموضعُه هنا لا أسفلَ العمود: البطاقةُ تُشَدّ إلى طول
+                      جارتها فيبقى تحت المزايا فراغُ ثلاثِ مئةِ بكسل — وهو
+                      الفراغُ نفسُه الذي نُقلت المزايا إليه أصلا (٨ سبتمبر). */}
+                  <FreeNowPerks bare className="mt-3.5" />
                 </Card>
               </div>
 
