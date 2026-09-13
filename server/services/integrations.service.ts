@@ -343,6 +343,56 @@ export async function saveCalendlyConfig(
   return row
 }
 
+/* ─────────── نبضُ مزامنة Calendly ───────────
+
+   ═══ العطبُ الذي كُتب له ═══
+
+   وظيفةُ المزامنة تُخبر بما عملت، و`runJob` لا تكتب أثرا إلّا إن عملت شيئا
+   أو سقط لها شيء. فحسابٌ خطأٌ في الرمز — يُقرأ فيه صفرُ مواعيد — لا يُنتج
+   أثرا ولا خبرا: تعمل الدورةُ كلَّ خمس دقائق وتقرأ لا شيء، والمشغّلُ يرى
+   صمتا فيظنّها تعمل (١٣ سبتمبر ٢٠٢٦ — ضاع تشخيصُ حجزٍ حقيقيٍّ في هذا الصمت).
+
+   ولا يُعالَج بكتابة أثرٍ كلَّ دورة: خمسُ دقائقَ تعني مئتَي سطرٍ في اليوم
+   لا خبرَ في أكثرها. فالنبضُ يُكتب فوق سابقه في صفّ التكامل نفسِه — حالةٌ
+   واحدةٌ تُقرأ، لا سجلٌّ يُنقَّب فيه.
+
+   ولا يمسّ سرّا: يُدمج فوق الإعداد القائم ولا يُعيد كتابةَ حقوله. */
+export interface CalendlySyncState {
+  /** وقتُ آخرِ دورةٍ نُفّذت — بصيغة ISO */
+  at: string
+  /** كم موعدا قرأت من Calendly — الصفرُ هو الإشارةُ إلى حسابٍ خطأ */
+  events: number
+  done: number
+  skipped: number
+  /** سببُ سقوطِ النداء إن سقط — يُقال ولا يُبتلع */
+  errorAr?: string
+}
+
+export async function recordCalendlySync(prisma: PrismaClient, state: CalendlySyncState): Promise<void> {
+  try {
+    const current = await getRawConfig(prisma, 'calendly')
+    await prisma.integrationSetting.update({
+      where: { provider: 'calendly' },
+      data: { config: { ...current, sync: { ...state } } as unknown as Prisma.InputJsonValue },
+    })
+  } catch {
+    /* لا صفَّ بعد، أو كتابةٌ سقطت — والنبضُ خبرٌ عن الدورة لا يُسقطها */
+  }
+}
+
+export async function getCalendlySync(prisma: PrismaClient): Promise<CalendlySyncState | null> {
+  const raw = await getRawConfig(prisma, 'calendly')
+  const sync = raw.sync as Partial<CalendlySyncState> | undefined
+  if (!sync || typeof sync.at !== 'string') return null
+  return {
+    at: sync.at,
+    events: Number(sync.events ?? 0),
+    done: Number(sync.done ?? 0),
+    skipped: Number(sync.skipped ?? 0),
+    errorAr: typeof sync.errorAr === 'string' ? sync.errorAr : undefined,
+  }
+}
+
 async function getRawConfig(prisma: PrismaClient, provider: string): Promise<Record<string, unknown>> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider } })
   return (row?.config as Record<string, unknown>) ?? {}

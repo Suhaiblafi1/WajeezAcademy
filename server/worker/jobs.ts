@@ -27,7 +27,7 @@ import { NotificationService, liveChannels } from '../services/notification.serv
 import { CohortService } from '../services/cohort.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
-import { getCalendlyConfig } from '../services/integrations.service'
+import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
 import { CalendlyWebhookService } from '../services/calendly-webhook.service'
 import {
   CalendlyApiError,
@@ -505,6 +505,25 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
 const CALENDLY_LOOKBACK_MS = 2 * DAY
 const CALENDLY_EVENT_CAP = 50
 
+/* ─────────── ولماذا يُسمّى سببُ التجاوز ───────────
+
+   كان الخبرُ يقول عددَ المواعيد ولا يقول لماذا لم يُطابَق أحدُها. وحُوول
+   تشخيصُ حجزٍ حقيقيٍّ لم يصل الطابور (١٣ سبتمبر ٢٠٢٦) فلم يكن في السجلّ ما
+   يُقرأ: العددُ وحدَه لا يفرّق بين بريدٍ مختلفٍ ورقمِ طلبٍ غائبٍ وحسابٍ خطإ.
+
+   ═══ والمتجاوَزُ يُعَدّ إخفاقا لا لا-شيء ═══
+
+   `runJob` لا تكتب أثرا إلّا إن كان `done` أو `failed` فوق الصفر. وحجزٌ
+   حقيقيٌّ لم يُطابَق كان يُنتج صفرَين — فلا سطرَ في السجلّ أصلا، والمشغّلُ
+   يرى صمتا لا خبرا. وهو **إخفاقٌ فعلا**: موعدٌ حجزه إنسانٌ ولم يبلغ طابورَ
+   المراجعة، ويحتاج نظرَ إنسانٍ ليُدرَك. فيُعَدّ في `failed` ليُكتب. */
+const CALENDLY_SKIP_AR: Record<string, string> = {
+  no_reference: 'بلا رقمِ طلبٍ في الحجز — حُجز من Calendly مباشرةً لا من الموقع',
+  incomplete_payload: 'بياناتُ المدعوّ ناقصة',
+  no_application: 'رقمُ الطلب والبريدُ معا لا يطابقان طلبا — أرجحُه بريدٌ مختلفٌ عند الحجز',
+  no_interview: 'إلغاءُ موعدٍ غيرِ مسجَّلٍ عندنا',
+}
+
 export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
   const job = 'calendly_interview_sync'
@@ -524,6 +543,7 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
     /* رمزٌ منتهٍ أو شبكةٌ ساقطة: يُقال ولا يُرمى — دورةٌ ساقطةٌ لا توقف
        العاملَ عن بقيّة وظائفه، وصفحةُ صحّةِ النظام تقرأ هذا السطر. */
     const why = e instanceof CalendlyApiError ? `ردّ ${e.status}` : 'خطأُ شبكة'
+    await recordCalendlySync(prisma, { at: now.toISOString(), events: 0, done: 0, skipped: 0, errorAr: why })
     return { job, summaryAr: `تعذّر سؤالُ Calendly (${why}) — لا مقابلةَ زِيدت`, done: 0, failed: 1, ms: Date.now() - started }
   }
 
@@ -536,6 +556,8 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
 
   let done = 0
   let failed = 0
+  /* سببُ التجاوز وعددُه — يُقال في الخبر فيُشخَّص بلا سجلّ خادم */
+  const skipped = new Map<string, number>()
   const calendly = new CalendlyWebhookService(prisma)
   for (const event of events.slice(0, CALENDLY_EVENT_CAP)) {
     const uri = typeof event.uri === 'string' ? event.uri : ''
@@ -549,17 +571,33 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
       for (const invitee of await listCalendlyInvitees(config.token, uri)) {
         const result = await calendly.handle(calendlyInviteeAsEvent(event, invitee))
         if (result.recorded || result.canceled) done += 1
+        else if (result.ignored && result.reason && result.reason !== 'other_event') {
+          skipped.set(result.reason, (skipped.get(result.reason) ?? 0) + 1)
+        }
       }
     } catch { failed += 1 }
   }
 
+  const skippedTotal = [...skipped.values()].reduce((a, b) => a + b, 0)
+  /* النبضُ يُكتب في كلّ دورةٍ ناجحة — حتّى الفارغةَ منها. فدورةٌ تقرأ صفرَ
+     مواعيدَ هي الإشارةُ إلى رمزٍ على حسابٍ غيرِ المضيف، ولا أثرَ لها في
+     السجلّ لأنّها لم تعمل شيئا ولم يسقط لها شيء. */
+  await recordCalendlySync(prisma, {
+    at: now.toISOString(), events: events.length, done, skipped: skippedTotal,
+  })
+  const parts: string[] = []
+  if (done > 0) parts.push(`${done} مقابلةً حُدّثت`)
+  if (skippedTotal > 0) {
+    const why = [...skipped.entries()].map(([r, n]) => `${n} — ${CALENDLY_SKIP_AR[r] ?? r}`).join(' · ')
+    parts.push(`تُجووز ${skippedTotal}: ${why}`)
+  }
+
   return {
     job,
-    summaryAr: done > 0
-      ? `مزامنةُ Calendly: ${done} مقابلةً حُدّثت من ${events.length} موعدا`
-      : `مزامنةُ Calendly: لا جديدَ في ${events.length} موعدا`,
+    summaryAr: `مزامنةُ Calendly من ${events.length} موعدا: ${parts.join(' · ') || 'لا جديد'}`,
     done,
-    failed,
+    /* المتجاوَزُ في عداد الإخفاق ليُكتب الأثرُ — وعلّتُه فوق */
+    failed: failed + skippedTotal,
     ms: Date.now() - started,
   }
 }
