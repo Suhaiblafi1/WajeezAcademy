@@ -311,7 +311,27 @@ export default function CohortWorkspace() {
           </Inset>
         )}
 
-        {/* ═══ خطُّ المراحل — يمتلئ بقدر ما أُنجز، والمرحلةُ التالية مضاءة ═══ */}
+        {/* ═══ المرحلتان — قبل خطِّ الخطوات لا بعده ═══
+
+            كان خطُّ الخطوات الستّ يُصيَّر أوّلا ثمّ لسانا «التجهيز/التشغيل»
+            تحته، ويبقى الخطُّ ظاهرا في التشغيل أيضا. فيُقرأ «التشغيل» كأنّه
+            خانةٌ تتكرّر عند كلّ خطوة، ولا يُدرى أيُّهما يحوي الآخر.
+
+            والصوابُ أنّ الخطواتِ الستَّ **من التجهيز** لا من الشعبة: فالطورُ
+            يُختار أوّلا، ثمّ تظهر خطواتُه إن كان تجهيزا. */}
+        <TabBar
+          ariaLabel="طورا الشعبة"
+          className="mt-5"
+          items={[
+            { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
+            { id: "run", label: <span className="inline-flex items-center gap-2"><Video className="h-4 w-4" aria-hidden="true" />التشغيل</span> },
+          ]}
+          value={phase}
+          onChange={setPhase}
+        />
+
+        {/* ═══ خطُّ الخطوات — يمتلئ بقدر ما أُنجز، والتاليةُ مضاءة ═══ */}
+        {phase === "prepare" && (
         <div className="relative mt-5">
           <div aria-hidden="true" className="pointer-events-none absolute inset-x-[8.3%] top-5 hidden h-1 rounded-full bg-white/10 md:block">
             <div className="stage-fill h-full rounded-full bg-teal" style={{ width: `${ready}%` }} />
@@ -354,19 +374,8 @@ export default function CohortWorkspace() {
             })}
           </ol>
         </div>
+        )}
       </Panel>
-
-      {/* ═══ المرحلتان ═══ */}
-      <TabBar
-        ariaLabel="مرحلتا الشعبة"
-        className="mb-5"
-        items={[
-          { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
-          { id: "run", label: <span className="inline-flex items-center gap-2"><Video className="h-4 w-4" aria-hidden="true" />التشغيل</span> },
-        ]}
-        value={phase}
-        onChange={setPhase}
-      />
 
       {phase === "prepare" && locked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
