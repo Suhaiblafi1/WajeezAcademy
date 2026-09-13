@@ -489,8 +489,7 @@ export default function TrainerApplications() {
             </div>
           </dl>
           <p className="mt-3 border-y border-white/20 py-2 text-read leading-5 text-muted-foreground">
-            بياناتٌ شخصيّةٌ قدّمها صاحبُها لغرض التقدّم للتدريب في وجيز — تُتداول في لجنة
-            المراجعة ولا تُنشر ولا تُشارَك خارجَها.
+            بياناتٌ شخصيّةٌ قُدّمت لغرض التقدّم للتدريب — لا تُنشر ولا تُشارَك.
           </p>
         </div>
 
@@ -639,7 +638,7 @@ export default function TrainerApplications() {
                   { label: "مقابلاتٌ جرت", value: String(a.interviews.filter((iv) => !iv.canceledAt).length) },
                 ];
                 return (
-                  <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 print:grid-cols-5 print:gap-1">
                     {facts.map((f) => (
                       <Inset key={f.label} className="px-3 py-2">
                         <dt className="text-read leading-5 text-muted-foreground">{f.label}</dt>
@@ -712,8 +711,10 @@ export default function TrainerApplications() {
               )}
             </Panel>
 
-            {/* سجل الحالات */}
-            <Panel as="article">
+            {/* سجل الحالات — ولا يُطبع: أثرُ إجراءٍ داخليٍّ («مسودة» ثمّ «مُقدَّم»)
+                لا معلومةٌ عن المتقدّم. ومن يقرأ الورقةَ ليحكم لا يعنيه متى
+                انتقل الصفُّ من حالةٍ إلى حالة. */}
+            <Panel as="article" className="print:hidden">
               <h4 id="sec-history" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
