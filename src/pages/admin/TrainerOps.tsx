@@ -40,10 +40,17 @@ const CR_STATUS_AR: Record<string, string> = {
 
    وأُضيف ما كان ينقصه: `aria-expanded` و`aria-controls` — فمن يقرأ بأذنه كان
    يسمع زرّا لا يعرف أمفتوحٌ هو أم مغلق، ولا ما الذي يفتحه. */
-function FoldSection({ icon: Icon, title, children, defaultOpen = false, id, toolOnly = false }: {
+function FoldSection({ icon: Icon, title, children, defaultOpen = false, id, omitFromPrint = false }: {
   icon: typeof Star; title: string; children: React.ReactNode; defaultOpen?: boolean; id?: string;
-  /** قسمٌ كلُّ ما فيه حقولُ إدخال — لا يُطبع، وإلّا بقي عنوانُه بلا شيءٍ تحته */
-  toolOnly?: boolean;
+  /* ═══ ما لا يُطبع ═══
+
+     قسمان لا يصلحان للورق: ما كلُّ ما فيه حقولُ إدخال، وما لا شيءَ فيه بعد.
+     وكلاهما يُخرج **عنوانا بلا سطرٍ تحته** — وهو العطبُ الذي كُتب له إظهارُ
+     المطويّ أصلا، فلا يُعاد إدخالُه من باب آخر.
+
+     وثلاثةٌ من أربعة هنا حقولٌ خالصة: «الدرس التجريبيّ» و«المراجع» و«العقد»
+     لا تعرض المسجَّلَ في متنها بل في قائمةٍ منسدلة — فلا شيءَ منها يُطبع. */
+  omitFromPrint?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = `fold-${title.replace(/\s+/g, "-")}`;
@@ -60,7 +67,7 @@ function FoldSection({ icon: Icon, title, children, defaultOpen = false, id, too
     return () => window.removeEventListener("hashchange", openIfTargeted);
   }, [id]);
   return (
-    <Panel as="article" id={id} className={`scroll-mt-28 ${toolOnly ? 'print:hidden' : ''}`}>
+    <Panel as="article" id={id} className={`scroll-mt-28 ${omitFromPrint ? 'print:hidden' : ''}`}>
       <button type="button" onClick={() => setOpen(!open)}
         aria-expanded={open} aria-controls={bodyId}
         className="flex w-full cursor-pointer items-center justify-between text-sm font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-4 focus-visible:ring-offset-paper">
@@ -166,7 +173,7 @@ export function TrainerDetailOps({ app, onAction }: {
   return (
     <>
       {/* المقابلات */}
-      <FoldSection icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`} id="sec-interviews">
+      <FoldSection icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`} id="sec-interviews" omitFromPrint={app.interviews.length === 0}>
         <div className="space-y-3">
           {app.interviews.map((iv) => (
             <Inset key={iv.id} className="text-xs">
@@ -228,7 +235,7 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* تقييم الديمو */}
-      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)" id="sec-demo" toolOnly>
+      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)" id="sec-demo" omitFromPrint>
         <RubricInput scores={demoScores} onChange={setDemoScores} />
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
@@ -251,7 +258,7 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* المراجع المهنية */}
-      <FoldSection icon={UserCheck} title="المراجع المهنية" id="sec-references">
+      <FoldSection icon={UserCheck} title="المراجع المهنية" id="sec-references" omitFromPrint>
         <div className="grid gap-2 sm:grid-cols-2">
           <input value={refForm.name} onChange={(e) => setRefForm({ ...refForm, name: e.target.value })} placeholder="اسم المرجع" className={inputCls} />
           <input value={refForm.relation} onChange={(e) => setRefForm({ ...refForm, relation: e.target.value })} placeholder="العلاقة (مدير سابق…)" className={inputCls} />
@@ -292,7 +299,7 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* العقد */}
-      <FoldSection icon={FileSignature} title="العقد والتوقيع" id="sec-contract">
+      <FoldSection icon={FileSignature} title="العقد والتوقيع" id="sec-contract" omitFromPrint>
         <div className="flex flex-wrap gap-2">
           <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}
             placeholder="عنوان العقد — عقد تدريب 2026" className={`${inputCls} flex-1`} />
