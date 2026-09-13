@@ -19,6 +19,7 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
 import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
+import { yearsLabel } from "@/application/trainer/application-options";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
@@ -38,6 +39,19 @@ const STATUS_LABELS: Record<string, string> = {
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
 const APP_FORMS = { one: "طلبٌ", two: "طلبان", few: "طلبات", many: "طلبا" };
+
+/* أقسامُ الملفّ كما تُقرأ لا كما تُخزَّن. والمعرّفاتُ هي نفسُها الموضوعةُ على
+   الأقسام هنا وفي `TrainerOps`، ومن قفز إلى قسمٍ مطويٍّ فتحه القسمُ نفسُه. */
+const DOSSIER_SECTIONS: { id: string; label: string }[] = [
+  { id: "sec-profile", label: "المتقدّم وملفّه" },
+  { id: "sec-docs", label: "الوثائق" },
+  { id: "sec-history", label: "سجلّ الحالة" },
+  { id: "sec-interviews", label: "المقابلات" },
+  { id: "sec-demo", label: "الدرس التجريبيّ" },
+  { id: "sec-references", label: "المراجع المهنيّة" },
+  { id: "sec-contract", label: "العقد والتوقيع" },
+  { id: "sec-rubric", label: "الروبرك والقرار" },
+];
 
 const RUBRIC_AXES: { key: string; label: string }[] = [
   { key: "domain_expertise", label: "خبرة المجال" },
@@ -110,6 +124,8 @@ interface AppDetail extends Record<string, unknown> {
   profile: { id: string; userId: string | null } | null;
   /** حسابُ المتقدّم — يُنشأ مع القسم الأوّل */
   userId: string | null;
+  /** وقتُ التقديم — يُرسله الخادمُ دائما، ويُقرأ في ترويسة المطبوع */
+  createdAt: string;
   summary?: TrainerSummary;
 }
 
@@ -443,6 +459,40 @@ export default function TrainerApplications() {
           )}
         </Card>
 
+        {/* ═══ ترويسةُ المطبوع — لا تُرى على الشاشة ═══
+
+            المطبوعُ كان يبدأ بأوّل بطاقةٍ في الصفحة بلا عنوانٍ ولا تاريخ، فمن
+            وجد الأوراقَ على طاولةٍ لا يعرف ما هي ولا متى طُبعت ولا لمن. وهو
+            مستندٌ يُتداول في لجنةٍ ويُحفظ في ملفّ، لا لقطةُ شاشة.
+
+            و`div` لا `header`: الترويساتُ كلُّها محجوبةٌ في الطباعة (شريطُ
+            الموقع)، فلو كانت `header` لحُجبت معها. */}
+        <div className="hidden print:block">
+          <p className="text-fine font-bold tracking-widest text-muted-foreground">وجيز أكاديمي — ملفُّ متقدّمٍ للتدريب</p>
+          <h1 className="mt-1 text-2xl font-black">{a.fullName}</h1>
+          <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-read">
+            <div className="flex gap-2">
+              <dt className="font-bold text-muted-foreground">رقمُ الطلب</dt>
+              <dd dir="ltr" className="font-mono">{a.reference}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="font-bold text-muted-foreground">الحالة</dt>
+              <dd className="font-bold">{STATUS_LABELS[a.status] ?? a.status}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="font-bold text-muted-foreground">قُدّم في</dt>
+              <dd>{fmtDateTime(new Date(a.createdAt))}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="font-bold text-muted-foreground">طُبع في</dt>
+              <dd>{fmtDateTime(new Date())}</dd>
+            </div>
+          </dl>
+          <p className="mt-3 border-y border-white/20 py-2 text-read leading-5 text-muted-foreground">
+            بياناتٌ شخصيّةٌ قدّمها صاحبُها لغرض التقدّم للتدريب في وجيز — تُتداول في لجنة
+            المراجعة ولا تُنشر ولا تُشارَك خارجَها.
+          </p>
+        </div>
 
         {/* ── الحذف النهائيّ ──
 
@@ -515,7 +565,7 @@ export default function TrainerApplications() {
               <TrainerCoursesTab summary={a.summary} />
             ) : (
             <>
-            <Panel as="article">
+            <Panel as="article" id="sec-profile" className="scroll-mt-28">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="text-lg font-black">{a.fullName}</h3>
@@ -533,6 +583,34 @@ export default function TrainerApplications() {
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
               </div>
+              {/* ═══ شريطُ الحقائق — خمسةُ أرقامٍ قبل أيّ نثر ═══
+
+                  خبرتُه وعددُ دوراته ووثائقه كانت مبثوثةً في صفوفٍ نصّيّةٍ
+                  داخلَ كتلٍ مختلفة، فمن أراد حكما سريعا («أيستحقّ وقتَ
+                  مقابلة؟») قرأ الملفَّ كلَّه ليجمعها بنفسه. ولوحاتُ التوظيف
+                  التي نُظر فيها (Juicebox) تضع هذه الأرقامَ فوقَ كلّ شيء.
+
+                  والأرقامُ هنا محسوبةٌ من المعروض لا مخزَّنة — فلا تبلى. */}
+              {(() => {
+                const d = a as unknown as Dossier;
+                const facts: { label: string; value: string }[] = [
+                  { label: "خبرةُ المجال", value: yearsLabel(d.domainYears) },
+                  { label: "خبرةُ التدريب", value: yearsLabel(d.trainingYears) },
+                  { label: "دوراتٌ يصلح لها", value: String((d.teachableCourseIds ?? []).length) },
+                  { label: "وثائقُ رفعها", value: String(a.documents.length) },
+                  { label: "مقابلاتٌ جرت", value: String(a.interviews.filter((iv) => !iv.canceledAt).length) },
+                ];
+                return (
+                  <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                    {facts.map((f) => (
+                      <Inset key={f.label} className="px-3 py-2">
+                        <dt className="text-read leading-5 text-muted-foreground">{f.label}</dt>
+                        <dd className="mt-0.5 text-sm font-black leading-6 text-foreground">{f.value}</dd>
+                      </Inset>
+                    ))}
+                  </dl>
+                );
+              })()}
               {a.bio && <p className="mt-4 text-read leading-6 text-foreground">{a.bio}</p>}
               {a.motivation && (
                 <Inset as="p" className="mt-3 text-read leading-6 text-foreground">
@@ -553,7 +631,7 @@ export default function TrainerApplications() {
 
             {/* الوثائق الخاصة */}
             <Panel as="article">
-              <h4 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
+              <h4 id="sec-docs" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> الوثائق — روابط موقعة تنتهي خلال دقائق</h4>
               {a.documents.length === 0 ? (
                 <p className="mt-3 text-read text-muted-foreground">لم يرفع المرشح وثائق بعد.</p>
               ) : (
@@ -598,7 +676,7 @@ export default function TrainerApplications() {
 
             {/* سجل الحالات */}
             <Panel as="article">
-              <h4 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
+              <h4 id="sec-history" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
               <ol className="mt-3 space-y-2">
                 {a.statusHistory.map((h, i) => (
                   <li key={i} className="flex items-center gap-2 text-read text-muted-foreground">
@@ -619,8 +697,33 @@ export default function TrainerApplications() {
 
           {/* عمود القرارات والروبرك */}
           <div className="space-y-4">
+            {/* ═══ فهرسُ الأقسام — تمريرةٌ واحدةٌ ويُقفَز فيها ═══
+
+                قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «الصفحة غير مرتّبة وغير
+                سهلة التعامل»، واختار تمريرةً واحدةً بفهرسٍ جانبيٍّ على
+                التبويبات — ومعه حقّ: من يبتّ في طلبٍ يقرؤه كلَّه، والتبويبُ
+                يخبّئ عنه ما يحتاج أن يوازن به.
+
+                ولا يُطبع: أداةُ تنقّلٍ لا محتوى. */}
+            {tab === "dossier" && (
+              <nav aria-label="أقسام الملفّ" className="sticky top-24 z-10 print:hidden">
+                <Panel as="section" className="!px-3 !py-3">
+                  <p className="px-1 pb-2 text-read font-black text-muted-foreground">في هذا الملفّ</p>
+                  <ul className="space-y-0.5">
+                    {DOSSIER_SECTIONS.map((sc) => (
+                      <li key={sc.id}>
+                        <a href={`#${sc.id}`}
+                          className="block rounded-lg px-2 py-1.5 text-read leading-5 text-muted-foreground transition hover:bg-white/[0.05] hover:text-foreground">
+                          {sc.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </Panel>
+              </nav>
+            )}
             <Panel as="article">
-              <h4 className="text-sm font-black">الروبرك — تسعة محاور (١–٥)</h4>
+              <h4 id="sec-rubric" className="scroll-mt-28 text-sm font-black">الروبرك — تسعة محاور (١–٥)</h4>
               <div className="mt-3 space-y-2">
                 {RUBRIC_AXES.map((x) => (
                   <div key={x.key} className="flex items-center justify-between gap-2">

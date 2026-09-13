@@ -40,20 +40,42 @@ const CR_STATUS_AR: Record<string, string> = {
 
    وأُضيف ما كان ينقصه: `aria-expanded` و`aria-controls` — فمن يقرأ بأذنه كان
    يسمع زرّا لا يعرف أمفتوحٌ هو أم مغلق، ولا ما الذي يفتحه. */
-function FoldSection({ icon: Icon, title, children, defaultOpen = false }: {
-  icon: typeof Star; title: string; children: React.ReactNode; defaultOpen?: boolean;
+function FoldSection({ icon: Icon, title, children, defaultOpen = false, id }: {
+  icon: typeof Star; title: string; children: React.ReactNode; defaultOpen?: boolean; id?: string;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = `fold-${title.replace(/\s+/g, "-")}`;
+  /* ═══ ومن جاء من الفهرس يجد القسمَ مفتوحا ═══
+
+     فهرسٌ يقفز إلى عنوانٍ مطويٍّ لا شيءَ تحته أسوأُ من لا فهرس: يظنّ القارئُ
+     أنّ القسمَ فارغ. فالقسمُ المقصودُ بالعنوان يفتح نفسَه — عند الوصول وعند
+     كلّ قفزةٍ بعدها، إذ لا يُعاد تركيبُ المكوّن بتغيّر الجزء وحدَه. */
+  useEffect(() => {
+    if (!id) return;
+    const openIfTargeted = () => { if (window.location.hash === `#${id}`) setOpen(true); };
+    openIfTargeted();
+    window.addEventListener("hashchange", openIfTargeted);
+    return () => window.removeEventListener("hashchange", openIfTargeted);
+  }, [id]);
   return (
-    <Panel as="article">
+    <Panel as="article" id={id} className="scroll-mt-28">
       <button type="button" onClick={() => setOpen(!open)}
         aria-expanded={open} aria-controls={bodyId}
         className="flex w-full cursor-pointer items-center justify-between text-sm font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-4 focus-visible:ring-offset-paper">
         <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
         <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
-      {open && <div id={bodyId} className="mt-4">{children}</div>}
+      {/* ═══ المطويُّ يُخفى ولا يُنزَع ═══
+
+          كان `{open && <div>…}` — فالمطويُّ **غيرُ موجودٍ في الصفحة** أصلا لا
+          مخفيّا فيها. والطابعةُ لا تطبع ما ليس موجودا: خرج تقريرُ المتقدّم بستّ
+          صفحاتٍ تحمل عناوينَ «المقابلات» و«الدرس التجريبيّ» و«المراجع» و«العقد»
+          **بلا سطرٍ تحتها**، ويبدو مكتملا — وهو أسوأُ من نقصٍ ظاهر (١٣ سبتمبر
+          ٢٠٢٦، بلاغُ صاحب المنصّة بصورة الطباعة).
+
+          فيُخفى بـCSS ويُعرض في الطباعة دائما. و`display:none` يحجبه عن قارئ
+          الشاشة كما يحجبه عن العين، فلا يفترق `aria-expanded` عمّا يُرى. */}
+      <div id={bodyId} className={`mt-4 ${open ? '' : 'hidden print:block'}`}>{children}</div>
     </Panel>
   );
 }
@@ -140,7 +162,7 @@ export function TrainerDetailOps({ app, onAction }: {
   return (
     <>
       {/* المقابلات */}
-      <FoldSection icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`}>
+      <FoldSection icon={CalendarCheck} title={`المقابلات (${app.interviews.length})`} id="sec-interviews">
         <div className="space-y-3">
           {app.interviews.map((iv) => (
             <Inset key={iv.id} className="text-xs">
@@ -202,7 +224,7 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* تقييم الديمو */}
-      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)">
+      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)" id="sec-demo">
         <RubricInput scores={demoScores} onChange={setDemoScores} />
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
@@ -225,7 +247,7 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* المراجع المهنية */}
-      <FoldSection icon={UserCheck} title="المراجع المهنية">
+      <FoldSection icon={UserCheck} title="المراجع المهنية" id="sec-references">
         <div className="grid gap-2 sm:grid-cols-2">
           <input value={refForm.name} onChange={(e) => setRefForm({ ...refForm, name: e.target.value })} placeholder="اسم المرجع" className={inputCls} />
           <input value={refForm.relation} onChange={(e) => setRefForm({ ...refForm, relation: e.target.value })} placeholder="العلاقة (مدير سابق…)" className={inputCls} />
@@ -266,7 +288,7 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* العقد */}
-      <FoldSection icon={FileSignature} title="العقد والتوقيع">
+      <FoldSection icon={FileSignature} title="العقد والتوقيع" id="sec-contract">
         <div className="flex flex-wrap gap-2">
           <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}
             placeholder="عنوان العقد — عقد تدريب 2026" className={`${inputCls} flex-1`} />
