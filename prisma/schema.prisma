@@ -1782,6 +1782,8 @@ model CohortAssessment {
   cohortId    String                 @db.Uuid
   moduleId    String?
   title       String
+  /* تعليماتُ التكليف — ما يفعله المتعلّم. NULL لما أُنشئ قبل العمود. */
+  briefAr     String?
   type        String                 @default("assignment") // assignment | quiz | project
   maxScore    Int                    @default(100)
   passScore   Int?

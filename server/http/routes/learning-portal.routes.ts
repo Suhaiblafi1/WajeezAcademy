@@ -336,11 +336,29 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const planContent = z.object({
     kind: z.literal('trainer'),
     summaryAr: z.string().max(2000).nullish(),
+    /* المعرّفُ لا يتكرّر في خطّةٍ واحدة.
+
+       كان المعرّفُ يُشتقُّ من الموضع في الواجهة (`T${length + 1}`)، فمع
+       الحذفِ يُعاد رقمٌ قائمٌ ويصير في الخطّة محوران بمعرّفٍ واحد — والخادمُ
+       يقبلهما. والواجهةُ صارت تشتقّه من أكبرِ ما أُعطي، لكنّ الحدَّ يُثبَّت
+       هنا أيضا: عميلٌ قديمٌ أو طلبٌ يدويٌّ لا يكسر خطّةً بصمت. */
     modules: z.array(z.object({
       moduleId: z.string().max(64), titleAr: z.string().min(2).max(200),
       outcomeAr: z.string().max(1000).nullish(), activityAr: z.string().max(2000).nullish(),
       artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(6000).nullish(),
-    })).max(40),
+    })).max(40).superRefine((mods, ctx) => {
+      const seen = new Set<string>()
+      for (const [i, m] of mods.entries()) {
+        if (seen.has(m.moduleId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [i, 'moduleId'],
+            message: `معرّفُ المحور «${m.moduleId}» مكرّرٌ في الخطّة`,
+          })
+        }
+        seen.add(m.moduleId)
+      }
+    }),
     resources: z.array(z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), noteAr: z.string().max(500).nullish() })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
     /* اقتراحُ اسمٍ للدورة أو المسار — يركب مع الخطّة ويُقرَّر فيه عند الاعتماد */
@@ -489,12 +507,42 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       title: z.string().min(3), type: z.enum(['assignment', 'quiz', 'project']),
-      moduleId: z.string().optional(), maxScore: z.number().int().min(1).optional(),
+      moduleId: z.string().optional(), briefAr: z.string().max(4000).optional(), maxScore: z.number().int().min(1).optional(),
       passScore: z.number().int().optional(), dueAt: z.coerce.date().optional(), rubricId: z.string().uuid().optional(),
       items: z.array(z.object({ prompt: z.string().min(2), kind: z.enum(['text', 'choice', 'file']).optional(), maxScore: z.number().int().optional() })).optional(),
     }).parse(req.body)
     await enrollments.assertCohortTrainer(req.auth!.userId, id)
     return reply.status(201).send(await assessments.createAssessment(req.auth!.userId, { ...body, cohortId: id }))
+  })
+
+  /* ── تعديلُ تكليفٍ وحذفُه ──
+
+     المعرّفُ في المسار هو معرّفُ التكليف لا الشعبة: الخدمةُ تستخرج شعبتَه
+     منه ثمّ تتحقّق أنّها من شعب المنادي (`assertAssessmentTrainer`) — فلا
+     يُعدَّل تكليفُ شعبةٍ ليست له بمعرّفٍ يُخمَّن. */
+
+  app.patch('/api/trainer/assessments/:assessmentId', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'تعديل تكليفٍ في شعبتي' },
+  }, async (req) => {
+    const { assessmentId } = z.object({ assessmentId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      title: z.string().min(3).optional(),
+      /* النصُّ الفارغ يعني «امحُ التعليمات» — فيصير null لا سلسلةً فارغة */
+      briefAr: z.string().max(4000).nullable().optional(),
+      type: z.enum(['assignment', 'quiz', 'project']).optional(),
+      maxScore: z.number().int().min(1).optional(),
+      dueAt: z.coerce.date().nullable().optional(),
+    }).parse(req.body)
+    return assessments.updateAssessment(req.auth!.userId, assessmentId, body)
+  })
+
+  app.delete('/api/trainer/assessments/:assessmentId', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'حذف تكليفٍ لم يُسلَّم فيه' },
+  }, async (req) => {
+    const { assessmentId } = z.object({ assessmentId: z.string().uuid() }).parse(req.params)
+    return assessments.deleteAssessment(req.auth!.userId, assessmentId)
   })
 
   /* ── مخاطبة الشعبة، واقتراح تأجيل جلسة ──
