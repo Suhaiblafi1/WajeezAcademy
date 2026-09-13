@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CalendarClock, GraduationCap, Loader2, Send, ServerOff, Video } from "lucide-react";
+import { CalendarClock, GraduationCap, Link2, Loader2, Send, ServerOff, UserPlus, Video } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
 import { trainerInterviewUrl } from "@/application/trainer/application-options";
@@ -14,11 +14,13 @@ import { fmtDayMonth, fmtTime } from "@/application/text/format-ar";
 import { countAr } from "@/application/text/count-ar";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import { staffControlCls } from "@/components/FormKit";
 import ProgressRing from "@/components/ui/ProgressRing";
 /* صيغةُ العدد لا تُرتجل في السطر: «و1 طالباً» نصبٌ في غير موضعه يقرؤه
    المدرّب في كلّ دخول. */
 const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" } as const;
 const STUDENT_FORMS = { one: "طالب", two: "طالبان", few: "طلاب", many: "طالبا" } as const;
+const REGISTERED_FORMS = { one: "مسجَّل", two: "مسجَّلان", few: "مسجَّلين", many: "مسجَّلا" } as const;
 
 /* ── الصفحة الحقيقية للمدرب المسجّل — من الخادم مباشرة، بلا بيانات استعراض ── */
 
@@ -48,6 +50,8 @@ interface RealCohort {
   };
 }
 interface RealQueueItem { id: string; status: string }
+/** رابطي العامُّ ومن سجّل عبره — `/api/trainer/me/referral` */
+interface MyReferral { code: string; slug: string; url: string; publicReady: boolean; registered: number }
 /** موجزُ الشعبة كما يعطيه `/api/trainer/cohorts/summary` — الدالّةُ نفسُها التي تحسب قائمةَ صفحة الشعبة */
 interface CohortSummary {
   id: string; title: string; courseTitle: string; planStatus: string; done: number; total: number;
@@ -58,6 +62,8 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const [cohorts, setCohorts] = useState<RealCohort[] | null>(null);
   const [queue, setQueue] = useState<RealQueueItem[] | null>(null);
   const [summary, setSummary] = useState<CohortSummary[]>([]);
+  const [referral, setReferral] = useState<MyReferral | null>(null);
+  const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   /* طلبُ اجتماعٍ مع الإدارة — يُطوى حتّى يُطلب، فالإطارُ ثقيلٌ على لوحةٍ تُفتح كلَّ يوم */
   const [meetingOpen, setMeetingOpen] = useState(false);
@@ -75,8 +81,10 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
       apiGet<RealQueueItem[]>("/api/trainer/grading-queue"),
       /* الموجزُ رفاهيةٌ فوق الأساس: غيابُه لا يُسقط اللوحة */
       apiGet<CohortSummary[]>("/api/trainer/cohorts/summary").catch(() => [] as CohortSummary[]),
+      /* والرابطُ كذلك: لوحةٌ تسقط لأنّ رابطَ دعوةٍ تعذّر إحضارُه لوحةٌ هشّة */
+      apiGet<MyReferral>("/api/trainer/me/referral").catch(() => null),
     ])
-      .then(([c, q, s]) => { setCohorts(c); setQueue(q); setSummary(s); })
+      .then(([c, q, s, r]) => { setCohorts(c); setQueue(q); setSummary(s); setReferral(r); })
       .catch(() => setFailed(true));
   }, []);
 
@@ -186,6 +194,51 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
             })}
           </div>
         </section>
+      )}
+
+      {/* ═══ رابطي ومن سجّل عبره ═══
+
+          قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «أتِح للمدرّب رابطَ دعوةٍ
+          لكافّة دوراته وليس لدورةٍ دورة»، و«خاصّةً كم شخصٌ سجّل من خلال
+          رابطه». فالرابطُ والرقمُ في موضعٍ واحد: رابطٌ بلا رقمٍ لا يُعرف
+          أنفع، ورقمٌ بلا رابطٍ خبرٌ لا يُعمل به.
+
+          والرقمُ من ختمِ التسجيل (`referralProfileId`) لا من النقرات: هو
+          الرقمُ الذي يُدفع عليه، فلا يُعرض له أكبرُ منه. */}
+      {referral && (
+        <Panel as="section" className="mb-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="flex items-center gap-2 text-sm font-black"><Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابطي العامّ</p>
+            <span className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              {referral.registered > 0 ? `سجّل عبره ${countAr(referral.registered, REGISTERED_FORMS)}` : "لم يسجّل أحدٌ عبره بعد"}
+            </span>
+          </div>
+          <p className="mt-1 text-read leading-6 text-muted-foreground">
+            صفحةٌ باسمك تعرض كلَّ شعبك المفتوحة — رابطٌ واحدٌ لها جميعا. انشره حيث شئت، وكلُّ من سجّل منه يُحسب لك بأجر الإحالة وتراه بعلامة «عبر رابطك» عند اسمه.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <input
+              readOnly dir="ltr" value={referral.url} aria-label="رابطي العامّ"
+              onFocus={(e) => e.currentTarget.select()}
+              className={`${staffControlCls} min-w-0 flex-1 text-left font-mono`}
+            />
+            <button
+              type="button" className="btn-outline-brand h-10 px-5"
+              onClick={() => { void navigator.clipboard?.writeText(referral.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}
+            >
+              {copied ? "نُسخ" : "انسخ الرابط"}
+            </button>
+            <a href={referral.url} target="_blank" rel="noreferrer" className="text-read font-bold text-teal-light-ink hover:text-foreground">عايِنْها</a>
+          </div>
+          {/* البوّابةُ تُقال لا تُخفى: من لم يُعتمد نشرُ ملفّه رابطُه لا يفتح
+              بعد — فيُقال له لمَ ومَن يرفعه، لا يُعطى رابطا يردّ ٤٠٤. */}
+          {!referral.publicReady && (
+            <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
+              صفحتُك لا تفتح للعامّة بعد: لا يُعرض اسمُ مدرّبٍ قبل اعتماد الإدارة نشرَ ملفّه. راجِع الإدارة لاعتماده، ثمّ يعمل الرابطُ نفسُه بلا تغيير.
+            </Inset>
+          )}
+        </Panel>
       )}
 
       {/* ف-١ · طابور العمل — أول ما يراه المدرب صار قابلا للتنفيذ لا مجرد أرقام */}

@@ -1101,6 +1101,10 @@ model TrainerProfile {
   publishApprovedAt     DateTime?
   suspendedAt           DateTime?
   suspendedBy           String?                      @db.Uuid
+  /// اسمُه في العنوان العامّ `/t/<publicSlug>` — يُشتقّ مرّةً من اسمه ويبقى:
+  /// لو تغيّر لبطل ما نشره على وسائط التواصل. والصفحةُ لا تُعرض إلّا لمن
+  /// اجتاز بوّابةَ الظهور (`trainer-visibility.ts`).
+  publicSlug            String?                      @unique
   /**
    * نطاق الكتالوج صلاحية تُمنح بعد سجل مثبت (البند هـ-١) — والافتراضي نطاق
    * الشعبة: المدرب يجرّب ويبدع فيه بلا مخاطرة على أحد.
@@ -1517,13 +1521,18 @@ model Cohort {
 /// قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): للمدرّب رابطٌ لكلّ شعبةٍ ينشره حيث
 /// شاء، وكلُّ من سجّل منه يُحسب له بأجرٍ مختلف — والسعرُ على الطالب واحد.
 /// والرمزُ يُنشأ مرّةً ويبقى: لو تغيّر ضاع ما نُشر.
+/// رابطُ دعوةٍ للمدرّب. `cohortId` مملوءٌ = رابطُ شعبةٍ بعينها، وفارغٌ =
+/// رابطُه هو على كامل ما يدرّب (المرحلة «أ» من مسار المدرّب، ١٣ سبتمبر ٢٠٢٦).
+/// وجدولٌ واحدٌ للنوعين لأنّ `code` يجب أن يكون فريدا بينهما جميعا: القارئُ
+/// يستبين الرمزَ بنداءٍ واحد. وفرادةُ الرابط الواسع في فهرسٍ جزئيٍّ بالترحيل،
+/// إذ `@@unique` لا يمنع تكرار `NULL` في PostgreSQL.
 model TrainerReferralLink {
   id        String         @id @default(uuid()) @db.Uuid
-  cohortId  String         @db.Uuid
+  cohortId  String?        @db.Uuid
   profileId String         @db.Uuid
   code      String         @unique
   createdAt DateTime       @default(now())
-  cohort    Cohort         @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  cohort    Cohort?        @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([cohortId, profileId])

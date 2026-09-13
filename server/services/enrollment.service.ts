@@ -23,11 +23,29 @@ export class EnrollmentService {
     this.notifications = new NotificationService(prisma)
   }
 
+  /** الرمزُ الذي يُختم على تسجيل هذه الشعبة — أو لا شيء */
+  private async referralFor(code: string, cohortId: string): Promise<{ profileId: string; code: string } | null> {
+    const link = await this.prisma.trainerReferralLink.findUnique({
+      where: { code }, select: { profileId: true, code: true, cohortId: true },
+    })
+    if (!link) return null
+    if (link.cohortId === cohortId) return { profileId: link.profileId, code: link.code }
+    if (link.cohortId !== null) return null
+    const teaches = await this.prisma.cohortTrainer.findFirst({ where: { cohortId, profileId: link.profileId }, select: { id: true } })
+    return teaches ? { profileId: link.profileId, code: link.code } : null
+  }
+
   /** تسجيل متعلم — يملأ السعة ثم يحوّل الفائض لقائمة انتظار؛ التجاوز يتطلب override موثقا */
   async enroll(cohortId: string, userId: string, actorId: string | null, opts: { overrideCapacity?: boolean; referralCode?: string } = {}) {
-    /* مصدرُ التسجيل يُختم مرّةً: رمزٌ صحيحٌ يخصّ هذه الشعبةَ — وإلّا عامّ */
+    /* مصدرُ التسجيل يُختم مرّةً: رمزٌ صحيحٌ يخصّ هذه الشعبةَ — وإلّا عامّ.
+
+       والرمزُ نوعان (١٣ سبتمبر ٢٠٢٦): رمزُ شعبةٍ بعينها، ورمزُ المدرّب على
+       كامل ما يدرّب (`cohortId = null`). والثاني يُختم هنا **بشرط أن يكون
+       صاحبُه مدرّبَ هذه الشعبة** — فالختمُ حجّةُ الأجر، ولا يُختم لمن لم
+       يدرّب. والفحصُ في هذا الموضع لا في المتصل به وحدَه: `enroll` يُنادى
+       من التسوية ومن الإدارة معا. */
     const referral = opts.referralCode
-      ? await this.prisma.trainerReferralLink.findFirst({ where: { code: opts.referralCode, cohortId }, select: { profileId: true, code: true } })
+      ? await this.referralFor(opts.referralCode, cohortId)
       : null
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
