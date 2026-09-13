@@ -94,8 +94,11 @@ export default function BookInterview({ name, email, reference, className = '' }
 
   /* الأصلُ من الخادم إن ضُبط، وإلّا المضمَّن — بلا حالةِ تحميلٍ ظاهرة:
      تُرسم البطاقةُ بالمضمَّن ثمّ تُبدَّل إن جاء بديل. */
-  const { interviewBookingUrl } = usePlatformConfig()
-  const url = trainerInterviewUrl({ name, email, reference }, interviewBookingUrl ?? undefined)
+  const { interviewBookingUrl, interviewGuests } = usePlatformConfig()
+  const url = trainerInterviewUrl(
+    { name, email, reference, guests: interviewGuests ?? undefined },
+    interviewBookingUrl ?? undefined,
+  )
   /* `embed_domain` شرطُ Calendly لبثّ الأحداث، و`embed_type` يُخفي رأسَ صفحتهم */
   const embedUrl = `${url}${url.includes('?') ? '&' : '?'}embed_domain=${encodeURIComponent(window.location.hostname)}&embed_type=Inline`
 

@@ -11,7 +11,7 @@
    صالح». */
 
 import { describe, expect, it } from 'vitest'
-import { normalizeCalendlyBookingUrl } from '../../services/integrations.service'
+import { normalizeCalendlyBookingUrl, normalizeCalendlyGuests } from '../../services/integrations.service'
 
 const ok = (input: string) => {
   const r = normalizeCalendlyBookingUrl(input)
@@ -88,5 +88,50 @@ describe('وما لا يصحّ يُقال سببُه — لا «رابطٌ غي�
 
   it('وعنوانُ Calendly بلا اسمِ مستخدمٍ لا يفتح تقويما', () => {
     expect(rejected('https://calendly.com')).toContain('اسمِ مستخدم')
+  })
+})
+
+describe('والحاضرون المضافون تلقائيا: يُقبلون بأيّ فاصل، ويُقال ما لا يصحّ', () => {
+  /* ═══ العطبُ الذي كُتب له ═══
+
+     المقابلةُ تُحجز بين المتقدّم والمضيف وحدَهما، فمن أراد حضورَها من الإدارة
+     لزمه أن يُضاف يدويّا في كلّ موعدٍ على حدة — أو يفوتَه (١٣ سبتمبر ٢٠٢٦).
+
+     وحقلٌ يُكتب فيه بريدٌ خطأً لا يُخطئ عند Calendly بل يُتجاهل صامتا، فلا
+     يحضر أحدٌ ولا يُعرف لماذا. فيُفحص هنا قبل أن يُحفظ. */
+  const ok = (input: string) => {
+    const r = normalizeCalendlyGuests(input)
+    if (!r.ok) throw new Error(`رُفض وهو صحيح: «${input}» — ${r.messageAr}`)
+    return r.value
+  }
+
+  it('الفاصلةُ والمنقوطةُ والسطرُ الجديد كلُّها فواصل، والفراغُ يُطرح', () => {
+    for (const form of [
+      'a@wajeez.co,b@wajeez.co',
+      'a@wajeez.co, b@wajeez.co',
+      'a@wajeez.co ; b@wajeez.co',
+      'a@wajeez.co\nb@wajeez.co',
+    ]) {
+      expect(ok(form), `الصورةُ «${form}» لم تُطبَّع كما ينبغي`).toBe('a@wajeez.co,b@wajeez.co')
+    }
+  })
+
+  it('وبريدٌ واحدٌ يكفي، والحقلُ الفارغُ يعني «لا أحد»', () => {
+    expect(ok('suhaib@wajeez.co')).toBe('suhaib@wajeez.co')
+    expect(ok('   ')).toBe('')
+  })
+
+  it('والمكرَّرُ يُطرح — وإلّا وصلت دعوتان إلى العنوان نفسِه', () => {
+    expect(ok('a@wajeez.co, A@Wajeez.co')).toBe('a@wajeez.co')
+  })
+
+  it('⚠️ وما ليس بريدا يُرفض ويُسمّى — لا يُمرَّر ليُتجاهَل عند Calendly صامتا', () => {
+    const r = normalizeCalendlyGuests('suhaib@wajeez.co, notanemail')
+    expect(r.ok, 'مُرِّر ما ليس بريدا').toBe(false)
+    expect(r.messageAr, 'لا يُسمّي المرفوض').toContain('notanemail')
+  })
+
+  it('وعلاماتُ الاتّجاه المنسوخةُ مع النصّ العربيّ لا تُفسده', () => {
+    expect(ok('\u200fsuhaib@wajeez.co\u200e')).toBe('suhaib@wajeez.co')
   })
 })

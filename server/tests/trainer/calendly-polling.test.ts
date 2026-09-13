@@ -13,6 +13,7 @@ import type { PrismaClient } from '@prisma/client'
 import { JOBS, syncCalendlyInterviews } from '../../worker/jobs'
 import { maskedIntegrationsView, saveCalendlyConfig, getCalendlyConfig } from '../../services/integrations.service'
 import { SystemHealthService } from '../../services/system-health.service'
+import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { setupTestDb, testPrisma } from '../helpers/db'
 
 const TOKEN = 'calendly-pat-for-tests-0000'
@@ -38,9 +39,13 @@ let failWith = 0
 /* حسابٌ لا موعدَ فيه — صورةُ الرمزِ على حسابٍ غيرِ المضيف */
 let noEvents = false
 
+const RESCHEDULE_URL = 'https://calendly.com/reschedulings/poll-invitee-1'
+
 const invitee = () => ({
   uri: `${eventUri}/invitees/poll-invitee-1`,
   email: inviteeEmail,
+  reschedule_url: RESCHEDULE_URL,
+  cancel_url: 'https://calendly.com/cancellations/poll-invitee-1',
   status: inviteeCanceled ? 'canceled' : 'active',
   canceled_at: inviteeCanceled ? '2026-09-21T08:00:00.000Z' : null,
   tracking: {
@@ -149,8 +154,24 @@ describe('الحجزُ المقروءُ يصير مقابلةً', () => {
     expect(interview?.scheduledAt.toISOString()).toBe(START)
     expect(interview?.provider).toBe('calendly')
     expect(interview?.canceledAt).toBeNull()
+    /* ═══ رابطُ التعديل يُحفظ ولا يُرمى ═══
+
+       يصل مع المدعوّ في كلّ دورة، ولا يُشتقّ من شيءٍ عندنا: يحمل معرِّفَ
+       المدعوّ لا معرِّفَ الحدث. فإن لم يُحفظ حين وصل لزم نداءُ Calendly من
+       جديدٍ كلّما فتح متقدّمٌ صفحةَ متابعته (١٣ سبتمبر ٢٠٢٦). */
+    expect(interview?.rescheduleUrl, 'رابطُ التعديل وصل ولم يُحفظ').toBe(RESCHEDULE_URL)
+    expect(interview?.cancelUrl).toContain('cancellations')
     const application = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: applicationId } })
     expect(application.status).toBe('interview_scheduled')
+  })
+
+  it('⚠️ وصاحبُ الطلب يقرأ رابطَ تعديله في المتابعة العامّة — لا في بريده وحدَه', async () => {
+    /* من يفتح صفحةَ المتابعة إنّما فتحها لأنّه لم يجد رسالةَ Calendly. فلو
+       بقي الرابطُ في القاعدة ولم يخرج إلى الواجهة لم يُغنِ عنه شيئا. */
+    const svc = new TrainerApplicationService(prisma)
+    const status = await svc.getPublicStatus(EMAIL, REFERENCE)
+    expect(status.hasInterview).toBe(true)
+    expect(status.interviewRescheduleUrl, 'الرابطُ محفوظٌ ولا يصل صاحبَه').toBe(RESCHEDULE_URL)
   })
 
   it('وإعادةُ الدورة لا تُنشئ ثانيةً ولا تسأل عن مدعوّي موعدٍ تُعرف حالتُه', async () => {

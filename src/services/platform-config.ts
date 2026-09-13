@@ -16,10 +16,12 @@ export interface PlatformConfig {
      ولا يُنسخ المضمَّنُ هنا: `null` تعني «الافتراضُ في الواجهة» فيبقى مصدرٌ
      واحد — ويُغيَّر المضيفُ من الشاشة بلا نشرِ واجهة. */
   interviewBookingUrl: string | null;
+  /** بريدٌ أو أكثرُ يُضاف حاضرا في كلّ موعد — مفصولةٌ بفاصلة */
+  interviewGuests: string | null;
 }
 
 /* الافتراضُ عند تعذُّر السؤال: «لا» — فلا نعرض زرّا قد لا يعمل. */
-const FALLBACK: PlatformConfig = { fileUploads: false, demoMode: false, interviewBookingUrl: null };
+const FALLBACK: PlatformConfig = { fileUploads: false, demoMode: false, interviewBookingUrl: null, interviewGuests: null };
 
 let cached: Promise<PlatformConfig> | null = null;
 let snapshot: PlatformConfig | null = null;

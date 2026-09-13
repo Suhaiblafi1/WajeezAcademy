@@ -1006,6 +1006,9 @@ model TrainerInterview {
   provider      String             @default("manual") // manual | calendly
   externalId    String?            @unique // Calendly invitee URI — idempotency + cancellation
   canceledAt    DateTime?
+  // روابطُ Calendly للمدعوّ — تُعرض لصاحب الطلب فيغني عن التنقيب في بريده
+  rescheduleUrl String?
+  cancelUrl     String?
   interviewerId String?            @db.Uuid
   outcome       String? // passed | hold | failed
   notes         String?

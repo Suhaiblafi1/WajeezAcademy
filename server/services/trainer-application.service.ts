@@ -417,6 +417,8 @@ export class TrainerApplicationService {
     hasInterview: boolean
     /** موعدُ أقربِ مقابلةٍ قائمة — يُعرض لصاحبه في صفحة المتابعة العامّة */
     interviewAt: Date | null
+    /** رابطُ تعديل الموعد عند Calendly — لصاحب الحجز وحدَه، ولا يُشتقّ عندنا */
+    interviewRescheduleUrl: string | null
   }> {
     const normalized = email.trim().toLowerCase()
     const ref = reference?.trim().toUpperCase() || null
@@ -430,7 +432,7 @@ export class TrainerApplicationService {
           where: { canceledAt: null },
           orderBy: { scheduledAt: 'asc' },
           take: 1,
-          select: { scheduledAt: true },
+          select: { scheduledAt: true, rescheduleUrl: true },
         },
       },
     })
@@ -441,6 +443,9 @@ export class TrainerApplicationService {
       reference: app.reference, status: app.status as TrainerStatus, createdAt: app.createdAt,
       completed: !!app.phase2CompletedAt, hasInterview: app._count.interviews > 0,
       interviewAt: app.interviews[0]?.scheduledAt ?? null,
+      /* الفراغُ وارد: مقابلةٌ سُجّلت يدويّا، أو حُجزت قبل حفظِ الرابط. فتُعرض
+         بلا زرِّ تعديلٍ بدل زرٍّ لا يفتح شيئا. */
+      interviewRescheduleUrl: app.interviews[0]?.rescheduleUrl ?? null,
     }
   }
 

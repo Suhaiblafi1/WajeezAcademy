@@ -208,6 +208,8 @@ export interface CalendlyConfig {
   token?: string
   /** رابطُ الحجز العامّ — فارغٌ يعني «استعمل المضمَّنَ في الواجهة» */
   bookingUrl?: string
+  /** بريدٌ أو أكثرُ يُضاف حاضرا إلى كلّ موعد — مفصولةٌ بفاصلة */
+  guests?: string
 }
 
 /* ─────────── رابطُ الحجز: يُقبل بأيّ صورةٍ صحيحة، ويُشرَح حين لا يصحّ ───────────
@@ -286,6 +288,39 @@ export function normalizeCalendlyBookingUrl(input: string): CalendlyUrlCheck {
   return { ok: true, url: `https://${CALENDLY_HOST}/${segments.join('/')}` }
 }
 
+/* ─────────── الحاضرون المضافون تلقائيا ───────────
+
+   ═══ العطبُ الذي كُتب له ═══
+
+   المقابلةُ تُحجز بين المتقدّم والمضيف وحدَهما، فمن أراد حضورَها من الإدارة
+   لزمه أن يُضاف يدويّا في كلّ موعدٍ على حدة — أو يفوتَه (١٣ سبتمبر ٢٠٢٦).
+
+   وCalendly يقبل ضيوفا مُعبَّئين في الرابط (`guests=`)، فيُضافون بلا لمسة.
+   ⚠ وشرطُه أن يكون «Invitees can add guests» مفعَّلا في نوع الحدث، وإلّا
+   تجاهَل المعامَلَ صامتا — وهذا مكتوبٌ في البطاقة لأنّه لا يُكتشف بالنظر. */
+export interface CalendlyGuestsCheck {
+  ok: boolean
+  /** المطبَّعُ: بريدٌ أو أكثرُ مفصولةٌ بفاصلة، أو الفراغُ إن لم يُطلب أحد */
+  value?: string
+  messageAr?: string
+}
+
+const EMAIL = /^[^\s@,]+@[^\s@,]+\.[^\s@,]{2,}$/
+
+export function normalizeCalendlyGuests(input: string): CalendlyGuestsCheck {
+  /* علاماتُ الاتّجاه تُلتقط مع النسخ من صفحةٍ عربيّة ولا تُرى في الحقل */
+  const cleaned = input.replace(/[\u200e\u200f\u202a-\u202e]/g, '').trim()
+  if (!cleaned) return { ok: true, value: '' }
+  /* الفاصلةُ والفاصلةُ المنقوطةُ والسطرُ الجديد — كلُّها فواصلُ يكتبها الناس */
+  const parts = cleaned.split(/[,;\n]+/).map((v) => v.trim()).filter(Boolean)
+  const bad = parts.filter((v) => !EMAIL.test(v))
+  if (bad.length) {
+    return { ok: false, messageAr: `ليس بريدا صحيحا: «${bad.join('» و«')}». اكتب بريدا كاملا، وافصل بين البُرد بفاصلة.` }
+  }
+  /* المكرَّرُ يُطرح: Calendly يقبله ويرسل دعوتَين إلى العنوان نفسِه */
+  return { ok: true, value: [...new Set(parts.map((v) => v.toLowerCase()))].join(',') }
+}
+
 export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyConfig> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider: 'calendly' } })
   const c = (row?.config ?? {}) as Partial<CalendlyConfig>
@@ -294,6 +329,7 @@ export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyC
     signingKey: c.signingKey || undefined,
     token: c.token || undefined,
     bookingUrl: c.bookingUrl || undefined,
+    guests: c.guests || undefined,
   }
   const env = process.env
   if (env.CALENDLY_WEBHOOK_SIGNING_KEY) {
@@ -307,7 +343,7 @@ export async function getCalendlyConfig(prisma: PrismaClient): Promise<CalendlyC
 
 export async function saveCalendlyConfig(
   prisma: PrismaClient, actorId: string,
-  input: Partial<{ enabled: boolean; signingKey: string; token: string; bookingUrl: string }>,
+  input: Partial<{ enabled: boolean; signingKey: string; token: string; bookingUrl: string; guests: string }>,
 ) {
   const current = await getRawConfig(prisma, 'calendly')
   const next: Record<string, unknown> = { ...current }
@@ -322,6 +358,13 @@ export async function saveCalendlyConfig(
       if (!checked.ok) throw new AuthError('bad_booking_url', checked.messageAr, 422)
       next.bookingUrl = checked.url
     }
+  }
+  /* والحاضرون كالرابط: فراغٌ صريحٌ يعني «لا أحد»، وما لا يصحّ يُردّ بسببه */
+  if (input.guests !== undefined) {
+    const checked = normalizeCalendlyGuests(input.guests)
+    if (!checked.ok) throw new AuthError('bad_calendly_guests', checked.messageAr!, 422)
+    if (checked.value) next.guests = checked.value
+    else delete next.guests
   }
   /* لا يُكتب فوق السرّ المخزَّن بقيمةٍ مقنَّعةٍ عادت من الشاشة */
   for (const k of ['signingKey', 'token'] as const) {
@@ -454,6 +497,7 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
          و`polling` تبقى: هي الطريقُ العاملُ على الخطّة المجّانيّة. */
       polling: !!calendly.token && calendly.enabled,
       bookingUrl: calendly.bookingUrl ?? '',
+      guests: calendly.guests ?? '',
     },
   }
 }
