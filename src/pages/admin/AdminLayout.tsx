@@ -231,7 +231,9 @@ export default function AdminLayout({ children, title }: { children: React.React
                   التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
 
         <div className="min-w-0 flex-1 py-8">
-          <h1 className="mb-6 text-2xl font-black">{title}</h1>
+          {/* ولا يُطبع: عنوانُ الشاشة يكرّر ما في ترويسة المطبوع («الطلب
+              WJ-TR-…» فوق الاسم ورقمِه)، وهو عنوانُ أداةٍ لا عنوانُ مستند. */}
+          <h1 className="mb-6 text-2xl font-black print:hidden">{title}</h1>
           {children}
           {/* البند ٦: أيَّ نسخةٍ تنظر إليها؟ — الجوابُ في الشاشة لا في curl */}
           <BuildStampLine />

@@ -680,7 +680,7 @@ export default function TrainerApplications() {
                           <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" />
                           <span className="font-bold">{d.kind}</span>
                           <span dir="ltr" className="min-w-0 flex-1 truncate text-muted-foreground">{d.originalName}</span>
-                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform print:hidden ${isOpen ? "rotate-180" : ""}`} />
                         </button>
                         {isOpen && (
                           <div className="mt-2 overflow-hidden rounded-xl bg-white/5 print:hidden">
