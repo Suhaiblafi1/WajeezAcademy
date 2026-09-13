@@ -552,8 +552,19 @@ export default function CohortWorkspace() {
             {content.modules.map((m, i) => {
               const open = openModule === m.moduleId;
               const filled = m.titleAr.trim().length > 1 && (m.outcomeAr ?? "").trim().length > 1;
+              /* ═══ ولماذا يتلوّن المحورُ المفتوح ═══
+
+                 شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «لا أميّز متى تنتهي
+                 الشاشةُ المنسدلة». وثمانيةُ محاورَ مطويّةٍ بحافّةٍ واحدةٍ خافتة
+                 (`border-white/10`)، فإذا فُتح أحدُها امتدّ خمسةَ حقولٍ بالأرضيّة
+                 نفسِها وبالحافّة نفسِها — فلا تُرى بدايتُه من نهايةِ ما قبله،
+                 ولا نهايتُه من بدايةِ ما بعده.
+
+                 والعلاجُ نبرةٌ قائمةٌ في نظام الأسطح لا لونٌ يُكتب باليد:
+                 المفتوحُ `accent` والمطويُّ `default`. فحدُّه ظاهرٌ من طرفَيه،
+                 ويعرف الناظرُ أين هو من القائمة بلا أن يعدّ. */
               return (
-              <Card as="li" key={m.moduleId}>
+              <Card as="li" key={m.moduleId} tone={open ? "accent" : "default"}>
                 <div className="flex flex-wrap items-center gap-2">
                   {/* العنوانُ زرٌّ يطوي البطاقةَ ويفتحها — فستّةُ محاورَ في خمسةِ
                       حقولٍ جدارٌ لا يُقرأ، والمطويُّ منها يُرى سطرا واحدا. */}
@@ -643,13 +654,36 @@ export default function CohortWorkspace() {
               const patch = (next: Partial<PlanResource>) =>
                 setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...next } : x)) });
               return (
-                <Card as="li" key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
-                  <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
-                  <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
-                  <select value={resourceKind(r.kind)} onChange={(e) => patch({ kind: e.target.value })} disabled={locked} aria-label={`نوع المصدر ${i + 1}`} className={controlCls}>
-                    {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
-                  </select>
-                  <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
+                <Card as="li" key={i} className="grid gap-3">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+                    <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
+                    <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
+                    <select value={resourceKind(r.kind)} onChange={(e) => patch({ kind: e.target.value })} disabled={locked} aria-label={`نوع المصدر ${i + 1}`} className={controlCls}>
+                      {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
+                    </select>
+                    <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
+                  </div>
+                  {/* ═══ ولماذا سطرُ «لماذا هذا المصدر» ═══
+
+                      طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يكون لكلّ مصدرٍ
+                      وصفٌ يقول ما هو ولمَ يهمّ. والمفاجأةُ أنّ الحقلَ كان
+                      موجودا في كلّ الطريق إلّا أوّلَه: `noteAr` في نوع المصدر،
+                      ويقبله الخادمُ (٥٠٠ حرفا)، ويمرّره `plan-overlay` مشذَّبا،
+                      **والمتعلّمُ يعرضه أصلا** في `StageWork`. فلم يكن ينقص
+                      إلّا خانةٌ يكتب فيها المدرّب — فما من مدرّبٍ كتب وصفا قطّ،
+                      وسطرٌ في شاشة المتعلّم لم يُملأ يوما.
+
+                      واختياريٌّ بقصد: مصدرٌ بلا وصفٍ خيرٌ من مدرّبٍ يتوقّف عند
+                      حقلٍ إلزاميٍّ فلا يضيف المصدرَ أصلا. */}
+                  <input
+                    value={r.noteAr ?? ""}
+                    onChange={(e) => patch({ noteAr: e.target.value })}
+                    disabled={locked}
+                    maxLength={500}
+                    placeholder="لماذا هذا المصدر؟ ما فيه، ومتى يقرؤه (اختياريّ)"
+                    aria-label={`وصف المصدر ${i + 1}`}
+                    className={controlCls}
+                  />
                 </Card>
               );
             })}
