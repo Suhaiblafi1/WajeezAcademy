@@ -83,7 +83,7 @@ const years = yearsLabel
    يقرأ بأذنه يسمعها كذلك. */
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[7rem_1fr] items-baseline gap-x-3 border-b border-white/[0.06] pb-2 last:border-0 last:pb-0">
+    <div className="grid grid-cols-[8.5rem_1fr] items-baseline gap-x-3 border-b border-white/[0.06] pb-2 last:border-0 last:pb-0">
       <dt className="text-read font-bold leading-6 text-muted-foreground">{label}</dt>
       <dd className="min-w-0 text-xs leading-6 text-foreground">{children}</dd>
     </div>

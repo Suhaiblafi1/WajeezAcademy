@@ -27,8 +27,8 @@
    أو، وهو أسوأ، لمرّ حارسٌ لأنّ اللفظَ ورد في تعليق. */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
@@ -103,5 +103,65 @@ describe('الأسطحُ الطافية', () => {
         `${name}: لا مستمعَ إغلاقٍ على المستند`,
       ).toMatch(/document\.addEventListener\(\s*["']mousedown["']/)
     }
+  })
+
+  /* ═══ ولماذا لا تُعدّ الأسطحُ الطافيةُ بقائمة ═══
+
+     الفحصان أعلاه يقرآن `FLOATING` — قائمةَ ملفّاتٍ تُكتب باليد. وسطحٌ طافٍ
+     جديدٌ في ملفٍّ ليس فيها لا يراه أحد، وهذا ما وقع بالحرف (١٣ سبتمبر
+     ٢٠٢٦): أُضيف فهرسٌ لاصقٌ في `TrainerApplications.tsx` بنغمةٍ افتراضيّةٍ
+     شفّافة، فطفا فوق الروبرك وتراكب النصّان — **والحارسُ أخضر**، لأنّ الملفَّ
+     ليس في القائمة.
+
+     فالمرشّحون يُستخرجون من الشيفرة لا من قائمة: كلُّ ما حمل `sticky` أو
+     `fixed`، سواءٌ كان السطحَ نفسَه أو حاضنَه المباشر. ويكفيه أحدُ ثلاثة:
+     نغمةٌ صلبة، أو أرضيّةٌ صريحة، أو `backdrop-blur` يُضبّب ما تحته. */
+  const SURFACE_TAG = /^<(Panel|Card|Inset)\b([^>]*)>/
+  const OPAQUE = /\b(bg-[\w./[\]%-]+|backdrop-blur)/
+  const FLOATS = /(?<![\w:-])(sticky|fixed)(?![\w-])/
+
+  const tsxFiles = (dir: string): string[] =>
+    readdirSync(dir).flatMap((entry) => {
+      const full = join(dir, entry)
+      if (statSync(full).isDirectory()) return entry === 'tests' ? [] : tsxFiles(full)
+      return full.endsWith('.tsx') ? [full] : []
+    })
+
+  it('⚠️ ٤) وكلُّ طافٍ في المستودَع يُحجَب — تُستخرج القائمةُ ولا تُكتب باليد', () => {
+    const offenders: string[] = []
+    for (const full of tsxFiles(join(root, 'src'))) {
+      const src = code(relative(root, full))
+      for (const m of src.matchAll(/<(\w+)([^>]*?)className=(?:"([^"]*)"|\{`([^`]*)`\})([^>]*?)>/g)) {
+        const cls = m[3] ?? m[4] ?? ''
+        if (!FLOATS.test(cls)) continue
+        const where = relative(root, full)
+
+        /* أ) السطحُ نفسُه يطفو */
+        if (['Panel', 'Card', 'Inset'].includes(m[1])) {
+          const attrs = `${m[2] ?? ''}${m[5] ?? ''}`
+          if (attrs.includes('tone="solid"') || OPAQUE.test(cls)) continue
+          offenders.push(`${where} → <${m[1]}> طافٍ بلا حجاب [${cls.slice(0, 48)}]`)
+          continue
+        }
+
+        /* ب) أو حاضنُه المباشر — ولا يُعتدّ إلّا بما لا يفصله عنه إلّا فراغٌ
+              أو شرطُ عرضٍ بقوسه، كي لا يُتّهم سطحٌ بعيدٌ في الملفّ نفسِه. */
+        const rest = src.slice(m.index + m[0].length)
+        const lead = /^\s*(?:\{[^<{}]{0,80}&&\s*\(\s*)?/.exec(rest)?.[0] ?? ''
+        const tag = SURFACE_TAG.exec(rest.slice(lead.length))
+        if (!tag) continue
+        const attrs = tag[2]
+        if (attrs.includes('tone="solid"')) continue
+        const inner = /className="([^"]*)"/.exec(attrs)?.[1] ?? ''
+        if (OPAQUE.test(inner)) continue
+        offenders.push(`${where} → <${tag[1]}> داخلَ حاضنٍ طافٍ [${cls.slice(0, 48)}]`)
+      }
+    }
+    expect(
+      offenders,
+      'سطحٌ يطفو فوق الصفحة بأرضيّةٍ شفّافة — يُقرأ ما تحته من خلاله فيتراكب '
+      + 'النصّان. أعطِه `tone="solid"`، أو أرضيّةً صريحة، أو `backdrop-blur`:\n'
+      + offenders.join('\n'),
+    ).toEqual([])
   })
 })

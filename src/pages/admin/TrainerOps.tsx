@@ -40,8 +40,10 @@ const CR_STATUS_AR: Record<string, string> = {
 
    وأُضيف ما كان ينقصه: `aria-expanded` و`aria-controls` — فمن يقرأ بأذنه كان
    يسمع زرّا لا يعرف أمفتوحٌ هو أم مغلق، ولا ما الذي يفتحه. */
-function FoldSection({ icon: Icon, title, children, defaultOpen = false, id }: {
+function FoldSection({ icon: Icon, title, children, defaultOpen = false, id, toolOnly = false }: {
   icon: typeof Star; title: string; children: React.ReactNode; defaultOpen?: boolean; id?: string;
+  /** قسمٌ كلُّ ما فيه حقولُ إدخال — لا يُطبع، وإلّا بقي عنوانُه بلا شيءٍ تحته */
+  toolOnly?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const bodyId = `fold-${title.replace(/\s+/g, "-")}`;
@@ -58,12 +60,12 @@ function FoldSection({ icon: Icon, title, children, defaultOpen = false, id }: {
     return () => window.removeEventListener("hashchange", openIfTargeted);
   }, [id]);
   return (
-    <Panel as="article" id={id} className="scroll-mt-28">
+    <Panel as="article" id={id} className={`scroll-mt-28 ${toolOnly ? 'print:hidden' : ''}`}>
       <button type="button" onClick={() => setOpen(!open)}
         aria-expanded={open} aria-controls={bodyId}
         className="flex w-full cursor-pointer items-center justify-between text-sm font-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-4 focus-visible:ring-offset-paper">
         <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-teal-light-ink" /> {title}</span>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition print:hidden ${open ? "rotate-180" : ""}`} aria-hidden="true" />
       </button>
       {/* ═══ المطويُّ يُخفى ولا يُنزَع ═══
 
@@ -81,8 +83,10 @@ function FoldSection({ icon: Icon, title, children, defaultOpen = false, id }: {
 }
 
 function RubricInput({ scores, onChange }: { scores: Record<string, number>; onChange: (s: Record<string, number>) => void }) {
+  /* لا يُطبع: حقلُ إدخالٍ كامل. وإخفاءُ المربّعات وحدَها يترك أسماءَ المحاور
+     معلّقةً بلا درجات — سطورٌ لا تعني شيئا على الورق. */
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 print:hidden">
       {RUBRIC_AXES.map((x) => (
         <div key={x.key} className="flex items-center justify-between gap-2">
           <span className="text-fine text-muted-foreground">{x.label}</span>
@@ -224,7 +228,7 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* تقييم الديمو */}
-      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)" id="sec-demo">
+      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)" id="sec-demo" toolOnly>
         <RubricInput scores={demoScores} onChange={setDemoScores} />
         <div className="mt-3 flex flex-wrap gap-2">
           {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
