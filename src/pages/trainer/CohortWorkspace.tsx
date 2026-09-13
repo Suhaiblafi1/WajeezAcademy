@@ -44,9 +44,10 @@ import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import ProgressRing from "@/components/ui/ProgressRing";
-import { controlCls, areaCls } from "@/components/FormKit";
+import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
+import { countAr } from "@/application/text/count-ar";
 
 /* ─────────── ما يصل من الخادم ─────────── */
 
@@ -97,6 +98,60 @@ const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
 ];
 type Phase = "prepare" | "run";
 const ASSESSMENT_TYPES: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع تخرج" };
+const MODULE_FORMS = { one: "محور", two: "محوران", few: "محاور", many: "محورا" } as const;
+
+/* ── رأسُ كلّ خطوة: ما هي، ولمَ هي، وكم تأخذ ──
+
+   كان المدرّبُ يفتح الخطوةَ فيجد حقولا بلا مقدّمة، فلا يعرف أهي دقيقتان
+   أم ساعة، ولا لمن يُكتب ما يكتبه. والوقتُ المذكور تقديرٌ صادقٌ لا وعد:
+   يُقال ليقرّر أيبدأها الآن أم يؤجّلها، وهو أنفعُ ما يُقال له قبلها. */
+const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: string }> = {
+  identity: {
+    title: "اسمُ الشعبة ومواعيدُها",
+    purpose: "تعريفُ الدفعة كما يراها المتعلّمُ قبل أن يسجّل: اسمُها، ومتى تبدأ وتنتهي، وأيّامُ لقاءاتها.",
+    minutes: "نحو ٣ دقائق",
+  },
+  modules: {
+    title: "المحاور والتطبيق العمليّ",
+    purpose: "خارطةُ ما ستدرّسه. تبدأ من محاور الكتالوج وتعدّلها لهذه الشعبة — ولا تمسّ الكتالوجَ نفسَه.",
+    minutes: "نحو ١٥ دقيقة",
+  },
+  resources: {
+    title: "المصادر",
+    purpose: "ما يحتاجه المتعلّمُ خارجَ اللقاء: كرّاسةٌ أو مقالٌ أو فيديو. تُفتح له مع أوّل يوم.",
+    minutes: "نحو ٥ دقائق",
+  },
+  sessions: {
+    title: "اللقاءات والتسجيلات",
+    purpose: "مواعيدُ اللقاءات المباشرة داخلَ النافذة التي حدّدتها الإدارة، وتسجيلاتُها بعد انتهائها.",
+    minutes: "نحو ٧ دقائق",
+  },
+  assignments: {
+    title: "تكاليفُ الشعبة",
+    purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم. خطوةٌ اختياريّة — ويُنصح بواحدٍ على الأقلّ.",
+    minutes: "نحو ٥ دقائق",
+  },
+  approval: {
+    title: "الموافقة والإرسال للاعتماد",
+    purpose: "مراجعةٌ أخيرةٌ ثمّ إرسال. بعد الإرسال تُقفل الشعبةُ للتعديل حتّى يصل قرارُ الإدارة.",
+    minutes: "دقيقة",
+  },
+};
+
+function StageIntro({ stage }: { stage: Stage }) {
+  const it = STAGE_INTRO[stage];
+  const Icon = STAGES.find((s) => s.key === stage)?.icon ?? BookOpen;
+  return (
+    <div>
+      <h3 className="flex items-center gap-2 text-sm font-black">
+        <Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> {it.title}
+      </h3>
+      <p className="mt-1.5 text-read leading-7 text-muted-foreground">
+        {it.purpose} <span className="whitespace-nowrap text-teal-light-ink">· {it.minutes}</span>
+      </p>
+    </div>
+  );
+}
 
 /** التاريخُ كما يقبله `<input type="date">` */
 const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
@@ -104,8 +159,12 @@ const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 /* بصمتا المرحلتين اللتين تتقاسمان `content` — «المحاور» و«المصادر» تُحفظان
    معا بـ`savePlan`، لكنّ المدرّبَ يحرّر واحدةً في كلّ مرّة. فلو قيست
    البصمةُ على الكائن كلِّه لأضاءت المرحلتان معا بتعديلٍ في إحداهما. */
-const modulesKey = (c: PlanContent) => JSON.stringify({ s: c.summaryAr ?? "", m: c.modules, n: c.liveNoteAr ?? "" });
+const modulesKey = (c: PlanContent) => JSON.stringify(c.modules);
 const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources);
+/* والوصفُ صار مع الاسم والمواعيد، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
+   حيث صار الحقلُ لا حيث كان. */
+const summaryKey = (c: PlanContent) => c.summaryAr ?? "";
+const liveNoteKey = (c: PlanContent) => c.liveNoteAr ?? "";
 
 export default function CohortWorkspace() {
   const { id } = useParams();
@@ -128,9 +187,12 @@ export default function CohortWorkspace() {
   const [pendingDelete, setPendingDelete] = useState<Workspace["assessments"][number] | null>(null);
   /* والمحورُ المطلوبُ حذفُه — ومعه موضعُه، فالعناوينُ تتكرّر */
   const [pendingModule, setPendingModule] = useState<{ index: number; module: PlanModule } | null>(null);
+  /* المحورُ المفتوح — واحدٌ في كلّ مرّة. والمطويُّ يُقرأ سطرا فلا تصير
+     الصفحةُ جدارا من ثلاثين حقلا. */
+  const [openModule, setOpenModule] = useState<string | null>(null);
   /* بصمةُ آخرِ ما حُفظ — يُقاس عليها «فيه تغييرٌ لم يُحفظ» لكلّ مرحلةٍ وحدَها.
      كانت المرحلةُ تُغادَر بتعديلٍ في يدها فيضيع بلا كلمة. */
-  const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "" });
+  const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "", sessions: "" });
   /* رابطُ دعوتي لهذه الشعبة — يُنشأ مرّةً عند أوّل طلبٍ ويبقى */
   const [referral, setReferral] = useState<{ code: string; url: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -149,7 +211,12 @@ export default function CohortWorkspace() {
       setContent(nextContent);
       setIdentity(nextIdentity);
       /* البصمةُ تُؤخذ ممّا وصل لا ممّا في اليد — فبعد كلّ حفظٍ يعود كلُّ شيءٍ نظيفا */
-      setBaseline({ identity: JSON.stringify(nextIdentity), modules: modulesKey(nextContent), resources: resourcesKey(nextContent) });
+      setBaseline({
+        identity: JSON.stringify(nextIdentity) + summaryKey(nextContent),
+        modules: modulesKey(nextContent),
+        resources: resourcesKey(nextContent),
+        sessions: liveNoteKey(nextContent),
+      });
       /* أوّلُ فتح: المعتمَدةُ تُفتح على التشغيل، وغيرُها على أوّل مرحلةٍ لم تتمّ */
       if (first) {
         const status = w.plan?.status ?? "draft";
@@ -217,21 +284,27 @@ export default function CohortWorkspace() {
      كتب بلا كلمة. فصارت المرحلةُ المعدَّلةُ تُعلَّم على الخطّ، وزرُّ حفظها
      لا يعمل بلا تغيير، والخروجُ من الصفحة يُستأذَن فيه. */
   const dirty: Record<string, boolean> = {
-    identity: JSON.stringify(identity) !== baseline.identity,
+    identity: JSON.stringify(identity) + summaryKey(content) !== baseline.identity,
     modules: modulesKey(content) !== baseline.modules,
     resources: resourcesKey(content) !== baseline.resources,
+    sessions: liveNoteKey(content) !== baseline.sessions,
   };
   dirtyRef.current = Object.values(dirty).some(Boolean);
 
   const openStage = (s: Stage) => { setPhase("prepare"); setStage(s); };
   const savePlan = () => act(() => apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content), "حُفظت مسودّتك");
-  const saveIdentity = () => act(() => apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, {
-    title: identity.title.trim(),
-    startsAt: identity.startsAt ? new Date(identity.startsAt).toISOString() : undefined,
-    endsAt: identity.endsAt ? new Date(identity.endsAt).toISOString() : undefined,
-    daysOfWeek: identity.daysOfWeek, startTime: identity.startTime || undefined,
-    language: identity.language, deliveryMode: identity.deliveryMode,
-  }), "حُفظت بياناتُ الشعبة");
+  /* زرٌّ واحدٌ يحفظ الاثنين: بياناتُ الشعبة في الشعبة، ووصفُها في الخطّة.
+     وزرّان في خطوةٍ واحدةٍ يجعل المدرّبَ يحفظ أحدَهما ويظنّ الآخرَ محفوظا. */
+  const saveIdentity = () => act(async () => {
+    await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content);
+    await apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, {
+      title: identity.title.trim(),
+      startsAt: identity.startsAt ? new Date(identity.startsAt).toISOString() : undefined,
+      endsAt: identity.endsAt ? new Date(identity.endsAt).toISOString() : undefined,
+      daysOfWeek: identity.daysOfWeek, startTime: identity.startTime || undefined,
+      language: identity.language, deliveryMode: identity.deliveryMode,
+    });
+  }, "حُفظت بياناتُ الشعبة");
   const submit = () => act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
   /* ── التكاليف: إنشاءٌ وتعديلٌ وحذف ──
 
@@ -387,43 +460,41 @@ export default function CohortWorkspace() {
       {/* ─────────── ① الاسم والمواعيد ─────────── */}
       {phase === "prepare" && stage === "identity" && (
         <Panel as="section">
-          <h3 className="flex items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> اسمُ الشعبة ومواعيدُها</h3>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="sm:col-span-2">
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">اسم الشعبة</span>
+          <StageIntro stage="identity" />
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+            <StaffField wide label="اسم الشعبة" hint="ما يراه المتعلّم في الكتالوج وفي شهادته. صِفِ الدفعةَ لا الدورة — «الدفعة الثالثة · مساء الأحد».">
               <input value={identity.title} onChange={(e) => setIdentity({ ...identity, title: e.target.value })} disabled={locked} className={controlCls} />
-            </label>
-            <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">تبدأ في</span>
+            </StaffField>
+            <StaffField label="تبدأ في" hint="يظهر في صفحة التسجيل، وعليه تُحسب وتيرةُ المتعلّم.">
               <input type="date" dir="ltr" value={identity.startsAt} onChange={(e) => { setIdentity({ ...identity, startsAt: e.target.value }); e.target.blur(); }} disabled={locked} className={`${controlCls} text-left`} />
-            </label>
-            <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">تنتهي في</span>
+            </StaffField>
+            <StaffField label="تنتهي في" hint="آخرُ يومٍ تُحتسب فيه الجلساتُ والتسليمات.">
               <input type="date" dir="ltr" value={identity.endsAt} onChange={(e) => { setIdentity({ ...identity, endsAt: e.target.value }); e.target.blur(); }} disabled={locked} className={`${controlCls} text-left`} />
-            </label>
-            <div className="sm:col-span-2">
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">أيّام اللقاءات</span>
+            </StaffField>
+            <StaffField as="div" wide label="أيّام اللقاءات" hint="المواعيدُ المتكرّرة. لا تُنشئ لقاءً بنفسها — تُنشئه في خطوة «اللقاءات».">
               <DayOfWeekPicker value={identity.daysOfWeek} onChange={(daysOfWeek) => setIdentity({ ...identity, daysOfWeek })} />
-            </div>
-            <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">وقت البدء</span>
+            </StaffField>
+            <StaffField label="وقت البدء" hint="بتوقيت الشعبة — يظهر في تقويم المتعلّم بتوقيته هو.">
               <input type="time" dir="ltr" value={identity.startTime} onChange={(e) => setIdentity({ ...identity, startTime: e.target.value })} disabled={locked} className={`${controlCls} text-left`} />
-            </label>
-            <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">نمط التقديم</span>
+            </StaffField>
+            <StaffField label="نمط التقديم" hint="«عن بُعد» يفتح اجتماعا لكلّ لقاء، و«حضوريّ» لا يفتحه.">
               <select value={identity.deliveryMode} onChange={(e) => setIdentity({ ...identity, deliveryMode: e.target.value })} disabled={locked} className={`${controlCls} [&>option]:bg-surface`}>
                 <option value="remote">عن بُعد</option>
                 <option value="in_person">حضوريّ</option>
                 <option value="hybrid">مدمج</option>
               </select>
-            </label>
-            <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">لغة التدريب</span>
+            </StaffField>
+            <StaffField label="لغة التدريب" hint="لغةُ الشرح في اللقاءات — تُعرض للمتعلّم قبل التسجيل.">
               <input value={identity.language} onChange={(e) => setIdentity({ ...identity, language: e.target.value })} disabled={locked} className={controlCls} />
-            </label>
+            </StaffField>
+            {/* وصفُ الشعبة موضعُه هنا لا في «المحاور»: هو تعريفُ الشعبة
+                نفسِها، وكان في خطوةٍ اسمُها «المحاور» فلا يجده من يبحث عنه. */}
+            <StaffField wide label="وصفٌ موجزٌ للشعبة" hint="سطران يقرؤهما المتعلّم قبل أن يدفع. قل ما سيخرج به، لا ما ستشرحه.">
+              <textarea rows={2} value={content.summaryAr ?? ""} onChange={(e) => setContent({ ...content, summaryAr: e.target.value })} disabled={locked} className={areaCls} />
+            </StaffField>
           </div>
           {/* السعرُ يُقرأ ولا يُكتب — ويُقال لماذا، لا يُخفى */}
-          <Inset className="mt-4 flex items-start gap-2 text-read leading-6 text-muted-foreground">
+          <Inset className="mt-5 flex items-start gap-2 text-read leading-6 text-muted-foreground">
             <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
               السعرُ والسعةُ بيد الإدارة: {ws.cohort.readOnly.price === null ? "لم يُحدَّد بعد" : <b dir="ltr" className="font-mono text-foreground">{ws.cohort.readOnly.price} {ws.cohort.readOnly.currency}</b>}
@@ -442,18 +513,16 @@ export default function CohortWorkspace() {
             <p className="text-read font-black text-foreground">اقتراحٌ للإدارة (اختياريّ)</p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">إن رأيتَ اسما أدقَّ للدورة أو لمسارها فاكتبه هنا — يصل المعتمِدَ مع خطّتك، ويُطبَّق إن قبله.</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label>
-                <span className="mb-1.5 block text-read font-bold text-muted-foreground">اسمٌ مقترحٌ للدورة</span>
+              <StaffField label="اسمٌ مقترحٌ للدورة" hint="يُعرض على المعتمِد بجانب الاسم الحاليّ — واتركه فارغا إن كان الحاليُّ دقيقا.">
                 <input value={content.proposals?.courseTitleAr ?? ""} disabled={locked} maxLength={200}
                   onChange={(e) => setContent({ ...content, proposals: { ...(content.proposals ?? {}), courseTitleAr: e.target.value } })}
                   placeholder={ws.course.titleAr} className={controlCls} />
-              </label>
-              <label>
-                <span className="mb-1.5 block text-read font-bold text-muted-foreground">اسمٌ مقترحٌ للمسار</span>
+              </StaffField>
+              <StaffField label="اسمٌ مقترحٌ للمسار" hint="اسمُ المسار الذي تنتمي إليه الدورة — إن رأيتَ أنّه لا يصفها.">
                 <input value={content.proposals?.pathwayTitleAr ?? ""} disabled={locked} maxLength={200}
                   onChange={(e) => setContent({ ...content, proposals: { ...(content.proposals ?? {}), pathwayTitleAr: e.target.value } })}
                   placeholder="كما هو في الكتالوج" className={controlCls} />
-              </label>
+              </StaffField>
             </div>
             <Button tone="secondary" size="sm" disabled={busy || locked} onClick={savePlan} className="mt-3">احفظ الاقتراح مع الخطّة</Button>
           </Inset>
@@ -463,24 +532,39 @@ export default function CohortWorkspace() {
       {/* ─────────── ② المحاور والتطبيق ─────────── */}
       {phase === "prepare" && stage === "modules" && (
         <Panel as="section">
-          <h3 className="flex items-center gap-2 text-sm font-black"><BookOpen className="h-4 w-4 text-teal-light-ink" /> المحاور والتطبيق العمليّ</h3>
-          <p className="mt-1 text-read leading-6 text-muted-foreground">
-            تبدأ من محاور الكتالوج وتعدّلها كما تراها لهذه الشعبة — العنوان، والمخرج، والتطبيق العمليّ، وما يُسلّمه المتعلّم، والمتن. ولا تمسّ الكتالوجَ نفسَه.
-          </p>
-          <label className="mt-4 block">
-            <span className="mb-1.5 block text-read font-bold text-muted-foreground">وصفٌ موجزٌ للشعبة (يقرؤه المتعلّم)</span>
-            <textarea rows={2} value={content.summaryAr ?? ""} onChange={(e) => setContent({ ...content, summaryAr: e.target.value })} disabled={locked} className={areaCls} />
-          </label>
+          <StageIntro stage="modules" />
           {content.modules.length === 0 && (
             <Inset tone="warn" className="mt-4 text-read leading-6 text-gold-ink">لا محاورَ لهذه الدورة في الكتالوج بعد — أضف محورا أدناه وابدأ منه.</Inset>
           )}
-          <ol className="mt-4 space-y-3">
-            {content.modules.map((m, i) => (
+          <p className="mt-4 text-read text-muted-foreground">{countAr(content.modules.length, MODULE_FORMS)} · اضغط العنوانَ لتفتحه</p>
+          <ol className="mt-3 space-y-3">
+            {content.modules.map((m, i) => {
+              const open = openModule === m.moduleId;
+              const filled = m.titleAr.trim().length > 1 && (m.outcomeAr ?? "").trim().length > 1;
+              return (
               <Card as="li" key={m.moduleId}>
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="min-w-0 flex-1 text-read font-black text-teal-light-ink">المحور {i + 1} <span className="font-mono text-muted-foreground">{m.moduleId}</span></p>
-                  {/* الترتيبُ بزرَّين لا بسحب: يعمل باللمس وبلوحة المفاتيح،
-                      ويُقرأ لقارئ الشاشة، ولا ينقلب في الاتّجاه العربيّ. */}
+                  {/* العنوانُ زرٌّ يطوي البطاقةَ ويفتحها — فستّةُ محاورَ في خمسةِ
+                      حقولٍ جدارٌ لا يُقرأ، والمطويُّ منها يُرى سطرا واحدا. */}
+                  <button
+                    type="button"
+                    onClick={() => setOpenModule(open ? null : m.moduleId)}
+                    aria-expanded={open}
+                    className="flex min-w-0 flex-1 items-center gap-2 text-start"
+                  >
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-read font-black text-teal-light-ink">
+                        المحور {i + 1}
+                        {!open && m.titleAr.trim() && <span className="font-bold text-foreground"> — {m.titleAr}</span>}
+                      </span>
+                      {!open && (
+                        <span className={`mt-0.5 block truncate text-read ${filled ? "text-muted-foreground" : "text-gold-ink"}`}>
+                          {filled ? (m.outcomeAr ?? "") : "ينقصه العنوانُ أو المخرَج"}
+                        </span>
+                      )}
+                    </span>
+                  </button>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button tone="ghost" size="sm" disabled={locked || i === 0}
                       aria-label={`انقل «${m.titleAr || `المحور ${i + 1}`}» إلى أعلى`}
@@ -496,38 +580,52 @@ export default function CohortWorkspace() {
                     >احذف</Button>
                   </div>
                 </div>
-                <div className="mt-3 grid gap-3">
-                  <input value={m.titleAr} onChange={(e) => setModule(i, { titleAr: e.target.value })} disabled={locked} placeholder="عنوان المحور" aria-label={`عنوان المحور ${i + 1}`} className={controlCls} />
-                  <textarea rows={2} value={m.outcomeAr ?? ""} onChange={(e) => setModule(i, { outcomeAr: e.target.value })} disabled={locked} placeholder="ما يخرج به المتعلّم من هذا المحور" aria-label={`مخرج المحور ${i + 1}`} className={areaCls} />
-                  <textarea rows={2} value={m.activityAr ?? ""} onChange={(e) => setModule(i, { activityAr: e.target.value })} disabled={locked} placeholder="التطبيق العمليّ — ماذا يفعل المتعلّم بيده" aria-label={`تطبيق المحور ${i + 1}`} className={areaCls} />
-                  <input value={m.artifactAr ?? ""} onChange={(e) => setModule(i, { artifactAr: e.target.value })} disabled={locked} placeholder="ما يُسلّمه المتعلّم (اختياريّ)" aria-label={`مُسلَّم المحور ${i + 1}`} className={controlCls} />
-                  <textarea rows={3} value={m.bodyAr ?? ""} onChange={(e) => setModule(i, { bodyAr: e.target.value })} disabled={locked} placeholder="متن المحور (اختياريّ)" aria-label={`متن المحور ${i + 1}`} className={areaCls} />
+                {open && (
+                <div className="mt-4 grid gap-5">
+                  <p className="text-read text-muted-foreground">المعرّف <span className="font-mono">{m.moduleId}</span></p>
+                  <StaffField label="عنوان المحور" hint="اسمٌ قصيرٌ يظهر في قائمة المتعلّم. ابدأه باسمٍ لا بفعل: «بنية المقال» لا «نتعلّم بنية المقال».">
+                    <input value={m.titleAr} onChange={(e) => setModule(i, { titleAr: e.target.value })} disabled={locked} aria-label={`عنوان المحور ${i + 1}`} className={controlCls} />
+                  </StaffField>
+                  <StaffField label="مخرَج المحور" hint="ما يستطيع المتعلّمُ فعلَه بعده ولم يكن يستطيعه قبله. ابدأه بفعلٍ يُقاس: «يميّز»، «يكتب»، «يحلّل».">
+                    <textarea rows={2} value={m.outcomeAr ?? ""} onChange={(e) => setModule(i, { outcomeAr: e.target.value })} disabled={locked} aria-label={`مخرج المحور ${i + 1}`} className={areaCls} />
+                  </StaffField>
+                  <StaffField label="التطبيق العمليّ" hint="ما يفعله بيده في هذا المحور. إن لم يكن فيه شيءٌ يفعله فهو محاضرةٌ لا محور.">
+                    <textarea rows={2} value={m.activityAr ?? ""} onChange={(e) => setModule(i, { activityAr: e.target.value })} disabled={locked} aria-label={`تطبيق المحور ${i + 1}`} className={areaCls} />
+                  </StaffField>
+                  <StaffField label="ما يُسلّمه المتعلّم (اختياريّ)" hint="إن ذكرتَ مُسلَّما هنا فاجعل له تكليفا في خطوة «التكاليف» — وإلّا فلا سبيل لتسليمه.">
+                    <input value={m.artifactAr ?? ""} onChange={(e) => setModule(i, { artifactAr: e.target.value })} disabled={locked} aria-label={`مُسلَّم المحور ${i + 1}`} className={controlCls} />
+                  </StaffField>
+                  <StaffField label="متن المحور (اختياريّ)" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة. والروابطُ والملفّاتُ موضعُها «المصادر».">
+                    <textarea rows={3} value={m.bodyAr ?? ""} onChange={(e) => setModule(i, { bodyAr: e.target.value })} disabled={locked} aria-label={`متن المحور ${i + 1}`} className={areaCls} />
+                  </StaffField>
                 </div>
+                )}
               </Card>
-            ))}
+              );
+            })}
           </ol>
           <div className="mt-4 flex flex-wrap gap-2">
             {/* المعرّفُ من أكبرِ ما أُعطي لا من الطول — فلا يرث محورٌ جديدٌ
                 معرّفَ محذوف. الشرحُ في `application/trainer/plan-modules`. */}
-            <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, modules: [...content.modules, { moduleId: nextTrainerModuleId(ws.course.id, content.modules), titleAr: "" }] })}>+ محور</Button>
+            <Button tone="secondary" disabled={locked} onClick={() => {
+              const moduleId = nextTrainerModuleId(ws.course.id, content.modules);
+              setContent({ ...content, modules: [...content.modules, { moduleId, titleAr: "" }] });
+              setOpenModule(moduleId);
+            }}>+ محور</Button>
+            <Button tone="confirm" disabled={busy || locked || !dirty.modules || content.modules.some((m) => m.titleAr.trim().length < 2)} onClick={savePlan}>احفظ المحاور</Button>
           </div>
-          <label className="mt-4 block">
-            <span className="mb-1.5 block text-read font-bold text-muted-foreground">ملاحظاتٌ عن اللقاءات المباشرة (اختياريّ)</span>
-            <textarea rows={2} value={content.liveNoteAr ?? ""} onChange={(e) => setContent({ ...content, liveNoteAr: e.target.value })} disabled={locked} className={areaCls} />
-          </label>
-          <Button tone="confirm" disabled={busy || locked || !dirty.modules || content.modules.some((m) => m.titleAr.trim().length < 2)} onClick={savePlan} className="mt-4">احفظ المحاور</Button>
         </Panel>
       )}
 
       {/* ─────────── ③ المصادر ─────────── */}
       {phase === "prepare" && stage === "resources" && (
         <Panel as="section">
-          <h3 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> المصادر</h3>
-          <p className="mt-1 text-read leading-6 text-muted-foreground">روابطُ ما يحتاجه المتعلّم — كرّاسة، أو مقال، أو فيديو. وما ترفعه ملفّا من «التشغيل» يظهر تحتها.</p>
+          <StageIntro stage="resources" />
+          <p className="mt-2 text-read leading-6 text-muted-foreground">سمِّ المحتوى لا المنصّة: «كرّاسة التحرير» لا «ملفّ PDF». وما ترفعه ملفّا من «التشغيل» يظهر تحتها.</p>
           <ul className="mt-4 space-y-3">
             {content.resources.map((r, i) => (
               <Card as="li" key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                <input value={r.title} onChange={(e) => setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} disabled={locked} placeholder="اسم المصدر" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
+                <input value={r.title} onChange={(e) => setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
                 <input dir="ltr" value={r.url} onChange={(e) => setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)) })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
                 <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
               </Card>
@@ -553,8 +651,21 @@ export default function CohortWorkspace() {
       {/* ─────────── ④ اللقاءات والتسجيلات ─────────── */}
       {phase === "prepare" && stage === "sessions" && (
         <div className="space-y-5">
+          <Panel as="section"><StageIntro stage="sessions" /></Panel>
           {/* الجدولةُ بيده داخلَ نافذة الإدارة */}
           <TrainerSchedule cohortId={ws.cohort.id} onDone={() => void load()} />
+
+          {/* ملاحظةُ اللقاءات موضعُها هنا لا في «المحاور»: هي عن اللقاء لا
+              عن المحور، وكانت في خطوةٍ لا يفتحها من يسأل عن لقاءاته. */}
+          <Panel as="section">
+            <StaffField
+              label="ملاحظاتٌ عن اللقاءات المباشرة (اختياريّ)"
+              hint="ما تودّ أن يعرفه المتعلّم عن أسلوب لقاءاتك: أتُسجَّل؟ أالكاميرا مطلوبة؟ أيُسمح بالدخول متأخّرا؟"
+            >
+              <textarea rows={2} value={content.liveNoteAr ?? ""} onChange={(e) => setContent({ ...content, liveNoteAr: e.target.value })} disabled={locked} className={areaCls} />
+            </StaffField>
+            <Button tone="confirm" disabled={busy || locked || !dirty.sessions} onClick={savePlan} className="mt-4">احفظ الملاحظة</Button>
+          </Panel>
           <Panel as="section">
             <h3 className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-light-ink" /> الجلسات المسجّلة — من رابط <span className="text-read font-bold text-muted-foreground">({recordingsDone ? "أُضيفت" : "اختياريّ"})</span></h3>
             <p className="mt-1 text-read leading-6 text-muted-foreground">ألصق رابطَ التسجيل (يوتيوب، أو درايف، أو زووم) على لقائه — لا حاجةَ لرفع ملفّ.</p>
@@ -594,10 +705,7 @@ export default function CohortWorkspace() {
       {/* ─────────── ⑤ التكاليف ─────────── */}
       {phase === "prepare" && stage === "assignments" && (
         <Panel as="section">
-          <h3 className="flex items-center gap-2 text-sm font-black"><ClipboardCheck className="h-4 w-4 text-gold-ink" /> تكاليفُ الشعبة — واجباتُها ومشروعُها</h3>
-          <p className="mt-1 text-read leading-6 text-muted-foreground">
-            ما تؤلّفه هنا يصل المسجّلين، ويعود إليك تسليمُهم في طابور المراجعة. مرحلةٌ اختياريّةٌ عند الإرسال — وتُنصح بواحدٍ على الأقلّ يُسلَّم.
-          </p>
+          <StageIntro stage="assignments" />
           {ws.assessments.length === 0 ? (
             <p className="mt-3 text-read text-muted-foreground">لا تكليفَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
           ) : (
@@ -641,31 +749,36 @@ export default function CohortWorkspace() {
             </p>
             <div className="mt-3 grid gap-3">
               <label className="block">
-                <span className="mb-1.5 block text-read font-bold text-muted-foreground">العنوان</span>
+                <span className="block text-read font-bold text-foreground">العنوان</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">يظهر في قائمة مهامّ المتعلّم وفي طابور تقييمك.</span>
                 <input aria-label="عنوان التكليف" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
                   onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} className={controlCls} />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-read font-bold text-muted-foreground">التعليمات — ما يفعله المتعلّم بالضبط</span>
+                <span className="block text-read font-bold text-foreground">التعليمات</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">ما يفعله بالضبط، ومقدارُه، وما يُسلَّم. العنوانُ وحدَه لا يكفي للعمل.</span>
                 <textarea rows={3} aria-label="تعليمات التكليف" value={taskForm.briefAr}
                   placeholder="اذكر المطلوبَ ومقدارَه وما يُسلَّم — فالعنوانُ وحدَه لا يكفي للعمل."
                   onChange={(e) => setTaskForm({ ...taskForm, briefAr: e.target.value })} className={areaCls} />
               </label>
               <div className="grid gap-3 sm:grid-cols-3">
                 <label className="block">
-                  <span className="mb-1.5 block text-read font-bold text-muted-foreground">النوع</span>
+                  <span className="block text-read font-bold text-foreground">النوع</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يُسلَّم مرّة، و«اختبار» له درجة، و«مشروع تخرّج» يُحتسب في الإكمال.</span>
                   <select aria-label="نوع التكليف" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
                     {Object.entries(ASSESSMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-1.5 block text-read font-bold text-muted-foreground">الدرجة العظمى</span>
+                  <span className="block text-read font-bold text-foreground">الدرجة العظمى</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">عليها تُحسب نسبتُه. لا تُخفَض بعد رصد درجةٍ أعلى منها.</span>
                   <input type="number" min={1} dir="ltr" aria-label="الدرجة العظمى" value={taskForm.maxScore}
                     onChange={(e) => setTaskForm({ ...taskForm, maxScore: Math.max(1, Number(e.target.value) || 1) })}
                     className={`${controlCls} text-left`} />
                 </label>
                 <label className="block">
-                  <span className="mb-1.5 block text-read font-bold text-muted-foreground">آخر موعد</span>
+                  <span className="block text-read font-bold text-foreground">آخر موعد</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">بعده يظهر المتعلّم في «من يحتاج تدخّلك» إن لم يسلّم.</span>
                   <input type="date" dir="ltr" aria-label="آخر موعد للتسليم" value={taskForm.dueAt}
                     onChange={(e) => setTaskForm({ ...taskForm, dueAt: e.target.value })} className={`${controlCls} text-left`} />
                 </label>
@@ -721,7 +834,7 @@ export default function CohortWorkspace() {
       {/* ─────────── ⑥ الاعتماد ─────────── */}
       {phase === "prepare" && stage === "approval" && (
         <Panel as="section" tone={st.tone}>
-          <h3 className="flex items-center gap-2 text-sm font-black"><Send className="h-4 w-4 text-teal-light-ink" /> الموافقة والإرسال للاعتماد</h3>
+          <StageIntro stage="approval" />
           <p className="mt-2 text-read leading-7 text-foreground">
             بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، وتكاليفَها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
           </p>
