@@ -59,6 +59,7 @@ const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompens
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
+const SharedDossier = lazy(() => import('./pages/SharedDossier'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
@@ -178,6 +179,9 @@ export default function App() {
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}
           <Route path="/join-trainer/verify" element={<JoinTrainerVerify />} />
+          {/* سجلُّ المتقدّم برابطٍ باسمِ قارئه — بلا حساب، والرابطُ هو الهويّة.
+              وهو ما حلّ محلَّ الملفّ المطبوع (قرارُ ١٣ سبتمبر ٢٠٢٦). */}
+          <Route path="/r/:token" element={<SharedDossier />} />
           {/* حالةُ طلب الانضمام لصاحب الحساب — بوّابةُ المتقدّم الوحيدة */}
           <Route element={<RequireRole allow={APPLICANT_ROLES} />}>
             <Route path="/join-trainer/status" element={<ApplicantStatus />} />

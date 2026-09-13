@@ -84,6 +84,10 @@ const PHRASES: Record<string, string> = {
   'trainer.interview.self_booked': 'حجزُ متقدّمٍ موعدَ مقابلته بنفسه',
   'trainer.interview.self_canceled': 'إلغاءُ متقدّمٍ موعدَ مقابلته',
   'trainer.interview.dossier_sent': 'إرسالُ ملفِّ المتقدّم إلى لجنة المراجعة',
+  /* لا يُركَّب اسمُهما من المعجم: «dossier_link» ليست كلمةً فيه، والتركيبُ
+     الناقصُ يُظهر المفتاحَ اللاتينيَّ في شاشةِ صاحب المنصّة. */
+  'trainer.dossier_link.create': 'إنشاءُ رابطِ سجلٍّ باسمِ قارئ',
+  'trainer.dossier_link.revoke': 'إلغاءُ رابطِ سجلٍّ',
   'trainer.interview.invite': 'دعوةُ متقدّمٍ إلى حجزِ موعدِ مقابلة',
   'trainer.create_direct': 'تعيينُ مدرّبٍ داخليّا — بلا نموذجِ تقدّم',
   'advisor.case.create_own': 'إدخالُ المستشارِ عميلا وفتحُ حالته',

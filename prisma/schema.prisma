@@ -954,6 +954,7 @@ model TrainerApplication {
   references           TrainerReference[]
   statusHistory        TrainerStatusHistory[]
   invitations          TrainerInvitation[]
+  dossierLinks         TrainerDossierLink[]
   profile              TrainerProfile?
 
   @@index([status, createdAt])
@@ -987,14 +988,26 @@ model TrainerApplicationDocument {
 }
 
 model TrainerApplicationReview {
-  id            String             @id @default(uuid()) @db.Uuid
-  applicationId String             @db.Uuid
-  reviewerId    String             @db.Uuid
+  id            String              @id @default(uuid()) @db.Uuid
+  applicationId String              @db.Uuid
+  /// كاتبٌ واحدٌ لا غير: موظّفٌ مسجَّلُ الدخول، أو صاحبُ رابطٍ باسمه.
+  reviewerId    String?             @db.Uuid
+  linkId        String?             @db.Uuid
+  /// يُنسَخ الاسمُ في الصفّ فيبقى ولو حُذف الرابط — والتقييمُ بلا اسمٍ لا يصلح مرجعا
+  reviewerName  String?
   scores        Json // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
   overallNote   String?
-  createdAt     DateTime           @default(now())
-  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  /// بمفردات `TrainerInterview.outcome` نفسِها — لا معجمَ ثانيا لشيءٍ واحد
+  verdict       String? // passed | hold | failed
+  /// ملاحظةٌ على دوراته لا تمسّ `teachableCourseIds`: يعدّلها هو في «المؤهّلات» عنده
+  coursesNote   String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  application   TrainerApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  link          TrainerDossierLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
 
+  /// لكلّ قارئٍ تقييمٌ واحدٌ يعود إليه فيراجعه، لا صفٌّ جديدٌ في كلّ حفظ
+  @@unique([applicationId, linkId])
   @@index([applicationId])
 }
 
@@ -1069,6 +1082,36 @@ model TrainerInvitation {
   createdBy     String?            @db.Uuid
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+}
+
+/// ═══ رابطُ سجلِّ المتقدّم — يُقرأ ويُكتب فيه بلا حساب ═══
+///
+/// قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): يُرسَل الملفُّ رابطا بين الفريق بدل
+/// ورقةٍ تُطبع. وطُلب أوّلا رابطٌ عامٌّ يفتحه كلُّ من وصله، فعُدل عنه: الملفُّ
+/// يحمل اسمَ إنسانٍ وبريدَه وسيرتَه، وكتابةٌ بلا اسمٍ لا تصلح مرجعا يُرجَع
+/// إليه إن سأل مرفوضٌ عن سببِ رفضه.
+///
+/// فالرابطُ **باسمِ قارئٍ بعينه**: يُفتح بنقرةٍ بلا تسجيل، والرابطُ نفسُه هو
+/// الهويّة. ولا يُحفظ الرمزُ بل هاشُه — كـ`TrainerInvitation` سواءً بسواء.
+///
+/// والرابطُ يزول والسجلُّ يبقى: التقييمُ في ملفّ المتقدّم أبدا، وإنّما يُغلق
+/// البابُ الذي دخل منه.
+model TrainerDossierLink {
+  id            String                     @id @default(uuid()) @db.Uuid
+  applicationId String                     @db.Uuid
+  tokenHash     String                     @unique // sha256(token) — لا يُحفظ الرمزُ ذاته
+  reviewerName  String // مَن هو، ليُنسَب إليه ما يكتب
+  reviewerEmail String?
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  firstOpenedAt DateTime?
+  lastOpenedAt  DateTime?
+  createdBy     String?                    @db.Uuid
+  createdAt     DateTime                   @default(now())
+  application   TrainerApplication         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  reviews       TrainerApplicationReview[]
 
   @@index([applicationId])
 }
@@ -1734,30 +1777,30 @@ model Recording {
 }
 
 model Enrollment {
-  id               String                 @id @default(uuid()) @db.Uuid
-  cohortId         String                 @db.Uuid
-  userId           String                 @db.Uuid
-  status           String                 @default("enrolled") // enrolled | waitlisted | completed | dropped
-  enrolledBy       String?                @db.Uuid
-  overrideCapacity Boolean                @default(false) // تجاوز سعة موثق بصلاحية
+  id                String                 @id @default(uuid()) @db.Uuid
+  cohortId          String                 @db.Uuid
+  userId            String                 @db.Uuid
+  status            String                 @default("enrolled") // enrolled | waitlisted | completed | dropped
+  enrolledBy        String?                @db.Uuid
+  overrideCapacity  Boolean                @default(false) // تجاوز سعة موثق بصلاحية
   /// من أين جاء: عبر رابطِ مدرّبٍ (يُحسب له بأجر الإحالة) أو عامّ. يُختم عند
   /// التسجيل من رمزٍ حُمل مع الحجز، ولا يُغيَّر بعدها — فهو حجّةُ الأجر.
-  referralProfileId String?               @db.Uuid
+  referralProfileId String?                @db.Uuid
   referralCode      String?
-  createdAt        DateTime               @default(now())
-  cohort           Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)
-  user             User                   @relation("EnrollmentUser", fields: [userId], references: [id])
-  joinLinks        SessionJoinLink[]
-  attendance       Attendance[]
-  attempts         AssessmentAttempt[]
-  submissions      AssignmentSubmission[]
-  moduleProgress   ModuleProgress[]
-  courseProgress   CourseProgress?
-  certificates     Certificate[]
-  learnerRequests  LearnerRequest[]
-  skillRemeasures  SkillRemeasure[]
-  ratings          Rating[]
-  messages         CohortMessage[]
+  createdAt         DateTime               @default(now())
+  cohort            Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  user              User                   @relation("EnrollmentUser", fields: [userId], references: [id])
+  joinLinks         SessionJoinLink[]
+  attendance        Attendance[]
+  attempts          AssessmentAttempt[]
+  submissions       AssignmentSubmission[]
+  moduleProgress    ModuleProgress[]
+  courseProgress    CourseProgress?
+  certificates      Certificate[]
+  learnerRequests   LearnerRequest[]
+  skillRemeasures   SkillRemeasure[]
+  ratings           Rating[]
+  messages          CohortMessage[]
 
   @@unique([cohortId, userId])
   @@index([userId, status])
@@ -1791,7 +1834,9 @@ model CohortAssessment {
   cohortId    String                 @db.Uuid
   moduleId    String?
   title       String
-  /* تعليماتُ التكليف — ما يفعله المتعلّم. NULL لما أُنشئ قبل العمود. */
+  /**
+   * تعليماتُ التكليف — ما يفعله المتعلّم. NULL لما أُنشئ قبل العمود.
+   */
   briefAr     String?
   /// مرفقاتُ التكليف — مصفوفةُ `{ title, url, kind }` بأنواع `RESOURCE_KINDS`
   /// نفسِها (١٣ سبتمبر ٢٠٢٦). نموذجٌ يُملأ، أو مرجعٌ يُقرأ قبل التسليم.
@@ -2409,22 +2454,22 @@ model CvSubmission {
  */
 
 model EnrollmentRequest {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @db.Uuid
-  cohortId  String    @db.Uuid
-  pathwayId String?
-  status    String    @default("pending") // pending | seat_held | rejected | converted | cancelled
-  note      String?
-  decidedBy String?   @db.Uuid
-  decidedAt DateTime?
-  orderId   String?   @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  cohortId     String    @db.Uuid
+  pathwayId    String?
+  status       String    @default("pending") // pending | seat_held | rejected | converted | cancelled
+  note         String?
+  decidedBy    String?   @db.Uuid
+  decidedAt    DateTime?
+  orderId      String?   @db.Uuid
   /// خطّة المتعلّم التي وُلد منها هذا الطلب — تجمع طلباتِ خطّةٍ واحدة في طلب شراء واحد وفاتورة واحدة
-  planId    String?   @db.Uuid
+  planId       String?   @db.Uuid
   /// رمزُ الدعوة الذي جاء به إلى الدفع — يُحمل حتّى التسوية فيُختم على التسجيل
   referralCode String?
-  createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cohort    Cohort    @relation(fields: [cohortId], references: [id])
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cohort       Cohort    @relation(fields: [cohortId], references: [id])
 
   @@unique([userId, cohortId])
   @@index([cohortId, status])
