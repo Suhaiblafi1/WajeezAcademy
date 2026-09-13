@@ -9,6 +9,7 @@ import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
 import { TRAINER_INTERVIEW } from "@/application/trainer/application-options";
+import { calendlyCardNotice } from "@/lib/calendly-card";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -30,7 +31,7 @@ interface IntegrationsView {
     hasAccountId: boolean; hasClientId: boolean; hasClientSecret: boolean;
   };
   calendly: {
-    enabled: boolean; envSourced: boolean; ready: boolean; polling: boolean;
+    enabled: boolean; envSourced: boolean; polling: boolean;
     signingKey: string; hasSigningKey: boolean; callbackUrl: string; siteUrlExplicit: boolean;
     token: string; hasToken: boolean; bookingUrl: string;
   };
@@ -150,6 +151,8 @@ export default function Integrations() {
   }
 
   const webhookUrl = `${window.location.origin.replace("7100", "7101")}/api/webhooks/payments/${payForm.driver}`;
+  /* حالُ بطاقة Calendly تُقرَّر في دالّةٍ خالصةٍ محروسة، لا في شرطٍ هنا */
+  const calNotice = view ? calendlyCardNotice(view.calendly) : null;
 
   return (
     <AdminLayout title="التكاملات — الدفع والبريد">
@@ -368,14 +371,10 @@ export default function Integrations() {
             <p className="mt-1 text-read leading-6 text-muted-foreground">
               يكتب موعدَ المقابلة عندنا حين يحجزه المتقدّم، ويُلغيه حين يُلغي.
             </p>
-            {view.calendly.enabled && !view.calendly.ready && !view.calendly.polling && (
-              <Inset as="p" tone="danger" className="mt-3 text-read leading-6 text-red-200">
-                مفعَّلٌ بلا رمزٍ ولا مفتاحِ توقيع — لا يُسجَّل موعدٌ البتّة.
-              </Inset>
-            )}
-            {view.calendly.polling && !view.calendly.ready && (
-              <Inset as="p" tone="positive" className="mt-3 text-read leading-6 text-emerald-200">
-                المزامنةُ بالسؤال الدوريّ — يسأل الخادمُ Calendly كلَّ خمس دقائق. تعمل على الخطّة المجّانيّة.
+            {calNotice && (
+              <Inset as="p" tone={calNotice.tone === "danger" ? "danger" : "positive"}
+                className={`mt-3 text-read leading-6 ${calNotice.tone === "danger" ? "text-red-200" : "text-emerald-200"}`}>
+                {calNotice.textAr}
               </Inset>
             )}
             {view.calendly.envSourced && (

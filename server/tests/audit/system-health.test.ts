@@ -12,6 +12,7 @@ import { AuthService } from '../../services/auth.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { SystemHealthService } from '../../services/system-health.service'
+import { saveCalendlyConfig } from '../../services/integrations.service'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -163,5 +164,49 @@ describe('ولا تُقرأ بلا صلاحيّة الإعدادات', () => {
   it('والزائرُ ٤٠١', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/admin/system-health' })
     expect(res.statusCode).toBe(401)
+  })
+})
+
+describe('ومزامنةُ Calendly: كلُّ حالٍ تقول عملَها هي، لا «لم تُضبط» تجمعها', () => {
+  /* ═══ العطبُ الذي كُتب له ═══
+
+     جُمعت حالتان في «لم تُضبط»: تكاملٌ مطفأ، ورمزٌ غيرُ محفوظ. فقرأ صاحبُ
+     المنصّة «لم تُضبط» وذهب يبحث عن مربّع التفعيل — وكان مؤشَّرا، والغائبُ
+     الرمزُ وحدَه. والعملُ في الحالتين مختلفٌ تماما: هذه نقرةُ مربّعٍ وحفظ،
+     وتلك رحلةٌ إلى Calendly لتوليد رمزٍ من الحساب المضيف (١٣ سبتمبر ٢٠٢٦).
+
+     والحارسُ على البند في اللقطة لا على ورودِ نصّ: قيمتُه في كلّ حالٍ تفترق
+     عن الأخرى، والعملُ المكتوبُ يفترق معها. */
+  const calendly = async () => {
+    const snap = await health.snapshot()
+    const found = flat(snap as unknown as Snapshot).find((i) => i.key === 'calendly_sync')
+    expect(found, 'لا بندَ لمزامنة Calendly في صحّة النظام').toBeDefined()
+    return found!
+  }
+
+  it('⚠️ لا رمزَ محفوظ: يُقال إنّ الرمزَ هو الغائب، ويُدَلُّ على حقله لا على مربّع التفعيل', async () => {
+    /* لا صفَّ للتكامل أصلا — وهي حالُ منصّةٍ لم تُضبط بعد */
+    const item = await calendly()
+    expect(item.valueAr, 'ما زالت الحالان مجموعتَين في «لم تُضبط»').toBe('لا رمزَ محفوظ')
+    expect(item.level).toBe('attention')
+    expect(item.actionAr, 'لا يقول من أين يُولَّد الرمز').toContain('الحساب المضيف')
+    /* والخطأُ الواقعُ كان لصقَ الرمز في حقل مفتاحِ التوقيع، فيُستثنى صراحةً */
+    expect(item.actionAr, 'لا يحذّر من الحقل المجاور').toContain('مفتاحِ التوقيع')
+  })
+
+  it('ورمزٌ محفوظٌ وتكاملٌ مطفأ: حالٌ أخرى بعملٍ آخر — نقرةُ مربّعٍ لا رحلةُ توليد', async () => {
+    await saveCalendlyConfig(prisma, learnerId, { enabled: false, token: 'health-calendly-token-0001' })
+    const item = await calendly()
+    expect(item.valueAr, 'يُخلط الرمزُ المحفوظُ بغيابه').toBe('الرمزُ محفوظٌ والتكاملُ مطفأ')
+    expect(item.level).toBe('attention')
+    expect(item.actionAr, 'لا يدلّ على مربّع التفعيل').toContain('مفعَّل')
+    expect(item.actionAr, 'يطلب إعادةَ لصقِ رمزٍ محفوظ').toContain('ولا حاجةَ لإعادة لصق الرمز')
+  })
+
+  it('ومفعَّلٌ برمزٍ ولا نبضَ بعد: لا يُقال «مضبوط» ولا «معطَّل» — بل لم تعمل دورةٌ بعد', async () => {
+    await saveCalendlyConfig(prisma, learnerId, { enabled: true, token: 'health-calendly-token-0001' })
+    const item = await calendly()
+    expect(item.level, 'يُحكَم على دورةٍ لم تقع بعد').toBe('unknown')
+    expect(item.valueAr).toContain('لم تعمل دورةٌ بعد')
   })
 })
