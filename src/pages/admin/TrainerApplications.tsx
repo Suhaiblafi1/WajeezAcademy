@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
-  Loader2, MailCheck, Printer, RefreshCw, ServerOff, Star, UserPlus, XCircle,
+  Loader2, MailCheck, Printer, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -20,15 +20,21 @@ import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./
 import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import InterviewSheet from "./InterviewSheet";
+import ReviewerLinks from "./ReviewerLinks";
 import { yearsLabel } from "@/application/trainer/application-options";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
+import { PURGEABLE_STATUSES } from "@/application/trainer/purgeable";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import { RUBRIC_AXES } from "@/application/trainer/rubric";
+/* الحالاتُ التي يقبل الخادمُ حذفَها — تُقرأ من مصدرها لا تُكتب هنا.
+   ونسخةٌ ثانيةٌ تنحرف يوما فيَعِد الزرُّ بما يرفضه الخادم. */
+const PURGEABLE: string[] = [...PURGEABLE_STATUSES];
+
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
@@ -104,13 +110,22 @@ interface AppRow {
   documentsCount: number; reviewsCount: number; interviewsCount: number;
 }
 
+/** قرارُ القارئ كما يُقرأ — بمفردات `TrainerInterview.outcome` نفسِها */
+const VERDICT_AR: Record<string, string> = {
+  passed: "يجتاز", hold: "يُعاد لقاؤه", failed: "لا يجتاز",
+};
+
 interface AppDetail extends Record<string, unknown> {
   id: string; reference: string; status: string; fullName: string; email: string;
   jobTitle: string | null; country: string | null;
   motivation: string | null; bio: string | null; linkedinUrl: string | null;
   documents: { id: string; kind: string; originalName: string; storageKey: string }[];
   documentUrls: Record<string, string>;
-  reviews: { id: string; scores: Record<string, number>; overallNote: string | null; createdAt: string }[];
+  reviews: {
+    id: string; scores: Record<string, number>; overallNote: string | null; createdAt: string;
+    /** فارغٌ في المراجعات القديمة التي سبقت الروابط — وتُعرض «من داخل الإدارة» */
+    reviewerName?: string | null; verdict?: string | null; coursesNote?: string | null; updatedAt?: string;
+  }[];
   interviews: { id: string; scheduledAt: string; outcome: string | null; canceledAt: string | null }[];
   statusHistory: { fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }[];
   profile: { id: string; userId: string | null } | null;
@@ -232,7 +247,6 @@ export default function TrainerApplications() {
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [selected, setSelected] = useState<AppDetail | null>(null);
-  const [scores, setScores] = useState<Record<string, number>>({});
   const [note, setNote] = useState("");
   /* خانةُ «ما الذي نريده منه» — منفصلةٌ عن ملاحظة المراجع: تلك تُكتب لنا،
      وهذه تصل المتقدّمَ بنصّها في رسالةٍ وفي صفحة حالته. وخلطُهما يُرسل إليه
@@ -242,10 +256,11 @@ export default function TrainerApplications() {
   /* الوثيقةُ المفتوحةُ داخل الشاشة — لا لسانٌ ثانٍ يُفقِد المراجعُ موضعَه */
   const [openDoc, setOpenDoc] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [purging, setPurging] = useState(false);
-  const [purgeReason, setPurgeReason] = useState("");
   const [tab, setTab] = useState<DetailTab>("dossier");
   const { user } = useRealSession();
+  /* المحوُ للمدير الأعلى وحدَه — ومن لا يملك حبّتَه لا يرى البابَ أصلا */
+  const canPurge = user?.permissions?.includes("trainer.applications.purge") ?? false;
+  const [purging, setPurging] = useState<AppDetail | null>(null);
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
   const [mode, setMode] = useState<"apps" | "run" | "changes">("apps");
@@ -271,7 +286,7 @@ export default function TrainerApplications() {
     try {
       const detail = await apiGet<AppDetail>(`/api/admin/trainer-applications/${id}`);
       setSelected(detail);
-      setScores({}); setNote("");
+      setNote("");
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذر فتح الطلب");
     }
@@ -287,6 +302,39 @@ export default function TrainerApplications() {
       await load();
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* المحوُ: رفضٌ أوّلا إن لزم، ثمّ حذفٌ بالمرجع. والجوابُ يُقال كما هو —
+     كم ملفّا مُحي من القرص، وهل ذهب الحساب أم بقي ولماذا. */
+  const purgeApplication = async (target: AppDetail, reasonAr: string) => {
+    setBusy(true);
+    try {
+      if (!PURGEABLE.includes(target.status)) {
+        await apiPost(`/api/admin/trainer-applications/${target.id}/decision`, {
+          action: "reject", note: reasonAr,
+        });
+      }
+      const r = await apiDelete<{
+        deletedDocuments: number; unremovedFiles: string[];
+        deletedAccount: boolean; keptAccountReason: string | null;
+      }>(`/api/admin/trainer-applications/${encodeURIComponent(target.reference)}`, { reasonAr });
+
+      const parts = [`حُذف ${target.reference}`];
+      if (r.deletedDocuments > 0) parts.push(`و${r.deletedDocuments} وثيقة`);
+      if (r.deletedAccount) parts.push("وحسابُه");
+      else if (r.keptAccountReason) parts.push(`وبقي حسابُه — ${r.keptAccountReason}`);
+      toast(parts.join(" "));
+      /* وما لم يُمحَ يُقال صريحا: «تمّ» لا تُقال عن نصفِ فعل */
+      if (r.unremovedFiles.length > 0) {
+        toastError(`بقي ${r.unremovedFiles.length} ملفّا على القرص لم يُمحَ — راجِعها يدويّا`);
+      }
+      setSelected(null);
+      await load();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر الحذف");
     } finally {
       setBusy(false);
     }
@@ -373,7 +421,6 @@ export default function TrainerApplications() {
         {d.label}
       </Button>
     );
-    const rubricComplete = RUBRIC_AXES.every((x) => scores[x.key] >= 1);
     /* زرُّ القرار في الشريط اللاصق: أضيقُ وبلا عرضٍ كامل، فالشريطُ صفٌّ لا عمود */
     const barButton = (d: (typeof DECISIONS)[number]) => (
       <Button
@@ -487,47 +534,37 @@ export default function TrainerApplications() {
 
         {/* ── الحذف النهائيّ ──
 
-            الطلبُ المنتهي كان يبقى في القاعدة أبدا، فبقيت طلباتُ الاختبار
-            في الإنتاج بلا سبيلٍ إلى إزالتها. والحبّةُ منفصلة عن المراجعة:
-            من يراجع ليس بالضرورة من يمحو. */}
-        {(user?.permissions.includes("trainer.applications.purge") ?? false)
-          && ["draft", "email_verification_pending", "rejected", "withdrawn"].includes(a.status) && (
-          <details className="mb-4 rounded-2xl border border-red-500/25 bg-red-500/[0.05] p-4">
-            <summary className="cursor-pointer text-xs font-black text-red-300">حذفٌ نهائيّ لهذا الطلب</summary>
-            <p className="mt-2 text-read leading-6 text-foreground">
-              يُحذف الطلبُ ومستنداتُه ومراجعاتُه ولا يُستردّ. ويبقى أثرُ الحذف في سجلّ
-              التدقيق: من حذف، ومتى، ولماذا. ولا يُحذف طلبُ من صار مدرّبا.
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <input
-                value={purgeReason}
-                onChange={(e) => setPurgeReason(e.target.value)}
-                placeholder="سبب الحذف (مطلوب)"
-                aria-label="سبب الحذف النهائي"
-                className="min-w-[18rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-red-500/50"
-              />
-              <Button tone="danger" size="sm" type="button"
-                disabled={purging || purgeReason.trim().length < 5}
-                onClick={async () => {
-                  setPurging(true);
-                  try {
-                    await apiDelete(`/api/admin/trainer-applications/${encodeURIComponent(a.reference)}`, { reasonAr: purgeReason.trim() });
-                    setPurgeReason("");
-                    setSelected(null);
-                    toast(`حُذف الطلب ${a.reference} نهائيّا.`);
-                    await load();
-                  } catch (e) {
-                    toastError(e instanceof ApiError ? e.message : "تعذّر الحذف");
-                  } finally {
-                    setPurging(false);
-                  }
-                }}
-                loading={purging}
-              >
-                احذفه نهائيّا
-              </Button>
-            </div>
-          </details>
+            ═══ لماذا صار يظهر في كلّ حالة (١٣ سبتمبر ٢٠٢٦) ═══
+
+            كان محجوبا إلّا على الحالات الأربع المنتهية. وطلباتُ التجربة —
+            وهي أوّلُ ما بُني له هذا الباب — تسكن كلَّ الحالات: مقابلةٌ
+            مجدولةٌ، ديمو مطلوب، مراجعةٌ أكاديميّة. فكان البابُ موجودا
+            **ولا يُرى حيث يُحتاج**، وقال صاحبُ المنصّة إنّه لا يجد سبيلا
+            إلى حذف ما أنشأه للتجربة.
+
+            فصار يظهر دائما لمن يملك حبّتَه، ويتكفّل الحوارُ بالباقي: المنتهي
+            يُحذف، وما دونه يُرفض أوّلا ثمّ يُحذف — بنقرةٍ واحدةٍ وأثرَين.
+            ومن صار مدرّبا يُقال له لا، ويُدَلّ على الإيقاف. */}
+        {canPurge && (
+          <Panel as="article" className="mb-4 border-red-500/25">
+            <h4 className="text-sm font-black text-red-300">حذفٌ نهائيّ لهذا الطلب</h4>
+            {a.profile ? (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                صار مدرّبا معتمدا — ولا يُمحى سجلُّ من تعاقدنا معه. أوقِف ملفّه إن أردت.
+              </p>
+            ) : (
+              <>
+                <p className="mt-2 text-read leading-6 text-muted-foreground">
+                  يذهب الطلبُ ووثائقُه ومقابلاتُه وتقييماتُه وروابطُ قُرّائه، ولا يُستردّ.
+                  ويبقى في سجلّ التدقيق: من حذف، ومتى، ولماذا.
+                </p>
+                <Button tone="danger" icon={Trash2} type="button" disabled={busy}
+                  onClick={() => setPurging(a)} className="mt-3">
+                  احذفه نهائيّا
+                </Button>
+              </>
+            )}
+          </Panel>
         )}
 
         {/* ═══ الروبرك أسفلَ الملفّ لا في جانبه ═══
@@ -728,44 +765,80 @@ export default function TrainerApplications() {
             )}
           </div>
 
+          {/* روابطُ القُرّاء — قبل الحكم، فمنها يأتي ما يُحكَم به */}
+          <div className="mt-4 print:hidden">
+            <ReviewerLinks applicationId={a.id} />
+          </div>
+
           {/* والحكمُ في الذيل، عريضا: الروبركُ والقرارُ جنبا إلى جنبٍ على الشاشات
               الواسعة بدل عمودٍ واحدٍ طويلٍ يُمرَّر فيه. */}
           {/* ولا يُطبعان: حقلا إدخالٍ لا محتوى ملفّ. وإخفاءُ المربّعات وحدَها
               كان يترك أسماءَ المحاور معلّقةً بلا درجات — عنوانٌ بلا شيءٍ تحته،
               وهو العطبُ الذي أُصلح في الأقسام المطويّة نفسِه. */}
           <div className="grid gap-4 lg:grid-cols-2 lg:items-start print:hidden">
+            {/* ═══ الروبركُ صار عرضا لا نموذجا (١٣ سبتمبر ٢٠٢٦) ═══
+
+                قرارُ صاحب المنصّة: التقييمُ يُملأ في الصفحة المشتركة التي
+                يفتحها كلُّ قارئٍ برابطه باسمه. فنموذجُ الإدخال هنا كان
+                **الموضعَ الثاني** لشيءٍ واحد — ومن ملأ ههنا وملأ زميلُه هناك
+                لم يُعرف أيُّهما التقييم.
+
+                فذهب النموذجُ وبقيت المقارنة: وهي وحدَها ما لا يُغني عنه
+                الرابط، إذ لا يرى قارئٌ رأيَ زميله قبل أن يكتب رأيَه. */}
             <Panel as="article">
-              <h4 id="sec-rubric" className="scroll-mt-28 text-sm font-black">الروبرك — تسعة محاور (١–٥)</h4>
-              <div className="mt-3 space-y-2">
-                {RUBRIC_AXES.map((x) => (
-                  <div key={x.key} className="flex items-center justify-between gap-2">
-                    <span className="text-fine text-muted-foreground">{x.label}</span>
-                    <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
-                      {[1, 2, 3, 4, 5].map((v) => (
-                        <button
-                          key={v} type="button" onClick={() => setScores({ ...scores, [x.key]: v })}
-                          aria-pressed={scores[x.key] === v}
-                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border text-fine font-bold transition ${
-                            scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-muted-foreground hover:border-white/40"
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <textarea
-                value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="ملاحظة المراجع…"
-                aria-label="ملاحظة المراجع"
-                className={`${staffAreaCls} mt-3`}
-              />
-              <Button tone="confirm" disabled={!rubricComplete || busy}
-                onClick={() => void act(() => apiPost(`/api/admin/trainer-applications/${a.id}/reviews`, { scores, overallNote: note || undefined }), "سُجل التقييم")} className="mt-3 w-full">
-                <Star className="h-3.5 w-3.5" /> سجّل التقييم
-              </Button>
-              <p className="mt-2 text-center text-read text-muted-foreground">{a.reviews.length} تقييم مسجل</p>
+              <h4 id="sec-rubric" className="scroll-mt-28 text-sm font-black">التقييمات — {a.reviews.length}</h4>
+              {a.reviews.length === 0 ? (
+                <p className="mt-2 text-read leading-6 text-muted-foreground">
+                  لا تقييمَ بعد. أنشئ رابطا باسم قارئٍ من «روابطُ القُرّاء» أعلاه، وما يكتبه يظهر هنا.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-3">
+                  {a.reviews.map((r) => (
+                    <Inset key={r.id}>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <span className="text-read font-bold">
+                          {r.reviewerName ?? "مراجعٌ من داخل الإدارة"}
+                        </span>
+                        {r.verdict && (
+                          <span className={`rounded-full border px-2 py-0.5 text-read ${
+                            r.verdict === "passed" ? "border-teal-light-ink/50 text-teal-light-ink"
+                              : r.verdict === "failed" ? "border-red-400/50 text-red-300"
+                              : "border-gold/50 text-gold-ink"
+                          }`}>
+                            {VERDICT_AR[r.verdict] ?? r.verdict}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* المحاورُ المقيَّمةُ وحدَها — و«لم يُقيَّم» تُقال ولا تُترك فراغا */}
+                      <dl className="mt-2 space-y-1">
+                        {RUBRIC_AXES.map((x) => (
+                          <div key={x.key} className="flex items-baseline justify-between gap-3">
+                            <dt className="text-read text-muted-foreground">{x.label}</dt>
+                            <dd className="shrink-0 text-read font-bold">
+                              {typeof r.scores?.[x.key] === "number"
+                                ? `${r.scores[x.key]} / 5`
+                                : <span className="font-normal text-muted-foreground">لم يُقيَّم</span>}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+
+                      {r.overallNote && (
+                        <p className="mt-2 whitespace-pre-line text-read leading-6">{r.overallNote}</p>
+                      )}
+                      {r.coursesNote && (
+                        <p className="mt-2 whitespace-pre-line text-read leading-6 text-gold-ink">
+                          على دوراته: {r.coursesNote}
+                        </p>
+                      )}
+                      <p className="mt-2 text-read text-muted-foreground">
+                        {fmtDateTime(new Date(r.updatedAt ?? r.createdAt))}
+                      </p>
+                    </Inset>
+                  ))}
+                </div>
+              )}
             </Panel>
 
             <Panel as="article">
@@ -838,7 +911,48 @@ export default function TrainerApplications() {
               )}
             </Panel>
           </div>
+
         </div>
+
+      {/* ═══ حوارُ المحو — يُكتب فيه رقمُ الطلب بالحرف وسببٌ يبقى ═══
+
+            و«ارفضه ثمّ احذفه» لمن كان قيدَ النظر: الحذفُ لا يقع إلّا على منتهٍ
+            (`PURGEABLE_STATUSES`)، وطلباتُ التجربة تسكن كلَّ الحالات. فبدل أن
+            يُقال «ارفضه أوّلا ثمّ عُد» يقع الأمران بنقرةٍ واحدة — وكلاهما في
+            الأثر بسببه، فلا ينتقل شيءٌ في الخفاء. */}
+        {purging && (
+          <ConfirmAction
+            titleAr={`حذفُ الطلب ${purging.reference} نهائيّا`}
+            confirmLabelAr={PURGEABLE.includes(purging.status) ? "احذفه نهائيّا" : "ارفضه ثمّ احذفه نهائيّا"}
+            busy={busy}
+            typing={{ expected: purging.reference, labelAr: "اكتب رقمَ الطلب بالحرف" }}
+            reason={{ labelAr: "سببُ الحذف — يبقى في الأثر بعد أن يذهب الطلب", minLength: 5 }}
+            onCancel={() => setPurging(null)}
+            onConfirm={(reason) => {
+              /* `reason` اختياريٌّ في نوع المكوّن وحاضرٌ هنا بحكم `reason={{…}}`.
+                 ولا يُمرَّر فارغا بدلا منه: الخادمُ يشترطه، فيصير الردُّ خطأً
+                 غامضا بدل زرٍّ لا يعمل. */
+              if (!reason) return;
+              const target = purging;
+              setPurging(null);
+              void purgeApplication(target, reason);
+            }}
+          >
+            <p className="text-read leading-6">
+              يذهب <b>{purging.fullName}</b> ومعه {purging.documents.length} وثيقة
+              {" "}و{purging.reviews.length} تقييما و{purging.interviews.length} مقابلة
+              {" "}و{purging.statusHistory.length} انتقالَ حالة — ولا رجعة.
+            </p>
+            {!PURGEABLE.includes(purging.status) && (
+              <p className="mt-2 text-read leading-6 text-gold-ink">
+                وهو قيدُ النظر الآن («{STATUS_LABELS[purging.status] ?? purging.status}»)، فيُرفض أوّلا ثمّ يُحذف.
+              </p>
+            )}
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              وحسابُه يُحذف معه إن لم يكن له غيرُ هذا الطلب — وإن كان له تسجيلٌ أو شراءٌ بقي، ويُقال لك.
+            </p>
+          </ConfirmAction>
+        )}
       </AdminLayout>
     );
   }

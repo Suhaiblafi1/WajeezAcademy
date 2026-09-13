@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
+import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { EarningsService } from '../../services/earnings.service'
@@ -20,6 +21,7 @@ const rubricSchema = z.object(
 
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
+  const links = new TrainerDossierLinkService(prisma)
   const changes = new TrainerChangeService(prisma)
   const applications = new TrainerApplicationService(prisma)
 
@@ -47,6 +49,45 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { reference } = z.object({ reference: z.string().trim().min(3).max(60) }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
     return applications.purge(reference, req.auth!.userId, reasonAr)
+  })
+
+  /* ── روابطُ سجلِّ المتقدّم — تُنشأ باسمٍ وتُلغى باسم ──
+
+     الرمزُ يُردّ **مرّةً واحدةً عند الإنشاء** ولا يُقرأ بعدها أبدا: لا يُحفظ
+     منه إلّا هاشُه. فمن أضاع الرابطَ أنشأ غيرَه وألغى الأوّل — ولا سبيلَ إلى
+     استرجاعه، وهو المقصود. */
+  app.post('/api/admin/trainer-applications/:id/dossier-links', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'رابطُ سجلٍّ باسمِ قارئ — يُردّ رمزُه مرّةً واحدة' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      reviewerName: z.string().trim().min(2).max(120),
+      reviewerEmail: z.string().trim().email().max(200).optional(),
+      days: z.number().int().min(1).max(180).optional(),
+    }).parse(req.body ?? {})
+    const made = await links.create(id, req.auth!.userId, {
+      reviewerName: body.reviewerName,
+      reviewerEmail: body.reviewerEmail ?? null,
+      ...(body.days ? { ttlMs: body.days * 24 * 3600_000 } : {}),
+    })
+    return reply.status(201).send({ url: made.url, link: made.link })
+  })
+
+  app.get('/api/admin/trainer-applications/:id/dossier-links', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'روابطُ السجلّ وحالُها — مَن، ومتى فُتح، وهل أُلغي' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return links.list(id)
+  })
+
+  app.delete('/api/admin/trainer-applications/:id/dossier-links/:linkId', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'إلغاءُ رابطِ سجلّ — لا حذفُه، فالتقييمُ المكتوبُ به معلَّقٌ باسمه' },
+  }, async (req) => {
+    const { id, linkId } = z.object({ id: z.string().uuid(), linkId: z.string().uuid() }).parse(req.params)
+    return links.revoke(id, linkId, req.auth!.userId)
   })
 
   app.get('/api/admin/trainer-applications/:id', {
