@@ -30,6 +30,7 @@
 import { useEffect, useState } from 'react'
 import { CalendarClock, CheckCircle2, ExternalLink, Loader2, Video } from 'lucide-react'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '@/application/trainer/application-options'
+import { nextFrameHeight } from '@/lib/calendly-embed'
 import { Inset } from '@/components/ui/Surface'
 import { usePlatformConfig } from '@/hooks/usePlatformConfig'
 
@@ -71,7 +72,18 @@ export default function BookInterview({ name, email, reference, className = '' }
      وCalendly يبثّ `calendly.page_height` في الإطار العاري متى ضُبط
      `embed_domain` — فيُقاس الارتفاعُ منه ولا يُقدَّر. وإن لم يصل (تغيّرت
      صيغتُهم مثلا) بقي الاحتياطيُّ سخيّا: تمريرٌ داخليٌّ نادرٌ خيرٌ من إطارٍ
-     مقطوع. */
+     مقطوع.
+
+     ═══ والصندوقُ يكبر ولا يصغر ═══
+
+     وكان يتبع كلَّ رسالةٍ صعودا ونزولا، فيقفز في الصفحة ثلاث مرّات في حجزٍ
+     واحد: التقويمُ طويل، ثمّ قائمةُ الأوقات أقصر، ثمّ النموذجُ أطول. فمن
+     كان يقرأ ما تحت البطاقة انتُزع من موضعه مرّتَين — وشكا صاحبُ المنصّة
+     منه (١٣ سبتمبر ٢٠٢٦): «بوكس ثابت وليس متحرّكا داخليّا».
+
+     فصار الارتفاعُ **أكبرَ ما بُثّ**: يرتفع حين لا يكفي فلا يُقصّ محتوى
+     ولا يُولَد تمريرٌ داخليّ، ولا ينزل بعدها فلا يقفز شيء. وثمنُه فراغٌ
+     أبيضُ أسفلَ الخطوة الأقصر — وهو أهونُ من صفحةٍ ترتجّ تحت الإصبع. */
   const [frameHeight, setFrameHeight] = useState<number | null>(null)
 
   useEffect(() => {
@@ -79,10 +91,8 @@ export default function BookInterview({ name, email, reference, className = '' }
       if (e.origin !== CALENDLY_ORIGIN) return
       const data = e.data as { event?: unknown; payload?: { height?: unknown } } | null
       if (data && typeof data === 'object' && data.event === 'calendly.page_height') {
-        /* يصل نصّا مثل `"1024px"` — ويُقبل الرقمُ كذلك احتياطا */
-        const raw = data.payload?.height
-        const px = typeof raw === 'number' ? raw : Number.parseInt(String(raw ?? ''), 10)
-        if (Number.isFinite(px) && px > 320 && px < 4000) setFrameHeight(px)
+        /* القرارُ في `lib/calendly-embed.ts` — يكبر ولا يصغر، وهناك يُفحص */
+        setFrameHeight((prev) => nextFrameHeight(prev, data.payload?.height))
         return
       }
       if (!isScheduledEvent(e)) return
@@ -124,17 +134,18 @@ export default function BookInterview({ name, email, reference, className = '' }
         </Inset>
       ) : (
         <>
-          {/* الحجزُ داخل الصفحة. والارتفاعُ ثابتٌ لأنّنا لا نحمّل سكربتَهم */}
+          {/* الحجزُ داخل الصفحة، في صندوقٍ لا يصغر بعد أن كبر */}
           {/* الانحناءُ على الحاضن لا على الإطار: `rounded-*` مع كلمة `border`
               في صيغةٍ واحدةٍ سطحٌ مكتوبٌ بيده، وسقفُها محروس. */}
           <div className="mt-4 overflow-hidden rounded-xl bg-white">
+            {/* الأرضيّةُ سخيّةٌ على الهاتف: محتوى Calendly هناك أطولُ منه على
+                الحاسوب، وقِصَرُها هو الذي أنتج التمريرَ المتداخل. وهي `min-h`
+                لا `h`: فالمقيسُ حين يجاوزها يرفع الصندوقَ، وحين يقصر عنها لا
+                يُنقصه — فلا يُقصّ محتوى ولا يرتجّ ما تحته. */}
             <div
-              className="relative w-full"
-              /* الاحتياطيُّ سخيٌّ على الهاتف: محتوى Calendly هناك أطولُ منه
-                 على الحاسوب، وقِصَرُه هو الذي أنتج التمريرَ المتداخل. */
+              className="relative w-full min-h-[1040px] sm:min-h-[760px]"
               style={{ height: frameHeight ?? undefined }}
             >
-              <div className={frameHeight ? 'hidden' : 'h-[1040px] sm:h-[760px]'} aria-hidden="true" />
               {/* اللوحُ خلفَ الإطار لا مكانَه: يُغطّى حين يجيب Calendly، فلا
                   وميضَ ولا قفزةٌ في الارتفاع. */}
               {!frameReady && (

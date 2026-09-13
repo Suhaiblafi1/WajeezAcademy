@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react'
 import { safeGet, safeRemove } from '@/services/safe-storage'
 import { Link } from 'react-router'
 import PublicSearch from './PublicSearch'
-import { Menu, Search as SearchIcon, User, X } from 'lucide-react'
+import { LogOut, Menu, Search as SearchIcon, User, X } from 'lucide-react'
 import { CONTACT } from '@/data/stories'
 import { ECOSYSTEM_NOTE } from '@/data/siteContent'
 import ThemeToggle from '@/components/ThemeToggle'
-import { homePathForRoles, readRoles } from '@/services/auth'
+import SiteAccountMenu from '@/components/SiteAccountMenu'
+import { homePathForRoles, readRoles, signOut } from '@/services/auth'
 
 import { Inset } from "@/components/ui/Surface";
 /* اسم المستخدم المحفوظ محليا — نفس منطق ترويسة الرئيسية */
@@ -28,7 +29,9 @@ function readUserName(): string | null {
 /* ترويسة موحدة مع الرئيسية: شعار + روابط + حساب + زر المؤشر + قائمة جوال */
 function SiteNav() {
   const [open, setOpen] = useState(false)
-  const [userName] = useState<string | null>(readUserName)
+  /* والاسمُ حالةٌ تُكتب لا قراءةٌ واحدة: من خرج من قائمة الاسم تعود به
+     الترويسةُ إلى «دخول» في مكانها، بلا إعادة تحميلٍ للصفحة. */
+  const [userName, setUserName] = useState<string | null>(readUserName)
   /* وجهةُ الاسم بوّابةُ صاحبه لا بوّابةُ المتعلّم دائما: كان مديرُ النظام
      يضغط اسمَه فيجد نفسه طالبا — وليس عطبا في الصلاحيات بل في الرابط. */
   const [portalHome] = useState(() => homePathForRoles(readRoles()))
@@ -89,10 +92,12 @@ function SiteNav() {
           </button>
           <ThemeToggle />
           {userName ? (
-            <Inset as={Link} tone="accent" interactive to={portalHome} className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
-              <User className="h-4 w-4" />
-              {userName}
-            </Inset>
+            /* الاسمُ قائمةٌ لا رابطا: فيها «بوّابتي» وفيها الخروج — والخروجُ
+               كان يحتاج دخولَ البوّابة أوّلا (`SiteAccountMenu.tsx`). */
+            <SiteAccountMenu
+              name={userName} portalHome={portalHome} onSignedOut={() => setUserName(null)}
+              className="hidden md:block"
+            />
           ) : (
             <Inset as={Link} tone="accent" interactive to="/auth" className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex">
               <User className="h-4 w-4" />
@@ -123,9 +128,20 @@ function SiteNav() {
             renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light-ink', () => setOpen(false))
           )}
           {userName ? (
-            <Inset as={Link} tone="accent" interactive to={portalHome} onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 px-5 py-3 font-semibold text-teal-light-ink">
-              <User className="h-4 w-4" /> {userName}
-            </Inset>
+            <>
+              <Inset as={Link} tone="accent" interactive to={portalHome} onClick={() => setOpen(false)} className="mt-2 flex items-center justify-center gap-2 px-5 py-3 font-semibold text-teal-light-ink">
+                <User className="h-4 w-4" /> {userName}
+              </Inset>
+              {/* وفي الجوّال يُعرض الخروجُ صريحا لا منسدلا: القائمةُ مفتوحةٌ
+                  أصلا، ومنسدلةٌ داخل منسدلةٍ لا تُفتح بإصبع. */}
+              <button
+                type="button"
+                onClick={() => { setOpen(false); void signOut().then(() => setUserName(null)) }}
+                className="mt-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-5 py-3 font-semibold text-muted-foreground transition hover:bg-red-500/10 hover:text-red-300"
+              >
+                <LogOut className="h-4 w-4" /> تسجيل الخروج
+              </button>
+            </>
           ) : (
             <Inset as={Link} interactive to="/auth"
               onClick={() => setOpen(false)} className="mt-2 flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold text-muted-foreground">
