@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CalendarClock, ClipboardCheck, GraduationCap, Loader2, ServerOff, Users, Video } from "lucide-react";
+import { CalendarClock, GraduationCap, Loader2, Send, ServerOff, Video } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
 import { trainerInterviewUrl } from "@/application/trainer/application-options";
@@ -98,37 +98,44 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const atRisk = findAtRisk(cohorts, now);
 
   const students = cohorts.reduce((n, c) => n + c.cohort.enrollments.length, 0);
-  const awaiting = queue.filter((q) => q.status === "submitted" || q.status === "under_review").length;
-  const nowIso = new Date(now).toISOString();
   /* التخطيطُ لا العمل: ما بَعُد عن نافذة الطابور وحدَه — والقسمةُ محروسةٌ في
      `src/tests/trainer/upcoming.test.ts` كي لا تعود جلسةٌ تظهر في اللوحتين. */
   const planAhead = buildUpcoming(cohorts, now);
 
-  /* جلساتُ الأسبوع — رقمٌ في الشريط لا قائمةٌ ثانية */
-  const weekEnd = new Date(now + 7 * 86_400_000).toISOString();
-  const weekSessions = cohorts.reduce((n, c) => n + c.cohort.sessions.filter((s) => s.startsAt > nowIso && s.startsAt < weekEnd && s.status !== "done").length, 0);
+  /* ما تنتظر إرسالَه: المسودّةُ والمردودةُ وحدَهما — والمعتمَدةُ والمرسَلةُ
+     ليست عليه. والعددُ لا يُرى في أيّ تبويب: يلزم فتحُ كلّ شعبةٍ لمعرفته. */
+  const waitingToSubmit = summary.filter((c) => c.planStatus === "draft" || c.planStatus === "changes_requested").length;
 
   return (
     <div>
-      {/* ═══ الرأس: تحيّةٌ وأربعةُ أرقامٍ في شريطٍ واحد ═══
+      {/* ═══ الرأس: تحيّةٌ وإشارتان لا تُريهما التبويبات ═══
 
-          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «بطاقاتُ الشعب أوّلا» — فالأرقامُ
-          شريطٌ رفيعٌ في الرأس، والشعبُ بحلقاتها تحته مباشرة، ثمّ ما ينتظر عمله. */}
+          كانت أربعَ بطاقاتٍ تشير إلى **المقاصد الأربعة نفسِها** التي في
+          شريط التبويبات فوقها: «شعبي» و«طلابي» و«تنتظر تقييمي» و«جلسات
+          هذا الأسبوع» — أي الروابطُ ذاتُها مرّتين في شاشةٍ واحدة. وقالها
+          صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «مبعثرة… وفيها معلوماتٌ سهلةُ
+          الوصول للمدرّب في التبويبات أعلاه».
+
+          فحُذفت، وبقي في موضعها ما **لا** يُرى في تبويبٍ ولا في قسمٍ أسفلَ
+          الصفحة: كم شعبةً تنتظر إرسالَه للاعتماد — ولا يُعرف إلّا بفتح كلِّ
+          شعبةٍ على حدة. والأعدادُ التي حُذفت لم تضِع: التحيّةُ تقولها نثرا.
+
+          ولم تُوضع بجانبها «أقربُ جلسة»: طابورُ العمل تحتها يعرض الجلسةَ
+          القريبةَ بزرِّ دخولها، و«جلساتي القادمة» تعرض ما بَعُد — فبطاقةٌ
+          ثالثةٌ تقولها تكرارٌ ثالث، وهو عينُ ما حُذف من أجله الأربعة.
+
+          ⚠ وعدّادُ «كم سجّل عبر رابطك» هو المؤشّرُ الذي طلبه صاحبُ المنصّة،
+          ويحتاج رابطا على مستوى المدرّب لا على مستوى الشعبة (المرحلة «أ» من
+          خطّة المسار) — فلا يُختلق هنا رقمٌ لا مصدرَ له. */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">أهلاً {name} — {cohorts.length > 0 ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.` : "لم تُسند إليك شعب بعد."}</p>
         <div className="flex flex-wrap gap-2">
-          {[
-            { icon: GraduationCap, label: "شعبي", value: cohorts.length, to: "/trainer/board", warn: false },
-            { icon: Users, label: "طلابي", value: students, to: "/trainer/learners", warn: false },
-            { icon: ClipboardCheck, label: "تنتظر تقييمي", value: awaiting, to: "/trainer/grading", warn: awaiting > 0 },
-            { icon: Video, label: "جلسات هذا الأسبوع", value: weekSessions, to: "/trainer/schedule", warn: false },
-          ].map((k) => (
-            <Card as={Link} interactive key={k.label} to={k.to} tone={k.warn ? "warn" : "default"} className="flex items-center gap-2.5 px-3.5 py-2">
-              <k.icon className={`h-4 w-4 ${k.warn ? "text-gold-ink" : "text-teal-light-ink"}`} aria-hidden="true" />
-              <span className={`text-lg font-black tabular-nums ${k.warn ? "text-gold-ink" : "text-foreground"}`}>{k.value}</span>
-              <span className="text-read text-muted-foreground">{k.label}</span>
+          {waitingToSubmit > 0 && (
+            <Card as={Link} interactive to="/trainer/board" tone="warn" className="flex items-center gap-2.5 px-3.5 py-2">
+              <Send className="h-4 w-4 text-gold-ink" aria-hidden="true" />
+              <span className="text-read font-bold text-gold-ink">{countAr(waitingToSubmit, COHORT_FORMS)} تنتظر إرسالَك للاعتماد</span>
             </Card>
-          ))}
+          )}
         </div>
       </div>
 

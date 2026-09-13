@@ -190,6 +190,42 @@ export function Field({
   )
 }
 
+/* ── حقلُ شاشات التشغيل — كما `staffControlCls` مع `controlCls` ──
+
+   `Field` أعلاه لنموذجٍ يُملأ مرّةً: عنوانُه اثنا عشرَ وتلميحُه مثلُه.
+   وشاشاتُ التشغيل تُقرأ يوما كاملا، وعناوينُ حقولها أربعةَ عشرَ أصلا — فلو
+   استُعملت `Field` فيها لصَغُرت عناوينُها لا لكبُرت.
+
+   وهذه تحمل ما كان ينقص هناك: **تلميحٌ تحت كلّ عنوان** يقول ما يُكتب في
+   الحقل وأين يظهر. فالمدرّبُ كان يقرأ «مخرج المحور» ولا يدري أيُكتب فيه
+   فعلٌ أم وصف، ولا من يقرؤه.
+
+   والتلميحُ داخلَ `<label>` بقصد: يُقرأ مع العنوان لقارئ الشاشة بلا
+   `aria-describedby` ومعرّفاتٍ تُولَّد. */
+export function StaffField({
+  label,
+  hint,
+  as = 'label',
+  wide = false,
+  children,
+}: {
+  label: string
+  hint?: ReactNode
+  /** `div` لمجموعةٍ لا يجمعها حقلٌ واحد — كمنتقي الأيّام */
+  as?: 'label' | 'div'
+  wide?: boolean
+  children: ReactNode
+}) {
+  const Tag = as
+  return (
+    <Tag className={`block min-w-0 ${wide ? 'sm:col-span-2' : ''}`}>
+      <span className="block text-read font-bold leading-6 text-foreground">{label}</span>
+      {hint && <span className="mt-0.5 block text-read leading-6 text-muted-foreground">{hint}</span>}
+      <span className="mt-2 block">{children}</span>
+    </Tag>
+  )
+}
+
 /** المثلُ للمجموعات: `fieldset` بدل `label` كي يصحّ ربطُ الخيارات المتعددة */
 export function FieldSet({
   legend,
