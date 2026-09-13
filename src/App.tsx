@@ -30,7 +30,9 @@ const MySkills = lazy(() => import('./pages/student/MySkills'))
 const Remeasure = lazy(() => import('./pages/student/Remeasure'))
 const Review = lazy(() => import('./pages/student/Review'))
 const Certificates = lazy(() => import('./pages/student/Certificates'))
-const StudentAccount = lazy(() => import('./pages/student/Account'))
+/* «حسابي» صفحةٌ واحدةٌ لكلّ الأدوار، وإطارُها يتبع بوّابةَ من فتحها —
+   فلا يصير المديرُ طالبا حين يعدّل اسمَه (`pages/PortalFrame.tsx`). */
+const AccountPage = lazy(() => import('./pages/student/Account'))
 const StudentBilling = lazy(() => import('./pages/student/Billing'))
 const StudentCv = lazy(() => import('./pages/student/MyCv'))
 const StudentNotifications = lazy(() => import('./pages/student/Notifications'))
@@ -214,7 +216,7 @@ export default function App() {
             <Route path="/student/rate" element={<RateMyLearning />} />
             <Route path="/student/certificates" element={<Certificates />} />
             <Route path="/student/learning" element={<Journey />} />
-            <Route path="/student/account" element={<StudentAccount />} />
+            <Route path="/student/account" element={<AccountPage />} />
             <Route path="/student/billing" element={<StudentBilling />} />
             <Route path="/student/cv" element={<StudentCv />} />
             <Route path="/student/notifications" element={<StudentNotifications />} />
@@ -230,6 +232,7 @@ export default function App() {
                 ثلاثتها من `data/advisor` — قائمةُ طلبةٍ وأخطارٌ وطلباتُ مراجعةٍ
                 مولَّدة في المتصفّح، تُعرض على المستشار كأنها حالة طلبة. */}
             <Route path="/advisor" element={<AdvisorCases />} />
+            <Route path="/advisor/account" element={<AccountPage />} />
             <Route path="/advisor/cases" element={<Navigate to="/advisor" replace />} />
             <Route path="/advisor/learners" element={<AdvisorMyLearners />} />
             <Route path="/advisor/ratings" element={<AdvisorMyRatings />} />
@@ -237,6 +240,7 @@ export default function App() {
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />
+            <Route path="/trainer/account" element={<AccountPage />} />
             <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
@@ -252,6 +256,7 @@ export default function App() {
           </Route>
           <Route element={<RequireRole allow={ADMIN_ROLES} />}>
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/account" element={<AccountPage />} />
             <Route path="/admin/ratings" element={<AdminRatingModeration />} />
             <Route path="/admin/cohorts" element={<AdminCohorts />} />
             <Route path="/admin/terms" element={<AdminTerms />} />

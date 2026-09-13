@@ -13,11 +13,12 @@
    لماذا يُفتح له بابٌ ويُغلق آخر بدل أن يصطدم بالمنع فيظنّه عطبا. */
 
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useLocation, useNavigate } from 'react-router'
 import { ChevronDown, LogOut, UserCog } from 'lucide-react'
 import { signOut } from '@/services/auth'
 import type { SessionUser } from '@/services/session'
 import { Inset } from '@/components/ui/Surface'
+import { accountPathForPortal } from '@/application/site/portal-paths'
 
 /* أسماء الأدوار بالعربية — مطابقةٌ لما في `server/auth/permissions.ts` */
 const ROLE_NAMES_AR: Record<string, string> = {
@@ -38,6 +39,9 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
   const [open, setOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const navigate = useNavigate()
+  /* «حسابي» تُفتح داخل البوّابة التي نحن فيها — كانت تُفتح دائما على
+     `/student/account`، فينقلب المديرُ طالبا في عينه (`pages/PortalFrame.tsx`). */
+  const accountPath = accountPathForPortal(useLocation().pathname)
   const boxRef = useRef<HTMLDivElement>(null)
 
   /* ═══ ولماذا مستمعٌ على المستند لا ستارةٌ `fixed` ═══
@@ -115,10 +119,9 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
 
             <div className="border-t border-white/10 pt-1.5">
               {/* صفحةُ الحساب واحدةٌ للجميع: الاسمُ وكلمةُ المرور وإنهاءُ كلّ
-                  الجلسات فيها. وهي تُصيَّر بإطار بوّابة المتعلّم — وذلك ما
-                  عندنا اليوم، ولها إطارٌ خاصٌّ بالعاملين حين يلزم. */}
+                  الجلسات فيها. وإطارُها إطارُ البوّابة التي فُتحت منها. */}
               <Link
-                to="/student/account"
+                to={accountPath}
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground transition hover:bg-white/[0.04] hover:text-foreground"
               >
