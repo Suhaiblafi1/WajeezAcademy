@@ -218,7 +218,7 @@ export default function JoinTrainer() {
   const [lookupResult, setLookupResult] = useState<
     {
       reference: string; label: string; explain: string; status: string
-      hasInterview: boolean; interviewAt: string | null
+      hasInterview: boolean; interviewAt: string | null; interviewRescheduleUrl: string | null
     } | null
   >(null);
   const [lookupError, setLookupError] = useState("");
@@ -626,6 +626,7 @@ export default function JoinTrainer() {
       if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
       const res = await apiGet<{
         reference: string; status: string; hasInterview: boolean; interviewAt: string | null
+        interviewRescheduleUrl: string | null
       }>(
         `/api/v1/trainer-applications/status?${q.toString()}`,
       );
@@ -633,6 +634,7 @@ export default function JoinTrainer() {
       setLookupResult({
         reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "",
         status: res.status, hasInterview: res.hasInterview, interviewAt: res.interviewAt,
+        interviewRescheduleUrl: res.interviewRescheduleUrl,
       });
     } catch (err) {
       setLookupError(err instanceof ApiError ? err.message : "تعذر جلب الحالة");
@@ -1537,9 +1539,21 @@ export default function JoinTrainer() {
                   <p className="mt-2 text-read leading-6 text-foreground">
                     {fmtDateTime(new Date(lookupResult.interviewAt))} — عن بُعد
                   </p>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    أرسل Calendly تفاصيلَ الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
-                  </p>
+                  {/* ═══ ورابطُ التعديل هنا لا في البريد وحدَه ═══
+
+                      كان يُقال «تجدهما في بريدك»، وهو صحيحٌ ولا يكفي: من
+                      يفتح صفحةَ المتابعة إنّما فتحها لأنّه لم يجد الرسالة.
+                      والرابطُ محفوظٌ عندنا منذ المزامنة، فلا نداءَ زائد. */}
+                  {lookupResult.interviewRescheduleUrl ? (
+                    <a href={lookupResult.interviewRescheduleUrl} target="_blank" rel="noopener noreferrer"
+                      className="mt-2 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink hover:underline">
+                      <CalendarClock className="h-3.5 w-3.5" /> عدِّل موعدَك أو ألغِه عند Calendly
+                    </a>
+                  ) : (
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      أرسل Calendly تفاصيلَ الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
+                    </p>
+                  )}
                 </Inset>
               )}
               {BOOKABLE_STATUSES.includes(lookupResult.status) && !lookupResult.hasInterview && (

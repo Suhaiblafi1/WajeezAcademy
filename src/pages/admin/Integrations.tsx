@@ -33,7 +33,7 @@ interface IntegrationsView {
   calendly: {
     enabled: boolean; envSourced: boolean; polling: boolean;
     signingKey: string; hasSigningKey: boolean; callbackUrl: string; siteUrlExplicit: boolean;
-    token: string; hasToken: boolean; bookingUrl: string;
+    token: string; hasToken: boolean; bookingUrl: string; guests: string;
   };
 }
 
@@ -63,7 +63,7 @@ export default function Integrations() {
   const [zoomProbe, setZoomProbe] = useState<{ ok: boolean; message: string } | null>(null);
   /* الرمزُ الشخصيُّ صار محفوظا مع المفتاح: المزامنةُ الدوريّةُ تسأل Calendly
      كلَّ خمس دقائق بلا إنسانٍ يلصقه. وعلّةُ النقض في `CalendlyConfig`. */
-  const [calForm, setCalForm] = useState({ enabled: false, signingKey: "", token: "", bookingUrl: "" });
+  const [calForm, setCalForm] = useState({ enabled: false, signingKey: "", token: "", bookingUrl: "", guests: "" });
   const [calProbe, setCalProbe] = useState<CalendlyRegisterReply | null>(null);
 
   const load = useCallback(async () => {
@@ -84,7 +84,7 @@ export default function Integrations() {
       });
       setCalForm({
         enabled: v.calendly.enabled, signingKey: v.calendly.signingKey,
-        token: v.calendly.token, bookingUrl: v.calendly.bookingUrl,
+        token: v.calendly.token, bookingUrl: v.calendly.bookingUrl, guests: v.calendly.guests,
       });
     } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
@@ -397,6 +397,24 @@ export default function Integrations() {
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
                   اسمُ المستخدم يكفي، والرابطُ كاملا يصحّ. واتركه فارغا للعودة إلى المضمَّن في الموقع.
                 </p>
+              </div>
+              {/* ═══ حاضرون يُضافون إلى كلّ موعدٍ بلا لمسة ═══
+
+                  المقابلةُ بين المتقدّم والمضيف وحدَهما، فمن أراد حضورَها من
+                  الإدارة لزمه أن يُضاف يدويّا في كلّ موعد — أو يفوتَه. */}
+              <div>
+                <label className={labelCls}>يُضاف حاضرا في كلّ موعد — اختياريّ</label>
+                <input dir="ltr" value={calForm.guests}
+                  onChange={(e) => setCalForm({ ...calForm, guests: e.target.value })}
+                  placeholder="you@example.com, someone@example.com"
+                  className={`${inputCls} mt-1 w-full font-mono`} />
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  بريدٌ أو أكثرُ مفصولةٌ بفاصلة. يُضافون ضيوفا في دعوة التقويم فتصلهم تفاصيلُ الاجتماع.
+                </p>
+                <Inset as="p" className="mt-2 text-read leading-6 text-muted-foreground">
+                  ⚠ ويلزم تفعيلُ <span dir="ltr">Invitees can add guests</span> في نوع الحدث عند Calendly —
+                  وإلّا تجاهَل الضيوفَ بلا خطأٍ يظهر. وهو متاحٌ على الخطّة المجّانيّة.
+                </Inset>
               </div>
               <div>
                 <label className={labelCls}>الرمزُ الشخصيُّ — به يسأل الخادمُ عن الحجوزات</label>

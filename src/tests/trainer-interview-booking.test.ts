@@ -46,6 +46,22 @@ describe('رابطُ الحجز', () => {
     expect(q.get('utm_content')).toBe('WJ-TR-2026-00041')
   })
 
+  it('⚠️ والحاضرون المضافون يسافرون في الرابط — وإلّا حضر المضيفُ والمتقدّمُ وحدَهما', () => {
+    /* المقابلةُ تُحجز بين اثنين، فمن أراد حضورَها من الإدارة لزمه أن يُضاف
+       يدويّا في كلّ موعدٍ على حدة — أو يفوتَه (١٣ سبتمبر ٢٠٢٦). و`guests`
+       معامَلٌ يقبله Calendly فيضيفهم بلا لمسة. */
+    const url = trainerInterviewUrl({ email: 's@x.com', guests: 'suhaib@wajeez.co,hadeel@wajeez.co' })
+    expect(new URL(url).searchParams.get('guests')).toBe('suhaib@wajeez.co,hadeel@wajeez.co')
+    /* ومن لم يُضبط له حاضرٌ لا يُرسَل له معامَلٌ فارغ */
+    expect(new URL(trainerInterviewUrl({ email: 's@x.com' })).searchParams.has('guests')).toBe(false)
+  })
+
+  it('والبطاقةُ تقرؤهم من إعداد المنصّة — فحقلٌ لا يناديه أحدٌ زينة', () => {
+    const card = readFileSync(join(process.cwd(), 'src/components/BookInterview.tsx'), 'utf8')
+    expect(card, 'البطاقةُ لا تقرأ الحاضرين').toContain('interviewGuests')
+    expect(card, 'لا تمرّرهم إلى بناء الرابط').toMatch(/guests:\s*interviewGuests/)
+  })
+
   it('ويبقى صالحا بلا تعبئة — فلا يُنتَج رابطٌ بعلامة استفهامٍ عارية', () => {
     expect(trainerInterviewUrl({})).toBe(TRAINER_INTERVIEW.url)
     expect(trainerInterviewUrl({ name: '   ' })).toBe(TRAINER_INTERVIEW.url)

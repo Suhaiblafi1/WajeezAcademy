@@ -25,7 +25,13 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
        الأصلُ في `src/application/trainer/application-options.ts`، ولا يستورد
        الخادمُ من `src/`. فبدل نسخِ الرابط هنا ونسخةٍ تفترق عن أختها، لا
        يُرسَل شيءٌ إلّا حين يُضبط بديلٌ من الشاشة — فيبقى مصدرٌ واحدٌ لا اثنان. */
-    interviewBookingUrl: (await getCalendlyConfig(prisma)).bookingUrl ?? null,
+    ...await (async () => {
+      const c = await getCalendlyConfig(prisma)
+      /* والحاضرون يُعلَنون هنا لأنّ الرابطَ يُبنى في المتصفّح: `guests=` معامَلٌ
+         في رابط Calendly لا سرٌّ، وهو بريدٌ للعمل يظهر لكلّ حاضرٍ في الموعد
+         أصلا — فلا يُكشف بإعلانه ما لم يكن مكشوفا. */
+      return { interviewBookingUrl: c.bookingUrl ?? null, interviewGuests: c.guests ?? null }
+    })(),
   }))
 
   app.get('/api/public/pathways', {

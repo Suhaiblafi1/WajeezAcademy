@@ -65,6 +65,9 @@ interface CalendlyWebhookPayload {
   email?: unknown
   questions_and_answers?: CalendlyQuestionAnswer[]
   tracking?: CalendlyTracking
+  /* روابطُ Calendly للمدعوّ نفسِه — تصل في الحدث وفي السؤال الدوريّ معا */
+  reschedule_url?: unknown
+  cancel_url?: unknown
   scheduled_event?: {
     uri?: unknown
     start_time?: unknown
@@ -142,6 +145,13 @@ export class CalendlyWebhookService {
       const scheduledAt = parsedDate(payload.scheduled_event?.start_time)
       if (!scheduledAt) throw new AuthError('bad_calendly_payload', 'حدث Calendly بلا موعد صالح', 400)
       const scheduledEventUri = typeof payload.scheduled_event?.uri === 'string' ? payload.scheduled_event.uri : null
+      /* ═══ ولماذا يُحفظان هنا لا يُبنَيان عند العرض ═══
+
+         رابطُ التعديل يحمل معرِّفَ المدعوّ لا معرِّفَ الحدث، ولا يُشتقّ من
+         شيءٍ عندنا — فإمّا أن يُحفظ حين يصل، وإمّا أن يُنادى Calendly مرّةً
+         أخرى كلّما فتح متقدّمٌ صفحةَ متابعته. والأوّلُ أصحُّ وأرخص. */
+      const rescheduleUrl = typeof payload.reschedule_url === 'string' ? payload.reschedule_url : null
+      const cancelUrl = typeof payload.cancel_url === 'string' ? payload.cancel_url : null
 
       const result = await this.prisma.$transaction(async (tx) => {
         /* `find` ثمّ `create` يتسابقان عند تسليمَين متزامنَين: كلاهما يرى
@@ -154,6 +164,8 @@ export class CalendlyWebhookService {
             mode: 'remote',
             provider: 'calendly',
             externalId,
+            rescheduleUrl,
+            cancelUrl,
             notes: scheduledEventUri
               ? `حجزها المتقدّم عبر Calendly — ${scheduledEventUri}`
               : 'حجزها المتقدّم عبر Calendly',

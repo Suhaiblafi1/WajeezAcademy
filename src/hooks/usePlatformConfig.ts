@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { loadPlatformConfig, platformConfigSnapshot, type PlatformConfig } from "@/services/platform-config";
 
 export function usePlatformConfig(): PlatformConfig {
-  const [config, setConfig] = useState<PlatformConfig>(() => platformConfigSnapshot() ?? { fileUploads: false, demoMode: false, interviewBookingUrl: null });
+  const [config, setConfig] = useState<PlatformConfig>(() => platformConfigSnapshot() ?? { fileUploads: false, demoMode: false, interviewBookingUrl: null, interviewGuests: null });
   useEffect(() => {
     let alive = true;
     void loadPlatformConfig().then((c) => { if (alive) setConfig(c); });

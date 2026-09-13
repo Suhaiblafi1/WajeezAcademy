@@ -178,6 +178,9 @@ export interface CalendlyInvitee {
   canceled_at?: string | null
   questions_and_answers?: { answer?: unknown }[]
   tracking?: { utm_source?: unknown; utm_medium?: unknown; utm_content?: unknown }
+  /* يصلان مع كلّ مدعوٍّ ولا يقتضيان نداءً آخر — وكانا يُرميان */
+  reschedule_url?: string
+  cancel_url?: string
 }
 
 /** المواعيدُ التي تبدأ بعد `minStartTime` — النشطةُ والملغاةُ معا */
@@ -215,6 +218,8 @@ export function calendlyInviteeAsEvent(
       email: invitee.email,
       questions_and_answers: invitee.questions_and_answers,
       tracking: invitee.tracking,
+      reschedule_url: invitee.reschedule_url,
+      cancel_url: invitee.cancel_url,
       scheduled_event: { uri: scheduled.uri, start_time: scheduled.start_time },
     },
   }
