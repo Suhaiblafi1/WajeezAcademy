@@ -29,12 +29,15 @@ let adminId = ''
 /* ما طُلب من Calendly في هذه الدورة — به يُقاس أنّ المعروفَ لا يُسأل عنه */
 let asked: string[] = []
 let eventStatus: 'active' | 'canceled' = 'active'
+/* يُبدَّلان في حارس «الحجزُ الذي لا يُطابَق» — والباقي على الأصل */
+let eventUri = EVENT_URI
+let inviteeEmail = EMAIL
 let inviteeCanceled = false
 let failWith = 0
 
 const invitee = () => ({
-  uri: INVITEE_URI,
-  email: EMAIL,
+  uri: `${eventUri}/invitees/poll-invitee-1`,
+  email: inviteeEmail,
   status: inviteeCanceled ? 'canceled' : 'active',
   canceled_at: inviteeCanceled ? '2026-09-21T08:00:00.000Z' : null,
   tracking: {
@@ -87,7 +90,7 @@ beforeEach(() => {
       return {
         ok: true, status: 200,
         text: async () => JSON.stringify({
-          collection: [{ uri: EVENT_URI, start_time: START, status: eventStatus }],
+          collection: [{ uri: eventUri, start_time: START, status: eventStatus }],
         }),
       }
     }
@@ -193,5 +196,28 @@ describe('الوظيفةُ مسجَّلةٌ في دورة العامل', () => {
     expect(job!.run).toBe(syncCalendlyInterviews)
     /* ودورتُها لا تطول: حجزٌ لا يظهر قبل ساعةٍ يُربك المراجعةَ والمتقدّمَ معا */
     expect(job!.everyMs).toBeLessThanOrEqual(10 * 60_000)
+  })
+})
+
+describe('الحجزُ الذي لا يُطابَق يُقال سببُه ويُعَدّ', () => {
+  it('⚠️ بريدٌ مختلفٌ عند الحجز: يُسمّى السببُ في الخبر، ويُعَدّ فيُكتب الأثر', async () => {
+    /* ═══ العطبُ الذي كُتب له ═══
+
+       حجزٌ حقيقيٌّ لم يصل الطابور، ولم يكن في السجلّ ما يُشخَّص به: الخبرُ
+       يقول عددَ المواعيد ولا يقول لماذا تُجووزت. وأسوأُ منه أنّ `runJob` لا
+       تكتب أثرا إلّا إن كان `done` أو `failed` فوق الصفر — فحجزٌ متجاوَزٌ
+       كان يُنتج صفرَين، فلا سطرَ أصلا والمشغّلُ يرى صمتا (١٣ سبتمبر ٢٠٢٦). */
+    eventStatus = 'active'
+    inviteeCanceled = false
+    eventUri = 'https://api.calendly.com/scheduled_events/poll-event-2'
+    inviteeEmail = 'someone-else@test.local'
+
+    const result = await syncCalendlyInterviews(prisma, new Date('2026-09-23T09:00:00.000Z'))
+
+    expect(result.done, 'لا شيءَ يُطابَق فلا شيءَ يُحدَّث').toBe(0)
+    /* يُعَدّ إخفاقا ليُكتب الأثر — وهو إخفاقٌ فعلا: موعدٌ حجزه إنسانٌ ولم
+       يبلغ طابورَ المراجعة. */
+    expect(result.failed, 'المتجاوَزُ لا يُعَدّ — فلا أثرَ يُكتب ولا خبرَ يُقرأ').toBe(1)
+    expect(result.summaryAr, 'الخبرُ لا يقول سببَ التجاوز').toContain('لا يطابقان طلبا')
   })
 })
