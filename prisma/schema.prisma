@@ -1793,6 +1793,10 @@ model CohortAssessment {
   title       String
   /* تعليماتُ التكليف — ما يفعله المتعلّم. NULL لما أُنشئ قبل العمود. */
   briefAr     String?
+  /// مرفقاتُ التكليف — مصفوفةُ `{ title, url, kind }` بأنواع `RESOURCE_KINDS`
+  /// نفسِها (١٣ سبتمبر ٢٠٢٦). نموذجٌ يُملأ، أو مرجعٌ يُقرأ قبل التسليم.
+  /// NULL لما أُنشئ قبل العمود، ولا فرقَ بينه وبين المصفوفة الفارغة.
+  attachments Json?
   type        String                 @default("assignment") // assignment | quiz | project
   maxScore    Int                    @default(100)
   passScore   Int?

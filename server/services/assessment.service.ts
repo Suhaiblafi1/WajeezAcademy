@@ -3,6 +3,7 @@
 
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
+import type { TypedLink } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
@@ -38,6 +39,7 @@ export class AssessmentService {
   async createAssessment(actorId: string, input: {
     cohortId: string; title: string; type: 'assignment' | 'quiz' | 'project'
     moduleId?: string; briefAr?: string; maxScore?: number; passScore?: number; dueAt?: Date; rubricId?: string
+    attachments?: TypedLink[]
     items?: { prompt: string; kind?: string; maxScore?: number }[]
   }) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: input.cohortId } })
@@ -51,6 +53,9 @@ export class AssessmentService {
         cohortId: input.cohortId, title: input.title, type: input.type, moduleId: input.moduleId,
         briefAr: input.briefAr, maxScore: input.maxScore ?? 100, passScore: input.passScore, dueAt: input.dueAt,
         rubricId: input.rubricId, createdBy: actorId,
+        /* عمودُ JSON: Prisma يطلب `InputJsonValue` لا نوعَنا — والتحويلُ
+           هنا صريحٌ في موضعٍ واحد، لا `any` ينتشر في الخدمة. */
+        attachments: (input.attachments ?? undefined) as Prisma.InputJsonValue | undefined,
         items: input.items ? { create: input.items.map((it, i) => ({ sequence: i + 1, prompt: it.prompt, kind: it.kind ?? 'text', maxScore: it.maxScore ?? 10 })) } : undefined,
       },
       include: { items: true },
@@ -82,7 +87,7 @@ export class AssessmentService {
 
   async updateAssessment(actorId: string, assessmentId: string, patch: {
     title?: string; briefAr?: string | null; type?: 'assignment' | 'quiz' | 'project'
-    maxScore?: number; dueAt?: Date | null
+    maxScore?: number; dueAt?: Date | null; attachments?: TypedLink[]
   }) {
     const before = await this.assertAssessmentTrainer(actorId, assessmentId)
     /* الدرجةُ العظمى لا تنزل تحت درجةٍ رُصدت فعلا — وإلّا صار متعلّمٌ
@@ -106,6 +111,8 @@ export class AssessmentService {
         ...(patch.type !== undefined ? { type: patch.type } : {}),
         ...(patch.maxScore !== undefined ? { maxScore: patch.maxScore } : {}),
         ...(patch.dueAt !== undefined ? { dueAt: patch.dueAt } : {}),
+        /* المصفوفةُ الفارغةُ محوٌ مقصودٌ لا إهمال — ولذلك `!== undefined` */
+        ...(patch.attachments !== undefined ? { attachments: patch.attachments as unknown as Prisma.InputJsonValue } : {}),
       },
     })
     await recordAudit(this.prisma, {

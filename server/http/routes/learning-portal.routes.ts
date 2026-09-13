@@ -19,6 +19,7 @@ import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { ReferralService } from '../../services/referral.service'
+import { RESOURCE_KINDS } from '../../../src/application/trainer/plan-overlay'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -373,7 +374,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
         seen.add(m.moduleId)
       }
     }),
-    resources: z.array(z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), noteAr: z.string().max(500).nullish() })).max(60),
+    /* نوعُ المصدر — يُقرأ في شاشة المتعلّم فيُعرَض بأيقونته واسمه. والقائمةُ
+       بيضاءُ لا حرّة: نوعٌ مخترَعٌ يصير «رابطا» عند القراءة، ويُردّ هنا كي
+       لا يُحفظ أصلا. */
+    resources: z.array(z.object({
+      title: z.string().min(2).max(200), url: z.string().url().max(500),
+      kind: z.enum(RESOURCE_KINDS).nullish(), noteAr: z.string().max(500).nullish(),
+    })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
     /* اقتراحُ اسمٍ للدورة أو المسار — يركب مع الخطّة ويُقرَّر فيه عند الاعتماد */
     proposals: z.object({ courseTitleAr: z.string().max(200).nullish(), pathwayTitleAr: z.string().max(200).nullish() }).nullish(),
@@ -523,6 +530,11 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       title: z.string().min(3), type: z.enum(['assignment', 'quiz', 'project']),
       moduleId: z.string().optional(), briefAr: z.string().max(4000).optional(), maxScore: z.number().int().min(1).optional(),
       passScore: z.number().int().optional(), dueAt: z.coerce.date().optional(), rubricId: z.string().uuid().optional(),
+      /* المرفقات — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */
+      attachments: z.array(z.object({
+        title: z.string().min(2).max(200), url: z.string().url().max(500),
+        kind: z.enum(RESOURCE_KINDS).nullish(),
+      })).max(10).optional(),
       items: z.array(z.object({ prompt: z.string().min(2), kind: z.enum(['text', 'choice', 'file']).optional(), maxScore: z.number().int().optional() })).optional(),
     }).parse(req.body)
     await enrollments.assertCohortTrainer(req.auth!.userId, id)
@@ -547,6 +559,11 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       type: z.enum(['assignment', 'quiz', 'project']).optional(),
       maxScore: z.number().int().min(1).optional(),
       dueAt: z.coerce.date().nullable().optional(),
+      /* المصفوفةُ الفارغةُ تعني «امحُ المرفقات» — كالنصّ الفارغ للتعليمات */
+      attachments: z.array(z.object({
+        title: z.string().min(2).max(200), url: z.string().url().max(500),
+        kind: z.enum(RESOURCE_KINDS).nullish(),
+      })).max(10).optional(),
     }).parse(req.body)
     return assessments.updateAssessment(req.auth!.userId, assessmentId, body)
   })
