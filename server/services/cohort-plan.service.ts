@@ -209,7 +209,7 @@ export class CohortPlanService {
         },
         assessments: {
           where: { status: { not: 'closed' } }, orderBy: { createdAt: 'asc' },
-          select: { id: true, title: true, type: true, maxScore: true, dueAt: true, status: true, _count: { select: { submissions: true } } },
+          select: { id: true, title: true, briefAr: true, type: true, maxScore: true, dueAt: true, status: true, _count: { select: { submissions: true } } },
         },
       },
     })
@@ -267,7 +267,7 @@ export class CohortPlanService {
       })),
       /* التكاليفُ مع عدد ما سُلّم — لمرحلة «التكاليف» في التجهيز */
       assessments: cohort.assessments.map((a) => ({
-        id: a.id, title: a.title, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
+        id: a.id, title: a.title, briefAr: a.briefAr, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
         submissions: a._count.submissions,
       })),
       checklist,

@@ -37,7 +37,7 @@ export class AssessmentService {
 
   async createAssessment(actorId: string, input: {
     cohortId: string; title: string; type: 'assignment' | 'quiz' | 'project'
-    moduleId?: string; maxScore?: number; passScore?: number; dueAt?: Date; rubricId?: string
+    moduleId?: string; briefAr?: string; maxScore?: number; passScore?: number; dueAt?: Date; rubricId?: string
     items?: { prompt: string; kind?: string; maxScore?: number }[]
   }) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: input.cohortId } })
@@ -49,7 +49,7 @@ export class AssessmentService {
     const assessment = await this.prisma.cohortAssessment.create({
       data: {
         cohortId: input.cohortId, title: input.title, type: input.type, moduleId: input.moduleId,
-        maxScore: input.maxScore ?? 100, passScore: input.passScore, dueAt: input.dueAt,
+        briefAr: input.briefAr, maxScore: input.maxScore ?? 100, passScore: input.passScore, dueAt: input.dueAt,
         rubricId: input.rubricId, createdBy: actorId,
         items: input.items ? { create: input.items.map((it, i) => ({ sequence: i + 1, prompt: it.prompt, kind: it.kind ?? 'text', maxScore: it.maxScore ?? 10 })) } : undefined,
       },
@@ -57,6 +57,79 @@ export class AssessmentService {
     })
     await recordAudit(this.prisma, { actorId, action: 'assessment.create', entityType: 'cohort_assessment', entityId: assessment.id, meta: { cohortId: input.cohortId, type: input.type } })
     return assessment
+  }
+
+  /* ── تعديلُ التكليف وحذفُه — مدرّبُ الشعبة وحدَه ──
+
+     كان التكليفُ يُنشأ ولا يُمسّ بعدها: خطأٌ مطبعيٌّ في عنوانٍ يقرؤه كلُّ
+     مسجَّلٍ يبقى ما بقيت الشعبة، وتكليفٌ أُنشئ سهوا يبقى في قائمتهم. فصار
+     له تعديلٌ وحذف.
+
+     والحدُّ الذي لا يُتجاوَز: **ما سُلّم فيه لا يُحذف**. حذفُ التكليف
+     يُسقط تسليماتِ المتعلّمين معه (`onDelete: Cascade`) — وعملُهم ليس
+     ملكَ المدرّب. فيُمنع الحذفُ ويُقال له أن يُغلقه بدلا منه. */
+
+  /** يتحقّق أنّ المنادي مدرّبُ شعبةِ هذا التكليف، ويعيد التكليفَ بعدد تسليماته */
+  private async assertAssessmentTrainer(userId: string, assessmentId: string) {
+    const assessment = await this.prisma.cohortAssessment.findUnique({
+      where: { id: assessmentId },
+      include: { _count: { select: { submissions: true } } },
+    })
+    if (!assessment) throw new AuthError('not_found', 'هذا التكليف غير موجود', 404)
+    await this.enrollments.assertCohortTrainer(userId, assessment.cohortId)
+    return assessment
+  }
+
+  async updateAssessment(actorId: string, assessmentId: string, patch: {
+    title?: string; briefAr?: string | null; type?: 'assignment' | 'quiz' | 'project'
+    maxScore?: number; dueAt?: Date | null
+  }) {
+    const before = await this.assertAssessmentTrainer(actorId, assessmentId)
+    /* الدرجةُ العظمى لا تنزل تحت درجةٍ رُصدت فعلا — وإلّا صار متعلّمٌ
+       حاصلا على أكثرَ من النهاية. */
+    if (patch.maxScore !== undefined && patch.maxScore < before.maxScore) {
+      const top = await this.prisma.grade.aggregate({
+        where: { submission: { assessmentId } },
+        _max: { score: true },
+      })
+      /* `Grade.score` عشريٌّ في القاعدة — يُقارَن رقما لا كائنا */
+      const highest = Number(top._max.score ?? 0)
+      if (highest > patch.maxScore) {
+        throw new AuthError('score_below_awarded', `درجةٌ مرصودةٌ تبلغ ${highest} — لا تُخفَض النهايةُ دونها`)
+      }
+    }
+    const updated = await this.prisma.cohortAssessment.update({
+      where: { id: assessmentId },
+      data: {
+        ...(patch.title !== undefined ? { title: patch.title } : {}),
+        ...(patch.briefAr !== undefined ? { briefAr: patch.briefAr } : {}),
+        ...(patch.type !== undefined ? { type: patch.type } : {}),
+        ...(patch.maxScore !== undefined ? { maxScore: patch.maxScore } : {}),
+        ...(patch.dueAt !== undefined ? { dueAt: patch.dueAt } : {}),
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'assessment.update', entityType: 'cohort_assessment', entityId: assessmentId,
+      meta: { cohortId: before.cohortId, fields: Object.keys(patch) },
+    })
+    return updated
+  }
+
+  async deleteAssessment(actorId: string, assessmentId: string) {
+    const before = await this.assertAssessmentTrainer(actorId, assessmentId)
+    if (before._count.submissions > 0) {
+      throw new AuthError(
+        'has_submissions',
+        `سلّم فيه ${before._count.submissions} — لا يُحذف تكليفٌ فيه عملُ متعلّمين. أغلِقه بدلا من حذفه.`,
+        409,
+      )
+    }
+    await this.prisma.cohortAssessment.delete({ where: { id: assessmentId } })
+    await recordAudit(this.prisma, {
+      actorId, action: 'assessment.delete', entityType: 'cohort_assessment', entityId: assessmentId,
+      meta: { cohortId: before.cohortId, title: before.title },
+    })
+    return { deleted: true }
   }
 
   /* ── تسليم المتعلم ── */
