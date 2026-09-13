@@ -19,6 +19,7 @@ import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { ReferralService } from '../../services/referral.service'
+import { RESOURCE_KINDS } from '../../../src/application/trainer/plan-overlay'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -373,7 +374,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
         seen.add(m.moduleId)
       }
     }),
-    resources: z.array(z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), noteAr: z.string().max(500).nullish() })).max(60),
+    /* نوعُ المصدر — يُقرأ في شاشة المتعلّم فيُعرَض بأيقونته واسمه. والقائمةُ
+       بيضاءُ لا حرّة: نوعٌ مخترَعٌ يصير «رابطا» عند القراءة، ويُردّ هنا كي
+       لا يُحفظ أصلا. */
+    resources: z.array(z.object({
+      title: z.string().min(2).max(200), url: z.string().url().max(500),
+      kind: z.enum(RESOURCE_KINDS).nullish(), noteAr: z.string().max(500).nullish(),
+    })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
     /* اقتراحُ اسمٍ للدورة أو المسار — يركب مع الخطّة ويُقرَّر فيه عند الاعتماد */
     proposals: z.object({ courseTitleAr: z.string().max(200).nullish(), pathwayTitleAr: z.string().max(200).nullish() }).nullish(),

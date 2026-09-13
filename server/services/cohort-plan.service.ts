@@ -48,7 +48,8 @@ export interface TrainerPlanModule {
   artifactAr?: string | null
   bodyAr?: string | null
 }
-export interface TrainerPlanResource { title: string; url: string; noteAr?: string | null }
+/** `kind` من `RESOURCE_KINDS` — وغيابُه يعني «رابط» (ما حُفظ قبل العمود) */
+export interface TrainerPlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
 /** ما يقترحه المدرّبُ على الإدارة مع خطّته — ويُطبَّق باعتمادها إن شاءت (٨ سبتمبر ٢٠٢٦) */
 export interface TrainerPlanProposals { courseTitleAr?: string | null; pathwayTitleAr?: string | null }
 export interface TrainerPlanContent {

@@ -39,6 +39,8 @@ import CohortOps from "./CohortOps";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
+import { RESOURCE_KINDS, resourceKind } from "@/application/trainer/plan-overlay";
+import { RESOURCE_META } from "@/components/resource-kind-meta";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -52,7 +54,7 @@ import { countAr } from "@/application/text/count-ar";
 /* ─────────── ما يصل من الخادم ─────────── */
 
 interface PlanModule { moduleId: string; titleAr: string; outcomeAr?: string | null; activityAr?: string | null; artifactAr?: string | null; bodyAr?: string | null }
-interface PlanResource { title: string; url: string; noteAr?: string | null }
+interface PlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
 interface PlanProposals { courseTitleAr?: string | null; pathwayTitleAr?: string | null }
 interface PlanContent { kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: PlanProposals | null }
 interface Workspace {
@@ -621,18 +623,25 @@ export default function CohortWorkspace() {
       {phase === "prepare" && stage === "resources" && (
         <Panel as="section">
           <StageIntro stage="resources" />
-          <p className="mt-2 text-read leading-6 text-muted-foreground">سمِّ المحتوى لا المنصّة: «كرّاسة التحرير» لا «ملفّ PDF». وما ترفعه ملفّا من «التشغيل» يظهر تحتها.</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">سمِّ المحتوى لا المنصّة: «كرّاسة التحرير» لا «ملفّ PDF». واختر نوعَه — المتعلّمُ يرى النوعَ قبل أن ينقر، فيعرف أكتابٌ هو أم فيديو أم كتابٌ صوتيّ. وما ترفعه ملفّا من «التشغيل» يظهر تحتها.</p>
           <ul className="mt-4 space-y-3">
-            {content.resources.map((r, i) => (
-              <Card as="li" key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                <input value={r.title} onChange={(e) => setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
-                <input dir="ltr" value={r.url} onChange={(e) => setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)) })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
-                <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
-              </Card>
-            ))}
+            {content.resources.map((r, i) => {
+              const patch = (next: Partial<PlanResource>) =>
+                setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...next } : x)) });
+              return (
+                <Card as="li" key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+                  <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
+                  <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
+                  <select value={resourceKind(r.kind)} onChange={(e) => patch({ kind: e.target.value })} disabled={locked} aria-label={`نوع المصدر ${i + 1}`} className={controlCls}>
+                    {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
+                  </select>
+                  <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
+                </Card>
+              );
+            })}
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, resources: [...content.resources, { title: "", url: "" }] })}>+ مصدر</Button>
+            <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, resources: [...content.resources, { title: "", url: "", kind: "link" }] })}>+ مصدر</Button>
             <Button tone="confirm" disabled={busy || locked || !dirty.resources || content.resources.some((r) => !r.title.trim() || !/^https?:\/\//.test(r.url))} onClick={savePlan}>احفظ المصادر</Button>
           </div>
           {ws.materials.length > 0 && (

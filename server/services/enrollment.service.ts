@@ -3,6 +3,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { projectPlanForLearner, PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
 import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
@@ -384,6 +385,15 @@ export class EnrollmentService {
             materials: { where: { status: 'active' } },
             assessments: { where: { status: 'published' }, include: { items: true, rubric: { include: { criteria: true } } } },
             trainers: { include: { profile: { include: { application: { select: { fullName: true } } } } } },
+            /* خطّةُ مدرّبِ الشعبة المعتمَدة — أحدثُها. والترشيحُ هنا على
+               الحالة كذلك لا على الانتقاء وحدَه: لو عاد المشروعُ يوما بلا
+               بوّابة، لم يصل هذا الاستعلامُ مسودّةً أصلا. */
+            plans: {
+              where: { trainerId: { not: null }, status: { in: [...PLAN_VISIBLE_STATUSES] } },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { status: true, content: true },
+            },
           },
         },
         attendance: true,
@@ -395,7 +405,11 @@ export class EnrollmentService {
       },
     })
     if (!e) throw new AuthError('not_found', 'التسجيل غير موجود', 404)
-    return e
+    /* الخطّةُ تخرج **مشروعةً** لا خاما: `content` يحمل اقتراحاتِ المدرّب
+       على الإدارة وملاحظتَه على اللقاءات، وليستا للمتعلّم. والصفُّ نفسُه
+       يُنزع من الحمولة كي لا يخرج من بابٍ آخرَ غدا. */
+    const { plans, ...cohort } = e.cohort
+    return { ...e, cohort: { ...cohort, trainerPlan: projectPlanForLearner(plans[0] ?? null) } }
   }
 
   /** نواتج المتعلم — كلُّ ما سلّمه عبر تسجيلاته، مرتّبا بالأحدث.
