@@ -40,6 +40,7 @@ import { readReferral } from "@/application/commerce/referral";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
+import FreeNowPerks from "@/components/FreeNowPerks";
 import {
   PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
   type PresentmentCurrency,
@@ -314,6 +315,10 @@ export default function BuyPanel({
                 </ul>
               </Card>
             )}
+
+            {/* وما هو مجّانيٌّ للجميع بجوارها لا بداخلها — قائمةُ المسار
+                غرضُها فرقُ الشراءَين، والمجّانيُّ فيها يناقضها. */}
+            <FreeNowPerks className="mt-3" />
 
             {/* البنودُ بشعبها — والموعدُ يُبدَّل هنا لا في شاشةٍ أخرى. أسماءٌ
                 وتواريخ بلا أسعار: رآها المشتري قبل أن يصل هنا، ولا تتكرر —
