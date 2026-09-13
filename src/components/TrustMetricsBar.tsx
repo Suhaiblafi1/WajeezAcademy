@@ -27,9 +27,18 @@ export default function TrustMetricsBar({ nested = false }: { nested?: boolean }
   return (
     <Wrapper
       aria-label="وجيز مهارات بالأرقام"
-      /* داخلَ قسمٍ قائم: خيطٌ شعريٌّ ومسافةٌ تفصله عمّا فوقه. وبلا الخيط كانت
-         ثلاثُ كتلٍ معنونةٍ تتلاصق على ٤٨ بكسلا في قسمٍ محشوٍّ لواحدة. */
-      className={nested ? 'mt-12 border-t border-white/5 pt-12 md:mt-16 md:pt-16' : 'border-y border-white/5 bg-white/[0.02] py-10 md:py-12'}
+      /* ═══ أرضيّةٌ تفصله، لا خيطٌ شعريّ (١٣ سبتمبر ٢٠٢٦) ═══
+
+         كان الفصلُ خيطا بعرض بكسلٍ واحد. وفي النهاريّ صارت ثلاثُ كتلٍ متتاليةٍ
+         على أرضيّةٍ واحدة (`--background: #F6F4EF`) لا يفصلها إلّا شعرة، فقال
+         صاحبُ المنصّة إنّ الألوانَ تتداخل ولا يُعرف أين يبدأ القسم.
+
+         و`bg-surface` هو الجوابُ بالرمز لا باللون: **أبيضُ صريحٌ في النهاريّ**
+         (`255 255 255`) وسطحُ بطاقةٍ داكنٌ في الليليّ (`#121B1D`). فلو كُتب
+         `bg-white` لأضاء الليليَّ بياضا يحرق العين. */
+      className={nested
+        ? 'mt-12 rounded-3xl bg-surface px-5 py-10 md:mt-16 md:px-10 md:py-12'
+        : 'border-y border-white/5 bg-surface py-10 md:py-12'}
     >
       <div className={nested ? '' : 'shell'}>
         <div className="reveal text-center">
