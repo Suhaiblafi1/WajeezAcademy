@@ -34,6 +34,11 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
   const [rows, setRows] = useState<LinkRow[] | null>(null)
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
+  /* بريدُ القارئ — وبه وحدَه يصير الإرسالُ ممكنا. والرمزُ لا يُحفظ، فهذه
+     اللحظةُ هي الوحيدةُ التي يُعرف فيها الرابط: من أراد إرسالَه بعدها
+     أنشأ رابطا جديدا. */
+  const [email, setEmail] = useState('')
+  const [send, setSend] = useState(false)
   /* الرمزُ الطازجُ — يُعرض حتّى يُنسَخ، ثمّ لا يعود أبدا */
   const [fresh, setFresh] = useState<{ url: string; name: string } | null>(null)
   const [copied, setCopied] = useState(false)
@@ -52,12 +57,22 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
     if (name.trim().length < 2) return
     setBusy(true)
     try {
-      const r = await apiPost<{ url: string }>(`/api/admin/trainer-applications/${applicationId}/dossier-links`, {
-        reviewerName: name.trim(),
-      })
+      const r = await apiPost<{ url: string; emailDelivery: string | null }>(
+        `/api/admin/trainer-applications/${applicationId}/dossier-links`,
+        {
+          reviewerName: name.trim(),
+          ...(email.trim() ? { reviewerEmail: email.trim() } : {}),
+          ...(send && email.trim() ? { sendEmail: true } : {}),
+        },
+      )
       setFresh({ url: r.url, name: name.trim() })
       setCopied(false)
+      /* ما جرى للبريد يُقال صراحةً: «أُنشئ» وحدَها تُقرأ «وصل» — وقد لا يكون */
+      if (send && email.trim()) {
+        toast(r.emailDelivery === 'sent' ? `أُرسل الرابطُ إلى ${email.trim()}` : 'أُنشئ الرابط — ولم يُرسَل البريد، فانسخه بيدك')
+      }
       setName('')
+      setEmail('')
       await load()
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'تعذّر إنشاءُ الرابط')
@@ -96,12 +111,26 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
           aria-label="اسم القارئ"
           className={`${staffControlCls} min-w-0 flex-1`}
         />
+        <input
+          type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') void create() }}
+          placeholder="بريدُه — اختياريّ"
+          aria-label="بريد القارئ"
+          className={`${staffControlCls} min-w-0 flex-1`}
+        />
         {/* ثانويٌّ لا رئيسيّ: الرئيسيُّ في هذه الشاشة زرُّ القرار، ولا ذهبيّان
             في شاشةٍ واحدة — إنشاءُ رابطٍ خطوةٌ لا غاية. */}
         <Button tone="secondary" disabled={busy || name.trim().length < 2} onClick={() => void create()}>
           أنشئ رابطا
         </Button>
       </div>
+      <label className="mt-2 flex cursor-pointer items-center gap-2 text-read leading-6 text-muted-foreground">
+        <input
+          type="checkbox" checked={send} disabled={!email.trim()}
+          onChange={(e) => setSend(e.target.checked)} className="accent-gold"
+        />
+        أرسِلْه إليه بالبريد الآن — فالرمزُ لا يُحفظ، ولا سبيلَ إلى إرساله بعد هذه اللحظة.
+      </label>
 
       {/* ═══ اللوحُ الوحيدُ الذي يُقرأ فيه الرمز ═══ */}
       {fresh && (

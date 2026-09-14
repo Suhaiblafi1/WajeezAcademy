@@ -65,13 +65,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       reviewerName: z.string().trim().min(2).max(120),
       reviewerEmail: z.string().trim().email().max(200).optional(),
       days: z.number().int().min(1).max(180).optional(),
+      /* الإرسالُ هنا أو لا يُرسَل أبدا: الرمزُ لا يُحفظ، فهذه لحظتُه الوحيدة */
+      sendEmail: z.boolean().optional(),
     }).parse(req.body ?? {})
     const made = await links.create(id, req.auth!.userId, {
       reviewerName: body.reviewerName,
       reviewerEmail: body.reviewerEmail ?? null,
+      sendEmail: body.sendEmail ?? false,
       ...(body.days ? { ttlMs: body.days * 24 * 3600_000 } : {}),
     })
-    return reply.status(201).send({ url: made.url, link: made.link })
+    return reply.status(201).send({ url: made.url, link: made.link, emailDelivery: made.emailDelivery })
   })
 
   app.get('/api/admin/trainer-applications/:id/dossier-links', {

@@ -270,3 +270,51 @@ describe('روابطُ القُرّاء من شاشة الإدارة', () => {
     expect(res.statusCode).toBeLessThan(404)
   })
 })
+
+/* ═══ المرحلةُ الثالثة: الرابطُ يُرسَل، ولا يصل صاحبَ الملفّ ═══
+
+   بريدُ القارئ يحمل رابطَه بدل مرفَق PDF. والإرسالُ **في لحظة الإنشاء أو
+   لا يقع أبدا**: الرمزُ لا يُحفظ — هاشُه وحدَه — فليس في الخادم ما يُرسَل
+   بعدها. ومن ظنّ خلافَ ذلك بنى زرَّ «أعِد الإرسال» على لا شيء.
+
+   ولا يصل الرابطُ المتقدّمَ: فيه تقييمُنا له، ورسالةٌ واحدةٌ تُوجَّه خطأً
+   تُسلّمه أسبابَ رفضه بخطّ أيدينا (مسجَّلةٌ مخاطرةً في التصميم). */
+describe('إرسالُ الرابط بالبريد', () => {
+  it('⚠️ بريدُ المتقدّم نفسِه يُردّ — ولا يُنشأ رابطٌ أصلا', async () => {
+    const before = await svc.list(applicationId)
+    await expect(
+      svc.create(applicationId, adminId, { reviewerName: 'خطأٌ في اللصق', reviewerEmail: SECRET_EMAIL }),
+    ).rejects.toThrow(/المتقدّم/)
+    /* ولا يُترك رابطٌ معلَّقٌ من محاولةٍ مردودة */
+    expect((await svc.list(applicationId)).length).toBe(before.length)
+  })
+
+  it('وبحرفٍ كبيرٍ أو بمسافاتٍ كذلك — المطابقةُ على البريد لا على صورته', async () => {
+    await expect(
+      svc.create(applicationId, adminId, { reviewerName: 'خطأٌ آخر', reviewerEmail: `  ${SECRET_EMAIL.toUpperCase()} ` }),
+    ).rejects.toThrow(/المتقدّم/)
+  })
+
+  it('وبلا طلبِ إرسالٍ لا يُرسَل شيءٌ — واللصقُ بيدِ الأدمن يبقى الأصل', async () => {
+    const made = await svc.create(applicationId, adminId, {
+      reviewerName: 'قارئٌ بلا إرسال', reviewerEmail: 'reader-quiet@test.local',
+    })
+    expect(made.emailDelivery, 'أُرسل بريدٌ لم يُطلَب').toBeNull()
+    expect(made.url).toContain('/r/')
+  })
+
+  it('وحين يُطلب يُقال ما جرى — ولا يُفترض النجاح', async () => {
+    const made = await svc.create(applicationId, adminId, {
+      reviewerName: 'قارئٌ يُرسَل إليه', reviewerEmail: 'reader-sent@test.local', sendEmail: true,
+    })
+    /* البريدُ غيرُ مهيّأ في الاختبار، فالحالةُ `not_configured` لا `sent` —
+       والمقيسُ أنّ الحالةَ **تُقال**، فمن بنى «أُرسل» على مجرّد الإنشاء كذب. */
+    expect(made.emailDelivery, 'لا تُقال حالةُ الإرسال').not.toBeNull()
+    expect(made.url).toContain('/r/')
+  })
+
+  it('ولا يُرسَل بلا بريدٍ ولو طُلب', async () => {
+    const made = await svc.create(applicationId, adminId, { reviewerName: 'قارئٌ بلا بريد', sendEmail: true })
+    expect(made.emailDelivery).toBeNull()
+  })
+})
