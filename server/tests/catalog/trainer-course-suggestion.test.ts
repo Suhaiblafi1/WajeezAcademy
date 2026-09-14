@@ -99,6 +99,71 @@ describe('المقترحُ يصير طلبَ تغييرٍ في الطابور ا
   })
 })
 
+/* ═══ والطابورُ كان ينتهي عند البابِ الذي يُفتح ═══
+
+   حرست الاختباراتُ فوق **الإرسال** كلَّه: المعرّفُ والحمولةُ والمهاراتُ
+   والعنوان. ولم يحرس أحدٌ **الاعتماد** — وهو الزرُّ الوحيدُ الذي يُضغط
+   في هذا الطابور.
+
+   و`decide('approve')` تنادي `promoteEntity(… 'course', entityId …)`،
+   وهي تكتب `course.update({ where: { id } })`. ومعرّفُ المقترح
+   `C-PROPOSED-…` **لا صفَّ له في `Course` بقصد** — وهو ما يثبته الاختبارُ
+   أعلاه بنفسه (`expect(known).toBeNull()`). فالكتابةُ ترمي `P2025`،
+   والمعاملةُ تُلغى، والمراجعُ يرى ٥٠٠ بلا سبب.
+
+   وهذا عطبٌ لا يُرى بقراءة الإرسال: الاختبارُ الذي أثبت أنّ الصفَّ معدومٌ
+   هو نفسُه الذي كان يجب أن يسأل «وماذا يحدث حين يُعتمد؟». */
+describe('اعتمادُ مقترحٍ ليس في الكتالوج', () => {
+  const CHECKER = '00000000-0000-0000-0000-00000000000b'
+
+  /* ═══ والصنفُ الثاني: مهارةٌ تُطلَب ولم تُخلَق ═══
+
+     شاشةُ الكتالوج تفتح بابا واحدا لطلب مهارةٍ جديدة، فتكتب طلبَ تغييرٍ
+     صنفُه `skill` ومعرّفُه «مَزلَقُ» اسمٍ لا صفَّ له في `Skill`. فكان
+     الاعتمادُ يسقط سقوطَ الدورة بعينه — من `tx.skill.update`.
+
+     ولذلك لم يكن الإصلاحُ بادئةَ `C-PROPOSED-`: البادئةُ تحرس صنفا واحدا،
+     والصنفان اثنان من أوّل يوم. */
+  it('ومهارةٌ طُلب ميلادُها تُعتمد ولا تصطدم بصفٍّ معدوم', async () => {
+    const cr = await admin.submitChangeRequest(
+      'skill', 'mahara-la-tujad',
+      { kind: 'skill_request', slug: 'mahara-la-tujad', nameAr: 'مهارةٌ مطلوبة', reasonAr: 'يحتاجها مقترحٌ' },
+      ACTOR,
+    )
+    const done = await admin.decide(cr.id, 'approve', 'مهارةٌ وجيهة', CHECKER)
+    expect(done.status).toBe('approved')
+    expect(
+      await prisma.skill.findUnique({ where: { id: 'mahara-la-tujad' } }),
+      'وُلدت مهارةٌ من باب القرار — والمهارةُ تُخلق حيث تُربط بالكتالوج',
+    ).toBeNull()
+  })
+
+  it('يمضي ولا يصطدم بصفٍّ لا وجودَ له', async () => {
+    const cr = await admin.submitCourseSuggestion(applicationId, {
+      kind: 'new_course', titleAr: 'تحليلُ الأثر الاجتماعيّ', skillIds: [],
+    }, ACTOR)
+    expect(cr.entityId).toMatch(/^C-PROPOSED-/)
+
+    const done = await admin.decide(cr.id, 'approve', 'مقترحٌ وجيه', CHECKER)
+    expect(done.status).toBe('approved')
+
+    /* ولا يُخلَق له صفٌّ في الكتالوج بابا خلفيّا: الاعتمادُ قرارٌ على
+       المقترح، وميلادُ الدورة يمرّ بمعالجها حيث تُكتب محاورُها. */
+    expect(
+      await prisma.course.findUnique({ where: { id: cr.entityId } }),
+      'وُلدت دورةٌ في الكتالوج من باب القرار لا من باب التأليف',
+    ).toBeNull()
+  })
+
+  it('و«نسخةٌ من دورةٍ قائمة» تُعتمد وترفع دورتَها كما كانت', async () => {
+    const cr = await admin.submitCourseSuggestion(applicationId, { kind: 'variant', courseId }, ACTOR)
+    const done = await admin.decide(cr.id, 'approve', 'نسخةٌ مقبولة', CHECKER)
+    expect(done.status).toBe('approved')
+    const row = await prisma.course.findUnique({ where: { id: courseId } })
+    expect(row?.status, 'الدورةُ القائمةُ لم تُرفع').toBe('approved')
+  })
+})
+
 describe('كلُّ اقتراحٍ يُربط وحدَه — والطلبُ يحمل عشرين', () => {
   it('الحمولةُ تحمل السجلَّ المقصودَ وحدَه لا الطلبَ كلَّه', async () => {
     const cr = await admin.submitCourseSuggestion(applicationId, {

@@ -684,8 +684,40 @@ export class CatalogAdminService {
     })
   }
 
+  /* ═══ والطلبُ قد يسبق وجودَ ما يطلبه ═══
+
+     طلبُ التغيير ليس دائما تغييرا على صفٍّ قائم. منه ما هو **طلبُ ميلاد**:
+     `trainer_new_course` معرّفُه `C-PROPOSED-…` ولا صفَّ له في `Course`
+     بقصد — كما يثبته اختبارُ الإرسال نفسُه — و`skill_request` معرّفُه
+     «مَزلَقُ» مهارةٍ لم تُخلَق بعد.
+
+     وكان الاعتمادُ يكتب `update({ where: { id } })` على الصفّ في كلّ حال،
+     فيرمي Prisma الرمزَ `P2025`، وتُلغى المعاملةُ كلُّها، **ويرى المراجعُ
+     ٥٠٠ بلا سبب** — على أنّ قرارَه سليمٌ ومكتوبٌ وقد سجّل. ومرّ ذلك لأنّ
+     الاختباراتِ حرست الإرسالَ كلَّه ولم يحرس أحدٌ الزرَّ الوحيدَ الذي
+     يُضغط بعده.
+
+     والقاعدةُ التي كانت ناقصةً تُقال في سطر: **يُرفَع ما هو موجود.** ومن
+     طُلب ميلادُه يُعتمد قرارا، ثمّ يولد من باب التأليف حيث تُكتب محاورُه
+     وتُربط مهاراتُه — لا من باب القرار بابا خلفيّا.
+
+     ولمَ الوجودُ يُسأل عنه القاعدةَ ولا يُقاس على بادئة الاسم: البادئةُ
+     تحرس صنفا واحدا، وقد كان الصنفان اثنَين من أوّل يوم. وثالثٌ يأتي غدا
+     فيسقط سقوطَهما. */
+  private async entityExists(tx: Prisma.TransactionClient, entityType: string, id: string): Promise<boolean> {
+    const where = { id }
+    if (entityType === 'pathway') return (await tx.pathway.count({ where })) > 0
+    if (entityType === 'course') return (await tx.course.count({ where })) > 0
+    if (entityType === 'skill') return (await tx.skill.count({ where })) > 0
+    if (entityType === 'question') return (await tx.question.count({ where })) > 0
+    if (entityType === 'template') return (await tx.compositeTemplate.count({ where })) > 0
+    return false
+  }
+
   /** رفع حالة كيان وإصداره الحالي معا — داخل معاملة القرار أو النشر */
   async promoteEntity(tx: Prisma.TransactionClient, entityType: string, entityId: string, from: string, to: string) {
+    /* يُرفَع ما هو موجود — وما طُلب ميلادُه يُعتمد قرارا ويولد بعدُ */
+    if (!(await this.entityExists(tx, entityType, entityId))) return
     if (entityType === 'pathway') {
       const e = await tx.pathway.update({ where: { id: entityId }, data: { status: to } })
       await tx.pathwayVersion.updateMany({ where: { pathwayId: entityId, version: e.currentVersion, status: from }, data: { status: to } })
