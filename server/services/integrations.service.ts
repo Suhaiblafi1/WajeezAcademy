@@ -8,6 +8,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
 import { getZoomConfig, zoomMissing, zoomReady } from './zoom.service'
+import { WHATSAPP_SPOTS } from '../../src/application/site/whatsapp'
 
 export type PaymentDriver = 'test' | 'manual' | 'moyasar' | 'stripe'
 
@@ -500,4 +501,72 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
       guests: calendly.guests ?? '',
     },
   }
+}
+
+/* ═══ أرقامُ واتساب — لكلّ موضعٍ رقمُه ═══
+
+   قرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «ابنِ لي صفحةً تسهّل عليّ إدخالَ رقم
+   واتساب لكلّ مكانٍ فيه تواصلٌ مع واتساب».
+
+   وكان الرقمُ حرفا في `data/stories.ts` تقرؤه خمسةُ مواضع — فتغييرُه نشرةٌ
+   كاملة. وهو ليس سرّا: يظهر في رابط `wa.me` لكلّ زائر. فلا تقنيعَ هنا ولا
+   `MASK` — ما يُعرض للعامّة لا يُخفى عن صاحبه في شاشته.
+
+   والمزوّدُ `whatsapp` مذكورٌ في تعليق `IntegrationSetting` أصلا، فلا جدولَ
+   جديدٌ يُبنى. */
+
+const WHATSAPP_SPOT_KEYS = new Set(WHATSAPP_SPOTS.map((s) => s.key))
+
+export async function getWhatsAppNumbers(prisma: PrismaClient): Promise<Record<string, string>> {
+  const cfg = await getRawConfig(prisma, 'whatsapp')
+  const numbers = (cfg.numbers as Record<string, unknown>) ?? {}
+  const out: Record<string, string> = {}
+  for (const [k, v] of Object.entries(numbers)) {
+    const s = normalizeWhatsAppNumber(String(v ?? ''))
+    if (s) out[k] = s
+  }
+  return out
+}
+
+/** تُطبَّع في الخادم كذلك — من كتب بالواجهة قد يُرسل بغيرها */
+function normalizeWhatsAppNumber(raw: string): string {
+  const digits = (raw ?? '').replace(/[^\d+]/g, '')
+  if (!digits) return ''
+  return digits.replace(/^\+/, '').replace(/^00/, '')
+}
+
+export async function saveWhatsAppNumbers(
+  prisma: PrismaClient, actorId: string, input: Record<string, string>,
+) {
+  const current = await getWhatsAppNumbers(prisma)
+  const next: Record<string, string> = { ...current }
+  /* الفراغُ يمحو الموضعَ لا يحفظ فراغا: من أراد أن يرجع موضعٌ إلى الرقم العامّ
+     يمحو خانتَه، ولا يبقى مفتاحٌ بقيمةٍ خاوية. */
+  for (const [k, v] of Object.entries(input)) {
+    /* لا مفتاحَ خارجَ السجلّ: الشاشةُ تُولَّد منه، فمفتاحٌ غيرُه لا يقرؤه شيءٌ
+       ويبقى في الجدول أبدا لا يعرف أحدٌ من كتبه ولا لمَ. */
+    if (!WHATSAPP_SPOT_KEYS.has(k)) {
+      throw new AuthError('bad_whatsapp', `لا موضعَ في الموقع اسمُه «${k}»`, 422)
+    }
+    const n = normalizeWhatsAppNumber(v)
+    if (n) {
+      if (!/^\d{8,15}$/.test(n)) {
+        throw new AuthError('bad_whatsapp', `رقمٌ غير صالحٍ في «${k}» — أرقامٌ فقط، من ٨ إلى ١٥ خانة`, 422)
+      }
+      next[k] = n
+    } else delete next[k]
+  }
+
+  const row = await prisma.integrationSetting.upsert({
+    where: { provider: 'whatsapp' },
+    update: { config: { numbers: next } as Prisma.InputJsonValue, enabled: Object.keys(next).length > 0, updatedBy: actorId },
+    create: { provider: 'whatsapp', config: { numbers: next } as Prisma.InputJsonValue, enabled: Object.keys(next).length > 0, updatedBy: actorId },
+  })
+  await recordAudit(prisma, {
+    actorId, action: 'integration.whatsapp.save', entityType: 'integration_setting', entityId: 'whatsapp',
+    /* تُسجَّل المواضعُ المضبوطةُ لا الأرقام: السجلُّ يُقرأ ولا داعيَ لتكرار
+       ما هو معروضٌ في الشاشة أصلا. */
+    meta: { spots: Object.keys(next) },
+  })
+  return row
 }

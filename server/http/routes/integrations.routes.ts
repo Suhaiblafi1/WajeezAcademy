@@ -10,6 +10,7 @@ import { SystemHealthService } from '../../services/system-health.service'
 import {
   getPaymentConfig, getEmailConfig, savePaymentConfig, saveEmailConfig, saveZoomConfig, maskedIntegrationsView,
   getCalendlyConfig, saveCalendlyConfig,
+  getWhatsAppNumbers, saveWhatsAppNumbers,
 } from '../../services/integrations.service'
 import { getZoomConfig, zoomProbe, forgetZoomToken } from '../../services/zoom.service'
 import { registerCalendlyWebhook, CalendlyApiError } from '../../services/calendly-api.service'
@@ -38,6 +39,31 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     preHandler: requirePermission('settings.manage'),
     schema: { tags: ['admin-integrations'], summary: 'إعدادات التكامل — عرض مقنَّع' },
   }, async () => maskedIntegrationsView(prisma))
+
+  /* ═══ أرقامُ واتساب ═══
+
+     القراءةُ **عامّةٌ بلا جلسة**: الرقمُ يظهر في رابط `wa.me` لكلّ زائرٍ
+     يضغط الزرّ، فحجبُه خلف بوّابةٍ حراسةٌ لما لا يُحرَس. والكتابةُ خلف
+     `settings.manage` كسائر الإعدادات. */
+  app.get('/api/site/whatsapp', {
+    schema: { tags: ['public'], summary: 'أرقامُ واتساب لكلّ موضعٍ في الموقع' },
+  }, async () => ({ numbers: await getWhatsAppNumbers(prisma) }))
+
+  app.get('/api/admin/integrations/whatsapp', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'أرقامُ واتساب كما هي — لا تقنيعَ لما يُعرض للعامّة' },
+  }, async () => ({ numbers: await getWhatsAppNumbers(prisma) }))
+
+  app.put('/api/admin/integrations/whatsapp', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'حفظُ رقمِ واتساب لكلّ موضع — والفراغُ يُرجع الموضعَ إلى الرقم العامّ' },
+  }, async (req) => {
+    const body = z.object({
+      numbers: z.record(z.string().max(40), z.string().max(40)),
+    }).parse(req.body)
+    await saveWhatsAppNumbers(prisma, req.auth!.userId, body.numbers)
+    return { numbers: await getWhatsAppNumbers(prisma) }
+  })
 
   app.put('/api/admin/integrations/payment', {
     preHandler: requirePermission('settings.manage'),

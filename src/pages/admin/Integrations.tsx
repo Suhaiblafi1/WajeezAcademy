@@ -4,12 +4,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { CalendarClock, CreditCard, Loader2, Mail, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck, Video } from "lucide-react";
+import { CalendarClock, CreditCard, Loader2, Mail, MessageCircle, PlugZap, RefreshCw, Send, ServerOff, ShieldCheck, Video } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { DEFAULT_SENDER_EMAIL } from "@/application/site/origin";
 import { TRAINER_INTERVIEW } from "@/application/trainer/application-options";
 import { calendlyCardNotice } from "@/lib/calendly-card";
+import { WHATSAPP_SPOTS, isValidWhatsApp, normalizeWhatsApp } from "@/application/site/whatsapp";
+import { setWhatsAppNumbers } from "@/services/whatsapp";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -65,6 +67,9 @@ export default function Integrations() {
      كلَّ خمس دقائق بلا إنسانٍ يلصقه. وعلّةُ النقض في `CalendlyConfig`. */
   const [calForm, setCalForm] = useState({ enabled: false, signingKey: "", token: "", bookingUrl: "", guests: "" });
   const [calProbe, setCalProbe] = useState<CalendlyRegisterReply | null>(null);
+  /* أرقامُ واتساب — نداؤها مستقلٌّ عن `/api/admin/integrations`: هي في جدول
+     الإعدادات نفسِه لكنّها ليست سرّا يُقنَّع، فلا تُخلط بمن يُقنَّع. */
+  const [waForm, setWaForm] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -86,6 +91,9 @@ export default function Integrations() {
         enabled: v.calendly.enabled, signingKey: v.calendly.signingKey,
         token: v.calendly.token, bookingUrl: v.calendly.bookingUrl, guests: v.calendly.guests,
       });
+      const wa = await apiGet<{ numbers: Record<string, string> }>("/api/admin/integrations/whatsapp");
+      setWaForm(wa.numbers ?? {});
+      setWhatsAppNumbers(wa.numbers ?? {});
     } catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
   }, []);
@@ -136,6 +144,21 @@ export default function Integrations() {
     finally { setBusy(false); }
   };
 
+  /* ما لا يصلح يُسمّى قبل الحفظ لا بعده — فلا يُرسل رقمٌ يُرَدُّ من الخادم */
+  const waBad = WHATSAPP_SPOTS.filter((sp) => (waForm[sp.key] ?? "").trim() && !isValidWhatsApp(waForm[sp.key]));
+
+  const saveWhatsApp = async () => {
+    if (waBad.length) { toastError(`رقمٌ غير صالحٍ في «${waBad[0].labelAr}»`); return; }
+    /* تُرسَل كلُّ المواضعِ لا المملوءةَ وحدَها: الفراغُ عند الخادم محوٌ،
+       فمن أفرغ خانةً أراد أن يرجع موضعُها إلى الرقم العامّ. */
+    const payload: Record<string, string> = {};
+    for (const sp of WHATSAPP_SPOTS) payload[sp.key] = (waForm[sp.key] ?? "").trim();
+    await act(async () => {
+      const r = await apiPut<{ numbers: Record<string, string> }>("/api/admin/integrations/whatsapp", { numbers: payload });
+      setWhatsAppNumbers(r.numbers ?? {});
+    }, "حُفظت أرقام واتساب");
+  };
+
   if (offline) {
     return (
       <AdminLayout title="التكاملات">
@@ -161,6 +184,56 @@ export default function Integrations() {
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-2">
+          {/* ════ أرقامُ واتساب ════
+
+              أوّلَ الشاشةِ وعرضَ العمودين: هو أكثرُ ما يتغيّر (رقمُ مستشارٍ
+              يُبدَّل في يوم)، وليس فيه سرٌّ يُقنَّع — فلا يُدفن بين المفاتيح. */}
+          <Panel as="section" className="lg:col-span-2">
+            <p className="flex items-center gap-2 text-sm font-black">
+              <MessageCircle className="h-4 w-4 text-teal-ink" /> أرقام واتساب — لكلّ موضعٍ رقمُه
+            </p>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">
+              كلُّ زرِّ واتسابٍ في الموقع مذكورٌ هنا باسمِه وبأين يظهر. واتركِ الخانةَ فارغةً
+              ليرجع موضعُها إلى رقم «مراسلة مستشار وجيز» — فرقمٌ واحدٌ يكفي من لا يريد أكثر.
+            </p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {WHATSAPP_SPOTS.map((sp) => {
+                const raw = waForm[sp.key] ?? "";
+                const bad = Boolean(raw.trim()) && !isValidWhatsApp(raw);
+                return (
+                  <div key={sp.key}>
+                    <label className={labelCls} htmlFor={`wa-${sp.key}`}>{sp.labelAr}</label>
+                    <input
+                      id={`wa-${sp.key}`}
+                      dir="ltr"
+                      inputMode="tel"
+                      value={raw}
+                      onChange={(e) => setWaForm({ ...waForm, [sp.key]: e.target.value })}
+                      placeholder="962771052222"
+                      className={`${inputCls} mt-1 w-full font-mono ${bad ? "border-red-400/60" : ""}`}
+                    />
+                    <p className="mt-1 text-read leading-5 text-muted-foreground">يظهر في: {sp.whereAr}</p>
+                    {bad && (
+                      <p className="mt-1 text-read leading-5 font-bold text-red-300">
+                        أرقامٌ فقط بصيغةٍ دوليّةٍ بلا «+» ولا صفرَين — من ٨ إلى ١٥ خانة.
+                      </p>
+                    )}
+                    {/* ما سيُحفظ فعلا يُرى قبل الحفظ: من لصق «+962 77…» يطمئنّ
+                        أنّ المحفوظ صورةٌ أخرى، ولا يظنّ أنّ شيئا ضاع. */}
+                    {!bad && raw.trim() && normalizeWhatsApp(raw) !== raw.trim() && (
+                      <p className="mt-1 text-read leading-5 text-muted-foreground">
+                        يُحفظ هكذا: <span dir="ltr" className="font-mono text-teal-light-ink">{normalizeWhatsApp(raw)}</span>
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <Button tone="confirm" disabled={busy || waBad.length > 0} onClick={() => void saveWhatsApp()} className="mt-4">
+              حفظ أرقام واتساب
+            </Button>
+          </Panel>
+
           {/* ════ مزود الدفع ════ */}
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-gold-ink" /> مزود الدفع</p>
