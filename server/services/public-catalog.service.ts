@@ -8,6 +8,7 @@ import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { AuthError } from './auth.service'
 import { openRegistrationWhere } from './registration-window'
 import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
+import { photoPublicUrl } from './storage.service'
 
 export class PublicCatalogService {
   private prisma: PrismaClient
@@ -162,7 +163,7 @@ export class PublicCatalogService {
       name: profile.application.fullName,
       headline: profile.headline,
       bio: profile.bioPublic,
-      photoUrl: profile.photoUrl,
+      photoUrl: photoPublicUrl(profile.photoUrl),
       country: profile.application.country,
       specialties: profile.application.specialties.map((s) => s.specialty),
       ratingAvg: profile.ratingAvg,

@@ -134,6 +134,41 @@ export const MAX_UPLOAD_BYTES: Record<string, number> = {
 }
 export const MAX_UPLOAD_ANY = 4 * 1024 * 1024
 
+/* ═══ صورةُ المدرّب — سقفُها سقفُ صورةٍ لا سقفُ وثيقة ═══
+
+   وثائقُ المتقدّم أربعةُ ميغابايت لأنّها مسحٌ ضوئيٌّ لشهادة. والصورةُ
+   الشخصيّةُ تُعرض في بطاقةٍ بعرض ٢٠٠ بكسل — فمليونٌ واحدٌ سخيٌّ عليها،
+   وأربعةٌ تعني صفحةَ فريقٍ تحمّل عشرين ميغابايت على هاتفٍ في الطريق. */
+export const MAX_PHOTO_BYTES = 1024 * 1024
+
+/* والصورُ صيغٌ ثلاثٌ لا أكثر: ما يعرضه كلُّ متصفّحٍ بلا تحويل */
+export const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp'] as const
+
+/* ═══ كيف تُميَّز الصورةُ المخزَّنةُ عن رابطٍ خارجيّ ═══
+
+   `TrainerProfile.photoUrl` عمودُ نصٍّ واحد، ويحمل أحدَ شكلَين: رابطا
+   خارجيّا `https://…` يُلصق كما هو، أو مفتاحَ مخزنٍ بهذه البادئة. وعمودٌ
+   واحدٌ خيرٌ من عمودَين لأنّ الصورةَ واحدةٌ لا اثنتان — ومن ألصق رابطا
+   ثمّ رفع ملفّا أراد أن يحلّ الثاني محلَّ الأوّل، وهو ما يفعله عمودٌ واحد. */
+export const PHOTO_KEY_PREFIX = 'storage:'
+
+/** المفتاحُ إن كانت الصورةُ عندنا، و`null` إن كانت رابطا خارجيّا أو لا شيء */
+export function photoStorageKey(photoUrl: string | null | undefined): string | null {
+  if (!photoUrl?.startsWith(PHOTO_KEY_PREFIX)) return null
+  return photoUrl.slice(PHOTO_KEY_PREFIX.length) || null
+}
+
+/* ═══ وما يخرج للشاشة عنوانٌ يفتح، لا مفتاحٌ تفكّه هي ═══
+
+   لو خرجت `storage:abc` إلى الواجهة لَلزم كلَّ شاشةٍ أن تعرف البادئةَ
+   وتبنيَ العنوان. وهي ثلاثُ شاشاتٍ اليوم وأكثرُ غدا. فالخادمُ يفكّها
+   مرّةً عند الخروج، والواجهةُ ترى `src` وحسب. */
+export function photoPublicUrl(photoUrl: string | null | undefined): string | null {
+  if (!photoUrl) return null
+  const key = photoStorageKey(photoUrl)
+  return key ? `/api/v1/trainer-photos/${key}` : photoUrl
+}
+
 /* مواد الشعبة وتسجيلاتها ليست وثائق متقدّم: حجمها حجم محاضرة، ومسار رفعها
    مسألة قائمة لم تُحسم بعد (رابطها الموقّع يقصد مسارا لا يخدم إلا وثائق
    المتقدّمين). فحدُّها يبقى كما كان حتى يُحسم مخزنها — ولا يُخلط بحدّ هذه. */
@@ -160,6 +195,7 @@ export function newStorageKey(): string {
    يملكه سجلٌّ — فلا يبقى على القرص ما لا يعرفه أحد ولا يحذفه أحد. */
 export type StorageOwnerKind =
   | 'trainer_document' | 'cv' | 'recording' | 'material' | 'submission' | 'assessment_response'
+  | 'trainer_photo'
 
 export interface StorageOwner {
   kind: StorageOwnerKind
@@ -216,6 +252,16 @@ export async function resolveStorageOwner(
 
   const res = await prisma.assessmentResponse.findFirst({ where: { storageKey }, select: { id: true } })
   if (res) return { kind: 'assessment_response', maxBytes: MAX_UPLOAD_ANY }
+
+  /* ═══ والسابعُ: صورةُ المدرّب ═══
+
+     تُبحث بالبادئةِ لا بالمفتاحِ مجرّدا، فالعمودُ يحمل `storage:<key>`.
+     وسقفُها سقفُ صورةٍ — فمن رفع ملفّا بأربعةِ ميغابايت يُردّ هنا قبل أن
+     يُكتب على القرص، لا بعد أن يملأه. */
+  const photo = await prisma.trainerProfile.findFirst({
+    where: { photoUrl: `${PHOTO_KEY_PREFIX}${storageKey}` }, select: { id: true },
+  })
+  if (photo) return { kind: 'trainer_photo', maxBytes: MAX_PHOTO_BYTES }
 
   return null
 }

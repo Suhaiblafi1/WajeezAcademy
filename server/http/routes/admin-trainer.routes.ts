@@ -337,6 +337,33 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.publishCohort(cohortId, req.auth!.userId)
   })
 
+  /* ═══ الملفُّ العامُّ — الصلاحيّةُ `trainer.publish` ═══
+
+     لأنّ ما يُكتب هنا هو **بعينه** ما تعرضه صفحةُ الفريق للعامّة: عنوانُه
+     ونبذتُه وصورتُه. فمن يملك اعتمادَ الظهور يملك تحريرَ ما يَظهر، ولا
+     يُفتح بابٌ ثالثٌ حول القرار نفسِه. */
+  app.put('/api/admin/trainers/:profileId/public-profile', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'عنوانُ المدرّب ونبذتُه وصورتُه — ما تعرضه صفحةُ الفريق' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      headline: z.string().trim().max(160).nullish(),
+      bioPublic: z.string().trim().max(1200).nullish(),
+      photoUrl: z.string().trim().max(500).nullish(),
+    }).parse(req.body ?? {})
+    return review.savePublicProfile(profileId, req.auth!.userId, body)
+  })
+
+  app.post('/api/admin/trainers/:profileId/photo-upload', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'رابطُ رفعٍ موقّتٌ لصورة المدرّب — يحتاج FILE_UPLOADS' },
+  }, async (req, reply) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { mime } = z.object({ mime: z.string().max(60) }).parse(req.body ?? {})
+    return reply.status(201).send(await review.startPhotoUpload(profileId, req.auth!.userId, mime))
+  })
+
   app.post('/api/admin/trainers/:profileId/publish-approval', {
     preHandler: requirePermission('trainer.publish'),
     schema: { tags: ['admin-trainers'], summary: 'موافقة الظهور العام — توثيق الملف وإظهاره للعامة' },

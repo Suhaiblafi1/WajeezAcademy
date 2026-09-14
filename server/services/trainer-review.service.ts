@@ -19,6 +19,11 @@ import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
+import {
+  MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
+  assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, signKey,
+} from './storage.service'
+import { deleteObject } from './object-store'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
@@ -1045,6 +1050,10 @@ export class TrainerReviewService {
       suspended: Boolean(p.suspendedAt),
       publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
       isVerified: p.isVerified,
+      /* ما تعرضه صفحةُ الفريق — يُقرأ هنا ليُحرَّر هنا */
+      headline: p.headline,
+      bioPublic: p.bioPublic,
+      photoUrl: photoPublicUrl(p.photoUrl),
       qualifications: p.qualifications.map((q) => ({
         courseId: q.courseId,
         courseTitle: q.course.versions[0]?.titleAr ?? q.courseId,
@@ -1179,6 +1188,87 @@ export class TrainerReviewService {
     return assignment
   }
 
+  /* ═══ الملفُّ العامُّ للمدرّب — عنوانُه ونبذتُه وصورتُه ═══
+
+     كان `headline` و`bioPublic` يُبذران مرّةً من نصّ الطلب ثمّ **لا يُعدَّلان
+     أبدا**: لا في الإدارة ولا في بوّابة المدرّب. وهما ما تعرضه صفحةُ الفريق
+     للعامّة. فنبذةٌ كُتبت في نموذج تقديمٍ قبل أشهرٍ هي وجهُ المدرّب إلى
+     الناس، ولا سبيلَ إلى تحسينها إلّا بيدٍ في القاعدة.
+
+     و`photoUrl` أسوأ: عمودٌ في المخطَّط **لا يكتبه شيءٌ في الشيفرة كلِّها**.
+
+     وقرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): صورةُ المدرّب تُرفع، وأمرُ التخزين
+     يُضبط بيده — «اجعل الموقعَ مستعدّا لهذا فورا». */
+  async savePublicProfile(
+    profileId: string, actorId: string,
+    input: { headline?: string | null; bioPublic?: string | null; photoUrl?: string | null },
+  ) {
+    const profile = await this.requireActiveProfile(profileId)
+    const data: Prisma.TrainerProfileUpdateInput = {}
+    if (input.headline !== undefined) data.headline = input.headline?.trim() || null
+    if (input.bioPublic !== undefined) data.bioPublic = input.bioPublic?.trim() || null
+
+    if (input.photoUrl !== undefined) {
+      const next = input.photoUrl?.trim() || null
+      /* لا يُلصق في العمود إلّا رابطٌ آمنٌ أو مفتاحُ مخزنٍ أصدرناه نحن.
+         عمودٌ يخرج إلى `src` في صفحةٍ عامّةٍ يقبل `javascript:` لو تُرك. */
+      if (next && !next.startsWith('https://') && !next.startsWith(PHOTO_KEY_PREFIX)) {
+        throw new AuthError('bad_photo', 'رابطُ الصورة يجب أن يبدأ بـhttps://', 422)
+      }
+      /* والصورةُ القديمةُ تُمحى من القرص حين تُستبدل — وإلّا بقيت بايتاتٌ
+         لا يشير إليها سجلٌّ، ولا يعرف أحدٌ أنّها هناك ليحذفها. */
+      const oldKey = photoStorageKey(profile.photoUrl)
+      if (oldKey && oldKey !== photoStorageKey(next)) {
+        try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ }
+      }
+      data.photoUrl = next
+    }
+
+    const saved = await this.prisma.trainerProfile.update({ where: { id: profile.id }, data })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.public_profile.save', entityType: 'trainer_profile', entityId: profile.id,
+      meta: { fields: Object.keys(data) },
+    })
+    return {
+      headline: saved.headline, bioPublic: saved.bioPublic, photoUrl: photoPublicUrl(saved.photoUrl),
+    }
+  }
+
+  /* ═══ ورفعُ الصورة: المفتاحُ يُكتب في العمود قبل أن تُرفع البايتات ═══
+
+     `resolveStorageOwner` تعرف المالكَ من القاعدة. فلو أُصدر الرابطُ ثمّ
+     كُتب العمودُ بعد الرفع، لَردّ مسارُ الرفع «لا مالك» — والمفتاحُ الذي
+     أصدرناه توّا لا يقبله خادمُنا.
+
+     فالعمودُ يُكتب أوّلا، والصورةُ تظهر حين تصل بايتاتُها. ومن بدأ رفعا ثمّ
+     تركه يبقى عمودُه يشير إلى كائنٍ لا وجودَ له — فيردّ مسارُ العرض ٤٠٤،
+     وهو أهونُ من رفعٍ لا يُقبل. */
+  async startPhotoUpload(profileId: string, actorId: string, mime: string) {
+    assertFileUploadsEnabled('والبديلُ الآن: ألصِق رابطَ الصورة مباشرةً في الحقل.')
+    if (!(PHOTO_MIMES as readonly string[]).includes(mime)) {
+      throw new AuthError('bad_mime', 'الصورةُ JPEG أو PNG أو WebP', 422)
+    }
+    const profile = await this.requireActiveProfile(profileId)
+    const oldKey = photoStorageKey(profile.photoUrl)
+    const storageKey = newStorageKey()
+    await this.prisma.trainerProfile.update({
+      where: { id: profile.id }, data: { photoUrl: `${PHOTO_KEY_PREFIX}${storageKey}` },
+    })
+    if (oldKey) { try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ } }
+
+    const exp = Date.now() + SIGNED_URL_TTL_MS
+    const sig = signKey(storageKey, exp, 'write')
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.photo.upload', entityType: 'trainer_profile', entityId: profile.id,
+    })
+    return {
+      storageKey,
+      uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${sig}`,
+      maxBytes: MAX_PHOTO_BYTES,
+      photoUrl: photoPublicUrl(`${PHOTO_KEY_PREFIX}${storageKey}`),
+    }
+  }
+
   /** الموافقة على الظهور العام — لا ظهور إلا بملف موثق وموافقة نشر */
   async approvePublicVisibility(profileId: string, actorId: string) {
     const profile = await this.requireActiveProfile(profileId)
@@ -1242,7 +1332,7 @@ export class TrainerReviewService {
       id: p.id, name: p.application.fullName, headline: p.headline, bio: p.bioPublic,
       country: p.application.country,
       specialties: p.application.specialties.map((s) => s.specialty),
-      photoUrl: p.photoUrl,
+      photoUrl: photoPublicUrl(p.photoUrl),
       ratingAvg: p.ratingAvg,
       ratingCount: p.ratingCount,
       /* التعليق لا يُعرض إلا مع متوسّط معروض: تعليقٌ بلا رقم يُقرأ انتقاءً */
