@@ -161,13 +161,19 @@ const PHRASES: Record<string, string> = {
   'cv.view': 'مشاهدةُ سيرةٍ ذاتيّة',
   'cv.view_own': 'مشاهدةُ سيرته الذاتيّة',
   'cv.delete': 'حذفُ سيرةٍ ذاتيّة',
-  'rollback': 'الرجوعُ إلى إصدارٍ سابق',
-  'publish': 'نشر',
-  'approve': 'اعتماد',
-  'reject': 'رفض',
-  'create': 'إنشاء',
-  'desc': 'تعديلُ وصف',
-  'start_review': 'بدءُ مراجعة',
+  /* ═══ وسبعةُ أسماءٍ كانت هنا لأشياءَ ليست أفعالَ أثرٍ أصلا ═══
+
+     `rollback` · `publish` · `approve` · `reject` · `create` · `desc` ·
+     `start_review` — كان الحارسُ يمسح كلَّ `action: '…'` في `server/`،
+     فالتقط ترتيبَ استعلامٍ (`orderBy: { _count: { action: 'desc' } }`)،
+     وسجلَّ إصدارٍ آخرَ (`catalogVersionEvent`)، ووسمَ Zod لمُدخَل.
+
+     **فاختُلقت لها عباراتٌ عربيّةٌ لتُسكِته**: «`desc` — تعديلُ وصف»،
+     واسمُها في الحقيقة اتّجاهُ فرزٍ في SQL. ومعجمٌ يكذب أسوأُ من معجمٍ
+     ناقص: من قرأه صدّقه.
+
+     فصار المسحُ على نافذة `recordAudit` وحدَها، وسقطت السبعةُ لأنّها لم
+     تكن هناك قطّ. */
   'catalog.version.delete_draft': 'حذفُ مسودّةِ إصدار',
   /* ك-٣: ربطُ المهارات بابٌ قائمٌ بذاته — فالدورةُ تُولد بلا مهارةٍ وتُصلَح بعدُ */
   'catalog.course.skills_set': 'ربطُ مهاراتٍ بدورة',
@@ -200,7 +206,51 @@ const PHRASES: Record<string, string> = {
   'trainer.blackout.remove': 'حذفُ المدرّبِ فترةَ غياب',
   'trainer_compensation.set_rule': 'تعيينُ قاعدةِ تعويضِ مدرّب',
   'trainer_payout.generate_skipped': 'تخطّي توليدِ مستحقّ',
-  'request_resubmit': 'طلبُ إعادةِ تقديم',
+
+  /* ═══ وأربعةٌ وعشرون فعلا تُبنى ولا تُكتب حرفا ═══
+
+     منها ما يُركَّب بقالبٍ نصّيّ ومنها ما يُنتقى بشرط. وكان المسحُ الحرفيُّ
+     أعمى عنها، **فمرّت تُعرض مفاتيحَ لاتينيّةً في سجلٍّ عربيّ** ولم يحمرّ
+     شيء. وتُكتب هنا بعباراتٍ كاملةٍ لا بالتركيب: «نشِط · متن» ليست اسما
+     لإتاحةِ مادّة. */
+
+  /* مراجعةُ متنِ الوحدة — `module-authoring.service.ts` */
+  'module.content.academic_approve': 'اعتمادٌ أكاديميٌّ لمتنِ وحدة',
+  'module.content.request_changes': 'طلبُ تعديلاتٍ على متنِ وحدة',
+  'module.content.return_to_academic': 'إعادةُ متنِ وحدةٍ للمراجعة الأكاديميّة',
+
+  /* تسليمُ المتعلّم — `assessment.service.ts:251` */
+  'submission.start_review': 'بدءُ مراجعةِ تسليم',
+  'submission.request_resubmit': 'طلبُ إعادةِ تسليم',
+  'submission.accept': 'قبولُ تسليم',
+
+  /* تأجيلُ جلسة — `cohort-message.service.ts:228` */
+  'session.reschedule.approve': 'اعتمادُ تأجيلِ جلسة',
+  'session.reschedule.reject': 'ردُّ اقتراحِ تأجيلِ جلسة',
+
+  /* طلبُ مستشار — `advisor-request.service.ts:165` */
+  'advisor.request.approved': 'اعتمادُ طلبِ مستشار',
+  'advisor.request.rejected': 'ردُّ طلبِ مستشار',
+
+  /* طلبُ متعلّم — `learner-request.service.ts:247` */
+  'learner.request.in_review': 'بدءُ النظرِ في طلبِ متعلّم',
+  'learner.request.fulfilled': 'تلبيةُ طلبِ متعلّم',
+  'learner.request.declined': 'ردُّ طلبِ متعلّم',
+
+  /* موادُّ الشعبة وتسجيلاتُها — `cohort.service.ts:1284` */
+  'content.active': 'إتاحةُ مادّةٍ أو تسجيل',
+  'content.archived': 'أرشفةُ مادّةٍ أو تسجيل',
+  'content.disabled': 'تعطيلُ مادّةٍ أو تسجيل',
+
+  /* وظائفُ العامل الثماني — `worker/jobs.ts`. وفاعلُها النظامُ لا إنسان */
+  'worker.calendly_interview_sync': 'مزامنةُ مقابلاتِ Calendly',
+  'worker.cleanup_expired': 'تنظيفُ ما انتهت صلاحيّتُه',
+  'worker.cohort_status_sync': 'مزامنةُ حالاتِ الشعب',
+  'worker.dispatch_notifications': 'إرسالُ الإشعاراتِ المنتظِرة',
+  'worker.enforce_retention': 'تطبيقُ مددِ الحفظ',
+  'worker.publish_scheduled_changes': 'نشرُ التغييراتِ المجدولة',
+  'worker.reclaim_abandoned_orders': 'استرجاعُ الطلباتِ المهجورة',
+  'worker.session_reminders': 'تذكيراتُ الجلسات',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */

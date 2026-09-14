@@ -158,6 +158,30 @@ export class PublicCatalogService {
     if (!profile) throw new AuthError('not_found', 'لا مدرّبَ بهذا المسار', 404)
 
     const cohorts = await this.openCohorts({ trainers: { some: { profileId: profile.id } } })
+
+    /* ═══ ومسارُه باسمه على صفحته (ن-٨) ═══
+
+       رابطُ الدعوة يشير إلى هذه الصفحة، وكانت تعرض شعبَه المفتوحةَ وحدَها.
+       فمن بنى مسارا باسمه ونُشر على الرفّ العامّ، **لم يكن رابطُه يبلغه** —
+       يقع الزائرُ على قائمةِ شعبٍ متفرّقةٍ لا على ما جمعه له صاحبُها.
+
+       ولا يُفحص هنا اعتمادُ نشرِ المدرّب ثانيةً: `PUBLIC_TRAINER_WHERE` أعلاه
+       ردّ الصفحةَ كلَّها ٤٠٤ إن لم يُعتمد. فالمسارُ يُقرأ بحالته وحدَها. */
+    const paths = (await this.prisma.trainerPath.findMany({
+      where: { profileId: profile.id, status: 'published' },
+      orderBy: { publishedAt: 'desc' },
+      include: {
+        term: { select: { titleAr: true, season: true, year: true, startsOn: true } },
+        courses: { orderBy: { sequence: 'asc' }, select: { courseId: true } },
+      },
+    })).map((p) => ({
+      slug: p.slug,
+      titleAr: p.titleAr,
+      blurbAr: p.blurbAr,
+      term: p.term,
+      courseCount: p.courses.length,
+    }))
+
     return {
       slug,
       name: profile.application.fullName,
@@ -173,6 +197,7 @@ export class PublicCatalogService {
       /* رمزُه الواسعُ يخرج مع الصفحة: من دخل من بابه يُسجَّل له بلا أن
          يحمل الزائرُ شيئا في العنوان. */
       referralCode: profile.referralLinks[0]?.code ?? null,
+      paths,
       cohorts,
     }
   }

@@ -9,8 +9,16 @@
    يُعرض أجرُ الإحالة بعينه لكلّ شعبة، فلا يُخترع هنا رقمٌ ولا يُنسخ فيفترق
    عن مصدره.
 
-   والقسمُ الذي يبني مسارا باسمه من دوراته (وهو تمامُ ف-١) موضعُه هذه الصفحةُ
-   حين يصل القسمُ «ن» — فالمكانُ مُعدٌّ له، ولا يُبنى قبله. */
+   ─────────── وما كان مؤجَّلا صار مبنيّا ───────────
+
+   كُتب هنا: «والقسمُ الذي يبني مسارا باسمه من دوراته موضعُه هذه الصفحةُ حين
+   يصل القسمُ ن». وقد وصل القسمُ «ن» وبُني بناءً كاملا في «مساراتي» — بمعالجٍ
+   يختار الدوراتِ والموسمَ ويُرسل للاعتماد.
+
+   **فلا يُبنى هنا ثانيةً**: صفحتان تبنيان مسارا تفترقان يوما، والمسارُ عقدٌ
+   على متعلّمٍ لا شاشةُ عرض. فهذه الصفحةُ **تعرض ما بناه هناك** وتقول له إن
+   لم يبنِ شيئا بعدُ — والرابطُ يبلغه لأنّ صفحتَه العامّة صارت تعرض مساراتِه
+   (ن-٨). */
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Link2, Loader2, UserPlus, Wallet } from "lucide-react";
@@ -22,10 +30,13 @@ import { staffControlCls } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 
 interface MyReferral { code: string; slug: string; url: string; publicReady: boolean; registered: number }
+/** ما يعرضه «مساراتي» — يُقرأ هنا ولا يُبنى */
+interface MyPath { id: string; titleAr: string; status: string; courseCount?: number }
 const REGISTERED_FORMS = { one: "متعلّمٌ واحد", two: "متعلّمان", few: "متعلّمين", many: "متعلّما" } as const;
 
 export default function Referral() {
   const [referral, setReferral] = useState<MyReferral | null>(null);
+  const [paths, setPaths] = useState<MyPath[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -34,6 +45,10 @@ export default function Referral() {
     void apiGet<MyReferral>("/api/trainer/me/referral")
       .then((r) => { if (alive) setReferral(r); })
       .catch((e) => { if (alive) setError(permissionMessage(e, "تعذّر الوصول إلى الخادم")); });
+    /* ومساراتُه: إخفاقُها لا يُعطّل الرابط — فالرابطُ هو البند، والمسارُ زيادة */
+    void apiGet<MyPath[]>("/api/trainer/paths")
+      .then((r) => { if (alive) setPaths(r); })
+      .catch(() => { if (alive) setPaths([]); });
     return () => { alive = false };
   }, []);
 
@@ -49,6 +64,46 @@ export default function Referral() {
           فمن سجّل منه يصلك باسمك لا رقما: تراه بعلامة «عبر رابطك» عند اسمه في طلبتك.
         </p>
       </Panel>
+
+      {/* ═══ ما أوصى به فعلا — تمامُ و-١ ═══
+
+          السؤالُ في الأعلى يسأل «ما الذي توصي به؟»، وكان الجوابُ الوحيدُ
+          «صفحتُك تعرض شعبَك». وهذا عرضٌ لا توصية: الشعبُ ما أسندته الإدارةُ
+          إليه، والمسارُ ما اختاره هو ورتّبه وسمّاه.
+
+          فيُعرض هنا ما بناه في «مساراتي»، ويُقال له صراحةً إن لم يبنِ شيئا. */}
+      {paths !== null && (
+        <Panel as="section" className="mb-6">
+          <h2 className="text-lg font-black">مساراتُك التي يبلغها رابطُك</h2>
+          {paths.filter((p) => p.status === "published").length === 0 ? (
+            <>
+              <p className="mt-2 text-read leading-7 text-muted-foreground">
+                لم تنشر مسارا باسمك بعد. ورابطُك اليومَ يعرض شعبَك المفتوحةَ متفرّقةً —
+                وهي ما أُسند إليك، لا ما اخترتَه أنت.
+              </p>
+              <Button as={Link} to="/trainer/paths" tone="secondary" size="sm" className="mt-3">
+                ابنِ مسارا من دوراتك
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-read leading-7 text-muted-foreground">
+                هذه تظهر لمن يفتح رابطَك، قبل شعبك المتفرّقة:
+              </p>
+              <ul className="mt-3 space-y-2">
+                {paths.filter((p) => p.status === "published").map((p) => (
+                  <Inset as="li" key={p.id} className="px-4 py-2.5">
+                    <span className="font-bold">{p.titleAr}</span>
+                  </Inset>
+                ))}
+              </ul>
+              <Button as={Link} to="/trainer/paths" tone="ghost" size="sm" className="mt-3">
+                أدِر مساراتي
+              </Button>
+            </>
+          )}
+        </Panel>
+      )}
 
       {!referral && !error && (
         <div className="grid place-items-center py-16">

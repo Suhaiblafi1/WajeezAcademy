@@ -234,42 +234,6 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     return reply.status(201).send(cr)
   })
 
-  /* ═══ مقترحُ دورةٍ من مدرّب ═══
-
-     صلاحيّتان لا واحدة: `catalog.view` لأنّه يُنشئ طلبَ تغييرٍ كسائرِ ما
-     يُنشئه صانعٌ، و`trainer.applications.review` لأنّه **يقرأ طلبَ متقدّمٍ**
-     ويسمّي صاحبَه في الحمولة. فمن يملك الكتالوجَ وحدَه لا يفتح به بابا إلى
-     أسماء المتقدّمين. */
-  app.post('/api/admin/catalog/course-suggestions', {
-    preHandler: requirePermission('catalog.view'),
-    schema: { tags: ['admin-catalog'], summary: 'مقترحُ دورةٍ من مدرّب — نسخةٌ من دورةٍ قريبة أو دورةٌ جديدةٌ بمهارات' },
-  }, async (req, reply) => {
-    if (!req.auth!.permissions.includes('trainer.applications.review')) {
-      return reply.status(403).send({
-        error: {
-          code: 'forbidden',
-          message_ar: 'ربطُ مقترحِ مدرّبٍ يحتاج صلاحيّةَ مراجعة الطلبات أيضا — فهو يقرأ طلبَه',
-        },
-      })
-    }
-    const body = z.object({
-      applicationId: z.string().uuid(),
-      noteAr: z.string().max(2000).optional(),
-      /* ترتيبُ الاقتراح في سجلّاته — سقفُه سقفُ `MAX_PROPOSALS` */
-      proposalIndex: z.number().int().min(0).max(19).optional(),
-    }).and(z.discriminatedUnion('kind', [
-      z.object({ kind: z.literal('variant'), courseId: z.string().min(1) }),
-      z.object({
-        kind: z.literal('new_course'),
-        titleAr: z.string().min(3).max(200),
-        skillIds: z.array(z.string()).max(12).default([]),
-      }),
-    ])).parse(req.body)
-    const { applicationId, ...rest } = body
-    const cr = await admin.submitCourseSuggestion(applicationId, rest, req.auth!.userId)
-    return reply.status(201).send({ id: cr.id, entityId: cr.entityId, status: cr.status })
-  })
-
   app.post('/api/admin/catalog/change-requests/:id/decision', {
     preHandler: requirePermission('catalog.pathway.review'),
     schema: { tags: ['admin-catalog'], summary: 'قرار مراجعة (checker) — ممنوع اعتماد الذات' },

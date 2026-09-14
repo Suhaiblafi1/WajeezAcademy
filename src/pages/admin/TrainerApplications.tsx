@@ -19,7 +19,6 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
 import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
-import CourseSuggestionDialog from "./CourseSuggestionDialog";
 import ProposalsEditor from "./ProposalsEditor";
 import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
@@ -263,7 +262,6 @@ export default function TrainerApplications() {
   /* الوثيقةُ المفتوحةُ داخل الشاشة — لا لسانٌ ثانٍ يُفقِد المراجعُ موضعَه */
   const [openDoc, setOpenDoc] = useState<string | null>(null);
   /* الاقتراحُ الذي يُربط الآن — معرّفُ طلبه وترتيبُه ونصُّه، لا كائنُ الطلب */
-  const [suggestFor, setSuggestFor] = useState<{ id: string; index?: number; line: string } | null>(null);
   /* والحذفُ مطويٌّ افتراضا — ليس عملا يوميّا، ولا يُجاور أزرارَ القرار */
   const [purgeOpen, setPurgeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -653,7 +651,6 @@ export default function TrainerApplications() {
                 applicationId={a.id}
                 raw={a.teachableProposals}
                 teachableOther={a.teachableOther}
-                onLink={(index, line) => setSuggestFor({ id: a.id, index, line })}
                 onSaved={() => openDetail(a.id)}
               />
             </Panel>
@@ -975,14 +972,6 @@ export default function TrainerApplications() {
           </ConfirmAction>
         )}
 
-        {suggestFor?.id === a.id && (
-          <CourseSuggestionDialog
-            applicationId={a.id}
-            trainerWordsAr={suggestFor.line}
-            proposalIndex={suggestFor.index}
-            onClose={() => setSuggestFor(null)}
-          />
-        )}
       </AdminLayout>
     );
   }

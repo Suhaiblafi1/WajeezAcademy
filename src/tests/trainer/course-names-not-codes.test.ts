@@ -18,7 +18,7 @@
    حلَّ محلَّ اسمها. */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
@@ -32,18 +32,38 @@ function renderedText(p: string): string {
     .replace(/\b[a-zA-Z-]+=\{[^{}]*\}/g, '')
 }
 
-/** شاشاتُ المدرّب التي تعرض دورةً أو تأهيلا */
-const TRAINER_SCREENS = [
-  'src/pages/trainer/Qualifications.tsx',
-  'src/pages/trainer/CohortBoard.tsx',
-  'src/pages/trainer/TrainerDashboard.tsx',
-  'src/pages/trainer/CohortOps.tsx',
-]
+/* ═══ وقائمةٌ مكتوبةٌ بيدها تحرس ما فيها وحدَه ═══
+
+   كانت أربعَ شاشاتٍ مسمّاةً — والبوّابةُ خضراءُ على ما سواها. فشاشةُ
+   «دوراتي المقترحة» وُلدت بعدها وهي تطبع «دخلت الكتالوجَ **برمز**
+   C-BIZ-101» للمدرّب، ولم يحمرّ شيء: لم تكن في القائمة.
+
+   فصار المسحُ على **كلّ شاشات المدرّب** — من أضاف شاشةً ورث الحارسَ معها،
+   ولا يحتاج أن يتذكّر تسجيلَها. */
+function trainerScreens(): string[] {
+  const dir = join(process.cwd(), 'src/pages/trainer')
+  return readdirSync(dir)
+    .filter((n) => n.endsWith('.tsx'))
+    .map((n) => `src/pages/trainer/${n}`)
+}
+const TRAINER_SCREENS = trainerScreens()
 
 describe('رمزُ الدورة لا يُعرض للمدرّب', () => {
+  it('المسحُ يجد شاشاتِ المدرّب — وإلّا كان يخضرّ على فراغ', () => {
+    expect(TRAINER_SCREENS.length, 'لم تُقرأ شاشةٌ واحدة').toBeGreaterThan(8)
+  })
+
   for (const f of TRAINER_SCREENS) {
     it(`⚠️ ${f.split('/').pop()} لا تُصيّر \`courseId\` نصّا`, () => {
-      const hit = renderedText(f).split('\n').find((l) => /\.courseId\s*\}/.test(l))
+      /* ═══ والرمزُ يُكتب بإملاءَين ═══
+
+         كان الفحصُ على `.courseId}` وحدَها. و«دوراتي المقترحة» تطبعه
+         `{p.course.id}` — **الشيءُ نفسُه بمسارِ خاصّيّةٍ آخر** — فمرّت
+         وهي تعرض «دخلت الكتالوجَ برمز C-BIZ-101» للمدرّب.
+
+         فوُسّع على الإملاءَين: `courseId` و`course.id` (ومعها `course?.id`). */
+      const hit = renderedText(f).split('\n')
+        .find((l) => /\.courseId\s*\}/.test(l) || /\.course\??\.id\s*[}`]/.test(l))
       expect(hit ?? null, `رمزُ الدورة يُقرأ في سطر: ${hit?.trim().slice(0, 90)}`).toBeNull()
     })
   }
