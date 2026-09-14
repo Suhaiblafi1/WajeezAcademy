@@ -243,3 +243,115 @@ describe('سير اقتراحات التعديل', () => {
     expect(actions).toContain('trainer.change.publish')
   })
 })
+
+/* ═══ ح-٣: إعادةُ التسمية إصدارٌ من الدورة لا دورةٌ ثانية ═══
+
+   كان المدرّبُ بلا بابٍ إلى اسم دورته في هذه القناة: الأنواعُ كلُّها عن
+   المحاور والساعات، و`publishToCatalog` تنسخ `titleAr` من الإصدار الأساس
+   حرفا بحرف. فما وجد إلّا صندوقَ «اقتراحٌ للإدارة» في خطّة شعبته — وكان
+   يكتب الاسمَ **على النسخة الحاليّة** فيُعيد تسميةَ الشهادات الصادرة (ك-٢).
+
+   والفحصُ على الأثر لا على وجود النوع: يُقترح اسمٌ، ويُعتمَد ويُنشر،
+   فيُنتظَر **إصدارٌ جديدٌ باسمه الجديد وإصدارٌ قديمٌ باسمه القديم معا**. */
+describe('ح-٣ اسمُ الدورة يصير إصدارا جديدا لا دورةً مستقلّة', () => {
+  const RENAMED = 'إدارةُ العمليات — من التخطيط إلى القياس'
+  let titleRequestId = ''
+  let versionBefore = 0
+  let titleBefore = ''
+
+  it('المدرّبُ يقترح اسما — ولا شيءَ يتغيّر بإرساله', async () => {
+    const course = await prisma.course.findUniqueOrThrow({ where: { id: COURSE }, select: { currentVersion: true } })
+    versionBefore = course.currentVersion
+    titleBefore = (await prisma.courseVersion.findUniqueOrThrow({
+      where: { courseId_version: { courseId: COURSE, version: versionBefore } },
+    })).titleAr
+
+    const req = await changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog',
+      reason: 'الاسمُ الحاليُّ يصف الأداةَ لا المهارةَ التي يخرج بها المتعلّم',
+      items: [{ changeType: 'course_title_edit', targetKey: COURSE, afterValue: { titleAr: RENAMED } }],
+    })
+    titleRequestId = req.id
+
+    const still = await prisma.courseVersion.findUniqueOrThrow({
+      where: { courseId_version: { courseId: COURSE, version: versionBefore } },
+    })
+    expect(still.titleAr, 'الإرسالُ وحدَه غيّر الاسم').toBe(titleBefore)
+  })
+
+  it('واسمُ الدورة لا يُقترح بنطاق شعبة — هو حقيقةُ كتالوج', async () => {
+    const cohort = await review.createCohort(managerId, { courseId: COURSE, title: 'شعبةُ فحصِ النطاق' })
+    await expect(changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'cohort', cohortId: cohort.id,
+      reason: 'محاولةُ تسميةِ الدورة من داخل شعبة',
+      items: [{ changeType: 'course_title_edit', targetKey: COURSE, afterValue: { titleAr: 'اسمٌ من داخل شعبة' } }],
+    })).rejects.toMatchObject({ code: 'bad_scope' })
+  })
+
+  it('والاسمُ نفسُه لا يُقترح — ولا اسمان في اقتراح', async () => {
+    await expect(changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اقتراحُ الاسمِ القائمِ نفسِه بلا تغيير',
+      items: [{ changeType: 'course_title_edit', targetKey: COURSE, afterValue: { titleAr: titleBefore } }],
+    })).rejects.toMatchObject({ code: 'no_change' })
+
+    await expect(changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اسمان في اقتراحٍ واحدٍ لا يُقبلان',
+      items: [
+        { changeType: 'course_title_edit', targetKey: COURSE, afterValue: { titleAr: 'اسمٌ أوّل' } },
+        { changeType: 'course_title_edit', targetKey: COURSE, afterValue: { titleAr: 'اسمٌ ثانٍ' } },
+      ],
+    })).rejects.toMatchObject({ code: 'bad_items' })
+  })
+
+  it('والنشرُ يُنشئ إصدارا بالاسم الجديد — والقديمُ باقٍ باسمه', async () => {
+    const { analyzeImpact } = await import('../../services/impact.service')
+    await changes.decide(titleRequestId, managerId, 'approve_for_catalog', 'اسمٌ أدقُّ فعلا')
+    await analyzeImpact(prisma, TrainerChangeService.impactRef(titleRequestId), managerId)
+    await changes.publish(titleRequestId, managerId)
+
+    const course = await prisma.course.findUniqueOrThrow({ where: { id: COURSE }, select: { currentVersion: true } })
+    expect(course.currentVersion).toBe(versionBefore + 1)
+
+    /* ① الإصدارُ الجديدُ يحمل الاسمَ الجديد */
+    const fresh = await prisma.courseVersion.findUniqueOrThrow({
+      where: { courseId_version: { courseId: COURSE, version: course.currentVersion } },
+    })
+    expect(fresh.titleAr).toBe(RENAMED)
+
+    /* ② والقديمُ لم يُمَسّ — وهو ما تقرؤه شهادةٌ صدرت عليه (ك-٢) */
+    const old = await prisma.courseVersion.findUniqueOrThrow({
+      where: { courseId_version: { courseId: COURSE, version: versionBefore } },
+    })
+    expect(old.titleAr, 'أُعيدت تسميةُ الإصدار القديم').toBe(titleBefore)
+
+    /* ③ ولا دورةَ ثانيةً وُلدت — رمزٌ واحدٌ ونسختان */
+    const courses = await prisma.course.count({ where: { id: { startsWith: COURSE } } })
+    expect(courses, 'وُلدت دورةٌ مستقلّةٌ بدل نسخة').toBe(1)
+  })
+
+  it('ومدرّبٌ بلا صلاحيّةِ الكتالوج يقترح الاسمَ وحدَه — ولا يقترح معه بنية', async () => {
+    const plain = await makeActiveTrainer('title-only-trainer@test.local', 'مدرّبٌ بلا منح')
+    await prisma.trainerCourseQualification.upsert({
+      where: { profileId_courseId: { profileId: plain.profileId, courseId: COURSE } },
+      update: { status: 'qualified' },
+      create: { profileId: plain.profileId, courseId: COURSE, status: 'qualified', qualifiedBy: managerId },
+    })
+    expect((await changes.catalogScopeFor(plain.profileId)).allowed).toBe(false)
+
+    /* الاسمُ وحدَه يمرّ: لا ساعةً يزيد ولا محورا، ولا ينشر نفسَه */
+    const ok = await changes.submit(plain.userId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اسمٌ أوضحُ لمن يبحث عن المهارة لا عن الأداة',
+      items: [{ changeType: 'course_title_edit', targetKey: COURSE, afterValue: { titleAr: 'اسمٌ يقترحه مدرّبٌ بلا منح' } }],
+    })
+    expect(ok.status).toBe('submitted')
+
+    /* وبندٌ بنيويٌّ واحدٌ يركب معه يُعيد البوّابة */
+    await expect(changes.submit(plain.userId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اسمٌ ومعه محورٌ جديدٌ في اقتراحٍ واحد',
+      items: [
+        { changeType: 'course_title_edit', targetKey: COURSE, afterValue: { titleAr: 'اسمٌ مع بنية' } },
+        { changeType: 'module_add', afterValue: { titleAr: 'محورٌ جديد', hours: 2 } },
+      ],
+    })).rejects.toMatchObject({ code: 'scope_not_granted' })
+  })
+})

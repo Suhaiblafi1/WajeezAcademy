@@ -35,6 +35,9 @@ const readCode = (p: string) => readFileSync(join(root, p), 'utf8')
 /* التشغيلُ انتقل من «شعبي» إلى مرحلة «التشغيل» في صفحة الشعبة الواحدة
    (٨ سبتمبر ٢٠٢٦) — والحارسُ يتبع الشيفرةَ إلى موضعها الجديد بحمولته نفسِها. */
 const BOARD = 'src/pages/trainer/CohortOps.tsx'
+/* واللقاءاتُ والحضورُ انتقلا من التشغيل إلى «لقاءات مباشرة» (د-٤ · ١٤ سبتمبر
+   ٢٠٢٦) — والحارسُ يتبعهما بحمولته نفسِها، ولا يُخفَّف لأنّ الملفَّ تبدّل. */
+const SESSIONS = 'src/pages/trainer/SessionsAndAttendance.tsx'
 const LIST = 'src/pages/trainer/CohortAssignments.tsx'
 const QUEUE = 'src/pages/trainer/GradingQueue.tsx'
 
@@ -74,7 +77,7 @@ describe('المؤلِّفُ يرى ما ألّف', () => {
 describe('أزرارُ الحضور تقول حالتَها لمن لا يرى', () => {
   /** كتلةُ الأزرار الأربعة وحدَها */
   const attendanceBlock = () => {
-    const code = readCode(BOARD)
+    const code = readCode(SESSIONS)
     const i = code.indexOf('ATTENDANCE_OPTIONS.map')
     expect(i, 'لم تُوجد أزرارُ الحضور').toBeGreaterThan(0)
     return code.slice(i, i + 900)

@@ -397,8 +397,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       kind: z.enum(RESOURCE_KINDS).nullish(), noteAr: z.string().max(500).nullish(),
     })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
-    /* اقتراحُ اسمٍ للدورة أو المسار — يركب مع الخطّة ويُقرَّر فيه عند الاعتماد */
-    proposals: z.object({ courseTitleAr: z.string().max(200).nullish(), pathwayTitleAr: z.string().max(200).nullish() }).nullish(),
+    /* وسقط `proposals` من المخطّط (د-٦): اسمُ الدورة يمرّ بـ
+       `/api/trainer/course-title-proposals` فيصير إصدارا جديدا (ح-٣)، ولا
+       يُكتب على النسخة القائمة من داخل خطّة شعبة. والمحفوظُ قبلَه في
+       `content` لا يُمسّ — والمخطّطُ يُسقط المفتاحَ الزائدَ ولا يردّ الحفظ. */
   })
 
   app.get('/api/trainer/cohorts/:id/workspace', {

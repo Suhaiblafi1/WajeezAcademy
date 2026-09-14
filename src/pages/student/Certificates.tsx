@@ -15,6 +15,8 @@ import { fmtDate } from "@/application/text/format-ar";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 interface Cert {
   id: string; number: string; learnerName: string; courseId: string; courseVersion: number;
+  /** اسمُ الدورة كما كان يومَ صدرت الشهادة — لا اسمُها اليوم */
+  courseTitle: string;
   enrollmentId: string;
   issuedAt: string; status: string; revocation: { reason: string; createdAt?: string } | null;
 }
@@ -105,7 +107,7 @@ export default function Certificates() {
               </div>
               {/* h2 لا h3: البطاقةُ تحت عنوان الصفحة مباشرةً بلا قسمٍ بينهما،
                   والقفزُ من h1 إلى h3 يوهم قارئَ الشاشة بقسمٍ غائب. */}
-              <h2 className="mt-4 font-black">دورة <span dir="ltr" className="font-mono text-sm">{c.courseId}</span> — إصدار {c.courseVersion}</h2>
+              <h2 className="mt-4 font-black">{c.courseTitle}</h2>
               <p className="mt-1 text-read leading-5 text-muted-foreground">باسم: {c.learnerName}</p>
               <p className="mt-1 text-read leading-5 text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
               {c.revocation && <Inset as="p" tone="danger" className="mt-2 p-2 text-read text-red-300">سبب الإلغاء: {c.revocation.reason}</Inset>}

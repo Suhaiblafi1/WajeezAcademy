@@ -196,33 +196,57 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
   })
 
   /* آخرَ السلسلة: يُرسل خطّةً جديدةً ويعتمدها، فلا يغيّر حالةَ ما قبله */
-  it('واقتراحُ اسم الدورة أو المسار يركب مع الخطّة ويُطبَّق باعتماد الإدارة وحدَه', async () => {
-    /* خطّةٌ جديدة باقتراحين — تُرسل، فلا يتغيّر اسمٌ حتّى تُعتمَد */
-    await plans.savePlan(trainerUserId, cohortId, {
-      ...content,
-      proposals: { courseTitleAr: 'دورة تحليل الأعمال — كما يراها المدرّب', pathwayTitleAr: 'مسارُ محلّل الأعمال' },
-    })
-    const sent = await plans.submit(trainerUserId, cohortId, true)
-    const course = await prisma.course.findUniqueOrThrow({ where: { id: 'C-BIZ-101' }, select: { currentVersion: true, homePathwayId: true } })
-    const titleBefore = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId: 'C-BIZ-101', version: course.currentVersion } })).titleAr
-    expect(titleBefore).not.toContain('كما يراها المدرّب')
+  it('اعتمادُ الخطّة لا يُعيد تسميةَ الدورة — ولو حملت الخطّةُ اقتراحا قديما', async () => {
+    /* كان هنا الضدُّ تماما: خطّةٌ باقتراحَين، واعتمادٌ يكتب الاسمَ **على
+       النسخة الحاليّة** بـ`updateMany`. وذلك ما كان يُعيد تسميةَ كلِّ شهادةٍ
+       صدرت عن الدورة (ك-٢). فحُذف الصندوقُ (د-٦) وصارت التسميةُ إصدارا
+       جديدا في قناتها (ح-٣)، وهذا الاختبارُ يحرس البابَ مغلقا.
 
-    /* اعتمادٌ يقبل اسمَ الدورة ويرفض اسمَ المسار */
-    const res = await plans.decide(adminId, sent.id, true, undefined, { courseTitle: true, pathwayTitle: false })
+       والاقتراحُ يُكتب هنا **في العمود مباشرةً** لا عبر `savePlan`: المخطّطُ
+       لم يعد يقبل المفتاح، والمحاكاةُ المقصودة خطّةٌ محفوظةٌ قبل الحذف. */
+    await plans.savePlan(trainerUserId, cohortId, content)
+    const sent = await plans.submit(trainerUserId, cohortId, true)
+    await prisma.cohortDeliveryPlan.update({
+      where: { id: sent.id },
+      data: {
+        content: {
+          ...(content as unknown as Record<string, unknown>),
+          proposals: { courseTitleAr: 'دورة تحليل الأعمال — كما يراها المدرّب', pathwayTitleAr: 'مسارُ محلّل الأعمال' },
+        },
+      },
+    })
+
+    const course = await prisma.course.findUniqueOrThrow({
+      where: { id: 'C-BIZ-101' }, select: { currentVersion: true, homePathwayId: true },
+    })
+    const before = await prisma.courseVersion.findFirstOrThrow({
+      where: { courseId: 'C-BIZ-101', version: course.currentVersion },
+    })
+
+    const res = await plans.decide(adminId, sent.id, true)
     expect(res.status).toBe('approved')
-    const applied: Record<string, string> = ('applied' in res && res.applied) ? res.applied : {}
-    expect(applied.courseTitleAr).toBe('دورة تحليل الأعمال — كما يراها المدرّب')
-    expect(applied.pathwayTitleAr).toBeUndefined()
-    const titleAfter = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId: 'C-BIZ-101', version: course.currentVersion } })).titleAr
-    expect(titleAfter).toBe('دورة تحليل الأعمال — كما يراها المدرّب')
+
+    /* الاسمُ كما كان — ولا نسخةَ جديدةٌ وُلدت من اعتمادِ خطّة */
+    const after = await prisma.courseVersion.findFirstOrThrow({
+      where: { courseId: 'C-BIZ-101', version: course.currentVersion },
+    })
+    expect(after.titleAr).toBe(before.titleAr)
+    expect(after.titleAr).not.toContain('كما يراها المدرّب')
+    const nowCourse = await prisma.course.findUniqueOrThrow({ where: { id: 'C-BIZ-101' }, select: { currentVersion: true } })
+    expect(nowCourse.currentVersion).toBe(course.currentVersion)
+
+    /* واسمُ المسار كذلك */
     if (course.homePathwayId) {
       const pw = await prisma.pathway.findUniqueOrThrow({ where: { id: course.homePathwayId }, select: { currentVersion: true } })
       const pv = await prisma.pathwayVersion.findFirstOrThrow({ where: { pathwayId: course.homePathwayId, version: pw.currentVersion } })
-      expect(pv.title, 'اسمُ المسار تغيّر بلا قبول').not.toBe('مسارُ محلّل الأعمال')
+      expect(pv.title, 'اسمُ المسار تغيّر باعتماد خطّة').not.toBe('مسارُ محلّل الأعمال')
     }
-    /* والأثرُ مسجَّلٌ باسم من اعتمد */
-    const audit = await prisma.auditEvent.findFirst({ where: { action: 'cohort.plan.proposal_applied', entityId: cohortId }, orderBy: { createdAt: 'desc' } })
-    expect(audit?.actorId).toBe(adminId)
+
+    /* ولا أثرَ جديدٌ بالفعل الذي زال */
+    const audit = await prisma.auditEvent.findFirst({
+      where: { action: 'cohort.plan.proposal_applied', entityId: cohortId },
+    })
+    expect(audit).toBeNull()
   })
 
 })

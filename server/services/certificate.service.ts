@@ -144,21 +144,44 @@ export class CertificateService {
     return cert
   }
 
+  /* ── اسمُ الدورة كما كان يومَ صدرت الشهادة ──
+
+     العطب: الشهادةُ تلتقط `courseId` و`courseVersion` وقتَ الإصدار — لقطةٌ
+     صحيحةٌ مكتوبةٌ في صفِّها — ثمّ كان التحقّقُ **يتجاهل اللقطة** ويقرأ
+     العنوانَ من `versions[0]`، أي من آخرِ إصدارٍ للدورة أيًّا كان.
+
+     فكلُّ تبديلٍ لاسم دورةٍ يُبدّل الاسمَ على كلّ شهادةٍ صدرت قبله — في
+     صفحة التحقّق العامّة التي يفتحها صاحبُ عمل. والشهادةُ دعوى المنصّة على
+     صاحبها في لحظةٍ بعينها؛ لا يُعاد كتابتُها بعد تسليمها.
+
+     ولم يكن هذا احتمالا بعيدا: `cohort-plan.service` كان يُطبّق اقتراحَ
+     المدرّب بـ`updateMany` **على النسخة الحاليّة نفسِها** — فتبديلٌ واحدٌ
+     يعتمده مديرٌ يُعيد تسميةَ شهاداتٍ مسلَّمة. (وقد زال ذلك البابُ مع
+     الصندوق، ويبقى الحارسُ هنا لأنّ البابَ ليس وحدَه: `trainer-change`
+     تُنشئ نسخةً جديدة، والمستوردُ يُحدّث، واليدُ تكتب في قاعدةٍ يوما.)
+
+     والفشلُ الآمن `courseId` لا «آخرُ إصدار»: رمزٌ صريحٌ خيرٌ من اسمٍ
+     يبدو صحيحا وليس هو. */
+  private async titleAtIssue(courseId: string, version: number): Promise<string> {
+    const at = await this.prisma.courseVersion.findUnique({
+      where: { courseId_version: { courseId, version } },
+      select: { titleAr: true },
+    })
+    return at?.titleAr ?? courseId
+  }
+
   /** تحقق عام محدود البيانات — يُسجل كل تحقق */
   async verify(number: string, ip?: string) {
     const cert = await this.prisma.certificate.findUnique({
       where: { number: number.trim().toUpperCase() },
-      include: {
-        revocation: true,
-        enrollment: { include: { cohort: { include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } } } } },
-      },
+      include: { revocation: true },
     })
     if (!cert) throw new AuthError('not_found', 'لا شهادة بهذا الرقم', 404)
     await this.prisma.certificateVerification.create({ data: { certificateId: cert.id, ip } })
     return {
       number: cert.number,
       learnerName: cert.learnerName,
-      courseTitle: cert.enrollment.cohort.course.versions[0]?.titleAr ?? cert.courseId,
+      courseTitle: await this.titleAtIssue(cert.courseId, cert.courseVersion),
       courseVersion: cert.courseVersion,
       issuedAt: cert.issuedAt,
       status: cert.status,
@@ -182,11 +205,30 @@ export class CertificateService {
     return updated
   }
 
+  /* وصاحبُ الشهادة يرى اسمَها هو الآخر — وكان يرى رمزَها.
+
+     شاشةُ «شهاداتي» كانت تكتب «دورة C-BIZ-101 — إصدار ١»: رمزٌ داخليٌّ في
+     الموضع الذي يفتحه المتعلّمُ ليقرأ ما أنجزه. والاسمُ هنا **اسمُ لحظة
+     الإصدار** نفسُه الذي يُعرضه التحقّقُ العامّ، فلا تفترق الشهادةُ عن
+     صفحتها.
+
+     ودفعةٌ واحدةٌ لا استعلامٌ لكلّ صفّ: الأزواجُ تُجمع ثمّ تُقرأ مرّة. */
   async myCertificates(userId: string) {
-    return this.prisma.certificate.findMany({
+    const rows = await this.prisma.certificate.findMany({
       where: { enrollment: { userId } },
       include: { revocation: true },
       orderBy: { issuedAt: 'desc' },
     })
+    if (rows.length === 0) return []
+    const wanted = new Map(rows.map((c) => [`${c.courseId}@${c.courseVersion}`, { courseId: c.courseId, version: c.courseVersion }]))
+    const versions = await this.prisma.courseVersion.findMany({
+      where: { OR: [...wanted.values()] },
+      select: { courseId: true, version: true, titleAr: true },
+    })
+    const titles = new Map(versions.map((v) => [`${v.courseId}@${v.version}`, v.titleAr]))
+    return rows.map((c) => ({
+      ...c,
+      courseTitle: titles.get(`${c.courseId}@${c.courseVersion}`) ?? c.courseId,
+    }))
   }
 }

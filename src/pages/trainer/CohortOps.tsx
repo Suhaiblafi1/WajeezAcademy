@@ -22,10 +22,7 @@
    وأزرارُ الحضور تقول حالتَها لمن لا يرى. */
 
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
-import {
-  CalendarClock, CalendarDays, CalendarPlus, ClipboardCheck, Loader2, MessageSquarePlus, Upload, Users, Video,
-} from "lucide-react";
+import { ClipboardCheck, Loader2, MessageSquarePlus, Upload, Users } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { fmtDateTimeAr } from "@/utils/format";
@@ -36,11 +33,6 @@ import { controlCls, areaCls } from "@/components/FormKit";
 import CohortAssignments, { type CohortAssessment } from "./CohortAssignments";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
-
-const ATTENDANCE_OPTIONS = [
-  { value: "present", label: "حاضر" }, { value: "late", label: "متأخر" },
-  { value: "absent", label: "غائب" }, { value: "excused", label: "معذور" },
-] as const;
 
 interface TrainerCohort {
   role: string;
@@ -82,8 +74,6 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
   const [materialLink, setMaterialLink] = useState({ title: "", url: "" });
   const [msgForm, setMsgForm] = useState({ body: "", enrollmentId: "" });
   const [msgLog, setMsgLog] = useState<Record<string, CohortMessage[]>>({});
-  const [rescheduleFor, setRescheduleFor] = useState<string | null>(null);
-  const [rescheduleForm, setRescheduleForm] = useState({ at: "", reason: "" });
 
   const load = useCallback(async () => {
     try { setRow(await apiGet<TrainerCohort>(`/api/trainer/cohorts/${cohortId}/ops`)); setErr(""); }
@@ -98,9 +88,6 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
     catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر تنفيذ الإجراء"); }
     finally { setBusy(false); }
   };
-
-  const markAttendance = (sessionId: string, enrollmentId: string, status: string) =>
-    act(() => apiPost(`/api/trainer/sessions/${sessionId}/attendance`, { enrollmentId, status }), "سُجل الحضور وأُعيد حساب التقدم");
 
   /* رفعُ ملفٍّ — تسجيلٌ ثمّ رفعٌ موقّع. والخادمُ يفكّ جسمَ الرفع كـoctet-stream
      فقط؛ النوعُ الحقيقيُّ مسجَّلٌ في خطوة التسجيل التي قبله. */
@@ -128,14 +115,6 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
     ).then(() => setMaterialLink({ title: "", url: "" }));
   };
 
-  const uploadRecording = (sessionId: string, file: File) =>
-    act(async () => {
-      const res = await apiPost<{ uploadUrl?: string }>(`/api/trainer/sessions/${sessionId}/recordings`, {
-        title: file.name.replace(/\.[^.]+$/, ""), mime: file.type || "video/mp4", sizeBytes: file.size,
-      });
-      if (res.uploadUrl) await putFile(res.uploadUrl, file, "تعذر رفع الملف بعد التسجيل");
-    }, "سُجل التسجيل ورُفع — سيظهر للمسجلين في الشعبة");
-
   /* ── مخاطبة الشعبة ──
      الرسالة تُسجَّل ثم تُوصَّل، والسجلّ يُعاد تحميله فورا: من أرسل يرى أثره
      لا رسالةَ نجاحٍ تختفي. */
@@ -159,18 +138,6 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
     }, msgForm.enrollmentId ? "وصلت رسالتك المتعلّم — وبقيت في السجلّ" : "بلغ إعلانك الشعبة — وبقي في السجلّ");
   };
 
-  /* ── اقتراح موعد ──
-     يُقترح ولا يُغيَّر: الموعد لا يتبدّل عند المتعلّمين إلا باعتماد الإدارة. */
-  const proposeReschedule = (sessionId: string) =>
-    act(async () => {
-      await apiPost(`/api/trainer/sessions/${sessionId}/reschedule`, {
-        proposedStartsAt: new Date(rescheduleForm.at).toISOString(),
-        reason: rescheduleForm.reason.trim(),
-      });
-      setRescheduleFor(null);
-      setRescheduleForm({ at: "", reason: "" });
-    }, "وصل اقتراحك الإدارة — والموعد لا يتغيّر حتى تعتمده");
-
   if (err) return <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>;
   if (!row) return <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>;
 
@@ -179,113 +146,10 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
 
   return (
     <div className="space-y-5">
-      {/* ── اللقاءات والحضور ── */}
-      <Panel as="section">
-        <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> اللقاءات والحضور</h3>
-        {c.sessions.length === 0 ? (
-          <p className="mt-2 text-read text-muted-foreground">لا لقاءات مجدولة بعد — حدّدها في مرحلة «اللقاءات» من التجهيز.</p>
-        ) : (
-          <div className="mt-3 space-y-3">
-            {c.sessions.map((s) => (
-              <Card key={s.id}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold">{s.title}</p>
-                    <p className="mt-0.5 text-read text-muted-foreground">
-                      {fmtDateTimeAr(s.startsAt)}
-                      {s.status === "done" && " · انتهت"}
-                    </p>
-                  </div>
-                  {s.zoom && (
-                    <a href={s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                      className="flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-fine font-black text-on-teal transition hover:bg-teal-light">
-                      <Video className="h-3 w-3" /> افتح الاجتماع
-                    </a>
-                  )}
-                  {s.status !== "done" && (
-                    <a href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground">
-                      <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
-                    </a>
-                  )}
-                  {/* الزرُّ يظهر حين يستطيع الخادمُ تخزينَ الملفّ — لا قبله */}
-                  {fileUploads && (
-                    <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
-                      <Upload className="h-3 w-3" /> ارفع التسجيل
-                      <input type="file" accept="video/*" className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
-                    </label>
-                  )}
-                  {s.status !== "done" && (
-                    <Button tone="secondary" size="sm" type="button"
-                      onClick={() => { setRescheduleFor(rescheduleFor === s.id ? null : s.id); setRescheduleForm({ at: "", reason: "" }); }} className="min-h-9">
-                      <CalendarClock className="h-3 w-3" /> اقترح موعدا
-                    </Button>
-                  )}
-                </div>
-
-                {/* الاقتراح لا يغيّر شيئا حتى تعتمده الإدارة — والنصّ يقولها قبل الضغط */}
-                {rescheduleFor === s.id && (
-                  <Inset tone="warn" className="mt-3 space-y-2.5">
-                    <p className="text-read leading-relaxed text-gold-ink">
-                      تقترح ولا تغيّر: الموعد يبقى كما هو عند متعلّميك حتى تعتمد الإدارة اقتراحك.
-                      {" "}ومآلُ اقتراحك — وسحبُه — في <Link to="/trainer/schedule" className="font-black underline">جدولي</Link>.
-                    </p>
-                    <div className="grid gap-2.5 sm:grid-cols-2">
-                      <div>
-                        <label htmlFor={`rs-at-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">الموعد المقترح</label>
-                        <input id={`rs-at-${s.id}`} type="datetime-local" dir="ltr" value={rescheduleForm.at}
-                          onChange={(e) => setRescheduleForm((f) => ({ ...f, at: e.target.value }))} className={`${controlCls} text-left`} />
-                      </div>
-                      <div>
-                        <label htmlFor={`rs-why-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">السبب — تقرؤه الإدارة لتقرّر</label>
-                        <input id={`rs-why-${s.id}`} value={rescheduleForm.reason}
-                          onChange={(e) => setRescheduleForm((f) => ({ ...f, reason: e.target.value }))}
-                          placeholder="مثال: سفر في موعد الجلسة" className={controlCls} />
-                      </div>
-                    </div>
-                    <Button tone="confirm" size="sm" type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
-                      onClick={() => void proposeReschedule(s.id)} className="disabled:cursor-not-allowed">
-                      أرسل الاقتراح للإدارة
-                    </Button>
-                  </Inset>
-                )}
-                {s.zoom?.passcode && (
-                  <p className="mt-2 text-read text-muted-foreground">رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span></p>
-                )}
-                {/* شبكة الحضور — الحالةُ تُعلَن بـaria-pressed لا باللون وحدَه، وكلُّ زرٍّ باسم صاحبه */}
-                <div className="mt-3 space-y-1.5 border-t border-white/8 pt-3">
-                  {active.map((e) => {
-                    const current = e.attendance.find((a) => a.sessionId === s.id)?.status;
-                    return (
-                      <div key={e.id} className="flex items-center gap-3">
-                        <p className="min-w-0 flex-1 truncate text-read text-foreground">{e.user.displayName}</p>
-                        <div className="flex gap-1">
-                          {ATTENDANCE_OPTIONS.map((opt) => (
-                            <button key={opt.value} disabled={busy}
-                              aria-pressed={current === opt.value}
-                              aria-label={`${e.user.displayName}: ${opt.label}`}
-                              onClick={() => void markAttendance(s.id, e.id, opt.value)}
-                              className={`cursor-pointer rounded-full border px-2.5 py-1 text-fine font-bold transition disabled:opacity-40 ${
-                                current === opt.value
-                                  ? "border-teal bg-teal/15 text-teal-light-ink"
-                                  : "border-white/12 text-muted-foreground hover:border-white/30 hover:text-foreground"
-                              }`}>
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {active.length === 0 && <p className="text-read text-muted-foreground">لا متعلمين مسجلين بعد.</p>}
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </Panel>
-
+      /* ── وانتقلت «اللقاءاتُ والحضور» إلى «لقاءات مباشرة» (د-٤) ──
+         موضعُها `SessionsAndAttendance.tsx` في مرحلة التجهيز، حيث يجدول
+         المدرّبُ لقاءَه. نُقلت ولم تُنسَخ: شبكةُ الحضور تُعيد حسابَ التقدّم،
+         ونسختان منها بابان لرقمٍ واحدٍ يُبنى عليه استحقاقُ شهادة. */
       {/* ── تقدّم المتعلّمين ── */}
       <Panel as="section">
         <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><Users className="h-4 w-4 text-teal-light-ink" /> من التحق وتقدّمُه ({active.length})</h3>

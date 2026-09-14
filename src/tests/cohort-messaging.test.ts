@@ -20,6 +20,10 @@ const read = (p: string) => readFileSync(join(root, p), 'utf8')
 /* التشغيلُ انتقل من «شعبي» إلى مرحلة «التشغيل» في صفحة الشعبة الواحدة
    (٨ سبتمبر ٢٠٢٦) — والحارسُ يتبع الشيفرةَ إلى موضعها الجديد بحمولته نفسِها. */
 const BOARD = 'src/pages/trainer/CohortOps.tsx'
+/* واقتراحُ التأجيل تبع لقاءَه إلى «لقاءات مباشرة» (د-٤ · ١٤ سبتمبر ٢٠٢٦):
+   يُقترح من بطاقة اللقاء التي يجدولها ويسجّل حضورَها. والمخاطبةُ تبقى في
+   التشغيل — هي ما سيصير «مركزَ التواصل» (ع-١). */
+const SESSIONS = 'src/pages/trainer/SessionsAndAttendance.tsx'
 const ADMIN = 'src/pages/admin/AdminCohorts.tsx'
 const ROUTES = 'server/http/routes/learning-portal.routes.ts'
 
@@ -44,7 +48,7 @@ describe('مخاطبة الشعبة', () => {
 
 describe('اقتراح تأجيل جلسة', () => {
   it('الشاشة تقول «تقترح ولا تغيّر» قبل الضغط', () => {
-    const src = read(BOARD)
+    const src = read(SESSIONS)
     const form = /rescheduleFor === s\.id && \([\s\S]*?\n {38}\)\}/.exec(src)?.[0] ?? src
     expect(form, 'الوعد غير مكتوب في النموذج').toMatch(/تقترح ولا تغيّر/)
     expect(form, 'لا يُقال إنّ الموعد يبقى حتى الاعتماد').toMatch(/حتى تعتمد الإدارة/)
@@ -53,8 +57,10 @@ describe('اقتراح تأجيل جلسة', () => {
   })
 
   it('القرار في شاشة الإدارة لا في شاشة المدرب', () => {
-    const board = read(BOARD)
-    expect(board, 'المدرب يعتمد اقتراحه بنفسه').not.toContain('session-reschedules')
+    /* ولا يعتمد المدرّبُ اقتراحَه في أيٍّ من الشاشتين */
+    for (const screen of [BOARD, SESSIONS]) {
+      expect(read(screen), 'المدرب يعتمد اقتراحه بنفسه').not.toContain('session-reschedules')
+    }
     const admin = read(ADMIN)
     expect(admin, 'الإدارة لا ترى الاقتراحات').toContain('/api/admin/session-reschedules')
     expect(admin, 'لا اعتماد').toContain('"approve"')

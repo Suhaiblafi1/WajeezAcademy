@@ -95,10 +95,8 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       approve: z.boolean(), note: z.string().max(2000).optional(),
-      /* ما يُقبل من اقتراحات المدرّب على الاسم — لا يُطبَّق شيءٌ بلا اختيارٍ صريح */
-      applyProposals: z.object({ courseTitle: z.boolean().optional(), pathwayTitle: z.boolean().optional() }).optional(),
     }).parse(req.body)
-    return plans.decide(req.auth!.userId, id, body.approve, body.note, body.applyProposals)
+    return plans.decide(req.auth!.userId, id, body.approve, body.note)
   })
 
   app.post('/api/admin/cohorts/:cohortId/remind-trainer', {
