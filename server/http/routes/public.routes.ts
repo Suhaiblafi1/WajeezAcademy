@@ -6,10 +6,12 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { PublicCatalogService } from '../../services/public-catalog.service'
 import { fileUploadsEnabled } from '../../services/storage.service'
+import { TrainerPathService } from '../../services/trainer-path.service'
 import { getCalendlyConfig } from '../../services/integrations.service'
 
 export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const catalog = new PublicCatalogService(prisma)
+  const trainerPaths = new TrainerPathService(prisma)
 
   /* ما تستطيعه هذه المنصّةُ فعلا — تقرأه الواجهةُ قبل أن تعرض زرّا.
      الواجهةُ كانت تعرض «ارفع التسجيل» و«ارفع سيرتك» حيث لا مخزنَ يقبلهما،
@@ -37,6 +39,15 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
   app.get('/api/public/pathways', {
     schema: { tags: ['public-catalog'], summary: 'المسارات المنشورة مع دوراتها مرتبة' },
   }, async () => catalog.pathways())
+
+  /* رفُّ مسارات المدرّبين (ن-١) — قسمٌ مستقلٌّ تحت «مسارات أعدّها مدرّبونا
+     المعتمدون»، لا يختلط بالمسارات المنسَّقة ولا يدخل التشخيص (ن-٥).
+
+     والترشيحُ وقتَ القراءة هو ما يجعل ن-٤ آليّا: الموقوفُ يسقط من الرفّ في
+     اللحظة، ولا يُمسّ من التحق. */
+  app.get('/api/public/trainer-paths', {
+    schema: { tags: ['public-catalog'], summary: 'مساراتٌ أعدّها مدرّبونا المعتمدون (ن-١)' },
+  }, async () => trainerPaths.shelf())
 
   app.get('/api/public/pathways/:id', {
     schema: { tags: ['public-catalog'], summary: 'مسار منشور بالمعرف — 404 إن كان مسودة' },

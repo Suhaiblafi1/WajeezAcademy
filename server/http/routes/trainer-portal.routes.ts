@@ -8,6 +8,8 @@ import { MAX_COURSE_TITLE, MIN_COURSE_TITLE, TrainerChangeService } from '../../
 import {
   CourseProposalService, MAX_PROPOSAL_AUDIENCE, MAX_PROPOSAL_TITLE, MIN_PROPOSAL_TITLE,
 } from '../../services/course-proposal.service'
+import { TrainerPathService } from '../../services/trainer-path.service'
+import { MAX_PATH_BLURB, MAX_PATH_COURSES, MAX_PATH_TITLE } from '../../../src/application/trainer/path-rules'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerAvailabilityService } from '../../services/trainer-availability.service'
@@ -15,9 +17,18 @@ import { TermService } from '../../services/term.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
 
+/* جسمُ المسار — واحدٌ للإنشاء والتعديل، فلا يفترق حدّان لشيءٍ واحد */
+const pathBody = z.object({
+  titleAr: z.string().trim().min(1).max(MAX_PATH_TITLE),
+  blurbAr: z.string().trim().max(MAX_PATH_BLURB).nullish(),
+  termId: z.string().uuid().nullish(),
+  courseIds: z.array(z.string().min(2).max(64)).max(MAX_PATH_COURSES),
+})
+
 export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const changes = new TrainerChangeService(prisma)
   const proposals = new CourseProposalService(prisma)
+  const paths = new TrainerPathService(prisma)
   const review = new TrainerReviewService(prisma)
   const earnings = new EarningsService(prisma)
   const availability = new TrainerAvailabilityService(prisma)
@@ -203,6 +214,52 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return proposals.remove(req.auth!.userId, id)
+  })
+
+  /* ═══ مساراتي — أبنيها من دوراتي وتُعرض على الرفّ العامّ (ن-١) ═══
+
+     والصلاحيّةُ `trainer.portal`: البناءُ والإرسالُ فعلُه هو. **والنشرُ ليس
+     منها** — بابُه عند الإدارة بـ`trainer.publish`، فلا يُدرج أحدٌ نفسَه
+     على رفٍّ عامٍّ باسمه. */
+  app.get('/api/trainer/paths', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'مساراتي وحالُ كلٍّ منها وما ينقصه (ن-١)' },
+  }, async (req) => paths.mine(req.auth!.userId))
+
+  app.get('/api/trainer/paths/courses', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'دوراتي التي أبني منها مسارا — بعناوينها' },
+  }, async (req) => paths.myCourses(req.auth!.userId))
+
+  app.post('/api/trainer/paths', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'مسارٌ جديدٌ مسوّدةً' },
+  }, async (req, reply) => {
+    return reply.status(201).send(await paths.create(req.auth!.userId, pathBody.parse(req.body)))
+  })
+
+  app.patch('/api/trainer/paths/:id', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'تعديلُ مساري ما دام بيدي' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return paths.update(req.auth!.userId, id, pathBody.parse(req.body))
+  })
+
+  app.delete('/api/trainer/paths/:id', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'حذفُ مساري ما دام بيدي' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return paths.remove(req.auth!.userId, id)
+  })
+
+  app.post('/api/trainer/paths/:id/submit', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'إرسالُ المسار للمراجعة — ويُردّ بما ينقص لا بـ«غير صالح»' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return paths.submit(req.auth!.userId, id)
   })
 
   app.get('/api/trainer/catalog-scope', {

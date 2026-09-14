@@ -5,6 +5,7 @@ import { bestsellers, pathwayDomain, pathwayDomains, pathways } from '@/data/pat
 import { bestsellerCourses, courses, pathwaySizeAr } from '@/data/courses'
 import FavoriteButton from '@/components/FavoriteButton'
 import SiteShell from '@/components/SiteShell'
+import TrainerPathsShelf from '@/components/TrainerPathsShelf'
 import SeoHead from '@/components/SeoHead'
 import CourseTitle from "@/components/CourseTitle";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -352,6 +353,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           ))}
         </div>
       )}
+
+      {/* ن-١: رفُّ مسارات المدرّبين — قسمٌ مستقلٌّ في صفحة المسارات وحدَها.
+
+          ويُقرأ حيًّا لا من الكتالوج المضمَّن: ن-٤ يشترط أن يُغلق المسارُ
+          للتسجيل **في اللحظة** حين يُوقَف صاحبُه، ولقطةٌ تُبنى وقتَ النشر لا
+          تعرف الإيقافَ حتّى تُعاد. */}
+      {isPathways ? <TrainerPathsShelf /> : null}
 
       {/* دعوة للتشخيص */}
       <Panel tone="accent" className="mt-14 p-8 text-center">

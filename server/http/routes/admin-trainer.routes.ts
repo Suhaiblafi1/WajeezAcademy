@@ -8,6 +8,7 @@ import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-re
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { CourseProposalService } from '../../services/course-proposal.service'
+import { TrainerPathService } from '../../services/trainer-path.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
@@ -25,6 +26,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   const links = new TrainerDossierLinkService(prisma)
   const changes = new TrainerChangeService(prisma)
   const proposals = new CourseProposalService(prisma)
+  const trainerPaths = new TrainerPathService(prisma)
   const applications = new TrainerApplicationService(prisma)
 
   app.get('/api/admin/trainer-applications', {
@@ -416,6 +418,48 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const body = z.object({ note: z.string().max(500).optional() }).parse(req.body ?? {})
     await review.suspendTrainer(profileId, req.auth!.userId, body.note)
     return { ok: true }
+  })
+
+  /* ═══ مساراتُ المدرّبين — مراجعةُ ما يُعرض على الرفّ العامّ (ن-١ · ن-٧) ═══
+
+     والصلاحيّةُ `trainer.publish` بنصّها «الموافقة على ظهور المدرب للعامة» —
+     وهذا عينُه: إدراجٌ عامٌّ يحمل اسمَه. ولا صلاحيّةَ جديدةٌ تعني منحَها من
+     جديدٍ لكلّ من يوافق اليوم.
+
+     **والاسمُ يُعتمد مع المسار في المراجعة نفسِها** (ن-٧): اسمٌ على رفٍّ عامٍّ
+     نصُّ تسويقٍ يحمل مصداقيّةَ الأكاديميّة، ولا يُنشر ادّعاءٌ عامٌّ بلا نظرة. */
+  app.get('/api/admin/trainer-paths', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'مساراتُ المدرّبين — طابورُ المراجعة (ن-١)' },
+  }, async (req) => {
+    const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
+    return trainerPaths.queue(scope ?? 'open')
+  })
+
+  app.post('/api/admin/trainer-paths/:id/approve', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'نشرُ المسار على الرفّ — يُردّ لمن لم يُعتمد ظهورُه (ن-٢)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return trainerPaths.approve(req.auth!.userId, id)
+  })
+
+  app.post('/api/admin/trainer-paths/:id/reject', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'ردُّ المسار بسببٍ يقرؤه صاحبُه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ noteAr: z.string().trim().min(5).max(2000) }).parse(req.body)
+    return trainerPaths.reject(req.auth!.userId, id, body.noteAr)
+  })
+
+  app.post('/api/admin/trainer-paths/:id/retire', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'سحبُ المسار من الرفّ — ولا يمسّ من التحق (ن-٤)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ noteAr: z.string().trim().max(2000).nullish() }).parse(req.body ?? {})
+    return trainerPaths.retire(req.auth!.userId, id, body.noteAr)
   })
 
   /* ═══ طابورُ الدورات المقترحة — تُصنَّف قبل أن تدخل الكتالوج (ح-٤) ═══

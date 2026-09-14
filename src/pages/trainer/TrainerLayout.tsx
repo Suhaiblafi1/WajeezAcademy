@@ -1,5 +1,5 @@
 import { Link, NavLink } from "react-router";
-import { Award, BookPlus, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, Link2, Star, Users, Wallet } from "lucide-react";
+import { Award, BookPlus, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, Link2, Route, Star, Users, Wallet } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -90,6 +90,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     /* ح-٢: بعد «مؤهّلاتي» — السؤالان جارانِ: ما أُهِّلتُ له، وما أقترحه ولم
        يدخل الكتالوجَ بعد. وقرارُ الإدارة يصل هنا، فلا يُدفن في صفحةٍ طويلة. */
     { to: "/trainer/course-proposals", label: "دوراتي المقترحة", icon: BookPlus },
+    /* ن-١: بعد «دوراتي المقترحة» — الأولى دوراتٌ ليست عندنا، وهذه ترتيبُ
+       ما عندنا في مسارٍ باسمه. والسؤالان متجاوران في ذهنه. */
+    { to: "/trainer/paths", label: "مساراتي", icon: Route },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
     { to: "/trainer/ratings", label: "ما قيل عنّي", icon: Star },
     /* ب-٥: بعد «ما قيل عنّي» مباشرةً — قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) */

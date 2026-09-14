@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Crown, FlaskConical, GitBranch, GraduationCap, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, PenLine, PlugZap, ShieldAlert, Star, UserCheck, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Crown, FlaskConical, GitBranch, GraduationCap, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, PenLine, PlugZap, Route, ShieldAlert, Star, UserCheck, UserPlus, Users, Wallet } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -74,6 +74,9 @@ export default function AdminLayout({ children, title }: { children: React.React
         /* ح-٤: طابورُ الدورات المقترحة — وصلاحيّتُه `trainer.change.review`،
            هي بنصّها «مراجعة اقتراحات تعديل الدورات من المدربين»، وهذا منها. */
         { to: "/admin/course-proposals", label: "دوراتٌ مقترحة", icon: BookPlus, need: "trainer.change.review" },
+        /* ن-١: وصلاحيّتُه `trainer.publish` — «الموافقة على ظهور المدرب للعامة»،
+           وهذا إدراجٌ عامٌّ يحمل اسمَه. */
+        { to: "/admin/trainer-paths", label: "مساراتُ المدرّبين", icon: Route, need: "trainer.publish" },
         { to: "/admin/advisor-requests", label: "طلبات المستشارين", icon: BadgePercent , need: "advisor.request.review"},
         /* طابورُ شهاداتِ المتعلّمين وتوصياتِهم — كان الإصدارُ لا يُطلب أصلا،
            فمن أنهى دورتَه في شعبةٍ لا أحدَ يفتحها بقي بلا شهادة. */
