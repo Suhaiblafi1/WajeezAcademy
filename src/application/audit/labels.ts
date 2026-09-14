@@ -151,6 +151,8 @@ const PHRASES: Record<string, string> = {
   'notification.failed': 'إشعارٌ فشل إرسالُه',
   'trainer.change.apply_catalog': 'تطبيقُ اقتراحِ مدرّبٍ على الكتالوج',
   'trainer.publish_approve': 'اعتمادُ ظهورِ المدرّبِ للعامّة',
+  'trainer.public_profile.save': 'حفظُ ملفِّ المدرّب العامّ',
+  'trainer.photo.upload': 'رفعُ صورةِ المدرّب',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */
   'notification.pref.mute': 'كتمُ صنفِ إشعاراتٍ بطلب صاحبه',
