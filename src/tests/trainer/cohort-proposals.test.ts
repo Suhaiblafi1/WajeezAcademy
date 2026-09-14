@@ -81,6 +81,25 @@ describe('وبابُ الاسم الجديد موصولٌ — شاشةٌ ومس�
     expect(routes).toMatch(/scope: 'catalog'/)
   })
 
+  /* ═══ ولا يعتمد المعتمِدُ اسما لم يره ═══
+
+     بطاقةُ الاقتراح عند الإدارة كانت تعرض السببَ و«ن بند تعديل» وحدَهما.
+     فمن ضغط «اعتماد للكتالوج» على اقتراحِ تسميةٍ اعتمد اسما لم يقرأه — وهو
+     كلُّ الاقتراح لا تفصيلا فيه. جُرّبت الشاشةُ بالمتصفّح فظهر ذلك، فأُضيف.
+
+     والفحصُ على **القراءة من البند** لا على ورودِ نصّ: العنوانُ يُقرأ من
+     `afterValue.titleAr` لبندِ `course_title_edit` بعينه. */
+  it('وبطاقةُ المعتمِد تعرض الاسمَ المقترَحَ قبل أزرار القرار', () => {
+    const admin = code('src/pages/admin/TrainerOps.tsx')
+    expect(admin).toMatch(/changeType === "course_title_edit"/)
+    expect(admin).toMatch(/after\?\.titleAr/)
+    /* ويُعرض في البطاقة لا في دالّةٍ لا تُنادى */
+    expect(admin).toMatch(/\{proposedTitle\(r\) &&/)
+    /* وقبل أزرار القرار: يقرأ ثمّ يقرّر */
+    const card = admin.slice(admin.indexOf('{rows.map((r) =>'))
+    expect(card.indexOf('proposedTitle(r)')).toBeLessThan(card.indexOf('approve_for_catalog'))
+  })
+
   it('والشاشةُ تناديه من ورشة الشعبة — لا مسارَ بلا شاشةٍ من جديد', () => {
     const screen = code('src/pages/trainer/CourseTitleProposal.tsx')
     expect(screen).toContain('/api/trainer/course-title-proposals')
