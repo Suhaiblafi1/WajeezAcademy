@@ -56,12 +56,22 @@ export type MailBlock =
   | { kind: 'cta'; label: string; href: string; caption?: string }
   /** تنبيهٌ مؤطَّرٌ بلونٍ ذهبيّ — لما يُفوَّت إن قُرئ فقرةً */
   | { kind: 'callout'; text: string }
-  /** سطرٌ خافتٌ في آخر المتن: «إن لم تكن أنت…» */
-  | { kind: 'note'; text: string }
+  /** سطرٌ خافتٌ في آخر المتن: «إن لم تكن أنت…».
+   *
+   *  و`link` اختياريٌّ لأنّ عنوانا في سطرٍ خافتٍ كان يخرج **نصّا لا يُضغط**:
+   *  رابطُ التفضيلات ظهر `https://…/student/notifications` مكتوبا، فعلى
+   *  قارئه أن يحدّده وينسخه ويلصقه. وما لا يُضغط في بريدٍ لا يُزار. */
+  | { kind: 'note'; text: string; link?: { label: string; href: string } }
 
 export interface MailDoc {
   /** «مرحبا فلان،» — يُبنى وحدَه فلا يُكتب في كلّ قالب */
   greetingName?: string
+  /** سطرُ المعاينة في صندوق الوارد — يُعرض بجانب الموضوع ولا يُرى في الرسالة.
+   *
+   *  وبلا هذا السطر يأخذ عميلُ البريد أوّلَ نصٍّ يجده، وهو «مرحبا فلان،» —
+   *  فيُهدَر أنفعُ سطرٍ في الصندوق على تحيّةٍ لا خبرَ فيها. ومن لم يُعطِه
+   *  أخذ الأوّلَ من متنه، وهو خيرٌ من التحيّة. */
+  preheader?: string
   /** عنوانٌ يُقرأ أوّلَ المتن — غالبا هو موضوعُ الرسالة بصيغةٍ أطول */
   heading: string
   blocks: MailBlock[]
@@ -85,7 +95,7 @@ function textOf(doc: MailDoc): string {
         out.push(`${b.label}:`, b.href, '')
         break
       case 'callout': out.push(`! ${b.text}`, ''); break
-      case 'note': out.push(b.text, ''); break
+      case 'note': out.push(b.link ? `${b.text} ${b.link.href}` : b.text, ''); break
     }
   }
   out.push('— أكاديمية وجيز')
@@ -106,6 +116,12 @@ const P = `margin:0 0 14px;font-size:15px;line-height:1.9;color:${BRAND.ink};`
 
 function htmlOf(doc: MailDoc): string {
   const parts: string[] = []
+
+  /* أوّلُ فقرةٍ إن لم يُكتب سطرُ معاينةٍ صراحةً — ومقصوصةٌ عند حدٍّ معقول:
+     ما زاد على نحوِ مئةِ محرفٍ يقطعه الصندوقُ نفسُه. */
+  const firstP = doc.blocks.find((b) => b.kind === 'p')
+  const preheader = (doc.preheader ?? (firstP && 'text' in firstP ? firstP.text : doc.heading))
+    .replace(/\s+/g, ' ').trim().slice(0, 140)
 
   if (doc.greetingName) {
     parts.push(`<p style="${P}font-weight:700;">مرحبا ${esc(doc.greetingName.trim() || 'بك')}،</p>`)
@@ -169,7 +185,13 @@ function htmlOf(doc: MailDoc): string {
         )
         break
       case 'note':
-        parts.push(`<p style="margin:0 0 10px;font-size:13px;line-height:1.8;color:${BRAND.muted};">${esc(b.text)}</p>`)
+        parts.push(
+          `<p style="margin:0 0 10px;font-size:13px;line-height:1.8;color:${BRAND.muted};">${esc(b.text)}`
+          + (b.link
+            ? ` <a href="${esc(b.link.href)}" style="color:${BRAND.teal};">${esc(b.link.label)}</a>`
+            : '')
+          + `</p>`,
+        )
         break
     }
   }
@@ -183,6 +205,9 @@ function htmlOf(doc: MailDoc): string {
 <title>${esc(doc.heading)}</title>
 </head>
 <body style="margin:0;padding:0;background:${BRAND.paper};">
+<!-- سطرُ المعاينة: يقرؤه صندوقُ الوارد ولا يظهر في الرسالة. والمسافاتُ
+     الصفريّةُ بعده تمنع العميلَ من ضمّ ما بعده إلى المعاينة. -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${BRAND.paper};opacity:0;">${esc(preheader)}${'&#8203;&nbsp;'.repeat(30)}</div>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${BRAND.paper};">
 <tr><td align="center" style="padding:28px 12px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:100%;max-width:600px;background:${BRAND.surface};border-radius:16px;overflow:hidden;border:1px solid ${BRAND.hairline};font-family:${FONT};" dir="rtl">

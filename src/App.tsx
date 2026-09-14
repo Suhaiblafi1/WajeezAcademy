@@ -56,6 +56,8 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTerms = lazy(() => import('./pages/admin/Terms'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
+const AssignByTrainer = lazy(() => import('./pages/admin/AssignByTrainer'))
+const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
@@ -64,6 +66,7 @@ const SharedDossier = lazy(() => import('./pages/SharedDossier'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
+const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCourseProposals'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const CohortWorkspace = lazy(() => import('./pages/trainer/CohortWorkspace'))
@@ -250,6 +253,8 @@ export default function App() {
             <Route path="/trainer" element={<TrainerDashboard />} />
             <Route path="/trainer/account" element={<AccountPage />} />
             <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
+            {/* ح-٢: دوراتٌ يقترحها وليست في الكتالوج — من طلبه، ثمّ بيده */}
+            <Route path="/trainer/course-proposals" element={<TrainerCourseProposals />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
@@ -276,6 +281,10 @@ export default function App() {
                 `data/admin`. سير المحتوى الحقيقي في «الكتالوج» و«النشر والإصدارات». */}
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />
             <Route path="/admin/trainers" element={<AdminTrainerApps />} />
+            {/* ج-١: بابٌ ثانٍ للإسناد يبدأ من المدرّب — وإسنادُ الشعبة يبقى في صفحتها */}
+            <Route path="/admin/assign-by-trainer" element={<AssignByTrainer />} />
+            {/* ح-٤: دوراتٌ اقترحها المدرّبون — تُصنَّف قبل أن تدخل الكتالوج */}
+            <Route path="/admin/course-proposals" element={<AdminCourseProposals />} />
             {/* الأتعابُ شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك محروسٌ
                 بـ`trainer.applications.view` والأتعابُ بـ`trainer.compensation.manage`،
                 ولا تلتقيان إلّا في `super_admin` — فكانت الماليةُ تملك المفتاحَ

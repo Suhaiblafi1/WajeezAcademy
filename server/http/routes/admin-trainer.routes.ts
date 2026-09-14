@@ -7,6 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
+import { CourseProposalService } from '../../services/course-proposal.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
@@ -23,6 +24,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   const review = new TrainerReviewService(prisma)
   const links = new TrainerDossierLinkService(prisma)
   const changes = new TrainerChangeService(prisma)
+  const proposals = new CourseProposalService(prisma)
   const applications = new TrainerApplicationService(prisma)
 
   app.get('/api/admin/trainer-applications', {
@@ -414,6 +416,60 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const body = z.object({ note: z.string().max(500).optional() }).parse(req.body ?? {})
     await review.suspendTrainer(profileId, req.auth!.userId, body.note)
     return { ok: true }
+  })
+
+  /* ═══ طابورُ الدورات المقترحة — تُصنَّف قبل أن تدخل الكتالوج (ح-٤) ═══
+
+     الصلاحيّةُ `trainer.change.review` نفسُها لا صلاحيّةٌ جديدة: هي بنصّها
+     «مراجعة اقتراحات تعديل الدورات من المدربين»، وهذا منها — ومن يراجع
+     اقتراحَ تعديلٍ على دورةٍ قائمةٍ هو من يحكم في دورةٍ يقترحها. وصلاحيّةٌ
+     جديدةٌ تعني منحَها لكلِّ من يراجع اليوم، وذلك عملٌ بلا مقابل.
+
+     وثلاثةُ أبوابٍ لا رابع:
+     · **نسخةٌ من رمزٍ قائم** — يُربط الاقتراحُ بالرمز ولا يُنشأ إصدار. بابُ
+       الإصدار بعدها بيدِ المدرّب (ح-٣)، فلا يُكتب باسمه ما لم يكتبه.
+     · **دورةٌ جديدة** — تُنشأ في شاشة الكتالوج بنموذجها الكامل (مسارٌ
+       وتسلسلٌ وساعاتٌ ومهارات)، ثمّ يُربط الاقتراحُ بها هنا.
+     · **رفضٌ بسبب** — والسببُ يلزم: من رُفض اقتراحُه بلا سببٍ أعاده كما هو. */
+  app.get('/api/admin/course-proposals', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'دوراتٌ اقترحها المدرّبون — طابورُ التصنيف (ح-٤)' },
+  }, async (req) => {
+    const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
+    return proposals.queue(scope ?? 'open')
+  })
+
+  app.post('/api/admin/course-proposals/:id/link', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'تصنيفُ اقتراحٍ نسخةً من رمزٍ قائم — يُربط ولا يُنشأ إصدار' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      courseId: z.string().min(2).max(64),
+      noteAr: z.string().trim().max(2000).nullish(),
+    }).parse(req.body)
+    return proposals.linkToCourse(req.auth!.userId, id, body.courseId, body.noteAr)
+  })
+
+  app.post('/api/admin/course-proposals/:id/became-course', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'ربطُ اقتراحٍ بالدورة الجديدة التي أُنشئت منه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      courseId: z.string().min(2).max(64),
+      noteAr: z.string().trim().max(2000).nullish(),
+    }).parse(req.body)
+    return proposals.markBecameCourse(req.auth!.userId, id, body.courseId, body.noteAr)
+  })
+
+  app.post('/api/admin/course-proposals/:id/reject', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'رفضُ اقتراحِ دورةٍ بسببٍ يقرؤه صاحبُه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ noteAr: z.string().trim().min(5).max(2000) }).parse(req.body)
+    return proposals.reject(req.auth!.userId, id, body.noteAr)
   })
 
   /* ── مراجعة اقتراحات تعديل الدورات من المدربين ── */

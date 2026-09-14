@@ -1,0 +1,116 @@
+/* أين يذهب من قرأ الإشعار — وجهةُ كلِّ مفتاحِ قالب (ط-١).
+
+   ═══ لماذا هذا ملفٌّ أصلا ═══
+
+   رسائلُ الإشعارات كانت تخرج **نصّا خاما بلا رابطٍ واحد**: «وصلت درجتك»،
+   ثمّ لا شيء. فيبقى على صاحبها أن يتذكّر عنوانَ المنصّة، ويفتحها، ويبحث عن
+   الشاشة التي فيها خبرُه. والرسالةُ التي لا يُعمَل بها لا تُقرأ مرّتَين.
+
+   ═══ وما يُشترط في الوجهة ═══
+
+   ① **أن تكون مسارا قائما** — لا مخترَعا. وحارسٌ يقابل هذه المسارات بما في
+      `App.tsx` فيسقط على وجهةٍ لا وجودَ لها. (وقد أُخترعت مساراتٌ في هذه
+      المنصّة من قبلُ ومُرّرت لأنّ أحدا لم يقابلها بالمسارات الحقيقيّة.)
+   ② **وأن تحمل الخبرَ نفسَه** — لا الصفحةَ الرئيسيّة. من أُصدرت شهادتُه
+      يُفتح له «شهاداتي» لا لوحةُ حسابه.
+   ③ **ونصُّ الزرِّ فعلٌ يقول ما سيجد** — لا «اضغط هنا»: من يقرأ في بريده
+      لا يرى ما وراء الزرّ، فاسمُ الزرِّ هو كلُّ ما يعرفه قبل أن يضغط.
+
+   ═══ ولمَ الجمهورُ جزءٌ من المفتاح ═══
+
+   الجلسةُ الواحدةُ تُذكِّر المتعلّمَ والمدرّبَ، ولا تصلح وجهةٌ واحدةٌ لهما:
+   المتعلّمُ يُفتح له «رحلتي» والمدرّبُ «جدولي». فلو كانت الوجهةُ بالمفتاح
+   وحدَه لذهب أحدُهما إلى بوّابةٍ لا يملكها.
+
+   و`staff.announce` أوضحُ: مفتاحٌ **واحدٌ** يصل الجمهورَين فعلا، ولكلٍّ
+   شاشةُ إشعاراتِ بوّابته. */
+
+/** جمهورُ الإشعار — نسخةٌ من `NotificationAudience` في الخادم */
+export type MailAudience = 'learner' | 'trainer' | 'staff'
+
+export interface MailDestination {
+  /** مسارٌ نسبيٌّ في التطبيق — يبني الخادمُ المطلقَ منه */
+  path: string
+  /** نصُّ الزرّ: فعلٌ يقول ماذا سيجد */
+  ctaAr: string
+}
+
+/** وجهةُ الجمهور الواحد لمفاتيحَ بعينها */
+type Table = Record<string, MailDestination>
+
+const LEARNER: Table = {
+  /* رحلتي — جدولُ شعبه ووحداتُه وتسليماتُه وطلباتُه، كلُّها في شاشةٍ واحدة */
+  'cohort.session.scheduled': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  'session.reminder': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  'session.reminder.24h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  'session.reminder.1h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  'enrollment.approved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  'enrollment.confirmed': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  'enrollment.rejected': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  'enrollment.waitlist.promoted': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  'learner.request_decided': { path: '/student/learning', ctaAr: 'اقرأ قرارَ طلبك' },
+  'plan.requested': { path: '/student/billing', ctaAr: 'افتح طلبَك' },
+  'plan.seats_held': { path: '/student/billing', ctaAr: 'أكمِل حجزَ مقعدك' },
+  /* التصحيحُ والدرجات — في «رحلتي» مع التسليم الذي صُحِّح */
+  'submission.start_review': { path: '/student/learning', ctaAr: 'افتح تسليمك' },
+  'submission.request_resubmit': { path: '/student/learning', ctaAr: 'أعِد تسليمك' },
+  'submission.accept': { path: '/student/learning', ctaAr: 'افتح تسليمك' },
+  'submission.reject': { path: '/student/learning', ctaAr: 'افتح تسليمك' },
+  'grade.create': { path: '/student/learning', ctaAr: 'اقرأ درجتَك وملحوظاتِ مدرّبك' },
+  'grade.update': { path: '/student/learning', ctaAr: 'اقرأ درجتَك المعدَّلة' },
+  'payment.succeeded': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
+  'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
+  'staff.announce': { path: '/student/notifications', ctaAr: 'اقرأ الإعلان' },
+}
+
+const TRAINER: Table = {
+  'trainer_payout': { path: '/trainer/earnings', ctaAr: 'افتح كشفَ مستحقّاتك' },
+  'trainer.qualified': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  'trainer.qualify.rejected': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
+  'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّةَ شعبتك' },
+  'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرارَ الخطّة' },
+  /* ومفاتيحُ تذكيرِ المدرّب غيرُ مفاتيحِ المتعلّم — `session.reminder.trainer.*`
+     في `worker/jobs.ts`. وكنتُ كتبتُ هنا مفاتيحَ المتعلّم للمدرّب، فكانت
+     أسطرا ميّتةً: لا يصل المدرّبَ `session.reminder.24h` أبدا، ولا وجهةَ
+     لما يصله فعلا. وأمسكه الحارسُ ② حين قابل السجلَّ بالجداول. */
+  'session.reminder.trainer.24h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
+  'session.reminder.trainer.1h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
+  'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابورَ التصحيح' },
+}
+
+const STAFF: Table = {
+  'staff.task.assigned': { path: '/admin/tasks', ctaAr: 'افتح مهمّتك' },
+  'staff.task.done': { path: '/admin/tasks', ctaAr: 'افتح المهامّ' },
+  'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
+  'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
+  'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلبَ الانضمام' },
+  'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلبَ المتعلّم' },
+  'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلبَ التأهيل' },
+  'advisor.case.assigned': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
+  'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },
+  'cohort.plan.submitted': { path: '/admin/cohorts', ctaAr: 'راجِع خطّةَ الشعبة' },
+}
+
+const BY_AUDIENCE: Record<MailAudience, Table> = {
+  learner: LEARNER,
+  trainer: TRAINER,
+  staff: STAFF,
+}
+
+/** كلُّ ما تحمله الجداولُ من مسارات — يقابلها الحارسُ بمسارات `App.tsx` */
+export function allDestinationPaths(): string[] {
+  return [...new Set(Object.values(BY_AUDIENCE).flatMap((t) => Object.values(t).map((d) => d.path)))]
+}
+
+/** وجهةُ هذا الإشعار لهذا الجمهور — أو `null` فتخرج الرسالةُ بلا زرّ.
+ *
+ *  ولا وجهةَ مخترَعةٌ عند الجهل: زرٌّ يُفتح على شاشةٍ لا خبرَ فيها أسوأُ من
+ *  رسالةٍ بلا زرّ — الأوّلُ يُضيّع وقتَ صاحبه ويُفقده الثقةَ بالأزرار. */
+export function destinationFor(
+  templateKey: string | null | undefined,
+  audience: MailAudience,
+): MailDestination | null {
+  if (!templateKey) return null
+  return BY_AUDIENCE[audience][templateKey] ?? null
+}

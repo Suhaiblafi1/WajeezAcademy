@@ -12,7 +12,7 @@
     "build:image": "vite build",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
-    "verify": "npm run typecheck && npx tsx scripts/lint-baseline.ts && vitest run src/tests",
+    "verify": "npm run typecheck && npx tsx scripts/lint-baseline.ts && npm run ci:locale && npx tsx scripts/validate-catalog-source.ts && npx tsx scripts/v2_1/sim-journeys.ts --check && npm run ci:coverage-baseline && npm run ci:overlays && npm run audit:recommendation-universe && npm run ci:migrations && npm run ci:authoring && vitest run src/tests",
     "preview": "vite preview",
     "api:dev": "tsx server/index.ts",
     "db:start": "docker compose up -d db minio",

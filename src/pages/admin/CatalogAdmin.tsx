@@ -1,6 +1,7 @@
 /* لوحة إدارة الكتالوج — عدادات الحالات، استعراض الكيانات، إنشاء مسودات
    (مهارة/دورة/مسار)، تقديم طلبات تغيير، وقرارات maker-checker */
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 import {
   BookMarked, CheckCircle2, ChevronDown, FilePlus2, GitPullRequest, Layers,
   RefreshCw, Route, XCircle,
@@ -113,6 +114,19 @@ export default function CatalogAdmin() {
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
   const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
   const [openForm, setOpenForm] = useState<"skill" | "course" | "pathway" | "cr" | null>(null);
+
+  /* ═══ قادمٌ من اقتراحِ مدرّبٍ صُنِّف «دورةً جديدة» (ح-٤) ═══
+
+     النموذجُ هنا هو النموذجُ الوحيد: مسارٌ وتسلسلٌ وساعاتٌ ومهاراتٌ ووحدات
+     ومدقّقُ تمارين. وثانيةٌ أنحفُ منه في شاشة الطابور تتخلّف عنه بعد شهر.
+     فيُفتَح هذا محمَّلا بعنوان الاقتراح، ويُربط ما أُنشئ بصاحبه عند التمام —
+     فلا يُنسخ الرمزُ بيدٍ ولا يُنسى الربطُ فيبقى الاقتراحُ معلّقا. */
+  const [params, setParams] = useSearchParams();
+  const fromProposal = params.get("proposalId");
+  const seedTitleAr = params.get("titleAr") ?? undefined;
+  useEffect(() => {
+    if (fromProposal) setOpenForm("course");
+  }, [fromProposal]);
 
   const refresh = useCallback(async () => {
     try {
@@ -391,7 +405,19 @@ export default function CatalogAdmin() {
             pathways={pathways.map((p) => ({ id: p.id, title: p.title }))}
             skills={skills}
             onRequestSkill={requestSkill}
-            onDone={() => { setOpenForm(null); void refresh(); }}
+            seedTitleAr={seedTitleAr}
+            onDone={(courseId) => {
+              setOpenForm(null);
+              /* الربطُ عند التمام لا قبله: اقتراحٌ يُعلَّق بدورةٍ لم تُنشأ
+                 يترك المدرّبَ يقرأ «صارت دورةً» ولا دورةَ هناك. */
+              if (fromProposal && courseId) {
+                void apiPost(`/api/admin/course-proposals/${fromProposal}/became-course`, { courseId })
+                  .then(() => toast("رُبط اقتراحُ المدرّب بالدورة الجديدة"))
+                  .catch(() => toast("أُنشئت الدورةُ ولم يُربط الاقتراحُ بها — اربِطه من طابور الاقتراحات"))
+                  .finally(() => { params.delete("proposalId"); params.delete("titleAr"); setParams(params, { replace: true }); });
+              }
+              void refresh();
+            }}
           />
         )}
 

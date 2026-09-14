@@ -7,6 +7,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { getEmailConfig, type EmailConfig } from './integrations.service'
 import { sendEmail, type MailAttachment } from './mail'
+import { renderNotificationMail } from './notification-mail'
 import { categoryForTemplate } from '../../src/application/notifications/categories'
 
 /* لأيّ بوابةٍ الإشعار — جرسُ كلٍّ يعرض جمهورَه وحده.
@@ -53,17 +54,34 @@ export class UnwiredExternalProvider implements NotificationProvider {
   }
 }
 
-/** مزود البريد الحقيقي — Resend عبر إعدادات التكامل؛ يُرسل لبريد المستخدم المسجل */
+/** مزود البريد الحقيقي — Resend عبر إعدادات التكامل؛ يُرسل لبريد المستخدم المسجل.
+ *
+ *  ── وكان يخرج نصّا خامّا (ط-١) ──
+ *
+ *  `{ subject, text }` بلا `html`: فتيّارُ الإشعارات — وهو أكثرُ ما يخرج من
+ *  المنصّة عددا — كان الوحيدَ الذي لا يمرّ على القالب، بينما تمرّ عليه
+ *  رسائلُ التوثيق وكلمةِ المرور والانضمام. فصار يمرّ، ومعه زرٌّ إلى موضع
+ *  الخبر لا إلى الصفحة الرئيسيّة. */
 export class ResendEmailProvider implements NotificationProvider {
   readonly channel = 'email'
   private config: EmailConfig
   private toEmail: string
-  constructor(config: EmailConfig, toEmail: string) {
+  private toName: string | null
+  constructor(config: EmailConfig, toEmail: string, toName?: string | null) {
     this.config = config
     this.toEmail = toEmail
+    this.toName = toName ?? null
   }
   async send(payload: NotificationPayload): Promise<{ ok: boolean; error?: string }> {
-    return sendEmail(this.config, { to: this.toEmail, subject: payload.title, text: payload.body })
+    const { text, html } = renderNotificationMail({
+      title: payload.title,
+      body: payload.body,
+      templateKey: payload.templateKey,
+      audience: payload.audience ?? 'learner',
+      siteUrl: publicSiteUrl(),
+      greetingName: this.toName,
+    })
+    return sendEmail(this.config, { to: this.toEmail, subject: payload.title, text, html })
   }
 }
 
@@ -191,8 +209,10 @@ export class NotificationService {
     if (channel === 'email') {
       const config = await getEmailConfig(this.prisma)
       if (config.enabled && config.apiKey) {
-        const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true } })
-        if (user?.email) return new ResendEmailProvider(config, user.email)
+        const user = await this.prisma.user.findUnique({
+          where: { id: userId }, select: { email: true, displayName: true },
+        })
+        if (user?.email) return new ResendEmailProvider(config, user.email, user.displayName)
       }
     }
     return new UnwiredExternalProvider(channel as 'email' | 'whatsapp' | 'sms')
