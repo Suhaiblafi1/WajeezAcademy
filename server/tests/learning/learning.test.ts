@@ -264,8 +264,23 @@ describe('التشغيل التعليمي الكامل', () => {
     await progress.setCompletionRule(managerId, { courseId: COURSE, type: 'assessment_passed', threshold: 99 })
     await expect(certificates.issue(enrollmentId, managerId))
       .rejects.toMatchObject({ code: 'rules_unmet' })
-    /* قاعدة الشعبة تتقدم على قاعدة الدورة */
-    await progress.setCompletionRule(managerId, { courseId: COURSE, cohortId, type: 'attendance_pct', threshold: 80 })
+
+    /* ═══ تُحدَّث هنا خطوةٌ واحدة — بقرارٍ لا بتنازل (ك-١٤) ═══
+
+       كان السطرُ التالي يضيف قاعدةً على الشعبة **لا تخصّ الشرطَ المستحيل**
+       (حضورٌ ٨٠٪)، فتصدر الشهادةُ — لأنّ `cohortRules.length ? cohortRules :
+       courseRules` كانت تُسقط قواعدَ الدورة كلَّها بأوّل قاعدةِ شعبة. وتعليقُ
+       الاختبار يقولها صراحةً: «قاعدة الشعبة تتقدم على قاعدة الدورة».
+
+       وهو العطبُ بعينه: شرطٌ يستحيل تحقّقُه يُمحى بإضافةٍ لا تخصّه، فتصدر
+       شهادةٌ لمن لم يستوفِ ما أعلنته الدورة.
+
+       والمحروسُ في هذا الاختبار باقٍ كما هو: تُرفض قبل، وتصدر بعد، ويكتمل
+       التسجيل، ولا تتكرّر. والمتبدّلُ **البابُ** وحدَه: الإرخاءُ صار إسقاطا
+       صريحا للشرط نفسِه (`required: false`) لا أثرا جانبيّا لشرطٍ آخر. */
+    await progress.setCompletionRule(managerId, {
+      courseId: COURSE, cohortId, type: 'assessment_passed', threshold: 0, required: false,
+    })
     const cert = await certificates.issue(enrollmentId, managerId)
     expect(cert.number).toMatch(/^WJ-CERT-\d{4}-\d{5}$/)
     expect(cert.learnerName).toBe('متعلم التشغيل')

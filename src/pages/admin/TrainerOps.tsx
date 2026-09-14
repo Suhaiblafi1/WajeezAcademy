@@ -375,7 +375,7 @@ interface TrainerChangeRequest {
   id: string; status: string; reason: string; scope: string; createdAt: string;
   /* اسمُ الدورة الحاليُّ يصل مع القائمة (`versions` في `listForReview`) —
      والرمزُ وحدَه لا يُعرِّف دورةً لمن يقرّر فيها (ح-١). */
-  course?: { id: string; versions?: { titleAr: string }[] } | null; courseId?: string;
+  course?: { id: string; currentVersion?: number; versions?: { titleAr: string }[] } | null; courseId?: string;
   items?: { changeType: string; note?: string | null; afterValue?: unknown }[];
   /* البند ب-١: من يصله التعديل — يأتي مع القائمة لا بنداء إضافي */
   blastRadius?: BlastRadius | null;
@@ -465,6 +465,15 @@ export function TrainerChangeRequests() {
             <div>
               <p className="text-sm font-black">
                 {r.course?.versions?.[0]?.titleAr ?? `دورة ${r.courseId ?? r.course?.id ?? "—"}`}
+                {/* ح-٣ · س-٢: النسخةُ الحاليّةُ تُقرأ عند القرار — فاعتمادُ
+                    اقتراحٍ بنطاق الكتالوج يُنشئ التي تليها، ومن لا يرى الرقمَ
+                    لا يعرف أنّه يُصدر نسخةً ثالثةً لا ثانية. */}
+                {typeof r.course?.currentVersion === "number" && (
+                  <span className="mr-2 rounded-full border border-white/15 px-2 py-0.5 text-fine font-bold text-muted-foreground">
+                    النسخة {r.course.currentVersion}
+                    {r.scope === "catalog" && <> ← {r.course.currentVersion + 1}</>}
+                  </span>
+                )}
                 <span className="mr-2 text-fine font-bold text-muted-foreground">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
               </p>
               {/* ═══ الاسمُ المقترَحُ يُقرأ قبل القرار لا بعده (ح-٣) ═══

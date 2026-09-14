@@ -31,13 +31,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Link2, Loader2, Lock, Send, Sparkles, Video,
+  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import CohortOps from "./CohortOps";
 import CourseTitleProposal from "./CourseTitleProposal";
 import SessionsAndAttendance from "./SessionsAndAttendance";
+import CohortMaterials from "./CohortMaterials";
+import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
@@ -419,7 +421,10 @@ export default function CohortWorkspace() {
           className="mt-5"
           items={[
             { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
-            { id: "run", label: <span className="inline-flex items-center gap-2"><Video className="h-4 w-4" aria-hidden="true" />التشغيل</span> },
+            /* ع-١: «التشغيل» صار «مركزَ التواصل» — ولم يبقَ فيه إلّا المخاطبة.
+               فاللقاءاتُ والحضورُ ذهبت إلى «لقاءات مباشرة» (د-٤)، والموادُّ إلى
+               «المصادر»، ولوحتان كانتا تكرارَ تبويبَي «طلبتي» و«طابور التقييم». */
+            { id: "run", label: <span className="inline-flex items-center gap-2"><MessageSquarePlus className="h-4 w-4" aria-hidden="true" />مركز التواصل</span> },
           ]}
           value={phase}
           onChange={setPhase}
@@ -652,9 +657,10 @@ export default function CohortWorkspace() {
 
       {/* ─────────── ③ المصادر ─────────── */}
       {phase === "prepare" && stage === "resources" && (
+        <div className="space-y-5">
         <Panel as="section">
           <StageIntro stage="resources" />
-          <p className="mt-2 text-read leading-6 text-muted-foreground">سمِّ المحتوى لا المنصّة: «كرّاسة التحرير» لا «ملفّ PDF». واختر نوعَه — المتعلّمُ يرى النوعَ قبل أن ينقر، فيعرف أكتابٌ هو أم فيديو أم كتابٌ صوتيّ. وما ترفعه ملفّا من «التشغيل» يظهر تحتها.</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">سمِّ المحتوى لا المنصّة: «كرّاسة التحرير» لا «ملفّ PDF». واختر نوعَه — المتعلّمُ يرى النوعَ قبل أن ينقر، فيعرف أكتابٌ هو أم فيديو أم كتابٌ صوتيّ.</p>
           <ul className="mt-4 space-y-3">
             {content.resources.map((r, i) => {
               const patch = (next: Partial<PlanResource>) =>
@@ -698,17 +704,13 @@ export default function CohortWorkspace() {
             <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, resources: [...content.resources, { title: "", url: "", kind: "link" }] })}>+ مصدر</Button>
             <Button tone="confirm" disabled={busy || locked || !dirty.resources || content.resources.some((r) => !r.title.trim() || !/^https?:\/\//.test(r.url))} onClick={savePlan}>احفظ المصادر</Button>
           </div>
-          {ws.materials.length > 0 && (
-            <ul className="mt-5 space-y-1.5 text-read">
-              {ws.materials.map((m) => (
-                <li key={m.id} className="flex items-center gap-2 text-muted-foreground">
-                  <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  <a href={m.readUrl ?? m.externalUrl ?? "#"} target="_blank" rel="noreferrer" className="text-teal-light-ink underline decoration-dotted underline-offset-4">{m.title}</a>
-                </li>
-              ))}
-            </ul>
-          )}
         </Panel>
+
+        {/* موادُّ الشعبة — كانت تُقرأ هنا وتُضاف من «التشغيل»، فصارت تُقرأ
+            وتُضاف في موضعٍ واحد (ع-١). ولوحةٌ على حدة لا مدموجةً في مصادر
+            الخطّة: تلك تمرّ بالاعتماد وتصل الدرس، وهذه موادُّ شعبةٍ جارية. */}
+        <CohortMaterials cohortId={ws.cohort.id} />
+        </div>
       )}
 
       {/* ─────────── ④ اللقاءات والتسجيلات ─────────── */}
@@ -738,6 +740,7 @@ export default function CohortWorkspace() {
 
       {/* ─────────── ⑤ التكاليف ─────────── */}
       {phase === "prepare" && stage === "assignments" && (
+        <div className="space-y-5">
         <Panel as="section">
           <StageIntro stage="assignments" />
           {ws.assessments.length === 0 ? (
@@ -848,6 +851,11 @@ export default function CohortWorkspace() {
             </div>
           </div>
         </Panel>
+
+        {/* ما سُلّم وما ينتظر — انتقلت من «التشغيل» (ع-١). من كتب المهمّةَ
+            يرى تحتها من استجاب لها، بالمقام الصحيح لا بعدد قائمة الانتظار. */}
+        <CohortSubmissions cohortId={ws.cohort.id} />
+        </div>
       )}
 
       {pendingModule && (
@@ -944,7 +952,7 @@ export default function CohortWorkspace() {
               </div>
             </Panel>
           )}
-          <CohortOps cohortId={ws.cohort.id} onAuthorAssignment={() => openStage("assignments")} />
+          <CohortOps cohortId={ws.cohort.id} />
         </div>
       )}
     </TrainerLayout>

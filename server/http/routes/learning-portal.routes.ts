@@ -604,7 +604,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
-      audience: z.enum(['cohort', 'learner']),
+      audience: z.enum(['cohort', 'learner', 'advisors']),
       enrollmentId: z.string().uuid().optional(),
       body: z.string().min(2).max(2000),
     }).parse(req.body)

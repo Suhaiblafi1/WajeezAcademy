@@ -4,6 +4,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 
@@ -138,9 +139,21 @@ export class ProgressService {
     const progress = e.courseProgress ?? (await this.recomputeProgress(enrollmentId))
     const ev = (progress.evidence ?? {}) as Record<string, number>
 
-    const cohortRules = await this.prisma.completionRule.findMany({ where: { cohortId: e.cohortId, required: true } })
-    const courseRules = await this.prisma.completionRule.findMany({ where: { courseId: e.cohort.courseId, cohortId: null, required: true } })
-    const rules = cohortRules.length ? cohortRules : courseRules
+    /* ك-١٤: قاعدةُ الدورة أرضيّةٌ لا تُمحى بقاعدةِ شعبة.
+
+       كان السطرُ هنا `cohortRules.length ? cohortRules : courseRules` — فقاعدةٌ
+       واحدةٌ تُضاف على شعبةٍ تُسقط قواعدَ الدورة كلَّها، ومنها الحضورُ
+       والتكاليفُ والتقييم. فتصير «شهادة من وجيز» عن الرمز نفسِه تعني شيئا في
+       شعبةٍ وشيئا آخرَ في جارتها.
+
+       والقسمةُ صارت في وحدةٍ نقيّةٍ تُفحَص بلا قاعدةِ بيانات، والإرخاءُ بابُه
+       واحدٌ صريح: قاعدةُ شعبةٍ بـ`required: false`. و**لذلك يُقرأ غيرُ اللازم
+       أيضا** — فالمرفوعُ إشارةُ إسقاطٍ لا صفٌّ مهمَل. */
+    const [cohortRules, courseRules] = await Promise.all([
+      this.prisma.completionRule.findMany({ where: { cohortId: e.cohortId } }),
+      this.prisma.completionRule.findMany({ where: { courseId: e.cohort.courseId, cohortId: null } }),
+    ])
+    const rules = resolveCompletionRules(courseRules, cohortRules)
 
     const failures: string[] = []
     for (const r of rules) {

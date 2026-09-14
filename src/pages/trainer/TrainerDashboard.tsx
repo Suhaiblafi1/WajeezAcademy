@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CalendarClock, GraduationCap, Loader2, Send, ServerOff, Video } from "lucide-react";
+import { GraduationCap, Loader2, Send, ServerOff, Video } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
-import { trainerInterviewUrl } from "@/application/trainer/application-options";
+import BookAdminMeeting from "@/components/BookAdminMeeting";
 import TrainerWorkQueue from "@/components/TrainerWorkQueue";
 import AtRiskList from "@/components/AtRiskList";
 import { buildWorkQueue } from "@/application/trainer/work-queue";
@@ -60,7 +60,6 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const [summary, setSummary] = useState<CohortSummary[]>([]);
   const [failed, setFailed] = useState(false);
   /* طلبُ اجتماعٍ مع الإدارة — يُطوى حتّى يُطلب، فالإطارُ ثقيلٌ على لوحةٍ تُفتح كلَّ يوم */
-  const [meetingOpen, setMeetingOpen] = useState(false);
   /* نبضة كل دقيقة: «جلستك الآن» تتغيّر مع الوقت بلا إعادة تحميل.
      القيمة في حالة لا في الرسم — Date.now() في الرسم غير نقي. */
   const [now, setNow] = useState(() => Date.now());
@@ -241,27 +240,10 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
       {/* ═══ اجتماعٌ مع الإدارة — بنقرة، داخل الصفحة، وفي الذيل لا الصدر ═══
 
           قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): لا مهامَّ تهيئةٍ هنا — ما يلزم
-          المدرّبَ يُقال له في كلّ شعبةٍ في موضعها. وبدلَها بابٌ يسأل منه: من
-          لم يفهم شيئا يحجز موعدا من التقويم نفسِه الذي يحجز منه المتقدّمون. */}
-      <Panel as="section" className="mt-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="flex items-center gap-2 text-sm font-black"><CalendarClock className="h-4 w-4 text-teal-light-ink" /> تريد أن تسأل أو تفهم شيئا؟ احجز اجتماعا مع الإدارة</p>
-          <button type="button" aria-expanded={meetingOpen} onClick={() => setMeetingOpen((v) => !v)} className="btn-outline-brand h-10 px-5">
-            {meetingOpen ? "أغلق التقويم" : "اختر موعدا"}
-          </button>
-        </div>
-        {meetingOpen && (
-          <div className="mt-4 overflow-hidden rounded-xl bg-white">
-            <iframe
-              src={`${trainerInterviewUrl({ name, email })}${trainerInterviewUrl({ name, email }).includes("?") ? "&" : "?"}embed_domain=${encodeURIComponent(window.location.hostname)}&embed_type=Inline`}
-              title="حجز اجتماع مع الإدارة"
-              loading="lazy"
-              style={{ border: "none" }}
-              className="block h-[680px] w-full"
-            />
-          </div>
-        )}
-      </Panel>
+          المدرّبَ يُقال له في كلّ شعبةٍ في موضعها. وبدلَها بابٌ يسأل منه.
+
+          وصار مكوّنا (ع-١): السطرُ نفسُه في «مركز التواصل»، ونسختان تفترقان. */}
+      <BookAdminMeeting name={name} email={email} className="mt-6" />
 
       <p className="mt-6 text-center text-read text-muted-foreground">
         كل بند أعلاه يقودك إلى مكان تنفيذه — وصفحةُ كلّ شعبةٍ تحمل تجهيزَها وتشغيلَها معا.
