@@ -1157,7 +1157,8 @@ model TrainerInvitation {
 model TrainerDossierLink {
   id            String                     @id @default(uuid()) @db.Uuid
   applicationId String                     @db.Uuid
-  tokenHash     String                     @unique // sha256(token) — لا يُحفظ الرمزُ ذاته
+  tokenHash     String                     @unique // sha256(token) — به يُتحقّق الرابطُ عند فتحه
+  tokenClear    String? // الرمزُ نصّا صريحا — قرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦) لينسخ الرابطَ نفسَه
   reviewerName  String // مَن هو، ليُنسَب إليه ما يكتب
   reviewerEmail String?
   expiresAt     DateTime

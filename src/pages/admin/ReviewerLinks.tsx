@@ -37,6 +37,9 @@ interface LinkRow {
   firstOpenedAt: string | null
   lastOpenedAt: string | null
   createdAt: string
+  /* عنوانٌ جاهزٌ للنسخ — `null` لملغىً أو منتهٍ، ولروابطَ أُنشئت قبل حفظ
+     الرمز (١٤ سبتمبر ٢٠٢٦) فلا رمزَ لها يُستخرج. وتلك تُجدَّد لا تُنسَخ. */
+  copyUrl: string | null
 }
 
 export default function ReviewerLinks({ applicationId }: { applicationId: string }) {
@@ -91,6 +94,20 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
   }
 
   /* التجديدُ يُعيد اللوحَ الطازجَ نفسَه — فمن جدّد رأى الرابطَ حيث اعتاد */
+  /* نسخُ الرابط نفسِه — لا تجديدَ ولا إبطالَ لما بيد القارئ.
+     صار ممكنا بحفظ الرمز (قرارُ صاحب المنصّة · ١٤ سبتمبر ٢٠٢٦). */
+  const copyLink = async (row: LinkRow) => {
+    if (!row.copyUrl) return
+    try {
+      await navigator.clipboard.writeText(row.copyUrl)
+      toast(`نُسخ رابطُ ${row.reviewerName} — هو نفسُه، ولم يتغيّر شيء`)
+    } catch {
+      /* المتصفّحُ قد يمنع الحافظة — فيُعرض النصُّ ليُنسَخ باليد */
+      setFresh({ url: row.copyUrl, name: row.reviewerName })
+      setCopied(false)
+    }
+  }
+
   const rotate = async (row: LinkRow) => {
     if (busy) return
     setBusy(true)
@@ -213,6 +230,16 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
               {/* والملغى لا يُجدَّد: الإلغاءُ قرارٌ لا يُلتفّ حوله بزرّ. أمّا
                   المنتهي أجلُه فيُجدَّد — وهو أكثرُ ما يُجدَّد له. */}
               <div className="flex flex-wrap items-center gap-2">
+                {row.copyUrl && (
+                  <Button
+                    tone="confirm"
+                    icon={Copy}
+                    disabled={busy}
+                    onClick={() => { void copyLink(row) }}
+                  >
+                    انسخ الرابط
+                  </Button>
+                )}
                 {!row.revokedAt && (
                   <Button tone="secondary" icon={RefreshCw} disabled={busy} onClick={() => void rotate(row)}>
                     جدّده وانسخه
