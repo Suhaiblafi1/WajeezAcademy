@@ -1,13 +1,23 @@
-/* الحذف النهائيّ لطلب مدرّب — وحرّاسُه الثلاثة.
+/* الحذف النهائيّ لطلب مدرّب — وما يرفضه.
 
-   الحذفُ لا يُستردّ، فما يُحرَس هنا ليس أنّه يحذف بل **أنّه يرفض**:
+   الحذفُ لا يُستردّ، فما يُحرَس هنا ليس أنّه يحذف بل **متى يرفض**:
 
-   ١) من صار مدرّبا لا يُحذف طلبُه. `TrainerProfile` بلا `Cascade` عمدا،
-      وملفّه يرتبط بتأهيلاتٍ وإسنادٍ وعقود — فمن تعاقدنا معه له تاريخٌ لا
-      يُمحى بضغطة.
-   ٢) ولا يُحذف طلبٌ قيد النظر: المنتهيةُ وحدها.
-   ٣) ولا حذفَ بلا سبب — ويُكتب في سجلّ التدقيق **قبل** الحذف، فيبقى الأثرُ
-      بعد أن يذهب الصفّ. وهذا آخرها هو ما يجعل الحذف مقبولا أصلا. */
+   ١) لا يُحذف طلبٌ قيد النظر: بينه وبين المنصّة قرارٌ لم يُبَتّ. ومن أراد
+      حذفَه رفضه أوّلا — فيصير الرفضُ فعلا مسجَّلا لا صمتا.
+   ٢) ولا حذفَ بلا سبب — ويُكتب في سجلّ التدقيق **قبل** الحذف، فيبقى الأثرُ
+      بعد أن يذهب الصفّ. وهذا هو ما يجعل الحذف مقبولا أصلا.
+   ٣) وبايتاتُ الوثيقة تُمحى من القرص لا صفُّها وحدَه.
+
+   ═══ وحارسٌ ثالثٌ انقلب (١٤ سبتمبر ٢٠٢٦) ═══
+
+   كان: «من صار مدرّبا لا يُحذف طلبُه» — و`TrainerProfile` بلا `Cascade`
+   عمدا، فملفُّه يرتبط بتأهيلاتٍ وإسنادٍ وعقود، ومن تعاقدنا معه له تاريخٌ لا
+   يُمحى بضغطة.
+
+   وقال صاحبُ المنصّة إنّ الافتراضَ خاطئ: لم يُتعاقَد مع أحدٍ إطلاقا. فصار
+   الملفُّ يذهب مع الطلب، والحارسُ يحرس أنّه **يذهب ولا يبقى يتيما**.
+   والحارسُ الباقي ليس عن سجلّنا بل عمّا بيد متعلّم — شهادةٌ صادرةٌ رقمُها
+   معلَن، وتفصيلُه في `purge-trainer-profile.test.ts`. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -107,13 +117,24 @@ describe('حذف طلب المدرّب نهائيّا', () => {
     expect(await prisma.user.count({ where: { id: rich.userId } })).toBe(1)
   })
 
-  it('٣) والمنتهيةُ وحدها قابلةٌ للحذف — والقائمة صريحة', () => {
+  /* ═══ ١٤ سبتمبر ٢٠٢٦: دخلت حالاتُ المدرّب المعتمَد ═══
+
+     كان يُحرَس أنّ `active` و`onboarding` خارجَ القائمة: صاحبُها صار مدرّبا
+     وله ملفٌّ وعقود. وقال صاحبُ المنصّة إنّنا لم نتعاقد مع أحدٍ إطلاقا،
+     وطلب حذفَ أيِّ حسابٍ سواه وإلغاءَ كلِّ ما يتعلّق به.
+
+     **ولم يكن لها بابٌ آخر أصلا**: `active` تصل إلى `suspended` وحدَها،
+     و`suspended` تعود إليها — فلا طريقَ من إحداهما إلى `rejected`. أي أنّ
+     إبقاءها خارجا كان يعني «لا حذفَ أبدا» لا «حذفا بعد رفض».
+
+     و`contract_pending` تبقى خارجا: قيدُ نظرٍ بينه وبين المنصّة قرارٌ لم
+     يُبَتّ — يُرفض أوّلا ثمّ يُحذف، فيصير الرفضُ فعلا مسجَّلا لا صمتا. */
+  it('٣) المنتهيةُ وحالاتُ المدرّب المعتمَد — والقائمة صريحة', () => {
     expect([...PURGEABLE_STATUSES].sort()).toEqual(
-      ['draft', 'email_verification_pending', 'rejected', 'withdrawn'],
+      ['active', 'draft', 'email_verification_pending', 'onboarding', 'rejected', 'suspended', 'withdrawn'],
     )
-    expect(PURGEABLE_STATUSES).not.toContain('active')
-    expect(PURGEABLE_STATUSES).not.toContain('onboarding')
-    expect(PURGEABLE_STATUSES).not.toContain('contract_pending')
+    expect(PURGEABLE_STATUSES, 'قيدُ نظرٍ يُرفض أوّلا').not.toContain('contract_pending')
+    expect(PURGEABLE_STATUSES).not.toContain('under_review')
   })
 
   it('٤) والحذفُ يمضي مع أبنائه — ويترك أثرا في سجلّ التدقيق', async () => {
@@ -144,15 +165,23 @@ describe('حذف طلب المدرّب نهائيّا', () => {
     expect(JSON.stringify(audit!.before)).toContain(app.reference)
   })
 
-  it('٥) ومن صار مدرّبا لا يُحذف طلبُه', async () => {
-    const app = await makeApplication('active', 'd')
-    await prisma.trainerProfile.create({
-      data: { applicationId: app.id, headline: 'مدرّبٌ متعاقَد' },
-    })
-    await expect(svc.purge(app.reference, ACTOR, 'محاولةُ حذفِ مدرّبٍ متعاقَد')).rejects.toThrow(/مدرّبا/)
-    expect(await prisma.trainerApplication.count({ where: { id: app.id } })).toBe(1)
+  /* ═══ وانقلب البند الخامس ═══
 
-    await prisma.trainerProfile.deleteMany({ where: { applicationId: app.id } })
-    await prisma.trainerApplication.delete({ where: { id: app.id } })
+     كان: «ومن صار مدرّبا لا يُحذف طلبُه». وعلّتُه أنّ من تعاقدنا معه له
+     تاريخٌ لا يُمحى بضغطة — وقال صاحبُ المنصّة إنّ الافتراضَ خاطئ: لم
+     يُتعاقَد مع أحد. فصار الملفُّ يذهب مع الطلب، والحارسُ يحرس **أنّه يذهب
+     ولا يبقى يتيما**. وتفصيلُ ما يبقى للمتعلّم في
+     `purge-trainer-profile.test.ts`. */
+  it('٥) ومن صار مدرّبا يُحذف طلبُه — وملفُّه معه، فلا يبقى ملفٌّ بلا طلب', async () => {
+    const app = await makeApplication('active', 'd')
+    const profile = await prisma.trainerProfile.create({
+      data: { applicationId: app.id, headline: 'مدرّبٌ للتجربة' },
+    })
+    await svc.purge(app.reference, ACTOR, 'طلبُ تجربةٍ أنشأتُه بنفسي')
+    expect(await prisma.trainerApplication.count({ where: { id: app.id } })).toBe(0)
+    expect(
+      await prisma.trainerProfile.count({ where: { id: profile.id } }),
+      'ذهب الطلبُ وبقي ملفُّه يتيما',
+    ).toBe(0)
   })
 })

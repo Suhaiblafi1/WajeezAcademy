@@ -367,6 +367,22 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.startPhotoUpload(profileId, req.auth!.userId, mime))
   })
 
+  /* اقتراحاتُ الدورات يحرّرها الأدمن — بصلاحيّة مراجعة الطلبات نفسِها،
+     فمن يقرّر في الطلب يصحّح ما يُقرَّر عليه. والسقفُ سقفُ `MAX_PROPOSALS`. */
+  app.put('/api/admin/trainer-applications/:id/teachable-proposals', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'تحريرُ اقتراحات الدورات — إضافةً وتسميةً وحذفا' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      proposals: z.array(z.object({
+        titleAr: z.string().max(200),
+        audienceAr: z.string().max(200).optional().default(''),
+      })).max(20),
+    }).parse(req.body)
+    return { proposals: await review.saveTeachableProposals(id, req.auth!.userId, body.proposals) }
+  })
+
   app.post('/api/admin/trainers/:profileId/publish-approval', {
     preHandler: requirePermission('trainer.publish'),
     schema: { tags: ['admin-trainers'], summary: 'موافقة الظهور العام — توثيق الملف وإظهاره للعامة' },

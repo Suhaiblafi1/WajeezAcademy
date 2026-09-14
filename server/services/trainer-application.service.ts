@@ -802,7 +802,8 @@ export class TrainerApplicationService {
     const app = await this.prisma.trainerApplication.findUnique({
       where: { reference },
       include: {
-        profile: { select: { id: true } },
+        /* ويلزم من الملفّ ما يقرّر: أشعبٌ يقودها؟ ومن فيها؟ */
+        profile: { select: { id: true, cohortTrainers: { select: { cohortId: true } } } },
         /* ويلزم `storageKey`: بايتاتُ الوثيقة على القرص لا في الصفّ، ولا
            يعرف القرصَ إلّا هذا المفتاح. */
         documents: { select: { id: true, storageKey: true } },
@@ -810,12 +811,43 @@ export class TrainerApplicationService {
     })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
 
-    if (app.profile) {
-      throw new AuthError(
-        'has_profile',
-        'صاحب هذا الطلب صار مدرّبا — لا يُحذف طلبُه. أوقِف ملفّه إن أردت.',
-        409,
-      )
+    /* ═══ الملفُّ يذهب معه — والحارسُ صار على ما بيد متعلّمٍ لا على وجودِ ملفّ ═══
+
+       ─────────── ما كان هنا ولماذا زال ───────────
+
+       كان: «صار مدرّبا فلا يُحذف طلبُه». وعلّتُه أنّ `TrainerProfile` يرتبط
+       بتأهيلاتٍ وإسنادٍ وعقود، **فمن تعاقدنا معه له تاريخٌ لا يُمحى بضغطة**.
+
+       وقال صاحبُ المنصّة (١٤ سبتمبر ٢٠٢٦): «أبلغك أنّنا لم نتعاقد مع أحدٍ
+       إطلاقا، وأوّلُ شخصٍ حقيقيٍّ هي المدرّبةُ الأولى. فاسمح لي أن أحذف أيَّ
+       شخصٍ آخرَ أبديّا وإلغاءِ كلِّ شيءٍ يتعلّق بحسابه — وهذا قراري أتحمّل
+       مسؤوليّته».
+
+       فالعلّةُ كانت في افتراضٍ عن البيانات، والافتراضُ خاطئ. وأبناءُ الملفّ
+       كلُّهم `Cascade` في المخطَّط فيذهبون نظافا — إلّا `CohortTrainer`
+       (مرجعٌ لازمٌ بلا تتالٍ) فتُحذف صفوفُه هنا بيدٍ.
+
+       ─────────── والحارسُ الباقي ليس عن سجلّنا ───────────
+
+       شهادةٌ صادرةٌ بيد متعلّمٍ رقمُها معلَنٌ ويُتحقَّق منه برابط. وتلك ليست
+       سجلَّنا عن المدرّب، بل **دعوى إنسانٍ ثالثٍ على المنصّة**. فلو محونا
+       شعبتَه صار الرابطُ يقول «لا شهادةَ بهذا الرقم» عن شهادةٍ صحيحة.
+
+       ولا يقع هذا ما دام قولُ صاحب المنصّة قائما — فإن وقع فمعناه أنّ في
+       البيانات ما لا يتوقّعه، والوقوفُ حينها أصوبُ من المضيّ. */
+    const cohortIds = app.profile?.cohortTrainers.map((c) => c.cohortId) ?? []
+    if (cohortIds.length) {
+      const live = await this.prisma.certificate.count({
+        where: { status: 'active', enrollment: { cohortId: { in: cohortIds } } },
+      })
+      if (live > 0) {
+        throw new AuthError(
+          'issued_certificates',
+          `لهذا المدرّب ${live} شهادةً صادرةً بيد متعلّمين — أرقامُها معلَنةٌ ويُتحقَّق منها برابط. `
+          + 'أوقِف ملفَّه بدل حذفه، أو اسحب الشهاداتِ أوّلا إن كانت خطأً.',
+          409,
+        )
+      }
     }
     if (!PURGEABLE_STATUSES.includes(app.status as TrainerStatus)) {
       throw new AuthError(
@@ -869,7 +901,22 @@ export class TrainerApplicationService {
       }
     }
 
-    await this.prisma.trainerApplication.delete({ where: { id: app.id } })
+    /* ═══ والملفُّ قبل الطلب — وإلّا رفضت القاعدة ═══
+
+       `TrainerProfile.application` مرجعٌ بلا تتالٍ، فحذفُ الطلب وملفُّه قائمٌ
+       يُردّ. وأبناءُ الملفّ كلُّهم `Cascade` إلّا `CohortTrainer`: مرجعٌ لازمٌ
+       بلا `onDelete`، أي `Restrict` — فيُحذف بيدٍ قبله، وإلّا سقطت المعاملةُ
+       كلُّها برسالةِ قاعدةٍ لا تدلّ على سببها.
+
+       والثلاثةُ في معاملةٍ واحدة: نصفُ حذفٍ يترك ملفَّ مدرّبٍ بلا طلبٍ —
+       وذاك أسوأُ من ألّا يُحذف شيء. */
+    await this.prisma.$transaction(async (tx) => {
+      if (app.profile) {
+        await tx.cohortTrainer.deleteMany({ where: { profileId: app.profile.id } })
+        await tx.trainerProfile.delete({ where: { id: app.profile.id } })
+      }
+      await tx.trainerApplication.delete({ where: { id: app.id } })
+    })
 
     /* ═══ وحسابُه: يزول إن كان حسابَ تجربةٍ، ويبقى إن كان فيه أثرُ إنسان ═══
 
@@ -891,8 +938,18 @@ export class TrainerApplicationService {
         },
       })
       if (user) {
-        const onlyApplicant = user.roles.every((r) => r.roleId === 'trainer_applicant')
-        if (!onlyApplicant) keptAccountReason = 'له أدوارٌ أخرى على المنصّة'
+        /* ═══ ودورُ «مدرّب» لا يُبقي الحسابَ بعد اليوم ═══
+
+           كان الشرطُ «لا دورَ له إلّا متقدّم مدرّب»، فمن اعتُمد مدرّبا نال
+           دورَ `trainer` فبقي حسابُه أبدا ولو ذهب ملفُّه وطلبُه — حسابٌ يتيمٌ
+           بدورٍ لا ملفَّ خلفه.
+
+           والقرارُ (١٤ سبتمبر ٢٠٢٦): «وإلغاءُ كلِّ شيءٍ يتعلّق بحسابه». فالدوران
+           معا من هذا الباب. وما سواهما — متعلّمٌ أو مستشارٌ أو إداريّ — يبقى:
+           ذاك إنسانٌ له على المنصّة شأنٌ غيرُ هذا الطلب. */
+        const TRAINER_ROLES = ['trainer_applicant', 'trainer']
+        const onlyTrainer = user.roles.every((r) => TRAINER_ROLES.includes(r.roleId))
+        if (!onlyTrainer) keptAccountReason = 'له أدوارٌ أخرى على المنصّة'
         else if (user._count.enrollments > 0) keptAccountReason = 'له تسجيلاتٌ في شعب'
         else if (user._count.orders > 0) keptAccountReason = 'له طلباتُ شراء'
         if (!keptAccountReason) {

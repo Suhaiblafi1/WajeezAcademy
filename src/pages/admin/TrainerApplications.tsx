@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  BookOpen, CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
+  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
   Loader2, MailCheck, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
@@ -20,7 +20,7 @@ import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./
 import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import CourseSuggestionDialog from "./CourseSuggestionDialog";
-import { proposalLine, readProposals } from "@/application/trainer/teachable-proposals";
+import ProposalsEditor from "./ProposalsEditor";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { yearsLabel } from "@/application/trainer/application-options";
@@ -58,8 +58,6 @@ const DOSSIER_SECTIONS: { id: string; label: string }[] = [
   { id: "sec-history", label: "سجلّ الحالة" },
   { id: "sec-questions", label: "أسئلةُ المقابلة" },
   { id: "sec-interviews", label: "المقابلات" },
-  { id: "sec-demo", label: "الدرس التجريبيّ" },
-  { id: "sec-references", label: "المراجع المهنيّة" },
   { id: "sec-contract", label: "العقد والتوقيع" },
   { id: "sec-rubric", label: "الروبرك والقرار" },
 ];
@@ -127,6 +125,8 @@ interface AppDetail extends Record<string, unknown> {
     id: string; scores: Record<string, number>; overallNote: string | null; createdAt: string;
     /** فارغٌ في المراجعات القديمة التي سبقت الروابط — وتُعرض «من داخل الإدارة» */
     reviewerName?: string | null; verdict?: string | null; coursesNote?: string | null; updatedAt?: string;
+    /* الاتفاقُ الماليُّ إن ذُكر — نصّا لا رقما، ولا يقع به عقدٌ ولا دفعة */
+    feeExpectationAr?: string | null; feeProposalAr?: string | null;
   }[];
   interviews: { id: string; scheduledAt: string; outcome: string | null; canceledAt: string | null }[];
   statusHistory: { fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }[];
@@ -263,6 +263,8 @@ export default function TrainerApplications() {
   const [openDoc, setOpenDoc] = useState<string | null>(null);
   /* الاقتراحُ الذي يُربط الآن — معرّفُ طلبه وترتيبُه ونصُّه، لا كائنُ الطلب */
   const [suggestFor, setSuggestFor] = useState<{ id: string; index?: number; line: string } | null>(null);
+  /* والحذفُ مطويٌّ افتراضا — ليس عملا يوميّا، ولا يُجاور أزرارَ القرار */
+  const [purgeOpen, setPurgeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<DetailTab>("dossier");
   const { user } = useRealSession();
@@ -516,41 +518,6 @@ export default function TrainerApplications() {
             وطباعةُ المتصفّح تبقى عاملةً على **الصفحة المشتركة** لمن أراد
             ورقةً في الغرفة — وهي مقصودةٌ في التصميم. */}
 
-        {/* ── الحذف النهائيّ ──
-
-            ═══ لماذا صار يظهر في كلّ حالة (١٣ سبتمبر ٢٠٢٦) ═══
-
-            كان محجوبا إلّا على الحالات الأربع المنتهية. وطلباتُ التجربة —
-            وهي أوّلُ ما بُني له هذا الباب — تسكن كلَّ الحالات: مقابلةٌ
-            مجدولةٌ، ديمو مطلوب، مراجعةٌ أكاديميّة. فكان البابُ موجودا
-            **ولا يُرى حيث يُحتاج**، وقال صاحبُ المنصّة إنّه لا يجد سبيلا
-            إلى حذف ما أنشأه للتجربة.
-
-            فصار يظهر دائما لمن يملك حبّتَه، ويتكفّل الحوارُ بالباقي: المنتهي
-            يُحذف، وما دونه يُرفض أوّلا ثمّ يُحذف — بنقرةٍ واحدةٍ وأثرَين.
-            ومن صار مدرّبا يُقال له لا، ويُدَلّ على الإيقاف. */}
-        {canPurge && (
-          <Panel as="article" className="mb-4 border-red-500/25">
-            <h4 className="text-sm font-black text-red-300">حذفٌ نهائيّ لهذا الطلب</h4>
-            {a.profile ? (
-              <p className="mt-2 text-read leading-6 text-muted-foreground">
-                صار مدرّبا معتمدا — ولا يُمحى سجلُّ من تعاقدنا معه. أوقِف ملفّه إن أردت.
-              </p>
-            ) : (
-              <>
-                <p className="mt-2 text-read leading-6 text-muted-foreground">
-                  يذهب الطلبُ ووثائقُه ومقابلاتُه وتقييماتُه وروابطُ قُرّائه، ولا يُستردّ.
-                  ويبقى في سجلّ التدقيق: من حذف، ومتى، ولماذا.
-                </p>
-                <Button tone="danger" icon={Trash2} type="button" disabled={busy}
-                  onClick={() => setPurging(a)} className="mt-3">
-                  احذفه نهائيّا
-                </Button>
-              </>
-            )}
-          </Panel>
-        )}
-
         {/* ═══ الروبرك أسفلَ الملفّ لا في جانبه ═══
 
             كان عمودا ثالثا يقتطع ثلثَ العرض، فيُقرأ ملفُّ المتقدّم في ثلثَين:
@@ -681,43 +648,13 @@ export default function TrainerApplications() {
               {/* ما كتبه بقلمه لا يبقى ملاحظةً تُقرأ مرّةً — يصير بندا في طابور.
                   والزرُّ هنا لا داخلَ `ApplicationDossier`: تلك تعرضها صفحةُ
                   المراجعة الخارجيّةُ أيضا لمن لا حسابَ له. */}
-              {(() => {
-                /* السجلّاتُ أوّلا (أ-٣)، والفقرةُ القديمةُ لمن سبقها — والطلبُ
-                   الواحدُ لا يحمل الاثنين. وكلُّ اقتراحٍ يُربط وحدَه: الطلبُ
-                   يحمل عشرين، وربطُ واحدٍ لا يربطها كلَّها. */
-                const rows = readProposals(a.teachableProposals);
-                if (rows.length === 0 && !a.teachableOther) return null;
-                return (
-                  <div className="mt-3 border-t border-white/10 pt-3">
-                    <p className="text-read font-black text-muted-foreground">
-                      دوراتٌ اقترحها وليست في كتالوجنا — اربِط كلَّ واحدةٍ بما يناسبها
-                    </p>
-                    <ul className="mt-2 space-y-1.5">
-                      {rows.map((c, i) => (
-                        <li key={i} className="flex flex-wrap items-center gap-2 text-read leading-6">
-                          <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
-                          <span className="min-w-0 flex-1 font-bold">{proposalLine(c)}</span>
-                          <Button tone="secondary" size="sm" onClick={() => setSuggestFor({ id: a.id, index: i, line: proposalLine(c) })}>
-                            اربِطها
-                          </Button>
-                        </li>
-                      ))}
-                      {rows.length === 0 && a.teachableOther && (
-                        <li className="flex flex-wrap items-center gap-2 text-read leading-6">
-                          <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
-                          <span className="min-w-0 flex-1 whitespace-pre-line">{a.teachableOther}</span>
-                          <Button tone="secondary" size="sm" onClick={() => setSuggestFor({ id: a.id, line: a.teachableOther! })}>
-                            اربِطها
-                          </Button>
-                        </li>
-                      )}
-                    </ul>
-                    <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-                      نسخةً من دورةٍ قريبة، أو دورةً جديدةً بمهاراتها — ويصير طلبَ تغييرٍ في طابور الكتالوج.
-                    </p>
-                  </div>
-                );
-              })()}
+              <ProposalsEditor
+                applicationId={a.id}
+                raw={a.teachableProposals}
+                teachableOther={a.teachableOther}
+                onLink={(index, line) => setSuggestFor({ id: a.id, index, line })}
+                onSaved={() => openDetail(a.id)}
+              />
             </Panel>
 
             {/* الوثائق الخاصة */}
@@ -786,6 +723,45 @@ export default function TrainerApplications() {
 
             {/* عمليات متقدمة: مقابلات، ديمو، مراجع، عقود */}
             <TrainerDetailOps app={a} onAction={act} />
+
+            {/* ═══ والحذفُ في الذيل، مطويّا ═══
+
+                كان في صدر الشاشة لوحا أحمرَ يراه كلُّ من فتح طلبا. وقال
+                صاحبُ المنصّة (١٤ سبتمبر ٢٠٢٦): «وضعتَ مكانَ الحذف بمكانٍ
+                رئيسيٍّ غيرِ مريح — اجعل الحذفَ في مكانٍ آخر لأنّه ليس عملا
+                يوميّا».
+
+                وهو صوابٌ أبعدُ من الراحة: زرٌّ لا يُنقر في تسعٍ وتسعين من
+                مئةٍ يجاور أزرارَ القرار يُنقر يوما بالخطأ. فصار مطويّا في
+                الذيل مع العمليّات — من قصده وجده، ومن لم يقصده لم يره. */}
+            {canPurge && (
+              <Panel as="article" className="border-red-500/20">
+                <button type="button" aria-expanded={purgeOpen}
+                  onClick={() => setPurgeOpen((v) => !v)}
+                  className="flex w-full cursor-pointer items-center gap-2 text-right text-sm font-black text-red-300">
+                  <Trash2 className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">حذفٌ نهائيّ لهذا الطلب</span>
+                  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${purgeOpen ? "rotate-180" : ""}`} />
+                </button>
+                {purgeOpen && (
+                  <div className="mt-3">
+                    <p className="text-read leading-6 text-muted-foreground">
+                      يذهب الطلبُ ووثائقُه ومقابلاتُه وتقييماتُه وروابطُ قُرّائه، ولا يُستردّ.
+                      ويبقى في سجلّ التدقيق: من حذف، ومتى، ولماذا.
+                    </p>
+                    {a.profile && (
+                      <p className="mt-2 text-read leading-6 text-gold-ink">
+                        وله ملفُّ مدرّبٍ — يذهب معه: تأهيلاتُه وإسنادُه وشعبُه ورموزُ إحالته وقواعدُ مستحقّاته.
+                      </p>
+                    )}
+                    <Button tone="danger" icon={Trash2} type="button" disabled={busy}
+                      onClick={() => setPurging(a)} className="mt-3">
+                      احذفه نهائيّا
+                    </Button>
+                  </div>
+                )}
+              </Panel>
+            )}
             </>
             )}
           </div>
@@ -856,6 +832,25 @@ export default function TrainerApplications() {
                         <p className="mt-2 whitespace-pre-line text-read leading-6 text-gold-ink">
                           على دوراته: {r.coursesNote}
                         </p>
+                      )}
+                      {/* المالُ يُعرض حيث يُقرَّر — ومن قرأ حكمَ القارئ ولم يرَ
+                          ما دار في الحديث عن المبلغ قرّر على نصف الصورة.
+                          ولا يقع به عقدٌ: العقدُ في موضعه من الشاشة. */}
+                      {(r.feeExpectationAr || r.feeProposalAr) && (
+                        <dl className="mt-2 space-y-0.5 text-read leading-6">
+                          {r.feeExpectationAr && (
+                            <div className="flex flex-wrap gap-x-2">
+                              <dt className="font-bold text-muted-foreground">يتوقّع</dt>
+                              <dd className="min-w-0">{r.feeExpectationAr}</dd>
+                            </div>
+                          )}
+                          {r.feeProposalAr && (
+                            <div className="flex flex-wrap gap-x-2">
+                              <dt className="font-bold text-muted-foreground">ونقترح</dt>
+                              <dd className="min-w-0">{r.feeProposalAr}</dd>
+                            </div>
+                          )}
+                        </dl>
                       )}
                       <p className="mt-2 text-read text-muted-foreground">
                         {fmtDateTime(new Date(r.updatedAt ?? r.createdAt))}

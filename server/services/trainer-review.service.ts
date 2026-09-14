@@ -19,6 +19,7 @@ import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
+import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
   MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
   assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, signKey,
@@ -1267,6 +1268,60 @@ export class TrainerReviewService {
       maxBytes: MAX_PHOTO_BYTES,
       photoUrl: photoPublicUrl(`${PHOTO_KEY_PREFIX}${storageKey}`),
     }
+  }
+
+  /* ═══ اقتراحاتُ الدورات يحرّرها الأدمن ═══
+
+     ─────────── العطبُ الذي كُتبت له ───────────
+
+     الطلباتُ التي سبقت أ-٣ (١٣ سبتمبر) تحمل **فقرةً حرّةً واحدة**
+     (`teachableOther`) لا صفوفا. وأوّلُ مدرّبةٍ حقيقيّةٍ في المنصّة من
+     هؤلاء: كتبت ثماني دوراتٍ في فقرةٍ واحدة، فلا صفَّ يُربط بالكتالوج ولا
+     اسمَ يُصحَّح.
+
+     وقرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «أعطني المجال في ملفّها أن أضع اسمَ
+     الدورة المقترحة بنفسي لغايات الربط… لأنّي كأدمن قد أقوم بتغيير اسم
+     الدورة أو تصحيحٍ إملائيّ — فهذا الخيار ليس فقط لحلّ مشكلة اليوم بل
+     تفادٍ مستقبليّ».
+
+     ─────────── ولماذا العمودُ نفسُه لا عمودٌ ثانٍ ───────────
+
+     `teachableProposals` هو ما تقرؤه الشاشةُ وما يُربط بالكتالوج. فلو كُتب
+     تصحيحُ الأدمن في عمودٍ ثانٍ لصار للطلب مصدران للحقيقة، ولاحتاج كلُّ
+     قارئٍ أن يعرف أيَّهما يغلب. فالأدمنُ يكتب في العمود نفسِه.
+
+     **والفقرةُ القديمةُ تبقى كما كتبها صاحبُها**: لا تُمحى ولا تُقسَّم أسطرا
+     تخمينا — التخمينُ يبتر جملةً كتبها إنسانٌ عن نفسه. وتُعرض تحت الصفوف
+     مرجعا يُقارَن به.
+
+     ─────────── والأثرُ يقول من غيّر ماذا ───────────
+
+     ما يكتبه الأدمنُ في ملفّ متقدّمٍ عن نفسه يجب أن يُعرف أنّه ليس بقلمه —
+     وإلّا قُرئ بعد شهرٍ كأنّ المتقدّمَ قاله. */
+  async saveTeachableProposals(
+    applicationId: string, actorId: string, rows: readonly { titleAr: string; audienceAr: string }[],
+  ) {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId }, select: { id: true, teachableProposals: true },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+
+    /* التشذيبُ بالدالّة المشتركة لا بيدٍ هنا: الشاشةُ والخادمُ يناديان
+       الواحدةَ، فلا يفترق ما يُعرض عمّا يُخزَّن. */
+    const next = cleanProposals(rows as { titleAr: string; audienceAr: string }[])
+    const before = readProposals(app.teachableProposals)
+
+    await this.prisma.trainerApplication.update({
+      where: { id: applicationId },
+      data: { teachableProposals: next as unknown as Prisma.InputJsonValue },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.application.proposals_edit',
+      entityType: 'trainer_application', entityId: applicationId,
+      before: { count: before.length, titles: before.map((p) => p.titleAr) },
+      after: { count: next.length, titles: next.map((p) => p.titleAr) },
+    })
+    return next
   }
 
   /** الموافقة على الظهور العام — لا ظهور إلا بملف موثق وموافقة نشر */

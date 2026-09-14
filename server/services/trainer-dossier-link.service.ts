@@ -65,6 +65,9 @@ export interface SavedReviewInput {
   overallNote?: string | null
   verdict?: string | null
   coursesNote?: string | null
+  /* الاتفاقُ الماليُّ إن جرى ذكرُه — نصّا لا رقما، ولا مالَ يتحرّك به */
+  feeExpectationAr?: string | null
+  feeProposalAr?: string | null
 }
 
 export class TrainerDossierLinkService {
@@ -238,7 +241,9 @@ export class TrainerDossierLinkService {
       myReview: mine
         ? {
             scores: mine.scores, overallNote: mine.overallNote,
-            verdict: mine.verdict, coursesNote: mine.coursesNote, updatedAt: mine.updatedAt,
+            verdict: mine.verdict, coursesNote: mine.coursesNote,
+            feeExpectationAr: mine.feeExpectationAr, feeProposalAr: mine.feeProposalAr,
+            updatedAt: mine.updatedAt,
           }
         : null,
     }
@@ -259,6 +264,8 @@ export class TrainerDossierLinkService {
       overallNote: input.overallNote?.trim() || null,
       verdict: input.verdict || null,
       coursesNote: input.coursesNote?.trim() || null,
+      feeExpectationAr: input.feeExpectationAr?.trim() || null,
+      feeProposalAr: input.feeProposalAr?.trim() || null,
       reviewerName: link.reviewerName,
     }
 
@@ -279,7 +286,12 @@ export class TrainerDossierLinkService {
     const trail = {
       actorId: null,
       entityType: 'trainer_application', entityId: link.applicationId,
-      meta: { reviewId: saved.id, linkId: link.id, reviewerName: link.reviewerName },
+      /* والمبلغُ لا يُنسَخ في الأثر: يُقال إن ذُكر، ويُقرأ من صفّه. سجلُّ
+         التدقيق يُقرأ بعينٍ أوسعَ من عين من يقرّر في راتبِ إنسان. */
+      meta: {
+        reviewId: saved.id, linkId: link.id, reviewerName: link.reviewerName,
+        feeDiscussed: Boolean(data.feeExpectationAr || data.feeProposalAr),
+      },
       before: before ? { scores: before.scores, overallNote: before.overallNote, verdict: before.verdict, coursesNote: before.coursesNote } : undefined,
       after: { scores: data.scores, overallNote: data.overallNote, verdict: data.verdict, coursesNote: data.coursesNote },
     }

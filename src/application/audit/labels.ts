@@ -150,6 +150,7 @@ const PHRASES: Record<string, string> = {
   'trainer.application.account_linked': 'ربطُ طلبِ انضمامٍ بحسابٍ قائم',
   'trainer.application.verify_email': 'توثيقُ بريدِ متقدّم',
   'trainer.application.phase2_complete': 'إتمامُ القسم الثاني من طلبِ انضمام',
+  'trainer.application.proposals_edit': 'تحريرُ اقتراحاتِ دوراتِ المتقدّم',
   /* يُبنى المفتاحُ بشرطٍ في الشيفرة (`result.ok ? 'notification.sent' : …`)
      فلا يُقرأ بمسحِ نصٍّ حرفيّ — ولذلك يُكتب هنا صراحةً. */
   'notification.sent': 'إشعارٌ أُرسل',

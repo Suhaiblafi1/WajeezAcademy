@@ -31,14 +31,15 @@ describe('موضعُ الزرّ', () => {
     expect(dossier, 'الزرُّ في ملفٍّ يراه مراجعٌ بلا حساب').not.toMatch(/CourseSuggestionDialog|course-suggestions/)
   })
 
-  it('ولا يظهر إلّا لمن كتب شيئا — فلا زرَّ لطلبٍ بلا اقتراح', () => {
-    expect(apps).toMatch(/if \(rows\.length === 0 && !a\.teachableOther\) return null;/)
-  })
-
+  /* ١٤ سبتمبر ٢٠٢٦: انتقل عرضُ الاقتراحات إلى `ProposalsEditor` — صار الأدمنُ
+     يكتب أسماءها ويصحّحها، لا يقرؤها فقط. فالحارسُ ينتقل معه ويبقى على
+     المعنى: زرٌّ لكلّ اقتراحٍ لا زرٌّ للطلب، والترتيبُ يُمرَّر. */
   it('وزرٌّ لكلّ اقتراحٍ لا زرٌّ للطلب — فالطلبُ يحمل عشرين', () => {
-    expect(apps, 'السجلّاتُ لا تُقرأ بالدالّة المشتركة').toMatch(/readProposals\(a\.teachableProposals\)/)
-    expect(apps, 'زرٌّ واحدٌ للطلب كلِّه').toMatch(/rows\.map\(\(c, i\)/)
-    expect(apps).toMatch(/setSuggestFor\(\{ id: a\.id, index: i/)
+    const ed = code('src/pages/admin/ProposalsEditor.tsx')
+    expect(ed, 'السجلّاتُ لا تُقرأ بالدالّة المشتركة').toMatch(/readProposals\(raw\)/)
+    expect(ed, 'زرٌّ واحدٌ للطلب كلِّه').toMatch(/rows\.map\(\(r, i\)/)
+    expect(ed, 'لا يُمرَّر ترتيبُ الاقتراح').toMatch(/onLink\(i,/)
+    expect(apps, 'الشاشةُ لا تمرّر الترتيبَ إلى النافذة').toMatch(/setSuggestFor\(\{ id: a\.id, index, line \}\)/)
   })
 })
 
