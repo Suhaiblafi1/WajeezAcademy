@@ -8,6 +8,8 @@ import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-re
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { CourseProposalService } from '../../services/course-proposal.service'
+import { TrainerPathService } from '../../services/trainer-path.service'
+import { TrainerDepartureService } from '../../services/trainer-departure.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
@@ -25,6 +27,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   const links = new TrainerDossierLinkService(prisma)
   const changes = new TrainerChangeService(prisma)
   const proposals = new CourseProposalService(prisma)
+  const trainerPaths = new TrainerPathService(prisma)
+  const departures = new TrainerDepartureService(prisma)
   const applications = new TrainerApplicationService(prisma)
 
   app.get('/api/admin/trainer-applications', {
@@ -416,6 +420,167 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const body = z.object({ note: z.string().max(500).optional() }).parse(req.body ?? {})
     await review.suspendTrainer(profileId, req.auth!.userId, body.note)
     return { ok: true }
+  })
+
+  /* ═══ رحيلُ مدرّب — شيءٌ واحدٌ يُتتبَّع (ن-٩ · ن-١٠) ═══
+
+     والصلاحيّةُ `trainer.assign`: هذا إسنادٌ ونقلٌ في شعب، وهي صلاحيّتُهما.
+     ولا صلاحيّةَ جديدةٌ تعني منحَها من جديدٍ لكلّ من يُسنِد اليوم.
+
+     **ولا مالَ يتحرّك من هنا**: الردُّ طلبٌ يُرفع إلى الماليّة فتقرّه
+     بصلاحيّتها المستقلّة، والرصيدُ كوبونٌ مقصورٌ على صاحبه. */
+  app.get('/api/admin/trainer-departures', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'ملفّاتُ رحيلِ المدرّبين (ن-٩)' },
+  }, async (req) => {
+    const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
+    return departures.list(scope ?? 'open')
+  })
+
+  app.post('/api/admin/trainer-departures', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'فتحُ ملفِّ رحيل — تُجمَع شعبُه ويُفتح لكلّ متعلّمٍ صفّ' },
+  }, async (req, reply) => {
+    const body = z.object({
+      profileId: z.string().uuid(),
+      reasonAr: z.string().trim().min(5).max(2000),
+    }).parse(req.body)
+    return reply.status(201).send(await departures.open(req.auth!.userId, body.profileId, body.reasonAr))
+  })
+
+  app.get('/api/admin/trainer-departures/:id', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'ملفُّ رحيلٍ بكلّ اسمٍ فيه وما يمنع إغلاقَه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return departures.detail(id)
+  })
+
+  app.get('/api/admin/cohorts/:cohortId/substitutes', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'من يصلح بديلا لهذه الشعبة — تُنتجها المنصّةُ لا الذاكرة' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    return departures.substitutesFor(cohortId)
+  })
+
+  app.post('/api/admin/trainer-departures/:id/substitute', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'بديلٌ يأخذ مكانَه — فلا يتحرّك إلّا الاسم (الطريقُ الأوّل)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      cohortId: z.string().uuid(), profileId: z.string().uuid(),
+    }).parse(req.body)
+    return departures.substitute(req.auth!.userId, id, body.cohortId, body.profileId)
+  })
+
+  app.get('/api/admin/departure-cases/:caseId/equivalents', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'الشعبُ النظيرة — على الرمز نفسِه، مجموعةٌ معرَّفةٌ لا اجتهاد (ح-٣)' },
+  }, async (req) => {
+    const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
+    return departures.equivalentCohorts(caseId)
+  })
+
+  app.post('/api/admin/departure-cases/:caseId/move', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'نقلُ متعلّمٍ إلى نظير (الطريقُ الثاني)' },
+  }, async (req) => {
+    const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      toCohortId: z.string().uuid(), noteAr: z.string().trim().max(2000).nullish(),
+    }).parse(req.body)
+    return departures.moveLearner(req.auth!.userId, caseId, body.toCohortId, body.noteAr)
+  })
+
+  app.post('/api/admin/departure-cases/:caseId/offer-choice', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'عرضُ الاختيار على صاحبه — ولا يُختار عنه (ن-١٠)' },
+  }, async (req) => {
+    const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ noteAr: z.string().trim().max(2000).nullish() }).parse(req.body ?? {})
+    return departures.offerChoice(req.auth!.userId, caseId, body.noteAr)
+  })
+
+  app.get('/api/admin/departure-cases/:caseId/refundable', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'دفعاتُ هذه الشعبة التي يُردّ منها — لا تُخمَّن' },
+  }, async (req) => {
+    const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
+    return departures.refundablePayments(caseId)
+  })
+
+  app.post('/api/admin/departure-cases/:caseId/settle', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'تنفيذُ ما اختاره — طلبُ ردٍّ إلى الماليّة أو رصيدٌ باسمه' },
+  }, async (req) => {
+    const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      amount: z.number().min(0), bonus: z.number().min(0).optional(),
+      currency: z.string().max(8).optional(),
+      /* الدفعةُ التي يُردّ منها — تُشترط في الردّ ويتجاهلها الرصيد */
+      paymentId: z.string().uuid().optional(),
+    }).parse(req.body)
+    return departures.settleChoice(req.auth!.userId, caseId, body)
+  })
+
+  app.post('/api/admin/departure-cases/:caseId/notify', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'إبلاغُ صاحبه — ويُردّ على صفٍّ لم يُقرَّر (قاعدةُ السمعة)' },
+  }, async (req) => {
+    const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
+    return departures.notify(req.auth!.userId, caseId)
+  })
+
+  app.post('/api/admin/trainer-departures/:id/close', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'إغلاقُ الملفّ — ولا يُغلق واسمٌ معلَّق' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return departures.close(req.auth!.userId, id)
+  })
+
+  /* ═══ مساراتُ المدرّبين — مراجعةُ ما يُعرض على الرفّ العامّ (ن-١ · ن-٧) ═══
+
+     والصلاحيّةُ `trainer.publish` بنصّها «الموافقة على ظهور المدرب للعامة» —
+     وهذا عينُه: إدراجٌ عامٌّ يحمل اسمَه. ولا صلاحيّةَ جديدةٌ تعني منحَها من
+     جديدٍ لكلّ من يوافق اليوم.
+
+     **والاسمُ يُعتمد مع المسار في المراجعة نفسِها** (ن-٧): اسمٌ على رفٍّ عامٍّ
+     نصُّ تسويقٍ يحمل مصداقيّةَ الأكاديميّة، ولا يُنشر ادّعاءٌ عامٌّ بلا نظرة. */
+  app.get('/api/admin/trainer-paths', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'مساراتُ المدرّبين — طابورُ المراجعة (ن-١)' },
+  }, async (req) => {
+    const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
+    return trainerPaths.queue(scope ?? 'open')
+  })
+
+  app.post('/api/admin/trainer-paths/:id/approve', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'نشرُ المسار على الرفّ — يُردّ لمن لم يُعتمد ظهورُه (ن-٢)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return trainerPaths.approve(req.auth!.userId, id)
+  })
+
+  app.post('/api/admin/trainer-paths/:id/reject', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'ردُّ المسار بسببٍ يقرؤه صاحبُه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ noteAr: z.string().trim().min(5).max(2000) }).parse(req.body)
+    return trainerPaths.reject(req.auth!.userId, id, body.noteAr)
+  })
+
+  app.post('/api/admin/trainer-paths/:id/retire', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'سحبُ المسار من الرفّ — ولا يمسّ من التحق (ن-٤)' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ noteAr: z.string().trim().max(2000).nullish() }).parse(req.body ?? {})
+    return trainerPaths.retire(req.auth!.userId, id, body.noteAr)
   })
 
   /* ═══ طابورُ الدورات المقترحة — تُصنَّف قبل أن تدخل الكتالوج (ح-٤) ═══

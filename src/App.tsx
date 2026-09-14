@@ -58,6 +58,8 @@ const AdminTerms = lazy(() => import('./pages/admin/Terms'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const AssignByTrainer = lazy(() => import('./pages/admin/AssignByTrainer'))
 const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
+const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
+const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDepartures'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
@@ -67,6 +69,7 @@ const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
 const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCourseProposals'))
+const TrainerMyPaths = lazy(() => import('./pages/trainer/MyPaths'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const CohortWorkspace = lazy(() => import('./pages/trainer/CohortWorkspace'))
@@ -255,6 +258,8 @@ export default function App() {
             <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
             {/* ح-٢: دوراتٌ يقترحها وليست في الكتالوج — من طلبه، ثمّ بيده */}
             <Route path="/trainer/course-proposals" element={<TrainerCourseProposals />} />
+            {/* ن-١: مسارٌ يبنيه المدرّبُ من دوراته ويُعرض على الرفّ العامّ */}
+            <Route path="/trainer/paths" element={<TrainerMyPaths />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
@@ -285,6 +290,10 @@ export default function App() {
             <Route path="/admin/assign-by-trainer" element={<AssignByTrainer />} />
             {/* ح-٤: دوراتٌ اقترحها المدرّبون — تُصنَّف قبل أن تدخل الكتالوج */}
             <Route path="/admin/course-proposals" element={<AdminCourseProposals />} />
+            {/* ن-١: مراجعةُ ما يُعرض على الرفّ باسم مدرّب */}
+            <Route path="/admin/trainer-paths" element={<AdminTrainerPaths />} />
+            {/* ن-٩ · ن-١٠: رحيلُ مدرّب — بديلٌ ثمّ نظيرٌ ثمّ اختيارُ صاحبه */}
+            <Route path="/admin/trainer-departures" element={<AdminTrainerDepartures />} />
             {/* الأتعابُ شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك محروسٌ
                 بـ`trainer.applications.view` والأتعابُ بـ`trainer.compensation.manage`،
                 ولا تلتقيان إلّا في `super_admin` — فكانت الماليةُ تملك المفتاحَ

@@ -352,6 +352,7 @@ model Course {
   trainerAssignments    TrainerCourseAssignment[]
   trainerChangeRequests TrainerChangeRequest[]
   trainerProposals      TrainerCourseProposal[]
+  trainerPathCourses    TrainerPathCourse[]
   cohorts               Cohort[]
 }
 
@@ -1217,6 +1218,8 @@ model TrainerProfile {
   assignments           TrainerCourseAssignment[]
   changeRequests        TrainerChangeRequest[]
   courseProposals       TrainerCourseProposal[]
+  paths                 TrainerPath[]
+  departures            TrainerDeparture[]
   onboardingTasks       TrainerOnboardingTask[]
   contracts             TrainerContract[]
   referralLinks         TrainerReferralLink[]
@@ -1335,6 +1338,139 @@ model TrainerCourseAssignment {
 /// قدّمه المتقدّمُ يومَ تقدّم، وقد قرأه من اعتمده. وهذا الجدولُ يُبذَر منه
 /// عند إنشاء الملفّ، ويحيا بعدها وحدَه. فمن عدّل اقتراحَه اليومَ لم يُعِد
 /// كتابةَ ما قرأه المعتمِدُ أمس.
+/// مسارٌ يبنيه مدرّبٌ من دوراته ويُعرض على الرفّ العامّ (ن-١).
+///
+/// ═══ ولمَ ليس صفًّا في `Pathway` ═══
+///
+/// ن-٥ يقطع بأنّه **لا يزاحم في التشخيص**: «مؤشّر وجيز» يوصي بمسارٍ واحدٍ
+/// اختِير من فجوةِ مهارةٍ قِيست، وحزمةٌ جمعها مدرّبٌ لم تُبنَ من فجوةٍ
+/// مقيسة. و`Pathway` هو ما يقرؤه محرّكُ التوصية (`PathwaySkillRequirement`
+/// و`PathwayDomain`) — فلو سكن المسارُ هناك لصار الوعدُ معلّقا براية
+/// يُطفئها أحدُهم يوما. وفي هذا المخطّط سابقةٌ لهذا التمييز نفسِه:
+/// `CompositeTemplate.notCountedAsPathway`.
+///
+/// ═══ ولا عمودَ سعرٍ هنا — بقصد (ن-٦) ═══
+///
+/// «السعرُ والسعةُ بيد الإدارة» مكتوبةٌ في وجه المدرّب في ورشة شعبته. ومسارٌ
+/// عامٌّ يسعّر نفسَه يسلّم سلطةَ التسعير لمن يجمع حزمة. فالسعرُ حاصلُ ما
+/// تكلّفه دوراتُه، وأيُّ خصمٍ قرارُ إدارةٍ كسائر الأسعار. وحقلٌ غيرُ موجودٍ
+/// أصدقُ من حقلٍ موجودٍ تحرسه شاشة.
+/// رحيلُ مدرّبٍ — شيءٌ واحدٌ يُتتبَّع لا ذاكرةُ إداريّ (ن-٩).
+///
+/// ═══ الفرضيّةُ التي بُني عليها ═══
+///
+/// «البرمجيّةُ تسجّل التزاما ولا تمنع إنسانا من الرحيل». فالتصميمُ يفترض أنّ
+/// الرحيلَ يقع، ويجعل التسليمَ لطيفا — لا يمنعه.
+///
+/// ═══ وقاعدةُ السمعة: القرارُ قبل الرسالة ═══
+///
+/// «لا ينبغي أن يقرأ متعلّمٌ «رحل مدرّبُك» بلا أن يكون البديلُ في الجملة
+/// نفسِها». ولذلك `notifiedAt` **لا تُكتب وحالُ الصفّ `pending`** — يُفرَض
+/// ذلك في الخدمة ويحرسه اختبار. فالرسالةُ تحمل ما يجري بعدها لا اعتذارا
+/// وانتظارا.
+///
+/// ═══ ولا تُغلق الحالةُ واسمٌ واحدٌ معلَّق ═══
+model TrainerDeparture {
+  id        String    @id @default(uuid()) @db.Uuid
+  profileId String    @db.Uuid
+  /// لماذا رحل — يُقرأ بعد سنةٍ حين يُسأل عن الشعب التي تحرّكت
+  reasonAr  String
+  openedBy  String    @db.Uuid
+  openedAt  DateTime  @default(now())
+  closedAt  DateTime?
+  closedBy  String?   @db.Uuid
+  profile   TrainerProfile  @relation(fields: [profileId], references: [id])
+  cases     DepartureCase[]
+
+  @@index([closedAt, openedAt])
+}
+
+/// متعلّمٌ واحدٌ في شعبةٍ فقدت مدرّبَها — يُحلّ وحدَه لا ضمنَ كتلة (ن-٩).
+///
+/// `pending` لم يُقرَّر بعد · `substituted` جاء بديلٌ فلم يتحرّك إلّا الاسم ·
+/// `moved` نُقل إلى نظيرٍ (إصدارٌ من الرمز نفسِه — وهنا يثمر ح-٣) ·
+/// `refund_requested` اختار الردَّ فرُفع طلبُه إلى الماليّة ·
+/// `credited` اختار الرصيدَ فصُرف كوبونٌ باسمه.
+///
+/// **ولا يُختار عنه** (ن-١٠): `learnerChoice` تُكتب باختياره هو، ولا يُحَلّ
+/// صفٌّ بردٍّ أو رصيدٍ قبل أن تُكتب. «لا المنصّةُ تختار نيابةً عنه، ولا
+/// رصيدٌ يُفرَض على من أراد مالَه».
+model DepartureCase {
+  id              String    @id @default(uuid()) @db.Uuid
+  departureId     String    @db.Uuid
+  enrollmentId    String    @db.Uuid
+  cohortId        String    @db.Uuid
+  outcome         String    @default("pending")
+  /// متى أُبلغ صاحبُه — ولا تُكتب قبل أن يُقرَّر (قاعدةُ السمعة)
+  notifiedAt      DateTime?
+  /// وحين لا بديلَ ولا نظير: متى عُرض عليه الاختيار
+  choiceOfferedAt DateTime?
+  /// refund | credit — **بيده لا بيدنا**
+  learnerChoice   String?
+  chosenAt        DateTime?
+  resolvedBy      String?   @db.Uuid
+  resolvedAt      DateTime?
+  noteAr          String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  departure       TrainerDeparture @relation(fields: [departureId], references: [id], onDelete: Cascade)
+  enrollment      Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  cohort          Cohort           @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@unique([departureId, enrollmentId])
+  @@index([departureId, outcome])
+}
+
+model TrainerPath {
+  id           String    @id @default(uuid()) @db.Uuid
+  profileId    String    @db.Uuid
+  /// اسمُه كما يختاره — ويُعتمد **مع المسار في المراجعة نفسِها** (ن-٧):
+  /// اسمٌ على رفٍّ عامٍّ نصُّ تسويقٍ يحمل مصداقيّةَ الأكاديميّة.
+  titleAr      String
+  blurbAr      String?
+  /// الموسمُ الذي يعمل فيه — **صفٌّ في `Term` لا نصّ** (ن-٣). فالنصُّ الحرّ
+  /// يبلى ساعةَ يمضي الموسمُ ولا يتذكّر أحدٌ تحريرَه، والصفُّ يحمل معه
+  /// نافذةَ التسجيل فتقول البطاقةُ متى يُفتح صدقا.
+  termId       String?   @db.Uuid
+  /// draft | submitted | published | rejected | retired
+  status       String    @default("draft")
+  /// عنوانُه العامّ — يُشتقّ مرّةً ويبقى: لو تغيّر لبطل ما نشره صاحبُه
+  slug         String?   @unique
+  reviewedBy   String?   @db.Uuid
+  reviewedAt   DateTime?
+  /// سببُ الردّ يقرؤه صاحبُه — ومن رُدّ مسارُه بلا سببٍ أعاده كما هو
+  reviewNoteAr String?
+  publishedAt  DateTime?
+  /// السحبُ من الرفّ بيد الإدارة (ن-١) — ولا يمسّ من التحق (ن-٤)
+  retiredAt    DateTime?
+  retiredBy    String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  profile      TrainerProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  term         Term?               @relation(fields: [termId], references: [id])
+  courses      TrainerPathCourse[]
+
+  @@index([status, publishedAt])
+  @@index([profileId, status])
+}
+
+/// دورةٌ في مسارِ مدرّب — ومفتاحُها المركّبُ هو ما يفرض ح-٣ هنا (ن-٨).
+///
+/// «لا يُرشَّح إصداران لرمزٍ واحدٍ في مسارٍ واحد» قائمةٌ في `PathwayCourse`
+/// بالبناء: `@@id([pathwayId, courseId])` والنسخُ تتشارك `courseId`. والقاعدةُ
+/// نفسُها تلزم ما يبنيه الناسُ لا ما نكتبه نحن وحدَه — فالمفتاحُ هنا مثلُه،
+/// ويحرسه `src/tests/catalog/one-version-per-path.test.ts`.
+model TrainerPathCourse {
+  pathId   String      @db.Uuid
+  courseId String
+  sequence Int         @default(1)
+  path     TrainerPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  course   Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@id([pathId, courseId])
+  @@index([courseId])
+}
+
 model TrainerCourseProposal {
   id             String    @id @default(uuid()) @db.Uuid
   profileId      String    @db.Uuid
@@ -1570,6 +1706,7 @@ model Term {
   updatedAt            DateTime                  @updatedAt
   cohorts              Cohort[]
   trainerAvailability  TrainerTermAvailability[]
+  trainerPaths         TrainerPath[]
 
   @@unique([year, season])
   @@index([status, startsOn])
@@ -1657,6 +1794,7 @@ model Cohort {
   referralLinks       TrainerReferralLink[]
 
   @@index([courseId, status])
+  departureCases      DepartureCase[]
 }
 
 /// ═══ رابطُ دعوةِ المدرّب — لكلّ شعبةٍ رابطٌ لا يشترك فيه غيرُه ═══
@@ -1897,6 +2035,7 @@ model Enrollment {
   moduleProgress    ModuleProgress[]
   courseProgress    CourseProgress?
   certificates      Certificate[]
+  departureCases    DepartureCase[]
   learnerRequests   LearnerRequest[]
   skillRemeasures   SkillRemeasure[]
   ratings           Rating[]

@@ -105,6 +105,22 @@ const PHRASES: Record<string, string> = {
   'trainer.course_proposal.link': 'ربطُ اقتراحِ دورةٍ برمزٍ قائمٍ في الكتالوج',
   'trainer.course_proposal.become_course': 'دخولُ اقتراحِ دورةٍ الكتالوجَ دورةً جديدة',
   'trainer.course_proposal.reject': 'رفضُ اقتراحِ دورة',
+  /* ن-١: مسارٌ يبنيه مدرّبٌ ويُعرض على الرفّ العامّ. والثلاثةُ عباراتٌ كاملة:
+     «نشرُ مسارِ مدرّب» وحدَه لا يقول أين نُشر، والرفُّ هو الخبر. */
+  'trainer.path.publish': 'نشرُ مسارِ مدرّبٍ على الرفّ العامّ',
+  'trainer.path.retire': 'سحبُ مسارِ مدرّبٍ من الرفّ العامّ',
+  'trainer.path.reject': 'ردُّ مسارِ مدرّبٍ بسبب',
+  /* ن-٩ · ن-١٠: رحيلُ مدرّبٍ وما يترتّب عليه. وعباراتٌ كاملةٌ لا تركيب:
+     «نقلُ مدرّب» لا يقول ما جرى للمتعلّمين، وهم الخبر. */
+  'trainer.departure.open': 'فتحُ ملفِّ رحيلِ مدرّب',
+  'trainer.departure.substitute': 'إسنادُ بديلٍ لشعبةٍ فقدت مدرّبَها',
+  'trainer.departure.move': 'نقلُ متعلّمٍ إلى شعبةٍ نظيرةٍ بعد رحيلِ مدرّبه',
+  'trainer.departure.offer_choice': 'عرضُ الاختيار على متعلّمٍ — ردٌّ أو رصيد',
+  'trainer.departure.learner_choice': 'اختيارُ المتعلّم بين الردّ والرصيد',
+  'trainer.departure.refund_requested': 'رفعُ طلبِ ردٍّ باختيار المتعلّم',
+  'trainer.departure.credit': 'صرفُ رصيدٍ باسم متعلّمٍ باختياره',
+  'trainer.departure.notify': 'إبلاغُ متعلّمٍ بما جرى لشعبته',
+  'trainer.departure.close': 'إغلاقُ ملفِّ رحيلِ مدرّب',
   'trainer.qualify.auto': 'تأهيلُ مدرّبٍ تلقائيّا لما ذكره في طلبه',
   'cohort.plan.save': 'حفظُ مدرّبٍ خطّةَ شعبته',
   'cohort.plan.submit': 'إرسالُ مدرّبٍ خطّةَ شعبته للاعتماد',
@@ -187,7 +203,7 @@ const WORDS: Record<string, string> = {
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويضُ مدرّب',
   trainer_payout: 'مستحقُّ مدرّب', application: 'طلبُ انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّةٌ تجريبيّة', review: 'مراجعة',
-  change: 'اقتراحُ تعديل', course_proposal: 'اقتراحُ دورة', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلبُ تسجيل',
+  change: 'اقتراحُ تعديل', course_proposal: 'اقتراحُ دورة', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلبُ تسجيل',
   waitlist: 'قائمةُ انتظار', order: 'طلبُ شراء', payment: 'دفعة', refund: 'استرداد', coupon: 'كوبون',
   invoice: 'فاتورة', plan: 'خطّة', item: 'بند', module: 'وحدة', content: 'متن', material: 'مادّة',
   recording: 'تسجيلٌ مرئيّ', assessment: 'تقييم', attempt: 'محاولة', grade: 'درجة', rubric: 'روبرك',
