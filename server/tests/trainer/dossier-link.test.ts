@@ -318,3 +318,106 @@ describe('إرسالُ الرابط بالبريد', () => {
     expect(made.emailDelivery).toBeNull()
   })
 })
+
+/* ═══ تجديدُ الرابط: رمزٌ جديدٌ على الصفّ نفسِه (١٤ سبتمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أريد أن أتمكّن من إعادة نسخِ الرابط للمفعَّلين بدلا من
+   إنشاء جديد». ونسخُ القديمِ مستحيلٌ بنيةً: `sha256` طريقٌ واحد.
+
+   فالذي يزعجه ليس الحرفَ القديم بل **الصفَّ الثاني**: قارئٌ واحدٌ بسطرَين
+   وتقييمُه ينقسم بينهما. والتجديدُ يُبدّل الرمزَ على الصفّ نفسِه.
+
+   ═══ وأثمنُ ما يُحرَس هنا ═══
+
+   **أنّ التقييمَ يبقى.** فهو معلَّقٌ بـ`linkId` — بمعرّف الصفّ لا بالرمز. ولو
+   أُنشئ صفٌّ جديدٌ بدل التجديد لبدأ القارئُ من بياضٍ وبقي تقييمُه الأوّلُ
+   معلَّقا بصفٍّ لا يفتحه أحد. وهذا هو الفرقُ كلُّه بين الحلَّين، ولا يظهر
+   إلّا بقارئٍ كتب ثمّ جُدِّد رابطُه. */
+describe('تجديدُ رابط القارئ', () => {
+  it('⚠️ القديمُ يموت والجديدُ يعمل — وهما على صفٍّ واحد', async () => {
+    const made = await svc.create(applicationId, adminId, { reviewerName: 'قارئٌ يُجدَّد' })
+    const oldToken = made.url.split('/r/')[1]
+    expect((await app.inject({ method: 'GET', url: `/api/r/${oldToken}` })).statusCode).toBe(200)
+
+    const again = await svc.rotate(applicationId, made.link.id, adminId)
+    const newToken = again.url.split('/r/')[1]
+
+    expect(newToken, 'الرمزُ لم يتغيّر').not.toBe(oldToken)
+    expect(again.link.id, 'أُنشئ صفٌّ ثانٍ بدل التجديد').toBe(made.link.id)
+    expect((await app.inject({ method: 'GET', url: `/api/r/${oldToken}` })).statusCode).toBe(401)
+    expect((await app.inject({ method: 'GET', url: `/api/r/${newToken}` })).statusCode).toBe(200)
+  })
+
+  it('⚠️ وتقييمُه المكتوبُ يبقى — وهو العلّةُ التي لأجلها جُدِّد ولم يُنشأ جديد', async () => {
+    const made = await svc.create(applicationId, adminId, { reviewerName: 'قارئٌ كتب ثمّ جُدِّد' })
+    const first = made.url.split('/r/')[1]
+    await svc.saveReview(first, {
+      scores: { domain_expertise: 5 }, overallNote: 'ملاحظةٌ كُتبت قبل التجديد',
+    })
+
+    const again = await svc.rotate(applicationId, made.link.id, adminId)
+    const view = await svc.view(again.url.split('/r/')[1])
+
+    expect(view.myReview, 'ضاع تقييمُه بالتجديد').not.toBeNull()
+    expect(view.myReview?.overallNote).toBe('ملاحظةٌ كُتبت قبل التجديد')
+    expect(view.reviewer.name).toBe('قارئٌ كتب ثمّ جُدِّد')
+  })
+
+  it('وسجلُّ فتحه يبقى — تاريخُه لا يُمحى لأنّ رابطَه بُدِّل', async () => {
+    const made = await svc.create(applicationId, adminId, { reviewerName: 'قارئٌ فتح ثمّ جُدِّد' })
+    await svc.view(made.url.split('/r/')[1])
+    const opened = await prisma.trainerDossierLink.findUnique({ where: { id: made.link.id } })
+    expect(opened!.firstOpenedAt).not.toBeNull()
+
+    await svc.rotate(applicationId, made.link.id, adminId)
+    const after = await prisma.trainerDossierLink.findUnique({ where: { id: made.link.id } })
+    expect(after!.firstOpenedAt, 'مُحي سجلُّ فتحه').toEqual(opened!.firstOpenedAt)
+  })
+
+  it('⚠️ والمنتهي أجلُه يُجدَّد فيعود صالحا — وهو أكثرُ ما يُجدَّد له', async () => {
+    const made = await svc.create(applicationId, adminId, { reviewerName: 'قارئٌ انتهى أجلُه' })
+    await prisma.trainerDossierLink.update({
+      where: { id: made.link.id }, data: { expiresAt: new Date(Date.now() - 1000) },
+    })
+    expect((await app.inject({ method: 'GET', url: `/api/r/${made.url.split('/r/')[1]}` })).statusCode).toBe(401)
+
+    const again = await svc.rotate(applicationId, made.link.id, adminId)
+    expect(again.link.expiresAt.getTime(), 'لم يُجدَّد الأجل').toBeGreaterThan(Date.now())
+    expect((await app.inject({ method: 'GET', url: `/api/r/${again.url.split('/r/')[1]}` })).statusCode).toBe(200)
+  })
+
+  it('⚠️ والملغى لا يُجدَّد — الإلغاءُ قرارٌ لا يُلتفّ حوله بزرّ', async () => {
+    const made = await svc.create(applicationId, adminId, { reviewerName: 'قارئٌ أُلغي' })
+    await svc.revoke(applicationId, made.link.id, adminId)
+    await expect(svc.rotate(applicationId, made.link.id, adminId)).rejects.toThrow(/ملغى/)
+    /* ولا يُبعث الرابطُ القديمُ بمحاولةٍ مردودة */
+    expect((await app.inject({ method: 'GET', url: `/api/r/${made.url.split('/r/')[1]}` })).statusCode).toBe(401)
+  })
+
+  it('ورابطٌ من طلبٍ آخرَ لا يُجدَّد من هنا', async () => {
+    const other = await prisma.trainerApplication.create({
+      data: { reference: `WJ-TR-OTHER-${Date.now()}`, fullName: 'طلبٌ آخر', email: `other-${Date.now()}@test.local`, status: 'submitted' },
+    })
+    const made = await svc.create(other.id, adminId, { reviewerName: 'قارئُ طلبٍ آخر' })
+    await expect(svc.rotate(applicationId, made.link.id, adminId)).rejects.toThrow(/غير موجود/)
+  })
+
+  /* ⚠ ونُقض هذا الحارسُ بحقنِ الرمزِ تحت مفتاحٍ اسمُه `token` فمرّ أخضرَ —
+     لأنّ `recordAudit` تمسح كلَّ مفتاحٍ فيه «token» أصلا. فالدفاعُ الأوّلُ
+     كان يحجب النقضَ لا الحارسَ. وأُعيد النقضُ تحت مفتاحٍ لا يمسحه المُعقِّم
+     (`openAt: '/r/…'`) فسقط — وهو الشكلُ الذي يقع به التسريبُ فعلا: لا
+     أحدَ يسمّي المتغيّرَ «token» حين يُسرّبه. */
+  it('والأثرُ يُسجَّل ولا يحمل رمزا — لا القديمَ ولا الجديد', async () => {
+    const made = await svc.create(applicationId, adminId, { reviewerName: 'قارئُ الأثر' })
+    const again = await svc.rotate(applicationId, made.link.id, adminId)
+    const trail = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.dossier_link.rotate', entityId: applicationId },
+      orderBy: { createdAt: 'desc' },
+    })
+    expect(trail, 'لا أثرَ للتجديد').not.toBeNull()
+    const whole = JSON.stringify(trail!.meta)
+    expect(whole).toContain('قارئُ الأثر')
+    expect(whole, 'تسرّب الرمزُ الجديدُ إلى الأثر').not.toContain(again.url.split('/r/')[1])
+    expect(whole, 'تسرّب الرمزُ القديمُ إلى الأثر').not.toContain(made.url.split('/r/')[1])
+  })
+})

@@ -120,39 +120,49 @@ export class TrainerDossierLinkService {
     /* ═══ والبريدُ يُرسَل هنا أو لا يُرسَل أبدا ═══
 
        الرمزُ لا يُحفظ — هاشُه وحدَه. فهذه اللحظةُ هي **الوحيدةُ** التي يُعرف
-       فيها الرابط. ومن أراد إرسالَه لاحقا أنشأ رابطا جديدا؛ لا سبيلَ إلى
-       استخراج القديم، وهو مقصودٌ لا نقص. */
+       فيها هذا الرابطُ بعينه. ومن أراده بعدها **جدّده** (`rotate`): رمزٌ
+       جديدٌ على الصفّ نفسِه — لا صفٌّ ثانٍ للقارئ الواحد. */
     const url = `${publicSiteUrl()}/r/${token}`
-    let emailDelivery: DirectMailStatus | null = null
-    if (input.sendEmail && link.reviewerEmail) {
-      const res = await sendDirectEmail(this.prisma, {
-        to: link.reviewerEmail,
-        subject: `ملفُّ متقدّمٍ لمراجعتك — ${app.reference}`,
-        ...renderMail({
-          greetingName: link.reviewerName,
-          heading: 'ملفُّ متقدّمٍ ينتظر قراءتك',
-          blocks: [
-            { kind: 'facts', rows: [
-              { label: 'رقم الطلب', value: app.reference },
-              { label: 'ينتهي الرابط', value: fmtDateLong(link.expiresAt) },
-            ] },
-            { kind: 'cta', label: 'افتح الملفّ واكتب تقييمك', href: url,
-              caption: 'يُفتح بنقرةٍ بلا تسجيلٍ ولا كلمة مرور.' },
-            /* والتحذيرُ في المتن لا في تعليقِ شيفرة: من يقرأ الرسالةَ هو من
-               قد يُعيد توجيهَها، فالتنبيهُ يبلغه حيث هو. */
-            { kind: 'callout', text: 'هذا الرابطُ لك وحدَك ويقوم مقامَ توقيعك — فلا تُعِد توجيهَه، فما يُكتب به يُنسَب إليك.' },
-            { kind: 'note', text: 'وإن وصلك خطأً فأخبرنا بالردّ على هذه الرسالة، ويُلغى.' },
-          ],
-        }),
-      })
-      emailDelivery = res.status
-      await recordAudit(this.prisma, {
-        actorId, action: 'trainer.dossier_link.send',
-        entityType: 'trainer_application', entityId: applicationId,
-        meta: { linkId: link.id, reviewerName: link.reviewerName, delivery: res.status },
-      })
-    }
+    const emailDelivery = input.sendEmail
+      ? await this.mailLink(link, app.reference, url, actorId, applicationId)
+      : null
     return { link, url, emailDelivery }
+  }
+
+  /* رسالةُ الرابط — يتقاسمها الإنشاءُ والتجديد، فلا نصّان يفترقان يوما */
+  private async mailLink(
+    link: { id: string; reviewerName: string; reviewerEmail: string | null; expiresAt: Date },
+    reference: string, url: string, actorId: string, applicationId: string,
+  ): Promise<DirectMailStatus | null> {
+    if (!link.reviewerEmail) return null
+    const res = await sendDirectEmail(this.prisma, {
+      to: link.reviewerEmail,
+      subject: `ملفُّ متقدّمٍ لمراجعتك — ${reference}`,
+      ...renderMail({
+        greetingName: link.reviewerName,
+        heading: 'ملفُّ متقدّمٍ ينتظر قراءتك',
+        blocks: [
+          { kind: 'facts', rows: [
+            { label: 'رقم الطلب', value: reference },
+            { label: 'ينتهي الرابط', value: fmtDateLong(link.expiresAt) },
+          ] },
+          { kind: 'cta', label: 'افتح الملفّ واكتب تقييمك', href: url,
+            caption: 'يُفتح بنقرةٍ بلا تسجيلٍ ولا كلمة مرور.' },
+          /* والتحذيرُ في المتن لا في تعليقِ شيفرة: من يقرأ الرسالةَ هو من
+             قد يُعيد توجيهَها، فالتنبيهُ يبلغه حيث هو. */
+          { kind: 'callout', text: 'هذا الرابطُ لك وحدَك ويقوم مقامَ توقيعك — فلا تُعِد توجيهَه، فما يُكتب به يُنسَب إليك.' },
+          /* ومن جُدِّد رابطُه وصلته رسالتان، فيُقال له أيُّهما يعمل — وإلّا
+             فتح الأوّلَ فرُدّ بـ«غير صالح» وظنّ العطبَ فينا. */
+          { kind: 'note', text: 'وإن كان قد وصلك رابطٌ قبله فهذا يُبطله — افتح هذا وحدَه. وإن وصلك خطأً فأخبرنا بالردّ، ويُلغى.' },
+        ],
+      }),
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.dossier_link.send',
+      entityType: 'trainer_application', entityId: applicationId,
+      meta: { linkId: link.id, reviewerName: link.reviewerName, delivery: res.status },
+    })
+    return res.status
   }
 
   async list(applicationId: string) {
@@ -164,6 +174,78 @@ export class TrainerDossierLinkService {
         revokedAt: true, firstOpenedAt: true, lastOpenedAt: true, createdAt: true,
       },
     })
+  }
+
+  /* ═══ التجديدُ: رمزٌ جديدٌ على الصفّ نفسِه ═══
+
+     ─────────── الطلبُ وما يمنع حرفَه ───────────
+
+     قال صاحبُ المنصّة (١٤ سبتمبر ٢٠٢٦): «أريد أن أتمكّن من إعادة نسخِ الرابط
+     للمفعَّلين بدلا من إنشاء جديد».
+
+     و**نسخُ القديمِ مستحيلٌ بنيةً لا كسلا**: في القاعدة `sha256(token)` وحدَه،
+     والهاشُ طريقٌ واحد. ولو حُفظ الرمزُ نصّا لصارت نسخةٌ من القاعدة تسريبا
+     لكلِّ رابطٍ حيٍّ دفعةً واحدة — وكلُّ رابطٍ اعتمادٌ يقرأ به حاملُه ملفَّ
+     إنسانٍ بسيرته ووثائقه.
+
+     ─────────── وما يريده يقع بغير ذلك ───────────
+
+     الذي يزعجه ليس الحرفُ القديم بل **الصفُّ الثاني**: قارئٌ واحدٌ بسطرَين،
+     وتقييمُه ينقسم بينهما. فالتجديدُ يُبدّل الرمزَ **على الصفّ نفسِه**:
+
+       · يبقى معرّفُ الصفّ — ومعه **تقييمُه المكتوب**، إذ يُعلَّق بـ`linkId`
+         لا بالرمز. وهذا هو بيتُ القصيد: لو أُنشئ صفٌّ جديدٌ لبدأ القارئُ من
+         بياضٍ وبقي تقييمُه الأوّلُ معلَّقا بصفٍّ ميّت.
+       · ويبقى اسمُه وسجلُّ فتحه — أوّلَ مرّةٍ وآخرَ مرّة. تاريخُه لا يُمحى
+         لأنّ رابطَه بُدِّل.
+       · ويُجدَّد الأجلُ — فالمنتهي يعود صالحا، وهو أكثرُ ما يُجدَّد له.
+
+     ─────────── وثمنُه يُقال ولا يُخفى ───────────
+
+     **القديمُ يموت في اللحظة.** فمن كان فاتحا الصفحةَ وضغط «احفظ» بعد
+     التجديد رُدَّ بـ«الرابط غير صالح». وهو الصواب — رابطٌ حيٌّ واحدٌ لكلّ
+     قارئ — لكنّه ليس بلا ثمن، فرسالةُ التجديد تقول له أن يترك ما قبلها.
+
+     ─────────── والملغى لا يُجدَّد ───────────
+
+     الإلغاءُ قرارٌ: «لا يقرأ هذا الملفَّ بعد اليوم». فلو أعاده التجديدُ
+     صامتا لصار زرُّ «انسخ» بابا خلفيّا حول قرارٍ اتُّخذ. ومن أراد إعادتَه
+     أنشأ رابطا جديدا — فعلٌ ظاهرٌ في الأثر باسمه. */
+  async rotate(applicationId: string, linkId: string, actorId: string, opts?: { sendEmail?: boolean }) {
+    const link = await this.prisma.trainerDossierLink.findFirst({ where: { id: linkId, applicationId } })
+    if (!link) throw new AuthError('not_found', 'الرابط غير موجود', 404)
+    if (link.revokedAt) {
+      throw new AuthError(
+        'link_revoked',
+        'هذا الرابطُ ملغى — والإلغاءُ قرار. أنشئ رابطا جديدا باسمه إن أردتَ أن يقرأ ثانيةً.',
+        409,
+      )
+    }
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId }, select: { reference: true },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+
+    const token = newToken()
+    const updated = await this.prisma.trainerDossierLink.update({
+      where: { id: linkId },
+      data: {
+        tokenHash: sha256(token),
+        expiresAt: new Date(Date.now() + (DOSSIER_LINK_TTL_MS)),
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.dossier_link.rotate',
+      entityType: 'trainer_application', entityId: applicationId,
+      /* والرمزُ لا يُسجَّل — لا القديمُ ولا الجديد */
+      meta: { linkId, reviewerName: updated.reviewerName, expiresAt: updated.expiresAt },
+    })
+
+    const url = `${publicSiteUrl()}/r/${token}`
+    const emailDelivery = opts?.sendEmail
+      ? await this.mailLink(updated, app.reference, url, actorId, applicationId)
+      : null
+    return { link: updated, url, emailDelivery }
   }
 
   /** يُلغى ولا يُحذف: التقييمُ المكتوبُ به معلَّقٌ باسم صاحبه */
