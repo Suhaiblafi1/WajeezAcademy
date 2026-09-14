@@ -17,6 +17,7 @@
 import type { ReactNode } from 'react'
 import { BookOpen } from 'lucide-react'
 import { courseById } from '@/data/courses'
+import { usePublishedContent } from '@/services/public-content'
 import { readProposals } from '@/application/trainer/teachable-proposals'
 import { contactChannelLabel, seasonLabel, yearsLabel } from '@/application/trainer/application-options'
 import { Card } from '@/components/ui/Surface'
@@ -113,6 +114,25 @@ const has = (a?: string[] | null) => Array.isArray(a) && a.length > 0
 
    فيُقال ما وقع: محجوبٌ عن الرابط المشترك، وموضعُه الأدمن. */
 export default function ApplicationDossier({ a, showContact = true }: { a: Dossier; showContact?: boolean }) {
+  /* ═══ الكتالوجُ يُطلب هنا، وإلّا طُبعت المعرّفاتُ خاما ═══
+
+     `courses` في `@/data/courses` تُبنى **لحظةَ استيراد الوحدة** من كتالوجٍ
+     يبدأ فارغا ويُحمَّل كسولا (البند ع-١: الحزمةُ المضمَّنةُ كانت تهبط في
+     حزمة الدخول، ٧٢٠ كيلوبايت على كلّ زائرٍ قبل أوّل بكسل). ومن يملؤه هو
+     `usePublishedContent()`.
+
+     ولم تكن تناديه **لا شاشةُ الطلبات ولا صفحةُ الرابط**. فترجع
+     `courseById('C-BIZ-101')` فارغةً، ويقع الرجوعُ `?? id` — فيقرأ المراجعُ
+     «C-BIZ-101» مكانَ اسم الدورة. وهو أهمُّ ما في الطلب: عليه يُسنَد
+     المدرّبُ بعد الاعتماد.
+
+     وموضعُ النداءِ هنا لا في الشاشتَين: هذا هو المكوّنُ الذي يحتاج الأسماء،
+     فمن أضاف له شاشةً ثالثةً غدا لا يحتاج أن يتذكّر. والخطّافُ يعيد الرسمَ
+     عند تثبيت اللقطة، فالمعرّفُ يصير اسما من نفسه.
+
+     كُشف بالنظر في الصفحة لا بالشيفرة (١٤ سبتمبر ٢٠٢٦). */
+  usePublishedContent()
+
   const av = a.availability ?? null
   const teachable = a.teachableCourseIds ?? []
   /* يُقرأ العمودُ مرّةً واحدةً وبفحص: `Json?` يقبل أيَّ شكل، ومن قرأه بلا

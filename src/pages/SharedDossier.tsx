@@ -28,6 +28,8 @@ interface MyReview {
   overallNote: string | null
   verdict: string | null
   coursesNote: string | null
+  feeExpectationAr: string | null
+  feeProposalAr: string | null
   updatedAt: string
 }
 
@@ -58,6 +60,9 @@ export default function SharedDossier() {
   const [overallNote, setOverallNote] = useState('')
   const [verdict, setVerdict] = useState<string>('')
   const [coursesNote, setCoursesNote] = useState('')
+  /* الاتفاقُ الماليُّ — نصّا لا رقما، ويُملأ إن جرى ذكرُه ويُترك إن لم يُذكر */
+  const [feeExpectation, setFeeExpectation] = useState('')
+  const [feeProposal, setFeeProposal] = useState('')
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
 
@@ -80,6 +85,8 @@ export default function SharedDossier() {
         setOverallNote(v.myReview?.overallNote ?? '')
         setVerdict(v.myReview?.verdict ?? '')
         setCoursesNote(v.myReview?.coursesNote ?? '')
+        setFeeExpectation(v.myReview?.feeExpectationAr ?? '')
+        setFeeProposal(v.myReview?.feeProposalAr ?? '')
         setSavedAt(v.myReview?.updatedAt ?? null)
       })
       .catch((e: unknown) => {
@@ -94,6 +101,7 @@ export default function SharedDossier() {
     try {
       const r = await apiPut<{ savedAt: string }>(`/api/r/${encodeURIComponent(token)}/review`, {
         scores, overallNote: overallNote || null, verdict: verdict || null, coursesNote: coursesNote || null,
+        feeExpectationAr: feeExpectation || null, feeProposalAr: feeProposal || null,
       })
       setSavedAt(r.savedAt)
       setError(null)
@@ -102,7 +110,7 @@ export default function SharedDossier() {
     } finally {
       setSaving(false)
     }
-  }, [token, scores, overallNote, verdict, coursesNote])
+  }, [token, scores, overallNote, verdict, coursesNote, feeExpectation, feeProposal])
 
   /* ما لم يُقيَّم بعد — يُقال عددُه ولا يُترك القارئُ يعدّ بعينه */
   const remaining = useMemo(
@@ -212,6 +220,37 @@ export default function SharedDossier() {
             maxLength={4000}
             className="mt-1 w-full rounded-lg border border-white/12 bg-transparent p-3 text-read leading-6" />
         </label>
+
+        {/* ═══ الاتفاقُ الماليُّ — إن جرى ذكرُه ═══
+
+            قرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «ضع في التقييم داخل الرابط
+            الاتفاقَ الماليَّ في حال تمّ التحدّث عنه: ما هي توقّعاتها، وكم
+            نقترح أن يكون المبلغ — لغايات التقديم فقط».
+
+            ونصٌّ لا رقمٌ بقصد: الوحدةُ تختلف (بالساعة؟ بالشعبة؟) والعملةُ
+            تختلف، وأكثرُ ما يُقال في مكالمةٍ مدى لا رقمٌ واحد. وخانةٌ رقميّةٌ
+            تجبر القارئَ على اختراع دقّةٍ لا يملكها.
+
+            **ولا يقع بهذين عقدٌ ولا دفعة**: يُقرآن عند القرار، ويُبنى العقدُ
+            في موضعه. */}
+        <Inset as="fieldset" className="mt-5 p-4">
+          <legend className="px-1 text-read font-bold">الاتفاقُ الماليّ — إن جرى ذكرُه</legend>
+          <p className="text-read leading-6 text-muted-foreground">
+            لغايات التقديم فقط. اتركهما فارغَين إن لم يُذكر المالُ في حديثك معه.
+          </p>
+          <label className="mt-3 block">
+            <span className="text-read font-bold">ما يتوقّعه هو</span>
+            <input value={feeExpectation} onChange={(e) => setFeeExpectation(e.target.value)}
+              maxLength={500} placeholder="مثال: ٢٥ دينارا للساعة، أو «لم يحدّد ويترك الأمر لنا»"
+              className="mt-1 w-full rounded-lg border border-white/12 bg-transparent p-3 text-read leading-6" />
+          </label>
+          <label className="mt-3 block">
+            <span className="text-read font-bold">ما نقترحه نحن</span>
+            <input value={feeProposal} onChange={(e) => setFeeProposal(e.target.value)}
+              maxLength={500} placeholder="مثال: ٢٠ دينارا للساعة لأوّل شعبة، تُراجَع بعدها"
+              className="mt-1 w-full rounded-lg border border-white/12 bg-transparent p-3 text-read leading-6" />
+          </label>
+        </Inset>
 
         <fieldset className="mt-4">
           <legend className="text-read font-bold">قرارُك</legend>

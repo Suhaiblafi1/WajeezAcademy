@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Wallet,
   Activity, AlertTriangle, BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
-  Globe, Info, Loader2, Settings2, Star, UserCheck, XCircle, Zap,
+  Globe, Info, Loader2, Settings2, Star, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -15,7 +15,6 @@ import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
-import { RUBRIC_AXES } from "@/application/trainer/rubric";
 
 
 const CR_STATUS_AR: Record<string, string> = {
@@ -79,30 +78,6 @@ function FoldSection({ icon: Icon, title, children, defaultOpen = false, id, omi
   );
 }
 
-function RubricInput({ scores, onChange }: { scores: Record<string, number>; onChange: (s: Record<string, number>) => void }) {
-  /* لا يُطبع: حقلُ إدخالٍ كامل. وإخفاءُ المربّعات وحدَها يترك أسماءَ المحاور
-     معلّقةً بلا درجات — سطورٌ لا تعني شيئا على الورق. */
-  return (
-    <div className="space-y-2 print:hidden">
-      {RUBRIC_AXES.map((x) => (
-        <div key={x.key} className="flex items-center justify-between gap-2">
-          <span className="text-fine text-muted-foreground">{x.label}</span>
-          <div className="flex gap-1" role="radiogroup" aria-label={x.label}>
-            {[1, 2, 3, 4, 5].map((v) => (
-              <button key={v} type="button" onClick={() => onChange({ ...scores, [x.key]: v })}
-                aria-pressed={scores[x.key] === v}
-                className={`grid h-6 w-6 cursor-pointer place-items-center rounded-md border text-fine font-bold transition ${
-                  scores[x.key] === v ? "border-gold bg-gold text-on-gold" : "border-white/15 text-muted-foreground hover:border-white/40"
-                }`}>
-                {v}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 /** ملخّصُ المدرّب كما يحسبه الخادم — لا تُستنتج أرقامُه في الشاشة */
 export interface TrainerSummary {
@@ -145,20 +120,12 @@ export function TrainerDetailOps({ app, onAction }: {
   };
   onAction: (fn: () => Promise<unknown>, doneMsg: string) => Promise<void>;
 }) {
-  /* ما لم يُوثَّق بعد، وما لم يُوقَّع بعد — فالقائمةُ تعرض ما يُعمل لا كلَّ شيء */
-  const unverifiedRefs = (app.references ?? []).filter((r) => !r.verifiedAt);
+  /* وما لم يُوقَّع بعد — فالقائمةُ تعرض ما يُعمل لا كلَّ شيء */
   const unsignedContracts = (app.profile?.contracts ?? []).filter((c) => !c.signedAt);
 
   const [interviewForm, setInterviewForm] = useState({ scheduledAt: "", mode: "remote", notes: "" });
-  const [demoScores, setDemoScores] = useState<Record<string, number>>({});
-  const [demoDecision, setDemoDecision] = useState("pass");
-  const [demoNotes, setDemoNotes] = useState("");
-  const [refForm, setRefForm] = useState({ name: "", relation: "", contact: "", note: "" });
-  const [verifyId, setVerifyId] = useState("");
   const [contractForm, setContractForm] = useState({ title: "", terms: "" });
   const [lastContractId, setLastContractId] = useState("");
-
-  const demoComplete = RUBRIC_AXES.every((x) => demoScores[x.key] >= 1);
 
   return (
     <>
@@ -225,70 +192,20 @@ export function TrainerDetailOps({ app, onAction }: {
       </FoldSection>
 
       {/* تقييم الديمو */}
-      <FoldSection icon={Star} title="تقييم الدرس التجريبي (Demo)" id="sec-demo" omitFromPrint>
-        <RubricInput scores={demoScores} onChange={setDemoScores} />
-        <div className="mt-3 flex flex-wrap gap-2">
-          {([["pass", "يجتاز"], ["retry", "يعيد"], ["fail", "لا يجتاز"]] as const).map(([d, label]) => (
-            <button key={d} type="button" onClick={() => setDemoDecision(d)}
-              className={`cursor-pointer rounded-full border px-3 py-1 text-fine font-bold transition ${demoDecision === d ? "border-gold bg-gold/10 text-gold-ink" : "border-white/15 text-muted-foreground"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <textarea value={demoNotes} onChange={(e) => setDemoNotes(e.target.value)} rows={2} placeholder="ملاحظات التقييم…" className={`${inputCls} mt-3`} />
-        <Button tone="confirm" size="sm" disabled={!demoComplete}
-          onClick={() => void onAction(
-            () => apiPost(`/api/admin/trainer-applications/${app.id}/demo-evaluations`, {
-              scores: demoScores, decision: demoDecision, notes: demoNotes || undefined,
-            }),
-            "سُجل تقييم الديمو",
-          )} className="mt-3">
-          سجّل تقييم الديمو
-        </Button>
-      </FoldSection>
+      {/* ═══ ذهب قسمان من هنا (١٤ سبتمبر ٢٠٢٦) ═══
 
-      {/* المراجع المهنية */}
-      <FoldSection icon={UserCheck} title="المراجع المهنية" id="sec-references" omitFromPrint>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <input value={refForm.name} onChange={(e) => setRefForm({ ...refForm, name: e.target.value })} placeholder="اسم المرجع" className={inputCls} />
-          <input value={refForm.relation} onChange={(e) => setRefForm({ ...refForm, relation: e.target.value })} placeholder="العلاقة (مدير سابق…)" className={inputCls} />
-          <input value={refForm.contact} onChange={(e) => setRefForm({ ...refForm, contact: e.target.value })} placeholder="وسيلة التواصل" className={inputCls} />
-          <input value={refForm.note} onChange={(e) => setRefForm({ ...refForm, note: e.target.value })} placeholder="ملاحظة" className={inputCls} />
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button tone="confirm" size="sm" disabled={refForm.name.trim().length < 2}
-            onClick={() => void onAction(
-              () => apiPost(`/api/admin/trainer-applications/${app.id}/references`, {
-                name: refForm.name, relation: refForm.relation || undefined,
-                contact: refForm.contact || undefined, note: refForm.note || undefined,
-              }),
-              "أُضيف المرجع",
-            )}>
-            أضف مرجعا
-          </Button>
-          {/* والمراجعُ تُضاف في هذه البطاقة نفسِها فوقُ — فطلبُ معرّفِ ما
-              أضفتَه قبل سطرَين أغربُ من طلبِ معرّفٍ من شاشةٍ أخرى.
-              والموثَّقُ يُعلَّم فلا يُوثَّق مرّتَين. */}
-          <label className="sr-only" htmlFor={`ref-verify-${app.id}`}>المرجعُ المراد توثيقُه</label>
-          <select id={`ref-verify-${app.id}`} value={verifyId} onChange={(e) => setVerifyId(e.target.value)}
-            disabled={unverifiedRefs.length === 0} className={`${selectCls} max-w-64`}>
-            <option value="">
-              {(app.references?.length ?? 0) === 0
-                ? "لا مراجعَ بعد — أضِف واحدا أوّلا"
-                : unverifiedRefs.length === 0 ? "وُثّقت المراجعُ كلُّها" : "اختر مرجعا لتوثيقه…"}
-            </option>
-            {unverifiedRefs.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}{r.relation ? ` — ${r.relation}` : ""}</option>
-            ))}
-          </select>
-          <Button tone="secondary" size="sm" disabled={!verifyId}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-references/${verifyId}/verify`), "وُثق المرجع")}>
-            توثيق
-          </Button>
-        </div>
-      </FoldSection>
+          «تقييمُ الدرس التجريبيّ» و«المراجعُ المهنيّة». وقرارُ صاحب المنصّة:
+          «احذف تقييمَ الدرس التجريبيّ والمراجعَ المهنيّةَ من حساب المدرّب لدى
+          الأدمن».
 
-      {/* العقد */}
+          ولكلٍّ منهما بديلٌ قائمٌ لا فراغ: **التقييمُ** صار يُكتب في رابط
+          القارئ — يفتحه في الغرفة ويكتب فيه فيصل الملفَّ منسوبا إليه،
+          والروبركُ في ذيل الملفّ يضع تقييمات القُرّاء جنبا إلى جنب.
+          **والمراجعُ** يكتبها المتقدّمُ في طلبه، وتُقرأ في ملفّه.
+
+          فما ذهب هنا نموذجا إدخالٍ ثانيا لشيءٍ له مدخلُه — وشاشتان تكتبان
+          في حقلٍ واحدٍ تفترقان يوما. */}
+
       <FoldSection icon={FileSignature} title="العقد والتوقيع" id="sec-contract" omitFromPrint>
         <div className="flex flex-wrap gap-2">
           <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}

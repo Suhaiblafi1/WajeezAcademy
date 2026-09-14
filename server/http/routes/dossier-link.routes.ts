@@ -39,6 +39,9 @@ export function registerDossierLinkRoutes(app: FastifyInstance, prisma: PrismaCl
       /* بمفردات `TrainerInterview.outcome` نفسِها — لا معجمَ ثانيا لشيءٍ واحد */
       verdict: z.enum(['passed', 'hold', 'failed']).nullable().optional(),
       coursesNote: z.string().max(4000).nullable().optional(),
+      /* الاتفاقُ الماليُّ نصّا لا رقما — والسقفُ قصيرٌ لأنّه سطرٌ لا تقرير */
+      feeExpectationAr: z.string().max(500).nullable().optional(),
+      feeProposalAr: z.string().max(500).nullable().optional(),
     }).parse(req.body)
     reply.header('X-Robots-Tag', 'noindex, nofollow')
     return svc.saveReview(token, body)

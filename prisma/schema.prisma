@@ -1016,6 +1016,21 @@ model TrainerApplicationReview {
   verdict       String? // passed | hold | failed
   /// ملاحظةٌ على دوراته لا تمسّ `teachableCourseIds`: يعدّلها هو في «المؤهّلات» عنده
   coursesNote   String?
+  /// ═══ الاتفاقُ الماليُّ إن جرى ذكرُه — نصّا لا رقما ═══
+  ///
+  /// قرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «ضع في التقييم داخل الرابط الاتفاقَ
+  /// الماليَّ في حال تمّ التحدّث عنه: ما هي توقّعاتها، وكم نقترح أن يكون
+  /// المبلغ — لغايات التقديم فقط».
+  ///
+  /// ونصٌّ لا رقمٌ بقصد: الوحدةُ تختلف (بالساعة؟ بالشعبة؟ بالدورة؟) والعملةُ
+  /// تختلف، وأكثرُ ما يُقال في مكالمةٍ مدى لا رقمٌ واحد. وعمودٌ رقميٌّ يجبر
+  /// القارئَ على اختراع دقّةٍ لا يملكها.
+  ///
+  /// ⚠️ **ولا مالَ يتحرّك بهذين**: لا يمسّان `TrainerCompensationRule` ولا
+  /// معادلةَ المستحقّات ولا دفتر الأستاذ. هما ما قيل في حديثٍ، يُقرأ عند
+  /// القرار ثمّ يُبنى عليه عقدٌ في موضعه.
+  feeExpectationAr String?
+  feeProposalAr    String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   application   TrainerApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
