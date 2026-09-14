@@ -43,10 +43,11 @@ import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
-import { MIN_MODULE_BODY } from "@/application/trainer/plan-overlay";
 import { RESOURCE_KINDS, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
+import ModuleBodyUpload from "@/components/ModuleBodyUpload";
+import { moduleBodyDone } from "@/application/trainer/module-body";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -59,7 +60,12 @@ import { countAr } from "@/application/text/count-ar";
 
 /* ─────────── ما يصل من الخادم ─────────── */
 
-interface PlanModule { moduleId: string; titleAr: string; outcomeAr?: string | null; activityAr?: string | null; artifactAr?: string | null; bodyAr?: string | null }
+interface PlanModule {
+  moduleId: string; titleAr: string; outcomeAr?: string | null; activityAr?: string | null;
+  artifactAr?: string | null; bodyAr?: string | null;
+  /* ع-٢: ملفٌّ يُغني عن الكتابة */
+  bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null;
+}
 interface PlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
 /* ما بقي من صندوق «اقتراحٌ للإدارة» المحذوف (د-٦): خطّةٌ حُفظت قبل حذفه قد
    تحمل `proposals` في عمود JSON. يُقرأ منه اسمُ الدورة وحدَه ليُعرض مهيّأً في
@@ -288,11 +294,12 @@ export default function CohortWorkspace() {
   const doneCount = required.filter((c) => c.done).length;
   const remaining = required.length - doneCount;
   /* المحاورُ التي ينقصها المحتوى النظريّ — بالأرقام والعناوين، لا بعدد.
-     والأرضيّةُ هي أرضيّةُ الخادم نفسُها (`MIN_MODULE_BODY` = ٤٠): رقمان
-     يقولان الشيءَ نفسَه يفترقان، فيُقال له «تمّ» ويُردّ إرسالُه. */
+     والقاعدةُ قاعدةُ الخادم نفسُها (`moduleBodyDone`): مكتوبٌ بأربعين حرفا
+     **أو** ملفٌّ مرفوع (ع-٢). وقاعدتان تقولان الشيءَ نفسَه تفترقان، فيُقال
+     له «تمّ» ويُردّ إرسالُه. */
   const missingBody = content.modules
     .map((m, i) => ({ ...m, n: i + 1 }))
-    .filter((m) => (m.bodyAr ?? "").trim().length < MIN_MODULE_BODY);
+    .filter((m) => !moduleBodyDone(m));
   const ready = required.length ? Math.round((doneCount / required.length) * 100) : 0;
   const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
 
@@ -634,6 +641,14 @@ export default function CohortWorkspace() {
                          متوسّطُه ٢٣ ألفَ حرفٍ في الكتالوج — فلا يرى كاتبُه
                          ما قبله ولا ما بعده وهو يكتب. */
                       rows={20}
+                    />
+                    <ModuleBodyUpload
+                      cohortId={ws.cohort.id}
+                      moduleId={m.moduleId}
+                      value={m}
+                      onChange={(next) => setModule(i, next)}
+                      disabled={locked}
+                      label={`ملفُّ المحتوى النظريّ للمحور ${i + 1}`}
                     />
                   </StaffField>
                 </div>

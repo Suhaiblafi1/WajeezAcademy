@@ -398,6 +398,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
          والسقفُ يُستورَد ولا يُكتب رقما: رقمان يقولان الشيءَ نفسَه يفترقان،
          وهذا افتراقُهما. */
       artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(MAX_BODY_CHARS).nullish(),
+      /* ع-٢: مفتاحُ ملفِّ المحتوى النظريّ. والصفُّ يُنشأ قبل الرفع، فما
+         يصل هنا إشارةٌ إليه لا ملفّ — ويُقابَل بالصفوف عند العرض، فمفتاحٌ
+         لا صفَّ له لا يعرض شيئا. */
+      bodyFileKey: z.string().trim().max(120).nullish(),
+      bodyFileName: z.string().trim().max(200).nullish(),
+      bodyFileMime: z.string().trim().max(120).nullish(),
     })).max(40).superRefine((mods, ctx) => {
       const seen = new Set<string>()
       for (const [i, m] of mods.entries()) {

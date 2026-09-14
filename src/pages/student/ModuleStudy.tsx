@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import LessonBody from "@/components/LessonBody";
+import ModuleBodyDoc from "@/components/ModuleBodyDoc";
 import CheckQuestion from "@/components/CheckQuestion";
 import ModuleCheck from "@/components/ModuleCheck";
 import DecisionScenario from "@/components/DecisionScenario";
@@ -165,6 +166,31 @@ export default function ModuleStudy() {
 
      فتُقال الحقيقة: قيد التأليف، وموعدُها موعدُ جلستها في جدولك. ولا يُوعَد
      بإشعارٍ لا مُرسِلَ له. */
+  /* ═══ ع-٢: والمحتوى النظريُّ قد يكون ملفّا ═══
+
+     «قيد التأليف» تُقال لمن لا متنَ له **ولا ملفّ**. ومن أرفق مدرّبُه وثيقةً
+     فوحدتُه جاهزةٌ — وعرضُ «قيد التأليف» عليها يخفي ما رُفع لأجله. */
+  if (!mod.body?.trim() && mod.bodyFileKey) {
+    return (
+      <PortalLayout title={mod.title}>
+        <Panel as="section" className="md:p-9">
+          <h2 className="text-xl font-black leading-snug md:text-2xl">{mod.title}</h2>
+          {mod.outcome && (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              <span className="font-bold text-foreground">ما ستخرج به منها: </span>{mod.outcome}
+            </p>
+          )}
+          <ModuleBodyDoc
+            storageKey={mod.bodyFileKey}
+            mime={mod.bodyFileMime}
+            name={mod.bodyFileName}
+            className="mt-6"
+          />
+        </Panel>
+      </PortalLayout>
+    );
+  }
+
   if (!mod.body?.trim()) {
     return (
       <PortalLayout title={mod.title}>
@@ -266,6 +292,17 @@ export default function ModuleStudy() {
           {pos === 0 && mod.video && <ModuleVideo raw={mod.video} checksRaw={mod.checks} moduleId={mod.id} className="mt-5" />}
 
           <LessonBody body={step.body} className="mt-5 text-base leading-9" />
+
+          {/* ع-٢: من كتب **ورفع** فله الاثنان — والملفُّ مع الدرس الأوّل
+              وحدَه، فهو متنُ الوحدة كلِّها لا متنُ خطوةٍ منها. */}
+          {pos === 0 && mod.bodyFileKey && (
+            <ModuleBodyDoc
+              storageKey={mod.bodyFileKey}
+              mime={mod.bodyFileMime}
+              name={mod.bodyFileName}
+              className="mt-8"
+            />
+          )}
 
           {/* استرجاعٌ بعد الدرس مباشرة — لا في آخر الوحدة وحدها */}
           {step.checks.length > 0 && (

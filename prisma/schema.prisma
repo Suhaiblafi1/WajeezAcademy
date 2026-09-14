@@ -1797,6 +1797,7 @@ model Cohort {
 
   @@index([courseId, status])
   departureCases      DepartureCase[]
+  moduleBodyFiles     ModuleBodyFile[]
 }
 
 /// ═══ رابطُ دعوةِ المدرّب — لكلّ شعبةٍ رابطٌ لا يشترك فيه غيرُه ═══
@@ -3189,4 +3190,33 @@ model Favorite {
   /// لا يُحفظ الشيءُ مرّتَين لصاحبٍ واحد — والقلبُ يُنقر مرارا
   @@unique([userId, kind, refId])
   @@index([userId, createdAt])
+}
+
+
+/// ملفُّ المحتوى النظريِّ لمحور (ع-٢) — بديلٌ عن كتابته لا إضافةٌ إليه.
+///
+/// ═══ ولمَ صفٌّ والخطّةُ JSON ═══
+///
+/// محاورُ خطّةِ المدرّب تسكن `CohortDeliveryPlan.content` — ولا مفتاحَ
+/// تخزينٍ في JSON يعرفه `resolveStorageOwner`، وهو الذي يقرّر سقفَ الرفع
+/// وصاحبَ الملفّ. فبلا صفٍّ لا يُقبل رفعٌ أصلا.
+///
+/// والخطّةُ تشير إليه بمفتاحه (`bodyFileKey`)، فتنتقل الإشارةُ مع نسخِ
+/// الخطّة كما ينتقل `bodyAr`: خطّةٌ مُتجاوَزةٌ تبقى تشير إلى ملفِّها هي.
+/// ولذلك لا قيدَ فريدٌ على (الشعبة · المحور): نسخةٌ جديدةٌ قد ترفع ملفّا
+/// ثانيا والأوّلُ ما زال مقروءا في نسخةٍ سابقة. والوحدانيّةُ يفرضها شكلُ
+/// JSON — حقلٌ واحدٌ لا مصفوفة.
+model ModuleBodyFile {
+  id           String   @id @default(uuid()) @db.Uuid
+  cohortId     String   @db.Uuid
+  moduleId     String
+  storageKey   String   @unique // خاصّ — لا يُقدَّم إلّا برابطٍ موقَّعٍ بعد فحص الصلاحيّة
+  originalName String
+  mime         String
+  sizeBytes    Int?
+  uploadedBy   String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  cohort       Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@index([cohortId, moduleId])
 }

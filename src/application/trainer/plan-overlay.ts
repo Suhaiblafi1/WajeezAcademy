@@ -85,6 +85,10 @@ export interface CatalogModuleLike {
   activity?: string | null
   artifact?: string | null
   body?: string | null
+  /** ع-٢: يأتي من الخطّة وحدَها — لا ملفَّ متنٍ في الكتالوج */
+  bodyFileKey?: string | null
+  bodyFileName?: string | null
+  bodyFileMime?: string | null
 }
 
 /** ما يعلو به المدرّب — الشكلُ نفسُه الذي يحفظه في خطّته */
@@ -95,6 +99,13 @@ export interface PlanModuleLike {
   activityAr?: string | null
   artifactAr?: string | null
   bodyAr?: string | null
+  /** ع-٢: ملفٌّ يقرؤه المتعلّمُ بدلا من متنٍ مكتوب */
+  bodyFileKey?: string | null
+  /* واسمُه ونوعُه لقطةٌ تسكن الخطّةَ لا تُقرأ من صفٍّ عند كلّ فتحة: الشاشةُ
+     تحتاج النوعَ لتعرف أيُعرض في مكانه أم يُنزَّل، وطلبٌ ثانٍ لأجل ذلك
+     يؤخّر أوّلَ ما يراه المتعلّم. والصفُّ يبقى مالكَ البايتات وحارسَها. */
+  bodyFileName?: string | null
+  bodyFileMime?: string | null
 }
 
 /** ما تعلو به الخطّةُ — المشروعُ من محتواها إلى المتعلّم لا كلُّه */
@@ -118,17 +129,12 @@ export function planIsVisible(status: string | null | undefined): boolean {
   return (PLAN_VISIBLE_STATUSES as readonly string[]).includes(status ?? '')
 }
 
-/* ═══ أقلُّ ما يُعدّ محتوًى نظريّا ═══
+/* ── ونُقلت أرضيّةُ المتن إلى `module-body.ts` (ع-٢) ──
 
-   صار «المحتوى النظريّ» شرطا لاعتماد الشعبة (د-١، ١٣ سبتمبر ٢٠٢٦). والأرضيّةُ
-   أربعون حرفا لا حرفٌ واحد: «x» ليس محتوًى، وشرطٌ يمرّ بحرفٍ شرطٌ صوريٌّ
-   يُتعلَّم الالتفافُ عليه في أوّل شعبة. وأربعون جملةٌ قصيرةٌ — أقلُّ ما يُقرأ
-   لا أكثرُ ما يُطلَب.
-
-   وموضعُه هنا لا في الخادم: تقرؤه شاشةُ المدرّب لتسمّي المحاورَ الناقصة،
-   ويقرؤه الخادمُ ليقرّر جاهزيّةَ المرحلة. ورقمان يقولان الشيءَ نفسَه
-   يفترقان — فيُقال له «تمّ» ويُردّ إرسالُه. */
-export const MIN_MODULE_BODY = 40
+   صار للمتن بديلٌ: ملفٌّ يُرفق. فقاعدةُ «متى يتمّ المحور» لم تعد رقما بل
+   قسمةً بين المكتوب والمرفوع، ومسكنُها مع القسمة. وتُصدَّر من هنا كما كانت
+   فلا يُكسَر مستوردٌ قائم — والقيمةُ واحدةٌ في الموضعَين لأنّها واحدة. */
+export { MIN_MODULE_BODY } from './module-body'
 
 /** نصٌّ ذو معنى — والفراغُ والمسافاتُ وحدَها ليست كتابة */
 function written(v: string | null | undefined): string | null {
@@ -143,24 +149,38 @@ function written(v: string | null | undefined): string | null {
  * ما أضافه المدرّبُ من محاورَ ليست في الكتالوج بترتيب خطّته. و`fromTrainer`
  * تقول عن كلّ حقلٍ مَن كتبه — تستعملها الشاشةُ لتنسب المتنَ إلى مدرّبه.
  */
+/* ع-٢: الخارجُ يحمل ملفَّ المتن صراحةً — تضيفه هذه الدالّةُ فعلا، فلو
+   بقي النوعُ `T` وحدَه لَقرأته الشاشةُ بـ`as any` أو لم تقرأه أصلا. */
+type Overlaid<T> = T & {
+  fromTrainer: boolean
+  bodyFileKey: string | null
+  bodyFileName: string | null
+  bodyFileMime: string | null
+}
+
 export function overlayModules<T extends CatalogModuleLike>(
   catalog: readonly T[],
   plan: LearnerPlanView | null,
-): (T & { fromTrainer: boolean })[] {
-  if (!plan || plan.modules.length === 0) {
-    return catalog.map((m) => ({ ...m, fromTrainer: false }))
-  }
+): Overlaid<T>[] {
+  /* بلا خطّةٍ لا ملفَّ متن: الكتالوجُ لا يحمله. وتُكتب `null` صراحةً فلا
+     يتسرّب `undefined` إلى شاشةٍ تسأل «أثمّ ملفّ؟». */
+  const bare = (m: T): Overlaid<T> =>
+    ({ ...m, fromTrainer: false, bodyFileKey: null, bodyFileName: null, bodyFileMime: null })
+
+  if (!plan || plan.modules.length === 0) return catalog.map(bare)
   const byId = new Map<string, PlanModuleLike>()
   for (const m of plan.modules) byId.set(m.moduleId, m)
 
-  const out: (T & { fromTrainer: boolean })[] = catalog.map((m) => {
+  const out: Overlaid<T>[] = catalog.map((m) => {
     const over = byId.get(m.id)
-    if (!over) return { ...m, fromTrainer: false }
+    if (!over) return bare(m)
     const title = written(over.titleAr)
     const outcome = written(over.outcomeAr)
     const activity = written(over.activityAr)
     const artifact = written(over.artifactAr)
     const body = written(over.bodyAr)
+    /* ع-٢: الملفُّ من الخطّة وحدَها — والكتالوجُ لا يحمل ملفَّ متن */
+    const bodyFileKey = written(over.bodyFileKey)
     return {
       ...m,
       title: title ?? m.title,
@@ -168,10 +188,13 @@ export function overlayModules<T extends CatalogModuleLike>(
       activity: activity ?? m.activity ?? null,
       artifact: artifact ?? m.artifact ?? null,
       body: body ?? m.body ?? null,
+      bodyFileKey,
+      bodyFileName: written(over.bodyFileName),
+      bodyFileMime: written(over.bodyFileMime),
       /* «من مدرّبك» تُقال حين كتب شيئا فعلا — لا لمجرّد بقاءِ المحور
-         في خطّته بحقولٍ فارغة. */
-      fromTrainer: Boolean(title ?? outcome ?? activity ?? artifact ?? body),
-    } as T & { fromTrainer: boolean }
+         في خطّته بحقولٍ فارغة. وملفٌّ رفعه كتابةٌ منه أيضا. */
+      fromTrainer: Boolean(title ?? outcome ?? activity ?? artifact ?? body ?? bodyFileKey),
+    } as Overlaid<T>
   })
 
   /* ما أضافه المدرّبُ ممّا ليس في الكتالوج — في ذيل القائمة بترتيب خطّته */
@@ -186,7 +209,7 @@ export function overlayModules<T extends CatalogModuleLike>(
       artifact: written(m.artifactAr),
       body: written(m.bodyAr),
       fromTrainer: true,
-    } as unknown as T & { fromTrainer: boolean })
+    } as unknown as Overlaid<T>)
   }
   return out
 }
@@ -196,7 +219,7 @@ export function overlayModule<T extends CatalogModuleLike>(
   catalogModule: T | null | undefined,
   plan: LearnerPlanView | null,
   moduleId: string,
-): (T & { fromTrainer: boolean }) | null {
+): Overlaid<T> | null {
   const catalog = catalogModule ? [catalogModule] : []
   return overlayModules(catalog, plan).find((m) => m.id === moduleId) ?? null
 }
@@ -230,6 +253,11 @@ export function projectPlanForLearner(
           activityAr: m.activityAr ?? null,
           artifactAr: m.artifactAr ?? null,
           bodyAr: m.bodyAr ?? null,
+          /* ع-٢: يصل المتعلّمَ مفتاحُ الملفّ لا الملفّ — وقراءتُه تمرّ
+             بحارسٍ يتحقّق من التحاقه بالشعبة. */
+          bodyFileKey: m.bodyFileKey ?? null,
+          bodyFileName: m.bodyFileName ?? null,
+          bodyFileMime: m.bodyFileMime ?? null,
         }))
       : [],
     resources: Array.isArray(c.resources)

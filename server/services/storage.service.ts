@@ -22,6 +22,7 @@ import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { getObject } from './object-store'
+import { MAX_BODY_FILE_BYTES } from '../../src/application/trainer/module-body'
 
 /* التطوير وحده يبلغ هذا المسار. وcwd لا import.meta.url: الأخير يصير
    `/var/task/api` في الحزمة فيصعد فوق النشر. */
@@ -195,7 +196,7 @@ export function newStorageKey(): string {
    يملكه سجلٌّ — فلا يبقى على القرص ما لا يعرفه أحد ولا يحذفه أحد. */
 export type StorageOwnerKind =
   | 'trainer_document' | 'cv' | 'recording' | 'material' | 'submission' | 'assessment_response'
-  | 'trainer_photo' | 'avatar'
+  | 'trainer_photo' | 'avatar' | 'module_body'
 
 export interface StorageOwner {
   kind: StorageOwnerKind
@@ -279,6 +280,22 @@ export async function resolveStorageOwner(
     where: { photoPendingKey: storageKey }, select: { id: true },
   })
   if (pending) return { kind: 'trainer_photo', maxBytes: MAX_PHOTO_BYTES }
+
+  /* ═══ والتاسعُ: ملفُّ المحتوى النظريّ (ع-٢) ═══
+
+     الصفُّ يُكتب قبل إصدار رابط الرفع، فيعرفه هذا هنا ويعرف نوعَه المعلَن.
+     ولولاه لَرُدّ الرفعُ: مفتاحٌ لا يعرفه أحدٌ لا سقفَ له. */
+  const body = await prisma.moduleBodyFile.findUnique({
+    where: { storageKey }, select: { mime: true, originalName: true },
+  })
+  if (body) {
+    return {
+      kind: 'module_body',
+      maxBytes: MAX_BODY_FILE_BYTES,
+      mime: body.mime,
+      originalName: body.originalName,
+    }
+  }
 
   return null
 }
