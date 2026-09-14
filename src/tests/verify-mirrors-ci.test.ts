@@ -1,19 +1,27 @@
 /* أمرُ التحقّق يطابق البوّابةَ — حارسُ الخطإ الذي كلّفني دفعتَين حمراوَين.
  *
- * ── ما وقع ──
+ * ── ما وقع أوّلا ──
  *
  * شغّلتُ `npx tsc --noEmit` قبل كلّ دمجٍ فمرّ نظيفا. **و`tsconfig.json` ملفُّ
  * حلٍّ بمراجعَ فقط: فحصُه لا يفحص شيئا** — والتعليقُ فوق خطوة البوّابة يقول
  * ذلك حرفا. فمرّت ٩٤ خطأَ نوعٍ إلى `main` واحمرّت البوّابةُ دفعتَين.
  *
- * ── ولماذا حارسٌ لا عزمٌ على الانتباه ──
+ * ── وما وقع ثانيا: هذا الحارسُ نفسُه كان أخضرَ وهو لا يحرس ──
  *
- * الفرقُ بين ما أشغّله وما تشغّله البوّابةُ لا يُحمِّر شيئا عندي — بل يُخفي
- * الأخطاء. وهو الصنفُ الذي لا يُصلحه التذكّر: يُصلحه أن يصير للتحقّق **أمرٌ
- * واحدٌ في `package.json`**، وأن يُقاس أنّه ما زال يطابق البوّابة.
+ * كُتب فوقُ: «فإن أُضيفت خطوةٌ إلى البوّابة ولم تُضَف إلى `verify`، احمرّ هذا
+ * الاختبارُ وقال أيَّها». **ولم يكن يفعل.** كان يقارن بقائمةٍ مكتوبةٍ باليد
+ * من أربع خطوات، والبوّابةُ أربعَ عشرة. فمرّت `ci:locale` سنينَ خارجَ
+ * `verify` والحارسُ أخضر — حتّى احمرّت البوّابةُ على `toLocaleDateString("ar")`
+ * في شاشةٍ شُحنت بعد `verify` نظيف (١٤ سبتمبر ٢٠٢٦).
  *
- * فإن أُضيفت خطوةٌ إلى البوّابة ولم تُضَف إلى `verify`، احمرّ هذا الاختبارُ
- * وقال أيَّها. */
+ * وهو عينُ العطب الذي يحرسه: فرقٌ بين ما أشغّله وما تشغّله البوّابة. وقد
+ * كُتب في `ci.yml` نفسِه مرّتَين عن بوّاباتٍ أخرى: «معرَّفةٌ ولا يناديها
+ * أحد». فالقائمةُ اليدويّةُ هي الداء لا الدواء.
+ *
+ * ── والعلاج: تُقرأ الخطواتُ من `ci.yml` نفسِه ──
+ *
+ * فما يُضاف إلى البوّابة غدا يدخل هذا الفحصَ بلا أن يذكره أحد. وما لا
+ * يُشغَّل محلّيّا يُسمّى هنا **بزمنِه المقيس** — استثناءٌ مُعلَنٌ لا نسيان. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -26,23 +34,89 @@ const read = (p: string) => readFileSync(join(root, p), 'utf8')
 const pkg = JSON.parse(read('package.json')) as { scripts: Record<string, string> }
 const ci = read('.github/workflows/ci.yml')
 
-/** أوامرُ الوظيفة السريعة في البوّابة — ما يُفحَص قبل كلّ دمج */
-const GATE = [
-  { what: 'أنواعُ الواجهة', run: 'tsc --noEmit -p tsconfig.app.json' },
-  { what: 'أنواعُ الخادم', run: 'tsc --noEmit -p tsconfig.node.json' },
-  { what: 'دينُ التلويم', run: 'scripts/lint-baseline.ts' },
-  { what: 'اختباراتُ الواجهة', run: 'vitest run src/tests' },
+/** يُفَكّ `npm run x` إلى ما يعنيه — فالمقارنةُ على الأمر لا على اسمه */
+function expand(cmd: string, depth = 0): string {
+  if (depth > 5) return cmd
+  return cmd.replace(/npm run ([\w:-]+)/g, (whole, name: string) =>
+    pkg.scripts[name] ? expand(pkg.scripts[name], depth + 1) : whole)
+}
+
+/** `npx` زينةٌ في المقارنة: البوّابةُ تكتبه و`package.json` لا يكتبه */
+const norm = (s: string) => s.replace(/\bnpx\s+/g, '').replace(/\s+/g, ' ').trim()
+
+/* خطواتُ الوظيفة السريعة كما هي في `ci.yml` — تُقرأ ولا تُكتب هنا.
+
+   وتُستبعد خطواتُ التهيئة (`npm ci` و`prisma generate`) لأنّها ليست فحصا،
+   والخطواتُ متعدّدةُ الأسطر (`run: |`) لأنّها سكربتاتٌ لا أمرٌ واحد. */
+function gateSteps(): string[] {
+  const fast = ci.slice(ci.indexOf('  fast:'), ci.indexOf('\n  server:') + 1 || undefined)
+  const out: string[] = []
+  for (const m of fast.matchAll(/^ {8}run: (?!\|)(.+)$/gm)) {
+    const cmd = norm(m[1])
+    if (/^npm ci$/.test(cmd) || /prisma generate/.test(cmd)) continue
+    out.push(cmd)
+  }
+  return out
+}
+
+/** ما لا يُشغَّل في `verify` — ومعه زمنُه المقيس، فالاستثناءُ قرارٌ لا سهو.
+ *
+ *  ── والأرقامُ مقيسةٌ على هذا الجهاز في ١٤ سبتمبر ٢٠٢٦ ──
+ *
+ *  كلُّ بوّابةٍ وحدَها: ترحيلاتٌ ٠ث · تراكباتٌ ١ث · رحلاتٌ ١ث · تغطيةٌ ١ث ·
+ *  فضاءُ التوصيات ١ث · كتالوجٌ ٢ث · لغةٌ ٠٫٣ث · تأليفٌ ١٤ث.
+ *
+ *  فضُمَّت ثمانيتُها. و`verify` بعدها **٣ دقائقَ و١٥ ثانية** — لا مجموعَ
+ *  أزمنتها وحدَه: لكلِّ `npx tsx` إقلاعٌ باردٌ يُحسب. والزيادةُ نحوُ دقيقة،
+ *  ثمنا لثغرةٍ كلّفت دفعةً حمراءَ بعد `verify` نظيف.
+ *
+ *  وما بقي خارجا أُقصي بزمنه لا بظنّ. */
+const OUTSIDE: { run: string; whyAr: string }[] = [
+  {
+    run: 'npm run ci:question-waste',
+    whyAr: 'قياسٌ مضادٌّ للواقع على ٣٠٠ جلسة — ٥٩ ثانيةً مقيسة، تضاعف زمنَ الأمر. '
+      + 'وأمرٌ يطول يُهجَر، وبوّابةٌ تُهجَر أسوأُ من بوّابةٍ تتأخّر إلى CI.',
+  },
+  {
+    run: 'npm run build',
+    whyAr: 'بناءُ الإنتاج — و`typecheck` يمسك أخطاءَ الأنواع قبله، فما يزيده '
+      + 'البناءُ وحدَه نادرٌ وثمنُه في كلّ تحقّقٍ غيرُ مقبول.',
+  },
 ]
 
 describe('«npm run verify» يطابق ما تفحصه البوّابة', () => {
+  const steps = gateSteps()
+  const verifyAll = norm(`${expand(pkg.scripts.verify)} ${expand(pkg.scripts.typecheck)}`)
+
   it('الأمرُ معرَّفٌ — فلا يُخترع في كلّ مرّة', () => {
     expect(pkg.scripts.verify, 'لا أمرَ تحقّقٍ واحد').toBeTruthy()
     expect(pkg.scripts.typecheck).toBeTruthy()
   })
 
-  it.each(GATE)('يشمل $what', ({ run }) => {
-    const all = `${pkg.scripts.verify} ${pkg.scripts.typecheck}`
-    expect(all, `البوّابةُ تفحصه و«verify» لا يفحصه: ${run}`).toContain(run)
+  it('والقراءةُ من `ci.yml` تجد خطواتِ البوّابة فعلا — فلا يمرّ بصفرٍ كاذب', () => {
+    /* الحارسُ القديمُ كان يقارن بأربعٍ مكتوبةٍ باليد والبوّابةُ أربعَ عشرة.
+       فإن عاد المسحُ بعددٍ صغيرٍ فالعطبُ في القراءة لا في البوّابة. */
+    expect(steps.length, 'تعطّلت قراءةُ `ci.yml` نفسُها').toBeGreaterThanOrEqual(10)
+    expect(steps).toContain('tsc --noEmit -p tsconfig.app.json')
+    expect(steps).toContain('vitest run src/tests')
+  })
+
+  it('كلُّ خطوةٍ في البوّابة إمّا في `verify` وإمّا مُسمّاةٌ بسببها', () => {
+    const missing = steps.filter((s) =>
+      !verifyAll.includes(norm(expand(s))) && !OUTSIDE.some((o) => norm(expand(o.run)) === norm(expand(s))))
+    expect(
+      missing,
+      'البوّابةُ تفحصها و«verify» لا يفحصها ولا هي في `OUTSIDE` بسببها:\n' + missing.join('\n'),
+    ).toEqual([])
+  })
+
+  it('وما استُثني ما زال في البوّابة — فلا يُحرَس عذرٌ لخطوةٍ زالت', () => {
+    /* استثناءٌ لخطوةٍ حُذفت من `ci.yml` يُطيل القائمةَ بلا معنى ويخفي أنّها زالت */
+    for (const o of OUTSIDE) {
+      expect(steps.map((s) => norm(expand(s))), `استثناءٌ لا وجودَ له في البوّابة: ${o.run}`)
+        .toContain(norm(expand(o.run)))
+      expect(o.whyAr.length, `استثناءٌ بلا سبب: ${o.run}`).toBeGreaterThan(40)
+    }
   })
 
   it('ولا يفحص `tsconfig.json` — ملفُّ حلٍّ بمراجعَ لا يفحص شيئا', () => {
@@ -50,8 +124,7 @@ describe('«npm run verify» يطابق ما تفحصه البوّابة', () =>
     expect(pkg.scripts.typecheck).not.toMatch(/tsc --noEmit(?! -p)/)
   })
 
-  it('وكلُّ خطوةٍ يعدّها الحارسُ موجودةٌ في البوّابة فعلا', () => {
-    /* وإلّا حرس الحارسُ بوّابةً متخيَّلة */
-    for (const { run } of GATE) expect(ci, `ليست في ci.yml: ${run}`).toContain(run)
+  it('وبوّابةُ اللغة فيه — وهي الخطوةُ التي أثبتت أنّ القائمةَ اليدويّة لا تحرس', () => {
+    expect(verifyAll, '`ci:locale` خارجَ `verify` ثانيةً').toContain('scripts/audit-locale.ts --check')
   })
 })

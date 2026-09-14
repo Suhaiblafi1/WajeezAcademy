@@ -34,6 +34,7 @@ import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
+import { fmtDate } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -263,7 +264,7 @@ export default function AssignByTrainer() {
                         <p className="text-read font-black text-foreground">{c.title}</p>
                         <p className="mt-0.5 text-read text-muted-foreground">
                           {c.courseTitle}
-                          {c.startsAt && <> · تبدأ {new Date(c.startsAt).toLocaleDateString("ar")}</>}
+                          {c.startsAt && <> · تبدأ {fmtDate(c.startsAt)}</>}
                           {" · "}{c.enrolled}{c.capacity ? ` من ${c.capacity}` : ""} التحقوا
                           {other.length > 0 && <> · عليها {other.map((x) => x.name).join(" و")}</>}
                         </p>
