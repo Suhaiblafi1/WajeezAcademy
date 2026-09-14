@@ -38,6 +38,17 @@ interface UserRow {
   emailVerified: boolean;
 }
 
+/* ═══ الحذفُ جملةً: الشاشةُ تعرض قسمةَ الخادم ولا تحسبها (القسم ل) ═══
+
+   `whyAr` يأتي من `src/application/admin/bulk-purge.ts` عبر الخادم — فلو
+   حسبت الشاشةُ هنا «أيُحذف هذا؟» لصار للقاعدة صاحبان، ولاختلفا يوم يتغيّر
+   أحدُهما. وهي تعرض ما قيل لها، والخادمُ يُعيد الحسابَ عند التنفيذ. */
+interface BulkPreview {
+  rows: { id: string; email: string; displayName: string; roles: string[]; deletable: boolean; whyAr: string | null }[];
+  deletable: number;
+  refused: number;
+}
+
 /** حالاتُ الحساب الأربع بالعربيّة ولونِها — «مدعوّ» ليس «نشطا» */
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   active: { label: "نشط", cls: "border-emerald-400/30 text-emerald-300" },
@@ -118,6 +129,13 @@ export default function Users() {
   /* المحوُ بالسجلّ حبّةٌ مستقلّة — بالصلاحية لا بالدور، فالشاشةُ لا تفحص
      أدوارا أبدا (يحرسه `src/tests/admin-permissions.test.ts`). */
   const canPurgeHistory = can("admin.users.purge_history");
+  /* ل-١ · ل-٢: الحذفُ جملةً لمن يملك حبّتَه — والمديرُ الأعلى وحدَه يملكها،
+     إذ لا تُفوَّض. ومن لا يملكها لا يرى مربّعَ اختيارٍ أصلا. */
+  const canPurgeBulk = can("admin.users.purge_bulk");
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  /* والعددُ المكتوبُ يسكن في `ConfirmAction` لا هنا: هو صاحبُ حقلِ التأكيد
+     في هذه المنصّة كلِّها، ونسخُ الحقل هنا يجعل له صاحبَين. */
+  const [preview, setPreview] = useState<BulkPreview | null>(null);
   const [permFor, setPermFor] = useState<string | null>(null);
   const [perms, setPerms] = useState<PermView | null>(null);
   const [permReason, setPermReason] = useState("");
@@ -190,6 +208,38 @@ export default function Users() {
       toast("مُحي الحساب بسجلّه كلّه — والأثرُ محفوظ.");
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل المحو"); }
+    finally { setBusy(false); }
+  };
+
+  /* ═══ الحذفُ جملةً — خطوتان لا واحدة (القسم ل) ═══
+
+     الأولى تسأل الخادمَ: من في هؤلاء يُحذف ومن يُردّ ولماذا؟ والثانيةُ
+     تنفّذ بعد أن يُكتب عددُ ما سيُحذف فعلا. ولا شيء بينهما يقع.
+
+     وما يُرسَل إلى التنفيذ هو المختارُ كلُّه لا المقبولُ منه: الخادمُ يُعيد
+     القسمةَ من جديد، فلو اشترى أحدُهم دورةً بين المعاينة والضغط رُدَّ وقيل
+     إنّ العددَ تغيّر — ولو أرسلنا المقبولَ وحدَه لَضاع هذا الفحص. */
+  const openBulkPreview = async () => {
+    if (busy || picked.size === 0) return;
+    setBusy(true);
+    try {
+      setPreview(await apiPost<BulkPreview>("/api/admin/users/bulk-purge/preview", { ids: [...picked] }));
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّرت المعاينة"); }
+    finally { setBusy(false); }
+  };
+
+  const runBulkPurge = async (confirmCount: string) => {
+    setBusy(true);
+    try {
+      const res = await apiPost<{ purged: number; refused: number }>(
+        "/api/admin/users/bulk-purge", { ids: [...picked], confirmCount });
+      /* والرسالةُ تقول الرقمَين: «تمّ» وحدَها كذبٌ حين يُردّ نصفُ الدفعة */
+      toast(res.refused > 0
+        ? `حُذف ${res.purged} حسابا · رُدّ ${res.refused} لِما يحمله`
+        : `حُذف ${res.purged} حسابا نهائيّا.`);
+      setPicked(new Set()); setPreview(null);
+      await load();
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الحذف جملةً"); }
     finally { setBusy(false); }
   };
 
@@ -377,6 +427,40 @@ export default function Users() {
         </div>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
           placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
+        {/* ═══ شريطُ الدفعة — يظهر حين يُختار شيء، ويبقى عبر الخانات ═══
+
+            والعددُ مكتوبٌ فيه لا مخبوء: من اختار في «النشطة» ثمّ انتقل إلى
+            «المؤرشَفة» يرى أنّ عندَه سبعةً مختارةً بعدُ، ويقرأ أسماءَهم كلَّهم
+            في المعاينة قبل أن يقع شيء. */}
+        {canPurgeBulk && (
+          <Card className="mb-3 flex flex-wrap items-center gap-3">
+            <Button tone="ghost" size="sm" disabled={view.rows.length === 0}
+              onClick={() => setPicked((prev) => {
+                const next = new Set(prev);
+                const ids = view.rows.map((u) => u.id);
+                /* إن كان المعروضُ كلُّه مختارا فالضغطةُ تنزعه — زرٌّ واحدٌ يفعل ونقيضَه */
+                if (ids.every((id) => next.has(id))) ids.forEach((id) => next.delete(id));
+                else ids.forEach((id) => next.add(id));
+                return next;
+              })}>
+              {view.rows.length > 0 && view.rows.every((u) => picked.has(u.id))
+                ? `انزع المعروض (${view.rows.length})`
+                : `اختر المعروض (${view.rows.length})`}
+            </Button>
+            {picked.size === 0 ? (
+              <span className="text-fine text-muted-foreground">لا حساب مختار — اختر ما تريد حذفَه جملةً.</span>
+            ) : (
+              <>
+                <span className="text-read font-black">{picked.size} مختارا</span>
+                <Button tone="danger" size="sm" icon={Trash2} loading={busy}
+                  onClick={() => void openBulkPreview()}>
+                  عايِن الحذف
+                </Button>
+                <Button tone="ghost" size="sm" onClick={() => setPicked(new Set())}>ألغِ الاختيار</Button>
+              </>
+            )}
+          </Card>
+        )}
         {view.total === 0 ? (
           <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
             {q.trim()
@@ -390,6 +474,22 @@ export default function Users() {
           {view.rows.map((u) => (
             <Card key={u.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                {/* مربّعُ الاختيار ملاصقٌ للاسم لا في طرف البطاقة: من يضغطه
+                    يقرأ من يختار في النظرة نفسِها. */}
+                {canPurgeBulk && (
+                  <input
+                    type="checkbox"
+                    checked={picked.has(u.id)}
+                    onChange={(e) => setPicked((prev) => {
+                      const next = new Set(prev);
+                      if (e.target.checked) next.add(u.id); else next.delete(u.id);
+                      return next;
+                    })}
+                    aria-label={`اختر ${u.displayName || u.email} للحذف جملةً`}
+                    className="h-4 w-4 shrink-0 accent-red-400"
+                  />
+                )}
                 <div>
                   <p className="font-black">{u.displayName || "—"} <span className="mr-2 text-fine font-normal text-muted-foreground" dir="ltr">{u.email}</span></p>
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -416,6 +516,7 @@ export default function Users() {
                     {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
                     {u.denies > 0 && <span className="rounded-full border border-red-400/40 px-2.5 py-0.5 text-fine font-bold text-red-300">−{u.denies} ممنوعة</span>}
                   </div>
+                </div>
                 </div>
                 <div className="flex gap-2">
                   {canManage && (
@@ -623,6 +724,73 @@ export default function Users() {
         </div>
         )}
         </>
+      )}
+
+      {/* ═══ المعاينةُ هي البند، لا الحذف (ل-٣) ═══
+
+          من اختار أربعين لن يُحذف له أربعون: تُحذف الفارغةُ وتُردّ من تحمل
+          شهادةً أو طلبا أو تسجيلا. فتُقرأ القسمةُ هنا قبل أن يقع شيء —
+          هؤلاء يُحذفون، وهؤلاء لا، وهذا ما يحمله كلُّ واحدٍ منهم.
+
+          والعددُ يُكتب لا كلمة (ل-٥): «اكتب delete» تُكتب بلا قراءة، ومن
+          ظنّ أنّه يحذف ثلاثةً فرأى نفسَه يكتب ٣١ توقّف. والمكتوبُ يُرسَل
+          إلى الخادم فيقابله بما يراه هو لحظتَها — فإن تغيّرت القسمةُ بين
+          القراءة والضغط رُدّت الدفعةُ وقيل العددُ الجديد. */}
+      {preview && (
+        <ConfirmAction
+          titleAr={preview.deletable > 0
+            ? `حذفُ ${preview.deletable} حسابا جملةً — لا رجعةَ فيه`
+            : "لا حساب في هذا الاختيار يُحذف"}
+          confirmLabelAr={preview.deletable > 0 ? `احذف ${preview.deletable} حسابا` : "أغلِق"}
+          busy={busy}
+          tone={preview.deletable > 0 ? "danger" : "default"}
+          typing={preview.deletable > 0
+            ? { expected: String(preview.deletable), labelAr: "اكتب عددَ ما سيُحذف فعلا لتأكيد القصد" }
+            : undefined}
+          onCancel={() => setPreview(null)}
+          onConfirm={() => {
+            if (preview.deletable === 0) { setPreview(null); return; }
+            void runBulkPurge(String(preview.deletable));
+          }}
+        >
+          <p>
+            اخترتَ {preview.rows.length} حسابا:
+            <b className="text-foreground"> {preview.deletable} يُحذف</b>
+            {preview.refused > 0 && <> · <b className="text-foreground">{preview.refused} يُردّ</b></>}.
+          </p>
+
+          {preview.deletable > 0 && (
+            <Inset>
+              <p className="font-black text-red-300">يُحذفون نهائيّا ({preview.deletable}):</p>
+              <ul className="mt-1.5 space-y-1">
+                {preview.rows.filter((r) => r.deletable).map((r) => (
+                  <li key={r.id}>
+                    {r.displayName || "—"} <span dir="ltr" className="font-mono text-muted-foreground">{r.email}</span>
+                  </li>
+                ))}
+              </ul>
+            </Inset>
+          )}
+
+          {preview.refused > 0 && (
+            <Inset>
+              <p className="font-black">لا يُحذفون ({preview.refused}) — وهذا ما يحمله كلٌّ منهم:</p>
+              <ul className="mt-1.5 space-y-1.5">
+                {preview.rows.filter((r) => !r.deletable).map((r) => (
+                  <li key={r.id}>
+                    <span className="font-bold">{r.displayName || "—"}</span>{" "}
+                    <span dir="ltr" className="font-mono text-muted-foreground">{r.email}</span>
+                    <span className="block text-muted-foreground">{r.whyAr}</span>
+                  </li>
+                ))}
+              </ul>
+            </Inset>
+          )}
+
+          {preview.deletable > 0 && (
+            <p>ولا يُمحى سجلٌّ من هنا: من حمل شيئا رُدّ ولم يُحذف قسرا — والمحوُ بالسجلّ يبقى حسابا حسابا بسببٍ يُكتب.</p>
+          )}
+        </ConfirmAction>
       )}
 
       {confirming?.kind === "verifyEmail" && (

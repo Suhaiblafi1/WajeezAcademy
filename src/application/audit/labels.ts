@@ -23,6 +23,8 @@ const PHRASES: Record<string, string> = {
   'admin.user.unarchive': 'إعادةُ تنشيطِ حساب',
   'admin.user.purge': 'حذفُ حسابٍ نهائيّا',
   'admin.user.purge_with_history': 'محوُ حسابٍ بسجلّه كلّه',
+  /* ل-٦: صفٌّ واحدٌ يجمع الدفعةَ — فلا تُقرأ حذوفا متفرّقةً في ثانية */
+  'admin.users.purge_bulk': 'حذفُ حساباتٍ جملةً',
   /* البند ٦٦ — أخطرُ فعلين في السجلّ، ولذلك يُسمَّيان بما يفعلانه لا برمزهما */
   'accounts.reset_purge': 'إعادةُ ضبط الحسابات — محوٌ نهائيّ',
   'accounts.reset_archive': 'إعادةُ ضبط الحسابات — أرشفة',
