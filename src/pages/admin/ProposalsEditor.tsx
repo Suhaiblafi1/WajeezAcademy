@@ -29,12 +29,12 @@ import { Inset } from "@/components/ui/Surface";
 import { staffControlCls as controlCls } from "@/components/FormKit";
 import { apiPut, ApiError } from "@/services/api";
 import {
-  MAX_PROPOSALS, emptyProposal, proposalLine, readProposals,
+  MAX_PROPOSALS, emptyProposal, readProposals,
   type TeachableProposal,
 } from "@/application/trainer/teachable-proposals";
 
 export default function ProposalsEditor({
-  applicationId, raw, teachableOther, onLink, onSaved,
+  applicationId, raw, teachableOther, onSaved,
 }: {
   applicationId: string
   /** العمودُ كما هو في القاعدة — يُقرأ بالدالّة المشتركة لا بفكٍّ يدويّ */
@@ -42,7 +42,6 @@ export default function ProposalsEditor({
   /** فقرةُ الطلبات التي سبقت السجلّات — تُعرض مرجعا ولا تُمحى */
   teachableOther: string | null
   /** يفتح نافذةَ الربط لصفٍّ بعينه */
-  onLink: (index: number, line: string) => void
   onSaved: () => Promise<void> | void
 }) {
   const saved = readProposals(raw);
@@ -74,7 +73,7 @@ export default function ProposalsEditor({
   return (
     <div className="mt-3 border-t border-white/10 pt-3">
       <p className="text-read font-black text-muted-foreground">
-        دوراتٌ اقترحها وليست في كتالوجنا — سمِّ كلَّ واحدةٍ ثمّ اربِطها
+        دوراتٌ اقترحها وليست في كتالوجنا — سمِّ كلَّ واحدةٍ كما تريدها
       </p>
       <p className="mt-1 text-read leading-5 text-muted-foreground">
         اكتبها كما تريدها أن تُقرأ: لك أن تصحّح إملاءها أو تغيّر اسمها. والفقرةُ التي كتبها هو تبقى أدناه كما هي.
@@ -85,11 +84,6 @@ export default function ProposalsEditor({
       ) : (
         <ul className="mt-2 space-y-2">
           {rows.map((r, i) => {
-            /* الربطُ لا يُفتح لصفٍّ لم يُحفظ بعد: الخادمُ يقرأ الاقتراحَ من
-               القاعدة بترتيبه، فصفٌّ في الشاشة وحدَها يُربط بغيره أو بفراغ. */
-            const persisted = i < saved.length
-              && saved[i].titleAr === r.titleAr.trim()
-              && saved[i].audienceAr === r.audienceAr.trim();
             return (
               <li key={i} className="flex flex-wrap items-start gap-2">
                 <BookOpen className="mt-2.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
@@ -105,12 +99,6 @@ export default function ProposalsEditor({
                   aria-label={`جمهورُ الاقتراح ${i + 1}`}
                   className={`${controlCls} min-w-0 flex-1`}
                 />
-                <Button
-                  tone="secondary" size="sm" disabled={!persisted}
-                  onClick={() => onLink(i, proposalLine(saved[i]))}
-                >
-                  اربِطها
-                </Button>
                 <Button tone="ghost" size="sm" icon={Trash2} aria-label={`احذف الاقتراح ${i + 1}`}
                   onClick={() => setRows((cur) => cur.filter((_, k) => k !== i))} />
               </li>
@@ -130,7 +118,7 @@ export default function ProposalsEditor({
           </Button>
         )}
         {dirty && (
-          <span className="text-read leading-5 text-gold-ink">احفِظ أوّلا ليُفتح «اربِطها».</span>
+          <span className="text-read leading-5 text-gold-ink">تغييراتٌ لم تُحفظ.</span>
         )}
       </div>
 
@@ -141,8 +129,10 @@ export default function ProposalsEditor({
         </Inset>
       )}
 
+      {/* والتصنيفُ موضعُه «دوراتٌ مقترحة» لا هنا: هذه الشاشةُ تُصحّح ما كتبه
+          المتقدّمُ في طلبه، وذاك الطابورُ يقرّر مصيرَ كلِّ اقتراح. */}
       <p className="mt-2 text-read leading-5 text-muted-foreground">
-        و«اربِطها» تجعلها نسخةً من دورةٍ قريبة، أو دورةً جديدةً بمهاراتها — فتصير طلبَ تغييرٍ في طابور الكتالوج.
+        وما يُحفَظ هنا يصل طابورَ «دوراتٌ مقترحة» — وهناك تُربط بدورةٍ قائمة أو تصير دورةً جديدة.
       </p>
     </div>
   );

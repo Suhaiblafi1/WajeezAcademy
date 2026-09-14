@@ -5,59 +5,10 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { proposalLine, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
 import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
 import { GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
-
-/* ═══ مقترحُ دورةٍ من مدرّب — من نصٍّ في ملفٍّ إلى بندٍ في طابور ═══
-
-   ─────────── العطبُ الذي كُتب له ───────────
-
-   نموذجُ الانضمام يسأل المدرّبَ عن «دوراتٍ يقدر عليها وليست في كتالوجنا»،
-   ويحفظ جوابَه في `teachableOther` نصّا حرّا. ويُعرض ذلك النصُّ في ملفّ
-   المتقدّم، ثمّ **يموت هناك**: لا زرَّ يمسّه ولا طابورَ يصل إليه. فأثمنُ ما
-   في الطلب — ما يعرفه المتقدّمُ ولا نعرفه — يُقرأ مرّةً ويُنسى.
-
-   وقرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «المؤهّلاتُ المضافةُ نعم مهمّة، ولا
-   يجب أن تكون فقط ملاحظات، وإنّما خانةٌ تُعامل وكأنّها نسخةٌ جديدةٌ من دورةٍ
-   تُربط بها، أو دورةٌ جديدةٌ تُربط بمهاراتٍ معيّنة».
-
-   ─────────── ولماذا لا جدولَ جديدا ───────────
-
-   `ContentChangeRequest` قائمٌ ومحكومٌ بـmaker-checker، وله طابورٌ في شاشة
-   الكتالوج وتعليقاتٌ وقرارات. والمقترحُ **طلبُ تغييرٍ على الكتالوج** لا شيءٌ
-   آخر: إمّا نسخةٌ من دورةٍ قائمة، وإمّا دورةٌ جديدةٌ بمهارات. فجدولٌ ثانٍ
-   يعني طابورَين يُنسى أحدُهما — وقد رأينا ذلك في هذه المنصّة.
-
-   ─────────── والشكلان ───────────
-
-   • `variant` — قريبةٌ من دورةٍ عندنا: `entityId` هو **معرّفُ تلك الدورة**،
-     فيقرؤها المؤلّفُ حيث يعمل عليها أصلا.
-
-   • `new_course` — دورةٌ لا وجودَ لها: ولا يُخترع لها معرّفٌ كاذبٌ يوهم أنّها
-     في الكتالوج. بل معرّفٌ بادئتُه تقول ما هو (`C-PROPOSED-…`) — يُبحث به،
-     ويُقرأ على وجهه: مقترحٌ لم يُؤلَّف بعد.
-
-   وفي الحالتَين يحمل الحمولةُ **كلامَ المدرّب بنصّه** ومرجعَ طلبه واسمَه، فمن
-   فتح الطلبَ بعد شهرٍ عرف من أين جاء ومن يسأل عنه. */
-
-export type CourseSuggestionInput = (
-  | { kind: 'variant'; courseId: string }
-  | { kind: 'new_course'; titleAr: string; skillIds: string[] }
-) & {
-  noteAr?: string
-  /* أيُّ اقتراحٍ من اقتراحاته — فالطلبُ يحمل عشرين، وربطُ واحدٍ لا يربطها كلَّها.
-     والطلباتُ التي سبقت أ-٣ تحمل فقرةً حرّةً واحدة، فيغيب الترقيم. */
-  proposalIndex?: number
-}
-
-const PROPOSED_PREFIX = 'C-PROPOSED-'
-
-export function proposedCourseId(): string {
-  return `${PROPOSED_PREFIX}${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-}
 
 export interface ReadinessStep {
   key: 'basics' | 'courses' | 'profile' | 'domains' | 'impact'
@@ -643,66 +594,6 @@ export class CatalogAdminService {
     }
     return this.prisma.contentChangeRequest.create({
       data: { entityType, entityId, payload: payload as object, status: 'in_review', createdBy: actorId },
-    })
-  }
-
-  /** مقترحُ دورةٍ من مدرّب — يصير طلبَ تغييرٍ في الطابور القائم (انظر أعلاه) */
-  async submitCourseSuggestion(
-    applicationId: string, input: CourseSuggestionInput, actorId: string,
-  ) {
-    const app = await this.prisma.trainerApplication.findUnique({
-      where: { id: applicationId },
-      /* ما يلزم الطلبَ وحدَه: لا بريدَ ولا هاتفَ — الطابورُ يُقرأ بعينٍ أوسعَ
-         من عين مراجعِ الطلبات، فلا يُسرَّب إليه ما ليس من شأنه. */
-      select: { id: true, reference: true, fullName: true, teachableOther: true, teachableProposals: true },
-    })
-    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
-
-    /* السجلُّ الذي يُربط — يُقرأ بالدالّة المشتركة لا بفكٍّ يدويٍّ للعمود:
-       العمودُ `Json?` يقبل أيَّ شكل، وقارئٌ بلا فحصٍ يُسقط المسارَ بحقلٍ مشوّه. */
-    const proposals = readProposals(app.teachableProposals)
-    const picked = input.proposalIndex !== undefined
-      ? proposalLine(proposals[input.proposalIndex] ?? { titleAr: '', audienceAr: '' }) || null
-      : null
-    if (input.proposalIndex !== undefined && !picked) {
-      throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا الترتيب في الطلب', 422)
-    }
-
-    let entityId: string
-    let brief: Record<string, unknown>
-    if (input.kind === 'variant') {
-      const course = await this.prisma.course.findUnique({ where: { id: input.courseId } })
-      if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة في الكتالوج', 404)
-      entityId = course.id
-      brief = { kind: 'trainer_course_variant', courseId: course.id }
-    } else {
-      if (input.titleAr.trim().length < 3) throw new AuthError('bad_title', 'عنوانُ المقترح ثلاثةُ أحرفٍ على الأقلّ', 422)
-      /* المهاراتُ تُتحقَّق قبل أن تُكتب: مقترحٌ يشير إلى مهارةٍ لا وجودَ لها
-         يُقرأ بعد شهرٍ ولا يُفهم — والخطأُ هنا أرخصُ منه هناك. */
-      const known = await this.prisma.skill.findMany({
-        where: { id: { in: input.skillIds } }, select: { id: true },
-      })
-      const missing = input.skillIds.filter((id) => !known.some((k) => k.id === id))
-      if (missing.length) throw new AuthError('unknown_skill', `مهاراتٌ غيرُ معروفة: ${missing.join(' · ')}`, 422)
-      entityId = proposedCourseId()
-      brief = { kind: 'trainer_new_course', titleAr: input.titleAr.trim(), skillIds: input.skillIds }
-    }
-
-    return this.prisma.contentChangeRequest.create({
-      data: {
-        entityType: 'course',
-        entityId,
-        status: 'in_review',
-        createdBy: actorId,
-        payload: {
-          ...brief,
-          /* كلامُه بنصّه — لا تلخيصا: من يؤلّف الدورةَ يقرأ ما كتبه صاحبُها.
-             والسجلُّ المقصودُ وحدَه حين يكون مرقَّما، وإلّا فالفقرةُ القديمة. */
-          trainerWordsAr: picked ?? app.teachableOther ?? null,
-          fromApplication: { id: app.id, reference: app.reference, fullName: app.fullName },
-          noteAr: input.noteAr?.trim() || null,
-        } as Prisma.InputJsonValue,
-      },
     })
   }
 
