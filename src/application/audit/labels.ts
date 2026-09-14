@@ -99,6 +99,11 @@ const PHRASES: Record<string, string> = {
   'term.calendar_publish': 'نشرُ تقويم الفصل',
   'term.delete': 'حذفُ فصلٍ لم يُنشر ولا شعبَ فيه',
   'trainer.qualify': 'تأهيلُ مدرّبٍ لدورة',
+  /* ح-٤: قراراتُ تصنيفِ دورةٍ اقترحها مدرّبٌ وليست في الكتالوج. وثلاثتُها
+     عباراتٌ كاملة لا تركيب: «ربطُ اقتراحِ دورة» وحدَه لا يقول بماذا رُبط. */
+  'trainer.course_proposal.link': 'ربطُ اقتراحِ دورةٍ برمزٍ قائمٍ في الكتالوج',
+  'trainer.course_proposal.become_course': 'دخولُ اقتراحِ دورةٍ الكتالوجَ دورةً جديدة',
+  'trainer.course_proposal.reject': 'رفضُ اقتراحِ دورة',
   'trainer.qualify.auto': 'تأهيلُ مدرّبٍ تلقائيّا لما ذكره في طلبه',
   'cohort.plan.save': 'حفظُ مدرّبٍ خطّةَ شعبته',
   'cohort.plan.submit': 'إرسالُ مدرّبٍ خطّةَ شعبته للاعتماد',
@@ -180,7 +185,7 @@ const WORDS: Record<string, string> = {
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويضُ مدرّب',
   trainer_payout: 'مستحقُّ مدرّب', application: 'طلبُ انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّةٌ تجريبيّة', review: 'مراجعة',
-  change: 'اقتراحُ تعديل', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلبُ تسجيل',
+  change: 'اقتراحُ تعديل', course_proposal: 'اقتراحُ دورة', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلبُ تسجيل',
   waitlist: 'قائمةُ انتظار', order: 'طلبُ شراء', payment: 'دفعة', refund: 'استرداد', coupon: 'كوبون',
   invoice: 'فاتورة', plan: 'خطّة', item: 'بند', module: 'وحدة', content: 'متن', material: 'مادّة',
   recording: 'تسجيلٌ مرئيّ', assessment: 'تقييم', attempt: 'محاولة', grade: 'درجة', rubric: 'روبرك',

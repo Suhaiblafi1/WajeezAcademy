@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
+import { seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { buildIcs } from './calendar/ics'
@@ -539,6 +540,12 @@ export class TrainerReviewService {
       const profile = await tx.trainerProfile.create({
         data: { applicationId, headline: app.jobTitle ?? null, bioPublic: app.bio ?? null },
       })
+      /* ح-٢: دوراتُه المقترحةُ تُبذَر من طلبه إلى جدولها، فيجدها في بوّابته.
+         والعمودُ في الطلب يبقى كما هو — سجلُّ ما قدّمه يومَ تقدّم. */
+      const submitted = await tx.trainerApplication.findUnique({
+        where: { id: applicationId }, select: { teachableProposals: true },
+      })
+      await seedProposalsFromApplication(tx, profile.id, submitted?.teachableProposals, actorId)
       const taskSeeds = [
         { key: 'sign_contract', title: 'توقيع العقد' },
         { key: 'academy_orientation', title: 'التعريف بمنهجية الأكاديمية' },

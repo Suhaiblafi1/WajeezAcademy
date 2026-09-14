@@ -5,6 +5,9 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { MAX_COURSE_TITLE, MIN_COURSE_TITLE, TrainerChangeService } from '../../services/trainer-change.service'
+import {
+  CourseProposalService, MAX_PROPOSAL_AUDIENCE, MAX_PROPOSAL_TITLE, MIN_PROPOSAL_TITLE,
+} from '../../services/course-proposal.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerAvailabilityService } from '../../services/trainer-availability.service'
@@ -14,6 +17,7 @@ import { AuthError } from '../../services/auth.service'
 
 export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const changes = new TrainerChangeService(prisma)
+  const proposals = new CourseProposalService(prisma)
   const review = new TrainerReviewService(prisma)
   const earnings = new EarningsService(prisma)
   const availability = new TrainerAvailabilityService(prisma)
@@ -155,6 +159,52 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return changes.withdraw(req.auth!.userId, id)
   })
+  /* ═══ دوراتي المقترحة — ما أقدر عليه وليس في كتالوجكم (ح-٢) ═══
+
+     كتبها يومَ تقدّم (أ-٣) فحُفظت في طلبه، وبُذرت إلى جدولها يومَ اعتُمد.
+     وهنا يملكها: يضيف ويعدّل ويحذف **ما لم يُبتّ فيه**. وما بُتّ فيه يقرؤه
+     ولا يكتبه — اقتراحٌ صار دورةً في الكتالوج لا يُحذف من تحت قرارِ من
+     اعتمده.
+
+     والصلاحيّةُ `trainer.portal`: هذا بابُه إلى ما كتبه عن نفسه، لا تصرّفٌ
+     في كتالوجٍ ولا في مال. والكتالوجُ لا يُمسّ من هنا البتّة — التصنيفُ
+     وحدَه يُدخله، وبابُه عند الإدارة. */
+  app.get('/api/trainer/course-proposals', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'دوراتي المقترحةُ وحالُ كلٍّ منها (ح-٢)' },
+  }, async (req) => proposals.mine(req.auth!.userId))
+
+  app.post('/api/trainer/course-proposals', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'إضافةُ دورةٍ أقدر عليها وليست في الكتالوج' },
+  }, async (req, reply) => {
+    const body = z.object({
+      titleAr: z.string().trim().min(MIN_PROPOSAL_TITLE).max(MAX_PROPOSAL_TITLE),
+      audienceAr: z.string().trim().max(MAX_PROPOSAL_AUDIENCE).nullish(),
+    }).parse(req.body)
+    return reply.status(201).send(await proposals.add(req.auth!.userId, body))
+  })
+
+  app.patch('/api/trainer/course-proposals/:id', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'تعديلُ اقتراحي ما لم يُبتّ فيه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      titleAr: z.string().trim().min(MIN_PROPOSAL_TITLE).max(MAX_PROPOSAL_TITLE),
+      audienceAr: z.string().trim().max(MAX_PROPOSAL_AUDIENCE).nullish(),
+    }).parse(req.body)
+    return proposals.edit(req.auth!.userId, id, body)
+  })
+
+  app.delete('/api/trainer/course-proposals/:id', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'حذفُ اقتراحي ما لم يُبتّ فيه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return proposals.remove(req.auth!.userId, id)
+  })
+
   app.get('/api/trainer/catalog-scope', {
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'أهليتي لنطاق الكتالوج — تُقرأ قبل كتابة اقتراح (هـ-١)' },

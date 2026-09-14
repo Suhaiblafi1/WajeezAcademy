@@ -26,14 +26,20 @@ interface SkillRow {
 const inputCls = "w-full rounded-xl border border-white/10 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none focus:border-gold/60";
 const selectCls = `${inputCls} [&>option]:bg-surface`;
 
-export default function CourseWizard({ pathways, skills, onDone, onRequestSkill }: {
+export default function CourseWizard({ pathways, skills, onDone, onRequestSkill, seedTitleAr }: {
   pathways: PathwayOption[];
   skills: SkillRow[];
-  onDone: () => void;
+  /** رمزُ ما أُنشئ — يقرؤه من جاء من اقتراحِ مدرّبٍ فيربطه به (ح-٤) */
+  onDone: (courseId?: string) => void;
   onRequestSkill: (input: { slug: string; nameAr: string; reasonAr: string }) => Promise<void>;
+  /** عنوانٌ يبدأ به الحقلُ — يأتي من اقتراحِ مدرّبٍ يُصنَّف دورةً جديدة (ح-٤).
+      وهو بذرةٌ لا قفل: يُكتب في المسوّدة مرّةً ثمّ يملكه من يُنشئ. */
+  seedTitleAr?: string;
 }) {
   const [step, setStep] = useState(0);
-  const [d, setD] = useState<CourseWizardDraft>(EMPTY_COURSE_DRAFT);
+  const [d, setD] = useState<CourseWizardDraft>(
+    seedTitleAr ? { ...EMPTY_COURSE_DRAFT, titleAr: seedTitleAr } : EMPTY_COURSE_DRAFT,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +65,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill 
         })),
       });
       toast("أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
-      onDone();
+      onDone(d.id.trim());
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "فشل إنشاء الدورة");
     } finally {

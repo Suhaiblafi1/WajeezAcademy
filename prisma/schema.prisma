@@ -351,6 +351,7 @@ model Course {
   trainerQualifications TrainerCourseQualification[]
   trainerAssignments    TrainerCourseAssignment[]
   trainerChangeRequests TrainerChangeRequest[]
+  trainerProposals      TrainerCourseProposal[]
   cohorts               Cohort[]
 }
 
@@ -1200,6 +1201,7 @@ model TrainerProfile {
   qualifications        TrainerCourseQualification[]
   assignments           TrainerCourseAssignment[]
   changeRequests        TrainerChangeRequest[]
+  courseProposals       TrainerCourseProposal[]
   onboardingTasks       TrainerOnboardingTask[]
   contracts             TrainerContract[]
   referralLinks         TrainerReferralLink[]
@@ -1301,6 +1303,49 @@ model TrainerCourseAssignment {
   course     Course         @relation(fields: [courseId], references: [id])
   cohort     Cohort?        @relation(fields: [cohortId], references: [id])
 
+  @@index([profileId, status])
+}
+
+/// دورةٌ يقترحها مدرّبٌ وليست في الكتالوج — من طلبِه أوّلا، ثمّ بيدِه (ح-٢)،
+/// ثمّ تُصنَّف عند الإدارة (ح-٤).
+///
+/// **ولمَ جدولٌ بعد أن قلتُ عمودَ JSON يكفي؟** لأنّ ما بنى ذلك الحكمَ زال.
+/// قلتُ في ترحيل `teachableProposals` (١٣ سبتمبر): «لا حياةَ له خارج طلبه
+/// ولا يُستعلَم عنه وحدَه». وح-٢ يمنحه حياةً بعد الطلب — يعدّله المدرّبُ في
+/// بوّابته بعد شهور — وح-٤ يستعلم عنه وحدَه: طابورُ تصنيفٍ عبرَ المدرّبين
+/// كلِّهم. ولكلِّ اقتراحٍ بعدها قرارٌ ومُقرِّرٌ ووقت. فالعلّةُ انقلبت، لا
+/// الرأي.
+///
+/// **والعمودُ في الطلب يبقى كما هو** — لا يُنقَل ولا يُفرَّغ: هو سجلُّ ما
+/// قدّمه المتقدّمُ يومَ تقدّم، وقد قرأه من اعتمده. وهذا الجدولُ يُبذَر منه
+/// عند إنشاء الملفّ، ويحيا بعدها وحدَه. فمن عدّل اقتراحَه اليومَ لم يُعِد
+/// كتابةَ ما قرأه المعتمِدُ أمس.
+model TrainerCourseProposal {
+  id             String    @id @default(uuid()) @db.Uuid
+  profileId      String    @db.Uuid
+  titleAr        String
+  /// لمن هي — لا تلزم: من أوقفناه عند حقلٍ إلزاميٍّ ثانٍ خسِرنا اقتراحَه
+  audienceAr     String?
+  /// draft | submitted | linked | became_course | rejected
+  ///
+  /// `linked` — قرّرت الإدارةُ أنّها نسخةٌ من رمزٍ قائم، فرُبطت به. ولا
+  /// يُنشأ الإصدارُ هنا: بابُه `TrainerChangeRequest` بنوع `course_title_edit`،
+  /// يمشيه المدرّبُ بنفسه. وإنشاؤه آليّا يضع في فمه عنوانا ومحاورَ لم يكتبها.
+  ///
+  /// `became_course` — صارت دورةً في الكتالوج، و`courseId` يشير إليها.
+  status         String    @default("draft")
+  /// ما صارت إليه — رمزُ الدورة في الحالتَين `linked` و`became_course`
+  courseId       String?
+  decidedBy      String?   @db.Uuid
+  decidedAt      DateTime?
+  /// سببُ الرفض أو ملحوظةُ التصنيف — والرفضُ بلا سببٍ يترك صاحبَه يخمّن
+  decisionNoteAr String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  profile        TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course         Course?        @relation(fields: [courseId], references: [id])
+
+  @@index([status, createdAt])
   @@index([profileId, status])
 }
 
