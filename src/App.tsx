@@ -43,6 +43,7 @@ const MyVault = lazy(() => import('./pages/student/MyVault'))
 const StudentLibrary = lazy(() => import('./pages/student/Library'))
 const RateMyLearning = lazy(() => import('./pages/student/RateMyLearning'))
 const TrainerMyRatings = lazy(() => import('./pages/trainer/MyRatings'))
+const TrainerReferral = lazy(() => import('./pages/trainer/Referral'))
 const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
@@ -260,6 +261,7 @@ export default function App() {
             <Route path="/trainer/proposals" element={<Navigate to="/trainer/board" replace />} />
             <Route path="/trainer/board" element={<CohortBoard />} />
             <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
+            <Route path="/trainer/referral" element={<TrainerReferral />} />
           </Route>
           <Route element={<RequireRole allow={ADMIN_ROLES} />}>
             <Route path="/admin" element={<AdminDashboard />} />
