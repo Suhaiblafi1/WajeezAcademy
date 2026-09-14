@@ -23,6 +23,12 @@ import Button from "@/components/ui/Button";
 
 const LOCAL_KEY = "wajeez_profile";
 
+/* رابطُ الرفع نسبيٌّ يُصدره الخادم، ويُسبق بأصل الـAPI كما تفعل بقيّةُ
+   شاشات الرفع. وفي الإنتاج `VITE_API_URL` غيرُ مضبوطٍ فيستوي الأمران،
+   لكنّه في التطوير يشير إلى منفذٍ آخر — فالرفعُ بلا هذه البادئة يقصد
+   خادمَ Vite لا الـAPI، فيسقط حيث لا يسقط في الإنتاج. */
+const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
+
 /* أقدمُ سنةِ ميلادٍ في القائمة — ومن وُلد قبلها فحالٌ لا يُخدَم بقائمةٍ أطول:
    تطويلُها إلى ١٩٠٠ يزيد ثلاثين سطرا يمرّ عليها كلُّ متعلّمٍ ولا يختارها أحد. */
 const BIRTH_YEAR_FLOOR = 1930;
@@ -118,6 +124,11 @@ export default function StudentAccount() {
   /* ما رُفع عندنا — يُعرض ولا يُحرَّر نصّا، والحقلُ يبقى للروابط الخارجيّة */
   const [storedAvatar, setStoredAvatar] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
+  /* رسالةُ الرفع تسكن عند الزرّ لا عند زرّ الحفظ.
+     كانت تُكتب في `err` وحدَه، وهو يُعرض قبل زرّ الحفظ — مئةً وخمسين
+     سطرا أسفلَ منتقي الصورة. فكان الرفعُ يسقط، وتُكتب العلّةُ خارجَ
+     الشاشة، ويرى صاحبُه زرّا لا يفعل شيئا. */
+  const [photoMsg, setPhotoMsg] = useState<{ bad: boolean; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* تحميل الملف: من الخادم عند وجود جلسة حقيقية، وإلا من المخزن المحلي الموسوم */
@@ -221,28 +232,32 @@ export default function StudentAccount() {
      الخادمُ في `awaitingApproval`، وتُقال له هنا صراحةً لئلّا ينتظر ظهورا
      لا يأتي. */
   const uploadAvatar = async (file: File) => {
-    setErr(""); setSavedMsg(""); setPhotoBusy(true);
+    setErr(""); setSavedMsg(""); setPhotoMsg(null); setPhotoBusy(true);
     try {
       const blob = await prepareImage(file);
       const r = await apiPost<{
         uploadUrl: string; maxBytes: number; avatarUrl: string; awaitingApproval: boolean;
       }>("/api/learner/avatar-upload", { mime: PHOTO_OUT_MIME });
       if (blob.size > r.maxBytes) {
-        setErr(`الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)`);
+        setPhotoMsg({ bad: true, text: `الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)` });
         return;
       }
-      const res = await fetch(r.uploadUrl, {
+      const res = await fetch(`${API_BASE}${r.uploadUrl}`, {
         method: "PUT", headers: { "content-type": PHOTO_OUT_MIME }, body: blob,
       });
-      if (!res.ok) { setErr("تعذّر رفعُ الصورة"); return; }
+      if (!res.ok) {
+        /* الحالةُ تُقال: ٥٠١ إشعالٌ مطفأ، و٤١٥ نوعٌ مرفوض، و٤٠٣ رابطٌ منتهٍ */
+        setPhotoMsg({ bad: true, text: `تعذّر رفعُ الصورة (${res.status})` });
+        return;
+      }
       setStoredAvatar(r.avatarUrl);
       setForm((f) => ({ ...f, avatarUrl: "" }));
-      setSavedMsg(r.awaitingApproval
+      setPhotoMsg({ bad: false, text: r.awaitingApproval
         ? "رُفعت صورتُك. وتظهر في حسابك الآن — أمّا صفحتُك العامّة فتنتظر اعتمادَ الإدارة."
-        : "رُفعت صورتُك.");
+        : "رُفعت صورتُك." });
     } catch (e) {
-      setErr(e instanceof ImageConditionError ? e.message
-        : e instanceof ApiError ? e.message : "تعذّر رفعُ الصورة");
+      setPhotoMsg({ bad: true, text: e instanceof ImageConditionError ? e.message
+        : e instanceof ApiError ? e.message : "تعذّر رفعُ الصورة" });
     } finally {
       setPhotoBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -437,6 +452,14 @@ export default function StudentAccount() {
                 تُقتطع مربّعةً · أقلُّ ضلعٍ ٤٠٠ بكسل · JPEG أو PNG أو WebP
               </span>
             </div>
+            {photoMsg && (
+              <p
+                role="alert"
+                className={`mt-2 text-read leading-5 font-semibold ${photoMsg.bad ? "text-red-300" : "text-teal-light-ink"}`}
+              >
+                {photoMsg.text}
+              </p>
+            )}
           </Field>
         </div>
       </Panel>
