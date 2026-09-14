@@ -25,6 +25,8 @@ import { fmtDateTimeAr } from "@/utils/format";
 import { Card, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { fmtDateWith, fmtTime } from "@/application/text/format-ar";
+import MonthCalendar from "@/components/MonthCalendar";
+import { nextItem } from "@/application/calendar/month-grid";
 interface Slot {
   sessionId: string;
   title: string;
@@ -129,6 +131,9 @@ export default function TrainerSchedule() {
 
   /* التجميعُ باليوم يقع هنا لا في الخادم: الخادمُ يُرجع خطّا زمنيّا واحدا،
      وشكلُ العرض (يومٌ يومٌ) قرارُ واجهةٍ يتغيّر دون أن يتغيّر المسار. */
+  /* «القادمة» تُميَّز في التقويم — وما مضى ليس قادما ولو بدقيقة */
+  const nextSession = nextItem(data.sessions, (x) => new Date(x.startsAt));
+
   const byDay = new Map<string, Slot[]>();
   for (const s of data.sessions) {
     const k = dayKey(s.startsAt);
@@ -157,6 +162,41 @@ export default function TrainerSchedule() {
             </span>
           </Card>
         )}
+      </Panel>
+
+      {/* ═══ تقويمٌ أوّلا، ثمّ القائمةُ تحته ═══
+
+          شكوى ١٣ سبتمبر ٢٠٢٦: «جدولي» قائمةٌ مبعثرةٌ لا تقويم. والقائمةُ
+          تقول «متى» ولا تقول «أين أنا من الشهر»: من له جلستان يوم الأحد
+          وثالثةٌ بعد أسبوعين يقرأ ثلاثةَ أسطرٍ ولا يرى الأسبوعَ الفارغَ
+          بينها.
+
+          ولم تُحذف القائمةُ بل نزلت تحته: التقويمُ يقول الشكلَ، والقائمةُ
+          تقول التفصيلَ — اسمَ الدورة والشعبةِ والدور ووقتَ النهاية. وخانةُ
+          يومٍ لا تسع ذلك، ومن حشره فيها أعاد الازدحامَ من بابٍ آخر. */}
+      <Panel as="section" className="mt-5">
+        <MonthCalendar
+          items={data.sessions}
+          at={(x) => new Date(x.startsAt)}
+          isNext={(x) => x.sessionId === nextSession?.sessionId}
+          emptyAr="لا جلسةَ في هذا الشهر — تنقّل بالأسهم أو ارجع إلى اليوم."
+          renderItem={(x, { isNext }) => (
+            <span
+              title={`${x.title} — ${x.courseTitle}`}
+              className={
+                'block truncate rounded px-1 py-0.5 text-fine leading-4 '
+                + (x.clashesWith.length > 0
+                  ? 'bg-red-400/15 text-danger-ink'
+                  : isNext
+                    ? 'bg-teal/25 font-black text-teal-light-ink'
+                    : 'bg-white/[0.06] text-foreground')
+              }
+            >
+              <span className="tabular-nums">{time(x.startsAt)}</span>{' '}
+              <span className="hidden sm:inline">{x.title}</span>
+            </span>
+          )}
+        />
       </Panel>
 
       {data.sessions.length === 0 ? (
