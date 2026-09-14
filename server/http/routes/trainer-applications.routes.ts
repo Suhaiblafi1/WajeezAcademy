@@ -10,7 +10,7 @@ import { TrainerApplicationService } from '../../services/trainer-application.se
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import {
   verifySignature, recordDocumentSize, readDocumentContent, resolveStorageOwner,
-  MAX_UPLOAD_ANY, UPLOADABLE_KINDS, PHOTO_KEY_PREFIX,
+  MAX_UPLOAD_ANY, UPLOADABLE_KINDS, PHOTO_KEY_PREFIX, sniffImageMime, kindRequiresImage,
 } from '../../services/storage.service'
 import { assertSafeKey } from '../../services/object-store'
 import { PUBLIC_TRAINER_WHERE } from '../../services/trainer-visibility'
@@ -263,6 +263,23 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       const mb = Math.floor(max / (1024 * 1024))
       return reply.status(413).send({ error: { code: 'too_large', message_ar: `الملف يتجاوز ${mb}MB` } })
     }
+    /* وما ادّعى أنّه صورةٌ يُسأل عنه البايتات.
+
+       كان النوعُ يُؤخذ من `content-type` حين لا يعرفه السجلّ — وهو ترويسةٌ
+       يكتبها العميل. فمفتاحُ صورةٍ كان يقبل أيَّ بايتات، ثمّ تُخدَم من نطاقنا
+       بالنوع الذي ادّعاه صاحبُها. والتوقيعُ في أوّل البايتات يقطع ذلك بلا
+       مكتبة، ويُقاس على البنية لا على الامتداد. */
+    if (kindRequiresImage(owner.kind)) {
+      const sniffed = sniffImageMime(buffer)
+      if (!sniffed) {
+        return reply.status(415).send({
+          error: { code: 'not_an_image', message_ar: 'الملفُّ ليس صورةً — JPEG أو PNG أو WebP' },
+        })
+      }
+      /* والنوعُ المخزَّنُ ما ثبت من البايتات، لا ما قيل عنها */
+      owner.mime = sniffed
+    }
+
     /* النوعُ والاسمُ من السجلّ حيث يعرفهما، وإلّا فمن الطلب نفسِه: ثلاثةٌ من
        النماذج الستّة لا تحمل عمودَ نوعٍ ولا اسمٍ أصليّ. */
     await putObject(storageKey, buffer, {

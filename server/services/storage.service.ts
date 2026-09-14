@@ -195,7 +195,7 @@ export function newStorageKey(): string {
    يملكه سجلٌّ — فلا يبقى على القرص ما لا يعرفه أحد ولا يحذفه أحد. */
 export type StorageOwnerKind =
   | 'trainer_document' | 'cv' | 'recording' | 'material' | 'submission' | 'assessment_response'
-  | 'trainer_photo'
+  | 'trainer_photo' | 'avatar'
 
 export interface StorageOwner {
   kind: StorageOwnerKind
@@ -263,7 +263,59 @@ export async function resolveStorageOwner(
   })
   if (photo) return { kind: 'trainer_photo', maxBytes: MAX_PHOTO_BYTES }
 
+  /* ═══ والثامنُ: صورةُ الحساب ═══
+
+     يرفعها صاحبُها لنفسه بلا استئذان، وتظهر في ترويسته وشهاداته. وصيرورتُها
+     صورةً **عامّةً** للمدرّب بابٌ آخرُ لا هذا: `photoPendingKey` ثمّ اعتمادُ
+     الإدارة. فالرفعُ حرٌّ والعرضُ العامُّ محكوم. */
+  const avatar = await prisma.learnerProfile.findFirst({
+    where: { avatarUrl: `${PHOTO_KEY_PREFIX}${storageKey}` }, select: { id: true },
+  })
+  if (avatar) return { kind: 'avatar', maxBytes: MAX_PHOTO_BYTES }
+
+  /* وصورةُ المدرّب المعلَّقةُ قبل الاعتماد: بايتاتُها تُرفع وتُقرأ للإدارة،
+     ومفتاحُها في عمودٍ غيرِ `photoUrl` — فلولا هذا السطرُ لَرُدّ رفعُها. */
+  const pending = await prisma.trainerProfile.findFirst({
+    where: { photoPendingKey: storageKey }, select: { id: true },
+  })
+  if (pending) return { kind: 'trainer_photo', maxBytes: MAX_PHOTO_BYTES }
+
   return null
+}
+
+/* ═══ أهي صورةٌ حقّا؟ البايتاتُ تُسأل لا الترويسة ═══
+
+   `PUT /api/v1/uploads/:key` كان يثق بـ`content-type` الذي يرسله العميل حين
+   لا يعرف السجلُّ نوعا. فمن ملك رابطَ رفعٍ موقّعا — وكلُّ مستخدمٍ مسجّلٍ
+   يملكه لصورته — استطاع أن يخزّن **أيَّ بايتات** تحت مفتاحِ صورة، ثمّ تُخدَم
+   من نطاقك بالنوع الذي ادّعاه.
+
+   والشرطُ الذي يقطع ذلك لا يحتاج مكتبةً: لكلِّ صيغةٍ توقيعٌ في أوّل بايتاتها.
+   فتُقرأ منها، فإن لم تُطابق واحدةً من الثلاث رُدّ الرفعُ قبل أن يُكتب شيء.
+
+   وهذا فحصُ **بنيةٍ لا امتداد**: ملفٌّ اسمُه `.jpg` وبداخله HTML يسقط هنا. */
+const IMAGE_SIGNATURES: ReadonlyArray<{ mime: string; test: (b: Buffer) => boolean }> = [
+  { mime: 'image/jpeg', test: (b) => b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+  {
+    mime: 'image/png',
+    test: (b) => b.length >= 8 && b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47
+      && b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a,
+  },
+  {
+    mime: 'image/webp',
+    test: (b) => b.length >= 12 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP',
+  },
+]
+
+/** نوعُ الصورة من بايتاتها، أو `null` إن لم تكن صورةً من الثلاث */
+export function sniffImageMime(buffer: Buffer): string | null {
+  for (const sig of IMAGE_SIGNATURES) if (sig.test(buffer)) return sig.mime
+  return null
+}
+
+/** الأنواعُ التي لا يُقبل فيها إلّا ما ثبت أنّه صورة */
+export function kindRequiresImage(kind: StorageOwnerKind): boolean {
+  return kind === 'trainer_photo' || kind === 'avatar'
 }
 
 /* الحجمُ يبقى في سجلّ وثيقة المتقدّم — تقرؤه شاشةُ المراجعة. والبايتاتُ

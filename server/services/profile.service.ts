@@ -6,6 +6,13 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
+import {
+  assertFileUploadsEnabled, newStorageKey, signKey,
+  MAX_PHOTO_BYTES, PHOTO_MIMES, PHOTO_KEY_PREFIX, SIGNED_URL_TTL_MS, photoStorageKey,
+} from './storage.service'
+import { deleteObject } from './object-store'
+import { AuthError } from './auth.service'
+import { recordAudit } from './audit'
 
 const str = (max: number) => z.string().trim().max(max).nullable().optional()
 const patchSchema = z.object({
@@ -47,7 +54,11 @@ export class ProfileService {
       create: { userId },
       update: {},
     })
-    return { user, profile }
+    /* العمودُ يحمل `storage:<key>` لما رُفع عندنا، ورابطا خارجيّا لما أُلصق.
+       والشاشةُ لا تفكّ مفاتيح: تُعطى عنوانا يفتح، وتعرف أنّ ما بدأ بـ`/api/`
+       صورةٌ مرفوعةٌ لا نصٌّ يُحرَّر. */
+    const key = photoStorageKey(profile.avatarUrl)
+    return { user, profile: { ...profile, avatarUrl: key ? `/api/v1/avatars/${key}` : profile.avatarUrl } }
   }
 
   /** يحدّث ما أرسله الطالب فقط — بقية الحقول كما هي */
@@ -75,5 +86,59 @@ export class ProfileService {
       update: data,
     })
     return { profile }
+  }
+
+  /* ═══ صورةُ الحساب: يرفعها صاحبُها، ولا تُعرض للعامّة بذلك ═══
+
+     قرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «everyone can put their picture and
+     the admin approves it» — والاعتمادُ **على العامّ وحدَه**. فهذه تسري فورا
+     في ترويسة صاحبها وشهاداته، ومن كان مدرّبا وُضعت صورتُه كذلك في
+     `photoPendingKey` تنتظر الإدارة، ولا تمسّ `photoUrl` الذي تقرؤه الصفحةُ
+     العامّة. فالرفعُ حرٌّ والعرضُ العامُّ محكوم.
+
+     والمفتاحُ يُكتب **قبل** أن تُصدَر رابطُ الرفع، لأنّ `resolveStorageOwner`
+     يقرأ المالكَ من القاعدة: فلو أُصدر الرابطُ أوّلا لَرُدّت بايتاتُه بـ٤٠٤. */
+  async startAvatarUpload(userId: string, mime: string) {
+    assertFileUploadsEnabled('والبديلُ الآن: ألصِق رابطَ صورةٍ مباشرا في الحقل.')
+    if (!(PHOTO_MIMES as readonly string[]).includes(mime)) {
+      throw new AuthError('bad_mime', 'الصورةُ JPEG أو PNG أو WebP', 422)
+    }
+    const existing = await this.prisma.learnerProfile.findUnique({
+      where: { userId }, select: { avatarUrl: true },
+    })
+    const oldKey = photoStorageKey(existing?.avatarUrl)
+    const storageKey = newStorageKey()
+
+    await this.prisma.learnerProfile.upsert({
+      where: { userId },
+      create: { userId, avatarUrl: `${PHOTO_KEY_PREFIX}${storageKey}` },
+      update: { avatarUrl: `${PHOTO_KEY_PREFIX}${storageKey}` },
+    })
+
+    /* ومن كان مدرّبا فصورتُه تنتظر الاعتماد — لا تُعرض بالرفع وحدَه */
+    const trainer = await this.prisma.trainerProfile.findFirst({
+      where: { userId }, select: { id: true },
+    })
+    if (trainer) {
+      await this.prisma.trainerProfile.update({
+        where: { id: trainer.id }, data: { photoPendingKey: storageKey },
+      })
+    }
+
+    /* غيابُ القديمةِ ليس عطبا — المهمُّ ألّا تبقى بلا مالك */
+    if (oldKey) { try { await deleteObject(oldKey) } catch { /* لا شيء */ } }
+
+    const exp = Date.now() + SIGNED_URL_TTL_MS
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'account.avatar.upload', entityType: 'learner_profile', entityId: userId,
+      meta: { awaitingApproval: Boolean(trainer) },
+    })
+    return {
+      storageKey,
+      uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}`,
+      maxBytes: MAX_PHOTO_BYTES,
+      avatarUrl: `/api/v1/avatars/${storageKey}`,
+      awaitingApproval: Boolean(trainer),
+    }
   }
 }

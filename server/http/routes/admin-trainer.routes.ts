@@ -387,6 +387,27 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.startPhotoUpload(profileId, req.auth!.userId, mime))
   })
 
+  /* اعتمادُ صورةٍ رفعها المدرّبُ لنفسه — أو ردُّها.
+
+     وبصلاحيّة `trainer.publish` لا `trainer.qualify`: هذا قرارُ **عرضٍ
+     عامّ**، فيملكه من يملك النشرَ لا من يملك التأهيل. */
+  app.post('/api/admin/trainers/:profileId/photo/approve', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ الصورة المعلّقة — تصير صورةَ الصفحة العامّة' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    return review.approvePendingPhoto(profileId, req.auth!.userId)
+  })
+
+  app.post('/api/admin/trainers/:profileId/photo/reject', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'ردُّ الصورة المعلّقة — تبقى صورةَ حسابه ولا تُعرض عامّة' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().trim().max(300).optional() }).parse(req.body ?? {})
+    return review.rejectPendingPhoto(profileId, req.auth!.userId, reasonAr)
+  })
+
   /* اقتراحاتُ الدورات يحرّرها الأدمن — بصلاحيّة مراجعة الطلبات نفسِها،
      فمن يقرّر في الطلب يصحّح ما يُقرَّر عليه. والسقفُ سقفُ `MAX_PROPOSALS`. */
   app.put('/api/admin/trainer-applications/:id/teachable-proposals', {

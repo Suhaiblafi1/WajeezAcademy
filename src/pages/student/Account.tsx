@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   Award, BookOpen, CheckCircle2, FileText, Loader2, Lock, LogOut,
-  Mail, MessageCircle, Route as RouteIcon, Save, ShieldAlert, User, X,
+  ImagePlus, Mail, MessageCircle, Route as RouteIcon, Save, ShieldAlert, User, X,
 } from "lucide-react";
 /* الإطارُ يتبع البوّابةَ التي فُتحت منها الصفحة — لا بوّابةَ المتعلّم دائما.
    والسببُ مشروحٌ في `pages/PortalFrame.tsx`. */
@@ -11,6 +11,7 @@ import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fetchMe } from "@/services/me";
 import { showsLearnerFields } from "@/application/site/account-fields";
 import { clearLocalSession, readSession } from "@/services/auth";
+import { prepareImage, ImageConditionError, PHOTO_OUT_MIME } from "@/lib/prepare-image";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DateField from "@/components/ui/DateField";
@@ -114,6 +115,10 @@ export default function StudentAccount() {
   const [busy, setBusy] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [err, setErr] = useState("");
+  /* ما رُفع عندنا — يُعرض ولا يُحرَّر نصّا، والحقلُ يبقى للروابط الخارجيّة */
+  const [storedAvatar, setStoredAvatar] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   /* تحميل الملف: من الخادم عند وجود جلسة حقيقية، وإلا من المخزن المحلي الموسوم */
   /* ═══ ولماذا تعرف هذه الصفحةُ دورَ صاحبها ═══
@@ -141,10 +146,13 @@ export default function StudentAccount() {
         const data = await apiGet<ServerProfile>("/api/learner/profile");
         if (!alive) return;
         setEmail(data.user.email);
+        const stored = ((data.profile.avatarUrl as string) ?? "");
+        setStoredAvatar(stored.startsWith("/api/") ? stored : "");
         setForm({
           ...EMPTY,
           displayName: data.user.displayName ?? "",
-          avatarUrl: (data.profile.avatarUrl as string) ?? "",
+          avatarUrl: ((data.profile.avatarUrl as string) ?? "").startsWith("/api/")
+            ? "" : ((data.profile.avatarUrl as string) ?? ""),
           phone: (data.profile.phone as string) ?? "",
           country: (data.profile.country as string) ?? "",
           city: (data.profile.city as string) ?? "",
@@ -206,6 +214,41 @@ export default function StudentAccount() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const touch = (k: string) => () => setTouched((t) => (t[k] ? t : { ...t, [k]: true }));
 
+  /* الرفعُ ثلاثُ خطوات: تجهيزٌ في المتصفّح يفرض الشروطَ ويُسقط EXIF، ثمّ
+     رابطٌ موقّتٌ من الخادم، ثمّ البايتاتُ إليه مباشرةً لا في JSON.
+
+     ومن كان مدرّبا فصورتُه تنتظر اعتمادَ الإدارة قبل صفحته العامّة — يقولها
+     الخادمُ في `awaitingApproval`، وتُقال له هنا صراحةً لئلّا ينتظر ظهورا
+     لا يأتي. */
+  const uploadAvatar = async (file: File) => {
+    setErr(""); setSavedMsg(""); setPhotoBusy(true);
+    try {
+      const blob = await prepareImage(file);
+      const r = await apiPost<{
+        uploadUrl: string; maxBytes: number; avatarUrl: string; awaitingApproval: boolean;
+      }>("/api/learner/avatar-upload", { mime: PHOTO_OUT_MIME });
+      if (blob.size > r.maxBytes) {
+        setErr(`الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)`);
+        return;
+      }
+      const res = await fetch(r.uploadUrl, {
+        method: "PUT", headers: { "content-type": PHOTO_OUT_MIME }, body: blob,
+      });
+      if (!res.ok) { setErr("تعذّر رفعُ الصورة"); return; }
+      setStoredAvatar(r.avatarUrl);
+      setForm((f) => ({ ...f, avatarUrl: "" }));
+      setSavedMsg(r.awaitingApproval
+        ? "رُفعت صورتُك. وتظهر في حسابك الآن — أمّا صفحتُك العامّة فتنتظر اعتمادَ الإدارة."
+        : "رُفعت صورتُك.");
+    } catch (e) {
+      setErr(e instanceof ImageConditionError ? e.message
+        : e instanceof ApiError ? e.message : "تعذّر رفعُ الصورة");
+    } finally {
+      setPhotoBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
   const fieldErrors = useMemo<Record<string, string | null>>(() => {
     const name = form.displayName.trim();
     const url = form.avatarUrl.trim();
@@ -248,7 +291,11 @@ export default function StudentAccount() {
       gender: form.gender || null,
       interests: form.interests,
       /* الحقول الفارغة تُرسل null لتمسح القيمة القديمة بوعي */
-      avatarUrl: form.avatarUrl || null, phone: form.phone || null,
+      /* ما رُفع عندنا لا يمرّ في هذه الحمولة: الحقلُ يفرغ بعد الرفع بقصد،
+         فإرسالُ `null` عنه يمحو صورةً لم يطلب أحدٌ محوَها. ولا يُرسل المحوُ
+         إلّا إذا لم تكن هناك مرفوعةٌ أصلا — أي أنّ الفراغَ فراغُ صاحبه. */
+      ...(form.avatarUrl.trim() || !storedAvatar ? { avatarUrl: form.avatarUrl || null } : {}),
+      phone: form.phone || null,
       country: form.country || null, city: form.city || null,
       preferredLanguage: form.preferredLanguage || null,
       education: form.education || null, university: form.university || null, major: form.major || null,
@@ -349,8 +396,8 @@ export default function StudentAccount() {
       {/* بطاقة الهوية */}
       <Panel as="section" className="md:p-8">
         <div className="flex flex-wrap items-center gap-4">
-          {form.avatarUrl ? (
-            <img src={form.avatarUrl} alt="صورتك الشخصية" className="h-16 w-16 rounded-2xl border border-white/10 object-cover" />
+          {(storedAvatar || form.avatarUrl) ? (
+            <img src={storedAvatar || form.avatarUrl} alt="صورتك الشخصية" className="h-16 w-16 rounded-2xl border border-white/10 object-cover" />
           ) : (
             <span className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-teal to-teal-deep text-2xl font-black text-foreground">
               {(form.displayName || "م").charAt(0)}
@@ -373,7 +420,23 @@ export default function StudentAccount() {
             <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} onBlur={touch("displayName")} {...bad("displayName", errOf("displayName"))} className={inputCls} autoComplete="name" />
           </Field>
           <Field label="رابط الصورة الشخصية" hint="اختياري — رابط صورة مباشر يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
-            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder="https://…" className={`${inputCls} text-left`} />
+            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder={storedAvatar ? "صورةٌ مرفوعةٌ عندنا" : "https://…"} className={`${inputCls} text-left`} />
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadAvatar(f); }}
+              />
+              <Button tone="secondary" size="sm" disabled={photoBusy} onClick={() => fileRef.current?.click()}>
+                {photoBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                {photoBusy ? "جارٍ الرفع…" : "ارفع صورة من جهازك"}
+              </Button>
+              <span className="text-fine leading-5 text-muted-foreground">
+                تُقتطع مربّعةً · أقلُّ ضلعٍ ٤٠٠ بكسل · JPEG أو PNG أو WebP
+              </span>
+            </div>
           </Field>
         </div>
       </Panel>
