@@ -55,6 +55,8 @@ import { stories, partnerLogos, STORY_ILLUSTRATIVE_BADGE_AR } from '@/data/stori
 import StoryAvatar from '@/components/StoryAvatar'
 import ProofBand from '@/components/ProofBand'
 import { Card, Panel, Inset } from '@/components/ui/Surface'
+import { waHref, whatsAppFor } from '@/application/site/whatsapp'
+import { useWhatsAppNumbers } from '@/services/whatsapp'
 
 /* «مؤشر وجيز» — سؤالا وعيٍ مستقلّان (البند ٥٧): يُحفظان محليا على جهاز الزائر
    فقط، ولا يغذّيان التشخيص إلّا `m4` — وهو الذي يوفّر سؤالا في التشخيص فعلا
@@ -1158,15 +1160,15 @@ function MobileCtaBar() {
 /* ───────────────── المستشار المهني — قناة إنسانية هادئة لا تزاحم المؤشر ───────────────── */
 const ADVISOR_MSG = 'مرحبا، زرت أكاديمية وجيز وأريد حديثا قصيرا مع مستشار مهني قبل أن أبدأ تشخيصي.'
 
-function advisorHref() {
-  return CONTACT.whatsapp
-    ? `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(ADVISOR_MSG)}`
-    : `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمية وجيز — حديث مع مستشار')}&body=${encodeURIComponent(ADVISOR_MSG)}`
+function advisorHref(numbers: Record<string, string>) {
+  return waHref(numbers, 'advisor', CONTACT.whatsapp, ADVISOR_MSG)
+    ?? `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمية وجيز — حديث مع مستشار')}&body=${encodeURIComponent(ADVISOR_MSG)}`
 }
 
-/* شارة قناة عصرية — نقطة حية متدرجة لا شعار أخضر تقليدي */
-function ChannelBadge() {
-  const isWhatsApp = Boolean(CONTACT.whatsapp)
+/* شارة قناة عصرية — نقطة حية متدرجة لا شعار أخضر تقليدي.
+   والقناةُ تُمرَّر لا تُحسَب هنا: الشارةُ والزرُّ يقولان شيئا واحدا، فلو
+   حسب كلٌّ منهما على حدة جاز أن يفتح الزرُّ بريدا والشارةُ تقول «واتساب». */
+function ChannelBadge({ isWhatsApp }: { isWhatsApp: boolean }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-2.5 py-1 text-fine font-bold text-muted-foreground">
       <span className={`h-1.5 w-1.5 rounded-full ${isWhatsApp ? 'bg-gradient-to-br from-emerald-300 to-teal' : 'bg-teal'}`} />
@@ -1177,7 +1179,8 @@ function ChannelBadge() {
 
 /* شريط رفيع بعد القصص — لحظة الاقتناع العاطفي يجد فيها المتردد طمأنة بشرية */
 function AdvisorStrip() {
-  const isWhatsApp = Boolean(CONTACT.whatsapp)
+  const numbers = useWhatsAppNumbers()
+  const isWhatsApp = Boolean(whatsAppFor(numbers, 'advisor', CONTACT.whatsapp))
   return (
     <section className="shell pb-4">
       <Panel tone="accent" className="reveal flex flex-col items-center justify-between gap-5 bg-gradient-to-l from-panel/80 to-card px-6 py-6 md:flex-row md:px-8">
@@ -1193,7 +1196,7 @@ function AdvisorStrip() {
         </div>
         <div className="flex shrink-0 flex-col items-center gap-2">
           <a
-            href={advisorHref()}
+            href={advisorHref(numbers)}
             target={isWhatsApp ? '_blank' : undefined}
             rel={isWhatsApp ? 'noreferrer' : undefined}
             className="inline-flex items-center gap-2 rounded-full border border-teal/40 bg-teal/10 px-6 py-2.5 text-sm font-bold text-teal-light-ink transition hover:bg-teal/20"
@@ -1203,7 +1206,7 @@ function AdvisorStrip() {
           </a>
           <p className="flex items-center gap-2 text-read text-muted-foreground">
             مجاني · خمس عشرة دقيقة · بلا التزام
-            <ChannelBadge />
+            <ChannelBadge isWhatsApp={isWhatsApp} />
           </p>
         </div>
       </Panel>

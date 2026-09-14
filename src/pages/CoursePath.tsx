@@ -32,7 +32,6 @@ import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first-time-promo";
-import { CONTACT } from "@/data/stories";
 import { savePathDraft } from "@/services/path-drafts";
 import {
   courseById, courseFullById, courseDetails,
@@ -43,6 +42,7 @@ import { hasCoreCatalog } from "@/data/core-catalog-source";
 import Button from "@/components/ui/Button";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
+import DiscountProofLink from '@/components/DiscountProofLink'
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 /** ترتيبُ الدورة المضافة بالكلمة: «أضف دورة ثالثة» لا «أضف الدورة ٣» —
@@ -637,19 +637,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     بريدٍ من الهاتف رحلةٌ يتركها أكثرُهم في منتصفها.
 
                     وواتساب المستشارين هو القناة الرسميّة المعتمدة أصلا
-                    (`CONTACT.whatsapp` في data/stories.ts)، فلا قناةَ جديدة
-                    تُفتح هنا بل تُستعمل القائمة. */}
-                <p className="mt-2 text-read leading-5 text-muted-foreground">
-                  <a
-                    href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-teal-ink"
-                  >
-                    راسلنا على واتساب بصورة الإثبات
-                  </a>{" "}
-                  لمعرفة الكود للطلبة وموظفي الحكومة.
-                </p>
+                    (رقمُ «إثبات أهليّة خصم الفئة» في إعدادات التكاملات)، فلا
+                    قناةَ جديدة تُفتح هنا بل تُستعمل القائمة. */}
+                <DiscountProofLink />
               </details>
             </div>
 

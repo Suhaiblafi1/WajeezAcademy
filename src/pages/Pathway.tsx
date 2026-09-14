@@ -46,10 +46,10 @@ import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { DISCOUNT_CATEGORIES, nextBuildStep } from "@/application/commerce/discount-policy";
 import { priceCart } from "@/application/commerce/cart-pricing";
 import { couponFieldCls } from "@/components/FormKit";
-import { CONTACT } from "@/data/stories";
 
 import Button from "@/components/ui/Button";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
+import DiscountProofLink from '@/components/DiscountProofLink'
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = safeGet("wajeez_user");
@@ -822,17 +822,7 @@ export default function PathwayPage() {
                             </li>
                           ))}
                         </ul>
-                        <p className="mt-2 text-read leading-5 text-muted-foreground">
-                          <a
-                            href={`https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent("أرغب بالتحقق من أهليتي لخصم فئة — وسأرفق ما يثبت ذلك.")}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-teal-ink"
-                          >
-                            راسلنا على واتساب بصورة الإثبات
-                          </a>{" "}
-                          لمعرفة الكود للطلبة وموظفي الحكومة.
-                        </p>
+                        <DiscountProofLink />
                       </details>
                     </>
                   ) : (
