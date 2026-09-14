@@ -373,11 +373,20 @@ interface BlastRadius {
 }
 interface TrainerChangeRequest {
   id: string; status: string; reason: string; scope: string; createdAt: string;
-  course?: { id: string } | null; courseId?: string;
-  items?: { changeType: string; note?: string | null }[];
+  /* اسمُ الدورة الحاليُّ يصل مع القائمة (`versions` في `listForReview`) —
+     والرمزُ وحدَه لا يُعرِّف دورةً لمن يقرّر فيها (ح-١). */
+  course?: { id: string; versions?: { titleAr: string }[] } | null; courseId?: string;
+  items?: { changeType: string; note?: string | null; afterValue?: unknown }[];
   /* البند ب-١: من يصله التعديل — يأتي مع القائمة لا بنداء إضافي */
   blastRadius?: BlastRadius | null;
   blastRadiusSentenceAr?: string | null;
+}
+
+/** الاسمُ المقترَحُ في اقتراحِ تسمية — أو لا شيءَ إن لم يكن الاقتراحُ تسمية */
+function proposedTitle(r: TrainerChangeRequest): string | null {
+  const item = r.items?.find((i) => i.changeType === "course_title_edit");
+  const after = (item?.afterValue ?? null) as { titleAr?: unknown } | null;
+  return typeof after?.titleAr === "string" && after.titleAr.trim() ? after.titleAr.trim() : null;
 }
 
 /* البند ب-١: دائرة الأثر فوق كل اقتراح. تُعرض قبل أزرار القرار لا بعدها —
@@ -455,9 +464,20 @@ export function TrainerChangeRequests() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-black">
-                دورة <span dir="ltr" className="font-mono text-xs">{r.courseId ?? r.course?.id ?? "—"}</span>
+                {r.course?.versions?.[0]?.titleAr ?? `دورة ${r.courseId ?? r.course?.id ?? "—"}`}
                 <span className="mr-2 text-fine font-bold text-muted-foreground">نطاق: {r.scope === "cohort" ? "شعبة" : "كتالوج"}</span>
               </p>
+              {/* ═══ الاسمُ المقترَحُ يُقرأ قبل القرار لا بعده (ح-٣) ═══
+
+                  البطاقةُ كانت تعرض السببَ و«١ بند تعديل» — فمن ضغط «اعتماد
+                  للكتالوج» على اقتراحِ تسميةٍ اعتمد اسما **لم يره**. والاسمُ
+                  هو كلُّ الاقتراح، لا تفصيلا فيه. */}
+              {proposedTitle(r) && (
+                <p className="mt-1 text-read leading-6">
+                  <span className="text-muted-foreground">الاسمُ المقترَح: </span>
+                  <b className="text-foreground">{proposedTitle(r)}</b>
+                </p>
+              )}
               <p className="mt-1 text-read leading-6 text-muted-foreground">{r.reason}</p>
               <p className="mt-1 text-read text-muted-foreground">
                 {fmtDateTime(new Date(r.createdAt))} · {r.items?.length ?? 0} بند تعديل

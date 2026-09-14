@@ -10,13 +10,29 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { blastRadiusSentenceAr, courseBlastRadius, planHoursImpactOf } from './catalog-impact.service'
 import { checkHoursProposal, planHoursWarnings } from '../../src/application/catalog/hours-policy'
-import { catalogScopeGate } from '../../src/application/catalog/scope-policy'
+import { catalogScopeGate, needsCatalogScope, TITLE_ONLY_CHANGE } from '../../src/application/catalog/scope-policy'
 
 export const CHANGE_TYPES = [
+  /* ح-٣: إعادةُ تسميةِ الدورة **نسخةٌ منها لا دورةٌ ثانية**.
+
+     كان المدرّبُ لا يملك بابا إلى اسم دورته في هذه القناة أصلا: الأنواعُ
+     كلُّها عن المحاور والساعات، و`publishToCatalog` تنسخ `titleAr` من
+     الإصدار الأساس حرفا بحرف. فمن أراد اسما آخرَ لم يجد إلّا صندوقَ
+     «اقتراحٌ للإدارة» في خطّة شعبته — وكان يكتب الاسمَ **على النسخة
+     الحاليّة نفسِها** بـ`updateMany`، فيُعاد تسميةُ ما صدر من شهادات.
+
+     فصار الاسمُ نوعَ تغييرٍ كسائرِه: يمرّ بـmaker-checker، وتُعرض معه
+     دائرةُ الأثر، وينتهي **إصدارا جديدا** يحمل الاسمَ الجديد ويترك ما قبله
+     كما كان. وهو نصُّ ح-٣: «النسخة رقم ٢» لا دورةٌ مستقلّة. */
+  'course_title_edit',
   'module_title_edit', 'module_add', 'module_reorder', 'explanation_improve',
   'material_add', 'activity_add', 'assignment_add', 'assessment_improve',
   'examples_update', 'duration_propose', 'project_propose', 'outcome_propose',
 ] as const
+
+/** حدّا اسمِ الدورة — ما يقبله الكتالوج نفسُه */
+export const MIN_COURSE_TITLE = 4
+export const MAX_COURSE_TITLE = 120
 export type ChangeType = (typeof CHANGE_TYPES)[number]
 
 /* مفاتيح محظورة داخل afterValue — حماية عميقة فوق حصر أنواع التغيير */
@@ -110,9 +126,33 @@ export class TrainerChangeService {
       if (!check.ok) throw new AuthError('bad_hours', check.errorsAr.join(' · '), 400)
     }
 
+    /* اسمُ الدورة حقيقةُ كتالوجٍ لا حقيقةُ شعبة (ح-٣). ولو قُبل بنطاق الشعبة
+       لصار «تعديلا» يُكتب في خطّة تنفيذٍ لا يقرؤه أحد، والدورةُ باسمها
+       الأوّل في كلّ مسارٍ وقالبٍ وشهادة — وهو الوهمُ الذي يحرسه هذا الردّ. */
+    const titleItems = input.items.filter((i) => i.changeType === TITLE_ONLY_CHANGE)
+    if (titleItems.length && input.scope !== 'catalog') {
+      throw new AuthError('bad_scope', 'اسمُ الدورة يخصّ الكتالوج كلَّه لا شعبةً واحدة — اقترحه بنطاق الكتالوج', 400)
+    }
+    if (titleItems.length > 1) throw new AuthError('bad_items', 'اسمٌ واحدٌ للدورة لا اسمان في اقتراحٍ واحد', 400)
+    for (const item of titleItems) {
+      const after = (item.afterValue ?? {}) as Record<string, unknown>
+      const titleAr = typeof after.titleAr === 'string' ? after.titleAr.trim() : ''
+      if (titleAr.length < MIN_COURSE_TITLE || titleAr.length > MAX_COURSE_TITLE) {
+        throw new AuthError('bad_title', `اسمُ الدورة بين ${MIN_COURSE_TITLE} و${MAX_COURSE_TITLE} حرفا`, 400)
+      }
+      const current = await this.prisma.courseVersion.findUnique({
+        where: { courseId_version: { courseId: input.courseId, version: course.currentVersion } },
+        select: { titleAr: true },
+      })
+      if (current && current.titleAr.trim() === titleAr) {
+        throw new AuthError('no_change', 'الاسمُ المقترَح هو الاسمُ القائم', 400)
+      }
+    }
+
     /* البند هـ-١: نطاق الكتالوج صلاحية تُمنح بعد سجل مثبت لا حقٌّ يُفترض.
-       نطاق الشعبة مفتوح للجميع — وهو الافتراضي في الشاشة والرسالة هنا. */
-    if (input.scope === 'catalog') {
+       نطاق الشعبة مفتوح للجميع — وهو الافتراضي في الشاشة والرسالة هنا.
+       واقتراحُ الاسمِ وحدَه مستثنى، وعلّتُه مكتوبةٌ في `scope-policy`. */
+    if (input.scope === 'catalog' && needsCatalogScope(input.items.map((i) => i.changeType))) {
       const gate = await this.catalogScopeFor(profile.id)
       if (!gate.allowed) throw new AuthError('scope_not_granted', gate.reasonAr, 403)
     }
@@ -455,10 +495,16 @@ export class TrainerChangeService {
 
     let totalHours = baseVersion.totalHours
     let durationProposed: number | null = null
+    /* ح-٣: الاسمُ يبدأ من الإصدار الأساس ولا يُنسخ منه حرفا بحرف بعد اليوم */
+    let titleAr = baseVersion.titleAr
 
     for (const item of req.items) {
       const after = (item.afterValue ?? {}) as Record<string, unknown>
       switch (item.changeType) {
+        case 'course_title_edit': {
+          if (typeof after.titleAr === 'string' && after.titleAr.trim()) titleAr = after.titleAr.trim()
+          break
+        }
         case 'module_title_edit': {
           const m = modules.find((x) => x.id === item.targetKey)
           if (m && typeof after.titleAr === 'string') m.titleAr = after.titleAr
@@ -518,7 +564,7 @@ export class TrainerChangeService {
       await tx.courseVersion.create({
         data: {
           courseId: course.id, version: newVersion,
-          titleAr: baseVersion.titleAr, legacyTitleAr: baseVersion.legacyTitleAr,
+          titleAr, legacyTitleAr: baseVersion.legacyTitleAr,
           shortPromiseAr: baseVersion.shortPromiseAr, descriptionAr: baseVersion.descriptionAr,
           audienceAr: baseVersion.audienceAr, prerequisitesAr: baseVersion.prerequisitesAr,
           levelAr: baseVersion.levelAr, totalHours, weeklyHours: baseVersion.weeklyHours,

@@ -51,18 +51,27 @@ export interface TrainerPlanModule {
 }
 /** `kind` من `RESOURCE_KINDS` — وغيابُه يعني «رابط» (ما حُفظ قبل العمود) */
 export interface TrainerPlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
-/** ما يقترحه المدرّبُ على الإدارة مع خطّته — ويُطبَّق باعتمادها إن شاءت (٨ سبتمبر ٢٠٢٦) */
-export interface TrainerPlanProposals { courseTitleAr?: string | null; pathwayTitleAr?: string | null }
 export interface TrainerPlanContent {
   kind: 'trainer'
   summaryAr?: string | null
   modules: TrainerPlanModule[]
   resources: TrainerPlanResource[]
   liveNoteAr?: string | null
-  proposals?: TrainerPlanProposals | null
+  /* ── وحُذف `proposals` من هنا (د-٦ · ١٤ سبتمبر ٢٠٢٦) ──
+
+     كان حقلَين — اسمٌ مقترحٌ للدورة وآخرُ للمسار — يركبان مع الخطّة،
+     ويكتبهما الاعتمادُ **على النسخة الحاليّة** بـ`updateMany`. فتبديلٌ
+     واحدٌ يُعيد تسميةَ كلِّ شهادةٍ صدرت (ك-٢)، بلا سجلِّ من اقترح ولا لِمَ.
+
+     واسمُ الدورة صار يمرّ بقناته: `TrainerChangeService` بنوع
+     `course_title_edit` — maker-checker ودائرةُ أثرٍ و**إصدارٌ جديد** لا
+     كتابةٌ فوق القائم (ح-٣). واسمُ المسار سقط ولم يُنقل: المدرّبُ لا يعيد
+     تسميةَ مسارٍ مشترك، بل يبني مسارَه هو من دوراته (القسم «ن»).
+
+     والمحفوظُ في القاعدة لا يُمسّ: `content` عمودُ JSON، وما فيه من
+     `proposals` يبقى كما كتبه صاحبُه ولا يقرؤه شيء — وتعرضه شاشةُ المدرّب
+     مهيّأً ليُرسَل في القناة الجديدة، فلا يضيع ولا يُرسَل بلا ضغطة. */
 }
-/** أيُّ الاقتراحين تقبله الإدارة عند الاعتماد */
-export interface ApplyProposals { courseTitle?: boolean; pathwayTitle?: boolean }
 
 /** ما يجوز للمدرّب تعديلُه في صفّ الشعبة نفسِه — والباقي بيد الإدارة */
 export const TRAINER_EDITABLE_COHORT_FIELDS = [
@@ -439,11 +448,11 @@ export class CohortPlanService {
     }
   }
 
-  async decide(actorId: string, planId: string, approve: boolean, note?: string, applyProposals?: ApplyProposals) {
+  async decide(actorId: string, planId: string, approve: boolean, note?: string) {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({
       where: { id: planId },
       include: {
-        cohort: { select: { id: true, title: true, pathwayId: true, course: { select: { id: true, currentVersion: true, homePathwayId: true } } } },
+        cohort: { select: { id: true, title: true } },
         trainer: { include: { application: { select: { fullName: true, email: true } } } },
       },
     })
@@ -482,42 +491,6 @@ export class CohortPlanService {
       actorId, action: 'cohort.plan.approve', entityType: 'cohort', entityId: plan.cohort.id, meta: { planId },
     })
 
-    /* ═══ اقتراحُ اسم الدورة أو المسار — يُطبَّق باعتماد الإدارة لا بإرسال المدرّب ═══
-
-       قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): للمدرّب أن يغيّر «حتّى عنوان الدورة،
-       واسمَ المسار إن كان له مسارٌ كامل — وكلُّه يحتاج موافقةَ الإدارة». فالاقتراحُ
-       يركب مع الخطّة، والمعتمِدُ يختار ما يقبله. ويُكتب على النسخة الحاليّة من
-       الدورة والمسار — الاسمُ وحدَه — ويُسجَّل أثرا باسم من اعتمده. */
-    const proposals = (plan.content as TrainerPlanContent | null)?.proposals ?? null
-    const applied: Record<string, string> = {}
-    if (proposals && applyProposals) {
-      const courseTitle = proposals.courseTitleAr?.trim()
-      if (applyProposals.courseTitle && courseTitle) {
-        await this.prisma.courseVersion.updateMany({
-          where: { courseId: plan.cohort.course.id, version: plan.cohort.course.currentVersion },
-          data: { titleAr: courseTitle },
-        })
-        applied.courseTitleAr = courseTitle
-      }
-      const pathwayTitle = proposals.pathwayTitleAr?.trim()
-      const pathwayId = plan.cohort.pathwayId ?? plan.cohort.course.homePathwayId
-      if (applyProposals.pathwayTitle && pathwayTitle && pathwayId) {
-        const pathway = await this.prisma.pathway.findUnique({ where: { id: pathwayId }, select: { currentVersion: true } })
-        if (pathway) {
-          await this.prisma.pathwayVersion.updateMany({
-            where: { pathwayId, version: pathway.currentVersion },
-            data: { title: pathwayTitle },
-          })
-          applied.pathwayTitleAr = pathwayTitle
-          applied.pathwayId = pathwayId
-        }
-      }
-      if (Object.keys(applied).length > 0) {
-        await recordAudit(this.prisma, {
-          actorId, action: 'cohort.plan.proposal_applied', entityType: 'cohort', entityId: plan.cohort.id, meta: { planId, ...applied },
-        })
-      }
-    }
 
     await this.tellTrainer(plan.trainer, plan.cohort, {
       title: `اعتُمدت خطّةُ «${plan.cohort.title}»`,
@@ -525,7 +498,7 @@ export class CohortPlanService {
       heading: 'اعتُمدت خطّةُ شعبتك — وهي جاهزةٌ الآن',
       cta: 'افتح شعبتك',
     })
-    return { status: 'approved' as const, applied }
+    return { status: 'approved' as const }
   }
 
   /** تذكيرُ المدرّب بأن يُكمل تجهيزَ شعبته — إشعارٌ وبريدٌ معا */
