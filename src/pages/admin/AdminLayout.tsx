@@ -68,6 +68,9 @@ export default function AdminLayout({ children, title }: { children: React.React
            يُركَّب في بوابتَي المدرّب والمستشار. */
         { to: "/admin/learners", label: "الطلبة المسجَّلون", icon: GraduationCap , need: "enrollment.manage"},
         { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus , need: "trainer.applications.view"},
+        /* ج-١: «أجد صعوبةً بالبحث عن الدورات» — بابٌ يبدأ من الإنسان. وصلاحيّتُه
+           `trainer.assign`: هي ما يفعله، والتأهيلُ في مكانه محروسٌ بمساره. */
+        { to: "/admin/assign-by-trainer", label: "إسنادٌ من المدرّب", icon: UserCheck, need: "trainer.assign" },
         { to: "/admin/advisor-requests", label: "طلبات المستشارين", icon: BadgePercent , need: "advisor.request.review"},
         /* طابورُ شهاداتِ المتعلّمين وتوصياتِهم — كان الإصدارُ لا يُطلب أصلا،
            فمن أنهى دورتَه في شعبةٍ لا أحدَ يفتحها بقي بلا شهادة. */

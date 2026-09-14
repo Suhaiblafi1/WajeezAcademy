@@ -56,6 +56,7 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTerms = lazy(() => import('./pages/admin/Terms'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
+const AssignByTrainer = lazy(() => import('./pages/admin/AssignByTrainer'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
@@ -276,6 +277,8 @@ export default function App() {
                 `data/admin`. سير المحتوى الحقيقي في «الكتالوج» و«النشر والإصدارات». */}
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />
             <Route path="/admin/trainers" element={<AdminTrainerApps />} />
+            {/* ج-١: بابٌ ثانٍ للإسناد يبدأ من المدرّب — وإسنادُ الشعبة يبقى في صفحتها */}
+            <Route path="/admin/assign-by-trainer" element={<AssignByTrainer />} />
             {/* الأتعابُ شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك محروسٌ
                 بـ`trainer.applications.view` والأتعابُ بـ`trainer.compensation.manage`،
                 ولا تلتقيان إلّا في `super_admin` — فكانت الماليةُ تملك المفتاحَ
