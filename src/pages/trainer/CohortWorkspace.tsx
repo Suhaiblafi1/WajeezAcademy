@@ -37,6 +37,7 @@ import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import CohortOps from "./CohortOps";
 import CourseTitleProposal from "./CourseTitleProposal";
+import SessionsAndAttendance from "./SessionsAndAttendance";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
@@ -187,7 +188,6 @@ export default function CohortWorkspace() {
   const [content, setContent] = useState<PlanContent | null>(null);
   const [identity, setIdentity] = useState({ title: "", startsAt: "", endsAt: "", daysOfWeek: [] as string[], startTime: "", language: "", deliveryMode: "remote" });
   const [confirm, setConfirm] = useState(false);
-  const [recLink, setRecLink] = useState<Record<string, { title: string; url: string }>>({});
   /* نموذجُ التكليف — واحدٌ للإنشاء والتعديل. `editingId` يقرّر أيَّهما:
      فارغٌ فإنشاء، وفيه معرّفٌ فتعديلُ ذاك التكليف بعينه. */
   const [taskForm, setTaskForm] = useState({ title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "" });
@@ -293,7 +293,6 @@ export default function CohortWorkspace() {
     .filter((m) => (m.bodyAr ?? "").trim().length < MIN_MODULE_BODY);
   const ready = required.length ? Math.round((doneCount / required.length) * 100) : 0;
   const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
-  const recordingsDone = byKey.get("recordings")?.done ?? false;
 
   /* ── «فيه تغييرٌ لم يُحفظ» ──
 
@@ -719,6 +718,10 @@ export default function CohortWorkspace() {
           {/* الجدولةُ بيده داخلَ نافذة الإدارة */}
           <TrainerSchedule cohortId={ws.cohort.id} onDone={() => void load()} />
 
+          {/* واللقاءاتُ المجدولةُ وحضورُها — انتقلت من «التشغيل» (د-٤). من
+              جدول لقاءه يرى في الموضع نفسِه ما جدوله ومن حضره. */}
+          <SessionsAndAttendance cohortId={ws.cohort.id} />
+
           {/* ملاحظةُ اللقاءات موضعُها هنا لا في «المحاور»: هي عن اللقاء لا
               عن المحور، وكانت في خطوةٍ لا يفتحها من يسأل عن لقاءاته. */}
           <Panel as="section">
@@ -729,39 +732,6 @@ export default function CohortWorkspace() {
               <textarea rows={2} value={content.liveNoteAr ?? ""} onChange={(e) => setContent({ ...content, liveNoteAr: e.target.value })} disabled={locked} className={areaCls} />
             </StaffField>
             <Button tone="confirm" disabled={busy || locked || !dirty.sessions} onClick={savePlan} className="mt-4">احفظ الملاحظة</Button>
-          </Panel>
-          <Panel as="section">
-            <h3 className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-light-ink" /> الجلسات المسجّلة — من رابط <span className="text-read font-bold text-muted-foreground">({recordingsDone ? "أُضيفت" : "اختياريّ"})</span></h3>
-            <p className="mt-1 text-read leading-6 text-muted-foreground">ألصق رابطَ التسجيل (يوتيوب، أو درايف، أو زووم) على لقائه — لا حاجةَ لرفع ملفّ.</p>
-            {ws.sessions.length === 0 ? (
-              <p className="mt-3 text-read text-muted-foreground">لا لقاءاتٍ بعد — أضفها أعلاه أوّلا.</p>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {ws.sessions.map((s) => {
-                  const form = recLink[s.id] ?? { title: "", url: "" };
-                  return (
-                    <Card as="li" key={s.id}>
-                      <p className="text-read font-black">{s.title} <span className="font-normal text-muted-foreground">· {fmtDateTimeAr(s.startsAt)}</span></p>
-                      {s.recordings.length > 0 && (
-                        <ul className="mt-2 space-y-1 text-read">
-                          {s.recordings.map((r) => (
-                            <li key={r.id}><a href={r.readUrl ?? r.externalUrl ?? "#"} target="_blank" rel="noreferrer" className="text-teal-light-ink underline decoration-dotted underline-offset-4">{r.title}</a></li>
-                          ))}
-                        </ul>
-                      )}
-                      <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                        <input value={form.title} onChange={(e) => setRecLink({ ...recLink, [s.id]: { ...form, title: e.target.value } })} placeholder="اسم التسجيل" aria-label={`اسم تسجيل ${s.title}`} className={controlCls} />
-                        <input dir="ltr" value={form.url} onChange={(e) => setRecLink({ ...recLink, [s.id]: { ...form, url: e.target.value } })} placeholder="https://…" aria-label={`رابط تسجيل ${s.title}`} className={`${controlCls} text-left`} />
-                        <Button tone="secondary" size="sm" disabled={busy || form.title.trim().length < 2 || !/^https?:\/\//.test(form.url)}
-                          onClick={() => act(() => apiPost(`/api/trainer/sessions/${s.id}/recording-link`, { title: form.title.trim(), url: form.url.trim() }).then(() => setRecLink({ ...recLink, [s.id]: { title: "", url: "" } })), "أُضيف التسجيل")}>
-                          أضف
-                        </Button>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </ul>
-            )}
           </Panel>
         </div>
       )}
