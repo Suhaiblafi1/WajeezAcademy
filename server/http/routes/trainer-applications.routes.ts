@@ -3,15 +3,17 @@
    وما يخصّ صاحبَ الحساب: طلبه، واستئنافه، وسحبه. */
 
 import type { FastifyInstance } from 'fastify'
-import { getObjectMeta, putObject } from '../../services/object-store'
+import { getObject, getObjectMeta, putObject } from '../../services/object-store'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import {
   verifySignature, recordDocumentSize, readDocumentContent, resolveStorageOwner,
-  MAX_UPLOAD_ANY, UPLOADABLE_KINDS,
+  MAX_UPLOAD_ANY, UPLOADABLE_KINDS, PHOTO_KEY_PREFIX,
 } from '../../services/storage.service'
+import { assertSafeKey } from '../../services/object-store'
+import { PUBLIC_TRAINER_WHERE } from '../../services/trainer-visibility'
 import { requirePermission } from '../auth-plugin'
 import { CONTACT_CHANNEL_VALUES, TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 import { assertNotBot } from '../honeypot'
@@ -293,6 +295,39 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     const name = meta?.originalName || owner.originalName || storageKey
     reply.header('content-type', mime)
     reply.header('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(name)}`)
+    return reply.send(content)
+  })
+
+  /* ═══ صورةُ المدرّب — عامّةٌ بلا توقيع، ومحروسةٌ بالنشر ═══
+
+     وثائقُ المتقدّم روابطُ موقّعةٌ لعشر دقائق. والصورةُ لا تصلح كذلك: هي
+     `<img src>` في صفحةٍ عامّةٍ يفتحها زائرٌ بلا حساب، وتُخزَّن في ذاكرة
+     متصفّحه، وتُشارَك. ورابطٌ ينتهي بعد عشر دقائق يعني صفحةَ فريقٍ مكسورةً
+     لمن فتحها متأخّرا.
+
+     **فالحارسُ النشرُ لا التوقيع**: لا تُقدَّم صورةٌ إلّا لملفٍّ يجتاز
+     `PUBLIC_TRAINER_WHERE` بعينها — الشرطُ نفسُه الذي يحكم ظهورَ الاسم.
+     فمدرّبٌ لم يُعتمد نشرُه، أو أُوقف، تختفي صورتُه في اللحظة نفسِها التي
+     يختفي فيها اسمُه. ومفتاحُ المخزن عشوائيٌّ بـ٢٤ بايتا، فلا يُخمَّن. */
+  app.get('/api/v1/trainer-photos/:storageKey', {
+    schema: { tags: ['public'], summary: 'صورةُ مدرّبٍ معتمَدِ النشر — بلا توقيع، وتختفي بإخفائه' },
+  }, async (req, reply) => {
+    const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
+    assertSafeKey(storageKey)
+    const profile = await prisma.trainerProfile.findFirst({
+      where: { photoUrl: `${PHOTO_KEY_PREFIX}${storageKey}`, ...PUBLIC_TRAINER_WHERE },
+      select: { id: true },
+    })
+    /* ولا يُفرَّق في الردّ بين «لا صورةَ» و«لم يُعتمد نشرُه»: الفرقُ يقول
+       عن مدرّبٍ ما لا يُقال قبل اعتماد نشره. */
+    if (!profile) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'لا صورة' } })
+    const content = await getObject(storageKey)
+    if (!content) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'لا صورة' } })
+    const meta = await getObjectMeta(storageKey)
+    reply.header('content-type', meta?.mime || 'image/jpeg')
+    /* ساعةٌ في ذاكرة المتصفّح: تكفي جولةَ زائرٍ في الموقع، ولا تُبقي صورةَ
+       من أُوقف ظاهرةً يوما بعد إيقافه. */
+    reply.header('cache-control', 'public, max-age=3600')
     return reply.send(content)
   })
 }

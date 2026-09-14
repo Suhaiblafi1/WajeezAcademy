@@ -125,6 +125,7 @@ const PHRASES: Record<string, string> = {
   'integration.calendly.save': 'حفظُ مفتاحِ توقيع Calendly',
   'integration.calendly.register': 'تسجيلُ اشتراك Calendly للمقابلات',
   'integration.zoom.test': 'اختبارُ اتّصالِ Zoom',
+  'integration.whatsapp.save': 'حفظُ أرقامِ واتساب لمواضع الموقع',
   'staff.task.assign': 'تكليفُ موظّفٍ بمهمّة',
   'staff.task.complete': 'إغلاقُ مهمّة',
   'staff.notify': 'إشعارُ موظّف',
@@ -154,6 +155,8 @@ const PHRASES: Record<string, string> = {
   'notification.failed': 'إشعارٌ فشل إرسالُه',
   'trainer.change.apply_catalog': 'تطبيقُ اقتراحِ مدرّبٍ على الكتالوج',
   'trainer.publish_approve': 'اعتمادُ ظهورِ المدرّبِ للعامّة',
+  'trainer.public_profile.save': 'حفظُ ملفِّ المدرّب العامّ',
+  'trainer.photo.upload': 'رفعُ صورةِ المدرّب',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */
   'notification.pref.mute': 'كتمُ صنفِ إشعاراتٍ بطلب صاحبه',

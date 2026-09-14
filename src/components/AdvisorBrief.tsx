@@ -32,6 +32,8 @@ import { loadLastResult } from "@/application/diagnostic/session-store";
 import type { DiagResult } from "@/data/diagnostic";
 import { CONTACT } from "@/data/stories";
 import { fmtDateLong } from "@/application/text/format-ar";
+import { waHref as buildWaHref } from "@/application/site/whatsapp";
+import { useWhatsAppNumbers } from "@/services/whatsapp";
 
 /** ما يُطلب من المرسِل — مكتوبٌ مرّةً ويُقرأ في الورقة وفي الرسالة معا */
 export const BRIEF_ATTACH_NOTE_AR =
@@ -59,9 +61,9 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
   const gaps = (result?.gapDetails ?? []).slice(0, MAX_ROWS);
   const answered = Number(result?.resultJson?.answered_count ?? 0);
 
-  const waHref = `https://wa.me/${CONTACT.whatsapp}?text=${encodeURIComponent(
-    `${message}\n\n${BRIEF_ATTACH_NOTE_AR}`,
-  )}`;
+  /* رقمُ «مستشار قبل الدفع» من الإدارة، و`CONTACT.whatsapp` رجوعٌ حتّى يُضبط */
+  const numbers = useWhatsAppNumbers();
+  const waHref = buildWaHref(numbers, "advisor_brief", CONTACT.whatsapp, `${message}\n\n${BRIEF_ATTACH_NOTE_AR}`);
 
   /* وسمُ الجسد يحكم الطباعة: بوجوده يُخفى `#root` فلا تُطبع الصفحةُ خلف
      النافذة. ويُرفع عند الإغلاق مهما كان سببُه — وإلّا بقيت كلُّ طباعةٍ
@@ -156,9 +158,12 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
           </Button>
           {/* رابطٌ لا زرّ (`as="a"`): يُفتح في لسانٍ جديد ويعمل بلا جافاسكربت
               — ونبرتُه من السلّم لا مكتوبةً في مكانها. */}
-          <Button tone="confirm" as="a" icon={MessageCircle} href={waHref} target="_blank" rel="noreferrer">
-            تابع إلى واتساب
-          </Button>
+          {/* لا زرَّ محادثةٍ إن لا رقمَ — فزرٌّ يفتح `wa.me/` فارغا أسوأُ من غيابه */}
+          {waHref ? (
+            <Button tone="confirm" as="a" icon={MessageCircle} href={waHref} target="_blank" rel="noreferrer">
+              تابع إلى واتساب
+            </Button>
+          ) : null}
         </div>
       </Card>
     </Modal>

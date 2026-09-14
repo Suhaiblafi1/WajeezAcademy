@@ -18,13 +18,13 @@
    الطلب رسالةُ خطأٍ بعد نقرة؛ فتُعرض شعبُ الدورات التي هو مؤهَّلٌ لها وحدَها،
    ويُقال له لماذا اختفى الباقي. */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck, CheckCircle2, Clock, GraduationCap, Loader2, Search,
+  BadgeCheck, CheckCircle2, Clock, GraduationCap, ImagePlus, Loader2, Search,
   ServerOff, ShieldAlert, UserCheck, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { controlCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -48,6 +48,9 @@ interface OpsTrainer {
   suspended: boolean;
   publiclyVisible: boolean;
   isVerified: boolean;
+  headline: string | null;
+  bioPublic: string | null;
+  photoUrl: string | null;
   qualifications: OpsQualification[];
   assignments: OpsAssignment[];
 }
@@ -68,6 +71,147 @@ interface CohortOpt { id: string; title: string; courseId: string; status: strin
 const QUAL_LABEL: Record<string, string> = {
   qualified: "مؤهَّل", pending: "طلبٌ معلَّق", rejected: "مرفوض", retired: "متقاعد",
 };
+
+/* ملفُّ المدرّب العامّ — ما تعرضه صفحةُ الفريق، يُحرَّر حيث يُقرَّر نشرُه.
+
+   ═══ العطبُ الذي كُتب له ═══
+
+   `headline` و`bioPublic` كانا يُبذران مرّةً من نصّ الطلب ثمّ لا يُعدَّلان
+   أبدا — لا في الإدارة ولا في بوّابة المدرّب. فنبذةٌ كُتبت في نموذج تقديمٍ
+   قبل أشهرٍ هي وجهُ المدرّب إلى الناس. و`photoUrl` عمودٌ **لا يكتبه شيءٌ في
+   الشيفرة كلِّها**.
+
+   ═══ ورابطٌ أو رفعٌ — واحدٌ يعمل اليومَ والآخرُ ينتظر قرارَ تشغيل ═══
+
+   حقلُ الرابط يعمل الآنَ بلا تخزين. وزرُّ الرفع يحتاج `FILE_UPLOADS=on`،
+   فيُقال ذلك في الشاشة لا في رسالة خطأ بعد الضغط. */
+function PublicProfileEditor({
+  trainer, onSaved,
+}: {
+  trainer: OpsTrainer
+  onSaved: () => Promise<void> | void
+}) {
+  const [form, setForm] = useState({
+    headline: trainer.headline ?? "",
+    bioPublic: trainer.bioPublic ?? "",
+    photoUrl: trainer.photoUrl?.startsWith("/api/") ? "" : trainer.photoUrl ?? "",
+  });
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  /* الصورةُ المعروضةُ من الخادم لا من الحقل: الحقلُ للرابط الخارجيّ، والمرفوعةُ
+     عنوانُها `/api/v1/trainer-photos/…` وليست ممّا يُكتب بيد. */
+  const shown = trainer.photoUrl;
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      await apiPut(`/api/admin/trainers/${trainer.profileId}/public-profile`, {
+        headline: form.headline.trim() || null,
+        bioPublic: form.bioPublic.trim() || null,
+        /* حقلُ الرابط فارغٌ حين تكون الصورةُ مرفوعةً عندنا — فلا يُرسَل
+           `photoUrl` أصلا، وإلّا محا الفراغُ صورةً لم يُردْ أحدٌ محوَها. */
+        ...(form.photoUrl.trim() || !shown?.startsWith("/api/")
+          ? { photoUrl: form.photoUrl.trim() || null }
+          : {}),
+      });
+      toast("حُفظ الملفُّ العامّ");
+      await onSaved();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
+    } finally { setBusy(false); }
+  };
+
+  /* الرفعُ خطوتان: رابطٌ موقّتٌ من الخادم، ثمّ البايتاتُ إليه مباشرةً.
+     ولا يمرّ الملفُّ في JSON — فذاك يضخّمه الثلثَ ويقرؤه الخادمُ نصّا. */
+  const upload = async (file: File) => {
+    setBusy(true);
+    try {
+      const r = await apiPost<{ uploadUrl: string; maxBytes: number }>(
+        `/api/admin/trainers/${trainer.profileId}/photo-upload`, { mime: file.type },
+      );
+      if (file.size > r.maxBytes) {
+        toastError(`الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)`);
+        return;
+      }
+      const res = await fetch(r.uploadUrl, {
+        method: "PUT", headers: { "content-type": file.type }, body: file,
+      });
+      if (!res.ok) { toastError("تعذّر رفعُ الصورة"); return; }
+      toast("رُفعت الصورة");
+      setForm((f) => ({ ...f, photoUrl: "" }));
+      await onSaved();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر رفعُ الصورة");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="mt-3 border-t border-white/10 pt-3">
+      <p className="text-read font-black text-muted-foreground">ملفُّه العامّ — ما تعرضه صفحةُ الفريق</p>
+      <div className="mt-2 grid gap-2.5 md:grid-cols-2">
+        <div>
+          <label className="block text-fine font-bold text-muted-foreground" htmlFor={`hl-${trainer.profileId}`}>
+            العنوانُ المهنيّ
+          </label>
+          <input
+            id={`hl-${trainer.profileId}`}
+            value={form.headline}
+            onChange={(e) => setForm({ ...form, headline: e.target.value })}
+            placeholder="مثال: مهندسُ بياناتٍ ومدرّبُ تحليلٍ تطبيقيّ"
+            className={`${controlCls} mt-1 w-full`}
+          />
+        </div>
+        <div>
+          <label className="block text-fine font-bold text-muted-foreground" htmlFor={`ph-${trainer.profileId}`}>
+            رابطُ الصورة — أو ارفعها أدناه
+          </label>
+          <input
+            id={`ph-${trainer.profileId}`}
+            dir="ltr"
+            value={form.photoUrl}
+            onChange={(e) => setForm({ ...form, photoUrl: e.target.value })}
+            placeholder={shown?.startsWith("/api/") ? "صورةٌ مرفوعةٌ عندنا" : "https://…"}
+            className={`${controlCls} mt-1 w-full font-mono`}
+          />
+        </div>
+      </div>
+      <div className="mt-2.5">
+        <label className="block text-fine font-bold text-muted-foreground" htmlFor={`bio-${trainer.profileId}`}>
+          نبذتُه — تُقرأ في صفحة الفريق كما تُكتب هنا
+        </label>
+        <textarea
+          id={`bio-${trainer.profileId}`}
+          rows={3}
+          value={form.bioPublic}
+          onChange={(e) => setForm({ ...form, bioPublic: e.target.value })}
+          className={`${controlCls} mt-1 w-full`}
+        />
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        {shown && (
+          <img src={shown} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-white/15" />
+        )}
+        <Button tone="confirm" size="sm" disabled={busy} onClick={() => void save()}>حفظُ الملفّ العامّ</Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
+        />
+        <Button tone="secondary" size="sm" disabled={busy} onClick={() => fileRef.current?.click()}>
+          <ImagePlus className="h-3.5 w-3.5" /> ارفع صورة
+        </Button>
+        <span className="text-fine leading-5 text-muted-foreground">
+          حتّى ميغابايت · JPEG أو PNG أو WebP — والرفعُ يحتاج تفعيلَ التخزين على الخادم.
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export default function TrainerRunOps() {
   const [trainers, setTrainers] = useState<OpsTrainer[] | null>(null);
@@ -381,6 +525,8 @@ export default function TrainerRunOps() {
                       )}
                     </div>
                   </div>
+
+                  <PublicProfileEditor trainer={t} onSaved={load} />
 
                   {/* الإجراءات */}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
