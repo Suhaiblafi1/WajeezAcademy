@@ -39,6 +39,7 @@ import CohortOps from "./CohortOps";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
+import { MIN_MODULE_BODY } from "@/application/trainer/plan-overlay";
 import { RESOURCE_KINDS, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
@@ -279,6 +280,12 @@ export default function CohortWorkspace() {
   const required = ws.checklist.filter((c) => !c.optional);
   const doneCount = required.filter((c) => c.done).length;
   const remaining = required.length - doneCount;
+  /* المحاورُ التي ينقصها المحتوى النظريّ — بالأرقام والعناوين، لا بعدد.
+     والأرضيّةُ هي أرضيّةُ الخادم نفسُها (`MIN_MODULE_BODY` = ٤٠): رقمان
+     يقولان الشيءَ نفسَه يفترقان، فيُقال له «تمّ» ويُردّ إرسالُه. */
+  const missingBody = content.modules
+    .map((m, i) => ({ ...m, n: i + 1 }))
+    .filter((m) => (m.bodyAr ?? "").trim().length < MIN_MODULE_BODY);
   const ready = required.length ? Math.round((doneCount / required.length) * 100) : 0;
   const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
   const recordingsDone = byKey.get("recordings")?.done ?? false;
@@ -617,12 +624,19 @@ export default function CohortWorkspace() {
                   <StaffField label="ما يُسلّمه المتعلّم (اختياريّ)" hint="إن ذكرتَ مُسلَّما هنا فاجعل له مهمّةً في خطوة «المهامّ والتطبيق العمليّ» — وإلّا فلا سبيل لتسليمه.">
                     <input value={m.artifactAr ?? ""} onChange={(e) => setModule(i, { artifactAr: e.target.value })} disabled={locked} aria-label={`مُسلَّم المحور ${i + 1}`} className={controlCls} />
                   </StaffField>
-                  <StaffField label="متن المحور (اختياريّ)" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة — ابدأ كلَّ درسٍ بعنوانٍ من الشريط، فالمتنُ يُقسَّم عنده دروسا. و«عايِنْ» تريكه كما يراه هو. والروابطُ والملفّاتُ موضعُها «المصادر».">
+                  <StaffField label="المحتوى النظريّ" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة — ابدأ كلَّ درسٍ بعنوانٍ من الشريط، فالمحتوى يُقسَّم عنده دروسا. و«عايِنْ» تريكه كما يراه هو. والروابطُ والملفّاتُ موضعُها «المصادر». ويلزم لاعتماد الشعبة — لا لحفظها.">
                     <BodyEditor
                       value={m.bodyAr ?? ""}
                       onChange={(next) => setModule(i, { bodyAr: next })}
                       disabled={locked}
-                      ariaLabel={`متن المحور ${i + 1}`}
+                      ariaLabel={`المحتوى النظريّ للمحور ${i + 1}`}
+                      /* ═══ سطحُ كتابةٍ بقَدرِ ما يُكتب فيه ═══
+
+                         طلب صاحبُ المنصّة سطحا «بسعة صفحة Word ليرى ما
+                         يكتب». وكانت ستّةُ أسطرٍ نافذةً يُمرَّر فيها متنٌ
+                         متوسّطُه ٢٣ ألفَ حرفٍ في الكتالوج — فلا يرى كاتبُه
+                         ما قبله ولا ما بعده وهو يكتب. */
+                      rows={20}
                     />
                   </StaffField>
                 </div>
@@ -920,6 +934,25 @@ export default function CohortWorkspace() {
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
           {remaining > 0 && !approved && (
             <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">بقي {remaining} من المراحل قبل الإرسال — المضاءةُ بالذهبيّ على الخطّ أعلاه هي التالية.</Inset>
+          )}
+          {/* ═══ ولماذا تُسمّى المحاورُ الناقصةُ بأسمائها ═══
+
+              «المحتوى النظريّ» صار شرطا للاعتماد (د-١). وشرطٌ يقول «ينقص
+              شيءٌ» بلا أن يقول **ما هو** يترك المدرّبَ يفتح ثمانيةَ محاورَ
+              واحدا واحدا ليجد أيَّها الناقص — وهو بعينه ما شُكي منه في
+              مواضعَ أخرى. فتُذكر أرقامُها وعناوينُها، ويُفتح منها الأوّل
+              بنقرة. */}
+          {!approved && missingBody.length > 0 && (
+            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
+              ينقص المحتوى النظريُّ في {missingBody.length === 1 ? "محورٍ واحد" : `${missingBody.length} محاور`}:{" "}
+              {missingBody.map((m) => `${m.n}. ${m.titleAr || "بلا عنوان"}`).join(" · ")}
+              <Button
+                tone="ghost" size="sm" className="mt-2"
+                onClick={() => { setStage("modules"); setOpenModule(missingBody[0].moduleId); }}
+              >
+                افتح أوّلَها
+              </Button>
+            </Inset>
           )}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
             <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />

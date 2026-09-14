@@ -29,6 +29,7 @@
    و`financialReady` — والشاشةُ تقول إنّه بيد الإدارة. */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
+import { MIN_MODULE_BODY } from '../../src/application/trainer/plan-overlay'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
@@ -130,14 +131,28 @@ export function buildChecklist(input: {
 }): ChecklistItem[] {
   const c = input.cohort
   const identityDone = c.title.trim().length >= 3 && Boolean(c.startsAt) && c.daysOfWeek.length > 0 && Boolean(c.startTime)
-  const modulesDone = (input.content?.modules?.length ?? 0) > 0
+  /* ═══ ولماذا صار المحتوى النظريُّ شرطا للاعتماد ═══
+
+     طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يصير «المحتوى النظريّ» إلزاميّا
+     لكلّ محور. وقرارُ التنفيذ: **يمنع الاعتمادَ ولا يمنع الحفظ** — فمن
+     كتب نصفَ شعبته ثمّ أغلق حاسوبه يجب أن يجد نصفَه حين يعود، ومرحلةٌ لا
+     تُحفظ حتّى تكتمل تُخسِر العملَ الذي بُذل.
+
+     وكان الشرطُ «فيها محاورُ» وحدَه — وهو صحيحٌ دائما، لأنّ المحاورَ تُحمَّل
+     من الكتالوج بدءا. فمرحلةٌ تُعدّ تامّةً قبل أن يكتب المدرّبُ حرفا.
+
+     والأرضيّةُ أربعون حرفا لا حرفٌ واحد: «x» ليس محتوى نظريّا، وشرطٌ يمرّ
+     بحرفٍ شرطٌ صوريٌّ يُتعلَّم الالتفافُ عليه في أوّل شعبة. وأربعون جملةٌ
+     قصيرةٌ — أقلُّ ما يُقرأ لا أكثرُ ما يُطلَب. */
+  const mods = input.content?.modules ?? []
+  const modulesDone = mods.length > 0 && mods.every((m) => (m.bodyAr ?? '').trim().length >= MIN_MODULE_BODY)
   const resourcesDone = (input.content?.resources?.length ?? 0) > 0
   const sessionsDone = input.sessions.length > 0
   const recordingsDone = input.sessions.some((s) => s.recordings.length > 0)
   const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
   return [
     { key: 'identity', labelAr: 'راجع اسمَ الشعبة ومواعيدها', done: identityDone, optional: false },
-    { key: 'modules', labelAr: 'رتّب المحاورَ والتطبيقَ العمليّ', done: modulesDone, optional: false },
+    { key: 'modules', labelAr: 'اكتب المحتوى النظريَّ لكلّ محور', done: modulesDone, optional: false },
     { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم', done: resourcesDone, optional: false },
     { key: 'sessions', labelAr: 'حدّد مواعيدَ اللقاءات المباشرة', done: sessionsDone, optional: false },
     { key: 'recordings', labelAr: 'ارفع الجلساتِ المسجّلة — إن وُجدت', done: recordingsDone, optional: true },
