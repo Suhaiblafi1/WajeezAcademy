@@ -27,8 +27,38 @@ type Overview = {
 };
 type ChangeRequest = {
   id: string; entityType: string; entityId: string; status: string; createdAt: string
+  payload?: Record<string, unknown> | null
   decisions: { decision: string; noteAr: string | null; createdAt: string }[]
 };
+
+/* مقترحُ مدرّبٍ في الطابور — يُقرأ بلا فتحِ حمولة.
+
+   كان البندُ يُعرض «دورة · C-PROPOSED-XY12Z» ولا شيءَ غيرُه: معرّفٌ لا يقول
+   ما هو ولا من اقترحه. فالمقترحُ يصل الطابورَ ولا يُفهم — وهو عطبُ الملاحظةِ
+   الميّتةِ نفسُه، منقولا من الملفّ إلى الطابور. */
+function TrainerSuggestion({ payload }: { payload: Record<string, unknown> | null | undefined }) {
+  const kind = typeof payload?.kind === 'string' ? payload.kind : null;
+  if (kind !== 'trainer_course_variant' && kind !== 'trainer_new_course') return null;
+  const from = payload?.fromApplication as { fullName?: string; reference?: string } | undefined;
+  const words = typeof payload?.trainerWordsAr === 'string' ? payload.trainerWordsAr : null;
+  const note = typeof payload?.noteAr === 'string' ? payload.noteAr : null;
+  const titleAr = typeof payload?.titleAr === 'string' ? payload.titleAr : null;
+  const skillIds = Array.isArray(payload?.skillIds) ? (payload.skillIds as string[]) : [];
+  return (
+    <div className="mt-1.5 text-read leading-6">
+      <p className="font-bold text-teal-light-ink">
+        {kind === 'trainer_new_course' ? `دورةٌ مقترحة: ${titleAr ?? '—'}` : 'نسخةٌ مقترحةٌ من هذه الدورة'}
+        {from?.fullName ? ` · اقترحها ${from.fullName}` : ''}
+        {from?.reference ? ` (${from.reference})` : ''}
+      </p>
+      {skillIds.length > 0 && (
+        <p className="text-muted-foreground">مهاراتُها: <span dir="ltr" className="font-mono text-fine">{skillIds.join(' · ')}</span></p>
+      )}
+      {words && <p className="whitespace-pre-line text-muted-foreground"><span className="font-bold">بقلمه: </span>{words}</p>}
+      {note && <p className="text-muted-foreground"><span className="font-bold">ملاحظةُ المراجع: </span>{note}</p>}
+    </div>
+  );
+}
 type PathwayRow = { id: string; status: string; title: string; courseCount: number };
 type CourseRow = { id: string; status: string; title: string; hours: number; skillCount: number; pathways: string[] };
 type SkillRow = {
@@ -428,10 +458,11 @@ export default function CatalogAdmin() {
         <div className="mt-4 space-y-3">
           {crs.length === 0 && <p className="text-sm text-muted-foreground">لا طلبات بعد.</p>}
           {crs.map((cr) => (
-            <Card key={cr.id} className="flex flex-wrap items-center justify-between gap-3">
+            <Card key={cr.id} className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="font-bold text-sm">{ENTITY_AR[cr.entityType] ?? cr.entityType} · <span dir="ltr" className="font-mono text-xs">{cr.entityId}</span></p>
                 <p className="mt-1 text-read text-muted-foreground">{fmtDateTime(new Date(cr.createdAt))} — {cr.decisions.length} قرار</p>
+                <TrainerSuggestion payload={cr.payload} />
               </div>
               <div className="flex items-center gap-2">
                 <Pill v={cr.status} />
