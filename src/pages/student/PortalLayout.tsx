@@ -8,6 +8,7 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import ThemeToggle from "@/components/ThemeToggle";
 import EcosystemNote from "@/components/EcosystemNote";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
+import DepartureChoiceNotice from "@/components/DepartureChoiceNotice";
 import { usePublishedContent } from "@/services/public-content";
 import { getLibraryResources } from "@/data/core-catalog-source";
 
@@ -412,6 +413,13 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             ولا يُعرض والقناةُ مغلقة: الحاجزُ غيرُ مفروضٍ حينها (الخادمُ يُسقطه)،
             وزرُّ الإرسال لا يمكن أن ينجح. فالشريطُ يصير تحذيرا من قيدٍ لا وجودَ
             له، ودعوةً إلى فعلٍ لا يقع. */}
+        {/* ن-١٠ — ويتقدّم بلاغَ التوثيق. كلاهما حدٌّ، والفرقُ في صاحبه:
+            بريدٌ غيرُ موثَّقٍ تقصيرُ المتعلّم وحدُّه معلوم، ورحيلُ المدرّب
+            إخلالُ المنصّة ومالُ المتعلّم معلَّقٌ به. فما أخللنا به أوّلا.
+
+            ولا يُشترط فيه توثيقُ بريدٍ ولا قناةٌ مفتوحة: من لم يصله البريدُ
+            فهذه شاشتُه — وهي آخرُ ما يبقى بينه وبين اختيارٍ لا يُتّخذ عنه. */}
+        {sessionUser && <DepartureChoiceNotice />}
         {sessionUser && !sessionUser.emailVerified && emailChannel !== false && (
           <VerifyEmailNotice email={sessionUser.email} className="mb-6" />
         )}

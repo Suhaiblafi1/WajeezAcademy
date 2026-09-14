@@ -61,6 +61,11 @@ const LEARNER: Table = {
   'payment.succeeded': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
   'staff.announce': { path: '/student/notifications', ctaAr: 'اقرأ الإعلان' },
+  /* ن-٩: الخبرُ يحمل ما يجري بعده، و«رحلتي» فيها جدولُه وشعبتُه الجديدة */
+  'departure.resolved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  /* والاختيارُ يُنقر في بوّابته لا في البريد: البلاغُ يحمل الخيارَين ليُقرآ،
+     والقرارُ يُكتب حيث تُعرف هويّةُ صاحبه. */
+  'departure.choice': { path: '/student/learning', ctaAr: 'اختر ما يناسبك' },
 }
 
 const TRAINER: Table = {

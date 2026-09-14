@@ -110,6 +110,17 @@ const PHRASES: Record<string, string> = {
   'trainer.path.publish': 'نشرُ مسارِ مدرّبٍ على الرفّ العامّ',
   'trainer.path.retire': 'سحبُ مسارِ مدرّبٍ من الرفّ العامّ',
   'trainer.path.reject': 'ردُّ مسارِ مدرّبٍ بسبب',
+  /* ن-٩ · ن-١٠: رحيلُ مدرّبٍ وما يترتّب عليه. وعباراتٌ كاملةٌ لا تركيب:
+     «نقلُ مدرّب» لا يقول ما جرى للمتعلّمين، وهم الخبر. */
+  'trainer.departure.open': 'فتحُ ملفِّ رحيلِ مدرّب',
+  'trainer.departure.substitute': 'إسنادُ بديلٍ لشعبةٍ فقدت مدرّبَها',
+  'trainer.departure.move': 'نقلُ متعلّمٍ إلى شعبةٍ نظيرةٍ بعد رحيلِ مدرّبه',
+  'trainer.departure.offer_choice': 'عرضُ الاختيار على متعلّمٍ — ردٌّ أو رصيد',
+  'trainer.departure.learner_choice': 'اختيارُ المتعلّم بين الردّ والرصيد',
+  'trainer.departure.refund_requested': 'رفعُ طلبِ ردٍّ باختيار المتعلّم',
+  'trainer.departure.credit': 'صرفُ رصيدٍ باسم متعلّمٍ باختياره',
+  'trainer.departure.notify': 'إبلاغُ متعلّمٍ بما جرى لشعبته',
+  'trainer.departure.close': 'إغلاقُ ملفِّ رحيلِ مدرّب',
   'trainer.qualify.auto': 'تأهيلُ مدرّبٍ تلقائيّا لما ذكره في طلبه',
   'cohort.plan.save': 'حفظُ مدرّبٍ خطّةَ شعبته',
   'cohort.plan.submit': 'إرسالُ مدرّبٍ خطّةَ شعبته للاعتماد',

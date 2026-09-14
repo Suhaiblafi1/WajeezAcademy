@@ -4,6 +4,8 @@
    مفاتيح التخزين لا تكشف أبدا — تُحوَّل إلى روابط قراءة موقعة قصيرة العمر. */
 
 import type { FastifyInstance } from 'fastify'
+import { TrainerDepartureService } from '../../services/trainer-departure.service'
+import { LEARNER_CHOICES } from '../../../src/application/trainer/departure-rules'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
@@ -60,6 +62,7 @@ function signCohortContent<T extends {
 }
 
 export function registerLearningPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
+  const departures = new TrainerDepartureService(prisma)
   const cohorts = new CohortService(prisma)
   const enrollments = new EnrollmentService(prisma)
   const messages = new CohortMessageService(prisma)
@@ -139,6 +142,25 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ cohortId: z.string().uuid() }).parse(req.body)
     return enrollments.switchCohort(req.auth!.userId, id, body.cohortId)
+  })
+
+  /* ═══ الاختيارُ لصاحبه حين رحل مدرّبُه (ن-١٠) ═══
+
+     «لا المنصّةُ تختار نيابةً عنه، ولا رصيدٌ يُفرَض على من أراد مالَه». فهذا
+     بابُه هو: يقرأ ما عُرض عليه، ويختار. والإدارةُ تعرض ولا تختار — ولذلك
+     البابُ هنا في بوّابته لا هناك. */
+  app.get('/api/learner/departure-choices', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'ما عُرض عليّ من اختيارٍ بعد رحيل مدرّبي (ن-١٠)' },
+  }, async (req) => departures.myOpenChoices(req.auth!.userId))
+
+  app.post('/api/learner/departure-choices/:caseId', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'أختار: ردُّ ما تبقّى أو رصيدٌ باسمي' },
+  }, async (req) => {
+    const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ choice: z.enum(LEARNER_CHOICES) }).parse(req.body)
+    return departures.chooseAsLearner(req.auth!.userId, caseId, body.choice)
   })
 
   app.post('/api/learner/assessments/:id/submissions', {
