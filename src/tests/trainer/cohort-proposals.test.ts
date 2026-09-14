@@ -1,15 +1,20 @@
-/* اقتراحُ اسم الدورة أو المسار — يركب مع الخطّة، وتقبله الإدارة بالاختيار.
+/* اسمُ الدورة يمرّ بقناته — ولا يُكتب من داخل خطّة شعبة (ح-٣ · د-٦).
 
-   قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): للمدرّب أن يغيّر «حتّى عنوان الدورة،
-   واسمَ المسار إن كان له مسارٌ كامل — وكلُّه يحتاج موافقةَ الإدارة». وكان
-   لهذا طابورٌ مستقلّ (`TrainerChangeRequest`) بمساراتٍ في الخادم لا تناديها
-   شاشة — فحُذفت مساراتُ المدرّب منه، وصار الاقتراحُ حقلَين في خطّة الشعبة.
+   ═══ ما كان يحرسه هذا الملفّ ═══
 
-   والفحصُ على البنية:
-   · الحقلان في مخطّط الخطّة عند الخادم، وفي شاشة المدرّب، وفي شاشة المعتمِد.
-   · الاعتمادُ يمرّر ما اختاره المعتمِدُ (`applyProposals`) — لا يُطبَّق شيءٌ ضمنا.
-   · والمساراتُ الميّتة لم تعد في الخادم، و`catalog-scope` باقٍ لأنّ شاشةً تناديه.
-   · ولوحةُ المدرّب تبدأ ببطاقات شعبه من الموجز. */
+   حقلَين في خطّة الشعبة: اسمٌ مقترحٌ للدورة وآخرُ للمسار، يختار المعتمِدُ
+   ما يقبله فيُكتب **على النسخة الحاليّة** بـ`updateMany`. وكان الحارسُ
+   يثبت وجودَهما في المواضع الأربعة.
+
+   ═══ ولماذا انقلب ═══
+
+   الكتابةُ فوق النسخة القائمة تُعيد تسميةَ **كلِّ شهادةٍ صدرت** عن الدورة،
+   لأنّ التحقّقَ العامّ كان يقرأ آخرَ إصدار (ك-٢). فالاسمُ صار نوعَ تغييرٍ
+   في `TrainerChangeService` ينتهي **إصدارا جديدا**، والصندوقُ حُذف.
+
+   فصار الحارسُ يحرس الضدَّ — والفحصُ **بنيويٌّ لا نصّيّ**: لا يكفي أن تغيب
+   كلمةٌ من ملفّ، بل تُفحص المواضعُ الأربعةُ التي كانت تحمل الحقلَين، ويُفحص
+   أنّ البابَ الجديدَ **موصولٌ من شاشةٍ إلى مسارٍ إلى خدمة**. */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -18,35 +23,79 @@ const root = process.cwd()
 const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('اقتراحُ الاسم يركب مع الخطّة', () => {
-  it('مخطّطُ الخطّة عند الخادم يقبل الاقتراحين — لا أكثر', () => {
+describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضعه الأربعة', () => {
+  it('مخطّطُ الخطّة عند الخادم لم يعد يقبل `proposals`', () => {
     const routes = code('server/http/routes/learning-portal.routes.ts')
-    const schema = routes.slice(routes.indexOf('const planContent = z.object({'), routes.indexOf("app.get('/api/trainer/cohorts/:id/workspace'"))
-    expect(schema).toMatch(/proposals: z\.object\(\{ courseTitleAr: z\.string\(\)\.max\(200\)\.nullish\(\), pathwayTitleAr: z\.string\(\)\.max\(200\)\.nullish\(\) \}\)\.nullish\(\)/)
+    const schema = routes.slice(
+      routes.indexOf('const planContent = z.object({'),
+      routes.indexOf("app.get('/api/trainer/cohorts/:id/workspace'"),
+    )
+    expect(schema).not.toContain('proposals')
+    expect(schema).not.toContain('courseTitleAr')
   })
 
-  it('والمدرّبُ يكتبهما في مرحلة الاسم والمواعيد ويحفظهما مع الخطّة', () => {
+  it('وشاشةُ المدرّب لا تكتبهما في الخطّة', () => {
     const ws = code('src/pages/trainer/CohortWorkspace.tsx')
-    expect(ws).toMatch(/proposals: \{ \.\.\.\(content\.proposals \?\? \{\}\), courseTitleAr: e\.target\.value \}/)
-    expect(ws).toMatch(/proposals: \{ \.\.\.\(content\.proposals \?\? \{\}\), pathwayTitleAr: e\.target\.value \}/)
+    expect(ws).not.toMatch(/proposals: \{ \.\.\.\(content\.proposals \?\? \{\}\)/)
+    expect(ws).not.toContain('pathwayTitleAr')
   })
 
-  it('والمعتمِدُ يختار ما يقبله ويمرّره صراحةً — لا اعتمادَ يطبّق ضمنا', () => {
+  it('وشاشةُ المعتمِد لا تعرض خياراتٍ تُطبَّق مع الاعتماد', () => {
     const admin = code('src/pages/admin/CohortOps.tsx')
-    expect(admin).toMatch(/applyProposals\.courseTitle/)
-    expect(admin).toMatch(/applyProposals\.pathwayTitle/)
-    expect(admin).toMatch(/\{ approve: true, applyProposals \}/)
+    expect(admin).not.toContain('applyProposals')
     const route = code('server/http/routes/admin-learning.routes.ts')
-    expect(route).toMatch(/applyProposals: z\.object/)
-    expect(route).toMatch(/plans\.decide\(req\.auth!\.userId, id, body\.approve, body\.note, body\.applyProposals\)/)
+    expect(route).not.toContain('applyProposals')
+    /* والاعتمادُ يمرّر ثلاثةً لا خمسة — لا وسيطَ اقتراحاتٍ خلفه */
+    expect(route).toMatch(/plans\.decide\(req\.auth!\.userId, id, body\.approve, body\.note\)/)
   })
 
-  it('والخادمُ يكتب الاسمَ على النسخة الحاليّة ويسجّل الأثر', () => {
+  it('والخادمُ لا يكتب اسما على نسخةٍ قائمةٍ من اعتماد خطّة', () => {
     const svc = code('server/services/cohort-plan.service.ts')
-    expect(svc).toMatch(/courseVersion\.updateMany\(\{\s*where: \{ courseId: plan\.cohort\.course\.id, version: plan\.cohort\.course\.currentVersion \}/)
-    expect(svc).toMatch(/pathwayVersion\.updateMany\(/)
-    expect(svc).toContain("action: 'cohort.plan.proposal_applied'")
+    expect(svc).not.toContain('courseVersion.updateMany')
+    expect(svc).not.toContain('pathwayVersion.updateMany')
+    expect(svc).not.toContain("action: 'cohort.plan.proposal_applied'")
+  })
+
+  /* والاسمُ في المعجم يبقى: أحداثٌ حقيقيّةٌ كُتبت به قبل الحذف، والمعجمُ هو
+     ما يُقرأ به سجلُّ الشعبة — فحذفُ السطر يترك أحداثا بلا اسم. */
+  it('واسمُ الفعل يبقى في معجم الأثر — لأنّ ما كُتب به يُقرأ', () => {
     expect(code('src/application/audit/labels.ts')).toContain("'cohort.plan.proposal_applied'")
+  })
+})
+
+describe('وبابُ الاسم الجديد موصولٌ — شاشةٌ ومسارٌ وخدمة', () => {
+  it('الخدمةُ تعرف النوعَ وتحمل الاسمَ إلى الإصدار الجديد', () => {
+    const svc = code('server/services/trainer-change.service.ts')
+    expect(svc).toContain("'course_title_edit'")
+    /* والفحصُ على **الحمل** لا على ورودِ الاسم: الإصدارُ الجديدُ كان ينسخ
+       `baseVersion.titleAr` حرفا بحرف، فلو بقي كذلك لمرّ النوعُ بلا أثر. */
+    expect(svc).toMatch(/case 'course_title_edit': \{[\s\S]{0,200}titleAr = after\.titleAr\.trim\(\)/)
+    expect(svc).toMatch(/courseId: course\.id, version: newVersion,\s*\n\s*titleAr,/)
+    expect(svc).not.toMatch(/version: newVersion,\s*\n\s*titleAr: baseVersion\.titleAr/)
+  })
+
+  it('والمسارُ يقبله من المدرّب بنطاق الكتالوج', () => {
+    const routes = code('server/http/routes/trainer-portal.routes.ts')
+    expect(routes).toContain("'/api/trainer/course-title-proposals'")
+    expect(routes).toMatch(/changeType: 'course_title_edit'/)
+    expect(routes).toMatch(/scope: 'catalog'/)
+  })
+
+  it('والشاشةُ تناديه من ورشة الشعبة — لا مسارَ بلا شاشةٍ من جديد', () => {
+    const screen = code('src/pages/trainer/CourseTitleProposal.tsx')
+    expect(screen).toContain('/api/trainer/course-title-proposals')
+    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
+    expect(ws).toContain('<CourseTitleProposal')
+    expect(ws).toContain('from "./CourseTitleProposal"')
+  })
+
+  /* وما كتبه مدرّبٌ في الصندوق القديم لا يضيع: يُعرض مهيّأً في القناة
+     الجديدة. والفحصُ على الوصل — `legacyDraft` يصل من `content.proposals`. */
+  it('وما حُفظ في الصندوق القديم يُعرض مهيّأً لا مهجورا', () => {
+    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
+    expect(ws).toMatch(/legacyDraft=\{content\.proposals\?\.courseTitleAr \?\? null\}/)
+    const screen = code('src/pages/trainer/CourseTitleProposal.tsx')
+    expect(screen).toMatch(/setTitleAr\(draft\)/)
   })
 })
 

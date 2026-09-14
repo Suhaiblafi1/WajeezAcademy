@@ -71,7 +71,17 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
 
   it('وكلُّ حقلٍ في «الاسم والمواعيد» كذلك', () => {
     const { all, hinted } = everyFieldHinted(stageBlock(ws, 'identity', 'modules'))
-    expect(all, 'لا حقولَ موصوفةً أصلا').toBeGreaterThanOrEqual(9)
+    /* كانت الأرضيّةُ تسعةً حين كان في الخطوة عشرةُ حقول. ثمّ خرج منها حقلا
+       «اقتراحٌ للإدارة» إلى ملفّهما (د-٦)، فصارت ثمانيةً — والأرضيّةُ سنَدُ
+       المحلِّل لا المحروس: المحروسُ `hinted === all`. ولئلّا تنقص التغطيةُ
+       بخروجهما يتبعهما الفحصُ إلى ملفّهما في الاختبار الذي يليه. */
+    expect(all, 'لا حقولَ موصوفةً أصلا').toBeGreaterThanOrEqual(8)
+    expect(hinted, `${all - hinted} حقلا بلا تلميح`).toBe(all)
+  })
+
+  it('وحقلا اقتراحِ اسمِ الدورة كذلك — تبِعا الفحصَ إلى ملفّهما', () => {
+    const { all, hinted } = everyFieldHinted(code('src/pages/trainer/CourseTitleProposal.tsx'))
+    expect(all, 'لا حقولَ موصوفةً أصلا').toBeGreaterThanOrEqual(2)
     expect(hinted, `${all - hinted} حقلا بلا تلميح`).toBe(all)
   })
 

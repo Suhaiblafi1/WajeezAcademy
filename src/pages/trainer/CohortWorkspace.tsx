@@ -36,6 +36,7 @@ import {
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import CohortOps from "./CohortOps";
+import CourseTitleProposal from "./CourseTitleProposal";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
@@ -57,8 +58,12 @@ import { countAr } from "@/application/text/count-ar";
 
 interface PlanModule { moduleId: string; titleAr: string; outcomeAr?: string | null; activityAr?: string | null; artifactAr?: string | null; bodyAr?: string | null }
 interface PlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
-interface PlanProposals { courseTitleAr?: string | null; pathwayTitleAr?: string | null }
-interface PlanContent { kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: PlanProposals | null }
+/* ما بقي من صندوق «اقتراحٌ للإدارة» المحذوف (د-٦): خطّةٌ حُفظت قبل حذفه قد
+   تحمل `proposals` في عمود JSON. يُقرأ منه اسمُ الدورة وحدَه ليُعرض مهيّأً في
+   القناة الجديدة، فلا يضيع ما كتبه مدرّبٌ بيده. ولا يُكتب من هنا أبدا.
+   واسمُ المسار سقط ولم يُقرأ: لا قناةَ له — المدرّبُ يبني مسارَه هو (القسم «ن»). */
+interface LegacyPlanProposals { courseTitleAr?: string | null }
+interface PlanContent { kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: LegacyPlanProposals | null }
 interface Workspace {
   role: string;
   trainer: { name: string };
@@ -521,29 +526,17 @@ export default function CohortWorkspace() {
           </Inset>
           <Button tone="confirm" disabled={busy || locked || !dirty.identity || identity.title.trim().length < 3} onClick={saveIdentity} className="mt-4">احفظ البيانات</Button>
 
-          {/* ═══ اقتراحٌ على اسم الدورة أو المسار — يُقرَّر فيه عند الاعتماد ═══
+          {/* ═══ اسمُ الدورة — قناتُه الصحيحة لا صندوقٌ في الخطّة (ح-٣ · د-٦) ═══
 
-              قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): للمدرّب أن يغيّر «حتّى عنوان
-              الدورة، واسمَ المسار إن كان له مسار — وكلُّه يحتاج موافقةَ الإدارة».
-              فالاقتراحُ يركب مع الخطّة ويُعرض على المعتمِد، ولا يمسّ الكتالوجَ
-              حتّى تقبله الإدارة. */}
-          <Inset className="mt-5">
-            <p className="text-read font-black text-foreground">اقتراحٌ للإدارة (اختياريّ)</p>
-            <p className="mt-1 text-read leading-6 text-muted-foreground">إن رأيتَ اسما أدقَّ للدورة أو لمسارها فاكتبه هنا — يصل المعتمِدَ مع خطّتك، ويُطبَّق إن قبله.</p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <StaffField label="اسمٌ مقترحٌ للدورة" hint="يُعرض على المعتمِد بجانب الاسم الحاليّ — واتركه فارغا إن كان الحاليُّ دقيقا.">
-                <input value={content.proposals?.courseTitleAr ?? ""} disabled={locked} maxLength={200}
-                  onChange={(e) => setContent({ ...content, proposals: { ...(content.proposals ?? {}), courseTitleAr: e.target.value } })}
-                  placeholder={ws.course.titleAr} className={controlCls} />
-              </StaffField>
-              <StaffField label="اسمٌ مقترحٌ للمسار" hint="اسمُ المسار الذي تنتمي إليه الدورة — إن رأيتَ أنّه لا يصفها.">
-                <input value={content.proposals?.pathwayTitleAr ?? ""} disabled={locked} maxLength={200}
-                  onChange={(e) => setContent({ ...content, proposals: { ...(content.proposals ?? {}), pathwayTitleAr: e.target.value } })}
-                  placeholder="كما هو في الكتالوج" className={controlCls} />
-              </StaffField>
-            </div>
-            <Button tone="secondary" size="sm" disabled={busy || locked} onClick={savePlan} className="mt-3">احفظ الاقتراح مع الخطّة</Button>
-          </Inset>
+              حلَّ محلَّ «اقتراحٌ للإدارة (اختياريّ)»: كان يكتب الاسمَ على
+              النسخة الحاليّة فيُعيد تسميةَ الشهادات الصادرة، ولا يترك سجلَّ
+              من اقترح ولا لِمَ. والعلّةُ كاملةً في رأس `CourseTitleProposal`. */}
+          <CourseTitleProposal
+            courseId={ws.course.id}
+            currentTitleAr={ws.course.titleAr}
+            legacyDraft={content.proposals?.courseTitleAr ?? null}
+            locked={locked}
+          />
         </Panel>
       )}
 
