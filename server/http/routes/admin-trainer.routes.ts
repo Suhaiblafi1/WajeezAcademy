@@ -85,6 +85,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return links.list(id)
   })
 
+  /* تجديدُ رابطٍ قائم — رمزٌ جديدٌ على الصفّ نفسِه، لا صفٌّ ثانٍ للقارئ الواحد.
+     و`POST` لا `GET`: فعلٌ يُبطل القديمَ ويكتب في القاعدة، لا قراءةٌ تُعاد. */
+  app.post('/api/admin/trainer-applications/:id/dossier-links/:linkId/rotate', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'تجديدُ رابطِ قارئ — يبطل القديمُ ويبقى تقييمُه وسجلُّ فتحه' },
+  }, async (req) => {
+    const { id, linkId } = z.object({
+      id: z.string().uuid(), linkId: z.string().uuid(),
+    }).parse(req.params)
+    const { sendEmail } = z.object({ sendEmail: z.boolean().optional() }).parse(req.body ?? {})
+    const made = await links.rotate(id, linkId, req.auth!.userId, { sendEmail })
+    return { url: made.url, link: made.link, emailDelivery: made.emailDelivery }
+  })
+
   app.delete('/api/admin/trainer-applications/:id/dossier-links/:linkId', {
     preHandler: requirePermission('trainer.applications.review'),
     schema: { tags: ['admin-trainers'], summary: 'إلغاءُ رابطِ سجلّ — لا حذفُه، فالتقييمُ المكتوبُ به معلَّقٌ باسمه' },

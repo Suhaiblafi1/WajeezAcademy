@@ -1,16 +1,25 @@
-/* روابطُ سجلِّ المتقدّم — تُنشأ باسمٍ وتُنسخ مرّةً وتُلغى.
+/* روابطُ سجلِّ المتقدّم — تُنشأ باسمٍ، وتُجدَّد، وتُلغى.
 
-   ═══ لماذا مرّةً واحدة ═══
+   ═══ لماذا لا يُعرض الرمزُ ثانيةً ═══
 
    لا يُحفظ الرمزُ في القاعدة بل هاشُه، فلا سبيلَ إلى إظهاره ثانيةً ولو أردنا.
    وهو المقصود: من حاز الرابطَ فهو القارئُ المسمّى فيه، وسجلٌّ يُخرج رموزَه
    لمن فتح الشاشةَ ليس سجلّا محروسا.
 
-   فالرمزُ يُعرض عند الإنشاء وحدَه في لوحٍ ظاهر، ومن أضاعه أنشأ غيرَه وألغى
-   الأوّل — خطوتان، وكلتاهما في الأثر. */
+   ═══ ولذلك «جدّده» لا «أنشئ غيرَه» (١٤ سبتمبر ٢٠٢٦) ═══
+
+   كان يُقال هنا: «من أضاعه أنشأ غيرَه وألغى الأوّل». وهو يعمل، لكنّه يترك
+   **صفَّين لقارئٍ واحد** — ويقسم تقييمَه بينهما، إذ يُعلَّق التقييمُ
+   بمعرّف الصفّ لا بالرمز.
+
+   فقال صاحبُ المنصّة: «أريد أن أتمكّن من إعادة نسخِ الرابط للمفعَّلين بدلا
+   من إنشاء جديد». فصار التجديدُ يُبدّل الرمزَ على الصفّ نفسِه: يبقى الاسمُ
+   وتقييمُه وسجلُّ فتحه، ويُجدَّد الأجل، **ويموت القديمُ في اللحظة**.
+
+   والملغى لا يُجدَّد: الإلغاءُ قرارٌ لا يُلتفّ حوله بزرّ. */
 
 import { useCallback, useEffect, useState } from 'react'
-import { Link2, Copy, Ban, Check } from 'lucide-react'
+import { Link2, Copy, Ban, Check, RefreshCw } from 'lucide-react'
 import { apiGet, apiPost, apiDelete, ApiError } from '@/services/api'
 import { toast, toastError } from '@/components/Toast'
 import { fmtDateTime } from '@/application/text/format-ar'
@@ -76,6 +85,32 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
       await load()
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'تعذّر إنشاءُ الرابط')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  /* التجديدُ يُعيد اللوحَ الطازجَ نفسَه — فمن جدّد رأى الرابطَ حيث اعتاد */
+  const rotate = async (row: LinkRow) => {
+    if (busy) return
+    setBusy(true)
+    try {
+      const r = await apiPost<{ url: string; emailDelivery: string | null }>(
+        `/api/admin/trainer-applications/${applicationId}/dossier-links/${row.id}/rotate`,
+        row.reviewerEmail ? { sendEmail: true } : {},
+      )
+      setFresh({ url: r.url, name: row.reviewerName })
+      setCopied(false)
+      if (row.reviewerEmail) {
+        toast(r.emailDelivery === 'sent'
+          ? `جُدِّد الرابطُ وأُرسل إلى ${row.reviewerEmail}`
+          : 'جُدِّد الرابط — ولم يُرسَل البريد، فانسخه بيدك')
+      } else {
+        toast('جُدِّد الرابط — انسخه الآن')
+      }
+      await load()
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : 'تعذّر تجديدُ الرابط')
     } finally {
       setBusy(false)
     }
@@ -175,15 +210,31 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
                   {state.textAr} · أجلُه {fmtDateTime(new Date(row.expiresAt))}
                 </span>
               </div>
-              {!state.spent && (
-                <Button tone="danger" icon={Ban} disabled={busy} onClick={() => void revoke(row)}>
-                  ألغِه
-                </Button>
-              )}
+              {/* والملغى لا يُجدَّد: الإلغاءُ قرارٌ لا يُلتفّ حوله بزرّ. أمّا
+                  المنتهي أجلُه فيُجدَّد — وهو أكثرُ ما يُجدَّد له. */}
+              <div className="flex flex-wrap items-center gap-2">
+                {!row.revokedAt && (
+                  <Button tone="secondary" icon={RefreshCw} disabled={busy} onClick={() => void rotate(row)}>
+                    جدّده وانسخه
+                  </Button>
+                )}
+                {!state.spent && (
+                  <Button tone="danger" icon={Ban} disabled={busy} onClick={() => void revoke(row)}>
+                    ألغِه
+                  </Button>
+                )}
+              </div>
             </Inset>
           )
         })}
       </div>
+
+      {rows && rows.length > 0 && (
+        <p className="mt-3 text-read leading-6 text-muted-foreground">
+          و«جدّده وانسخه» يعطيك رابطا جديدا للقارئ نفسِه — يبقى تقييمُه وسجلُّ فتحه،
+          <b className="text-gold-ink"> ويتوقّف رابطُه القديمُ فورا</b>. ومن كان بريدُه محفوظا وصلَه الجديدُ تلقائيّا.
+        </p>
+      )}
     </Panel>
   )
 }

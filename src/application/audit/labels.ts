@@ -88,6 +88,7 @@ const PHRASES: Record<string, string> = {
      الناقصُ يُظهر المفتاحَ اللاتينيَّ في شاشةِ صاحب المنصّة. */
   'trainer.dossier_link.create': 'إنشاءُ رابطِ سجلٍّ باسمِ قارئ',
   'trainer.dossier_link.send': 'إرسالُ رابط سجلِّ المتقدّم بالبريد',
+  'trainer.dossier_link.rotate': 'تجديدُ رابطِ سجلٍّ — يبطل القديم',
   'trainer.dossier_link.revoke': 'إلغاءُ رابطِ سجلٍّ',
   'trainer.interview.invite': 'دعوةُ متقدّمٍ إلى حجزِ موعدِ مقابلة',
   'trainer.create_direct': 'تعيينُ مدرّبٍ داخليّا — بلا نموذجِ تقدّم',
