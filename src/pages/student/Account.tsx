@@ -8,6 +8,8 @@ import {
    والسببُ مشروحٌ في `pages/PortalFrame.tsx`. */
 import PortalFrame from "../PortalFrame";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
+import { fetchMe } from "@/services/me";
+import { showsLearnerFields } from "@/application/site/account-fields";
 import { clearLocalSession, readSession } from "@/services/auth";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -114,6 +116,24 @@ export default function StudentAccount() {
   const [err, setErr] = useState("");
 
   /* تحميل الملف: من الخادم عند وجود جلسة حقيقية، وإلا من المخزن المحلي الموسوم */
+  /* ═══ ولماذا تعرف هذه الصفحةُ دورَ صاحبها ═══
+
+     هي صفحةٌ واحدةٌ للبوّابات الأربع، ومكتوبةٌ بشكل المتعلّم: تنادي
+     `/api/learner/profile` وتسأل عن المؤهّل والجامعة والوظيفة والاهتمامات.
+     وتلك حقولُ **قياسٍ** يقرؤها مؤشّرُ وجيز ليوصي بمسار — فمن ليس متعلّما
+     لا يُقاس بها. والقرارُ في `application/site/account-fields` فيُفحص.
+
+     والأدوارُ من `fetchMe` لا من نداءٍ ثالث: هي مُخزَّنةٌ مشتركةٌ تُجاب من
+     الذاكرة في أغلب الأحيان — وكانت الصفحاتُ تنادي `‎/api/auth/me‎` خمسَ
+     مرّاتٍ في الفتحة الواحدة قبل أن تُوحَّد. */
+  const [roles, setRoles] = useState<string[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void fetchMe().then((m) => { if (alive) setRoles(m.user?.roles ?? []); }).catch(() => { if (alive) setRoles([]); });
+    return () => { alive = false };
+  }, []);
+  const learnerFields = showsLearnerFields(roles);
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -376,6 +396,9 @@ export default function StudentAccount() {
           </Field>
           {/* ثلاثُ قوائمَ لا منتقي المتصفّح: العودةُ إلى سنةِ ميلادٍ فيه
               تنقّلٌ شهرا شهرا — و`ui/DateField.tsx` يشرح لماذا. */}
+          {/* حقلا قياسٍ لا حقلا حساب: يقرؤهما مؤشّرُ وجيز، فمن ليس
+              متعلّما لا يُسأل عنهما (ج-٢). والإخفاءُ لا يمسّ المخزون. */}
+          {learnerFields && (<>
           <Field label="تاريخ الميلاد" hint="اختياري — يستخدم لشهاداتك والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
             <DateField
               value={form.birthDate} onChange={(v) => set("birthDate", v)} onBlur={touch("birthDate")}
@@ -390,6 +413,7 @@ export default function StudentAccount() {
               <option value="female">أنثى</option>
             </select>
           </Field>
+          </>)}
           <Field label="اللغة المفضلة للتعلم">
             <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">اختر</option>
@@ -399,6 +423,17 @@ export default function StudentAccount() {
         </div>
       </Panel>
 
+      {/* ═══ قسمان يخصّان المتعلّمَ وحدَه (ج-٢) ═══
+
+          التعليمُ والحياةُ المهنيّةُ والاهتماماتُ حقولُ **قياس**: يقرؤها
+          مؤشّرُ وجيز ليوصي بمسار. فالمدرّبُ والمديرُ لا يُقاسان بها ولا
+          معنى لسؤالهما عنها — وكانت تُعرض لهما لأنّ الصفحةَ واحدةٌ للبوّابات
+          الأربع ومكتوبةٌ بشكل المتعلّم.
+
+          وتُخفى ولا تُحذف: من حمل الدورَين يراها، والمخزونُ لا يُمسّ —
+          الصفحةُ تحمّل الملفَّ كاملا وتعيده كاملا، فحقلٌ مخفيٌّ يُحفظ كما
+          جاء. */}
+      {learnerFields && (<>
       {/* التعليم */}
       <Panel as="section" className="mt-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><BookOpen className="h-4 w-4 text-teal-light-ink" /> التعليم</h2>
@@ -522,6 +557,8 @@ export default function StudentAccount() {
       </Panel>
 
       {/* الأمان والجلسات — إجراءات حقيقية على الخادم، تظهر فقط مع جلسة فعالة */}
+      </>)}
+
       {mode === "server" && (
         <Panel as="section" className="mt-6 md:p-8">
           <h2 className="flex items-center gap-2 text-base font-black"><ShieldAlert className="h-4 w-4 text-teal-light-ink" /> الأمان والجلسات</h2>
