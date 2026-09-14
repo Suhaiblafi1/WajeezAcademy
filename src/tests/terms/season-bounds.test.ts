@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import { TRAINING_SEASONS } from '../../application/trainer/application-options'
 import {
-  SEASON_MONTHS, crossesYearEnd, termBounds, termMonths, termOf, monthWithinTerm, termTitleAr,
+  SEASON_MONTHS, crossesYearEnd, termBounds, termHorizon, termMonths, termOf, monthWithinTerm, termTitleAr,
 } from '../../application/terms/season'
 
 describe('الأربعةُ تغطّي السنة — لا شهرَ بلا فصل ولا شهرَ في فصلين', () => {
@@ -83,5 +83,60 @@ describe('والعنوانُ من المصدر نفسِه — لا جدولَ أ
     for (const s of TRAINING_SEASONS) {
       expect(termTitleAr(2026, s.value)).toBe(`${s.label} 2026`)
     }
+  })
+})
+
+/* ═══ أفقُ العرض في «المواسم والتقويم» ═══
+
+   ثمانيةُ مواسمَ في شاشةٍ واحدة عملٌ لا يُقرأ: لكلٍّ نافذةُ تسجيلٍ وتوزيعٌ
+   وزرُّ نشر. وشكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «ضع الموسمَ القادمَ
+   والذي يليه فقط». والخطرُ في التنفيذ أن يُخفى معها الموسمُ **الجاري** —
+   وفيه الشعبُ التي تعمل اليوم. */
+describe('أفقُ عرض المواسم — الجاري وما يليه، ولا يُحذف شيء', () => {
+  const term = (startsOn: string, endsOn: string) => ({ startsOn, endsOn })
+  /* المواسمُ الثمانيةُ التي كانت في الشاشة يومَ الشكوى */
+  const all = [
+    term('2026-02-01', '2026-04-30'), term('2026-05-01', '2026-07-31'),
+    term('2026-08-01', '2026-10-31'), term('2026-11-01', '2027-01-31'),
+    term('2027-02-01', '2027-04-30'), term('2027-05-01', '2027-07-31'),
+    term('2027-08-01', '2027-10-31'), term('2027-11-01', '2028-01-31'),
+  ]
+  const day = (iso: string) => new Date(`${iso}T12:00:00Z`)
+
+  it('⚠️ ثمانيةٌ تصير ثلاثا: الجاري ثمّ اثنان — ولا يضيع منها واحد', () => {
+    const { shown, hidden } = termHorizon(all, day('2026-09-13'))
+    expect(shown.map((t) => t.startsOn)).toEqual(['2026-08-01', '2026-11-01', '2027-02-01'])
+    expect(shown.length + hidden.length, 'ضاع فصلٌ في القسمة').toBe(all.length)
+  })
+
+  it('⚠️ والجاري لا يُخفى مع المخفيّ — فيه شعبٌ تعمل اليوم', () => {
+    /* ١٣ سبتمبر داخلَ موسم أغسطس–أكتوبر: لو حُسب بـ«ما بدأ بعد اليوم»
+       وحدَه لسقط، ولوجد المديرُ شعبَه الجاريةَ خلفَ إفصاح. */
+    const { shown, hidden } = termHorizon(all, day('2026-09-13'))
+    expect(shown[0].startsOn).toBe('2026-08-01')
+    expect(hidden.some((t) => t.startsOn === '2026-08-01'), 'الجاري خلفَ الإفصاح').toBe(false)
+  })
+
+  it('⚠️ والجاري لا يأكل نصيبَ المستقبل — يبقى القادمُ والذي يليه كاملَين', () => {
+    /* لو عُدّ الجاري من الاثنين لظهر واحدٌ فقط بعده — وهو ما طُلب ضدُّه */
+    const inside = termHorizon(all, day('2026-09-13')).shown.filter((t) => t.startsOn > '2026-09-13')
+    expect(inside.length).toBe(2)
+  })
+
+  it('وما بين موسمَين — لا جاريَ — فالمعروضُ اثنان لا ثلاثة', () => {
+    const gapped = [term('2026-02-01', '2026-04-30'), term('2026-11-01', '2027-01-31'), term('2027-02-01', '2027-04-30')]
+    const { shown } = termHorizon(gapped, day('2026-09-13'))
+    expect(shown.map((t) => t.startsOn)).toEqual(['2026-11-01', '2027-02-01'])
+  })
+
+  it('والماضي كلُّه خلفَ الإفصاح، ولا يُرتَّب العرضُ إلا بالبداية', () => {
+    const shuffled = [all[7], all[0], all[3], all[2]]
+    const { shown, hidden } = termHorizon(shuffled, day('2026-09-13'))
+    expect(shown.map((t) => t.startsOn)).toEqual(['2026-08-01', '2026-11-01', '2027-11-01'])
+    expect(hidden.map((t) => t.startsOn)).toEqual(['2026-02-01'])
+  })
+
+  it('ولا مواسمَ أصلا فلا شيءَ يُعرض ولا شيءَ يُخفى', () => {
+    expect(termHorizon([], day('2026-09-13'))).toEqual({ shown: [], hidden: [] })
   })
 })

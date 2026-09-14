@@ -138,15 +138,19 @@ describe('البابُ يُنسب لصاحبه، واللوحةُ تقول كم 
     expect(page).toMatch(/page\?\.referralCode/)
   })
 
-  it('واللوحةُ تعرض الرابطَ والرقمَ معا من نداءٍ واحد', () => {
-    const home = code('src/pages/trainer/TrainerDashboard.tsx')
+  /* ب-٥ (١٣ سبتمبر ٢٠٢٦): البطاقةُ انتقلت من «الرئيسية» إلى تبويب «دعوتي».
+     والمحروسُ هو هو — الرابطُ والرقمُ من نداءٍ واحد، والبوّابةُ تُقال لا
+     تُخفى — وموضعُه وحدَه تبدّل. ويحرس **النقلَ نفسَه** ملفٌّ آخر
+     (`referral-tab.test.ts`) كيلا تعود نسخةٌ ثانيةٌ في الرئيسية. */
+  it('وصفحةُ «دعوتي» تعرض الرابطَ والرقمَ معا من نداءٍ واحد', () => {
+    const home = code('src/pages/trainer/Referral.tsx')
     expect(home).toContain('/api/trainer/me/referral')
     expect(home, 'الرقمُ محسوبٌ في الواجهة لا مأخوذٌ من ختم التسجيل').toMatch(/referral\.registered/)
     expect(home, 'لا رابطَ يُنسخ').toMatch(/writeText\(referral\.url\)/)
   })
 
   it('وتقول متى لا يعمل الرابطُ بدل أن تعطيه رابطا يردّ ٤٠٤', () => {
-    const home = code('src/pages/trainer/TrainerDashboard.tsx')
+    const home = code('src/pages/trainer/Referral.tsx')
     expect(home).toMatch(/!referral\.publicReady/)
     const svc = code('server/services/referral.service.ts')
     const fn = svc.slice(svc.indexOf('async wideLinkFor'))

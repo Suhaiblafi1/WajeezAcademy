@@ -155,6 +155,21 @@ describe('④ ما يخرج إلى المتعلّم يُنتقى بأسمائه 
     expect(projectPlanForLearner({ status: 'approved', content: null })).toBeNull()
   })
 
+  /* ═══ وصفُ المصدر يبلغ المتعلّمَ فعلا ═══
+
+     كان `noteAr` مارّا في كلّ الطريق ولا يُكتب: لا خانةَ للمدرّب يكتبه فيها،
+     فما مُلئ قطّ وما ظهر قطّ — والفحصُ القائمُ يمرّره فارغا (`'  '`) فيثبت
+     أنّ الفراغَ يُشذَّب، ولا يثبت أنّ المكتوبَ يصل. فلمّا فُتحت الخانةُ (د-٣،
+     ١٣ سبتمبر ٢٠٢٦) صار للسطر قارئ، فوجب أن يُحرَس وصولُه. */
+  it('⚠️ ووصفُ المصدر المكتوبُ يصل المتعلّمَ — لا يُشذَّب مع الفراغ', () => {
+    const written = 'اقرأها قبل اللقاء الثاني — فيها الحالةُ التي نحلّلها معا.'
+    const out = projectPlanForLearner({
+      status: 'approved',
+      content: { ...content, resources: [{ title: 'كرّاسة', url: 'https://x.test/k', kind: 'book', noteAr: written }] },
+    })
+    expect(out?.resources[0]?.noteAr, 'الوصفُ سقط في الطريق إلى المتعلّم').toBe(written)
+  })
+
   it('ومحتوى مشوّهٌ لا يُسقط الصفحة', () => {
     const out = projectPlanForLearner({ status: 'approved', content: { modules: 'لا مصفوفة', resources: 7 } })
     expect(out?.modules).toEqual([])

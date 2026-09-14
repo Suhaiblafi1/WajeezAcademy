@@ -16,6 +16,10 @@ import TeachableCoursePicker from "@/components/TeachableCoursePicker";
 import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
 import { mobileFormatByDial, timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
+import {
+  cleanProposals, emptyProposal, hasProposal, MAX_PROPOSALS,
+  type TeachableProposal,
+} from "@/application/trainer/teachable-proposals";
 import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
@@ -202,6 +206,12 @@ export default function JoinTrainer() {
   /* القسمان 2–3 — كانا في صفحة مستقلة تُفتح برابط بريد، وصارا قسمين هنا */
   const [teachable, setTeachable] = useState<string[]>([]);
   const [teachableOther, setTeachableOther] = useState("");
+  /* أ-٣: صفوفٌ تُقرأ واحدةً تلو الأخرى بدل فقرةٍ واحدة. ويُبدأ بصفٍّ فارغٍ
+     واحدٍ — لا بصفرٍ يحتاج نقرةً ليظهر، ولا بثلاثةٍ تُوحي بأنّ الثلاثةَ
+     مطلوبة. */
+  const [proposals, setProposals] = useState<TeachableProposal[]>([emptyProposal()]);
+  const patchProposal = (i: number, patch: Partial<TeachableProposal>) =>
+    setProposals((rows) => rows.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   const [days, setDays] = useState<string[]>([]);
   const [periods, setPeriods] = useState<string[]>([]);
   const [seasons, setSeasons] = useState<string[]>([]);
@@ -246,6 +256,15 @@ export default function JoinTrainer() {
     setTargetAudiences(d.targetAudiences ?? []);
     setTeachable(d.teachable ?? []);
     setTeachableOther(d.teachableOther ?? "");
+    /* مسودّةٌ كُتبت قبل أ-٣ تحمل فقرةً ولا تحمل صفوفا: تُقرأ الفقرةُ صفّا
+       أوّلَ فلا يخسر صاحبُها ما كتبه، ولا نُقسّمها أسطرا تخمينا. */
+    setProposals(
+      d.proposals?.length
+        ? d.proposals
+        : d.teachableOther?.trim()
+          ? [{ titleAr: d.teachableOther.trim().slice(0, 200), audienceAr: "" }]
+          : [emptyProposal()],
+    );
     setDays(d.days ?? []);
     setPeriods(d.periods ?? []);
     setSeasons(d.seasons ?? []);
@@ -280,13 +299,13 @@ export default function JoinTrainer() {
     if (!draftLoaded.current || phase2Done) return;
     const written = saveDraft({
       step, form, specialties, languages, targetCountries, targetAudiences,
-      teachable, teachableOther, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
+      teachable, teachableOther, proposals, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
       contactChannel: contactChannel || undefined, contactAltEmail: contactAltEmail || undefined,
       reference: result?.reference, candidateToken: candidateToken || undefined,
     });
     setDraftBlocked(!written);
   }, [step, form, specialties, languages, targetCountries, targetAudiences,
-      teachable, teachableOther, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
+      teachable, teachableOther, proposals, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
       contactChannel, contactAltEmail, result, candidateToken, phase2Done]);
 
   const startOver = () => {
@@ -464,7 +483,7 @@ export default function JoinTrainer() {
     if (uploads.cv?.status !== "done") m[2].push("رفع سيرتك الذاتية");
     /* دورةٌ من الكتالوج أو سطرٌ يكتبه بنفسه — أحدهما يكفي، فالكتالوج ليس
        نهاية ما يُتقنه أحد. */
-    if (teachable.length === 0 && teachableOther.trim().length < 10) {
+    if (teachable.length === 0 && !hasProposal(proposals)) {
       m[2].push("دورة واحدة تستطيع تقديمها — من القائمة أو بقلمك");
     }
     /* الموسمُ شرطٌ عند الخادم (`min(1)`) منذ أوّل يوم، ولم تكن الواجهةُ تذكره —
@@ -482,7 +501,7 @@ export default function JoinTrainer() {
     }
     return m;
   }, [form, bioWords, evidenceValid.length, evidenceMalformed,
-      specialties, languages, motivationLen, accreditationReady, uploads, teachable, teachableOther, demoConsent, seasons,
+      specialties, languages, motivationLen, accreditationReady, uploads, teachable, proposals, demoConsent, seasons,
       password, passwordConfirm, result, contactChannel, contactAltEmail]);
 
   const stepValid = useMemo(() => ({
@@ -516,7 +535,9 @@ export default function JoinTrainer() {
       const res = await apiPost<CompleteResponse>(`/api/v1/trainer-applications/${encodeURIComponent(result.reference)}/phase-2`, {
         candidateToken,
         teachableCourseIds: teachable,
-        teachableOther: teachableOther.trim() || undefined,
+        /* العمودُ القديمُ لا يُكتب بعد اليوم — يبقى في القاعدة لطلباتٍ
+           سبقته، ويُقرأ في ملفّ المتقدّم كما كُتب. */
+        teachableProposals: cleanProposals(proposals),
         availability: {
           days: days.length ? days : undefined,
           hoursPerWeek: hoursPerWeek ? Number(hoursPerWeek) : undefined,
@@ -762,7 +783,7 @@ export default function JoinTrainer() {
       k: "ما تستطيع تدريسه",
       v: [
         teachable.length ? `${teachable.slice(0, 3).join(" · ")}${teachable.length > 3 ? ` وغيرها (${teachable.length} بالمجمل)` : ""}` : "",
-        teachableOther.trim() ? "ودورة اقترحتَها بقلمك" : "",
+        hasProposal(proposals) ? `ودوراتٌ اقترحتَها بقلمك (${cleanProposals(proposals).length})` : "",
       ].filter(Boolean).join(" · "),
     },
     {
@@ -1274,18 +1295,64 @@ export default function JoinTrainer() {
               >
                 <TeachableCoursePicker selected={teachable} onChange={setTeachable} />
 
+                {/* ═══ ولماذا صارت صفوفا ═══
+
+                    كانت فقرةً واحدةً بتلميحٍ **يرجو** أن يكتب «عنوانا لكل
+                    سطر، ولمن هو» — والرجاءُ ليس بنية: يصل المعتمِدَ ما يصل،
+                    فيُقرأ بالعين ولا يُعدّ ولا يُصنَّف واحدُه وحدَه. وقال
+                    صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «لتصبح مقروءة واحدة تلو
+                    الأخرى ليس نصاً».
+
+                    والصفُّ حقلان: العنوانُ يلزم، و«لمن هو» لا يلزم — فمن
+                    أوقفناه عند حقلٍ إلزاميٍّ ثانٍ خسِرنا اقتراحَه كلَّه، وهو
+                    ما نريده منه. */}
                 <div className="mt-5 border-t border-white/10 pt-5">
                   <Field
                     label="دورات تستطيع تقديمها ولم نذكرها"
-                    htmlFor="jt-other-courses"
-                    hint="كتالوجنا ليس نهاية المعرفة. اكتب ما تُتقنه ولا تجده أعلاه — عنوانا لكل سطر، ولمن هو."
+                    htmlFor="jt-proposal-title-0"
+                    hint="كتالوجنا ليس نهاية المعرفة. اكتب ما تُتقنه ولا تجده أعلاه — دورةً في كل سطر."
                   >
-                    <textarea
-                      id="jt-other-courses" rows={3} maxLength={1000}
-                      value={teachableOther} onChange={(e) => setTeachableOther(e.target.value)}
-                      placeholder="مثال: تحليل تكلفة الاستحواذ للمتاجر الإلكترونية — لمدراء التسويق"
-                      className={areaCls}
-                    />
+                    <ul className="grid gap-2.5">
+                      {proposals.map((row, i) => (
+                        <li key={i} className="grid gap-2 sm:grid-cols-[1.4fr_1fr_auto]">
+                          <input
+                            id={`jt-proposal-title-${i}`}
+                            value={row.titleAr} maxLength={200}
+                            onChange={(e) => patchProposal(i, { titleAr: e.target.value })}
+                            placeholder="اسم الدورة — مثال: تحليل تكلفة الاستحواذ للمتاجر الإلكترونية"
+                            aria-label={`اسم الدورة المقترحة ${i + 1}`}
+                            className={controlCls}
+                          />
+                          <input
+                            value={row.audienceAr} maxLength={200}
+                            onChange={(e) => patchProposal(i, { audienceAr: e.target.value })}
+                            placeholder="لمن هي؟ (اختياريّ)"
+                            aria-label={`جمهور الدورة المقترحة ${i + 1}`}
+                            className={controlCls}
+                          />
+                          {/* الإزالةُ لا تظهر على صفٍّ وحيد: من أزاله بقي بلا
+                              حقلٍ يكتب فيه، فيحتاج نقرةً ليعود إلى ما كان. */}
+                          {proposals.length > 1 && (
+                            <Button
+                              type="button" tone="ghost" size="sm"
+                              onClick={() => setProposals((rows) => rows.filter((_, j) => j !== i))}
+                              aria-label={`أزل الدورة المقترحة ${i + 1}`}
+                            >
+                              أزل
+                            </Button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                    {proposals.length < MAX_PROPOSALS && (
+                      <Button
+                        type="button" tone="secondary" size="sm"
+                        onClick={() => setProposals((rows) => [...rows, emptyProposal()])}
+                        className="mt-2.5"
+                      >
+                        + دورة أخرى
+                      </Button>
+                    )}
                   </Field>
                 </div>
               </Question>

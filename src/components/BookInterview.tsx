@@ -27,7 +27,7 @@
    من webhook موقّع، لأنّ رسالةَ المتصفّح لا تحمل الوقت ولا تصلح دليلا للكتابة.
    ومصدرُ الرسالة يُفحَص مع ذلك: نافذةٌ أخرى تستطيع أن تبثّ ما تشاء. */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CalendarClock, CheckCircle2, ExternalLink, Loader2, Video } from 'lucide-react'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '@/application/trainer/application-options'
 import { nextFrameHeight } from '@/lib/calendly-embed'
@@ -102,6 +102,27 @@ export default function BookInterview({ name, email, reference, className = '' }
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
+  /* ═══ ولماذا تُردّ الصفحةُ إلى البطاقة بعد الحجز ═══
+
+     الإطارُ يملأ الشاشةَ وهو مفتوح (١٠٤٠ على الهاتف)، فمن بلغ زرَّ التأكيد
+     فيه صار في أسفل الصفحة. فإذا حُجز الموعدُ اختفى الإطارُ كلُّه وحلّ محلَّه
+     سطرٌ واحد — فيهبط ما تحته ألفَ بكسل، ويبقى المتقدّمُ حيث كان: أمام
+     تذييلِ الصفحة، والتأكيدُ فوقه بعيدا عن عينه. فيظنّ أنّ شيئا لم يحدث.
+     وشكا صاحبُ المنصّة منه صراحةً (١٣ سبتمبر ٢٠٢٦).
+
+     والمردُّ إلى **البطاقة** لا إلى رأس الصفحة: هذه البطاقةُ تُركَّب داخلَ
+     نموذجِ الانضمام وداخلَ صفحةِ الحالة، فرأسُ الصفحة ليس موضعَها — ومن
+     رُدّ إليه فقد موضعَه من النموذج بلا ذنب.
+
+     والمردُّ معلَّقٌ بـ`done` وحدَه لا داخلَ مستمعِ الرسائل: فذاك يُنادى مرارا
+     بـ`page_height` ما دام المتقدّمُ يقلّب المواعيد، ولو كان المردُّ فيه
+     لانتزع الصفحةَ من تحته وهو يختار. */
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!done) return
+    cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [done])
+
   /* الأصلُ من الخادم إن ضُبط، وإلّا المضمَّن — بلا حالةِ تحميلٍ ظاهرة:
      تُرسم البطاقةُ بالمضمَّن ثمّ تُبدَّل إن جاء بديل. */
   const { interviewBookingUrl, interviewGuests } = usePlatformConfig()
@@ -113,7 +134,7 @@ export default function BookInterview({ name, email, reference, className = '' }
   const embedUrl = `${url}${url.includes('?') ? '&' : '?'}embed_domain=${encodeURIComponent(window.location.hostname)}&embed_type=Inline`
 
   return (
-    <div className={`rounded-2xl border border-teal/30 bg-teal/[0.05] p-5 ${className}`}>
+    <div ref={cardRef} className={`rounded-2xl border border-teal/30 bg-teal/[0.05] p-5 ${className}`}>
       <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
         <CalendarClock className="h-4 w-4" /> احجز مقابلتك — اختر الوقت الذي يناسبك
       </p>

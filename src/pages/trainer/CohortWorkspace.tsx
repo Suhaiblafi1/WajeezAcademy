@@ -39,6 +39,7 @@ import CohortOps from "./CohortOps";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
+import { MIN_MODULE_BODY } from "@/application/trainer/plan-overlay";
 import { RESOURCE_KINDS, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
@@ -95,8 +96,8 @@ const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
   { key: "identity", label: "الاسم والمواعيد", icon: ClipboardList },
   { key: "modules", label: "المحاور", icon: BookOpen },
   { key: "resources", label: "المصادر", icon: FileText },
-  { key: "sessions", label: "اللقاءات", icon: CalendarDays },
-  { key: "assignments", label: "التكاليف", icon: ClipboardCheck },
+  { key: "sessions", label: "لقاءات مباشرة", icon: CalendarDays },
+  { key: "assignments", label: "المهامّ والتطبيق العمليّ", icon: ClipboardCheck },
   { key: "approval", label: "الاعتماد", icon: Send },
 ];
 type Phase = "prepare" | "run";
@@ -130,7 +131,7 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
     minutes: "نحو ٧ دقائق",
   },
   assignments: {
-    title: "تكاليفُ الشعبة",
+    title: "المهامّ والتطبيق العمليّ",
     purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم. خطوةٌ اختياريّة — ويُنصح بواحدٍ على الأقلّ.",
     minutes: "نحو ٥ دقائق",
   },
@@ -279,6 +280,12 @@ export default function CohortWorkspace() {
   const required = ws.checklist.filter((c) => !c.optional);
   const doneCount = required.filter((c) => c.done).length;
   const remaining = required.length - doneCount;
+  /* المحاورُ التي ينقصها المحتوى النظريّ — بالأرقام والعناوين، لا بعدد.
+     والأرضيّةُ هي أرضيّةُ الخادم نفسُها (`MIN_MODULE_BODY` = ٤٠): رقمان
+     يقولان الشيءَ نفسَه يفترقان، فيُقال له «تمّ» ويُردّ إرسالُه. */
+  const missingBody = content.modules
+    .map((m, i) => ({ ...m, n: i + 1 }))
+    .filter((m) => (m.bodyAr ?? "").trim().length < MIN_MODULE_BODY);
   const ready = required.length ? Math.round((doneCount / required.length) * 100) : 0;
   const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
   const recordingsDone = byKey.get("recordings")?.done ?? false;
@@ -337,11 +344,11 @@ export default function CohortWorkspace() {
     if (editingId) await apiPatch(`/api/trainer/assessments/${editingId}`, payload);
     else await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined });
     cancelEdit();
-  }, editingId ? "حُفظ التعديل — يراه المسجّلون كما هو الآن" : "أُنشئ التكليف — يظهر للمسجلين ويعود إليك تسليمهم في طابور المراجعة");
+  }, editingId ? "حُفظ التعديل — يراه المسجّلون كما هو الآن" : "أُنشئت المهمّة — تظهر للمسجّلين ويعود إليك تسليمُهم في طابور المراجعة");
   const deleteAssessment = (a: Workspace["assessments"][number]) => act(async () => {
     await apiDelete(`/api/trainer/assessments/${a.id}`);
     if (editingId === a.id) cancelEdit();
-  }, "حُذف التكليف");
+  }, "حُذفت المهمّة");
 
   const setModule = (i: number, patch: Partial<PlanModule>) =>
     setContent({ ...content, modules: content.modules.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
@@ -552,8 +559,19 @@ export default function CohortWorkspace() {
             {content.modules.map((m, i) => {
               const open = openModule === m.moduleId;
               const filled = m.titleAr.trim().length > 1 && (m.outcomeAr ?? "").trim().length > 1;
+              /* ═══ ولماذا يتلوّن المحورُ المفتوح ═══
+
+                 شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «لا أميّز متى تنتهي
+                 الشاشةُ المنسدلة». وثمانيةُ محاورَ مطويّةٍ بحافّةٍ واحدةٍ خافتة
+                 (`border-white/10`)، فإذا فُتح أحدُها امتدّ خمسةَ حقولٍ بالأرضيّة
+                 نفسِها وبالحافّة نفسِها — فلا تُرى بدايتُه من نهايةِ ما قبله،
+                 ولا نهايتُه من بدايةِ ما بعده.
+
+                 والعلاجُ نبرةٌ قائمةٌ في نظام الأسطح لا لونٌ يُكتب باليد:
+                 المفتوحُ `accent` والمطويُّ `default`. فحدُّه ظاهرٌ من طرفَيه،
+                 ويعرف الناظرُ أين هو من القائمة بلا أن يعدّ. */
               return (
-              <Card as="li" key={m.moduleId}>
+              <Card as="li" key={m.moduleId} tone={open ? "accent" : "default"}>
                 <div className="flex flex-wrap items-center gap-2">
                   {/* العنوانُ زرٌّ يطوي البطاقةَ ويفتحها — فستّةُ محاورَ في خمسةِ
                       حقولٍ جدارٌ لا يُقرأ، والمطويُّ منها يُرى سطرا واحدا. */}
@@ -603,15 +621,22 @@ export default function CohortWorkspace() {
                   <StaffField label="التطبيق العمليّ" hint="ما يفعله بيده في هذا المحور. إن لم يكن فيه شيءٌ يفعله فهو محاضرةٌ لا محور.">
                     <textarea rows={2} value={m.activityAr ?? ""} onChange={(e) => setModule(i, { activityAr: e.target.value })} disabled={locked} aria-label={`تطبيق المحور ${i + 1}`} className={areaCls} />
                   </StaffField>
-                  <StaffField label="ما يُسلّمه المتعلّم (اختياريّ)" hint="إن ذكرتَ مُسلَّما هنا فاجعل له تكليفا في خطوة «التكاليف» — وإلّا فلا سبيل لتسليمه.">
+                  <StaffField label="ما يُسلّمه المتعلّم (اختياريّ)" hint="إن ذكرتَ مُسلَّما هنا فاجعل له مهمّةً في خطوة «المهامّ والتطبيق العمليّ» — وإلّا فلا سبيل لتسليمه.">
                     <input value={m.artifactAr ?? ""} onChange={(e) => setModule(i, { artifactAr: e.target.value })} disabled={locked} aria-label={`مُسلَّم المحور ${i + 1}`} className={controlCls} />
                   </StaffField>
-                  <StaffField label="متن المحور (اختياريّ)" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة — ابدأ كلَّ درسٍ بعنوانٍ من الشريط، فالمتنُ يُقسَّم عنده دروسا. و«عايِنْ» تريكه كما يراه هو. والروابطُ والملفّاتُ موضعُها «المصادر».">
+                  <StaffField label="المحتوى النظريّ" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة — ابدأ كلَّ درسٍ بعنوانٍ من الشريط، فالمحتوى يُقسَّم عنده دروسا. و«عايِنْ» تريكه كما يراه هو. والروابطُ والملفّاتُ موضعُها «المصادر». ويلزم لاعتماد الشعبة — لا لحفظها.">
                     <BodyEditor
                       value={m.bodyAr ?? ""}
                       onChange={(next) => setModule(i, { bodyAr: next })}
                       disabled={locked}
-                      ariaLabel={`متن المحور ${i + 1}`}
+                      ariaLabel={`المحتوى النظريّ للمحور ${i + 1}`}
+                      /* ═══ سطحُ كتابةٍ بقَدرِ ما يُكتب فيه ═══
+
+                         طلب صاحبُ المنصّة سطحا «بسعة صفحة Word ليرى ما
+                         يكتب». وكانت ستّةُ أسطرٍ نافذةً يُمرَّر فيها متنٌ
+                         متوسّطُه ٢٣ ألفَ حرفٍ في الكتالوج — فلا يرى كاتبُه
+                         ما قبله ولا ما بعده وهو يكتب. */
+                      rows={20}
                     />
                   </StaffField>
                 </div>
@@ -643,13 +668,36 @@ export default function CohortWorkspace() {
               const patch = (next: Partial<PlanResource>) =>
                 setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...next } : x)) });
               return (
-                <Card as="li" key={i} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
-                  <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
-                  <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
-                  <select value={resourceKind(r.kind)} onChange={(e) => patch({ kind: e.target.value })} disabled={locked} aria-label={`نوع المصدر ${i + 1}`} className={controlCls}>
-                    {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
-                  </select>
-                  <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
+                <Card as="li" key={i} className="grid gap-3">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+                    <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
+                    <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
+                    <select value={resourceKind(r.kind)} onChange={(e) => patch({ kind: e.target.value })} disabled={locked} aria-label={`نوع المصدر ${i + 1}`} className={controlCls}>
+                      {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
+                    </select>
+                    <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
+                  </div>
+                  {/* ═══ ولماذا سطرُ «لماذا هذا المصدر» ═══
+
+                      طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يكون لكلّ مصدرٍ
+                      وصفٌ يقول ما هو ولمَ يهمّ. والمفاجأةُ أنّ الحقلَ كان
+                      موجودا في كلّ الطريق إلّا أوّلَه: `noteAr` في نوع المصدر،
+                      ويقبله الخادمُ (٥٠٠ حرفا)، ويمرّره `plan-overlay` مشذَّبا،
+                      **والمتعلّمُ يعرضه أصلا** في `StageWork`. فلم يكن ينقص
+                      إلّا خانةٌ يكتب فيها المدرّب — فما من مدرّبٍ كتب وصفا قطّ،
+                      وسطرٌ في شاشة المتعلّم لم يُملأ يوما.
+
+                      واختياريٌّ بقصد: مصدرٌ بلا وصفٍ خيرٌ من مدرّبٍ يتوقّف عند
+                      حقلٍ إلزاميٍّ فلا يضيف المصدرَ أصلا. */}
+                  <input
+                    value={r.noteAr ?? ""}
+                    onChange={(e) => patch({ noteAr: e.target.value })}
+                    disabled={locked}
+                    maxLength={500}
+                    placeholder="لماذا هذا المصدر؟ ما فيه، ومتى يقرؤه (اختياريّ)"
+                    aria-label={`وصف المصدر ${i + 1}`}
+                    className={controlCls}
+                  />
                 </Card>
               );
             })}
@@ -730,7 +778,7 @@ export default function CohortWorkspace() {
         <Panel as="section">
           <StageIntro stage="assignments" />
           {ws.assessments.length === 0 ? (
-            <p className="mt-3 text-read text-muted-foreground">لا تكليفَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
+            <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
           ) : (
             <ul className="mt-3 space-y-2">
               {ws.assessments.map((a) => (
@@ -768,19 +816,19 @@ export default function CohortWorkspace() {
           {/* ── نموذجٌ واحدٌ: يؤلّف تكليفا أو يعدّل واحدا قائما ── */}
           <div className="mt-5 border-t border-white/10 pt-4">
             <p className="text-read font-black text-foreground">
-              {editingId ? "تعديلُ التكليف" : "تكليفٌ جديد"}
+              {editingId ? "تعديلُ المهمّة" : "مهمّةٌ جديدة"}
             </p>
             <div className="mt-3 grid gap-3">
               <label className="block">
                 <span className="block text-read font-bold text-foreground">العنوان</span>
                 <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">يظهر في قائمة مهامّ المتعلّم وفي طابور تقييمك.</span>
-                <input aria-label="عنوان التكليف" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
+                <input aria-label="عنوان المهمّة" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
                   onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} className={controlCls} />
               </label>
               <label className="block">
                 <span className="block text-read font-bold text-foreground">التعليمات</span>
                 <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">ما يفعله بالضبط، ومقدارُه، وما يُسلَّم. العنوانُ وحدَه لا يكفي للعمل.</span>
-                <textarea rows={3} aria-label="تعليمات التكليف" value={taskForm.briefAr}
+                <textarea rows={3} aria-label="تعليمات المهمّة" value={taskForm.briefAr}
                   placeholder="اذكر المطلوبَ ومقدارَه وما يُسلَّم — فالعنوانُ وحدَه لا يكفي للعمل."
                   onChange={(e) => setTaskForm({ ...taskForm, briefAr: e.target.value })} className={areaCls} />
               </label>
@@ -810,7 +858,7 @@ export default function CohortWorkspace() {
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">النوع</span>
                     <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يُسلَّم مرّة، و«اختبار» له درجة، و«مشروع تخرّج» يُحتسب في الإكمال.</span>
-                  <select aria-label="نوع التكليف" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
+                  <select aria-label="نوع المهمّة" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
                     {Object.entries(ASSESSMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </label>
@@ -830,7 +878,7 @@ export default function CohortWorkspace() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button tone="confirm" disabled={busy || taskForm.title.trim().length < 3} onClick={saveAssessment}>
-                  {editingId ? "احفظ التعديل" : "أنشئ التكليف"}
+                  {editingId ? "احفظ التعديل" : "أنشئ المهمّة"}
                 </Button>
                 {editingId && <Button tone="ghost" disabled={busy} onClick={cancelEdit}>أَلْغِ التعديل</Button>}
               </div>
@@ -864,7 +912,7 @@ export default function CohortWorkspace() {
 
       {pendingDelete && (
         <ConfirmAction
-          titleAr="حذفُ التكليف"
+          titleAr="حذفُ المهمّة"
           confirmLabelAr="احذفه"
           busy={busy}
           onCancel={() => setPendingDelete(null)}
@@ -881,15 +929,34 @@ export default function CohortWorkspace() {
         <Panel as="section" tone={st.tone}>
           <StageIntro stage="approval" />
           <p className="mt-2 text-read leading-7 text-foreground">
-            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، وتكاليفَها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
+            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، ومهامَّها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
           {remaining > 0 && !approved && (
             <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">بقي {remaining} من المراحل قبل الإرسال — المضاءةُ بالذهبيّ على الخطّ أعلاه هي التالية.</Inset>
           )}
+          {/* ═══ ولماذا تُسمّى المحاورُ الناقصةُ بأسمائها ═══
+
+              «المحتوى النظريّ» صار شرطا للاعتماد (د-١). وشرطٌ يقول «ينقص
+              شيءٌ» بلا أن يقول **ما هو** يترك المدرّبَ يفتح ثمانيةَ محاورَ
+              واحدا واحدا ليجد أيَّها الناقص — وهو بعينه ما شُكي منه في
+              مواضعَ أخرى. فتُذكر أرقامُها وعناوينُها، ويُفتح منها الأوّل
+              بنقرة. */}
+          {!approved && missingBody.length > 0 && (
+            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
+              ينقص المحتوى النظريُّ في {missingBody.length === 1 ? "محورٍ واحد" : `${missingBody.length} محاور`}:{" "}
+              {missingBody.map((m) => `${m.n}. ${m.titleAr || "بلا عنوان"}`).join(" · ")}
+              <Button
+                tone="ghost" size="sm" className="mt-2"
+                onClick={() => { setStage("modules"); setOpenModule(missingBody[0].moduleId); }}
+              >
+                افتح أوّلَها
+              </Button>
+            </Inset>
+          )}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
             <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
-            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها وتكاليفَها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
+            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها ومهامَّها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
           </label>
           <Button tone="primary" disabled={busy || locked || !confirm || remaining > 0 || approved} onClick={submit} className="mt-4">
             <Send className="h-4 w-4" /> أرسلها للاعتماد

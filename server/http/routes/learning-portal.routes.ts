@@ -15,6 +15,7 @@ import { LearnerRequestService, LEARNER_REQUEST_KINDS } from '../../services/lea
 import { SkillGrowthService } from '../../services/skill-growth.service'
 import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
+import { MAX_BODY_CHARS } from '../../services/module-authoring.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
@@ -360,7 +361,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     modules: z.array(z.object({
       moduleId: z.string().max(64), titleAr: z.string().min(2).max(200),
       outcomeAr: z.string().max(1000).nullish(), activityAr: z.string().max(2000).nullish(),
-      artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(6000).nullish(),
+      /* ═══ ولماذا سقفُ المتن هو سقفُ التأليف نفسُه ═══
+
+         كان هنا ٦٠٠٠ وحدَه في المنصّة كلِّها: التأليفُ واستيرادُ الكتالوج على
+         ٤٠٠٠٠ (`MAX_BODY_CHARS`)، وخطّةُ المدرّب على ٦٠٠٠. ومتونُ الكتالوج
+         تُحمَّل في الخطّة بدءا (`modules: w.course.baseModules`) ثمّ تُرسَل مع
+         كلّ حفظ — فكان كلُّ حفظٍ يسقط ٤٢٢ على «modules.0.bodyAr» في كلّ دورةٍ
+         لها متونٌ مؤلَّفة. وهي مئةٌ وواحدٌ وتسعون متنا من مئةٍ وواحدٍ وتسعين:
+         **لا متنَ واحدٌ تحت السقف**، ومتوسّطُها ٢٣ ألفا وأطولُها ٣٥ ألفا.
+
+         فلم يكن المدرّبُ يعجز عن حفظ المتن وحدَه، بل عن حفظ **أيّ** مرحلةٍ من
+         مراحل التجهيز: الحفظُ يرسل `content` كاملا، فيسقط كلُّه بمتنٍ لم يمسّه.
+
+         والسقفُ يُستورَد ولا يُكتب رقما: رقمان يقولان الشيءَ نفسَه يفترقان،
+         وهذا افتراقُهما. */
+      artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(MAX_BODY_CHARS).nullish(),
     })).max(40).superRefine((mods, ctx) => {
       const seen = new Set<string>()
       for (const [i, m] of mods.entries()) {

@@ -126,7 +126,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
                 className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground transition hover:bg-white/[0.04] hover:text-foreground"
               >
                 <UserCog className="h-4 w-4" />
-                حسابي — الاسم وكلمة المرور والجلسات
+                إعدادات الحساب — الاسم وكلمة المرور والجلسات
               </Link>
               <button
                 type="button"

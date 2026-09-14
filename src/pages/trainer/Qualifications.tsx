@@ -204,10 +204,24 @@ export default function TrainerQualifications() {
           ) : (
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
               {quals.map((q) => (
+                /* ═══ ولماذا سقط رمزُ الدورة من البطاقة ═══
+
+                   شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «أسماءُ الدورات بدل
+                   رموزها». وكانت البطاقةُ تحمل الاثنين — الاسمَ عنوانا
+                   و`C-AUT-101` تحته بخطٍّ أحاديّ — فيقرأ المدرّبُ رمزا لا
+                   يعنيه شيئا في شاشةٍ كلُّها له.
+
+                   والرمزُ لم يُستبدل بل **حُذف**: الاسمُ كان فوقه أصلا، فلم
+                   يكن الرمزُ يقول شيئا جديدا. وبقي ما يفيده: أيُّ نسخةٍ
+                   أُهِّل لها، ومتى.
+
+                   وحين لا اسمَ في الكتالوج لا يُطبع الرمزُ بديلا — يُقال إنّ
+                   الاسمَ غائب. فرمزٌ في موضع الاسم هو العطبُ نفسُه من بابٍ
+                   آخر. */
                 <Card as="li" key={q.courseId}>
-                  <p className="font-bold">{q.title || q.courseId}</p>
+                  <p className="font-bold">{q.title || "دورةٌ بلا اسمٍ في الكتالوج"}</p>
                   <p className="mt-1 text-read leading-5 text-muted-foreground">
-                    <span className="font-mono">{q.courseId}</span> · النسخة {q.currentVersion} · أُهِّلت {fmtDate(q.qualifiedAt)}
+                    النسخة {q.currentVersion} · أُهِّلت {fmtDate(q.qualifiedAt)}
                   </p>
                 </Card>
               ))}

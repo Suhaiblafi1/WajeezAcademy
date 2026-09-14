@@ -12,6 +12,7 @@
 import type { ReactNode } from 'react'
 import { RUBRIC_AXES } from '@/application/trainer/rubric'
 import { courseById } from '@/data/courses'
+import { readProposals } from '@/application/trainer/teachable-proposals'
 import { Panel } from '@/components/ui/Surface'
 import type { Dossier } from './ApplicationDossier'
 
@@ -36,7 +37,8 @@ function personalAsks(a: Dossier): string[] {
     const one = courseById(teachable[0])?.name ?? teachable[0]
     asks.push(`اختار «${one}» ضمن ما يستطيع تدريسه — كيف يبدأ أوّلَ جلسةٍ فيها، وما أوّلُ ما يخرج به المتدرّب؟`)
   }
-  if (teachable.length === 0 && a.teachableOther?.trim()) {
+  /* السجلّاتُ أو الفقرةُ القديمة — السؤالُ واحدٌ في الحالتين */
+  if (teachable.length === 0 && (readProposals(a.teachableProposals).length > 0 || a.teachableOther?.trim())) {
     asks.push('لم يختر شيئا من كتالوجنا وكتب بديلا — أيُّ دوراتنا أقربُ إلى ما يُتقنه فعلا؟')
   }
 

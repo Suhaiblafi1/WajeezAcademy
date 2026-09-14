@@ -17,6 +17,7 @@
 import type { ReactNode } from 'react'
 import { BookOpen } from 'lucide-react'
 import { courseById } from '@/data/courses'
+import { readProposals } from '@/application/trainer/teachable-proposals'
 import { contactChannelLabel, seasonLabel, yearsLabel } from '@/application/trainer/application-options'
 import { Card } from '@/components/ui/Surface'
 
@@ -47,6 +48,8 @@ export interface Dossier extends Record<string, unknown> {
   deliveryMode?: string | null
   teachableCourseIds?: string[]
   teachableOther?: string | null
+  /** سجلّاتُ الاقتراحات (أ-٣) — تغيب في طلبٍ سبقها */
+  teachableProposals?: unknown
   availability?: { days?: string[]; hoursPerWeek?: number; startFrom?: string; periods?: string[]; seasons?: string[] } | null
   demoConsent?: boolean
   contactChannel?: string | null
@@ -112,6 +115,9 @@ const has = (a?: string[] | null) => Array.isArray(a) && a.length > 0
 export default function ApplicationDossier({ a, showContact = true }: { a: Dossier; showContact?: boolean }) {
   const av = a.availability ?? null
   const teachable = a.teachableCourseIds ?? []
+  /* يُقرأ العمودُ مرّةً واحدةً وبفحص: `Json?` يقبل أيَّ شكل، ومن قرأه بلا
+     فحصٍ أسقط ملفَّ المتقدّم كلَّه بحقلٍ واحدٍ مشوَّه. */
+  const proposals = readProposals(a.teachableProposals)
   const phone = a.phone ? `${a.phoneCountryCode ?? ''}${a.phone}` : null
 
   return (
@@ -188,7 +194,7 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
 
       {/* أهمُّ ما في الطلب: على هذا يُسنَد إلى شعبة بعد الاعتماد */}
       <Block title="ما يستطيع تدريسه — وعليه يُسنَد بعد الاعتماد">
-        {teachable.length === 0 && !a.teachableOther ? (
+        {teachable.length === 0 && !a.teachableOther && proposals.length === 0 ? (
           <p className="text-read text-muted-foreground">لم يختر شيئا من الكتالوج ولم يكتب بديلا.</p>
         ) : (
           <>
@@ -202,7 +208,25 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
                 ))}
               </ul>
             )}
-            {a.teachableOther && (
+            {/* ═══ سجلّاتٌ أوّلا، والفقرةُ القديمةُ كما كُتبت ═══
+
+                الطلباتُ الجديدة (أ-٣، ١٣ سبتمبر ٢٠٢٦) تحمل سجلّاتٍ تُقرأ
+                واحدةً تلو الأخرى. والتي سبقتها تحمل فقرةً حرّة — تُعرض كما
+                كتبها صاحبُها بلا أن تُقسَّم أسطرا تخمينا: التخمينُ يبتر
+                جملةً كتبها إنسانٌ عن نفسه. والطلبُ الواحد لا يحمل الاثنين. */}
+            {proposals.length > 0 && (
+              <Row label="ودوراتٌ ليست في كتالوجنا">
+                <ul className="space-y-1">
+                  {proposals.map((c, i) => (
+                    <li key={i} className="text-read leading-6">
+                      <span className="font-bold">{c.titleAr}</span>
+                      {c.audienceAr && <span className="text-muted-foreground"> — {c.audienceAr}</span>}
+                    </li>
+                  ))}
+                </ul>
+              </Row>
+            )}
+            {proposals.length === 0 && a.teachableOther && (
               <Row label="ودوراتٌ ليست في كتالوجنا">
                 <span className="whitespace-pre-line">{a.teachableOther}</span>
               </Row>

@@ -1,12 +1,12 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { Activity, Award, BadgePercent, CalendarCog, CalendarRange, Crown, FlaskConical, GitBranch, ClipboardList, GraduationCap, HandCoins, History, Layers, PenLine, ShieldAlert, LayoutDashboard, UserCheck, UserPlus, Users, BarChart3, LifeBuoy, Wallet, Bell, PlugZap, Star } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
 
-import Button from "@/components/ui/Button";
 import BuildStampLine from "@/components/BuildStampLine";
 /** إطار لوحة الإدارة والعمليات — هويّة الإداريّ من جلسته وحدها.
 
@@ -194,11 +194,7 @@ export default function AdminLayout({ children, title }: { children: React.React
               بلا ذلك كان اسم الحساب يفيض ٣٨ بكسل خارج الشاشة فيظهر تمرير أفقي
               على مستوى المستند — والقراءة تصير سطرا سطرا بتمرير يمينا ويسارا. */}
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
-              aria-label="بحث سريع — Ctrl+K"
-              title="بحث سريع — Ctrl+K" className="hidden bg-white/[0.03] sm:flex">
-              بحث… <kbd className="rounded border border-white/15 px-1.5 text-fine">Ctrl K</kbd>
-            </Button>
+            <SearchChip hintAr="ابحث في الحسابات والشعب" />
             <NotificationBell audience="staff" />
             <ThemeToggle />
             <StaffAccountMenu user={user} />

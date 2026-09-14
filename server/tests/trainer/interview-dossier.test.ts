@@ -115,6 +115,81 @@ describe('بناءُ صفحة الملفّ', () => {
     expect(html, 'الموعدُ بلا منطقةٍ زمنيّة').toContain('بتوقيت Asia/Amman')
   })
 
+  /* ═══ دوراتٌ يقترحها — سجلّاتٌ لا فقرة (أ-٣) ═══
+
+     صار العمودُ سجلّاتٍ في ١٣ سبتمبر ٢٠٢٦، والعمودُ القديمُ يبقى للطلبات
+     التي سبقته. والملفُّ يُقرأ عند المُقابِل: من فقده فقد أهمَّ ما يسأل عنه. */
+  it('⚠️ الاقتراحاتُ تُقرأ واحدةً تلو الأخرى — لا كتلةً في سطر', async () => {
+    const row = await prisma.trainerApplication.findUniqueOrThrow({
+      where: { id: applicationId },
+      include: { specialties: true, documents: true },
+    })
+    const html = buildDossierHtml(
+      {
+        ...(row as unknown as DossierApplication),
+        teachableOther: null,
+        teachableProposals: [
+          { titleAr: 'تحليلُ تكلفة الاستحواذ', audienceAr: 'لمدراء التسويق' },
+          { titleAr: 'لوحاتُ القياس بلا كود', audienceAr: '' },
+        ],
+      },
+      { scheduledAt: new Date(START), courseTitles: [] },
+    )
+    expect(html, 'الاقتراحُ الأوّل غائب').toContain('تحليلُ تكلفة الاستحواذ — لمدراء التسويق')
+    expect(html, 'اقتراحٌ بلا جمهورٍ سقط').toContain('لوحاتُ القياس بلا كود')
+    expect(html, 'بقيت شَرطةٌ بلا ما بعدها').not.toContain('لوحاتُ القياس بلا كود —')
+    expect(html, 'الاقتراحاتُ لم تُصيَّر قائمةً تُقرأ').toMatch(/<ul><li>[\s\S]*<\/li><\/ul>/)
+  })
+
+  it('⚠️ وطلبٌ سبق السجلّاتِ تُعرض فقرتُه كما كتبها — لا تُقسَّم تخمينا', async () => {
+    /* قرارُ صاحب المنصّة: العمودُ القديمُ يُحفظ ولا يُمسّ. والتقسيمُ تخمينا
+       يبتر جملةً كتبها إنسانٌ عن نفسه. */
+    const row = await prisma.trainerApplication.findUniqueOrThrow({
+      where: { id: applicationId },
+      include: { specialties: true, documents: true },
+    })
+    const html = buildDossierHtml(
+      {
+        ...(row as unknown as DossierApplication),
+        teachableOther: 'أُتقن تدريبَ السلامة المهنيّة، وأيضا إدارةَ المخاطر في المصانع.',
+        teachableProposals: null,
+      },
+      { scheduledAt: new Date(START), courseTitles: [] },
+    )
+    expect(html, 'الفقرةُ القديمةُ سقطت حين لا سجلّ').toContain('أُتقن تدريبَ السلامة المهنيّة')
+  })
+
+  it('⚠️ وعمودٌ مشوَّهٌ لا يُسقط الملفَّ في وجه المُقابِل', async () => {
+    /* `Json?` يقبل أيَّ شكل: كتابةٌ يدويّةٌ في القاعدة، أو صيغةٌ تغيّرت. */
+    const row = await prisma.trainerApplication.findUniqueOrThrow({
+      where: { id: applicationId },
+      include: { specialties: true, documents: true },
+    })
+    for (const bad of ['نصّ', 7, {}, [null], [{ x: 1 }]]) {
+      const html = buildDossierHtml(
+        { ...(row as unknown as DossierApplication), teachableProposals: bad },
+        { scheduledAt: new Date(START), courseTitles: [] },
+      )
+      expect(html, `سقط الملفُّ بـ${JSON.stringify(bad)}`).toContain(REFERENCE)
+    }
+  })
+
+  it('⚠️ وما يكتبه المتقدّم في الاقتراح نصٌّ لا وسم', async () => {
+    const row = await prisma.trainerApplication.findUniqueOrThrow({
+      where: { id: applicationId },
+      include: { specialties: true, documents: true },
+    })
+    const html = buildDossierHtml(
+      {
+        ...(row as unknown as DossierApplication),
+        teachableProposals: [{ titleAr: '<img src=x onerror=alert(1)>', audienceAr: '' }],
+      },
+      { scheduledAt: new Date(START), courseTitles: [] },
+    )
+    expect(html, 'وسمٌ من يدِ المتقدّم دخل الصفحة').not.toContain('<img src=x')
+    expect(html, 'النصُّ لم يُهرَّب').toContain('&lt;img')
+  })
+
   it('وما يكتبه المتقدّم نصٌّ لا وسم', async () => {
     const row = await prisma.trainerApplication.findUniqueOrThrow({
       where: { id: applicationId },

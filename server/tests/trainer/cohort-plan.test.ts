@@ -50,7 +50,14 @@ async function approvedTrainer(auth: AuthService, apps: TrainerApplicationServic
 const content: TrainerPlanContent = {
   kind: 'trainer',
   summaryAr: 'شعبةٌ تطبيقيّة — كلُّ وحدةٍ تنتهي بمهمّةٍ من واقع العمل',
-  modules: [{ moduleId: 'C-BIZ-101-M1', titleAr: 'المحور الأوّل — كما يراه المدرّب', activityAr: 'تطبيقٌ عمليٌّ على بياناتٍ حقيقيّة' }],
+  /* والمتنُ مكتوبٌ بقصد: صار «المحتوى النظريّ» شرطا لتمام مرحلة المحاور
+     (د-١، ١٣ سبتمبر ٢٠٢٦)، وهذه الخطّةُ تمثّل مسودّةً **مكتملة** — فلو
+     تُركت بلا متنٍ لاختبرت نقصا لا اكتمالا. */
+  modules: [{
+    moduleId: 'C-BIZ-101-M1', titleAr: 'المحور الأوّل — كما يراه المدرّب',
+    activityAr: 'تطبيقٌ عمليٌّ على بياناتٍ حقيقيّة',
+    bodyAr: 'الشرحُ المكتوب الذي يقرؤه المتعلّمُ داخل المنصّة قبل اللقاء الأوّل، وفيه ما يكفي ليبدأ.',
+  }],
   resources: [{ title: 'كرّاسة الوحدة الأولى', url: 'https://example.com/unit-1.pdf' }],
 }
 
@@ -136,6 +143,13 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(plan.status).toBe('draft')
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'modules')?.done).toBe(true)
+    /* ⚠️ ولو غاب المتنُ لم تتمّ المرحلةُ — والحفظُ يمرّ على أيّ حال (د-١) */
+    const bare = { ...content, modules: content.modules.map((m) => ({ ...m, bodyAr: '' })) }
+    const draft = await plans.savePlan(trainerUserId, cohortId, bare)
+    expect(draft.status, 'نقصُ المتن منع الحفظَ — وهو يمنع الاعتمادَ وحدَه').toBe('draft')
+    const after = await plans.workspace(trainerUserId, cohortId)
+    expect(after.checklist.find((c) => c.key === 'modules')?.done, 'مرحلةُ المحاور تمّت بلا متن').toBe(false)
+    await plans.savePlan(trainerUserId, cohortId, content)
     expect(ws.checklist.find((c) => c.key === 'resources')?.done).toBe(true)
     expect(ws.checklist.find((c) => c.key === 'approval')?.done).toBe(false)
   })

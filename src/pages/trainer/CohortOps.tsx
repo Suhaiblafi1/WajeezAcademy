@@ -399,11 +399,11 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
 
       {/* ── التكاليف: ما سُلّم وما ينتظر — والتأليفُ في التجهيز ── */}
       <Panel as="section">
-        <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><ClipboardCheck className="h-4 w-4 text-gold-ink" /> التكاليفُ وتسليماتُها</h3>
+        <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><ClipboardCheck className="h-4 w-4 text-gold-ink" /> المهامُّ وتسليماتُها</h3>
         <CohortAssignments items={c.assessments} learners={active.length} />
         {onAuthorAssignment && (
           <Button tone="secondary" size="sm" type="button" onClick={onAuthorAssignment} className="mt-3">
-            <ClipboardCheck className="h-3 w-3" /> ألّف تكليفا جديدا — من مرحلة التكاليف
+            <ClipboardCheck className="h-3 w-3" /> ألّف مهمّةً جديدة — من مرحلة «المهامّ والتطبيق العمليّ»
           </Button>
         )}
       </Panel>

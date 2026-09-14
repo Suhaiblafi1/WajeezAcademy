@@ -24,6 +24,8 @@ export interface TrainerDraft {
   targetAudiences: string[]
   teachable: string[]
   teachableOther: string
+  /** دوراتٌ يقترحها سجلّاتٍ (أ-٣) — تغيب في مسودّةٍ كُتبت قبلها */
+  proposals?: { titleAr: string; audienceAr: string }[]
   days: string[]
   periods: string[]
   /** مواسمُ التدريب المختارة — قد تغيب في مسودّةٍ قديمة */

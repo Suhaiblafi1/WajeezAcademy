@@ -141,4 +141,28 @@ describe('رابطُ دعوة المدرّب', () => {
     const c = mine.cohorts.find((x) => x.cohortId === cohortId)
     expect(c).toMatchObject({ general: 1, referred: 1, rate: 50, referralRate: 80, projected: 130 })
   })
+
+  /* ═══ رابطُ المدرّب يُقرأ كما كُتب ═══
+
+     `public-slug.ts` يقول قصدَه صراحةً: «الحروفُ العربيّةُ تبقى عربيّةً في
+     العنوان… والقارئُ العربيُّ يقرأ اسمَ مدرّبه». وكان `encodeURIComponent`
+     ينقضه عند آخر خطوة، فيصل المدرّبَ في خانة النسخ سطرٌ من `%D8%B1%D8%A7…`
+     لا يُقرأ ولا يُرسَل في رسالة.
+
+     والحارسُ على النتيجة لا على غياب دالّةٍ بعينها: ما يراه المدرّبُ وينسخه. */
+  it('⚠️ رابطُه العامُّ يُقرأ بالعربيّة — لا `%D8%B1%D8%A7…` في خانة النسخ', async () => {
+    const wide = await referrals.wideLinkFor(trainerUserId)
+    expect(wide.slug, 'المسارُ نفسُه صار مرمَّزا').not.toMatch(/%[0-9A-Fa-f]{2}/)
+    expect(wide.url, 'الرابطُ يصل المدرّبَ مرمَّزا فلا يُقرأ').not.toMatch(/%[0-9A-Fa-f]{2}/)
+    expect(wide.url, 'اسمُ المدرّب ليس في رابطه').toContain(wide.slug)
+    expect(wide.url).toMatch(/\/t\//)
+  })
+
+  it('⚠️ ولا يدخل المسارَ ما يكسر عنوانا — فالخامُّ آمنٌ لأنّ الاشتقاق حارسُه', async () => {
+    /* تُرك الترميزُ اتّكالا على `KEEP` في `public-slug`: لا `/` ولا `?` ولا
+       `#` ولا مسافةٌ ولا `%`. ولو اتّسع المسموحُ يوما لعاد الترميزُ لازما —
+       فيسقط هذا الحارسُ قبل أن يصل رابطٌ مكسورٌ إلى أحد. */
+    const { slug } = await referrals.wideLinkFor(trainerUserId)
+    expect(slug, 'دخل المسارَ محرفٌ يكسر العنوان').not.toMatch(/[/?#%\s]/)
+  })
 })
