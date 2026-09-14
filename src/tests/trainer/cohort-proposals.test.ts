@@ -100,6 +100,16 @@ describe('وبابُ الاسم الجديد موصولٌ — شاشةٌ ومس�
     expect(card.indexOf('proposedTitle(r)')).toBeLessThan(card.indexOf('approve_for_catalog'))
   })
 
+  /* س-٢: ومن يعتمد بنطاق الكتالوج يُنشئ النسخةَ التي تلي الحاليّة — فالرقمُ
+     يُقرأ عند القرار، وإلّا ظنَّ المعتمِدُ أنّه يُصدر الثانيةَ وهي الرابعة. */
+  it('وبطاقةُ المعتمِد تقول النسخةَ الحاليّةَ وما ستصير إليه', () => {
+    const admin = code('src/pages/admin/TrainerOps.tsx')
+    expect(admin).toMatch(/r\.course\?\.currentVersion/)
+    expect(admin).toMatch(/النسخة \{r\.course\.currentVersion\}/)
+    /* والسهمُ لنطاق الكتالوج وحدَه — نطاقُ الشعبة لا يُنشئ نسخة */
+    expect(admin).toMatch(/r\.scope === "catalog" &&[\s\S]{0,80}currentVersion \+ 1/)
+  })
+
   it('والشاشةُ تناديه من ورشة الشعبة — لا مسارَ بلا شاشةٍ من جديد', () => {
     const screen = code('src/pages/trainer/CourseTitleProposal.tsx')
     expect(screen).toContain('/api/trainer/course-title-proposals')
