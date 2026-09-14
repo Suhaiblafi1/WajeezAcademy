@@ -245,10 +245,26 @@ describe('روابطُ القُرّاء من شاشة الإدارة', () => {
     const rows = listed.json() as { id: string; reviewerName: string }[]
     expect(rows.some((r) => r.id === link.id)).toBe(true)
 
-    /* ⚠ ولا رمزَ ولا هاشَ في السرد — من فتح الشاشةَ لا يحوز روابطَ غيره */
+    /* ⚠️ كان هنا: «ولا رمزَ ولا هاشَ في السرد».
+
+       والشطرُ الأوّلُ نُقض بقرارِ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): يُخزَّن
+       الرمزُ نصّا ليُنسَخ الرابطُ نفسُه، فيخرج في `copyUrl` **عمدا**. وثمنُه
+       مكتوبٌ في هجرة `20260914200000_dossier_link_token_clear`.
+
+       فيُحدَّث الحارسُ ولا يُحذف: ما زال يحرس أنّ الرمزَ لا يخرج إلّا في
+       موضعه المقصود، وأنّ الهاشَ لا يخرج البتّة. وحيُّ الرابط وميّتُه
+       يحرسه `dossier-token-stored.test.ts`. */
     const body = listed.body
-    expect(body, 'تسرّب الرمزُ إلى السرد').not.toContain(url.split('/r/')[1])
+    const token = url.split('/r/')[1]
+    const row = (listed.json() as { id: string; copyUrl: string | null }[])
+      .find((r) => r.id === link.id)
+    expect(row?.copyUrl, 'الرابطُ الحيُّ لا يخرج للنسخ — والنسخُ قرارٌ قائم').toBe(url)
     expect(body, 'تسرّب الهاشُ إلى السرد').not.toContain('tokenHash')
+    /* ولا يخرج الرمزُ مجرّدا في حقلٍ ثانٍ — العنوانُ وحدَه يحمله */
+    expect(
+      body.split(token).length - 1,
+      'ظهر الرمزُ أكثرَ من مرّة: حقلٌ ثانٍ يحمله يُنسى عند التدقيق.',
+    ).toBe(1)
 
     const gone = await app.inject({
       method: 'DELETE', url: `/api/admin/trainer-applications/${applicationId}/dossier-links/${link.id}`,
@@ -256,8 +272,7 @@ describe('روابطُ القُرّاء من شاشة الإدارة', () => {
     })
     expect(gone.statusCode).toBe(200)
 
-    /* وبعد الإلغاء لا يُفتح */
-    const token = url.split('/r/')[1]
+    /* وبعد الإلغاء لا يُفتح — والرمزُ هو المُعلَنُ أعلاه، لا نسخةٌ ثانيةٌ منه */
     expect((await app.inject({ method: 'GET', url: `/api/r/${token}` })).statusCode).toBe(401)
   })
 
