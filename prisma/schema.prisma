@@ -1358,7 +1358,9 @@ model CohortMessage {
   id           String      @id @default(uuid()) @db.Uuid
   cohortId     String      @db.Uuid
   authorId     String      @db.Uuid
-  audience     String // cohort | learner
+  /// cohort | learner | advisors — و`advisors` مستقبلوها ليسوا متعلّمين:
+  /// مستشارو متعلّمي الشعبة بإسنادٍ قائم (ع-١). و`enrollmentId` فيها فارغ.
+  audience     String
   /// المتعلّم المقصود حين تكون الرسالة إليه وحده
   enrollmentId String?     @db.Uuid
   body         String

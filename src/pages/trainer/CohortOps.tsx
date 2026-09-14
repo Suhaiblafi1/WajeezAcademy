@@ -22,17 +22,15 @@
    وأزرارُ الحضور تقول حالتَها لمن لا يرى. */
 
 import { useCallback, useEffect, useState } from "react";
-import { ClipboardCheck, Loader2, MessageSquarePlus, Upload, Users } from "lucide-react";
+import { Loader2, MessageSquarePlus } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { fmtDateTimeAr } from "@/utils/format";
-import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import BookAdminMeeting from "@/components/BookAdminMeeting";
+import { useRealSession } from "@/services/session";
 import Button from "@/components/ui/Button";
 import { controlCls, areaCls } from "@/components/FormKit";
-import CohortAssignments, { type CohortAssessment } from "./CohortAssignments";
-
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 interface TrainerCohort {
   role: string;
@@ -44,15 +42,12 @@ interface TrainerCohort {
       zoom: { joinUrl: string; passcode: string | null } | null;
       recordings: { id: string; title: string; readUrl: string | null }[];
     }[];
+    /* المخاطبةُ وحدَها تحتاج المسجَّلين — اسما وحالةً لا أكثر. والتقدّمُ
+       والحضورُ والإحالةُ خرجت مع لوحاتها (ع-١ · د-٤). */
     enrollments: {
       id: string; status: string;
       user: { displayName: string };
-      courseProgress: { percent: number } | null;
-      attendance: { sessionId: string; status: string }[];
-      referredByMe?: boolean;
     }[];
-    materials: { id: string; title: string; readUrl: string | null }[];
-    assessments: CohortAssessment[];
   };
 }
 
@@ -62,16 +57,11 @@ interface CohortMessage {
   enrollment: { user: { displayName: string } } | null;
 }
 
-export default function CohortOps({ cohortId, onAuthorAssignment }: {
-  cohortId: string;
-  /** تأليفُ التكاليف مرحلةٌ في التجهيز — الزرُّ هنا يقود إليها */
-  onAuthorAssignment?: () => void;
-}) {
-  const { fileUploads } = usePlatformConfig();
+export default function CohortOps({ cohortId }: { cohortId: string }) {
+  const { user: me } = useRealSession();
   const [row, setRow] = useState<TrainerCohort | null>(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [materialLink, setMaterialLink] = useState({ title: "", url: "" });
   const [msgForm, setMsgForm] = useState({ body: "", enrollmentId: "" });
   const [msgLog, setMsgLog] = useState<Record<string, CohortMessage[]>>({});
 
@@ -91,30 +81,6 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
 
   /* رفعُ ملفٍّ — تسجيلٌ ثمّ رفعٌ موقّع. والخادمُ يفكّ جسمَ الرفع كـoctet-stream
      فقط؛ النوعُ الحقيقيُّ مسجَّلٌ في خطوة التسجيل التي قبله. */
-  const putFile = async (uploadUrl: string, file: File, failMsg: string) => {
-    const put = await fetch(`${API_BASE}${uploadUrl}`, {
-      method: "PUT", credentials: "include", headers: { "content-type": "application/octet-stream" }, body: file,
-    });
-    if (!put.ok) throw new ApiError("upload_failed", failMsg, put.status);
-  };
-
-  const uploadMaterialFile = (file: File) =>
-    act(async () => {
-      const res = await apiPost<{ uploadUrl?: string }>(`/api/trainer/cohorts/${cohortId}/materials`, {
-        title: file.name.replace(/\.[^.]+$/, ""), kind: "file",
-        file: { originalName: file.name, mime: file.type || "application/octet-stream", sizeBytes: file.size },
-      });
-      if (res.uploadUrl) await putFile(res.uploadUrl, file, "تعذر رفع الملف بعد تسجيل المادة");
-    }, "أُضيفت المادة ورُفعت — تظهر للمسجلين في الشعبة");
-
-  const addMaterialLink = () => {
-    if (!materialLink.title.trim() || !materialLink.url.trim()) return;
-    return act(
-      () => apiPost(`/api/trainer/cohorts/${cohortId}/materials`, { title: materialLink.title.trim(), kind: "link", externalUrl: materialLink.url.trim() }),
-      "أُضيف الرابط إلى مواد الشعبة",
-    ).then(() => setMaterialLink({ title: "", url: "" }));
-  };
-
   /* ── مخاطبة الشعبة ──
      الرسالة تُسجَّل ثم تُوصَّل، والسجلّ يُعاد تحميله فورا: من أرسل يرى أثره
      لا رسالةَ نجاحٍ تختفي. */
@@ -129,13 +95,17 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
     if (!msgForm.body.trim()) return;
     void act(async () => {
       await apiPost(`/api/trainer/cohorts/${cohortId}/messages`, {
-        audience: msgForm.enrollmentId ? "learner" : "cohort",
-        enrollmentId: msgForm.enrollmentId || undefined,
+        audience: msgForm.enrollmentId === "advisors" ? "advisors" : msgForm.enrollmentId ? "learner" : "cohort",
+        enrollmentId: msgForm.enrollmentId && msgForm.enrollmentId !== "advisors" ? msgForm.enrollmentId : undefined,
         body: msgForm.body.trim(),
       });
       setMsgForm({ body: "", enrollmentId: "" });
       await loadMessages(cohortId);
-    }, msgForm.enrollmentId ? "وصلت رسالتك المتعلّم — وبقيت في السجلّ" : "بلغ إعلانك الشعبة — وبقي في السجلّ");
+    }, msgForm.enrollmentId === "advisors"
+      ? "وصلت رسالتك مستشاري متعلّميك — وبقيت في السجلّ"
+      : msgForm.enrollmentId
+        ? "وصلت رسالتك المتعلّم — وبقيت في السجلّ"
+        : "بلغ إعلانك الشعبة — وبقي في السجلّ");
   };
 
   if (err) return <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>;
@@ -146,46 +116,30 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
 
   return (
     <div className="space-y-5">
-      /* ── وانتقلت «اللقاءاتُ والحضور» إلى «لقاءات مباشرة» (د-٤) ──
+      {/* ── وانتقلت «اللقاءاتُ والحضور» إلى «لقاءات مباشرة» (د-٤) ──
          موضعُها `SessionsAndAttendance.tsx` في مرحلة التجهيز، حيث يجدول
          المدرّبُ لقاءَه. نُقلت ولم تُنسَخ: شبكةُ الحضور تُعيد حسابَ التقدّم،
-         ونسختان منها بابان لرقمٍ واحدٍ يُبنى عليه استحقاقُ شهادة. */
-      {/* ── تقدّم المتعلّمين ── */}
-      <Panel as="section">
-        <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><Users className="h-4 w-4 text-teal-light-ink" /> من التحق وتقدّمُه ({active.length})</h3>
-        {active.length === 0 ? (
-          <p className="mt-2 text-read text-muted-foreground">لم يلتحق أحدٌ بعد — يظهرون هنا فورَ تسجيلهم.</p>
-        ) : (
-          <div className="mt-3 space-y-2">
-            {active.map((e) => (
-              <div key={e.id} className="flex items-center gap-3">
-                <p className="w-40 truncate text-read text-foreground">
-                  {e.user.displayName}
-                  {e.referredByMe && <span className="mr-2 rounded-full bg-gold/15 px-2 py-0.5 text-read font-bold text-gold-ink">عبر رابطك</span>}
-                </p>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-teal" style={{ width: `${e.courseProgress?.percent ?? 0}%` }} />
-                </div>
-                <p className="w-10 text-left text-read text-muted-foreground">{e.courseProgress?.percent ?? 0}٪</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
-
-      {/* ── مخاطبة الشعبة ── */}
+         ونسختان منها بابان لرقمٍ واحدٍ يُبنى عليه استحقاقُ شهادة. */}
+      {/* ── وسقطت «من التحق وتقدّمُه» (ع-١) ──
+         تكرارُ تبويب «طلبتي» (`MyLearners`): الأسماءُ نفسُها والنسبُ نفسُها
+         وفيه بحثٌ ليس هنا. ولم تُنقل لأنّ لها موضعا قائما. */}
       <Panel as="section">
         <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
           <MessageSquarePlus className="h-4 w-4 text-teal-light-ink" /> مخاطبة الشعبة
         </h3>
         <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-          إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه. وكلاهما يبقى في السجلّ أدناه.
+          إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه، أو إلى المستشارين الذين يتابعون متعلّميك.
+          وكلُّها تبقى في السجلّ أدناه.
         </p>
         <div className="mt-3 space-y-2.5">
           <select aria-label="إلى من" value={msgForm.enrollmentId}
             onChange={(e) => setMsgForm((f) => ({ ...f, enrollmentId: e.target.value }))}
             className={`${controlCls} [&>option]:bg-surface`}>
             <option value="">إلى الشعبة كلّها ({active.length} متعلّما)</option>
+            {/* ع-١: ومستشارو متعلّمي هذه الشعبة — لا رابطَ بين مستشارٍ ودورة
+                في البيانات، والطريقُ الوحيدُ المسنود: متعلّموك ← حالاتُهم ←
+                من يتابعها إسنادا قائما. */}
+            <option value="advisors">إلى مستشاري متعلّميك</option>
             {active.map((e) => <option key={e.id} value={e.id}>إلى {e.user.displayName} وحده</option>)}
           </select>
           <textarea aria-label="نصّ الرسالة" rows={3} maxLength={2000} value={msgForm.body}
@@ -208,7 +162,11 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
                 {msgLog[c.id].map((m) => (
                   <Inset as="li" key={m.id}>
                     <p className="text-read text-muted-foreground">
-                      {m.audience === "cohort" ? `إلى الشعبة · ${m.recipients} متعلّما` : `إلى ${m.enrollment?.user.displayName ?? "متعلّم"}`}
+                      {m.audience === "cohort"
+                        ? `إلى الشعبة · ${m.recipients} متعلّما`
+                        : m.audience === "advisors"
+                          ? `إلى المستشارين · ${m.recipients}`
+                          : `إلى ${m.enrollment?.user.displayName ?? "متعلّم"}`}
                       {" · "}{fmtDateTimeAr(m.createdAt)}
                     </p>
                     <p className="mt-1.5 whitespace-pre-line text-read leading-6 text-foreground">{m.body}</p>
@@ -220,57 +178,18 @@ export default function CohortOps({ cohortId, onAuthorAssignment }: {
         </div>
       </Panel>
 
-      {/* ── مواد الشعبة ── */}
-      <Panel as="section">
-        <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><Upload className="h-4 w-4 text-teal-light-ink" /> مواد الشعبة</h3>
-        {c.materials.length > 0 ? (
-          <ul className="mt-3 space-y-1.5">
-            {c.materials.map((m) => (
-              <li key={m.id} className="flex items-center justify-between gap-3 text-read text-foreground">
-                <span className="min-w-0 truncate">{m.title}</span>
-                {m.readUrl && (
-                  <a href={`${API_BASE}${m.readUrl}`} target="_blank" rel="noreferrer" className="shrink-0 font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">افتح</a>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-2 text-read text-muted-foreground">لا مواد بعد — {fileUploads ? "ارفع كرّاسة أو أضف رابطا." : "أضف رابطا أدناه."}</p>
-        )}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {fileUploads ? (
-            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-teal/45 px-3.5 py-1.5 text-fine font-bold text-teal-light-ink transition hover:bg-teal/10">
-              <Upload className="h-3 w-3" /> ارفع ملفا (كرّاسة أو فيديو)
-              <input type="file" className="hidden" disabled={busy}
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMaterialFile(f); e.target.value = ""; }} />
-            </label>
-          ) : (
-            <p className="text-read leading-6 text-muted-foreground">
-              رفعُ الملفّات لم يُفعَّل على هذه المنصّة بعد — <span className="font-bold text-foreground">أضف المادّةَ برابطٍ أدناه</span> (Drive أو YouTube أو أيّ رابطٍ يفتحه طلبتُك).
-            </p>
-          )}
-        </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-          <input aria-label="عنوان الرابط" placeholder="عنوان المادة" value={materialLink.title}
-            onChange={(e) => setMaterialLink((f) => ({ ...f, title: e.target.value }))} className={controlCls} />
-          <input aria-label="رابط المادة" dir="ltr" placeholder="https://…" value={materialLink.url}
-            onChange={(e) => setMaterialLink((f) => ({ ...f, url: e.target.value }))} className={`${controlCls} text-left`} />
-          <Button tone="secondary" size="sm" disabled={busy || !materialLink.title.trim() || !materialLink.url.trim()} onClick={() => void addMaterialLink()}>
-            أضف رابطا
-          </Button>
-        </div>
-      </Panel>
+      {/* ── وانتقلت «موادُّ الشعبة» إلى «المصادر» (ع-١) ──
+         موضعُها `CohortMaterials.tsx`. ولم تُحذف كأختَيها: لا تبويبَ يحملها،
+         فحذفُها يسلب المدرّبَ بابَ الكرّاسة والرابط. */}
+      {/* ع-١ نصًّا: «وأضف السطرَ: تريد أن تسأل أو تفهم شيئا؟ احجز اجتماعا مع
+          الإدارة». ومن فتح شعبتَه ليخاطب أحدا قد يكون سؤالُه للإدارة لا
+          لمتعلّميه — والمكوّنُ هو هو الذي في لوحة المدرّب، لا نسخةٌ ثانية. */}
+      <BookAdminMeeting name={me?.displayName ?? ""} email={me?.email ?? ""} />
 
-      {/* ── التكاليف: ما سُلّم وما ينتظر — والتأليفُ في التجهيز ── */}
-      <Panel as="section">
-        <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><ClipboardCheck className="h-4 w-4 text-gold-ink" /> المهامُّ وتسليماتُها</h3>
-        <CohortAssignments items={c.assessments} learners={active.length} />
-        {onAuthorAssignment && (
-          <Button tone="secondary" size="sm" type="button" onClick={onAuthorAssignment} className="mt-3">
-            <ClipboardCheck className="h-3 w-3" /> ألّف مهمّةً جديدة — من مرحلة «المهامّ والتطبيق العمليّ»
-          </Button>
-        )}
-      </Panel>
+      {/* ── وسقطت «المهامُّ وتسليماتُها» (ع-١) ──
+         التصحيحُ في «طابور التقييم» (`GradingQueue`) — وهو التبويبُ الذي
+         يَفعل لا الذي يَعرض، ورأسُ ملفّه يروي كيف جُمع التصحيحُ فيه بعد أن
+         كان في موضعين. والتأليفُ مرحلةٌ في التجهيز. */}
     </div>
   );
 }

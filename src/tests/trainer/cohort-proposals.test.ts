@@ -170,7 +170,8 @@ describe('لوحةُ المدرّب — بطاقاتُ الشعب أوّلا', (
   it('والرأسُ شريطٌ رفيع، والبطاقاتُ بعده، والاجتماعُ في الذيل', () => {
     const head = home.indexOf('waitingToSubmit > 0')
     const cards = home.indexOf('summary.map(')
-    const meeting = home.indexOf('احجز اجتماعا مع الإدارة')
+    /* وصار سطرُ الاجتماع مكوّنا يُستعمل مرّتين (ع-١) — فيُطلَب وسمُه لا نصُّه */
+    const meeting = home.indexOf('<BookAdminMeeting')
     expect(head, 'لا إشارةَ في الرأس').toBeGreaterThan(0)
     expect(head, 'الرأسُ بعد البطاقات').toBeLessThan(cards)
     expect(cards, 'الاجتماعُ قبل البطاقات').toBeLessThan(meeting)

@@ -22,9 +22,37 @@ export class CohortMessageService {
     this.prisma = prisma
   }
 
-  /** رسالةٌ إلى الشعبة كلّها أو إلى متعلّم بعينه — تُسجَّل ثم تُوصَّل */
+  /* ═══ مستشارو الشعبة — من هم فعلا (ع-١) ═══
+
+     سؤالُ ع-١ كان: «مستشارو دورته» أهم المسنَدون إلى الشعبة أم من يتابعون
+     متعلّميها؟ والجوابُ في المخطّط لا في الرأي: **لا رابطَ بين مستشارٍ وشعبة
+     ولا بينه وبين دورة**. المستشارُ يُسنَد إلى **حالة** (`AdvisorAssignment`
+     ← `AdvisorCase`)، والحالةُ لها `clientId` — أي إنسان.
+
+     فالطريقُ الوحيدُ الذي تسنده البيانات: متعلّمو الشعبة ← حالاتُهم ←
+     المسنَدون إليها إسنادا **قائما** (`unassignedAt: null`).
+
+     والإسنادُ المُلغى لا يُخاطَب: من رُفعت عنه الحالةُ لا شأنَ له بها. */
+  private async cohortAdvisorIds(cohortId: string): Promise<string[]> {
+    const learners = await this.prisma.enrollment.findMany({
+      where: { cohortId, status: { not: 'dropped' } },
+      select: { userId: true },
+    })
+    if (learners.length === 0) return []
+    const assignments = await this.prisma.advisorAssignment.findMany({
+      where: {
+        unassignedAt: null,
+        case: { clientId: { in: learners.map((l) => l.userId) } },
+      },
+      select: { advisorId: true },
+    })
+    /* المستشارُ الواحدُ قد يتابع عدّةَ متعلّمين في الشعبة — ويصله واحدة */
+    return [...new Set(assignments.map((a) => a.advisorId))]
+  }
+
+  /** رسالةٌ إلى الشعبة كلّها أو إلى متعلّم بعينه أو إلى مستشاري متعلّميها */
   async send(authorId: string, cohortId: string, input: {
-    audience: 'cohort' | 'learner'
+    audience: 'cohort' | 'learner' | 'advisors'
     enrollmentId?: string
     body: string
   }) {
@@ -41,6 +69,41 @@ export class CohortMessageService {
     /* المستقبلون يُحسبون من الشعبة نفسها لا ممّا يُرسله المُنادي — ورسالةٌ
        إلى متعلّم تُتحقَّق من كونه في هذه الشعبة، وإلّا خاطب مدرّبٌ متعلّم
        شعبةٍ ليست له بمعرّفٍ يُخمَّن. */
+    /* ── فرعُ المستشارين: مستقبلوه ليسوا متعلّمين فلا يمرّ بحسابهم ── */
+    if (input.audience === 'advisors') {
+      const advisorIds = await this.cohortAdvisorIds(cohortId)
+      if (advisorIds.length === 0) {
+        throw new AuthError(
+          'no_advisors',
+          'لا مستشارَ قائمٌ على أحدٍ من متعلّمي هذه الشعبة — فلا أحدَ تصله رسالتُك',
+          409,
+        )
+      }
+      const message = await this.prisma.cohortMessage.create({
+        data: {
+          cohortId, authorId, audience: 'advisors', enrollmentId: null,
+          body, recipients: advisorIds.length,
+        },
+      })
+      const author = await this.prisma.user.findUnique({
+        where: { id: authorId }, select: { displayName: true },
+      })
+      for (const userId of advisorIds) {
+        /* والمستشارُ يقرأ من جانب الفريق لا من جانب المتعلّم */
+        await safeNotify(this.prisma, {
+          userId, channel: 'in_app', audience: 'staff',
+          title: `رسالةٌ من مدرّب — ${cohort.title}`,
+          body: `${author?.displayName ?? 'مدرّبُ الشعبة'}: ${body.slice(0, 240)}`,
+          data: { cohortId, messageId: message.id },
+        })
+      }
+      await recordAudit(this.prisma, {
+        actorId: authorId, action: 'cohort.message.send', entityType: 'cohort', entityId: cohortId,
+        meta: { messageId: message.id, audience: 'advisors', recipients: advisorIds.length },
+      })
+      return message
+    }
+
     const where = input.audience === 'learner'
       ? { id: input.enrollmentId, cohortId, status: { not: 'dropped' } }
       : { cohortId, status: { not: 'dropped' } }

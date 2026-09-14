@@ -40,19 +40,86 @@ const BOARD = 'src/pages/trainer/CohortOps.tsx'
 const SESSIONS = 'src/pages/trainer/SessionsAndAttendance.tsx'
 const LIST = 'src/pages/trainer/CohortAssignments.tsx'
 const QUEUE = 'src/pages/trainer/GradingQueue.tsx'
+const SUBMISSIONS = 'src/pages/trainer/CohortSubmissions.tsx'
+
+/* ═══ ع-١: «التشغيل» صار «مركزَ التواصل» — ولا يبقى فيه إلّا المخاطبة ═══
+
+   نصُّ ع-١: «أبقِ مخاطبةَ الشعبة، وأضف مخاطبةَ المستشارين، واحذف كلَّ ما
+   عداه، وسمِّه مركزَ التواصل، وأضف سطرَ حجزِ الاجتماع».
+
+   وما كان فيه لم يُحذف كلُّه بل ذهب إلى موضعه: اللقاءاتُ والحضورُ إلى
+   «لقاءات مباشرة» (د-٤)، والموادُّ إلى «المصادر»، وما سُلّم إلى «المهامّ».
+   وواحدةٌ وحدَها سقطت بلا بديل — «من التحق وتقدّمُه» — لأنّ «طلبتي» تحملها
+   بأسمائها ونسبها وبحثٍ ليس هنا.
+
+   والفحصُ على **نداءات الخادم** لا على نصٍّ في عنوان: شاشةٌ تُبقي زرًّا
+   يرفع مادّةً ما زالت تحمل الموادَّ مهما سُمّيت. */
+describe('مركزُ التواصل لا يحمل إلّا المخاطبة', () => {
+  const ops = readCode(BOARD)
+
+  it('لا يرفع مادّةً ولا يضيف رابطَها', () => {
+    expect(ops, 'موادُّ الشعبة ما زالت في مركز التواصل').not.toContain('/materials')
+  })
+
+  it('ولا يعرض تسليماتِ المهامّ', () => {
+    expect(ops, 'ما سُلّم ما زال في مركز التواصل').not.toContain('<CohortAssignments')
+  })
+
+  it('ولا يسرد المتعلّمين وتقدّمَهم — و«طلبتي» تحملهم', () => {
+    expect(ops, 'قائمةُ التقدّم ما زالت في مركز التواصل').not.toContain('courseProgress')
+    expect(readCode('src/pages/trainer/MyLearners.tsx'), 'و«طلبتي» لا تحملهم').toContain('courseProgress')
+  })
+
+  it('والمخاطبةُ باقيةٌ بأجمهتها الثلاثة', () => {
+    expect(ops).toContain('/messages')
+    /* ⚠ أوّلُ صياغةٍ طلبت ورودَ «advisors» في الملفّ — فمرّت وقد نُزع الخيارُ
+       من القائمة، لأنّ الكلمةَ باقيةٌ في منطق الإرسال. فصار الفحصُ على
+       **ما يراه المدرّب**: خيارٌ مصيَّرٌ يختاره، ومنطقٌ يترجمه، ونصٌّ يؤكّده. */
+    expect(ops, 'خيارُ مخاطبة المستشارين ليس في القائمة').toMatch(
+      /<option value="advisors">[^<]+<\/option>/,
+    )
+    expect(ops, 'الخيارُ لا يُترجَم إلى جمهورٍ عند الإرسال').toMatch(
+      /audience: msgForm\.enrollmentId === "advisors" \? "advisors"/,
+    )
+  })
+
+  it('وسطرُ حجزِ الاجتماع فيه — بالمكوّن لا بنسخةٍ ثانية', () => {
+    expect(ops).toContain('<BookAdminMeeting')
+  })
+})
 
 describe('المؤلِّفُ يرى ما ألّف', () => {
-  it('اللوحُ يُمرّر تكاليفَ الشعبة إلى قسمها — لا يعلنها في النوع ثمّ يُهملها', () => {
-    const code = readCode(BOARD)
+  /* ═══ ويتبع الحارسُ الشيفرةَ إلى موضعها (ع-١ · ١٤ سبتمبر ٢٠٢٦) ═══
+
+     «ما سُلّم وما ينتظر» انتقلت من «التشغيل» إلى مرحلة «المهامّ والتطبيق
+     العمليّ»: من كتب المهمّةَ يرى تحتها من استجاب لها.
+
+     وقد ظُنّت أوّلا تكرارَ «طابور التقييم» فحُذفت — **فأسقط هذا الحارسُ
+     الحذف، وكان محقًّا**: الطابورُ صفُّ تسليماتٍ تُصحَّح واحدا واحدا، وهذه
+     تقول لكلّ مهمّةٍ كم سلّم وكم ينتظر بالمقام الصحيح. سؤالان لا واحد.
+
+     فحُمل الحارسُ كما هو إلى الموضع الجديد، ولم يُخفَّف حرفٌ منه. */
+  it('المرحلةُ تُمرّر تكاليفَ الشعبة إلى قسمها — لا تعلنها في النوع ثمّ تُهملها', () => {
+    const code = readCode(SUBMISSIONS)
     const i = code.indexOf('<CohortAssignments')
-    expect(i, 'قسمُ التكاليف ليس في اللوح أصلا — فالمؤلِّفُ لا يرى ما ألّف').toBeGreaterThan(0)
+    expect(i, 'قسمُ التكاليف ليس في المرحلة أصلا — فالمؤلِّفُ لا يرى ما ألّف').toBeGreaterThan(0)
     /* والمقياسُ ما يُمرَّر لا ورودُ الوسم: قسمٌ بلا بياناتٍ يعرض فراغا دائما */
     const props = code.slice(i, code.indexOf('/>', i))
-    expect(props, 'القسمُ مصيَّرٌ بلا تكاليف').toContain('items={c.assessments}')
+    expect(props, 'القسمُ مصيَّرٌ بلا تكاليف').toContain('items={row.cohort.assessments}')
     expect(
       props,
       'مقامُ «سلّم ٣ من ١٢» غيرُ ممرَّر — فيصير «من ٠» أو عددَ قائمة الانتظار معهم.',
     ).toContain('learners=')
+    /* والمقامُ يستثني المنتظرين صراحةً — وهو ما كان اللوحُ يحسبه بـ`active` */
+    expect(code, 'المقامُ يعدّ قائمةَ الانتظار مع من التحق').toContain('!== "waitlisted"')
+  })
+
+  it('والمرحلةُ تُصيّرها فعلا — لا ملفٌّ بلا شاشة', () => {
+    const ws = readCode('src/pages/trainer/CohortWorkspace.tsx')
+    const from = ws.indexOf('stage === "assignments" &&')
+    const to = ws.indexOf('stage === "approval" &&')
+    expect(from, 'لا مرحلةَ تكاليف').toBeGreaterThan(-1)
+    expect(ws.slice(from, to), 'المرحلةُ لا تُصيّر ما سُلّم').toContain('<CohortSubmissions')
   })
 
   it('والقسمُ يصيّرها ويقول كم سلّم وكم ينتظر تصحيحَه', () => {
