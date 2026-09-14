@@ -1062,6 +1062,9 @@ export class TrainerReviewService {
       headline: p.headline,
       bioPublic: p.bioPublic,
       photoUrl: photoPublicUrl(p.photoUrl),
+      /* وصورةٌ رفعها هو وتنتظر قرارَنا — تُقرأ من مسار صور الحسابات لا من
+         مسار الصور العامّة، فالعامُّ لا يخدم ما لم يُعتمد بعد. */
+      pendingPhotoUrl: p.photoPendingKey ? `/api/v1/avatars/${p.photoPendingKey}` : null,
       qualifications: p.qualifications.map((q) => ({
         courseId: q.courseId,
         courseTitle: q.course.versions[0]?.titleAr ?? q.courseId,
@@ -1275,6 +1278,57 @@ export class TrainerReviewService {
       maxBytes: MAX_PHOTO_BYTES,
       photoUrl: photoPublicUrl(`${PHOTO_KEY_PREFIX}${storageKey}`),
     }
+  }
+
+  /* ═══ اعتمادُ صورةٍ رفعها المدرّبُ لنفسه — أو ردُّها ═══
+
+     قرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «everyone can put their picture and
+     the admin approves it». فالمدرّبُ يرفع من حسابه، فتسكن صورتُه
+     `photoPendingKey` — عمودا لا تقرؤه الصفحةُ العامّة — ولا تصير
+     `photoUrl` إلّا بيدِ الإدارة.
+
+     والاعتمادُ ينقل المفتاحَ ويحذف الصورةَ العامّةَ القديمةَ من القرص. والردُّ
+     يخلي العمودَ **ولا يحذف البايتات**: هي صورةُ حسابه التي يراها في ترويسته،
+     وليست ملكَ الإدارة لتُمحى. فالمردودُ عرضُها عامّةً لا وجودُها. */
+  async approvePendingPhoto(profileId: string, actorId: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId }, select: { id: true, photoUrl: true, photoPendingKey: true },
+    })
+    if (!profile) throw new AuthError('not_found', 'الملفُّ غيرُ موجود', 404)
+    if (!profile.photoPendingKey) {
+      throw new AuthError('no_pending_photo', 'لا صورةَ تنتظر الاعتماد', 409)
+    }
+    const oldKey = photoStorageKey(profile.photoUrl)
+    const updated = await this.prisma.trainerProfile.update({
+      where: { id: profile.id },
+      data: { photoUrl: `${PHOTO_KEY_PREFIX}${profile.photoPendingKey}`, photoPendingKey: null },
+    })
+    /* والقديمةُ تُحذف بعد النقل لا قبله: لو انقطع شيءٌ بينهما بقيت الأولى */
+    if (oldKey && oldKey !== profile.photoPendingKey) {
+      try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ }
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.photo.approve', entityType: 'trainer_profile', entityId: profile.id,
+    })
+    return { photoUrl: photoPublicUrl(updated.photoUrl) }
+  }
+
+  async rejectPendingPhoto(profileId: string, actorId: string, reasonAr?: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId }, select: { id: true, photoPendingKey: true },
+    })
+    if (!profile) throw new AuthError('not_found', 'الملفُّ غيرُ موجود', 404)
+    if (!profile.photoPendingKey) {
+      throw new AuthError('no_pending_photo', 'لا صورةَ تنتظر الاعتماد', 409)
+    }
+    await this.prisma.trainerProfile.update({
+      where: { id: profile.id }, data: { photoPendingKey: null },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.photo.reject', entityType: 'trainer_profile', entityId: profile.id,
+      reason: reasonAr,
+    })
+    return { ok: true }
   }
 
   /* ═══ اقتراحاتُ الدورات يحرّرها الأدمن ═══

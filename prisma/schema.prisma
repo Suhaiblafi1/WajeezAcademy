@@ -1188,6 +1188,7 @@ model TrainerProfile {
   headline              String?
   bioPublic             String?
   photoUrl              String? // صورة المدرب — لا تُعرض إلا بصورة حقيقية يرفعها المدرب/الإدارة
+  photoPendingKey       String? // صورة رفعها المدرب لنفسه، تنتظر اعتماد الإدارة — لا تُعرض للعامة
   ratingAvg             Float? // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
   ratingCount           Int? // عدد التقييمات
   hoursTaught           Int? // ساعات التدريب الفعلية مع الأكاديمية

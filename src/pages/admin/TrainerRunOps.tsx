@@ -51,6 +51,8 @@ interface OpsTrainer {
   headline: string | null;
   bioPublic: string | null;
   photoUrl: string | null;
+  /* صورةٌ رفعها هو من حسابه وتنتظر قرارَنا — ولا تراها العامّةُ حتّى تُعتمد */
+  pendingPhotoUrl: string | null;
   qualifications: OpsQualification[];
   assignments: OpsAssignment[];
 }
@@ -118,6 +120,18 @@ function PublicProfileEditor({
       await onSaved();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
+    } finally { setBusy(false); }
+  };
+
+  /* اعتمادُ الصورة المعلّقة أو ردُّها — قرارُ عرضٍ عامّ لا قرارُ تخزين */
+  const decidePhoto = async (approve: boolean) => {
+    setBusy(true);
+    try {
+      await apiPost(`/api/admin/trainers/${trainer.profileId}/photo/${approve ? "approve" : "reject"}`, {});
+      toast(approve ? "اعتُمدت الصورة" : "رُدّت الصورة");
+      await onSaved();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذُ القرار");
     } finally { setBusy(false); }
   };
 
@@ -190,6 +204,32 @@ function PublicProfileEditor({
           className={`${controlCls} mt-1 w-full`}
         />
       </div>
+      {trainer.pendingPhotoUrl && (
+        <Inset className="mt-2.5 flex flex-wrap items-center gap-3">
+          <img
+            src={trainer.pendingPhotoUrl}
+            alt="صورةٌ تنتظر الاعتماد"
+            className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-amber-400/60"
+          />
+          <div className="min-w-40 flex-1">
+            <p className="text-read font-black">صورةٌ رفعها بنفسه — تنتظر اعتمادَك</p>
+            <p className="text-read leading-5 text-muted-foreground">
+              لا تراها صفحةُ الفريق حتّى تعتمدها. والردُّ لا يحذفها من حسابه — يمنع عرضَها عامّةً فقط.
+            </p>
+          </div>
+          <Button
+            tone="confirm"
+            size="sm"
+            disabled={busy}
+            onClick={() => void decidePhoto(true)}
+          >
+            اعتمِدها للصفحة العامّة
+          </Button>
+          <Button tone="ghost" size="sm" disabled={busy} onClick={() => void decidePhoto(false)}>
+            ردُّها
+          </Button>
+        </Inset>
+      )}
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         {shown && (
           <img src={shown} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-white/15" />
