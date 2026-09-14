@@ -34,6 +34,13 @@ interface TrainerPage {
   ratingAvg: number | null; ratingCount: number | null;
   hoursTaught: number | null; graduatesCount: number | null;
   referralCode: string | null;
+  /* ن-٨: مساراتُه المنشورةُ باسمه — رابطُ دعوته يشير إلى هنا، فما جمعه
+     لمتابعيه يجب أن يبلغَهم منه. */
+  paths: {
+    slug: string | null; titleAr: string; blurbAr: string | null;
+    term: { titleAr: string; season: string; year: number; startsOn: string } | null;
+    courseCount: number;
+  }[];
   cohorts: PublicCohort[];
 }
 
@@ -133,6 +140,31 @@ export default function TrainerPublic() {
             </ul>
           )}
         </Panel>
+
+        {/* ═══ ما جمعه هو أوّلا، ثمّ شعبُه المتفرّقة (ن-٨ · تمامُ و-١) ═══
+
+            المسارُ اختيارُه ورأيُه: رتّب دوراتِه وسمّاها باسمه. والشعبُ
+            قائمةٌ تعرضها المنصّة. فمن فتح رابطَ دعوته يرى ما أوصى به قبل أن
+            يرى ما هو متاحٌ عنده. */}
+        {page.paths.length > 0 && (
+          <>
+            <h2 className="mt-10 text-xl font-black">مساراتٌ أعدّها بنفسه</h2>
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              {page.paths.map((p) => (
+                <Card as="li" key={p.slug ?? p.titleAr} id={p.slug ? `path-${p.slug}` : undefined}>
+                  <h3 className="font-black">{p.titleAr}</h3>
+                  {p.blurbAr && (
+                    <p className="mt-1.5 text-read leading-6 text-muted-foreground">{p.blurbAr}</p>
+                  )}
+                  <p className="mt-2 text-read leading-6 text-muted-foreground">
+                    {p.courseCount} دورة
+                    {p.term && <> · {p.term.titleAr}</>}
+                  </p>
+                </Card>
+              ))}
+            </ul>
+          </>
+        )}
 
         <h2 className="mt-10 text-xl font-black">الشعبُ المفتوحةُ للتسجيل</h2>
         {page.cohorts.length === 0 ? (
