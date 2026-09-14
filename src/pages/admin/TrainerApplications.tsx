@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   BookOpen, CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
-  Loader2, MailCheck, Printer, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
+  Loader2, MailCheck, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -446,7 +446,7 @@ export default function TrainerApplications() {
     return (
       <AdminLayout title={`الطلب ${a.reference}`}>
         <Button tone="ghost" icon={ChevronLeft} onClick={() => setSelected(null)}
-          className="mb-4 text-teal-light-ink hover:text-teal-ink print:hidden">
+          className="mb-4 text-teal-light-ink hover:text-teal-ink">
           كل الطلبات
         </Button>
 
@@ -456,8 +456,9 @@ export default function TrainerApplications() {
             (وهو طويل) يصعد يبحث عن الأزرار أو ينزل. وقرارُ صاحب المنصّة أن
             يكون الفعلُ في متناول اليد دائما.
 
-            و`print:hidden`: الشريطُ أداةٌ لا محتوى، فلا يُطبع. */}
-        <Card className="sticky top-0 z-20 -mx-1 mb-4 bg-paper/95 !px-4 !py-3 backdrop-blur-xl print:hidden">
+            وسقالةُ الطباعة رُفعت من هذه الشاشة (١٤ سبتمبر ٢٠٢٦): لا زرَّ
+            يطبعها بعد أن صار لكلّ قارئٍ رابطُه. */}
+        <Card className="sticky top-0 z-20 -mx-1 mb-4 bg-paper/95 !px-4 !py-3 backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-black">{a.fullName}</p>
@@ -474,7 +475,6 @@ export default function TrainerApplications() {
                   اطلب معلومات إضافية
                 </Button>
               )}
-              <Button tone="ghost" icon={Printer} onClick={() => window.print()}>اطبع الملفّ</Button>
             </div>
           </div>
 
@@ -506,39 +506,15 @@ export default function TrainerApplications() {
           )}
         </Card>
 
-        {/* ═══ ترويسةُ المطبوع — لا تُرى على الشاشة ═══
+        {/* ═══ ترويسةُ المطبوع ذهبت مع زرّ الطباعة (١٤ سبتمبر ٢٠٢٦) ═══
 
-            المطبوعُ كان يبدأ بأوّل بطاقةٍ في الصفحة بلا عنوانٍ ولا تاريخ، فمن
-            وجد الأوراقَ على طاولةٍ لا يعرف ما هي ولا متى طُبعت ولا لمن. وهو
-            مستندٌ يُتداول في لجنةٍ ويُحفظ في ملفّ، لا لقطةُ شاشة.
+            كانت تُرسَم لمطبوعٍ يُتداول في لجنة: عنوانٌ ورقمُ طلبٍ وتاريخُ
+            طباعةٍ وسطرُ خصوصيّة. والمطبوعُ نفسُه ذهب — صار لكلّ قارئٍ رابطُه
+            باسمه (المرحلةُ الثالثة). فترويسةٌ لا يقرؤها أحدٌ ليست حيادا: هي
+            شيفرةٌ تُصان ويُظنّ أنّها تعمل.
 
-            و`div` لا `header`: الترويساتُ كلُّها محجوبةٌ في الطباعة (شريطُ
-            الموقع)، فلو كانت `header` لحُجبت معها. */}
-        <div className="hidden print:block">
-          <p className="text-fine font-bold tracking-widest text-muted-foreground">وجيز أكاديمي — ملفُّ متقدّمٍ للتدريب</p>
-          <h1 className="mt-1 text-2xl font-black">{a.fullName}</h1>
-          <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-read">
-            <div className="flex gap-2">
-              <dt className="font-bold text-muted-foreground">رقمُ الطلب</dt>
-              <dd dir="ltr" className="font-mono">{a.reference}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-bold text-muted-foreground">الحالة</dt>
-              <dd className="font-bold">{STATUS_LABELS[a.status] ?? a.status}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-bold text-muted-foreground">قُدّم في</dt>
-              <dd>{fmtDateTime(new Date(a.createdAt))}</dd>
-            </div>
-            <div className="flex gap-2">
-              <dt className="font-bold text-muted-foreground">طُبع في</dt>
-              <dd>{fmtDateTime(new Date())}</dd>
-            </div>
-          </dl>
-          <p className="mt-3 border-y border-white/20 py-2 text-read leading-5 text-muted-foreground">
-            بياناتٌ شخصيّةٌ قُدّمت لغرض التقدّم للتدريب — لا تُنشر ولا تُشارَك.
-          </p>
-        </div>
+            وطباعةُ المتصفّح تبقى عاملةً على **الصفحة المشتركة** لمن أراد
+            ورقةً في الغرفة — وهي مقصودةٌ في التصميم. */}
 
         {/* ── الحذف النهائيّ ──
 
@@ -619,7 +595,7 @@ export default function TrainerApplications() {
 
                 ولا يُطبع: أداةُ تنقّلٍ لا محتوى. */}
             {tab === "dossier" && (
-              <nav aria-label="أقسام الملفّ" className="sticky top-20 z-10 print:hidden">
+              <nav aria-label="أقسام الملفّ" className="sticky top-20 z-10">
                 <Panel as="section" tone="solid" className="!px-3 !py-2">
                   <ul className="flex flex-wrap items-center gap-1">
                     {DOSSIER_SECTIONS.map((sc) => (
@@ -642,7 +618,7 @@ export default function TrainerApplications() {
             <Panel as="article" id="sec-profile" className="scroll-mt-28">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-black print:hidden">{a.fullName}</h3>
+                  <h3 className="text-lg font-black">{a.fullName}</h3>
                   <p className="mt-1 text-read text-muted-foreground">
                     {a.jobTitle ?? "—"} · {a.country ?? "—"}
                     {(() => {
@@ -653,7 +629,7 @@ export default function TrainerApplications() {
                   </p>
                   <p className="mt-1 text-read text-muted-foreground" dir="ltr">{a.email}</p>
                 </div>
-                <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink print:hidden">
+                <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
               </div>
@@ -675,7 +651,7 @@ export default function TrainerApplications() {
                   { label: "مقابلاتٌ جرت", value: String(a.interviews.filter((iv) => !iv.canceledAt).length) },
                 ];
                 return (
-                  <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 print:grid-cols-5 print:gap-1">
+                  <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                     {facts.map((f) => (
                       <Inset key={f.label} className="px-3 py-2">
                         <dt className="text-read leading-5 text-muted-foreground">{f.label}</dt>
@@ -766,10 +742,10 @@ export default function TrainerApplications() {
                           <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" />
                           <span className="font-bold">{d.kind}</span>
                           <span dir="ltr" className="min-w-0 flex-1 truncate text-muted-foreground">{d.originalName}</span>
-                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform print:hidden ${isOpen ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                         </button>
                         {isOpen && (
-                          <div className="mt-2 overflow-hidden rounded-xl bg-white/5 print:hidden">
+                          <div className="mt-2 overflow-hidden rounded-xl bg-white/5">
                             <iframe
                               src={url} title={d.originalName}
                               style={{ border: "none" }}
@@ -815,7 +791,7 @@ export default function TrainerApplications() {
           </div>
 
           {/* روابطُ القُرّاء — قبل الحكم، فمنها يأتي ما يُحكَم به */}
-          <div className="mt-4 print:hidden">
+          <div className="mt-4">
             <ReviewerLinks applicationId={a.id} />
           </div>
 
@@ -824,7 +800,7 @@ export default function TrainerApplications() {
           {/* ولا يُطبعان: حقلا إدخالٍ لا محتوى ملفّ. وإخفاءُ المربّعات وحدَها
               كان يترك أسماءَ المحاور معلّقةً بلا درجات — عنوانٌ بلا شيءٍ تحته،
               وهو العطبُ الذي أُصلح في الأقسام المطويّة نفسِه. */}
-          <div className="grid gap-4 lg:grid-cols-2 lg:items-start print:hidden">
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             {/* ═══ الروبركُ صار عرضا لا نموذجا (١٣ سبتمبر ٢٠٢٦) ═══
 
                 قرارُ صاحب المنصّة: التقييمُ يُملأ في الصفحة المشتركة التي

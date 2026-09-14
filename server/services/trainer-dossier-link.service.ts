@@ -28,7 +28,9 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { TrainerApplicationService } from './trainer-application.service'
 import { assertRubric, cleanRubric, type RubricScores } from './trainer-review.service'
-import { publicSiteUrl } from './notification.service'
+import { publicSiteUrl, sendDirectEmail, type DirectMailStatus } from './notification.service'
+import { renderMail } from './mail-template'
+import { fmtDateLong } from '../../src/application/text/format-ar'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
@@ -78,12 +80,22 @@ export class TrainerDossierLinkService {
   /** يُنشئ رابطا ويردّ الرمزَ **مرّةً واحدة** — لا يُقرأ بعدها أبدا، إذ لا يُحفظ */
   async create(
     applicationId: string, actorId: string,
-    input: { reviewerName: string; reviewerEmail?: string | null; ttlMs?: number },
+    input: { reviewerName: string; reviewerEmail?: string | null; ttlMs?: number; sendEmail?: boolean },
   ) {
     const app = await this.prisma.trainerApplication.findUnique({
-      where: { id: applicationId }, select: { id: true },
+      where: { id: applicationId }, select: { id: true, reference: true, fullName: true, email: true },
     })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+
+    /* ═══ ولا يصل الرابطُ المتقدّمَ أبدا ═══
+
+       فيه تقييمُنا له، ورسالةٌ واحدةٌ تُوجَّه خطأً تُسلّمه أسبابَ رفضه بخطّ
+       أيدينا. والمنعُ هنا لا في الشاشة: من أخطأ فلصق بريدَ المتقدّم في خانة
+       القارئ لا يُنبَّه إلّا بردٍّ صريح. (مسجَّلةٌ مخاطرةً في التصميم.) */
+    const readerEmail = input.reviewerEmail?.trim().toLowerCase() || null
+    if (readerEmail && readerEmail === app.email.trim().toLowerCase()) {
+      throw new AuthError('applicant_email', 'هذا بريدُ المتقدّم نفسِه — ولا يصل الرابطُ صاحبَ الملفّ', 422)
+    }
 
     const token = newToken()
     const link = await this.prisma.trainerDossierLink.create({
@@ -102,7 +114,42 @@ export class TrainerDossierLinkService {
       /* الاسمُ يُسجَّل والرمزُ لا — و`sanitize` يمسح ما فيه «token» على كلّ حال */
       meta: { linkId: link.id, reviewerName: link.reviewerName, expiresAt: link.expiresAt },
     })
-    return { link, url: `${publicSiteUrl()}/r/${token}` }
+    /* ═══ والبريدُ يُرسَل هنا أو لا يُرسَل أبدا ═══
+
+       الرمزُ لا يُحفظ — هاشُه وحدَه. فهذه اللحظةُ هي **الوحيدةُ** التي يُعرف
+       فيها الرابط. ومن أراد إرسالَه لاحقا أنشأ رابطا جديدا؛ لا سبيلَ إلى
+       استخراج القديم، وهو مقصودٌ لا نقص. */
+    const url = `${publicSiteUrl()}/r/${token}`
+    let emailDelivery: DirectMailStatus | null = null
+    if (input.sendEmail && link.reviewerEmail) {
+      const res = await sendDirectEmail(this.prisma, {
+        to: link.reviewerEmail,
+        subject: `ملفُّ متقدّمٍ لمراجعتك — ${app.reference}`,
+        ...renderMail({
+          greetingName: link.reviewerName,
+          heading: 'ملفُّ متقدّمٍ ينتظر قراءتك',
+          blocks: [
+            { kind: 'facts', rows: [
+              { label: 'رقم الطلب', value: app.reference },
+              { label: 'ينتهي الرابط', value: fmtDateLong(link.expiresAt) },
+            ] },
+            { kind: 'cta', label: 'افتح الملفّ واكتب تقييمك', href: url,
+              caption: 'يُفتح بنقرةٍ بلا تسجيلٍ ولا كلمة مرور.' },
+            /* والتحذيرُ في المتن لا في تعليقِ شيفرة: من يقرأ الرسالةَ هو من
+               قد يُعيد توجيهَها، فالتنبيهُ يبلغه حيث هو. */
+            { kind: 'callout', text: 'هذا الرابطُ لك وحدَك ويقوم مقامَ توقيعك — فلا تُعِد توجيهَه، فما يُكتب به يُنسَب إليك.' },
+            { kind: 'note', text: 'وإن وصلك خطأً فأخبرنا بالردّ على هذه الرسالة، ويُلغى.' },
+          ],
+        }),
+      })
+      emailDelivery = res.status
+      await recordAudit(this.prisma, {
+        actorId, action: 'trainer.dossier_link.send',
+        entityType: 'trainer_application', entityId: applicationId,
+        meta: { linkId: link.id, reviewerName: link.reviewerName, delivery: res.status },
+      })
+    }
+    return { link, url, emailDelivery }
   }
 
   async list(applicationId: string) {
