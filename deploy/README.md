@@ -84,14 +84,38 @@ openssl rand -hex 32      # STORAGE_SECRET
 
 ## ٣ · وجهة النسخ الاحتياطي — قبل أيّ نشر
 
+`deploy/backup.sh` **يرفض العمل** بلا وجهةٍ خارجَ الخادم. نسخةٌ على القرص
+نفسِه ليست نسخةً احتياطية: عطبُ القرص يأخذ الأصلَ والنسخةَ معا.
+
+وأيُّ وجهةٍ يقبلها rclone تصلح (S3 · Backblaze B2 · صندوق تخزين). وهذه
+خطواتُ **صندوق تخزين Hetzner** كاملةً — تُنفَّذ **على الخادم** لا على جهازك:
+
 ```bash
-rclone config                 # أنشئ وجهة: S3 · Backblaze B2 · صندوق تخزين
-# ثم في deploy/.env.production:
-#   BACKUP_REMOTE=wajeez-backup:wajeez/db
+# ١ · عرّف الوجهة. المنفذُ ٢٣ لا ٢٢، وكلمةُ السرّ تمرّ عبر obscure
+rclone config create wajeez-backup sftp \
+  host uXXXXXX.your-storagebox.de user uXXXXXX port 23 \
+  pass "$(rclone obscure 'كلمة-السرّ')"
+
+# ٢ · أثبِتها قبل الوثوق بها — لا يكفي أنّ الأمرَ السابقَ لم يخطئ
+rclone lsd wajeez-backup:
+
+# ٣ · ثمّ في deploy/.env.production
+BACKUP_REMOTE=wajeez-backup:wajeez
+
+# ٤ · خذ نسخةً ثمّ استرجعها
+bash deploy/backup.sh
+bash deploy/backup.sh --verify
+
+# ٥ · واقرأ الحالَ بعدها
+bash deploy/status.sh
 ```
 
-`deploy/backup.sh` **يرفض العمل** بلا هذه الوجهة. نسخةٌ على القرص نفسه ليست
-نسخةً احتياطية: عطبُ القرص يأخذ الأصل والنسخة معا.
+و`uXXXXXX` اسمُ المستخدم واسمُ المضيف معا — يعطيكه Hetzner عند إنشاء الصندوق،
+ولا يُخمَّن.
+
+**ولا تقف عند الرفع.** إثباتُ الاسترجاع الذي يكتبه `--verify` هو شرطُ **إعادة
+ضبطِ الحسابات** — محوٌ لا رجعةَ فيه. فمن رفع ولم يسترجع فتح ذلك البابَ على
+نسخةٍ لم يَرَها تعود.
 
 ## ٤ · وجّه النطاق ثم انشر
 
