@@ -140,6 +140,21 @@ export class TrainerPathService {
     return rows.map((c) => ({ courseId: c.id, titleAr: titleOf(c) }))
   }
 
+  /** المواسمُ التي يصلح أن يُعلَن فيها مسارٌ — ما لم ينتهِ بعد (ن-٣).
+   *
+   *  و`/api/trainer/me/terms` يردّ المواسمَ كلَّها بما مضى منها، وهو صوابٌ
+   *  هناك: المدرّبُ يرى إتاحتَه المعلَنةَ في مواسمَ سبقت. أمّا هنا فعرضُ
+   *  موسمٍ انقضى فخٌّ — يُعلَن المسارُ لموسمٍ انتهى، فتقول البطاقةُ للزائر
+   *  «يبدأ» عن تاريخٍ مضى. ورأيتُها في الرفّ المصيَّر قبل أن تشتكيَ. */
+  async upcomingTerms() {
+    const rows = await this.prisma.term.findMany({
+      where: { endsOn: { gte: new Date() }, status: { notIn: ['cancelled'] } },
+      orderBy: { startsOn: 'asc' },
+      select: { id: true, titleAr: true, startsOn: true, registrationOpensAt: true },
+    })
+    return rows
+  }
+
   async create(userId: string, input: PathInput) {
     const ctx = await this.context(userId)
     const d = this.clean(input)

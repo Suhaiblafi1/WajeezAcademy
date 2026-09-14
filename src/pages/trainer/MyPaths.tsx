@@ -75,7 +75,7 @@ export default function MyPaths() {
     Promise.all([
       apiGet<MyPath[]>("/api/trainer/paths"),
       apiGet<MyCourse[]>("/api/trainer/paths/courses"),
-      apiGet<MyTerm[]>("/api/trainer/me/terms"),
+      apiGet<MyTerm[]>("/api/trainer/paths/terms"),
     ])
       .then(([p, c, t]) => { setRows(p); setMyCourses(c); setTerms(t); setErr(null); })
       .catch((e) => setErr(e instanceof ApiError ? e.message : "تعذّر تحميل مساراتك"));

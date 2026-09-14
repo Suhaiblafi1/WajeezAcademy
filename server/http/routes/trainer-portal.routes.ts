@@ -231,6 +231,11 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['trainer-portal'], summary: 'دوراتي التي أبني منها مسارا — بعناوينها' },
   }, async (req) => paths.myCourses(req.auth!.userId))
 
+  app.get('/api/trainer/paths/terms', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'المواسمُ التي يصلح إعلانُ مسارٍ فيها — ما لم ينتهِ (ن-٣)' },
+  }, async () => paths.upcomingTerms())
+
   app.post('/api/trainer/paths', {
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'مسارٌ جديدٌ مسوّدةً' },

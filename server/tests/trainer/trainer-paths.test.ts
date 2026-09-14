@@ -161,6 +161,28 @@ describe('ن · مسارُ المدرّب على قاعدةٍ حقيقيّة', (
     expect((await paths.shelf()).some((x) => x.id === p.id)).toBe(true)
   })
 
+  /* ن-٣: ورأيتُه في الرفّ المصيَّر — البطاقةُ قالت «يبدأ ١ فبراير ٢٠٢٦» عن
+     موسمٍ انقضى، لأنّ المنتقيَ كان يعرض المواسمَ كلَّها. وإعلانُ مسارٍ لموسمٍ
+     انتهى فخٌّ لصاحبه قبل أن يكون خطأً في الشاشة. */
+  it('ن-٣ · ولا يُعرض للإعلان موسمٌ انقضى', async () => {
+    const past = await prisma.term.upsert({
+      where: { year_season: { year: 2019, season: 'feb_apr' } },
+      update: {},
+      create: {
+        year: 2019, season: 'feb_apr', titleAr: 'موسمٌ مضى',
+        startsOn: new Date('2019-02-01'), endsOn: new Date('2019-04-30'), status: 'closed',
+      },
+    })
+    const offered = await paths.upcomingTerms()
+    expect(offered.some((t) => t.id === past.id), 'عُرض موسمٌ انتهى').toBe(false)
+    expect(offered.some((t) => t.id === termId), 'سقط الموسمُ القادمُ أيضا').toBe(true)
+    /* ولا واحدٌ منها منتهٍ — لا هذا وحدَه */
+    for (const t of offered) {
+      const row = await prisma.term.findUniqueOrThrow({ where: { id: t.id } })
+      expect(row.endsOn.getTime(), `موسمٌ منتهٍ معروض: ${t.titleAr}`).toBeGreaterThanOrEqual(Date.now() - 86_400_000)
+    }
+  })
+
   it('وما خرج من يده لا يعدّله — والمردودُ يعود مسوّدةً بالتعديل', async () => {
     const t = await trainer('path-lock@test.local', 'ليلى المدرّبة', ['C-PATH-1', 'C-PATH-2'], true)
     const p = await paths.create(t.userId, {
