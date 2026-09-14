@@ -105,6 +105,13 @@ export class TrainerDossierLinkService {
       data: {
         applicationId,
         tokenHash: sha256(token),
+        /* ═══ والرمزُ يُحفظ نصّا — قرارٌ لا سهو ═══
+
+           كان `sha256` وحدَه، فلا نسخةَ من الرابط في مكان. وقرارُ صاحب
+           المنصّة (١٤ سبتمبر ٢٠٢٦) أن يُخزَّن ليُنسَخ الرابطُ نفسُه بعد
+           ضياعه، وأن يكون عاريا لا مشفَّرا. وثمنُه مكتوبٌ في هجرته
+           `20260914200000_dossier_link_token_clear`. */
+        tokenClear: token,
         reviewerName: input.reviewerName.trim(),
         reviewerEmail: input.reviewerEmail?.trim() || null,
         expiresAt: new Date(Date.now() + (input.ttlMs ?? DOSSIER_LINK_TTL_MS)),
@@ -166,14 +173,32 @@ export class TrainerDossierLinkService {
   }
 
   async list(applicationId: string) {
-    return this.prisma.trainerDossierLink.findMany({
+    const rows = await this.prisma.trainerDossierLink.findMany({
       where: { applicationId },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true, reviewerName: true, reviewerEmail: true, expiresAt: true,
         revokedAt: true, firstOpenedAt: true, lastOpenedAt: true, createdAt: true,
+        tokenClear: true,
       },
     })
+
+    /* ═══ والعنوانُ يخرج للشاشة، لا الرمزُ مجرّدا ═══
+
+       الشاشةُ تنسخ رابطا لا تركّبه، فلا تعرف صيغةَ `/r/` ولا تُصلحها يومَ
+       تتغيّر. والرمزُ نفسُه لا يخرج في أيّ حقلٍ آخر.
+
+       **ولا يخرج إلّا لرابطٍ حيّ.** الملغى والمنتهي رمزُهما موجودٌ في القاعدة
+       لكنّه لا يفتح شيئا — فإخراجُه يُغري بنسخِ ما لا يعمل، ويوسّع انتشارَ
+       رمزٍ قد يُعاد إحياؤه بتمديدٍ لاحق. فالحيُّ وحدَه يُنسَخ، وما عداه
+       يُجدَّد. */
+    const now = Date.now()
+    return rows.map(({ tokenClear, ...row }) => ({
+      ...row,
+      copyUrl: tokenClear && !row.revokedAt && row.expiresAt.getTime() > now
+        ? `${publicSiteUrl()}/r/${tokenClear}`
+        : null,
+    }))
   }
 
   /* ═══ التجديدُ: رمزٌ جديدٌ على الصفّ نفسِه ═══
@@ -183,12 +208,21 @@ export class TrainerDossierLinkService {
      قال صاحبُ المنصّة (١٤ سبتمبر ٢٠٢٦): «أريد أن أتمكّن من إعادة نسخِ الرابط
      للمفعَّلين بدلا من إنشاء جديد».
 
-     و**نسخُ القديمِ مستحيلٌ بنيةً لا كسلا**: في القاعدة `sha256(token)` وحدَه،
-     والهاشُ طريقٌ واحد. ولو حُفظ الرمزُ نصّا لصارت نسخةٌ من القاعدة تسريبا
-     لكلِّ رابطٍ حيٍّ دفعةً واحدة — وكلُّ رابطٍ اعتمادٌ يقرأ به حاملُه ملفَّ
-     إنسانٍ بسيرته ووثائقه.
+     وكان نسخُ القديمِ مستحيلا بنيةً: في القاعدة `sha256(token)` وحدَه،
+     والهاشُ طريقٌ واحد. **ثمّ تغيّر ذلك بقرارٍ لاحق** (١٤ سبتمبر ٢٠٢٦): صار
+     الرمزُ يُحفظ نصّا في `tokenClear`، فالنسخُ ممكنٌ اليومَ من الشاشة.
 
-     ─────────── وما يريده يقع بغير ذلك ───────────
+     وثمنُه — أنّ كلَّ مَقلَبٍ ليليٍّ يصير دفترَ روابطَ حيّة — مكتوبٌ في هجرة
+     `20260914200000_dossier_link_token_clear`، وقد عُرض على صاحب المنصّة
+     مرّتَين فاختاره.
+
+     ─────────── ويبقى التجديدُ لما لا يُنسَخ ───────────
+
+     الروابطُ المنشأةُ **قبل** تلك الهجرة لا رمزَ لها ولا يُستخرج من هاشها،
+     فتلك تُجدَّد ولا تُنسَخ. والمنتهيةُ أجلُها كذلك: النسخُ يعيد الحرفَ لا
+     الصلاحية.
+
+     ─────────── وما يصلحه التجديدُ أصلا ───────────
 
      الذي يزعجه ليس الحرفُ القديم بل **الصفُّ الثاني**: قارئٌ واحدٌ بسطرَين،
      وتقييمُه ينقسم بينهما. فالتجديدُ يُبدّل الرمزَ **على الصفّ نفسِه**:
@@ -230,7 +264,7 @@ export class TrainerDossierLinkService {
     const updated = await this.prisma.trainerDossierLink.update({
       where: { id: linkId },
       data: {
-        tokenHash: sha256(token),
+        tokenHash: sha256(token), tokenClear: token,
         expiresAt: new Date(Date.now() + (DOSSIER_LINK_TTL_MS)),
       },
     })
