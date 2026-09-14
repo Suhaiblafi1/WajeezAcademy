@@ -48,7 +48,12 @@ describe('محرّرُ الملفّ العامّ', () => {
   })
 
   it('والبايتاتُ تُرفع إلى الرابط الموقّت مباشرةً — لا في جسم JSON', () => {
-    expect(screen, 'الملفُّ يمرّ في JSON فيضخم ويُقرأ نصّا').toMatch(/method:\s*"PUT"[\s\S]{0,120}body:\s*file/)
+    /* الجسمُ مُعرِّفٌ مجرّد — لا `JSON.stringify`. وكان الحارسُ يشترط اسمَ
+       المتغيّر `file` بعينه، فسقط يومَ صار المرفوعُ قالبا مؤطَّرا اسمُه
+       `blob`: اشتراطُ اسمٍ يقيس التسميةَ لا البنية. */
+    expect(screen, 'الملفُّ يمرّ في JSON فيضخم ويُقرأ نصّا').toMatch(/method:\s*"PUT"[\s\S]{0,160}body:\s*[A-Za-z_$][\w$]*\s*,/)
+    const put = screen.indexOf('method: "PUT"')
+    expect(screen.slice(put, put + 200), 'الجسمُ مُسلسَلٌ نصّا').not.toContain('JSON.stringify')
   })
 })
 

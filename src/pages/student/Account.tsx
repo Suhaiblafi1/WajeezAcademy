@@ -11,7 +11,8 @@ import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fetchMe } from "@/services/me";
 import { showsLearnerFields } from "@/application/site/account-fields";
 import { clearLocalSession, readSession } from "@/services/auth";
-import { prepareImage, ImageConditionError, PHOTO_OUT_MIME } from "@/lib/prepare-image";
+import { ImageConditionError, PHOTO_OUT_MIME } from "@/lib/prepare-image";
+import ImageFramer from "@/components/ImageFramer";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DateField from "@/components/ui/DateField";
@@ -129,6 +130,8 @@ export default function StudentAccount() {
      سطرا أسفلَ منتقي الصورة. فكان الرفعُ يسقط، وتُكتب العلّةُ خارجَ
      الشاشة، ويرى صاحبُه زرّا لا يفعل شيئا. */
   const [photoMsg, setPhotoMsg] = useState<{ bad: boolean; text: string } | null>(null);
+  /* الملفُّ المختارُ يُعرض في المؤطِّر أوّلا — فالإطارُ قرارُ صاحبه لا قصٌّ من الوسط */
+  const [framing, setFraming] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   /* تحميل الملف: من الخادم عند وجود جلسة حقيقية، وإلا من المخزن المحلي الموسوم */
@@ -231,10 +234,9 @@ export default function StudentAccount() {
      ومن كان مدرّبا فصورتُه تنتظر اعتمادَ الإدارة قبل صفحته العامّة — يقولها
      الخادمُ في `awaitingApproval`، وتُقال له هنا صراحةً لئلّا ينتظر ظهورا
      لا يأتي. */
-  const uploadAvatar = async (file: File) => {
+  const uploadAvatar = async (blob: Blob) => {
     setErr(""); setSavedMsg(""); setPhotoMsg(null); setPhotoBusy(true);
     try {
-      const blob = await prepareImage(file);
       const r = await apiPost<{
         uploadUrl: string; maxBytes: number; avatarUrl: string; awaitingApproval: boolean;
       }>("/api/learner/avatar-upload", { mime: PHOTO_OUT_MIME });
@@ -251,6 +253,7 @@ export default function StudentAccount() {
         return;
       }
       setStoredAvatar(r.avatarUrl);
+      setFraming(null);
       setForm((f) => ({ ...f, avatarUrl: "" }));
       setPhotoMsg({ bad: false, text: r.awaitingApproval
         ? "رُفعت صورتُك. وتظهر في حسابك الآن — أمّا صفحتُك العامّة فتنتظر اعتمادَ الإدارة."
@@ -442,7 +445,7 @@ export default function StudentAccount() {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadAvatar(f); }}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) { setPhotoMsg(null); setFraming(f); } }}
               />
               <Button tone="secondary" size="sm" disabled={photoBusy} onClick={() => fileRef.current?.click()}>
                 {photoBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
@@ -459,6 +462,16 @@ export default function StudentAccount() {
               >
                 {photoMsg.text}
               </p>
+            )}
+            {framing && (
+              <ImageFramer
+                file={framing}
+                onDone={uploadAvatar}
+                onCancel={() => {
+                  setFraming(null);
+                  if (fileRef.current) fileRef.current.value = "";
+                }}
+              />
             )}
           </Field>
         </div>
