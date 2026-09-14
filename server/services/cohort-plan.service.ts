@@ -54,7 +54,12 @@ export interface TrainerPlanModule {
   bodyFileMime?: string | null
 }
 /** `kind` من `RESOURCE_KINDS` — وغيابُه يعني «رابط» (ما حُفظ قبل العمود) */
-export interface TrainerPlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
+export interface TrainerPlanResource {
+  /* والرابطُ اختياريٌّ منذ د-٣: المصدرُ رابطٌ **أو** ملفٌّ مرفوع */
+  title: string; url?: string | null; kind?: string | null; noteAr?: string | null
+  /** د-٣: مصدرٌ مرفوعٌ بدل رابطٍ مُلصَق */
+  bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null
+}
 export interface TrainerPlanContent {
   kind: 'trainer'
   summaryAr?: string | null

@@ -196,7 +196,7 @@ export function newStorageKey(): string {
    يملكه سجلٌّ — فلا يبقى على القرص ما لا يعرفه أحد ولا يحذفه أحد. */
 export type StorageOwnerKind =
   | 'trainer_document' | 'cv' | 'recording' | 'material' | 'submission' | 'assessment_response'
-  | 'trainer_photo' | 'avatar' | 'module_body'
+  | 'trainer_photo' | 'avatar' | 'cohort_file'
 
 export interface StorageOwner {
   kind: StorageOwnerKind
@@ -281,16 +281,16 @@ export async function resolveStorageOwner(
   })
   if (pending) return { kind: 'trainer_photo', maxBytes: MAX_PHOTO_BYTES }
 
-  /* ═══ والتاسعُ: ملفُّ المحتوى النظريّ (ع-٢) ═══
+  /* ═══ والتاسعُ: ملفُّ شعبةٍ — متنُ محورٍ أو مصدرٌ (ع-٢ · د-٣) ═══
 
      الصفُّ يُكتب قبل إصدار رابط الرفع، فيعرفه هذا هنا ويعرف نوعَه المعلَن.
      ولولاه لَرُدّ الرفعُ: مفتاحٌ لا يعرفه أحدٌ لا سقفَ له. */
-  const body = await prisma.moduleBodyFile.findUnique({
+  const body = await prisma.cohortFile.findUnique({
     where: { storageKey }, select: { mime: true, originalName: true },
   })
   if (body) {
     return {
-      kind: 'module_body',
+      kind: 'cohort_file',
       maxBytes: MAX_BODY_FILE_BYTES,
       mime: body.mime,
       originalName: body.originalName,

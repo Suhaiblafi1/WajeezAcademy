@@ -1797,7 +1797,7 @@ model Cohort {
 
   @@index([courseId, status])
   departureCases      DepartureCase[]
-  moduleBodyFiles     ModuleBodyFile[]
+  files               CohortFile[]
 }
 
 /// ═══ رابطُ دعوةِ المدرّب — لكلّ شعبةٍ رابطٌ لا يشترك فيه غيرُه ═══
@@ -3193,24 +3193,28 @@ model Favorite {
 }
 
 
-/// ملفُّ المحتوى النظريِّ لمحور (ع-٢) — بديلٌ عن كتابته لا إضافةٌ إليه.
+/// ملفٌّ يخصّ شعبةً ويُقرأ بحارسٍ واحد (ع-٢ · د-٣).
 ///
-/// ═══ ولمَ صفٌّ والخطّةُ JSON ═══
+/// ═══ ولمَ جدولٌ واحدٌ لغرضَين ═══
 ///
-/// محاورُ خطّةِ المدرّب تسكن `CohortDeliveryPlan.content` — ولا مفتاحَ
-/// تخزينٍ في JSON يعرفه `resolveStorageOwner`، وهو الذي يقرّر سقفَ الرفع
-/// وصاحبَ الملفّ. فبلا صفٍّ لا يُقبل رفعٌ أصلا.
+/// بُني أوّلا لمتنِ المحور وحدَه (`ModuleBodyFile`). ثمّ جاء د-٣ يطلب ملفّا
+/// لمصدرٍ في الخطّة — **وقاعدةُ من يقرأ هي هي**: من التحق بالشعبة، أو
+/// مدرّبُها، أو من يعتمد خطّتَها.
 ///
-/// والخطّةُ تشير إليه بمفتاحه (`bodyFileKey`)، فتنتقل الإشارةُ مع نسخِ
-/// الخطّة كما ينتقل `bodyAr`: خطّةٌ مُتجاوَزةٌ تبقى تشير إلى ملفِّها هي.
-/// ولذلك لا قيدَ فريدٌ على (الشعبة · المحور): نسخةٌ جديدةٌ قد ترفع ملفّا
-/// ثانيا والأوّلُ ما زال مقروءا في نسخةٍ سابقة. والوحدانيّةُ يفرضها شكلُ
-/// JSON — حقلٌ واحدٌ لا مصفوفة.
-model ModuleBodyFile {
+/// وقاعدةُ وصولٍ منسوخةٌ في موضعَين أخطرُ من سطرٍ مكرَّر: تُشدَّد في أحدهما
+/// وتُنسى في الآخر، فيُقرأ ملفُّ شعبةٍ لم يشترِها أحد. فمالكٌ واحدٌ للبايتات
+/// وللحارس، و`purpose` يقول لأيّ شيءٍ هو.
+///
+/// و`refId` رمزُ ما يتعلّق به: معرّفُ المحور لمتنه، ومعرّفُ المصدر لملفّه.
+/// والخطّةُ تشير إليه بمفتاحه، فتنتقل الإشارةُ مع نسخِها — ولذلك لا قيدَ
+/// فريدٌ على (الشعبة · الغرض · الرمز): نسخةٌ جديدةٌ قد ترفع ملفّا ثانيا
+/// والأوّلُ ما زال مقروءا في نسخةٍ سابقة.
+model CohortFile {
   id           String   @id @default(uuid()) @db.Uuid
   cohortId     String   @db.Uuid
-  moduleId     String
-  storageKey   String   @unique // خاصّ — لا يُقدَّم إلّا برابطٍ موقَّعٍ بعد فحص الصلاحيّة
+  purpose      String // module_body | plan_resource
+  refId        String
+  storageKey   String   @unique // خاصّ — لا يُقدَّم إلّا بعد فحص الصلاحيّة
   originalName String
   mime         String
   sizeBytes    Int?
@@ -3218,5 +3222,5 @@ model ModuleBodyFile {
   createdAt    DateTime @default(now())
   cohort       Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
 
-  @@index([cohortId, moduleId])
+  @@index([cohortId, purpose, refId])
 }

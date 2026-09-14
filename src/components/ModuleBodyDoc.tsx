@@ -16,25 +16,26 @@
    ويُقرأ في مكانه. */
 
 import { Download, FileText } from "lucide-react";
-import { bodyFileLabelAr, readsInline } from "@/application/trainer/module-body";
+import { fileLabelAr, fileReadsInline, type FilePurpose } from "@/application/trainer/module-body";
 
 import { Card, Inset } from "@/components/ui/Surface";
 
 export default function ModuleBodyDoc({
-  storageKey, mime, name, className = "",
+  storageKey, mime, name, purpose = "module_body", className = "",
 }: {
   storageKey: string;
   mime?: string | null;
   name?: string | null;
+  purpose?: FilePurpose;
   className?: string;
 }) {
-  const href = `/api/v1/module-body/${encodeURIComponent(storageKey)}`;
-  const label = bodyFileLabelAr(mime);
-  const title = name?.trim() || `المحتوى النظريّ (${label})`;
+  const href = `/api/v1/cohort-files/${encodeURIComponent(storageKey)}`;
+  const label = fileLabelAr(purpose, mime);
+  const title = name?.trim() || `ملفّ (${label})`;
 
   return (
     <div className={className}>
-      {readsInline(mime) ? (
+      {fileReadsInline(purpose, mime) ? (
         <>
           {/* الارتفاعُ بالشاشة لا برقمٍ ثابت: صفحةُ PDF طويلةٌ، وإطارٌ بـ٤٠٠
               بكسلٍ يجعل القراءةَ تمريرا داخل تمرير. */}

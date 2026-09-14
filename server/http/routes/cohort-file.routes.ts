@@ -1,4 +1,9 @@
-/* ملفُّ المحتوى النظريّ — مساراتُه (ع-٢).
+/* ملفّاتُ الشعبة — مساراتُها (ع-٢ · د-٣).
+
+   ═══ بابٌ واحدٌ لغرضَين ═══
+
+   متنُ المحور وملفُّ المصدر يختلفان في ما يُقبل منهما ويتّفقان في من يقرأ.
+   والمقبولُ يقرّره `fileBlockerAr` بالغرض، والقراءةُ حارسٌ واحدٌ في الخدمة.
 
    ═══ ولمَ القراءةُ بالجلسة لا برابطٍ موقَّع ═══
 
@@ -14,45 +19,47 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requireAuth } from '../auth-plugin'
-import { ModuleBodyService } from '../../services/module-body.service'
+import { CohortFileService } from '../../services/cohort-file.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
-import { BODY_FILE_MIMES } from '../../../src/application/trainer/module-body'
+import { FILE_PURPOSES } from '../../../src/application/trainer/module-body'
 
-export function registerModuleBodyRoutes(app: FastifyInstance, prisma: PrismaClient) {
-  const bodies = new ModuleBodyService(prisma)
+export function registerCohortFileRoutes(app: FastifyInstance, prisma: PrismaClient) {
+  const files = new CohortFileService(prisma)
 
-  app.post('/api/trainer/cohorts/:cohortId/modules/:moduleId/body-file', {
+  app.post('/api/trainer/cohorts/:cohortId/files', {
     preHandler: requireAuth,
-    schema: { tags: ['trainer'], summary: 'رابطُ رفعٍ لملفِّ المحتوى النظريّ — يحتاج FILE_UPLOADS' },
+    schema: { tags: ['trainer'], summary: 'رابطُ رفعٍ لملفِّ شعبة — متنِ محورٍ أو مصدر (يحتاج FILE_UPLOADS)' },
   }, async (req, reply) => {
-    const { cohortId, moduleId } = z.object({
-      cohortId: z.string().uuid(), moduleId: z.string().trim().min(1).max(120),
-    }).parse(req.params)
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     const body = z.object({
-      mime: z.enum(BODY_FILE_MIMES as unknown as [string, ...string[]]),
+      purpose: z.enum(FILE_PURPOSES),
+      refId: z.string().trim().min(1).max(120),
+      mime: z.string().trim().min(3).max(120),
       originalName: z.string().trim().min(1).max(200),
     }).parse(req.body)
-    return reply.status(201).send(await bodies.startUpload(req.auth!.userId, cohortId, moduleId, body))
+    return reply.status(201).send(
+      await files.startUpload(req.auth!.userId, cohortId, body.purpose, body.refId, body),
+    )
   })
 
-  app.delete('/api/trainer/cohorts/:cohortId/body-file/:storageKey', {
+  app.delete('/api/trainer/cohorts/:cohortId/files/:storageKey', {
     preHandler: requireAuth,
-    schema: { tags: ['trainer'], summary: 'فكُّ ملفِّ المحتوى النظريّ ومحوُه' },
+    schema: { tags: ['trainer'], summary: 'فكُّ ملفِّ شعبةٍ ومحوُه' },
   }, async (req) => {
     const { cohortId, storageKey } = z.object({
       cohortId: z.string().uuid(), storageKey: z.string().min(10),
     }).parse(req.params)
     assertSafeKey(storageKey)
-    return bodies.detach(req.auth!.userId, cohortId, storageKey)
+    return files.detach(req.auth!.userId, cohortId, storageKey)
   })
 
-  app.get('/api/v1/module-body/:storageKey', {
+  app.get('/api/v1/cohort-files/:storageKey', {
     preHandler: requireAuth,
-    schema: { tags: ['learner'], summary: 'قراءةُ ملفِّ المحتوى النظريّ — لمن التحق بالشعبة' },
+    schema: { tags: ['learner'], summary: 'قراءةُ ملفِّ شعبة — لمن التحق بها أو يدرّسها أو يعتمد خطّتها' },
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)
-    const row = await bodies.assertCanRead(storageKey, req.auth!)
+    const row = await files.assertCanRead(storageKey, req.auth!)
 
     const content = await getObject(storageKey)
     if (!content) {

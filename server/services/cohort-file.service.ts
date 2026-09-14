@@ -1,4 +1,4 @@
-/* ملفُّ المحتوى النظريّ — رفعُه وقراءتُه (ع-٢).
+/* ملفُّ شعبةٍ — رفعُه وقراءتُه (ع-٢ · د-٣).
 
    ═══ من يرفع، ومن يقرأ ═══
 
@@ -19,10 +19,10 @@ import {
 } from './storage.service'
 import { deleteObject } from './object-store'
 import {
-  bodyFileBlockerAr, MAX_BODY_FILE_BYTES,
+  fileBlockerAr, MAX_BODY_FILE_BYTES, type FilePurpose,
 } from '../../src/application/trainer/module-body'
 
-export class ModuleBodyService {
+export class CohortFileService {
   private prisma: PrismaClient
 
   constructor(prisma: PrismaClient) {
@@ -53,26 +53,26 @@ export class ModuleBodyService {
 
   /** رابطُ رفعٍ موقَّت — والصفُّ يُكتب أوّلا ليعرفه `resolveStorageOwner` */
   async startUpload(
-    userId: string, cohortId: string, moduleId: string,
+    userId: string, cohortId: string, purpose: FilePurpose, refId: string,
     input: { mime: string; originalName: string },
   ) {
-    assertFileUploadsEnabled('والبديلُ الآن: اكتب المحتوى النظريَّ في المحرّر.')
+    assertFileUploadsEnabled('والبديلُ الآن: ألصِق رابطا، أو اكتب المحتوى في المحرّر.')
     await this.requireCohortTrainer(cohortId, userId)
 
-    const blocker = bodyFileBlockerAr(input.mime)
+    const blocker = fileBlockerAr(purpose, input.mime)
     if (blocker) throw new AuthError('bad_mime', blocker, 422)
 
-    const name = input.originalName.trim().slice(0, 200) || 'المحتوى النظريّ'
+    const name = input.originalName.trim().slice(0, 200) || 'ملفّ'
     const storageKey = newStorageKey()
-    await this.prisma.moduleBodyFile.create({
-      data: { cohortId, moduleId, storageKey, originalName: name, mime: input.mime, uploadedBy: userId },
+    await this.prisma.cohortFile.create({
+      data: { cohortId, purpose, refId, storageKey, originalName: name, mime: input.mime, uploadedBy: userId },
     })
 
     const exp = Date.now() + SIGNED_URL_TTL_MS
     const sig = signKey(storageKey, exp, 'write')
     await recordAudit(this.prisma, {
-      actorId: userId, action: 'cohort.module_body.upload',
-      entityType: 'cohort', entityId: cohortId, meta: { moduleId, mime: input.mime },
+      actorId: userId, action: 'cohort.file.upload',
+      entityType: 'cohort', entityId: cohortId, meta: { purpose, refId, mime: input.mime },
     })
     return {
       storageKey,
@@ -86,11 +86,10 @@ export class ModuleBodyService {
   /** ما عُرف عن ملفّاتِ هذه الشعبة — تقرؤه الشاشتان بمفاتيحها */
   async describe(cohortId: string, keys: readonly string[]) {
     if (keys.length === 0) return []
-    const rows = await this.prisma.moduleBodyFile.findMany({
+    return this.prisma.cohortFile.findMany({
       where: { cohortId, storageKey: { in: [...keys] } },
-      select: { storageKey: true, moduleId: true, originalName: true, mime: true, sizeBytes: true },
+      select: { storageKey: true, purpose: true, refId: true, originalName: true, mime: true, sizeBytes: true },
     })
-    return rows
   }
 
   /* ═══ الحذفُ يُفكّ الإشارةَ ولا يمحو الماضي ═══
@@ -99,16 +98,16 @@ export class ModuleBodyService {
      في المخزن ما لا تشير إليه خطّةٌ حيّة. */
   async detach(userId: string, cohortId: string, storageKey: string) {
     await this.requireCohortTrainer(cohortId, userId)
-    const row = await this.prisma.moduleBodyFile.findUnique({
-      where: { storageKey }, select: { id: true, cohortId: true, moduleId: true },
+    const row = await this.prisma.cohortFile.findUnique({
+      where: { storageKey }, select: { id: true, cohortId: true, purpose: true, refId: true },
     })
     if (!row || row.cohortId !== cohortId) throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
 
-    await this.prisma.moduleBodyFile.delete({ where: { id: row.id } })
+    await this.prisma.cohortFile.delete({ where: { id: row.id } })
     try { await deleteObject(storageKey) } catch { /* غيابُها ليس عطبا */ }
     await recordAudit(this.prisma, {
-      actorId: userId, action: 'cohort.module_body.remove',
-      entityType: 'cohort', entityId: cohortId, meta: { moduleId: row.moduleId },
+      actorId: userId, action: 'cohort.file.remove',
+      entityType: 'cohort', entityId: cohortId, meta: { purpose: row.purpose, refId: row.refId },
     })
     return { removed: true }
   }
@@ -119,9 +118,9 @@ export class ModuleBodyService {
      وما عدا هؤلاء يُردّ **بأربعمئةٍ وأربعة** لا بثلاثمئةٍ وثلاثة: وجودُ
      ملفٍّ لشعبةٍ بعينها خبرٌ في نفسه، ولا يُعطاه من لا يملكها. */
   async assertCanRead(storageKey: string, auth: { userId: string; permissions: readonly string[] }) {
-    const row = await this.prisma.moduleBodyFile.findUnique({
+    const row = await this.prisma.cohortFile.findUnique({
       where: { storageKey },
-      select: { cohortId: true, originalName: true, mime: true },
+      select: { cohortId: true, originalName: true, mime: true, purpose: true },
     })
     if (!row) throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
 

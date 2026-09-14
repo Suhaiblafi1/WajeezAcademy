@@ -12,7 +12,7 @@ import { useRef, useState } from "react";
 import { FileUp, Trash2, FileText, Loader2 } from "lucide-react";
 import { apiPost, apiDelete, ApiError, permissionMessage } from "@/services/api";
 import {
-  BODY_FILE_MIMES, MAX_BODY_FILE_BYTES, bodyFileBlockerAr, bodyFileLabelAr,
+  MAX_BODY_FILE_BYTES, acceptedMimes, fileBlockerAr, fileLabelAr, type FilePurpose,
 } from "@/application/trainer/module-body";
 
 /* كما في بقيّة أسطح الرفع: الرفعُ يذهب إلى الخادم مباشرةً لا عبر `apiPost` */
@@ -28,14 +28,16 @@ export interface BodyFileValue {
 }
 
 export default function ModuleBodyUpload({
-  cohortId, moduleId, value, onChange, disabled = false, label,
+  cohortId, purpose = "module_body", refId, value, onChange, disabled = false, label, hint,
 }: {
   cohortId: string;
-  moduleId: string;
+  purpose?: FilePurpose;
+  refId: string;
   value: BodyFileValue;
   onChange: (next: BodyFileValue) => void;
   disabled?: boolean;
   label: string;
+  hint?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -44,14 +46,14 @@ export default function ModuleBodyUpload({
   const upload = async (file: File) => {
     /* الحاجزُ هنا وعند الخادم معا: من رفع ملفّا كبيرا يُقال له قبل أن ينتظر
        رفعَه كلَّه ثمّ يُردّ. والخادمُ يبقى الحَكَم. */
-    const blocker = bodyFileBlockerAr(file.type, file.size);
+    const blocker = fileBlockerAr(purpose, file.type, file.size);
     if (blocker) { setErr(blocker); return; }
     setBusy(true);
     setErr(null);
     try {
       const res = await apiPost<{ storageKey: string; uploadUrl: string }>(
-        `/api/trainer/cohorts/${cohortId}/modules/${encodeURIComponent(moduleId)}/body-file`,
-        { mime: file.type, originalName: file.name },
+        `/api/trainer/cohorts/${cohortId}/files`,
+        { purpose, refId, mime: file.type, originalName: file.name },
       );
       const put = await fetch(`${API_BASE}${res.uploadUrl}`, {
         method: "PUT", credentials: "include",
@@ -73,7 +75,7 @@ export default function ModuleBodyUpload({
     setBusy(true);
     setErr(null);
     try {
-      await apiDelete(`/api/trainer/cohorts/${cohortId}/body-file/${encodeURIComponent(key)}`);
+      await apiDelete(`/api/trainer/cohorts/${cohortId}/files/${encodeURIComponent(key)}`);
       onChange({ bodyFileKey: null, bodyFileName: null, bodyFileMime: null });
     } catch (e) {
       setErr(permissionMessage(e, "تعذّر حذفُ الملفّ الآن."));
@@ -88,15 +90,15 @@ export default function ModuleBodyUpload({
         <Inset className="flex flex-wrap items-center gap-2.5">
           <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
           <span className="min-w-0 flex-1 break-words text-read leading-6">
-            {value.bodyFileName || "المحتوى النظريّ"}
-            <span className="text-muted-foreground">{" · "}{bodyFileLabelAr(value.bodyFileMime)}</span>
+            {value.bodyFileName || "ملفّ"}
+            <span className="text-muted-foreground">{" · "}{fileLabelAr(purpose, value.bodyFileMime)}</span>
           </span>
           <Button tone="ghost" icon={Trash2} onClick={remove} disabled={disabled || busy} className="min-h-9">
             احذفه
           </Button>
         </Inset>
         <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-          يقرؤه المتعلّمُ في وحدته. ويكفي وحدَه لاعتماد المحور — وإن كتبتَ فوقه فله الاثنان.
+          {hint ?? "يقرؤه المتعلّمُ في وحدته. ويكفي وحدَه لاعتماد المحور — وإن كتبتَ فوقه فله الاثنان."}
         </p>
         {err && <p role="status" className="mt-1.5 text-read leading-6 text-gold">{err}</p>}
       </div>
@@ -108,7 +110,7 @@ export default function ModuleBodyUpload({
       <input
         ref={pick}
         type="file"
-        accept={BODY_FILE_MIMES.join(",")}
+        accept={acceptedMimes(purpose).join(",")}
         className="sr-only"
         aria-label={label}
         onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
@@ -120,11 +122,10 @@ export default function ModuleBodyUpload({
         disabled={disabled || busy}
         className="min-h-9"
       >
-        {busy ? "يُرفَع…" : "أو أرفِق ملفّا بدلا من الكتابة"}
+        {busy ? "يُرفَع…" : label}
       </Button>
       <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-        PDF يُقرأ في الصفحة، وWord يُنزَّل — حتّى {Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت.
-        وما عداهما موضعُه «المصادر».
+        {hint ?? `PDF يُقرأ في الصفحة، وWord يُنزَّل — حتّى ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت.`}
       </p>
       {err && <p role="status" className="mt-1.5 text-read leading-6 text-gold">{err}</p>}
     </div>

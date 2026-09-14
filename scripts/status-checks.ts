@@ -47,7 +47,9 @@ export interface StatusColumn {
 }
 
 /** الأسماءُ التي تُقرأ حالةً — لا كلُّ عمودٍ نصّيٍّ له تعليق */
-const STATUS_NAMES = /^(status|state|kind|type|level|result|outcome)$/
+/* و`purpose` منها (د-٣): عمودٌ يحمل مجموعةً مغلقةً كغيره — `module_body`
+   أو `plan_resource` — وتعليقُه عقدٌ لا يمنع شيئا بلا قيد. */
+const STATUS_NAMES = /^(status|state|kind|type|level|result|outcome|purpose)$/
 
 export function statusColumns(schema = readFileSync(join(root, 'prisma/schema.prisma'), 'utf8')): StatusColumn[] {
   const out: StatusColumn[] = []

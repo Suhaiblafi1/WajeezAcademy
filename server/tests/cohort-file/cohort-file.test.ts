@@ -1,4 +1,4 @@
-/* ملفُّ المحتوى النظريّ — من يرفع ومن يقرأ (ع-٢).
+/* ملفُّ شعبةٍ — من يرفع ومن يقرأ (ع-٢ · د-٣).
 
    ═══ وأثقلُ ما هنا القراءة ═══
 
@@ -12,14 +12,14 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
-import { ModuleBodyService } from '../../services/module-body.service'
+import { CohortFileService } from '../../services/cohort-file.service'
 import { resolveStorageOwner } from '../../services/storage.service'
 import { MAX_BODY_FILE_BYTES } from '../../../src/application/trainer/module-body'
 
 const PDF = 'application/pdf'
 
 let prisma: PrismaClient
-let bodies: ModuleBodyService
+let bodies: CohortFileService
 let cohortId: string
 let trainerUserId: string
 let learnerId: string
@@ -28,7 +28,7 @@ let strangerId: string
 beforeAll(async () => {
   await setupTestDb()
   prisma = await testPrisma()
-  bodies = new ModuleBodyService(prisma)
+  bodies = new CohortFileService(prisma)
   const auth = new AuthService(prisma)
   process.env.FILE_UPLOADS = 'on'
 
@@ -62,7 +62,7 @@ beforeAll(async () => {
 
 describe('ع-٢ · من يرفع', () => {
   it('مدرّبُ الشعبة يرفع — ويُنشأ الصفُّ قبل الرابط ليعرفه المخزن', async () => {
-    const r = await bodies.startUpload(trainerUserId, cohortId, 'M1', {
+    const r = await bodies.startUpload(trainerUserId, cohortId, 'module_body', 'M1', {
       mime: PDF, originalName: 'النظريّة.pdf',
     })
     expect(r.uploadUrl).toContain('/api/v1/uploads/')
@@ -71,19 +71,19 @@ describe('ع-٢ · من يرفع', () => {
     /* ولولا الصفُّ لَرُدّ الرفعُ: مفتاحٌ لا يعرفه أحدٌ لا سقفَ له */
     const owner = await resolveStorageOwner(prisma, r.storageKey)
     expect(owner, 'المخزنُ لا يعرف مفتاحَ ملفِّ المتن — فيُردّ رفعُه').toBeTruthy()
-    expect(owner!.kind).toBe('module_body')
+    expect(owner!.kind).toBe('cohort_file')
     expect(owner!.maxBytes).toBe(MAX_BODY_FILE_BYTES)
   })
 
   it('ولا يرفع من ليس مدرّبَها', async () => {
     await expect(
-      bodies.startUpload(strangerId, cohortId, 'M2', { mime: PDF, originalName: 'x.pdf' }),
+      bodies.startUpload(strangerId, cohortId, 'module_body', 'M2', { mime: PDF, originalName: 'x.pdf' }),
     ).rejects.toMatchObject({ status: 403 })
   })
 
   it('ولا تُقبل صيغةٌ ليست متنا — والصورةُ بابُها «المصادر»', async () => {
     await expect(
-      bodies.startUpload(trainerUserId, cohortId, 'M3', { mime: 'image/png', originalName: 'a.png' }),
+      bodies.startUpload(trainerUserId, cohortId, 'module_body', 'M3', { mime: 'image/png', originalName: 'a.png' }),
     ).rejects.toMatchObject({ status: 422 })
   })
 })
@@ -91,7 +91,7 @@ describe('ع-٢ · من يرفع', () => {
 describe('ع-٢ · ومن يقرأ', () => {
   let key = ''
   beforeAll(async () => {
-    const r = await bodies.startUpload(trainerUserId, cohortId, 'M9', {
+    const r = await bodies.startUpload(trainerUserId, cohortId, 'module_body', 'M9', {
       mime: PDF, originalName: 'درسٌ.pdf',
     })
     key = r.storageKey
@@ -123,11 +123,11 @@ describe('ع-٢ · ومن يقرأ', () => {
 
 describe('ع-٢ · والحذف', () => {
   it('يُفكّ الملفُّ ويُمحى صفُّه — فلا يبقى في المخزن ما لا يُشار إليه', async () => {
-    const r = await bodies.startUpload(trainerUserId, cohortId, 'M7', {
+    const r = await bodies.startUpload(trainerUserId, cohortId, 'module_body', 'M7', {
       mime: PDF, originalName: 'قديم.pdf',
     })
     await bodies.detach(trainerUserId, cohortId, r.storageKey)
-    const row = await prisma.moduleBodyFile.findUnique({ where: { storageKey: r.storageKey } })
+    const row = await prisma.cohortFile.findUnique({ where: { storageKey: r.storageKey } })
     expect(row, 'الصفُّ باقٍ بعد الحذف').toBeNull()
     await expect(
       bodies.assertCanRead(r.storageKey, { userId: learnerId, permissions: [] }),
@@ -135,9 +135,51 @@ describe('ع-٢ · والحذف', () => {
   })
 
   it('ولا يحذف من ليس مدرّبَها', async () => {
-    const r = await bodies.startUpload(trainerUserId, cohortId, 'M8', {
+    const r = await bodies.startUpload(trainerUserId, cohortId, 'module_body', 'M8', {
       mime: PDF, originalName: 'محميّ.pdf',
     })
     await expect(bodies.detach(strangerId, cohortId, r.storageKey)).rejects.toMatchObject({ status: 403 })
+  })
+})
+
+/* ═══ د-٣ · والغرضان يتقاسمان الحارسَ ويفترقان في المقبول ═══
+
+   وهذا سببُ الجدول الواحد: قاعدةُ الوصول واحدةٌ، ونسخُها في موضعَين أخطرُ
+   من سطرٍ مكرَّر — تُشدَّد في أحدهما وتُنسى في الآخر. */
+describe('د-٣ · ملفُّ المصدر', () => {
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  let key = ''
+
+  it('يُقبل ما لا يُقبل متنا — شرائحُ مصدرٌ لا درس', async () => {
+    const r = await bodies.startUpload(trainerUserId, cohortId, 'plan_resource', 'r0', {
+      mime: PPTX, originalName: 'عرض.pptx',
+    })
+    key = r.storageKey
+    expect(r.storageKey).toBeTruthy()
+
+    await expect(
+      bodies.startUpload(trainerUserId, cohortId, 'module_body', 'M5', {
+        mime: PPTX, originalName: 'عرض.pptx',
+      }),
+      'شريحةٌ مرّت متنا',
+    ).rejects.toMatchObject({ status: 422 })
+  })
+
+  it('وحارسُ القراءة هو هو — لا قاعدةٌ ثانيةٌ للمصادر', async () => {
+    await expect(
+      bodies.assertCanRead(key, { userId: learnerId, permissions: [] }),
+    ).resolves.toBeTruthy()
+    await expect(
+      bodies.assertCanRead(key, { userId: strangerId, permissions: [] }),
+      'الغريبُ يقرأ ملفَّ مصدرٍ وإن رُدّ عن متنٍ — قاعدتان',
+    ).rejects.toMatchObject({ status: 404 })
+  })
+
+  it('ولا يرفع مصدرا من ليس مدرّبَها', async () => {
+    await expect(
+      bodies.startUpload(strangerId, cohortId, 'plan_resource', 'r1', {
+        mime: PPTX, originalName: 'x.pptx',
+      }),
+    ).rejects.toMatchObject({ status: 403 })
   })
 })

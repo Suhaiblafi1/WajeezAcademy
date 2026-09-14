@@ -89,3 +89,96 @@ export function moduleBodyBlockerAr(m: ModuleBodyLike): string | null {
   if (moduleBodyDone(m)) return null
   return `اكتب أربعين حرفا على الأقلّ، أو أرفق ${BODY_FILE_TYPES.map((t) => t.labelAr).join(' أو ')}`
 }
+
+
+/* ═══ أغراضُ ملفّات الشعبة — ولمَ هما في ملفٍّ واحد (د-٣) ═══
+
+   متنُ المحور (ع-٢) وملفُّ المصدر (د-٣) يختلفان في ما يُقبل منهما: المتنُ
+   درسٌ يُقرأ فصيغتاه PDF وWord، والمصدرُ قد يكون شريحةً أو جدولا أو صورةً —
+   فبابُه أوسع.
+
+   ويتّفقان في **من يقرأ**: من التحق بالشعبة، أو مدرّبُها، أو من يعتمد
+   خطّتَها. وتلك قاعدةُ وصولٍ، ونسخُها في موضعَين أخطرُ من سطرٍ مكرَّر —
+   تُشدَّد في أحدهما وتُنسى في الآخر. فالحارسُ واحدٌ والمقبولُ يختلف. */
+export const FILE_PURPOSES = ['module_body', 'plan_resource'] as const
+export type FilePurpose = (typeof FILE_PURPOSES)[number]
+
+/* ── وما يُقبل مصدرا ──
+
+   د-٣ يقول «PDF ورابطٌ وفيديو وغيرُها». والمرفوعُ منها ما يُخزَّن ويُقرأ:
+   وثيقةٌ أو شريحةٌ أو جدولٌ أو صورة. وما عداها رابطٌ يُلصق — ولا نستضيف
+   فيديو، وقد قيل في `Recording` نصّا: «نستضيف ونربط». */
+export const RESOURCE_FILE_TYPES = [
+  { mime: 'application/pdf', labelAr: 'PDF', inline: true },
+  {
+    mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    labelAr: 'Word', inline: false,
+  },
+  {
+    mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    labelAr: 'شرائح', inline: false,
+  },
+  {
+    mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    labelAr: 'جدول', inline: false,
+  },
+  { mime: 'image/png', labelAr: 'صورة', inline: true },
+  { mime: 'image/jpeg', labelAr: 'صورة', inline: true },
+] as const
+
+export const RESOURCE_FILE_MIMES: readonly string[] = RESOURCE_FILE_TYPES.map((t) => t.mime)
+
+/** ما يُقبل لكلّ غرض — مالكٌ واحدٌ يقرؤه الخادمُ والشاشة */
+export function acceptedMimes(purpose: FilePurpose): readonly string[] {
+  return purpose === 'module_body' ? BODY_FILE_MIMES : RESOURCE_FILE_MIMES
+}
+
+export function fileLabelAr(purpose: FilePurpose, mime: string | null | undefined): string {
+  if (purpose === 'module_body') return bodyFileLabelAr(mime)
+  return RESOURCE_FILE_TYPES.find((t) => t.mime === mime)?.labelAr ?? 'ملفّ'
+}
+
+/** أيُعرض في الصفحة أم يُنزَّل؟ */
+export function fileReadsInline(purpose: FilePurpose, mime: string | null | undefined): boolean {
+  if (purpose === 'module_body') return readsInline(mime)
+  return RESOURCE_FILE_TYPES.some((t) => t.mime === mime && t.inline)
+}
+
+/** لماذا يُردّ هذا الملفُّ لهذا الغرض — أو `null` فيُقبل */
+export function fileBlockerAr(
+  purpose: FilePurpose, mime: string, sizeBytes?: number,
+): string | null {
+  const allowed = acceptedMimes(purpose)
+  if (!allowed.includes(mime)) {
+    const names = purpose === 'module_body'
+      ? BODY_FILE_TYPES.map((t) => t.labelAr)
+      : [...new Set(RESOURCE_FILE_TYPES.map((t) => t.labelAr))]
+    return `لا يُقبل إلّا ${names.join(' أو ')}`
+  }
+  if (typeof sizeBytes === 'number' && sizeBytes > MAX_BODY_FILE_BYTES) {
+    return `الملفُّ أكبرُ من ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت`
+  }
+  return null
+}
+
+/* ═══ ومصدرٌ له ما يُفتح — رابطٌ أو ملفّ (د-٣) ═══
+
+   كان الشرطُ «رابطٌ بصيغةِ https» في موضعَين: زرُّ الحفظ في الشاشة، وحاجزُ
+   الحفظ عند الخادم. وزاد د-٣ بديلا — ملفٌّ مرفوع — فلو زِيد في أحدهما دون
+   الآخرَ رُفع الملفُّ ثمّ رُدّ حفظُه، أو حُفظ مصدرٌ لا يقود إلى شيء.
+
+   فمالكٌ واحدٌ يقرؤه الطرفان. */
+export interface ResourceSourceLike {
+  url?: string | null
+  bodyFileKey?: string | null
+}
+
+export function resourceHasSource(r: ResourceSourceLike): boolean {
+  if ((r.bodyFileKey ?? '').trim().length > 0) return true
+  return /^https?:\/\//.test((r.url ?? '').trim())
+}
+
+/** ما ينقص هذا المصدرَ — أو `null` فهو تامّ */
+export function resourceSourceBlockerAr(r: ResourceSourceLike): string | null {
+  return resourceHasSource(r) ? null : 'بلا رابطٍ ولا ملفّ — ولا يُعرض على متعلّمٍ سطرٌ لا يقود إلى شيء'
+}

@@ -120,6 +120,11 @@ export interface LearnerPlanResource {
   url: string
   kind?: string | null
   noteAr?: string | null
+  /* د-٣: مصدرٌ مرفوعٌ — يُفتح من مسارٍ محروسٍ لا من رابطٍ خارجيّ. واسمُه
+     ونوعُه لقطةٌ تسكن الخطّةَ، فتعرف الشاشةُ أتعرضه أم تُنزّله بلا طلبٍ ثانٍ. */
+  bodyFileKey?: string | null
+  bodyFileName?: string | null
+  bodyFileMime?: string | null
 }
 
 /** حالاتُ الخطّة التي تُقرأ — وما عداها لا يُعلي شيئا */
@@ -266,6 +271,9 @@ export function projectPlanForLearner(
           url: r.url,
           kind: resourceKind(r.kind),
           noteAr: written(r.noteAr),
+          bodyFileKey: written(r.bodyFileKey),
+          bodyFileName: written(r.bodyFileName),
+          bodyFileMime: written(r.bodyFileMime),
         }))
       : [],
   }

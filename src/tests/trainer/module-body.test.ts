@@ -16,8 +16,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  BODY_FILE_MIMES, MAX_BODY_FILE_BYTES, MIN_MODULE_BODY, bodyFileBlockerAr,
-  moduleBodyBlockerAr, moduleBodyDone, readsInline,
+  BODY_FILE_MIMES, FILE_PURPOSES, MAX_BODY_FILE_BYTES, MIN_MODULE_BODY, acceptedMimes,
+  bodyFileBlockerAr, fileBlockerAr, fileReadsInline, moduleBodyBlockerAr, moduleBodyDone,
+  readsInline, resourceHasSource, resourceSourceBlockerAr,
 } from '../../application/trainer/module-body'
 import { MIN_MODULE_BODY as VIA_OVERLAY, overlayModules } from '../../application/trainer/plan-overlay'
 
@@ -118,7 +119,75 @@ describe('ع-٢ · وشاشةُ المتعلّم', () => {
 
   it('والقارئُ يقرأ من مسارٍ محروسٍ بالجلسة لا من رابطٍ مفتوح', () => {
     const doc = code('src/components/ModuleBodyDoc.tsx')
-    expect(doc, 'مسارُ القراءة ليس مسارَ المتن المحروس').toContain('/api/v1/module-body/')
+    expect(doc, 'مسارُ القراءة ليس مسارَ ملفّات الشعبة المحروس').toContain('/api/v1/cohort-files/')
     expect(doc, 'رابطٌ موقَّعٌ يُنسخ فيُفتح بلا حساب').not.toMatch(/\bsig=|\bexp=/)
+  })
+})
+
+/* ═══ د-٣ · والمصدرُ ملفّا يُرفع لا رابطا يُلصق ═══
+
+   «ملفّ» كان **نوعا يُختار من القائمة** منذ البداية (`RESOURCE_KINDS`)، ولا
+   شيءَ يُرفَع خلفه: الحقلُ يطلب `https://` والحاجزُ يشترطه. فمن اختاره لصق
+   رابطا وسمّاه ملفّا، أو ترك النوعَ كذبا على ما تحته.
+
+   وأخطرُ ما هنا **قاعدةُ «له ما يُفتح»**: كانت ستصير في موضعَين — زرُّ
+   الحفظ في الشاشة وحاجزُ الخادم — فيُرفع الملفُّ ثمّ يُردّ حفظُه. */
+describe('د-٣ · المصدرُ ملفّا', () => {
+  const PPTX = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+
+  it('بابُ المصدر أوسعُ من باب المتن — شرائحُ وجداولُ وصور', () => {
+    expect(acceptedMimes('plan_resource')).toContain(PPTX)
+    expect(acceptedMimes('plan_resource')).toContain('image/png')
+    /* والمتنُ درسٌ يُقرأ: شريحةٌ ليست متنا */
+    expect(acceptedMimes('module_body'), 'بابُ المتن اتّسع فصار كلَّ شيء').not.toContain(PPTX)
+    expect(fileBlockerAr('module_body', PPTX), 'شريحةٌ تمرّ متنا').toBeTruthy()
+    expect(fileBlockerAr('plan_resource', PPTX)).toBeNull()
+  })
+
+  it('والغرضان هما ما في المخطَّط — لا ثالثَ يُخترع', () => {
+    expect([...FILE_PURPOSES].sort()).toEqual(['module_body', 'plan_resource'])
+  })
+
+  it('وما يُعرض في الصفحة يختلف بالغرض', () => {
+    expect(fileReadsInline('plan_resource', 'image/png'), 'صورةٌ تُنزَّل ولا تُعرض').toBe(true)
+    expect(fileReadsInline('plan_resource', PPTX), 'شرائحُ تُعرض في متصفّح').toBe(false)
+    expect(fileReadsInline('module_body', 'application/pdf')).toBe(true)
+  })
+
+  it('⚠️ ومصدرٌ له ما يُفتح: رابطٌ **أو** ملفّ — وقاعدةٌ واحدةٌ لا اثنتان', () => {
+    expect(resourceHasSource({ url: 'https://x.test/a.pdf' })).toBe(true)
+    expect(resourceHasSource({ bodyFileKey: 'k-1' }), 'المرفوعُ يُردّ لأنّه بلا رابط').toBe(true)
+    expect(resourceHasSource({ url: '', bodyFileKey: '  ' }), 'مصدرٌ بلا شيءٍ يمرّ').toBe(false)
+    expect(resourceHasSource({ url: 'ftp://x.test/a' }), 'رابطٌ ليس https يمرّ').toBe(false)
+    expect(resourceSourceBlockerAr({}), 'لا يُقال ما ينقص').toBeTruthy()
+  })
+
+  /* والفحصُ على **غياب** الصيغة المكتوبة بيدها لا على حضور اسم الدالّة:
+     استيرادٌ يبقى في الملفّ ويُرضي `toContain` بلا أن يُنادى شيء — وقد
+     جُرّبت فمرّت، وهي عينُ ما وقع في حارس البند ٣٠ قبله.
+
+     ومحصورٌ في **موضع المصادر** لا في الملفّ كلِّه: مرفقاتُ المهامّ فحصُها
+     رابطٌ بيدها بحقّ — لا ملفَّ يُرفع فيها، فشرطُها ليس شرطَ المصادر.
+     وحارسٌ يشمل الملفَّ كلَّه يحمرّ على ميزةٍ لا يحرسها. */
+  const near = (src: string, needle: string, span = 260) => {
+    const at = src.indexOf(needle)
+    return at < 0 ? '' : src.slice(at, at + span)
+  }
+
+  it('والطرفان يقرآن المالكَ نفسَه — لا شرطَ رابطٍ مكتوبٌ بيده', () => {
+    const ws = near(code('src/pages/trainer/CohortWorkspace.tsx'), 'content.resources.some(')
+    expect(ws, 'لم يُعثر على شرط حفظ المصادر في الشاشة').toBeTruthy()
+    expect(ws, 'الشاشةُ تفحص صيغةَ الرابط بيدها فتُنكر المرفوع').not.toMatch(/\^https\?:/)
+    expect(ws).toContain('resourceHasSource')
+
+    const route = near(code('server/http/routes/learning-portal.routes.ts'), 'resources: z.array(', 900)
+    expect(route, 'لم يُعثر على حاجز المصادر في الخادم').toBeTruthy()
+    expect(route, 'الخادمُ يفحص صيغةَ الرابط بيده فيُنكر المرفوع').not.toMatch(/\^https\?:/)
+    expect(route).toContain('resourceSourceBlockerAr')
+  })
+
+  it('والمتعلّمُ يفتح المرفوعَ من مسارٍ محروسٍ لا من رابطٍ خارجيّ', () => {
+    const work = code('src/components/journey/StageWork.tsx')
+    expect(work, 'المرفوعُ لا يُفتح من مسار الشعبة').toContain('/api/v1/cohort-files/')
   })
 })
