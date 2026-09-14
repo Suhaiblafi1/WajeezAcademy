@@ -24,6 +24,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { auditActionAr, entityTypeAr } from '@/application/audit/labels'
+import { auditWeightOf } from '@/application/audit/weight'
+import { NOTIFICATION_CATEGORIES } from '@/application/notifications/categories'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -163,6 +165,43 @@ describe('معجمُ الأثر يغطّي ما تكتبه الخدمات', () =
     const { actions } = collect()
     const untranslated = [...actions].filter((a) => auditActionAr(a) === a)
     expect(untranslated, `أفعالٌ بلا اسمٍ عربيّ: ${untranslated.join(', ')}`).toEqual([])
+  })
+
+  /* ═══ ولكلِّ فعلٍ وزنُه — ي-١ ═══
+
+     القائمةُ إلى جانب المعجم تُنسى: يُضاف الفعلُ الحادي والأربعون بعد
+     المئتين **فلا يُرسل لأحد**، ولا شيءَ يُنبّه. فالوزنُ صفةٌ في الفعل،
+     وهذا الحارسُ يقرأ الأفعالَ من الشيفرة نفسِها — **بالمِسحة نفسِها التي
+     يقرأ بها الأسماء**، فلا يكون لـ«ما الأفعالُ القائمة؟» صاحبان. */
+  it('ولكلِّ فعلٍ وزنٌ مُعلَن — فلا يُضاف فعلٌ لا يعرف أحدٌ أيصل صاحبَه أم لا', () => {
+    const { actions } = collect()
+    const unweighted = [...actions].filter((a) => auditWeightOf(a) === null)
+    expect(
+      unweighted,
+      `أفعالٌ بلا وزن: ${unweighted.join('، ')} — صنِّفها في `
+      + '`src/application/audit/weight.ts`: `high` لما يمسّ وصولَه أو مالَه أو سجلَّه، '
+      + '`medium` لما يُرسَل ويحترم تفضيلاتِه، و`low` لما يغيّر النظامَ لا الإنسان.',
+    ).toEqual([])
+  })
+
+  /* ═══ ولا وزنٌ يناقض ما قرّرته المنصّةُ قبله ═══
+
+     `medium` معناه «يُرسَل ويحترم تفضيلاتِه». وفي الإشعارات أصنافٌ
+     `silenceable: false` — لا يملك صاحبُها كتمَها، ولكلٍّ سببٌ مكتوب.
+
+     فلو وُزن فعلٌ من صنفٍ لا يُكتم بـ`medium` لَشُحن تناقض: طبقةٌ تقول
+     «اكتمه إن شئت» وأخرى تقول «لا تملك ذلك». وقد وقع فعلا في أوّل صياغةِ
+     الأوزان — صُنّف التصحيحُ وعملُ الموظّف متوسّطَين، وكلاهما لا يُكتم. */
+  it('وما لا يملك صاحبُه كتمَه لا يُوزن متوسّطا', () => {
+    const { actions } = collect()
+    const locked = new Set(
+      NOTIFICATION_CATEGORIES.filter((c) => !c.silenceable).flatMap((c) => c.templateKeys),
+    )
+    const clash = [...actions].filter((a) => locked.has(a) && auditWeightOf(a) === 'medium')
+    expect(
+      clash,
+      `أفعالٌ صنفُها لا يُكتم ووزنُها متوسّط: ${clash.join('، ')} — ارفعها إلى \`high\``,
+    ).toEqual([])
   })
 
   it('وكلُّ نوعِ كيانٍ كذلك', () => {
