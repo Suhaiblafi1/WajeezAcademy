@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
+  BookOpen, CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
   Loader2, MailCheck, Printer, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
@@ -19,6 +19,8 @@ import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
 import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
+import CourseSuggestionDialog from "./CourseSuggestionDialog";
+import { proposalLine, readProposals } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { yearsLabel } from "@/application/trainer/application-options";
@@ -133,6 +135,10 @@ interface AppDetail extends Record<string, unknown> {
   userId: string | null;
   /** وقتُ التقديم — يُرسله الخادمُ دائما، ويُقرأ في ترويسة المطبوع */
   createdAt: string;
+  /** فقرةُ الطلبات التي سبقت السجلّات (أ-٣) — تبقى تُقرأ وتُربط */
+  teachableOther: string | null;
+  /** سجلّاتُ ما يقترحه: عنوانٌ ولمن هو — تُربط واحدةً تلو الأخرى */
+  teachableProposals?: unknown;
   summary?: TrainerSummary;
 }
 
@@ -255,6 +261,8 @@ export default function TrainerApplications() {
   const [askOpen, setAskOpen] = useState(false);
   /* الوثيقةُ المفتوحةُ داخل الشاشة — لا لسانٌ ثانٍ يُفقِد المراجعُ موضعَه */
   const [openDoc, setOpenDoc] = useState<string | null>(null);
+  /* الاقتراحُ الذي يُربط الآن — معرّفُ طلبه وترتيبُه ونصُّه، لا كائنُ الطلب */
+  const [suggestFor, setSuggestFor] = useState<{ id: string; index?: number; line: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState<DetailTab>("dossier");
   const { user } = useRealSession();
@@ -693,6 +701,47 @@ export default function TrainerApplications() {
               <div className="mt-5">
                 <ApplicationDossier a={a as unknown as Dossier} />
               </div>
+
+              {/* ما كتبه بقلمه لا يبقى ملاحظةً تُقرأ مرّةً — يصير بندا في طابور.
+                  والزرُّ هنا لا داخلَ `ApplicationDossier`: تلك تعرضها صفحةُ
+                  المراجعة الخارجيّةُ أيضا لمن لا حسابَ له. */}
+              {(() => {
+                /* السجلّاتُ أوّلا (أ-٣)، والفقرةُ القديمةُ لمن سبقها — والطلبُ
+                   الواحدُ لا يحمل الاثنين. وكلُّ اقتراحٍ يُربط وحدَه: الطلبُ
+                   يحمل عشرين، وربطُ واحدٍ لا يربطها كلَّها. */
+                const rows = readProposals(a.teachableProposals);
+                if (rows.length === 0 && !a.teachableOther) return null;
+                return (
+                  <div className="mt-3 border-t border-white/10 pt-3">
+                    <p className="text-read font-black text-muted-foreground">
+                      دوراتٌ اقترحها وليست في كتالوجنا — اربِط كلَّ واحدةٍ بما يناسبها
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {rows.map((c, i) => (
+                        <li key={i} className="flex flex-wrap items-center gap-2 text-read leading-6">
+                          <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
+                          <span className="min-w-0 flex-1 font-bold">{proposalLine(c)}</span>
+                          <Button tone="secondary" size="sm" onClick={() => setSuggestFor({ id: a.id, index: i, line: proposalLine(c) })}>
+                            اربِطها
+                          </Button>
+                        </li>
+                      ))}
+                      {rows.length === 0 && a.teachableOther && (
+                        <li className="flex flex-wrap items-center gap-2 text-read leading-6">
+                          <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-ink" />
+                          <span className="min-w-0 flex-1 whitespace-pre-line">{a.teachableOther}</span>
+                          <Button tone="secondary" size="sm" onClick={() => setSuggestFor({ id: a.id, line: a.teachableOther! })}>
+                            اربِطها
+                          </Button>
+                        </li>
+                      )}
+                    </ul>
+                    <p className="mt-1.5 text-read leading-5 text-muted-foreground">
+                      نسخةً من دورةٍ قريبة، أو دورةً جديدةً بمهاراتها — ويصير طلبَ تغييرٍ في طابور الكتالوج.
+                    </p>
+                  </div>
+                );
+              })()}
             </Panel>
 
             {/* الوثائق الخاصة */}
@@ -952,6 +1001,15 @@ export default function TrainerApplications() {
               وحسابُه يُحذف معه إن لم يكن له غيرُ هذا الطلب — وإن كان له تسجيلٌ أو شراءٌ بقي، ويُقال لك.
             </p>
           </ConfirmAction>
+        )}
+
+        {suggestFor?.id === a.id && (
+          <CourseSuggestionDialog
+            applicationId={a.id}
+            trainerWordsAr={suggestFor.line}
+            proposalIndex={suggestFor.index}
+            onClose={() => setSuggestFor(null)}
+          />
         )}
       </AdminLayout>
     );
