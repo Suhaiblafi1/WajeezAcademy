@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router";
 import { Award, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, Link2, Star, Users, Wallet } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
+import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
@@ -10,7 +11,6 @@ import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
 
-import Button from "@/components/ui/Button";
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, checked } = useRealSession();
@@ -167,11 +167,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           <div className="flex items-center gap-3">
             {/* بحث سريع Ctrl+K — لجلسة المدرب الحقيقية فقط: يضرب نقطة الخادم المقيدة بإسناداته */}
             {realTrainer && (
-              <Button tone="secondary" size="sm" onClick={() => window.dispatchEvent(new Event("wajeez:open-search"))}
-                aria-label="بحث سريع — Ctrl+K"
-                title="بحث سريع — Ctrl+K" className="hidden text-fine md:flex">
-                بحث… <kbd className="rounded border border-white/15 px-1.5 text-fine">Ctrl K</kbd>
-              </Button>
+              <SearchChip hintAr="ابحث في شعبك وطلبتك" />
             )}
             <NotificationBell audience="trainer" />
             <ThemeToggle />
