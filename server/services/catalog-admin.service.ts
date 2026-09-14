@@ -4,6 +4,7 @@
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { recordAudit } from './audit'
 import { proposalLine, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
 import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
@@ -129,6 +130,9 @@ export class CatalogAdminService {
     return rows.map((c) => ({
       id: c.id, status: c.status, title: c.versions[0]?.titleAr ?? '',
       hours: c.versions[0]?.totalHours ?? 0, skillCount: c.skillLinks.length,
+      /* والمعرّفاتُ لا العددُ وحدَه (ك-٣): من يُصلح دورةً بلا مهاراتٍ يحتاج
+         أن يرى ما عليها الآن قبل أن يبدّله — والعددُ لا يقول ذلك. */
+      skillIds: c.skillLinks.map((l) => l.skillId),
       pathways: c.pathwayLinks.map((l) => l.pathwayId),
       pathwayNames: c.pathwayLinks
         .map((l) => l.pathway?.versions[0]?.title)
@@ -198,6 +202,50 @@ export class CatalogAdminService {
         versions: { create: { version: 1, nameAr: input.nameAr, status: 'draft', createdBy: actorId } },
       },
     })
+  }
+
+  /* ═══ ومهاراتُ الدورة تُصلَح بعد ميلادها (ك-٣) ═══
+
+     كانت `CourseSkillLink` تُكتب في موضعَين لا ثالثَ لهما: `createCourse`
+     والمستورِد. فما وُلد بلا مهارةٍ بقي بلا مهارةٍ إلى الأبد — **ولا شاشةَ
+     في المنصّة كلِّها تُصلحه**. وشاشةُ الكتالوج كانت تدلّ على بابٍ لا يفتح:
+     «`skillIds` لربط المهارات — تُدمج في إصدارٍ جديد بعد الاعتماد والنشر»،
+     ولا شيءَ في الخادم يقرأ حمولةَ طلبِ تغييرٍ ويطبّقها. وعدٌ بلا آلة.
+
+     فهذا هو البابُ نفسُه: يُستبدَل الربطُ كلُّه بما أُرسل — لا إضافةٌ وحدَها،
+     إذ فكُّ مهارةٍ أُلحقت خطأً حاجةٌ كحاجةِ إلحاقها.
+
+     ولا يمسّ إصدارا: `CourseSkillLink` معلَّقةٌ بالدورة لا بنسختها
+     (`@@id([courseId, skillId])`) — وهو قرارٌ قائمٌ في المخطّط، ومعناه أنّ
+     المهاراتِ لا تختلف بين نسخةٍ وأخرى. فلا نسخةَ تُولد من ربطِ مهارة. */
+  async setCourseSkills(courseId: string, skillIds: string[], actorId?: string) {
+    const course = await this.prisma.course.findUnique({ where: { id: courseId }, select: { id: true } })
+    if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
+
+    const unique = [...new Set(skillIds)]
+    const known = await this.prisma.skill.findMany({ where: { id: { in: unique } }, select: { id: true } })
+    const missing = unique.filter((id) => !known.some((k) => k.id === id))
+    if (missing.length) throw new AuthError('unknown_skill', `مهاراتٌ غيرُ معروفة: ${missing.join(' · ')}`, 422)
+
+    const before = (await this.prisma.courseSkillLink.findMany({
+      where: { courseId }, select: { skillId: true },
+    })).map((l) => l.skillId).sort()
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.courseSkillLink.deleteMany({ where: { courseId } })
+      if (unique.length) await tx.courseSkillLink.createMany({ data: unique.map((skillId) => ({ courseId, skillId })) })
+    })
+
+    /* الأثرُ يقول ما كان وما صار — فمن قرأه بعد شهرٍ عرف ما فُكّ وما رُبط */
+    await recordAudit(this.prisma, {
+      actorId, action: 'catalog.course.skills_set', entityType: 'course', entityId: courseId,
+      before: { skillIds: before }, after: { skillIds: [...unique].sort() },
+    })
+
+    /* وتقييمُ القياس يعود مع الردّ كما في الإنشاء: يرى المؤلّفُ أثرَ اختياره
+       لحظتَها لا بعد أسبوعٍ في ترشيحٍ باهت (ب-٤). */
+    const slugs = await this.prisma.skill.findMany({ where: { id: { in: unique } }, select: { slug: true } })
+    return { courseId, skillIds: unique, assessment: assessSkillSelection(slugs.map((s) => s.slug)) }
   }
 
   /** إنشاء دورة كمسودة مع وحداتها وروابط مهاراتها */
@@ -684,8 +732,40 @@ export class CatalogAdminService {
     })
   }
 
+  /* ═══ والطلبُ قد يسبق وجودَ ما يطلبه ═══
+
+     طلبُ التغيير ليس دائما تغييرا على صفٍّ قائم. منه ما هو **طلبُ ميلاد**:
+     `trainer_new_course` معرّفُه `C-PROPOSED-…` ولا صفَّ له في `Course`
+     بقصد — كما يثبته اختبارُ الإرسال نفسُه — و`skill_request` معرّفُه
+     «مَزلَقُ» مهارةٍ لم تُخلَق بعد.
+
+     وكان الاعتمادُ يكتب `update({ where: { id } })` على الصفّ في كلّ حال،
+     فيرمي Prisma الرمزَ `P2025`، وتُلغى المعاملةُ كلُّها، **ويرى المراجعُ
+     ٥٠٠ بلا سبب** — على أنّ قرارَه سليمٌ ومكتوبٌ وقد سجّل. ومرّ ذلك لأنّ
+     الاختباراتِ حرست الإرسالَ كلَّه ولم يحرس أحدٌ الزرَّ الوحيدَ الذي
+     يُضغط بعده.
+
+     والقاعدةُ التي كانت ناقصةً تُقال في سطر: **يُرفَع ما هو موجود.** ومن
+     طُلب ميلادُه يُعتمد قرارا، ثمّ يولد من باب التأليف حيث تُكتب محاورُه
+     وتُربط مهاراتُه — لا من باب القرار بابا خلفيّا.
+
+     ولمَ الوجودُ يُسأل عنه القاعدةَ ولا يُقاس على بادئة الاسم: البادئةُ
+     تحرس صنفا واحدا، وقد كان الصنفان اثنَين من أوّل يوم. وثالثٌ يأتي غدا
+     فيسقط سقوطَهما. */
+  private async entityExists(tx: Prisma.TransactionClient, entityType: string, id: string): Promise<boolean> {
+    const where = { id }
+    if (entityType === 'pathway') return (await tx.pathway.count({ where })) > 0
+    if (entityType === 'course') return (await tx.course.count({ where })) > 0
+    if (entityType === 'skill') return (await tx.skill.count({ where })) > 0
+    if (entityType === 'question') return (await tx.question.count({ where })) > 0
+    if (entityType === 'template') return (await tx.compositeTemplate.count({ where })) > 0
+    return false
+  }
+
   /** رفع حالة كيان وإصداره الحالي معا — داخل معاملة القرار أو النشر */
   async promoteEntity(tx: Prisma.TransactionClient, entityType: string, entityId: string, from: string, to: string) {
+    /* يُرفَع ما هو موجود — وما طُلب ميلادُه يُعتمد قرارا ويولد بعدُ */
+    if (!(await this.entityExists(tx, entityType, entityId))) return
     if (entityType === 'pathway') {
       const e = await tx.pathway.update({ where: { id: entityId }, data: { status: to } })
       await tx.pathwayVersion.updateMany({ where: { pathwayId: entityId, version: e.currentVersion, status: from }, data: { status: to } })

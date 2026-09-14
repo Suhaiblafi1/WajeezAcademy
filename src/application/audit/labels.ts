@@ -169,6 +169,8 @@ const PHRASES: Record<string, string> = {
   'desc': 'تعديلُ وصف',
   'start_review': 'بدءُ مراجعة',
   'catalog.version.delete_draft': 'حذفُ مسودّةِ إصدار',
+  /* ك-٣: ربطُ المهارات بابٌ قائمٌ بذاته — فالدورةُ تُولد بلا مهارةٍ وتُصلَح بعدُ */
+  'catalog.course.skills_set': 'ربطُ مهاراتٍ بدورة',
   'diagnostic.attach': 'إرفاقُ نتيجةِ تشخيصٍ بحساب',
   'plan.approve_requests': 'اعتمادُ طلباتِ خطّة',
   'plan.request_enrollment': 'طلبُ تسجيلٍ من خطّة',
