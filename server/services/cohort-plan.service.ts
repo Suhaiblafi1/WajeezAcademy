@@ -29,7 +29,7 @@
    و`financialReady` — والشاشةُ تقول إنّه بيد الإدارة. */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
-import { MIN_MODULE_BODY } from '../../src/application/trainer/plan-overlay'
+import { moduleBodyDone } from '../../src/application/trainer/module-body'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
@@ -48,9 +48,18 @@ export interface TrainerPlanModule {
   activityAr?: string | null
   artifactAr?: string | null
   bodyAr?: string | null
+  /** ع-٢: ملفٌّ يقرؤه المتعلّمُ بدلا من متنٍ مكتوب — «بدلا» لا «مع» */
+  bodyFileKey?: string | null
+  bodyFileName?: string | null
+  bodyFileMime?: string | null
 }
 /** `kind` من `RESOURCE_KINDS` — وغيابُه يعني «رابط» (ما حُفظ قبل العمود) */
-export interface TrainerPlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
+export interface TrainerPlanResource {
+  /* والرابطُ اختياريٌّ منذ د-٣: المصدرُ رابطٌ **أو** ملفٌّ مرفوع */
+  title: string; url?: string | null; kind?: string | null; noteAr?: string | null
+  /** د-٣: مصدرٌ مرفوعٌ بدل رابطٍ مُلصَق */
+  bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null
+}
 export interface TrainerPlanContent {
   kind: 'trainer'
   summaryAr?: string | null
@@ -153,8 +162,11 @@ export function buildChecklist(input: {
      والأرضيّةُ أربعون حرفا لا حرفٌ واحد: «x» ليس محتوى نظريّا، وشرطٌ يمرّ
      بحرفٍ شرطٌ صوريٌّ يُتعلَّم الالتفافُ عليه في أوّل شعبة. وأربعون جملةٌ
      قصيرةٌ — أقلُّ ما يُقرأ لا أكثرُ ما يُطلَب. */
+  /* ع-٢: تمامُ المحور صار «مكتوبٌ **أو** مرفوع»، وقاعدتُه في موضعٍ واحدٍ
+     (`moduleBodyDone`) يقرؤه الخادمُ وشاشةُ المدرّب معا — ورقمان يقولان
+     الشيءَ نفسَه يفترقان، فيُقال له «تمّ» ويُردّ إرسالُه. */
   const mods = input.content?.modules ?? []
-  const modulesDone = mods.length > 0 && mods.every((m) => (m.bodyAr ?? '').trim().length >= MIN_MODULE_BODY)
+  const modulesDone = mods.length > 0 && mods.every(moduleBodyDone)
   const resourcesDone = (input.content?.resources?.length ?? 0) > 0
   const sessionsDone = input.sessions.length > 0
   const recordingsDone = input.sessions.some((s) => s.recordings.length > 0)

@@ -1,9 +1,13 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { ArrowLeft, BookOpen, Flame, Route, Search, SlidersHorizontal, Target } from 'lucide-react'
+import { ArrowLeft, BookOpen, Flame, Heart, Route, Search, SlidersHorizontal, Target } from 'lucide-react'
 import { bestsellers, pathwayDomain, pathwayDomains, pathways } from '@/data/pathways'
 import { bestsellerCourses, courses, pathwaySizeAr } from '@/data/courses'
 import FavoriteButton from '@/components/FavoriteButton'
+import {
+  favoriteRows, favoriteUserKey, loadFavorites, onFavoritesChanged,
+} from '@/services/favorites'
+import { favoriteKey, favoriteKeySet } from '@/application/catalog/favorites'
 import SiteShell from '@/components/SiteShell'
 import TrainerPathsShelf from '@/components/TrainerPathsShelf'
 import SeoHead from '@/components/SeoHead'
@@ -12,6 +16,9 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
+import {
+  courseSearchFields, courseSearchLayers, pathwaySearchFields, pathwaySearchLayers,
+} from '@/application/catalog/search-fields'
 import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
 import { useCourseCohorts } from '@/services/cohort-prices'
@@ -56,6 +63,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
      معا أبدا: لو بقيت «أساسيات» افتراضيّةً هناك لصارت رقاقتُها غيرَ قابلةٍ
      للاختيار — تُحذف من العنوان فيرتدّ المعروضُ إلى «الكل». */
   const cat = params.get('cat') ?? 'الكل'
+  /* ع-٨ · «المفضّلة» — مرشِّحٌ لا صفحة: ما حفظه يُرى في مكانه من الكتالوج
+     بترتيبه ورقاقاته، لا في قائمةٍ ثانيةٍ تعيش بقواعدَ أخرى. */
+  const favOnly = params.get('fav') === '1'
+  const signedIn = Boolean(favoriteUserKey())
+  const saved = useSyncExternalStore(onFavoritesChanged, favoriteRows)
+  const savedKeys = useMemo(() => favoriteKeySet(saved), [saved])
+  useEffect(() => { void loadFavorites() }, [])
   const sort = (params.get('sort') ?? 'featured') as Sort
 
   const patch = (key: string, value: string) => {
@@ -63,6 +77,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     /* القيمة الافتراضية تحذف من العنوان: الكل للمجال، featured للترتيب */
     const isDefault =
       (key === 'cat' && value === 'الكل') ||
+      (key === 'fav' && value !== '1') ||
       (key === 'sort' && value === 'featured') ||
       (key === 'q' && !value)
     if (!isDefault && value) next.set(key, value)
@@ -71,15 +86,14 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   }
 
   const shownPathways = useMemo(() => {
-    const pathwayRank = (p: (typeof pathways)[number]) =>
-      catalogRank(q, [[p.name, p.shortName], [...p.coreSkills], [p.audience, p.transformation, p.output]])
+    const pathwayRank = (p: (typeof pathways)[number]) => catalogRank(q, pathwaySearchLayers(p))
     let list = pathways.filter(
       (p) =>
         (cat === 'الكل' || pathwayDomain(p.id) === cat) &&
         /* الحقولُ كلُّها لا حقلان: الاسمُ القصيرُ والمهاراتُ **والجمهورُ
            والتحوّلُ والمخرَج** — وكلُّها مؤلَّفةٌ في الكتالوج اليوم ولم يكن
            يبحث فيها أحد. */
-        matchesCatalogQuery(q, [p.name, p.shortName, p.audience, p.transformation, p.output, ...p.coreSkills])
+        matchesCatalogQuery(q, pathwaySearchFields(p))
     )
     if (sort === 'shortest') list = [...list].sort((a, b) => a.durationWeeks - b.durationWeeks)
     else if (sort === 'longest') list = [...list].sort((a, b) => b.durationWeeks - a.durationWeeks)
@@ -93,8 +107,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   }, [q, cat, sort, bestsellerIds, catalogVersion])
 
   const shownCourses = useMemo(() => {
-    const courseRank = (c: (typeof courses)[number]) =>
-      catalogRank(q, [[c.name], [c.promise, ...c.skills], [c.audience, c.pathwayName]])
+    /* ع-٨: «يطابق الكلماتِ حيثما كانت — العنوانُ والوعدُ **وعناوينُ
+       المحاور**». وما يُدرَّس داخل الدورة كان محجوبا كلَّه: من بحث عن
+       «تحليل المنافسين» لم يجد الدورةَ التي تُدرّسه في محورها الثالث.
+
+       وموضعُها الطبقةُ الثالثة لا الأولى: من طابق في اسمه هو المقصود،
+       ومن ذُكرت كلمتُه في محورٍ من محاوره يبقى ولا يتصدّر. */
+    const courseRank = (c: (typeof courses)[number]) => catalogRank(q, courseSearchLayers(c))
     /* المجالُ لا الفئة — بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦): «للدورات أريد
        البحث يكون بالمجال مثل المسارات وليس الفئة المستهدفة». والمجالُ يُشتقّ
        من مسار الدورة الأمّ بالدالّة المركزيّة نفسِها التي تصنّف المسارات،
@@ -102,7 +121,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     let list = courses.filter(
       (c) =>
         (cat === 'الكل' || pathwayDomain(c.pathwayId) === cat) &&
-        matchesCatalogQuery(q, [c.name, c.promise, c.audience, c.pathwayName, ...c.skills])
+        matchesCatalogQuery(q, courseSearchFields(c))
     )
     if (sort === 'shortest') list = [...list].sort((a, b) => a.weeks - b.weeks)
     else if (sort === 'longest') list = [...list].sort((a, b) => b.weeks - a.weeks)
@@ -127,7 +146,22 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   )
 
   const isPathways = kind === 'pathways'
-  const count = isPathways ? shownPathways.length : shownCourses.length
+  /* ═══ والمفضّلةُ تُرشَّح خارجَ الذاكرة المحفوظة، بقصد ═══
+
+     وُضع الترشيحُ أوّلَ مرّةٍ **داخلَ** `useMemo`، فلم يعمل: قائمةُ تبعيّاته
+     مكتوبةٌ بيدها و`react-hooks/exhaustive-deps` معطَّلٌ عليها بسببٍ آخر —
+     فلا المترجِمُ ينبّه ولا اللينتر. والعنوانُ يتغيّر و`aria-pressed` تنقلب
+     والقائمةُ لا تتحرّك: إحدى وثمانون بطاقةً تحت رقاقةٍ تقول «المفضّلة».
+     ولم يُرَ ذلك إلّا في المتصفّح — مرّ التحقّقُ والاختباراتُ كلُّها.
+
+     فالترشيحُ هنا: سطرٌ بلا تبعيّاتٍ تُنسى. والكلفةُ لا شيء — ترشيحُ ثمانين
+     صفّا بعد ترتيبها. */
+  const favFilter = <T,>(list: T[], kind: string, id: (x: T) => string) =>
+    favOnly ? list.filter((x) => savedKeys.has(favoriteKey(kind, id(x)))) : list
+
+  const visiblePathways = favFilter(shownPathways, 'pathway', (p) => p.id)
+  const visibleCourses = favFilter(shownCourses, 'course', (c) => c.id)
+  const count = isPathways ? visiblePathways.length : visibleCourses.length
 
   return (
     <SiteShell>
@@ -211,6 +245,24 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
             {c}
           </button>
         ))}
+
+        {/* ولا تُعرض لزائرٍ بلا حساب: رقاقةٌ تَعِد بمفضّلةٍ لا يملكها تُنقر
+            مرّةً فتُرى فارغةً، وتُقرأ عطبا لا دعوةً إلى التسجيل. والقلبُ على
+            البطاقات هو بابُ التسجيل — يحفظ ما أراده ساعةَ أراده. */}
+        {signedIn && (
+          <button
+            onClick={() => patch('fav', favOnly ? '' : '1')}
+            aria-pressed={favOnly}
+            className={`ms-1 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-2.5 py-1 text-fine font-semibold transition ${
+              favOnly
+                ? 'border-gold/60 bg-gold/15 text-gold-ink'
+                : 'border-white/10 bg-white/[0.03] text-muted-foreground hover:border-gold/50 hover:text-gold-ink'
+            }`}
+          >
+            <Heart className={`h-3 w-3 ${favOnly ? 'fill-current' : ''}`} aria-hidden="true" />
+            المفضّلة
+          </button>
+        )}
       </div>
 
       {/* ــ لوحُ «الفصلُ القادم» رُفع من هاتين الصفحتين (قرارُ صاحب المنصّة،
@@ -223,7 +275,11 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
       <p className="mt-6 text-read leading-5 text-muted-foreground" aria-live="polite">
         {count === 0
-          ? 'لا نتائج مطابقة — جرّب توسيع البحث'
+          ? favOnly
+            /* «جرّب توسيع البحث» نصيحةٌ لا تصلح هنا: لا بحثَ ضيّقٌ يُوسَّع،
+               بل مفضّلةٌ لم يُوضع فيها شيءٌ بعد. */
+            ? 'لا شيءَ في مفضّلتك بعد — اضغط القلبَ على ما يعجبك ليعود إليك'
+            : 'لا نتائج مطابقة — جرّب توسيع البحث'
           : isPathways
             ? `يعرض ${count} ${count === 1 ? 'مسارا' : 'مسارات'}`
             : `يعرض ${count} ${count === 1 ? 'دورة' : 'دورات'}`}
@@ -232,7 +288,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       {/* النتائج */}
       {isPathways ? (
         <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {shownPathways.map((p) => (
+          {visiblePathways.map((p) => (
             <Panel as="article" key={p.id} className="group flex min-w-0 flex-col transition hover:border-teal/40 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]">
               {/* يلتف: صفٌّ لا يلتف يفرض عرض محتواه على البطاقة مهما ضاقت الشاشة،
                   فتخرج البطاقة خارج شبكتها ويظهر تمرير أفقي عند التكبير. */}
@@ -249,7 +305,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                     وجيز» والمجالَ والمستوى — فيلتفّ سطرين على البطاقة الضيّقة
                     ويهبط العنوانُ عن رأسها. والمستوى صفةُ المسار نفسِه لا
                     تصنيفَه، فموضعُه مع اسمه. */}
-                <FavoriteButton pathwayId={p.id} pathwayName={p.name} className="-ms-1 ms-auto" />
+                <FavoriteButton refId={p.id} title={p.name} className="-ms-1 ms-auto" />
               </div>
               {/* ── الاسمُ القصيرُ في البطاقة، والكاملُ في الصفحة ──
 
@@ -294,7 +350,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </div>
       ) : (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {shownCourses.map((c) => (
+          {visibleCourses.map((c) => (
             <Card as="article" key={c.id} className="group flex flex-col transition hover:border-gold/40">
               <div className="flex items-center gap-2">
                 {bestsellerCourseIds.has(c.id) && (
@@ -303,6 +359,10 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
                     مختارة
                   </span>
                 )}
+                {/* ع-٨: والقلبُ على الدورة كما هو على المسار. ومن لا حسابَ
+                    له يُفتح له بابُ التسجيل ثمّ تُحفظ دورتُه — فالحسابُ
+                    يُولد على شيءٍ أراده لا على نموذجٍ خالٍ. */}
+                <FavoriteButton kind="course" refId={c.id} title={c.name} className="-me-1 ms-auto" />
                 {/* لا وسمَ ثانويّا على الدورة.
 
                     كان «أساسيات» أو «موظفون» — وهو تصنيفُ **المسار** الذي

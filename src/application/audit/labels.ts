@@ -23,6 +23,8 @@ const PHRASES: Record<string, string> = {
   'admin.user.unarchive': 'إعادةُ تنشيطِ حساب',
   'admin.user.purge': 'حذفُ حسابٍ نهائيّا',
   'admin.user.purge_with_history': 'محوُ حسابٍ بسجلّه كلّه',
+  /* ل-٦: صفٌّ واحدٌ يجمع الدفعةَ — فلا تُقرأ حذوفا متفرّقةً في ثانية */
+  'admin.users.purge_bulk': 'حذفُ حساباتٍ جملةً',
   /* البند ٦٦ — أخطرُ فعلين في السجلّ، ولذلك يُسمَّيان بما يفعلانه لا برمزهما */
   'accounts.reset_purge': 'إعادةُ ضبط الحسابات — محوٌ نهائيّ',
   'accounts.reset_archive': 'إعادةُ ضبط الحسابات — أرشفة',
@@ -51,6 +53,9 @@ const PHRASES: Record<string, string> = {
   'cohort.publish': 'فتحُ شعبةٍ للتسجيل',
   'cohort.status': 'تغييرُ حالةِ شعبة',
   'cohort.status.sync': 'مواءمةُ حالاتِ الشعب بالتواريخ',
+  /* ع-٢ · د-٣: ملفُّ شعبةٍ — متنُ محورٍ أو مصدرٌ في الخطّة */
+  'cohort.file.upload': 'إرفاقُ ملفٍّ إلى شعبة',
+  'cohort.file.remove': 'حذفُ ملفٍّ من شعبة',
   'cohort.session.add': 'إضافةُ جلسةٍ إلى شعبة',
   /* نقلُ المدرّب لقاءَه داخلَ نافذته — لا اقتراحٌ يُرفع إلى الإدارة.
      ويُفرَّق عن `session.reschedule.*` عمدا: ذاك طلبٌ يُبَتّ، وهذا فعلٌ وقع. */

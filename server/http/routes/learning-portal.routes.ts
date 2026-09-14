@@ -21,6 +21,7 @@ import { MAX_BODY_CHARS } from '../../services/module-authoring.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
+import { resourceSourceBlockerAr } from '../../../src/application/trainer/module-body'
 import { ReferralService } from '../../services/referral.service'
 import { RESOURCE_KINDS } from '../../../src/application/trainer/plan-overlay'
 import { AuthError } from '../../services/auth.service'
@@ -398,6 +399,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
          والسقفُ يُستورَد ولا يُكتب رقما: رقمان يقولان الشيءَ نفسَه يفترقان،
          وهذا افتراقُهما. */
       artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(MAX_BODY_CHARS).nullish(),
+      /* ع-٢: مفتاحُ ملفِّ المحتوى النظريّ. والصفُّ يُنشأ قبل الرفع، فما
+         يصل هنا إشارةٌ إليه لا ملفّ — ويُقابَل بالصفوف عند العرض، فمفتاحٌ
+         لا صفَّ له لا يعرض شيئا. */
+      bodyFileKey: z.string().trim().max(120).nullish(),
+      bodyFileName: z.string().trim().max(200).nullish(),
+      bodyFileMime: z.string().trim().max(120).nullish(),
     })).max(40).superRefine((mods, ctx) => {
       const seen = new Set<string>()
       for (const [i, m] of mods.entries()) {
@@ -414,9 +421,26 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     /* نوعُ المصدر — يُقرأ في شاشة المتعلّم فيُعرَض بأيقونته واسمه. والقائمةُ
        بيضاءُ لا حرّة: نوعٌ مخترَعٌ يصير «رابطا» عند القراءة، ويُردّ هنا كي
        لا يُحفظ أصلا. */
+    /* ═══ د-٣: ورابطٌ **أو** ملفٌّ مرفوع ═══
+
+       كان `url` إلزاميّا بصيغةِ رابط. و«ملفّ» نوعٌ يُختار من القائمة منذ
+       البداية — فكان المدرّبُ يختاره ثمّ يُطالَب برابطٍ لا يملكه، فيلصق
+       رابطا ويسمّيه ملفّا أو يدع النوعَ كذبا.
+
+       فصار أحدُهما يكفي، ويُردّ ما ليس فيه شيءٌ يُفتح: مصدرٌ بلا رابطٍ ولا
+       ملفٍّ سطرٌ في شاشة المتعلّم لا يقود إلى شيء. */
     resources: z.array(z.object({
-      title: z.string().min(2).max(200), url: z.string().url().max(500),
+      title: z.string().min(2).max(200),
+      url: z.string().max(500).nullish(),
       kind: z.enum(RESOURCE_KINDS).nullish(), noteAr: z.string().max(500).nullish(),
+      bodyFileKey: z.string().trim().max(120).nullish(),
+      bodyFileName: z.string().trim().max(200).nullish(),
+      bodyFileMime: z.string().trim().max(120).nullish(),
+    }).superRefine((r, ctx) => {
+      const blocker = resourceSourceBlockerAr(r)
+      if (blocker) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `«${r.title}» ${blocker}`, path: ['url'] })
+      }
     })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
     /* وسقط `proposals` من المخطّط (د-٦): اسمُ الدورة يمرّ بـ

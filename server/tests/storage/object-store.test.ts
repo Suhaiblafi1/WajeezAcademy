@@ -120,7 +120,7 @@ describe('كلُّ نموذجٍ يحمل مفتاحَ تخزينٍ يعرفه ا
   /** ما يعرفه `resolveStorageOwner` فعلا — يُصرَّح هنا ويُقارن بالمخطَّط */
   const RESOLVED = [
     'AssessmentResponse', 'AssignmentSubmission', 'CvSubmission',
-    'LearningMaterial', 'Recording', 'TrainerApplicationDocument',
+    'CohortFile', 'LearningMaterial', 'Recording', 'TrainerApplicationDocument',
   ].sort()
 
   it('المسحُ يقرأ المخطَّطَ فعلا', () => {

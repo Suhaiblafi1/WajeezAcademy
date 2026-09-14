@@ -63,6 +63,7 @@ model User {
   skillRemeasures      SkillRemeasure[]           @relation("SkillRemeasureUser")
   retrievalCards       RetrievalCard[]            @relation("RetrievalCardUser")
   scenarioRuns         ScenarioRun[]              @relation("ScenarioRunUser")
+  favorites            Favorite[]                 @relation("FavoriteUser")
 }
 
 model Role {
@@ -1796,6 +1797,7 @@ model Cohort {
 
   @@index([courseId, status])
   departureCases      DepartureCase[]
+  files               CohortFile[]
 }
 
 /// ═══ رابطُ دعوةِ المدرّب — لكلّ شعبةٍ رابطٌ لا يشترك فيه غيرُه ═══
@@ -3162,4 +3164,63 @@ model MarketingLead {
   lastSeenAt DateTime @default(now())
 
   @@index([createdAt])
+}
+
+
+/// مفضّلةُ الزائر المسجَّل (ع-٨).
+///
+/// ═══ ولمَ جدولٌ وقد كانت في المتصفّح ═══
+///
+/// كانت `localStorage` بمفتاحٍ مشتقٍّ من البريد. وهي تعمل حتّى يفتح صاحبُها
+/// حاسوبَه بعد هاتفه فيجد المفضّلةَ فارغة — وقد حفظ فيها أمس. والزرُّ نفسُه
+/// يشترط حسابا قبل الحفظ (بوّابةُ `FavoriteButton`)، فما حُفظ **لحسابٍ**
+/// يسكن حيث يسكن الحساب، لا حيث صادف أن يكون المتصفّح.
+///
+/// و`kind` لأنّ ع-٨ يقول «المسارات والدورات» كلتيهما، و`refId` رمزٌ نصّيٌّ
+/// من الكتالوج (`P-…` أو `C-…`) لا مفتاحٌ أجنبيّ: الكتالوجُ مصدرُه ملفّاتٌ
+/// تُبنى، لا صفوفٌ في القاعدة.
+model Favorite {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  kind      String // pathway | course
+  refId     String
+  createdAt DateTime @default(now())
+  user      User     @relation("FavoriteUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  /// لا يُحفظ الشيءُ مرّتَين لصاحبٍ واحد — والقلبُ يُنقر مرارا
+  @@unique([userId, kind, refId])
+  @@index([userId, createdAt])
+}
+
+
+/// ملفٌّ يخصّ شعبةً ويُقرأ بحارسٍ واحد (ع-٢ · د-٣).
+///
+/// ═══ ولمَ جدولٌ واحدٌ لغرضَين ═══
+///
+/// بُني أوّلا لمتنِ المحور وحدَه (`ModuleBodyFile`). ثمّ جاء د-٣ يطلب ملفّا
+/// لمصدرٍ في الخطّة — **وقاعدةُ من يقرأ هي هي**: من التحق بالشعبة، أو
+/// مدرّبُها، أو من يعتمد خطّتَها.
+///
+/// وقاعدةُ وصولٍ منسوخةٌ في موضعَين أخطرُ من سطرٍ مكرَّر: تُشدَّد في أحدهما
+/// وتُنسى في الآخر، فيُقرأ ملفُّ شعبةٍ لم يشترِها أحد. فمالكٌ واحدٌ للبايتات
+/// وللحارس، و`purpose` يقول لأيّ شيءٍ هو.
+///
+/// و`refId` رمزُ ما يتعلّق به: معرّفُ المحور لمتنه، ومعرّفُ المصدر لملفّه.
+/// والخطّةُ تشير إليه بمفتاحه، فتنتقل الإشارةُ مع نسخِها — ولذلك لا قيدَ
+/// فريدٌ على (الشعبة · الغرض · الرمز): نسخةٌ جديدةٌ قد ترفع ملفّا ثانيا
+/// والأوّلُ ما زال مقروءا في نسخةٍ سابقة.
+model CohortFile {
+  id           String   @id @default(uuid()) @db.Uuid
+  cohortId     String   @db.Uuid
+  purpose      String // module_body | plan_resource
+  refId        String
+  storageKey   String   @unique // خاصّ — لا يُقدَّم إلّا بعد فحص الصلاحيّة
+  originalName String
+  mime         String
+  sizeBytes    Int?
+  uploadedBy   String?  @db.Uuid
+  createdAt    DateTime @default(now())
+  cohort       Cohort   @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@index([cohortId, purpose, refId])
 }

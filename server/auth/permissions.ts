@@ -53,6 +53,13 @@ export const PERMISSIONS = [
      للمدير الأعلى وحدَه (`ROLE_PERMISSIONS.super_admin` يأخذ الكلَّ)، و
      `NON_DELEGATABLE` تمنع تفويضَها لمن دونه مهما كانت رتبتُه. */
   { key: 'admin.accounts.reset', description: 'إعادةُ ضبط الحسابات — محوُ حسابات الناس ومعاملاتِهم كلِّها استعدادا للإطلاق. لا رجعةَ فيه' },
+  /* ل-١ · ل-٢: الحذفُ جملةً — حبّةٌ واحدةٌ لا تُفوَّض، ولا يمسّ جدولَ دورٍ أحد.
+
+     وقرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) نصَّ على ذلك: «صلاحيّاتُ المدير
+     الأكاديميّ لا تُمسّ، والحذفُ جملةً لمدير النظام الأعلى وحدَه، ولا يكسب
+     من دونه قدرةً على الحذف لا يملكها اليوم». وهو لا يملكها فعلا:
+     `academic_manager` عنده `admin.users.view` وحدَها. */
+  { key: 'admin.users.purge_bulk', description: 'حذفُ حساباتٍ جملةً — للمدير الأعلى وحدَه، ولا تُفوَّض' },
   /* التكليفُ والإشعار — حبّتان لا واحدة.
 
      من يوزّع المهامّ ليس بالضرورة من يبثّ الإعلانات: الأولى تُتابَع وتُغلَق،
@@ -362,7 +369,7 @@ export interface DelegationRefusal { code: string; message_ar: string }
    تُستثنى صراحةً — لا لأنّ التفويضَ سيّئ، بل لأنّ هذه الحبّة **تمحو
    المنصّةَ كلَّها ولا رجعةَ فيها**. فمن ملكها يجب أن يملكها بدوره لا بمنحةٍ
    من غيره، وتبقى في `super_admin` وحدَه حيث يراها Git ويراجعها. */
-const NON_DELEGATABLE: readonly string[] = ['admin.accounts.reset']
+const NON_DELEGATABLE: readonly string[] = ['admin.accounts.reset', 'admin.users.purge_bulk']
 
 /** أيجوز لهذا أن يمنح تلك الصلاحية لذاك؟ — أو لماذا لا يجوز */
 export function refuseDelegation(actor: {

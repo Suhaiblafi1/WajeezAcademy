@@ -227,12 +227,18 @@ export default function StageWork({
                 <ul className="mt-2 space-y-1.5">
                   {planResources.map((r, i) => {
                     const meta = RESOURCE_META[resourceKind(r.kind)];
+                    /* د-٣: المرفوعُ يُفتح من مسارٍ محروسٍ بالجلسة والالتحاق،
+                       لا من رابطٍ خارجيّ — ولا `target="_blank"` عليه: هو
+                       ملفُّ شعبته لا موقعٌ آخر. */
+                    const uploaded = (r.bodyFileKey ?? "").trim();
+                    const href = uploaded
+                      ? `/api/v1/cohort-files/${encodeURIComponent(uploaded)}`
+                      : r.url ?? "#";
                     return (
-                      <li key={`${r.url}-${i}`}>
+                      <li key={`${uploaded || r.url}-${i}`}>
                         <a
-                          href={r.url}
-                          target="_blank"
-                          rel="noreferrer"
+                          href={href}
+                          {...(uploaded ? {} : { target: "_blank", rel: "noreferrer" })}
                           className="flex items-start gap-2 text-read leading-6 text-foreground transition hover:text-teal-light-ink"
                         >
                           <meta.icon className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />

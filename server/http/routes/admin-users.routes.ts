@@ -14,8 +14,10 @@ import {
 import { inviteLink, sendStaffInviteEmail } from '../../services/account-mail'
 import { AccountResetService } from '../../services/account-reset.service'
 import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
+import { BulkPurgeService } from '../../services/bulk-purge.service'
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
+  const bulkPurge = new BulkPurgeService(prisma)
   /* ثلاثُ حبّات: الرؤية · تعيين الأدوار والإيقاف · التفويض. والمدير
      الأكاديميّ يملك الأولى والثالثة لا الثانية. */
   const canView = requirePermission('admin.users.view')
@@ -615,6 +617,34 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     else await prisma.user.delete({ where: { id } })
     return { ok: true, purged: check.target.email, withHistory: blockers.length > 0 }
   })
+  /* ═══ الحذفُ جملةً — القسم ل ═══
+
+     والمعاينةُ هي البندُ لا الحذف: من اختار أربعين لن يُحذف له أربعون، إذ
+     يُردّ كلُّ حسابٍ يحمل شهادةً أو طلبا أو تسجيلا. فتُقرأ القسمةُ قبل أن
+     يقع شيء، ثمّ يُكتب عددُ ما سيُحذف فعلا.
+
+     والصلاحيّةُ `admin.users.purge_bulk` لا تُفوَّض — يملكها المديرُ الأعلى
+     بدوره وحدَه. ولا تُمسّ بها صلاحيّةُ أحدٍ دونه. */
+  app.post('/api/admin/users/bulk-purge/preview', {
+    preHandler: requirePermission('admin.users.purge_bulk'),
+    schema: { tags: ['admin-users'], summary: 'معاينةُ حذفٍ جملةً — من يُحذف ومن يُردّ ولماذا' },
+  }, async (req) => {
+    const { ids } = z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(req.body)
+    return bulkPurge.preview(req.auth!.userId, ids)
+  })
+
+  app.post('/api/admin/users/bulk-purge', {
+    preHandler: requirePermission('admin.users.purge_bulk'),
+    config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
+    schema: { tags: ['admin-users'], summary: 'تنفيذُ الحذف جملةً — يشترط كتابةَ عدد ما سيُحذف' },
+  }, async (req) => {
+    const body = z.object({
+      ids: z.array(z.string().uuid()).min(1),
+      confirmCount: z.string().trim().max(10),
+    }).parse(req.body)
+    return bulkPurge.execute(req.auth!.userId, body.ids, body.confirmCount)
+  })
+
   /* ═══ إعادةُ ضبط الحسابات — البند ٦٦ ═══
 
      أخطرُ بابٍ في المنصّة: محوُ حسابات الناس ومعاملاتِهم كلِّها. ولذلك

@@ -406,7 +406,7 @@ export default function PathwayPage() {
               <Badge variant="outline" className="border-white/20 text-foreground">{pathway.level}</Badge>
               {custom && !compositeCtx && <Badge className="border border-teal-light/50 bg-teal/15 text-teal-light-ink">نسختك المخصصة</Badge>}
               {compositeCtx && <Badge className="border border-gold/60 bg-gold/15 text-gold-ink">خطة مركبة مخصصة</Badge>}
-              <FavoriteButton pathwayId={pathway.id} pathwayName={pathway.name} className="ms-auto" />
+              <FavoriteButton refId={pathway.id} title={pathway.name} className="ms-auto" />
             </div>
             {/* اسم الخطّة كما اعتُمدت — لا اسم المسار المضيف. استعارةُ اسمه هي
                 ما جعل المتعلّم يظنّ أن خطّته أُعيدت تسميتها. */}

@@ -43,10 +43,11 @@ import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
-import { MIN_MODULE_BODY } from "@/application/trainer/plan-overlay";
 import { RESOURCE_KINDS, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
+import ModuleBodyUpload from "@/components/ModuleBodyUpload";
+import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -59,8 +60,17 @@ import { countAr } from "@/application/text/count-ar";
 
 /* ─────────── ما يصل من الخادم ─────────── */
 
-interface PlanModule { moduleId: string; titleAr: string; outcomeAr?: string | null; activityAr?: string | null; artifactAr?: string | null; bodyAr?: string | null }
-interface PlanResource { title: string; url: string; kind?: string | null; noteAr?: string | null }
+interface PlanModule {
+  moduleId: string; titleAr: string; outcomeAr?: string | null; activityAr?: string | null;
+  artifactAr?: string | null; bodyAr?: string | null;
+  /* ع-٢: ملفٌّ يُغني عن الكتابة */
+  bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null;
+}
+interface PlanResource {
+  title: string; url: string; kind?: string | null; noteAr?: string | null;
+  /* د-٣: مصدرٌ مرفوعٌ لا مُلصَق — «ملفّ» كان نوعا يُختار بلا ما يُرفَع */
+  bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null;
+}
 /* ما بقي من صندوق «اقتراحٌ للإدارة» المحذوف (د-٦): خطّةٌ حُفظت قبل حذفه قد
    تحمل `proposals` في عمود JSON. يُقرأ منه اسمُ الدورة وحدَه ليُعرض مهيّأً في
    القناة الجديدة، فلا يضيع ما كتبه مدرّبٌ بيده. ولا يُكتب من هنا أبدا.
@@ -173,6 +183,8 @@ const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
    البصمةُ على الكائن كلِّه لأضاءت المرحلتان معا بتعديلٍ في إحداهما. */
 const modulesKey = (c: PlanContent) => JSON.stringify(c.modules);
 const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources);
+
+
 /* والوصفُ صار مع الاسم والمواعيد، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
    حيث صار الحقلُ لا حيث كان. */
 const summaryKey = (c: PlanContent) => c.summaryAr ?? "";
@@ -288,11 +300,12 @@ export default function CohortWorkspace() {
   const doneCount = required.filter((c) => c.done).length;
   const remaining = required.length - doneCount;
   /* المحاورُ التي ينقصها المحتوى النظريّ — بالأرقام والعناوين، لا بعدد.
-     والأرضيّةُ هي أرضيّةُ الخادم نفسُها (`MIN_MODULE_BODY` = ٤٠): رقمان
-     يقولان الشيءَ نفسَه يفترقان، فيُقال له «تمّ» ويُردّ إرسالُه. */
+     والقاعدةُ قاعدةُ الخادم نفسُها (`moduleBodyDone`): مكتوبٌ بأربعين حرفا
+     **أو** ملفٌّ مرفوع (ع-٢). وقاعدتان تقولان الشيءَ نفسَه تفترقان، فيُقال
+     له «تمّ» ويُردّ إرسالُه. */
   const missingBody = content.modules
     .map((m, i) => ({ ...m, n: i + 1 }))
-    .filter((m) => (m.bodyAr ?? "").trim().length < MIN_MODULE_BODY);
+    .filter((m) => !moduleBodyDone(m));
   const ready = required.length ? Math.round((doneCount / required.length) * 100) : 0;
   const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
 
@@ -635,6 +648,14 @@ export default function CohortWorkspace() {
                          ما قبله ولا ما بعده وهو يكتب. */
                       rows={20}
                     />
+                    <ModuleBodyUpload
+                      cohortId={ws.cohort.id}
+                      refId={m.moduleId}
+                      value={m}
+                      onChange={(next) => setModule(i, next)}
+                      disabled={locked}
+                      label="أو أرفِق ملفّا بدلا من الكتابة"
+                    />
                   </StaffField>
                 </div>
                 )}
@@ -669,7 +690,25 @@ export default function CohortWorkspace() {
                 <Card as="li" key={i} className="grid gap-3">
                   <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
                     <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
-                    <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
+                    {/* د-٣: «ملفّ» كان نوعا يُختار ولا شيءَ يُرفَع — فيلصق
+                        المدرّبُ رابطا ويسمّيه ملفّا، أو يدع النوعَ كذبا.
+                        فالحقلُ يتبدّل بالنوع: مرفوعٌ هنا، أو مُلصَقٌ هناك. */}
+                    {resourceKind(r.kind) === "file" ? (
+                      <div className="sm:col-span-1">
+                        <ModuleBodyUpload
+                          cohortId={ws.cohort.id}
+                          purpose="plan_resource"
+                          refId={`r${i}`}
+                          value={r}
+                          onChange={(next) => patch(next)}
+                          disabled={locked}
+                          label="ارفع الملفّ"
+                          hint="يفتحه المتعلّمُ من درسه — PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
+                        />
+                      </div>
+                    ) : (
+                      <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
+                    )}
                     <select value={resourceKind(r.kind)} onChange={(e) => patch({ kind: e.target.value })} disabled={locked} aria-label={`نوع المصدر ${i + 1}`} className={controlCls}>
                       {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
                     </select>
@@ -702,7 +741,9 @@ export default function CohortWorkspace() {
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
             <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, resources: [...content.resources, { title: "", url: "", kind: "link" }] })}>+ مصدر</Button>
-            <Button tone="confirm" disabled={busy || locked || !dirty.resources || content.resources.some((r) => !r.title.trim() || !/^https?:\/\//.test(r.url))} onClick={savePlan}>احفظ المصادر</Button>
+            {/* والمرفوعُ لا يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ
+                مصدرٍ ملفُّه في المخزن — فيُرفع ثمّ لا يُحفظ. */}
+            <Button tone="confirm" disabled={busy || locked || !dirty.resources || content.resources.some((r) => !r.title.trim() || !resourceHasSource(r))} onClick={savePlan}>احفظ المصادر</Button>
           </div>
         </Panel>
 

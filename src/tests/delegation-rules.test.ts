@@ -117,6 +117,20 @@ describe('مديرُ النظام', () => {
     expect(refuseDelegation(superAdmin, targetOf('super_admin'), 'catalog.view'))
       .toMatchObject({ code: 'rank_too_low' })
   })
+
+  /* ═══ وحبّتان لا تُفوَّضان ولو من أعلى الرتب ═══
+
+     كلتاهما تمحو حساباتِ الناس بلا رجعة: `admin.accounts.reset` تمحو
+     المنصّةَ كلَّها، و`admin.users.purge_bulk` تمحو دفعةً بضغطة. فمن ملكهما
+     يملكهما **بدوره** حيث يراه Git ويراجعه، لا بمنحةٍ في شاشةٍ من غيره.
+
+     والفحصُ على أعلى الرتب بقصد: لو مرّت عليه مرّت على كلّ من دونه. */
+  it('وحبّتا المحو لا تُفوَّضان — ولا يُستثنى منهما أحد', () => {
+    for (const key of ['admin.accounts.reset', 'admin.users.purge_bulk']) {
+      expect(refuseDelegation(superAdmin, targetOf('academic_manager'), key), key)
+        .toMatchObject({ code: 'never_delegatable' })
+    }
+  })
 })
 
 describe('من لا يفوّض', () => {
