@@ -1,10 +1,10 @@
 import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeft, BadgeCheck, GraduationCap, Users, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen,
+  ArrowLeft, BadgeCheck, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen,
 } from 'lucide-react'
 import { TRAINER_POOLS, TRAINER_PENDING_AR, courseById } from '@/data/courses'
-import { pathways, pathwayById } from '@/data/pathways'
+import { pathwayById } from '@/data/pathways'
 import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
@@ -91,6 +91,16 @@ function TrainerOffer({ ids }: { ids: string[] }) {
       </ul>
     </div>
   )
+}
+
+/* «مدرب الكفاءة الرقمية» ← «الكفاءة الرقمية».
+
+   الأسماءُ في `TRAINER_POOLS` أسماءُ **أدوار**، وتحت عنوان «المجالات التي
+   نغطّيها» يبقى صدرُها («مدرب» و«مدربة») يجرّ العينَ إلى شخص — وهو ما نُزعت
+   البطاقاتُ لأجله. فيُجرَّد في العرض وحدَه: الترشيحُ يبقى على الأصل، فمن بحث
+   عن «مدربة» وجد. */
+function domainOf(role: string): string {
+  return role.replace(/^مدرّ?بة?\s+/, '')
 }
 
 /* ───────────────── صفحة الفريق التدريبي ─────────────────
@@ -309,45 +319,51 @@ export default function Trainers() {
         </section>
       )}
 
-      {/* التخصصات المطلوبة فعلا — عدد محدود مع خيار عرض الكل */}
+      {/* ═══ ولا اسمَ مدرّبٍ قبل اعتماده — ولو خلت الصفحة ═══
+
+          قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «لا تظهر أيَّ مدرّبٍ حتّى لو
+          مثالا، إلّا أن يكون معتمَدا لدينا».
+
+          وكان هنا بطاقةٌ لكلّ تخصّصٍ: أيقونةُ قبّعةِ تخرّجٍ وعنوانٌ على هيئة
+          اسمِ مهنة («مدرب الكفاءة الرقمية») وسطرٌ يقول «يُعلن المدرب بعد
+          اعتماد الشعبة». وهي صادقةٌ في نصّها **وتُقرأ أشخاصا في شكلها** —
+          فمن مسح الصفحةَ بعينه رأى فريقا، ثمّ قرأ فعلم أنّه لا أحد.
+
+          والمعتمَدون اليومَ صفر (قيس بـ`/api/trainers/public`). فنزعُ
+          البطاقات يُفرِغ الصفحة، وتركُها يخالف القرار. فالثالثةُ: تبقى
+          التخصّصاتُ **وسوما تُقرأ مجالاتٍ لا أشخاصا**، ويعلو ذلك بيانُ حالٍ
+          يقول ما هو واقعٌ فعلا. */}
+      {filteredApproved.length === 0 && !query && (
+        <Card tone="accent" className="mt-12 text-center">
+          <h2 className="text-lg font-black">لم يُعتمد نشرُ اسمِ مدرّبٍ بعد</h2>
+          <p className="mx-auto mt-3 max-w-xl text-read leading-7 text-muted-foreground">
+            قاعدتُنا ألّا يُنشر اسمُ مدرّبٍ قبل اعتماد نشره. فما يظهر هنا حين يمتلئ
+            أسماءُ من اجتازوا المراجعةَ فعلا — لا أمثلةَ ولا صورا توضيحيّة. ومدرّبُ
+            كلّ شعبةٍ يُعلن على بطاقتها عند اعتمادها.
+          </p>
+        </Card>
+      )}
+
+      {/* المجالاتُ التي نغطّيها — وسوما لا بطاقاتٍ تُقرأ أشخاصا */}
       {visibleRoles.length > 0 && (
         <section className="mt-12">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {visibleRoles.map(([role, familiesSet]) => {
-              const families = [...familiesSet].map((f) => FAMILY_LABEL[f] ?? f)
-              const pathwayCount = pathways.filter((p) => familiesSet.has(p.id.split('-')[1] ?? '')).length
-              return (
-                <Panel as="article" key={role} className="transition hover:border-teal/40">
-                  <div className="flex items-center gap-4">
-                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-teal/15 text-xl font-black text-teal-light-ink">
-                      <GraduationCap className="h-6 w-6" />
-                    </span>
-                    <div>
-                      <h2 className="font-bold leading-relaxed">{role}</h2>
-                      <p className="mt-1 text-read leading-5 text-muted-foreground">{TRAINER_PENDING_AR}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-1.5">
-                    {families.map((f) => (
-                      <span key={f} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
-                        {f}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-4 flex items-center gap-1.5 text-read text-muted-foreground">
-                    <Users className="h-3.5 w-3.5 text-teal-ink" />
-                    يغطي {pathwayCount} {pathwayCount === 1 ? 'مسارا' : 'مسارات'} من كتالوج وجيز
-                  </p>
-                </Panel>
-              )
-            })}
-          </div>
+          <h2 className="text-center text-lg font-black">المجالات التي نغطّيها</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-read leading-6 text-muted-foreground">
+            تخصّصاتٌ يطلبها كتالوجُ وجيز — لا أسماءَ مدرّبين.
+          </p>
+          <ul className="mx-auto mt-5 flex max-w-3xl flex-wrap justify-center gap-1.5">
+            {visibleRoles.map(([role]) => (
+              <li key={role} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
+                {domainOf(role)}
+              </li>
+            ))}
+          </ul>
           {!showAllSpecialties && !query && filteredRoles.length > SPECIALTIES_PREVIEW && (
             <div className="mt-6 text-center">
               <button
                 type="button"
                 onClick={() => setShowAllSpecialties(true)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-bold text-muted-foreground transition hover:border-teal/40 hover:text-foreground"
+                className="inline-flex items-center gap-2 text-read font-bold text-teal-light-ink underline underline-offset-4"
               >
                 عرض كل التخصصات ({filteredRoles.length})
                 <ChevronDown className="h-4 w-4" />
