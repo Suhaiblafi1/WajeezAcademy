@@ -175,7 +175,15 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       /* ما يستطيع تدريسه: معرّفاتٌ من الكتالوج تُربط بالمقرر عند التعيين،
          ونصٌّ حرّ بجانبها لما ليس عندنا بعد. */
       teachableCourseIds: z.array(z.string()).max(60).optional().default([]),
+      /* العمودُ القديمُ يُقرأ ولا يُكتب (١٣ سبتمبر ٢٠٢٦): الطلباتُ الجديدة
+         ترسل `teachableProposals` سجلّاتٍ، وهذا يبقى مقبولا في المخطّط
+         لعميلٍ قديمٍ لم يُحدَّث بعد — ولا يُرسله نموذجُنا. */
       teachableOther: z.string().max(1000).optional(),
+      /* دوراتٌ يقترحها مقروءةً واحدةً تلو الأخرى — والسقوفُ هنا هي سقوفُ
+         `application/trainer/teachable-proposals` نفسُها. */
+      teachableProposals: z.array(z.object({
+        titleAr: z.string().max(200), audienceAr: z.string().max(200),
+      })).max(20).optional(),
       availability: z.object({
         days: z.array(z.string()).optional(), hoursPerWeek: z.number().min(1).max(80).optional(),
         startFrom: z.string().optional(),

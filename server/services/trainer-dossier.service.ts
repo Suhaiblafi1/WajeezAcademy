@@ -27,6 +27,7 @@ import { renderPdf } from './pdf'
 import { readDocumentContent } from './storage.service'
 import { sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { recordAudit } from './audit'
+import { proposalLine, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { fmtDateLong, fmtDateTime, fmtDateWith } from '../../src/application/text/format-ar'
 import {
   APPLICANT_STATUS, contactChannelLabel, DELIVERY_MODES, DOMAIN_YEARS, EMPLOYMENT_STATUS,
@@ -117,6 +118,8 @@ export interface DossierApplication {
   contactChannel: string | null
   contactAltEmail: string | null
   teachableOther: string | null
+  /** سجلّاتُ الاقتراحات (أ-٣) — تغيب في طلبٍ سبقها */
+  teachableProposals?: unknown
   createdAt: Date
   specialties: { specialty: string }[]
   documents: { kind: string; originalName: string; sizeBytes: number }[]
@@ -190,14 +193,25 @@ export function buildDossierHtml(
     },
   ])
 
+  /* يُقرأ العمودُ مرّةً وبفحص — `Json?` يقبل أيَّ شكل، وملفٌّ يسقط بحقلٍ
+     مشوَّهٍ يسقط عند من يقرؤه لا عند من كتبه. */
+  const proposed = readProposals(app.teachableProposals)
+
   const teaching = rows([
     {
       k: 'من كتالوجنا',
       v: ctx.courseTitles.length
         ? esc(ctx.courseTitles.join(' · '))
-        : (app.teachableOther ? '' : 'لم يختر دورةً من الكتالوج'),
+        : (app.teachableOther || proposed.length ? '' : 'لم يختر دورةً من الكتالوج'),
     },
-    { k: 'ودوراتٌ بقلمه', v: para(app.teachableOther) },
+    /* السجلّاتُ أوّلا، والفقرةُ القديمةُ كما كتبها صاحبُها حين لا سجلّ:
+       الطلبُ الواحد لا يحمل الاثنين، ولا تُقسَّم فقرةٌ أسطرا تخمينا. */
+    {
+      k: 'ودوراتٌ بقلمه',
+      v: proposed.length
+        ? `<ul>${proposed.map((c) => `<li>${esc(proposalLine(c))}</li>`).join('')}</ul>`
+        : para(app.teachableOther),
+    },
     { k: 'جمهوره', v: esc(app.targetAudiences.join(' · ')) },
     { k: 'دوله المستهدفة', v: esc(app.targetCountries.join(' · ')) },
     { k: 'لغات تدريبه', v: esc(app.trainingLanguages.join(' · ')) },

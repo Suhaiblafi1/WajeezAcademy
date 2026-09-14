@@ -117,7 +117,11 @@ describe('نموذج انضمام المدرب', () => {
 
     expect(src, 'سؤال ما يستطيع تقديمه مفقود').toContain('ما الدورات التي تستطيع تقديمها؟')
     expect(src, 'المعرّفات لا تُرسَل — فلا يُربط بمقرر عند التعيين').toContain('teachableCourseIds: teachable')
-    expect(src, 'النصّ الحرّ لا يُرسَل').toContain('teachableOther: teachableOther.trim()')
+    /* أ-٣ (١٣ سبتمبر ٢٠٢٦): النصُّ الحرُّ صار سجلّاتٍ تُقرأ واحدةً تلو
+       الأخرى، فالمحروسُ هو هو — أنّ ما ليس في الكتالوج يُرسَل ولا يُهمَل —
+       وتبدّل شكلُه وحدَه. والعمودُ القديمُ لم يعد يُكتب. */
+    expect(src, 'ما ليس في الكتالوج لا يُرسَل').toContain('teachableProposals: cleanProposals(proposals)')
+    expect(src, 'العمودُ المهجورُ عاد يُكتب').not.toContain('teachableOther: teachableOther.trim()')
 
     /* المجال أوّلا: الكتالوج مئةُ عنوان، وعرضُها دفعةً واحدة مسحٌ لا اختيار */
     const picker = read('src/components/TeachableCoursePicker.tsx')

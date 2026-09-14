@@ -49,7 +49,7 @@ const SHARED_FIELDS = {
   linkedinUrl: true, youtubeUrl: true, instagramUrl: true, facebookUrl: true,
   hasAccreditation: true, accreditationDetails: true,
   targetCountries: true, targetAudiences: true, trainingLanguages: true,
-  deliveryMode: true, teachableCourseIds: true, teachableOther: true,
+  deliveryMode: true, teachableCourseIds: true, teachableOther: true, teachableProposals: true,
   availability: true, demoConsent: true,
   previousCourses: true, totalLearners: true, previousOrgs: true, evidenceNotes: true,
   emailVerifiedAt: true, privacyConsentAt: true, phase2CompletedAt: true, createdAt: true,

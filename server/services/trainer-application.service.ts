@@ -12,6 +12,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { renderMail } from './mail-template'
+import { cleanProposals } from '../../src/application/trainer/teachable-proposals'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
@@ -564,6 +565,7 @@ export class TrainerApplicationService {
     previousCourses: { title: string; org?: string; year?: number; link?: string }[]
     teachableCourseIds: string[]
     teachableOther?: string
+    teachableProposals?: { titleAr: string; audienceAr: string }[]
     availability: AvailabilityInput
     demoConsent: boolean
     phoneCountryCode?: string
@@ -635,6 +637,11 @@ export class TrainerApplicationService {
           totalLearners: null, previousOrgs: null, evidenceNotes: null,
           teachableCourseIds: input.teachableCourseIds,
           teachableOther: input.teachableOther?.trim() || null,
+          /* السجلّاتُ تُشذَّب بالقرار الواحد (`teachable-proposals`) لا هنا:
+             الشاشةُ والخادمُ يناديان الدالّةَ نفسَها، فلا يفترق ما يُعرض عمّا
+             يُخزَّن. وتُخزَّن مصفوفةً دائما ولو فارغة — و`readProposals` يقرأ
+             الفارغَ والغائبَ سواءً، فلا حاجةَ إلى تمييزٍ لا يُقرأ. */
+          teachableProposals: cleanProposals(input.teachableProposals ?? []) as unknown as Prisma.InputJsonValue,
           availability: input.availability as unknown as Prisma.InputJsonValue,
           demoConsent: input.demoConsent,
           ...(sentPhone ? { phone, phoneCountryCode } : {}),
