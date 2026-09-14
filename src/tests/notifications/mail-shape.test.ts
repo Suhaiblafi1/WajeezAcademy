@@ -62,7 +62,16 @@ describe('ط-١ · رسالةُ الإشعار', () => {
 
   it('③ والمزوّدُ يسلّم `html` إلى `sendEmail` — لا نصّا خامّا', () => {
     const svc = code('server/services/notification.service.ts')
-    const cls = svc.slice(svc.indexOf('class ResendEmailProvider'), svc.indexOf('export type DirectMailStatus'))
+    const from = svc.indexOf('class ResendEmailProvider')
+    const to = svc.indexOf('export type DirectMailStatus')
+    /* ═══ وحدّا القصّ يُثبَت وجودُهما ═══
+
+       الحدّان اسمان في ملفٍّ يتغيّر. فلو نُقل `DirectMailStatus` أو أُعيدت
+       تسميةُ المزوّد، عادت `indexOf` بـ`-1` وصارت الشريحةُ فارغةً أو الملفَّ
+       كلَّه — **ويخضرّ الحارسُ على فراغ**. فيُسأل عنهما أوّلا. */
+    expect(from, 'لم يُعثر على `class ResendEmailProvider` — حدُّ القصّ زال').toBeGreaterThan(-1)
+    expect(to, 'لم يُعثر على `export type DirectMailStatus` — حدُّ القصّ زال').toBeGreaterThan(from)
+    const cls = svc.slice(from, to)
     expect(cls, 'المزوّدُ لا يمرّ على القالب').toContain('renderNotificationMail(')
     /* والفحصُ على ما يُسلَّم فعلا: `text, html` معا لا `text` وحدَه */
     expect(cls, 'يُرسل بلا `html` — وهو عينُ ما كان').toMatch(/sendEmail\(this\.config,\s*\{[^}]*html\s*\}/)
