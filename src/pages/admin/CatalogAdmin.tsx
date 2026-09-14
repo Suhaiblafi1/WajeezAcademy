@@ -12,15 +12,18 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
 import { toast } from "@/components/Toast";
 import PathwayWizard from "@/components/PathwayWizard";
 import CourseWizard from "@/components/CourseWizard";
+import SkillPicker from "@/components/SkillPicker";
+import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import Chip from "@/components/ui/Chip";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
@@ -61,7 +64,7 @@ function TrainerSuggestion({ payload }: { payload: Record<string, unknown> | nul
   );
 }
 type PathwayRow = { id: string; status: string; title: string; courseCount: number };
-type CourseRow = { id: string; status: string; title: string; hours: number; skillCount: number; pathways: string[] };
+type CourseRow = { id: string; status: string; title: string; hours: number; skillCount: number; skillIds: string[]; pathways: string[] };
 type SkillRow = {
   id: string; status: string; slug: string; nameAr: string; familyId: string | null;
   /* ب-٤: حالة القياس من الخادم — تُحسب من المحرك لا من عمود في القاعدة */
@@ -101,6 +104,13 @@ export default function CatalogAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [browse, setBrowse] = useState<"pathways" | "courses" | "skills" | "questions" | "templates" | null>(null);
+  /* الصلاحيةُ لا الدور — والشاشةُ تُخفي ما لا يملكه، والخادمُ هو الحَكَم */
+  const { user: me } = useRealSession();
+  const canEditCourse = me?.permissions.includes("catalog.course.edit") ?? false;
+  /* ك-٣: محرِّرُ مهارات دورةٍ قائمة — مفتوحٌ لواحدةٍ في المرّة، ومسوّدتُه
+     منفصلةٌ عن المحفوظ حتّى يُضغط الحفظ. */
+  const [skillsFor, setSkillsFor] = useState<string | null>(null);
+  const [skillDraft, setSkillDraft] = useState<string[]>([]);
   /* فرزُ الكتالوج — قرارُ صاحب المنصّة: «طريقٌ أسهلُ لفرز الدورات».
 
      الكتالوجُ اليومَ ٨١ دورةً و٣٠٥ مهارةً ومئاتُ الأسئلة، وكانت تُسرد قوائمَ
@@ -329,11 +339,60 @@ export default function CatalogAdmin() {
         {browse === "courses" && (
           <ul className="mt-3 space-y-2">
             {courseView.rows.map((c) => (
-              <Inset as="li" key={c.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
-                <span className="font-mono text-fine text-muted-foreground" dir="ltr">{c.id}</span>
-                <span className="font-bold">{c.title}</span>
-                <span className="text-fine text-muted-foreground">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
-                <span className="mr-auto"><Pill v={c.status} /></span>
+              <Inset as="li" key={c.id} className="px-4 py-2.5 text-sm">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="font-mono text-fine text-muted-foreground" dir="ltr">{c.id}</span>
+                  <span className="font-bold">{c.title}</span>
+                  <span className="text-fine text-muted-foreground">{c.hours} ساعة · {c.skillCount} مهارة · {c.pathways.join("، ") || "بلا مسار"}</span>
+                  {/* ك-٣: «بلا مهارات» تُقال هنا لا عند النشر — فمن يقرأ الصفَّ
+                      يعرف لماذا لن تُنشر، ولا يكتشفه بعد أسبوعٍ عند الحاجز. */}
+                  {c.skillCount === 0 && (
+                    <Chip tone="danger">بلا مهارات — لن تُنشر ولن يرشّحها التشخيص</Chip>
+                  )}
+                  <span className="mr-auto flex items-center gap-2">
+                    <Pill v={c.status} />
+                    {canEditCourse && (
+                      <Button
+                        tone={c.skillCount === 0 ? "danger" : "ghost"} size="sm"
+                        aria-expanded={skillsFor === c.id}
+                        onClick={() => {
+                          if (skillsFor === c.id) { setSkillsFor(null); return; }
+                          setSkillsFor(c.id); setSkillDraft(c.skillIds);
+                        }}
+                      >
+                        مهاراتها
+                      </Button>
+                    )}
+                  </span>
+                </div>
+                {skillsFor === c.id && (
+                  <Inset className="mt-3">
+                    <SkillPicker
+                      skills={skills}
+                      selectedIds={skillDraft}
+                      onToggle={(id) => setSkillDraft((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))}
+                      onRequestSkill={requestSkill}
+                    />
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <Button
+                        tone="confirm" size="sm" loading={busy}
+                        onClick={() => void act(
+                          () => apiPut(`/api/admin/catalog/courses/${c.id}/skills`, { skillIds: skillDraft }),
+                          skillDraft.length === 0
+                            ? "فُكّت مهاراتُ الدورة — ولن تُنشر حتّى تُربط بواحدةٍ على الأقلّ"
+                            : `رُبطت ${skillDraft.length} مهارة بالدورة`,
+                        ).then(() => setSkillsFor(null))}
+                      >
+                        احفظ المهارات
+                      </Button>
+                      <Button tone="ghost" size="sm" onClick={() => setSkillsFor(null)}>أغلِق</Button>
+                      {/* الاستبدالُ يُقال صراحةً: من ظنّها إضافةً فكَّ ما لم يقصد */}
+                      <span className="text-fine text-muted-foreground">
+                        المحفوظُ يُستبدَل بما تختاره هنا — لا يُضاف إليه.
+                      </span>
+                    </div>
+                  </Inset>
+                )}
               </Inset>
             ))}
             {courses.length === 0 && <p className="text-sm text-muted-foreground">لا دورات بعد.</p>}

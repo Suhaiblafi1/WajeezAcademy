@@ -58,6 +58,17 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     return reply.status(201).send({ id: skill.id, status: skill.status })
   })
 
+  /* ك-٣: ربطُ مهاراتٍ بدورةٍ قائمة — البابُ الوحيدُ الذي يُصلح دورةً
+     وُلدت بلا مهارة، وبه يُفتح حاجزُ النشر الذي يمنعها. */
+  app.put('/api/admin/catalog/courses/:courseId/skills', {
+    preHandler: requirePermission('catalog.course.edit'),
+    schema: { tags: ['admin-catalog'], summary: 'ربطُ مهارات الدورة — يستبدل الربطَ كلَّه بما أُرسل' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string() }).parse(req.params)
+    const { skillIds } = z.object({ skillIds: z.array(z.string()).max(12) }).parse(req.body)
+    return admin.setCourseSkills(courseId, skillIds, req.auth!.userId)
+  })
+
   app.post('/api/admin/catalog/courses', {
     preHandler: requirePermission('catalog.course.create'),
     schema: { tags: ['admin-catalog'], summary: 'إنشاء دورة كمسودة مع وحداتها ومهاراتها' },
