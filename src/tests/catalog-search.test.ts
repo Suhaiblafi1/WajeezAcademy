@@ -21,6 +21,7 @@ import './setup-catalog'
 import { pathways, pathwayDomain, pathwayDomains } from '../data/pathways'
 import { courses } from '../data/courses'
 import { catalogRank, matchesCatalogQuery } from '../application/catalog/catalog-search'
+import { courseSearchFields, pathwaySearchFields } from '../application/catalog/search-fields'
 import { normalizeAr } from '../application/text/search-ar'
 import { sortKeyAr } from '../application/catalog/course-title'
 import { resolveCatalogRefsAr } from '../application/catalog/visitor-text'
@@ -135,21 +136,47 @@ describe('٢٩ · ثمانيةُ استعلاماتٍ واقعيّة — وكا�
     expect(top, 'مطابقةُ الاسم لم تبلغ أعلى رتبة').toBe(3)
   })
 
-  /* يُقاس نداءُ البحث نفسُه لا ورودُ الاسم في الملفّ: `p.audience` تظهر في
-     البطاقة أيضا (البند ٣٠)، فالفحصُ على النصّ كلِّه يمرّ ولو خرجت من البحث. */
-  it('والحقولُ الموسَّعةُ داخلَ نداء البحث — لا الاسمُ وحدَه', () => {
-    const call = (subject: string) =>
-      new RegExp(`matchesCatalogQuery\\(q, \\[${subject}[^\\]]*\\]\\)`).exec(catalogPage)?.[0] ?? ''
-    const pathwayCall = call('p\\.name')
-    expect(pathwayCall, 'المساراتُ لا تُبحَث بالمطابقة العربيّة').toBeTruthy()
-    for (const field of ['p.shortName', 'p.audience', 'p.transformation', 'p.output', 'p.coreSkills']) {
-      expect(pathwayCall, `${field} خارج بحث المسارات`).toContain(field)
+  /* ═══ وكان هذا الفحصُ يقرأ نصَّ الشاشة — ولمَ لم يعد ═══
+
+     كانت قائمةُ الحقول مكتوبةً في `Catalog.tsx`، فلم يكن أمامَ الحارس إلّا
+     أن يلتقط نداءَ `matchesCatalogQuery` بتعبيرٍ نمطيٍّ ويفتّش فيه عن أسماء
+     الحقول. وهو ما يحذّر منه المستودَع نصّا: الفحصُ على البنية لا على ورودِ
+     حرفٍ في ملفّ. وقد أثبت هشاشتَه بنفسه — نُقلت القائمةُ إلى مالكها
+     (ع-٨) فاحمرّ، والبحثُ لم ينقص حقلا واحدا.
+
+     فصار على **القيم**: يأخذ مسارا حقيقيّا ويتحقّق أنّ ما يوصف به يصل
+     الحقولَ فعلا. ويبقى شرطُ أنّ الشاشةَ تنادي المالكَ — فلا تعود قائمةٌ
+     مكتوبةٌ بيدها من بابٍ آخر. */
+  it('والحقولُ الموسَّعةُ داخلَ البحث فعلا — لا الاسمُ وحدَه', () => {
+    const p = pathways.find((x) => x.shortName && x.audience && x.transformation && x.output)!
+    const pFields = pathwaySearchFields(p).filter(Boolean) as string[]
+    for (const [label, value] of [
+      ['الاسم القصير', p.shortName], ['الجمهور', p.audience],
+      ['التحوّل', p.transformation], ['المخرَج', p.output], ['المهارة', p.coreSkills[0]],
+    ] as const) {
+      expect(pFields, `${label} خارج بحث المسارات`).toContain(value)
     }
-    const courseCall = call('c\\.name')
-    expect(courseCall, 'الدوراتُ لا تُبحَث بالمطابقة العربيّة').toBeTruthy()
-    for (const field of ['c.promise', 'c.audience', 'c.pathwayName', 'c.skills']) {
-      expect(courseCall, `${field} خارج بحث الدورات`).toContain(field)
+
+    const c = courses.find((x) => x.promise && x.audience && x.pathwayName && x.skills.length)!
+    const cFields = courseSearchFields(c).filter(Boolean) as string[]
+    for (const [label, value] of [
+      ['الوعد', c.promise], ['الجمهور', c.audience],
+      ['اسم المسار', c.pathwayName], ['المهارة', c.skills[0]],
+    ] as const) {
+      expect(cFields, `${label} خارج بحث الدورات`).toContain(value)
     }
+
+    /* والشاشةُ لا تبني قائمةً بيدها: لو بنتها لمرّ ما سبق وهي تبحث في
+       حقلَين — الفحصُ أعلاه على **المالك**، والشاشةُ قد تتجاوزه.
+
+       والفحصُ على **غياب** الصيغة السيّئة لا على حضور اسم الدالّة: استيرادٌ
+       معطَّلٌ يُبقي الاسمَ في الملفّ ويُرضي `toContain` بلا أن يُنادى شيء —
+       وقد جُرّبت فمرّت. أمّا قائمةٌ مكتوبةٌ بين قوسَين فلا تُخفى. */
+    const code = catalogPage.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    expect(code, 'قائمةُ حقولٍ مكتوبةٌ في الشاشة تتجاوز مالكَها')
+      .not.toMatch(/matchesCatalogQuery\(\s*q\s*,\s*\[/)
+    expect(code, 'طبقاتُ رتبةٍ مكتوبةٌ في الشاشة تتجاوز مالكَها')
+      .not.toMatch(/catalogRank\(\s*q\s*,\s*\[/)
   })
 })
 

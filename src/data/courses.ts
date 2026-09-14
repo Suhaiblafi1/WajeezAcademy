@@ -54,6 +54,7 @@ export interface CourseFull {
 /* فهارس مشتقة تُبنى من المصدر الفعال وتُعاد تعبئتها عند تثبيت لقطة API */
 let pathwayTitle = new Map<string, string>()
 let modulesByCourse = new Map<string, CoreCatalogModule[]>()
+let moduleTitles = new Map<string, string[]>()
 
 function rebuildIndexes(raw: CoreCatalogRaw): void {
   pathwayTitle = new Map(raw.launch_pathways.map((p) => [p.id, p.title]))
@@ -65,6 +66,19 @@ function rebuildIndexes(raw: CoreCatalogRaw): void {
   }
   for (const list of grouped.values()) list.sort((a, b) => a.sequence - b.sequence)
   modulesByCourse = grouped
+  moduleTitles = new Map([...grouped].map(([id, list]) => [id, list.map((m) => m.title_ar)]))
+}
+
+/* ═══ عناوينُ المحاور، مبنيّةً مرّةً — ولمَ فهرسٌ لا `courseFullById` ═══
+
+   ع-٨ يريد البحثَ يبلغ «عناوينَ المحاور». و`courseFullById` تبنيها كائناتٍ
+   كاملةً بمتونها وسيناريوهاتها — فلو نُودِيت في مرشِّحٍ يمرّ على إحدى
+   وثمانين دورةً **عند كلّ حرفٍ يُكتب** لبَنت آلافَ الكائنات لأجل عنوان.
+
+   فالعناوينُ وحدَها تُفرَز مع بقيّة الفهارس، وتُعاد تعبئتُها معها حين تُثبَّت
+   لقطةُ الكتالوج — فلا تتخلّف عن مصدرها. */
+export function moduleTitlesOf(courseId: string): string[] {
+  return moduleTitles.get(courseId) ?? []
 }
 
 rebuildIndexes(getCoreCatalogRaw())

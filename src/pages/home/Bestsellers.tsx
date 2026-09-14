@@ -229,7 +229,7 @@ export function Bestsellers() {
               </div>
             </Link>
             {/* مفضلة البطاقة المميزة — فوق الرابط بزاوية حرة، والنقر لا يفتح المسار */}
-            <FavoriteButton pathwayId={spotlight.id} pathwayName={spotlight.p.name}
+            <FavoriteButton refId={spotlight.id} title={spotlight.p.name}
               className="absolute left-3 top-3 z-10 bg-paper/70 backdrop-blur md:left-5 md:top-5" />
           </article>
         )}
