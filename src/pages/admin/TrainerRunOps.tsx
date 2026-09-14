@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import ImageFramer from "@/components/ImageFramer";
+import { PHOTO_OUT_MIME } from "@/lib/prepare-image";
 
 /* أصلُ الـAPI: في التطوير منفذٌ آخرُ غيرُ خادم Vite */
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
@@ -103,6 +105,8 @@ function PublicProfileEditor({
   });
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  /* المختارُ يُؤطَّر قبل رفعه — كشاشة الحساب سواءً بسواء */
+  const [framing, setFraming] = useState<File | null>(null);
   /* الصورةُ المعروضةُ من الخادم لا من الحقل: الحقلُ للرابط الخارجيّ، والمرفوعةُ
      عنوانُها `/api/v1/trainer-photos/…` وليست ممّا يُكتب بيد. */
   const shown = trainer.photoUrl;
@@ -140,21 +144,22 @@ function PublicProfileEditor({
 
   /* الرفعُ خطوتان: رابطٌ موقّتٌ من الخادم، ثمّ البايتاتُ إليه مباشرةً.
      ولا يمرّ الملفُّ في JSON — فذاك يضخّمه الثلثَ ويقرؤه الخادمُ نصّا. */
-  const upload = async (file: File) => {
+  const upload = async (blob: Blob) => {
     setBusy(true);
     try {
       const r = await apiPost<{ uploadUrl: string; maxBytes: number }>(
-        `/api/admin/trainers/${trainer.profileId}/photo-upload`, { mime: file.type },
+        `/api/admin/trainers/${trainer.profileId}/photo-upload`, { mime: PHOTO_OUT_MIME },
       );
-      if (file.size > r.maxBytes) {
+      if (blob.size > r.maxBytes) {
         toastError(`الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)`);
         return;
       }
       const res = await fetch(`${API_BASE}${r.uploadUrl}`, {
-        method: "PUT", headers: { "content-type": file.type }, body: file,
+        method: "PUT", headers: { "content-type": PHOTO_OUT_MIME }, body: blob,
       });
-      if (!res.ok) { toastError("تعذّر رفعُ الصورة"); return; }
+      if (!res.ok) { toastError(`تعذّر رفعُ الصورة (${res.status})`); return; }
       toast("رُفعت الصورة");
+      setFraming(null);
       setForm((f) => ({ ...f, photoUrl: "" }));
       await onSaved();
     } catch (e) {
@@ -243,7 +248,7 @@ function PublicProfileEditor({
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) setFraming(f); }}
         />
         <Button tone="secondary" size="sm" disabled={busy} onClick={() => fileRef.current?.click()}>
           <ImagePlus className="h-3.5 w-3.5" /> ارفع صورة
@@ -252,6 +257,16 @@ function PublicProfileEditor({
           حتّى ميغابايت · JPEG أو PNG أو WebP — والرفعُ يحتاج تفعيلَ التخزين على الخادم.
         </span>
       </div>
+      {framing && (
+        <ImageFramer
+          file={framing}
+          onDone={upload}
+          onCancel={() => {
+            setFraming(null);
+            if (fileRef.current) fileRef.current.value = "";
+          }}
+        />
+      )}
     </div>
   );
 }

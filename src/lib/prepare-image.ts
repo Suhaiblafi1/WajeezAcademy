@@ -46,7 +46,7 @@ export class ImageConditionError extends Error {}
    أصلا**، فلا تمسّه `img-src` ولا تُوسَّع السياسةُ لأجل شاشةٍ واحدة. وإن
    غاب — متصفّحٌ قديم — فالتراجعُ إلى `data:` وهي مسموحةٌ في السياسة نصّا. */
 
-interface Decoded {
+export interface Decoded {
   source: CanvasImageSource
   width: number
   height: number
@@ -74,7 +74,7 @@ function loadFromUrl(url: string): Promise<HTMLImageElement> {
   })
 }
 
-async function decode(file: File): Promise<Decoded> {
+export async function decode(file: File): Promise<Decoded> {
   if (typeof createImageBitmap === 'function') {
     try {
       const bmp = await createImageBitmap(file)
@@ -92,27 +92,73 @@ async function decode(file: File): Promise<Decoded> {
   }
 }
 
+/* ═══ هندسةُ الإطار — تُحسب هنا لتُقاس، لا في المكوّن ═══
+
+   المؤطِّرُ يعرض الصورةَ في نافذةٍ مربّعة، ولصاحبها إزاحةٌ ومقياس. وما
+   يُرفع هو **ما تحت النافذة** لا الصورةُ كلُّها.
+
+   والحسابُ في ملفٍّ لا شاشةٍ بقصد: القاعدتان اللتان لا تُريان بالنظر —
+   أنّ المُخرَج يبقى مربّعا ٥١٢ مهما كان الإطار، وأنّ الإزاحةَ لا تخرج عن
+   حدود الصورة فتُرسم حافّةٌ سوداء — تُحرَسان باختبارٍ لا بتجربةِ يد. */
+
+export interface Framing {
+  /** مقياسُ العرض: ١ يعني أنّ الضلعَ الأقصرَ يملأ النافذةَ تماما */
+  zoom: number
+  /** إزاحةُ المركز بالبكسل في إحداثيّات **المصدر** */
+  offsetX: number
+  offsetY: number
+}
+
+export const FRAMING_CENTER: Framing = { zoom: 1, offsetX: 0, offsetY: 0 }
+export const MAX_ZOOM = 5
+
+/** ضلعُ المربّع المقتطَع من المصدر عند هذا التقريب */
+export function sourceSide(width: number, height: number, zoom: number): number {
+  return Math.min(width, height) / Math.max(1, zoom)
+}
+
+/**
+ * يحوّل الإطارَ إلى مستطيلِ اقتطاعٍ داخلَ حدود الصورة.
+ * والإزاحةُ **تُقصّ** عند الحدّ: من سحب أبعدَ من الحافّة يقف عندها، فلا
+ * تُرسم حافّةٌ سوداء في المُخرَج.
+ */
+export function cropRect(
+  width: number, height: number, framing: Framing,
+): { sx: number; sy: number; side: number } {
+  const side = sourceSide(width, height, framing.zoom)
+  const maxX = (width - side) / 2
+  const maxY = (height - side) / 2
+  const dx = Math.min(maxX, Math.max(-maxX, framing.offsetX))
+  const dy = Math.min(maxY, Math.max(-maxY, framing.offsetY))
+  return { sx: (width - side) / 2 + dx, sy: (height - side) / 2 + dy, side }
+}
+
+/** أدونَ الحدِّ حدّةً؟ — يُقاس **المربّعُ المختار** لا الملفُّ كلُّه */
+export function framingIsSoft(width: number, height: number, framing: Framing): boolean {
+  return cropRect(width, height, framing).side < PHOTO_MIN_SIDE
+}
+
 /**
  * يفحص الصورةَ ويجهّزها: مربّعةً ٥١٢ بـWebP، بلا بياناتِ موضع.
  * يرمي `ImageConditionError` برسالةٍ عربيّةٍ إن خالفت شرطا.
  */
-export async function prepareImage(file: File): Promise<Blob> {
+export async function prepareImage(file: File, framing: Framing = FRAMING_CENTER): Promise<Blob> {
   if (!(PHOTO_IN_MIMES as readonly string[]).includes(file.type)) {
     throw new ImageConditionError('الصورةُ JPEG أو PNG أو WebP')
   }
 
   const img = await decode(file)
   try {
-    const side = Math.min(img.width, img.height)
-    if (side < PHOTO_MIN_SIDE) {
-      throw new ImageConditionError(
-        `الصورةُ صغيرة (${img.width}×${img.height}) — أقلُّ ضلعٍ ${PHOTO_MIN_SIDE} بكسل`,
-      )
-    }
+    return await renderFraming(img, framing)
+  } finally {
+    img.release()
+  }
+}
 
-    /* المربّعُ من الوسط: ما زاد من الضلع الأطول يُقصّ نصفَين متساويَين */
-    const sx = (img.width - side) / 2
-    const sy = (img.height - side) / 2
+/** يرسم المربّعَ المختار إلى ٥١٢ ويرمّزه — يُنادى بعد فكٍّ قائم */
+export async function renderFraming(img: Decoded, framing: Framing): Promise<Blob> {
+  {
+    const { sx, sy, side } = cropRect(img.width, img.height, framing)
 
     const canvas = document.createElement('canvas')
     canvas.width = PHOTO_OUT_SIDE
@@ -127,7 +173,5 @@ export async function prepareImage(file: File): Promise<Blob> {
     })
     if (!blob) throw new ImageConditionError('تعذّر ترميزُ الصورة')
     return blob
-  } finally {
-    img.release()
   }
 }
