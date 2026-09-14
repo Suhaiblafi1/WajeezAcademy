@@ -11,7 +11,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   MAX_PROPOSALS, cleanProposals, emptyProposal, hasProposal,
-  proposalLine, proposalWritten, readProposals,
+  proposalLine, proposalWritten, readProposals, teachableCountAr,
 } from '@/application/trainer/teachable-proposals'
 
 const p = (titleAr: string, audienceAr = '') => ({ titleAr, audienceAr })
@@ -85,5 +85,52 @@ describe('السطرُ كما يُقرأ', () => {
   it('«العنوان — لمن هو»، وبلا جمهورٍ فالعنوانُ وحدَه بلا شَرطةٍ معلَّقة', () => {
     expect(proposalLine(p('دورة', 'لمدراء'))).toBe('دورة — لمدراء')
     expect(proposalLine(p('دورة')), 'بقيت شَرطةٌ بلا ما بعدها').toBe('دورة')
+  })
+})
+
+/* ═══ «دوراتٌ يصلح لها» في شريط الحقائق ═══
+
+   ─────────── العطبُ الذي كُتب له ───────────
+
+   كان الشريطُ يقرأ `teachableCourseIds.length` وحدَه. ووقع ذلك على أوّل
+   مدرّبةٍ حقيقيّةٍ في المنصّة: ثماني دوراتٍ في ملفّها كتبتها بقلمها، وشريطُ
+   الحقائق يقول «٠ دوراتٌ يصلح لها» — أي «لا تصلح لشيء».
+
+   ورقمٌ كاذبٌ في أوّل ما تقع عليه العين أسوأُ من غياب الرقم: الشريطُ بُني
+   ليُقرأ بنظرةٍ قبل القرار، فمن قرأه ولم يفتح الملفَّ قرّر على كذبة. */
+describe('عددُ ما يصلح له — ولا رقمَ يكذب', () => {
+  it('⚠️ من كتب بقلمه ولم يختر من الكتالوج لا يُقال عنه «٠»', () => {
+    expect(teachableCountAr({ teachableOther: 'ثماني دوراتٍ في فقرةٍ واحدة' })).toBe('بقلمه')
+  })
+
+  it('والاقتراحاتُ تُعدّ مع اختيارات الكتالوج لا بدلا عنها', () => {
+    expect(teachableCountAr({
+      teachableCourseIds: ['C-BIZ-101', 'C-BIZ-103'],
+      teachableProposals: [{ titleAr: 'دورةٌ مقترحة' }],
+    })).toBe('3')
+  })
+
+  it('ومن سمّى فقرتَه صفوفا صار يُعدّ — فالمحرّرُ يُصلح الرقمَ من نفسه', () => {
+    const before = { teachableOther: 'ريادةُ الأعمال · التسعير · إدارةُ المشاريع' }
+    expect(teachableCountAr(before)).toBe('بقلمه')
+    expect(teachableCountAr({
+      ...before,
+      teachableProposals: [{ titleAr: 'ريادةُ الأعمال' }, { titleAr: 'التسعير' }, { titleAr: 'إدارةُ المشاريع' }],
+    })).toBe('3')
+  })
+
+  it('ولا يُخمَّن عددٌ من فقرة — «١» عن ثمانٍ ليست أصدقَ من «٠»', () => {
+    /* التخمينُ يعيد العطبَ بصورةٍ أخرى، فالنصُّ يبقى نصّا حتّى يُسمّى */
+    expect(teachableCountAr({ teachableOther: 'سطرٌ\nوسطرٌ\nوسطرٌ ثالث' })).toBe('بقلمه')
+  })
+
+  it('ومن لم يكتب شيئا ولم يختر فصفرٌ صادق', () => {
+    expect(teachableCountAr({})).toBe('0')
+    expect(teachableCountAr({ teachableCourseIds: [], teachableOther: '   ' })).toBe('0')
+  })
+
+  it('وعمودٌ مشوَّهٌ لا يُسقط الشريطَ ولا يُنفخ الرقم', () => {
+    expect(teachableCountAr({ teachableProposals: 'ليست مصفوفة' })).toBe('0')
+    expect(teachableCountAr({ teachableProposals: [{ titleAr: '  ' }, null, 7] })).toBe('0')
   })
 })

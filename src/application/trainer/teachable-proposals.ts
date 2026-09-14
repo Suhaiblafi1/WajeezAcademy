@@ -76,3 +76,34 @@ export function readProposals(raw: unknown): TeachableProposal[] {
 /** سطرٌ يُقرأ: «العنوان — لمن هو»، وبلا جمهورٍ فالعنوانُ وحدَه */
 export const proposalLine = (p: TeachableProposal): string =>
   p.audienceAr ? `${p.titleAr} — ${p.audienceAr}` : p.titleAr
+
+/* ═══ «دوراتٌ يصلح لها» في شريط الحقائق — رقمٌ كان يكذب ═══
+
+   ─────────── العطب ───────────
+
+   كان الشريطُ يقرأ `teachableCourseIds.length` وحدَه. فمن اختار من الكتالوج
+   ظهر عددُه، **ومن كتب دوراتِه بقلمه ولم يختر من الكتالوج ظهر له «٠»**.
+
+   ووقع ذلك على أوّل مدرّبةٍ حقيقيّةٍ في المنصّة: ثماني دوراتٍ في ملفّها،
+   وشريطُ الحقائق يقول «٠ دوراتٌ يصلح لها» — أي «لا تصلح لشيء». ورقمٌ كاذبٌ
+   في أوّل ما تقع عليه العين أسوأُ من غياب الرقم: الشريطُ بُني ليُقرأ بنظرةٍ
+   قبل القرار، فمن قرأه ولم يفتح الملفَّ قرّر على كذبة.
+
+   ─────────── ولماذا نصٌّ حين لا يُعدّ ───────────
+
+   الاقتراحاتُ سجلّاتٌ تُعدّ، فتُجمع إلى اختيارات الكتالوج. أمّا الطلباتُ
+   التي سبقت السجلّات فتحمل **فقرةً حرّةً واحدة** — وعددُ الدورات فيها لا
+   يُعرف إلّا بتخمين. والتخمينُ هنا يعيد العطبَ بصورةٍ أخرى: «١» عن ثمانٍ
+   ليس أصدقَ من «٠».
+
+   فيُقال «بقلمه»: قصيرٌ يليق بخانةٍ في شريط، وصادقٌ — ثمّ من فتح الملفَّ
+   قرأها، ومن أراد عددا سمّاها في المحرّر فصارت تُعدّ. */
+export function teachableCountAr(input: {
+  teachableCourseIds?: readonly string[] | null
+  teachableProposals?: unknown
+  teachableOther?: string | null
+}): string {
+  const counted = (input.teachableCourseIds?.length ?? 0) + readProposals(input.teachableProposals).length
+  if (counted > 0) return String(counted)
+  return trim(input.teachableOther) ? 'بقلمه' : '0'
+}

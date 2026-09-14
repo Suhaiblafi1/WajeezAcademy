@@ -21,6 +21,7 @@ import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import CourseSuggestionDialog from "./CourseSuggestionDialog";
 import ProposalsEditor from "./ProposalsEditor";
+import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { yearsLabel } from "@/application/trainer/application-options";
@@ -613,7 +614,7 @@ export default function TrainerApplications() {
                 const facts: { label: string; value: string }[] = [
                   { label: "خبرةُ المجال", value: yearsLabel(d.domainYears) },
                   { label: "خبرةُ التدريب", value: yearsLabel(d.trainingYears) },
-                  { label: "دوراتٌ يصلح لها", value: String((d.teachableCourseIds ?? []).length) },
+                  { label: "دوراتٌ يصلح لها", value: teachableCountAr(d) },
                   { label: "وثائقُ رفعها", value: String(a.documents.length) },
                   { label: "مقابلاتٌ جرت", value: String(a.interviews.filter((iv) => !iv.canceledAt).length) },
                 ];
