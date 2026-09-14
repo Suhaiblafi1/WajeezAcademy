@@ -25,6 +25,9 @@ import {
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+
+/* أصلُ الـAPI: في التطوير منفذٌ آخرُ غيرُ خادم Vite */
+const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 import { controlCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -147,7 +150,7 @@ function PublicProfileEditor({
         toastError(`الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)`);
         return;
       }
-      const res = await fetch(r.uploadUrl, {
+      const res = await fetch(`${API_BASE}${r.uploadUrl}`, {
         method: "PUT", headers: { "content-type": file.type }, body: file,
       });
       if (!res.ok) { toastError("تعذّر رفعُ الصورة"); return; }
