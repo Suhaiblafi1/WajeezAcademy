@@ -100,18 +100,34 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'money',
     labelAr: 'المال',
-    whatAr: 'إيصالُ دفعٍ · مستحقّاتُ مدرّب',
+    whatAr: 'إيصالُ دفعٍ · ردُّ مبلغٍ أو ردُّ طلبِه · إلغاءُ طلبٍ لم يكتمل · مستحقّاتُ مدرّب',
     silenceable: false,
     lockedWhyAr: 'إيصالُ دفعٍ لا يُكتَم: هو سجلُّك عند الخلاف، وكتمُه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
-    templateKeys: ['payment.succeeded', 'trainer_payout'],
+    /* ═══ والردُّ خبرُ مالٍ كالقبض (ي-٤) ═══
+
+       كان المالُ يعود إلى البطاقة — أو يُرفض ردُّه — **ولا مفتاحَ ردٍّ في
+       المنصّة كلِّها**. فالسببُ المكتوب فوق («هو سجلُّك عند الخلاف») يقع على
+       الردّ أشدَّ ممّا يقع على القبض: من قبضتَ منه يرى الخصمَ في كشفه، ومن
+       رددتَ إليه قد لا يرى شيئا أيّاما ثمّ يسأل: أرُدَّ أم لا؟
+
+       و`order.cancelled_abandoned` معه: طلبٌ يُلغى بعد ساعةٍ ويُفرَج عن
+       مقعده بيدِ وظيفةٍ لا إنسان (`worker/jobs.ts`) — وصاحبُه لم يُخبَر
+       بالساعة أصلا، فيجد المقعدَ ذهب ولا يعرف أنّه كان له وقت. */
+    templateKeys: [
+      'payment.succeeded', 'payment.refunded', 'payment.refund_rejected',
+      'order.cancelled_abandoned', 'trainer_payout',
+    ],
   },
   {
     key: 'certificates',
     labelAr: 'الشهادات',
-    whatAr: 'إصدارُ شهادةٍ باسمك',
+    whatAr: 'إصدارُ شهادةٍ باسمك · أو إلغاؤها',
     silenceable: false,
-    lockedWhyAr: 'الشهادةُ تُنسب إليك برقمٍ يُتحقَّق منه علنا — فإصدارُها خبرٌ يجب أن يبلغك.',
-    templateKeys: ['certificate.issued'],
+    lockedWhyAr: 'الشهادةُ تُنسب إليك برقمٍ يُتحقَّق منه علنا — فإصدارُها خبرٌ يجب أن يبلغك، وإلغاؤها أوجب.',
+    /* والسببُ المكتوب فوق يقع على السحب أشدَّ ممّا يقع على الإصدار: صفحةُ
+       التحقّق العامّة تبدأ تعرضها «ملغاة» لمن يحمل رقمَها في اللحظة نفسِها
+       (`certificate.service.ts` — `verify`). فمن يسأل عنها يعرف قبل صاحبها. */
+    templateKeys: ['certificate.issued', 'certificate.revoked'],
   },
   {
     key: 'work',
@@ -159,7 +175,12 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     whatAr: 'تغيّرُ مدرّبِ شعبتك · نقلُك إلى شعبةٍ نظيرة · ردُّ ما تبقّى أو رصيدٌ باسمك',
     silenceable: false,
     lockedWhyAr: 'تغييرٌ يمسّ مقعدَك أو مالَك — وكتمُه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
-    templateKeys: ['departure.choice', 'departure.resolved'],
+    /* و`enrollment.dropped` هنا لسببٍ قاسٍ: حارسُ ي-٣ كان يقرأ «أُخبِر أحدٌ»
+       لا «أُخبِر صاحبُه» — و`drop` ينادي `fillSeatFromWaitlist` فيُخبِر **من
+       أخذ المقعدَ الشاغر**، لا من أُسقط تسجيلُه. فمرّ خضراءَ بإشعارٍ يصل
+       إنسانا آخر. ولا يُصلَح ذلك في الحارس — لا يعرف المرسَلَ إليه ولا
+       يُخمّنه — بل بأن يُخبَر صاحبُه فعلا. */
+    templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped'],
   },
   /* ═══ حسابي ووصولي — ي-٣ ═══
 

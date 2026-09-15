@@ -140,6 +140,9 @@ const PHRASES: Record<string, string> = {
   'cohort.remind_trainer': 'تذكيرُ مدرّبٍ بتجهيز شعبته',
   'session.recording.link': 'إضافةُ تسجيلِ جلسةٍ من رابط',
   'referral.link.create': 'إنشاءُ رابطِ دعوةِ مدرّبٍ لشعبة',
+  /* ط-٣: الرابطُ القصيرُ يُسَكّ ويُبطَل — ولا يُحذف صفُّه */
+  'short_link.create': 'سكُّ رابطٍ قصير',
+  'short_link.revoke': 'إبطالُ رابطٍ قصير',
   'checkout.referral_ignored': 'إهمالُ رمزِ دعوةٍ لا يخصّ الشراء',
   'trainer.suspend': 'إيقافُ مدرّب',
   'trainer.reinstate': 'رفعُ إيقافٍ عن مدرّب',

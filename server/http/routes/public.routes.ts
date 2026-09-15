@@ -8,10 +8,12 @@ import { PublicCatalogService } from '../../services/public-catalog.service'
 import { fileUploadsEnabled } from '../../services/storage.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { getCalendlyConfig } from '../../services/integrations.service'
+import { ShortLinkService } from '../../services/short-link.service'
 
 export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const catalog = new PublicCatalogService(prisma)
   const trainerPaths = new TrainerPathService(prisma)
+  const shortLinks = new ShortLinkService(prisma)
 
   /* ما تستطيعه هذه المنصّةُ فعلا — تقرأه الواجهةُ قبل أن تعرض زرّا.
      الواجهةُ كانت تعرض «ارفع التسجيل» و«ارفع سيرتك» حيث لا مخزنَ يقبلهما،
@@ -89,6 +91,17 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { slug } = z.object({ slug: z.string().min(1).max(120) }).parse(req.params)
     return catalog.pathPublicTarget(slug)
+  })
+
+  /* ط-٣: وجهةُ رابطٍ قصير — يُقرأ تحت زرِّ البريد ويُنسخ باليد.
+
+     وهو عامٌّ بلا جلسةٍ بقصد: الرابطُ يُفتح من بريدٍ قبل الدخول، ومن جهازٍ
+     ليس فيه حسابٌ أصلا. والسرُّ في الرمز لا في الجلسة. */
+  app.get('/api/public/links/:code', {
+    schema: { tags: ['public-catalog'], summary: 'وجهةُ رابطٍ قصير — مسارٌ داخليٌّ يُحوَّل إليه' },
+  }, async (req) => {
+    const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
+    return shortLinks.resolve(code)
   })
 
   app.get('/api/public/methodology', {

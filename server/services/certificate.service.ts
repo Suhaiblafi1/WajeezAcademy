@@ -192,7 +192,11 @@ export class CertificateService {
   /** إلغاء شهادة — سبب إلزامي، أثر دائم، لا حذف */
   async revoke(certificateId: string, actorId: string, reason: string) {
     if (reason.trim().length < 5) throw new AuthError('no_reason', 'الإلغاء يتطلب سببا موثقا')
-    const cert = await this.prisma.certificate.findUnique({ where: { id: certificateId } })
+    /* وصاحبُها يُقرأ معها (ي-٤) — كان الاستعلامُ يقف عند الشهادة نفسِها */
+    const cert = await this.prisma.certificate.findUnique({
+      where: { id: certificateId },
+      include: { enrollment: { select: { userId: true } } },
+    })
     if (!cert) throw new AuthError('not_found', 'الشهادة غير موجودة', 404)
     if (cert.status === 'revoked') throw new AuthError('bad_state', 'الشهادة ملغاة مسبقا', 409)
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -201,6 +205,20 @@ export class CertificateService {
       /* السببُ في عمودِه لا في الحمولة — شاشةُ الأثر تقرؤه من هناك */
       await recordAudit(tx, { actorId, action: 'certificate.revoke', entityType: 'certificate', entityId: certificateId, reason })
       return c
+    })
+    /* ═══ والتحقّقُ العامُّ يسبق صاحبَها إلى الخبر (ي-٤) ═══
+
+       `verify` يبدأ يردّ `status: 'revoked'` ومعه السبب لكلِّ من يحمل الرقم
+       في اللحظة نفسِها. فمن سأل عنها عرف، وصاحبُها لا يعرف — وهو الذي
+       يُسأل. والإصدارُ يُرسَل («صدرت شهادتك 🎓») فالسحبُ أولى.
+
+       وبعد المعاملة لا داخلَها: إشعارٌ يفشل لا ينقض سحبا وقع. */
+    await safeNotify(this.prisma, {
+      userId: cert.enrollment.userId, channel: 'in_app',
+      title: 'أُلغيت شهادتُك',
+      body: `أُلغيت شهادتُك رقم ${cert.number}، وصار التحقّقُ العامُّ يعرضها ملغاةً ومعها سببُها: ${reason}. راسِلنا إن كان لديك ما تبيّنه.`,
+      templateKey: 'certificate.revoked',
+      data: { certificateId, number: cert.number },
     })
     return updated
   }

@@ -438,6 +438,7 @@ const ABANDONED_ORDER_MS = HOUR
 
 export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
+  const notifications = new NotificationService(prisma)
   const cutoff = new Date(now.getTime() - ABANDONED_ORDER_MS)
   const stale = await prisma.order.findMany({
     where: { status: 'pending_payment', createdAt: { lt: cutoff } },
@@ -466,6 +467,23 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
         meta: { userId: order.userId, total: String(order.total), currency: order.currency, ageMs: now.getTime() - order.createdAt.getTime() },
         reason: 'طلبٌ مهجورٌ لم يُدفع — أُلغي آليّا وأُفرِج عن مقاعده',
       })
+      /* ═══ ويُقال لصاحبه (ي-٤) ═══
+
+         وظيفةٌ لا إنسانٌ تُلغي طلبَه وتُفرج عن مقعده بعد ساعة، و`actorId`
+         فوقُ `null` لأنّه فعلا لا فاعلَ له. وكان يقع صامتا تماما: يعود
+         المشتري ليُتمّ دفعَه فيجد الطلبَ ذهب ولا يعرف لماذا ولا أنّ شيئا
+         اقتُطع منه أو لم يُقتطع. والمعرّفُ كان في الحمولة فوقُ ولا يُستعمل. */
+      try {
+        await notifications.notify({
+          userId: order.userId,
+          channel: 'in_app',
+          templateKey: 'order.cancelled_abandoned',
+          title: 'أُلغي طلبُك الذي لم يكتمل دفعُه',
+          body: `أُلغي طلبُك (${order.total} ${order.currency}) لأنّه لم يُدفع، وأُفرِج عن مقعده لغيرك. ولم يُقتطع منك شيء — ويمكنك شراؤه من جديدٍ متى شئت.`,
+          data: { orderId: order.id },
+          audience: 'learner',
+        })
+      } catch { /* الإشعارُ خدمةٌ مساندة — لا يُبطل إلغاءً وقع */ }
       done++
     } catch {
       /* صفٌّ تعذّر إلغاؤه لا يوقف أخواته — يُعدّ ويُقرأ في السجلّ */

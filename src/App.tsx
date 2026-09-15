@@ -24,6 +24,7 @@ const PathwayPage = lazy(() => import('./pages/Pathway'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 const TrainerPublicPage = lazy(() => import('./pages/TrainerPublic'))
 const PathRedirectPage = lazy(() => import('./pages/PathRedirect'))
+const ShortLinkPage = lazy(() => import('./pages/ShortLink'))
 
 /* البوابات الداخلية تُحمَّل عند الطلب فقط — لا تبطئ الصفحات العامة */
 const StudentDashboard = lazy(() => import('./pages/student/Dashboard'))
@@ -185,6 +186,8 @@ export default function App() {
           <Route path="/t/:slug" element={<TrainerPublicPage />} />
           {/* رابطُ مسارٍ باسمه — يحوّل إلى صفحة صاحبه مرساةً عند بطاقته (ن-١١) */}
           <Route path="/path/:slug" element={<PathRedirectPage />} />
+          {/* ط-٣: رابطٌ قصيرٌ يُقرأ تحت زرِّ البريد — يحوّل إلى مسارٍ داخليّ */}
+          <Route path="/s/:code" element={<ShortLinkPage />} />
           <Route path="/join-trainer" element={<JoinTrainer />} />
           <Route path="/join-trainer/complete" element={<JoinTrainerComplete />} />
           {/* رابطُ بريد التأكيد يوثّق العنوان — صفحةٌ عامّة بلا جلسة */}

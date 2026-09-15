@@ -152,11 +152,39 @@ describe('التسجيل والدفع الاختباري', () => {
     await prisma.integrationSetting.deleteMany({ where: { provider: 'payment' } })
   })
 
+  /* ═══ والمالُ الذي يعود يُخبَر به صاحبُه (ي-٤) ═══
+
+     لم يكن في المنصّة **مفتاحُ ردٍّ واحد**: `settleOrder` يرسل «تأكد دفعك ✓»
+     عند القبض، ثمّ يعود المالُ إلى البطاقة — أو يُرفض ردُّه — في صمت. ومن
+     رُدَّ إليه قد لا يرى شيئا في كشفه أيّاما بحسب مصرفه، فيسأل: أرُدَّ أم لا؟
+
+     ولمَ هنا لا في حارس ي-٣ البنيويّ: `refund.process` و`refund.reject`
+     يسكنان **طريقةً واحدة** (`processRefund`)، وحدُّ ذاك الحارس هو المعالِج —
+     فإشعارُ أحدِ الفرعَين يُغطّي الآخرَ عنده. جُرّب: نُزع إشعارُ الردّ فبقي
+     أخضرَ بإشعار الرفض. فالحرسُ على المرسَل إليه بالقاعدة لا بالنصّ.
+
+     والرفضُ وحدَه هنا لأنّه لا يستهلك رصيدَ الاسترداد — والردُّ المقبولُ
+     يُحرَس في التاسع حيث يقع أصلا. */
+  it('٨·١) ردُّ طلبِ الاسترداد يصل صاحبَه ومعه سببُه', async () => {
+    const refused = await commerce.requestRefund(paymentId, managerId, { amount: 25, reason: 'طلبٌ يُرَدّ' })
+    await commerce.processRefund(refused.id, managerId, false, 'خارجَ مدّة الاسترداد')
+    const note = await prisma.notification.findFirst({
+      where: { userId: learnerId, templateKey: 'payment.refund_rejected' },
+    })
+    expect(note, 'رُفض طلبُه ولم يُخبَر').not.toBeNull()
+    expect(note!.body, 'السببُ المكتوب لم يصل صاحبَ الطلب').toContain('خارجَ مدّة الاسترداد')
+  })
+
   it('9) استرداد جزئي ثم كامل — الدفعة والطلب يتحدثان', async () => {
     const partial = await commerce.requestRefund(paymentId, managerId, { amount: 100, reason: 'انسحاب جزئي موثق' })
     await commerce.processRefund(partial.id, managerId, true)
     let payment = await prisma.payment.findUnique({ where: { id: paymentId } })
     expect(payment?.status).toBe('partially_refunded')
+    /* ي-٤: والمالُ الذي عاد يُخبَر به صاحبُه — لا يُقيَّد في الدفتر وحدَه */
+    expect(
+      await prisma.notification.findFirst({ where: { userId: learnerId, templateKey: 'payment.refunded' } }),
+      'رُدَّ المالُ إلى بطاقته ولم يُخبَر',
+    ).not.toBeNull()
     /* المتبقي 350 — الزيادة مرفوضة */
     await expect(commerce.requestRefund(paymentId, managerId, { amount: 400, reason: 'مبلغ يتجاوز المتبقي' }))
       .rejects.toMatchObject({ code: 'bad_amount' })
