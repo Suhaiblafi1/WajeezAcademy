@@ -116,7 +116,13 @@ export class CohortService {
   }
 
   /** تعيين مدرب على الشعبة — يتطلب ملفا نشطا وتأهيلا للدورة، ويمنع تعارض الجدول */
-  async assignTrainer(cohortId: string, profileId: string, actorId: string, role: 'lead' | 'assistant' = 'lead') {
+  /* و`announce` رايةٌ صريحة: `assignToCohort` في مراجعة المدرّبين ينادي هذه
+     الطريقةَ ثمّ يُبلّغ بنفسه في حالةِ الدورةِ بلا شعبة. فمن يعرف الحدثَ
+     يملك رسالتَه، ولا تخرج رسالتان عن إسنادٍ واحد. */
+  async assignTrainer(
+    cohortId: string, profileId: string, actorId: string,
+    role: 'lead' | 'assistant' = 'lead', announce = true,
+  ) {
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId }, include: { sessions: true },
     })
@@ -143,6 +149,29 @@ export class CohortService {
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.trainer.assign', entityType: 'cohort', entityId: cohortId, meta: { profileId, role },
     })
+    /* ═══ ويعلم من أُسنِدت إليه (ي-٤) ═══
+
+       كان الإسنادُ يُخبَر به من بابٍ ولا يُخبَر به من باب: مسارُ المراجعة
+       يرسل `trainer.assigned`، وطريقُ الإدارة المباشر (`POST /api/admin/
+       cohorts/:id/trainers`) ينادي هذه الطريقةَ رأسا فلا يرسل شيئا. فمن
+       أُسنِدت إليه شعبةٌ من ذلك الباب يكتشفها في بوّابته مصادفةً — وعليه أن
+       يحضر جلساتِها.
+
+       واسمُ الشعبة وحدَه في النصّ: عنوانُها عربيٌّ يكتبه إنسان، ورمزُ
+       الدورة لاتينيٌّ لا يُعرض لمدرّبٍ (وحارسُه قائم). */
+    if (announce && profile.userId) {
+      await safeNotify(this.prisma, {
+        userId: profile.userId, channel: 'in_app', audience: 'trainer',
+        templateKey: 'trainer.assigned',
+        title: 'أُسنِدت إليك شعبة',
+        body: `أُسنِدت إليك شعبةُ «${cohort.title}»`
+          + (cohort.startsAt
+            ? ` — تبدأ ${fmtDateWith(cohort.startsAt, { day: 'numeric', month: 'long', year: 'numeric' })}.`
+            : '.')
+          + ' تجد جلساتِها ومتعلّميها في بوّابتك.',
+        data: { cohortId, role },
+      })
+    }
     return link
   }
 

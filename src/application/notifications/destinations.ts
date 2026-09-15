@@ -43,6 +43,7 @@ const LEARNER: Table = {
   'cohort.session.scheduled': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   /* ي-٤: والرابطُ يُقرأ من الصفحة نفسِها التي فيها الموعد */
   'cohort.meeting.linked': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  'cohort.schedule_changed': { path: '/student/learning', ctaAr: 'راجِع مواعيدَك' },
   'session.reminder': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.24h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.1h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },

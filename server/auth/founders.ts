@@ -41,6 +41,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from '../services/audit'
+import { safeNotify } from '../services/notification.service'
 
 /** بُرُدُ المؤسِّسين — بحروفٍ صغيرة، وبقرارِ صاحب المنصّة وحدَه */
 export const FOUNDER_EMAILS: readonly string[] = [
@@ -84,6 +85,25 @@ export async function ensureFoundersPromoted(prisma: PrismaClient): Promise<Foun
       entityType: 'user',
       entityId: user.id,
       meta: { email, role: ROLE, source: 'FOUNDER_EMAILS' },
+    })
+    /* ═══ ويعلم صاحبُ الحساب أنّ لوحةَ الإدارة فُتحت له (ي-٤) ═══
+
+       يقع هذا عند إقلاع الخادم بلا فاعلٍ إنسانٍ: بريدٌ في قائمة المؤسِّسين
+       يُرقّى صاحبُه مديرَ نظامٍ أعلى. وكان يقع بلا خبرٍ لصاحبه — ومكانةٌ
+       تُمنح في صمتٍ لا تُراجَع.
+
+       و`audience: 'staff'` صراحةً: الافتراضُ `learner`، فصفُّ الإشعار
+       ينزل في جرسِ بوّابةِ المتعلّم — وهي البوّابةُ التي لا يفتحها مديرُ
+       النظام. وجرسٌ في بابٍ لا يُطرَق ليس إخبارا.
+
+       وجرسٌ لا بريدٌ هنا بقصد: يقع في كلِّ إقلاعٍ يُرقّي، ولا يُعلَّق بدءُ
+       الخادم على نداءِ شبكة. */
+    await safeNotify(prisma, {
+      userId: user.id, channel: 'in_app', audience: 'staff',
+      templateKey: 'account.roles_changed',
+      title: 'أُضيف إليك دورُ مديرِ النظام الأعلى',
+      body: 'أُضيف إلى حسابك في أكاديمية وجيز دورُ مديرِ النظام الأعلى عند إقلاع الخادم، لأنّ بريدَك في قائمة المؤسِّسين. ولوحةُ الإدارة مفتوحةٌ لك الآن.',
+      data: { role: ROLE, source: 'FOUNDER_EMAILS' },
     })
     out.promoted.push(email)
   }
