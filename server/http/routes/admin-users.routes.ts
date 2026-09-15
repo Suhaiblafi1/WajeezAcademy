@@ -187,6 +187,23 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     }
     /* لا يعمل أحدٌ بصلاحيةٍ نُزعت عنه: الجلسة تحمل الصلاحيات وقت حلّها، فتُبطَل */
     await auth.revokeAllSessions(id)
+    /* ═══ ويُقال له لماذا خرج (ي-٤) ═══
+
+       هذا السطرُ فوقُ يُخرج صاحبَ الحساب من المنصّة في الحال — وكان يقع
+       صامتا تماما: يجد نفسَه عند بابِ الدخول بلا سبب، فيظنّ عطلا ويعيد
+       المحاولةَ ثمّ يسأل الدعم. والصلاحيّةُ باسمها العربيّ لا بمفتاحها، فمن
+       يقرأ «catalog.course.review» يحتاج من يترجمها له. */
+    const permissionAr = PERMISSIONS.find((x) => x.key === body.permissionKey)?.description ?? body.permissionKey
+    const whyAr = reason ? ` والسببُ المسجَّل: ${reason}` : ''
+    await notifyAccountOwner(
+      prisma, id, 'account.permission_changed',
+      body.effect === 'deny' ? 'نُزعت عنك صلاحيّة' : body.effect === 'grant' ? 'مُنحتَ صلاحيّةً جديدة' : 'عادت صلاحيّاتُك إلى دورك',
+      body.effect === 'grant'
+        ? `مُنح حسابُك في أكاديمية وجيز صلاحيّةَ «${permissionAr}». وأُبطلت جلساتُك المفتوحة، فادخل من جديدٍ كي تسريَ.${whyAr}`
+        : body.effect === 'deny'
+          ? `نُزعت عن حسابك في أكاديمية وجيز صلاحيّةُ «${permissionAr}»، وأُبطلت جلساتُك المفتوحة — فما كنتَ تفتحه بها لم يعد يُفتح.${whyAr}`
+          : `أُلغي استثناءُ صلاحيّةِ «${permissionAr}» عن حسابك في أكاديمية وجيز، فعادت صلاحيّاتُك إلى ما يمنحه دورُك. وأُبطلت جلساتُك المفتوحة، فادخل من جديد.${whyAr}`,
+    )
     await recordAudit(prisma, {
       actorId: req.auth!.userId, action: `admin.permission.${body.effect}`,
       entityType: 'user', entityId: id, reason: reason || undefined,

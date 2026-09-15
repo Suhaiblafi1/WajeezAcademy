@@ -132,7 +132,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'work',
     labelAr: 'عملي في الأكاديمية',
-    whatAr: 'مهمّةٌ كُلِّفتَ بها · طلبٌ ينتظر قرارك · شعبةٌ أُسنِدت إليك · تذكرةُ دعمٍ أو طلبُ انضمامٍ جديد',
+    whatAr: 'مهمّةٌ كُلِّفتَ بها · طلبٌ ينتظر قرارك · شعبةٌ أُسنِدت إليك · اعتمادُ ظهورك ونطاقُ اقتراحك · تذكرةُ دعمٍ أو طلبُ انضمامٍ جديد',
     silenceable: false,
     lockedWhyAr: 'تكليفٌ لا يعلم به صاحبُه ليس تكليفا — ولذلك لا يُكتَم عملُ الموظّف.',
     templateKeys: [
@@ -143,6 +143,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.qualified', 'trainer.qualify.rejected', 'trainer.assigned',
       /* والمستشارُ مثلُه: حالةٌ أُسنِدت إليه عملٌ ينتظره، وكان يكتشفها بإعادة التحميل */
       'advisor.case.assigned',
+      /* ي-٤: واعتمادُ ظهوره — اسمُه وسيرتُه صارا يُعرضان للناس، وهو لا يعلم
+         متى. ونطاقُ الكتالوج معه: يقرّر ما يجوز أن يمسَّه اقتراحُه، ومن
+         سُحب عنه ولم يُخبَر يكتب اقتراحا ثمّ يُردّ بخطأٍ لا يفهمه. */
+      'trainer.publish.approved', 'trainer.scope.granted', 'trainer.scope.revoked',
       /* وتذكيرُ المدرّب بحصّتِه هنا لا في «الجلسات»: حصّةُ المتعلّم موعدٌ
          له، وحصّةُ المدرّب موعدٌ عليه. ومن يكتمها يُغيّب صفّا دفع مقاعدَه. */
       'session.reminder.trainer.24h', 'session.reminder.trainer.1h',
@@ -193,13 +197,16 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'account',
     labelAr: 'حسابي ووصولي',
-    whatAr: 'إيقافُ حسابك أو إعادتُه · أرشفتُه أو إخراجُه منها · تغيّرُ أدوارك',
+    whatAr: 'إيقافُ حسابك أو إعادتُه · أرشفتُه أو إخراجُه منها · تغيّرُ أدوارك أو صلاحيّاتك',
     silenceable: false,
     lockedWhyAr: 'خبرُ وصولِك إلى حسابك ليس تذكيرا يُكتَم — ومن مُنع من الدخول له أن يعرف لماذا.',
     templateKeys: [
       'account.suspended', 'account.reinstated',
       'account.archived', 'account.unarchived',
       'account.roles_changed',
+      /* ي-٤: ومنحُ صلاحيّةٍ أو نزعُها — والسطرُ الذي يليه في المعالِج يُبطل
+         جلساتِه كلَّها، فيخرج من المنصّة في الحال. وخروجٌ بلا سببٍ يُقرأ عطلا. */
+      'account.permission_changed',
     ],
   },
 ]

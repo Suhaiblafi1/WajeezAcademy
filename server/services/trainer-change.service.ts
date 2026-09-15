@@ -8,6 +8,7 @@
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { safeNotify } from './notification.service'
 import { blastRadiusSentenceAr, courseBlastRadius, planHoursImpactOf } from './catalog-impact.service'
 import { checkHoursProposal, planHoursWarnings } from '../../src/application/catalog/hours-policy'
 import { catalogScopeGate, needsCatalogScope, TITLE_ONLY_CHANGE } from '../../src/application/catalog/scope-policy'
@@ -377,6 +378,21 @@ export class TrainerChangeService {
       entityType: 'trainer_profile', entityId: profileId,
       meta: { scope: 'catalog' },
     })
+    /* ═══ ويعلم صاحبُه ما صار يجوز له (ي-٤) ═══
+
+       هذا الملفُّ لم يكن يستورد مُرسِلا واحدا. والنطاقُ يقرّر ما يجوز أن
+       يمسَّه اقتراحُه: أدورتَه نفسَها أم شعبتَه وحدَها. فمن سُحب عنه ولم
+       يُخبَر يكتب اقتراحا على الدورة ثمّ يُردّ عند النشر بخطأٍ لا يفهمه. */
+    if (profile.userId) {
+      await safeNotify(this.prisma, {
+        userId: profile.userId, channel: 'in_app', audience: 'trainer',
+        templateKey: grant ? 'trainer.scope.granted' : 'trainer.scope.revoked',
+        title: grant ? 'مُنحتَ نطاقَ الكتالوج' : 'سُحب منك نطاقُ الكتالوج',
+        body: grant
+          ? 'صار اقتراحُك يجوز أن يمسّ الدورةَ نفسَها لا شعبتَك وحدَها، ويُعرض معه أثرُه قبل النشر.'
+          : 'تبقى اقتراحاتُك على شعبك وحدها، وما نُشر قبل السحب باقٍ كما هو.',
+      })
+    }
     return { profileId, grantedAt: updated.catalogScopeGrantedAt?.toISOString() ?? null }
   }
 

@@ -1395,6 +1395,18 @@ export class TrainerReviewService {
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.publish_approve', entityType: 'trainer_profile', entityId: profile.id,
     })
+    /* ═══ ويعلم صاحبُ الاسم أنّ اسمَه صار يُعرض (ي-٤) ═══
+
+       هذا السطرُ فوقُ يضع اسمَه وسيرتَه وصورتَه على الموقع العامّ وفي صفحته
+       باسمه. وكان يقع بلا خبر: يُنشَر ملفُّ إنسانٍ للناس ولا يعلم متى نُشر
+       ولا أنّ ما فيه صار يُقرأ. وقاعدةُ المستودَع نفسُها تقول «لا اسمَ
+       مدرّبٍ يُعرض قبل اعتماد نشره» — فاللحظةُ التي يقع فيها الاعتمادُ
+       أولى اللحظات بأن تبلغه. */
+    await this.notifyTrainerUser(profile.id, {
+      templateKey: 'trainer.publish.approved',
+      title: 'اعتُمد ظهورُك للعامّة',
+      body: 'صار ملفُّك — اسمُك وسيرتُك وما أُهِّلتَ له — يظهر في صفحة مدرّبي الأكاديمية وفي صفحتك باسمك. راجِعه، فما فيه هو ما يقرؤه الناس.',
+    })
   }
 
   async suspendTrainer(profileId: string, actorId: string, note?: string) {
@@ -1412,6 +1424,30 @@ export class TrainerReviewService {
         actorId, action: 'trainer.suspend', entityType: 'trainer_profile', entityId: profileId, meta: { note },
       })
     })
+    /* ═══ ولا يُترك يكتشف الإيقافَ عند الباب (ي-٤) ═══
+
+       المعاملةُ فوقُ توقف حسابَه وتُبطل جلساتِه كلَّها، فيجد بوّابتَه مغلقةً
+       بلا كلمة. و**البريدُ لا الجرس**: `auth.service` يمنع الدخولَ على غير
+       `active`، فصفُّ إشعارٍ في القاعدة لا يقرؤه أحدٌ أبدا — وهو أسوأُ من
+       الصمت لأنّه يُحسَب إخبارا وليس به.
+
+       وبعد المعاملة لا داخلَها: بريدٌ يُخفق لا ينقض إيقافا وقع، والإيقافُ
+       حقيقةٌ في القاعدة قبله. */
+    const portalUrl = `${publicSiteUrl()}/trainer`
+    await sendDirectEmail(this.prisma, {
+      to: profile.application.email,
+      subject: 'أُوقف حسابُك في أكاديمية وجيز',
+      ...renderMail({
+        greetingName: profile.application.fullName,
+        heading: 'أُوقف حسابُك في أكاديمية وجيز',
+        blocks: [
+          { kind: 'p', text: 'لا تُفتح بوّابتُك ولا تُسنَد إليك شعبةٌ جديدة حتّى يُرفع الإيقاف، وشعبُك القائمةُ تبقى كما هي عند الأكاديمية.' },
+          ...(note ? [{ kind: 'p' as const, text: `والسببُ الذي كُتب: ${note}` }] : []),
+          { kind: 'p', text: `وإن كان في الأمر لبسٌ فردَّ على هذه الرسالة. وبوّابتك حين تُفتح: ${portalUrl}` },
+        ],
+      }),
+    })
+
     if (profile.application.status === 'active') {
       await this.apps.transition(profile.applicationId, 'suspended', actorId, note ?? 'إيقاف المدرب')
     }
