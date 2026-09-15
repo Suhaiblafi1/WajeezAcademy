@@ -10,6 +10,12 @@ import { normalizeAr } from '../../src/application/text/search-ar'
 import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
 import { GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
+import type { PermissionKey } from '../auth/permissions'
+
+/* حبّةُ استثناء maker-checker — تُكتب مرّةً واحدةً، ونوعُها من فهرس الصلاحيّات
+   نفسِه: فإن زالت من الفهرس أو تغيّر حرفٌ في اسمها لم تُترجَم الشيفرةُ أصلا،
+   ولا تصمت الحبّةُ الميّتةُ صمتَ النصّ المطابَق. */
+const SELF_APPROVE: PermissionKey = 'catalog.self_approve'
 
 export interface ReadinessStep {
   key: 'basics' | 'courses' | 'profile' | 'domains' | 'impact'
@@ -651,12 +657,30 @@ export class CatalogAdminService {
     return rows
   }
 
-  /** قرار مراجعة (checker) — ممنوع أن يعتمد صانعُ الطلب طلبَه بنفسه */
-  async decide(changeRequestId: string, decision: 'approve' | 'request_changes' | 'reject', noteAr: string | undefined, actorId: string) {
+  /* ═══ قرارُ المراجعة (checker) — ومن يراجع نفسَه ═══
+
+     القاعدةُ أنّ صانعَ الطلب لا يعتمده. واستثناؤها حبّةٌ واحدةٌ
+     (`catalog.self_approve`) شرحُ وجودها في `server/auth/permissions.ts`
+     حيث تُعرَّف — لا يُنسخ هنا فيفترق النسخان.
+
+     و`permissions` صلاحيّاتُ الفاعل كما حلّتها الجلسةُ في طبقة HTTP، تُمرَّر
+     ولا تُقرأ هنا من القاعدة: الخدمةُ تُختبَر بلا جلسةٍ ولا كوكي. وفراغُها
+     الافتراضيُّ يعني «لا استثناء» — فمن نسي تمريرَها وقع على القاعدة الأشدّ
+     لا على أوسعها، وهو الاتّجاهُ الذي يُخطئ فيه الصمتُ بأمان. */
+  async decide(
+    changeRequestId: string,
+    decision: 'approve' | 'request_changes' | 'reject',
+    noteAr: string | undefined,
+    actorId: string,
+    permissions: readonly string[] = [],
+  ) {
     const cr = await this.prisma.contentChangeRequest.findUnique({ where: { id: changeRequestId } })
     if (!cr) throw new AuthError('not_found', 'طلب التغيير غير موجود', 404)
     if (cr.status !== 'in_review') throw new AuthError('bad_state', 'الطلب ليس قيد المراجعة', 409)
-    if (cr.createdBy === actorId) throw new AuthError('maker_checker', 'لا يجوز اعتماد طلب أنشأته بنفسك (maker-checker)', 403)
+    const isSelf = cr.createdBy === actorId
+    if (isSelf && !permissions.includes(SELF_APPROVE)) {
+      throw new AuthError('maker_checker', 'لا يجوز اعتماد طلب أنشأته بنفسك (maker-checker)', 403)
+    }
 
     const newStatus = decision === 'approve' ? 'approved' : decision === 'reject' ? 'rejected' : 'changes_requested'
     return this.prisma.$transaction(async (tx) => {
@@ -664,6 +688,25 @@ export class CatalogAdminService {
       const updated = await tx.contentChangeRequest.update({ where: { id: changeRequestId }, data: { status: newStatus, reviewedBy: actorId, reviewedAt: new Date() } })
       /* الاعتماد يرفع الكيان المسودة إلى «approved» استعدادا للنشر */
       if (decision === 'approve') await this.promoteEntity(tx, cr.entityType, cr.entityId, 'draft', 'approved')
+      /* ثمنُ الاستثناء: أن يُقال إنّه وقع.
+
+         الاعتمادُ العاديّ يُقرأ من `ContentApprovalDecision`، واعتمادُ الذات
+         يُستخرَج منه بمقابلة `createdBy` بـ`reviewedBy` — أي لا يُقرأ. فيُكتب
+         هنا فعلا مستقلّا في سجلّ الأثر، **داخل المعاملة نفسِها**: إن سقط
+         الاعتمادُ سقط أثرُه معه، ولا يبقى خبرُ ترقيةٍ لم تقع.
+
+         والردُّ وطلبُ التعديل لا يُكتبان: من يردّ عملَه إلى نفسه لم يتخطَّ
+         حاجزا — الحاجزُ على ما يمضي قُدُما لا على ما يرجع. */
+      if (isSelf && decision === 'approve') {
+        await recordAudit(tx, {
+          actorId,
+          action: 'catalog.change_request.self_approve',
+          entityType: 'content_change_request',
+          entityId: changeRequestId,
+          reason: noteAr,
+          meta: { entityType: cr.entityType, entityId: cr.entityId },
+        })
+      }
       return updated
     })
   }

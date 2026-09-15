@@ -236,12 +236,12 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.post('/api/admin/catalog/change-requests/:id/decision', {
     preHandler: requirePermission('catalog.pathway.review'),
-    schema: { tags: ['admin-catalog'], summary: 'قرار مراجعة (checker) — ممنوع اعتماد الذات' },
+    schema: { tags: ['admin-catalog'], summary: 'قرار مراجعة (checker) — ولا يعتمد الذاتَ إلّا حاملُ catalog.self_approve' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       decision: z.enum(['approve', 'request_changes', 'reject']), noteAr: z.string().optional(),
     }).parse(req.body)
-    return admin.decide(id, body.decision, body.noteAr, req.auth!.userId)
+    return admin.decide(id, body.decision, body.noteAr, req.auth!.userId, req.auth!.permissions)
   })
 }
