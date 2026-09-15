@@ -86,6 +86,9 @@ beforeAll(async () => {
     data: { email: `sa-admin-${Date.now()}@wajeez.test`, displayName: 'المديرُ الأكاديميّ', passwordHash: 'x' },
   })
   adminId = admin.id
+  /* ودورُه يُسنَد فعلا: `notifyRole` يقرأ حاملي الدور من `UserRole`، فمديرٌ
+     بلا صفٍّ فيه لا يُبلَّغ — ويمرّ الحارسُ على صفرٍ كاذبٍ لا على تبليغ. */
+  await prisma.userRole.create({ data: { userId: adminId, roleId: 'academic_manager' } })
 
   const tUser = await prisma.user.create({
     data: { email: `sa-trainer-${Date.now()}@wajeez.test`, displayName: 'مدرّبُ الشعبة', passwordHash: 'x' },
