@@ -15,7 +15,11 @@
    ١) المسارُ المنشورُ يخرج مع الصفحة العامّة.
    ٢) وغيرُ المنشور لا يخرج — مسوّدةٌ أو منتظِرُ اعتمادٍ ليس وعدا لأحد.
    ٣) وقاعدةُ اعتماد النشر (ن-٢) فوقهما: مدرّبٌ لم يُعتمد ظهورُه لا صفحةَ له
-      أصلا، فلا يُقرأ مسارُه من بابٍ خلفيّ. */
+      أصلا، فلا يُقرأ مسارُه من بابٍ خلفيّ.
+
+   ثمّ زِيد هنا **ن-١١** — رابطُ المسار باسمه (`/path/<slug>`) — لأنّه يقرأ
+   القاعدةَ نفسَها من الخيوط نفسِها: `pathPublicTarget` نسخةٌ من شرطَي
+   `trainerPublicPage`، وحارسُهما واحدٌ حتّى لا ينحرف أحدُهما وحدَه. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -84,5 +88,50 @@ describe('صفحةُ المدرّب العامّة تحمل ما جمعه', () =
     await prisma.trainerProfile.update({ where: { id: profileId }, data: { publishApprovedAt: null } })
     await expect(pub.trainerPublicPage(SLUG)).rejects.toThrow(/لا مدرّب/)
     await prisma.trainerProfile.update({ where: { id: profileId }, data: { publishApprovedAt: new Date() } })
+  })
+})
+
+
+/* ═══ ن-١١ — رابطُ المسار باسمه ═══
+
+   `TrainerPath.slug` كان يُشتقّ ويُحفَظ ولا عنوانَ يحلّه. والبابُ الذي فُتح
+   له **وجهةٌ** لا صفحة، لأنّ بوّابةَ النشر تسكن في صفحة المدرّب: فيُحرَس
+   هنا أنّ الوجهةَ ترث تلك البوّابةَ كاملةً، وأنّها لا تحمل من هويّة المدرّب
+   شيئا يجعلها مالكا ثانيا لها. */
+describe('ورابطُ المسار باسمه يصل إلى صاحبه (ن-١١)', () => {
+  const LIVE = `${SLUG}-live`
+  const SHELVED = `${SLUG}-shelved`
+
+  beforeAll(async () => {
+    await prisma.trainerPath.create({
+      data: { profileId, titleAr: 'مسارُ الرابط', status: 'published', slug: LIVE, publishedAt: new Date() },
+    })
+    /* منشورٌ ثمّ سُحب — والعنوانُ باقٍ في الصفّ، وهو بالضبط ما يُغري بالتسامح */
+    await prisma.trainerPath.create({
+      data: { profileId, titleAr: 'مسارٌ مسحوب', status: 'retired', slug: SHELVED, retiredAt: new Date() },
+    })
+  })
+
+  it('المسارُ المنشورُ يدلّ على صفحة صاحبه', async () => {
+    const target = await pub.pathPublicTarget(LIVE)
+    expect(target.trainerSlug, 'الرابطُ لا يدلّ على صاحبه').toBe(SLUG)
+    expect(target.titleAr).toBe('مسارُ الرابط')
+  })
+
+  it('ولا يحمل الردُّ من هويّة المدرّب شيئا — المالكُ الأوّلُ يعرضها', async () => {
+    const target = await pub.pathPublicTarget(LIVE)
+    expect(Object.keys(target).sort(), 'الوجهةُ بدأت تعرض المدرّبَ بنفسها').toEqual(['titleAr', 'trainerSlug'])
+  })
+
+  it('وما ليس منشورا لا يُدَلّ عليه — ولا ما سُحب من الرفّ', async () => {
+    await expect(pub.pathPublicTarget(SHELVED)).rejects.toThrow(/لا مسار/)
+    await expect(pub.pathPublicTarget(`${SLUG}-la-shay`)).rejects.toThrow(/لا مسار/)
+  })
+
+  it('ومدرّبٌ لم يُعتمد ظهورُه — رابطُ مساره لا يفتح', async () => {
+    await prisma.trainerProfile.update({ where: { id: profileId }, data: { publishApprovedAt: null } })
+    await expect(pub.pathPublicTarget(LIVE)).rejects.toThrow(/لا مسار/)
+    await prisma.trainerProfile.update({ where: { id: profileId }, data: { publishApprovedAt: new Date() } })
+    await expect(pub.pathPublicTarget(LIVE)).resolves.toMatchObject({ trainerSlug: SLUG })
   })
 })

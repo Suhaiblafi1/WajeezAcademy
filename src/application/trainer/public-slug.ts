@@ -48,3 +48,15 @@ export function uniqueSlug(base: string, taken: ReadonlySet<string>): string {
   }
   throw new Error('تعذّر اشتقاقُ مسارٍ فريد')
 }
+
+/**
+ * مرساةُ بطاقةِ المسار في صفحة صاحبه.
+ *
+ * ولمَ دالّةٌ لا نصٌّ مكرّرٌ في موضعَين: يكتبها **العارضُ** في
+ * `TrainerPublic` ويقصدها **المحوِّلُ** في `PathRedirect` — ورابطٌ يشير إلى
+ * مرساةٍ لا وجودَ لها يُنزل الزائرَ في رأس الصفحة بلا خبرٍ يقول إنّه أخطأ.
+ * فمن غيّرها في موضعٍ غيّرها في الاثنين، أو حمِرت عنده البوّابة.
+ */
+export function pathAnchorId(slug: string): string {
+  return `path-${slug}`
+}

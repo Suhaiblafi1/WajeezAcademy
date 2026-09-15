@@ -4,6 +4,7 @@
 
 import { Resend } from 'resend'
 import { ACADEMY_EMAILS, type EmailConfig } from './integrations.service'
+import { liveMailAllowed, MAIL_GATE_REFUSAL_AR } from '../../src/application/notifications/mail-gate'
 
 export interface MailInput {
   to: string
@@ -51,6 +52,10 @@ function attachmentsOf(input: MailInput) {
 export async function sendEmail(config: EmailConfig, input: MailInput): Promise<{ ok: boolean; error?: string }> {
   if (!config.enabled) return { ok: false, error: 'قناة البريد غير مفعّلة — فعّلها من شاشة التكاملات' }
   if (!config.apiKey || !config.fromEmail) return { ok: false, error: 'إعدادات البريد ناقصة: مفتاح Resend وعنوان المرسل إلزاميان' }
+  /* ولا يخرج شيءٌ إلى الشبكة قبل هذا السطر — وهو الموضعُ الوحيدُ في المنصّة
+     الذي يُبنى فيه عميلُ Resend، فالبوّابةُ فوقه تحرسه كلَّه. ورفضُها يُقرأ
+     ويُسجَّل كأيِّ فشلِ إرسال: لا يُبتلع صامتا ولا يُدّعى نجاحا لم يقع. */
+  if (!liveMailAllowed()) return { ok: false, error: MAIL_GATE_REFUSAL_AR }
   try {
     const resend = new Resend(config.apiKey)
     const { error } = await resend.emails.send({

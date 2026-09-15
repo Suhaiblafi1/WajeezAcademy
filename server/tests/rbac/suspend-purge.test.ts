@@ -238,3 +238,69 @@ describe('رفضٌ برمزِ حالته لا بـ٢٠٠', () => {
     expect((res.json() as { error: { code: string } }).error.code).toBe('not_suspended')
   })
 })
+
+/* ═══ ي-٣ — ومن مُنع من الدخول يُخبَر لماذا ═══
+
+   قسمةُ الأوزان في `src/application/audit/weight.ts` تقول في أوّل سطرٍ من
+   `high`: «لا يُعقل أن يُمنع إنسانٌ من أن يُخبَر بإيقاف حسابه». وكان لا
+   يُخبَر: الأفعالُ الخمسةُ تُكتب في الأثر ثمّ تنتهي هناك، فيجد صاحبُ
+   الحساب بابا لا يُفتح ولا يعرف ممّن يسأل.
+
+   وحارسُ `src/tests/audit-high-reaches-person.test.ts` يمنع أن يُكتب فعلٌ
+   عالٍ في معالِجٍ صامت — لكنّه يقرأ الشيفرةَ لا القاعدة. فهذا يثبت أنّ
+   الصفَّ يُكتب فعلا، وأنّه لا يُكتَم، وأنّ نصَّه عربيٌّ يُقرأ. */
+describe('خبرُ الحساب يصل صاحبَه — ولا يُكتَم', () => {
+  const noteFor = (userId: string, templateKey: string) =>
+    prisma.notification.findFirst({ where: { userId, templateKey }, orderBy: { queuedAt: 'desc' } })
+
+  it('الإيقافُ ورفعُه يصلان', async () => {
+    const id = await mkUser('tell-suspend')
+    await app.inject({ method: 'POST', url: `/api/admin/users/${id}/suspend`, headers: { cookie: superCookie } })
+    expect(await noteFor(id, 'account.suspended'), 'أُوقف حسابُه ولم يُخبَر').not.toBeNull()
+
+    await app.inject({ method: 'POST', url: `/api/admin/users/${id}/reinstate`, headers: { cookie: superCookie } })
+    expect(await noteFor(id, 'account.reinstated'), 'رُفع إيقافُه ولم يُخبَر').not.toBeNull()
+  })
+
+  it('والأرشفةُ تصل ومعها السببُ الذي أُلزم به الموظّف', async () => {
+    const id = await mkUser('tell-archive')
+    const reason = 'انتهت علاقتُه بالأكاديمية — أرشفةٌ إداريّة'
+    await app.inject({
+      method: 'POST', url: `/api/admin/users/${id}/archive`,
+      headers: { cookie: superCookie }, payload: { reason },
+    })
+    const note = await noteFor(id, 'account.archived')
+    expect(note, 'أُرشف حسابُه ولم يُخبَر').not.toBeNull()
+    expect(note!.body, 'السببُ أُلزم به الموظّفُ ثمّ أُخفي عن صاحب الشأن').toContain(reason)
+
+    await app.inject({ method: 'POST', url: `/api/admin/users/${id}/unarchive`, headers: { cookie: superCookie } })
+    expect(await noteFor(id, 'account.unarchived'), 'أُعيد تنشيطُه ولم يُخبَر').not.toBeNull()
+  })
+
+  it('وتغيّرُ الأدوار يصل بأسمائها العربيّة لا بمعرّفاتها', async () => {
+    const id = await mkUser('tell-roles')
+    await app.inject({
+      method: 'POST', url: `/api/admin/users/${id}/roles`,
+      headers: { cookie: superCookie }, payload: { roleIds: ['support'] },
+    })
+    const note = await noteFor(id, 'account.roles_changed')
+    expect(note, 'تغيّرت أدوارُه ولم يُخبَر').not.toBeNull()
+    const arabicName = (await prisma.role.findUnique({ where: { id: 'support' } }))!.nameAr
+    expect(note!.body).toContain(arabicName)
+    expect(note!.body, 'معرّفٌ لاتينيٌّ في رسالةٍ عربيّة').not.toContain('support')
+  })
+
+  it('ولا يُكتَم ولو حُفر تفضيلُ كتمٍ في القاعدة بيد', async () => {
+    const id = await mkUser('tell-muted')
+    /* صنفُ `account` غيرُ قابلٍ للكتم في `categories.ts` — والحدُّ يُفرَض في
+       `notify` لا في الشاشة، فصفٌّ مكتوبٌ بيدٍ لا يُسكِت خبرا. */
+    await prisma.notificationPreference.create({
+      data: { userId: id, category: 'account', channel: 'in_app', enabled: false },
+    })
+    await app.inject({ method: 'POST', url: `/api/admin/users/${id}/suspend`, headers: { cookie: superCookie } })
+    expect(
+      await noteFor(id, 'account.suspended'),
+      'تفضيلٌ في القاعدة كتم خبرَ إيقافِ حساب',
+    ).not.toBeNull()
+  })
+})

@@ -202,6 +202,35 @@ export class PublicCatalogService {
     }
   }
 
+  /** إلى أين يصل رابطُ مسارٍ باسمه — `/path/:slug` (ن-١١)
+
+      ═══ ولمَ وجهةٌ لا صفحة ═══
+
+      `TrainerPath.slug` كان يُشتقّ ويُحفَظ ويخرج في ثلاثة ردود، **ولا عنوانَ
+      في المنصّة كلِّها يحلّه**. ومكتوبٌ في المخطّط أنّه «عنوانُه العامّ» —
+      فالنيّةُ كانت مسجّلةً وينقصها الباب.
+
+      والبابُ وجهةٌ ترجع إلى صفحة المدرّب، لا صفحةٌ ثانيةٌ للمسار. وذلك
+      لسببٍ واحدٍ يكفي: بوّابةُ النشر (`PUBLIC_TRAINER_WHERE` واعتمادُ
+      النشر) تسكن في `trainerPublicPage` — وصفحةٌ ثانيةٌ تعرض اسمَ المدرّب
+      تصير **مالكا ثانيا لقاعدةٍ واحدة**، وهو بابُ الخطأ الذي دفعت هذه
+      المنصّةُ ثمنَه مرارا. فيُعاد الزائرُ إلى المالك الأوّل.
+
+      والشرطان هنا نسخةٌ من شرطَيها بقصد: المسارُ منشور، **وصاحبُه** ممّن
+      يجوز عرضُ اسمه. فمسارٌ منشورٌ لمدرّبٍ لم يُعتمد نشرُه لا يُدَلّ عليه. */
+  async pathPublicTarget(slug: string) {
+    const path = await this.prisma.trainerPath.findFirst({
+      where: {
+        slug, status: 'published',
+        profile: { ...PUBLIC_TRAINER_WHERE, application: { status: 'active' } },
+      },
+      select: { titleAr: true, profile: { select: { publicSlug: true } } },
+    })
+    const trainerSlug = path?.profile.publicSlug
+    if (!path || !trainerSlug) throw new AuthError('not_found', 'لا مسارَ بهذا الرابط', 404)
+    return { trainerSlug, titleAr: path.titleAr }
+  }
+
   /** المراجع العلمية للمنهجية — الملف نفسه مصدر واحد، يقدمه الخادم */
   async methodology() {
     const path = join(process.cwd(), 'src/data/methodology-references.v1.json')

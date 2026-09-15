@@ -18,6 +18,7 @@ import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { Panel, Card } from "@/components/ui/Surface";
 import { apiGet } from "@/services/api";
+import { pathAnchorId } from "@/application/trainer/public-slug";
 import { REFERRAL_KEY } from "@/application/commerce/referral";
 import { fmtDate, fmtMoney, fmtNum } from "@/application/text/format-ar";
 import { countAr } from "@/application/text/count-ar";
@@ -151,7 +152,7 @@ export default function TrainerPublic() {
             <h2 className="mt-10 text-xl font-black">مساراتٌ أعدّها بنفسه</h2>
             <ul className="mt-4 grid gap-4 sm:grid-cols-2">
               {page.paths.map((p) => (
-                <Card as="li" key={p.slug ?? p.titleAr} id={p.slug ? `path-${p.slug}` : undefined}>
+                <Card as="li" key={p.slug ?? p.titleAr} id={p.slug ? pathAnchorId(p.slug) : undefined}>
                   <h3 className="font-black">{p.titleAr}</h3>
                   {p.blurbAr && (
                     <p className="mt-1.5 text-read leading-6 text-muted-foreground">{p.blurbAr}</p>

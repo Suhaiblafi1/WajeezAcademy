@@ -161,6 +161,26 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     lockedWhyAr: 'تغييرٌ يمسّ مقعدَك أو مالَك — وكتمُه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
     templateKeys: ['departure.choice', 'departure.resolved'],
   },
+  /* ═══ حسابي ووصولي — ي-٣ ═══
+
+     قسمةُ صاحب المنصّة في `audit/weight.ts` تقول في أوّل سطرٍ من `high`:
+     «لا يُعقل أن يُمنع إنسانٌ من أن يُخبَر بإيقاف حسابه». وكان **لا يُخبَر**:
+     الإيقافُ والأرشفةُ وتعيينُ الأدوار تُسجَّل في الأثر ثمّ تنتهي هناك، فيجد
+     صاحبُ الحساب بابا لا يُفتح ولا يعرف لماذا ولا ممّن يسأل.
+
+     ولا يُكتَم بحال: من فقد وصولَه لا يُعرض عليه مفتاحُ كتمِ خبرِ فقده. */
+  {
+    key: 'account',
+    labelAr: 'حسابي ووصولي',
+    whatAr: 'إيقافُ حسابك أو إعادتُه · أرشفتُه أو إخراجُه منها · تغيّرُ أدوارك',
+    silenceable: false,
+    lockedWhyAr: 'خبرُ وصولِك إلى حسابك ليس تذكيرا يُكتَم — ومن مُنع من الدخول له أن يعرف لماذا.',
+    templateKeys: [
+      'account.suspended', 'account.reinstated',
+      'account.archived', 'account.unarchived',
+      'account.roles_changed',
+    ],
+  },
 ]
 
 /** الصنفُ الذي ينتمي إليه مفتاحُ قالب — أو `null` لمفتاحٍ لا صنفَ له بعد */
