@@ -91,6 +91,9 @@ const TRAINER: Table = {
   /* والنطاقُ يُقرأ أثرُه في اقتراحاته: ما يجوز أن يمسَّه الاقتراح */
   'trainer.scope.granted': { path: '/trainer/course-proposals', ctaAr: 'افتح اقتراحاتك' },
   'trainer.scope.revoked': { path: '/trainer/course-proposals', ctaAr: 'افتح اقتراحاتك' },
+  /* وسؤالُ الإدارة عن اقتراحه: الاقتراحُ واقفٌ على جوابه، وموضعُ الجواب هو
+     موضعُ الخبر نفسُه — فالزرُّ يضعه حيث يجيب لا حيث يقرأ فيبحث. */
+  'trainer.course_proposal.question': { path: '/trainer/course-proposals', ctaAr: 'أجِبْ عن السؤال' },
   'trainer.qualify.rejected': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّةَ شعبتك' },

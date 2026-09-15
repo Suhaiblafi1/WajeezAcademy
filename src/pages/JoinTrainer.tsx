@@ -262,7 +262,7 @@ export default function JoinTrainer() {
       d.proposals?.length
         ? d.proposals
         : d.teachableOther?.trim()
-          ? [{ titleAr: d.teachableOther.trim().slice(0, 200), audienceAr: "" }]
+          ? [{ titleAr: d.teachableOther.trim().slice(0, 200), summaryAr: "" }]
           : [emptyProposal()],
     );
     setDays(d.days ?? []);
@@ -1323,11 +1323,13 @@ export default function JoinTrainer() {
                             aria-label={`اسم الدورة المقترحة ${i + 1}`}
                             className={controlCls}
                           />
-                          <input
-                            value={row.audienceAr} maxLength={200}
-                            onChange={(e) => patchProposal(i, { audienceAr: e.target.value })}
-                            placeholder="لمن هي؟ (اختياريّ)"
-                            aria-label={`جمهور الدورة المقترحة ${i + 1}`}
+                          {/* نبذةٌ لا سطرُ جمهور: النبذةُ فقرةٌ تُكتب، فالحقلُ
+                              يكبر معها ولا يخفي أوّلَها عن كاتبه. */}
+                          <textarea
+                            value={row.summaryAr} maxLength={1500} rows={3}
+                            onChange={(e) => patchProposal(i, { summaryAr: e.target.value })}
+                            placeholder="نبذةٌ عن الدورة (اختياريّة) — ماذا فيها، ولمن، وما الذي يخرج به المتدرّب"
+                            aria-label={`نبذةُ الدورة المقترحة ${i + 1}`}
                             className={controlCls}
                           />
                           {/* الإزالةُ لا تظهر على صفٍّ وحيد: من أزاله بقي بلا

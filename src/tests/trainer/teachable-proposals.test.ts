@@ -14,13 +14,13 @@ import {
   proposalLine, proposalWritten, readProposals, teachableCountAr,
 } from '@/application/trainer/teachable-proposals'
 
-const p = (titleAr: string, audienceAr = '') => ({ titleAr, audienceAr })
+const p = (titleAr: string, summaryAr = '') => ({ titleAr, summaryAr })
 
 describe('ما يُعدّ اقتراحا', () => {
-  it('⚠️ العنوانُ يلزم ومن هو لا يلزم — فلا يُخسَر اقتراحٌ عند حقلٍ ثانٍ', () => {
+  it('⚠️ العنوانُ يلزم والنبذةُ لا تلزم — فلا يُخسَر اقتراحٌ عند حقلٍ ثانٍ', () => {
     expect(proposalWritten(p('تحليلُ تكلفة الاستحواذ'))).toBe(true)
-    expect(proposalWritten(p('تحليلُ تكلفة الاستحواذ', 'لمدراء التسويق'))).toBe(true)
-    expect(proposalWritten(p('', 'لمدراء التسويق')), 'جمهورٌ بلا عنوانٍ صار اقتراحا').toBe(false)
+    expect(proposalWritten(p('تحليلُ تكلفة الاستحواذ', 'تقيس أثرَ الحملات'))).toBe(true)
+    expect(proposalWritten(p('', 'تقيس أثرَ الحملات')), 'نبذةٌ بلا عنوانٍ صارت اقتراحا').toBe(false)
   })
 
   it('⚠️ والفراغُ ليس كتابةً — وإلّا مرّ «تمّ ملؤه» على نموذجٍ فارغ', () => {
@@ -35,12 +35,12 @@ describe('ما يُعدّ اقتراحا', () => {
 describe('ما يُرسَل إلى الخادم', () => {
   it('⚠️ الصفوفُ الفارغةُ تسقط — فلا تُخزَّن صفوفٌ لا شيءَ فيها', () => {
     /* الشاشةُ تبدأ بصفٍّ فارغٍ وتضيف صفوفا؛ ومن أرسلها كما هي خزّن فراغا. */
-    const out = cleanProposals([p('دورةٌ أولى', 'لمدراء'), emptyProposal(), p('  ')])
-    expect(out).toEqual([{ titleAr: 'دورةٌ أولى', audienceAr: 'لمدراء' }])
+    const out = cleanProposals([p('دورةٌ أولى', 'نبذتُها'), emptyProposal(), p('  ')])
+    expect(out).toEqual([{ titleAr: 'دورةٌ أولى', summaryAr: 'نبذتُها' }])
   })
 
   it('والأطرافُ تُشذَّب في الحقلين معا', () => {
-    expect(cleanProposals([p('  دورة  ', '  لمن  ')])).toEqual([{ titleAr: 'دورة', audienceAr: 'لمن' }])
+    expect(cleanProposals([p('  دورة  ', '  نبذة  ')])).toEqual([{ titleAr: 'دورة', summaryAr: 'نبذة' }])
   })
 
   it('⚠️ والسقفُ عشرون — فمن جاوزها يُفرغ سيرتَه لا يقترح', () => {
@@ -54,10 +54,11 @@ describe('ما يُرسَل إلى الخادم', () => {
   })
 
   it('⚠️ وما طال يُقصّ ولا يُرَدّ — فلا يسقط الطلبُ كلُّه بحقلٍ طويل', () => {
-    const long = 'ن'.repeat(500)
+    const long = 'ن'.repeat(2000)
     const [only] = cleanProposals([p(long, long)])
     expect(only.titleAr.length).toBe(200)
-    expect(only.audienceAr.length).toBe(200)
+    /* والنبذةُ سقفُها أوسعُ من العنوان: فقرةٌ تُكتب لا سطرٌ يُسمّى */
+    expect(only.summaryAr.length).toBe(1500)
   })
 
   it('ولا يُغيَّر ترتيبُ ما كتبه — هو رتّبها بقصد', () => {
@@ -76,14 +77,30 @@ describe('قراءةُ العمود من القاعدة', () => {
   })
 
   it('وما كان سليما يُقرأ مشذَّبا', () => {
-    expect(readProposals([{ titleAr: ' دورة ', audienceAr: ' لمن ' }, { titleAr: '' }]))
-      .toEqual([{ titleAr: 'دورة', audienceAr: 'لمن' }])
+    expect(readProposals([{ titleAr: ' دورة ', summaryAr: ' نبذة ' }, { titleAr: '' }]))
+      .toEqual([{ titleAr: 'دورة', summaryAr: 'نبذة' }])
+  })
+
+  /* ═══ والمفتاحُ القديمُ يُقرأ — وإلّا أُفرغت نبذةُ كلِّ متقدّمٍ سبق ═══
+
+     عمودُ `teachableProposals` سجلُّ ما قُدّم يومَ قُدّم، **ولا يُعاد كتابتُه
+     أبدا**. فصفوفُ الطلبات التي سبقت ١٥ سبتمبر تحمل `audienceAr` إلى الأبد،
+     ومن قرأ `summaryAr` وحدَها عرض ملفَّ مدرّبٍ فيه ثماني دوراتٍ بلا وصفٍ
+     لواحدة — صامتا بلا خطأٍ يُرى. */
+  it('⚠️ والمفتاحُ القديمُ `audienceAr` يُقرأ نبذةً — فلا يُفرَّغ ملفُّ متقدّمٍ سبق', () => {
+    expect(readProposals([{ titleAr: 'دورةٌ قديمة', audienceAr: 'لمدراء التسويق' }]))
+      .toEqual([{ titleAr: 'دورةٌ قديمة', summaryAr: 'لمدراء التسويق' }])
+  })
+
+  it('وإن اجتمعا فالجديدُ هو المقروء — لا يُخلَط سطرُ جمهورٍ بنبذةٍ كُتبت بعده', () => {
+    expect(readProposals([{ titleAr: 'دورة', summaryAr: 'نبذةٌ مكتوبة', audienceAr: 'جمهورٌ قديم' }]))
+      .toEqual([{ titleAr: 'دورة', summaryAr: 'نبذةٌ مكتوبة' }])
   })
 })
 
 describe('السطرُ كما يُقرأ', () => {
-  it('«العنوان — لمن هو»، وبلا جمهورٍ فالعنوانُ وحدَه بلا شَرطةٍ معلَّقة', () => {
-    expect(proposalLine(p('دورة', 'لمدراء'))).toBe('دورة — لمدراء')
+  it('«العنوان — نبذتُه»، وبلا نبذةٍ فالعنوانُ وحدَه بلا شَرطةٍ معلَّقة', () => {
+    expect(proposalLine(p('دورة', 'نبذتُها'))).toBe('دورة — نبذتُها')
     expect(proposalLine(p('دورة')), 'بقيت شَرطةٌ بلا ما بعدها').toBe('دورة')
   })
 })

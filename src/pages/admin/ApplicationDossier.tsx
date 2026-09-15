@@ -240,7 +240,9 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
                   {proposals.map((c, i) => (
                     <li key={i} className="text-read leading-6">
                       <span className="font-bold">{c.titleAr}</span>
-                      {c.audienceAr && <span className="text-muted-foreground"> — {c.audienceAr}</span>}
+                      {c.summaryAr && (
+                        <span className="whitespace-pre-wrap text-muted-foreground"> — {c.summaryAr}</span>
+                      )}
                     </li>
                   ))}
                 </ul>

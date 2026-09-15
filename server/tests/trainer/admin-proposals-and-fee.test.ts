@@ -56,8 +56,8 @@ beforeAll(async () => {
 describe('الأدمنُ يكتب اسمَ الاقتراح بنفسه', () => {
   it('⚠️ يكتب في العمود نفسِه الذي يُربط منه — لا في عمودٍ ثانٍ', async () => {
     await review.saveTeachableProposals(applicationId, ACTOR, [
-      { titleAr: 'أساسيّاتُ ريادة الأعمال', audienceAr: 'الشبابُ المبتدئون' },
-      { titleAr: 'التسعيرُ العمليُّ للمشاريع الصغيرة', audienceAr: '' },
+      { titleAr: 'أساسيّاتُ ريادة الأعمال', summaryAr: 'الشبابُ المبتدئون' },
+      { titleAr: 'التسعيرُ العمليُّ للمشاريع الصغيرة', summaryAr: '' },
     ])
     const app = await prisma.trainerApplication.findUnique({
       where: { id: applicationId }, select: { teachableProposals: true, teachableOther: true },
@@ -78,8 +78,8 @@ describe('الأدمنُ يكتب اسمَ الاقتراح بنفسه', () => {
 
   it('ويصحّح الاسمَ فيحلّ الجديدُ محلَّ القديم — لا يُضاف صفٌّ ثانٍ', async () => {
     await review.saveTeachableProposals(applicationId, ACTOR, [
-      { titleAr: 'أساسيات ريادة الأعمال وبناء فكرة المشروع', audienceAr: 'الشبابُ المبتدئون' },
-      { titleAr: 'التسعيرُ العمليُّ للمشاريع الصغيرة', audienceAr: '' },
+      { titleAr: 'أساسيات ريادة الأعمال وبناء فكرة المشروع', summaryAr: 'الشبابُ المبتدئون' },
+      { titleAr: 'التسعيرُ العمليُّ للمشاريع الصغيرة', summaryAr: '' },
     ])
     const app = await prisma.trainerApplication.findUnique({
       where: { id: applicationId }, select: { teachableProposals: true },
@@ -91,8 +91,8 @@ describe('الأدمنُ يكتب اسمَ الاقتراح بنفسه', () => {
 
   it('والفراغُ يسقط — صفٌّ بلا عنوانٍ ليس اقتراحا', async () => {
     await review.saveTeachableProposals(applicationId, ACTOR, [
-      { titleAr: 'دورةٌ باقية', audienceAr: '' },
-      { titleAr: '   ', audienceAr: 'جمهورٌ بلا عنوان' },
+      { titleAr: 'دورةٌ باقية', summaryAr: '' },
+      { titleAr: '   ', summaryAr: 'نبذةٌ بلا عنوان' },
     ])
     const app = await prisma.trainerApplication.findUnique({
       where: { id: applicationId }, select: { teachableProposals: true },

@@ -107,6 +107,10 @@ export default function CatalogAdmin() {
   /* الصلاحيةُ لا الدور — والشاشةُ تُخفي ما لا يملكه، والخادمُ هو الحَكَم */
   const { user: me } = useRealSession();
   const canEditCourse = me?.permissions.includes("catalog.course.edit") ?? false;
+  /* استثناءُ maker-checker — تُقرأ من الجلسة لا من اسم الدور: الحبّةُ تُمنح
+     وتُنزع، والاسمُ لا يتبعها. والسطرُ أسفلَ الطابور يقول أيَّهما يحكمك،
+     فلا يُكتشف الجوابُ بضغطِ زرٍّ يردّ ٤٠٣. */
+  const canSelfApprove = me?.permissions.includes("catalog.self_approve") ?? false;
   /* ك-٣: محرِّرُ مهارات دورةٍ قائمة — مفتوحٌ لواحدةٍ في المرّة، ومسوّدتُه
      منفصلةٌ عن المحفوظ حتّى يُضغط الحفظ. */
   const [skillsFor, setSkillsFor] = useState<string | null>(null);
@@ -566,7 +570,10 @@ export default function CatalogAdmin() {
           ))}
         </div>
         <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
-          <BookMarked className="h-3.5 w-3.5" /> maker-checker: لا يستطيع صانع الطلب اعتماده بنفسه — الخادم يرفض ذلك.
+          <BookMarked className="h-3.5 w-3.5" />
+          {canSelfApprove
+            ? "maker-checker: صانعُ الطلب لا يعتمده بنفسه — وحسابُك مستثنى، فما قدّمتَه تعتمده وحدَك ويُكتب في سجلّ الأثر باسمه."
+            : "maker-checker: لا يستطيع صانع الطلب اعتماده بنفسه — الخادم يرفض ذلك."}
         </p>
       </section>
 

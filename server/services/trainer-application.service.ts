@@ -16,6 +16,7 @@ import { cleanProposals } from '../../src/application/trainer/teachable-proposal
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 import { deleteObject } from './object-store'
 import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/trainer/purgeable'
+import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMPTS } from './trainer-application-reference'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
 import { fmtDateLong } from '../../src/application/text/format-ar'
@@ -244,7 +245,13 @@ export class TrainerApplicationService {
       accessTokenHash: sha256(candidateToken),
     }
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    /* ═══ ويُعاد ما سقط على تصادم المرجع وحدَه ═══
+
+       المرجعُ يُقرأ ثمّ يُكتب، وطلبان في اللحظة نفسِها يقرآن رقما واحدا
+       فيسقط ثانيهما على قيد التفرّد. فتُعاد المعاملةُ كلُّها — الحسابُ
+       والطلبُ معا، فما بُدئ فيها لم يبقَ منه شيء — مرّةً أو مرّتين لهذا السبب
+       بعينه لا لغيره. والتفصيلُ في `trainer-application-reference.ts`. */
+    const commit = () => this.prisma.$transaction(async (tx) => {
       let userId: string
       if (user) {
         userId = user.id
@@ -301,7 +308,15 @@ export class TrainerApplicationService {
       return { reference, userId, resumed: false }
     })
 
-    return { ...result, candidateToken }
+    for (let attempt = 1; ; attempt += 1) {
+      try {
+        const result = await commit()
+        return { ...result, candidateToken }
+      } catch (e) {
+        if (attempt < REFERENCE_ATTEMPTS && isReferenceCollision(e)) continue
+        throw e
+      }
+    }
   }
 
   /** بريدُ تأكيد التقديم — بالتفاصيل ورقم الطلب وما يليه، وهو بريدُ توثيق العنوان أيضا */
@@ -569,7 +584,7 @@ export class TrainerApplicationService {
     previousCourses: { title: string; org?: string; year?: number; link?: string }[]
     teachableCourseIds: string[]
     teachableOther?: string
-    teachableProposals?: { titleAr: string; audienceAr: string }[]
+    teachableProposals?: { titleAr: string; summaryAr: string }[]
     availability: AvailabilityInput
     demoConsent: boolean
     phoneCountryCode?: string
@@ -760,10 +775,10 @@ export class TrainerApplicationService {
   }
 
   /** رقم مرجعي متسلسل — WJ-TR-YYYY-##### داخل عداد ذري */
+  /* المرجعُ من المولّد المشترك: أعلى رقمٍ قائمٍ لا عددُ الصفوف — فالعدُّ
+     ينقص بالحذف النهائيّ ويتصادم (`trainer-application-reference.ts`). */
   private async nextReference(db: Prisma.TransactionClient | PrismaClient = this.prisma): Promise<string> {
-    const year = new Date().getFullYear()
-    const count = await db.trainerApplication.count()
-    return `WJ-TR-${year}-${String(count + 1).padStart(5, '0')}`
+    return nextTrainerApplicationReference(db)
   }
   /* ─────────── الحذف النهائيّ — لا التعطيل ───────────
 

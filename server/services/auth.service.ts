@@ -264,9 +264,22 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email: normalized } })
     if (!user) return { tokenForDelivery: null } // نفس الرد للعميل سواء وُجد البريد أم لا
     const token = newToken()
-    await this.prisma.passwordResetToken.create({
-      data: { userId: user.id, tokenHash: sha256(token), expiresAt: new Date(Date.now() + 3600_000) },
-    })
+    /* والطلبُ الجديدُ يُبطل ما قبله — عرفُ الدعوة نفسُه: «رابطان صالحان
+       لحسابٍ واحدٍ بابان لا باب» (`issueInvite`). ولم تكن الاستعادةُ تفعله،
+       فكلُّ طلبٍ يترك رمزَه حيّا ساعةً كاملة: من طلب ثلاثا فُتحت له ثلاثةُ
+       أبوابٍ في وقتٍ واحد، وكلُّ رسالةٍ قديمةٍ في صندوقه تبقى مفتاحا.
+
+       والإبطالُ على الغرض وحدَه: الدعوةُ الساريةُ لا تسقط بطلب استعادة —
+       غرضان مستقلّان ولكلٍّ عمرُه. */
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.updateMany({
+        where: { userId: user.id, purpose: 'reset', usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.passwordResetToken.create({
+        data: { userId: user.id, tokenHash: sha256(token), expiresAt: new Date(Date.now() + 3600_000) },
+      }),
+    ])
     return { tokenForDelivery: token }
   }
 
@@ -314,12 +327,31 @@ export class AuthService {
     if (newPassword.length < 8) throw new AuthError('weak_password', 'كلمة المرور 8 أحرف على الأقل')
     const row = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash: sha256(token) } })
     if (!row || row.usedAt || row.expiresAt < new Date()) throw new AuthError('invalid_token', 'رابط الاستعادة غير صالح أو منتهي', 400)
-    /* تعيينُ الكلمة من دعوةٍ يُفعّل الحساب: «مدعوّ» حالةُ من لم يدخل بعد،
-       وهي تنتهي بأوّل كلمةِ مرورٍ يضعها صاحبُه — لا بقرارِ موظّف. */
+    /* تعيينُ الكلمة يُفعّل الحساب: «مدعوّ» حالةُ من لم يدخل بعد، وهي تنتهي
+       بأوّلِ كلمةِ مرورٍ يضعها صاحبُه — لا بقرارِ موظّف.
+
+       ── والشرطُ الحالةُ لا غرضُ الرمز ──
+
+       كان التفعيلُ مشروطا بـ`row.purpose === 'invite'` معها، ورسالةُ الدعوة
+       تقول لصاحبها صراحةً: «فإن انتهى فاطلب إعادةَ إرسال الدعوة، **أو
+       استعمل «نسيت كلمة المرور» ببريدك هذا**» (`account-mail.ts`). وذلك
+       البابُ الثاني كان مغلقا: «نسيت كلمة المرور» يُصدر رمزا غرضُه `reset`،
+       فيضع المدعوُّ كلمتَه ويُقال له «عُيّنت كلمة المرور — سجّل الدخول من
+       جديد»، ثمّ يُردُّ عند الدخول بـ«هذا الحساب موقوف — تواصل مع الدعم».
+       وهو ليس موقوفا، ولا دعمَ يُراجَع في هذا: طريقٌ مسدودٌ برسالةٍ تكذب
+       على صاحبه، دلّته عليه رسالتُنا نفسُها.
+
+       والرمزان في قوّةِ الدليل سواء: كلاهما لا يُولَّد إلّا ليُرسَل إلى ذلك
+       العنوان بعينه، ولا يُعاد في الردّ خارج التطوير (وهي الحجّةُ المبسوطةُ
+       أسفلَه في البند ٦٧). فالفرقُ بينهما عمرُ الرابط ونصُّ الرسالة، لا من
+       يملكه — والتفعيلُ على **حالةِ الحساب** وحدَها.
+
+       وحدُّه قائمٌ كما كان: `suspended` و`archived` لا يُفتحان بكلمةِ مرور،
+       ولذلك يُقاس على `'invited'` لا على «ليس active». */
     const user = await this.prisma.user.findUnique({
       where: { id: row.userId }, select: { status: true, emailVerifiedAt: true },
     })
-    const activate = row.purpose === 'invite' && user?.status === 'invited'
+    const activate = user?.status === 'invited'
 
     /* ── ومن فتح رابطا وصله بالبريد فقد أثبت أنّ العنوان يبلغه (البند ٦٧) ──
 

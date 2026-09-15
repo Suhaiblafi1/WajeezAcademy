@@ -184,7 +184,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       /* دوراتٌ يقترحها مقروءةً واحدةً تلو الأخرى — والسقوفُ هنا هي سقوفُ
          `application/trainer/teachable-proposals` نفسُها. */
       teachableProposals: z.array(z.object({
-        titleAr: z.string().max(200), audienceAr: z.string().max(200),
+        titleAr: z.string().max(200), summaryAr: z.string().max(1500),
       })).max(20).optional(),
       availability: z.object({
         days: z.array(z.string()).optional(), hoursPerWeek: z.number().min(1).max(80).optional(),

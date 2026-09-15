@@ -183,13 +183,22 @@ const ERASURE_COPY: Record<AccountErasureKind, { subject: string; heading: strin
   },
 }
 
-export async function sendAccountErasedEmail(
-  prisma: PrismaClient,
-  input: { to: string; displayName?: string | null; reasonAr?: string | null; kind: AccountErasureKind },
-): Promise<DirectMailResult> {
+export interface AccountErasedMailInput {
+  to: string
+  displayName?: string | null
+  reasonAr?: string | null
+  kind: AccountErasureKind
+}
+
+/* ═══ الصياغةُ تُفصَل عن الإرسال (ي-٦) ═══
+
+   الرسالةُ الواحدةُ تخرج من بابَين: حذفٌ مفردٌ يُرسِل في حينه، ودفعةٌ تكتب
+   في طابور البريد ليُفرّغه العاملُ مُمَهَّلا. ولو صيغت في كلٍّ منهما على حدة
+   لَافترقتا بعد شهرٍ — وهي رسالةٌ لا يُقرأ خطؤها إلّا عند من لا حسابَ له
+   يشكو منه. فالصياغةُ هنا مرّةً واحدة، والبابان يأخذان منها. */
+export function accountErasedMail(input: AccountErasedMailInput): { subject: string; text: string; html: string } {
   const copy = ERASURE_COPY[input.kind]
-  return sendDirectEmail(prisma, {
-    to: input.to,
+  return {
     subject: copy.subject,
     ...renderMail({
       greetingName: input.displayName ?? undefined,
@@ -204,5 +213,13 @@ export async function sendAccountErasedEmail(
         { kind: 'callout', text: 'وهذه آخرُ رسالةٍ تصلك منّا على هذا العنوان. فإن كان في الأمر خطأٌ فردَّ عليها وسيصل ردُّك إلى الدعم.' },
       ],
     }),
-  })
+  }
+}
+
+/** الإرسالُ في حينه — للحذف المفرد. والدفعةُ تكتب في الطابور (`outbox.service.ts`). */
+export async function sendAccountErasedEmail(
+  prisma: PrismaClient,
+  input: AccountErasedMailInput,
+): Promise<DirectMailResult> {
+  return sendDirectEmail(prisma, { to: input.to, ...accountErasedMail(input) })
 }
