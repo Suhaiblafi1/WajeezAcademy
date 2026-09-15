@@ -41,6 +41,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { sendAccountErasedEmail } from './account-mail'
 import { FOUNDER_EMAILS } from '../auth/founders'
 import { attestationState, type AttestationState } from './backup-attestation'
 import { purgeAccountWithHistory } from './account-purge.service'
@@ -201,8 +202,15 @@ export class AccountResetService {
 
     for (const t of targets) {
       try {
-        if (input.mode === 'archive') await this.archiveOne(t.id, t.email)
-        else await purgeAccountWithHistory(this.prisma, t.id)
+        if (input.mode === 'archive') await this.archiveOne(t.id, t.email, reason)
+        else {
+          /* ═══ والبريدُ قبل المحو كالأثر (ي-٤) ═══
+
+             الصفُّ يذهب كلُّه ومعه جرسُه، فالبريدُ هو الحامل. ومكتوبٌ في
+             `account-mail.ts` لمَ، ولمَ يتقدّم الفعلَ على عرف الأثر. */
+          await sendAccountErasedEmail(this.prisma, { to: t.email, reasonAr: reason, kind: 'reset_purge' })
+          await purgeAccountWithHistory(this.prisma, t.id)
+        }
         done.push(t.email)
       } catch (e) {
         /* حسابٌ يتعثّر لا يوقف البقيّة: كلُّ حسابٍ معاملتُه وحدَه، فالمتعثّرُ
@@ -225,7 +233,17 @@ export class AccountResetService {
   }
 
   /** الأرشفة: يبقى الصفُّ ويسقط الدخول وتُعمّى الهويّة */
-  private async archiveOne(userId: string, email: string): Promise<void> {
+  private async archiveOne(userId: string, email: string, reasonAr?: string): Promise<void> {
+    /* ═══ والبريدُ قبل المعاملة لا بعدها (ي-٤) ═══
+
+       المعاملةُ أدناه تُعمّي العنوانَ إلى `archived+<id>@wajeez.invalid` —
+       وهو مقصودٌ («ولا يُترك كما هو فيُراسَل بعد الأرشفة»). فبعدها لا عنوانَ
+       في القاعدة يُبلَّغ به، والجرسُ لا يُقرأ لأنّ الدخولَ يُمنع على غير
+       `active`. فالرسالةُ الأخيرةُ تخرج الآن، على العنوان الذي وصل به.
+
+       و`reasonAr` يُمرَّر من الحلقة: لم يكن يصل هذه الطريقةَ أصلا، فكان
+       السببُ يُلزَم به الموظّفُ ثمّ يُخفى عمّن يمسّه. */
+    await sendAccountErasedEmail(this.prisma, { to: email, reasonAr, kind: 'reset_archive' })
     await this.prisma.$transaction(async (tx) => {
       await tx.session.deleteMany({ where: { userId } })
       await tx.user.update({
