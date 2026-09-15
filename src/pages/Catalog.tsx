@@ -352,23 +352,42 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {visibleCourses.map((c) => (
             <Card as="article" key={c.id} className="group flex flex-col transition hover:border-gold/40">
-              <div className="flex items-center gap-2">
+              {/* ── صفُّ الوسمين والقلب: الالتفافُ بينهما لا حولَ القلب ──
+
+                  بطاقةُ الدورة رُبعُ الشبكة على اللابتوب — نحوُ ٢٦٠ بكسلا
+                  للمحتوى — و«مختارة» ووسمُ مجالٍ كـ«التقنية والذكاء
+                  الاصطناعي» والقلبُ لا يجتمعون في سطر. فلو كان الثلاثةُ في
+                  صفٍّ ملتفٍّ واحدٍ لهبط **القلبُ** إلى السطر الثاني (وهو ما
+                  وقع أوّلَ مرّة)، فيُقرأ منزلقا بلا سبب.
+
+                  فالوسمان في حاويتهما يلتفّان بينهما، والقلبُ أخٌ لها لا لهما:
+                  يبقى في أعلى اليسار مهما التفّ ما يمينَه. */}
+              <div className="flex items-start gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                 {bestsellerCourseIds.has(c.id) && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gold/10 px-2 py-0.5 text-fine font-bold text-gold-ink">
                     <Flame className="h-3 w-3" />
                     مختارة
                   </span>
                 )}
+                {/* ── ووسمُ المجال إلى جانبها (صاحب المنصّة، ١٥ سبتمبر ٢٠٢٦) ──
+
+                    «هناك مكانٌ لليبل مختارة… اجعل بجانبها ليبل لمجال الدورة
+                    بحسب الفلاتر لكي لا تبقى المساحةُ فارغةً للدورات غير
+                    المختارة، والمختارةُ يصبح لها ليبلان».
+
+                    وكان في هذا الموضع وسمٌ ثانويٌّ فحُذف — لأنّه كان
+                    `c.category`: **جمهورُ** المسار الذي تسكنه الدورة
+                    («أساسيات» و«موظفون»)، لا وصفا لها. والذي يعود اليومَ غيرُه:
+                    `pathwayDomain` — **مجالُها** نفسُه الذي تصفّي به الرقاقاتُ
+                    فوق النتائج، وهو الذي تحمله بطاقةُ المسار المجاورة بالهيئة
+                    نفسِها. فالوسمُ يقول للزائر تحت أيّ رقاقةٍ يقع ما يراه. */}
+                <span className="rounded-full border border-white/10 px-2 py-0.5 text-fine text-muted-foreground">{pathwayDomain(c.pathwayId)}</span>
+                </div>
                 {/* ع-٨: والقلبُ على الدورة كما هو على المسار. ومن لا حسابَ
                     له يُفتح له بابُ التسجيل ثمّ تُحفظ دورتُه — فالحسابُ
                     يُولد على شيءٍ أراده لا على نموذجٍ خالٍ. */}
-                <FavoriteButton kind="course" refId={c.id} title={c.name} className="-me-1 ms-auto" />
-                {/* لا وسمَ ثانويّا على الدورة.
-
-                    كان «أساسيات» أو «موظفون» — وهو تصنيفُ **المسار** الذي
-                    تسكنه الدورة لا وصفٌ لها. وقد سقط «من مسار كذا» من تحت
-                    العنوان للسبب نفسِه، فبقاؤه وسما فوقَه يعيد الشيءَ من بابٍ
-                    آخر. والبطاقةُ الآن: الاسمُ ثمّ المخرَجُ ثمّ المدّة. */}
+                <FavoriteButton kind="course" refId={c.id} title={c.name} className="-me-1 ms-auto shrink-0" />
               </div>
               <CourseTitle name={c.name} termEn={c.termEn} className="mt-3 font-bold leading-relaxed" />
               {/* المخرَجُ أوّلا لا موضعُ الدورة من مسار.

@@ -2236,6 +2236,7 @@
         "يبني مصفوفة معايير ويخرج ثلاث فرضيات قابلة للاختبار."
       ],
       "practical_project_ar": "ملف قرار مهني: بيان قرار + جرد أدلة + مصفوفة موزونة + ثلاث فرضيات مع دفاع شفهي 5 دقائق.",
+      "title_term_en": "Career Planning & Market Research",
       "list_price": 125,
       "list_currency": "USD"
     },
@@ -2302,6 +2303,7 @@
         "يقارن المقابلة ببيانات أخرى ويمنع تعميم تجربة فردية."
       ],
       "practical_project_ar": "رسالتا تواصل + مقابلة معلوماتية موثقة + مذكرة تثليث وتحديث فرضية.",
+      "title_term_en": "Professional Networking",
       "list_price": 100,
       "list_currency": "USD"
     },
@@ -2369,6 +2371,7 @@
         "يفصل الأداء الأولي عن الملاءمة ويحدث الثقة."
       ],
       "practical_project_ar": "ملف تجربة مهنية: الميثاق، المخرج، ملاحظة خارجية، ومراجعة قرار.",
+      "title_term_en": "Career Prototyping",
       "list_price": 100,
       "list_currency": "USD"
     },
@@ -2435,6 +2438,7 @@
         "يحول القرار إلى بحث وتجربة وتواصل أو تعلم بدليل."
       ],
       "practical_project_ar": "مذكرة قرار مهني مع مصفوفة حساسية وخطة 30 يومًا ودفاع 7 دقائق.",
+      "title_term_en": "Career Decision & Transition Plan",
       "list_price": 100,
       "list_currency": "USD"
     },
@@ -2582,6 +2586,7 @@
         "يجمع نقدًا ويصحح ويشرح الأثر والتعلم."
       ],
       "practical_project_ar": "مشروع محفظة + سجل قرارات + نسختان قبل/بعد + دراسة حالة 400–600 كلمة.",
+      "title_term_en": "Portfolio Building",
       "list_price": 100,
       "list_currency": "USD"
     },
@@ -2715,6 +2720,7 @@
         "يقرأ معدلات التحويل ويفصل النشاط عن النتيجة."
       ],
       "practical_project_ar": "لوحة بحث 6 أسابيع + خطة جهات + 6 رسائل + أول مراجعة أسبوعية.",
+      "title_term_en": "Job Search Strategy",
       "list_price": 100,
       "list_currency": "USD"
     },
@@ -2797,6 +2803,7 @@
         "يحدد التحقق والمراجعة والمسؤولية حسب الأثر."
       ],
       "practical_project_ar": "تدقيق 10 مهام عمل مع قرار استخدام/عدم استخدام ومخاطر وضوابط لكل مهمة.",
+      "title_term_en": "AI Foundations & Prompt Engineering",
       "list_price": 125,
       "list_currency": "USD"
     },
@@ -2930,6 +2937,7 @@
         "يقيس وقتًا وجودة ومخاطر ويقارن بخط أساس."
       ],
       "practical_project_ar": "سير عمل مطبق على تقرير مهني مع خط أساس وسجل تحقق وتحليل عائد/مخاطر.",
+      "title_term_en": "AI-Assisted Writing & Research",
       "list_price": 175,
       "list_currency": "USD"
     },
@@ -2996,6 +3004,7 @@
         "يحلل الأثر ويحدد التدريب والحوكمة والخطوة التالية."
       ],
       "practical_project_ar": "مشروع طيار: ميثاق + مخاطر + بيانات قبل/بعد + عرض قرار 10 دقائق.",
+      "title_term_en": "AI Use Cases at Work",
       "list_price": 175,
       "list_currency": "USD"
     },
@@ -3280,6 +3289,7 @@
         "يجيب عن الاعتراضات ويحدد ما يغير القرار."
       ],
       "practical_project_ar": "حزمة قرار: ميثاق + ملف تحليل + لوحة + مذكرة + إحاطة مسجلة.",
+      "title_term_en": "Data Storytelling",
       "list_price": 175,
       "list_currency": "USD"
     },
@@ -3844,6 +3854,7 @@
         "يعرض الافتراضات والطلبات ومسار التحديث."
       ],
       "practical_project_ar": "خطة 30/60/90 + خريطة أصحاب مصلحة + تجربة تحسين + عرض 12 دقيقة.",
+      "title_term_en": "First 90 Days Plan",
       "list_price": 175,
       "list_currency": "USD"
     },
@@ -3987,6 +3998,7 @@
         "يجمع الأنماط والأسباب ويقترح إجراءً تصحيحيًا."
       ],
       "practical_project_ar": "محاكاة شكوى + رد مكتوب + تحليل نمط شكاوى + خطة إجراء تصحيحي.",
+      "title_term_en": "Complaint Handling & Service Recovery",
       "list_price": 175,
       "list_currency": "USD"
     },
@@ -4121,6 +4133,7 @@
         "يقارن قبل/بعد ويحدد التكلفة والمخاطر والخطوة."
       ],
       "practical_project_ar": "ميثاق + blueprint + نموذج + اختبار + بيانات قبل/بعد + عرض قرار.",
+      "title_term_en": "Service Improvement Pilots",
       "list_price": 175,
       "list_currency": "USD"
     },
@@ -4404,6 +4417,7 @@
         "يقرأ التحويل والسيولة والسعة ويختار مسارًا."
       ],
       "practical_project_ar": "خط 20 فرصة + سجل تجربة + دليل بيع/رفض + نموذج نقدي وخطة 90 يومًا.",
+      "title_term_en": "First Sale & Growth Plan",
       "list_price": 175,
       "list_currency": "USD"
     },
@@ -4494,6 +4508,7 @@
         "ينفذ قرار الأتمتة وحدودها وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خريطة عملية + مصفوفة أولوية بالوقت ونسبة الخطأ وحجم التكرار + دراسة جدوى مبسطة لنقطة أتمتة واحدة.",
+      "title_term_en": "Automation Opportunity Analysis",
       "list_price": 150,
       "list_currency": "USD"
     },
@@ -4870,6 +4885,7 @@
         "ينفذ حزمة محتوى مرتبطة بهدف وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "تقويم محتوى + أعمدة محتوى محددة + نماذج منشورة + خطة إعادة استخدام وتوزيع.",
+      "title_term_en": "Content Marketing",
       "list_price": 150,
       "list_currency": "USD"
     },
@@ -5015,6 +5031,7 @@
         "ينفذ خطة نمو وقرار التحسين وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة تجارب نمو + لوحة أداء + خط أساس ونتائج قياس + خطة نمو 90 يومًا قابلة للتنفيذ.",
+      "title_term_en": "Campaign Measurement & Optimisation",
       "list_price": 150,
       "list_currency": "USD"
     },
@@ -5246,6 +5263,7 @@
         "ينفذ Proposal وعرض شفهي وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "عرض تجاري كامل + تقديم شفهي مسجل + ربط موثق بين كل بند وقيمته لدى صاحب القرار.",
+      "title_term_en": "Proposals & Pitching",
       "list_price": 150,
       "list_currency": "USD"
     },
@@ -5554,6 +5572,7 @@
         "ينفذ خطة مواهب واحتفاظ وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة تعلم وتطوير لقسم + تحليل فجوة قدرة + مسار تطوير وخطة نقل التعلم إلى العمل.",
+      "title_term_en": "Talent Development & Retention",
       "list_price": 150,
       "list_currency": "USD"
     },
@@ -6239,6 +6258,7 @@
         "ينفذ عرض Product Case وقرار الاستثمار وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "خطة إطلاق ومؤشرات + لوحة قياس + تجارب واحتفاظ بعد الإطلاق + عرض المنتج أمام لجنة.",
+      "title_term_en": "Product Launch & Metrics",
       "list_price": 150,
       "list_currency": "USD"
     },
@@ -6543,6 +6563,7 @@
         "ينفذ عرض حالة تحسين متكاملة وينتج دليلًا قابلًا للمراجعة والدفاع."
       ],
       "practical_project_ar": "تجربة تحسين بدورة PDCA + بيانات قبل وبعد + خطة توحيد وإدارة تغيير + عرض حالة تحسين تشغيلي.",
+      "title_term_en": "Continuous Improvement (PDCA)",
       "list_price": 150,
       "list_currency": "USD"
     },

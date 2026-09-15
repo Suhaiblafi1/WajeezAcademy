@@ -228,11 +228,19 @@ function Hero() {
             المنصّة على اللابتوب «شبهَ متلاصقة» (٨ سبتمبر ٢٠٢٦). فالتكبيرُ يضرب
             الحجمَ والمسافةَ معا ولا يغيّر نسبتَهما، والنسبةُ هي ما كان ضيّقا.
             فزادت المسافةُ على كلّ المقاسات. */}
-        <h1 className="reveal is-visible mx-auto mt-7 max-w-3xl md:mt-6">
-          <span className="block text-xl font-semibold leading-relaxed text-foreground/80 sm:text-2xl md:text-3xl">
+        {/* ── والصدرُ كبُر درجةً (صاحب المنصّة، ١٥ سبتمبر ٢٠٢٦: «كبّر الهيرو
+            قليلاً») ──
+
+            درجةٌ واحدةٌ في السُّلَّم الطباعيّ على كلّ مقاس، لا قفزةٌ على
+            الشاشات الواسعة وحدَها: السطران يُقرآن معا، فلو كبُر الثاني وحدَه
+            لانكسرت نسبتُهما. والعرضُ اتّسع معهما (`max-w-4xl`) — وإلّا لالتفّ
+            السطرُ الأوّلُ ثلاثةَ أسطرٍ على اللابتوب لأنّ الحرفَ كبُر ولم يكبر
+            ما يسعه. */}
+        <h1 className="reveal is-visible mx-auto mt-7 max-w-4xl md:mt-6">
+          <span className="block text-2xl font-semibold leading-relaxed text-foreground/80 sm:text-3xl md:text-4xl">
             المسار الصحيح لا يبدأ باختيار دورة.
           </span>
-          <span className="mt-5 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text md:mt-4 text-3xl font-bold leading-[1.3] text-transparent sm:text-4xl md:text-6xl md:leading-[1.2]">
+          <span className="mt-5 block bg-gradient-to-l from-teal-light-ink via-teal-ink to-gold-ink bg-clip-text md:mt-4 text-4xl font-bold leading-[1.3] text-transparent sm:text-5xl md:text-7xl md:leading-[1.2]">
             يبدأ بفهم هدفك.
           </span>
         </h1>
@@ -563,84 +571,119 @@ function HowItWorks() {
 /* ───────────────── منهجية وجيز — ثقة علمية بلا استعراض شعارات ───────────────── */
 /* ───────────────── visual band ───────────────── */
 /* ───────────────── stories (the heart) ───────────────── */
+/* ═══ النماذجُ خلفَ سطرٍ يُنقر — لا شريطٌ مبسوطٌ في وجه الزائر ═══
+
+   قرارُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): «هذه الخانة لا أريدها أن تظهر مباشرة،
+   بل إذا نُقر على جملةٍ معيّنة تظهر النماذجُ أسفلها… لأنّها غير مهمّةٍ
+   إطلاقا».
+
+   فالقسمُ في حالته المطويّة **سطرٌ واحد**: لا وسمَ قسمٍ ولا عنوانَ ثلاثين
+   بكسلا ولا خمسُ بطاقاتٍ تُمرَّر أفقيّا. ومن أرادها نقر فنزلت تحته.
+
+   ولماذا `hidden` لا حذفٌ من الشجرة: `aria-controls` تشير إلى ما تفتحه،
+   فلو لم يوجد المشارُ إليه في الحالة المطويّة لأشارت الزرُّ إلى عدم. و`hidden`
+   ترفع المحتوى عن الشاشة وعن شجرة الإتاحة معا — فلا يقرؤه قارئُ الشاشة ولا
+   يبلغه التبويب وهو مطويّ.
+
+   والعنوانُ والتنويهُ نزلا **داخلَ** المطويّ: التنويه («ليست شهاداتٍ لأشخاصٍ
+   حقيقيين») يصحبُ البطاقاتِ أينما ظهرت — فلا تُرى نماذجُ بلا ما يقول إنّها
+   نماذج. */
 function Stories() {
   const [open, setOpen] = useState<(typeof stories)[number] | null>(null)
+  const [shown, setShown] = useState(false)
 
   return (
-    <section id="stories" className="scroll-mt-24 relative py-12 md:py-16">
+    <section id="stories" className="scroll-mt-24 relative py-8 md:py-10">
       <div className="pointer-events-none absolute left-1/3 top-0 h-[400px] w-[400px] rounded-full bg-teal/8 blur-[130px]" />
       <div className="shell">
         <div className="reveal text-center">
-          <SectionLabel>نماذج توضيحية لرحلات التعلم</SectionLabel>
-          <h2 className="mt-5 text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
-          {/* كان تحت العنوان سطرٌ يشرحه («من التشخيص إلى مشروع تخرّج…») —
-              حُذف بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦): البطاقاتُ تحته تقوله.
-              والصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
-          <p className="mx-auto mt-4 max-w-md text-read leading-5 text-muted-foreground">
-            نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
-          </p>
+          <button
+            type="button"
+            onClick={() => setShown((v) => !v)}
+            aria-expanded={shown}
+            aria-controls="stories-panel"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:bg-teal/[0.07] hover:text-teal-light-ink"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span className="underline-offset-4 hover:underline">اعرض نماذج توضيحية لرحلات التعلم</span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${shown ? 'rotate-180' : ''}`} />
+          </button>
         </div>
       </div>
 
-      {/* شريط القصص المضغوط — بطاقة لكل قصة، والتفاصيل في نافذتها */}
-      <p className="sr-only">{`يعرض ${stories.length} قصص — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}</p>
-      <div
-        role="region"
-        aria-roledescription="شريط بطاقات"
-        aria-label="قصص متعلمي وجيز"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'ArrowLeft') { e.preventDefault(); e.currentTarget.scrollBy({ left: -320, behavior: 'smooth' }) }
-          if (e.key === 'ArrowRight') { e.preventDefault(); e.currentTarget.scrollBy({ left: 320, behavior: 'smooth' }) }
-        }}
-        className="scrollbar-hide mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
-      >
-        {stories.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setOpen(s)}
-            className="group flex w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-white/10 bg-card text-right transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
-          >
-            <div className="relative h-36 overflow-hidden">
-              <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
-                <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-20 w-20" />
+      <div id="stories-panel" hidden={!shown}>
+        <div className="shell">
+          <div className="mt-8 text-center">
+            <h2 className="text-3xl font-bold md:text-4xl">هكذا تُبنى الرحلة عندنا</h2>
+            {/* كان تحت العنوان سطرٌ يشرحه («من التشخيص إلى مشروع تخرّج…») —
+                حُذف بقرار صاحب المنصّة (٨ سبتمبر ٢٠٢٦): البطاقاتُ تحته تقوله.
+                والصدقُ باقٍ والصوتُ خافت: تنويهٌ لا يزاحم ما جاء الزائرُ ليقرأه */}
+            <p className="mx-auto mt-4 max-w-md text-read leading-5 text-muted-foreground">
+              نماذج توضيحية مركبة من أنماط شائعة — ليست شهادات لأشخاص حقيقيين.
+            </p>
+          </div>
+        </div>
+
+        {/* شريط القصص المضغوط — بطاقة لكل قصة، والتفاصيل في نافذتها */}
+        <p className="sr-only">{`يعرض ${stories.length} قصص — اسحب بإصبعك أو استخدم أسهم لوحة المفاتيح للتنقل بينها`}</p>
+        <div
+          role="region"
+          aria-roledescription="شريط بطاقات"
+          aria-label="قصص متعلمي وجيز"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowLeft') { e.preventDefault(); e.currentTarget.scrollBy({ left: -320, behavior: 'smooth' }) }
+            if (e.key === 'ArrowRight') { e.preventDefault(); e.currentTarget.scrollBy({ left: 320, behavior: 'smooth' }) }
+          }}
+          className="scrollbar-hide mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 md:px-[max(1.25rem,calc((100vw-72rem)/2+1.25rem))]"
+        >
+          {stories.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setOpen(s)}
+              className="group flex w-[280px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-white/10 bg-card text-right transition-all duration-200 hover:-translate-y-1 hover:border-teal/50 hover:shadow-[0_20px_60px_-30px_rgba(56,167,180,0.4)]"
+            >
+              <div className="relative h-36 overflow-hidden">
+                <div className="grid h-full w-full place-items-center bg-[radial-gradient(circle_at_60%_20%,rgba(56,167,180,0.35),transparent_65%)]">
+                  <StoryAvatar id={s.id} name={s.name} look={s.look} className="h-20 w-20" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+                <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-fine font-bold">{s.tag}</span>
               </div>
-              <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-              <span className="tag-teal absolute bottom-3 right-4 rounded-full px-3 py-1 text-fine font-bold">{s.tag}</span>
-            </div>
-            <div className="flex flex-1 flex-col p-5">
-              <p className="text-sm font-bold">
-                {s.name} <span className="font-normal text-muted-foreground">— {s.role}</span>
-              </p>
-              {/* «قبل» سقط من البطاقة وبقي في النافذة.
+              <div className="flex flex-1 flex-col p-5">
+                <p className="text-sm font-bold">
+                  {s.name} <span className="font-normal text-muted-foreground">— {s.role}</span>
+                </p>
+                {/* «قبل» سقط من البطاقة وبقي في النافذة.
 
-                  كان على كلّ بطاقةٍ سطران: حالُه قبلُ ثمّ نتيجتُه. والقارئُ في
-                  شريطٍ أفقيّ لا يوازن بينهما — يمسح النتائجَ ليجد ما يشبهه، ثمّ
-                  يفتح ما يشبهه ليقرأ القصّة كاملة (وهي كاملةٌ في النافذة أصلا).
-                  و«قبل» بلا «بعد» في مساحةِ سطرين لا يبني الموازنةَ التي وُضع
-                  لها، ويضاعف نصَّ الشريط. */}
-              <p className="mt-2 line-clamp-2 text-read leading-6 text-foreground/85">
-                <span className="font-bold text-gold-ink">النتيجة: </span>
-                {s.result}
-              </p>
-              <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
-                اقرأ القصة كاملة
-                <ArrowLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-1" />
-              </span>
-            </div>
-          </button>
-        ))}
+                    كان على كلّ بطاقةٍ سطران: حالُه قبلُ ثمّ نتيجتُه. والقارئُ في
+                    شريطٍ أفقيّ لا يوازن بينهما — يمسح النتائجَ ليجد ما يشبهه، ثمّ
+                    يفتح ما يشبهه ليقرأ القصّة كاملة (وهي كاملةٌ في النافذة أصلا).
+                    و«قبل» بلا «بعد» في مساحةِ سطرين لا يبني الموازنةَ التي وُضع
+                    لها، ويضاعف نصَّ الشريط. */}
+                <p className="mt-2 line-clamp-2 text-read leading-6 text-foreground/85">
+                  <span className="font-bold text-gold-ink">النتيجة: </span>
+                  {s.result}
+                </p>
+                <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
+                  اقرأ القصة كاملة
+                  <ArrowLeft className="h-3.5 w-3.5 transition group-hover:-translate-x-1" />
+                </span>
+              </div>
+            </button>
+          ))}
 
-        {/* بطاقة ختامية تعيد للتشخيص */}
-        <Panel as={Link} tone="accent" interactive to="/diagnostic" className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center border-dashed text-center transition hover:border-teal/60 hover:bg-teal/10">
-          <Compass className="h-7 w-7 text-teal-ink" />
-          <p className="mt-3 text-sm font-bold leading-relaxed">وقصتك التالية؟</p>
-          <p className="mt-1.5 text-read leading-6 text-muted-foreground">تبدأ بثلاث دقائق من التشخيص</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
-            ابدأ الآن
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </span>
-        </Panel>
+          {/* بطاقة ختامية تعيد للتشخيص */}
+          <Panel as={Link} tone="accent" interactive to="/diagnostic" className="flex w-[240px] shrink-0 snap-start flex-col items-center justify-center border-dashed text-center transition hover:border-teal/60 hover:bg-teal/10">
+            <Compass className="h-7 w-7 text-teal-ink" />
+            <p className="mt-3 text-sm font-bold leading-relaxed">وقصتك التالية؟</p>
+            <p className="mt-1.5 text-read leading-6 text-muted-foreground">تبدأ بثلاث دقائق من التشخيص</p>
+            <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
+              ابدأ الآن
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </span>
+          </Panel>
+        </div>
       </div>
 
       {/* نافذة القصة الكاملة */}

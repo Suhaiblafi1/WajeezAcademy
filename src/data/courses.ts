@@ -13,7 +13,8 @@ import { pathwayCategory } from './pathways'
 export interface Course {
   id: string
   name: string
-  /** المصطلح المهنيّ بالإنجليزية — سطرٌ ثانويّ تحت العنوان، لا جزءٌ منه */
+  /** المصطلح المهنيّ بالإنجليزية — وسمٌ تحت العنوان لا جزءٌ منه.
+      ولكلّ دورةٍ مصطلحُها منذ ١٥ سبتمبر ٢٠٢٦ (انظر `CoreCatalogCourse`). */
   termEn?: string | null
   legacyName?: string
   pathwayId: string
@@ -221,6 +222,13 @@ onCoreCatalogInstalled(() => {
   bestsellerCourses.splice(0, bestsellerCourses.length, ...buildBestsellerCourses())
 })
 
+/* فئاتُ **الجمهور** — ولم تعد مصدرَ رقاقةِ تصفيةٍ في شاشة.
+
+   صفحةُ الدورات تصفّي بالمجال منذ ٨ سبتمبر ٢٠٢٦ (`pathwayDomains`)، وبقي
+   شريطُ الرئيسة على هذه حتّى ١٥ سبتمبر — فيقرأ الزائرُ «موظفون ومختصون» هنا
+   و«إدارة المشاريع والعمليات» هناك للدورة نفسِها. فوُحِّدتا على المجال.
+   والقائمةُ باقيةٌ لأنّ `Course.category` يُشتقّ منها ويُرسَل في حدث
+   `course_viewed` — تصنيفٌ يُقاس به، لا رقاقةٌ تُعرض. */
 export const courseCategories = ['الكل', 'أفراد ومهن ناشئة', 'موظفون ومختصون', 'قيادة وريادة الأعمال', 'حكومي']
 
 /* سعر الدورة المنفردة: 130–180 دولارا حسب مدتها */
