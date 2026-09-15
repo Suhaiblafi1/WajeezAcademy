@@ -59,6 +59,10 @@ export interface TrainerPlanModule {
 export interface TrainerPlanResource {
   /* والرابطُ اختياريٌّ منذ د-٣: المصدرُ رابطٌ **أو** ملفٌّ مرفوع */
   title: string; url?: string | null; kind?: string | null; noteAr?: string | null
+  /** صنفُه الثلاثيّ (١٥ سبتمبر ٢٠٢٦) — ومنه يُشتقّ نوعُه */
+  category?: string | null
+  /** متى يُفتح للمتعلّم — للمسجَّل وحدَه */
+  opensAt?: string | null
   /** د-٣: مصدرٌ مرفوعٌ بدل رابطٍ مُلصَق */
   bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null
 }

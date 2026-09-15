@@ -31,19 +31,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
+  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import CohortOps from "./CohortOps";
 import CourseTitleProposal from "./CourseTitleProposal";
 import SessionsAndAttendance from "./SessionsAndAttendance";
-import CohortMaterials from "./CohortMaterials";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
-import { RESOURCE_KINDS, readTypedLinks, resourceKind } from "@/application/trainer/plan-overlay";
+import { RESOURCE_KINDS, RESOURCE_CATEGORIES, readTypedLinks, resourceKind, resourceCategory, kindForCategory } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
@@ -67,7 +66,9 @@ interface PlanModule {
   bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null;
 }
 interface PlanResource {
-  title: string; url: string; kind?: string | null; noteAr?: string | null;
+  title: string; url?: string | null; kind?: string | null; noteAr?: string | null;
+  /* ١٥ سبتمبر ٢٠٢٦: الصنفُ يُختار، والنوعُ يُشتقّ منه */
+  category?: string | null; opensAt?: string | null;
   /* د-٣: مصدرٌ مرفوعٌ لا مُلصَق — «ملفّ» كان نوعا يُختار بلا ما يُرفَع */
   bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null;
 }
@@ -124,6 +125,40 @@ const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
 type Phase = "prepare" | "run";
 const ASSESSMENT_TYPES: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع تخرج" };
 const MODULE_FORMS = { one: "محور", two: "محوران", few: "محاور", many: "محورا" } as const;
+
+/* ═══ الأصنافُ الثلاثةُ كما يقرؤها المدرّب ═══
+
+   ثلاثُ خاناتٍ سمّاها صاحبُ المنصّة بنفسه (١٥ سبتمبر ٢٠٢٦)، ولكلٍّ بابُها:
+   المسجَّلُ بتاريخ فتحه، والكتبُ بهدفها، والعامُّ بلا شرط. والنصُّ هنا لا في
+   `plan-overlay`: ذاك محضٌ يقرؤه الخادمُ كذلك، وهذا عرضٌ بأيقونات. */
+const RESOURCE_CATEGORY_META: Record<string, {
+  label: string; hint: string; icon: typeof BookOpen; titlePlaceholder: string; notePlaceholder: string; addLabel: string;
+}> = {
+  recorded: {
+    label: "دوراتٌ مسجّلةٌ لك",
+    hint: "جلساتُك التدريبيّةُ المسجَّلة. تحدّد متى تُفتح لكلّ واحدةٍ على مدى الفصل — وقبل موعدها لا تصل المتعلّمَ أصلا.",
+    icon: Film,
+    titlePlaceholder: "اسمُ الجلسة — «اللقاء الثاني · التحليل العمليّ»",
+    notePlaceholder: "ماذا في هذه الجلسة، ومتى يشاهدها (اختياريّ)",
+    addLabel: "+ جلسةٌ مسجّلة",
+  },
+  reading: {
+    label: "كتبٌ وملفّات",
+    hint: "كرّاسةٌ أو مقالٌ أو نموذجٌ يملؤه. وقل لكلّ واحدٍ ما الهدفُ منه — فملفٌّ بلا هدفٍ يُفتح مرّةً ولا يُعاد إليه.",
+    icon: FileText,
+    titlePlaceholder: "سمِّ المحتوى لا المنصّة — «كرّاسة التحرير» لا «ملفّ PDF»",
+    notePlaceholder: "ما الهدفُ منه؟ ما فيه، ومتى يقرؤه",
+    addLabel: "+ كتابٌ أو ملفّ",
+  },
+  public: {
+    label: "فيديوهاتٌ وروابطُ عامّةٌ للفائدة",
+    hint: "ما ينفعه ولم تصنعه أنت: فيديو، أو بودكاست، أو أيُّ مصدرٍ مفتوحٍ يفيد الطلبة.",
+    icon: Link2,
+    titlePlaceholder: "اسمُ المصدر كما يراه المتعلّم",
+    notePlaceholder: "لماذا هذا المصدر؟ ما فيه، ومتى يقرؤه (اختياريّ)",
+    addLabel: "+ رابطٌ عامّ",
+  },
+};
 
 /* ── رأسُ كلّ خطوة: ما هي، ولمَ هي، وكم تأخذ ──
 
@@ -216,6 +251,16 @@ export default function CohortWorkspace() {
      ويُحذف منها، لا حقلٌ نصّيّ. */
   const [taskAttachments, setTaskAttachments] = useState<PlanResource[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  /* ═══ نموذجُ المهمّة انسدالٌ يُفتح، لا جدارٌ مفتوحٌ أبدا ═══
+
+     قال صاحبُ المنصّة (١٥ سبتمبر ٢٠٢٦): «هنا التصميمُ مبعثر — يجب أن تكون
+     لائحةُ المهامّ التي قدّمها مع حقّ التعديل والحذف، وإضافةُ مهمّةٍ جديدةٍ
+     تفتح انسدالا يقوم بتعديل المطلوب فيها ويؤكّد».
+
+     وكان ثمانيةَ حقولٍ مفتوحةً تحت اللائحة أبدا، فتُقرأ الصفحةُ نموذجا
+     تتقدّمه قائمةٌ لا قائمةً يليها فعل. ومن جاء ليراجع مهامَّه وجد نفسَه
+     في نموذجِ إنشاء. */
+  const [taskFormOpen, setTaskFormOpen] = useState(false);
   /* التكليفُ المطلوبُ حذفُه — الحذفُ لا يقع بنقرةٍ واحدة */
   const [pendingDelete, setPendingDelete] = useState<Workspace["assessments"][number] | null>(null);
   /* والمحورُ المطلوبُ حذفُه — ومعه موضعُه، فالعناوينُ تتكرّر */
@@ -260,6 +305,27 @@ export default function CohortWorkspace() {
   /* الخروجُ بتعديلٍ في اليد يُستأذَن فيه. والقراءةُ من مرجعٍ لا من حالة:
      الخطّافُ يُسجَّل مرّةً فوق الشرط (قواعدُ الخطّافات)، والقيمةُ تُحسب
      بعد الحارس — فالمرجعُ هو ما يصل بينهما. */
+  /* ═══ الرأسُ يلتصق ويضمر — لا يذهب ولا يبتلع الشاشة ═══
+
+     طلبُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): «الشريطُ العلويُّ لتعديل الشعب يجب
+     أن يبقى ظاهرا للمدرّب حتّى يخرج من خانة الشعب كلِّها»، ثمّ: «اجعل
+     الستبر أصغرَ عندما نرفع للأعلى ليتبقّى مساحةٌ جيّدةٌ للمدرّب بتعبئة ما
+     هو مطلوبٌ منه».
+
+     فالرأسُ لاصقٌ في الطورين معا — لا في التجهيز وحدَه — ويضمر بالتمرير:
+     تسقط الحلقةُ والعنوانُ وأسطرُ الحالة، وتصغر دوائرُ الخطوات، وتبقى
+     الخطواتُ الستُّ وحدَها شريطا رفيعا يُنقر.
+
+     والعتبةُ ٩٦ بكسلا لا صفرا: ارتعاشةُ إصبعٍ على لوحةٍ لمسيّةٍ تبدّل
+     الحالةَ عند الصفر فيهتزّ الرأسُ صاعدا هابطا. */
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setCompact(window.scrollY > 96);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const dirtyRef = useRef(false);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => { if (dirtyRef.current) e.preventDefault(); };
@@ -349,9 +415,11 @@ export default function CohortWorkspace() {
      النموذجُ واحدٌ للفعلين: ما كُتب فيه يُرسَل `POST` إن لم يكن تحت اليد
      تكليفٌ يُعدَّل، و`PATCH` إن كان. فلا شاشةٌ ثانيةٌ ولا حقولٌ تُكرَّر. */
   const blankTask = { title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "" };
-  const cancelEdit = () => { setEditingId(null); setTaskForm(blankTask); setTaskAttachments([]); };
+  const cancelEdit = () => { setEditingId(null); setTaskForm(blankTask); setTaskAttachments([]); setTaskFormOpen(false); };
   const editAssessment = (a: Workspace["assessments"][number]) => {
     setEditingId(a.id);
+    /* «عدّل» يفتح الانسدالَ نفسَه — لا شاشةَ ثانيةً ولا حقولٌ تُكرَّر */
+    setTaskFormOpen(true);
     setTaskForm({ title: a.title, briefAr: a.briefAr ?? "", type: a.type, maxScore: a.maxScore, dueAt: toDateInput(a.dueAt) });
     setTaskAttachments(readTypedLinks(a.attachments));
   };
@@ -363,8 +431,8 @@ export default function CohortWorkspace() {
       dueAt: taskForm.dueAt ? new Date(taskForm.dueAt).toISOString() : null,
       /* الناقصُ يُسقَط لا يُرسَل نصفَ مرفق — والمصفوفةُ الفارغةُ محوٌ مقصود */
       attachments: taskAttachments
-        .filter((r) => r.title.trim() && /^https?:\/\//.test(r.url.trim()))
-        .map((r) => ({ title: r.title.trim(), url: r.url.trim(), kind: resourceKind(r.kind) })),
+        .filter((r) => r.title.trim() && /^https?:\/\//.test((r.url ?? "").trim()))
+        .map((r) => ({ title: r.title.trim(), url: (r.url ?? "").trim(), kind: resourceKind(r.kind) })),
     };
     if (editingId) await apiPatch(`/api/trainer/assessments/${editingId}`, payload);
     else await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined });
@@ -397,8 +465,13 @@ export default function CohortWorkspace() {
       </Link>
 
       {/* ═══ الرأس: أين وصلت الشعبة ═══ */}
-      <Panel as="section" tone={st.tone} className="mb-5">
-        <div className="flex flex-wrap items-start gap-5">
+      <Panel
+        as="section"
+        tone={st.tone}
+        className={`sticky z-30 mb-5 bg-paper/95 backdrop-blur transition-[padding] ${compact ? "py-3" : ""}`}
+        style={{ top: "var(--staff-sticky-top, 0px)" }}
+      >
+        <div className={`flex flex-wrap items-start gap-5 ${compact ? "hidden" : ""}`}>
           <ProgressRing value={ready} label={`${doneCount}/${gated.length}`} caption="تجهيز" size={76} />
           <div className="min-w-0 flex-1">
             <p className="text-read font-bold text-muted-foreground">{ws.course.titleAr}</p>
@@ -449,12 +522,18 @@ export default function CohortWorkspace() {
           onChange={setPhase}
         />
 
-        {/* ═══ خطُّ الخطوات — يمتلئ بقدر ما أُنجز، والتاليةُ مضاءة ═══ */}
-        {phase === "prepare" && (
-        <div className="relative mt-5">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-x-[8.3%] top-5 hidden h-1 rounded-full bg-white/10 md:block">
-            <div className="stage-fill h-full rounded-full bg-teal" style={{ width: `${ready}%` }} />
-          </div>
+        {/* ═══ خطُّ الخطوات — يمتلئ بقدر ما أُنجز، والتاليةُ مضاءة ═══
+
+            ويبقى في «مركز التواصل» كذلك: نقرةٌ على خطوةٍ تعيده إلى التجهيز
+            عندها (`openStage` تبدّل الطورَ والخطوةَ معا). وكان يختفي بتبديل
+            الطور، فيفقد المدرّبُ سلّمَه ولا يجد طريقَ العودة إلّا بلسانٍ
+            فوقه لا يدلّ عليه شيء. */}
+        <div className={`relative ${compact ? "mt-3" : "mt-5"}`}>
+          {!compact && (
+            <div aria-hidden="true" className="pointer-events-none absolute inset-x-[8.3%] top-5 hidden h-1 rounded-full bg-white/10 md:block">
+              <div className="stage-fill h-full rounded-full bg-teal" style={{ width: `${ready}%` }} />
+            </div>
+          )}
           <ol className="grid gap-2 md:grid-cols-6">
             {STAGES.map((s, i) => {
               const item = byKey.get(s.key);
@@ -468,24 +547,28 @@ export default function CohortWorkspace() {
                     type="button"
                     onClick={() => openStage(s.key)}
                     aria-current={selected ? "step" : undefined}
-                    className={`group flex w-full items-center gap-3 rounded-2xl px-2 py-1.5 text-start transition md:flex-col md:items-center md:gap-2 md:text-center ${selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"}`}
+                    className={`group flex w-full items-center rounded-2xl text-start transition md:flex-col md:items-center md:text-center ${compact ? "gap-2 px-1 py-1 md:gap-1" : "gap-3 px-2 py-1.5 md:gap-2"} ${selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"}`}
                   >
-                    <span className={`relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 text-sm font-black transition ${
+                    <span className={`relative z-10 grid shrink-0 place-items-center rounded-full border-2 font-black transition ${compact ? "h-7 w-7 text-fine" : "h-10 w-10 text-sm"} ${
                       done ? "border-teal bg-teal text-on-teal"
                         : isNext ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_4px_rgba(250,188,5,0.15)]"
                         : "border-white/15 bg-surface text-muted-foreground"
                     }`}>
-                      {done ? <Check className="h-4 w-4" aria-hidden="true" /> : i + 1}
+                      {done ? <Check className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden="true" /> : i + 1}
                       {/* نقطةٌ ذهبيّةٌ على الرقم: في هذه المرحلة تعديلٌ لم يُحفظ */}
                       {dirty[s.key] && (
                         <span className="absolute -end-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-surface bg-gold" aria-hidden="true" />
                       )}
                     </span>
                     <span className="min-w-0">
-                      <span className={`block text-read font-bold leading-5 ${done || isNext || selected ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</span>
-                      <span className={`block text-fine leading-4 ${dirty[s.key] ? "font-bold text-gold-ink" : "text-muted-foreground"}`}>
-                        {dirty[s.key] ? "لم يُحفَظ" : done ? "تمّ" : isNext ? "التالي" : optional ? "اختياريّ" : "لم يتمّ بعد"}
-                      </span>
+                      <span className={`block font-bold leading-5 ${compact ? "text-fine" : "text-read"} ${done || isNext || selected ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</span>
+                      {/* والسطرُ الثاني يُطوى بالضمور — إلّا «لم يُحفَظ»:
+                          تعديلٌ في اليد لا يُكتم لتوفير سطر. */}
+                      {(!compact || dirty[s.key]) && (
+                        <span className={`block text-fine leading-4 ${dirty[s.key] ? "font-bold text-gold-ink" : "text-muted-foreground"}`}>
+                          {dirty[s.key] ? "لم يُحفَظ" : done ? "تمّ" : isNext ? "التالي" : optional ? "اختياريّ" : "لم يتمّ بعد"}
+                        </span>
+                      )}
                     </span>
                   </button>
                 </li>
@@ -493,7 +576,6 @@ export default function CohortWorkspace() {
             })}
           </ol>
         </div>
-        )}
       </Panel>
 
       {phase === "prepare" && locked && stage !== "approval" && (
@@ -724,76 +806,120 @@ export default function CohortWorkspace() {
         <div className="space-y-5">
         <Panel as="section">
           <StageIntro stage="resources" />
-          <p className="mt-2 text-read leading-6 text-muted-foreground">سمِّ المحتوى لا المنصّة: «كرّاسة التحرير» لا «ملفّ PDF». واختر نوعَه — المتعلّمُ يرى النوعَ قبل أن ينقر، فيعرف أكتابٌ هو أم فيديو أم كتابٌ صوتيّ.</p>
-          <ul className="mt-4 space-y-3">
-            {content.resources.map((r, i) => {
-              const patch = (next: Partial<PlanResource>) =>
-                setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...next } : x)) });
+          {/* ═══ ثلاثةُ أصنافٍ لا قائمةُ أنواعٍ لكلّ صفّ ═══
+
+              كانت الصفحةُ صفوفا متشابهةً في كلٍّ منها قائمةُ أنواعٍ من ستّة
+              يختار منها المدرّبُ بنفسه — «عشوائيّة» كما سمّاها صاحبُ المنصّة
+              (١٥ سبتمبر ٢٠٢٦). فيختلف ترتيبُ شعبتين لمدرّبٍ واحد، ولا يعرف
+              المتعلّمُ أين يبحث.
+
+              فصارت ثلاثَ خاناتٍ لكلٍّ بابُها: المسجَّلُ بتاريخ فتحه، والكتبُ
+              بهدفها، والعامُّ بلا شرط. والنوعُ يُشتقّ من الصنف فلا يُسأل. */}
+          <div className="mt-4 space-y-5">
+            {RESOURCE_CATEGORIES.map((cat) => {
+              const meta = RESOURCE_CATEGORY_META[cat];
+              /* الموضعُ الأصليُّ يُحمل مع الصفّ: التعديلُ والحذفُ يقعان على
+                 المصفوفة الواحدة، والترشيحُ يعيد ترقيما لا يطابقها. */
+              const rows = content.resources
+                .map((r, i) => ({ r, i }))
+                .filter(({ r }) => resourceCategory(r) === cat);
               return (
-                <Card as="li" key={i} className="grid gap-3">
-                  <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto]">
-                    <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder="اسم المصدر — ما يراه المتعلّم" aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
-                    {/* د-٣: «ملفّ» كان نوعا يُختار ولا شيءَ يُرفَع — فيلصق
-                        المدرّبُ رابطا ويسمّيه ملفّا، أو يدع النوعَ كذبا.
-                        فالحقلُ يتبدّل بالنوع: مرفوعٌ هنا، أو مُلصَقٌ هناك. */}
-                    {resourceKind(r.kind) === "file" ? (
-                      <div className="sm:col-span-1">
-                        <ModuleBodyUpload
-                          cohortId={ws.cohort.id}
-                          purpose="plan_resource"
-                          refId={`r${i}`}
-                          value={r}
-                          onChange={(next) => patch(next)}
-                          disabled={locked}
-                          label="ارفع الملفّ"
-                          hint="يفتحه المتعلّمُ من درسه — PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
-                        />
-                      </div>
-                    ) : (
-                      <input dir="ltr" value={r.url} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
-                    )}
-                    <select value={resourceKind(r.kind)} onChange={(e) => patch({ kind: e.target.value })} disabled={locked} aria-label={`نوع المصدر ${i + 1}`} className={controlCls}>
-                      {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
-                    </select>
-                    <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
-                  </div>
-                  {/* ═══ ولماذا سطرُ «لماذا هذا المصدر» ═══
+                <section key={cat}>
+                  <h4 className="flex items-center gap-2 text-read font-black text-foreground">
+                    <meta.icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" /> {meta.label}
+                  </h4>
+                  <p className="mt-1 text-read leading-6 text-muted-foreground">{meta.hint}</p>
+                  <ul className="mt-3 space-y-3">
+                    {rows.map(({ r, i }) => {
+                      const patch = (next: Partial<PlanResource>) =>
+                        setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...next } : x)) });
+                      return (
+                        <Card as="li" key={i} className="grid gap-3">
+                          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                            <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder={meta.titlePlaceholder} aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
+                            {/* المرفوعُ حيث يُرفَع، والمُلصَقُ حيث يُلصَق —
+                                والصنفُ يقرّر أيُّهما، لا قائمةٌ يختار منها. */}
+                            {cat === "reading" ? (
+                              <ModuleBodyUpload
+                                cohortId={ws.cohort.id}
+                                purpose="plan_resource"
+                                refId={`r${i}`}
+                                value={r}
+                                onChange={(next) => patch(next)}
+                                disabled={locked}
+                                label="ارفع الملفّ"
+                                hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل. أو ألصِق رابطا بدلَه."
+                              />
+                            ) : (
+                              <input dir="ltr" value={r.url ?? ""} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
+                            )}
+                            <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
+                          </div>
+                          {/* والرابطُ يبقى متاحا للكتب كذلك — كتابٌ على الشبكة لا يُرفَع */}
+                          {cat === "reading" && (
+                            <input dir="ltr" value={r.url ?? ""} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="أو رابطٌ إليه — https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
+                          )}
+                          <input
+                            value={r.noteAr ?? ""}
+                            onChange={(e) => patch({ noteAr: e.target.value })}
+                            disabled={locked}
+                            maxLength={500}
+                            placeholder={meta.notePlaceholder}
+                            aria-label={`وصف المصدر ${i + 1}`}
+                            className={controlCls}
+                          />
+                          {/* ═══ «ويحدّد متى تفتح للطالب طيلةَ الفصل» ═══
 
-                      طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يكون لكلّ مصدرٍ
-                      وصفٌ يقول ما هو ولمَ يهمّ. والمفاجأةُ أنّ الحقلَ كان
-                      موجودا في كلّ الطريق إلّا أوّلَه: `noteAr` في نوع المصدر،
-                      ويقبله الخادمُ (٥٠٠ حرفا)، ويمرّره `plan-overlay` مشذَّبا،
-                      **والمتعلّمُ يعرضه أصلا** في `StageWork`. فلم يكن ينقص
-                      إلّا خانةٌ يكتب فيها المدرّب — فما من مدرّبٍ كتب وصفا قطّ،
-                      وسطرٌ في شاشة المتعلّم لم يُملأ يوما.
-
-                      واختياريٌّ بقصد: مصدرٌ بلا وصفٍ خيرٌ من مدرّبٍ يتوقّف عند
-                      حقلٍ إلزاميٍّ فلا يضيف المصدرَ أصلا. */}
-                  <input
-                    value={r.noteAr ?? ""}
-                    onChange={(e) => patch({ noteAr: e.target.value })}
-                    disabled={locked}
-                    maxLength={500}
-                    placeholder="لماذا هذا المصدر؟ ما فيه، ومتى يقرؤه (اختياريّ)"
-                    aria-label={`وصف المصدر ${i + 1}`}
-                    className={controlCls}
-                  />
-                </Card>
+                              للمسجَّل وحدَه: جلسةٌ تدريبيّةٌ تُفتح في أسبوعها
+                              لا مع أوّل يوم. والفارغُ يعني «مفتوحةٌ من البداية»
+                              — لا «مغلقةٌ أبدا». */}
+                          {cat === "recorded" && (
+                            <StaffField label="متى تُفتح للمتعلّم" hint="اتركه فارغا لتُفتح مع أوّل يومٍ في الفصل. وقبل موعده لا تصل المتعلّمَ أصلا.">
+                              <input
+                                type="date" dir="ltr"
+                                value={r.opensAt ? r.opensAt.slice(0, 10) : ""}
+                                min={ws.cohort.term ? ws.cohort.term.startsOn.slice(0, 10) : undefined}
+                                max={ws.cohort.term ? ws.cohort.term.endsOn.slice(0, 10) : undefined}
+                                onChange={(e) => patch({ opensAt: e.target.value ? new Date(`${e.target.value}T00:00:00`).toISOString() : null })}
+                                disabled={locked}
+                                aria-label={`متى يُفتح المصدر ${i + 1}`}
+                                className={`${controlCls} text-left`}
+                              />
+                            </StaffField>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </ul>
+                  <Button
+                    tone="secondary" size="sm" className="mt-3" disabled={locked}
+                    onClick={() => setContent({
+                      ...content,
+                      resources: [...content.resources, { title: "", url: "", category: cat, kind: kindForCategory(cat, false) }],
+                    })}
+                  >
+                    {meta.addLabel}
+                  </Button>
+                </section>
               );
             })}
-          </ul>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button tone="secondary" disabled={locked} onClick={() => setContent({ ...content, resources: [...content.resources, { title: "", url: "", kind: "link" }] })}>+ مصدر</Button>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
             {/* والمرفوعُ لا يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ
                 مصدرٍ ملفُّه في المخزن — فيُرفع ثمّ لا يُحفظ. */}
             <Button tone="confirm" disabled={busy || locked || !dirty.resources || content.resources.some((r) => !r.title.trim() || !resourceHasSource(r))} onClick={savePlan}>احفظ المصادر</Button>
           </div>
         </Panel>
 
-        {/* موادُّ الشعبة — كانت تُقرأ هنا وتُضاف من «التشغيل»، فصارت تُقرأ
-            وتُضاف في موضعٍ واحد (ع-١). ولوحةٌ على حدة لا مدموجةً في مصادر
-            الخطّة: تلك تمرّ بالاعتماد وتصل الدرس، وهذه موادُّ شعبةٍ جارية. */}
-        <CohortMaterials cohortId={ws.cohort.id} />
+        {/* ═══ و«موادُّ الشعبة» حُذفت كلّيّا (١٥ سبتمبر ٢٠٢٦) ═══
+
+            كانت لوحةً ثانيةً تحت المصادر ترفع ملفّاتٍ لا تمرّ باعتماد.
+            وقال صاحبُ المنصّة: «لا داعيَ لخانة مواد الشعبة كلّيّا».
+
+            وما كانت تحمله له بابُه الآن: ملفٌّ للمتعلّم يُرفع في «كتبٌ
+            وملفّات» ويمرّ بالاعتماد كسائر المصادر، وملفُّ لقاءٍ بعينه
+            يُرفق باللقاء في خطوته. ولوحتان ترفعان ملفّاتٍ للمتعلّم
+            إحداهما محروسةٌ والأخرى لا — بابٌ حول الاعتماد لا خانةُ راحة. */}
         </div>
       )}
 
@@ -863,11 +989,25 @@ export default function CohortWorkspace() {
             </ul>
           )}
 
-          {/* ── نموذجٌ واحدٌ: يؤلّف تكليفا أو يعدّل واحدا قائما ── */}
+          {/* ── نموذجٌ واحدٌ: يؤلّف تكليفا أو يعدّل واحدا قائما — وينسدل ── */}
           <div className="mt-5 border-t border-white/10 pt-4">
-            <p className="text-read font-black text-foreground">
-              {editingId ? "تعديلُ المهمّة" : "مهمّةٌ جديدة"}
-            </p>
+            {!taskFormOpen ? (
+              <Button tone="secondary" disabled={locked} onClick={() => setTaskFormOpen(true)}>
+                + مهمّةٌ جديدة
+              </Button>
+            ) : (
+              <>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              aria-expanded
+              className="flex w-full items-center justify-between gap-2 text-start"
+            >
+              <span className="text-read font-black text-foreground">
+                {editingId ? "تعديلُ المهمّة" : "مهمّةٌ جديدة"}
+              </span>
+              <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </button>
             <div className="mt-3 grid gap-3">
               <label className="block">
                 <span className="block text-read font-bold text-foreground">العنوان</span>
@@ -893,7 +1033,7 @@ export default function CohortWorkspace() {
                     return (
                       <li key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
                         <input value={att.title} onChange={(e) => patch({ title: e.target.value })} placeholder="اسم المرفق" aria-label={`اسم المرفق ${i + 1}`} className={controlCls} />
-                        <input dir="ltr" value={att.url} onChange={(e) => patch({ url: e.target.value })} placeholder="https://…" aria-label={`رابط المرفق ${i + 1}`} className={`${controlCls} text-left`} />
+                        <input dir="ltr" value={att.url ?? ""} onChange={(e) => patch({ url: e.target.value })} placeholder="https://…" aria-label={`رابط المرفق ${i + 1}`} className={`${controlCls} text-left`} />
                         <select value={resourceKind(att.kind)} onChange={(e) => patch({ kind: e.target.value })} aria-label={`نوع المرفق ${i + 1}`} className={controlCls}>
                           {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
                         </select>
@@ -928,11 +1068,16 @@ export default function CohortWorkspace() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button tone="confirm" disabled={busy || taskForm.title.trim().length < 3} onClick={saveAssessment}>
-                  {editingId ? "احفظ التعديل" : "أنشئ المهمّة"}
+                  {editingId ? "احفظ التعديل" : "أكِّدِ المهمّة"}
                 </Button>
-                {editingId && <Button tone="ghost" disabled={busy} onClick={cancelEdit}>أَلْغِ التعديل</Button>}
+                {/* والإلغاءُ يُطوى بالانسدال: من فتحه ليجرّب يغلقه بلا أثر */}
+                <Button tone="ghost" disabled={busy} onClick={cancelEdit}>
+                  {editingId ? "أَلْغِ التعديل" : "أغلِق"}
+                </Button>
               </div>
             </div>
+              </>
+            )}
           </div>
         </Panel>
 

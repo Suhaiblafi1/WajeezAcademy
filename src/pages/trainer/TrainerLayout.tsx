@@ -6,7 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import { useRealSession } from "@/services/session";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
@@ -118,9 +118,32 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     );
   }
 
+  const headerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () => {
+      document.documentElement.style.setProperty("--staff-sticky-top", `${Math.round(el.getBoundingClientRect().height)}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => { ro.disconnect(); document.documentElement.style.removeProperty("--staff-sticky-top"); };
+  }, []);
+
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
+      {/* ═══ ارتفاعُ الشريط يُقاس ويُنشَر — لا يُخمَّن رقما في مكانٍ آخر ═══
+
+          شاشاتٌ تحت هذا الشريط تُلصِق رؤوسَها (`sticky`)، فتحتاج أن تعرف
+          أين ينتهي هو. ورقمٌ مكتوبٌ بيدٍ في كلّ واحدةٍ منها يفترق عنه عند
+          أوّل تبديلٍ هنا: الشريطُ يلفّ سطرَه على الهاتف فيطول، ويقصر على
+          الحاسوب، ويتبدّل بمعامل التكبير `--app-scale`.
+
+          فيُقاس بـ`ResizeObserver` ويُنشَر متغيّرا واحدا على الجذر تقرؤه
+          من شاءت. ولو لم يُقَس بقي `0px` — فالرأسُ يلتصق بأعلى الإطار، وهو
+          أسوأُ عرضا لا شاشةٌ مكسورة. */}
+      <header ref={headerRef} className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
         {/* ── الشريطُ يأخذ سطرَه ──
 
             كان تسعةَ رموزٍ **بلا كلمة** بعرض ٣٩٠: النصُّ `hidden sm:inline`،
