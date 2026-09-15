@@ -1,0 +1,187 @@
+{
+  "_ملاحظة": "اقتراحُ تجميعٍ للمهاراتِ التي لا تخدمها دورةٌ اليوم. مقترحٌ لا قرار: المعرّفاتُ مبدئيّة، والعناوينُ والساعاتُ تُراجَع في عمود «تعديلك». لا يدخل شيءٌ منه الكتالوجَ حتّى يعتمده صاحبُ المنصّة.",
+  "courses": [
+    {
+      "proposed_id": "C-FIN-101",
+      "title_ar": "دورة إدارة المال الشخصي: من الدخل إلى ميزانية تصمد",
+      "title_term_en": "Personal Money Management",
+      "family_id": "FIN",
+      "level_ar": "تأسيسي",
+      "suggested_total_hours": 16,
+      "rationale_ar": "أكبرُ فجوةٍ في المهاراتِ غيرِ المخدومة: إحدى عشرةَ مهارةً ماليّةً بلا دورةٍ واحدة. وهذه الستُّ تُبنى على بعضها في تسلسلٍ طبيعيّ — هدفٌ ثمّ ميزانيةٌ ثمّ ادّخارٌ ثمّ طوارئُ ثمّ دين.",
+      "skill_slugs": ["financial_goal_setting", "personal_budgeting", "saving_habits", "emergency_fund", "debt_management", "consumer_awareness"]
+    },
+    {
+      "proposed_id": "C-FIN-102",
+      "title_ar": "دورة أساسيات الاستثمار وقراءة الاقتصاد للأفراد",
+      "title_term_en": "Investment & Economic Literacy",
+      "family_id": "FIN",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 14,
+      "rationale_ar": "تُبنى على C-FIN-101 ولا تسبقها: من لا ميزانيةَ له لا يستثمر. وضمُّ الضرائبِ والاقتصادِ العامِّ هنا يجعلها دورةَ «فهمِ المال خارج جيبك».",
+      "skill_slugs": ["investment_basics", "risk_return", "tax_basics", "public_economics_basics"]
+    },
+    {
+      "proposed_id": "C-GOV-101",
+      "title_ar": "دورة أساسيات العمل في الخدمة العامة",
+      "title_term_en": "Public Service Foundations",
+      "family_id": "GOV",
+      "level_ar": "تأسيسي",
+      "suggested_total_hours": 16,
+      "rationale_ar": "عائلةُ GOV كلُّها بلا دورة — عشرُ مهاراتٍ معطّلة. وهذه الخمسُ هي ما يحتاجه الموظّفُ الجديدُ في أوّلِ سنة: العقليّةُ والمراسلةُ والنزاهةُ والمال والمشتريات.",
+      "skill_slugs": ["public_service_mindset", "public_ethics", "government_correspondence", "public_finance_basics", "public_procurement"]
+    },
+    {
+      "proposed_id": "C-GOV-102",
+      "title_ar": "دورة السياسات العامة والتحوّل الرقمي الحكومي",
+      "title_term_en": "Public Policy & Digital Government",
+      "family_id": "GOV",
+      "level_ar": "متقدّم",
+      "suggested_total_hours": 18,
+      "rationale_ar": "الطبقةُ الأعلى من GOV: من ينفّذ إلى من يصوغ ويقيس. وجاهزيّةُ AI هنا لا في دوراتِ AI العامّة، لأنّ قيودَ الحكومةِ (خصوصيّةٌ وشفافيّةٌ ومساءلة) غيرُ قيودِ الشركة.",
+      "skill_slugs": ["policy_literacy", "policy_evaluation", "public_sector_project_management", "digital_government", "government_ai_readiness"]
+    },
+    {
+      "proposed_id": "C-FAM-101",
+      "title_ar": "دورة التواصل مع الأبناء والانضباط الإيجابي",
+      "title_term_en": "Parenting Communication & Positive Discipline",
+      "family_id": "FAM",
+      "level_ar": "تأسيسي",
+      "suggested_total_hours": 14,
+      "rationale_ar": "عائلةُ FAM كلُّها بلا دورة. وهذه الخمسُ محورُها واحد: كيف يُقال الشيءُ في البيت — حوارا وحدّا وقدوةً ودعما لليافع.",
+      "skill_slugs": ["parent_child_communication", "positive_discipline", "family_dialogue", "role_modeling", "teen_confidence_support"]
+    },
+    {
+      "proposed_id": "C-FAM-102",
+      "title_ar": "دورة بناء بيئة تعلّم ومسؤوليّة في الأسرة",
+      "title_term_en": "Family Learning Environment",
+      "family_id": "FAM",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 14,
+      "rationale_ar": "محورُها ما يُبنى لا ما يُقال: قراءةٌ وأهدافٌ ومالٌ وسلامةٌ رقميّة. ونقلتُ «الثقافةَ الماليّةَ للأسرة» من عائلة FIN إلى هنا لأنّها تُمارَس مع الأبناء لا في ميزانيةِ الفرد.",
+      "skill_slugs": ["child_learning_support", "family_reading_culture", "family_goal_setting", "child_financial_literacy", "family_financial_literacy", "child_digital_safety"]
+    },
+    {
+      "proposed_id": "C-WEL-101",
+      "title_ar": "دورة إدارة الطاقة والتركيز",
+      "title_term_en": "Energy & Focus Management",
+      "family_id": "WELL",
+      "level_ar": "تأسيسي",
+      "suggested_total_hours": 12,
+      "rationale_ar": "غيرُ سريريّةٍ بنصِّ تعريفِ المهارات — لا نصيحةَ طبّيّةً ولا وعدَ علاج. محورُها توزيعُ المهامِّ على الطاقةِ وحمايةُ الانتباه.",
+      "skill_slugs": ["energy_management", "distraction_reduction", "mindful_technology_use", "sleep_routine_awareness", "recovery_planning"]
+    },
+    {
+      "proposed_id": "C-WEL-102",
+      "title_ar": "دورة بناء العادات والاستمرار تحت الضغط",
+      "title_term_en": "Habits & Resilience",
+      "family_id": "WELL",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 12,
+      "rationale_ar": "الوجهُ الثاني من WELL: لا كيف تُدار الطاقةُ في يوم، بل كيف يستمرُّ السلوكُ شهرا. وهي المهاراتُ التي يسقط عندها معظمُ المتعلّمين فلا يُكملون.",
+      "skill_slugs": ["habit_building", "motivation_systems", "healthy_boundaries", "stress_resilience_nonclinical"]
+    },
+    {
+      "proposed_id": "C-LRN-101",
+      "title_ar": "دورة مهارات التعلّم الذاتي",
+      "title_term_en": "Self-Directed Learning",
+      "family_id": "LEARN",
+      "level_ar": "تأسيسي",
+      "suggested_total_hours": 14,
+      "rationale_ar": "أوْلى ما يُبنى: منصّةٌ تعليميّةٌ بلا دورةٍ في كيفيّةِ التعلّمِ نفسِه تترك المتعلّمَ يتعثّر في كلِّ دورةٍ بعدها. مرشّحةٌ لأن تكون مساندةً في مساراتٍ كثيرة.",
+      "skill_slugs": ["self_directed_learning", "reading_strategies", "note_taking", "summarization", "memory_spaced_repetition"]
+    },
+    {
+      "proposed_id": "C-LRN-102",
+      "title_ar": "دورة إثبات التعلّم: من الإكمال إلى ملفّ إنجاز",
+      "title_term_en": "Evidence of Learning",
+      "family_id": "LEARN",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 12,
+      "rationale_ar": "ضممتُ إليها «استخدام AI كمدرّب تعلّم» — وهي المهارةُ الوحيدةُ المعطّلةُ في عائلة AI، وموضعُها الطبيعيُّ هنا لا في دورةِ AI تقنيّة.",
+      "skill_slugs": ["course_completion", "portfolio_learning", "peer_learning", "ai_for_learning"]
+    },
+    {
+      "proposed_id": "C-DIG-101",
+      "title_ar": "دورة الكفاءة الرقمية الأساسية",
+      "title_term_en": "Digital Fluency Foundations",
+      "family_id": "DIG",
+      "level_ar": "تأسيسي",
+      "suggested_total_hours": 12,
+      "rationale_ar": "مهاراتٌ تُفترَض ولا تُعلَّم، فيدفع المتعلّمُ ثمنَها في كلِّ دورةٍ لاحقة: بحثٌ وملفّاتٌ وإنتاجيّةٌ ووضوحُ عرض.",
+      "skill_slugs": ["information_search", "digital_file_management", "digital_productivity", "basic_design_literacy"]
+    },
+    {
+      "proposed_id": "C-DIG-102",
+      "title_ar": "دورة العمل عن بُعد والتعاون السحابي",
+      "title_term_en": "Remote Work & Cloud Collaboration",
+      "family_id": "DIG",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 12,
+      "rationale_ar": "«الرفاه الرقمي» هنا لا في WELL: مشكلتُه تنشأ من أدواتِ العملِ نفسِها، فيُعالَج حيث يُستعمل.",
+      "skill_slugs": ["cloud_collaboration", "remote_work_tools", "digital_wellbeing"]
+    },
+    {
+      "proposed_id": "C-COG-101",
+      "title_ar": "دورة التفكير الإبداعي ومنهجيات الابتكار",
+      "title_term_en": "Creative Thinking & Innovation",
+      "family_id": "COG",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 14,
+      "rationale_ar": "الفضولُ مدخلٌ والإبداعُ توليدٌ والابتكارُ تحويلٌ إلى تجربةٍ قابلةٍ للاختبار — ثلاثتُها قوسٌ واحدٌ لا ثلاثُ دورات.",
+      "skill_slugs": ["curiosity", "creative_thinking", "innovation_methods"]
+    },
+    {
+      "proposed_id": "C-COG-102",
+      "title_ar": "دورة النماذج الذهنية والقرار تحت الغموض",
+      "title_term_en": "Mental Models & Sensemaking",
+      "family_id": "COG",
+      "level_ar": "متقدّم",
+      "suggested_total_hours": 14,
+      "rationale_ar": "تخدم المسارَ القياديَّ والتحليليَّ معا، ومحورُها الحالةُ التي لا تكتمل فيها المعلومات — وهي حالةُ أغلبِ القراراتِ الحقيقيّة.",
+      "skill_slugs": ["mental_models", "sensemaking", "ambiguity_tolerance"]
+    },
+    {
+      "proposed_id": "C-BIZ-110",
+      "title_ar": "دورة نموّ المشروع الصغير: المنافسة والتسويق والبيع أونلاين",
+      "title_term_en": "Small Business Growth",
+      "family_id": "BIZ",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 18,
+      "rationale_ar": "أربعُ مهاراتٍ يحتاجها صاحبُ المشروعِ الصغيرِ في سنةٍ واحدة. والأساسياتُ القانونيّةُ محورٌ فيها لا دورةٌ مستقلّة — فهي حاجةُ امتثالٍ لا تخصّصُ محاماة.",
+      "skill_slugs": ["competitive_analysis", "social_media_strategy", "ecommerce_basics", "legal_basics_business"]
+    },
+    {
+      "proposed_id": "C-CAR-110",
+      "title_ar": "دورة الانتقال المهني والتفاوض على العرض",
+      "title_term_en": "Career Transition & Negotiation",
+      "family_id": "CAREER",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 12,
+      "rationale_ar": "عائلةُ CAREER مخدومةٌ في أوّلِها (تخطيطٌ وبحثُ سوق) ومقطوعةٌ في آخرِها: من قرّر الانتقالَ ثمّ وصل إلى عرضٍ لا يجد ما يُكمل به. تُبنى على C-CAR-104 القائمة.",
+      "skill_slugs": ["career_transition", "salary_negotiation", "mentorship_use"]
+    },
+    {
+      "proposed_id": "C-DAT-110",
+      "title_ar": "دورة قراءة المؤشرات وذكاء الأعمال",
+      "title_term_en": "Dashboards & Business Intelligence",
+      "family_id": "DATA",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 12,
+      "recommendation_ar": "مرشّحةٌ للدمج لا للإنشاء",
+      "rationale_ar": "مهارتان فقط — رقيقةٌ لدورةٍ مستقلّة. ورأيي: تُضمّان محورَين إلى دورةِ بياناتٍ قائمة بدل دورةٍ بمهارتَين. أدرجتُها لتُقرَّر لا لتُنشأ كما هي.",
+      "skill_slugs": ["dashboard_reading", "business_intelligence"]
+    },
+    {
+      "proposed_id": "C-COM-110",
+      "title_ar": "دورة كتابة التقارير والثقافة الإعلامية",
+      "title_term_en": "Report Writing & Media Literacy",
+      "family_id": "COM",
+      "level_ar": "متوسط",
+      "suggested_total_hours": 12,
+      "recommendation_ar": "مرشّحةٌ للدمج لا للإنشاء",
+      "rationale_ar": "مهارتان متباعدتان: الكتابةُ إنتاجٌ والثقافةُ الإعلاميّةُ استهلاك. ضمُّهما في دورةٍ واحدةٍ ضمُّ ما لا يجمعه محور — والأصحُّ توزيعُهما على دورتَي تواصلٍ قائمتَين.",
+      "skill_slugs": ["report_writing", "media_literacy"]
+    }
+  ]
+}
