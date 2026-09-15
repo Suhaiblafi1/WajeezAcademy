@@ -23,11 +23,12 @@
 
 import { useMemo, useState, useSyncExternalStore } from "react"
 import { Link } from "react-router"
-import { ArrowLeft, ChevronDown, Flame, Route, Target } from "lucide-react"
-import { bestsellers, pathwayById, pathwayDomain } from "@/data/pathways"
+import { ArrowLeft, ChevronDown, Compass, Flame, Route, Target } from "lucide-react"
+import { bestsellers, pathwayById, pathwayDomain, pathways, type Pathway } from "@/data/pathways"
 import { resolveCatalogRefsAr } from "@/application/catalog/visitor-text"
+import { ALL_AR, filterRows, shownFor, type PickSource } from "@/application/catalog/home-picks"
 import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-source"
-import { bestsellerCourses, courseById, pathwaySizeAr } from "@/data/courses"
+import { bestsellerCourses, courses, pathwaySizeAr, type Course } from "@/data/courses"
 import CourseTitle from "@/components/CourseTitle"
 import { Card } from "@/components/ui/Surface"
 import FavoriteButton from "@/components/FavoriteButton"
@@ -46,16 +47,22 @@ const DOOR = "inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-s
    جعلته ثقيلا أوّلَ مرّة: من جاء يتصفّح المسارات يرى المرشِّحات لا المسارات.
    والالتفافُ يعود من `sm:` فلا يفقد سطحُ المكتب شيئا. */
 function CategoryFilter({
-  counts, active, onChange, label,
+  counts, allCount, active, onChange, label,
 }: {
   counts: [string, number][]
+  /* عدُّ «الكل» يُمرَّر ولا يُجمع من الرقاقات.
+
+     كان `counts.reduce(...)` — وهو صحيحٌ ما دام المعروضُ تحت «الكل» هو
+     اتّحادَ ما تحت الرقاقات. ولم يعد كذلك: لكلّ رقاقةٍ سقفٌ أربعة و«الكل»
+     رقاقةٌ لها سقفُها، فالجمعُ يَعِد باثنتين وعشرين ويعطي أربعا. */
+  allCount: number
   active: string
   onChange: (c: string) => void
   label: string
 }) {
   const [more, setMore] = useState(false)
   const TOP = 5
-  const total = counts.reduce((sum, [, n]) => sum + n, 0)
+  const total = allCount
   const rest = counts.slice(TOP)
   const activeInRest = rest.some(([c]) => c === active)
   const shown: [string, number][] = [['الكل', total], ...counts.slice(0, TOP), ...(more || activeInRest ? rest : [])]
@@ -107,11 +114,31 @@ function CategoryFilter({
   )
 }
 
-/** عدُّ التكرار مرتَّبا تنازليّا — بلا «الكل»، يضيفه المرشِّح */
-function countBy(values: string[]): [string, number][] {
-  const m = new Map<string, number>()
-  for (const v of values) m.set(v, (m.get(v) ?? 0) + 1)
-  return [...m].sort((a, b) => b[1] - a[1])
+/* ــ وسمُ البطاقة: ذهبيٌّ لمن اختير، وهادئٌ لمن اقتُرح ــ
+
+   ما جاء لإتمام الثلاثة ليس «من اختيارنا» — والوسمُ الذهبيُّ ادّعاءٌ تحريريّ
+   لا يُلبَس لمن لم يُختر (`home-picks.ts` يعيده بـ`note: null`). فله وسمُه:
+   الشكلُ نفسُه والصوتُ أخفض، فيبقى للشريط إيقاعٌ واحدٌ بلا فراغٍ في موضع
+   الوسم ولا ادّعاءٍ زائد.
+
+   وما جاء من **خارج** المجال يقول مجالَه صريحا: تحت رقاقةٍ لا يبلغ مجالُها
+   ثلاثةً في الكتالوج كلِّه، البطاقةُ الوافدةُ تُعلن من أين هي — فالرقاقةُ
+   لا تُنسَب إليها بطاقةٌ ليست منها. */
+function PickBadge({ note, fromDomain }: { note: string | null; fromDomain?: string }) {
+  if (note) {
+    return (
+      <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
+        <Flame className="h-3 w-3" />
+        {note}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex w-fit items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-fine font-semibold text-muted-foreground">
+      <Compass className="h-3 w-3" />
+      {fromDomain ? `من ${fromDomain}` : 'مقترحٌ في هذا المجال'}
+    </span>
+  )
 }
 
 export function Bestsellers() {
@@ -127,33 +154,73 @@ export function Bestsellers() {
     [catalogVersion],
   )
   const spotlight = picks[0]
-  const [pwCat, setPwCat] = useState('الكل')
-  const [crCat, setCrCat] = useState('الكل')
+  const [pwCat, setPwCat] = useState(ALL_AR)
+  const [crCat, setCrCat] = useState(ALL_AR)
 
-  /* أسماءُ المسارات لفكّ إحالات «ليس لك إن» — الحقلُ يشير إلى مساراتٍ بمعرّفها */
+  /* أسماءُ المسارات لفكّ إحالات «ليس لك إن» — الحقلُ يشير إلى مساراتٍ بمعرّفها.
+     والخريطةُ من الكتالوج كلِّه لا من المختارات وحدَها: المقترَحُ يحمل الحقلَ
+     نفسَه، وإحالتُه إلى مسارٍ غيرِ مختارٍ كانت تُحذف مع جملتها (`visitor-text`). */
   const nameById = useMemo(
-    () => new Map(picks.map((b) => [b.p.id, b.p.shortName])),
-    [picks],
-  )
-
-  /* بقيّةُ المختارات بعد المميّزة — تُصفّى ثمّ تُقتطع بستّ */
-  const restPaths = useMemo(() => picks.slice(1), [picks])
-  const pwCounts = useMemo(() => countBy(restPaths.map((b) => pathwayDomain(b.p.id))), [restPaths])
-  const morePaths = useMemo(
-    () => restPaths.filter((b) => pwCat === 'الكل' || pathwayDomain(b.p.id) === pwCat).slice(0, 6),
-    [restPaths, pwCat],
-  )
-
-  const allCourses = useMemo(
-    () => bestsellerCourses.map((b) => ({ ...b, c: courseById(b.id)! })).filter((b) => b.c),
+    () => new Map(pathways.map((p) => [p.id, p.shortName])),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- كما فوقه: الكتالوجُ يُستبدل وقت التشغيل
     [catalogVersion],
   )
-  const crCounts = useMemo(() => countBy(allCourses.map((b) => b.c.category)), [allCourses])
-  const moreCourses = useMemo(
-    () => allCourses.filter((b) => crCat === 'الكل' || b.c.category === crCat).slice(0, 6),
-    [allCourses, crCat],
+
+  /* ── شريطُ المسارات: مختاراتٌ يُتمّها الكتالوجُ إلى ثلاثة، وسقفُها أربعة ──
+     البطاقةُ المميّزةُ تُستثنى فلا تُرى مرّتين في قسمٍ واحد. */
+  const pathSource: PickSource<Pathway> = useMemo(
+    () => ({
+      editorial: bestsellers,
+      pool: pathways,
+      idOf: (p) => p.id,
+      domainOf: (p) => pathwayDomain(p.id),
+      exclude: spotlight ? [spotlight.id] : [],
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- كما فوقه: الكتالوجُ يُستبدل وقت التشغيل
+    [spotlight, catalogVersion],
   )
+  const pwRows = useMemo(() => filterRows(pathSource), [pathSource])
+  const pwCounts = useMemo(
+    () => pwRows.map((r) => [r.domain, r.shown.length] as [string, number]),
+    [pwRows],
+  )
+  const morePaths = useMemo(() => shownFor(pathSource, pwCat), [pathSource, pwCat])
+
+  /* ── وترتيبُ الاقتراح في الدورات: دورةٌ من كلّ مسارٍ أوّلا ──
+     الكتالوجُ مرتَّبٌ بالمسار ثمّ التسلسل، فأوّلُ ما يقع عليه الإتمامُ دورةٌ
+     من المسار الذي أُخذت منه المختارة. فتُقدَّم دورةٌ واحدةٌ من كلّ مسارٍ على
+     ثانيةٍ من مسارٍ رُئي — اقتراحٌ يوسّع ما يُرى لا يكرّره. */
+  const coursePool = useMemo(() => {
+    const firsts: typeof courses = []
+    const rest: typeof courses = []
+    const seen = new Set<string>()
+    for (const c of courses) {
+      if (seen.has(c.pathwayId)) rest.push(c)
+      else { firsts.push(c); seen.add(c.pathwayId) }
+    }
+    return [...firsts, ...rest]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- كما فوقه: الكتالوجُ يُستبدل وقت التشغيل
+  }, [catalogVersion])
+
+  /* والمجالُ لا الفئةُ المستهدفة — كرقاقات صفحة الدورات (صاحب المنصّة، ٨
+     سبتمبر ٢٠٢٦: «للدورات أريد البحث يكون بالمجال مثل المسارات وليس الفئة
+     المستهدفة»). كانت الرئيسةُ وحدَها بقيت على `category`، فيقرأ الزائرُ
+     «موظفون ومختصون» هنا و«إدارة المشاريع والعمليات» هناك للشيء نفسِه. */
+  const courseSource: PickSource<Course> = useMemo(
+    () => ({
+      editorial: bestsellerCourses,
+      pool: coursePool,
+      idOf: (c) => c.id,
+      domainOf: (c) => pathwayDomain(c.pathwayId),
+    }),
+    [coursePool],
+  )
+  const crRows = useMemo(() => filterRows(courseSource), [courseSource])
+  const crCounts = useMemo(
+    () => crRows.map((r) => [r.domain, r.shown.length] as [string, number]),
+    [crRows],
+  )
+  const moreCourses = useMemo(() => shownFor(courseSource, crCat), [courseSource, crCat])
 
   return (
     <section id="bestsellers" className="scroll-mt-20 pb-10 pt-10 md:pb-12 md:pt-14">
@@ -245,17 +312,19 @@ export function Bestsellers() {
             القسمَ خُمسَ الصفحة (٢١٩٩ بكسلا)، والتصفيةُ عملُ صفحةِ الكتالوج
             لا الرئيسة. فبقي قرارُ البند ٥٦ في جوهره: **دليلٌ لا كتالوجٌ ثانٍ.**
 
-            والعددُ ستٌّ لكلٍّ: يملأ الشريطَ ولا يُغري بالتمرير بلا نهاية. */}
+            وكان العددُ ستّا لكلٍّ تُقتطع من أوّل القائمة. فصار (١٥ سبتمبر
+            ٢٠٢٦) ثلاثةً حدًّا أدنى وأربعةً حدًّا أعلى **لكلّ رقاقة** —
+            والحسابُ كلُّه في `home-picks.ts` ومعه علّتُه. */}
         {morePaths.length > 0 && (
           <div className="reveal mt-12">
             <h3 className="text-lg font-bold md:text-xl">مسارات أخرى من اختيارنا</h3>
-            <CategoryFilter counts={pwCounts} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
+            <CategoryFilter counts={pwCounts} allCount={shownFor(pathSource, ALL_AR).length} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {morePaths.map((b) => (
                 <Card
-                  key={b.id}
+                  key={b.item.id}
                   as={Link}
-                  to={`/pathways/${b.id}`}
+                  to={`/pathways/${b.item.id}`}
                   tone="accent"
                   interactive
                   className="group flex w-[280px] shrink-0 snap-start flex-col gap-2 p-5 md:w-[330px] md:gap-2.5 md:p-6"
@@ -263,26 +332,23 @@ export function Bestsellers() {
                   {/* ذهبيّةٌ كبطاقة الدورة المجاورة (صاحب المنصّة، ١٢ سبتمبر
                       ٢٠٢٦): الوسمُ واحدٌ في معناه — «هذه مختارةٌ ولمن» —
                       فلونان له في شريطين متجاورين يقولان فرقا لا وجود له. */}
-                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
-                    <Flame className="h-3 w-3" />
-                    {b.note}
-                  </span>
+                  <PickBadge note={b.note} fromDomain={b.kind === 'other' ? pathwayDomain(b.item.id) : undefined} />
                   {/* الاسمُ **القصير** كبطاقة الكتالوج: الكاملُ متوسّطُه ٤٥ حرفا
                       وفيه نقطتان — يصلح لصفحةٍ لا لبطاقةٍ في شريط. */}
-                  <h4 className="text-base font-black leading-snug">{b.p.shortName}</h4>
+                  <h4 className="text-base font-black leading-snug">{b.item.shortName}</h4>
                   {/* «لمن؟» حُذفت من البطاقة (٩ سبتمبر ٢٠٢٦، قرارُ صاحب المنصّة
                       — عكسُ البند ٣٠): بطاقةٌ أهدأ وأقلّ ازدحاما. و«ليس لك
                       إن» يبقى — أصدقُ سطرٍ في الكتالوج: يمنع شراءً خاطئا قبل
                       وقوعه، والمنعُ خدمةٌ لا خسارة. */}
-                  {b.p.notFor && (
+                  {b.item.notFor && (
                     <p className="line-clamp-2 text-read leading-5 text-muted-foreground md:line-clamp-3">
                       <span className="font-bold text-gold-ink">ليس لك إن: </span>
-                      {resolveCatalogRefsAr(b.p.notFor, (id) => nameById.get(id))}
+                      {resolveCatalogRefsAr(b.item.notFor, (id) => nameById.get(id))}
                     </p>
                   )}
                   <p className="flex items-start gap-1.5 text-read leading-5 text-teal-light-ink">
                     <Target className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    <span className="line-clamp-2 min-w-0 md:line-clamp-3">تتخرّج بـ: {b.p.output}</span>
+                    <span className="line-clamp-2 min-w-0 md:line-clamp-3">تتخرّج بـ: {b.item.output}</span>
                   </p>
                   {/* سطرُ الذيل: الحجمُ يمينا، و«تفاصيل المسار» يسارا — لافتةٌ
                       خافتةٌ تقول إنّ البطاقةَ تُفتح، لا زرٌّ يزاحم المحتوى.
@@ -292,7 +358,7 @@ export function Bestsellers() {
                       أسقط التباينَ إلى ٣٫٨:١ على الورق الفاتح (فحصُ الإتاحة في
                       CI)، والحبرُ كاملا ينقلب إلى `#1F6E77` هناك فيبلغ ٤٫٥:١. */}
                   <span className="mt-auto flex items-center justify-between gap-2 pt-2 text-fine text-muted-foreground">
-                    <span>{pathwaySizeAr(b.p)}</span>
+                    <span>{pathwaySizeAr(b.item)}</span>
                     <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
                       تفاصيل المسار
                       <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
@@ -317,7 +383,7 @@ export function Bestsellers() {
         {moreCourses.length > 0 && (
           <div className="reveal mt-10">
             <h3 className="text-lg font-bold md:text-xl">ودوراتٌ مفردة</h3>
-            <CategoryFilter counts={crCounts} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
+            <CategoryFilter counts={crCounts} allCount={shownFor(courseSource, ALL_AR).length} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {moreCourses.map((b) => (
                 /* ⚠️ `‎/build/:courseId` لا `‎/courses/:id`.
@@ -325,27 +391,24 @@ export function Bestsellers() {
                    بطاقةِ دورةٍ رابطا مكسورا على الإنتاج. والكتالوجُ يقصد
                    `‎/build/` نفسَه: صفحةٌ من هذه الدورة وحدَها. */
                 <Card
-                  key={b.id}
+                  key={b.item.id}
                   as={Link}
-                  to={`/build/${b.id}`}
+                  to={`/build/${b.item.id}`}
                   interactive
                   className="group flex w-[260px] shrink-0 snap-start flex-col gap-2 p-5 md:w-[310px] md:gap-2.5 md:p-6"
                 >
-                  <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gold/10 px-2.5 py-1 text-fine font-bold text-gold-ink">
-                    <Flame className="h-3 w-3" />
-                    {b.note}
-                  </span>
-                  <CourseTitle as="h4" name={b.c.name} termEn={b.c.termEn} className="font-bold leading-relaxed" />
+                  <PickBadge note={b.note} fromDomain={b.kind === 'other' ? pathwayDomain(b.item.pathwayId) : undefined} />
+                  <CourseTitle as="h4" name={b.item.name} termEn={b.item.termEn} className="font-bold leading-relaxed" />
                   {/* الوعدُ — ما يخرج به المتعلّم، وهو ما يُشترى */}
-                  {b.c.promise && (
-                    <p className="line-clamp-2 text-read leading-6 text-muted-foreground md:line-clamp-3">{b.c.promise}</p>
+                  {b.item.promise && (
+                    <p className="line-clamp-2 text-read leading-6 text-muted-foreground md:line-clamp-3">{b.item.promise}</p>
                   )}
                   <p className="text-read text-muted-foreground">
-                    {b.c.weeks} {b.c.weeks === 1 ? 'أسبوع' : 'أسابيع'}
+                    {b.item.weeks} {b.item.weeks === 1 ? 'أسبوع' : 'أسابيع'}
                   </p>
                   <span className="mt-auto flex items-center justify-between gap-2">
                     <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
-                      {b.c.skill}
+                      {b.item.skill}
                     </span>
                     <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
                       تفاصيل الدورة
