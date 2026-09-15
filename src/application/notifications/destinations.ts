@@ -80,6 +80,11 @@ const LEARNER: Table = {
 const TRAINER: Table = {
   'trainer_payout': { path: '/trainer/earnings', ctaAr: 'افتح كشفَ مستحقّاتك' },
   'trainer.qualified': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  /* ي-٤: ملفُّه العامُّ يُحرَّر من صفحة حسابه — وهي ما يحمل الخبرَ نفسَه */
+  'trainer.publish.approved': { path: '/trainer/account', ctaAr: 'راجِع ملفَّك العامّ' },
+  /* والنطاقُ يُقرأ أثرُه في اقتراحاته: ما يجوز أن يمسَّه الاقتراح */
+  'trainer.scope.granted': { path: '/trainer/course-proposals', ctaAr: 'افتح اقتراحاتك' },
+  'trainer.scope.revoked': { path: '/trainer/course-proposals', ctaAr: 'افتح اقتراحاتك' },
   'trainer.qualify.rejected': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّةَ شعبتك' },
