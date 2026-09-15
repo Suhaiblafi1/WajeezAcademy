@@ -12,9 +12,33 @@ import {
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
 import { inviteLink, sendStaffInviteEmail } from '../../services/account-mail'
+import { safeNotify } from '../../services/notification.service'
 import { AccountResetService } from '../../services/account-reset.service'
 import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
 import { BulkPurgeService } from '../../services/bulk-purge.service'
+
+/* ═══ ما غيّر وصولَ إنسانٍ يصله (ي-٣) ═══
+
+   قسمةُ الأوزان في `src/application/audit/weight.ts` تقول في أوّل سطرٍ من
+   `high`: «لا يُعقل أن يُمنع إنسانٌ من أن يُخبَر بإيقاف حسابه». وكان لا
+   يُخبَر: الإيقافُ والأرشفةُ وتعيينُ الأدوار تُكتب في الأثر ثمّ تنتهي هناك،
+   فيجد صاحبُ الحساب بابا لا يُفتح ولا يعرف لماذا.
+
+   ولمَ `safeNotify` لا `notify`: إيقافُ حسابٍ فعلٌ أمنيٌّ لا يُعلَّق على
+   نجاح رسالة. فلو تعذّر الإشعارُ مضى الإيقافُ وبقي أثرُه — والعكسُ (أن يفشل
+   الإيقافُ لأنّ البريدَ سقط) عطبٌ يُستغَلّ.
+
+   وصنفُه `account` في `categories.ts` غيرُ قابلٍ للكتم: من فقد وصولَه لا
+   يُعرض عليه مفتاحُ كتمِ خبرِ فقده. */
+async function notifyAccountOwner(
+  prisma: PrismaClient,
+  userId: string,
+  templateKey: string,
+  title: string,
+  body: string,
+): Promise<void> {
+  await safeNotify(prisma, { userId, channel: 'in_app', templateKey, title, body })
+}
 
 export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClient, auth: AuthService) {
   const bulkPurge = new BulkPurgeService(prisma)
@@ -375,6 +399,13 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const rankRefusal = refuseRoleAssignment(req.auth!.roles, roleIds, before?.roles.map((r) => r.roleId) ?? [])
     if (rankRefusal) return reply.status(403).send({ error: rankRefusal })
     await auth.setRoles(id, roleIds)
+    /* وأسماؤها العربيّةُ من `Role.nameAr` لا معرّفاتُها: رسالةٌ عربيّةٌ تقول
+       «super_admin» تُحوج قارئَها إلى من يترجمها له. */
+    const named = await prisma.role.findMany({ where: { id: { in: roleIds } }, select: { nameAr: true } })
+    await notifyAccountOwner(
+      prisma, id, 'account.roles_changed', 'تغيّرت أدوارُك',
+      `تغيّرت أدوارُك في أكاديمية وجيز. وأدوارُك الآن: ${named.map((r) => r.nameAr).join('، ')}.`,
+    )
     /* ═══ وتعيينُ الأدوار يُسجَّل ═══
 
        لم يكن يُسجَّل. وهو **أعلى فعلٍ سلطةً على المنصّة**: به يصير حسابٌ
@@ -440,6 +471,10 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       const check = await refuseRank(id, req.auth!.roles, 'إيقاف')
       if ('error' in check) return reply.status(check.status).send({ error: check.error })
       await auth.suspend(id)
+      await notifyAccountOwner(
+        prisma, id, 'account.suspended', 'أُوقف حسابُك',
+        'أُوقف حسابُك في أكاديمية وجيز، وأُبطلت جلساتُك المفتوحة. ولا يُقبل دخولُك حتّى يُرفع الإيقاف — فإن كنتَ ترى في ذلك خطأً فراسِل الدعم.',
+      )
       await recordAudit(prisma, {
         actorId: req.auth!.userId, action: 'admin.user.suspend', entityType: 'user', entityId: id,
         meta: { email: check.target.email },
@@ -513,6 +548,12 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const check = await refuseRank(id, req.auth!.roles, 'أرشفةَ')
     if ('error' in check) return reply.status(check.status).send({ error: check.error })
     await auth.archive(id, req.auth!.userId, reason)
+    /* والسببُ يصل صاحبَه كما وصل السجلَّ: سببٌ يُلزَم به الموظّفُ ثمّ يُخفى
+       عمّن يمسّه إلزامٌ بلا فائدةٍ لصاحب الشأن. */
+    await notifyAccountOwner(
+      prisma, id, 'account.archived', 'أُرشف حسابُك',
+      `أُرشف حسابُك في أكاديمية وجيز، وتبقى سجلّاتُك وشهاداتُك محفوظةً كما هي. والسببُ المسجَّل: ${reason}`,
+    )
     /* السببُ في عمودِه `reason` لا في `meta`: الشاشةُ تقرأ «السببُ المكتوب»
        من العمود، والمرشّحاتُ تعمل عليه. وإلزامُ سببٍ ثمّ إخفاؤه في حمولةٍ
        لا تُعرض يُبطل الغرضَ من إلزامه. */
@@ -531,6 +572,10 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const check = await refuseRank(id, req.auth!.roles, 'إعادةَ تنشيطِ')
     if ('error' in check) return reply.status(check.status).send({ error: check.error })
     await auth.unarchive(id)
+    await notifyAccountOwner(
+      prisma, id, 'account.unarchived', 'أُعيد تنشيطُ حسابك',
+      'أُخرج حسابُك في أكاديمية وجيز من الأرشيف، وعاد دخولُك كما كان.',
+    )
     await recordAudit(prisma, {
       actorId: req.auth!.userId, action: 'admin.user.unarchive', entityType: 'user', entityId: id,
       meta: { email: check.target.email },
@@ -547,6 +592,10 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
         return reply.status(409).send({ error: { code: 'not_suspended', message_ar: 'هذا الحساب ليس موقوفا' } })
       }
       await auth.reinstate(id)
+      await notifyAccountOwner(
+        prisma, id, 'account.reinstated', 'رُفع الإيقافُ عن حسابك',
+        'رُفع الإيقافُ عن حسابك في أكاديمية وجيز، وعاد دخولُك كما كان.',
+      )
       await recordAudit(prisma, {
         actorId: req.auth!.userId, action: 'admin.user.reinstate', entityType: 'user', entityId: id,
         meta: { email: check.target.email },
