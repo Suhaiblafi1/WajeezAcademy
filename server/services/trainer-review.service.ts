@@ -1184,18 +1184,17 @@ export class TrainerReviewService {
     const cohort = cohortId
       ? await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true, startsAt: true } })
       : null
-    await this.notifyTrainerUser(profileId, {
-      templateKey: 'trainer.assigned',
-      title: cohort ? 'أُسنِدت إليك شعبة' : 'أُسنِدت إليك دورة',
-      body: cohort
-        ? `أُسنِدت إليك شعبةُ «${cohort.title}» في دورة «${courseTitle}»` +
-          (cohort.startsAt
-          ? ` — تبدأ ${fmtDateWith(cohort.startsAt, { day: 'numeric', month: 'long', year: 'numeric' })}.`
-          : '.') +
-          ' تجد جلساتِها ومتعلّميها في بوّابتك.'
-        : `أُسنِدت إليك دورة «${courseTitle}» — وتصلك شعبُها حين تُجدوَل.`,
-      data: { courseId, cohortId },
-    })
+    /* ي-٤: وإسنادُ الشعبة صار يُبلَّغ به من `assignTrainer` نفسِها، فيغطّي
+       البابَين معا — هذا البابَ وبابَ الإدارة المباشر. فلا يبقى هنا إلّا
+       ما لا تعرفه تلك الطريقة: إسنادُ **دورةٍ بلا شعبة**. */
+    if (!cohort) {
+      await this.notifyTrainerUser(profileId, {
+        templateKey: 'trainer.assigned',
+        title: 'أُسنِدت إليك دورة',
+        body: `أُسنِدت إليك دورة «${courseTitle}» — وتصلك شعبُها حين تُجدوَل.`,
+        data: { courseId, cohortId },
+      })
+    }
     return assignment
   }
 

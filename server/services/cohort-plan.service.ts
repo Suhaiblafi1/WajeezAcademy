@@ -34,6 +34,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
+import { fmtDateWith } from '../../src/application/text/format-ar'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { readFile } from 'node:fs/promises'
@@ -85,6 +86,14 @@ export interface TrainerPlanContent {
 /** ما يجوز للمدرّب تعديلُه في صفّ الشعبة نفسِه — والباقي بيد الإدارة */
 export const TRAINER_EDITABLE_COHORT_FIELDS = [
   'title', 'startsAt', 'endsAt', 'daysOfWeek', 'startTime', 'timezone', 'language', 'deliveryMode',
+] as const
+
+/** ما يغيّر **متى يحضر المتعلّمُ وأين** — ويُبلَّغ به (ي-٤).
+
+    و`title` و`language` خارجَها بقصد: تهذيبُ عنوانٍ ليس خبرا يُوقظ به
+    عشرون إنسانا، ورسالةٌ عن لا شيءٍ تُعلّم قارئَها أن يتجاهل ما بعدها. */
+export const SCHEDULE_FIELDS = [
+  'startsAt', 'endsAt', 'daysOfWeek', 'startTime', 'timezone', 'deliveryMode',
 ] as const
 export type TrainerCohortPatch = Partial<{
   title: string; startsAt: Date; endsAt: Date; daysOfWeek: string[]; startTime: string; timezone: string
@@ -393,6 +402,35 @@ export class CohortPlanService {
       actorId: userId, action: 'cohort.trainer_update', entityType: 'cohort', entityId: cohortId,
       meta: { fields: Object.keys(allowed) },
     })
+
+    /* ═══ ومن يحضر الشعبةَ يعلم أنّ موعدَها تحرّك (ي-٤) ═══
+
+       المدرّبُ يملك تحريكَ البدءِ والأيّامِ والساعةِ والمنطقةِ ونمطِ اللقاء —
+       وكلُّها تغيّر متى يحضر المتعلّمُ وأين. وكان يقع بلا أن يبلغ مسجَّلا
+       واحدا: يجد جدولَه تبدّل حين يفتح «رحلتي»، إن فتحها.
+
+       والفاعلُ هنا المدرّبُ لا المتعلّم، فهو من الأفعال التي `entityId`
+       فيها شعبةٌ لا إنسان — وهو بعينه ما يجعل حارسَ ي-٣ عاجزا عن معرفة
+       المرسَل إليه، ويجعل هذا السطرَ هو الجواب. */
+    const moved = Object.keys(allowed).filter((k) => (SCHEDULE_FIELDS as readonly string[]).includes(k))
+    if (moved.length > 0) {
+      const learners = await this.prisma.enrollment.findMany({
+        where: { cohortId, status: { not: 'dropped' } },
+        select: { userId: true },
+      })
+      const when = row.startsAt
+        ? ` وتبدأ ${fmtDateWith(row.startsAt, { weekday: 'long', day: 'numeric', month: 'long' })}.`
+        : ''
+      for (const l of learners) {
+        await safeNotify(this.prisma, {
+          userId: l.userId, channel: 'in_app', audience: 'learner',
+          templateKey: 'cohort.schedule_changed',
+          title: `تغيّر موعدُ «${row.title}»`,
+          body: `عُدّل جدولُ «${row.title}».${when} راجِع مواعيدَك في صفحة رحلتك قبل اللقاء القادم.`,
+          data: { cohortId, fields: moved },
+        })
+      }
+    }
     return row
   }
 

@@ -40,7 +40,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'sessions',
     labelAr: 'مواعيدُ الجلسات',
-    whatAr: 'جدولةُ لقاءٍ جديدٍ في شعبتك · وقبل الجلسة بيومٍ وقبلها بساعة',
+    whatAr: 'جدولةُ لقاءٍ جديدٍ في شعبتك · تغيّرُ جدولها · وقبل الجلسة بيومٍ وقبلها بساعة',
     silenceable: true,
     /* ── ثغرةٌ كانت هنا: `session.reminder.1h` بلا صنف ──
 
@@ -58,6 +58,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        على كلّ حال — فالكتمُ يُسكت الجرسَ ولا يُخفي اللقاء. */
     templateKeys: [
       'cohort.session.scheduled', 'cohort.meeting.linked',
+      /* ي-٤: وتحرّكُ جدولِ الشعبة نفسِها — المدرّبُ يملك تحريكَ البدء
+         والأيّام والساعة والمنطقة ونمط اللقاء، وكلُّها تغيّر متى يحضر
+         المتعلّمُ وأين. وهو خبرُ موعدٍ كالتذكير، والموعدُ يبقى في جدوله. */
+      'cohort.schedule_changed',
       'session.reminder', 'session.reminder.24h', 'session.reminder.1h',
     ],
   },
