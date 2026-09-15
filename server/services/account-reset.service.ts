@@ -39,9 +39,11 @@
    بالتواريخ — بالدالّة القائمة نفسِها لا بنسخةٍ ثانية. */
 
 import type { PrismaClient } from '@prisma/client'
+import { randomUUID } from 'node:crypto'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { sendAccountErasedEmail } from './account-mail'
+import { accountErasedMail } from './account-mail'
+import { enqueueMail } from './outbox.service'
 import { FOUNDER_EMAILS } from '../auth/founders'
 import { attestationState, type AttestationState } from './backup-attestation'
 import { purgeAccountWithHistory } from './account-purge.service'
@@ -199,33 +201,33 @@ export class AccountResetService {
 
     const done: string[] = []
     const failed: { email: string; errorAr: string }[] = []
-    /* ═══ ومن لم تبلغه رسالتُه يُسمَّى (ي-٦) ═══
+    /* ═══ والرسائلُ تُكتب في الطابور لا تخرج من هنا (ي-٦) ═══
 
-       `sendAccountErasedEmail` تردّ حالَها **ولا ترمي**، فلا يلتقطها
-       `catch` أدناه: مزوّدٌ يردّ ٤٢٩ أو عنوانٌ يرتدّ يمرّ من هنا صامتا،
-       ويُمحى الحسابُ على كلّ حال. فيُقرأ الجوابُ «مُحي ٣١» على أنّ ٣١
-       إنسانا أُخبروا، وقد لا يكون أُخبر منهم أحد.
+       كان نداءُ الإرسال يقع في هذه الحلقة، **وجوابُه يُهمَل**: الدالّةُ تردّ
+       حالَها ولا ترمي، فلا يلتقطها `catch` أدناه. ومزوّدٌ يردّ ٤٢٩ أو عنوانٌ
+       يرتدّ يمرّ صامتا ويُمحى الحسابُ على كلّ حال.
 
-       وهو في إعادة الضبط أوقعُ منه في المحو الجُمليّ: الساحةُ هنا
-       **كلُّ من في المنصّة** إلّا المستثنَين، فدفعةٌ واحدةٌ قد تكون مئاتٍ من
-       نداءات المزوّد في حلقةٍ واحدة — وحدُّه القياسيُّ طلبان في الثانية. */
-    const unreached: { email: string; whyAr: string }[] = []
+       وهو هنا أوقعُ منه في المحو الجُمليّ: الساحةُ **كلُّ من في المنصّة**
+       إلّا المستثنَين — فمئاتُ نداءاتٍ في حلقةٍ واحدةٍ على حدٍّ هو طلبان في
+       الثانية. فتُكتب في `OutboxMail` ويُفرّغها العاملُ مُمَهَّلا.
+
+       ومرجعُ الدفعة يجمعها: تُقرأ رسائلُ إعادةِ ضبطٍ واحدةٍ معا لا متفرّقة. */
+    const batchId = randomUUID()
 
     for (const t of targets) {
       try {
-        if (input.mode === 'archive') await this.archiveOne(t.id, t.email, reason)
+        if (input.mode === 'archive') await this.archiveOne(t.id, t.email, reason, batchId)
         else {
           /* ═══ والبريدُ قبل المحو كالأثر (ي-٤) ═══
 
              الصفُّ يذهب كلُّه ومعه جرسُه، فالبريدُ هو الحامل. ومكتوبٌ في
              `account-mail.ts` لمَ، ولمَ يتقدّم الفعلَ على عرف الأثر. */
-          const mail = await sendAccountErasedEmail(this.prisma, { to: t.email, reasonAr: reason, kind: 'reset_purge' })
-          if (mail.status !== 'sent') {
-            unreached.push({
-              email: t.email,
-              whyAr: mail.status === 'not_configured' ? 'لا قناةَ بريدٍ موصولة' : (mail.error ?? 'سقط الإرسال'),
-            })
-          }
+          await enqueueMail(this.prisma, {
+            to: t.email,
+            ...accountErasedMail({ to: t.email, reasonAr: reason, kind: 'reset_purge' }),
+            purpose: 'account.erased.reset_purge',
+            batchId,
+          })
           await purgeAccountWithHistory(this.prisma, t.id)
         }
         done.push(t.email)
@@ -246,11 +248,11 @@ export class AccountResetService {
       /* المزامنةُ تحسينٌ بعديّ لا شرطُ صحّة — لا تُسقط نتيجةَ المحو */
     }
 
-    return { mode: input.mode, purged: done.length, failed, cohortsResynced, unreached }
+    return { mode: input.mode, purged: done.length, failed, cohortsResynced, batchId }
   }
 
   /** الأرشفة: يبقى الصفُّ ويسقط الدخول وتُعمّى الهويّة */
-  private async archiveOne(userId: string, email: string, reasonAr?: string): Promise<void> {
+  private async archiveOne(userId: string, email: string, reasonAr: string | undefined, batchId: string): Promise<void> {
     /* ═══ والبريدُ قبل المعاملة لا بعدها (ي-٤) ═══
 
        المعاملةُ أدناه تُعمّي العنوانَ إلى `archived+<id>@wajeez.invalid` —
@@ -259,8 +261,22 @@ export class AccountResetService {
        `active`. فالرسالةُ الأخيرةُ تخرج الآن، على العنوان الذي وصل به.
 
        و`reasonAr` يُمرَّر من الحلقة: لم يكن يصل هذه الطريقةَ أصلا، فكان
-       السببُ يُلزَم به الموظّفُ ثمّ يُخفى عمّن يمسّه. */
-    await sendAccountErasedEmail(this.prisma, { to: email, reasonAr, kind: 'reset_archive' })
+       السببُ يُلزَم به الموظّفُ ثمّ يُخفى عمّن يمسّه.
+
+       ═══ وتُكتب في الطابور لا تخرج من هنا (ي-٦) ═══
+
+       وهذه الطريقةُ تُنادى من حلقة إعادة الضبط نفسِها — أي أنّها **دفعةٌ**
+       كالمحو سواءً بسواء، وإن بدت في قراءتها حسابا واحدا. فلو بقيت تُرسل
+       مباشرةً لَبقي نصفُ الساحة على العطب الذي أُصلح في نصفها الآخر.
+
+       والعنوانُ يُلتقط هنا قبل التعمية، ويبقى في الطابور — فما يُرسَل بعد
+       دقائقَ يُرسَل إلى من كان، لا إلى `archived+…@wajeez.invalid`. */
+    await enqueueMail(this.prisma, {
+      to: email,
+      ...accountErasedMail({ to: email, reasonAr, kind: 'reset_archive' }),
+      purpose: 'account.erased.reset_archive',
+      batchId,
+    })
     await this.prisma.$transaction(async (tx) => {
       await tx.session.deleteMany({ where: { userId } })
       await tx.user.update({
