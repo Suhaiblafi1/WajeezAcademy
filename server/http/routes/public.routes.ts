@@ -83,6 +83,14 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     return catalog.trainerPublicPage(slug)
   })
 
+  /* رابطُ مسارٍ باسمه — يردّ وجهتَه لا صفحتَه (ن-٩) */
+  app.get('/api/public/paths/:slug', {
+    schema: { tags: ['public-catalog'], summary: 'وجهةُ رابطِ مسارٍ منشورٍ باسم مدرّبه — عنوانُ صفحته ومرساها' },
+  }, async (req) => {
+    const { slug } = z.object({ slug: z.string().min(1).max(120) }).parse(req.params)
+    return catalog.pathPublicTarget(slug)
+  })
+
   app.get('/api/public/methodology', {
     schema: { tags: ['public-catalog'], summary: 'المراجع العلمية للمنهجية — من ملف المصدر الوحيد' },
   }, async () => catalog.methodology())
