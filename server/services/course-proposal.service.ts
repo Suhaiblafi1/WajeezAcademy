@@ -20,19 +20,47 @@
    ═══ وحدودُ ما يملكه صاحبُ الاقتراح ═══
 
    يعدّل ويحذف **ما لم يُبتّ فيه**. وبعد القرار يقرأ ولا يكتب: اقتراحٌ صار
-   دورةً في الكتالوج لا يُحذف من تحت قرارِ من اعتمده. */
+   دورةً في الكتالوج لا يُحذف من تحت قرارِ من اعتمده.
+
+   ═══ وبينهما سؤال ═══
+
+   كان الطابورُ بابَين: صنِّف أو ارفض. ومن وصله اقتراحٌ اسمُه «دوره خطابه
+   عامه» ولا يدري أهي للمبتدئين أم للتنفيذيّين، ولا كم ساعةً يراها صاحبُها،
+   **لم يملك إلّا أن يخمّن أو يرفض** — والرفضُ لسؤالٍ لم يُسأل يُفقد المنصّةَ
+   دورةً ويُفقد المدرّبَ ثقتَه.
+
+   فصار بابٌ ثالث: `askTrainer` تكتب سؤالا ويُنقل الاقتراحُ إلى
+   `info_requested`، فيقرؤه صاحبُه في بوّابته ويجيب ويعدّل، ثمّ يعود
+   `submitted` ومعه سؤالُها وجوابُه معا — لا الجوابُ وحدَه بلا ما سُئل عنه.
+
+   ═══ والتصنيفُ لا ينتهي بالتصنيف ═══
+
+   اقتراحٌ صُنِّف «نسخةٌ من رمزٍ قائم» لا يُدرّسه صاحبُه: التأهيلُ فعلٌ ثانٍ
+   في شاشةٍ ثانية. وكان ينتهي القرارُ ولا يبقى ما يذكّر به، فيُصنَّف الاقتراحُ
+   ويبقى المدرّبُ غيرَ مؤهَّلٍ لما اقترحه — **وهو ضياعُ العمل بعد إنجازه، لا
+   قبله**. فالقرارُ يخلق مهمّةً قائمةً على من قرّر، وتبقى في «مهامّي» حتّى
+   يُغلقها بيده. */
 
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { safeNotify } from './notification.service'
+import { StaffTaskService, type Assigner } from './staff-task.service'
+import { suggestCourses, type ProposalMatch } from '../../src/application/trainer/proposal-match'
 
 /** طولُ العنوان — ما يقبله الكتالوج نفسُه، فلا يُقبل هنا ما يُردّ هناك */
 export const MIN_PROPOSAL_TITLE = 3
 export const MAX_PROPOSAL_TITLE = 200
-export const MAX_PROPOSAL_AUDIENCE = 300
+/** النبذةُ فقرةٌ لا سطر — و«لمن هي» كانت ٣٠٠ حرفٍ لأنّها كانت سطرا واحدا */
+export const MAX_PROPOSAL_SUMMARY = 1500
+/** سؤالُ الإدارة وجوابُه — ونصٌّ أطولُ من هذا ليس سؤالا بل مواصفاتُ دورة */
+export const MAX_PROPOSAL_QUESTION = 2000
 
-/** ما لم يُبتّ فيه — وهو وحدَه ما يملك صاحبُه تعديلَه وحذفَه */
-export const OPEN_PROPOSAL = ['draft', 'submitted'] as const
+/** ما لم يُبتّ فيه — وهو وحدَه ما يملك صاحبُه تعديلَه وحذفَه.
+
+    و`info_requested` منه بقصد: سُئل صاحبُه ليعدّل، فمنعُه من التعديل يجعل
+    السؤالَ بلا جواب. */
+export const OPEN_PROPOSAL = ['draft', 'submitted', 'info_requested'] as const
 /** ما بُتّ فيه — يُقرأ ولا يُكتب */
 export const DECIDED_PROPOSAL = ['linked', 'became_course', 'rejected'] as const
 
@@ -40,7 +68,7 @@ type Db = PrismaClient | Prisma.TransactionClient
 
 export interface ProposalInput {
   titleAr: string
-  audienceAr?: string | null
+  summaryAr?: string | null
 }
 
 /* عنوانُ الدورة يسكن إصدارَها لا الدورةَ نفسَها: `Course` رمزٌ وحالةٌ ورقمُ
@@ -57,11 +85,19 @@ function currentTitle(course: {
   return course.versions.find((v) => v.version === course.currentVersion)?.titleAr ?? course.id
 }
 
-/** صفٌّ واحدٌ في `teachableProposals` — وما لا عنوانَ له لا يُبذَر */
+/** صفٌّ واحدٌ في `teachableProposals` — وما لا عنوانَ له لا يُبذَر.
+
+    والمفتاحان كلاهما يُقرأ: الطلباتُ التي سبقت هذا التغيير كتبت `audienceAr`،
+    وعمودُ الطلب **لا يُعاد كتابتُه أبدا** (هو سجلُّ ما قُدّم يومَ قُدّم). فمن
+    قرأ واحدا منهما وحدَه أسقط نبذةَ كلِّ متقدّمٍ قديمٍ صامتا. */
 interface RawProposal {
   titleAr?: unknown
+  summaryAr?: unknown
   audienceAr?: unknown
 }
+
+/** نصٌّ من حمولةٍ غيرِ موثوقة — وما ليس نصّا فراغ */
+const rawText = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 
 /** يُبذَر جدولُ الاقتراحات من طلبِ المتقدّم مرّةً — عند ميلاد ملفّه.
 
@@ -82,8 +118,8 @@ export async function seedProposalsFromApplication(
 
   const rows = (raw as RawProposal[])
     .map((r) => ({
-      titleAr: typeof r?.titleAr === 'string' ? r.titleAr.trim() : '',
-      audienceAr: typeof r?.audienceAr === 'string' ? r.audienceAr.trim() : '',
+      titleAr: rawText(r?.titleAr),
+      summaryAr: rawText(r?.summaryAr) || rawText(r?.audienceAr),
     }))
     .filter((r) => r.titleAr.length > 0)
   if (rows.length === 0) return 0
@@ -93,7 +129,7 @@ export async function seedProposalsFromApplication(
       data: {
         profileId,
         titleAr: r.titleAr.slice(0, MAX_PROPOSAL_TITLE),
-        audienceAr: r.audienceAr ? r.audienceAr.slice(0, MAX_PROPOSAL_AUDIENCE) : null,
+        summaryAr: r.summaryAr ? r.summaryAr.slice(0, MAX_PROPOSAL_SUMMARY) : null,
         status: 'submitted',
       },
     })
@@ -143,10 +179,10 @@ export class CourseProposalService {
     if (titleAr.length < MIN_PROPOSAL_TITLE) {
       throw new AuthError('short_title', `عنوانُ الدورة ${MIN_PROPOSAL_TITLE} أحرفٍ فأكثر`, 400)
     }
-    const audienceAr = (input.audienceAr ?? '').trim()
+    const summaryAr = (input.summaryAr ?? '').trim()
     return {
       titleAr: titleAr.slice(0, MAX_PROPOSAL_TITLE),
-      audienceAr: audienceAr ? audienceAr.slice(0, MAX_PROPOSAL_AUDIENCE) : null,
+      summaryAr: summaryAr ? summaryAr.slice(0, MAX_PROPOSAL_SUMMARY) : null,
     }
   }
 
@@ -187,8 +223,8 @@ export class CourseProposalService {
     await recordAudit(this.prisma, {
       actorId: userId, action: 'trainer.course_proposal.update',
       entityType: 'trainer_course_proposal', entityId: id,
-      before: { titleAr: before.titleAr, audienceAr: before.audienceAr },
-      after: { titleAr: row.titleAr, audienceAr: row.audienceAr },
+      before: { titleAr: before.titleAr, summaryAr: before.summaryAr },
+      after: { titleAr: row.titleAr, summaryAr: row.summaryAr },
     })
     return row
   }
@@ -205,9 +241,65 @@ export class CourseProposalService {
     return { deleted: true }
   }
 
+  /** جوابُ المدرّب على سؤال الإدارة — ويعيد اقتراحَه إلى الطابور.
+
+      ولا يُمحى السؤالُ بالجواب: من فتح الطابورَ بعد أسبوعٍ يقرأ «سُئل كذا،
+      فأجاب كذا» — وجوابٌ بلا سؤالِه نصفُ جملة. */
+  async answer(userId: string, id: string, answerAr: string) {
+    const profile = await this.profileForUser(userId)
+    const before = await this.mineOrThrow(profile.id, id)
+    if (before.status !== 'info_requested') {
+      throw new AuthError('no_question', 'لا سؤالَ مفتوحا على هذا الاقتراح', 409)
+    }
+    const text = answerAr.trim()
+    if (text.length < 2) throw new AuthError('empty_answer', 'اكتب جوابَك — الفراغُ لا يُجيب سؤالا', 400)
+
+    const row = await this.prisma.trainerCourseProposal.update({
+      where: { id },
+      data: {
+        answerAr: text.slice(0, MAX_PROPOSAL_QUESTION),
+        answeredAt: new Date(),
+        status: 'submitted',
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'trainer.course_proposal.answer',
+      entityType: 'trainer_course_proposal', entityId: id, meta: { titleAr: row.titleAr },
+    })
+    return row
+  }
+
   /* ═══ جانبُ الإدارة (ح-٤) ═══ */
 
-  /** طابورُ ما لم يُصنَّف — عبرَ المدرّبين كلِّهم، وهو ما لا يقدر عليه عمودُ JSON */
+  /* ═══ ما يُرشَّح للربط — يُحسب هنا لا في المتصفّح ═══
+
+     الكتالوجُ واحدٌ وثمانون رمزا بمهاراتها، والمرشِّحُ يقرأ نصَّها كلَّه.
+     وحسابُه في المتصفّح يعني تحميلَ ذلك كلِّه إلى كلّ من يفتح الشاشة، ثمّ
+     إعادةَ حسابه عند كلّ إعادةِ تصيير. وهو هنا مرّةً واحدةً لكلّ نداء. */
+  private async matchableCourses() {
+    const rows = await this.prisma.course.findMany({
+      where: { status: { not: 'archived' } },
+      select: {
+        id: true, currentVersion: true,
+        versions: { select: { version: true, titleAr: true, shortPromiseAr: true } },
+        skillLinks: { select: { skill: { select: { nameAr: true } } } },
+      },
+    })
+    return rows.map((c) => {
+      const v = c.versions.find((x) => x.version === c.currentVersion)
+      return {
+        id: c.id,
+        titleAr: v?.titleAr ?? c.id,
+        extraAr: [v?.shortPromiseAr, ...c.skillLinks.map((l) => l.skill.nameAr)],
+      }
+    })
+  }
+
+  /** طابورُ ما لم يُصنَّف — عبرَ المدرّبين كلِّهم، وهو ما لا يقدر عليه عمودُ JSON.
+
+      ويصحب كلَّ اقتراحٍ مفتوحٍ ترشيحُ أقربِ الرموز إليه (`suggestedCourses`):
+      من يصنّف لا يحفظ الكتالوجَ بظهر قلب، ومن لم يُرشَّح له شيءٌ أنشأ ثانيةً
+      لما هو موجود. والمصنَّفُ لا يُرشَّح له: قد بُتّ فيه. */
   async queue(scope: 'open' | 'all' = 'open') {
     const rows = await this.prisma.trainerCourseProposal.findMany({
       where: scope === 'open' ? { status: { in: [...OPEN_PROPOSAL] } } : {},
@@ -222,28 +314,126 @@ export class CourseProposalService {
         },
       },
     })
+    const open = rows.filter((r) => (OPEN_PROPOSAL as readonly string[]).includes(r.status))
+    const catalog = open.length > 0 ? await this.matchableCourses() : []
+
     return rows.map((r) => ({
       id: r.id,
       profileId: r.profileId,
       trainerName: r.profile.application.fullName,
       trainerEmail: r.profile.application.email,
       titleAr: r.titleAr,
-      audienceAr: r.audienceAr,
+      summaryAr: r.summaryAr,
       status: r.status,
       courseId: r.courseId,
       courseTitleAr: currentTitle(r.course),
+      questionAr: r.questionAr,
+      questionAt: r.questionAt,
+      answerAr: r.answerAr,
+      answeredAt: r.answeredAt,
       decisionNoteAr: r.decisionNoteAr,
       decidedAt: r.decidedAt,
       createdAt: r.createdAt,
+      suggestedCourses: (OPEN_PROPOSAL as readonly string[]).includes(r.status)
+        ? suggestCourses({ titleAr: r.titleAr, summaryAr: r.summaryAr }, catalog)
+        : ([] as ProposalMatch[]),
     }))
+  }
+
+  /** سؤالُ الإدارة قبل القرار — ينقل الاقتراحَ إلى صاحبه ويُشعره.
+
+      والسؤالُ يُطرح على المفتوح وحدَه: سؤالٌ بعد الرفض لا جوابَ له يُغيّر
+      شيئا، ولو رُدّ الاقتراحُ إلى `info_requested` بعد بتٍّ لَفتح بابا
+      لنقض القرار من حيث لا يُرى. */
+  async askTrainer(actorId: string, id: string, questionAr: string) {
+    const text = questionAr.trim()
+    if (text.length < 5) {
+      throw new AuthError('short_question', 'اكتب سؤالَك — سطرٌ غامضٌ يُعيد الاقتراحَ كما هو', 400)
+    }
+    const row = await this.prisma.trainerCourseProposal.findUnique({
+      where: { id },
+      include: { profile: { select: { userId: true, application: { select: { fullName: true } } } } },
+    })
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    this.assertOpen(row.status)
+
+    const out = await this.prisma.trainerCourseProposal.update({
+      where: { id },
+      data: {
+        status: 'info_requested',
+        questionAr: text.slice(0, MAX_PROPOSAL_QUESTION),
+        questionBy: actorId,
+        questionAt: new Date(),
+        /* سؤالٌ جديدٌ يمحو جوابَ سؤالٍ قبله: الجوابُ المعروضُ يجب أن يكون
+           جوابَ السؤال المعروض، وإلّا قُرئ جوابٌ قديمٌ على سؤالٍ جديد. */
+        answerAr: null,
+        answeredAt: null,
+      },
+    })
+
+    /* والسؤالُ يصل صاحبَه: سؤالٌ في شاشةٍ لا يفتحها إلّا مصادفةً ليس سؤالا.
+
+       و`userId` قد يكون فارغا: ملفٌّ أُنشئ قبل أن يُفعّل صاحبُه حسابَه بدعوته.
+       فيُسأل الاقتراحُ على كلّ حال — السؤالُ مكتوبٌ في الطابور يقرؤه حين يدخل
+       — ولا يُنادى الإشعارُ بمعرّفٍ معدوم. */
+    if (row.profile.userId) {
+      await safeNotify(this.prisma, {
+        userId: row.profile.userId, audience: 'trainer', channel: 'in_app',
+        title: `سؤالٌ عن دورتك المقترحة: ${row.titleAr}`,
+        body: `${text}\n\nافتح «دوراتي المقترحة» لتجيب — ولك أن تعدّل عنوانَها ونبذتَها معه.`,
+        templateKey: 'trainer.course_proposal.question',
+        data: { proposalId: id },
+      })
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.course_proposal.ask',
+      entityType: 'trainer_course_proposal', entityId: id,
+      meta: { titleAr: row.titleAr, questionAr: text },
+    })
+    return out
+  }
+
+  /* ═══ ما يبقى بعد القرار — مهمّةُ التأهيل ═══
+
+     التصنيفُ يقول «هذه دورتُنا»، ولا يجعل المدرّبَ يدرّسها: التأهيلُ فعلٌ
+     ثانٍ في `/admin/assign-by-trainer`. وبينهما ينامُ الاقتراحُ إلى الأبد إن
+     لم يبقَ ما يذكّر به — وهو ما وقع فعلا: اقتراحاتٌ صُنِّفت وأصحابُها غيرُ
+     مؤهَّلين لها بعد شهور.
+
+     فالمهمّةُ على **من قرّر** لا على المدرّب: التأهيلُ بيدِ الإدارة لا بيده،
+     ومهمّةٌ تُلقى على من لا يملك إنجازَها إزعاجٌ لا تذكير. واسمُه فيها كي
+     يُقرأ الصفُّ في «مهامّي» بلا فتحِ شاشةٍ أخرى.
+
+     وهي `high` بقصد: عملٌ نصفُه تمّ ونصفُه معلّق أولى بالإنجاز من عملٍ لم
+     يبدأ — والمدرّبُ ينتظر في الطرف الآخر وقد قيل له إنّ دورتَه قُبلت. */
+  private async openQualificationTask(
+    actor: Assigner,
+    input: { proposalId: string; titleAr: string; courseId: string; trainerName: string; wasLinked: boolean },
+  ) {
+    const tasks = new StaffTaskService(this.prisma)
+    await tasks.assign(actor, {
+      assigneeId: actor.userId,
+      priority: 'high',
+      title: `أهِّل ${input.trainerName} للدورة ${input.courseId}`,
+      bodyAr: [
+        input.wasLinked
+          ? `اقتراحُه «${input.titleAr}» صُنِّف نسخةً من ${input.courseId}.`
+          : `اقتراحُه «${input.titleAr}» صار الدورةَ ${input.courseId} في الكتالوج.`,
+        'ويبقى تأهيلُه لها — وبلا تأهيلٍ لا يُسنَد إلى شعبةٍ منها، فيبقى القرارُ بلا أثر.',
+        'التأهيلُ من: /admin/assign-by-trainer',
+      ].join('\n'),
+    })
   }
 
   /** «نسخةٌ من رمزٍ قائم» — يُربط ولا يُنشأ إصدارٌ باسم صاحبه.
 
       وبابُ الإصدار بعدها بيدِ المدرّب: `course_title_edit` في
       `TrainerChangeService` بـmaker-checker ودائرةِ أثر (ح-٣). */
-  async linkToCourse(actorId: string, id: string, courseId: string, noteAr?: string | null) {
-    const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
+  async linkToCourse(actor: Assigner, id: string, courseId: string, noteAr?: string | null) {
+    const row = await this.prisma.trainerCourseProposal.findUnique({
+      where: { id },
+      include: { profile: { select: { application: { select: { fullName: true } } } } },
+    })
     if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
@@ -251,14 +441,18 @@ export class CourseProposalService {
     const out = await this.prisma.trainerCourseProposal.update({
       where: { id },
       data: {
-        status: 'linked', courseId, decidedBy: actorId, decidedAt: new Date(),
+        status: 'linked', courseId, decidedBy: actor.userId, decidedAt: new Date(),
         decisionNoteAr: noteAr?.trim() || null,
       },
     })
     await recordAudit(this.prisma, {
-      actorId, action: 'trainer.course_proposal.link',
+      actorId: actor.userId, action: 'trainer.course_proposal.link',
       entityType: 'trainer_course_proposal', entityId: id,
       meta: { courseId, titleAr: row.titleAr },
+    })
+    await this.openQualificationTask(actor, {
+      proposalId: id, titleAr: row.titleAr, courseId,
+      trainerName: row.profile.application.fullName, wasLinked: true,
     })
     return out
   }
@@ -267,8 +461,11 @@ export class CourseProposalService {
 
       ولا تُنشأ الدورةُ هنا: نموذجُ الكتالوج يحمل المسارَ والتسلسلَ والساعاتِ
       والمهاراتِ ومدقّقَ التمارين، وثانيةٌ أنحفُ منه تتخلّف عنه بعد شهر. */
-  async markBecameCourse(actorId: string, id: string, courseId: string, noteAr?: string | null) {
-    const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
+  async markBecameCourse(actor: Assigner, id: string, courseId: string, noteAr?: string | null) {
+    const row = await this.prisma.trainerCourseProposal.findUnique({
+      where: { id },
+      include: { profile: { select: { application: { select: { fullName: true } } } } },
+    })
     if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
@@ -276,14 +473,18 @@ export class CourseProposalService {
     const out = await this.prisma.trainerCourseProposal.update({
       where: { id },
       data: {
-        status: 'became_course', courseId, decidedBy: actorId, decidedAt: new Date(),
+        status: 'became_course', courseId, decidedBy: actor.userId, decidedAt: new Date(),
         decisionNoteAr: noteAr?.trim() || null,
       },
     })
     await recordAudit(this.prisma, {
-      actorId, action: 'trainer.course_proposal.become_course',
+      actorId: actor.userId, action: 'trainer.course_proposal.become_course',
       entityType: 'trainer_course_proposal', entityId: id,
       meta: { courseId, titleAr: row.titleAr },
+    })
+    await this.openQualificationTask(actor, {
+      proposalId: id, titleAr: row.titleAr, courseId,
+      trainerName: row.profile.application.fullName, wasLinked: false,
     })
     return out
   }

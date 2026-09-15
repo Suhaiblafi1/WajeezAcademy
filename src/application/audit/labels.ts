@@ -196,6 +196,10 @@ const PHRASES: Record<string, string> = {
   'trainer.application.verify_email': 'توثيقُ بريدِ متقدّم',
   'trainer.application.phase2_complete': 'إتمامُ القسم الثاني من طلبِ انضمام',
   'trainer.application.proposals_edit': 'تحريرُ اقتراحاتِ دوراتِ المتقدّم',
+  /* سؤالُ الإدارة عن اقتراحٍ وجوابُ صاحبه — فعلان يُقرآن كثيرا في الطابور،
+     ولا يستقيم تركيبُهما من المقاطع (`course_proposal` ليست كلمةً في معجم). */
+  'trainer.course_proposal.ask': 'سؤالٌ عن دورةٍ اقترحها مدرّب',
+  'trainer.course_proposal.answer': 'جوابُ مدرّبٍ عن دورته المقترحة',
   /* يُبنى المفتاحُ بشرطٍ في الشيفرة (`result.ok ? 'notification.sent' : …`)
      فلا يُقرأ بمسحِ نصٍّ حرفيّ — ولذلك يُكتب هنا صراحةً. */
   'notification.sent': 'إشعارٌ أُرسل',

@@ -61,7 +61,7 @@ export default function ProposalsEditor({
     setBusy(true);
     try {
       await apiPut(`/api/admin/trainer-applications/${applicationId}/teachable-proposals`, {
-        proposals: rows.map((r) => ({ titleAr: r.titleAr, audienceAr: r.audienceAr })),
+        proposals: rows.map((r) => ({ titleAr: r.titleAr, summaryAr: r.summaryAr })),
       });
       toast("حُفظت الاقتراحات");
       await onSaved();
@@ -93,10 +93,11 @@ export default function ProposalsEditor({
                   aria-label={`اسمُ الاقتراح ${i + 1}`}
                   className={`${controlCls} min-w-0 flex-[2]`}
                 />
-                <input
-                  value={r.audienceAr} onChange={(e) => set(i, { audienceAr: e.target.value })}
-                  placeholder="لمن هي — اختياريّ"
-                  aria-label={`جمهورُ الاقتراح ${i + 1}`}
+                <textarea
+                  value={r.summaryAr} onChange={(e) => set(i, { summaryAr: e.target.value })}
+                  placeholder="نبذةٌ عن الدورة — اختياريّة"
+                  aria-label={`نبذةُ الاقتراح ${i + 1}`}
+                  rows={2}
                   className={`${controlCls} min-w-0 flex-1`}
                 />
                 <Button tone="ghost" size="sm" icon={Trash2} aria-label={`احذف الاقتراح ${i + 1}`}

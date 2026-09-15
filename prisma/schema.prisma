@@ -1478,9 +1478,16 @@ model TrainerCourseProposal {
   id             String    @id @default(uuid()) @db.Uuid
   profileId      String    @db.Uuid
   titleAr        String
-  /// لمن هي — لا تلزم: من أوقفناه عند حقلٍ إلزاميٍّ ثانٍ خسِرنا اقتراحَه
-  audienceAr     String?
-  /// draft | submitted | linked | became_course | rejected
+  /// نبذةٌ عن الدورة بقلم صاحبها — لا تلزم: من أوقفناه عند حقلٍ إلزاميٍّ ثانٍ
+  /// خسِرنا اقتراحَه. وكانت «لمن هي» سطرا واحدا، فصارت نبذةً بقرار صاحب
+  /// المنصّة: الجمهورُ وحدَه لا يُعرِّف دورةً، ومن قرأ «للمحاسبين» لا يعرف
+  /// ما فيها. والعمودُ هو هو — فما كتبه المدرّبون قبلُ باقٍ يعدّلونه.
+  summaryAr      String?
+  /// draft | submitted | info_requested | linked | became_course | rejected
+  ///
+  /// `info_requested` — سألت الإدارةُ صاحبَها سؤالا قبل أن تقرّر، فهو عنده
+  /// لا عندها. ويبقى مفتوحا (`OPEN_PROPOSAL`) فيعدّله ويردّ عليه، ثمّ يعود
+  /// `submitted` إلى الطابور ومعه سؤالُها وجوابُه معا.
   ///
   /// `linked` — قرّرت الإدارةُ أنّها نسخةٌ من رمزٍ قائم، فرُبطت به. ولا
   /// يُنشأ الإصدارُ هنا: بابُه `TrainerChangeRequest` بنوع `course_title_edit`،
@@ -1488,6 +1495,14 @@ model TrainerCourseProposal {
   ///
   /// `became_course` — صارت دورةً في الكتالوج، و`courseId` يشير إليها.
   status         String    @default("draft")
+  /// سؤالُ الإدارة قبل القرار، ومن سأله ومتى — والسؤالُ بلا صاحبٍ لا يُتابَع
+  questionAr     String?
+  questionBy     String?   @db.Uuid
+  questionAt     DateTime?
+  /// جوابُ المدرّب عليه — يُحفظ ولا يُمحى بالقرار: من قرأ «رُفضت» بعد شهرٍ
+  /// يحتاج أن يرى ما سُئل عنه وبمَ أجاب
+  answerAr       String?
+  answeredAt     DateTime?
   /// ما صارت إليه — رمزُ الدورة في الحالتَين `linked` و`became_course`
   courseId       String?
   decidedBy      String?   @db.Uuid

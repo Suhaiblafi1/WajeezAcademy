@@ -170,6 +170,10 @@ const LOW: readonly string[] = [
   'trainer.change.publish', 'trainer.change.apply_catalog',
   'trainer.course_proposal.create', 'trainer.course_proposal.update',
   'trainer.course_proposal.delete',
+  /* والسؤالُ عن اقتراحٍ وجوابُه: خبرُ عملٍ في الطابور لا خبرُ إنسان. ويصل
+     صاحبَه إشعارا في بوّابته على كلّ حال (`trainer.course_proposal.question`
+     في صنفٍ لا يُكتم) — وهذا وزنُ الأثر لا وزنُ الإشعار. */
+  'trainer.course_proposal.ask', 'trainer.course_proposal.answer',
   'trainer.path.create', 'trainer.path.update',
   'trainer.path.submit', 'trainer.path.delete',
   'trainer.departure.open', 'trainer.departure.close',

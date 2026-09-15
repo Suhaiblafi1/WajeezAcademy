@@ -6,7 +6,8 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { MAX_COURSE_TITLE, MIN_COURSE_TITLE, TrainerChangeService } from '../../services/trainer-change.service'
 import {
-  CourseProposalService, MAX_PROPOSAL_AUDIENCE, MAX_PROPOSAL_TITLE, MIN_PROPOSAL_TITLE,
+  CourseProposalService, MAX_PROPOSAL_QUESTION, MAX_PROPOSAL_SUMMARY,
+  MAX_PROPOSAL_TITLE, MIN_PROPOSAL_TITLE,
 } from '../../services/course-proposal.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { MAX_PATH_BLURB, MAX_PATH_COURSES, MAX_PATH_TITLE } from '../../../src/application/trainer/path-rules'
@@ -191,7 +192,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req, reply) => {
     const body = z.object({
       titleAr: z.string().trim().min(MIN_PROPOSAL_TITLE).max(MAX_PROPOSAL_TITLE),
-      audienceAr: z.string().trim().max(MAX_PROPOSAL_AUDIENCE).nullish(),
+      summaryAr: z.string().trim().max(MAX_PROPOSAL_SUMMARY).nullish(),
     }).parse(req.body)
     return reply.status(201).send(await proposals.add(req.auth!.userId, body))
   })
@@ -203,9 +204,25 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       titleAr: z.string().trim().min(MIN_PROPOSAL_TITLE).max(MAX_PROPOSAL_TITLE),
-      audienceAr: z.string().trim().max(MAX_PROPOSAL_AUDIENCE).nullish(),
+      summaryAr: z.string().trim().max(MAX_PROPOSAL_SUMMARY).nullish(),
     }).parse(req.body)
     return proposals.edit(req.auth!.userId, id, body)
+  })
+
+  /* جوابُ سؤالِ الإدارة — بابٌ مستقلٌّ عن التعديل بقصد.
+
+     لو كان الجوابُ حقلا في `PATCH` لَجاز أن يُحفظ التعديلُ بلا جواب، فيعود
+     الاقتراحُ إلى الطابور وسؤالُه معلّقٌ كما هو. وبابٌ وحدَه يجعل «أجاب»
+     فعلا يقع أو لا يقع. */
+  app.post('/api/trainer/course-proposals/:id/answer', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'جوابُ سؤالِ الإدارة عن اقتراحي — يعيده إلى الطابور' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      answerAr: z.string().trim().min(2).max(MAX_PROPOSAL_QUESTION),
+    }).parse(req.body)
+    return proposals.answer(req.auth!.userId, id, body.answerAr)
   })
 
   app.delete('/api/trainer/course-proposals/:id', {

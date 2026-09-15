@@ -10,9 +10,15 @@
 
    ─────────── قراراتٌ مكتوبةٌ كيلا تُخمَّن ثانية ───────────
 
-   · **العنوانُ يلزم، ومن هو لا يلزم.** صفٌّ بلا عنوانٍ ليس اقتراحا فيسقط.
-     وصفٌّ بعنوانٍ بلا جمهورٍ اقتراحٌ ناقصٌ لا باطل — ومن أوقفه عند حقلٍ
+   · **العنوانُ يلزم، والنبذةُ لا تلزم.** صفٌّ بلا عنوانٍ ليس اقتراحا فيسقط.
+     وصفٌّ بعنوانٍ بلا نبذةٍ اقتراحٌ ناقصٌ لا باطل — ومن أوقفه عند حقلٍ
      إلزاميٍّ ثانٍ خسِر الاقتراحَ كلَّه، ونحن نريده.
+
+   · **وكانت «لمن هي» فصارت نبذة** (قرارُ صاحب المنصّة، ١٥ سبتمبر ٢٠٢٦):
+     الجمهورُ وحدَه لا يُعرّف دورة، ومن قرأ «للمحاسبين» لا يعرف ما فيها.
+     والمفتاحُ القديمُ `audienceAr` **يُقرأ ولا يُكتب**: عمودُ الطلب سجلُّ ما
+     قُدّم يومَ قُدّم فلا يُعاد كتابتُه، ومن قرأ الجديدَ وحدَه أفرغ نبذةَ كلّ
+     متقدّمٍ سبق.
 
    · **الفراغُ ليس كتابة.** مسافاتٌ وحدَها تُشذَّب فيسقط الصفّ، وإلّا مرّ
      «تمّ ملؤه» على نموذجٍ فارغ.
@@ -20,21 +26,23 @@
    · **السقفُ عشرون.** من يقترح أكثرَ من عشرين دورةً لا يقترح، بل يُفرغ
      سيرتَه — والمراجعةُ البشريّةُ بعده هي التي تدفع الثمن. */
 
-/** اقتراحٌ واحد — عنوانُه ولمن هو */
+/** اقتراحٌ واحد — عنوانُه ونبذتُه */
 export interface TeachableProposal {
   titleAr: string
-  audienceAr: string
+  summaryAr: string
 }
 
 /** أكثرُ ما يُقبل من الاقتراحات في طلبٍ واحد */
 export const MAX_PROPOSALS = 20
-/** أطولُ عنوانٍ وأطولُ جمهور — يوافق سقفَ الخادم */
+/** أطولُ عنوان — يوافق سقفَ الخادم */
 export const MAX_PROPOSAL_FIELD = 200
+/** والنبذةُ فقرةٌ لا سطر، فسقفُها أوسع */
+export const MAX_PROPOSAL_SUMMARY = 1500
 
 const trim = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 
 /** صفٌّ فارغٌ يُبدأ به، أو يُضاف عند «أضف دورة» */
-export const emptyProposal = (): TeachableProposal => ({ titleAr: '', audienceAr: '' })
+export const emptyProposal = (): TeachableProposal => ({ titleAr: '', summaryAr: '' })
 
 /** أهذا الصفُّ اقتراحٌ يُرسَل؟ — العنوانُ وحدَه يقرّر */
 export const proposalWritten = (p: TeachableProposal): boolean => trim(p.titleAr).length > 0
@@ -47,7 +55,7 @@ export function cleanProposals(rows: readonly TeachableProposal[]): TeachablePro
   return rows
     .map((p) => ({
       titleAr: trim(p.titleAr).slice(0, MAX_PROPOSAL_FIELD),
-      audienceAr: trim(p.audienceAr).slice(0, MAX_PROPOSAL_FIELD),
+      summaryAr: trim(p.summaryAr).slice(0, MAX_PROPOSAL_SUMMARY),
     }))
     .filter((p) => p.titleAr.length > 0)
     .slice(0, MAX_PROPOSALS)
@@ -68,14 +76,16 @@ export function readProposals(raw: unknown): TeachableProposal[] {
   if (!Array.isArray(raw)) return []
   return raw
     .filter((r): r is Record<string, unknown> => typeof r === 'object' && r !== null)
-    .map((r) => ({ titleAr: trim(r.titleAr), audienceAr: trim(r.audienceAr) }))
+    /* `audienceAr` مفتاحُ ما سبق — يُقرأ ولا يُكتب، وسقوطُه يُفرغ نبذةَ كلّ
+       متقدّمٍ قديمٍ بلا خطأٍ يُرى */
+    .map((r) => ({ titleAr: trim(r.titleAr), summaryAr: trim(r.summaryAr) || trim(r.audienceAr) }))
     .filter((p) => p.titleAr.length > 0)
     .slice(0, MAX_PROPOSALS)
 }
 
-/** سطرٌ يُقرأ: «العنوان — لمن هو»، وبلا جمهورٍ فالعنوانُ وحدَه */
+/** سطرٌ يُقرأ: «العنوان — نبذتُه»، وبلا نبذةٍ فالعنوانُ وحدَه */
 export const proposalLine = (p: TeachableProposal): string =>
-  p.audienceAr ? `${p.titleAr} — ${p.audienceAr}` : p.titleAr
+  p.summaryAr ? `${p.titleAr} — ${p.summaryAr}` : p.titleAr
 
 /* ═══ «دوراتٌ يصلح لها» في شريط الحقائق — رقمٌ كان يكذب ═══
 
