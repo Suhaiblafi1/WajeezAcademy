@@ -34,10 +34,18 @@
    ولا تُقرأ القائمةُ على أنّها «صمتٌ مبرَّر»: فيها ما يصل صاحبَه من مُنادي
    الطريقة لا من الطريقة نفسِها، وفيها ما لا يصل أحدا البتّة. وتمييزُ
    هذا من ذاك يقع حين يُزال السطر — فلا يُزال إلّا بعد أن يخضرّ الفحصُ
-   عليه، وذلك ما يجعل القائمةَ تنقص بالعمل لا بالقلم. */
+   عليه، وذلك ما يجعل القائمةَ تنقص بالعمل لا بالقلم.
+
+   ═══ وحدُّ هذا الحارس يُقال صراحةً ═══
+
+   يثبت أنّ **أحدا** يُخبَر، لا أنّ **صاحبَه** يُخبَر — لأنّه لا يعرف
+   المرسَلَ إليه ولا يُخمّنه، وذلك أصلُ ي-٣ كلِّه. وقد أُمسك ذلك مرّةً بيد:
+   `enrollment.drop` كان يخضرّ لأنّه ينادي `fillSeatFromWaitlist` فيُبشّر
+   **من دخل المقعدَ الشاغر** — وصاحبُ المقعد المُسقَط لا يعلم. فلا يُقرأ
+   خضورُ سطرٍ هنا إقرارا بأنّ الصحيحَ أُخبِر، بل بأنّ الصمتَ المطبق زال. */
 
 import { describe, expect, it } from 'vitest'
-import { auditSites, handlerAround, sourceOf } from './helpers/audit-sites'
+import { auditSites, handlerAround, localCallees, sourceOf } from './helpers/audit-sites'
 import { auditWeightOf } from '@/application/audit/weight'
 
 /* ═══ ما يُعَدّ بلوغا لإنسان ═══
@@ -60,28 +68,57 @@ const REACHING_RE = new RegExp(
   [...REACHING.map((r) => `\\b${r.call}\\(`), '\\.notify\\(', '\\bnotify[A-Z]\\w*\\('].join('|'),
 )
 
-/** الدَّينُ المقيس — فعلٌ عالٍ في معالِجٍ لا يُخبِر أحدا */
+/** الدَّينُ المقيس — فعلٌ عالٍ في معالِجٍ لا يُخبِر أحدا
+
+    كان اثنَين وأربعين يوم كُتب، فصار **ثمانيةً وعشرين**: تسعةٌ سقطت — خمسةٌ
+    بإصلاح الحارس (كان يقرأ أسماءَ المُرسِلين فلا يرى غلافا محلّيّا يُرسل)،
+    وأربعٌ بإشعاراتٍ كُتبت فعلا. */
 const SILENT_DEBT: readonly string[] = [
-  /* الحسابُ ووصولُه — `admin-users.routes.ts` و`account-reset.service.ts` */
+  /* ═══ الحسابُ ووصولُه — تسعةٌ، ولا واحدَ منها يُخبِر أحدا ═══
+
+     والمحوُ منها بابٌ خاصّ: صفُّ `Notification` يُحذف مع صاحبه
+     (`onDelete: Cascade`)، وجرسُ المؤرشَف لا يُقرأ أصلا لأنّ الدخولَ يُمنع
+     على غير `active`. فما يصل هنا بريدٌ مباشرٌ **قبل** المحو لا جرسٌ بعده. */
   'admin.user.purge', 'admin.user.purge_with_history', 'admin.users.purge_bulk',
   'accounts.reset_purge', 'accounts.reset_archive',
+  /* وهذه أحدُّها: تُنزع صلاحيّةٌ وتُبطَل جلساتُه في السطر نفسِه — فيُخرَج من
+     المنصّة في الحال بلا كلمةٍ تقول لماذا. */
   'admin.permission.grant', 'admin.permission.deny', 'admin.permission.clear',
   'auth.founder.promoted',
-  /* المدرّبُ ومكانتُه */
+
+  /* ═══ المدرّبُ ومكانتُه ═══
+
+     و`trainer.suspend` أشدُّها: تُبطَل جلساتُه ويُمنع دخولُه، فلا يبلغه جرسٌ
+     بحال — بريدٌ أو لا شيء. و`trainer.status.transition` وحدَه ليس ثغرةً
+     بذاته: هو مَخنقُ ستّةَ عشرَ حالةً، وبعضُها فعلُ صاحبه قبل ثانية. والثغرةُ
+     المخبوءةُ تحته أضيق: **الردُّ والانتظار** لا رسالةَ لهما أصلا. */
   'trainer.suspend', 'trainer.publish_approve', 'trainer.status.transition',
   'trainer.contract.sign', 'trainer.account.activate',
   'trainer.scope.grant', 'trainer.scope.revoke',
-  /* الشعبةُ ومن أُسند إليها */
+
+  /* ═══ الشعبةُ ومن أُسند إليها ═══
+
+     و`cohort.trainer.assign` يُخبِر من بابٍ ولا يُخبِر من باب: مسارُ المراجعة
+     يرسل `trainer.assigned`، وطريقُ الإدارة المباشر لا يرسل شيئا.
+     والزُّومُ أوسعُها أثرا: رابطٌ يُلصَق بلقاءٍ قائمٍ فيُفتح بابُ غرفةٍ بلا
+     أن يعلم به من يحضرها — عشرون إنسانا في الشعبة الوسطى. */
   'cohort.trainer.assign', 'cohort.trainer_update',
-  'cohort.plan.approve', 'cohort.plan.changes_requested',
   'zoom.create_api', 'zoom.attach_manual',
-  /* التسجيلُ والمال */
-  'enrollment.create', 'enrollment.drop', 'enrollment.switch_cohort',
-  'payment.charge', 'payment.record_manual',
-  'refund.process', 'refund.reject',
-  'order.checkout', 'order.cancel',
-  'certificate.revoke',
-  /* رحيلُ المدرّب */
+
+  /* ═══ التسجيلُ والمال — ما بقي منه ═══
+
+     `enrollment.create` يُخبَر به على مسار الشراء (`payment.succeeded`) ولا
+     يُخبَر على مسار الإدارة، ولا يُخبَر من وُضع في قائمة الانتظار.
+     و`order.checkout` يحجز مقعدا وله ساعةٌ تنقضي — ولا يُقال له ذلك. */
+  'enrollment.create', 'enrollment.switch_cohort', 'order.checkout',
+
+  /* ═══ رحيلُ المدرّب ═══
+
+     وهذه خمسةٌ حالُها خاصّ: `departure.resolved` يصل صاحبَه فعلا، لكن **بيدِ
+     موظّفٍ يضغط «أبلِغه» مرّةً لكلِّ متعلّم** — لا مسارَ شيفرةٍ يضمنه ولا
+     وظيفةَ تذكّر. فالمقعدُ ينتقل والمالُ يُرَدّ ثمّ يُنتظَر إنسان.
+     و`learner_choice` وحدَه صامتٌ من طرفَيه: لا صاحبُه يُشكَر ولا الإدارةُ
+     تُستدعى لتنفيذ ما اختاره. */
   'trainer.departure.learner_choice', 'trainer.departure.substitute',
   'trainer.departure.move', 'trainer.departure.credit',
   'trainer.departure.refund_requested',
@@ -98,7 +135,14 @@ function silentHighActions(): string[] {
   }
   const silent: string[] = []
   for (const [action, sites] of byAction) {
-    const reached = sites.some((s) => REACHING_RE.test(handlerAround(sourceOf(s.file), s.at)))
+    const reached = sites.some((s) => {
+      const src = sourceOf(s.file)
+      const seg = handlerAround(src, s.at)
+      if (REACHING_RE.test(seg)) return true
+      /* والغلافُ المحلّيُّ يُتبَع درجةً واحدة — ومكتوبٌ في `audit-sites.ts`
+         لمَ لا يُحكَم عليه باسمه: `tellTrainer` تُرسل جرسا وبريدا. */
+      return localCallees(src, seg).some((body) => REACHING_RE.test(body))
+    })
     if (!reached) silent.push(action)
   }
   return silent.sort()

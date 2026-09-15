@@ -273,6 +273,28 @@ export class EnrollmentService {
   async drop(enrollmentId: string, actorId: string | null, note?: string) {
     const e = await this.prisma.enrollment.update({ where: { id: enrollmentId }, data: { status: 'dropped' } })
     await recordAudit(this.prisma, { actorId, action: 'enrollment.drop', entityType: 'enrollment', entityId: enrollmentId, meta: { note } })
+
+    /* ═══ ويُخبَر من أُسقط تسجيلُه، لا من أخذ مقعدَه وحدَه (ي-٤) ═══
+
+       كان في هذه الطريقة إشعارٌ واحدٌ يخرج — `fillSeatFromWaitlist` أدناه
+       يُبشّر **من دخل المقعدَ الشاغر**. فالفعلُ يبدو مُخبِرا وهو يُخبر إنسانا
+       آخر: صاحبُ المقعد يجد شعبتَه اختفت من «رحلتي» بلا كلمة.
+
+       وهذا بعينه حدُّ حارس ي-٣: يثبت أنّ **أحدا** يُخبَر، ولا يعرف المرسَلَ
+       إليه ولا يُخمّنه — ولذلك لا يُصلَح في الحارس بل هنا. */
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: e.cohortId }, select: { title: true } })
+    try {
+      await this.notifications.notify({
+        userId: e.userId,
+        channel: 'in_app',
+        templateKey: 'enrollment.dropped',
+        title: 'أُسقط تسجيلُك',
+        body: `أُسقط تسجيلُك في «${cohort?.title ?? 'شعبتك'}»، فلم تعد جلساتُها ولا موادُّها تظهر في «تعلُّمي»${note ? `. والسببُ المسجَّل: ${note}` : ''}. راسِلنا إن كان في الأمر خطأ.`,
+        data: { cohortId: e.cohortId, enrollmentId },
+        audience: 'learner',
+      })
+    } catch { /* الإشعارُ خدمةٌ مساندة — لا يُبطل إسقاطا وقع */ }
+
     const promoted = await this.fillSeatFromWaitlist(e.cohortId, actorId)
     return { ...e, promotedEnrollmentId: promoted?.id ?? null }
   }

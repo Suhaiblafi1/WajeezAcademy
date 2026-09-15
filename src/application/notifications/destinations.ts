@@ -59,10 +59,19 @@ const LEARNER: Table = {
   'grade.create': { path: '/student/learning', ctaAr: 'اقرأ درجتَك وملحوظاتِ مدرّبك' },
   'grade.update': { path: '/student/learning', ctaAr: 'اقرأ درجتَك المعدَّلة' },
   'payment.succeeded': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
+  /* ي-٤: الردُّ وردُّ طلبِه كلاهما في «الفواتير» — الصفُّ نفسُه يحمل الخبر */
+  'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشفَ فواتيرك' },
+  'payment.refund_rejected': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
+  /* والملغاةُ تبقى معروضةً هناك بحالتها — فالوجهةُ تحمل الخبرَ لا تخفيه */
+  'certificate.revoked': { path: '/student/certificates', ctaAr: 'افتح شهاداتك' },
   'staff.announce': { path: '/student/notifications', ctaAr: 'اقرأ الإعلان' },
   /* ن-٩: الخبرُ يحمل ما يجري بعده، و«رحلتي» فيها جدولُه وشعبتُه الجديدة */
   'departure.resolved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  /* ي-٤: ومن أُسقط تسجيلُه — الوجهةُ «رحلتي»، وغيابُ الشعبة منها هو الخبر.
+     وصنفُ `enrollment_change` لا يقبل مفتاحا بلا وجهة (حارسُ ن-١٠): تغييرٌ
+     يمسّ مقعدَه يُفتح له بابٌ يرى فيه ما بقي له، لا رسالةٌ تُغلق عليه. */
+  'enrollment.dropped': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   /* والاختيارُ يُنقر في بوّابته لا في البريد: البلاغُ يحمل الخيارَين ليُقرآ،
      والقرارُ يُكتب حيث تُعرف هويّةُ صاحبه. */
   'departure.choice': { path: '/student/learning', ctaAr: 'اختر ما يناسبك' },

@@ -9,7 +9,16 @@
    ٢) ولا تتجاوز السعة: انسحابٌ واحد يرقّي واحدا لا اثنين.
    ٣) وحالُ الشعبة تتبع الواقع: تبقى ممتلئةً إن مُلئ المقعد، وتعود مفتوحةً
       إن لم يكن في الطابور أحد.
-   ٤) والمرقَّى يُخبَر — فمن رُقّي وهو لا يعلم يظنّ نفسَه منتظِرا. */
+   ٤) والمرقَّى يُخبَر — فمن رُقّي وهو لا يعلم يظنّ نفسَه منتظِرا.
+   ٥) **ومن أُسقط تسجيلُه يُخبَر هو أيضا** (ي-٤) — وهذا الخامسُ زِيد لأنّ
+      الرابعَ كان يخفيه: `drop` كان يُخرج إشعارا واحدا يذهب إلى **من دخل
+      المقعدَ الشاغر**، فيبدو الفعلُ مُخبِرا وهو يُخبر إنسانا آخر. وصاحبُ
+      المقعد يجد شعبتَه اختفت من «رحلتي» بلا كلمة.
+
+      ولمَ هنا لا في حارس ي-٣ البنيويّ: ذاك يثبت أنّ **أحدا** يُخبَر ولا
+      يعرف المرسَلَ إليه — وهو بالضبط ما لا ينفع هنا. فلو حُذف الإشعارُ
+      أدناه لبقي الحارسُ أخضرَ بإشعار الترقية. فالحرسُ على المرسَل إليه
+      يكون بالقاعدة لا بالنصّ. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -115,5 +124,37 @@ describe('الترقيةُ التلقائيّة من قائمة الانتظار
     expect((await prisma.cohort.findUnique({ where: { id: c.id } }))?.status).toBe('open')
     const bRow = await prisma.enrollment.findUnique({ where: { cohortId_userId: { cohortId: c.id, userId: b } } })
     expect(bRow?.status).toBe('enrolled')
+  })
+
+  it('ومن أُسقط تسجيلُه يُخبَر هو — لا من أخذ مقعدَه وحدَه', async () => {
+    const c = await cohortWithCapacity('شعبةٌ يُسقَط منها', 1)
+    const gone = await learner('dropped-told')
+    const waiting = await learner('waiting-told')
+    const e = await enrollments.enroll(c.id, gone, adminId)
+    await enrollments.enroll(c.id, waiting, adminId)
+
+    await enrollments.drop(e.id, adminId, 'انسحابٌ بطلبه')
+
+    const his = await prisma.notification.findFirst({
+      where: { userId: gone, templateKey: 'enrollment.dropped' },
+    })
+    expect(his, 'أُسقط تسجيلُه ولم يُخبَر — والمرقَّى أُخبِر').not.toBeNull()
+    expect(his!.body, 'السببُ المسجَّل لم يصل صاحبَ الشأن').toContain('انسحابٌ بطلبه')
+
+    /* والمرقَّى يُخبَر كما كان — فالخامسُ زيادةٌ لا إبدال */
+    expect(
+      await prisma.notification.findFirst({
+        where: { userId: waiting, templateKey: 'enrollment.waitlist.promoted' },
+      }),
+      'ذهب إشعارُ الترقية حين زِيد إشعارُ الإسقاط',
+    ).not.toBeNull()
+
+    /* ولا يُخلَط الاثنان: لكلِّ واحدٍ خبرُه هو */
+    expect(
+      await prisma.notification.findFirst({
+        where: { userId: waiting, templateKey: 'enrollment.dropped' },
+      }),
+      'وصل خبرُ الإسقاط إلى من دخل المقعد',
+    ).toBeNull()
   })
 })

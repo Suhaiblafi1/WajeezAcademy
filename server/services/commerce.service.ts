@@ -791,12 +791,26 @@ export class CommerceService {
 
   /** تنفيذ الاسترداد — صلاحية مالية؛ يحدّث الدفعة والطلب */
   async processRefund(refundId: string, actorId: string, approve: boolean, note?: string) {
-    const refund = await this.prisma.refund.findUnique({ where: { id: refundId }, include: { payment: { include: { invoice: true } } } })
+    /* وصاحبُ المال يُقرأ مع الصفّ (ي-٤): كان الاستعلامُ يقف عند الفاتورة،
+       فيُردّ المبلغُ أو يُرفض ردُّه ولا أحدَ في المدى يُخبَر. */
+    const refund = await this.prisma.refund.findUnique({
+      where: { id: refundId },
+      include: { payment: { include: { invoice: { include: { order: { select: { userId: true } } } } } } },
+    })
     if (!refund) throw new AuthError('not_found', 'الاسترداد غير موجود', 404)
     if (refund.status !== 'pending') throw new AuthError('bad_state', 'الاسترداد بُت فيه مسبقا', 409)
     if (!approve) {
       const r = await this.prisma.refund.update({ where: { id: refundId }, data: { status: 'rejected', approvedBy: actorId } })
       await recordAudit(this.prisma, { actorId, action: 'refund.reject', entityType: 'refund', entityId: refundId, reason: note })
+      /* ولا يُترك صاحبُ الطلب على وعد: في مسار رحيل المدرّب يُقال له صراحةً
+         «رُفع الطلبُ إلى الماليّة» ثمّ لا يصله جواب. */
+      await safeNotify(this.prisma, {
+        userId: refund.payment.invoice.order.userId, channel: 'in_app',
+        title: 'لم يُجَب طلبُ ردِّ المبلغ',
+        body: `نظرنا في طلب ردّ ${num(refund.amount)} ${refund.payment.currency} ولم نتمكّن من إجابته${note ? `. والسببُ المسجَّل: ${note}` : ''}. راسِل الدعمَ إن كان لديك ما تضيفه.`,
+        templateKey: 'payment.refund_rejected',
+        data: { refundId, amount: num(refund.amount), currency: refund.payment.currency },
+      })
       return r
     }
     /* ردّ المال عند المزود قبل القيد. كان القيد وحده: يُعلَّم الاسترداد
@@ -833,6 +847,19 @@ export class CommerceService {
     await recordAudit(this.prisma, {
       actorId, action: 'refund.process', entityType: 'refund', entityId: refundId,
       meta: { amount: num(refund.amount), provider: provider.name, providerRefundRef },
+    })
+    /* ═══ والقبضُ يُخبَر به فلمَ لا يُخبَر الردّ؟ (ي-٤) ═══
+
+       `settleOrder` يرسل «تأكد دفعك ✓» عند القبض، ولم يكن في المنصّة **مفتاحُ
+       ردٍّ واحد**. فالمالُ يعود إلى البطاقة ولا يعلم صاحبُه — وقد لا يظهر في
+       كشفه أيّاما بحسب مصرفه، فيسأل: أرُدَّ أم لا؟ وسببُ صنف «المال» مكتوبٌ
+       في `categories.ts`: «هو سجلُّك عند الخلاف». */
+    await safeNotify(this.prisma, {
+      userId: refund.payment.invoice.order.userId, channel: 'in_app',
+      title: 'رُدَّ إليك مبلغ',
+      body: `رُدَّ إليك ${num(refund.amount)} ${refund.payment.currency}. ويصل المبلغُ بطاقتَك خلال أيّام عملٍ بحسب مصرفك، وقيدُه في «الفواتير» من الآن.`,
+      templateKey: 'payment.refunded',
+      data: { refundId, amount: num(refund.amount), currency: refund.payment.currency },
     })
     return result
   }

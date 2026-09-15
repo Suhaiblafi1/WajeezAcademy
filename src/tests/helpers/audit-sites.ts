@@ -140,6 +140,36 @@ export function sourceOf(file: string): string {
    قبل الموضع، وأوّلُ ما بعده. */
 const BOUNDARY = /\bapp\.(?:get|post|put|patch|delete)\(|^\s{2}(?:private\s+)?(?:async\s+)?[a-zA-Z_]\w*\s*\(|^export\s+(?:async\s+)?function\s+\w+\s*\(/gm
 
+/* ═══ والغلافُ المحلّيُّ يُتبَع، ولا يُحكَم عليه باسمه ═══
+
+   `cohort-plan.service.ts` يُخبر المدرّبَ بقرارِ خطّته جرسا وبريدا — في
+   دالّةٍ اسمُها `tellTrainer`. وكان الحارسُ يقرأ **أسماءَ** المُرسِلين، فلم
+   تطابق، فحُسب قرارُ الخطّة صامتا وهو أبلغُ ما يُرسَل.
+
+   والعلاجُ الذي يُغري: أن يُعاد تسميتُها `notifyTrainer` فتطابق. وذلك بعينه
+   ما يمنعه عرفُ المستودَع — اختراعُ اسمٍ ليَسكُت حارسٌ يقرأ الموضعَ الخطأ،
+   كما اختُلق «تعديلُ وصف» اسما عربيّا لاتّجاه فرزٍ في SQL.
+
+   فالحارسُ يُصلَح لا الشيفرة: يُتبَع النداءُ إلى تعريفه في الملفّ نفسِه،
+   ودرجةً واحدةً فقط — فمن نادى غلافا يُرسل فقد أرسل. */
+export function localCallees(src: string, segment: string): string[] {
+  const names = new Set(
+    [...segment.matchAll(/(?:this\.)?\b([a-zA-Z_]\w*)\s*\(/g)].map((m) => m[1]),
+  )
+  const bodies: string[] = []
+  for (const name of names) {
+    const decl = new RegExp(
+      `^\\s{2}(?:private\\s+)?(?:async\\s+)?${name}\\s*\\(`
+      + `|^(?:export\\s+)?(?:async\\s+)?function\\s+${name}\\s*\\(`
+      + `|^(?:export\\s+)?const\\s+${name}\\s*=`,
+      'm',
+    )
+    const hit = decl.exec(src)
+    if (hit) bodies.push(handlerAround(src, hit.index + 1))
+  }
+  return bodies
+}
+
 /** جسمُ المعالِج الذي يحوي موضعا — من حدِّه إلى الحدِّ الذي يليه */
 export function handlerAround(src: string, at: number): string {
   let start = 0
