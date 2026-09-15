@@ -602,17 +602,32 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      يفتح له شعب غيره. فالفعلان هنا بصلاحيته هو (trainer.cohort.operate) خلف
      assertCohortTrainer: شعبته وحدها، لا شعبة سواه. */
 
-  /* ═══ ورفعُ «موادّ الشعبة» من المدرّب سقط (١٥ سبتمبر ٢٠٢٦) ═══
+  /* ═══ رفعُ موادّ الشعبة — المسلكُ باقٍ وإن ذهبت لوحتُه (١٥ سبتمبر ٢٠٢٦) ═══
 
-     «لا داعيَ لخانة مواد الشعبة كلّيّا» (صاحب المنصّة). وحُذفت اللوحةُ من
-     «المصادر»، فلم يبقَ لهذا المسلك نداءٌ واحد.
+     «لا داعيَ لخانة مواد الشعبة كلّيّا» (صاحب المنصّة) — فحُذفت **اللوحةُ**
+     من «المصادر». وكنتُ حذفتُ المسلكَ معها بحجّة أنّه يكتب مادّةً يراها
+     المسجَّلون بلا اعتماد، فمسلكٌ بلا شاشةٍ بابٌ حول الاعتماد.
 
-     ولم يُترك مفتوحا بلا شاشة: كان يكتب `LearningMaterial` يراه المسجَّلون
-     **بلا اعتماد** — وهو ما صار للمصادر بابٌ محروسٌ عنه. فمسلكٌ حيٌّ بلا
-     شاشةٍ تناديه بابٌ حول الاعتماد لا بقيّةٌ حميدة.
+     ⚠️ وكان توسيعا لما طُلب: الطلبُ عن خانةٍ في الشاشة، والمسلكُ عقدٌ
+     محروسٌ بثلاثة اختباراتٍ في `server/tests/trainer/course-tools.test.ts`
+     تقيس أنّه يقبل الكرّاسةَ والرابطَ ويردُّ غيرَ الموثّق. فسقطت الثلاثةُ
+     في CI — وحذفُها ليُخضَرَّ الحاجزُ نقضٌ للعقد لا وفاءٌ به.
 
-     ورفعُ الإدارة باقٍ (`/api/admin/cohorts/:id/materials`): لها شاشتُها
-     وصلاحيّتُها، وهي من تعتمد أصلا. */
+     فرُدَّ المسلكُ كما كان. وأمّا كونُه يكتب مادّةً بلا اعتماد فملحوظةٌ
+     تُرفع إلى صاحب المنصّة ليقرّر — لا تُنفَّذ بقرارٍ من عندي. */
+  app.post('/api/trainer/cohorts/:id/materials', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'رفع مادة لشعبتي — فيديو أو كرّاسة أو ملخص أو رابط' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      title: z.string().min(2), kind: z.enum(['file', 'link', 'summary_audio', 'summary_text']),
+      moduleId: z.string().optional(), externalUrl: z.string().url().optional(),
+      file: z.object({ originalName: z.string(), mime: z.string(), sizeBytes: z.number().int().positive() }).optional(),
+    }).parse(req.body)
+    await enrollments.assertCohortTrainer(req.auth!.userId, id)
+    return reply.status(201).send(await cohorts.registerMaterial(req.auth!.userId, id, body))
+  })
 
   app.post('/api/trainer/cohorts/:id/assessments', {
     preHandler: requirePermission('trainer.cohort.operate'),

@@ -30,6 +30,19 @@ const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*(\/\/|--).*$/gm, '')
 
 const COHORT_SVC = code('server/services/cohort.service.ts')
+
+/** جسدُ دالّةٍ من الخدمة — من توقيعها إلى الدالّة التي تليها.
+
+    ولا يُقَصُّ عند أوّل `\n  }`: توقيعُ هذه الدوالّ يحمل نوعا كائنيًّا
+    ينتهي بـ`\n  }) {`، فالقصُّ عنده يقطع **قبل الجسد** — فيقرأ الحارسُ
+    توقيعا ويحكم على جسدٍ لم يره. */
+function methodBody(src: string, signature: string): string {
+  const at = src.indexOf(signature)
+  if (at < 0) return ''
+  const rest = src.slice(at + signature.length)
+  const next = rest.indexOf('\n  async ')
+  return next < 0 ? rest : rest.slice(0, next)
+}
 const SCHED = code('src/pages/trainer/TrainerSchedule.tsx')
 
 describe('① البوّابةُ واحدةٌ — ولا تُنسَخ بيدٍ في كلّ موضع', () => {
@@ -88,6 +101,27 @@ describe('② المدرّبُ يجدول منتظِرا — ولا يُنشأ �
   it('⚠️ ولا يُنادى `addSessionWithMeeting` — فذاك يُنشئ الاجتماعَ ويُبلّغ معا', () => {
     expect(body, 'ما زال يُنشئ الاجتماعَ ويُبلّغ لحظتَه').not.toContain('addSessionWithMeeting(')
     expect(body, 'ما زال يُبلّغ المسجَّلين قبل الاعتماد').not.toContain('notifyCohortOfSession')
+  })
+
+  it('⚠️ وبابُ المدرّب الآخرُ ينتظر كذلك — لا بابان بحكمَين', () => {
+    /* `trainerAddSession` لا مسلكَ ينادي اليوم، لكنّها **بابُ مدرّبٍ** بحكم
+       اسمها وفحصِها. ولو تركت تكتب `approved` لصار في الخدمة بابان لمدرّبٍ
+       واحد: أحدُهما ينتظر قرارا والآخرُ يُعلن لحظتَه — ومن وصل الثاني
+       بمسلكٍ يوما لم يكن ليعلم أنّه تخطّى بوّابة.
+
+       والحارسُ هنا لأنّ العطبَ **لا يظهر في شاشةٍ ولا في اختبارٍ قائم**:
+       اختبارُ النافذة يقيس المدى والسقفَ ولا يسأل عن الاعتماد. */
+    const body = methodBody(COHORT_SVC, 'async trainerAddSession(userId')
+    expect(body, 'لم يُعثَر على بابِ المدرّب الآخر').not.toBe('')
+    expect(body, 'بابُ المدرّب الآخرُ يُعلن لحظتَه').toContain("approvalState: 'pending'")
+  })
+
+  it('وبابُ الإدارة يبقى معتمَدا بحكم من جدوله', () => {
+    /* والافتراضُ في `addSession` نفسِها `approved`: ما جدولته الإدارةُ
+       معتمَدٌ، فالنداءاتُ الإداريّةُ لا تُبدّل ولا تنتظر نفسَها. */
+    const body = methodBody(COHORT_SVC, 'async addSession(actorId')
+    expect(body, 'لم يُعثَر على بابِ الإدارة').not.toBe('')
+    expect(body).toMatch(/approvalState: input\.approvalState \?\? 'approved'/)
   })
 
   it('والإدارةُ تُبلَّغ بأنّ لقاءً ينتظرها', () => {

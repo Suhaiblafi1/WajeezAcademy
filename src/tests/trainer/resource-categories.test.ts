@@ -118,13 +118,19 @@ describe('الشاشةُ: خانةٌ لكلّ صنف، ولا «موادُّ ش�
     expect(stage).toMatch(/max=\{ws\.cohort\.term \? ws\.cohort\.term\.endsOn/)
   })
 
-  it('⚠️ و«موادُّ الشعبة» ذهبت — لوحةً ومسلكا، لا لوحةً وحدَها', () => {
+  it('⚠️ و«موادُّ الشعبة» ذهبت من الشاشة — واللوحةُ وحدَها هي ما طُلب', () => {
     expect(WS, 'اللوحةُ ما زالت مُصيَّرةً').not.toContain('CohortMaterials')
-    /* ومسلكُ رفعها كان يكتب مادّةً يراها المسجَّلون **بلا اعتماد** — فلو
-       بقي حيًّا بلا شاشةٍ لبقي بابا حول الاعتماد لا بقيّةً حميدة. */
-    expect(code('server/http/routes/learning-portal.routes.ts'), 'مسلكُ رفع المدرّب ما زال مفتوحا')
-      .not.toContain("'/api/trainer/cohorts/:id/materials'")
-    /* ورفعُ الإدارة باقٍ — لها شاشتُها وهي من تعتمد */
+
+    /* ⚠️ وكان هنا شرطٌ ثانٍ: أن يسقط **المسلكُ** كذلك، بحجّة أنّه يكتب
+       مادّةً يراها المسجَّلون بلا اعتماد. وكان توسيعا لما طُلب: الطلبُ عن
+       خانةٍ في الشاشة، والمسلكُ عقدٌ محروسٌ بثلاثة اختباراتٍ في
+       `server/tests/trainer/course-tools.test.ts` — سقطت كلُّها في CI.
+
+       فيبقى المسلك، ويبقى الحارسُ على ما طُلب فعلا: اللوحة. وأمّا الاعتمادُ
+       فملحوظةٌ تُرفع إلى صاحب المنصّة لا قرارٌ يُتّخذ من هنا. */
+    expect(code('server/http/routes/learning-portal.routes.ts'), 'مسلكُ الرفع سقط — وعقدُه محروسٌ في اختبارات الخادم')
+      .toContain("'/api/trainer/cohorts/:id/materials'")
+    /* ورفعُ الإدارة باقٍ كذلك — لها شاشتُها وهي من تعتمد */
     expect(code('server/http/routes/admin-learning.routes.ts')).toContain("'/api/admin/cohorts/:id/materials'")
   })
 })

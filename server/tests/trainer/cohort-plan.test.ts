@@ -108,7 +108,13 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     const me = rows.find((r) => r.id === cohortId)
     expect(me, 'الشعبةُ ليست في الموجز').toBeTruthy()
     const ws = await plans.workspace(trainerUserId, cohortId)
-    const required = ws.checklist.filter((c) => !c.optional)
+    /* و«الاعتماد» خارجَ العدّ في الموضعَين معا (١٥ سبتمبر ٢٠٢٦): البطاقةُ
+       تعدّ ما **يملك المدرّبُ إنجازَه**، ولا يملك قرارَ الإدارة. وكان
+       يُعَدّ فيهما، فبطاقةُ شعبةٍ تامّةٍ تقول «٥ من ٦» أبدا.
+
+       والمحروسُ هو هو: أن تقول البطاقةُ ما تقوله الورشة. فالقاعدةُ واحدةٌ
+       هنا وهناك — ولو استُثني في أحدهما وحدَه لافترق الرقمان. */
+    const required = ws.checklist.filter((c) => !c.optional && c.key !== 'approval')
     expect(me!.total).toBe(required.length)
     expect(me!.done).toBe(required.filter((c) => c.done).length)
     expect(me!.next?.key).toBe(required.find((c) => !c.done)!.key)
@@ -154,7 +160,36 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(ws.checklist.find((c) => c.key === 'approval')?.done).toBe(false)
   })
 
+  /* ═══ ما صار الإرسالُ يشترطه (١٥ سبتمبر ٢٠٢٦) ═══
+
+     `submit` صار يحتجّ بقائمة المراحل نفسِها التي تُطفئ الزرَّ في الشاشة —
+     وكان يقبل ما تطفئه، فالحاجزُ زرٌّ لا بوّابة. فالشعبةُ لا تُرسَل حتّى
+     يكون لها **فصلٌ** (منه حدودُها) و**لقاءٌ لكلّ محورٍ على الأقلّ**.
+
+     وهذه الشعبةُ أُنشئت بلا فصلٍ ولا لقاء — وهو ما كان يكفي قبل القرار.
+     فتُجهَّز هنا كما يجهّزها مدرّبُها في الشاشة، ثمّ تُرسَل. والمحروسُ لم
+     يتبدّل: لا إرسالَ بلا تأكيد، وبتأكيدٍ تصير بانتظار الاعتماد. */
+  const makeSubmittable = async () => {
+    const term = await prisma.term.upsert({
+      where: { year_season: { year: 2027, season: 'feb_apr' } },
+      update: {},
+      create: {
+        year: 2027, season: 'feb_apr', titleAr: 'فصلُ الاختبار',
+        startsOn: new Date('2027-02-01'), endsOn: new Date('2027-04-30'), status: 'open',
+      },
+    })
+    await prisma.cohort.update({ where: { id: cohortId }, data: { termId: term.id } })
+    /* لقاءٌ لكلّ محورٍ في الخطّة — والخطّةُ محورٌ واحد */
+    const have = await prisma.cohortSession.count({ where: { cohortId } })
+    for (let i = have; i < content.modules.length; i += 1) {
+      await prisma.cohortSession.create({
+        data: { cohortId, title: `لقاءُ المحور ${i + 1}`, startsAt: new Date(`2027-02-${String(i + 3).padStart(2, '0')}T15:00:00.000Z`) },
+      })
+    }
+  }
+
   it('ولا يُرسل بلا تأكيد — وبتأكيدٍ تصير بانتظار الاعتماد', async () => {
+    await makeSubmittable()
     await expect(plans.submit(trainerUserId, cohortId, false)).rejects.toMatchObject({ code: 'confirm_required' })
     const sent = await plans.submit(trainerUserId, cohortId, true)
     expect(sent.status).toBe('submitted')
@@ -175,7 +210,14 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
   })
 
   it('يعدّل ويعيد الإرسال، والاعتمادُ يوفي شرطَ فتح الشعبة', async () => {
-    await plans.savePlan(trainerUserId, cohortId, { ...content, modules: [{ ...content.modules[0], bodyAr: 'مثالٌ تطبيقيٌّ أُضيف' }] })
+    /* والمتنُ المعدَّلُ يبلغ أرضيّةَ المحتوى النظريّ (`MIN_MODULE_BODY`):
+       كان عشرين حرفا، وهو دون الأربعين. ومنذ صار `submit` يحتجّ بالقائمة
+       (١٥ سبتمبر ٢٠٢٦) يُردّ الإرسالُ على متنٍ ناقص — وهو ما نصّ عليه
+       شرطُ المحتوى النظريّ أصلا: «يمنع الاعتمادَ ولا يمنع الحفظ». */
+    await plans.savePlan(trainerUserId, cohortId, {
+      ...content,
+      modules: [{ ...content.modules[0], bodyAr: 'مثالٌ تطبيقيٌّ أُضيف بعد ردِّ الإدارة، يشرح الخطوةَ بالتفصيل كما يقرؤها المتعلّم' }],
+    })
     await plans.submit(trainerUserId, cohortId, true)
     const latest = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId }, orderBy: { createdAt: 'desc' } })
     const r = await plans.decide(adminId, latest.id, true)

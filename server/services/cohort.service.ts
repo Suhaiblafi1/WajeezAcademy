@@ -749,13 +749,24 @@ export class CohortService {
   /** المدرّبُ يضيف لقاءً في شعبته — بالحدّ نفسِه الذي تُفحص به إضافةُ الإدارة */
   async trainerAddSession(userId: string, cohortId: string, input: {
     title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
+    noteAr?: string | null
   }) {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
       throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
     }
     await this.assertWithinWindow(cohortId, input, { counts: true })
     /* وفحصُ التعارض هو فحصُ الإدارة نفسُه — `addSession` تحمله */
-    return this.addSession(userId, cohortId, input)
+    /* ═══ وهذا البابُ ينتظر الاعتمادَ كأخيه ═══
+
+       لا مسلكَ ينادي هذه اليومَ (`/api/trainer/cohorts/:id/sessions` يمرّ
+       بـ`trainerAddSessionWithMeeting`)، لكنّها **بابُ مدرّبٍ** بحكم اسمها
+       وفحصِها. ولو تركت تكتب `approved` لصار في الخدمة بابان لمدرّبٍ واحد:
+       أحدُهما ينتظر قرارا والآخرُ يُعلن لحظتَه — ومن وصل الثاني بمسلكٍ يوما
+       لم يكن ليعلم أنّه تخطّى بوّابةً.
+
+       والافتراضُ يبقى `approved` في `addSession` نفسِها: تلك بابُ الإدارة،
+       وما جدولته الإدارةُ معتمَدٌ بحكم من جدوله. */
+    return this.addSession(userId, cohortId, { ...input, approvalState: 'pending', wantsZoom: false })
   }
 
   /** المدرّبُ ينقل لقاءَه — لا يقترح نقله */
