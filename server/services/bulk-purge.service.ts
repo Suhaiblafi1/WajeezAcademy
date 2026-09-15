@@ -17,7 +17,8 @@ import type { PrismaClient } from '@prisma/client'
 import { randomUUID } from 'node:crypto'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { sendAccountErasedEmail } from './account-mail'
+import { accountErasedMail } from './account-mail'
+import { enqueueMail } from './outbox.service'
 import { accountFootprint, footprintBlockersAr } from './account-purge.service'
 import {
   decideBulk, deletableIds, bulkExecuteBlockerAr, MAX_BULK_PURGE, TOP_ROLE,
@@ -116,16 +117,21 @@ export class BulkPurgeService {
        «عمليّةً واحدةً مقصودةً على واحدٍ وثلاثين حسابا». */
     const batchId = randomUUID()
     let purged = 0
-    /* ═══ ومن لم تبلغه رسالتُه يُسمَّى (ي-٦) ═══
+    /* ═══ والرسائلُ تُكتب في الطابور لا تخرج من هنا (ي-٦) ═══
 
-       `sendAccountErasedEmail` تردّ حالَها ولا ترمي: مزوّدٌ يردّ ٤٢٩ أو عنوانٌ
-       يرتدّ يخرج منها `failed` — وكان الجوابُ **يُهمَل**. فيُحذف الحسابُ على
-       كلّ حال، ولا يبقى في المنصّة كلِّها أثرٌ أنّ صاحبَه لم يُخبَر.
+       كانت تخرج في هذه الحلقة، **وكان جوابُها يُهمَل**: نداءُ الإرسال يردّ
+       حالَه ولا يرمي. فمزوّدٌ يردّ ٤٢٩ — وهو ما يقع بعينه في مئتَي نداءٍ
+       متتابعٍ على حدٍّ هو طلبان في الثانية — أو عنوانٌ يرتدّ، يمرّ صامتا
+       ويُحذف الحسابُ على كلّ حال.
 
-       وهو أسوأُ من صمتٍ معلوم: السجلُّ يقول «حُذف ٣١ حسابا» فيُقرأ أنّ ٣١
-       إنسانا أُخبروا، وقد لا يكون أُخبر منهم أحد. فما سقط يُكتب في صفّ
-       الدفعة باسمه — يُقرأ ويُعاد الإرسالُ باليد. */
-    const unreached: { email: string; whyAr: string }[] = []
+       ومهلةٌ بين الرسائل هنا غيرُ ممكنة: مئتا حسابٍ بستّ مئةِ ميلي ثانيةٍ
+       تحبس الطلبَ دقيقتَين. فالرسائلُ تُكتب في `OutboxMail` وتعود الدفعةُ في
+       حينها، ويُفرّغ العاملُ مُمَهَّلا ويُعيد ما سقط (`outbox.service.ts`).
+
+       وجدولٌ ثانٍ للبريد إلى جانب `Notification` بسببٍ بنيويٍّ لا بذوق:
+       صفُّ الإشعار معلَّقٌ بصاحبه بـ`onDelete: Cascade` فيذهب معه في السطر
+       الذي يلي — ورسالةُ المحو تخرج إلى من يُمحى صفُّه بعد ثانية. */
+    let queuedNotices = 0
     for (const id of targets) {
       const row = rowById.get(id)!
       /* الأثرُ قبل المحو: بعده لا يبقى ما يُشار إليه */
@@ -137,27 +143,24 @@ export class BulkPurgeService {
 
          و`admin.users.purge_bulk` أدناه لا رسالةَ له: معرّفُه **دفعةٌ** لا
          إنسان، ومن تعنيهم الدفعةُ أُبلغوا واحدا واحدا في هذه الحلقة. */
-      const mail = await sendAccountErasedEmail(this.prisma, {
-        to: row.email, displayName: row.displayName, kind: 'purge',
+      await enqueueMail(this.prisma, {
+        to: row.email,
+        ...accountErasedMail({ to: row.email, displayName: row.displayName, kind: 'purge' }),
+        purpose: 'account.erased.purge',
+        batchId,
       })
-      if (mail.status !== 'sent') {
-        unreached.push({
-          email: row.email,
-          whyAr: mail.status === 'not_configured' ? 'لا قناةَ بريدٍ موصولة' : (mail.error ?? 'سقط الإرسال'),
-        })
-      }
+      queuedNotices += 1
       await this.prisma.user.delete({ where: { id } })
       purged += 1
     }
 
     await recordAudit(this.prisma, {
       actorId, action: 'admin.users.purge_bulk', entityType: 'user', entityId: batchId,
-      meta: {
-        batchId, purged, refused: view.refused, requested: [...new Set(ids)].length,
-        /* ولا يُكتب `unreached: []` فارغا في كلّ صفّ: غيابُه يعني بلوغَ الجميع */
-        ...(unreached.length > 0 ? { unreached, unreachedCount: unreached.length } : {}),
-      },
+      /* و`queuedNotices` لا `sent`: الصفُّ يقول ما وقع حقّا — فالدفعةُ تعود
+         قبل أن يُرسَل شيء. ومصيرُ كلِّ رسالةٍ يُقرأ من `OutboxMail` بهذا
+         `batchId` نفسِه: من سأل بعد شهرٍ «أأُخبر فلان؟» وجد الجوابَ في صفٍّ. */
+      meta: { batchId, purged, refused: view.refused, requested: [...new Set(ids)].length, queuedNotices },
     })
-    return { batchId, purged, refused: view.refused, unreached }
+    return { batchId, purged, refused: view.refused, queuedNotices }
   }
 }

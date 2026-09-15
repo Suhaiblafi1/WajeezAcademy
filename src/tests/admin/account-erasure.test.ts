@@ -23,6 +23,28 @@ import { handlerAround } from '../helpers/audit-sites'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf-8')
 
+/* ═══ بابان يُخرجان الرسالة، لا واحد (ي-٦) ═══
+
+   `sendAccountErasedEmail` تُرسل في حينها، و`enqueueMail` تكتب في طابور
+   البريد ليُرسله العامل. والقسمةُ بينهما قاعدةٌ مكتوبةٌ في
+   `admin-users.routes.ts`: **ما يراه إنسانٌ ينتظر جوابَه يخرج في حينه، وما
+   لا يُرى يُوضَع في طابورٍ يُعيد المحاولة.**
+
+   فحذفٌ مفردٌ يقف عليه موظّفٌ أمام شاشةٍ يُرسِل مباشرةً، ودفعةٌ من مئتَي
+   حسابٍ تكتب في الطابور — لأنّ مئتَي نداءٍ متتابعٍ تتجاوز حدَّ المزوّد
+   (طلبان في الثانية) فتُبتلع رسائلُ ناسٍ حقيقيّين.
+
+   والحارسُ يقبل البابَين: دعواه أنّ **أحدا يُخبَر**، لا أيُّ دالّةٍ تُنادى.
+   ولو ثُبِّت على اسمٍ واحدٍ لَحمِر على تحسينٍ صحيحٍ — وقد حمِر فعلا حين
+   تحوّلت الدفعاتُ إلى الطابور، فأُصلح ولم يُسكَت. */
+const TELLS = ['sendAccountErasedEmail(', 'enqueueMail(']
+
+/** موضعُ أوّلِ إبلاغٍ في المقطع — أو `-1` */
+const tellsAt = (handler: string): number => {
+  const hits = TELLS.map((t) => handler.indexOf(t)).filter((i) => i > -1)
+  return hits.length === 0 ? -1 : Math.min(...hits)
+}
+
 /** مواضعُ المحو والتعمية — ومعها الفعلُ الذي يجب أن تسبقه الرسالة */
 const SITES: readonly { file: string; mutation: RegExp; whatAr: string }[] = [
   {
@@ -54,7 +76,7 @@ describe('رسالةُ آخرِ العهد', () => {
       const at = src.search(site.mutation)
       expect(at, `لم يُعثر على ${site.whatAr} في ${site.file}`).toBeGreaterThan(-1)
       const handler = handlerAround(src, at)
-      const sent = handler.indexOf('sendAccountErasedEmail(')
+      const sent = tellsAt(handler)
       expect(sent, `${site.whatAr}: يقع بلا رسالةٍ أخيرة`).toBeGreaterThan(-1)
       const mutated = handler.search(site.mutation)
       expect(sent, `${site.whatAr}: الرسالةُ بعد الفعل لا قبله`).toBeLessThan(mutated)
@@ -76,7 +98,9 @@ describe('رسالةُ آخرِ العهد', () => {
        وإلزامٌ بسببٍ ثمّ إخفاؤه عمّن يمسّه إلزامٌ بلا فائدةٍ لصاحب الشأن. */
     for (const file of ['server/http/routes/admin-users.routes.ts', 'server/services/account-reset.service.ts']) {
       const src = read(file)
-      for (const m of src.matchAll(/sendAccountErasedEmail\([\s\S]{0,320}?\}\)/g)) {
+      /* و`accountErasedMail(` هي الصياغةُ التي يأخذها البابان معا — فهي
+         الموضعُ الذي يُمرَّر فيه السببُ أو يُنسى، أيًّا كان البابُ بعدها. */
+      for (const m of src.matchAll(/(?:sendAccountErasedEmail|accountErasedMail)\([\s\S]{0,320}?\}\)/g)) {
         expect(m[0], `${file}: رسالةٌ تخرج بلا السبب المكتوب`).toMatch(/reasonAr/)
       }
     }

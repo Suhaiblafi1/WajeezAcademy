@@ -26,6 +26,7 @@ import type { PrismaClient } from '@prisma/client'
 import { NotificationService, liveChannels } from '../services/notification.service'
 import { AuthService } from '../services/auth.service'
 import { sendVerifyReminderEmail } from '../services/account-mail'
+import { drainOutbox, OUTBOX_MAX_ATTEMPTS } from '../services/outbox.service'
 import { CohortService } from '../services/cohort.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
@@ -55,7 +56,11 @@ const HOUR = 3_600_000
 const DAY = 24 * HOUR
 
 /** حدودُ الدورة الواحدة — لا انفجارَ بعد انقطاع */
-const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_000, verifyReminders: 100 }
+const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_000, verifyReminders: 100,
+  /* ي-٦: ستّون رسالةً بمهلة ٦٠٠ms = نحوُ ستٍّ وثلاثين ثانيةً في الدورة،
+     ودورتُها دقيقة. فدفعةُ مئتَي حسابٍ تخرج في نحو أربع دقائق — تحت حدّ
+     المزوّد طوالَها، ولا تُمسك الدورةَ عن بقيّة الوظائف. */
+  outbox: 60 }
 
 /** تذكيرتان لكلّ جلسة: قبل يومٍ وقبل ساعة. المفتاحُ هو ما يمنع التكرار. */
 const REMINDERS = [
@@ -113,6 +118,45 @@ export async function dispatchQueuedNotifications(prisma: PrismaClient, now = ne
         + (oldest ? ` — أقدمُها انتظر ${Math.max(1, Math.round((now.getTime() - oldest.getTime()) / 60_000))} دقيقة` : ''))
       + held,
     done, failed, ms: Date.now() - started,
+  }
+}
+
+/* ═══════════ تفريغُ طابور البريد الخارج (ي-٦) ═══════════
+
+   القاعدةُ ومعناها في `server/services/outbox.service.ts`. وهذه الوظيفةُ
+   جدولتُه وحدَها: تسأل عن القناة، ثمّ تُفرّغ ما استحقّ مُمَهَّلا.
+
+   **والقناةُ تُسأل قبل الصفّ** — عرفُ `dispatchQueuedNotifications`: صفٌّ
+   يُحاوَل وقناتُه مغلقةٌ يرفع عدّادَه ويقترب من حدّ المحاولات بلا أن يكون
+   أحدٌ حاول إرسالَه. فيبقى ينتظر وصلَ قناته، ويُقال عددُه في الخبر. */
+export async function dispatchOutboxMail(prisma: PrismaClient): Promise<JobResult> {
+  const started = Date.now()
+
+  const waiting = await prisma.outboxMail.count({
+    where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS } },
+  })
+  if (!(await liveChannels(prisma)).includes('email')) {
+    return {
+      job: 'outbox_mail',
+      summaryAr: waiting > 0
+        ? `قناةُ البريد غيرُ موصولة — و${waiting} رسالةً تنتظرها ولا تُحرَق`
+        : 'قناةُ البريد غيرُ موصولة — ولا رسالةَ تنتظر',
+      done: 0, failed: 0, ms: Date.now() - started,
+    }
+  }
+
+  const run = await drainOutbox(prisma, { limit: LIMITS.outbox })
+  /* والمستنفَدُ يُقال في الخبر: صفٌّ بلغ حدَّ محاولاته لا يُعاد أبدا، فلو لم
+     يُذكَر هنا لَبقي إنسانٌ لم يُخبَر ولا أحدَ يعلم. */
+  const dead = await prisma.outboxMail.count({ where: { status: 'failed' } })
+  return {
+    job: 'outbox_mail',
+    summaryAr: (run.sent === 0 && run.failed === 0
+      ? 'لا رسالةَ في طابور البريد'
+      : `خرج ${run.sent}، وسقط ${run.failed}`)
+      + (run.remaining > 0 ? ` — وبقي ${run.remaining} للدورة القادمة` : '')
+      + (dead > 0 ? ` · و${dead} استنفدت محاولاتِها ولم تصل` : ''),
+    done: run.sent, failed: run.failed, ms: Date.now() - started,
   }
 }
 
@@ -461,6 +505,12 @@ export const RETENTION_DAYS = {
   loginAttempt: 90,
   registrationAttempt: 90,
   paymentWebhook: 365,
+  /* ي-٦: ما خرج من طابور البريد يُقلَّم سريعا — وعدنا صاحبَه بمحوٍ كامل،
+     فلا يبقى عنوانُه عندنا شهورا بعد أن أدّت الرسالةُ غرضَها. والمتنُ ممحوٌّ
+     ساعةَ خرجت، فهذا تقليمُ ما بقي: أنّه أُخبِر ومتى. */
+  outboxSent: 14,
+  /* وما استنفد محاولاتِه يبقى أطولَ: إنسانٌ لم يُخبَر، وأحدٌ يجب أن يراه */
+  outboxFailed: 90,
 } as const
 
 /** أقصى ما يُحذف من جدولٍ واحدٍ في الدورة — كي لا تُقفل معاملةٌ جدولا */
@@ -496,6 +546,18 @@ export async function enforceRetention(prisma: PrismaClient, now = new Date()): 
         select: { id: true }, take: RETENTION_BATCH,
       }),
       (ids) => prisma.notification.deleteMany({ where: { id: { in: ids } } })),
+    trim('بريدٌ خرج',
+      () => prisma.outboxMail.findMany({
+        where: { status: 'sent', sentAt: { lt: ago(RETENTION_DAYS.outboxSent) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.outboxMail.deleteMany({ where: { id: { in: ids } } })),
+    trim('بريدٌ لم يصل',
+      () => prisma.outboxMail.findMany({
+        where: { status: 'failed', createdAt: { lt: ago(RETENTION_DAYS.outboxFailed) } },
+        select: { id: true }, take: RETENTION_BATCH,
+      }),
+      (ids) => prisma.outboxMail.deleteMany({ where: { id: { in: ids } } })),
     trim('أحداث استخدام',
       () => prisma.analyticsEvent.findMany({
         where: { createdAt: { lt: ago(RETENTION_DAYS.analytics) } },
@@ -764,6 +826,7 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
 
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
+  { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسالُ ما في طابور البريد' },
   { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكيرُ الجلسات' },
   /* ي-٥: ودورتُه ساعةٌ لا خمسُ دقائق — عتبتُه يومٌ وأربعةٌ، فدقّةُ الدقائق
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
