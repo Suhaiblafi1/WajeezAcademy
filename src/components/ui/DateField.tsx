@@ -29,7 +29,8 @@
 import { useId, useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import {
-  daysInMonth, formatTypedDate, joinIsoDay, MONTHS_AR, parseTypedDate, splitIsoDay, yearChoices,
+  type DateParts, dateStateFromIso, daysInMonth, MONTHS_AR, parseTypedDate, pickDatePart,
+  syncDateState, typeDateText, yearChoices,
 } from '@/application/text/date-parts'
 
 export interface DateFieldProps {
@@ -61,41 +62,44 @@ export default function DateField({
 }: DateFieldProps) {
   const auto = useId()
   const base = id ?? auto
-  const [text, setText] = useState(() => formatTypedDate(value))
+  /* ═══ الحالةُ هنا لا تُشتقّ من `value` ═══
+
+     `value` لا تحمل إلّا تاريخا مكتملا، والقوائمُ تُملأ جزءا جزءا. فلو
+     قُرئت الأجزاءُ منها لارتدّ كلُّ اختيارٍ ناقصٍ إلى الفراغ أمام عين
+     صاحبه — وهو العطبُ الموصوفُ في `date-parts`. والانتقالاتُ الثلاثةُ
+     هناك خالصةٌ ومفحوصة، وهذا المكوّنُ يناديها لا غير. */
+  const [state, setState] = useState(() => dateStateFromIso(value))
   const [picking, setPicking] = useState(false)
 
-  /* ما يأتي من فوقُ يُعرض — تحميلُ ملفٍّ محفوظ، أو اختيارٌ من القوائم.
+  /* ما يأتي من فوقُ يُعرض — تحميلُ ملفٍّ محفوظ، أو تفريغٌ من الشاشة المضيفة.
 
      والمواءمةُ **أثناء التصيير** لا في أثرٍ بعده: هذه حالةٌ تُشتقّ من خاصّيّة،
      وأثرٌ لها يُصيّر مرّتين ويُعيد رسمَ الحقل تحت إصبع من يكتب (وهو ما يمنعه
      `react-hooks/set-state-in-effect`). والنمطُ من توثيق React نفسِه.
 
-     والشرطُ الثاني يمنع محوَ ما يُكتب: من كتب «13/09/2026» أنتج القيمةَ
+     و`syncDateState` تمنع محوَ ما يُكتب: من كتب «13/09/2026» أنتج القيمةَ
      نفسَها، فلا يُعاد بناءُ نصِّه منها ويقفز مؤشّرُه إلى آخره. */
   const [lastValue, setLastValue] = useState(value)
   if (value !== lastValue) {
     setLastValue(value)
-    if (parseTypedDate(text).iso !== value) setText(formatTypedDate(value))
+    setState((prev) => syncDateState(prev, value))
   }
 
-  const parsed = parseTypedDate(text)
-  const parts = splitIsoDay(value)
+  const parsed = parseTypedDate(state.text)
+  const parts = state.parts
   const years = yearChoices(fromYear, toYear, yearOrder)
   const dayCount = daysInMonth(Number(parts.year), Number(parts.month))
 
-  const type = (next: string) => {
-    setText(next)
-    const out = parseTypedDate(next)
-    /* الناقصُ يُفرّغ القيمةَ ولا يُبقي تاريخا قديما تحت نصٍّ جديد — ومن محا
-       الحقلَ محا اختيارَه. */
-    if (out.iso !== value) onChange(out.iso)
+  /* الانتقالُ يُحسب مرّةً ويُقرأ منه الاثنان: ما يُعرض وما يُرسَل — فلا
+     يفترق ما في الشاشة عمّا في الطلب. */
+  const apply = (next: typeof state) => {
+    setState(next)
+    if (next.iso !== state.iso) onChange(next.iso)
   }
 
-  const set = (patch: Partial<typeof parts>) => {
-    const iso = joinIsoDay({ ...parts, ...patch })
-    onChange(iso)
-    setText(formatTypedDate(iso))
-  }
+  const type = (next: string) => apply(typeDateText(state, next))
+
+  const set = (patch: Partial<DateParts>) => apply(pickDatePart(state, patch))
 
   const cls = `${selectClassName} [&>option]:bg-surface`
 
@@ -105,7 +109,7 @@ export default function DateField({
         <input
           id={base}
           {...aria}
-          value={text}
+          value={state.text}
           onChange={(e) => type(e.target.value)}
           onBlur={onBlur}
           inputMode="numeric"

@@ -11,7 +11,8 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  daysInMonth, joinIsoDay, MONTHS_AR, splitIsoDay, yearChoices,
+  dateStateFromIso, daysInMonth, joinIsoDay, MONTHS_AR, pickDatePart, splitIsoDay,
+  syncDateState, typeDateText, yearChoices,
 } from '@/application/text/date-parts'
 import { nextFrameHeight, parseFrameHeight } from '@/lib/calendly-embed'
 
@@ -77,6 +78,61 @@ describe('أجزاءُ التاريخ — الحالاتُ الحدّيّةُ ا
   })
 })
 
+/* ═══ الشكوى الثالثة (١٥ سبتمبر ٢٠٢٦) — «ولا يتأثّر ما يختاره من الخيارات» ═══
+
+   القوائمُ كانت تقرأ أجزاءَها من القيمة المرسَلة، والقيمةُ لا تُكتب إلّا
+   لتاريخٍ مكتمل. فمن اختار السنةَ وحدَها: `joinIsoDay` يردّ `''`، فتبقى
+   القيمةُ فارغةً، فترتدّ القائمةُ إلى «السنة» — **فلا تفعل القوائمُ شيئا
+   أبدا إلّا لمن كتب التاريخَ كاملا قبلها**، وهي وُضعت لمن لا يكتب.
+
+   والفحصُ على الانتقالات: اختيارٌ ناقصٌ يبقى، ومكتملٌ يُرسَل. */
+describe('القوائمُ تُبنى جزءا جزءا — والناقصُ لا يرتدّ', () => {
+  it('⚠️ سنةٌ وحدَها تبقى مختارةً ولا تُرسَل', () => {
+    const after = pickDatePart(dateStateFromIso(''), { year: '2026' })
+    expect(after.parts.year, 'ارتدّت السنةُ إلى الفراغ أمام عين مختارها').toBe('2026')
+    expect(after.iso, 'نصفُ تاريخٍ ذهب إلى الخادم').toBe('')
+  })
+
+  it('⚠️ وتُبنى عليها الأجزاءُ الباقيةُ واحدا واحدا حتّى تكتمل', () => {
+    let st = dateStateFromIso('')
+    st = pickDatePart(st, { year: '2026' })
+    st = pickDatePart(st, { month: '10' })
+    expect(st.parts, 'ضاع ما اختير قبل الشهر').toEqual({ year: '2026', month: '10', day: '' })
+    expect(st.iso, 'أُرسل تاريخٌ بلا يوم').toBe('')
+    st = pickDatePart(st, { day: '15' })
+    expect(st.iso, 'اكتملت الثلاثةُ ولم يُرسَل شيء').toBe('2026-10-15')
+    expect(st.text, 'الحقلُ لا يُري ما اختير من القوائم').toBe('15/10/2026')
+  })
+
+  it('⚠️ واليومُ المقصوصُ يُرى مقصوصا في قائمته — لا رقمٌ يخالف ما سيُرسَل', () => {
+    let st = dateStateFromIso('2026-01-31')
+    st = pickDatePart(st, { month: '2' })
+    expect(st.iso).toBe('2026-02-28')
+    expect(st.parts.day, 'القائمةُ تقول ٣١ والمرسَلُ ٢٨').toBe('28')
+  })
+
+  it('والمكتوبُ يحرّك القوائمَ متى اكتمل — فلا يفترق البابان', () => {
+    const st = typeDateText(dateStateFromIso(''), '09/07/1985')
+    expect(st.iso).toBe('1985-07-09')
+    expect(st.parts).toEqual({ year: '1985', month: '7', day: '9' })
+  })
+
+  it('وما زال يُكتب لا يمحو ما اختير — ومحوُ الحقل يمحوه', () => {
+    const picked = pickDatePart(dateStateFromIso(''), { year: '2026' })
+    expect(typeDateText(picked, '13/0').parts.year, 'انتُزع اختيارُه وهو يكتب').toBe('2026')
+    expect(typeDateText(picked, '').parts, 'محا الحقلَ وبقي اختيارُه').toEqual({ year: '', month: '', day: '' })
+  })
+
+  it('⚠️ وقيمةٌ عادت كما أرسلناها لا تُعيد بناءَ نصِّه — فلا يقفز مؤشّرُه', () => {
+    /* من كتب «5/1/2026» أنتج `2026-01-05`. ولو أُعيد بناءُ نصِّه منها لصار
+       «05/01/2026» تحت إصبعه وقفز المؤشّرُ إلى آخره. */
+    const typed = typeDateText(dateStateFromIso(''), '5/1/2026')
+    expect(syncDateState(typed, '2026-01-05')).toBe(typed)
+    /* وقيمةٌ جاءت من غيرِنا (مسودّةٌ حُمّلت) تُتبَع */
+    expect(syncDateState(typed, '2026-03-01').text).toBe('01/03/2026')
+  })
+})
+
 describe('أين رُحّل اختيارُ التاريخ', () => {
   it('⚠️ تاريخُ الميلاد قوائمُ لا منتقي متصفّح — وسنتُه تبلغ ١٩٨٥ وما قبلها', () => {
     const account = code('src/pages/student/Account.tsx')
@@ -111,8 +167,10 @@ describe('أين رُحّل اختيارُ التاريخ', () => {
   it('⚠️ والتاريخُ يُكتب أرقاما لا يُنتقى وحدَه', () => {
     const field = code('src/components/ui/DateField.tsx')
     expect(field, 'لا حقلَ كتابةٍ في الحقل أصلا').toMatch(/<input\b/)
-    expect(field, 'المكتوبُ لا يُقرأ بالقسمة المفحوصة').toContain('parseTypedDate')
-    expect(field, 'المحفوظُ لا يُعرض مكتوبا').toContain('formatTypedDate')
+    expect(field, 'المكتوبُ لا يُقرأ بالقسمة المفحوصة').toContain('typeDateText')
+    /* `dateStateFromIso` هي التي تبني النصَّ من المحفوظ — و`formatTypedDate`
+       تحتها. والحارسُ على من يُنادى هنا لا على من يُنادى في الطبقة الأدنى. */
+    expect(field, 'المحفوظُ لا يُعرض مكتوبا').toContain('dateStateFromIso')
     /* والنمطُ يُرى قبل الكتابة — «13/09/2026» لا «yyyy-mm-dd» */
     expect(field, 'لا نمطَ معروضٌ يُحتذى').toMatch(/placeholder="\d{2}\/\d{2}\/\d{4}"/)
   })
@@ -159,6 +217,31 @@ describe('صندوقُ الحجز — يكبر ولا يصغر', () => {
     expect(card).toMatch(/min-h-\[\d{3,4}px\]/)
     expect(card, 'رقمُ ارتفاعٍ مفروضٌ باليد عاد إلى الصندوق').not.toMatch(/className="[^"]*\sh-\[\d{3,4}px\]/)
     expect(card, 'قرارُ الارتفاع رجع إلى داخل المكوّن فلا يُفحص').toContain('nextFrameHeight')
+  })
+
+  /* ═══ الشكوى الثالثة (١٥ سبتمبر ٢٠٢٦) — «تتحرّك داخل البوكس» ═══
+
+     كانت الأرضيّةُ `min-h-[1040px] sm:min-h-[760px]`: تنزل الثلثَ على
+     الشاشات الأوسع. و`sm:` تقيس **الشاشة**، وعرضُ الإطار ليس عرضَها —
+     البطاقةُ تُركَّب في عمودٍ سقفُه `max-w-lg`، فالإطارُ نحوَ ٤٦٠ بكسلا على
+     حاسوبٍ عرضُه ألفان، وCalendly يرسم عنده تخطيطَه الضيّقَ الطويل. فمن فتحها
+     على حاسوبٍ رأى إطارا مقصوصا يُمرَّر داخلَ نفسه. */
+  it('⚠️ ولا تنزل الأرضيّةُ على الشاشات الأوسع — الإطارُ يقيسه عرضُ البطاقة لا عرضُ الشاشة', () => {
+    const card = code('src/components/BookInterview.tsx')
+    const floors = [...card.matchAll(/(^|\s|")(?:(sm|md|lg|xl):)?min-h-\[(\d{3,4})px\]/g)]
+      .map((m) => ({ at: m[2] ?? 'base', px: Number(m[3]) }))
+    expect(floors.length, 'لا أرضيّةَ في الصندوق أصلا').toBeGreaterThan(0)
+    const base = floors.find((f) => f.at === 'base')
+    expect(base, 'الأرضيّةُ مشروطةٌ بعرضٍ ولا أرضيّةَ مطلقةً تحتها').toBeTruthy()
+    for (const f of floors) {
+      expect(
+        f.px,
+        `أرضيّةٌ أقصرُ عند \`${f.at}\` (${f.px}px دون ${base!.px}px) — وعرضُ الإطار لا يتبع عرضَ الشاشة`,
+      ).toBeGreaterThanOrEqual(base!.px)
+    }
+    /* وتسع تخطيطَ Calendly الضيّق: ترويسةٌ، ثمّ شبكةُ الشهر، ثمّ المنطقةُ
+       الزمنيّة — وقد قِيست أطولَ من ألف بكسل. */
+    expect(base!.px, 'أرضيّةٌ لا تسع تقويمَ Calendly في عمودٍ ضيّق').toBeGreaterThanOrEqual(1040)
   })
   /* ═══ ولماذا يُفحص الأثرُ بمصفوفةِ اعتماده ═══
 
