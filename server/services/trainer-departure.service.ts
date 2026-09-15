@@ -29,7 +29,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { NotificationService } from './notification.service'
+import { NotificationService, notifyRole } from './notification.service'
 import { CommerceService } from './commerce.service'
 import {
   canClose, CHOICE_LABEL_AR, closeBlockersAr, isResolved, LEARNER_CHOICES, needsLearnerChoice,
@@ -46,11 +46,19 @@ import {
    و`Record<ResolvedOutcome, …>` يجعل المترجِمَ نفسَه هو الحارس: من زاد مآلا
    في `RESOLVED_OUTCOMES` ولم يكتب نصَّه لم يُبنَ المشروع. وحارسٌ في المترجِم
    لا يُنسى تشغيلُه. */
-const RESOLVED_MESSAGE: Record<ResolvedOutcome, (cohortTitle: string) => string> = {
+/** رمزُ رصيدِ الرحيل — يُشتقّ من معرّف الصفّ، ومالكُه واحد.
+
+    وكان يُكتب في الكوبون هنا ولا يُقال لصاحبه: نصُّ `credited` أدناه لا
+    يأخذ وسيطا أصلا، فيُخبَر أنّ له رصيدا ولا يُخبَر بما يستعمله. */
+export function creditCouponCode(caseId: string): string {
+  return `WJZ-CR-${caseId.slice(0, 8).toUpperCase()}`
+}
+
+const RESOLVED_MESSAGE: Record<ResolvedOutcome, (cohortTitle: string, caseId: string) => string> = {
   substituted: (t) => `تغيّر مدرّبُ «${t}». مقعدُك وجدولُك ومدفوعاتُك كما هي — ولم يتغيّر إلّا الاسم.`,
   moved: (t) => `نُقلت إلى شعبةٍ أخرى من الدورة نفسِها بعد تغيّرٍ في «${t}». جدولُك الجديدُ في «رحلتي».`,
   refund_requested: (t) => `بناءً على اختيارك، رُفع طلبُ ردِّ ما تبقّى من قيمة «${t}» إلى الماليّة.`,
-  credited: () => 'بناءً على اختيارك، صُرف لك رصيدٌ باسمك يُخصَم من أيّ مسارٍ تختاره — ومعه زيادةٌ لأجلِ ما سبّبناه.',
+  credited: (_t, caseId) => `بناءً على اختيارك، صُرف لك رصيدٌ باسمك يُخصَم من أيّ مسارٍ تختاره — ومعه زيادةٌ لأجلِ ما سبّبناه. ورمزُه: ${creditCouponCode(caseId)}`,
 }
 
 /** نصُّ عرضِ الاختيار — يُبنى من `LEARNER_CHOICES` فلا يبقى خيارٌ بلا ذكرٍ فيه */
@@ -255,6 +263,12 @@ export class TrainerDepartureService {
     if (!departed) throw new AuthError('not_found', 'لا ملفَّ رحيلٍ بهذا المعرّف', 404)
     if (departed.closedAt) throw new AuthError('closed', 'أُغلق ملفُّ الرحيل', 409)
 
+    /* معرّفاتُ الصفوف تُقرأ **قبل** حلّها: `updateMany` يردّ عددا لا
+       معرّفات، ومن حُلَّ أمرُه بلا معرّفٍ لا يُبلَّغ. */
+    const pending = await this.prisma.departureCase.findMany({
+      where: { departureId, cohortId, outcome: 'pending' },
+      select: { id: true },
+    })
     const n = await this.prisma.$transaction(async (tx) => {
       /* الراحلُ يخرج من الشعبة، والبديلُ يدخلها قائدا */
       await tx.cohortTrainer.deleteMany({ where: { cohortId, profileId: departed.profileId } })
@@ -274,7 +288,10 @@ export class TrainerDepartureService {
       actorId, action: 'trainer.departure.substitute', entityType: 'trainer_departure', entityId: departureId,
       meta: { cohortId, cohortTitle: cohort.title, newProfileId, learners: n },
     })
-    return { resolved: n }
+    /* ويُبلَّغ كلُّ من حُلَّ أمرُه — لا يُنتظَر زرٌّ يُضغط عشرين مرّة */
+    let told = 0
+    for (const row of pending) if (await this.tellResolved(actorId, row.id)) told += 1
+    return { resolved: n, told }
   }
 
   /* ═══ الطريقُ الثاني: يُنقل المتعلّم إلى نظير ═══ */
@@ -349,7 +366,9 @@ export class TrainerDepartureService {
       actorId, action: 'trainer.departure.move', entityType: 'departure_case', entityId: caseId,
       meta: { fromCohortId: c.cohortId, toCohortId, toTitle: to.title },
     })
-    return { moved: true }
+    /* ومقعدُه انتقل في السطر فوقُ — فلا يبقى جدولُه يتغيّر وهو لا يعلم */
+    const told = await this.tellResolved(actorId, caseId)
+    return { moved: true, told }
   }
 
   /* ═══ الطريقُ الثالث: الاختيارُ لصاحبه (ن-١٠) ═══ */
@@ -492,6 +511,25 @@ export class TrainerDepartureService {
       actorId: userId, action: 'trainer.departure.learner_choice',
       entityType: 'departure_case', entityId: caseId, meta: { choice },
     })
+    /* ═══ واختيارٌ لا يُنفّذه أحدٌ ليس اختيارا (ي-٤) ═══
+
+       هذا الفعلُ كان صامتا من طرفَيه: لا صاحبُ المقعد يُشكَر، **ولا أحدٌ في
+       الإدارة يُستدعى**. فيبقى الخيارُ في عمودٍ حتّى يفتح موظّفٌ شاشةَ
+       الرحيل مصادفةً فيرى زرَّ «نفِّذ ما اختاره». وصاحبُه اختار ردَّ ماله،
+       فينتظر شيئا لا يعلم أنّه لم يبدأ.
+
+       ولا مفتاحَ قائمٌ يصلح له: `departure.choice` عرضٌ خرج من قبل،
+       و`departure.resolved` يخالف قاعدةَ السمعة ① — لا شيءَ حُلَّ بعد. */
+    const cohort = await this.prisma.departureCase.findUnique({
+      where: { id: caseId }, select: { cohort: { select: { title: true } } },
+    })
+    await notifyRole(this.prisma, ['super_admin', 'academic_manager'], {
+      channel: 'in_app',
+      templateKey: 'departure.chosen',
+      title: 'اختار صاحبُ المقعد — ولم يُنفَّذ بعد',
+      body: `اختار صاحبُ المقعد في «${cohort?.cohort.title ?? 'شعبته'}»: ${CHOICE_LABEL_AR[choice]}. ولا يقع شيءٌ حتّى يُنفَّذ — افتح ملفَّ الرحيل ونفِّذ ما اختاره.`,
+      data: { caseId, choice },
+    })
     return out
   }
 
@@ -525,7 +563,7 @@ export class TrainerDepartureService {
     if (choice === 'credit') {
       const total = input.amount + (input.bonus ?? 0)
       if (total <= 0) throw new AuthError('bad_amount', 'مبلغُ الرصيد أكبرُ من صفر', 400)
-      const code = `WJZ-CR-${caseId.slice(0, 8).toUpperCase()}`
+      const code = creditCouponCode(caseId)
       await this.prisma.coupon.create({
         data: {
           code,
@@ -570,7 +608,10 @@ export class TrainerDepartureService {
       where: { id: caseId },
       data: { outcome, resolvedBy: actorId, resolvedAt: new Date() },
     })
-    return out
+    /* والمآلُ وقع الآن — رصيدٌ صُرف أو طلبُ ردٍّ رُفع. فيُقال لصاحبه في
+       الحال، ولا يُنتظَر أن يتذكّر أحدٌ زرًّا. */
+    const told = await this.tellResolved(actorId, caseId)
+    return { ...out, told }
   }
 
   /* ═══ والرسالةُ بعد القرار لا قبله ═══ */
@@ -594,30 +635,55 @@ export class TrainerDepartureService {
     if (blocker) throw new AuthError('undecided', blocker, 409)
     if (c.notifiedAt) throw new AuthError('already', 'أُبلغ من قبل', 409)
 
-    const notifications = new NotificationService(this.prisma)
-    const body = this.messageFor(c.outcome, c.cohort.title)
-    await notifications.notify({
-      userId: c.enrollment.userId, channel: 'in_app',
-      templateKey: 'departure.resolved',
-      title: `تغييرٌ في «${c.cohort.title}»`,
-      body,
-      data: { caseId, outcome: c.outcome },
-      audience: 'learner',
-    })
+    await this.tellResolved(actorId, caseId)
+    return this.prisma.departureCase.findUniqueOrThrow({ where: { id: caseId } })
+  }
 
-    const out = await this.prisma.departureCase.update({
-      where: { id: caseId }, data: { notifiedAt: new Date() },
+  /* ونصُّ الرسالة يحمل ما يجري بعدها — لا اعتذارا وانتظارا */
+  /* ═══ ولا يُنتظَر إنسانٌ ليضغط «أبلِغه» (ي-٤) ═══
+
+     `departure.resolved` كان يصل صاحبَه فعلا — **بيدِ موظّفٍ يضغط زرًّا
+     مرّةً لكلِّ متعلّم**. و`substitute` يحلّ صفوفَ الشعبة كلَّها في
+     `updateMany` واحد: فالعبءُ يكبر بكِبَر الشعبة، وهو بعينه الموضعُ الذي
+     يُترك فيه. ولا وظيفةَ تذكّر، ولا حدَّ للتأخير — وحدَه `close` يمنع
+     إغلاقَ ملفٍّ فيه من قُرِّر أمرُه ولم يُبلَّغ، ولا شيءَ يوجب الإغلاق.
+
+     فصار الإبلاغُ يقع مع القرار نفسِه. والزرُّ يبقى: من تعذّر إبلاغُه
+     آليّا يُعاد إبلاغُه بيد، و`notifiedAt` يمنع التكرار.
+
+     ويُبتلع خطؤه بقصد: قرارٌ وقع في القاعدة لا يُنقض لأنّ جرسا لم يُقرع. */
+  private async tellResolved(actorId: string | null, caseId: string): Promise<boolean> {
+    const c = await this.prisma.departureCase.findUnique({
+      where: { id: caseId },
+      include: {
+        cohort: { select: { title: true } },
+        enrollment: { select: { userId: true } },
+        departure: { select: { profile: { select: { application: { select: { fullName: true } } } } } },
+      },
     })
+    /* صفٌّ لم يُقرَّر أمرُه لا تخرج عليه رسالة — قاعدةُ السمعة ①.
+       ومن أُبلغ لا يُبلَّغ مرّتَين. */
+    if (!c || c.notifiedAt || notifyBlockerAr(c)) return false
+    try {
+      await new NotificationService(this.prisma).notify({
+        userId: c.enrollment.userId, channel: 'in_app',
+        templateKey: 'departure.resolved',
+        title: `تغييرٌ في «${c.cohort.title}»`,
+        body: this.messageFor(c.outcome, c.cohort.title, caseId),
+        data: { caseId, outcome: c.outcome },
+        audience: 'learner',
+      })
+    } catch { return false }
+    await this.prisma.departureCase.update({ where: { id: caseId }, data: { notifiedAt: new Date() } })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.departure.notify', entityType: 'departure_case', entityId: caseId,
       meta: { outcome: c.outcome },
     })
-    return out
+    return true
   }
 
-  /* ونصُّ الرسالة يحمل ما يجري بعدها — لا اعتذارا وانتظارا */
-  private messageFor(outcome: string, cohortTitle: string): string {
-    return RESOLVED_MESSAGE[outcome as ResolvedOutcome](cohortTitle)
+  private messageFor(outcome: string, cohortTitle: string, caseId: string): string {
+    return RESOLVED_MESSAGE[outcome as ResolvedOutcome](cohortTitle, caseId)
   }
 
   /** تُغلق الحالةُ ولا اسمَ معلَّق */
