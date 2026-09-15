@@ -53,8 +53,11 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        كالتذكير، ومن كتم مواعيدَ الجلسات كتمها كلَّها لا نصفَها. وجدولُ
        الشعبة يبقى معروضا في صفحة رحلته على كلّ حال — فالكتمُ يُسكت الجرسَ
        ولا يُخفي الموعد. */
+    /* ي-٤: و«صار للقاء رابط» — رابطٌ يُلصَق بلقاءٍ أُعلن من قبلُ بلا رابط.
+       وهو هنا لا في صنفٍ مقفل: خبرُ موعدٍ كالتذكير، والموعدُ يبقى في جدوله
+       على كلّ حال — فالكتمُ يُسكت الجرسَ ولا يُخفي اللقاء. */
     templateKeys: [
-      'cohort.session.scheduled',
+      'cohort.session.scheduled', 'cohort.meeting.linked',
       'session.reminder', 'session.reminder.24h', 'session.reminder.1h',
     ],
   },
@@ -150,6 +153,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       /* وتذكيرُ المدرّب بحصّتِه هنا لا في «الجلسات»: حصّةُ المتعلّم موعدٌ
          له، وحصّةُ المدرّب موعدٌ عليه. ومن يكتمها يُغيّب صفّا دفع مقاعدَه. */
       'session.reminder.trainer.24h', 'session.reminder.trainer.1h',
+      /* ي-٤: ورابطُ لقاءٍ يستضيفه — «حصّةُ المتعلّم موعدٌ له، وحصّةُ المدرّب
+         موعدٌ عليه»، فمفتاحُه غيرُ مفتاحِ المتعلّم ولا يُكتَم. */
+      'cohort.meeting.linked.trainer',
       /* وأنّ عملا دخل طابورَ تصحيحه: المتعلّمُ ينتظر جوابا، والصمتُ يُقرأ
          إهمالا وهو جهل. */
       'submission.queued',
