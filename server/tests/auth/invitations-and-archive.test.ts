@@ -86,6 +86,26 @@ describe('«مدعوّ» حالةٌ تنتهي بأوّل كلمةِ مرور', 
     expect(session.token).toBeTruthy()
   })
 
+  /* رسالةُ الدعوة تقول لصاحبها صراحةً: «فإن انتهى فاطلب إعادةَ إرسال الدعوة،
+     أو استعمل «نسيت كلمة المرور» ببريدك هذا» (account-mail.ts). وكان البابُ
+     الثاني مغلقا: رمزُ الاستعادة غرضُه `reset` لا `invite`، والتفعيلُ كان
+     مشروطا بالغرض — فيضع المدعوُّ كلمتَه، ويُقال له «عُيّنت كلمة المرور
+     سجّل الدخول من جديد»، ثمّ يُردُّ عند الدخول بـ«هذا الحساب موقوف تواصل
+     مع الدعم». وهو ليس موقوفا، ولا دعمَ يُراجَع في هذا. */
+  it('والمدعوُّ يُفعَّل برمز الاستعادة كذلك — فرسالةُ الدعوة تدلّه عليه', async () => {
+    const { userId } = await invitedAccount('invite.forgot@test.local')
+    const { tokenForDelivery } = await auth.requestPasswordReset('invite.forgot@test.local')
+    await auth.resetPassword(tokenForDelivery!, 'ChosenPass#123')
+
+    expect(
+      (await prisma.user.findUnique({ where: { id: userId } }))!.status,
+      'وضع كلمتَه كما قالت له الرسالة، فبقي «مدعوّا» لا يدخل',
+    ).toBe('active')
+    /* ويدخل بها فعلا — والحالةُ وحدَها لا تكفي دليلا */
+    const session = await auth.login('invite.forgot@test.local', 'ChosenPass#123')
+    expect(session.token).toBeTruthy()
+  })
+
   it('واستعادةٌ عاديّةٌ لا تُغيّر حالةَ حسابٍ موقوف', async () => {
     const { userId } = await invitedAccount('invite.suspended@test.local')
     await auth.suspend(userId)
