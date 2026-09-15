@@ -146,7 +146,12 @@ describe('البابُ يُنسب لصاحبه، واللوحةُ تقول كم 
     const home = code('src/pages/trainer/Referral.tsx')
     expect(home).toContain('/api/trainer/me/referral')
     expect(home, 'الرقمُ محسوبٌ في الواجهة لا مأخوذٌ من ختم التسجيل').toMatch(/referral\.registered/)
-    expect(home, 'لا رابطَ يُنسخ').toMatch(/writeText\(referral\.url\)/)
+    /* والنسخُ صار دالّةً واحدةً بمفتاح (`copy`) منذ نزلت روابطُ الشعب
+       بجانبه (١٥ سبتمبر ٢٠٢٦): رايةُ «نُسخ» كانت واحدةً، فلو بقيت أضاءت
+       تحت كلّ زرٍّ معا ولم يدرِ الناسخُ أيَّها نسخ. والمحروسُ هو هو —
+       رابطُ الملفّ الكامل يُنسخ بنقرة. */
+    expect(home, 'لا رابطَ يُنسخ').toMatch(/copy\("wide", referral\.url\)/)
+    expect(home, 'النسخُ لا يبلغ الحافظة').toMatch(/writeText\(url\)/)
   })
 
   it('وتقول متى لا يعمل الرابطُ بدل أن تعطيه رابطا يردّ ٤٠٤', () => {

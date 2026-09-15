@@ -361,6 +361,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* رابطُه الواسعُ وأثرُه — نداءٌ واحدٌ للوحة: الرابطُ وكم سجّل منه.
      وهما معا لأنّ الرابطَ بلا رقمٍ دعوةٌ لا يُعرف أنفعت، والرقمُ بلا رابطٍ
      خبرٌ لا يُعمل به. */
+  /* روابطُ شعبي المفتوحة — تُقرأ في «دعوتي» دفعةً واحدة (١٥ سبتمبر ٢٠٢٦) */
+  app.get('/api/trainer/me/referral-links', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'رابطُ دعوتي لكلّ شعبةٍ مفتوحةٍ أدرّبها' },
+  }, async (req) => referrals.cohortLinksFor(req.auth!.userId))
+
   app.get('/api/trainer/me/referral', {
     preHandler: requirePermission('trainer.cohort.plan'),
     schema: { tags: ['trainer-ops'], summary: 'رابطي العامُّ على كامل ما أدرّب، ومن سجّل عبره' },
@@ -478,6 +484,24 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     }).passthrough().parse(req.body)
     void TRAINER_EDITABLE_COHORT_FIELDS
     return plans.updateCohort(req.auth!.userId, id, body as Record<string, unknown>)
+  })
+
+  /* فصلُ الشعبة — يختاره مدرّبُها، وحدودُه تصير نافذةَ جدولته (١٥ سبتمبر ٢٠٢٦) */
+  app.get('/api/trainer/cohorts/:id/terms', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'الفصولُ التي يسعني اختيارُها لهذه الشعبة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return plans.selectableTerms(req.auth!.userId, id)
+  })
+
+  app.post('/api/trainer/cohorts/:id/term', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'اختيارُ فصل الشعبة — ومنه تُشتقّ حدودُها ونافذةُ جدولتها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { termId } = z.object({ termId: z.string().uuid() }).parse(req.body)
+    return plans.setTerm(req.auth!.userId, id, termId)
   })
 
   app.post('/api/trainer/cohorts/:id/plan/submit', {

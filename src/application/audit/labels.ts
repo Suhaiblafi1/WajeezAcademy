@@ -60,6 +60,7 @@ const PHRASES: Record<string, string> = {
   /* نقلُ المدرّب لقاءَه داخلَ نافذته — لا اقتراحٌ يُرفع إلى الإدارة.
      ويُفرَّق عن `session.reschedule.*` عمدا: ذاك طلبٌ يُبَتّ، وهذا فعلٌ وقع. */
   'cohort.session.move': 'نقلُ موعدِ لقاءٍ داخلَ نافذة الجدولة',
+  'cohort.term.set': 'تحديدُ مدرّبٍ فصلَ شعبته',
   'cohort.schedule_window.open': 'فتحُ نافذةِ جدولةٍ للمدرّب',
   'cohort.schedule_window.close': 'إغلاقُ نافذةِ جدولةِ المدرّب',
   'cohort.sessions.generate': 'توليدُ جلساتِ شعبةٍ من الجدول',

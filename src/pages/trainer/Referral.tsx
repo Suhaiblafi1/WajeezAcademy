@@ -30,6 +30,11 @@ import { staffControlCls } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 
 interface MyReferral { code: string; slug: string; url: string; publicReady: boolean; registered: number }
+/** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
+interface CohortLink {
+  cohortId: string; title: string; termTitleAr: string | null; status: string
+  registrationOpen: boolean; learners: number; code: string; url: string
+}
 /** ما يعرضه «مساراتي» — يُقرأ هنا ولا يُبنى */
 interface MyPath { id: string; titleAr: string; status: string; courseCount?: number }
 const REGISTERED_FORMS = { one: "متعلّمٌ واحد", two: "متعلّمان", few: "متعلّمين", many: "متعلّما" } as const;
@@ -38,7 +43,16 @@ export default function Referral() {
   const [referral, setReferral] = useState<MyReferral | null>(null);
   const [paths, setPaths] = useState<MyPath[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [cohortLinks, setCohortLinks] = useState<CohortLink[] | null>(null);
+  /* المنسوخُ يُعلَّم بمفتاحه لا برايةٍ واحدة: رايةٌ واحدةٌ لروابطَ كثيرةٍ
+     تُضيء «نُسخ» تحت كلّ زرٍّ معا، فلا يدري أيَّها نسخ. */
+  const [copied, setCopied] = useState<string | null>(null);
+  const copy = (key: string, url: string) => {
+    void navigator.clipboard?.writeText(url).then(() => {
+      setCopied(key);
+      setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
+    });
+  };
 
   useEffect(() => {
     let alive = true;
@@ -49,6 +63,10 @@ export default function Referral() {
     void apiGet<MyPath[]>("/api/trainer/paths")
       .then((r) => { if (alive) setPaths(r); })
       .catch(() => { if (alive) setPaths([]); });
+    /* وروابطُ شعبه: إخفاقُها لا يُعطّل الرابطَ العامّ — ذاك هو البند */
+    void apiGet<CohortLink[]>("/api/trainer/me/referral-links")
+      .then((r) => { if (alive) setCohortLinks(r); })
+      .catch(() => { if (alive) setCohortLinks([]); });
     return () => { alive = false };
   }, []);
 
@@ -60,8 +78,9 @@ export default function Referral() {
       <Panel as="section" className="mb-6">
         <h2 className="text-lg font-black">ما الذي توصي به من يتابعك؟</h2>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          لك صفحةٌ باسمك تعرض كلَّ شعبك المفتوحة — رابطٌ واحدٌ لها جميعا. انشره حيث تكتب وحيث يسمعك الناس،
-          فمن سجّل منه يصلك باسمك لا رقما: تراه بعلامة «عبر رابطك» عند اسمه في طلبتك.
+          لك صفحةٌ باسمك تعرض كلَّ شعبك المفتوحة — رابطٌ واحدٌ لها جميعا. ولكلّ شعبةٍ مفتوحةٍ رابطٌ منفصلٌ
+          يقود إليها وحدَها، أدناه. انشر أيَّهما شئت حيث تكتب وحيث يسمعك الناس، فمن سجّل من أيٍّ منهما
+          يصلك باسمك لا رقما: تراه بعلامة «عبر رابطك» عند اسمه في طلبتك، وبأجر الإحالة في «مستحقاتي».
         </p>
       </Panel>
 
@@ -131,11 +150,8 @@ export default function Referral() {
                 onFocus={(e) => e.currentTarget.select()}
                 className={`${staffControlCls} min-w-0 flex-1 text-left`}
               />
-              <Button
-                tone="secondary"
-                onClick={() => { void navigator.clipboard?.writeText(referral.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}
-              >
-                {copied ? "نُسخ" : "انسخ الرابط"}
+              <Button tone="secondary" onClick={() => copy("wide", referral.url)}>
+                {copied === "wide" ? "نُسخ" : "انسخ الرابط"}
               </Button>
               <a href={referral.url} target="_blank" rel="noreferrer" className="text-read font-bold text-teal-light-ink hover:text-foreground">عايِنْها</a>
             </div>
@@ -147,6 +163,70 @@ export default function Referral() {
               </Inset>
             )}
           </Panel>
+
+          {/* ═══ رابطٌ لكلّ شعبةٍ مفتوحة — نُقل إلى هنا (١٥ سبتمبر ٢٠٢٦) ═══
+
+              كان داخلَ الشعبة في «مركز التواصل»: يفتح المدرّبُ شعبةً فيجد
+              رابطَها، ولا يجد روابطَ شعبه الأخرى إلّا بفتح كلِّ واحدةٍ على
+              حدة. ومن أراد أن يدعو إلى ثلاثِ دفعاتٍ فتح ثلاثَ شاشات.
+
+              وقرارُ صاحب المنصّة: تُجمع في «دعوتي» خارجَ الشعب، إلى جانب
+              رابط ملفّه الكامل — «إمّا أن يحصل على رابطٍ لملفّه الكامل كما
+              هو موجودٌ حاليّا، أو أن يقوم بدعوة جمهوره لكلّ شعبةٍ مفتوحةٍ
+              برابطٍ منفصل».
+
+              والمفتوحةُ وحدَها: رابطٌ إلى مسودّةٍ أو إلى شعبةٍ انتهت يُحرج
+              ناشرَه ويردّ من فتحه إلى صفحةٍ لا تقبل تسجيلا. */}
+          {cohortLinks !== null && (
+            <Panel as="section" className="mb-6">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابطٌ لكلّ شعبة
+              </p>
+              {cohortLinks.length === 0 ? (
+                <p className="mt-2 text-read leading-7 text-muted-foreground">
+                  لا شعبةَ مفتوحةً لك الآن. وحين تُفتح لك شعبةٌ يظهر رابطُها هنا — ورابطُك العامُّ أعلاه
+                  يبلغها من يومها بلا أن تنشر شيئا جديدا.
+                </p>
+              ) : (
+                <>
+                  <p className="mt-2 text-read leading-7 text-muted-foreground">
+                    كلُّ رابطٍ يقود إلى شعبته وحدَها — انشره لمن تدعوه إلى هذه الدفعة بعينها. وحسابُ من سجّل
+                    منه حسابُ رابطك العامّ نفسُه: يُحسب لك بأجر الإحالة.
+                  </p>
+                  <ul className="mt-3 space-y-3">
+                    {cohortLinks.map((c) => (
+                      <Inset as="li" key={c.cohortId} className="px-4 py-3">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <span className="text-read font-bold text-foreground">{c.title}</span>
+                          <span className="text-read text-muted-foreground">
+                            {c.termTitleAr ? `${c.termTitleAr} · ` : ""}
+                            {c.learners > 0 ? countAr(c.learners, REGISTERED_FORMS) : "لم يسجّل أحدٌ بعد"}
+                          </span>
+                        </div>
+                        {/* وحالةُ التسجيل تُقال: رابطٌ إلى شعبةٍ أُغلق تسجيلُها
+                            يعمل ولا يُسجَّل منه أحد، فيُظنُّ الرابطُ عاطلا. */}
+                        {!c.registrationOpen && (
+                          <p className="mt-1 text-read leading-6 text-gold-ink">
+                            تسجيلُ هذه الشعبة مغلقٌ الآن — الرابطُ يعمل، ولا يُسجَّل منه حتّى تفتحه الإدارة.
+                          </p>
+                        )}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <input
+                            readOnly dir="ltr" value={c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
+                            onFocus={(e) => e.currentTarget.select()}
+                            className={`${staffControlCls} min-w-0 flex-1 text-left`}
+                          />
+                          <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, c.url)}>
+                            {copied === c.cohortId ? "نُسخ" : "انسخ الرابط"}
+                          </Button>
+                        </div>
+                      </Inset>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </Panel>
+          )}
 
           {/* ف-١: يُقال إنّ الإحالةَ أعلى، ولا يُكتب رقمُها هنا — مصدرُه
               «مستحقاتي» حيث يُعرض أجرُ الإحالة لكلّ شعبةٍ بعينها. ورقمٌ

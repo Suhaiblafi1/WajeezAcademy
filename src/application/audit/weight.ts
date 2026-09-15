@@ -103,6 +103,7 @@ const MEDIUM: readonly string[] = [
   /* جلسةٌ أُضيفت أو نُقلت، ونافذةُ الجدولة */
   'cohort.session.add', 'cohort.session.move', 'cohort.sessions.generate',
   'cohort.schedule_window.open', 'cohort.schedule_window.close',
+  'cohort.term.set',
   'cohort.remind_trainer',
   /* اقتراحُ تأجيلٍ ينتظر قرارا */
   'session.reschedule.propose',

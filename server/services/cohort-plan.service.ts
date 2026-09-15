@@ -30,6 +30,7 @@
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { moduleBodyDone } from '../../src/application/trainer/module-body'
+import { blockingBeforeSubmit } from '../../src/application/trainer/plan-gate'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
@@ -150,14 +151,25 @@ export async function staticModulesFor(courseId: string): Promise<TrainerPlanMod
    على البطاقة عن القائمة التي يراها داخل الشعبة. */
 export interface ChecklistItem { key: string; labelAr: string; done: boolean; optional: boolean }
 export function buildChecklist(input: {
-  cohort: { title: string; startsAt: Date | null; daysOfWeek: string[]; startTime: string | null }
+  cohort: { title: string; termId: string | null }
   content: TrainerPlanContent | null
   sessions: { recordings: unknown[] }[]
   assessmentsCount: number
   planStatus: PlanStatus
 }): ChecklistItem[] {
   const c = input.cohort
-  const identityDone = c.title.trim().length >= 3 && Boolean(c.startsAt) && c.daysOfWeek.length > 0 && Boolean(c.startTime)
+  /* ═══ الهُويّةُ صارت: اسمٌ وفصل ═══
+
+     قرارُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): «اشطب كلَّ شيءٍ بالخانة الأولى
+     واترك فقط تغييرَ اسم الدورة والنبذةَ عنها — والباقي لا داعيَ له، لأنّ
+     الدورةَ ستكون متاحةً للطلاب طيلةَ فصل الشتاء، وله فقط أن يقرّر متى
+     الجلساتُ المباشرة في مرحلة تحديد اللقاءات».
+
+     فالبدءُ والانتهاءُ لم يعودا يُكتبان بيدٍ: يشتقّهما `setTerm` من حدود
+     الفصل. والأيّامُ والساعةُ سقطتا من الشرط لأنّهما سقطتا من الشاشة —
+     ومواعيدُ اللقاءات تُحدَّد لقاءً لقاءً لا بنمطٍ أسبوعيٍّ مفترَض. وشرطٌ
+     على حقلٍ لا بابَ إليه يحبس المدرّبَ خارجَ الاعتماد بلا أن يقول لماذا. */
+  const identityDone = c.title.trim().length >= 3 && Boolean(c.termId)
   /* ═══ ولماذا صار المحتوى النظريُّ شرطا للاعتماد ═══
 
      طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يصير «المحتوى النظريّ» إلزاميّا
@@ -177,14 +189,23 @@ export function buildChecklist(input: {
   const mods = input.content?.modules ?? []
   const modulesDone = mods.length > 0 && mods.every(moduleBodyDone)
   const resourcesDone = (input.content?.resources?.length ?? 0) > 0
-  const sessionsDone = input.sessions.length > 0
+  /* ═══ لقاءٌ لكلّ محورٍ على الأقلّ ═══
+
+     «عددُ الجلسات يجب أن يكون بحدٍّ أدنى لا يقلّ عن عدد المحاور، ويحقّ له
+     الزيادةُ كما يشاء موزّعةً على الفصل كاملا» (صاحب المنصّة، ١٥ سبتمبر
+     ٢٠٢٦). وكان الشرطُ «لقاءٌ واحدٌ فأكثر» — فثمانيةُ محاورَ تمرّ بلقاءٍ
+     واحد، ويجد المتعلّمُ محاورَ لم تُشرَح قطّ.
+
+     ولا سقفَ من هنا: الزيادةُ حقُّه، وهذا حدٌّ أدنى لا نطاق. */
+  const sessionsNeeded = mods.length
+  const sessionsDone = input.sessions.length >= Math.max(1, sessionsNeeded)
   const recordingsDone = input.sessions.some((s) => s.recordings.length > 0)
   const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
   return [
-    { key: 'identity', labelAr: 'راجع اسمَ الشعبة ومواعيدها', done: identityDone, optional: false },
+    { key: 'identity', labelAr: 'سمِّ الشعبةَ واختر فصلَها', done: identityDone, optional: false },
     { key: 'modules', labelAr: 'اكتب المحتوى النظريَّ لكلّ محور', done: modulesDone, optional: false },
     { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم', done: resourcesDone, optional: false },
-    { key: 'sessions', labelAr: 'حدّد مواعيدَ اللقاءات المباشرة', done: sessionsDone, optional: false },
+    { key: 'sessions', labelAr: `حدّد مواعيدَ اللقاءات المباشرة — لقاءٌ لكلّ محورٍ على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`, done: sessionsDone, optional: false },
     { key: 'recordings', labelAr: 'ارفع الجلساتِ المسجّلة — إن وُجدت', done: recordingsDone, optional: true },
     /* التكاليفُ في التجهيز لا في التشغيل وحدَه: «أين تفاصيل الواجبات؟»
        (صاحب المنصّة، ٨ سبتمبر ٢٠٢٦). اختياريّةٌ عند الإرسال — قد تُؤلَّف
@@ -247,6 +268,7 @@ export class CohortPlanService {
             },
           },
         },
+        term: { select: { id: true, titleAr: true, season: true, year: true, startsOn: true, endsOn: true, status: true } },
         sessions: { orderBy: { startsAt: 'asc' }, include: { zoom: { select: { joinUrl: true } }, recordings: { where: { status: 'active' } } } },
         materials: { where: { status: 'active' }, orderBy: { createdAt: 'asc' } },
         enrollments: {
@@ -283,6 +305,9 @@ export class CohortPlanService {
         id: cohort.id, title: cohort.title, status: cohort.status,
         startsAt: cohort.startsAt, endsAt: cohort.endsAt, daysOfWeek: cohort.daysOfWeek, startTime: cohort.startTime,
         timezone: cohort.timezone, language: cohort.language, deliveryMode: cohort.deliveryMode,
+        /* الفصلُ يحكم مدى الشعبة: منه بدؤها وانتهاؤها، وفيه وحدَه تُجدوَل
+           لقاءاتُها. ويُرسَل كاملا لا معرّفا — الشاشةُ تعرض اسمَه وحدودَه. */
+        termId: cohort.termId, term: cohort.term,
         /* يُقرأ ولا يُكتب — ويُقال ذلك في الشاشة */
         readOnly: { price: cohort.price === null ? null : Number(cohort.price), currency: cohort.currency, capacity: cohort.capacity },
       },
@@ -352,9 +377,11 @@ export class CohortPlanService {
         cohort: c, content: (plan?.content ?? null) as TrainerPlanContent | null,
         sessions: c.sessions, assessmentsCount: c._count.assessments, planStatus,
       })
-      const required = checklist.filter((i) => !i.optional)
+      /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» الذي ليس بيده.
+         وكانت تعدّه، فبطاقةُ شعبةٍ تامّةٍ تقول «٥ من ٦» أبدا. */
+      const required = checklist.filter((i) => !i.optional && i.key !== 'approval')
       const done = required.filter((i) => i.done).length
-      const next = checklist.find((i) => !i.done && !i.optional) ?? checklist.find((i) => !i.done) ?? null
+      const next = blockingBeforeSubmit(checklist)[0] ?? checklist.find((i) => !i.done) ?? null
       return {
         id: c.id, title: c.title, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
         status: c.status, startsAt: c.startsAt, endsAt: c.endsAt,
@@ -434,6 +461,77 @@ export class CohortPlanService {
     return row
   }
 
+  /* ═══ فصلُ الشعبة — يختاره مدرّبُها، وحدودُه تحكم جدولَه ═══
+
+     قرارُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): «يجب أن يكون هنا تحديدُ الفصل
+     أوّلا، ويتمّ تقييدُ المدرّب بتحديد الأوقات ضمنَ أشهر الفصل نفسِه».
+
+     والبدءُ والانتهاءُ يُشتقّان من حدود الفصل ولا يُكتبان بيد: الشعبةُ
+     متاحةٌ للمتعلّم طيلةَ الفصل، فتاريخان يكتبهما المدرّبُ داخلَ الفصل
+     يضيّقان ما لم يُقصَد تضييقُه — ويفترقان عن الفصل عند أوّل تعديل.
+
+     وهما ليسا زينةً: صفحةُ التسجيل والكتالوجُ ووتيرةُ المتعلّم كلُّها
+     تقرأ `startsAt`. فلو تُركا فارغَين لسقط ما يقرؤهما، ولذلك يُكتبان هنا
+     مرّةً واحدةً من مصدرٍ واحد.
+
+     والنافذةُ كذلك: `scheduleWindow*` كانت تُفتح بيد الإدارة حتّى يجدول
+     المدرّبُ، فيقف منتظرا إذنا لا يعرف متى يصل. وقد صار الفصلُ هو الإذن —
+     من اختار فصلا فتحت له أشهرُه. والسقفُ يبقى للإدارة إن وضعته. */
+  async setTerm(userId: string, cohortId: string, termId: string) {
+    await this.ownedCohort(userId, cohortId)
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
+    })
+    if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
+    if (['closed', 'cancelled'].includes(term.status)) {
+      throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
+    }
+
+    /* لقاءٌ خارجَ الفصل الجديد يمنع النقل: الصامتُ هنا يترك جلسةً معلنةً
+       لمتعلّمين في شهرٍ لا تغطّيه الشعبة. ويُقال عددُها وأوّلُها. */
+    const strays = await this.prisma.cohortSession.findMany({
+      where: { cohortId, OR: [{ startsAt: { lt: term.startsOn } }, { startsAt: { gt: term.endsOn } }] },
+      orderBy: { startsAt: 'asc' },
+      select: { id: true, title: true, startsAt: true },
+    })
+    if (strays.length) {
+      throw new AuthError(
+        'sessions_outside_term',
+        `${strays.length} من لقاءاتك خارجَ «${term.titleAr}» — أوّلُها «${strays[0].title}». انقلها أو احذفها ثمّ اختر الفصل.`,
+        409,
+      )
+    }
+
+    const row = await this.prisma.cohort.update({
+      where: { id: cohortId },
+      data: {
+        termId: term.id,
+        startsAt: term.startsOn,
+        endsAt: term.endsOn,
+        scheduleWindowStart: term.startsOn,
+        scheduleWindowEnd: term.endsOn,
+      },
+      select: { id: true, title: true, termId: true, startsAt: true, endsAt: true },
+    })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'cohort.term.set', entityType: 'cohort', entityId: cohortId,
+      meta: { termId: term.id, termTitle: term.titleAr, startsAt: term.startsOn, endsOn: term.endsOn },
+    })
+    return { ...row, term }
+  }
+
+  /** الفصولُ التي يسعه اختيارُها — الحيّةُ التي لم تنتهِ بعد */
+  async selectableTerms(userId: string, cohortId: string) {
+    await this.ownedCohort(userId, cohortId)
+    const rows = await this.prisma.term.findMany({
+      where: { status: { in: ['planned', 'open', 'active'] } },
+      orderBy: { startsOn: 'asc' },
+      select: { id: true, titleAr: true, season: true, year: true, startsOn: true, endsOn: true, status: true },
+    })
+    return rows
+  }
+
   /** «أوافق على كلّ ما في الشعبة» — ثمّ تُرسَل */
   async submit(userId: string, cohortId: string, confirm: boolean) {
     const { profile } = await this.ownedCohort(userId, cohortId)
@@ -446,6 +544,28 @@ export class CohortPlanService {
     }
     const content = latest.content as unknown as TrainerPlanContent
     if (!content?.modules?.length) throw new AuthError('no_modules', 'لا محاورَ في الخطّة — رتّبها أوّلا', 409)
+
+    /* الحاجزُ هنا لا في الزرّ وحدَه: زرٌّ مطفأٌ لا يمنع طلبا يُرسَل بيدٍ
+       أخرى. والقاعدةُ من `plan-gate` نفسِها التي تُطفئ الزرَّ — فلا يفترق
+       ما تراه الشاشةُ عمّا يقبله الخادم. */
+    const gateCohort = await this.prisma.cohort.findUniqueOrThrow({
+      where: { id: cohortId },
+      select: {
+        title: true, startsAt: true, daysOfWeek: true, startTime: true, termId: true,
+        sessions: { select: { recordings: { select: { id: true } } } },
+        _count: { select: { assessments: true } },
+      },
+    })
+    const blocking = blockingBeforeSubmit(buildChecklist({
+      cohort: gateCohort,
+      content,
+      sessions: gateCohort.sessions,
+      assessmentsCount: gateCohort._count.assessments,
+      planStatus: latest.status as PlanStatus,
+    }))
+    if (blocking.length) {
+      throw new AuthError('stages_incomplete', `بقي قبل الإرسال: ${blocking.map((b) => b.labelAr).join(' · ')}`, 409)
+    }
 
     const now = new Date()
     const plan = await this.prisma.cohortDeliveryPlan.update({

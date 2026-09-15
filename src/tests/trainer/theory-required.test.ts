@@ -24,7 +24,7 @@ const plan = (bodies: (string | null)[]) => ({
   resources: [{ title: 'مرجع', url: 'https://x.test/a' }],
 })
 const build = (bodies: (string | null)[]) => buildChecklist({
-  cohort: { title: 'شعبة', startsAt: new Date(), daysOfWeek: ['sun'], startTime: '18:00' },
+  cohort: { title: 'شعبة', termId: 'T-winter' },
   content: plan(bodies) as never,
   sessions: [{ recordings: [] }],
   assessmentsCount: 0,

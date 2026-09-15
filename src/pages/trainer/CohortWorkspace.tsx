@@ -31,7 +31,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
+  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -48,13 +48,13 @@ import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
+import { blockingBeforeSubmit } from "@/application/trainer/plan-gate";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import ProgressRing from "@/components/ui/ProgressRing";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
-import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import { countAr } from "@/application/text/count-ar";
 
@@ -76,6 +76,8 @@ interface PlanResource {
    القناة الجديدة، فلا يضيع ما كتبه مدرّبٌ بيده. ولا يُكتب من هنا أبدا.
    واسمُ المسار سقط ولم يُقرأ: لا قناةَ له — المدرّبُ يبني مسارَه هو (القسم «ن»). */
 interface LegacyPlanProposals { courseTitleAr?: string | null }
+/** الفصلُ الدراسيّ — حدودُه هي حدودُ الشعبة ونافذةُ جدولتها */
+interface Term { id: string; titleAr: string; season: string; year: number; startsOn: string; endsOn: string; status: string }
 interface PlanContent { kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: LegacyPlanProposals | null }
 interface Workspace {
   role: string;
@@ -83,6 +85,7 @@ interface Workspace {
   cohort: {
     id: string; title: string; status: string; startsAt: string | null; endsAt: string | null; daysOfWeek: string[];
     startTime: string | null; timezone: string | null; language: string; deliveryMode: string;
+    termId: string | null; term: Term | null;
     readOnly: { price: number | null; currency: string; capacity: number | null };
   };
   course: { id: string; titleAr: string; baseModules: PlanModule[] };
@@ -200,7 +203,11 @@ export default function CohortWorkspace() {
 
   /* النسخةُ التي يحرّرها — تبدأ من الخطّة إن كانت، وإلّا من محاور الكتالوج */
   const [content, setContent] = useState<PlanContent | null>(null);
-  const [identity, setIdentity] = useState({ title: "", startsAt: "", endsAt: "", daysOfWeek: [] as string[], startTime: "", language: "", deliveryMode: "remote" });
+  /* ما بقي من الهُويّة بعد الشطب (١٥ سبتمبر ٢٠٢٦): اسمٌ ونبذة. والمواعيدُ
+     تُشتقّ من الفصل، واللقاءاتُ تُحدَّد لقاءً لقاءً في خطوتها. */
+  const [identity, setIdentity] = useState({ title: "" });
+  /* الفصولُ التي يسعه اختيارُها — تُقرأ مرّةً عند فتح الشعبة */
+  const [terms, setTerms] = useState<Term[]>([]);
   const [confirm, setConfirm] = useState(false);
   /* نموذجُ التكليف — واحدٌ للإنشاء والتعديل. `editingId` يقرّر أيَّهما:
      فارغٌ فإنشاء، وفيه معرّفٌ فتعديلُ ذاك التكليف بعينه. */
@@ -219,21 +226,15 @@ export default function CohortWorkspace() {
   /* بصمةُ آخرِ ما حُفظ — يُقاس عليها «فيه تغييرٌ لم يُحفظ» لكلّ مرحلةٍ وحدَها.
      كانت المرحلةُ تُغادَر بتعديلٍ في يدها فيضيع بلا كلمة. */
   const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "", sessions: "" });
-  /* رابطُ دعوتي لهذه الشعبة — يُنشأ مرّةً عند أوّل طلبٍ ويبقى */
-  const [referral, setReferral] = useState<{ code: string; url: string } | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async (first = false) => {
     if (!id) return;
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
       setWs(w);
-      apiGet<{ code: string; url: string }>(`/api/trainer/cohorts/${id}/referral-link`).then(setReferral).catch(() => setReferral(null));
+      apiGet<Term[]>(`/api/trainer/cohorts/${id}/terms`).then(setTerms).catch(() => setTerms([]));
       const nextContent: PlanContent = w.plan?.content ?? { kind: "trainer", summaryAr: "", modules: w.course.baseModules, resources: [], liveNoteAr: "" };
-      const nextIdentity = {
-        title: w.cohort.title, startsAt: toDateInput(w.cohort.startsAt), endsAt: toDateInput(w.cohort.endsAt),
-        daysOfWeek: w.cohort.daysOfWeek, startTime: w.cohort.startTime ?? "", language: w.cohort.language, deliveryMode: w.cohort.deliveryMode,
-      };
+      const nextIdentity = { title: w.cohort.title };
       setContent(nextContent);
       setIdentity(nextIdentity);
       /* البصمةُ تُؤخذ ممّا وصل لا ممّا في اليد — فبعد كلّ حفظٍ يعود كلُّ شيءٍ نظيفا */
@@ -296,9 +297,15 @@ export default function CohortWorkspace() {
   const approved = planStatus === "approved" || planStatus === "published";
   /* حالةُ كلّ مرحلةٍ من قائمة الخادم — والمفتاحُ واحدٌ هنا وهناك */
   const byKey = new Map(ws.checklist.map((c) => [c.key, c]));
-  const required = ws.checklist.filter((c) => !c.optional);
-  const doneCount = required.filter((c) => c.done).length;
-  const remaining = required.length - doneCount;
+  /* ما يحجب الإرسال — من `plan-gate`، القاعدةِ نفسِها التي يحتجّ بها الخادم.
+     وكان يُحسب هنا بيدٍ فيَعُدّ «الاعتمادَ» شرطا لنفسه: لا يتمّ حتّى يُرسَل،
+     ولا يُرسَل حتّى يتمّ — فالزرُّ مطفأٌ أبدا وإن أتمّ المدرّبُ كلَّ شيء. */
+  const blocking = blockingBeforeSubmit(ws.checklist);
+  const remaining = blocking.length;
+  /* والخطُّ يمتلئ بقدر ما **يملك المدرّبُ** إنجازَه — فيبلغ تمامَه حين لا يبقى
+     إلّا قرارُ الإدارة، لا يقف دون التمام ينتظر قرارا ليس بيده. */
+  const gated = ws.checklist.filter((c) => !c.optional && c.key !== "approval");
+  const doneCount = gated.filter((c) => c.done).length;
   /* المحاورُ التي ينقصها المحتوى النظريّ — بالأرقام والعناوين، لا بعدد.
      والقاعدةُ قاعدةُ الخادم نفسُها (`moduleBodyDone`): مكتوبٌ بأربعين حرفا
      **أو** ملفٌّ مرفوع (ع-٢). وقاعدتان تقولان الشيءَ نفسَه تفترقان، فيُقال
@@ -306,7 +313,7 @@ export default function CohortWorkspace() {
   const missingBody = content.modules
     .map((m, i) => ({ ...m, n: i + 1 }))
     .filter((m) => !moduleBodyDone(m));
-  const ready = required.length ? Math.round((doneCount / required.length) * 100) : 0;
+  const ready = gated.length ? Math.round((doneCount / gated.length) * 100) : 0;
   const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
 
   /* ── «فيه تغييرٌ لم يُحفظ» ──
@@ -329,14 +336,13 @@ export default function CohortWorkspace() {
      وزرّان في خطوةٍ واحدةٍ يجعل المدرّبَ يحفظ أحدَهما ويظنّ الآخرَ محفوظا. */
   const saveIdentity = () => act(async () => {
     await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content);
-    await apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, {
-      title: identity.title.trim(),
-      startsAt: identity.startsAt ? new Date(identity.startsAt).toISOString() : undefined,
-      endsAt: identity.endsAt ? new Date(identity.endsAt).toISOString() : undefined,
-      daysOfWeek: identity.daysOfWeek, startTime: identity.startTime || undefined,
-      language: identity.language, deliveryMode: identity.deliveryMode,
-    });
+    await apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, { title: identity.title.trim() });
   }, "حُفظت بياناتُ الشعبة");
+  /* الفصلُ يُحفظ وحدَه لا مع الاسم: اختيارُه يحرّك حدودَ الشعبةَ ونافذةَ
+     جدولتها، وقد يُردّ إن كان في الجدول لقاءٌ خارجَه — فلا يُبتلع في زرٍّ
+     اسمُه «احفظ البيانات» ويظنُّ صاحبُه أنّ الاسمَ لم يُحفظ. */
+  const chooseTerm = (termId: string) =>
+    act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/term`, { termId }), "حُدِّد فصلُ الشعبة");
   const submit = () => act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
   /* ── التكاليف: إنشاءٌ وتعديلٌ وحذف ──
 
@@ -393,7 +399,7 @@ export default function CohortWorkspace() {
       {/* ═══ الرأس: أين وصلت الشعبة ═══ */}
       <Panel as="section" tone={st.tone} className="mb-5">
         <div className="flex flex-wrap items-start gap-5">
-          <ProgressRing value={ready} label={`${doneCount}/${required.length}`} caption="تجهيز" size={76} />
+          <ProgressRing value={ready} label={`${doneCount}/${gated.length}`} caption="تجهيز" size={76} />
           <div className="min-w-0 flex-1">
             <p className="text-read font-bold text-muted-foreground">{ws.course.titleAr}</p>
             <h2 className="mt-0.5 text-xl font-black leading-snug">{ws.cohort.title}</h2>
@@ -501,38 +507,75 @@ export default function CohortWorkspace() {
       {phase === "prepare" && stage === "identity" && (
         <Panel as="section">
           <StageIntro stage="identity" />
-          <div className="mt-5 grid gap-5 sm:grid-cols-2">
+
+          {/* ═══ الفصلُ أوّلا — فمنه كلُّ ما شُطب من هذه الخطوة ═══
+
+              كان المدرّبُ يكتب بدءا وانتهاءً وأيّامَ أسبوعٍ وساعةً ونمطا
+              ولغة: ستّةُ حقولٍ يملؤها قبل أن يصل إلى مادّته. وقرارُ صاحب
+              المنصّة (١٥ سبتمبر ٢٠٢٦) أسقطها كلَّها — الشعبةُ متاحةٌ
+              للمتعلّم طيلةَ الفصل، فحدودُها حدودُه، وما يقرّره المدرّبُ
+              هو **متى اللقاءاتُ** لا متى الشعبة. */}
+          <StaffField
+            as="div"
+            wide
+            label="فصلُ الشعبة"
+            hint="تُتاح الشعبةُ للمتعلّم طيلةَ الفصل، ولقاءاتُك تُجدوَل داخلَ أشهره وحدَها."
+          >
+            {terms.length === 0 ? (
+              <Inset as="p" className="text-read leading-6 text-muted-foreground">
+                لا فصلَ مفتوحٌ للاختيار الآن — تفتحه الإدارةُ من «الفصول»، ثمّ يظهر هنا.
+              </Inset>
+            ) : (
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {terms.map((t) => {
+                  const picked = ws.cohort.termId === t.id;
+                  return (
+                    <Card as="li" key={t.id} tone={picked ? "accent" : undefined} className="p-0">
+                      <button
+                        type="button"
+                        disabled={busy || locked}
+                        aria-pressed={picked}
+                        onClick={() => { if (!picked) void chooseTerm(t.id); }}
+                        className="w-full p-3 text-start transition disabled:opacity-60"
+                      >
+                        <span className="flex items-center gap-2 text-read font-bold text-foreground">
+                          {picked && <Check className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />}
+                          {t.titleAr}
+                        </span>
+                        <span className="mt-0.5 block text-fine text-muted-foreground">
+                          {fmtDateAr(t.startsOn)} — {fmtDateAr(t.endsOn)}
+                        </span>
+                      </button>
+                    </Card>
+                  );
+                })}
+              </ul>
+            )}
+          </StaffField>
+
+          {/* وحدودُ الشعبة تُقال بعد الاختيار لا تُترك تُستنتَج */}
+          {ws.cohort.term && (
+            <Inset tone="accent" className="mt-3 flex items-start gap-2 text-read leading-6">
+              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>
+                تبدأ الشعبةُ <b className="text-foreground">{fmtDateAr(ws.cohort.term.startsOn)}</b> وتنتهي{" "}
+                <b className="text-foreground">{fmtDateAr(ws.cohort.term.endsOn)}</b> — حدودُ «{ws.cohort.term.titleAr}».
+                وداخلَها تضع مواعيدَ لقاءاتك في خطوة «لقاءات مباشرة».
+              </span>
+            </Inset>
+          )}
+
+          <div className="mt-5 grid gap-5">
             <StaffField wide label="اسم الشعبة" hint="ما يراه المتعلّم في الكتالوج وفي شهادته. صِفِ الدفعةَ لا الدورة — «الدفعة الثالثة · مساء الأحد».">
-              <input value={identity.title} onChange={(e) => setIdentity({ ...identity, title: e.target.value })} disabled={locked} className={controlCls} />
-            </StaffField>
-            <StaffField label="تبدأ في" hint="يظهر في صفحة التسجيل، وعليه تُحسب وتيرةُ المتعلّم.">
-              <input type="date" dir="ltr" value={identity.startsAt} onChange={(e) => { setIdentity({ ...identity, startsAt: e.target.value }); e.target.blur(); }} disabled={locked} className={`${controlCls} text-left`} />
-            </StaffField>
-            <StaffField label="تنتهي في" hint="آخرُ يومٍ تُحتسب فيه الجلساتُ والتسليمات.">
-              <input type="date" dir="ltr" value={identity.endsAt} onChange={(e) => { setIdentity({ ...identity, endsAt: e.target.value }); e.target.blur(); }} disabled={locked} className={`${controlCls} text-left`} />
-            </StaffField>
-            <StaffField as="div" wide label="أيّام اللقاءات" hint="المواعيدُ المتكرّرة. لا تُنشئ لقاءً بنفسها — تُنشئه في خطوة «اللقاءات».">
-              <DayOfWeekPicker value={identity.daysOfWeek} onChange={(daysOfWeek) => setIdentity({ ...identity, daysOfWeek })} />
-            </StaffField>
-            <StaffField label="وقت البدء" hint="بتوقيت الشعبة — يظهر في تقويم المتعلّم بتوقيته هو.">
-              <input type="time" dir="ltr" value={identity.startTime} onChange={(e) => setIdentity({ ...identity, startTime: e.target.value })} disabled={locked} className={`${controlCls} text-left`} />
-            </StaffField>
-            <StaffField label="نمط التقديم" hint="«عن بُعد» يفتح اجتماعا لكلّ لقاء، و«حضوريّ» لا يفتحه.">
-              <select value={identity.deliveryMode} onChange={(e) => setIdentity({ ...identity, deliveryMode: e.target.value })} disabled={locked} className={`${controlCls} [&>option]:bg-surface`}>
-                <option value="remote">عن بُعد</option>
-                <option value="in_person">حضوريّ</option>
-                <option value="hybrid">مدمج</option>
-              </select>
-            </StaffField>
-            <StaffField label="لغة التدريب" hint="لغةُ الشرح في اللقاءات — تُعرض للمتعلّم قبل التسجيل.">
-              <input value={identity.language} onChange={(e) => setIdentity({ ...identity, language: e.target.value })} disabled={locked} className={controlCls} />
+              <input value={identity.title} onChange={(e) => setIdentity({ title: e.target.value })} disabled={locked} className={controlCls} />
             </StaffField>
             {/* وصفُ الشعبة موضعُه هنا لا في «المحاور»: هو تعريفُ الشعبة
                 نفسِها، وكان في خطوةٍ اسمُها «المحاور» فلا يجده من يبحث عنه. */}
-            <StaffField wide label="وصفٌ موجزٌ للشعبة" hint="سطران يقرؤهما المتعلّم قبل أن يدفع. قل ما سيخرج به، لا ما ستشرحه.">
+            <StaffField wide label="نبذةٌ عن الشعبة" hint="سطران يقرؤهما المتعلّم قبل أن يدفع. قل ما سيخرج به، لا ما ستشرحه.">
               <textarea rows={2} value={content.summaryAr ?? ""} onChange={(e) => setContent({ ...content, summaryAr: e.target.value })} disabled={locked} className={areaCls} />
             </StaffField>
           </div>
+
           {/* السعرُ يُقرأ ولا يُكتب — ويُقال لماذا، لا يُخفى */}
           <Inset className="mt-5 flex items-start gap-2 text-read leading-6 text-muted-foreground">
             <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -944,8 +987,16 @@ export default function CohortWorkspace() {
             بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، ومهامَّها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
+          {/* والباقي يُسمّى بأسمائه لا بعدد: «بقي ١» تركت المدرّبَ يفتح
+              المراحلَ واحدةً واحدةً ليجد أيَّها — وكان الواحدُ الباقي هو هذه
+              المرحلةَ نفسَها فلا يجده أبدا. */}
           {remaining > 0 && !approved && (
-            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">بقي {remaining} من المراحل قبل الإرسال — المضاءةُ بالذهبيّ على الخطّ أعلاه هي التالية.</Inset>
+            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
+              بقي قبل الإرسال: {blocking.map((b) => b.labelAr).join(" · ")}
+              <Button tone="ghost" size="sm" className="mt-2" onClick={() => openStage(blocking[0].key as Stage)}>
+                افتح أوّلَها
+              </Button>
+            </Inset>
           )}
           {/* ═══ ولماذا تُسمّى المحاورُ الناقصةُ بأسمائها ═══
 
@@ -979,20 +1030,15 @@ export default function CohortWorkspace() {
       {/* ═══ التشغيل ═══ */}
       {phase === "run" && (
         <div className="space-y-5">
-          {/* رابطُ دعوتك — لهذه الشعبة وحدَك: تنشره في صفحاتك، وكلُّ من سجّل منه
-              يُحسب لك بأجر الإحالة، وتراه بعلامة «عبر رابطك» عند اسمه. */}
-          {referral && (
-            <Panel as="section">
-              <p className="flex items-center gap-2 text-sm font-black"><Link2 className="h-4 w-4 text-teal-light-ink" /> رابطُ دعوتك لهذه الشعبة</p>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">انشره حيث شئت — كلُّ من سجّل منه يُحسب لك، وتراه بعلامة «عبر رابطك» عند اسمه وفي «مستحقاتي».</p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <input readOnly dir="ltr" value={referral.url} aria-label="رابط الدعوة" onFocus={(e) => e.currentTarget.select()} className={`${controlCls} min-w-0 flex-1 text-left font-mono`} />
-                <Button tone="secondary" onClick={() => { void navigator.clipboard?.writeText(referral.url).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }); }}>
-                  {copied ? "نُسخ" : "انسخ الرابط"}
-                </Button>
-              </div>
-            </Panel>
-          )}
+          {/* ═══ ورابطُ الدعوة خرج من هنا (١٥ سبتمبر ٢٠٢٦) ═══
+
+              كان بطاقةً في رأس «مركز التواصل»، فيراها المدرّبُ في شعبةٍ
+              ولا يجد في يده روابطَ شعبه الأخرى إلّا بفتح كلِّ واحدةٍ على
+              حدة. وقرارُ صاحب المنصّة: تُجمع كلُّها في «دعوتي» خارجَ الشعب
+              — رابطُ حسابه الكاملُ ورابطُ كلّ شعبةٍ مفتوحةٍ بجانبه.
+
+              ولا يُترك مركزُ التواصل يحمل نسخةً ثانية: رابطان لشيءٍ واحدٍ
+              في شاشتين يفترقان يوما، ومن نسخ أحدَهما لا يدري أيَّهما نسخ. */}
           <CohortOps cohortId={ws.cohort.id} />
         </div>
       )}
