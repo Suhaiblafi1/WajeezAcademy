@@ -5,7 +5,8 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { projectPlanForLearner, PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
-import { NotificationService } from './notification.service'
+import { NotificationService, safeNotify } from './notification.service'
+import { fmtDateWith } from '../../src/application/text/format-ar'
 import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
 import { CohortService } from './cohort.service'
 
@@ -37,7 +38,12 @@ export class EnrollmentService {
   }
 
   /** تسجيل متعلم — يملأ السعة ثم يحوّل الفائض لقائمة انتظار؛ التجاوز يتطلب override موثقا */
-  async enroll(cohortId: string, userId: string, actorId: string | null, opts: { overrideCapacity?: boolean; referralCode?: string } = {}) {
+  /* و`announce` رايةٌ صريحة: مسارُ الشراء يُبلّغ بنفسه («تأكد دفعك ✓ …
+     مقاعدك صارت تسجيلاً فعلياً») بعد التسوية، فلا رسالتان عن شيءٍ واحد. */
+  async enroll(
+    cohortId: string, userId: string, actorId: string | null,
+    opts: { overrideCapacity?: boolean; referralCode?: string; announce?: boolean } = {},
+  ) {
     /* مصدرُ التسجيل يُختم مرّةً: رمزٌ صحيحٌ يخصّ هذه الشعبةَ — وإلّا عامّ.
 
        والرمزُ نوعان (١٣ سبتمبر ٢٠٢٦): رمزُ شعبةٍ بعينها، ورمزُ المدرّب على
@@ -118,6 +124,27 @@ export class EnrollmentService {
       actorId, action: 'enrollment.create', entityType: 'enrollment', entityId: enrollment.id,
       meta: { cohortId, userId, status, overrideCapacity: override },
     })
+
+    /* ═══ ويعلم من سُجّل أنّه سُجّل (ي-٤) ═══
+
+       كان يُخبَر به على مسار الشراء وحدَه — `settleOrder` يرسل «تأكد دفعك».
+       أمّا مسارُ الإدارة (تسجيلُ موظّفٍ لمتعلّم) فصامت، **وقائمةُ الانتظار
+       أصمتُ منه**: من امتلأت الشعبةُ دونه يُوضع في الطابور ولا يُقال له —
+       فيظنّ نفسَه مسجَّلا حتّى يُفاجأ، أو يظنّ أنّ شيئا لم يقع.
+       (والترقيةُ من الطابور كانت تُخبَر من قبلُ — فكان يُبشَّر بالخروج من
+       صفٍّ لم يعلم أنّه دخله.) */
+    if (opts.announce !== false) {
+      const title = cohort.title
+      await safeNotify(this.prisma, {
+        userId, channel: 'in_app', audience: 'learner',
+        templateKey: status === 'waitlisted' ? 'enrollment.waitlisted' : 'enrollment.confirmed',
+        title: status === 'waitlisted' ? `أُضفتَ إلى قائمة انتظار «${title}»` : `سُجّلت في «${title}»`,
+        body: status === 'waitlisted'
+          ? `امتلأت «${title}»، فأُضفتَ إلى قائمة انتظارها — ونُعلمك فورَ أن يشغر مقعد. ولا يلزمك شيءٌ الآن.`
+          : `سُجّلت في «${title}» — تجد جلساتِها وموادَّها في «تعلُّمي».`,
+        data: { cohortId, enrollmentId: enrollment.id, status },
+      })
+    }
 
     /* ── ورابطُ دخولٍ في كلّ جلسةٍ لم تُعقد بعد ──
 
@@ -266,6 +293,18 @@ export class EnrollmentService {
         from: from.id, fromTitle: from.title, fromStartsAt: from.startsAt,
         to: to.id, toTitle: to.title, toStartsAt: to.startsAt,
       },
+    })
+    /* وصاحبُ المقعد هو الفاعلُ هنا ويرى الجوابَ في الحال — فهذا أخفُّ ما في
+       الباب. لكنّ المقعدَ والموعدَ تحرّكا فعلا، وهو ما يصفه صنفُ «تغييرٌ في
+       شعبتك» حرفا. وصفٌّ في جرسه يبقى مرجعا حين يُسأل بعد شهر: متى نُقلت؟ */
+    await safeNotify(this.prisma, {
+      userId, channel: 'in_app', audience: 'learner',
+      templateKey: 'enrollment.switched',
+      title: `نُقل مقعدُك إلى «${to.title}»`,
+      body: `نُقل مقعدُك من «${from.title}» إلى «${to.title}»`
+        + (to.startsAt ? ` — وتبدأ ${fmtDateWith(to.startsAt, { day: 'numeric', month: 'long', year: 'numeric' })}.` : '.')
+        + ' تجد جلساتِها ومادّتها في «تعلُّمي».',
+      data: { enrollmentId, from: from.id, to: to.id },
     })
     return moved
   }

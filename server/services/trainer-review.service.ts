@@ -419,6 +419,59 @@ export class TrainerReviewService {
     if (action === 'request_info') {
       await this.notifyInfoRequested(app.email, app.fullName, app.reference, note, actorId, applicationId)
     }
+
+    /* ═══ ولا يُردّ أحدٌ في صمت، ولا يُترك منتظِرا بلا خبر (ي-٤) ═══
+
+       كان `decide` يفرّق ثلاثةَ قراراتٍ في الإبلاغ: الاعتمادُ يُرسَل، وطلبُ
+       المعلومات يُرسَل، و**الردُّ والانتظارُ لا رسالةَ لهما أصلا**. فمن رُدّ
+       طلبُه يبقى يتفقّد صفحةَ حالته شهرا، ومن وُضع في الانتظار يظنّ أنّه
+       رُدّ — والاثنان أعطيانا وقتَهما وسيرتَهما.
+
+       وهذه هي الثغرةُ التي كان `trainer.status.transition` يخفيها: ذاك
+       مَخنقُ ستّةَ عشرَ حالة، والإبلاغُ عنده يوقظ الناسَ على تنقّلاتٍ
+       داخليّةٍ لا تعنيهم. وموضعُ الإصلاح هنا، حيث يقع القرارُ ويُعرف.
+
+       والسببُ يصل صاحبَه كما وصل السجلَّ حين كُتب: ردٌّ بلا سببٍ يُقرأ حكما
+       على الشخص لا على الطلب. */
+    if (action === 'reject') {
+      await this.notifyDecision(app.email, app.fullName, app.reference, {
+        heading: 'قرارُنا في طلبك للانضمام مدرّبا',
+        bodyAr: 'شكرا لوقتك ولما شاركتَه معنا. ولم نتمكّن هذه المرّةَ من المضيّ في طلبك.',
+        noteAr: note,
+        closingAr: 'ولك أن تتقدّم إلينا من جديدٍ حين يتغيّر ما تعرضه — فالبابُ يبقى مفتوحا.',
+      })
+    }
+
+    if (action === 'waitlist') {
+      await this.notifyDecision(app.email, app.fullName, app.reference, {
+        heading: 'طلبُك في قائمة الانتظار',
+        bodyAr: 'راجعنا طلبك ولم نُغلقه: وُضع في قائمة الانتظار حتّى تُفتح حاجةٌ تناسب ما تدرّسه.',
+        noteAr: note,
+        closingAr: 'ونعود إليك على هذا العنوان حين يجدّ ما يناسبك. ولا يلزمك شيءٌ الآن.',
+      })
+    }
+  }
+
+  /** قرارٌ يصل صاحبَه — ولا يُسقط القرارَ إن أخفق البريد */
+  private async notifyDecision(
+    to: string, fullName: string, reference: string,
+    copy: { heading: string; bodyAr: string; noteAr?: string; closingAr: string },
+  ): Promise<void> {
+    await sendDirectEmail(this.prisma, {
+      to,
+      subject: `${copy.heading} (${reference})`,
+      ...renderMail({
+        greetingName: fullName,
+        heading: copy.heading,
+        blocks: [
+          { kind: 'p', text: copy.bodyAr },
+          ...(copy.noteAr?.trim()
+            ? [{ kind: 'facts' as const, rows: [{ label: 'وممّا كُتب في المراجعة', value: copy.noteAr.trim() }] }]
+            : []),
+          { kind: 'p', text: copy.closingAr },
+        ],
+      }),
+    })
   }
 
   /* ═══ دعوةٌ إلى حجزِ موعدٍ آخر — بنقرةٍ واحدة ═══
@@ -784,6 +837,34 @@ export class TrainerReviewService {
         actorId, action: 'trainer.contract.sign', entityType: 'trainer_contract', entityId: contractId,
       })
     })
+    /* ═══ ويعلم صاحبُ العقد أنّ توقيعَه سُجّل (ي-٤) ═══
+
+       المعاملةُ فوقُ تُغلق مهمّةَ «توقيع العقد» في تهيئته وتنقل طلبَه إلى
+       طورِ التهيئة — وكان يقع بلا خبر: يوقّع ثمّ ينتظر ولا يعرف أوصل توقيعُه
+       أم لا.
+
+       و**بريدٌ لا جرس**: `profile.userId` موجودٌ في المدى لكنّه فارغٌ عادةً
+       في هذا الطور — الربطُ بين الملفّ والحساب يقع لاحقا بالدعوة الآمنة
+       (`consumeInvitation`). فالعنوانُ يُقرأ من الطلب، وهو ما يملكه المتقدّمُ
+       قبل أن يكون له حسابٌ أصلا. */
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: contract.profile.applicationId },
+      select: { email: true, fullName: true },
+    })
+    if (app) {
+      await sendDirectEmail(this.prisma, {
+        to: app.email,
+        subject: 'سُجّل توقيعُ عقدك — أكاديمية وجيز',
+        ...renderMail({
+          greetingName: app.fullName,
+          heading: 'سُجّل توقيعُ عقدك',
+          blocks: [
+            { kind: 'p', text: 'وانتقل طلبُك إلى طورِ التهيئة. تبقّت مهامُّ التهيئة، وتُفتح لك في بوّابتك حين يُنشأ حسابُك بدعوةٍ تصلك على هذا العنوان.' },
+            { kind: 'note', text: 'وإن لم تكن أنت من وقّع فأبلغنا بردٍّ على هذه الرسالة.' },
+          ],
+        }),
+      })
+    }
     await this.apps.transition(contract.profile.applicationId, 'onboarding', actorId, 'توقيع العقد')
   }
 
@@ -867,7 +948,7 @@ export class TrainerReviewService {
       throw new AuthError('email_taken', 'يوجد حساب بهذا البريد — سجّل الدخول واطلب ربط الملف من الإدارة', 409)
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    const out = await this.prisma.$transaction(async (tx) => {
       const user = existing
         ? await tx.user.update({
             where: { id: existing.id },
@@ -899,6 +980,30 @@ export class TrainerReviewService {
         data: { applicationId: app.id, fromStatus: from, toStatus: 'active', actorId: user.id, note: 'إنشاء الحساب عبر الدعوة الآمنة' },
       })
       return { userId: user.id }
+    })
+    /* والتأكيدُ خارجَ المعاملة على عرف هذا الملفّ («الدعوةُ والبريدُ خارجَ
+       المعاملة»): بريدٌ يُخفق لا ينقض حسابا أُنشئ. */
+    await this.confirmActivation(email, app.fullName)
+    return out
+  }
+
+  /** تأكيدُ إنشاء الحساب — يخرج بعد المعاملة على عرف هذا الملفّ (ي-٤).
+
+      وصاحبُه هو الفاعلُ وهو على الشاشة، فهذا أخفُّ ما في الباب. وقيمتُه
+      الباقيةُ أمنيّة: هنا تُعيَّن كلمةُ المرور ويصير الحسابُ حيّا، ورابطُ
+      الدعوة يُستهلك مرّةً واحدة. فمن لم يكن هو من فعلَه يعلم في حينه. */
+  private async confirmActivation(email: string, fullName: string): Promise<void> {
+    await sendDirectEmail(this.prisma, {
+      to: email,
+      subject: 'أُنشئ حسابُك في أكاديمية وجيز',
+      ...renderMail({
+        greetingName: fullName,
+        heading: 'أُنشئ حسابُك وفُتحت بوّابتُك',
+        blocks: [
+          { kind: 'p', text: 'تدخلها ببريدك هذا وكلمتك الجديدة.' },
+          { kind: 'note', text: 'وإن لم تكن أنت من أنشأه فتواصل معنا فورا بردٍّ على هذه الرسالة — فرابطُ الدعوة يُستخدم مرّةً واحدةً وقد استُهلك.' },
+        ],
+      }),
     })
   }
 

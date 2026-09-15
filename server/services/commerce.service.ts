@@ -378,6 +378,21 @@ export class CommerceService {
         gift: pricing.lines.find((l) => l.isGift)?.courseId ?? null,
       },
     })
+    /* ═══ والساعةُ التي تنقضي تُقال لصاحبها (ي-٤) ═══
+
+       المقاعدُ تُحجز هنا ولا يُدفع بعد، و`reclaim_abandoned_orders` في
+       المُشغِّل الخلفيّ يُلغي ما هُجر بعد ساعةٍ ويُفرج عن مقاعده. وصار
+       يُخبَر بالإلغاء حين يقع — **فكان يُقال له «أُلغي طلبُك» ولم يُقل له
+       قطُّ إنّ له وقتا**. وهذا نصفُه الآخر.
+
+       وصنفُه «المال» لا «تقدّمي»: مهلةٌ يسقط بانقضائها مقعدٌ لا تُكتَم. */
+    await safeNotify(this.prisma, {
+      userId, channel: 'in_app', audience: 'learner',
+      templateKey: 'order.seats_held',
+      title: 'حُجز مقعدُك — وبقي الدفع',
+      body: `حُجز لك ${unique.length === 1 ? 'مقعد' : `${unique.length} مقاعد`} بفاتورة ${order.invoice.number} (${total} ${currency}). أتمم الدفعَ خلال ساعة — وبعدها يُفرَج عن المقعد لغيرك ولا يُقتطع منك شيء.`,
+      data: { orderId: order.order.id, invoiceNumber: order.invoice.number, total, currency },
+    })
     return {
       orderId: order.order.id,
       invoiceId: order.invoice.id,
@@ -727,7 +742,7 @@ export class CommerceService {
     for (const target of targets.values()) {
       try {
         /* المصدرُ يُختم هنا — عند التسوية، من الرمز الذي حُمل مع الحجز */
-        await this.enrollments.enroll(target.cohortId, target.userId, actorId, { referralCode: target.referralCode ?? undefined })
+        await this.enrollments.enroll(target.cohortId, target.userId, actorId, { referralCode: target.referralCode ?? undefined, announce: false })
       } catch (err) {
         /* مسجل مسبقا (مثل إعادة معالجة) — لا يمنع التحويل */
         if (!(err instanceof AuthError && err.code === 'already_enrolled')) {
