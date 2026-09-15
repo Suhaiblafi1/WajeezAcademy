@@ -123,6 +123,22 @@ describe('دورة طلب المدرب', () => {
     expect(s.reference).toBe(reference)
     const withRef = await apps.getPublicStatus(phase1.email, reference.toLowerCase())
     expect(withRef.reference).toBe(reference)
+    /* ═══ والتوثيقُ في الردّ — شاشةُ «وصل طلبك» تقرؤه منه ═══
+
+       البندُ ③ قبله وثّق بريدَ هذا الطلب فعلا، فالحقلُ هنا يقول `true`.
+       ولولاه لقالت الشاشةُ «غير موثَّق» لمن وثّق — وهي تسأل هذا النداءَ
+       وحدَه. والفحصُ على الطرفين معا في `trainer-application-form.test.ts`. */
+    expect(s.emailVerified, 'الحالةُ العامّةُ لا تقول إن كان البريدُ موثَّقا').toBe(true)
+  })
+
+  it('4ب) وطلبٌ لم يُوثَّق بريدُه بعدُ يُقال عنه ذلك صراحةً — لا يُسكت عنه', async () => {
+    /* الحقلُ يجب أن يتبع العمودَ لا أن يكون `true` أبدا: شاشةُ المتقدّم
+       تُخفي نداءَ التوثيق كلَّه متى قرأته `true`. فطلبٌ ثانٍ لم يُوثَّق. */
+    const other = await apps.submitPhase1({
+      ...phase1, email: 'trainer-unverified@test.local', password: 'Trainer#54321',
+    })
+    const st = await apps.getPublicStatus('trainer-unverified@test.local', other.reference)
+    expect(st.emailVerified, 'بريدٌ لم يُوثَّق يُقال عنه إنّه موثَّق').toBe(false)
   })
 
   it('5) الطلب يظهر في قائمة الإدارة', async () => {

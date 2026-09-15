@@ -16,6 +16,7 @@ import TeachableCoursePicker from "@/components/TeachableCoursePicker";
 import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
 import { mobileFormatByDial, timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
+import EmailVerifyStatus from "@/components/EmailVerifyStatus";
 import {
   cleanProposals, emptyProposal, hasProposal, MAX_PROPOSALS,
   type TeachableProposal,
@@ -223,6 +224,22 @@ export default function JoinTrainer() {
   /* كيف نتواصل معه للاجتماع التعريفيّ */
   const [contactChannel, setContactChannel] = useState<ContactChannel | "">("");
   const [contactAltEmail, setContactAltEmail] = useState("");
+  /* ═══ تأكيدُ البريد في آخر الطلب — لا في أوّله ═══
+
+     البريدُ كُتب في القسم الأوّل، ثمّ مرّ المتقدّمُ بقسمَين طويلَين. وهو
+     **كلُّ ما بيننا وبينه** بعد الإرسال: رسالةُ التوثيق، وأخبارُ طلبه،
+     ودعوةُ المقابلة، وحسابُه نفسُه. وحرفٌ واحدٌ ساقطٌ فيه يعني طلبا كاملا
+     لا يصل صاحبَه أبدا — ولا نعرف نحن أنّه لم يصل.
+
+     وحقلٌ ثانٍ بجانب الأوّل لا يمسك شيئا: من يخطئ في كتابته ينسخه إلى
+     الحقل الذي تحته. أمّا كتابتُه ثانيةً بعد قسمَين، من الذاكرة لا من
+     الشاشة، فتمسك الخطأ. وهو طلبُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): «اطلب
+     منه أن يؤكّد إيميله في نهاية الطلب، وإذا كان متشابها يُكمل، وإن أخطأ
+     يقول: عدّل في الصفحة الأولى».
+
+     ولا يُحفظ في المسودّة عمدا: تأكيدٌ مستعادٌ من ذاكرة المتصفّح ليس
+     تأكيدا — يُكتب بيد صاحبه أو لا يُكتب. */
+  const [emailConfirm, setEmailConfirm] = useState("");
 
   /* متابعة حالة طلب سابق — البريدُ يكفي، والرقمُ اختياريّ */
   const [lookup, setLookup] = useState({ reference: "", email: "" });
@@ -230,6 +247,7 @@ export default function JoinTrainer() {
     {
       reference: string; label: string; explain: string; status: string
       hasInterview: boolean; interviewAt: string | null; interviewRescheduleUrl: string | null
+      emailVerified: boolean
     } | null
   >(null);
   const [lookupError, setLookupError] = useState("");
@@ -403,6 +421,13 @@ export default function JoinTrainer() {
     stepsRef.current?.focus({ preventScroll: true });
   }, [step]);
 
+  /* المقارنةُ تُطبَّع طرفاها: البريدُ لا يفرّق بين حرفٍ كبيرٍ وصغير، ومسافةٌ
+     التقطها اللصقُ ليست خطأً يُوقف طلبا. وهي هنا مرّةً واحدةً يقرأ منها
+     الفحصُ والشاشةُ معا — ولو حُسبت في موضعَين لافترقتا عند أوّل تعديل. */
+  const emailNormalized = form.email.trim().toLowerCase();
+  const emailConfirmMatches = emailNormalized.length > 0
+    && emailConfirm.trim().toLowerCase() === emailNormalized;
+
   const fieldErrors = useMemo<Record<string, string | null>>(() => ({
     name: nameWords.length >= 2 ? null : 'اكتب اسمك كاملا — اسمُك واسمُ عائلتك، لا كلمةً واحدة',
     email: /.+@.+\..+/.test(form.email) ? null : 'بريدٌ بصيغةٍ صحيحة، مثل name@example.com',
@@ -438,11 +463,17 @@ export default function JoinTrainer() {
     altEmail: contactChannel !== 'other_email' || /.+@.+\..+/.test(contactAltEmail)
       ? null
       : 'بريدٌ آخرُ بصيغةٍ صحيحة، مثل name@example.com',
+    /* والرسالةُ تقول أين يُصحَّح: «غير متطابق» وحدَها تترك المتقدّمَ أمام
+       حقلَين في قسمَين لا يدري أيَّهما الصواب. */
+    emailConfirm: !emailConfirm.trim() || emailConfirmMatches
+      ? null
+      : 'لا يطابق بريدك في القسم الأول — صحّح ما كتبته هنا، أو عُد إلى القسم الأول وعدّل البريد نفسَه',
   /* و`phoneCountryCode` بينها: رسالةُ الجوال تُقاس بصيغة الدولة المختارة،
      فلو غابت لبقيت الرسالةُ على دولةٍ سابقةٍ بعد تغيير الرمز. */
   }), [nameWords.length, form.email, form.phone, form.phoneCountryCode, form.hasAccreditation,
       form.accreditationBody, accreditationName,
-      password, passwordConfirm, result, contactChannel, contactAltEmail]);
+      password, passwordConfirm, result, contactChannel, contactAltEmail,
+      emailConfirm, emailConfirmMatches]);
 
   /** رسالةُ الحقل — تُكتم حتى يُلمس */
   const errOf = (k: string) => (touched[k] ? fieldErrors[k] ?? null : null);
@@ -493,6 +524,8 @@ export default function JoinTrainer() {
     if (seasons.length === 0) m[2].push("موسمٌ واحدٌ تستطيع التدريس فيه");
     if (!demoConsent) m[2].push("الموافقة على الدرس التجريبي والمقابلة");
     /* كيف نصل إليه — ووسيلةٌ تحتاج رقما بلا رقم لا تُقبل */
+    /* والبريدُ يُؤكَّد قبل الإرسال — سطرٌ هنا لأنّ الزرَّ يقرأ من هذه القائمة */
+    if (!emailConfirmMatches) m[3].push("تأكيد بريدك الإلكتروني — أعد كتابته كما في القسم الأول");
     const channel = CONTACT_CHANNELS.find((c) => c.value === contactChannel);
     if (!channel) m[3].push("وسيلة التواصل التي تفضّلها");
     else {
@@ -502,7 +535,7 @@ export default function JoinTrainer() {
     return m;
   }, [form, bioWords, evidenceValid.length, evidenceMalformed,
       specialties, languages, motivationLen, accreditationReady, uploads, teachable, proposals, demoConsent, seasons,
-      password, passwordConfirm, result, contactChannel, contactAltEmail]);
+      password, passwordConfirm, result, contactChannel, contactAltEmail, emailConfirmMatches]);
 
   const stepValid = useMemo(() => ({
     1: missing[1].length === 0 && motivationLen <= MOTIVATION_MAX,
@@ -648,7 +681,7 @@ export default function JoinTrainer() {
       if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
       const res = await apiGet<{
         reference: string; status: string; hasInterview: boolean; interviewAt: string | null
-        interviewRescheduleUrl: string | null
+        interviewRescheduleUrl: string | null; emailVerified: boolean
       }>(
         `/api/v1/trainer-applications/status?${q.toString()}`,
       );
@@ -656,7 +689,7 @@ export default function JoinTrainer() {
       setLookupResult({
         reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "",
         status: res.status, hasInterview: res.hasInterview, interviewAt: res.interviewAt,
-        interviewRescheduleUrl: res.interviewRescheduleUrl,
+        interviewRescheduleUrl: res.interviewRescheduleUrl, emailVerified: res.emailVerified,
       });
     } catch (err) {
       setLookupError(err instanceof ApiError ? err.message : "تعذر جلب الحالة");
@@ -705,18 +738,29 @@ export default function JoinTrainer() {
               </p>
             </Card>
 
-            <Card tone={mailSent ? "default" : "warn"}>
-              <p className="flex items-center gap-2 text-sm font-black">
-                <MailCheck className="h-4 w-4 text-teal-light-ink" />
-                {mailSent ? "أرسلنا بريد تأكيد إلى" : "تعذّر إرسال بريد التأكيد الآن"}
-                {mailSent && <b dir="ltr" className="text-teal-light-ink">{form.email.trim()}</b>}
-              </p>
-              <p className="mt-2 text-read leading-7 text-muted-foreground">
-                {mailSent
-                  ? "فيه رقم طلبك وتفاصيله والخطوة التالية — وفيه رابطٌ افتحه مرة واحدة ليُوثَّق بريدك. إن لم يصلك خلال دقائق راجع مجلد الرسائل غير المرغوبة، أو أعد إرساله من صفحة حالتك."
-                  : "طلبك محفوظ ومقدَّم على أي حال. يمكنك طلب رسالة التأكيد مجددا من صفحة حالتك بعد الدخول."}
-              </p>
-            </Card>
+            {/* ═══ حالةُ البريد تُقاس ولا تُوعَد ═══
+
+                كانت هنا بطاقةٌ تقول «أرسلنا بريد تأكيد» ثمّ تصمت إلى الأبد:
+                من فتح الرابطَ وعاد يقرأ الجملةَ نفسَها فلا يدري أحُسبت
+                نقرتُه، ومن لم تصله رسالةٌ لا يعرف أنّه لم يصله شيء. والتوثيقُ
+                شرطُ اعتماد طلبه — فحالتُه تُعرض حيّةً: «غير موثَّق» حتّى
+                يوثّق، ثمّ «تمّ التوثيق». والتفصيلُ في `EmailVerifyStatus`. */}
+            <EmailVerifyStatus
+              email={form.email.trim()} reference={result.reference}
+              delivery={completion?.emailDelivery ?? null}
+            />
+
+            {mailSent && (
+              <Card>
+                <p className="flex items-center gap-2 text-sm font-black">
+                  <MailCheck className="h-4 w-4 text-teal-light-ink" /> وفي الرسالة نفسِها
+                </p>
+                <p className="mt-2 text-read leading-7 text-muted-foreground">
+                  رقمُ طلبك وتفاصيلُه والخطوةُ التالية — احتفظ بها. وإن حجزتَ مقابلتك فستصلك
+                  من Calendly دعوةُ تقويمٍ ثانيةٌ فيها زرّا إعادة الجدولة والإلغاء.
+                </p>
+              </Card>
+            )}
 
             <Card>
               <p className="flex items-center gap-2 text-sm font-black">
@@ -1482,6 +1526,52 @@ export default function JoinTrainer() {
                 )}
               </Question>
 
+              {/* ═══ البريدُ يُكتب ثانيةً — آخرَ شيءٍ قبل الإرسال ═══
+
+                  عليه تصل رسالةُ التوثيق وأخبارُ الطلب ودعوةُ المقابلة، وبه
+                  يدخل حسابَه. وحرفٌ ساقطٌ فيه = طلبٌ كاملٌ لا يبلغ صاحبَه —
+                  ولا نعرف نحن أنّه لم يبلغه. والتفصيلُ عند تعريف الحالة. */}
+              <Question
+                n={2}
+                title="أكّد بريدك الإلكتروني"
+                required
+                hint="اكتبه من ذاكرتك لا بالنسخ — فهذا هو ما يمسك الحرفَ الساقط."
+              >
+                <Field label="أعد كتابة بريدك الإلكتروني" htmlFor="jt-email-confirm" required error={errOf("emailConfirm")}>
+                  <input
+                    id="jt-email-confirm" type="email" dir="ltr" autoComplete="off" spellCheck={false}
+                    placeholder="name@example.com"
+                    value={emailConfirm} onChange={(e) => setEmailConfirm(e.target.value)} onBlur={touch("emailConfirm")}
+                    {...invalidProps("jt-email-confirm-error", errOf("emailConfirm"))}
+                    className={`${controlCls} text-left`}
+                  />
+                </Field>
+
+                {emailConfirmMatches ? (
+                  <Inset as="p" tone="positive" className="mt-4 flex items-start gap-2 text-read leading-6 text-foreground">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                    <span>
+                      متطابق — نكمل. وستصلك رسالةُ التوثيق على{" "}
+                      <b dir="ltr" className="font-mono text-foreground">{form.email.trim()}</b>، فافتحها ووثّق بريدك.
+                    </span>
+                  </Inset>
+                ) : emailConfirm.trim() ? (
+                  /* ═══ والمخرجُ يُعطى مع الرفض لا بعده ═══
+
+                     من كتب بريدَه خطأً في القسم الأوّل لا يُصلحه هنا: هذا
+                     الحقلُ تأكيدٌ لا مصدر. فيُقال له أين يُصحَّح **ويُنقل
+                     إليه بزرّ** — لا يُترك يبحث عن القسم الأوّل بنفسه. */
+                  <Inset as="p" tone="warn" className="mt-4 text-read leading-6 text-gold-ink">
+                    <b className="text-gold-ink">لا يطابق.</b> في القسم الأول كتبتَ{" "}
+                    <b dir="ltr" className="font-mono text-foreground">{form.email.trim() || "—"}</b>.
+                    فإن كان هذا هو الصواب فصحّح ما كتبتَه هنا؛ وإن كان البريدُ نفسُه خطأً{" "}
+                    <button type="button" onClick={() => setStep(1)} className="cursor-pointer font-black underline">
+                      عد إلى القسم الأول وعدّله
+                    </button>.
+                  </Inset>
+                ) : null}
+              </Question>
+
               {/* ملخّص ما سيصل المراجع — بلا مفاجآت */}
               <Card>
                 <p className="flex items-center gap-2 text-read leading-5 font-black text-foreground">
@@ -1602,6 +1692,16 @@ export default function JoinTrainer() {
                 <p className="text-read leading-5 font-black text-teal-light-ink">{lookupResult.label}</p>
                 <p className="mt-1 text-read text-muted-foreground" dir="ltr">{lookupResult.reference}</p>
                 {lookupResult.explain && <p className="mt-2 text-read leading-6 text-foreground">{lookupResult.explain}</p>}
+                {/* ═══ وحالةُ البريد هنا أيضا — من الردّ نفسِه بلا نداءٍ ثانٍ ═══
+
+                    من يفتح هذا القسمَ بعد يومَين هو بعينه من لم تصله رسالةٌ أو
+                    لم يفتحها. ولو سكتت البطاقةُ عن التوثيق لقالت شاشةٌ «غير
+                    موثَّق» وسكتت أختُها — فيُصدَّق السكوتُ طمأنينةً. */}
+                <p className={`mt-2 text-read leading-6 ${lookupResult.emailVerified ? "text-emerald-300" : "text-gold-ink"}`}>
+                  {lookupResult.emailVerified
+                    ? "بريدك موثَّق — تمّ التوثيق."
+                    : "بريدك غير موثَّق بعد — افتح رسالةَ التأكيد في بريدك وانقر رابطَها. وإن لم تجدها فراجع مجلّد الرسائل غير المرغوبة، أو اطلبها من جديد بعد الدخول إلى حسابك."}
+                </p>
               </Inset>
               {/* ═══ والزرُّ الذي وعد به النصُّ يكون تحته فعلا ═══
 

@@ -11,7 +11,7 @@
 import { useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import { controlCls, Field, OptionGrid } from '@/components/FormKit'
-import { courses, courseDomain } from '@/data/courses'
+import { courses, courseDomain, courseDomainLabel } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
 import { Card } from '@/components/ui/Surface'
 
@@ -29,11 +29,18 @@ export default function TeachableCoursePicker({
      القائمة فارغةً أبدا عند المتقدّم ولا يعرف لماذا. وهو يجلب ويشترك معا. */
   const catalogVersion = usePublishedContent()
 
+  /* المجالُ واسمُه وعددُ دوراته معا: الاسمُ يقول أيُّ بابٍ هو، والكلماتُ
+     تقول ماذا خلفه، والعددُ يقول أيستحقّ الفتحَ أصلا. */
   const domains = useMemo(() => {
     void catalogVersion /* `courses` تُملأ في مكانها — فالنسخة هي إشارة الحساب */
-    return [...new Set(courses.map((c) => courseDomain(c.id)))]
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b, 'ar'))
+    const counts = new Map<string, number>()
+    for (const c of courses) {
+      const d = courseDomain(c.id)
+      if (d) counts.set(d, (counts.get(d) ?? 0) + 1)
+    }
+    return [...counts.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'ar'))
+      .map(([name, count]) => ({ name, count, label: courseDomainLabel(name) }))
   }, [catalogVersion])
   const inDomain = useMemo(() => {
     void catalogVersion
@@ -55,8 +62,12 @@ export default function TeachableCoursePicker({
           id="tc-domain" value={domain} onChange={(e) => setDomain(e.target.value)}
           className={`${controlCls} [&>option]:bg-surface`}
         >
-          <option value="">اختر المجال لتظهر دوراته</option>
-          {domains.map((d) => <option key={d} value={d}>{d}</option>)}
+          <option value="">اختر المجال — وتحت كلّ مجالٍ أهمُّ ما فيه</option>
+          {/* `<option>` نصٌّ لا وسم: فالكلماتُ تُوصَل بشَرطةٍ ولا تُنسَّق.
+              والعددُ في آخره — الرقمُ يُمسَح بالعين أسرعَ من كلمة. */}
+          {domains.map((d) => (
+            <option key={d.name} value={d.name}>{d.label} ({d.count})</option>
+          ))}
         </select>
       </Field>
 
@@ -66,7 +77,7 @@ export default function TeachableCoursePicker({
       {domain && (
         <Card className="bg-paper/20">
           <p className="mb-3 text-read leading-6 text-muted-foreground">
-            اختر ما تستطيع تدريسه الآن من {domain} — ولك أن تعود وتختار مجالا آخر.
+            اختر ما تستطيع تدريسه الآن من {domain} ({inDomain.length}) — ولك أن تعود وتختار مجالا آخر.
           </p>
           <div className="max-h-64 overflow-y-auto pl-1">
             <OptionGrid

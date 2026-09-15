@@ -6,7 +6,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { courseDomain } from "@/data/courses";
+import {
+  COURSE_DOMAIN_FAMILIES, courseDomain, courseDomainKeywords, courseDomainKeywordsByFamily,
+  courseDomainLabel,
+} from "@/data/courses";
 import { pathwayCategory } from "@/data/pathways";
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), "utf8");
@@ -122,5 +125,42 @@ describe("«المجال» مجالٌ معرفيّ لا فئةٌ مستهدفة"
       .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "");
     expect(picker).toContain("courseDomain");
     expect(picker).not.toContain("pathwayCategory");
+  });
+
+  /* ═══ واسمُ المجال وحدَه لا يقول ماذا فيه (١٥ سبتمبر ٢٠٢٦) ═══
+
+     «التواصل والعرض» — أفيه الإلقاء؟ أفيه الإنجليزيّة للأعمال؟ فالمتقدّمُ
+     يفتح المجالَ ويغلقه ويفتح غيرَه، عشرين مرّةً ليعرف أين يقع ما يُتقنه.
+     وشكا صاحبُ المنصّة: «المجالات غير واضحة… سهّل عليه التوقّع».
+
+     والفحصُ على التغطية لا على ورودِ كلمة: عائلةٌ واحدةٌ بلا كلماتٍ تكفي
+     لتعود الشكوى في بابها. */
+  it("⚠️ ٧) ولكلّ مجالٍ كلماتُه المفتاحيّة — فلا يُفتح بابٌ ليُعرف ما خلفه", () => {
+    expect(COURSE_DOMAIN_FAMILIES.length, "لا مجالاتِ أصلا").toBeGreaterThan(15);
+    for (const family of COURSE_DOMAIN_FAMILIES) {
+      const words = courseDomainKeywordsByFamily(family);
+      expect(words, `مجالٌ بلا كلماتٍ تدلّ عليه: ${family}`).toBeTruthy();
+      /* وثلاثُ مفاتيحَ على الأقلّ: مفتاحان لا يقصّان الشكَّ عن أربع دورات */
+      expect(
+        words.split("·").filter((w) => w.trim()).length,
+        `كلماتُ ${family} أقلُّ من أن تدلّ: «${words}»`,
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("⚠️ ٨) والكلماتُ تُقرأ بالاسم العربيّ — فالقائمةُ لا تعرف العائلة", () => {
+    /* السجلّان مفتاحُهما العائلةُ، والشاشاتُ تحمل الاسمَ العربيَّ وحدَه.
+       فلو انقطع الجسرُ بينهما عادت القائمةُ أسماءً عاريةً بلا أن يحمرّ شيء. */
+    expect(courseDomainKeywords("الأمن السيبراني"), "لا كلماتِ لمجالٍ بالاسم").toBeTruthy();
+    expect(courseDomainLabel("الأمن السيبراني")).toMatch(/^الأمن السيبراني — .+/);
+    /* وما لا كلماتِ له يبقى اسمَه — لا شَرطةً معلّقةً على فراغ */
+    expect(courseDomainLabel("أخرى")).toBe("أخرى");
+  });
+
+  it("⚠️ ٩) والقائمةُ تعرض الكلماتِ فعلا — لا الاسمَ وحدَه", () => {
+    const picker = read("src/components/TeachableCoursePicker.tsx")
+      .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "");
+    expect(picker, "القائمةُ ما زالت تعرض الاسمَ عاريا").toContain("courseDomainLabel");
+    expect(picker, "لا يُعرض عددُ دورات المجال — وهو أسرعُ ما يُمسح بالعين").toMatch(/\{d\.count\}/);
   });
 });

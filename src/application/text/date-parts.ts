@@ -138,3 +138,67 @@ export function formatTypedDate(iso: string | null | undefined): string {
   if (!p.year) return ''
   return `${p.day.padStart(2, '0')}/${p.month.padStart(2, '0')}/${p.year}`
 }
+
+/* ═══════════ حالةُ الحقل — نصٌّ يُكتب وقوائمُ تُختار، معا ═══════════
+
+   ═══ العطبُ الذي كُتبت له ═══
+
+   كانت القوائمُ الثلاثُ تقرأ أجزاءَها من القيمة المرسَلة وحدَها
+   (`splitIsoDay(value)`)، والقيمةُ لا تُكتب إلّا حين يكتمل التاريخُ ثلاثةَ
+   أجزاء. فمن فتح القوائمَ على حقلٍ فارغٍ واختار السنةَ: يُحسب `joinIsoDay`
+   على `{سنة، بلا شهر، بلا يوم}` فيردّ `''`، فتبقى القيمةُ فارغةً، فتُشتقّ
+   الأجزاءُ منها فارغةً — **فترتدّ القائمةُ إلى «السنة» أمام عينه**. ثمّ
+   يختار الشهرَ فيرتدّ كذلك. فالقوائمُ لا تفعل شيئا أبدا إلّا لمن كتب
+   التاريخَ كاملا قبلها، وهي وُضعت لمن لا يكتب.
+
+   وهي شكوى صاحب المنصّة بنصّها (١٥ سبتمبر ٢٠٢٦): «التاريخُ ما زال لا يعمل
+   ويجب أن يُدخله كتابيّا، ولا يتأثّر ما يختاره من الخيارات أدنى التاريخ».
+
+   ═══ فصار المختارُ يُحفظ ولو لم يكتمل ═══
+
+   الأجزاءُ حالةٌ قائمةٌ بذاتها لا اشتقاقٌ من القيمة: من اختار سنةً وحدَها
+   رآها مختارةً وبقيت، ويبني عليها الشهرَ ثمّ اليوم. والقيمةُ تُرسَل حين
+   تكتمل الثلاثةُ لا قبل — فالضمانُ القديم قائم: **نصفُ تاريخٍ لا يُرسَل.**
+
+   وهي دالّاتٌ خالصةٌ لا شرطٌ في المكوّن، للسبب المكتوب في رأس هذا الملفّ:
+   هذه انتقالاتُ حالةٍ تُفحص في Node، وشرطٌ في JSX لا يُفحص إلّا بمطابقة
+   نصّ — وهي المطابقةُ التي مرّ منها حرّاسٌ خضرٌ لأسبابٍ خاطئة هنا. */
+
+export interface DateFieldState {
+  /** ما تعرضه القوائمُ الثلاث — يبقى ولو لم يكتمل */
+  parts: DateParts
+  /** ما يُرى في حقل الكتابة كما كُتب */
+  text: string
+  /** ما يُرسَل إلى فوق — `''` ما لم يكتمل التاريخُ ويصحّ */
+  iso: string
+}
+
+/** الحالةُ من قيمةٍ محفوظة — تحميلُ مسودّةٍ أو قيمةٍ جاءت من فوق */
+export function dateStateFromIso(value: string | null | undefined): DateFieldState {
+  const parts = splitIsoDay(value)
+  return { parts, text: formatTypedDate(value), iso: parts.year ? joinIsoDay(parts) : '' }
+}
+
+/** اختيارُ جزءٍ من القوائم — الناقصُ يبقى معروضا ولا يرتدّ */
+export function pickDatePart(prev: DateFieldState, patch: Partial<DateParts>): DateFieldState {
+  const raw = { ...prev.parts, ...patch }
+  const iso = joinIsoDay(raw)
+  /* واليومُ المقصوصُ يُرى مقصوصا: من كان على ٣١ ثمّ بدّل الشهرَ إلى فبراير
+     تقول له القائمةُ ٢٨ — لا رقما لا يوافق ما سيُرسَل. */
+  return iso
+    ? { parts: splitIsoDay(iso), iso, text: formatTypedDate(iso) }
+    : { parts: raw, iso: '', text: '' }
+}
+
+/** ما كُتب في الحقل — ويُحرّك القوائمَ متى اكتمل، ولا يمحوها قبلَه */
+export function typeDateText(prev: DateFieldState, text: string): DateFieldState {
+  const out = parseTypedDate(text)
+  if (out.iso) return { parts: splitIsoDay(out.iso), iso: out.iso, text }
+  /* ومن محا الحقلَ محا اختيارَه كلَّه — أمّا الناقصُ فلا يمسّ ما اختير */
+  return { parts: text.trim() ? prev.parts : EMPTY_PARTS, iso: '', text }
+}
+
+/** قيمةٌ جاءت من فوق: تُتبَع إن كانت غيرَ ما أرسلناه، وإلّا فلا يُمسّ المكتوب */
+export function syncDateState(prev: DateFieldState, value: string): DateFieldState {
+  return prev.iso === value ? prev : dateStateFromIso(value)
+}

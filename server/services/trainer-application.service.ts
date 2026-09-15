@@ -439,6 +439,16 @@ export class TrainerApplicationService {
     interviewAt: Date | null
     /** رابطُ تعديل الموعد عند Calendly — لصاحب الحجز وحدَه، ولا يُشتقّ عندنا */
     interviewRescheduleUrl: string | null
+    /* ═══ ولماذا يُعاد التوثيقُ هنا ═══
+
+       شاشةُ «وصل طلبك» تقول للمتقدّم إنّ رسالةَ التوثيق أُرسلت، ثمّ لا تقول
+       له أبدا هل وصلت ووثّق أم لا: يفتح الرابطَ في لسانٍ آخرَ ويعود، فتخبره
+       الشاشةُ الخبرَ نفسَه. فيظنّ أنّ النقرةَ لم تُحسب، أو يمضي ظانّا أنّه
+       وثّق وهو لم يفعل — والتوثيقُ شرطُ اعتمادِ طلبه.
+
+       فتُعاد الحالةُ نعم/لا لا تاريخا: الوقتُ لا يُعرض في هذه الشاشة، وما
+       لا يُعرض لا يُكشف في ردٍّ عامٍّ يكفي فيه البريدُ وحدَه. */
+    emailVerified: boolean
   }> {
     const normalized = email.trim().toLowerCase()
     const ref = reference?.trim().toUpperCase() || null
@@ -466,6 +476,7 @@ export class TrainerApplicationService {
       /* الفراغُ وارد: مقابلةٌ سُجّلت يدويّا، أو حُجزت قبل حفظِ الرابط. فتُعرض
          بلا زرِّ تعديلٍ بدل زرٍّ لا يفتح شيئا. */
       interviewRescheduleUrl: app.interviews[0]?.rescheduleUrl ?? null,
+      emailVerified: !!app.emailVerifiedAt,
     }
   }
 
