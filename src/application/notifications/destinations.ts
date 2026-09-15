@@ -41,6 +41,8 @@ type Table = Record<string, MailDestination>
 const LEARNER: Table = {
   /* رحلتي — جدولُ شعبه ووحداتُه وتسليماتُه وطلباتُه، كلُّها في شاشةٍ واحدة */
   'cohort.session.scheduled': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  /* ي-٤: والرابطُ يُقرأ من الصفحة نفسِها التي فيها الموعد */
+  'cohort.meeting.linked': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.24h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.1h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
@@ -93,6 +95,7 @@ const TRAINER: Table = {
      في `worker/jobs.ts`. وكنتُ كتبتُ هنا مفاتيحَ المتعلّم للمدرّب، فكانت
      أسطرا ميّتةً: لا يصل المدرّبَ `session.reminder.24h` أبدا، ولا وجهةَ
      لما يصله فعلا. وأمسكه الحارسُ ② حين قابل السجلَّ بالجداول. */
+  'cohort.meeting.linked.trainer': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'session.reminder.trainer.24h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'session.reminder.trainer.1h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابورَ التصحيح' },

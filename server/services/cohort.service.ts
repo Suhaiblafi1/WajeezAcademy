@@ -931,7 +931,7 @@ export class CohortService {
   /** ربط اجتماع Zoom يدوي — لا اجتماع حقيقي دون مفاتيح */
   async attachManualZoom(actorId: string, sessionId: string, input: {
     joinUrl: string; meetingId?: string; passcode?: string; learnerUrl?: string; hostProfileId?: string
-  }) {
+  }, announce = true) {
     const session = await this.prisma.cohortSession.findUnique({ where: { id: sessionId }, include: { zoom: true, cohort: { include: { trainers: true } } } })
     if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
     if (session.zoom) throw new AuthError('already_linked', 'الجلسة مرتبطة باجتماع مسبقا', 409)
@@ -947,6 +947,7 @@ export class CohortService {
       },
     })
     await recordAudit(this.prisma, { actorId, action: 'zoom.attach_manual', entityType: 'cohort_session', entityId: sessionId })
+    if (announce) await this.notifyMeetingLinked(sessionId)
     return zoom
   }
 
@@ -1031,7 +1032,7 @@ export class CohortService {
     let zoom: Awaited<ReturnType<typeof this.attachApiZoom>> | null = null
     if (config) {
       try {
-        zoom = await this.attachApiZoom(actorId, session.id, config)
+        zoom = await this.attachApiZoom(actorId, session.id, config, false)
       } catch (e) {
         /* تعويضٌ صريح: الجلسةُ وُلدت قبل لحظةٍ ولا شيءَ معلَّقٌ بها، فتُحذف كي
            لا يبقى في الجدول لقاءٌ طُلب له اجتماعٌ ولم يُنشأ — وهو ما يراه
@@ -1060,7 +1061,13 @@ export class CohortService {
   }
 
   /** اجتماعٌ حقيقيٌّ على Zoom لجلسةٍ قائمة — `zoom_api` لا `manual` */
-  async attachApiZoom(actorId: string, sessionId: string, preloaded?: Awaited<ReturnType<typeof getZoomConfig>>) {
+  /* و`announce` رايةٌ صريحة: `addSessionWithMeeting` يُبلّغ بنفسه بعد النداء
+     («لقاءٌ جديد… ورابطُ الانضمام») فلا تُرسَل رسالتان عن شيءٍ واحد. */
+  async attachApiZoom(
+    actorId: string, sessionId: string,
+    preloaded?: Awaited<ReturnType<typeof getZoomConfig>>,
+    announce = true,
+  ) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       include: { zoom: true, cohort: { select: { title: true, timezone: true } } },
@@ -1100,6 +1107,7 @@ export class CohortService {
     })
     /* ورابطٌ لكلّ مسجَّلٍ بعد الإنشاء — لا يُسقط الجلسةَ إن تعذّر */
     if (meeting.meetingId) await this.linkRegistrants(sessionId, meeting.meetingId, config)
+    if (announce) await this.notifyMeetingLinked(sessionId)
     return zoom
   }
 
@@ -1162,6 +1170,60 @@ export class CohortService {
       data: reason ? { syncState: 'failed', syncError: reason } : { syncState: 'synced', syncError: null },
     })
     return { linked, reason }
+  }
+
+  /* ═══ ورابطٌ أُلصق بلقاءٍ قائمٍ خبرٌ لمن يحضره (ي-٤) ═══
+
+     `addSessionWithMeeting` يولد الجلسةَ ورابطَها معا فيُخبر عنهما رسالةٌ
+     واحدة. أمّا **الإلصاقُ على لقاءٍ أُعلن من قبلُ بلا رابط** — وهو ما تفعله
+     طريقا الإدارة — فكان يقع صامتا تماما: يُفتح بابُ الغرفة ولا يعلم به من
+     يحضرها. ولم تكن في المنصّة كلِّها رسالةُ «صار للقاء رابط»: تذكيرا
+     اليومِ والساعةِ يقولان «رابطُ الانضمام في صفحة الجلسة» ولا يحملانه،
+     ولا يقعان إلّا قبل الموعد.
+
+     والعددُ ليس صغيرا: كلُّ مسجَّلٍ غيرِ منسحبٍ في الشعبة — عشرون في الوسطى
+     — ومعهم مدرّبوها.
+
+     ولمَ مفتاحان لا واحد: المتعلّمُ يُبلَّغ في صنف «مواعيدُ الجلسات» ويجوز
+     كتمُه (والموعدُ يبقى في جدوله على كلّ حال)، والمدرّبُ في «عملي» ولا
+     يُكتَم — «حصّةُ المتعلّم موعدٌ له، وحصّةُ المدرّب موعدٌ عليه»، وهي
+     القسمةُ نفسُها التي فرّقت `session.reminder` عن `session.reminder.trainer`. */
+  private async notifyMeetingLinked(sessionId: string): Promise<void> {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true, title: true, startsAt: true, cohortId: true,
+        cohort: { select: { title: true, trainers: { select: { profile: { select: { userId: true } } } } } },
+      },
+    })
+    if (!session) return
+    const when = fmtDateWith(session.startsAt, {
+      weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit',
+    })
+    const learners = await this.prisma.enrollment.findMany({
+      where: { cohortId: session.cohortId, status: { not: 'dropped' } },
+      select: { userId: true },
+    })
+    const data = { cohortId: session.cohortId, sessionId: session.id }
+    for (const r of learners) {
+      await safeNotify(this.prisma, {
+        userId: r.userId, channel: 'in_app', audience: 'learner',
+        templateKey: 'cohort.meeting.linked',
+        title: `صار للقاء رابطُ انضمام — ${session.cohort.title}`,
+        body: `${session.title} — ${when}. تجد رابطَ الانضمام في صفحة رحلتك قبل موعده.`,
+        data,
+      })
+    }
+    for (const t of session.cohort.trainers) {
+      if (!t.profile?.userId) continue
+      await safeNotify(this.prisma, {
+        userId: t.profile.userId, channel: 'in_app', audience: 'trainer',
+        templateKey: 'cohort.meeting.linked.trainer',
+        title: `صار للقاء رابطُ انضمام — ${session.cohort.title}`,
+        body: `${session.title} — ${when}. تجد رابطَ الانضمام في جدولك.`,
+        data,
+      })
+    }
   }
 
   /** يُبلَّغ كلُّ مسجَّلٍ في الشعبة — والعددُ يعود كي تقوله الشاشةُ لا تخمّنه */
