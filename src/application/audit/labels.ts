@@ -184,6 +184,9 @@ const PHRASES: Record<string, string> = {
      وهي ثلاثُ كلماتٍ لا جملة. ومن يقرأ السجلَّ يجب أن يرى أنّ القاموسَ
      الذي يُقاس به الناسُ قد زِيد فيه. */
   'catalog.skill.create': 'إنشاءُ مهارةٍ في القاموس',
+  /* استثناءُ maker-checker حين يقع — ولا يُسمَّى «اعتمادَ طلبٍ» كغيره:
+     الفرقُ بينهما هو كلُّ ما يُقرأ هذا السطرُ من أجله. */
+  'catalog.change_request.self_approve': 'اعتمادُ طلبِ تغييرٍ قدّمه المعتمِدُ نفسُه',
   'diagnostic.attach': 'إرفاقُ نتيجةِ تشخيصٍ بحساب',
   'plan.approve_requests': 'اعتمادُ طلباتِ خطّة',
   'plan.request_enrollment': 'طلبُ تسجيلٍ من خطّة',
@@ -267,6 +270,7 @@ const WORDS: Record<string, string> = {
   roles: 'أدوار', role: 'دور', advisor: 'مستشار', case: 'حالة', commission: 'عمولة',
   request: 'طلب', catalog: 'كتالوج', cohort: 'شعبة', cohorts: 'شعب', session: 'جلسة', sessions: 'جلسات',
   term: 'فصل دراسيّ', accounts: 'حسابات', platform: 'المنصّة',
+  content_change_request: 'طلبُ تغييرِ محتوى',
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويضُ مدرّب',
   trainer_payout: 'مستحقُّ مدرّب', application: 'طلبُ انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّةٌ تجريبيّة', review: 'مراجعة',
