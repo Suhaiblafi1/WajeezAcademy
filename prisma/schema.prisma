@@ -547,24 +547,19 @@ model Assessment {
 
 /**
  * ═══ جدولٌ لا يكتب فيه أحد — ولا يُبنى عليه (ك-١٥) ═══
- *
  * في المخطّط روبركان، ولهما اسمان متشابهان ومقصدان مختلفان:
- *
  * · **`Rubric`** (هذا) — معاييرُ في عمود `Json`، معلّقٌ بـ`Assessment`، أي
- *   بتقييمٍ في **إصدار الدورة** بالكتالوج. لا سطرَ في الشيفرة كلِّها يكتب
- *   فيه: لا خدمةٌ ولا مستوردُ الكتالوج ولا البذرة. يُنشأ فارغا ويبقى فارغا.
- *
+ * بتقييمٍ في **إصدار الدورة** بالكتالوج. لا سطرَ في الشيفرة كلِّها يكتب
+ * فيه: لا خدمةٌ ولا مستوردُ الكتالوج ولا البذرة. يُنشأ فارغا ويبقى فارغا.
  * · **`GradingRubric`** — معاييرُ **صفوفا** لا JSON، معلّقٌ بـ
- *   `CohortAssessment`، أي بتكليفٍ في شعبةٍ حقيقيّة. وهو الحيُّ: تكتبه
- *   `assessment.service` وتقرؤه شاشةُ التصحيح.
- *
+ * `CohortAssessment`، أي بتكليفٍ في شعبةٍ حقيقيّة. وهو الحيُّ: تكتبه
+ * `assessment.service` وتقرؤه شاشةُ التصحيح.
  * والخطرُ ليس في بقائه بل في **تشابههما**: من يبني ميزةَ روبركٍ جديدةً غدا
  * يقع على هذا أوّلا — الاسمُ أقصرُ والعلاقةُ أوضح — فيكتب فيه ولا يظهر شيءٌ
  * في أيّ شاشة، ويقضي يومَه يبحث عن العطب.
- *
  * ولم يُحذف: صفوفُه — إن وُجدت في قاعدةِ الإنتاج — تُمحى بحذفه بلا رجعة،
  * وذلك يُتحقَّق منه على القاعدة الحيّة لا من هنا. والاستعلام:
- *   SELECT COUNT(*) FROM "Rubric";
+ * SELECT COUNT(*) FROM "Rubric";
  * فإن كان صفرا فحذفُه ترحيلٌ من سطرَين. وحتّى ذلك يحرسه اختبارٌ يمنع أن
  * يُكتب فيه من جديد.
  */
@@ -1029,19 +1024,19 @@ model TrainerApplicationDocument {
 }
 
 model TrainerApplicationReview {
-  id            String              @id @default(uuid()) @db.Uuid
-  applicationId String              @db.Uuid
+  id               String              @id @default(uuid()) @db.Uuid
+  applicationId    String              @db.Uuid
   /// كاتبٌ واحدٌ لا غير: موظّفٌ مسجَّلُ الدخول، أو صاحبُ رابطٍ باسمه.
-  reviewerId    String?             @db.Uuid
-  linkId        String?             @db.Uuid
+  reviewerId       String?             @db.Uuid
+  linkId           String?             @db.Uuid
   /// يُنسَخ الاسمُ في الصفّ فيبقى ولو حُذف الرابط — والتقييمُ بلا اسمٍ لا يصلح مرجعا
-  reviewerName  String?
-  scores        Json // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
-  overallNote   String?
+  reviewerName     String?
+  scores           Json // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
+  overallNote      String?
   /// بمفردات `TrainerInterview.outcome` نفسِها — لا معجمَ ثانيا لشيءٍ واحد
-  verdict       String? // passed | hold | failed
+  verdict          String? // passed | hold | failed
   /// ملاحظةٌ على دوراته لا تمسّ `teachableCourseIds`: يعدّلها هو في «المؤهّلات» عنده
-  coursesNote   String?
+  coursesNote      String?
   /// ═══ الاتفاقُ الماليُّ إن جرى ذكرُه — نصّا لا رقما ═══
   ///
   /// قرارُ صاحب المنصّة (١٤ سبتمبر ٢٠٢٦): «ضع في التقييم داخل الرابط الاتفاقَ
@@ -1057,10 +1052,10 @@ model TrainerApplicationReview {
   /// القرار ثمّ يُبنى عليه عقدٌ في موضعه.
   feeExpectationAr String?
   feeProposalAr    String?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  application   TrainerApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  link          TrainerDossierLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  application      TrainerApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  link             TrainerDossierLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
 
   /// لكلّ قارئٍ تقييمٌ واحدٌ يعود إليه فيراجعه، لا صفٌّ جديدٌ في كلّ حفظ
   @@unique([applicationId, linkId])
@@ -1374,14 +1369,14 @@ model TrainerCourseAssignment {
 ///
 /// ═══ ولا تُغلق الحالةُ واسمٌ واحدٌ معلَّق ═══
 model TrainerDeparture {
-  id        String    @id @default(uuid()) @db.Uuid
-  profileId String    @db.Uuid
+  id        String          @id @default(uuid()) @db.Uuid
+  profileId String          @db.Uuid
   /// لماذا رحل — يُقرأ بعد سنةٍ حين يُسأل عن الشعب التي تحرّكت
   reasonAr  String
-  openedBy  String    @db.Uuid
-  openedAt  DateTime  @default(now())
+  openedBy  String          @db.Uuid
+  openedAt  DateTime        @default(now())
   closedAt  DateTime?
-  closedBy  String?   @db.Uuid
+  closedBy  String?         @db.Uuid
   profile   TrainerProfile  @relation(fields: [profileId], references: [id])
   cases     DepartureCase[]
 
@@ -1399,11 +1394,11 @@ model TrainerDeparture {
 /// صفٌّ بردٍّ أو رصيدٍ قبل أن تُكتب. «لا المنصّةُ تختار نيابةً عنه، ولا
 /// رصيدٌ يُفرَض على من أراد مالَه».
 model DepartureCase {
-  id              String    @id @default(uuid()) @db.Uuid
-  departureId     String    @db.Uuid
-  enrollmentId    String    @db.Uuid
-  cohortId        String    @db.Uuid
-  outcome         String    @default("pending")
+  id              String           @id @default(uuid()) @db.Uuid
+  departureId     String           @db.Uuid
+  enrollmentId    String           @db.Uuid
+  cohortId        String           @db.Uuid
+  outcome         String           @default("pending")
   /// متى أُبلغ صاحبُه — ولا تُكتب قبل أن يُقرَّر (قاعدةُ السمعة)
   notifiedAt      DateTime?
   /// وحين لا بديلَ ولا نظير: متى عُرض عليه الاختيار
@@ -1411,11 +1406,11 @@ model DepartureCase {
   /// refund | credit — **بيده لا بيدنا**
   learnerChoice   String?
   chosenAt        DateTime?
-  resolvedBy      String?   @db.Uuid
+  resolvedBy      String?          @db.Uuid
   resolvedAt      DateTime?
   noteAr          String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   departure       TrainerDeparture @relation(fields: [departureId], references: [id], onDelete: Cascade)
   enrollment      Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   cohort          Cohort           @relation(fields: [cohortId], references: [id], onDelete: Cascade)
@@ -1425,8 +1420,8 @@ model DepartureCase {
 }
 
 model TrainerPath {
-  id           String    @id @default(uuid()) @db.Uuid
-  profileId    String    @db.Uuid
+  id           String              @id @default(uuid()) @db.Uuid
+  profileId    String              @db.Uuid
   /// اسمُه كما يختاره — ويُعتمد **مع المسار في المراجعة نفسِها** (ن-٧):
   /// اسمٌ على رفٍّ عامٍّ نصُّ تسويقٍ يحمل مصداقيّةَ الأكاديميّة.
   titleAr      String
@@ -1434,21 +1429,21 @@ model TrainerPath {
   /// الموسمُ الذي يعمل فيه — **صفٌّ في `Term` لا نصّ** (ن-٣). فالنصُّ الحرّ
   /// يبلى ساعةَ يمضي الموسمُ ولا يتذكّر أحدٌ تحريرَه، والصفُّ يحمل معه
   /// نافذةَ التسجيل فتقول البطاقةُ متى يُفتح صدقا.
-  termId       String?   @db.Uuid
+  termId       String?             @db.Uuid
   /// draft | submitted | published | rejected | retired
-  status       String    @default("draft")
+  status       String              @default("draft")
   /// عنوانُه العامّ — يُشتقّ مرّةً ويبقى: لو تغيّر لبطل ما نشره صاحبُه
-  slug         String?   @unique
-  reviewedBy   String?   @db.Uuid
+  slug         String?             @unique
+  reviewedBy   String?             @db.Uuid
   reviewedAt   DateTime?
   /// سببُ الردّ يقرؤه صاحبُه — ومن رُدّ مسارُه بلا سببٍ أعاده كما هو
   reviewNoteAr String?
   publishedAt  DateTime?
   /// السحبُ من الرفّ بيد الإدارة (ن-١) — ولا يمسّ من التحق (ن-٤)
   retiredAt    DateTime?
-  retiredBy    String?   @db.Uuid
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  retiredBy    String?             @db.Uuid
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
   profile      TrainerProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   term         Term?               @relation(fields: [termId], references: [id])
   courses      TrainerPathCourse[]
@@ -1475,8 +1470,8 @@ model TrainerPathCourse {
 }
 
 model TrainerCourseProposal {
-  id             String    @id @default(uuid()) @db.Uuid
-  profileId      String    @db.Uuid
+  id             String         @id @default(uuid()) @db.Uuid
+  profileId      String         @db.Uuid
   titleAr        String
   /// نبذةٌ عن الدورة بقلم صاحبها — لا تلزم: من أوقفناه عند حقلٍ إلزاميٍّ ثانٍ
   /// خسِرنا اقتراحَه. وكانت «لمن هي» سطرا واحدا، فصارت نبذةً بقرار صاحب
@@ -1494,10 +1489,10 @@ model TrainerCourseProposal {
   /// يمشيه المدرّبُ بنفسه. وإنشاؤه آليّا يضع في فمه عنوانا ومحاورَ لم يكتبها.
   ///
   /// `became_course` — صارت دورةً في الكتالوج، و`courseId` يشير إليها.
-  status         String    @default("draft")
+  status         String         @default("draft")
   /// سؤالُ الإدارة قبل القرار، ومن سأله ومتى — والسؤالُ بلا صاحبٍ لا يُتابَع
   questionAr     String?
-  questionBy     String?   @db.Uuid
+  questionBy     String?        @db.Uuid
   questionAt     DateTime?
   /// جوابُ المدرّب عليه — يُحفظ ولا يُمحى بالقرار: من قرأ «رُفضت» بعد شهرٍ
   /// يحتاج أن يرى ما سُئل عنه وبمَ أجاب
@@ -1505,12 +1500,12 @@ model TrainerCourseProposal {
   answeredAt     DateTime?
   /// ما صارت إليه — رمزُ الدورة في الحالتَين `linked` و`became_course`
   courseId       String?
-  decidedBy      String?   @db.Uuid
+  decidedBy      String?        @db.Uuid
   decidedAt      DateTime?
   /// سببُ الرفض أو ملحوظةُ التصنيف — والرفضُ بلا سببٍ يترك صاحبَه يخمّن
   decisionNoteAr String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   profile        TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course         Course?        @relation(fields: [courseId], references: [id])
 
@@ -1810,10 +1805,10 @@ model Cohort {
   assessments         CohortAssessment[]
   completionRules     CompletionRule[]
   referralLinks       TrainerReferralLink[]
-
-  @@index([courseId, status])
   departureCases      DepartureCase[]
   files               CohortFile[]
+
+  @@index([courseId, status])
 }
 
 /// ═══ رابطُ دعوةِ المدرّب — لكلّ شعبةٍ رابطٌ لا يشترك فيه غيرُه ═══
@@ -1905,6 +1900,19 @@ model CohortTrainer {
   @@unique([cohortId, profileId])
 }
 
+/// اللقاءُ المباشر — يجدوله مدرّبُه، وتعتمده الإدارةُ قبل أن يُعلَن.
+///
+/// ═══ ولمَ صار الاعتمادُ شرطا (١٥ سبتمبر ٢٠٢٦) ═══
+///
+/// قرارُ صاحب المنصّة: «يعطى خيارَ إنشاء جلساتٍ مباشرةٍ من خلال إنشاء
+/// اجتماعٍ جديدٍ مربوطٍ بحساب زووم الخاصّ بنا، ويحدّد أيَّ ساعةٍ وإلى أيّ
+/// ساعةٍ والتاريخَ واليوم، ويحدّد نبذةً عنه، ويرفق أيَّ ملفٍّ يريد اختياريّ.
+/// وبعدها الإدارةُ توافق، ويصبح هناك جلسةُ زووم لايف تُنشَر في منصّة الطلبة
+/// بتاريخها، ويُرسَل إيميلٌ للطلاب بالاجتماع وللإدارة».
+///
+/// وكان اللقاءُ يُعلَن لحظةَ إنشائه: `addSessionWithMeeting` ينشئ الاجتماعَ
+/// ويُبلّغ المسجَّلين في النداء نفسِه. فخطأٌ في تاريخٍ يصل عشرين إنسانا قبل
+/// أن يُقرأ، ولا سبيلَ إلى سحبه.
 model CohortSession {
   id             String                     @id @default(uuid()) @db.Uuid
   cohortId       String                     @db.Uuid
@@ -1914,6 +1922,39 @@ model CohortSession {
   endsAt         DateTime?
   timezone       String?
   status         String                     @default("scheduled") // scheduled | live | done | cancelled
+  /// نبذةُ اللقاء — «ملاحظاتٌ عن اللقاءات المباشرة» صارت لكلّ لقاءٍ لا
+  /// للشعبة كلِّها: ملاحظةٌ واحدةٌ عن عشرة لقاءاتٍ تُكتب عامّةً فلا تُقرأ.
+  noteAr         String?
+  /// ملفٌّ يُرفق باللقاء — اختياريّ، ويراه المسجَّلون مع موعده
+  attachmentKey  String?
+  attachmentName String?
+  attachmentMime String?
+  /// ═══ موقفُ الإدارة من هذا اللقاء ═══
+  ///
+  /// و`approvalState` لا `state`: `scripts/status-checks.ts` يطابق الاسمَ
+  /// **تامًّا** (`^(status|state|kind|type|level|result|outcome)$`)، و`status`
+  /// هنا مأخوذٌ لدورة حياة اللقاء نفسِه (`scheduled | live | done`). فلا
+  /// قيدَ `CHECK` مولَّدٌ على هذا العمود — كما `ZoomMeeting.syncState`
+  /// و`Attendance.source` قبله، وللسبب نفسِه لا سهوا.
+  ///
+  /// و`approved` هو الافتراض **عمدا**: ما جدولته الإدارةُ بنفسها معتمَدٌ
+  /// بحكم من جدوله، وصفوفُ ما قبل هذا العمود لقاءاتٌ معلَنةٌ يحضرها الناسُ
+  /// فعلا — فافتراضُ `pending` كان يسحبها من تقاويمهم بترحيلٍ واحد.
+  /// والمدرّبُ وحدَه يكتب `pending` صراحةً حين يجدول.
+  approvalState  String                     @default("approved") // pending | approved | rejected
+  approvedAt     DateTime?
+  approvedBy     String?                    @db.Uuid
+  /// سببُ الردّ — يُقرأ في شاشة المدرّب، فلا يُردّ لقاءٌ بلا علّةٍ تُعرَف
+  reviewNote     String?
+  /// أيريد صاحبُه اجتماعَ Zoom؟ — نيّةٌ تُحفظ حتّى الاعتماد.
+  ///
+  /// ولا يُنشأ الاجتماعُ عند الجدولة: اجتماعٌ لموعدٍ قد يُردّ صفٌّ في
+  /// حسابنا لا يحضره أحد، ورابطٌ حيٌّ قبل الاعتماد يُنسَخ من شاشة المدرّب
+  /// ويُنشَر. فيُنشأ عند الاعتماد، وهذه رايتُه حتّى حينه.
+  ///
+  /// وعمودٌ صريحٌ لا علامةٌ تُدَسُّ في `reviewNote`: عمودُ الملاحظة للإنسان
+  /// يقرؤه، ومن حمّله رايةً أفسد الاثنين — تُمحى الرايةُ بأوّل ردٍّ مكتوب.
+  wantsMeeting   Boolean                    @default(true)
   createdAt      DateTime                   @default(now())
   cohort         Cohort                     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   zoom           ZoomMeeting?
@@ -1923,6 +1964,8 @@ model CohortSession {
   reschedules    SessionRescheduleRequest[]
 
   @@index([cohortId, startsAt])
+  /// طابورُ الإدارة يقرأ المنتظِرَ وحدَه — لا يمسح الجدولَ كلَّه
+  @@index([approvalState, startsAt])
 }
 
 model ZoomMeeting {
@@ -3182,7 +3225,6 @@ model MarketingLead {
   @@index([createdAt])
 }
 
-
 /// مفضّلةُ الزائر المسجَّل (ع-٨).
 ///
 /// ═══ ولمَ جدولٌ وقد كانت في المتصفّح ═══
@@ -3207,7 +3249,6 @@ model Favorite {
   @@unique([userId, kind, refId])
   @@index([userId, createdAt])
 }
-
 
 /// ملفٌّ يخصّ شعبةً ويُقرأ بحارسٍ واحد (ع-٢ · د-٣).
 ///
@@ -3246,7 +3287,6 @@ model CohortFile {
  * روابطُ البريد تحمل رموزا طويلةً معتِمة، وكلُّ زرٍّ يطبع عنوانَه كاملا تحته
  * — وذلك مقصودٌ لا سهو: من يطبع الرسالةَ أو تُعطَّل عنده الروابطُ لا يبلغه
  * الزرُّ وحدَه. فالقصيرُ يجمع الاثنين: سطرٌ يُقرأ ويُنسخ باليد.
- *
  * و`target` **مسارٌ داخليٌّ** لا عنوانٌ مطلق، وذلك حدُّ أمانٍ لا ذوق: جدولٌ
  * يحفظ عنوانا ويُحوِّل إليه بلا شرطٍ هو تحويلٌ مفتوحٌ يُستغَلّ — يُرسَل الضحيّةُ
  * رابطا على نطاق الأكاديمية فيثق به ثمّ يجد نفسَه في موقعٍ يطلب كلمتَه.

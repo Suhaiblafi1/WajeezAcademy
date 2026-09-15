@@ -43,12 +43,60 @@ export function resourceKind(v: string | null | undefined): ResourceKind {
   return (RESOURCE_KINDS as readonly string[]).includes(v ?? '') ? (v as ResourceKind) : 'link'
 }
 
+/* ═══ أصنافُ المصادر الثلاثة — يختار المدرّبُ الصنفَ لا النوع ═══
+
+   قال صاحبُ المنصّة (١٥ سبتمبر ٢٠٢٦): «في صفحة المصادر للشعبة هنا عشوائيّة.
+   يجب أن تكون مصنّفةً بدلا أن يختار نوعا لكلّ ملفٍّ بنفسه: دوراتٌ مسجّلةٌ
+   للمدرّب — وهي جلساتٌ تدريبيّةٌ مسجّلة — ويحدّد متى تفتح للطالب طيلةَ
+   الفصل؛ كتبٌ وملفّاتٌ ويكتب ما الهدف؛ فيديوهاتٌ وروابطُ عامّةٌ للفائدة مثل
+   فيديوهات وبودكاست وأيّ مصدرٍ مفتوحٍ قد يفيد الطلبة».
+
+   وكان لكلّ صفٍّ قائمةُ أنواعٍ من ستّة (`RESOURCE_KINDS`) يختار منها المدرّبُ
+   بنفسه — فتصير الصفحةُ كومةً لا تصنيفا، ويختلف ترتيبُ شعبتين لمدرّبٍ واحد.
+
+   والنوعُ لم يُلغَ: هو ما يراه المتعلّمُ أيقونةً واسما، وما زال في العمود
+   وفي شاشته. لكنّه صار **يُشتقّ من الصنف** لا يُسأل عنه — إلّا في «كتبٌ
+   وملفّات» حيث يفرّق المرفوعُ عن المُلصَق، وذاك يُعرف من وجود الملفّ.
+
+   ── والقديمُ يُقرأ ولا يُلفَّق له صنفٌ لم يختره صاحبُه ──
+
+   ما حُفظ قبل هذا العمود لا `category` فيه. فيُشتقّ من نوعه: ما كان كتابا
+   أو صوتيًّا أو ملفًّا فهو «كتبٌ وملفّات»، وما عداه «عامّ». و**لا شيءَ
+   يُشتقّ «مسجّلا»**: تلك خانةٌ لها بوّابةُ فتحٍ زمنيّة، ولو وُضع فيها
+   فيديوٌ قديمٌ لاحتجب عن متعلّمٍ كان يراه. والقاعدةُ: الترحيلُ لا يحجب. */
+export const RESOURCE_CATEGORIES = ['recorded', 'reading', 'public'] as const
+export type ResourceCategory = (typeof RESOURCE_CATEGORIES)[number]
+
+/** صنفُ المصدر — ويُشتقُّ من النوع لما حُفظ قبل العمود */
+export function resourceCategory(r: { category?: string | null; kind?: string | null }): ResourceCategory {
+  if ((RESOURCE_CATEGORIES as readonly string[]).includes(r.category ?? '')) return r.category as ResourceCategory
+  return ['book', 'audiobook', 'file'].includes(r.kind ?? '') ? 'reading' : 'public'
+}
+
+/** النوعُ الذي يراه المتعلّم — يُشتقُّ من الصنف فلا يُسأل عنه المدرّب */
+export function kindForCategory(category: ResourceCategory, hasFile: boolean): ResourceKind {
+  if (category === 'recorded') return 'video'
+  if (category === 'reading') return hasFile ? 'file' : 'book'
+  return 'link'
+}
+
+/** أمفتوحٌ هذا المصدرُ للمتعلّم الآن؟ — «متى تفتح للطالب» تخصّ المسجّلَ وحدَه */
+export function resourceOpen(r: { category?: string | null; kind?: string | null; opensAt?: string | Date | null }, now = new Date()): boolean {
+  if (resourceCategory(r) !== 'recorded' || !r.opensAt) return true
+  const at = r.opensAt instanceof Date ? r.opensAt : new Date(r.opensAt)
+  return Number.isNaN(at.getTime()) ? true : at <= now
+}
+
 /** مرفقٌ أو مصدرٌ — الشكلُ واحدٌ في خطّة الشعبة وفي التكليف */
 export interface TypedLink {
   title: string
   url: string
   kind?: string | null
   noteAr?: string | null
+  /** صنفُ المصدر — مسجَّلٌ للمدرّب، أو كتبٌ وملفّات، أو عامٌّ للفائدة */
+  category?: string | null
+  /** متى يُفتح للمتعلّم — للمسجَّل وحدَه، وفارغٌ يعني «مع أوّل يوم» */
+  opensAt?: string | null
 }
 
 /**
@@ -120,6 +168,10 @@ export interface LearnerPlanResource {
   url: string
   kind?: string | null
   noteAr?: string | null
+  /** صنفُه — تعرضه شاشةُ المتعلّم مجموعا لا كومةً واحدة */
+  category?: string | null
+  /** متى فُتح — يُقرأ للعرض، والمحجوبُ لا يصل أصلا */
+  opensAt?: string | null
   /* د-٣: مصدرٌ مرفوعٌ — يُفتح من مسارٍ محروسٍ لا من رابطٍ خارجيّ. واسمُه
      ونوعُه لقطةٌ تسكن الخطّةَ، فتعرف الشاشةُ أتعرضه أم تُنزّله بلا طلبٍ ثانٍ. */
   bodyFileKey?: string | null
@@ -242,6 +294,9 @@ export function overlayModule<T extends CatalogModuleLike>(
  */
 export function projectPlanForLearner(
   plan: { status: string | null | undefined; content: unknown } | null | undefined,
+  /* واللحظةُ تُمرَّر ولا تُؤخذ من الساعة داخلَ الدالّة: بوّابةٌ زمنيّةٌ لا
+     تُختبَر إلّا بانتظارٍ حقيقيٍّ بوّابةٌ لا يحرسها أحد. */
+  now = new Date(),
 ): LearnerPlanView | null {
   if (!plan || !planIsVisible(plan.status)) return null
   const c = plan.content as
@@ -265,16 +320,27 @@ export function projectPlanForLearner(
           bodyFileMime: m.bodyFileMime ?? null,
         }))
       : [],
+    /* ═══ والمسجَّلُ الذي لم يحن وقتُه لا يصل المتعلّمَ أصلا ═══
+
+       «ويحدّد متى تفتح للطالب طيلةَ الفصل» — وبوّابةٌ تُطبَّق في الشاشة
+       وحدَها ليست بوّابة: الرابطُ يصل الجهازَ فيُقرأ من أدوات المتصفّح، أو
+       من نداءٍ مباشر. فالحجبُ هنا — في الإسقاط الذي يبني ما يُرسَل.
+
+       والفارغُ لا يحجب: مصدرٌ بلا تاريخِ فتحٍ مفتوحٌ مع أوّل يوم. */
     resources: Array.isArray(c.resources)
-      ? c.resources.map((r) => ({
-          title: r.title,
-          url: r.url,
-          kind: resourceKind(r.kind),
-          noteAr: written(r.noteAr),
-          bodyFileKey: written(r.bodyFileKey),
-          bodyFileName: written(r.bodyFileName),
-          bodyFileMime: written(r.bodyFileMime),
-        }))
+      ? c.resources
+          .filter((r) => resourceOpen(r, now))
+          .map((r) => ({
+            title: r.title,
+            url: r.url,
+            kind: resourceKind(r.kind),
+            category: resourceCategory(r),
+            opensAt: typeof r.opensAt === 'string' ? r.opensAt : null,
+            noteAr: written(r.noteAr),
+            bodyFileKey: written(r.bodyFileKey),
+            bodyFileName: written(r.bodyFileName),
+            bodyFileMime: written(r.bodyFileMime),
+          }))
       : [],
   }
 }

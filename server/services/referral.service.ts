@@ -64,6 +64,73 @@ export class ReferralService {
     return { code: row.code, url: `${publicSiteUrl()}/build/${cohort.courseId}?ref=${encodeURIComponent(row.code)}` }
   }
 
+  /* ═══ روابطُ شعبه كلِّها في نداءٍ واحد ═══
+
+     قرارُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): يخرج رابطُ الشعبة من «مركز
+     التواصل» داخلَ كلّ شعبةٍ ويُجمع في «دعوتي» — «إمّا أن يحصل على رابطٍ
+     لملفّه الكامل كما هو موجودٌ حاليّا، أو أن يقوم بدعوة جمهوره لكلّ شعبةٍ
+     مفتوحةٍ برابطٍ منفصل».
+
+     ونداءٌ واحدٌ لا نداءٌ لكلّ شعبة: الصفحةُ كانت ستفتح `linkFor` مرّةً
+     لكلّ شعبةٍ في يده، وكلُّ واحدةٍ قد تُنشئ صفًّا — فعشرُ شعبٍ عشرةُ
+     نداءاتٍ متتابعة، وأوّلُ ما يراه المدرّبُ ينتظرها جميعا.
+
+     و«المفتوحة» تُقرأ من حالة الشعبة: المسودّةُ والملغاةُ والمنتهيةُ لا
+     يُدعى إليها أحد — ورابطٌ إلى شعبةٍ لا تقبل تسجيلا يُحرج ناشرَه. */
+  async cohortLinksFor(userId: string) {
+    const profile = await this.activeProfile(userId)
+    const mine = await this.prisma.cohortTrainer.findMany({
+      where: { profileId: profile.id, cohort: { status: { in: ['open', 'active', 'full'] } } },
+      select: {
+        cohort: {
+          select: {
+            id: true, title: true, status: true, courseId: true, startsAt: true,
+            registrationOpen: true,
+            term: { select: { titleAr: true } },
+            _count: { select: { enrollments: { where: { status: { not: 'dropped' } } } } },
+          },
+        },
+      },
+      orderBy: { cohort: { startsAt: 'asc' } },
+    })
+    if (mine.length === 0) return []
+
+    const cohortIds = mine.map((m) => m.cohort.id)
+    const existing = await this.prisma.trainerReferralLink.findMany({
+      where: { profileId: profile.id, cohortId: { in: cohortIds } },
+      select: { cohortId: true, code: true },
+    })
+    const byCohort = new Map(existing.map((r) => [r.cohortId as string, r.code]))
+
+    /* الناقصُ يُنشأ هنا — ومن سبق رمزُه يبقى كما هو: لو تغيّر ضاع ما نُشر */
+    for (const id of cohortIds) {
+      if (byCohort.has(id)) continue
+      const row = await this.prisma.trainerReferralLink.create({
+        data: { cohortId: id, profileId: profile.id, code: newCode() },
+      })
+      byCohort.set(id, row.code)
+      await recordAudit(this.prisma, {
+        actorId: userId, action: 'referral.link.create', entityType: 'cohort', entityId: id, meta: { code: row.code },
+      })
+    }
+
+    const site = publicSiteUrl()
+    return mine.map((m) => {
+      const c = m.cohort
+      const code = byCohort.get(c.id) as string
+      return {
+        cohortId: c.id,
+        title: c.title,
+        termTitleAr: c.term?.titleAr ?? null,
+        status: c.status,
+        registrationOpen: c.registrationOpen,
+        learners: c._count.enrollments,
+        code,
+        url: `${site}/build/${c.courseId}?ref=${encodeURIComponent(code)}`,
+      }
+    })
+  }
+
   /* ─────────── الرابطُ الواسع ─────────── */
 
   /** ملفُّ المدرّب النشِط — أو خطأٌ صريح */

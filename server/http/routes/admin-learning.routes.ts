@@ -99,6 +99,32 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return plans.decide(req.auth!.userId, id, body.approve, body.note)
   })
 
+  /* ═══ اللقاءاتُ المنتظِرةُ قرارا — في الطابور الذي تراجع فيه الإدارةُ خطّةَ
+     الشعبة نفسِها (١٥ سبتمبر ٢٠٢٦) ═══
+
+     «وبعدها الإدارةُ توافق، ويصبح هناك جلسةُ زووم لايف تُنشَر في منصّة
+     الطلبة بتاريخها، ويُرسَل إيميلٌ للطلاب بالاجتماع وللإدارة» — وموضعُ
+     القرار: «الموافقةُ في طابور الإدارة الحالي» (صاحب المنصّة).
+
+     والصلاحيّةُ `cohort.plan.approve` نفسُها: من يعتمد خطّةَ الشعبة يعتمد
+     لقاءاتِها — وصلاحيّةٌ ثانيةٌ لعملٍ واحدٍ تُمنح لأحدهما وتُنسى للآخر. */
+  app.get('/api/admin/cohort-sessions/pending', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'اللقاءاتُ المباشرةُ بانتظار الاعتماد' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid().optional() }).parse(req.query ?? {})
+    return cohorts.pendingSessions(cohortId)
+  })
+
+  app.post('/api/admin/cohort-sessions/:id/decide', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ لقاءٍ مباشرٍ أو ردُّه — وبالاعتماد يُنشأ اجتماعُه ويُبلَّغ المسجَّلون' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
+    return cohorts.decideSession(req.auth!.userId, id, body.approve, body.note)
+  })
+
   app.post('/api/admin/cohorts/:cohortId/remind-trainer', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-cohorts'], summary: 'تذكيرُ مدرّب الشعبة بإكمال تجهيزها — جرسٌ وبريد' },

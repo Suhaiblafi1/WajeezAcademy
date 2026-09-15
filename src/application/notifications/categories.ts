@@ -188,7 +188,17 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     whatAr: 'إرسالُ خطّةِ شعبتك للاعتماد · قرارُ الإدارة فيها · تذكيرٌ بإكمال تجهيزها',
     silenceable: false,
     lockedWhyAr: 'قرارُ الإدارة في خطّتك يُبنى عليه فتحُ الشعبة، والتذكيرُ يحمل ما بقي عليك — وكتمُهما يُبقي شعبةً بلا مدرّبٍ يعلم أنّ عليه شيئا.',
-    templateKeys: ['cohort.plan.submitted', 'cohort.plan.decision'],
+    /* واللقاءُ المباشرُ من هذا الصنف نفسِه (١٥ سبتمبر ٢٠٢٦): جدولتُه
+       تنتظر قرارا كخطّة الشعبة، وقرارُها يُعلن موعدا لعشرين إنسانا أو
+       يمنعه. و`pending` يصل الإدارةَ لا المدرّبَ — وهو هنا لأنّ الحارسَ
+       يطلب صنفا لكلّ مفتاحٍ يُرسَل، كـ`submitted` قبله.
+
+       ولا يُكتَم كأخيه: من ردَّ عليه لقاءٌ ولم يعلم وقف يومَ اللقاء ينتظر
+       طلبةً لا يأتون، ومن اعتُمد لقاؤه ولم يعلم لم يحضّر له. */
+    templateKeys: [
+      'cohort.plan.submitted', 'cohort.plan.decision',
+      'cohort.session.pending', 'cohort.session.approved', 'cohort.session.rejected',
+    ],
   },
   {
     /* ن-٩: رحيلُ مدرّبٍ يُحرّك مقعدا أو مالا — وذاك حقٌّ لا تذكير.

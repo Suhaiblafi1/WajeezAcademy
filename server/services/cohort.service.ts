@@ -13,7 +13,7 @@ import { recordAudit } from './audit'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
-import { safeNotify } from './notification.service'
+import { safeNotify, notifyRole } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { createZoomMeeting, getZoomConfig, registerZoomParticipant, zoomMissing, zoomReady } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
@@ -602,6 +602,13 @@ export class CohortService {
 
   async addSession(actorId: string, cohortId: string, input: {
     title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
+    /* ما يجدوله المدرّبُ ينتظر قرارا، وما تجدوله الإدارةُ معتمَدٌ بحكم من
+       جدوله — والافتراضُ هو الثاني، فالنداءاتُ الإداريّةُ لا تُبدّل. */
+    noteAr?: string | null
+    attachmentKey?: string | null; attachmentName?: string | null; attachmentMime?: string | null
+    approvalState?: 'pending' | 'approved'
+    /** نيّةُ الاجتماع تُحفظ حتّى الاعتماد — لا يُنشأ اجتماعٌ لموعدٍ قد يُردّ */
+    wantsZoom?: boolean
   }) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, include: { trainers: true } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
@@ -611,7 +618,18 @@ export class CohortService {
       await this.assertNoScheduleConflict(t.profileId, [{ startsAt: input.startsAt, endsAt: input.endsAt ?? null }], cohortId)
     }
     const session = await this.prisma.cohortSession.create({
-      data: { cohortId, title: input.title, startsAt: input.startsAt, endsAt: input.endsAt, timezone: input.timezone, moduleId: input.moduleId },
+      data: {
+        cohortId, title: input.title, startsAt: input.startsAt, endsAt: input.endsAt,
+        timezone: input.timezone, moduleId: input.moduleId,
+        noteAr: input.noteAr?.trim() || null,
+        attachmentKey: input.attachmentKey ?? null,
+        attachmentName: input.attachmentName ?? null,
+        attachmentMime: input.attachmentMime ?? null,
+        approvalState: input.approvalState ?? 'approved',
+        /* والنيّةُ عمودٌ صريح: لقاءٌ «حضوريّ» يُطفئها فلا يُنشأ له اجتماعٌ
+           عند الاعتماد، والافتراضُ أنّ اللقاءَ المباشرَ يريد اجتماعا. */
+        wantsMeeting: input.wantsZoom ?? true,
+      },
     })
     await recordAudit(this.prisma, { actorId, action: 'cohort.session.add', entityType: 'cohort', entityId: cohortId, meta: { sessionId: session.id } })
     return session
@@ -731,13 +749,24 @@ export class CohortService {
   /** المدرّبُ يضيف لقاءً في شعبته — بالحدّ نفسِه الذي تُفحص به إضافةُ الإدارة */
   async trainerAddSession(userId: string, cohortId: string, input: {
     title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
+    noteAr?: string | null
   }) {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
       throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
     }
     await this.assertWithinWindow(cohortId, input, { counts: true })
     /* وفحصُ التعارض هو فحصُ الإدارة نفسُه — `addSession` تحمله */
-    return this.addSession(userId, cohortId, input)
+    /* ═══ وهذا البابُ ينتظر الاعتمادَ كأخيه ═══
+
+       لا مسلكَ ينادي هذه اليومَ (`/api/trainer/cohorts/:id/sessions` يمرّ
+       بـ`trainerAddSessionWithMeeting`)، لكنّها **بابُ مدرّبٍ** بحكم اسمها
+       وفحصِها. ولو تركت تكتب `approved` لصار في الخدمة بابان لمدرّبٍ واحد:
+       أحدُهما ينتظر قرارا والآخرُ يُعلن لحظتَه — ومن وصل الثاني بمسلكٍ يوما
+       لم يكن ليعلم أنّه تخطّى بوّابةً.
+
+       والافتراضُ يبقى `approved` في `addSession` نفسِها: تلك بابُ الإدارة،
+       وما جدولته الإدارةُ معتمَدٌ بحكم من جدوله. */
+    return this.addSession(userId, cohortId, { ...input, approvalState: 'pending', wantsZoom: false })
   }
 
   /** المدرّبُ ينقل لقاءَه — لا يقترح نقله */
@@ -1081,12 +1110,138 @@ export class CohortService {
   /** المدرّبُ يجدول لقاءه واجتماعَه — بالحدّ نفسِه الذي تُفحص به جدولةُ الإدارة */
   async trainerAddSessionWithMeeting(userId: string, cohortId: string, input: {
     title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string; withZoom?: boolean
+    noteAr?: string | null
+    attachmentKey?: string | null; attachmentName?: string | null; attachmentMime?: string | null
   }) {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
       throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
     }
     await this.assertWithinWindow(cohortId, input, { counts: true })
-    return this.addSessionWithMeeting(userId, cohortId, input)
+
+    /* ═══ يُجدوَل منتظِرا، ولا يُعلَن حتّى تعتمده الإدارة ═══
+
+       قرارُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): «وبعدها الإدارةُ توافق، ويصبح
+       هناك جلسةُ زووم لايف تُنشَر في منصّة الطلبة بتاريخها، ويُرسَل إيميلٌ
+       للطلاب بالاجتماع وللإدارة».
+
+       وكان `addSessionWithMeeting` يُنشئ الاجتماعَ ويُبلّغ في النداء نفسِه —
+       فخطأٌ في تاريخٍ يصل عشرين إنسانا قبل أن يُقرأ، ولا سبيلَ إلى سحبه.
+
+       **والاجتماعُ لا يُنشأ هنا**: اجتماعُ Zoom لموعدٍ قد يُردّ صفٌّ في
+       حسابنا لا يحضره أحد، ورابطٌ حيٌّ قبل الاعتماد يُنسَخ من شاشة المدرّب
+       ويُنشَر. فيُنشأ عند الاعتماد، ونيّتُه تُحفظ حتّى حينه. */
+    const session = await this.addSession(userId, cohortId, {
+      ...input,
+      approvalState: 'pending',
+      wantsZoom: input.withZoom !== false,
+    })
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      title: 'لقاءٌ مباشرٌ بانتظار اعتمادك',
+      body: `جدول مدرّبُ الشعبة «${session.title}» — راجِعه واعتمِده ليصل المسجَّلين.`,
+      templateKey: 'cohort.session.pending',
+      data: { cohortId, sessionId: session.id },
+    })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'cohort.session.propose', entityType: 'cohort_session', entityId: session.id,
+      meta: { cohortId, startsAt: session.startsAt, withZoom: input.withZoom !== false },
+    })
+    /* ولا عددَ مبلَّغين يُقال: لم يُبلَّغ أحد، وقولُ «بُلِّغ ٠» يُقرأ عطبا */
+    return { session, zoom: null, notified: 0, pending: true as const }
+  }
+
+  /* ═══ قرارُ الإدارة على لقاءٍ منتظِر ═══
+
+     الاعتمادُ هو اللحظةُ التي يقع فيها كلُّ شيء: يُنشأ اجتماعُ Zoom، ويُنشَر
+     اللقاءُ في منصّة الطلبة بتاريخه، ويصلهم البريدُ وتصل الإدارةَ نسختُه.
+
+     وإنشاءُ الاجتماع قد يسقط (مفاتيحُ ناقصةٌ أو Zoom لا يستجيب). فلا يُكتب
+     الاعتمادُ قبله: لقاءٌ «معتمَدٌ» بلا اجتماعٍ موعدٌ بلا باب، ويراه
+     المسجَّلون فيقفون عنده. فتُرتَّب: الاجتماعُ أوّلا، ثمّ الختمُ، ثمّ
+     التبليغ. */
+  async decideSession(actorId: string, sessionId: string, approve: boolean, note?: string) {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, cohortId: true, title: true, startsAt: true, approvalState: true, wantsMeeting: true, zoom: { select: { id: true } } },
+    })
+    if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
+    if (session.approvalState !== 'pending') {
+      throw new AuthError('already_decided', 'هذا اللقاء لا ينتظر قرارا', 409)
+    }
+
+    if (!approve) {
+      const rejected = await this.prisma.cohortSession.update({
+        where: { id: sessionId },
+        data: { approvalState: 'rejected', approvedBy: actorId, approvedAt: new Date(), reviewNote: note?.trim() || null, status: 'cancelled' },
+      })
+      await recordAudit(this.prisma, {
+        actorId, action: 'cohort.session.reject', entityType: 'cohort_session', entityId: sessionId,
+        meta: { cohortId: session.cohortId, note: note?.trim() || null },
+      })
+      await this.notifyCohortTrainers(session.cohortId, {
+        templateKey: 'cohort.session.rejected',
+        title: `لم يُعتمَد لقاءُ «${session.title}»`,
+        body: note?.trim()
+          ? `راجِع الملاحظةَ ثمّ أعِد جدولتَه: ${note.trim()}`
+          : 'راجِع الإدارةَ لمعرفة السبب ثمّ أعِد جدولتَه.',
+        data: { cohortId: session.cohortId, sessionId },
+      })
+      return { session: rejected, zoom: null, notified: 0 }
+    }
+
+    /* نيّةُ الاجتماع محفوظةٌ منذ الجدولة — و`zoom` قائمٌ يعني لقاءً حضوريًّا
+       جُدول باجتماعٍ من قبل، فلا يُنشأ ثانٍ. */
+    let zoom: { joinUrl: string } | null = session.zoom
+      ? await this.prisma.zoomMeeting.findUnique({ where: { sessionId } })
+      : null
+    if (!zoom && session.wantsMeeting) {
+      zoom = await this.attachApiZoom(actorId, sessionId, undefined, false)
+    }
+
+    const approved = await this.prisma.cohortSession.update({
+      where: { id: sessionId },
+      data: { approvalState: 'approved', approvedBy: actorId, approvedAt: new Date(), reviewNote: null },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.session.approve', entityType: 'cohort_session', entityId: sessionId,
+      meta: { cohortId: session.cohortId, hasMeeting: Boolean(zoom) },
+    })
+    const notified = await this.notifyCohortOfSession(session.cohortId, approved, zoom)
+    await this.notifyCohortTrainers(session.cohortId, {
+      templateKey: 'cohort.session.approved',
+      title: `اعتُمد لقاءُ «${session.title}»`,
+      body: `وصل المسجَّلين في تقويمهم وبالبريد${zoom ? '، ومعه رابطُ الاجتماع' : ''}.`,
+      data: { cohortId: session.cohortId, sessionId },
+    })
+    return { session: approved, zoom, notified }
+  }
+
+  /** اللقاءاتُ المنتظِرةُ قرارا — للطابور الذي تراجع فيه الإدارةُ الشعبة */
+  async pendingSessions(cohortId?: string) {
+    return this.prisma.cohortSession.findMany({
+      where: { approvalState: 'pending', ...(cohortId ? { cohortId } : {}) },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true, title: true, startsAt: true, endsAt: true, noteAr: true,
+        attachmentKey: true, attachmentName: true, attachmentMime: true, createdAt: true,
+        cohort: { select: { id: true, title: true } },
+      },
+    })
+  }
+
+  /** مدرّبو الشعبة — يُبلَّغون بقرار الإدارة على لقاءاتهم */
+  private async notifyCohortTrainers(
+    cohortId: string,
+    msg: { templateKey: string; title: string; body: string; data: Record<string, unknown> },
+  ) {
+    const trainers = await this.prisma.cohortTrainer.findMany({
+      where: { cohortId },
+      select: { profile: { select: { userId: true } } },
+    })
+    for (const t of trainers) {
+      if (!t.profile?.userId) continue
+      await safeNotify(this.prisma, { userId: t.profile.userId, channel: 'in_app', audience: 'trainer', ...msg })
+    }
   }
 
   /** اجتماعٌ حقيقيٌّ على Zoom لجلسةٍ قائمة — `zoom_api` لا `manual` */
