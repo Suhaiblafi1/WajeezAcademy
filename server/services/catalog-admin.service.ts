@@ -6,6 +6,7 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
+import { normalizeAr } from '../../src/application/text/search-ar'
 import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
 import { GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
@@ -137,7 +138,29 @@ export class CatalogAdminService {
     }))
   }
 
-  /** إنشاء مهارة جديدة كمسودة — المعرف بصيغة SK-X-* للامتدادات */
+  /* ═══ مهارةٌ جديدةٌ تُولد بقصدٍ ويُعرف من ولّدها (ح-٤) ═══
+
+     المهارةُ عملةُ «مؤشّر وجيز»: بها يُقاس كلُّ متعلّمٍ وعليها يُرشَّح كلُّ
+     مسار. فإدخالُ واحدةٍ جديدةٍ **يغيّر كيف يُقاس الناسُ جميعا** — لا كيف
+     تُعرض دورةٌ واحدة.
+
+     وكان البابُ مفتوحا على مصراعَيه في موضعَين:
+
+     ① **لا أثرَ يُكتب**. تُنشأ المهارةُ فلا يبقى في السجلّ أنّها أُنشئت ولا
+        من أنشأها. ونظيرُها `catalog.course.skills_set` يُسجَّل — فربطُ
+        مهارةٍ قائمةٍ بدورةٍ كان أوثقَ توثيقا من خلقِ المهارة نفسِها.
+
+     ② **ولا شيءَ يقول «هي موجودةٌ عندك»**. `slug` وحدَه فريدٌ في المخطّط،
+        و`nameAr` ليس كذلك — فـ«القيادة» و«قياده» و«القِيادة» ثلاثُ مهاراتٍ
+        تدخل القاموسَ بلا اعتراض. وثلاثتُها تقسم قياسَ المهارة الواحدة
+        أثلاثا: من أتقنها تُحسب له واحدةٌ وتبقى اثنتان ثغرةً في تشخيصه، فيُرشَّح
+        له ما يعرفه. وهو عطبٌ **لا يظهر عند الإنشاء** بل بعد شهورٍ في توصيةٍ
+        رديئةٍ لا يُعرف سببُها.
+
+     فالشرطُ هنا «اختر من الموجود أوّلا» مبنيًّا لا موصًى به: تُقارَن الأسماءُ
+     **مطبَّعةً** (همزاتٍ وتشكيلا وتاءً مربوطة) فيُردّ التوأمُ ويُسمَّى معرّفُه
+     — فمن أراد ربطَ دورته بها وجدها، ومن أراد غيرَها سمّاها باسمٍ يفرّقها.
+     والردُّ لا يمنع مهارةً جديدةً حقّا؛ يمنع أن تدخل **بالغلط**. */
   async createSkill(input: { id: string; slug: string; nameAr: string; familyId?: string }, actorId?: string) {
     if (!/^SK-[A-Z0-9-]+$/.test(input.id)) throw new AuthError('invalid_id', 'معرف المهارة بصيغة SK-XXX-000')
     const dup = await this.prisma.skill.findUnique({ where: { id: input.id } })
@@ -146,13 +169,35 @@ export class CatalogAdminService {
       const known = await this.prisma.skill.findFirst({ where: { familyId: input.familyId }, select: { id: true } })
       if (!known) throw new AuthError('unknown_family', 'رمز عائلة المهارة غير معروف في القاموس')
     }
-    return this.prisma.skill.create({
+
+    /* والقاموسُ مئاتٌ لا ملايين، والفعلُ فعلُ إدارةٍ لا مسارٌ ساخن — فتُقرأ
+       الأسماءُ وتُطبَّع في الذاكرة. وعمودٌ مطبَّعٌ في القاعدة يُصان ويُهاجَر
+       ويتخلّف عن `normalizeAr` حين تتغيّر، وهي واحدةٌ للبحث ولهذا الباب. */
+    const wanted = normalizeAr(input.nameAr)
+    const all = await this.prisma.skill.findMany({ select: { id: true, nameAr: true } })
+    const twin = all.find((s) => normalizeAr(s.nameAr) === wanted)
+    if (twin) {
+      throw new AuthError(
+        'duplicate_name',
+        `في القاموس مهارةٌ بهذا الاسم: ${twin.nameAr} (${twin.id}) — اربِط دورتَك بها،`
+        + ' أو سمِّ الجديدةَ اسما يفرّقها عنها. واسمان متشابهان يقسمان قياسَ المهارة الواحدة.',
+        409,
+      )
+    }
+
+    const created = await this.prisma.skill.create({
       data: {
         id: input.id, slug: input.slug, nameAr: input.nameAr, familyId: input.familyId ?? null,
         status: 'draft',
         versions: { create: { version: 1, nameAr: input.nameAr, status: 'draft', createdBy: actorId } },
       },
     })
+    await recordAudit(this.prisma, {
+      actorId: actorId ?? null, action: 'catalog.skill.create',
+      entityType: 'skill', entityId: created.id,
+      meta: { nameAr: created.nameAr, slug: created.slug, familyId: created.familyId },
+    })
+    return created
   }
 
   /* ═══ ومهاراتُ الدورة تُصلَح بعد ميلادها (ك-٣) ═══

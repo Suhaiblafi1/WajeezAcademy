@@ -199,6 +199,17 @@ export class AccountResetService {
 
     const done: string[] = []
     const failed: { email: string; errorAr: string }[] = []
+    /* ═══ ومن لم تبلغه رسالتُه يُسمَّى (ي-٦) ═══
+
+       `sendAccountErasedEmail` تردّ حالَها **ولا ترمي**، فلا يلتقطها
+       `catch` أدناه: مزوّدٌ يردّ ٤٢٩ أو عنوانٌ يرتدّ يمرّ من هنا صامتا،
+       ويُمحى الحسابُ على كلّ حال. فيُقرأ الجوابُ «مُحي ٣١» على أنّ ٣١
+       إنسانا أُخبروا، وقد لا يكون أُخبر منهم أحد.
+
+       وهو في إعادة الضبط أوقعُ منه في المحو الجُمليّ: الساحةُ هنا
+       **كلُّ من في المنصّة** إلّا المستثنَين، فدفعةٌ واحدةٌ قد تكون مئاتٍ من
+       نداءات المزوّد في حلقةٍ واحدة — وحدُّه القياسيُّ طلبان في الثانية. */
+    const unreached: { email: string; whyAr: string }[] = []
 
     for (const t of targets) {
       try {
@@ -208,7 +219,13 @@ export class AccountResetService {
 
              الصفُّ يذهب كلُّه ومعه جرسُه، فالبريدُ هو الحامل. ومكتوبٌ في
              `account-mail.ts` لمَ، ولمَ يتقدّم الفعلَ على عرف الأثر. */
-          await sendAccountErasedEmail(this.prisma, { to: t.email, reasonAr: reason, kind: 'reset_purge' })
+          const mail = await sendAccountErasedEmail(this.prisma, { to: t.email, reasonAr: reason, kind: 'reset_purge' })
+          if (mail.status !== 'sent') {
+            unreached.push({
+              email: t.email,
+              whyAr: mail.status === 'not_configured' ? 'لا قناةَ بريدٍ موصولة' : (mail.error ?? 'سقط الإرسال'),
+            })
+          }
           await purgeAccountWithHistory(this.prisma, t.id)
         }
         done.push(t.email)
@@ -229,7 +246,7 @@ export class AccountResetService {
       /* المزامنةُ تحسينٌ بعديّ لا شرطُ صحّة — لا تُسقط نتيجةَ المحو */
     }
 
-    return { mode: input.mode, purged: done.length, failed, cohortsResynced }
+    return { mode: input.mode, purged: done.length, failed, cohortsResynced, unreached }
   }
 
   /** الأرشفة: يبقى الصفُّ ويسقط الدخول وتُعمّى الهويّة */

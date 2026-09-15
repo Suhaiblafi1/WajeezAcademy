@@ -24,6 +24,7 @@ import {
 } from '../../application/notifications/destinations'
 import { NOTIFICATION_CATEGORIES, isSilenceable } from '../../application/notifications/categories'
 import { notificationMailDoc, renderNotificationMail } from '../../../server/services/notification-mail'
+import { renderMail } from '../../../server/services/mail-template'
 
 const root = process.cwd()
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -47,6 +48,18 @@ const NO_DESTINATION: Record<string, string> = {
   /* ي-٤ — وخبرٌ عن شيءٍ زال: الوجهةُ يجب أن تحمل الخبر، وهذا لا تحمله
      شاشةٌ لأنّ موضوعَه لم يعد له صفٌّ يُعرض. */
   'order.cancelled_abandoned': 'الطلبُ أُلغي — ولا صفَّ له في «الفواتير» يُفتح',
+  /* ═══ ي-٥ — ولمَ لا وجهةَ لتذكير التوثيق، وهو أحوجُ الرسائل إلى زرّ ═══
+
+     لأنّ وجهتَه **ليست مسارا**: التوثيقُ يقع بـ`‎/auth/verify?token=…`، ورمزٌ
+     لكلِّ إنسانٍ يُسَكّ عند الإرسال ويموت بعد ثمانٍ وأربعين ساعة. وجدولُ
+     الوجهات يحمل مساراتٍ ثابتةً بحسب المفتاح والجمهور — فوضعُ الرمز فيه
+     مستحيلٌ بنيةً، ووضعُ `‎/auth/verify` بلا رمزٍ زرٌّ يفتح صفحةَ خطأ.
+
+     والزرُّ الحقيقيُّ في البريد نفسِه (`sendVerifyReminderEmail`) حيث الرمزُ
+     في اليد. وهذا الصفُّ جرسٌ في المنصّة لمن يدخلها، وخبرُه تامٌّ بلا زرّ:
+     «أرسلنا رابطا إلى بريدك». */
+  'account.verify.reminder.1': 'الرمزُ في البريد لا في مسارٍ ثابت — والزرُّ هناك',
+  'account.verify.reminder.2': 'الرمزُ في البريد لا في مسارٍ ثابت — والزرُّ هناك',
 }
 
 describe('ط-١ · رسالةُ الإشعار', () => {
@@ -115,6 +128,31 @@ describe('ط-١ · رسالةُ الإشعار', () => {
       audience: 'staff', siteUrl: 'https://x.test',
     })
     expect(JSON.stringify(staff.blocks), 'أُحيل موظّفٌ إلى شاشةِ متعلّم').not.toMatch(prefs)
+  })
+
+  /* ═══ ط-٥ · والقالبُ لا يدسُّه من تحتُ ═══
+
+     الشروطُ الثلاثةُ أعلاه كلُّها في `notificationMailDoc`، وانجرافٌ واحدٌ
+     يتخطّاها جميعا: ذيلٌ يُضاف في `mail-template` نفسِه — «هيئةٌ واحدةٌ
+     ترثها كلُّ رسالة»، فلمَ لا ذيلٌ واحد؟
+
+     لأنّ «كلَّ رسالة» تشمل ما ليس من هذا التيّار: بريدَ استعادةِ كلمة المرور
+     (ومن لا يستطيع الدخولَ لا تنفعه شاشةُ تفضيلات)، و**بريدَ المحو** الذي
+     يقول بنصّه «وهذه آخرُ رسالةٍ تصلك منّا على هذا العنوان». ورابطُ
+     تفضيلاتٍ تحت ذلك السطر يقرؤه صاحبُه سخريةً منه.
+
+     فالدعوى على القالب: وصفٌ لم يطلب السطرَ لا يُصيَّر به — نصّا وترميزا. */
+  it('④ب ووصفٌ لم يطلب رابطَ التفضيلات لا يُصيَّر به — فلا ذيلَ مشتركٌ يدسُّه', () => {
+    const prefs = /student\/notifications/
+    const bare = renderMail({
+      heading: 'استعادةُ كلمة المرور',
+      blocks: [
+        { kind: 'p', text: 'اضغط الزرَّ لتعيين كلمةٍ جديدة.' },
+        { kind: 'cta', label: 'عيّن كلمةً جديدة', href: 'https://x.test/auth/reset?token=t' },
+      ],
+    })
+    expect(bare.html, 'القالبُ يدسّ رابطَ تفضيلاتٍ في كلِّ رسالةٍ تخرج').not.toMatch(prefs)
+    expect(bare.text, 'القالبُ يدسّ رابطَ تفضيلاتٍ في النصّ الخامّ').not.toMatch(prefs)
   })
 
   it('⑤ والجمهورُ يفرّق الوجهة — لا يُرسَل مدرّبٌ إلى بوّابةِ متعلّم', () => {
