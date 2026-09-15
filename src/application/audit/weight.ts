@@ -132,6 +132,8 @@ const LOW_FAMILIES: readonly string[] = [
   'worker', 'integration', 'catalog', 'module', 'assessment', 'rubric',
   'material', 'recording', 'content', 'diagnostic', 'skill', 'term',
   'coupon', 'completion_rule', 'notification', 'cv', 'account', 'checkout',
+  /* ط-٣: سكُّ رابطٍ قصيرٍ وإبطالُه — عنوانٌ يُختصر، لا وصولُ إنسانٍ يتغيّر */
+  'short_link',
   'attempt', 'attendance', 'feedback', 'referral', 'plan', 'zoom',
   'trainer_compensation', 'advisor', 'learner', 'session',
 ]

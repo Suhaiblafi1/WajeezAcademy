@@ -25,20 +25,21 @@
    يُقبل على **ما يدرّبه صاحبُه** من سلّة الشراء لا على كلّ ما فيها. فمن
    اشترى شعبتَه وشعبةَ غيرِه في طلبٍ واحدٍ يُحسب له ما درّبه وحدَه. */
 
-import { randomBytes } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { slugifyName, uniqueSlug } from '../../src/application/trainer/public-slug'
 import { recordAudit } from './audit'
+import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import { publicSiteUrl } from './notification.service'
 
-/** رمزٌ يُقرأ ويُنسخ: ثمانيةُ أحرفٍ من أبجديّةٍ بلا التباس (لا 0/O ولا 1/I) */
-const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+/** رمزٌ يُقرأ ويُنسخ: ثمانيةُ أحرفٍ من أبجديّةٍ بلا التباس (لا 0/O ولا 1/I).
+
+    والأبجديّةُ صارت في `src/application/text/unambiguous-code.ts` حين لزمت
+    الرابطَ القصيرَ أيضا (ط-٣): نسختان منها تفترقان بحذفِ حرفٍ من إحداهما،
+    فيصير رمزٌ يُملى في الهاتف مقروءا وآخرُ ملتبسا ولا شيءَ يقول إنّهما كانا
+    واحدا. والطولُ يبقى هنا لأنّه شأنُ هذا الرمز وحدَه. */
 function newCode(): string {
-  const bytes = randomBytes(8)
-  let out = 'WJ-'
-  for (const b of bytes) out += ALPHABET[b % ALPHABET.length]
-  return out
+  return `WJ-${randomUnambiguousCode(8)}`
 }
 
 export class ReferralService {
