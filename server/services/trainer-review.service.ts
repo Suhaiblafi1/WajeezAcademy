@@ -15,6 +15,7 @@ import { renderMail } from './mail-template'
 import { TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
+import { nextTrainerApplicationReference } from './trainer-application-reference'
 import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
@@ -733,9 +734,9 @@ export class TrainerReviewService {
             data: { email, displayName: fullName, passwordHash: passwordHash!, status: 'invited' },
           })).id
 
-      const year = new Date().getFullYear()
-      const count = await tx.trainerApplication.count()
-      const reference = `WJ-TR-${year}-${String(count + 1).padStart(5, '0')}`
+      /* المرجعُ من المولّد المشترك لا من عدد الصفوف: العدُّ ينقص بالحذف
+         النهائيّ فيتصادم — `trainer-application-reference.ts` */
+      const reference = await nextTrainerApplicationReference(tx)
 
       const app = await tx.trainerApplication.create({
         data: {
