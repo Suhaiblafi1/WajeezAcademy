@@ -95,6 +95,11 @@ const TRAINER: Table = {
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّةَ شعبتك' },
   'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرارَ الخطّة' },
+  /* ولقاءاتُ المدرّب المنتظِرةُ وقرارُها — وجهتُها لوحُه لا لوحُ الإدارة:
+     `cohort.session.pending` يصل الإدارةَ، وشاشتُها شعبةُ اللقاء نفسِها. */
+  'cohort.session.pending': { path: '/admin/cohorts', ctaAr: 'راجِع اللقاءَ واعتمِده' },
+  'cohort.session.approved': { path: '/trainer/board', ctaAr: 'افتح لقاءاتِ شعبتك' },
+  'cohort.session.rejected': { path: '/trainer/board', ctaAr: 'اقرأ الملاحظةَ وأعِد جدولتَه' },
   /* ومفاتيحُ تذكيرِ المدرّب غيرُ مفاتيحِ المتعلّم — `session.reminder.trainer.*`
      في `worker/jobs.ts`. وكنتُ كتبتُ هنا مفاتيحَ المتعلّم للمدرّب، فكانت
      أسطرا ميّتةً: لا يصل المدرّبَ `session.reminder.24h` أبدا، ولا وجهةَ

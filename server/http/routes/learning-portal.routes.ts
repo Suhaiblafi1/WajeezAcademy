@@ -722,11 +722,24 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const body = z.object({
       title: z.string().min(2).max(160),
       startsAt: z.coerce.date(),
-      endsAt: z.coerce.date().optional(),
+      /* والنهايةُ صارت مطلوبةً: «يحدّد أيَّ ساعةٍ وإلى أيّ ساعة» (١٥ سبتمبر
+         ٢٠٢٦). وكانت تُترك فتُفترض ساعتان في Zoom — رقمٌ يُخمَّن على وقتِ
+         عشرين إنسانا، ويُقفَل الاجتماعُ عليهم وهم فيه. */
+      endsAt: z.coerce.date(),
       timezone: z.string().max(64).optional(),
       moduleId: z.string().max(64).optional(),
+      /* نبذةُ اللقاء — صارت لكلّ لقاءٍ لا للشعبة كلِّها */
+      noteAr: z.string().max(2000).nullish(),
+      /* وملفٌّ اختياريٌّ يُرفق به */
+      attachmentKey: z.string().trim().max(120).nullish(),
+      attachmentName: z.string().trim().max(200).nullish(),
+      attachmentMime: z.string().trim().max(120).nullish(),
       /* المدرّبُ ينشئ اجتماعَه بنفسه — لا ينتظر مديرا يلصق رابطا */
       withZoom: z.boolean().optional(),
+    }).superRefine((b, ctx) => {
+      if (b.endsAt <= b.startsAt) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهايةُ اللقاء قبل بدايته', path: ['endsAt'] })
+      }
     }).parse(req.body)
     return reply.status(201).send(await cohorts.trainerAddSessionWithMeeting(req.auth!.userId, id, body))
   })

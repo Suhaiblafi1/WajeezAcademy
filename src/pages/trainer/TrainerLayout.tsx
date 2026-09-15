@@ -45,6 +45,33 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   }, [refreshPending]);
   const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
 
+  /* ═══ ارتفاعُ الشريط يُقاس ويُنشَر — فوق كلّ عودةٍ مبكّرة ═══
+
+     شاشاتٌ تحت هذا الشريط تُلصِق رؤوسَها (`sticky`)، فتحتاج أن تعرف أين
+     ينتهي هو. ورقمٌ مكتوبٌ بيدٍ في كلٍّ منها يفترق عنه عند أوّل تبديل:
+     الشريطُ يلفّ سطرَه على الهاتف فيطول، ويقصر على الحاسوب، ويتبدّل
+     بمعامل التكبير `--app-scale`. فيُقاس بـ`ResizeObserver` ويُنشَر
+     متغيّرا واحدا على الجذر تقرؤه من شاءت.
+
+     وموضعُه هنا لا قبل `return` الأخيرة: تحتها ثلاثُ عوداتٍ مبكّرة
+     (لم يُفحَص بعد · لا ملفَّ مدرّبٍ له · لا صلاحيّةَ)، فخطّافٌ بعدها
+     يُنادى في تصييرٍ ولا يُنادى في آخر — وذاك ما ردّه `rules-of-hooks`.
+
+     و`headerRef` فارغٌ في تلك العودات، فالخطّافُ يخرج بلا عمل. */
+  const headerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () => {
+      document.documentElement.style.setProperty("--staff-sticky-top", `${Math.round(el.getBoundingClientRect().height)}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => { ro.disconnect(); document.documentElement.style.removeProperty("--staff-sticky-top"); };
+  }, [checked, hasProfile, realTrainer]);
+
+
   if (!checked) {
     return (
       <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-foreground">
@@ -117,19 +144,6 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
       </div>
     );
   }
-
-  const headerRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    const el = headerRef.current;
-    if (!el) return;
-    const publish = () => {
-      document.documentElement.style.setProperty("--staff-sticky-top", `${Math.round(el.getBoundingClientRect().height)}px`);
-    };
-    publish();
-    const ro = new ResizeObserver(publish);
-    ro.observe(el);
-    return () => { ro.disconnect(); document.documentElement.style.removeProperty("--staff-sticky-top"); };
-  }, []);
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">

@@ -226,7 +226,15 @@ const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources);
 /* والوصفُ صار مع الاسم والمواعيد، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
    حيث صار الحقلُ لا حيث كان. */
 const summaryKey = (c: PlanContent) => c.summaryAr ?? "";
-const liveNoteKey = (c: PlanContent) => c.liveNoteAr ?? "";
+/* ═══ ولم تعد لخطوة «اللقاءات» مسودّةٌ تُحفظ ═══
+
+   كانت تحمل حقلا واحدا (`liveNoteAr`) يُحفظ مع الخطّة، فتُعلَّم «لم يُحفَظ»
+   إن كُتب فيه. وقد ذهب إلى كلّ لقاءٍ على حدة (١٥ سبتمبر ٢٠٢٦)، واللقاءُ
+   يُحفظ بنداءٍ خاصٍّ به لحظةَ إرساله للاعتماد — فلا شيءَ في هذه الخطوة
+   ينتظر زرَّ حفظ.
+
+   و`liveNoteAr` يبقى في النوع وفي `content`: ما كتبه مدرّبٌ قبل اليوم لا
+   يُمحى بترحيلِ شاشةٍ — يُحمل كما هو ولا يُعرض ولا يُكتب. */
 
 export default function CohortWorkspace() {
   const { id } = useParams();
@@ -270,7 +278,7 @@ export default function CohortWorkspace() {
   const [openModule, setOpenModule] = useState<string | null>(null);
   /* بصمةُ آخرِ ما حُفظ — يُقاس عليها «فيه تغييرٌ لم يُحفظ» لكلّ مرحلةٍ وحدَها.
      كانت المرحلةُ تُغادَر بتعديلٍ في يدها فيضيع بلا كلمة. */
-  const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "", sessions: "" });
+  const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "" });
 
   const load = useCallback(async (first = false) => {
     if (!id) return;
@@ -287,7 +295,6 @@ export default function CohortWorkspace() {
         identity: JSON.stringify(nextIdentity) + summaryKey(nextContent),
         modules: modulesKey(nextContent),
         resources: resourcesKey(nextContent),
-        sessions: liveNoteKey(nextContent),
       });
       /* أوّلُ فتح: المعتمَدةُ تُفتح على التشغيل، وغيرُها على أوّل مرحلةٍ لم تتمّ */
       if (first) {
@@ -392,7 +399,8 @@ export default function CohortWorkspace() {
     identity: JSON.stringify(identity) + summaryKey(content) !== baseline.identity,
     modules: modulesKey(content) !== baseline.modules,
     resources: resourcesKey(content) !== baseline.resources,
-    sessions: liveNoteKey(content) !== baseline.sessions,
+    /* واللقاءاتُ تُحفظ بنفسها — لا مسودّةَ لها في اليد */
+    sessions: false,
   };
   dirtyRef.current = Object.values(dirty).some(Boolean);
 
@@ -923,28 +931,33 @@ export default function CohortWorkspace() {
         </div>
       )}
 
-      {/* ─────────── ④ اللقاءات والتسجيلات ─────────── */}
+      {/* ─────────── ④ اللقاءات المباشرة ─────────── */}
       {phase === "prepare" && stage === "sessions" && (
         <div className="space-y-5">
           <Panel as="section"><StageIntro stage="sessions" /></Panel>
-          {/* الجدولةُ بيده داخلَ نافذة الإدارة */}
-          <TrainerSchedule cohortId={ws.cohort.id} onDone={() => void load()} />
+
+          {/* الجدولةُ بيده داخلَ أشهر فصله، والاعتمادُ بيد الإدارة */}
+          <TrainerSchedule
+            cohortId={ws.cohort.id}
+            onDone={() => void load()}
+            minSessions={Math.max(1, content.modules.length)}
+            haveSessions={ws.sessions.length}
+          />
 
           {/* واللقاءاتُ المجدولةُ وحضورُها — انتقلت من «التشغيل» (د-٤). من
               جدول لقاءه يرى في الموضع نفسِه ما جدوله ومن حضره. */}
           <SessionsAndAttendance cohortId={ws.cohort.id} />
 
-          {/* ملاحظةُ اللقاءات موضعُها هنا لا في «المحاور»: هي عن اللقاء لا
-              عن المحور، وكانت في خطوةٍ لا يفتحها من يسأل عن لقاءاته. */}
-          <Panel as="section">
-            <StaffField
-              label="ملاحظاتٌ عن اللقاءات المباشرة (اختياريّ)"
-              hint="ما تودّ أن يعرفه المتعلّم عن أسلوب لقاءاتك: أتُسجَّل؟ أالكاميرا مطلوبة؟ أيُسمح بالدخول متأخّرا؟"
-            >
-              <textarea rows={2} value={content.liveNoteAr ?? ""} onChange={(e) => setContent({ ...content, liveNoteAr: e.target.value })} disabled={locked} className={areaCls} />
-            </StaffField>
-            <Button tone="confirm" disabled={busy || locked || !dirty.sessions} onClick={savePlan} className="mt-4">احفظ الملاحظة</Button>
-          </Panel>
+          {/* ═══ وسقطت «ملاحظاتٌ عن اللقاءات المباشرة» من هنا (١٥ سبتمبر ٢٠٢٦) ═══
+
+              كانت خانةً واحدةً لكلّ لقاءات الشعبة: «ما تودّ أن يعرفه المتعلّم
+              عن أسلوب لقاءاتك». وقال صاحبُ المنصّة: «لا داعيَ لوجود ملاحظاتٌ
+              عن اللقاءات المباشرة (اختياريّ) بالأسفل» — وصارت **لكلّ لقاءٍ
+              على حدة** في نموذج إنشائه.
+
+              وملاحظةٌ واحدةٌ عن عشرة لقاءاتٍ تُكتب عامّةً فلا تقول شيئا عن
+              أيٍّ منها؛ ومن أراد أن يقول «هذا اللقاء يُسجَّل وذاك لا» لم يكن
+              يملك أين يقوله. */}
         </div>
       )}
 
