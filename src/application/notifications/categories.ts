@@ -72,6 +72,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     silenceable: true,
     templateKeys: [
       'enrollment.approved', 'enrollment.confirmed', 'enrollment.rejected',
+      /* ي-٤: ووضعُه في الطابور — كانت الترقيةُ منه تُخبَر ولا يُخبَر الدخولُ
+         فيه، فيُبشَّر بالخروج من صفٍّ لم يعلم أنّه دخله. */
+      'enrollment.waitlisted',
       'enrollment.waitlist.promoted', 'learner.request_decided', 'plan.requested', 'plan.seats_held',
     ],
   },
@@ -122,6 +125,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        بالساعة أصلا، فيجد المقعدَ ذهب ولا يعرف أنّه كان له وقت. */
     templateKeys: [
       'payment.succeeded', 'payment.refunded', 'payment.refund_rejected',
+      /* ي-٤: والمهلةُ التي يسقط بانقضائها المقعد — نصفُ «أُلغي طلبُك» الآخر */
+      'order.seats_held',
       'order.cancelled_abandoned', 'trainer_payout',
     ],
   },
@@ -197,7 +202,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        أخذ المقعدَ الشاغر**، لا من أُسقط تسجيلُه. فمرّ خضراءَ بإشعارٍ يصل
        إنسانا آخر. ولا يُصلَح ذلك في الحارس — لا يعرف المرسَلَ إليه ولا
        يُخمّنه — بل بأن يُخبَر صاحبُه فعلا. */
-    templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped'],
+    /* و`enrollment.switched` معها: المقعدُ والموعدُ تحرّكا، وهو ما يصفه
+       عنوانُ الصنف حرفا — وإن كان صاحبُه هو من طلبه. */
+    templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped', 'enrollment.switched'],
   },
   /* ═══ حسابي ووصولي — ي-٣ ═══
 

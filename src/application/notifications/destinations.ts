@@ -50,6 +50,8 @@ const LEARNER: Table = {
   'enrollment.approved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.confirmed': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.rejected': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  'enrollment.waitlisted': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
+  'enrollment.switched': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك الجديدة' },
   'enrollment.waitlist.promoted': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'learner.request_decided': { path: '/student/learning', ctaAr: 'اقرأ قرارَ طلبك' },
   'plan.requested': { path: '/student/billing', ctaAr: 'افتح طلبَك' },
@@ -63,6 +65,7 @@ const LEARNER: Table = {
   'grade.update': { path: '/student/learning', ctaAr: 'اقرأ درجتَك المعدَّلة' },
   'payment.succeeded': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
   /* ي-٤: الردُّ وردُّ طلبِه كلاهما في «الفواتير» — الصفُّ نفسُه يحمل الخبر */
+  'order.seats_held': { path: '/student/billing', ctaAr: 'أتمم الدفع' },
   'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشفَ فواتيرك' },
   'payment.refund_rejected': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
