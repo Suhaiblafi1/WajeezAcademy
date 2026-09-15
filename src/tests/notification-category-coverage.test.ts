@@ -49,6 +49,11 @@ function walk(dir: string, out: string[] = []): string[] {
    `REMINDERS` لَشكا الحارسُ بدل أن يمسح أقلَّ في صمت. */
 const JOBS = readFileSync(join(root, 'server/worker/jobs.ts'), 'utf8')
 const REMINDERS_BLOCK = JOBS.match(/const REMINDERS = \[([\s\S]*?)\] as const/)
+/* ي-٥: وجدولُ تذكير التوثيق — الصيغةُ نفسُها، فالثغرةُ نفسُها.
+   مفاتيحُه في ثابتٍ وتُمرَّر `templateKey: step.key` متغيّرا، فلا يراها
+   المسحُ الحرفيّ. وهذا هو الموضعُ الثاني الذي وقع فيه ما يحذّر منه الرأسُ
+   أعلاه — ولذلك يُسمَّى صراحةً كما سُمّي أخوه. */
+const VERIFY_BLOCK = JOBS.match(/const VERIFY_REMINDERS = \[([\s\S]*?)\] as const/)
 
 /* ═══ وبابٌ ثالثٌ: مفاتيحُ تُبنى وقتَ التنفيذ ═══
 
@@ -88,8 +93,10 @@ const KEYS = (() => {
     }
   }
   /* ٢) وما يُعلَن في جدول التذكير ثمّ يُمرَّر متغيّرا */
-  for (const m of (REMINDERS_BLOCK?.[1] ?? '').matchAll(/(?:key|trainerKey):\s*'([^']+)'/g)) {
-    found.add(m[1])
+  for (const block of [REMINDERS_BLOCK, VERIFY_BLOCK]) {
+    for (const m of (block?.[1] ?? '').matchAll(/(?:key|trainerKey):\s*'([^']+)'/g)) {
+      found.add(m[1])
+    }
   }
   /* ٣) وتوسّعاتُ ما يُبنى وقتَ التنفيذ */
   for (const expansions of Object.values(DYNAMIC)) for (const k of expansions) found.add(k)
@@ -111,6 +118,17 @@ describe('أصنافُ الإشعارات تغطّي ما يُرسَل فعلا'
     ).not.toBeNull()
     expect(KEYS).toContain('session.reminder.1h')
     expect(KEYS).toContain('session.reminder.trainer.24h')
+  })
+
+  it('وجدولُ تذكير التوثيق مقروءٌ باسمِه كذلك (ي-٥)', () => {
+    expect(
+      VERIFY_BLOCK,
+      'لم يُعثر على «const VERIFY_REMINDERS = [...] as const» في server/worker/jobs.ts.\n'
+      + 'إن أُعيدت تسميتُه فحدّث هذا الحارسَ معه — وإلّا خرجت مفاتيحُ تذكير '
+      + 'التوثيق من المسح صامتةً، كما خرج «‎.1h» سنةً.',
+    ).not.toBeNull()
+    expect(KEYS).toContain('account.verify.reminder.1')
+    expect(KEYS).toContain('account.verify.reminder.2')
   })
 
   it('وكلُّ مفتاحٍ يُبنى بقالبٍ نصّيٍّ مُسمّى التوسّعات — فلا بابَ رابع', () => {

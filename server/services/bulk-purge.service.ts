@@ -116,6 +116,16 @@ export class BulkPurgeService {
        «عمليّةً واحدةً مقصودةً على واحدٍ وثلاثين حسابا». */
     const batchId = randomUUID()
     let purged = 0
+    /* ═══ ومن لم تبلغه رسالتُه يُسمَّى (ي-٦) ═══
+
+       `sendAccountErasedEmail` تردّ حالَها ولا ترمي: مزوّدٌ يردّ ٤٢٩ أو عنوانٌ
+       يرتدّ يخرج منها `failed` — وكان الجوابُ **يُهمَل**. فيُحذف الحسابُ على
+       كلّ حال، ولا يبقى في المنصّة كلِّها أثرٌ أنّ صاحبَه لم يُخبَر.
+
+       وهو أسوأُ من صمتٍ معلوم: السجلُّ يقول «حُذف ٣١ حسابا» فيُقرأ أنّ ٣١
+       إنسانا أُخبروا، وقد لا يكون أُخبر منهم أحد. فما سقط يُكتب في صفّ
+       الدفعة باسمه — يُقرأ ويُعاد الإرسالُ باليد. */
+    const unreached: { email: string; whyAr: string }[] = []
     for (const id of targets) {
       const row = rowById.get(id)!
       /* الأثرُ قبل المحو: بعده لا يبقى ما يُشار إليه */
@@ -127,17 +137,27 @@ export class BulkPurgeService {
 
          و`admin.users.purge_bulk` أدناه لا رسالةَ له: معرّفُه **دفعةٌ** لا
          إنسان، ومن تعنيهم الدفعةُ أُبلغوا واحدا واحدا في هذه الحلقة. */
-      await sendAccountErasedEmail(this.prisma, {
+      const mail = await sendAccountErasedEmail(this.prisma, {
         to: row.email, displayName: row.displayName, kind: 'purge',
       })
+      if (mail.status !== 'sent') {
+        unreached.push({
+          email: row.email,
+          whyAr: mail.status === 'not_configured' ? 'لا قناةَ بريدٍ موصولة' : (mail.error ?? 'سقط الإرسال'),
+        })
+      }
       await this.prisma.user.delete({ where: { id } })
       purged += 1
     }
 
     await recordAudit(this.prisma, {
       actorId, action: 'admin.users.purge_bulk', entityType: 'user', entityId: batchId,
-      meta: { batchId, purged, refused: view.refused, requested: [...new Set(ids)].length },
+      meta: {
+        batchId, purged, refused: view.refused, requested: [...new Set(ids)].length,
+        /* ولا يُكتب `unreached: []` فارغا في كلّ صفّ: غيابُه يعني بلوغَ الجميع */
+        ...(unreached.length > 0 ? { unreached, unreachedCount: unreached.length } : {}),
+      },
     })
-    return { batchId, purged, refused: view.refused }
+    return { batchId, purged, refused: view.refused, unreached }
   }
 }

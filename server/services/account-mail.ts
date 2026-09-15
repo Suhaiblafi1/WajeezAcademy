@@ -46,6 +46,41 @@ export async function sendVerifyEmail(
   })
 }
 
+/* ═══ تذكيرُ التوثيق — اثنان ثمّ صمتٌ دائم (ي-٥) ═══
+
+   ولمَ رسالةٌ أخرى ولا يُعاد إرسالُ رسالةِ التوثيق نفسِها: لأنّ الثانيةَ
+   يجب أن **تقول إنّها الأخيرة**. ومن لم يُقَل له ذلك يبقى يتوقّع ثالثةً
+   ورابعةً، أو — وهو الأسوأ — يتعلّم أنّ رسائلنا تتكرّر فيتوقّف عن قراءتها.
+   والوعدُ بالكفّ يُشترى بكلمةٍ واحدة، ويُوفى.
+
+   والنبرةُ لا تُلام ولا تُلحّ: التوثيقُ ليس واجبا على أحد، وإنّما هو شرطُ
+   شراءٍ وشهادةٍ يُقال كما هو. */
+export async function sendVerifyReminderEmail(
+  prisma: PrismaClient,
+  input: { to: string; displayName: string; token: string; last: boolean },
+): Promise<DirectMailResult> {
+  const link = verifyEmailLink(input.token)
+  return sendDirectEmail(prisma, {
+    to: input.to,
+    subject: input.last ? 'تذكيرٌ أخير بتوثيق بريدك — أكاديمية وجيز' : 'بقي توثيقُ بريدك — أكاديمية وجيز',
+    ...renderMail({
+      greetingName: input.displayName,
+      preheader: 'رابطٌ جديدٌ صالحٌ ثمانيَ وأربعين ساعة.',
+      heading: input.last ? 'تذكيرٌ أخير: بريدُك غيرُ موثَّقٍ بعد' : 'بريدُك غيرُ موثَّقٍ بعد',
+      blocks: [
+        { kind: 'p', text: 'أنشأتَ حسابَك عندنا ولم تُكمل توثيقَ بريدك. والرابطُ الأوّلُ انتهت صلاحيّتُه، فهذا رابطٌ جديد.' },
+        { kind: 'cta', label: 'وثّق بريدي الآن', href: link, caption: 'أو انسخ الرابط:' },
+        { kind: 'callout', text: 'الرابط صالحٌ ثمانيَ وأربعين ساعة.' },
+        { kind: 'p', text: 'والدخولُ والتصفّحُ والتشخيصُ تعمل كلُّها من غير هذه الخطوة — التوثيقُ مطلوبٌ للشراء والشهادة فقط.' },
+        /* وهذا هو السطرُ الذي من أجله كُتبت هذه الرسالةُ منفصلةً */
+        input.last
+          ? { kind: 'note' as const, text: 'وهذا آخرُ تذكيرٍ نرسله في هذا الشأن. ويبقى بابُ التوثيق مفتوحا في إعدادات حسابك متى شئت.' }
+          : { kind: 'note' as const, text: 'إن لم تكن أنت من أنشأ الحساب فتجاهل هذه الرسالة.' },
+      ],
+    }),
+  })
+}
+
 export async function sendPasswordResetEmail(
   prisma: PrismaClient,
   input: { to: string; token: string },

@@ -24,6 +24,8 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { NotificationService, liveChannels } from '../services/notification.service'
+import { AuthService } from '../services/auth.service'
+import { sendVerifyReminderEmail } from '../services/account-mail'
 import { CohortService } from '../services/cohort.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
@@ -53,7 +55,7 @@ const HOUR = 3_600_000
 const DAY = 24 * HOUR
 
 /** حدودُ الدورة الواحدة — لا انفجارَ بعد انقطاع */
-const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_000 }
+const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_000, verifyReminders: 100 }
 
 /** تذكيرتان لكلّ جلسة: قبل يومٍ وقبل ساعة. المفتاحُ هو ما يمنع التكرار. */
 const REMINDERS = [
@@ -110,6 +112,146 @@ export async function dispatchQueuedNotifications(prisma: PrismaClient, now = ne
         + (failed > 0 ? ' (المزوّد)' : '')
         + (oldest ? ` — أقدمُها انتظر ${Math.max(1, Math.round((now.getTime() - oldest.getTime()) / 60_000))} دقيقة` : ''))
       + held,
+    done, failed, ms: Date.now() - started,
+  }
+}
+
+/* ═══════════ تذكيرُ التوثيق — اثنان ثمّ صمتٌ دائم (ي-٥) ═══════════
+
+   ═══ القسمةُ وعلّتُها ═══
+
+   واحدٌ بعد يوم، وآخرُ بعد ثلاثةٍ منه، ثمّ **يُكَفّ نهائيّا**. وعدمُ التوثيق
+   ليس جُرما، والثالثُ يُعلّم صاحبَه أن يتجاهل مُرسِلَنا كلَّه — فنخسر بريدَ
+   الشهادة والإيصال معه، لا هذا التذكير وحدَه.
+
+   ═══ وثلاثةُ أبوابٍ للصمت، لا واحد ═══
+
+   ① **وثّق** — الشرطُ `emailVerifiedAt: null` في الاستعلام، و
+      `issueEmailVerification` تردّ `null` لمن وثّق بين الاستعلام والإرسال.
+      فمن وثّق في تلك الثانية لا يصله تذكيرٌ بما فعله للتوّ.
+
+   ② **بلغه الاثنان** — والعلمُ يُقرأ من القاعدة لا يُخزَّن عَلَما: أثمّ صفُّ
+      إشعارٍ بهذا المفتاح لهذا الحساب؟ فلو أُعيد تشغيلُ الدورة عشرا لم يزد
+      شيء. وهو عرفُ `sendSessionReminders` نفسُه.
+
+   ③ **ومضت النافذة** — `VERIFY_WINDOW_MS`، شهرٌ من إنشاء الحساب. وهو حدُّ
+      **الساحة** لا حدُّ التكرار: التكرارَ يمنعه الصفُّ ②. وعلّتُه أنّ الوظيفةَ
+      لولاه لَبقيت تمرّ على كلِّ حسابٍ غيرِ موثَّقٍ منذ افتُتحت المنصّةُ، في
+      كلِّ دورة، إلى الأبد — استعلامٌ يكبر بعمر المنصّة ولا يجد أحدا. ومعناه
+      في حقّ الناس أنّ «ثمّ يتوقّف، نهائيّا» تشمل من سجّل ونسي: بعد شهرٍ لا
+      نطرق بابَه، وبابُ التوثيق يبقى مفتوحا في إعدادات حسابه متى شاء.
+
+   ═══ والقناةُ تُسأل قبل الناس — وهذا أخطرُ سطرٍ في الوظيفة ═══
+
+   كُتبت هذه الوظيفةُ أوّلَ مرّةٍ تمرّ على الحسابات ثمّ تسأل عن القناة عند
+   الإرسال. وكشف النقضُ ما في ذلك: `issueEmailVerification` **تسكّ رمزا
+   جديدا وتكتبه في الصفّ**، فتُبطل الرمزَ الذي قبله.
+
+   فلو كانت قناةُ البريد مغلقةً لَدارت الوظيفةُ كلَّ ساعةٍ تسكّ رمزا لكلّ
+   حسابٍ غيرِ موثَّقٍ ثمّ تسقط في الإرسال — **ورابطُ التوثيق الذي وصل صاحبَه
+   ساعةَ سجّل يموت بعد ساعة**، لا بعد ثمانٍ وأربعين. فيضغطه فيُقال له «غيرُ
+   صالح» فيظنّ العطبَ فينا، ولا أحدَ يعلم لماذا.
+
+   فالقناةُ تُسأل أوّلا (`liveChannels`)، وما لا بريدَ موصولَ له يخرج بلا أن
+   يمسّ أحدا — وهو عرفُ `dispatchQueuedNotifications` نفسُه.
+
+   ═══ ولمَ الصفُّ قبل الإرسال بعد ذلك ═══
+
+   وقد صار الوصولُ إلى هنا يعني أنّ القناةَ موصولة، فسقوطُ الإرسال عندئذٍ
+   عنوانٌ لا يقبل لا قناةٌ مقطوعة. والصفُّ يُكتب قبلَه بقصد: **محاولةٌ واحدةٌ
+   لكلّ إنسانٍ لكلّ تذكير**. وبلا ذلك يُعاد الطرقُ على عنوانٍ يرتدّ كلَّ ساعة
+   — وهو أقصرُ طريقٍ إلى أن يُعلَّم مُرسِلُنا في قوائم المنع، فنخسر بريدَ
+   الشهادة والإيصال لمن لا ذنبَ له.
+
+   والسقوطُ لا يُبتلع: يُعَدّ في `failed` ويظهر في خبر الدورة. */
+const VERIFY_REMINDERS = [
+  { key: 'account.verify.reminder.1', afterMs: DAY, last: false },
+  { key: 'account.verify.reminder.2', afterMs: 4 * DAY, last: true },
+] as const
+
+/** بعد شهرٍ من إنشاء الحساب لا يُذكَّر — والحدُّ يمنع محاولةً أبديّةً على عنوانٍ لا يقبل */
+const VERIFY_WINDOW_MS = 30 * DAY
+
+export async function sendVerificationReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const notifications = new NotificationService(prisma)
+  const auth = new AuthService(prisma)
+  let done = 0
+  let failed = 0
+  const parts: string[] = []
+
+  /* القناةُ قبل الناس — وإلّا أُبطلت رموزُ التوثيق القائمةُ كلَّ ساعة */
+  if (!(await liveChannels(prisma)).includes('email')) {
+    return {
+      job: 'verify_reminders',
+      summaryAr: 'قناةُ البريد غيرُ موصولة — لا يُذكَّر أحدٌ ولا يُمَسّ رمزُه',
+      done: 0, failed: 0, ms: Date.now() - started,
+    }
+  }
+
+  for (const step of VERIFY_REMINDERS) {
+    const candidates = await prisma.user.findMany({
+      where: {
+        emailVerifiedAt: null,
+        /* الموقوفُ والمؤرشَفُ لا يُذكَّران بخطوةٍ لا تنفعهما */
+        status: 'active',
+        createdAt: {
+          lte: new Date(now.getTime() - step.afterMs),
+          gte: new Date(now.getTime() - VERIFY_WINDOW_MS),
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      take: LIMITS.verifyReminders,
+      select: { id: true },
+    })
+
+    let sent = 0
+    for (const u of candidates) {
+      const already = await prisma.notification.count({
+        where: { userId: u.id, templateKey: step.key },
+      })
+      if (already > 0) continue
+
+      /* رمزٌ جديدٌ لا القديم: صلاحيّةُ رمز التوثيق ثمانٍ وأربعون ساعة،
+         والتذكيرُ الثاني يقع في اليوم الرابع — فرابطٌ يُعاد إرسالُه ميّتٌ
+         ساعةَ يصل، وهو أسوأُ من ألّا يصل. */
+      let issued: { token: string; email: string; displayName: string } | null = null
+      try {
+        issued = await auth.issueEmailVerification(u.id)
+      } catch {
+        failed += 1
+        continue
+      }
+      /* وثّق بين الاستعلام والإرسال */
+      if (!issued) continue
+
+      /* الجرسُ أوّلا — عَلَمُ «حُوول مرّةً»، فلا يُطرَق عنوانٌ يرتدّ كلَّ ساعة */
+      try {
+        await notifications.notify({
+          userId: u.id, channel: 'in_app', templateKey: step.key,
+          title: step.last ? 'تذكيرٌ أخير بتوثيق بريدك' : 'بقي توثيقُ بريدك',
+          body: step.last
+            ? 'أرسلنا رابطا جديدا إلى بريدك، وهذا آخرُ تذكيرٍ نرسله في هذا الشأن.'
+            : 'أرسلنا رابطا جديدا إلى بريدك. والتوثيقُ مطلوبٌ للشراء والشهادة.',
+          audience: 'learner',
+        })
+      } catch {
+        failed += 1
+        continue
+      }
+
+      const mail = await sendVerifyReminderEmail(prisma, {
+        to: issued.email, displayName: issued.displayName, token: issued.token, last: step.last,
+      })
+      if (mail.status === 'sent') { sent += 1; done += 1 } else { failed += 1 }
+    }
+    if (sent > 0) parts.push(`${step.last ? 'الأخير' : 'الأوّل'}: ${sent}`)
+  }
+
+  return {
+    job: 'verify_reminders',
+    summaryAr: (parts.length === 0 ? 'لا تذكيرَ مستحقّا' : `ذُكِّر ${parts.join('، ')}`)
+      + (failed > 0 ? ` · وسقط ${failed} عند المزوّد` : ''),
     done, failed, ms: Date.now() - started,
   }
 }
@@ -623,6 +765,9 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكيرُ الجلسات' },
+  /* ي-٥: ودورتُه ساعةٌ لا خمسُ دقائق — عتبتُه يومٌ وأربعةٌ، فدقّةُ الدقائق
+     فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
+  { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكيرُ توثيق البريد' },
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالاتُ الشعب بالتواريخ' },
   { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشرُ المجدول' },
   /* كلَّ عشر دقائق: المقعدُ المحبوسُ يمنع شراءً الآن لا غدا */
