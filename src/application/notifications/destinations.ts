@@ -110,6 +110,8 @@ const STAFF: Table = {
   'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلبَ المتعلّم' },
   'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلبَ التأهيل' },
   'advisor.case.assigned': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
+  /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
+  'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفِّذ ما اختاره' },
   'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },
   'cohort.plan.submitted': { path: '/admin/cohorts', ctaAr: 'راجِع خطّةَ الشعبة' },
 }

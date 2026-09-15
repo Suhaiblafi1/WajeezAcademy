@@ -347,7 +347,10 @@ describe('ن-٩ · قاعدةُ السمعة: القرارُ قبل الرسال
     await dep.substitute(adminId, d.id, c, sub)
     const [c1] = (await dep.detail(d.id)).cases
 
-    await dep.notify(adminId, c1.id)
+    /* ي-٤: ولم تعد تُطلَب بيد — `substitute` أعلاه أبلغ صاحبَها معه.
+       فالحارسُ باقٍ على جوهره (الرسالةُ تخرج بعد القرار وتحمل ما بعده)
+       وصار أقوى: تخرج بلا أن يتذكّرها أحد. */
+    expect(c1).toBeTruthy()
     const note = await prisma.notification.findFirst({
       where: { userId: l.userId, templateKey: 'departure.resolved' },
     })
@@ -367,7 +370,15 @@ describe('ولا تُغلق الحالةُ واسمٌ معلَّق', () => {
     await expect(dep.close(adminId, d.id)).rejects.toMatchObject({ status: 409 })
 
     await dep.substitute(adminId, d.id, c, sub)
-    /* حُلّ ولم يُبلَّغ — وذلك أيضا يمنع الإغلاق */
+
+    /* ═══ حُلّ ولم يُبلَّغ — وذلك أيضا يمنع الإغلاق ═══
+
+       وصارت هذه الحالُ تُبنى صراحةً بعد ي-٤: القرارُ صار يُبلِغ بنفسه، فلا
+       يبقى المقرَّرُ غيرَ المُبلَّغ حالا تقع بالسهو. **لكنّها لم تزل ممكنة**:
+       `tellResolved` يبتلع خطأ الإرسال ويردّ `false` ولا يضع `notifiedAt` —
+       كي لا يُنقض قرارٌ وقع في القاعدة لأنّ جرسا لم يُقرع. فمن أخفق إبلاغُه
+       يبقى معلَّقا، والحاجزُ هو ما يمنع طيَّ ملفّه عليه. */
+    await prisma.departureCase.updateMany({ where: { departureId: d.id }, data: { notifiedAt: null } })
     const blocked = await dep.detail(d.id)
     expect(blocked.canClose, 'أُغلق وفيه من لم يُبلَّغ').toBe(false)
     expect(blocked.closeBlockersAr.join(' ')).toMatch(/لم يُبلَّغ/)
@@ -377,5 +388,91 @@ describe('ولا تُغلق الحالةُ واسمٌ معلَّق', () => {
     const ready = await dep.detail(d.id)
     expect(ready.canClose, 'حُلّ الجميعُ وأُبلغوا ولا يُغلق').toBe(true)
     await dep.close(adminId, d.id)
+  })
+})
+
+/* ═══ ي-٤ · والإبلاغُ مسارُ شيفرةٍ لا زرٌّ يُنتظَر ═══
+
+   `departure.resolved` كان يصل صاحبَه فعلا — **بيدِ موظّفٍ يضغط «أبلِغه»
+   مرّةً لكلِّ متعلّم**. و`substitute` يحلّ صفوفَ الشعبة كلَّها في نداءٍ
+   واحد: فالعبءُ يكبر بكِبَر الشعبة، وهو بعينه الموضعُ الذي يُترك فيه.
+   ولا وظيفةَ تذكّر ولا حدَّ للتأخير — وحدَه `close` يمنع إغلاق ملفٍّ فيه
+   من قُرِّر أمرُه ولم يُبلَّغ، ولا شيءَ يوجب الإغلاق.
+
+   وحارسُ ي-٣ البنيويُّ لا يرى شيئا من هذا: نداءُ الإرسال كان موجودا في
+   الملفّ، في طريقةٍ أخرى ينادِيها زرّ. فالفحصُ على القاعدة. */
+describe('ي-٤ · ما قُرّر يبلغ صاحبَه بلا انتظارِ زرّ', () => {
+  const told = (userId: string, key = 'departure.resolved') =>
+    prisma.notification.findFirst({ where: { userId, templateKey: key } })
+
+  it('البديلُ يُبلَّغ به كلُّ من حُلَّ أمرُه — لا واحدٌ لكلِّ ضغطة', async () => {
+    const gone = await trainer('dep-tell1@test.local', 'الراحلُ ط', ['C-DEP-1'])
+    const sub = await trainer('dep-tell2@test.local', 'البديلُ ط', ['C-DEP-1'])
+    const c = await cohort(crypto.randomUUID(), 'C-DEP-1', 'شعبةُ البلاغ', gone)
+    const a = await learner('l-tell1@test.local', 'متعلّمُ البلاغ ١', c)
+    const b = await learner('l-tell2@test.local', 'متعلّمُ البلاغ ٢', c)
+    const d = await dep.open(adminId, gone, 'سافر ولم يعد')
+
+    const r = await dep.substitute(adminId, d.id, c, sub)
+    expect(r.resolved).toBe(2)
+    expect(r.told, 'حُلَّ أمرُ اثنَين وأُبلغ أقلُّ منهما').toBe(2)
+    expect(await told(a.userId), 'حُلَّ أمرُه ولم يُبلَّغ').not.toBeNull()
+    expect(await told(b.userId), 'حُلَّ أمرُ أخيه ولم يُبلَّغ هو').not.toBeNull()
+
+    /* ولا يُبلَّغ مرّتَين: الزرُّ يبقى لمن تعذّر إبلاغُه، ويردّ على المُبلَّغ */
+    const [c1] = (await dep.detail(d.id)).cases
+    await expect(dep.notify(adminId, c1.id)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('والنقلُ إلى نظيرٍ يُبلَّغ به صاحبُ المقعد — ومقعدُه انتقل فعلا', async () => {
+    const gone = await trainer('dep-tell3@test.local', 'الراحلُ ي', ['C-DEP-1'])
+    const from = await cohort(crypto.randomUUID(), 'C-DEP-1', 'شعبةُ النقل', gone)
+    const to = await cohort(crypto.randomUUID(), 'C-DEP-1', 'الشعبةُ النظيرة')
+    const l = await learner('l-tell3@test.local', 'متعلّمُ النقل', from)
+    const d = await dep.open(adminId, gone, 'أنهى تعاقدَه')
+    const [c1] = (await dep.detail(d.id)).cases
+
+    const moved = await dep.moveLearner(adminId, c1.id, to, 'لا بديلَ مؤهَّل')
+    expect(moved.told, 'انتقل مقعدُه ولم يُبلَّغ').toBe(true)
+    expect(await told(l.userId)).not.toBeNull()
+  })
+
+  it('والرصيدُ يصل ومعه رمزُه — فلا يُقال «لك رصيد» بلا ما يُستعمل به', async () => {
+    const gone = await trainer('dep-tell4@test.local', 'الراحلُ ك', ['C-DEP-1'])
+    const c = await cohort(crypto.randomUUID(), 'C-DEP-1', 'شعبةُ الرصيد', gone)
+    const l = await learner('l-tell4@test.local', 'متعلّمُ الرصيد', c)
+    const d = await dep.open(adminId, gone, 'أنهى تعاقدَه')
+    const [c1] = (await dep.detail(d.id)).cases
+    await dep.offerChoice(adminId, c1.id)
+    await dep.chooseAsLearner(l.userId, c1.id, 'credit')
+    await dep.settleChoice(adminId, c1.id, { amount: 100, bonus: 20 })
+
+    const note = await told(l.userId)
+    expect(note, 'صُرف له رصيدٌ ولم يُبلَّغ').not.toBeNull()
+    const coupon = await prisma.coupon.findFirstOrThrow({ where: { restrictedToUserId: l.userId } })
+    expect(
+      note!.body,
+      'أُخبِر أنّ له رصيدا ولم يُخبَر برمزه — فلا يعرف بمَ يستعمله',
+    ).toContain(coupon.code)
+  })
+
+  it('واختيارُ صاحبِ المقعد يستدعي الإدارةَ — فلا يبقى في عمودٍ لا يراه أحد', async () => {
+    const gone = await trainer('dep-tell5@test.local', 'الراحلُ ل', ['C-DEP-1'])
+    const c = await cohort(crypto.randomUUID(), 'C-DEP-1', 'شعبةُ الاستدعاء', gone)
+    const l = await learner('l-tell5@test.local', 'متعلّمُ الاستدعاء', c)
+    const d = await dep.open(adminId, gone, 'أنهى تعاقدَه')
+    const [c1] = (await dep.detail(d.id)).cases
+    await dep.offerChoice(adminId, c1.id)
+
+    await dep.chooseAsLearner(l.userId, c1.id, 'refund')
+
+    /* و`adminId` يحمل دورا إداريّا في هذا الملفّ — فهو ممّن يُستدعى.
+       والبحثُ يُقيَّد بشعبةِ هذا الصفّ: هذا الملفُّ يستدعي الإدارةَ مرارا،
+       و`findFirst` بلا قيدٍ يلتقط استدعاءَ اختبارٍ سابقٍ فيخضرّ على غيره. */
+    const summoned = await prisma.notification.findFirst({
+      where: { userId: adminId, templateKey: 'departure.chosen', body: { contains: 'شعبةُ الاستدعاء' } },
+    })
+    expect(summoned, 'اختار صاحبُ المقعد ولم يُستدعَ أحدٌ لتنفيذه').not.toBeNull()
+    expect(summoned!.body, 'الاستدعاءُ لا يقول ماذا اختار').toContain(CHOICE_LABEL_AR.refund)
   })
 })
