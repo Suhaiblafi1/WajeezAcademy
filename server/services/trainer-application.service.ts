@@ -569,7 +569,7 @@ export class TrainerApplicationService {
     previousCourses: { title: string; org?: string; year?: number; link?: string }[]
     teachableCourseIds: string[]
     teachableOther?: string
-    teachableProposals?: { titleAr: string; audienceAr: string }[]
+    teachableProposals?: { titleAr: string; summaryAr: string }[]
     availability: AvailabilityInput
     demoConsent: boolean
     phoneCountryCode?: string

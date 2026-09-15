@@ -1464,7 +1464,7 @@ export class TrainerReviewService {
      ما يكتبه الأدمنُ في ملفّ متقدّمٍ عن نفسه يجب أن يُعرف أنّه ليس بقلمه —
      وإلّا قُرئ بعد شهرٍ كأنّ المتقدّمَ قاله. */
   async saveTeachableProposals(
-    applicationId: string, actorId: string, rows: readonly { titleAr: string; audienceAr: string }[],
+    applicationId: string, actorId: string, rows: readonly { titleAr: string; summaryAr: string }[],
   ) {
     const app = await this.prisma.trainerApplication.findUnique({
       where: { id: applicationId }, select: { id: true, teachableProposals: true },
@@ -1473,7 +1473,7 @@ export class TrainerReviewService {
 
     /* التشذيبُ بالدالّة المشتركة لا بيدٍ هنا: الشاشةُ والخادمُ يناديان
        الواحدةَ، فلا يفترق ما يُعرض عمّا يُخزَّن. */
-    const next = cleanProposals(rows as { titleAr: string; audienceAr: string }[])
+    const next = cleanProposals(rows as { titleAr: string; summaryAr: string }[])
     const before = readProposals(app.teachableProposals)
 
     await this.prisma.trainerApplication.update({

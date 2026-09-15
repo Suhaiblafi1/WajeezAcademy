@@ -22,6 +22,12 @@ const rubricSchema = z.object(
   Object.fromEntries(RUBRIC_CRITERIA.map((k) => [k, z.number().int().min(1).max(5)])),
 ).partial().strict()
 
+/* الفاعلُ برتبته لا بمعرّفه وحدَه — تصنيفُ الاقتراح يفتح مهمّةً قائمة،
+   و`StaffTaskService` تقيس الرتبةَ قبل أن تُكلّف. */
+function actorOf(req: { auth: { userId: string; roles: string[] } | null }) {
+  return { userId: req.auth!.userId, roles: req.auth!.roles }
+}
+
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
   const links = new TrainerDossierLinkService(prisma)
@@ -418,7 +424,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const body = z.object({
       proposals: z.array(z.object({
         titleAr: z.string().max(200),
-        audienceAr: z.string().max(200).optional().default(''),
+        summaryAr: z.string().max(1500).optional().default(''),
       })).max(20),
     }).parse(req.body)
     return { proposals: await review.saveTeachableProposals(id, req.auth!.userId, body.proposals) }
@@ -634,7 +640,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       courseId: z.string().min(2).max(64),
       noteAr: z.string().trim().max(2000).nullish(),
     }).parse(req.body)
-    return proposals.linkToCourse(req.auth!.userId, id, body.courseId, body.noteAr)
+    return proposals.linkToCourse(actorOf(req), id, body.courseId, body.noteAr)
   })
 
   app.post('/api/admin/course-proposals/:id/became-course', {
@@ -646,7 +652,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       courseId: z.string().min(2).max(64),
       noteAr: z.string().trim().max(2000).nullish(),
     }).parse(req.body)
-    return proposals.markBecameCourse(req.auth!.userId, id, body.courseId, body.noteAr)
+    return proposals.markBecameCourse(actorOf(req), id, body.courseId, body.noteAr)
+  })
+
+  /* بابٌ ثالثٌ قبل القرار: اسأل صاحبَه.
+
+     ومن صنّف اقتراحا لا يفهمه خمّن أو رفض — والرفضُ لسؤالٍ لم يُسأل يُفقد
+     المنصّةَ دورةً ويُفقد المدرّبَ ثقتَه. */
+  app.post('/api/admin/course-proposals/:id/ask', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'سؤالُ صاحبِ الاقتراح قبل تصنيفه — يصله في بوّابته' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ questionAr: z.string().trim().min(5).max(2000) }).parse(req.body)
+    return proposals.askTrainer(req.auth!.userId, id, body.questionAr)
   })
 
   app.post('/api/admin/course-proposals/:id/reject', {

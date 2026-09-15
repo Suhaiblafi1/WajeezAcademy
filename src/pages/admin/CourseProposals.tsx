@@ -27,7 +27,7 @@
    يلزم في الخادم لا في الشاشة وحدَها. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookPlus, Check, Link2, Loader2, X } from "lucide-react";
+import { BookPlus, Check, Link2, Loader2, MessageCircleQuestion, Sparkles, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import AdminLayout from "./AdminLayout";
 import EmptyState from "@/components/EmptyState";
@@ -41,26 +41,39 @@ import { fmtDateLong } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 
+interface Suggestion {
+  courseId: string;
+  titleAr: string;
+  score: number;
+  sharedAr: string[];
+}
+
 interface Row {
   id: string;
   profileId: string;
   trainerName: string;
   trainerEmail: string;
   titleAr: string;
-  audienceAr: string | null;
+  summaryAr: string | null;
   status: string;
   courseId: string | null;
   courseTitleAr: string | null;
+  questionAr: string | null;
+  questionAt: string | null;
+  answerAr: string | null;
+  answeredAt: string | null;
   decisionNoteAr: string | null;
   decidedAt: string | null;
   createdAt: string;
+  /** أقربُ رموزِ الكتالوج إليه — محسوبةٌ في الخادم، وفارغةٌ لما بُتّ فيه */
+  suggestedCourses: Suggestion[];
 }
 
 /* والحقلُ `title` لا `titleAr`: هكذا يردّه `/api/admin/catalog/courses`.
    وواجهةٌ تسمّيه بغير اسمه تُظهر قائمةً من الفراغ بلا خطأٍ يُرى. */
 interface CourseRow { id: string; title: string; status: string }
 
-const OPEN = ["draft", "submitted"];
+const OPEN = ["draft", "submitted", "info_requested"];
 
 const SAID: Record<string, string> = {
   linked: "نسخةٌ من رمزٍ قائم",
@@ -83,6 +96,8 @@ export default function CourseProposals() {
   const [linkCourse, setLinkCourse] = useState("");
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
+  const [askFor, setAskFor] = useState<string | null>(null);
+  const [askText, setAskText] = useState("");
 
   const load = useCallback(() => {
     Promise.all([
@@ -102,8 +117,10 @@ export default function CourseProposals() {
       toast(okAr);
       setLinkFor(null);
       setRejectFor(null);
+      setAskFor(null);
       setLinkCourse("");
       setRejectNote("");
+      setAskText("");
       load();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
@@ -113,7 +130,7 @@ export default function CourseProposals() {
   }
 
   const shown = useMemo(
-    () => (rows ?? []).filter((r) => matchesQuery(q, [r.titleAr, r.audienceAr ?? "", r.trainerName, r.trainerEmail])),
+    () => (rows ?? []).filter((r) => matchesQuery(q, [r.titleAr, r.summaryAr ?? "", r.trainerName, r.trainerEmail])),
     [rows, q],
   );
 
@@ -124,8 +141,10 @@ export default function CourseProposals() {
       <Card className="mb-4">
         <p className="text-sm leading-7 text-muted-foreground">
           كلُّ اقتراحٍ هنا <b>ليس دورةً بعد</b>: لا يظهر في الكتالوج ولا يُحسب في التشخيص حتّى يُصنَّف.
-          وبابان لا ثالثَ لهما — <b>نسخةٌ من رمزٍ قائم</b> إن كانت قريبةً منه فتُربط به ويقترح المدرّبُ
+          وبابان للتصنيف — <b>نسخةٌ من رمزٍ قائم</b> إن كانت قريبةً منه فتُربط به ويقترح المدرّبُ
           نسختَه بنفسه، أو <b>دورةٌ جديدة</b> تُنشأ في نموذج الكتالوج بمهاراتها ثمّ تُربط هنا.
+          {" "}وقبلهما <b>اسأل المدرّب</b> إن نقصك ما تقرّر به — فيعود الاقتراحُ إليك بجوابه.
+          {" "}وكلُّ تصنيفٍ يفتح لك <b>مهمّةً قائمةً بتأهيله</b> للدورة، فلا يُصنَّف اقتراحٌ ويبقى صاحبُه لا يدرّسه.
         </p>
       </Card>
 
@@ -161,8 +180,10 @@ export default function CourseProposals() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-[16rem] flex-1">
                         <div className="text-read font-bold text-foreground">{r.titleAr}</div>
-                        {r.audienceAr ? (
-                          <div className="mt-0.5 text-sm text-muted-foreground">لمن: {r.audienceAr}</div>
+                        {r.summaryAr ? (
+                          <div className="mt-1 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+                            {r.summaryAr}
+                          </div>
                         ) : null}
                         <div className="mt-1 text-sm text-muted-foreground">
                           اقترحها <b className="text-foreground">{r.trainerName}</b>
@@ -171,13 +192,19 @@ export default function CourseProposals() {
                         <div className="mt-1 text-xs text-muted-foreground/70">
                           {r.decidedAt ? `صُنِّفت ${fmtDateLong(r.decidedAt)}` : `وصلت ${fmtDateLong(r.createdAt)}`}
                         </div>
+                        {/* واقفٌ على جوابه هو — فلا يُقرأ الطابورُ كأنّه كلُّه ينتظرنا */}
+                        {r.status === "info_requested" ? (
+                          <span className="mt-2 inline-block rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-300">
+                            سُئل — ننتظر جوابَه
+                          </span>
+                        ) : null}
                       </div>
 
                       {open ? (
                         <div className="flex flex-wrap gap-2">
                           <Button
                             tone="secondary" icon={Link2} disabled={busy}
-                            onClick={() => { setLinkFor(linkFor === r.id ? null : r.id); setRejectFor(null); }}
+                            onClick={() => { setLinkFor(linkFor === r.id ? null : r.id); setRejectFor(null); setAskFor(null); }}
                           >
                             نسخةٌ من رمزٍ قائم
                           </Button>
@@ -192,9 +219,16 @@ export default function CourseProposals() {
                           >
                             دورةٌ جديدة
                           </Button>
+                          {/* بابٌ قبل القرار: اسأل. ومن صنّف ما لا يفهم خمّن أو رفض. */}
+                          <Button
+                            tone="ghost" icon={MessageCircleQuestion} disabled={busy}
+                            onClick={() => { setAskFor(askFor === r.id ? null : r.id); setLinkFor(null); setRejectFor(null); }}
+                          >
+                            اسأل المدرّب
+                          </Button>
                           <Button
                             tone="danger" icon={X} disabled={busy}
-                            onClick={() => { setRejectFor(rejectFor === r.id ? null : r.id); setLinkFor(null); }}
+                            onClick={() => { setRejectFor(rejectFor === r.id ? null : r.id); setLinkFor(null); setAskFor(null); }}
                           >
                             لا تُقبل
                           </Button>
@@ -217,6 +251,47 @@ export default function CourseProposals() {
                     {/* ── الربطُ برمزٍ قائم ── */}
                     {linkFor === r.id ? (
                       <Inset className="mt-3 grid gap-3">
+                        {/* ═══ ما يرشّحه النظام ═══
+
+                            القائمةُ تحته فيها واحدٌ وثمانون رمزا، ومن لا يحفظ
+                            الكتالوجَ بظهر قلبٍ أنشأ ثانيةً لما هو موجود. وكلُّ
+                            ترشيحٍ يقول **لماذا** رُشّح — وترشيحٌ بلا سببٍ
+                            يُقبل بلا قراءةٍ أو يُهمَل كلُّه. */}
+                        {r.suggestedCourses.length > 0 ? (
+                          <div>
+                            <div className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
+                              <Sparkles className="h-4 w-4 text-teal" aria-hidden />
+                              أقربُ ما عندنا إليها
+                            </div>
+                            <div className="grid gap-2">
+                              {r.suggestedCourses.map((sug) => (
+                                <button
+                                  key={sug.courseId}
+                                  type="button"
+                                  onClick={() => setLinkCourse(sug.courseId)}
+                                  className={
+                                    "rounded-xl border px-3 py-2 text-right transition "
+                                    + (linkCourse === sug.courseId
+                                      ? "border-teal/60 bg-teal/10"
+                                      : "border-white/10 bg-white/[0.03] hover:border-teal/40")
+                                  }
+                                >
+                                  <div className="text-sm font-bold text-foreground">{sug.titleAr}</div>
+                                  <div dir="ltr" className="text-left font-mono text-xs text-muted-foreground/70">
+                                    {sug.courseId}
+                                  </div>
+                                  <div className="mt-0.5 text-xs text-muted-foreground">
+                                    تشترك في: {sug.sharedAr.join("، ")}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-read leading-6 text-muted-foreground">
+                            لم يجد النظامُ رمزا قريبا — اخترْ من القائمة، أو أنشئها دورةً جديدة.
+                          </p>
+                        )}
                         <StaffField
                           label="أيُّ رمزٍ هي نسخةٌ منه؟"
                           hint="يُربط الاقتراحُ به، ويقترح المدرّبُ اسمَه ومحاورَه بنفسه"
@@ -243,6 +318,59 @@ export default function CourseProposals() {
                           </Button>
                           <Button tone="ghost" icon={X} onClick={() => setLinkFor(null)}>تراجَع</Button>
                         </div>
+                      </Inset>
+                    ) : null}
+
+                    {/* ── السؤالُ قبل القرار ── */}
+                    {askFor === r.id ? (
+                      <Inset className="mt-3 grid gap-3">
+                        <StaffField
+                          label="ما الذي تريد أن تعرفه عنها؟"
+                          hint="يصل المدرّبَ في «دوراتي المقترحة» ويُشعَر به — ويعود الاقتراحُ إليك بجوابه"
+                        >
+                          <textarea
+                            className={staffControlCls} value={askText} maxLength={2000} rows={3}
+                            placeholder="مثلا: كم ساعةً تراها؟ وما الفرق بينها وبين C-BIZ-104؟"
+                            onChange={(e) => setAskText(e.target.value)}
+                          />
+                        </StaffField>
+                        <div className="flex gap-2">
+                          <Button
+                            tone="confirm" icon={Check} loading={busy} disabled={askText.trim().length < 5}
+                            onClick={() => run(
+                              () => apiPost(`/api/admin/course-proposals/${r.id}/ask`, { questionAr: askText.trim() }),
+                              "وصل السؤالُ صاحبَها",
+                            )}
+                          >
+                            أرسِل السؤال
+                          </Button>
+                          <Button tone="ghost" icon={X} onClick={() => setAskFor(null)}>تراجَع</Button>
+                        </div>
+                      </Inset>
+                    ) : null}
+
+                    {/* خيطُ السؤال وجوابه — يبقى بعد القرار: من قرأ «رُفضت»
+                        بعد شهرٍ يحتاج أن يرى ما سُئل عنه وبمَ أُجيب. */}
+                    {r.questionAr ? (
+                      <Inset className="mt-3 grid gap-2 text-sm leading-7">
+                        <div>
+                          <span className="font-bold text-foreground">سألناه</span>
+                          {r.questionAt ? (
+                            <span className="ms-1.5 text-xs text-muted-foreground/70">{fmtDateLong(r.questionAt)}</span>
+                          ) : null}
+                          <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">{r.questionAr}</p>
+                        </div>
+                        {r.answerAr ? (
+                          <div>
+                            <span className="font-bold text-foreground">فأجاب</span>
+                            {r.answeredAt ? (
+                              <span className="ms-1.5 text-xs text-muted-foreground/70">{fmtDateLong(r.answeredAt)}</span>
+                            ) : null}
+                            <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">{r.answerAr}</p>
+                          </div>
+                        ) : (
+                          <p className="text-read text-muted-foreground">ولم يُجب بعد.</p>
+                        )}
                       </Inset>
                     ) : null}
 
