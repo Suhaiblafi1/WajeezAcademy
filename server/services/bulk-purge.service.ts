@@ -17,6 +17,7 @@ import type { PrismaClient } from '@prisma/client'
 import { randomUUID } from 'node:crypto'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { sendAccountErasedEmail } from './account-mail'
 import { accountFootprint, footprintBlockersAr } from './account-purge.service'
 import {
   decideBulk, deletableIds, bulkExecuteBlockerAr, MAX_BULK_PURGE, TOP_ROLE,
@@ -121,6 +122,13 @@ export class BulkPurgeService {
       await recordAudit(this.prisma, {
         actorId, action: 'admin.user.purge', entityType: 'user', entityId: id,
         meta: { email: row.email, displayName: row.displayName, roles: row.roles, batchId, batchSize: targets.length },
+      })
+      /* والبريدُ قبل المحو كالأثر (ي-٤) — ولكلِّ إنسانٍ رسالتُه.
+
+         و`admin.users.purge_bulk` أدناه لا رسالةَ له: معرّفُه **دفعةٌ** لا
+         إنسان، ومن تعنيهم الدفعةُ أُبلغوا واحدا واحدا في هذه الحلقة. */
+      await sendAccountErasedEmail(this.prisma, {
+        to: row.email, displayName: row.displayName, kind: 'purge',
       })
       await this.prisma.user.delete({ where: { id } })
       purged += 1

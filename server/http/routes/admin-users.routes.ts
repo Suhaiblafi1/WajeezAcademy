@@ -11,7 +11,7 @@ import {
   PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, ROLE_RANK, refuseDelegation, refuseRoleAssignment, rankOf,
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
-import { inviteLink, sendStaffInviteEmail } from '../../services/account-mail'
+import { inviteLink, sendAccountErasedEmail, sendStaffInviteEmail } from '../../services/account-mail'
 import { safeNotify } from '../../services/notification.service'
 import { AccountResetService } from '../../services/account-reset.service'
 import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
@@ -678,6 +678,18 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
         email: check.target.email, displayName: check.target.displayName, roles: check.target.roles.map((r) => r.roleId),
         ...(blockers.length > 0 ? { footprint } : {}),
       },
+    })
+    /* ═══ والبريدُ قبل المحو كالأثر (ي-٤) ═══
+
+       ولا جرسَ هنا بحال: `Notification` معلَّقٌ بصاحبه بـ`onDelete: Cascade`
+       فيذهب معه. ومكتوبٌ في `account-mail.ts` لمَ البريدُ هو الحامل، ولمَ
+       يتقدّم الفعلَ على عرف الأثر. وإخفاقُه لا يمنع المحوَ: قرارٌ اتُّخذ لا
+       يُنقض لأنّ رسالةً لم تخرج، والأثرُ فوقُ يحفظ ما جرى. */
+    await sendAccountErasedEmail(prisma, {
+      to: check.target.email,
+      displayName: check.target.displayName,
+      reasonAr: reason || null,
+      kind: blockers.length > 0 ? 'purge_with_history' : 'purge',
     })
     if (blockers.length > 0) await purgeAccountWithHistory(prisma, id)
     else await prisma.user.delete({ where: { id } })

@@ -105,3 +105,69 @@ export async function sendStaffInviteEmail(
     }),
   })
 }
+
+/* ═══ رسالةُ آخرِ العهد — حسابٌ يُمحى أو يُعمّى (ي-٤) ═══
+
+   ═══ ولمَ بريدٌ لا جرس، ولمَ قبل الفعل لا بعده ═══
+
+   صفُّ `Notification` معلَّقٌ بصاحبه بـ`onDelete: Cascade`: فإشعارٌ يُكتب قبل
+   المحو أو بعده **يُحذف مع صاحبه** في الحالَين. والمؤرشَفُ لا يبلغه جرسٌ
+   أصلا لأنّ الدخولَ ممنوعٌ على غير `active`. فما يبلغ الإنسانَ في هذين
+   البابَين بريدٌ مباشرٌ وحدَه — وهذا هو الحاملُ للحكم.
+
+   ويُرسَل **قبل أن يقع الفعل**، على عرف الأثر نفسِه («الأثرُ قبل المحو»).
+   ولا يُدّعى أكثرُ من ذلك: العنوانُ مُلتقَطٌ في متغيّرٍ قبلَه، فلو أُخِّر
+   لخرجت الرسالةُ كذلك. لكنّ التقديمَ يمنع أن يعتمد يوما على صفٍّ يوشك أن
+   يزول — أو على بريدٍ تُعمّيه المعاملةُ إلى `archived+<id>@wajeez.invalid`
+   وهي تجري.
+
+   وهي آخرُ ما يصله منّا على هذا العنوان — فتقول ما جرى ومن يُراجَع، ولا
+   تحيله إلى شاشةٍ لم تعد تُفتح له. */
+export type AccountErasureKind = 'purge' | 'purge_with_history' | 'reset_purge' | 'reset_archive'
+
+const ERASURE_COPY: Record<AccountErasureKind, { subject: string; heading: string; whatAr: string }> = {
+  purge: {
+    subject: 'حُذف حسابُك في أكاديمية وجيز',
+    heading: 'حُذف حسابُك في أكاديمية وجيز',
+    whatAr: 'حُذف حسابُك حذفا نهائيّا، فلم يبقَ لك فيه دخولٌ ولا بيانات.',
+  },
+  purge_with_history: {
+    subject: 'حُذف حسابُك وسجلُّه في أكاديمية وجيز',
+    heading: 'حُذف حسابُك وسجلُّه في أكاديمية وجيز',
+    whatAr: 'حُذف حسابُك بسجلّه كلِّه: تسجيلاتُك وطلباتُك وشهاداتُك مُحيت معه ولا تُستعاد.',
+  },
+  reset_purge: {
+    subject: 'حُذف حسابُك ضمن إعادة ضبط الحسابات',
+    heading: 'حُذف حسابُك في أكاديمية وجيز',
+    whatAr: 'تُعيد الأكاديميةُ ضبطَ حساباتها، وحسابُك ضمن ما يُمحى: لا يبقى لك دخولٌ ولا تسجيلاتٌ ولا شهادات.',
+  },
+  reset_archive: {
+    subject: 'أُرشف حسابُك ضمن إعادة ضبط الحسابات',
+    heading: 'أُرشف حسابُك في أكاديمية وجيز',
+    whatAr: 'أُرشف حسابُك ضمن إعادة ضبط الحسابات: سقط دخولُك وعُمّيت هويّتُك، وبقيت سجلّاتُك محفوظةً للمُحاسَبة.',
+  },
+}
+
+export async function sendAccountErasedEmail(
+  prisma: PrismaClient,
+  input: { to: string; displayName?: string | null; reasonAr?: string | null; kind: AccountErasureKind },
+): Promise<DirectMailResult> {
+  const copy = ERASURE_COPY[input.kind]
+  return sendDirectEmail(prisma, {
+    to: input.to,
+    subject: copy.subject,
+    ...renderMail({
+      greetingName: input.displayName ?? undefined,
+      heading: copy.heading,
+      blocks: [
+        { kind: 'p', text: copy.whatAr },
+        ...(input.reasonAr?.trim()
+          ? [{ kind: 'facts' as const, rows: [{ label: 'السببُ المسجَّل', value: input.reasonAr.trim() }] }]
+          : []),
+        /* ولا زرٌّ يُخترَع: ما من شاشةٍ تُفتح له بعد هذا. والردُّ على الرسالة
+           يصل الدعمَ — وهو البابُ الوحيدُ الباقي، فيُقال صراحةً. */
+        { kind: 'callout', text: 'وهذه آخرُ رسالةٍ تصلك منّا على هذا العنوان. فإن كان في الأمر خطأٌ فردَّ عليها وسيصل ردُّك إلى الدعم.' },
+      ],
+    }),
+  })
+}
