@@ -1,4 +1,4 @@
-/* محاكاة رحلات V2.1 التسع المطلوبة — لكل رحلة: سؤال → لماذا الآن → إجابة → ما الذي تغيّر.
+/* محاكاة رحلات V2.1 — لكل رحلة: سؤال → لماذا الآن → إجابة → ما الذي تغيّر.
    حتمي: كل شخصية تُشغّل مرتين ويجب تطابق الأسئلة والنتيجة.
    الناتج: docs/diagnostic-v2_1/journeys.v2_1.json + ملخص console.
 
@@ -20,6 +20,13 @@ interface PersonaScript {
   goalMatch?: string // نص جزئي من خيار الهدف
   needMatch?: string // نص جزئي من خيار الاحتياج
   skillLevel?: number
+  /* يقيّم عائلاته بهذا المستوى بعد الأسئلة — وبه وحده تُبنى الخطّة المركّبة.
+
+     ولماذا أُضيف: الرحلاتُ التسعُ لا تقيّم عائلاتها، و`composedPath` مشروطٌ
+     بتقييمٍ غير فارغ. فمسارُ الاستدلال (تقييمُ العائلة → مستوى مهارة مستدَل →
+     ملاءمة المقرر) والخطّةُ المركّبةُ كانا **خارج خط الأساس كلَّه**: يخضرّ
+     لأنّه لا يمرّ بهما لا لأنّه فحصهما. */
+  rateFamiliesAt?: number
 }
 
 const PERSONAS: PersonaScript[] = [
@@ -32,6 +39,9 @@ const PERSONAS: PersonaScript[] = [
   { id: 'freelancer', label_ar: 'مستقل', stage: 'freelancer', goalMatch: 'العمل الحر', needMatch: 'المبيعات', skillLevel: 3 },
   { id: 'trainer', label_ar: 'مدرب / مختص تعلم وتطوير', stage: 'trainer_ld', employment: 'o3', goalMatch: 'تصميم تدريب', needMatch: 'التعلم والتدريب', skillLevel: 4 },
   { id: 'unsure', label_ar: 'غير محسوم', stage: 'other_unsure', employment: 'o1', goalMatch: 'غير متأكد', needMatch: 'غير متأكد', skillLevel: 3 },
+  /* نسخةُ «موظف خبير» نفسِها، وفارقُها الوحيد أنّه قيّم عائلاته. فالفرقُ بين
+     الرحلتين في خط الأساس هو **أثرُ التقييم وحدَه** — تُقرأ إحداهما بالأخرى. */
+  { id: 'rated', label_ar: 'موظف خبير — قيّم عائلاته', stage: 'experienced', employment: 'o3', goalMatch: 'الترقية', needMatch: 'إدارة المشاريع', skillLevel: 4, rateFamiliesAt: 2 },
 ]
 
 function pickOption(options: string[], activeIds: string[] | undefined, match: string | undefined, fallbackIdx: number): { idx: number; optionId: string } {
@@ -84,8 +94,15 @@ function runPersona(p: PersonaScript) {
     ]
     steps.push({ questionId: q.question_id, question_ar: q.text_ar, why_now_ar: why, answer_ar: label, what_changed: changed })
   }
+  /* التقييمُ بعد الأسئلة لا قبلها: `familiesToRate` يشتقّ العائلاتِ من
+     مرشّحَيه الأوّلَين، فلا وجودَ لها قبل أن تتضح المنافسة — كما في الشاشة. */
+  if (p.rateFamiliesAt !== undefined) {
+    engine.setFamilyRatings(Object.fromEntries(engine.familiesToRate().map((f) => [f.family, p.rateFamiliesAt!])))
+  }
+
   const rec = engine.recommend()
   const v2 = rec.v2 as { confidence?: { overall: number; outputKind_ar: string } } | undefined
+  const cp = rec.composedPath
   return {
     persona: p.label_ar,
     stage: p.stage,
@@ -97,6 +114,24 @@ function runPersona(p: PersonaScript) {
       compositeTemplateId: rec.composite?.templateId ?? null,
       confidence: v2?.confidence?.overall ?? rec.confidence.total,
       outputKind_ar: v2?.confidence?.outputKind_ar ?? rec.confidence.band_ar,
+      /* يُكتب حين توجد خطّةٌ مركّبةٌ فقط — فالرحلاتُ التسعُ تبقى ببصمتها
+         كما هي، ولا يتحرّك خطُّ الأساس لأجل مفتاحٍ فارغ. */
+      ...(cp
+        ? {
+            composed: {
+              anchorDomain: cp.anchorDomain,
+              courseIds: cp.courses.map((c) => c.courseId),
+              totalHours: cp.totalHours,
+              /* المستدَلُّ يُعدّ: هو الفرقُ الذي أحدثه وصلُ تقييم العائلات
+                 بملاءمة المقرر، ولو انقطع السلكُ ثانيةً لعاد صفرا هنا. */
+              inferredSkills: cp.courses.reduce((n, c) => n + c.inferredSkills.length, 0),
+              coveredGaps: cp.coveredGaps.length,
+              uncoveredGaps: cp.uncoveredGaps.length,
+              relaxedForMinimum: cp.relaxedForMinimum,
+              matchesPathwayId: cp.matchesPathwayId,
+            },
+          }
+        : {}),
     },
   }
 }
@@ -177,6 +212,7 @@ for (const j of journeys) {
 const allDet = journeys.every((j) => j.deterministic)
 console.log(allDeterminismNote(allDet))
 function allDeterminismNote(ok: boolean) {
-  return ok ? '\n✅ كل الرحلات التسع حتمية عبر تشغيلين.' : '\n❌ رحلة غير حتمية — يمنع الدمج.'
+  /* العددُ يُقرأ لا يُكتب: «التسع» كانت مكتوبةً بخطّ اليد فصارت تكذب عند العاشرة */
+  return ok ? `\n✅ كل الرحلات (${journeys.length}) حتمية عبر تشغيلين.` : '\n❌ رحلة غير حتمية — يمنع الدمج.'
 }
 if (!allDet) process.exit(1)
