@@ -29,6 +29,8 @@ let makerId: string
 let checkerId: string
 
 const S = 'E2E' // بادئة معرفات الاختبار
+/* معرّفُ الدورة يولّده الخادم — يُملأ في أوّل اختبارٍ ويقرؤه ما بعده */
+let COURSE_ID = ''
 
 beforeAll(async () => {
   await setupTestDb()
@@ -52,16 +54,46 @@ describe('دورة النشر الكاملة', () => {
     expect(skill.status).toBe('draft')
 
     const course = await admin.createCourse({
-      id: `C-${S}-001`, pathwayId: 'PW-STU-003', sequence: 9, titleAr: 'دورة اختبار النشر الشامل',
+      pathwayId: 'PW-STU-003', sequence: 9, titleAr: 'دورة اختبار النشر الشامل',
       totalHours: 8, skillIds: [`SK-X-${S}-001`],
       modules: [{ sequence: 1, titleAr: 'وحدة الاختبار الأولى', hours: 8 }],
     }, makerId)
     expect(course.status).toBe('draft')
+    COURSE_ID = course.id
+    /* ═══ والمعرّفُ مولَّدٌ لا مكتوب ═══
+
+       لم يُرسَل `id` أعلاه أصلا — الخادمُ هو من يشتقّه. والمفحوصُ هنا
+       **القاعدةُ** لا الحرف: العائلةُ في المعرّف هي عائلةُ دورات المسار
+       الأمّ نفسِه. وهي ليست زينةً — `courseDomain` تقرؤها فتُخرج المجالَ
+       المعرفيّ، وعليه تقوم المرشِّحاتُ ومنعُ التزاحم.
+
+       والتوقّعُ يُشتقّ من القاعدة لا يُكتب بيد: لو تبدّلت دوراتُ
+       `PW-STU-003` غدا بقي الاختبارُ صادقا. */
+    expect(COURSE_ID, 'المعرّفُ المولَّد لا يتبع صيغةَ الكتالوج').toMatch(/^C-[A-Z0-9]+-\d+$/)
+    const familyOf = (id: string) => /^C-([A-Z0-9]+)-\d+$/.exec(id)?.[1] ?? ''
+    /* الدوراتُ الأصليّةُ وحدَها (`homePathwayId`) — والمساندةُ من عائلةٍ
+       أخرى عمدا، فعدُّها يخلط. */
+    const siblings = (await prisma.course.findMany({
+      where: { homePathwayId: 'PW-STU-003', NOT: { id: COURSE_ID } }, select: { id: true },
+    })).map((c) => c.id)
+    const theirs = new Set(siblings.map(familyOf))
+    expect(theirs.size, 'المسارُ الأمُّ بلا دوراتٍ أصليّة — تعطّل الفحصُ نفسُه').toBeGreaterThan(0)
+    expect(
+      theirs.has(familyOf(COURSE_ID)),
+      `المولَّدُ ${COURSE_ID} خارجَ عائلةِ مسارِه (${[...theirs].join(' · ')}) — يقع في «أخرى»`,
+    ).toBe(true)
+    /* ورقمُه يلي أكبرَ ما في عائلته هو — في الكتالوج كلِّه لا في المسار
+       وحدَه، فالعائلةُ تعبر المسارات ولا يجوز أن يصطدم رقمان. */
+    const inFamily = (await prisma.course.findMany({
+      where: { id: { startsWith: `C-${familyOf(COURSE_ID)}-` }, NOT: { id: COURSE_ID } }, select: { id: true },
+    })).map((c) => Number(/-(\d+)$/.exec(c.id)?.[1] ?? 0))
+    expect(Number(/-(\d+)$/.exec(COURSE_ID)![1]), 'الرقمُ ليس تاليا لأكبرِ ما في العائلة')
+      .toBeGreaterThan(Math.max(...inFamily))
 
     const pathway = await admin.createPathway({
       id: `PW-${S}-001`, title: 'مسار اختبار النشر', beforeText: 'قبل', afterText: 'بعد',
       durationWeeks: 4, weeklyHours: '4–5', level: 'تمهيدي', capstone: 'مشروع تخرج اختباري',
-      courseIds: [`C-${S}-001`],
+      courseIds: [COURSE_ID],
     }, makerId)
     expect(pathway.status).toBe('draft')
 
@@ -93,7 +125,7 @@ describe('دورة النشر الكاملة', () => {
   it('3) maker-checker: المنع ثم الاعتماد من مراجع آخر', async () => {
     await prisma.skill.update({ where: { id: `SK-X-${S}-001` }, data: { status: 'draft' } })
 
-    for (const [entityType, entityId] of [['skill', `SK-X-${S}-001`], ['course', `C-${S}-001`], ['pathway', `PW-${S}-001`]] as const) {
+    for (const [entityType, entityId] of [['skill', `SK-X-${S}-001`], ['course', COURSE_ID], ['pathway', `PW-${S}-001`]] as const) {
       const cr = await admin.submitChangeRequest(entityType, entityId, { action: 'create' }, makerId)
       await expect(admin.decide(cr.id, 'approve', undefined, makerId)).rejects.toThrow(AuthError) // اعتماد الذات ممنوع
       const done = await admin.decide(cr.id, 'approve', 'سليم', checkerId)
@@ -102,7 +134,7 @@ describe('دورة النشر الكاملة', () => {
 
     const statuses = await Promise.all([
       prisma.skill.findUnique({ where: { id: `SK-X-${S}-001` } }),
-      prisma.course.findUnique({ where: { id: `C-${S}-001` } }),
+      prisma.course.findUnique({ where: { id: COURSE_ID } }),
       prisma.pathway.findUnique({ where: { id: `PW-${S}-001` } }),
     ])
     expect(statuses.map((s) => s!.status)).toEqual(['approved', 'approved', 'approved'])
@@ -158,7 +190,7 @@ describe('دورة النشر الكاملة', () => {
     expect(old!.status).toBe('superseded')
 
     expect(payload.coreCatalog.launch_pathways.map((p) => p.id)).toContain(`PW-${S}-001`)
-    expect(payload.coreCatalog.courses.map((c) => c.course_id)).toContain(`C-${S}-001`)
+    expect(payload.coreCatalog.courses.map((c) => c.course_id)).toContain(COURSE_ID)
     expect(payload.coreCatalog.skill_extensions.map((s) => s.skill_id)).toContain(`SK-X-${S}-001`)
   })
 

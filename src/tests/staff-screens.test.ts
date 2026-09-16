@@ -26,7 +26,7 @@ const board = read('src/pages/trainer/CohortBoard.tsx')
 const grading = read('src/pages/trainer/GradingQueue.tsx')
 const schedule = read('src/pages/trainer/Schedule.tsx')
 const learners = read('src/pages/trainer/MyLearners.tsx')
-const adminNav = read('src/pages/admin/AdminLayout.tsx')
+const adminNav = read('src/pages/admin/nav-map.ts')
 
 describe('٢٣ · التصحيحُ في موضعٍ واحد — لا تبويبٌ يُحيل إلى لوح', () => {
   it('طابورُ التصحيح يحمل أدواتَه: المراجعةُ والدرجةُ والتغذيةُ الراجعة', () => {

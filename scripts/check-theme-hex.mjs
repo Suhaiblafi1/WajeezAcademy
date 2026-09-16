@@ -27,7 +27,7 @@ const FORBIDDEN_HEX = [
 /** مرافق الأسطح التي يجب ألا تحمل hex محظورا */
 const SURFACE_UTILS = ['bg', 'from', 'via', 'to', 'fill', 'stroke', 'ring'];
 
-/* ── حبرُ الخطر: عائلةٌ واحدةٌ مغطّاةٌ وأخرى ليست ──
+/* ── حبرُ الحالات: التغطيةُ بالدرجة لا بالعائلة ──
 
    `text-red-200` و`text-red-300` لهما تجاوزٌ في `src/styles/light.css` منذ
    المهمّة ٢٠ (كانتا ١٫٢:‏١ على الورق في سبعةَ عشرةَ شاشة). و**`text-rose-*`
@@ -36,10 +36,31 @@ const SURFACE_UTILS = ['bg', 'from', 'via', 'to', 'fill', 'stroke', 'ring'];
    الإتاحة **١٫٢٩:‏١ في المظهر الفاتح** — وأمسكها لأنّ الشاشةَ كانت في
    مجموعة الفحص. ولو كانت شاشةً غيرَ مفحوصةٍ لَمَرّت.
 
-   فالرمزُ `text-danger-ink` ينقلب في المظهرين (`--danger-ink` في
-   `src/index.css`)، وهذا الحارسُ يمنع عودةَ العائلة غير المغطّاة — في كلّ
-   ملفٍّ لا في المفحوص وحدَه. */
-const FORBIDDEN_INK = /\btext-rose-\d{2,3}\b/g;
+   وكان هذا الحارسُ يمنع عائلةً واحدةً باسمها (`rose`)، فمرّ من جانبه ما هو
+   أضيق: **درجةٌ** غيرُ مغطّاةٍ من عائلةٍ مغطّاة. `text-emerald-300` لها
+   تجاوزٌ و`text-emerald-200` ليس لها، ولوحُ «تمّ» في `WorkHeader` يكتب
+   الثانية — فاختفى نصُّه على الورق في **كلّ شاشةِ إدارة**، وبلّغ عنه صاحبُ
+   المنصّة (١٥ سبتمبر ٢٠٢٦) لا فحصٌ آليّ. ومعه ثلاثٌ أخرياتٌ في المسح نفسِه.
+
+   فالحارسُ الآن لا يحفظ أسماءَ عائلاتٍ ممنوعة: **يقرأ المغطّى من
+   `light.css` نفسِه** ويقارنه بالمستعمَل في `src/`. فأيُّ درجةٍ تُكتب بلا
+   تجاوزٍ تُسقطه — ولا يحتاج أحدٌ أن يتذكّر أيَّ عائلةٍ ناقصة. */
+
+/** عائلاتُ Tailwind ذاتُ الدرجات — والرموزُ (`teal-ink`، `gold-ink`) خارجَها
+    لأنّها بلا رقم، وهي المقصودةُ أصلا: تنقلب بالمتغيّر لا بتجاوزِ صنف. */
+const INK_FAMILIES = [
+  'red', 'rose', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald',
+  'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink',
+];
+const INK_USE = new RegExp(`\\btext-(${INK_FAMILIES.join('|')})-(\\d{2,3})\\b`, 'g');
+
+/* المغطّى يُقرأ من ورقة الفاتح: `.text-emerald-200 { … }` — وتُقبل الصيغةُ
+   ذاتُ الشفافيّة (`.text-red-200\/80`) لأنّ الدرجةَ نفسَها هي المغطّاة. */
+const LIGHT_CSS = readFileSync('src/styles/light.css', 'utf8');
+const COVERED_INK = new Set(
+  [...LIGHT_CSS.matchAll(new RegExp(`\\.text-(${INK_FAMILIES.join('|')})-(\\d{2,3})`, 'g'))]
+    .map((m) => `${m[1]}-${m[2]}`)
+);
 
 const hexAlt = FORBIDDEN_HEX.join('|');
 const utilAlt = SURFACE_UTILS.join('|');
@@ -51,9 +72,18 @@ const files = execSync(
 ).trim().split('\n').filter(Boolean);
 
 let violations = 0;
-let inkViolations = 0;
+const uncovered = new Map();
+
+/* التعليقُ يُفرَّغ ولا يُحذف: مسافاتٌ بعدد حروفه فتبقى أرقامُ الأسطر صادقة.
+   وهذا لازم — تعليقاتُ هذا المستودَع تشرح ما أُزيل فتذكر أسماءَ الأصناف،
+   وحارسٌ يطابق نصًّا في تعليقٍ حارسٌ يخضرّ لسببٍ خاطئ. */
+const blank = (m) => m.replace(/[^\n]/g, ' ');
+const stripComments = (src) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, blank).replace(/\/\/[^\n]*/g, blank);
+
 for (const file of files) {
-  const lines = readFileSync(file, 'utf8').split('\n');
+  const raw = readFileSync(file, 'utf8');
+  const lines = stripComments(raw).split('\n');
   lines.forEach((line, i) => {
     pattern.lastIndex = 0;
     let m;
@@ -61,11 +91,13 @@ for (const file of files) {
       violations++;
       console.error(`✗ ${file}:${i + 1} — ${m[0]}`);
     }
-    FORBIDDEN_INK.lastIndex = 0;
+    INK_USE.lastIndex = 0;
     let ink;
-    while ((ink = FORBIDDEN_INK.exec(line)) !== null) {
-      inkViolations++;
-      console.error(`✗ ${file}:${i + 1} — ${ink[0]} (لا تجاوزَ لها على الورق)`);
+    while ((ink = INK_USE.exec(line)) !== null) {
+      const shade = `${ink[1]}-${ink[2]}`;
+      if (COVERED_INK.has(shade)) continue;
+      if (!uncovered.has(shade)) uncovered.set(shade, []);
+      uncovered.get(shade).push(`${file}:${i + 1}`);
     }
   });
 }
@@ -77,13 +109,22 @@ if (violations > 0) {
    — هي تتكيف مع الوضعين تلقائيا. التفاصيل في src/index.css.`);
 }
 
+const inkViolations = [...uncovered.values()].reduce((n, at) => n + at.length, 0);
 if (inkViolations > 0) {
+  console.error('');
+  for (const [shade, at] of [...uncovered].sort()) {
+    console.error(`✗ text-${shade} — ${at.length} موضعا، بلا تجاوزٍ على الورق:`);
+    for (const where of at.slice(0, 6)) console.error(`    ${where}`);
+    if (at.length > 6) console.error(`    … و${at.length - 6} غيرها`);
+  }
   console.error(`
-❌ حارس الثيم: وُجد ${inkViolations} حبرَ خطرٍ من عائلة rose.
-   استخدم text-danger-ink — ينقلب في المظهرين. و«rose» بلا تجاوزٍ على الورق
-   فتُقاس نحوَ ١٫٣:‏١، وهو ما أمسكه فحصُ الإتاحة في المهمّة ٧٢.`);
+❌ حارس الثيم: ${inkViolations} موضعا يكتب درجةً لا تجاوزَ لها في المظهر الفاتح.
+   درجاتُ Tailwind الفاتحة مصمَّمةٌ للداكن، فتقيس على الورق نحوَ ١٫٣:‏١ —
+   أي نصٌّ موجودٌ غيرُ مرئيّ. والعلاجُ أحدُ اثنين:
+     • رمزٌ ينقلب بالمتغيّر: text-danger-ink · text-gold-ink · text-teal-ink
+     • أو تجاوزٌ مقيسٌ للدرجة في src/styles/light.css`);
 }
 
 if (violations + inkViolations > 0) process.exit(1);
 
-console.log(`✅ حارس الثيم: ${files.length} ملف نظيف — لا أسطح داكنة حرفية ولا حبرَ خطرٍ بلا تجاوز.`);
+console.log(`✅ حارس الثيم: ${files.length} ملف نظيف — لا أسطح داكنة حرفية، و${COVERED_INK.size} درجةَ حبرٍ مغطّاةٌ على الورق.`);

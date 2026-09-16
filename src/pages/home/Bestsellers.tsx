@@ -364,16 +364,25 @@ export function Bestsellers() {
                     <Target className="mt-1 h-3.5 w-3.5 shrink-0" />
                     <span className="line-clamp-3 min-w-0">تتخرّج بـ: {b.item.output}</span>
                   </p>
-                  {/* سطرُ الذيل: الحجمُ يمينا، و«تفاصيل المسار» يسارا — لافتةٌ
-                      خافتةٌ تقول إنّ البطاقةَ تُفتح، لا زرٌّ يزاحم المحتوى.
-                      كانت البطاقةُ بلا أيّ إشارةٍ إلى أنّها رابط (٨ سبتمبر ٢٠٢٦).
+                  {/* ═══ سطران لا سطرٌ واحد (١٥ سبتمبر ٢٠٢٦) ═══
 
-                      والخفوتُ بالحجم لا بالشفافيّة: `text-teal-light-ink/75`
+                      كانا في صفٍّ واحد: الحجمُ يمينا و«تفاصيل المسار» يسارا.
+                      والحجمُ ثلاثُ حقائقَ لا واحدة («٤ دورات · ٤٠ ساعة ·
+                      ٨ أسابيع»)، فيزاحم اللافتةَ ويُقرآن كتلةً واحدة.
+
+                      وطلب صاحبُ المنصّة رفعَه سطرا: «عدد الساعات والدورات
+                      أعلى بسطر، وتفاصيل المسار لوحدها أفقيا». والفراغُ الذي
+                      يُرفع إليه موجودٌ أصلا — `min-h` تتركه تحت المتن.
+
+                      و`mt-auto` انتقلت إليه لأنّه صار أوّلَ الذيل: هو الذي
+                      يهبط إلى قاع البطاقة، واللافتةُ تتبعه.
+
+                      واللافتةُ خافتةٌ بالحجم لا بالشفافيّة: `text-teal-light-ink/75`
                       أسقط التباينَ إلى ٣٫٨:١ على الورق الفاتح (فحصُ الإتاحة في
                       CI)، والحبرُ كاملا ينقلب إلى `#1F6E77` هناك فيبلغ ٤٫٥:١. */}
-                  <span className="mt-auto flex items-center justify-between gap-2 pt-2 text-fine text-muted-foreground">
-                    <span>{pathwaySizeAr(b.item)}</span>
-                    <span className="inline-flex shrink-0 items-center gap-1 font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
+                  <span className="mt-auto block pt-2 text-fine text-muted-foreground">{pathwaySizeAr(b.item)}</span>
+                  <span className="flex items-center text-fine">
+                    <span className="inline-flex items-center gap-1 font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
                       تفاصيل المسار
                       <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
                     </span>
@@ -421,12 +430,25 @@ export function Bestsellers() {
                   {b.item.promise && (
                     <p className="line-clamp-3 text-read leading-6 text-muted-foreground">{b.item.promise}</p>
                   )}
-                  <p className="text-read text-muted-foreground">
-                    {b.item.weeks} {b.item.weeks === 1 ? 'أسبوع' : 'أسابيع'}
-                  </p>
+                  {/* ═══ ورقاقةُ المهارة تصعد، والأسابيعُ تنزل (١٥ سبتمبر ٢٠٢٦) ═══
+
+                      كانت الرقاقةُ ملاصقةً لـ«تفاصيل الدورة» في ذيلٍ واحد.
+                      وهي صندوقٌ باسمٍ طويل («تقييم موثوقية المعلومات»)
+                      فينكسر سطرين إلى جانب اللافتة، فيُقرأ الذيلُ مزدحما.
+
+                      فقال صاحبُ المنصّة: «ضع البوكس الذي فيه الموثوقية في
+                      الأعلى بدل عدد الأسابيع، وعددُ الأسابيع ينزل». وهو
+                      تبديلٌ يصحّ بصريّا: «٢ أسابيع» كلمتان تجاوران اللافتةَ
+                      بلا انكسار، والرقاقةُ تأخذ سطرَها كاملا.
+
+                      وبطاقةُ المسار المجاورةُ ذيلُها سطرٌ واحد لأنّ حجمَها
+                      ثلاثُ حقائق — واختلافُهما مقصود. */}
+                  <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
+                    {b.item.skill}
+                  </span>
                   <span className="mt-auto flex items-center justify-between gap-2">
-                    <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
-                      {b.item.skill}
+                    <span className="text-read text-muted-foreground">
+                      {b.item.weeks} {b.item.weeks === 1 ? 'أسبوع' : 'أسابيع'}
                     </span>
                     <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
                       تفاصيل الدورة

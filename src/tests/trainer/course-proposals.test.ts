@@ -175,7 +175,7 @@ describe('ح-٢ · ح-٤ — الاقتراحُ يصير سجلّا ثمّ يُ�
   })
 
   it('وبابُ الطابور محروسٌ بصلاحيّةِ مراجعةِ اقتراحات المدرّبين', () => {
-    expect(code('src/pages/admin/AdminLayout.tsx'))
+    expect(code('src/pages/admin/nav-map.ts'))
       .toMatch(/to: "\/admin\/course-proposals"[^}]*need: "trainer\.change\.review"/)
     expect(code('src/App.tsx'), 'لا مسارَ لشاشة الطابور').toContain('/admin/course-proposals')
     expect(code('src/App.tsx'), 'لا مسارَ لشاشة المدرّب').toContain('/trainer/course-proposals')

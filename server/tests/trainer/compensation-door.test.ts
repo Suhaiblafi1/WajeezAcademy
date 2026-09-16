@@ -108,7 +108,9 @@ describe('وبابُها في مكانه', () => {
   })
 
   it('وحارسُ البابِ صلاحيّةُ الأتعاب نفسُها — لا أوسعُ ولا أضيق', () => {
-    const nav = readCode('src/pages/admin/AdminLayout.tsx')
+    /* خريطةُ القائمة انتقلت إلى ملفِّها (١٦ سبتمبر ٢٠٢٦) — يقرؤها الشريطُ
+       ودليلُ «كلّ الشاشات» معا. والمفحوصُ هو هو: البابُ وحارسُه. */
+    const nav = readCode('src/pages/admin/nav-map.ts')
     const i = nav.indexOf('/admin/trainer-compensation')
     expect(i, 'لا بابَ في القائمة — فلا يبلغه إلّا من يكتب مسارَه بيده').toBeGreaterThan(0)
     const entry = nav.slice(i, nav.indexOf('\n', i))

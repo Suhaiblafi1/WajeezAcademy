@@ -59,20 +59,40 @@ export default function TrustMetricsBar({ nested = false }: { nested?: boolean }
           </p>
         </div>
 
-        <dl className="reveal mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4 md:gap-x-6">
+        {/* ═══ الرقمُ يصغر ليُقرأ — والأيقونةُ تنزل إلى سطره ═══
+
+            كان كلُّ مقياسٍ ثلاثَ طبقات: مربّعٌ ٤٨×٤٨ للأيقونة، ثمّ رقمٌ
+            بـ٣٦ بكسلا يصير ٤٤ على الواسع، ثمّ لصيقةٌ تحته — واثنان في الصفّ
+            على الهاتف بفجوةٍ رأسيّةٍ ٣٢ بكسلا. فالأربعةُ تملأ شاشةً كاملةً
+            تقريبا، ووصفها صاحبُ المنصّة بـ«الدفشة» (١٥ سبتمبر ٢٠٢٦).
+
+            والعلاجُ ليس رقما أصغرَ وحدَه بل **طبقةً أقلّ**: المربّعُ يسقط،
+            والأيقونةُ تصير حرفا صغيرا في سطر اللصيقة — فتبقى تدلّ ولا تأخذ
+            سطرا لنفسها. والرقمُ ٢٤ ثمّ ٣٠: أكبرُ ما في الكتلة ولا يزاحمها.
+
+            وخيطٌ رفيعٌ بين الأعمدة على الواسع (`border-s` منطقيٌّ فينقلب مع
+            الاتّجاه): أربعةُ أرقامٍ متجاورةٍ بلا فاصلٍ تُقرأ رقما واحدا
+            طويلا — وهي العلّةُ نفسُها التي عولجت في `WorkHeader`. */}
+        <dl className="reveal mt-7 grid grid-cols-2 gap-y-7 md:grid-cols-4 md:gap-y-0">
           {metrics.map((m) => {
             const Icon = METRIC_ICON[m.key] ?? Building2
             return (
-              <div key={m.key} className="flex flex-col items-center text-center">
-                <span className="order-1 grid h-12 w-12 place-items-center rounded-2xl border border-teal/25 bg-teal/10">
-                  <Icon className="h-5 w-5 text-teal-light-ink" />
-                </span>
-                <dd className="order-2 mt-3 text-4xl font-black tabular-nums tracking-tight text-teal-light-ink md:text-[2.75rem]">
+              /* `div` يجمع المصطلحَ ووصفَه — وهو المسموحُ في `dl`. واللصيقةُ
+                 قبل القيمة في البنية (‏`dt` ثمّ `dd`) وبعدها في العرض
+                 (`order`)، فيقرأ قارئُ الشاشة «مؤسسة رائدة: ١٠٠+» ويرى
+                 الناظرُ الرقمَ أوّلا. */
+              <div key={m.key} className="flex flex-col items-center px-3 text-center md:border-s md:border-white/10 md:first:border-s-0">
+                {/* `items-start` لا `items-center`: اللصيقةُ تلتفّ سطرين في
+                    مقياسَين، فالأيقونةُ الوسطى تقف بين السطرين معلَّقةً في
+                    الفراغ. ومحاذاتُها لأوّل سطرٍ هي النمطُ القائمُ في
+                    المستودَع («تتخرّج بـ» في بطاقة المسار). */}
+                <dt className="order-2 mt-1.5 flex items-start justify-center gap-1.5 text-fine leading-snug text-muted-foreground">
+                  <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                  <span>{m.label_ar}</span>
+                </dt>
+                <dd className="order-1 text-2xl font-black tabular-nums tracking-tight text-teal-light-ink md:text-3xl">
                   {m.display_value}
                 </dd>
-                <dt className="order-3 mt-2 text-fine leading-snug text-muted-foreground md:text-xs">
-                  {m.label_ar}
-                </dt>
               </div>
             )
           })}

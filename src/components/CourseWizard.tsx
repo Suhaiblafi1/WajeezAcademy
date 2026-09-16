@@ -4,7 +4,7 @@
    نفس مبدأ PathwayWizard: خطوة لا تُفتح إلا بعد اكتمال ما يمنع التالية،
    وتعليمة قصيرة فوق كل خطوة بلغة غير تقنية — لا مصطلح برمجي. */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   COURSE_WIZARD_STEPS, EMPTY_COURSE_DRAFT, EMPTY_MODULE, courseBlockersOf,
@@ -12,7 +12,7 @@ import {
 } from "@/application/catalog/course-wizard";
 import SkillPicker from "@/components/SkillPicker";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
-import { apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -42,6 +42,24 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* ═══ المعرّفُ يُرى ولا يُكتب ═══
+
+     كان حقلا يُطلب من المؤلّف، نصُّه النائب «CRS-XXX-000» — وهي صيغةٌ
+     **يرفضها الخادم** (`C-XXX-000`)، فمن كتب ما قيل له رُدّ. وقرارُ صاحب
+     المنصّة (١٦ سبتمبر ٢٠٢٦): «تسمية الدورات من اختصاص النظام».
+
+     فصار سطرا يُقرأ: يظهر لحظةَ اختيار المسار الأمّ لأنّ العائلةَ منه
+     تُشتقّ. وهو **عرضٌ لا عقد** — الخادمُ يولّده ثانيةً عند الإنشاء،
+     والمعروضُ هنا ما سيكون إن لم تسبقه دورةٌ أخرى. */
+  const [nextId, setNextId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!d.pathwayId) { setNextId(null); return; }
+    let live = true;
+    void apiGet<{ id: string }>(`/api/admin/catalog/courses/next-id?pathwayId=${encodeURIComponent(d.pathwayId)}`)
+      .then((r) => { if (live) setNextId(r.id); })
+      .catch(() => { if (live) setNextId(null); });
+    return () => { live = false; };
+  }, [d.pathwayId]);
 
   const key = COURSE_WIZARD_STEPS[step].key as CourseWizardStepKey;
   const blockers = courseBlockersOf(key, d);
@@ -51,8 +69,8 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
   const create = async () => {
     setBusy(true); setError(null);
     try {
-      await apiPost("/api/admin/catalog/courses", {
-        id: d.id.trim(), pathwayId: d.pathwayId, sequence: Number(d.sequence) || 1,
+      const created = await apiPost<{ id: string }>("/api/admin/catalog/courses", {
+        pathwayId: d.pathwayId, sequence: Number(d.sequence) || 1,
         titleAr: d.titleAr.trim(), shortPromiseAr: d.shortPromiseAr.trim() || undefined,
         levelAr: d.levelAr.trim() || undefined, totalHours: Number(d.totalHours),
         skillIds: d.skillIds,
@@ -64,8 +82,10 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
           scenarioAr: m.scenarioAr.trim() || undefined, hours: Number(m.hours) || 1,
         })),
       });
-      toast("أُنشئت الدورة كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر");
-      onDone(d.id.trim());
+      /* والمعرّفُ من ردّ الخادم لا من المسوّدة: هو الذي ولّده، ومن ربط
+         اقتراحَ مدرّبٍ بمعرّفٍ خمّنه المتصفّحُ ربطه بدورةٍ لا وجودَ لها. */
+      toast(`أُنشئت الدورة ${created.id} كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر`);
+      onDone(created.id);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "فشل إنشاء الدورة");
     } finally {
@@ -108,7 +128,6 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
       {/* ١ · بيانات الدورة */}
       {key === "basics" && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <input value={d.id} onChange={(e) => setD({ ...d, id: e.target.value })} placeholder="المعرّف — CRS-XXX-000" dir="ltr" className={inputCls} />
           <select value={d.pathwayId} onChange={(e) => setD({ ...d, pathwayId: e.target.value })} className={selectCls}>
             <option value="">المسار الأم…</option>
             {pathways.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.id})</option>)}
@@ -118,6 +137,25 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
           <input value={d.totalHours} onChange={(e) => setD({ ...d, totalHours: e.target.value })} type="number" min={1} placeholder="إجمالي الساعات" className={inputCls} />
           <input value={d.shortPromiseAr} onChange={(e) => setD({ ...d, shortPromiseAr: e.target.value })} placeholder="الوعد المختصر (اختياري)" className={`${inputCls} sm:col-span-2`} />
           <input value={d.levelAr} onChange={(e) => setD({ ...d, levelAr: e.target.value })} placeholder="المستوى (اختياري)" className={inputCls} />
+
+          {/* سطرُ المعرّف — يشغل عرضَ الشبكة كلَّه ليُقرأ سطرا لا حقلا رابعا */}
+          <Inset className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 sm:col-span-2 lg:col-span-3">
+            <span className="text-fine font-bold text-muted-foreground">معرّف الدورة</span>
+            {d.pathwayId ? (
+              nextId ? (
+                <>
+                  <span dir="ltr" className="font-mono text-sm font-black text-teal-light-ink">{nextId}</span>
+                  <span className="text-fine text-muted-foreground">
+                    — يولّده النظام من المسار الأمّ، ولا يُكتب بيد
+                  </span>
+                </>
+              ) : (
+                <span className="text-fine text-muted-foreground">يُحسب…</span>
+              )
+            ) : (
+              <span className="text-fine text-muted-foreground">يظهر بعد اختيار المسار الأمّ</span>
+            )}
+          </Inset>
         </div>
       )}
 
@@ -202,7 +240,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
       {key === "review" && (
         <div className="space-y-3 text-sm">
           <Card className="bg-paper/20">
-            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-fine text-muted-foreground">({d.id})</span></p>
+            <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-fine text-muted-foreground">({nextId ?? "—"})</span></p>
             <p className="mt-1 text-read text-muted-foreground">
               المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>

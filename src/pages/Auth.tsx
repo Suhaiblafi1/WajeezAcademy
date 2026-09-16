@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router'
-import { Compass, Route as RouteIcon, BookOpen } from 'lucide-react'
+import { Compass, Presentation } from 'lucide-react'
 import AuthGate from '@/components/AuthGate'
 import { Card, Inset } from '@/components/ui/Surface'
 import SiteShell from '@/components/SiteShell'
@@ -27,29 +27,35 @@ export default function Auth() {
             من وصل هذه الصفحةَ من قلبٍ ضغطه أو من شراءٍ بدأه جاء **بنيّة**،
             وتلك محفوظةٌ في بوّابتها (`FavoriteButton`) فيعود إليها بعد
             الدخول. ومن وصلها من زرِّ «دخول» في الترويسة لا نيّةَ معه: يجد
-            نموذجا يسأله بريدَه ولا يقول لمَ.
+            نموذجا يسأله بريدَه ولا يقول لمَ. فهذا جوابُ «لماذا حسابٌ أصلا»،
+            وهو تحت النموذج لا فوقه: من جاء ليدخل فعلا لا يُزاح نموذجُه.
 
-            فالأبوابُ الثلاثةُ هنا هي جوابُ «لماذا حسابٌ أصلا»: يبدأ من
-            تشخيصٍ يقيس، أو مسارٍ يختاره، أو دورةٍ بعينها — ثمّ يصير للحساب
-            ما يحفظه. وهي تحت النموذج لا فوقه: من جاء ليدخل فعلا لا يُزاح
-            نموذجُه من مكانه. */}
+            ═══ وثلاثةٌ صارت اثنتين — لأنّ الثلاثةَ كانت تخاطب واحدا ═══
+
+            كانت ثلاثةَ أبواب: تشخيصٌ ومساراتٌ ودورةٌ بعينها. وكلُّها تفترض
+            **متعلّما**. وبلّغ صاحبُ المنصّة (١٥ سبتمبر ٢٠٢٦): «أنت تدعوه
+            إلى التشخيص وهو أصلا مدرّب — فكيف تدعوه؟».
+
+            والبلاغُ يصدّقه ما في الشيفرة: `‎/join-trainer` يُحيل من قدّم
+            طلبَه إلى هذه الصفحة ليدخل (`JoinTrainer.tsx`)، و`TrainerLayout`
+            كذلك. فالمدرّبُ يبلغها بابا معلوما، ويُعرض عليه أن يقيس مستواه.
+
+            فصارتا سطرَين يسأل كلٌّ منهما **من أنت** قبل أن يقول ما تفعل.
+            وسقط «تصفّح المسارات» و«دورةٌ بعينها»: كلاهما في ترويسة الموقع
+            على بُعد نقرةٍ، وليسا جوابا لسؤالِ الهويّة. */}
         <Card as="section" className="mx-auto mt-8 max-w-md">
           <h2 className="text-sm font-black">أوّلُ مرّةٍ هنا؟</h2>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الحسابُ يحفظ ما تبدؤه — فابدأ بشيءٍ يعنيك، ثمّ أنشئه ليبقى معك.
+            الحسابُ يحفظ ما تبدؤه — وبدايتُك تختلف باختلافك:
           </p>
           <div className="mt-3 grid gap-2">
             <Inset as="a" interactive href="/#diagnostic" className="flex items-center gap-2.5 text-read leading-6">
               <Compass className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              <span><b className="text-foreground">قِس مستواك أوّلا</b> — التشخيصُ مجّانيٌّ ويقترح عليك مسارَك</span>
+              <span><b className="text-foreground">إن كنت متعلّما</b> — ابدأ بالتشخيص المجّانيّ: يقيس مستواك ويقترح مسارَك</span>
             </Inset>
-            <Inset as={Link} interactive to="/pathways" className="flex items-center gap-2.5 text-read leading-6">
-              <RouteIcon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              <span><b className="text-foreground">تصفّح المسارات</b> — رحلةٌ كاملةٌ من حيث أنت إلى حيث تريد</span>
-            </Inset>
-            <Inset as={Link} interactive to="/courses" className="flex items-center gap-2.5 text-read leading-6">
-              <BookOpen className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              <span><b className="text-foreground">أو دورةً بعينها</b> — إن كنت تعرف ما ينقصك</span>
+            <Inset as={Link} interactive to="/join-trainer" className="flex items-center gap-2.5 text-read leading-6">
+              <Presentation className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+              <span><b className="text-foreground">إن كنت مدرّبا ولم تقدّم طلبَ الانضمام</b> — ابدأ من هنا</span>
             </Inset>
           </div>
         </Card>
