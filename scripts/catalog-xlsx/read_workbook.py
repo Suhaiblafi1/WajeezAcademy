@@ -26,6 +26,7 @@ from openpyxl import load_workbook
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CATALOG = os.path.join(ROOT, "src", "data", "catalog", "core-catalog.v2.json")
 SKILLS = os.path.join(ROOT, "src", "data", "catalog", "skills.v1.ar.json")
+PROPOSED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "proposed-courses.json")
 
 SENTINEL = "(حذف)"
 EDIT_MARK = "⟵"
@@ -68,11 +69,16 @@ def load_sources() -> dict[str, dict]:
         cat = json.load(f)
     with open(SKILLS, encoding="utf-8") as f:
         sk = json.load(f)
+    with open(PROPOSED, encoding="utf-8") as f:
+        pr = json.load(f)
     idx = {
         "courses": {c["course_id"]: c for c in cat["courses"]},
         "modules": {m["module_id"]: m for m in cat["modules"]},
         "skills": {s["skill_id"]: s for s in sk["skills"]},
-        "proposed": {},
+        # مصدرُ الدوراتِ المقترحةِ ملفُّها لا الكتالوج — فهي اقتراحٌ لم يدخله
+        # بعد. وتركُها فارغةً كان يردُّ كلَّ تعديلٍ فيها «معرّفٌ لا أصلَ له»،
+        # ويوقف بالمردودِ الواحدِ استيرادَ الورقاتِ الأخرى كلِّها.
+        "proposed": {c["proposed_id"]: c for c in pr["courses"]},
     }
     known = {s["slug"] for s in sk["skills"]}
     known |= {e.get("slug") for e in cat.get("skill_extensions", []) if e.get("slug")}
