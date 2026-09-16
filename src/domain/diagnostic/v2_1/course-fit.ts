@@ -18,6 +18,7 @@
 import { courseById, catalogCourses } from '../catalog'
 import { TARGET_LEVEL } from '../v2/skills'
 import { pathwayDomainsV2 } from '../v2/data'
+import { resolveSkillLevels, INFERRED_EVIDENCE_WEIGHT } from './skill-families'
 import type { CatalogCourse } from '../types'
 import type { DecisionContext, DomainId, SkillState } from '../v2/types'
 
@@ -102,6 +103,9 @@ export interface CourseFit {
   gapSkills: string[]
   /** مهاراته التي أتقنها أصلا — كل واحدة تخفض قيمة المقرر */
   masteredSkills: string[]
+  /** مهاراته التي جاء مستواها من تقييم عائلتها لا من قياسها — ترجيحٌ يُقال
+      للمتعلم كي يعرف كم من حكمِنا عليه دليلٌ وكم منه ترجيح */
+  inferredSkills: string[]
   /** مهاراته غير المقيسة */
   unknownSkills: string[]
   reason_ar: string
@@ -129,17 +133,29 @@ export function assessCourseFit(course: CatalogCourse, ctx: DecisionContext, dom
   const gapSkills: string[] = []
   const masteredSkills: string[] = []
   const unknownSkills: string[] = []
+  const inferredSkills: string[] = []
   let needSum = 0
+  /* تقييمُ العائلة يدخل هنا كما يدخل منافسةَ الكيانات (assessEntitySkills) —
+     كان لا يدخل، فيُرتَّب المسارُ الوسيط على ربع مهاراته والباقي تخمينٌ ثابت. */
+  const resolved = resolveSkillLevels([...course.skill_slugs], ctx.skillStates, ctx.familyRatings ?? {})
   for (const slug of course.skill_slugs) {
-    const st = ctx.skillStates.get(slug)
-    if (st?.state === 'measured' && st.level !== undefined) {
-      if (st.level >= TARGET_LEVEL) {
+    const r = resolved.get(slug)
+    if (r?.provenance === 'measured' && r.level !== null && r.level !== undefined) {
+      if (r.level >= TARGET_LEVEL) {
         masteredSkills.push(slug)
         /* أتقنها: المقرر لا يضيف له شيئا — حاجة صفر */
       } else {
         gapSkills.push(slug)
-        needSum += Math.max(0, TARGET_LEVEL - st.level) / TARGET_LEVEL
+        needSum += Math.max(0, TARGET_LEVEL - r.level) / TARGET_LEVEL
       }
+    } else if (r?.provenance === 'inferred' && r.level !== null && r.level !== undefined) {
+      /* ترجيحٌ لا دليل — يحرّك الحاجة بوزنه المعلن ولا يبلغ بها طرفا.
+         ولا يدخل masteredSkills أبدا: إتقانٌ مستدَلٌّ من تقييمٍ ذاتيٍّ لعائلةٍ
+         كاملة يحرم المتعلّمَ دورةً لم يُقَس فيها. وملءُ التغطية بالترجيح يجعل
+         التشخيص أكملَ لا أصدق — و«لا أعرف» إشارةٌ تُفقد إن مُلئت. */
+      inferredSkills.push(slug)
+      const raw = Math.max(0, TARGET_LEVEL - r.level) / TARGET_LEVEL
+      needSum += UNKNOWN_NEED + INFERRED_EVIDENCE_WEIGHT * (raw - UNKNOWN_NEED)
     } else {
       unknownSkills.push(slug)
       needSum += UNKNOWN_NEED
@@ -160,6 +176,11 @@ export function assessCourseFit(course: CatalogCourse, ctx: DecisionContext, dom
   const bits: string[] = []
   if (gapSkills.length > 0) bits.push(`يسدّ ${gapSkills.length} فجوة مقيسة`)
   if (masteredSkills.length > 0) bits.push(`${masteredSkills.length} من مهاراته أتقنتها أصلا`)
+  /* يُقال حين يغلب الترجيحُ لا في كل مرّة: الصدقُ أن يعرف متى حكمُنا مبنيٌّ
+     على تقييمه لعائلته لا على قياسِ مهارته. */
+  if (inferredSkills.length > gapSkills.length + masteredSkills.length) {
+    bits.push(`مستواه مُرجَّحٌ من تقييمك لعائلته — لا مقيسٌ بسؤال`)
+  }
   if (domainMatch >= 0.8) bits.push('في صميم مجالك')
   else if (domainMatch <= 0.2) bits.push('خارج مجالك الأقرب')
   if (levelMatch >= 0.9) bits.push('بمستواك')
@@ -179,6 +200,7 @@ export function assessCourseFit(course: CatalogCourse, ctx: DecisionContext, dom
     total,
     gapSkills,
     masteredSkills,
+    inferredSkills,
     unknownSkills,
     reason_ar: bits.join(' · ') || 'ملاءمة متوسطة بلا إشارة قوية',
   }

@@ -13,6 +13,7 @@ import {
   learnerLevel,
   MAX_SUBSTITUTIONS,
 } from '../../../domain/diagnostic/v2_1/course-fit'
+import { familyIndex, INFERRED_EVIDENCE_WEIGHT } from '../../../domain/diagnostic/v2_1/skill-families'
 import { assessDomainsV21, derivePersonaV21 } from '../../../domain/diagnostic/v2_1/engine'
 import type { DecisionContext, SkillState } from '../../../domain/diagnostic/v2/types'
 import type { FactBag } from '../../../domain/diagnostic/types'
@@ -130,5 +131,52 @@ describe('ملاءمة المقرر — لكل مقرر مهاراته', () => {
     expect(c.masteredSkills.length).toBe(0)
     expect(c.unknownSkills.length).toBe(catalogCourses[0].skill_slugs.length)
     expect(c.skillNeed).toBe(0.5)
+  })
+
+  /* ═══ تقييمُ العائلاتِ يصل ملاءمةَ المقرر ═══
+
+     العلّة: المتعلّم يقيّم عائلاته في شبكةٍ تُعرض له، فتستعمله منافسةُ الكيانات
+     (assessEntitySkills في compete.ts) ولا تستعمله ملاءمةُ المقرر — تقرأ
+     ctx.skillStates وحدَها وتعطي كلَّ ما عداها UNKNOWN_NEED ثابتة. بل إنّ
+     composePath يحسب resolveSkillLevels ثمّ يستدعي assessCourseFit فتُرمى
+     نتيجتُه. فالمسارُ الوسيط يُرتَّب على ٢٥٪ من مهاراته مقيسةً، والباقي تخمين.
+
+     والشرطُ الذي لا يُتنازل عنه: **المستدَلُّ يبقى مستدَلّا.** ملءُ التغطية
+     بترجيحٍ يجعل التشخيصَ أكملَ لا أصدق — و«لا أعرف» إشارةٌ تُفقد إن مُلئت.
+     فالاستدلالُ يحرّك الحاجةَ بوزنه المعلن (INFERRED_EVIDENCE_WEIGHT) ولا
+     يُتقن مهارةً أبدا: إتقانٌ مستدَلٌّ يحرم المتعلّمَ دورةً بناءً على تقديرٍ
+     ذاتيٍّ لعائلةٍ كاملة. */
+  it('تقييمُ العائلة يُقرأ في ملاءمة المقرر — ويبقى ترجيحا لا دليلا', () => {
+    const idx = familyIndex()
+    const course = catalogCourses.find((c) => c.skill_slugs.every((s) => idx.familyOf.has(s)))
+    expect(course, 'لا مقرّرَ كلُّ مهاراته ذاتُ عائلة').toBeTruthy()
+    const fams = [...new Set(course!.skill_slugs.map((s) => idx.familyOf.get(s)!))]
+
+    const facts = { career_stage: fact('manager') }
+    const bare = ctxOf(facts)
+    const measured = ctxOf(facts, Object.fromEntries(course!.skill_slugs.map((s) => [s, 5])))
+    const inferred: DecisionContext = { ...ctxOf(facts), familyRatings: Object.fromEntries(fams.map((f) => [f, 5])) }
+
+    const b = assessCourseFit(course!, bare)
+    const m = assessCourseFit(course!, measured)
+    const i = assessCourseFit(course!, inferred)
+
+    /* ١) القياسُ المباشر يُتقن ويُصفّر الحاجة — كما كان */
+    expect(m.skillNeed).toBe(0)
+    expect(m.masteredSkills).toHaveLength(course!.skill_slugs.length)
+
+    /* ٢) والاستدلالُ يُقرأ: الحاجةُ تنخفض عن المجهول */
+    expect(i.skillNeed).toBeLessThan(b.skillNeed)
+
+    /* ٣) ولا يُتقن — المقرّر يبقى في خطّته */
+    expect(i.masteredSkills).toHaveLength(0)
+    expect(i.skillNeed).toBeGreaterThan(0)
+
+    /* ٤) وبوزنٍ معلن لا مُخترَع: نصفُ المسافة إلى المقيس لا كلُّها */
+    expect(i.skillNeed).toBeCloseTo(b.skillNeed - INFERRED_EVIDENCE_WEIGHT * (b.skillNeed - m.skillNeed), 6)
+
+    /* ٥) ويُقال للمتعلّم كم من حكمِنا ترجيح */
+    expect(i.inferredSkills).toHaveLength(course!.skill_slugs.length)
+    expect(m.inferredSkills).toHaveLength(0)
   })
 })
