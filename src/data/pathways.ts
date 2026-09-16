@@ -57,8 +57,11 @@ function levelOf(level: string): Pathway['level'] {
 export function pathwayCategory(id: string): string {
   const fam = id.split('-')[1]
   switch (fam) {
+    /* GRPH مع FND/STU: التصميمُ حرفةٌ يدخلها الطالبُ والمستقلُّ قبل الموظّف —
+       وجمهورُ PW-GRPH-001 في ملفّه التعريفيّ student · early_career · freelancer. */
     case 'FND':
     case 'STU':
+    case 'GRPH':
       return 'أفراد ومهن ناشئة'
     case 'GOV':
       return 'حكومي'
@@ -96,6 +99,7 @@ const SECTOR_BY_DOMAIN: Record<string, string> = {
   communication_influence: 'التطوير المهني والتواصل',
   family_parenting: 'التطوير المهني والتواصل',
   personal_development: 'التطوير المهني والتواصل',
+  visual_design: 'التصميم والإبداع',
 }
 
 export function pathwayDomain(id: string): string {
@@ -112,6 +116,7 @@ export const pathwayDomains = [
   'المالية وريادة الأعمال',
   'القطاع الحكومي',
   'التطوير المهني والتواصل',
+  'التصميم والإبداع',
 ]
 
 function skillsOf(raw: CoreCatalogRaw, courseIds: string[]): string[] {

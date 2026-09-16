@@ -19,7 +19,8 @@
     { "id": "communication_influence", "name_ar": "التواصل والتأثير والتفاوض", "desc_ar": "خطابة تنفيذية وتفاوض وتأثير." },
     { "id": "learning_design", "name_ar": "تصميم التعلم وإعداد المدربين", "desc_ar": "تصميم تجارب تعلم وبرامج تدريبية." },
     { "id": "family_parenting", "name_ar": "الأسرة والتربية", "desc_ar": "أهداف أسرية وتربوية — لا مسار حاليًا (فجوة كتالوج موثقة)." },
-    { "id": "personal_development", "name_ar": "التطوير الشخصي العام", "desc_ar": "نمو شخصي وثقافة عامة — لا مسار مخصص حاليًا (فجوة كتالوج موثقة)." }
+    { "id": "personal_development", "name_ar": "التطوير الشخصي العام", "desc_ar": "نمو شخصي وثقافة عامة — لا مسار مخصص حاليًا (فجوة كتالوج موثقة)." },
+    { "id": "visual_design", "name_ar": "التصميم البصريّ والهويّة", "desc_ar": "من يصنع أثرا بصريّا — تصميما أو هويّةً أو موادَّ منشورة — ويحتاج نظاما يُطبَّق وقرارا يُبرَّر." }
   ],
   "pathway_domains": {
     "PW-STU-003": ["career_direction"],
@@ -41,7 +42,8 @@
     "PW-CYB-001": ["cyber_risk"],
     "PW-COM-001": ["communication_influence"],
     "PW-NEG-001": ["communication_influence", "sales"],
-    "PW-LND-001": ["learning_design"]
+    "PW-LND-001": ["learning_design"],
+    "PW-GRPH-001": ["visual_design"]
   },
   "goal_domains": {
     "employment_advancement": ["employment_readiness"],

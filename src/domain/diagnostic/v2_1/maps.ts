@@ -219,6 +219,12 @@ export const NEEDS_V21: NeedDefV21[] = [
   { code: 'need_finance', label_ar: 'المالية وفهم الأرقام', stages: [...EMPLOYED_LIKE, 'founder', 'freelancer'], domains: ['finance_mgmt'] },
   { code: 'need_learning_design', label_ar: 'تصميم التعلم والتدريب', stages: ['trainer_ld', 'manager', 'senior_manager'], domains: ['learning_design'] },
   { code: 'need_business', label_ar: 'بناء مشروعي من الصفر', stages: ['founder', 'freelancer', 'other_unsure', 'experienced'], domains: ['entrepreneurship'] },
+  /* بابُ الوصول إلى `visual_design` — ومن دونه يبقى PW-GRPH-001 منشورا لا
+     يُرشَّح أبدا، كما بقي PW-GOV-002 قبل البند ٣٩. يحرسه
+     src/tests/diagnostic/v2_1/domain-reachability.test.ts.
+     والمراحلُ سبعٌ لا «all»: التصميمُ حرفةُ من يصنع بيده، فلا يُعرض على
+     مديرٍ أو قائدٍ سألَ عن القيادة. */
+  { code: 'need_visual_design', label_ar: 'التصميم البصري والهوية', stages: ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'freelancer', 'founder', 'other_unsure'], domains: ['visual_design'] },
   { code: 'need_unsure', label_ar: 'غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي', stages: 'all', domains: [] },
 ]
 
@@ -344,8 +350,10 @@ export const RIASEC_DOMAINS: Record<RiasecDim, DomainId[]> = {
   riasec_realistic: ['operations'],
   /* تحليل معلومات معقدة، بحث عميق، أسئلة بلا إجابة مباشرة */
   riasec_investigative: ['data_decision', 'cyber_risk'],
-  /* صناعة محتوى وتصميم وسرد، مهام مفتوحة، لغة وصورة */
-  riasec_artistic: ['marketing_growth', 'communication_influence'],
+  /* صناعة محتوى وتصميم وسرد، مهام مفتوحة، لغة وصورة.
+     `visual_design` أُضيف حين صار للتصميم مسارٌ يُرشَّح — والسطرُ كان يقول
+     «وتصميم» منذ كتابته ولا مجالَ في الكتالوج يحمله. */
+  riasec_artistic: ['marketing_growth', 'communication_influence', 'visual_design'],
   /* مساعدة الآخرين على الفهم، الشرح والتدريب، التعاون */
   riasec_social: ['learning_design', 'people_leadership'],
   /* قيادة مبادرة وإقناع، بيع وتفاوض، منافسة ونتائج */

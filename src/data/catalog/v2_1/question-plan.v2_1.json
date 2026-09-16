@@ -2077,6 +2077,36 @@
       ],
       "final_status": "active_b2c"
     },
+    "QB-M4-040": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «visual_hierarchy» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "visual_hierarchy",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QB-M4-041": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "adaptive",
+      "action": "rewrite",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "يقيس مهارة «brand_identity_design» بمقياس الدليل — تغيّر الفجوة المقيسة والثقة لكل مسار يتطلبها.",
+      "why_ar": "سؤال دليل مهاري — يُطرح فقط عندما تكون المهارة متطلبة لمرشح متصدر وقادرة على تغيير الترتيب.",
+      "measures": [
+        "brand_identity_design",
+        "skill_vector"
+      ],
+      "final_status": "active_b2c"
+    },
     "QB-M5-001": {
       "surface": "b2c",
       "layer21": "domain_differentiation",
@@ -3102,7 +3132,8 @@
         "operations",
         "finance_mgmt",
         "learning_design",
-        "entrepreneurship"
+        "entrepreneurship",
+        "visual_design"
       ],
       "impact_ar": "يكتشف المجال — محرك التمييز الرئيس بين المسارات والقوالب.",
       "why_ar": "الاحتياج الحقيقي لا اسم المسار.",

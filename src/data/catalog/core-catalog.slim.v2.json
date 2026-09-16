@@ -462,6 +462,29 @@
         "C-LND-105"
       ],
       "total_hours": 40
+    },
+    {
+      "id": "PW-GRPH-001",
+      "title": "الهويّة البصريّة من الأساس: من تصميمٍ يُعجب إلى نظامٍ يُطبَّق",
+      "short_title": "التصميم البصريّ والهويّة",
+      "audience": "من يصمّم بالذوقِ وحده — طالبٌ أو مبتدئٌ أو مستقلٌّ — ويريد أن يسلّم نظاما بصريّا يطبّقه غيرُه ويدافع عنه بسببٍ يقوله.",
+      "not_for": "من يريد تصميمَ واجهاتِ المنتجاتِ الرقميّةِ وتجربةَ المستخدم؛ يُوجَّه إلى PW-PRD-001. ولا تدرّب هذه الدورةُ على الرسمِ اليدويِّ ولا على فنِّ الخطِّ العربيِّ الحرفيّ — الخطُّ هنا يُختار ويُضبَط لا يُكتَب.",
+      "entry": "١٦ سنةً فأكثر، جهازٌ يشغّل برنامجَ تصميمٍ متجهيٍّ ونقطيّ، ٥–٦ ساعاتٍ أسبوعيّا، واستعدادٌ لعرضِ العملِ على مراجعٍ وتلقّي نقدٍ مكتوب.",
+      "before": "تصميمٌ يُعجب صاحبَه ولا يملك سببا يقوله، وملفٌّ لا يفتحه غيرُه، وهويّةٌ تُكسَر في أوّلِ تطبيق.",
+      "after": "نظامٌ بصريٌّ بدليلِ استعمالٍ يطبّقه غيرُ مصمّمِه، وحزمةُ تسليمٍ يعمل عليها المنفّذُ بلا سؤال، وملفُّ أعمالٍ كلُّ قرارٍ فيه مُبرَّر.",
+      "duration_weeks": 10,
+      "weekly_hours": "5–6",
+      "level": "تأسيسي–تطبيقي",
+      "delivery": "هجين: تعلم ذاتي + ورشة نقدٍ أسبوعيّةٍ على العملِ المعروض + مراجعةُ ممارسٍ عند تسليمِ نظامِ الهويّة.",
+      "capstone": "نظامُ هويّةٍ بصريّةٍ كاملٌ لجهةٍ حقيقيّةٍ أو مفترضة: شعارٌ بصيغِه، ونظامٌ لونيٌّ ونصّيّ، ودليلُ استعمالٍ يطبّقه غيرُه، وثلاثةُ تطبيقاتٍ منفَّذة.",
+      "outcome_metric": "٧٥٪ يسلّمون نظامَ هويّةٍ يجتاز مراجعةَ الاتّساق؛ ٧٠٪ ينتج غيرُ مصمّمٍ من دليلِهم مادّةً صحيحةً من أوّلِ محاولة.",
+      "course_ids": [
+        "C-GRPH-101",
+        "C-GRPH-102",
+        "C-GRPH-103",
+        "C-GRPH-104"
+      ],
+      "total_hours": 56
     }
   ],
   "courses": [
@@ -2888,6 +2911,168 @@
         "إدارة الاجتماعات الرقمية",
         "التعبير الواضح"
       ]
+    },
+    {
+      "course_id": "C-GRPH-101",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 1,
+      "title_ar": "دورة أساسيات التصميم البصريّ: ضبط التسلسلِ والمسافةِ واللون",
+      "subtitle_ar": "ما تقرؤه العينُ أوّلا يُقرَّر لا يُصادَف · صفحةٌ على شبكةٍ تُحاسَب بالمحاذاة",
+      "level_ar": "تأسيسي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "visual_hierarchy",
+        "white_space",
+        "colour_theory",
+        "grid_layout"
+      ],
+      "skill_ids": [
+        "SK-GRPH-001",
+        "SK-GRPH-002",
+        "SK-GRPH-003",
+        "SK-GRPH-004"
+      ],
+      "skill_names_ar": [
+        "التسلسل البصري",
+        "المساحة البيضاء",
+        "نظرية اللون",
+        "الشبكة والتخطيط"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-102",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 2,
+      "title_ar": "دورة التايبوغرافي والخطّ العربيّ: اختيار الخطِّ وضبطُ إيقاعِ النصّ",
+      "subtitle_ar": "الخطُّ يُختار بالوسيطِ والجمهور · والنصُّ يُختبَر على المقاسِ الفعليّ قبل اعتماده",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "arabic_type_selection",
+        "type_hierarchy_spacing",
+        "bilingual_typesetting",
+        "readability_testing"
+      ],
+      "skill_ids": [
+        "SK-GRPH-016",
+        "SK-GRPH-017",
+        "SK-GRPH-018",
+        "SK-GRPH-019"
+      ],
+      "skill_names_ar": [
+        "اختيار الخطّ العربي",
+        "إيقاع النصّ وتباعده",
+        "الركن الثنائي عربي/لاتيني",
+        "اختبار المقروئية"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-103",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 3,
+      "title_ar": "دورة أدوات التصميم الرقميّ: إخراج ملفٍّ نظيفٍ قابلٍ للتسليم",
+      "subtitle_ar": "المسارُ والطبقةُ والقناعُ · وملفٌّ يفتحه غيرُك فيعمل لا فيتوقّف",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "vector_editing",
+        "raster_editing",
+        "design_file_hygiene",
+        "design_handoff"
+      ],
+      "skill_ids": [
+        "SK-GRPH-012",
+        "SK-GRPH-013",
+        "SK-GRPH-014",
+        "SK-GRPH-015"
+      ],
+      "skill_names_ar": [
+        "التحرير المتجهي",
+        "تحرير الصور النقطية",
+        "نظافة ملف التصميم",
+        "تسليم التصميم"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-104",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 4,
+      "title_ar": "دورة الهويّة البصريّة: بناء نظامٍ يُطبَّق لا شعارٍ يُعجب",
+      "subtitle_ar": "الشعارُ عنصرٌ في نظام · والدليلُ يكتبه المصمّمُ ليطبّقه غيرُه بلا سؤال",
+      "level_ar": "تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "brand_identity_design",
+        "logo_systems",
+        "brand_guidelines",
+        "brand_application"
+      ],
+      "skill_ids": [
+        "SK-GRPH-005",
+        "SK-GRPH-006",
+        "SK-GRPH-007",
+        "SK-GRPH-008"
+      ],
+      "skill_names_ar": [
+        "تصميم الهوية البصرية",
+        "أنظمة الشعار",
+        "دليل الهوية",
+        "تطبيق الهوية"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-105",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 5,
+      "title_ar": "دورة تصميم المطبوعات ومحتوى الشبكات: تكييف العملِ لكلِّ مقاس",
+      "subtitle_ar": "المقاسُ يتغيّر والتسلسلُ لا يسقط · وملفُّ الطباعةِ يُضبَط قبل التسليمِ لا بعد الردّ",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "editorial_layout",
+        "print_preparation",
+        "social_format_adaptation",
+        "brand_application"
+      ],
+      "skill_ids": [
+        "SK-GRPH-011",
+        "SK-GRPH-009",
+        "SK-GRPH-010",
+        "SK-GRPH-008"
+      ],
+      "skill_names_ar": [
+        "تخطيط المطبوع",
+        "تجهيز ملفات الطباعة",
+        "تكييف المقاسات الرقمية",
+        "تطبيق الهوية"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-106",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 6,
+      "title_ar": "دورة موجز التصميم والعرض على العميل: تحويل الطلبِ إلى قرارٍ مُبرَّر",
+      "subtitle_ar": "الموجزُ يسبق الرسم · والتعديلُ له عددٌ ونطاقٌ يُتّفق عليهما قبل البدء",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "design_brief",
+        "concept_rationale",
+        "revision_management",
+        "design_presentation"
+      ],
+      "skill_ids": [
+        "SK-GRPH-020",
+        "SK-GRPH-021",
+        "SK-GRPH-022",
+        "SK-GRPH-023"
+      ],
+      "skill_names_ar": [
+        "موجز التصميم",
+        "تبرير المفهوم",
+        "إدارة جولات التعديل",
+        "عرض التصميم على العميل"
+      ]
     }
   ],
   "skill_extensions": [
@@ -3513,6 +3698,167 @@
       "name_ar": "تقييم أثر التعلم",
       "family_id": "LND",
       "family_ar": "تصميم التعلم والتدريب"
+    },
+    {
+      "skill_id": "SK-GRPH-001",
+      "slug": "visual_hierarchy",
+      "name_ar": "التسلسل البصري",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-002",
+      "slug": "white_space",
+      "name_ar": "المساحة البيضاء",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-003",
+      "slug": "colour_theory",
+      "name_ar": "نظرية اللون",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-004",
+      "slug": "grid_layout",
+      "name_ar": "الشبكة والتخطيط",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-005",
+      "slug": "brand_identity_design",
+      "name_ar": "تصميم الهوية البصرية",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-006",
+      "slug": "logo_systems",
+      "name_ar": "أنظمة الشعار",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-007",
+      "slug": "brand_guidelines",
+      "name_ar": "دليل الهوية",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-008",
+      "slug": "brand_application",
+      "name_ar": "تطبيق الهوية",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-009",
+      "slug": "print_preparation",
+      "name_ar": "تجهيز ملفات الطباعة",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-010",
+      "slug": "social_format_adaptation",
+      "name_ar": "تكييف المقاسات الرقمية",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-011",
+      "slug": "editorial_layout",
+      "name_ar": "تخطيط المطبوع",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-012",
+      "slug": "vector_editing",
+      "name_ar": "التحرير المتجهي",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-013",
+      "slug": "raster_editing",
+      "name_ar": "تحرير الصور النقطية",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-014",
+      "slug": "design_file_hygiene",
+      "name_ar": "نظافة ملف التصميم",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-015",
+      "slug": "design_handoff",
+      "name_ar": "تسليم التصميم",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-016",
+      "slug": "arabic_type_selection",
+      "name_ar": "اختيار الخطّ العربي",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-017",
+      "slug": "type_hierarchy_spacing",
+      "name_ar": "إيقاع النصّ وتباعده",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-018",
+      "slug": "bilingual_typesetting",
+      "name_ar": "الركن الثنائي عربي/لاتيني",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-019",
+      "slug": "readability_testing",
+      "name_ar": "اختبار المقروئية",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-020",
+      "slug": "design_brief",
+      "name_ar": "موجز التصميم",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-021",
+      "slug": "concept_rationale",
+      "name_ar": "تبرير المفهوم",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-022",
+      "slug": "revision_management",
+      "name_ar": "إدارة جولات التعديل",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-023",
+      "slug": "design_presentation",
+      "name_ar": "عرض التصميم على العميل",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
     }
   ]
 }

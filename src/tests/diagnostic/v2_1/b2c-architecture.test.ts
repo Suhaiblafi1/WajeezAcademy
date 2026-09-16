@@ -123,8 +123,8 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     /* 205 ← 208: أُضيفت QB-M4-034/035/036 (kpi_design · risk_management ·
        change_management) لتُرى ٤١٪ من الدورات التي كان مطابق المهارات لا يراها.
        العدد مرجعيّ موثّق — أي تغيير يتطلب تحديثا مقصودا هنا. */
-    expect(Object.keys(questionPlanV21).length).toBe(211)
-    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(211)
+    expect(Object.keys(questionPlanV21).length).toBe(213)
+    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(213)
     /* الأرقام المرجعية الموثقة — أي تغيير يتطلب تحديثًا مقصودًا لهذا الاختبار.
        المرحلة 4: نُقلت أسئلة المهارات الأربع المقاسة غير المغطاة
        (QB-M4-002/005/023/025) إلى ما بعد التوصية بقرار أكاديمي موثق.
@@ -184,8 +184,16 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        الأسئلة الجديدة أزاحت أسئلة أقلّ نفعا بدل أن تُضاف فوقها. ورحلة
        «مدرب/مختص تعلم» انقلبت من advisor_referral إلى single_pathway
        بثقة ٦٢٪→٦٧٪ وسؤالين أقلّ — صارت تُطابَق بدل أن تُحال.
-       active_b2c 69→72، والمجموع 208→211. */
-    expect(counts).toEqual({ active_b2c: 72, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
+       active_b2c 69→72، والمجموع 208→211.
+       عائلةٌ جديدة 2026-09-16: أُضيف مسارُ التصميم البصريّ PW-GRPH-001 بستِّ
+       دوراتٍ و٢٣ مهارة، ومعه سؤالا قياسٍ لمهارتين منها (QB-M4-040
+       visual_hierarchy · QB-M4-041 brand_identity_design). واثنان لا واحد
+       بقصد: مسارٌ بمهارةٍ مقيسةٍ واحدةٍ يجتاز `pathwaysZeroCoverage` ولا
+       يفصل مبتدئا عن ممارس — فواحدةٌ تأسيسيّةٌ وأخرى متقدّمةٌ تعطيان المحرّكَ
+       طرفَي السلّم. وهما يدخلان b2c تلقائيّا: `buildQuestionPlan` يعطي كلَّ
+       سؤال M4 سطحَ b2c بلا تدخّل (question-plan.ts).
+       active_b2c 72→74، والمجموع 211→213. */
+    expect(counts).toEqual({ active_b2c: 74, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {

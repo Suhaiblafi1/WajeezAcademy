@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "notes_ar": "ملفات تعريف المسارات العشرين — تأليف موثق من حقول audience/before/after في core-catalog.v2.json لأن الكتالوج الأصلي لا يحمل fit_score_weights. الرموز من fact_taxonomy؛ الرموز الموسعة (personal_growth, family_wellbeing, explore) خاصة بطبقة المسارات وموثقة هنا.",
+  "notes_ar": "ملفات تعريف المسارات الواحد والعشرين — تأليف موثق من حقول audience/before/after في core-catalog.v2.json لأن الكتالوج الأصلي لا يحمل fit_score_weights. الرموز من fact_taxonomy؛ الرموز الموسعة (personal_growth, family_wellbeing, explore) خاصة بطبقة المسارات وموثقة هنا.",
   "profiles": {
     "PW-STU-003": {
       "personas": ["student", "early_career"],
@@ -184,6 +184,15 @@
       "min_weekly_load": "3_4",
       "goal_clarity_fit": ["medium", "high"],
       "notes_ar": "تصميم تعلم وإعداد مدربين."
+    },
+    "PW-GRPH-001": {
+      "personas": ["student", "early_career", "freelancer"],
+      "goals": ["personal_brand", "employment_advancement", "personal_growth", "revenue_growth"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "لمن يريد أن يصمّم بسببٍ يقوله ويسلّم نظاما يطبّقه غيرُه — لا شعارا يُعجب ثمّ يُكسر."
     }
   }
 }

@@ -313,6 +313,19 @@
       ],
       "measured_by": "QB-M4-010"
     },
+    "arabic_type_selection": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
     "assessment_design": {
       "layers": [
         "pathway_requirement",
@@ -412,6 +425,59 @@
       "pathway_ids": [
         "PW-NEG-001"
       ]
+    },
+    "bilingual_typesetting": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
+    "brand_application": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
+    "brand_guidelines": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
+    "brand_identity_design": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ],
+      "measured_by": "QB-M4-041"
     },
     "brand_strategy": {
       "layers": [
@@ -681,6 +747,19 @@
         "PW-EMP-005"
       ]
     },
+    "colour_theory": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
     "competency_frameworks": {
       "layers": [
         "pathway_requirement",
@@ -729,6 +808,15 @@
         "PW-OPS-001"
       ],
       "measured_by": "QB-M4-021"
+    },
+    "concept_rationale": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "concession_strategy": {
       "layers": [
@@ -1237,6 +1325,50 @@
         "PW-SCM-001"
       ]
     },
+    "design_brief": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
+    "design_file_hygiene": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
+    "design_handoff": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
+    "design_presentation": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "design_thinking": {
       "layers": [
         "diagnostic",
@@ -1402,6 +1534,15 @@
       "pathway_ids": [
         "PW-FIN-001"
       ]
+    },
+    "editorial_layout": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "emergency_fund": {
       "layers": [
@@ -1740,6 +1881,19 @@
       "academic_status": "merged",
       "merged_into": "SK-DATA-014",
       "decision_role_ar": "مدموجة في SK-DATA-014 بقرار أكاديمي موثق (2026-08-19) — مرجع تاريخي فقط، لا تدخل التشخيص."
+    },
+    "grid_layout": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
     },
     "growth_experimentation": {
       "layers": [
@@ -2182,6 +2336,19 @@
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-STU-002"
+      ]
+    },
+    "logo_systems": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
       ]
     },
     "market_research": {
@@ -2692,6 +2859,15 @@
         "PW-FIN-001"
       ]
     },
+    "print_preparation": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "prioritization": {
       "layers": [
         "pathway_requirement",
@@ -3020,6 +3196,32 @@
         "PW-COM-001"
       ]
     },
+    "raster_editing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
+    "readability_testing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
     "reading_strategies": {
       "layers": [
         "learning_outcome"
@@ -3100,6 +3302,15 @@
         "PW-STU-003"
       ],
       "measured_by": "QB-M4-022"
+    },
+    "revision_management": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "risk_management": {
       "layers": [
@@ -3319,6 +3530,15 @@
       "pathway_ids": [
         "PW-CYB-001"
       ]
+    },
+    "social_format_adaptation": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "social_media_strategy": {
       "layers": [
@@ -3666,6 +3886,19 @@
       ],
       "measured_by": "QB-M4-032"
     },
+    "type_hierarchy_spacing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
     "unit_economics": {
       "layers": [
         "diagnostic",
@@ -3751,6 +3984,19 @@
       ],
       "measured_by": "QB-M4-033"
     },
+    "vector_editing": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ]
+    },
     "vendor_management": {
       "layers": [
         "pathway_requirement",
@@ -3764,6 +4010,20 @@
         "PW-EMP-003",
         "PW-SCM-001"
       ]
+    },
+    "visual_hierarchy": {
+      "layers": [
+        "diagnostic",
+        "pathway_requirement"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "تُقاس بسؤال M4 وتدخل حساب فجوة المهارات للمسارات التي تتطلبها.",
+      "pathway_ids": [
+        "PW-GRPH-001"
+      ],
+      "measured_by": "QB-M4-040"
     },
     "voice_and_presence": {
       "layers": [
@@ -3790,6 +4050,19 @@
       "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
       "pathway_ids": [
         "PW-SCM-001"
+      ]
+    },
+    "white_space": {
+      "layers": [
+        "pathway_requirement",
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "متطلب مسار غير مقاس: لا تُفترض ولا تدخل الفجوة ولا التفسير — تُعرض كمجهولة صراحة.",
+      "pathway_ids": [
+        "PW-GRPH-001"
       ]
     },
     "workflow_automation": {

@@ -57,7 +57,8 @@ describe('لا حقل يقرؤه المحرك ساقط', () => {
   })
 
   it('الكتالوج المثبَّت يرى كل المهارات — النحيف لا يُنقص عددا', () => {
-    const extensions = 89 // امتدادات core-catalog
+    /* ٨٩ ← ١١٢: أُضيفت ٢٣ مهارةَ تصميمٍ جرافيكيٍّ مع عائلة GRPH (2026-09-16) */
+    const extensions = 112 // امتدادات core-catalog
     expect(skillsCatalog.length).toBe(fullSkills.length + extensions)
   })
 })

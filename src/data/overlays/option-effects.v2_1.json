@@ -181,6 +181,9 @@
         "need_id": "need_business"
       },
       "o19": {
+        "need_id": "need_visual_design"
+      },
+      "o20": {
         "need_id": "need_unsure"
       }
     },
