@@ -35,6 +35,13 @@ interface RawPathway {
   support_hours?: number
   support_course_count?: number
   support_courses?: { course_id: string }[]
+  credential_ar: string
+}
+
+/** الأرقامُ تُكتب عربيّةً أو هنديّةً في نصوص الكتالوج — كلتاهما تُقرأ */
+const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩'
+function parseArabicInt(s: string): number {
+  return Number([...s].map((ch) => (AR_DIGITS.includes(ch) ? String(AR_DIGITS.indexOf(ch)) : ch)).join(''))
 }
 
 const raw = coreCatalog as unknown as {
@@ -81,5 +88,26 @@ describe('مجاميعُ المسار: المخزَّنُ يطابق المحس�
       }
     }
     expect(drift, 'المساندةُ تُعرض بساعاتٍ ليست ساعاتِها: ' + drift.join(' · ')).toEqual([])
+  })
+
+  /* ── الشهادةُ تقول رقما، فليكن رقمَ مسارها ──
+
+     كانت العشرون كلُّها تقول «٤٤ ساعة تعلم» ومجموعُ دوراتها ٤٠ — رقمٌ واحدٌ
+     منسوخٌ في نصٍّ نمطيٍّ لا يتبع مسارَه. وليست الشهادةُ حقلا داخليّا: هي ما
+     يحمله المتعلّمُ بعد شهورٍ من العمل ويعرضه على من يوظّفه. فصُحِّحت الواحدةُ
+     والعشرون إلى مجموعِ دوراتها (2026-09-16)، وهذا يمنع عودةَ الفارق. */
+  it('ورقمُ الساعاتِ في نصِّ الشهادة هو مجموعُ ساعاتِ دوراتِها', () => {
+    const drift: string[] = []
+    for (const p of raw.launch_pathways) {
+      const hours = p.course_ids.reduce((s, cid) => s + (hoursOf.get(cid) ?? 0), 0)
+      const m = /([\d\u0660-\u0669]+)\s*ساعة/.exec(p.credential_ar ?? '')
+      if (!m) {
+        drift.push(`${p.id}: نصُّ الشهادةِ بلا رقمِ ساعات`)
+        continue
+      }
+      const said = parseArabicInt(m[1])
+      if (said !== hours) drift.push(`${p.id}: الشهادةُ تقول ${said} ومجموعُ دوراتِه ${hours}`)
+    }
+    expect(drift, 'شهادةٌ تَعِد بساعاتٍ ليست ساعاتِ مسارها: ' + drift.join(' · ')).toEqual([])
   })
 })
