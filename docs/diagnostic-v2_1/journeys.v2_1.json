@@ -1137,6 +1137,113 @@
         "outputKind_ar": "اتجاه استكشافي"
       },
       "deterministic": true
+    },
+    {
+      "persona": "موظف خبير — قيّم عائلاته",
+      "stage": "experienced",
+      "questionsCount": 8,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "موظف ذو خبرة",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "التقدم أو الترقية في عملي",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "إدارة المشاريع",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QB-M2-005",
+          "question_ar": "ما مدى وضوح هدفك الآن؟",
+          "why_now_ar": "وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.",
+          "answer_ar": "غير واضح",
+          "what_changed": [
+            "+goal_clarity"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-001",
+          "question_ar": "ما نوع الجهة التي تعمل فيها؟",
+          "why_now_ar": "القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها.",
+          "answer_ar": "خاص — شركة أو مؤسسة ربحية (أيًّا كان مجالها: صحي أو تقني أو مالي…)",
+          "what_changed": [
+            "+sector"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-011",
+          "question_ar": "هل تتعامل مع مشتريات، عطاءات، مالية، موازنة، أو موارد بشرية؟",
+          "why_now_ar": "فاز أساسًا بسبب: يكمل سياقًا حاسمًا للقرار.",
+          "answer_ar": "خدمة جمهور",
+          "what_changed": [
+            "+function_specialization",
+            "+current_domain"
+          ]
+        },
+        {
+          "questionId": "QB-M3B-003",
+          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
+          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
+          "answer_ar": "نعم",
+          "what_changed": [
+            "+public_facing"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_pathway",
+        "topPathwayId": "PW-EMP-003",
+        "compositeTemplateId": null,
+        "confidence": 0.815775400957511,
+        "outputKind_ar": "أفضل تطابق حالي",
+        "composed": {
+          "anchorDomain": "project_management",
+          "courseIds": [
+            "C-PM-101",
+            "C-SVC-101",
+            "C-COMX-104",
+            "C-PM-103",
+            "C-PM-104",
+            "C-PM-105"
+          ],
+          "totalHours": 64,
+          "inferredSkills": 30,
+          "coveredGaps": 27,
+          "uncoveredGaps": 61,
+          "relaxedForMinimum": false,
+          "matchesPathwayId": null
+        }
+      },
+      "deterministic": true
     }
   ]
 }
