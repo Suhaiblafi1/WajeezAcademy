@@ -88,7 +88,7 @@ describe('ج-١ · الإسنادُ يبدأ من المدرّب', () => {
   })
 
   it('وبابُها في القائمة محروسٌ بصلاحيّة الإسناد', () => {
-    const layout = code('src/pages/admin/AdminLayout.tsx')
+    const layout = code('src/pages/admin/nav-map.ts')
     expect(layout).toMatch(/to: "\/admin\/assign-by-trainer"[^}]*need: "trainer\.assign"/)
     expect(code('src/App.tsx'), 'لا مسارَ للشاشة').toContain('/admin/assign-by-trainer')
   })

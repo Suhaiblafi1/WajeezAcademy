@@ -33,7 +33,9 @@ let makerId = ''
 let checkerId = ''
 
 const S = Date.now().toString(36).toUpperCase().slice(-4)
-const COURSE = `C-K3-${S}`
+/* المعرّفُ يولّده الخادمُ الآن (`mintCourseId`) فلا يُكتب هنا — ويُقرأ من
+   ردّ الإنشاء. وهذا هو المقصود: من يكتبه صار النظامَ لا الإنسان. */
+let COURSE = ''
 const SKILL_A = `SK-X-K3A-${S}`
 const SKILL_B = `SK-X-K3B-${S}`
 
@@ -59,11 +61,11 @@ beforeAll(async () => {
 
   /* ═══ وهذا هو البابُ بعينه ═══
      `skillIds: []` مقبولةٌ في مسار الإنشاء — فالدورةُ تُولد عمياءَ بلا اعتراض. */
-  await admin.createCourse({
-    id: COURSE, pathwayId: 'PW-STU-003', sequence: 9,
+  COURSE = (await admin.createCourse({
+    pathwayId: 'PW-STU-003', sequence: 9,
     titleAr: 'دورةٌ وُلدت بلا مهارات', totalHours: 2, skillIds: [],
     modules: [{ sequence: 1, titleAr: 'وحدةٌ أولى', hours: 2 }],
-  }, makerId)
+  }, makerId)).id
 
   /* تُعتمد بالطريق الحقيقيّ — صانعٌ ومراجعٌ لا كتابةَ حالةٍ باليد */
   const cr = await admin.submitChangeRequest('course', COURSE, { kind: 'k3_fixture' }, makerId)

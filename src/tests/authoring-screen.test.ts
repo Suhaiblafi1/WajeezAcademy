@@ -66,7 +66,7 @@ describe("شاشة تأليف المتون", () => {
 });
 
 describe("تسجيل الشاشة في اللوحة", () => {
-  const LAYOUT = readFileSync(join(process.cwd(), "src/pages/admin/AdminLayout.tsx"), "utf8");
+  const LAYOUT = readFileSync(join(process.cwd(), "src/pages/admin/nav-map.ts"), "utf8");
   const APP = readFileSync(join(process.cwd(), "src/App.tsx"), "utf8");
 
   it("لها مسارٌ وتبويبٌ مشروطٌ بصلاحيّة الكتابة", () => {

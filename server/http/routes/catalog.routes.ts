@@ -69,12 +69,28 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     return admin.setCourseSkills(courseId, skillIds, req.auth!.userId)
   })
 
+  /* ═══ المعرّفُ يُعرض قبل الإنشاء ولا يُكتب ═══
+
+     المؤلّفُ يرى ما سيُولَّد لحظةَ اختياره المسارَ الأمّ — لا بعد الحفظ.
+     وهو **عرضٌ لا حجز**: المولِّدُ نفسُه يُنادى ثانيةً عند الإنشاء، فإن
+     سبقته دورةٌ أخرى إلى الرقم أخذ التالي. والبديلُ حجزٌ يترك ثقوبا في
+     الترقيم كلّما أغلق أحدٌ المعالجَ في منتصفه. */
+  app.get('/api/admin/catalog/courses/next-id', {
+    preHandler: requirePermission('catalog.course.create'),
+    schema: { tags: ['admin-catalog'], summary: 'معرّفُ الدورة القادم في مسارٍ — عرضٌ لا حجز' },
+  }, async (req) => {
+    const { pathwayId } = z.object({ pathwayId: z.string() }).parse(req.query)
+    return { id: await admin.mintCourseId(pathwayId) }
+  })
+
   app.post('/api/admin/catalog/courses', {
     preHandler: requirePermission('catalog.course.create'),
-    schema: { tags: ['admin-catalog'], summary: 'إنشاء دورة كمسودة مع وحداتها ومهاراتها' },
+    schema: { tags: ['admin-catalog'], summary: 'إنشاء دورة كمسودة مع وحداتها ومهاراتها — ومعرّفُها مولَّد' },
   }, async (req, reply) => {
+    /* ولا `id` في الحمولة: ما يرسله المتصفّحُ لا يُقرأ أصلا، فلا سبيلَ
+       إلى فرض معرّفٍ من الخارج ولو عُدّل النداء بيد. */
     const body = z.object({
-      id: z.string(), pathwayId: z.string(), sequence: z.number().int().min(1),
+      pathwayId: z.string(), sequence: z.number().int().min(1),
       titleAr: z.string().min(3), shortPromiseAr: z.string().optional(), levelAr: z.string().optional(),
       totalHours: z.number().int().min(1), skillIds: z.array(z.string()).default([]),
       modules: z.array(z.object({

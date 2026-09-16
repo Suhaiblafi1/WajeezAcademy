@@ -22,6 +22,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
 const LAYOUT = 'src/pages/admin/AdminLayout.tsx'
+/* خريطةُ القائمة انتقلت إلى ملفِّها (١٦ سبتمبر ٢٠٢٦): يقرؤها الشريطُ
+   ودليلُ «كلّ الشاشات» معا، و`react-refresh` يمنع تصديرَ ما ليس مكوّنا
+   من ملفّ مكوّن. والمفحوصُ هو هو — صلاحيةُ كلّ تبويب. */
+const NAV = 'src/pages/admin/nav-map.ts'
 const USERS = 'src/pages/admin/Users.tsx'
 const ROUTES = 'server/http/routes/admin-users.routes.ts'
 
@@ -43,10 +47,13 @@ describe('هويّة الإداريّ', () => {
 })
 
 describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
-  const src = read(LAYOUT)
+  const src = read(NAV)
 
   it('لكلّ تبويبٍ صلاحيتُه — ولا تبويب بلا واحدة', () => {
-    const block = /const allSections[\s\S]*?\n {2}\];/.exec(src)?.[0] ?? ''
+    /* ⚠ الكتلةُ صارت في مدى الوحدة لا داخلَ المكوّن (١٦ سبتمبر ٢٠٢٦):
+       دليلُ «كلّ الشاشات» في الرئيسية يقرؤها، فلا تصلح محبوسةً في دالّة.
+       والمفحوصُ لم يتغيّر — صلاحيةُ كلّ تبويب — إنّما إزاحةُ إغلاقها. */
+    const block = /export const allSections[\s\S]*?\n\];/.exec(src)?.[0] ?? ''
     expect(block, 'كتلة التبويبات مفقودة').toBeTruthy()
     const items = [...block.matchAll(/\{ to: "(\/admin[^"]*)"[^}]*\}/g)].map((m) => m[0])
     expect(items.length, 'لا تبويبات').toBeGreaterThan(5)
@@ -83,11 +90,11 @@ describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
   })
 
   it('الترشيح يقع فعلا — ومن لا تبويبَ له يُقال له', () => {
-    expect(src, 'التبويبات لا تُرشَّح بالصلاحيات').toMatch(/\.filter\(\(it\) => !it\.need \|\| canAny\(it\.need\)\)/)
+    expect(src, 'التبويبات لا تُرشَّح بالصلاحيات').toMatch(/\.filter\(\(it\) => canAny\(it\.need\)\)/)
     /* و«أيًّا منها» تُقاس: `some` لا `every` — وإلّا صار الجمعُ تضييقا لا توسعة */
     expect(src, '«عدّة صلاحيات» تعني أيًّا منها لا كلَّها')
-      .toMatch(/\(Array\.isArray\(need\) \? need : \[need\]\)\.some\(can\)/)
-    expect(src, 'من لا صلاحية له يُترك في لوحةٍ فارغة').toContain('لا صلاحيات مفعّلة لحسابك')
+      .toMatch(/\(Array\.isArray\(need\) \? need : \[need\]\)\.some\(/)
+    expect(read(LAYOUT), 'من لا صلاحية له يُترك في لوحةٍ فارغة').toContain('لا صلاحيات مفعّلة لحسابك')
   })
 })
 

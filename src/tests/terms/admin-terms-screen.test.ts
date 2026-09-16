@@ -18,7 +18,7 @@ describe('شاشةُ المواسم', () => {
 
   it('لها مسارٌ وبندٌ في القائمة محروسٌ بصلاحيّة الشعب', () => {
     expect(code('src/App.tsx')).toMatch(/path="\/admin\/terms" element=\{<AdminTerms \/>\}/)
-    const row = code('src/pages/admin/AdminLayout.tsx').split('\n').find((l) => l.includes('/admin/terms'))
+    const row = code('src/pages/admin/nav-map.ts').split('\n').find((l) => l.includes('/admin/terms'))
     expect(row, 'لا بندَ في القائمة').toBeTruthy()
     expect(row).toContain('cohort.manage')
   })

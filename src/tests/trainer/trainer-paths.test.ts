@@ -128,7 +128,7 @@ describe('ن · مسارُ المدرّب', () => {
   })
 
   it('وبابُه في القائمتَين — ومسارُه في التطبيق', () => {
-    expect(code('src/pages/admin/AdminLayout.tsx'))
+    expect(code('src/pages/admin/nav-map.ts'))
       .toMatch(/to: "\/admin\/trainer-paths"[^}]*need: "trainer\.publish"/)
     expect(code('src/App.tsx')).toContain('/admin/trainer-paths')
     expect(code('src/App.tsx')).toContain('/trainer/paths')

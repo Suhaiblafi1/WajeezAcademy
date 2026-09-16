@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
-import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Crown, FlaskConical, GitBranch, GraduationCap, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, PenLine, PlugZap, Route, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Crown, Search, X } from "lucide-react";
+import { sectionsFor } from "./nav-map";
+import { matchesQuery } from "@/application/text/search-ar";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -19,16 +22,18 @@ import BuildStampLine from "@/components/BuildStampLine";
     — أي لحساب المالية بالضبط — فلا يبلغ شاشاته ويُدعى إلى انتحال اسم. */
 export default function AdminLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, checked } = useRealSession();
+  /* ═══ ومرشِّحٌ فوق القائمة ═══
+
+     سبعُ مجموعاتٍ تجيب «أين أبحث؟»، ولا تُغني عن «أعرف اسمَها وأريدها الآن».
+     وهو نمطُ `Quick Find` في لوحات الإدارة الكبيرة: حرفان يختصران ثمانيا
+     وعشرين سطرا إلى ثلاثة. وهو **غيرُ** لوحة البحث (`Ctrl K`): تلك تبحث في
+     البيانات — حسابا وشعبةً وتذكرة — وهذا يبحث في **أسماء الشاشات**.
+
+     ولا يُحفظ في المتصفّح: مرشِّحٌ يبقى بعد إغلاق الصفحة يُخفي شاشاتٍ
+     لا يعرف صاحبُها لمَ غابت. */
+  const [navQuery, setNavQuery] = useState("");
   const location = useLocation();
   const navigate = useNavigate();
-  const can = (key: string) => user?.permissions.includes(key) ?? false;
-  /* `need` واحدةٌ أو عدّة — و«عدّة» تعني **أيًّا منها**، لا كلَّها.
-
-     شاشةٌ تخدم صلاحيتين لا تُحرَس بواحدةٍ منهما: «الطلبات والفواتير» تحمل
-     طابورَ طلبات التسجيل والفواتيرَ معا، وكانت تُحرَس بـ`finance.view` وحدها
-     — فمن مُنح مراجعةَ طلبات التسجيل لا يرى طابورَه أصلا. */
-  const canAny = (need: string | string[]) =>
-    (Array.isArray(need) ? need : [need]).some(can);
 
   if (!checked) {
     return (
@@ -38,102 +43,24 @@ export default function AdminLayout({ children, title }: { children: React.React
     );
   }
 
-  /* ثلاثةُ أبوابٍ لا ستّة — قرارُ صاحب المنصّة: «الأكاديمية» و«الأمور الفنّية»
-     و«الصلاحيات العامّة للموقع».
+  const sections = sectionsFor(user?.permissions);
 
-     كانت ستّةً («نظرة عامة» و«التعليم والمحتوى» و«الأشخاص» و«المالية»
-     و«العملاء» و«النظام») لسبعةَ عشرَ تبويبا، فصارت العناوينُ أكثرَ من أن
-     تُقرأ، ووقع «الطلبةُ المسجَّلون» و«طلباتُ المدربين» في «الأشخاص» مع
-     «المستخدمون والأدوار» — وهما شأنان مختلفان: الأوّلُ عملٌ أكاديميّ يوميّ،
-     والثاني منحُ صلاحيةٍ على الموقع كلِّه.
+  /* المرشَّحُ للعرض وحدَه — و`sections` تبقى كاملةً لأنّ قائمةَ الجوّال
+     وحارسَ «لا صلاحية» يقرآنها، وكلاهما لا شأنَ له بما كُتب في المرشِّح.
 
-     والسؤالُ الذي يفرزها: أهو عملُ الأكاديمية نفسِها (ما نعلّم ومن نعلّم ومن
-     يعلّم)؟ أم تشغيلُ المنصّة (مالٌ ودعمٌ وتكاملاتٌ وتكليفات)؟ أم من يملك
-     ماذا على الموقع؟
-
-     ولكلّ تبويبٍ صلاحيتُه المعلَنة، والقائمة تُرشَّح بها. كانت تُعرض كاملةً
-     لكلّ إداريّ: ثلاثة عشر بابا يفتح من لا يملكها فيُردّ عند الخادم — الحارس
-     يعمل، لكنّه يكتشف حدّه بالاصطدام لا بالقراءة. */
-  const allSections: { title: string; items: { to: string; label: string; icon: typeof LayoutDashboard; end?: boolean; need?: string | string[]; open?: true }[] }[] = [
-    {
-      title: "الأكاديمية",
-      items: [
-        { to: "/admin", label: "الرئيسية", icon: LayoutDashboard, end: true, open: true },
-        { to: "/admin/catalog", label: "الكتالوج", icon: Layers , need: "catalog.view"},
-        { to: "/admin/authoring", label: "تأليف المتون", icon: PenLine , need: "catalog.course.edit"},
-        { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch , need: "catalog.impact.view"},
-        { to: "/admin/cohorts", label: "الشعب", icon: CalendarCog , need: "cohort.manage"},
-        { to: "/admin/terms", label: "المواسم والتقويم", icon: CalendarRange , need: "cohort.manage"},
-        /* الطلبةُ المسجَّلون — نطاقُ كلِّ دورٍ يُشتقّ في الخادم، واللوحُ نفسُه
-           يُركَّب في بوابتَي المدرّب والمستشار. */
-        { to: "/admin/learners", label: "الطلبة المسجَّلون", icon: GraduationCap , need: "enrollment.manage"},
-        { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus , need: "trainer.applications.view"},
-        /* ج-١: «أجد صعوبةً بالبحث عن الدورات» — بابٌ يبدأ من الإنسان. وصلاحيّتُه
-           `trainer.assign`: هي ما يفعله، والتأهيلُ في مكانه محروسٌ بمساره. */
-        { to: "/admin/assign-by-trainer", label: "إسنادٌ من المدرّب", icon: UserCheck, need: "trainer.assign" },
-        /* ح-٤: طابورُ الدورات المقترحة — وصلاحيّتُه `trainer.change.review`،
-           هي بنصّها «مراجعة اقتراحات تعديل الدورات من المدربين»، وهذا منها. */
-        { to: "/admin/course-proposals", label: "دوراتٌ مقترحة", icon: BookPlus, need: "trainer.change.review" },
-        /* ن-١: وصلاحيّتُه `trainer.publish` — «الموافقة على ظهور المدرب للعامة»،
-           وهذا إدراجٌ عامٌّ يحمل اسمَه. */
-        { to: "/admin/trainer-paths", label: "مساراتُ المدرّبين", icon: Route, need: "trainer.publish" },
-        /* ن-٩: رحيلُ مدرّب — وصلاحيّتُه `trainer.assign`، فالبديلُ إسنادٌ
-           والنقلُ إسناد، وهما عملُ هذا الباب لا عملُ الماليّة. */
-        { to: "/admin/trainer-departures", label: "رحيلُ مدرّب", icon: UserMinus, need: "trainer.assign" },
-        { to: "/admin/advisor-requests", label: "طلبات المستشارين", icon: BadgePercent , need: "advisor.request.review"},
-        /* طابورُ شهاداتِ المتعلّمين وتوصياتِهم — كان الإصدارُ لا يُطلب أصلا،
-           فمن أنهى دورتَه في شعبةٍ لا أحدَ يفتحها بقي بلا شهادة. */
-        { to: "/admin/learner-requests", label: "طلبات المتعلّمين", icon: Award , need: "certificate.issue"},
-        { to: "/admin/advisors", label: "المستشارون والعمولة", icon: UserCheck , need: "advisor.manage"},
-        /* «الاستثناءات» كان اسما لا يدلّ على شيء، وحارسا لا يحرس ما وراءه:
-           التبويبُ مشروطٌ بـ`enrollment.request.review` والشاشةُ تقرأ
-           `/api/admin/advisor-cases/unassigned` المحروسَ بـ`advisor.assign`.
-           فمن مُنح مراجعةَ طلبات التسجيل يرى بابا يفتحه فيُردّ عند الخادم،
-           **وطابورُه هو في شاشةٍ أخرى لا يراها أصلا**. والاسمُ الآن يقول
-           محتواه، والحارسُ هو حارسُ مساره. */
-        { to: "/admin/exceptions", label: "حالات بلا مستشار", icon: ShieldAlert , need: "advisor.assign"},
-        { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical , need: "diagnostic.simulate"},
-        { to: "/admin/ratings", label: "مراجعة التقييمات", icon: Star , need: "rating.moderate"},
-      ],
-    },
-    {
-      title: "الأمور الفنّية",
-      items: [
-        { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet , need: ["finance.view", "enrollment.request.review"]},
-        /* بابُ الأتعاب هنا لا في «طلبات المدربين»: تلك محروسةٌ
-           بـ`trainer.applications.view` ولا تملكها المالية، فكانت تملك
-           المفتاحَ ولا تملك الباب — وبلا قاعدةِ أتعابٍ لا يُولَّد كشفٌ أصلا. */
-        { to: "/admin/trainer-compensation", label: "أتعاب المدربين", icon: HandCoins , need: "trainer.compensation.manage"},
-        { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3 , need: "reports.view"},
-        { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy , need: "support.operate"},
-        { to: "/admin/notifications", label: "الإشعارات", icon: Bell , need: "notifications.manage"},
-        /* `open` لا غيابَ شرط: التبويب الذي لا يعرض إلّا ما يخصّ صاحبَه
-           يُعلن ذلك صراحةً فيُقرأ ويُحصى، ولا يمرّ سهوا.
-
-           و«مهامّي» منه: كلُّ من جاز حارسَ اللوحة قد يُكلَّف — ولو حُرس
-           التبويب بصلاحية التكليف لما رأى المكلَّفُ تكليفَه. وأقسامُ
-           التكليف داخل الصفحة محروسةٌ بـ`staff.task.assign` وحدها. */
-        { to: "/admin/tasks", label: "المهامّ والتكليفات", icon: ClipboardList, open: true },
-        { to: "/admin/integrations", label: "التكاملات — الدفع والبريد", icon: PlugZap , need: "settings.manage"},
-      ],
-    },
-    {
-      title: "الصلاحيات العامّة للموقع",
-      items: [
-        { to: "/admin/users", label: "المستخدمون والأدوار", icon: Users , need: "admin.users.view"},
-        { to: "/admin/audit", label: "سجلّ الأثر", icon: History , need: "audit.view"},
-        /* «هل النظامُ سليم؟» — بصلاحيّةِ الإعدادات: بنودُها تكشف حالةَ
-           مزوّد الدفع والبريد وأرقامَ محاولاتِ الدخول الفاشلة. */
-        { to: "/admin/system-health", label: "صحّة النظام", icon: Activity , need: "settings.manage"},
-      ],
-    },
-  ];
-
-  /* المفتوحُ (`open`) يمرّ بلا صلاحية: «الرئيسية» ليقف عليها من جاز حارسَ
-     المسار، و«المهامّ» لأنّها لا تعرض إلّا ما يخصّ صاحبَها. */
-  const sections = allSections
-    .map((sec) => ({ ...sec, items: sec.items.filter((it) => !it.need || canAny(it.need)) }))
-    .filter((sec) => sec.items.length > 0);
+     ولا `useMemo`: ثمانيةٌ وعشرون بندا تُرشَّح في كلّ تصيير بلا أن يُقاس
+     فرقٌ، والذاكرةُ هنا كانت **خطأً** لا تحسينا — تقع بعد ارتدادِ «لم
+     تُقرأ الجلسةُ بعد»، فتُنادى الحُبيبةُ في تصييرٍ ولا تُنادى في آخر.
+     وأمسكه `react-hooks/rules-of-hooks` في بوّابة دين التلويم. */
+  const q = navQuery.trim();
+  /* والمطابقةُ بمطابِق المنصّة لا بـ`includes` خامّ: كُتبت أوّلا حرفيّةً،
+     فأظهرت المعاينةُ أنّ «مدرّب» لا يجد «طلبات المدربين» — شدّةٌ في
+     الاستعلام وليست في العنوان. و`matchesQuery` يُسقط التشكيلَ ويوحّد
+     الهمزةَ ويوسّع «أل»، وهو نفسُه الذي تبحث به بقيّةُ الشاشات. */
+  const shown = !q ? sections
+    : sections
+        .map((sec) => ({ ...sec, items: sec.items.filter((it) => matchesQuery(q, [it.label, it.descAr])) }))
+        .filter((sec) => sec.items.length > 0);
 
   /* من لا تبويبَ له لا يُترك في لوحةٍ فارغة يظنّها معطوبة */
   if (sections.every((sec) => sec.items.every((it) => it.open))) {
@@ -216,10 +143,46 @@ export default function AdminLayout({ children, title }: { children: React.React
 
       <div className="shell flex items-start gap-6">
         {/* الشريط الجانبي — شاشات كبيرة */}
-        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 overflow-y-auto border-l border-white/10 py-8 pl-5 lg:block">
-          {sections.map((s) => (
-            <div key={s.title} className="mb-7">
-              <p className="mb-2 px-3 text-fine font-black tracking-wide text-muted-foreground">{s.title}</p>
+        <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-64 shrink-0 overflow-y-auto border-l border-white/10 py-6 pl-5 lg:block">
+          {/* المرشِّحُ فوق المجموعات — ولا يُخفيها كلَّها بلا أن يقول لمَ */}
+          <div className="relative mb-5">
+            <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            {/* `text` لا `search`: الأخيرةُ تُلحق زرَّ مسحٍ من المتصفّح
+                فيقف إلى جانب زرِّنا — زرّان لفعلٍ واحد. */}
+            <input
+              type="text"
+              value={navQuery}
+              onChange={(e) => setNavQuery(e.target.value)}
+              placeholder="ابحث في الشاشات…"
+              aria-label="ترشيح شاشات الإدارة بالاسم"
+              className="w-full rounded-xl border border-white/10 bg-black/20 py-2 pe-8 ps-8 text-fine text-foreground outline-none placeholder:text-muted-foreground focus:border-teal/50"
+            />
+            {navQuery && (
+              <button
+                type="button"
+                onClick={() => setNavQuery("")}
+                aria-label="مسح الترشيح"
+                className="absolute left-2 top-1/2 grid h-6 w-6 -translate-y-1/2 cursor-pointer place-items-center rounded-lg text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+
+          {shown.map((s, i) => (
+            /* ═══ الرأسُ لا يُشبه البند ═══
+
+               كُتب أوّلا بأيقونةٍ إلى جانبه، فحاذت أيقونتُه أيقوناتِ البنود
+               تحته — فقُرئ الرأسُ بندا سادسا في مجموعته. وأظهرته المعاينةُ
+               الحيّة لا المراجعة.
+
+               فسقطت الأيقونةُ من الرأس (وتبقى في دليل «كلّ الشاشات»، وهناك
+               بطاقاتٌ لا صفٌّ واحد فلا تلتبس)، وحلّ محلَّها خيطٌ يفصل
+               المجموعةَ عمّا قبلها. والفصلُ بفراغٍ وخطٍّ لا بزينة. */
+            <div key={s.title} className={i === 0 ? "mb-6" : "mb-6 border-t border-white/[0.07] pt-5"}>
+              <p className="mb-2 px-3 text-fine font-black tracking-wider text-muted-foreground">
+                {s.title}
+              </p>
               <nav className="space-y-1">
                 {s.items.map((t) => (
                   <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => linkCls(isActive)}>
@@ -230,6 +193,14 @@ export default function AdminLayout({ children, title }: { children: React.React
               </nav>
             </div>
           ))}
+
+          {shown.length === 0 && (
+            <p className="px-3 text-fine leading-6 text-muted-foreground">
+              لا شاشةَ تطابق «{q}» — جرّب كلمةً أقصر، أو
+              <button type="button" onClick={() => setNavQuery("")} className="mx-1 cursor-pointer font-bold text-teal-light-ink hover:underline">امسح الترشيح</button>
+              لترى المجموعات كلَّها.
+            </p>
+          )}
         </aside>
 
         {/* ب-٢: حاوية تخطيط لا منطقة landmark — منطقة main واحدة في التطبيق

@@ -7,6 +7,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
 import { normalizeAr } from '../../src/application/text/search-ar'
+import { COURSE_DOMAIN_FAMILIES, courseDomain } from '../../src/application/catalog/course-domain'
 import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
 import { GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
@@ -250,18 +251,77 @@ export class CatalogAdminService {
     return { courseId, skillIds: unique, assessment: assessSkillSelection(slugs.map((s) => s.slug)) }
   }
 
-  /** إنشاء دورة كمسودة مع وحداتها وروابط مهاراتها */
+  /* ═══ معرّفُ الدورة يُولَّد ولا يُكتب (١٦ سبتمبر ٢٠٢٦) ═══
+
+     كان حقلا في المعالج نصُّه النائب «المعرّف — CRS-XXX-000»، والخادمُ
+     يشترط `‎/^C-[A-Z0-9-]+$/‎`. أي أنّ **ما تطلبه الشاشةُ يرفضه الخادم**:
+     من كتب `CRS-FIN-001` كما قيل له رُدّ بـ«معرف الدورة بصيغة C-XXX-000».
+     وهما مكتوبان في ملفّين لا يقرأ أحدُهما الآخر، فبقي الخلافُ سنةً.
+
+     وقرارُ صاحب المنصّة: «تسمية الدورات ليس من اختصاص البشر وإنما من
+     اختصاص النظام — اجعلها تلقائية ولا يمكن تغييرها».
+
+     ── ولماذا العائلةُ من المسار الأمّ ──
+
+     العائلةُ في المعرّف **ليست زينة**: `courseDomain` تقرؤها فتُخرج مجالَ
+     الدورة المعرفيّ (`C-CYB-101` ← الأمن السيبراني)، وعليه تقوم مرشِّحاتُ
+     المجال وقائمةُ تأهيل المدرّب ومنعُ التزاحم في مخطِّط الفصل. فعائلةٌ
+     مخترَعةٌ تُسقط الدورةَ في «أخرى» بصمت.
+
+     وقيست القاعدةُ على الكتالوج الحيّ: **عشرون مسارا، وفي كلٍّ منها عائلةُ
+     دوراتٍ واحدةٌ لا غير** (٨١ دورة). فالمسارُ الأمُّ يحدّد العائلةَ تحديدا
+     تامّا — ولا يُسأل عنها إنسان.
+
+     ومسارٌ لا دورةَ فيه بعدُ لا سابقةَ له، فتُؤخذ عائلتُه من مقطعه
+     (`PW-MKT-002` ← `MKT`). وإن لم تكن عائلةً معروفةً بقي `domainAr` فارغا
+     كما كان دائما — ولا يُخترع مجالٌ لا يعرفه أحد. */
+  async mintCourseId(pathwayId: string): Promise<string> {
+    const familyOf = (courseId: string) => /^C-([A-Z0-9]+)-\d+$/.exec(courseId)?.[1] ?? null
+
+    /* ١ · عائلةُ دوراتِ المسار — **الأصليّةِ وحدَها**.
+
+       ولمَ التقييد: `PathwayCourse` تحمل المساندات أيضا (`kind: 'support'`)،
+       وهي من عائلاتٍ أخرى عمدا — `PW-STU-003` مسارُه `C-CAR-*` وتُسنده
+       `C-COMX-106` (الإنجليزية للأعمال). فعدُّ الروابط كلِّها يخلط
+       المساندَ بالأصل، وفي مسارٍ مساندُه أكثرُ من أصله تُؤخذ العائلةُ
+       الخطأ. وأمسك هذا **اختبارُ النشر الشامل** على قاعدةٍ حقيقيّة.
+
+       و`homePathwayId` هو الفصلُ الصريح: المسارُ الأمُّ للدورة، يكتبه
+       المستورِدُ من `pathway_id` في المصدر. */
+    const siblings = await this.prisma.course.findMany({
+      where: { homePathwayId: pathwayId }, select: { id: true },
+    })
+    const tally = new Map<string, number>()
+    for (const c of siblings) {
+      const f = familyOf(c.id)
+      if (f) tally.set(f, (tally.get(f) ?? 0) + 1)
+    }
+    const fromSiblings = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+
+    /* ٢ · وإلّا فمقطعُ المسار نفسِه */
+    const fromPathway = /^PW-([A-Z0-9]+)-\d+$/.exec(pathwayId)?.[1]
+    const family = fromSiblings ?? fromPathway ?? 'GEN'
+
+    /* ٣ · والرقمُ يلي أكبرَ ما في العائلة — و١٠١ مبدأُ الترقيم في الكتالوج */
+    const inFamily = await this.prisma.course.findMany({
+      where: { id: { startsWith: `C-${family}-` } }, select: { id: true },
+    })
+    const top = inFamily.reduce((max, c) => {
+      const n = Number(/^C-[A-Z0-9]+-(\d+)$/.exec(c.id)?.[1] ?? 0)
+      return n > max ? n : max
+    }, 0)
+    return `C-${family}-${Math.max(top + 1, 101)}`
+  }
+
+  /** إنشاء دورة كمسودة مع وحداتها وروابط مهاراتها — ومعرّفُها مولَّد */
   async createCourse(input: {
-    id: string; pathwayId: string; sequence: number; titleAr: string; shortPromiseAr?: string
+    pathwayId: string; sequence: number; titleAr: string; shortPromiseAr?: string
     levelAr?: string; totalHours: number; skillIds: string[]
     modules: { sequence: number; titleAr: string; outcomeAr?: string; activityAr?: string; artifactAr?: string; bodyAr?: string; checksAr?: string; videoAr?: string; scenarioAr?: string; hours: number }[]
   }, actorId?: string) {
-    if (!/^C-[A-Z0-9-]+$/.test(input.id)) throw new AuthError('invalid_id', 'معرف الدورة بصيغة C-XXX-000')
-    if (await this.prisma.course.findUnique({ where: { id: input.id } })) {
-      throw new AuthError('duplicate_id', 'معرف الدورة موجود مسبقا', 409)
-    }
     const pathway = await this.prisma.pathway.findUnique({ where: { id: input.pathwayId } })
     if (!pathway) throw new AuthError('unknown_pathway', 'المسار الأم غير موجود')
+    const id = await this.mintCourseId(input.pathwayId)
     const skills = await this.prisma.skill.findMany({ where: { id: { in: input.skillIds } } })
     if (skills.length !== input.skillIds.length) throw new AuthError('unknown_skill', 'مهارة واحدة أو أكثر غير موجودة')
     if (input.modules.length === 0) throw new AuthError('no_modules', 'الدورة بلا وحدات غير مقبولة')
@@ -270,9 +330,19 @@ export class CatalogAdminService {
        المؤلّف يرى أثر اختياره لحظة الحفظ لا بعد أسبوع في ترشيح باهت. */
     const skillAssessment = assessSkillSelection(skills.map((sk) => sk.slug))
 
+    /* والمجالُ يُكتب عند الميلاد لا في ترحيلٍ لاحق.
+
+       كان `domainAr` يُملأ مرّةً واحدةً في ترحيل `term_system` من عائلةِ
+       المعرّف، ولا يكتبه هذا المسارُ أبدا — فكلُّ دورةٍ أُنشئت من المعالج
+       وُلدت بمجالٍ فارغ، ومخطِّطُ الفصل يقرأ الفارغَ فلا يمنع تزاحما.
+       والعائلةُ صارت معلومةً هنا، فلا عذرَ لتركه. */
+    const domainAr = COURSE_DOMAIN_FAMILIES.includes(/^C-([A-Z0-9]+)-/.exec(id)?.[1] ?? '')
+      ? courseDomain(id)
+      : null
+
     const created = await this.prisma.course.create({
       data: {
-        id: input.id, status: 'draft', createdBy: actorId,
+        id, status: 'draft', createdBy: actorId, domainAr,
         versions: {
           create: {
             version: 1, titleAr: input.titleAr, shortPromiseAr: input.shortPromiseAr,
@@ -283,7 +353,7 @@ export class CatalogAdminService {
         pathwayLinks: { create: { pathwayId: input.pathwayId, sequence: input.sequence } },
         modules: {
           create: input.modules.map((m) => ({
-            id: `${input.id}-M${m.sequence}`, status: 'draft',
+            id: `${id}-M${m.sequence}`, status: 'draft',
             versions: {
               create: [{
                 version: 1, sequence: m.sequence, titleAr: m.titleAr, outcomeAr: m.outcomeAr,

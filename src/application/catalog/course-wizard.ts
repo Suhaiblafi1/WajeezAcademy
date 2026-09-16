@@ -24,7 +24,9 @@ export const EMPTY_MODULE: CourseModuleDraft = {
 }
 
 export interface CourseWizardDraft {
-  id: string
+  /* لا `id` هنا: المعرّفُ يولّده الخادمُ من المسار الأمّ (`mintCourseId`)،
+     ولا يمرّ بالمسوّدة أصلا. وكان حقلا نصُّه النائب «CRS-XXX-000» — وهي
+     صيغةٌ يرفضها الخادمُ نفسُه (`C-XXX-000`)، فكان الحقلُ يطلب ما لا يُقبل. */
   pathwayId: string
   sequence: string
   titleAr: string
@@ -36,7 +38,7 @@ export interface CourseWizardDraft {
 }
 
 export const EMPTY_COURSE_DRAFT: CourseWizardDraft = {
-  id: '', pathwayId: '', sequence: '1', titleAr: '', shortPromiseAr: '', levelAr: '',
+  pathwayId: '', sequence: '1', titleAr: '', shortPromiseAr: '', levelAr: '',
   totalHours: '', skillIds: [], modules: [EMPTY_MODULE],
 }
 
@@ -45,7 +47,6 @@ export function courseBlockersOf(step: CourseWizardStepKey, d: CourseWizardDraft
   switch (step) {
     case 'basics': {
       const out: string[] = []
-      if (d.id.trim().length < 3) out.push('المعرّف — CRS-XXX-000 (٣ أحرف على الأقل)')
       if (!d.pathwayId) out.push('اختر المسار الذي تنتمي إليه هذه الدورة')
       if (d.titleAr.trim().length < 3) out.push('اسم الدورة (٣ أحرف على الأقل)')
       if (!(Number(d.totalHours) >= 1)) out.push('إجمالي الساعات — رقم واحد على الأقل')

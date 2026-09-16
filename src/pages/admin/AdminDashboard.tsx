@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import StaffInbox from "@/components/StaffInbox";
+import ScreenDirectory from "@/components/admin/ScreenDirectory";
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import DiagnosticFunnel from "@/components/DiagnosticFunnel";
@@ -220,6 +221,15 @@ export default function AdminDashboard() {
           </span>
         ))}
       </Card>
+
+      {/* ═══ الدليلُ قبل الأرقام ═══
+
+          الأرقامُ تجيب «كيف حالُ المنصّة اليوم»، والدليلُ يجيب «ما الذي
+          أملكه وأين أجده» — وهو السؤالُ الذي لا تجيبه شاشةٌ أخرى، ولا
+          يجيبه الشريطُ الجانبيُّ على هاتفٍ يخفيه. فهو فوقَها.
+
+          و«ما ينتظرك» يبقى الأوّلَ: العملُ قبل الدليل كما هو قبل العدد. */}
+      <ScreenDirectory className="mb-8" />
 
       {cards === null && !failed && (
         <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
