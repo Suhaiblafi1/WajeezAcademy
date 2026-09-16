@@ -58,6 +58,8 @@ export type DomainId =
   | 'family_parenting'
   | 'personal_development'
   | 'visual_design'
+  | 'spatial_design'
+  | 'construction_engineering'
 
 export interface DomainAssessment {
   scores: Partial<Record<DomainId, number>>

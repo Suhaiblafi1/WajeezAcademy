@@ -919,7 +919,7 @@
     {
       "persona": "مدرب / مختص تعلم وتطوير",
       "stage": "trainer_ld",
-      "questionsCount": 12,
+      "questionsCount": 14,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -999,7 +999,7 @@
         {
           "questionId": "QB-M4-032",
           "question_ar": "تصميم تدريب أو شرح منظَّم لمجموعة — ما أقرب وصف لخبرتك به؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
           "answer_ar": "أحلل مشكلة الأداء قبل أن أقرر إن كان التدريب حلّها أصلا",
           "what_changed": [
             "+skill:training_needs_analysis"
@@ -1008,28 +1008,46 @@
         {
           "questionId": "QB-M4-038",
           "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في تصميم حلٍّ يبدأ من حاجة المستفيد لا من فكرتك أنت؟",
-          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة يتطلبها المرشح المتصدر.",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
           "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
           "what_changed": [
             "+skill:design_thinking"
           ]
         },
         {
-          "questionId": "QB-M3B-003",
-          "question_ar": "هل تتعامل مباشرة مع الجمهور أو العملاء؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "نعم",
+          "questionId": "QB-M4-046",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في تسلسل الشرح؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
           "what_changed": [
-            "+public_facing"
+            "+skill:explanation_sequencing"
           ]
         },
         {
-          "questionId": "QB-M3B-012",
-          "question_ar": "هل تدير أشخاصا أو مشاريع أو اجتماعات؟",
-          "why_now_ar": "فاز أساسًا بسبب: يستكمل سياقك العام.",
-          "answer_ar": "نعم",
+          "questionId": "QB-M4-047",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة الحمل المعرفي؟",
+          "why_now_ar": "فاز أساسًا بسبب: يفصل بين المرشحين المتصدرين بدليل مهارة.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
           "what_changed": [
-            "+leadership_context"
+            "+skill:cognitive_load_theory"
+          ]
+        },
+        {
+          "questionId": "QB-M4-061",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في منطقة النموّ القريبة؟",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
+          "what_changed": [
+            "+skill:zone_proximal_development"
+          ]
+        },
+        {
+          "questionId": "QB-M4-060",
+          "question_ar": "أي وصف يقترب أكثر من خبرتك العملية في فهم نمو المراهق؟",
+          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "answer_ar": "أستخدمها بانتظام في عملي أو دراستي",
+          "what_changed": [
+            "+skill:adolescent_development"
           ]
         }
       ],
@@ -1037,7 +1055,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-LND-001",
         "compositeTemplateId": null,
-        "confidence": 0.6594310344193421,
+        "confidence": 0.6400977010860087,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true

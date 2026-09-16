@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "notes_ar": "ملفات تعريف المسارات الواحد والعشرين — تأليف موثق من حقول audience/before/after في core-catalog.v2.json لأن الكتالوج الأصلي لا يحمل fit_score_weights. الرموز من fact_taxonomy؛ الرموز الموسعة (personal_growth, family_wellbeing, explore) خاصة بطبقة المسارات وموثقة هنا.",
+  "notes_ar": "ملفات تعريف المسارات الستة والعشرين — تأليف موثق من حقول audience/before/after في core-catalog.v2.json لأن الكتالوج الأصلي لا يحمل fit_score_weights. الرموز من fact_taxonomy؛ الرموز الموسعة (personal_growth, family_wellbeing, explore) خاصة بطبقة المسارات وموثقة هنا.",
   "profiles": {
     "PW-STU-003": {
       "personas": ["student", "early_career"],
@@ -193,6 +193,51 @@
       "min_weekly_load": "3_4",
       "goal_clarity_fit": ["medium", "high"],
       "notes_ar": "لمن يريد أن يصمّم بسببٍ يقوله ويسلّم نظاما يطبّقه غيرُه — لا شعارا يُعجب ثمّ يُكسر."
+    },
+    "PW-PSY-001": {
+      "personas": ["employee", "student", "early_career", "manager"],
+      "goals": ["personal_growth", "employment_advancement", "lead_team"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["low", "medium", "high"],
+      "notes_ar": "لمن يريد تفسيرا يعتمد عليه لانفعالِه وقرارِه وسلوكِ من حوله."
+    },
+    "PW-PSY-002": {
+      "personas": ["trainer", "employee", "student"],
+      "goals": ["personal_growth", "design_training"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "لمن يُنقَل إليه عن علم النفس كثيرا ويريد ما يفرز به الصحيحَ من الشائع."
+    },
+    "PW-EDU-001": {
+      "personas": ["trainer", "employee", "manager", "student"],
+      "goals": ["design_training", "personal_growth", "employment_advancement"],
+      "sectors": [],
+      "functions": ["learning_development", "hr"],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "لمن يعلّم أو يدرّب أو يربّي ويريد أن يعرف لماذا يعمل ما يعمل."
+    },
+    "PW-INTR-001": {
+      "personas": ["freelancer", "early_career", "student", "founder"],
+      "goals": ["personal_brand", "employment_advancement", "revenue_growth", "personal_growth"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "لمن يصمّم الفراغَ الداخليَّ ويريد أن يسلّمه منفَّذا بكلفتِه لا مرسوما فقط."
+    },
+    "PW-ENGR-001": {
+      "personas": ["employee", "early_career", "freelancer", "manager", "student"],
+      "goals": ["employment_advancement", "promotion", "personal_growth", "revenue_growth"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["medium", "high"],
+      "notes_ar": "لمن يعمل في تنفيذ المشاريع الهندسيّة ويريد ما يُوثَّق ويصمد للمراجعة."
     }
   }
 }

@@ -140,6 +140,9 @@
         "تصميم التعلم والتدريب",
         "بناء مشروعي من الصفر",
         "التصميم البصري والهوية",
+        "التصميم الداخلي والديكور",
+        "الهندسة وتنفيذ المشاريع الإنشائية",
+        "فهم النفس والسلوك الإنساني",
         "غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي"
       ],
       "measures": [
@@ -1436,6 +1439,906 @@
       "sensitivity_level": "low",
       "required_level": "deep",
       "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-042",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في تنظيم الانفعال؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "emotion_regulation",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ بأدوات التنظيم ومن يتجاوزها إلى ما بعدها. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-043",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في كشف انحياز التأكيد؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "confirmation_bias",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يعرف اسم الانحياز عمّن يكشفه في قرار اتخذه. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-044",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في الصدق والثبات؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "validity_reliability_basics",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يحتاج أساس القياس قبل نقد الدراسات. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-045",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في قراءة العينة وحجم الأثر؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "sample_effect_size",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يقرأ الملخص عمّن يقرأ المنهج. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-046",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في تسلسل الشرح؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "explanation_sequencing",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يحتاج بناء الشرح عمّن يحتاج تفسير التعلّم. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-047",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في إدارة الحمل المعرفي؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "cognitive_load_theory",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة في مسار التعلّم. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-048",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في تخطيط الفراغ؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "space_planning",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ من التخطيط ومن يتجاوزه إلى التشطيب والعرض. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-049",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في اختيار الخامات؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "material_selection",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يختار من كتالوج عمّن يختار بالأداء. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-050",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في قراءة المخطّطات؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "drawing_reading",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ من قراءة المخطّط ومن يتجاوزها إلى الحصر والإشراف. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-051",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في حصر الكميات؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "quantity_takeoff",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يحصر بطريقته عمّن يحصر بطريقة موثّقة تُعاد. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-052",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في اختيار الخطّ العربي؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "arabic_type_selection",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يحتاج أساس التايبوغرافي قبل الهوية. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-053",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في تسليم التصميم؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "design_handoff",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من ينتج تصميما عمّن يسلّم حزمة يعمل عليها غيره. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-054",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في تجهيز ملفات الطباعة؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "print_preparation",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة المطبوعات ومحتوى الشبكات. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-055",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في موجز التصميم؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "design_brief",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من ينفّذ الطلب عمّن يحوّله إلى قرار مبرّر. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-056",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في حدود التفسير النفسي؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "explanatory_limits",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يعرف المدارس عمّن يعرف حدّ كل منها. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-057",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في فهم الترميز والاسترجاع؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "memory_encoding_retrieval",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الذاكرة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-058",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في كشف خطأ الإسناد؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "attribution_error",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة علم النفس الاجتماعي. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-059",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في التفريق بين العرض والاضطراب؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "symptom_vs_disorder",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الاضطرابات النفسية للفهم لا للتشخيص. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-060",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في فهم نمو المراهق؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "adolescent_development",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة نموّ الإنسان. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-061",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في منطقة النموّ القريبة؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "zone_proximal_development",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يشرح عمّن يساند ثم ينسحب. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-062",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في تهيئة البيئة؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "prepared_environment",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة المونتيسوري. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-063",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في النتائج الطبيعية والمنطقية؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "natural_logical_consequences",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة التربية الإيجابية. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-064",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في شدة الإضاءة؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "lighting_levels",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الإضاءة الداخلية. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-065",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في النمذجة ثلاثية الأبعاد؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "3d_modelling_basics",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة العرض ثلاثي الأبعاد. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-066",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في اختيار الأثاث؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "furniture_selection",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الأثاث والتأثيث. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-067",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في ميزانية المشروع الداخلي؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "interior_budgeting",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يصمّم عمّن يسلّم داخل ميزانيته. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-068",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في الرسم ثنائي الأبعاد بالحاسوب؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "cad_2d_drafting",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ من الرسم ومن يتجاوزه إلى النمذجة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-069",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في النمذجة بـBIM؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "bim_modelling",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة نمذجة المباني. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-070",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في الإشراف على الموقع؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "site_supervision",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الإشراف على الموقع والسلامة. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-071",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.1",
+      "text_ar": "أي وصف يقترب أكثر من خبرتك العملية في إعداد المستخلص؟",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لم أتعامل معها عمليًا",
+        "أعرف أساسياتها نظريًا",
+        "شاركت في مهمة أو مشروع استخدمها",
+        "أستخدمها بانتظام في عملي أو دراستي",
+        "قدت عملًا بها ولدي نتيجة واضحة"
+      ],
+      "options_key": "evidence_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "payment_application",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من ينفّذ عمّن يوثّق ويحصّل مستحقّه. — صياغة V2.1 تقيس الدليل العملي لا الثقة بالنفس.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1,
       "reference_anchor": "O*NET",
       "active": true
     },

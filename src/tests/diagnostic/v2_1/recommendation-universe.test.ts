@@ -81,13 +81,14 @@ const FORMERLY_FROZEN = [
 ]
 
 describe('فضاء التوصيات الموحد V2.1 — معايير القبول (البند 19)', () => {
-  /* ٣٥←٣٦ و٢٠←٢١ قياسيّا (2026-09-16): أُضيف PW-GRPH-001 — مسارُ التصميم
-     البصريّ. والمركّباتُ خمسَ عشرةَ كما هي: القوالبُ المركّبةُ مؤلَّفةٌ في
-     composite-templates.v1.json ولا يولّدها مسارٌ جديد. */
-  it('الفضاء النشط = 36 كيانًا (21 قياسيًا + 15 مركبًا) — TPL-SMART-OPS-001 موسوم needs_revision بقرار أكاديمي موثق (إغلاق منطق V2.1)', () => {
+  /* ٣٥←٤١ و٢٠←٢٦ قياسيّا (2026-09-16): ستّةُ مساراتٍ جديدةٍ للعائلات الخمس
+     (GRPH · PSY×2 · EDU · INTR · ENGR). والمركّباتُ خمسَ عشرةَ كما هي:
+     القوالبُ المركّبةُ مؤلَّفةٌ في composite-templates.v1.json ولا يولّدها
+     مسارٌ جديد. */
+  it('الفضاء النشط = 41 كيانًا (26 قياسيًا + 15 مركبًا) — TPL-SMART-OPS-001 موسوم needs_revision بقرار أكاديمي موثق (إغلاق منطق V2.1)', () => {
     const universe = recommendationUniverse()
-    expect(universe.active.length).toBe(36)
-    expect(universe.active.filter((e) => e.entity_type === 'standard').length).toBe(21)
+    expect(universe.active.length).toBe(41)
+    expect(universe.active.filter((e) => e.entity_type === 'standard').length).toBe(26)
     expect(universe.active.filter((e) => e.entity_type === 'composite').length).toBe(15)
     /* القرار الموثق: SMART-OPS لا يفوز من أي شخصية بشرية طبيعية (3520 توليفة +
        12 شخصية مصممة) — PW-OPS يهيمن أحاديًا وSUPPLY/CX/DT تهيمن مركبًا */

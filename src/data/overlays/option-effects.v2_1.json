@@ -184,6 +184,15 @@
         "need_id": "need_visual_design"
       },
       "o20": {
+        "need_id": "need_interior_design"
+      },
+      "o21": {
+        "need_id": "need_construction"
+      },
+      "o22": {
+        "need_id": "need_self_understanding"
+      },
+      "o23": {
         "need_id": "need_unsure"
       }
     },

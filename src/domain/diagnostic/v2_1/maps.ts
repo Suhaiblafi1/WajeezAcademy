@@ -225,6 +225,13 @@ export const NEEDS_V21: NeedDefV21[] = [
      والمراحلُ سبعٌ لا «all»: التصميمُ حرفةُ من يصنع بيده، فلا يُعرض على
      مديرٍ أو قائدٍ سألَ عن القيادة. */
   { code: 'need_visual_design', label_ar: 'التصميم البصري والهوية', stages: ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'freelancer', 'founder', 'other_unsure'], domains: ['visual_design'] },
+  { code: 'need_interior_design', label_ar: 'التصميم الداخلي والديكور', stages: ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'freelancer', 'founder', 'other_unsure'], domains: ['spatial_design'] },
+  { code: 'need_construction', label_ar: 'الهندسة وتنفيذ المشاريع الإنشائية', stages: ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'manager', 'freelancer', 'founder'], domains: ['construction_engineering'] },
+  /* `personal_development` كان في التصنيف بلا مسارٍ منذ كتابتِه — «فجوة كتالوج
+     موثقة» بنصِّ الملفّ — ولا يصل إليه في V2.1 هدفٌ ولا احتياج: هدفُ
+     `specific_skill` مجالاتُه فارغةٌ عمدا (Goal ≠ Domain). فلمّا صار له
+     مساران (PW-PSY-001 · PW-PSY-002) لزمه بابُ وصول. */
+  { code: 'need_self_understanding', label_ar: 'فهم النفس والسلوك الإنساني', stages: ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'manager', 'trainer_ld', 'other_unsure'], domains: ['personal_development'] },
   { code: 'need_unsure', label_ar: 'غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي', stages: 'all', domains: [] },
 ]
 
@@ -346,16 +353,20 @@ export type RiasecDim =
     مخطَّط أكاديمي ثابت (هولاند) لا بيانات كتالوج، فموضعه هنا لا في اللقطة.
     الميل دليل غير مباشر: يرجّح ولا يحسم — والاحتياج يبقى محرّك اكتشاف المجال. */
 export const RIASEC_DOMAINS: Record<RiasecDim, DomainId[]> = {
-  /* أدوات وأجهزة ونتائج ملموسة، إصلاح وتحسين، مهام عملية واضحة */
-  riasec_realistic: ['operations'],
+  /* أدوات وأجهزة ونتائج ملموسة، إصلاح وتحسين، مهام عملية واضحة.
+     `construction_engineering` أُضيف حين صار للتنفيذِ الهندسيِّ مسارٌ يُرشَّح —
+     وهو أقربُ ما يكون إلى وصفِ هذا البعد. */
+  riasec_realistic: ['operations', 'construction_engineering'],
   /* تحليل معلومات معقدة، بحث عميق، أسئلة بلا إجابة مباشرة */
   riasec_investigative: ['data_decision', 'cyber_risk'],
   /* صناعة محتوى وتصميم وسرد، مهام مفتوحة، لغة وصورة.
      `visual_design` أُضيف حين صار للتصميم مسارٌ يُرشَّح — والسطرُ كان يقول
      «وتصميم» منذ كتابته ولا مجالَ في الكتالوج يحمله. */
-  riasec_artistic: ['marketing_growth', 'communication_influence', 'visual_design'],
-  /* مساعدة الآخرين على الفهم، الشرح والتدريب، التعاون */
-  riasec_social: ['learning_design', 'people_leadership'],
+  riasec_artistic: ['marketing_growth', 'communication_influence', 'visual_design', 'spatial_design'],
+  /* مساعدة الآخرين على الفهم، الشرح والتدريب، التعاون.
+     `personal_development` أُضيف مع مسارَي فهمِ النفس: من يميل إلى فهمِ
+     الناسِ ومساعدتِهم هو جمهورُهما الأوّل. */
+  riasec_social: ['learning_design', 'people_leadership', 'personal_development'],
   /* قيادة مبادرة وإقناع، بيع وتفاوض، منافسة ونتائج */
   riasec_enterprising: ['sales', 'entrepreneurship'],
   /* تنظيم المعلومات والملفات والخطوات بدقة */
