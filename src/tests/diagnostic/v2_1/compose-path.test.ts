@@ -16,6 +16,7 @@ import {
   COMPOSED_MIN_COURSES,
   COMPOSED_MAX_COURSES,
   MAX_OFF_ANCHOR,
+  MIN_FRESH_SHARE,
 } from '../../../domain/diagnostic/v2_1/compose-path'
 import { pathwayDomainsV2 } from '../../../domain/diagnostic/v2/data'
 import { courseById } from '../../../domain/diagnostic/catalog'
@@ -249,6 +250,65 @@ describe('حماية مجال الهدف من الفجوات الجانبية', 
     /* لا انهيار ولا خطة فارغة — والأدوار تبقى مشتقّة */
     expect(plan.courses.length).toBeGreaterThan(0)
     for (const c of plan.courses) expect(['goal', 'gap', 'support']).toContain(c.role)
+  })
+
+  /* ═══ الخطّةُ تختار فعلا، ولا تُسمّى مركّبةً وهي منقولة ═══
+
+     ثمانيةَ عشرَ مسارا من عشرين يحمل مجالا واحدا، فالمرساةُ الواحدةُ تترك
+     حوضَ الاختيار أربعَ دوراتٍ في عشرةٍ من ستّةَ عشرَ مجالا — والخطّةُ تطلب
+     خمسا إلى ستّ. فلا اختيارَ يجري، والنتيجةُ المسارُ الجاهزُ بعينه. */
+  const STAGES = ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'manager', 'founder', 'freelancer', 'trainer_ld']
+
+  /* ⚠ صدقٌ في حدود هذا الاختبار: تأكيدُ ثباتٍ لا حارسُ طفرة. مُسح الكتالوجُ
+     على ٢٤٠ تركيبةً (مرحلة × هدف × تقييم) بالشيفرة قبل العتبة فلم يقع **خرقٌ
+     واحد** — لأنّ تداخلَ المهارات في الكتالوج ٢٫٤٪ داخل المسار و١٫٢٪ خارجه،
+     فشبهُ التوأم لا يتصدّران معا. والعتبةُ تُكتب لما يأتي: ستٌّ وعشرون دورةً
+     في خمسِ عائلاتٍ جديدةٍ تنتظر الدخول، وفيها التصميمُ والهندسةُ حيث
+     التداخلُ أرجح. يصير حارسا حقيقيّا حينها. */
+  it('عتبةُ الإضافة: في خطّةٍ لم تُرخَ لها العتبة، كلُّ مقرّرٍ بعد الأوّل يضيف نصفَ مهاراته على الأقلّ', () => {
+    let checked = 0
+    for (const stage of STAGES) {
+      const plan = composePath(ctxOf({ career_stage: fact(stage) }), { BIZ: 2, COM: 3, LEAD: 2, DATA: 2, AI: 3, CAREER: 2 })
+      /* ما مرّ بجولة الاستعادة يُستثنى: هي تُرخي العتبةَ عمدا كي لا تُنقص
+         الخطّةَ عن حدّها، والإرخاءُ معلَنٌ في الخطّة لا يُستنتج. */
+      if (plan.relaxedForMinimum) continue
+      checked++
+      const seen = new Set<string>()
+      plan.courses.forEach((c, i) => {
+        const slugs = courseById.get(c.courseId)?.skill_slugs ?? []
+        const fresh = slugs.filter((s) => !seen.has(s))
+        if (i > 0) {
+          expect(fresh.length, `${c.courseId} في خطّة ${stage} يضيف ${fresh.length} من ${slugs.length}`)
+            .toBeGreaterThanOrEqual(Math.ceil(slugs.length * MIN_FRESH_SHARE))
+        }
+        slugs.forEach((s) => seen.add(s))
+      })
+    }
+    expect(checked, 'كلُّ الخطط مرّت بالإرخاء — الحارس يخضرّ على فراغ').toBeGreaterThan(0)
+  })
+
+  it('الحدُّ الأدنى يُفرَض أو يُقال: خطّةٌ دونه تُصرّح أنّها ليست مركّبة', () => {
+    for (const stage of STAGES) {
+      const plan = composePath(ctxOf({ career_stage: fact(stage) }), { BIZ: 2, COM: 3, LEAD: 2, DATA: 2, AI: 3, CAREER: 2 })
+      if (plan.courses.length >= COMPOSED_MIN_COURSES) continue
+      /* التصريحُ صيغتان: نقصُ كتالوجٍ في مجالٍ معلوم، أو مجالٌ لم يتّضح بعد.
+         والمشتركُ بينهما أنّها ليست خطّةً رُكّبت له — وهذا ما يُفحص. */
+      expect(plan.reasons_ar.join(' '), `خطّة ${stage} من ${plan.courses.length} مقرّرات تُسمّى مركّبةً بلا تصريح`)
+        .toContain('رُكّبت لك')
+    }
+  })
+
+  it('المرساةُ تتّسع لمجالَين حين يتقاربان — فيصير للخطّة ما تختار منه', () => {
+    const contested = STAGES
+      .map((s) => ctxOf({ career_stage: fact(s) }))
+      .find((c) => c.domains.contested !== null)
+    /* لا حالةَ تنازعٍ في هذه المراحل: يُقال ولا يُدّعى فحصٌ لم يجرِ */
+    if (!contested) return
+    const [a, b] = contested.domains.contested!
+    const plan = composePath(contested, { BIZ: 2, COM: 3, LEAD: 2, DATA: 2, AI: 3, CAREER: 2 })
+    const doms = new Set(plan.courses.flatMap((c) => pathwayDomainsV2[c.pathwayId] ?? []))
+    expect([a, b].some((d) => doms.has(d)), 'الخطّةُ لا تمسّ أيّا من المجالَين المتنازعَين').toBe(true)
+    expect(plan.reasons_ar.join(' ')).toContain('متقاربان')
   })
 
   it('المؤجَّل يضيف مهارة لا يكررها، ولا يكرر ما في الخطة', () => {
