@@ -401,8 +401,6 @@ export function courseDetails(c: Course): { trainer: Trainer; topics: string[]; 
 export {
   COURSE_DOMAIN_FAMILIES,
   courseDomain,
-  courseDomainKeywords,
-  courseDomainKeywordsByFamily,
-  courseDomainLabel,
+  courseDomainByFamily,
 } from '@/application/catalog/course-domain'
 

@@ -11,7 +11,7 @@
 import { useMemo, useState } from 'react'
 import { X } from 'lucide-react'
 import { controlCls, Field, OptionGrid } from '@/components/FormKit'
-import { courses, courseDomain, courseDomainLabel } from '@/data/courses'
+import { courses, courseDomain } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
 import { Card } from '@/components/ui/Surface'
 
@@ -29,18 +29,17 @@ export default function TeachableCoursePicker({
      القائمة فارغةً أبدا عند المتقدّم ولا يعرف لماذا. وهو يجلب ويشترك معا. */
   const catalogVersion = usePublishedContent()
 
-  /* المجالُ واسمُه وعددُ دوراته معا: الاسمُ يقول أيُّ بابٍ هو، والكلماتُ
-     تقول ماذا خلفه، والعددُ يقول أيستحقّ الفتحَ أصلا. */
+  /* الاسمُ وحدَه — فهو مقطعان يقولان ما في المجال (`application/catalog/
+     course-domain`)، ولا يحتاج ذيلا من كلماتٍ ولا عددا بجانبه. والعددُ يُقال
+     بعد الاختيار حيث يعني شيئا، لا في كلّ سطرٍ من خمسةٍ وعشرين. */
   const domains = useMemo(() => {
     void catalogVersion /* `courses` تُملأ في مكانها — فالنسخة هي إشارة الحساب */
-    const counts = new Map<string, number>()
+    const names = new Set<string>()
     for (const c of courses) {
       const d = courseDomain(c.id)
-      if (d) counts.set(d, (counts.get(d) ?? 0) + 1)
+      if (d) names.add(d)
     }
-    return [...counts.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0], 'ar'))
-      .map(([name, count]) => ({ name, count, label: courseDomainLabel(name) }))
+    return [...names].sort((a, b) => a.localeCompare(b, 'ar'))
   }, [catalogVersion])
   const inDomain = useMemo(() => {
     void catalogVersion
@@ -62,11 +61,11 @@ export default function TeachableCoursePicker({
           id="tc-domain" value={domain} onChange={(e) => setDomain(e.target.value)}
           className={`${controlCls} [&>option]:bg-surface`}
         >
-          <option value="">اختر المجال — وتحت كلّ مجالٍ أهمُّ ما فيه</option>
-          {/* `<option>` نصٌّ لا وسم: فالكلماتُ تُوصَل بشَرطةٍ ولا تُنسَّق.
-              والعددُ في آخره — الرقمُ يُمسَح بالعين أسرعَ من كلمة. */}
-          {domains.map((d) => (
-            <option key={d.name} value={d.name}>{d.label} ({d.count})</option>
+          <option value="">اختر مجالك</option>
+          {/* `<option>` نصٌّ لا وسم: لا شَرطةَ ولا قوسَ ولا رقم — عنوانٌ واحد
+              تمسحه العينُ في سطرٍ قصير. */}
+          {domains.map((name) => (
+            <option key={name} value={name}>{name}</option>
           ))}
         </select>
       </Field>
