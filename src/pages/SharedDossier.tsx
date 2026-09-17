@@ -162,8 +162,10 @@ export default function SharedDossier() {
         </Panel>
       )}
 
+      {/* مفتوحةً هنا: هذه الصفحةُ لا تُفتح إلّا في الغرفة، والأسئلةُ سببُ
+          فتحها — فطيُّها يُخفي المقصودَ خلف نقرة. وفي شاشة الأدمن تُطوى. */}
       <div className="mt-4">
-        <InterviewQuestions a={a} />
+        <InterviewQuestions a={a} defaultOpen />
       </div>
 
       {/* ═══ ما يُملأ — وهو سببُ وجود الصفحة ═══ */}

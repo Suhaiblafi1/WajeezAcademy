@@ -16,6 +16,7 @@ import { getZoomConfig, zoomProbe, forgetZoomToken } from '../../services/zoom.s
 import { registerCalendlyWebhook, CalendlyApiError } from '../../services/calendly-api.service'
 import { publicSiteUrl } from '../../services/notification.service'
 import { sendEmail } from '../../services/mail'
+import { renderMail } from '../../services/mail-template'
 import { recordAudit } from '../../services/audit'
 
 export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -223,10 +224,19 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
   }, async (req) => {
     const { to } = z.object({ to: z.string().email() }).parse(req.body)
     const config = await getEmailConfig(prisma)
+    /* وتخرج على القالب لا نصّا خامّا: هذه الرسالةُ يقرؤها المديرُ ليحكم
+       على إعداد البريد — ومن رآها عاريةً حكم بأنّ رسائلَنا كلَّها عارية.
+       فما يراه هنا هو ما يصل الناسَ فعلا: ترويسةٌ وعلامةٌ وتذييل. */
     const result = await sendEmail(config, {
       to,
       subject: 'بريد تجريبي — أكاديمية وجيز',
-      text: 'إن وصلتك هذه الرسالة فإعدادات البريد سليمة، وقناة email في الإشعارات جاهزة للعمل الحقيقي.',
+      ...renderMail({
+        heading: 'وصلتك هذه الرسالة — فإعدادُ البريد سليم',
+        blocks: [
+          { kind: 'p', text: 'قناةُ البريد في الإشعارات جاهزةٌ للعمل الحقيقيّ، والرسائلُ تخرج بهذه الهيئة نفسِها.' },
+          { kind: 'note', text: 'رسالةٌ تجريبيّةٌ أرسلها مديرٌ من شاشة التكاملات — ولا إجراءَ عليك.' },
+        ],
+      }),
     })
     await recordAudit(prisma, {
       actorId: req.auth!.userId, action: 'integration.email.test', entityType: 'integration_setting', entityId: 'email',

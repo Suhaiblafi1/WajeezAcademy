@@ -610,7 +610,7 @@ export class CohortPlanService {
         blocks: [
           { kind: 'facts', rows: [{ label: 'الشعبة', value: cohort.title }] },
           { kind: 'callout', text: msg.body },
-          { kind: 'cta', label: msg.cta, href: url, caption: 'أو انسخ الرابط:' },
+          { kind: 'cta', label: msg.cta, href: url },
         ],
       }),
     })

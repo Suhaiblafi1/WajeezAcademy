@@ -26,6 +26,7 @@ import type { PrismaClient } from '@prisma/client'
 import { renderPdf } from './pdf'
 import { readDocumentContent } from './storage.service'
 import { sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
+import { renderMail } from './mail-template'
 import { recordAudit } from './audit'
 import { proposalLine, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { fmtDateLong, fmtDateTime, fmtDateWith } from '../../src/application/text/format-ar'
@@ -362,19 +363,32 @@ export async function sendInterviewDossier(
   const when = app.timezone
     ? `${fmtDateWith(scheduledAt, { dateStyle: 'long', timeStyle: 'short', timeZone: app.timezone })} (بتوقيت ${app.timezone})`
     : `${fmtDateTime(scheduledAt)} (UTC)`
-  const text = [
-    `حجز ${app.fullName} مقابلتَه عبر Calendly.`,
-    ``,
-    `الموعد: ${when}`,
-    `رقم الطلب: ${app.reference}`,
-    `البريد: ${app.email}`,
-    app.phone ? `الجوال: ${app.phoneCountryCode ?? ''}${app.phone}` : '',
-    ``,
-    pdf ? 'ملفُّ الطلب مرفقٌ بهذه الرسالة (PDF).' : `تعذّر إرفاق ملفّ الطلب — ${pdfError ?? 'سببٌ غيرُ معروف'}. وتفاصيلُه في شاشة «طلبات المدربين».`,
-    cvBytes ? `وسيرتُه الذاتيّةُ مرفقةٌ ملفًّا منفصلا: ${cv?.originalName}` : 'ولم يرفع سيرةً ذاتيّة.',
-    ``,
-    `${publicSiteUrl()}/admin/trainer-applications`,
-  ].filter((l) => l !== undefined).join('\n')
+  /* ═══ وهذه الرسالةُ تمرّ على القالب كغيرِها (١٧ سبتمبر ٢٠٢٦) ═══
+
+     كانت **نصّا خامّا** وحدَه: لا ترويسةَ ولا علامةَ ولا زرّ، وعنوانُ الشاشة
+     مكتوبٌ في آخر سطرٍ عاريا. وهي تصل المُقابِلين من الأكاديمية نفسِها —
+     ومن كتب «بكافّة أنواعها» في شكواه أرادها معها. والقالبُ يولّد النصَّ
+     الخامَّ من الوصف نفسِه، فلا يخسر قارئُ النصّ شيئا. */
+  const appsUrl = `${publicSiteUrl()}/admin/trainer-applications`
+  const mail = renderMail({
+    heading: `حجز ${app.fullName} مقابلتَه عبر Calendly`,
+    preheader: `${when} — الطلب ${app.reference}`,
+    blocks: [
+      { kind: 'facts', rows: [
+        { label: 'الموعد', value: when },
+        { label: 'رقم الطلب', value: app.reference },
+        { label: 'البريد', value: app.email },
+        ...(app.phone ? [{ label: 'الجوال', value: `${app.phoneCountryCode ?? ''}${app.phone}` }] : []),
+      ] },
+      { kind: 'p', text: pdf
+        ? 'ملفُّ الطلب مرفقٌ بهذه الرسالة (PDF).'
+        : `تعذّر إرفاق ملفّ الطلب — ${pdfError ?? 'سببٌ غيرُ معروف'}. وتفاصيلُه في شاشة «طلبات المدربين».` },
+      { kind: 'p', text: cvBytes
+        ? `وسيرتُه الذاتيّةُ مرفقةٌ ملفًّا منفصلا: ${cv?.originalName}`
+        : 'ولم يرفع سيرةً ذاتيّة.' },
+      { kind: 'cta', label: 'افتح شاشة طلبات المدربين', href: appsUrl },
+    ],
+  })
 
   const attachments = [
     ...(pdf ? [{ filename: `${app.reference}-ملف-المتقدم.pdf`, content: pdf, contentType: 'application/pdf' }] : []),
@@ -386,7 +400,7 @@ export async function sendInterviewDossier(
   const sent = await sendDirectEmail(prisma, {
     to: recipients.join(', '),
     subject: `مقابلةٌ محجوزة: ${app.fullName} — ${app.reference}`,
-    text,
+    ...mail,
     attachments,
   })
 

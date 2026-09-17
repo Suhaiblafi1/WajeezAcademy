@@ -499,7 +499,7 @@ export class TrainerReviewService {
         heading: 'نودّ أن نلتقيك مرّةً أخرى',
         blocks: [
           { kind: 'p', text: 'اخترْ من التقويم الوقتَ الذي يناسبك — تظهر لك الأوقاتُ المتاحةُ وحدَها، ويصلك التأكيدُ ودعوةُ التقويم فورَ اختيارك.' },
-          { kind: 'cta', label: 'اختر موعدك', href: link, caption: 'أو انسخ الرابط:' },
+          { kind: 'cta', label: 'اختر موعدك', href: link },
           { kind: 'facts', rows: [
             { label: 'رقم الطلب', value: app.reference },
             { label: 'المدّة', value: `${TRAINER_INTERVIEW.minutes} دقيقة` },
@@ -534,7 +534,7 @@ export class TrainerReviewService {
             ? ([{ kind: 'h', text: 'وهذا ما نحتاجه' }, { kind: 'callout', text: asked }] as const)
             : ([{ kind: 'p', text: 'راجعْ طلبك وأكمل ما تراه ناقصا فيه — ومستنداتُك أوّلُ ما يُنظَر فيه.' }] as const)),
           { kind: 'p', text: 'طلبك ما زال مفتوحا للتعديل: افتح صفحة حالتك، عدّل ما يلزم، ثمّ أرسله من جديد. ولا يلزمك تعبئتُه من أوّله — يُفتح على ما كتبتَه.' },
-          { kind: 'cta', label: 'عدّل طلبك الآن', href: statusUrl, caption: 'أو انسخ الرابط:' },
+          { kind: 'cta', label: 'عدّل طلبك الآن', href: statusUrl },
           { kind: 'facts', rows: [{ label: 'رقم الطلب', value: reference }] },
           { kind: 'note', text: 'ولو كان في السؤال ما يحتاج توضيحا، ردَّ على هذه الرسالة.' },
         ],
@@ -631,7 +631,7 @@ export class TrainerReviewService {
         heading: `اعتُمد طلبك (${reference}) — أهلا بك مدرّبا في أكاديمية وجيز`,
         blocks: [
           { kind: 'p', text: 'بوّابتك مفتوحةٌ الآن بالحساب نفسِه الذي تابعتَ به طلبك.' },
-          { kind: 'cta', label: 'افتح بوّابة المدرّب', href: portalUrl, caption: 'أو انسخ الرابط:' },
+          { kind: 'cta', label: 'افتح بوّابة المدرّب', href: portalUrl },
           { kind: 'p', text: 'تجد فيها ملفَّك ومهامَّ التهيئة، وتصلك الشعبُ حين تُسنَد إليك.' },
         ],
       }),
@@ -918,7 +918,7 @@ export class TrainerReviewService {
         greetingName: app.fullName,
         heading: `اكتمل اعتماد طلبك (${app.reference}) — وهذه دعوتك لإنشاء حسابك`,
         blocks: [
-          { kind: 'cta', label: 'أنشئ حسابك واختر كلمتك', href: acceptUrl, caption: 'أو انسخ الرابط:' },
+          { kind: 'cta', label: 'أنشئ حسابك واختر كلمتك', href: acceptUrl },
           { kind: 'callout', text: 'الرابط صالحٌ اثنتين وسبعين ساعة، ويُستخدم مرّةً واحدة.' },
           { kind: 'note', text: 'فإن انتهى فاطلب من فريقنا إعادةَ إرساله.' },
         ],
@@ -1548,7 +1548,10 @@ export class TrainerReviewService {
         blocks: [
           { kind: 'p', text: 'لا تُفتح بوّابتُك ولا تُسنَد إليك شعبةٌ جديدة حتّى يُرفع الإيقاف، وشعبُك القائمةُ تبقى كما هي عند الأكاديمية.' },
           ...(note ? [{ kind: 'p' as const, text: `والسببُ الذي كُتب: ${note}` }] : []),
-          { kind: 'p', text: `وإن كان في الأمر لبسٌ فردَّ على هذه الرسالة. وبوّابتك حين تُفتح: ${portalUrl}` },
+          { kind: 'p', text: [
+            'وإن كان في الأمر لبسٌ فردَّ على هذه الرسالة. و',
+            { text: 'بوّابتك', href: portalUrl }, ' تفتح من موضعها حين يُرفع الإيقاف.',
+          ] },
         ],
       }),
     })

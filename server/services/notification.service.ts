@@ -17,6 +17,7 @@ import { getEmailConfig, type EmailConfig } from './integrations.service'
 import { sendEmail, type MailAttachment } from './mail'
 import { renderNotificationMail } from './notification-mail'
 import { categoryForTemplate } from '../../src/application/notifications/categories'
+import { publicSiteUrl } from './site-url'
 
 /* لأيّ بوابةٍ الإشعار — جرسُ كلٍّ يعرض جمهورَه وحده.
 
@@ -128,28 +129,10 @@ export async function sendDirectEmail(
   }
 }
 
-/** أصل الموقع العام لبناء الروابط في الرسائل.
-
-    APP_URL إلزاميٌّ في الإنتاج (`deploy/.env.production`)، والمحلّيُّ احتياطيٌّ
-    للتطوير وحده. وبلا هذا الاحتياطي كانت روابط تأكيد البريد ودعوة إنشاء
-    الحساب تُبنى على localhost:7100 في الإنتاج ما لم يُضبط المتغير يدويا —
-    رسالة تصل برابط لا يفتح عند أحد. */
-export function publicSiteUrl(): string {
-  const explicit = process.env.APP_URL?.trim()
-  if (explicit) return explicit.replace(/\/+$/, '')
-  return 'http://localhost:7100'
-}
-
-/** هل عنوانُ الموقع مضبوطٌ صراحةً، أم نحن على الاحتياطيّ المحلّيّ؟
-
-    يهمّ هذا حيث يخرج العنوانُ إلى طرفٍ ثالث فيعود منه المشتري: بوّابةُ الدفع
-    تأخذ `success_url` و`cancel_url` وقتَ إنشاء الجلسة، فإن كانا `localhost`
-    عاد المشتري بعد دفعٍ ناجح إلى عنوانٍ لا يفتح عنده. والمالُ يُقبض والتسجيلُ
-    يُسوّى (الـwebhook مستقلّ عن المتصفّح) — فيكون العطبُ صامتا في السجلّات
-    صاخبا عند المشتري، وهو أسوأُ ترتيب. */
-export function hasExplicitSiteUrl(): boolean {
-  return Boolean(process.env.APP_URL?.trim())
-}
+/* ولماذا تُعاد من هنا وقد نزلت إلى `site-url.ts`: ستّةَ عشرَ ملفّا تستوردها
+   من هذه الخدمة (خدماتٌ ومساراتٌ واختبارات)، ونقلُ المعرفةِ إلى ورقةٍ لا
+   يُوجب تحريكَ مُستورِديها. والسببُ البنيويُّ للنزول في رأس `site-url.ts`. */
+export { publicSiteUrl, hasExplicitSiteUrl } from './site-url'
 
 const MAX_ATTEMPTS = 3
 
