@@ -13,6 +13,7 @@ import { requireAuth } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
 import { requirePermission } from '../auth-plugin'
 import { TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
+import { TERM_STATUSES } from '../../../src/application/terms/lifecycle'
 
 export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const terms = new TermService(prisma)
@@ -79,6 +80,18 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
       season: z.enum(TRAINING_SEASON_VALUES),
     }).parse(req.body)
     return reply.status(201).send(await terms.create(req.auth!.userId, body))
+  })
+
+  /* حالةُ الفصل — البابُ الذي لم يكن. والعلّةُ كاملةً في
+     `src/application/terms/lifecycle`: خمسُ قيمٍ يقرؤها خمسةُ مواضعَ ولا
+     كاتبَ واحد، فكلُّ فصلٍ `planned` إلى الأبد. */
+  app.post('/api/admin/terms/:id/status', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-terms'], summary: 'نقلُ حالة الفصل — فتحُه أو إنهاؤه أو إلغاؤه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { status } = z.object({ status: z.enum(TERM_STATUSES) }).parse(req.body)
+    return terms.setStatus(req.auth!.userId, id, status)
   })
 
   app.delete('/api/admin/terms/:id', {

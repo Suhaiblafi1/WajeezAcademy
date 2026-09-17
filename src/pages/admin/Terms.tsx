@@ -31,6 +31,7 @@ import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 import { termHorizon } from "@/application/terms/season";
 import { toast, toastError } from "@/components/Toast";
+import { TERM_STATUS_AR, TERM_STATUS_EFFECT_AR, nextStatuses, type TermStatus } from "@/application/terms/lifecycle";
 
 interface Term {
   id: string; year: number; season: string; titleAr: string;
@@ -50,7 +51,13 @@ interface AvailableTrainer { profileId: string; name: string; status: string; ma
 
 /** `datetime-local` يقبل بلا ثوانٍ ولا منطقة — والخادمُ يقرؤه تاريخا */
 const toLocal = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
-const STATUS_AR: Record<string, string> = { draft: "مسودّة", planning: "قيد التخطيط", open: "مفتوح", running: "جارٍ", closed: "مغلق" };
+/* ═══ ومعجمُ الحالات صار من عمود العمل لا من ذاكرةٍ سابقة ═══
+
+   كان هنا معجمٌ محلّيّ: `draft | planning | open | running | closed`. وثلاثةٌ
+   منها ليست من قيم العمود أصلا (`planned | open | active | closed |
+   cancelled`)، فكان الإداريُّ يقرأ لكلّ فصلٍ كلمةَ «planned» بالإنجليزيّة —
+   لأنّ الترجمةَ تخطئ المفتاحَ فتسقط إلى القيمة الخام. ومعجمان يقولان الشيءَ
+   نفسَه يفترقان؛ فصار المعجمُ مع القاعدة في `application/terms/lifecycle`. */
 
 /** شعبةٌ لم يُسمَّ فصلُها بعد — «لم تُفتَح» لا «معطوبة» */
 interface TermlessCohort {
@@ -120,6 +127,12 @@ export default function Terms() {
     const r = await apiPost<PlanResult>(`/api/admin/terms/${t.id}/plan`, { apply: true });
     setPlans((p) => ({ ...p, [t.id]: r }));
   }, "وُزّعت شعبُ الموسم وفُتحت");
+  /* نقلُ حالة الفصل — والزرُّ يقول أثرَه لا اسمَه وحدَه (`TERM_STATUS_EFFECT_AR`) */
+  const moveStatus = (t: Term, to: TermStatus) => act(
+    `status-${t.id}`,
+    () => apiPost(`/api/admin/terms/${t.id}/status`, { status: to }),
+    `${t.titleAr}: ${TERM_STATUS_AR[to]}`,
+  );
   const publish = (t: Term) => act(`publish-${t.id}`, () => apiPost(`/api/admin/terms/${t.id}/publish-calendar`, {}), "نُشر التقويم — يراه الزائرُ الآن");
   const remove = (t: Term) => act(`delete-${t.id}`, async () => {
     await apiDelete(`/api/admin/terms/${t.id}`);
@@ -257,9 +270,35 @@ export default function Terms() {
                   <div className="min-w-0">
                     <h2 className="flex items-center gap-2 text-lg font-black"><CalendarRange className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {t.titleAr}</h2>
                     <p className="mt-1 text-read text-muted-foreground">
-                      {seasonLabel(t.season)} · {fmtDateAr(t.startsOn)} إلى {fmtDateAr(t.endsOn)} · {STATUS_AR[t.status] ?? t.status}
+                      {seasonLabel(t.season)} · {fmtDateAr(t.startsOn)} إلى {fmtDateAr(t.endsOn)} · {TERM_STATUS_AR[t.status as TermStatus] ?? t.status}
                     </p>
                     <p className="mt-1 text-read text-muted-foreground">{t._count.cohorts} شعبة · {t._count.trainerAvailability} مدرّبا أعلن إتاحته</p>
+                    {/* ═══ بابُ الحالة ═══
+
+                        كان العمودُ يُقرأ ولا يُكتب: خمسُ قيمٍ وخمسةُ قرّاءَ ولا
+                        كاتبَ واحد (العلّةُ في `application/terms/lifecycle`).
+                        والأزرارُ تُبنى من `nextStatuses` لا تُكتب باليد — فما
+                        لا يجوز لا يُعرض، ولا يحتاج الإداريُّ أن يحفظ الجدول.
+
+                        و«جارٍ» و«منتهٍ» يقعان بالتقويم كذلك في وظيفةٍ كلَّ
+                        ساعة: هذا بابُ التعجيل لا البابُ الوحيد. */}
+                    {nextStatuses(t.status).length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {nextStatuses(t.status).map((to) => (
+                          <Button
+                            key={to}
+                            tone={to === "cancelled" ? "ghost" : "secondary"}
+                            size="sm"
+                            disabled={busy !== null}
+                            title={TERM_STATUS_EFFECT_AR[to]}
+                            onClick={() => void moveStatus(t, to)}
+                          >
+                            {to === "open" ? "افتحه للتسجيل" : to === "cancelled" ? "ألغِه" : to === "closed" ? "أنهِه" : "اجعله جاريا"}
+                          </Button>
+                        ))}
+                        <span className="text-read text-muted-foreground">{TERM_STATUS_EFFECT_AR[nextStatuses(t.status)[0]]}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="text-read">
                     {published

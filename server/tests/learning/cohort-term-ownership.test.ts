@@ -25,6 +25,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { CohortService } from '../../services/cohort.service'
+import { TermService } from '../../services/term.service'
 
 let prisma: PrismaClient
 let cohorts: CohortService
@@ -112,15 +113,23 @@ describe('① بابُ الإدارة: فعلٌ واحدٌ يفتح الشعبة
     expect(await prisma.cohort.count(), 'بقيت شعبةٌ بلا مدرّبٍ بعد إخفاق الإسناد').toBe(before)
   })
 
-  it('وفصلٌ مغلقٌ لا تُفتح فيه شعبة', async () => {
+  /* ⚠️ كان الفصلُ يُنهى هنا بـ`prisma.term.create({ status: 'closed' })` —
+     أي بحالةٍ لم يكن في المنصّة كلِّها سطرٌ يكتبها، فالحارسُ أخضرُ على ما
+     لا يقع في الإنتاج. وصار له بابٌ (`TermService.setStatus`)، فيُنهى منه. */
+  it('وفصلٌ أُنهي من بابه لا تُفتح فيه شعبة', async () => {
     const closed = await prisma.term.create({
       data: {
         titleAr: 'موسمٌ منتهٍ', season: 'feb_apr', year: 2025,
         startsOn: new Date('2025-02-01T00:00:00.000Z'),
         endsOn: new Date('2025-04-30T00:00:00.000Z'),
-        status: 'closed',
       },
     })
+    const terms = new TermService(prisma)
+    await terms.setStatus(adminId, closed.id, 'open')
+    await terms.setStatus(adminId, closed.id, 'closed')
+    expect((await prisma.term.findUniqueOrThrow({ where: { id: closed.id } })).status,
+      'لم يُنهِ البابُ الفصلَ أصلا').toBe('closed')
+
     await expect(cohorts.openForTrainer(adminId, {
       courseId: COURSE, profileId, termId: closed.id, title: 'شعبةٌ في موسمٍ منتهٍ',
     })).rejects.toMatchObject({ code: 'term_closed' })

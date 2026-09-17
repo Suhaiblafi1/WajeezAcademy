@@ -28,6 +28,7 @@ import { AuthService } from '../services/auth.service'
 import { sendVerifyReminderEmail } from '../services/account-mail'
 import { drainOutbox, OUTBOX_MAX_ATTEMPTS } from '../services/outbox.service'
 import { CohortService } from '../services/cohort.service'
+import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
 import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
@@ -437,6 +438,23 @@ export async function syncCohortStatuses(prisma: PrismaClient, now = new Date())
   }
 }
 
+/* ═══════════ ٣ب · حالاتُ الفصول بالتواريخ ═══════════
+
+   كحالات الشعب سواءً، وبالتقسيم نفسِه: الفتحُ قرارٌ بشريّ، والانتهاءُ حقيقةُ
+   تقويم. وكان حقلُ `status` في الفصل لا يكتبه شيءٌ أصلا — لا يدٌ ولا تقويم. */
+export async function syncTermStatuses(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const terms = new TermService(prisma)
+  const out = await terms.syncStatusesByDate(null, { apply: true, now })
+  return {
+    job: 'term_status_sync',
+    summaryAr: out.changes.length === 0
+      ? 'حالاتُ الفصول مطابقةٌ لتواريخها'
+      : `حُدِّث ${out.changes.length} فصلا: ${out.changes.map((c) => `${c.titleAr} (${c.reason})`).join('، ')}`,
+    done: out.changes.length, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /* ═══════════ ٤ · النشرُ المجدول ═══════════
 
    حُدِّد للتغيير موعدُ نشرٍ ومرّ، ولم يُنشَر: لا مجدولَ ينفّذه. والفاعلُ
@@ -832,6 +850,8 @@ export const JOBS = [
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
   { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكيرُ توثيق البريد' },
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالاتُ الشعب بالتواريخ' },
+  /* والفصلُ حدُّه يومٌ لا دقيقة — فساعةٌ تكفي ولا تُثقل */
+  { key: 'term_status_sync', everyMs: HOUR, run: syncTermStatuses, titleAr: 'حالاتُ الفصول بالتواريخ' },
   { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشرُ المجدول' },
   /* كلَّ عشر دقائق: المقعدُ المحبوسُ يمنع شراءً الآن لا غدا */
   { key: 'reclaim_abandoned_orders', everyMs: 10 * 60_000, run: reclaimAbandonedOrders, titleAr: 'تحريرُ مقاعدِ الطلبات المهجورة' },
