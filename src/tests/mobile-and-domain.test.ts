@@ -7,8 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  COURSE_DOMAIN_FAMILIES, courseDomain, courseDomainKeywords, courseDomainKeywordsByFamily,
-  courseDomainLabel,
+  COURSE_DOMAIN_FAMILIES, courseDomain, courseDomainByFamily,
 } from "@/data/courses";
 import { pathwayCategory } from "@/data/pathways";
 
@@ -108,8 +107,8 @@ describe("«المجال» مجالٌ معرفيّ لا فئةٌ مستهدفة"
   it("٤) دورةُ الأمن السيبرانيّ مجالُها الأمن لا «موظفون»", () => {
     /* كان الحقل يسمّي نفسَه «المجال» ويُملأ بـ`pathwayCategory` — وتلك
        تُعيد جمهورا. فمن يُتقن الأمن السيبرانيّ لا يجده في القائمة. */
-    expect(courseDomain("C-CYB-101")).toBe("الأمن السيبراني");
-    expect(courseDomain("C-AI-101")).toBe("الذكاء الاصطناعي");
+    expect(courseDomain("C-CYB-101")).toBe("الأمن السيبراني وحماية البيانات");
+    expect(courseDomain("C-AI-101")).toBe("الذكاء الاصطناعي وتطبيقاته");
     expect(courseDomain("C-FINM-101")).toBe("المالية والمحاسبة");
     /* وهذه هي الفئة المستهدفة — شيءٌ آخر تماما */
     expect(pathwayCategory("PW-EMP-001")).toBe("موظفون ومختصون");
@@ -127,40 +126,52 @@ describe("«المجال» مجالٌ معرفيّ لا فئةٌ مستهدفة"
     expect(picker).not.toContain("pathwayCategory");
   });
 
-  /* ═══ واسمُ المجال وحدَه لا يقول ماذا فيه (١٥ سبتمبر ٢٠٢٦) ═══
+  /* ═══ والعنوانُ مقطعان يحملان ما في المجال (١٧ سبتمبر ٢٠٢٦) ═══
 
-     «التواصل والعرض» — أفيه الإلقاء؟ أفيه الإنجليزيّة للأعمال؟ فالمتقدّمُ
-     يفتح المجالَ ويغلقه ويفتح غيرَه، عشرين مرّةً ليعرف أين يقع ما يُتقنه.
-     وشكا صاحبُ المنصّة: «المجالات غير واضحة… سهّل عليه التوقّع».
+     كان الاسمُ كلمةً عاريةً («التسويق») لا تقول ماذا خلفها، فأُلحق به ذيلٌ
+     من أربع كلماتٍ مفتاحيّةٍ وعددُ دوراته — فبلغ السطرُ ثمانيةً وتسعين حرفا
+     في المتوسّط ومئةً وتسعةً وعشرين في أطوله. وشكا صاحبُ المنصّة: «كبيرة
+     جدا وعشوائية».
 
-     والفحصُ على التغطية لا على ورودِ كلمة: عائلةٌ واحدةٌ بلا كلماتٍ تكفي
-     لتعود الشكوى في بابها. */
-  it("⚠️ ٧) ولكلّ مجالٍ كلماتُه المفتاحيّة — فلا يُفتح بابٌ ليُعرف ما خلفه", () => {
+     وردُّ الكلمةِ العاريةِ هو الشكوى الأولى بعينها. فالقرار: «يجب أن يكون
+     من مقطعين، وكلُّ مقطعٍ انعكاسٌ لأهمّ ما جاء ضمن هذا المجال» — والاسمُ
+     يحمل ما كان الذيلُ يحمله.
+
+     والفحصُ على **بنية العنوان** لا على ورودِ كلمةٍ بعينها: عنوانٌ واحدٌ
+     بمقطعٍ واحدٍ يكفي لتعود الشكوى في بابه. */
+  it("⚠️ ٧) ولكلّ مجالٍ عنوانٌ من مقطعين — لا كلمةٌ عاريةٌ ولا ثلاثة", () => {
     expect(COURSE_DOMAIN_FAMILIES.length, "لا مجالاتِ أصلا").toBeGreaterThan(15);
     for (const family of COURSE_DOMAIN_FAMILIES) {
-      const words = courseDomainKeywordsByFamily(family);
-      expect(words, `مجالٌ بلا كلماتٍ تدلّ عليه: ${family}`).toBeTruthy();
-      /* وثلاثُ مفاتيحَ على الأقلّ: مفتاحان لا يقصّان الشكَّ عن أربع دورات */
-      expect(
-        words.split("·").filter((w) => w.trim()).length,
-        `كلماتُ ${family} أقلُّ من أن تدلّ: «${words}»`,
-      ).toBeGreaterThanOrEqual(3);
+      const title = courseDomainByFamily(family);
+      expect(title, `مجالٌ بلا عنوان: ${family}`).toBeTruthy();
+      /* المقطعان تصلهما واوٌ مبتدئةٌ كلمةً — فواحدةٌ لا أكثر: اثنتان ثلاثةُ
+         مقاطعَ لا مقطعان، وصفرٌ كلمةٌ عاريةٌ كالتي شُكي منها. */
+      const joins = title.match(/\sو/g)?.length ?? 0;
+      expect(joins, `عنوانُ ${family} ليس مقطعين: «${title}»`).toBe(1);
+      const [first, second] = title.split(/\sو/);
+      expect(first?.trim().length, `مقطعٌ أوّلُ فارغٌ في ${family}`).toBeGreaterThan(2);
+      expect(second?.trim().length, `مقطعٌ ثانٍ فارغٌ في ${family}`).toBeGreaterThan(2);
+      /* ولا رقمَ في العنوان: «لا داعي لوجود رقم ٤ في العنوان» */
+      expect(title, `رقمٌ في عنوان ${family}: «${title}»`).not.toMatch(/[0-9٠-٩]/);
     }
   });
 
-  it("⚠️ ٨) والكلماتُ تُقرأ بالاسم العربيّ — فالقائمةُ لا تعرف العائلة", () => {
-    /* السجلّان مفتاحُهما العائلةُ، والشاشاتُ تحمل الاسمَ العربيَّ وحدَه.
-       فلو انقطع الجسرُ بينهما عادت القائمةُ أسماءً عاريةً بلا أن يحمرّ شيء. */
-    expect(courseDomainKeywords("الأمن السيبراني"), "لا كلماتِ لمجالٍ بالاسم").toBeTruthy();
-    expect(courseDomainLabel("الأمن السيبراني")).toMatch(/^الأمن السيبراني — .+/);
-    /* وما لا كلماتِ له يبقى اسمَه — لا شَرطةً معلّقةً على فراغ */
-    expect(courseDomainLabel("أخرى")).toBe("أخرى");
+  it("⚠️ ٨) وسقفُ العنوان يمنع عودةَ السطر الطويل بصمت", () => {
+    /* أطولُ عنوانٍ اليوم واحدٌ وثلاثون حرفا. والسقفُ أربعةٌ وثلاثون: يتّسع
+       لعنوانٍ جديدٍ يُكتب بالقاعدة نفسِها، ويسقط على أوّل ذيلٍ يعود. */
+    for (const family of COURSE_DOMAIN_FAMILIES) {
+      const title = courseDomainByFamily(family);
+      expect(title.length, `عنوانُ ${family} تجاوز السقف: «${title}»`).toBeLessThanOrEqual(34);
+    }
   });
 
-  it("⚠️ ٩) والقائمةُ تعرض الكلماتِ فعلا — لا الاسمَ وحدَه", () => {
+  it("⚠️ ٩) والقائمةُ تعرض العنوانَ عاريا — والعددُ بعد الاختيار لا قبله", () => {
     const picker = read("src/components/TeachableCoursePicker.tsx")
       .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "");
-    expect(picker, "القائمةُ ما زالت تعرض الاسمَ عاريا").toContain("courseDomainLabel");
-    expect(picker, "لا يُعرض عددُ دورات المجال — وهو أسرعُ ما يُمسح بالعين").toMatch(/\{d\.count\}/);
+    /* لا ذيلَ ولا عدد: `<option>` يحمل الاسمَ وحدَه */
+    expect(picker, "عاد ذيلُ الكلمات إلى القائمة").not.toContain("courseDomainLabel");
+    expect(picker, "عاد العددُ إلى كلّ سطرٍ من خمسةٍ وعشرين").not.toContain("count");
+    /* والعددُ لم يُفقد — يُقال بعد فتح المجال حيث يعني شيئا */
+    expect(picker, "العددُ لا يُقال في موضعه أيضا").toContain("inDomain.length");
   });
 });
