@@ -765,6 +765,20 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return cohorts.trainerMoveSession(req.auth!.userId, sessionId, body)
   })
 
+  /* ═══ حذفُ لقاء — لأنّ الشاشةَ كانت تأمر به ولا بابَ له ═══
+
+     «احذف لقاءً أو راجعها لتوسيعه» في شاشة الجدولة، و«انقلها أو احذفها ثمّ
+     اختر الفصل» في خطإ الفصل — وكلاهما يأمر بفعلٍ ليس في الواجهة البرمجيّة
+     كلِّها. وهو كذلك مخرجُ الحلقة المغلقة: لقاءاتٌ ولّدتها الإدارةُ خارجَ
+     الفصل لا تُنقل (النقلُ يمرّ بالنافذة التي يحاول فتحَها) — فتُحذف. */
+  app.delete('/api/trainer/sessions/:sessionId', {
+    preHandler: requirePermission('trainer.cohort.schedule'),
+    schema: { tags: ['trainer-ops'], summary: 'حذفُ لقاءٍ لم ينعقد من شعبتي' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    return cohorts.trainerDeleteSession(req.auth!.userId, sessionId)
+  })
+
   /* والاقتراحُ باقٍ لما يقع خارجَ النافذة — لا بديلا عمّا صار داخلها */
   app.post('/api/trainer/sessions/:sessionId/reschedule', {
     preHandler: requirePermission('trainer.cohort.operate'),

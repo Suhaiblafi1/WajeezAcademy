@@ -34,6 +34,7 @@ import { staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
+import { capReached } from "@/application/trainer/schedule-window";
 
 /* ═══ الحدُّ يُقرأ قبل المحاولة لا بعد الرفض ═══
 
@@ -43,7 +44,9 @@ import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 interface ScheduleWindow {
   mine: boolean; open: boolean;
   start: string | null; end: string | null;
-  maxSessions: number | null; used: number; remaining: number;
+  /* `remaining: null` تعني **بلا سقفٍ معلَن** — لا «نفد». وكان الصفرُ يحمل
+     المعنيَين فقيل لشعبةٍ فارغةٍ إنّها بلغت سقفَها. */
+  maxSessions: number | null; used: number; remaining: number | null;
 }
 
 /** ما يُرفَق باللقاء — الشكلُ الذي يفهمه `ModuleBodyUpload` */
@@ -88,7 +91,7 @@ export default function TrainerSchedule({
     );
   }
 
-  const full = win.remaining <= 0;
+  const full = capReached(win.maxSessions, win.used);
   /* والناقصُ يُقال بعددِه لا بإشارة: من بقي عليه لقاءان يعرف أنّهما اثنان */
   const short = Math.max(0, minSessions - haveSessions);
 

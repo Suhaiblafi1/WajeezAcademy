@@ -103,6 +103,10 @@ const MEDIUM: readonly string[] = [
   /* جلسةٌ أُضيفت أو نُقلت، ونافذةُ الجدولة */
   'cohort.session.add', 'cohort.session.move', 'cohort.sessions.generate',
   'cohort.session.propose', 'cohort.session.approve', 'cohort.session.reject',
+  /* وحذفُ لقاءٍ وزنُه وزنُ نقله: كلاهما يُخرج موعدا من تقويم من كان
+     ينتظره، ولا يمسّ وصولَه ولا مالَه ولا سجلَّه. والمسجَّلون يُبلَّغون
+     بمفتاح `cohort.schedule_changed` لا بهذا — هذا أثرٌ لا إشعار. */
+  'cohort.session.delete',
   'cohort.schedule_window.open', 'cohort.schedule_window.close',
   'cohort.term.set',
   'cohort.remind_trainer',

@@ -227,6 +227,28 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
   }
 }
 
+/* ── إلغاءُ اجتماع ──
+
+   يُنادى حين يُحذف اللقاءُ من عندنا. ولولاه لبقي في حساب الأكاديميّة موعدٌ
+   لا شعبةَ له، يفتحه من وصله رابطُه يوما فيجد غرفةً مفتوحةً بلا مدرّب.
+
+   ── ولمَ لا يرمي هذا كذلك ──
+
+   الحذفُ عندنا وقع أو سيقع، وإخفاقُ Zoom لا يردّه. و٤٠٤ حالةٌ **متوقّعة**
+   لا شاذّة: من حذف الاجتماعَ من لوحة Zoom بيده ترك عندنا صفًّا يشير إلى لا
+   شيء، وإلغاءُ ما أُلغي نجاحٌ لا خطأ. فيردّ ما وقع ويُكتب في السجلّ، ولا
+   يُعاقَب المدرّبُ بمنعِ حذفٍ لأنّ خدمةً خارجيّةً تعثّرت. */
+export async function deleteZoomMeeting(c: ZoomConfig, meetingId: string): Promise<{ ok: boolean; reason?: string }> {
+  const token = await zoomToken(c)
+  const res = await fetch(`${ZOOM_API_BASE_URL}/meetings/${encodeURIComponent(meetingId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  /* ٢٠٤ حذفٌ تمّ · ٤٠٤ لا اجتماعَ بهذا المعرّف — وكلاهما «لم يعد قائما» */
+  if (res.status === 204 || res.status === 404) return { ok: true }
+  return { ok: false, reason: `ردُّ Zoom عند الإلغاء (HTTP ${res.status})` }
+}
+
 /** فحصٌ حيٌّ للمفاتيح — يطلب رمزا فعلا ولا يكتفي بوجود القيم */
 /* ── تسجيلُ متعلّمٍ في اجتماع ──
 
