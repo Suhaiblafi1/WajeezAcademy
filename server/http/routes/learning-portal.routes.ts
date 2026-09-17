@@ -494,23 +494,15 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return plans.updateCohort(req.auth!.userId, id, body as Record<string, unknown>)
   })
 
-  /* فصلُ الشعبة — يختاره مدرّبُها، وحدودُه تصير نافذةَ جدولته (١٥ سبتمبر ٢٠٢٦) */
-  app.get('/api/trainer/cohorts/:id/terms', {
-    preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'الفصولُ التي يسعني اختيارُها لهذه الشعبة' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return plans.selectableTerms(req.auth!.userId, id)
-  })
+  /* ═══ وبابُ فصلِ الشعبة أُغلق على المدرّب (١٧ سبتمبر ٢٠٢٦) ═══
 
-  app.post('/api/trainer/cohorts/:id/term', {
-    preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'اختيارُ فصل الشعبة — ومنه تُشتقّ حدودُها ونافذةُ جدولتها' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const { termId } = z.object({ termId: z.string().uuid() }).parse(req.body)
-    return plans.setTerm(req.auth!.userId, id, termId)
-  })
+     صحّح صاحبُ المنصّة: «القصدُ كان لدينا في الإدارة نكون قد اعتمدنا الدورةَ
+     في فصلٍ معيّن فتتقيّد إجاباتُه حول أوقات الجلسات في هذه المدّة فقط».
+
+     فانتقل المسلكان إلى الإدارة: `POST /api/admin/cohorts/open-for-trainer`
+     يفتح الشعبةَ بفصلها ومدرّبها في فعلٍ واحد، و`POST /api/admin/cohorts/:id/term`
+     يسمّي فصلَ شعبةٍ قائمة. والمدرّبُ يقرأ الفصلَ في رأس ورشته ولا يكتبه. */
+
 
   app.post('/api/trainer/cohorts/:id/plan/submit', {
     preHandler: requirePermission('trainer.cohort.plan'),

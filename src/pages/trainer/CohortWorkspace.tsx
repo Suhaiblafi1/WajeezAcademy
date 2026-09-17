@@ -47,7 +47,7 @@ import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
-import { blockingBeforeSubmit } from "@/application/trainer/plan-gate";
+import { blockingBeforeSubmit, trainerOwned } from "@/application/trainer/plan-gate";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -115,7 +115,7 @@ const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent"
    تُطوى داخل «اللقاءات»: مرحلةٌ واحدةٌ لهما. */
 type Stage = "identity" | "modules" | "resources" | "sessions" | "assignments" | "approval";
 const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
-  { key: "identity", label: "الاسم والمواعيد", icon: ClipboardList },
+  { key: "identity", label: "الاسمُ والنبذة", icon: ClipboardList },
   { key: "modules", label: "المحاور", icon: BookOpen },
   { key: "resources", label: "المصادر", icon: FileText },
   { key: "sessions", label: "لقاءات مباشرة", icon: CalendarDays },
@@ -167,9 +167,13 @@ const RESOURCE_CATEGORY_META: Record<string, {
    يُقال ليقرّر أيبدأها الآن أم يؤجّلها، وهو أنفعُ ما يُقال له قبلها. */
 const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: string }> = {
   identity: {
-    title: "اسمُ الشعبة ومواعيدُها",
-    purpose: "تعريفُ الدفعة كما يراها المتعلّمُ قبل أن يسجّل: اسمُها، ومتى تبدأ وتنتهي، وأيّامُ لقاءاتها.",
-    minutes: "نحو ٣ دقائق",
+    title: "اسمُ الشعبة ونبذتُها",
+    /* وكان يَعِدُ بما لم يعد فيها: «متى تبدأ وتنتهي وأيّامُ لقاءاتها» —
+       والبدءُ والانتهاءُ يُشتقّان من الفصل الذي تسمّيه الإدارة، ومواعيدُ
+       اللقاءات تُحدَّد لقاءً لقاءً في خطوتها. ومقدّمةٌ تَعِدُ بحقولٍ لا
+       وجودَ لها تجعل المدرّبَ يبحث عمّا ليس هنا ويظنّ الشاشةَ ناقصة. */
+    purpose: "تعريفُ الدفعة كما يراها المتعلّمُ قبل أن يسجّل: اسمُها وسطرانِ عمّا يخرج به منها.",
+    minutes: "نحو دقيقتين",
   },
   modules: {
     title: "المحاور والتطبيق العمليّ",
@@ -223,7 +227,7 @@ const modulesKey = (c: PlanContent) => JSON.stringify(c.modules);
 const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources);
 
 
-/* والوصفُ صار مع الاسم والمواعيد، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
+/* والوصفُ صار مع الاسم والنبذة، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
    حيث صار الحقلُ لا حيث كان. */
 const summaryKey = (c: PlanContent) => c.summaryAr ?? "";
 /* ═══ ولم تعد لخطوة «اللقاءات» مسودّةٌ تُحفظ ═══
@@ -250,7 +254,6 @@ export default function CohortWorkspace() {
      تُشتقّ من الفصل، واللقاءاتُ تُحدَّد لقاءً لقاءً في خطوتها. */
   const [identity, setIdentity] = useState({ title: "" });
   /* الفصولُ التي يسعه اختيارُها — تُقرأ مرّةً عند فتح الشعبة */
-  const [terms, setTerms] = useState<Term[]>([]);
   const [confirm, setConfirm] = useState(false);
   /* نموذجُ التكليف — واحدٌ للإنشاء والتعديل. `editingId` يقرّر أيَّهما:
      فارغٌ فإنشاء، وفيه معرّفٌ فتعديلُ ذاك التكليف بعينه. */
@@ -285,7 +288,6 @@ export default function CohortWorkspace() {
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
       setWs(w);
-      apiGet<Term[]>(`/api/trainer/cohorts/${id}/terms`).then(setTerms).catch(() => setTerms([]));
       const nextContent: PlanContent = w.plan?.content ?? { kind: "trainer", summaryAr: "", modules: w.course.baseModules, resources: [], liveNoteAr: "" };
       const nextIdentity = { title: w.cohort.title };
       setContent(nextContent);
@@ -375,9 +377,12 @@ export default function CohortWorkspace() {
      ولا يُرسَل حتّى يتمّ — فالزرُّ مطفأٌ أبدا وإن أتمّ المدرّبُ كلَّ شيء. */
   const blocking = blockingBeforeSubmit(ws.checklist);
   const remaining = blocking.length;
+  /* وأوّلُ ما يستطيع هو فتحَه من الباقي — لا كلُّ الباقي خطوةٌ في يده */
+  const firstMine = blocking.find((b) => STAGES.some((s) => s.key === b.key)) ?? null;
   /* والخطُّ يمتلئ بقدر ما **يملك المدرّبُ** إنجازَه — فيبلغ تمامَه حين لا يبقى
-     إلّا قرارُ الإدارة، لا يقف دون التمام ينتظر قرارا ليس بيده. */
-  const gated = ws.checklist.filter((c) => !c.optional && c.key !== "approval");
+     إلّا قرارُ الإدارة، لا يقف دون التمام ينتظر قرارا ليس بيده. وصفُّ الفصل
+     مثلُ صفِّ الاعتماد في هذا: تسمّيه الإدارةُ عند الإسناد، فلا يُعدُّ عليه. */
+  const gated = trainerOwned(ws.checklist).filter((c) => !c.optional);
   const doneCount = gated.filter((c) => c.done).length;
   /* المحاورُ التي ينقصها المحتوى النظريّ — بالأرقام والعناوين، لا بعدد.
      والقاعدةُ قاعدةُ الخادم نفسُها (`moduleBodyDone`): مكتوبٌ بأربعين حرفا
@@ -415,8 +420,6 @@ export default function CohortWorkspace() {
   /* الفصلُ يُحفظ وحدَه لا مع الاسم: اختيارُه يحرّك حدودَ الشعبةَ ونافذةَ
      جدولتها، وقد يُردّ إن كان في الجدول لقاءٌ خارجَه — فلا يُبتلع في زرٍّ
      اسمُه «احفظ البيانات» ويظنُّ صاحبُه أنّ الاسمَ لم يُحفظ. */
-  const chooseTerm = (termId: string) =>
-    act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/term`, { termId }), "حُدِّد فصلُ الشعبة");
   const submit = () => act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
   /* ── التكاليف: إنشاءٌ وتعديلٌ وحذف ──
 
@@ -614,64 +617,45 @@ export default function CohortWorkspace() {
         </Inset>
       )}
 
-      {/* ─────────── ① الاسم والمواعيد ─────────── */}
+      {/* ─────────── ① الاسمُ والنبذة ─────────── */}
       {phase === "prepare" && stage === "identity" && (
         <Panel as="section">
           <StageIntro stage="identity" />
 
-          {/* ═══ الفصلُ أوّلا — فمنه كلُّ ما شُطب من هذه الخطوة ═══
+          {/* ═══ الفصلُ حقيقةٌ تُقرأ، لا سؤالٌ يُسأل ═══
 
-              كان المدرّبُ يكتب بدءا وانتهاءً وأيّامَ أسبوعٍ وساعةً ونمطا
-              ولغة: ستّةُ حقولٍ يملؤها قبل أن يصل إلى مادّته. وقرارُ صاحب
-              المنصّة (١٥ سبتمبر ٢٠٢٦) أسقطها كلَّها — الشعبةُ متاحةٌ
-              للمتعلّم طيلةَ الفصل، فحدودُها حدودُه، وما يقرّره المدرّبُ
-              هو **متى اللقاءاتُ** لا متى الشعبة. */}
-          <StaffField
-            as="div"
-            wide
-            label="فصلُ الشعبة"
-            hint="تُتاح الشعبةُ للمتعلّم طيلةَ الفصل، ولقاءاتُك تُجدوَل داخلَ أشهره وحدَها."
-          >
-            {terms.length === 0 ? (
-              <Inset as="p" className="text-read leading-6 text-muted-foreground">
-                لا فصلَ مفتوحٌ للاختيار الآن — تفتحه الإدارةُ من «الفصول»، ثمّ يظهر هنا.
-              </Inset>
-            ) : (
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {terms.map((t) => {
-                  const picked = ws.cohort.termId === t.id;
-                  return (
-                    <Card as="li" key={t.id} tone={picked ? "accent" : undefined} className="p-0">
-                      <button
-                        type="button"
-                        disabled={busy || locked}
-                        aria-pressed={picked}
-                        onClick={() => { if (!picked) void chooseTerm(t.id); }}
-                        className="w-full p-3 text-start transition disabled:opacity-60"
-                      >
-                        <span className="flex items-center gap-2 text-read font-bold text-foreground">
-                          {picked && <Check className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />}
-                          {t.titleAr}
-                        </span>
-                        <span className="mt-0.5 block text-fine text-muted-foreground">
-                          {fmtDateAr(t.startsOn)} — {fmtDateAr(t.endsOn)}
-                        </span>
-                      </button>
-                    </Card>
-                  );
-                })}
-              </ul>
-            )}
-          </StaffField>
+              كانت هنا شبكةُ فصولٍ ينقر فيها المدرّب. وصحّح صاحبُ المنصّة
+              (١٧ سبتمبر ٢٠٢٦): «القصدُ كان لدينا في الإدارة نكون قد اعتمدنا
+              الدورةَ في فصلٍ معيّن فتتقيّد إجاباتُه حول أوقات الجلسات في هذه
+              المدّة فقط»، وصاغ الفعلَ: «عندما نقوم بإسناد دورةٍ لمدرّب نحدّد
+              لأيّ فصلٍ ستكون، وبهذا نكون فتحنا شعبةً له».
 
-          {/* وحدودُ الشعبة تُقال بعد الاختيار لا تُترك تُستنتَج */}
-          {ws.cohort.term && (
-            <Inset tone="accent" className="mt-3 flex items-start gap-2 text-read leading-6">
-              <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              فالفصلُ يحكم نافذةَ التسجيل والتقويمَ المنشورَ وموسمَ الإيراد،
+              ويكتب `startsAt` الذي يقرؤه الكتالوجُ العامُّ — وكان القرارَ
+              الإداريَّ المحضَ الوحيدَ المفوَّضَ في هذه الشاشة، ويُكتب بنقرةٍ
+              بلا بوّابةٍ بينما كلُّ ما عداه يمرّ باعتماد. */}
+          {ws.cohort.term ? (
+            <Inset tone="accent" className="flex items-start gap-2 text-read leading-7">
+              <CalendarDays className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>
-                تبدأ الشعبةُ <b className="text-foreground">{fmtDateAr(ws.cohort.term.startsOn)}</b> وتنتهي{" "}
-                <b className="text-foreground">{fmtDateAr(ws.cohort.term.endsOn)}</b> — حدودُ «{ws.cohort.term.titleAr}».
-                وداخلَها تضع مواعيدَ لقاءاتك في خطوة «لقاءات مباشرة».
+                هذه الشعبةُ معتمَدةٌ لـ<b className="text-foreground">«{ws.cohort.term.titleAr}»</b> —
+                من <b className="text-foreground">{fmtDateAr(ws.cohort.term.startsOn)}</b> إلى{" "}
+                <b className="text-foreground">{fmtDateAr(ws.cohort.term.endsOn)}</b>.
+                ولقاءاتُك تُجدوَل داخلَ هذه الأشهر وحدَها، لقاءً لقاءً في خطوة «لقاءات مباشرة».
+              </span>
+            </Inset>
+          ) : (
+            /* ═══ وحالةٌ لم يكن لها اسم ═══
+
+               شعبةٌ بلا فصلٍ ليست معطوبةً بل **لم تُفتَح بعد**. وكان يُقال
+               له «اخترْه في خطوة الاسم والمواعيد» — أي يُؤمَر بفعلٍ صار ليس
+               له. والصوابُ أن يُقال ما يقع، ومن يفعله، وما يستطيعه هو الآن. */
+            <Inset tone="warn" className="flex items-start gap-2 text-read leading-7 text-gold-ink">
+              <CalendarDays className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>
+                <b>لم تُفتَح هذه الشعبةُ بعد</b> — تسمّي الإدارةُ فصلَها عند الإسناد، ومنه تُشتقّ حدودُها
+                وتُفتح لك جدولةُ اللقاءات. ويصلك إشعارٌ حين يُسمَّى.
+                {" "}وحتّى ذلك الحين أعِدَّ محاورَك ومصادرَك — فهي لا تنتظر الفصل.
               </span>
             </Inset>
           )}
@@ -1172,9 +1156,14 @@ export default function CohortWorkspace() {
           {remaining > 0 && !approved && (
             <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
               بقي قبل الإرسال: {blocking.map((b) => b.labelAr).join(" · ")}
-              <Button tone="ghost" size="sm" className="mt-2" onClick={() => openStage(blocking[0].key as Stage)}>
-                افتح أوّلَها
-              </Button>
+              {/* والزرُّ يفتح أوّلَ ما **هو** فاعلُه: في الباقي صفوفٌ بيدِ
+                  الإدارة (تسميةُ الفصل)، وزرٌّ يقود إلى خطوةٍ لا وجودَ لها
+                  يترك الشاشةَ بيضاءَ ويبدو عطبا. */}
+              {firstMine && (
+                <Button tone="ghost" size="sm" className="mt-2" onClick={() => openStage(firstMine.key as Stage)}>
+                  افتح أوّلَها
+                </Button>
+              )}
             </Inset>
           )}
           {/* ═══ ولماذا تُسمّى المحاورُ الناقصةُ بأسمائها ═══

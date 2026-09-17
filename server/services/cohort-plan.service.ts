@@ -30,7 +30,7 @@
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { moduleBodyDone } from '../../src/application/trainer/module-body'
-import { blockingBeforeSubmit } from '../../src/application/trainer/plan-gate'
+import { blockingBeforeSubmit, trainerOwned } from '../../src/application/trainer/plan-gate'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
@@ -172,8 +172,16 @@ export function buildChecklist(input: {
      فالبدءُ والانتهاءُ لم يعودا يُكتبان بيدٍ: يشتقّهما `setTerm` من حدود
      الفصل. والأيّامُ والساعةُ سقطتا من الشرط لأنّهما سقطتا من الشاشة —
      ومواعيدُ اللقاءات تُحدَّد لقاءً لقاءً لا بنمطٍ أسبوعيٍّ مفترَض. وشرطٌ
-     على حقلٍ لا بابَ إليه يحبس المدرّبَ خارجَ الاعتماد بلا أن يقول لماذا. */
-  const identityDone = c.title.trim().length >= 3 && Boolean(c.termId)
+     على حقلٍ لا بابَ إليه يحبس المدرّبَ خارجَ الاعتماد بلا أن يقول لماذا.
+
+     ── ثمّ خرج الفصلُ من هنا إلى صفٍّ باسمه ──
+
+     وصحّح صاحبُ المنصّة (١٧ سبتمبر ٢٠٢٦) أنّ الفصلَ ليس اختيارَ المدرّب:
+     «عندما نقوم بإسناد دورةٍ لمدرّب نحدّد لأيّ فصلٍ ستكون». فبقاؤه شرطا
+     في صفٍّ عنوانُه «سمِّ الشعبة» يجعل «لم يتمّ» تهمةً على عملٍ أتمّه:
+     كتب اسمَها فبقي الصفُّ أحمرَ ولا بابَ في يده يفتحه. فصار له صفٌّ
+     يسمّي فاعلَه، والهُويّةُ ترجع إلى ما يملكه: اسمُها. */
+  const identityDone = c.title.trim().length >= 3
   /* ═══ ولماذا صار المحتوى النظريُّ شرطا للاعتماد ═══
 
      طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يصير «المحتوى النظريّ» إلزاميّا
@@ -206,7 +214,11 @@ export function buildChecklist(input: {
   const recordingsDone = input.sessions.some((s) => s.recordings.length > 0)
   const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
   return [
-    { key: 'identity', labelAr: 'سمِّ الشعبةَ واختر فصلَها', done: identityDone, optional: false },
+    /* صفُّ الإدارة أوّلا لأنّه بابُ ما بعدَه: بلا فصلٍ لا نافذةَ جدولةٍ ولا
+       حدودَ شعبة. وهو يحجب الإرسالَ ولا يُعدّ على المدرّب — و`trainerOwned`
+       في `plan-gate` هي القاعدةُ التي تفرّق بين الأمرين في موضعٍ واحد. */
+    { key: 'term', labelAr: 'تسمّي الإدارةُ فصلَ الشعبة فتُفتح لك الجدولة', done: Boolean(c.termId), optional: false },
+    { key: 'identity', labelAr: 'سمِّ الشعبةَ واكتب نبذتَها', done: identityDone, optional: false },
     { key: 'modules', labelAr: 'اكتب المحتوى النظريَّ لكلّ محور', done: modulesDone, optional: false },
     { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم', done: resourcesDone, optional: false },
     { key: 'sessions', labelAr: `حدّد مواعيدَ اللقاءات المباشرة — لقاءٌ لكلّ محورٍ على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`, done: sessionsDone, optional: false },
@@ -381,9 +393,10 @@ export class CohortPlanService {
         cohort: c, content: (plan?.content ?? null) as TrainerPlanContent | null,
         sessions: c.sessions, assessmentsCount: c._count.assessments, planStatus,
       })
-      /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» الذي ليس بيده.
-         وكانت تعدّه، فبطاقةُ شعبةٍ تامّةٍ تقول «٥ من ٦» أبدا. */
-      const required = checklist.filter((i) => !i.optional && i.key !== 'approval')
+      /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» ولا «الفصلَ»
+         اللذين ليسا بيده. وكانت تعدّ الاعتمادَ، فبطاقةُ شعبةٍ تامّةٍ تقول
+         «٥ من ٦» أبدا. والقاعدةُ من `plan-gate` لا تُكتب بيدٍ هنا. */
+      const required = trainerOwned(checklist).filter((i) => !i.optional)
       const done = required.filter((i) => i.done).length
       const next = blockingBeforeSubmit(checklist)[0] ?? checklist.find((i) => !i.done) ?? null
       return {
@@ -465,98 +478,14 @@ export class CohortPlanService {
     return row
   }
 
-  /* ═══ فصلُ الشعبة — يختاره مدرّبُها، وحدودُه تحكم جدولَه ═══
+  /* ═══ وفصلُ الشعبة لم يعد من شأن المدرّب (١٧ سبتمبر ٢٠٢٦) ═══
 
-     قرارُ صاحب المنصّة (١٥ سبتمبر ٢٠٢٦): «يجب أن يكون هنا تحديدُ الفصل
-     أوّلا، ويتمّ تقييدُ المدرّب بتحديد الأوقات ضمنَ أشهر الفصل نفسِه».
+     كان هنا `setTerm` و`selectableTerms`. وصحّح صاحبُ المنصّة: الفصلُ حقيقةٌ
+     إداريّةٌ تُسمَّى عند إسناد الدورة إلى مدرّبها، لا سؤالٌ يُسأل عنه.
 
-     والبدءُ والانتهاءُ يُشتقّان من حدود الفصل ولا يُكتبان بيد: الشعبةُ
-     متاحةٌ للمتعلّم طيلةَ الفصل، فتاريخان يكتبهما المدرّبُ داخلَ الفصل
-     يضيّقان ما لم يُقصَد تضييقُه — ويفترقان عن الفصل عند أوّل تعديل.
+     فانتقل المنطقُ كاملا إلى `CohortService.setTerm` و`openForTrainer` —
+     وفي رأسهما العلّةُ والقرارُ بنصّهما. والخطّةُ هنا تقرأ الفصلَ ولا تكتبه. */
 
-     وهما ليسا زينةً: صفحةُ التسجيل والكتالوجُ ووتيرةُ المتعلّم كلُّها
-     تقرأ `startsAt`. فلو تُركا فارغَين لسقط ما يقرؤهما، ولذلك يُكتبان هنا
-     مرّةً واحدةً من مصدرٍ واحد.
-
-     والنافذةُ كذلك: `scheduleWindow*` كانت تُفتح بيد الإدارة حتّى يجدول
-     المدرّبُ، فيقف منتظرا إذنا لا يعرف متى يصل. وقد صار الفصلُ هو الإذن —
-     من اختار فصلا فتحت له أشهرُه. والسقفُ يبقى للإدارة إن وضعته. */
-  async setTerm(userId: string, cohortId: string, termId: string) {
-    await this.ownedCohort(userId, cohortId)
-    const term = await this.prisma.term.findUnique({
-      where: { id: termId },
-      select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
-    })
-    if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
-    if (['closed', 'cancelled'].includes(term.status)) {
-      throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
-    }
-
-    /* ═══ لقاءٌ خارجَ الفصل يمنع النقل — ورسالتُه كانت أحجيةً ═══
-
-       الصامتُ هنا يترك جلسةً معلَنةً لمتعلّمين في شهرٍ لا تغطّيه الشعبة،
-       فالمنعُ صواب. لكنّ الرسالةَ كانت: «٤ من لقاءاتك خارجَ «موسم الخريف» —
-       أوّلُها «الجلسة ١». انقلها أو احذفها ثمّ اختر الفصل.» وشكا منها صاحبُ
-       المنصّة (١٧ سبتمبر ٢٠٢٦): «يصدر ملاحظةً لم أفهمها». وثلاثةُ أسبابٍ
-       لذلك، كلُّها في الرسالة لا في المدرّب:
-
-       ① **«من لقاءاتك» وهي ليست لقاءاته.** تلك الصفوفُ ولّدتها وظيفةُ
-         الإدارة الجماعيّة (`catalog-readiness`) قبل أن يُسنَد إليه، بأسماءٍ
-         آليّةٍ «الجلسة ١» لم يرها في شاشةٍ قطّ.
-       ② **«انقلها» مستحيل.** النقلُ يمرّ بـ`assertWithinWindow`، والنافذةُ
-         لا تُفتح إلّا بالفصل الذي يحاول اختيارَه. حلقةٌ مقفلة.
-       ③ **«احذفها» لم يكن له مسلكٌ** في الواجهة البرمجيّة كلِّها.
-
-       فصار الحذفُ ممكنا (`trainerDeleteSession`)، وصارت الرسالةُ تقول
-       **ما تصفه المواعيدُ لا ما تسمّيه الأسماءُ الآليّة** — فيجدها في
-       قائمته — وتنسب المولِّدَ إلى الإدارة كما هو، وتأمر بالممكن وحدَه. */
-    const strays = await this.prisma.cohortSession.findMany({
-      where: { cohortId, OR: [{ startsAt: { lt: term.startsOn } }, { startsAt: { gt: term.endsOn } }] },
-      orderBy: { startsAt: 'asc' },
-      select: { id: true, title: true, startsAt: true },
-    })
-    if (strays.length) {
-      const when = strays.slice(0, 3)
-        .map((s) => fmtDateWith(s.startsAt, { day: 'numeric', month: 'long' }))
-        .join('، ')
-      const more = strays.length > 3 ? ` وغيرُها` : ''
-      throw new AuthError(
-        'sessions_outside_term',
-        `في هذه الشعبة ${strays.length === 1 ? 'لقاءٌ واحدٌ' : `${strays.length} لقاءاتٍ`} خارجَ أشهر «${term.titleAr}»`
-        + ` (${when}${more}) — أغلبُها لقاءاتٌ ولّدتها الإدارةُ عند فتح الشعبة.`
-        + ` احذفها من خطوة «لقاءات مباشرة» ثمّ اختر الفصل، أو اطلب من الإدارة فصلا يغطّيها.`,
-        409,
-      )
-    }
-
-    const row = await this.prisma.cohort.update({
-      where: { id: cohortId },
-      data: {
-        termId: term.id,
-        startsAt: term.startsOn,
-        endsAt: term.endsOn,
-        scheduleWindowStart: term.startsOn,
-        scheduleWindowEnd: term.endsOn,
-      },
-      select: { id: true, title: true, termId: true, startsAt: true, endsAt: true },
-    })
-    await recordAudit(this.prisma, {
-      actorId: userId, action: 'cohort.term.set', entityType: 'cohort', entityId: cohortId,
-      meta: { termId: term.id, termTitle: term.titleAr, startsAt: term.startsOn, endsOn: term.endsOn },
-    })
-    return { ...row, term }
-  }
-
-  /** الفصولُ التي يسعه اختيارُها — الحيّةُ التي لم تنتهِ بعد */
-  async selectableTerms(userId: string, cohortId: string) {
-    await this.ownedCohort(userId, cohortId)
-    const rows = await this.prisma.term.findMany({
-      where: { status: { in: ['planned', 'open', 'active'] } },
-      orderBy: { startsOn: 'asc' },
-      select: { id: true, titleAr: true, season: true, year: true, startsOn: true, endsOn: true, status: true },
-    })
-    return rows
-  }
 
   /** «أوافق على كلّ ما في الشعبة» — ثمّ تُرسَل */
   async submit(userId: string, cohortId: string, confirm: boolean) {
