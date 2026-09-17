@@ -61,7 +61,10 @@ const PHRASES: Record<string, string> = {
      ويُفرَّق عن `session.reschedule.*` عمدا: ذاك طلبٌ يُبَتّ، وهذا فعلٌ وقع. */
   'cohort.session.move': 'نقلُ موعدِ لقاءٍ داخلَ نافذة الجدولة',
   'cohort.session.delete': 'حذفُ مدرّبٍ لقاءً لم ينعقد',
+  /* بابُه أُغلق (١٧ سبتمبر ٢٠٢٦) ولم يعد يُكتب — ويبقى ليُقرأ ما كُتب قبله */
   'cohort.term.set': 'تحديدُ مدرّبٍ فصلَ شعبته',
+  'cohort.term.assign': 'تسميةُ الإدارة فصلَ شعبة',
+  'cohort.open_for_trainer': 'فتحُ شعبةٍ لمدرّبٍ في فصلٍ معيَّن',
   'cohort.session.propose': 'جدولةُ مدرّبٍ لقاءً ينتظر الاعتماد',
   'cohort.session.approve': 'اعتمادُ لقاءٍ مباشرٍ ونشرُه للمسجَّلين',
   'cohort.session.reject': 'ردُّ لقاءٍ مباشرٍ إلى مدرّبه',

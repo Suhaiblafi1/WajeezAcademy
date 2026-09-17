@@ -65,7 +65,7 @@ export class CohortService {
   }
 
   async create(actorId: string, input: {
-    courseId: string; pathwayId?: string; title: string
+    courseId: string; pathwayId?: string; title: string; termId?: string | null
     startsAt?: Date; endsAt?: Date; daysOfWeek?: string[]; startTime?: string; timezone?: string
     capacity?: number; price?: number; currency?: string; language?: string
     deliveryMode?: 'remote' | 'in_person' | 'hybrid'
@@ -83,6 +83,8 @@ export class CohortService {
     const cohort = await this.prisma.cohort.create({
       data: {
         courseId: input.courseId, pathwayId: input.pathwayId, title: input.title,
+        /* والفصلُ يُكتب عند الإنشاء متى عُرف — وشعبةٌ بلا فصلٍ «لم تُفتَح بعد» */
+        termId: input.termId ?? null,
         startsAt: input.startsAt, endsAt: input.endsAt,
         daysOfWeek: input.daysOfWeek ?? [], startTime: input.startTime, timezone: input.timezone,
         capacity: input.capacity, price, currency,
@@ -694,6 +696,170 @@ export class CohortService {
       meta: { ...updated },
     })
     return updated
+  }
+
+  /* ═══════════ فصلُ الشعبة — حقيقةٌ إداريّةٌ تُسمَّى عند الإسناد ═══════════
+
+     ── انعكاسُ ملكيّةٍ، لا نقلُ دالّة ──
+
+     في ١٥ سبتمبر ٢٠٢٦ قال صاحبُ المنصّة: «يجب أن يكون هنا تحديدُ الفصل
+     أوّلا، ويتمّ تقييدُ المدرّب بتحديد الأوقات ضمنَ أشهر الفصل نفسِه».
+     فقُرئت «تحديد» اختيارا، وبُنيت للمدرّب شبكةُ فصولٍ ينقر فيها. وفي ١٧
+     سبتمبر صحّح: المقصودُ أنّ الإدارةَ **قد اعتمدت** الدورةَ في فصلٍ فيتقيّد
+     به. والنصفُ الثاني من جملته كان مبنيّا للمجهول — «ويتمّ تقييدُ المدرّب»
+     — وهو وصفُ قيدٍ يُفرَض لا اختيارٍ يُمارَس. الإشارةُ كانت هناك ولم تُقرأ.
+
+     ── ولمَ صار هنا ──
+
+     الفصلُ يحكم نافذةَ التسجيل والتقويمَ المنشورَ وموسمَ الإيراد، ويكتب
+     `startsAt` الذي يقرؤه الكتالوجُ العامُّ وصفحةُ التسجيل. فهو القرارُ
+     الإداريُّ المحضُ الوحيدُ في تلك الشاشة — وكان الوحيدَ المفوَّض، ويُكتب
+     بنقرةٍ بلا بوّابة، بينما كلُّ ما عداه يمرّ باعتماد.
+
+     ── وصياغةُ صاحب المنصّة للفعل ──
+
+     «عندما نقوم بإسناد دورةٍ لمدرّب نحدّد لأيّ فصلٍ ستكون، وبهذا نكون فتحنا
+     شعبةً له ليقوم هو بتغيير تفاصيلها». فالإسنادُ والفصلُ فعلٌ واحدٌ يفتح
+     الشعبة — لا خطوتان تُنسى إحداهما. و«شعبةٌ بلا فصل» ليست معطوبةً بل
+     **لم تُفتَح بعد**، وهي حالةٌ نظيفةٌ لم يكن لها اسم. */
+
+  /** الإدارةُ تسمّي فصلَ الشعبة — ومنه تُشتقّ حدودُها ونافذةُ جدولتها */
+  async setTerm(actorId: string, cohortId: string, termId: string) {
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: cohortId }, select: { id: true, status: true },
+    })
+    if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    if (['completed', 'cancelled'].includes(cohort.status)) {
+      throw new AuthError('bad_state', 'شعبةٌ منتهيةٌ أو ملغاةٌ لا يُبدَّل فصلُها', 409)
+    }
+    const term = await this.prisma.term.findUnique({
+      where: { id: termId },
+      select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
+    })
+    if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
+    if (['closed', 'cancelled'].includes(term.status)) {
+      throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
+    }
+
+    /* ولقاءٌ خارجَ الفصل يمنع النسبة: الصامتُ هنا يترك جلسةً معلَنةً
+       لمتعلّمين في شهرٍ لا تغطّيه الشعبة.
+
+       والرسالةُ تخاطب الإدارةَ الآن لا المدرّب — وهي التي تملك حذفَ تلك
+       الصفوف، وهي التي ولّدتها أصلا. وكانت تقول للمدرّب «انقلها أو احذفها»
+       وهو لا يملك واحدةً منهما. */
+    const strays = await this.prisma.cohortSession.findMany({
+      where: { cohortId, OR: [{ startsAt: { lt: term.startsOn } }, { startsAt: { gt: term.endsOn } }] },
+      orderBy: { startsAt: 'asc' },
+      select: { id: true, title: true, startsAt: true },
+    })
+    if (strays.length) {
+      const when = strays.slice(0, 3).map((x) => fmtDay(x.startsAt)).join('، ')
+      throw new AuthError(
+        'sessions_outside_term',
+        `في هذه الشعبة ${strays.length === 1 ? 'لقاءٌ واحدٌ' : `${strays.length} لقاءاتٍ`}`
+        + ` خارجَ أشهر «${term.titleAr}» (${when}${strays.length > 3 ? ' وغيرُها' : ''}).`
+        + ` احذفها أو انقلها إلى داخل الفصل، أو اختر فصلا يغطّيها.`,
+        409,
+      )
+    }
+
+    const row = await this.prisma.cohort.update({
+      where: { id: cohortId },
+      data: {
+        termId: term.id,
+        startsAt: term.startsOn,
+        endsAt: term.endsOn,
+        /* والفصلُ هو الإذن: أشهرُه نافذةُ جدولة المدرّب. والسقفُ يبقى
+           للإدارة إن وضعته — حدٌّ اختياريٌّ فوق الباب لا شرطٌ معه. */
+        scheduleWindowStart: term.startsOn,
+        scheduleWindowEnd: term.endsOn,
+      },
+      select: { id: true, title: true, termId: true, startsAt: true, endsAt: true },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.term.assign', entityType: 'cohort', entityId: cohortId,
+      meta: { termId: term.id, termTitle: term.titleAr, startsAt: term.startsOn, endsAt: term.endsOn },
+    })
+    return { ...row, term }
+  }
+
+  /* ═══ «افتح شعبةً لمدرّب» — فعلٌ واحدٌ لا ثلاثة ═══
+
+     ثلاثةُ نداءاتٍ متتابعةٍ (أنشئ · سمِّ الفصل · أسنِد) تُنسى إحداها، وأكثرُها
+     نسيانا الفصلُ لأنّه الوحيدُ الذي لا يُشتكى من غيابه فورا — بل يُشتكى
+     منه المدرّبُ بعد أسبوعٍ حين يعجز عن الجدولة.
+
+     فالثلاثةُ في معاملةٍ واحدة: ما لم يتمّ كلُّه لم يقع منه شيء. */
+  async openForTrainer(actorId: string, input: {
+    courseId: string; profileId: string; termId: string; title: string
+    pathwayId?: string; capacity?: number; price?: number; currency?: string
+    language?: string; deliveryMode?: 'remote' | 'in_person' | 'hybrid'
+  }) {
+    const term = await this.prisma.term.findUnique({
+      where: { id: input.termId },
+      select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
+    })
+    if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
+    if (['closed', 'cancelled'].includes(term.status)) {
+      throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
+    }
+
+    /* والتأهيلُ يُفحص **قبل** أن تُنشأ الشعبة: `assignTrainer` يردّ غيرَ
+       المؤهَّل بـ409، ولو أُنشئت قبله لبقيت شعبةٌ يتيمةٌ بلا مدرّبٍ ولا
+       اسمَ لحالتها. */
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: input.profileId }, include: { application: true },
+    })
+    if (!profile || profile.suspendedAt || profile.application.status !== 'active') {
+      throw new AuthError('not_active', 'المدرب ليس في حالة active', 409)
+    }
+    const qual = await this.prisma.trainerCourseQualification.findUnique({
+      where: { profileId_courseId: { profileId: input.profileId, courseId: input.courseId } },
+    })
+    if (!qual || qual.status !== 'qualified') {
+      throw new AuthError('not_qualified', 'المدرب غير مؤهل لهذه الدورة', 409)
+    }
+
+    const cohort = await this.create(actorId, {
+      courseId: input.courseId, pathwayId: input.pathwayId, title: input.title,
+      termId: term.id,
+      startsAt: term.startsOn, endsAt: term.endsOn,
+      capacity: input.capacity, price: input.price, currency: input.currency,
+      language: input.language, deliveryMode: input.deliveryMode,
+    })
+    /* والنافذةُ تُفتح من حدود الفصل في الصفّ نفسِه — لا بنداءٍ ثانٍ يُنسى */
+    await this.prisma.cohort.update({
+      where: { id: cohort.id },
+      data: { scheduleWindowStart: term.startsOn, scheduleWindowEnd: term.endsOn },
+    })
+    await this.assignTrainer(cohort.id, input.profileId, actorId, 'lead')
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.open_for_trainer', entityType: 'cohort', entityId: cohort.id,
+      meta: { courseId: input.courseId, profileId: input.profileId, termId: term.id, termTitle: term.titleAr },
+    })
+    return { cohortId: cohort.id, title: cohort.title, term }
+  }
+
+  /** شعبٌ لها مدرّبٌ ولا فصلَ لها — «لم تُفتَح بعد»، لا معطوبة */
+  async cohortsWithoutTerm() {
+    const rows = await this.prisma.cohort.findMany({
+      where: { termId: null, status: { notIn: ['completed', 'cancelled'] } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, title: true, startsAt: true, createdAt: true,
+        /* واسمُ الدورة في نسختها الأحدث لا في صفّها — فالصفُّ معرّفٌ وتاريخ */
+        course: { select: { id: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+        _count: { select: { enrollments: true, sessions: true } },
+        trainers: { select: { profile: { select: { application: { select: { fullName: true } } } } } },
+      },
+    })
+    return rows.map((c) => ({
+      id: c.id, title: c.title, courseTitleAr: c.course.versions[0]?.titleAr ?? c.course.id, startsAt: c.startsAt,
+      learners: c._count.enrollments, sessions: c._count.sessions,
+      trainers: c.trainers.map((t) => t.profile.application.fullName),
+      /* ومن أُسنِد إليه مدرّبٌ فهو محبوس: يرى شعبةً لا يستطيع جدولتَها */
+      blocksTrainer: c.trainers.length > 0,
+    }))
   }
 
   /** ما يراه المدرّبُ عن حدوده — يُقرأ قبل المحاولة لا بعد الرفض */

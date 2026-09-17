@@ -108,7 +108,9 @@ const MEDIUM: readonly string[] = [
      بمفتاح `cohort.schedule_changed` لا بهذا — هذا أثرٌ لا إشعار. */
   'cohort.session.delete',
   'cohort.schedule_window.open', 'cohort.schedule_window.close',
-  'cohort.term.set',
+  'cohort.term.set', 'cohort.term.assign',
+  /* وفتحُ شعبةٍ لمدرّب: إسنادٌ يصله خبرُه، ووزنُه وزنُ الإسناد */
+  'cohort.open_for_trainer',
   'cohort.remind_trainer',
   /* اقتراحُ تأجيلٍ ينتظر قرارا */
   'session.reschedule.propose',
