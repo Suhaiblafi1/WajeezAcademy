@@ -210,39 +210,56 @@ describe('صندوقُ الحجز — يكبر ولا يصغر', () => {
     expect(nextFrameHeight(null, 'abc')).toBeNull()
   })
 
-  it('⚠️ وللصندوق أرضيّةٌ سخيّةٌ قبل أن يصل قياس — وهي `min-h` لا `h`', () => {
-    /* الأرضيّةُ `h` كانت تُلزم الصندوقَ بها فيُقصّ ما زاد، وهو مصدرُ التمرير
-       المتداخل الذي شُكي منه. */
+  /* ═══ الشكوى الرابعة (١٧ سبتمبر ٢٠٢٦) — «طويل جدا للأسفل» ═══
+
+     الأرضيّةُ السخيّةُ (١١٨٠ بكسلا) حلّت التمريرَ المتداخل وأورثت عطبا
+     آخر: بطاقةٌ تمتدّ شاشةً ونصفا في الصفحة. وقرارُ صاحب المنصّة: «اجعله
+     قصيرا، وللشخص أن ينزل سكرولا إن احتاج، ولا يتحرّك ما بداخله يمينا
+     ويسارا».
+
+     فصار الصندوقُ المرئيُّ مقطوعا قصيرا، والإطارُ داخله بطول محتواه —
+     فالمُمرَّرُ صندوقُنا لا صفحةُ Calendly، ولا شريطَ تمريرٍ ثانٍ داخلها.
+     والفحصُ على القسمة نفسِها: مَن يحمل السقفَ، ومن يحمل الطولَ المقيس. */
+
+  /** الوسمُ المفتوحُ الذي فيه هذه الكلمة — لتُفحص خصائصُه هو لا الملفُّ كلُّه */
+  const tagWith = (src: string, needle: string): string | null => {
+    for (const m of src.matchAll(/<div[^>]*>/g)) if (m[0].includes(needle)) return m[0]
+    return null
+  }
+
+  it('⚠️ والصندوقُ المرئيُّ قصيرٌ مقطوع — لا يتبع طولَ تقويم Calendly', () => {
     const card = code('src/components/BookInterview.tsx')
-    expect(card).toMatch(/min-h-\[\d{3,4}px\]/)
+    const cap = /h-\[min\((\d{2,3})vh,(\d{3,4})px\)\]/.exec(card)
+    expect(cap, 'لا سقفَ معلَنٌ لارتفاع الصندوق — فطولُه طولُ التقويم').not.toBeNull()
+    expect(Number(cap![2]), 'سقفٌ يتجاوز شاشةَ حاسوبٍ — وهي الشكوى بعينها').toBeLessThanOrEqual(640)
+    expect(Number(cap![1]), 'سقفٌ يبتلع شاشةَ الهاتف').toBeLessThanOrEqual(80)
+    /* ولا تعود الأرضيّةُ بالألف من الباب الخلفيّ */
+    expect(card, 'عادت أرضيّةُ الألفِ بكسلٍ فطال الصندوقُ ثانية').not.toMatch(/min-h-\[\d{4}px\]/)
     expect(card, 'رقمُ ارتفاعٍ مفروضٌ باليد عاد إلى الصندوق').not.toMatch(/className="[^"]*\sh-\[\d{3,4}px\]/)
+  })
+
+  it('⚠️ ويُمرَّر رأسيّا وحدَه — فلا يزحف ما بداخله يمينا ويسارا', () => {
+    const card = code('src/components/BookInterview.tsx')
+    const scroller = tagWith(card, 'overflow-y-auto')
+    expect(scroller, 'لا صندوقَ يُمرَّر — فأين ينزل من لم يسعه السقف؟').toBeTruthy()
+    expect(scroller, 'المحورُ الأفقيُّ مفتوحٌ — وهو ما شُكي منه').toContain('overflow-x-hidden')
+    expect(card, '`overflow-auto` تفتح المحورَين معا').not.toMatch(/\boverflow-auto\b/)
+  })
+
+  it('⚠️ والطولُ المقيسُ للإطار لا للصندوق — وإلّا عاد تمريرٌ داخلَ تمرير', () => {
+    /* لو حمل الصندوقُ الطولَ المقيسَ لطال معه فعادت الشكوى الأولى. ولو
+       قصُر الإطارُ عن محتواه لوُلد شريطُ تمريرٍ داخلَ صفحة Calendly نفسِها
+       — وهي الشكوى الثالثة. فالقسمةُ شرطُ الاثنتين معا. */
+    const card = code('src/components/BookInterview.tsx')
+    const scroller = tagWith(card, 'overflow-y-auto')
+    expect(scroller, 'الصندوقُ يحمل ارتفاعا محسوبا فيطول بطول التقويم').not.toMatch(/style=/)
+    const holder = tagWith(card, 'style={{ height: frameHeight')
+    expect(holder, 'لا عنصرَ يحمل الطولَ المقيس — فالإطارُ يُقصّ داخلَ نفسه').toBeTruthy()
+    expect(holder, 'حاملُ الطولِ هو الصندوقُ المُمرَّرُ نفسُه').not.toMatch(/overflow-y-auto/)
+    expect(holder, 'لا يملأ الصندوقَ قبل أن يصل قياس').toContain('min-h-full')
     expect(card, 'قرارُ الارتفاع رجع إلى داخل المكوّن فلا يُفحص').toContain('nextFrameHeight')
   })
 
-  /* ═══ الشكوى الثالثة (١٥ سبتمبر ٢٠٢٦) — «تتحرّك داخل البوكس» ═══
-
-     كانت الأرضيّةُ `min-h-[1040px] sm:min-h-[760px]`: تنزل الثلثَ على
-     الشاشات الأوسع. و`sm:` تقيس **الشاشة**، وعرضُ الإطار ليس عرضَها —
-     البطاقةُ تُركَّب في عمودٍ سقفُه `max-w-lg`، فالإطارُ نحوَ ٤٦٠ بكسلا على
-     حاسوبٍ عرضُه ألفان، وCalendly يرسم عنده تخطيطَه الضيّقَ الطويل. فمن فتحها
-     على حاسوبٍ رأى إطارا مقصوصا يُمرَّر داخلَ نفسه. */
-  it('⚠️ ولا تنزل الأرضيّةُ على الشاشات الأوسع — الإطارُ يقيسه عرضُ البطاقة لا عرضُ الشاشة', () => {
-    const card = code('src/components/BookInterview.tsx')
-    const floors = [...card.matchAll(/(^|\s|")(?:(sm|md|lg|xl):)?min-h-\[(\d{3,4})px\]/g)]
-      .map((m) => ({ at: m[2] ?? 'base', px: Number(m[3]) }))
-    expect(floors.length, 'لا أرضيّةَ في الصندوق أصلا').toBeGreaterThan(0)
-    const base = floors.find((f) => f.at === 'base')
-    expect(base, 'الأرضيّةُ مشروطةٌ بعرضٍ ولا أرضيّةَ مطلقةً تحتها').toBeTruthy()
-    for (const f of floors) {
-      expect(
-        f.px,
-        `أرضيّةٌ أقصرُ عند \`${f.at}\` (${f.px}px دون ${base!.px}px) — وعرضُ الإطار لا يتبع عرضَ الشاشة`,
-      ).toBeGreaterThanOrEqual(base!.px)
-    }
-    /* وتسع تخطيطَ Calendly الضيّق: ترويسةٌ، ثمّ شبكةُ الشهر، ثمّ المنطقةُ
-       الزمنيّة — وقد قِيست أطولَ من ألف بكسل. */
-    expect(base!.px, 'أرضيّةٌ لا تسع تقويمَ Calendly في عمودٍ ضيّق').toBeGreaterThanOrEqual(1040)
-  })
   /* ═══ ولماذا يُفحص الأثرُ بمصفوفةِ اعتماده ═══
 
      المردُّ إلى البطاقة بعد الحجز صحيحٌ في أثرٍ معلَّقٍ بـ`done`، وعطبٌ داخلَ

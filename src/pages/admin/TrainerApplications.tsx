@@ -689,7 +689,7 @@ export default function TrainerApplications() {
                             {/* ومخرجٌ لمن لا يعرض متصفّحُه النوع — لا يُترك بلا طريق */}
                             <a href={url} target="_blank" rel="noreferrer"
                               className="block px-3 py-2 text-fine text-teal-light-ink underline decoration-dotted underline-offset-4">
-                              افتحها في لسانٍ جديد إن لم تُعرَض هنا
+                              افتحها في تبويبٍ جديد إن لم تُعرَض هنا
                             </a>
                           </div>
                         )}

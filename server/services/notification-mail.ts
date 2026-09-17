@@ -71,7 +71,6 @@ export function notificationMailDoc(input: NotificationMailInput): MailDoc {
       kind: 'cta',
       label: dest.ctaAr,
       href: `${input.siteUrl}${dest.path}`,
-      caption: 'أو انسخ الرابط:',
     })
   }
 
