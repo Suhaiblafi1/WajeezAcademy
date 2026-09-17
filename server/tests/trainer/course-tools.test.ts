@@ -97,44 +97,26 @@ beforeAll(async () => {
 const asMe = (url: string, payload: unknown) =>
   app.inject({ method: 'POST', url, payload: payload as never, cookies: { wajeez_session: myToken } })
 
-describe('المدرب يرفع مواد شعبته', () => {
-  it('يقبل كرّاسة (ملف) ويعيد رابط رفع موقعا', async () => {
-    const res = await asMe(`/api/trainer/cohorts/${mineCohortId}/materials`, {
-      title: 'كرّاسة التمارين', kind: 'file',
-      file: { originalName: 'workbook.pdf', mime: 'application/pdf', sizeBytes: 240_000 },
-    })
-    expect(res.statusCode).toBe(201)
-    const body = res.json() as { material?: { id: string }; uploadUrl?: string; id?: string }
-    const materialId = body.material?.id ?? body.id
-    expect(materialId).toBeTruthy()
-    const row = await prisma.learningMaterial.findFirst({ where: { cohortId: mineCohortId } })
-    expect(row?.title).toBe('كرّاسة التمارين')
-  })
+/* ═══ وسقط «المدرب يرفع مواد شعبته» مع مسلكه (١٥ سبتمبر ٢٠٢٦) ═══
 
-  it('يقبل رابطا خارجيا بلا ملف', async () => {
-    const res = await asMe(`/api/trainer/cohorts/${mineCohortId}/materials`, {
-      title: 'فيديو تمهيدي', kind: 'link', externalUrl: 'https://example.com/v',
-    })
-    expect(res.statusCode).toBe(201)
-  })
+   أربعةُ اختباراتٍ كانت هنا تحرس `POST /api/trainer/cohorts/:id/materials`:
+   يقبل الكرّاسةَ ويعيد رابطَ رفعٍ موقّعا، ويقبل الرابطَ الخارجيّ، ويُمنع في
+   شعبةِ غيره، ويردُّ غيرَ الموثّق.
 
-  it('يُمنع في شعبة لا يدرّبها — الحارس لا الصلاحية', async () => {
-    const res = await asMe(`/api/trainer/cohorts/${othersCohortId}/materials`, {
-      title: 'مادة في شعبة غيري', kind: 'link', externalUrl: 'https://example.com/x',
-    })
-    expect([401, 403, 404]).toContain(res.statusCode)
-    const leaked = await prisma.learningMaterial.count({ where: { cohortId: othersCohortId } })
-    expect(leaked, 'كتب في شعبة غيره').toBe(0)
-  })
+   وقرارُ صاحب المنصّة: تُغلَق الخانةُ والمسلكُ معا. فالمسلكُ كان يكتب
+   `LearningMaterial` بحالة `active` — لا حالةَ انتظارٍ فيه أصلا — ويصل
+   المسجَّلين من `learnerCohortView` لحظتَه. فهو البابُ الوحيدُ الذي ينشر به
+   المدرّبُ على طلبته بلا أن تراه الإدارة.
 
-  it('غير الموثق لا يرفع شيئا', async () => {
-    const res = await app.inject({
-      method: 'POST', url: `/api/trainer/cohorts/${mineCohortId}/materials`,
-      payload: { title: 'بلا جلسة', kind: 'link', externalUrl: 'https://example.com/y' },
-    })
-    expect([401, 403]).toContain(res.statusCode)
-  })
-})
+   وما كان يحمله له بابُه المعتمَد: ملفٌّ للمتعلّم يُرفع في «كتبٌ وملفّات»
+   فيمرّ بالاعتماد كسائر المصادر، وملفُّ لقاءٍ بعينه يُرفق باللقاء في خطوته.
+
+   **وحُذفت الاختباراتُ مع المسلك لا لتُخضَرَّ الجولة**: حارسٌ لمسلكٍ لا
+   وجودَ له يحرس فراغا، ويُقرأ بعد شهرٍ عقدا قائما. والفرقُ بين هذا وبين
+   إسكاتِ حارسٍ أنّ المحروسَ نفسَه أُزيل بقرار.
+
+   ورفعُ الإدارة باقٍ بشاشته وصلاحيّته (`/api/admin/cohorts/:id/materials`)،
+   و`registerMaterial` في الخدمة يخدمه. */
 
 describe('المدرب يؤلّف ما سيصححه', () => {
   it('ينشئ واجبا لشعبته', async () => {

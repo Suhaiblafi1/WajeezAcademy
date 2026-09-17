@@ -37,12 +37,52 @@ describe('رابطُ دعوة المدرّب', () => {
     expect(svc, 'الختمُ الأوّل لا يُصان').toContain('existing.referralProfileId ? {} : stamp')
   })
 
-  it('والمدرّبُ يرى العلامةَ عند الاسم — في «متعلّموني» وفي الورشة', () => {
-    expect(code('src/pages/trainer/MyLearners.tsx')).toContain('عبر رابطك')
-    expect(code('src/pages/trainer/CohortWorkspace.tsx')).toContain('referral-link')
-    expect(code('src/pages/trainer/CohortWorkspace.tsx')).toContain('عبر رابطك')
+  /* ⚠️ كان هذا الحارسُ أخضرَ لسببٍ خاطئ (١٥ سبتمبر ٢٠٢٦).
+
+     كان يشترط ورودَ «عبر رابطك» في `CohortWorkspace` ويعدّه دليلا على أنّ
+     المدرّبَ يرى العلامةَ عند اسم المتعلّم هناك. ولم تكن هناك علامةٌ قطّ:
+     الحرفانِ كانا في **نثر بطاقة الدعوة** — «وتراه بعلامة عبر رابطك عند
+     اسمه» — أي في وعدٍ بالعلامة لا في العلامة. والورشةُ لا تعرض قائمةَ
+     متعلّمين أصلا منذ انتقلت إلى «طلبتي».
+
+     فلمّا خرجت البطاقةُ إلى «دعوتي» سقط الحارسُ — وكشف أنّه كان يحرس نصًّا
+     لا بنية. وهو بعينه ما نهى عنه `CLAUDE.md`: «الفحصُ على البنية لا على
+     ورودِ حرفٍ في ملفّ».
+
+     فصار على الموضع الذي تُصيَّر فيه العلامةُ فعلا — شارةٌ مشروطةٌ
+     بـ`referredByMe` بجوار الاسم في «طلبتي». */
+  it('والمدرّبُ يرى العلامةَ عند الاسم — شارةً مشروطةً لا نثرا يَعِد بها', () => {
+    const learners = code('src/pages/trainer/MyLearners.tsx')
+    expect(learners, 'العلامةُ لا تُصيَّر عند الاسم').toMatch(/\{r\.referredByMe && [\s\S]{0,160}عبر رابطك/)
+    /* والخادمُ يُرسل الرايةَ التي تشترطها الشارة */
+    expect(code('server/services/enrollment.service.ts')).toContain('referredByMe: e.referralProfileId === profile.id')
     /* ولا يخرج معرّفُ المدرّب — العلامةُ وحدَها */
     expect(code('server/services/enrollment.service.ts')).toContain('referralProfileId: undefined')
+  })
+
+  /* ═══ وموضعُ الروابط: «دعوتي» لا داخلَ كلّ شعبة (١٥ سبتمبر ٢٠٢٦) ═══
+
+     كان رابطُ الشعبة بطاقةً في «مركز التواصل» داخلَ الشعبة، فلا يجمع
+     المدرّبُ روابطَ شعبه إلّا بفتح كلِّ واحدةٍ على حدة. وقرارُ صاحب
+     المنصّة: تُجمع في «دعوتي» — رابطُ ملفّه الكامل، ورابطٌ منفصلٌ لكلّ
+     شعبةٍ مفتوحة.
+
+     والفحصُ على الطرفين معا: لو نُقل ولم يُحذف لبقي رابطان لشيءٍ واحدٍ في
+     شاشتين — يفترقان يوما، ولا يدري ناسخُ أحدِهما أيَّهما نسخ. */
+  it('وروابطُ الشعب في «دعوتي» — خرجت من «مركز التواصل»', () => {
+    const referralPage = code('src/pages/trainer/Referral.tsx')
+    const workspace = code('src/pages/trainer/CohortWorkspace.tsx')
+
+    expect(referralPage, 'روابطُ الشعب لا تُقرأ في «دعوتي»').toContain('/api/trainer/me/referral-links')
+    expect(referralPage, 'الرابطُ العامُّ سقط مع النقل').toContain('/api/trainer/me/referral')
+
+    expect(workspace, 'رابطُ الشعبة ما زال داخلَ الشعبة').not.toContain('referral-link')
+    expect(workspace, 'بطاقةُ الدعوة ما زالت في مركز التواصل').not.toContain('رابطُ دعوتك لهذه الشعبة')
+
+    /* والخادمُ يردّ الرمزَ نفسَه لا رمزا جديدا لكلّ فتحة — لو تغيّر ضاع ما نُشر */
+    const svc = code('server/services/referral.service.ts')
+    expect(svc).toMatch(/async cohortLinksFor\(/)
+    expect(svc, 'روابطُ الشعب لا تقتصر على المفتوحة').toMatch(/status: \{ in: \['open', 'active', 'full'\] \}/)
   })
 
   it('والكشفُ بندان: عامٌّ وعبر الرابط — وأجرُ الإحالة يُضبط من الإدارة', () => {

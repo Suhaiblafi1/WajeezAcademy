@@ -23,7 +23,7 @@ import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { resourceSourceBlockerAr } from '../../../src/application/trainer/module-body'
 import { ReferralService } from '../../services/referral.service'
-import { RESOURCE_KINDS } from '../../../src/application/trainer/plan-overlay'
+import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -361,6 +361,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* رابطُه الواسعُ وأثرُه — نداءٌ واحدٌ للوحة: الرابطُ وكم سجّل منه.
      وهما معا لأنّ الرابطَ بلا رقمٍ دعوةٌ لا يُعرف أنفعت، والرقمُ بلا رابطٍ
      خبرٌ لا يُعمل به. */
+  /* روابطُ شعبي المفتوحة — تُقرأ في «دعوتي» دفعةً واحدة (١٥ سبتمبر ٢٠٢٦) */
+  app.get('/api/trainer/me/referral-links', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'رابطُ دعوتي لكلّ شعبةٍ مفتوحةٍ أدرّبها' },
+  }, async (req) => referrals.cohortLinksFor(req.auth!.userId))
+
   app.get('/api/trainer/me/referral', {
     preHandler: requirePermission('trainer.cohort.plan'),
     schema: { tags: ['trainer-ops'], summary: 'رابطي العامُّ على كامل ما أدرّب، ومن سجّل عبره' },
@@ -433,6 +439,14 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       title: z.string().min(2).max(200),
       url: z.string().max(500).nullish(),
       kind: z.enum(RESOURCE_KINDS).nullish(), noteAr: z.string().max(500).nullish(),
+      /* الصنفُ الذي اختاره المدرّب — والقائمةُ بيضاءُ كالأنواع: صنفٌ
+         مخترَعٌ يُقرأ «عامّا» عند العرض، ويُردّ هنا كي لا يُحفظ أصلا. */
+      category: z.enum(RESOURCE_CATEGORIES).nullish(),
+      /* «ويحدّد متى تفتح للطالب طيلةَ الفصل» — للمسجَّل وحدَه، وفارغٌ يعني
+         «مع أوّل يوم». ولا يُفحص هنا أنّه داخلَ الفصل: حدودُ الفصل تتبدّل
+         باختيارِ فصلٍ آخر، ومصدرٌ يُردُّ حفظُه لتاريخٍ صار خارجَ المدى
+         يَحبِس المدرّبَ عن حفظ خطّته كلِّها — والعرضُ يحكم لا الحفظ. */
+      opensAt: z.string().datetime().nullish(),
       bodyFileKey: z.string().trim().max(120).nullish(),
       bodyFileName: z.string().trim().max(200).nullish(),
       bodyFileMime: z.string().trim().max(120).nullish(),
@@ -478,6 +492,24 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     }).passthrough().parse(req.body)
     void TRAINER_EDITABLE_COHORT_FIELDS
     return plans.updateCohort(req.auth!.userId, id, body as Record<string, unknown>)
+  })
+
+  /* فصلُ الشعبة — يختاره مدرّبُها، وحدودُه تصير نافذةَ جدولته (١٥ سبتمبر ٢٠٢٦) */
+  app.get('/api/trainer/cohorts/:id/terms', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'الفصولُ التي يسعني اختيارُها لهذه الشعبة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return plans.selectableTerms(req.auth!.userId, id)
+  })
+
+  app.post('/api/trainer/cohorts/:id/term', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'اختيارُ فصل الشعبة — ومنه تُشتقّ حدودُها ونافذةُ جدولتها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { termId } = z.object({ termId: z.string().uuid() }).parse(req.body)
+    return plans.setTerm(req.auth!.userId, id, termId)
   })
 
   app.post('/api/trainer/cohorts/:id/plan/submit', {
@@ -570,19 +602,26 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      يفتح له شعب غيره. فالفعلان هنا بصلاحيته هو (trainer.cohort.operate) خلف
      assertCohortTrainer: شعبته وحدها، لا شعبة سواه. */
 
-  app.post('/api/trainer/cohorts/:id/materials', {
-    preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'رفع مادة لشعبتي — فيديو أو كرّاسة أو ملخص أو رابط' },
-  }, async (req, reply) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({
-      title: z.string().min(2), kind: z.enum(['file', 'link', 'summary_audio', 'summary_text']),
-      moduleId: z.string().optional(), externalUrl: z.string().url().optional(),
-      file: z.object({ originalName: z.string(), mime: z.string(), sizeBytes: z.number().int().positive() }).optional(),
-    }).parse(req.body)
-    await enrollments.assertCohortTrainer(req.auth!.userId, id)
-    return reply.status(201).send(await cohorts.registerMaterial(req.auth!.userId, id, body))
-  })
+  /* ═══ ورفعُ «موادّ الشعبة» من المدرّب أُغلق (١٥ سبتمبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: تُغلَق الخانةُ والمسلكُ معا، وتُحذف اختباراتُه —
+     «nothing is real for now».
+
+     والعلّةُ أنّه كان يكتب `LearningMaterial` بحالة `active`، ولا حالةَ
+     انتظارٍ في ذلك الصفّ أصلا، فيصل المسجَّلين من `learnerCohortView`
+     لحظتَه. فكان البابَ الوحيدَ الذي ينشر به المدرّبُ على طلبته بلا أن
+     تراه الإدارة — وسائرُ ما يصلهم يمرّ باعتمادٍ: المصادرُ في الخطّة،
+     واللقاءاتُ في طابور الإدارة.
+
+     وما كان يحمله له بابُه المعتمَد: ملفٌّ للمتعلّم في «كتبٌ وملفّات»،
+     وملفُّ لقاءٍ بعينه يُرفق باللقاء في خطوته.
+
+     ⚠️ وقد حذفتُه أوّلَ مرّةٍ من عندي فسقطت أربعةُ اختباراتٍ في CI، فرَدَدتُه
+     ورفعتُ الأمرَ. وهذه المرّةُ بقرارٍ — والاختباراتُ تذهب معه لأنّ المحروسَ
+     نفسَه أُزيل، لا لتُخضَرَّ الجولة.
+
+     ورفعُ الإدارة باقٍ (`/api/admin/cohorts/:id/materials`): لها شاشتُها
+     وصلاحيّتُها، وهي من تعتمد أصلا. */
 
   app.post('/api/trainer/cohorts/:id/assessments', {
     preHandler: requirePermission('trainer.cohort.operate'),
@@ -692,11 +731,24 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const body = z.object({
       title: z.string().min(2).max(160),
       startsAt: z.coerce.date(),
-      endsAt: z.coerce.date().optional(),
+      /* والنهايةُ صارت مطلوبةً: «يحدّد أيَّ ساعةٍ وإلى أيّ ساعة» (١٥ سبتمبر
+         ٢٠٢٦). وكانت تُترك فتُفترض ساعتان في Zoom — رقمٌ يُخمَّن على وقتِ
+         عشرين إنسانا، ويُقفَل الاجتماعُ عليهم وهم فيه. */
+      endsAt: z.coerce.date(),
       timezone: z.string().max(64).optional(),
       moduleId: z.string().max(64).optional(),
+      /* نبذةُ اللقاء — صارت لكلّ لقاءٍ لا للشعبة كلِّها */
+      noteAr: z.string().max(2000).nullish(),
+      /* وملفٌّ اختياريٌّ يُرفق به */
+      attachmentKey: z.string().trim().max(120).nullish(),
+      attachmentName: z.string().trim().max(200).nullish(),
+      attachmentMime: z.string().trim().max(120).nullish(),
       /* المدرّبُ ينشئ اجتماعَه بنفسه — لا ينتظر مديرا يلصق رابطا */
       withZoom: z.boolean().optional(),
+    }).superRefine((b, ctx) => {
+      if (b.endsAt <= b.startsAt) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهايةُ اللقاء قبل بدايته', path: ['endsAt'] })
+      }
     }).parse(req.body)
     return reply.status(201).send(await cohorts.trainerAddSessionWithMeeting(req.auth!.userId, id, body))
   })

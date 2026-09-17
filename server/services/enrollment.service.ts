@@ -9,6 +9,7 @@ import { NotificationService, safeNotify } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
 import { CohortService } from './cohort.service'
+import { LEARNER_SESSION_WHERE } from './session-visibility'
 
 export class EnrollmentService {
   private prisma: PrismaClient
@@ -157,7 +158,7 @@ export class EnrollmentService {
        والسببُ مكتوبٌ في `syncState` على كلّ حال. */
     if (status === 'enrolled') {
       const upcoming = await this.prisma.cohortSession.findMany({
-        where: { cohortId, startsAt: { gte: new Date() }, zoom: { provider: 'zoom_api' } },
+        where: { ...LEARNER_SESSION_WHERE, cohortId, startsAt: { gte: new Date() }, zoom: { provider: 'zoom_api' } },
         select: { id: true },
       })
       for (const s of upcoming) {
@@ -440,6 +441,7 @@ export class EnrollmentService {
           include: {
             course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
             sessions: {
+              where: LEARNER_SESSION_WHERE,
               orderBy: { startsAt: 'asc' },
               include: { zoom: true, recordings: { where: { status: 'active' } } },
             },

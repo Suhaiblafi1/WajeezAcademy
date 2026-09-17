@@ -7,6 +7,7 @@ import { AuthError } from './auth.service'
 import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
+import { LEARNER_SESSION_WHERE } from './session-visibility'
 
 const ATTENDANCE_STATUSES = ['present', 'late', 'absent', 'excused'] as const
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
@@ -49,7 +50,7 @@ export class ProgressService {
       include: {
         cohort: {
           include: {
-            sessions: { where: { status: { not: 'cancelled' } } },
+            sessions: { where: { ...LEARNER_SESSION_WHERE, status: { not: 'cancelled' } } },
             course: { include: { modules: true } },
             assessments: true,
           },

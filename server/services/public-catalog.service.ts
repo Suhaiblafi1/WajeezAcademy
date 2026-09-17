@@ -9,6 +9,7 @@ import { AuthError } from './auth.service'
 import { openRegistrationWhere } from './registration-window'
 import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { photoPublicUrl } from './storage.service'
+import { LEARNER_SESSION_WHERE } from './session-visibility'
 
 export class PublicCatalogService {
   private prisma: PrismaClient
@@ -103,7 +104,7 @@ export class PublicCatalogService {
         trainers: {
           include: { profile: { select: { ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
         },
-        sessions: { orderBy: { startsAt: 'asc' }, select: { startsAt: true, endsAt: true, title: true } },
+        sessions: { where: LEARNER_SESSION_WHERE, orderBy: { startsAt: 'asc' }, select: { startsAt: true, endsAt: true, title: true } },
         /* المقعدُ المحجوز مقعدٌ مشغول.
 
            كان العدُّ على `enrolled` وحدَه، و`checkout` يمنع على

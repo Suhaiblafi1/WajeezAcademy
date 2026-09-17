@@ -51,6 +51,12 @@ interface TrainerPlan {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
   } | null;
 }
+/** لقاءٌ مباشرٌ ينتظر قرارَ الإدارة — يجدوله المدرّبُ ولا يُعلَن حتّى يُعتمَد */
+interface PendingSession {
+  id: string; title: string; startsAt: string; endsAt: string | null; noteAr: string | null;
+  attachmentName: string | null; createdAt: string;
+  cohort: { id: string; title: string };
+}
 const PLAN_AR: Record<string, string> = {
   draft: "مسودّةٌ عند المدرّب", submitted: "بانتظار اعتمادك", changes_requested: "رُدّت إليه بتعديلات",
   approved: "معتمَدة", published: "منشورة", superseded: "نسخةٌ قديمة",
@@ -122,6 +128,17 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
     catch { setTrainerPlan(null); }
   }, [cohort.id]);
   useEffect(() => { void loadPlan(); }, [loadPlan]);
+  /* ═══ ولقاءاتُ هذه الشعبة المنتظِرة — في الطابور نفسِه (١٥ سبتمبر ٢٠٢٦) ═══
+
+     «الموافقةُ في طابور الإدارة الحالي» (صاحب المنصّة). فلا شاشةٌ ثانيةٌ
+     يُنسى فتحُها: من فتح الشعبةَ ليعتمد خطّتَها يجد لقاءاتِها المنتظِرةَ
+     تحتها، ويقرّر في الموضع نفسِه. */
+  const [pendingSessions, setPendingSessions] = useState<PendingSession[]>([]);
+  const loadPendingSessions = useCallback(async () => {
+    try { setPendingSessions(await apiGet<PendingSession[]>(`/api/admin/cohort-sessions/pending?cohortId=${cohort.id}`)); }
+    catch { setPendingSessions([]); }
+  }, [cohort.id]);
+  useEffect(() => { void loadPendingSessions(); }, [loadPendingSessions]);
   const picked = trainers.find((t) => t.profileId === assignForm.profileId) ?? null;
 
   const act = useCallback(async (fn: () => Promise<unknown>, msg: string) => {
@@ -393,6 +410,55 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             </Button>
           )}
         </div>
+
+        {/* ═══ لقاءاتٌ مباشرةٌ تنتظر قرارك ═══
+
+            وبالاعتماد يقع كلُّ شيء: يُنشأ اجتماعُ Zoom، ويُنشَر اللقاءُ في
+            منصّة الطلبة بتاريخه، ويصلهم البريدُ به. فيُقال ذلك على الزرّ
+            صراحةً — من يعتمد يعرف ما يُطلقه، لا يكتشفه بعد النقر. */}
+        {pendingSessions.length > 0 && canApprovePlan && (
+          <div className="mt-4 border-t border-white/10 pt-4">
+            <p className="text-read font-black text-foreground">
+              لقاءاتٌ مباشرةٌ تنتظر قرارك ({pendingSessions.length})
+            </p>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">
+              باعتمادك يُنشأ اجتماعُ Zoom ويُنشَر اللقاءُ للمسجَّلين بتاريخه ويصلهم بالبريد.
+            </p>
+            <ul className="mt-3 space-y-2">
+              {pendingSessions.map((ps) => (
+                <Inset as="li" key={ps.id}>
+                  <p className="text-read font-bold text-foreground">{ps.title}</p>
+                  <p className="mt-1 text-read text-muted-foreground">
+                    {fmtDateTimeAr(ps.startsAt)}
+                    {ps.endsAt && <> — {fmtDateTimeAr(ps.endsAt)}</>}
+                    {ps.attachmentName && <> · مرفقٌ: {ps.attachmentName}</>}
+                  </p>
+                  {ps.noteAr && <p className="mt-1 whitespace-pre-line text-read leading-6 text-muted-foreground">{ps.noteAr}</p>}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button tone="confirm" size="sm" disabled={busy}
+                      onClick={() => act(
+                        () => apiPost(`/api/admin/cohort-sessions/${ps.id}/decide`, { approve: true }).then(loadPendingSessions),
+                        "اعتُمد اللقاء — أُنشئ اجتماعُه وبُلِّغ المسجَّلون",
+                      )}>
+                      اعتمِدْه وأعلِنه
+                    </Button>
+                    <Button tone="danger" size="sm" disabled={busy}
+                      onClick={() => {
+                        const note = window.prompt("لمَ يُردّ؟ يصل مدرّبَه بنصّه:");
+                        if (!note?.trim()) return;
+                        void act(
+                          () => apiPost(`/api/admin/cohort-sessions/${ps.id}/decide`, { approve: false, note: note.trim() }).then(loadPendingSessions),
+                          "رُدّ اللقاءُ إلى مدرّبه",
+                        );
+                      }}>
+                      ردَّه
+                    </Button>
+                  </div>
+                </Inset>
+              ))}
+            </ul>
+          </div>
+        )}
       </Section>
       )}
 

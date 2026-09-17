@@ -16,6 +16,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { LEARNER_SESSION_WHERE } from './session-visibility'
 import {
   AR_CARDS, AR_COHORTS, AR_SESSIONS, AR_SUBMISSIONS,
   DAY_MS, HORIZON_DAYS, countAr, dueLabelAr, urgencyOf,
@@ -153,7 +154,7 @@ export class DeadlinesService {
                والعنوانُ يتغيّر بالإصدار، والأحدثُ هو ما يقرؤه المتعلّم */
             course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
             sessions: {
-              where: { startsAt: { gte: now, lte: until }, status: { notIn: ['cancelled'] } },
+              where: { ...LEARNER_SESSION_WHERE, startsAt: { gte: now, lte: until }, status: { notIn: ['cancelled'] } },
               select: { id: true, title: true, startsAt: true, endsAt: true, status: true },
             },
           },
