@@ -58,6 +58,9 @@ export interface CoreCatalogCourse {
   skill_names_ar: string[]
   learning_objectives_ar?: string[]
   learning_outcomes_ar?: string[]
+  /** مشروعُ الدورة العمليّ. كان في الكتالوج ولا في هذه الواجهة — وهو عينُ ما
+      تحكيه الملاحظةُ فوق (`short_title`): حقلٌ موجودٌ يُقرأ عبر خطأ نوع. */
+  practical_project_ar?: string
   summative_assessment_ar?: string
   source_codes?: string[]
   /** سعر القائمة وعملته — الرقم المُعلن قبل فتح الشعبة، وترثه الشعبة */
