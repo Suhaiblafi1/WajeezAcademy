@@ -521,14 +521,17 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return reply.status(201).send(await plans.submit(req.auth!.userId, id, confirm))
   })
 
-  app.post('/api/trainer/sessions/:sessionId/recording-link', {
-    preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'تسجيلُ جلسةٍ من رابط — لا ملفَّ يُرفع' },
-  }, async (req, reply) => {
-    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
-    const body = z.object({ title: z.string().min(2).max(200), url: z.string().url().max(500), moduleId: z.string().max(64).optional() }).parse(req.body)
-    return reply.status(201).send(await plans.addRecordingLink(req.auth!.userId, sessionId, body))
-  })
+  /* ═══ وبابُ «تسجيلٌ من رابط» أُغلق (١٧ سبتمبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة: «ما الرابطُ الذي تتوقّعه منه وأنت تعلم أنّ التدريبَ
+     من خلال زووم خاصٍّ فينا؟» — وكان ضرَرُه أكبرَ من سؤالٍ زائد: هو
+     **الخانةُ الوحيدةُ في شاشة اللقاءات التي تقبل رابطا**، فمن يملك زووم
+     خاصًّا يلصق فيها رابطَ اجتماعه هو فيصل المتعلّمين، ويخرج اللقاءُ من
+     حساب الأكاديميّة إلى حسابه بلا أن تعلم المنصّة.
+
+     ورفعُ الملفّ باقٍ مؤقّتا حتّى يُشبَك زووم ويصل التسجيلُ من سحابته.
+     وبابُ الإدارة `POST /api/admin/sessions/:id/recordings` باقٍ للحالة
+     الشاذّة — لقاءٌ عُقد خارجَ زووم، أو ملفٌّ يُنقَذ بيد. */
 
   app.get('/api/trainer/my-cohorts', {
     preHandler: requirePermission('trainer.cohort.operate'),
@@ -743,9 +746,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       attachmentKey: z.string().trim().max(120).nullish(),
       attachmentName: z.string().trim().max(200).nullish(),
       attachmentMime: z.string().trim().max(120).nullish(),
-      /* المدرّبُ ينشئ اجتماعَه بنفسه — لا ينتظر مديرا يلصق رابطا */
-      withZoom: z.boolean().optional(),
-    }).superRefine((b, ctx) => {
+      /* و`withZoom` سقطت (١٧ سبتمبر ٢٠٢٦): نيّةُ الاجتماع تُقرأ من
+         `Cohort.deliveryMode` لا تُسأل من المدرّب. والمتنُ `strict` كي
+         يُردّ عميلٌ قديمٌ يرسلها بخطإٍ مسمًّى لا بابتلاعٍ صامت. */
+    }).strict().superRefine((b, ctx) => {
       if (b.endsAt <= b.startsAt) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهايةُ اللقاء قبل بدايته', path: ['endsAt'] })
       }

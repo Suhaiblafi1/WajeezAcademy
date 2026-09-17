@@ -19,20 +19,20 @@
    والمصدرُ هو المصدرُ نفسُه (`/ops`): لا مسارَ جديدٌ يُبنى لعرضٍ انتقل. */
 
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
-import { CalendarClock, CalendarDays, CalendarPlus, Loader2, Upload, Video } from "lucide-react";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { CalendarDays, CalendarPlus, Loader2, Trash2, Upload, Video } from "lucide-react";
+import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { fmtDateTimeAr } from "@/utils/format";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
+import ConfirmAction from "@/components/ConfirmAction";
 import Button from "@/components/ui/Button";
 import { controlCls } from "@/components/FormKit";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 /** مرجعٌ ثابتٌ للحقل الفارغ — كائنٌ جديدٌ في كلّ تصيير يُعيد بناءَ الحقل */
-const EMPTY_REC = { title: "", url: "" };
+const EMPTY_MOVE = { date: "", from: "", to: "" };
 
 const ATTENDANCE_OPTIONS = [
   { value: "present", label: "حاضر" }, { value: "late", label: "متأخر" },
@@ -42,7 +42,9 @@ const ATTENDANCE_OPTIONS = [
 interface OpsRow {
   cohort: {
     sessions: {
-      id: string; title: string; startsAt: string; status: string;
+      id: string; title: string; startsAt: string; endsAt: string | null; status: string;
+      /* موقفُ الإدارة من اللقاء — والفارغُ معتمَدٌ (صفوفُ ما قبل العمود) */
+      approvalState?: string | null; reviewNote?: string | null;
       zoom: { joinUrl: string; passcode: string | null } | null;
       recordings: { id: string; title: string; readUrl: string | null }[];
     }[];
@@ -59,9 +61,9 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
   const [row, setRow] = useState<OpsRow | null>(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [recLink, setRecLink] = useState<Record<string, { title: string; url: string }>>({});
-  const [rescheduleFor, setRescheduleFor] = useState<string | null>(null);
-  const [rescheduleForm, setRescheduleForm] = useState({ at: "", reason: "" });
+  const [moveFor, setMoveFor] = useState<string | null>(null);
+  const [moveForm, setMoveForm] = useState(EMPTY_MOVE);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string } | null>(null);
 
   const load = useCallback(async () => {
     try { setRow(await apiGet<OpsRow>(`/api/trainer/cohorts/${cohortId}/ops`)); setErr(""); }
@@ -93,25 +95,29 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
       }
     }, "سُجل التسجيل ورُفع — سيظهر للمسجلين في الشعبة");
 
-  const addRecordingLink = (sessionId: string) => {
-    const form = recLink[sessionId] ?? EMPTY_REC;
-    return act(
-      () => apiPost(`/api/trainer/sessions/${sessionId}/recording-link`, { title: form.title.trim(), url: form.url.trim() }),
-      "أُضيف التسجيل",
-    ).then(() => setRecLink((prev) => ({ ...prev, [sessionId]: EMPTY_REC })));
-  };
+  /* ═══ ينقل موعدَه بنفسه — لا يستأذن فيه ═══
 
-  /* ── اقتراح موعد ──
-     يُقترح ولا يُغيَّر: الموعد لا يتبدّل عند المتعلّمين إلا باعتماد الإدارة. */
-  const proposeReschedule = (sessionId: string) =>
+     كان هنا «اقترح موعدا»: يرفع طلبا إلى طابورٍ عند الإدارة وينتظر. وقال
+     صاحبُ المنصّة (١٧ سبتمبر ٢٠٢٦): «لماذا يقترح موعدا وهو من يحدّده
+     بالبداية؟» — وهو محقّ. والمسلكُ الصحيحُ كُتب في الخادم في ١٣ سبتمبر
+     («المدرّبُ ينقل لقاءَه — لا يقترح نقله») **ولم تنادِه شاشةٌ واحدة**؛
+     بقيت هذه اللوحةُ تنادي بابَ الاستثناء وتترك بابَ الروتين.
+
+     وقرارُه في النقل: «يغيّرُه فيرجع لانتظار الإدارة». فالنقلُ ينفُذ في
+     الحال، ويسقط اللقاءُ المعتمَدُ إلى الانتظار، ويُبلَّغ مسجَّلوه. */
+  const moveSession = (sessionId: string) =>
     act(async () => {
-      await apiPost(`/api/trainer/sessions/${sessionId}/reschedule`, {
-        proposedStartsAt: new Date(rescheduleForm.at).toISOString(),
-        reason: rescheduleForm.reason.trim(),
+      await apiPatch(`/api/trainer/sessions/${sessionId}`, {
+        startsAt: new Date(`${moveForm.date}T${moveForm.from}`).toISOString(),
+        endsAt: new Date(`${moveForm.date}T${moveForm.to}`).toISOString(),
       });
-      setRescheduleFor(null);
-      setRescheduleForm({ at: "", reason: "" });
-    }, "وصل اقتراحك الإدارة — والموعد لا يتغيّر حتى تعتمده");
+      setMoveFor(null);
+      setMoveForm(EMPTY_MOVE);
+    }, "نُقل الموعد — ويعود للاعتماد قبل أن يصل متعلّميك");
+
+  /* والحذفُ فعلٌ كانت الشاشةُ تأمر به ولا بابَ له — وصار له مسلكٌ محروس */
+  const removeSession = (sessionId: string) =>
+    act(() => apiDelete(`/api/trainer/sessions/${sessionId}`), "حُذف اللقاء");
 
   if (err) return <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>;
   if (!row) return <div className="grid place-items-center py-10"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>;
@@ -135,6 +141,25 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                     {fmtDateTimeAr(s.startsAt)}
                     {s.status === "done" && " · انتهت"}
                   </p>
+                  {/* ═══ الحالةُ تُقال حين تكون غيرَ الأصل ═══
+                      والمعتمَدُ بلا حبّة: شارةٌ خضراءُ على كلّ صفٍّ تجعل
+                      الصفراءَ لا تُرى. والفارغُ معتمَدٌ — صفوفُ ما قبل العمود. */}
+                  {s.approvalState === "pending" && (
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      <span className="me-1.5 inline-flex items-center rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-fine font-black text-gold-ink">
+                        بانتظار اعتماد الإدارة
+                      </span>
+                      غيرُ ظاهرةٍ للمتعلّمين بعد.
+                    </p>
+                  )}
+                  {s.approvalState === "rejected" && (
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      <span className="me-1.5 inline-flex items-center rounded-full border border-red-400/40 bg-red-400/10 px-2.5 py-0.5 text-fine font-black text-red-300">
+                        رُدَّت
+                      </span>
+                      {s.reviewNote || "راجِع ملاحظةَ الإدارة ثمّ انقل موعدَها."}
+                    </p>
+                  )}
                 </div>
                 {s.zoom && (
                   <a href={s.zoom.joinUrl} target="_blank" rel="noreferrer"
@@ -158,65 +183,88 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                 )}
                 {s.status !== "done" && (
                   <Button tone="secondary" size="sm" type="button"
-                    onClick={() => { setRescheduleFor(rescheduleFor === s.id ? null : s.id); setRescheduleForm({ at: "", reason: "" }); }} className="min-h-9">
-                    <CalendarClock className="h-3 w-3" /> اقترح موعدا
+                    onClick={() => {
+                      const open = moveFor === s.id;
+                      setMoveFor(open ? null : s.id);
+                      /* ويُهيَّأ بموعده الحاليّ لا فارغا: من ينقل ساعةً واحدة
+                         لا يُطالَب بكتابة التاريخ كلِّه من جديد. */
+                      setMoveForm(open ? EMPTY_MOVE : {
+                        date: s.startsAt.slice(0, 10),
+                        from: s.startsAt.slice(11, 16),
+                        to: (s.endsAt ?? s.startsAt).slice(11, 16),
+                      });
+                    }} className="min-h-9">
+                    <CalendarDays className="h-3 w-3" /> انقل الموعد
+                  </Button>
+                )}
+                {s.status !== "done" && (
+                  <Button tone="ghost" size="sm" type="button" className="min-h-9"
+                    aria-label={`احذف لقاء ${s.title}`}
+                    onClick={() => setPendingDelete({ id: s.id, title: s.title })}>
+                    <Trash2 className="h-3 w-3" aria-hidden="true" /> احذفه
                   </Button>
                 )}
               </div>
 
-              {/* الاقتراح لا يغيّر شيئا حتى تعتمده الإدارة — والنصّ يقولها قبل الضغط */}
-              {rescheduleFor === s.id && (
-                <Inset tone="warn" className="mt-3 space-y-2.5">
-                  <p className="text-read leading-relaxed text-gold-ink">
-                    تقترح ولا تغيّر: الموعد يبقى كما هو عند متعلّميك حتى تعتمد الإدارة اقتراحك.
-                    {" "}ومآلُ اقتراحك — وسحبُه — في <Link to="/trainer/schedule" className="font-black underline">جدولي</Link>.
+              {/* والنقلُ يقول أثرَه قبل الضغط لا بعده */}
+              {moveFor === s.id && (
+                <Inset tone="accent" className="mt-3 space-y-2.5">
+                  <p className="text-read leading-relaxed text-foreground">
+                    الموعدُ لك داخلَ أشهر فصلك. وما تنقله <b>يعود لانتظار الإدارة</b> —
+                    فيغيب عن شاشات متعلّميك حتّى تعتمده، ويصلهم خبرُ التغيير.
                   </p>
-                  <div className="grid gap-2.5 sm:grid-cols-2">
+                  <div className="grid gap-2.5 sm:grid-cols-3">
                     <div>
-                      <label htmlFor={`rs-at-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">الموعد المقترح</label>
-                      <input id={`rs-at-${s.id}`} type="datetime-local" dir="ltr" value={rescheduleForm.at}
-                        onChange={(e) => setRescheduleForm((f) => ({ ...f, at: e.target.value }))} className={`${controlCls} text-left`} />
+                      <label htmlFor={`mv-d-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">التاريخ</label>
+                      <input id={`mv-d-${s.id}`} type="date" dir="ltr" value={moveForm.date}
+                        onChange={(e) => setMoveForm((f) => ({ ...f, date: e.target.value }))} className={`${controlCls} text-left`} />
                     </div>
                     <div>
-                      <label htmlFor={`rs-why-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">السبب — تقرؤه الإدارة لتقرّر</label>
-                      <input id={`rs-why-${s.id}`} value={rescheduleForm.reason}
-                        onChange={(e) => setRescheduleForm((f) => ({ ...f, reason: e.target.value }))}
-                        placeholder="مثال: سفر في موعد الجلسة" className={controlCls} />
+                      <label htmlFor={`mv-f-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">من الساعة</label>
+                      <input id={`mv-f-${s.id}`} type="time" dir="ltr" value={moveForm.from}
+                        onChange={(e) => setMoveForm((f) => ({ ...f, from: e.target.value }))} className={`${controlCls} text-left`} />
+                    </div>
+                    <div>
+                      <label htmlFor={`mv-t-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">إلى الساعة</label>
+                      <input id={`mv-t-${s.id}`} type="time" dir="ltr" value={moveForm.to}
+                        onChange={(e) => setMoveForm((f) => ({ ...f, to: e.target.value }))} className={`${controlCls} text-left`} />
                     </div>
                   </div>
-                  <Button tone="confirm" size="sm" type="button" disabled={busy || !rescheduleForm.at || rescheduleForm.reason.trim().length < 10}
-                    onClick={() => void proposeReschedule(s.id)} className="disabled:cursor-not-allowed">
-                    أرسل الاقتراح للإدارة
+                  <Button tone="confirm" size="sm" type="button"
+                    disabled={busy || !moveForm.date || !moveForm.from || moveForm.to <= moveForm.from}
+                    onClick={() => void moveSession(s.id)} className="disabled:cursor-not-allowed">
+                    انقلْه
                   </Button>
+                  {!!moveForm.from && moveForm.to <= moveForm.from && (
+                    <p className="text-read font-bold text-gold-ink">ساعةُ الانتهاء قبل ساعة البدء.</p>
+                  )}
                 </Inset>
               )}
-              {/* تسجيلُ اللقاء — رابطٌ يُلصَق، أو ملفٌّ يُرفع حين يُفتح التخزين.
-                  موضعُه بطاقةُ اللقاء نفسِها: كانت لوحةً ثانيةً تُعيد سردَ
-                  اللقاءات في الخطوة نفسِها، فقائمتان لشيءٍ واحدٍ في شاشةٍ
-                  واحدةٍ هي الكثافةُ التي شكا منها صاحبُ المنصّة. */}
-              <div className="mt-3 border-t border-white/8 pt-3">
-                {s.recordings.length > 0 && (
-                  <ul className="mb-2 space-y-1 text-read">
+              {/* ═══ تسجيلُ اللقاء — يُقرأ ولا يُكتب ═══
+
+                  كانت هنا خانةُ رابطٍ تقبل `https://…`. وسأل صاحبُ المنصّة
+                  (١٧ سبتمبر ٢٠٢٦): «ما الرابطُ الذي تتوقّعه منه وأنت تعلم
+                  أنّ التدريبَ من خلال زووم خاصٍّ فينا؟» — والخانةُ أخطرُ
+                  ممّا تبدو: هي **الخانةُ الوحيدةُ في الشاشة التي تقبل
+                  رابطا**، فمدرّبٌ يملك زووم خاصًّا يلصق فيها رابطَ اجتماعه
+                  هو، فيصل المتعلّمين، ويخرج اللقاءُ من حسابنا إلى حسابه
+                  بلا أن تعلم المنصّة. فذهبت.
+
+                  ورفعُ الملفّ باقٍ **مؤقّتا** بأمر صاحب المنصّة: لم يُشترَ
+                  زووم بعد، والاجتماعاتُ تُنشأ بـ`auto_recording: 'none'`،
+                  فرفعُه اليومَ هو المنتِجُ الوحيدُ لتسجيلِ لقاءٍ مباشر. ويُحذف
+                  يومَ يُشبَك زووم ويصل التسجيلُ وحدَه. */}
+              {s.recordings.length > 0 && (
+                <div className="mt-3 border-t border-white/8 pt-3">
+                  <ul className="space-y-1 text-read">
                     {s.recordings.map((r) => (
                       <li key={r.id}>
                         <a href={r.readUrl ?? "#"} target="_blank" rel="noreferrer" className="text-teal-light-ink underline decoration-dotted underline-offset-4">{r.title}</a>
                       </li>
                     ))}
                   </ul>
-                )}
-                <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                  <input value={(recLink[s.id] ?? EMPTY_REC).title}
-                    onChange={(e) => setRecLink({ ...recLink, [s.id]: { ...(recLink[s.id] ?? EMPTY_REC), title: e.target.value } })}
-                    placeholder="اسم التسجيل" aria-label={`اسم تسجيل ${s.title}`} className={controlCls} />
-                  <input dir="ltr" value={(recLink[s.id] ?? EMPTY_REC).url}
-                    onChange={(e) => setRecLink({ ...recLink, [s.id]: { ...(recLink[s.id] ?? EMPTY_REC), url: e.target.value } })}
-                    placeholder="https://…" aria-label={`رابط تسجيل ${s.title}`} className={`${controlCls} text-left`} />
-                  <Button tone="secondary" size="sm" disabled={busy || (recLink[s.id] ?? EMPTY_REC).title.trim().length < 2 || !/^https?:\/\//.test((recLink[s.id] ?? EMPTY_REC).url)}
-                    onClick={() => void addRecordingLink(s.id)}>
-                    أضف التسجيل
-                  </Button>
                 </div>
-              </div>
+              )}
               {s.zoom?.passcode && (
                 <p className="mt-2 text-read text-muted-foreground">رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span></p>
               )}
@@ -250,6 +298,23 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
             </Card>
           ))}
         </div>
+      )}
+
+      {/* والحذفُ يقول أثرَه كاملا قبل وقوعه — لا «أنت متأكّد؟» */}
+      {pendingDelete && (
+        <ConfirmAction
+          titleAr="حذفُ اللقاء"
+          confirmLabelAr="احذفه"
+          busy={busy}
+          onCancel={() => setPendingDelete(null)}
+          onConfirm={() => { const d = pendingDelete; setPendingDelete(null); void removeSession(d.id); }}
+        >
+          <p className="text-read leading-7">
+            يُحذف «{pendingDelete.title}» من شعبتك، ويُلغى اجتماعُ Zoom معه.
+            وإن كان معتمَدا وصل مسجَّليك خبرُ إلغائه.
+            {" "}ولا يُحذف لقاءٌ سُجّل فيه حضورٌ أو انعقد اجتماعُه — تلك واقعةٌ لا مسوّدة.
+          </p>
+        </ConfirmAction>
       )}
     </Panel>
   );

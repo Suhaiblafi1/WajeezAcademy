@@ -1244,7 +1244,7 @@ export class CohortService {
 
   /** المدرّبُ يجدول لقاءه واجتماعَه — بالحدّ نفسِه الذي تُفحص به جدولةُ الإدارة */
   async trainerAddSessionWithMeeting(userId: string, cohortId: string, input: {
-    title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string; withZoom?: boolean
+    title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
     noteAr?: string | null
     attachmentKey?: string | null; attachmentName?: string | null; attachmentMime?: string | null
   }) {
@@ -1265,15 +1265,24 @@ export class CohortService {
        **والاجتماعُ لا يُنشأ هنا**: اجتماعُ Zoom لموعدٍ قد يُردّ صفٌّ في
        حسابنا لا يحضره أحد، ورابطٌ حيٌّ قبل الاعتماد يُنسَخ من شاشة المدرّب
        ويُنشَر. فيُنشأ عند الاعتماد، ونيّتُه تُحفظ حتّى حينه. */
+    /* ═══ ونيّةُ الاجتماع تُقرأ من الشعبة لا تُسأل من المدرّب ═══
+
+       كانت خانةَ اختيارٍ في الشاشة. وقال صاحبُ المنصّة (١٧ سبتمبر ٢٠٢٦):
+       الجوابُ مكتوبٌ عندنا في `deliveryMode` — فلمَ يُسأل عنه؟ وضرَرُها لم
+       يكن سؤالا زائدا: من قرأها إذنا ماليّا فأطفأها، اعتُمدت جلستُه
+       بـ`wantsMeeting: false` — لقاءٌ «مباشرٌ» بلا اجتماعٍ أصلا. */
+    const cohort = await this.prisma.cohort.findUniqueOrThrow({
+      where: { id: cohortId }, select: { deliveryMode: true },
+    })
     const session = await this.addSession(userId, cohortId, {
       ...input,
       approvalState: 'pending',
-      wantsZoom: input.withZoom !== false,
+      wantsZoom: cohort.deliveryMode !== 'in_person',
     })
     await this.notifyAdminsOfPendingSession(session.id, cohortId, session.title)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.propose', entityType: 'cohort_session', entityId: session.id,
-      meta: { cohortId, startsAt: session.startsAt, withZoom: input.withZoom !== false },
+      meta: { cohortId, startsAt: session.startsAt, deliveryMode: cohort.deliveryMode },
     })
     /* ولا عددَ مبلَّغين يُقال: لم يُبلَّغ أحد، وقولُ «بُلِّغ ٠» يُقرأ عطبا */
     return { session, zoom: null, notified: 0, pending: true as const }

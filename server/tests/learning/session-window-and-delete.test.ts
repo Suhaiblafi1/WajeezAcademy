@@ -58,7 +58,7 @@ const until = (day: number) => new Date(`2027-02-${String(day).padStart(2, '0')}
 
 const schedule = (day: number) =>
   cohorts.trainerAddSessionWithMeeting(trainerUserId, uncappedId, {
-    title: `لقاءُ ${day}`, startsAt: at(day), endsAt: until(day), withZoom: true,
+    title: `لقاءُ ${day}`, startsAt: at(day), endsAt: until(day),
   })
 
 beforeAll(async () => {

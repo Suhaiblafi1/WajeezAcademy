@@ -719,19 +719,6 @@ export class CohortPlanService {
   }
 
   /** تسجيلُ جلسةٍ من رابط — لا ملفَّ يُرفع */
-  async addRecordingLink(userId: string, sessionId: string, input: { title: string; url: string; moduleId?: string }) {
-    const session = await this.prisma.cohortSession.findUnique({ where: { id: sessionId }, select: { cohortId: true } })
-    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
-    await this.ownedCohort(userId, session.cohortId)
-    const rec = await this.prisma.recording.create({
-      data: { sessionId, title: input.title.trim(), externalUrl: input.url, moduleId: input.moduleId ?? null, createdBy: userId },
-    })
-    await recordAudit(this.prisma, {
-      actorId: userId, action: 'session.recording.link', entityType: 'cohort_session', entityId: sessionId, meta: { recordingId: rec.id },
-    })
-    return rec
-  }
-
   /* ─────────── إخبارُ المدرّب — جرسٌ وبريد ─────────── */
 
   private async tellTrainer(
