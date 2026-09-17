@@ -10,7 +10,7 @@ import { areaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
 import CohortReadiness from "./CohortReadiness";
-import CohortWizard from "./CohortWizard";
+import CohortWizard, { type WizardTerm } from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
@@ -106,19 +106,23 @@ export default function AdminCohorts() {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [rsComment, setRsComment] = useState<Record<string, string>>({});
+  const [terms, setTerms] = useState<WizardTerm[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try {
-      const [cohortRows, courseRows, rsRows] = await Promise.all([
+      const [cohortRows, courseRows, rsRows, termRows] = await Promise.all([
         apiGet<CohortRow[]>("/api/admin/cohorts"),
         apiGet<CourseOption[]>("/api/admin/catalog/courses"),
         /* اقتراحات التأجيل لا تُسقط الصفحة: غيابها أهون من شعبٍ لا تُدار */
         apiGet<RescheduleRow[]>("/api/admin/session-reschedules").catch(() => [] as RescheduleRow[]),
+        /* والمواسمُ كذلك: الشعبةُ تُولَد بفصلها منذ ١٧ سبتمبر ٢٠٢٦ */
+        apiGet<WizardTerm[]>("/api/admin/terms?all=true").catch(() => [] as WizardTerm[]),
       ]);
       setRows(cohortRows);
       setCourses(courseRows.filter((c) => c.status === "published"));
       setReschedules(rsRows);
+      setTerms(termRows);
     } catch (err) {
       setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — شغّل واجهة API أولا");
     } finally {
@@ -288,6 +292,7 @@ export default function AdminCohorts() {
         </Card>
         {createOpen && (
           <CohortWizard
+            terms={terms}
             /* من الـAPI لا من الكتالوج المضمَّن: هذه الشاشةُ لا تطلب
                `/api/public/core-catalog` أصلا، فـ`courseById` كانت تردّ
                `undefined` للدوراتِ كلِّها — فيُعرض «—» ثمّ تُفتح الشعبةُ
