@@ -27,13 +27,14 @@
    الجدولة إليه فعلا، **فخرجت ولم يُرفَع خطُّه**. */
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, Video } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
+import { capReached } from "@/application/trainer/schedule-window";
 
 /* ═══ الحدُّ يُقرأ قبل المحاولة لا بعد الرفض ═══
 
@@ -43,7 +44,9 @@ import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 interface ScheduleWindow {
   mine: boolean; open: boolean;
   start: string | null; end: string | null;
-  maxSessions: number | null; used: number; remaining: number;
+  /* `remaining: null` تعني **بلا سقفٍ معلَن** — لا «نفد». وكان الصفرُ يحمل
+     المعنيَين فقيل لشعبةٍ فارغةٍ إنّها بلغت سقفَها. */
+  maxSessions: number | null; used: number; remaining: number | null;
 }
 
 /** ما يُرفَق باللقاء — الشكلُ الذي يفهمه `ModuleBodyUpload` */
@@ -53,7 +56,7 @@ interface Attachment {
   bodyFileMime?: string | null;
 }
 
-const BLANK = { title: "", date: "", from: "18:00", to: "20:00", noteAr: "", withZoom: true };
+const BLANK = { title: "", date: "", from: "18:00", to: "20:00", noteAr: "" };
 
 export default function TrainerSchedule({
   cohortId, onDone, minSessions, haveSessions,
@@ -88,7 +91,7 @@ export default function TrainerSchedule({
     );
   }
 
-  const full = win.remaining <= 0;
+  const full = capReached(win.maxSessions, win.used);
   /* والناقصُ يُقال بعددِه لا بإشارة: من بقي عليه لقاءان يعرف أنّهما اثنان */
   const short = Math.max(0, minSessions - haveSessions);
 
@@ -162,16 +165,24 @@ export default function TrainerSchedule({
             />
           </StaffField>
 
-          {/* المدرّبُ ينشئ اجتماعَه بنفسه — لا ينتظر مديرا يفتح Zoom ويلصق رابطا */}
-          <label className="flex items-start gap-2 text-read leading-5 text-muted-foreground">
-            <input type="checkbox" checked={form.withZoom}
-              onChange={(e) => setForm({ ...form, withZoom: e.target.checked })}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
+          {/* ═══ اجتماعُ Zoom حقيقةٌ تُقرأ لا سؤالٌ يُسأل ═══
+
+              كانت هنا خانةُ اختيارٍ «أنشئ اجتماعَ Zoom». وسأل صاحبُ المنصّة
+              (١٧ سبتمبر ٢٠٢٦): ما الذي يُسأل عنه المدرّبُ وأنت تعلم أنّ
+              التدريبَ من خلال زووم خاصٍّ فينا؟ والجوابُ مكتوبٌ في الصفّ
+              أصلا: `Cohort.deliveryMode`. فالخانةُ كانت تسأل عمّا تعرفه
+              المنصّة.
+
+              وضرَرُها لم يكن سؤالا زائدا فحسب: مدرّبةٌ تقرؤها إذنا ماليّا لا
+              تملكه فتُطفئها، فتُعتمَد جلسةٌ بـ`wantsMeeting: false` — أي
+              لقاءٌ مباشرٌ بلا اجتماعٍ أصلا، ولا شيءَ في الشاشة يقول ذلك. */}
+          <Inset className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
+            <Video className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
-              <b className="text-foreground">أنشئ اجتماعَ Zoom على حساب المنصّة</b> — يُنشأ لحظةَ اعتماد الإدارة،
-              ويصل رابطُه كلَّ مسجَّلٍ في الشعبة. وأطفئه للّقاء الحضوريّ.
+              يُنشأ اجتماعُ Zoom على حساب الأكاديميّة لحظةَ اعتماد الإدارة، ويصل رابطُه كلَّ مسجَّلٍ
+              في الشعبة. <b className="text-foreground">لا حسابَ تملكه ولا رابطَ تلصقه.</b>
             </span>
-          </label>
+          </Inset>
 
           <div>
             <Button tone="confirm" loading={busy}
@@ -187,9 +198,8 @@ export default function TrainerSchedule({
                     attachmentKey: attachment.bodyFileKey ?? null,
                     attachmentName: attachment.bodyFileName ?? null,
                     attachmentMime: attachment.bodyFileMime ?? null,
-                    withZoom: form.withZoom,
                   });
-                  setForm({ ...BLANK, from: form.from, to: form.to, withZoom: form.withZoom });
+                  setForm({ ...BLANK, from: form.from, to: form.to });
                   setAttachment({});
                   /* ولا يُقال «بُلِّغ ٠ متعلّما»: لم يُبلَّغ أحدٌ بعد، والصدقُ
                      أن يُقال إلى أين ذهب — لا رقمٌ يُقرأ عطبا. */

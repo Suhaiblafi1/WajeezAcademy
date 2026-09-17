@@ -492,17 +492,39 @@ export class CohortPlanService {
       throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
     }
 
-    /* لقاءٌ خارجَ الفصل الجديد يمنع النقل: الصامتُ هنا يترك جلسةً معلنةً
-       لمتعلّمين في شهرٍ لا تغطّيه الشعبة. ويُقال عددُها وأوّلُها. */
+    /* ═══ لقاءٌ خارجَ الفصل يمنع النقل — ورسالتُه كانت أحجيةً ═══
+
+       الصامتُ هنا يترك جلسةً معلَنةً لمتعلّمين في شهرٍ لا تغطّيه الشعبة،
+       فالمنعُ صواب. لكنّ الرسالةَ كانت: «٤ من لقاءاتك خارجَ «موسم الخريف» —
+       أوّلُها «الجلسة ١». انقلها أو احذفها ثمّ اختر الفصل.» وشكا منها صاحبُ
+       المنصّة (١٧ سبتمبر ٢٠٢٦): «يصدر ملاحظةً لم أفهمها». وثلاثةُ أسبابٍ
+       لذلك، كلُّها في الرسالة لا في المدرّب:
+
+       ① **«من لقاءاتك» وهي ليست لقاءاته.** تلك الصفوفُ ولّدتها وظيفةُ
+         الإدارة الجماعيّة (`catalog-readiness`) قبل أن يُسنَد إليه، بأسماءٍ
+         آليّةٍ «الجلسة ١» لم يرها في شاشةٍ قطّ.
+       ② **«انقلها» مستحيل.** النقلُ يمرّ بـ`assertWithinWindow`، والنافذةُ
+         لا تُفتح إلّا بالفصل الذي يحاول اختيارَه. حلقةٌ مقفلة.
+       ③ **«احذفها» لم يكن له مسلكٌ** في الواجهة البرمجيّة كلِّها.
+
+       فصار الحذفُ ممكنا (`trainerDeleteSession`)، وصارت الرسالةُ تقول
+       **ما تصفه المواعيدُ لا ما تسمّيه الأسماءُ الآليّة** — فيجدها في
+       قائمته — وتنسب المولِّدَ إلى الإدارة كما هو، وتأمر بالممكن وحدَه. */
     const strays = await this.prisma.cohortSession.findMany({
       where: { cohortId, OR: [{ startsAt: { lt: term.startsOn } }, { startsAt: { gt: term.endsOn } }] },
       orderBy: { startsAt: 'asc' },
       select: { id: true, title: true, startsAt: true },
     })
     if (strays.length) {
+      const when = strays.slice(0, 3)
+        .map((s) => fmtDateWith(s.startsAt, { day: 'numeric', month: 'long' }))
+        .join('، ')
+      const more = strays.length > 3 ? ` وغيرُها` : ''
       throw new AuthError(
         'sessions_outside_term',
-        `${strays.length} من لقاءاتك خارجَ «${term.titleAr}» — أوّلُها «${strays[0].title}». انقلها أو احذفها ثمّ اختر الفصل.`,
+        `في هذه الشعبة ${strays.length === 1 ? 'لقاءٌ واحدٌ' : `${strays.length} لقاءاتٍ`} خارجَ أشهر «${term.titleAr}»`
+        + ` (${when}${more}) — أغلبُها لقاءاتٌ ولّدتها الإدارةُ عند فتح الشعبة.`
+        + ` احذفها من خطوة «لقاءات مباشرة» ثمّ اختر الفصل، أو اطلب من الإدارة فصلا يغطّيها.`,
         409,
       )
     }
@@ -697,19 +719,6 @@ export class CohortPlanService {
   }
 
   /** تسجيلُ جلسةٍ من رابط — لا ملفَّ يُرفع */
-  async addRecordingLink(userId: string, sessionId: string, input: { title: string; url: string; moduleId?: string }) {
-    const session = await this.prisma.cohortSession.findUnique({ where: { id: sessionId }, select: { cohortId: true } })
-    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
-    await this.ownedCohort(userId, session.cohortId)
-    const rec = await this.prisma.recording.create({
-      data: { sessionId, title: input.title.trim(), externalUrl: input.url, moduleId: input.moduleId ?? null, createdBy: userId },
-    })
-    await recordAudit(this.prisma, {
-      actorId: userId, action: 'session.recording.link', entityType: 'cohort_session', entityId: sessionId, meta: { recordingId: rec.id },
-    })
-    return rec
-  }
-
   /* ─────────── إخبارُ المدرّب — جرسٌ وبريد ─────────── */
 
   private async tellTrainer(

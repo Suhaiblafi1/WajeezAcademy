@@ -66,13 +66,12 @@ const enrollmentOf = async (userId: string) =>
   (await prisma.enrollment.findFirstOrThrow({ where: { cohortId, userId }, select: { id: true } })).id
 
 /** لقاءٌ جديدٌ داخلَ النافذة — يُنادى في كلّ اختبارٍ بموعدٍ مختلفٍ لئلّا يتعارض */
-const schedule = (day: number, opts: { withZoom?: boolean } = {}) =>
+const schedule = (day: number) =>
   cohorts.trainerAddSessionWithMeeting(trainerUserId, cohortId, {
     title: `لقاءُ اليوم ${day}`,
     startsAt: new Date(`2027-01-${String(day).padStart(2, '0')}T15:00:00.000Z`),
     endsAt: new Date(`2027-01-${String(day).padStart(2, '0')}T17:00:00.000Z`),
     noteAr: 'أحضِر الكرّاسة',
-    withZoom: opts.withZoom ?? true,
   })
 
 beforeAll(async () => {
@@ -189,10 +188,17 @@ describe('③ وبالاعتماد يقع كلُّ شيء', () => {
     expect(new Set(notes.map((n) => n.userId))).toEqual(new Set(enrolled))
   })
 
-  it('و«الحضوريُّ» يُعتمَد بلا اجتماع — النيّةُ محفوظةٌ منذ الجدولة', async () => {
-    const out = await schedule(9, { withZoom: false })
+  it('⚠️ و«الحضوريُّ» يُعتمَد بلا اجتماع — والنيّةُ تُقرأ من الشعبة لا تُسأل', async () => {
+    /* كانت خانةَ اختيارٍ في الشاشة (`withZoom`). وقرارُ صاحب المنصّة
+       (١٧ سبتمبر ٢٠٢٦): الجوابُ مكتوبٌ في `Cohort.deliveryMode`، فلا
+       يُسأل عنه مدرّبٌ يقرؤه إذنا ماليّا فيطفئه — فتُعتمَد جلستُه
+       «مباشرةً» بلا اجتماعٍ أصلا. فالحارسُ صار على المصدر لا على الحقل. */
+    await prisma.cohort.update({ where: { id: cohortId }, data: { deliveryMode: 'in_person' } })
+    const out = await schedule(9)
+    await prisma.cohort.update({ where: { id: cohortId }, data: { deliveryMode: 'remote' } })
+
     const row = await prisma.cohortSession.findUniqueOrThrow({ where: { id: out.session.id } })
-    expect(row.wantsMeeting).toBe(false)
+    expect(row.wantsMeeting, 'شعبةٌ حضوريّةٌ نُوي لها اجتماع').toBe(false)
 
     const decided = await cohorts.decideSession(adminId, out.session.id, true)
     expect(decided.zoom, 'أُنشئ اجتماعٌ للقاءٍ حضوريّ').toBeNull()

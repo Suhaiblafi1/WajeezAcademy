@@ -8,7 +8,9 @@
    ونقلُ صلاحيّةٍ يُختبر بما **يمنعه** لا بما يسمح به. فالمفحوصُ هنا أربعةُ
    حدود، كلُّها تُرَدّ:
 
-     ① نافذةٌ لم تُفتح            → لا جدولةَ أصلا
+     ① نافذةٌ لم تُفتح            → لا جدولةَ أصلا (والفتحُ **مدًى كاملٌ**:
+                                    بدايةٌ ونهاية. والسقفُ حدٌّ اختياريٌّ
+                                    فوقه لا شرطٌ معه — ١٧ سبتمبر ٢٠٢٦)
      ② موعدٌ خارجَ المدى          → يُرَدّ ولو كانت مفتوحة
      ③ سقفُ اللقاءات مبلوغ        → يُرَدّ ولو كان داخلَ المدى
      ④ من ليس مدرّبَ الشعبة       → يُرَدّ ولو كان مدرّبا مؤهَّلا
@@ -110,14 +112,41 @@ describe('نافذةُ جدولةِ المدرّب', () => {
     })).rejects.toMatchObject({ code: 'forbidden' })
   })
 
-  it('ونصفُ نافذةٍ لا يفتح بابا — الثلاثةُ تُقرأ معا', async () => {
-    /* مدًى بلا سقف: النافذةُ تبقى مغلقة، فلا تصير «مفتوحةً بلا حدّ» */
+  it('⚠️ ونصفُ نافذةٍ لا يفتح بابا — والنصفُ **مدًى ناقصٌ** لا سقفٌ غائب', async () => {
+    /* ═══ انعكاسُ قاعدةٍ كانت محروسةً هنا (١٧ سبتمبر ٢٠٢٦) ═══
+
+       كان المفحوصُ: «مدًى بلا سقف: النافذةُ تبقى مغلقة، فلا تصير مفتوحةً
+       بلا حدّ». وكان صوابا يومَ كانت الإدارةُ وحدَها تفتح النافذةَ
+       بالثلاثة. ثمّ صار **الفصلُ** يفتحها: `setTerm` يكتب المدى من حدود
+       الفصل ولا يكتب سقفا — فبقيت القاعدةُ الثلاثيّةُ تغلق البابَ على
+       مدرّبٍ اختار فصلَه، ويُقال له في خطوة اللقاءات «لم يُحدَّد فصلُ هذه
+       الشعبة بعد» بعد أن حدّده. وهو الحصارُ الذي شكا منه صاحبُ المنصّة.
+
+       فالبابُ حدّان، والسقفُ حدٌّ اختياريٌّ فوقه. و«نصفُ النافذة» صار
+       معناه الصحيحَ الوحيد: **مدًى ناقص** — بدايةٌ بلا نهاية. */
+    await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: null, maxSessions: 5 })
+    const half = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
+    expect(half.open, 'مدًى ناقصٌ فتح بابا').toBe(false)
+    await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
+      title: 'لقاءٌ بمدًى ناقص', startsAt: inside,
+    })).rejects.toMatchObject({ code: 'forbidden' })
+  })
+
+  it('⚠️ ومدًى كاملٌ بلا سقفٍ **يفتح** — غيابُ السقف «بلا سقف» لا «مغلق»', async () => {
+    /* وهذا الصفُّ بعينه ما يصنعه `setTerm` للمدرّب: حدّان من حدود الفصل،
+       و`maxSessions` فارغٌ لأنّ الإدارةَ لم تضع سقفا. */
     await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: to, maxSessions: null })
     const w = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
-    expect(w.open).toBe(false)
-    await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'لقاءٌ بنصف نافذة', startsAt: inside,
-    })).rejects.toMatchObject({ code: 'forbidden' })
+    expect(w.open, 'الفصلُ فتح النافذةَ والبابُ مغلق — وهذا هو الحصار').toBe(true)
+    expect(w.remaining, 'غيابُ السقف قُرئ صفرا، فقيل لشعبةٍ فارغةٍ بلغتَ سقفَك').toBeNull()
+
+    /* والمسموحُ يقع فعلا — وإلّا كان الحارسُ يحرس بابا مسدودا */
+    const s = await cohorts.trainerAddSession(trainerUserId, cohortId, {
+      title: 'لقاءٌ بلا سقف', startsAt: inside, endsAt: new Date('2026-12-03T20:00:00Z'),
+    })
+    expect(s.cohortId).toBe(cohortId)
+    /* ويُرفَع أثرُه: ما بعده يَعُدّ اللقاءاتِ من الصفر ويفحص السقفَ عليها */
+    await prisma.cohortSession.delete({ where: { id: s.id } })
   })
 
   it('② تُفتح النافذة — فيقع ما بداخلها، ويُرَدّ ما خارجَ مداها', async () => {

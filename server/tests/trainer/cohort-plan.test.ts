@@ -228,10 +228,17 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(check.missing.some((m) => m.includes('خطة تقديم'))).toBe(false)
   })
 
-  it('والتسجيلُ يُضاف من رابطٍ بلا ملفّ', async () => {
+  it('ولقاءٌ له تسجيلٌ يُتِمُّ مرحلةَ التسجيلات — أيًّا كان مصدرُه', async () => {
+    /* كان الفحصُ يمرّ عبر `addRecordingLink` — بابُ «تسجيلٌ من رابط».
+       وأُغلق البابُ (١٧ سبتمبر ٢٠٢٦) لأنّه كان الخانةَ الوحيدةَ في شاشة
+       اللقاءات التي تقبل رابطا، فيلصق فيها من يملك زووم خاصًّا رابطَ
+       اجتماعه هو. والقاعدةُ المحروسةُ هنا ليست البابَ بل الأثر: لقاءٌ له
+       تسجيلٌ يُتِمّ المرحلة. فيُكتب الصفُّ مباشرةً — كما يكتبه رفعُ الملفّ
+       اليومَ، وكما ستكتبه سحابةُ زووم غدا. */
     const session = await prisma.cohortSession.create({ data: { cohortId, title: 'اللقاء الأوّل', startsAt: new Date(Date.now() + 86400_000) } })
-    const rec = await plans.addRecordingLink(trainerUserId, session.id, { title: 'تسجيل اللقاء الأوّل', url: 'https://example.com/rec-1' })
-    expect(rec.externalUrl).toBe('https://example.com/rec-1')
+    const rec = await prisma.recording.create({
+      data: { sessionId: session.id, title: 'تسجيل اللقاء الأوّل', externalUrl: 'https://example.com/rec-1' },
+    })
     expect(rec.storageKey).toBeNull()
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'recordings')?.done).toBe(true)

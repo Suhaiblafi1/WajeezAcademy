@@ -15,9 +15,10 @@ import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MA
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify, notifyRole } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { createZoomMeeting, getZoomConfig, registerZoomParticipant, zoomMissing, zoomReady } from './zoom.service'
+import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, zoomMissing, zoomReady } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
+import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -649,9 +650,17 @@ export class CohortService {
      وقرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): **يملك المدرّبُ جدولَ شعبته ضمن
      حدودٍ تضعها الإدارة**، وتبقى الإدارةُ على الاستثناء لا على الروتين.
 
-     والحدُّ ثلاثةٌ تُقرأ معا — مدًى يبدأ، ومدًى ينتهي، وسقفُ لقاءات. وغيابُ
-     أيٍّ منها **بابٌ مغلَق** لا بابٌ بلا حدّ: فالشعبُ القائمةُ كلُّها تبقى
-     على ما كانت عليه حتّى تُفتح نافذتُها صراحةً. */
+     ═══ وتصحيحٌ لقاعدةٍ كانت هنا (١٧ سبتمبر ٢٠٢٦) ═══
+
+     كُتب هنا أنّ «الحدَّ ثلاثةٌ تُقرأ معا — مدًى يبدأ، ومدًى ينتهي، وسقفُ
+     لقاءات، وغيابُ أيٍّ منها بابٌ مغلَق». وكان ذلك صحيحا يومَ كانت الإدارةُ
+     وحدَها تفتح النافذة بالثلاثة. ثمّ صار الفصلُ يفتحها (`setTerm` يكتب
+     المدى من حدوده ولا يكتب سقفا) — فبقيت القاعدةُ الثلاثيّةُ تغلق البابَ
+     على من فتح فصلَه، وهو الحصارُ الذي شكا منه صاحبُ المنصّة.
+
+     **فالبابُ حدّان، والسقفُ حدٌّ اختياريٌّ فوقه.** والقاعدةُ في موضعٍ واحدٍ
+     يقرؤه الخادمُ وشاشةُ المدرّب معا: `src/application/trainer/schedule-window.ts`،
+     وفي رأسه العلّةُ كاملةً. */
 
   /** الإدارةُ تفتح النافذة أو تغلقها — والإغلاق بإفراغ الثلاثة */
   async setScheduleWindow(actorId: string, cohortId: string, input: {
@@ -674,7 +683,9 @@ export class CohortService {
       },
       select: { scheduleWindowStart: true, scheduleWindowEnd: true, maxSessions: true },
     })
-    const opened = updated.scheduleWindowStart && updated.scheduleWindowEnd && updated.maxSessions
+    /* والسجلُّ يقول ما وقع فعلا: نافذةٌ بمدًى بلا سقفٍ **مفتوحة**، وكان
+       يُكتب لها «أُغلقت» فيفترق الأثرُ عمّا يستطيعه المدرّب. */
+    const opened = windowOpen(updated)
     await recordAudit(this.prisma, {
       actorId,
       action: opened ? 'cohort.schedule_window.open' : 'cohort.schedule_window.close',
@@ -697,15 +708,15 @@ export class CohortService {
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     const mine = await this.isCohortTrainer(userId, cohortId)
-    const open = Boolean(cohort.scheduleWindowStart && cohort.scheduleWindowEnd && cohort.maxSessions)
     return {
       mine,
-      open,
+      open: windowOpen(cohort),
       start: cohort.scheduleWindowStart,
       end: cohort.scheduleWindowEnd,
       maxSessions: cohort.maxSessions,
       used: cohort._count.sessions,
-      remaining: cohort.maxSessions ? Math.max(0, cohort.maxSessions - cohort._count.sessions) : 0,
+      /* و`null` تعني «بلا سقف» لا صفرا — وكان الصفرُ يعنيهما معا */
+      remaining: remainingSessions(cohort.maxSessions, cohort._count.sessions),
     }
   }
 
@@ -732,8 +743,11 @@ export class CohortService {
       throw new AuthError('bad_state', 'لا جدولةَ لشعبةٍ منتهية', 409)
     }
     const { scheduleWindowStart: from, scheduleWindowEnd: to, maxSessions: cap } = cohort
-    if (!from || !to || !cap) {
-      throw new AuthError('forbidden', 'لم تفتح الإدارةُ نافذةَ جدولةٍ لهذه الشعبة بعد', 403)
+    /* البابُ يفتحه الفصلُ وحدَه؛ والسقفُ حدٌّ اختياريٌّ يُفحص بعدَه لا معه.
+       وكانا مضمومَين بـ«و» فأُغلق البابُ على من فتح فصلَه — والعلّةُ كاملةً
+       في رأس `schedule-window.ts`. */
+    if (!windowOpen(cohort) || !from || !to) {
+      throw new AuthError('forbidden', 'لم تُفتح لهذه الشعبة نافذةُ جدولةٍ بعد — تُسمّي الإدارةُ فصلَها عند الإسناد', 403)
     }
     if (when.startsAt < from || when.startsAt > to) {
       throw new AuthError('forbidden', `الموعدُ خارجَ نافذة الجدولة (${fmtDay(from)} — ${fmtDay(to)})`, 403)
@@ -741,7 +755,7 @@ export class CohortService {
     if (when.endsAt && when.endsAt > to) {
       throw new AuthError('forbidden', `نهايةُ اللقاء بعد نافذة الجدولة (${fmtDay(to)})`, 403)
     }
-    if (opts.counts && cohort._count.sessions >= cap) {
+    if (opts.counts && capReached(cap, cohort._count.sessions)) {
       throw new AuthError('forbidden', `بلغتَ سقفَ اللقاءات (${cap}) — احذف لقاءً أو راجع الإدارة`, 403)
     }
   }
@@ -773,7 +787,7 @@ export class CohortService {
   async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, cohortId: true, title: true, startsAt: true },
+      select: { id: true, cohortId: true, title: true, startsAt: true, approvalState: true },
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
@@ -794,15 +808,136 @@ export class CohortService {
         session.cohortId,
       )
     }
+    /* ═══ والمنقولُ يرجع إلى الانتظار ═══
+
+       قرارُ صاحب المنصّة (١٧ سبتمبر ٢٠٢٦): «يغيّرُه فيرجع لانتظار الإدارة».
+       فاللقاءُ المعتمَدُ صار في تقاويم عشرين إنسانا وله اجتماعُ زووم قائم،
+       ونقلُه يُسقطه إلى `pending` فيغيب عن شاشات المتعلّمين حتّى تعتمده
+       الإدارةُ ثانيةً — فلا يصل الناسَ موعدٌ لم يُراجَع.
+
+       ولأنّه يرجع إلى الانتظار سقط بابُ «اقترح موعدا» كلُّه: من يملك النقلَ
+       لا يستأذن فيه، والاعتمادُ يقع بعدَه لا قبلَه. */
+    const wasApproved = session.approvalState === 'approved'
     const moved = await this.prisma.cohortSession.update({
       where: { id: sessionId },
-      data: { startsAt: input.startsAt, endsAt: input.endsAt },
+      data: {
+        startsAt: input.startsAt,
+        endsAt: input.endsAt,
+        ...(wasApproved ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
+      },
     })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.move', entityType: 'cohort_session', entityId: sessionId,
-      meta: { from: session.startsAt, to: input.startsAt, cohortId: session.cohortId },
+      meta: { from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending: wasApproved },
     })
+    /* والإدارةُ تُعلَم أنّ في طابورها صفًّا جديدا — وإلّا بقي اللقاءُ محجوبا
+       عن متعلّميه ولا أحدَ يعلم أنّه ينتظر. */
+    if (wasApproved) {
+      await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
+      await this.tellCohortScheduleChanged(session.cohortId, session,
+        'نقله مدرّبُك ويُراجَع الآن عند الإدارة. ويصلك موعدُه الجديدُ حين يُعتمَد.')
+    }
     return moved
+  }
+
+  /* ═══ وما كان في تقويمه ثمّ لم يعد — يُقال له ═══
+
+     قرارُ ١٧ سبتمبر يُسقط اللقاءَ المنقولَ إلى الانتظار، فيغيب عن شاشات
+     متعلّميه. والحذفُ يغيّبه كذلك. وكلاهما **تغيّرٌ في موعدٍ أُعلن**، فلو
+     مرّ صامتا لَحضر متعلّمٌ في وقتٍ لا أحدَ فيه — وهو بعينه العطبُ الذي
+     بُنيت له بوّابةُ `session-visibility.ts`: لا يسقط شيء، بل يُعرض موعدٌ
+     زائدٌ أو يختفي موعدٌ منتظَر.
+
+     والمفتاحُ `cohort.schedule_changed` قائمٌ ومسجَّلٌ في الوجهات والأصناف
+     معا — وهو موضوعُه بالحرف: «تحرّكُ جدولِ الشعبة». فلا يُخترَع مفتاحٌ
+     جديدٌ لِما له مفتاح. */
+  private async tellCohortScheduleChanged(
+    cohortId: string,
+    session: { id: string; title: string },
+    whyAr: string,
+  ): Promise<number> {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
+    const recipients = await this.prisma.enrollment.findMany({
+      where: { cohortId, status: { not: 'dropped' } },
+      select: { userId: true },
+    })
+    for (const r of recipients) {
+      await safeNotify(this.prisma, {
+        userId: r.userId, channel: 'in_app', audience: 'learner',
+        templateKey: 'cohort.schedule_changed',
+        title: `تغيّر موعدٌ في ${cohort?.title ?? 'شعبتك'}`,
+        body: `${session.title} — ${whyAr}`,
+        data: { cohortId, sessionId: session.id },
+      })
+    }
+    return recipients.length
+  }
+
+  /* الطابورُ يُنبَّه من موضعٍ واحد: يدخله لقاءٌ جديدٌ يُجدوَل، ويدخله لقاءٌ
+     معتمَدٌ نُقل فسقط إلى الانتظار. ولو كُتب النداءُ في كلٍّ بيده لَنُسي في
+     أحدهما، وبقي اللقاءُ محجوبا عن متعلّميه ولا أحدَ يعلم أنّه ينتظر. */
+  private async notifyAdminsOfPendingSession(sessionId: string, cohortId: string, title: string) {
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      title: 'لقاءٌ مباشرٌ بانتظار اعتمادك',
+      body: `جدول مدرّبُ الشعبة «${title}» — راجِعه واعتمِده ليصل المسجَّلين.`,
+      templateKey: 'cohort.session.pending',
+      data: { cohortId, sessionId },
+    })
+  }
+
+  /* ═══ حذفُ لقاء — فعلٌ كانت الشاشةُ تأمر به ولا بابَ له ═══
+
+     كانت `TrainerSchedule` تقول عند السقف «احذف لقاءً أو راجعها لتوسيعه»،
+     وكان خطأُ `sessions_outside_term` يقول «انقلها أو احذفها ثمّ اختر
+     الفصل» — **ولا مسلكَ حذفِ لقاءٍ في الواجهة البرمجيّة كلِّها**. فالمدرّبُ
+     يُؤمَر بفعلٍ لا يستطيعه، وهو المبدأُ الرابع في موجز المنصّة.
+
+     وهو كذلك ما يفكّ الحلقةَ المغلقة: اللقاءاتُ الخارجةُ عن الفصل ولّدتها
+     الإدارةُ آليّا قبل إسناد المدرّب، ونقلُها يمرّ بالنافذة التي يحاول
+     فتحَها — فالحذفُ مخرجُه الوحيد.
+
+     والحراسةُ على الأثر لا على الحالة: ما حضره أحدٌ أو انعقد اجتماعُه فهو
+     واقعةٌ لا مسودّة، وحذفُه يمحو حضورا مسجَّلا. */
+  async trainerDeleteSession(userId: string, sessionId: string) {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true, cohortId: true, title: true, startsAt: true, approvalState: true,
+        zoom: { select: { meetingId: true, actualStartAt: true } },
+        _count: { select: { attendance: true } },
+      },
+    })
+    if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
+    if (!(await this.isCohortTrainer(userId, session.cohortId))) {
+      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+    }
+    if (session._count.attendance > 0 || session.zoom?.actualStartAt) {
+      throw new AuthError('bad_state', 'لقاءٌ انعقد ولا يُحذف — سُجِّل فيه حضور. راجع الإدارة إن أردت إلغاءه', 409)
+    }
+    /* واجتماعُ زووم يُلغى معه، وإلّا بقي في حساب الأكاديميّة موعدٌ لا شعبةَ
+       له ويفتحه من وصله رابطُه. والإخفاقُ لا يمنع الحذفَ: صفٌّ يشير إلى
+       اجتماعٍ محذوفٍ أهونُ من شعبةٍ لا تُنظَّف. */
+    if (session.zoom?.meetingId) {
+      try {
+        const cfg = await getZoomConfig(this.prisma)
+        if (zoomReady(cfg)) await deleteZoomMeeting(cfg, session.zoom.meetingId)
+      } catch (e) {
+        console.error('[zoom] تعذّر إلغاءُ الاجتماع مع لقائه', session.zoom.meetingId, e)
+      }
+    }
+    /* والمُعلَنُ يُبلَّغ قبل أن يُمحى صفُّه — فبعد الحذف لا مرجعَ يُقرأ منه */
+    const wasAnnounced = session.approvalState === 'approved'
+    const told = wasAnnounced
+      ? await this.tellCohortScheduleChanged(session.cohortId, session, 'أُلغي هذا اللقاء. ويصلك بديلُه إن جُدوِل.')
+      : 0
+
+    await this.prisma.cohortSession.delete({ where: { id: sessionId } })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'cohort.session.delete', entityType: 'cohort_session', entityId: sessionId,
+      meta: { cohortId: session.cohortId, title: session.title, startsAt: session.startsAt, announced: wasAnnounced, told },
+    })
+    return { deleted: true as const, told }
   }
 
   /* ═══ توليدُ الجلسات من الجدول الأسبوعيّ ═══
@@ -1109,7 +1244,7 @@ export class CohortService {
 
   /** المدرّبُ يجدول لقاءه واجتماعَه — بالحدّ نفسِه الذي تُفحص به جدولةُ الإدارة */
   async trainerAddSessionWithMeeting(userId: string, cohortId: string, input: {
-    title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string; withZoom?: boolean
+    title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
     noteAr?: string | null
     attachmentKey?: string | null; attachmentName?: string | null; attachmentMime?: string | null
   }) {
@@ -1130,21 +1265,24 @@ export class CohortService {
        **والاجتماعُ لا يُنشأ هنا**: اجتماعُ Zoom لموعدٍ قد يُردّ صفٌّ في
        حسابنا لا يحضره أحد، ورابطٌ حيٌّ قبل الاعتماد يُنسَخ من شاشة المدرّب
        ويُنشَر. فيُنشأ عند الاعتماد، ونيّتُه تُحفظ حتّى حينه. */
+    /* ═══ ونيّةُ الاجتماع تُقرأ من الشعبة لا تُسأل من المدرّب ═══
+
+       كانت خانةَ اختيارٍ في الشاشة. وقال صاحبُ المنصّة (١٧ سبتمبر ٢٠٢٦):
+       الجوابُ مكتوبٌ عندنا في `deliveryMode` — فلمَ يُسأل عنه؟ وضرَرُها لم
+       يكن سؤالا زائدا: من قرأها إذنا ماليّا فأطفأها، اعتُمدت جلستُه
+       بـ`wantsMeeting: false` — لقاءٌ «مباشرٌ» بلا اجتماعٍ أصلا. */
+    const cohort = await this.prisma.cohort.findUniqueOrThrow({
+      where: { id: cohortId }, select: { deliveryMode: true },
+    })
     const session = await this.addSession(userId, cohortId, {
       ...input,
       approvalState: 'pending',
-      wantsZoom: input.withZoom !== false,
+      wantsZoom: cohort.deliveryMode !== 'in_person',
     })
-    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
-      channel: 'in_app',
-      title: 'لقاءٌ مباشرٌ بانتظار اعتمادك',
-      body: `جدول مدرّبُ الشعبة «${session.title}» — راجِعه واعتمِده ليصل المسجَّلين.`,
-      templateKey: 'cohort.session.pending',
-      data: { cohortId, sessionId: session.id },
-    })
+    await this.notifyAdminsOfPendingSession(session.id, cohortId, session.title)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.propose', entityType: 'cohort_session', entityId: session.id,
-      meta: { cohortId, startsAt: session.startsAt, withZoom: input.withZoom !== false },
+      meta: { cohortId, startsAt: session.startsAt, deliveryMode: cohort.deliveryMode },
     })
     /* ولا عددَ مبلَّغين يُقال: لم يُبلَّغ أحد، وقولُ «بُلِّغ ٠» يُقرأ عطبا */
     return { session, zoom: null, notified: 0, pending: true as const }

@@ -40,7 +40,15 @@ function methodBody(src: string, signature: string): string {
   const at = src.indexOf(signature)
   if (at < 0) return ''
   const rest = src.slice(at + signature.length)
-  const next = rest.indexOf('\n  async ')
+  /* ═══ يُقطَع عند أوّلِ عضوٍ تالٍ في الصنف — عامًّا كان أو خاصًّا ═══
+
+     كان يقطع عند `\n  async ` وحدَها. فلمّا جُمع نداءُ الطابور في دالّةٍ
+     **خاصّة** (١٧ سبتمبر ٢٠٢٦) صار متنُ الدالّة السابقة يبتلعها، فيمرّ
+     فحصٌ عليها وهو يظنّ نفسَه يفحص متنَ غيرِها — وذاك حارسٌ أخضرُ لسببٍ
+     خاطئ، وقد مرّ منه ثلاثةٌ في هذه المنصّة.
+
+     وأعضاءُ الصنف وحدَها على مسافة مسافتَين؛ وما في المتون على أربعٍ فأكثر. */
+  const next = rest.search(/\n {2}(?:private |protected |static )*(?:async )?[A-Za-z_$][\w$]*\s*\(/)
   return next < 0 ? rest : rest.slice(0, next)
 }
 const SCHED = code('src/pages/trainer/TrainerSchedule.tsx')
@@ -124,9 +132,42 @@ describe('② المدرّبُ يجدول منتظِرا — ولا يُنشأ �
     expect(body).toMatch(/approvalState: input\.approvalState \?\? 'approved'/)
   })
 
-  it('والإدارةُ تُبلَّغ بأنّ لقاءً ينتظرها', () => {
-    expect(body).toMatch(/notifyRole\([\s\S]{0,120}'academic_manager', 'super_admin'/)
-    expect(body).toContain("templateKey: 'cohort.session.pending'")
+  it('⚠️ والإدارةُ تُبلَّغ بأنّ لقاءً ينتظرها — من كلِّ بابٍ يُدخِله الطابور', () => {
+    /* كان الفحصُ على نصِّ `notifyRole` مكتوبا في هذا المتن. ثمّ صار للطابور
+       **بابان** بقرار صاحب المنصّة (١٧ سبتمبر ٢٠٢٦): جدولةٌ جديدة، ولقاءٌ
+       معتمَدٌ نُقل فسقط إلى الانتظار. فجُمع النداءُ في موضعٍ واحدٍ يقرؤه
+       البابان.
+
+       والحارسُ يتبع القاعدةَ لا موضعَها: **البابان كلاهما** ينادِيان
+       النداءَ الواحد، والنداءُ يبلّغ الدورَين بالمفتاح المعلوم. ولو نُسي
+       أحدُ البابَين سقط — وهو أقوى ممّا كان يحرسه أوّلا، إذ كان بابٌ واحد. */
+    expect(body, 'بابُ الجدولة لا يُدخل الطابورَ أحدا')
+      .toMatch(/notifyAdminsOfPendingSession\(/)
+
+    const moved = methodBody(COHORT_SVC, 'async trainerMoveSession(userId')
+    expect(moved, 'لم يُعثَر على بابِ النقل').not.toBe('')
+    expect(moved, 'المنقولُ يسقط إلى الانتظار ولا يعلم به أحدٌ في الإدارة')
+      .toMatch(/notifyAdminsOfPendingSession\(/)
+
+    const tell = methodBody(COHORT_SVC, 'private async notifyAdminsOfPendingSession(')
+    expect(tell, 'لم يُعثَر على النداء الواحد').not.toBe('')
+    expect(tell).toMatch(/notifyRole\([\s\S]{0,120}'academic_manager', 'super_admin'/)
+    expect(tell).toContain("templateKey: 'cohort.session.pending'")
+  })
+
+  it('⚠️ والمنقولُ المعتمَدُ يُقال لمتعلّميه — لا يختفي من تقويمهم صامتا', () => {
+    /* أخطرُ ما يُحدثه قرارُ ١٧ سبتمبر: لقاءٌ كان معتمَدا يسقط إلى الانتظار
+       فيغيب عن شاشات المسجَّلين. ولو مرّ صامتا لَحضر متعلّمٌ في وقتٍ لا
+       أحدَ فيه — وهو العطبُ الصامتُ الذي بُنيت له `session-visibility.ts`. */
+    const moved = methodBody(COHORT_SVC, 'async trainerMoveSession(userId')
+    expect(moved, 'المنقولُ يختفي من تقويم متعلّميه بلا كلمة')
+      .toMatch(/tellCohortScheduleChanged\(/)
+
+    const tell = methodBody(COHORT_SVC, 'private async tellCohortScheduleChanged(')
+    expect(tell, 'لم يُعثَر على نداء المتعلّمين').not.toBe('')
+    /* والمفتاحُ قائمٌ مسجَّلٌ في الوجهات والأصناف — لا مُخترَعٌ هنا */
+    expect(tell).toContain("templateKey: 'cohort.schedule_changed'")
+    expect(tell, 'يصل المنسحبَ خبرُ موعدٍ لم يعد له').toMatch(/status: \{ not: 'dropped' \}/)
   })
 
   it('ولا يُقال «بُلِّغ ٠ متعلّما» — رقمٌ صادقٌ يُقرأ عطبا', () => {
