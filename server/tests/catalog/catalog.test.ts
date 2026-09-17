@@ -103,10 +103,11 @@ describe('باني اللقطة', () => {
     const { PERSONAS } = await import('../../../src/tests/diagnostic/personas')
 
     const snap = await buildSnapshotFromDb(prisma)
-    expect(snap.counts.pathways).toBe(20)
-    /* العدد يُقرأ من المصدر لا يُكتب رقما: 100 في المسارات + المستقلّات
-       (C-COMX-106 «الإنجليزية للأعمال» أولها) — ورقمٌ ثابت هنا يقفل باب
-       إضافة مقرر بعد اليوم. */
+    /* العددان يُقرآن من المصدر لا يُكتبان رقما — ورقمٌ ثابت هنا يقفل باب
+       إضافة مقرر أو مسار بعد اليوم. وقد أقفله فعلا: بقي `pathways` مكتوبا
+       «20» بجانب `courses` المقروء، فسقط يوم أُضيفت العائلاتُ الخمس (٢٠٢٦-٠٩-١٦)
+       والمسارات ٢٠←٢٦. فصار يُقرأ مثلَه. */
+    expect(snap.counts.pathways).toBe(j('src/data/catalog/core-catalog.v2.json').launch_pathways.length)
     expect(snap.counts.courses).toBe(j('src/data/catalog/core-catalog.v2.json').courses.length)
 
     /* المضمن أولا */

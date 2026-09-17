@@ -19,7 +19,10 @@
     { "id": "communication_influence", "name_ar": "التواصل والتأثير والتفاوض", "desc_ar": "خطابة تنفيذية وتفاوض وتأثير." },
     { "id": "learning_design", "name_ar": "تصميم التعلم وإعداد المدربين", "desc_ar": "تصميم تجارب تعلم وبرامج تدريبية." },
     { "id": "family_parenting", "name_ar": "الأسرة والتربية", "desc_ar": "أهداف أسرية وتربوية — لا مسار حاليًا (فجوة كتالوج موثقة)." },
-    { "id": "personal_development", "name_ar": "التطوير الشخصي العام", "desc_ar": "نمو شخصي وثقافة عامة — لا مسار مخصص حاليًا (فجوة كتالوج موثقة)." }
+    { "id": "personal_development", "name_ar": "التطوير الشخصي العام", "desc_ar": "نمو شخصي وثقافة عامة — فهم النفس والسلوك وقراءة ما يُقال عنهما. كانت فجوة كتالوج موثقة حتى أُضيف PW-PSY-001 و PW-PSY-002." },
+    { "id": "visual_design", "name_ar": "التصميم البصريّ والهويّة", "desc_ar": "من يصنع أثرا بصريّا — تصميما أو هويّةً أو موادَّ منشورة — ويحتاج نظاما يُطبَّق وقرارا يُبرَّر." },
+    { "id": "spatial_design", "name_ar": "التصميم الداخليّ والفراغ", "desc_ar": "من يصمّم فراغا يُستعمَل — توزيعا وخاماتٍ وإضاءةً وتأثيثا — ويحتاج قرارا يُنفَّذ بكلفتِه." },
+    { "id": "construction_engineering", "name_ar": "الهندسة وتنفيذ المشاريع", "desc_ar": "من يعمل في تنفيذ المشاريع الهندسيّة — رسما وتنسيقا وحصرا وإشرافا — ويحتاج ما يُوثَّق ويصمد للمراجعة." }
   ],
   "pathway_domains": {
     "PW-STU-003": ["career_direction"],
@@ -41,7 +44,13 @@
     "PW-CYB-001": ["cyber_risk"],
     "PW-COM-001": ["communication_influence"],
     "PW-NEG-001": ["communication_influence", "sales"],
-    "PW-LND-001": ["learning_design"]
+    "PW-LND-001": ["learning_design"],
+    "PW-GRPH-001": ["visual_design"],
+    "PW-PSY-001": ["personal_development"],
+    "PW-PSY-002": ["personal_development"],
+    "PW-EDU-001": ["learning_design"],
+    "PW-INTR-001": ["spatial_design"],
+    "PW-ENGR-001": ["construction_engineering"]
   },
   "goal_domains": {
     "employment_advancement": ["employment_readiness"],

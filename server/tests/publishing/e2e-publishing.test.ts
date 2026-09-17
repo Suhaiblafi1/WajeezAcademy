@@ -2,6 +2,9 @@
    السيناريو المطلوب: إنشاء مهارة → دورة → مسار → فشل نشر بنقص متعمد → استكمال →
    محاكاة → اعتماد (maker-checker) → نشر → ظهور في اللقطة → بقاء النتائج القديمة → rollback */
 
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
@@ -10,6 +13,14 @@ import { CatalogAdminService } from '../../services/catalog-admin.service'
 import { PublishingService } from '../../services/publishing.service'
 import { analyzeImpact } from '../../services/impact.service'
 import { buildApp } from '../../http/app'
+
+/* عددُ مسارات الكتالوج يُقرأ من المصدر لا يُكتب رقما: كان «20» مكتوبا في
+   موضعين، فسقط الاختباران يوم أُضيفت العائلاتُ الخمس (٢٠٢٦-٠٩-١٦) والمسارات
+   ٢٠←٢٦ — وهما لا يفحصان عددَ المسارات أصلا، بل أنّ اللقطةَ القديمةَ لم
+   تتغيّر وأنّ الاسترجاعَ يعيدها. فصار العددُ مشتقّا ليبقى الفحصُ على ما وُضع له. */
+const SRC_PATHWAYS: number = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../..', 'src/data/catalog/core-catalog.v2.json'), 'utf8'),
+).launch_pathways.length
 
 /** الشكل الأدنى من حمولة اللقطة الذي يفحصه هذا الاختبار */
 interface SnapshotPayload {
@@ -198,7 +209,7 @@ describe('دورة النشر الكاملة', () => {
     const old = await prisma.catalogVersion.findFirst({ where: { label: 'catalog-v2.0-import' }, include: { snapshots: true } })
     expect(old!.snapshots[0].payloadHash).toMatch(/^[0-9a-f]{64}$/)
     const payload = old!.snapshots[0].payload as unknown as SnapshotPayload
-    expect(payload.coreCatalog.launch_pathways).toHaveLength(20) // بلا أثر رجعي
+    expect(payload.coreCatalog.launch_pathways).toHaveLength(SRC_PATHWAYS) // بلا أثر رجعي
   })
 
   it('6) rollback يعيد اللقطة القديمة كنشر جديد', async () => {
@@ -208,7 +219,7 @@ describe('دورة النشر الكاملة', () => {
     const active = await getActiveSnapshot(prisma)
     expect(active!.hash).toBe(rb.snapshotHash)
     const payload = active!.payload as unknown as SnapshotPayload
-    expect(payload.coreCatalog.launch_pathways).toHaveLength(20)
+    expect(payload.coreCatalog.launch_pathways).toHaveLength(SRC_PATHWAYS)
   })
 })
 

@@ -4482,6 +4482,966 @@
       "active": true
     },
     {
+      "question_id": "QB-M4-040",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التسلسل البصري: ترتيب عناصر التصميم بحيث تُقرأ بالترتيب الذي أردته.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "visual_hierarchy",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة في مسار التصميم البصري.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-041",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تصميم الهوية البصرية: بناء نظام بصري متكامل لا شعار منفرد.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "brand_identity_design",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يحتاج بناء الأساس عمّن يحتاج نظام الهوية مباشرة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-042",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تنظيم الانفعال: خفض شدة الانفعال أو إعادة توجيهه قبل أن تتصرف به.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "emotion_regulation",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ بأدوات التنظيم ومن يتجاوزها إلى ما بعدها.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-043",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في كشف انحياز التأكيد: ملاحظة أنك تبحث عما يوافق رأيك وتهمل ما يخالفه.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "confirmation_bias",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يعرف اسم الانحياز عمّن يكشفه في قرار اتخذه.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-044",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الصدق والثبات: الحكم على مقياس بما يقيسه فعلا وباتساق نتيجته عند الإعادة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "validity_reliability_basics",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يحتاج أساس القياس قبل نقد الدراسات.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-045",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في قراءة العينة وحجم الأثر: الحكم على نتيجة دراسة قبل النظر إلى خلاصتها.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "sample_effect_size",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يقرأ الملخص عمّن يقرأ المنهج.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-046",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تسلسل الشرح: ترتيب عناصر الشرح بحيث يُبنى المعنى خطوة خطوة لا دفعة واحدة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "explanation_sequencing",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يحتاج بناء الشرح عمّن يحتاج تفسير التعلّم.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-047",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في إدارة الحمل المعرفي: تصميم الشرح بحيث لا يتجاوز سعة معالجة المتعلم.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "cognitive_load_theory",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد الدورات الأساسية أو الداعمة في مسار التعلّم.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-048",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تخطيط الفراغ: توزيع الوظائف على المساحة بما يخدم الاستعمال قبل الشكل.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "space_planning",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ من التخطيط ومن يتجاوزه إلى التشطيب والعرض.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-049",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في اختيار الخامات: المفاضلة بين خامتين بأدائهما وكلفتهما وصيانتهما لا بمظهرهما.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "material_selection",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يختار من كتالوج عمّن يختار بالأداء.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-050",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في قراءة المخطّطات: تتبّع بند واحد بين المسقط والقطاع والواجهة وربطه بمواصفته.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "drawing_reading",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ من قراءة المخطّط ومن يتجاوزها إلى الحصر والإشراف.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-051",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في حصر الكميات: قياس كميات البنود من المخططات بطريقة يصل بها المراجع إلى الرقم نفسه.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "quantity_takeoff",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يحصر بطريقته عمّن يحصر بطريقة موثّقة تُعاد.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-052",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في اختيار الخطّ العربي: اختياره بما يناسب النص والوسيط والجمهور لا بما يعجب العين.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "arabic_type_selection",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يحتاج أساس التايبوغرافي قبل الهوية.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-053",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تسليم التصميم: تجهيز الأصول والصيغ التي يحتاجها المنفّذ لا الملف الخام وحده.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "design_handoff",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من ينتج تصميما عمّن يسلّم حزمة يعمل عليها غيره.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-054",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تجهيز ملفات الطباعة: ضبط الألوان والحواف والدقة قبل التسليم للمطبعة.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "print_preparation",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة المطبوعات ومحتوى الشبكات.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-055",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في موجز التصميم: تحويل طلب العميل الغامض إلى موجز بهدف وجمهور وقيد ومعيار قبول.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "design_brief",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من ينفّذ الطلب عمّن يحوّله إلى قرار مبرّر.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-056",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في حدود التفسير النفسي: تحديد ما تفسّره كل مدرسة نفسية وما تعجز عنه.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "explanatory_limits",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يعرف المدارس عمّن يعرف حدّ كل منها.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-057",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في فهم الترميز والاسترجاع: تفسير لماذا يفشل استدعاء معلومة مع بقاء أثرها.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "memory_encoding_retrieval",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الذاكرة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-058",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في كشف خطأ الإسناد: ملاحظة أنك تفسّر سلوك غيرك بطبعه وسلوكك بالظرف.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "attribution_error",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة علم النفس الاجتماعي.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-059",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في التفريق بين العرض والاضطراب: تمييز ما هو ضيق عابر مما يستدعي مختصا.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "symptom_vs_disorder",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الاضطرابات النفسية للفهم لا للتشخيص.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-060",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في فهم نمو المراهق: توقّع ما يستطيعه معرفيا وانفعاليا في سنّه وما لا يستطيعه.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "adolescent_development",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة نموّ الإنسان.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-061",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في منطقة النموّ القريبة: تحديد ما يستطيعه المتعلم بمساندة وتصميم تلك المساندة ثم رفعها.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "zone_proximal_development",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يشرح عمّن يساند ثم ينسحب.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-062",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في تهيئة البيئة: ترتيب المكان والمواد ليعمل الطفل باستقلال دون تدخل دائم.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "prepared_environment",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة المونتيسوري.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-063",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في النتائج الطبيعية والمنطقية: بناء نتيجة متصلة بالفعل يتعلم منها الطفل بدل العقاب.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "natural_logical_consequences",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة التربية الإيجابية.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "OECD",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-064",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في شدة الإضاءة: تحديد الشدة المناسبة لكل مهمة في الفراغ وقياسها لا تقديرها.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "lighting_levels",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الإضاءة الداخلية.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-065",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في النمذجة ثلاثية الأبعاد: بناء نموذج للفراغ بمقاساته الصحيحة لا التقريبية.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "3d_modelling_basics",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة العرض ثلاثي الأبعاد.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-066",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في اختيار الأثاث: اختيار القطعة بوظيفتها ومقاسها وتحمّلها لا بصورتها في الكتالوج.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "furniture_selection",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الأثاث والتأثيث.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 0.9,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-067",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في ميزانية المشروع الداخلي: توزيعها على البنود وترك احتياط معلن قبل بدء التنفيذ.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "interior_budgeting",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من يصمّم عمّن يسلّم داخل ميزانيته.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.1,
+      "reference_anchor": "ESCO",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-068",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الرسم ثنائي الأبعاد بالحاسوب: إنتاج مخططات دقيقة بالطبقات والكتل والمراجع.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "cad_2d_drafting",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد من يبدأ من الرسم ومن يتجاوزه إلى النمذجة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-069",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في النمذجة بـBIM: بناء نموذج معلوماتي للمبنى تُشتق منه المخططات والكميات.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "bim_modelling",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة نمذجة المباني.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-070",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في الإشراف على الموقع: متابعة التنفيذ مقابل المخطط والمواصفة وتوثيق الانحراف.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "site_supervision",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويحدد حاجة دورة الإشراف على الموقع والسلامة.",
+      "sensitivity_level": "low",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
+      "question_id": "QB-M4-071",
+      "module_id": "M4",
+      "module_name": "خط أساس المهارات المحورية",
+      "version": "1.0",
+      "text_ar": "قيّم مستواك الحالي في إعداد المستخلص: إعداده ببنوده وأدلّته ومرفقاته كما يشترط العقد.",
+      "answer_type": "skill_level_5",
+      "options_ar": [
+        "لا أعرفها",
+        "مبتدئ",
+        "أستخدمها أحيانا",
+        "جيد عمليًا",
+        "متقدم وأطبقها بثقة"
+      ],
+      "options_key": "skill_level_5",
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "measures": [
+        "payment_application",
+        "skill_vector"
+      ],
+      "decision_impact": "يدخل في gap_vector ويفصل من ينفّذ عمّن يوثّق ويحصّل مستحقّه.",
+      "sensitivity_level": "medium",
+      "required_level": "deep",
+      "weight": 1.0,
+      "reference_anchor": "O*NET",
+      "active": true
+    },
+    {
       "question_id": "QB-M5-001",
       "module_id": "M5",
       "module_name": "الميول المهنية RIASEC",
