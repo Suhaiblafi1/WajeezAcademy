@@ -49,7 +49,7 @@ import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import { blockingBeforeSubmit } from "@/application/trainer/plan-gate";
 import { toast, toastError } from "@/components/Toast";
-import { Panel, Card, Inset } from "@/components/ui/Surface";
+import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import ProgressRing from "@/components/ui/ProgressRing";
@@ -473,10 +473,29 @@ export default function CohortWorkspace() {
       </Link>
 
       {/* ═══ الرأس: أين وصلت الشعبة ═══ */}
-      <Panel
+      {/* ═══ الشريطُ يُلحَم بالسقف، ولا فراغَ ميّتٌ فوقه ═══
+
+          شكا صاحبُ المنصّة (١٧ سبتمبر ٢٠٢٦): «ألغِ الفراغَ فوقها واجعلها
+          ملاصقةً للسقف عند النزول للأسفل». وثلاثةُ أشياءَ كانت تمنع ذلك:
+
+          ① **فراغٌ ميّتٌ مقدارُه عشرون بكسلا**: صفُّ الهويّة يُخفى عند
+            الضمور بـ`display:none`، **فلا ينطوي هامشُ `mt-5` الذي على
+            أخيه** — يبقى معلّقا فوق اللسانَين. وهذا هو «الفراغ» بعينه.
+          ② **بطاقةٌ مقوّسةٌ لا تلتصق**: `rounded-3xl` وحدٌّ محيطٌ و`mb-5`
+            تجعلها تجلس في الصفحة لا تُلحَم بحافّتها. فصارت `Bar` — شكلُ
+            جلوسٍ آخرُ لا زخرفةً أخرى، وتفيض عن حشو الحاضن بـ`-mx-5`
+            لتبلغ حافّتَي الإطار.
+          ③ **أرضيّةٌ شفّافة**: `bg-paper/95` مع `backdrop-blur` تتبع ما
+            يمرّ تحتها، والقياسُ لا يجوز أن يتبع المتنَ المارّ. فصارت
+            `tone="solid"` صمّاء.
+
+          ونغمةُ الحالة (`st.tone`) سقطت من السطح عمدا: تينتُها ستّةٌ في
+          المئة، فهي شفّافةٌ بحكمها ولا تصلح لسطحٍ يمرّ تحته متن. والحالةُ
+          لم تُفقَد — تُقرأ من حبّتها ومن ختم «شعبةٌ معتمَدة» داخلَ الشريط. */}
+      <Bar
         as="section"
-        tone={st.tone}
-        className={`sticky z-30 mb-5 bg-paper/95 backdrop-blur transition-[padding] ${compact ? "py-3" : ""}`}
+        tone="solid"
+        className={`sticky z-30 -mx-5 mb-5 px-5 transition-[padding] ${compact ? "py-3" : ""}`}
         style={{ top: "var(--staff-sticky-top, 0px)" }}
       >
         <div className={`flex flex-wrap items-start gap-5 ${compact ? "hidden" : ""}`}>
@@ -518,7 +537,9 @@ export default function CohortWorkspace() {
             يُختار أوّلا، ثمّ تظهر خطواتُه إن كان تجهيزا. */}
         <TabBar
           ariaLabel="طورا الشعبة"
-          className="mt-5"
+          /* ولا يُكتب `mt-5` ثابتا: أخوه يُخفى بـ`display:none` فلا ينطوي
+             هامشُه معه — عشرون بكسلا ميّتةً فوق اللسانَين عند الضمور. */
+          className={compact ? "" : "mt-5"}
           items={[
             { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
             /* ع-١: «التشغيل» صار «مركزَ التواصل» — ولم يبقَ فيه إلّا المخاطبة.
@@ -584,7 +605,7 @@ export default function CohortWorkspace() {
             })}
           </ol>
         </div>
-      </Panel>
+      </Bar>
 
       {phase === "prepare" && locked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
