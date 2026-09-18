@@ -52,9 +52,10 @@ function CategoryFilter({
   counts: [string, number][]
   /* عدُّ «الكل» يُمرَّر ولا يُجمع من الرقاقات.
 
-     كان `counts.reduce(...)` — وهو صحيحٌ ما دام المعروضُ تحت «الكل» هو
-     اتّحادَ ما تحت الرقاقات. ولم يعد كذلك: لكلّ رقاقةٍ سقفٌ أربعة و«الكل»
-     رقاقةٌ لها سقفُها، فالجمعُ يَعِد باثنتين وعشرين ويعطي أربعا. */
+     كان `counts.reduce(...)` — وهو **جمعٌ لا اتّحاد**: البطاقةُ التي تستعيرها
+     رقاقةٌ ضيّقةٌ من مجالٍ آخر تُعَدّ مرّتين، فيَعِد الرقمُ باثنتين وعشرين
+     والشريطُ يعطي ثمانيَ عشرة. والعددُ الصادقُ هو طولُ ما يُعرَض فعلا تحت
+     «الكل» — يُحسب حيث يُحسب المعروضُ نفسُه (`home-picks.ts`) ويُمرَّر. */
   allCount: number
   active: string
   onChange: (c: string) => void
@@ -123,7 +124,10 @@ function CategoryFilter({
 
    وما جاء من **خارج** المجال يقول مجالَه صريحا: تحت رقاقةٍ لا يبلغ مجالُها
    ثلاثةً في الكتالوج كلِّه، البطاقةُ الوافدةُ تُعلن من أين هي — فالرقاقةُ
-   لا تُنسَب إليها بطاقةٌ ليست منها. */
+   لا تُنسَب إليها بطاقةٌ ليست منها.
+
+   وتحت «الكل» كلُّ مقترَحٍ يُعلن مجالَه كذلك (`home-picks.ts` يعيده `other`):
+   لا رقاقةَ مجالٍ نشطةً هناك تُفهَم منها «هذا المجال»، فالبطاقةُ تسمّيه. */
 function PickBadge({ note, fromDomain }: { note: string | null; fromDomain?: string }) {
   if (note) {
     return (
@@ -185,6 +189,10 @@ export function Bestsellers() {
     [pwRows],
   )
   const morePaths = useMemo(() => shownFor(pathSource, pwCat), [pathSource, pwCat])
+  /* و«الكل» تُحسب مرّةً لا في كلّ تصيير: صارت (١٨ سبتمبر ٢٠٢٦) اتّحادَ صفوف
+     الرقاقات كلِّها لا اقتطاعَ أربعةٍ من رأس القائمة — فثمنُها صفٌّ لكلّ
+     مجال، ويُدفع مرّةً مع الرقاقات لا مع كلّ ضغطةِ رقاقة. */
+  const pwAllCount = useMemo(() => shownFor(pathSource, ALL_AR).length, [pathSource])
 
   /* ── وترتيبُ الاقتراح في الدورات: دورةٌ من كلّ مسارٍ أوّلا ──
      الكتالوجُ مرتَّبٌ بالمسار ثمّ التسلسل، فأوّلُ ما يقع عليه الإتمامُ دورةٌ
@@ -221,6 +229,7 @@ export function Bestsellers() {
     [crRows],
   )
   const moreCourses = useMemo(() => shownFor(courseSource, crCat), [courseSource, crCat])
+  const crAllCount = useMemo(() => shownFor(courseSource, ALL_AR).length, [courseSource])
 
   return (
     <section id="bestsellers" className="scroll-mt-20 pb-10 pt-10 md:pb-12 md:pt-14">
@@ -318,7 +327,7 @@ export function Bestsellers() {
         {morePaths.length > 0 && (
           <div className="reveal mt-12">
             <h3 className="text-lg font-bold md:text-xl">مسارات أخرى من اختيارنا</h3>
-            <CategoryFilter counts={pwCounts} allCount={shownFor(pathSource, ALL_AR).length} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
+            <CategoryFilter counts={pwCounts} allCount={pwAllCount} active={pwCat} onChange={setPwCat} label="تصفية المسارات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {morePaths.map((b) => (
                 <Card
@@ -406,7 +415,7 @@ export function Bestsellers() {
         {moreCourses.length > 0 && (
           <div className="reveal mt-10">
             <h3 className="text-lg font-bold md:text-xl">ودوراتٌ مفردة</h3>
-            <CategoryFilter counts={crCounts} allCount={shownFor(courseSource, ALL_AR).length} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
+            <CategoryFilter counts={crCounts} allCount={crAllCount} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {moreCourses.map((b) => (
                 /* ⚠️ `‎/build/:courseId` لا `‎/courses/:id`.

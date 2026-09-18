@@ -1,4 +1,4 @@
-/* حارسُ حدَّي رقاقات الرئيسة: لا تحت ثلاثةٍ ولا فوق أربعة.
+/* حارسُ حدَّي رقاقات الرئيسة: لا تحت ثلاثةٍ ولا فوق أربعة — و«الكل» بلا حدّ.
 
    ═══ العطبُ الذي يحرسه ═══
 
@@ -15,7 +15,15 @@
    أو حُذف مسارٌ من مجالٍ ضيّق، أمسكه هذا الملفّ.
 
    والأمثلةُ المؤلَّفةُ تحته تحرس ما لا تظهره البيانات اليوم: ترتيبَ الدرجات
-   الثلاث، وألّا يلبس المقترَحُ وسمَ المختار. */
+   الثلاث، وألّا يلبس المقترَحُ وسمَ المختار.
+
+   ═══ و«الكل» تُقاس بمسطرةٍ أخرى (١٨ سبتمبر ٢٠٢٦) ═══
+
+   كان هنا حارسٌ يقول `shownFor(source, ALL_AR).length ≤ 4` — أي يثبّت العطبَ
+   الذي شكا منه صاحبُ المنصّة: رقاقةُ «الكل» أضيقُ من كلّ رقاقةٍ تحتها. فقد
+   استُبدل بنقيضه: **كلُّ بطاقةٍ تحت أيّ رقاقةٍ تحت «الكل»**. وهذا فحصٌ على
+   البنية لا على رقم — لو عاد السقفُ إلى «الكل» بأيّ صورةٍ سقط، ولو تغيّر
+   الكتالوجُ فالعلاقةُ نفسُها تُقاس. */
 
 import '../setup-catalog'
 import { describe, expect, it } from 'vitest'
@@ -69,18 +77,46 @@ describe('رقاقاتُ الرئيسة — حدّان على ما تُظهره 
     describe(name, () => {
       const rows = filterRows(source)
 
+      /* وهذه الأعرافُ تشمل «الكل» — فهي صفٌّ يُصيَّر كغيره، والاتّحادُ لا
+         يُعفيه من ألّا يكرّر بطاقةً ولا يدفن مختارا تحت مقترَح. */
+      const withAll = () => [...rows, { domain: ALL_AR, shown: shownFor(source, ALL_AR) }]
+
       it('لكلّ رقاقةٍ ثلاثٌ فأكثر', () => {
         expect(rows.length).toBeGreaterThan(0)
-        for (const row of rows) {
+        for (const row of withAll()) {
           expect(row.shown.length, `رقاقة «${row.domain}» تحت الأرضيّة`).toBeGreaterThanOrEqual(3)
         }
       })
 
-      it('ولا رقاقةَ فوق أربع — ولا «الكل»', () => {
+      it('ولا رقاقةَ مجالٍ فوق أربع', () => {
         for (const row of rows) {
           expect(row.shown.length, `رقاقة «${row.domain}» فوق السقف`).toBeLessThanOrEqual(4)
         }
-        expect(shownFor(source, ALL_AR).length, 'رقاقةُ «الكل» فوق السقف').toBeLessThanOrEqual(4)
+      })
+
+      /* ── الحارسُ الذي يقلب القاعدةَ على «الكل» ──
+
+         السقفُ نصُّه «لكلّ فلتر»، و«الكل» رفعُ الفلتر لا فلترٌ. فلا يُقاس
+         طولُها برقم — يُقاس بأنّها **تسع ما تحتها**: أيُّ بطاقةٍ يراها
+         الزائرُ تحت رقاقةٍ يجب أن يراها حين يرفع التصفية. ولو أُعيد
+         الاقتطاعُ إلى «الكل» — بأربعةٍ أو بأربعين — سقط هذا فورا، لأنّ
+         الرقاقاتِ السبعَ تعرض ثمانيَ عشرةَ بطاقةً متمايزة. */
+      it('و«الكل» تضمّ كلَّ ما تعرضه الرقاقات — فلا سقفَ عليها', () => {
+        const all = shownFor(source, ALL_AR)
+        const allIds = all.map((s) => source.idOf(s.item))
+        const inAll = new Set(allIds)
+        for (const row of rows) {
+          for (const s of row.shown) {
+            const id = source.idOf(s.item)
+            expect(inAll.has(id), `«${row.domain}» تعرض ${id} و«الكل» لا تعرضها`).toBe(true)
+          }
+        }
+        /* ولا تزيد على ذلك: «الكل» ترفع التصفيةَ عن هذا الشريط ولا تستبدل
+           به الكتالوجَ كلَّه — وتحته بابٌ إليه. */
+        const fromChips = new Set(rows.flatMap((r) => r.shown.map((s) => source.idOf(s.item))))
+        for (const id of allIds) {
+          expect(fromChips.has(id), `«الكل» تعرض ${id} ولا رقاقةَ تعرضها`).toBe(true)
+        }
       })
 
       it('وما يُعدّ هو ما يُعرض — الصفُّ نفسُه الذي يُصيَّر', () => {
@@ -90,14 +126,14 @@ describe('رقاقاتُ الرئيسة — حدّان على ما تُظهره 
       })
 
       it('ولا بطاقةَ مكرّرةٌ في رقاقةٍ واحدة', () => {
-        for (const row of rows) {
+        for (const row of withAll()) {
           const ids = row.shown.map((s) => source.idOf(s.item))
           expect(new Set(ids).size, `تكرارٌ في «${row.domain}»`).toBe(ids.length)
         }
       })
 
       it('والمستثنى لا يعود من باب الإتمام', () => {
-        for (const row of [...rows, { domain: ALL_AR, shown: shownFor(source, ALL_AR) }]) {
+        for (const row of withAll()) {
           for (const id of source.exclude ?? []) {
             expect(row.shown.map((s) => source.idOf(s.item)), `المستثنى ظهر في «${row.domain}»`).not.toContain(id)
           }
@@ -105,7 +141,7 @@ describe('رقاقاتُ الرئيسة — حدّان على ما تُظهره 
       })
 
       it('والمختارُ يتقدّم المقترَح — لا يُدفن اختيارُ المؤلِّف تحت إتمامِ عدد', () => {
-        for (const row of rows) {
+        for (const row of withAll()) {
           const kinds = row.shown.map((s) => s.kind)
           const lastEditorial = kinds.lastIndexOf('editorial')
           const firstFill = kinds.findIndex((k) => k !== 'editorial')
@@ -127,7 +163,7 @@ describe('رقاقاتُ الرئيسة — حدّان على ما تُظهره 
       })
 
       it('والوسمُ الذهبيُّ للمختار وحدَه — المقترَحُ بلا وسمٍ يدّعيه', () => {
-        for (const row of rows) {
+        for (const row of withAll()) {
           for (const s of row.shown) {
             if (s.kind === 'editorial') expect(s.note, `مختارٌ بلا وسمٍ في «${row.domain}»`).toBeTruthy()
             else expect(s.note, `مقترَحٌ لبس وسمَ المختار في «${row.domain}»`).toBeNull()
@@ -136,7 +172,7 @@ describe('رقاقاتُ الرئيسة — حدّان على ما تُظهره 
       })
 
       it('وكلُّ رقاقةٍ مجالُ مختارٍ — لا رقاقةَ اقتراحاتٍ خالصةٍ تحت «من اختيارنا»', () => {
-        for (const row of rows) {
+        for (const row of withAll()) {
           expect(row.shown[0]?.kind, `رقاقة «${row.domain}» بلا مختارٍ أصلا`).toBe('editorial')
         }
       })
@@ -195,9 +231,42 @@ describe('درجاتُ الإتمام الثلاث', () => {
     expect(shown[1].item.id).toBe('a1')
   })
 
-  it('و«الكل» لا تستدعي خارجا — لا خارجَ لها', () => {
+  it('و«الكل» لا تستدعي من خارج الشريط — لا خارجَ لها', () => {
     const src = fixture([{ id: 'a1', domain: 'أ' }], [{ id: 'a1', note: 'اختيار' }])
     expect(shownFor(src, ALL_AR).map((s) => s.kind)).toEqual(['editorial'])
+  })
+
+  /* ── و«الكل» تجمع ما فرّقته الرقاقات ──
+
+     المسطرةُ هنا مؤلَّفةٌ لا مقيسةٌ من الكتالوج: مجالان، لكلٍّ مختارٌ واحدٌ
+     وإتمامُه من مجاله. فالرقاقتان تعرضان ستّا، و«الكل» تعرض الستَّ نفسَها —
+     لا أربعا. ولو أُعيد سقفُ الرقاقة إليها لسقط هذا العدد. */
+  it('و«الكل» تجمع مختارَ الرقاقات وإتمامَها معا — فوق سقفِ الرقاقة الواحدة', () => {
+    const src = fixture(
+      [
+        { id: 'a1', domain: 'أ' }, { id: 'a2', domain: 'أ' }, { id: 'a3', domain: 'أ' },
+        { id: 'b1', domain: 'ب' }, { id: 'b2', domain: 'ب' }, { id: 'b3', domain: 'ب' },
+      ],
+      [{ id: 'a1', note: 'اختيار' }, { id: 'b1', note: 'اختيار' }],
+    )
+    const all = shownFor(src, ALL_AR)
+    expect(all.map((s) => s.item.id)).toEqual(['a1', 'b1', 'a2', 'a3', 'b2', 'b3'])
+    expect(all.length, '«الكل» اقتُطعت كرقاقةِ مجال').toBeGreaterThan(MAX_PER_FILTER)
+    /* والمختارُ وحدَه يحمل الوسمَ، وما أتمّ به الرقاقاتُ نقصَها يُعلن مجالَه */
+    expect(all.map((s) => s.kind)).toEqual([
+      'editorial', 'editorial', 'other', 'other', 'other', 'other',
+    ])
+  })
+
+  it('وما تعرضه رقاقةٌ من خارج مجالها تعرضه «الكل» أيضا', () => {
+    /* «ب» مجالٌ ضيّق (عنصرٌ واحد) فيستعير من «أ» — والمستعارُ تحت «الكل» */
+    const src = fixture(
+      [{ id: 'a1', domain: 'أ' }, { id: 'a2', domain: 'أ' }, { id: 'a3', domain: 'أ' }, { id: 'b1', domain: 'ب' }],
+      [{ id: 'b1', note: 'اختيار' }, { id: 'a1', note: 'اختيار' }],
+    )
+    const chips = filterRows(src).flatMap((r) => r.shown.map((s) => s.item.id))
+    const all = shownFor(src, ALL_AR).map((s) => s.item.id)
+    for (const id of new Set(chips)) expect(all, `«الكل» لا تعرض ${id}`).toContain(id)
   })
 
   it('والمستثنى لا يُحسب ولا يُعرض — ولو كان مختارا', () => {
