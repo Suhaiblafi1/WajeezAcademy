@@ -144,7 +144,7 @@ export default function EmailVerifyStatus({
         </p>
         <p className="mt-2 text-read leading-7 text-foreground">
           <b dir="ltr" className="font-mono text-foreground">{email}</b> صار موثَّقا، ولا يبقى عليك شيءٌ فيه.
-          وعلى هذا البريد تصلك أخبارُ طلبك ودعوةُ المقابلة.
+          وعلى هذا البريد تصلك أخبارُ طلبك ودعوةُ لقاء التعارف.
         </p>
       </Card>
     )

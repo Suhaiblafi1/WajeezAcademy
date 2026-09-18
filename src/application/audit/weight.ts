@@ -172,7 +172,7 @@ const LOW: readonly string[] = [
   'trainer.application.purge', 'trainer.application.proposals_edit',
   'trainer.application.phase2_complete',
   'trainer.application.account_created', 'trainer.application.account_linked',
-  'trainer.interview.invite', 'trainer.interview.outcome',
+  'trainer.interview.invite', 'trainer.interview.remind', 'trainer.interview.outcome',
   'trainer.interview.dossier_sent', 'trainer.interview.self_booked',
   'trainer.interview.self_canceled',
   'trainer.dossier_link.create', 'trainer.dossier_link.revoke',

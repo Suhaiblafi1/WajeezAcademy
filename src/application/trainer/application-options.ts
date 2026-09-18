@@ -107,6 +107,16 @@ export const TRAINER_INTERVIEW = {
   url: 'https://calendly.com/hadeel-7/wajeez-academy',
   minutes: 45,
   platformAr: 'اجتماع مرئي',
+  /* ═══ اسمُه عند المتقدّم — كلمةٌ واحدةٌ في كلّ ما يقرؤه ═══
+
+     كان يُسمّى في شاشاته ثلاثةَ أسماء: «مقابلة» و«الاجتماع التعريفيّ» و«لقاء
+     التعارف». وثلاثةُ أسماءٍ لشيءٍ واحدٍ تُقرأ ثلاثةَ أشياء — فيظنّ من حجز
+     «لقاء تعارف» أنّ «المقابلة» موعدٌ آخرُ ينتظره.
+
+     وقرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦): «لقاء التعارف» فيما يقرؤه المتقدّم.
+     و«المقابلة» تبقى في شاشات الإدارة — هناك صفٌّ في جدولٍ ونتيجةٌ تُسجَّل،
+     لا دعوةٌ تُقرأ. */
+  labelAr: 'لقاء التعارف',
 } as const
 
 /** الرابطُ معبَّأً سلفا باسم المتقدّم وبريده ورقم طلبه.
@@ -159,7 +169,7 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
   },
   submitted: {
     label: 'وصل طلبك — بانتظار المراجعة',
-    explain: 'طلبك كامل عند فريقنا. احجز موعدَ اجتماعك التعريفيّ من الزرّ أدناه — ونقرأ طلبك قبله.',
+    explain: 'طلبك كامل عند فريقنا، ولم يبقَ إلّا حجزُ موعدِ لقاء التعارف من الزرّ أدناه — ونقرأ طلبك قبله.',
     tone: 'progress',
   },
   under_review: {
@@ -174,12 +184,12 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
   },
   shortlisted: {
     label: 'اختيار أولي',
-    explain: 'اجتاز طلبك الفرز الأوّليّ. الخطوةُ التالية مقابلةٌ قصيرة — احجز موعدَها من الزرّ أدناه.',
+    explain: 'اجتاز طلبك الفرز الأوّليّ. الخطوةُ التالية لقاءُ تعارفٍ قصير — احجز موعدَه من الزرّ أدناه.',
     tone: 'progress',
   },
   interview_scheduled: {
-    label: 'مقابلة مجدولة',
-    explain: 'لديك موعد مقابلة. راجع بريدك لتفاصيله.',
+    label: 'موعدُك محجوز',
+    explain: 'حُجز موعدُ لقاء التعارف. راجع بريدك لتفاصيله — ومنه تغيّره أو تلغيه إن لزم.',
     tone: 'progress',
   },
   demo_requested: {
@@ -189,7 +199,7 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
   },
   academic_review: {
     label: 'مراجعة أكاديمية نهائية',
-    explain: 'تكتب اللجنة الأكاديمية تقييمها النهائي بعد المقابلة والدرس التجريبي.',
+    explain: 'تكتب اللجنة الأكاديمية تقييمها النهائي بعد لقاء التعارف والدرس التجريبي.',
     tone: 'progress',
   },
   conditionally_approved: {
@@ -252,6 +262,18 @@ export const WITHDRAWABLE_STATUSES = [
 export const BOOKABLE_STATUSES: readonly string[] = [
   'submitted', 'under_review', 'information_requested', 'shortlisted',
 ]
+
+/* ═══ من يُذكَّر بحجز موعده — مِحَكٌّ واحدٌ للشاشة وللخادم ═══
+
+   الشاشةُ تعرض الزرَّ، والخادمُ يردّ الطلبَ. ولو كُتب الشرطُ مرّتين لانحرف
+   أحدُهما يوما، فيُعرض زرٌّ يُردّ ٤٠٩ — أو يُخفى زرٌّ كان يعمل. وهذا يقع في
+   هذا المستودَع: `PHASE2_OPEN_STATUSES` مكتوبٌ فوقُ أنّه نظيرٌ لهذا بعينه.
+
+   وطرفاه مقصودان: الحالةُ تقبل الحجزَ (لا مسوّدةٌ ولا قرارٌ وقع)، ولا موعدَ
+   قائمٌ له — والملغى لا يُحسب موعدا، فمن ألغى أحوجُ الناس إلى التذكير. */
+export function canRemindToBook(app: { status: string; liveInterviews: number }): boolean {
+  return BOOKABLE_STATUSES.includes(app.status) && app.liveInterviews === 0
+}
 
 /** الحالاتُ التي يجوز لصاحب الطلب أن يعدّله فيها.
 

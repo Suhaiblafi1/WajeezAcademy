@@ -23,7 +23,7 @@ import ProposalsEditor from "./ProposalsEditor";
 import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
-import { yearsLabel } from "@/application/trainer/application-options";
+import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
@@ -36,6 +36,11 @@ import { RUBRIC_AXES } from "@/application/trainer/rubric";
 /* الحالاتُ التي يقبل الخادمُ حذفَها — تُقرأ من مصدرها لا تُكتب هنا.
    ونسخةٌ ثانيةٌ تنحرف يوما فيَعِد الزرُّ بما يرفضه الخادم. */
 const PURGEABLE: string[] = [...PURGEABLE_STATUSES];
+
+/** من يُذكَّر بالحجز — المِحَكُّ من الوحدة المشتركة، وهو نفسُه الذي يحرس
+    المسار في الخادم. ولا يُعاد كتابتُه هنا: نسختان تنحرفان. */
+const canRemind = (a: { status: string; interviewsCount: number }): boolean =>
+  canRemindToBook({ status: a.status, liveInterviews: a.interviewsCount });
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
@@ -248,8 +253,17 @@ export default function TrainerApplications() {
      على صفٍّ غاب عن العين بلا علمِ صاحب القرار. */
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [bulkProgress, setBulkProgress] = useState("");
-  /* رفضٌ أو انتظارٌ على دفعةٍ: كلاهما يصل صاحبَ الطلب، فسببُه يُكتب أوّلا */
+  /* رفضٌ أو انتظارٌ على دفعةٍ: كلاهما يصل صاحبَ الطلب، فسببُه يُكتب أوّلا —
+     ووجهةُ السبب تختلف بينهما، ومكتوبٌ عند النافذة أدناه كيف. */
   const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
+  /* ═══ مرشِّحُ «لم يحجز موعدا» ═══
+
+     الطابورُ يعرض عددَ المقابلات في كلّ صفّ، ومن أراد من لم يحجز عدَّ الأصفارَ
+     بعينه في عشرات الصفوف. وهم بعينهم من يُذكَّر — فصار سؤالا يُضغط.
+
+     وهو في الشاشة لا في الخادم: الحالةُ تُرشَّح هناك، وهذا يعمل على ما وصل
+     فيُقرأ أثرُه فورا بلا نداءٍ ثانٍ. */
+  const [onlyUnbooked, setOnlyUnbooked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [selected, setSelected] = useState<AppDetail | null>(null);
@@ -360,7 +374,9 @@ export default function TrainerApplications() {
 
   /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل */
   const view = paginate(
-    apps.filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
+    apps
+      .filter((a) => !onlyUnbooked || canRemind(a))
+      .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
     page, 20);
 
   const toggleSel = (id: string) => setSel((prev) => {
@@ -378,6 +394,25 @@ export default function TrainerApplications() {
   /* السببُ يأتي من نافذة التأكيد لا من حوار متصفّح — و**لا يُقرأ من حالة
      الصفحة**: `note` أعلاه هو نصُّ مراجعةِ طلبٍ واحدٍ في نموذجٍ آخر، وخلطُه
      بالقرار الجماعيّ يُرسل ملاحظةَ مراجعٍ إلى عشراتٍ لم تُكتب لهم. */
+  /* ومن يصلح للتذكير: من يُقبل حجزُه ولم يحجز. وهو شرطُ الخادم نفسُه
+     (`remindToBookInterview`) — ولو افترقا لعرضت الشاشةُ زرّا يردّه ٤٠٩. */
+  const remindable = selectedRows.length > 0 && selectedRows.every(canRemind);
+
+  const bulkRemind = async () => {
+    if (busy || sel.size === 0) return;
+    setBusy(true); setBulkProgress("");
+    const outcome = await runBulk(
+      [...sel],
+      (id) => apiPost(`/api/admin/trainer-applications/${id}/booking-reminder`, {}),
+      (done, total) => setBulkProgress(`${done} من ${total}`),
+    );
+    setBulkProgress("");
+    setSel(new Set(outcome.failed.map((f) => f.id)));
+    toast(bulkMessage(outcome, "أُرسل التذكير"));
+    setBusy(false);
+    await load();
+  };
+
   const bulkDecide = async (action: string, labelAr: string, decisionNote?: string) => {
     if (busy || sel.size === 0) return;
     setBusy(true); setBulkProgress("");
@@ -1029,6 +1064,13 @@ export default function TrainerApplications() {
               <option value="">كل الحالات</option>
               {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
+            {/* سؤالٌ يُضغط بدل عدِّ الأصفار في عمود «مقابلة» */}
+            <Button tone={onlyUnbooked ? "confirm" : "ghost"}
+              aria-pressed={onlyUnbooked}
+              onClick={() => { setOnlyUnbooked((v) => !v); setPage(1); }}>
+              <CalendarCheck className="h-3.5 w-3.5" /> لم يحجز موعدا
+              <span className="mr-1 font-mono">{apps.filter(canRemind).length}</span>
+            </Button>
             <Button tone="secondary" onClick={() => void load()}>
               <RefreshCw className="h-3.5 w-3.5" /> تحديث
             </Button>
@@ -1058,6 +1100,13 @@ export default function TrainerApplications() {
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
             placeholder="ابحث باسمٍ أو بريدٍ أو رقمِ طلبٍ أو تخصّص…" />
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
+            {/* التذكيرُ أوّلا: هو الأكثرُ وقوعا في هذا الطابور، وليس قرارا
+                يُتراجَع عنه — رسالةٌ تُرسَل لمن ننتظره وهو ينتظرنا. */}
+            {remindable && (
+              <Button size="sm" tone="secondary" onClick={() => void bulkRemind()}>
+                <CalendarCheck className="h-3.5 w-3.5" /> ذكّرهم بحجز الموعد — على {sel.size}
+              </Button>
+            )}
             {commonActions.length === 0 ? (
               <span className="text-fine text-muted-foreground">
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
@@ -1116,7 +1165,18 @@ export default function TrainerApplications() {
           titleAr={`«${bulkDecision.labelAr}» على ${sel.size} طلبَ انضمام`}
           confirmLabelAr={`${bulkDecision.labelAr} — على ${sel.size}`}
           busy={busy}
-          reason={{ labelAr: "السببُ — يصل صاحبَ كلّ طلبٍ كما تكتبه، ويبقى في الأثر", minLength: 5 }}
+          reason={{
+            /* ═══ ولا يُوعَد بما لا يقع ═══
+
+               كان السطرُ واحدا: «يصل صاحبَ كلّ طلبٍ كما تكتبه». وصار سببُ
+               الرفض لا يُرسَل (قرارُ صاحب المنصّة، ١٨ سبتمبر ٢٠٢٦)، فبقاءُ
+               الوعد يجعل المراجعَ يكتب للمتقدّم نصًّا لا يقرؤه أحدٌ غيرُنا —
+               أو يكتم ما كان سيكتبه للأثر. */
+            labelAr: bulkDecision.action === "reject"
+              ? "السببُ — للأثر الداخليّ، ولا يصل المتقدّم"
+              : "السببُ — يصل صاحبَ كلّ طلبٍ كما تكتبه، ويبقى في الأثر",
+            minLength: 5,
+          }}
           onCancel={() => setBulkDecision(null)}
           onConfirm={(reason) => {
             const target = bulkDecision;
@@ -1124,7 +1184,12 @@ export default function TrainerApplications() {
             void bulkDecide(target.action, target.labelAr, reason);
           }}
         >
-          <p>يُطبَّق القرارُ على المحدَّد كلِّه، ويُخبَر أصحابُه. والسببُ واحدٌ للجميع — فاكتبه عامّا يصلح لكلّ من يقرؤه.</p>
+          <p>
+            يُطبَّق القرارُ على المحدَّد كلِّه، ويُخبَر أصحابُه برسالةٍ من المنصّة.{" "}
+            {bulkDecision.action === "reject"
+              ? "وسببُك يبقى في الأثر عندنا ولا يُرسَل — فاكتبه لمن يراجع الطلبَ بعدك."
+              : "والسببُ واحدٌ للجميع ويصلهم بنصّه — فاكتبه عامّا يصلح لكلّ من يقرؤه."}
+          </p>
         </ConfirmAction>
       )}
     </AdminLayout>

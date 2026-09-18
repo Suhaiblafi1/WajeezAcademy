@@ -151,7 +151,7 @@ export default function JoinTrainerComplete() {
           <h1 className="mt-6 text-2xl font-black">ملفك المهني اكتمل</h1>
           <p className="mt-3 text-sm leading-8 text-muted-foreground">
             عاد طلبك <b className="font-mono" dir="ltr">{reference}</b> إلى المراجعة الأكاديمية بكل ما أرسلت.
-            الخطوة التالية: مقابلة ثم درس تجريبي قصير — سنراسلك على بريدك.
+            ولم يبقَ إلّا أن تحجز موعدَ لقاء التعارف من صفحة طلبك — ونقرأ ملفك قبله.
           </p>
         </div>
       </SiteShell>

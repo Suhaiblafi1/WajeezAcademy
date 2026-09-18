@@ -4,7 +4,7 @@
    مبدأ الفصل: قبول الطلب ≠ إنشاء الحساب ≠ تفعيل الدور ≠ التأهيل ≠ التعيين ≠ النشر.
    المتقدم لا يمنح نفسه دور trainer أبدا — الحساب يُنشأ فقط عبر دعوة إدارية. */
 
-import { ACADEMY_EMAILS } from './integrations.service'
+import { ACADEMY_EMAILS, getCalendlyConfig } from './integrations.service'
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
@@ -12,7 +12,8 @@ import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
-import { TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
+import { bookingReminderMail, decisionMailFor } from './trainer-decision-mail'
+import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
 import { nextTrainerApplicationReference } from './trainer-application-reference'
@@ -432,47 +433,46 @@ export class TrainerReviewService {
        مَخنقُ ستّةَ عشرَ حالة، والإبلاغُ عنده يوقظ الناسَ على تنقّلاتٍ
        داخليّةٍ لا تعنيهم. وموضعُ الإصلاح هنا، حيث يقع القرارُ ويُعرف.
 
-       والسببُ يصل صاحبَه كما وصل السجلَّ حين كُتب: ردٌّ بلا سببٍ يُقرأ حكما
-       على الشخص لا على الطلب. */
-    if (action === 'reject') {
-      await this.notifyDecision(app.email, app.fullName, app.reference, {
-        heading: 'قرارُنا في طلبك للانضمام مدرّبا',
-        bodyAr: 'شكرا لوقتك ولما شاركتَه معنا. ولم نتمكّن هذه المرّةَ من المضيّ في طلبك.',
-        noteAr: note,
-        closingAr: 'ولك أن تتقدّم إلينا من جديدٍ حين يتغيّر ما تعرضه — فالبابُ يبقى مفتوحا.',
-      })
-    }
+       ═══ وسببُ الرفض لا يصل صاحبَه (١٨ سبتمبر ٢٠٢٦) ═══
 
-    if (action === 'waitlist') {
-      await this.notifyDecision(app.email, app.fullName, app.reference, {
-        heading: 'طلبُك في قائمة الانتظار',
-        bodyAr: 'راجعنا طلبك ولم نُغلقه: وُضع في قائمة الانتظار حتّى تُفتح حاجةٌ تناسب ما تدرّسه.',
-        noteAr: note,
-        closingAr: 'ونعود إليك على هذا العنوان حين يجدّ ما يناسبك. ولا يلزمك شيءٌ الآن.',
+       كان يصله في جدولٍ مؤطَّرٍ عنوانُه «وممّا كُتب في المراجعة». وقرارُ
+       صاحب المنصّة أن يبقى في الأثر الداخليّ وحدَه: ما يكتبه المراجعُ يُكتب
+       لعينِ مراجعٍ آخرَ لا لعين صاحب الطلب، وسطرٌ واحدٌ منه يُقرأ حكما على
+       الشخص. والملاحظةُ تبقى مطلوبةً في الشاشة ومكتوبةً في الأثر — فالقرارُ
+       يُسأل عنه بعد شهرٍ ويُجاب.
+
+       وقائمةُ الانتظار تبقى على ملاحظتها: تلك تقول «ننتظرك لأجل كذا»، وهي
+       خبرٌ لصاحبها لا حكمٌ عليه. والفرقُ مفحوصٌ في
+       `src/tests/trainer-decision-mail.test.ts`. */
+    if (action === 'reject' || action === 'waitlist') {
+      await this.notifyDecision(app.email, action, {
+        fullName: app.fullName, reference: app.reference, noteAr: note,
       })
     }
   }
 
-  /** قرارٌ يصل صاحبَه — ولا يُسقط القرارَ إن أخفق البريد */
+  /* ═══ قرارٌ يصل صاحبَه — ولا يُسقط القرارَ إن أخفق البريد ═══
+
+     والنصُّ ليس هنا: هو في `trainer-decision-mail.ts` دالّةً خالصةً يحرسها
+     المسارُ السريع. ومكتوبٌ في رأسه لماذا — وفيه يقع إسقاطُ سببِ الرفض عن
+     رسالة صاحبه. وهذه تُرسل ما رُدَّ إليها ولا تؤلّف حرفا. */
   private async notifyDecision(
-    to: string, fullName: string, reference: string,
-    copy: { heading: string; bodyAr: string; noteAr?: string; closingAr: string },
+    to: string, action: 'reject' | 'waitlist',
+    input: { fullName: string; reference: string; noteAr?: string },
   ): Promise<void> {
-    await sendDirectEmail(this.prisma, {
-      to,
-      subject: `${copy.heading} (${reference})`,
-      ...renderMail({
-        greetingName: fullName,
-        heading: copy.heading,
-        blocks: [
-          { kind: 'p', text: copy.bodyAr },
-          ...(copy.noteAr?.trim()
-            ? [{ kind: 'facts' as const, rows: [{ label: 'وممّا كُتب في المراجعة', value: copy.noteAr.trim() }] }]
-            : []),
-          { kind: 'p', text: copy.closingAr },
-        ],
-      }),
-    })
+    const mail = decisionMailFor(action, input)
+    await sendDirectEmail(this.prisma, { to, subject: mail.subject, ...renderMail(mail.doc) })
+  }
+
+  /* ═══ رابطُ الحجز في البريد يتبع ما ضُبط في التكاملات ═══
+
+     الشاشةُ تقرأ `interviewBookingUrl` من إعداد المنصّة وتسقط إلى المضمَّن
+     حين لا بديل. والبريدُ كان يأخذ المضمَّنَ دائما — فمن بدّل التقويمَ من
+     شاشة التكاملات بدّلَه في الموقع وحدَه، وبقيت الرسائلُ تدعو إلى تقويمٍ
+     لم يعد أحدٌ يفتحه. والوجهتان يجب أن تكونا واحدة. */
+  private async bookingLink(input: { name: string; email: string; reference: string }): Promise<string> {
+    const calendly = await getCalendlyConfig(this.prisma)
+    return trainerInterviewUrl(input, calendly.bookingUrl || undefined)
   }
 
   /* ═══ دعوةٌ إلى حجزِ موعدٍ آخر — بنقرةٍ واحدة ═══
@@ -490,7 +490,7 @@ export class TrainerReviewService {
     })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
 
-    const link = trainerInterviewUrl({ name: app.fullName, email: app.email, reference: app.reference })
+    const link = await this.bookingLink({ name: app.fullName, email: app.email, reference: app.reference })
     const mail = await sendDirectEmail(this.prisma, {
       to: app.email,
       subject: `موعدٌ آخر معنا — اختر ما يناسبك (${app.reference})`,
@@ -514,6 +514,61 @@ export class TrainerReviewService {
       meta: { sentTo: app.email, emailDelivery: mail.status },
     })
     return { emailDelivery: mail.status }
+  }
+
+  /* ═══ تذكيرُ من وصل طلبُه ولم يحجز موعده ═══
+
+     الحجزُ شاشةٌ تُرى مرّةً واحدةً بعد الإرسال، ومن أغلقها ليعود «لاحقا» لا
+     يعود. فيقف طلبٌ كاملٌ بلا لقاءٍ ونحسبه متأخّرا وهو ينتظرنا.
+
+     وهي غيرُ الدعوة فوقَها: تلك تقول «نودّ أن نلتقيك مرّةً أخرى» — نصٌّ لا
+     يصلح لمن لم يلتقِنا بعد. وهذه تقول «بقيت خطوةٌ واحدة».
+
+     ═══ ولا يُذكَّر أحدٌ بما فعله ═══
+
+     الحارسان أدناه ليسا تجميلا: رسالةُ «لم تحجز» تصل من حجز أمس فتُقرأ
+     إهمالا منّا، ورسالةٌ تصل من رُدَّ طلبُه تدعوه إلى موعدٍ لن يكون — وكلاهما
+     أسوأُ من السكوت. فيُردّان قبل الإرسال لا بعده.
+
+     ووجهةُ زرِّها صفحةُ طلبه لا التقويمُ رأسا — في `trainer-decision-mail.ts`
+     مكتوبٌ لماذا. */
+  async remindToBookInterview(applicationId: string, actorId: string): Promise<{ emailDelivery: string }> {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: {
+        email: true, fullName: true, reference: true, status: true,
+        /* الملغاةُ لا تُحسب: من ألغى موعدَه لم يعد له موعد، وهو أحوجُ الناس
+           إلى التذكير. وهو القيدُ نفسُه الذي يعدّ به الطابورُ مقابلاتِه. */
+        _count: { select: { interviews: { where: { canceledAt: null } } } },
+      },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    /* المِحَكُّ من الوحدة المشتركة — هو نفسُه الذي يقرّر عرضَ الزرّ في الشاشة.
+       والسببُ يُفصَّل بعده: «لا يُذكَّر» وحدَها لا تقول للموظّف لماذا. */
+    if (!canRemindToBook({ status: app.status, liveInterviews: app._count.interviews })) {
+      throw app._count.interviews > 0
+        ? new AuthError('already_booked', 'حجز موعدَه فعلا — ولا يُذكَّر بما فعل', 409)
+        : new AuthError(
+            'not_bookable',
+            `حالةُ الطلب «${app.status}» لا يُحجَز فيها موعد — فالتذكيرُ يدعوه إلى بابٍ مغلق`,
+            409,
+          )
+    }
+
+    const mail = bookingReminderMail({
+      fullName: app.fullName,
+      reference: app.reference,
+      statusUrl: `${publicSiteUrl()}/join-trainer/status`,
+      bookingUrl: await this.bookingLink({ name: app.fullName, email: app.email, reference: app.reference }),
+    })
+    const sent = await sendDirectEmail(this.prisma, {
+      to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.interview.remind', entityType: 'trainer_application', entityId: applicationId,
+      meta: { sentTo: app.email, emailDelivery: sent.status },
+    })
+    return { emailDelivery: sent.status }
   }
 
   /** بريدُ «نحتاج منك» — يحمل السؤالَ نفسَه ورابطَ التعديل */
