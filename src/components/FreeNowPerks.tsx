@@ -14,7 +14,7 @@ import { Link } from 'react-router'
 import { ArrowLeft, Gift } from 'lucide-react'
 import { FREE_FOR_ALL_NOW, type Perk } from '@/data/pathway-perks'
 import Modal from '@/components/Modal'
-import { Card, Inset } from '@/components/ui/Surface'
+import { Inset } from '@/components/ui/Surface'
 
 function PerkBody({ perk }: { perk: Perk }) {
   return (
@@ -30,14 +30,17 @@ function PerkBody({ perk }: { perk: Perk }) {
   )
 }
 
-/** `bare`: بلا بطاقةٍ — لأنّها تُستعمل داخلَ بطاقةٍ قائمة، وبطاقةٌ في بطاقةٍ
-    ازدواجُ حدودٍ يضاعف المعالمَ على قارئ الشاشة ولا يفصل شيئا للعين. */
-export default function FreeNowPerks({ className = '', bare = false }: { className?: string; bare?: boolean }) {
+/** بلا بطاقةٍ تلفّها: موضعُها الوحيدُ داخلَ بطاقةٍ قائمة، وبطاقةٌ في بطاقةٍ
+    ازدواجُ حدودٍ يضاعف المعالمَ على قارئ الشاشة ولا يفصل شيئا للعين.
+
+    وكانت لها صيغةٌ ثانيةٌ ببطاقةٍ لِلَوح الشراء — فلمّا خرجت من اللوح (انظر
+    رأسَ `BuyPanel.tsx`) خرجت معها، فصيغةٌ بلا نداءٍ تُقرأ ولا تُختبَر. */
+export default function FreeNowPerks({ className = '' }: { className?: string }) {
   const [open, setOpen] = useState<Perk | null>(null)
   if (FREE_FOR_ALL_NOW.length === 0) return null
 
-  const inner = (
-    <>
+  return (
+    <section className={`border-t border-white/10 pt-3 ${className}`}>
       <h3 className="flex items-center gap-1.5 text-sm font-black text-gold-ink">
         <Gift className="h-4 w-4" aria-hidden="true" /> ومجّانا لك الآن — بمسارٍ أو بغيره
       </h3>
@@ -87,10 +90,6 @@ export default function FreeNowPerks({ className = '', bare = false }: { classNa
           </Inset>
         </Modal>
       )}
-    </>
+    </section>
   )
-
-  return bare
-    ? <section className={`border-t border-white/10 pt-3 ${className}`}>{inner}</section>
-    : <Card as="section" tone="warn" className={className}>{inner}</Card>
 }
