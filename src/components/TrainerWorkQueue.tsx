@@ -2,7 +2,7 @@
    الترتيب بالإلحاح لا بالنوع: الجلسة الجارية قبل التسجيل المنسي قبل التقييم. */
 
 import { Link } from "react-router";
-import { AlertTriangle, ClipboardCheck, ClipboardList, ListChecks, Radio, Video, Upload, ArrowLeft } from "lucide-react";
+import { AlertTriangle, CalendarX2, ClipboardCheck, ClipboardList, ListChecks, ListTodo, Radio, Send, Undo2, Video, Upload, ArrowLeft } from "lucide-react";
 import type { QueueItem, QueueKind } from "@/application/trainer/work-queue";
 
 import WorkHeader from "@/components/admin/WorkHeader";
@@ -13,6 +13,10 @@ const ICON: Record<QueueKind, typeof Video> = {
   grading_pending: ClipboardCheck,
   not_submitted: AlertTriangle,
   recording_missing: Upload,
+  session_rejected: CalendarX2,
+  plan_returned: Undo2,
+  plan_ready_unsent: Send,
+  plan_incomplete: ListTodo,
 };
 
 /* الإلحاح يحمله الشكل والنص؛ اللون تعزيز لا مصدرا وحيدا */
@@ -23,6 +27,12 @@ const TONE: Record<QueueKind, string> = {
   grading_pending: "border-gold/40 bg-gold/[0.06]",
   not_submitted: "border-white/10 bg-white/[0.03]",
   recording_missing: "border-white/10 bg-white/[0.03]",
+  /* الثلاثةُ الذهبيّةُ واحدةٌ في معناها: الإدارةُ تنتظرك أو خطوةٌ واحدةٌ
+     تفصلك عن التمام. والرابعُ عملٌ طويلٌ لا يُلحّ. */
+  session_rejected: "border-gold/40 bg-gold/[0.06]",
+  plan_returned: "border-gold/40 bg-gold/[0.06]",
+  plan_ready_unsent: "border-gold/40 bg-gold/[0.06]",
+  plan_incomplete: "border-white/10 bg-white/[0.03]",
 };
 
 /* «١ بندٌ» و«٢ بندان» و«٣ بنود» و«١١ بندا» — والبنودُ مختلفةُ الأجناس
