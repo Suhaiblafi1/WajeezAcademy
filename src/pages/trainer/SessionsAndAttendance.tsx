@@ -29,6 +29,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 import Button from "@/components/ui/Button";
 import { controlCls } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
+import { openableRecordings } from "@/application/learning/recording-href";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
@@ -56,7 +57,7 @@ interface OpsRow {
         actualStartAt: string | null; durationMin: number | null; participantCount: number | null;
         syncState: string | null; syncError: string | null;
       } | null;
-      recordings: { id: string; title: string; readUrl: string | null }[];
+      recordings: { id: string; title: string; readUrl: string | null; externalUrl: string | null }[];
     }[];
     enrollments: {
       id: string; status: string;
@@ -287,16 +288,22 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                   هو، فيصل المتعلّمين، ويخرج اللقاءُ من حسابنا إلى حسابه
                   بلا أن تعلم المنصّة. فذهبت.
 
-                  ورفعُ الملفّ باقٍ **مؤقّتا** بأمر صاحب المنصّة: لم يُشترَ
-                  زووم بعد، والاجتماعاتُ تُنشأ بـ`auto_recording: 'none'`،
-                  فرفعُه اليومَ هو المنتِجُ الوحيدُ لتسجيلِ لقاءٍ مباشر. ويُحذف
-                  يومَ يُشبَك زووم ويصل التسجيلُ وحدَه. */}
-              {s.recordings.length > 0 && (
+                  ورفعُ الملفّ باقٍ: الاجتماعاتُ تُنشأ منذ (١٨ سبتمبر ٢٠٢٦)
+                  بـ`auto_recording: 'cloud'` فيصل التسجيلُ وحدَه، لكنّ
+                  التسجيلَ السحابيَّ في حسابات Zoom المدفوعة وحدَها — ومن
+                  سقط عنده يبقى الرفعُ بابَه.
+
+                  ── ويُقرأ المصدران معا ──
+
+                  المرفوعُ رابطٌ موقَّعٌ (`readUrl`) والواصلُ من Zoom رابطٌ
+                  خارجيّ (`externalUrl`). وقراءةُ الأوّلِ وحدَه — كما كان —
+                  تجعل كلَّ تسجيلٍ يصل من Zoom سطرا يفتح على `#`. */}
+              {openableRecordings(s.recordings).length > 0 && (
                 <div className="mt-3 border-t border-white/8 pt-3">
                   <ul className="space-y-1 text-read">
-                    {s.recordings.map((r) => (
+                    {openableRecordings(s.recordings).map((r) => (
                       <li key={r.id}>
-                        <a href={r.readUrl ?? "#"} target="_blank" rel="noreferrer" className="text-teal-light-ink underline decoration-dotted underline-offset-4">{r.title}</a>
+                        <a href={r.href} target="_blank" rel="noreferrer" className="text-teal-light-ink underline decoration-dotted underline-offset-4">{r.title}</a>
                       </li>
                     ))}
                   </ul>

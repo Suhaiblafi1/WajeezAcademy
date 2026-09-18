@@ -1591,7 +1591,7 @@ export class CohortService {
     })
     await recordAudit(this.prisma, {
       actorId, action: 'zoom.create_api', entityType: 'cohort_session', entityId: sessionId,
-      meta: { meetingId: meeting.meetingId, durationMinutes },
+      meta: { meetingId: meeting.meetingId, durationMinutes, autoRecording: meeting.autoRecording },
     })
     /* ورابطٌ لكلّ مسجَّلٍ بعد الإنشاء — لا يُسقط الجلسةَ إن تعذّر */
     if (meeting.meetingId) await this.linkRegistrants(sessionId, meeting.meetingId, config)
