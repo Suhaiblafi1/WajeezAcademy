@@ -65,6 +65,8 @@ export interface ZoomMeetingResult {
   /** رابطُ المضيف — لا يُعطى لمتعلّم أبدا، فهو يبدأ الاجتماعَ بصلاحيّة المضيف */
   startUrl: string
   passcode: string | null
+  /** أقَبِل الحسابُ التسجيلَ السحابيّ؟ — يُكتب في الأثر، فلا يُسأل بعد شهرٍ لمَ لا تسجيلَ لهذا اللقاء */
+  autoRecording: boolean
 }
 
 /* ── الإعداد: البيئةُ تغلب القاعدةَ، كما في الدفع والبريد ── */
@@ -171,7 +173,24 @@ export interface CreateMeetingInput {
 export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput): Promise<ZoomMeetingResult> {
   const token = await zoomToken(c)
   const host = encodeURIComponent(c.hostEmail || 'me')
-  const res = await fetch(`${ZOOM_API_BASE_URL}/users/${host}/meetings`, {
+
+  /* ══════════ ولمَ الإنشاءُ محاولتان لا واحدة ══════════
+
+     `auto_recording: 'cloud'` إعدادٌ **لا تملكه كلُّ الحسابات**: التسجيلُ
+     السحابيُّ في المدفوع وحدَه. وما يفعله Zoom بإعدادٍ لا يملكه الحسابُ ليس
+     مضمونا — قد يتجاهله، وقد يردَّ ٤٠٠.
+
+     والردُّ ٤٠٠ هنا لا يُكلّف تسجيلا: مسارُ الاعتماد عندنا يقرأ سقوطَ
+     الإنشاءِ فيكتب `zoom.create_failed` **ويُلغي الجلسة**. فتُلغى حصّةٌ
+     مجدوَلةٌ يحضرها ناسٌ لأنّ تفضيلَ تسجيلٍ لم يُقبَل — عقوبةٌ لا تناسب
+     ذنبَها.
+
+     فتُعاد المحاولةُ مرّةً واحدةً بلا الإعداد: يبقى اللقاءُ، ويسقط تسجيلُه
+     وحدَه، ويُكتب سقوطُه في أثرِ الإنشاء (`autoRecording: false`) — فلا
+     يُسأل بعد شهرٍ «لمَ لا تسجيلَ لهذا اللقاء» ولا جواب. وما كان ٤٠٠
+     لسببٍ آخرَ (موعدٌ غيرُ صالح، مضيفٌ لا وجودَ له) يعود ٤٠٠ في الثانية
+     كذلك، فيُرمى برسالته كما كان. */
+  const attempt = (autoRecording: boolean) => fetch(`${ZOOM_API_BASE_URL}/users/${host}/meetings`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     body: JSON.stringify({
@@ -190,7 +209,15 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
         /* والرمزُ مطلوب: الرابطُ وحدَه يُعاد نشرُه، والرمزُ يجعل النشرَ ناقصا */
         meeting_authentication: false,
         mute_upon_entry: true,
-        auto_recording: 'none',
+        /* ── والتسجيلُ إلى السحابة: قرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦) ──
+
+           كان `'none'`، فكان تسجيلُ اللقاء المباشر يُنتَج بيدٍ واحدةٍ: مدرّبٌ
+           يسجّل بنفسه ثمّ يرفع ملفّا. ومن نسي لم يبقَ من لقائه شيء — ومن
+           غاب عن موعده لا يجد بديلا. والطابورُ يعرف هذا النقصَ ويصرخ به
+           (`recording_missing`) ولا يملك سدَّه.
+
+           فصار يُطلب من Zoom نفسِه، ويصل بـ`recording.completed` بلا يد. */
+        auto_recording: autoRecording ? 'cloud' : 'none',
         /* ── التسجيلُ المسبق: صفرٌ = يُقبل تلقائيّا ──
 
            وهو شرطُ رابطٍ لكلّ متعلّم، والرابطُ لكلّ متعلّمٍ شرطُ حضورٍ
@@ -207,6 +234,14 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
       },
     }),
   })
+
+  let autoRecording = true
+  let res = await attempt(true)
+  if (res.status === 400) {
+    autoRecording = false
+    res = await attempt(false)
+  }
+
   if (!res.ok) {
     const detail = res.status === 401 || res.status === 403
       ? 'رفض Zoom الطلب — تأكّد أنّ التطبيق يملك صلاحيّة `meeting:write:admin`'
@@ -224,6 +259,7 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
     joinUrl: j.join_url,
     startUrl: j.start_url ?? j.join_url,
     passcode: j.password ?? null,
+    autoRecording,
   }
 }
 

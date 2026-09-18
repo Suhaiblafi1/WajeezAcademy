@@ -28,6 +28,7 @@ import SwitchCohort from "@/components/SwitchCohort";
 import CourseCertificate from "@/components/journey/CourseCertificate";
 import SessionEmbed from "@/components/journey/SessionEmbed";
 import { readUserName } from "@/services/auth";
+import { openableRecordings } from "@/application/learning/recording-href";
 import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks } from "@/application/content/module-checks";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
@@ -99,7 +100,9 @@ export default function StageWork({
   const nextModuleIndex = modules.findIndex((m) => !doneModules.has(m.id));
   const percent = detail.courseProgress?.percent ?? stage.percent ?? 0;
   const trainers = detail.cohort.trainers.map((t) => t.profile.application.fullName);
-  const recordings = detail.cohort.sessions.flatMap((s) => s.recordings);
+  /* وما لا رابطَ له يسقط هنا: التسجيلُ يصل من بابَين — مرفوعٌ عندنا أو
+     واصلٌ من Zoom — وقراءةُ أحدِهما وحدَها تُظهر سطرا يفتح على `#`. */
+  const recordings = openableRecordings(detail.cohort.sessions.flatMap((s) => s.recordings));
   const references = useMemo(() => referencesByIds(full?.referenceIds ?? []), [full?.referenceIds]);
   const planResources = detail.cohort.trainerPlan?.resources ?? [];
   const hasResources =
@@ -279,7 +282,7 @@ export default function StageWork({
                   {recordings.map((rec) => (
                     <a
                       key={rec.id}
-                      href={rec.readUrl ?? "#"}
+                      href={rec.href}
                       target="_blank"
                       rel="noreferrer"
                       className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"

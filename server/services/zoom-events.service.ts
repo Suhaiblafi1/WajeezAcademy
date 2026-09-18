@@ -12,7 +12,19 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { fetchZoomParticipants, getZoomConfig, zoomReady } from './zoom.service'
+import { pickRecording } from '../../src/application/learning/zoom-recording'
 import { recordAudit } from './audit'
+
+/** ملفٌّ واحدٌ من تسجيلٍ سحابيّ — التسجيلُ الواحدُ عدّةُ ملفّات */
+export interface ZoomRecordingFile {
+  file_type?: string
+  recording_type?: string
+  status?: string
+  recording_start?: string
+  recording_end?: string
+  play_url?: string
+  download_url?: string
+}
 
 export interface ZoomEventObject {
   id?: number | string
@@ -21,6 +33,10 @@ export interface ZoomEventObject {
   end_time?: string
   duration?: number
   participant?: { user_name?: string; email?: string; join_time?: string; leave_time?: string }
+  /* ما يصل مع `recording.completed` وحدَه */
+  share_url?: string
+  recording_play_passcode?: string
+  recording_files?: ZoomRecordingFile[]
 }
 
 const asDate = (v?: string): Date | null => {
@@ -87,9 +103,78 @@ export class ZoomEventService {
         return true
       }
 
+      case 'recording.completed':
+        return this.saveRecording(meeting.sessionId, object)
+
       default:
         return false
     }
+  }
+
+  /* ══════════ التسجيلُ يصل وحدَه ══════════
+
+     قرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦): يُشغَّل التسجيلُ السحابيّ. فصار
+     الاجتماعُ يُنشأ بـ`auto_recording: 'cloud'`، ويبلّغ Zoom بهذا الحدثِ حين
+     يجهز التسجيل — فيُكتب صفُّ `Recording` بلا يدٍ ترفع ملفّا.
+
+     ── ورابطٌ لا ملفّ ──
+
+     التسجيلُ يبقى عند Zoom ولا يُنزَّل إلينا: ملفُّ لقاءٍ بساعتَين مئاتُ
+     الميغابايت، وتنزيلُه في مسارِ webhook يُطيل ردًّا يجب أن يكون سريعا،
+     ويملأ تخزينَنا بما هو محفوظٌ أصلا. فيُكتب `externalUrl` — وهو عمودٌ
+     قائمٌ في `Recording` منذ أوّل يوم.
+
+     و`sizeBytes` **لا يُكتب**: عمودُه `Int` (أربعةُ بايتات)، وتسجيلُ ثلاثِ
+     ساعاتٍ عالي الدقّة يتجاوز سقفَه — فتسقط الكتابةُ كلُّها ويضيع التسجيلُ
+     لأجل رقمٍ لا يقرؤه أحد. وحجمُ ملفٍّ ليس عندنا ليس خبرَنا.
+
+     ── والرمزُ في الرابط: ثمنٌ يُقال ولا يُخبَّأ ──
+
+     حساباتُ Zoom تشترط بحسب إعدادها رمزا لفتح التسجيل المشترَك، ويرسله معه
+     (`recording_play_passcode`). ورابطٌ بلا رمزِه يفتح صفحةً تسأل عمّا لا
+     يملكه المتعلّم — وهو عطبٌ صامتٌ من صنف: كلُّ شيءٍ يبدو واصلا ولا شيءَ
+     يعمل. فيُلحَق الرمزُ بالرابط.
+
+     وثمنُه أنّ الرابطَ يصير حاملا: من نُسخ إليه شاهد. وهو دون سترِ الروابط
+     الموقّعة التي تنتهي صلاحيّتها، وفوق تسجيلٍ لا يُفتح أصلا. والبابُ الذي
+     يُعرض فيه الرابطُ محروسٌ بالالتحاق كما كان.
+
+     ── ولا يتكرّر الصفُّ على إعادة إرسال ──
+
+     Zoom يُعيد إرسالَ ما لم يُردَّ عليه سريعا، والرابطُ ثابتٌ لتسجيلٍ بعينه.
+     فيُبحث عنه قبل الكتابة. */
+  private async saveRecording(sessionId: string, object: ZoomEventObject): Promise<boolean> {
+    /* الانتقاءُ قرارٌ خالصٌ يسكن في `src/application/learning/zoom-recording`
+       ويُجرَّب نقضُه محلّيّا — وما هنا كتابتُه وحدَها */
+    const picked = pickRecording(object)
+    if (!picked) return false
+
+    const already = await this.prisma.recording.findFirst({
+      where: { sessionId, externalUrl: picked.url },
+    })
+    if (already) return true
+
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      select: { title: true, moduleId: true },
+    })
+    if (!session) return false
+
+    const recording = await this.prisma.recording.create({
+      data: {
+        sessionId,
+        moduleId: session.moduleId,
+        title: `تسجيلُ «${session.title}»`,
+        externalUrl: picked.url,
+        mime: 'video/mp4',
+        durationSec: picked.durationSec,
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'zoom.recording_ready', entityType: 'cohort_session', entityId: sessionId,
+      meta: { recordingId: recording.id, durationSec: picked.durationSec, files: (object.recording_files ?? []).length },
+    })
+    return true
   }
 
   /* ══════════ من الدقائق إلى الحكم ══════════

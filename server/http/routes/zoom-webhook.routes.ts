@@ -31,19 +31,16 @@ import type { FastifyInstance } from 'fastify'
 import type { PrismaClient } from '@prisma/client'
 import { getZoomConfig, verifyZoomWebhook, zoomUrlValidationReply } from '../../services/zoom.service'
 import { ZoomEventService } from '../../services/zoom-events.service'
+import type { ZoomEventObject } from '../../services/zoom-events.service'
 
+/* وشكلُ الجسم يُستورَد ولا يُنسَخ: نسخةٌ هنا وأصلٌ هناك يفترقان بأوّل حقلٍ
+   يُضاف — وهو بعينه العطبُ المكتوبُ في رأس `zoom.service.ts`: «مصدران
+   لحقيقةٍ واحدة». فما تقرؤه الخدمةُ هو ما يعلنه هذا المسلك. */
 interface ZoomEvent {
   event?: string
   payload?: {
     plainToken?: string
-    object?: {
-      id?: number | string
-      uuid?: string
-      start_time?: string
-      end_time?: string
-      duration?: number
-      participant?: { user_name?: string; email?: string; join_time?: string; leave_time?: string }
-    }
+    object?: ZoomEventObject
   }
 }
 

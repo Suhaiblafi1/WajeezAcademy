@@ -20,7 +20,7 @@ export interface CohortSession {
   endsAt: string | null
   status: string
   zoom: { joinUrl: string; learnerUrl: string | null; meetingId: string | null; passcode: string | null } | null
-  recordings: { id: string; title: string; durationSec: number | null; readUrl: string | null }[]
+  recordings: { id: string; title: string; durationSec: number | null; readUrl: string | null; externalUrl: string | null }[]
 }
 
 export interface CohortMaterial {
