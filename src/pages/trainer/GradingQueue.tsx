@@ -18,7 +18,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { ClipboardCheck, MessageSquarePlus, RefreshCw, ServerOff, Star } from "lucide-react";
+import { ClipboardCheck, MessageSquarePlus, Paperclip, RefreshCw, ServerOff, Star } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -43,11 +43,18 @@ const SUBMISSION_STATUS: Record<string, string> = {
   resubmit_requested: "طُلبت إعادته", accepted: "مقبول", rejected: "مرفوض",
 };
 
+interface RubricCriterion { id: string; title: string; maxScore: number }
 interface QueueItem {
   id: string; status: string; textAnswer: string | null; submittedAt: string; reviewNote: string | null;
-  assessment: { title: string; maxScore: number; cohort: { title: string } };
-  enrollment: { userId: string };
-  grades: { score: string; maxScore: string }[];
+  /** بابُ ملفِّ التسليم — محروسٌ بالجلسة، ولا يخرج مفتاحُ التخزين */
+  fileUrl: string | null;
+  assessment: {
+    title: string; maxScore: number; cohort: { title: string };
+    /* المسطرةُ إن كانت — وأكثرُ التكاليف بلا مسطرة، فالحقلُ فارغٌ لا ناقص */
+    rubric: { id: string; title: string; criteria: RubricCriterion[] } | null;
+  };
+  enrollment: { userId: string; user: { displayName: string } | null };
+  grades: { score: string; maxScore: string; rubricScores: { criterionId: string; score: number }[] | null }[];
   feedback: { body: string }[];
 }
 
@@ -62,6 +69,16 @@ export default function GradingQueue() {
   const [reviewNote, setReviewNote] = useState<Record<string, string>>({});
   const [gradeForm, setGradeForm] = useState<Record<string, string>>({});
   const [feedbackForm, setFeedbackForm] = useState<Record<string, string>>({});
+  /* ═══ درجاتُ المسطرة — عمودٌ لكلّ معيار ═══
+
+     مسلكُ الدرجة يقبل `rubricScores` منذ زمنٍ ولا يرسلها أحد، وأعمدةُ
+     المسطرة قائمةٌ في القاعدة، ومساطرُ مؤلَّفةٌ ترقد بلا قارئ. فالحكمُ كان
+     رقما واحدا بلا سببٍ مكتوب — وهو عينُ ما تبيعه هذه المنصّة: «سيَنظر
+     مختصٌّ فيما أنتجتَه أنت، ويقول لك الحقيقةَ عنه».
+
+     والمفتاحُ `${submissionId}:${criterionId}` — تسليمٌ واحدٌ قد يُفتح مع
+     غيره في الطابور نفسِه، ومعرّفُ المعيار وحدَه يخلط بينها. */
+  const [rubricForm, setRubricForm] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setOffline(null);
@@ -96,11 +113,34 @@ export default function GradingQueue() {
     act(() => apiPost(`/api/trainer/submissions/${submissionId}/review`, { action, note: reviewNote[submissionId] || undefined }),
       action === "accept" ? "قُبل التسليم" : action === "reject" ? "رُفض التسليم مع السبب" : action === "request_resubmit" ? "طُلبت إعادة التسليم" : "بدأت المراجعة");
 
-  const grade = (submissionId: string, maxScore: number) =>
+  /** درجاتُ معايير تسليمٍ كما هي في النموذج الآن — والفارغُ صفرٌ صريح */
+  const rubricOf = (q: QueueItem) =>
+    (q.assessment.rubric?.criteria ?? []).map((c) => ({
+      criterionId: c.id,
+      score: Number(rubricForm[`${q.id}:${c.id}`] ?? "") || 0,
+    }));
+
+  /* ═══ ومجموعُ المعايير هو الدرجة — لا رقمٌ يُكتب إلى جانبها ═══
+     رقمان لشيءٍ واحدٍ يفترقان، ويُقرأ أحدُهما حكما والآخرُ سببا لا يجمعه. */
+  const rubricTotal = (q: QueueItem) => rubricOf(q).reduce((n, r) => n + r.score, 0);
+  const rubricMax = (q: QueueItem) =>
+    (q.assessment.rubric?.criteria ?? []).reduce((n, c) => n + c.maxScore, 0);
+
+  const grade = (q: QueueItem) =>
     act(async () => {
-      const score = Number(gradeForm[submissionId]);
-      await apiPost("/api/trainer/grade", { submissionId, score, maxScore });
-      setGradeForm((prev) => ({ ...prev, [submissionId]: "" }));
+      const hasRubric = (q.assessment.rubric?.criteria.length ?? 0) > 0;
+      const score = hasRubric ? rubricTotal(q) : Number(gradeForm[q.id]);
+      const maxScore = hasRubric ? rubricMax(q) : q.assessment.maxScore;
+      await apiPost("/api/trainer/grade", {
+        submissionId: q.id, score, maxScore,
+        ...(hasRubric ? { rubricScores: rubricOf(q) } : {}),
+      });
+      setGradeForm((prev) => ({ ...prev, [q.id]: "" }));
+      setRubricForm((prev) => {
+        const next = { ...prev };
+        for (const c of q.assessment.rubric?.criteria ?? []) delete next[`${q.id}:${c.id}`];
+        return next;
+      });
     }, "سُجلت الدرجة — وأي تعديل لاحق سيوثق في السجل");
 
   const sendFeedback = (submissionId: string) =>
@@ -187,9 +227,12 @@ export default function GradingQueue() {
             <Panel key={q.id} id={`submission-${q.id}`} tabIndex={-1} className="outline-none">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">
-                  <p className="font-black">{q.assessment.title}</p>
+                  {/* ═══ الاسمُ أوّلا — والحكمُ على إنسانٍ لا على صفّ ═══
+                      كان يصل `userId` ويُهمَل، فيصحّح المدرّبُ عملا لا يعرف
+                      صاحبَه. والفارغُ يُقال فراغا لا يُختلق له اسم. */}
+                  <p className="font-black">{q.enrollment.user?.displayName ?? "متعلّمٌ بلا اسمٍ مسجَّل"}</p>
                   <p className="mt-0.5 text-read text-muted-foreground">
-                    {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
+                    {q.assessment.title} · {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
                   </p>
                 </div>
                 {q.grades[0] && (
@@ -200,6 +243,19 @@ export default function GradingQueue() {
               </div>
               {q.textAnswer && (
                 <p className="mt-3 max-h-32 overflow-y-auto rounded-2xl bg-paper/30 p-4 text-sm leading-7 text-foreground">{q.textAnswer}</p>
+              )}
+              {/* ═══ ومُخرَجُه يُفتَح ═══
+                  كان مفتاحُ التخزين يصل الشاشةَ خاما ولا مسارَ يفتحه: مفتاحُ
+                  ملفِّ متعلّمٍ في متنٍ يُقرأ من أدوات المتصفّح، ومُخرَجٌ لا
+                  سبيلَ إلى رؤيته. فصار له بابٌ محروسٌ بالجلسة. */}
+              {q.fileUrl && (
+                <a href={q.fileUrl} target="_blank" rel="noreferrer"
+                  className="mt-3 inline-flex min-h-11 items-center gap-2 text-read font-bold text-teal-light-ink hover:text-foreground">
+                  <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" /> افتح ملفَّ التسليم
+                </a>
+              )}
+              {!q.fileUrl && !q.textAnswer && (
+                <p className="mt-3 text-read text-muted-foreground">لا نصَّ ولا ملفَّ في هذا التسليم.</p>
               )}
               <textarea
                 value={reviewNote[q.id] ?? ""}
@@ -236,7 +292,7 @@ export default function GradingQueue() {
                     الدرجة»، ٤٠٩). وكان الحقلُ والزرُّ مفعَّلَين على
                     `submitted` كذلك، فيكتب المدرّبُ الرقمَ ويضغط ويُردّ.
                     والحالةُ معروفةٌ في الشاشة، فالشرطُ يُقال قبل الضغط. */}
-                {["under_review", "submitted"].includes(q.status) && (
+                {["under_review", "submitted"].includes(q.status) && (q.assessment.rubric?.criteria.length ?? 0) === 0 && (
                   <span className="flex items-center gap-1.5">
                     <Star className="h-3.5 w-3.5 text-gold-ink" />
                     <input type="number" min={0} max={q.assessment.maxScore} value={gradeForm[q.id] ?? ""}
@@ -246,7 +302,7 @@ export default function GradingQueue() {
                       aria-label={`درجةُ «${q.assessment.title}» من ${q.assessment.maxScore}`}
                       className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none disabled:cursor-not-allowed disabled:opacity-45" />
                     <Button size="sm" disabled={busy || q.status !== "under_review" || !(gradeForm[q.id] ?? "").trim()}
-                      onClick={() => void grade(q.id, q.assessment.maxScore)}>
+                      onClick={() => void grade(q)}>
                       سجّل الدرجة
                     </Button>
                     {q.status !== "under_review" && (
@@ -255,6 +311,47 @@ export default function GradingQueue() {
                   </span>
                 )}
               </div>
+              {/* ═══ المسطرةُ — درجةٌ بسببٍ مكتوب ═══
+
+                  «كلُّ وحدةٍ تنتهي بمُخرَجٍ يقرؤه إنسانٌ مقابلَ مسطرةٍ
+                  مكتوبة» — والوعدُ: «سيَنظر مختصٌّ فيما أنتجتَه أنت، ويقول
+                  لك الحقيقةَ عنه». وكانت المسطرةُ تُؤلَّف ولا تُقرأ، فالحكمُ
+                  رقمٌ واحدٌ بلا تفصيل.
+
+                  والمجموعُ يُحسب من المعايير ولا يُكتب إلى جانبها: رقمان
+                  لشيءٍ واحدٍ يفترقان. */}
+              {["under_review", "submitted"].includes(q.status) && (q.assessment.rubric?.criteria.length ?? 0) > 0 && (
+                <div className="mt-3 border-t border-white/8 pt-3">
+                  <p className="text-read font-black text-foreground">{q.assessment.rubric!.title}</p>
+                  <ul className="mt-2 grid gap-2">
+                    {q.assessment.rubric!.criteria.map((c) => (
+                      <li key={c.id} className="flex flex-wrap items-center gap-2">
+                        <span className="min-w-0 flex-1 text-read text-foreground">{c.title}</span>
+                        <input type="number" min={0} max={c.maxScore}
+                          value={rubricForm[`${q.id}:${c.id}`] ?? ""}
+                          disabled={q.status !== "under_review"}
+                          onChange={(e) => setRubricForm((prev) => ({ ...prev, [`${q.id}:${c.id}`]: e.target.value }))}
+                          placeholder={`من ${c.maxScore}`}
+                          aria-label={`درجةُ «${c.title}» من ${c.maxScore}`}
+                          className="w-20 shrink-0 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none disabled:cursor-not-allowed disabled:opacity-45" />
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="text-read font-black text-teal-light-ink">
+                      المجموع: {rubricTotal(q)} من {rubricMax(q)}
+                    </span>
+                    <Button size="sm" disabled={busy || q.status !== "under_review"}
+                      onClick={() => void grade(q)}>
+                      سجّل الدرجة
+                    </Button>
+                    {q.status !== "under_review" && (
+                      <span className="text-fine text-muted-foreground">اضغط «ابدأ المراجعة» أوّلا</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="mt-3 flex gap-2 border-t border-white/8 pt-3">
                 <input value={feedbackForm[q.id] ?? ""}
                   onChange={(e) => setFeedbackForm((prev) => ({ ...prev, [q.id]: e.target.value }))}

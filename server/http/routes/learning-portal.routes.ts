@@ -26,7 +26,8 @@ import { ReferralService } from '../../services/referral.service'
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
 import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
 import { AuthError } from '../../services/auth.service'
-import { requirePermission } from '../auth-plugin'
+import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
+import { requireAuth, requirePermission } from '../auth-plugin'
 
 /* يحوّل محتوى شعبة خاما إلى نسخة آمنة للعرض: روابط موقعة بدل مفاتيح التخزين */
 function signCohortContent<T extends {
@@ -847,6 +848,30 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     preHandler: requirePermission('trainer.cohort.operate'),
     schema: { tags: ['trainer-ops'], summary: 'طابور المراجعة — تسليمات شعبي المعلقة فقط' },
   }, async (req) => assessments.trainerQueue(req.auth!.userId))
+
+  /* ═══ ملفُّ التسليم — بابٌ محروسٌ بدل مفتاحٍ يتسرّب ═══
+
+     كان الطابورُ يُرجع `storageKey` خاما إلى شاشة المدرّب ولا مسارَ يفتحه:
+     مفتاحُ ملفِّ متعلّمٍ في متنٍ يُقرأ من أدوات المتصفّح، ومُخرَجٌ لا سبيلَ
+     إلى فتحه أصلا. فصار للمفتاح بابُه، وحارسُه الجلسةُ لا توقيعٌ في العنوان
+     — كما قُرِّر لملفّات الشعبة في `cohort-file.routes.ts`: قارئُه داخلٌ
+     بحسابه، فلا رابطَ يُنسخ في محادثةٍ ويُفتح بعد شهرٍ بلا حساب. */
+  app.get('/api/v1/submission-files/:storageKey', {
+    preHandler: requireAuth,
+    schema: { tags: ['trainer-ops'], summary: 'قراءةُ ملفِّ تسليم — لصاحبه ولمدرّب شعبته' },
+  }, async (req, reply) => {
+    const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
+    assertSafeKey(storageKey)
+    await assessments.assertCanReadSubmissionFile(storageKey, req.auth!)
+    const content = await getObject(storageKey)
+    if (!content) {
+      return reply.status(404).send({ error: { code: 'not_uploaded', message_ar: 'الملف لم يرفع بعد' } })
+    }
+    const meta = await getObjectMeta(storageKey)
+    reply.header('content-type', meta?.mime || 'application/octet-stream')
+    reply.header('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(meta?.originalName || storageKey)}`)
+    return reply.send(content)
+  })
 
   app.post('/api/trainer/submissions/:id/review', {
     preHandler: requirePermission('trainer.cohort.operate'),
