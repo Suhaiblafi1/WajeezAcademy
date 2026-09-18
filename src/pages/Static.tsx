@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle2, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { staticPageBySlug, faqs } from "@/data/siteContent";
 import SeoHead from "@/components/SeoHead";
+import { publicPageByPath, seoFor } from "@/application/site/public-pages";
 import ThemeToggle from "@/components/ThemeToggle";
 
 import { Panel, Card } from "@/components/ui/Surface";
@@ -38,6 +39,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 /* ─── صفحة محتوى عامة (من نحن، الخصوصية، الشروط، الاسترداد) ─── */
 function StaticContent({ slug }: { slug: string }) {
   const page = staticPageBySlug(slug);
+  const staticSeo = publicPageByPath(`/p/${slug}`);
   if (!page) {
     return (
       <Shell>
@@ -47,7 +49,14 @@ function StaticContent({ slug }: { slug: string }) {
   }
   return (
     <Shell>
-      <SeoHead title={page.title} description={page.intro} path={`/p/${page.slug}`} />
+      {/* الوسومُ من السجلّ لا من المحتوى: عنوانُ «من نحن» يحمل اسمَ الموقع
+          سلفا، فتذييلُه ثانيةً يكرّره في لسان المتصفّح وفي نتيجة البحث.
+          والسقوطُ على المحتوى يبقى لصفحةٍ تُضاف ولمّا تُسجَّل بعد. */}
+      <SeoHead
+        title={staticSeo?.title ?? page.title}
+        description={staticSeo?.description ?? page.intro}
+        path={`/p/${page.slug}`}
+      />
       <h1 className="text-3xl font-black leading-snug md:text-4xl">{page.title}</h1>
       <p className="mt-4 text-lg leading-loose text-muted-foreground">{page.intro}</p>
       <div className="mt-10 space-y-8">
@@ -99,7 +108,7 @@ function FaqPage() {
   const [open, setOpen] = useState<number | null>(0);
   return (
     <Shell>
-      <SeoHead title="الأسئلة الشائعة" description="إجابات صريحة عن أكثر ما يسألنا عنه الزوار: التشخيص، الأسعار، الشهادات، والاسترداد." path="/p/faq" />
+      <SeoHead {...seoFor('/p/faq')} />
       <h1 className="text-3xl font-black leading-snug md:text-4xl">الأسئلة الشائعة</h1>
       <p className="mt-4 text-lg leading-loose text-muted-foreground">جمعنا ما يسألنا عنه الزوار فعلا — وأجبنا بلا مجاملة.</p>
       <div className="mt-10 space-y-3">

@@ -7,6 +7,7 @@ import {
 import { CONTACT } from '@/data/stories'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
+import { seoFor } from '@/application/site/public-pages'
 import { track } from '@/services/analytics'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
 
@@ -114,11 +115,7 @@ export default function Contact() {
 
   return (
     <SiteShell>
-      <SeoHead
-        title="تواصل معنا"
-        description="سؤال عن مسار؟ عرض تدريبي لشركتك أو جهتك؟ حدد من تكون في النموذج — فريق أكاديمية وجيز يقرأ كل رسالة بنفسه ويرد خلال يوم عمل."
-        path="/contact"
-      />
+      <SeoHead {...seoFor('/contact')} />
 
       <div className="grid gap-10 lg:grid-cols-5">
         {/* بيانات التواصل */}

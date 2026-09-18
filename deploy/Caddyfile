@@ -60,11 +60,28 @@
 		# الأصول مُبصمة بالمحتوى (index-Xq-pZg9a.js) فتُخزَّن للأبد بأمان
 		@hashed path_regexp \.[0-9a-zA-Z_-]{8,}\.(js|css|woff2|png|jpg|svg)$
 		header @hashed Cache-Control "public, max-age=31536000, immutable"
-		# وindex.html لا يُخزَّن أبدا: هو الذي يدلّ على الأصول الجديدة
-		@html path /index.html /
+		# وصفحاتُ HTML لا تُخزَّن أبدا: هي التي تدلّ على الأصول الجديدة.
+		# والمقياسُ «مسارٌ بلا امتداد» لا قائمةُ مساراتٍ تُكتب بيد — فكلُّ صفحةٍ
+		# مُهيَّأة (/pathways و/p/faq…) تُطلب بلا امتداد، والجذرُ كذلك.
+		@html path /index.html
+		@page not path_regexp \.[a-zA-Z0-9]+$
 		header @html Cache-Control "no-cache"
+		header @page Cache-Control "no-cache"
 
-		try_files {path} /index.html
+		# ── ولماذا `{path}.html` في الوسط ──
+		#
+		# كان السطرُ `try_files {path} /index.html` — فيردّ `index.html` نفسَه
+		# لكلّ مسار. وذلك الملفُّ يحمل `canonical` الرئيسة، فكانت كلُّ صفحةٍ
+		# تقول للزاحف «أصلي هو الرئيسة»؛ فطُويت صفحاتُ الموقع كلُّها في عنوانٍ
+		# واحد ولم يظهر منها شيءٌ في قوقل. وهو العطبُ الذي وُلد لأجله
+		# `scripts/prerender-seo.ts`: لكلّ صفحةٍ ملفُّها بوسومها.
+		#
+		# وملفٌّ `.html` لا مجلّدٌ بقصد: مجلّدُ `pathways/index.html` يجعل
+		# الخادمَ يحوّل `/pathways` إلى `/pathways/` — عنوانا ثانيا بشرطةٍ
+		# مائلةٍ يخالف `canonical` المُعلَن. والامتدادُ يتفادى التحويلَ كلَّه.
+		#
+		# والحارس: src/tests/seo/serving-prerendered.test.ts
+		try_files {path} {path}.html /index.html
 		file_server
 	}
 

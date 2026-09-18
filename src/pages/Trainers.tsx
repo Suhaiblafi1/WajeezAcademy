@@ -8,6 +8,7 @@ import { pathwayById } from '@/data/pathways'
 import { apiGet } from '@/services/api'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
+import { seoFor } from '@/application/site/public-pages'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
 
 interface PublicTrainer {
@@ -166,11 +167,7 @@ export default function Trainers() {
 
   return (
     <SiteShell>
-      <SeoHead
-        title="الفريق التدريبي"
-        description="تخصصات الفريق التدريبي في أكاديمية وجيز — ويُعيَّن مدرّبُ كلّ شعبةٍ قريبا ويُعلن اسمُه على بطاقتها."
-        path="/trainers"
-      />
+      <SeoHead {...seoFor('/trainers')} />
 
       <div className="text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-teal/30 bg-teal/10 px-4 py-1.5 text-sm text-teal-light-ink">

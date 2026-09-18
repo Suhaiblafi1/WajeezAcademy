@@ -11,6 +11,7 @@ import { favoriteKey, favoriteKeySet } from '@/application/catalog/favorites'
 import SiteShell from '@/components/SiteShell'
 import TrainerPathsShelf from '@/components/TrainerPathsShelf'
 import SeoHead from '@/components/SeoHead'
+import { seoFor } from '@/application/site/public-pages'
 import CourseTitle from "@/components/CourseTitle";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { track } from '@/services/analytics'
@@ -165,15 +166,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
 
   return (
     <SiteShell>
-      <SeoHead
-        title={isPathways ? 'كل المسارات' : 'كل الدورات'}
-        description={
-          isPathways
-            ? 'تصفح كتالوج مسارات أكاديمية وجيز كاملا — ابحث وصفِّ حسب المجال والمدة.'
-            : 'تصفح دورات أكاديمية وجيز المنفردة — ابحث وصفِّ حسب المجال والمدة.'
-        }
-        path={isPathways ? '/pathways' : '/courses'}
-      />
+      <SeoHead {...seoFor(isPathways ? '/pathways' : '/courses')} />
 
       {/* الترويسة */}
       <div className="text-center">
