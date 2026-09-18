@@ -20,6 +20,7 @@ import { CONTACT } from '@/data/stories'
 import { track } from '@/services/analytics'
 import { usePublishedContent } from '@/services/public-content'
 import SeoHead from '@/components/SeoHead'
+import { seoFor } from '@/application/site/public-pages'
 import ThemeToggle from '@/components/ThemeToggle'
 import { homePathForRoles, readRoles } from '@/services/auth'
 import Modal from '@/components/Modal'
@@ -1301,11 +1302,7 @@ export default function Home() {
   }, [navType])
   return (
     <div ref={topRef} dir="rtl" className="min-h-screen bg-background text-foreground">
-      <SeoHead
-        title="مسارك يبدأ من فهمك"
-        description="أكاديمية وجيز — تشخيص تعليمي ذكي يفهم هدفك وواقعك، ثم يرسم لك مسارا واحدا مفسّرا بمدربين حقيقيين ومخرج عملي يثبت جاهزيتك."
-        path="/"
-      />
+      <SeoHead {...seoFor('/')} />
       <Nav />
       <div>
         <Hero />

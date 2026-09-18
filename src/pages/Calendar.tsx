@@ -22,6 +22,7 @@ import { Link } from "react-router";
 import { CalendarDays, Loader2, Users } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
+import { seoFor } from "@/application/site/public-pages";
 import EmptyState from "@/components/EmptyState";
 import { apiGet } from "@/services/api";
 import { fmtDateAr, daysLabelAr } from "@/utils/format";
@@ -64,11 +65,7 @@ export default function CalendarPage() {
 
   return (
     <SiteShell>
-      <SeoHead
-        title="تقويم الفصل"
-        description="ما يُفتح هذا الفصل من دورات أكاديمية وجيز — بأشهره الثلاثة ومواعيد بدايته ونافذة التسجيل."
-        path="/calendar"
-      />
+      <SeoHead {...seoFor('/calendar')} />
 
       {data === undefined ? (
         <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>

@@ -9,6 +9,7 @@ import {
 } from "@/components/FormKit";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
+import { seoFor } from "@/application/site/public-pages";
 import { apiPost, apiGet, ApiError } from "@/services/api";
 import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
 import { countAr } from "@/application/text/count-ar";
@@ -876,23 +877,19 @@ export default function JoinTrainer() {
 
   return (
     <SiteShell>
-      <SeoHead
-        title="انضم مدربا"
-        description="درّب في أكاديمية وجيز — عبّئ طلب الانضمام الأولي وسيراجعه فريقنا الأكاديمي."
-        path="/join-trainer"
-      />
+      <SeoHead {...seoFor('/join-trainer')} />
       <div className="mx-auto max-w-3xl">
         <span className="kicker">انضم إلى نخبة المدربين</span>
         <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>
         <p className="mt-4 max-w-2xl text-base leading-8 text-foreground">
-          مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون واجبات، ويرافقون طلابا، ويقيمون مشاريع تخرج.
+          مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون عملا بأيديهم، ويرافقون متعلّمين حتى إتقان المهارة، ويعتمدون ما أنجزوه في نهاية المسار.
           نموذج واحد بثلاثة أقسام — يُحفظ تقدّمك كلما مضيت، ولا ينتظرك بريد بينها.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
             { icon: Compass, text: "مسارات مبنية بمنهجية موثقة لا بمزاج" },
-            { icon: Users, text: "طلاب جادون وصلوا عبر تشخيص" },
+            { icon: Users, text: "متعلّمون جادّون وصلوا عبر تشخيص" },
             { icon: Mic2, text: "مقابلة ودرس تجريبي قبل الاعتماد" },
           ].map((f) => (
             <Card key={f.text}>

@@ -75,12 +75,17 @@ function siteOriginHtml(): Plugin {
         return html.replaceAll("%VITE_SITE_ORIGIN%", origin)
       },
     },
-    /* sitemap.xml وrobots.txt يُنسخان من public/ كما هما — لا يمرّان بالتحويل.
-       فيُعاد كتابتهما بعد النسخ. ولو فُقد أحدهما فالبناء يسقط: خريطةٌ فيها
-       %VITE_SITE_ORIGIN% حرفيا تُقدَّم لمحرك البحث فتُرفض كلها. */
+    /* robots.txt يُنسخ من public/ كما هو — لا يمرّ بالتحويل. فيُعاد كتابته
+       بعد النسخ. ولو فُقد فالبناء يسقط: ملفٌّ فيه %VITE_SITE_ORIGIN% حرفيا
+       يُقدَّم لمحرك البحث فيُرفض.
+
+       و`sitemap.xml` لم يعد هنا: صار يُولَّد كاملا بـ`scripts/prerender-seo.ts`
+       من `PUBLIC_PAGES` — المصدرِ نفسِه الذي تُهيَّأ منه الصفحات. وكان ملفّا
+       ساكنا في `public/`، فافترق عمّا يُخدَم فعلا: أعلن `/verify` صفحةً بلا
+       وسومٍ خاصّة، وأغفل `/mirror` و`/calendar` أصلا. */
     closeBundle() {
       const out = path.resolve(__dirname, "dist")
-      for (const name of ["sitemap.xml", "robots.txt"]) {
+      for (const name of ["robots.txt"]) {
         const file = path.join(out, name)
         if (!existsSync(file)) throw new Error(`dist/${name} مفقود — لا يمكن حقن الأصل القانوني فيه`)
         writeFileSync(file, readFileSync(file, "utf8").replaceAll("%VITE_SITE_ORIGIN%", origin))

@@ -36,6 +36,7 @@ import { apiPost } from "@/services/api";
 import { ensurePublishedSnapshot } from "@/services/catalog-snapshot";
 import { ensurePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
+import { seoFor } from "@/application/site/public-pages";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
 import ResultFeedback from "@/components/ResultFeedback";
@@ -723,11 +724,7 @@ export default function Diagnostic() {
 
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
-      <SeoHead
-        title="التشخيص الذكي"
-        description="تشخيص تعليمي تكيفي يفهم هدفك وواقعك، ويوصي بمسار واحد مفسّر بدرجة ثقة — مجاني ودون حساب."
-        path="/diagnostic"
-      />
+      <SeoHead {...seoFor('/diagnostic')} />
       {/* Top bar */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-5">

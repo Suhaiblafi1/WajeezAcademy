@@ -28,7 +28,11 @@
    ومفتاحُ الإطفاء: `DISABLED = true` ثمّ نشرة — يُلغي العاملُ تسجيلَ نفسِه
    ويمحو ما خزّن، فيعود الموقعُ إلى ما كان بلا انتظار انتهاء صلاحية. */
 
-const CACHE = 'wajeez-shell-v1'
+/* رقمُ النسخة يتغيّر مع تغيّر **شكل** ما يُخزَّن لا مع تغيّر المحتوى:
+   `activate` يمحو كلَّ اسمٍ سواه. ورُفع إلى v2 يومَ صارت القوقعةُ قوقعاتٍ —
+   فالمحفوظُ القديمُ مفتاحُه واحدٌ لكلّ المسارات، ولا يصحّ أن يُقرأ بالقواعد
+   الجديدة. */
+const CACHE = 'wajeez-shell-v2'
 const SHELL = '/index.html'
 const DISABLED = false
 
@@ -83,6 +87,24 @@ if (DISABLED) {
     }
   }
 
+  /* التنقّل: كـ`networkFirst` غير أنّ للانقطاع ملاذين — قوقعةُ المسار نفسِه
+     أوّلا، ثمّ قوقعةُ الرئيسة لمسارٍ لم يُزَر من قبل */
+  const navigationFirst = async (request, key) => {
+    try {
+      const response = await fetch(request)
+      if (response.ok && response.type === 'basic') {
+        const copy = response.clone()
+        const cache = await caches.open(CACHE)
+        await cache.put(key, copy)
+      }
+      return response
+    } catch (err) {
+      const cached = (await caches.match(key)) || (await caches.match(SHELL))
+      if (cached) return cached
+      throw err
+    }
+  }
+
   self.addEventListener('fetch', (event) => {
     const { request } = event
 
@@ -92,10 +114,19 @@ if (DISABLED) {
     if (url.origin !== self.location.origin) return  // خطوطٌ وصورٌ خارجية
     if (url.pathname.startsWith('/api/')) return     // بياناتٌ حيّة لا تُخزَّن أبدا
 
-    /* التنقّلُ كلُّه يرثُ قوقعةً واحدة: التطبيقُ صفحةٌ واحدة، و`.htaccess`
-       يعيد كتابة كلّ مسارٍ إلى `index.html` — فمفتاحٌ واحد يكفي كلَّ المسارات */
+    /* ولكلّ مسارٍ قوقعتُه — لا قوقعةٌ واحدةٌ للجميع.
+       
+       كان المفتاحُ `SHELL` لكلّ تنقّل، وكان صحيحا يومَ كان الخادمُ يردّ
+       `index.html` نفسَه — بايتا ببايت — لكلّ مسار. وقد تغيّر ذلك:
+       `scripts/prerender-seo.ts` صار يكتب لكلّ صفحةٍ ملفَّها بعنوانها
+       و`canonical` الخاصَّين بها، و`try_files {path} {path}.html` يخدمه.
+       فمفتاحٌ واحدٌ صار يخزّن أوّلَ صفحةٍ زارها الزائر ثمّ يردّها عند
+       الانقطاع مكانَ أيّ صفحةٍ أخرى — صفحةً بعنوانٍ ليس عنوانَها.
+       
+       فالمفتاحُ المسارُ نفسُه، و`SHELL` يبقى ملاذا أخيرا: مسارٌ لم يُزَر قطُّ
+       خيرٌ له قوقعةُ الرئيسة من شاشة خطأ. */
     if (request.mode === 'navigate') {
-      event.respondWith(networkFirst(request, SHELL))
+      event.respondWith(navigationFirst(request, url.origin + url.pathname))
       return
     }
 

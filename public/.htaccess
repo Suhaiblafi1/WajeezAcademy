@@ -19,6 +19,12 @@
   RewriteCond %{REQUEST_URI} ^/assets/
   RewriteRule ^ - [R=404,L]
 
+  # صفحةٌ مُهيَّأةٌ لهذا المسار؟ تُقدَّم هي — بعنوانها و`canonical` الخاصَّين بها.
+  # (`scripts/prerender-seo.ts` يكتب `/pathways` في `pathways.html` وهكذا.)
+  # وهي موازيةُ `try_files {path} {path}.html /index.html` في `deploy/Caddyfile`.
+  RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+  RewriteRule ^(.+?)/?$ /$1.html [L]
+
   # وما عداها يعود للتطبيق
   RewriteRule ^ index.html [L]
 </IfModule>

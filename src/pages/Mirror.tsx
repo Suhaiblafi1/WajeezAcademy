@@ -16,6 +16,8 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { ArrowLeft, Compass, Info, RotateCcw } from 'lucide-react'
 import SiteShell from '@/components/SiteShell'
+import SeoHead from '@/components/SeoHead'
+import { seoFor } from '@/application/site/public-pages'
 import { Card, Panel } from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
 import { LIKERT_AR, mirrorItems } from '@/domain/diagnostic/mirror/items'
@@ -59,6 +61,8 @@ export default function Mirror() {
 
   return (
     <SiteShell>
+      {/* صفحةٌ عامّةٌ كانت بلا وسومٍ خاصّة — فترث عنوانَ الرئيسة وcanonicalها */}
+      <SeoHead {...seoFor('/mirror')} />
       <div className="mx-auto max-w-3xl px-5 py-10 md:py-14">
         <span className="kicker">مرآة وجيز</span>
         <h1 className="mt-3 text-2xl font-black leading-snug md:text-4xl">

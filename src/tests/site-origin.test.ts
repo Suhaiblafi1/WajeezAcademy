@@ -17,8 +17,12 @@ import { CANONICAL_ORIGIN, DEFAULT_SENDER_EMAIL, EMAIL_DOMAIN, siteOrigin } from
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
-/* الملفات التي كانت تحمل النطاق، وصار الأصل يُحقن فيها وقت البناء */
-const TEMPLATED = ['index.html', 'public/sitemap.xml', 'public/robots.txt']
+/* الملفات التي كانت تحمل النطاق، وصار الأصل يُحقن فيها وقت البناء.
+
+   و`public/sitemap.xml` لم يعد منها — ولا من المستودَع أصلا: صارت الخريطةُ
+   تُولَّد كاملةً في `scripts/prerender-seo.ts` من `PUBLIC_PAGES`. ويحرس
+   `src/tests/seo/sitemap.test.ts` أنّها لا تكتب نطاقا حرفا كذلك. */
+const TEMPLATED = ['index.html', 'public/robots.txt']
 
 describe('الأصل القانوني للموقع', () => {
   it('النطاق النهائي معلن مرة واحدة في وحدته', () => {

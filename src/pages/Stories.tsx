@@ -5,6 +5,7 @@ import { appReviews, stories, STORY_ILLUSTRATIVE_BADGE_AR, type Story } from '@/
 import Modal from '@/components/Modal'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
+import { seoFor } from '@/application/site/public-pages'
 import StoryAvatar from '@/components/StoryAvatar'
 import { Card, Inset } from '@/components/ui/Surface'
 
@@ -20,11 +21,7 @@ export default function StoriesPage() {
 
   return (
     <SiteShell>
-      <SeoHead
-        title="نماذج رحلات التعلم"
-        description="نماذج توضيحية لرحلات تعلم تبدأ بالتشخيص أو بمسار جاهز وتنتهي بمشروع تخرج — مع قياس المهارة قبل وبعد."
-        path="/stories"
-      />
+      <SeoHead {...seoFor('/stories')} />
 
       <div className="text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-1.5 text-sm font-bold text-gold-ink">

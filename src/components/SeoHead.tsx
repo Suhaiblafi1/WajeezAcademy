@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { siteOrigin } from '@/application/site/origin'
+import { pageTitle, ROBOTS_INDEXABLE, ROBOTS_PRIVATE } from '@/application/site/public-pages'
 
 /* رأس SEO لكل صفحة: عنوان ووصف ومشاركة وفهرسة — يُحقن عند التنقل */
 interface Props {
@@ -11,9 +12,13 @@ interface Props {
   noindex?: boolean
 }
 
-const SITE = 'أكاديمية وجيز'
 /* الأصل لم يعد ثابتا هنا: في الفترة التجريبية كان يُعلن canonical إلى نطاق لا
-   يستجيب. انظر src/application/site/origin.ts. */
+   يستجيب. انظر src/application/site/origin.ts.
+
+   واسمُ الموقع وصيغةُ العنوان كذلك: `pageTitle` في
+   `src/application/site/public-pages.ts` — وهي نفسُها التي يكتبها
+   `scripts/prerender-seo.ts` في الوسم الساكن. فلو افترقتا لقرأ الزاحفُ
+   عنوانا في المصدر ثمّ استبدلته React بآخرَ بعد التصيير. */
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`)
@@ -27,11 +32,11 @@ function upsertMeta(attr: 'name' | 'property', key: string, content: string) {
 
 export default function SeoHead({ title, description, path = '/', noindex = false }: Props) {
   useEffect(() => {
-    const fullTitle = `${title} — ${SITE}`
+    const fullTitle = pageTitle(title)
     document.title = fullTitle
     const url = `${siteOrigin()}${path}`
     upsertMeta('name', 'description', description)
-    upsertMeta('name', 'robots', noindex ? 'noindex, nofollow' : 'index, follow')
+    upsertMeta('name', 'robots', noindex ? ROBOTS_PRIVATE : ROBOTS_INDEXABLE)
     upsertMeta('property', 'og:title', fullTitle)
     upsertMeta('property', 'og:description', description)
     upsertMeta('property', 'og:url', url)
