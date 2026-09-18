@@ -267,8 +267,29 @@ describe('④ الشاشتان: نموذجٌ بساعتَين ونبذةٍ وم�
   })
 
   it('والنبذةُ والمرفقُ يُرسلان معه', () => {
-    expect(SCHED).toMatch(/attachmentKey: attachment\.bodyFileKey/)
-    expect(SCHED).toContain('ملفٌّ يُرفق باللقاء (اختياريّ)')
+    /* ═══ والفحصُ على متن النداء لا على سطرٍ بعينه ═══
+
+       كان يطابق `attachmentKey: attachment.bodyFileKey` حرفا، فسقط حين
+       جُمع النداءُ في دالّةٍ واحدةٍ تخدم اللقاءَ المفرد والسلسلةَ معا —
+       والمرفقُ ما زال يُرسَل. فالفحصُ على **متن النداء**: أتحمل الحقولُ
+       الأربعةُ مصادرَها؟ */
+    const at = SCHED.indexOf('/api/trainer/cohorts/${cohortId}/sessions')
+    expect(at, 'لا نداءَ إنشاءٍ في الشاشة').toBeGreaterThan(0)
+    const body = SCHED.slice(at, SCHED.indexOf('});', at))
+    expect(body, 'النبذةُ لا تُرسَل').toContain('noteAr:')
+    expect(body, 'مفتاحُ الملفّ لا يُرسَل').toMatch(/attachmentKey:[^\n]*attachment\.bodyFileKey/)
+    expect(body, 'اسمُ الملفّ لا يُرسَل').toMatch(/attachmentName:[^\n]*attachment\.bodyFileName/)
+    expect(body, 'نوعُ الملفّ لا يُرسَل').toMatch(/attachmentMime:[^\n]*attachment\.bodyFileMime/)
+    expect(SCHED, 'لا حقلَ رفعٍ في الشاشة').toContain('ملفٌّ يُرفق باللقاء (اختياريّ)')
+
+    /* ═══ والمرفقُ للمتفرّق وحدَه (١٨ سبتمبر ٢٠٢٦) ═══
+       ملفٌّ واحدٌ يُنسخ على اثني عشرَ لقاءً يصير اثنتَي عشرةَ شريحةً
+       متطابقةً في تقويم المتعلّم. وموضعُ ملفِّ كلِّ لقاءٍ صفحتُه بعد
+       إنشائه، حيث يُقرأ مع سياقه. */
+    const single = SCHED.indexOf('mode === "single" && (')
+    expect(single, 'لا حارسَ وضعٍ على حقل الرفع').toBeGreaterThan(-1)
+    expect(SCHED.slice(single, single + 400), 'حقلُ الرفع ليس خلف حارس «متفرّق»')
+      .toContain('ملفٌّ يُرفق باللقاء')
   })
 
   it('والمدى من الفصل — لا يُجدوَل خارجَ أشهره', () => {

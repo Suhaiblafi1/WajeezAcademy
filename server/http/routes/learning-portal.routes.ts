@@ -24,6 +24,7 @@ import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../service
 import { resourceSourceBlockerAr } from '../../../src/application/trainer/module-body'
 import { ReferralService } from '../../services/referral.service'
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
+import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
 import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
@@ -745,6 +746,14 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     }).strict().superRefine((b, ctx) => {
       if (b.endsAt <= b.startsAt) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهايةُ اللقاء قبل بدايته', path: ['endsAt'] })
+        return
+      }
+      /* ═══ ساعتان حدًّا أدنى — والفحصُ هنا لا في الشاشة وحدَها ═══
+         كان المفحوصُ أنّ النهايةَ بعد البداية وحدَها، فلقاءٌ من عشر دقائق
+         يمرّ ويصير اجتماعَ زووم ويصل المسجَّلين. والقاعدةُ من موضعها
+         (`session-length.ts`) لا مكتوبةً بيدها هنا وهناك. */
+      if (sessionTooShort(b.startsAt, b.endsAt)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: SHORT_SESSION_AR, path: ['endsAt'] })
       }
     }).parse(req.body)
     return reply.status(201).send(await cohorts.trainerAddSessionWithMeeting(req.auth!.userId, id, body))
@@ -758,6 +767,16 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const body = z.object({
       startsAt: z.coerce.date(),
       endsAt: z.coerce.date().optional(),
+      /* والنقلُ بابٌ ثانٍ إلى الطول: من نقل وقصّر تخطّى الحدَّ من حيث لا
+         يُفحَص. والنهايةُ اختياريّةٌ هنا، فما لم تُرسَل لا طولَ يُفحَص. */
+    }).superRefine((b, ctx) => {
+      if (b.endsAt && b.endsAt <= b.startsAt) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهايةُ اللقاء قبل بدايته', path: ['endsAt'] })
+        return
+      }
+      if (b.endsAt && sessionTooShort(b.startsAt, b.endsAt)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: SHORT_SESSION_AR, path: ['endsAt'] })
+      }
     }).parse(req.body)
     return cohorts.trainerMoveSession(req.auth!.userId, sessionId, body)
   })
