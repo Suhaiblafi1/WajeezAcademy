@@ -9,11 +9,15 @@ import { fileUploadsEnabled } from '../../services/storage.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { getCalendlyConfig } from '../../services/integrations.service'
 import { ShortLinkService } from '../../services/short-link.service'
+import { readSeasonGate } from '../../services/registration-window'
+import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
+import { assertNotBot } from '../honeypot'
 
 export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const catalog = new PublicCatalogService(prisma)
   const trainerPaths = new TrainerPathService(prisma)
   const shortLinks = new ShortLinkService(prisma)
+  const interest = new RegistrationInterestService(prisma)
 
   /* ما تستطيعه هذه المنصّةُ فعلا — تقرأه الواجهةُ قبل أن تعرض زرّا.
      الواجهةُ كانت تعرض «ارفع التسجيل» و«ارفع سيرتك» حيث لا مخزنَ يقبلهما،
@@ -24,6 +28,12 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
   }, async () => ({
     fileUploads: fileUploadsEnabled(),
     demoMode: process.env.DEMO_MODE === 'true',
+    /* بابُ الموسم — تقرؤه الواجهةُ لتعرض الرسالةَ مكانَ صفحة الدفع.
+
+       وهو **راحةٌ لا حارس**: الحارسُ في `checkout` و`pay`، وهذا يجنّب المشتريَ
+       أن يملأ سلّةً ويختار عملةً ثمّ يُردّ. ولو كُذب هذا الحقلُ في متصفّحٍ
+       لَما مرّت دفعةٌ واحدة. */
+    registration: await readSeasonGate(prisma),
     /* ═══ رابطُ الحجز: `null` تعني «استعمل المضمَّن» ═══
 
        الأصلُ في `src/application/trainer/application-options.ts`، ولا يستورد
@@ -37,6 +47,28 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
       return { interviewBookingUrl: c.bookingUrl ?? null, interviewGuests: c.guests ?? null }
     })(),
   }))
+
+  /* بريدُ من ينتظر فتحَ الباب (قرارُ صاحب المنصّة ١٨ سبتمبر ٢٠٢٦).
+
+     عامٌّ بلا مصادقة بقصد: **من يُردّ عند الدفع أكثرُه بلا حساب** — جاء من
+     إعلانٍ أو بحث، ورأى السعرَ، ونقر. وأن نطلب منه حسابا قبل بريده يعني ألّا
+     نأخذ بريدَ أكثرِهم.
+
+     وحارسُه سقفُه لا فخُّه: الفخُّ طبقةٌ رخيصةٌ تُمسك متصفّحا آليّا، والسقفُ
+     هو ما يمنع ألفَ عنوانٍ مختلَقٍ في دقيقة (والعلّةُ كاملةً في رأس
+     `honeypot.ts`). */
+  app.post('/api/public/registration-interest', {
+    config: { rateLimit: { max: 5, timeWindow: '10 minutes' } },
+    schema: { tags: ['public'], summary: 'أبلغوني حين يُفتح باب التسجيل — بريدٌ ينتظر الموسم' },
+  }, async (req, reply) => {
+    assertNotBot(req.body)
+    const body = z.object({
+      email: z.string().trim().toLowerCase().email().max(200),
+      source: z.enum(INTEREST_SOURCES).optional(),
+    }).parse(req.body)
+    const res = await interest.record(body.email, body.source ?? 'buy')
+    return reply.status(201).send({ ...res, consentAr: INTEREST_CONSENT_AR })
+  })
 
   app.get('/api/public/pathways', {
     schema: { tags: ['public-catalog'], summary: 'المسارات المنشورة مع دوراتها مرتبة' },

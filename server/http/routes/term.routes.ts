@@ -11,14 +11,19 @@ import { TermPlanningService } from '../../services/term-planning.service'
 import { TermCalendarService } from '../../services/term-calendar.service'
 import { requireAuth } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
+import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 import { TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 import { TERM_STATUSES } from '../../../src/application/terms/lifecycle'
+import { readSeasonGate, writeSeasonGate } from '../../services/registration-window'
+import { RegistrationInterestService } from '../../services/registration-interest.service'
+import { seasonLabel, TRAINING_SEASON_VALUES as SEASON_VALUES } from '../../../src/application/trainer/application-options'
 
 export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const terms = new TermService(prisma)
   const planning = new TermPlanningService(prisma)
   const calendar = new TermCalendarService(prisma)
+  const interest = new RegistrationInterestService(prisma)
 
   /* ─── العامّة: «متى تبدأ؟» صار له جواب (البند ٥٢) ───
 
@@ -61,6 +66,75 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
       meta: { titleAr: term.titleAr },
     })
     return term
+  })
+
+  /* ─────────── بابُ الموسم: قرارٌ واحدٌ يعلو الشعبَ والفصول ───────────
+
+     العلّةُ كاملةً في رأس `registration-window.ts`. وموضعُه هنا لأنّ من يفتح
+     بابَ التسجيل هو من يخطّط الفصول — لا شاشةَ ثالثةٌ يُبحث عنها يومَ يُفتح.
+
+     وصلاحيّتُه `cohort.open`: من يملك فتحَ شعبةٍ يملك فتحَ الباب عليها. */
+  app.get('/api/admin/registration-season', {
+    preHandler: requirePermission('cohort.open'),
+    schema: { tags: ['admin-terms'], summary: 'حالةُ باب التسجيل ومن ينتظر فتحَه' },
+  }, async () => {
+    const gate = await readSeasonGate(prisma)
+    return { gate, waiting: await interest.waiting(gate.seasonKey || 'unset') }
+  })
+
+  app.post('/api/admin/registration-season', {
+    preHandler: requirePermission('cohort.open'),
+    schema: { tags: ['admin-terms'], summary: 'إغلاقُ باب التسجيل أو فتحُه — ولا يُلمس علمُ شعبةٍ واحدة' },
+  }, async (req) => {
+    const body = z.object({
+      open: z.boolean(),
+      season: z.enum(SEASON_VALUES).optional(),
+      messageAr: z.string().trim().max(200).optional(),
+    }).parse(req.body)
+
+    const before = await readSeasonGate(prisma)
+    const seasonKey = body.season ?? before.seasonKey
+    /* اسمُ الموسم يُشتقّ من `TRAINING_SEASONS` لا يُكتب باليد: «موسم الشتاء»
+       في هذه الشاشة و«موسم الشتاء» في ملفّ المدرّب اسمٌ واحدٌ أو اسمان
+       يفترقان عند أوّل تحرير. */
+    const seasonAr = seasonKey ? seasonLabel(seasonKey).replace(/\s*\(.*\)$/, '') : ''
+    const gate = await writeSeasonGate(prisma, {
+      open: body.open,
+      seasonKey,
+      seasonAr,
+      messageAr: body.messageAr ?? (seasonAr ? `لم يفتح باب التسجيل ل${seasonAr} بعد` : ''),
+    }, req.auth!.userId)
+
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId,
+      action: gate.open ? 'registration.season.open' : 'registration.season.close',
+      entityType: 'platform', entityId: seasonKey || 'unset',
+      before: { open: before.open, seasonKey: before.seasonKey },
+      after: { open: gate.open, seasonKey: gate.seasonKey, messageAr: gate.messageAr },
+    })
+    return { gate, waiting: await interest.waiting(gate.seasonKey || seasonKey || 'unset') }
+  })
+
+  /* إبلاغُ المنتظرين — فعلٌ مستقلٌّ عن الفتح بقصد.
+
+     ولو أُرسلت الرسائلُ مع الفتح تلقائيّا لَما استطاع أحدٌ أن يفتح البابَ
+     ويتحقّق من شعبةٍ أو سعرٍ قبل أن يُنادى الناس. فالفتحُ يقع، ثمّ يُنظَر،
+     ثمّ يُضغط «أبلغهم» — ومن أُبلغ لا يُبلَّغ مرّتين. */
+  app.post('/api/admin/registration-season/notify', {
+    preHandler: requirePermission('cohort.open'),
+    config: { rateLimit: { max: 3, timeWindow: '10 minutes' } },
+    schema: { tags: ['admin-terms'], summary: 'إبلاغُ من ترك بريدَه أنّ باب التسجيل فُتح' },
+  }, async (req) => {
+    const { season } = z.object({ season: z.enum(SEASON_VALUES).optional() }).parse(req.body ?? {})
+    const gate = await readSeasonGate(prisma)
+    /* والبابُ يجب أن يكون مفتوحا: رسالةٌ تقول «فُتح» تصل قبل أن يُفتح تُعيد
+       الناسَ إلى الجملة نفسِها التي تركوا بريدَهم بسببها. */
+    if (!gate.open) {
+      throw new AuthError('season_closed', 'افتح باب التسجيل أوّلا — ثمّ أبلغ من ينتظره', 409)
+    }
+    const seasonKey = season ?? (gate.seasonKey || 'unset')
+    const seasonAr = seasonKey !== 'unset' ? seasonLabel(seasonKey).replace(/\s*\(.*\)$/, '') : ''
+    return interest.notifyWaiting(req.auth!.userId, gate, seasonKey, seasonAr)
   })
 
   app.get('/api/admin/terms', {
