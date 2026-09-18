@@ -47,6 +47,21 @@ function signCohortContent<T extends {
             learnerUrl: (s.zoom as { learnerUrl?: string | null }).learnerUrl ?? null,
             meetingId: (s.zoom as { meetingId?: string | null }).meetingId ?? null,
             passcode: opts.revealPasscode ? s.zoom.passcodeEnc : null,
+            /* ═══ وما تكتبه زووم ولا يراه أحد ═══
+
+               `actualStartAt` و`durationMin` و`participantCount` تُملأ من
+               أحداثِ زووم منذ زمن — «ما وقع فعلا — يملؤه webhook لا يدٌ».
+               ثمّ يُسقطها هذا الإسقاطُ فلا تبلغ شاشةً واحدة: فالمدرّبُ يرى
+               موعدَه **المجدوَل** ولا يعرف أنعقد أصلا ولا كم دام ولا كم حضر.
+
+               و`syncError` أسوأُ: كُتب في الخدمة أنّه «يُكتب في `syncError`
+               فيُقرأ في الشاشة» — ولا شاشةَ تقرؤه. فمزامنةُ حضورٍ تسقط،
+               ويبقى المدرّبُ ينتظر أسماءً لا تأتي ولا يعرف أنّها لن تأتي. */
+            actualStartAt: (s.zoom as { actualStartAt?: Date | null }).actualStartAt ?? null,
+            durationMin: (s.zoom as { durationMin?: number | null }).durationMin ?? null,
+            participantCount: (s.zoom as { participantCount?: number | null }).participantCount ?? null,
+            syncState: (s.zoom as { syncState?: string | null }).syncState ?? null,
+            syncError: (s.zoom as { syncError?: string | null }).syncError ?? null,
           }
         : null,
       recordings: s.recordings.map((r) => ({

@@ -28,11 +28,16 @@ import { Panel, Card, Inset } from "@/components/ui/Surface";
 import ConfirmAction from "@/components/ConfirmAction";
 import Button from "@/components/ui/Button";
 import { controlCls } from "@/components/FormKit";
+import { countAr } from "@/application/text/count-ar";
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 /** مرجعٌ ثابتٌ للحقل الفارغ — كائنٌ جديدٌ في كلّ تصيير يُعيد بناءَ الحقل */
 const EMPTY_MOVE = { date: "", from: "", to: "" };
+
+/* صيغةُ العدد لا تُرتجَل: «١١٨ دقيقةٌ» و«١ حاضر» يقرؤهما المدرّبُ في كلّ لقاء */
+const MINUTE_FORMS = { one: "دقيقة", two: "دقيقتان", few: "دقائق", many: "دقيقة" } as const;
+const PERSON_FORMS = { one: "واحد", two: "اثنان", few: "أشخاص", many: "شخصا" } as const;
 
 const ATTENDANCE_OPTIONS = [
   { value: "present", label: "حاضر" }, { value: "late", label: "متأخر" },
@@ -45,7 +50,12 @@ interface OpsRow {
       id: string; title: string; startsAt: string; endsAt: string | null; status: string;
       /* موقفُ الإدارة من اللقاء — والفارغُ معتمَدٌ (صفوفُ ما قبل العمود) */
       approvalState?: string | null; reviewNote?: string | null;
-      zoom: { joinUrl: string; passcode: string | null } | null;
+      zoom: {
+        joinUrl: string; passcode: string | null;
+        /* ما وقع فعلا — يملؤه webhook زووم لا يدٌ. والمجدولُ نيّةٌ، وهذا خبر. */
+        actualStartAt: string | null; durationMin: number | null; participantCount: number | null;
+        syncState: string | null; syncError: string | null;
+      } | null;
       recordings: { id: string; title: string; readUrl: string | null }[];
     }[];
     enrollments: {
@@ -158,6 +168,33 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                         رُدَّت
                       </span>
                       {s.reviewNote || "راجِع ملاحظةَ الإدارة ثمّ انقل موعدَها."}
+                    </p>
+                  )}
+                  {/* ═══ وما وقع فعلا — كانت زووم تكتبه ولا يراه أحد ═══
+
+                      `actualStartAt` و`durationMin` و`participantCount` تُملأ
+                      من أحداث زووم منذ زمن، ويُسقطها الإسقاطُ قبل الشاشة. فكان
+                      المدرّبُ يرى موعدَه **المجدوَل** ولا يعرف أنعقد أصلا ولا
+                      كم دام ولا كم حضر — ثمّ يُسأل عن لقاءٍ لا خبرَ له عنه.
+
+                      والمجدولُ نيّةٌ وهذا خبر، فلا يحلّ محلَّه: يُقال تحته. */}
+                  {s.zoom?.actualStartAt && (
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      انعقد {fmtDateTimeAr(s.zoom.actualStartAt)}
+                      {s.zoom.durationMin !== null && ` · ${countAr(s.zoom.durationMin, MINUTE_FORMS)}`}
+                      {s.zoom.participantCount !== null && ` · حضره ${countAr(s.zoom.participantCount, PERSON_FORMS)}`}
+                    </p>
+                  )}
+                  {/* ═══ ومزامنةٌ سقطت تُقال لصاحبها ═══
+
+                      كُتب في الخدمة أنّ السببَ «يُكتب في `syncError` فيُقرأ في
+                      الشاشة» — ولا شاشةَ كانت تقرؤه. فيسقط جلبُ الحضور، ويبقى
+                      المدرّبُ ينتظر أسماءً لا تأتي ولا يعرف أنّها لن تأتي.
+                      والفعلُ الذي يزيله في يده: يسجّله بنفسه أدناه. */}
+                  {s.zoom?.syncState === "failed" && (
+                    <p className="mt-1 text-read leading-6 text-gold-ink">
+                      تعذّرت مزامنةُ الحضور من زووم — سجّله بيدك أدناه.
+                      {s.zoom.syncError ? ` (${s.zoom.syncError})` : ""}
                     </p>
                   )}
                 </div>
