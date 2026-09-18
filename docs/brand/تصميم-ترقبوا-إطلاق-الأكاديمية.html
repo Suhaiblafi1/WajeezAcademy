@@ -1,14 +1,14 @@
 <!doctype html>
 <!-- تصميمُ «ترقّبوا إطلاق أكاديمية وجيز» — لقطةُ ريلز على إنستقرام.
 
-     ما هو: صفحةٌ واحدةٌ بمقاس ١٠٨٠×١٩٢٠ تُصوَّر صورةً ثمّ تُرفع. ووسطَها
-     **مربّعٌ متروكٌ فارغا بقصد**: عليه يوضع ملصقُ الأسئلة في التطبيق، فلا
-     يُكتب فيه نصٌّ هنا ولا يُملأ.
+     ما هو: صفحةٌ واحدةٌ بمقاس ١٠٨٠×١٩٢٠ تُصوَّر صورةً ثمّ تُرفع.
 
-     لماذا لوحةٌ فاتحةٌ تحت العلامة: `logo-mark.png` شكلٌ فيروزيٌّ على
-     شفافيّة — حرفُه مقطوعٌ لا مطبوعٌ أبيض — فعلى الداكن يأخذ لونَ الخلفيّة
-     فتذوب صورتُه. وهو ما سبق أن قُرّر لبريد المنصّة (`mail-template.ts`):
-     تُحمل العلامةُ على بياض. والقرارُ هنا نفسُه، وللسبب نفسِه.
+     وكان وسطَها مربّعٌ متروكٌ فارغا يوضع عليه ملصقُ الأسئلة في إنستقرام،
+     فرفعه صاحبُ المنصّة إلى معلومات: لوحٌ بسطرَين، ثمّ دعوةٌ إلى ترشيح
+     المدرّبين. فالصفحةُ تُقرأ وحدَها ولا تنتظر ملصقا فوقها.
+
+     (ولماذا تُقلَب شفّافيّةُ العلامة بدل حملها على لوحةٍ بيضاء: مشروحٌ عند
+     `.mark` في الأنماط، حيث يسكن الشرحُ مع ما يشرحه.)
 
      والمنطقةُ الآمنة: يحجب ريلز نحوَ ٢٥٠ بكسلا من أعلى و٤٨٠ من أسفل وعمودَ
      أزرارٍ عرضُه ١٩٠ على الجانب. فلا ينزل شيءٌ ذو معنًى تحت ١٤٤٠. وتُرى
@@ -166,17 +166,34 @@
   :root[data-theme="light"] .chip{background:rgba(14,34,37,.035)}
 
   /* ــ المربَّعُ المتروكُ لملصَق الأسئلة ــ */
-  .slot{
-    position:relative;margin-top:46px;
-    width:780px;height:276px;border-radius:38px;
+  /* ــ معلوماتٌ مكانَ المربّع ــ
+
+     كان هنا مربّعٌ متروكٌ فارغا يوضع عليه ملصقُ الأسئلة، ورفعه صاحبُ المنصّة
+     إلى معلومات: لوحٌ بسطرَين يقولان ما يهمُّ من يقرأ، ثمّ دعوةٌ إلى ترشيح
+     المدرّبين — وحدُّها مقطَّعٌ كما كان حدُّ المربّع، فالدعوةُ تُطلب ولا تُملأ. */
+  .facts{
+    margin-top:38px;width:780px;
+    border-radius:32px;overflow:hidden;
     background:var(--box-fill);
-    border:2px dashed var(--box-line);
+    border:1px solid var(--box-line);
   }
-  .slot .corner{position:absolute;width:40px;height:40px;border:3px solid var(--teal)}
-  .slot .c1{top:-3px;right:-3px;border-left:0;border-bottom:0;border-radius:0 40px 0 0}
-  .slot .c2{top:-3px;left:-3px;border-right:0;border-bottom:0;border-radius:40px 0 0 0}
-  .slot .c3{bottom:-3px;right:-3px;border-left:0;border-top:0;border-radius:0 0 40px 0}
-  .slot .c4{bottom:-3px;left:-3px;border-right:0;border-top:0;border-radius:0 0 0 40px}
+  .fact{
+    display:flex;align-items:center;justify-content:center;gap:18px;
+    padding:24px 32px;
+    font-size:33px;font-weight:500;color:var(--ink);
+  }
+  .fact + .fact{border-top:1px solid var(--hair)}
+  .fact svg{color:var(--teal-light);flex:none;display:block}
+
+  .nominate{
+    margin-top:28px;
+    display:inline-flex;align-items:center;gap:14px;
+    padding:18px 36px;border-radius:999px;
+    border:1px dashed var(--box-line);
+    background:rgba(56,167,180,.06);
+    font-size:30px;font-weight:600;color:var(--teal-light);
+  }
+  .nominate svg{flex:none;display:block}
 
   /* ــ الدعوةُ إلى الفعل ــ */
   .cta{margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:13px}
@@ -187,7 +204,9 @@
     color:#08272B;font-size:31px;font-weight:600;
     box-shadow:0 20px 48px rgba(56,167,180,.30);
   }
-  .cta-note{font-size:27px;font-weight:400;color:var(--ink-faint)}
+  /* العنوانُ لاتينيٌّ في صفحةٍ عربيّة، فيُصرَّح باتّجاهه ولا يُترك للثنائيّة */
+  .cta-url{font-size:31px;font-weight:600;color:var(--ink-soft);
+           direction:ltr;letter-spacing:.03em}
 
   /* أدلّةُ ريلز: الشريطُ العلويّ ٢٥٠ والسفليّ ٤٨٠ وعمودُ الأزرار ١٩٠ */
   .guides{display:none}
@@ -242,9 +261,31 @@
       <span class="chip">مخرجات عمليّة</span>
     </div>
 
-    <div class="slot">
-      <span class="corner c1"></span><span class="corner c2"></span>
-      <span class="corner c3"></span><span class="corner c4"></span>
+    <div class="facts">
+      <div class="fact">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/>
+        </svg>
+        نستهدف كافّة المجالات
+      </div>
+      <div class="fact">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.7 2.6L16 9.4"/>
+        </svg>
+        التقديم مفتوح الآن
+      </div>
+    </div>
+
+    <div class="nominate">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>
+      </svg>
+      تعرف مدرّبا مميّزا؟ رشِّحه لنا
     </div>
 
     <div class="cta">
@@ -256,7 +297,7 @@
         </svg>
         قدِّم عبر الرابط
       </div>
-      <div class="cta-note">أو أرسل لي رسالة مباشرة لنتحدّث</div>
+      <div class="cta-url">www.wajeezacademy.com</div>
     </div>
   </div>
 </div>
