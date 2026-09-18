@@ -23,8 +23,30 @@
      أُتِمَّ من خارجه — وهو نصُّ الطلب: «أو اقترح مساراتٍ أخرى». والبطاقةُ
      الآتيةُ من خارج المجال **تحمل اسمَ مجالها** فلا تدّعي الرقاقةُ أنّها منها.
 
-   • **سقفٌ أربعة** — على كلّ رقاقةٍ بما فيها «الكل». الشريطُ دليلٌ لا كتالوجٌ
-     ثانٍ، وتحته بابٌ إلى الكتالوج كاملا.
+   • **سقفٌ أربعة** — على كلّ رقاقةِ **مجال**. الشريطُ دليلٌ لا كتالوجٌ ثانٍ،
+     وتحته بابٌ إلى الكتالوج كاملا.
+
+   ═══ و«الكل» ليست رقاقةً من هذه الرقاقات (١٨ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «فلتر الكل للمسارات والدورات يجب أن يضمّ الكل ولا
+   يُعامَل معاملةَ بقيّة الفلاتر».
+
+   والعطبُ الذي رآه مقيس: كلُّ رقاقةِ مجالٍ تقول «٣» وسبعُ رقاقاتٍ تعرض
+   **ثمانيَ عشرةَ** بطاقةً متمايزةً في المسارات (وإحدى وعشرين في الدورات)،
+   و«الكل» فوقهنّ تقول «٤». فالرقاقةُ التي معناها **غيابُ التصفية** كانت
+   أضيقَ من كلِّ رقاقةٍ تحتها — والزائرُ الذي يضغطها ليرى كلَّ شيءٍ يرى أقلَّ
+   ممّا كان يراه.
+
+   وعلّتُه أنّ `MAX_PER_FILTER` كان يُطبَّق عليها كما يُطبَّق على المجالات.
+   والحدُّ نصُّه «لكلّ فلتر» — و«الكل» ليست فلترا بل رفعُه.
+
+   فصارت «الكل» **اتّحادَ ما تعرضه الرقاقات**: كلُّ مختارٍ أوّلا بترتيبه، ثمّ
+   كلُّ ما أتمّت به رقاقةٌ نقصَها. فلا بطاقةَ تُرى تحت رقاقةٍ ولا تُرى تحت
+   «الكل» — وهو معنى أن تضمّ الكل.
+
+   ولمَ ليست الكتالوجَ كلَّه: عنوانُ القسم «من اختيارنا»، والـ١١٣ دورةً خلف
+   البابِ تحته. فـ«الكل» ترفع التصفيةَ عن **هذا** الشريط، ولا تستبدل به
+   الكتالوج.
 
    ═══ ولمَ يبقى المقترَحُ مُميَّزا عن المختار ═══
 
@@ -41,10 +63,10 @@
 /** رقاقةُ «الكل» — ليست مجالا بل غيابُ تصفية */
 export const ALL_AR = 'الكل'
 
-/** أرضيّةُ الرقاقة: ما دون الثلاثة يُتَمّ من الكتالوج */
+/** أرضيّةُ رقاقةِ المجال: ما دون الثلاثة يُتَمّ من الكتالوج */
 export const MIN_PER_FILTER = 3
 
-/** وسقفُها: ما فوق الأربعة يُقتطع */
+/** وسقفُها: ما فوق الأربعة يُقتطع. و«الكل» خارجَ الحدّين — انظر رأسَ الملفّ */
 export const MAX_PER_FILTER = 4
 
 /** انتقاءٌ تحريريّ: معرِّفٌ ووسمُه المكتوب */
@@ -57,7 +79,11 @@ export interface EditorialPick {
 
     • `editorial` — من الانتقاء التحريريّ، وله وسمُه المكتوب.
     • `domain`    — من كتالوج المجال نفسِه، جاء لإتمام الثلاثة.
-    • `other`     — من خارج المجال، حين لا يبلغ المجالُ كلُّه ثلاثةً. */
+    • `other`     — من خارج المجال، حين لا يبلغ المجالُ كلُّه ثلاثةً.
+
+    وتحت «الكل» لا مجالَ يُنسَب إليه شيء، فكلُّ ما لم يُختر تحريريّا يُعاد
+    `other`: البطاقةُ تُعلن مجالَها على وجهها بدل أن تُحيل إلى رقاقةٍ لا
+    وجودَ لها («مقترحٌ في هذا المجال» — أيُّ مجال؟). */
 export type PickKind = 'editorial' | 'domain' | 'other'
 
 /** عنصرٌ كما يُعرض — ووسمُه `null` إن جاء لإتمام العدد لا اختيارا */
@@ -78,7 +104,16 @@ export interface PickSource<T> {
   exclude?: readonly string[]
 }
 
-/** ما يُعرض تحت رقاقةٍ بعينها: المختارُ أوّلا، ثمّ اقتراحاتٌ حتّى الثلاثة، وسقفُه أربعة.
+/** ما يُعرض تحت رقاقةٍ بعينها — و«الكل» بابُها غيرُ باب المجالات.
+
+    • رقاقةُ مجالٍ: مختارُه أوّلا إلى السقف، ثمّ إتمامٌ إلى الأرضيّة
+      (`shownInDomain`).
+    • «الكل»: اتّحادُ ما تعرضه الرقاقاتُ كلُّها، بلا سقف (`shownForAll`). */
+export function shownFor<T>(source: PickSource<T>, domain: string): ShownPick<T>[] {
+  return domain === ALL_AR ? shownForAll(source) : shownInDomain(source, domain)
+}
+
+/** ما يُعرض تحت رقاقةِ مجال: المختارُ أوّلا، ثمّ اقتراحاتٌ حتّى الثلاثة، وسقفُه أربعة.
 
     والإتمامُ على ثلاث درجاتٍ تُستنفَد بترتيبها — وكلُّ درجةٍ أبعدُ ممّا قبلها:
 
@@ -90,11 +125,11 @@ export interface PickSource<T> {
 
     والمقترَحُ من خارج المجال **يُعلن مجالَه** على البطاقة (`kind: 'other'`)،
     فالرقاقةُ لا تدّعي أنّه منها. */
-export function shownFor<T>(source: PickSource<T>, domain: string): ShownPick<T>[] {
+function shownInDomain<T>(source: PickSource<T>, domain: string): ShownPick<T>[] {
   const { editorial, pool, idOf, domainOf, exclude = [] } = source
   const byId = new Map(pool.map((x) => [idOf(x), x]))
   const taken = new Set<string>(exclude)
-  const inDomain = (item: T) => domain === ALL_AR || domainOf(item) === domain
+  const inDomain = (item: T) => domainOf(item) === domain
 
   const shown: ShownPick<T>[] = []
   for (const pick of editorial) {
@@ -118,23 +153,53 @@ export function shownFor<T>(source: PickSource<T>, domain: string): ShownPick<T>
   fill('domain', pool.filter(inDomain))
   /* ومن خارج المجال: المختارُ أوّلا — فأقربُ ما يُقترح على من ضاق مجالُه هو
      ما اختاره المؤلِّفُ لغيره، لا أوّلُ ما يقع عليه ترتيبُ الكتالوج. */
-  if (domain !== ALL_AR) {
-    const editorialItems = editorial.flatMap((pick) => {
-      const item = byId.get(pick.id)
-      return item ? [item] : []
-    })
-    fill('other', editorialItems)
-    fill('other', pool)
+  const editorialItems = editorial.flatMap((pick) => {
+    const item = byId.get(pick.id)
+    return item ? [item] : []
+  })
+  fill('other', editorialItems)
+  fill('other', pool)
+  return shown
+}
+
+/** «الكل»: كلُّ ما تعرضه الرقاقاتُ مجموعا بلا تكرارٍ ولا سقف.
+
+    المختارُ كلُّه أوّلا بترتيب المؤلِّف — فلا يُدفن اختيارُه تحت إتمامِ عدد —
+    ثمّ ما أتمّت به كلُّ رقاقةٍ نقصَها بترتيب الرقاقات. فما رآه الزائرُ تحت
+    رقاقةٍ يراه هنا، وهو ما يعنيه أن «تضمّ الكل».
+
+    ولمَ لا يُستدعى `shownInDomain` بـ«الكل» نفسِها: تلك تُصفّي ثمّ تُقتطع —
+    وهذان بالضبط ما لا تفعله رقاقةٌ معناها رفعُ التصفية. */
+function shownForAll<T>(source: PickSource<T>): ShownPick<T>[] {
+  const { editorial, pool, idOf, exclude = [] } = source
+  const byId = new Map(pool.map((x) => [idOf(x), x]))
+  const taken = new Set<string>(exclude)
+  const shown: ShownPick<T>[] = []
+  const put = (item: T, note: string | null, kind: PickKind) => {
+    const id = idOf(item)
+    if (taken.has(id)) return
+    taken.add(id)
+    shown.push({ item, note, kind })
+  }
+
+  for (const pick of editorial) {
+    const item = byId.get(pick.id)
+    if (item) put(item, pick.note, 'editorial')
+  }
+  /* وما أتمّت به الرقاقاتُ نقصَها يُعاد `other` لا `domain`: لا مجالَ نشطا
+     هنا يُشار إليه بـ«هذا المجال»، فالبطاقةُ تسمّي مجالَها. */
+  for (const domain of chipDomains(source)) {
+    for (const s of shownInDomain(source, domain)) put(s.item, null, 'other')
   }
   return shown
 }
 
-/** الرقاقاتُ ومحتوى كلٍّ منها — مجالاتُ الانتقاء التحريريّ وحدَها.
+/** مجالاتُ الرقاقات بترتيب أوّلِ ظهورٍ في الانتقاء التحريريّ.
 
     ولمَ لا كلُّ مجالٍ في الكتالوج: عنوانُ الشريط «من اختيارنا». فمجالٌ لم
     يُختر منه شيءٌ قطّ لا تُفتح له رقاقةٌ تعرض اقتراحاتٍ خالصةً تحت هذا
     العنوان — الكتالوجُ كاملا خلف البابِ تحته. */
-export function filterRows<T>(source: PickSource<T>): { domain: string; shown: ShownPick<T>[] }[] {
+function chipDomains<T>(source: PickSource<T>): string[] {
   const { editorial, pool, idOf, domainOf, exclude = [] } = source
   const skip = new Set(exclude)
   const byId = new Map(pool.map((x) => [idOf(x), x]))
@@ -145,5 +210,11 @@ export function filterRows<T>(source: PickSource<T>): { domain: string; shown: S
     const d = domainOf(item)
     if (!domains.includes(d)) domains.push(d)
   }
-  return domains.map((domain) => ({ domain, shown: shownFor(source, domain) }))
+  return domains
+}
+
+/** الرقاقاتُ ومحتوى كلٍّ منها — مجالاتُ الانتقاء التحريريّ وحدَها.
+    و«الكل» ليست منها: الشاشةُ تصدّرها بنفسها، ومحتواها اتّحادُ هذه. */
+export function filterRows<T>(source: PickSource<T>): { domain: string; shown: ShownPick<T>[] }[] {
+  return chipDomains(source).map((domain) => ({ domain, shown: shownInDomain(source, domain) }))
 }
