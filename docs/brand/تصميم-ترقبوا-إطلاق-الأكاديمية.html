@@ -1,0 +1,335 @@
+<!doctype html>
+<!-- تصميمُ «ترقّبوا إطلاق أكاديمية وجيز» — لقطةُ ريلز على إنستقرام.
+
+     ما هو: صفحةٌ واحدةٌ بمقاس ١٠٨٠×١٩٢٠ تُصوَّر صورةً ثمّ تُرفع.
+
+     وكان وسطَها مربّعٌ متروكٌ فارغا يوضع عليه ملصقُ الأسئلة في إنستقرام،
+     فرفعه صاحبُ المنصّة إلى معلومات: لوحٌ بسطرَين، ثمّ دعوةٌ إلى ترشيح
+     المدرّبين. فالصفحةُ تُقرأ وحدَها ولا تنتظر ملصقا فوقها.
+
+     (ولماذا تُقلَب شفّافيّةُ العلامة بدل حملها على لوحةٍ بيضاء: مشروحٌ عند
+     `.mark` في الأنماط، حيث يسكن الشرحُ مع ما يشرحه.)
+
+     والمنطقةُ الآمنة: يحجب ريلز نحوَ ٢٥٠ بكسلا من أعلى و٤٨٠ من أسفل وعمودَ
+     أزرارٍ عرضُه ١٩٠ على الجانب. فلا ينزل شيءٌ ذو معنًى تحت ١٤٤٠. وتُرى
+     الحدودُ بإضافة `?guides` إلى العنوان.
+
+     الأنماط:  (بلا شيء) داكن · `?light` فاتح · `?guides` أدلّةُ المنطقة
+
+     الصورتان المعتمَدتان بجواره: `ترقبوا-الإطلاق-داكن.png` و`…-فاتح.png`،
+     وهما ما يُرفع. وبقاؤهما في المستودَع ليس تكرارا للمصدر، فالتصديرُ يلزمه
+     خطَّان لا واحد:
+
+       ① **Avenir Arabic** من `public/fonts/` — وهو المطلوبُ هنا. وملفّاتُه
+          ليست في المستودَع (ترخيصُ Monotype لا يُنشر)، فمن صدّر قبل وضعها
+          خرجت لقطتُه بالخطّ الثاني لا الأوّل.
+       ② **IBM Plex Sans Arabic** من Google Fonts — الارتدادُ، كما ترتدُّ
+          إليه `src/index.css`. ويلزمه أن تكون الشبكةُ مفتوحة.
+
+     ومن صدّر بلا شبكةٍ ولا ملفّاتِ خطٍّ نزل إلى خطّ النظام، **وذلك يغيّر
+     المقاييسَ** فينزل المتنُ تحت المنطقة الآمنة. فما يُرفع محفوظٌ لا يُعاد
+     اشتقاقُه.
+
+     ــ والصورتان المحفوظتان الآن بالخطّ ② ــ لأنّ ملفّات ① لم تُوضع بعد.
+     فمن وضعها في `public/fonts/` بالأسماء التي يذكرها README هناك، أعاد
+     التصديرَ بالأمر أدناه فخرجت اللقطةُ بخطّ المنصّة.
+
+     وإعادةُ التصدير بعد تحرير النصّ (في متصفّحٍ له شبكة — والمقاسُ هو مقاسُ
+     اللقطة فلا قصَّ بعدها):
+
+       chromium --headless=new --hide-scrollbars --force-device-scale-factor=1 \
+         --window-size=1080,1920 --virtual-time-budget=8000 \
+         --screenshot=out.png \
+         "file://$PWD/docs/brand/تصميم-ترقبوا-إطلاق-الأكاديمية.html"
+
+     والنصُّ يُحرَّر من متن الصفحة مباشرةً — لا مصدرَ له في مكانٍ آخر. -->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" />
+<title>ترقّبوا إطلاق أكاديمية وجيز</title>
+<style>
+
+  /* ــ خطُّ المنصّة: Avenir Arabic ــ
+
+     هو خطُّ صاحب المنتج، وملفّاتُه مستضافةٌ ذاتيّا في `public/fonts/`
+     (انظر README هناك: ترخيصُ Monotype للويب يُسلَّم woff2). والأوزانُ
+     المتاحةُ في الحزمة ثلاثةٌ — ٤٠٠ و٥٠٠ و٧٠٠ — فما طُلب دونها أو بينها
+     يأخذه المتصفّحُ من أقربها.
+
+     ولا شيء يُكسر قبل وضع الملفّات: المتصفّح يتخطّى ملفّا غير موجودٍ بصمت
+     ويرتدُّ إلى `IBM Plex Sans Arabic` — كما يفعل `src/index.css` نفسُه. */
+  @font-face{font-family:"Avenir Arabic";src:url("../../public/fonts/avenir-arabic-400.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:"Avenir Arabic";src:url("../../public/fonts/avenir-arabic-500.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:"Avenir Arabic";src:url("../../public/fonts/avenir-arabic-700.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+
+  :root{
+    --ground:#0D0D0D;
+    --teal:#38A7B4;
+    --teal-light:#6EC7D1;
+    --teal-deep:#247B84;
+    --ink:#FFFFFF;
+    --ink-soft:rgba(255,255,255,.72);
+    --ink-faint:rgba(255,255,255,.46);
+    --hair:rgba(255,255,255,.10);
+    --glow-teal:rgba(56,167,180,.26);
+    --glow-gold:rgba(250,188,5,.075);
+    --grid:rgba(255,255,255,.022);
+    --box-fill:rgba(56,167,180,.055);
+    --box-line:rgba(110,199,209,.40);
+  }
+  :root[data-theme="light"]{
+    --ground:#F6F4EF;
+    --ink:#0E2225;
+    --ink-soft:rgba(14,34,37,.74);
+    --ink-faint:rgba(14,34,37,.50);
+    --hair:rgba(14,34,37,.12);
+    --glow-teal:rgba(56,167,180,.20);
+    --glow-gold:rgba(250,188,5,.095);
+    --grid:rgba(14,34,37,.030);
+    --teal-light:#1A5C64;
+    --box-fill:rgba(56,167,180,.07);
+    --box-line:rgba(36,123,132,.42);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1080px;height:1920px;overflow:hidden;background:var(--ground)}
+  body{font-family:"Avenir Arabic","IBM Plex Sans Arabic","Neo Sans Arabic",system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  /* اللوحةُ مثبَّتةٌ في الزاوية وتقصُّ ما فاض، فلا يزحزحها فائضٌ في RTL */
+  .canvas{
+    position:fixed;inset-inline-start:auto;left:0;top:0;
+    width:1080px;height:1920px;overflow:hidden;
+    background:var(--ground);
+  }
+
+  /* ــ طبقاتُ الخلفية ــ */
+  .bg{position:absolute;inset:0;pointer-events:none}
+  .bg-grid{
+    background-image:
+      repeating-linear-gradient(to right, var(--grid) 0 1px, transparent 1px 72px),
+      repeating-linear-gradient(to bottom, var(--grid) 0 1px, transparent 1px 72px);
+    mask-image:radial-gradient(ellipse 70% 50% at 50% 42%, #000 0%, transparent 78%);
+  }
+  .bg-glow-top{
+    background:radial-gradient(ellipse 760px 620px at 50% 14%, var(--glow-teal) 0%, transparent 70%);
+  }
+  .bg-glow-bottom{
+    background:radial-gradient(ellipse 700px 560px at 26% 66%, var(--glow-gold) 0%, transparent 74%);
+  }
+  .bg-ring{
+    position:absolute;left:50%;top:640px;transform:translateX(-50%);
+    width:1500px;height:1500px;border-radius:50%;
+    border:1px solid rgba(110,199,209,.065);
+  }
+  .bg-ring.two{width:1140px;height:1140px;top:820px;border-color:rgba(110,199,209,.05)}
+  .bg-noise{opacity:.05;mix-blend-mode:overlay}
+  .bg-vignette{
+    background:radial-gradient(ellipse 78% 62% at 50% 44%, transparent 45%, rgba(0,0,0,.55) 100%);
+  }
+  :root[data-theme="light"] .bg-vignette{
+    background:radial-gradient(ellipse 78% 62% at 50% 44%, transparent 50%, rgba(14,34,37,.10) 100%);
+  }
+  :root[data-theme="light"] .bg-noise{opacity:.035;mix-blend-mode:multiply}
+
+  /* ــ المنطقةُ الآمنةُ لريلز: ٢٤٠ من أعلى و٤٩٠ من أسفل ــ */
+  .stage{
+    position:relative;z-index:2;
+    height:100%;
+    padding:306px 96px 492px;
+    display:flex;flex-direction:column;align-items:center;
+    text-align:center;
+  }
+
+  /* ــ العلامةُ بلا خلفيّة ــ
+
+     `logo-mark.png` مربّعٌ فيروزيٌّ **حرفُه مقطوع**: الحرفُ شفّافيّةٌ لا
+     طباعةٌ بيضاء. فحملُه على لوحةٍ بيضاءَ يُظهره، لكنّه يضع تحت العلامة
+     خلفيّةً لا مكانَ لها في تصميمٍ داكن.
+
+     فيُقلَب القناعُ بدلَ ذلك: `feFuncA` يعكس الشفافيّةَ فيصير الحرفُ هو
+     المطبوعَ والمربّعُ شفّافا، ثمّ `clip-path` يقصُّ ما حول المربّع (وقد
+     صار معتِما بالقلب). والجدولُ `1 1 0 0` لا `1 0`: تعبئةُ الملفّ
+     شفّافيّتُها ٨٩٪ لا ١٠٠٪، فالقلبُ الخطّيُّ يُبقي شبحَ مربّعٍ بـ١١٪. */
+  .mark{display:block;filter:drop-shadow(0 12px 34px rgba(56,167,180,.42))}
+  .mark img{width:146px;height:146px;display:block;
+            filter:url(#ink-on-dark);clip-path:inset(2.7% round 16%)}
+  :root[data-theme="light"] .mark{filter:drop-shadow(0 12px 30px rgba(36,123,132,.18))}
+  :root[data-theme="light"] .mark img{filter:url(#ink-on-light)}
+
+  .title{margin-top:46px;line-height:1}
+  .title .t1{
+    display:block;font-size:62px;font-weight:300;
+    color:var(--ink-soft);letter-spacing:.01em;line-height:1.34;
+  }
+  .title .t2{
+    display:block;margin-top:8px;
+    font-size:98px;font-weight:700;line-height:1.28;
+    background:linear-gradient(200deg,#FFFFFF 8%,var(--teal-light) 96%);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  :root[data-theme="light"] .title .t2{
+    background:linear-gradient(200deg,#0E2225 10%,#247B84 96%);
+    -webkit-background-clip:text;background-clip:text;
+  }
+
+  .rule{margin-top:26px;width:132px;height:2px;
+        background:linear-gradient(to left,transparent,var(--teal),transparent)}
+
+  .lede{margin-top:24px;font-size:35px;font-weight:500;color:var(--ink-soft);line-height:1.5}
+
+  .chips{margin-top:18px;display:flex;gap:14px;justify-content:center}
+  .chip{
+    padding:11px 24px;border-radius:14px;
+    border:1px solid var(--hair);
+    background:rgba(255,255,255,.035);
+    color:var(--ink-faint);font-size:25px;font-weight:400;
+  }
+  :root[data-theme="light"] .chip{background:rgba(14,34,37,.035)}
+
+  /* ــ المربَّعُ المتروكُ لملصَق الأسئلة ــ */
+  /* ــ معلوماتٌ مكانَ المربّع ــ
+
+     كان هنا مربّعٌ متروكٌ فارغا يوضع عليه ملصقُ الأسئلة، ورفعه صاحبُ المنصّة
+     إلى معلومات: لوحٌ بسطرَين يقولان ما يهمُّ من يقرأ، ثمّ دعوةٌ إلى ترشيح
+     المدرّبين — وحدُّها مقطَّعٌ كما كان حدُّ المربّع، فالدعوةُ تُطلب ولا تُملأ. */
+  .facts{
+    margin-top:38px;width:780px;
+    border-radius:32px;overflow:hidden;
+    background:var(--box-fill);
+    border:1px solid var(--box-line);
+  }
+  .fact{
+    display:flex;align-items:center;justify-content:center;gap:18px;
+    padding:24px 32px;
+    font-size:33px;font-weight:500;color:var(--ink);
+  }
+  .fact + .fact{border-top:1px solid var(--hair)}
+  .fact svg{color:var(--teal-light);flex:none;display:block}
+
+  .nominate{
+    margin-top:28px;
+    display:inline-flex;align-items:center;gap:14px;
+    padding:18px 36px;border-radius:999px;
+    border:1px dashed var(--box-line);
+    background:rgba(56,167,180,.06);
+    font-size:30px;font-weight:600;color:var(--teal-light);
+  }
+  .nominate svg{flex:none;display:block}
+
+  /* ــ الدعوةُ إلى الفعل ــ */
+  .cta{margin-top:30px;display:flex;flex-direction:column;align-items:center;gap:13px}
+  .cta-pill{
+    display:inline-flex;align-items:center;gap:16px;
+    padding:20px 40px;border-radius:999px;
+    background:linear-gradient(180deg,var(--teal) 0%,var(--teal-deep) 100%);
+    color:#08272B;font-size:31px;font-weight:600;
+    box-shadow:0 20px 48px rgba(56,167,180,.30);
+  }
+  /* العنوانُ لاتينيٌّ في صفحةٍ عربيّة، فيُصرَّح باتّجاهه ولا يُترك للثنائيّة */
+  .cta-url{font-size:31px;font-weight:600;color:var(--ink-soft);
+           direction:ltr;letter-spacing:.03em}
+
+  /* أدلّةُ ريلز: الشريطُ العلويّ ٢٥٠ والسفليّ ٤٨٠ وعمودُ الأزرار ١٩٠ */
+  .guides{display:none}
+  :root[data-guides] .guides{display:block;position:absolute;inset:0;z-index:9}
+  .guides i{position:absolute;background:rgba(255,0,80,.22);
+            outline:1px dashed rgba(255,0,80,.75);font-style:normal}
+  .guides .g-top{top:0;left:0;right:0;height:250px}
+  .guides .g-bottom{bottom:0;left:0;right:0;height:480px}
+  .guides .g-right{top:250px;bottom:480px;left:0;width:190px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <filter id="ink-on-dark" color-interpolation-filters="sRGB">
+    <feComponentTransfer result="INV"><feFuncA type="table" tableValues="1 1 0 0"/></feComponentTransfer>
+    <feFlood flood-color="#FFFFFF" result="F"/>
+    <feComposite in="F" in2="INV" operator="in"/>
+  </filter>
+  <filter id="ink-on-light" color-interpolation-filters="sRGB">
+    <feComponentTransfer result="INV"><feFuncA type="table" tableValues="1 1 0 0"/></feComponentTransfer>
+    <feFlood flood-color="#247B84" result="F"/>
+    <feComposite in="F" in2="INV" operator="in"/>
+  </filter>
+</svg>
+<div class="canvas">
+  <div class="guides"><i class="g-top"></i><i class="g-bottom"></i><i class="g-right"></i></div>
+  <div class="bg bg-glow-top"></div>
+  <div class="bg bg-glow-bottom"></div>
+  <div class="bg bg-grid"></div>
+  <div class="bg"><div class="bg-ring"></div><div class="bg-ring two"></div></div>
+  <div class="bg bg-vignette"></div>
+  <svg class="bg bg-noise" xmlns="http://www.w3.org/2000/svg">
+    <filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="4"/></filter>
+    <rect width="100%" height="100%" filter="url(#n)"/>
+  </svg>
+
+  <div class="stage">
+    <span class="mark"><img src="../../public/logo-mark.png" alt="وجيز" /></span>
+
+    <h1 class="title">
+      <span class="t1">ترقّبوا إطلاق</span>
+      <span class="t2">أكاديمية وجيز</span>
+    </h1>
+
+    <div class="rule"></div>
+
+    <p class="lede">نبحث عن مدرّبين من كافة الدول العربية</p>
+
+    <div class="chips">
+      <span class="chip">خبرة حقيقية</span>
+      <span class="chip">محتوى أصيل</span>
+      <span class="chip">مخرجات عمليّة</span>
+    </div>
+
+    <div class="facts">
+      <div class="fact">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/>
+        </svg>
+        نستهدف كافّة المجالات
+      </div>
+      <div class="fact">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.7 2.6L16 9.4"/>
+        </svg>
+        التقديم مفتوح الآن
+      </div>
+    </div>
+
+    <div class="nominate">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>
+      </svg>
+      تعرف مدرّبا مميّزا؟ رشِّحه لنا
+    </div>
+
+    <div class="cta">
+      <div class="cta-pill">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </svg>
+        قدِّم عبر الرابط
+      </div>
+      <div class="cta-url">www.wajeezacademy.com</div>
+    </div>
+  </div>
+</div>
+
+  <script>
+    if (location.search.indexOf('light') !== -1) document.documentElement.dataset.theme = 'light';
+    if (location.search.indexOf('guides') !== -1) document.documentElement.dataset.guides = '1';
+  </script>
+</body>
+</html>
