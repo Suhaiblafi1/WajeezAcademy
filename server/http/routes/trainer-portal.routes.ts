@@ -4,7 +4,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
-import { MAX_COURSE_TITLE, MIN_COURSE_TITLE, TrainerChangeService } from '../../services/trainer-change.service'
+import { TrainerChangeService } from '../../services/trainer-change.service'
 import {
   CourseProposalService, MAX_PROPOSAL_QUESTION, MAX_PROPOSAL_SUMMARY,
   MAX_PROPOSAL_TITLE, MIN_PROPOSAL_TITLE,
@@ -112,65 +112,19 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   })
 
   /* حُذفت هنا أربعةُ مساراتٍ بلا شاشة (٨ سبتمبر ٢٠٢٦): مخطّطُ الدورة، وإرسالُ
-     اقتراحِ تعديلٍ وقائمتُه وسحبُه. الاقتراحُ صار يركب مع خطّة الشعبة
-     (`proposals` في `cohort-plan.service.ts`) لا طابورا مستقلّا — «ليس اقتراحا
-     بل واجبٌ عليه». وأمّا جانبُ الإدارة من `TrainerChangeService` فباقٍ في
-     `admin-trainer.routes.ts` بشاشته.
+     اقتراحِ تعديلٍ وقائمتُه وسحبُه. وأمّا جانبُ الإدارة من `TrainerChangeService`
+     فباقٍ في `admin-trainer.routes.ts` بشاشته.
 
-     ═══ ويعود منها واحدٌ اليومَ — بشاشته (ح-٣) ═══
+     ═══ ثمّ عاد منها بابُ الاسم بشاشته (ح-٣)، ثمّ أُغلق (ق٥) ═══
 
-     الصندوقُ الذي حلَّ محلَّها كان يكتب الاسمَ **على النسخة الحاليّة** بـ
-     `updateMany`، فيُعاد تسميةُ كلِّ شهادةٍ صدرت. وقرارُ ح-٣: إعادةُ التسمية
-     **نسخةٌ جديدة** لا كتابةٌ فوق القائم. فعاد بابُ الاسمِ وحدَه إلى قناته
-     الصحيحة — `TrainerChangeService` بـmaker-checker ودائرةِ أثرٍ وإصدارٍ
-     جديد — والبقيّةُ تبقى محذوفةً حتّى تُبنى شاشتُها، فعلّةُ حذفِها قائمة.
+     عاد `/api/trainer/course-title-proposals` — إرسالا وقائمةً وسحبا — ليكون
+     للمدرّب بابٌ إلى اسم دورته في قناةٍ صحيحة: maker-checker وإصدارٌ جديدٌ لا
+     كتابةٌ فوق القائم. وأغلقه صاحبُ المنصّة (١٧ سبتمبر ٢٠٢٦): «بابُ اسم
+     الدورة يُغلق» — قناةٌ لا يملكها أحدٌ أسوأُ من لا قناة.
 
-     وهو مسارٌ ضيّقٌ بقصد: لا `submit` عامًّا يقبل كلَّ نوعِ تغييرٍ بلا شاشة،
-     بل «اقترِح اسما لهذه الدورة» وحدَه. */
-  app.post('/api/trainer/course-title-proposals', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'اقتراحُ اسمٍ آخرَ لدورة — يصير إصدارا جديدا باعتماد الإدارة (ح-٣)' },
-  }, async (req, reply) => {
-    const body = z.object({
-      courseId: z.string().min(2).max(64),
-      titleAr: z.string().trim().min(MIN_COURSE_TITLE).max(MAX_COURSE_TITLE),
-      reason: z.string().trim().min(10).max(2000),
-    }).parse(req.body)
-    const request = await changes.submit(req.auth!.userId, {
-      courseId: body.courseId,
-      scope: 'catalog',
-      reason: body.reason,
-      items: [{ changeType: 'course_title_edit', targetKey: body.courseId, afterValue: { titleAr: body.titleAr } }],
-    })
-    return reply.status(201).send(request)
-  })
+     فلا مسلكَ اسمٍ هنا، ولا نوعَ `course_title_edit` في `CHANGE_TYPES`
+     أصلا — والإغلاقُ من الجذر لا من الشاشة وحدَها. */
 
-  app.get('/api/trainer/course-title-proposals', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'اقتراحاتي لأسماء الدورات وحالتُها' },
-  }, async (req) => {
-    const { courseId } = z.object({ courseId: z.string().min(2).max(64).optional() }).parse(req.query)
-    const mine = await changes.listMine(req.auth!.userId)
-    return mine
-      .filter((r) => r.items.some((i) => i.changeType === 'course_title_edit'))
-      .filter((r) => !courseId || r.courseId === courseId)
-      .map((r) => ({
-        id: r.id,
-        courseId: r.courseId,
-        status: r.status,
-        createdAt: r.createdAt,
-        reason: r.reason,
-        titleAr: (r.items.find((i) => i.changeType === 'course_title_edit')?.afterValue as { titleAr?: string } | null)?.titleAr ?? null,
-      }))
-  })
-
-  app.post('/api/trainer/course-title-proposals/:id/withdraw', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'سحبُ اقتراحِ اسمٍ قبل أن يُبتّ فيه' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return changes.withdraw(req.auth!.userId, id)
-  })
   /* ═══ دوراتي المقترحة — ما أقدر عليه وليس في كتالوجكم (ح-٢) ═══
 
      كتبها يومَ تقدّم (أ-٣) فحُفظت في طلبه، وبُذرت إلى جدولها يومَ اعتُمد.

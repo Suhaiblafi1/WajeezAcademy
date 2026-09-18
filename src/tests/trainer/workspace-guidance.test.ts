@@ -91,11 +91,10 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
     expect(hinted, `${all - hinted} حقلا بلا تلميح`).toBe(all)
   })
 
-  it('وحقلا اقتراحِ اسمِ الدورة كذلك — تبِعا الفحصَ إلى ملفّهما', () => {
-    const { all, hinted } = everyFieldHinted(code('src/pages/trainer/CourseTitleProposal.tsx'))
-    expect(all, 'لا حقولَ موصوفةً أصلا').toBeGreaterThanOrEqual(2)
-    expect(hinted, `${all - hinted} حقلا بلا تلميح`).toBe(all)
-  })
+  /* وكان هنا فحصُ حقلَي اقتراحِ اسمِ الدورة: خرجا من الخطوة الأولى إلى
+     ملفّهما (د-٦) فتبِعهما الفحصُ إليه، ثمّ أُغلق بابُ الاقتراح كلُّه
+     (ق٥ · ١٧ سبتمبر ٢٠٢٦) فزال الملفُّ وحقلاه. ويحرس إغلاقَه
+     `cohort-proposals` بنيويّا — لا ملفٌّ هنا يُفحَص. */
 
   it('ولا يبقى في الخطوتين حقلٌ بالصيغة القديمة — عنوانٌ عارٍ بلا تلميح', () => {
     /* الصيغةُ القديمة: `<span className="mb-1.5 block text-read font-bold …">`

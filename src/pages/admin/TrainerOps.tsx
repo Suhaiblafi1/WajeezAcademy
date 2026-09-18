@@ -300,11 +300,11 @@ interface TrainerChangeRequest {
 }
 
 /** الاسمُ المقترَحُ في اقتراحِ تسمية — أو لا شيءَ إن لم يكن الاقتراحُ تسمية */
-function proposedTitle(r: TrainerChangeRequest): string | null {
-  const item = r.items?.find((i) => i.changeType === "course_title_edit");
-  const after = (item?.afterValue ?? null) as { titleAr?: unknown } | null;
-  return typeof after?.titleAr === "string" && after.titleAr.trim() ? after.titleAr.trim() : null;
-}
+/* وزال من هنا `proposedTitle` وسطرُه في البطاقة: كان يقرأ بندَ
+   `course_title_edit` ليُري المعتمِدَ الاسمَ المقترَح، وأُغلق بابُ اقتراح
+   الاسم (ق٥ · ١٧ سبتمبر ٢٠٢٦). والمعلَّقُ يومَ الإغلاق صُيِّر `superseded`
+   بتعليله في هجرة `20260917190000_close_course_title_channel` — فلا يبقى
+   في الطابور بندٌ لا تعرف الشاشةُ كيف تعرضه. */
 
 /* البند ب-١: دائرة الأثر فوق كل اقتراح. تُعرض قبل أزرار القرار لا بعدها —
    المعتمِد يقرأ من يصله التعديل ثم يقرر، لا يقرر ثم يكتشف. */
@@ -398,12 +398,6 @@ export function TrainerChangeRequests() {
                   البطاقةُ كانت تعرض السببَ و«١ بند تعديل» — فمن ضغط «اعتماد
                   للكتالوج» على اقتراحِ تسميةٍ اعتمد اسما **لم يره**. والاسمُ
                   هو كلُّ الاقتراح، لا تفصيلا فيه. */}
-              {proposedTitle(r) && (
-                <p className="mt-1 text-read leading-6">
-                  <span className="text-muted-foreground">الاسمُ المقترَح: </span>
-                  <b className="text-foreground">{proposedTitle(r)}</b>
-                </p>
-              )}
               <p className="mt-1 text-read leading-6 text-muted-foreground">{r.reason}</p>
               <p className="mt-1 text-read text-muted-foreground">
                 {fmtDateTime(new Date(r.createdAt))} · {r.items?.length ?? 0} بند تعديل

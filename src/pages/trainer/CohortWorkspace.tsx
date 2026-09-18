@@ -36,7 +36,6 @@ import {
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import CohortOps from "./CohortOps";
-import CourseTitleProposal from "./CourseTitleProposal";
 import SessionsAndAttendance from "./SessionsAndAttendance";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
@@ -681,17 +680,19 @@ export default function CohortWorkspace() {
           </Inset>
           <Button tone="confirm" disabled={busy || locked || !dirty.identity || identity.title.trim().length < 3} onClick={saveIdentity} className="mt-4">احفظ البيانات</Button>
 
-          {/* ═══ اسمُ الدورة — قناتُه الصحيحة لا صندوقٌ في الخطّة (ح-٣ · د-٦) ═══
+          {/* ═══ ولا سؤالَ عن اسم الدورة هنا (ق٥ · ١٧ سبتمبر ٢٠٢٦) ═══
 
-              حلَّ محلَّ «اقتراحٌ للإدارة (اختياريّ)»: كان يكتب الاسمَ على
-              النسخة الحاليّة فيُعيد تسميةَ الشهادات الصادرة، ولا يترك سجلَّ
-              من اقترح ولا لِمَ. والعلّةُ كاملةً في رأس `CourseTitleProposal`. */}
-          <CourseTitleProposal
-            courseId={ws.course.id}
-            currentTitleAr={ws.course.titleAr}
-            legacyDraft={content.proposals?.courseTitleAr ?? null}
-            locked={locked}
-          />
+              كان هنا صندوقُ «اقترِح اسما لهذه الدورة»: حلَّ محلَّ «اقتراحٌ
+              للإدارة (اختياريّ)» وأصلح عطبَه — إصدارٌ جديدٌ لا كتابةٌ فوق
+              القائم فتُعاد تسميةُ الشهادات الصادرة.
+
+              وسأل صاحبُ المنصّة عنه: «لماذا هذا السؤال هنا؟». والجوابُ أنّه
+              لم يكن له موضعٌ صحيحٌ أصلا في شاشةِ تجهيزِ شعبة: المدرّبُ جاء
+              يعدّ دفعتَه، فيُسأل عن اسم الدورة في الكتالوج كلِّه. ثمّ أغلق
+              القناةَ كلَّها (ق٥) — قناةٌ لا يملكها أحدٌ أسوأُ من لا قناة.
+
+              فلم يبقَ في الخطوة الأولى قرارٌ ليس من عمله: اسمُ شعبته
+              ونبذتُها، وكلاهما يملكه. */}
         </Panel>
       )}
 
