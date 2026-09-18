@@ -120,13 +120,21 @@
     text-align:center;
   }
 
-  .mark-plate{
-    width:156px;height:156px;border-radius:40px;
-    background:#F6F4EF;
-    display:grid;place-items:center;
-    box-shadow:0 22px 56px rgba(56,167,180,.26), 0 0 0 1px rgba(255,255,255,.06);
-  }
-  .mark{width:112px;height:112px;display:block}
+  /* ــ العلامةُ بلا خلفيّة ــ
+
+     `logo-mark.png` مربّعٌ فيروزيٌّ **حرفُه مقطوع**: الحرفُ شفّافيّةٌ لا
+     طباعةٌ بيضاء. فحملُه على لوحةٍ بيضاءَ يُظهره، لكنّه يضع تحت العلامة
+     خلفيّةً لا مكانَ لها في تصميمٍ داكن.
+
+     فيُقلَب القناعُ بدلَ ذلك: `feFuncA` يعكس الشفافيّةَ فيصير الحرفُ هو
+     المطبوعَ والمربّعُ شفّافا، ثمّ `clip-path` يقصُّ ما حول المربّع (وقد
+     صار معتِما بالقلب). والجدولُ `1 1 0 0` لا `1 0`: تعبئةُ الملفّ
+     شفّافيّتُها ٨٩٪ لا ١٠٠٪، فالقلبُ الخطّيُّ يُبقي شبحَ مربّعٍ بـ١١٪. */
+  .mark{display:block;filter:drop-shadow(0 12px 34px rgba(56,167,180,.42))}
+  .mark img{width:146px;height:146px;display:block;
+            filter:url(#ink-on-dark);clip-path:inset(2.7% round 16%)}
+  :root[data-theme="light"] .mark{filter:drop-shadow(0 12px 30px rgba(36,123,132,.18))}
+  :root[data-theme="light"] .mark img{filter:url(#ink-on-light)}
 
   .eyebrow{
     margin-top:28px;
@@ -212,6 +220,18 @@
 </style>
 </head>
 <body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <filter id="ink-on-dark" color-interpolation-filters="sRGB">
+    <feComponentTransfer result="INV"><feFuncA type="table" tableValues="1 1 0 0"/></feComponentTransfer>
+    <feFlood flood-color="#FFFFFF" result="F"/>
+    <feComposite in="F" in2="INV" operator="in"/>
+  </filter>
+  <filter id="ink-on-light" color-interpolation-filters="sRGB">
+    <feComponentTransfer result="INV"><feFuncA type="table" tableValues="1 1 0 0"/></feComponentTransfer>
+    <feFlood flood-color="#247B84" result="F"/>
+    <feComposite in="F" in2="INV" operator="in"/>
+  </filter>
+</svg>
 <div class="canvas">
   <div class="guides"><i class="g-top"></i><i class="g-bottom"></i><i class="g-right"></i></div>
   <div class="bg bg-glow-top"></div>
@@ -225,9 +245,9 @@
   </svg>
 
   <div class="stage">
-    <div class="mark-plate"><img class="mark" src="../../public/logo-mark.png" alt="وجيز" /></div>
+    <span class="mark"><img src="../../public/logo-mark.png" alt="وجيز" /></span>
 
-    <div class="eyebrow"><span class="dot"></span>الإطلاق قريبًا</div>
+    <div class="eyebrow"><span class="dot"></span>قريبًا</div>
 
     <h1 class="title">
       <span class="t1">ترقّبوا إطلاق</span>
