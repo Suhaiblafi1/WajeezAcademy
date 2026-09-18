@@ -33,6 +33,7 @@ interface Slot {
   startsAt: string;
   endsAt: string | null;
   status: string;
+  approvalState: string;
   role: string;
   cohortId: string;
   cohortTitle: string;
@@ -222,6 +223,19 @@ export default function TrainerSchedule() {
                           <p className="mt-0.5 text-read text-muted-foreground">
                             {s.courseTitle} · {s.cohortTitle} · {ROLE_AR[s.role] ?? s.role}
                           </p>
+                          {/* ═══ والمنتظِرةُ في جدوله تُرى — وتُقال منتظِرة ═══
+                              كانت تسقط من هذه الشاشة أصلا (بوّابةُ المتعلّم
+                              طُبّقت على المدرّب)، فيقرأ غيابَ ما أنشأه ضياعا.
+                              والمعتمَدُ بلا حبّة — شارةٌ على كلّ صفٍّ تُعمي
+                              عن الصفراء. */}
+                          {s.approvalState === "pending" && (
+                            <p className="mt-1 text-read leading-6 text-muted-foreground">
+                              <span className="me-1.5 inline-flex items-center rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-fine font-black text-gold-ink">
+                                بانتظار اعتماد الإدارة
+                              </span>
+                              غيرُ ظاهرةٍ للمتعلّمين بعد — وهي في جدولك.
+                            </p>
+                          )}
                         </div>
                         <div className="flex shrink-0 items-center gap-2 text-xs font-black">
                           {clash && (

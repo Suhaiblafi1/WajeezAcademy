@@ -317,6 +317,42 @@ describe('جدولُ المدرّب عبر شعبه', () => {
     expect((await deadlines.forTrainer(trainerUserId)).sessions).toHaveLength(0)
   })
 
+  it('⚠️ والمنتظِرةُ في جدوله وتتزاحم — وكانت تسقط بشرط المتعلّم صامتةً', async () => {
+    /* بوّابةُ `LEARNER_SESSION_WHERE` كانت مطبَّقةً على هذه الدالّة، وهي
+       شاشةُ المدرّب عن جلساته هو. فما جدوَله بيده وينتظر قرارَ الإدارة
+       يختفي من جدوله — ويختفي معه من **حساب التزاحم**، لأنّ الحسابَ يجري
+       على الصفوف الراجعة. فالشاشةُ تقول «لا تزاحم» وفي اليوم تزاحمان. */
+    await reset()
+    const a = await mkCohort('شعبةُ المعتمَد')
+    const b = await mkCohort('شعبةُ المنتظِر')
+    await prisma.cohortTrainer.createMany({
+      data: [{ cohortId: a.id, profileId }, { cohortId: b.id, profileId }],
+    })
+    const at = Date.now() + 9 * DAY
+    await prisma.cohortSession.create({
+      data: { cohortId: a.id, title: 'معتمَدة', approvalState: 'approved', startsAt: new Date(at), endsAt: new Date(at + 2 * 3_600_000) },
+    })
+    await prisma.cohortSession.create({
+      data: { cohortId: b.id, title: 'منتظِرة', approvalState: 'pending', startsAt: new Date(at + 3_600_000), endsAt: new Date(at + 3 * 3_600_000) },
+    })
+    const out = await deadlines.forTrainer(trainerUserId)
+    expect(out.sessions.map((s) => s.title), 'ما جدوَله بيده سقط من جدوله').toEqual(['معتمَدة', 'منتظِرة'])
+    expect(out.sessions.find((s) => s.title === 'منتظِرة')!.approvalState, 'الموقفُ لم يصل الشاشة').toBe('pending')
+    expect(out.clashing, 'التزاحمُ حُسب على ما بقي بعد الحجب').toBe(2)
+  })
+
+  it('والمردودةُ خارجَ جدوله — خبرُ الردّ في طابور عمله لا في مواعيده', async () => {
+    await reset()
+    const c = await mkCohort('شعبةُ المردود')
+    await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId } })
+    /* والحالةُ `scheduled` قصدا: لو اتُّكل على شرط الملغى لَمرّ الفحصُ بلا
+       أن تُختبَر بوّابةُ الردّ نفسُها — وذاك حارسٌ أخضرُ لسببٍ خاطئ. */
+    await prisma.cohortSession.create({
+      data: { cohortId: c.id, title: 'مردودة', approvalState: 'rejected', startsAt: new Date(Date.now() + DAY), endsAt: new Date(Date.now() + DAY + 3_600_000) },
+    })
+    expect((await deadlines.forTrainer(trainerUserId)).sessions).toHaveLength(0)
+  })
+
   it('ولا يرى المدرّبُ جلسةَ شعبةٍ لا يدرّبها', async () => {
     await reset()
     const mine = await mkCohort('شعبتي')

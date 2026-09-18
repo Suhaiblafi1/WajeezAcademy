@@ -16,7 +16,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
-import { LEARNER_SESSION_WHERE } from './session-visibility'
+import { TRAINER_OWN_SESSION_WHERE } from './session-visibility'
 import {
   AR_CARDS, AR_COHORTS, AR_SESSIONS, AR_SUBMISSIONS,
   DAY_MS, HORIZON_DAYS, countAr, dueLabelAr, urgencyOf,
@@ -154,8 +154,8 @@ export class DeadlinesService {
                والعنوانُ يتغيّر بالإصدار، والأحدثُ هو ما يقرؤه المتعلّم */
             course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
             sessions: {
-              where: { ...LEARNER_SESSION_WHERE, startsAt: { gte: now, lte: until }, status: { notIn: ['cancelled'] } },
-              select: { id: true, title: true, startsAt: true, endsAt: true, status: true },
+              where: { ...TRAINER_OWN_SESSION_WHERE, startsAt: { gte: now, lte: until }, status: { notIn: ['cancelled'] } },
+              select: { id: true, title: true, startsAt: true, endsAt: true, status: true, approvalState: true },
             },
           },
         },
@@ -167,6 +167,8 @@ export class DeadlinesService {
       startsAt: s.startsAt.toISOString(),
       endsAt: s.endsAt ? s.endsAt.toISOString() : null,
       status: s.status,
+      /* وموقفُ الإدارة يُقال في الصفّ: منتظِرةٌ في جدوله ليست كمعتمَدة */
+      approvalState: s.approvalState,
       role: l.role,
       cohortId: l.cohort.id, cohortTitle: l.cohort.title,
       courseTitle: l.cohort.course.versions[0]?.titleAr ?? l.cohort.title,
