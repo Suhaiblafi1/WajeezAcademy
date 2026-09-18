@@ -21,6 +21,10 @@ import { wajeezSkillsStats } from '@/data/trustMetrics'
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const source = readFileSync(join(root, 'src/data/pathway-perks.ts'), 'utf8')
 
+/* بلا تعليقات: الحارسُ على ما يُصيَّر، وذِكرُ الاسم في شرحٍ ليس عرضا له. */
+const rendered = (file: string) =>
+  readFileSync(join(root, file), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+
 describe('قائمتا المزايا لا تتداخلان', () => {
   it('⚠️ ولا بندَ في الاثنتين — فرقُ الشراءَين لا يكون مجّانا للجميع', () => {
     const paid = new Set(PATHWAY_ONLY_PERKS.map((p) => p.t))
@@ -62,5 +66,30 @@ describe('قائمتا المزايا لا تتداخلان', () => {
     expect(source, 'الرقمُ مكتوبٌ باليد بدل قراءته').toMatch(/wajeezSkillsStats\.find/)
     const summaries = FREE_FOR_ALL_NOW.find((p) => p.explain)?.explain?.paras.join(' ') ?? ''
     expect(summaries, 'الرقمُ لا يظهر في الشرح').toContain(doc!.display_value)
+  })
+})
+
+/* ═══ وأين يُعرض المجّانيُّ — شاشةٌ واحدةٌ لا شاشتان ═══
+
+   قرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦): «لا داعي لوجود هذه الخانة بعد أن
+   ينقر على دفع… لا أريد أن أشتّته لكي يقوم بإتمام الدفع كاملا، وهي موجودةٌ
+   في الصفحة التي قبلها». فما بعد نقرة الشراء غرضُه إتمامُه.
+
+   والكتلةُ بابٌ يُنقر فيُغادِر — فتكرارُها على اللوح ليس زخرفا زائدا بل
+   مخرجٌ من الدفع في وسطه. والفحصُ على التصيير لا على ورود الاسم: اسمٌ في
+   تعليقٍ لا يعرض شيئا، فالتعليقاتُ تُنزع قبل النظر. */
+describe('وموضعُ المجّانيّ شاشةٌ واحدة', () => {
+  it('صفحةُ المسار تعرضه — وإلّا فالحارسُ يحرس عدما', () => {
+    expect(rendered('src/pages/Pathway.tsx'), 'صفحةُ المسار لا تعرضه').toMatch(/<FreeNowPerks\b/)
+  })
+
+  it('⚠️ ولوحُ الشراء لا يعرضه — لا بابَ مجّانيّا بعد نقرة الدفع', () => {
+    const buy = rendered('src/components/BuyPanel.tsx')
+    expect(buy, 'لوحُ الشراء يعرض المجّانيّ ثانيةً').not.toMatch(/<FreeNowPerks\b/)
+    expect(buy, 'لوحُ الشراء ما زال يستورد الكتلة').not.toMatch(/from\s+['"]@\/components\/FreeNowPerks['"]/)
+  })
+
+  it('ويبقى فيه فرقُ الشراءَين وحدَه — تأكيدُ ما يشتريه لا صرفٌ عنه', () => {
+    expect(rendered('src/components/BuyPanel.tsx'), 'اللوحُ لا يعرض فرقَ الشراءَين').toMatch(/PATHWAY_ONLY_PERKS\.map/)
   })
 })

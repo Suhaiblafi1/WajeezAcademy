@@ -876,7 +876,7 @@ export default function PathwayPage() {
                       وموضعُه هنا لا أسفلَ العمود: البطاقةُ تُشَدّ إلى طول
                       جارتها فيبقى تحت المزايا فراغُ ثلاثِ مئةِ بكسل — وهو
                       الفراغُ نفسُه الذي نُقلت المزايا إليه أصلا (٨ سبتمبر). */}
-                  <FreeNowPerks bare className="mt-3.5" />
+                  <FreeNowPerks className="mt-3.5" />
                 </Card>
               </div>
 
