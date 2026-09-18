@@ -35,3 +35,22 @@ export function blockingBeforeSubmit<T extends GateItem>(checklist: readonly T[]
 export function readyToSubmit(checklist: readonly GateItem[]): boolean {
   return blockingBeforeSubmit(checklist).length === 0
 }
+
+/* ═══ وصفوفٌ في القائمة ليست من عمله ═══
+
+   صفُّ `approval` بيدِ المديرِ الأكاديميّ، وصفُّ `term` بيدِ الإدارة تسمّيه
+   عند الإسناد (قرارُ صاحب المنصّة، ١٧ سبتمبر ٢٠٢٦). وكلاهما **يحجب**
+   الإرسالَ حقّا — لا خطّةَ تُرفع بلا فصلٍ تُشتقّ منه حدودُها — لكنّ واحدا
+   منهما لا يُعدُّ على المدرّب.
+
+   والفرقُ ليس تجميلا: خطُّ التقدّم والبطاقةُ يقولان «أنجزتَ كذا من كذا»،
+   فصفٌّ لا بابَ له في يده يُبقي خطَّه دون التمام أبدا مهما أتمّ — وهو
+   عينُ ما مُنع في الاعتماد فبقي «٥ من ٦» لكلّ شعبةٍ تامّة. فما ليس بيده
+   يُرى في مكانه (لافتةُ «لم تُفتَح هذه الشعبةُ بعد» في الخطوة الأولى)
+   ولا يُحسَب في عدَدِه، ولا يُساق إليه زرُّ «افتح أوّلَها». */
+export const ADMIN_OWNED_KEYS: readonly string[] = ['term', APPROVAL_KEY]
+
+/** ما يملك المدرّبُ إنجازَه وحدَه — به يُقاس تقدّمُه لا بغيره */
+export function trainerOwned<T extends GateItem>(checklist: readonly T[]): T[] {
+  return checklist.filter((c) => !ADMIN_OWNED_KEYS.includes(c.key))
+}

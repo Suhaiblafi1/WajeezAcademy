@@ -31,6 +31,7 @@ import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 import { termHorizon } from "@/application/terms/season";
 import { toast, toastError } from "@/components/Toast";
+import { TERM_STATUS_AR, TERM_STATUS_EFFECT_AR, nextStatuses, type TermStatus } from "@/application/terms/lifecycle";
 
 interface Term {
   id: string; year: number; season: string; titleAr: string;
@@ -50,7 +51,19 @@ interface AvailableTrainer { profileId: string; name: string; status: string; ma
 
 /** `datetime-local` يقبل بلا ثوانٍ ولا منطقة — والخادمُ يقرؤه تاريخا */
 const toLocal = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
-const STATUS_AR: Record<string, string> = { draft: "مسودّة", planning: "قيد التخطيط", open: "مفتوح", running: "جارٍ", closed: "مغلق" };
+/* ═══ ومعجمُ الحالات صار من عمود العمل لا من ذاكرةٍ سابقة ═══
+
+   كان هنا معجمٌ محلّيّ: `draft | planning | open | running | closed`. وثلاثةٌ
+   منها ليست من قيم العمود أصلا (`planned | open | active | closed |
+   cancelled`)، فكان الإداريُّ يقرأ لكلّ فصلٍ كلمةَ «planned» بالإنجليزيّة —
+   لأنّ الترجمةَ تخطئ المفتاحَ فتسقط إلى القيمة الخام. ومعجمان يقولان الشيءَ
+   نفسَه يفترقان؛ فصار المعجمُ مع القاعدة في `application/terms/lifecycle`. */
+
+/** شعبةٌ لم يُسمَّ فصلُها بعد — «لم تُفتَح» لا «معطوبة» */
+interface TermlessCohort {
+  id: string; title: string; courseTitleAr: string;
+  learners: number; sessions: number; trainers: string[]; blocksTrainer: boolean;
+}
 
 export default function Terms() {
   const [terms, setTerms] = useState<Term[] | null>(null);
@@ -63,11 +76,18 @@ export default function Terms() {
   const [trainers, setTrainers] = useState<Record<string, AvailableTrainer[]>>({});
   /* الحذفُ بضغطتين: الأولى تكشف زرَّ التأكيد، والثانية تحذف — لا حوارَ متصفّح */
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /* شعبٌ لها مدرّبٌ ولم يُسمَّ فصلُها — ومدرّبوها محبوسون عن الجدولة */
+  const [termless, setTermless] = useState<TermlessCohort[] | null>(null);
+  const [pickTerm, setPickTerm] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     try {
-      const rows = await apiGet<Term[]>("/api/admin/terms?all=true");
+      const [rows, stuck] = await Promise.all([
+        apiGet<Term[]>("/api/admin/terms?all=true"),
+        apiGet<TermlessCohort[]>("/api/admin/cohorts/without-term").catch(() => [] as TermlessCohort[]),
+      ]);
       setTerms(rows);
+      setTermless(stuck);
       setWindows(Object.fromEntries(rows.map((t) => [t.id, { opensAt: toLocal(t.registrationOpensAt), closesAt: toLocal(t.registrationClosesAt) }])));
       setError(null);
     } catch (e) { setError(permissionMessage(e, "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev")); setTerms([]); }
@@ -80,6 +100,14 @@ export default function Terms() {
     try { await fn(); toast(done); await load(); }
     catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإجراء"); }
     finally { setBusy(null); }
+  };
+
+  /* تسميةُ فصلِ شعبةٍ قائمة — وبها تُفتح نافذةُ جدولة مدرّبها */
+  const nameTerm = (c: TermlessCohort) => {
+    const termId = pickTerm[c.id];
+    if (!termId) return;
+    return act(`term-${c.id}`, () => apiPost(`/api/admin/cohorts/${c.id}/term`, { termId }),
+      "سُمّي فصلُ الشعبة — وفُتحت نافذةُ جدولة مدرّبها");
   };
 
   const create = () => act("create", () => apiPost("/api/admin/terms", { year: Number(form.year), season: form.season }), "أُنشئ الموسم بحدوده المحسوبة");
@@ -99,6 +127,12 @@ export default function Terms() {
     const r = await apiPost<PlanResult>(`/api/admin/terms/${t.id}/plan`, { apply: true });
     setPlans((p) => ({ ...p, [t.id]: r }));
   }, "وُزّعت شعبُ الموسم وفُتحت");
+  /* نقلُ حالة الفصل — والزرُّ يقول أثرَه لا اسمَه وحدَه (`TERM_STATUS_EFFECT_AR`) */
+  const moveStatus = (t: Term, to: TermStatus) => act(
+    `status-${t.id}`,
+    () => apiPost(`/api/admin/terms/${t.id}/status`, { status: to }),
+    `${t.titleAr}: ${TERM_STATUS_AR[to]}`,
+  );
   const publish = (t: Term) => act(`publish-${t.id}`, () => apiPost(`/api/admin/terms/${t.id}/publish-calendar`, {}), "نُشر التقويم — يراه الزائرُ الآن");
   const remove = (t: Term) => act(`delete-${t.id}`, async () => {
     await apiDelete(`/api/admin/terms/${t.id}`);
@@ -155,6 +189,71 @@ export default function Terms() {
         </div>
       </Panel>
 
+      {/* ═══ شعبٌ أُسنِد مدرّبُها ولم يُسمَّ فصلُها ═══
+
+          صار الفصلُ حقيقةً إداريّةً تُسمَّى عند الإسناد (١٧ سبتمبر ٢٠٢٦).
+          ومن أُسنِدت إليه شعبةٌ بلا فصلٍ **محبوسٌ**: يفتح ورشتَه فلا يجدول
+          لقاءً واحدا، ولا شيءَ في المنصّة كان يقول لأحدٍ إنّه ينتظر.
+
+          وموضعُها فوق قائمة المواسم بقصد: إنسانٌ متوقّفٌ عن عمله يسبق
+          تخطيطَ تقويمٍ قادم. */}
+      {termless !== null && termless.length > 0 && (
+        <Panel as="section" tone="warn" className="mb-6">
+          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" /> شعبٌ لم يُسمَّ فصلُها ({termless.length})
+          </h2>
+          <p className="mt-1 text-read leading-6 text-muted-foreground">
+            الشعبةُ بلا فصلٍ <b className="text-foreground">لم تُفتَح بعد</b> — لا معطوبة. لكنّ مَن أُسنِدت إليه
+            لا يستطيع جدولةَ لقاءٍ واحدٍ حتّى يُسمَّى فصلُها، فيرى ورشةً لا تعمل.
+            {terms !== null && terms.length === 0 && " وأنشئ موسما أوّلا — لا فصلَ يُسمّى به بعد."}
+          </p>
+          <ul className="mt-4 space-y-3">
+            {termless.map((c) => (
+              <Card as="li" key={c.id} tone={c.blocksTrainer ? "warn" : undefined}>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-read font-bold text-foreground">{c.title}</p>
+                    <p className="mt-0.5 text-read text-muted-foreground">
+                      {c.courseTitleAr}
+                      {c.learners > 0 && <> · {c.learners} التحقوا</>}
+                      {c.sessions > 0 && <> · {c.sessions} لقاء</>}
+                    </p>
+                    {c.blocksTrainer && (
+                      <p className="mt-1 text-read font-bold text-gold-ink">
+                        محبوسٌ: {c.trainers.join("، ")} — لا يجدول حتّى يُسمَّى الفصل.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    <label>
+                      <span className="mb-1.5 block text-read font-bold text-muted-foreground">الفصل</span>
+                      <select
+                        value={pickTerm[c.id] ?? ""}
+                        onChange={(e) => setPickTerm({ ...pickTerm, [c.id]: e.target.value })}
+                        aria-label={`فصلُ شعبة ${c.title}`}
+                        className={staffSelectCls}
+                      >
+                        <option value="">اختر فصلا…</option>
+                        {(terms ?? [])
+                          .filter((t) => !["closed", "cancelled"].includes(t.status))
+                          .map((t) => <option key={t.id} value={t.id}>{t.titleAr}</option>)}
+                      </select>
+                    </label>
+                    <Button
+                      tone="confirm"
+                      disabled={busy !== null || !pickTerm[c.id]}
+                      onClick={() => void nameTerm(c)}
+                    >
+                      سمِّ الفصل
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </ul>
+        </Panel>
+      )}
+
       {terms === null ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>
       ) : terms.length === 0 ? (
@@ -171,9 +270,35 @@ export default function Terms() {
                   <div className="min-w-0">
                     <h2 className="flex items-center gap-2 text-lg font-black"><CalendarRange className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {t.titleAr}</h2>
                     <p className="mt-1 text-read text-muted-foreground">
-                      {seasonLabel(t.season)} · {fmtDateAr(t.startsOn)} إلى {fmtDateAr(t.endsOn)} · {STATUS_AR[t.status] ?? t.status}
+                      {seasonLabel(t.season)} · {fmtDateAr(t.startsOn)} إلى {fmtDateAr(t.endsOn)} · {TERM_STATUS_AR[t.status as TermStatus] ?? t.status}
                     </p>
                     <p className="mt-1 text-read text-muted-foreground">{t._count.cohorts} شعبة · {t._count.trainerAvailability} مدرّبا أعلن إتاحته</p>
+                    {/* ═══ بابُ الحالة ═══
+
+                        كان العمودُ يُقرأ ولا يُكتب: خمسُ قيمٍ وخمسةُ قرّاءَ ولا
+                        كاتبَ واحد (العلّةُ في `application/terms/lifecycle`).
+                        والأزرارُ تُبنى من `nextStatuses` لا تُكتب باليد — فما
+                        لا يجوز لا يُعرض، ولا يحتاج الإداريُّ أن يحفظ الجدول.
+
+                        و«جارٍ» و«منتهٍ» يقعان بالتقويم كذلك في وظيفةٍ كلَّ
+                        ساعة: هذا بابُ التعجيل لا البابُ الوحيد. */}
+                    {nextStatuses(t.status).length > 0 && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {nextStatuses(t.status).map((to) => (
+                          <Button
+                            key={to}
+                            tone={to === "cancelled" ? "ghost" : "secondary"}
+                            size="sm"
+                            disabled={busy !== null}
+                            title={TERM_STATUS_EFFECT_AR[to]}
+                            onClick={() => void moveStatus(t, to)}
+                          >
+                            {to === "open" ? "افتحه للتسجيل" : to === "cancelled" ? "ألغِه" : to === "closed" ? "أنهِه" : "اجعله جاريا"}
+                          </Button>
+                        ))}
+                        <span className="text-read text-muted-foreground">{TERM_STATUS_EFFECT_AR[nextStatuses(t.status)[0]]}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="text-read">
                     {published

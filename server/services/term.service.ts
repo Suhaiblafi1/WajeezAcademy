@@ -12,9 +12,8 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 import { termBounds, termTitleAr, termOf } from '../../src/application/terms/season'
+import { LIVE_TERM_STATUSES, TERM_STATUS_AR, canMove, dueByDate, type TermStatus } from '../../src/application/terms/lifecycle'
 import { termWindowVerdict } from './registration-window'
-
-const LIVE_TERM_STATUSES = ['planned', 'open', 'active'] as const
 
 export class TermService {
   private prisma: PrismaClient
@@ -72,6 +71,81 @@ export class TermService {
       meta: { titleAr: term.titleAr, year: term.year, season: term.season },
     })
     return { deleted: true, id }
+  }
+
+  /* ─────────── حالةُ الفصل: قرارٌ يُكتب، لا حقلٌ يُقرأ فارغا ───────────
+
+     القاعدةُ كلُّها في `src/application/terms/lifecycle` — ومعها العلّةُ
+     بالحرف: خمسُ قيمٍ وخمسةُ قرّاءٍ ولا كاتبَ واحد. وهنا البابُ الذي تفعله
+     الإدارةُ بيدها؛ وما يقع بالتقويم في `syncStatusesByDate` تحتَه.
+
+     والإلغاءُ يُردّ إن كان في الفصل شعبٌ — الشرطُ نفسُه الذي يحرس الحذفَ:
+     شعبةٌ يُلغى فصلُها تفقد حدودَها بصمتٍ (`onDelete: SetNull`)، ومدرّبُها
+     يجد نافذتَه أُغلقت بلا خبر. */
+  async setStatus(actorId: string, id: string, to: string) {
+    const term = await this.prisma.term.findUnique({
+      where: { id }, include: { _count: { select: { cohorts: true } } },
+    })
+    if (!term) throw new AuthError('term_not_found', 'الفصلُ غيرُ موجود', 404)
+    if (term.status === to) return term
+    if (!canMove(term.status, to)) {
+      const fromAr = TERM_STATUS_AR[term.status as TermStatus] ?? term.status
+      const toAr = TERM_STATUS_AR[to as TermStatus] ?? to
+      throw new AuthError('bad_transition', `لا يُنقل فصلٌ «${fromAr}» إلى «${toAr}»`, 409)
+    }
+    if (to === 'cancelled' && term._count.cohorts > 0) {
+      throw new AuthError(
+        'term_has_cohorts',
+        `في الفصل ${term._count.cohorts} شعبة — انقلها إلى فصلٍ آخرَ أو ألغِها أوّلا`,
+        409,
+      )
+    }
+    const updated = await this.prisma.term.update({
+      where: { id },
+      data: {
+        status: to,
+        /* `openedAt`/`openedBy` عمودانِ وُضعا لهذه اللحظةِ بعينها ولم يُكتبا قطّ.
+           ويُكتبان مرّةً: من فتحه أوّلَ مرّةٍ هو من فتحه، وإن أُغلق ثمّ فُتح. */
+        ...(to === 'open' && !term.openedAt ? { openedAt: new Date(), openedBy: actorId } : {}),
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'term.status', entityType: 'term', entityId: id,
+      meta: { from: term.status, to, titleAr: term.titleAr },
+    })
+    return updated
+  }
+
+  /* ─────────── وما يقع بالتقويم لا بقرار ───────────
+
+     فصلٌ مضت أشهرُه منتهٍ وإن لم ينقر أحدٌ زرّا، وفصلٌ مفتوحٌ بلغ أوّلَ
+     أشهره جارٍ. والفاعلُ `null`: لم يقرّره إنسان. والوظيفةُ نفسُها تُقرأ
+     جافّةً (`apply: false`) فتُرى قبل أن تقع. */
+  async syncStatusesByDate(actorId: string | null, options: { apply?: boolean; now?: Date } = {}) {
+    const now = options.now ?? new Date()
+    const live = await this.prisma.term.findMany({
+      where: { status: { in: [...LIVE_TERM_STATUSES] } },
+      select: { id: true, titleAr: true, status: true, startsOn: true, endsOn: true },
+    })
+    const changes = live
+      .map((t) => ({ term: t, to: dueByDate(t, now) }))
+      .filter((x): x is { term: (typeof live)[number]; to: TermStatus } => x.to !== null)
+      .map(({ term, to }) => ({
+        termId: term.id, titleAr: term.titleAr, from: term.status, to,
+        reason: to === 'closed' ? 'مضت أشهرُه' : 'بلغ أوّلَ أشهره',
+      }))
+    if (options.apply !== true) return { applied: false, changed: 0, changes }
+
+    let changed = 0
+    for (const ch of changes) {
+      await this.prisma.term.update({ where: { id: ch.termId }, data: { status: ch.to } })
+      await recordAudit(this.prisma, {
+        actorId, action: 'term.status', entityType: 'term', entityId: ch.termId,
+        meta: { from: ch.from, to: ch.to, titleAr: ch.titleAr, byCalendar: true },
+      })
+      changed += 1
+    }
+    return { applied: true, changed, changes }
   }
 
   /* ─────────── نافذةُ التسجيل — بديلُ الدعوة الدائمة (البند ٥١) ───────────

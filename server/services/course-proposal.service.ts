@@ -427,8 +427,9 @@ export class CourseProposalService {
 
   /** «نسخةٌ من رمزٍ قائم» — يُربط ولا يُنشأ إصدارٌ باسم صاحبه.
 
-      وبابُ الإصدار بعدها بيدِ المدرّب: `course_title_edit` في
-      `TrainerChangeService` بـmaker-checker ودائرةِ أثر (ح-٣). */
+      وكان بعدها بابٌ بيد المدرّب إلى اسم الدورة (`course_title_edit` · ح-٣)،
+      وأُغلق (ق٥ · ١٧ سبتمبر ٢٠٢٦). فمن رُبط اقتراحُه برمزٍ قائمٍ يقرأ اسمَه
+      كما هو، وتسميةُ الكتالوج بيد الإدارة. */
   async linkToCourse(actor: Assigner, id: string, courseId: string, noteAr?: string | null) {
     const row = await this.prisma.trainerCourseProposal.findUnique({
       where: { id },

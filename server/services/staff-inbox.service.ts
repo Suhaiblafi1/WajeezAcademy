@@ -121,6 +121,38 @@ export class StaffInboxService {
         severity: 'attention',
         sample: [],
       })
+
+      /* ═══ شعبٌ لها مدرّبٌ ولم يُسمَّ فصلُها ═══
+
+         صار الفصلُ حقيقةً إداريّةً تُسمَّى عند الإسناد (١٧ سبتمبر ٢٠٢٦).
+         ومن أُسنِدت إليه شعبةٌ بلا فصلٍ **محبوسٌ**: يفتح ورشتَه فلا يستطيع
+         جدولةَ لقاءٍ واحد، ولا شيءَ في المنصّة يقول لأحدٍ أنّه ينتظر.
+
+         وهذا السطرُ هو الذي يمنع أن يصير نقلُ الملكيّة حبسا صامتا — فلا
+         يُغلق بابُ المدرّب إلّا وهذا الطابورُ يراه أحد. والخطورةُ `urgent`
+         لأنّ إنسانا متوقّفٌ عن عمله، لا لأنّ صفًّا ناقص. */
+      const termless = await this.prisma.cohort.findMany({
+        where: {
+          termId: null,
+          status: { notIn: ['completed', 'cancelled'] },
+          trainers: { some: {} },
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 5,
+        select: { title: true },
+      })
+      const termlessCount = await this.prisma.cohort.count({
+        where: { termId: null, status: { notIn: ['completed', 'cancelled'] }, trainers: { some: {} } },
+      })
+      push({
+        key: 'cohorts_without_term',
+        titleAr: 'شعبٌ أُسنِد مدرّبُها ولم يُسمَّ فصلُها',
+        whyAr: 'مدرّبُها لا يستطيع جدولةَ لقاءٍ واحدٍ حتّى يُسمَّى الفصل',
+        count: termlessCount,
+        href: '/admin/cohorts',
+        severity: 'urgent',
+        sample: termless.map((c) => c.title),
+      })
     }
 
     /* ── طلباتُ التسجيل ── */

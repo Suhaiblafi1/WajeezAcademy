@@ -160,6 +160,8 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req, reply) => {
     const body = z.object({
       courseId: z.string(), pathwayId: z.string().optional(), title: z.string().min(3),
+      /* والفصلُ حقيقةٌ إداريّةٌ منذ ١٧ سبتمبر ٢٠٢٦ — تُكتب هنا لا في شاشة المدرّب */
+      termId: z.string().uuid().nullish(),
       startsAt: z.coerce.date().optional(), endsAt: z.coerce.date().optional(),
       daysOfWeek: dayCodes.optional(), startTime: z.string().optional(), timezone: z.string().optional(),
       capacity: z.number().int().min(1).optional(), price: z.number().min(0).optional(), currency: z.string().optional(),
@@ -212,6 +214,53 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const body = z.object({ profileId: z.string().uuid(), role: z.enum(['lead', 'assistant']).default('lead') }).parse(req.body)
     return reply.status(201).send(await cohorts.assignTrainer(id, body.profileId, req.auth!.userId, body.role))
   })
+
+  /* ═══ «افتح شعبةً لمدرّب» — الفعلُ الذي يسمّي الفصلَ ويفتح الشعبة ═══
+
+     صياغةُ صاحب المنصّة (١٧ سبتمبر ٢٠٢٦): «عندما نقوم بإسناد دورةٍ لمدرّب
+     نحدّد لأيّ فصلٍ ستكون، وبهذا نكون فتحنا شعبةً له ليقوم هو بتغيير
+     تفاصيلها وتحديد ساعات اللقاء المباشر ووضع المصادر».
+
+     فالإنشاءُ والفصلُ والإسنادُ فعلٌ واحدٌ في معاملةٍ واحدة — لا ثلاثةُ
+     نداءاتٍ تُنسى إحداها، وأكثرُها نسيانا الفصلُ لأنّ غيابَه لا يُشتكى منه
+     فورا: يُشتكى منه المدرّبُ بعد أسبوعٍ حين يعجز عن الجدولة. */
+  app.post('/api/admin/cohorts/open-for-trainer', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-learning'], summary: 'فتحُ شعبةٍ لمدرّب — دورةٌ ومدرّبٌ وفصلٌ في فعلٍ واحد' },
+  }, async (req, reply) => {
+    const body = z.object({
+      courseId: z.string().min(3).max(40),
+      profileId: z.string().uuid(),
+      termId: z.string().uuid(),
+      title: z.string().min(3).max(200),
+      pathwayId: z.string().optional(),
+      capacity: z.number().int().min(1).optional(),
+      price: z.number().min(0).optional(),
+      currency: z.string().optional(),
+      language: z.string().optional(),
+      deliveryMode: z.enum(['remote', 'in_person', 'hybrid']).optional(),
+    }).parse(req.body)
+    return reply.status(201).send(await cohorts.openForTrainer(req.auth!.userId, body))
+  })
+
+  /* وتسميةُ فصلِ شعبةٍ قائمة — للشعب التي وُلدت قبل هذا القرار */
+  app.post('/api/admin/cohorts/:id/term', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'تسميةُ فصلِ شعبة — ومنه حدودُها ونافذةُ جدولة مدرّبها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ termId: z.string().uuid() }).parse(req.body)
+    return cohorts.setTerm(req.auth!.userId, id, body.termId)
+  })
+
+  /* ═══ الطابورُ الذي يمنع الحبسَ الصامت ═══
+
+     شعبةٌ لها مدرّبٌ ولا فصلَ لها = مدرّبٌ يرى شعبةً لا يستطيع جدولتَها،
+     ولا أحدَ في الإدارة يعلم. فتُعرض هنا مرتّبةً، والمحبوسُ فيها موسوم. */
+  app.get('/api/admin/cohorts/without-term', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'شعبٌ لم يُسمَّ فصلُها بعد — ومن أُسنِد إليها محبوسٌ عن الجدولة' },
+  }, async () => cohorts.cohortsWithoutTerm())
 
   /* توليدُ الجلسات من النمط — والافتراضُ عرضٌ لا كتابة */
   app.post('/api/admin/cohorts/:id/sessions/generate', {

@@ -15,7 +15,7 @@
    فصار الحارسُ يحرس الضدَّ — والفحصُ **بنيويٌّ لا نصّيّ**: لا يكفي أن تغيب
    كلمةٌ من ملفّ، بل تُفحص المواضعُ الأربعةُ التي كانت تحمل الحقلَين، ويُفحص
    أنّ البابَ الجديدَ **موصولٌ من شاشةٍ إلى مسارٍ إلى خدمة**. */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -63,68 +63,67 @@ describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضع�
   })
 })
 
-describe('وبابُ الاسم الجديد موصولٌ — شاشةٌ ومسارٌ وخدمة', () => {
-  it('الخدمةُ تعرف النوعَ وتحمل الاسمَ إلى الإصدار الجديد', () => {
-    const svc = code('server/services/trainer-change.service.ts')
-    expect(svc).toContain("'course_title_edit'")
-    /* والفحصُ على **الحمل** لا على ورودِ الاسم: الإصدارُ الجديدُ كان ينسخ
-       `baseVersion.titleAr` حرفا بحرف، فلو بقي كذلك لمرّ النوعُ بلا أثر. */
-    expect(svc).toMatch(/case 'course_title_edit': \{[\s\S]{0,200}titleAr = after\.titleAr\.trim\(\)/)
-    expect(svc).toMatch(/courseId: course\.id, version: newVersion,\s*\n\s*titleAr,/)
-    expect(svc).not.toMatch(/version: newVersion,\s*\n\s*titleAr: baseVersion\.titleAr/)
+/* ═══ ثمّ أُغلق بابُ الاسم كلُّه (ق٥ · ١٧ سبتمبر ٢٠٢٦) ═══
+
+   كان هنا وصفٌ يحرس أنّ البابَ الجديدَ **موصولٌ**: شاشةٌ في ورشة الشعبة،
+   ومسلكٌ يقبلها، وخدمةٌ تحمل الاسمَ إلى إصدارٍ جديد. وقد بُني لأنّ حذفَ
+   صندوقِ «اقتراحٌ للإدارة» كان يجب أن يترك للمدرّب بابا لا أن يسدّه.
+
+   وسأل صاحبُ المنصّة عن موضعه: «لماذا هذا السؤال هنا؟» — والمدرّبُ جاء
+   يجهّز دفعتَه فيُسأل عن اسم الدورة في الكتالوج كلِّه. ثمّ أغلق القناةَ:
+   «بابُ اسم الدورة يُغلق»، وعلّتُه أنّ قناةً لا يملكها أحدٌ أسوأُ من لا
+   قناة.
+
+   فانقلب الحارسُ إلى ضدّه، والفحصُ **بنيويٌّ في أربعة مواضع**: الشاشةُ
+   زالت، والورشةُ لا تنادي ما زال، والمسلكُ لا يقبل، والنوعُ خرج من
+   `CHANGE_TYPES` — وهو الجذر: ما دام النوعُ في القائمة فالبابُ مفتوحٌ
+   لكلّ من ينادي `submit` ولو بلا شاشة. */
+describe('ق٥ بابُ اسم الدورة مغلقٌ في مواضعه الأربعة', () => {
+  it('⚠️ لا شاشةَ اقتراحِ اسمٍ أصلا', () => {
+    expect(existsSync(join(root, 'src/pages/trainer/CourseTitleProposal.tsx')),
+      'عادت شاشةُ اقتراح الاسم').toBe(false)
   })
 
-  it('والمسارُ يقبله من المدرّب بنطاق الكتالوج', () => {
+  it('⚠️ وورشةُ الشعبة لا تناديها — ولا تحمل إليها مسودّةً قديمة', () => {
+    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
+    expect(ws, 'الورشةُ ما زالت تصيّر شاشةَ الاقتراح').not.toContain('CourseTitleProposal')
+    expect(ws, 'ما زال يُمرَّر اقتراحُ اسمٍ من الخطّة').not.toContain('legacyDraft')
+  })
+
+  it('⚠️ ولا مسلكَ اسمٍ في مسارات المدرّب', () => {
     const routes = code('server/http/routes/trainer-portal.routes.ts')
-    expect(routes).toContain("'/api/trainer/course-title-proposals'")
-    expect(routes).toMatch(/changeType: 'course_title_edit'/)
-    expect(routes).toMatch(/scope: 'catalog'/)
+    const urls = [...routes.matchAll(/app\.(get|post|patch|delete)\(\s*'([^']+)'/g)].map((m) => m[2])
+    expect(urls.filter((u) => u.includes('course-title')), 'عاد مسلكُ اقتراح الاسم').toEqual([])
   })
 
-  /* ═══ ولا يعتمد المعتمِدُ اسما لم يره ═══
+  it('⚠️ والجذرُ: لا نوعَ `course_title_edit` في الخدمة — لا في الأنواع ولا في التطبيق', () => {
+    const svc = code('server/services/trainer-change.service.ts')
+    const types = svc.slice(svc.indexOf('export const CHANGE_TYPES = ['), svc.indexOf('] as const'))
+    expect(types, 'عاد النوعُ إلى القائمة، فعاد البابُ لكلّ من ينادي `submit`')
+      .not.toContain('course_title_edit')
+    expect(svc, 'بقيت حالةُ تطبيقِ الاسم — فاسمُ إصدارٍ جديدٍ يُبدَّل ببندٍ لا بابَ له')
+      .not.toMatch(/case 'course_title_edit'/)
+    /* والاسمُ يُنسخ من الإصدار الأساس بلا تبديل — وهو ما كان قبل ح-٣ */
+    expect(svc).toMatch(/const titleAr = baseVersion\.titleAr/)
+  })
 
-     بطاقةُ الاقتراح عند الإدارة كانت تعرض السببَ و«ن بند تعديل» وحدَهما.
-     فمن ضغط «اعتماد للكتالوج» على اقتراحِ تسميةٍ اعتمد اسما لم يقرأه — وهو
-     كلُّ الاقتراح لا تفصيلا فيه. جُرّبت الشاشةُ بالمتصفّح فظهر ذلك، فأُضيف.
-
-     والفحصُ على **القراءة من البند** لا على ورودِ نصّ: العنوانُ يُقرأ من
-     `afterValue.titleAr` لبندِ `course_title_edit` بعينه. */
-  it('وبطاقةُ المعتمِد تعرض الاسمَ المقترَحَ قبل أزرار القرار', () => {
+  it('⚠️ وبطاقةُ المعتمِد لا تقرأ بندَ اسمٍ لم يعد يُولَد', () => {
     const admin = code('src/pages/admin/TrainerOps.tsx')
-    expect(admin).toMatch(/changeType === "course_title_edit"/)
-    expect(admin).toMatch(/after\?\.titleAr/)
-    /* ويُعرض في البطاقة لا في دالّةٍ لا تُنادى */
-    expect(admin).toMatch(/\{proposedTitle\(r\) &&/)
-    /* وقبل أزرار القرار: يقرأ ثمّ يقرّر */
-    const card = admin.slice(admin.indexOf('{rows.map((r) =>'))
-    expect(card.indexOf('proposedTitle(r)')).toBeLessThan(card.indexOf('approve_for_catalog'))
+    expect(admin, 'ما زالت البطاقةُ تقرأ بندَ الاسم').not.toContain('course_title_edit')
   })
 
-  /* س-٢: ومن يعتمد بنطاق الكتالوج يُنشئ النسخةَ التي تلي الحاليّة — فالرقمُ
-     يُقرأ عند القرار، وإلّا ظنَّ المعتمِدُ أنّه يُصدر الثانيةَ وهي الرابعة. */
-  it('وبطاقةُ المعتمِد تقول النسخةَ الحاليّةَ وما ستصير إليه', () => {
-    const admin = code('src/pages/admin/TrainerOps.tsx')
-    expect(admin).toMatch(/r\.course\?\.currentVersion/)
-    expect(admin).toMatch(/النسخة \{r\.course\.currentVersion\}/)
-    /* والسهمُ لنطاق الكتالوج وحدَه — نطاقُ الشعبة لا يُنشئ نسخة */
-    expect(admin).toMatch(/r\.scope === "catalog" &&[\s\S]{0,80}currentVersion \+ 1/)
-  })
-
-  it('والشاشةُ تناديه من ورشة الشعبة — لا مسارَ بلا شاشةٍ من جديد', () => {
-    const screen = code('src/pages/trainer/CourseTitleProposal.tsx')
-    expect(screen).toContain('/api/trainer/course-title-proposals')
-    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
-    expect(ws).toContain('<CourseTitleProposal')
-    expect(ws).toContain('from "./CourseTitleProposal"')
-  })
-
-  /* وما كتبه مدرّبٌ في الصندوق القديم لا يضيع: يُعرض مهيّأً في القناة
-     الجديدة. والفحصُ على الوصل — `legacyDraft` يصل من `content.proposals`. */
-  it('وما حُفظ في الصندوق القديم يُعرض مهيّأً لا مهجورا', () => {
-    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
-    expect(ws).toMatch(/legacyDraft=\{content\.proposals\?\.courseTitleAr \?\? null\}/)
-    const screen = code('src/pages/trainer/CourseTitleProposal.tsx')
-    expect(screen).toMatch(/setTitleAr\(draft\)/)
+  /* ولا يُترك المعلَّقُ في طابورٍ لا يعرف أحدٌ ما يفعل به: هجرةٌ تُصيّره
+     `superseded` بتعليلها. والفحصُ على وجود الهجرة وعلى ما تفعله — فحذفُ
+     البابِ بلا هذه الهجرة يترك طلبَ مدرّبٍ حيًّا بلا من يبتّ فيه. */
+  it('⚠️ وما أُرسل قبل الإغلاق له هجرةٌ تقف به وتقول لماذا', () => {
+    const sql = readFileSync(join(root, 'prisma/migrations/20260917190000_close_course_title_channel/migration.sql'), 'utf8')
+    const body = sql.replace(/^\s*--.*$/gm, '')
+    expect(body, 'الهجرةُ لا تمسّ الطلبات المعلّقة').toMatch(/UPDATE "TrainerChangeRequest"/)
+    expect(body).toMatch(/superseded/)
+    expect(body, 'لم تُعلَّل الوقفةُ لصاحبها').toMatch(/reviewerComment/)
+    expect(body, 'مسّت الهجرةُ ما بُتّ فيه — قرارٌ وقع لا يُعاد كتابتُه')
+      .toMatch(/status" IN \('draft', 'submitted', 'under_review', 'changes_requested'\)/)
+    expect(body, 'الهجرةُ تطال طلباتٍ ليست اقتراحَ اسم').toMatch(/changeType" = 'course_title_edit'/)
   })
 })
 

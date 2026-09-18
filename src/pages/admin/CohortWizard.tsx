@@ -44,12 +44,24 @@ function nextWeekISO(): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** فصلٌ تُفتح فيه الشعبة — حدودُه حدودُها ونافذةُ جدولة مدرّبها */
+export interface WizardTerm {
+  id: string; titleAr: string; startsOn: string; endsOn: string; status: string;
+}
+
 export default function CohortWizard({
   courses,
+  terms,
   onDone,
   onError,
 }: {
   courses: WizardCourse[];
+  /* ═══ ولمَ الفصلُ في المعالج لا بعده ═══
+
+     قرارُ صاحب المنصّة (١٧ سبتمبر ٢٠٢٦): «عندما نقوم بإسناد دورةٍ لمدرّب
+     نحدّد لأيّ فصلٍ ستكون، وبهذا نكون فتحنا شعبةً له». فالشعبةُ تُولَد
+     بفصلها أو لا تُولَد — وشعبةٌ بلا فصلٍ تحبس مدرّبَها عن الجدولة كلِّها. */
+  terms: WizardTerm[];
   onDone: (message: string) => void;
   onError: (message: string) => void;
 }) {
@@ -69,8 +81,19 @@ export default function CohortWizard({
   const [capacity, setCapacity] = useState("20");
   const [price, setPrice] = useState("");
 
+  const [termId, setTermId] = useState("");
   const [trainers, setTrainers] = useState<EligibleTrainer[] | null>(null);
   const [trainerId, setTrainerId] = useState("");
+
+  const term = useMemo(() => terms.find((t) => t.id === termId) ?? null, [terms, termId]);
+
+  /* واختيارُ الفصل يجرّ أوّلَ أسبوعٍ إلى داخله: القيمةُ الافتراضيّةُ «الأسبوعُ
+     القادم» تقع خارجَ فصلٍ يبدأ بعد شهرَين، فتُولَّد جلساتٌ شاردةٌ يُردّ بها
+     تسميةُ الفصل بعد حين. */
+  useEffect(() => {
+    if (!term) return;
+    setFrom((cur) => (cur >= term.startsOn && cur <= term.endsOn ? cur : term.startsOn.slice(0, 10)));
+  }, [term]);
 
   const course = useMemo(() => courses.find((c) => c.id === courseId) ?? null, [courses, courseId]);
   const currency = course?.currency ?? "USD";
@@ -141,6 +164,7 @@ export default function CohortWizard({
     const m: string[] = [];
     if (step === 0) {
       if (!courseId) m.push("اختر الدورةَ من القائمة");
+      if (!termId) m.push("اختر الفصلَ — الشعبةُ تُولَد بفصلها، وبلا فصلٍ يُحبَس مدرّبُها عن الجدولة");
       if (title.trim().length < 3) m.push("اكتب عنوانا للشعبة — ثلاثةُ أحرفٍ على الأقلّ");
     } else if (step === 1) {
       if (days.length === 0) m.push("اختر يوما واحدا على الأقلّ");
@@ -153,7 +177,7 @@ export default function CohortWizard({
       if (price !== "" && Number(price) < 0) m.push("السعرُ صفرٌ أو أكثر");
     }
     return m;
-  }, [step, courseId, title, days, startTime, weeks, duration, preview.length, capacity, price]);
+  }, [step, courseId, termId, title, days, startTime, weeks, duration, preview.length, capacity, price]);
 
   const canNext = stepMissing.length === 0;
 
@@ -172,12 +196,23 @@ export default function CohortWizard({
     try {
       const cohort = await apiPost<{ id: string }>("/api/admin/cohorts", {
         courseId,
+        termId: termId || undefined,
         title: title.trim(),
         capacity: Number(capacity),
         price: price ? Number(price) : undefined,
         daysOfWeek: days,
         startTime,
       });
+
+      /* والفصلُ يُشتقّ منه البدءُ والانتهاءُ ونافذةُ الجدولة — **قبل** توليد
+         الجلسات: بعده تصير الجلساتُ الشاردةُ مانعا لا تحذيرا. */
+      if (termId) {
+        try {
+          await apiPost(`/api/admin/cohorts/${cohort.id}/term`, { termId });
+        } catch (e) {
+          notes.push(`حدودُ الفصل لم تُشتقّ (${e instanceof ApiError ? e.message : "خطأ"}) — سمِّ الفصلَ من «المواسم»`);
+        }
+      }
 
       try {
         const gen = await apiPost<GeneratePreview>(`/api/admin/cohorts/${cohort.id}/sessions/generate`, {
@@ -281,6 +316,29 @@ export default function CohortWizard({
               <Inset as="p" className="mt-3 px-3 py-2.5 text-read text-muted-foreground">
                 سعرُ قائمة الدورة: {course.listPrice ?? "—"} {currency}
               </Inset>
+            )}
+
+            {/* ═══ الفصلُ يُسمَّى هنا لا بعدُ ═══
+
+                الشعبةُ تُولَد بفصلها: منه حدودُها، ومنه نافذةُ جدولة مدرّبها.
+                وشعبةٌ بلا فصلٍ تحبس من يُسنَد إليها عن الجدولة كلِّها — وهي
+                الحالةُ التي يُفرَغ منها طابورُ «شعبٌ لم يُسمَّ فصلُها». */}
+            <label className="mt-3 block text-xs text-muted-foreground" htmlFor="wiz-term">الفصل</label>
+            <select id="wiz-term" value={termId} onChange={(e) => setTermId(e.target.value)} className={inputCls}>
+              <option value="">اختر الفصل…</option>
+              {terms
+                .filter((t) => !["closed", "cancelled"].includes(t.status))
+                .map((t) => <option key={t.id} value={t.id}>{t.titleAr}</option>)}
+            </select>
+            {terms.length === 0 ? (
+              <p className="mt-2 text-read leading-6 text-gold-ink">
+                لا موسمَ مفتوحٌ بعد — أنشئه في «المواسم»، فلا تُفتح شعبةٌ بلا فصل.
+              </p>
+            ) : (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                حدودُ الفصل حدودُ الشعبة، وداخلَها يجدول مدرّبُها لقاءاته.
+                {term && <> يبدأ {term.startsOn.slice(0, 10)} وينتهي {term.endsOn.slice(0, 10)}.</>}
+              </p>
             )}
           </div>
         </div>

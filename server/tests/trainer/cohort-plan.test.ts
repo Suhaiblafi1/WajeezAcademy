@@ -11,6 +11,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { blockingBeforeSubmit, trainerOwned } from '../../../src/application/trainer/plan-gate'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService, type AvailabilityInput } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
@@ -82,13 +83,29 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     await prisma.cohortTrainer.create({ data: { cohortId, profileId: t1.profileId, role: 'lead', assignedBy: adminId } })
   })
 
-  it('الورشةُ تقول ما بقي — وكلُّه لم يتمّ بعد', async () => {
+  /* ═══ وما «لم يتمّ» في شعبةٍ وُلدت للتوّ ═══
+
+     كان الفحصُ: **كلُّ** الإلزاميّات لم تتمّ. وصحّ يومَه لأنّ صفّ الهُويّة
+     كان يشترط اسما **وفصلا**، والشعبةُ تُولد بلا فصل. ثمّ خرج الفصلُ إلى
+     صفٍّ يسمّي فاعلَه (ق١ · ١٧ سبتمبر ٢٠٢٦) ورجعت الهُويّةُ إلى ما يملكه
+     المدرّب: اسمُها. والشعبةُ تُولد باسمها، فصفُّها تامٌّ منذ أوّل نظرة —
+     وهذا هو المقصود: لا يُكتب «لم يتمّ» على عملٍ وقع.
+
+     فالمحروسُ صار أدقَّ: الاسمُ تمَّ، وما لم يُعمَل بعدُ لم يتمّ، والفصلُ
+     في صفِّه هو لا في صفِّ الاسم. */
+  it('الورشةُ تقول ما بقي — والاسمُ وحدَه تمَّ لأنّها وُلدت به', async () => {
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.plan).toBeNull()
     expect(ws.cohort.readOnly.price).toBe(120)
     expect(ws.course.baseModules.length).toBeGreaterThan(0)
-    const required = ws.checklist.filter((c) => !c.optional)
-    expect(required.every((c) => !c.done)).toBe(true)
+
+    const byKey = new Map(ws.checklist.map((c) => [c.key, c]))
+    expect(byKey.get('identity')!.done, 'سُمّيت الشعبةُ وبقي صفُّ اسمها «لم يتمّ»').toBe(true)
+    expect(byKey.get('term'), 'لا صفَّ للفصل — فلا يعرف المدرّبُ لماذا وقف').toBeTruthy()
+    expect(byKey.get('term')!.done, 'شعبةٌ لم تُسنَد بفصلٍ عُدَّت مفتوحة').toBe(false)
+
+    const rest = ws.checklist.filter((c) => !c.optional && c.key !== 'identity')
+    expect(rest.every((c) => !c.done), 'عُدَّ تامًّا ما لم يُعمَل بعد').toBe(true)
   })
 
   /* ═══ صفحةُ الشعبة الواحدة (٨ سبتمبر ٢٠٢٦) ═══ */
@@ -113,11 +130,22 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
        يُعَدّ فيهما، فبطاقةُ شعبةٍ تامّةٍ تقول «٥ من ٦» أبدا.
 
        والمحروسُ هو هو: أن تقول البطاقةُ ما تقوله الورشة. فالقاعدةُ واحدةٌ
-       هنا وهناك — ولو استُثني في أحدهما وحدَه لافترق الرقمان. */
-    const required = ws.checklist.filter((c) => !c.optional && c.key !== 'approval')
+       هنا وهناك — ولو استُثني في أحدهما وحدَه لافترق الرقمان.
+
+       ⚠️ ولذلك تُقرأ من `plan-gate` ولا تُكتب بيدٍ هنا: كان الاستثناءُ
+       مكتوبا في هذا السطر (`key !== 'approval'`)، فلمّا صار صفُّ الفصل
+       كصفِّ الاعتماد — يحجب الإرسالَ ولا يُعدّ على المدرّب — قال الاختبارُ
+       خمسةً وقالت الخدمةُ أربعة. ونسختان من قاعدةٍ واحدةٍ تفترقان. */
+    const required = trainerOwned(ws.checklist).filter((c) => !c.optional)
     expect(me!.total).toBe(required.length)
     expect(me!.done).toBe(required.filter((c) => c.done).length)
-    expect(me!.next?.key).toBe(required.find((c) => !c.done)!.key)
+
+    /* و«التالي» ليس أوّلَ ما بقي عليه: هو أوّلُ ما يقف دونه الإرسالُ —
+       وقد يكون بيدِ الإدارة. فشعبةٌ لم يُسمَّ فصلُها تقول بطاقتُها «التالي:
+       تسمّي الإدارةُ فصلَ الشعبة» لا «اكتب المحاور» — وإلّا ساقته البطاقةُ
+       إلى عملٍ بابُه مغلقٌ حتّى تُفتح الشعبة. */
+    expect(me!.next?.key).toBe(blockingBeforeSubmit(ws.checklist)[0]!.key)
+    expect(me!.next?.key, 'بطاقةُ شعبةٍ بلا فصلٍ لا تقول ما تنتظره').toBe('term')
     /* ومدرّبٌ آخرُ لا يرى شعبةَ غيره في موجزه */
     expect((await plans.summaries(otherTrainerUserId)).map((r) => r.id)).not.toContain(cohortId)
   })
