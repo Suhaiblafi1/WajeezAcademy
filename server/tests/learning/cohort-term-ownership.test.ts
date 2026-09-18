@@ -66,11 +66,16 @@ beforeAll(async () => {
   trainerUserId = lead.userId
   otherProfileId = (await makeTrainer('unqualified', false)).profileId
 
+  /* ⚠️ سنةٌ بعيدةٌ بقصد: هجرةُ `term_system` تبذر فصولَ **السنة الجارية
+     والتي تليها** بمواسمها الأربعة، وقاعدةُ الاختبار تحملها. فصفٌّ بسنةٍ
+     قريبةٍ يصطدم بـ`@@unique([year, season])` ويسقط الملفُّ كلُّه في
+     `beforeAll` — وهو ما وقع. والسنةُ الجاريةُ تتحرّك، فلا يُحلّ بسنةٍ
+     أخرى قريبة. */
   const term = await prisma.term.create({
     data: {
-      titleAr: 'موسمُ الخريف ٢٠٢٧', season: 'nov_jan', year: 2027,
-      startsOn: new Date('2027-11-01T00:00:00.000Z'),
-      endsOn: new Date('2028-01-31T00:00:00.000Z'),
+      titleAr: 'موسمُ الشتاء ٢٠٧١', season: 'nov_jan', year: 2071,
+      startsOn: new Date('2071-11-01T00:00:00.000Z'),
+      endsOn: new Date('2072-01-31T00:00:00.000Z'),
       status: 'open',
     },
   })
@@ -92,8 +97,8 @@ describe('① بابُ الإدارة: فعلٌ واحدٌ يفتح الشعبة
     })
     expect(row.termId, 'فُتحت شعبةٌ بلا فصل — وهي الحالةُ التي أُلغيت').toBe(termId)
     /* وحدودُها من حدود الفصل: الكتالوجُ العامُّ وصفحةُ التسجيل يقرآن `startsAt` */
-    expect(row.startsAt?.toISOString()).toBe('2027-11-01T00:00:00.000Z')
-    expect(row.endsAt?.toISOString()).toBe('2028-01-31T00:00:00.000Z')
+    expect(row.startsAt?.toISOString()).toBe('2071-11-01T00:00:00.000Z')
+    expect(row.endsAt?.toISOString()).toBe('2072-01-31T00:00:00.000Z')
     expect(row.trainers, 'أُنشئت الشعبةُ ولم يُسنَد مدرّبُها').toHaveLength(1)
     expect(row.trainers[0].profileId).toBe(profileId)
   })
@@ -119,9 +124,9 @@ describe('① بابُ الإدارة: فعلٌ واحدٌ يفتح الشعبة
   it('وفصلٌ أُنهي من بابه لا تُفتح فيه شعبة', async () => {
     const closed = await prisma.term.create({
       data: {
-        titleAr: 'موسمٌ منتهٍ', season: 'feb_apr', year: 2025,
-        startsOn: new Date('2025-02-01T00:00:00.000Z'),
-        endsOn: new Date('2025-04-30T00:00:00.000Z'),
+        titleAr: 'موسمٌ يُنهى', season: 'feb_apr', year: 2072,
+        startsOn: new Date('2072-02-01T00:00:00.000Z'),
+        endsOn: new Date('2072-04-30T00:00:00.000Z'),
       },
     })
     const terms = new TermService(prisma)
@@ -155,7 +160,7 @@ describe('② والشعبُ القائمةُ تُسمَّى فصولُها من
     await cohorts.setTerm(adminId, legacyId, termId)
     const row = await prisma.cohort.findUniqueOrThrow({ where: { id: legacyId } })
     expect(row.termId).toBe(termId)
-    expect(row.scheduleWindowStart?.toISOString()).toBe('2027-11-01T00:00:00.000Z')
+    expect(row.scheduleWindowStart?.toISOString()).toBe('2071-11-01T00:00:00.000Z')
 
     const win = await cohorts.scheduleWindowFor(trainerUserId, legacyId)
     expect(win.open, 'سُمّي الفصلُ والنافذةُ ما زالت مغلقة').toBe(true)

@@ -31,13 +31,19 @@ const COURSE = 'C-BIZ-101'
 
 const day = (iso: string) => new Date(`${iso}T00:00:00.000Z`)
 
-/** فصلٌ بحدودٍ مكتوبةٍ بيد — الحدودُ هنا مُدخَلُ الاختبار لا محلُّ الفحص */
+/* ═══ فصلٌ بحدودٍ مكتوبةٍ بيد — والحدودُ مُدخَلُ الاختبار لا محلُّ الفحص ═══
+
+   ⚠️ و`(year, season)` هنا **مفتاحُ تعريفٍ** لا وصفٌ للحدود: هجرةُ
+   `term_system` تبذر فصولَ السنة الجارية والتي تليها بمواسمها الأربعة،
+   وقاعدةُ الاختبار واحدةٌ لكلّ الملفّات — فصفٌّ بسنةٍ قريبةٍ يصطدم
+   بـ`@@unique([year, season])` ويُسقط الملفَّ في `beforeAll`. فالسنةُ
+   تُشتقّ من بداية المدى والموسمُ يُمرَّر، ولا يُقرأ منهما حكم. */
 let seq = 0
-async function makeTerm(startsOn: string, endsOn: string, status = 'planned') {
+async function makeTerm(startsOn: string, endsOn: string, status = 'planned', season = 'feb_apr') {
   seq += 1
   return prisma.term.create({
     data: {
-      titleAr: `فصلُ حالةٍ ${seq}`, season: 'feb_apr', year: 2040 + seq,
+      titleAr: `فصلُ حالةٍ ${seq}`, season, year: Number(startsOn.slice(0, 4)),
       startsOn: day(startsOn), endsOn: day(endsOn), status,
     },
   })
@@ -108,6 +114,13 @@ describe('② وما لا يجوز يُردّ', () => {
   })
 })
 
+/* ═══ ③ والتقويمُ يفعل ما ليس قرارا ═══
+
+   ⚠️ والقاعدةُ مشتركةٌ بين ملفّات الاختبار كلِّها، و`syncStatusesByDate`
+   تمسّ **كلَّ** فصلٍ حيٍّ بلغه التاريخ. فلحظاتُ المزامنة هنا مختارةٌ لتكون
+   أضيقَ أثرٍ ممكن: `2026-01-01` لا يسبقه انتهاءُ فصلٍ لغير هذا الملفّ (ولا
+   فصلٍ مبذور)، و`2019-12-01` أقدمُ من كلّ ما في القاعدة. ولحظةٌ بعيدةٌ
+   (٢٠٤٧ مثلا) كانت تُنهي فصولَ ملفّاتٍ أخرى بصمت. */
 describe('③ والتقويمُ يفعل ما ليس قرارا', () => {
   it('⚠️ ما مضت أشهرُه يُنهى — ولو لم يُفتح قطّ', async () => {
     const t = await makeTerm('2020-02-01', '2020-04-30')
@@ -118,9 +131,9 @@ describe('③ والتقويمُ يفعل ما ليس قرارا', () => {
   })
 
   it('⚠️ والمفتوحُ يجري ببلوغ أوّلِ أشهره — والمخطَّطُ لا يُفتح بالتقويم', async () => {
-    const open = await makeTerm('2047-02-01', '2047-04-30', 'open')
-    const planned = await makeTerm('2047-02-01', '2047-04-30')
-    await terms.syncStatusesByDate(null, { apply: true, now: day('2047-03-01') })
+    const open = await makeTerm('2019-11-01', '2020-01-31', 'open', 'nov_jan')
+    const planned = await makeTerm('2019-11-01', '2020-01-31', 'planned', 'may_jul')
+    await terms.syncStatusesByDate(null, { apply: true, now: day('2019-12-01') })
     expect((await prisma.term.findUniqueOrThrow({ where: { id: open.id } })).status).toBe('active')
     expect(
       (await prisma.term.findUniqueOrThrow({ where: { id: planned.id } })).status,
