@@ -9,6 +9,7 @@ import {
 } from "@/components/FormKit";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
+import { seoFor } from "@/application/site/public-pages";
 import { apiPost, apiGet, ApiError } from "@/services/api";
 import { TRAINING_SPECIALIZATIONS } from "@/data/trainer-contracts";
 import { countAr } from "@/application/text/count-ar";
@@ -876,11 +877,7 @@ export default function JoinTrainer() {
 
   return (
     <SiteShell>
-      <SeoHead
-        title="انضم مدربا"
-        description="درّب في أكاديمية وجيز — عبّئ طلب الانضمام الأولي وسيراجعه فريقنا الأكاديمي."
-        path="/join-trainer"
-      />
+      <SeoHead {...seoFor('/join-trainer')} />
       <div className="mx-auto max-w-3xl">
         <span className="kicker">انضم إلى نخبة المدربين</span>
         <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>

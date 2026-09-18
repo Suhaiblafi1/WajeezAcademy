@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Compass, Target, Route, GraduationCap, MessageSquareText, AlertTriangle, ExternalLink, ArrowLeft } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
+import { seoFor } from "@/application/site/public-pages";
 import { usePublishedContent } from "@/services/public-content";
 import { publicReferences } from "@/data/methodology";
 import { pathways } from "@/data/pathways";
@@ -99,11 +100,7 @@ export default function Methodology() {
   const refs = publicReferences();
   return (
     <SiteShell>
-      <SeoHead
-        title="منهجية وجيز"
-        description="المراجع المهنية والتعليمية التي استرشدت بها أكاديمية وجيز في فهم ميولك وتحديد فجواتك وربطك بالمسار الأنسب."
-        path="/methodology"
-      />
+      <SeoHead {...seoFor('/methodology')} />
       <div className="mx-auto max-w-3xl">
         <p className="text-xs font-bold tracking-wide text-teal-light-ink">منهجية وجيز</p>
         <h1 className="mt-3 text-3xl font-black leading-snug md:text-4xl">

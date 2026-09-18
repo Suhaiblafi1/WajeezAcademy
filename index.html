@@ -162,8 +162,15 @@
       })();
     </script>
 
-    <!-- الهوية والوصف الافتراضيان — كل صفحة تحدّثهما عبر SeoHead -->
-    <title>أكاديمية وجيز — مسارك يبدأ من فهمك</title>
+    <!-- الهويّةُ والوصفُ الافتراضيّان — قيمُ الصفحة الرئيسة.
+
+         وصيغةُ العنوان «العنوانُ — أكاديمية وجيز» تطابق `pageTitle` في
+         `src/application/site/public-pages.ts`. وكانت مقلوبةً هنا، فيقرأ
+         الزاحفُ صيغةً في المصدر وتستبدلها React بأخرى بعد التصيير.
+
+         وما بعد البناء: `scripts/prerender-seo.ts` يكتب لكلّ صفحةٍ ملفَّها
+         بوسومها — وهذا الملفُّ قالبُها جميعا وصفحةُ الرئيسة معا. -->
+    <title>مسارك يبدأ من فهمك — أكاديمية وجيز</title>
     <meta name="description" content="أكاديمية وجيز — تشخيص تعليمي ذكي يفهم هدفك وواقعك، ثم يرسم لك مسارا واحدا مفسّرا بمدربين حقيقيين ومخرج عملي يثبت جاهزيتك." />
     <!-- الأصل يُحقن وقت البناء: %VITE_SITE_ORIGIN% — النطاق النهائي في الإنتاج،
          ونطاق النشرة في الفترة التجريبية. الوسوم الساكنة هي ما تقرؤه بوتات
@@ -174,7 +181,7 @@
     <!-- المشاركة الاجتماعية -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="أكاديمية وجيز" />
-    <meta property="og:title" content="أكاديمية وجيز — مسارك يبدأ من فهمك" />
+    <meta property="og:title" content="مسارك يبدأ من فهمك — أكاديمية وجيز" />
     <meta property="og:description" content="تشخيص ذكي يفهمك، مسار واحد مفسّر، ومخرج عملي يثبت جاهزيتك — من مجموعة وجيز." />
     <meta property="og:url" content="%VITE_SITE_ORIGIN%/" />
     <meta property="og:locale" content="ar_AR" />
@@ -183,7 +190,7 @@
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="شعار أكاديمية وجيز" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="أكاديمية وجيز — مسارك يبدأ من فهمك" />
+    <meta name="twitter:title" content="مسارك يبدأ من فهمك — أكاديمية وجيز" />
     <meta name="twitter:description" content="تشخيص ذكي يفهمك، مسار واحد مفسّر، ومخرج عملي يثبت جاهزيتك." />
     <meta name="twitter:image" content="%VITE_SITE_ORIGIN%/og-image.png" />
 

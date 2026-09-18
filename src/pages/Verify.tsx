@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowRight, BadgeCheck, Loader2, Search, ServerOff, ShieldX } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
+import SeoHead from "@/components/SeoHead";
+import { seoFor } from "@/application/site/public-pages";
 import { fmtDateLong } from "@/application/text/format-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
@@ -62,6 +64,9 @@ export default function Verify() {
 
   return (
     <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 py-16 text-foreground">
+      {/* كانت هذه الصفحةُ في خريطة الموقع بلا `SeoHead` — فتُقدَّم للزاحف
+          بعنوان الرئيسة و`canonical` الرئيسة، أي أنّها لا تُفهرس أبدا. */}
+      <SeoHead {...seoFor('/verify')} />
       <Link to="/" className="flex items-center gap-2 text-muted-foreground transition hover:text-foreground">
         <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
       </Link>
