@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
-import { getTheme, toggleTheme } from "@/services/theme";
+import { getTheme, subscribeTheme, toggleTheme } from "@/services/theme";
 
 import Button from "@/components/ui/Button";
+
 /** زر تبديل المظهر — شمس في الداكن، قمر في الفاتح؛ يُحفظ الاختيار ويعمل فورا عبر المنصة كلها.
 
     ولماذا رموزُ السمة لا `white/…`: كان الزرّ `border-white/10 text-muted-foreground`،
@@ -28,18 +29,61 @@ import Button from "@/components/ui/Button";
     حسابي» — وقِيسا في المتصفّح بالتعبئة نفسِها `rgb(250,188,5)`.
 
     ولم يمسكه الحارسُ لأنّه كان يعدّ **الذهبيَّ في الملفّ**، وهذا ملفٌّ فيه
-    واحد. والشاشةُ تُبنى من ملفّات. */
-export default function ThemeToggle() {
+    واحد. والشاشةُ تُبنى من ملفّات.
+
+    ── ولماذا صار للزرّ كلمةٌ بعد أن كان رمزا وحدَه (١٨ سبتمبر ٢٠٢٦) ──
+
+    بكلام صاحب المنصّة: «معظمُ الزوّار لا يعلم بوجودها». والعلّةُ أنّ الرمزَ
+    كان ثالثَ ثلاثةِ رموزٍ متجاورةٍ في الترويسة (بحثٌ · مظهرٌ · حساب)، وصفُّ
+    الرموز المتجاورة يُدرَّب عليه الزائرُ فيتخطّاه. والكلمةُ تكسر الصفَّ:
+    «نهاريّ» بجانب الشمس تقول ما يحدث إن ضُغط، والرمزُ وحدَه لا يقول.
+
+    و**الكلمةُ هي الغايةُ المقصودة** لا لونٌ أعلى صوتا — فالنبرةُ تبقى
+    `ghost` كما هي، والذهبيُّ يبقى لفعل الصفحة الأوّل (أعلاه).
+
+    وتُخفى الكلمةُ دون `sm` عمدا: الترويسةُ على هاتفٍ عرضُه ٣٩٠ ضيّقةٌ أصلا
+    (انظر `shrink-0` أدناه)، والاكتشافُ على الهاتف موضعُه الدرجُ لا
+    الترويسة — ولذلك صار للدرج شكلٌ ثانٍ (`variant="row"`) فيه الكلمةُ
+    كاملةً بعنوانها.
+
+    والوصفُ «نهاريّ/ليليّ» لا «فاتح/داكن»: المظهرُ صار يتبع الجهازَ الذي
+    يبدّل على الشمس (`services/theme.ts`)، فاللفظُ الذي يصف نهارا وليلا
+    أقربُ إلى ما يراه الزائرُ فعلا. وهو لفظُ المستودع في وصف المظهرين
+    (`ui/Surface.tsx` · `TrustMetricsBar.tsx` · `CountryPicker.tsx`). */
+export default function ThemeToggle({ variant = "header" }: { variant?: "header" | "row" }) {
   const [theme, setTheme] = useState(getTheme);
-  const next = theme === "light" ? "الداكن" : "الفاتح";
-  return (
+  /* نسخُ الزرّ في الشاشة الواحدة أكثرُ من واحدة (ترويسةٌ ودرج) — فتتبع
+     بعضَها بدل أن تتخالف. */
+  useEffect(() => subscribeTheme(setTheme), []);
+
+  const goingLight = theme !== "light";
+  const nextWord = goingLight ? "نهاريّ" : "ليليّ";
+  const Icon = goingLight ? Sun : Moon;
+
+  const button = (
     <Button tone="ghost" onClick={() => setTheme(toggleTheme())}
-      aria-label={`التبديل إلى المظهر ${next}`}
-      title={`المظهر ${next}`}
+      aria-label={`التبديل إلى المظهر ال${goingLight ? "نهاريّ" : "ليليّ"}`}
+      title={`المظهر ال${nextWord}`}
       /* `shrink-0`: القياسُ على هاتفٍ عرضُه ٣٩٠ بكسلا وجد الزرَّ ٢٠×٤٤ لا
          ٤٤×٤٤ — لأنّ الشريطَ الذي يحمله `flex`، وعنوانُ الصفحة الطويلُ
-         بجانبه يضغطه فيصير خطّا رأسيّا لا زرّا. */ className="grid h-11 w-11 shrink-0 place-items-center border border-border bg-foreground/[0.04] hover:border-gold/60 hover:bg-gold/10">
-      {theme === "light" ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
+         بجانبه يضغطه فيصير خطّا رأسيّا لا زرّا.
+         و`min-w-11` تحرس المقاسَ نفسَه بعد أن صار العرضُ بالحشو لا بـ`w-11`:
+         بلا كلمةٍ (دون `sm`) يبقى الزرُّ ٤٤ بكسلا لا ٤٢. */
+      className="flex h-11 min-w-11 shrink-0 items-center justify-center gap-2 px-3 border border-border bg-foreground/[0.04] hover:border-gold/60 hover:bg-gold/10">
+      <Icon className="h-[18px] w-[18px]" />
+      <span className={variant === "row" ? "text-sm font-bold" : "hidden text-sm font-bold sm:inline"}>{nextWord}</span>
     </Button>
+  );
+
+  if (variant === "header") return button;
+
+  /* شكلُ الدرج — صفٌّ بعنوانه كبقيّة صفوفه، لا رمزٌ عائمٌ في الوسط.
+     وعلى الهاتف هذا هو موضعُ الاكتشاف الأوّل: الترويسةُ هناك رموزٌ بلا
+     كلمات، والدرجُ كلماتٌ يقرؤها الزائرُ صفّا صفّا. */
+  return (
+    <div className="mt-2 flex w-full items-center justify-between gap-3 px-5 py-3">
+      <span className="text-sm font-semibold text-muted-foreground">المظهر</span>
+      {button}
+    </div>
   );
 }

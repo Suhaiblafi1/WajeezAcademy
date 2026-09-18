@@ -88,7 +88,7 @@ export default function LearnerSearchField({
       </Inset>
 
       {hits !== null && (
-        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-[#0F1A1D] p-1 shadow-2xl">
+        <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-2xl">
           {hits.length === 0 && (
             <li className="px-3 py-2 text-read text-muted-foreground">لا متعلّمَ بهذا الاسم أو البريد.</li>
           )}

@@ -1,10 +1,17 @@
 import { StrictMode } from 'react'
 import { loadPlatformConfig } from './services/platform-config'
+import { initTheme } from './services/theme'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import './index.css'
 import './styles/light.css'
 import App from './App.tsx'
+
+/* المظهرُ مطبَّقٌ قبل هذا السطر — سكربتُ `index.html` فعله قبل أوّل رسم.
+   وهذا النداءُ لما بعدَه: يُنصت لتبديل الجهاز نهارا وليلا ما دام الزائرُ
+   لم يختر بيده. ولولاه لبقي الموقعُ على مظهر لحظةِ الفتح حتى تُحدَّث
+   الصفحة. */
+initTheme()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
