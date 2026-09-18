@@ -75,10 +75,20 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
     .replace(/^\s*\/\/.*$/gm, " ");
   /* كتلةُ الشريط وحدَها: الملفُّ فيه شاشاتُ رفضٍ ثلاثٌ لها أزرارُها */
   const navBlock = layout.slice(layout.indexOf("<nav "), layout.indexOf("</nav>"));
+  /* ═══ والحبّةُ انتقلت إلى السلّم — فالفحصُ يتبعها ═══
+
+     صارت صيغةُ الحبّة درجةً في `ui/NavPill.tsx` لأنّ الشريط احتاج **زرّا**
+     إلى جانب روابطه («المزيد»)، والزرُّ المكتوبُ بيده يزيد عدّادَ
+     `design-system.test.ts` — وقاعدتُه: «من احتاج صيغةً لا يغطّيها السلّم
+     فالنقصُ في السلّم». فيُفحص الموضعان: القاعدةُ في موضعها الجديد، وأنّ
+     الشريطَ يستعملها — وإلّا حرسنا قاعدةً لا تحرس الشريط. */
+  const pill = read("src/components/ui/NavPill.tsx")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/^\s*\/\/.*$/gm, " ");
 
   it("٧) الاسمُ مرئيٌّ على الهاتف — لا رمزٌ يُخمَّن معناه", () => {
     expect(
-      /hidden\s+sm:inline/.test(navBlock),
+      /hidden\s+sm:inline/.test(navBlock + pill),
       "نصُّ التبويب مخفيٌّ تحت `sm`، فيصير الشريطُ تسعةَ رموزٍ متشابهةٍ "
       + "بعرض ٣٨ بكسلا — والمراجعُ توصي بخمسةٍ فأقلَّ في شريطٍ أوّل بلا أسماء.",
     ).toBe(false);
@@ -97,9 +107,62 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
   });
 
   it("٩) وهدفُ اللمس مريحٌ لا مجرّدَ مطابقٍ للحدّ الأدنى", () => {
-    expect(navBlock, "بلا `min-h-11` يصير الهدفُ ٢٨ بكسلا ارتفاعا").toContain("min-h-11");
+    /* ⚠ والفحصُ على **صيغة الحبّة** لا على الملفّ: نُزعت `shrink-0` من
+       `PILL` فبقي الحارسُ أخضرَ — طابقها في `className` أيقونةٍ داخلَ
+       الحبّة. وهي مصيدةُ `CLAUDE.md` بعينها، وقد وقع فيها هذا الحارسُ
+       نفسُه مرّةً قبلها في تعليقٍ لا في أيقونة. */
+    const pillCls = /const PILL = '([^']*)'/.exec(pill)?.[1] ?? "";
+    expect(pillCls, "لا صيغةَ حبّةٍ في السلّم أصلا").not.toBe("");
+    expect(pillCls, "بلا `min-h-11` يصير الهدفُ ٢٨ بكسلا ارتفاعا").toContain("min-h-11");
     /* و`shrink-0` كي لا ينضغط النصُّ حتّى يختفي حين يُمرَّر الشريط */
-    expect(navBlock).toContain("shrink-0");
+    expect(pillCls, "بلا `shrink-0` ينضغط النصُّ حتّى يختفي عند التمرير").toContain("shrink-0");
+    expect(navBlock, "الشريطُ لا يستعمل الحبّةَ — فالقاعدةُ فوقه لا تحرسه").toContain("<NavPill");
+  });
+
+  /* ═══ ما بعد الحادي عشر: زرٌّ يُرى لا تمريرٌ لا يُرى ═══
+
+     كان الشريطُ يحمل أحدَ عشرَ بندا في `overflow-x-auto` و`scrollbar-hide`:
+     البنودُ بعد الحافّة موجودةٌ ولا شيءَ يقول إنّها هناك — و«مساراتي»
+     مقطوعةٌ عند الحدّ، وثلاثةٌ خلفَها. وقرارُ صاحب المنصّة (١٨ سبتمبر
+     ٢٠٢٦): خمسةٌ تُرى وستٌّ خلف «المزيد» — لا تلاشٍ عند الحافّة. */
+  it("⚠️ ١٠) وما خرج عن الخمسة يبلغه زرٌّ يُرى — لا تمريرٌ بلا علامة", () => {
+    expect(layout, "لا قسمةَ بين ما يُرى وما يُقصَد").toMatch(/const primaryTabs = tabs\.filter\(\(t\) => t\.primary\)/);
+    expect(layout).toMatch(/const moreTabs = tabs\.filter\(\(t\) => !t\.primary\)/);
+    const primaryCount = (layout.match(/primary: true/g) ?? []).length;
+    expect(primaryCount, "لا بندَ في الشريط الأوّل").toBeGreaterThan(0);
+    expect(
+      primaryCount,
+      "الشريطُ الأوّلُ يتجاوز خمسةً — والمراجعُ توصي بخمسةٍ فأقلَّ في شريطٍ أوّل، "
+      + "وما زاد يعود خلف تمريرٍ لا علامةَ عليه.",
+    ).toBeLessThanOrEqual(5);
+    expect(navBlock, "لا زرَّ يفتح بقيّةَ التبويبات").toContain("<MoreTabs");
+  });
+
+  it("⚠️ ١١) وزرُّ «المزيد» خارجَ المُمرَّر — وإلّا قُصَّت قائمتُه عند الحافّة", () => {
+    /* `overflow-x-auto` يقصُّ كلَّ `absolute` في داخله. فلو وُضع الزرُّ داخلَ
+       الشريط المُمرَّر لانفتحت القائمةُ مقصوصةً — عطبٌ يُرى ولا يُفهَم سببُه. */
+    const scroller = navBlock.indexOf("overflow-x-auto");
+    const scrollerEnd = navBlock.indexOf("</div>", scroller);
+    const more = navBlock.indexOf("<MoreTabs");
+    expect(scroller, "لا شريطَ مُمرَّرٌ أصلا").toBeGreaterThan(-1);
+    expect(scrollerEnd, "لم يُغلَق الشريطُ المُمرَّر").toBeGreaterThan(-1);
+    expect(more, "لا زرَّ «المزيد»").toBeGreaterThan(-1);
+    expect(more, "الزرُّ داخلَ المُمرَّر — فقائمتُه تُقَصُّ عند حافّته").toBeGreaterThan(scrollerEnd);
+  });
+
+  it("⚠️ ١٢) والقائمةُ تُغلَق بالمفتاح وبالنقر خارجَها — ولا ستارةَ `fixed`", () => {
+    /* الترويسةُ تحمل `backdrop-blur`، و`backdrop-filter` يجعل حاملَه كتلةً
+       حاضنةً لكلّ `fixed` في ذرّيّته — فالستارةُ تمتدّ على الترويسة وحدَها
+       (`h-16`) ولا تغلق شيئا. وهي علّةٌ وقعت في هذه الترويسة بعينها مع
+       `StaffAccountMenu`، فلا تُعاد. */
+    const menu = layout.slice(layout.indexOf("function MoreTabs"), layout.indexOf("export default function TrainerLayout"));
+    expect(menu, "لا مكوّنَ قائمةٍ أصلا").not.toBe("");
+    expect(menu, "لا مستمعَ نقرٍ على المستند").toContain('document.addEventListener("mousedown"');
+    expect(menu, "لا تُغلَق بـ`Escape`").toContain('e.key === "Escape"');
+    expect(menu, "ستارةٌ `fixed` — وهي لا تغطّي شيئا تحت `backdrop-blur`").not.toMatch(/fixed\s+inset-0/);
+    /* والزرُّ يقول لقارئ الشاشة إنّه يفتح قائمةً وهل هي مفتوحة */
+    expect(pill, "الزرُّ لا يُعلن أنّه يفتح قائمة").toContain('aria-haspopup="menu"');
+    expect(pill, "لا يُعلن حالتَه مفتوحةً أو مغلقة").toContain("aria-expanded={expanded}");
   });
 });
 
