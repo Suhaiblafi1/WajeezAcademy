@@ -40,8 +40,28 @@ export interface ResolvedRule {
   type: string
   threshold: number
   /** من أين جاءت — يُقرأ في الشرح لا في الحكم */
-  source: 'course' | 'cohort' | 'tightened'
+  source: 'course' | 'cohort' | 'tightened' | 'default'
 }
+
+/* ═══ ولا قاعدةَ ليست إذنا — بل سؤالٌ لم يُجَب ═══
+
+   كان الإكمالُ يُحسب «تمّ إن لم يسقط شرط». وشعبةٌ لا شرطَ عليها لا يسقط
+   فيها شيء — فتُصدِر شهادةً **لكلّ ملتحق**، حضر أو لم يحضر، سلّم أو لم
+   يسلّم. والشهادةُ هي الدعوى التي لا تحتمل المرونة.
+
+   والأرضيّةُ الافتراضيّةُ مهمّةٌ واحدةٌ مقبولة — لا حضورٌ ولا نسبة. لأنّ
+   الوعدَ المبيعَ: «سيَنظر مختصٌّ فيما أنتجتَه أنت، ويقول لك الحقيقةَ عنه».
+   وهي **مبلوغةٌ دائما** بعد ق٨: لا تُعتمَد شعبةٌ بلا مهمّةٍ واحدةٍ على
+   الأقلّ، فالأرضيّةُ لا تحبس أحدا على ما لا وجودَ له.
+
+   ── وتُطبَّق حين لا يُقال شيءٌ أصلا ──
+
+   لا حين يُقال «لا شرط». من أسقط نوعا صراحةً (`required: false`) قرّر
+   وبقي قرارُه في السجلّ — والإرخاءُ بابُه واحدٌ صريحٌ كما هو مكتوبٌ أعلاه.
+   فالافتراضيُّ يملأ **الصمتَ** لا يعلو **القول**. */
+export const DEFAULT_COMPLETION_RULES: readonly ResolvedRule[] = [
+  { type: 'assignment_accepted', threshold: 1, source: 'default' },
+]
 
 /**
  * قواعدُ الإكمال السارية على تسجيل — أرضيّةُ الدورة مشدودةً بما تزيده الشعبة.
@@ -55,6 +75,9 @@ export function resolveCompletionRules(
   courseRules: readonly CompletionRuleLike[],
   cohortRules: readonly CompletionRuleLike[],
 ): ResolvedRule[] {
+  /* الصمتُ يملؤه الافتراضيّ — والقولُ لا يعلوه شيء */
+  if (courseRules.length === 0 && cohortRules.length === 0) return [...DEFAULT_COMPLETION_RULES]
+
   /* أشدُّ ما كُتب لكلّ نوعٍ على الدورة — والمرفوعُ (`required: false`) لا يُعَدّ */
   const floor = new Map<string, number>()
   for (const r of courseRules) {
