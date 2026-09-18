@@ -17,10 +17,22 @@
      الأنماط:  (بلا شيء) داكن · `?light` فاتح · `?guides` أدلّةُ المنطقة
 
      الصورتان المعتمَدتان بجواره: `ترقبوا-الإطلاق-داكن.png` و`…-فاتح.png`،
-     وهما ما يُرفع. وبقاؤهما في المستودَع ليس تكرارا للمصدر: التصديرُ يلزمه
-     أن يُحمَّل الخطُّ من Google Fonts — كما تحمّله `index.html` — فمن صدّر
-     بلا شبكةٍ ارتدّ إلى خطّ النظام، **والارتدادُ يغيّر المقاييس** فينزل
-     المتنُ تحت المنطقة الآمنة. فما يُرفع محفوظٌ لا يُعاد اشتقاقُه.
+     وهما ما يُرفع. وبقاؤهما في المستودَع ليس تكرارا للمصدر، فالتصديرُ يلزمه
+     خطَّان لا واحد:
+
+       ① **Avenir Arabic** من `public/fonts/` — وهو المطلوبُ هنا. وملفّاتُه
+          ليست في المستودَع (ترخيصُ Monotype لا يُنشر)، فمن صدّر قبل وضعها
+          خرجت لقطتُه بالخطّ الثاني لا الأوّل.
+       ② **IBM Plex Sans Arabic** من Google Fonts — الارتدادُ، كما ترتدُّ
+          إليه `src/index.css`. ويلزمه أن تكون الشبكةُ مفتوحة.
+
+     ومن صدّر بلا شبكةٍ ولا ملفّاتِ خطٍّ نزل إلى خطّ النظام، **وذلك يغيّر
+     المقاييسَ** فينزل المتنُ تحت المنطقة الآمنة. فما يُرفع محفوظٌ لا يُعاد
+     اشتقاقُه.
+
+     ــ والصورتان المحفوظتان الآن بالخطّ ② ــ لأنّ ملفّات ① لم تُوضع بعد.
+     فمن وضعها في `public/fonts/` بالأسماء التي يذكرها README هناك، أعاد
+     التصديرَ بالأمر أدناه فخرجت اللقطةُ بخطّ المنصّة.
 
      وإعادةُ التصدير بعد تحرير النصّ (في متصفّحٍ له شبكة — والمقاسُ هو مقاسُ
      اللقطة فلا قصَّ بعدها):
@@ -40,6 +52,19 @@
       href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" />
 <title>ترقّبوا إطلاق أكاديمية وجيز</title>
 <style>
+
+  /* ــ خطُّ المنصّة: Avenir Arabic ــ
+
+     هو خطُّ صاحب المنتج، وملفّاتُه مستضافةٌ ذاتيّا في `public/fonts/`
+     (انظر README هناك: ترخيصُ Monotype للويب يُسلَّم woff2). والأوزانُ
+     المتاحةُ في الحزمة ثلاثةٌ — ٤٠٠ و٥٠٠ و٧٠٠ — فما طُلب دونها أو بينها
+     يأخذه المتصفّحُ من أقربها.
+
+     ولا شيء يُكسر قبل وضع الملفّات: المتصفّح يتخطّى ملفّا غير موجودٍ بصمت
+     ويرتدُّ إلى `IBM Plex Sans Arabic` — كما يفعل `src/index.css` نفسُه. */
+  @font-face{font-family:"Avenir Arabic";src:url("../../public/fonts/avenir-arabic-400.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:"Avenir Arabic";src:url("../../public/fonts/avenir-arabic-500.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:"Avenir Arabic";src:url("../../public/fonts/avenir-arabic-700.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
 
   :root{
     --ground:#0D0D0D;
@@ -72,7 +97,7 @@
 
   *{margin:0;padding:0;box-sizing:border-box}
   html,body{width:1080px;height:1920px;overflow:hidden;background:var(--ground)}
-  body{font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  body{font-family:"Avenir Arabic","IBM Plex Sans Arabic","Neo Sans Arabic",system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
   /* اللوحةُ مثبَّتةٌ في الزاوية وتقصُّ ما فاض، فلا يزحزحها فائضٌ في RTL */
   .canvas{
     position:fixed;inset-inline-start:auto;left:0;top:0;
