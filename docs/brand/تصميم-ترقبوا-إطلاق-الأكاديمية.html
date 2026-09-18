@@ -46,7 +46,6 @@
     --teal:#38A7B4;
     --teal-light:#6EC7D1;
     --teal-deep:#247B84;
-    --gold:#FABC05;
     --ink:#FFFFFF;
     --ink-soft:rgba(255,255,255,.72);
     --ink-faint:rgba(255,255,255,.46);
@@ -67,7 +66,6 @@
     --glow-gold:rgba(250,188,5,.095);
     --grid:rgba(14,34,37,.030);
     --teal-light:#1A5C64;
-    --gold:#8A6A00;
     --box-fill:rgba(56,167,180,.07);
     --box-line:rgba(36,123,132,.42);
   }
@@ -115,7 +113,7 @@
   .stage{
     position:relative;z-index:2;
     height:100%;
-    padding:262px 96px 492px;
+    padding:296px 96px 492px;
     display:flex;flex-direction:column;align-items:center;
     text-align:center;
   }
@@ -136,19 +134,7 @@
   :root[data-theme="light"] .mark{filter:drop-shadow(0 12px 30px rgba(36,123,132,.18))}
   :root[data-theme="light"] .mark img{filter:url(#ink-on-light)}
 
-  .eyebrow{
-    margin-top:28px;
-    display:inline-flex;align-items:center;gap:14px;
-    padding:13px 30px;border-radius:999px;
-    border:1px solid rgba(250,188,5,.34);
-    background:rgba(250,188,5,.07);
-    color:var(--gold);
-    font-size:26px;font-weight:500;letter-spacing:.02em;
-  }
-  .eyebrow .dot{width:11px;height:11px;border-radius:50%;background:var(--gold);
-                box-shadow:0 0 0 6px rgba(250,188,5,.16)}
-
-  .title{margin-top:28px;line-height:1}
+  .title{margin-top:46px;line-height:1}
   .title .t1{
     display:block;font-size:62px;font-weight:300;
     color:var(--ink-soft);letter-spacing:.01em;line-height:1.34;
@@ -247,8 +233,6 @@
   <div class="stage">
     <span class="mark"><img src="../../public/logo-mark.png" alt="وجيز" /></span>
 
-    <div class="eyebrow"><span class="dot"></span>قريبًا</div>
-
     <h1 class="title">
       <span class="t1">ترقّبوا إطلاق</span>
       <span class="t2">أكاديمية وجيز</span>
@@ -285,7 +269,7 @@
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
         </svg>
-        قدِّم عبر الرابط في البايو
+        قدِّم عبر الرابط
       </div>
       <div class="cta-note">أو أرسل لي رسالة مباشرة لنتحدّث</div>
     </div>
