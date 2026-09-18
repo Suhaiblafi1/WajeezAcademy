@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { CalendarClock,
   ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
-  FileUp, KeyRound, Loader2, Mail, MailCheck, MessageCircle, Mic2, Phone, RefreshCcw, Search, Send, Sparkles, Users,
+  FileUp, KeyRound, Loader2, Mail, MessageCircle, Mic2, Phone, RefreshCcw, Search, Send, Sparkles, Users,
 } from "lucide-react";
 import {
   areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, invalidProps, OptionGrid, Question,
@@ -703,7 +703,6 @@ export default function JoinTrainer() {
      بدء الطلب في الخلفية تفصيلٌ تقني، وإظهار شاشة النجاح عنده يوهم المتقدّم
      أنه انتهى وقد بقي نصف طلبه. */
   if (result && phase2Done) {
-    const mailSent = completion?.emailDelivery === "sent";
     const channel = CONTACT_CHANNELS.find((c) => c.value === contactChannel);
     const channelValue = contactChannel === "other_email" ? contactAltEmail.trim()
       : contactChannel === "email" ? form.email.trim()
@@ -750,18 +749,6 @@ export default function JoinTrainer() {
               email={form.email.trim()} reference={result.reference}
               delivery={completion?.emailDelivery ?? null}
             />
-
-            {mailSent && (
-              <Card>
-                <p className="flex items-center gap-2 text-sm font-black">
-                  <MailCheck className="h-4 w-4 text-teal-light-ink" /> وفي الرسالة نفسِها
-                </p>
-                <p className="mt-2 text-read leading-7 text-muted-foreground">
-                  رقمُ طلبك وتفاصيلُه والخطوةُ التالية — احتفظ بها. وإن حجزتَ مقابلتك فستصلك
-                  من Calendly دعوةُ تقويمٍ ثانيةٌ فيها زرّا إعادة الجدولة والإلغاء.
-                </p>
-              </Card>
-            )}
 
             <Card>
               <p className="flex items-center gap-2 text-sm font-black">
