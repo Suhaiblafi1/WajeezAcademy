@@ -144,6 +144,9 @@ const LOW_FAMILIES: readonly string[] = [
   'short_link',
   'attempt', 'attendance', 'feedback', 'referral', 'plan', 'zoom',
   'trainer_compensation', 'advisor', 'learner', 'session',
+  /* وبابُ الموسم: قرارٌ يغيّر ما تفعله المنصّةُ لا ما يملكه إنسانٌ بعينه.
+     ومن يُبلَّغ بفتحه يصله بريدُه من `OutboxMail` لا من وزن الأثر. */
+  'registration',
 ]
 
 /* وأفعالٌ مفردةٌ وزنُها منخفضٌ وإن كانت عائلتُها أثقل */

@@ -35,6 +35,8 @@ import { CalendarDays, ChevronDown, CreditCard, Gift, Info, Loader2, Route as Ro
 import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
+import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { apiPost, ApiError } from "@/services/api";
 import { readReferral } from "@/application/commerce/referral";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
@@ -131,6 +133,15 @@ export default function BuyPanel({
   onClose: () => void;
 }) {
   const { cohorts, loaded } = useCourseCohorts();
+
+  /* بابُ الموسم — يُقرأ قبل النقر ويُصدَّق بعده.
+
+     الخادمُ هو الحارس، وهذا يجنّب المشتريَ أن يختار موعدا وعملةً ثمّ يُردّ.
+     و`serverClosed` لما لا تعرفه القدراتُ المحمَّلة: تبويبٌ فُتح قبل الإغلاق،
+     أو نداءُ `/api/config` تعذّر — فتأتي الجملةُ من الردّ نفسِه. */
+  const { registration } = usePlatformConfig();
+  const [serverClosed, setServerClosed] = useState<string | null>(null);
+  const closedAr = serverClosed ?? (registration.open ? null : registration.messageAr);
 
   /* الشعبةُ المختارة لكلّ دورة — أوّلُ المتاح افتراضا، ويبدّلها من شاء */
   const [chosen, setChosen] = useState<Record<string, string>>({});
@@ -249,6 +260,13 @@ export default function BuyPanel({
          ولا مبلغ — ولا يستطيع أن يجيب «هل نجح دفعي؟». */
       window.location.assign(`/student/learning?paid=${order.orderId}`);
     } catch (e) {
+      /* وقفلُ الموسم لا يُعرض خطأً أحمرَ في أسفل اللوح: هو ليس عطبا في طلبه
+         بل بابٌ لم يُفتح، وجوابُه حقلُ بريدٍ لا «أعد المحاولة». */
+      if (e instanceof ApiError && e.code === "season_closed") {
+        setServerClosed(e.message);
+        setPaying(false);
+        return;
+      }
       setError(e instanceof ApiError ? e.message : "تعذّر إتمام الشراء — أعد المحاولة");
       setPaying(false);
     }
@@ -565,7 +583,20 @@ export default function BuyPanel({
               </Inset>
             )}
 
-            {!nothingLeft && (
+            {/* البابُ مغلقٌ: الرسالةُ وحقلُ البريد مكانَ زرِّ الدفع.
+
+                ولا يُعرض الزرُّ معطَّلا إلى جانبها: زرٌّ مطفأٌ يُقرأ عطبا في
+                الصفحة، والجملةُ تقول ما يقوله الإطفاءُ وأكثر. */}
+            {!nothingLeft && closedAr && (
+              <RegistrationClosedNotice
+                messageAr={closedAr}
+                source={kind === "pathway" ? "pathway" : "course"}
+                email={email}
+                className="mt-5"
+              />
+            )}
+
+            {!nothingLeft && !closedAr && (
               <>
                 <Button tone="primary" onClick={() => void pay()}
                   disabled={paying || quoting || !quote || !quote.emailVerified || payableIds.length === 0} className="mt-5 w-full disabled:opacity-50">

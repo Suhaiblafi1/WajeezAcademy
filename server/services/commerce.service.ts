@@ -18,7 +18,7 @@ import { getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
-import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
+import { assertSeasonOpen, cohortAcceptsRegistration, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
 
 /* اللبِناتُ المشتركةُ انتقلت إلى `commerce/cart-types` كي لا يصير الاستيرادُ
    حلقةً بين السلّة والخدمة. ويُعاد تصديرُها من هنا: مواضعُ الاستيراد القائمة
@@ -42,6 +42,11 @@ export class CommerceService {
   /* ── طلب التسجيل وحجز المقعد ── */
 
   async requestEnrollment(userId: string, cohortId: string, note?: string) {
+    /* بابُ الموسم أوّلا — يعلو شروطَ الشعبة وشرطَ البريد معا. فمن لم يوثّق
+       بريدَه والبابُ مغلق لا يُقال له «وثّق بريدك» ثمّ يُردّ بعد أن يوثّقه:
+       يُقال له ما يمنعه حقّا من أوّل نداء. */
+    assertSeasonOpen(await readSeasonGate(this.prisma))
+
     /* حاجز توثيق البريد (١هـ). المال والمواعيد والفاتورة كلها تُرسل إلى عنوان
        لم يُثبت أنه يصل صاحبه — فالتوثيق شرطٌ قبل بدء الشراء لا بعده.
 
@@ -83,6 +88,7 @@ export class CommerceService {
   }
 
   async requestPlanEnrollment(userId: string) {
+    assertSeasonOpen(await readSeasonGate(this.prisma))
     const verified = await this.cart.emailVerified(userId)
     if (!verified && (await this.cart.emailChannelEnabled())) {
       throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يُفتح بمجرّد فتحه', 403)
@@ -319,6 +325,10 @@ export class CommerceService {
      `seat_held` مربوطةً بالطلب، فتعمل `settleOrder` القائمة كما هي. «الطلب»
      هنا سجلُّ حجزِ مقعدٍ داخليّ لا خطوةَ موافقةٍ بشريّة. */
   async checkout(userId: string, cohortIds: string[], couponCode?: string, referralCode?: string) {
+    /* وهذا هو الحارسُ الحقيقيّ لا ما في الواجهة: الشاشةُ تُخفي الزرَّ، وهذا
+       يردّ من لم يُخفَ عنه — من فتح تبويبَه قبل الإغلاق، ومن ينادي المسارَ
+       بلا شاشةٍ أصلا. */
+    assertSeasonOpen(await readSeasonGate(this.prisma))
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds, true)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
@@ -539,6 +549,15 @@ export class CommerceService {
 
     const existing = await this.prisma.payment.findUnique({ where: { idempotencyKey } })
     if (existing) return existing // idempotent — نفس المفتاح يعيد نفس الدفعة
+
+    /* وبابُ الموسم هنا لا في رأس النداء: ما فوقَه **قراءاتٌ تُعيد ما وقع**
+       (طلبٌ سُوّي، ودفعةٌ بالمفتاح نفسِه). فمن دفع أمس ثمّ حدّث صفحتَه اليوم
+       يجب أن يرى إيصالَه لا «لم يفتح باب التسجيل» — الإغلاقُ يمنع دفعةً
+       جديدةً تُنشأ، لا يُنكر دفعةً وقعت.
+
+       وطلبٌ لم يكتمل دفعُه يُردّ: البابُ أُغلق وهو في الطريق، ومقعدُه يبقى
+       محجوزا حتّى يُلغيه أو يُفتح البابُ فيُكمل. */
+    assertSeasonOpen(await readSeasonGate(this.prisma))
 
     const config = await getPaymentConfig(this.prisma)
     const provider = getPaymentProvider(config)

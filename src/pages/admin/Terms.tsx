@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { CalendarCheck, CalendarPlus, CalendarRange, Loader2, Play, Users, Trash2 } from "lucide-react";
+import { BellRing, CalendarCheck, CalendarPlus, CalendarRange, DoorClosed, DoorOpen, Loader2, Play, Users, Trash2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError, permissionMessage } from "@/services/api";
@@ -48,6 +48,10 @@ interface PlanResult {
   loadByMonth: Record<number, number>;
 }
 interface AvailableTrainer { profileId: string; name: string; status: string; maxCohorts: number | null; qualifiedCourseIds: string[] }
+
+/** بابُ الموسم كما يقرؤه الخادم — العلّةُ في `server/services/registration-window.ts` */
+interface SeasonGate { open: boolean; seasonKey: string; seasonAr: string; messageAr: string }
+interface GateState { gate: SeasonGate; waiting: { total: number; pending: number } }
 
 /** `datetime-local` يقبل بلا ثوانٍ ولا منطقة — والخادمُ يقرؤه تاريخا */
 const toLocal = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
@@ -79,15 +83,25 @@ export default function Terms() {
   /* شعبٌ لها مدرّبٌ ولم يُسمَّ فصلُها — ومدرّبوها محبوسون عن الجدولة */
   const [termless, setTermless] = useState<TermlessCohort[] | null>(null);
   const [pickTerm, setPickTerm] = useState<Record<string, string>>({});
+  /* بابُ التسجيل للمنصّة كلِّها — قرارٌ واحدٌ فوق الشعب والفصول */
+  const [gate, setGate] = useState<GateState | null>(null);
+  const [gateSeason, setGateSeason] = useState("nov_jan");
+  const [gateMessage, setGateMessage] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const [rows, stuck] = await Promise.all([
+      const [rows, stuck, seasonGate] = await Promise.all([
         apiGet<Term[]>("/api/admin/terms?all=true"),
         apiGet<TermlessCohort[]>("/api/admin/cohorts/without-term").catch(() => [] as TermlessCohort[]),
+        apiGet<GateState>("/api/admin/registration-season").catch(() => null),
       ]);
       setTerms(rows);
       setTermless(stuck);
+      if (seasonGate) {
+        setGate(seasonGate);
+        if (seasonGate.gate.seasonKey) setGateSeason(seasonGate.gate.seasonKey);
+        setGateMessage(seasonGate.gate.messageAr);
+      }
       setWindows(Object.fromEntries(rows.map((t) => [t.id, { opensAt: toLocal(t.registrationOpensAt), closesAt: toLocal(t.registrationClosesAt) }])));
       setError(null);
     } catch (e) { setError(permissionMessage(e, "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev")); setTerms([]); }
@@ -109,6 +123,32 @@ export default function Terms() {
     return act(`term-${c.id}`, () => apiPost(`/api/admin/cohorts/${c.id}/term`, { termId }),
       "سُمّي فصلُ الشعبة — وفُتحت نافذةُ جدولة مدرّبها");
   };
+
+  /* فتحُ البابِ وإغلاقُه — ولا يُلمس تحته علمُ شعبةٍ واحدة، فما كان مغلقا
+     قبل الإغلاق يبقى مغلقا بعد الفتح. */
+  const setGateOpen = (open: boolean) => act(
+    "gate",
+    async () => {
+      const r = await apiPost<GateState>("/api/admin/registration-season", {
+        open, season: gateSeason, ...(open ? {} : { messageAr: gateMessage.trim() || undefined }),
+      });
+      setGate(r);
+      setGateMessage(r.gate.messageAr);
+    },
+    open ? "فُتح باب التسجيل — وينتظر من ترك بريده أن تُبلغه" : "أُوقف التسجيل — ومن ينقر الدفعَ يُطلَب بريدُه",
+  );
+
+  /* إبلاغُ المنتظرين — فعلٌ مستقلٌّ عن الفتح: يُفتح البابُ، ويُتحقَّق من
+     الشعب والأسعار، ثمّ يُنادى الناس. ومن أُبلغ لا يُبلَّغ مرّتين. */
+  const notifyWaiting = () => act(
+    "gate-notify",
+    async () => {
+      const r = await apiPost<{ queued: number }>("/api/admin/registration-season/notify", { season: gateSeason });
+      toast(r.queued > 0 ? `كُتبت ${r.queued} رسالةً في الطابور — يُرسلها العامل` : "لا أحد ينتظر الآن");
+      setGate(await apiGet<GateState>("/api/admin/registration-season"));
+    },
+    "أُبلغ المنتظرون",
+  );
 
   const create = () => act("create", () => apiPost("/api/admin/terms", { year: Number(form.year), season: form.season }), "أُنشئ الموسم بحدوده المحسوبة");
   const saveWindow = (t: Term) => {
@@ -167,6 +207,72 @@ export default function Terms() {
       ]} />
 
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-read leading-6 text-red-200">{error}</Inset>}
+
+      {/* ═══ بابُ التسجيل — أوّلُ ما يُقرأ في هذه الشاشة ═══
+
+          قرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦): يُوقَف التسجيلُ حتّى يُفتح بابُ
+          الموسم، ومن نقر «ادفع» يُقال له ذلك ويُطلَب بريدُه.
+
+          وموضعُه فوق كلِّ شيءٍ لأنّه يعلو كلَّ شيء: لا معنى لضبط نافذةِ فصلٍ
+          ولا لتوزيع شعبٍ وبابُ المنصّة مغلقٌ — ومن لا يرى القفلَ يظنّ عطبا
+          حيث لا عطب. */}
+      {gate && (
+        <Panel as="section" className="mb-6">
+          <h2 className="flex items-center gap-2 text-sm font-black">
+            {gate.gate.open
+              ? <DoorOpen className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
+              : <DoorClosed className="h-4 w-4 text-gold-ink" aria-hidden="true" />}
+            بابُ التسجيل — المنصّةُ كلُّها
+          </h2>
+          <p className="mt-1 text-read leading-6 text-muted-foreground">
+            {gate.gate.open
+              ? "التسجيلُ مفتوح: الشراءُ يمضي بشروط الشعبة ونافذة فصلها كما هي."
+              : "التسجيلُ موقوف: من ينقر «ادفع» يرى الرسالةَ أدناه ويُطلَب بريدُه — ولا يُلمَس علمُ شعبةٍ ولا نافذةُ فصل."}
+          </p>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
+            <label>
+              <span className="mb-1.5 block text-read font-bold text-muted-foreground">الموسم المنتظَر</span>
+              <select value={gateSeason} onChange={(e) => setGateSeason(e.target.value)} className={staffSelectCls}>
+                {TRAINING_SEASONS.map((s) => <option key={s.value} value={s.value}>{s.label} — {s.months}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="mb-1.5 block text-read font-bold text-muted-foreground">ما يُقال لمن نقر الدفع</span>
+              <input
+                value={gateMessage}
+                onChange={(e) => setGateMessage(e.target.value)}
+                placeholder="لم يفتح باب التسجيل لموسم الشتاء بعد"
+                className={staffControlCls}
+              />
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {gate.gate.open ? (
+              <Button tone="secondary" disabled={busy !== null} onClick={() => setGateOpen(false)}>
+                <DoorClosed className="h-4 w-4" aria-hidden="true" /> أوقف التسجيل
+              </Button>
+            ) : (
+              <Button tone="confirm" disabled={busy !== null} onClick={() => setGateOpen(true)}>
+                <DoorOpen className="h-4 w-4" aria-hidden="true" /> افتح باب التسجيل
+              </Button>
+            )}
+            {/* والإبلاغُ لا يُعرض إلّا والبابُ مفتوحٌ ومن ينتظر: زرٌّ يُرسل
+                «فُتح» قبل أن يُفتح يُعيد الناسَ إلى الجملة نفسِها. */}
+            {gate.gate.open && gate.waiting.pending > 0 && (
+              <Button tone="confirm" disabled={busy !== null} onClick={notifyWaiting}>
+                <BellRing className="h-4 w-4" aria-hidden="true" /> أبلغ المنتظرين ({gate.waiting.pending})
+              </Button>
+            )}
+            <span className="text-read leading-6 text-muted-foreground">
+              {gate.waiting.total === 0
+                ? "لم يترك أحدٌ بريدَه بعد."
+                : `ترك بريدَه ${gate.waiting.total} — ${gate.waiting.pending} لم يُبلَّغوا بعد.`}
+            </span>
+          </div>
+        </Panel>
+      )}
 
       {/* ① إنشاءُ موسم — لا تواريخَ باليد: الموسمُ يحدّدها */}
       <Panel as="section" className="mb-6">

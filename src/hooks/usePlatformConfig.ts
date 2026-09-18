@@ -4,10 +4,12 @@
    ظهر الزرّ. والعكسُ — إظهارُ زرٍّ ثمّ إخفاؤه — كان سيُربك المستخدم. */
 
 import { useEffect, useState } from "react";
-import { loadPlatformConfig, platformConfigSnapshot, type PlatformConfig } from "@/services/platform-config";
+import { loadPlatformConfig, platformConfigSnapshot, PLATFORM_CONFIG_FALLBACK, type PlatformConfig } from "@/services/platform-config";
 
 export function usePlatformConfig(): PlatformConfig {
-  const [config, setConfig] = useState<PlatformConfig>(() => platformConfigSnapshot() ?? { fileUploads: false, demoMode: false, interviewBookingUrl: null, interviewGuests: null });
+  /* والافتراضُ يُستورَد لا يُنسَخ: كان مكتوبا هنا ثانيةً بيده، فكلُّ حقلٍ
+     يُضاف إلى القدرات يلزمه أن يُضاف في موضعَين — وأحدُهما يُنسى. */
+  const [config, setConfig] = useState<PlatformConfig>(() => platformConfigSnapshot() ?? PLATFORM_CONFIG_FALLBACK);
   useEffect(() => {
     let alive = true;
     void loadPlatformConfig().then((c) => { if (alive) setConfig(c); });

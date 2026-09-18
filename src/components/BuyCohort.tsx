@@ -14,6 +14,8 @@ import { apiPost, ApiError } from "@/services/api";
 import type { CohortOption } from "@/services/cohort-prices";
 import { formatOfferPrice } from "@/application/commerce/pathway-offer";
 import Button from "@/components/ui/Button";
+import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import {
   PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
   type PresentmentCurrency,
@@ -34,6 +36,9 @@ export default function BuyCohort({
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* بابُ الموسم — العلّةُ في `RegistrationClosedNotice`، والحارسُ في الخادم */
+  const { registration } = usePlatformConfig();
+  const [serverClosed, setServerClosed] = useState<string | null>(null);
   /* عملةُ البطاقة — تُختار هنا وحدَها. والسعرُ المعروض في الموقع كلِّه بالدولار
      (قرارُ صاحب المنصّة)، فلا مبدّلَ عملةٍ في أيّ صفحةٍ أخرى. */
   const [currency, setCurrency] = useState<PresentmentCurrency>("USD");
@@ -63,11 +68,17 @@ export default function BuyCohort({
       }
       onBought?.();
     } catch (e) {
+      if (e instanceof ApiError && e.code === "season_closed") { setServerClosed(e.message); return }
       setError(e instanceof ApiError ? e.message : "تعذّر إتمام الشراء — أعد المحاولة");
     } finally {
       setBusy(false);
     }
   };
+
+  const closedAr = serverClosed ?? (registration.open ? null : registration.messageAr);
+  if (closedAr) {
+    return <RegistrationClosedNotice messageAr={closedAr} source="cohort" className={className} />;
+  }
 
   return (
     <div className={`flex flex-col items-end gap-1.5 ${className}`}>

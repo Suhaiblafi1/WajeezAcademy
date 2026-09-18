@@ -18,17 +18,34 @@ export interface PlatformConfig {
   interviewBookingUrl: string | null;
   /** بريدٌ أو أكثرُ يُضاف حاضرا في كلّ موعد — مفصولةٌ بفاصلة */
   interviewGuests: string | null;
+  /** بابُ الموسم — أتبيع المنصّةُ الآن، وما يُقال لمن نقر الدفعَ إن لم تكن */
+  registration: RegistrationGate;
 }
 
-/* الافتراضُ عند تعذُّر السؤال: «لا» — فلا نعرض زرّا قد لا يعمل. */
-const FALLBACK: PlatformConfig = { fileUploads: false, demoMode: false, interviewBookingUrl: null, interviewGuests: null };
+export interface RegistrationGate {
+  open: boolean;
+  seasonKey: string;
+  seasonAr: string;
+  messageAr: string;
+}
+
+/* الافتراضُ عند تعذُّر السؤال: «لا» — فلا نعرض زرّا قد لا يعمل.
+
+   ويُستثنى بابُ الموسم: افتراضُه **مفتوح**. فالقاعدةُ أعلاه تمنع زرّا قد
+   يفشل، وهذا يمنع بيعا قد ينجح — وهما ليسا سواء. والحارسُ في `checkout`
+   و`pay` على كلّ حال: من نقر الدفعَ ونحن نجهل حالَ الباب يُردّ من الخادم
+   برسالته نفسِها، فيرى اللوحُ ما كان سيريه لو عرف. */
+export const PLATFORM_CONFIG_FALLBACK: PlatformConfig = {
+  fileUploads: false, demoMode: false, interviewBookingUrl: null, interviewGuests: null,
+  registration: { open: true, seasonKey: "", seasonAr: "", messageAr: "" },
+};
 
 let cached: Promise<PlatformConfig> | null = null;
 let snapshot: PlatformConfig | null = null;
 
 export function loadPlatformConfig(): Promise<PlatformConfig> {
   cached ??= apiGet<PlatformConfig>("/api/config")
-    .catch(() => FALLBACK)
+    .catch(() => PLATFORM_CONFIG_FALLBACK)
     .then((c) => { snapshot = c; return c });
   return cached;
 }
