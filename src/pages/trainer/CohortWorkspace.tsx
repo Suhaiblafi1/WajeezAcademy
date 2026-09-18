@@ -43,6 +43,8 @@ import ConfirmAction from "@/components/ConfirmAction";
 import Modal from "@/components/Modal";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES, readTypedLinks, resourceKind, resourceCategory, kindForCategory } from "@/application/trainer/plan-overlay";
+import type { ResourceCategory } from "@/application/trainer/plan-overlay";
+import { X } from "lucide-react";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
@@ -202,7 +204,7 @@ const STAGE_INTRO: Record<Step, { title: string; purpose: string; minutes: strin
   },
   assignments: {
     title: "المهامّ والتطبيق العمليّ",
-    purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم. خطوةٌ اختياريّة — ويُنصح بواحدٍ على الأقلّ.",
+    purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم. ومهمّةٌ واحدةٌ على الأقلّ شرطٌ للاعتماد — لا تكون المحاضرةُ إلزاميّةً والمُخرَجُ اختياريّا.",
     minutes: "نحو ٥ دقائق",
   },
   approval: {
@@ -294,6 +296,23 @@ export default function CohortWorkspace() {
   /* بصمةُ آخرِ ما حُفظ — يُقاس عليها «فيه تغييرٌ لم يُحفظ» لكلّ مرحلةٍ وحدَها.
      كانت المرحلةُ تُغادَر بتعديلٍ في يدها فيضيع بلا كلمة. */
   const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "" });
+  /* ═══ «أضف» تفتح مسوّدةً لا صفًّا حقيقيّا ═══
+
+     كانت تدفع صفًّا فارغا إلى `content.resources` فورا. وشرطُ زرِّ الحفظ
+     «لا صفَّ بلا عنوانٍ ولا مصدر» يقرؤه ناقصا، **فيُقفَل الحفظُ على اللوحة
+     كلِّها** — ومن ضغط «أضف» استطلاعا لا يجد ما يُخرجه منه إلّا «أزل»،
+     وقد لا يربط بينهما. فالمسوّدةُ خارجَ الخطّة حتّى تكتمل، ولها ثلاثةُ
+     مخارج: × وزرُّ إلغاءٍ وEsc. */
+  const [draft, setDraft] = useState<{ category: ResourceCategory; source: "file" | "url" | null; row: PlanResource } | null>(null);
+  /* ═══ ومفاتيحُ ملفّاتٍ سقطت صفوفُها — تُحذف بعد الحفظ لا قبله ═══
+
+     «أزِل» كانت تُسقط الصفَّ وتترك الملفَّ في التخزين مدى الحياة. وحذفُه
+     **لحظةَ الإزالة** أسوأ: الصفُّ ما زال في الخطّة المحفوظة حتّى يُحفظ
+     ما بعده، فمن أزال ثمّ خرج بلا حفظٍ ترك خطّةً تشير إلى ملفٍّ مُحيَ.
+
+     فيُؤجَّل الحذفُ إلى ما بعد أوّل حفظٍ ناجح. ومن خرج قبله ترك ملفّا
+     يتيما — وهو أهونُ من صفٍّ يقود إلى لا شيء. */
+  const [orphans, setOrphans] = useState<string[]>([]);
 
   const load = useCallback(async (first = false) => {
     if (!id) return;
@@ -353,6 +372,24 @@ export default function CohortWorkspace() {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
+
+  /* ═══ ثلاثةُ مخارجَ من المسوّدة — والملفُّ يُحذف مع إلغائها ═══
+     المسوّدةُ لم تدخل الخطّةَ قطّ، فلا خطّةَ محفوظةً تشير إلى ملفّها —
+     وحذفُه هنا فوريٌّ لا مؤجَّل. */
+  const cancelDraft = useCallback(() => {
+    setDraft((d) => {
+      const key = (d?.row.bodyFileKey ?? "").trim();
+      if (key) void apiDelete(`/api/trainer/cohorts/${id}/files/${encodeURIComponent(key)}`).catch(() => {});
+      return null;
+    });
+  }, [id]);
+
+  useEffect(() => {
+    if (!draft) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cancelDraft(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [draft, cancelDraft]);
 
   const act = async (fn: () => Promise<unknown>, done: string) => {
     if (busy) return;
@@ -426,7 +463,18 @@ export default function CohortWorkspace() {
   dirtyRef.current = Object.values(dirty).some(Boolean);
 
   const openStage = (s: Stage) => { setPhase("prepare"); setStage(s); };
-  const savePlan = () => act(() => apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content), "حُفظت مسودّتك");
+  /** يحذف ملفًّا من التخزين — والسقوطُ يُبتلع: ملفٌّ يتيمٌ أهونُ من صفٍّ يبقى */
+  const dropFile = async (key: string) => {
+    try { await apiDelete(`/api/trainer/cohorts/${ws.cohort.id}/files/${encodeURIComponent(key)}`); }
+    catch { /* لا يُعطَّل الحفظُ لأجل ملفٍّ لم يُحذف */ }
+  };
+  const savePlan = () => act(async () => {
+    await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content);
+    /* وبعد نجاح الحفظ — لا قبله: الخطّةُ المحفوظةُ لم تعد تشير إليها */
+    const keys = orphans;
+    setOrphans([]);
+    for (const k of keys) await dropFile(k);
+  }, "حُفظت مسودّتك");
   /* زرٌّ واحدٌ يحفظ الاثنين: بياناتُ الشعبة في الشعبة، ووصفُها في الخطّة.
      وزرّان في خطوةٍ واحدةٍ يجعل المدرّبَ يحفظ أحدَهما ويظنّ الآخرَ محفوظا. */
   const saveIdentity = () => act(async () => {
@@ -906,15 +954,34 @@ export default function CohortWorkspace() {
                   <p className="mt-1 text-read leading-6 text-muted-foreground">{meta.hint}</p>
                   <ul className="mt-3 space-y-3">
                     {rows.map(({ r, i }) => {
+                      /* ═══ والنوعُ يُعاد اشتقاقُه مع كلّ تعديل ═══
+
+                         كان يُكتب مرّةً عند إنشاء الصفّ (`kindForCategory(cat,
+                         false)` أي «كتاب») ولا يُعاد. فمن رفع ملفًّا في خانة
+                         الكتب بقي نوعُه «كتابا» مدى الحياة — يراه المتعلّمُ
+                         كتابا وهو مستند. وعطبٌ **صامت**: لا يسقط شيء، بل
+                         يُعرض اسمٌ خاطئٌ لا يُكذّبه شيء. */
                       const patch = (next: Partial<PlanResource>) =>
-                        setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...next } : x)) });
+                        setContent({
+                          ...content,
+                          resources: content.resources.map((x, j) => {
+                            if (j !== i) return x;
+                            const merged = { ...x, ...next };
+                            return { ...merged, kind: kindForCategory(resourceCategory(merged), Boolean((merged.bodyFileKey ?? "").trim())) };
+                          }),
+                        });
+                      const hasFile = Boolean((r.bodyFileKey ?? "").trim());
                       return (
                         <Card as="li" key={i} className="grid gap-3">
                           <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
                             <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder={meta.titlePlaceholder} aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
-                            {/* المرفوعُ حيث يُرفَع، والمُلصَقُ حيث يُلصَق —
-                                والصنفُ يقرّر أيُّهما، لا قائمةٌ يختار منها. */}
-                            {cat === "reading" ? (
+                            {/* ═══ مصدرٌ واحدٌ لا حقلان ═══
+
+                                كان لخانة الكتب حقلُ رفعٍ **وحقلُ رابطٍ تحته**،
+                                فيملؤهما مدرّبٌ معا ولا شيءَ يقول أيُّهما يصل
+                                المتعلّم. فصار المعروضُ ما اختاره عند الإضافة:
+                                المرفوعُ حيث رُفع، والمُلصَقُ حيث لُصق. */}
+                            {cat === "reading" && hasFile ? (
                               <ModuleBodyUpload
                                 cohortId={ws.cohort.id}
                                 purpose="plan_resource"
@@ -923,17 +990,19 @@ export default function CohortWorkspace() {
                                 onChange={(next) => patch(next)}
                                 disabled={locked}
                                 label="ارفع الملفّ"
-                                hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل. أو ألصِق رابطا بدلَه."
+                                hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
                               />
                             ) : (
                               <input dir="ltr" value={r.url ?? ""} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
                             )}
-                            <Button tone="ghost" size="sm" disabled={locked} onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}>أزل</Button>
+                            {/* والإزالةُ تُقيّد ملفَّها ليُحذف بعد الحفظ */}
+                            <Button tone="ghost" size="sm" disabled={locked}
+                              onClick={() => {
+                                const key = (r.bodyFileKey ?? "").trim();
+                                if (key) setOrphans((o) => [...o, key]);
+                                setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) });
+                              }}>أزل</Button>
                           </div>
-                          {/* والرابطُ يبقى متاحا للكتب كذلك — كتابٌ على الشبكة لا يُرفَع */}
-                          {cat === "reading" && (
-                            <input dir="ltr" value={r.url ?? ""} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="أو رابطٌ إليه — https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
-                          )}
                           <input
                             value={r.noteAr ?? ""}
                             onChange={(e) => patch({ noteAr: e.target.value })}
@@ -966,11 +1035,80 @@ export default function CohortWorkspace() {
                       );
                     })}
                   </ul>
+
+                  {/* ═══ المسوّدة — خارجَ الخطّة حتّى تكتمل ═══
+
+                      ومصدرُها يُختار **قبل ظهور أيّ حقل**: في «كتبٌ وملفّات»
+                      زرّان، وفي غيرها الرابطُ وحدَه فلا سؤال. فالحالةُ
+                      الخاطئةُ (ملفٌّ ورابطٌ معا) لا يمكن التعبيرُ عنها بدل
+                      أن تُشرَح بجملةٍ تحت الحقلَين. */}
+                  {draft?.category === cat && (
+                    <Card tone="accent" className="mt-3 grid gap-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-read font-black text-foreground">{meta.addLabel.replace("+ ", "")} — جديد</p>
+                        <Button tone="ghost" size="sm" icon={X} aria-label="أغلِق المسوّدة" onClick={cancelDraft}>أغلِق</Button>
+                      </div>
+
+                      {draft.source === null ? (
+                        <>
+                          <p className="text-read leading-6 text-muted-foreground">من أين يأتي هذا المصدر؟ اختر واحدا — ولا يجتمع ملفٌّ ورابطٌ في صفٍّ واحد.</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button tone="secondary" size="sm" onClick={() => setDraft({ ...draft, source: "file" })}>ارفع ملفّا</Button>
+                            <Button tone="secondary" size="sm" onClick={() => setDraft({ ...draft, source: "url" })}>أضِف رابطَ كتاب</Button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <input value={draft.row.title}
+                            onChange={(e) => setDraft({ ...draft, row: { ...draft.row, title: e.target.value } })}
+                            placeholder={meta.titlePlaceholder} aria-label="اسمُ المصدر الجديد" className={controlCls} />
+                          {draft.source === "file" ? (
+                            <ModuleBodyUpload
+                              cohortId={ws.cohort.id}
+                              purpose="plan_resource"
+                              refId={`draft-${cat}`}
+                              value={draft.row}
+                              onChange={(next) => setDraft({ ...draft, row: { ...draft.row, ...next } })}
+                              label="ارفع الملفّ"
+                              hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
+                            />
+                          ) : (
+                            <input dir="ltr" value={draft.row.url ?? ""}
+                              onChange={(e) => setDraft({ ...draft, row: { ...draft.row, url: e.target.value } })}
+                              placeholder="https://…" aria-label="رابطُ المصدر الجديد" className={`${controlCls} text-left`} />
+                          )}
+                          <input value={draft.row.noteAr ?? ""} maxLength={500}
+                            onChange={(e) => setDraft({ ...draft, row: { ...draft.row, noteAr: e.target.value } })}
+                            placeholder={meta.notePlaceholder} aria-label="وصفُ المصدر الجديد" className={controlCls} />
+                          <div className="flex flex-wrap gap-2">
+                            <Button tone="confirm" size="sm"
+                              disabled={!draft.row.title.trim() || !resourceHasSource(draft.row)}
+                              onClick={() => {
+                                const row = draft.row;
+                                setContent({
+                                  ...content,
+                                  resources: [...content.resources, {
+                                    ...row,
+                                    category: cat,
+                                    kind: kindForCategory(cat, Boolean((row.bodyFileKey ?? "").trim())),
+                                  }],
+                                });
+                                setDraft(null);
+                              }}>أضِفْه</Button>
+                            <Button tone="ghost" size="sm" onClick={cancelDraft}>ألغِ</Button>
+                          </div>
+                        </>
+                      )}
+                    </Card>
+                  )}
+
                   <Button
-                    tone="secondary" size="sm" className="mt-3" disabled={locked}
-                    onClick={() => setContent({
-                      ...content,
-                      resources: [...content.resources, { title: "", url: "", category: cat, kind: kindForCategory(cat, false) }],
+                    tone="secondary" size="sm" className="mt-3" disabled={locked || draft !== null}
+                    onClick={() => setDraft({
+                      category: cat,
+                      /* والخانتان الأخريان رابطٌ وحدَه — فلا يُسأل عمّا لا خيارَ فيه */
+                      source: cat === "reading" ? null : "url",
+                      row: { title: "", url: "", category: cat, kind: kindForCategory(cat, false) },
                     })}
                   >
                     {meta.addLabel}

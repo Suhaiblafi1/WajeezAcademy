@@ -80,6 +80,30 @@ export function kindForCategory(category: ResourceCategory, hasFile: boolean): R
   return 'link'
 }
 
+/* ═══ والنوعُ الذي يُعرض يُشتقّ لا يُصدَّق ═══
+
+   النوعُ كان يُكتب مرّةً حين يُنشأ الصفُّ ولا يُعاد: صفُّ «كتبٌ وملفّات»
+   يولد نوعُه `book`، ثمّ يرفع صاحبُه ملفًّا فيبقى `book` مدى الحياة —
+   فيراه المتعلّمُ **كتابا وهو مستند**. وعطبٌ صامت: لا يسقط شيء، بل يُعرض
+   اسمٌ خاطئٌ لا يُكذّبه شيءٌ في الشاشة.
+
+   وأُصلحت الكتابةُ في الشاشة، ولا يكفي: صفوفٌ حُفظت بالنوع الخاطئ قبل
+   الإصلاح باقيةٌ في القاعدة. فالاشتقاقُ هنا — في الإسقاط الذي يبني ما
+   يصل المتعلّمَ — يشفيها كلَّها بلا ترحيل.
+
+   ── وما لا يُشتقّ ──
+
+   الصفُّ الذي **لا صنفَ صريحَ فيه** حُفظ قبل عمود `category`، ونوعُه هو
+   ما اختاره صاحبُه من الستّة. واشتقاقُه يُحوّل `audiobook` إلى `book`
+   ويُضيّع تمييزا قصده صاحبُه. فالقاعدةُ: يُشتقُّ لمن له صنفٌ صريح،
+   ويُصدَّق نوعُ من لا صنفَ له. */
+export function displayKind(r: {
+  category?: string | null; kind?: string | null; bodyFileKey?: string | null
+}): ResourceKind {
+  if (!(RESOURCE_CATEGORIES as readonly string[]).includes(r.category ?? '')) return resourceKind(r.kind)
+  return kindForCategory(r.category as ResourceCategory, (r.bodyFileKey ?? '').trim().length > 0)
+}
+
 /** أمفتوحٌ هذا المصدرُ للمتعلّم الآن؟ — «متى تفتح للطالب» تخصّ المسجّلَ وحدَه */
 export function resourceOpen(r: { category?: string | null; kind?: string | null; opensAt?: string | Date | null }, now = new Date()): boolean {
   if (resourceCategory(r) !== 'recorded' || !r.opensAt) return true
@@ -333,7 +357,8 @@ export function projectPlanForLearner(
           .map((r) => ({
             title: r.title,
             url: r.url,
-            kind: resourceKind(r.kind),
+            /* والنوعُ يُشتقّ لمن له صنفٌ صريح — فيُشفى ما حُفظ خطأً */
+            kind: displayKind(r),
             category: resourceCategory(r),
             opensAt: typeof r.opensAt === 'string' ? r.opensAt : null,
             noteAr: written(r.noteAr),

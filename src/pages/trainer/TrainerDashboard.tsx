@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
-import { GraduationCap, Loader2, Send, ServerOff, Video } from "lucide-react";
+import { Loader2, ServerOff } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
 import BookAdminMeeting from "@/components/BookAdminMeeting";
@@ -8,13 +7,10 @@ import TrainerWorkQueue from "@/components/TrainerWorkQueue";
 import AtRiskList from "@/components/AtRiskList";
 import { buildWorkQueue } from "@/application/trainer/work-queue";
 import { findAtRisk } from "@/application/trainer/at-risk";
-import { buildUpcoming } from "@/application/trainer/upcoming";
 import { useRealSession } from "@/services/session";
-import { fmtDayMonth, fmtTime } from "@/application/text/format-ar";
 import { countAr } from "@/application/text/count-ar";
 
-import { Panel, Card, Inset } from "@/components/ui/Surface";
-import ProgressRing from "@/components/ui/ProgressRing";
+import { Card } from "@/components/ui/Surface";
 /* صيغةُ العدد لا تُرتجل في السطر: «و1 طالباً» نصبٌ في غير موضعه يقرؤه
    المدرّب في كلّ دخول. */
 const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" } as const;
@@ -31,6 +27,10 @@ interface RealCohort {
     course: { versions: { titleAr: string }[] };
     sessions: {
       id: string; title: string; startsAt: string; endsAt: string | null; status: string;
+      /* موقفُ الإدارة ونصُّ ردّها — يصلان في الرد منذ اليوم الأوّل ولم يكونا
+         مُعلَنَين هنا، فلم يكن للطابور سبيلٌ إلى «لقاءٌ رُدَّ عليك». */
+      approvalState: string | null;
+      reviewNote: string | null;
       zoom: { joinUrl: string; learnerUrl: string | null } | null;
       recordings: { id: string }[];
       /* لا حضور على الجلسة: الخادم يعيده داخل كل تسجيل */
@@ -92,51 +92,53 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
       </div>
     );
 
-  /* ف-١ وف-٢: كلاهما من نفس الردّين — بلا نقطة نهاية جديدة */
-  const work = buildWorkQueue(cohorts, queue.filter((q) => q.status === "submitted" || q.status === "under_review").length, now);
+  /* ف-١ وف-٢: كلاهما من نفس الردود — بلا نقطة نهاية جديدة */
+  const work = buildWorkQueue(
+    cohorts,
+    queue.filter((q) => q.status === "submitted" || q.status === "under_review").length,
+    now,
+    summary,
+  );
   const atRisk = findAtRisk(cohorts, now);
 
   const students = cohorts.reduce((n, c) => n + c.cohort.enrollments.length, 0);
-  /* التخطيطُ لا العمل: ما بَعُد عن نافذة الطابور وحدَه — والقسمةُ محروسةٌ في
-     `src/tests/trainer/upcoming.test.ts` كي لا تعود جلسةٌ تظهر في اللوحتين. */
-  const planAhead = buildUpcoming(cohorts, now);
 
-  /* ما تنتظر إرسالَه: المسودّةُ والمردودةُ وحدَهما — والمعتمَدةُ والمرسَلةُ
-     ليست عليه. والعددُ لا يُرى في أيّ تبويب: يلزم فتحُ كلّ شعبةٍ لمعرفته. */
-  const waitingToSubmit = summary.filter((c) => c.planStatus === "draft" || c.planStatus === "changes_requested").length;
+  /* ═══ ما ينتظر الإدارةَ لا ينتظره — جملةٌ لا بند ═══
+
+     شعبةٌ أرسلها وتنتظر القرار، أو تمَّ فيها كلُّ ما يملكه وبقي مانعٌ بيد
+     الإدارة (تسميةُ الفصل) — كلتاهما ليست عملا له. وقاعدةُ الطابور صريحة:
+     «بند بلا إجراء ليس عملا بل خبرا». فلا تُحشر فيه بزرٍّ لا يفعل شيئا،
+     ولا تُكتم: تُقال هنا في نصف سطر. */
+  const waitingOnAdmin = summary.filter((c) =>
+    c.planStatus === "submitted"
+    || (c.planStatus === "draft" && c.total > 0 && c.done >= c.total && Boolean(c.next)),
+  ).length;
 
   return (
     <div>
-      {/* ═══ الرأس: تحيّةٌ وإشارتان لا تُريهما التبويبات ═══
+      {/* ═══ الرأس: سطرٌ واحدٌ نثرا — والعملُ كلُّه في طابورٍ واحدٍ تحته ═══
 
-          كانت أربعَ بطاقاتٍ تشير إلى **المقاصد الأربعة نفسِها** التي في
-          شريط التبويبات فوقها: «شعبي» و«طلابي» و«تنتظر تقييمي» و«جلسات
-          هذا الأسبوع» — أي الروابطُ ذاتُها مرّتين في شاشةٍ واحدة. وقالها
-          صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «مبعثرة… وفيها معلوماتٌ سهلةُ
-          الوصول للمدرّب في التبويبات أعلاه».
+          كانت أربعَ بطاقاتٍ تشير إلى المقاصد نفسِها التي في شريط التبويبات
+          فوقها، فحُذفت (١٣ سبتمبر ٢٠٢٦). ثمّ بقيت بعدها ثلاثةُ أقسامٍ تعيد
+          ما في التبويبات أو ما في الطابور:
 
-          فحُذفت، وبقي في موضعها ما **لا** يُرى في تبويبٍ ولا في قسمٍ أسفلَ
-          الصفحة: كم شعبةً تنتظر إرسالَه للاعتماد — ولا يُعرف إلّا بفتح كلِّ
-          شعبةٍ على حدة. والأعدادُ التي حُذفت لم تضِع: التحيّةُ تقولها نثرا.
+          · حبّةُ «شعبتان تنتظران إرسالَك» — عددٌ لا يقول أيَّ شعبةٍ ولا ما
+            ينقصها؛ صارت بنودا في الطابور، لكلٍّ اسمُها وخطوتُها ووجهتُها.
+          · شبكةُ «شعبي» — هي تبويبُ «شعبي» نفسُه مرسوما مرّةً ثانية.
+          · «جلساتي القادمة» — هي تبويبُ «جدولي» نفسُه مقصوصا عند ثلاثين يوما.
 
-          ولم تُوضع بجانبها «أقربُ جلسة»: طابورُ العمل تحتها يعرض الجلسةَ
-          القريبةَ بزرِّ دخولها، و«جلساتي القادمة» تعرض ما بَعُد — فبطاقةٌ
-          ثالثةٌ تقولها تكرارٌ ثالث، وهو عينُ ما حُذف من أجله الأربعة.
+          فبقي سطرُ تحيّةٍ وطابورٌ وقائمةُ المتعثّرين وبابُ الإدارة. ومن أراد
+          الجردَ كلَّه فتبويباتُه فوقه.
 
-          ⚠ وعدّادُ «كم سجّل عبر رابطك» هو المؤشّرُ الذي طلبه صاحبُ المنصّة،
-          ويحتاج رابطا على مستوى المدرّب لا على مستوى الشعبة (المرحلة «أ» من
-          خطّة المسار) — فلا يُختلق هنا رقمٌ لا مصدرَ له. */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">أهلاً {name} — {cohorts.length > 0 ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.` : "لم تُسند إليك شعب بعد."}</p>
-        <div className="flex flex-wrap gap-2">
-          {waitingToSubmit > 0 && (
-            <Card as={Link} interactive to="/trainer/board" tone="warn" className="flex items-center gap-2.5 px-3.5 py-2">
-              <Send className="h-4 w-4 text-gold-ink" aria-hidden="true" />
-              <span className="text-read font-bold text-gold-ink">{countAr(waitingToSubmit, COHORT_FORMS)} تنتظر إرسالَك للاعتماد</span>
-            </Card>
-          )}
-        </div>
-      </div>
+          ⚠ ولم تُوضع لوحةُ «أرقامُك» (حضورٌ ٪ وتقييمٌ ٤٫٦): رقمان منها لا
+          مصدرَ لهما في هذه الردود، والقاعدةُ ألّا يُختلق هنا رقمٌ لا مصدرَ
+          له. والعددان اللذان لهما مصدرٌ يقولهما السطرُ نثرا. */}
+      <p className="mb-6 text-sm leading-7 text-muted-foreground">
+        أهلاً {name} — {cohorts.length > 0
+          ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.`
+          : "لم تُسند إليك شعب بعد."}
+        {waitingOnAdmin > 0 && ` و${countAr(waitingOnAdmin, COHORT_FORMS)} تنتظر الإدارةَ لا تنتظرك.`}
+      </p>
 
       {/* ═══ ولماذا سقطت بطاقاتُ «بوّابتك جاهزة» ═══
 
@@ -144,36 +146,8 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
           · التشغيل) لمن لم تُسند إليه شعبةٌ بعد. وقرارُ صاحب المنصّة (١٣
           سبتمبر ٢٠٢٦): تُحذف وتبقى الصفحة. فالشرحُ يسبق العمل، ومن لا شعبةَ
           له لا ينفعه شرحُ مراحلِ شعبةٍ لا يراها — ومن أُسندت إليه يجدها في
-          «شعبي» أدناه فيتعلّمها منها. وسطرُ «لم تُسند إليك شعب بعد» أعلاه
+          تبويب «شعبي» فيتعلّمها منها. وسطرُ «لم تُسند إليك شعب بعد» أعلاه
           يقول حالَه بلا ثلاث بطاقات. */}
-
-      {/* ═══ شعبي — بطاقةٌ لكلٍّ بحلقة تجهيزها وخطوتها التالية ═══ */}
-      {summary.length > 0 && (
-        <section className="mb-6">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-base font-black"><GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> شعبي</h2>
-            <Link to="/trainer/board" className="text-read font-bold text-teal-light-ink hover:text-foreground">كلُّها</Link>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {summary.map((c) => {
-              const ready = c.total > 0 ? Math.round((c.done / c.total) * 100) : 0;
-              const approved = c.planStatus === "approved" || c.planStatus === "published";
-              return (
-                <Card as={Link} interactive key={c.id} to={`/trainer/cohort/${c.id}`} tone={approved ? "positive" : c.planStatus === "changes_requested" ? "warn" : "default"} className="flex items-center gap-3.5">
-                  <ProgressRing value={ready} label={`${c.done}/${c.total}`} size={56} stroke={5} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-read font-black text-foreground">{c.title}</span>
-                    <span className="block truncate text-read text-muted-foreground">{c.courseTitle}</span>
-                    <span className="mt-1 block text-read leading-5 text-teal-light-ink">
-                      {approved ? "معتمَدة — في التشغيل" : c.next ? `التالي: ${c.next.labelAr}` : "التجهيزُ مكتمل"}
-                    </span>
-                  </span>
-                </Card>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* ═══ ولماذا لم يعد الرابطُ هنا ═══
 
@@ -183,59 +157,11 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
           `pages/trainer/Referral.tsx`. فنُقل ولم يُكرَّر: نسختان منه تفترقان
           يوما، ويُقرأ الرقمُ فيهما مختلفا. */}
 
-      {/* ف-١ · طابور العمل — أول ما يراه المدرب صار قابلا للتنفيذ لا مجرد أرقام */}
-      {cohorts.length > 0 && <TrainerWorkQueue items={work} className="mb-6" />}
+      {/* ف-١ · طابورُ العمل — وصار يحمل التجهيزَ والردَّ كذلك، فلا عملَ خارجَه */}
+      {(cohorts.length > 0 || summary.length > 0) && <TrainerWorkQueue items={work} className="mb-6" />}
 
       {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
       {cohorts.length > 0 && <AtRiskList learners={atRisk} className="mb-6" />}
-
-      {/* ═══ جلساتي القادمة — للتخطيط لا للعمل ═══
-
-          كانت تعيد ما في الطابور أعلاه بصيغةٍ أضعف: الجلسةُ نفسُها بسطرين،
-          ومعها في الطابور زرُّ دخولٍ وهنا رابطٌ إلى الشعبة. فصارت لما بَعُد
-          عن نافذته وحدَه: أيّامٌ معنونةٌ يُخطَّط عليها، بلا رابطِ اجتماعٍ —
-          فلا أحدَ يدخل جلسةً بعد ثلاثةِ أيّام، والرابطُ فعلٌ عاجلٌ مكانُه
-          الطابور. والقاعدةُ تُقال للمدرّب تحت العنوان كي يعرف لمَ لا يرى
-          جلسةَ الغد هنا. */}
-      <Panel as="section">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" aria-hidden="true" /> جلساتي القادمة</p>
-          <Link to="/trainer/schedule" className="text-read font-bold text-teal-light-ink hover:text-foreground">جدولي كاملا</Link>
-        </div>
-        <p className="mt-1 text-read text-muted-foreground">ما هو أبعدُ من يوم — وأقربُ منه تجده في «ما ينتظرك الآن» أعلاه بزرِّ دخوله.</p>
-
-        {planAhead.length === 0 ? (
-          <Inset as="p" className="mt-4 px-4 py-6 text-center text-read text-muted-foreground">
-            لا جلساتٍ مجدولةً بعد يومك — وما كان خلال يومٍ فمكانُه الطابورُ أعلاه.
-          </Inset>
-        ) : (
-          <div className="mt-4 space-y-4">
-            {planAhead.map((d) => (
-              <div key={d.dayOffset}>
-                <p className="mb-2 flex flex-wrap items-baseline gap-x-2 text-read font-black text-teal-light-ink">
-                  {d.labelAr}
-                  <span className="font-bold text-muted-foreground">{fmtDayMonth(d.sessions[0].startsAt)}</span>
-                </p>
-                <ul className="space-y-2">
-                  {d.sessions.map((s) => (
-                    <Card as="li" key={s.id} className="p-0">
-                      <Link to={`/trainer/cohort/${s.cohortId}`} className="flex items-center gap-3 px-4 py-2.5 text-xs transition hover:text-teal-light-ink">
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-bold text-foreground">{s.titleAr}</span>
-                          <span className="mt-0.5 block truncate text-read text-muted-foreground">{s.cohortTitleAr}</span>
-                        </span>
-                        <span className="shrink-0 text-fine font-bold tabular-nums text-muted-foreground">
-                          {fmtTime(s.startsAt)}
-                        </span>
-                      </Link>
-                    </Card>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
 
       {/* ═══ اجتماعٌ مع الإدارة — بنقرة، داخل الصفحة، وفي الذيل لا الصدر ═══
 
@@ -243,7 +169,7 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
           المدرّبَ يُقال له في كلّ شعبةٍ في موضعها. وبدلَها بابٌ يسأل منه.
 
           وصار مكوّنا (ع-١): السطرُ نفسُه في «مركز التواصل»، ونسختان تفترقان. */}
-      <BookAdminMeeting name={name} email={email} className="mt-6" />
+      <BookAdminMeeting name={name} email={email} />
 
       <p className="mt-6 text-center text-read text-muted-foreground">
         كل بند أعلاه يقودك إلى مكان تنفيذه — وصفحةُ كلّ شعبةٍ تحمل تجهيزَها وتشغيلَها معا.

@@ -39,8 +39,15 @@ beforeAll(async () => {
   })
   cohortId = cohort.id
 
-  /* شعبة ثانية لاختبار الشهادة: لا قواعد إكمال عليها ولا على دورتها، فتمرّ
-     evaluateCompletion ويُختبر حاجز البريد وحده. */
+  /* شعبة ثانية لاختبار الشهادة: تمرّ `evaluateCompletion` فيُختبر حاجزُ
+     البريد وحدَه لا مختلطا بـ`rules_unmet`.
+
+     ═══ وصار المرورُ يُعلَن لا يُفترَض (م٤ · ١٧ سبتمبر ٢٠٢٦) ═══
+
+     كان يكفي أن تخلوَ من القواعد: الصمتُ يُقرأ «مكتمل». وذاك كان يُصدِر
+     شهادةً لكلّ ملتحقٍ في كلّ شعبةٍ لم يكتب أحدٌ لها شرطا — فصار للصمت
+     حدٌّ أدنى. فتقول هذه الشعبةُ إسقاطَها **صراحةً**، وهو البابُ الوحيدُ
+     إلى الإرخاء ويبقى قولُه في الصفّ. */
   const free = await prisma.cohort.create({
     data: {
       courseId: 'C-BIZ-101', title: 'شعبة الشهادة الاختبارية', status: 'open',
@@ -48,6 +55,9 @@ beforeAll(async () => {
     },
   })
   await prisma.completionRule.deleteMany({ where: { OR: [{ cohortId: free.id }, { courseId: 'C-BIZ-101', cohortId: null }] } })
+  await prisma.completionRule.create({
+    data: { courseId: 'C-BIZ-101', cohortId: free.id, type: 'assignment_accepted', threshold: 0, required: false },
+  })
   freeCohortId = free.id
 }, 240_000)
 

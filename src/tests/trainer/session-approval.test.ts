@@ -23,7 +23,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { LEARNER_SESSION_WHERE, sessionApproved } from '../../../server/services/session-visibility'
+import { LEARNER_SESSION_WHERE, TRAINER_OWN_SESSION_WHERE, sessionApproved } from '../../../server/services/session-visibility'
 
 const root = process.cwd()
 const code = (p: string) =>
@@ -52,6 +52,8 @@ function methodBody(src: string, signature: string): string {
   return next < 0 ? rest : rest.slice(0, next)
 }
 const SCHED = code('src/pages/trainer/TrainerSchedule.tsx')
+const DEADLINES = code('server/services/deadlines.service.ts')
+const SCHEDULE_PAGE = code('src/pages/trainer/Schedule.tsx')
 
 describe('① البوّابةُ واحدةٌ — ولا تُنسَخ بيدٍ في كلّ موضع', () => {
   it('المعتمَدُ وحدَه يُقرأ للمتعلّم', () => {
@@ -87,7 +89,6 @@ describe('① البوّابةُ واحدةٌ — ولا تُنسَخ بيدٍ �
        ويفترق غدا عن الموضع الواحد — وهي علّةُ `trainer-visibility` نفسُها. */
     for (const p of [
       'server/services/enrollment.service.ts',
-      'server/services/deadlines.service.ts',
       'server/services/progress.service.ts',
       'server/services/public-catalog.service.ts',
     ]) {
@@ -95,6 +96,46 @@ describe('① البوّابةُ واحدةٌ — ولا تُنسَخ بيدٍ �
       expect(src, `${p}: البوّابةُ غيرُ مستوردة`).toMatch(/import \{ LEARNER_SESSION_WHERE \} from '\.\/session-visibility'/)
       expect(src, `${p}: البوّابةُ مستوردةٌ ولا تُستعمَل`).toMatch(/LEARNER_SESSION_WHERE[,\s}]/)
     }
+  })
+})
+
+describe('⑴ب وجدولُ المدرّب ليس شاشةَ متعلّم — بوّابةٌ ثانيةٌ لا الأولى', () => {
+  /* كان `deadlines.service.ts` في قائمة الحارس أعلاه، ويمرّ بها — **بالسطر
+     الذي هو العطبُ نفسُه**: استعمالُه الوحيدُ لبوّابة المتعلّم كان في
+     `forTrainer`، أي في جدول المدرّب لا في مواعيد المتعلّم. فكان حارسا
+     أخضرَ لسببٍ خاطئ، وهو صنفُ ما وقع في هذه المنصّة غيرَ مرّة.
+
+     فخرج الملفُّ من تلك القائمة (مواعيدُ المتعلّم فيه لا تقرأ لقاءً أصلا،
+     وهذا محروسٌ أدناه)، وصار له حارسُه على **متن الدالّة** لا على الملفّ. */
+
+  it('بوّابةُ المدرّب: كلُّ ما جدوَله ولم يُردّ', () => {
+    expect(TRAINER_OWN_SESSION_WHERE).toEqual({ approvalState: { not: 'rejected' } })
+  })
+
+  it('⚠️ ومتنُ `forTrainer` لا يحمل شرطَ المتعلّم — وكان يحمله', () => {
+    const body = methodBody(DEADLINES, 'async forTrainer(userId: string, now = new Date(), days = 30) {')
+    expect(body, 'لم يُعثر على متن الدالّة — فالحارسُ يحكم على فراغ').not.toBe('')
+    expect(body, 'جدولُ المدرّب ما زال يُقرأ بشرط المتعلّم').not.toContain('LEARNER_SESSION_WHERE')
+    expect(body, 'يقرأ الجلساتِ بلا بوّابةٍ مسمّاة').toContain('TRAINER_OWN_SESSION_WHERE')
+    expect(DEADLINES, 'البوّابةُ غيرُ مستوردة').toMatch(/import \{ TRAINER_OWN_SESSION_WHERE \} from '\.\/session-visibility'/)
+  })
+
+  it('⚠️ والموقفُ يُرجَع مع الصفّ — فالشاشةُ تقول «منتظِرة» ولا تخمّن', () => {
+    const body = methodBody(DEADLINES, 'async forTrainer(userId: string, now = new Date(), days = 30) {')
+    expect(body, 'العمودُ غيرُ مقروءٍ من قاعدة البيانات').toContain('approvalState: true')
+    expect(body, 'مقروءٌ ولا يُرجَع في الصفّ').toContain('approvalState: s.approvalState')
+    /* والشاشةُ تعلنه في نوعها وتعرضه — لا يكفي أن يصل */
+    expect(SCHEDULE_PAGE, 'الشاشةُ لا تعلن الحقلَ في نوعها').toMatch(/approvalState:\s*string/)
+    const at = SCHEDULE_PAGE.indexOf('s.approvalState === "pending"')
+    expect(at, 'لا شارةَ للمنتظِرة في جدوله').toBeGreaterThan(-1)
+    expect(SCHEDULE_PAGE.slice(at, at + 400)).toContain('بانتظار اعتماد الإدارة')
+  })
+
+  it('ومواعيدُ المتعلّم في الملفّ نفسِه لا تقرأ لقاءً — ولو قرأت لعادت بوّابتُه', () => {
+    const body = methodBody(DEADLINES, 'async forLearner(userId: string, now = new Date()) {')
+    expect(body, 'لم يُعثر على متن الدالّة').not.toBe('')
+    expect(body, 'صارت تقرأ الجلسات — فلتمرّ ببوّابة المتعلّم ولتعُد إلى قائمة الحارس')
+      .not.toMatch(/sessions\s*:\s*\{/)
   })
 })
 
@@ -226,8 +267,29 @@ describe('④ الشاشتان: نموذجٌ بساعتَين ونبذةٍ وم�
   })
 
   it('والنبذةُ والمرفقُ يُرسلان معه', () => {
-    expect(SCHED).toMatch(/attachmentKey: attachment\.bodyFileKey/)
-    expect(SCHED).toContain('ملفٌّ يُرفق باللقاء (اختياريّ)')
+    /* ═══ والفحصُ على متن النداء لا على سطرٍ بعينه ═══
+
+       كان يطابق `attachmentKey: attachment.bodyFileKey` حرفا، فسقط حين
+       جُمع النداءُ في دالّةٍ واحدةٍ تخدم اللقاءَ المفرد والسلسلةَ معا —
+       والمرفقُ ما زال يُرسَل. فالفحصُ على **متن النداء**: أتحمل الحقولُ
+       الأربعةُ مصادرَها؟ */
+    const at = SCHED.indexOf('/api/trainer/cohorts/${cohortId}/sessions')
+    expect(at, 'لا نداءَ إنشاءٍ في الشاشة').toBeGreaterThan(0)
+    const body = SCHED.slice(at, SCHED.indexOf('});', at))
+    expect(body, 'النبذةُ لا تُرسَل').toContain('noteAr:')
+    expect(body, 'مفتاحُ الملفّ لا يُرسَل').toMatch(/attachmentKey:[^\n]*attachment\.bodyFileKey/)
+    expect(body, 'اسمُ الملفّ لا يُرسَل').toMatch(/attachmentName:[^\n]*attachment\.bodyFileName/)
+    expect(body, 'نوعُ الملفّ لا يُرسَل').toMatch(/attachmentMime:[^\n]*attachment\.bodyFileMime/)
+    expect(SCHED, 'لا حقلَ رفعٍ في الشاشة').toContain('ملفٌّ يُرفق باللقاء (اختياريّ)')
+
+    /* ═══ والمرفقُ للمتفرّق وحدَه (١٨ سبتمبر ٢٠٢٦) ═══
+       ملفٌّ واحدٌ يُنسخ على اثني عشرَ لقاءً يصير اثنتَي عشرةَ شريحةً
+       متطابقةً في تقويم المتعلّم. وموضعُ ملفِّ كلِّ لقاءٍ صفحتُه بعد
+       إنشائه، حيث يُقرأ مع سياقه. */
+    const single = SCHED.indexOf('mode === "single" && (')
+    expect(single, 'لا حارسَ وضعٍ على حقل الرفع').toBeGreaterThan(-1)
+    expect(SCHED.slice(single, single + 400), 'حقلُ الرفع ليس خلف حارس «متفرّق»')
+      .toContain('ملفٌّ يُرفق باللقاء')
   })
 
   it('والمدى من الفصل — لا يُجدوَل خارجَ أشهره', () => {

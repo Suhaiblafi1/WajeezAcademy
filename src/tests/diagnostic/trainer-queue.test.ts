@@ -134,6 +134,127 @@ describe('طابور عمل المدرب — ف-١', () => {
     )
     expect(items.map((i) => i.kind).slice(0, 3)).toEqual(['session_now', 'attendance_missing', 'grading_pending'])
   })
+
+  /* ═══ اللقاءُ المردود — وهو ملغًى في الحالة ═══
+
+     ردُّ الإدارة يكتب `approvalState: 'rejected'` ومعه `status: 'cancelled'`.
+     والاختبارُ فوق يثبت أنّ الملغى لا يُنتج بندا — فلو قُرئ المردودُ بعد ذلك
+     الشرط لَسقط، وهو أوّلُ ما على المدرّب أن يعرفه. */
+  it('⚠️ لقاءٌ رُدَّ يُنتج بندَه — ولو كتبت معه الإدارةُ `cancelled`', () => {
+    const items = buildWorkQueue(
+      [cohort({
+        sessions: [{ id: 'S1', title: 'اللقاء الثالث', startsAt: iso(3 * DAY), endsAt: iso(3 * DAY + HOUR), status: 'cancelled', approvalState: 'rejected', reviewNote: 'الموعدُ يصادف إجازة', zoom: null, recordings: [] }],
+        enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }],
+      })],
+      0, NOW,
+    )
+    const it0 = items.find((i) => i.kind === 'session_rejected')
+    expect(it0, 'المردودُ سقط مع الملغى').toBeTruthy()
+    expect(it0!.titleAr).toContain('اللقاء الثالث')
+    expect(it0!.detailAr, 'ملاحظةُ الإدارة لم تصل صاحبَها').toContain('الموعدُ يصادف إجازة')
+    expect(it0!.href).toBe('/trainer/cohort/CO-1')
+    expect(it0!.external).toBe(false)
+  })
+
+  it('ومردودٌ مضى موعدُه يبقى — فالدرسُ لم يُعقَد وما زال يحتاج موعدا', () => {
+    const items = buildWorkQueue(
+      [cohort({ sessions: [{ id: 'S1', title: 'ماضٍ مردود', startsAt: iso(-9 * DAY), endsAt: iso(-9 * DAY + HOUR), status: 'cancelled', approvalState: 'rejected', reviewNote: null, zoom: null, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }] })],
+      0, NOW,
+    )
+    expect(items.map((i) => i.kind)).toEqual(['session_rejected'])
+    /* ولا يُنسَب إلى الإدارة صمتٌ لم تقله ولا كلامٌ لم تكتبه */
+    expect(items[0].detailAr).toContain('بلا ملاحظةٍ من الإدارة')
+  })
+
+  it('واللقاءُ المنتظِرُ ليس مردودا — لا بندَ ردٍّ له', () => {
+    const items = buildWorkQueue(
+      [cohort({ sessions: [{ id: 'S1', title: 'منتظِرة', startsAt: iso(3 * DAY), endsAt: iso(3 * DAY + HOUR), status: 'scheduled', approvalState: 'pending', zoom: null, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }] })],
+      0, NOW,
+    )
+    expect(items.some((i) => i.kind === 'session_rejected')).toBe(false)
+  })
+})
+
+/* ═══ تجهيزُ الشعبة في الطابور — بعد أن كان حبّةَ عددٍ في الرأس ═══
+
+   كان اللوحُ يقول «شعبتان تنتظران إرسالَك» رقما لا يقول أيَّ شعبةٍ ولا ما
+   ينقصها. فصارت بنودا، ولكلِّ موقفٍ بندُه. */
+describe('بنودُ التجهيز في طابور المدرّب', () => {
+  const plan = (over: Partial<Record<string, unknown>> = {}) => ({
+    id: 'CO-9', title: 'الدفعة الأولى', courseTitle: 'تحرير النصوص', planStatus: 'draft',
+    done: 4, total: 4, next: null, ...over,
+  })
+
+  it('لا موجزَ ولا مصفوفة: لا بندَ ولا رمي', () => {
+    expect(buildWorkQueue([], 0, NOW)).toEqual([])
+    expect(buildWorkQueue([], 0, NOW, null)).toEqual([])
+    expect(buildWorkQueue([], 0, NOW, [{ id: '', planStatus: '' }])).toEqual([])
+  })
+
+  it('⚠️ شعبةٌ رُدَّت إليه تسبق كلَّ تجهيز — الإدارةُ قرّرت وتنتظره', () => {
+    const items = buildWorkQueue([], 0, NOW, [plan({ planStatus: 'changes_requested', done: 2 })])
+    expect(items.map((i) => i.kind)).toEqual(['plan_returned'])
+    expect(items[0].titleAr).toContain('الدفعة الأولى')
+    expect(items[0].href).toBe('/trainer/cohort/CO-9')
+  })
+
+  it('⚠️ وتجهيزٌ تمَّ ولا مانع: بندُ إرسالٍ باسم شعبته', () => {
+    const items = buildWorkQueue([], 0, NOW, [plan()])
+    expect(items.map((i) => i.kind)).toEqual(['plan_ready_unsent'])
+    expect(items[0].actionAr).toBe('أرسِلها للاعتماد')
+  })
+
+  it('⚠️ وتجهيزٌ تمَّ ومانعُه بيد الإدارة: لا بند — بندٌ بلا إجراءٍ خبرٌ لا عمل', () => {
+    /* `next` أوّلُ ما يمنع الإرسال ولو لم يكن بيده: تسميةُ الفصل بيد الإدارة.
+       فزرُّ «أرسِلها» هنا كذبٌ — يُضغَط فلا يُرسِل. وموضعُ الخبر سطرُ التحيّة. */
+    const items = buildWorkQueue([], 0, NOW, [plan({ next: { key: 'term', labelAr: 'تسمّي الإدارةُ فصلَ الشعبة' } })])
+    expect(items).toEqual([])
+  })
+
+  it('وتجهيزٌ لم يكتمل: بندُ إكمالٍ يسمّي الخطوةَ التالية وما بقي', () => {
+    const items = buildWorkQueue([], 0, NOW, [plan({ done: 1, total: 4, next: { key: 'sessions', labelAr: 'اجدوِل لقاءاتِ الشعبة' } })])
+    expect(items.map((i) => i.kind)).toEqual(['plan_incomplete'])
+    expect(items[0].detailAr).toContain('1 من 4')
+    expect(items[0].detailAr).toContain('اجدوِل لقاءاتِ الشعبة')
+    expect(items[0].count, 'الشارةُ لا تقول كم بقي').toBe(3)
+  })
+
+  it('والمرسَلُ والمعتمَدُ والمنشورُ لا شيءَ عليه فيها', () => {
+    for (const planStatus of ['submitted', 'approved', 'published', 'superseded']) {
+      expect(buildWorkQueue([], 0, NOW, [plan({ planStatus })]), planStatus).toEqual([])
+    }
+  })
+
+  it('⚠️ والمردودةُ بعد الجارية وقبل التسجيل المنسيّ — وبينهما يُقاس الترتيب', () => {
+    /* والجلسةُ الماضيةُ بلا حضورٍ مسجَّلٍ هنا قصدا: بندان فقط لا يكشفان
+       ترتيبا — يبقيان على حالهما مهما تغيّر الإلحاح. فلا بدّ من ثالثٍ
+       **بينهما** كي يكون للحارس ما يسقط به. */
+    const items = buildWorkQueue(
+      [cohort({
+        sessions: [
+          { id: 'S1', title: 'الآن', startsAt: iso(-5 * 60_000), endsAt: iso(HOUR), status: 'scheduled', zoom: { joinUrl: 'x' }, recordings: [] },
+          { id: 'S2', title: 'ماضية', startsAt: iso(-3 * DAY), endsAt: iso(-3 * DAY + HOUR), status: 'done', zoom: null, recordings: [{}] },
+        ],
+        enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }],
+      })],
+      0, NOW,
+      [plan({ planStatus: 'changes_requested' })],
+    )
+    expect(items.map((i) => i.kind)).toEqual(['session_now', 'plan_returned', 'attendance_missing'])
+  })
+
+  it('⚠️ و«أرسِلها» بعد الجلسة القريبة وقبل «لم يسلّموا» — خطوةٌ واحدةٌ لا تُلحّ كجلسة', () => {
+    const items = buildWorkQueue(
+      [cohort({
+        sessions: [{ id: 'S1', title: 'غدا', startsAt: iso(6 * HOUR), endsAt: iso(7 * HOUR), status: 'scheduled', zoom: null, recordings: [] }],
+        enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }],
+        assessments: [{ id: 'A1', title: 'واجب', dueAt: iso(-DAY), status: 'published', submissions: [] }],
+      })],
+      0, NOW,
+      [plan()],
+    )
+    expect(items.map((i) => i.kind)).toEqual(['session_soon', 'plan_ready_unsent', 'not_submitted'])
+  })
 })
 
 describe('إنذار المتعثرين — ف-٢', () => {

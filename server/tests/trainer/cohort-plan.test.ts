@@ -109,10 +109,13 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
   })
 
   /* ═══ صفحةُ الشعبة الواحدة (٨ سبتمبر ٢٠٢٦) ═══ */
-  it('التكاليفُ مرحلةٌ في التجهيز — اختياريّةٌ، وتتمّ بأوّل تكليف', async () => {
+  /* ═══ نُقض بقرارٍ لا بتنازل (ق٨ · ١٧ سبتمبر ٢٠٢٦) ═══
+     كان العنوانُ «اختياريّةٌ، وتتمّ بأوّل تكليف». وقرارُ صاحب المنصّة أن
+     تحجب: «لا تكون المحاضرةُ إلزاميّةً والمُخرَجُ اختياريّا». */
+  it('⚠️ والمهامُّ مرحلةٌ في التجهيز — وصارت شرطا يحجب', async () => {
     const before = (await plans.workspace(trainerUserId, cohortId)).checklist.find((c) => c.key === 'assignments')
-    expect(before, 'لا مرحلةَ للتكاليف').toBeTruthy()
-    expect(before!.optional).toBe(true)
+    expect(before, 'لا مرحلةَ للمهامّ').toBeTruthy()
+    expect(before!.optional, 'عادت المهامُّ اختياريّةً').toBe(false)
     expect(before!.done).toBe(false)
     await prisma.cohortAssessment.create({ data: { cohortId, title: 'واجبُ الوحدة الأولى', type: 'assignment', maxScore: 100 } })
     const ws = await plans.workspace(trainerUserId, cohortId)
@@ -212,6 +215,14 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     for (let i = have; i < content.modules.length; i += 1) {
       await prisma.cohortSession.create({
         data: { cohortId, title: `لقاءُ المحور ${i + 1}`, startsAt: new Date(`2027-02-${String(i + 3).padStart(2, '0')}T15:00:00.000Z`) },
+      })
+    }
+    /* ومهمّةٌ واحدةٌ على الأقلّ — صارت شرطا (ق٨). وتُنشأ هنا إن لم تكن:
+       الحالةُ التي تسبقها تُنشئ واحدةً، والاتّكالُ على أثرِ حالةٍ أخرى
+       يجعل هذه تسقط إن سقطت تلك — وهو ما وقع فعلا. */
+    if ((await prisma.cohortAssessment.count({ where: { cohortId } })) === 0) {
+      await prisma.cohortAssessment.create({
+        data: { cohortId, title: 'مهمّةُ الإرسال', type: 'assignment', maxScore: 100 },
       })
     }
   }

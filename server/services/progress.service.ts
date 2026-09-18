@@ -77,20 +77,41 @@ export class ProgressService {
       const g = a.grades[0]
       return g && a.assessment.passScore !== null && Number(g.score) >= (a.assessment.passScore ?? 0)
     })
+    /* ═══ والحضورُ وحدَه لا يُتِمُّ محورا له عملٌ ═══
+
+       كان الحضورُ دليلا مساويا للتسليم المقبول والتقييم المُجتاز. فمن جلس
+       في اللقاء تمَّ محورُه — ولو لم يُنتج شيئا ولم ينظر فيه أحد. وذاك
+       يناقض ما تبيعه المنصّة: «سيَنظر مختصٌّ فيما أنتجتَه أنت».
+
+       ── ولمَ لم يسقط الحضورُ كلَّه ──
+
+       محورٌ **لا عملَ عليه أصلا** لا دليلَ منتَجا فيه، فاشتراطُ ما لا وجودَ
+       له يجعل «مكتمل» حالةً لا تُبلَغ أبدا. فالقاعدة: حيث يوجد عملٌ فالعملُ
+       هو الدليل، وحيث لا عملَ فالحضورُ دليلُه.
+
+       والدليلُ يُكتب بما هو — `submission` أو `assessment` أو `attendance` —
+       لا «أحدُهما» كما كان. فمن قرأ الصفَّ بعد سنةٍ عرف على أيِّ شيءٍ تمَّ.
+
+       ولا يُنقض ما مضى: الصفوفُ لا تُردّ من «مكتمل»، والحسابُ على ما يأتي. */
+    const publishedFor = (moduleId: string) =>
+      e.cohort.assessments.some((a) => a.moduleId === moduleId && a.status !== 'draft')
     for (const m of e.cohort.course.modules) {
-      const hasEvidence =
-        acceptedSubs.some((s) => e.cohort.assessments.find((a) => a.id === s.assessmentId)?.moduleId === m.id) ||
-        passedAttempts.some((a) => a.assessment.moduleId === m.id) ||
-        e.attendance.some((att) => {
-          const session = e.cohort.sessions.find((s) => s.id === att.sessionId)
-          return session?.moduleId === m.id && ['present', 'late'].includes(att.status)
-        })
+      const byWork = acceptedSubs.some((s) => e.cohort.assessments.find((a) => a.id === s.assessmentId)?.moduleId === m.id)
+      const byAssessment = passedAttempts.some((a) => a.assessment.moduleId === m.id)
+      const attended = e.attendance.some((att) => {
+        const session = e.cohort.sessions.find((s) => s.id === att.sessionId)
+        return session?.moduleId === m.id && ['present', 'late'].includes(att.status)
+      })
+      const via = byWork ? 'submission'
+        : byAssessment ? 'assessment'
+        : attended && !publishedFor(m.id) ? 'attendance'
+        : null
       const current = e.moduleProgress.find((mp) => mp.moduleId === m.id)
-      if (hasEvidence && (!current || current.status !== 'completed')) {
+      if (via && (!current || current.status !== 'completed')) {
         await this.prisma.moduleProgress.upsert({
           where: { enrollmentId_moduleId: { enrollmentId, moduleId: m.id } },
-          update: { status: 'completed', completedAt: new Date(), evidence: { via: 'attendance_or_assessment' } },
-          create: { enrollmentId, moduleId: m.id, status: 'completed', completedAt: new Date(), evidence: { via: 'attendance_or_assessment' } },
+          update: { status: 'completed', completedAt: new Date(), evidence: { via } },
+          create: { enrollmentId, moduleId: m.id, status: 'completed', completedAt: new Date(), evidence: { via } },
         })
       }
     }

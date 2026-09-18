@@ -12,7 +12,7 @@
    في `server/tests/learning`. */
 
 import { describe, expect, it } from 'vitest'
-import { resolveCompletionRules } from '../../application/learning/completion-rules'
+import { DEFAULT_COMPLETION_RULES, resolveCompletionRules } from '../../application/learning/completion-rules'
 
 const rule = (type: string, threshold: number, required = true) => ({ type, threshold, required })
 
@@ -74,7 +74,36 @@ describe('قواعدُ الإكمال تُدمج ولا تُستبدَل', () =>
     expect(out).toEqual([])
   })
 
-  it('ولا قواعدَ يعني لا شرطَ — لا شرطا مُختلَقا', () => {
-    expect(resolveCompletionRules([], [])).toEqual([])
+  /* ═══ نُقض بقرارٍ لا بتنازل (م٤ · ١٧ سبتمبر ٢٠٢٦) ═══
+
+     كان هنا: «ولا قواعدَ يعني لا شرطَ — لا شرطا مُختلَقا». وعلّتُه وجيهةٌ
+     في ظاهرها: لا تُخترَع قاعدةٌ لم يكتبها أحد.
+
+     لكنّ القراءةَ الأخرى أثقل: `evaluateCompletion` تحكم «تمّ إن لم يسقط
+     شرط»، فلا شرطَ تعني **الشهادةُ لكلّ ملتحق** — حضر أو لم يحضر، سلّم أو
+     لم يسلّم. وذاك اختراعُ إذنٍ لم يكتبه أحدٌ كذلك، وهو أخطرُ: الشهادةُ
+     الدعوى الوحيدةُ التي لا تحتمل المرونة.
+
+     فصار الصمتُ يملؤه حدٌّ أدنى مكتوبٌ في موضعٍ واحد، والقولُ يعلوه. */
+  it('⚠️ ولا قواعدَ يملؤها حدٌّ أدنى — ولا تعني الشهادةَ لكلّ ملتحق', () => {
+    expect(resolveCompletionRules([], [])).toEqual([...DEFAULT_COMPLETION_RULES])
+    /* والحدُّ مهمّةٌ واحدةٌ مقبولة — لا حضورٌ ولا نسبة */
+    expect(DEFAULT_COMPLETION_RULES).toEqual([
+      { type: 'assignment_accepted', threshold: 1, source: 'default' },
+    ])
+  })
+
+  it('⚠️ والافتراضيُّ يملأ الصمتَ لا يعلو القول — إسقاطٌ صريحٌ يبقى إسقاطا', () => {
+    /* من أسقط نوعا صراحةً قرّر وبقي قرارُه في السجلّ. ولو عاد الافتراضيُّ
+       فوقه لصار البابُ الوحيدُ إلى الإرخاء مغلقا من حيث لا يُرى. */
+    expect(resolveCompletionRules([rule('assignment_accepted', 1, false)], [])).toEqual([])
+    expect(resolveCompletionRules([], [rule('assignment_accepted', 1, false)])).toEqual([])
+  })
+
+  it('ولا يُزاحم الافتراضيُّ قاعدةً مكتوبةً من أيّ جهة', () => {
+    expect(resolveCompletionRules([rule('attendance_pct', 70)], []))
+      .toEqual([{ type: 'attendance_pct', threshold: 70, source: 'course' }])
+    expect(resolveCompletionRules([], [rule('attendance_pct', 70)]))
+      .toEqual([{ type: 'attendance_pct', threshold: 70, source: 'cohort' }])
   })
 })

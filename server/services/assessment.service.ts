@@ -414,16 +414,65 @@ export class AssessmentService {
   }
 
   /** طابور مراجعة المدرب — تسليمات شعبه فقط */
+  /* ═══ طابورُ التصحيح — ما يحتاجه الحكمُ لا ما يسهل جلبُه ═══
+
+     كان الطابورُ يُرجع `enrollment` كاملا ومعه `userId` **ولا اسم**: يصل
+     المعرّفُ إلى الشاشة فيُهمَل، فيصحّح المدرّبُ عملا لا يعرف صاحبَه. وهو
+     يحكم على إنسانٍ بعينه لا على صفٍّ في قاعدة.
+
+     والمسطرةُ لم تكن تُجلَب أصلا — وأعمدتُها قائمةٌ منذ زمن (`rubricId`
+     و`RubricCriterion`)، ومسلكُ الدرجة يقبل `rubricScores` ولا يرسلها أحد.
+     فمساطرُ مؤلَّفةٌ ترقد بلا قارئ، والحكمُ يصير رقما بلا سببٍ مكتوب.
+
+     ومفتاحُ التخزين **لا يخرج**: كان يصل الشاشةَ خاما — مفتاحُ ملفِّ متعلّمٍ
+     في متنٍ يُقرأ من أدوات المتصفّح ويُنسخ في محادثة. فيخرج مسارُ قراءةٍ
+     محروسٌ بدلَه، وحارسُه الجلسةُ لا توقيعٌ في العنوان: قارئُه مدرّبُ الشعبة
+     أو صاحبُ التسليم، وكلاهما داخلٌ بحسابه — وهي القاعدةُ نفسُها المكتوبةُ
+     في `cohort-file.routes.ts` لملفّات الشعبة. */
   async trainerQueue(trainerUserId: string) {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId: trainerUserId } })
     if (!profile) throw new AuthError('not_trainer', 'لا ملف مدرب لهذا الحساب', 403)
-    return this.prisma.assignmentSubmission.findMany({
+    const rows = await this.prisma.assignmentSubmission.findMany({
       where: { assessment: { cohort: { trainers: { some: { profileId: profile.id } } } }, status: { in: ['submitted', 'under_review'] } },
       include: {
-        assessment: { include: { cohort: { select: { title: true } } } },
-        enrollment: true, grades: { include: { history: true } }, feedback: true,
+        assessment: {
+          include: {
+            cohort: { select: { title: true } },
+            rubric: { include: { criteria: { orderBy: { sequence: 'asc' } } } },
+          },
+        },
+        /* الاسمُ وحدَه: البريدُ والرقمُ ملكُ المتعلّم، والمنصّةُ هي القناة */
+        enrollment: { include: { user: { select: { displayName: true } } } },
+        grades: { include: { history: true } }, feedback: true,
       },
       orderBy: { submittedAt: 'asc' },
     })
+    return rows.map(({ storageKey, ...s }) => ({
+      ...s,
+      fileUrl: storageKey ? `/api/v1/submission-files/${encodeURIComponent(storageKey)}` : null,
+    }))
+  }
+
+  /* ═══ من يقرأ ملفَّ تسليم ═══
+
+     صاحبُه، ومدرّبُ شعبته. ولا ثالثَ من هذا الباب: من يعتمد الخطّةَ لا شأنَ
+     له بمُخرَجِ متعلّمٍ بعينه، وبابُ الإدارة إلى أعمال المتعلّمين غيرُ هذا.
+
+     وما لا يملكه يُردّ **بأربعمئةٍ وأربعة** لا بثلاثمئةٍ وثلاثة: وجودُ ملفٍّ
+     بمفتاحٍ بعينه خبرٌ في نفسه. */
+  async assertCanReadSubmissionFile(storageKey: string, auth: { userId: string }) {
+    const row = await this.prisma.assignmentSubmission.findFirst({
+      where: { storageKey },
+      select: {
+        id: true,
+        enrollment: { select: { userId: true } },
+        assessment: { select: { cohort: { select: { trainers: { select: { profile: { select: { userId: true } } } } } } } },
+      },
+    })
+    if (!row) throw new AuthError('not_found', 'الملف غير موجود', 404)
+    const mine = row.enrollment.userId === auth.userId
+    const teaches = row.assessment.cohort.trainers.some((t) => t.profile.userId === auth.userId)
+    if (!mine && !teaches) throw new AuthError('not_found', 'الملف غير موجود', 404)
+    return row
   }
 }

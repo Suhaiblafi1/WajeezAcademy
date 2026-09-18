@@ -1,5 +1,7 @@
-import { Link, NavLink } from "react-router";
-import { Award, BookPlus, CalendarDays, ClipboardCheck, GraduationCap, LayoutDashboard, Link2, Route, Star, Users, Wallet } from "lucide-react";
+import { Link, NavLink, useLocation } from "react-router";
+import { Award, BookPlus, CalendarDays, ChevronDown, ClipboardCheck, GraduationCap, LayoutDashboard, Link2, MoreHorizontal, Route, Star, Users, Wallet } from "lucide-react";
+import { Inset } from "@/components/ui/Surface";
+import { NavPill, NavPillButton } from "@/components/ui/NavPill";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -11,9 +13,94 @@ import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
 
+/* ═══ «المزيد» — ستّةُ تبويباتٍ خلف بابٍ يُرى، لا خلف تمريرٍ لا يُرى ═══
+
+   الشريطُ كان يحمل أحدَ عشرَ بندا في `overflow-x-auto` و`scrollbar-hide`:
+   فالبنودُ بعد الحافّة موجودةٌ ولا شيءَ في الشاشة يقول إنّها هناك. وتعليقُ
+   الشريط نفسُه كان يَعِد بألّا «يُخفي ثلاثةَ تبويباتٍ خلف تمريرٍ بلا علامةٍ
+   تدلّ عليه» — وهو ما كان يفعله، لأنّ أخذَ الشريطِ سطرَه كاملا لم يكن
+   يكفيه: أحدَ عشرَ بندا بأسمائها تفوق ١١٠٨ بكسلا الفعليّة على الحاسوب.
+
+   ── ولماذا زرٌّ لا حافّةٌ تتلاشى ──
+
+   التلاشي والسهمُ يجعلان المخفيَّ **مرئيَّ الوجود** ولا يجعلانه مبلوغا:
+   يبقى التنقّلُ تمريرا أفقيّا بالفأرة، و«مستحقّاتي» وراءَ تمريرَتين.
+   وقرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦) على الزرّ: نقرةٌ معلومةٌ خيرٌ من
+   تمريرٍ مقدَّر.
+
+   ── وثلاثةٌ تبيت في البنية ──
+
+   · المستمعُ على `document` لا ستارةٌ `fixed`: الترويسةُ تحمل `backdrop-blur`
+     و`backdrop-filter` يجعل حاملَه كتلةً حاضنةً لكلّ `fixed` في ذرّيّته،
+     فالستارةُ تمتدّ على الترويسة وحدَها. وهي علّةٌ وقعت في هذه الترويسة
+     بعينها مع `StaffAccountMenu`، فلا تُعاد.
+   · والزرُّ **خارجَ** الشريط المُمرَّر: `overflow-x-auto` يقصُّ كلَّ
+     `absolute` في داخله، فالقائمةُ كانت ستُقصّ عند حافّته.
+   · والزرُّ يحمل حالةَ النشاط حين يكون المفتوحُ من بنوده: من فتح
+     «مستحقّاتي» يرى أين هو، وإلّا بدا الشريطُ بلا موضعٍ نشط.
+
+   وتُغلَق عند تبدّل المسار بـ`key={pathname}` من أبيها لا بأثرٍ جانبيٍّ
+   يكتب الحالةَ في `useEffect`: النقرُ في بنودها يغلقها بيده، والباقي رجوعُ
+   المتصفّح وما جرى خارجَها — وإعادةُ التركيب تضبطها بلا دَينِ تلويم. */
+function MoreTabs({ items, pathname }: { items: { to: string; label: string; icon: typeof Users }[]; pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const here = items.some((t) => pathname === t.to || pathname.startsWith(`${t.to}/`));
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={boxRef} className="relative shrink-0">
+      <NavPillButton
+        active={here}
+        icon={MoreHorizontal}
+        label="المزيد"
+        expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <ChevronDown className={`h-3 w-3 shrink-0 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+      </NavPillButton>
+
+      {open && (
+        <Inset role="menu" tone="solid" className="absolute left-0 top-12 z-50 w-64 p-1.5 shadow-2xl">
+          {items.map((t) => (
+            <NavLink
+              key={t.to}
+              to={t.to}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={({ isActive }) =>
+                `flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-xs font-bold transition ${
+                  isActive ? "bg-teal text-on-teal" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                }`
+              }
+            >
+              <t.icon className="h-4 w-4 shrink-0" />
+              <span>{t.label}</span>
+            </NavLink>
+          ))}
+        </Inset>
+      )}
+    </div>
+  );
+}
+
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, checked } = useRealSession();
+  const { pathname } = useLocation();
   /* الصلاحيّةُ تكفي للدخول، ولا تكفي للعمل: مديرُ النظام يملكها بلا ملفٍّ في
      هذه البوّابة، فكانت كلُّ شاشةٍ تسقط وحدَها بـ«لا ملف مدرب مرتبطا بهذا
      الحساب». فيُسأل مرّةً هنا، ويُقال مرّةً واحدة. */
@@ -108,11 +195,16 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   /* «شعبي وجلساتها» دخلت التبويبات — وهي ورشةُ عمله الفعليّة (الحضور والمواد
      والتكليفات والدرجات) ولم تكن فيها، فلا يبلغها إلا من يكتب مسارها بيده. */
   const tabs = [
-    { to: "/trainer", label: "الرئيسية", icon: LayoutDashboard, end: true },
-    { to: "/trainer/board", label: "شعبي", icon: Users },
-    { to: "/trainer/learners", label: "طلبتي", icon: GraduationCap },
-    { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck, count: pending },
-    { to: "/trainer/schedule", label: "جدولي", icon: CalendarDays },
+    /* ═══ خمسةٌ تُرى، وستٌّ في «المزيد» — قرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦) ═══
+
+       الخمسةُ الأولى ما يفتحه في يومه: لوحتُه، وشعبُه، وطلبتُه، وما ينتظر
+       تصحيحَه، وجدولُه. والستّةُ الباقيةُ يُقصَد كلٌّ منها قصدا (مؤهّلاتي ·
+       مقترحاتي · مساراتي · مستحقّاتي · ما قيل عنّي · دعوتي) فلا تُزاحم. */
+    { to: "/trainer", label: "الرئيسية", icon: LayoutDashboard, end: true, primary: true },
+    { to: "/trainer/board", label: "شعبي", icon: Users, primary: true },
+    { to: "/trainer/learners", label: "طلبتي", icon: GraduationCap, primary: true },
+    { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck, count: pending, primary: true },
+    { to: "/trainer/schedule", label: "جدولي", icon: CalendarDays, primary: true },
     { to: "/trainer/qualifications", label: "مؤهّلاتي وإتاحتي", icon: Award },
     /* ح-٢: بعد «مؤهّلاتي» — السؤالان جارانِ: ما أُهِّلتُ له، وما أقترحه ولم
        يدخل الكتالوجَ بعد. وقرارُ الإدارة يصل هنا، فلا يُدفن في صفحةٍ طويلة. */
@@ -125,6 +217,8 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     /* ب-٥: بعد «ما قيل عنّي» مباشرةً — قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) */
     { to: "/trainer/referral", label: "دعوتي", icon: Link2 },
   ];
+  const primaryTabs = tabs.filter((t) => t.primary);
+  const moreTabs = tabs.filter((t) => !t.primary);
 
   /* له الصلاحيّةُ ولا ملفَّ له: شاشةٌ واحدةٌ تشرح، بدل عشرِ شاشاتٍ تسقط */
   if (realTrainer && hasProfile === false) {
@@ -158,54 +252,44 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           من شاءت. ولو لم يُقَس بقي `0px` — فالرأسُ يلتصق بأعلى الإطار، وهو
           أسوأُ عرضا لا شاشةٌ مكسورة. */}
       <header ref={headerRef} className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
-        {/* ── الشريطُ يأخذ سطرَه ──
+        {/* ── الشريطُ يأخذ سطرَه، وخمسةٌ فيه لا أحدَ عشر ──
 
             كان تسعةَ رموزٍ **بلا كلمة** بعرض ٣٩٠: النصُّ `hidden sm:inline`،
             فيصير كلُّ عنصرٍ ٣٨×٤٤ بكسلا يُميَّز بالرمز وحدَه. والعرضُ فوق ٢٤
             التي تشترطها WCAG 2.5.8 فليس مخالفةً — لكنّ تسعةَ أهدافٍ متشابهةٍ
             بلا اسمٍ ليست تنقّلا، والمراجعُ توصي بخمسةٍ فأقلَّ في شريطٍ أوّل.
 
-            والجوابُ الأسماءُ لا الحذف: تسعةُ تبويباتٍ كلُّها عملٌ يفعله
-            المدرّب، ومن حذف منها أخفى عملا لا زحاما.
+            فصارت بأسمائها وأخذ الشريطُ سطرَه كاملا. ولم يكفِ: أحدَ عشرَ بندا
+            بأسمائها تفوق إطارَ العرض، ويشتدّ على الحاسوب بمعامل التكبير ١٫٣
+            (`--app-scale` في `#80`) — إطارُ ١٤٤٠ يصير ١١٠٨ فعليّا. فبقي
+            `overflow-x-auto` و`scrollbar-hide` يخفيان الأربعةَ الأخيرة بلا
+            علامةٍ تدلّ عليها، وهو ما كان هذا التعليقُ نفسُه يَعِد بألّا يقع.
 
-            **وامتدادٌ أفقيٌّ كان قبل هذا ولم يره التقرير:** التسعةُ بأسمائها
-            ٨٦٧ بكسلا في صفٍّ واحدٍ مع الشعار والأدوات، فكانت `body.scrollWidth`
-            تفوق إطارَ العرض عند ٣٩٠ و٨٢٠ و١٤٤٠ **جميعا** (قِيس بالمتصفّح).
-            ويشتدّ على الحاسوب بمعامل التكبير ١٫٣ (`--app-scale` في `#80`):
-            إطارُ ١٤٤٠ يصير ١١٠٨ فعليّا، فلا يتّسع الصفُّ لثلاثةٍ منها.
-
-            فالشريطُ يأخذ سطرَه في كلّ المقاسات — عرضُ الحاوية كلِّه لا فضلةُ
-            ما تركه الشعارُ والأدوات. وهو أصدقُ من صفٍّ يُخفي ثلاثةَ تبويباتٍ
-            خلف تمريرٍ بلا علامةٍ تدلّ عليه. */}
+            والجوابُ خمسةٌ تُرى وستٌّ خلف زرِّ «المزيد» — لا تلاشٍ عند الحافّة:
+            التلاشي يجعل المخفيَّ مرئيَّ الوجود ولا يجعله مبلوغا (قرارُ صاحب
+            المنصّة، ١٨ سبتمبر ٢٠٢٦). والتمريرُ باقٍ على الخمسة للهاتف وحدَه،
+            و«المزيد» خارجَه فلا يُمرَّر معها ولا تُقصُّ قائمتُه. */}
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-5 py-2">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">وجيز — بوابة المدرب</span>
           </Link>
-          <nav className="scrollbar-hide order-last flex w-full items-center justify-start gap-1 overflow-x-auto rounded-full border border-white/10 bg-white/[0.03] p-1">
-            {tabs.map((t) => (
-              <NavLink
-                key={t.to}
-                to={t.to}
-                end={t.end}
-                className={({ isActive }) =>
-                  /* `shrink-0` كي لا ينضغط النصُّ حين يُمرَّر الشريط،
-                     و`min-h-11` هدفُ لمسٍ مريحٌ على الهاتف. */
-                  `flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 ${
-                    isActive ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"
-                  }`
-                }
-              >
-                <t.icon className="h-3.5 w-3.5" />
-                <span>{t.label}</span>
-                {/* العددُ يُقرأ للعين وللقارئ معا: الرقمُ وحدَه لا يقول ماذا يعدّ */}
-                {!!t.count && (
-                  <span className="rounded-full bg-gold px-1.5 text-fine font-black text-on-gold">
-                    <span className="sr-only">ينتظر تصحيحَك: </span>{t.count}
-                  </span>
-                )}
-              </NavLink>
-            ))}
+          <nav aria-label="تبويبات بوّابة المدرّب" className="order-last flex w-full items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
+            <div className="scrollbar-hide flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto">
+              {/* والحبّةُ درجةٌ في السلّم (`ui/NavPill`) لا صيغةٌ تُكتب هنا:
+                  الزرُّ إلى جانبها يجب أن يطابقها شكلا، ونسختان تفترقان. */}
+              {primaryTabs.map((t) => (
+                <NavPill key={t.to} to={t.to} end={t.end} icon={t.icon} label={t.label}>
+                  {/* العددُ يُقرأ للعين وللقارئ معا: الرقمُ وحدَه لا يقول ماذا يعدّ */}
+                  {!!t.count && (
+                    <span className="rounded-full bg-gold px-1.5 text-fine font-black text-on-gold">
+                      <span className="sr-only">ينتظر تصحيحَك: </span>{t.count}
+                    </span>
+                  )}
+                </NavPill>
+              ))}
+            </div>
+            <MoreTabs key={pathname} items={moreTabs} pathname={pathname} />
           </nav>
           <div className="flex items-center gap-3">
             {/* بحث سريع Ctrl+K — لجلسة المدرب الحقيقية فقط: يضرب نقطة الخادم المقيدة بإسناداته */}
