@@ -5,12 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0D0D0D" />
     <script>
-      /* المظهر قبل أول رسم — بلا وميض: داكن دائما عند كل فتح، واختيار «الفاتح»
-         يعيش للزيارة الحالية فقط (sessionStorage). المفتاح القديم في
-         localStorage لم يعد مستخدما — يُزال مرة واحدة */
+      /* المظهر قبل أول رسم — بلا وميض. والقاعدة مشروحة في
+         `src/services/theme.ts`: اختيار الزائر المحفوظ يعلو، فإن لم يختر
+         فالجهاز هو الحكم (`prefers-color-scheme`) — وهو الذي يبدّل نهارا
+         وليلا من نفسه. ويُسأل عن الداكن وحده لأن المتصفح يقول «فاتح» لمن
+         اختاره ولمن لم يختر شيئا سواء.
+
+         ويُكتب هنا خاما لا باستيراد الوحدة: هذا يسبق الحزمة كلها، وغايته
+         ألا تُرسم الصفحة مرة بمظهر ثم تُعاد بآخر.
+
+         ومفتاح الزيارة القديم في sessionStorage لم يعد مستخدما — يُزال مرة. */
       try {
-        localStorage.removeItem("wajeez_theme");
-        if (sessionStorage.getItem("wajeez_theme") === "light") document.documentElement.dataset.theme = "light";
+        var saved = localStorage.getItem("wajeez_theme");
+        var t = saved === "light" || saved === "dark"
+          ? saved
+          : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.dataset.theme = t;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", t === "light" ? "#F6F4EF" : "#0D0D0D");
+        sessionStorage.removeItem("wajeez_theme");
       } catch (e) {}
     </script>
     <!-- أيقونةُ اللسان: علامةُ وجيز نفسُها لا حرفٌ مرسوم.

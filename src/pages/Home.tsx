@@ -191,9 +191,7 @@ function Nav() {
           <a href="#diagnostic" onClick={() => setOpen(false)} className="btn-teal mt-2 flex w-full px-5 py-3">
             ابدأ مؤشر وجيز
           </a>
-          <div className="mt-3 flex justify-center">
-            <ThemeToggle />
-          </div>
+          <ThemeToggle variant="row" />
         </nav>
       )}
     </header>
