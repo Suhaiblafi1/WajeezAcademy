@@ -31,7 +31,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
+  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, Link2, Loader2, Lock, MessageSquarePlus, Pencil, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -40,6 +40,7 @@ import SessionsAndAttendance from "./SessionsAndAttendance";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
+import Modal from "@/components/Modal";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES, readTypedLinks, resourceKind, resourceCategory, kindForCategory } from "@/application/trainer/plan-overlay";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
@@ -51,9 +52,8 @@ import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
-import ProgressRing from "@/components/ui/ProgressRing";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
-import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
+import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import { countAr } from "@/application/text/count-ar";
 
 /* ─────────── ما يصل من الخادم ─────────── */
@@ -109,12 +109,23 @@ const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent"
   superseded: { label: "نسخةٌ قديمة", tone: "default" },
 };
 
-/* المراحلُ الستّ — بترتيبها على الخطّ. ومفاتيحُها مفاتيحُ قائمة الخادم، فحالةُ
-   كلٍّ (تمّ / لم يتمّ) تُقرأ من هناك لا تُخمَّن هنا. و«التسجيلات» الاختياريّةُ
-   تُطوى داخل «اللقاءات»: مرحلةٌ واحدةٌ لهما. */
-type Stage = "identity" | "modules" | "resources" | "sessions" | "assignments" | "approval";
+/* ═══ المراحلُ خمسٌ — والسادسةُ انطوت (ق٧ · ١٧ سبتمبر ٢٠٢٦) ═══
+
+   كانت ستًّا، أولاها «الاسمُ والمواعيد». ثمّ خرج منها الفصلُ (ق١) وصندوقُ
+   اسمِ الدورة (ق٥)، فلم يبقَ فيها **قرارٌ**: اسمٌ كتبته الإدارةُ عند الفتح
+   يعدّله إن شاء، ونبذةٌ في سطرين. ودرجةٌ في سلّمٍ تعني «قف هنا واقرر»، فلا
+   تُنفَق على حقلين لا قرارَ فيهما.
+
+   فصارت الهُويّةُ **بابا في اسم الشعبة نفسِه** في الشريط: يُنقَر فيُفتح
+   حقلاها. وصفُّها في قائمة الخادم باقٍ كما هو — الاسمُ شرطٌ للاعتماد ولم
+   يسقط، وإنّما تبدّل مكانُ بابه.
+
+   ومفاتيحُها مفاتيحُ قائمة الخادم، فحالةُ كلٍّ (تمّ / لم يتمّ) تُقرأ من
+   هناك لا تُخمَّن هنا. و«التسجيلات» الاختياريّةُ تُطوى داخل «اللقاءات». */
+type Stage = "modules" | "resources" | "sessions" | "assignments" | "approval";
+/** ما يُفتح في لوحةٍ مستقلّة — درجةٌ في السلّم أو بابُ الهُويّة */
+type Step = Stage | "identity";
 const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
-  { key: "identity", label: "الاسمُ والنبذة", icon: ClipboardList },
   { key: "modules", label: "المحاور", icon: BookOpen },
   { key: "resources", label: "المصادر", icon: FileText },
   { key: "sessions", label: "لقاءات مباشرة", icon: CalendarDays },
@@ -164,7 +175,7 @@ const RESOURCE_CATEGORY_META: Record<string, {
    كان المدرّبُ يفتح الخطوةَ فيجد حقولا بلا مقدّمة، فلا يعرف أهي دقيقتان
    أم ساعة، ولا لمن يُكتب ما يكتبه. والوقتُ المذكور تقديرٌ صادقٌ لا وعد:
    يُقال ليقرّر أيبدأها الآن أم يؤجّلها، وهو أنفعُ ما يُقال له قبلها. */
-const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: string }> = {
+const STAGE_INTRO: Record<Step, { title: string; purpose: string; minutes: string }> = {
   identity: {
     title: "اسمُ الشعبة ونبذتُها",
     /* وكان يَعِدُ بما لم يعد فيها: «متى تبدأ وتنتهي وأيّامُ لقاءاتها» —
@@ -201,7 +212,7 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
   },
 };
 
-function StageIntro({ stage }: { stage: Stage }) {
+function StageIntro({ stage }: { stage: Step }) {
   const it = STAGE_INTRO[stage];
   const Icon = STAGES.find((s) => s.key === stage)?.icon ?? BookOpen;
   return (
@@ -244,7 +255,9 @@ export default function CohortWorkspace() {
   const [ws, setWs] = useState<Workspace | null>(null);
   const [err, setErr] = useState("");
   const [phase, setPhase] = useState<Phase>("prepare");
-  const [stage, setStage] = useState<Stage>("identity");
+  const [stage, setStage] = useState<Stage>("modules");
+  /* بابُ الهُويّة — يُفتح من اسم الشعبة في الشريط لا من درجةٍ في السلّم */
+  const [identityOpen, setIdentityOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   /* النسخةُ التي يحرّرها — تبدأ من الخطّة إن كانت، وإلّا من محاور الكتالوج */
@@ -303,7 +316,7 @@ export default function CohortWorkspace() {
         if (status === "approved" || status === "published") setPhase("run");
         else {
           const next = w.checklist.find((c) => !c.done && !c.optional && STAGES.some((s) => s.key === c.key));
-          setStage((next?.key as Stage) ?? "identity");
+          setStage((next?.key as Stage) ?? "modules");
         }
       }
     } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح صفحة الشعبة"); }
@@ -392,6 +405,10 @@ export default function CohortWorkspace() {
     .filter((m) => !moduleBodyDone(m));
   const ready = gated.length ? Math.round((doneCount / gated.length) * 100) : 0;
   const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
+  /* موضعُ الخطوة الحاليّة — يُقال بالضمور بدل اسم الشعبة: المضمورُ يجيب
+     «أين أنا» لا «ما شعبتي». */
+  const here = STAGES.find((s) => s.key === stage) ?? null;
+  const stepNo = STAGES.findIndex((s) => s.key === stage) + 1;
 
   /* ── «فيه تغييرٌ لم يُحفظ» ──
 
@@ -456,11 +473,6 @@ export default function CohortWorkspace() {
   const setModule = (i: number, patch: Partial<PlanModule>) =>
     setContent({ ...content, modules: content.modules.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
 
-  const whenLine = [
-    ws.cohort.startsAt ? `تبدأ ${fmtDateAr(ws.cohort.startsAt)}` : "بلا موعدِ بدءٍ بعد",
-    daysLabelAr(ws.cohort.daysOfWeek) || null,
-    ws.cohort.startTime ? `الساعة ${ws.cohort.startTime}` : null,
-  ].filter(Boolean).join(" · ");
 
   return (
     <TrainerLayout title={`شعبة «${ws.cohort.title}»`}>
@@ -474,140 +486,171 @@ export default function CohortWorkspace() {
         <ArrowRight className="h-4 w-4" /> شعبي
       </Link>
 
-      {/* ═══ الرأس: أين وصلت الشعبة ═══ */}
-      {/* ═══ الشريطُ يُلحَم بالسقف، ولا فراغَ ميّتٌ فوقه ═══
+      {/* ═══ الشريطُ «ب» — صفٌّ واحدٌ يحمل كلَّ ما كان في ثلاثة ═══
 
-          شكا صاحبُ المنصّة (١٧ سبتمبر ٢٠٢٦): «ألغِ الفراغَ فوقها واجعلها
-          ملاصقةً للسقف عند النزول للأسفل». وثلاثةُ أشياءَ كانت تمنع ذلك:
+          شكواه الأولى (١٧ سبتمبر ٢٠٢٦): «القائمة العلويّة آخذةٌ حيّزا كبيرا
+          من الصفحة… ألغِ الفراغَ فوقها واجعلها ملاصقةً للسقف عند النزول».
+          وكان خلفها رقم: **٦٠٦ بكسلا من الزينة قبل أوّل حقلٍ يكتب فيه**، في
+          شاشةٍ ارتفاعُها الفعّالُ ٦٩٢ (بمقياس `--app-scale: 1.3` على العريض).
+          أي ٨٨٪ منها. فالكتابةُ في الخطوة الأولى بلا تمرير **مستحيلةٌ بنيةً**
+          لا صعبة.
 
-          ① **فراغٌ ميّتٌ مقدارُه عشرون بكسلا**: صفُّ الهويّة يُخفى عند
-            الضمور بـ`display:none`، **فلا ينطوي هامشُ `mt-5` الذي على
-            أخيه** — يبقى معلّقا فوق اللسانَين. وهذا هو «الفراغ» بعينه.
-          ② **بطاقةٌ مقوّسةٌ لا تلتصق**: `rounded-3xl` وحدٌّ محيطٌ و`mb-5`
-            تجعلها تجلس في الصفحة لا تُلحَم بحافّتها. فصارت `Bar` — شكلُ
-            جلوسٍ آخرُ لا زخرفةً أخرى، وتفيض عن حشو الحاضن بـ`-mx-5`
-            لتبلغ حافّتَي الإطار.
-          ③ **أرضيّةٌ شفّافة**: `bg-paper/95` مع `backdrop-blur` تتبع ما
-            يمرّ تحتها، والقياسُ لا يجوز أن يتبع المتنَ المارّ. فصارت
-            `tone="solid"` صمّاء.
+          وقد سبق في الموجة ٠ أن لُحِم بالسقف وذهب الفراغُ الميّتُ فوقه. وهذا
+          تمامُه: ثلاثةُ صفوفٍ (هُويّةُ الشعبة · لسانا الطور · سلّمُ الخطوات)
+          تصير **صفًّا واحدا**، وقد صار ممكنا لأنّ الخطوةَ الأولى انطوت.
 
-          ونغمةُ الحالة (`st.tone`) سقطت من السطح عمدا: تينتُها ستّةٌ في
-          المئة، فهي شفّافةٌ بحكمها ولا تصلح لسطحٍ يمرّ تحته متن. والحالةُ
-          لم تُفقَد — تُقرأ من حبّتها ومن ختم «شعبةٌ معتمَدة» داخلَ الشريط. */}
+          ── وكيف يقرأ ──
+
+          ساكنا: اسمُ الشعبة (وهو بابُ تعديله)، ثمّ العلاماتُ الخمس والنشطةُ
+          وحدَها تحمل اسمَها، ثمّ زرُّ «التالي». وتحتها سطرُ حقائقَ واحد.
+          ومضمورا: موضعُ الخطوة بدل الاسم، والعلاماتُ في الوسط، ويسقط سطرُ
+          الحقائق. وحلقةُ التقدّم صارت **خيطا هو الحدُّ السفليُّ نفسُه** — لا
+          عنصرا يُضاف إلى الارتفاع.
+
+          ── وأربعةُ عهودٍ لا تُمَسّ (من وثيقة القرار) ──
+
+          ① النقطةُ الذهبيّةُ «لم يُحفَظ» تبقى على علامتها مهما ضمر الشريط.
+          ② ملاحظةُ الإدارة حين تُردُّ الخطّةُ تبقى في المنطقة اللاصقة.
+          ③ الشريطُ يبقى ظاهرا ولا يُشرَط بالطور (قرارُ ١٥ سبتمبر).
+          ④ والأسماءُ تبقى مسموعةً كاملةً: كلُّ علامةٍ تحمل «الخطوة ن من ٥:
+            اسمُها» وإن غاب الاسمُ عن العين. */}
       <Bar
         as="section"
         tone="solid"
-        className={`sticky z-30 -mx-5 mb-5 px-5 transition-[padding] ${compact ? "py-3" : ""}`}
+        className="relative sticky z-30 -mx-5 mb-5 px-5"
         style={{ top: "var(--staff-sticky-top, 0px)" }}
       >
-        <div className={`flex flex-wrap items-start gap-5 ${compact ? "hidden" : ""}`}>
-          <ProgressRing value={ready} label={`${doneCount}/${gated.length}`} caption="تجهيز" size={76} />
-          <div className="min-w-0 flex-1">
-            <p className="text-read font-bold text-muted-foreground">{ws.course.titleAr}</p>
-            <h2 className="mt-0.5 text-xl font-black leading-snug">{ws.cohort.title}</h2>
-            <p className="mt-1 text-read text-muted-foreground">{whenLine} · {ws.learners.length} التحقوا · {ws.sessions.length} لقاء</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {approved ? (
-                <span className="stage-seal inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-read font-black text-emerald-300">
-                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> شعبةٌ معتمَدة
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-full border border-white/10 px-3 py-1 text-read font-bold text-foreground">{st.label}</span>
-              )}
-              {!approved && nextStage && (
-                <Button tone="secondary" size="sm" type="button" onClick={() => openStage(nextStage.key)}>
-                  التالي: {nextStage.label}
-                </Button>
-              )}
-            </div>
+        <div>
+          <div className="flex items-center gap-3">
+            {/* الاسمُ ساكنا، وموضعُ الخطوة مضمورا — ولا يجتمعان فيضيق الصفّ */}
+            {compact ? (
+              <p className="shrink-0 text-read font-black text-foreground">
+                الخطوة {stepNo} من {STAGES.length}
+                <span className="font-bold text-muted-foreground"> · {here?.label}</span>
+              </p>
+            ) : (
+              /* واسمُ الشعبة بابُ هُويّتها: ما انطوى لم يُحذف، وإنّما صار
+                 يُفتح من الاسم نفسِه — وهو أقربُ موضعٍ يُطلب فيه. */
+              <button
+                type="button"
+                onClick={() => setIdentityOpen(true)}
+                className="group flex shrink-0 items-center gap-1.5 text-start"
+              >
+                <span className="text-read font-black leading-6 text-foreground">{ws.cohort.title}</span>
+                <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:text-teal-light-ink" aria-hidden="true" />
+                <span className="sr-only">عدّل اسمَ الشعبة ونبذتَها</span>
+              </button>
+            )}
+
+            <ol className={`flex min-w-0 flex-1 items-center gap-1 ${compact ? "justify-center" : ""}`}>
+              {STAGES.map((s, i) => {
+                const item = byKey.get(s.key);
+                const done = item?.done ?? false;
+                const optional = item?.optional ?? false;
+                const isNext = nextStage?.key === s.key;
+                const selected = phase === "prepare" && stage === s.key;
+                /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
+                const stateAr = dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : isNext ? "التالية" : optional ? "اختياريّة" : "لم تتمّ بعد";
+                return (
+                  <li key={s.key} className="min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => openStage(s.key)}
+                      aria-current={selected ? "step" : undefined}
+                      aria-label={`الخطوة ${i + 1} من ${STAGES.length}: ${s.label} — ${stateAr}`}
+                      className={`group flex items-center gap-1.5 rounded-full p-1 transition ${selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"}`}
+                    >
+                      <span className={`relative grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-fine font-black transition ${
+                        done ? "border-teal bg-teal text-on-teal"
+                          : isNext ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_3px_rgba(250,188,5,0.15)]"
+                          : "border-white/15 bg-surface text-muted-foreground"
+                      }`}>
+                        {done ? <Check className="h-3 w-3" aria-hidden="true" /> : i + 1}
+                        {/* ① تعديلٌ في اليد لا يُكتم لتوفير سطر — ولا لتوفير صفّ */}
+                        {dirty[s.key] && (
+                          <span className="absolute -end-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-gold" aria-hidden="true" />
+                        )}
+                      </span>
+                      {/* والاسمُ للنشطة دائما، ولغيرها عند التحويم وعند تركيز
+                          لوحة المفاتيح — فمن يتنقّل بالمفتاح يقرأ ما يقرؤه
+                          صاحبُ الفأرة، لا أقلَّ منه. */}
+                      <span
+                        aria-hidden="true"
+                        className={`overflow-hidden whitespace-nowrap text-read font-bold transition-[max-width] duration-200 ${
+                          selected
+                            ? "max-w-[11rem] text-foreground"
+                            : "max-w-0 text-muted-foreground group-hover:max-w-[11rem] group-focus-visible:max-w-[11rem]"
+                        }`}
+                      >
+                        {s.label}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+
+            {approved ? (
+              <span className="stage-seal inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-0.5 text-read font-black text-emerald-300">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> معتمَدة
+              </span>
+            ) : nextStage ? (
+              <Button tone="secondary" size="sm" type="button" className="shrink-0" onClick={() => openStage(nextStage.key)}>
+                التالي: {nextStage.label}
+              </Button>
+            ) : null}
           </div>
-        </div>
-        {ws.plan?.reviewerNote && planStatus === "changes_requested" && (
-          <Inset tone="warn" className="mt-4">
-            <p className="text-read font-black text-gold-ink">ملاحظةُ الإدارة</p>
-            <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{ws.plan.reviewerNote}</p>
-          </Inset>
-        )}
 
-        {/* ═══ المرحلتان — قبل خطِّ الخطوات لا بعده ═══
-
-            كان خطُّ الخطوات الستّ يُصيَّر أوّلا ثمّ لسانا «التجهيز/التشغيل»
-            تحته، ويبقى الخطُّ ظاهرا في التشغيل أيضا. فيُقرأ «التشغيل» كأنّه
-            خانةٌ تتكرّر عند كلّ خطوة، ولا يُدرى أيُّهما يحوي الآخر.
-
-            والصوابُ أنّ الخطواتِ الستَّ **من التجهيز** لا من الشعبة: فالطورُ
-            يُختار أوّلا، ثمّ تظهر خطواتُه إن كان تجهيزا. */}
-        <TabBar
-          ariaLabel="طورا الشعبة"
-          /* ولا يُكتب `mt-5` ثابتا: أخوه يُخفى بـ`display:none` فلا ينطوي
-             هامشُه معه — عشرون بكسلا ميّتةً فوق اللسانَين عند الضمور. */
-          className={compact ? "" : "mt-5"}
-          items={[
-            { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
-            /* ع-١: «التشغيل» صار «مركزَ التواصل» — ولم يبقَ فيه إلّا المخاطبة.
-               فاللقاءاتُ والحضورُ ذهبت إلى «لقاءات مباشرة» (د-٤)، والموادُّ إلى
-               «المصادر»، ولوحتان كانتا تكرارَ تبويبَي «طلبتي» و«طابور التقييم». */
-            { id: "run", label: <span className="inline-flex items-center gap-2"><MessageSquarePlus className="h-4 w-4" aria-hidden="true" />مركز التواصل</span> },
-          ]}
-          value={phase}
-          onChange={setPhase}
-        />
-
-        {/* ═══ خطُّ الخطوات — يمتلئ بقدر ما أُنجز، والتاليةُ مضاءة ═══
-
-            ويبقى في «مركز التواصل» كذلك: نقرةٌ على خطوةٍ تعيده إلى التجهيز
-            عندها (`openStage` تبدّل الطورَ والخطوةَ معا). وكان يختفي بتبديل
-            الطور، فيفقد المدرّبُ سلّمَه ولا يجد طريقَ العودة إلّا بلسانٍ
-            فوقه لا يدلّ عليه شيء. */}
-        <div className={`relative ${compact ? "mt-3" : "mt-5"}`}>
+          {/* سطرُ الحقائق: ما كان في أربعة أسطرَ في صفٍّ واحد. ويسقط بالضمور
+              — فالمضمورُ يجيب «أين أنا» لا «ما شعبتي». */}
           {!compact && (
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-[8.3%] top-5 hidden h-1 rounded-full bg-white/10 md:block">
-              <div className="stage-fill h-full rounded-full bg-teal" style={{ width: `${ready}%` }} />
-            </div>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">
+              {doneCount} من {gated.length} · {ws.course.titleAr} · {ws.learners.length} التحقوا · {ws.sessions.length} لقاء
+              {ws.cohort.term ? <> · {ws.cohort.term.titleAr}</> : <> · <span className="text-gold-ink">لم تُفتَح بعد</span></>}
+              {!approved && <> · {st.label}</>}
+            </p>
           )}
-          <ol className="grid gap-2 md:grid-cols-6">
-            {STAGES.map((s, i) => {
-              const item = byKey.get(s.key);
-              const done = item?.done ?? false;
-              const optional = item?.optional ?? false;
-              const isNext = nextStage?.key === s.key;
-              const selected = phase === "prepare" && stage === s.key;
-              return (
-                <li key={s.key} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => openStage(s.key)}
-                    aria-current={selected ? "step" : undefined}
-                    className={`group flex w-full items-center rounded-2xl text-start transition md:flex-col md:items-center md:text-center ${compact ? "gap-2 px-1 py-1 md:gap-1" : "gap-3 px-2 py-1.5 md:gap-2"} ${selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"}`}
-                  >
-                    <span className={`relative z-10 grid shrink-0 place-items-center rounded-full border-2 font-black transition ${compact ? "h-7 w-7 text-fine" : "h-10 w-10 text-sm"} ${
-                      done ? "border-teal bg-teal text-on-teal"
-                        : isNext ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_4px_rgba(250,188,5,0.15)]"
-                        : "border-white/15 bg-surface text-muted-foreground"
-                    }`}>
-                      {done ? <Check className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden="true" /> : i + 1}
-                      {/* نقطةٌ ذهبيّةٌ على الرقم: في هذه المرحلة تعديلٌ لم يُحفظ */}
-                      {dirty[s.key] && (
-                        <span className="absolute -end-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-surface bg-gold" aria-hidden="true" />
-                      )}
-                    </span>
-                    <span className="min-w-0">
-                      <span className={`block font-bold leading-5 ${compact ? "text-fine" : "text-read"} ${done || isNext || selected ? "text-foreground" : "text-muted-foreground"}`}>{s.label}</span>
-                      {/* والسطرُ الثاني يُطوى بالضمور — إلّا «لم يُحفَظ»:
-                          تعديلٌ في اليد لا يُكتم لتوفير سطر. */}
-                      {(!compact || dirty[s.key]) && (
-                        <span className={`block text-fine leading-4 ${dirty[s.key] ? "font-bold text-gold-ink" : "text-muted-foreground"}`}>
-                          {dirty[s.key] ? "لم يُحفَظ" : done ? "تمّ" : isNext ? "التالي" : optional ? "اختياريّ" : "لم يتمّ بعد"}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
+
+          {/* ② وملاحظةُ الإدارة تبقى لاصقةً: يقرؤها وهو ينزل ويصعد يصحّح */}
+          {ws.plan?.reviewerNote && planStatus === "changes_requested" && (
+            <Inset tone="warn" className="mt-2">
+              <p className="text-read font-black text-gold-ink">ملاحظةُ الإدارة</p>
+              <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{ws.plan.reviewerNote}</p>
+            </Inset>
+          )}
+
         </div>
+
+        {/* ═══ الخيطُ: حلقةُ التقدّم صارت الحدَّ السفليَّ نفسَه ═══
+
+            كانت `ProgressRing` مربّعا من ٧٦ بكسلا في رأسٍ لاصق. وصارت خيطا
+            من بكسلَين **مطلقَ الموضع على حافّة الشريط** — فلا يضيف إلى
+            ارتفاعه شيئا، ويجلس فوق الحدِّ الذي ترسمه `Bar` مباشرةً.
+
+            وقياسُه من `Bar` نفسِها (`relative` عليها) لا من صندوقٍ داخلَ
+            حشوها: الحشوُ يسكن الدرجةَ في `Surface.tsx` وقد يتبدّل، وخيطٌ
+            يُزاح بمقدارٍ مكتوبٍ بيدٍ يفترق عنه عند أوّل تبديل. */}
+        <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5">
+          <span className="stage-fill block h-full bg-teal" style={{ width: `${ready}%` }} />
+        </span>
       </Bar>
+
+      {/* ═══ الطوران — خرجا من الشريط إلى المتن ═══
+
+          كانا لسانَين داخلَ الشريط اللاصق، فيأخذان من سقفه ثلاثين بكسلا في
+          كلّ تمرير. وليسا ملاحةً دائمة: يُنقران مرّةً في الجلسة. فنزلا إلى
+          رأس المتن حيث يُقرآن مرّةً ويُتركان. */}
+      <TabBar
+        ariaLabel="طورا الشعبة"
+        className="mb-4"
+        items={[
+          { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
+          /* ع-١: «التشغيل» صار «مركزَ التواصل» — ولم يبقَ فيه إلّا المخاطبة. */
+          { id: "run", label: <span className="inline-flex items-center gap-2"><MessageSquarePlus className="h-4 w-4" aria-hidden="true" />مركز التواصل</span> },
+        ]}
+        value={phase}
+        onChange={setPhase}
+      />
 
       {phase === "prepare" && locked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
@@ -616,11 +659,13 @@ export default function CohortWorkspace() {
         </Inset>
       )}
 
-      {/* ─────────── ① الاسمُ والنبذة ─────────── */}
-      {phase === "prepare" && stage === "identity" && (
-        <Panel as="section">
-          <StageIntro stage="identity" />
+{/* ═══ لافتةُ الفصل — فوقَ المتن كلِّه لا داخلَ خطوةٍ واحدة ═══
 
+          كانت داخلَ الخطوة الأولى. وقد انطوت (ق٧)، ولافتةُ الفصل ليست من
+          الهُويّة أصلا: هي حدودُ ما يستطيعه في **كلّ** خطوة، وأشدُّ ما
+          تُطلب في «لقاءات مباشرة» حيث يجدول داخلَها. */}
+      {phase === "prepare" && (
+        <div className="mb-4">
           {/* ═══ الفصلُ حقيقةٌ تُقرأ، لا سؤالٌ يُسأل ═══
 
               كانت هنا شبكةُ فصولٍ ينقر فيها المدرّب. وصحّح صاحبُ المنصّة
@@ -658,8 +703,21 @@ export default function CohortWorkspace() {
               </span>
             </Inset>
           )}
+        </div>
+      )}
 
-          <div className="mt-5 grid gap-5">
+      {/* ═══ بابُ الهُويّة — لوحةٌ تُفتح من اسم الشعبة في الشريط ═══
+
+          كانت الخطوةَ الأولى في السلّم. ولم يبقَ فيها قرارٌ بعد ق١ و ق٥ —
+          اسمٌ ونبذةٌ لا غير — فدرجةٌ في سلّمٍ تُنفَق عليهما زينةٌ بلا مقابل.
+          وحقلاها لم يُحذفا: صارا يُفتحان من الاسم نفسِه، وهو أقربُ موضعٍ
+          يخطر فيه تعديلُه. ولوحةٌ مُحكَمةٌ (`Modal`) لا تُفقد التركيزَ ولا
+          مخرجَ الهروب. */}
+      {identityOpen && (
+        <Modal onClose={() => setIdentityOpen(false)} label="اسمُ الشعبة ونبذتُها" panelClassName="w-full max-w-2xl">
+          <Panel as="section">
+            <StageIntro stage="identity" />
+            <div className="mt-5 grid gap-5">
             <StaffField wide label="اسم الشعبة" hint="ما يراه المتعلّم في الكتالوج وفي شهادته. صِفِ الدفعةَ لا الدورة — «الدفعة الثالثة · مساء الأحد».">
               <input value={identity.title} onChange={(e) => setIdentity({ title: e.target.value })} disabled={locked} className={controlCls} />
             </StaffField>
@@ -693,9 +751,12 @@ export default function CohortWorkspace() {
 
               فلم يبقَ في الخطوة الأولى قرارٌ ليس من عمله: اسمُ شعبته
               ونبذتُها، وكلاهما يملكه. */}
-        </Panel>
+            <Button tone="ghost" className="mt-3" onClick={() => setIdentityOpen(false)}>إغلاق</Button>
+          </Panel>
+        </Modal>
       )}
 
+      
       {/* ─────────── ② المحاور والتطبيق ─────────── */}
       {phase === "prepare" && stage === "modules" && (
         <Panel as="section">

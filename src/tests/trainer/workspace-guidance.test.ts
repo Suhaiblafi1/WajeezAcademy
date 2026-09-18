@@ -21,8 +21,21 @@ const code = (p: string) => raw(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replac
 const WS = 'src/pages/trainer/CohortWorkspace.tsx'
 const KIT = 'src/components/FormKit.tsx'
 
-/** نصُّ خطوةٍ بعينها: من شرطِ تصييرها إلى شرطِ التي تليها */
+/* ═══ ولوحةُ الهُويّة لم تعد درجةً في السلّم (ق٧ · ١٧ سبتمبر ٢٠٢٦) ═══
+
+   انطوت درجتُها لمّا لم يبقَ فيها قرار، وصار حقلاها يُفتحان من اسم الشعبة
+   في الشريط. فحقلاها قائمان يُشرَحان كسائرهما — وإنّما يُقتطعان من بابهما
+   لا من شرطِ خطوة. والمحروسُ لم يتبدّل: **ما بقي مشروحٌ كلُّه**. */
+
+/** نصُّ لوحةٍ بعينها — درجةٌ في السلّم، أو بابُ الهُويّة */
 function stageBlock(src: string, stage: string, nextStage: string): string {
+  if (stage === 'identity') {
+    const from = src.indexOf('{identityOpen && (')
+    expect(from, 'لا بابَ لحقلَي الهُويّة').toBeGreaterThan(-1)
+    const to = src.indexOf('</Modal>', from)
+    expect(to, 'بابُ الهُويّة ليس لوحةً مُحكَمة').toBeGreaterThan(from)
+    return src.slice(from, to)
+  }
   const from = src.indexOf(`stage === "${stage}" &&`)
   const to = src.indexOf(`stage === "${nextStage}" &&`)
   expect(from, `لا خطوةَ ${stage}`).toBeGreaterThan(-1)
@@ -46,6 +59,8 @@ describe('لكلّ خطوةٍ رأسٌ يقول ما هي وكم تأخذ', () =
   })
 
   it('وكلُّ خطوةٍ تُصيّر رأسَها لا عنوانا مكتوبا بيدها', () => {
+    /* وبابُ الهُويّة يحمل رأسَه كذلك وإن لم يكن درجةً — فالمُقتطَعُ من
+       السلّم لا يُقتطَع من الشرح. */
     for (const s of ['identity', 'modules', 'resources', 'assignments', 'approval']) {
       expect(ws, `الخطوة ${s} بلا رأس`).toContain(`<StageIntro stage="${s}" />`)
     }
@@ -114,8 +129,8 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
 describe('الحقلُ في الخطوة التي يخصّها', () => {
   const ws = code(WS)
 
-  it('وصفُ الشعبة في «الاسمُ والنبذة» لا في «المحاور»', () => {
-    expect(stageBlock(ws, 'identity', 'modules'), 'الوصفُ ليس في الخطوة الأولى').toContain('content.summaryAr')
+  it('وصفُ الشعبة مع اسمها في بابهما — لا في «المحاور»', () => {
+    expect(stageBlock(ws, 'identity', 'modules'), 'الوصفُ ليس مع الاسم في بابه').toContain('content.summaryAr')
     expect(stageBlock(ws, 'modules', 'resources'), 'الوصفُ ما زال في «المحاور»').not.toContain('summaryAr')
   })
 
