@@ -31,6 +31,8 @@ import { CohortService } from '../services/cohort.service'
 import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
+import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
+import { isDigestHour, unbookedDigest } from '../../src/application/trainer/unbooked-digest'
 import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
 import { CalendlyWebhookService } from '../services/calendly-webhook.service'
 import {
@@ -61,7 +63,9 @@ const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_0
   /* ي-٦: ستّون رسالةً بمهلة ٦٠٠ms = نحوُ ستٍّ وثلاثين ثانيةً في الدورة،
      ودورتُها دقيقة. فدفعةُ مئتَي حسابٍ تخرج في نحو أربع دقائق — تحت حدّ
      المزوّد طوالَها، ولا تُمسك الدورةَ عن بقيّة الوظائف. */
-  outbox: 60 }
+  outbox: 60,
+  /* سقفُ ما يُقرأ من طابور الطلبات لملخّص الصباح — والطابورُ أصغرُ منه بكثير */
+  unbooked: 200 }
 
 /** تذكيرتان لكلّ جلسة: قبل يومٍ وقبل ساعة. المفتاحُ هو ما يمنع التكرار. */
 const REMINDERS = [
@@ -842,6 +846,128 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
   }
 }
 
+/* ═══════════ ملخّصُ الإدارة: من أتمّ طلبَه ولم يحجز ═══════════
+
+   تذكيرُ المتقدّم **يدويٌّ** بقرار صاحب المنصّة، ولا تُطارده آلة. وثمنُ
+   ذلك أن يتذكّر الموظّفُ أن يفتح الطابور — فإن نسي أسبوعا وقف أربعةٌ
+   ينتظرون رسالةً لا أحدَ يُرسلها. فهذه الوظيفةُ تُذكّر **الموظّفَ** وحدَه،
+   ولا تمسّ بريدَ متقدّمٍ واحد.
+
+   والشروطُ الثلاثةُ في رأس هذا الملفّ تقع هنا كما تقع على أخواتها:
+
+   ① **تُعاد بلا ضرر** — أثرُ العمل هو المانع: صفُّ إشعارٍ بهذا المفتاح
+      لهذا الموظّف في العشرين ساعةً الماضية يعني أنّ ملخّصَ اليوم خرج،
+      فيُترَك. وعشرون ساعةً تسع نافذةَ الصباح كلَّها ولا تبلغ صباحَ الغد.
+   ② **ومحدودةُ الأثر** — سقفٌ على من يُقرأ من الطابور، فلا تُقلع دورةٌ
+      على قاعدةٍ ضخمةٍ فتقرأ كلَّ طلبٍ في التاريخ.
+   ③ **وتُخبر بما فعلت** — ومن ذلك أن تقول حين تمتنع: ليس وقتَها، أو لا
+      قناةَ بريد، أو لا متأخّرَ اليوم.
+
+   والقرارُ **من يُعَدّ متأخّرا** ليس هنا بل في `unbooked-digest.ts`: هذا
+   الاستعلامُ يقرّب الصفوفَ (حالةٌ تقبل الحجزَ وطلبٌ مكتمل) والوحدةُ تقرّر.
+   ولو كُتب الشرطُ كاملا في SQL لَصار للقرار موضعان، وانحرف أحدُهما يوما
+   بلا أن يُحمِّر شيئا — فالمقابلةُ القائمةُ والعتبةُ يُقاسان في الوحدة
+   وحدَها، وهناك يُنقَضان. */
+
+/** أدوارُ من يقرأ طابورَ الطلبات — وهي أدوارُ بريد «وصل طلبٌ جديد» نفسُها */
+const DIGEST_ROLES = ['super_admin', 'academic_manager', 'operations_manager']
+
+/** مفتاحُ القالب — وهو أثرُ «خرج ملخّصُ اليوم» أيضا */
+const DIGEST_KEY = 'admin.trainer_unbooked'
+
+/** نافذةُ «سبق اليومَ»: تسع الصباحَ كلَّه ولا تبلغ صباحَ الغد */
+const DIGEST_WINDOW_MS = 20 * HOUR
+
+export async function digestUnbookedApplicants(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const quiet = (summaryAr: string): JobResult => ({
+    job: 'unbooked_digest', summaryAr, done: 0, failed: 0, ms: Date.now() - started,
+  })
+
+  /* الوقتُ يُسأل عنه في كلّ دورة: العاملُ يُقلع مع كلّ نشرة، ودورةٌ تُقاس
+     بالساعات منذ إقلاعه تُرسل ملخّصَ الصباح عصرا لمن نشر ظهرا. */
+  if (!isDigestHour(now)) return quiet('ليس وقتَ الملخّص — يخرج صباحا بتوقيت الأكاديمية')
+  /* والقناةُ قبل الناس: بلا بريدٍ موصولٍ لا يُكتب صفٌّ يُحرق بمحاولةٍ فاشلة */
+  if (!(await liveChannels(prisma)).includes('email')) {
+    return quiet('قناةُ البريد غيرُ موصولة — لا يخرج ملخّصٌ إلى أحد')
+  }
+
+  const candidates = await prisma.trainerApplication.findMany({
+    where: { status: { in: [...BOOKABLE_STATUSES] }, phase2CompletedAt: { not: null } },
+    orderBy: { phase2CompletedAt: 'asc' },
+    take: LIMITS.unbooked,
+    select: {
+      id: true, fullName: true, reference: true, status: true, phase2CompletedAt: true,
+      _count: { select: { interviews: { where: { canceledAt: null } } } },
+    },
+  })
+
+  /* ومن ذُكِّر متى ذُكِّر — من الأثر لا من عمودٍ يُستحدَث. والأحدثُ أوّلا،
+     فأوّلُ ما يُصادَف لكلّ طلبٍ هو آخرُ تذكيرٍ له. */
+  const ids = candidates.map((c) => c.id)
+  const reminders = ids.length === 0 ? [] : await prisma.auditEvent.findMany({
+    where: { action: 'trainer.interview.remind', entityType: 'trainer_application', entityId: { in: ids } },
+    orderBy: { createdAt: 'desc' },
+    select: { entityId: true, createdAt: true },
+  })
+  const lastRemind = new Map<string, Date>()
+  for (const e of reminders) if (e.entityId && !lastRemind.has(e.entityId)) lastRemind.set(e.entityId, e.createdAt)
+
+  const digest = unbookedDigest(
+    candidates.map((c) => ({
+      fullName: c.fullName,
+      reference: c.reference,
+      status: c.status,
+      liveInterviews: c._count.interviews,
+      completedAt: c.phase2CompletedAt,
+      remindedAt: lastRemind.get(c.id) ?? null,
+    })),
+    now,
+  )
+  /* صباحٌ لا متأخّرَ فيه: لا رسالة. ورسالةٌ تقول «لا شيء» كلَّ يومٍ تُعلّم
+     قارئَها أن يمرَّ عليها — فتضيع يومَ تحمل خبرا. */
+  if (!digest) return quiet('لا متقدّمَ تأخّر عن حجز موعده')
+
+  const holders = await prisma.userRole.findMany({
+    where: { roleId: { in: DIGEST_ROLES }, user: { status: 'active' } },
+    select: { userId: true },
+  })
+  const staff = [...new Set(holders.map((h) => h.userId))]
+  if (staff.length === 0) return quiet(`${digest.count} لم يحجزوا — ولا حاملَ لأدوار المراجعة يصله الملخّص`)
+
+  const notifications = new NotificationService(prisma)
+  let done = 0
+  let failed = 0
+  let already = 0
+  for (const userId of staff) {
+    const sentToday = await prisma.notification.count({
+      where: { userId, templateKey: DIGEST_KEY, queuedAt: { gte: new Date(now.getTime() - DIGEST_WINDOW_MS) } },
+    })
+    if (sentToday > 0) { already += 1; continue }
+    try {
+      const row = await notifications.notify({
+        userId, channel: 'email', templateKey: DIGEST_KEY, audience: 'staff',
+        title: digest.titleAr, body: digest.bodyAr,
+        data: { count: digest.count, oldestDays: digest.oldestDays },
+      })
+      if (row?.status === 'sent') done += 1
+      else failed += 1
+    } catch {
+      /* سقوطُ واحدٍ لا يمنع بقيّةَ الإدارة من قراءة الملخّص */
+      failed += 1
+    }
+  }
+
+  return {
+    job: 'unbooked_digest',
+    summaryAr: `${digest.titleAr} (أقدمُهم ${digest.oldestAr})`
+      + ` — وصل ${done} من الإدارة`
+      + (failed > 0 ? `، وسقط ${failed} عند المزوّد` : '')
+      + (already > 0 ? `، وسبق اليومَ ${already}` : ''),
+    done, failed, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسالُ ما في طابور البريد' },
@@ -858,6 +984,9 @@ export const JOBS = [
   /* كلَّ خمس دقائق: من حجز مقابلتَه يظهر حجزُه في طابور المراجعة بعد دقائق
      لا بعد يوم — وهي نافذةُ ردٍّ مقبولةٌ على حجزِ موعد. */
   { key: 'calendly_interview_sync', everyMs: 5 * 60_000, run: syncCalendlyInterviews, titleAr: 'مزامنةُ مقابلات Calendly' },
+  /* كلَّ ساعةٍ لا كلَّ يوم: الوظيفةُ نفسُها تسأل عن الساعة، فدورةٌ يوميّةٌ
+     تُقاس منذ الإقلاع تُخطئ نافذةَ الصباح كلَّما نُشرت نشرةٌ بعد الظهر. */
+  { key: 'unbooked_digest', everyMs: HOUR, run: digestUnbookedApplicants, titleAr: 'ملخّصُ من لم يحجز موعده' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },

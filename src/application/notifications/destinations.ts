@@ -119,6 +119,9 @@ const STAFF: Table = {
   'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلبَ الانضمام' },
+  /* وملخّصُ من لم يحجز — الشاشةُ نفسُها، وفيها مرشّحُ «لم يحجز موعدا» وزرُّ
+     التذكير. فالزرُّ يضع قارئَه حيث يعمل لا حيث يقرأ الخبرَ ثانيةً. */
+  'admin.trainer_unbooked': { path: '/admin/trainers', ctaAr: 'افتح طابورَ الطلبات' },
   'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلبَ المتعلّم' },
   'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلبَ التأهيل' },
   'advisor.case.assigned': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
