@@ -63,10 +63,12 @@ const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
 const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDepartures'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
+const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const SharedDossier = lazy(() => import('./pages/SharedDossier'))
+const ContractSign = lazy(() => import('./pages/ContractSign'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
@@ -195,6 +197,8 @@ export default function App() {
           {/* سجلُّ المتقدّم برابطٍ باسمِ قارئه — بلا حساب، والرابطُ هو الهويّة.
               وهو ما حلّ محلَّ الملفّ المطبوع (قرارُ ١٣ سبتمبر ٢٠٢٦). */}
           <Route path="/r/:token" element={<SharedDossier />} />
+          {/* بابُ توقيعِ العقد — عامٌّ كأخيه، والرمزُ هو الهويّة */}
+          <Route path="/c/:token" element={<ContractSign />} />
           {/* حالةُ طلب الانضمام لصاحب الحساب — بوّابةُ المتقدّم الوحيدة */}
           <Route element={<RequireRole allow={APPLICANT_ROLES} />}>
             <Route path="/join-trainer/status" element={<ApplicantStatus />} />
@@ -305,6 +309,7 @@ export default function App() {
                 ولا تلتقيان إلّا في `super_admin` — فكانت الماليةُ تملك المفتاحَ
                 ولا تملك الباب. */}
             <Route path="/admin/trainer-compensation" element={<AdminTrainerCompensation />} />
+            <Route path="/admin/trainer-contracts" element={<AdminTrainerContracts />} />
             <Route path="/admin/catalog" element={<CatalogAdmin />} />
             <Route path="/admin/authoring" element={<AdminAuthoring />} />
             <Route path="/admin/publishing" element={<PublishingBoard />} />

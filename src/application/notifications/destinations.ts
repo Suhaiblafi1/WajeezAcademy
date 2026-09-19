@@ -124,6 +124,10 @@ const STAFF: Table = {
   'admin.trainer_unbooked': { path: '/admin/trainers', ctaAr: 'افتح طابورَ الطلبات' },
   'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلبَ المتعلّم' },
   'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلبَ التأهيل' },
+  /* والعقدُ وُقّع أو اعتُذر عنه — وكلاهما ينتظر عملا في شاشة العقود:
+     الموقَّعُ يُراجَع توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. */
+  'trainer.contract.signed': { path: '/admin/trainer-contracts', ctaAr: 'راجِع التوقيعَ وفعّلْ حسابَه' },
+  'trainer.contract.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سببَ الاعتذار' },
   'advisor.case.assigned': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
   'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفِّذ ما اختاره' },
