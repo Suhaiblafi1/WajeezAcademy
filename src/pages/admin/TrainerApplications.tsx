@@ -24,6 +24,7 @@ import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
+import { mailBatchOutcomeAr } from "@/application/notifications/delivery";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
@@ -315,12 +316,23 @@ export default function TrainerApplications() {
     }
   };
 
-  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+  /* ═══ والخبرُ يتبع الجواب لا النيّة ═══
+
+     كان `doneMsg` نصّا ثابتا يُعرض بعد كلّ فعلٍ نجح نداؤه. ومسالكُ البريد
+     تردّ حالَ رسالتها (`emailDelivery`)، فكانت تُرمى: تُعرض «أُرسل» ولو ردّ
+     الخادمُ أنّ شيئا لم يخرج. فصار المُنادي يستطيع أن يقرأ الجوابَ ويصوغ
+     الخبرَ منه — و`mailOutcomeAr` تكتب الجملةَ فلا تُعاد صياغتُها في كلّ
+     زرّ. ونبرةُ الخبر تتبع `ok`: ما لم يخرج لا يُعرض أخضرَ. */
+  const act = async (
+    fn: () => Promise<unknown>,
+    doneMsg: string | ((result: unknown) => { ar: string; ok: boolean }),
+  ) => {
     if (busy) return;
     setBusy(true);
     try {
-      await fn();
-      toast(doneMsg);
+      const result = await fn();
+      const said = typeof doneMsg === "string" ? { ar: doneMsg, ok: true } : doneMsg(result);
+      if (said.ok) toast(said.ar); else toastError(said.ar);
       if (selected) await openDetail(selected.id);
       await load();
     } catch (err) {
@@ -401,14 +413,20 @@ export default function TrainerApplications() {
   const bulkRemind = async () => {
     if (busy || sel.size === 0) return;
     setBusy(true); setBulkProgress("");
+    /* حالُ بريد كلّ رسالةٍ يُجمع — فدفعةٌ «نُفّذت» وبريدُها لم يخرج خبرٌ كاذب */
+    const deliveries: (string | null)[] = [];
     const outcome = await runBulk(
       [...sel],
-      (id) => apiPost(`/api/admin/trainer-applications/${id}/booking-reminder`, {}),
+      async (id) => {
+        const r = await apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/booking-reminder`, {});
+        deliveries.push(r.emailDelivery ?? null);
+      },
       (done, total) => setBulkProgress(`${done} من ${total}`),
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    toast(bulkMessage(outcome, "أُرسل التذكير"));
+    const said = mailBatchOutcomeAr(bulkMessage(outcome, "أُرسل التذكير"), deliveries);
+    if (said.ok) toast(said.ar); else toastError(said.ar);
     setBusy(false);
     await load();
   };
