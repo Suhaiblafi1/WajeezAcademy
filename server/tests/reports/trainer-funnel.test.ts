@@ -10,6 +10,8 @@
       يمنعه) لا يُحسب أثرا للتذكير، وإلّا نسبنا إلى الرسالة ما ليس لها.
    ③ **و«جرى اللقاء» لا تعني نتيجةً سُجّلت وحدَها** — المُقابِلُ ينسى
       التسجيل، وموعدٌ مضى ولم يُلغَ لقاءٌ جرى.
+   ⑤ **ومن لم يحضر ليس منهم** — وهو الذي كان يقع في الشقّ الثاني حرفا
+      (موعدٌ مضى ولم يُلغَ) فيُعَدّ لقاءً وقع، ويُقاس تسرُّبُ الغياب صفرا.
    ④ **وكلُّ صفٍّ يقول أساسَ نسبته** — فنسبةٌ من المذكَّرين لا تُقرأ من الكلّ. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -102,23 +104,43 @@ beforeAll(async () => {
     data: { applicationId: hired.id, fromStatus: 'academic_review', toStatus: 'active', createdAt: ago(18) },
   })
 
+  /* ═══ حجز ولم يحضر — والفرقُ بين «حجز» و«جرى اللقاء» ═══
+
+     موعدُه مضى ولم يُلغَ، فكان يقع في شقِّ «موعدٌ مضى ولم يُلغَ» حرفا
+     ويُعَدّ لقاءً وقع. وهو بعينه التسرُّبُ الذي لا يُرى. */
+  const ghost = await application('ghost', { status: 'under_review', completedAgo: 14 })
+  await prisma.trainerInterview.create({
+    data: { applicationId: ghost.id, scheduledAt: ago(3), createdAt: ago(10), mode: 'remote', outcome: 'no_show' },
+  })
+
   funnel = (await reports.run('trainer-funnel', {})).rows
 }, 240_000)
 
 describe('قمعُ توظيف المدرّبين', () => {
   it('الأساسُ الطلبُ المكتمل — والمسوّدةُ خارجَه', () => {
     /* خمسةٌ أتمّوا، والسادسُ مسوّدة. ولو دخلت لانخفضت كلُّ نسبةٍ بعدها. */
-    expect(row(funnel, 'طلبٌ مكتمل').count).toBe(6)
+    expect(row(funnel, 'طلبٌ مكتمل').count).toBe(7)
     expect(row(funnel, 'طلبٌ مكتمل').pct).toBe(100)
   })
 
   it('ويُعدّ من حجز ومن جرى لقاؤه ومن اعتُمد — كلٌّ بنسبته', () => {
-    expect(row(funnel, 'حجز لقاءَ التعارف').count).toBe(4)
-    expect(row(funnel, 'حجز لقاءَ التعارف').pct).toBe(66.7)
-    /* الأربعةُ مواعيدُهم مضت ولم تُلغَ — فجرت وإن لم تُسجَّل نتيجةُ ثلاثة */
+    expect(row(funnel, 'حجز لقاءَ التعارف').count).toBe(5)
+    expect(row(funnel, 'حجز لقاءَ التعارف').pct).toBe(71.4)
+    /* أربعةٌ مواعيدُهم مضت ولم تُلغَ — فجرت وإن لم تُسجَّل نتيجةُ ثلاثة.
+       والخامسُ حجز ولم يحضر، فليس منهم. */
     expect(row(funnel, 'جرى اللقاء').count).toBe(4)
     expect(row(funnel, 'اعتُمد مدرّبا').count).toBe(1)
-    expect(row(funnel, 'اعتُمد مدرّبا').pct).toBe(16.7)
+    expect(row(funnel, 'اعتُمد مدرّبا').pct).toBe(14.3)
+  })
+
+  it('⑤ ومن لم يحضر لا يُعَدّ لقاءً جرى — وله صفُّه ونسبتُه من حجز', () => {
+    expect(row(funnel, 'لم يحضر اللقاء').count).toBe(1)
+    /* الأساسُ «من حجز» لا «من المكتمل»: من لم يحجز لا يُنسَب إليه غياب */
+    expect(row(funnel, 'لم يحضر اللقاء').base).toBe('من حجز')
+    expect(row(funnel, 'لم يحضر اللقاء').pct).toBe(20)
+    /* والمجموعُ يُقرأ: خمسةٌ حجزوا، أربعةٌ جرى لقاؤهم، وواحدٌ غاب */
+    expect(row(funnel, 'جرى اللقاء').count + row(funnel, 'لم يحضر اللقاء').count)
+      .toBe(row(funnel, 'حجز لقاءَ التعارف').count)
   })
 
   it('وأثرُ التذكير: من ذُكّر، ومن حجز بعده — ونسبتُه من المذكَّرين', () => {

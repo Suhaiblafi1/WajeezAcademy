@@ -4,6 +4,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import ExcelJS from 'exceljs'
+import { NO_SHOW, interviewHeld } from '../../src/application/trainer/interview-outcome'
 
 export interface ReportFilter {
   from?: Date
@@ -361,14 +362,17 @@ export class ReportsService {
           }
           const firstBooking = (a: (typeof apps)[number]) =>
             a.interviews.map((i) => i.createdAt).sort((x, y) => x.getTime() - y.getTime())[0] ?? null
-          /* «جرى اللقاء» — نتيجةٌ سُجّلت، أو موعدٌ مضى ولم يُلغَ. والثاني لازم:
-             المُقابِلُ قد ينسى تسجيل النتيجة، ولقاءٌ جرى لا يصير لم يجرِ. */
-          const held = (a: (typeof apps)[number]) =>
-            a.interviews.filter((i) => i.outcome !== null || (!i.canceledAt && i.scheduledAt < now))
+          /* «جرى اللقاء» — القرارُ في `interview-outcome.ts` لا هنا: نتيجةٌ
+             سُجّلت أو موعدٌ مضى ولم يُلغَ، **والغيابُ يخرج**. وكان الغيابُ
+             يقع في الشقّ الثاني حرفا (موعدٌ مضى ولم يُلغَ) فيُعَدّ لقاءً وقع،
+             ويُقاس التسرُّبُ صفرا وهو لا يُرى. */
+          const held = (a: (typeof apps)[number]) => a.interviews.filter((i) => interviewHeld(i, now))
+          const missed = (a: (typeof apps)[number]) => a.interviews.filter((i) => i.outcome === NO_SHOW)
 
           const submitted = apps.length
           const booked = apps.filter((a) => a.interviews.length > 0)
           const interviewed = apps.filter((a) => held(a).length > 0)
+          const noShow = apps.filter((a) => missed(a).length > 0)
           const approved = apps.filter((a) => a.status === 'active')
           const reminded = apps.filter((a) => firstReminder.has(a.id))
           const bookedAfterReminder = reminded.filter((a) => {
@@ -399,6 +403,16 @@ export class ReportsService {
                 const h = held(a).map((i) => i.scheduledAt).sort((x, y) => x.getTime() - y.getTime())[0]
                 return b && h ? [days(b, h)] : []
               })),
+            },
+            /* ═══ والغيابُ صفٌّ مستقلٌّ لا نقصٌ في صفٍّ آخر ═══
+
+               «حجز ولم يجرِ لقاؤه» تسرُّبٌ من نوعٍ آخر: لا هو رفضٌ ولا هو
+               انتظار، بل موعدٌ ضاع على الطرفَين. وأساسُه **من حجز** لا من
+               المكتمل: من لم يحجز لا يُنسَب إليه غياب. */
+            {
+              stage: 'لم يحضر اللقاء', count: noShow.length, pct: pct(noShow.length, booked.length),
+              base: 'من حجز',
+              medianDays: null,
             },
             {
               stage: 'اعتُمد مدرّبا', count: approved.length, pct: pct(approved.length, submitted),

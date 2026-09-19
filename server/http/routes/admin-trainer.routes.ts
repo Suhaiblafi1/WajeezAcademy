@@ -15,6 +15,7 @@ import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
 import { analyzeImpact } from '../../services/impact.service'
+import { INTERVIEW_OUTCOME_KEYS } from '../../../src/application/trainer/interview-outcome'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -175,7 +176,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'تسجيل نتيجة مقابلة' },
   }, async (req) => {
     const { interviewId } = z.object({ interviewId: z.string().uuid() }).parse(req.params)
-    const body = z.object({ outcome: z.enum(['passed', 'hold', 'failed']), notes: z.string().max(1000).optional() }).parse(req.body)
+    /* والقائمةُ من المعجم المشترك: زرٌّ في الشاشة لا يقبله الخادمُ عطبٌ
+       يُرى عند أوّل ضغطة، وقيمةٌ يقبلها الخادمُ بلا عنوانٍ عربيٍّ تُعرض
+       لاتينيّةً في بطاقة المقابلة. */
+    const body = z.object({
+      outcome: z.enum(INTERVIEW_OUTCOME_KEYS), notes: z.string().max(1000).optional(),
+    }).parse(req.body)
     return review.recordInterviewOutcome(interviewId, req.auth!.userId, body.outcome, body.notes)
   })
 
