@@ -5,7 +5,7 @@
  * مكوّن — فتصديرُها من `AdminLayout.tsx` يكسر التحديثَ الساخن.
  */
 
-import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Coins, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
 
 /* ═══ سبعُ مجموعاتٍ لا ثلاثةُ أبواب ═══
 
@@ -93,12 +93,44 @@ export const allSections: AdminNavSection[] = [
         descAr: "محاكاةُ المحرّك التشخيصيّ: أيُّ مسارٍ يُرشَّح لأيّ حال، ولمَ" },
     ],
   },
+  /* ═══ ولماذا انقسم «المدرّبون» مجموعتين ═══
+
+     كانت مجموعةً واحدةً بخمسة بنود — وهو سقفُ الحارس (`admin-nav.test.ts`
+     يردُّ ما نقص عن اثنين وما زاد عن خمسة، كي لا تصير القائمةُ جدارا).
+     وجاءت «العقود» سادسةً.
+
+     ورفعُ السقف أسهلُ الأجوبة وأسوأُها: الحارسُ يقيس أنّ التصنيفَ ما زال
+     يُقرأ بالعين، ومن يرفعه ليمرّ إنّما يُسكت المقياسَ لا يُصلح المقيس.
+
+     فانقسمت على **معنى** لا على عدد: بابٌ لمن يدخل — الطلبُ ثمّ العقدُ ثمّ
+     الأجر، وهو تسلسلُ يومٍ واحد؛ وبابٌ لمن دخل — يُسنَد ويُعرض ويرحل.
+
+     والأتعابُ تبقى تحت «المدرّبين» كما قُرّر في ١٦ سبتمبر — لم تعد إلى
+     «التشغيل والمالية»، وإنّما لزمت أختَها: متنُ العقد يحمل الأجرَ نفسَه. */
   {
-    title: "المدرّبون",
+    title: "المدرّبون — الانضمامُ والتعاقد",
     icon: Presentation,
     items: [
       { to: "/admin/trainers", label: "طلبات المدربين", icon: UserPlus, need: "trainer.applications.view",
         descAr: "طابورُ الانضمام: الملفّ والمقابلةُ والتأهيلُ ثمّ القبول" },
+      /* ص-١: العقدُ بيدِ من يقرّر لا بيدِ من يدفع — `trainer.contract.manage`
+         عند المدير الأكاديميّ، و`trainer.compensation.manage` تبقى للماليّة. */
+      { to: "/admin/trainer-contracts", label: "العقود", icon: FileSignature, need: "trainer.contract.manage",
+        descAr: "وثيقةٌ تُركَّب من أجره ودوراته المؤهَّل لها، وتُجمَّد ثمّ تُوقَّع" },
+      /* ═══ ولماذا الأتعابُ هنا لا في «التشغيل والمالية» ═══
+
+         كانت هناك لأنّ صلاحيّتَها `trainer.compensation.manage` ماليّة،
+         فرسم الحارسُ التصنيفَ. والصلاحيةُ لم تتغيّر حرفا — ترشيحُ القائمة
+         يخفيها عمّن لا يملكها كما كان. الذي تغيّر أنّ من يسأل «أين أمورُ
+         المدرّبين؟» يجدها كلَّها في موضعٍ واحد. */
+      { to: "/admin/trainer-compensation", label: "أتعاب المدربين", icon: HandCoins, need: "trainer.compensation.manage",
+        descAr: "قاعدةُ الأتعاب وكشوفُ المستحقّات — وبلا قاعدةٍ لا كشفَ يُولَّد" },
+    ],
+  },
+  {
+    title: "المدرّبون — التشغيل",
+    icon: UserCheck,
+    items: [
       /* ج-١: «أجد صعوبةً بالبحث عن الدورات» — بابٌ يبدأ من الإنسان. وصلاحيّتُه
          `trainer.assign`: هي ما يفعله، والتأهيلُ في مكانه محروسٌ بمساره. */
       { to: "/admin/assign-by-trainer", label: "إسنادٌ من المدرّب", icon: UserCheck, need: "trainer.assign",
@@ -111,14 +143,6 @@ export const allSections: AdminNavSection[] = [
          والنقلُ إسناد، وهما عملُ هذا الباب لا عملُ الماليّة. */
       { to: "/admin/trainer-departures", label: "رحيلُ مدرّب", icon: UserMinus, need: "trainer.assign",
         descAr: "بديلٌ ثمّ نظيرٌ ثمّ اختيارُ صاحبه — فلا شعبةَ تبقى بلا مدرّب" },
-      /* ═══ ولماذا الأتعابُ هنا لا في «التشغيل والمالية» ═══
-
-         كانت هناك لأنّ صلاحيّتَها `trainer.compensation.manage` ماليّة،
-         فرسم الحارسُ التصنيفَ. والصلاحيةُ لم تتغيّر حرفا — ترشيحُ القائمة
-         يخفيها عمّن لا يملكها كما كان. الذي تغيّر أنّ من يسأل «أين أمورُ
-         المدرّبين؟» يجدها كلَّها في موضعٍ واحد. */
-      { to: "/admin/trainer-compensation", label: "أتعاب المدربين", icon: HandCoins, need: "trainer.compensation.manage",
-        descAr: "قاعدةُ الأتعاب وكشوفُ المستحقّات — وبلا قاعدةٍ لا كشفَ يُولَّد" },
     ],
   },
   {
