@@ -6,6 +6,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
+import { VERIFY_LINK_TTL_MS } from '../../src/application/links/verification-window'
 
 /** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
 const LEARNER_ROLE = 'learner'
@@ -72,8 +73,11 @@ export const SIGNUP_MAX_PER_DAY = 100
 export const SIGNUP_MAX_TAKEN = 10
 export const SIGNUP_TAKEN_WINDOW_MS = 15 * 60_000
 const GENERIC_LOGIN_FAIL = 'البريد أو كلمة المرور غير صحيحة'
-/** مهلة رابط توثيق البريد — يومان: أطول من مهلة الاستعادة لأنه ليس إجراء طوارئ */
-const EMAIL_VERIFY_TTL_MS = 48 * 3600_000
+/** مهلة رابط توثيق البريد — أربعٌ وعشرون ساعة، وسقفُها ونصُّها في
+    `src/application/links/verification-window.ts`. كانت يومَين، ونقضها قرارُ
+    صاحب المنصّة (١٩ سبتمبر ٢٠٢٦) مع أختها في طلب الانضمام: لا رابطَ يبقى
+    مفتوحا أكثرَ من يوم. ومن فاتته المهلةُ يطلب رابطا جديدا من حسابه. */
+const EMAIL_VERIFY_TTL_MS = VERIFY_LINK_TTL_MS
 
 export interface AuthContext {
   userId: string

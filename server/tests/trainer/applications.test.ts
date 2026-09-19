@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { buildApp } from '../../http/app'
+import { VERIFY_LINK_TTL_MS } from '../../../src/application/links/verification-window'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -101,9 +102,27 @@ describe('دورة طلب المدرب', () => {
     expect(row.contactChannel).toBe('phone')
     expect(row.emailVerifyTokenHash).not.toBeNull()
 
+    /* ═══ ولا يعيش الرابطُ أكثرَ من يوم (١٩ سبتمبر ٢٠٢٦) ═══
+
+       كان سبعةَ أيّام، ونقضه صاحبُ المنصّة: «الرابط صالح لمدّة ٧ أيّام غير
+       احترافيّة، يجب أن يكون لـ٢٤ ساعة بحدّ أقصى». والفحصُ هنا على اللحظة
+       **المكتوبة في القاعدة** لا على ثابتٍ يُقرأ: الرقمُ والجملةُ يُحرسان
+       معا في المسار السريع (`src/tests/verification-link-window.test.ts`)،
+       وهذا يشهد أنّ ما كُتب للطلب فعلا يتبعهما. */
+    expect(
+      row.emailVerifyExpiresAt!.getTime() - Date.now(),
+      'رابطُ توثيق طلب الانضمام يعيش أكثرَ من أربعٍ وعشرين ساعة',
+    ).toBeLessThanOrEqual(VERIFY_LINK_TTL_MS + 5_000)
+
     /* الرمزُ يصل بالبريد — وإعادةُ الإرسال تُصدر رمزا جديدا يُفحص هنا */
     const resent = await apps.resendVerification(phase1.email)
     expect(resent.tokenForDelivery).toBeTruthy()
+    /* وإعادةُ الإرسال تُصدر رمزا بمهلته لا بمهلةٍ أطول */
+    const reissued = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference } })
+    expect(
+      reissued.emailVerifyExpiresAt!.getTime() - Date.now(),
+      'الرمزُ المعادُ إرسالُه يعيش أكثرَ من السقف',
+    ).toBeLessThanOrEqual(VERIFY_LINK_TTL_MS + 5_000)
     await expect(apps.verifyEmail(reference, 'wrong-token-xx')).rejects.toMatchObject({ code: 'invalid_token' })
     const first = await apps.verifyEmail(reference, resent.tokenForDelivery!)
     expect(first).toEqual({ status: 'submitted', alreadyVerified: false })

@@ -12,7 +12,7 @@ import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
-import { bookingReminderMail, decisionMailFor } from './trainer-decision-mail'
+import { bookingReminderMail, decisionMailFor, rejectionUndoneMail } from './trainer-decision-mail'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { LIVE_INTERVIEW, revertWhenNoLiveInterview } from './trainer-interview-state'
@@ -393,8 +393,13 @@ export class TrainerReviewService {
   async decide(applicationId: string, actorId: string, action:
     | 'approve'
     | 'move_to_review' | 'request_info' | 'shortlist' | 'request_demo' | 'academic_review'
-    | 'conditionally_approve' | 'waitlist' | 'reject'
-    | 'start_onboarding' | 'activate' | 'reinstate', note?: string) {
+    | 'conditionally_approve' | 'waitlist' | 'reject' | 'undo_reject'
+    | 'start_onboarding' | 'activate' | 'reinstate', note?: string): Promise<{
+    /* حالُ البريد حيث يكون للقرار بريدٌ يُقرأ خبرُه في الشاشة — و«تمّ» لا
+       تُقال عن بريدٍ لم يخرج (`src/application/notifications/delivery.ts`).
+       وهي اليومَ للتراجع وحدَه: بقيّةُ القرارات لا تقرأ الشاشةُ حالَ بريدها. */
+    emailDelivery?: DirectMailStatus
+  }> {
     /* حارس التضارب: لا يجوز لأحد اتخاذ قرار في طلب بريده هو */
     const app = await this.prisma.trainerApplication.findUnique({ where: { id: applicationId } })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
@@ -420,6 +425,8 @@ export class TrainerReviewService {
       conditionally_approve: 'conditionally_approved',
       waitlist: 'waitlisted',
       reject: 'rejected',
+      /* التراجعُ عن الردّ — يعود إلى الطابور من أوّله لا إلى ما رُدّ منه */
+      undo_reject: 'under_review',
       /* ─────────── آخرُ السلسلة ───────────
 
          كانت السلسلةُ تنتهي عند «قبول مشروط»، ولا زرَّ بعده. فمن اجتاز
@@ -467,6 +474,21 @@ export class TrainerReviewService {
          قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): المعتمَدُ مؤهَّلٌ لكلّ ما ذكره في
          طلبه، وتضيف الإدارةُ فوقَه ما تراه. */
       await this.syncQualificationsFromApplication(profile.id, actorId)
+    }
+
+    /* ═══ ولا يُنقض ردٌّ بلا كلمةٍ تُقال لصاحبه ═══
+
+       الشرطُ هنا لا في الشاشة وحدَها: مسارُ الإدارة يُنادى من غيرها (دفعةً
+       أو بأداة)، وقرارٌ ينقلب على صاحبه مرّتين بلا سببٍ أسوأُ من قرارٍ واحد.
+       والحدُّ عشرةُ أحرف: «خطأ» و«عدنا» لا تشرحان شيئا لمن يقرؤها بعد
+       اعتذار. والنصُّ يُرسَل كما كُتب — فهو مكتوبٌ له لا للأثر. */
+    const undoReason = action === 'undo_reject' ? (note ?? '').trim() : ''
+    if (action === 'undo_reject' && undoReason.length < 10) {
+      throw new AuthError(
+        'reason_required',
+        'اكتب سببَ التراجع عن الرفض — يصل المتقدّمَ بنصّه، ولا يُنقض قرارٌ في صمت',
+        422,
+      )
     }
 
     await this.apps.transition(applicationId, targets[action], actorId, note)
@@ -551,6 +573,25 @@ export class TrainerReviewService {
         fullName: app.fullName, reference: app.reference, noteAr: note,
       })
     }
+
+    /* ═══ والتراجعُ يصل صاحبَه بسببه — وإلّا فهو تصحيحٌ في دفترنا لا عنده ═══
+
+       من رُدّ طلبُه قرأ اعتذارا وأغلق الباب. فلو نُقض الردُّ في القاعدة وحدَها
+       لبقي هو على خبره الأوّل: لا يتفقّد صفحةَ حالةٍ أغلقها، ولا يحجز موعدا
+       لا يعلم أنّه فُتح له. والرسالةُ تحمل السببَ بنصّه بقرار صاحب المنصّة —
+       وهي الموضعُ الوحيدُ الذي يسافر فيه ما يكتبه المراجعُ في هذا المسار. */
+    if (action === 'undo_reject') {
+      const mail = rejectionUndoneMail({
+        fullName: app.fullName, reference: app.reference, noteAr: undoReason,
+        statusUrl: `${publicSiteUrl()}/join-trainer`,
+      })
+      const sent = await sendDirectEmail(this.prisma, { to: app.email, subject: mail.subject, ...renderMail(mail.doc) })
+      /* والحالُ يُعاد إلى الشاشة لا يُبتلع: القرارُ وقع، وما قد لا يقع خروجُ
+         البريد وحدَه — فمن رُفع رفضُه ولم يبلغه الخبرُ يُبلَّغ بيد من قرّر. */
+      return { emailDelivery: sent.status }
+    }
+
+    return {}
   }
 
   /* ═══ قرارٌ يصل صاحبَه — ولا يُسقط القرارَ إن أخفق البريد ═══
