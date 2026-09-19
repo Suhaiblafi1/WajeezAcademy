@@ -177,6 +177,21 @@ const LOW: readonly string[] = [
   'trainer.interview.self_canceled',
   'trainer.dossier_link.create', 'trainer.dossier_link.revoke',
   'trainer.dossier_link.rotate', 'trainer.dossier_link.send',
+  /* ═══ وتركيبُ العقد ليس إرسالَه ═══
+
+     صُنّفا أوّلا `high`، فحمّر الحارسُ الذي يشترط أن يبلغ العاليَ إنسان —
+     وكان محقّا، لكنّ الجوابَ لم يكن إشعارا بل تصحيحَ الفعل نفسِه.
+
+     فالتركيبُ يُخرج **مسودّةً مجمَّدةً لم يرَها أحد**: لا رابطَ بعد، ولا
+     بريدَ خرج، ولا حالةَ طلبٍ تحرّكت. وإخبارُ المدرّب عندها بأنّ «عقدا
+     جُهّز له» وعدٌ لا يقابله فعل — يفتح بوّابتَه فلا يجد شيئا.
+
+     وهو كـ`trainer.dossier_link.create` سواءً بسواء: وثيقةٌ تُهيَّأ ثمّ
+     تُرسَل، والخبرُ مع الإرسال لا مع التهيئة.
+
+     **والإرسالُ والتوقيعُ (المرحلة ٢) عاليان بالضرورة**، ويصلان صاحبَهما
+     بريدا — فهناك يقع ما يمسّ وصولَه ومالَه. */
+  'trainer.contract.compose', 'trainer.contract.revoke',
   'trainer.change.submit', 'trainer.change.decide',
   'trainer.change.publish', 'trainer.change.apply_catalog',
   'trainer.course_proposal.create', 'trainer.course_proposal.update',

@@ -259,9 +259,81 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.createTrainerDirectly(req.auth!.userId, body))
   })
 
+  /* ═══════════ العقود — تركيبٌ ومعاينةٌ وإلغاء ═══════════
+
+     خلف `trainer.contract.manage` لا `trainer.compensation.manage`: من يقرّر
+     «هذا الشخصُ أريده» هو من يتعاقد، والماليّةُ تبقى وحدَها من يضبط الأجر.
+     والتصميمُ في docs/superpowers/specs/2026-09-19-trainer-contract-design.md */
+
+  const requiredDocumentsSchema = z.array(z.object({
+    kind: z.string().min(1).max(40),
+    labelAr: z.string().trim().min(1).max(120),
+    required: z.boolean(),
+  })).max(12)
+
+  const composeBody = z.object({
+    title: z.string().trim().min(3).max(160),
+    courseIds: z.array(z.string()).optional(),
+    requiredDocuments: requiredDocumentsSchema,
+    hoursNoteAr: z.string().trim().max(500).nullish(),
+    rateWaivedReasonAr: z.string().trim().max(500).nullish(),
+  })
+
+  app.get('/api/admin/trainer-contracts', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'قائمةُ العقود، ومن ينتظر عقدا ولا عقدَ له' },
+  }, async () => review.listContracts())
+
+  /* المتنُ في نداءٍ مستقلّ: القائمةُ تحمل عشراتِ الصفوف، ومتنُ العقد آلافُ
+     الأحرف. فحملُه في القائمة يجعل كلَّ فتحةِ شاشةٍ تنقل ما لا يُقرأ. */
+  app.get('/api/admin/trainer-contracts/:contractId/body', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'متنُ العقد المجمَّد كما وُقّع عليه' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    return review.contractBody(contractId)
+  })
+
+  app.get('/api/admin/trainer-applications/:id/contract-prefill', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'معطياتُ شاشة تركيب العقد — الأجرُ والدوراتُ المؤهَّل لها وما ينقص من هويّة الأكاديميّة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return review.contractPrefill(id)
+  })
+
+  /* المعاينةُ لا تُحفَظ ولا تُغيّر حالةً — ولذلك تعمل ولو نقصت هويّةُ
+     الأكاديميّة: الموظّفُ يرى الوثيقةَ ويرى مواضعَ النقص قبل أن يُطلب سدُّها. */
+  app.post('/api/admin/trainer-applications/:id/contract-preview', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'معاينةُ متن العقد كما يراه المدرّب — بلا حفظ' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = composeBody.parse(req.body)
+    return { bodyAr: await review.previewContract(id, body) }
+  })
+
+  app.post('/api/admin/trainer-applications/:id/contracts/compose', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'تركيبُ العقد وتجميدُ متنه — ينقل غيرَ النشط إلى contract_pending' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = composeBody.parse(req.body)
+    return reply.status(201).send(await review.composeContract(id, req.auth!.userId, body))
+  })
+
+  app.post('/api/admin/trainer-contracts/:contractId/revoke', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'إلغاءُ عقدٍ مفتوح — لا يُحذف، والسببُ يُكتب' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
+    return review.revokeContract(contractId, req.auth!.userId, reasonAr)
+  })
+
   app.post('/api/admin/trainer-applications/:id/contracts', {
     preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'إنشاء عقد وإرساله — ينقل الطلب إلى contract_pending' },
+    schema: { tags: ['admin-trainers'], summary: '⚠️ مهجور — البابُ القديم بلا متن. يُحذف في المرحلة الثانية' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ title: z.string().min(3), terms: z.record(z.string(), z.unknown()).optional() }).parse(req.body)

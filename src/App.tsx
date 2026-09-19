@@ -63,6 +63,7 @@ const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
 const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDepartures'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
+const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
@@ -305,6 +306,7 @@ export default function App() {
                 ولا تلتقيان إلّا في `super_admin` — فكانت الماليةُ تملك المفتاحَ
                 ولا تملك الباب. */}
             <Route path="/admin/trainer-compensation" element={<AdminTrainerCompensation />} />
+            <Route path="/admin/trainer-contracts" element={<AdminTrainerContracts />} />
             <Route path="/admin/catalog" element={<CatalogAdmin />} />
             <Route path="/admin/authoring" element={<AdminAuthoring />} />
             <Route path="/admin/publishing" element={<PublishingBoard />} />

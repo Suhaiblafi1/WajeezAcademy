@@ -1610,19 +1610,119 @@ model SessionRescheduleRequest {
   @@index([sessionId, createdAt])
 }
 
+/// ═══ عقدُ المدرّب — وثيقةٌ مجمَّدةٌ لا خانةُ عنوانٍ تُملأ ═══
+///
+/// كان هذا النموذجُ عنوانا وحالةً وتاريخين، و`terms Json?` لا يقرؤه شيءٌ في
+/// المستودَع. فالمدرّبُ لم يرَ وثيقةً قطّ، والمسؤولُ يسجّل توقيعَه بالنيابة
+/// عنه. وصفٌّ يقول «وُقّع» ولا متنَ تحته ولا إقرارَ من صاحبه ليس دليلا.
+///
+/// ─────────── ولمَ لقطةٌ لا وصلة ───────────
+///
+/// المتنُ يُركَّب مرّةً عند الإرسال ويُجمَّد في `bodyAr`، ومعه لقطةُ المال
+/// ولقطةُ الدورات. ولو قرأ العقدُ القاعدةَ حيّةً لكان تعديلُ أجرٍ بعد شهرٍ
+/// **يُعيد كتابةَ ما وُقّع عليه** — والموقَّعُ لا يتغيّر. ومن أراد تغييرَ
+/// شرطٍ فصفٌّ جديدٌ يشير إلى أبيه (`parentId`)، لا خانةٌ تُحرَّر تحت توقيع.
+///
+/// والتصميمُ الكاملُ ومراحلُه في
+/// `docs/superpowers/specs/2026-09-19-trainer-contract-design.md`.
 model TrainerContract {
   id        String         @id @default(uuid()) @db.Uuid
   profileId String         @db.Uuid
+  /// عنوانٌ يكتبه الموظّف — «عقد تدريب ٢٠٢٦». للتمييز في القوائم لا للمتن.
   title     String
-  terms     Json? // شروط التعاقد المهيكلة
-  status    String         @default("draft") // draft | sent | signed | expired | terminated
-  sentAt    DateTime?
-  signedAt  DateTime?
-  createdBy String?        @db.Uuid
-  createdAt DateTime       @default(now())
-  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  /// ⚠️ مهجورٌ للكتابة، محفوظٌ للقراءة: حقلٌ حرٌّ بلا شكلٍ ولا قارئٍ ولم
+  /// يُكتب فيه شيءٌ في أيّ مسارٍ أو اختبار. الجديدُ يكتب الأعمدةَ المهيكلةَ
+  /// أدناه، وهذا يبقى للصفوف التي سبقته. يُحذف حين لا يبقى صفٌّ يحمله.
+  terms     Json?
+  /// أصليٌّ، أم ملحقٌ يُضاف إلى نافذ، أم بديلٌ يحلّ محلَّه
+  kind      String         @default("original") // original | annex | replacement
+  /// `revoked` جديدةٌ في المرحلة الأولى: عقدٌ أُرسل بخطإٍ يُلغى ولا يُحذف —
+  /// فما أُرسل وقع، والسجلُّ يقول إنّه أُلغي ومن ألغاه ولماذا.
+  /// و`declined` و`countersigned` و`superseded` تأتي مع مرحلتيهما.
+  status    String         @default("draft") // draft | sent | revoked | signed | expired | terminated
+  /// رقمُ النسخة في السلسلة — ١ للأصل ثمّ ما يليه
+  revision  Int            @default(1)
+  /// النافذُ الذي هذا ملحقٌ له أو بديلٌ عنه
+  parentId  String?        @db.Uuid
+
+  /// ─────────── المتن: يُركَّب مرّةً ولا يُركَّب ثانيةً ───────────
+
+  /// إصدارُ القالب الذي رُكّب منه — يُقرأ عند النزاع: «أيَّ صياغةٍ وقّع؟»
+  bodyVersion String?
+  /// النصُّ العربيُّ كاملا بعد تعويض كلّ حقل. هذا هو المستند، وما عداه شرحُه.
+  bodyAr      String?
+  /// sha256(bodyAr) — تُحسب عند الإرسال، وتُقابَل عند التوقيع. فمن وقّع على
+  /// صفحةٍ ثمّ بُدّل تحتَه النصُّ لا يمرّ توقيعُه.
+  bodyHash    String?
+
+  /// ─────────── لقطةُ الاتفاق الماليّ عند الإرسال ───────────
+
+  /// صفُّ `TrainerCompensationRule` الذي نُقل عنه — للتتبّع لا للقراءة،
+  /// فالصفُّ يُغلَق ويُبدَّل بـ`setRule` والقراءةُ من الأعمدة أدناه.
+  compensationRuleId       String?  @db.Uuid
+  /// منقولٌ نصّا لا مرجعا — per_seat أو fixed_per_cohort أو revenue_share
+  compensationType         String?
+  compensationRate         Decimal? @db.Decimal(10, 2)
+  currency                 String   @default("USD")
+  compensationMinSeats     Int?
+  compensationReferralRate Decimal? @db.Decimal(10, 2)
+  /// ما قيل عن الساعات والكلفة — نصٌّ ينقله الموظّف أو يكتبه بيده.
+  /// **ولا مالَ يتحرّك به**: لا يمسّ `computeCohort` ولا دفترَ الأستاذ.
+  hoursNoteAr              String?
+  /// أُرسل بلا قاعدةِ تعويضٍ قائمة، بسببٍ مكتوب. وبلا هذا يُردّ الإرسال —
+  /// فعقدٌ يُوقَّع بلا أجرٍ متّفقٍ عليه يترك «مستحقّاتي» صفرا ولا أحدَ يعلم لمَ.
+  rateWaivedReasonAr       String?
+
+  /// ─────────── لقطةُ الدورات المؤهَّل لها ───────────
+
+  /// `[{ courseId, titleAr }]` من `TrainerCourseQualification` حيث الحالةُ
+  /// `qualified` وقتَ الإرسال. **ولا رموزَ لاتينيّةٌ في المتن** — أسماءٌ كما
+  /// يراها في بوّابته. ونسخةٌ لا وصلة: العقدُ يقول «هذه قائمةُ يومِ التوقيع»،
+  /// والتأهيلُ يزيد بعدها ولا يُعيد كتابةَ ما وُقّع.
+  qualifiedSnapshot Json?
+
+  /// الوثائقُ المطلوبةُ من هذا المدرّب بعينه — `[{kind, labelAr, required}]`
+  /// يختارها الموظّفُ قبل الإرسال («في حالة طلبنا»)، فليست واحدةً للجميع.
+  /// منها يُبنى الملحقُ (ج)، ولا يُقبل توقيعٌ قبل استكمالها (المرحلة ٢).
+  requiredDocuments Json?
+
+  /// البريدُ الذي أُرسل إليه، مثبَّتا لحظتَه — فبريدُ الطلب قد يُعدَّل بعدها
+  /// والعقدُ يقول إلى أين ذهب
+  signerEmail String?
+
+  /// ═══ أيحبس هذا العقدُ التفعيل؟ يُحسب عند التركيب ويُطبَّق عند الإرسال ═══
+  ///
+  /// ويُحسب عند التركيب لا عند الإرسال بقصد: الحالةُ قد تتغيّر بينهما، وما
+  /// رآه الموظّفُ وقرّر على أساسه هو حالُ يومِ التركيب.
+  ///
+  /// قرارُ صاحب المنصّة (٦ سبتمبر) جعل الاعتمادَ نقرةً واحدةً تبلغ `active`
+  /// بلا عقد، وقرارُه (١٩ سبتمبر) يجعل العقدَ بوّابة. وهما لا يتناقضان إن
+  /// فُرّق بينهما **بالوقت لا بالرأي**:
+  ///
+  /// · طلبٌ لم يبلغ `active` → `true`: يُنقل إلى `contract_pending`، ولا
+  ///   يُفعَّل حسابُه حتّى يُعتمَد توقيعُه.
+  /// · مدرّبٌ **نشطٌ أصلا** → `false`: بندٌ يُوثَّق على ملفٍّ حيّ، ولا تُمسّ
+  ///   حالةُ طلبه. فنقلُه إلى `contract_pending` يطرده من بوّابته
+  ///   (`trainer-change.service.ts` تردّ كلَّ حالةٍ غير `active` بـ«حسابك
+  ///   موقوف») — وسلبُ وصولٍ قائمٍ ليس توثيقا.
+  gatesActivation Boolean @default(true)
+
+  sentAt         DateTime?
+  signedAt       DateTime?
+  revokedAt      DateTime?
+  revokedBy      String?   @db.Uuid
+  revokeReasonAr String?
+
+  createdBy String?          @db.Uuid
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  profile   TrainerProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  parent    TrainerContract? @relation("ContractLineage", fields: [parentId], references: [id])
+  children  TrainerContract[] @relation("ContractLineage")
 
   @@index([profileId])
+  @@index([status, sentAt])
+  @@index([parentId])
 }
 
 model TrainerCompensationRule {
