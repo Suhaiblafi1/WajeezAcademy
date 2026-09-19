@@ -23,6 +23,8 @@
    بالقراءة قبل الموعد)، وأسبوعان ضعفُها — وما تجاوزهما يُنادى أحمرَ لا
    ليُلام أحد، بل ليُرى قبل أن يصير شهرا. */
 
+import { countAr, type CountForms } from '../text/count-ar'
+
 /** الحالاتُ التي تنتظرنا نحن — وفيها وحدَها يتلوّن العمر */
 export const AWAITING_US: readonly string[] = [
   'submitted', 'under_review', 'shortlisted', 'interview_scheduled',
@@ -48,14 +50,11 @@ export interface QueueAge {
   ar: string
 }
 
-const DAY_FORMS = { one: 'يوم', two: 'يومين', few: 'أيّام', many: 'يوما' } as const
-
-const countAr = (n: number): string => {
-  if (n === 1) return `${n} ${DAY_FORMS.one}`
-  if (n === 2) return `${n} ${DAY_FORMS.two}`
-  if (n >= 3 && n <= 10) return `${n} ${DAY_FORMS.few}`
-  return `${n} ${DAY_FORMS.many}`
-}
+/** صيغُ اليوم — تُصدَّر لأنّ ملخّصَ الإدارة يقول المدّةَ نفسَها في بريده.
+ *
+ *  ولو كُتبت مرّتَين لانحرفت إحداهما يوما، فيقرأ الموظّفُ «5 أيّام» في
+ *  الشاشة و«5 يوما» في الرسالة عن الإنسان نفسِه. */
+export const DAY_FORMS: CountForms = { one: 'يوم', two: 'يومين', few: 'أيّام', many: 'يوما' }
 
 /** عمرُ الطلب في حالته الحاليّة — و`null` لمن لا عمرَ له: وقع فيه قرار.
  *
@@ -73,7 +72,7 @@ export function queueAge(
   if (Number.isNaN(at.getTime())) return null
   /* الأرضيّةُ صفرٌ: ساعةٌ في المستقبل (فرقُ ساعةِ خادم) لا تُقرأ «منذ -١» */
   const days = Math.max(0, Math.floor((now.getTime() - at.getTime()) / 86_400_000))
-  const label = days === 0 ? 'اليوم' : `منذ ${countAr(days)}`
+  const label = days === 0 ? 'اليوم' : `منذ ${countAr(days, DAY_FORMS)}`
 
   if (AWAITING_APPLICANT.includes(status)) return { tone: 'calm', days, ar: `بانتظاره ${label}` }
   return {
