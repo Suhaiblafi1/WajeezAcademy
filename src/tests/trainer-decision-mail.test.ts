@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bookingReminderMail, decisionMailFor, rejectionMail, waitlistMail,
 } from '../../server/services/trainer-decision-mail'
+import { APPLICANT_STATUS } from '@/application/trainer/application-options'
 import { renderMail, type MailBlock } from '../../server/services/mail-template'
 
 const NAME = 'سلمى العمري'
@@ -51,6 +52,25 @@ describe('رسالةُ الاعتذار', () => {
     expect(mail.subject).toContain(REF)
     const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
     expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
+  })
+
+  it('ولا تَعِد بمدّةِ انتظارٍ لا يقيسها شيء — لا في البريد ولا في الشاشة', () => {
+    /* ═══ ما نُقض هنا ═══
+
+       كان النصّان يقولان «يمكنك التقديم مجددا بعد ستة أشهر». ولا حاجزَ
+       لها في الشيفرة: `submitPhase1` تردّ من له طلبٌ حيٌّ وحدَه، و`rejected`
+       نهائيّة — فمن رُدّ يُقبل طلبُه في الغد. فالنصُّ يصرف عمّن كان يعود.
+
+       وقرارُ صاحب المنصّة (١٩ سبتمبر ٢٠٢٦) حذفُها من الموضعَين معا. وهما
+       يُفحصان هنا جميعا: بريدٌ بلا مدّة وشاشةٌ بمدّةٍ تُنتج التناقضَ نفسَه
+       الذي حُذفت المدّةُ لأجله. */
+    const WAIT_PROMISE = /(بعد|خلال)\s+\S+\s*(أشهر|شهرا|شهر|سنة|أسبوع)/
+    const out = rendered(rejectionMail({ fullName: NAME, reference: REF }).doc)
+    expect(out.text, 'رسالةُ الاعتذار تَعِد بمدّةِ انتظار').not.toMatch(WAIT_PROMISE)
+    expect(APPLICANT_STATUS.rejected.explain, 'شاشةُ الحالة تَعِد بمدّةِ انتظار')
+      .not.toMatch(WAIT_PROMISE)
+    /* والبابُ يبقى مقولا — الحذفُ للمدّة لا للدعوة */
+    expect(out.text, 'ذهبت الدعوةُ إلى العودة مع المدّة').toContain('تتقدّم إلينا من جديد')
   })
 
   it('وهي أربعُ حركاتٍ لا سطرٌ واحد: شكرٌ، ومراجعةٌ، وقرارٌ، وبابٌ يبقى', () => {
