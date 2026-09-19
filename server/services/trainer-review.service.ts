@@ -559,7 +559,6 @@ export class TrainerReviewService {
       fullName: app.fullName,
       reference: app.reference,
       statusUrl: `${publicSiteUrl()}/join-trainer/status`,
-      bookingUrl: await this.bookingLink({ name: app.fullName, email: app.email, reference: app.reference }),
     })
     const sent = await sendDirectEmail(this.prisma, {
       to: app.email, subject: mail.subject, ...renderMail(mail.doc),

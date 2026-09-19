@@ -104,8 +104,7 @@ describe('رسالةُ قائمة الانتظار', () => {
 
 describe('تذكيرُ من لم يحجز', () => {
   const STATUS = 'https://example.test/join-trainer/status'
-  const BOOKING = 'https://calendly.com/x/y?email=s%40x.com'
-  const mail = bookingReminderMail({ fullName: NAME, reference: REF, statusUrl: STATUS, bookingUrl: BOOKING })
+  const mail = bookingReminderMail({ fullName: NAME, reference: REF, statusUrl: STATUS })
 
   it('زرُّها إلى صفحة الطلب لا إلى التقويم رأسا', () => {
     const cta = mail.doc.blocks.find((b: MailBlock) => b.kind === 'cta')
@@ -113,24 +112,29 @@ describe('تذكيرُ من لم يحجز', () => {
     expect(cta && cta.kind === 'cta' && cta.href).toBe(STATUS)
   })
 
-  it('والتقويمُ رابطٌ في المتن — مخرجٌ لمن تعذّر دخولُه، لا زرٌّ ثانٍ', () => {
-    const inText = mail.doc.blocks.some((b: MailBlock) =>
-      b.kind === 'p' && Array.isArray(b.text)
-      && b.text.some((part) => typeof part !== 'string' && part.href === BOOKING))
-    expect(inText, 'رابطُ التقويم مفقودٌ من المتن').toBe(true)
-    /* ولا يصير زرّا ثانيا: القالبُ زرُّه واحد، وزرّان يتنازعان النقرة */
-    expect(mail.doc.blocks.filter((b: MailBlock) => b.kind === 'cta')).toHaveLength(1)
+  it('وطريقٌ واحدٌ لا غير: زرٌّ واحدٌ ولا رابطَ ثانٍ في المتن', () => {
+    /* ═══ ما حُذف هنا (١٩ سبتمبر ٢٠٢٦) ═══
+
+       كان تحت الزرّ رابطُ التقويم المباشر «لمن تعذّر عليه الدخول»، وسطرٌ
+       يدعوه إلى الردّ. وقرارُ صاحب المنصّة حذفُهما: «لا داعي لهذا النصّ».
+
+       وغرضُ الرسالة نقرةٌ واحدة، فكلُّ وجهةٍ ثانيةٍ تقسم الانتباه. ومن تعذّر
+       عليه الدخولُ يتابع طلبَه بالبريد وحدَه في `/join-trainer` ويحجز من
+       تحتها — فالمخرجُ في المنتَج لا في الرسالة. */
+    expect(mail.doc.blocks.filter((b: MailBlock) => b.kind === 'cta'), 'زرّان يتنازعان النقرة').toHaveLength(1)
+    const linkInBody = mail.doc.blocks.some((b: MailBlock) =>
+      (b.kind === 'p' || b.kind === 'note' || b.kind === 'callout') && Array.isArray(b.text))
+    expect(linkInBody, 'عاد رابطٌ ثانٍ في متن الرسالة').toBe(false)
+    expect(mail.doc.blocks.filter((b: MailBlock) => b.kind === 'note'), 'عاد سطرٌ ملحقٌ في الذيل').toHaveLength(0)
   })
 
-  it('ورقمُ الطلب في الموضوع وفي جدول الحقائق', () => {
+  it('ورقمُ الطلب في الموضوع وفي جدول الحقائق — ولا صفَّ سواه', () => {
     expect(mail.subject).toContain(REF)
     const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
-    expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
+    expect(facts && facts.kind === 'facts' && facts.rows.map((r) => r.value)).toEqual([REF])
   })
 
-  it('والعنوانان يخرجان في النصّ الخامّ — فمن عطّل الـHTML يبلغ موعدَه', () => {
-    const out = rendered(mail.doc)
-    expect(out.text).toContain(STATUS)
-    expect(out.text).toContain(BOOKING)
+  it('وعنوانُ صفحة الطلب يخرج في النصّ الخامّ — فمن عطّل الـHTML يبلغ موعدَه', () => {
+    expect(rendered(mail.doc).text).toContain(STATUS)
   })
 })
