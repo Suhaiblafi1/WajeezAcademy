@@ -248,6 +248,17 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.document_register': 'رفعُ المدرّبِ وثيقةً مع عقده',
   'trainer.contract.sign_by_trainer': 'توقيعُ المدرّبِ عقدَه بنفسه',
   'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',
+  'trainer.contract.document_view': 'اطّلاعُ موظّفٍ على وثيقةِ هويّةٍ مع عقد',
+  'trainer.contract.countersign': 'اعتمادُ الأكاديميّةِ توقيعَ المدرّب',
+  'trainer.contract.reject_signature': 'رفضُ توقيعٍ لعدمِ مطابقتِه وثيقةَ الهويّة',
+  /* عروضُ الإسناد — دعوةٌ تُقبَل وتُردّ، لا توجيهٌ يقع */
+  'trainer.offer.create': 'عرضُ دورةٍ على مدرّبٍ مؤهَّلٍ لها',
+  'trainer.offer.accept': 'قبولُ المدرّبِ عرضَ إسناد',
+  'trainer.offer.decline': 'اعتذارُ المدرّبِ عن عرضِ إسناد',
+  'trainer.offer.withdraw': 'سحبُ الأكاديميّةِ عرضا قبل قبوله',
+  'trainer.offer.lapse': 'انقضاءُ مهلةِ الردّ على عرضِ إسناد',
+  'trainer.offer.prep_confirm': 'إقرارُ المدرّبِ بجاهزيّته لدورةٍ قبِلها',
+  'trainer.offer.prep_lapse': 'انقضاءُ أجلِ الإعداد بلا إقرارٍ بالجاهزيّة',
   'trainer_payout.generate_skipped': 'تخطّي توليدِ مستحقّ',
 
   /* ═══ وأربعةٌ وعشرون فعلا تُبنى ولا تُكتب حرفا ═══

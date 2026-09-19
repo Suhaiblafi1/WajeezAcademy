@@ -5,7 +5,7 @@ import { apiGet } from "@/services/api";
 import BookAdminMeeting from "@/components/BookAdminMeeting";
 import TrainerWorkQueue from "@/components/TrainerWorkQueue";
 import AtRiskList from "@/components/AtRiskList";
-import { buildWorkQueue } from "@/application/trainer/work-queue";
+import { buildWorkQueue, type TQOffer } from "@/application/trainer/work-queue";
 import { findAtRisk } from "@/application/trainer/at-risk";
 import { useRealSession } from "@/services/session";
 import { countAr } from "@/application/text/count-ar";
@@ -48,6 +48,7 @@ interface RealCohort {
   };
 }
 interface RealQueueItem { id: string; status: string }
+
 /** موجزُ الشعبة كما يعطيه `/api/trainer/cohorts/summary` — الدالّةُ نفسُها التي تحسب قائمةَ صفحة الشعبة */
 interface CohortSummary {
   id: string; title: string; courseTitle: string; planStatus: string; done: number; total: number;
@@ -59,6 +60,9 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   const [queue, setQueue] = useState<RealQueueItem[] | null>(null);
   const [summary, setSummary] = useState<CohortSummary[]>([]);
   const [failed, setFailed] = useState(false);
+  /* عروضُ الإسناد — تُجلَب هنا وتُبنى بنودا في الطابور، فلا قسمَ ثانيَ
+     في اللوحة ولا وجهةَ مكتوبةٌ بيد. */
+  const [offers, setOffers] = useState<TQOffer[]>([]);
   /* طلبُ اجتماعٍ مع الإدارة — يُطوى حتّى يُطلب، فالإطارُ ثقيلٌ على لوحةٍ تُفتح كلَّ يوم */
   /* نبضة كل دقيقة: «جلستك الآن» تتغيّر مع الوقت بلا إعادة تحميل.
      القيمة في حالة لا في الرسم — Date.now() في الرسم غير نقي. */
@@ -74,8 +78,12 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
       apiGet<RealQueueItem[]>("/api/trainer/grading-queue"),
       /* الموجزُ رفاهيةٌ فوق الأساس: غيابُه لا يُسقط اللوحة */
       apiGet<CohortSummary[]>("/api/trainer/cohorts/summary").catch(() => [] as CohortSummary[]),
+      /* والعروضُ رفاهيةٌ مثلُه: غيابُها لا يُسقط اللوحة */
+      apiGet<TQOffer[]>("/api/trainer/offers").catch(() => [] as TQOffer[]),
     ])
-      .then(([c, q, s]) => { setCohorts(c); setQueue(q); setSummary(s); })
+      .then(([c, q, s, o]) => {
+        setCohorts(c); setQueue(q); setSummary(s); setOffers(o);
+      })
       .catch(() => setFailed(true));
   }, []);
 
@@ -98,6 +106,10 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
     queue.filter((q) => q.status === "submitted" || q.status === "under_review").length,
     now,
     summary,
+    /* والعروضُ بندا في الطابور لا بطاقةً في اللوحة: القاعدةُ ألّا تُكتب في
+       هذه الصفحة وجهةٌ بيد — فوجهةُ البند تُحسَب مع إجرائه وسياقه في
+       `work-queue.ts`، ويحرسها `cohort-proposals.test.ts`. */
+    offers,
   );
   const atRisk = findAtRisk(cohorts, now);
 

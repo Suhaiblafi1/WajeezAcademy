@@ -30,6 +30,7 @@ import { drainOutbox, OUTBOX_MAX_ATTEMPTS } from '../services/outbox.service'
 import { CohortService } from '../services/cohort.service'
 import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
+import { TrainerOfferService } from '../services/trainer-offer.service'
 import { recordAudit } from '../services/audit'
 import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
 import { isDigestHour, unbookedDigest } from '../../src/application/trainer/unbooked-digest'
@@ -968,6 +969,45 @@ export async function digestUnbookedApplicants(prisma: PrismaClient, now = new D
   }
 }
 
+/* ═══════════ ١٢ · عروضُ الإسناد وآجالُ الإعداد ═══════════
+
+   ثلاثةُ آجالٍ كتبتها المنصّةُ ولا مُشغِّلَ لها: مهلةُ الردّ على عرضٍ تمرّ
+   فيبقى «مفتوحا» أبدا، وأجلُ الإعداد يقترب بلا تذكير، ثمّ ينقضي بلا أن
+   يعلم أحد.
+
+   **ولا يُسحب إسنادٌ هنا.** شعبةٌ فيها متعلّمون دفعوا مقاعدَهم لا يُبَتّ
+   أمرُها بمؤقّت: يُرفَع الخبرُ إلى إنسانٍ ينظر. وما يُغلَق آليّا هو
+   العرضُ **قبل** القبول وحدَه — وذاك لا أثرَ له في تشغيلٍ ولا مال. */
+export async function runTrainerOfferDeadlines(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const offers = new TrainerOfferService(prisma)
+  let done = 0
+  let failed = 0
+  const parts: string[] = []
+  /* وثلاثتُها مستقلّة: سقوطُ واحدةٍ لا يمنع أختَها — فأجلُ إعدادٍ ينقضي
+     لا يُترك بلا خبرٍ لأنّ عرضا آخرَ تعثّر إشعارُه. */
+  try {
+    const { lapsed } = await offers.lapseExpiredOffers(now)
+    done += lapsed
+    if (lapsed > 0) parts.push(`أُغلِق ${lapsed} عرضا بانقضاء مهلته`)
+  } catch { failed += 1; parts.push('تعثّر إغلاقُ العروض المنقضية') }
+  try {
+    const { reminded } = await offers.remindPrepDue(now)
+    done += reminded
+    if (reminded > 0) parts.push(`ذُكِّر ${reminded} بأجل إعداده`)
+  } catch { failed += 1; parts.push('تعثّر تذكيرُ آجال الإعداد') }
+  try {
+    const { raised } = await offers.lapsePrepDue(now)
+    done += raised
+    if (raised > 0) parts.push(`رُفع ${raised} أجلا انقضى بلا إقرارٍ إلى الإدارة`)
+  } catch { failed += 1; parts.push('تعثّر رفعُ آجال الإعداد المنقضية') }
+  return {
+    job: 'trainer_offer_deadlines',
+    summaryAr: parts.length === 0 ? 'لا عرضَ ولا أجلَ إعدادٍ حلَّ موعدُه' : parts.join(' · '),
+    done, failed, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسالُ ما في طابور البريد' },
@@ -987,6 +1027,9 @@ export const JOBS = [
   /* كلَّ ساعةٍ لا كلَّ يوم: الوظيفةُ نفسُها تسأل عن الساعة، فدورةٌ يوميّةٌ
      تُقاس منذ الإقلاع تُخطئ نافذةَ الصباح كلَّما نُشرت نشرةٌ بعد الظهر. */
   { key: 'unbooked_digest', everyMs: HOUR, run: digestUnbookedApplicants, titleAr: 'ملخّصُ من لم يحجز موعده' },
+  /* كلَّ ساعة: مهلةُ الردّ أيّامٌ وأجلُ الإعداد أيّام، فساعةٌ دقّةٌ كافيةٌ
+     لا تُثقل. والتذكيرُ يسأل عن «قبل يومٍ من الأجل» فيصيبها في كلّ حال. */
+  { key: 'trainer_offer_deadlines', everyMs: HOUR, run: runTrainerOfferDeadlines, titleAr: 'آجالُ عروض الإسناد وإعدادِها' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },

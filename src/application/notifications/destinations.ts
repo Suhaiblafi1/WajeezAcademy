@@ -111,6 +111,11 @@ const TRAINER: Table = {
   'session.reminder.trainer.24h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'session.reminder.trainer.1h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابورَ التصحيح' },
+  /* عروضُ الإسناد — والوجهةُ حيث يُجاب لا حيث يُقرأ الخبر ثانيةً */
+  'trainer.offer.received': { path: '/trainer/offers', ctaAr: 'اقرأ العرضَ وأجِبْ' },
+  'trainer.offer.withdrawn': { path: '/trainer/offers', ctaAr: 'افتح عروضَك' },
+  'trainer.offer.lapsed': { path: '/trainer/offers', ctaAr: 'افتح عروضَك' },
+  'trainer.prep.reminder': { path: '/trainer/offers', ctaAr: 'أقِرّ بجاهزيّتك' },
 }
 
 const STAFF: Table = {
@@ -128,6 +133,11 @@ const STAFF: Table = {
      الموقَّعُ يُراجَع توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. */
   'trainer.contract.signed': { path: '/admin/trainer-contracts', ctaAr: 'راجِع التوقيعَ وفعّلْ حسابَه' },
   'trainer.contract.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سببَ الاعتذار' },
+  /* والعروضُ في شاشة العقود نفسِها: العرضُ فرعٌ عن عقدٍ نافذ، ومن يتابع
+     الواحدَ يتابع الآخر — فلا تُفرَّق شاشتان لمسارٍ واحد. */
+  'trainer.offer.accepted': { path: '/admin/trainer-contracts', ctaAr: 'افتح العروض' },
+  'trainer.offer.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سببَ الاعتذار' },
+  'trainer.prep.lapsed': { path: '/admin/trainer-contracts', ctaAr: 'انظرْ وقرّر' },
   'advisor.case.assigned': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
   'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفِّذ ما اختاره' },

@@ -340,3 +340,91 @@ describe('إنذار المتعثرين — ف-٢', () => {
     expect(list[0].nameAr).toBe('كثير الأسباب')
   })
 })
+
+/* ═══ عروضُ الإسناد وآجالُ الإعداد في الطابور (المرحلة ٣) ═══
+
+   وهي في الطابور لا بطاقةً في اللوحة: قاعدةُ `work-queue.ts` أنّ لكلّ بندٍ
+   إجراءً واحدا ووجهةً واحدة، وهي التي تمنع قسما ثانيا في اللوحة يقود حيث
+   يقود التبويبُ فوقه. والفحصُ على البنية — أنواعُ البنود ووجهاتُها
+   وترتيبُها — لا على ورودِ نصٍّ في عنوان. */
+describe('عروضُ الإسناد في طابور المدرّب', () => {
+  const offer = (over: Record<string, unknown> = {}) => ({
+    id: 'OF-1', status: 'offered', courseTitleAr: 'دورةُ العرض',
+    expiresAt: iso(3 * DAY), ...over,
+  })
+
+  it('بلا عروضٍ لا بندَ — ولا يرمي على ردٍّ غيرِ مصفوفة', () => {
+    expect(buildWorkQueue([], 0, NOW, [], null).length).toBe(0)
+    expect(buildWorkQueue([], 0, NOW, [], []).length).toBe(0)
+    expect(buildWorkQueue([], 0, NOW, [], [{ id: null }]).length).toBe(0)
+  })
+
+  it('عرضٌ مفتوحٌ يصير بندا وجهتُه صفحةُ العروض', () => {
+    const items = buildWorkQueue([], 0, NOW, [], [offer()])
+    const it0 = items.find((x) => x.kind === 'offer_pending')
+    expect(it0, 'عرضٌ ينتظر جوابَه ولا بندَ له').toBeTruthy()
+    expect(it0!.href).toBe('/trainer/offers')
+    expect(it0!.external).toBe(false)
+    expect(it0!.count).toBe(1)
+  })
+
+  it('والمنقضي لا بندَ له — فقد أُغلِق، ولا يُطلب جوابٌ عمّا أُغلق', () => {
+    const items = buildWorkQueue([], 0, NOW, [], [offer({ expiresAt: iso(-DAY) })])
+    expect(items.some((x) => x.kind === 'offer_pending')).toBe(false)
+  })
+
+  it('والمجاب (قبولا أو اعتذارا) لا بندَ له', () => {
+    for (const status of ['accepted', 'declined', 'lapsed', 'withdrawn']) {
+      const items = buildWorkQueue([], 0, NOW, [], [offer({ status })])
+      expect(items.some((x) => x.kind === 'offer_pending'), status).toBe(false)
+    }
+  })
+
+  it('وعرضان يجتمعان في بندٍ واحدٍ عدّتُه اثنان، وأقربُ مهلةٍ في متنه', () => {
+    const items = buildWorkQueue([], 0, NOW, [], [
+      offer({ id: 'A', expiresAt: iso(4 * DAY) }),
+      offer({ id: 'B', expiresAt: iso(1 * DAY) }),
+    ])
+    const it0 = items.find((x) => x.kind === 'offer_pending')!
+    expect(it0.count).toBe(2)
+    expect(it0.detailAr).toContain(new Date(NOW + DAY).getUTCDate().toString())
+  })
+
+  it('⚠️ والعرضُ أُلحُّ من التصحيح ودونَ اللقاء الجاري — فمهلتُه أيّامٌ لا شهور', () => {
+    const items = buildWorkQueue(
+      [cohort({
+        sessions: [{ id: 'S1', title: 'جلسةٌ الآن', startsAt: iso(-10 * 60_000), endsAt: iso(HOUR), status: 'scheduled', recordings: [] }],
+        enrollments: [{ id: 'E1', status: 'enrolled', attendance: [], user: { displayName: 'أحمد' } }],
+      })],
+      5, NOW, [], [offer()],
+    )
+    const kinds = items.map((x) => x.kind)
+    expect(kinds[0], 'سبق العرضُ لقاءً يبدأ الآن').toBe('session_now')
+    expect(kinds.indexOf('offer_pending')).toBeLessThan(kinds.indexOf('grading_pending'))
+  })
+
+  it('وأجلُ الإعداد لا يُذكَر قبل أن يقترب — «لن نستعجل أكثر»', () => {
+    const far = buildWorkQueue([], 0, NOW, [], [
+      offer({ status: 'accepted', prepDueAt: iso(5 * DAY) }),
+    ])
+    expect(far.some((x) => x.kind === 'prep_due')).toBe(false)
+    const near = buildWorkQueue([], 0, NOW, [], [
+      offer({ status: 'accepted', prepDueAt: iso(HOUR) }),
+    ])
+    expect(near.some((x) => x.kind === 'prep_due'), 'أجلٌ ينتهي بعد ساعةٍ ولا بندَ له').toBe(true)
+  })
+
+  it('⚠️ ومن أقرّ بجاهزيّته لا يُطالَب ثانيةً', () => {
+    const items = buildWorkQueue([], 0, NOW, [], [
+      offer({ status: 'accepted', prepDueAt: iso(HOUR), prepConfirmedAt: iso(-HOUR) }),
+    ])
+    expect(items.some((x) => x.kind === 'prep_due')).toBe(false)
+  })
+
+  it('والمنقضي أجلُه يبقى بندا — فالعملُ قائمٌ ولا يُخفى بمضيّ تاريخ', () => {
+    const items = buildWorkQueue([], 0, NOW, [], [
+      offer({ status: 'accepted', prepDueAt: iso(-2 * DAY) }),
+    ])
+    expect(items.some((x) => x.kind === 'prep_due')).toBe(true)
+  })
+})

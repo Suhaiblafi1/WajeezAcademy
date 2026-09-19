@@ -1,10 +1,11 @@
 /* مسارات إدارة المدربين — مراجعة الطلبات، قرارات، عقود، دعوات،
    تأهيل، إسناد، شعب، نشر عام، إيقاف، ومراجعة اقتراحات التعديل. */
 
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
+import { TrainerOfferService } from '../../services/trainer-offer.service'
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { CourseProposalService } from '../../services/course-proposal.service'
@@ -15,6 +16,7 @@ import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
 import { analyzeImpact } from '../../services/impact.service'
+import { COURSE_PREP_MIN_DAYS } from '../../../src/application/trainer/notice-periods'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -30,6 +32,7 @@ function actorOf(req: { auth: { userId: string; roles: string[] } | null }) {
 
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
+  const offers = new TrainerOfferService(prisma)
   const links = new TrainerDossierLinkService(prisma)
   const changes = new TrainerChangeService(prisma)
   const proposals = new CourseProposalService(prisma)
@@ -348,6 +351,109 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
     return review.revokeContract(contractId, req.auth!.userId, reasonAr)
+  })
+
+  /* وثيقةُ الهويّة تُفتَح قبل الاعتماد — فالاعتمادُ مطابقةٌ بها.
+     والرابطُ موقَّتٌ لعشر دقائق كوثائق الطلب، وكلُّ فتحةٍ تُكتب في الأثر. */
+  app.get('/api/admin/trainer-contracts/:contractId/documents/:documentId/url', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'رابطُ قراءةٍ موقَّتٌ لوثيقةِ هويّةٍ مع عقد' },
+  }, async (req) => {
+    const { contractId, documentId } = z.object({
+      contractId: z.string().uuid(), documentId: z.string().uuid(),
+    }).parse(req.params)
+    return review.contractDocumentUrl(contractId, documentId, req.auth!.userId)
+  })
+
+  /* ═══════════ الاعتماد — ويحتاج صلاحيّتين ═══════════
+
+     `trainer.contract.manage` تكفي لتركيب عقدٍ وإرساله وإلغائه: تلك أفعالُ
+     وثيقة. والاعتمادُ ليس كذلك — هو **يفعّل حسابا ويمنح دورَ مدرّب**، وذاك
+     بابُ `trainer.applications.decide`. فمن ملك التعاقدَ وحدَه لا يصير به
+     طريقا جانبيّا حول قرارِ المدرّبين، كما في `/api/admin/trainers/direct`.
+
+     ولا يُستبدَل الحارسُ بـ`decide` وحدَها: من يعتمد عقدا يقرأ متنَه
+     ووثائقَه، وذلك خلف `trainer.contract.manage`. فالاثنتان معا. */
+  const requireDecideToo = (req: FastifyRequest, reply: FastifyReply): true | undefined => {
+    if (!req.auth!.permissions.includes('trainer.applications.decide')) {
+      reply.status(403).send({
+        error: {
+          code: 'forbidden',
+          message_ar: 'اعتمادُ عقدٍ يفتح حسابا ويمنح دورا — ويحتاج قرارَ المدرّبين أيضا، لا صلاحيةَ العقود وحدَها',
+        },
+      })
+      return undefined
+    }
+    return true
+  }
+
+  app.post('/api/admin/trainer-contracts/:contractId/countersign', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — ينفذ العقدُ ويُفعَّل حسابُه إن كان يحبسه' },
+  }, async (req, reply) => {
+    if (!requireDecideToo(req, reply)) return reply
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { noteAr } = z.object({ noteAr: z.string().trim().max(500).nullish() }).parse(req.body ?? {})
+    return review.countersignContract(contractId, req.auth!.userId, { noteAr })
+  })
+
+  app.post('/api/admin/trainer-contracts/:contractId/reject-signature', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'رفضُ توقيعٍ لا يطابق وثيقةَ الهويّة — يُغلَق العقدُ ولا يُمحى دليلُه' },
+  }, async (req, reply) => {
+    if (!requireDecideToo(req, reply)) return reply
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
+    return review.rejectSignature(contractId, req.auth!.userId, reasonAr)
+  })
+
+  /* ═══════════ عروضُ الإسناد ═══════════
+
+     خلف `trainer.assign` لا `trainer.contract.manage`: العرضُ إسنادٌ مؤجَّلٌ
+     إلى قبولِ صاحبه، وحارسُه حارسُ الإسناد. ومن يملك أن يُسنِد رأسا يملك
+     أن يعرض — والعكسُ ليس لازما. */
+
+  app.get('/api/admin/trainer-offers', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'عروضُ الإسناد — والمفتوحةُ أوّلا' },
+  }, async (req) => {
+    const q = z.object({
+      profileId: z.string().uuid().optional(),
+      status: z.enum(['offered', 'accepted', 'declined', 'lapsed', 'withdrawn']).optional(),
+    }).parse(req.query)
+    return offers.listForAdmin(q)
+  })
+
+  app.get('/api/admin/trainer-offers/options', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'من يصلح أن يُعرَض عليه، وما يصلح أن يُعرَض — ومن عنده عرضٌ قائم' },
+  }, async () => offers.offerOptions())
+
+  app.post('/api/admin/trainer-offers', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'عرضُ دورةٍ على مدرّبٍ مؤهَّلٍ لها — دعوةٌ تُقبَل وتُردّ' },
+  }, async (req, reply) => {
+    const body = z.object({
+      profileId: z.string().uuid(),
+      courseId: z.string().min(2).max(64),
+      cohortId: z.string().uuid().nullish(),
+      sessionsCount: z.number().int().min(1).max(500).nullish(),
+      startsAt: z.coerce.date().nullish(),
+      feeNoteAr: z.string().trim().max(500).nullish(),
+      noteAr: z.string().trim().max(1000).nullish(),
+      prepDays: z.number().int().min(COURSE_PREP_MIN_DAYS).max(60).nullish(),
+      responseDays: z.number().int().min(1).max(60).nullish(),
+    }).parse(req.body)
+    return reply.status(201).send(await offers.offer(body, req.auth!.userId))
+  })
+
+  app.post('/api/admin/trainer-offers/:offerId/withdraw', {
+    preHandler: requirePermission('trainer.assign'),
+    schema: { tags: ['admin-trainers'], summary: 'سحبُ عرضٍ قبل قبوله — والسببُ يصل صاحبَه' },
+  }, async (req) => {
+    const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
+    return offers.withdraw(offerId, req.auth!.userId, reasonAr)
   })
 
   app.post('/api/admin/trainer-applications/:id/contracts', {

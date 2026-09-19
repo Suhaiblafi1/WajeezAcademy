@@ -965,6 +965,10 @@ export class TrainerReviewService {
           compensationType: true, compensationRate: true, currency: true,
           gatesActivation: true, sentAt: true, signedAt: true, revokedAt: true,
           revokeReasonAr: true, createdAt: true, qualifiedSnapshot: true,
+          signerLegalName: true, declinedAt: true, declineReasonAr: true,
+          countersignedAt: true, academySignatoryName: true,
+          academySignatoryTitle: true, countersignNoteAr: true,
+          documents: { select: { id: true, kind: true, originalName: true, mime: true, uploadedAt: true }, orderBy: { uploadedAt: 'asc' } },
           profile: {
             select: {
               id: true,
@@ -976,7 +980,10 @@ export class TrainerReviewService {
       this.prisma.trainerApplication.findMany({
         where: {
           status: { in: [...TrainerReviewService.QUALIFIABLE_STATUSES] },
-          profile: { is: { contracts: { none: { status: { in: ['draft', 'sent', 'signed'] } } } } },
+          /* و`countersigned` في القائمة: بدونها يعود المدرّبُ النشطُ المعتمَدُ
+             عقدُه إلى طابور «ينتظر عقدا» — فحالتُه `active` وهي من
+             `QUALIFIABLE_STATUSES`، وعقدُه النافذُ ليس في المستثنيات. */
+          profile: { is: { contracts: { none: { status: { in: ['draft', 'sent', 'signed', 'countersigned'] } } } } },
         },
         orderBy: { updatedAt: 'desc' },
         select: { id: true, reference: true, fullName: true, email: true, status: true },
@@ -997,6 +1004,35 @@ export class TrainerReviewService {
     })
     if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
     return c
+  }
+
+  /** رابطُ قراءةٍ موقَّتٌ لوثيقةِ هويّةٍ رفعها المدرّبُ مع عقده.
+
+      وبدونه لا يُعتمَد توقيعٌ أصلا: الاعتمادُ **مطابقةُ الاسم القانونيِّ
+      بالوثيقة**، ومن لا يرى الوثيقةَ لا يطابق شيئا ويضغط الزرَّ على ثقة.
+
+      والوثيقةُ هويّةٌ لا ملفُّ عمل: كلُّ فتحةٍ تُكتب في الأثر باسم من فتح،
+      و`lastViewedAt` للعرض. فمن سأل «من نظر في جواز سفري؟» يُجاب. */
+  async contractDocumentUrl(contractId: string, documentId: string, actorId: string) {
+    const doc = await this.prisma.trainerContractDocument.findFirst({
+      where: { id: documentId, contractId },
+      select: { id: true, kind: true, storageKey: true, originalName: true, mime: true },
+    })
+    if (!doc) throw new AuthError('not_found', 'الوثيقة غير موجودة', 404)
+    const viewedAt = new Date()
+    await this.prisma.trainerContractDocument.update({
+      where: { id: doc.id }, data: { lastViewedAt: viewedAt },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.document_view',
+      entityType: 'trainer_contract', entityId: contractId,
+      meta: { documentId: doc.id, kind: doc.kind, viewedAt },
+    })
+    const exp = Date.now() + SIGNED_URL_TTL_MS
+    return {
+      url: `/api/v1/documents/${doc.storageKey}?exp=${exp}&sig=${signKey(doc.storageKey, exp, 'read')}`,
+      originalName: doc.originalName, mime: doc.mime, expiresAt: new Date(exp),
+    }
   }
 
   /** ما تحتاجه شاشةُ التركيب قبل أن يكتب الموظّفُ شيئا.
@@ -1566,6 +1602,166 @@ export class TrainerReviewService {
       body: `اعتذر ${c.profile.application.fullName} عن «${c.title}» — وسببُه: ${reason.slice(0, 200)}`,
       data: { contractId: c.id, applicationId: c.profile.applicationId },
     })
+    return { ok: true }
+  }
+
+  /* ═══════════ الاعتماد — وبه ينفذ العقد، وبه يُفتح الحساب ═══════════
+
+     التوقيعُ إقرارُ طرفٍ واحد. ونفاذُ العقد يحتاج قبولَ الطرف الآخر بعد أن
+     **ينظر إنسانٌ في وثيقة الهويّة ويطابق بها الاسمَ القانونيَّ المكتوب** —
+     وهو عملُ نظرٍ لا شرطٌ تفحصه آلة، فله زرٌّ لا مؤقِّت.
+
+     وهو المعبرُ الوحيدُ من «وقّع» إلى «حسابٌ مفتوح». */
+
+  /** يعتمد الأكاديميّةُ توقيعَ المدرّب، ثمّ يُفعَّل حسابُه إن كان العقدُ يحبسه.
+
+      والتفعيلُ يمرّ من `decide('activate')` نفسِها لا نسخةً عنها: هي التي
+      تربط حسابَ المتقدّم بالملفّ وتمنحه الدورَ وتبذر مؤهّلاته وتنقل الحالةَ
+      وتكتب أثرَها. ونسخُها هنا يعني مسارَ تفعيلٍ ثانيا يتخلّف عن الأوّل في
+      أوّل تعديلٍ يلحق ذاك ولا يلحق هذا. */
+  async countersignContract(
+    contractId: string, actorId: string, input: { noteAr?: string | null } = {},
+  ) {
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (c.status !== 'signed') {
+      throw new AuthError('bad_state', 'لا يُعتمَد إلّا عقدٌ وقّعه صاحبُه ولم يُعتمَد بعد', 409)
+    }
+    /* حارسُ التضارب نفسُه الذي في `decide`: من يعتمد عقدا يفتح به حسابا
+       ويمنح دورا. وهو يجري هنا أيضا لأنّ العقدَ قد لا يحبس التفعيلَ
+       (`gatesActivation = false`)، فلا يُنادى `decide` أصلا ولا يجري حارسُها. */
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId } })
+    if (actor && actor.email === c.profile.application.email) {
+      throw new AuthError('self_decision', 'لا يجوز اعتمادُ عقدٍ مرتبطٍ ببريدك', 403)
+    }
+
+    const note = (input.noteAr ?? '').trim().slice(0, 500)
+    const countersignedAt = new Date()
+    await this.prisma.$transaction(async (tx) => {
+      /* قارنْ واضبطْ داخل المعاملة كما في التوقيع: نقرتان متزامنتان تمرّان
+         معا فيُكتب اعتمادان ويُنادى التفعيلُ مرّتين. */
+      const done = await tx.trainerContract.updateMany({
+        where: { id: c.id, status: 'signed' },
+        data: {
+          status: 'countersigned', countersignedAt, countersignedBy: actorId,
+          /* المطبوعُ في المستند اسمُ المفوَّض في السجلّ، والمحفوظُ في
+             `countersignedBy` **من ضغط فعلا**. فإن اختلفا كان وكيلا عنه
+             بتفويضٍ خطّيٍّ يُكتب في الملحوظة — والسجلُّ يقول من فعل. */
+          academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
+          academySignatoryTitle: ACADEMY_LEGAL.signatoryTitleAr,
+          countersignNoteAr: note.length > 0 ? note : null,
+        },
+      })
+      if (done.count === 0) throw new AuthError('bad_state', 'اعتُمد العقدُ قبل ثوانٍ — حدّثْ الصفحة', 409)
+      await recordAudit(tx, {
+        actorId, action: 'trainer.contract.countersign',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: {
+          signerLegalName: c.signerLegalName, signedBodyHash: c.signedBodyHash,
+          bodyVersion: c.bodyVersion, gatesActivation: c.gatesActivation,
+          academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
+          noteAr: note.length > 0 ? note : null, countersignedAt,
+        },
+      })
+    })
+
+    /* ═══ ثمّ يُفتح الحساب — وخارجَ المعاملة بقصد ═══
+
+       الاعتمادُ هو الفعلُ القانونيّ، والتفعيلُ أثرُه التشغيليّ. فلو تعذّر
+       التفعيلُ — لا حسابَ للمتقدّم مثلا — لم يُمحَ اعتمادٌ صحيحٌ من أجل خطوةٍ
+       تُعاد بزرّ. ويُقال ما جرى بلا تجميل: الشاشةُ تعرض ما منع. */
+    let activated = false
+    let activationBlockedAr: string | null = null
+    if (c.gatesActivation) {
+      try {
+        await this.decide(c.profile.applicationId, actorId, 'activate', `اعتمادُ العقد الموقَّع — ${c.title}`)
+        activated = true
+      } catch (e) {
+        if (!(e instanceof AuthError)) throw e
+        activationBlockedAr = e.message
+      }
+    }
+
+    /* ولا يُعتمَد عقدٌ في صمت: من وقّع ينتظر جوابا، وهو اليومَ ملزَمٌ بما وقّع */
+    const app = c.profile.application
+    try {
+      await sendDirectEmail(this.prisma, {
+        to: c.signerEmail ?? app.email,
+        subject: `اعتُمد عقدُك — ${c.title}`,
+        ...renderMail({
+          greetingName: c.signerLegalName ?? app.fullName,
+          heading: activated ? 'اعتُمد عقدُك، وفُتح حسابُك' : 'اعتُمد عقدُك',
+          blocks: [
+            {
+              kind: 'p',
+              text: `اعتمدت الأكاديميّةُ توقيعَك على «${c.title}» بتاريخ ${fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' })}، فصار العقدُ نافذا بين الطرفين.`,
+            },
+            activated
+              ? { kind: 'callout' as const, text: 'حسابُك التدريبيُّ مفتوحٌ الآن — ادخل بوّابتَك لتقرأ دوراتِك المؤهَّل لها.' }
+              : { kind: 'note' as const, text: 'ويصلك فتحُ الحساب في رسالةٍ تالية.' },
+            {
+              kind: 'note',
+              text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك عرضا مستقلّا تقبله أو تعتذر عنه.',
+            },
+          ],
+        }),
+      })
+    } catch { /* البريدُ رفاهية — الاعتمادُ وقع، والنسخةُ تُعاد من الإدارة */ }
+
+    return { ok: true, countersignedAt, activated, activationBlockedAr }
+  }
+
+  /** رفضُ التوقيع — الاسمُ لا يطابق الوثيقةَ، أو الوثيقةُ ليست له.
+
+      ولا يُمحى توقيعُه: ما فعله وقع، وأعمدةُ الدليل (`signedAt` والاسمُ
+      والهاشُ وعنوانُ الشبكة) تبقى كما هي. والصفُّ يُغلَق بسببٍ مكتوب،
+      ويُركَّب عقدٌ جديدٌ إن أُريد — فمن وقّع باسمٍ غيرِ اسمه وقّع وثيقةً
+      تسمّي طرفا آخر، ولا تُصحَّح تسميةُ طرفٍ بتعديل حقل. */
+  async rejectSignature(contractId: string, actorId: string, reasonAr: string) {
+    const reason = (reasonAr ?? '').trim()
+    if (reason.length < 5) {
+      throw new AuthError('no_reason', 'اكتب ما لم يطابق — يصل صاحبَه ويُقرأ بعد شهرٍ حين يُسأل عنه', 422)
+    }
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: contractId, status: 'signed' },
+      data: {
+        status: 'revoked', revokedAt: new Date(), revokedBy: actorId,
+        revokeReasonAr: `رُفض التوقيع: ${reason}`.slice(0, 500),
+      },
+    })
+    if (done.count === 0) {
+      throw new AuthError('bad_state', 'لا يُرفَض توقيعٌ إلّا على عقدٍ موقَّعٍ لم يُعتمَد', 409)
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.reject_signature',
+      entityType: 'trainer_contract', entityId: contractId,
+      meta: { reasonAr: reason.slice(0, 500), signerLegalName: c.signerLegalName },
+    })
+
+    const app = c.profile.application
+    try {
+      await sendDirectEmail(this.prisma, {
+        to: c.signerEmail ?? app.email,
+        subject: `نحتاج مراجعةَ بيانات عقدك — ${c.title}`,
+        ...renderMail({
+          greetingName: c.signerLegalName ?? app.fullName,
+          heading: 'لم نستطع اعتمادَ توقيعك بعد',
+          blocks: [
+            { kind: 'p', text: `راجعنا توقيعَك على «${c.title}» ولم نستطع اعتمادَه.` },
+            { kind: 'callout', text: reason },
+            { kind: 'note', text: 'ويصلك عقدٌ جديدٌ برابطٍ جديدٍ بعد تصحيحه — ولا يلزمك ما لم يُعتمَد.' },
+          ],
+        }),
+      })
+    } catch { /* البريدُ رفاهية — الرفضُ وقع، ويُبلَّغ من الإدارة */ }
     return { ok: true }
   }
 
