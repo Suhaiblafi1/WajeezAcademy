@@ -177,7 +177,7 @@ const LOW: readonly string[] = [
   'trainer.account.link', 'trainer.demo.evaluate', 'trainer.document.register',
   'trainer.public_profile.save', 'trainer.photo.upload',
   'trainer.review.add', 'trainer.review.update',
-  'trainer.application.submit', 'trainer.application.resume',
+  'trainer.application.submit', 'trainer.application.resume', 'trainer.application.reapply',
   'trainer.application.purge', 'trainer.application.proposals_edit',
   'trainer.application.phase2_complete',
   'trainer.application.account_created', 'trainer.application.account_linked',

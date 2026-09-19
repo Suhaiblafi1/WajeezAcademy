@@ -92,6 +92,7 @@ const PHRASES: Record<string, string> = {
   'enrollment_request.reject': 'رفضُ طلبِ تسجيل',
   'learner.enroll.manual': 'تسجيلٌ يدويٌّ لمتعلّم',
   'trainer.application.submit': 'تقديمُ طلبِ انضمامٍ للتدريب',
+  'trainer.application.reapply': 'تقدّمٌ من جديدٍ بعد طلبٍ منتهٍ — يُفكّ القديمُ عن الحساب',
   'trainer.invitation.create': 'دعوةُ مدرّبٍ لإنشاء حسابه',
   'trainer.approved.notify': 'إشعارُ مدرّبٍ باعتماده',
   'trainer.info_requested.notify': 'إشعارُ متقدّمٍ بطلبِ معلوماتٍ إضافية',
@@ -284,7 +285,9 @@ const PHRASES: Record<string, string> = {
   'content.archived': 'أرشفةُ مادّةٍ أو تسجيل',
   'content.disabled': 'تعطيلُ مادّةٍ أو تسجيل',
 
-  /* وظائفُ العامل الثماني — `worker/jobs.ts`. وفاعلُها النظامُ لا إنسان */
+  /* وظائفُ العامل — `worker/jobs.ts`. وفاعلُها النظامُ لا إنسان.
+     (وكان مكتوبا هنا عددُها، فتقادم صامتا حين زِيدت وظائف — والعددُ يُقرأ
+     من `JOBS` لا من تعليق.) */
   'worker.calendly_interview_sync': 'مزامنةُ مقابلاتِ Calendly',
   'worker.cleanup_expired': 'تنظيفُ ما انتهت صلاحيّتُه',
   'worker.cohort_status_sync': 'مزامنةُ حالاتِ الشعب',
@@ -293,6 +296,7 @@ const PHRASES: Record<string, string> = {
   'worker.publish_scheduled_changes': 'نشرُ التغييراتِ المجدولة',
   'worker.reclaim_abandoned_orders': 'استرجاعُ الطلباتِ المهجورة',
   'worker.session_reminders': 'تذكيراتُ الجلسات',
+  'worker.unbooked_digest': 'ملخّصُ من لم يحجز موعدَ لقائه',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */
