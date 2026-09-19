@@ -4,6 +4,7 @@ import { CalendarClock,
   ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
   FileUp, KeyRound, Loader2, Mail, MessageCircle, Mic2, Phone, RefreshCcw, Search, Sparkles, Users,
 } from "lucide-react";
+import { InterviewPrep } from "@/components/InterviewPrep";
 import {
   areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, invalidProps, OptionGrid, Question,
 } from "@/components/FormKit";
@@ -1767,6 +1768,8 @@ export default function JoinTrainer() {
                       أرسل Calendly تفاصيلَ الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
                     </p>
                   )}
+                  {/* وما يُعمل به قبل الموعد — البابان يقرآن الأسطرَ نفسَها */}
+                  <InterviewPrep className="mt-4" />
                 </Inset>
               )}
               {BOOKABLE_STATUSES.includes(lookupResult.status) && !lookupResult.hasInterview && (

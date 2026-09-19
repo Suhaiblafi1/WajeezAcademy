@@ -293,7 +293,7 @@ export class TrainerReviewService {
         uid: `interview-${interview.id}@wajeez-academy`,
         title: 'مقابلة انضمام إلى نخبة مدرّبي وجيز',
         startsAt: input.scheduledAt,
-        durationMinutes: 45,
+        durationMinutes: TRAINER_INTERVIEW.minutes,
         description: `مقابلةٌ بشأن طلبك رقم ${app.reference}. ${remote ? 'عن بُعد — يصلك الرابط قبل الموعد.' : 'حضوريّة.'}`,
         url: `${publicSiteUrl()}/join-trainer`,
         organizer: { name: 'أكاديمية وجيز', email: ACADEMY_EMAILS.calendar },

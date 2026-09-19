@@ -16,6 +16,7 @@ import { publicSiteUrl } from '../notification.service'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
 import { buildIcs } from './ics'
+import { TRAINER_INTERVIEW } from '../../../src/application/trainer/application-options'
 
 /** المنظِّمُ واحدٌ في كلّ دعواتنا — ويُقرأ من إعدادات البريد حين تُضبط */
 const ORGANIZER = { name: 'أكاديمية وجيز', email: ACADEMY_EMAILS.calendar }
@@ -111,7 +112,7 @@ export class CalendarService {
         uid: `interview-${iv.id}@wajeez-academy`,
         title: 'مقابلة انضمام إلى نخبة مدرّبي وجيز',
         startsAt: iv.scheduledAt,
-        durationMinutes: 45,
+        durationMinutes: TRAINER_INTERVIEW.minutes,
         description: `مقابلةٌ بشأن طلبك رقم ${iv.application.reference}. ${
           iv.mode === 'in_person' ? 'حضوريّة.' : 'عن بُعد — يصلك الرابط قبل الموعد.'
         }`,

@@ -13,6 +13,7 @@ import BookInterview from "@/components/BookInterview";
 
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { InterviewPrep } from "@/components/InterviewPrep";
 /* بوّابةُ المتقدّم للتدريب — صفحةٌ واحدة تقول له أين طلبه.
 
    المتقدّم يدخل ببريده وكلمته التي اختارها عند التقديم، فيرى: حالةَ طلبه
@@ -33,7 +34,11 @@ interface Mine {
   phase2CompletedAt: string | null;
   emailVerifiedAt: string | null;
   documents: { kind: string; originalName: string; uploadedAt: string }[];
-  interviews: { id: string; scheduledAt: string; mode: string; canceledAt: string | null }[];
+  interviews: {
+    id: string; scheduledAt: string; mode: string; canceledAt: string | null;
+    /** رابطُ Calendly لتعديل الموعد أو إلغائه — محفوظٌ منذ المزامنة */
+    rescheduleUrl: string | null;
+  }[];
   statusHistory: { toStatus: string; note: string | null; createdAt: string }[];
   profile: { userId: string | null } | null;
 }
@@ -242,9 +247,23 @@ export default function ApplicantStatus() {
                 <p className="mt-2 text-sm leading-7 text-foreground">
                   {fmtDateTime(new Date(mine.interviews[0].scheduledAt))} — عن بُعد
                 </p>
-                <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  أرسل Calendly تفاصيل الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
-                </p>
+                {/* ═══ ورابطُ التعديل هنا كما هو في صفحة المتابعة بالبريد ═══
+
+                    كان يُقال له «تجدهما في بريدك» وحدَه، وصفحةُ المتابعة
+                    العامّةُ تعرض الرابطَ نفسَه منذ مدّة. فمن دخل بحسابه — وهو
+                    أقربُ البابَين — كان يرى أقلَّ ممّن دخل ببريده. */}
+                {mine.interviews[0].rescheduleUrl ? (
+                  <a href={mine.interviews[0].rescheduleUrl} target="_blank" rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink hover:underline">
+                    <CalendarClock className="h-3.5 w-3.5" /> عدِّل موعدَك أو ألغِه عند Calendly
+                  </a>
+                ) : (
+                  <p className="mt-1 text-read leading-6 text-muted-foreground">
+                    أرسل Calendly تفاصيل الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
+                  </p>
+                )}
+                {/* وما يُعمل به قبل الموعد — تحت الخبر لا فوقَه */}
+                <InterviewPrep className="mt-4" />
               </Card>
             )}
 
