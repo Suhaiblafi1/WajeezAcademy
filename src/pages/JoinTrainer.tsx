@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { CalendarClock,
   ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
-  FileUp, KeyRound, Loader2, Mail, MessageCircle, Mic2, Phone, RefreshCcw, Search, Send, Sparkles, Users,
+  FileUp, KeyRound, Loader2, Mail, MessageCircle, Mic2, Phone, RefreshCcw, Search, Sparkles, Users,
 } from "lucide-react";
 import {
   areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, invalidProps, OptionGrid, Question,
@@ -178,6 +178,52 @@ function normalizeDigits(v: string): string {
 const codeSelectCls = `${controlCls.replace("w-full", "")} w-32 shrink-0 px-2`;
 
 /** صفحة انضمام المدربين — على API حقيقي: قسمٌ أوّل يُنشئ الطلب والحساب، وقسمٌ أخير يُكمله */
+/* ═══ شريطُ المحطّات — يُرسم في النموذج وفي «وصل طلبك» كلتيهما ═══
+
+   ولماذا مكوّنٌ لا نسختان: لو كُتب مرّتين لافترقا عند أوّل تعديل، فيرى
+   المتقدّمُ أربعَ محطّاتٍ في شاشةٍ وثلاثا في أختها — وهو بعينه ما يجعل
+   «بقيت خطوةٌ واحدة» غيرَ مصدَّقة.
+
+   و`current` يقبل ٤ وإن كان `step` في النموذج ١..٣: المحطّةُ الرابعةُ ليست
+   خطوةَ نموذجٍ تُملأ، وهي «الحالية» حين يصير الحجزُ هو ما بقي. */
+function StepBar({ current, listRef, className = "mt-10" }: {
+  current: number;
+  listRef?: React.Ref<HTMLOListElement>;
+  className?: string;
+}) {
+  return (
+    <ol ref={listRef} tabIndex={-1} className={`${className} grid scroll-mt-24 grid-cols-1 gap-2 outline-none sm:grid-cols-4`} aria-label="مراحل الطلب">
+      {STEPS.map((s) => {
+        const state = s.n === current ? "current" : s.n < current ? "done" : "todo";
+        return (
+          <li key={s.n} aria-current={state === "current" ? "step" : undefined}>
+            <div
+              className={`rounded-2xl border p-3 transition-colors ${
+                state === "current" ? "border-gold/50 bg-gold/[0.07]"
+                  : state === "done" ? "border-teal/35 bg-teal/[0.05]" : "border-white/10 bg-white/[0.02]"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-fine font-black ${
+                    state === "current" ? "bg-gold text-on-gold"
+                      : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-muted-foreground"
+                  }`}
+                  dir="ltr"
+                >
+                  {state === "done" ? <Check className="h-3.5 w-3.5" /> : s.n}
+                </span>
+                <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-foreground"}`}>{s.title}</span>
+              </span>
+              <span className="mt-1.5 block text-fine leading-relaxed text-muted-foreground">{s.hint}</span>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default function JoinTrainer() {
   const hp = useHoneypot();
   const [params] = useSearchParams();
@@ -714,7 +760,16 @@ export default function JoinTrainer() {
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-teal/15">
             <CheckCircle2 className="h-8 w-8 text-teal-light-ink" />
           </span>
-          <h1 className="mt-6 text-2xl font-black">وصل طلبك كاملا — شكرا لك</h1>
+          {/* ═══ عنوانٌ يقول ما بقي لا ما انتهى ═══
+
+              «وصل طلبك كاملا — شكرا لك» يُقرأ ختاما، فيُغلق الصفحةَ من تحته
+              تقويمٌ ينتظره. والحقيقةُ أنّ الطلبَ وصل وأنّ الموعدَ لم يُحجز —
+              والجملتان تُقالان معا: شكرٌ، ثمّ ما بقي. */}
+          <h1 className="mt-6 text-2xl font-black">وصل طلبك — وبقيت خطوةٌ واحدة</h1>
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">
+            شكرا لك. طلبك كاملٌ عند فريقنا، ولم يبقَ إلّا أن تختار موعدَ لقاء التعارف من التقويم أدناه.
+          </p>
+          <StepBar current={4} className="mt-6 text-right" />
           <Card as="p" tone="warn" className="mt-4">
             <span className="text-xs text-muted-foreground">رقم طلبك</span>
             <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
@@ -886,36 +941,8 @@ export default function JoinTrainer() {
           ))}
         </div>
 
-        {/* مؤشر الخطوات — ثلاث محطات قصيرة بدل جدار واحد */}
-        <ol ref={stepsRef} tabIndex={-1} className="mt-10 grid scroll-mt-24 grid-cols-1 gap-2 outline-none sm:grid-cols-3" aria-label="أقسام الطلب">
-          {STEPS.map((s) => {
-            const state = s.n === step ? "current" : s.n < step ? "done" : "todo";
-            return (
-              <li key={s.n} aria-current={state === "current" ? "step" : undefined}>
-                <div
-                  className={`rounded-2xl border p-3 transition-colors ${
-                    state === "current" ? "border-gold/50 bg-gold/[0.07]"
-                      : state === "done" ? "border-teal/35 bg-teal/[0.05]" : "border-white/10 bg-white/[0.02]"
-                  }`}
-                >
-                  <span className="flex items-center gap-2">
-                    <span
-                      className={`grid h-6 w-6 shrink-0 place-items-center rounded-lg text-fine font-black ${
-                        state === "current" ? "bg-gold text-on-gold"
-                          : state === "done" ? "bg-teal/20 text-teal-light-ink" : "bg-white/10 text-muted-foreground"
-                      }`}
-                      dir="ltr"
-                    >
-                      {state === "done" ? <Check className="h-3.5 w-3.5" /> : s.n}
-                    </span>
-                    <span className={`text-xs font-black ${state === "todo" ? "text-muted-foreground" : "text-foreground"}`}>{s.title}</span>
-                  </span>
-                  <span className="mt-1.5 block text-fine leading-relaxed text-muted-foreground">{s.hint}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+        {/* مؤشر الخطوات — أربع محطات، آخرُها الموعد. ومكتوبٌ في `options.ts` لماذا */}
+        <StepBar current={step} listRef={stepsRef} />
 
         {/* الاستئناف يُقال ولا يُفترض: من يرى حقولا مملوءة ولا يعرف من ملأها
             يرتاب. والباب مفتوح للبدء من جديد بضغطة. */}
@@ -1605,7 +1632,7 @@ export default function JoinTrainer() {
             <div ref={missingRef}>
               <Card tone="warn" aria-live="polite">
                 <p className="text-read leading-5 font-black text-gold-ink">
-                  بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "الإرسال"}»
+                  بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "حجز الموعد"}»
                 </p>
                 <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-read leading-6 text-foreground">
                   {missing[step as 1 | 2 | 3].map((m) => (
@@ -1616,6 +1643,18 @@ export default function JoinTrainer() {
                 </ul>
               </Card>
             </div>
+          )}
+
+          {/* ═══ ويُقال له ما بعد الزرّ قبل أن يضغطه ═══
+
+              الزرُّ يقول «احجز»، والشاشةُ التالية تفتح التقويم. ومن لم يُقَل
+              له ذلك يضغط وهو يظنّ أنّه فرغ، فيقرأ ما بعده شكرا لا خطوة —
+              وهي الشكوى التي وُضعت المحطّةُ الرابعةُ لها. */}
+          {step === 3 && (
+            <Inset as="p" tone="accent" className="text-read leading-6 text-foreground">
+              وبعد هذا الزرّ تختار موعدَ لقاء التعارف مباشرةً من التقويم — وهي آخرُ خطوة،
+              ويصلك التأكيدُ ودعوةُ التقويم فورَ اختيارك.
+            </Inset>
           )}
 
           {/* التنقل — «التالي» يُضغط دائما ويفحص خطوتَه عند الضغط، فيُظهر نقصَها
@@ -1642,10 +1681,17 @@ export default function JoinTrainer() {
                 {!busy && <ArrowLeft className="h-4 w-4" />}
               </Button>
             ) : (
+              /* ═══ ولمَ يقول الزرُّ «احجز» وهو يُرسل ═══
+
+                 لأنّ ما يقع بعده حجز: الطلبُ يُحفَظ ثمّ يُفتح تقويمُ المواعيد
+                 في الشاشة التالية أوّلَ ما فيها. وزرٌّ يقول «أرسل» يُنهي
+                 الرحلةَ في ذهن صاحبها، فيقرأ ما بعده شكرا لا خطوة.
+
+                 والوعدُ يُوفى في الشاشة نفسِها — وإلّا كان الزرُّ كذبا. */
               <Button tone="primary" key="send"
                 type="submit" disabled={busy} className="disabled:cursor-not-allowed">
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {busy ? "جاري الإرسال…" : "أرسل طلب الانضمام"}
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
+                {busy ? "نحفظ طلبك…" : "احجز موعد لقاء التعارف"}
               </Button>
             )}
           </div>
@@ -1701,7 +1747,7 @@ export default function JoinTrainer() {
               {lookupResult.hasInterview && lookupResult.interviewAt && (
                 <Inset tone="positive" className="mt-3">
                   <p className="flex items-center gap-2 text-read leading-5 font-black text-emerald-300">
-                    <CalendarClock className="h-4 w-4" /> موعدُ مقابلتك
+                    <CalendarClock className="h-4 w-4" /> موعدُ لقاء التعارف
                   </p>
                   <p className="mt-2 text-read leading-6 text-foreground">
                     {fmtDateTime(new Date(lookupResult.interviewAt))} — عن بُعد

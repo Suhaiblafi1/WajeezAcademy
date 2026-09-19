@@ -12,6 +12,7 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+import { canRemindToBook } from "@/application/trainer/application-options";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
@@ -170,6 +171,29 @@ export function TrainerDetailOps({ app, onAction }: {
             )}>
             جدولة مقابلة
           </Button>
+
+          {/* ═══ وتذكيرُ من لم يحجز — رسالةٌ تقول «بقيت خطوةٌ واحدة» ═══
+
+              وهي غيرُ الدعوة تحتَها: تلك نصُّها «نودّ أن نلتقيك مرّةً أخرى»،
+              ولا تصلح لمن لم يلتقِنا بعد. وتُعرض بشرطها وحدَه — من يقبل
+              طلبُه الحجزَ ولم يحجز — فلا يُضغط زرٌّ يردّه الخادمُ ٤٠٩. */}
+          {canRemindToBook({
+            status: app.status,
+            liveInterviews: app.interviews.filter((iv) => !iv.canceledAt).length,
+          }) && (
+            <div className="border-t border-white/10 pt-3">
+              <Button tone="confirm" size="sm"
+                onClick={() => void onAction(
+                  () => apiPost(`/api/admin/trainer-applications/${app.id}/booking-reminder`, {}),
+                  "أُرسل التذكير — يحجز من صفحة طلبه",
+                )}>
+                <CalendarCheck className="h-3.5 w-3.5" /> ذكّره بحجز الموعد
+              </Button>
+              <p className="mt-1.5 text-read leading-5 text-muted-foreground">
+                رسالةٌ زرُّها إلى صفحة طلبه: يسجّل الدخول، يرى حالتَه، ويحجز من تحتها.
+              </p>
+            </div>
+          )}
 
           {/* ═══ ودعوةٌ إلى موعدٍ آخر بنقرةٍ واحدة ═══
 

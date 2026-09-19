@@ -147,7 +147,7 @@ export default function BookInterview({ name, email, reference, className = '' }
   return (
     <div ref={cardRef} className={`rounded-2xl border border-teal/30 bg-teal/[0.05] p-5 ${className}`}>
       <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
-        <CalendarClock className="h-4 w-4" /> احجز مقابلتك — اختر الوقت الذي يناسبك
+        <CalendarClock className="h-4 w-4" /> احجز {TRAINER_INTERVIEW.labelAr} — اختر الوقت الذي يناسبك
       </p>
 
       <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-read leading-5 text-muted-foreground">
@@ -194,7 +194,7 @@ export default function BookInterview({ name, email, reference, className = '' }
               >
                 <iframe
                   src={embedUrl}
-                  title="اختيار موعد المقابلة"
+                  title="اختيار موعد لقاء التعارف"
                   /* ولا `lazy`: البطاقةُ لا تُعرض إلّا لمن جاء ليحجز، فتأخيرُ
                      البدء حتّى يقترب من الشاشة تأخيرٌ بلا مقابل. */
                   onLoad={() => setFrameReady(true)}

@@ -147,6 +147,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.inviteToBookInterview(id, req.auth!.userId))
   })
 
+  /* تذكيرٌ لمن وصل طلبُه ولم يحجز — غيرُ الدعوة فوقَها: تلك للقاءٍ ثانٍ،
+     وهذه تقول «بقيت خطوةٌ واحدة» وتردّه إلى صفحة طلبه ليحجز منها. */
+  app.post('/api/admin/trainer-applications/:id/booking-reminder', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'تذكيرُ متقدّمٍ لم يحجز موعدَ لقاء التعارف' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return reply.status(201).send(await review.remindToBookInterview(id, req.auth!.userId))
+  })
+
   app.post('/api/admin/trainer-applications/:id/interviews', {
     preHandler: requirePermission('trainer.applications.review'),
     schema: { tags: ['admin-trainers'], summary: 'جدولة مقابلة — تنقل الطلب إلى interview_scheduled' },

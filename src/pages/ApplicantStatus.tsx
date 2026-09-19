@@ -237,7 +237,7 @@ export default function ApplicantStatus() {
             {mine.interviews[0] && (
               <Card tone="positive">
                 <p className="flex items-center gap-2 text-sm font-black text-emerald-300">
-                  <CalendarClock className="h-4 w-4" /> موعد مقابلتك
+                  <CalendarClock className="h-4 w-4" /> موعد لقاء التعارف
                 </p>
                 <p className="mt-2 text-sm leading-7 text-foreground">
                   {fmtDateTime(new Date(mine.interviews[0].scheduledAt))} — عن بُعد

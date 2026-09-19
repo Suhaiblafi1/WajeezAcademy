@@ -10,8 +10,9 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  APPLICANT_STATUS, BOOKABLE_STATUSES, TRAINER_INTERVIEW, trainerInterviewUrl,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, TRAINER_INTERVIEW, canRemindToBook, trainerInterviewUrl,
 } from '@/application/trainer/application-options'
+import { FORM_STEPS, STEPS } from '@/pages/join-trainer/options'
 import { verifyCalendlyWebhookSignature } from '../../server/services/calendly-webhook.service'
 import { createHmac } from 'node:crypto'
 
@@ -93,6 +94,94 @@ describe('أين يُعرض الحجزُ وأين لا', () => {
       expect(APPLICANT_STATUS[s].explain, `«${s}» ما زال يَعِد بمكالمة`)
         .not.toMatch(/نتواصل معك|سنرتّب موعدها|نرتّب موعدها/)
     }
+  })
+})
+
+describe('الحجزُ آخرُ محطّةٍ يراها المتقدّم — لا ذيلٌ بعد «تمّ»', () => {
+  /* ═══ العطبُ الذي كُتب له ═══
+
+     كان الزرُّ يقول «أرسل طلب الانضمام»، والشاشةُ بعده «وصل طلبك كاملا —
+     شكرا لك». فمن ضغطه قرأ أنّه فرغ، وتحته تقويمٌ لم يَعِده به شيء — فأغلق
+     الصفحةَ ولم يحجز، ونحسبه متأخّرا وهو ينتظرنا.
+
+     وقرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦): يُقال له «احجز موعد مقابلة» —
+     «بالنسبة لنا هذا إتمامُ طلب، ولكن له تتبيّن وكأنّه انتقل للمرحلة
+     الأخيرة». وهذا الوصفُ هو ما يُفحص هنا. */
+
+  it('المحطّاتُ أربعٌ: ثلاثٌ تُملأ وواحدةٌ تُحجَز', () => {
+    expect(STEPS).toHaveLength(FORM_STEPS + 1)
+    /* والأخيرةُ هي الموعد — باسمه الموحَّد لا باسمٍ ثالث */
+    expect(STEPS[STEPS.length - 1].title).toContain(TRAINER_INTERVIEW.labelAr)
+  })
+
+  it('وزرُّ آخرِ خطوةٍ يقول حجزا لا إرسالا', () => {
+    const src = code('src/pages/JoinTrainer.tsx')
+    const send = src.slice(src.indexOf('key="send"'))
+    expect(send.slice(0, 400), 'الزرُّ عاد يَعِد بإرسالٍ ينتهي عنده').not.toContain('أرسل طلب الانضمام')
+    expect(send.slice(0, 400), 'الزرُّ لا يقول ما بعده').toContain('احجز')
+  })
+
+  it('والوعدُ يُوفى في الشاشة التالية: تقويمٌ، ومحطّةٌ رابعةٌ حاليّة', () => {
+    const src = code('src/pages/JoinTrainer.tsx')
+    /* شاشةُ «وصل طلبك» هي ما قبل النموذج في الملفّ — تُعرف بمحطّتها الرابعة */
+    expect(src, 'الشاشةُ التاليةُ لا تقول إنّ الحجزَ هو ما بقي')
+      .toMatch(/<StepBar current=\{4\}/)
+    /* والتقويمُ نفسُه معروضٌ فيها — وإلّا كان الزرُّ وعدا لا يُوفى */
+    expect(src, 'شاشةُ ما بعد الإرسال بلا تقويم').toMatch(/<BookInterview\b/)
+  })
+})
+
+describe('تذكيرُ من لم يحجز — مِحَكٌّ واحدٌ للشاشة وللخادم', () => {
+  it.each([...BOOKABLE_STATUSES])('يُذكَّر من حالتُه «%s» ولا موعدَ له', (status) => {
+    expect(canRemindToBook({ status, liveInterviews: 0 })).toBe(true)
+  })
+
+  it('ولا يُذكَّر من حجز — ولو كانت حالتُه تقبل الحجز', () => {
+    for (const status of BOOKABLE_STATUSES) {
+      expect(canRemindToBook({ status, liveInterviews: 1 }), status).toBe(false)
+    }
+  })
+
+  it.each([
+    ['draft', 'طلبٌ لم يصل بعد'],
+    ['email_verification_pending', 'بريدٌ لم يُوثَّق'],
+    ['interview_scheduled', 'موعدُه محجوز'],
+    ['rejected', 'انتهى الطلب — والتذكيرُ يدعوه إلى بابٍ مغلق'],
+    ['withdrawn', 'سحب طلبَه'],
+    ['active', 'صار مدرّبا'],
+  ])('ولا من حالتُه «%s» — %s', (status) => {
+    expect(canRemindToBook({ status, liveInterviews: 0 })).toBe(false)
+  })
+
+  it('والخادمُ يحرس بالمِحَكّ نفسِه لا بشرطٍ ثانٍ يُكتب بيده', () => {
+    const service = code('server/services/trainer-review.service.ts')
+    const fn = service.slice(service.indexOf('async remindToBookInterview'))
+    expect(fn.slice(0, 2000), 'المسارُ لا يقرأ المِحَكَّ المشترك').toContain('canRemindToBook(')
+  })
+
+  it('وشاشتا الإدارة تقرآنه كذلك — فلا يُعرض زرٌّ يردّه الخادم', () => {
+    for (const screen of ['src/pages/admin/TrainerApplications.tsx', 'src/pages/admin/TrainerOps.tsx']) {
+      expect(code(screen), `${screen} يكتب شرطَه بيده`).toContain('canRemindToBook(')
+    }
+  })
+
+  it('ورابطُ التقويم في البريد يتبع ما ضُبط في التكاملات لا المضمَّن', () => {
+    /* الشاشةُ تقرأ `interviewBookingUrl` من إعداد المنصّة، والبريدُ كان يأخذ
+       المضمَّنَ دائما. فمن بدّل التقويمَ من شاشة التكاملات بدّله في الموقع
+       وحدَه، وبقيت الرسائلُ تدعو إلى تقويمٍ لا يفتحه أحد — بلا خطأٍ يظهر.
+
+       فموضعُ البناء واحدٌ في الخدمة كلِّها، وهو يقرأ الإعداد. */
+    const service = code('server/services/trainer-review.service.ts')
+    expect(service.match(/trainerInterviewUrl\(/g) ?? [],
+      'رابطُ حجزٍ يُبنى خارج الدالّة الواحدة — فيتخلّف عمّا ضُبط').toHaveLength(1)
+    const builder = service.slice(service.indexOf('private async bookingLink'))
+    expect(builder.slice(0, 400), 'الدالّةُ لا تقرأ إعدادَ التقويم').toContain('getCalendlyConfig(')
+  })
+
+  it('ورسالتُه غيرُ دعوةِ اللقاء الثاني — مسارٌ آخرُ وأثرٌ آخر', () => {
+    const service = code('server/services/trainer-review.service.ts')
+    expect(service, 'الأثرُ لا يفرّق التذكيرَ عن الدعوة').toContain("action: 'trainer.interview.remind'")
+    expect(service, 'ذهبت دعوةُ اللقاء الثاني').toContain("action: 'trainer.interview.invite'")
   })
 })
 

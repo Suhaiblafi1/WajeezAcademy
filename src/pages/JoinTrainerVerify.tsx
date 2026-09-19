@@ -57,12 +57,12 @@ export default function JoinTrainerVerify() {
               {state.alreadyVerified ? "بريدك موثَّق من قبل" : "وُثِّق بريدك"}
             </h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              طلبك <b className="font-mono text-muted-foreground" dir="ltr">{reference}</b> عند فريق المراجعة، وسنتواصل معك على
-              الوسيلة التي اختَرتها لعقد الاجتماع التعريفي.
+              طلبك <b className="font-mono text-muted-foreground" dir="ltr">{reference}</b> عند فريق المراجعة،
+              ولم يبقَ إلّا أن تحجز موعدَ لقاء التعارف — تجد التقويمَ في صفحة طلبك.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
-                سجّل الدخول لمتابعة طلبك
+                سجّل الدخول واحجز موعدك
               </Link>
               <Link to="/" className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
                 الرئيسية
