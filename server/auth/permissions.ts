@@ -102,7 +102,21 @@ export const PERMISSIONS = [
   { key: 'trainer.publish', description: 'الموافقة على ظهور المدرب للعامة' },
   { key: 'trainer.suspend', description: 'إيقاف مدرب ومنع وصوله' },
   { key: 'trainer.change.review', description: 'مراجعة اقتراحات تعديل الدورات من المدربين (checker)' },
-  { key: 'trainer.compensation.manage', description: 'إدارة العقود وقواعد التعويض والمستحقات' },
+  { key: 'trainer.compensation.manage', description: 'قواعدُ التعويض والمستحقّات — الرقمُ نفسُه' },
+  /* ═══ العقدُ بيدِ من يقرّر، والرقمُ بيدِ من يملكه ═══
+
+     كان مفتاحٌ واحدٌ يفتح البابين: `trainer.compensation.manage`، ولا يحمله
+     إلّا `finance`. وثمنُه أنّ **من يقرّر «هذا الشخصُ أريده» لا يستطيع أن
+     يرسل له عقدا** — فالمديرُ الأكاديميُّ يقرأ الطلبَ ويجري المقابلةَ ويقبل
+     قبولا مشروطا، ثمّ يقف. والماليّةُ تملك المفتاح ولا تملك الشاشة:
+     `trainer.applications.view` ليست عندها أصلا.
+
+     والحلُّ ليس توسيعَ مفتاح الماليّة ليشمل شاشةَ الطلبات — فذاك يفتح لها
+     السيرَ الذاتيّةَ ورسائلَ الدوافع وبيانات المتقدّمين، وهو توسيعٌ رُفض في
+     هذه المنصّة من قبل. بل **نقلُ الباب**: مفتاحٌ ثانٍ للتعاقد عند من يقرّر،
+     ويبقى الرقمُ عند الماليّة وحدَها. فمن يركّب العقدَ يرى الأجرَ مقروءا ولا
+     يملك تغييرَه. */
+  { key: 'trainer.contract.manage', description: 'تركيبُ عقد المدرّب وإرسالُه وإلغاؤه — لا ضبطُ أجره' },
   // منظومة المدربين — بوابة المدرب
   { key: 'trainer.portal', description: 'دخول بوابة المدرب وعرض تأهيله وإسناداته' },
   { key: 'trainer.change.submit', description: 'اقتراح تعديل على دورة مؤهل لها أو مسندة إليه' },
@@ -188,6 +202,9 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
        وهي في حزمة `super_admin` بحكم أنّها تشمل الصلاحيّاتِ كلَّها. */
     'trainer.invite', 'trainer.qualify', 'trainer.assign', 'trainer.publish', 'trainer.suspend',
     'trainer.change.review',
+    /* يتعاقد ولا يسعّر: `trainer.contract.manage` هنا و`trainer.compensation.manage`
+       عند الماليّة. فيركّب العقدَ ويرسله، ويرى الأجرَ في شاشته مقروءا لا محرَّرا. */
+    'trainer.contract.manage',
     'cohort.manage', 'cohort.open', 'cohort.plan.approve', 'cohort.override_capacity', 'enrollment.manage',
     'material.manage', 'certificate.issue', 'certificate.revoke',
     'advisor.assign', 'advisor.request.review', 'advisor.learner.view', 'cv.manage', 'cv.view',

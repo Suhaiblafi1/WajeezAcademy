@@ -24,10 +24,38 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
+  IDENTITY_MIMES, MAX_CONTRACT_DOC_BYTES,
   MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
   assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, signKey,
 } from './storage.service'
 import { deleteObject } from './object-store'
+import { EarningsService } from './earnings.service'
+import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
+import {
+  ACADEMY_LEGAL, LEGAL_FIELD_LABELS_AR,
+  academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
+} from '../../src/data/academy-legal'
+import {
+  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION,
+  renderContractBodyAr,
+  type ContractBodyInput, type ContractCompensation, type ContractCourseRow,
+} from '../../src/application/trainer/contract-body'
+import {
+  CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS,
+  hasRequiredIdentityDocument, readRequiredDocuments, type RequiredDocument,
+} from '../../src/application/trainer/contract-documents'
+import { CONTRACT_SIGNING_LINK_DAYS } from '../../src/application/trainer/notice-periods'
+
+/** ما تُرسله شاشةُ التركيب — والأجرُ ليس منه: يُقرأ من قاعدة الماليّة ولا
+    يُكتب من شاشة التعاقد. فمن يركّب العقدَ يرى الرقمَ ولا يملك تغييرَه. */
+export interface ContractComposeInput {
+  title: string
+  /** الدوراتُ المختارةُ من مؤهّلاته — وبلا قيمةٍ تُدرَج كلُّها */
+  courseIds?: string[]
+  requiredDocuments: RequiredDocument[]
+  hoursNoteAr?: string | null
+  rateWaivedReasonAr?: string | null
+}
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
@@ -434,9 +462,16 @@ export class TrainerReviewService {
       }
     }
 
-    /* القبول المشروط ينشئ ملف المدرب — قبل الحساب وقبل الدور */
+    /* القبول المشروط ينشئ ملف المدرب — قبل الحساب وقبل الدور.
+
+       ويبذر مؤهّلاتِه معه: العقدُ يُرسَل من هذا الطور، وبندُه الثاني يعدّد
+       ما أُهِّل له. وكان البذرُ في `approve`/`activate` وحدَهما، فيخرج
+       الملحقُ (أ) فارغا في كلّ عقدٍ يُرسَل على المسار الذي وُصف. والبذرُ
+       آمنٌ يُعاد: `skipDuplicates` على `(profileId, courseId)`، فمن أُهِّل
+       يدويّا لا يُكرَّر ومن رُدّ يبقى مردودا. */
     if (action === 'conditionally_approve') {
-      await this.ensureProfile(applicationId, app, actorId)
+      const profile = await this.ensureProfile(applicationId, app, actorId)
+      await this.syncQualificationsFromApplication(profile.id, actorId)
     }
 
     /* ولا يُعتمَد أحدٌ في صمت: النقرةُ الواحدة تُنهي المسارَ كلَّه، فلو لم
@@ -906,7 +941,639 @@ export class TrainerReviewService {
     }
   }
 
-  /* ─────────── العقد ─────────── */
+  /* ═══════════ العقد — وثيقةٌ تُركَّب وتُجمَّد ═══════════
+
+     التصميمُ ومراحلُه في
+     `docs/superpowers/specs/2026-09-19-trainer-contract-design.md`.
+
+     المرحلةُ الأولى تركّب المتنَ وتجمّده وتعاينه. والرابطُ والتوقيعُ ورفعُ
+     الوثائق في الثانية، والاعتمادُ والتفعيلُ في الثالثة. */
+
+  /** قائمةُ العقود، ومعها من يصلح أن يُركَّب له عقدٌ ولا عقدَ له.
+
+      والثاني هو نصفُ الشاشة الذي يُنسى: قائمةُ عقودٍ تُري ما صُنع ولا تُري
+      **من ينتظر**. فمن قُبل قبولا مشروطا منذ أسبوعين ولم يُرسَل له شيءٌ لا
+      يظهر في أيّ موضع، ولا يُكتشف إلّا حين يسأل هو. */
+  async listContracts() {
+    const [contracts, candidates] = await Promise.all([
+      this.prisma.trainerContract.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: {
+          id: true, title: true, status: true, kind: true, revision: true,
+          bodyVersion: true, bodyHash: true, signerEmail: true,
+          compensationType: true, compensationRate: true, currency: true,
+          gatesActivation: true, sentAt: true, signedAt: true, revokedAt: true,
+          revokeReasonAr: true, createdAt: true, qualifiedSnapshot: true,
+          profile: {
+            select: {
+              id: true,
+              application: { select: { id: true, reference: true, fullName: true, email: true, status: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.trainerApplication.findMany({
+        where: {
+          status: { in: [...TrainerReviewService.QUALIFIABLE_STATUSES] },
+          profile: { is: { contracts: { none: { status: { in: ['draft', 'sent', 'signed'] } } } } },
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: { id: true, reference: true, fullName: true, email: true, status: true },
+      }),
+    ])
+    return {
+      contracts,
+      candidates,
+      missingLegal: missingAcademyLegalFields().map((f) => LEGAL_FIELD_LABELS_AR[f]),
+    }
+  }
+
+  /** المتنُ المجمَّد وحدَه — يُقرأ عند السؤال: «أيَّ صياغةٍ وقّع؟» */
+  async contractBody(contractId: string) {
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      select: { id: true, title: true, bodyAr: true, bodyVersion: true, bodyHash: true, status: true },
+    })
+    if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    return c
+  }
+
+  /** ما تحتاجه شاشةُ التركيب قبل أن يكتب الموظّفُ شيئا.
+
+      والأجرُ يُقرأ بـ`activeRule` لا من الجدول مباشرةً — فهي المرجعُ نفسُه
+      الذي تحتسب به المستحقّات، فلا يقول العقدُ رقما ويصرف الكشفُ غيرَه. */
+  async contractPrefill(applicationId: string) {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      include: {
+        profile: { include: { contracts: { orderBy: { createdAt: 'desc' } } } },
+        reviews: { select: { feeExpectationAr: true, feeProposalAr: true, reviewerName: true } },
+      },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (!app.profile) throw new AuthError('no_profile', 'لا ملف مدرب لهذا الطلب — القبول المشروط أولا', 409)
+
+    const quals = await this.prisma.trainerCourseQualification.findMany({
+      where: { profileId: app.profile.id, status: 'qualified' },
+      select: { courseId: true },
+    })
+    const courses = await Promise.all(
+      quals.map(async (q) => ({ courseId: q.courseId, titleAr: await this.courseTitleAr(q.courseId) })),
+    )
+    const rule = await new EarningsService(this.prisma).activeRule(app.profile.id)
+
+    return {
+      applicationId,
+      profileId: app.profile.id,
+      reference: app.reference,
+      fullName: app.fullName,
+      email: app.email,
+      applicationStatus: app.status,
+      /* يُحسب هنا أيضا كي تقوله الشاشةُ للموظّف قبل أن ينقر — فأثرُ الإرسال
+         على مدرّبٍ نشطٍ يختلف عنه على مرشّح، ولا يُكتشف الفرقُ بعد وقوعه. */
+      gatesActivation: app.status !== 'active',
+      courses,
+      compensation: rule && {
+        ruleId: rule.id, type: rule.type, rate: rule.rate.toString(), currency: rule.currency,
+        minSeats: rule.minSeats, referralRate: rule.referralRate?.toString() ?? null,
+      },
+      /* ما قيل في المقابلة عن الأجر — يُعرض للموظّف ليستأنس به، ولا يُحتسب
+         منه شيء. وعمودا المراجعة يقولان ذلك صراحةً في المخطّط. */
+      feeNotes: app.reviews
+        .filter((r) => r.feeExpectationAr || r.feeProposalAr)
+        .map((r) => ({ reviewerName: r.reviewerName, expectation: r.feeExpectationAr, proposal: r.feeProposalAr })),
+      defaultDocuments: DEFAULT_REQUIRED_DOCUMENTS,
+      documentKinds: CONTRACT_DOCUMENT_KINDS,
+      missingLegal: missingAcademyLegalFields().map((f) => LEGAL_FIELD_LABELS_AR[f]),
+      openContract: app.profile.contracts.find((c) => c.status === 'draft' || c.status === 'sent') ?? null,
+    }
+  }
+
+  /** يبني مُدخلَ المتن من لقطةٍ محفوظةٍ أو من مُدخلِ الشاشة — موضعٌ واحدٌ
+      يعرف كيف يُركَّب العقد، فالمعاينةُ والمحفوظُ لا يفترقان. */
+  private contractBodyInput(args: {
+    fullName: string; email: string; reference: string
+    courses: ContractCourseRow[]
+    compensation: ContractCompensation | null
+    hoursNoteAr: string | null; rateWaivedReasonAr: string | null
+    requiredDocuments: RequiredDocument[]
+    issuedOn: Date
+  }): ContractBodyInput {
+    return {
+      academyPartyLineAr: academyPartyLineAr(),
+      academyLegalNameAr: ACADEMY_LEGAL.legalNameAr,
+      academyTradingNameAr: ACADEMY_LEGAL.tradingNameAr,
+      governingLawAr: ACADEMY_LEGAL.governingLawAr,
+      disputeVenueAr: ACADEMY_LEGAL.disputeVenueAr,
+      trainerFullName: args.fullName,
+      trainerEmail: args.email,
+      applicationReference: args.reference,
+      issuedOnAr: fmtDateWith(args.issuedOn, { year: 'numeric', month: 'long', day: 'numeric' }),
+      courses: args.courses,
+      compensation: args.compensation,
+      rateWaivedReasonAr: args.rateWaivedReasonAr,
+      hoursNoteAr: args.hoursNoteAr,
+      requiredDocuments: args.requiredDocuments,
+    }
+  }
+
+  /** معاينةٌ لا تُحفَظ — تعمل ولو نقصت هويّةُ الأكاديميّة، فالموظّفُ يرى
+      الوثيقةَ ويرى مواضعَ النقص فيها قبل أن يُطلب منه سدُّها. */
+  async previewContract(applicationId: string, input: ContractComposeInput) {
+    const pre = await this.contractPrefill(applicationId)
+    const chosen = this.chosenCourses(pre.courses, input.courseIds)
+    return renderContractBodyAr(this.contractBodyInput({
+      fullName: pre.fullName, email: pre.email, reference: pre.reference,
+      courses: chosen,
+      compensation: pre.compensation
+        ? { type: pre.compensation.type, rate: pre.compensation.rate, currency: pre.compensation.currency,
+            minSeats: pre.compensation.minSeats, referralRate: pre.compensation.referralRate }
+        : null,
+      hoursNoteAr: input.hoursNoteAr?.trim() || null,
+      rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
+      requiredDocuments: input.requiredDocuments,
+      issuedOn: new Date(),
+    }))
+  }
+
+  private chosenCourses(all: ContractCourseRow[], picked: string[] | undefined): ContractCourseRow[] {
+    if (!picked) return all
+    const want = new Set(picked)
+    return all.filter((c) => want.has(c.courseId))
+  }
+
+  /** ═══ التركيبُ والتجميد ═══
+
+      ومعاملةٌ واحدة: كانت `createContract` تُنشئ الصفَّ ثمّ تنقل الحالةَ في
+      نداءين. فإن ردَّ النقلُ (وهو يردُّ من أكثر الحالات — الخريطةُ لا تسمح
+      بـ`contract_pending` إلّا من `conditionally_approved`) بقي الصفُّ يتيما
+      حالتُه `sent`، ويتراكم واحدٌ مع كلّ محاولةٍ فاشلة. */
+  async composeContract(applicationId: string, actorId: string, input: ContractComposeInput) {
+    const missing = missingAcademyLegalFields()
+    if (missing.length > 0) {
+      throw new AuthError('academy_identity_missing', academyLegalGapMessageAr(missing), 422)
+    }
+    const pre = await this.contractPrefill(applicationId)
+    if (pre.openContract) {
+      throw new AuthError('contract_open', 'لهذا المدرّب عقدٌ مفتوحٌ — يُلغى أوّلا ثمّ يُركَّب غيرُه', 409)
+    }
+    const chosen = this.chosenCourses(pre.courses, input.courseIds)
+
+    /* ولا أجرَ مسكوتٌ عنه: بلا قاعدةٍ قائمةٍ وبلا سببٍ مكتوبٍ يُردّ التركيب.
+       فعقدٌ يُوقَّع ولا أساسَ لأتعابه يترك «مستحقّاتي» صفرا إلى الأبد، ولا
+       يعرف أحدٌ بعد شهرين أكان ذلك قصدا أم سهوا. */
+    if (!pre.compensation && !input.rateWaivedReasonAr?.trim()) {
+      throw new AuthError('no_rate', 'لا قاعدةَ أتعابٍ لهذا المدرّب — اضبطها الماليّةُ أوّلا، أو اكتب سببَ إرساله بلا أجرٍ متّفقٍ عليه', 422)
+    }
+    if (!hasRequiredIdentityDocument(input.requiredDocuments)) {
+      throw new AuthError('no_identity_document', 'وثيقةُ هويّةٍ واحدةٌ إلزاميّةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله', 422)
+    }
+
+    const issuedOn = new Date()
+    const bodyAr = renderContractBodyAr(this.contractBodyInput({
+      fullName: pre.fullName, email: pre.email, reference: pre.reference,
+      courses: chosen,
+      compensation: pre.compensation
+        ? { type: pre.compensation.type, rate: pre.compensation.rate, currency: pre.compensation.currency,
+            minSeats: pre.compensation.minSeats, referralRate: pre.compensation.referralRate }
+        : null,
+      hoursNoteAr: input.hoursNoteAr?.trim() || null,
+      rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
+      requiredDocuments: input.requiredDocuments,
+      issuedOn,
+    }))
+
+    return this.prisma.$transaction(async (tx) => {
+      const contract = await tx.trainerContract.create({
+        data: {
+          profileId: pre.profileId,
+          title: input.title.trim(),
+          kind: 'original',
+          status: 'draft',
+          bodyVersion: CONTRACT_BODY_VERSION,
+          bodyAr,
+          bodyHash: sha256(bodyAr),
+          compensationRuleId: pre.compensation?.ruleId ?? null,
+          compensationType: pre.compensation?.type ?? null,
+          compensationRate: pre.compensation?.rate ?? null,
+          currency: pre.compensation?.currency ?? LEDGER_CURRENCY,
+          compensationMinSeats: pre.compensation?.minSeats ?? null,
+          compensationReferralRate: pre.compensation?.referralRate ?? null,
+          hoursNoteAr: input.hoursNoteAr?.trim() || null,
+          rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
+          qualifiedSnapshot: chosen as unknown as Prisma.InputJsonValue,
+          requiredDocuments: input.requiredDocuments as unknown as Prisma.InputJsonValue,
+          signerEmail: pre.email,
+          gatesActivation: pre.gatesActivation,
+          createdBy: actorId,
+        },
+      })
+      /* ═══ ولا تتحرّك حالةُ الطلب هنا ═══
+
+         «عقد قيد التوقيع» تعني أنّ العقدَ عنده وأنّنا ننتظره — لا أنّنا
+         كتبنا مسودّة. ونقلُه عند التركيب يجعل المرشّحَ يرى في صفحة حالته
+         أنّه مطالَبٌ بتوقيعٍ لا رابطَ له بعد.
+
+         فالنقلُ مع الإرسال (المرحلة ٢)، وقيمةُ `gatesActivation` تُحسب
+         هنا وتُطبَّق هناك — فتُقرأ من حالةِ يومِ التركيب لا من حالةٍ قد
+         تتغيّر بين التركيب والإرسال. */
+      await recordAudit(tx, {
+        actorId, action: 'trainer.contract.compose', entityType: 'trainer_contract', entityId: contract.id,
+        meta: {
+          applicationId, bodyVersion: CONTRACT_BODY_VERSION, bodyHash: contract.bodyHash,
+          courseCount: chosen.length, gatesActivation: pre.gatesActivation,
+        },
+      })
+      return contract
+    })
+  }
+
+  /* ═══════════ الإرسالُ — وهنا يقع ما يمسّ المدرّب ═══════════
+
+     التركيبُ تهيئةٌ داخليّةٌ لا يعلم بها أحد. والإرسالُ هو الفعلُ: يُسكّ
+     الرمزُ، وتتحرّك حالةُ الطلب، ويصل البريدُ صاحبَه. فهنا وحدَه يُنقل إلى
+     `contract_pending` — ومعناها «العقدُ عنده وننتظره»، لا «كتبنا مسودّة». */
+
+  private signingUrl(token: string): string {
+    return `${publicSiteUrl()}/c/${encodeURIComponent(token)}`
+  }
+
+  /** يسكّ رمزا جديدا ويكتب هاشَه — يُستعمل للإرسال ولتجديد رابطٍ انقضى */
+  private mintContractToken(): { token: string; tokenHash: string; expiresAt: Date } {
+    const token = newToken()
+    return {
+      token,
+      tokenHash: sha256(token),
+      expiresAt: new Date(Date.now() + CONTRACT_SIGNING_LINK_DAYS * 86_400_000),
+    }
+  }
+
+  private async mailContract(args: {
+    to: string; fullName: string; title: string; url: string; expiresAt: Date; resend: boolean
+  }) {
+    return sendDirectEmail(this.prisma, {
+      to: args.to,
+      subject: args.resend ? `رابطٌ جديدٌ لتوقيع عقدك — ${args.title}` : `عقدُك مع أكاديمية وجيز — للقراءة والتوقيع`,
+      ...renderMail({
+        greetingName: args.fullName,
+        heading: args.resend ? 'هذا رابطٌ جديدٌ لتوقيع عقدك' : 'اكتمل اعتمادُك، وهذا عقدُك للقراءة والتوقيع',
+        blocks: [
+          { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
+          { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
+          { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
+          { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
+        ],
+      }),
+    })
+  }
+
+  /** الإرسالُ — معاملةٌ واحدةٌ، والبريدُ بعدها */
+  async sendContract(contractId: string, actorId: string) {
+    const contract = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (contract.status !== 'draft') {
+      throw new AuthError('bad_state', 'لا يُرسَل إلّا عقدٌ مسودّة — الملغى والموقَّعُ والمرسَلُ لها أبوابُها', 409)
+    }
+    if (!contract.bodyAr) {
+      throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. ركّبْ عقدا جديدا', 409)
+    }
+    const app = contract.profile.application
+    const { token, tokenHash, expiresAt } = this.mintContractToken()
+
+    await this.prisma.$transaction(async (tx) => {
+      /* قارنْ واضبطْ: نقرتان متزامنتان لا تُرسلان رمزين، والثانيةُ تجد صفرا */
+      const moved = await tx.trainerContract.updateMany({
+        where: { id: contractId, status: 'draft' },
+        data: { status: 'sent', sentAt: new Date(), tokenHash, tokenExpiresAt: expiresAt, signerEmail: app.email },
+      })
+      if (moved.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد مسودّة', 409)
+      /* والبوّابةُ تُطبَّق هنا: حالةُ الطلب لا تتحرّك إلّا لمن لم يُفعَّل بعد */
+      if (contract.gatesActivation && app.status !== 'contract_pending') {
+        await this.apps.transition(app.id, 'contract_pending', actorId, 'إرسالُ العقد للتوقيع', tx)
+      }
+      await recordAudit(tx, {
+        actorId, action: 'trainer.contract.send', entityType: 'trainer_contract', entityId: contractId,
+        meta: { applicationId: app.id, sentTo: app.email, expiresAt, gatesActivation: contract.gatesActivation },
+      })
+    })
+
+    /* والبريدُ خارجَ المعاملة على عرف هذا الملفّ: بريدٌ يُخفق لا ينقض إرسالا
+       وقع. والرابطُ يُعاد للموظّف كذلك — فقناةُ البريد قد تتعثّر، ومن يملك
+       الصلاحيّةَ يحتاج نسخةً يسلّمها بيده. */
+    const mail = await this.mailContract({
+      to: app.email, fullName: app.fullName, title: contract.title,
+      url: this.signingUrl(token), expiresAt, resend: false,
+    })
+    return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
+  }
+
+  /** تجديدُ الرابط — الرمزُ القديم يموت لحظتَها، فلا يبقى بابان */
+  async resendContract(contractId: string, actorId: string) {
+    const contract = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (contract.status !== 'sent') {
+      throw new AuthError('bad_state', 'لا يُجدَّد رابطٌ إلّا لعقدٍ مرسَلٍ بانتظار التوقيع', 409)
+    }
+    const app = contract.profile.application
+    const { token, tokenHash, expiresAt } = this.mintContractToken()
+    await this.prisma.trainerContract.update({
+      where: { id: contractId }, data: { tokenHash, tokenExpiresAt: expiresAt },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.resend', entityType: 'trainer_contract', entityId: contractId,
+      meta: { sentTo: app.email, expiresAt },
+    })
+    const mail = await this.mailContract({
+      to: app.email, fullName: app.fullName, title: contract.title,
+      url: this.signingUrl(token), expiresAt, resend: true,
+    })
+    return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
+  }
+
+  /** الإلغاء — وما أُرسل لا يُحذف. الصفُّ يبقى دليلا على ما رُكّب ومن ألغاه */
+  async revokeContract(contractId: string, actorId: string, reasonAr: string) {
+    if (reasonAr.trim().length < 5) {
+      throw new AuthError('no_reason', 'سببُ الإلغاء يُكتب — يُقرأ بعد شهرٍ حين يُسأل عنه', 422)
+    }
+    /* قارنْ واضبطْ في نداءٍ واحد: قراءةٌ ثمّ كتابةٌ تسمح لنقرتين متزامنتين
+       أن تمرّا معا، فيُكتب سببان ويُسجَّل أثران لإلغاءٍ واحد. */
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: contractId, status: { in: ['draft', 'sent'] } },
+      /* والرمزُ يموت مع الإلغاء: رابطٌ حيٌّ لعقدٍ ملغًى بابٌ مفتوحٌ على
+         وثيقةٍ لم تعد قائمة — ومن يفتحه يوقّع ما سُحب من تحته. */
+      data: {
+        status: 'revoked', revokedAt: new Date(), revokedBy: actorId, revokeReasonAr: reasonAr.trim(),
+        tokenHash: null, tokenExpiresAt: null,
+      },
+    })
+    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ ليس مفتوحا — لا يُلغى موقَّعٌ ولا ملغًى', 409)
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.revoke', entityType: 'trainer_contract', entityId: contractId,
+      meta: { reasonAr: reasonAr.trim() },
+    })
+    return { ok: true }
+  }
+
+  /* ═══════════ من الرابط — حيث يقرأ المدرّبُ ويوقّع ═══════════
+
+     ولا حسابَ له هنا: `profile.userId` فارغٌ حتّى الدعوة، فالرمزُ هو الهويّة
+     كما في رابط السجلّ. والفرقُ أنّ ذاك يقرأ ويُقيّم، وهذا **يلتزم بمال** —
+     فرسائلُ الردّ تفرّق بين «لم يعد صالحا» و«وُقّع» و«أُلغي»، لأنّ من يقف
+     أمام بابٍ مغلقٍ يحتاج أن يعرف أيَّ بابٍ هو. */
+
+  private async byToken(token: string) {
+    if (!token || token.length < 16) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 400)
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { tokenHash: sha256(token) },
+      include: {
+        documents: { orderBy: { uploadedAt: 'asc' } },
+        profile: { include: { application: true } },
+      },
+    })
+    if (!c) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح — تحقّقْ منه أو اطلب إعادةَ إرساله', 404)
+    return c
+  }
+
+  /** يُقرأ العقدُ من رابطه — ويُسجَّل أنّه فُتح */
+  async contractByToken(token: string) {
+    const c = await this.byToken(token)
+    const now = new Date()
+    if (c.status === 'signed') {
+      return { state: 'signed' as const, title: c.title, signedAt: c.signedAt, signerLegalName: c.signerLegalName }
+    }
+    if (c.status === 'declined') return { state: 'declined' as const, title: c.title, declinedAt: c.declinedAt }
+    if (c.status === 'revoked') return { state: 'revoked' as const, title: c.title }
+    if (c.status !== 'sent') throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
+    if (c.tokenExpiresAt && c.tokenExpiresAt < now) {
+      return { state: 'expired' as const, title: c.title, expiredAt: c.tokenExpiresAt }
+    }
+
+    await this.prisma.trainerContract.update({
+      where: { id: c.id },
+      data: { firstOpenedAt: c.firstOpenedAt ?? now, lastOpenedAt: now },
+    })
+
+    const required = readRequiredDocuments(c.requiredDocuments)
+    return {
+      state: 'open' as const,
+      contractId: c.id,
+      title: c.title,
+      trainerName: c.profile.application.fullName,
+      trainerEmail: c.signerEmail ?? c.profile.application.email,
+      bodyAr: c.bodyAr,
+      bodyVersion: c.bodyVersion,
+      /* يُعاد ليُردَّ مع التوقيع، فيُقابَل بما في القاعدة — ولا يُوثَق به
+         وحدَه: المقابلةُ في الخادم على `bodyAr` المحفوظ لا على ما يُرسَل. */
+      bodyHash: c.bodyHash,
+      expiresAt: c.tokenExpiresAt,
+      requiredDocuments: required,
+      /* أسماءٌ وأنواعٌ فقط — ولا مفاتيحَ تخزينٍ إلى واجهةٍ عامّة */
+      uploaded: c.documents.map((d) => ({ id: d.id, kind: d.kind, originalName: d.originalName })),
+      acks: CONTRACT_ACKS,
+      consentTextAr: CONTRACT_CONSENT_AR,
+      consentVersion: CONTRACT_CONSENT_VERSION,
+    }
+  }
+
+  /** عقدٌ مفتوحٌ للكتابة — يُستعمل قبل كلّ فعلٍ يغيّر شيئا من الرابط */
+  private async openByToken(token: string) {
+    const c = await this.byToken(token)
+    if (c.status !== 'sent') {
+      throw new AuthError('bad_state', 'هذا العقدُ لم يعد بانتظار التوقيع', 409)
+    }
+    if (c.tokenExpiresAt && c.tokenExpiresAt < new Date()) {
+      throw new AuthError('expired_token', 'انقضى أجلُ الرابط — اطلب من الأكاديمية إعادةَ إرساله', 410)
+    }
+    return c
+  }
+
+  /** وعدُ رفعٍ لوثيقةٍ مطلوبة — كـ`requestDocumentUpload` في مسار الطلب */
+  async requestContractDocumentUpload(token: string, input: {
+    kind: string; originalName: string; mime: string; sizeBytes: number
+  }) {
+    assertFileUploadsEnabled('والبديلُ الآن: أرسِلْ وثيقتَك إلى فريق الأكاديمية بالبريد.')
+    const c = await this.openByToken(token)
+    const required = readRequiredDocuments(c.requiredDocuments)
+    if (!required.some((d) => d.kind === input.kind)) {
+      throw new AuthError('bad_kind', 'هذه الوثيقةُ ليست مطلوبةً في هذا العقد', 422)
+    }
+    if (!(IDENTITY_MIMES as readonly string[]).includes(input.mime)) {
+      throw new AuthError('bad_mime', 'الصيغُ المقبولة: JPEG أو PNG أو WebP أو PDF', 422)
+    }
+    if (input.sizeBytes <= 0 || input.sizeBytes > MAX_CONTRACT_DOC_BYTES) {
+      throw new AuthError('too_large', `حجمُ الملفّ يتجاوز ${Math.round(MAX_CONTRACT_DOC_BYTES / 1048576)} ميغابايت`, 413)
+    }
+
+    const storageKey = newStorageKey()
+    const doc = await this.prisma.$transaction(async (tx) => {
+      /* ورفعُ وثيقةٍ من نوعٍ رُفع من قبلُ يحلّ محلَّه: من رفع صورةً مقلوبةً
+         ثمّ أعاد الرفعَ أراد الثانيةَ، ولا يُقرأ عند المطابقة صفّان لنوعٍ واحد. */
+      const old = await tx.trainerContractDocument.findMany({
+        where: { contractId: c.id, kind: input.kind }, select: { id: true, storageKey: true },
+      })
+      if (old.length > 0) {
+        await tx.trainerContractDocument.deleteMany({ where: { id: { in: old.map((o) => o.id) } } })
+      }
+      const created = await tx.trainerContractDocument.create({
+        data: {
+          contractId: c.id, kind: input.kind, storageKey,
+          originalName: input.originalName.slice(0, 200), mime: input.mime, sizeBytes: input.sizeBytes,
+        },
+      })
+      await recordAudit(tx, {
+        actorId: null, action: 'trainer.contract.document_register',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: { kind: input.kind, storageKey, replaced: old.length },
+      })
+      return { created, old }
+    })
+    /* وبايتاتُ المستبدَل تُمحى بعد المعاملة — فمحوٌ يُخفق لا ينقض صفّا */
+    for (const o of doc.old) { try { await deleteObject(o.storageKey) } catch { /* ما يبقى يُكنَس لاحقا */ } }
+
+    const exp = Date.now() + SIGNED_URL_TTL_MS
+    return {
+      documentId: doc.created.id, storageKey,
+      uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}`,
+    }
+  }
+
+  /** ═══ التوقيع ═══
+
+      ومقابلةُ الهاش قبل كلِّ شيء: من فتح الصفحةَ ثمّ بُدّل المتنُ تحته —
+      بإلغاءٍ وتركيبٍ جديدٍ مثلا — لا يمرّ توقيعُه على ما لم يره. */
+  async signContractByToken(token: string, input: {
+    legalName: string; bodyHash: string; acks: string[]; ip?: string | null; userAgent?: string | null
+  }) {
+    const c = await this.openByToken(token)
+    const legalName = input.legalName.trim()
+    if (legalName.length < 4) {
+      throw new AuthError('bad_name', 'اكتب اسمَك القانونيَّ كاملا كما في وثيقة هويّتك', 422)
+    }
+    if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
+      throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
+    }
+    const missingAcks = CONTRACT_ACKS.filter((a) => !input.acks.includes(a.key))
+    if (missingAcks.length > 0) {
+      throw new AuthError('acks_missing', 'لم تُقرّ ببنودٍ لا بدّ من الإقرار بها قبل التوقيع', 422)
+    }
+    const required = readRequiredDocuments(c.requiredDocuments).filter((d) => d.required)
+    const have = new Set(c.documents.map((d) => d.kind))
+    const missingDocs = required.filter((d) => !have.has(d.kind))
+    if (missingDocs.length > 0) {
+      throw new AuthError(
+        'documents_missing',
+        `لم تُرفَع بعد: ${missingDocs.map((d) => d.labelAr).join(' · ')}`,
+        422,
+      )
+    }
+
+    const signedAt = new Date()
+    await this.prisma.$transaction(async (tx) => {
+      /* قارنْ واضبطْ داخل المعاملة: قراءةٌ ثمّ كتابةٌ تسمح لنقرتين متزامنتين
+         أن تمرّا معا، فيُكتب توقيعان ويُغلَق أثران لتوقيعٍ واحد. و«وُقّع
+         مرّتين» على وثيقةٍ قانونيّةٍ لا معنى له. */
+      const done = await tx.trainerContract.updateMany({
+        where: { id: c.id, status: 'sent' },
+        data: {
+          status: 'signed', signedAt,
+          signerLegalName: legalName,
+          signerIp: input.ip?.slice(0, 64) ?? null,
+          signerUserAgent: input.userAgent?.slice(0, 300) ?? null,
+          consentTextAr: CONTRACT_CONSENT_AR,
+          signedBodyHash: input.bodyHash,
+          /* والرمزُ يموت بالتوقيع: وُقّع مرّةً، فلا بابَ يُفتح ثانية */
+          tokenHash: null, tokenExpiresAt: null,
+        },
+      })
+      if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+      await tx.trainerOnboardingTask.updateMany({
+        where: { profileId: c.profileId, key: 'sign_contract' }, data: { doneAt: signedAt },
+      })
+      /* والفاعلُ هو المدرّبُ لا موظّف — ولا حسابَ له، فاسمُه في `meta`
+         كما يفعل رابطُ السجلّ. ولا يُكتب في الأثر متنٌ ولا عنوانُ شبكة:
+         الهاشُ يكفي دليلا، والعنوانُ في صفّه محروسا بصلاحيّته. */
+      await recordAudit(tx, {
+        actorId: null, action: 'trainer.contract.sign_by_trainer',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: {
+          signerLegalName: legalName, bodyVersion: c.bodyVersion, bodyHash: c.bodyHash,
+          consentVersion: CONTRACT_CONSENT_VERSION, signedAt,
+        },
+      })
+    })
+
+    /* ونسخةُ صاحبِه تصله — فمن وقّع يملك ما وقّع عليه، لا يطلبه منّا */
+    const app = c.profile.application
+    try {
+      await sendDirectEmail(this.prisma, {
+        to: c.signerEmail ?? app.email,
+        subject: `نسختُك من العقد الموقَّع — ${c.title}`,
+        ...renderMail({
+          greetingName: legalName,
+          heading: 'سُجّل توقيعُك، وهذه نسختُك',
+          blocks: [
+            { kind: 'p', text: `وقّعتَ «${c.title}» بتاريخ ${fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' })}.` },
+            { kind: 'callout', text: 'تراجعه الأكاديميّةُ الآن، وتصلك رسالةٌ حين يُعتمَد ويُفتح حسابُك.' },
+            { kind: 'note', text: 'النصُّ الكاملُ مرفقٌ أدناه للحفظ.' },
+            { kind: 'p', text: c.bodyAr ?? '' },
+          ],
+        }),
+      })
+    } catch { /* البريدُ رفاهية — التوقيعُ وقع، والنسخةُ تُعاد من الإدارة */ }
+
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      templateKey: 'trainer.contract.signed',
+      title: 'وقّع مدرّبٌ عقدَه',
+      body: `وقّع ${legalName} «${c.title}» — يُراجَع توقيعُه ثمّ يُفعَّل حسابُه.`,
+      data: { contractId: c.id, applicationId: app.id },
+    })
+    return { ok: true, signedAt }
+  }
+
+  /** الاعتذارُ — جوابٌ مشروعٌ لا عطب. والعقدُ عرضٌ يُقبَل ويُردّ. */
+  async declineContractByToken(token: string, reasonAr: string) {
+    const c = await this.openByToken(token)
+    const reason = reasonAr.trim()
+    if (reason.length < 5) {
+      throw new AuthError('no_reason', 'اكتب سببَ اعتذارك — سطرٌ واحدٌ يكفي، ويساعدنا أن نفهم', 422)
+    }
+    const declinedAt = new Date()
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: c.id, status: 'sent' },
+      data: {
+        status: 'declined', declinedAt, declineReasonAr: reason.slice(0, 500),
+        tokenHash: null, tokenExpiresAt: null,
+      },
+    })
+    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.decline',
+      entityType: 'trainer_contract', entityId: c.id,
+      meta: { reasonAr: reason.slice(0, 500) },
+    })
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      templateKey: 'trainer.contract.declined',
+      title: 'اعتذر مدرّبٌ عن عقده',
+      body: `اعتذر ${c.profile.application.fullName} عن «${c.title}» — وسببُه: ${reason.slice(0, 200)}`,
+      data: { contractId: c.id, applicationId: c.profile.applicationId },
+    })
+    return { ok: true }
+  }
+
+  /* ─────────── العقد: البابُ القديم ───────────
+
+     ⚠️ **مهجورٌ، ويُحذف في المرحلة الثانية.** يكتب عنوانا بلا متنٍ ولا هاش،
+     ويسجّل المسؤولُ به توقيعا بالنيابة عن المدرّب. وهو اليومَ مسارُ اختبارات
+     دورة الحياة وحدَها، ويبقى حتّى تُنقل إلى `composeContract`. */
 
   async createContract(applicationId: string, actorId: string, input: { title: string; terms?: unknown }) {
     const profile = await this.profileFor(applicationId)
@@ -1102,7 +1769,7 @@ export class TrainerReviewService {
   /* ─────────── التأهيل والإسناد والنشر العام والإيقاف ─────────── */
 
   async qualifyForCourse(profileId: string, courseId: string, actorId: string, note?: string) {
-    const profile = await this.requireActiveProfile(profileId)
+    const profile = await this.requireLiveProfile(profileId)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة في الكتالوج')
     const q = await this.prisma.trainerCourseQualification.upsert({
@@ -1141,7 +1808,7 @@ export class TrainerReviewService {
   async requestQualification(
     profileId: string, courseId: string, cohortId: string, actorId: string, note?: string,
   ) {
-    const profile = await this.requireActiveProfile(profileId)
+    const profile = await this.requireLiveProfile(profileId)
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('unknown_cohort', 'الشعبة غير موجودة', 404)
     if (cohort.courseId !== courseId) {
@@ -1755,6 +2422,41 @@ export class TrainerReviewService {
     if (!profile) throw new AuthError('not_found', 'ملف المدرب غير موجود', 404)
     if (profile.suspendedAt || profile.application.status !== 'active') {
       throw new AuthError('not_active', 'المدرب ليس في حالة active', 409)
+    }
+    return profile
+  }
+
+  /* ═══ التأهيلُ يصحّ قبل التفعيل، والإسنادُ لا ═══
+
+     كان حارسٌ واحدٌ يحرس الفعلين، فيشترط `active` لكليهما. وثمنُ ذلك ظهر
+     يومَ صار العقدُ وثيقةً تُرسَل: العقدُ يَعِد بأن يُعدَّد فيه ما أُهِّل
+     له، والقبولُ المشروطُ لا يبذر مؤهّلا، **ولا يستطيع المسؤولُ أن يؤهّله
+     يدويّا لأنّه ليس `active` بعد** — فيخرج الملحقُ (أ) فارغا في كلّ عقدٍ
+     يُرسَل على المسار الذي وُصف.
+
+     والفعلان مختلفان في طبيعتهما لا في تشدُّدهما:
+
+     · **التأهيلُ وصفٌ لقدرته.** «يصلح لتدريس هذه الدورة» حكمٌ يصحّ على
+       مرشّحٍ لم يُفتح له حسابٌ بعد — بل هو الحكمُ الذي نبني عليه قرارَ
+       التعاقد نفسَه. فيُقبل من `conditionally_approved` فصاعدا.
+
+     · **والإسنادُ ارتباطٌ بشعبةٍ فيها متعلّمون.** لا يقع إلّا على مدرّبٍ
+       نشطٍ فُتحت بوّابتُه وتمّ التعاقدُ معه. فيبقى `requireActiveProfile`
+       على `assignToCohort` بلا تخفيف، ومعه حارسا `CohortService`.
+
+     وبهذا يبقى «مؤهَّلٌ ≠ مُسنَدٌ إليه» — وهو نفسُه البندُ الذي يقوم عليه
+     العقد — محروسا في مواضعه الثلاثة، ولا يصير هذا التخفيفُ بابا خلفيّا
+     حوله. ويحرسه `server/tests/trainer/qualify-before-active.test.ts`. */
+  private static readonly QUALIFIABLE_STATUSES = [
+    'conditionally_approved', 'contract_pending', 'onboarding', 'active',
+  ] as const
+
+  private async requireLiveProfile(profileId: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { id: profileId }, include: { application: true } })
+    if (!profile) throw new AuthError('not_found', 'ملف المدرب غير موجود', 404)
+    const allowed: readonly string[] = TrainerReviewService.QUALIFIABLE_STATUSES
+    if (profile.suspendedAt || !allowed.includes(profile.application.status)) {
+      throw new AuthError('not_live', 'ملفُّ المدرّب ليس في طورٍ يُؤهَّل فيه — القبولُ المشروطُ أوّلا', 409)
     }
     return profile
   }

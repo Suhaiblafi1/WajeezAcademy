@@ -239,6 +239,15 @@ const PHRASES: Record<string, string> = {
   'trainer.blackout.add': 'تسجيلُ المدرّبِ فترةَ غياب',
   'trainer.blackout.remove': 'حذفُ المدرّبِ فترةَ غياب',
   'trainer_compensation.set_rule': 'تعيينُ قاعدةِ تعويضِ مدرّب',
+  /* العقدُ — التصميمُ في
+     `docs/superpowers/specs/2026-09-19-trainer-contract-design.md` */
+  'trainer.contract.compose': 'تركيبُ عقدِ مدرّبٍ وتجميدُ متنِه',
+  'trainer.contract.revoke': 'إلغاءُ عقدِ مدرّبٍ قبل توقيعه',
+  'trainer.contract.send': 'إرسالُ العقد إلى المدرّب للتوقيع',
+  'trainer.contract.resend': 'تجديدُ رابط توقيع العقد',
+  'trainer.contract.document_register': 'رفعُ المدرّبِ وثيقةً مع عقده',
+  'trainer.contract.sign_by_trainer': 'توقيعُ المدرّبِ عقدَه بنفسه',
+  'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',
   'trainer_payout.generate_skipped': 'تخطّي توليدِ مستحقّ',
 
   /* ═══ وأربعةٌ وعشرون فعلا تُبنى ولا تُكتب حرفا ═══

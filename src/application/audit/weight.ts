@@ -49,6 +49,15 @@ const HIGH: readonly string[] = [
   'trainer.qualify', 'trainer.qualify.reject',
   'trainer.approved.notify', 'trainer.info_requested.notify',
   'trainer.status.transition', 'trainer.contract.sign',
+  /* ═══ والإرسالُ والتوقيعُ عاليان — هنا يقع ما يمسّ الإنسان ═══
+
+     التركيبُ تهيئةٌ لا يعلم بها أحد (في `LOW` أدناه، ومعه سببُه). أمّا
+     الإرسالُ فيحرّك حالةَ طلبه ويضع في بريده وثيقةً تلزمه، والتوقيعُ
+     **فعلُه هو** يلتزم به بمال، والاعتذارُ يُنهي طريقَه إلى التفعيل.
+     وثلاثتُها تُخبر إنسانا في معالجها: الأوّلان بريدا إلى صاحبه،
+     والثالثُ إشعارا إلى من ينتظر قرارَه. */
+  'trainer.contract.send', 'trainer.contract.resend',
+  'trainer.contract.sign_by_trainer', 'trainer.contract.decline',
   'trainer.account.activate', 'trainer.invitation.create',
   'trainer.scope.grant', 'trainer.scope.revoke',
   /* شعبةٌ أُسندت إليه */
@@ -177,6 +186,24 @@ const LOW: readonly string[] = [
   'trainer.interview.self_canceled',
   'trainer.dossier_link.create', 'trainer.dossier_link.revoke',
   'trainer.dossier_link.rotate', 'trainer.dossier_link.send',
+  /* ═══ وتركيبُ العقد ليس إرسالَه ═══
+
+     صُنّفا أوّلا `high`، فحمّر الحارسُ الذي يشترط أن يبلغ العاليَ إنسان —
+     وكان محقّا، لكنّ الجوابَ لم يكن إشعارا بل تصحيحَ الفعل نفسِه.
+
+     فالتركيبُ يُخرج **مسودّةً مجمَّدةً لم يرَها أحد**: لا رابطَ بعد، ولا
+     بريدَ خرج، ولا حالةَ طلبٍ تحرّكت. وإخبارُ المدرّب عندها بأنّ «عقدا
+     جُهّز له» وعدٌ لا يقابله فعل — يفتح بوّابتَه فلا يجد شيئا.
+
+     وهو كـ`trainer.dossier_link.create` سواءً بسواء: وثيقةٌ تُهيَّأ ثمّ
+     تُرسَل، والخبرُ مع الإرسال لا مع التهيئة.
+
+     **والإرسالُ والتوقيعُ (المرحلة ٢) عاليان بالضرورة**، ويصلان صاحبَهما
+     بريدا — فهناك يقع ما يمسّ وصولَه ومالَه. */
+  'trainer.contract.compose', 'trainer.contract.revoke',
+  /* ورفعُ الوثيقة كـ`trainer.document.register`: فعلُ رفعٍ لا خبرَ فيه
+     لأحد — وصاحبُه هو من رفعها، فلا يُخبَر بما فعله للتوّ. */
+  'trainer.contract.document_register',
   'trainer.change.submit', 'trainer.change.decide',
   'trainer.change.publish', 'trainer.change.apply_catalog',
   'trainer.course_proposal.create', 'trainer.course_proposal.update',

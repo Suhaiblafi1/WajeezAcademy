@@ -121,6 +121,7 @@ describe('كلُّ نموذجٍ يحمل مفتاحَ تخزينٍ يعرفه ا
   const RESOLVED = [
     'AssessmentResponse', 'AssignmentSubmission', 'CvSubmission',
     'CohortFile', 'LearningMaterial', 'Recording', 'TrainerApplicationDocument',
+    'TrainerContractDocument',
   ].sort()
 
   it('المسحُ يقرأ المخطَّطَ فعلا', () => {

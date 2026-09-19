@@ -135,6 +135,20 @@ export const MAX_UPLOAD_BYTES: Record<string, number> = {
 }
 export const MAX_UPLOAD_ANY = 4 * 1024 * 1024
 
+/* ═══ وثيقةُ الهويّة مع العقد — سقفٌ وصيغٌ مقيَّدة ═══
+
+   ولمَ قائمةٌ مغلقةٌ هنا ولا قائمةَ في وثائق الطلب: مسارُ الطلب يقبل أيَّ
+   `mime` يعلنه الرافع (`z.string().min(3).max(100)`)، ويُخزَّن المعلَنُ في
+   ملفّ الوصف ويُعاد في `content-type` عند القراءة. فمن رفع HTML وسمّاه كذلك
+   يُخدَم HTML من أصل الواجهة.
+
+   وذاك دَينٌ قائمٌ في مساره، **وهذا مسارٌ جديدٌ لا يُبنى عليه**: وثيقةُ
+   الهويّة تُفتح أمام موظّفٍ في لوحته، فصيغُها ثلاثُ صورٍ وPDF لا غير. */
+export const MAX_CONTRACT_DOC_BYTES = 4 * 1024 * 1024
+export const IDENTITY_MIMES = [
+  'image/jpeg', 'image/png', 'image/webp', 'application/pdf',
+] as const
+
 /* ═══ صورةُ المدرّب — سقفُها سقفُ صورةٍ لا سقفُ وثيقة ═══
 
    وثائقُ المتقدّم أربعةُ ميغابايت لأنّها مسحٌ ضوئيٌّ لشهادة. والصورةُ
@@ -195,8 +209,8 @@ export function newStorageKey(): string {
    التوقيعُ يُثبت أنّ المنصّةَ أصدرت الرابط، وهذا يمنع أن يُكتب كائنٌ لا
    يملكه سجلٌّ — فلا يبقى على القرص ما لا يعرفه أحد ولا يحذفه أحد. */
 export type StorageOwnerKind =
-  | 'trainer_document' | 'cv' | 'recording' | 'material' | 'submission' | 'assessment_response'
-  | 'trainer_photo' | 'avatar' | 'cohort_file'
+  | 'trainer_document' | 'contract_document' | 'cv' | 'recording' | 'material' | 'submission'
+  | 'assessment_response' | 'trainer_photo' | 'avatar' | 'cohort_file'
 
 export interface StorageOwner {
   kind: StorageOwnerKind
@@ -217,6 +231,21 @@ export async function resolveStorageOwner(
       kind: 'trainer_document',
       maxBytes: MAX_UPLOAD_BYTES[doc.kind] ?? MAX_UPLOAD_ANY,
       mime: doc.mime, originalName: doc.originalName,
+    }
+  }
+
+  /* ═══ وثيقةُ العقد — هويّةٌ يرفعها الموقّعُ من رابطه ═══
+
+     وسقفُها سقفُ وثيقةٍ لا سقفُ صورة: مسحٌ ضوئيٌّ لجوازٍ أو هويّةٍ بوجهين
+     يبلغ الميغابايتين بسهولة. وصيغُها مقيَّدةٌ عند طلب الرفع
+     (`IDENTITY_MIMES`) لا هنا — فهنا يُقرأ ما سُجّل، وهناك يُقرَّر ما يُقبل. */
+  const contractDoc = await prisma.trainerContractDocument.findUnique({
+    where: { storageKey }, select: { mime: true, originalName: true },
+  })
+  if (contractDoc) {
+    return {
+      kind: 'contract_document', maxBytes: MAX_CONTRACT_DOC_BYTES,
+      mime: contractDoc.mime, originalName: contractDoc.originalName,
     }
   }
 

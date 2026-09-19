@@ -150,6 +150,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     templateKeys: [
       'staff.task.assigned', 'staff.task.done', 'admin.support.ticket', 'admin.support_ticket',
       'admin.trainer_application', 'admin.learner_request', 'trainer.qualify.request',
+      /* وتوقيعُ العقد واعتذارُه: كلاهما قرارٌ ينتظر عملا — الموقَّعُ يُراجَع
+         توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. ومن لم يعلم
+         بالتوقيع تركَ مدرّبا وقّع ينتظر حسابا لا يُفتح. */
+      'trainer.contract.signed', 'trainer.contract.declined',
       /* وملخّصُ الصباح بمن أتمّ طلبَه ولم يحجز — عملٌ ينتظر الموظّفَ لا خبرٌ
          يُساق إليه. ولا يُكتَم لسببٍ عمليّ: كتمُه يُعيد المنصّةَ إلى ما قبلَه
          بالضبط — طابورٌ لا يفتحه أحدٌ حتّى يتذكّر، والمتقدّمُ ينتظر يدا لا
