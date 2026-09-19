@@ -2,7 +2,7 @@
    الترتيب بالإلحاح لا بالنوع: الجلسة الجارية قبل التسجيل المنسي قبل التقييم. */
 
 import { Link } from "react-router";
-import { AlertTriangle, CalendarX2, ClipboardCheck, ClipboardList, ListChecks, ListTodo, Radio, Send, Undo2, Video, Upload, ArrowLeft } from "lucide-react";
+import { AlertTriangle, CalendarX2, ClipboardCheck, ClipboardList, Handshake, ListChecks, ListTodo, Radio, Send, Undo2, Video, Upload, ArrowLeft } from "lucide-react";
 import type { QueueItem, QueueKind } from "@/application/trainer/work-queue";
 
 import WorkHeader from "@/components/admin/WorkHeader";
@@ -17,6 +17,8 @@ const ICON: Record<QueueKind, typeof Video> = {
   plan_returned: Undo2,
   plan_ready_unsent: Send,
   plan_incomplete: ListTodo,
+  offer_pending: Handshake,
+  prep_due: ListChecks,
 };
 
 /* الإلحاح يحمله الشكل والنص؛ اللون تعزيز لا مصدرا وحيدا */
@@ -33,6 +35,10 @@ const TONE: Record<QueueKind, string> = {
   plan_returned: "border-gold/40 bg-gold/[0.06]",
   plan_ready_unsent: "border-gold/40 bg-gold/[0.06]",
   plan_incomplete: "border-white/10 bg-white/[0.03]",
+  /* والعرضُ ذهبيٌّ مثلُها: مهلتُه تجري وينتظرك جوابٌ. وأجلُ الإعداد محايدٌ
+     — عملٌ قبِلتَه ولك فيه سَعة، و«لن نستعجل أكثر». */
+  offer_pending: "border-gold/40 bg-gold/[0.06]",
+  prep_due: "border-white/10 bg-white/[0.03]",
 };
 
 /* «١ بندٌ» و«٢ بندان» و«٣ بنود» و«١١ بندا» — والبنودُ مختلفةُ الأجناس

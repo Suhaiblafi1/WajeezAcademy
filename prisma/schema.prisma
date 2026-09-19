@@ -351,6 +351,7 @@ model Course {
   requiredBy            Prerequisite[]               @relation("PrereqOf")
   trainerQualifications TrainerCourseQualification[]
   trainerAssignments    TrainerCourseAssignment[]
+  trainerOffers         TrainerAssignmentOffer[]
   trainerChangeRequests TrainerChangeRequest[]
   trainerProposals      TrainerCourseProposal[]
   trainerPathCourses    TrainerPathCourse[]
@@ -1213,6 +1214,7 @@ model TrainerProfile {
   user                  User?                        @relation(fields: [userId], references: [id])
   skills                TrainerSkill[]
   qualifications        TrainerCourseQualification[]
+  assignmentOffers      TrainerAssignmentOffer[]
   assignments           TrainerCourseAssignment[]
   changeRequests        TrainerChangeRequest[]
   courseProposals       TrainerCourseProposal[]
@@ -1640,7 +1642,7 @@ model TrainerContract {
   /// يقول إنّه أُلغي ومن ألغاه ولماذا. و`declined`: المدرّبُ قرأه ولم يقبله،
   /// وهو **جوابٌ مشروعٌ لا عطب** — فالعقدُ عرضٌ يُقبَل ويُردّ.
   /// و`countersigned` و`superseded` تأتيان مع المرحلة الثالثة.
-  status    String         @default("draft") // draft | sent | declined | revoked | signed | expired | terminated
+  status    String         @default("draft") // draft | sent | declined | revoked | signed | countersigned | expired | terminated
   /// رقمُ النسخة في السلسلة — ١ للأصل ثمّ ما يليه
   revision  Int            @default(1)
   /// النافذُ الذي هذا ملحقٌ له أو بديلٌ عنه
@@ -1741,6 +1743,30 @@ model TrainerContract {
   /// القبول. فمن وقّع على صفحةٍ ثمّ بُدّل تحته النصُّ لا يمرّ توقيعُه.
   signedBodyHash  String?
 
+  /// ─────────── اعتمادُ الأكاديميّة توقيعَه ───────────
+  ///
+  /// وبه ينفذ العقد: التوقيعُ وحدَه إقرارُ طرفٍ واحد، والاعتمادُ هو قبولُ
+  /// الطرف الآخر بعد **مطابقة الاسم القانونيّ بوثيقة الهويّة** — وهي عملُ
+  /// إنسانٍ ينظر، لا شرطٌ تفحصه آلة.
+  ///
+  /// ═══ ومن يملك الاعتماد ═══
+  ///
+  /// السجلُّ الأردنيُّ يفوّض **محمد أمين خليل جميل زعتره** وحدَه بالتوقيع عن
+  /// الشركة، «أو من يفوّضه خطّيّا بذلك». وصلاحيّةُ `trainer.contract.manage`
+  /// عند المدير الأكاديميّ. فمن ضغط الزرَّ قد لا يكون من يسمّيه السجلّ.
+  ///
+  /// والجوابُ ألّا يُدَّعى ما ليس كذلك: يُطبَع في الملحق (د) اسمُ المفوَّض
+  /// وصفتُه من `academy-legal.ts`، ويُحفَظ هنا **من ضغط فعلا** — فإن كان
+  /// غيرَه كان وكيلا عنه بتفويضٍ يُكتب في `countersignNoteAr`. والسجلُّ
+  /// يقول من فعل، لا من يُفترض أنّه فعل.
+  countersignedAt       DateTime?
+  countersignedBy       String?   @db.Uuid
+  /// اسمُ المفوَّض كما يُطبَع في المستند — لا معرّفُه وحدَه، فالمعرّفُ لا يُقرأ في ورقة
+  academySignatoryName  String?
+  academySignatoryTitle String?
+  /// ملحوظةُ المعتمِد: ما طابقه بالوثيقة، أو تفويضُه الخطّيُّ إن لم يكن هو المفوَّض
+  countersignNoteAr     String?
+
   sentAt          DateTime?
   signedAt        DateTime?
   declinedAt      DateTime?
@@ -1757,10 +1783,100 @@ model TrainerContract {
   parent    TrainerContract? @relation("ContractLineage", fields: [parentId], references: [id])
   children  TrainerContract[] @relation("ContractLineage")
   documents TrainerContractDocument[]
+  offers    TrainerAssignmentOffer[]
 
   @@index([profileId])
   @@index([status, sentAt])
   @@index([parentId])
+}
+
+/// ═══ عرضُ إسنادٍ ينتظر جوابَ المدرّب ═══
+///
+/// البندُ الثالثُ من العقد: «لا ينشأ ارتباطُ المدرّب بأيّ شعبةٍ إلّا بعرضٍ من
+/// الأكاديميّة وقبولٍ منه»، و«لا ينشأ الارتباطُ بمحادثةٍ ولا برسالةٍ ولا
+/// بالسكوت ولا بمجرّد ورود الدورة في الملحق (أ)».
+///
+/// ─────────── ولمَ نموذجٌ ثالثٌ لا عمودٌ على أحد القائمَين ───────────
+///
+/// جُرّب الموضعان في التصميم فسقط كلاهما بدليلٍ من الشيفرة نفسِها:
+///
+/// ① **`CohortTrainer`**: كتابةُ العرض فيه تُعطي حارسَ تعارض الجدول ما يقرؤه
+///    (`assertNoScheduleConflict` لا يعدّ إلّا صفوفَه) — لكنّها **تجعله
+///    مشغولا قبل أن يقبل**: تظهر الشعبةُ في «شعبي» وفي جدوله وفي مستحقّاته،
+///    ويمرّ بـ`assertCohortTrainer`. وهو عينُ ما يمنعه البندُ ٣-١.
+///
+/// ② **`TrainerCourseAssignment`**: صفٌّ فيه حالتُه `active` **يُنشر اسمُه على
+///    صفحة الدورة العامّة** (`publicCourseTrainer` تقرأ هذا الجدولَ بعينه)،
+///    **ويجعله مستحقّا للمال** (`cohortLeadTrainer` تسقط إليه حين لا صفَّ
+///    تشغيليّ، و`generateForCohort` تعمل آليّا عند اكتمال الشعبة بلا إنسان).
+///    فعرضٌ لم يُقبَل يُعلَن مدرّبا ويُصرف له.
+///
+/// فالعرضُ **ليس ارتباطا**، ولذلك لا يسكن جدولَ ارتباط. وثمنُ ذلك معلومٌ
+/// ومقبول: ما دام معروضا لا يحجز له وقتا ولا يحمي شعبتَه — ولذلك **يُعاد
+/// فحصُ الدنيا كلِّها لحظةَ القبول** لا لحظةَ العرض (انظر `acceptOffer`).
+model TrainerAssignmentOffer {
+  id         String  @id @default(uuid()) @db.Uuid
+  profileId  String  @db.Uuid
+  courseId   String
+  /// الشعبةُ المعروضة — واختياريّةٌ لأنّ الدورةَ قد تُعرض قبل أن تُجدوَل شعبتُها
+  cohortId   String? @db.Uuid
+  /// العقدُ الذي يُجيز هذا العرض — فلا عرضَ بلا عقدٍ نافذ، والأثرُ يُقرأ معه
+  contractId String? @db.Uuid
+
+  /// `lapsed` انقضاءُ المهلة بلا ردّ — والبندُ ٣-٣ يجعله ردّا لا إهمالا
+  status String @default("offered") // offered | accepted | declined | lapsed | withdrawn
+
+  /// ─────────── ما يراه قبل أن يقرّر ───────────
+  ///
+  /// لقطةٌ وقتَ العرض: يقرّر على ما عُرض عليه، لا على ما صار بعد شهر.
+  /// وليست هذه اللقطةُ مصدرَ حقيقةٍ للتشغيل — الجدولُ يُقرأ حيّا عند القبول.
+  sessionsCount Int?
+  startsAt      DateTime?
+  /// نصّا لا رقما: «٢٥ دولارا لكلّ متعلّم، وبحدٍّ أدنى ٨ مقاعد» يفهمه إنسان
+  feeNoteAr     String?
+  noteAr        String?
+
+  /// مهلةُ الردّ — `ASSIGNMENT_OFFER_RESPONSE_DAYS` من `notice-periods.ts`
+  expiresAt  DateTime
+  offeredBy  String?  @db.Uuid
+  offeredAt  DateTime @default(now())
+
+  /// ─────────── الجواب ───────────
+  respondedAt     DateTime?
+  declineReasonAr String?
+  withdrawnBy     String?   @db.Uuid
+  withdrawReasonAr String?
+
+  /// ─────────── وبعد القبول: أجلُ الإعداد ───────────
+  ///
+  /// «على الأقلّ ثلاثة أيّام إلى خمسة أيّام لكلّ دورة — لن نستعجل أكثر».
+  /// ويجري من **القبول** لا من العرض: أجلٌ يجري على من لم يلتزم بعدُ ظلم.
+  prepDays       Int       @default(5)
+  prepDueAt      DateTime?
+  /// أقرّ المدرّبُ بجاهزيّته — فعلُه هو، والأجلُ يُطوى به. ومن لم يقرّ
+  /// يُذكَّر ثمّ تُرفَع مهمّةٌ، ولا يُفترض عنه شيء.
+  prepConfirmedAt DateTime?
+  /// آخرُ تذكيرٍ — كي لا يُطرَق بابٌ مرّتين في يوم
+  prepRemindedAt DateTime?
+  /// انقضى ولم يكتمل الإعداد — **ولا يُسحب الإسنادُ آليّا**: تُرفَع مهمّةٌ
+  /// لإنسانٍ ينظر. فشعبةٌ فيها متعلّمون لا يُبَتّ أمرُها بمؤقّت.
+  prepLapsedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// وCascade صريحٌ هنا بقصد: `CohortTrainer.profile` بلا `onDelete` فتصير
+  /// Restrict، وهي عطبٌ موثَّقٌ في `trainer-application.service.ts` يُضطرّ معه
+  /// المحوُ إلى حذفٍ يدويٍّ قبل المعاملة وإلّا سقطت برسالةِ قاعدةٍ غامضة.
+  profile  TrainerProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  course   Course           @relation(fields: [courseId], references: [id])
+  cohort   Cohort?          @relation(fields: [cohortId], references: [id], onDelete: SetNull)
+  contract TrainerContract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
+
+  @@index([profileId, status])
+  @@index([status, expiresAt])
+  @@index([cohortId])
+  @@index([contractId])
 }
 
 /// ═══ وثيقةٌ تُرفع مع التوقيع — لا مع الطلب ═══
@@ -1963,6 +2079,7 @@ model Cohort {
   assignments         TrainerCourseAssignment[]
   changeRequests      TrainerChangeRequest[]
   trainers            CohortTrainer[]
+  trainerOffers       TrainerAssignmentOffer[]
   sessions            CohortSession[]
   enrollments         Enrollment[]
   messages            CohortMessage[]

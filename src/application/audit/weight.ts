@@ -58,6 +58,21 @@ const HIGH: readonly string[] = [
      والثالثُ إشعارا إلى من ينتظر قرارَه. */
   'trainer.contract.send', 'trainer.contract.resend',
   'trainer.contract.sign_by_trainer', 'trainer.contract.decline',
+  /* ═══ والاعتمادُ ورفضُه (المرحلة ٣) ═══
+
+     بالاعتماد ينفذ العقدُ ويُفتح الحسابُ ويُمنح الدور — أثقلُ نقرةٍ في
+     المسار كلِّه. وبرفضِ التوقيع يُغلَق عقدٌ وقّعه صاحبُه، فيقف حيث كان.
+     وكلاهما يصل صاحبَه بريدا في معالجه. */
+  'trainer.contract.countersign', 'trainer.contract.reject_signature',
+  /* ═══ وعروضُ الإسناد ═══
+
+     العرضُ يضع أمام المدرّب التزاما بوقتٍ ومال، والسحبُ يرفعه من تحته،
+     والانقضاءُ يُغلق بابا كان مفتوحا له. وقبولُه **يكتب إسنادا حقيقيّا**
+     يُنشر اسمُه به ويصير طرفا في كشفِ مستحقّات، واعتذارُه يترك شعبةً بلا
+     مدرّب. وستّتُها تُخبر إنسانا في معالجها — الأوّلُ والثلاثةُ الأخيرةُ
+     المدرّبَ، والقبولُ والاعتذارُ من ينتظر الجواب. */
+  'trainer.offer.create', 'trainer.offer.accept', 'trainer.offer.decline',
+  'trainer.offer.withdraw', 'trainer.offer.lapse', 'trainer.offer.prep_lapse',
   'trainer.account.activate', 'trainer.invitation.create',
   'trainer.scope.grant', 'trainer.scope.revoke',
   /* شعبةٌ أُسندت إليه */
@@ -204,6 +219,12 @@ const LOW: readonly string[] = [
   /* ورفعُ الوثيقة كـ`trainer.document.register`: فعلُ رفعٍ لا خبرَ فيه
      لأحد — وصاحبُه هو من رفعها، فلا يُخبَر بما فعله للتوّ. */
   'trainer.contract.document_register',
+  /* والاطّلاعُ على وثيقةٍ فعلُ قراءةٍ لا يغيّر شيئا ولا يُخبَر به أحد.
+     ويُكتب مع ذلك: «من نظر في جواز سفري؟» سؤالٌ يُجاب. */
+  'trainer.contract.document_view',
+  /* والإقرارُ بالجاهزيّة فعلُ صاحبِه: لا يُخبَر بما فعله للتوّ، ولا يُوقَظ
+     به موظّفٌ — فسكونُ الأجل هو الخبر، لا طيُّه. */
+  'trainer.offer.prep_confirm',
   'trainer.change.submit', 'trainer.change.decide',
   'trainer.change.publish', 'trainer.change.apply_catalog',
   'trainer.course_proposal.create', 'trainer.course_proposal.update',

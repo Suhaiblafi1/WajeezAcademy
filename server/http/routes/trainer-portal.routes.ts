@@ -12,6 +12,7 @@ import {
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { MAX_PATH_BLURB, MAX_PATH_COURSES, MAX_PATH_TITLE } from '../../../src/application/trainer/path-rules'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { TrainerOfferService } from '../../services/trainer-offer.service'
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerAvailabilityService } from '../../services/trainer-availability.service'
 import { TermService } from '../../services/term.service'
@@ -31,6 +32,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const proposals = new CourseProposalService(prisma)
   const paths = new TrainerPathService(prisma)
   const review = new TrainerReviewService(prisma)
+  const offers = new TrainerOfferService(prisma)
   const earnings = new EarningsService(prisma)
   const availability = new TrainerAvailabilityService(prisma)
   const terms = new TermService(prisma)
@@ -39,6 +41,41 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'كشوف مستحقاتي وبنودها وملخصها — للمدرب نفسه فقط' },
   }, async (req) => earnings.listForTrainer(req.auth!.userId))
+
+  /* ═══ عروضُ الإسناد — والجوابُ له وحدَه ═══
+
+     ولا صلاحيةَ جديدةً لها: `trainer.portal` هي بابُ بوّابته كلِّها، والعرضُ
+     يُقرأ ويُجاب فيها. والملفُّ يُستخرَج من حسابه لا من جسمِ الطلب — فلا
+     يُجيب أحدٌ عن عرضِ غيره. */
+  app.get('/api/trainer/offers', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'عروضُ الإسناد التي عُرضت عليّ — وما قبِلتُه وينتظر إعدادي' },
+  }, async (req) => offers.listForTrainer(req.auth!.userId))
+
+  app.post('/api/trainer/offers/:offerId/accept', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'قبولُ عرضٍ — ويُعاد عنده فحصُ التأهيل والجدول والحالة' },
+  }, async (req) => {
+    const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
+    return offers.accept(offerId, req.auth!.userId)
+  })
+
+  app.post('/api/trainer/offers/:offerId/decline', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'الاعتذارُ عن عرض — جوابٌ مشروعٌ لا عطب' },
+  }, async (req) => {
+    const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
+    return offers.decline(offerId, req.auth!.userId, reasonAr)
+  })
+
+  app.post('/api/trainer/offers/:offerId/prep-confirm', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'الإقرارُ بالجاهزيّة — يطوي أجلَ الإعداد' },
+  }, async (req) => {
+    const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
+    return offers.confirmPrep(offerId, req.auth!.userId)
+  })
 
   app.get('/api/trainer/me', {
     preHandler: requirePermission('trainer.portal'),

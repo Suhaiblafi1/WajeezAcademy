@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation } from "react-router";
-import { Award, BookPlus, CalendarDays, ChevronDown, ClipboardCheck, GraduationCap, LayoutDashboard, Link2, MoreHorizontal, Route, Star, Users, Wallet } from "lucide-react";
+import { Award, BookPlus, CalendarDays, ChevronDown, ClipboardCheck, GraduationCap, Handshake, LayoutDashboard, Link2, MoreHorizontal, Route, Star, Users, Wallet } from "lucide-react";
 import { Inset } from "@/components/ui/Surface";
 import { NavPill, NavPillButton } from "@/components/ui/NavPill";
 import NotificationBell from "@/components/NotificationBell";
@@ -206,6 +206,10 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck, count: pending, primary: true },
     { to: "/trainer/schedule", label: "جدولي", icon: CalendarDays, primary: true },
     { to: "/trainer/qualifications", label: "مؤهّلاتي وإتاحتي", icon: Award },
+    /* وبعدها «عروضي» مباشرةً: ما أُهِّلتُ له، ثمّ ما عُرض عليّ منه. والخمسةُ
+       الأولى لا تُمسّ (قرارُ ١٨ سبتمبر ٢٠٢٦) — والعرضُ يصله جرسُه بوجهته،
+       والبطاقةُ في رئيسته، فلا يُكتشَف بتصفّحٍ مصادفةً. */
+    { to: "/trainer/offers", label: "عروضي", icon: Handshake },
     /* ح-٢: بعد «مؤهّلاتي» — السؤالان جارانِ: ما أُهِّلتُ له، وما أقترحه ولم
        يدخل الكتالوجَ بعد. وقرارُ الإدارة يصل هنا، فلا يُدفن في صفحةٍ طويلة. */
     { to: "/trainer/course-proposals", label: "دوراتي المقترحة", icon: BookPlus },

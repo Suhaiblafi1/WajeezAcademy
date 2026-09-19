@@ -17,6 +17,8 @@ export type QueueKind =
   | 'plan_returned'        /* خطّةُ شعبةٍ رُدَّت إليه بملاحظة */
   | 'plan_ready_unsent'    /* تجهيزٌ اكتمل ولم يُرسَل للاعتماد */
   | 'plan_incomplete'      /* تجهيزٌ لم يكتمل — والخطوةُ التالية باسمها */
+  | 'offer_pending'        /* عرضُ إسنادٍ ينتظر جوابَه، ومهلتُه تجري */
+  | 'prep_due'             /* دورةٌ قبِلها ولم يقرّ بجاهزيّته، وأجلُه يقترب */
 
 export interface QueueItem {
   kind: QueueKind
@@ -116,7 +118,19 @@ function whenAr(iso: string, now: number): string {
  * @param now الوقت الآن بالمللي — يُمرَّر صراحة كي يكون الاشتقاق نقيا وقابلا للاختبار
  * @param plans رد /api/trainer/cohorts/summary — تجهيزُ كلّ شعبةٍ وما يليه
  */
-export function buildWorkQueue(rows: unknown, gradingCount: number, now: number, plans: unknown = []): QueueItem[] {
+/** عرضُ إسنادٍ كما تقرؤه اللوحة — لا شكلُه كاملا، فالشاشةُ تقرؤه كاملا */
+export interface TQOffer {
+  id: string
+  status: string
+  courseTitleAr: string
+  expiresAt: string
+  prepDueAt?: string | null
+  prepConfirmedAt?: string | null
+}
+
+export function buildWorkQueue(
+  rows: unknown, gradingCount: number, now: number, plans: unknown = [], offers: unknown = [],
+): QueueItem[] {
   const items: QueueItem[] = []
   const cohorts: TQCohort[] = Array.isArray(rows)
     ? (rows as TQRow[]).map((r) => r?.cohort).filter((c): c is TQCohort => Boolean(c && c.id))
@@ -296,6 +310,59 @@ export function buildWorkQueue(rows: unknown, gradingCount: number, now: number,
       external: false,
       urgency: 15,
       count: gradingCount,
+    })
+  }
+
+  /* ═══ عروضُ الإسناد وآجالُ الإعداد ═══
+
+     وهي عملٌ من جنس الطابور: لكلٍّ إجراءٌ واحدٌ ووجهةٌ واحدة. ومهلةُ الردّ
+     أيّامٌ معدودة، فأُلحَّ من تجهيزِ شعبةٍ لم يحن موعدُها — ودونَ لقاءٍ يبدأ
+     الآن أو رُدَّ عليه.
+
+     وموضعُها هنا لا بطاقةً في اللوحة: البندُ يحمل وجهتَه كإخوته، والقاعدةُ
+     في رأس هذا الملفّ هي التي تمنع قسما ثانيا في اللوحة يقود حيث يقود
+     التبويبُ فوقه. */
+  const offerRows: TQOffer[] = Array.isArray(offers)
+    ? (offers as TQOffer[]).filter((o) => Boolean(o && o.id && o.status))
+    : []
+
+  const waiting = offerRows.filter((o) => o.status === 'offered' && new Date(o.expiresAt).getTime() > now)
+  if (waiting.length > 0) {
+    const soonest = waiting.reduce((a, b) =>
+      new Date(a.expiresAt).getTime() <= new Date(b.expiresAt).getTime() ? a : b)
+    items.push({
+      kind: 'offer_pending',
+      titleAr: waiting.length === 1
+        ? `عُرضت عليك «${soonest.courseTitleAr}»`
+        : `${arCount(waiting.length, 'عرضٌ واحدٌ ينتظر', 'عروض تنتظر')} جوابَك`,
+      detailAr: `أقربُ مهلةٍ تنتهي ${fmtDate(soonest.expiresAt)} — والاعتذارُ جوابٌ لا يُحسَب عليك`,
+      actionAr: 'اقرأه وأجِبْ',
+      href: '/trainer/offers',
+      external: false,
+      urgency: 8,
+      count: waiting.length,
+    })
+  }
+
+  /* وأجلُ الإعداد يُذكَر حين يقترب أو ينقضي — ولا يُذكَر قبل ذلك: «لن
+     نستعجل أكثر»، فبندٌ يقف في طابوره من يوم القبول استعجالٌ بلا داعٍ. */
+  const prep = offerRows.filter((o) =>
+    o.status === 'accepted' && !o.prepConfirmedAt && Boolean(o.prepDueAt)
+    && new Date(o.prepDueAt as string).getTime() - now < 2 * 86_400_000)
+  if (prep.length > 0) {
+    const soonest = prep.reduce((a, b) =>
+      new Date(a.prepDueAt as string).getTime() <= new Date(b.prepDueAt as string).getTime() ? a : b)
+    items.push({
+      kind: 'prep_due',
+      titleAr: prep.length === 1
+        ? `أجلُ إعداد «${soonest.courseTitleAr}» يقترب`
+        : arCount(prep.length, 'أجلُ إعدادٍ واحدٍ يقترب', 'آجال إعدادٍ تقترب'),
+      detailAr: `ينتهي ${fmtDate(soonest.prepDueAt as string)} — أقِرّ بجاهزيّتك أو أخبرنا بما تحتاجه`,
+      actionAr: 'أقِرّ بجاهزيّتي',
+      href: '/trainer/offers',
+      external: false,
+      urgency: 18,
+      count: prep.length,
     })
   }
 
