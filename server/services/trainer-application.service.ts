@@ -599,7 +599,9 @@ export class TrainerApplicationService {
         documents: { select: { kind: true, originalName: true, uploadedAt: true } },
         interviews: {
           where: LIVE_INTERVIEW,
-          select: { id: true, scheduledAt: true, mode: true, canceledAt: true },
+          /* ورابطُ التعديل يُعاد لصاحبه: صفحةُ المتابعة بالبريد تعرضه منذ
+             مدّة، وصفحةُ حسابه — وهي أقربُ البابَين — كانت تحيله إلى بريده. */
+          select: { id: true, scheduledAt: true, mode: true, canceledAt: true, rescheduleUrl: true },
           orderBy: { scheduledAt: 'asc' },
         },
         /* والملاحظةُ تُقرأ: هي نصُّ «ما المعلوماتُ التي نريدها منك» حين تُطلب،
