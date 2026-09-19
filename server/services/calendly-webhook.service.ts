@@ -9,6 +9,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { revertWhenNoLiveInterview } from './trainer-interview-state'
 import {
   ALLOWED_TRANSITIONS,
   TrainerApplicationService,
@@ -234,20 +235,9 @@ export class CalendlyWebhookService {
         meta: { interviewId: interview.id, provider: 'calendly' },
       })
 
-      const activeCount = await tx.trainerInterview.count({
-        where: { applicationId: application.id, canceledAt: null },
-      })
-      if (activeCount === 0 && application.status === 'interview_scheduled') {
-        const previous = await tx.trainerStatusHistory.findFirst({
-          where: { applicationId: application.id, toStatus: 'interview_scheduled' },
-          orderBy: { createdAt: 'desc' },
-          select: { fromStatus: true },
-        })
-        const backTo = previous?.fromStatus as TrainerStatus | undefined
-        if (backTo && ALLOWED_TRANSITIONS.interview_scheduled.includes(backTo)) {
-          await this.apps.transition(application.id, backTo, null, 'ألغى المتقدّم موعد Calendly', tx)
-        }
-      }
+      /* والعودةُ إلى ما قبل الحجز مشتركةٌ مع الغياب — موضعُها
+         `trainer-interview-state.ts`، ولمَ جُمعت مكتوبٌ في رأسه. */
+      await revertWhenNoLiveInterview(tx, this.apps, application.id, null, 'ألغى المتقدّم موعد Calendly')
       return { canceled: true }
     })
   }

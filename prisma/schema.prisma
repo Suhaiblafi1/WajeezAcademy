@@ -1075,7 +1075,7 @@ model TrainerInterview {
   rescheduleUrl String?
   cancelUrl     String?
   interviewerId String?            @db.Uuid
-  outcome       String? // passed | hold | failed
+  outcome       String? // passed | hold | failed | no_show — والغيابُ ليس حكما: لم يقع اللقاء، ويعود الطلبُ إلى ما قبل الحجز
   notes         String?
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)

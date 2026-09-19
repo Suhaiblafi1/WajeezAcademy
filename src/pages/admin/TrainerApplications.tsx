@@ -119,7 +119,10 @@ interface AppRow {
   waitingSince: string;
 }
 
-/** قرارُ القارئ كما يُقرأ — بمفردات `TrainerInterview.outcome` نفسِها */
+/** قرارُ القارئ كما يُقرأ — ثلاثتُها مفرداتُ `TrainerInterview.outcome`.
+ *
+ *  و«لم يحضر» ليست منها: القارئُ يقرأ ملفّا فلا يغيب عنه، والغيابُ خبرُ
+ *  موعدٍ لا حكمُ مراجع. */
 const VERDICT_AR: Record<string, string> = {
   passed: "يجتاز", hold: "يُعاد لقاؤه", failed: "لا يجتاز",
 };
