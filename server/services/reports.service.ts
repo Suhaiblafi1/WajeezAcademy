@@ -40,6 +40,7 @@ const COLUMN_AR: Record<string, string> = {
   minutes: 'الدقائق', mb: 'الحجم (م.ب)',
   priority: 'الأولوية', category: 'التصنيف',
   stage: 'المرحلة', users: 'أجهزة فريدة', events: 'الأحداث',
+  pct: 'النسبة ٪', base: 'الأساس', medianDays: 'وسيط الأيام',
 }
 const colAr = (k: string) => COLUMN_AR[k] ?? k
 
@@ -304,6 +305,124 @@ export class ReportsService {
             byCohort.set(r.session.cohortId, cur)
           }
           return [...byCohort.values()]
+        },
+      },
+      /* ═══ قمعُ التوظيف — لا لقطةُ حالات ═══
+
+         تقريرُ «طلبات المدربين» تحته يعدّ الحالاتِ الحاليّة: كم في المراجعة
+         وكم نشط. وهو يجيب «أين هم الآن» ولا يجيب **«أين نفقدهم»**: كم من
+         أتمّ طلبَه حجز لقاءَ تعارف؟ وكم حجز بعد أن ذُكّر؟ والسؤالان هما
+         موضعُ القرار — فبلاهما يُبنى التذكيرُ ولا يُعرف أنفع أم لا.
+
+         والأساسُ `phase2CompletedAt`: الطلبُ المكتمل هو ما يُقاس، لا مسوّدةٌ
+         فُتحت وتُركت. وكلُّ صفٍّ يقول **أساسَ نسبته** بالحرف، فلا تُقرأ نسبةٌ
+         على غير قاعدتها: «حجز بعد التذكير» نسبتُه من المذكَّرين لا من الكلّ. */
+      {
+        key: 'trainer-funnel', titleAr: 'قمعُ توظيف المدرّبين',
+        methodAr: 'الطلباتُ المكتملة في المدى (phase2CompletedAt): كم حجز لقاءَ تعارف، وكم جرى لقاؤه، وكم اعتُمد — ومعها أثرُ التذكير اليدويّ: كم ذُكّر وكم حجز بعده. ووسيطُ الأيّام بين المرحلة وسابقتها.',
+        run: async (f) => {
+          const apps = await p.trainerApplication.findMany({
+            where: hasRange(f) ? { phase2CompletedAt: dayRange(f) } : { phase2CompletedAt: { not: null } },
+            select: {
+              id: true, status: true, phase2CompletedAt: true,
+              interviews: { select: { createdAt: true, scheduledAt: true, canceledAt: true, outcome: true } },
+            },
+          })
+          if (apps.length === 0) return []
+
+          const ids = apps.map((a) => a.id)
+          /* أوّلُ تذكيرٍ لكلّ طلب — والأثرُ مصدرُه، فلا عمودَ يُضاف للجدول */
+          const reminders = await p.auditEvent.findMany({
+            where: { action: 'trainer.interview.remind', entityId: { in: ids } },
+            select: { entityId: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+          })
+          const firstReminder = new Map<string, Date>()
+          for (const r of reminders) if (!firstReminder.has(r.entityId)) firstReminder.set(r.entityId, r.createdAt)
+
+          /* لحظةُ الاعتماد من سجلّ الحالات لا من `updatedAt`: الأخيرُ يتحرّك
+             مع كلّ تعديلٍ لاحقٍ على الملفّ، فيكذب الوسيط. */
+          const approvals = await p.trainerStatusHistory.findMany({
+            where: { applicationId: { in: ids }, toStatus: 'active' },
+            select: { applicationId: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+          })
+          const firstApproval = new Map<string, Date>()
+          for (const a of approvals) if (!firstApproval.has(a.applicationId)) firstApproval.set(a.applicationId, a.createdAt)
+
+          const now = new Date()
+          const days = (from: Date, to: Date) => (to.getTime() - from.getTime()) / 86_400_000
+          const median = (xs: number[]) => {
+            if (xs.length === 0) return null
+            const s = [...xs].sort((a, b) => a - b)
+            const mid = Math.floor(s.length / 2)
+            const v = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
+            return Math.round(v * 10) / 10
+          }
+          const firstBooking = (a: (typeof apps)[number]) =>
+            a.interviews.map((i) => i.createdAt).sort((x, y) => x.getTime() - y.getTime())[0] ?? null
+          /* «جرى اللقاء» — نتيجةٌ سُجّلت، أو موعدٌ مضى ولم يُلغَ. والثاني لازم:
+             المُقابِلُ قد ينسى تسجيل النتيجة، ولقاءٌ جرى لا يصير لم يجرِ. */
+          const held = (a: (typeof apps)[number]) =>
+            a.interviews.filter((i) => i.outcome !== null || (!i.canceledAt && i.scheduledAt < now))
+
+          const submitted = apps.length
+          const booked = apps.filter((a) => a.interviews.length > 0)
+          const interviewed = apps.filter((a) => held(a).length > 0)
+          const approved = apps.filter((a) => a.status === 'active')
+          const reminded = apps.filter((a) => firstReminder.has(a.id))
+          const bookedAfterReminder = reminded.filter((a) => {
+            const booking = firstBooking(a)
+            const remindedAt = firstReminder.get(a.id)
+            return booking !== null && remindedAt !== undefined && booking > remindedAt
+          })
+
+          const pct = (n: number, of: number) => (of === 0 ? 0 : Math.round((n / of) * 1000) / 10)
+          return [
+            {
+              stage: 'طلبٌ مكتمل', count: submitted, pct: 100, base: 'نفسُه',
+              medianDays: null,
+            },
+            {
+              stage: 'حجز لقاءَ التعارف', count: booked.length, pct: pct(booked.length, submitted),
+              base: 'من المكتمل',
+              medianDays: median(booked.flatMap((a) => {
+                const b = firstBooking(a)
+                return b && a.phase2CompletedAt ? [days(a.phase2CompletedAt, b)] : []
+              })),
+            },
+            {
+              stage: 'جرى اللقاء', count: interviewed.length, pct: pct(interviewed.length, submitted),
+              base: 'من المكتمل',
+              medianDays: median(interviewed.flatMap((a) => {
+                const b = firstBooking(a)
+                const h = held(a).map((i) => i.scheduledAt).sort((x, y) => x.getTime() - y.getTime())[0]
+                return b && h ? [days(b, h)] : []
+              })),
+            },
+            {
+              stage: 'اعتُمد مدرّبا', count: approved.length, pct: pct(approved.length, submitted),
+              base: 'من المكتمل',
+              medianDays: median(approved.flatMap((a) => {
+                const at = firstApproval.get(a.id)
+                return at && a.phase2CompletedAt ? [days(a.phase2CompletedAt, at)] : []
+              })),
+            },
+            {
+              stage: 'ذُكّر بالحجز', count: reminded.length, pct: pct(reminded.length, submitted),
+              base: 'من المكتمل', medianDays: null,
+            },
+            {
+              stage: 'حجز بعد التذكير', count: bookedAfterReminder.length,
+              pct: pct(bookedAfterReminder.length, reminded.length),
+              base: 'من المذكَّرين',
+              medianDays: median(bookedAfterReminder.flatMap((a) => {
+                const b = firstBooking(a)
+                const r = firstReminder.get(a.id)
+                return b && r ? [days(r, b)] : []
+              })),
+            },
+          ]
         },
       },
       {

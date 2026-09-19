@@ -13,6 +13,7 @@ import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { canRemindToBook } from "@/application/trainer/application-options";
+import { mailOutcomeAr } from "@/application/notifications/delivery";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
@@ -119,7 +120,12 @@ export function TrainerDetailOps({ app, onAction }: {
     references?: { id: string; name: string; relation: string | null; verifiedAt: string | null }[];
     summary?: TrainerSummary;
   };
-  onAction: (fn: () => Promise<unknown>, doneMsg: string) => Promise<void>;
+  /* ونبرةُ الخبر تتبع الجواب: مسالكُ البريد تردّ `emailDelivery`، فيُصاغ
+     الخبرُ منه بـ`mailOutcomeAr` بدل نصٍّ ثابتٍ يقول «أُرسل» على كلّ حال. */
+  onAction: (
+    fn: () => Promise<unknown>,
+    doneMsg: string | ((result: unknown) => { ar: string; ok: boolean }),
+  ) => Promise<void>;
 }) {
   /* وما لم يُوقَّع بعد — فالقائمةُ تعرض ما يُعمل لا كلَّ شيء */
   const unsignedContracts = (app.profile?.contracts ?? []).filter((c) => !c.signedAt);
@@ -167,7 +173,10 @@ export function TrainerDetailOps({ app, onAction }: {
               () => apiPost(`/api/admin/trainer-applications/${app.id}/interviews`, {
                 scheduledAt: new Date(interviewForm.scheduledAt), mode: interviewForm.mode, notes: interviewForm.notes || undefined,
               }),
-              "جُدولت المقابلة وانتقل الطلب",
+              (r) => mailOutcomeAr(
+                "جُدولت المقابلة وانتقل الطلب — ووصلته دعوةُ التقويم",
+                (r as { emailDelivery?: string }).emailDelivery,
+              ),
             )}>
             جدولة مقابلة
           </Button>
@@ -185,7 +194,10 @@ export function TrainerDetailOps({ app, onAction }: {
               <Button tone="confirm" size="sm"
                 onClick={() => void onAction(
                   () => apiPost(`/api/admin/trainer-applications/${app.id}/booking-reminder`, {}),
-                  "أُرسل التذكير — يحجز من صفحة طلبه",
+                  (r) => mailOutcomeAr(
+                    "أُرسل التذكير — يحجز من صفحة طلبه",
+                    (r as { emailDelivery?: string }).emailDelivery,
+                  ),
                 )}>
                 <CalendarCheck className="h-3.5 w-3.5" /> ذكّره بحجز الموعد
               </Button>
@@ -204,7 +216,10 @@ export function TrainerDetailOps({ app, onAction }: {
             <Button tone="secondary" size="sm"
               onClick={() => void onAction(
                 () => apiPost(`/api/admin/trainer-applications/${app.id}/interview-invite`, {}),
-                "أُرسلت الدعوة — يختار موعده ويصلنا حين يحجز",
+                (r) => mailOutcomeAr(
+                  "أُرسلت الدعوة — يختار موعده ويصلنا حين يحجز",
+                  (r as { emailDelivery?: string }).emailDelivery,
+                ),
               )}>
               <CalendarCheck className="h-3.5 w-3.5" /> ادعُه ليحجز موعدا بنفسه
             </Button>
