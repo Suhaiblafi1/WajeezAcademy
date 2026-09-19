@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, KeyRound,
-  Loader2, MailCheck, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
+  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, Clock, FileText, History,
+  KeyRound, Loader2, MailCheck, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -24,6 +24,7 @@ import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
+import { queueAge } from "@/application/trainer/queue-age";
 import { mailBatchOutcomeAr } from "@/application/notifications/delivery";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -114,6 +115,8 @@ interface AppRow {
   country: string | null; jobTitle: string | null; domainYears: string | null; trainingYears: string | null;
   specialties: string[]; createdAt: string; emailVerified: boolean; phase2Done: boolean;
   documentsCount: number; reviewsCount: number; interviewsCount: number;
+  /** لحظةُ آخر حركةٍ في الطلب — تُحسب بها شارةُ العمر */
+  waitingSince: string;
 }
 
 /** قرارُ القارئ كما يُقرأ — بمفردات `TrainerInterview.outcome` نفسِها */
@@ -123,6 +126,11 @@ const VERDICT_AR: Record<string, string> = {
 
 interface AppDetail extends Record<string, unknown> {
   id: string; reference: string; status: string; fullName: string; email: string;
+  /** طلباتُ صاحبه السابقة — ومآلُ كلٍّ منها وملاحظتُه الداخليّة */
+  priorApplications?: {
+    reference: string; status: string; createdAt: string;
+    decidedAt: string | null; noteAr: string | null;
+  }[];
   jobTitle: string | null; country: string | null;
   motivation: string | null; bio: string | null; linkedinUrl: string | null;
   documents: { id: string; kind: string; originalName: string; storageKey: string }[];
@@ -753,6 +761,32 @@ export default function TrainerApplications() {
               )}
             </Panel>
 
+            {/* ═══ تقدّم سابقا — فلا يُراجَع من جديدٍ بلا ذاكرة ═══
+
+                بحذف مدّة الستّة أشهر صار المردودُ يتقدّم في الغد. ولولا هذا
+                اللوح لفتح المراجعُ طلبا يبدو أوّلَ طلبٍ لصاحبه، وقد رُدّ قبله
+                لسببٍ مكتوبٍ عندنا — فيُعيد القراءةَ كلَّها ليصل إلى ما وصل
+                إليه غيرُه. والملاحظةُ داخليّةٌ لم تصل صاحبَها، وهذا موضعُها. */}
+            {(a.priorApplications?.length ?? 0) > 0 && (
+              <Panel as="article" id="sec-prior">
+                <h4 className="flex items-center gap-2 text-sm font-black">
+                  <History className="h-4 w-4 text-gold-ink" /> تقدّم سابقا ({a.priorApplications!.length})
+                </h4>
+                <ol className="mt-3 space-y-2">
+                  {a.priorApplications!.map((p) => (
+                    <li key={p.reference} className="text-read leading-6 text-muted-foreground">
+                      <span className="font-mono text-foreground" dir="ltr">{p.reference}</span>
+                      {" — "}
+                      <b className="text-foreground">{STATUS_LABELS[p.status] ?? p.status}</b>
+                      {p.decidedAt && <> في {fmtDateTime(new Date(p.decidedAt))}</>}
+                      {/* السببُ كما كُتب — لا يُختصر ولا يُعاد صوغُه */}
+                      {p.noteAr && <span className="mt-1 block whitespace-pre-line text-foreground">«{p.noteAr}»</span>}
+                    </li>
+                  ))}
+                </ol>
+              </Panel>
+            )}
+
             {/* سجل الحالات — ويُطبع بطلب صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) بعد أن
                 قُطع: من يجلس إلى المتقدّم يحتاج أن يعرف متى قدّم وأين وقف. */}
             <Panel as="article">
@@ -1168,6 +1202,24 @@ export default function TrainerApplications() {
                   {a.emailVerified ? "بريد متحقق ✓" : "بريد غير متحقق"} · {a.documentsCount} وثيقة · {a.reviewsCount} تقييم · {a.interviewsCount} مقابلة
                   {a.phase2Done ? " · أكمل المرحلة الثانية" : ""}
                 </p>
+                {/* ═══ ومنذ متى يقف، وعند من ═══
+
+                    الصفُّ كان يعدّ ما فيه ولا يقول متى وصل، فيشيخ الطلبُ
+                    بصمت. واللونُ لا يُشعل إلّا على ما ينتظرنا: ما ينتظر
+                    صاحبَه يُقال عمرُه هادئا، ومن وقع فيه قرارٌ لا شارةَ له.
+                    والقاعدةُ في `queue-age.ts` تُفحص دالّةً لا شرطا هنا. */}
+                {(() => {
+                  const age = queueAge(a.status, a.waitingSince);
+                  if (!age) return null;
+                  return (
+                    <p className={`mt-1 inline-flex items-center gap-1.5 text-read font-bold ${
+                      age.tone === "late" ? "text-red-300"
+                        : age.tone === "warn" ? "text-gold-ink" : "text-muted-foreground"
+                    }`}>
+                      <Clock className="h-3.5 w-3.5" aria-hidden="true" /> {age.ar}
+                    </p>
+                  );
+                })()}
               </div>
               <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                 {STATUS_LABELS[a.status] ?? a.status}

@@ -290,6 +290,44 @@ export class TrainerApplicationService {
         return { reference: existing.reference, userId, resumed: true }
       }
 
+      /* ═══ ومن رُدَّ ثمّ عاد: حسابُه واحدٌ وطلبُه جديد ═══
+
+         `TrainerApplication.userId` فريدٌ — طلبٌ واحدٌ لكلّ حساب. فمن رُدّ
+         طلبُه ثمّ تقدّم ثانيةً كان إنشاءُ طلبه يسقط على قيد التفرّد: خطأُ
+         قاعدةٍ خامٌّ لا رسالةَ فيه، لا «لا يمكنك» ولا «راسِلنا» — شاشةٌ
+         تنكسر في وجه من دعوناه بأنفسنا.
+
+         وقد كُشف يومَ حُذفت مدّةُ الستّة أشهر (١٩ سبتمبر): البابُ فُتح في
+         النصّ وبقي مغلقا في القاعدة. والدعوةُ التي لا تُفتح أسوأُ من بابٍ
+         مقفلٍ معلَن.
+
+         فالطلبُ المنتهي يُفكّ عن الحساب ويبقى بكلّ ما فيه — ورقمُه وبريدُه
+         وسجلُّه وملاحظاتُه — ومخطَّطُ القاعدة يقول ذلك صراحةً: «الطلبات
+         السابقة بلا حساب تبقى تُتابَع برمزها». ولوحُ «تقدّم سابقا» في شاشة
+         المراجعة يجده بالبريد لا بالحساب، فلا يضيع تاريخُ أحد.
+
+         وما ليس منتهيا لا يُفكّ: ذاك طلبٌ حيٌّ، ويُردّ صاحبُه إلى متابعته
+         كما يردّه الحارسُ فوقُ بالبريد. */
+      const linked = await tx.trainerApplication.findUnique({
+        where: { userId },
+        select: { id: true, reference: true, status: true },
+      })
+      if (linked) {
+        if (!TERMINAL_STATUSES.includes(linked.status as TrainerStatus)) {
+          throw new AuthError(
+            'duplicate_application',
+            `لديك طلب قائم برقم ${linked.reference} — سجّل الدخول ببريدك لمتابعة حالته بدل التقديم مجددا`,
+            409,
+          )
+        }
+        await tx.trainerApplication.update({ where: { id: linked.id }, data: { userId: null } })
+        await recordAudit(tx, {
+          actorId: userId, action: 'trainer.application.reapply',
+          entityType: 'trainer_application', entityId: linked.id,
+          meta: { priorReference: linked.reference, priorStatus: linked.status },
+        })
+      }
+
       const reference = await this.nextReference(tx)
       const app = await tx.trainerApplication.create({
         data: {

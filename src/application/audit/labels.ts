@@ -92,6 +92,7 @@ const PHRASES: Record<string, string> = {
   'enrollment_request.reject': 'رفضُ طلبِ تسجيل',
   'learner.enroll.manual': 'تسجيلٌ يدويٌّ لمتعلّم',
   'trainer.application.submit': 'تقديمُ طلبِ انضمامٍ للتدريب',
+  'trainer.application.reapply': 'تقدّمٌ من جديدٍ بعد طلبٍ منتهٍ — يُفكّ القديمُ عن الحساب',
   'trainer.invitation.create': 'دعوةُ مدرّبٍ لإنشاء حسابه',
   'trainer.approved.notify': 'إشعارُ مدرّبٍ باعتماده',
   'trainer.info_requested.notify': 'إشعارُ متقدّمٍ بطلبِ معلوماتٍ إضافية',

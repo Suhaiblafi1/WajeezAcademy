@@ -98,6 +98,9 @@ export class TrainerReviewService {
          هذا العدد، ومن ألغى موعدَه عبر Calendly لم يجلس إليه أحد. */
       include: {
         specialties: true,
+        /* آخرُ حركةٍ في الطلب — يُحسب بها عمرُه في الشاشة. وواحدةٌ تكفي:
+           الشارةُ تقول «منذ متى وهو في حالته هذه» لا تاريخَ السلسلة. */
+        statusHistory: { orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
         _count: { select: { documents: true, reviews: true, interviews: { where: { canceledAt: null } } } },
       },
     })
@@ -105,6 +108,12 @@ export class TrainerReviewService {
       id: a.id, reference: a.reference, status: a.status, fullName: a.fullName, email: a.email,
       country: a.country, jobTitle: a.jobTitle, domainYears: a.domainYears, trainingYears: a.trainingYears,
       specialties: a.specialties.map((s) => s.specialty), createdAt: a.createdAt,
+      /* ═══ ومنذ متى يقف ═══
+
+         آخرُ حركةٍ أوّلا: من نُقل أمسِ إلى «مراجعة أكاديميّة» ينتظرنا منذ
+         أمسِ لا منذ شهر. فإن لم تكن له حركةٌ بعدُ فمنذ إتمامه، وإلّا فمنذ
+         إنشائه — ومسوّدةٌ لم تُكمَل عمرُها من يوم فُتحت. */
+      waitingSince: a.statusHistory[0]?.createdAt ?? a.phase2CompletedAt ?? a.createdAt,
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
     }))
@@ -155,9 +164,37 @@ export class TrainerReviewService {
       .filter((sn) => sn.startsAt > now)
       .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0] ?? null
 
+    /* ═══ ومن تقدّم سابقا لا يبدو جديدا ═══
+
+       لمّا حُذفت مدّةُ الستّة أشهر (١٩ سبتمبر) صار المردودُ يتقدّم في الغد —
+       وهو المقصود. وثمنُه أنّ المراجعَ يفتح الطلبَ الجديدَ ولا يعرف أنّ
+       صاحبَه تقدّم قبله ورُدّ، ولا يرى السببَ الذي كُتب حينها. فيُراجَع من
+       جديدٍ بلا ذاكرة، وقد يُردّ للسبب نفسِه بعد ساعةٍ من القراءة.
+
+       والسببُ يُقرأ من سجلّ حالات الطلب القديم: آخرُ حركةٍ فيه تحمل مآلَه
+       وملاحظةَ من قرّره. وهي ملاحظةٌ داخليّةٌ لم تُرسَل إلى صاحبها أصلا —
+       فموضعُها هنا، أمام من يقرّر. */
+    const prior = await this.prisma.trainerApplication.findMany({
+      /* **ما قبله وحدَه**: لو جُمع كلُّ طلبات البريد لظهر في صفحة الطلب
+         القديم طلبٌ جاء بعده تحت عنوان «تقدّم سابقا» — واللوحُ يجيب سؤالا
+         واحدا: ما الذي كان قبل هذا الطلب حين نُظر فيه. */
+      where: { email: app.email, id: { not: app.id }, createdAt: { lt: app.createdAt } },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        reference: true, status: true, createdAt: true,
+        statusHistory: { orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true, note: true } },
+      },
+    })
+
     return {
       ...app,
       accessTokenHash: undefined, emailVerifyTokenHash: undefined,
+      priorApplications: prior.map((p) => ({
+        reference: p.reference, status: p.status, createdAt: p.createdAt,
+        decidedAt: p.statusHistory[0]?.createdAt ?? null,
+        noteAr: p.statusHistory[0]?.note ?? null,
+      })),
       documentUrls: this.apps.signedDocumentUrls(app.documents),
       summary: {
         qualifiedCourses: (app.profile?.qualifications ?? [])
