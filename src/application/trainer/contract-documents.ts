@@ -91,6 +91,26 @@ export function documentKind(key: string): ContractDocumentKind | undefined {
   return CONTRACT_DOCUMENT_KINDS.find((k) => k.key === key)
 }
 
+/** يقرأ عمودَ `requiredDocuments` كما هو في القاعدة — وعمودُ JSON لا نوعَ له.
+
+    ولمَ قارئٌ متساهلٌ لا تحويلٌ صريح: الصفُّ قد يكون من قبلِ هذا الحقل
+    (فارغا)، أو كُتب بصيغةٍ أقدمَ، أو عُبث به في القاعدة. ومن قرأه بتحويلٍ
+    أعمى (`as RequiredDocument[]`) يمرّ بالسقوط إلى حيث تُقرأ `labelAr` من
+    `undefined` — في **صفحة توقيعٍ يراها مدرّب**. فما لا يُفهَم يسقط بصمت
+    هنا، والحقلُ الفارغُ يُقرأ قائمةً فارغةً لا انهيارا. */
+export function readRequiredDocuments(value: unknown): RequiredDocument[] {
+  if (!Array.isArray(value)) return []
+  const out: RequiredDocument[] = []
+  for (const row of value) {
+    if (!row || typeof row !== 'object') continue
+    const r = row as Record<string, unknown>
+    if (typeof r.kind !== 'string' || typeof r.labelAr !== 'string') continue
+    if (!r.kind.trim() || !r.labelAr.trim()) continue
+    out.push({ kind: r.kind, labelAr: r.labelAr, required: r.required !== false })
+  }
+  return out
+}
+
 /** أفي المنتقى وثيقةُ هويّةٍ واحدةٌ إلزاميّةٌ على الأقلّ؟
 
     فبلا واحدةٍ منها لا يُطابَق الاسمُ القانونيُّ بشيء، ويصير البندُ 15 من

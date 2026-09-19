@@ -20,7 +20,7 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FileSignature, FileText, Ban, RefreshCw } from "lucide-react";
+import { FileSignature, FileText, Ban, RefreshCw, Send } from "lucide-react";
 import { apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
@@ -34,7 +34,7 @@ import AdminLayout from "./AdminLayout";
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
-  signed: "موقَّع", expired: "منتهٍ", terminated: "مفسوخ",
+  signed: "موقَّع", expired: "منتهٍ", terminated: "مفسوخ", declined: "اعتُذر عنه",
 };
 
 interface CandidateRow { id: string; reference: string; fullName: string; email: string; status: string }
@@ -75,6 +75,10 @@ export default function TrainerContracts() {
   const [waivedAr, setWaivedAr] = useState("");
   const [preview, setPreview] = useState("");
   const [shownBody, setShownBody] = useState<{ title: string; body: string } | null>(null);
+  /* الرابطُ يُعرض للموظّف بعد الإرسال — كما في الدعوة الآمنة: قناةُ البريد
+     قد تتعثّر، ومن يملك الصلاحيّةَ يحتاج نسخةً يسلّمها بيده. ولا يُخزَّن
+     الرمزُ في القاعدة، فهذه فرصتُه الوحيدة. */
+  const [link, setLink] = useState<{ id: string; url: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -322,7 +326,29 @@ export default function TrainerContracts() {
                           {" · "}{fmtDateTime(c.createdAt)}
                         </span>
                       </span>
-                      <span className="flex gap-2">
+                      <span className="flex flex-wrap gap-2">
+                        {c.status === "draft" && c.bodyHash && (
+                          <Button size="sm" tone="confirm" icon={Send}
+                            onClick={() => void run(async () => {
+                              const r = await apiPost<{ signingUrl: string }>(
+                                `/api/admin/trainer-contracts/${c.id}/send`, {});
+                              setLink({ id: c.id, url: r.signingUrl });
+                              await load();
+                            }, "أُرسل العقدُ — والرابطُ أدناه")}>
+                            أرسِلْه للتوقيع
+                          </Button>
+                        )}
+                        {c.status === "sent" && (
+                          <Button size="sm" icon={RefreshCw}
+                            onClick={() => void run(async () => {
+                              const r = await apiPost<{ signingUrl: string }>(
+                                `/api/admin/trainer-contracts/${c.id}/resend`, {});
+                              setLink({ id: c.id, url: r.signingUrl });
+                              await load();
+                            }, "جُدِّد الرابطُ — والقديمُ بطل")}>
+                            جدِّدِ الرابط
+                          </Button>
+                        )}
                         {c.bodyHash && (
                           <Button size="sm" icon={FileText}
                             onClick={() => void run(async () => {
@@ -345,6 +371,12 @@ export default function TrainerContracts() {
                         )}
                       </span>
                     </div>
+                    {link?.id === c.id && (
+                      <Panel tone="positive" className="mt-2 p-2">
+                        <p className="mb-1 text-read">رابطُ التوقيع — انسخْه الآن، فلا يُعرض ثانية:</p>
+                        <code className="block break-all">{link.url}</code>
+                      </Panel>
+                    )}
                     {c.revokeReasonAr && (
                       <p className="mt-1 text-read opacity-70">سببُ الإلغاء: {c.revokeReasonAr}</p>
                     )}

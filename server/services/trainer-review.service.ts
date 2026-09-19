@@ -24,6 +24,7 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
+  IDENTITY_MIMES, MAX_CONTRACT_DOC_BYTES,
   MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
   assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, signKey,
 } from './storage.service'
@@ -35,13 +36,15 @@ import {
   academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
 } from '../../src/data/academy-legal'
 import {
-  CONTRACT_BODY_VERSION, renderContractBodyAr,
+  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION,
+  renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation, type ContractCourseRow,
 } from '../../src/application/trainer/contract-body'
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS,
-  hasRequiredIdentityDocument, type RequiredDocument,
+  hasRequiredIdentityDocument, readRequiredDocuments, type RequiredDocument,
 } from '../../src/application/trainer/contract-documents'
+import { CONTRACT_SIGNING_LINK_DAYS } from '../../src/application/trainer/notice-periods'
 
 /** ما تُرسله شاشةُ التركيب — والأجرُ ليس منه: يُقرأ من قاعدة الماليّة ولا
     يُكتب من شاشة التعاقد. فمن يركّب العقدَ يرى الرقمَ ولا يملك تغييرَه. */
@@ -1149,6 +1152,114 @@ export class TrainerReviewService {
     })
   }
 
+  /* ═══════════ الإرسالُ — وهنا يقع ما يمسّ المدرّب ═══════════
+
+     التركيبُ تهيئةٌ داخليّةٌ لا يعلم بها أحد. والإرسالُ هو الفعلُ: يُسكّ
+     الرمزُ، وتتحرّك حالةُ الطلب، ويصل البريدُ صاحبَه. فهنا وحدَه يُنقل إلى
+     `contract_pending` — ومعناها «العقدُ عنده وننتظره»، لا «كتبنا مسودّة». */
+
+  private signingUrl(token: string): string {
+    return `${publicSiteUrl()}/c/${encodeURIComponent(token)}`
+  }
+
+  /** يسكّ رمزا جديدا ويكتب هاشَه — يُستعمل للإرسال ولتجديد رابطٍ انقضى */
+  private mintContractToken(): { token: string; tokenHash: string; expiresAt: Date } {
+    const token = newToken()
+    return {
+      token,
+      tokenHash: sha256(token),
+      expiresAt: new Date(Date.now() + CONTRACT_SIGNING_LINK_DAYS * 86_400_000),
+    }
+  }
+
+  private async mailContract(args: {
+    to: string; fullName: string; title: string; url: string; expiresAt: Date; resend: boolean
+  }) {
+    return sendDirectEmail(this.prisma, {
+      to: args.to,
+      subject: args.resend ? `رابطٌ جديدٌ لتوقيع عقدك — ${args.title}` : `عقدُك مع أكاديمية وجيز — للقراءة والتوقيع`,
+      ...renderMail({
+        greetingName: args.fullName,
+        heading: args.resend ? 'هذا رابطٌ جديدٌ لتوقيع عقدك' : 'اكتمل اعتمادُك، وهذا عقدُك للقراءة والتوقيع',
+        blocks: [
+          { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
+          { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
+          { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
+          { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
+        ],
+      }),
+    })
+  }
+
+  /** الإرسالُ — معاملةٌ واحدةٌ، والبريدُ بعدها */
+  async sendContract(contractId: string, actorId: string) {
+    const contract = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (contract.status !== 'draft') {
+      throw new AuthError('bad_state', 'لا يُرسَل إلّا عقدٌ مسودّة — الملغى والموقَّعُ والمرسَلُ لها أبوابُها', 409)
+    }
+    if (!contract.bodyAr) {
+      throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. ركّبْ عقدا جديدا', 409)
+    }
+    const app = contract.profile.application
+    const { token, tokenHash, expiresAt } = this.mintContractToken()
+
+    await this.prisma.$transaction(async (tx) => {
+      /* قارنْ واضبطْ: نقرتان متزامنتان لا تُرسلان رمزين، والثانيةُ تجد صفرا */
+      const moved = await tx.trainerContract.updateMany({
+        where: { id: contractId, status: 'draft' },
+        data: { status: 'sent', sentAt: new Date(), tokenHash, tokenExpiresAt: expiresAt, signerEmail: app.email },
+      })
+      if (moved.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد مسودّة', 409)
+      /* والبوّابةُ تُطبَّق هنا: حالةُ الطلب لا تتحرّك إلّا لمن لم يُفعَّل بعد */
+      if (contract.gatesActivation && app.status !== 'contract_pending') {
+        await this.apps.transition(app.id, 'contract_pending', actorId, 'إرسالُ العقد للتوقيع', tx)
+      }
+      await recordAudit(tx, {
+        actorId, action: 'trainer.contract.send', entityType: 'trainer_contract', entityId: contractId,
+        meta: { applicationId: app.id, sentTo: app.email, expiresAt, gatesActivation: contract.gatesActivation },
+      })
+    })
+
+    /* والبريدُ خارجَ المعاملة على عرف هذا الملفّ: بريدٌ يُخفق لا ينقض إرسالا
+       وقع. والرابطُ يُعاد للموظّف كذلك — فقناةُ البريد قد تتعثّر، ومن يملك
+       الصلاحيّةَ يحتاج نسخةً يسلّمها بيده. */
+    const mail = await this.mailContract({
+      to: app.email, fullName: app.fullName, title: contract.title,
+      url: this.signingUrl(token), expiresAt, resend: false,
+    })
+    return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
+  }
+
+  /** تجديدُ الرابط — الرمزُ القديم يموت لحظتَها، فلا يبقى بابان */
+  async resendContract(contractId: string, actorId: string) {
+    const contract = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (contract.status !== 'sent') {
+      throw new AuthError('bad_state', 'لا يُجدَّد رابطٌ إلّا لعقدٍ مرسَلٍ بانتظار التوقيع', 409)
+    }
+    const app = contract.profile.application
+    const { token, tokenHash, expiresAt } = this.mintContractToken()
+    await this.prisma.trainerContract.update({
+      where: { id: contractId }, data: { tokenHash, tokenExpiresAt: expiresAt },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.resend', entityType: 'trainer_contract', entityId: contractId,
+      meta: { sentTo: app.email, expiresAt },
+    })
+    const mail = await this.mailContract({
+      to: app.email, fullName: app.fullName, title: contract.title,
+      url: this.signingUrl(token), expiresAt, resend: true,
+    })
+    return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
+  }
+
   /** الإلغاء — وما أُرسل لا يُحذف. الصفُّ يبقى دليلا على ما رُكّب ومن ألغاه */
   async revokeContract(contractId: string, actorId: string, reasonAr: string) {
     if (reasonAr.trim().length < 5) {
@@ -1158,12 +1269,265 @@ export class TrainerReviewService {
        أن تمرّا معا، فيُكتب سببان ويُسجَّل أثران لإلغاءٍ واحد. */
     const done = await this.prisma.trainerContract.updateMany({
       where: { id: contractId, status: { in: ['draft', 'sent'] } },
-      data: { status: 'revoked', revokedAt: new Date(), revokedBy: actorId, revokeReasonAr: reasonAr.trim() },
+      /* والرمزُ يموت مع الإلغاء: رابطٌ حيٌّ لعقدٍ ملغًى بابٌ مفتوحٌ على
+         وثيقةٍ لم تعد قائمة — ومن يفتحه يوقّع ما سُحب من تحته. */
+      data: {
+        status: 'revoked', revokedAt: new Date(), revokedBy: actorId, revokeReasonAr: reasonAr.trim(),
+        tokenHash: null, tokenExpiresAt: null,
+      },
     })
     if (done.count === 0) throw new AuthError('bad_state', 'العقدُ ليس مفتوحا — لا يُلغى موقَّعٌ ولا ملغًى', 409)
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.contract.revoke', entityType: 'trainer_contract', entityId: contractId,
       meta: { reasonAr: reasonAr.trim() },
+    })
+    return { ok: true }
+  }
+
+  /* ═══════════ من الرابط — حيث يقرأ المدرّبُ ويوقّع ═══════════
+
+     ولا حسابَ له هنا: `profile.userId` فارغٌ حتّى الدعوة، فالرمزُ هو الهويّة
+     كما في رابط السجلّ. والفرقُ أنّ ذاك يقرأ ويُقيّم، وهذا **يلتزم بمال** —
+     فرسائلُ الردّ تفرّق بين «لم يعد صالحا» و«وُقّع» و«أُلغي»، لأنّ من يقف
+     أمام بابٍ مغلقٍ يحتاج أن يعرف أيَّ بابٍ هو. */
+
+  private async byToken(token: string) {
+    if (!token || token.length < 16) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 400)
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { tokenHash: sha256(token) },
+      include: {
+        documents: { orderBy: { uploadedAt: 'asc' } },
+        profile: { include: { application: true } },
+      },
+    })
+    if (!c) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح — تحقّقْ منه أو اطلب إعادةَ إرساله', 404)
+    return c
+  }
+
+  /** يُقرأ العقدُ من رابطه — ويُسجَّل أنّه فُتح */
+  async contractByToken(token: string) {
+    const c = await this.byToken(token)
+    const now = new Date()
+    if (c.status === 'signed') {
+      return { state: 'signed' as const, title: c.title, signedAt: c.signedAt, signerLegalName: c.signerLegalName }
+    }
+    if (c.status === 'declined') return { state: 'declined' as const, title: c.title, declinedAt: c.declinedAt }
+    if (c.status === 'revoked') return { state: 'revoked' as const, title: c.title }
+    if (c.status !== 'sent') throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
+    if (c.tokenExpiresAt && c.tokenExpiresAt < now) {
+      return { state: 'expired' as const, title: c.title, expiredAt: c.tokenExpiresAt }
+    }
+
+    await this.prisma.trainerContract.update({
+      where: { id: c.id },
+      data: { firstOpenedAt: c.firstOpenedAt ?? now, lastOpenedAt: now },
+    })
+
+    const required = readRequiredDocuments(c.requiredDocuments)
+    return {
+      state: 'open' as const,
+      contractId: c.id,
+      title: c.title,
+      trainerName: c.profile.application.fullName,
+      trainerEmail: c.signerEmail ?? c.profile.application.email,
+      bodyAr: c.bodyAr,
+      bodyVersion: c.bodyVersion,
+      /* يُعاد ليُردَّ مع التوقيع، فيُقابَل بما في القاعدة — ولا يُوثَق به
+         وحدَه: المقابلةُ في الخادم على `bodyAr` المحفوظ لا على ما يُرسَل. */
+      bodyHash: c.bodyHash,
+      expiresAt: c.tokenExpiresAt,
+      requiredDocuments: required,
+      /* أسماءٌ وأنواعٌ فقط — ولا مفاتيحَ تخزينٍ إلى واجهةٍ عامّة */
+      uploaded: c.documents.map((d) => ({ id: d.id, kind: d.kind, originalName: d.originalName })),
+      acks: CONTRACT_ACKS,
+      consentTextAr: CONTRACT_CONSENT_AR,
+      consentVersion: CONTRACT_CONSENT_VERSION,
+    }
+  }
+
+  /** عقدٌ مفتوحٌ للكتابة — يُستعمل قبل كلّ فعلٍ يغيّر شيئا من الرابط */
+  private async openByToken(token: string) {
+    const c = await this.byToken(token)
+    if (c.status !== 'sent') {
+      throw new AuthError('bad_state', 'هذا العقدُ لم يعد بانتظار التوقيع', 409)
+    }
+    if (c.tokenExpiresAt && c.tokenExpiresAt < new Date()) {
+      throw new AuthError('expired_token', 'انقضى أجلُ الرابط — اطلب من الأكاديمية إعادةَ إرساله', 410)
+    }
+    return c
+  }
+
+  /** وعدُ رفعٍ لوثيقةٍ مطلوبة — كـ`requestDocumentUpload` في مسار الطلب */
+  async requestContractDocumentUpload(token: string, input: {
+    kind: string; originalName: string; mime: string; sizeBytes: number
+  }) {
+    assertFileUploadsEnabled('والبديلُ الآن: أرسِلْ وثيقتَك إلى فريق الأكاديمية بالبريد.')
+    const c = await this.openByToken(token)
+    const required = readRequiredDocuments(c.requiredDocuments)
+    if (!required.some((d) => d.kind === input.kind)) {
+      throw new AuthError('bad_kind', 'هذه الوثيقةُ ليست مطلوبةً في هذا العقد', 422)
+    }
+    if (!(IDENTITY_MIMES as readonly string[]).includes(input.mime)) {
+      throw new AuthError('bad_mime', 'الصيغُ المقبولة: JPEG أو PNG أو WebP أو PDF', 422)
+    }
+    if (input.sizeBytes <= 0 || input.sizeBytes > MAX_CONTRACT_DOC_BYTES) {
+      throw new AuthError('too_large', `حجمُ الملفّ يتجاوز ${Math.round(MAX_CONTRACT_DOC_BYTES / 1048576)} ميغابايت`, 413)
+    }
+
+    const storageKey = newStorageKey()
+    const doc = await this.prisma.$transaction(async (tx) => {
+      /* ورفعُ وثيقةٍ من نوعٍ رُفع من قبلُ يحلّ محلَّه: من رفع صورةً مقلوبةً
+         ثمّ أعاد الرفعَ أراد الثانيةَ، ولا يُقرأ عند المطابقة صفّان لنوعٍ واحد. */
+      const old = await tx.trainerContractDocument.findMany({
+        where: { contractId: c.id, kind: input.kind }, select: { id: true, storageKey: true },
+      })
+      if (old.length > 0) {
+        await tx.trainerContractDocument.deleteMany({ where: { id: { in: old.map((o) => o.id) } } })
+      }
+      const created = await tx.trainerContractDocument.create({
+        data: {
+          contractId: c.id, kind: input.kind, storageKey,
+          originalName: input.originalName.slice(0, 200), mime: input.mime, sizeBytes: input.sizeBytes,
+        },
+      })
+      await recordAudit(tx, {
+        actorId: null, action: 'trainer.contract.document_register',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: { kind: input.kind, storageKey, replaced: old.length },
+      })
+      return { created, old }
+    })
+    /* وبايتاتُ المستبدَل تُمحى بعد المعاملة — فمحوٌ يُخفق لا ينقض صفّا */
+    for (const o of doc.old) { try { await deleteObject(o.storageKey) } catch { /* ما يبقى يُكنَس لاحقا */ } }
+
+    const exp = Date.now() + SIGNED_URL_TTL_MS
+    return {
+      documentId: doc.created.id, storageKey,
+      uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}`,
+    }
+  }
+
+  /** ═══ التوقيع ═══
+
+      ومقابلةُ الهاش قبل كلِّ شيء: من فتح الصفحةَ ثمّ بُدّل المتنُ تحته —
+      بإلغاءٍ وتركيبٍ جديدٍ مثلا — لا يمرّ توقيعُه على ما لم يره. */
+  async signContractByToken(token: string, input: {
+    legalName: string; bodyHash: string; acks: string[]; ip?: string | null; userAgent?: string | null
+  }) {
+    const c = await this.openByToken(token)
+    const legalName = input.legalName.trim()
+    if (legalName.length < 4) {
+      throw new AuthError('bad_name', 'اكتب اسمَك القانونيَّ كاملا كما في وثيقة هويّتك', 422)
+    }
+    if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
+      throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
+    }
+    const missingAcks = CONTRACT_ACKS.filter((a) => !input.acks.includes(a.key))
+    if (missingAcks.length > 0) {
+      throw new AuthError('acks_missing', 'لم تُقرّ ببنودٍ لا بدّ من الإقرار بها قبل التوقيع', 422)
+    }
+    const required = readRequiredDocuments(c.requiredDocuments).filter((d) => d.required)
+    const have = new Set(c.documents.map((d) => d.kind))
+    const missingDocs = required.filter((d) => !have.has(d.kind))
+    if (missingDocs.length > 0) {
+      throw new AuthError(
+        'documents_missing',
+        `لم تُرفَع بعد: ${missingDocs.map((d) => d.labelAr).join(' · ')}`,
+        422,
+      )
+    }
+
+    const signedAt = new Date()
+    await this.prisma.$transaction(async (tx) => {
+      /* قارنْ واضبطْ داخل المعاملة: قراءةٌ ثمّ كتابةٌ تسمح لنقرتين متزامنتين
+         أن تمرّا معا، فيُكتب توقيعان ويُغلَق أثران لتوقيعٍ واحد. و«وُقّع
+         مرّتين» على وثيقةٍ قانونيّةٍ لا معنى له. */
+      const done = await tx.trainerContract.updateMany({
+        where: { id: c.id, status: 'sent' },
+        data: {
+          status: 'signed', signedAt,
+          signerLegalName: legalName,
+          signerIp: input.ip?.slice(0, 64) ?? null,
+          signerUserAgent: input.userAgent?.slice(0, 300) ?? null,
+          consentTextAr: CONTRACT_CONSENT_AR,
+          signedBodyHash: input.bodyHash,
+          /* والرمزُ يموت بالتوقيع: وُقّع مرّةً، فلا بابَ يُفتح ثانية */
+          tokenHash: null, tokenExpiresAt: null,
+        },
+      })
+      if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+      await tx.trainerOnboardingTask.updateMany({
+        where: { profileId: c.profileId, key: 'sign_contract' }, data: { doneAt: signedAt },
+      })
+      /* والفاعلُ هو المدرّبُ لا موظّف — ولا حسابَ له، فاسمُه في `meta`
+         كما يفعل رابطُ السجلّ. ولا يُكتب في الأثر متنٌ ولا عنوانُ شبكة:
+         الهاشُ يكفي دليلا، والعنوانُ في صفّه محروسا بصلاحيّته. */
+      await recordAudit(tx, {
+        actorId: null, action: 'trainer.contract.sign_by_trainer',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: {
+          signerLegalName: legalName, bodyVersion: c.bodyVersion, bodyHash: c.bodyHash,
+          consentVersion: CONTRACT_CONSENT_VERSION, signedAt,
+        },
+      })
+    })
+
+    /* ونسخةُ صاحبِه تصله — فمن وقّع يملك ما وقّع عليه، لا يطلبه منّا */
+    const app = c.profile.application
+    try {
+      await sendDirectEmail(this.prisma, {
+        to: c.signerEmail ?? app.email,
+        subject: `نسختُك من العقد الموقَّع — ${c.title}`,
+        ...renderMail({
+          greetingName: legalName,
+          heading: 'سُجّل توقيعُك، وهذه نسختُك',
+          blocks: [
+            { kind: 'p', text: `وقّعتَ «${c.title}» بتاريخ ${fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' })}.` },
+            { kind: 'callout', text: 'تراجعه الأكاديميّةُ الآن، وتصلك رسالةٌ حين يُعتمَد ويُفتح حسابُك.' },
+            { kind: 'note', text: 'النصُّ الكاملُ مرفقٌ أدناه للحفظ.' },
+            { kind: 'p', text: c.bodyAr ?? '' },
+          ],
+        }),
+      })
+    } catch { /* البريدُ رفاهية — التوقيعُ وقع، والنسخةُ تُعاد من الإدارة */ }
+
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      templateKey: 'trainer.contract.signed',
+      title: 'وقّع مدرّبٌ عقدَه',
+      body: `وقّع ${legalName} «${c.title}» — يُراجَع توقيعُه ثمّ يُفعَّل حسابُه.`,
+      data: { contractId: c.id, applicationId: app.id },
+    })
+    return { ok: true, signedAt }
+  }
+
+  /** الاعتذارُ — جوابٌ مشروعٌ لا عطب. والعقدُ عرضٌ يُقبَل ويُردّ. */
+  async declineContractByToken(token: string, reasonAr: string) {
+    const c = await this.openByToken(token)
+    const reason = reasonAr.trim()
+    if (reason.length < 5) {
+      throw new AuthError('no_reason', 'اكتب سببَ اعتذارك — سطرٌ واحدٌ يكفي، ويساعدنا أن نفهم', 422)
+    }
+    const declinedAt = new Date()
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: c.id, status: 'sent' },
+      data: {
+        status: 'declined', declinedAt, declineReasonAr: reason.slice(0, 500),
+        tokenHash: null, tokenExpiresAt: null,
+      },
+    })
+    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.decline',
+      entityType: 'trainer_contract', entityId: c.id,
+      meta: { reasonAr: reason.slice(0, 500) },
+    })
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      templateKey: 'trainer.contract.declined',
+      title: 'اعتذر مدرّبٌ عن عقده',
+      body: `اعتذر ${c.profile.application.fullName} عن «${c.title}» — وسببُه: ${reason.slice(0, 200)}`,
+      data: { contractId: c.id, applicationId: c.profile.applicationId },
     })
     return { ok: true }
   }

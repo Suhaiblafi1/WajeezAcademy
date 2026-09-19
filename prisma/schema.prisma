@@ -1636,10 +1636,11 @@ model TrainerContract {
   terms     Json?
   /// أصليٌّ، أم ملحقٌ يُضاف إلى نافذ، أم بديلٌ يحلّ محلَّه
   kind      String         @default("original") // original | annex | replacement
-  /// `revoked` جديدةٌ في المرحلة الأولى: عقدٌ أُرسل بخطإٍ يُلغى ولا يُحذف —
-  /// فما أُرسل وقع، والسجلُّ يقول إنّه أُلغي ومن ألغاه ولماذا.
-  /// و`declined` و`countersigned` و`superseded` تأتي مع مرحلتيهما.
-  status    String         @default("draft") // draft | sent | revoked | signed | expired | terminated
+  /// `revoked`: عقدٌ أُرسل بخطإٍ يُلغى ولا يُحذف — فما أُرسل وقع، والسجلُّ
+  /// يقول إنّه أُلغي ومن ألغاه ولماذا. و`declined`: المدرّبُ قرأه ولم يقبله،
+  /// وهو **جوابٌ مشروعٌ لا عطب** — فالعقدُ عرضٌ يُقبَل ويُردّ.
+  /// و`countersigned` و`superseded` تأتيان مع المرحلة الثالثة.
+  status    String         @default("draft") // draft | sent | declined | revoked | signed | expired | terminated
   /// رقمُ النسخة في السلسلة — ١ للأصل ثمّ ما يليه
   revision  Int            @default(1)
   /// النافذُ الذي هذا ملحقٌ له أو بديلٌ عنه
@@ -1707,11 +1708,47 @@ model TrainerContract {
   ///   موقوف») — وسلبُ وصولٍ قائمٍ ليس توثيقا.
   gatesActivation Boolean @default(true)
 
-  sentAt         DateTime?
-  signedAt       DateTime?
-  revokedAt      DateTime?
-  revokedBy      String?   @db.Uuid
-  revokeReasonAr String?
+  /// ─────────── الرابطُ الذي يُوقَّع منه ───────────
+  ///
+  /// والمدرّبُ لا حسابَ له في هذا الطور — `profile.userId` فارغٌ حتّى
+  /// `consumeInvitation` — فالرابطُ هو البابُ الوحيد. كـ`TrainerDossierLink`
+  /// سواءً بسواء: `randomBytes(32).base64url`، ولا يُخزَّن إلّا هاشُه.
+  ///
+  /// ⚠️ **ولا نسخةَ صريحةً للرمز هنا**، خلافا لرابط السجلّ (قرارُ ١٤ سبتمبر
+  /// بتخزين `tokenClear`). ذاك رابطُ قراءةٍ لقارئٍ مسمّى يُنسَخ في محادثة،
+  /// وهذا **بابُ توقيعٍ يلزم إنسانا بمال**. فمن ضاع منه الرابطُ يُجدَّد له،
+  /// ولا يُنسَخ من شاشةٍ ولا يُقرأ من نسخةٍ احتياطيّةٍ مسروقة.
+  tokenHash      String?   @unique
+  tokenExpiresAt DateTime?
+  firstOpenedAt  DateTime?
+  lastOpenedAt   DateTime?
+  /// آخرُ تذكيرٍ بالتوقيع — كي لا يُطرَق بابٌ مرّتين في يوم
+  remindedAt     DateTime?
+
+  /// ─────────── من وقّع، ودليلُ توقيعه ───────────
+
+  /// الاسمُ القانونيُّ كما كتبه بيده — غيرُ `TrainerApplication.fullName`،
+  /// فذاك اسمُ عرضٍ كتبه في نموذجٍ ولم يُقابَل بوثيقة.
+  signerLegalName String?
+  /// عنوانُ الشبكة ومتصفّحُه لحظةَ التوقيع — دليلُ الفعل لا تتبّعٌ للشخص.
+  /// و`AuditEvent` فيه عمودُ `ip` ولا يُكتب في مسارات الروابط، فهذا موضعُه.
+  signerIp        String?
+  signerUserAgent String?
+  /// نصُّ الإقرار الذي ظهر له وضغط عليه — يُحفَظ معه لا يُشار إليه، فصياغةُ
+  /// الإقرار تتغيّر والموقَّعُ عليه لا يتغيّر.
+  consentTextAr   String?
+  /// sha256 لما عُرض عليه فعلا لحظةَ التوقيع، يُقابَل بـ`bodyHash` قبل
+  /// القبول. فمن وقّع على صفحةٍ ثمّ بُدّل تحته النصُّ لا يمرّ توقيعُه.
+  signedBodyHash  String?
+
+  sentAt          DateTime?
+  signedAt        DateTime?
+  declinedAt      DateTime?
+  /// سببُ الاعتذار بخطّه — لا قائمةَ أسبابٍ تُختار، فأسبابُ الردّ لا تُحصى
+  declineReasonAr String?
+  revokedAt       DateTime?
+  revokedBy       String?   @db.Uuid
+  revokeReasonAr  String?
 
   createdBy String?          @db.Uuid
   createdAt DateTime         @default(now())
@@ -1719,10 +1756,39 @@ model TrainerContract {
   profile   TrainerProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
   parent    TrainerContract? @relation("ContractLineage", fields: [parentId], references: [id])
   children  TrainerContract[] @relation("ContractLineage")
+  documents TrainerContractDocument[]
 
   @@index([profileId])
   @@index([status, sentAt])
   @@index([parentId])
+}
+
+/// ═══ وثيقةٌ تُرفع مع التوقيع — لا مع الطلب ═══
+///
+/// ولمَ جدولٌ مستقلٌّ لا قيمةٌ جديدةٌ في `TrainerApplicationDocument.kind`:
+/// وثائقُ الطلبِ تُعرَض لقارئِ رابطِ السجلّ (`SHARED_FIELDS` ثمّ
+/// `signedDocumentUrls`) — أي أنّ إضافةَ «جواز سفر» هناك تضعه أمام لجنةِ
+/// مقابلةٍ لا شأنَ لها به. والجوازُ يُرفع **بعد** القرار لا قبله، ويُقرأ
+/// لمطابقةِ توقيعٍ لا لتقويمِ كفاءة. فكيانان لا كيانٌ بحقلٍ زائد.
+///
+/// ولا عمودَ `content Bytes?` هنا: ذاك في وثائق الطلب بقيّةُ عهدِ Vercel
+/// (القرصُ للقراءة فقط)، والقرصُ اليومَ موجودٌ — مجلّدُ Docker في
+/// `deploy/compose.prod.yml`. فالجديدُ يولد على القرص وحدَه.
+model TrainerContractDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  contractId   String   @db.Uuid
+  /// ومصدرُها `contract-documents.ts`، ويحرس تطابقَهما اختبارُ العقد
+  kind         String // national_id | passport | residence_permit | teaching_certificate | degree | experience_letter | other
+  storageKey   String   @unique
+  originalName String
+  mime         String
+  sizeBytes    Int
+  uploadedAt   DateTime @default(now())
+  /// آخرُ اطّلاعٍ من موظّف — والسجلُّ الكاملُ في الأثر، وهذا للعرض
+  lastViewedAt DateTime?
+  contract     TrainerContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
 }
 
 model TrainerCompensationRule {

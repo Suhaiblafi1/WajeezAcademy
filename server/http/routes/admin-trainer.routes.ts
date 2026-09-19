@@ -322,6 +322,25 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.composeContract(id, req.auth!.userId, body))
   })
 
+  /* والرابطُ يُعاد للموظّف مع الردّ لا في التطوير وحدَه — كما في الدعوة
+     الآمنة: قناةُ البريد قد تتعثّر، ومن يملك الصلاحيّةَ يحتاج نسخةً يسلّمها
+     بيده. وبلا ذلك يُنشأ رابطٌ لا يملك أحدٌ رمزَه، أي عقدٌ لا يُوقَّع أبدا. */
+  app.post('/api/admin/trainer-contracts/:contractId/send', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'إرسالُ العقد للتوقيع — يسكّ الرابطَ وينقل غيرَ النشط إلى contract_pending' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    return review.sendContract(contractId, req.auth!.userId)
+  })
+
+  app.post('/api/admin/trainer-contracts/:contractId/resend', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'تجديدُ رابط التوقيع — والقديمُ يموت لحظتَها' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    return review.resendContract(contractId, req.auth!.userId)
+  })
+
   app.post('/api/admin/trainer-contracts/:contractId/revoke', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'إلغاءُ عقدٍ مفتوح — لا يُحذف، والسببُ يُكتب' },
