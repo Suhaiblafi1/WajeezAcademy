@@ -32,6 +32,7 @@ import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { recordAudit } from '../services/audit'
 import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
+import { LIVE_INTERVIEW } from '../services/trainer-interview-state'
 import { isDigestHour, unbookedDigest } from '../../src/application/trainer/unbooked-digest'
 import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
 import { CalendlyWebhookService } from '../services/calendly-webhook.service'
@@ -898,7 +899,7 @@ export async function digestUnbookedApplicants(prisma: PrismaClient, now = new D
     take: LIMITS.unbooked,
     select: {
       id: true, fullName: true, reference: true, status: true, phase2CompletedAt: true,
-      _count: { select: { interviews: { where: { canceledAt: null } } } },
+      _count: { select: { interviews: { where: LIVE_INTERVIEW } } },
     },
   })
 

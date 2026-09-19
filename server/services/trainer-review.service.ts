@@ -14,6 +14,8 @@ import { seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import { bookingReminderMail, decisionMailFor } from './trainer-decision-mail'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
+import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
+import { LIVE_INTERVIEW, revertWhenNoLiveInterview } from './trainer-interview-state'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService } from './trainer-application.service'
 import { nextTrainerApplicationReference } from './trainer-application-reference'
@@ -129,7 +131,7 @@ export class TrainerReviewService {
         /* آخرُ حركةٍ في الطلب — يُحسب بها عمرُه في الشاشة. وواحدةٌ تكفي:
            الشارةُ تقول «منذ متى وهو في حالته هذه» لا تاريخَ السلسلة. */
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
-        _count: { select: { documents: true, reviews: true, interviews: { where: { canceledAt: null } } } },
+        _count: { select: { documents: true, reviews: true, interviews: { where: LIVE_INTERVIEW } } },
       },
     })
     return rows.map((a) => ({
@@ -322,15 +324,43 @@ export class TrainerReviewService {
     return { ...interview, emailDelivery }
   }
 
-  async recordInterviewOutcome(interviewId: string, actorId: string, outcome: 'passed' | 'hold' | 'failed', notes?: string) {
+  /* ═══ والغيابُ نتيجةٌ كسائرها — ويزيد عليها أنّه يُعيد الطلب ═══
+
+     «لم يحضر» ليس حكما على إنسان، بل خبرٌ بأنّ اللقاءَ لم يقع. فيُكتب في
+     صفّ الموعد كما تُكتب النتائج، ثمّ يُردّ الطلبُ إلى ما قبل الحجز — وإلّا
+     بقي واقفا في «حُدّد موعدُه» يصف موعدا مضى، فلا يُدعى صاحبُه إلى حجزٍ
+     جديد ولا يظهر في طابور من ينتظر قرارا.
+
+     والاثنان في معاملةٍ واحدة: نتيجةٌ تُكتب وحالةٌ لا تتبعها عطبٌ أسوأُ من
+     ألّا تُكتب — يُقرأ الغيابُ مسجَّلا والطلبُ يقول إنّ له موعدا.
+
+     ── ولمَ يُسأل عن العودة في كلّ نتيجةٍ لا في الغياب وحدَه ──
+
+     لأنّ الشرطَ الحقيقيَّ ليس اسمَ النتيجة بل أثرُها: **ألم يبقَ له موعدٌ
+     قائم؟** وذاك مقيسٌ في `revertWhenNoLiveInterview` نفسِها. و«ناجحٌ» على
+     موعدٍ قائمٍ لا يُعيد شيئا لأنّ الموعدَ باقٍ، لا لأنّ اسمَه ليس غيابا.
+     وشرطٌ زائدٌ باسم النتيجة يُقرأ حارسا وهو لا يحرس — والمقاسُ بالأثر
+     أصدقُ: من أُلغي موعدُه الوحيدُ ثمّ كُتبت له نتيجةٌ متأخّرةٌ يعود كذلك،
+     وهو صوابٌ كان يفوت. */
+  async recordInterviewOutcome(interviewId: string, actorId: string, outcome: string, notes?: string) {
     const interview = await this.prisma.trainerInterview.findUnique({ where: { id: interviewId } })
     if (!interview) throw new AuthError('not_found', 'المقابلة غير موجودة', 404)
-    const updated = await this.prisma.trainerInterview.update({ where: { id: interviewId }, data: { outcome, notes } })
+
+    const { updated, revertedTo } = await this.prisma.$transaction(async (tx) => {
+      const row = await tx.trainerInterview.update({ where: { id: interviewId }, data: { outcome, notes } })
+      const back = await revertWhenNoLiveInterview(
+        tx, this.apps, interview.applicationId, actorId,
+        /* والسببُ يقول ما وقع فعلا — فلا يُقرأ في السجلّ «لم يحضر» عن نتيجةٍ أخرى */
+        outcome === NO_SHOW ? 'لم يحضر لقاءَ التعارف' : 'لم يبقَ للطلب موعدٌ قائم',
+      )
+      return { updated: row, revertedTo: back }
+    })
+
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.interview.outcome', entityType: 'trainer_application', entityId: interview.applicationId,
-      meta: { interviewId, outcome },
+      meta: { interviewId, outcome, ...(revertedTo ? { revertedTo } : {}) },
     })
-    return updated
+    return { ...updated, revertedTo }
   }
 
   async recordDemoEvaluation(applicationId: string, evaluatorId: string, input: RubricScores, decision: 'pass' | 'retry' | 'fail', notes?: string) {
@@ -611,7 +641,7 @@ export class TrainerReviewService {
         email: true, fullName: true, reference: true, status: true,
         /* الملغاةُ لا تُحسب: من ألغى موعدَه لم يعد له موعد، وهو أحوجُ الناس
            إلى التذكير. وهو القيدُ نفسُه الذي يعدّ به الطابورُ مقابلاتِه. */
-        _count: { select: { interviews: { where: { canceledAt: null } } } },
+        _count: { select: { interviews: { where: LIVE_INTERVIEW } } },
       },
     })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)

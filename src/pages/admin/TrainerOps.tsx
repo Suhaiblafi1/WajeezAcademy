@@ -17,6 +17,7 @@ import { mailOutcomeAr } from "@/application/notifications/delivery";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
+import { INTERVIEW_OUTCOMES, outcomeLabelAr } from "@/application/trainer/interview-outcome";
 
 
 const CR_STATUS_AR: Record<string, string> = {
@@ -142,16 +143,28 @@ export function TrainerDetailOps({ app, onAction }: {
           {app.interviews.map((iv) => (
             <Inset key={iv.id} className="text-xs">
               <p className="font-bold">
-                {fmtDateTime(new Date(iv.scheduledAt))} — {iv.canceledAt ? "ملغاة" : iv.outcome ?? "بلا نتيجة"}
+                {fmtDateTime(new Date(iv.scheduledAt))} — {iv.canceledAt ? "ملغاة" : outcomeLabelAr(iv.outcome)}
               </p>
               {!iv.outcome && !iv.canceledAt && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {([["passed", "ناجح"], ["hold", "تعليق"], ["failed", "راسب"]] as const).map(([o, label]) => (
-                    <Button tone="secondary" size="sm" key={o} onClick={() => void onAction(
-                      () => apiPost(`/api/admin/trainer-interviews/${iv.id}/outcome`, { outcome: o }),
-                      "سُجلت نتيجة المقابلة",
+                  {/* والقائمةُ من المعجم المشترك — هو نفسُه الذي يقبله الخادم،
+                      فلا زرٌّ يُعرض ويُردّ، ولا قيمةٌ تُقبل بلا عنوانٍ عربيّ. */}
+                  {INTERVIEW_OUTCOMES.map((o) => (
+                    <Button tone="secondary" size="sm" key={o.key} title={o.whatAr} onClick={() => void onAction(
+                      () => apiPost(`/api/admin/trainer-interviews/${iv.id}/outcome`, { outcome: o.key }),
+                      (result) => {
+                        /* وخبرُ الغياب يقول ما وقع للطلب لا «سُجّلت النتيجة»:
+                           الموظّفُ يحتاج أن يعرف أنّ صاحبَه صار يحجز من جديد. */
+                        const back = (result as { revertedTo?: string | null } | null)?.revertedTo;
+                        return {
+                          ok: true,
+                          ar: back
+                            ? "سُجّل الغياب — وعاد الطلبُ إلى ما قبل الحجز ليحجز موعدا جديدا"
+                            : "سُجّلت نتيجةُ اللقاء",
+                        };
+                      },
                     )} className="text-fine">
-                      {label}
+                      {o.labelAr}
                     </Button>
                   ))}
                 </div>

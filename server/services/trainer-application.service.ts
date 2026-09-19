@@ -10,6 +10,7 @@ import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { LIVE_INTERVIEW } from './trainer-interview-state'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { renderMail } from './mail-template'
 import { cleanProposals } from '../../src/application/trainer/teachable-proposals'
@@ -503,9 +504,9 @@ export class TrainerApplicationService {
       orderBy: { createdAt: 'desc' },
       /* الملغاةُ لا تُعَدّ حجزا — من ألغى موعدَه يُدعى إلى حجزٍ جديد */
       include: {
-        _count: { select: { interviews: { where: { canceledAt: null } } } },
+        _count: { select: { interviews: { where: LIVE_INTERVIEW } } },
         interviews: {
-          where: { canceledAt: null },
+          where: LIVE_INTERVIEW,
           orderBy: { scheduledAt: 'asc' },
           take: 1,
           select: { scheduledAt: true, rescheduleUrl: true },
@@ -597,7 +598,7 @@ export class TrainerApplicationService {
         createdAt: true, phase2CompletedAt: true, emailVerifiedAt: true, teachableCourseIds: true,
         documents: { select: { kind: true, originalName: true, uploadedAt: true } },
         interviews: {
-          where: { canceledAt: null },
+          where: LIVE_INTERVIEW,
           select: { id: true, scheduledAt: true, mode: true, canceledAt: true },
           orderBy: { scheduledAt: 'asc' },
         },
