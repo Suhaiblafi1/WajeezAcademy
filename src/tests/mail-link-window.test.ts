@@ -3,21 +3,23 @@
    ═══ ما يُحرس هنا ═══
 
    شكا صاحبُ المنصّة (١٩ سبتمبر ٢٠٢٦) أنّ «الرابط صالحٌ سبعةَ أيّام» غيرُ
-   احترافيّ، وقرّر سقفَ أربعٍ وعشرين ساعة، ثمّ أدخل فيه دعوةَ الموظّفين صراحةً
-   (٢٠ سبتمبر). وكانت المدى ثلاثةً لا واحدا — سبعةُ أيّامٍ لطلب الانضمام،
-   وثمانٍ وأربعون ساعةً لتوثيق الحساب، وسبعةُ أيّامٍ للدعوة — **والمدّةُ
-   مكتوبةً بيدٍ في أربع رسائلَ وثلاثِ شاشات**. فما يُحرس ثلاثة:
+   احترافيّ، وقرّر سقفَ أربعٍ وعشرين ساعة، ثمّ أدخل فيه دعوةَ الموظّفين ثمّ
+   دعوةَ المدرّب المعتمَد (٢٠ سبتمبر). وكانت المدى أربعةً لا واحدا — سبعةُ
+   أيّامٍ لطلب الانضمام، وثمانٍ وأربعون ساعةً لتوثيق الحساب، وسبعةُ أيّامٍ
+   لدعوة الموظّف، واثنتان وسبعون ساعةً لدعوة المدرّب — **والمدّةُ مكتوبةً
+   بيدٍ في خمس رسائلَ وأربعِ شاشات**. فما يُحرس ثلاثة:
 
    ① **السقفُ لا يُرفع** — والفحصُ على الرقم المحسوب لا على نصّه.
    ② **ومن يكتب لحظةَ الانتهاء يحسبها منه** — `issueEmailVerification`
-      و`issueInvite` تُناديان بقاعدةٍ صوريّة فتُقرأ اللحظةُ التي كتبتاها
-      فعلا، لا سطرٌ يُفتَّش عنه في ملفّهما.
+      و`issueInvite` و`createInvitation` تُنادى بقاعدةٍ صوريّة فتُقرأ اللحظةُ
+      التي كتبتها فعلا، لا سطرٌ يُفتَّش عنه في ملفّها.
    ③ **والجملةُ تتبع الرقم** — كلُّ موضعٍ تُقال فيه المدّةُ للقارئ يقرؤها من
       الثابت. ولو كُتبت بيدٍ لَقال النصُّ «سبعةَ أيّام» والخادمُ يقطع بعد
       يومٍ، ولا يحمرّ شيء. وهذا وقع في هذا المستودَع مع مدّةٍ أخرى.
 
-   ورابطُ استعادة كلمة المرور خارج هذا: ساعةٌ واحدة — تحت السقف لا فوقه،
-   وضيقُه مقصودٌ مكتوبٌ في `mail-link-window.ts`. */
+   ورابطُ الاستعادة له مهلتُه: ثلاثون دقيقة (٢٠ سبتمبر ٢٠٢٦، وكانت ساعة).
+   فيُحرس من الجهة المقابلة — **ألّا يُرفع** إلى السقف قياسا على إخوته: تلك
+   تُطيل لتُيسّر، وهذا يُقصَّر ليؤمّن، والبابُ الذي يفتحه قفلُ الحساب نفسُه. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -25,8 +27,10 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@prisma/client'
 import { AuthService } from '../../server/services/auth.service'
+import { TrainerReviewService } from '../../server/services/trainer-review.service'
 import {
   MAIL_LINK_TTL_HOURS, MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR,
+  RESET_LINK_TTL_MINUTES, RESET_LINK_TTL_MS, RESET_LINK_WINDOW_AR,
 } from '@/application/links/mail-link-window'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -97,6 +101,74 @@ describe('سقفُ الرابط المرسَل بالبريد', () => {
     expect(life, 'دعوةُ الموظّف تعيش أكثرَ من السقف').toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
     expect(life, 'الدعوةُ تموت قبل ساعةٍ من إصدارها').toBeGreaterThan(HOUR)
   })
+
+  it('ودعوةُ حساب المدرّب المعتمَد مثلُهما — وكانت اثنتَين وسبعين ساعة', async () => {
+    /* قاعدةٌ صوريّة: طلبٌ معتمَدٌ بلا حساب، وقناةُ بريدٍ غيرُ مهيّأة فلا يخرج
+       شيءٌ إلى الشبكة. والمفحوصُ ما كُتب في صفّ الدعوة لا ما رُدّ وحدَه. */
+    let written: { expiresAt?: Date } | null = null
+    const prisma = {
+      trainerApplication: {
+        findUnique: async () => ({
+          id: 'app-1', reference: 'WJ-TR-2026-00099', status: 'onboarding',
+          email: 'trainer@test.local', fullName: 'مدرّبٌ معتمَد', userId: null,
+          profile: { id: 'p-1', userId: null },
+        }),
+      },
+      trainerInvitation: {
+        create: async ({ data }: { data: { expiresAt?: Date } }) => {
+          written = data
+          return {}
+        },
+      },
+      /* بلا إعدادِ بريدٍ: `sendDirectEmail` تردّ `not_configured` بلا شبكة */
+      integrationSetting: { findUnique: async () => null },
+      auditEvent: { create: async () => ({}) },
+    } as unknown as PrismaClient
+
+    const before = Date.now()
+    const out = await new TrainerReviewService(prisma).createInvitation('app-1', 'admin-1')
+    expect(written, 'لم يُكتب صفُّ دعوةٍ أصلا').not.toBeNull()
+    for (const [what, at] of [['المكتوبة', written!.expiresAt!], ['المُعادة', out.expiresAt]] as const) {
+      const life = at.getTime() - before
+      expect(life, `دعوةُ المدرّب ${what} تعيش أكثرَ من السقف`).toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
+      expect(life, `دعوةُ المدرّب ${what} تموت قبل ساعةٍ من إصدارها`).toBeGreaterThan(HOUR)
+    }
+  })
+})
+
+describe('نافذةُ الاستعادة أضيقُ — ولا تُرفع', () => {
+  it('ثلاثون دقيقةً لا أكثر، ودونَ سقف الروابط بفارقٍ حقيقيّ', () => {
+    expect(RESET_LINK_TTL_MINUTES, 'رُفعت نافذةُ الاستعادة فوق نصف ساعة').toBeLessThanOrEqual(30)
+    expect(RESET_LINK_TTL_MS, 'الميلّي ثانيةُ لا تطابق الدقائق').toBe(RESET_LINK_TTL_MINUTES * 60_000)
+    /* وأضيقُ من السقف بقصد: لو سُوّيت به يوما سقط هذا السطر قبل أن يُنشر */
+    expect(RESET_LINK_TTL_MS, 'سُوّيت نافذةُ الاستعادة بسقف الروابط')
+      .toBeLessThan(MAIL_LINK_TTL_MS)
+  })
+
+  it('ولحظةُ انتهاء رمز الاستعادة تُحسب منها — لا من السقف ولا من رقمٍ خامّ', async () => {
+    /* قاعدةٌ صوريّة: حسابٌ قائم، ويُلتقط ما كُتب في صفّ الرمز. و`$transaction`
+       تُنادى بمصفوفةِ عملياتٍ بُنيت قبلها — فالكتابةُ تقع وهي تُبنى. */
+    let written: { expiresAt?: Date } | null = null
+    const prisma = {
+      user: { findUnique: async () => ({ id: 'u-1', email: 'x@test.local' }) },
+      passwordResetToken: {
+        updateMany: (args: unknown) => args,
+        create: ({ data }: { data: { expiresAt?: Date } }) => {
+          written = data
+          return data
+        },
+      },
+      $transaction: async (ops: unknown[]) => ops,
+    } as unknown as PrismaClient
+
+    const before = Date.now()
+    const { tokenForDelivery } = await new AuthService(prisma).requestPasswordReset('x@test.local')
+    expect(tokenForDelivery, 'لم يُصدَر رمزُ استعادةٍ أصلا').toBeTruthy()
+    const life = written!.expiresAt!.getTime() - before
+    expect(life, 'رمزُ الاستعادة يعيش أكثرَ من نافذته').toBeLessThanOrEqual(RESET_LINK_TTL_MS + 1_000)
+    /* ولا يموت قبل أن يُقرأ: من يفتح بريدَه بعد دقائقَ يجده حيّا */
+    expect(life, 'رمزُ الاستعادة يموت قبل خمس دقائق').toBeGreaterThan(5 * 60_000)
+  })
 })
 
 describe('والجملةُ تتبع الرقم', () => {
@@ -130,6 +202,22 @@ describe('والجملةُ تتبع الرقم', () => {
       what: 'شاشةُ الرابط المنتهي', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => code('src/pages/JoinTrainerVerify.tsx'),
     },
+    {
+      what: 'مهلةُ دعوة المدرّب ورسالتُها', symbol: 'MAIL_LINK_TTL_MS',
+      src: () => code('server/services/trainer-review.service.ts'),
+    },
+    {
+      what: 'شاشةُ قبول دعوة المدرّب', symbol: 'MAIL_LINK_WINDOW_AR',
+      src: () => code('src/pages/TrainerAcceptInvite.tsx'),
+    },
+    {
+      what: 'نسخةُ رابط الدعوة في شاشة الطلبات', symbol: 'MAIL_LINK_WINDOW_AR',
+      src: () => code('src/pages/admin/TrainerApplications.tsx'),
+    },
+    {
+      what: 'رسالةُ استعادة كلمة المرور', symbol: 'RESET_LINK_WINDOW_AR',
+      src: () => mailBetween('export async function sendPasswordResetEmail', 'export async function sendStaffInviteEmail'),
+    },
   ]
 
   for (const site of SITES) {
@@ -143,8 +231,16 @@ describe('والجملةُ تتبع الرقم', () => {
     for (const site of SITES) {
       expect(site.src(), `${site.what}: ما زالت تَعِد بسبعة أيّام`).not.toContain('سبعةَ أيّام')
       expect(site.src(), `${site.what}: ما زالت تَعِد بثمانٍ وأربعين ساعة`).not.toContain('ثمانيَ وأربعين')
+      expect(site.src(), `${site.what}: ما زالت تَعِد باثنتَين وسبعين ساعة`).not.toContain('وسبعين ساعة')
+      expect(site.src(), `${site.what}: ما زال الرقمُ ٧٢ مكتوبا بيده`).not.toContain('٧٢ ساعة')
     }
-    /* والجملةُ نفسُها تقول يوما لا أكثر */
+    /* وجملةُ الاستعادة لا تَعِد بساعةٍ بعد أن صارت نصفَها */
+    expect(
+      mailBetween('export async function sendPasswordResetEmail', 'export async function sendStaffInviteEmail'),
+      'رسالةُ الاستعادة ما زالت تَعِد بساعة',
+    ).not.toContain('ساعةً واحدة')
+    /* والجملتان تقولان ما يقوله الرقم */
     expect(MAIL_LINK_WINDOW_AR).toContain('عشرين ساعة')
+    expect(RESET_LINK_WINDOW_AR).toContain('ثلاثين دقيقة')
   })
 })

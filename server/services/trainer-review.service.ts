@@ -12,7 +12,8 @@ import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
-import { bookingReminderMail, decisionMailFor, rejectionUndoneMail } from './trainer-decision-mail'
+import { bookingReminderMail, decisionMailFor, draftReminderMail, rejectionUndoneMail } from './trainer-decision-mail'
+import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { LIVE_INTERVIEW, revertWhenNoLiveInterview } from './trainer-interview-state'
@@ -23,6 +24,7 @@ import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMail
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
+import { buildFeeExampleAr, feeExampleFactsAr, type FeeExample } from '../../src/application/trainer/fee-example'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -88,7 +90,13 @@ export type RubricKey = (typeof RUBRIC_CRITERIA)[number]
 /** الناقصُ جائز — فالقيمةُ قد تغيب، ونوعُها يقول ذلك بدل أن يُكتَم بتحويل */
 export type RubricScores = Record<string, number | undefined>
 
-const INVITATION_TTL_MS = 72 * 3600_000 // 72 ساعة
+/* مهلةُ دعوة حساب المدرّب المعتمَد — من سقف روابط البريد لا برقمٍ بيدها.
+
+   كانت اثنتَين وسبعين ساعة، وأدخلها صاحبُ المنصّة في السقف (٢٠ سبتمبر
+   ٢٠٢٦): «نعم غيّره أيضا لـ٢٤ ساعة». فلم يبقَ فوق السقف رابطٌ يُرسَل بالبريد.
+   والمدّةُ ونصُّها في `src/application/links/mail-link-window.ts`، ومن فاتته
+   يطلب من الفريق إعادةَ إرسالها — وهو مقولٌ في الرسالة نفسِها. */
+const INVITATION_TTL_MS = MAIL_LINK_TTL_MS
 
 /* ═══ الناقصُ يُقبل، والمجهولُ يُرَدّ ═══
 
@@ -147,6 +155,21 @@ export class TrainerReviewService {
         /* آخرُ حركةٍ في الطلب — يُحسب بها عمرُه في الشاشة. وواحدةٌ تكفي:
            الشارةُ تقول «منذ متى وهو في حالته هذه» لا تاريخَ السلسلة. */
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
+        /* ═══ ونتيجةُ لقائه في الصفّ — لا خلفَ فتحةِ ملفّ ═══
+
+           شكا صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦) أنّ الصفَّ يقول كلَّ شيءٍ إلّا
+           ما يُقرَّر عليه: «أحتاج الاسم والرقم والحالة، وأيضا نتيجة المقابلة
+           — يجتاز أو لا يجتاز». وكانت تُكتب في بطاقة المقابلة داخلَ الملفّ،
+           فمن أراد أن يعرف من اجتاز فتح خمسةَ ملفّاتٍ ليقرأ خمسَ كلمات.
+
+           والملغاةُ لا تُقرأ: موعدٌ أُلغي لا نتيجةَ له. وتُؤخذ الأحدثُ
+           موعدا — من قوبل مرّتين فالثانيةُ قولُنا فيه. */
+        interviews: {
+          where: { canceledAt: null },
+          orderBy: { scheduledAt: 'desc' },
+          take: 1,
+          select: { outcome: true },
+        },
         _count: { select: { documents: true, reviews: true, interviews: { where: LIVE_INTERVIEW } } },
       },
     })
@@ -162,6 +185,9 @@ export class TrainerReviewService {
       waitingSince: a.statusHistory[0]?.createdAt ?? a.phase2CompletedAt ?? a.createdAt,
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
+      /* `null` = لا لقاءَ أو لقاءٌ بلا نتيجةٍ بعد — والشاشةُ تفرّق بينهما
+         بالحالة لا بهذا الحقل، فلا تُخترع نتيجةٌ لمن لم يُقابَل. */
+      interviewOutcome: a.interviews[0]?.outcome ?? null,
     }))
   }
 
@@ -822,6 +848,43 @@ export class TrainerReviewService {
 
      ووجهةُ زرِّها صفحةُ طلبه لا التقويمُ رأسا — في `trainer-decision-mail.ts`
      مكتوبٌ لماذا. */
+  /* ═══ تذكيرُ من بدأ ولم يُكمل ═══
+
+     طلبه صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦): «ذكّره أن يكمل التقديم إذا كان
+     مسوّدة» — فعلا يُضغط من قائمة الصفّ كأخيه تذكيرِ الحجز.
+
+     والشرطُ حالةٌ واحدة: `draft`. فمن أكمل لا يُقال له «أكمل»، ومن وقف عند
+     توثيق البريد بابُه غيرُ هذا (رسالةُ التوثيق تُعاد من حسابه). والرفضُ
+     يقول أيَّ حالةٍ هو فيها — «لا يُذكَّر» وحدَها لا تقول للموظّف لماذا. */
+  async remindDraftApplicant(applicationId: string, actorId: string): Promise<{ emailDelivery: string }> {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: { email: true, fullName: true, reference: true, status: true },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (app.status !== 'draft') {
+      throw new AuthError(
+        'not_draft',
+        `الطلبُ في حالة «${app.status}» لا في مسوّدة — فلا يُقال لصاحبه «أكمل» وقد أكمل`,
+        409,
+      )
+    }
+
+    const mail = draftReminderMail({
+      fullName: app.fullName,
+      reference: app.reference,
+      statusUrl: `${publicSiteUrl()}/join-trainer/status`,
+    })
+    const sent = await sendDirectEmail(this.prisma, {
+      to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.application.draft_remind', entityType: 'trainer_application', entityId: applicationId,
+      meta: { sentTo: app.email, emailDelivery: sent.status },
+    })
+    return { emailDelivery: sent.status }
+  }
+
   async remindToBookInterview(applicationId: string, actorId: string): Promise<{ emailDelivery: string }> {
     const app = await this.prisma.trainerApplication.findUnique({
       where: { id: applicationId },
@@ -1463,9 +1526,36 @@ export class TrainerReviewService {
     }
   }
 
+  /* ═══ المثالُ الحسابيُّ يُرسَل ولا يُوقَّع ═══
+
+     قرارُ صاحب المنصّة (٢٠ سبتمبر ٢٠٢٦): يُعرض على المدرّب مثالٌ بأرقامه هو
+     ليرى ما يعنيه أساسُ أتعابه بالأرقام — **خارجَ الوثيقة الموقَّعة**. وعلّةُ
+     الموضع في رأس `fee-example.ts`: ما دخل الملحقَ صار بندا بالبند 18-4، وما
+     سبق التوقيعَ في بريدٍ أسقطه البندُ نفسُه.
+
+     ولا يُرسَل حين لا قاعدةَ أتعابٍ أو حين تكون نسبةً من الإيراد — فالرقمُ
+     هناك دالّةٌ في سعرٍ نملكه نحن. */
+  private async contractFeeExample(compensationRuleId: string | null) {
+    if (!compensationRuleId) return null
+    const rule = await this.prisma.trainerCompensationRule.findUnique({ where: { id: compensationRuleId } })
+    if (!rule) return null
+    return buildFeeExampleAr({
+      type: rule.type, rate: rule.rate.toString(), currency: rule.currency,
+      minSeats: rule.minSeats, referralRate: rule.referralRate?.toString() ?? null,
+    })
+  }
+
   private async mailContract(args: {
     to: string; fullName: string; title: string; url: string; expiresAt: Date; resend: boolean
+    feeExample?: FeeExample | null
   }) {
+    const example = args.feeExample
+      ? [
+        { kind: 'h' as const, text: 'مثالٌ حسابيٌّ بأرقام أتعابك أنت' },
+        { kind: 'facts' as const, rows: feeExampleFactsAr(args.feeExample) },
+        { kind: 'note' as const, text: args.feeExample.noteAr },
+      ]
+      : []
     return sendDirectEmail(this.prisma, {
       to: args.to,
       subject: args.resend ? `رابطٌ جديدٌ لتوقيع عقدك — ${args.title}` : `عقدُك مع أكاديمية وجيز — للقراءة والتوقيع`,
@@ -1476,6 +1566,7 @@ export class TrainerReviewService {
           { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
           { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
           { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
+          ...example,
           { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
         ],
       }),
@@ -1521,6 +1612,7 @@ export class TrainerReviewService {
     const mail = await this.mailContract({
       to: app.email, fullName: app.fullName, title: contract.title,
       url: this.signingUrl(token), expiresAt, resend: false,
+      feeExample: await this.contractFeeExample(contract.compensationRuleId),
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
@@ -1547,6 +1639,7 @@ export class TrainerReviewService {
     const mail = await this.mailContract({
       to: app.email, fullName: app.fullName, title: contract.title,
       url: this.signingUrl(token), expiresAt, resend: true,
+      feeExample: await this.contractFeeExample(contract.compensationRuleId),
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
@@ -2055,7 +2148,8 @@ export class TrainerReviewService {
   }
 
   /* ─────────── الدعوة الآمنة وإنشاء الحساب ───────────
-     تُرسل بعد الاعتماد والعقد فقط. الرمز يُحفظ هاش، صالح 72 ساعة، يُستخدم مرة. */
+     تُرسل بعد الاعتماد والعقد فقط. الرمز يُحفظ هاش، وعمرُه سقفُ روابط البريد
+     (`INVITATION_TTL_MS` أعلاه)، ويُستخدم مرة. */
 
   /** ربطُ حساب المتقدّم بملفّ المدرّب ومنحُه دورَ المدرّب — دورُ التقديم يسقط */
   private async linkApplicantAsTrainer(profileId: string, userId: string, actorId: string | null): Promise<void> {
@@ -2104,7 +2198,7 @@ export class TrainerReviewService {
         heading: `اكتمل اعتماد طلبك (${app.reference}) — وهذه دعوتك لإنشاء حسابك`,
         blocks: [
           { kind: 'cta', label: 'أنشئ حسابك واختر كلمتك', href: acceptUrl },
-          { kind: 'callout', text: 'الرابط صالحٌ اثنتين وسبعين ساعة، ويُستخدم مرّةً واحدة.' },
+          { kind: 'callout', text: `الرابط صالحٌ ${MAIL_LINK_WINDOW_AR}، ويُستخدم مرّةً واحدة.` },
           { kind: 'note', text: 'فإن انتهى فاطلب من فريقنا إعادةَ إرساله.' },
         ],
       }),

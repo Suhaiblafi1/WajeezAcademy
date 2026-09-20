@@ -9,6 +9,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
+import { perSeatBreakdown } from '../../src/application/trainer/seat-fee'
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/ // «2026-08»
 
@@ -56,11 +57,22 @@ export class EarningsService {
       const { referred, general } = await this.seatsBySource(ct.cohort.id, profile.id)
       const rate = rule && rule.type === 'per_seat' ? Number(rule.rate) : null
       const referralRate = rule && rule.type === 'per_seat' ? (rule.referralRate === null ? rate : Number(rule.referralRate)) : null
+      /* والتوقّعُ من المعادلة نفسِها التي يحتسب بها الكشف — كان هنا حسابٌ
+         ثانٍ لا يطبّق الحدَّ الأدنى، فيُعرض للمدرّب أقلُّ ممّا يُدفع له. */
+      const breakdown = rate === null || !rule
+        ? null
+        : perSeatBreakdown({
+          general, referred, rate,
+          referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
+          minSeats: rule.minSeats,
+        })
       return {
         cohortId: ct.cohort.id, title: ct.cohort.title, status: ct.cohort.status,
         general, referred, rate, referralRate, currency: rule?.currency ?? LEDGER_CURRENCY,
         ruleType: rule?.type ?? null,
-        projected: rate === null ? null : general * rate + referred * (referralRate ?? rate),
+        billedSeats: breakdown?.billedSeats ?? null,
+        floorApplied: breakdown?.floorApplied ?? false,
+        projected: breakdown === null ? null : breakdown.total,
       }
     }))
     return { payouts, summary, agreement, rules, cohorts }
@@ -393,9 +405,20 @@ export class EarningsService {
     return { referred, general: total - referred }
   }
 
+  /* ═══ الأصيلُ يُرشَّح بدوره لا بترتيبٍ أبجديّ ═══
+
+     كان هنا `orderBy: { role: 'asc' }` وفي تعليقه «lead قبل assistant
+     أبجدياً» — **والتعليقُ خاطئ**: `'assistant' < 'lead'`. فكلُّ شعبةٍ فيها
+     مساعدٌ كانت تُحتسب أتعابُها بقاعدة المساعد وبإحالاته هو، والأصيلُ الذي
+     وقّع العقدَ لا يرى مقاعدَ رابطه. وبقيّةُ المستودَع كلُّها ترشّح
+     `role: 'lead'` صراحةً (التقارير · تقويمُ الفصل · خطّةُ الشعبة)، وهذا
+     الموضعُ وحدَه كان يخالفها.
+
+     وشعبةٌ بلا أصيلٍ لا تُحتسب لمساعدٍ سهوا: تسقط إلى الإسناد، ثمّ إلى
+     `no_trainer` — وخطأٌ يُقرأ خيرٌ من صرفٍ لغير صاحبه. */
   private async cohortLeadTrainer(cohortId: string) {
     const lead = await this.prisma.cohortTrainer.findFirst({
-      where: { cohortId }, orderBy: { role: 'asc' }, // lead قبل assistant أبجدياً
+      where: { cohortId, role: 'lead' },
     })
     if (lead) return lead.profileId
     const assignment = await this.prisma.trainerCourseAssignment.findFirst({
@@ -431,19 +454,22 @@ export class EarningsService {
          المجموع ويُكمَّل من العامّ. */
       const { referred, general } = await this.seatsBySource(cohortId, profileId)
       const actual = referred + general
-      const generalSeats = Math.max(general, rule.minSeats - referred)
-      const minNote = rule.minSeats > 0 && actual < rule.minSeats
-        ? ` (فعلي ${actual} — طُبق الحد الأدنى ${rule.minSeats})` : ''
+      const b = perSeatBreakdown({
+        general, referred, rate: Number(rule.rate),
+        referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
+        minSeats: rule.minSeats,
+      })
+      const minNote = b.floorApplied ? ` (فعلي ${actual} — طُبق الحد الأدنى ${rule.minSeats})` : ''
       items.push({
-        description: `تدريب «${courseTitle}» — ${generalSeats} متعلماً عامّا × ${Number(rule.rate)} ${rule.currency}${minNote}`,
-        amount: generalSeats * Number(rule.rate),
+        description: `تدريب «${courseTitle}» — ${b.generalSeats} متعلماً عامّا × ${Number(rule.rate)} ${rule.currency}${minNote}`,
+        amount: b.generalAmount,
         sourceRef: `cohort:${cohortId}`,
       })
       if (referred > 0) {
         const r = rule.referralRate === null ? Number(rule.rate) : Number(rule.referralRate)
         items.push({
           description: `منهم عبر رابطك — ${referred} متعلماً × ${r} ${rule.currency}`,
-          amount: referred * r,
+          amount: b.referralAmount,
           sourceRef: `cohort:${cohortId}:referral`,
         })
       }
