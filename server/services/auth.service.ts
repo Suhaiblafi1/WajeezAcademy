@@ -6,7 +6,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
-import { MAIL_LINK_TTL_MS } from '../../src/application/links/mail-link-window'
+import { MAIL_LINK_TTL_MS, RESET_LINK_TTL_MS } from '../../src/application/links/mail-link-window'
 
 /** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
 const LEARNER_ROLE = 'learner'
@@ -270,7 +270,7 @@ export class AuthService {
     const token = newToken()
     /* والطلبُ الجديدُ يُبطل ما قبله — عرفُ الدعوة نفسُه: «رابطان صالحان
        لحسابٍ واحدٍ بابان لا باب» (`issueInvite`). ولم تكن الاستعادةُ تفعله،
-       فكلُّ طلبٍ يترك رمزَه حيّا ساعةً كاملة: من طلب ثلاثا فُتحت له ثلاثةُ
+       فكلُّ طلبٍ يترك رمزَه حيّا مهلتَه كاملة: من طلب ثلاثا فُتحت له ثلاثةُ
        أبوابٍ في وقتٍ واحد، وكلُّ رسالةٍ قديمةٍ في صندوقه تبقى مفتاحا.
 
        والإبطالُ على الغرض وحدَه: الدعوةُ الساريةُ لا تسقط بطلب استعادة —
@@ -281,7 +281,11 @@ export class AuthService {
         data: { usedAt: new Date() },
       }),
       this.prisma.passwordResetToken.create({
-        data: { userId: user.id, tokenHash: sha256(token), expiresAt: new Date(Date.now() + 3600_000) },
+        /* والمهلةُ من `mail-link-window.ts` لا رقما خامّا هنا: كانت
+           `3600_000` في وسط الكتابة، فلا يجدها من يبحث عن مدّة رابط، ولا
+           تتبعها جملةُ الرسالة. وصارت ثلاثين دقيقةً بقرار صاحب المنصّة
+           (٢٠ سبتمبر ٢٠٢٦) — وهي أضيقُ من سقف الروابط بقصدٍ مكتوبٍ هناك. */
+        data: { userId: user.id, tokenHash: sha256(token), expiresAt: new Date(Date.now() + RESET_LINK_TTL_MS) },
       }),
     ])
     return { tokenForDelivery: token }

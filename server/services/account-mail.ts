@@ -10,7 +10,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { sendDirectEmail, publicSiteUrl, type DirectMailResult } from './notification.service'
 import { renderMail } from './mail-template'
-import { MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
+import { MAIL_LINK_WINDOW_AR, RESET_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 
 export function verifyEmailLink(token: string): string {
   return `${publicSiteUrl()}/auth/verify?token=${encodeURIComponent(token)}`
@@ -95,7 +95,7 @@ export async function sendPasswordResetEmail(
       blocks: [
         { kind: 'p', text: 'وصلنا طلبُ استعادة كلمة المرور لحسابك.' },
         { kind: 'cta', label: 'عيّن كلمة مرور جديدة', href: link },
-        { kind: 'callout', text: 'الرابط صالحٌ ساعةً واحدة، وتعيينُ كلمةٍ جديدة يُخرجك من كلّ الأجهزة.' },
+        { kind: 'callout', text: `الرابط صالحٌ ${RESET_LINK_WINDOW_AR}، وتعيينُ كلمةٍ جديدة يُخرجك من كلّ الأجهزة.` },
         { kind: 'note', text: 'إن لم تطلب هذا فتجاهل الرسالة — كلمتك الحالية باقيةٌ كما هي.' },
       ],
     }),
