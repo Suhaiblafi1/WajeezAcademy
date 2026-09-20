@@ -107,6 +107,7 @@ const PHRASES: Record<string, string> = {
   'trainer.dossier_link.revoke': 'إلغاءُ رابطِ سجلٍّ',
   'trainer.interview.invite': 'دعوةُ متقدّمٍ إلى حجزِ موعدِ مقابلة',
   'trainer.interview.remind': 'تذكيرُ متقدّمٍ بحجزِ موعدِ لقاء التعارف',
+  'trainer.application.draft_remind': 'تذكيرُ متقدّمٍ بإكمال طلبه المسوّدة',
   'trainer.create_direct': 'تعيينُ مدرّبٍ داخليّا — بلا نموذجِ تقدّم',
   'advisor.case.create_own': 'إدخالُ المستشارِ عميلا وفتحُ حالته',
   'term.create': 'إنشاءُ فصلٍ دراسيّ',

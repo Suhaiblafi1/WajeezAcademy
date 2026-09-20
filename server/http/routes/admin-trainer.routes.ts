@@ -163,6 +163,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.remindToBookInterview(id, req.auth!.userId))
   })
 
+  /* تذكيرُ المسوّدة — لمن أكمل القسمَ الأوّل وأغلق الصفحة. وهو لا يعلم أنّ
+     طلبَه لم يصلنا، ونحن نراه في الطابور ولا نراه ينتظرنا. */
+  app.post('/api/admin/trainer-applications/:id/draft-reminder', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'تذكيرُ متقدّمٍ بإكمال طلبه — للمسوّدة وحدَها' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return reply.status(201).send(await review.remindDraftApplicant(id, req.auth!.userId))
+  })
+
   app.post('/api/admin/trainer-applications/:id/interviews', {
     preHandler: requirePermission('trainer.applications.review'),
     schema: { tags: ['admin-trainers'], summary: 'جدولة مقابلة — تنقل الطلب إلى interview_scheduled' },

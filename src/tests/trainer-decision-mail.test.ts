@@ -19,7 +19,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  bookingReminderMail, decisionMailFor, rejectionMail, rejectionUndoneMail, waitlistMail,
+  bookingReminderMail, decisionMailFor, draftReminderMail, rejectionMail, rejectionUndoneMail, waitlistMail,
 } from '../../server/services/trainer-decision-mail'
 import { APPLICANT_STATUS } from '@/application/trainer/application-options'
 import { renderMail, type MailBlock } from '../../server/services/mail-template'
@@ -187,6 +187,44 @@ describe('رسالةُ التراجع عن الرفض', () => {
   })
 
   it('ورقمُ الطلب فيها — فيُسأل به إن سأل', () => {
+    const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
+    expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
+  })
+})
+
+/* ═══ تذكيرُ من بدأ ولم يُكمل ═══
+
+   المسوّدةُ نصفُ طلبٍ عند الخادم: أكمل قسمَه الأوّل ثمّ أغلق الصفحة، ولا
+   يعلم أنّ طلبَه لم يصلنا. وطلبه صاحبُ المنصّة فعلا يُضغط من قائمة الصفّ
+   (٢٠ سبتمبر ٢٠٢٦). وما يُحرس: أن تقول ما وقع، وأن تفتح البابَ الذي يُكمل
+   منه — لا نموذجا يبدأ من أوّله. */
+describe('رسالةُ تذكير المسوّدة', () => {
+  const STATUS = 'https://example.test/join-trainer/status'
+  const mail = draftReminderMail({ fullName: NAME, reference: REF, statusUrl: STATUS })
+
+  it('تقول إنّ ما كُتب محفوظٌ وإنّ الطلبَ لم يصل بعد — لا «شكرا لتقديمك»', () => {
+    const out = rendered(mail.doc)
+    expect(out.text, 'لا تقول إنّ المحفوظَ محفوظ').toContain('محفوظ')
+    expect(out.text, 'لا تقول إنّ الطلبَ لم يصل المراجعةَ بعد').toContain('لم يصل')
+    expect(mail.doc.preheader, 'بلا سطرِ معاينةٍ يقرأ الصندوقُ التحيّةَ وحدَها').toBeTruthy()
+  })
+
+  it('وزرُّها إلى صفحة الحالة — فيها «أكمل طلبك» يفتح النموذجَ على ما كُتب', () => {
+    /* ولو فُتح النموذجُ من أوّله لظنّ أنّه يبدأ من الصفر، فيتركه ثانية */
+    const cta = mail.doc.blocks.find((b: MailBlock) => b.kind === 'cta')
+    expect(cta, 'لا زرَّ يُكمل منه').toBeTruthy()
+    expect(cta && cta.kind === 'cta' && cta.href).toBe(STATUS)
+    expect(rendered(mail.doc).text, 'العنوانُ لا يخرج في النصّ الخامّ').toContain(STATUS)
+  })
+
+  it('ولا تَعِد بحذفٍ ولا تقول «آخرُ تذكير» — المسوّدةُ لا تُحذف بمضيّ وقت', () => {
+    const out = rendered(mail.doc).text
+    expect(out, 'تَعِد بحذفٍ لا يقع').not.toMatch(/يُحذف|سيُحذف|تُحذف/)
+    expect(out, 'تقول «آخرُ تذكير» ولا شيءَ يقيسه').not.toContain('آخر تذكير')
+  })
+
+  it('ورقمُ الطلب فيها وفي موضوعها — فيُسأل به إن سأل', () => {
+    expect(mail.subject).toContain(REF)
     const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
     expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
   })

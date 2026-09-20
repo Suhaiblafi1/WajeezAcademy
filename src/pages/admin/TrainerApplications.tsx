@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { ComponentType } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, Clock, FileText, History,
-  KeyRound, Loader2, MailCheck, RefreshCw, RotateCcw, ServerOff, Star, Trash2, UserPlus, XCircle,
+  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
+  KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -10,6 +11,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
+import { outcomeLabelAr } from "@/application/trainer/interview-outcome";
 import { staffAreaCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
@@ -24,7 +26,6 @@ import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
-import { queueAge } from "@/application/trainer/queue-age";
 import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/delivery";
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -44,6 +45,19 @@ const PURGEABLE: string[] = [...PURGEABLE_STATUSES];
     المسار في الخادم. ولا يُعاد كتابتُه هنا: نسختان تنحرفان. */
 const canRemind = (a: { status: string; interviewsCount: number }): boolean =>
   canRemindToBook({ status: a.status, liveInterviews: a.interviewsCount });
+
+/* ═══ نتيجةُ اللقاء في الصفّ — بلونها لا بلونٍ واحد ═══
+
+   «يجتاز أو لا يجتاز» هو ما يُقرَّر عليه، فيُقرأ بالعين قبل النصّ: الأخضرُ
+   اجتاز، والأحمرُ لم يجتز، والذهبيُّ معلَّق، والهادئُ لم يحضر — وهو خبرٌ عن
+   موعدٍ لم يقع لا حكمٌ على صاحبه. والأسماءُ من `interview-outcome.ts`
+   وحدَها، فلا تُكتب هنا ثانية. */
+const OUTCOME_TONE: Record<string, string> = {
+  passed: "border-emerald-400/40 text-emerald-300",
+  failed: "border-red-400/40 text-red-300",
+  hold: "border-gold/40 text-gold-ink",
+  no_show: "border-white/20 text-muted-foreground",
+};
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
@@ -122,6 +136,75 @@ const DECISIONS: { action: string; label: string; from: string[]; tone: "main" |
   { action: "reinstate", label: "ارفع الإيقاف", from: ["suspended"], tone: "main" },
 ];
 
+/* ═══ قائمةُ أفعالِ الصفّ — فعلٌ من الطابور بلا فتحِ ملفّ ═══
+
+   طلبها صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦): «ضع أيقونةَ أكشن ينسدل فيها: اعتمد،
+   اطلب منه تحديد موعد للمقابلة، ذكّره أن يكمل التقديم إذا كان مسوّدة…».
+
+   وما فيها **يتبع حالةَ الطلب** لا يُعرض كلُّه مطفأً: قائمةٌ من ستّةِ أفعالٍ
+   أربعتُها رماديّةٌ تُعلّم القارئَ ألّا يقرأها. فمن كان مسوّدةً رأى «ذكّره
+   بإكمال طلبه» ولم يرَ «اعتمِدْه»، ومن رُدّ رأى «تراجَعْ عن الرفض» وحدَه.
+
+   والإغلاقُ بمستمعٍ على المستند لا بستارةٍ `fixed`: عرفُ `StaffAccountMenu`
+   نفسُه، ومكتوبٌ هناك لماذا (`backdrop-filter` يحبس `fixed` في حاملها). */
+interface RowAction {
+  key: string;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  tone?: "danger";
+  run: () => void;
+}
+
+function RowActions({ items, label }: { items: RowAction[]; label: string }) {
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div ref={boxRef} className="relative shrink-0">
+      {/* زرٌّ من سلّم النظام لا صيغةٌ مكتوبةٌ بيدها — وكذلك لوحُ القائمة
+          تحته: `design-system.test.ts` يعدّ ما كُتب بيده ويحدُّه. */}
+      <Button
+        tone="ghost" size="sm" icon={MoreVertical}
+        aria-haspopup="menu" aria-expanded={open}
+        aria-label={`إجراءات ${label}`}
+        onClick={() => setOpen((v) => !v)}
+      />
+      {open && (
+        <Inset
+          role="menu" tone="solid"
+          className="absolute left-0 z-30 mt-1 w-64 p-1 shadow-xl"
+        >
+          {items.map((it) => (
+            <button
+              key={it.key} role="menuitem" type="button"
+              onClick={() => { setOpen(false); it.run(); }}
+              className={`flex w-full cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-right text-read font-bold transition ${
+                it.tone === "danger" ? "text-red-300 hover:bg-red-500/10" : "text-foreground hover:bg-white/5"
+              }`}
+            >
+              <it.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> {it.label}
+            </button>
+          ))}
+        </Inset>
+      )}
+    </div>
+  );
+}
+
 /** تبويبا الملفّ: من هو، وماذا يُدرّس — لا شاشةٌ واحدة تُقرأ عمودا طويلا */
 type DetailTab = "dossier" | "courses";
 
@@ -130,6 +213,8 @@ interface AppRow {
   country: string | null; jobTitle: string | null; domainYears: string | null; trainingYears: string | null;
   specialties: string[]; createdAt: string; emailVerified: boolean; phase2Done: boolean;
   documentsCount: number; reviewsCount: number; interviewsCount: number;
+  /** نتيجةُ آخر لقاءٍ غيرِ ملغى — `null` لمن لم يُقابَل أو لم تُسجَّل نتيجتُه */
+  interviewOutcome: string | null;
   /** لحظةُ آخر حركةٍ في الطلب — تُحسب بها شارةُ العمر */
   waitingSince: string;
 }
@@ -283,6 +368,9 @@ export default function TrainerApplications() {
   /* رفضٌ أو انتظارٌ على دفعةٍ: كلاهما يصل صاحبَ الطلب، فسببُه يُكتب أوّلا —
      ووجهةُ السبب تختلف بينهما، ومكتوبٌ عند النافذة أدناه كيف. */
   const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
+  /* قرارٌ على صفٍّ واحدٍ من قائمة أفعاله — والسببُ يُكتب في نافذته لا في
+     خانةٍ عامّة، كما في نظيرَيه داخل الملفّ. */
+  const [rowDecision, setRowDecision] = useState<{ app: AppRow; action: "reject" | "undo_reject" } | null>(null);
   /* ═══ مرشِّحُ «لم يحجز موعدا» ═══
 
      الطابورُ يعرض عددَ المقابلات في كلّ صفّ، ومن أراد من لم يحجز عدَّ الأصفارَ
@@ -418,7 +506,13 @@ export default function TrainerApplications() {
     apps
       .filter((a) => !onlyUnbooked || canRemind(a))
       .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
-    page, 20);
+    /* ═══ وخمسون في الصفحة لا عشرون (٢٠ سبتمبر ٢٠٢٦) ═══
+
+       «زد عدد المتقدّمين في الصفحة الواحدة». وقد أمكن: الصفُّ صار أربعَ
+       حقائقَ في سطرٍ واحد بعد أن كان أربعةَ أسطر، فخمسون منه أقصرُ ممّا
+       كان عشرون. ولا يُرفع أكثر: الترشيحُ والبحثُ فوقَه هما ما يُقصّر
+       الطابورَ حقّا، لا صفحةٌ تُمرَّر بلا نهاية. */
+    page, 50);
 
   const toggleSel = (id: string) => setSel((prev) => {
     const next = new Set(prev);
@@ -438,6 +532,68 @@ export default function TrainerApplications() {
   /* ومن يصلح للتذكير: من يُقبل حجزُه ولم يحجز. وهو شرطُ الخادم نفسُه
      (`remindToBookInterview`) — ولو افترقا لعرضت الشاشةُ زرّا يردّه ٤٠٩. */
   const remindable = selectedRows.length > 0 && selectedRows.every(canRemind);
+
+  /* ═══ ما يُعرض في قائمة أفعال الصفّ ═══
+
+     الشرطُ من `DECISIONS` نفسِها لا من قائمةٍ ثانيةٍ تُكتب هنا: خريطةُ
+     الانتقالات في الخادم تُقابَل بها، فلو كُتبت مرّتين ظهر فعلٌ يردّه ٤٠٩.
+     وكذلك التذكيرُ: `canRemind` هي مِحَكُّ الخادم بعينه. */
+  const allows = (action: string, status: string) =>
+    DECISIONS.some((d) => d.action === action && d.from.includes(status));
+
+  const rowActions = (a: AppRow): RowAction[] => {
+    const items: RowAction[] = [
+      { key: "open", label: "افتح الملفّ", icon: FileText, run: () => void openDetail(a.id) },
+    ];
+    if (allows("approve", a.status)) {
+      items.push({
+        key: "approve", label: "اعتمِدْه مدرّبا — بنقرة", icon: CheckCircle2,
+        run: () => void act(
+          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: "approve" }),
+          "اعتُمد مدرّبا — وأُعلم بذلك",
+        ),
+      });
+    }
+    /* والتذكيرُ بالحجز لمن يُقبل حجزُه ولم يحجز — وخبرُه يتبع حالَ بريده */
+    if (canRemind(a)) {
+      items.push({
+        key: "remind-booking", label: "اطلب منه تحديدَ موعد المقابلة", icon: CalendarCheck,
+        run: () => void act(
+          () => apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${a.id}/booking-reminder`, {}),
+          (result) => mailOutcomeAr(
+            "أُرسل إليه طلبُ تحديد الموعد",
+            (result as { emailDelivery?: string } | null)?.emailDelivery,
+          ),
+        ),
+      });
+    }
+    /* وتذكيرُ المسوّدة للمسوّدة وحدَها — والخادمُ يشترطها (٤٠٩ دونها) */
+    if (a.status === "draft") {
+      items.push({
+        key: "remind-draft", label: "ذكّره بإكمال طلبه", icon: Send,
+        run: () => void act(
+          () => apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${a.id}/draft-reminder`, {}),
+          (result) => mailOutcomeAr(
+            "أُرسل إليه تذكيرٌ بإكمال طلبه",
+            (result as { emailDelivery?: string } | null)?.emailDelivery,
+          ),
+        ),
+      });
+    }
+    if (allows("reject", a.status)) {
+      items.push({
+        key: "reject", label: "رفض بلطف", icon: XCircle, tone: "danger",
+        run: () => setRowDecision({ app: a, action: "reject" }),
+      });
+    }
+    if (allows("undo_reject", a.status)) {
+      items.push({
+        key: "undo-reject", label: "تراجَعْ عن الرفض", icon: RotateCcw,
+        run: () => setRowDecision({ app: a, action: "undo_reject" }),
+      });
+    }
+    return items;
+  };
 
   const bulkRemind = async () => {
     if (busy || sel.size === 0) return;
@@ -1254,46 +1410,103 @@ export default function TrainerApplications() {
                 <input type="checkbox" checked={sel.has(a.id)} onChange={() => toggleSel(a.id)}
                   aria-label={`حدّد طلب ${a.fullName}`} className="h-4 w-4 shrink-0 cursor-pointer accent-gold" />
               </label>
+            {/* ═══ أربعُ حقائقَ لا أربعةُ أسطر (٢٠ سبتمبر ٢٠٢٦) ═══
+
+                شكا صاحبُ المنصّة: «المعلومات كثيرة — أحتاج فقط الاسم والرقم
+                والحالة، وأيضا نتيجة المقابلة». وكان الصفُّ يقول التخصّصاتِ
+                وسنواتِ الخبرة والمسمّى، ثمّ يعدّ الوثائقَ والتقييماتِ
+                والمقابلات، ثمّ عمرَ الانتظار — أربعةَ أسطرٍ يُقرأ منها
+                سطرٌ ويُمرَّر الباقي. **وما يُقرَّر عليه لم يكن فيها**:
+                نتيجةُ اللقاء كانت خلفَ فتحةِ ملفّ.
+
+                فما بقي هو ما يُفرز به: من هو، وبأيّ رقم، وأين وقف، وماذا
+                قلنا فيه بعد لقائه. وما ذهب لم يُحذف — الملفُّ يفتحه كلَّه
+                بنقرة، وعمرُ الانتظار مقولٌ في ترويسة الطابور وفي ملخّص
+                الصباح. */}
             <button
               onClick={() => void openDetail(a.id)}
               className="flex flex-1 cursor-pointer flex-wrap items-center justify-between gap-3 text-right"
             >
-              <div>
-                <p className="font-black">{a.fullName} <span className="mr-2 font-mono text-fine text-muted-foreground" dir="ltr">{a.reference}</span></p>
-                <p className="mt-1 text-read text-muted-foreground">
-                  {a.specialties.join(" · ") || "—"} · خبرة مجال {a.domainYears ?? "—"} · {a.jobTitle ?? "—"}
-                </p>
-                <p className="mt-1 text-read text-muted-foreground">
-                  {a.emailVerified ? "بريد متحقق ✓" : "بريد غير متحقق"} · {a.documentsCount} وثيقة · {a.reviewsCount} تقييم · {a.interviewsCount} مقابلة
-                  {a.phase2Done ? " · أكمل المرحلة الثانية" : ""}
-                </p>
-                {/* ═══ ومنذ متى يقف، وعند من ═══
+              <p className="font-black">
+                {a.fullName} <span className="mr-2 font-mono text-fine text-muted-foreground" dir="ltr">{a.reference}</span>
+              </p>
+              <span className="flex flex-wrap items-center gap-2">
+                {/* ═══ ولا شارةَ عمرٍ هنا — حُذفت نهائيّا (٢٠ سبتمبر ٢٠٢٦) ═══
 
-                    الصفُّ كان يعدّ ما فيه ولا يقول متى وصل، فيشيخ الطلبُ
-                    بصمت. واللونُ لا يُشعل إلّا على ما ينتظرنا: ما ينتظر
-                    صاحبَه يُقال عمرُه هادئا، ومن وقع فيه قرارٌ لا شارةَ له.
-                    والقاعدةُ في `queue-age.ts` تُفحص دالّةً لا شرطا هنا. */}
-                {(() => {
-                  const age = queueAge(a.status, a.waitingSince);
-                  if (!age) return null;
-                  return (
-                    <p className={`mt-1 inline-flex items-center gap-1.5 text-read font-bold ${
-                      age.tone === "late" ? "text-red-300"
-                        : age.tone === "warn" ? "text-gold-ink" : "text-muted-foreground"
-                    }`}>
-                      <Clock className="h-3.5 w-3.5" aria-hidden="true" /> {age.ar}
-                    </p>
-                  );
-                })()}
-              </div>
-              <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
-                {STATUS_LABELS[a.status] ?? a.status}
+                    عُرضت أوّلا على كلّ صفّ، ثمّ على المتأخّر وحدَه حين شُكي
+                    من ازدحام الصفّ، ثمّ قال صاحبُ المنصّة: «شارة العمر
+                    احذفها نهائيّا من الصفّ». فذهبت كلُّها.
+
+                    والعطبُ الذي وُضعت له — أن يشيخ الطلبُ بصمت — بابُه غيرُ
+                    الصفّ: الترتيبُ يضع الأقدمَ أوّلا، وملخّصُ الصباح ينادي
+                    على من طال وقوفُه. و`queue-age.ts` باقٍ بدالّته
+                    ومحكوماتِه إن أُريد في موضعٍ آخر. */}
+                {/* ونتيجةُ اللقاء قبل الحالة: الحالةُ تقول أين وقف، وهذه
+                    تقول ماذا قلنا فيه — وهي الأحدثُ خبرا. ولا شارةَ لمن لم
+                    يُقابَل: فراغٌ أصدقُ من «بلا نتيجة» في كلّ صفّ. */}
+                {a.interviewOutcome && (
+                  <span className={`rounded-full border px-3 py-1 text-fine font-bold ${
+                    OUTCOME_TONE[a.interviewOutcome] ?? "border-white/20 text-muted-foreground"
+                  }`}>
+                    {outcomeLabelAr(a.interviewOutcome)}
+                  </span>
+                )}
+                <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
+                  {STATUS_LABELS[a.status] ?? a.status}
+                </span>
               </span>
             </button>
+            <RowActions label={a.fullName} items={rowActions(a)} />
             </Card>
           ))}
         </div>
       ))}
+
+      {/* ═══ قرارُ صفٍّ واحدٍ من قائمته — بسببه المكتوب قبل وقوعه ═══
+
+          والنصّان يفترقان بافتراق وجهة السبب: سببُ الرفض يبقى عندنا (قرارُ
+          ١٨ سبتمبر)، وسببُ التراجع يسافر إلى صاحبه بنصّه (قرارُ ١٩ سبتمبر).
+          فلا تُكتب جملةٌ واحدةٌ لهما. */}
+      {rowDecision && (
+        <ConfirmAction
+          titleAr={rowDecision.action === "reject"
+            ? `رفضُ طلب «${rowDecision.app.fullName}»`
+            : `التراجعُ عن رفض «${rowDecision.app.fullName}»`}
+          confirmLabelAr={rowDecision.action === "reject" ? "ارفضه بلطف" : "تراجَعْ وأبلِغه"}
+          tone={rowDecision.action === "reject" ? "danger" : "default"}
+          busy={busy}
+          reason={rowDecision.action === "reject"
+            ? { labelAr: "السببُ — للأثر الداخليّ، ولا يصل المتقدّم", minLength: 5 }
+            : { labelAr: "لماذا نتراجع؟ — يصل المتقدّمَ بنصّه في رسالته", minLength: 10 }}
+          onCancel={() => setRowDecision(null)}
+          onConfirm={(reason) => {
+            if (!reason) return;
+            const target = rowDecision;
+            setRowDecision(null);
+            void act(
+              () => apiPost<{ emailDelivery?: string }>(
+                `/api/admin/trainer-applications/${target.app.id}/decision`,
+                { action: target.action, note: reason },
+              ),
+              target.action === "reject"
+                ? "رُدَّ الطلبُ — وأُعلم صاحبُه، وسببُك في الأثر"
+                : (result) => mailOutcomeAr(
+                  "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
+                  (result as { emailDelivery?: string } | null)?.emailDelivery,
+                ),
+            );
+          }}
+        >
+          <p className="text-read leading-6">
+            الطلب <b dir="ltr">{rowDecision.app.reference}</b> — {rowDecision.app.fullName}.
+          </p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">
+            {rowDecision.action === "reject"
+              ? "يصله بريدُ اعتذارٍ من المنصّة، وسببُك يبقى في الأثر عندنا ولا يُرسَل — فاكتبه لمن يراجع الطلبَ بعدك."
+              : "يعود الطلبُ إلى «قيد المراجعة» بملفّه ومستنداته، ويصله بريدٌ يقول إنّنا عُدنا في قرارنا — وفيه سببُك بنصّه."}
+          </p>
+        </ConfirmAction>
+      )}
 
       {bulkDecision && (
         <ConfirmAction
