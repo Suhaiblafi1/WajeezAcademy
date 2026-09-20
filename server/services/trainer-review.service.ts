@@ -12,7 +12,7 @@ import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
 import { seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
-import { bookingReminderMail, decisionMailFor, rejectionUndoneMail } from './trainer-decision-mail'
+import { bookingReminderMail, decisionMailFor, draftReminderMail, rejectionUndoneMail } from './trainer-decision-mail'
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
@@ -138,6 +138,21 @@ export class TrainerReviewService {
         /* آخرُ حركةٍ في الطلب — يُحسب بها عمرُه في الشاشة. وواحدةٌ تكفي:
            الشارةُ تقول «منذ متى وهو في حالته هذه» لا تاريخَ السلسلة. */
         statusHistory: { orderBy: { createdAt: 'desc' }, take: 1, select: { createdAt: true } },
+        /* ═══ ونتيجةُ لقائه في الصفّ — لا خلفَ فتحةِ ملفّ ═══
+
+           شكا صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦) أنّ الصفَّ يقول كلَّ شيءٍ إلّا
+           ما يُقرَّر عليه: «أحتاج الاسم والرقم والحالة، وأيضا نتيجة المقابلة
+           — يجتاز أو لا يجتاز». وكانت تُكتب في بطاقة المقابلة داخلَ الملفّ،
+           فمن أراد أن يعرف من اجتاز فتح خمسةَ ملفّاتٍ ليقرأ خمسَ كلمات.
+
+           والملغاةُ لا تُقرأ: موعدٌ أُلغي لا نتيجةَ له. وتُؤخذ الأحدثُ
+           موعدا — من قوبل مرّتين فالثانيةُ قولُنا فيه. */
+        interviews: {
+          where: { canceledAt: null },
+          orderBy: { scheduledAt: 'desc' },
+          take: 1,
+          select: { outcome: true },
+        },
         _count: { select: { documents: true, reviews: true, interviews: { where: LIVE_INTERVIEW } } },
       },
     })
@@ -153,6 +168,9 @@ export class TrainerReviewService {
       waitingSince: a.statusHistory[0]?.createdAt ?? a.phase2CompletedAt ?? a.createdAt,
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
+      /* `null` = لا لقاءَ أو لقاءٌ بلا نتيجةٍ بعد — والشاشةُ تفرّق بينهما
+         بالحالة لا بهذا الحقل، فلا تُخترع نتيجةٌ لمن لم يُقابَل. */
+      interviewOutcome: a.interviews[0]?.outcome ?? null,
     }))
   }
 
@@ -682,6 +700,43 @@ export class TrainerReviewService {
 
      ووجهةُ زرِّها صفحةُ طلبه لا التقويمُ رأسا — في `trainer-decision-mail.ts`
      مكتوبٌ لماذا. */
+  /* ═══ تذكيرُ من بدأ ولم يُكمل ═══
+
+     طلبه صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦): «ذكّره أن يكمل التقديم إذا كان
+     مسوّدة» — فعلا يُضغط من قائمة الصفّ كأخيه تذكيرِ الحجز.
+
+     والشرطُ حالةٌ واحدة: `draft`. فمن أكمل لا يُقال له «أكمل»، ومن وقف عند
+     توثيق البريد بابُه غيرُ هذا (رسالةُ التوثيق تُعاد من حسابه). والرفضُ
+     يقول أيَّ حالةٍ هو فيها — «لا يُذكَّر» وحدَها لا تقول للموظّف لماذا. */
+  async remindDraftApplicant(applicationId: string, actorId: string): Promise<{ emailDelivery: string }> {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: { email: true, fullName: true, reference: true, status: true },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (app.status !== 'draft') {
+      throw new AuthError(
+        'not_draft',
+        `الطلبُ في حالة «${app.status}» لا في مسوّدة — فلا يُقال لصاحبه «أكمل» وقد أكمل`,
+        409,
+      )
+    }
+
+    const mail = draftReminderMail({
+      fullName: app.fullName,
+      reference: app.reference,
+      statusUrl: `${publicSiteUrl()}/join-trainer/status`,
+    })
+    const sent = await sendDirectEmail(this.prisma, {
+      to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.application.draft_remind', entityType: 'trainer_application', entityId: applicationId,
+      meta: { sentTo: app.email, emailDelivery: sent.status },
+    })
+    return { emailDelivery: sent.status }
+  }
+
   async remindToBookInterview(applicationId: string, actorId: string): Promise<{ emailDelivery: string }> {
     const app = await this.prisma.trainerApplication.findUnique({
       where: { id: applicationId },
