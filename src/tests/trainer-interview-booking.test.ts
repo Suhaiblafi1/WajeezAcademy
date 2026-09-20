@@ -10,7 +10,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  APPLICANT_STATUS, BOOKABLE_STATUSES, TRAINER_INTERVIEW, canRemindToBook, trainerInterviewUrl,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW, canRemindToBook,
+  trainerInterviewUrl,
 } from '@/application/trainer/application-options'
 import { FORM_STEPS, STEPS } from '@/pages/join-trainer/options'
 import { verifyCalendlyWebhookSignature } from '../../server/services/calendly-webhook.service'
@@ -114,11 +115,33 @@ describe('الحجزُ آخرُ محطّةٍ يراها المتقدّم — ل�
     expect(STEPS[STEPS.length - 1].title).toContain(TRAINER_INTERVIEW.labelAr)
   })
 
-  it('وزرُّ آخرِ خطوةٍ يقول حجزا لا إرسالا', () => {
+  it('وزرُّ آخرِ خطوةٍ يقول ما بعده — حجزا حين يُحجَز، وإرسالا حين يُوقَف الحجز', () => {
+    /* ═══ ولماذا صار الحارسُ يقرأ الفرعَ لا نافذةَ حروف ═══
+
+       كان يقيس ورودَ «احجز» في أوّل أربعمئة حرفٍ بعد الزرّ، وهو مِحَكٌّ يكذب
+       في الاتّجاهَين: يمرّ والزرُّ لا يقولها — إذ تكفيه الكلمةُ في فرعٍ لا
+       يُعرض — ويسقط والزرُّ يقولها، إذ تزحزح النافذةَ سطرٌ يُزاد. وقد وقع
+       الاثنان معا يومَ وُقف الحجز.
+
+       والقرارُ نفسُه لم يتغيّر (١٨ سبتمبر ٢٠٢٦): **الزرُّ يقول ما بعده**، فلا
+       يُقرأ ختاما فيُغلق الصفحةَ من تحته ما ينتظره. وإنّما تغيّر ما بعده:
+       تقويمٌ حين يُفتح الحجز، وإشعارُ وصولٍ حين يُوقَف. فيُفحص الطرفان معا —
+       كلٌّ بما يجب أن يقوله في حاله. */
     const src = code('src/pages/JoinTrainer.tsx')
     const send = src.slice(src.indexOf('key="send"'))
-    expect(send.slice(0, 400), 'الزرُّ عاد يَعِد بإرسالٍ ينتهي عنده').not.toContain('أرسل طلب الانضمام')
-    expect(send.slice(0, 400), 'الزرُّ لا يقول ما بعده').toContain('احجز')
+    /* اسمُ الزرّ وحدَه: من `{busy ? "…" :` إلى آخر سطرِه، لا نافذةً بالحروف */
+    const label = /\{busy \? "[^"]*" :([^\n]*)\}/.exec(send)?.[1] ?? ''
+    expect(label, 'لا يُقرأ اسمُ الزرّ — تغيّرت بنيتُه').toBeTruthy()
+    expect(label, 'الزرُّ عاد يَعِد بإرسالٍ ينتهي عنده').not.toContain('أرسل طلب الانضمام')
+
+    /* طرفا المفتاح إن كان الزرُّ يقرؤه، وإلّا فالاسمُ واحدٌ في كلّ حال */
+    const b = /INTERVIEW_BOOKING_PAUSE\.active \? "([^"]*)" : "([^"]*)"/.exec(label)
+    if (INTERVIEW_BOOKING_PAUSE.active) {
+      expect(b, 'الحجزُ موقوفٌ والزرُّ لا يقرأ المفتاح — فيَعِد بما لا يقع').toBeTruthy()
+      expect(b![1], 'طرفُ الوقف يَعِد بحجزٍ موقوف').not.toContain('احجز')
+      expect(b![1], 'طرفُ الوقف لا يقول ما يقع بالضغط').toMatch(/أرسل/)
+    }
+    expect(b ? b[2] : label, 'الزرُّ لا يقول «احجز» حين يكون الحجزُ مفتوحا').toContain('احجز')
   })
 
   it('والوعدُ يُوفى في الشاشة التالية: تقويمٌ، ومحطّةٌ رابعةٌ حاليّة', () => {
