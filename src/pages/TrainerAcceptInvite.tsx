@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
+import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
 
@@ -57,7 +58,7 @@ export default function TrainerAcceptInvite() {
           <>
             <h1 className="mt-6 text-center text-2xl font-black">تفعيل حسابك التدريبي</h1>
             <p className="mt-3 text-center text-sm leading-8 text-muted-foreground">
-              هذه الدعوة صالحة ٧٢ ساعة وتُستخدم مرة واحدة. اختر كلمة مرورك لإنشاء الحساب.
+              هذه الدعوة صالحة {MAIL_LINK_WINDOW_AR} وتُستخدم مرة واحدة. اختر كلمة مرورك لإنشاء الحساب.
             </p>
             <form onSubmit={submit} className="mt-6 space-y-4 rounded-3xl border border-white/10 bg-white/[0.03] p-6">
               <div>
