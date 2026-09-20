@@ -26,7 +26,8 @@ import {
 import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
-  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, TRAINING_SEASONS, type ContactChannel,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_PAUSE, TRAINING_SEASONS,
+  type ContactChannel,
 } from "@/application/trainer/application-options";
 
 /* صفحة انضمام المدربين.
@@ -795,9 +796,19 @@ export default function JoinTrainer() {
               «وصل طلبك كاملا — شكرا لك» يُقرأ ختاما، فيُغلق الصفحةَ من تحته
               تقويمٌ ينتظره. والحقيقةُ أنّ الطلبَ وصل وأنّ الموعدَ لم يُحجز —
               والجملتان تُقالان معا: شكرٌ، ثمّ ما بقي. */}
-          <h1 className="mt-6 text-2xl font-black">وصل طلبك — وبقيت خطوةٌ واحدة</h1>
+          {/* ═══ وحين يُوقَف الحجزُ يعود العنوانُ ختاما — لأنّه صار ختاما ═══
+
+              «وبقيت خطوةٌ واحدة» صوابٌ ما دام تحته تقويمٌ يُحجَز منه. فإذا
+              وُقف الحجزُ (`INTERVIEW_BOOKING_PAUSE`) لم تبقَ عليه خطوة: طلبُه
+              تمّ، وما بقي علينا نحن. فعنوانٌ يقول «بقيت خطوة» يجعله يبحث عن
+              فعلٍ ليس له — وهو العطبُ الأوّل مقلوبا. */}
+          <h1 className="mt-6 text-2xl font-black">
+            {INTERVIEW_BOOKING_PAUSE.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوةٌ واحدة"}
+          </h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            شكرا لك. طلبك كاملٌ عند فريقنا، ولم يبقَ إلّا أن تختار موعدَ لقاء التعارف من التقويم أدناه.
+            {INTERVIEW_BOOKING_PAUSE.active
+              ? "شكرا لك. طلبك كاملٌ عند فريقنا ولا ينقصه منك شيء. وحجزُ المواعيد موقوفٌ مؤقّتا لامتلائها — والتفصيلُ أدناه."
+              : "شكرا لك. طلبك كاملٌ عند فريقنا، ولم يبقَ إلّا أن تختار موعدَ لقاء التعارف من التقويم أدناه."}
           </p>
           <StepBar current={4} className="mt-6 text-right" />
           <Card as="p" tone="warn" className="mt-4">
@@ -1720,8 +1731,13 @@ export default function JoinTrainer() {
                  والوعدُ يُوفى في الشاشة نفسِها — وإلّا كان الزرُّ كذبا. */
               <Button tone="primary" key="send"
                 type="submit" disabled={busy} className="disabled:cursor-not-allowed">
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarClock className="h-4 w-4" />}
-                {busy ? "نحفظ طلبك…" : "احجز موعد لقاء التعارف"}
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : INTERVIEW_BOOKING_PAUSE.active ? <Check className="h-4 w-4" />
+                  : <CalendarClock className="h-4 w-4" />}
+                {/* والزرُّ يتبع المفتاح: ما دام الحجزُ موقوفا فما بعده إرسالٌ
+                    لا حجز، وزرٌّ يقول «احجز» ثمّ يفتح إشعارَ وقفٍ خُلفٌ للوعد
+                    — وهو العطبُ الذي كُتب له هذا الزرُّ أصلا، مقلوبا. */}
+                {busy ? "نحفظ طلبك…" : INTERVIEW_BOOKING_PAUSE.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
               </Button>
             )}
           </div>

@@ -29,10 +29,12 @@
    ومصدرُ الرسالة يُفحَص مع ذلك: نافذةٌ أخرى تستطيع أن تبثّ ما تشاء. */
 
 import { useEffect, useRef, useState } from 'react'
-import { CalendarClock, CheckCircle2, ExternalLink, Loader2, Video } from 'lucide-react'
-import { TRAINER_INTERVIEW, trainerInterviewUrl } from '@/application/trainer/application-options'
+import { CalendarClock, CalendarOff, CheckCircle2, ExternalLink, Loader2, MailCheck, Video } from 'lucide-react'
+import {
+  INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW, trainerInterviewUrl,
+} from '@/application/trainer/application-options'
 import { nextFrameHeight } from '@/lib/calendly-embed'
-import { Inset } from '@/components/ui/Surface'
+import { Card, Inset } from '@/components/ui/Surface'
 import { usePlatformConfig } from '@/hooks/usePlatformConfig'
 
 export interface BookInterviewProps {
@@ -137,6 +139,65 @@ export default function BookInterview({ name, email, reference, className = '' }
   /* الأصلُ من الخادم إن ضُبط، وإلّا المضمَّن — بلا حالةِ تحميلٍ ظاهرة:
      تُرسم البطاقةُ بالمضمَّن ثمّ تُبدَّل إن جاء بديل. */
   const { interviewBookingUrl, interviewGuests } = usePlatformConfig()
+
+  /* ═══ وقفُ الحجز — إشعارٌ يحلّ محلَّ التقويم، والتقويمُ باقٍ تحته ═══
+
+     القرارُ ولماذا مكتوبان في `application-options.ts`. وموضعُ الخروج هنا —
+     بعد آخر خطّافٍ وقبل بناء الرابط — مقصودٌ من وجهَين: ترتيبُ الخطّافات لا
+     يتغيّر بين حالٍ وحال (شرطُ React)، ولا تُقرأ `window.location` ولا يُفتح
+     إطارٌ لتقويمٍ لن يُعرض.
+
+     ═══ وأربعةُ أشياءَ تُقال معا — سكوتُ أيِّها يُنتج سؤالا ═══
+
+     ① **طلبُه وصل، وشكرا له.** فمن فتح الصفحةَ ليحجز فوجد بابا مغلقا قرأ
+        الإغلاقَ ردّا على طلبه — وهو أوّلُ ما يتبادر، وأبعدُ ما يكون عن الحقّ.
+     ② **ولماذا وُقف:** امتلاءُ المواعيد لا عطبٌ فينا. والتقويمُ حين تنفد
+        أوقاتُه يعرض شهرا فارغا بلا كلمة، فيقلّب الأسابيعَ ويظنّ العطب.
+     ③ **ومتى يعود** — بشهرٍ مسمّى. و«قريبا» ليست موعدا: من قرأها عاد غدا
+        يقلّب التقويمَ نفسَه.
+     ④ **ولا يُعيد التقديم.** وهو أوّلُ ما يفعله من وجد بابا مغلقا، فيزدحم
+        الطابورُ بنسخٍ من طلبٍ واحد — وهي الشكوى التي وُقف الحجزُ لأجلها. */
+  if (INTERVIEW_BOOKING_PAUSE.active) {
+    return (
+      <Card tone="warn" className={className}>
+        <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          وصلنا طلبك — شكرا لك
+        </p>
+        <p className="mt-3 text-read leading-7 text-foreground">
+          طلبك كاملٌ ومحفوظٌ عند فريقنا
+          {reference && <> برقم <b className="font-mono text-foreground" dir="ltr">{reference}</b></>}
+          ، ولا ينقصه منك شيءٌ الآن.
+        </p>
+
+        <Inset className="mt-4 text-read leading-7 text-muted-foreground">
+          <p className="flex items-start gap-2 font-black text-foreground">
+            <CalendarOff className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+            <span>حجزُ المواعيد متوقّفٌ مؤقّتا</span>
+          </p>
+          <p className="mt-2 pr-6">
+            امتلأت أوقاتُ اجتماعاتنا لكثرة المتقدّمين، فلا يوجد وقتٌ متاحٌ لحجز{' '}
+            {TRAINER_INTERVIEW.labelAr} هذا الشهر ({INTERVIEW_BOOKING_PAUSE.monthAr}).
+          </p>
+          <p className="mt-2 pr-6">
+            <b className="text-foreground">
+              ونعود إليك برابط حجز الموعد مجدّدا خلال الشهر القادم — {INTERVIEW_BOOKING_PAUSE.resumeMonthAr}.
+            </b>
+          </p>
+        </Inset>
+
+        <p className="mt-4 flex items-start gap-2 text-read leading-7 text-muted-foreground">
+          <MailCheck className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+          <span>
+            ولا يلزمك شيءٌ الآن: يصلك رابطُ الحجز على بريدك حين تُفتح المواعيد،
+            و<b className="text-foreground">لا حاجةَ إلى إعادة تقديم طلبك</b> — طلبٌ واحدٌ يكفي،
+            ومكانُك في الطابور محفوظٌ بتاريخ وصوله.
+          </span>
+        </p>
+      </Card>
+    )
+  }
+
   const url = trainerInterviewUrl(
     { name, email, reference, guests: interviewGuests ?? undefined },
     interviewBookingUrl ?? undefined,
