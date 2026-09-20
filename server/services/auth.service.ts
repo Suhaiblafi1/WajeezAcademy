@@ -6,7 +6,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
-import { VERIFY_LINK_TTL_MS } from '../../src/application/links/verification-window'
+import { MAIL_LINK_TTL_MS } from '../../src/application/links/mail-link-window'
 
 /** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
 const LEARNER_ROLE = 'learner'
@@ -74,10 +74,10 @@ export const SIGNUP_MAX_TAKEN = 10
 export const SIGNUP_TAKEN_WINDOW_MS = 15 * 60_000
 const GENERIC_LOGIN_FAIL = 'البريد أو كلمة المرور غير صحيحة'
 /** مهلة رابط توثيق البريد — أربعٌ وعشرون ساعة، وسقفُها ونصُّها في
-    `src/application/links/verification-window.ts`. كانت يومَين، ونقضها قرارُ
+    `src/application/links/mail-link-window.ts`. كانت يومَين، ونقضها قرارُ
     صاحب المنصّة (١٩ سبتمبر ٢٠٢٦) مع أختها في طلب الانضمام: لا رابطَ يبقى
     مفتوحا أكثرَ من يوم. ومن فاتته المهلةُ يطلب رابطا جديدا من حسابه. */
-const EMAIL_VERIFY_TTL_MS = VERIFY_LINK_TTL_MS
+const EMAIL_VERIFY_TTL_MS = MAIL_LINK_TTL_MS
 
 export interface AuthContext {
   userId: string
@@ -294,10 +294,19 @@ export class AuthService {
      منه «نسيت كلمة المرور» ليصنع لنفسه ما كان يجب أن يصله (شُوهد في جولة
      ٢٠٢٦-٠٩، الرحلة ٩).
 
-     فللدعوة رمزُها وعمرُها: سبعةُ أيّام، وغرضٌ مستقلٌّ يُقرأ عليه «هل ما زالت
-     دعوتُه سارية؟». وإصدارُ دعوةٍ جديدةٍ يُبطل ما قبلها: رابطان صالحان لحسابٍ
-     واحدٍ بابان لا باب. */
-  static readonly INVITE_TTL_MS = 7 * 86_400_000
+     فللدعوة رمزُها وغرضٌ مستقلٌّ يُقرأ عليه «هل ما زالت دعوتُه سارية؟».
+     وإصدارُ دعوةٍ جديدةٍ يُبطل ما قبلها: رابطان صالحان لحسابٍ واحدٍ بابان لا
+     باب.
+
+     ── وعمرُها صار يوما بعد أن كان أسبوعا (٢٠ سبتمبر ٢٠٢٦) ──
+
+     قرارُ صاحب المنصّة: «غيّر رابط دعوة الموظفين لـ٢٤ ساعة أيضا» — إلحاقا
+     بسقف روابط البريد الذي قرّره قبله بيوم. وحجّةُ السبعة كانت أنّ الموظّفَ
+     الجديد لا يفتح بريدَه ساعتَه، وهي تُوفى بيومٍ كامل لا بأسبوع. ومن فاتته
+     المهلةُ لا يقف: «أعد إرسال الدعوة» في شاشة المستخدمين تُصدر رابطا جديدا،
+     و«نسيت كلمة المرور» ببريده بابٌ ثانٍ. والسقفُ ونصُّه في
+     `src/application/links/mail-link-window.ts`. */
+  static readonly INVITE_TTL_MS = MAIL_LINK_TTL_MS
 
   async issueInvite(userId: string): Promise<{ token: string; expiresAt: Date }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } })

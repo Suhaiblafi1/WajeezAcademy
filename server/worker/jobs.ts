@@ -265,7 +265,7 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
       if (already > 0) continue
 
       /* رمزٌ جديدٌ لا القديم: صلاحيّةُ رمز التوثيق أربعٌ وعشرون ساعة
-         (`verification-window.ts`)، والتذكيرُ الأوّلُ يقع في اليوم الثاني —
+         (`mail-link-window.ts`)، والتذكيرُ الأوّلُ يقع في اليوم الثاني —
          فرابطٌ يُعاد إرسالُه ميّتٌ ساعةَ يصل، وهو أسوأُ من ألّا يصل. */
       let issued: { token: string; email: string; displayName: string } | null = null
       try {

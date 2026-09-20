@@ -17,7 +17,7 @@ import { cleanProposals } from '../../src/application/trainer/teachable-proposal
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 import { deleteObject } from './object-store'
 import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/trainer/purgeable'
-import { VERIFY_LINK_TTL_MS, VERIFY_LINK_WINDOW_AR } from '../../src/application/links/verification-window'
+import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMPTS } from './trainer-application-reference'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
@@ -142,8 +142,8 @@ const TERMINAL_STATUSES: TrainerStatus[] = ['rejected', 'withdrawn']
    صاحبُ المنصّة (١٩ سبتمبر ٢٠٢٦): رابطٌ يبقى مفتوحا أسبوعا في صندوقِ بريدٍ
    غيرُ احترافيّ. ومن فاتته المهلةُ لا يقف: `resendVerification` تفتح له
    رابطا جديدا من صفحة الانضمام ببريده وحدَه. والسقفُ ونصُّه في
-   `src/application/links/verification-window.ts`. */
-const VERIFY_TTL_MS = VERIFY_LINK_TTL_MS
+   `src/application/links/mail-link-window.ts`. */
+const VERIFY_TTL_MS = MAIL_LINK_TTL_MS
 
 export interface Phase1Input {
   fullName: string
@@ -406,7 +406,7 @@ export class TrainerApplicationService {
           { kind: 'cta', label: 'وثّق بريدك', href: link },
           /* والمدّةُ من الثابت لا بيدٍ هنا: رقمٌ في الخدمة وجملةٌ في الرسالة
              يفترقان عند أوّل تعديل — فيَعِد النصُّ بما لا يفي به الرمز. */
-          { kind: 'callout', text: `الرابط صالحٌ ${VERIFY_LINK_WINDOW_AR}، ويُفتح مرّةً واحدة.` },
+          { kind: 'callout', text: `الرابط صالحٌ ${MAIL_LINK_WINDOW_AR}، ويُفتح مرّةً واحدة.` },
           { kind: 'h', text: 'تفاصيل طلبك' },
           { kind: 'facts', rows: [
             { label: 'رقم الطلب', value: app.reference },

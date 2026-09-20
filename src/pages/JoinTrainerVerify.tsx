@@ -4,7 +4,7 @@ import { CheckCircle2, Loader2, MailWarning } from "lucide-react";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, ApiError } from "@/services/api";
-import { VERIFY_LINK_WINDOW_AR } from "@/application/links/verification-window";
+import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 
 /* رابطُ بريد التأكيد يفتح هنا.
 
@@ -80,7 +80,7 @@ export default function JoinTrainerVerify() {
             {/* والمدّةُ من الثابت نفسِه الذي يُحسب به الانتهاء — فلا تقول
                 الشاشةُ مدّةً والخادمُ يقيس غيرَها. */}
             <p className="mt-3 text-read leading-6 text-muted-foreground">
-              الروابط صالحةٌ {VERIFY_LINK_WINDOW_AR} لا أكثر. اطلب رسالة جديدة من صفحة الانضمام بإدخال بريدك في «تابع حالة طلبك».
+              الروابط صالحةٌ {MAIL_LINK_WINDOW_AR} لا أكثر. اطلب رسالة جديدة من صفحة الانضمام بإدخال بريدك في «تابع حالة طلبك».
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/join-trainer" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
