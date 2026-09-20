@@ -27,7 +27,17 @@ export interface CourseWizardDraft {
   /* لا `id` هنا: المعرّفُ يولّده الخادمُ من المسار الأمّ (`mintCourseId`)،
      ولا يمرّ بالمسوّدة أصلا. وكان حقلا نصُّه النائب «CRS-XXX-000» — وهي
      صيغةٌ يرفضها الخادمُ نفسُه (`C-XXX-000`)، فكان الحقلُ يطلب ما لا يُقبل. */
+  /* ═══ والمسارُ الأمُّ اختياريٌّ منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+
+     قرارُ صاحب المنصّة: «إن أردتُ أن أضيفها دورةً جديدةً، فلِمَ أضيفها إلى
+     مسار؟». فمن أراد دورةً قائمةً بنفسها اضطُرّ قبلُ إلى اختراع مسارٍ لها،
+     أو إلحاقها بمسارٍ لا تنتمي إليه فتظهر في رحلةِ من لم يطلبها.
+
+     والعائلةُ تقوم مقامَه حين يغيب: منها يُشتقّ المعرِّفُ (`MKT` ← `C-MKT-101`)
+     ومجالُ الدورة في مخطِّط الفصل. وأحدُهما لازمٌ — لا كلاهما ولا واحدَ. */
   pathwayId: string
+  /** عائلةُ المعرِّف حين لا مسارَ — من `COURSE_DOMAIN_FAMILIES` */
+  familyCode: string
   sequence: string
   titleAr: string
   shortPromiseAr: string
@@ -38,7 +48,7 @@ export interface CourseWizardDraft {
 }
 
 export const EMPTY_COURSE_DRAFT: CourseWizardDraft = {
-  pathwayId: '', sequence: '1', titleAr: '', shortPromiseAr: '', levelAr: '',
+  pathwayId: '', familyCode: '', sequence: '1', titleAr: '', shortPromiseAr: '', levelAr: '',
   totalHours: '', skillIds: [], modules: [EMPTY_MODULE],
 }
 
@@ -47,7 +57,11 @@ export function courseBlockersOf(step: CourseWizardStepKey, d: CourseWizardDraft
   switch (step) {
     case 'basics': {
       const out: string[] = []
-      if (!d.pathwayId) out.push('اختر المسار الذي تنتمي إليه هذه الدورة')
+      /* أحدُهما لازم: مسارٌ أمٌّ، أو عائلةٌ لدورةٍ قائمةٍ بنفسها. والفراغُ
+         يترك المعرِّفَ بلا عائلةٍ فيصير `C-GEN-101` بلا مجالٍ ولا جيران. */
+      if (!d.pathwayId && !d.familyCode) {
+        out.push('اختر المسار الأمّ — أو عائلةَ الدورة إن كانت قائمةً بنفسها')
+      }
       if (d.titleAr.trim().length < 3) out.push('اسم الدورة (٣ أحرف على الأقل)')
       if (!(Number(d.totalHours) >= 1)) out.push('إجمالي الساعات — رقم واحد على الأقل')
       return out

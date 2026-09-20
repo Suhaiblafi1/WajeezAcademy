@@ -9,6 +9,7 @@
    حتمي بالكامل: نفس الكتالوج → نفس الفضاء. */
 
 import {
+  catalogCourses,
   compositeTemplates,
   courseById,
   launchPathways,
@@ -19,7 +20,7 @@ import {
   type CompositeTemplate,
 } from '../catalog'
 import { WEEKLY_LOAD_ORDER } from '../config'
-import type { FactBag } from '../types'
+import type { CatalogCourse, FactBag } from '../types'
 import { pathwayDomainsV2, layersOfSkill, isDiagnosticSkillActive, functionDomainsV2 } from '../v2/data'
 import { resetFamilyIndex } from './skill-families'
 import type { DomainId } from '../v2/types'
@@ -27,7 +28,16 @@ import { GOALS_V21, NEEDS_V21, type CareerStage } from './maps'
 import { planOf } from './data'
 
 /* ─── أنواع الفضاء ─── */
-export type EntityType = 'standard' | 'composite'
+/* ═══ والثالثُ: دورةٌ قائمةٌ بنفسها (٢٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «إن أردتُ أن أضيفها دورةً جديدةً، فلِمَ أضيفها إلى
+   مسار؟ ينبغي أن تُحتسب دورةً جديدةً في نتيجة التشخيص بمهاراتها».
+
+   وكان الفضاءُ نوعَين: مسارٌ قياسيٌّ وقالبٌ مركّب — وكلاهما يُبنى من قائمةِ
+   دوراتٍ معلومة. فدورةٌ لا مسارَ لها ولا قالبَ **لا وجودَ لها عند المحرّك**:
+   `skillsOfCourses` لا تمرّ بها، فلا تدخل مهاراتُها مهاراتِ أيّ كيان، فلا
+   تُقاس ولا تُرشَّح ولا تُرى. وهي في الكتالوج منشورةٌ يقرؤها الناس. */
+export type EntityType = 'standard' | 'composite' | 'course'
 export type EntityStatus =
   | 'approved_active'
   | 'needs_revision'
@@ -622,6 +632,98 @@ export interface RecommendationUniverse {
   active: RecommendationEntity[]
 }
 
+/* ═══ كيانُ دورةٍ قائمةٍ بنفسها ═══
+
+   ولمَ هو أفقرُ من المسار بقصد: المسارُ يحمل ملفّا تشخيصيّا مكتوبا (جمهورٌ
+   وأهدافٌ ووظائفُ وقطاعات) يضعه إنسانٌ في `pathway-profiles.v1.json`. والدورةُ
+   لا تحمل إلّا ما يُعرف عنها بالبناء: مهاراتُها، ومجالُها المعلَن، وساعاتُها.
+
+   فهي تنافس على ما تملكه: **فجوةُ المهارة** (أثقلُ الأوزان الستّة: ٠٫٢٥)،
+   والمجال (٠٫١٥)، والجدوى (٠٫١). ولا جمهورَ لها ولا هدفٌ مصمَّم — فلا تغلب
+   مسارا صُمّم لإنسانٍ بعينه، وهو الصواب: دورةٌ واحدةٌ ليست تحوّلا.
+
+   ولا حالةَ مراجعةٍ لها: `approved_active` ما دامت في اللقطة، فاللقطةُ لا
+   تحمل إلّا المنشور. وبوّابتُها الحقيقيّةُ في الكتالوج لا هنا. */
+function buildCourseEntity(c: CatalogCourse): RecommendationEntity {
+  const domains = [...new Set((c.diagnostic_domains ?? []) as DomainId[])].sort()
+  const skills = [...new Set(c.skill_slugs)].sort()
+  return {
+    entity_id: c.course_id,
+    entity_type: 'course',
+    title_ar: c.title_ar,
+    status: 'approved_active',
+    status_reasons_ar: [],
+    transformation: { before_ar: '', after_ar: c.subtitle_ar ?? '' },
+    best_for: c.subtitle_ar ?? '',
+    not_for: '',
+    /* ═══ وجمهورُها مُعلَنٌ لا مسكوتٌ عنه ═══
+
+       كُتبت أوّلا فارغةً بحجّة أنّ «الدورةَ الواحدةَ لا تُصمَّم لمرحلة». وردّ
+       ذلك `assessEntityEligibility`: كيانٌ لم يُعلَن جمهورُه **يخرج من
+       المنافسة** — «عقوبةُ الصمت أن تخرج لا أن تدخل كلَّ منافسة». فكانت
+       الدورةُ تدخل الفضاءَ ولا تنافس مرّةً واحدة: ميزةٌ كاملةٌ بلا أثر.
+
+       ولم تُستثنَ من القاعدة: القاعدةُ كُتبت بعد حادثةٍ بعينها — «العلامةُ
+       المهنيّة» عُرضت على خرّيجٍ حديثٍ ونصُّها يستثني من لا يملك أدلّة —
+       واستثناءُ نوعٍ جديدٍ منها يُعيد البابَ نفسَه من جهةٍ أخرى. فيُعلن
+       صاحبُ الكتالوج جمهورَها، حقلا واحدا من قائمة. */
+    career_stages: [...new Set((c.diagnostic_stages ?? []) as CareerStage[])].sort(),
+    goals: [],
+    reachable_goals: [],
+    needs: needsCovering(domains),
+    domains,
+    extended_domains: domains,
+    functions: [],
+    sectors: [],
+    business_stages: [],
+    leadership_context: [],
+    /* إشارةٌ واحدةٌ موجبة: مجالُها. ولا إشارةَ هدفٍ — لا هدفَ مصمَّمٌ لها. */
+    positive_signals: [
+      { fact_key: 'need_domains', operator: 'contains_any', values: domains, weight: 1.2, rationale_ar: 'احتياجك في صميم مجال هذه الدورة.' },
+    ],
+    negative_signals: [],
+    hard_exclusions: [],
+    required_facts: [
+      { fact_key: 'need_id', question_ids: ['QC-N3-001'], importance: 'required', minimum_confidence: 0.65 },
+    ],
+    unproducible_facts: [],
+    diagnostic_skills: [],
+    skill_roles: skillRolesOf(skills),
+    skill_slugs: skills,
+    /* لا مسارَ تمثّله — وهو الحقلُ الذي لا يقرؤه أحدٌ أصلا، ويبقى صادقا */
+    pathway_requirements: [],
+    learning_outcomes: skills,
+    minimum_evidence: { fact_coverage: 1, domain_confidence: 0.55 },
+    minimum_skill_evidence: { measured_coverage_floor: 0 },
+    feasibility: {
+      min_weekly_load_order: weeklyOrderFromHours(c.total_hours),
+      estimated_hours: c.total_hours,
+      duration_weeks: Math.max(1, Math.ceil(c.total_hours / 4)),
+    },
+    required_courses: [c.course_id],
+    conditional_courses: [],
+    optional_courses: [],
+    estimated_hours: c.total_hours,
+    differentiators: [],
+    explanation_rules: {},
+  }
+}
+
+/** الدوراتُ المأذونُ لها أن تُرشَّح وحدَها — ولا يدخل الفضاءَ ما نقص شرطُه */
+export function standaloneCourses(): CatalogCourse[] {
+  return catalogCourses.filter((c) => (
+    c.recommendable_directly === true
+    /* ولا مجالَ لها = لا تُرشَّح: بلا مجالٍ لا يصلها هدفٌ ولا احتياج، فتقف
+       في الفضاء بملاءمةٍ لا تبلغ أرضيّةَ العرض أبدا. وكيانٌ لا يفوز أبدا
+       ضجيجٌ في التدقيق لا ميزة. */
+    && (c.diagnostic_domains?.length ?? 0) > 0
+    /* ولا جمهورَ = لا منافسة: `assessEntityEligibility` تُسقط الصامتَ عن
+       جمهوره، فدخولُها الفضاءَ بلا جمهورٍ ضجيجٌ في التدقيق لا ميزة. */
+    && (c.diagnostic_stages?.length ?? 0) > 0
+    && c.skill_slugs.length > 0
+  ))
+}
+
 let cached: RecommendationUniverse | null = null
 
 export function recommendationUniverse(): RecommendationUniverse {
@@ -631,7 +733,10 @@ export function recommendationUniverse(): RecommendationUniverse {
   const auditById = new Map(audits.map((a) => [a.template_id, a]))
   const standards = launchPathways.map((p) => buildStandardEntity(p.id))
   const composites = compositeTemplates.map((t) => buildCompositeEntity(t, auditById.get(t.template_id)!))
-  const entities = [...standards, ...composites]
+  /* والدوراتُ القائمةُ بنفسها ثالثةً — وفارغةٌ ما لم يُؤذَن لدورةٍ صراحةً،
+     فالفضاءُ يبقى كما كان حتّى يُعلَّم أوّلُ صندوق. */
+  const courses = standaloneCourses().map(buildCourseEntity)
+  const entities = [...standards, ...composites, ...courses]
   /* المهارات التشخيصية للمسارات القياسية — تقاس بالمقياس نفسه */
   const measurable = measurableSkills()
   for (const e of standards) e.diagnostic_skills = e.skill_slugs.filter((s) => measurable.has(s))

@@ -31,7 +31,7 @@ const VERDICT_AR: Record<string, string> = { yes: "نعم", somewhat: "إلى ح
 
 const KIND_AR: Record<string, string> = {
   pathway: "مسار", composite: "خطة مركبة", advisor: "إحالة لمستشار",
-  single_pathway: "مسار واحد", template: "قالب", none: "بلا نتيجة",
+  single_pathway: "مسار واحد", single_course: "دورة واحدة", template: "قالب", none: "بلا نتيجة",
 };
 
 export default function DiagnosticQuality() {

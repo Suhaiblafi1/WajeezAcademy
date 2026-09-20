@@ -17,6 +17,7 @@ import { toast } from "@/components/Toast";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from "@/application/catalog/course-domain";
 interface PathwayOption { id: string; title: string }
 interface SkillRow {
   id: string; status: string; slug: string; nameAr: string; familyId: string | null;
@@ -53,13 +54,17 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
      والمعروضُ هنا ما سيكون إن لم تسبقه دورةٌ أخرى. */
   const [nextId, setNextId] = useState<string | null>(null);
   useEffect(() => {
-    if (!d.pathwayId) { setNextId(null); return; }
+    /* والعائلةُ تقوم مقامَ المسار حين يغيب — والمصدرُ واحدٌ في الخادم */
+    const q = d.pathwayId
+      ? `pathwayId=${encodeURIComponent(d.pathwayId)}`
+      : d.familyCode ? `familyCode=${encodeURIComponent(d.familyCode)}` : null;
+    if (!q) { setNextId(null); return; }
     let live = true;
-    void apiGet<{ id: string }>(`/api/admin/catalog/courses/next-id?pathwayId=${encodeURIComponent(d.pathwayId)}`)
+    void apiGet<{ id: string }>(`/api/admin/catalog/courses/next-id?${q}`)
       .then((r) => { if (live) setNextId(r.id); })
       .catch(() => { if (live) setNextId(null); });
     return () => { live = false; };
-  }, [d.pathwayId]);
+  }, [d.pathwayId, d.familyCode]);
 
   const key = COURSE_WIZARD_STEPS[step].key as CourseWizardStepKey;
   const blockers = courseBlockersOf(key, d);
@@ -70,7 +75,9 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
     setBusy(true); setError(null);
     try {
       const created = await apiPost<{ id: string }>("/api/admin/catalog/courses", {
-        pathwayId: d.pathwayId, sequence: Number(d.sequence) || 1,
+        pathwayId: d.pathwayId || undefined,
+        sequence: d.pathwayId ? Number(d.sequence) || 1 : undefined,
+        familyCode: d.pathwayId ? undefined : d.familyCode || undefined,
         titleAr: d.titleAr.trim(), shortPromiseAr: d.shortPromiseAr.trim() || undefined,
         levelAr: d.levelAr.trim() || undefined, totalHours: Number(d.totalHours),
         skillIds: d.skillIds,
@@ -84,7 +91,9 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
       });
       /* والمعرّفُ من ردّ الخادم لا من المسوّدة: هو الذي ولّده، ومن ربط
          اقتراحَ مدرّبٍ بمعرّفٍ خمّنه المتصفّحُ ربطه بدورةٍ لا وجودَ لها. */
-      toast(`أُنشئت الدورة ${created.id} كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر`);
+      toast(d.pathwayId
+        ? `أُنشئت الدورة ${created.id} كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر`
+        : `أُنشئت الدورة ${created.id} كمسودة قائمةٍ بنفسها — أكمل سير الاعتماد ثم النشر`);
       onDone(created.id);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "فشل إنشاء الدورة");
@@ -128,11 +137,26 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
       {/* ١ · بيانات الدورة */}
       {key === "basics" && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <select value={d.pathwayId} onChange={(e) => setD({ ...d, pathwayId: e.target.value })} className={selectCls}>
-            <option value="">المسار الأم…</option>
+          <select
+            value={d.pathwayId}
+            onChange={(e) => setD({ ...d, pathwayId: e.target.value, familyCode: e.target.value ? "" : d.familyCode })}
+            className={selectCls}
+          >
+            <option value="">بلا مسارٍ أمّ — دورةٌ قائمةٌ بنفسها</option>
             {pathways.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.id})</option>)}
           </select>
-          <input value={d.sequence} onChange={(e) => setD({ ...d, sequence: e.target.value })} type="number" min={1} placeholder="الترتيب في المسار" className={inputCls} />
+          {d.pathwayId ? (
+            <input value={d.sequence} onChange={(e) => setD({ ...d, sequence: e.target.value })} type="number" min={1} placeholder="الترتيب في المسار" className={inputCls} />
+          ) : (
+            /* ولا تُترك بلا عائلة: منها يُشتقّ المعرّفُ ومجالُ الدورة في
+               مخطِّط الفصل، و`C-GEN-101` بلا مجالٍ لا يمنع تزاحما. */
+            <select value={d.familyCode} onChange={(e) => setD({ ...d, familyCode: e.target.value })} className={selectCls}>
+              <option value="">عائلةُ الدورة…</option>
+              {COURSE_DOMAIN_FAMILIES.map((f) => (
+                <option key={f} value={f}>{courseDomainByFamily(f)} ({f})</option>
+              ))}
+            </select>
+          )}
           <input value={d.titleAr} onChange={(e) => setD({ ...d, titleAr: e.target.value })} placeholder="اسم الدورة" className={`${inputCls} sm:col-span-2`} />
           <input value={d.totalHours} onChange={(e) => setD({ ...d, totalHours: e.target.value })} type="number" min={1} placeholder="إجمالي الساعات" className={inputCls} />
           <input value={d.shortPromiseAr} onChange={(e) => setD({ ...d, shortPromiseAr: e.target.value })} placeholder="الوعد المختصر (اختياري)" className={`${inputCls} sm:col-span-2`} />
@@ -141,19 +165,19 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
           {/* سطرُ المعرّف — يشغل عرضَ الشبكة كلَّه ليُقرأ سطرا لا حقلا رابعا */}
           <Inset className="flex flex-wrap items-center gap-x-2 gap-y-1 px-3 py-2.5 sm:col-span-2 lg:col-span-3">
             <span className="text-fine font-bold text-muted-foreground">معرّف الدورة</span>
-            {d.pathwayId ? (
+            {d.pathwayId || d.familyCode ? (
               nextId ? (
                 <>
                   <span dir="ltr" className="font-mono text-sm font-black text-teal-light-ink">{nextId}</span>
                   <span className="text-fine text-muted-foreground">
-                    — يولّده النظام من المسار الأمّ، ولا يُكتب بيد
+                    — يولّده النظام من {d.pathwayId ? "المسار الأمّ" : "عائلة الدورة"}، ولا يُكتب بيد
                   </span>
                 </>
               ) : (
                 <span className="text-fine text-muted-foreground">يُحسب…</span>
               )
             ) : (
-              <span className="text-fine text-muted-foreground">يظهر بعد اختيار المسار الأمّ</span>
+              <span className="text-fine text-muted-foreground">يظهر بعد اختيار المسار الأمّ أو عائلة الدورة</span>
             )}
           </Inset>
         </div>
@@ -242,7 +266,9 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
           <Card className="bg-paper/20">
             <p className="font-black">{d.titleAr || "—"} <span dir="ltr" className="font-mono text-fine text-muted-foreground">({nextId ?? "—"})</span></p>
             <p className="mt-1 text-read text-muted-foreground">
-              المسار: {pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
+              {d.pathwayId
+                ? `المسار: ${pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"}`
+                : `قائمةٌ بنفسها · عائلة ${courseDomainByFamily(d.familyCode) || d.familyCode || "—"}`} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
           </Card>
           <Inset as="p" className="px-4 py-3 text-read leading-6 text-foreground">

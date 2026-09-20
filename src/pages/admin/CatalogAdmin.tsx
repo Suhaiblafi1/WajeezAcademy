@@ -24,6 +24,10 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
+/* مجالاتُ التشخيص من مصدرها الواحد — ونسخةٌ في الشاشة تفترق عنه يوما،
+   فتُعرض مجالاتٌ لا يعرفها المحرّكُ ويردّها الخادم. */
+import { domainsV2 as DIAGNOSTIC_DOMAINS } from "@/domain/diagnostic/v2/data";
+import { CAREER_STAGE_LABELS_AR } from "@/domain/diagnostic/v2_1/maps";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 type Overview = {
   pathways: Record<string, number>; courses: Record<string, number>; skills: Record<string, number>
@@ -64,7 +68,12 @@ function TrainerSuggestion({ payload }: { payload: Record<string, unknown> | nul
   );
 }
 type PathwayRow = { id: string; status: string; title: string; courseCount: number };
-type CourseRow = { id: string; status: string; title: string; hours: number; skillCount: number; skillIds: string[]; pathways: string[] };
+type CourseRow = {
+  id: string; status: string; title: string; hours: number; skillCount: number;
+  skillIds: string[]; pathways: string[];
+  /* ك-٥: دورةٌ قائمةٌ بنفسها تُرشَّح بمهاراتها — الرمزُ ومجالُه معا */
+  recommendableDirectly?: boolean; diagnosticDomains?: string[]; diagnosticStages?: string[];
+};
 type SkillRow = {
   id: string; status: string; slug: string; nameAr: string; familyId: string | null;
   /* ب-٤: حالة القياس من الخادم — تُحسب من المحرك لا من عمود في القاعدة */
@@ -104,6 +113,10 @@ export default function CatalogAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [browse, setBrowse] = useState<"pathways" | "courses" | "skills" | "questions" | "templates" | null>(null);
+  /* ك-٥: تحريرُ إذن الترشيح المستقلّ — مفتوحٌ لدورةٍ واحدةٍ في كلّ مرّة */
+  const [soloFor, setSoloFor] = useState<string | null>(null);
+  const [soloDomains, setSoloDomains] = useState<string[]>([]);
+  const [soloStages, setSoloStages] = useState<string[]>([]);
   /* الصلاحيةُ لا الدور — والشاشةُ تُخفي ما لا يملكه، والخادمُ هو الحَكَم */
   const { user: me } = useRealSession();
   const canEditCourse = me?.permissions.includes("catalog.course.edit") ?? false;
@@ -353,6 +366,14 @@ export default function CatalogAdmin() {
                   {c.skillCount === 0 && (
                     <Chip tone="danger">بلا مهارات — لن تُنشر ولن يرشّحها التشخيص</Chip>
                   )}
+                  {/* ك-٥: ودورةٌ بلا مسارٍ تُقال حالُها صراحةً — فالتي لا
+                      تُرشَّح وحدَها لا يراها التشخيصُ إطلاقا، وذلك يُعرَف من
+                      الصفّ لا بعد شهرٍ من تساؤلٍ عن دورةٍ لا تظهر. */}
+                  {c.pathways.length === 0 && (
+                    c.recommendableDirectly
+                      ? <Chip tone="positive">تُرشَّح وحدَها · {(c.diagnosticDomains ?? []).length} مجال</Chip>
+                      : <Chip tone="warn">بلا مسارٍ ولا ترشيحٍ مستقلّ — لا يراها التشخيص</Chip>
+                  )}
                   <span className="mr-auto flex items-center gap-2">
                     <Pill v={c.status} />
                     {canEditCourse && (
@@ -367,8 +388,102 @@ export default function CatalogAdmin() {
                         مهاراتها
                       </Button>
                     )}
+                    {canEditCourse && (
+                      <Button
+                        tone="ghost" size="sm"
+                        aria-expanded={soloFor === c.id}
+                        onClick={() => {
+                          if (soloFor === c.id) { setSoloFor(null); return; }
+                          setSoloFor(c.id);
+                          setSoloDomains(c.diagnosticDomains ?? []);
+                          setSoloStages(c.diagnosticStages ?? []);
+                        }}
+                      >
+                        ترشيحُها وحدَها
+                      </Button>
+                    )}
                   </span>
                 </div>
+                {soloFor === c.id && (
+                  <Inset className="mt-3 grid gap-3">
+                    <p className="text-read leading-7 text-muted-foreground">
+                      دورةٌ قائمةٌ بنفسها تدخل فضاءَ التوصية بمهاراتها ومجالها — بلا أن تُلحَق بمسار.
+                      <b className="text-foreground"> ولا تُزاحم مسارا</b>: تقف حيث كان التشخيصُ يقول
+                      «لا شيءَ لك» فيُحيل إلى مستشار.
+                    </p>
+                    <fieldset className="grid gap-1.5">
+                      <legend className="text-read font-bold text-muted-foreground">
+                        مجالُ التشخيص الذي تخدمه — ولا تُرشَّح بلا واحد
+                      </legend>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                        {DIAGNOSTIC_DOMAINS.map((d) => (
+                          <label key={d.id} className="flex items-center gap-1.5 text-read text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={soloDomains.includes(d.id)}
+                              onChange={() => setSoloDomains((cur) => (
+                                cur.includes(d.id) ? cur.filter((x) => x !== d.id) : [...cur, d.id]
+                              ))}
+                            />
+                            {d.name_ar}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <fieldset className="grid gap-1.5">
+                      <legend className="text-read font-bold text-muted-foreground">
+                        جمهورُها — ولا تنافس مرّةً بلا جمهورٍ مُعلَن
+                      </legend>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                        {Object.entries(CAREER_STAGE_LABELS_AR).map(([id, label]) => (
+                          <label key={id} className="flex items-center gap-1.5 text-read text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={soloStages.includes(id)}
+                              onChange={() => setSoloStages((cur) => (
+                                cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
+                              ))}
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        tone="confirm" size="sm" loading={busy}
+                        disabled={soloDomains.length === 0 || soloStages.length === 0 || c.skillCount === 0}
+                        onClick={() => void act(
+                          () => apiPut(`/api/admin/catalog/courses/${c.id}/standalone`, {
+                            recommendable: true, domains: soloDomains, stages: soloStages,
+                          }),
+                          "صارت تُرشَّح وحدَها — تدخل فضاءَ التوصية عند النشر",
+                        ).then(() => setSoloFor(null))}
+                      >
+                        اجعلها تُرشَّح وحدَها
+                      </Button>
+                      {c.recommendableDirectly && (
+                        <Button
+                          tone="danger" size="sm" loading={busy}
+                          onClick={() => void act(
+                            () => apiPut(`/api/admin/catalog/courses/${c.id}/standalone`, {
+                              recommendable: false, domains: soloDomains, stages: soloStages,
+                            }),
+                            "أُطفئ ترشيحُها المستقلّ — ومجالُها يبقى مكتوبا",
+                          ).then(() => setSoloFor(null))}
+                        >
+                          أطفِئْ ترشيحَها
+                        </Button>
+                      )}
+                      <Button tone="ghost" size="sm" onClick={() => setSoloFor(null)}>أغلِق</Button>
+                      {c.skillCount === 0 && (
+                        <span className="text-read text-amber-300">
+                          اربطْ مهاراتِها أوّلا — تنافس بمهاراتها، وبلا مهارةٍ لا شيءَ يُقاس.
+                        </span>
+                      )}
+                    </div>
+                  </Inset>
+                )}
                 {skillsFor === c.id && (
                   <Inset className="mt-3">
                     <SkillPicker

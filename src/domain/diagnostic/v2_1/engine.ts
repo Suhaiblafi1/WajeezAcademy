@@ -569,15 +569,38 @@ export type RecommendationV21 = Recommendation & {
 
 /* ─── البديل المتباين ─── */
 
-/** متوسط موضع مقررات المسار على سلّم المستوى — لوصف التباين لا لتقييمه */
-function meanCourseLevel(pathwayId: string): number {
-  const cs = catalogCourses.filter((c) => c.pathway_id === pathwayId)
+/* ═══ مقرّراتُ كيانٍ — من الكيان نفسِه لا من عمود المسار (٢٠ سبتمبر ٢٠٢٦) ═══
+
+   كانت تُقرأ `catalogCourses.filter((c) => c.pathway_id === id)`. وهي صحيحةٌ
+   للمسار القياسيّ وحدَه: **القالبُ المركّب ليس مسارا**، فلا دورةَ في الكتالوج
+   تحمل معرِّفَه في `pathway_id` — فتعود القائمةُ فارغةً دائما.
+
+   وأثرُه ليس نظريّا: `contrastOf` تبني عليهما نصّا يقرؤه المتعلّم. فمركّبٌ
+   يُعرض بديلا تُحسب ساعاتُه صفرا ومستواه ١، فيُقارَن بمسارٍ حقيقيٍّ فيخرج
+   «أقصر — ساعات أقل إن كان وقتك أضيق» عن خطّةٍ من ستّ دوراتٍ واثنتين وخمسين
+   ساعة. أي أنّ السطرَ يكذب على من يقرؤه، ولا يُكتشف لأنّه لا يسقط.
+
+   والكيانُ يحمل ما يلزم أصلا: `required_courses` و`estimated_hours` محسوبتان
+   في `universe.ts` لكلّ نوع. فتُقرآن منه، فيصحّ القياسيُّ والمركّبُ والقائمُ
+   بنفسه بالقاعدة نفسِها. */
+function coursesOfEntity(entityId: string) {
+  const ent = recommendationUniverse().byId.get(entityId)
+  if (!ent) return []
+  return ent.required_courses
+    .map((cid) => catalogCourses.find((c) => c.course_id === cid))
+    .filter((c): c is NonNullable<typeof c> => c !== undefined)
+}
+
+/** متوسط موضع مقررات الكيان على سلّم المستوى — لوصف التباين لا لتقييمه */
+function meanCourseLevel(entityId: string): number {
+  const cs = coursesOfEntity(entityId)
   if (cs.length === 0) return 1
   const ord: Record<string, number> = { foundational: 0, foundational_applied: 1, applied: 2, practitioner: 3 }
   return cs.reduce((sum, c) => sum + (ord[courseLevelOf(c)] ?? 1), 0) / cs.length
 }
-function totalHoursOf(pathwayId: string): number {
-  return catalogCourses.filter((c) => c.pathway_id === pathwayId).reduce((s, c) => s + c.total_hours, 0)
+
+function totalHoursOf(entityId: string): number {
+  return recommendationUniverse().byId.get(entityId)?.estimated_hours ?? 0
 }
 
 /** لماذا هذا البديل مختلف — نصٌّ يقرؤه المتعلم، وnull إن لم يختلف اختلافا مفيدا.
@@ -644,7 +667,9 @@ export class DiagnosticEngineV21 {
     const { candidates } = this.eligibilityAndCandidates(ctx)
     const top = candidates.slice(0, 2).map((c) => c.pathwayId)
     if (top.length === 0) return []
-    const courseIds = catalogCourses.filter((c) => top.includes(c.pathway_id)).map((c) => c.course_id)
+    /* ومن الكيان لا من عمود المسار — وإلّا فمرشّحٌ مركّبٌ في الصدارة لا يُسأل
+       عن عائلةٍ واحدةٍ من مهاراته (انظر `coursesOfEntity`). */
+    const courseIds = top.flatMap((id) => coursesOfEntity(id).map((c) => c.course_id))
     const idx = familyIndexRef()
     return familiesForCourses(courseIds).map((f) => ({
       ...f,
@@ -1122,8 +1147,11 @@ export class DiagnosticEngineV21 {
     const ctx = this.decisionContext()
     const { candidates, comp } = this.eligibilityAndCandidates(ctx)
     const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
-    /* الفائز الفعلي: مركب مستوفٍ للشروط، وإلا أفضل قياسي — نفس قاعدة recommend() */
-    const winner = comp.compositeVictory?.passes && comp.bestComposite ? comp.bestComposite : comp.bestStandard
+    /* الفائز الفعلي: مركب مستوفٍ للشروط، وإلا أفضل قياسي، وإلا دورةٌ قائمةٌ
+       بنفسها — نفس قاعدة `competeEntities` حرفا بحرف، ولا نسخةَ تتخلّف عنها. */
+    const winner = comp.compositeVictory?.passes && comp.bestComposite
+      ? comp.bestComposite
+      : (comp.bestStandard ?? comp.bestCourse)
     const legacy = toLegacyConfidence(confidence)
     return {
       kind: comp.exploration.exploratory
@@ -1131,7 +1159,9 @@ export class DiagnosticEngineV21 {
         : winner
           ? winner.entity.entity_type === 'composite'
             ? 'composite_template'
-            : 'single_pathway'
+            : winner.entity.entity_type === 'course'
+              ? 'single_course'
+              : 'single_pathway'
           : 'advisor_referral',
       topId: winner?.entity.entity_id ?? null,
       topLabel_ar: winner?.entity.title_ar ?? (comp.exploration.exploratory ? 'اتجاه استكشافي' : 'إحالة لمستشار'),
@@ -1479,7 +1509,9 @@ export class DiagnosticEngineV21 {
     }
 
     const standardCandidates = comp.candidates.filter((c) => c.entity.entity_type === 'standard')
-    const primary = standardCandidates[0] ?? null
+    /* ودورةٌ قائمةٌ بنفسها حين لا مسارَ مؤهَّلا — لا مزاحمةً لمسارٍ قائم.
+       وهي القاعدةُ نفسُها في `competeEntities`، وموضعُ شرحها هناك. */
+    const primary = standardCandidates[0] ?? comp.bestCourse ?? null
     /* بديل واحد لا اثنان بالترتيب — وثلاثة خيارات على شاشة قرار تُربك ولا تُعين.
 
        والبديل يُنتقى بالصلة أولا لا بالملاءمة الخام. كان يُنتقى بأعلى ملاءمة بين
@@ -1514,7 +1546,11 @@ export class DiagnosticEngineV21 {
           contrastOf(primary.entity.entity_id, best.entity.entity_id) ??
           (best.entity.entity_type === 'composite'
             ? 'خطة أوسع تجمع أكثر من مجال — إن أردت تغطية أشمل'
-            : 'مسار قريب من حاجتك — إن أردت زاوية أخرى')
+            : best.entity.entity_type === 'course'
+              /* ولا يُقال «مسار» عن دورةٍ واحدة: من قرأ «مسارٌ قريب» وفتحه
+                 فوجد دورةً واحدةً قُرئ عليه وعدٌ لم نفِ به. */
+              ? 'دورةٌ واحدةٌ تسدّ فجوةً بعينها — إن كان وقتك أضيق'
+              : 'مسار قريب من حاجتك — إن أردت زاوية أخرى')
       }
     }
     /* شخصنّا الخطة ولا بديل خارجي: المسار كما صُمم خيارٌ ثانٍ حقيقي لمن يفضّل
@@ -1558,7 +1594,13 @@ export class DiagnosticEngineV21 {
       composite?.advisorHandoff !== undefined ||
       silentOnDecisive
 
-    const kind: Recommendation['kind'] = needsAdvisor ? 'advisor_referral' : composite ? 'composite_template' : 'single_pathway'
+    const kind: Recommendation['kind'] = needsAdvisor
+      ? 'advisor_referral'
+      : composite
+        ? 'composite_template'
+        : primary?.entity.entity_type === 'course'
+          ? 'single_course'
+          : 'single_pathway'
 
     const trainer = primary
       ? matchTrainer(primary.entity.entity_id, this.state.facts, primary.skills.gapSkillSlugs)

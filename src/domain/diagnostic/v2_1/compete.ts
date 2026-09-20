@@ -26,6 +26,7 @@ import {
   activeDomainsOf,
   gateDomainsOf,
   recommendationUniverse,
+  type EntityType,
   type RecommendationEntity,
 } from './universe'
 
@@ -137,7 +138,7 @@ export function assessEntitySkills(
 /* ─── الأهلية الصارمة (Hard Eligibility) ─── */
 export interface EntityEligibility {
   entityId: string
-  entityType: 'standard' | 'composite'
+  entityType: EntityType
   eligible: boolean
   /** المرحلة التي أقصته — للتدقيق: status | persona_stage | domain | context | evidence | feasibility */
   stage_ar?: string
@@ -714,6 +715,8 @@ export interface CompetitionResult {
   bestComposite: EntityCandidate | null
   /** أعلى مركب صافٍ بغض النظر عن البوابات — للتدقيق والتتبع فقط */
   topComposite: EntityCandidate | null
+  /** أفضل دورةٍ قائمةٍ بنفسها — تقف حيث لا مسارَ مؤهَّل، لا حيث يوجد */
+  bestCourse: EntityCandidate | null
   compositeVictory: CompositeVictory | null
   exploration: ExplorationDecision
   catalogGap: boolean
@@ -729,6 +732,7 @@ export function competeEntities(facts: FactBag, ctx: DecisionContext): Competiti
     .sort((a, b) => b.netFit - a.netFit || a.entity.entity_id.localeCompare(b.entity.entity_id))
 
   const bestStandard = candidates.find((c) => c.entity.entity_type === 'standard') ?? null
+  const bestCourse = candidates.find((c) => c.entity.entity_type === 'course') ?? null
   const compositeCandidates = candidates.filter((c) => c.entity.entity_type === 'composite')
   const topComposite = compositeCandidates[0] ?? null
 
@@ -744,15 +748,28 @@ export function competeEntities(facts: FactBag, ctx: DecisionContext): Competiti
     }) ?? null
   const compositeVictory = bestComposite ? compositeVictoryCheck(bestComposite, bestStandard ?? undefined, facts, ctx) : null
 
-  /* الفائز الفعلي: مركب يستوفي الشروط، وإلا أفضل قياسي */
-  const effectiveTop = compositeVictory?.passes ? bestComposite : bestStandard
+  /* ═══ الفائزُ الفعليّ: مركّبٌ يستوفي الشروط، وإلّا أفضلُ قياسيّ ═══
+
+     ─────────── والدورةُ القائمةُ بنفسها آخرُ الصفّ (٢٠ سبتمبر ٢٠٢٦) ───────────
+
+     قاعدةٌ واحدةٌ تحكمها: **لا تُزاحم مسارا، وإنّما تقف حيث كان يُقال «لا
+     شيءَ لك»**. فما دام مسارٌ واحدٌ مؤهَّلا فهو الفائزُ كما كان، ولا تتغيّر
+     رحلةُ متعلّمٍ واحدةٍ ممّا يجري اليوم.
+
+     ولمَ هذا هو الحدُّ الصحيح: المسارُ تحوّلٌ مصمَّمٌ لإنسانٍ بعينه — جمهورٌ
+     وهدفٌ ومدّةٌ ومشروعٌ ختاميّ — والدورةُ الواحدةُ ليست تحوّلا. فترجيحُها
+     على مسارٍ مؤهَّلٍ يبيع للمتعلّم أقلَّ ممّا يحتاج.
+
+     وما كان يقع قبلها حين لا مسار: `catalogGap` فإحالةٌ إلى مستشار — أي
+     «عندنا دورةٌ تناسبك ولا نعرضها عليك». وهذا هو بعينه ما طُلب إصلاحُه. */
+  const effectiveTop = compositeVictory?.passes ? bestComposite : (bestStandard ?? bestCourse)
   const exploration = explorationDecision(facts, ctx, effectiveTop?.netFit ?? null)
 
   /* فجوة كتالوج: هدف/احتياج حقيقي ولا كيان مؤهلًا بملاءمة ذات معنى (البند 15) */
   const goalOrNeedReal = facts['primary_goal'] !== undefined || facts['need_id'] !== undefined
   const catalogGap = goalOrNeedReal && (candidates.length === 0 || (effectiveTop?.netFit ?? 0) < CATALOG_GAP_FIT_FLOOR)
 
-  return { eligibility, candidates, bestStandard, bestComposite, topComposite, compositeVictory, exploration, catalogGap }
+  return { eligibility, candidates, bestStandard, bestCourse, bestComposite, topComposite, compositeVictory, exploration, catalogGap }
 }
 
 /** مرشح advisor_handoff منطبق على الكيان الفائز — لا يستبعده من المنافسة لكنه يُحيل التوصية لمستشار */
