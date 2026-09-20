@@ -57,7 +57,47 @@ jobs:
     timeout-minutes: 20
     environment: production
     steps:
+      # ═══ أسبقُ خطوةٍ: أمضبوطٌ هذا المسار أصلا؟ ═══
+      #
+      # وهذه ليست احتياطا نظريّا. §٢-ب من `docs/DEPLOYMENT.md` تسجّل أنّ
+      # `deploy.yml` كان في هذا المستودَع قبلُ وحُذف في #30، وقياسُ حذفه:
+      # **تسعُ تشغيلات — سبعُ فشلٍ واثنتا تخطٍّ وصفرُ نجاح**، وسببُ الفشل في
+      # آخرها أنّ أسرارَه كلَّها فارغة. أي أنّه لم ينشر شيئا مرّةً واحدةً قطّ،
+      # وبقي يحمرّ على كلّ دمجةٍ حتّى صار الأحمرُ لا يُقرأ — ثمّ حُذف.
+      #
+      # فمن لم يضبط الأسرارَ بعدُ لا يُغرَق في أحمرَ كاذب: تُتخطّى الخطواتُ
+      # ويُقال له في مُلخَّص التشغيل ما ينقص بالاسم. والأحمرُ يبقى لما يستحقّه:
+      # اتّصالٌ فشل، أو اتّصالٌ نجح **ولم ينشر**.
+      - name: أمضبوطٌ المسارُ؟
+        id: ready
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for key in DEPLOY_SSH_KEY DEPLOY_KNOWN_HOSTS DEPLOY_HOST DEPLOY_USER; do
+            [ -n "${!key:-}" ] || missing+=("$key")
+          done
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo 'ready=false' >> "$GITHUB_OUTPUT"
+          echo "::warning::لم يُنشَر شيء — ينقص في بيئة production: ${missing[*]}"
+          {
+            echo '## لم يُنشَر شيء'
+            echo
+            echo 'ينقص في بيئة `production`:'
+            for key in "${missing[@]}"; do echo "- \`$key\`"; done
+            echo
+            echo 'والخطواتُ في `docs/DEPLOYMENT.md` §٢-جـ-٢ — وأوّلُها سطرُ `command=` في `authorized_keys`.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: تهيئةُ المفتاح وبصمةِ المضيف
+        if: steps.ready.outputs.ready == 'true'
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
@@ -71,6 +111,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
 
       - name: النشر
+        if: steps.ready.outputs.ready == 'true'
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -87,6 +128,7 @@ jobs:
             "$DEPLOY_USER@$DEPLOY_HOST" 2>&1 | tee deploy-output.txt
 
       - name: التحقّقُ من أنّ النشرَ وقع فعلا
+        if: steps.ready.outputs.ready == 'true'
         run: |
           set -euo pipefail
           # السطرُ الذي لا يطبعه إلّا deploy.sh عند تمامه. وغيابُه يعني أنّ
