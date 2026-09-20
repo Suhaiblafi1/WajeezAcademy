@@ -396,3 +396,50 @@ describe('وما يُقرأ في «مستحقّاتي» من الأرقام نف
       'الفقرةُ المُحال إليها لا تحمل مُهَلَ الصرف').toContain(String(PAYOUT_OUTER_DAYS))
   })
 })
+
+describe('واثنان أصغرُ أُلحقا — المصاريفُ والمحتوى', () => {
+  it('المصاريفُ الإضافيّةُ لا تُقبل إلّا بموافقةٍ سابقةٍ مكتوبة', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 4)
+    expect(section, 'لا قيدَ على المطالبة بمصاريف').toMatch(/ولا تقبل منه مطالبة بمصاريف إضافية/)
+    expect(section, 'الموافقةُ لاحقةٌ أو شفويّة — فالقيدُ بلا أثر').toMatch(/كتابة قبل إنفاقه/)
+  })
+
+  it('وتحمُّلُه نفقتَه موصولٌ بفقرة العمل الحرّ — فهو قرينةُ استقلالٍ لا عبءٌ معلَّق', () => {
+    const body = renderContractBodyAr(base())
+    const free = [...clauseSection(body, 1).matchAll(/^1-(\d+) والمدرب حر في تنظيم وقته/gm)]
+    expect(free.length, 'لم تُقرأ فقرةُ حرّيّة تنظيم الوقت والأدوات').toBe(1)
+    expect(clauseSection(body, 4)).toContain(`وفق ما تقرر في البند 1-${free[0][1]}`)
+  })
+
+  /* وهذا الحارسُ هو سببُ وضع المصاريف قبل الفقرة المشروطة لا بعدها: فقرةُ
+     بيان الساعات تُطبَع أو لا تُطبَع بحسب المُدخَل، ومن وضع الجديدَ بعدها
+     أخرج ترقيما منقطعا في كلّ عقدٍ بلا بيانِ ساعات — ولا يراه من جرّب
+     بمُدخَلٍ واحد. */
+  it('وترقيمُ فقرات البند 4 متّصلٌ ببيان الساعات وبدونه', () => {
+    for (const hoursNoteAr of [null, 'نحو 18 ساعة تدريب لكل شعبة']) {
+      const body = renderContractBodyAr(base({ hoursNoteAr }))
+      const subs = [...clauseSection(body, 4).matchAll(/^4-(\d+) /gm)].map((m) => Number(m[1]))
+      expect(subs, `ترقيمُ فقرات البند 4 انقطع حين ${hoursNoteAr ? 'ورد' : 'غاب'} بيانُ الساعات`)
+        .toEqual(subs.map((_, i) => i + 1))
+    }
+  })
+
+  it('والمحتوى المخالفُ والمسيءُ ممنوعٌ — وهو ما لا يلتقطه بندُ حقوق الغير ولا بندُ معاملة المتعلّم', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 9)
+    expect(section, 'لا قيدَ على المحتوى نفسِه').toMatch(/محتوى مخالفا للقانون/)
+    expect(section, 'الإقحامُ خارج موضوع الدورة غيرُ ممنوع').toMatch(/فلا يقحم فيها ما خرج عنه/)
+  })
+
+  it('ويرث تدرُّجَ البند 9 — فلا يحتاج جزاءً جديدا، ولا يُفصَل عنه', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 9)
+    expect(section, 'قيدُ المحتوى خارجَ البند الذي يحمل تدرُّجَ الجزاء')
+      .toMatch(/^9-\d+ ولا يقدم المدرب في الجلسات/m)
+    expect(section, 'البندُ 9 بلا تدرُّجِ جزاء — فالقيدُ بلا أثر')
+      .toMatch(/^9-\d+ وإذا تكرر منه إخلال بين بهذا البند/m)
+  })
+
+  it('ولا يمنع معالجةَ ما يقتضيه موضوعُ الدورة — وإلّا صار البندُ رقابةً على المادّة', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 9)
+    expect(section).toMatch(/ما يقتضيه موضوع الدورة نفسه معالجة مهنية/)
+  })
+})
