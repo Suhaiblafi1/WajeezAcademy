@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, Clock, FileText, History,
+  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
   KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
@@ -11,7 +11,6 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
-import { queueAge } from "@/application/trainer/queue-age";
 import { outcomeLabelAr } from "@/application/trainer/interview-outcome";
 import { staffAreaCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
@@ -1432,24 +1431,16 @@ export default function TrainerApplications() {
                 {a.fullName} <span className="mr-2 font-mono text-fine text-muted-foreground" dir="ltr">{a.reference}</span>
               </p>
               <span className="flex flex-wrap items-center gap-2">
-                {/* ═══ والمتأخّرُ وحدَه يُقال عمرُه ═══
+                {/* ═══ ولا شارةَ عمرٍ هنا — حُذفت نهائيّا (٢٠ سبتمبر ٢٠٢٦) ═══
 
-                    الشارةُ وُضعت لأنّ الطلبَ كان يشيخ بصمت، وحذفُها من
-                    الصفّ يعيد الشكوى بعد شهر. وعرضُها على كلّ صفٍّ هو
-                    الضجيجُ الذي شُكي منه اليوم. فالقسمةُ على ما تقوله
-                    الدالّةُ نفسُها: الهادئُ يسكت، والمنبِّهُ والمتأخّرُ
-                    يُقالان — وهما وحدَهما ما يُستعجَل. */}
-                {(() => {
-                  const age = queueAge(a.status, a.waitingSince);
-                  if (!age || age.tone === "calm") return null;
-                  return (
-                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-fine font-bold ${
-                      age.tone === "late" ? "border-red-400/40 text-red-300" : "border-gold/40 text-gold-ink"
-                    }`}>
-                      <Clock className="h-3.5 w-3.5" aria-hidden="true" /> {age.ar}
-                    </span>
-                  );
-                })()}
+                    عُرضت أوّلا على كلّ صفّ، ثمّ على المتأخّر وحدَه حين شُكي
+                    من ازدحام الصفّ، ثمّ قال صاحبُ المنصّة: «شارة العمر
+                    احذفها نهائيّا من الصفّ». فذهبت كلُّها.
+
+                    والعطبُ الذي وُضعت له — أن يشيخ الطلبُ بصمت — بابُه غيرُ
+                    الصفّ: الترتيبُ يضع الأقدمَ أوّلا، وملخّصُ الصباح ينادي
+                    على من طال وقوفُه. و`queue-age.ts` باقٍ بدالّته
+                    ومحكوماتِه إن أُريد في موضعٍ آخر. */}
                 {/* ونتيجةُ اللقاء قبل الحالة: الحالةُ تقول أين وقف، وهذه
                     تقول ماذا قلنا فيه — وهي الأحدثُ خبرا. ولا شارةَ لمن لم
                     يُقابَل: فراغٌ أصدقُ من «بلا نتيجة» في كلّ صفّ. */}
