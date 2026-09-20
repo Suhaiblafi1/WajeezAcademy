@@ -131,6 +131,14 @@ services:
       - "443:443/udp"             # HTTP/3
     environment:
       SITE_DOMAIN: ${SITE_DOMAIN:?اضبط SITE_DOMAIN}
+      # ── والنطاقُ بلا www ──
+      # اختياريٌّ لا مطلوب: `deploy.sh` يشتقّه من `SITE_DOMAIN` حين يغيب عن
+      # `.env.production`، فنشرةٌ آليّةٌ تُصلح النطاقَ المجرّدَ بلا يدٍ على
+      # الخادم. و`localhost` قيمةٌ خاملة — لا تطلب شهادةً ولا تخدم زائرا —
+      # فمن رفع الحاويات بيده بلا اشتقاقٍ لم ينكسر عنده شيء. ولا `:?` هنا
+      # بقصد: متغيّرٌ جديدٌ يُلزِم لا يُصلح عطبا، بل يمنع النشرَ كلَّه على
+      # خادمٍ ملفُّ بيئته لم يُحدَّث بعد.
+      SITE_ALT_DOMAIN: ${SITE_ALT_DOMAIN:-localhost}
       ACME_EMAIL: ${ACME_EMAIL:?اضبط ACME_EMAIL — تنبيهات انتهاء الشهادة تصلك عليه}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
