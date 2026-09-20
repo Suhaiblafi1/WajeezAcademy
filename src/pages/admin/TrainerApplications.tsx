@@ -16,6 +16,7 @@ import { staffAreaCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
+import { useSearchParams } from "react-router";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
@@ -393,6 +394,10 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
 
 /** إدارة طلبات انضمام المدربين — API حقيقي: مراجعة بشرية، قرارات، عقد، دعوة آمنة */
 export default function TrainerApplications() {
+  /* `?app=<id>` — الملفُّ المفتوحُ موضعٌ في التاريخ لا حالةٌ في الذاكرة.
+     تفصيلُه عند `openDetail` أسفلُ. */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openApp = searchParams.get("app");
   const [apps, setApps] = useState<AppRow[]>([]);
   const [filter, setFilter] = useState("");
   const [q, setQ] = useState("");
@@ -465,15 +470,63 @@ export default function TrainerApplications() {
   const silentReload = useCallback(() => { void load(true); }, [load]);
   useAutoRefresh(silentReload, 60_000);
 
-  const openDetail = async (id: string) => {
+  /* ═══ الملفُّ المفتوحُ يسكن العنوانَ لا الحالةَ وحدَها (٢٠ سبتمبر ٢٠٢٦) ═══
+
+     شكا صاحبُ المنصّة: «أدخل ملفَّ طلبِ مدرّبٍ فأستصعب العودةَ للقائمة —
+     الرجوعُ بالمتصفّح يأخذني لرئيسيّة الإدارة، والنقرُ على «طلبات المدربين»
+     لا يعمل، فلا يبقى إلّا أن أصعد للأعلى».
+
+     وعلّتُهما واحدة: `openDetail` كانت تكتب في `useState` ولا تمسّ العنوان.
+     فالملفُّ ليس موضعا في التاريخ — والرجوعُ يغادر الشاشةَ كلَّها لأنّ
+     آخرَ موضعٍ سُجّل هو ما قبلها. والنقرُ على اسم الشاشة في الشريط يذهب
+     إلى `/admin/trainers` وهو العنوانُ الذي نحن فيه، فلا يتغيّر شيءٌ ولا
+     تُمسح الحالة — فيبدو الزرُّ ميّتا وهو سليم.
+
+     فصار الملفُّ `?app=<id>`: الرجوعُ يمحوه فتعود القائمة، والنقرُ على
+     اسم الشاشة يذهب إلى العنوان بلا مُعامِل فتعود كذلك، والرابطُ يُنسخ
+     إلى زميلٍ فيفتح عنده ما تفتحه أنت، والتحديثُ لا يضيّع الموضع.
+
+     و«افتحْ» غيرُ «أعِدْ قراءتَه»: الأولى تنقل — تكتب في العنوان ويتبعها
+     الجلبُ — والثانيةُ تجلب وحدَها بعد فعلٍ غيّر الملفَّ ومعرّفُه هو هو. */
+  const openDetail = (id: string) => {
+    setSearchParams((prev: URLSearchParams) => {
+      const next = new URLSearchParams(prev);
+      next.set("app", id);
+      return next;
+    });
+  };
+
+  const closeDetail = () => {
+    setSearchParams((prev: URLSearchParams) => {
+      const next = new URLSearchParams(prev);
+      next.delete("app");
+      return next;
+    });
+  };
+
+  const loadDetail = useCallback(async (id: string) => {
     try {
       const detail = await apiGet<AppDetail>(`/api/admin/trainer-applications/${id}`);
       setSelected(detail);
       setNote("");
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذر فتح الطلب");
+      /* وما لا يُفتح لا يبقى في العنوان: معرّفٌ محذوفٌ أو لا صلاحيّةَ عليه
+         يُبقي الشاشةَ فارغةً كلَّما رجع إليها صاحبُها. */
+      setSearchParams((prev: URLSearchParams) => {
+        const next = new URLSearchParams(prev);
+        next.delete("app");
+        return next;
+      });
     }
-  };
+  }, [setSearchParams]);
+
+  /* والعنوانُ هو المصدر: منه يُجلب الملفُّ، وبمحوه يُغلَق. فلا موضعَ ثانٍ
+     للحقيقة يفترق عن الأوّل. */
+  useEffect(() => {
+    if (!openApp) { setSelected(null); return; }
+    if (selected?.id !== openApp) void loadDetail(openApp);
+  }, [openApp, selected?.id, loadDetail]);
 
   /* ═══ والخبرُ يتبع الجواب لا النيّة ═══
 
@@ -492,7 +545,7 @@ export default function TrainerApplications() {
       const result = await fn();
       const said = typeof doneMsg === "string" ? { ar: doneMsg, ok: true } : doneMsg(result);
       if (said.ok) toast(said.ar); else toastError(said.ar);
-      if (selected) await openDetail(selected.id);
+      if (selected) await loadDetail(selected.id);
       await load();
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء");
@@ -525,7 +578,10 @@ export default function TrainerApplications() {
       if (r.unremovedFiles.length > 0) {
         toastError(`بقي ${r.unremovedFiles.length} ملفّا على القرص لم يُمحَ — راجِعها يدويّا`);
       }
-      setSelected(null);
+      /* ويُمحى المُعامِلُ لا المعروضُ وحدَه: لو بقي `?app=` بعد المحو لَأعاد
+         الأثرُ جلبَ طلبٍ لم يعد له وجود، فيُقرأ «تعذّر فتح الطلب» أحمرَ فوق
+         حذفٍ نجح. */
+      closeDetail();
       await load();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحذف");
@@ -742,10 +798,16 @@ export default function TrainerApplications() {
     );
     return (
       <AdminLayout title={`الطلب ${a.reference}`}>
-        <Button tone="ghost" icon={ChevronLeft} onClick={() => setSelected(null)}
-          className="mb-4 text-teal-light-ink hover:text-teal-ink">
-          كل الطلبات
-        </Button>
+        {/* ودربُ الوصول مكتوبٌ لا زرٌّ وحدَه: من دخل ملفّا بعد ملفٍّ نسي من
+            أين جاء، و«كل الطلبات» تقول الوجهةَ ولا تقول الموضع. */}
+        <nav aria-label="مسارُ الوصول" className="mb-4 flex flex-wrap items-center gap-1.5 text-fine">
+          <Button tone="ghost" icon={ChevronLeft} onClick={closeDetail}
+            className="text-teal-light-ink hover:text-teal-ink">
+            طلبات المدربين
+          </Button>
+          <span aria-hidden className="text-muted-foreground/50">›</span>
+          <span className="font-bold text-muted-foreground">{a.fullName}</span>
+        </nav>
 
         {/* ═══ شريطُ القرار — لاصقٌ أعلى الشاشة ═══
 
@@ -905,7 +967,7 @@ export default function TrainerApplications() {
                 contracts={a.profile?.contracts ?? []}
                 qualifications={a.profile?.qualifications ?? []}
                 permissions={user?.permissions ?? []}
-                onChanged={() => openDetail(a.id)}
+                onChanged={() => loadDetail(a.id)}
               />
             ) : tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} />
@@ -981,7 +1043,7 @@ export default function TrainerApplications() {
                 applicationId={a.id}
                 raw={a.teachableProposals}
                 teachableOther={a.teachableOther}
-                onSaved={() => openDetail(a.id)}
+                onSaved={() => loadDetail(a.id)}
               />
             </Panel>
 
