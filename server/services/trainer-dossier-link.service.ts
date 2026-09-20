@@ -53,6 +53,7 @@ const SHARED_FIELDS = {
   targetCountries: true, targetAudiences: true, trainingLanguages: true,
   deliveryMode: true, teachableCourseIds: true, teachableOther: true, teachableProposals: true,
   availability: true, demoConsent: true,
+  hasCourseRecordings: true, wantsToRecordCourses: true,
   previousCourses: true, totalLearners: true, previousOrgs: true, evidenceNotes: true,
   emailVerifiedAt: true, privacyConsentAt: true, phase2CompletedAt: true, createdAt: true,
 } as const
