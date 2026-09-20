@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
+  ArrowDownWideNarrow, ArrowUpNarrowWide,
   CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
-  KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff, Star, Trash2, UserPlus, XCircle,
+  KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff,
+  SlidersHorizontal, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -12,8 +14,9 @@ import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
 import { outcomeLabelAr } from "@/application/trainer/interview-outcome";
-import { staffAreaCls } from "@/components/FormKit";
+import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
+import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
 import { useSearchParams } from "react-router";
@@ -402,6 +405,10 @@ export default function TrainerApplications() {
   const [filter, setFilter] = useState("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const [size, setSize] = useState(50);
+  /* والافتراضُ هو ما كان قبل الخيار: أقدمُ أوّلا — صاحبُه أطولُ انتظارا */
+  const [sortKey, setSortKey] = useState<SortKey>("created");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   /* التحديدُ يبقى عبر الصفحات والبحث — والشريطُ يقول على كم يقع، فلا يُنفَّذ
      على صفٍّ غاب عن العين بلا علمِ صاحب القرار. */
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -599,18 +606,25 @@ export default function TrainerApplications() {
     .filter((a) => a.status === "submitted")
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل */
+  /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل.
+
+     وترتيبُ الحالة يقرأ `STATUS_LABELS` نفسَه: هو مكتوبٌ بدورة الحياة
+     أصلا، ونسخُ ترتيبِه في معجمٍ ثانٍ يعني معجمَين يفترقان عند أوّل
+     حالةٍ تُضاف. */
   const view = paginate(
-    apps
-      .filter((a) => !onlyUnbooked || canRemind(a))
-      .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
+    sortApplications(
+      apps
+        .filter((a) => !onlyUnbooked || canRemind(a))
+        .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
+      sortKey, sortDir, Object.keys(STATUS_LABELS),
+    ),
     /* ═══ وخمسون في الصفحة لا عشرون (٢٠ سبتمبر ٢٠٢٦) ═══
 
        «زد عدد المتقدّمين في الصفحة الواحدة». وقد أمكن: الصفُّ صار أربعَ
        حقائقَ في سطرٍ واحد بعد أن كان أربعةَ أسطر، فخمسون منه أقصرُ ممّا
        كان عشرون. ولا يُرفع أكثر: الترشيحُ والبحثُ فوقَه هما ما يُقصّر
        الطابورَ حقّا، لا صفحةٌ تُمرَّر بلا نهاية. */
-    page, 50);
+    page, size);
 
   const toggleSel = (id: string) => setSel((prev) => {
     const next = new Set(prev);
@@ -1520,25 +1534,63 @@ export default function TrainerApplications() {
             </Button>
           ))}
         </div>
+        {/* ═══ ما يُستعمل ظاهرٌ، وما دونه يُطوى — ولا يختفي عاملٌ بصمت ═══
+
+            قال صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦): «مرشِّحاتُ المدربين كثيرةٌ
+            ولا أستخدمها كلَّها — اجعل الرئيسيّةَ منها في الشاشة والباقيَ
+            في أخرى».
+
+            والحالةُ والترتيبُ يبقيان: بهما يُفرز الطابورُ في كلّ جلسة.
+            وما دونهما خلف «مرشّحاتٌ أخرى» — **وعددُ العاملِ منها مكتوبٌ
+            على الطيّة**، فلا يُقرأ طابورٌ منقوصٌ ويُظنّ تامّا. وذاك هو
+            خطرُ الطيّ كلِّه: مرشِّحٌ يعمل ولا يُرى. */}
         {mode === "apps" && (
           <>
             <select
               value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة"
-              className="rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground [&>option]:bg-surface"
+              className={staffSelectCls}
             >
               <option value="">كل الحالات</option>
               {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            {/* سؤالٌ يُضغط بدل عدِّ الأصفار في عمود «مقابلة» */}
-            <Button tone={onlyUnbooked ? "confirm" : "ghost"}
-              aria-pressed={onlyUnbooked}
-              onClick={() => { setOnlyUnbooked((v) => !v); setPage(1); }}>
-              <CalendarCheck className="h-3.5 w-3.5" /> لم يحجز موعدا
-              <span className="mr-1 font-mono">{apps.filter(canRemind).length}</span>
+
+            <select
+              value={sortKey} onChange={(e) => { setSortKey(e.target.value as SortKey); setPage(1); }}
+              aria-label="رتّبْ بـ"
+              className={staffSelectCls}
+            >
+              {SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>رتّبْ بـ{o.labelAr}</option>)}
+            </select>
+            {/* والاتّجاهُ زرٌّ لا خيارٌ ثالثٌ في قائمة: حالتان تُقلَبان بنقرة */}
+            <Button tone="ghost"
+              aria-label={sortDir === "asc" ? "الترتيبُ صاعد — اقلِبْه نازلا" : "الترتيبُ نازل — اقلِبْه صاعدا"}
+              onClick={() => { setSortDir((d) => (d === "asc" ? "desc" : "asc")); setPage(1); }}>
+              {sortDir === "asc"
+                ? <><ArrowUpNarrowWide className="h-3.5 w-3.5" /> تصاعديّا</>
+                : <><ArrowDownWideNarrow className="h-3.5 w-3.5" /> تنازليّا</>}
             </Button>
-            <Button tone="secondary" onClick={() => void load()}>
-              <RefreshCw className="h-3.5 w-3.5" /> تحديث
-            </Button>
+
+            <details className="group">
+              <summary className={`${staffControlCls} flex cursor-pointer list-none items-center gap-1.5 !w-auto text-muted-foreground transition hover:text-foreground`}>
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                مرشّحاتٌ أخرى
+                {onlyUnbooked && (
+                  <span className="rounded-full bg-teal/25 px-1.5 font-mono text-fine text-teal-light-ink">1</span>
+                )}
+              </summary>
+              <Inset className="mt-2 flex flex-wrap items-center gap-2">
+                {/* سؤالٌ يُضغط بدل عدِّ الأصفار في عمود «مقابلة» */}
+                <Button tone={onlyUnbooked ? "confirm" : "ghost"}
+                  aria-pressed={onlyUnbooked}
+                  onClick={() => { setOnlyUnbooked((v) => !v); setPage(1); }}>
+                  <CalendarCheck className="h-3.5 w-3.5" /> لم يحجز موعدا
+                  <span className="mr-1 font-mono">{apps.filter(canRemind).length}</span>
+                </Button>
+                <Button tone="secondary" onClick={() => void load()}>
+                  <RefreshCw className="h-3.5 w-3.5" /> تحديث
+                </Button>
+              </Inset>
+            </details>
           </>
         )}
       </div>
@@ -1563,6 +1615,7 @@ export default function TrainerApplications() {
       ) : (
         <div className="space-y-3">
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="طلبا"
+            size={size} onSize={setSize}
             placeholder="ابحث باسمٍ أو بريدٍ أو رقمِ طلبٍ أو تخصّص…" />
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
             {/* التذكيرُ أوّلا: هو الأكثرُ وقوعا في هذا الطابور، وليس قرارا
