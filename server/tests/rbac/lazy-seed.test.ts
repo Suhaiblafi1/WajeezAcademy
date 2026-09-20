@@ -12,7 +12,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
-import { ensureRbacSeeded, seedRbac } from '../../auth/rbac-seed'
+import { EXPECTED_GRANTS, ensureRbacSeeded, seedRbac } from '../../auth/rbac-seed'
 import { PERMISSIONS, ROLE_PERMISSIONS } from '../../auth/permissions'
 
 let prisma: PrismaClient
@@ -61,7 +61,34 @@ describe('البذر الكسول', () => {
     expect(await prisma.role.count()).toBeGreaterThanOrEqual(Object.keys(ROLE_PERMISSIONS).length)
   })
 
-  it('٤) و`learner.portal` باقٍ بعد كلّ ذلك — البوّابة لا تُغلق بالإصلاح', async () => {
+  /* ═══ والمنحُ الناقصُ لم يكن يُكشف (٢٠ سبتمبر ٢٠٢٦) ═══
+
+     كان الفحصُ يعدّ الصلاحيّاتِ والأدوارَ ولا يعدّ المنحَ بينهما. وهما لا
+     ينقصان إلّا بقاعدةٍ جديدة، **والمنحُ ينقص بغير ذلك**: بذرٌ انقطع في
+     منتصفه، أو حذفٌ يدويّ، أو `deleteMany` جرت بمصفوفةٍ ناقصةٍ في إصدارٍ
+     سابق. فتبقى الصفوفُ الناقصةُ أبدا — العددان تامّان فلا يُعاد البذر،
+     والصلاحيّاتُ تُقرأ من `RolePermission` في كلّ طلب.
+
+     وأثرُه يُقرأ في الشاشة لا في سجلّ: من فقد `settings.manage` لا يرى
+     «صحّة النظام»، ومجموعةٌ تفرغ بنودُها تختفي بعنوانها. وقد وقع هذا
+     بعينه، فبحث صاحبُ المنصّة عن شاشاتٍ «مفقودة» وهي قائمة. */
+  it('٤) ويبذر حين ينقص منحٌ والعددان تامّان — وهو ما كان يمرّ صامتا', async () => {
+    const victim = { roleId: 'super_admin', permissionKey: 'settings.manage' }
+    await prisma.rolePermission.delete({ where: { roleId_permissionKey: victim } })
+
+    /* العددان تامّان — فلا شيءَ في الفحص القديم يشي بالنقص */
+    expect(await prisma.permission.count()).toBe(PERMISSIONS.length)
+    expect(await prisma.role.count()).toBeGreaterThanOrEqual(Object.keys(ROLE_PERMISSIONS).length)
+
+    const r = await ensureRbacSeeded(prisma)
+    expect(r.seeded, 'مرّ المنحُ الناقصُ صامتا — والشاشةُ تختفي بلا خبر').toBe(true)
+
+    const back = await prisma.rolePermission.findUnique({ where: { roleId_permissionKey: victim } })
+    expect(back, 'لم تُستردّ الحبّةُ المحذوفة').not.toBeNull()
+    expect(await prisma.rolePermission.count()).toBeGreaterThanOrEqual(EXPECTED_GRANTS)
+  })
+
+  it('٥) و`learner.portal` باقٍ بعد كلّ ذلك — البوّابة لا تُغلق بالإصلاح', async () => {
     const rp = await prisma.rolePermission.findFirst({
       where: { roleId: 'learner', permissionKey: 'learner.portal' },
     })

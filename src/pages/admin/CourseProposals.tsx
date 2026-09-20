@@ -32,6 +32,7 @@ import { useNavigate } from "react-router";
 import AdminLayout from "./AdminLayout";
 import EmptyState from "@/components/EmptyState";
 import ListToolbar from "@/components/admin/ListToolbar";
+import CoursePicker from "@/components/admin/CoursePicker";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { staffAreaCls, staffControlCls, StaffField } from "@/components/FormKit";
@@ -71,7 +72,13 @@ interface Row {
 
 /* والحقلُ `title` لا `titleAr`: هكذا يردّه `/api/admin/catalog/courses`.
    وواجهةٌ تسمّيه بغير اسمه تُظهر قائمةً من الفراغ بلا خطأٍ يُرى. */
-interface CourseRow { id: string; title: string; status: string }
+/* والمساراتُ والمجالاتُ يردّهما `/api/admin/catalog/courses` من قبلُ —
+   وكان النوعُ هنا أضيقَ ممّا يصل، فيُرمى ما لا يُعلَن. ومرشِّحُ
+   «المجال» يُبنى منهما، فلو بقي النوعُ ضيّقا لَما ظهر المرشِّحُ أصلا. */
+interface CourseRow {
+  id: string; title: string; status: string;
+  pathwayNames?: string[]; diagnosticDomains?: string[];
+}
 
 /* ما لم يُبَتَّ فيه — وله الأبوابُ الأربعة (ربطٌ · دورةٌ جديدة · سؤالٌ · ردّ).
 
@@ -384,15 +391,10 @@ export default function CourseProposals() {
                           label="أيُّ رمزٍ هي نسخةٌ منه؟"
                           hint="يُربط الاقتراحُ به، ويقترح المدرّبُ اسمَه ومحاورَه بنفسه"
                         >
-                          <select
-                            className={staffControlCls} value={linkCourse}
-                            onChange={(e) => setLinkCourse(e.target.value)}
-                          >
-                            <option value="">اختر دورة…</option>
-                            {courses.map((c) => (
-                              <option key={c.id} value={c.id}>{c.title} — {c.id}</option>
-                            ))}
-                          </select>
+                          <CoursePicker
+                            courses={courses} value={linkCourse}
+                            onChange={setLinkCourse} labelAr="أيُّ رمزٍ هي نسخةٌ منه؟"
+                          />
                         </StaffField>
                         <div className="flex gap-2">
                           <Button

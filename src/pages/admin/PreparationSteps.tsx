@@ -33,6 +33,7 @@ import { apiGet, apiPost, apiPatch, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import CoursePicker from "@/components/admin/CoursePicker";
 import { staffControlCls as inputCls, staffAreaCls as areaCls } from "@/components/FormKit";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { fmtDateLong } from "@/application/text/format-ar";
@@ -72,7 +73,13 @@ export interface PrepQualification {
   course?: { versions: { titleAr: string }[] } | null;
 }
 
-interface CourseOption { id: string; status: string; title: string }
+/* والمساراتُ والمجالاتُ يردّهما `/api/admin/catalog/courses` من قبلُ —
+   وكان النوعُ هنا أضيقَ ممّا يصل، فيُرمى ما لا يُعلَن. ومرشِّحُ
+   «المجال» يُبنى منهما، فلو بقي النوعُ ضيّقا لَما ظهر المرشِّحُ أصلا. */
+interface CourseOption {
+  id: string; status: string; title: string;
+  pathwayNames?: string[]; diagnosticDomains?: string[];
+}
 
 interface PrefillCourse { courseId: string; titleAr: string }
 interface Prefill {
@@ -425,14 +432,13 @@ function CoursesStep({
                   {linkFor === p.id && (
                     <div className="mt-2.5 flex flex-wrap gap-2">
                       <label className="sr-only" htmlFor={`link-${p.id}`}>الرمزُ الذي تُربط به</label>
-                      <select
-                        id={`link-${p.id}`} value={linkCourse}
-                        onChange={(e) => setLinkCourse(e.target.value)}
-                        className={`${inputCls} min-w-[14rem] flex-1`}
-                      >
-                        <option value="">اختر الدورةَ القائمة…</option>
-                        {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                      </select>
+                      <div className="min-w-[16rem] flex-1">
+                        <CoursePicker
+                          id={`link-${p.id}`} courses={courses}
+                          value={linkCourse} onChange={setLinkCourse}
+                          labelAr="الرمزُ الذي تُربط به"
+                        />
+                      </div>
                       <Button
                         tone="confirm" size="sm" loading={busy} disabled={!linkCourse}
                         onClick={() => void run(async () => {
