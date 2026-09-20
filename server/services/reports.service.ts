@@ -1,4 +1,5 @@
-/* خدمة التقارير — 17 تقريرا تشغيليا، كل مؤشر له طريقة حساب معلنة بالعربية.
+/* خدمة التقارير — تقاريرُ تشغيليّة، لكلّ مؤشّرٍ طريقةُ حسابٍ معلنةٌ بالعربية.
+   (ولا يُكتب عددُها هنا رقما: كُتب فبلي مرّتين. تُعَدُّ من `defs()`.)
    الفلاتر: نطاق تاريخ + معرف دورة/شعبة حيث ينطبق.
    التصدير CSV/XLSX محكوم بصلاحية reports.export في طبقة المسارات. */
 
@@ -42,6 +43,8 @@ const COLUMN_AR: Record<string, string> = {
   priority: 'الأولوية', category: 'التصنيف',
   stage: 'المرحلة', users: 'أجهزة فريدة', events: 'الأحداث',
   pct: 'النسبة ٪', base: 'الأساس', medianDays: 'وسيط الأيام',
+  reference: 'المرجع', email: 'البريد', state: 'الحال', activeSince: 'نشطٌ منذ',
+  lastContract: 'آخرُ عقد', nextStepAr: 'الخطوةُ التالية',
 }
 const colAr = (k: string) => COLUMN_AR[k] ?? k
 
@@ -318,6 +321,91 @@ export class ReportsService {
          والأساسُ `phase2CompletedAt`: الطلبُ المكتمل هو ما يُقاس، لا مسوّدةٌ
          فُتحت وتُركت. وكلُّ صفٍّ يقول **أساسَ نسبته** بالحرف، فلا تُقرأ نسبةٌ
          على غير قاعدتها: «حجز بعد التذكير» نسبتُه من المذكَّرين لا من الكلّ. */
+      /* ═══ من يعمل بلا عقدٍ نافذ ═══
+
+         العقدُ صار بوّابةَ التفعيل في المرحلة الثالثة، لكنّ البوّابةَ تحرس
+         من يمرّ بعدها لا من مرّ قبلها. ومن صار مدرّبا قبل هذه المراحل نشطٌ
+         بلا عقدٍ في القاعدة، وهو **ليس مخالفةً** — بل عملٌ لم يُوثَّق بعد.
+
+         ولذلك لا يُسرَد الاسمُ وحدَه: لكلٍّ **حالُه وخطوتُه التالية**. فقائمةُ
+         أسماءٍ بلا تمييزٍ تُقرأ مرّةً وتُترك — يقرؤها الموظّفُ فلا يعرف أيُّهم
+         ينتظر ضغطةً منه وأيُّهم يحتاج عقدا يُركَّب من الصفر.
+
+         ولا تاريخَ قطعٍ مكتوبٌ بيد: «من قبل المرحلة» تُعرف بأنّه لا صفَّ عقدٍ
+         له إطلاقا، لا برقمٍ يُخمَّن ويبلى. */
+      {
+        key: 'trainers-without-contract', titleAr: 'مدرّبون نشطون بلا عقدٍ نافذ',
+        methodAr: 'كلُّ طلبٍ حالتُه active وله ملفُّ مدرّب، وليس له عقدٌ حالتُه countersigned. ولكلٍّ حالُه: لا عقدَ قطّ (سبق المرحلة) · مسوّدةٌ لم تُرسَل · أُرسل ينتظر توقيعَه · وُقّع ينتظر اعتمادَك · اعتُذر عنه · أُلغي · فُسخ. والمدى — إن ضُبط — يُقاس على تاريخ صيرورته نشطا.',
+        run: async (f) => {
+          const rows = await p.trainerApplication.findMany({
+            where: {
+              status: 'active',
+              profile: { is: { contracts: { none: { status: 'countersigned' } } } },
+            },
+            select: {
+              id: true, reference: true, fullName: true, email: true, updatedAt: true,
+              statusHistory: {
+                where: { toStatus: 'active' },
+                orderBy: { createdAt: 'desc' }, take: 1,
+                select: { createdAt: true },
+              },
+              profile: {
+                select: {
+                  createdAt: true,
+                  contracts: {
+                    orderBy: { createdAt: 'desc' }, take: 1,
+                    select: { status: true, title: true, createdAt: true },
+                  },
+                },
+              },
+            },
+            /* والسقفُ مرتفعٌ بقصد: المقيسُ «نشطٌ بلا عقد»، وهو محصورٌ بعدد
+               المدرّبين النشطين لا ينمو بنموّ الاستعمال. ولو بلغ ألفين
+               فالعطبُ في أنّ ألفين بلا عقدٍ لا في سقف التقرير. */
+            take: 2_000,
+          })
+
+          /* الحالُ والخطوةُ معا: من يقرأ يعرف ماذا يفعل الآن */
+          const SAID: Record<string, { state: string; next: string }> = {
+            none: { state: 'لا عقدَ قطّ — سبق مراحلَ التعاقد', next: 'ركّبْ له عقدا من شاشة العقود' },
+            draft: { state: 'مسوّدةٌ مجمَّدةٌ لم تُرسَل', next: 'أرسِلْها للتوقيع' },
+            sent: { state: 'أُرسل وينتظر توقيعَه', next: 'ذكّرْه أو جدّدْ رابطَه' },
+            signed: { state: 'وقّعه وينتظر اعتمادَك', next: 'طابِقِ الاسمَ بوثيقته ثمّ اعتمِدْ' },
+            declined: { state: 'اعتذر عنه', next: 'اقرأ سببَه ثمّ قرّرْ' },
+            revoked: { state: 'أُلغي', next: 'ركّبْ عقدا جديدا إن أردتَ بقاءَه' },
+            terminated: { state: 'فُسخ', next: 'أوقِفْ ملفَّه أو ركّبْ عقدا جديدا' },
+            expired: { state: 'انتهى', next: 'ركّبْ عقدا جديدا' },
+          }
+
+          return rows
+            .map((a) => {
+              const since = a.statusHistory[0]?.createdAt ?? a.profile?.createdAt ?? a.updatedAt
+              const last = a.profile?.contracts[0] ?? null
+              const said = SAID[last?.status ?? 'none'] ?? SAID.none
+              return {
+                trainer: a.fullName,
+                reference: a.reference,
+                email: a.email,
+                state: said.state,
+                nextStepAr: said.next,
+                activeSince: since.toISOString().slice(0, 10),
+                lastContract: last ? `${last.title} — ${last.createdAt.toISOString().slice(0, 10)}` : '—',
+                _since: since,
+              }
+            })
+            /* والمدى يُقاس على صيرورته نشطا: «من صار نشطا هذا الشهر ولا عقدَ له» */
+            .filter((r) => (!f.from || r._since >= f.from) && (!f.to || r._since <= f.to))
+            /* والأقدمُ أوّلا: من مضى عليه شهران بلا عقدٍ أولى بالنظر من أمسِ */
+            .sort((x, y) => x._since.getTime() - y._since.getTime())
+            /* و`_since` تُسقَط من الصفّ المعروض: هي أداةُ فرزٍ وترشيحٍ لا
+               عمودٌ يُقرأ — و`activeSince` تقوله بالصيغة التي تُعرض. */
+            .map((r) => {
+              const out: Record<string, unknown> = { ...r }
+              delete out._since
+              return out
+            })
+        },
+      },
       {
         key: 'trainer-funnel', titleAr: 'قمعُ توظيف المدرّبين',
         methodAr: 'الطلباتُ المكتملة في المدى (phase2CompletedAt): كم حجز لقاءَ تعارف، وكم جرى لقاؤه، وكم اعتُمد — ومعها أثرُ التذكير اليدويّ: كم ذُكّر وكم حجز بعده. ووسيطُ الأيّام بين المرحلة وسابقتها.',

@@ -51,7 +51,11 @@ function runPreflight(contents: string): { code: number; stderr: string } {
 
 /* ملفٌّ سليمٌ يُشتقّ منه كلُّ حالةٍ بتغييرِ سطرٍ واحد — فما يُقاس هو المتغيّرُ
    وحدَه لا فرقٌ آخرُ تسلّل مع نصٍّ كُتب مرّتين */
-const COMPLETE = 'SITE_DOMAIN=wajeezacademy.com\nAPP_URL=https://www.wajeezacademy.com\n'
+/* و`BANK_ENC_KEY` دخل الإلزاميّاتِ مع المرحلة الرابعة: بلا مفتاحٍ لا
+   يُحفَظ حسابٌ بنكيٌّ ولا يُصرَف مستحقّ (`bank-crypto.ts`). وقيمتُه هنا
+   ٦٤ خانةً ستّ عشريّةً صالحةً — وإلّا لَسقط «ملفٌّ سليم» على صيغةٍ. */
+const BANK_KEY = 'BANK_ENC_KEY=' + '0123456789abcdef'.repeat(4)
+const COMPLETE = `SITE_DOMAIN=wajeezacademy.com\nAPP_URL=https://www.wajeezacademy.com\n${BANK_KEY}\n`
 
 describe('لا نشرَ بلا APP_URL', () => {
   it('البوّابةُ تمرّ حين يكون مضبوطا — وإلّا فكلُّ ما بعدَه لا معنى له', () => {

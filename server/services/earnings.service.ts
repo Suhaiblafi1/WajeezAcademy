@@ -245,7 +245,48 @@ export class EarningsService {
     return this.transition(id, actorId, ['pending'], 'approved', 'trainer_payout.approve', { approvedBy: actorId })
   }
 
-  markPaid(id: string, actorId: string) {
+  /** ═══ ولا يُؤكَّد صرفٌ إلّا على حسابٍ كُشف لهذا المستحقّ بعينه ═══
+
+      ثلاثةُ أعطابٍ يسدّها هذا الشرط، وكلُّها تقع صامتةً:
+
+      ① **تأكيدُ صرفٍ ولا حسابَ أصلا.** يُكتب `paid` ويُخبَر المدرّبُ أنّ
+         مالَه صُرف، ولا مكانَ ذهب إليه. فيسأل بعد أسبوع، ولا جوابَ في
+         القاعدة.
+      ② **وتأكيدٌ بلا كشف.** من لم يفتح الحسابَ لم يُحوّل — والتأكيدُ حينئذٍ
+         إقرارٌ بفعلٍ لم يقع. والشرطُ يجعل كلَّ صرفٍ مسبوقا بأثرِ كشفٍ
+         يقول: هذا المستحقُّ، وهذا الحساب، وهذه اللحظة.
+      ③ **وتبديلُ الحساب بين الكشف والتأكيد.** يُكشف الحسابُ فيُنسَخ الرقمُ،
+         ثمّ يُبدَّل الصفُّ، ثمّ يُؤكَّد الصرفُ — فيقول السجلُّ إنّ المالَ
+         ذهب إلى الجديد وقد ذهب إلى القديم. وهو بابُ الاحتيال المعروفُ في
+         هذا الموضع بعينه.
+
+      والترتيبُ بعد `transition` بقصد: تلك تفحص الحالةَ وتردّ `bad_state`
+      لمستحقٍّ غيرِ معتمَد، فلا يتبدّل رمزُ خطإٍ قائمٍ بسبب حارسٍ جديد. */
+  async markPaid(id: string, actorId: string) {
+    const payout = await this.prisma.trainerPayout.findUnique({
+      where: { id },
+      select: { id: true, status: true, profileId: true, bankAccountId: true },
+    })
+    if (payout && payout.status === 'approved') {
+      if (!payout.bankAccountId) {
+        throw new AuthError(
+          'no_reveal',
+          'لم يُكشف حسابُ المدرّب لهذا المستحقّ — اكشفْه أوّلا، فلا يُؤكَّد صرفٌ إلى حسابٍ لم يُفتَح',
+          409,
+        )
+      }
+      const active = await this.prisma.trainerBankAccount.findFirst({
+        where: { profileId: payout.profileId, status: 'active' },
+        select: { id: true },
+      })
+      if (!active || active.id !== payout.bankAccountId) {
+        throw new AuthError(
+          'bank_account_changed',
+          'تبدّل حسابُ المدرّب بعد كشفه — اكشفْه ثانيةً وتحقّقْ من وجهة الحوالة قبل التأكيد',
+          409,
+        )
+      }
+    }
     return this.transition(id, actorId, ['approved'], 'paid', 'trainer_payout.pay', { paidAt: new Date() })
   }
 

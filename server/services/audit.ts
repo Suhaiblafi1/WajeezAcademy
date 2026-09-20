@@ -8,7 +8,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 type Db = PrismaClient | Prisma.TransactionClient
 
 /* مفاتيح محظورة في أي حمولة تدقيق — تُستبدل قيمتها بـ [محذوف] */
-const FORBIDDEN_KEYS = /password|passwd|secret|token|apikey|api_key|private_key|card|cvv|pan|passcode/i
+const FORBIDDEN_KEYS = /password|passwd|secret|token|apikey|api_key|private_key|card|cvv|pan|passcode|iban|beneficiary|swift/i
 
 function sanitize(value: unknown, depth = 0): unknown {
   if (depth > 6 || value === null || value === undefined) return value ?? null

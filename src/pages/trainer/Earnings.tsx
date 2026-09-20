@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Banknote, CheckCircle2, Clock3, Loader2, ShieldCheck, XCircle } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
-import { apiGet, ApiError } from "@/services/api";
+import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
 
-import { Panel, Card } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
+import { staffControlCls, StaffField } from "@/components/FormKit";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 const PAYOUT_STATUS: Record<string, { label: string; cls: string; icon: typeof Clock3 }> = {
   pending: { label: "بانتظار الاعتماد", cls: "border-gold/40 text-gold-ink", icon: Clock3 },
@@ -32,7 +34,173 @@ interface RealEarnings {
   cohorts: { cohortId: string; title: string; status: string; general: number; referred: number; rate: number | null; referralRate: number | null; currency: string; ruleType: string | null; projected: number | null }[];
 }
 
+interface MaskedBank {
+  id: string; maskedAr: string; tail4: string; countryCode: string;
+  holderName: string; bankNameAr: string; branchAr: string | null; swiftBic: string | null;
+  outcome: string; outcomeScore: number; outcomeSaidAr: string;
+  createdAt: string; lastRevealAt: string | null;
+}
+interface BankState { enabled: boolean; account: MaskedBank | null; contractNameAr: string | null }
+
 const fmt = (n: string | number) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+/* ═══ حسابي البنكيّ — يكتبه هنا، والبندُ ٤-٤ يقول إنّ موضعَه هنا ═══
+
+   «في بوابته على المنصة تحت «مستحقاتي» بعد تفعيل حسابه» — نصُّ العقد الذي
+   وقّعه، فأيُّ موضعٍ آخر يناقض وثيقةً بيده.
+
+   ولا يُعاد إليه الرقمُ بعد حفظه: يرى طرفَه الأخيرَ ليطمئنّ أنّه حسابُه،
+   ومن أراد تبديلَه كتبه كاملا. وهو نمطُ `integrations.service` نفسُه —
+   القيمةُ المقنَّعةُ لا تُكتب فوق السرّ الحقيقيّ. */
+function BankAccountPanel() {
+  const [state, setState] = useState<BankState | null>(null);
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [form, setForm] = useState({ iban: "", holderName: "", bankNameAr: "", branchAr: "", swiftBic: "" });
+
+  const load = useCallback(() => {
+    apiGet<BankState>("/api/trainer/bank-account")
+      .then((d) => { setState(d); setErr(""); })
+      .catch((e) => setErr(e instanceof ApiError ? e.message : "تعذّر تحميل حسابك البنكيّ"));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  if (!state) return null;
+
+  /* ولا تُعرَض خانةٌ لا تُحفظ: بلا مفتاحِ تعميةٍ على الخادم يُردُّ الحفظُ،
+     فيكتب المدرّبُ رقمَه ثمّ يُقال له «غيرُ مهيّأة». والصمتُ هنا أصدق. */
+  if (!state.enabled) {
+    return (
+      <Panel as="section" className="mb-6">
+        <p className="text-sm font-black">حسابي البنكيّ</p>
+        <p className="mt-2 text-read leading-6 text-muted-foreground">
+          خانةُ الحسابات البنكيّة غيرُ مهيّأةٍ على الخادم بعد — راسِلِ الإدارةَ لتسليم حسابك.
+        </p>
+      </Panel>
+    );
+  }
+
+  const a = state.account;
+  const save = async () => {
+    setBusy(true); setErr("");
+    try {
+      await apiPut("/api/trainer/bank-account", {
+        iban: form.iban.trim(),
+        holderName: form.holderName.trim(),
+        bankNameAr: form.bankNameAr.trim(),
+        branchAr: form.branchAr.trim() || null,
+        swiftBic: form.swiftBic.trim() || null,
+      });
+      setOpen(false);
+      setForm({ iban: "", holderName: "", bankNameAr: "", branchAr: "", swiftBic: "" });
+      load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "تعذّر حفظُ الحساب");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Panel as="section" className="mb-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-black">حسابي البنكيّ — إليه تُحوَّل مستحقّاتُك</p>
+        {!open && (
+          <Button size="sm" icon={Banknote} onClick={() => {
+            setOpen(true);
+            setForm((f) => ({
+              ...f,
+              holderName: a?.holderName ?? state.contractNameAr ?? "",
+              bankNameAr: a?.bankNameAr ?? "",
+              branchAr: a?.branchAr ?? "",
+              swiftBic: a?.swiftBic ?? "",
+            }));
+          }}>
+            {a ? "بدّلْه" : "أدخِلْ حسابك"}
+          </Button>
+        )}
+      </div>
+
+      {err && <Inset tone="danger" className="mt-3 p-3 text-read">{err}</Inset>}
+
+      {a && !open && (
+        <dl className="mt-3 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          <div className="flex gap-2 text-read">
+            <dt className="text-muted-foreground">الرقم:</dt>
+            <dd dir="ltr" className="font-mono font-bold">{a.maskedAr}</dd>
+          </div>
+          <div className="flex gap-2 text-read">
+            <dt className="text-muted-foreground">صاحبُ الحساب:</dt>
+            <dd className="font-bold">{a.holderName}</dd>
+          </div>
+          <div className="flex gap-2 text-read">
+            <dt className="text-muted-foreground">المصرف:</dt>
+            <dd className="font-bold">{a.bankNameAr}{a.branchAr ? ` — ${a.branchAr}` : ""}</dd>
+          </div>
+          <div className="flex gap-2 text-read">
+            <dt className="text-muted-foreground">سُجّل:</dt>
+            <dd className="font-bold">{fmtDateAr(a.createdAt)}</dd>
+          </div>
+          {a.outcome === "differs" && (
+            <p className="mt-2 text-read leading-6 text-gold-ink sm:col-span-2">
+              ⚠️ {a.outcomeSaidAr} — وليس هذا منعا، لكنّ الماليّةَ تسأل عنه قبل أوّل حوالة.
+            </p>
+          )}
+        </dl>
+      )}
+
+      {!a && !open && (
+        <p className="mt-2 text-read leading-6 text-muted-foreground">
+          لم تُدخِلْ حسابَك بعد — ولا يُصرَف مستحقٌّ قبله. يُكتب مرّةً ويبقى.
+        </p>
+      )}
+
+      {open && (
+        <Inset className="mt-3 grid gap-3 p-3">
+          <p className="text-read leading-6 text-muted-foreground">
+            يُحفَظ رقمُك معمّى، ولا يُعرض عليك بعدها إلّا بطرفه الأخير، ولا يظهر في أيّ عقدٍ
+            ولا في أيّ رسالةٍ منّا. ولا يُفتح إلّا لحظةَ تحويلِ مستحقٍّ معتمَد.
+          </p>
+          <StaffField label="رقمُ الحساب / IBAN" hint="كاملا بلا مسافات">
+            <input dir="ltr" className={staffControlCls} value={form.iban} maxLength={42}
+              placeholder="JO00XXXX0000000000000000000000"
+              onChange={(e) => setForm({ ...form, iban: e.target.value })} />
+          </StaffField>
+          <StaffField
+            label="اسمُ صاحب الحساب"
+            hint={state.contractNameAr
+              ? `كما يطبعه المصرف. واسمُك في العقد: ${state.contractNameAr}`
+              : "كما يطبعه المصرف"}
+          >
+            <input className={staffControlCls} value={form.holderName} maxLength={160}
+              onChange={(e) => setForm({ ...form, holderName: e.target.value })} />
+          </StaffField>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <StaffField label="المصرف">
+              <input className={staffControlCls} value={form.bankNameAr} maxLength={120}
+                onChange={(e) => setForm({ ...form, bankNameAr: e.target.value })} />
+            </StaffField>
+            <StaffField label="الفرع" hint="لا يلزم">
+              <input className={staffControlCls} value={form.branchAr} maxLength={120}
+                onChange={(e) => setForm({ ...form, branchAr: e.target.value })} />
+            </StaffField>
+          </div>
+          <StaffField label="SWIFT / BIC" hint="لا يلزم — للحوالات من خارج الأردن">
+            <input dir="ltr" className={staffControlCls} value={form.swiftBic} maxLength={16}
+              onChange={(e) => setForm({ ...form, swiftBic: e.target.value })} />
+          </StaffField>
+          <div className="flex flex-wrap gap-2">
+            <Button tone="confirm" icon={Banknote} loading={busy}
+              disabled={form.iban.trim().length < 15 || form.holderName.trim().length < 4 || form.bankNameAr.trim().length < 2}
+              onClick={() => void save()}>
+              احفظْ حسابي
+            </Button>
+            <Button tone="ghost" disabled={busy} onClick={() => { setOpen(false); setErr(""); }}>تراجعْ</Button>
+          </div>
+        </Inset>
+      )}
+    </Panel>
+  );
+}
 
 /** كشف مستحقات حقيقي من الخادم — للمدرب المسجل بحساب فعلي */
 function RealEarningsView() {
@@ -101,6 +269,8 @@ function RealEarningsView() {
           </p>
         )}
       </Panel>
+
+      <BankAccountPanel />
 
       {/* ═══ شعبةً شعبة — من أين جاء طلابك وماذا يُحسب لك عنهم ═══ */}
       {(cohorts ?? []).length > 0 && (

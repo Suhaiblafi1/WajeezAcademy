@@ -32,6 +32,7 @@ import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { TrainerOfferService } from '../services/trainer-offer.service'
 import { recordAudit } from '../services/audit'
+import { notPermanentAuditWhere } from '../../src/application/audit/retention'
 import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
 import { LIVE_INTERVIEW } from '../services/trainer-interview-state'
 import { isDigestHour, unbookedDigest } from '../../src/application/trainer/unbooked-digest'
@@ -557,9 +558,11 @@ export async function enforceRetention(prisma: PrismaClient, now = new Date()): 
   }
 
   const parts = await Promise.all([
+    /* وأثرُ العقود والعروض يُستثنى: دليلٌ في نزاعٍ قد يقع بعد سنتين، ومُدَدُ
+       التقادم العقديّة تتجاوزهما. والسببُ كاملا في `audit/retention.ts`. */
     trim('سجلّ الأثر',
       () => prisma.auditEvent.findMany({
-        where: { createdAt: { lt: ago(RETENTION_DAYS.audit) } },
+        where: { createdAt: { lt: ago(RETENTION_DAYS.audit) }, ...notPermanentAuditWhere() },
         select: { id: true }, take: RETENTION_BATCH,
       }),
       (ids) => prisma.auditEvent.deleteMany({ where: { id: { in: ids } } })),

@@ -34,7 +34,7 @@ envv() { grep -E "^[[:space:]]*$1=" "$ENV_FILE" | tail -1 | cut -d= -f2- ; }
 # أو قيمةٌ من مسافاتٍ تسقط إلى `http://localhost:7100` تماما كغيابِ السطر.
 # فيُقاس هنا بالمقياس نفسِه — وإلّا مرّ من الفحصِ ما يسقط في التشغيل.
 missing=()
-for key in SITE_DOMAIN APP_URL; do
+for key in SITE_DOMAIN APP_URL BANK_ENC_KEY; do
   value="$(envv "$key" || true)"
   # تجريدُ المسافات من الطرفين
   value="${value#"${value%%[![:space:]]*}"}"
@@ -42,11 +42,38 @@ for key in SITE_DOMAIN APP_URL; do
   [ -n "$value" ] || missing+=("$key")
 done
 
+# ── وصيغةُ المفتاح تُقاس لا وجودُه وحدَه ──
+#
+# `BANK_ENC_KEY` يُقرأ ٣٢ بايتا من ٦٤ خانةً ستّ عشريّة (`bank-crypto.ts`).
+# وقيمةٌ أقصرُ أو فيها حرفٌ غريبٌ تجعل الخانةَ **مطفأةً صامتةً**: الخادمُ
+# يقلع، والمدرّبُ يكتب حسابَه فيُردّ بـ٥٠١، ولا أحدَ يعلم لمَ حتّى يُسأل.
+# فتُقال هنا مرّةً قبل النشر.
+#
+# و`|| true` لازمةٌ: `set -e` مضبوطٌ أعلاه، وشرطُ `=~` الساقطُ يُنهي السكربت.
+bad_format=""
+bank_key="$(envv BANK_ENC_KEY || true)"
+bank_key="${bank_key#"${bank_key%%[![:space:]]*}"}"
+bank_key="${bank_key%"${bank_key##*[![:space:]]}"}"
+if [ -n "$bank_key" ]; then
+  if ! printf '%s' "$bank_key" | grep -qE '^[0-9a-fA-F]{64}$'; then
+    bad_format="BANK_ENC_KEY"
+  fi
+fi
+
+if [ -n "$bad_format" ]; then
+  printf '\n\033[31m✗ %s في %s ليس ٦٤ خانةً ستّ عشريّة\033[0m\n' "$bad_format" "$ENV_FILE" >&2
+  printf '  ولَّدْه هكذا: openssl rand -hex 32\n' >&2
+  exit 1
+fi
+
 if [ ${#missing[@]} -gt 0 ]; then
   printf '\n\033[31m✗ متغيّراتٌ إلزاميّةٌ غيرُ مضبوطةٍ في %s: %s\033[0m\n' "$ENV_FILE" "${missing[*]}" >&2
   printf '  APP_URL منه تُبنى روابطُ الرسائل (التوثيق · الدعوة · استعادةُ الكلمة)\n' >&2
   printf '  وعنوانُ العودة بعد الدفع. وبلا ضبطِه تصل الرسائلُ برابطٍ لا يفتح\n' >&2
   printf '  عند أحد، ويعود المشتري بعد دفعٍ ناجحٍ إلى localhost.\n' >&2
   printf '  اضبطه في %s ثمّ أعد النشر.\n' "$ENV_FILE" >&2
+  printf '  و BANK_ENC_KEY مفتاحُ تعميةِ حسابات المدرّبين البنكيّة — وبلا ضبطِه\n' >&2
+  printf '  لا يستطيع مدرّبٌ حفظَ حسابه ولا تستطيع الماليّةُ صرفَ مستحقّ.\n' >&2
+  printf '  ولَّدْه مرّةً واحدةً: openssl rand -hex 32\n' >&2
   exit 1
 fi

@@ -29,7 +29,9 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { NotificationService, notifyRole } from './notification.service'
+import { NotificationService, notifyRole, sendDirectEmail } from './notification.service'
+import { renderMail } from './mail-template'
+import { fmtDateWith } from '../../src/application/text/format-ar'
 import { CommerceService } from './commerce.service'
 import {
   canClose, CHOICE_LABEL_AR, closeBlockersAr, isResolved, LEARNER_CHOICES, needsLearnerChoice,
@@ -91,7 +93,8 @@ export class TrainerDepartureService {
     if (reason.length < 5) throw new AuthError('no_reason', 'اكتب سببَ الرحيل — يُقرأ بعد سنةٍ حين يُسأل', 400)
 
     const profile = await this.prisma.trainerProfile.findUnique({
-      where: { id: profileId }, select: { id: true, application: { select: { fullName: true } } },
+      where: { id: profileId },
+      select: { id: true, userId: true, application: { select: { fullName: true, email: true } } },
     })
     if (!profile) throw new AuthError('no_profile', 'لا مدرّبَ بهذا المعرّف', 404)
 
@@ -106,7 +109,24 @@ export class TrainerDepartureService {
       select: { id: true, cohortId: true },
     })
 
-    const departure = await this.prisma.$transaction(async (tx) => {
+    /* ═══ والرحيلُ يفسخ ═══
+
+       عقدٌ نافذٌ على من رحل وعدٌ قائمٌ لا يفي به أحد: الملحقُ (أ) يعدّد
+       دوراتٍ لا يدرّسها، والبندُ الثالثُ يَعِد بعروضٍ لن تصله. وبقاؤه
+       `countersigned` يجعل تقريرَ «بلا عقد» يقول إنّه مغطّى، ويمنع محوَ
+       طلبه أبدا بحارسِ `purge` الجديد — فيُحبَس ملفٌّ ميّتٌ إلى الأبد.
+
+       وفي المعاملة نفسِها بقصد: ملفُّ رحيلٍ يُفتح وعقدٌ يبقى نافذا حالةٌ
+       لا معنى لها، ولا تُترك ثانيةً واحدةً قائمة.
+
+       **والصفُّ لا يُمحى**: التوقيعُ والهاشُ والاسمُ القانونيُّ تبقى كما
+       هي. الفسخُ يُنهي أثرَه للمستقبل ولا يمحو أنّه كان.
+
+       والعروضُ المفتوحةُ تُسحب معه: عرضٌ ينتظر جوابَ من رحل بابٌ يُفتح على
+       إسنادٍ لا يقع — ولو قبِله لَمرّ من `assignToCohort` وسقط عند حارسِ
+       «الملفُّ نشطٌ» برسالةٍ لا ذنبَ له فيها. */
+    const terminatedAt = new Date()
+    const { departure, terminated, withdrawn, openOffers } = await this.prisma.$transaction(async (tx) => {
       const d = await tx.trainerDeparture.create({
         data: { profileId, reasonAr: reason, openedBy: actorId },
       })
@@ -115,14 +135,112 @@ export class TrainerDepartureService {
           data: { departureId: d.id, enrollmentId: e.id, cohortId: e.cohortId },
         })
       }
-      return d
+      /* والموقَّعُ الذي لم يُعتمَد بعدُ يُغلَق معه: لو تُرك `signed` لَبقي
+         `countersignContract` قادرةً عليه بعد شهر — وهي تنادي
+         `decide('activate')`، فيعود من رحل «نشطا» بضغطةٍ من موظّفٍ يقرأ
+         طابورا قديما. والرحيلُ لا يمسّ حالةَ الطلب، فلا شيءَ يمنعها. */
+      const t = await tx.trainerContract.updateMany({
+        where: { profileId, status: { in: ['signed', 'countersigned'] } },
+        data: {
+          status: 'terminated', terminatedAt, terminatedBy: actorId,
+          terminateReasonAr: `فُسخ برحيل المدرّب: ${reason}`.slice(0, 500),
+        },
+      })
+      /* وتُقرأ معرّفاتُها قبل المسح: `updateMany` تعيد عددا لا صفوفا،
+         وبعد المسح لا يُعرف أيُّها كان مفتوحا. والأثرُ يُكتب باسم كلّ
+         عرضٍ لا جملةً واحدة — فخطُّ زمنِ المدرّب يُقرأ عرضا عرضا، وهو
+         المكانُ الذي يسأل فيه بعد شهر: «وأين ذهب العرضُ الذي كان عندي؟» */
+      const openOffers = await tx.trainerAssignmentOffer.findMany({
+        where: { profileId, status: 'offered' },
+        select: { id: true, courseId: true, cohortId: true },
+      })
+      const w = await tx.trainerAssignmentOffer.updateMany({
+        where: { profileId, status: 'offered' },
+        data: {
+          status: 'withdrawn', respondedAt: terminatedAt, withdrawnBy: actorId,
+          withdrawReasonAr: `سُحب برحيل المدرّب: ${reason}`.slice(0, 500),
+        },
+      })
+      return { departure: d, terminated: t.count, withdrawn: w.count, openOffers }
     })
 
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.departure.open', entityType: 'trainer_departure', entityId: departure.id,
-      reason, meta: { trainer: profile.application.fullName, cohorts: cohortIds.length, learners: enrollments.length },
+      reason, meta: {
+        trainer: profile.application.fullName, cohorts: cohortIds.length,
+        learners: enrollments.length, terminatedContracts: terminated, withdrawnOffers: withdrawn,
+      },
     })
-    return { ...departure, cohorts: cohortIds.length, learners: enrollments.length }
+
+    /* وسحبُ العرض يُكتب بالفعل نفسِه الذي تكتبه `TrainerOfferService.withdraw`
+       (`trainer.offer.withdraw`) وبالكيان نفسِه — فخطُّ الزمن لا يفرّق بين
+       عرضٍ سُحب بيدٍ وعرضٍ سحبه الرحيل، ولا يختفي أحدُهما من القراءة. */
+    for (const o of openOffers) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'trainer.offer.withdraw',
+        entityType: 'trainer_profile', entityId: profileId,
+        meta: {
+          offerId: o.id, courseId: o.courseId, cohortId: o.cohortId,
+          reasonAr: `سُحب برحيل المدرّب: ${reason}`.slice(0, 500),
+          departureId: departure.id,
+        },
+      })
+    }
+
+    /* وفسخُ العقد أثرٌ مستقلٌّ عن فتح الملفّ: يُسأل عنه وحدَه بعد سنةٍ
+       («متى انتهى عقدُه؟»)، ويُقرأ في خطّ زمن العقد لا في خطّ الرحيل. */
+    if (terminated > 0) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'trainer.contract.terminate',
+        entityType: 'trainer_profile', entityId: profileId,
+        meta: { departureId: departure.id, count: terminated, terminatedAt, reasonAr: reason.slice(0, 500) },
+      })
+    }
+
+    /* ═══ ولا يُسحب من أحدٍ شيءٌ في صمت ═══
+
+       وكانت الرسالةُ محبوسةً على `terminated > 0` وحدَها، فمن لا عقدَ نافذَ
+       له — سبق المرحلةَ، أو فُسخ عقدُه من قبل — تُسحب عروضُه المفتوحةُ ولا
+       يعلم. فيفتح بوّابتَه بعد أسبوعٍ فلا يجد ما كان ينتظر جوابَه، ولا سطرَ
+       يقول أين ذهب. والشرطُ الآن على ما جرى فعلا: عقدٌ فُسخ أو عرضٌ سُحب. */
+    if (terminated > 0 || withdrawn > 0) {
+      try {
+        await sendDirectEmail(this.prisma, {
+          to: profile.application.email,
+          subject: 'انتهاءُ التعاقد — أكاديمية وجيز',
+          ...renderMail({
+            greetingName: profile.application.fullName,
+            heading: terminated > 0 ? 'سُجّل رحيلُك، وانتهى التعاقد' : 'سُجّل رحيلُك',
+            blocks: [
+              {
+                kind: 'p',
+                text: `سُجّل رحيلُك عن الأكاديميّة بتاريخ ${
+                  fmtDateWith(terminatedAt, { year: 'numeric', month: 'long', day: 'numeric' })
+                }.`,
+              },
+              ...(terminated > 0
+                ? [
+                  { kind: 'p' as const, text: 'وبه انتهى العقدُ بيننا للمستقبل.' },
+                  {
+                    kind: 'note' as const,
+                    text: 'ولا يمحو هذا ما كان: نسختُك من العقد ودليلُ توقيعك محفوظان، '
+                      + 'وما استحققتَه عن عملٍ أدّيتَه يبقى مستحقّا لك.',
+                  },
+                ]
+                : []),
+              ...(withdrawn > 0
+                ? [{ kind: 'note' as const, text: 'وسُحبت العروضُ التي كانت تنتظر جوابَك.' }]
+                : []),
+            ],
+          }),
+        })
+      } catch { /* البريدُ رفاهية — الفسخُ وقع، ويُبلَّغ من الإدارة */ }
+    }
+
+    return {
+      ...departure, cohorts: cohortIds.length, learners: enrollments.length,
+      terminatedContracts: terminated, withdrawnOffers: withdrawn,
+    }
   }
 
   /** ملفُّ رحيلٍ بكلّ اسمٍ فيه — وهو الشيءُ الواحدُ الذي يُتتبَّع */

@@ -39,11 +39,21 @@ export const ACADEMY_LEGAL = {
   /** الرقمُ الوطنيُّ للمنشأة — غيرُ الرقم الضريبيّ، ولا يُستعمل بدلا عنه */
   nationalNo: '200160976',
 
-  /** ⚠️ لم يصل بعد — ليس في صفحة السجلّ التي وردت */
+  /** ═══ الرقمُ الضريبيُّ — موجودٌ ولا يُشترَط ═══
+
+      قرارُ صاحب المنصّة (١٩ سبتمبر ٢٠٢٦): «لا داعيَ للرقم الضريبيّ». وهو
+      قرارُه لا رأيُنا — ونحن قد قلنا إنّ عقدَ خدماتٍ بمقابلٍ يُسأل عن وضعه
+      الضريبيّ، فأعاد القرارَ. ولذلك خرج من `REQUIRED_LEGAL_FIELDS` أدناه.
+
+      **والحقلُ يبقى ولا يُحذف**: يومَ يصل يُكتب هنا فيُطبَع في الديباجة
+      وحدَه بلا تعديلِ سطر — و`academyPartyLineAr` تُسقط جملتَه ما دام
+      فارغا، فلا يخرج في الوثيقة «والرقم الضريبيّ ،» معلَّقا على فراغ. */
   taxNo: '',
 
-  /** ⚠️ لم يصل بعد — السجلُّ يقول «مركز الشركة: عمّان» ولا عنوانَ تفصيليّا */
-  registeredAddressAr: '',
+  /** مركزُ الشركة — «الأردن، عمّان، الصويفية» بقرار صاحب المنصّة (١٩ سبتمبر
+      ٢٠٢٦)، وهو العنوانُ المنشورُ في الموقع لموقع عمّان بعينه. ولا يُكتب
+      حرفا في موضعين: `CONTACT.locations` في `stories.ts` تقرؤه من هنا. */
+  registeredAddressAr: 'الصويفية — ش. عبد الرحيم الحاج محمد 67',
 
   cityAr: 'عمّان',
   countryAr: 'المملكة الأردنية الهاشمية',
@@ -72,10 +82,14 @@ export type AcademyLegalField = keyof typeof ACADEMY_LEGAL
 /** الحقولُ التي لا يُركَّب متنُ عقدٍ بدونها — وما عداها تحسينُ عرض.
 
     و`nationalNo` ليس منها بقصد: السجلُّ التجاريُّ يعرّف الكيانَ، والرقمُ
-    الوطنيُّ إضافةٌ. أمّا `taxNo` فمنها، لأنّ عقدَ خدماتٍ بمقابلٍ يُسأل عن
-    وضعه الضريبيّ. */
+    الوطنيُّ إضافةٌ.
+
+    و`taxNo` **خرج منها** بقرار صاحب المنصّة (١٩ سبتمبر ٢٠٢٦). وكان فيها
+    بحجّةِ أنّ عقدَ خدماتٍ بمقابلٍ يُسأل عن وضعه الضريبيّ — والحجّةُ قيلت
+    ورُدّت، والقرارُ لصاحبه. ولا يُنقَص بخروجه شيءٌ من تعريف الطرف الأوّل:
+    السجلُّ التجاريُّ والرقمُ الوطنيُّ والعنوانُ المسجَّلُ قائمةٌ كلُّها. */
 export const REQUIRED_LEGAL_FIELDS: readonly AcademyLegalField[] = [
-  'legalNameAr', 'entityFormAr', 'registrationNo', 'taxNo',
+  'legalNameAr', 'entityFormAr', 'registrationNo',
   'registeredAddressAr', 'cityAr', 'countryAr',
   'signatoryNameAr', 'signatoryTitleAr',
   'governingLawAr', 'disputeVenueAr',
@@ -118,9 +132,14 @@ export function academyLegalGapMessageAr(missing: readonly AcademyLegalField[]):
     ولا يُستدعى إلّا بعد `missingAcademyLegalFields()` خاليةً — ومن استدعاه
     قبلها طبع فراغاتٍ في وثيقة. */
 export function academyPartyLineAr(source = ACADEMY_LEGAL): string {
+  /* والرقمُ الضريبيُّ جملةٌ تُزاد لا حقلٌ يُترك فارغا: خرج من المطلوب
+     (أعلاه)، فلو بقي في السطر بلا شرطٍ لخرجت الوثيقةُ تقول «والرقم الضريبيّ
+     ،» — فراغٌ في عقدٍ يوقّعه إنسان. ويعود وحدَه يومَ يُكتب. */
+  const taxAr = String(source.taxNo ?? '').trim()
   return `${source.legalNameAr}، ${source.entityFormAr}، المسجَّلة في ${
-    source.countryAr} بالسجلّ التجاريّ رقم ${source.registrationNo} والرقم الضريبيّ ${
-    source.taxNo}، وعنوانها ${source.registeredAddressAr}، ${source.cityAr}` +
+    source.countryAr} بالسجلّ التجاريّ رقم ${source.registrationNo}${
+    taxAr ? ` والرقم الضريبيّ ${taxAr}` : ''}، وعنوانها ${
+    source.registeredAddressAr}، ${source.cityAr}` +
     `، وتعمل باسم «${source.tradingNameAr}»` +
     `، ويمثّلها في توقيع هذا العقد ${source.signatoryNameAr} بصفته ${source.signatoryTitleAr}`
 }
