@@ -17,8 +17,9 @@
       الثابت. ولو كُتبت بيدٍ لَقال النصُّ «سبعةَ أيّام» والخادمُ يقطع بعد
       يومٍ، ولا يحمرّ شيء. وهذا وقع في هذا المستودَع مع مدّةٍ أخرى.
 
-   ورابطُ استعادة كلمة المرور خارج هذا: ساعةٌ واحدة — تحت السقف لا فوقه،
-   وضيقُه مقصودٌ مكتوبٌ في `mail-link-window.ts`. */
+   ورابطُ الاستعادة له مهلتُه: ثلاثون دقيقة (٢٠ سبتمبر ٢٠٢٦، وكانت ساعة).
+   فيُحرس من الجهة المقابلة — **ألّا يُرفع** إلى السقف قياسا على إخوته: تلك
+   تُطيل لتُيسّر، وهذا يُقصَّر ليؤمّن، والبابُ الذي يفتحه قفلُ الحساب نفسُه. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -29,6 +30,7 @@ import { AuthService } from '../../server/services/auth.service'
 import { TrainerReviewService } from '../../server/services/trainer-review.service'
 import {
   MAIL_LINK_TTL_HOURS, MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR,
+  RESET_LINK_TTL_MINUTES, RESET_LINK_TTL_MS, RESET_LINK_WINDOW_AR,
 } from '@/application/links/mail-link-window'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -134,6 +136,41 @@ describe('سقفُ الرابط المرسَل بالبريد', () => {
   })
 })
 
+describe('نافذةُ الاستعادة أضيقُ — ولا تُرفع', () => {
+  it('ثلاثون دقيقةً لا أكثر، ودونَ سقف الروابط بفارقٍ حقيقيّ', () => {
+    expect(RESET_LINK_TTL_MINUTES, 'رُفعت نافذةُ الاستعادة فوق نصف ساعة').toBeLessThanOrEqual(30)
+    expect(RESET_LINK_TTL_MS, 'الميلّي ثانيةُ لا تطابق الدقائق').toBe(RESET_LINK_TTL_MINUTES * 60_000)
+    /* وأضيقُ من السقف بقصد: لو سُوّيت به يوما سقط هذا السطر قبل أن يُنشر */
+    expect(RESET_LINK_TTL_MS, 'سُوّيت نافذةُ الاستعادة بسقف الروابط')
+      .toBeLessThan(MAIL_LINK_TTL_MS)
+  })
+
+  it('ولحظةُ انتهاء رمز الاستعادة تُحسب منها — لا من السقف ولا من رقمٍ خامّ', async () => {
+    /* قاعدةٌ صوريّة: حسابٌ قائم، ويُلتقط ما كُتب في صفّ الرمز. و`$transaction`
+       تُنادى بمصفوفةِ عملياتٍ بُنيت قبلها — فالكتابةُ تقع وهي تُبنى. */
+    let written: { expiresAt?: Date } | null = null
+    const prisma = {
+      user: { findUnique: async () => ({ id: 'u-1', email: 'x@test.local' }) },
+      passwordResetToken: {
+        updateMany: (args: unknown) => args,
+        create: ({ data }: { data: { expiresAt?: Date } }) => {
+          written = data
+          return data
+        },
+      },
+      $transaction: async (ops: unknown[]) => ops,
+    } as unknown as PrismaClient
+
+    const before = Date.now()
+    const { tokenForDelivery } = await new AuthService(prisma).requestPasswordReset('x@test.local')
+    expect(tokenForDelivery, 'لم يُصدَر رمزُ استعادةٍ أصلا').toBeTruthy()
+    const life = written!.expiresAt!.getTime() - before
+    expect(life, 'رمزُ الاستعادة يعيش أكثرَ من نافذته').toBeLessThanOrEqual(RESET_LINK_TTL_MS + 1_000)
+    /* ولا يموت قبل أن يُقرأ: من يفتح بريدَه بعد دقائقَ يجده حيّا */
+    expect(life, 'رمزُ الاستعادة يموت قبل خمس دقائق').toBeGreaterThan(5 * 60_000)
+  })
+})
+
 describe('والجملةُ تتبع الرقم', () => {
   /* الخدمتان تحسبان من الثابت، والمواضعُ التي تُقال فيها المدّةُ تقول جملتَه */
   const SITES: { what: string; symbol: string; src: () => string }[] = [
@@ -177,6 +214,10 @@ describe('والجملةُ تتبع الرقم', () => {
       what: 'نسخةُ رابط الدعوة في شاشة الطلبات', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => code('src/pages/admin/TrainerApplications.tsx'),
     },
+    {
+      what: 'رسالةُ استعادة كلمة المرور', symbol: 'RESET_LINK_WINDOW_AR',
+      src: () => mailBetween('export async function sendPasswordResetEmail', 'export async function sendStaffInviteEmail'),
+    },
   ]
 
   for (const site of SITES) {
@@ -193,7 +234,13 @@ describe('والجملةُ تتبع الرقم', () => {
       expect(site.src(), `${site.what}: ما زالت تَعِد باثنتَين وسبعين ساعة`).not.toContain('وسبعين ساعة')
       expect(site.src(), `${site.what}: ما زال الرقمُ ٧٢ مكتوبا بيده`).not.toContain('٧٢ ساعة')
     }
-    /* والجملةُ نفسُها تقول يوما لا أكثر */
+    /* وجملةُ الاستعادة لا تَعِد بساعةٍ بعد أن صارت نصفَها */
+    expect(
+      mailBetween('export async function sendPasswordResetEmail', 'export async function sendStaffInviteEmail'),
+      'رسالةُ الاستعادة ما زالت تَعِد بساعة',
+    ).not.toContain('ساعةً واحدة')
+    /* والجملتان تقولان ما يقوله الرقم */
     expect(MAIL_LINK_WINDOW_AR).toContain('عشرين ساعة')
+    expect(RESET_LINK_WINDOW_AR).toContain('ثلاثين دقيقة')
   })
 })
