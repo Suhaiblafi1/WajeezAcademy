@@ -26,7 +26,8 @@ import {
 import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
-  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_PAUSE, TRAINING_SEASONS,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_PAUSE,
+  RECORDING_ANSWERS, RECORDINGS_WHY, recordingAnswerPatch, TRAINING_SEASONS, WANTS_RECORDING_ANSWERS,
   type ContactChannel,
 } from "@/application/trainer/application-options";
 
@@ -267,6 +268,13 @@ export default function JoinTrainer() {
   const [seasons, setSeasons] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState("");
   const [startFrom, setStartFrom] = useState("");
+  /* ═══ تسجيلاتُ دوراته — وفراغُ الجواب حالٌ ثالثة ═══
+
+     `""` تعني «لم يُجب»، وهي غيرُ `"no"`. وعليها يقوم عرضُ السؤال الثاني:
+     لا يُفتح إلّا على من قال «لا» صراحةً. ولو كان الأوّلُ مربّعا يُؤشَّر
+     لَانفتح الثاني على كلّ من دخل الصفحة ولم يقرأ السؤالَ بعد. */
+  const [hasRecordings, setHasRecordings] = useState("");
+  const [wantsRecording, setWantsRecording] = useState("");
   const [demoConsent, setDemoConsent] = useState(false);
   const [uploads, setUploads] = useState<Record<string, UploadState>>({});
   const [phase2Done, setPhase2Done] = useState(false);
@@ -337,6 +345,8 @@ export default function JoinTrainer() {
     setSeasons(d.seasons ?? []);
     setHoursPerWeek(d.hoursPerWeek ?? "");
     setStartFrom(d.startFrom ?? "");
+    setHasRecordings(d.hasRecordings ?? "");
+    setWantsRecording(d.wantsRecording ?? "");
     setDemoConsent(Boolean(d.demoConsent));
     setContactChannel((d.contactChannel as ContactChannel | undefined) ?? "");
     setContactAltEmail(d.contactAltEmail ?? "");
@@ -367,12 +377,14 @@ export default function JoinTrainer() {
     const written = saveDraft({
       step, form, specialties, languages, targetCountries, targetAudiences,
       teachable, teachableOther, proposals, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
+      hasRecordings: hasRecordings || undefined, wantsRecording: wantsRecording || undefined,
       contactChannel: contactChannel || undefined, contactAltEmail: contactAltEmail || undefined,
       reference: result?.reference, candidateToken: candidateToken || undefined,
     });
     setDraftBlocked(!written);
   }, [step, form, specialties, languages, targetCountries, targetAudiences,
       teachable, teachableOther, proposals, days, periods, seasons, hoursPerWeek, startFrom, demoConsent,
+      hasRecordings, wantsRecording,
       contactChannel, contactAltEmail, result, candidateToken, phase2Done]);
 
   const startOver = () => {
@@ -653,6 +665,9 @@ export default function JoinTrainer() {
           periods: periods.length ? periods : undefined,
           seasons: seasons.length ? seasons : undefined,
         },
+        /* والرغبةُ تسقط متى كانت التسجيلاتُ موجودة — بالدالّة نفسِها التي
+           تقرؤها الخدمةُ، فلا يُرسَل جوابٌ عن سؤالٍ لم يُعرض. */
+        ...recordingAnswerPatch(hasRecordings, wantsRecording),
         demoConsent,
         /* الرقمُ يُرسَل هنا أيضا لا في القسم الأوّل وحدَه: ذاك أُرسل قبل هذه
            الشاشة، فتصحيحُ الرقم بعده كان يبقى في المتصفّح ولا يبلغ الخادم —
@@ -935,6 +950,15 @@ export default function JoinTrainer() {
     {
       k: "مستنداتك",
       v: uploadedDocs.map((d) => `${d.label}${d.name ? ` (${d.name})` : ""}`).join(" · "),
+    },
+    {
+      k: "تسجيلات دوراتك",
+      /* الصمتُ يُقال صمتا: من لم يُجب لا يُكتب عنه «لا» في مراجعته */
+      v: hasRecordings === "yes" ? "عندي تسجيلاتٌ جاهزة"
+        : hasRecordings === "no"
+          ? `ليست عندي بعد${wantsRecording === "yes" ? " — وأرغب في تسجيلها معكم"
+            : wantsRecording === "no" ? " — وأفضّل اللقاءات المباشرة" : ""}`
+          : "",
     },
     { k: "درسك التجريبي", v: demoConsent ? "موافق على تقديم درس تجريبي قصير" : "" },
   ];
@@ -1455,9 +1479,59 @@ export default function JoinTrainer() {
                 </div>
               </Question>
 
+              {/* ═══ التسجيلاتُ بعد الدورات لا قبلها ═══
+
+                  موضعُه هنا لأنّه يسأل عن **هذه الدورات بعينها**: من لم يقل
+                  بعدُ ماذا يستطيع أن يقدّم لا معنى لسؤاله هل سجّله. ولو سبق
+                  «ما الدورات» لَقُرئ سؤالا عن تسجيلاتٍ في المطلق. */}
+              <Question
+                n={3}
+                title="هل عندك تسجيلاتٌ جاهزةٌ لدوراتك؟"
+                hint={RECORDINGS_WHY}
+              >
+                {/* بلا `FieldSet`: عنوانُ السؤال فوقَه هو نصُّ السؤال، ولافتةٌ
+                    تحته تعيده مرّتين في العين وفي قارئ الشاشة. وسياقُ كلّ زرٍّ
+                    يأتيه من `name` في `aria-label`. */}
+                <div className="mt-1">
+                  <OptionGrid
+                    items={RECORDING_ANSWERS}
+                    isOn={(v) => hasRecordings === v}
+                    /* اختيارٌ واحدٌ لا تبديل: نقرةٌ على المختار تُبقيه، فلا
+                       يعود الجوابُ فراغا بنقرةٍ في غير موضعها. والرغبةُ
+                       تُمحى متى صار الجوابُ «نعم» — فلا تبقى إجابةٌ عن سؤالٍ
+                       اختفى من تحت عينه. */
+                    onToggle={(v) => {
+                      setHasRecordings(v);
+                      if (v !== "no") setWantsRecording("");
+                    }}
+                    cols={2}
+                    name="هل عندك تسجيلات جاهزة"
+                  />
+                </div>
+
+                {/* ولا يُعرض إلّا على من قال «لا» صراحةً — لا على من لم يُجب */}
+                {hasRecordings === "no" && (
+                  <Card className="mt-4 bg-paper/20">
+                    <FieldSet legend="وهل ترغب في تسجيل دوراتك معنا؟">
+                      <OptionGrid
+                        items={WANTS_RECORDING_ANSWERS}
+                        isOn={(v) => wantsRecording === v}
+                        onToggle={(v) => setWantsRecording(v)}
+                        cols={2}
+                        name="هل ترغب في تسجيل دوراتك"
+                      />
+                    </FieldSet>
+                    <p className="mt-4 text-read leading-6 text-muted-foreground">
+                      وجوابك هنا لا يُرجّح طلبك ولا يُضعفه — نسأله لنعرف كيف نُعدّ
+                      محتواك معك إن اعتُمدت، لا لنُفاضل به.
+                    </p>
+                  </Card>
+                )}
+              </Question>
+
               {/* اليومُ وحده لا يقول متى هو متفرّغ فيه: من يعمل نهارا لا يدرّب
                   إلا مساء، والشعبةُ تُجدوَل بالساعة لا باليوم. */}
-              <Question n={3} title="متى تستطيع أن تُدرّب؟" hint="الشعبة تُجدوَل بالساعة لا باليوم — فقل متى من اليوم، لا اليوم وحده.">
+              <Question n={4} title="متى تستطيع أن تُدرّب؟" hint="الشعبة تُجدوَل بالساعة لا باليوم — فقل متى من اليوم، لا اليوم وحده.">
                 <FieldRow>
                   {/* حقلُ `number` لا يقبل «٧» العربيّةَ الهنديّة: يبتلعها بلا
                       رسالةٍ فيظنّ الكاتبُ أنّه كتب ولم يُكتب شيء. فالشرطُ

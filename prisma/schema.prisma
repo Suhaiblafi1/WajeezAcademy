@@ -956,6 +956,18 @@ model TrainerApplication {
   previousOrgs         String?
   evidenceNotes        String?
   availability         Json? // {days, hoursPerWeek, startFrom}
+  /// هل عنده تسجيلاتٌ جاهزةٌ لدوراته؟ (٢٠ سبتمبر ٢٠٢٦)
+  ///
+  /// و`null` حالٌ ثالثةٌ مقصودة: «لم يُجب بعد» غيرُ «قال لا» — والسؤالُ
+  /// التالي لا يُعرض إلّا على من قال لا. ولو كان `Boolean @default(false)`
+  /// لَانفتح السؤالُ الثاني على كلّ طلبٍ قديمٍ لم يُسأل أصلا.
+  hasCourseRecordings  Boolean?
+  /// وإن لم تكن عنده — هل يرغب في تسجيلها معنا؟
+  ///
+  /// تابعٌ للأوّل لا مستقلّ: يبقى `null` متى كان `hasCourseRecordings` صحيحا،
+  /// فلا تبقى رغبةٌ مسجّلةٌ عن حالٍ لا تُسأل فيها. ويفرضه `recordingAnswerPatch`
+  /// في الوحدة المشتركة — تقرؤه الشاشةُ والخادمُ معا.
+  wantsToRecordCourses Boolean?
   demoConsent          Boolean                       @default(false)
   /// كيف نتواصل معه للاجتماع التعريفيّ: phone | whatsapp | email | other_email
   contactChannel       String?
@@ -1636,8 +1648,8 @@ model SessionRescheduleRequest {
 /// والتصميمُ الكاملُ ومراحلُه في
 /// `docs/superpowers/specs/2026-09-19-trainer-contract-design.md`.
 model TrainerContract {
-  id        String         @id @default(uuid()) @db.Uuid
-  profileId String         @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  profileId String  @db.Uuid
   /// عنوانٌ يكتبه الموظّف — «عقد تدريب ٢٠٢٦». للتمييز في القوائم لا للمتن.
   title     String
   /// ⚠️ مهجورٌ للكتابة، محفوظٌ للقراءة: حقلٌ حرٌّ بلا شكلٍ ولا قارئٍ ولم
@@ -1645,16 +1657,16 @@ model TrainerContract {
   /// أدناه، وهذا يبقى للصفوف التي سبقته. يُحذف حين لا يبقى صفٌّ يحمله.
   terms     Json?
   /// أصليٌّ، أم ملحقٌ يُضاف إلى نافذ، أم بديلٌ يحلّ محلَّه
-  kind      String         @default("original") // original | annex | replacement
+  kind      String  @default("original") // original | annex | replacement
   /// `revoked`: عقدٌ أُرسل بخطإٍ يُلغى ولا يُحذف — فما أُرسل وقع، والسجلُّ
   /// يقول إنّه أُلغي ومن ألغاه ولماذا. و`declined`: المدرّبُ قرأه ولم يقبله،
   /// وهو **جوابٌ مشروعٌ لا عطب** — فالعقدُ عرضٌ يُقبَل ويُردّ.
   /// و`countersigned` و`superseded` تأتيان مع المرحلة الثالثة.
-  status    String         @default("draft") // draft | sent | declined | revoked | signed | countersigned | expired | terminated
+  status    String  @default("draft") // draft | sent | declined | revoked | signed | countersigned | expired | terminated
   /// رقمُ النسخة في السلسلة — ١ للأصل ثمّ ما يليه
-  revision  Int            @default(1)
+  revision  Int     @default(1)
   /// النافذُ الذي هذا ملحقٌ له أو بديلٌ عنه
-  parentId  String?        @db.Uuid
+  parentId  String? @db.Uuid
 
   /// ─────────── المتن: يُركَّب مرّةً ولا يُركَّب ثانيةً ───────────
 
@@ -1796,12 +1808,12 @@ model TrainerContract {
   terminatedBy      String?   @db.Uuid
   terminateReasonAr String?
 
-  createdBy String?          @db.Uuid
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-  profile   TrainerProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  parent    TrainerContract? @relation("ContractLineage", fields: [parentId], references: [id])
-  children  TrainerContract[] @relation("ContractLineage")
+  createdBy String?                   @db.Uuid
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
+  profile   TrainerProfile            @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  parent    TrainerContract?          @relation("ContractLineage", fields: [parentId], references: [id])
+  children  TrainerContract[]         @relation("ContractLineage")
   documents TrainerContractDocument[]
   offers    TrainerAssignmentOffer[]
 
@@ -1857,30 +1869,30 @@ model TrainerAssignmentOffer {
   noteAr        String?
 
   /// مهلةُ الردّ — `ASSIGNMENT_OFFER_RESPONSE_DAYS` من `notice-periods.ts`
-  expiresAt  DateTime
-  offeredBy  String?  @db.Uuid
-  offeredAt  DateTime @default(now())
+  expiresAt DateTime
+  offeredBy String?  @db.Uuid
+  offeredAt DateTime @default(now())
 
   /// ─────────── الجواب ───────────
-  respondedAt     DateTime?
-  declineReasonAr String?
-  withdrawnBy     String?   @db.Uuid
+  respondedAt      DateTime?
+  declineReasonAr  String?
+  withdrawnBy      String?   @db.Uuid
   withdrawReasonAr String?
 
   /// ─────────── وبعد القبول: أجلُ الإعداد ───────────
   ///
   /// «على الأقلّ ثلاثة أيّام إلى خمسة أيّام لكلّ دورة — لن نستعجل أكثر».
   /// ويجري من **القبول** لا من العرض: أجلٌ يجري على من لم يلتزم بعدُ ظلم.
-  prepDays       Int       @default(5)
-  prepDueAt      DateTime?
+  prepDays        Int       @default(5)
+  prepDueAt       DateTime?
   /// أقرّ المدرّبُ بجاهزيّته — فعلُه هو، والأجلُ يُطوى به. ومن لم يقرّ
   /// يُذكَّر ثمّ تُرفَع مهمّةٌ، ولا يُفترض عنه شيء.
   prepConfirmedAt DateTime?
   /// آخرُ تذكيرٍ — كي لا يُطرَق بابٌ مرّتين في يوم
-  prepRemindedAt DateTime?
+  prepRemindedAt  DateTime?
   /// انقضى ولم يكتمل الإعداد — **ولا يُسحب الإسنادُ آليّا**: تُرفَع مهمّةٌ
   /// لإنسانٍ ينظر. فشعبةٌ فيها متعلّمون لا يُبَتّ أمرُها بمؤقّت.
-  prepLapsedAt   DateTime?
+  prepLapsedAt    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1977,15 +1989,15 @@ model TrainerBankAccount {
 }
 
 model TrainerContractDocument {
-  id           String   @id @default(uuid()) @db.Uuid
-  contractId   String   @db.Uuid
+  id           String          @id @default(uuid()) @db.Uuid
+  contractId   String          @db.Uuid
   /// ومصدرُها `contract-documents.ts`، ويحرس تطابقَهما اختبارُ العقد
   kind         String // national_id | passport | residence_permit | teaching_certificate | degree | experience_letter | other
-  storageKey   String   @unique
+  storageKey   String          @unique
   originalName String
   mime         String
   sizeBytes    Int
-  uploadedAt   DateTime @default(now())
+  uploadedAt   DateTime        @default(now())
   /// آخرُ اطّلاعٍ من موظّف — والسجلُّ الكاملُ في الأثر، وهذا للعرض
   lastViewedAt DateTime?
   contract     TrainerContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
@@ -2015,15 +2027,15 @@ model TrainerCompensationRule {
 }
 
 model TrainerPayout {
-  id         String              @id @default(uuid()) @db.Uuid
-  profileId  String              @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  profileId  String    @db.Uuid
   period     String // مثل 2026-08
-  status     String              @default("pending") // pending | approved | paid | cancelled
-  total      Decimal             @default(0) @db.Decimal(10, 2)
-  currency   String              @default("USD")
-  approvedBy String?             @db.Uuid
+  status     String    @default("pending") // pending | approved | paid | cancelled
+  total      Decimal   @default(0) @db.Decimal(10, 2)
+  currency   String    @default("USD")
+  approvedBy String?   @db.Uuid
   paidAt     DateTime?
-  createdAt  DateTime            @default(now())
+  createdAt  DateTime  @default(now())
 
   /// ═══ إلى أيِّ حسابٍ ذهب هذا المستحقّ ═══
   ///
@@ -2032,11 +2044,11 @@ model TrainerPayout {
   /// الاثنين هو بابُ الاحتيال المعروف في هذا الموضع بعينه.
   ///
   /// و`SetNull` لا `Cascade`: محوُ نسخةِ حسابٍ قديمةٍ لا يمحو مستحقّا صُرف.
-  bankAccountId String?           @db.Uuid
+  bankAccountId String?             @db.Uuid
   bankAccount   TrainerBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
 
-  profile    TrainerProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  items      TrainerPayoutItem[]
+  profile TrainerProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  items   TrainerPayoutItem[]
 
   @@index([profileId, period])
 }

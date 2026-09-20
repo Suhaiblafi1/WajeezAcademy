@@ -19,7 +19,9 @@ import { BookOpen } from 'lucide-react'
 import { courseById } from '@/data/courses'
 import { usePublishedContent } from '@/services/public-content'
 import { readProposals } from '@/application/trainer/teachable-proposals'
-import { contactChannelLabel, seasonLabel, yearsLabel } from '@/application/trainer/application-options'
+import {
+  contactChannelLabel, recordingsSummaryAr, seasonLabel, yearsLabel,
+} from '@/application/trainer/application-options'
 import { Card } from '@/components/ui/Surface'
 
 /** حقولٌ يُرسلها الخادم ولم تكن الشاشة تقرؤها */
@@ -52,6 +54,9 @@ export interface Dossier extends Record<string, unknown> {
   /** سجلّاتُ الاقتراحات (أ-٣) — تغيب في طلبٍ سبقها */
   teachableProposals?: unknown
   availability?: { days?: string[]; hoursPerWeek?: number; startFrom?: string; periods?: string[]; seasons?: string[] } | null
+  /** تسجيلاتُ دوراته — و`null` «لم يُسأل»، وهي حالُ كلّ طلبٍ سبق السؤال */
+  hasCourseRecordings?: boolean | null
+  wantsToRecordCourses?: boolean | null
   demoConsent?: boolean
   contactChannel?: string | null
   contactAltEmail?: string | null
@@ -255,6 +260,14 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
             )}
           </>
         )}
+        {/* ═══ والصمتُ يُقرأ صمتا ═══
+
+            `null` تعني «لم يُسأل» لا «قال لا»: السؤالُ أُضيف في ٢٠ سبتمبر
+            ٢٠٢٦، وما قبله من طلباتٍ لم يمرّ به. فلو قُرئ النفيُ من غياب
+            القيمة لَنُسب إلى مئةِ متقدّمٍ جوابٌ لم يقولوه. */}
+        <Row label="تسجيلاتٌ جاهزة لدوراته">
+          {recordingsSummaryAr(a.hasCourseRecordings, a.wantsToRecordCourses)}
+        </Row>
       </Block>
 
       <Block title="متى وكيف يُدرّب">

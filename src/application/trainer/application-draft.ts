@@ -33,6 +33,9 @@ export interface TrainerDraft {
   hoursPerWeek: string
   startFrom: string
   demoConsent: boolean
+  /** جوابا سؤال التسجيلات — يغيبان في مسودّةٍ كُتبت قبلهما، والفراغُ «لم يُجب» */
+  hasRecordings?: string
+  wantsRecording?: string
   /** وسيلةُ التواصل للاجتماع التعريفيّ — قد تغيب في مسودّةٍ قديمة */
   contactChannel?: string
   contactAltEmail?: string
