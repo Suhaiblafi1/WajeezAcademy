@@ -34,6 +34,12 @@ async function announceFounders(prisma: Awaited<ReturnType<typeof getPrisma>>): 
   try {
     const r = await ensureFoundersPromoted(prisma)
     for (const e of r.promoted) console.log(`⬆️  رُقّي إلى مدير النظام: ${e}`)
+    /* ورفعُ الإيقاف يُقال كالترقية: دخولٌ عاد بلا قرارِ إنسان، ومن يقرأ سجلَّ
+       الإقلاع يجب أن يرى ذلك فيه لا أن يكتشفه من الأثر بعد أسبوع. */
+    for (const e of r.reinstated) console.log(`🔓 رُفع الإيقافُ عن حسابِ مؤسِّس: ${e}`)
+    for (const e of r.archived) {
+      console.log(`⚠️  مؤسِّسٌ حسابُه مؤرشَف: ${e} — الأرشفةُ لا تُنقض في الإقلاع، تُفكّ من /admin/users`)
+    }
     for (const e of r.missing) {
       console.log(`ℹ️  مؤسِّسٌ بلا حساب: ${e} — يسجّل من /auth ثمّ يُرقّى في الإقلاع التالي`)
     }

@@ -43,7 +43,7 @@ const HIGH: readonly string[] = [
   'accounts.reset_purge', 'accounts.reset_archive',
   /* ما يملكه من صلاحيّة */
   'roles.set', 'admin.permission.grant', 'admin.permission.deny', 'admin.permission.clear',
-  'auth.founder.promoted',
+  'auth.founder.promoted', 'auth.founder.reinstated',
   /* مكانتُه مدرّبا */
   'trainer.suspend', 'trainer.reinstate', 'trainer.publish_approve',
   'trainer.qualify', 'trainer.qualify.reject',

@@ -9,6 +9,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
+import { holdsRoleBeyondTrainer } from '../auth/permissions'
 import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
@@ -668,7 +669,10 @@ export class TrainerReviewService {
 
     /* رفعُ الإيقاف يُعيد الملفَّ والحساب معا — وإلّا بقي «نشطا» وحسابُه موقوف */
     if (action === 'reinstate') {
-      const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId } })
+      const profile = await this.prisma.trainerProfile.findUnique({
+        where: { applicationId },
+        include: { user: { select: { roles: { select: { roleId: true } } } } },
+      })
       if (profile) {
         /* الإيقافُ يطفئ `publicVisibility` (suspendTrainer أدناه) ورفعُه لم يكن
            يعيدها — فيعود المدرّبُ «نشطا» ويبقى مخفيّا من الصفحة العامّة
@@ -678,7 +682,10 @@ export class TrainerReviewService {
           where: { id: profile.id },
           data: { suspendedAt: null, suspendedBy: null, publicVisibility: profile.publishApprovedAt !== null },
         })
-        if (profile.userId) {
+        /* ولا يُرفع عن الحساب إلّا ما أوقفه هذا المسارُ نفسُه: `suspendTrainer`
+           لا يوقف دخولَ من له موقعٌ فوقَ التدريب، فرفعُه هنا يُنشِّط حسابا
+           أوقفته شاشةُ المستخدمين لسببٍ آخرَ — رفعُ إيقافٍ بلا قرارٍ برفعه. */
+        if (profile.userId && !holdsRoleBeyondTrainer(profile.user?.roles.map((r) => r.roleId) ?? [])) {
           await this.prisma.user.update({ where: { id: profile.userId }, data: { status: 'active', suspendedAt: null } })
         }
         await recordAudit(this.prisma, {
@@ -2793,19 +2800,53 @@ export class TrainerReviewService {
     })
   }
 
+  /* ═══ إيقافُ التدريب لا يُسقط الحساب إلّا لمن لا موقعَ له سواه ═══
+
+     كان هذا المسارُ يوقف `User.status` ويُبطل الجلساتِ **لكلّ من رُبط بالملفّ**،
+     بلا نظرٍ إلى من يكون. ووقع ما يقع: صاحبُ المنصّة — وله ملفُّ مدرّبٍ كما
+     لغيره — رأى اسمَه في قائمة المدرّبين فأوقفه، فأُوقف **دخولُه هو**، وذهبت
+     معه لوحةُ الإدارة ورفعُ الإيقاف نفسُه. ولا سبيلَ إليه من المتصفّح، وهو لا
+     يملك خادما (`server/auth/founders.ts`).
+
+     وإيقافُ التدريب لا يحتاج ذلك أصلا: `suspendedAt` على الملفّ مفحوصةٌ في كلّ
+     مسارٍ يخصّ المدرّب — البوّابةُ والعروضُ والشعبُ والإحالةُ والحسابُ البنكيُّ
+     والظهورُ العامُّ والمستحقّات. فالإيقافُ تامٌّ بها وحدَها.
+
+     والقاعدة: يُوقَف الدخولُ لمن **قيامُه على المنصّة تدريبُه** — فبوّابتُه هي
+     دخولُه، وتركُه داخلا إلى لا شيءٍ عبث. ومن له موقعٌ فوقَ التدريب يبقى
+     دخولُه: أُوقف تدريبُه لا هو. */
   async suspendTrainer(profileId: string, actorId: string, note?: string) {
-    const profile = await this.prisma.trainerProfile.findUnique({ where: { id: profileId }, include: { application: true } })
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId },
+      include: { application: true, user: { select: { roles: { select: { roleId: true } } } } },
+    })
     if (!profile) throw new AuthError('not_found', 'ملف المدرب غير موجود', 404)
+
+    /* ولا يوقف نفسَه من هنا — كما لا يوقفها من شاشة المستخدمين.
+       والرفضُ يدلّ على البديل: قرارُه على نفسه يقع من ملفّه لا من قائمةٍ يراجعها. */
+    if (profile.userId && profile.userId === actorId) {
+      throw new AuthError(
+        'self_suspend',
+        'هذا ملفُّك أنت — لا توقف نفسَك من قائمة المدرّبين. وإن أردتَ إيقافَ حسابك فمن ملفّك الشخصيّ.',
+        409,
+      )
+    }
+
+    const locksAccount = profile.userId !== null
+      && !holdsRoleBeyondTrainer((profile.user?.roles ?? []).map((r) => r.roleId))
+
     await this.prisma.$transaction(async (tx) => {
       await tx.trainerProfile.update({
         where: { id: profileId }, data: { suspendedAt: new Date(), suspendedBy: actorId, publicVisibility: false },
       })
-      if (profile.userId) {
+      if (profile.userId && locksAccount) {
         await tx.user.update({ where: { id: profile.userId }, data: { status: 'suspended', suspendedAt: new Date() } })
         await tx.session.updateMany({ where: { userId: profile.userId, revokedAt: null }, data: { revokedAt: new Date() } })
       }
       await recordAudit(tx, {
-        actorId, action: 'trainer.suspend', entityType: 'trainer_profile', entityId: profileId, meta: { note },
+        actorId, action: 'trainer.suspend', entityType: 'trainer_profile', entityId: profileId,
+        /* ويُقرأ بعد شهرٍ أيُّ إيقافٍ وقع: أدخلَ البابَ أم وقف عند التدريب */
+        meta: { note, accountSuspended: locksAccount },
       })
     })
     /* ═══ ولا يُترك يكتشف الإيقافَ عند الباب (ي-٤) ═══
@@ -2816,16 +2857,23 @@ export class TrainerReviewService {
        الصمت لأنّه يُحسَب إخبارا وليس به.
 
        وبعد المعاملة لا داخلَها: بريدٌ يُخفق لا ينقض إيقافا وقع، والإيقافُ
-       حقيقةٌ في القاعدة قبله. */
+       حقيقةٌ في القاعدة قبله.
+
+       والعنوانُ يقول ما وقع بعينه: «أُوقف حسابُك» لمن أُوقف حسابُه، و«أُوقف
+       تدريبُك» لمن بقي دخولُه. فرسالةٌ تقول له إنّ حسابَه أُوقف وهو يدخل من
+       فوره أسوأُ من لا رسالة — تُكذّبها الشاشةُ أمامه. */
     const portalUrl = `${publicSiteUrl()}/trainer`
+    const heading = locksAccount ? 'أُوقف حسابُك في أكاديمية وجيز' : 'أُوقف تدريبُك في أكاديمية وجيز'
     await sendDirectEmail(this.prisma, {
       to: profile.application.email,
-      subject: 'أُوقف حسابُك في أكاديمية وجيز',
+      subject: heading,
       ...renderMail({
         greetingName: profile.application.fullName,
-        heading: 'أُوقف حسابُك في أكاديمية وجيز',
+        heading,
         blocks: [
-          { kind: 'p', text: 'لا تُفتح بوّابتُك ولا تُسنَد إليك شعبةٌ جديدة حتّى يُرفع الإيقاف، وشعبُك القائمةُ تبقى كما هي عند الأكاديمية.' },
+          { kind: 'p', text: locksAccount
+            ? 'لا تُفتح بوّابتُك ولا تُسنَد إليك شعبةٌ جديدة حتّى يُرفع الإيقاف، وشعبُك القائمةُ تبقى كما هي عند الأكاديمية.'
+            : 'لا تُفتح بوّابتُك التدريبيّةُ ولا تُسنَد إليك شعبةٌ جديدة حتّى يُرفع الإيقاف، وشعبُك القائمةُ تبقى كما هي عند الأكاديمية. ودخولُك إلى ما سوى التدريب باقٍ كما كان.' },
           ...(note ? [{ kind: 'p' as const, text: `والسببُ الذي كُتب: ${note}` }] : []),
           { kind: 'p', text: [
             'وإن كان في الأمر لبسٌ فردَّ على هذه الرسالة. و',

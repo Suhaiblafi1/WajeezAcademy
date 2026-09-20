@@ -102,3 +102,70 @@ describe('وما تفعله', () => {
     expect(rows, 'صفُّ دورٍ مكرَّر').toBe(1)
   })
 })
+
+/* ═══ ورفعُ الإيقاف — المخرجُ حين يُغلَق البابُ من الداخل ═══
+
+   رفعُ الإيقاف لا يقع إلّا من داخل لوحةٍ لا يفتحها موقوف. فمن أُوقف حسابُه
+   خرج، ولا يعيده إلّا مديرُ نظامٍ آخر أو من يملك SSH — وصاحبُ المنصّة قد لا
+   يملك أيّهما. وقد وقع ذلك فعلا: أوقف نفسَه من قائمة المدرّبين فذهبت لوحتُه
+   ورفعُ الإيقاف معها.
+
+   والحارسُ هنا على الترتيب قبل الأثر: الرفعُ يقع **قبل** فحصِ الدور وقبل
+   `continue` الذي يتخطّى المرقَّى من قبل. ولو وقع بعده لَما رُفع إيقافٌ عمّن
+   رتبتُه معه — وهي حالةُ صاحب المنصّة بعينها، لا حالةٌ نادرة. */
+describe('ورفعُ الإيقاف', () => {
+  const statusOf = async (email: string) =>
+    (await prisma.user.findUniqueOrThrow({ where: { email }, select: { status: true } })).status
+
+  it('حسابُ مؤسِّسٍ موقوفٌ يعود نشطا — ولو كانت رتبتُه معه من قبل', async () => {
+    expect(await rolesOf(FOUNDER), 'الشرطُ: مرقّى قبل الإيقاف').toContain('super_admin')
+    await auth.suspend((await prisma.user.findUniqueOrThrow({ where: { email: FOUNDER } })).id)
+    expect(await statusOf(FOUNDER)).toBe('suspended')
+
+    const r = await ensureFoundersPromoted(prisma)
+    /* الحالةُ في القاعدة أوّلا: هي المقصودةُ، وما يُرجعه التقريرُ خبرٌ عنها */
+    expect(await statusOf(FOUNDER), 'بقي موقوفا ولا بابَ يعود منه').toBe('active')
+    expect(await rolesOf(FOUNDER), 'نُزع دورٌ في أثناء الرفع').toEqual(['learner', 'super_admin'])
+    expect(r.reinstated, 'رُفع ولم يُقَل في تقرير الإقلاع').toContain(FOUNDER)
+  })
+
+  it('ويُسجَّل في الأثر بلا فاعل — لا رفعَ إيقافٍ صامتا', async () => {
+    const ev = await prisma.auditEvent.findFirst({
+      where: { action: 'auth.founder.reinstated' }, orderBy: { createdAt: 'desc' },
+    })
+    expect(ev, 'عاد دخولٌ سُلب ولا أثرَ له').not.toBeNull()
+    expect(ev!.actorId, 'الفاعلُ النظامُ لا إنسان').toBeNull()
+    expect(JSON.stringify(ev!.meta)).toContain(FOUNDER)
+  })
+
+  it('وآمنُ الإعادة — إقلاعٌ ثانٍ على حسابٍ نشطٍ لا يكتب شيئا', async () => {
+    const before = await prisma.auditEvent.count({ where: { action: 'auth.founder.reinstated' } })
+    const r = await ensureFoundersPromoted(prisma)
+    expect(
+      await prisma.auditEvent.count({ where: { action: 'auth.founder.reinstated' } }),
+      'رُفع إيقافُ حسابٍ نشطٍ أصلا — وكُتب في الأثر رفعٌ لم يقع',
+    ).toBe(before)
+    expect(r.reinstated).toEqual([])
+  })
+
+  it('ولا يُرفع إيقافُ من ليس في القائمة', async () => {
+    await auth.suspend((await prisma.user.findUniqueOrThrow({ where: { email: OUTSIDER } })).id)
+    const r = await ensureFoundersPromoted(prisma)
+    expect(await statusOf(OUTSIDER), 'رُفع إيقافُ من ليس مؤسِّسا').toBe('suspended')
+    expect(r.reinstated).not.toContain(OUTSIDER)
+  })
+
+  /* والأرشفةُ قرارٌ أثقل: تُخرج الحسابَ من الشاشات كلِّها، فلا تُنقض في
+     إقلاعِ خادم. تُقال في السجلّ ويُترك أمرُها لإنسان. ويقع هذا آخرَ الملفّ
+     لأنّه يترك الحسابَ مؤرشَفا. */
+  it('والمؤرشَفُ يُقال ولا يُفكّ', async () => {
+    const id = (await prisma.user.findUniqueOrThrow({ where: { email: FOUNDER } })).id
+    await auth.archive(id, id, 'فحصُ حدودِ ترقيةِ المؤسِّسين')
+    expect(await statusOf(FOUNDER)).toBe('archived')
+
+    const r = await ensureFoundersPromoted(prisma)
+    expect(await statusOf(FOUNDER), 'نُقضت أرشفةٌ في إقلاعِ خادم').toBe('archived')
+    expect(r.archived, 'أُرشف مؤسِّسٌ ولم يُقَل').toContain(FOUNDER)
+    expect(r.reinstated).not.toContain(FOUNDER)
+  })
+})
