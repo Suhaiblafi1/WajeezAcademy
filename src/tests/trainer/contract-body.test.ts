@@ -20,6 +20,10 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+  payoutTimingNoteAr,
+  PAYOUT_APPROVAL_DAYS, PAYOUT_OUTER_DAYS, PAYOUT_TRANSFER_DAYS,
+} from '@/application/trainer/notice-periods'
+import {
   CONTRACT_BODY_VERSION, renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
@@ -64,6 +68,15 @@ function clauseSection(body: string, n: number): string {
   return body.slice(at.index!, next ? next.index! : body.length)
 }
 
+/** أرقامُ الفقرات داخل بندٍ بعينه — `4-1` و`4-2` … بترتيب ورودها.
+
+    ولمَ لا يكفي ترقيمُ البنود وحدَه: الإحالاتُ في المتن تنزل إلى الفقرة
+    («وفق البند 4-5»، «استثناء من البندين 17-3 و17-4»). وإدخالُ فقرةٍ في وسط
+    بندٍ يزحزح ما بعدها، فتشير الإحالةُ إلى فقرةٍ أخرى **موجودةٍ** تقول غيرَ
+    ما قُصد — وذاك عطبٌ لا يُرى بالعين في وثيقةٍ من عشرين بندا. */
+const subItems = (body: string, n: number) =>
+  [...clauseSection(body, n).matchAll(new RegExp(`^${n}-(\\d+) `, 'gm'))].map((m) => Number(m[1]))
+
 describe('متنُ العقد — لا يخرج ناقصا ولا يحمل أثرَ قالب', () => {
   it('لا قالبَ بقي بلا تعويض، ولا قيمةَ برمجيّةٍ تسرّبت إلى وثيقة', () => {
     const body = renderContractBodyAr(base())
@@ -77,6 +90,32 @@ describe('متنُ العقد — لا يخرج ناقصا ولا يحمل أث�
     expect(nums.length, 'لم يُقرأ بندٌ واحد — أتغيّرت صيغةُ العناوين؟').toBeGreaterThan(10)
     expect(nums, 'الترقيمُ غيرُ متّصل').toEqual(nums.map((_, i) => i + 1))
     expect(new Set(nums).size, 'بندٌ مكرَّر').toBe(nums.length)
+  })
+
+  it('وترقيمُ الفقرات داخل كلّ بندٍ متّصلٌ كذلك — وإلّا أشارت إحالةٌ إلى غيرِ ما تقصد', () => {
+    const body = renderContractBodyAr(base())
+    for (const n of clauseNumbers(body)) {
+      const subs = subItems(body, n)
+      expect(subs.length, `البندُ ${n} خرج بلا فقرةٍ واحدة`).toBeGreaterThan(0)
+      expect(subs, `ترقيمُ فقرات البند ${n} غيرُ متّصل`).toEqual(subs.map((_, i) => i + 1))
+    }
+  })
+
+  it('وكلُّ إحالةٍ داخليّةٍ تقع على بندٍ وفقرةٍ موجودَين', () => {
+    const body = renderContractBodyAr(base())
+    const clauses = new Map(clauseNumbers(body).map((n) => [n, subItems(body, n)]))
+    const refs = [...body.matchAll(/البند(?:ين)? (\d+)(?:-(\d+))?/g)]
+    expect(refs.length, 'لم تُقرأ إحالةٌ واحدة — أتغيّرت صيغةُ الإحالات؟').toBeGreaterThan(10)
+    for (const r of refs) {
+      const clause = Number(r[1])
+      expect(clauses.has(clause), `إحالةٌ إلى «البند ${clause}» ولا وجودَ له`).toBe(true)
+      if (r[2]) {
+        expect(
+          clauses.get(clause)!.includes(Number(r[2])),
+          `إحالةٌ إلى «البند ${clause}-${r[2]}» ولا وجودَ لهذه الفقرة`,
+        ).toBe(true)
+      }
+    }
   })
 
   it('والملاحقُ الأربعةُ كلُّها موجودة — ولا عقدَ بلا دوراتِه وأتعابِه', () => {
@@ -175,6 +214,185 @@ describe('وما يميّز هذا العقدَ عن غيره مكتوبٌ في�
 
   it('وحمايةُ بلد الإقامة الآمرةُ محفوظةٌ — فاختيارُ القانون لا يُلغيها', () => {
     const body = renderContractBodyAr(base())
-    expect(clauseSection(body, 19)).toMatch(/حماية آمرة/)
+    expect(clauseSection(body, 20)).toMatch(/حماية آمرة/)
+  })
+})
+
+
+/* ═══ وسبعةٌ أُخذت من مسوّدتين سابقتين — ٢٠ سبتمبر ٢٠٢٦ ═══
+
+   والمقيسُ في كلٍّ منها **البنيةُ التي تجعل البندَ يعمل**، لا ورودُ جملةٍ
+   فيه: أنّ المنعَ له استثناءٌ يقابله، وأنّ التعويضَ يجري في الاتّجاهين،
+   وأنّ الإقرارَ موصولٌ بجزائه. فبندٌ يُمنَع فيه شيءٌ بلا استثناءٍ يناقض ما
+   نصرفه فعلا، وتعويضٌ في اتّجاهٍ واحدٍ يُخفَّض عند النزاع — وكلاهما يمرّ
+   على حارسٍ يبحث عن عبارة. */
+describe('التحصيلُ المباشرُ ممنوع — والاستثناءُ معه، وإلّا ناقض النصُّ ما نصرفه', () => {
+  it('البندُ 13 يمنع أخذَ المال من المتعلّم، ويستثني ما تدفعه الأكاديميّةُ هي', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 13)
+    expect(section, 'لم يُقرأ البندُ 13 أصلا').not.toBe('')
+    expect(section, 'لا منعَ للتحصيل من المتعلّم').toMatch(/لا يحصل المدرب من متعلم/)
+    expect(section, 'المنعُ بلا استثناءٍ لما تدفعه الأكاديميّةُ هي').toMatch(/ويستثنى/)
+  })
+
+  it('ورابطُ الإحالة مستثنى بالاسم — فالمنصّةُ تدفع عليه فعلا', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 13)
+    expect(section, 'رابطُ الإحالة غيرُ مستثنى، والمنصّةُ تدفع عليه').toMatch(/رابط إحالته/)
+  })
+
+  it('وما حُصّل خلافا لذلك يُردّ ولا يُعدّ حسما — فلا يُنقَض منعُ الحسم', () => {
+    const body = renderContractBodyAr(base())
+    const section = clauseSection(body, 13)
+    const noDeduction = [...clauseSection(body, 4).matchAll(/^4-(\d+) ولا تجري الأكاديمية أي حسم/gm)]
+    expect(noDeduction.length, 'لم تُقرأ فقرةُ منعِ الحسم في البند 4').toBe(1)
+    expect(section, 'الردُّ لم يُوصَل بفقرة منع الحسم فيقرأ نقضا لها')
+      .toContain(`في تطبيق البند 4-${noDeduction[0][1]}`)
+  })
+})
+
+describe('المسؤوليّةُ والتعويض — بندٌ قائمٌ بنفسه، متبادلٌ ومسقوف', () => {
+  it('البندُ 19 تعويضٌ، والقانونُ الحاكمُ آخرُ البنود', () => {
+    const body = renderContractBodyAr(base())
+    const nums = clauseNumbers(body)
+    expect(clauseSection(body, 19), 'البندُ 19 ليس بندَ المسؤوليّة').toMatch(/المسؤولية والتعويض/)
+    expect(clauseSection(body, nums[nums.length - 1])).toMatch(/القانون الحاكم/)
+  })
+
+  it('ويجري في الاتّجاهين — فتعويضٌ في اتّجاهٍ واحدٍ يُخفَّض عند النزاع', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 19)
+    expect(section, 'لا تعويضَ من المدرّب').toMatch(/يعوض المدرب الأكاديمية/)
+    expect(section, 'لا تعويضَ من الأكاديميّة — فالبندُ أحاديّ').toMatch(/تعوض الأكاديمية المدرب/)
+  })
+
+  it('وسقفُه متبادلٌ وله استثناءاتُه — وإلّا حمى المخالفَ عمدا', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 19)
+    expect(section, 'لا سقفَ للمسؤوليّة').toMatch(/لا يتجاوز مجموع ما يلتزم به أي من الطرفين/)
+    for (const out of ['الغش', 'العمد', 'الضرر الجسدي']) {
+      expect(section, `السقفُ يشمل «${out}» — وهو ما لا يُسقَّف`).toContain(out)
+    }
+  })
+
+  it('والبندُ يبقى بعد الإنهاء — وإلّا انتهى بانتهاء العقد وهو أحوجُ ما يكون', () => {
+    const body = renderContractBodyAr(base())
+    const survive = clauseSection(body, 17).match(/^17-\d+ ويبقى نافذا بعد الإنهاء: ([^\n]+)/m)
+    expect(survive, 'لم تُقرأ فقرةُ ما يبقى بعد الإنهاء').not.toBeNull()
+    expect(survive![1], 'بندُ المسؤوليّة لا يبقى بعد الإنهاء').toMatch(/(^|\s)و?19(\s|،)/)
+  })
+})
+
+describe('إحالةُ الاتفاقية — القيدُ كان علينا وحدَنا', () => {
+  it('للأكاديميّة أن تحيل، ومعها ترخيصُ البند 10-3', () => {
+    const body = renderContractBodyAr(base())
+    const section = clauseSection(body, 18)
+    expect(section, 'لا حقَّ للأكاديميّة في الإحالة').toMatch(/وللأكاديمية أن تحيل/)
+    expect(section, 'الترخيصُ لا ينتقل مع الإحالة فيبقى مع كيانٍ لم يعد يشغّل المنصّة')
+      .toMatch(/الترخيص المقرر في البند 10-3/)
+  })
+
+  it('ويبقى للمدرّب أساسُ أتعابه وحقُّه في الإنهاء — وإلّا صارت الإحالةُ تغييرا للعقد', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 18)
+    expect(section).toMatch(/أساس أتعابه كما هي/)
+    expect(section, 'الإحالةُ بلا مخرجٍ للمدرّب').toMatch(/وحقه في الإنهاء/)
+  })
+})
+
+describe('إقرارُ الأهليّة — موصولٌ بجزائه لا معلَّقٌ وحدَه', () => {
+  it('البندُ 15 يحمل إقرارَ الأهليّة وخلوِّ الذمّة من التزامٍ سابق', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 15)
+    expect(section, 'لا إقرارَ أهليّة').toMatch(/كامل الأهلية/)
+    expect(section, 'لا إقرارَ بخلوّ الذمّة من التزامٍ سابقٍ يمنعه').toMatch(/غير مرتبط بالتزام سابق/)
+  })
+
+  it('وهو من البيانات الجوهريّة — فيرث جزاءَ الفقرة التي تعاقب الكذبَ الجوهريّ', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 15)
+    const penalty = [...section.matchAll(/^15-(\d+) وإذا ثبت أن بيانا جوهريا/gm)]
+    expect(penalty.length, 'لم تُقرأ فقرةُ جزاء البيان الجوهريّ').toBe(1)
+    expect(section, 'الإقرارُ بلا جزاء — فهو جملةٌ لا بند')
+      .toContain(`من البيانات الجوهرية في تطبيق البند 15-${penalty[0][1]}`)
+  })
+})
+
+describe('أجلُ الصرف — رقمٌ في المتن لا إحالةٌ إلى وثيقةٍ لا وجودَ لها', () => {
+  it('لا إحالةَ إلى «دورة الصرف» — فالبحثُ عنها في المستودَع يردّ العقدَ وحدَه', () => {
+    expect(renderContractBodyAr(base()), 'العقدُ يحيل إلى وثيقةٍ غيرِ منشورة')
+      .not.toContain('دورة الصرف')
+  })
+
+  it('والمُهَلُ الثلاثُ مطبوعةٌ من ثوابتها — فلا يفترق المتنُ عن الشاشة', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 4)
+    for (const d of [PAYOUT_APPROVAL_DAYS, PAYOUT_TRANSFER_DAYS, PAYOUT_OUTER_DAYS]) {
+      expect(section, `المهلةُ ${d} غيرُ مطبوعةٍ في البند 4`).toContain(String(d))
+    }
+  })
+
+  it('والسقفُ لا يقلّ عن مجموع ما قبله — وإلّا وُعد بما لا يُوفى', () => {
+    expect(PAYOUT_OUTER_DAYS).toBeGreaterThanOrEqual(PAYOUT_APPROVAL_DAYS + PAYOUT_TRANSFER_DAYS)
+  })
+
+  it('ولا تسري المُهَلُ قبل أن يعطينا حسابَه — وإلّا وعدنا بصرفٍ لا سبيلَ إليه', () => {
+    const body = renderContractBodyAr(base())
+    const bank = [...clauseSection(body, 4).matchAll(/^4-(\d+) ويقدم المدرب بيانات حسابه البنكي/gm)]
+    expect(bank.length, 'لم تُقرأ فقرةُ الحساب البنكيّ').toBe(1)
+    expect(clauseSection(body, 4)).toContain(`بيانات حسابه البنكي وفق البند 4-${bank[0][1]}`)
+  })
+})
+
+describe('الإنهاءُ الفوريُّ لما لا تُصلحه مهلة', () => {
+  it('استثناءٌ صريحٌ من فقرتي المهلة والشعبة الجارية — لا فقرةٌ تُقرأ معهما فتتعارض', () => {
+    const body = renderContractBodyAr(base())
+    const section = clauseSection(body, 17)
+    const cure = [...section.matchAll(/^17-(\d+) ولأي منهما إنهاؤها فورا عند إخلال جسيم/gm)]
+    const ongoing = [...section.matchAll(/^17-(\d+) ولا يمس الإنهاء شعبة قبلها المدرب وبدأت/gm)]
+    expect(cure.length, 'لم تُقرأ فقرةُ مهلة التصحيح').toBe(1)
+    expect(ongoing.length, 'لم تُقرأ فقرةُ الشعبة الجارية').toBe(1)
+    expect(section, 'الاستثناءُ لا يذكر الفقرتَين اللتين يستثني منهما')
+      .toContain(`استثناء من البندين 17-${cure[0][1]} و17-${ongoing[0][1]}`)
+  })
+
+  it('ويغطّي ما يمسّ المتعلّمَ نفسَه — وهو سببُ وجوده', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 17)
+    for (const kind of ['إيذاء لمتعلم', 'تحرش', 'إفشاء متعمد لبيانات المتعلمين']) {
+      expect(section, `الإنهاءُ الفوريُّ لا يشمل «${kind}»`).toContain(kind)
+    }
+    expect(section, 'الشعبةُ الجاريةُ لا يُحَلّ فيها بديل').toMatch(/إحلال مدرب بديل في شعبة جارية/)
+  })
+
+  it('وتنتهي بالوفاة أو العجز — فلا يبقى عقدٌ ساريا بلا طرف', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 17)
+    expect(section).toMatch(/بوفاة المدرب أو بعجزه الدائم/)
+    expect(section, 'ما استحقّ عن عملٍ أُدّي ضاع بالوفاة').toMatch(/لمن يثبت حقه فيه/)
+  })
+})
+
+describe('الإفصاحُ عن العائق — إخطارٌ لا إذنٌ يُطلَب', () => {
+  it('البندُ 9 يوجب الإخطارَ فور العلم بما يحول دون التقديم', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 9)
+    expect(section, 'لا واجبَ إفصاح').toMatch(/ويخطر المدرب الأكاديمية كتابة فور علمه/)
+    expect(section).toMatch(/تعارض مصالح/)
+  })
+
+  it('ولا يمسّ حرّيّتَه في العمل لدى غيرها — وإلّا انقلب الإفصاحُ حصريّةً', () => {
+    const section = clauseSection(renderContractBodyAr(base()), 9)
+    expect(section, 'الإفصاحُ بلا تحفّظٍ يُقرأ قيدا على عمله الحرّ')
+      .toMatch(/ولا يقيد هذا البند حريته في العمل لدى غير الأكاديمية/)
+  })
+})
+
+describe('وما يُقرأ في «مستحقّاتي» من الأرقام نفسِها — فلا يُقال رقمٌ ويُحاسَب بغيره', () => {
+  it('جملةُ الشاشة مبنيّةٌ من الثوابت الثلاثة لا مكتوبةٌ حرفا', () => {
+    const note = payoutTimingNoteAr()
+    for (const d of [PAYOUT_APPROVAL_DAYS, PAYOUT_TRANSFER_DAYS, PAYOUT_OUTER_DAYS]) {
+      expect(note, `المهلةُ ${d} غائبةٌ عن جملة الشاشة`).toContain(String(d))
+    }
+  })
+
+  it('وتحيل إلى الفقرة التي تحملها في العقد — وهي موجودةٌ فيه فعلا', () => {
+    const body = renderContractBodyAr(base())
+    const ref = payoutTimingNoteAr().match(/البند (\d+)-(\d+)/)
+    expect(ref, 'جملةُ الشاشة لا تحيل إلى فقرةٍ في العقد').not.toBeNull()
+    const section = clauseSection(body, Number(ref![1]))
+    expect(section, `الفقرةُ ${ref![1]}-${ref![2]} لا وجودَ لها في العقد`)
+      .toMatch(new RegExp(`^${ref![1]}-${ref![2]} `, 'm'))
+    expect(section.match(new RegExp(`^${ref![1]}-${ref![2]} [^\n]+`, 'm'))![0],
+      'الفقرةُ المُحال إليها لا تحمل مُهَلَ الصرف').toContain(String(PAYOUT_OUTER_DAYS))
   })
 })
