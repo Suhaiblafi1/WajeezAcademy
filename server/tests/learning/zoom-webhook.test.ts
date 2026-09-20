@@ -21,6 +21,7 @@ import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { createHmac } from 'node:crypto'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { untilWritten } from '../helpers/until-written'
 import { buildApp } from '../../http/app'
 
 const SECRET = 'zoom-hook-secret-for-tests'
@@ -135,8 +136,11 @@ describe('والحدثُ الموقَّعُ يُكتب في موضعه', () => {
       payload: { object: { id: MEETING_ID, start_time: '2026-12-01T09:04:00Z' } },
     })
     expect(res.statusCode).toBe(200)
-    await new Promise((r) => setTimeout(r, 120))
-    const zoom = await prisma.zoomMeeting.findUnique({ where: { sessionId } })
+    /* يُنتظَر الأثرُ لا الساعة — الردُّ يسبق العملَ في هذه النقطة بقصد */
+    const zoom = await untilWritten(
+      () => prisma.zoomMeeting.findUnique({ where: { sessionId } }),
+      (z) => z?.actualStartAt != null,
+    )
     expect(zoom?.actualStartAt?.toISOString()).toBe('2026-12-01T09:04:00.000Z')
     const session = await prisma.cohortSession.findUnique({ where: { id: sessionId } })
     expect(
@@ -151,8 +155,10 @@ describe('والحدثُ الموقَّعُ يُكتب في موضعه', () => {
       payload: { object: { id: MEETING_ID, end_time: '2026-12-01T10:30:00Z', duration: 86 } },
     })
     expect(res.statusCode).toBe(200)
-    await new Promise((r) => setTimeout(r, 120))
-    const zoom = await prisma.zoomMeeting.findUnique({ where: { sessionId } })
+    const zoom = await untilWritten(
+      () => prisma.zoomMeeting.findUnique({ where: { sessionId } }),
+      (z) => z?.actualEndAt != null,
+    )
     expect(zoom?.actualEndAt?.toISOString()).toBe('2026-12-01T10:30:00.000Z')
     expect(zoom?.durationMin).toBe(86)
   })
