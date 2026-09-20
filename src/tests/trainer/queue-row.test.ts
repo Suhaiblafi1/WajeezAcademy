@@ -99,7 +99,7 @@ describe('② نتيجةُ اللقاء من معجمها', () => {
     }
     /* والعنوانُ يُقرأ من المعجم فعلا — لا حرفا لاتينيّا */
     expect(outcomeLabelAr('passed')).toBe('ناجح')
-    expect(outcomeLabelAr('failed')).toBe('راسب')
+    expect(outcomeLabelAr('failed')).toBe('غير مناسب')
   })
 })
 
