@@ -29,6 +29,10 @@ import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/d
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
+import type { Readiness } from "@/application/trainer/readiness";
+import PreparationSteps, {
+  type PrepContract, type PrepProposal, type PrepQualification, type PrepRule,
+} from "./PreparationSteps";
 import { PURGEABLE_STATUSES } from "@/application/trainer/purgeable";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -49,7 +53,9 @@ const STATUS_LABELS: Record<string, string> = {
   submitted: "مُقدَّم", under_review: "قيد المراجعة",
   information_requested: "بانتظار معلومات المرشح", shortlisted: "مختار أولي",
   interview_scheduled: "مقابلة مجدولة", demo_requested: "بانتظار الديمو",
-  academic_review: "مراجعة أكاديمية", conditionally_approved: "قبول مشروط",
+  /* «قبولٌ داخليّ» لا «قبولٌ مشروط»: المشروطُ يُقرأ قبولا عُلّق على شرط،
+     وهذا قرارُ فريقٍ لم يُبلَّغ به صاحبُه بعد — وبينهما فرقٌ في العمل كلِّه. */
+  academic_review: "مراجعة أكاديمية", conditionally_approved: "قبولٌ داخليّ — قيد التجهيز",
   contract_pending: "عقد قيد التوقيع", onboarding: "تهيئة", active: "نشط",
   waitlisted: "انتظار", rejected: "مرفوض", withdrawn: "مسحوب", suspended: "موقوف",
 };
@@ -84,7 +90,10 @@ const BULK_ACTIONS = ["move_to_review", "waitlist", "reject"];
 /* و«تراجَعْ عن الرفض» ثالثُهما — لا لأنّه يتكرّر، بل لأنّه **الفعلُ الوحيدُ
    الممكن** في الطلب المردود. ولو كان في المطويّة لَقالت شاشةُ المردود «لا
    إجراءات متاحة» في شريطها، وهو خبرٌ كاذبٌ منذ أن صار للردّ بابُ رجوع. */
-const PRIMARY_ACTIONS = ["approve", "reject", "undo_reject"];
+/* و«اقبَلْه داخليّا» رابعُها منذ ٢٠ سبتمبر ٢٠٢٦: صار المسارَ المقصودَ لا
+   فرعا فيه — يُقبل داخليّا فيُجهَّز، ثمّ يُعتمَد. ولو بقي خلف المطويّة
+   لَظهر الاعتمادُ الكاملُ وحدَه في الشريط، وهو آخرُ الطريق لا أوّلُه. */
+const PRIMARY_ACTIONS = ["conditionally_approve", "approve", "reject", "undo_reject"];
 
 const DECISIONS: { action: string; label: string; from: string[]; tone: "main" | "warn" | "danger" }[] = [
   { action: "approve", label: "اعتمِدْه مدرّبا — بنقرة", from: [...ONE_CLICK_APPROVABLE_STATUSES], tone: "main" },
@@ -93,7 +102,22 @@ const DECISIONS: { action: string; label: string; from: string[]; tone: "main" |
   { action: "shortlist", label: "اختصار أولي", from: ["under_review"], tone: "main" },
   { action: "request_demo", label: "اطلب درسا تجريبيا", from: ["shortlisted", "interview_scheduled"], tone: "warn" },
   { action: "academic_review", label: "مراجعة أكاديمية", from: ["demo_requested"], tone: "main" },
-  { action: "conditionally_approve", label: "قبول مشروط", from: ["academic_review"], tone: "main" },
+  /* ─────────── بابُ التجهيز (٢٠ سبتمبر ٢٠٢٦) ───────────
+
+     كان من `academic_review` وحدَها، وهي حالةٌ لا تقع إلّا بعد درسٍ تجريبيٍّ
+     ومراجعةٍ يوثّقهما أحدٌ في الشاشة — وأكثرُ ذلك يجري خارج المنصّة. فكان
+     البابُ الوحيدُ إلى تجهيز المدرّب مقفلا خلف توثيقٍ اختياريّ.
+
+     و`from` هنا هي `ONE_CLICK_APPROVABLE_STATUSES` مطروحا منها ما بعد
+     التجهيز: من صار `conditionally_approved` فهو فيه، و`contract_pending`
+     و`onboarding` عبرَاه. والمصدرُ واحدٌ كي لا تفترق قائمتان. */
+  {
+    action: "conditionally_approve", label: "اقبَلْه داخليّا — وابدأ تجهيزه",
+    from: [...ONE_CLICK_APPROVABLE_STATUSES].filter(
+      (st) => !["conditionally_approved", "contract_pending", "onboarding"].includes(st),
+    ),
+    tone: "main",
+  },
   { action: "waitlist", label: "قائمة الانتظار", from: ["submitted", "under_review", "shortlisted", "interview_scheduled", "academic_review"], tone: "warn" },
   { action: "reject", label: "رفض بلطف", from: ["submitted", "under_review", "information_requested", "shortlisted", "interview_scheduled", "demo_requested", "academic_review", "conditionally_approved", "contract_pending", "waitlisted"], tone: "danger" },
   /* ─────────── والردُّ يُتراجَع عنه (١٩ سبتمبر ٢٠٢٦) ───────────
@@ -122,7 +146,9 @@ const DECISIONS: { action: string; label: string; from: string[]; tone: "main" |
 ];
 
 /** تبويبا الملفّ: من هو، وماذا يُدرّس — لا شاشةٌ واحدة تُقرأ عمودا طويلا */
-type DetailTab = "dossier" | "courses";
+/* و«التجهيز» ثالثُها منذ ٢٠ سبتمبر ٢٠٢٦: الأتعابُ والدوراتُ والعقدُ في
+   موضعٍ واحدٍ داخل ملفّ صاحبها — لا في ثلاث شاشاتٍ يُجمَع منها. */
+type DetailTab = "dossier" | "courses" | "prep";
 
 interface AppRow {
   id: string; reference: string; status: string; fullName: string; email: string;
@@ -161,7 +187,17 @@ interface AppDetail extends Record<string, unknown> {
   }[];
   interviews: { id: string; scheduledAt: string; outcome: string | null; canceledAt: string | null }[];
   statusHistory: { fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }[];
-  profile: { id: string; userId: string | null } | null;
+  profile: {
+    id: string; userId: string | null;
+    /* ما تقرؤه شاشةُ التجهيز — يصحب الملفَّ فلا تُطلب ثلاثةُ نداءاتٍ أخرى */
+    courseProposals?: PrepProposal[];
+    contracts?: PrepContract[];
+    qualifications?: PrepQualification[];
+  } | null;
+  /** جاهزيّتُه للقبول الكامل — تُحسب في الخادم وتُقرأ هنا، فلا يَعِد زرٌّ بما يُردّ */
+  readiness?: Readiness;
+  /** القاعدةُ السارية كما حسبها `activeRule` — ولا تُستنتَج في المتصفّح */
+  activeCompensationRule?: PrepRule | null;
   /** حسابُ المتقدّم — يُنشأ مع القسم الأوّل */
   userId: string | null;
   /** وقتُ التقديم — يُرسله الخادمُ دائما، ويُقرأ في ترويسة المطبوع */
@@ -302,6 +338,12 @@ export default function TrainerApplications() {
   /* نافذةُ التراجع عن الرفض — مفتوحةٌ أو لا. والسببُ يُكتب فيها لا في خانة
      الملاحظة: يسافر إلى المتقدّم بنصّه، والخادمُ يشترطه (٤٢٢ دونه). */
   const [undoOpen, setUndoOpen] = useState(false);
+  /* ═══ حوارُ تجاوز بوّابة التجهيز — للمدير الأعلى وحدَه ═══
+
+     ولا يُخفى الزرُّ عمّن لا يملك التجاوز: إخفاؤه يترك من ضغط لا يعرف لمَ
+     اختفى. فهو ظاهرٌ معطَّلٌ، وتحته سطرٌ يقول ما ينقص — ومن ملك التجاوزَ
+     فُتح له هذا الحوارُ بسببٍ يُكتب. */
+  const [overrideOpen, setOverrideOpen] = useState(false);
   /* الوثيقةُ المفتوحةُ داخل الشاشة — لا لسانٌ ثانٍ يُفقِد المراجعُ موضعَه */
   const [openDoc, setOpenDoc] = useState<string | null>(null);
   /* الاقتراحُ الذي يُربط الآن — معرّفُ طلبه وترتيبُه ونصُّه، لا كائنُ الطلب */
@@ -499,16 +541,28 @@ export default function TrainerApplications() {
        متاح، وما لا يُتراجَع عنه أحمر. */
     /* والتراجعُ لا يُنفَّذ من الزرّ رأسا: سببُه يسافر إلى المتقدّم، فيُكتب في
        نافذةٍ تقول ذلك ويُقرأ قبل أن يُرسَل — لا في خانةِ ملاحظةٍ تُكتب لنا. */
+    /* ─────────── بوّابةُ التجهيز في الشاشة ───────────
+
+       الخادمُ يمنع، وهذه تقول قبل الضغط. والمصدرُ واحدٌ — `readiness` المحسوبةُ
+       في الخادم — فلا يَعِد زرٌّ أخضرُ بما يردّه ٤٠٩. */
+    const ready = a.readiness?.ready ?? true;
+    const missingAr = a.readiness?.blockersAr ?? [];
+    const canOverride = user?.roles?.includes("super_admin") ?? false;
+    const gatedByPrep = (action: string) => (action === "approve" || action === "activate") && !ready;
+
     const decisionClick = (d: (typeof DECISIONS)[number], decisionNote?: string) =>
       d.action === "undo_reject"
         ? setUndoOpen(true)
-        : void act(
-          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: decisionNote || undefined }),
-          "نُفذ القرار وسُجل في الأثر",
-        );
+        : gatedByPrep(d.action)
+          ? setOverrideOpen(true)
+          : void act(
+            () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: decisionNote || undefined }),
+            "نُفذ القرار وسُجل في الأثر",
+          );
     const decisionButton = (d: (typeof DECISIONS)[number]) => (
       <Button
-        key={d.action} disabled={busy}
+        key={d.action} disabled={busy || (gatedByPrep(d.action) && !canOverride)}
+        title={gatedByPrep(d.action) ? `لا يُعتمَد قبل التجهيز — ${missingAr.join(" · ")}` : undefined}
         tone={d.tone === "main" ? "primary" : d.tone === "warn" ? "secondary" : "danger"}
         icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
         onClick={() => decisionClick(d, note)}
@@ -520,7 +574,8 @@ export default function TrainerApplications() {
     /* زرُّ القرار في الشريط اللاصق: أضيقُ وبلا عرضٍ كامل، فالشريطُ صفٌّ لا عمود */
     const barButton = (d: (typeof DECISIONS)[number]) => (
       <Button
-        key={`bar-${d.action}`} disabled={busy}
+        key={`bar-${d.action}`} disabled={busy || (gatedByPrep(d.action) && !canOverride)}
+        title={gatedByPrep(d.action) ? `لا يُعتمَد قبل التجهيز — ${missingAr.join(" · ")}` : undefined}
         tone={d.tone === "main" ? "primary" : d.tone === "warn" ? "secondary" : "danger"}
         icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
         onClick={() => decisionClick(d, askNote || note)}
@@ -562,6 +617,27 @@ export default function TrainerApplications() {
               )}
             </div>
           </div>
+
+          {/* ═══ ولا يُعطَّل زرٌّ في صمت ═══
+
+              الزرُّ المعطَّلُ بلا سببٍ يجعل من ضغطه يظنّ الشاشةَ معطوبة. فسطرٌ
+              تحته يقول ما ينقص بنصّه، وبابُه إلى «التجهيز» حيث يُعمل — لا إلى
+              شاشةٍ أخرى يُبحث فيها عن اسمه. */}
+          {!ready && available.some((d) => d.action === "approve" || d.action === "activate") && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+              <span className="text-read leading-6 text-amber-200/90">
+                لا يُعتمَد اعتمادا كاملا قبل أن يتمّ تجهيزُه — <b>{missingAr.join(" · ")}</b>
+              </span>
+              <Button tone="secondary" size="sm" onClick={() => setTab("prep")}>
+                افتحْ «التجهيز»
+              </Button>
+              {canOverride && (
+                <span className="text-fine leading-5 text-muted-foreground">
+                  ولك — وحدَك — أن تتجاوزها بسببٍ يبقى مكتوبا.
+                </span>
+              )}
+            </div>
+          )}
 
           {askOpen && (
             <div className="mt-3 border-t border-white/10 pt-3">
@@ -628,6 +704,7 @@ export default function TrainerApplications() {
               onChange={setTab}
               items={[
                 { id: "dossier", label: "الملفّ والمعلومات" },
+                { id: "prep", label: "التجهيز" },
                 { id: "courses", label: "الدورات والشعب" },
               ]}
             />
@@ -661,7 +738,19 @@ export default function TrainerApplications() {
               </nav>
             )}
 
-            {tab === "courses" ? (
+            {tab === "prep" ? (
+              <PreparationSteps
+                applicationId={a.id}
+                profileId={a.profile?.id ?? null}
+                readiness={a.readiness}
+                activeRule={a.activeCompensationRule ?? null}
+                proposals={a.profile?.courseProposals ?? []}
+                contracts={a.profile?.contracts ?? []}
+                qualifications={a.profile?.qualifications ?? []}
+                permissions={user?.permissions ?? []}
+                onChanged={() => openDetail(a.id)}
+              />
+            ) : tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} />
             ) : (
             <>
@@ -1049,6 +1138,47 @@ export default function TrainerApplications() {
             المراجعُ — فلو كُتب في خانة الملاحظة العامّة لَخُلط بما يُكتب
             لعينِ مراجعٍ آخر. والحدُّ عشرةُ أحرفٍ كحدِّ الخادم، فلا يُردّ
             الزرُّ بـ٤٢٢ بعد أن قُبل في الشاشة. */}
+        {/* ═══ تجاوزُ بوّابة التجهيز — بابٌ ضيّقٌ بسببٍ يبقى ═══
+
+            قرارُ ٦ سبتمبر جعل الاعتمادَ نقرةً واحدة، وقرارُ ٢٠ سبتمبر يفحص
+            الثلاثَ قبلها. ويجتمعان في هذا الباب: يمرّ منه المديرُ الأعلى
+            وحدَه، بسببٍ يُكتب في سجلّ الأثر وفي سجلّ حالة الطلب معا — فمن
+            سأل بعد شهرٍ «لمَ صار هذا نشطا بلا عقد؟» وجد الجوابَ في الموضعَين
+            اللذَين يُنظَر فيهما. */}
+        {overrideOpen && (
+          <ConfirmAction
+            titleAr={`اعتمادُ «${a.fullName}» قبل أن يتمّ تجهيزُه`}
+            confirmLabelAr="تجاوزْ واعتمِدْه"
+            tone="danger"
+            busy={busy}
+            reason={{ labelAr: "لمَ يُعتمَد ناقصَ التجهيز؟ — يبقى في الأثر وفي سجلّ حالته", minLength: 20 }}
+            onCancel={() => setOverrideOpen(false)}
+            onConfirm={(reason) => {
+              if (!reason) return;
+              setOverrideOpen(false);
+              void act(
+                () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, {
+                  action: "approve", note: note || undefined, overrideReasonAr: reason,
+                }),
+                "اعتُمد — وسُجّل التجاوزُ بسببه",
+              );
+            }}
+          >
+            <p className="text-read leading-6">
+              لم تتمّ بعدُ: <b>{missingAr.join(" · ")}</b>
+            </p>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              وأثرُ التجاوز ليس شكليّا: بلا اتّفاقٍ ماليٍّ ساريا لا يُولَّد كشفُ مستحقّاتٍ
+              أصلا، فتبقى «مستحقّاتي» عنده صفرا. وبلا دورةٍ مؤهَّلٍ لها يفتح بوّابتَه على
+              فراغ. وبلا عقدٍ موقَّعٍ لا وثيقةَ تحكم ما بيننا.
+            </p>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              وله أن يُعتمَد الآن ويُستكمَل تجهيزُه بعدها — لكنّ أحدا لن يتذكّر أنّه ناقص
+              ما لم يُكتب هنا.
+            </p>
+          </ConfirmAction>
+        )}
+
         {undoOpen && (
           <ConfirmAction
             titleAr={`التراجعُ عن رفض «${a.fullName}»`}

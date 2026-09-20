@@ -17,6 +17,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
@@ -78,6 +79,9 @@ async function mkContracted(opts: { qualify?: boolean } = {}) {
     },
   })
   await review.countersignContract(contract.id, adminId, {})
+  /* ولا يُفعَّل بختم العقد منذ ٢٠ سبتمبر ٢٠٢٦ — فيُتمّ الطريقُ صراحةً */
+  await makeReadyForApproval(prisma, app.id, adminId)
+  await review.decide(app.id, adminId, 'approve')
   if (opts.qualify !== false) {
     await prisma.trainerCourseQualification.upsert({
       where: { profileId_courseId: { profileId: profile.id, courseId: COURSE } },

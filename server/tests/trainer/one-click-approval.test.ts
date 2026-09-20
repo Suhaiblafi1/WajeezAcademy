@@ -11,7 +11,17 @@
    فحصٌ لتمامها لا لوقوعها.
 
    وما لا يجوز أن تفعله النقرة: أن تتخطّى توثيقَ البريد، أو أن تُحيي طلبا
-   مرفوضا أو مسحوبا، أو أن يعتمد أحدٌ طلبَ نفسِه. */
+   مرفوضا أو مسحوبا، أو أن يعتمد أحدٌ طلبَ نفسِه.
+
+   ═══ وما تغيّر في ٢٠ سبتمبر ٢٠٢٦ ═══
+
+   صارت قبلَ النقرةِ **بوّابةُ تجهيز**: أتعابٌ سارية، ودورةٌ مؤهَّلٌ لها، وعقدٌ
+   موقَّع. فالنقرةُ باقيةٌ نقرةً — لا ثمانَ حالاتٍ تُمشى بالترتيب — لكنّها لا
+   تقع على فراغ. والطريقُ اليومَ قرارانِ بينهما عمل: «اقبَلْه داخليّا» يفتح
+   التجهيز، و«اعتمِدْه» يقع بعد تمامه.
+
+   ولذلك يُجهَّز المتقدّمُ في هذه الجولة قبل كلّ اعتماد (`prepare`). والبوّابةُ
+   نفسُها — منعُها وتجاوزُها — مفحوصةٌ في `readiness-gate.test.ts`. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -21,13 +31,18 @@ import {
   TrainerApplicationService, ALLOWED_TRANSITIONS, APPROVABLE_BY_MAP, TRAINER_STATUSES,
 } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { EarningsService } from '../../services/earnings.service'
 import { ONE_CLICK_APPROVABLE_STATUSES } from '../../../src/application/trainer/approval'
 
 let prisma: PrismaClient
 let auth: AuthService
 let apps: TrainerApplicationService
 let review: TrainerReviewService
+let earnings: EarningsService
 let adminId: string
+
+/** دورةٌ يُؤهَّل لها في التجهيز — الخطوةُ الثانيةُ لا تخضرّ بلا واحدة */
+const COURSE = 'C-ONE-101'
 
 const base = {
   phoneCountryCode: '+962', phone: '771050000', country: 'الأردن', timezone: 'Asia/Amman',
@@ -51,38 +66,69 @@ async function applicant(email: string, fullName: string) {
   return { id: row.id, reference: res.reference, userId: res.userId }
 }
 
+/** يُتمّ خطواتِ التجهيز الثلاث فتُفتح البوّابة — وتفصيلُها في `readiness-gate` */
+async function prepare(applicationId: string) {
+  await review.decide(applicationId, adminId, 'conditionally_approve')
+  const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId } })
+  await earnings.setRule(adminId, { profileId: profile.id, type: 'per_seat', rate: 25 })
+  await review.qualifyForCourse(profile.id, COURSE, adminId)
+  await prisma.trainerContract.create({
+    data: { profileId: profile.id, title: 'عقدُ تدريب', status: 'signed' },
+  })
+  return profile
+}
+
 beforeAll(async () => {
   await setupTestDb()
   prisma = await testPrisma()
   auth = new AuthService(prisma)
   apps = new TrainerApplicationService(prisma)
   review = new TrainerReviewService(prisma)
+  earnings = new EarningsService(prisma)
   const admin = await auth.register('admin-oneclick@test.local', 'Admin#12345', 'المدير الأكاديمي')
   adminId = admin.userId
   await auth.setRoles(adminId, ['academic_manager'])
+  await prisma.course.create({ data: { id: COURSE, status: 'published', currentVersion: 1 } })
+  await prisma.courseVersion.create({
+    data: { courseId: COURSE, version: 1, titleAr: 'دورةُ النقرة', totalHours: 10 },
+  })
 }, 180_000)
 
 describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
-  it('من «مقدَّم» مباشرةً إلى «نشط» — بلا خطوةٍ وسيطةٍ واحدة', async () => {
+  it('من «مقدَّم» إلى «نشط» بقرارَين لا بثمانٍ — ولا حالةَ وسيطةٌ تُختلق', async () => {
     const a = await applicant('oneclick-1@test.local', 'سلمى المدرّبة')
     const before = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })
     expect(before.status, 'نقطةُ البداية ليست «مقدَّم» — الفحصُ لا يقيس ما يدّعيه').toBe('submitted')
 
+    /* القرارُ الأوّل: «اقبَلْه داخليّا» — يقفز من «مقدَّم» رأسا، بلا اختصارٍ
+       ولا درسٍ تجريبيٍّ ولا مراجعةٍ أكاديميّة. */
+    await prepare(a.id)
+    const hops1 = await prisma.trainerStatusHistory.findMany({
+      where: { applicationId: a.id }, orderBy: { createdAt: 'asc' },
+    })
+    const toPrep = hops1[hops1.length - 1]
+    expect(toPrep.fromStatus).toBe('submitted')
+    expect(toPrep.toStatus).toBe('conditionally_approved')
+
+    /* والقرارُ الثاني: الاعتمادُ الكامل — قفزةٌ واحدةٌ كذلك */
     await review.decide(a.id, adminId, 'approve', 'اعتماد بنقرة')
 
     const after = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })
     expect(after.status).toBe('active')
-    /* ولا خطوةَ وسيطةٌ اختُلقت في السجلّ: قفزةٌ واحدةٌ موثَّقة */
     const hops = await prisma.trainerStatusHistory.findMany({
       where: { applicationId: a.id }, orderBy: { createdAt: 'asc' },
     })
     const last = hops[hops.length - 1]
-    expect(last.fromStatus).toBe('submitted')
+    expect(last.fromStatus).toBe('conditionally_approved')
     expect(last.toStatus).toBe('active')
+    /* وقرارانِ لا ثمانية: ما بعد «مقدَّم» حركتان فقط لا سلسلةٌ من ثمانٍ */
+    const afterSubmitted = hops.slice(hops.findIndex((h) => h.toStatus === 'submitted') + 1)
+    expect(afterSubmitted.map((h) => h.toStatus)).toEqual(['conditionally_approved', 'active'])
   })
 
   it('والاعتمادُ تامٌّ لا نصفُه: ملفٌّ ومهامُّ تهيئةٍ وحسابٌ بدور مدرّب', async () => {
     const a = await applicant('oneclick-2@test.local', 'هاني المدرّب')
+    await prepare(a.id)
     await review.decide(a.id, adminId, 'approve')
 
     const profile = await prisma.trainerProfile.findUnique({ where: { applicationId: a.id } })
@@ -102,6 +148,7 @@ describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
     const a = await applicant('oneclick-3@test.local', 'رنا المدرّبة')
     await review.decide(a.id, adminId, 'move_to_review')
     await review.decide(a.id, adminId, 'shortlist')
+    await prepare(a.id)
     await review.decide(a.id, adminId, 'approve')
     const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })
     expect(row.status).toBe('active')
@@ -115,14 +162,23 @@ describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
     }
     const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })
     expect(row.status).toBe('conditionally_approved')
-    /* وملفُّ القبول المشروط يُنشأ كما كان — الاختصارُ لم يُعطّله */
-    expect(await prisma.trainerProfile.findUnique({ where: { applicationId: a.id } })).not.toBeNull()
+    /* وملفُّ القبول الداخليّ يُنشأ كما كان — الاختصارُ لم يُعطّله */
+    const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: a.id } })
+    /* ثمّ يُتمّ تجهيزُه من حيث وقف — فالبوّابةُ لا تعرف أيَّ طريقٍ سلك */
+    await earnings.setRule(adminId, { profileId: profile.id, type: 'per_seat', rate: 25 })
+    await review.qualifyForCourse(profile.id, COURSE, adminId)
+    await prisma.trainerContract.create({
+      data: { profileId: profile.id, title: 'عقدُ تدريب', status: 'signed' },
+    })
     await review.decide(a.id, adminId, 'approve')
     expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status).toBe('active')
   })
 
   it('ولا اعتمادَ لطلبٍ مرفوض — النهايةُ نهاية', async () => {
     const a = await applicant('oneclick-5@test.local', 'مرفوض المدرّب')
+    /* ويُجهَّز أوّلا بقصد: لو رُدّ بلا تجهيزٍ لَرُدّ بـ`not_ready`، فيخضرّ
+       الحارسُ لسببٍ غيرِ الذي يحرسه. والمقصودُ أنّ **النهايةَ نهاية**. */
+    await prepare(a.id)
     await review.decide(a.id, adminId, 'reject', 'لا يناسب')
     await expect(review.decide(a.id, adminId, 'approve')).rejects.toMatchObject({ code: 'bad_transition' })
   })
@@ -137,9 +193,13 @@ describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
     /* للمتقدّم حسابٌ منذ تقديمه؛ فلو نال صلاحيّةَ القرار يوما لَاعتمد نفسَه.
        والحارسُ يقارن بريدَ الفاعل ببريد الطلب، فيمنعه ولو كان مديرا. */
     const a = await applicant('oneclick-6@test.local', 'ذاتيّ المدرّب')
+    /* ويُجهَّز أوّلا كي يكون المانعُ هو التضاربَ لا البوّابة — وإلّا خضرّ
+       الحارسُ ولو سقط ما يحرسه. */
+    await prepare(a.id)
     await auth.setRoles(a.userId, ['academic_manager'])
     await expect(review.decide(a.id, a.userId, 'approve')).rejects.toMatchObject({ code: 'self_decision' })
-    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status).toBe('submitted')
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status)
+      .toBe('conditionally_approved')
   })
 
   it('والشاشةُ والخادمُ يتّفقان على الحالات التي تُعتمَد منها — لا زرٌّ يُرفض ولا مسارٌ يُخفى', () => {

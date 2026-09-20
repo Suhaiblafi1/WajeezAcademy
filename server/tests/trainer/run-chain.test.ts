@@ -27,6 +27,7 @@ import { EnrollmentService } from '../../services/enrollment.service'
 import { PublicCatalogService } from '../../services/public-catalog.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -70,6 +71,7 @@ beforeAll(async () => {
     demoConsent: true, contact: { channel: 'email' },
   })
   await prisma.trainerApplication.update({ where: { id: row.id }, data: { emailVerifiedAt: new Date() } })
+  await makeReadyForApproval(prisma, row.id, managerId)
   await review.decide(row.id, managerId, 'approve')
   profileId = (await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: row.id } })).id
 
@@ -89,7 +91,13 @@ describe('سلسلةُ تشغيل المدرّب', () => {
     const me = rows.find((r) => r.profileId === profileId)
     expect(me, 'المدرّبُ المعتمَدُ ليس في القائمة').toBeTruthy()
     expect(me!.hasAccount, 'اعتمادٌ بلا حساب — بوّابةٌ لا تُفتح').toBe(true)
-    expect(me!.qualifications).toEqual([])
+    /* ═══ ولم يعد المعتمَدُ بلا تأهيل (٢٠ سبتمبر ٢٠٢٦) ═══
+
+       كان يُثبت أنّ القائمةَ تُعرض لمن لا تأهيلَ له — وقد صار ذلك محالا:
+       بوّابةُ التجهيز تشترط دورةً مؤهَّلا لها قبل الاعتماد، فمن بلغ «نشط»
+       له واحدةٌ على الأقلّ. والمقصودُ الباقي أنّ الحمولةَ تحمل الحقلَ
+       وتُقرأ، لا أنّها فارغة. */
+    expect(Array.isArray(me!.qualifications)).toBe(true)
   })
 
   it('ولا يراها من لا يملك التأهيل — الحمولةُ ليست عامّة', async () => {

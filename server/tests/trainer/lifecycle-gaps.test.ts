@@ -11,6 +11,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
@@ -117,6 +118,8 @@ describe('الاعتمادُ يصل إلى حساب المتقدّم نفسِه'
     const contract = await review.createContract(app!.id, adminId, { title: 'عقد تدريب', terms: {} })
     await review.signContract(contract.id, adminId)
     await expect(review.createInvitation(app!.id, adminId)).rejects.toMatchObject({ code: 'has_account' })
+    /* والتجهيزُ يسبق الاعتماد منذ ٢٠ سبتمبر ٢٠٢٦ — والبوّابةُ في `readiness-gate` */
+    await makeReadyForApproval(prisma, app!.id, adminId)
     await review.decide(app!.id, adminId, 'activate')
     const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app!.id } })
     expect(profile.userId).toBe(app!.userId)

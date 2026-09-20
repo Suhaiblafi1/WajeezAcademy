@@ -9,6 +9,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { CHANGE_TYPES, TrainerChangeService } from '../../services/trainer-change.service'
@@ -49,6 +50,8 @@ async function makeActiveTrainer(email: string, name: string) {
   const contract = await review.createContract(app!.id, managerId, { title: 'عقد اختبار' })
   await review.signContract(contract.id, managerId)
   /* للمتقدّم حسابٌ منذ تقديمه — التفعيلُ يربطه بملفّه ويمنحه دورَ المدرّب */
+  /* والتجهيزُ يسبق الاعتماد منذ ٢٠ سبتمبر ٢٠٢٦ — والبوّابةُ في `readiness-gate` */
+  await makeReadyForApproval(prisma, app!.id, managerId)
   await review.decide(app!.id, managerId, 'activate')
   const profile = await prisma.trainerProfile.findUnique({ where: { applicationId: app!.id } })
   return { userId: profile!.userId!, profileId: profile!.id }

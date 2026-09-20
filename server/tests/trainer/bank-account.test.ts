@@ -18,6 +18,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerBankService } from '../../services/trainer-bank.service'
@@ -84,6 +85,14 @@ async function mkTrainer(legalName = 'محمد علي حسن') {
     },
   })
   await review.countersignContract(contract.id, adminId, {})
+  /* ═══ ولا يفتح الاعتمادُ الحسابَ منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+
+     كان `countersignContract` يستدعي `decide('activate')` فيصير المدرّبُ
+     نشطا ويُربط حسابُه بملفّه. وصار القبولُ الكاملُ قرارَ إنسانٍ بعده
+     (`offer-and-countersign.test.ts`). وهذه الجولةُ تفحص الحسابَ البنكيَّ
+     لا الاعتماد، فتُتمّ الطريقَ صراحةً لتصل إلى ما كُتبت لفحصه. */
+  await makeReadyForApproval(prisma, app.id, adminId)
+  await review.decide(app.id, adminId, 'approve')
   return { app, profile, userId: user.userId }
 }
 

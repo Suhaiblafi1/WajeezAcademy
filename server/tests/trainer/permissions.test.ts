@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
@@ -129,6 +130,8 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
     await review.signContract(contract.id, adminId)
     /* حسابُه قائم — التفعيلُ يربطه ويمنحه الدور، ولا دعوة */
     await expect(review.createInvitation(aid, adminId)).rejects.toMatchObject({ code: 'has_account' })
+    /* والتجهيزُ يسبق الاعتماد منذ ٢٠ سبتمبر ٢٠٢٦ — والبوّابةُ في `readiness-gate` */
+    await makeReadyForApproval(prisma, aid, adminId)
     await review.decide(aid, adminId, 'activate')
 
     const profile = await prisma.trainerProfile.findUnique({ where: { applicationId: aid } })

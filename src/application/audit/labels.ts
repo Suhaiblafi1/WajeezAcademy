@@ -128,6 +128,10 @@ const PHRASES: Record<string, string> = {
   'trainer.course_proposal.link': 'ربطُ اقتراحِ دورةٍ برمزٍ قائمٍ في الكتالوج',
   'trainer.course_proposal.become_course': 'دخولُ اقتراحِ دورةٍ الكتالوجَ دورةً جديدة',
   'trainer.course_proposal.reject': 'رفضُ اقتراحِ دورة',
+  /* بابا الرجوع (٢٠ سبتمبر ٢٠٢٦): الربطُ حكمُ تشابهٍ يُراجَع، والعنوانُ
+     كلماتُ صاحبه فلا يُغيَّر في صمت. */
+  'trainer.course_proposal.unlink': 'نقضُ ربطِ اقتراحِ دورةٍ برمزٍ قائم',
+  'trainer.course_proposal.edit_by_staff': 'تصحيحُ الإدارةِ نصَّ اقتراحِ دورة',
   /* ن-١: مسارٌ يبنيه مدرّبٌ ويُعرض على الرفّ العامّ. والثلاثةُ عباراتٌ كاملة:
      «نشرُ مسارِ مدرّب» وحدَه لا يقول أين نُشر، والرفُّ هو الخبر. */
   'trainer.path.publish': 'نشرُ مسارِ مدرّبٍ على الرفّ العامّ',
@@ -250,6 +254,8 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',
   'trainer.contract.document_view': 'اطّلاعُ موظّفٍ على وثيقةِ هويّةٍ مع عقد',
   'trainer.contract.countersign': 'اعتمادُ الأكاديميّةِ توقيعَ المدرّب',
+  /* تجاوزُ بوّابة التجهيز — بابٌ للمدير الأعلى وحدَه بسببٍ مكتوب (٢٠ سبتمبر ٢٠٢٦) */
+  'trainer.readiness.override': 'اعتمادُ مدرّبٍ قبل أن يتمّ تجهيزُه',
   'trainer.contract.reject_signature': 'رفضُ توقيعٍ لعدمِ مطابقتِه وثيقةَ الهويّة',
   'trainer.contract.terminate': 'فسخُ عقدٍ نافذٍ برحيل المدرّب',
   /* الحسابُ البنكيّ — المرحلة الرابعة */

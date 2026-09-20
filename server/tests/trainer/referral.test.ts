@@ -17,6 +17,7 @@ import { ReferralService } from '../../services/referral.service'
 import { CommerceService } from '../../services/commerce.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { EarningsService } from '../../services/earnings.service'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 
 let prisma: PrismaClient
 let referrals: ReferralService
@@ -64,6 +65,7 @@ describe('رابطُ دعوة المدرّب', () => {
       })
       const app = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference: res.reference } })
       await review.decide(app.id, adminId, 'move_to_review')
+      await makeReadyForApproval(prisma, app.id, adminId)
       await review.decide(app.id, adminId, 'approve')
       const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })
       return { userId: app.userId!, profileId: profile.id }

@@ -25,6 +25,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService, type AvailabilityInput } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 
 let prisma: PrismaClient
 let apps: TrainerApplicationService
@@ -86,6 +87,7 @@ describe('المعتمَدُ مؤهَّلٌ لما ذكره في طلبه', () =
 
   it('الاعتمادُ بنقرةٍ يؤهّله لكلّ دورةٍ ذكرها', async () => {
     await review.decide(applicationId, adminId, 'move_to_review')
+    await makeReadyForApproval(prisma, applicationId, adminId)
     await review.decide(applicationId, adminId, 'approve')
     const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId } })
     profileId = profile.id

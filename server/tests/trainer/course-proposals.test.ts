@@ -15,6 +15,7 @@ import { TrainerApplicationService } from '../../services/trainer-application.se
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { CourseProposalService } from '../../services/course-proposal.service'
 import { tokensAr } from '../../../src/application/trainer/proposal-match'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -49,6 +50,7 @@ async function approvedTrainer(
     demoConsent: true, contact: { channel: 'email' }, teachableProposals,
   })
   await prisma.trainerApplication.update({ where: { id: row.id }, data: { emailVerifiedAt: new Date() } })
+  await makeReadyForApproval(prisma, row.id, adminId)
   await review.decide(row.id, adminId, 'approve', 'اعتماد للاختبار')
   const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: row.id } })
   return { applicationId: row.id, profileId: profile.id, userId: res.userId }
@@ -201,14 +203,31 @@ describe('ح-٤ — التصنيفُ قبل الكتالوج', () => {
     expect(row!.trainerName, 'الطابورُ بلا اسمِ من اقترح').toBe('هالة المدرّبة')
     expect(row!.titleAr).toBe('دورةٌ في الطابور')
 
-    /* والمصنَّفُ يخرج من طابور «ما لم يُصنَّف» ويبقى في «الكلّ» */
+    /* ═══ والمربوطُ يبقى في الطابور (٢٠ سبتمبر ٢٠٢٦) ═══
+
+       كان هذا الحارسُ يُثبت أنّه **يخرج**، وهو ما كانت الشيفرة تفعله. وقال
+       صاحبُ المنصّة: «حين أربطه يذهب — وأريده أن يبقى مكتوبا عليه أنّه رُبط
+       بكذا، فأعيد النظر فيه لاحقا». والعلّةُ أنّ الربطَ أضعفُ القرارات
+       الثلاثة: حكمُ تشابهٍ يُخطأ فيه ويُكتشف بعد أسبوع. والرفضُ و«صارت
+       دورةً» يخرجان كما كانا.
+
+       فالحارسُ باقٍ مقلوبا لا محذوفا: يُثبت الآن أنّه **يبقى** ومعه ما
+       رُبط به، فإخفاؤه ثانيةً يُسقطه. */
     await proposals.linkToCourse(actor, row!.id, courseId)
-    expect((await proposals.queue('open')).some((r) => r.id === row!.id)).toBe(false)
-    const all = await proposals.queue('all')
-    const decided = all.find((r) => r.id === row!.id)!
-    expect(decided.status).toBe('linked')
-    /* وعنوانُ الدورة يُقرأ من إصدارها الجاري */
-    expect(decided.courseTitleAr).toBe('دورةُ الأتمتة القائمة')
+    const stillOpen = (await proposals.queue('open')).find((r) => r.id === row!.id)
+    expect(stillOpen, 'اختفى المربوطُ من الطابور — فلا يُراجَع قرارٌ يُخطأ فيه').toBeTruthy()
+    expect(stillOpen!.status).toBe('linked')
+    /* وعنوانُ الدورة يُقرأ من إصدارها الجاري — فيُقرأ «رُبطت بـ…» باسمٍ لا برمز */
+    expect(stillOpen!.courseTitleAr).toBe('دورةُ الأتمتة القائمة')
+
+    /* والمردودُ يخرج — فالرفضُ جوابٌ وصل صاحبَه */
+    const other = await approvedTrainer('prop-queue-out@test.local', 'نورٌ المدرّبة', [
+      { titleAr: 'دورةٌ تُردّ', summaryAr: '' },
+    ])
+    const [toReject] = await prisma.trainerCourseProposal.findMany({ where: { profileId: other.profileId } })
+    await proposals.reject(adminId, toReject.id, 'لا تناسب الكتالوجَ اليوم')
+    expect((await proposals.queue('open')).some((r) => r.id === toReject.id)).toBe(false)
+    expect((await proposals.queue('all')).some((r) => r.id === toReject.id)).toBe(true)
   })
 })
 
@@ -378,13 +397,144 @@ describe('ترشيحُ أقربِ رمزٍ — في حمولة الطابور ل
     }
   })
 
-  it('وما بُتّ فيه لا يُرشَّح له — قد بُتّ فيه', async () => {
+  /* ═══ والمربوطُ يُرشَّح له كذلك — بابُ مراجعته (٢٠ سبتمبر ٢٠٢٦) ═══
+
+     كان هذا يُثبت أنّ ما بُتّ فيه لا يُرشَّح له. وصار الربطُ قرارا يُراجَع،
+     ومراجعتُه تحتاج ما يُقابَل به — فبقي الترشيحُ له. **ولا يُرشَّح له ما هو
+     مربوطٌ به أصلا**: سطرٌ يقول «اربِطْه بما هو مربوطٌ به» عبثٌ يُقرأ عطبا. */
+  it('والمربوطُ يُرشَّح له ليُراجَع — إلّا ما هو مربوطٌ به', async () => {
     const t = await approvedTrainer('prop-suggest-done@test.local', 'هدى المدرّبة', [
       { titleAr: 'الأتمتةُ المحاسبيّة', summaryAr: '' },
     ])
     const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
     await proposals.linkToCourse(actor, row.id, courseId)
+    const seen = (await proposals.queue('open')).find((r) => r.id === row.id)!
+    expect(seen.suggestedCourses.some((m) => m.courseId === courseId), 'رُشّح له ما هو مربوطٌ به').toBe(false)
+  })
+
+  it('والمردودُ لا يُرشَّح له — قد بُتّ فيه بتّا', async () => {
+    const t = await approvedTrainer('prop-suggest-rejected@test.local', 'سناءُ المدرّبة', [
+      { titleAr: 'الأتمتةُ المحاسبيّة', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await proposals.reject(adminId, row.id, 'لا تناسب الكتالوجَ اليوم')
     const seen = (await proposals.queue('all')).find((r) => r.id === row.id)!
     expect(seen.suggestedCourses).toEqual([])
+  })
+})
+
+/* ═══ نقضُ الربط وتصحيحُ النصّ — بابا رجوعٍ لأضعف القرارات (٢٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «حين أربطه يذهب — وأريده أن يبقى مكتوبا عليه أنّه رُبط
+   بكذا، فأعيد النظر فيه لاحقا». والربطُ حكمُ تشابهٍ يُخطأ فيه ويُكتشف بعد
+   أسبوع، فله رجوع. والرفضُ و«صارت دورةً» لا: الأوّلُ جوابٌ وصل صاحبَه،
+   والثاني أنشأ في الكتالوج شيئا له حياتُه. */
+describe('نقضُ الربط — الاقتراحُ يعود إلى الطابور غيرَ مبتوتٍ فيه', () => {
+  it('ينقض الربطَ فيعود «مقدَّما» بلا رمزٍ ولا مُقرِّر', async () => {
+    const t = await approvedTrainer('prop-unlink@test.local', 'رائدٌ المدرّب', [
+      { titleAr: 'دورةٌ تُربط ثمّ يُنقض ربطُها', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await proposals.linkToCourse(actor, row.id, courseId)
+
+    await proposals.unlink(adminId, row.id)
+    const after = await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })
+    expect(after.status).toBe('submitted')
+    expect(after.courseId, 'بقي مربوطا بعد نقض ربطه').toBeNull()
+    expect(after.decidedAt, 'بقي عليه أثرُ قرارٍ نُقض').toBeNull()
+    expect(after.decidedBy).toBeNull()
+  })
+
+  it('وما كان مربوطا به يبقى في الأثر — فمن سأل «بمَ كان؟» وجد الجواب', async () => {
+    const t = await approvedTrainer('prop-unlink-audit@test.local', 'سلمى المدرّبة', [
+      { titleAr: 'دورةٌ يُنقض ربطُها ويُسأل عنها', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await proposals.linkToCourse(actor, row.id, courseId)
+    await proposals.unlink(adminId, row.id)
+
+    const audit = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.course_proposal.unlink', entityId: row.id },
+    })
+    expect(audit, 'نُقض الربطُ بلا أثر').not.toBeNull()
+    expect(JSON.stringify(audit!.meta)).toContain(courseId)
+  })
+
+  it('ولا يُنقض ما ليس مربوطا — ولا يُنقض رفضٌ ولا دورةٌ أُنشئت', async () => {
+    const t = await approvedTrainer('prop-unlink-bad@test.local', 'فادٍ المدرّب', [
+      { titleAr: 'دورةٌ لم تُربط', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await expect(proposals.unlink(adminId, row.id)).rejects.toMatchObject({ code: 'not_linked' })
+
+    await proposals.reject(adminId, row.id, 'لا تناسب الكتالوجَ اليوم')
+    await expect(proposals.unlink(adminId, row.id)).rejects.toMatchObject({ code: 'not_linked' })
+  })
+
+  it('وبعد نقضه يُربط بغيره — وهو المقصودُ من البابِ كلِّه', async () => {
+    const other = await prisma.course.create({
+      data: { id: 'C-PROP-202', status: 'published', currentVersion: 1 },
+    })
+    await prisma.courseVersion.create({
+      data: { courseId: other.id, version: 1, titleAr: 'دورةٌ أخرى قائمة', totalHours: 8 },
+    })
+    const t = await approvedTrainer('prop-relink@test.local', 'منى المدرّبة', [
+      { titleAr: 'دورةٌ تُصوَّب وجهتُها', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await proposals.linkToCourse(actor, row.id, courseId)
+    await proposals.unlink(adminId, row.id)
+    await proposals.linkToCourse(actor, row.id, other.id)
+    const after = await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })
+    expect(after.status).toBe('linked')
+    expect(after.courseId).toBe(other.id)
+  })
+})
+
+describe('تصحيحُ نصّ الاقتراح بيد الإدارة — وما كان يُكتب في الأثر', () => {
+  it('يصحّح العنوانَ والنبذةَ، ويُحفظ ما كان', async () => {
+    const t = await approvedTrainer('prop-fix@test.local', 'هشامٌ المدرّب', [
+      { titleAr: 'دوره خطابه عامه', summaryAr: 'لموظفين' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+
+    await proposals.editByStaff(adminId, row.id, {
+      titleAr: 'دورةُ الخطابة العامّة', summaryAr: 'للموظّفين',
+    })
+    const after = await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })
+    expect(after.titleAr).toBe('دورةُ الخطابة العامّة')
+    expect(after.summaryAr).toBe('للموظّفين')
+
+    /* وهي كلماتُ صاحبها — فما كان يُقرأ بعد شهرٍ حين يُسأل */
+    const audit = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.course_proposal.edit_by_staff', entityId: row.id },
+    })
+    expect(audit, 'غُيّرت كلماتُ صاحبها بلا أثر').not.toBeNull()
+    const meta = JSON.stringify(audit!.meta)
+    expect(meta, 'لا يُقرأ ما كان قبل التصحيح').toContain('دوره خطابه عامه')
+    expect(meta).toContain('دورةُ الخطابة العامّة')
+  })
+
+  it('ويُصحَّح المربوطُ كذلك — فالربطُ ليس قفلا', async () => {
+    const t = await approvedTrainer('prop-fix-linked@test.local', 'دعاءُ المدرّبة', [
+      { titleAr: 'عنوانٌ فيه خطأ', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await proposals.linkToCourse(actor, row.id, courseId)
+    await proposals.editByStaff(adminId, row.id, { titleAr: 'عنوانٌ مصحَّح' })
+    const after = await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })
+    expect(after.titleAr).toBe('عنوانٌ مصحَّح')
+    expect(after.status, 'نقض التصحيحُ الربطَ').toBe('linked')
+  })
+
+  it('ولا يُقبل عنوانٌ أقصرُ من أن يُقرأ، ولا طلبٌ بلا تغيير', async () => {
+    const t = await approvedTrainer('prop-fix-bad@test.local', 'زينُ المدرّب', [
+      { titleAr: 'عنوانٌ سليم', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await expect(proposals.editByStaff(adminId, row.id, { titleAr: 'ا' }))
+      .rejects.toMatchObject({ code: 'bad_title' })
+    await expect(proposals.editByStaff(adminId, row.id, {}))
+      .rejects.toMatchObject({ code: 'nothing_to_change' })
   })
 })
