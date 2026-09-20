@@ -20,6 +20,7 @@ import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { createHmac } from 'node:crypto'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { untilWritten } from '../helpers/until-written'
 import { buildApp } from '../../http/app'
 
 const SECRET = 'zoom-recording-secret-for-tests'
@@ -50,7 +51,12 @@ const post = (payload: unknown) => {
   })
 }
 
-/* والردُّ يسبق العمل (Zoom يُعطّل نقطةً تتأخّر) — فيُنتظَر بعده */
+/* والردُّ يسبق العمل (Zoom يُعطّل نقطةً تتأخّر) — فيُنتظَر بعده.
+
+   وما أثبت وقوعَ شيءٍ يسأل عنه حتّى يقع (`untilWritten`)، فلا يراهن على
+   الساعة. وهذه تبقى لما يُثبت **نفيا** — «لم يُكتب صفٌّ ثانٍ» — فذاك لا
+   يُنتظَر: ما لم يقع بعدُ يشبه ما لن يقع تماما. وهي رهانٌ معلومٌ لا حارس،
+   ومَخرجُها أن تُنادى الخدمةُ منتظِرةً كما في آخر هذا الملفّ. */
 const settle = () => new Promise((r) => setTimeout(r, 200))
 
 const MP4 = {
@@ -107,9 +113,7 @@ describe('① البلاغُ يُنتج صفَّ تسجيلٍ معلَّقا ب�
       },
     })
     expect(res.statusCode).toBe(200)
-    await settle()
-
-    const rows = await recordingsOf(sessionId)
+    const rows = await untilWritten(() => recordingsOf(sessionId), (r) => r.length >= 1)
     expect(rows, 'لم يُكتب تسجيل — والمدرّبُ يرفع بيده ما وصل وحدَه').toHaveLength(1)
     expect(rows[0].externalUrl, 'الرابطُ بلا رمزِه يفتح سؤالا لا درسا')
       .toBe(`${SHARE}?pwd=${encodeURIComponent(PASS)}`)
@@ -130,9 +134,15 @@ describe('① البلاغُ يُنتج صفَّ تسجيلٍ معلَّقا ب�
   })
 
   it('⚠️ وأثرٌ يقول من أين جاء — لا صفٌّ يظهر بلا أصل', async () => {
-    const audit = await prisma.auditEvent.findFirst({
-      where: { action: 'zoom.recording_ready', entityId: sessionId },
-    })
+    /* بانتظارِ الأثر نفسِه لا بانتظارِ الصفّ: `zoom-events.service.ts` يكتب
+       التسجيلَ **ثمّ** الأثرَ، فجولةٌ وقفت عند ظهور الصفّ قد تسبق أثرَه.
+       وكانت المهلةُ الثابتةُ تستر هذا الترتيبَ حين كانت تكفيهما معا. */
+    const audit = await untilWritten(
+      () => prisma.auditEvent.findFirst({
+        where: { action: 'zoom.recording_ready', entityId: sessionId },
+      }),
+      (a) => a !== null,
+    )
     expect(audit, 'لا أثرَ لوصول التسجيل').not.toBeNull()
   })
 })
@@ -166,8 +176,7 @@ describe('② وإعادةُ الإرسال لا تُنتج صفًّا ثاني�
         },
       },
     })
-    await settle()
-    expect(await recordingsOf(sessionId)).toHaveLength(2)
+    expect(await untilWritten(() => recordingsOf(sessionId), (r) => r.length >= 2)).toHaveLength(2)
   })
 })
 
