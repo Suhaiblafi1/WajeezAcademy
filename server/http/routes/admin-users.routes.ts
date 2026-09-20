@@ -12,6 +12,7 @@ import {
   DELEGATABLE_FAMILIES, type PermissionKey,
 } from '../../auth/permissions'
 import { inviteLink, sendAccountErasedEmail, sendStaffInviteEmail } from '../../services/account-mail'
+import { MAIL_LINK_WINDOW_AR } from '../../../src/application/links/mail-link-window'
 import { safeNotify } from '../../services/notification.service'
 import { AccountResetService } from '../../services/account-reset.service'
 import { accountFootprint, footprintBlockersAr, purgeAccountWithHistory } from '../../services/account-purge.service'
@@ -327,7 +328,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       sent: mail.status === 'sent',
       expiresAt,
       note: mail.status === 'sent'
-        ? 'أُرسلت دعوةٌ جديدةٌ صالحةٌ سبعةَ أيّام — والقديمةُ أُبطلت.'
+        ? `أُرسلت دعوةٌ جديدةٌ صالحةٌ ${MAIL_LINK_WINDOW_AR} — والقديمةُ أُبطلت.`
         : 'أُصدرت دعوةٌ جديدةٌ ولم تُرسل — قناةُ البريد غير مفعّلة. سلّمه الرابطَ بنفسك أو فعّل البريد.',
       /* الرابطُ يُعاد لمن يملك إدارةَ المستخدمين وحدَه، وحين لا بريد: فهو
          السبيلُ الوحيدُ لتسليم الدعوة يدويّا — ولا يُسجَّل في الأثر. */

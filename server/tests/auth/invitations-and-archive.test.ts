@@ -1,14 +1,19 @@
-/* الدعوةُ تصلح سبعةَ أيّام، و«مدعوّ» حالةٌ تنتهي بأوّل دخول، والأرشفةُ
-   بديلٌ للحذف يحفظ السجلّ.
+/* الدعوةُ تصلح يوما، و«مدعوّ» حالةٌ تنتهي بأوّل دخول، والأرشفةُ بديلٌ
+   للحذف يحفظ السجلّ.
 
    الأصلُ في جولة ٢٠٢٦-٠٩ (الرحلة ٩): الدعوةُ كانت رمزَ استعادةٍ عمرُه ساعة،
    فأوّلُ محاولةِ تأهيلِ موظّفٍ تفشل غالبا ويُطلب منه أن يصنع لنفسه ما كان
-   يجب أن يصله. والحذفُ النهائيُّ كان الخيارَ الوحيدَ لمن غادر. */
+   يجب أن يصله. والحذفُ النهائيُّ كان الخيارَ الوحيدَ لمن غادر.
+
+   ثمّ صارت سبعةَ أيّام، ثمّ دخلت سقفَ روابط البريد بقرار صاحب المنصّة (٢٠
+   سبتمبر ٢٠٢٦): «غيّر رابط دعوة الموظفين لـ٢٤ ساعة أيضا». فالمفحوصُ هنا
+   طرفاها معا — لا تعود ساعةً كما كانت، ولا تتجاوز السقف. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
+import { MAIL_LINK_TTL_MS } from '../../../src/application/links/mail-link-window'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -27,12 +32,14 @@ async function invitedAccount(email: string) {
   return { userId, ...invite }
 }
 
-describe('دعوةٌ تصلح سبعةَ أيّام', () => {
-  it('عمرُها سبعةُ أيّامٍ لا ساعة', async () => {
+describe('دعوةٌ تصلح يوما', () => {
+  it('عمرُها السقفُ المشترك — لا ساعةَ رمز الاستعادة ولا أسبوعا', async () => {
+    /* السقفُ ونصُّه في `src/application/links/mail-link-window.ts`، ويُقرأ
+       منه هنا: رقمٌ مكتوبٌ بيدٍ في الحارس يُجمّد المهلةَ على ما كانت. */
     const { expiresAt } = await invitedAccount('invite.ttl@test.local')
-    const days = (expiresAt.getTime() - Date.now()) / 86_400_000
-    expect(days).toBeGreaterThan(6.9)
-    expect(days).toBeLessThan(7.1)
+    const life = expiresAt.getTime() - Date.now()
+    expect(life, 'الدعوةُ تعيش أكثرَ من سقف روابط البريد').toBeLessThanOrEqual(MAIL_LINK_TTL_MS)
+    expect(life, 'عادت الدعوةُ ساعةً كرمز الاستعادة — وهي العلّةُ التي كُتبت لها').toBeGreaterThan(3_600_000)
   })
 
   it('ولها غرضٌ مستقلٌّ عن رمز الاستعادة — فلا يُقرأ أحدُهما مكانَ الآخر', async () => {
@@ -62,7 +69,7 @@ describe('دعوةٌ تصلح سبعةَ أيّام', () => {
     const fresh = await invitedAccount('invite.state@test.local')
     expect((await auth.inviteState(fresh.userId)).state).toBe('pending')
 
-    /* تُقدَّم إلى الماضي كما لو مرّت ثمانيةُ أيّام */
+    /* تُقدَّم إلى الماضي كما لو مرّ يومان */
     await prisma.passwordResetToken.updateMany({
       where: { userId: fresh.userId, purpose: 'invite' },
       data: { expiresAt: new Date(Date.now() - 86_400_000) },

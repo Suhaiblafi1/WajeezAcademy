@@ -8,9 +8,10 @@ import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { ACCOUNT_KINDS, filterByKind, type AccountKind } from "@/application/admin/account-kind";
 import { matchesQuery } from "@/application/text/search-ar";
+import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { paginate } from "@/application/admin/paginate";
 import { apiDelete, apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
-import { fmtDateAr } from "@/utils/format";
+import { fmtShortDateTimeAr } from "@/utils/format";
 import { useRealSession } from "@/services/session";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -295,7 +296,7 @@ export default function Users() {
         <Card tone="warn" className="mb-5">
           <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>سبعةَ أيّام</b>.
+            لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>{MAIL_LINK_WINDOW_AR}</b>.
             ويبقى «مدعوّا» حتّى يدخل، فلا يُحسب فريقا عاملا قبل ذلك.
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_12rem_auto]">
@@ -499,9 +500,16 @@ export default function Users() {
                     <span className={`rounded-full border px-2.5 py-0.5 text-fine font-bold ${(STATUS_META[u.status] ?? STATUS_META.suspended).cls}`}>
                       {(STATUS_META[u.status] ?? { label: u.status }).label}
                     </span>
+                    {/* ═══ والساعةُ تُقال بعد أن صارت المهلةُ يوما ═══
+
+                        كانت الشارةُ تقول التاريخَ وحدَه («حتّى ٢٠ سبتمبر»)،
+                        وهو يكفي حين تعيش الدعوةُ أسبوعا. وقد صارت أربعا
+                        وعشرين ساعة (قرارُ ٢٠ سبتمبر ٢٠٢٦)، فتاريخٌ بلا ساعةٍ
+                        يُقرأ «أمامك اليومُ كلُّه» ودعوةٌ تنتهي بعد ساعتَين —
+                        فيُطمئنّ الموظّفُ إلى مهلةٍ ليست له. */}
                     {u.invite.state === "pending" && (
                       <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
-                        دعوةٌ سارية حتّى {fmtDateAr(u.invite.expiresAt)}
+                        دعوةٌ سارية حتّى {fmtShortDateTimeAr(u.invite.expiresAt)}
                       </span>
                     )}
                     {u.invite.state === "expired" && (
