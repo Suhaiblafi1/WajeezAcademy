@@ -126,3 +126,29 @@ describe('والمثالُ يوثّق المفتاحَ — فما لا يُذك�
     expect(line!.trim().startsWith('#'), 'يُشحن مضبوطا على عنوانٍ لا وجودَ له').toBe(true)
   })
 })
+
+describe('وحالُ الجرس يُقال حيث يُنظَر — لا في سجلٍّ على خادم', () => {
+  /* السجلُّ لا يُفتح إلّا بعد أن يُشَكّ، وشاشةُ «صحّة النظام» تُفتح. ولهذا
+     صار السطرُ فيها. وسلوكُه محروسٌ بقاعدةٍ حقيقيّة في
+     `server/tests/audit/deployment-health.test.ts`؛ وهذا يحرس وجودَه. */
+  const health = read('server/services/system-health.service.ts')
+
+  it('⚠️ سطرُ التنبيه موجودٌ في صحّة النظام', () => {
+    expect(health, 'لا سطرَ يقول إنّ الجرسَ مطفأ').toContain("key: 'deploy_alerting'")
+    expect(health, 'لا يقرأ العنوانَ من بيئة الحاوية').toContain('WAJEEZ_PING_URL')
+  })
+
+  it('⚠️ والفراغُ كالغياب — فلا يُطفأ الجرسُ بسطرٍ فارغ', () => {
+    /* `WAJEEZ_PING_URL=` يُقرأ سلسلةً فارغة، و`Boolean('')` كاذب — لكنّ
+       مسافاتٍ تُقرأ صدقا لولا `trim()`. */
+    expect(health, 'لا تُجرَّد المسافاتُ — فسطرٌ من فراغٍ يُقرأ ضبطا')
+      .toMatch(/WAJEEZ_PING_URL\?\.trim\(\)/)
+  })
+
+  it('ولا يحمرّ حمرةَ المعطَّل — الموقعُ يعمل، والمطفأُ هو الجرس', () => {
+    const row = health.slice(health.indexOf("key: 'deploy_alerting'"), health.indexOf("key: 'built_site_origin'"))
+    expect(row, 'أُعطي حمرةَ المعطَّل — وحاجزٌ أحمرُ على ما لا يمنع أحدا يُعلّم تجاهلَ الأحمر')
+      .not.toMatch(/level:[^\n]*'broken'/)
+    expect(row, 'لا يُسمّى الملفُّ الذي يُضبط فيه').toContain('deploy/.env.production')
+  })
+})

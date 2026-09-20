@@ -502,6 +502,9 @@ export class SystemHealthService {
     const labelSha = commitOfSnapshotLabel(active?.label)
     const prod = process.env.NODE_ENV === 'production'
     const explicitUrl = hasExplicitSiteUrl()
+    /* الحاويةُ تُحمَّل `deploy/.env.production` (`env_file` في compose)، فما
+       يضبطه المشغّلُ هناك للمراقب يصل هذه الشاشةَ كذلك. والفراغُ كالغياب. */
+    const deployPing = Boolean(process.env.WAJEEZ_PING_URL?.trim())
 
     return [
       {
@@ -557,6 +560,33 @@ export class SystemHealthService {
           + 'والمالُ يُقبض والتسجيلُ يُسوّى، فيكون العطبُ صامتا في السجلّات صاخبا عند المشتري.',
         actionAr: explicitUrl ? undefined : 'اضبط `APP_URL` في `deploy/.env.production` بعنوان الموقع، ثمّ أعد النشر.',
         href: explicitUrl ? undefined : '/admin/integrations',
+      },
+      {
+        /* ═══ أمعك من يوقظك حين يفشل النشر؟ ═══
+
+           أُضيف بعد ٢٠ سبتمبر ٢٠٢٦: فشلت نشرةُ الإنتاج اثنتي عشرة ساعةً —
+           يحاول المراقبُ كلَّ دقيقةٍ فيردّه حارسُ ما قبل النشر، ويكتب `✖`
+           في `~/wajeez-deploy.log`. ولا أحدَ يقرأ سجلّا على خادم. فبقي
+           الموقعُ يخدم بناءً عمرُه نصفُ يوم، ووصلت رسالةٌ للمتقدّمين إلى
+           `main` ولم تبلغ أحدا منهم — ولم يُعلَم إلّا بالسؤال.
+
+           وموضعُ هذا السطر هنا لا في السجلّ **هو الفكرةُ كلُّها**: السجلُّ
+           لا يُقرأ إلّا بعد أن يُشَكّ، وهذه الشاشةُ تُفتح. فيُقال فيها إنّ
+           الجرسَ مطفأٌ قبل أن يُحتاج إليه، لا بعد أن يُفتقد. */
+        key: 'deploy_alerting',
+        titleAr: 'التنبيهُ حين تفشل نشرة',
+        valueAr: deployPing
+          ? 'مضبوط — تصل نبضةٌ كلَّ دورة، و«/fail» فورَ الفشل'
+          : 'غيرُ مضبوط — الفشلُ يقع صامتا',
+        /* و«يحتاج نظرة» لا «معطَّل»: الموقعُ يعمل، والمطفأُ هو الجرسُ وحدَه.
+           وفي التطوير لا معنى له أصلا — فلا يحمرّ جهازُ مطوّرٍ بلا سبب. */
+        level: deployPing ? 'ok' : prod ? 'attention' : 'ok',
+        meaningAr:
+          'النشرُ آليٌّ: يسأل الخادمُ `main` كلَّ دقيقةٍ وينشر إن تحرّكت. فإن فشلت النشرةُ — متغيّرٌ ناقصٌ، أو قرصٌ امتلأ، أو بناءٌ سقط — '
+          + 'لم يتغيّر شيءٌ في وجهك: الموقعُ يعمل، ويخدم **النسخةَ القديمة**. والفرقُ بين أن تعلم بذلك بعد دقيقةٍ وأن تعلم بعد نصف يومٍ هو هذا السطر.',
+        actionAr: deployPing
+          ? undefined
+          : 'أنشئ فحصا في healthchecks.io بمهلة ٣٠ دقيقة، ثمّ ضع عنوانَه `WAJEEZ_PING_URL` في `deploy/.env.production`. والمراقبُ يقرؤه في الدورة التالية بلا إعادة تركيب.',
       },
       {
         key: 'built_site_origin',
