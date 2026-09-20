@@ -251,6 +251,10 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.document_view': 'اطّلاعُ موظّفٍ على وثيقةِ هويّةٍ مع عقد',
   'trainer.contract.countersign': 'اعتمادُ الأكاديميّةِ توقيعَ المدرّب',
   'trainer.contract.reject_signature': 'رفضُ توقيعٍ لعدمِ مطابقتِه وثيقةَ الهويّة',
+  'trainer.contract.terminate': 'فسخُ عقدٍ نافذٍ برحيل المدرّب',
+  /* الحسابُ البنكيّ — المرحلة الرابعة */
+  'trainer.bank.set': 'كتابةُ المدرّبِ حسابَه البنكيَّ أو تبديلُه',
+  'trainer.bank.reveal': 'كشفُ رقمِ حسابٍ بنكيٍّ لصرفِ مستحقّ',
   /* عروضُ الإسناد — دعوةٌ تُقبَل وتُردّ، لا توجيهٌ يقع */
   'trainer.offer.create': 'عرضُ دورةٍ على مدرّبٍ مؤهَّلٍ لها',
   'trainer.offer.accept': 'قبولُ المدرّبِ عرضَ إسناد',

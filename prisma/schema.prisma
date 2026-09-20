@@ -1230,6 +1230,7 @@ model TrainerProfile {
   availability          TrainerAvailability[]
   blackouts             TrainerBlackout[]
   termAvailability      TrainerTermAvailability[]
+  bankAccounts          TrainerBankAccount[]
 }
 
 model TrainerSkill {
@@ -1379,7 +1380,14 @@ model TrainerDeparture {
   openedAt  DateTime        @default(now())
   closedAt  DateTime?
   closedBy  String?         @db.Uuid
-  profile   TrainerProfile  @relation(fields: [profileId], references: [id])
+  /// و`Cascade` صريحٌ هنا بقصد: بلا `onDelete` تصير Restrict، فيصير كلُّ
+  /// مدرّبٍ فُتح له ملفُّ رحيلٍ **غيرَ قابلٍ للمحو أبدا** — و`purge` تسقط
+  /// برسالةِ قاعدةٍ غامضة. وقد كان ذلك واقعا حتّى ١٩ سبتمبر ٢٠٢٦، وكشفه
+  /// حارسُ «بعد الفسخ يُمحى»: رسالةُ مانعِ المحو تقول «افسخِ العقدَ بمسار
+  /// الرحيل ثمّ احذفه» — وذاك المسارُ نفسُه كان يُغلق البابَ الذي يدلّ عليه.
+  ///
+  /// وحالاتُ الرحيل تذهب معه (`DepartureCase.departure` متتالٍ أصلا).
+  profile   TrainerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
   cases     DepartureCase[]
 
   @@index([closedAt, openedAt])
@@ -1776,6 +1784,18 @@ model TrainerContract {
   revokedBy       String?   @db.Uuid
   revokeReasonAr  String?
 
+  /// ─────────── الفسخ — نهايةُ عقدٍ نفَذ ───────────
+  ///
+  /// و`revoked` غيرُه: ذاك إلغاءُ ما لم يُوقَّع بعد، وهذا إنهاءُ ما نفَذ
+  /// بين طرفين. ولا يُكتب اليومَ إلّا من مسار الرحيل (`TrainerDepartureService
+  /// .open`) في معاملته نفسِها — فمن رحل لا يبقى عقدُه نافذا عليه.
+  ///
+  /// والصفُّ يبقى بكلّ دليله بعد الفسخ: التوقيعُ والهاشُ والاسمُ القانونيّ.
+  /// فالفسخُ يُنهي أثرَه للمستقبل، ولا يمحو أنّه كان.
+  terminatedAt      DateTime?
+  terminatedBy      String?   @db.Uuid
+  terminateReasonAr String?
+
   createdBy String?          @db.Uuid
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
@@ -1890,6 +1910,72 @@ model TrainerAssignmentOffer {
 /// ولا عمودَ `content Bytes?` هنا: ذاك في وثائق الطلب بقيّةُ عهدِ Vercel
 /// (القرصُ للقراءة فقط)، والقرصُ اليومَ موجودٌ — مجلّدُ Docker في
 /// `deploy/compose.prod.yml`. فالجديدُ يولد على القرص وحدَه.
+/// ═══ حسابُ المدرّب البنكيّ — يكتبه بنفسه، ويُخزَّن معمّى ═══
+///
+/// **ولمَ جدولٌ مستقلٌّ لا أعمدةٌ على `TrainerProfile`:**
+///
+/// ① `profileForUser` و`listForTrainer` تقرآن الملفَّ بـ`findUnique` **بلا
+///    `select`** — فأيُّ عمودٍ يُضاف إليه يخرج إلى بوّابة المدرّب وإلى كلّ
+///    قارئٍ للملفّ في اللحظة نفسِها. وعمودٌ معمّى يُسرَّب ظرفُه ليس عطبا
+///    قاتلا، لكنّه يجعل النصَّ المعمّى في مكانٍ لا يُحصى قارئوه.
+/// ② والحسابُ **يتبدّل**: من غيّر مصرفَه يجب أن يبقى مستحقٌّ قديمٌ قادرا
+///    على قول «إلى أيِّ حسابٍ ذهب». وعمودٌ واحدٌ يُكتب فوقه يمحو ذلك.
+///
+/// فصفٌّ لكلّ نسخة، والفعّالُ واحدٌ يحرسه فهرسٌ جزئيٌّ في الهجرة.
+///
+/// **ولا يدخل هذا البيانُ عقدا ولا بريدا أبدا.** البندُ ٤-٤ من العقد يقول
+/// صراحةً إنّ الحساب يُكتب «في بوّابته على المنصّة تحت مستحقّاتي بعد تفعيل
+/// حسابه» — أي خارجَ الوثيقة الموقَّعة بقصد، بمشورةٍ قانونيّة.
+model TrainerBankAccount {
+  id        String @id @default(uuid()) @db.Uuid
+  profileId String @db.Uuid
+
+  /// `superseded` نسخةٌ أزاحها ما بعدها — تبقى ليُقرأ إليها مستحقٌّ قديم
+  status String @default("active") // active | superseded
+
+  /// ─────────── المعمّى ───────────
+  ///
+  /// ظرفُ AES-256-GCM: `v1.<iv>.<tag>.<ct>`. وهو **البيانُ نفسُه** لا رابطٌ
+  /// إليه — ولذلك مفتاحُه مستقلٌّ لا مشتقٌّ من وصلة القاعدة
+  /// (`bank-crypto.ts` يشرح لمَ).
+  ibanSealed String
+
+  /// ─────────── وما يُعرض بلا فكّ ───────────
+  ///
+  /// أربعةُ أرقامٍ أخيرةٌ ورمزُ دولةٍ يكفيان ليطمئنّ صاحبُه أنّه حسابُه، ولا
+  /// يكفيان لحوالة. ويُشتقّان عند الكتابة فلا يُسألان منه مرّتين.
+  tail4       String
+  countryCode String  @db.VarChar(2)
+  /// اسمُ صاحب الحساب كما يطبعه المصرف — صريحٌ بقصد: تُقارَن به تسميةُ
+  /// الطرف في العقد، والمقارنةُ يجب أن تعمل ولو غاب المفتاح.
+  holderName  String
+  bankNameAr  String
+  branchAr    String?
+  swiftBic    String?
+
+  /// ─────────── مطابقةُ الاسم — تُقال ولا تمنع ═══
+  ///
+  /// اختلافُ اسمِ المستفيد عن اسم الموقِّع بابُ احتيالٍ معروف. ومنعُه منعا
+  /// باتّا خطأ: يتزوّج فيتغيّر اسمُه، أو يكتبه المصرفُ بحروفٍ لاتينيّة.
+  /// فيُحسَب ويُعرَض لمن يصرف، والقرارُ له.
+  /// واسمُه `outcome` لا `nameOutcome` كي يلتقطه مولّدُ قيود الحالات
+  /// (`scripts/status-checks.ts` يطابق الاسمَ تماما) — فالقيدُ يُولَّد ولا
+  /// يُكتب بيد، ولا تمرّ قيمةٌ ثالثةٌ إلى العمود بسهو.
+  outcome      String @default("unverifiable") // matches | differs | unverifiable
+  outcomeScore Int    @default(0)
+
+  setBy        String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+  supersededAt DateTime?
+  /// آخرُ كشفٍ للرقم الصريح — والسجلُّ الكاملُ في الأثر، وهذا للعرض
+  lastRevealAt DateTime?
+
+  profile TrainerProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  payouts TrainerPayout[]
+
+  @@index([profileId, status])
+}
+
 model TrainerContractDocument {
   id           String   @id @default(uuid()) @db.Uuid
   contractId   String   @db.Uuid
@@ -1938,6 +2024,17 @@ model TrainerPayout {
   approvedBy String?             @db.Uuid
   paidAt     DateTime?
   createdAt  DateTime            @default(now())
+
+  /// ═══ إلى أيِّ حسابٍ ذهب هذا المستحقّ ═══
+  ///
+  /// يُكتب لحظةَ الكشف (`revealForPayout`) ويُقابَل لحظةَ التأكيد: من بدّل
+  /// حسابَه بين الكشف والحوالة لا يُؤكَّد صرفُه على ما كُشف — والفرقُ بين
+  /// الاثنين هو بابُ الاحتيال المعروف في هذا الموضع بعينه.
+  ///
+  /// و`SetNull` لا `Cascade`: محوُ نسخةِ حسابٍ قديمةٍ لا يمحو مستحقّا صُرف.
+  bankAccountId String?           @db.Uuid
+  bankAccount   TrainerBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+
   profile    TrainerProfile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
   items      TrainerPayoutItem[]
 

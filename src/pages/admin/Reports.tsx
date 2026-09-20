@@ -86,8 +86,11 @@ export default function Reports() {
 
   const columns = result?.rows.length ? Object.keys(result.rows[0]) : [];
 
+  /* والعددُ في العنوان يُعَدّ من القائمة لا يُكتب رقما: كُتب «17» وصار
+     الحقيقيُّ غيرَه مرّتين بلا أن يُنتبَه — ورقمٌ في عنوانٍ يكذب أسوأُ من
+     غيابه. ويُطوى ما دامت القائمةُ لم تصل، فلا يُعرض «0 تقريرا». */
   return (
-    <AdminLayout title="التقارير التشغيلية — 17 تقريرا بطريقة حساب معلنة">
+    <AdminLayout title={`التقارير التشغيلية${defs.length ? ` — ${defs.length} تقريرا` : ''} بطريقة حساب معلنة`}>
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {loading ? (

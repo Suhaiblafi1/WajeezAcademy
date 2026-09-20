@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
+import { TrainerBankService } from '../../services/trainer-bank.service'
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { CourseProposalService } from '../../services/course-proposal.service'
@@ -34,6 +35,7 @@ function actorOf(req: { auth: { userId: string; roles: string[] } | null }) {
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
   const offers = new TrainerOfferService(prisma)
+  const bank = new TrainerBankService(prisma)
   const links = new TrainerDossierLinkService(prisma)
   const changes = new TrainerChangeService(prisma)
   const proposals = new CourseProposalService(prisma)
@@ -1013,6 +1015,28 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return earnings.approve(id, req.auth!.userId)
+  })
+
+  /* ═══ كشفُ الحساب — خطوةٌ واحدةٌ قبل أن يتحرّك المال ═══
+
+     ولا يُعرض الرقمُ في أيّ قائمة: تُقرأ الشاشةُ مقنَّعةً، ويُفتح الصريحُ
+     لمستحقٍّ معتمَدٍ بعينه بضغطةٍ تُكتب في الأثر بفترته ومبلغه. */
+  app.get('/api/admin/trainer-payouts/:id/bank-account', {
+    preHandler: requirePermission('trainer.compensation.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'حسابُ المدرّب مقنَّعا — بلا كشفٍ ولا أثر' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const payout = await prisma.trainerPayout.findUnique({ where: { id }, select: { profileId: true } })
+    if (!payout) return { account: null }
+    return { account: await bank.maskedFor(payout.profileId) }
+  })
+
+  app.post('/api/admin/trainer-payouts/:id/bank-account/reveal', {
+    preHandler: requirePermission('finance.bank.reveal'),
+    schema: { tags: ['admin-trainers'], summary: 'كشفُ رقم الحساب لصرف مستحقٍّ معتمَد — يُسجَّل كلُّ كشف' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return bank.revealForPayout(id, req.auth!.userId)
   })
 
   app.post('/api/admin/trainer-payouts/:id/pay', {

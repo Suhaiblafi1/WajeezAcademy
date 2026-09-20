@@ -24,11 +24,13 @@ import {
   ACADEMY_LEGAL, LEGAL_FIELD_LABELS_AR, REQUIRED_LEGAL_FIELDS,
   academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
 } from '@/data/academy-legal'
+import { CONTACT } from '@/data/stories'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
-/** مصدرٌ كاملٌ مصطنع — فالحقيقيُّ ناقصٌ اليومَ عمدا، ولا يُختبَر به الاكتمال */
+/** مصدرٌ كاملٌ مصطنع — تُقاس به الآليّةُ وحدَها، فلا يتغيّر فحصُها بتغيّر
+    القيم الحقيقيّة. والحقيقيُّ يُقاس في موضعه أدناه. */
 const FULL: Record<string, string> = Object.fromEntries(
   Object.keys(ACADEMY_LEGAL).map((k) => [k, `قيمة-${k}`]),
 )
@@ -52,9 +54,11 @@ describe('اكتمالُ هويّة الطرف الأوّل', () => {
     }
   })
 
-  it('والحالُ اليومَ ناقصٌ فعلا — وهذا مقصودٌ لا سهو', () => {
-    /* لا يُقاس أيُّ حقلٍ ينقص، بل أنّ الآليّةَ حيّةٌ على البيانات الحقيقيّة:
-       يومَ تكتمل يبقى هذا أخضرَ بالفرع الآخر. */
+  it('والآليّةُ حيّةٌ على البيانات الحقيقيّة لا على المصطنعة وحدَها', () => {
+    /* كان هذا يقول «والحالُ اليومَ ناقصٌ فعلا» حين كان الملفُّ ناقصا عمدا.
+       وقد اكتمل (١٩ سبتمبر ٢٠٢٦)، فبقي منه ما لا يبلى: أنّ الرسالةَ تُبنى
+       على الحقيقيّ متى نقص، وأنّ رقمَ السجلّ لا يُفقَد. والاكتمالُ نفسُه
+       يُقاس في «الهويّةُ اكتملت» أدناه. */
     const missing = missingAcademyLegalFields()
     if (missing.length > 0) {
       expect(academyLegalGapMessageAr(missing)).toContain('لا يُرسَل عقدٌ بطرفٍ أوّلَ ناقص')
@@ -76,6 +80,66 @@ describe('وما مُنع الإرسالُ لأجله يبلغ الديباجة�
       expect(line, `${f} مطلوبٌ ولا يُطبَع`).toContain(FULL[f])
     })
   }
+})
+
+describe('الهويّةُ اكتملت — ويُرسَل العقدُ فعلا (١٩ سبتمبر ٢٠٢٦)', () => {
+  /* كان الملفُّ ناقصا عمدا فيُردُّ كلُّ إرسال. وقد وصل العنوانُ من صاحب
+     المنصّة («الأردن — عمّان — الصويفية»)، وخرج الرقمُ الضريبيُّ من المطلوب
+     بقراره. فصار البابُ مفتوحا — وهذا الحارسُ يمنع إغلاقَه بالسهو: من فرّغ
+     حقلا مطلوبا حبس كلَّ عقدٍ في المنصّة ولا يعلم. */
+  it('⚠️ لا ينقص الطرفَ الأوّلَ شيء — فلا عقدَ محبوس', () => {
+    expect(missingAcademyLegalFields(), 'عاد الإرسالُ محبوسا على هويّةٍ ناقصة').toEqual([])
+  })
+
+  it('والعنوانُ المسجَّلُ يبلغ الديباجةَ بنصّه', () => {
+    expect(academyPartyLineAr()).toContain(ACADEMY_LEGAL.registeredAddressAr)
+    expect(academyPartyLineAr()).toContain(ACADEMY_LEGAL.cityAr)
+  })
+})
+
+describe('والرقمُ الضريبيُّ جملةٌ تُزاد لا فراغٌ يُطبَع', () => {
+  /* خرج من المطلوب بقرار صاحب المنصّة. ولو بقي في سطر الديباجة بلا شرطٍ
+     لخرجت الوثيقةُ تقول «والرقم الضريبيّ ،» — فراغٌ معلَّقٌ في عقدٍ يوقّعه
+     إنسانٌ ويلتزم به. والفحصُ على البنية: الجملةُ تغيب بغيابه وتحضر بحضوره. */
+  const TAX_LEAD = 'والرقم الضريبيّ'
+
+  it('⚠️ يغيب ذكرُه كلَّه ما دام فارغا — لا «والرقم الضريبيّ» بلا رقم', () => {
+    const line = academyPartyLineAr({ ...FULL, taxNo: '   ' } as unknown as typeof ACADEMY_LEGAL)
+    expect(line, 'طُبعت جملةُ الضريبيّ على فراغ').not.toContain(TAX_LEAD)
+  })
+
+  it('ويعود وحدَه يومَ يُكتب — بلا تعديلِ سطر', () => {
+    const line = academyPartyLineAr({ ...FULL, taxNo: '٩٩٩' } as unknown as typeof ACADEMY_LEGAL)
+    expect(line).toContain(`${TAX_LEAD} ٩٩٩`)
+  })
+
+  it('وهو خارجُ المطلوب — فلا يُحبَس إرسالٌ على غيابه', () => {
+    expect(REQUIRED_LEGAL_FIELDS).not.toContain('taxNo')
+    expect(missingAcademyLegalFields({ ...FULL, taxNo: '' })).toEqual([])
+  })
+
+  it('ويبقى له اسمٌ عربيٌّ — فيومَ يُعاد إلى المطلوب تُقرأ رسالتُه', () => {
+    expect(LEGAL_FIELD_LABELS_AR.taxNo).toBeTruthy()
+  })
+})
+
+describe('وعنوانُ عمّان في الموقع هو المسجَّلُ نفسُه — مصدرٌ واحد', () => {
+  /* نسختان منه تفترقان يوما: تُعدَّل واحدةٌ لسببِ عرضٍ فتخرج العقودُ بعنوانٍ
+     غيرِ الذي في الموقع. والفحصُ على الاثنين معا: القيمةُ متطابقة، **ولا
+     تُكتب حرفا** في ملفّ العرض — وإلّا مرّ الحارسُ على نسختين متطابقتين
+     اليومَ تفترقان غدا. */
+  it('القيمةُ واحدة', () => {
+    const amman = CONTACT.locations.find((l) => l.label.includes(ACADEMY_LEGAL.cityAr))
+    expect(amman, 'لا موقعَ لعمّان في بيانات التواصل').toBeTruthy()
+    expect(amman!.address).toBe(ACADEMY_LEGAL.registeredAddressAr)
+  })
+
+  it('⚠️ ولا تُكتب حرفا في `stories.ts` — تُقرأ من مصدرها', () => {
+    expect(
+      read('src/data/stories.ts').includes(ACADEMY_LEGAL.registeredAddressAr),
+      'العنوانُ المسجَّلُ مكتوبٌ حرفا في ملفّ العرض — ونسختان تفترقان',
+    ).toBe(false)
+  })
 })
 
 describe('ولا تُكتب هذه القيمُ حرفا في ملفٍّ آخر', () => {

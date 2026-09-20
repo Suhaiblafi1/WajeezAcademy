@@ -33,10 +33,21 @@ beforeAll(async () => {
   learnerCookie = `${SESSION_COOKIE}=${(await auth.login('rep-learner@test.local', 'Learner#12345')).token}`
 }, 240_000)
 
+/* ═══ والعددُ سلكُ تعثّرٍ لا توثيقٌ للحاضر ═══
+
+   يُرفَع **عمدا** مع كلّ تقريرٍ يُضاف، ويسقط على من حذف تقريرا بلا انتباه.
+   وقد بلي مرّتين: كان اسمُ الاختبار «سبعة عشر» ورقمُه ١٨، ورأسُ الخدمة يقول
+   ١٧ ورأسُ المسارات ١٦ — ثلاثةُ أرقامٍ لشيءٍ واحد، وكلُّها كاذبة. فنُزعت
+   أرقامُ الرؤوس (تُعَدّ من `defs()`)، وبقي هذا وحدَه رقما يُقصَد رفعُه. */
+const REPORT_COUNT = 19
+
 describe('التقارير التشغيلية', () => {
-  it('1) سبعة عشر تقريرا — كل مؤشر له طريقة حساب معلنة', () => {
+  it('1) لكلّ تقريرٍ مفتاحٌ وعنوانٌ وطريقةُ حسابٍ معلنة', () => {
     const list = reports.listReports()
-    expect(list.length).toBe(18)
+    expect(list.length, 'تغيّر عددُ التقارير — ارفَعْ `REPORT_COUNT` إن كانت إضافةً مقصودة').toBe(REPORT_COUNT)
+    /* ولا مفتاحَ مكرَّرٌ: المكرَّرُ يُظلّل سابقَه في `run` فيُقرأ تقريرٌ
+       باسم آخرَ — والعددُ وحدَه لا يلتقطه. */
+    expect(new Set(list.map((r) => r.key)).size, 'مفتاحُ تقريرٍ مكرَّر').toBe(list.length)
     for (const r of list) {
       expect(r.key).toBeTruthy()
       expect(r.titleAr).toBeTruthy()
@@ -89,7 +100,7 @@ describe('صلاحيات التقارير عبر HTTP', () => {
   it('8) المدير يعرض الفهرس ويشغل تقريرا ويصدّره', async () => {
     const list = await app.inject({ method: 'GET', url: '/api/admin/reports', headers: { cookie: adminCookie } })
     expect(list.statusCode).toBe(200)
-    expect(list.json().length).toBe(18)
+    expect(list.json().length).toBe(REPORT_COUNT)
     const run = await app.inject({ method: 'GET', url: '/api/admin/reports/enrollments', headers: { cookie: adminCookie } })
     expect(run.statusCode).toBe(200)
     const csv = await app.inject({ method: 'GET', url: '/api/admin/reports/enrollments/export?format=csv', headers: { cookie: adminCookie } })

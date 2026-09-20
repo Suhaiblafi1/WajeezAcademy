@@ -13,6 +13,7 @@ import { TrainerPathService } from '../../services/trainer-path.service'
 import { MAX_PATH_BLURB, MAX_PATH_COURSES, MAX_PATH_TITLE } from '../../../src/application/trainer/path-rules'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
+import { TrainerBankService, MAX_ACCOUNT_LEN } from '../../services/trainer-bank.service'
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerAvailabilityService } from '../../services/trainer-availability.service'
 import { TermService } from '../../services/term.service'
@@ -33,6 +34,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const paths = new TrainerPathService(prisma)
   const review = new TrainerReviewService(prisma)
   const offers = new TrainerOfferService(prisma)
+  const bank = new TrainerBankService(prisma)
   const earnings = new EarningsService(prisma)
   const availability = new TrainerAvailabilityService(prisma)
   const terms = new TermService(prisma)
@@ -47,6 +49,29 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      ولا صلاحيةَ جديدةً لها: `trainer.portal` هي بابُ بوّابته كلِّها، والعرضُ
      يُقرأ ويُجاب فيها. والملفُّ يُستخرَج من حسابه لا من جسمِ الطلب — فلا
      يُجيب أحدٌ عن عرضِ غيره. */
+  /* ═══ حسابي البنكيّ — يكتبه بنفسه، ولا يُعاد إليه إلّا مقنَّعا ═══
+
+     والبندُ ٤-٤ من عقده يقول إنّ موضعَه هنا: «في بوّابته على المنصّة تحت
+     مستحقّاتي بعد تفعيل حسابه» — لا في الوثيقة الموقَّعة، بمشورةٍ قانونيّة. */
+  app.get('/api/trainer/bank-account', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'حسابي البنكيُّ مقنَّعا — ولا يُعاد الرقمُ أبدا' },
+  }, async (req) => bank.mine(req.auth!.userId))
+
+  app.put('/api/trainer/bank-account', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'كتابةُ الحساب البنكيّ أو تبديلُه — يُخزَّن معمّى ويصله خبرُه' },
+  }, async (req) => {
+    const body = z.object({
+      iban: z.string().trim().min(8).max(MAX_ACCOUNT_LEN + 8),
+      holderName: z.string().trim().min(4).max(160),
+      bankNameAr: z.string().trim().min(2).max(120),
+      branchAr: z.string().trim().max(120).nullish(),
+      swiftBic: z.string().trim().max(16).nullish(),
+    }).parse(req.body)
+    return bank.setMine(req.auth!.userId, body)
+  })
+
   app.get('/api/trainer/offers', {
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'عروضُ الإسناد التي عُرضت عليّ — وما قبِلتُه وينتظر إعدادي' },
@@ -87,7 +112,24 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
       include: {
         application: { select: { fullName: true, email: true, status: true, reference: true } },
         qualifications: true, assignments: { include: { cohort: true } }, onboardingTasks: true,
-        contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
+        /* ═══ وعقدُه يُنتقى حقلا حقلا ═══
+
+           كان `contracts: { ... take: 1 }` بلا `select`، فيخرج الصفُّ كاملا
+           إلى بوّابته: متنُ العقد كلُّه، وعنوانُ شبكته ومتصفّحُه لحظةَ
+           التوقيع، وملحوظةُ المعتمِد، وسببُ الإلغاء — ومعها منذ اليومَ
+           **سببُ الفسخ**، وهو نصُّ موظّفٍ عن رحيله يُكتب لعينِ موظّفٍ آخر.
+
+           ولا شاشةَ في بوّابته تقرأ منه حرفا اليوم (لا مستهلِكَ له في
+           `src/pages/trainer/`)، فالخارجُ كلُّه فائضٌ يُسرَّب ولا يُعرَض.
+           فيُنتقى ما يصلح أن يُقرأ: ما اسمُه، وأين صار، ومتى. */
+        contracts: {
+          orderBy: { createdAt: 'desc' }, take: 1,
+          select: {
+            id: true, title: true, status: true, kind: true, revision: true,
+            sentAt: true, signedAt: true, countersignedAt: true,
+            terminatedAt: true, createdAt: true,
+          },
+        },
       },
     })
     /* ── عددُ ما ينتظر تصحيحَه ──

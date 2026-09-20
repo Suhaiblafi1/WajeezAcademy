@@ -170,6 +170,20 @@ export const PERMISSIONS = [
   { key: 'finance.view', description: 'عرض الفواتير والمدفوعات والاستردادات' },
   { key: 'finance.payment.record', description: 'تسجيل دفعة يدوية موثقة' },
   { key: 'finance.refund.process', description: 'اعتماد وتنفيذ الاسترداد' },
+  /* ═══ كشفُ رقم الحساب — حدُّ تدقيقٍ لا حدُّ تفويض ═══
+
+     الصلاحيّةُ عند من يصرف أصلا (`finance`)، فهي لا تفصل بين شخصين. وقيمتُها
+     أنّ كلَّ فكٍّ يصير فعلا **مسمّى** يُسأل عنه: «لمَ فُتح حسابُ فلان؟»
+     يُجاب بفترةٍ ومبلغٍ لا بـ«لأنّ موظّفا فتح الشاشة».
+
+     ومن أراد فصلَ الأشخاص فعلا سحبها من الحزمة ومنحها بالتخصيص الفرديّ
+     (`permissionOverrides`) — والبابُ مفتوحٌ بلا تعديل شيفرة.
+
+     وأُسمّيت في عائلة `finance` لا `trainer` بقصد: `refuseDelegation` تشتقّ
+     العائلةَ من أوّل مقطع، و`trainer` عائلةٌ يفوّضها المديرُ الأكاديميّ —
+     فاسمٌ مثل `trainer.bank.reveal` يجعل كشفَ الحسابات قابلا للتفويض من
+     خارج الماليّة. */
+  { key: 'finance.bank.reveal', description: 'كشفُ رقم حساب المدرّب البنكيّ لحظةَ الصرف — ويُسجَّل كلُّ كشف' },
   // التقارير
   { key: 'reports.view', description: 'عرض التقارير التشغيلية' },
   { key: 'reports.export', description: 'تصدير التقارير CSV/XLSX' },
@@ -282,7 +296,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   /* `commerce.manage` هنا لا عند المديرِ الأكاديميّ: الطلباتُ والكوبوناتُ
      وخططُ الاشتراك بندٌ ماليّ، ومن يسجّل الدفعةَ هو من يملك الطلبَ الذي
      دُفع عنه. */
-  finance: ['trainer.compensation.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'reports.view', 'reports.export'],
+  finance: ['trainer.compensation.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'finance.bank.reveal', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
 }
