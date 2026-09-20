@@ -8,6 +8,7 @@ import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls, StaffField } from "@/components/FormKit";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+import { payoutTimingNoteAr } from "@/application/trainer/notice-periods";
 const PAYOUT_STATUS: Record<string, { label: string; cls: string; icon: typeof Clock3 }> = {
   pending: { label: "بانتظار الاعتماد", cls: "border-gold/40 text-gold-ink", icon: Clock3 },
   approved: { label: "معتمد — قيد الصرف", cls: "border-teal/40 text-teal-light-ink", icon: ShieldCheck },
@@ -355,7 +356,8 @@ function RealEarningsView() {
       </div>
 
       <Card as="p" className="mt-8 px-5 py-4 text-center text-read leading-6 text-muted-foreground">
-        الكشف يمر بثلاث مراحل: إنشاء من الإدارة المالية ← اعتماد ← صرف. كل بند مرتبط بمصدره لمنع الازدواج —
+        الكشف يمر بثلاث مراحل: إنشاء من الإدارة المالية ← اعتماد ← صرف. كل بند مرتبط بمصدره لمنع الازدواج.
+        {' '}{payoutTimingNoteAr()}{' '}
         ولأي استفسار عن بند تواصل مع منسقك قبل موعد الصرف.
       </Card>
     </TrainerLayout>

@@ -24,6 +24,7 @@ import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMail
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
+import { buildFeeExampleAr, feeExampleFactsAr, type FeeExample } from '../../src/application/trainer/fee-example'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -1323,9 +1324,36 @@ export class TrainerReviewService {
     }
   }
 
+  /* ═══ المثالُ الحسابيُّ يُرسَل ولا يُوقَّع ═══
+
+     قرارُ صاحب المنصّة (٢٠ سبتمبر ٢٠٢٦): يُعرض على المدرّب مثالٌ بأرقامه هو
+     ليرى ما يعنيه أساسُ أتعابه بالأرقام — **خارجَ الوثيقة الموقَّعة**. وعلّةُ
+     الموضع في رأس `fee-example.ts`: ما دخل الملحقَ صار بندا بالبند 18-4، وما
+     سبق التوقيعَ في بريدٍ أسقطه البندُ نفسُه.
+
+     ولا يُرسَل حين لا قاعدةَ أتعابٍ أو حين تكون نسبةً من الإيراد — فالرقمُ
+     هناك دالّةٌ في سعرٍ نملكه نحن. */
+  private async contractFeeExample(compensationRuleId: string | null) {
+    if (!compensationRuleId) return null
+    const rule = await this.prisma.trainerCompensationRule.findUnique({ where: { id: compensationRuleId } })
+    if (!rule) return null
+    return buildFeeExampleAr({
+      type: rule.type, rate: rule.rate.toString(), currency: rule.currency,
+      minSeats: rule.minSeats, referralRate: rule.referralRate?.toString() ?? null,
+    })
+  }
+
   private async mailContract(args: {
     to: string; fullName: string; title: string; url: string; expiresAt: Date; resend: boolean
+    feeExample?: FeeExample | null
   }) {
+    const example = args.feeExample
+      ? [
+        { kind: 'h' as const, text: 'مثالٌ حسابيٌّ بأرقام أتعابك أنت' },
+        { kind: 'facts' as const, rows: feeExampleFactsAr(args.feeExample) },
+        { kind: 'note' as const, text: args.feeExample.noteAr },
+      ]
+      : []
     return sendDirectEmail(this.prisma, {
       to: args.to,
       subject: args.resend ? `رابطٌ جديدٌ لتوقيع عقدك — ${args.title}` : `عقدُك مع أكاديمية وجيز — للقراءة والتوقيع`,
@@ -1336,6 +1364,7 @@ export class TrainerReviewService {
           { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
           { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
           { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
+          ...example,
           { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
         ],
       }),
@@ -1381,6 +1410,7 @@ export class TrainerReviewService {
     const mail = await this.mailContract({
       to: app.email, fullName: app.fullName, title: contract.title,
       url: this.signingUrl(token), expiresAt, resend: false,
+      feeExample: await this.contractFeeExample(contract.compensationRuleId),
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
@@ -1407,6 +1437,7 @@ export class TrainerReviewService {
     const mail = await this.mailContract({
       to: app.email, fullName: app.fullName, title: contract.title,
       url: this.signingUrl(token), expiresAt, resend: true,
+      feeExample: await this.contractFeeExample(contract.compensationRuleId),
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
