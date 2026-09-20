@@ -1,0 +1,101 @@
+# نشرُ الإنتاج من GitHub — بقرار صاحب المنصّة (٢٠ سبتمبر ٢٠٢٦).
+#
+# ═══ وهذا نسخٌ لقاعدةٍ قائمة، فيُقال صراحةً ═══
+#
+# كان في `scripts/deploy-watch.sh`: «الخادمُ يسأل ولا يُسأل — لا مفتاحَ في
+# GitHub، ولا منفذَ مفتوحٌ لأحد». وعلّتُها أنّ من يملك الكتابةَ في المستودَع
+# يستطيع كتابةَ سير عملٍ يستعمل السرّ. والقاعدةُ لم تُلغَ، بل **قُيّدت**:
+# صار في GitHub مفتاحٌ **لا يفتح إلّا بابا واحدا**.
+#
+# ═══ ثلاثُ طبقاتٍ تجعل المفتاحَ المسروقَ لا يساوي إلّا نشرةً ═══
+#
+# ① **أمرٌ مفروضٌ على المفتاح.** في `authorized_keys` على الخادم يُكتب المفتاح
+#    مسبوقا بـ`command="bash /opt/wajeez/deploy/deploy.sh"` مع منع النفق
+#    والوكيل والطرفيّة. فلا يختار هذا السيرُ ما يُنفَّذ — ولا يستطيع. ومن سرق
+#    المفتاحَ نشر الإصدارَ القائم، ولا يقرأ ملفّا ولا يفتح صَدَفة.
+#    ولهذا لا يمرَّر إلى `ssh` أدناه أمرٌ أصلا: الأمرُ عند الخادم لا عندنا.
+#
+# ② **بيئةٌ محميّة** (`environment: production`): سرُّها لا يُقرأ إلّا من وظيفةٍ
+#    تسمّيها، ولصاحب المستودَع أن يشترط مراجِعا أو يحصر الفروع في إعداداتها.
+#
+# ③ **ولا يُنشَر إلّا أخضر.** المحفّزُ ليس الدفعَ على `main` بل **نجاحَ CI**
+#    عليها (`workflow_run` بشرط `conclusion == 'success'`). فقاعدةُ «لا يُدمج
+#    أحمر» صارت «لا يُنشَر أحمر»، ودفعةٌ تصل قبل أن تُفحَص لا تنشر شيئا.
+#
+# ═══ وعلامةُ النجاح تُقاس ولا تُفترَض ═══
+#
+# لو سقط الأمرُ المفروضُ من `authorized_keys` لفتح `ssh` صَدَفةً بلا أمر،
+# ولخرج بصفرٍ بلا أن ينشر شيئا — **ونجاحٌ كاذبٌ أسوأُ من فشل**. فيُفتَّش في
+# المخرَج عن السطر الذي لا يطبعه إلّا `deploy/deploy.sh` عند تمامه.
+#
+# ولا يُلغي هذا `scripts/deploy-watch.sh`: من ركّبه بقي له طريقٌ ثانٍ يعمل بلا
+# GitHub أصلا، وتشغيلُ النشر مرّتين على الالتزام نفسِه لا يضرّ — فـ`deploy.sh`
+# يسحب ثمّ يبني ما في الشجرة.
+name: نشرُ الإنتاج
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # ولا يُلغى نشرٌ جارٍ: التبديلُ في منتصفه يترك حاوياتٍ نصفَ مبدَّلة.
+  # فالثاني ينتظر الأوّل ولا يقتله.
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: نشرٌ إلى خادم الإنتاج
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: تهيئةُ المفتاح وبصمةِ المضيف
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p ~/.ssh
+          # `printf` لا `echo`: الأخيرُ يفسّر ما في المفتاح من محارف
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+
+      - name: النشر
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          # ولا أمرَ بعد العنوان: الأمرُ مفروضٌ في authorized_keys على الخادم
+          ssh -T \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            "$DEPLOY_USER@$DEPLOY_HOST" 2>&1 | tee deploy-output.txt
+
+      - name: التحقّقُ من أنّ النشرَ وقع فعلا
+        run: |
+          set -euo pipefail
+          # السطرُ الذي لا يطبعه إلّا deploy.sh عند تمامه. وغيابُه يعني أنّ
+          # الأمرَ المفروضَ ليس على المفتاح — فالاتّصالُ نجح ولم يُنشَر شيء.
+          grep -q 'نُشر الإصدار' deploy-output.txt || {
+            echo "::error::اتّصلَ ولم يَنشُر — راجع command= في authorized_keys على الخادم" >&2
+            exit 1
+          }
+
+      - name: محوُ المفتاح
+        if: always()
+        run: shred -u ~/.ssh/deploy_key 2>/dev/null || rm -f ~/.ssh/deploy_key
