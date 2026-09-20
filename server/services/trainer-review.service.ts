@@ -13,6 +13,7 @@ import { recordAudit } from './audit'
 import { seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import { bookingReminderMail, decisionMailFor, rejectionUndoneMail } from './trainer-decision-mail'
+import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { LIVE_INTERVIEW, revertWhenNoLiveInterview } from './trainer-interview-state'
@@ -72,7 +73,13 @@ export type RubricKey = (typeof RUBRIC_CRITERIA)[number]
 /** الناقصُ جائز — فالقيمةُ قد تغيب، ونوعُها يقول ذلك بدل أن يُكتَم بتحويل */
 export type RubricScores = Record<string, number | undefined>
 
-const INVITATION_TTL_MS = 72 * 3600_000 // 72 ساعة
+/* مهلةُ دعوة حساب المدرّب المعتمَد — من سقف روابط البريد لا برقمٍ بيدها.
+
+   كانت اثنتَين وسبعين ساعة، وأدخلها صاحبُ المنصّة في السقف (٢٠ سبتمبر
+   ٢٠٢٦): «نعم غيّره أيضا لـ٢٤ ساعة». فلم يبقَ فوق السقف رابطٌ يُرسَل بالبريد.
+   والمدّةُ ونصُّها في `src/application/links/mail-link-window.ts`، ومن فاتته
+   يطلب من الفريق إعادةَ إرسالها — وهو مقولٌ في الرسالة نفسِها. */
+const INVITATION_TTL_MS = MAIL_LINK_TTL_MS
 
 /* ═══ الناقصُ يُقبل، والمجهولُ يُرَدّ ═══
 
@@ -1895,7 +1902,8 @@ export class TrainerReviewService {
   }
 
   /* ─────────── الدعوة الآمنة وإنشاء الحساب ───────────
-     تُرسل بعد الاعتماد والعقد فقط. الرمز يُحفظ هاش، صالح 72 ساعة، يُستخدم مرة. */
+     تُرسل بعد الاعتماد والعقد فقط. الرمز يُحفظ هاش، وعمرُه سقفُ روابط البريد
+     (`INVITATION_TTL_MS` أعلاه)، ويُستخدم مرة. */
 
   /** ربطُ حساب المتقدّم بملفّ المدرّب ومنحُه دورَ المدرّب — دورُ التقديم يسقط */
   private async linkApplicantAsTrainer(profileId: string, userId: string, actorId: string | null): Promise<void> {
@@ -1944,7 +1952,7 @@ export class TrainerReviewService {
         heading: `اكتمل اعتماد طلبك (${app.reference}) — وهذه دعوتك لإنشاء حسابك`,
         blocks: [
           { kind: 'cta', label: 'أنشئ حسابك واختر كلمتك', href: acceptUrl },
-          { kind: 'callout', text: 'الرابط صالحٌ اثنتين وسبعين ساعة، ويُستخدم مرّةً واحدة.' },
+          { kind: 'callout', text: `الرابط صالحٌ ${MAIL_LINK_WINDOW_AR}، ويُستخدم مرّةً واحدة.` },
           { kind: 'note', text: 'فإن انتهى فاطلب من فريقنا إعادةَ إرساله.' },
         ],
       }),

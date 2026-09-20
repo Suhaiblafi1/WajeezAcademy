@@ -26,6 +26,7 @@ import ReviewerLinks from "./ReviewerLinks";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
 import { queueAge } from "@/application/trainer/queue-age";
 import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/delivery";
+import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
@@ -1029,7 +1030,7 @@ export default function TrainerApplications() {
                   <code dir="ltr" className="mt-2 block overflow-x-auto whitespace-nowrap rounded-lg bg-paper/40 p-2 font-mono text-fine text-foreground">
                     {invite.url}
                   </code>
-                  <p className="mt-1.5 text-read text-muted-foreground">يُستخدم مرة واحدة ويسقط بعد ٧٢ ساعة.</p>
+                  <p className="mt-1.5 text-read text-muted-foreground">يُستخدم مرّةً واحدة، وصالحٌ {MAIL_LINK_WINDOW_AR}.</p>
                 </Inset>
               )}
               {a.profile?.userId && (
