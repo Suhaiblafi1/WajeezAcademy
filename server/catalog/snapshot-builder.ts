@@ -105,6 +105,14 @@ export async function buildSnapshotFromDb(
       skill_ids: c.skillLinks.map((l) => l.skillId),
       skill_slugs: c.skillLinks.map((l) => l.skill.slug),
       skill_names_ar: c.skillLinks.map((l) => l.skill.nameAr),
+      /* ═══ دورةٌ قائمةٌ بنفسها (٢٠ سبتمبر ٢٠٢٦) ═══
+
+         تخرجان في اللقطة معا أو لا تخرجان: الرمزُ بلا مجالٍ لا يُرشَّح — لا
+         يصله هدفٌ ولا احتياج — والمجالُ بلا رمزٍ لا يُقرأ. ويُبنى منهما كيانُ
+         `course` في `universe.ts`. */
+      recommendable_directly: c.recommendableDirectly,
+      diagnostic_domains: c.diagnosticDomains,
+      diagnostic_stages: c.diagnosticStages,
     }
   })
 

@@ -49,6 +49,12 @@ const HIGH: readonly string[] = [
   'trainer.qualify', 'trainer.qualify.reject',
   'trainer.approved.notify', 'trainer.info_requested.notify',
   'trainer.status.transition', 'trainer.contract.sign',
+  /* ═══ وتجاوزُ بوّابة التجهيز أعلاها ═══
+
+     يفتح حسابَ مدرّبٍ ويمنحه دورَه **وهو ناقصُ ما يحميه**: بلا اتّفاقٍ
+     ماليٍّ يُحسب به أجرُه، أو بلا عقدٍ يحكم ما بيننا. فهو يمسّ وصولَه
+     ومالَه معا، وهو بعينه ما يُسأل عنه بعد شهر. */
+  'trainer.readiness.override',
   /* ═══ والإرسالُ والتوقيعُ عاليان — هنا يقع ما يمسّ الإنسان ═══
 
      التركيبُ تهيئةٌ لا يعلم بها أحد (في `LOW` أدناه، ومعه سببُه). أمّا
@@ -158,6 +164,9 @@ const MEDIUM: readonly string[] = [
   /* اقتراحُ دورته */
   'trainer.course_proposal.link', 'trainer.course_proposal.become_course',
   'trainer.course_proposal.reject',
+  /* ونقضُ الربط وتصحيحُ النصّ معها: كلاهما قرارٌ على اقتراحِ إنسانٍ بعينه
+     يقرؤه في بوّابته — لا تغييرُ نظامٍ لا يعلم به أحد. */
+  'trainer.course_proposal.unlink', 'trainer.course_proposal.edit_by_staff',
   /* مسارُه باسمه */
   'trainer.path.publish', 'trainer.path.reject', 'trainer.path.retire',
   /* صورتُه ومراجعتُه */

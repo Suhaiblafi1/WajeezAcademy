@@ -10,7 +10,7 @@ import { normalizeAr } from '../../src/application/text/search-ar'
 import { COURSE_DOMAIN_FAMILIES, courseDomain } from '../../src/application/catalog/course-domain'
 import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
-import { GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
+import { CAREER_STAGE_LABELS_AR, GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
 import type { PermissionKey } from '../auth/permissions'
 
 /* حبّةُ استثناء maker-checker — تُكتب مرّةً واحدةً، ونوعُها من فهرس الصلاحيّات
@@ -102,6 +102,11 @@ export class CatalogAdminService {
          سعر» ثمّ تُنشئ شعبةً بـ١٢٥ دولارا. */
       listPrice: c.listPrice != null ? Number(c.listPrice) : null,
       listCurrency: c.listCurrency ?? 'USD',
+      /* ك-٥: إذنُ ترشيحِها وحدَها ومجالُها — تُقرآن في الصفّ فيُعرف حالُ
+         دورةٍ بلا مسارٍ بلا فتح شاشةٍ أخرى. */
+      recommendableDirectly: c.recommendableDirectly,
+      diagnosticDomains: c.diagnosticDomains,
+      diagnosticStages: c.diagnosticStages,
     }))
   }
 
@@ -251,6 +256,81 @@ export class CatalogAdminService {
     return { courseId, skillIds: unique, assessment: assessSkillSelection(slugs.map((s) => s.slug)) }
   }
 
+  /* ═══ دورةٌ تُرشَّح وحدَها في التشخيص (٢٠ سبتمبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «إن أردتُ أن أضيفها دورةً جديدةً، فلِمَ أضيفها إلى
+     مسار؟ ينبغي أن تُحتسب دورةً جديدةً في نتيجة التشخيص بمهاراتها».
+
+     والحقلان يُضبطان معا لأنّهما شرطٌ واحد: رمزٌ بلا مجالٍ كيانٌ لا يفوز
+     أبدا — لا يصله هدفٌ ولا احتياج — ومجالٌ بلا رمزٍ لا يُقرأ. فمن أراد
+     إطفاءَها أطفأ الرمزَ، والمجالُ يبقى مكتوبا لا يُفقَد.
+
+     ولا يُشتقّ المجالُ من المهارات: المهارةُ لا تحمل مجالا في هذا المخطّط —
+     المجالُ يُخرَط من المسار أو الهدف أو الوظيفة. فيُعلَن. */
+  async setStandaloneRecommendation(
+    courseId: string,
+    input: { recommendable: boolean; domains: string[]; stages: string[] },
+    actorId?: string,
+  ) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: {
+        id: true, recommendableDirectly: true, diagnosticDomains: true, diagnosticStages: true,
+        skillLinks: { select: { skillId: true } },
+      },
+    })
+    if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
+
+    const domains = [...new Set(input.domains.map((d) => d.trim()).filter(Boolean))].sort()
+    const known = new Set(domainsV2.map((d) => d.id as string))
+    const unknown = domains.filter((d) => !known.has(d))
+    if (unknown.length) {
+      throw new AuthError('unknown_domain', `مجالاتٌ لا يعرفها التشخيص: ${unknown.join(' · ')}`, 422)
+    }
+
+    const stages = [...new Set(input.stages.map((x) => x.trim()).filter(Boolean))].sort()
+    const knownStages = new Set(Object.keys(CAREER_STAGE_LABELS_AR))
+    const badStages = stages.filter((x) => !knownStages.has(x))
+    if (badStages.length) {
+      throw new AuthError('unknown_stage', `مراحلُ لا يعرفها التشخيص: ${badStages.join(' · ')}`, 422)
+    }
+
+    /* ولا تُشعَل بلا ما تنافس به: مجالٌ يصلها به احتياج، ومهارةٌ تُقاس.
+       والإشعالُ بلا أحدهما يضع في الفضاء كيانا لا يفوز أبدا — ويقرأ من
+       أشعله أنّ دورتَه «تُرشَّح» وهي لا تُرشَّح. */
+    if (input.recommendable) {
+      if (domains.length === 0) {
+        throw new AuthError('no_domain', 'اذكر مجالَ التشخيص الذي تخدمه — بلا مجالٍ لا يصلها هدفٌ ولا احتياج', 422)
+      }
+      if (course.skillLinks.length === 0) {
+        throw new AuthError('no_skills', 'اربطْ مهاراتِها أوّلا — الدورةُ تنافس بمهاراتها، وبلا مهارةٍ لا شيءَ يُقاس', 422)
+      }
+      /* والصمتُ عن الجمهور يُخرجها من المنافسة لا يُدخلها كلَّ منافسة
+         (`assessEntityEligibility`) — فتُرشَّح في الورق ولا تنافس مرّةً. */
+      if (stages.length === 0) {
+        throw new AuthError('no_stages', 'اذكر جمهورَها — كيانٌ بلا جمهورٍ مُعلَنٍ يخرج من المنافسة ولا ينافس مرّة', 422)
+      }
+    }
+
+    const updated = await this.prisma.course.update({
+      where: { id: courseId },
+      data: { recommendableDirectly: input.recommendable, diagnosticDomains: domains, diagnosticStages: stages },
+      select: { id: true, recommendableDirectly: true, diagnosticDomains: true, diagnosticStages: true },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'catalog.course.standalone_set', entityType: 'course', entityId: courseId,
+      before: {
+        recommendable: course.recommendableDirectly,
+        domains: [...course.diagnosticDomains].sort(), stages: [...course.diagnosticStages].sort(),
+      },
+      after: {
+        recommendable: updated.recommendableDirectly,
+        domains: updated.diagnosticDomains, stages: updated.diagnosticStages,
+      },
+    })
+    return updated
+  }
+
   /* ═══ معرّفُ الدورة يُولَّد ولا يُكتب (١٦ سبتمبر ٢٠٢٦) ═══
 
      كان حقلا في المعالج نصُّه النائب «المعرّف — CRS-XXX-000»، والخادمُ
@@ -300,8 +380,20 @@ export class CatalogAdminService {
 
     /* ٢ · وإلّا فمقطعُ المسار نفسِه */
     const fromPathway = /^PW-([A-Z0-9]+)-\d+$/.exec(pathwayId)?.[1]
-    const family = fromSiblings ?? fromPathway ?? 'GEN'
+    return this.mintCourseIdInFamily(fromSiblings ?? fromPathway ?? 'GEN')
+  }
 
+  /** ═══ ورقمٌ في عائلةٍ تُسمّى صراحةً — لدورةٍ بلا مسارٍ أمّ ═══
+
+      قرارُ صاحب المنصّة (٢٠ سبتمبر ٢٠٢٦): «إن أردتُ أن أضيفها دورةً جديدةً،
+      فلِمَ أضيفها إلى مسار؟». وكان المعرِّفُ يُشتقّ من المسار وحدَه، فصار
+      المسارُ لازما لميلاد الدورة لا لتصنيفها.
+
+      والعائلةُ تبقى لازمة: `C-MKT-101` يُقرأ ويُصنَّف ويُرتَّب به الكتالوج،
+      و«دورةٌ بلا عائلة» تصير `C-GEN-101` بلا مجالٍ ولا جيران. فمن أنشأ بلا
+      مسارٍ سمّى عائلتَها — حقلٌ واحدٌ من قائمةٍ معلومة، لا مسارٌ يُخترع
+      بجمهورٍ وتحوّلٍ ومدّة. */
+  async mintCourseIdInFamily(family: string): Promise<string> {
     /* ٣ · والرقمُ يلي أكبرَ ما في العائلة — و١٠١ مبدأُ الترقيم في الكتالوج */
     const inFamily = await this.prisma.course.findMany({
       where: { id: { startsWith: `C-${family}-` } }, select: { id: true },
@@ -313,15 +405,49 @@ export class CatalogAdminService {
     return `C-${family}-${Math.max(top + 1, 101)}`
   }
 
-  /** إنشاء دورة كمسودة مع وحداتها وروابط مهاراتها — ومعرّفُها مولَّد */
+  /** ═══ إنشاء دورة كمسودة — والمسارُ الأمُّ اختياريٌّ منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+
+      قرارُ صاحب المنصّة: «إن أردتُ أن أضيفها دورةً جديدةً، فلِمَ أضيفها إلى
+      مسار؟ ينبغي أن تُحتسب دورةً جديدةً في نتيجة التشخيص بمهاراتها. ولا
+      حاجةَ لأن تُعرض مسارَ تعلّمٍ إلّا أن يصنع المدرّبُ مسارَه بنفسه».
+
+      وكان المسارُ لازما في ثلاثة مواضعَ معا: يُتحقَّق من وجوده، ويُشتقّ منه
+      المعرِّف، ويُكتب له صفُّ ربطٍ في `PathwayCourse`. فمن أراد دورةً واحدةً
+      قائمةً بنفسها اضطُرّ إلى اختراع مسارٍ لها — أو إلحاقها بمسارٍ لا تنتمي
+      إليه، فتظهر في رحلةِ من لم يطلبها.
+
+      والثلاثةُ صارت مشروطةً بوجوده: بلا مسارٍ تُسمّى العائلةُ صراحةً، ولا
+      يُكتب صفُّ ربط. وما تبقّى — المهاراتُ والوحداتُ وتقييمُ القياس — هو هو،
+      فالدورةُ دورةٌ سواءٌ كانت في رحلةٍ أم قائمةً وحدَها. */
   async createCourse(input: {
-    pathwayId: string; sequence: number; titleAr: string; shortPromiseAr?: string
+    /** المسارُ الأمّ — وفارغٌ يعني دورةً قائمةً بنفسها */
+    pathwayId?: string | null
+    /** ترتيبُها في مسارها — لا معنى له بلا مسار */
+    sequence?: number | null
+    /** عائلةُ المعرِّف حين لا مسارَ يُشتقّ منه (`MKT` ← `C-MKT-101`) */
+    familyCode?: string | null
+    titleAr: string; shortPromiseAr?: string
     levelAr?: string; totalHours: number; skillIds: string[]
     modules: { sequence: number; titleAr: string; outcomeAr?: string; activityAr?: string; artifactAr?: string; bodyAr?: string; checksAr?: string; videoAr?: string; scenarioAr?: string; hours: number }[]
   }, actorId?: string) {
-    const pathway = await this.prisma.pathway.findUnique({ where: { id: input.pathwayId } })
-    if (!pathway) throw new AuthError('unknown_pathway', 'المسار الأم غير موجود')
-    const id = await this.mintCourseId(input.pathwayId)
+    let id: string
+    if (input.pathwayId) {
+      const pathway = await this.prisma.pathway.findUnique({ where: { id: input.pathwayId } })
+      if (!pathway) throw new AuthError('unknown_pathway', 'المسار الأم غير موجود')
+      id = await this.mintCourseId(input.pathwayId)
+    } else {
+      /* والعائلةُ من القائمة المسمّاة لا حرفا يُكتب: عائلةٌ مخترعةٌ تصنع
+         `C-XYZ-101` بلا مجالٍ عربيٍّ ولا جيران، ويقرؤها مخطِّطُ الفصل فراغا. */
+      const family = (input.familyCode ?? '').trim().toUpperCase()
+      if (!COURSE_DOMAIN_FAMILIES.includes(family)) {
+        throw new AuthError(
+          'unknown_family',
+          'دورةٌ بلا مسارٍ أمٍّ تحتاج عائلةً مسمّاةً من قائمة العائلات — منها يُشتقّ معرّفُها ومجالُها',
+          422,
+        )
+      }
+      id = await this.mintCourseIdInFamily(family)
+    }
     const skills = await this.prisma.skill.findMany({ where: { id: { in: input.skillIds } } })
     if (skills.length !== input.skillIds.length) throw new AuthError('unknown_skill', 'مهارة واحدة أو أكثر غير موجودة')
     if (input.modules.length === 0) throw new AuthError('no_modules', 'الدورة بلا وحدات غير مقبولة')
@@ -350,7 +476,11 @@ export class CatalogAdminService {
           },
         },
         skillLinks: { create: input.skillIds.map((skillId) => ({ skillId })) },
-        pathwayLinks: { create: { pathwayId: input.pathwayId, sequence: input.sequence } },
+        /* ولا صفَّ ربطٍ لدورةٍ بلا مسار — و`PathwayCourse` مفتاحُها
+           `(pathwayId, courseId)`، فصفٌّ بمسارٍ فارغٍ لا يُكتب أصلا. */
+        ...(input.pathwayId
+          ? { pathwayLinks: { create: { pathwayId: input.pathwayId, sequence: input.sequence ?? 1 } } }
+          : {}),
         modules: {
           create: input.modules.map((m) => ({
             id: `${id}-M${m.sequence}`, status: 'draft',

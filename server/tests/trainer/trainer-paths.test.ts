@@ -11,6 +11,7 @@ import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -45,6 +46,7 @@ async function trainer(email: string, fullName: string, courseIds: string[], pub
     demoConsent: true, contact: { channel: 'email' },
   })
   await prisma.trainerApplication.update({ where: { id: row.id }, data: { emailVerifiedAt: new Date() } })
+  await makeReadyForApproval(prisma, row.id, adminId)
   await review.decide(row.id, adminId, 'approve', 'اعتماد للاختبار')
   const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: row.id } })
 

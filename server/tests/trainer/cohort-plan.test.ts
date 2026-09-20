@@ -17,6 +17,7 @@ import { TrainerApplicationService, type AvailabilityInput } from '../../service
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { CohortPlanService, staticModulesFor, type TrainerPlanContent } from '../../services/cohort-plan.service'
 import { CohortService } from '../../services/cohort.service'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 
 let prisma: PrismaClient
 let plans: CohortPlanService
@@ -42,6 +43,7 @@ async function approvedTrainer(auth: AuthService, apps: TrainerApplicationServic
   })
   const app = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference: res.reference } })
   await review.decide(app.id, adminId, 'move_to_review')
+  await makeReadyForApproval(prisma, app.id, adminId)
   await review.decide(app.id, adminId, 'approve')
   const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })
   void auth

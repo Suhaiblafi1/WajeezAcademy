@@ -7,6 +7,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
@@ -281,6 +282,8 @@ describe('دورة طلب المدرب', () => {
     await review.signContract(contractId, adminId)
 
     await expect(review.createInvitation(applicationId, adminId)).rejects.toMatchObject({ code: 'has_account' })
+    /* والتجهيزُ يسبق الاعتماد منذ ٢٠ سبتمبر ٢٠٢٦ — والبوّابةُ في `readiness-gate` */
+    await makeReadyForApproval(prisma, applicationId, adminId)
     await review.decide(applicationId, adminId, 'activate')
 
     const user = await prisma.user.findUniqueOrThrow({ where: { id: trainerUserId }, include: { roles: true } })

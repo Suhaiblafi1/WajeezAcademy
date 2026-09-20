@@ -14,6 +14,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService, type AvailabilityInput } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
@@ -60,6 +61,15 @@ describe('الأصيلُ والحدُّ الأدنى — معادلةٌ واحد
       })
       const app = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference: res.reference } })
       await review.decide(app.id, adminId, 'move_to_review')
+      /* ═══ والتجهيزُ يسبق الاعتماد منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+
+         بوّابةٌ من ثلاث خطوات قبل «نشط»: أتعابٌ سارية، ودورةٌ مؤهَّلٌ لها،
+         وعقدٌ موقَّع. وهذه الجولةُ تفحص معادلةَ المستحقّات لا الاعتماد، فتُتمّ
+         ما ينقص بأقصر طريقٍ صحيح. والبوّابةُ في `readiness-gate.test.ts`.
+
+         ولا يُكتب تأهيلٌ فوق ما بُذر: `teachableCourseIds` أعلاه تبذر
+         `C-BIZ-101` عند القبول الداخليّ، والسقالةُ لا تضيف فوقها. */
+      await makeReadyForApproval(prisma, app.id, adminId)
       await review.decide(app.id, adminId, 'approve')
       const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })
       return { userId: app.userId!, profileId: profile.id }

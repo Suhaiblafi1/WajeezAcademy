@@ -61,6 +61,18 @@ export const MAX_PROPOSAL_QUESTION = 2000
     و`info_requested` منه بقصد: سُئل صاحبُه ليعدّل، فمنعُه من التعديل يجعل
     السؤالَ بلا جواب. */
 export const OPEN_PROPOSAL = ['draft', 'submitted', 'info_requested'] as const
+
+/* ═══ وما يبقى في الطابور بعد البتّ — `linked` وحدَها (٢٠ سبتمبر ٢٠٢٦) ═══
+
+   كان المربوطُ يختفي من الشاشة لحظةَ ربطه. وقال صاحبُ المنصّة: «حين أربطه
+   يذهب — وأريده أن يبقى مكتوبا عليه أنّه رُبط بكذا، فأعيد النظر فيه لاحقا».
+
+   وعلّةُ بقائه أنّ الربطَ **أضعفُ القرارات الثلاثة**: الرفضُ جوابٌ انتهى،
+   و«صارت دورةً» أنشأت شيئا في الكتالوج له حياتُه. أمّا الربطُ فحكمٌ بأنّ
+   هذه نسخةٌ من ذاك — وهو حكمُ تشابهٍ يُخطئ فيه من لا يحفظ الكتالوجَ كلَّه،
+   ويُكتشف خطؤه بعد أسبوعٍ حين يُقرأ الاقتراحُ ثانية. فيبقى معروضا ببابِ
+   رجوعٍ (`unlink`)، لا يُدفن في مِطواةٍ تُفتح بزرّ. */
+export const QUEUE_VISIBLE = [...OPEN_PROPOSAL, 'linked'] as const
 /** ما بُتّ فيه — يُقرأ ولا يُكتب */
 export const DECIDED_PROPOSAL = ['linked', 'became_course', 'rejected'] as const
 
@@ -302,7 +314,7 @@ export class CourseProposalService {
       لما هو موجود. والمصنَّفُ لا يُرشَّح له: قد بُتّ فيه. */
   async queue(scope: 'open' | 'all' = 'open') {
     const rows = await this.prisma.trainerCourseProposal.findMany({
-      where: scope === 'open' ? { status: { in: [...OPEN_PROPOSAL] } } : {},
+      where: scope === 'open' ? { status: { in: [...QUEUE_VISIBLE] } } : {},
       orderBy: [{ createdAt: 'asc' }],
       include: {
         course: COURSE_LOOKUP,
@@ -314,8 +326,10 @@ export class CourseProposalService {
         },
       },
     })
-    const open = rows.filter((r) => (OPEN_PROPOSAL as readonly string[]).includes(r.status))
-    const catalog = open.length > 0 ? await this.matchableCourses() : []
+    /* والترشيحُ يُحسب للمربوط كذلك: من يراجع ربطا سابقا يحتاج ما يقابله به.
+       والمبتوتُ بتّا نهائيّا (دورةٌ جديدة، أو رفضٌ) لا يُرشَّح له: قد انتهى. */
+    const matchable = rows.filter((r) => (QUEUE_VISIBLE as readonly string[]).includes(r.status))
+    const catalog = matchable.length > 0 ? await this.matchableCourses() : []
 
     return rows.map((r) => ({
       id: r.id,
@@ -334,8 +348,10 @@ export class CourseProposalService {
       decisionNoteAr: r.decisionNoteAr,
       decidedAt: r.decidedAt,
       createdAt: r.createdAt,
-      suggestedCourses: (OPEN_PROPOSAL as readonly string[]).includes(r.status)
+      suggestedCourses: (QUEUE_VISIBLE as readonly string[]).includes(r.status)
         ? suggestCourses({ titleAr: r.titleAr, summaryAr: r.summaryAr }, catalog)
+          /* ولا يُرشَّح له ما هو مربوطٌ به أصلا — سطرٌ يقول «اربِطْه بما هو مربوطٌ به» */
+          .filter((m) => m.courseId !== r.courseId)
         : ([] as ProposalMatch[]),
     }))
   }
@@ -504,6 +520,79 @@ export class CourseProposalService {
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.course_proposal.reject',
       entityType: 'trainer_course_proposal', entityId: id, reason, meta: { titleAr: row.titleAr },
+    })
+    return out
+  }
+
+  /** ═══ نقضُ الربط — يعود الاقتراحُ إلى الطابور غيرَ مبتوتٍ فيه ═══
+
+      والربطُ حكمُ تشابهٍ يُخطأ فيه (انظر رأسَ `QUEUE_VISIBLE`). فمن رأى بعد
+      أسبوعٍ أنّ «إدارةَ المشاريع الرشيقة» ليست نسخةً من «إدارة المشاريع»
+      ردَّه إلى الطابور، ثمّ ربطه بغيره أو جعله دورةً جديدة.
+
+      ولا يُمحى ما كان: رمزُ الدورة التي كان مربوطا بها يُكتب في الأثر، فمن
+      سأل «بمَ كان مربوطا قبل؟» وجد الجواب. وإنّما يُفرَّغ الصفُّ كي لا يُقرأ
+      قرارٌ نُقض على أنّه قائم. */
+  async unlink(actorId: string, id: string, noteAr?: string | null) {
+    const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    if (row.status !== 'linked') {
+      throw new AuthError('not_linked', 'لا يُنقض إلّا ربطٌ قائم — وهذا الاقتراحُ ليس مربوطا برمز', 409)
+    }
+    const out = await this.prisma.trainerCourseProposal.update({
+      where: { id },
+      data: {
+        status: 'submitted', courseId: null,
+        decidedBy: null, decidedAt: null,
+        decisionNoteAr: noteAr?.trim() || null,
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.course_proposal.unlink',
+      entityType: 'trainer_course_proposal', entityId: id,
+      meta: { previousCourseId: row.courseId, titleAr: row.titleAr, noteAr: noteAr?.trim() || null },
+    })
+    return out
+  }
+
+  /** ═══ تصحيحُ عنوانٍ أو نبذةٍ بيد الإدارة ═══
+
+      وهي **كلماتُ صاحبها**، فلا تُعدَّل في صمت: ما كان يُكتب في الأثر كاملا،
+      فمن قرأ بعد شهرٍ عنوانا لا يعرفه وجد أصلَه ومن غيّره ومتى.
+
+      ولمَ يُسمَح بها أصلا: يصل العنوانُ ممّا كُتب على عجلٍ في نموذج الانضمام
+      — «دوره خطابه عامه» — فلا يُقرأ في طابورٍ ولا في كتالوجٍ إن صار دورة.
+      وردُّه إلى صاحبه بسؤالٍ يكلّف أسبوعا لتصحيح همزة. */
+  async editByStaff(
+    actorId: string, id: string,
+    input: { titleAr?: string; summaryAr?: string | null },
+  ) {
+    const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+
+    const titleAr = input.titleAr?.trim()
+    if (titleAr !== undefined && titleAr.length < 3) {
+      throw new AuthError('bad_title', 'العنوان ثلاثةُ أحرفٍ فأكثر', 422)
+    }
+    const summaryAr = input.summaryAr === undefined ? undefined : (input.summaryAr?.trim() || null)
+    if (titleAr === undefined && summaryAr === undefined) {
+      throw new AuthError('nothing_to_change', 'لا تغييرَ في الطلب', 422)
+    }
+
+    const out = await this.prisma.trainerCourseProposal.update({
+      where: { id },
+      data: {
+        ...(titleAr !== undefined ? { titleAr } : {}),
+        ...(summaryAr !== undefined ? { summaryAr } : {}),
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.course_proposal.edit_by_staff',
+      entityType: 'trainer_course_proposal', entityId: id,
+      meta: {
+        beforeTitleAr: row.titleAr, afterTitleAr: out.titleAr,
+        beforeSummaryAr: row.summaryAr, afterSummaryAr: out.summaryAr,
+      },
     })
     return out
   }

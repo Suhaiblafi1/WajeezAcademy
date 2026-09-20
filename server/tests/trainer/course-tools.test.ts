@@ -9,6 +9,7 @@ import type { FastifyInstance } from 'fastify'
 import type { PrismaClient } from '@prisma/client'
 import { buildApp } from '../../http/app'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { CohortService } from '../../services/cohort.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
@@ -54,6 +55,8 @@ async function makeTrainer(email: string, name: string, password: string) {
   await review.decide(id, adminId, 'conditionally_approve')
   const contract = await review.createContract(id, adminId, { title: 'عقد', terms: {} })
   await review.signContract(contract.id, adminId)
+  /* والتجهيزُ يسبق الاعتماد منذ ٢٠ سبتمبر ٢٠٢٦ — والبوّابةُ في `readiness-gate` */
+  await makeReadyForApproval(prisma, id, adminId)
   await review.decide(id, adminId, 'activate')
   const session = await auth.login(email, password, '127.0.0.1', 'test')
   const profile = await prisma.trainerProfile.findFirst({ where: { applicationId: id } })

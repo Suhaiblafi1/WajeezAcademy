@@ -17,6 +17,7 @@ import { TrainerDepartureService } from '../../services/trainer-departure.servic
 import {
   CHOICE_LABEL_AR, LEARNER_CHOICES,
 } from '../../../src/application/trainer/departure-rules'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -43,6 +44,7 @@ async function trainer(email: string, fullName: string, courseIds: string[]) {
     demoConsent: true, contact: { channel: 'email' },
   })
   await prisma.trainerApplication.update({ where: { id: row.id }, data: { emailVerifiedAt: new Date() } })
+  await makeReadyForApproval(prisma, row.id, adminId)
   await review.decide(row.id, adminId, 'approve', 'اعتماد')
   const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: row.id } })
   for (const courseId of courseIds) {

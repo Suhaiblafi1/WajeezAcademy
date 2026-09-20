@@ -27,14 +27,14 @@
    يلزم في الخادم لا في الشاشة وحدَها. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookPlus, Check, Link2, Loader2, MessageCircleQuestion, Sparkles, X } from "lucide-react";
+import { BookPlus, Check, Link2, Link2Off, Loader2, MessageCircleQuestion, Pencil, Sparkles, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import AdminLayout from "./AdminLayout";
 import EmptyState from "@/components/EmptyState";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { toast, toastError } from "@/components/Toast";
-import { apiGet, apiPost, ApiError } from "@/services/api";
-import { staffControlCls, StaffField } from "@/components/FormKit";
+import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
+import { staffAreaCls, staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { fmtDateLong } from "@/application/text/format-ar";
@@ -73,7 +73,21 @@ interface Row {
    وواجهةٌ تسمّيه بغير اسمه تُظهر قائمةً من الفراغ بلا خطأٍ يُرى. */
 interface CourseRow { id: string; title: string; status: string }
 
+/* ما لم يُبَتَّ فيه — وله الأبوابُ الأربعة (ربطٌ · دورةٌ جديدة · سؤالٌ · ردّ).
+
+   ═══ والمربوطُ ليس منه، وليس منتهيا كذلك (٢٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «حين أربطه يذهب — وأريده أن يبقى مكتوبا عليه أنّه رُبط
+   بكذا، فأعيد النظر فيه لاحقا». والربطُ أضعفُ القرارات الثلاثة: حكمُ تشابهٍ
+   يُخطأ فيه ويُكتشف بعد أسبوعٍ حين يُقرأ الاقتراحُ ثانية. أمّا الرفضُ فجوابٌ
+   وصل صاحبَه، و«صارت دورةً» أنشأت في الكتالوج شيئا له حياتُه — فيُطويان.
+
+   فللمربوط حالٌ ثالثةٌ في هذه الشاشة: يبقى معروضا بأفعاله هو — يُربط بغيره،
+   أو يُنقض ربطُه فيعود إلى الطابور، أو يُصحَّح نصُّه. والخادمُ يردّه في نطاق
+   `open` (انظر `QUEUE_VISIBLE`)، وهذه تعرف أنّه يُعمل فيه. */
 const OPEN = ["draft", "submitted", "info_requested"];
+
+
 
 const SAID: Record<string, string> = {
   linked: "نسخةٌ من رمزٍ قائم",
@@ -98,6 +112,9 @@ export default function CourseProposals() {
   const [rejectNote, setRejectNote] = useState("");
   const [askFor, setAskFor] = useState<string | null>(null);
   const [askText, setAskText] = useState("");
+  const [editFor, setEditFor] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editSummary, setEditSummary] = useState("");
 
   const load = useCallback(() => {
     Promise.all([
@@ -118,6 +135,7 @@ export default function CourseProposals() {
       setLinkFor(null);
       setRejectFor(null);
       setAskFor(null);
+      setEditFor(null);
       setLinkCourse("");
       setRejectNote("");
       setAskText("");
@@ -161,20 +179,22 @@ export default function CourseProposals() {
 
           <div className="mb-3 mt-2">
             <Button tone="ghost" onClick={() => setShowDecided(!showDecided)}>
-              {showDecided ? "أظهِر ما لم يُصنَّف وحدَه" : "أظهِر ما صُنِّف أيضا"}
+              {showDecided ? "أخفِ ما انتهى أمرُه" : "أظهِر ما انتهى أمرُه — الدوراتِ والمردودَ"}
             </Button>
           </div>
 
           {view.total === 0 ? (
             <EmptyState
               icon={BookPlus}
-              titleAr={showDecided ? "لا اقتراحَ يطابق بحثَك" : "لا اقتراحَ ينتظر التصنيف"}
+              titleAr={showDecided ? "لا اقتراحَ يطابق بحثَك" : "لا اقتراحَ ينتظر التصنيفَ ولا مربوطَ يُراجَع"}
               reasonAr="تصل هنا الدوراتُ التي يقولها المدرّبون في طلبِ انضمامهم أو من بوّابتهم — ولا تدخل الكتالوجَ حتّى تُصنَّف."
             />
           ) : (
             <div className="grid gap-3">
               {view.rows.map((r) => {
                 const open = OPEN.includes(r.status);
+                /* المربوطُ ليس مفتوحا — ولا هو منتهٍ: له أفعالُه هو */
+                const linked = r.status === "linked";
                 return (
                   <Card key={r.id}>
                     <div className="flex flex-wrap items-start justify-between gap-3">
@@ -233,6 +253,34 @@ export default function CourseProposals() {
                             لا تُقبل
                           </Button>
                         </div>
+                      ) : linked ? (
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            tone="secondary" icon={Link2} disabled={busy}
+                            onClick={() => { setLinkFor(linkFor === r.id ? null : r.id); setLinkCourse(r.courseId ?? ""); setRejectFor(null); setAskFor(null); setEditFor(null); }}
+                          >
+                            اربِطْها بغيره
+                          </Button>
+                          <Button
+                            tone="ghost" icon={Link2Off} disabled={busy}
+                            onClick={() => void run(
+                              () => apiPost(`/api/admin/course-proposals/${r.id}/unlink`, {}),
+                              "نُقض الربطُ — عادت إلى الطابور",
+                            )}
+                          >
+                            انقُضِ الربط
+                          </Button>
+                          <Button
+                            tone="ghost" icon={Pencil} disabled={busy}
+                            onClick={() => {
+                              setEditFor(editFor === r.id ? null : r.id);
+                              setEditTitle(r.titleAr); setEditSummary(r.summaryAr ?? "");
+                              setLinkFor(null); setRejectFor(null); setAskFor(null);
+                            }}
+                          >
+                            صحِّحْ نصَّها
+                          </Button>
+                        </div>
                       ) : (
                         <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-bold text-muted-foreground">
                           {SAID[r.status] ?? r.status}
@@ -243,8 +291,48 @@ export default function CourseProposals() {
                     {/* ما صارت إليه، وما قيل لصاحبها */}
                     {!open ? (
                       <Inset className="mt-3 text-sm leading-7 text-muted-foreground">
-                        {r.courseId ? <>الرمز: <b className="text-foreground">{r.courseId}</b>{r.courseTitleAr ? ` — ${r.courseTitleAr}` : ""}. </> : null}
+                        {linked ? (
+                          <>
+                            <b className="text-teal-light-ink">رُبطت بـ «{r.courseTitleAr ?? r.courseId}»</b>
+                            <span className="text-muted-foreground"> — تبقى هنا لتُراجَع، ولا تدخل الكتالوجَ باسمها.</span>
+                            {" "}
+                          </>
+                        ) : r.courseId ? (
+                          <>الرمز: <b className="text-foreground">{r.courseId}</b>{r.courseTitleAr ? ` — ${r.courseTitleAr}` : ""}. </>
+                        ) : null}
                         {r.decisionNoteAr || (r.status === "rejected" ? "بلا سببٍ مكتوب." : "")}
+                      </Inset>
+                    ) : null}
+
+                    {/* ── تصحيحُ نصٍّ كتبه صاحبُه ── */}
+                    {editFor === r.id ? (
+                      <Inset className="mt-3 grid gap-3">
+                        <StaffField label="عنوانُ الدورة" hint="وهي كلماتُ صاحبها — فما كان يُكتب في سجلّ الأثر كاملا">
+                          <input
+                            className={staffControlCls} value={editTitle} maxLength={200}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                          />
+                        </StaffField>
+                        <StaffField label="نبذتُها">
+                          <textarea
+                            className={staffAreaCls} rows={3} maxLength={2000} value={editSummary}
+                            onChange={(e) => setEditSummary(e.target.value)}
+                          />
+                        </StaffField>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            tone="confirm" disabled={busy || editTitle.trim().length < 3}
+                            onClick={() => void run(
+                              () => apiPatch(`/api/admin/course-proposals/${r.id}`, {
+                                titleAr: editTitle.trim(), summaryAr: editSummary.trim() || null,
+                              }),
+                              "صُحِّح نصُّ الاقتراح — وما كان في الأثر",
+                            )}
+                          >
+                            احفظْ
+                          </Button>
+                          <Button tone="ghost" disabled={busy} onClick={() => setEditFor(null)}>تراجعْ</Button>
+                        </div>
                       </Inset>
                     ) : null}
 

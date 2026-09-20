@@ -25,6 +25,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
@@ -101,6 +102,14 @@ async function mkActiveTrainer(courseIds: string[] = [COURSE]) {
       create: { profileId: made.profile.id, courseId, status: 'qualified' },
     })
   }
+  /* ═══ والاعتمادُ لا يقع باعتماد العقد منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+
+     كان `countersignContract` يستدعي `decide('activate')`، فيكفي ختمُ العقد
+     ليصير المدرّبُ نشطا. وصار القبولُ الكاملُ قرارَ إنسانٍ بعده — وهو ما
+     يُثبته أوّلُ describe في هذا الملفّ. فتُتمّ هذه السقالةُ الطريقَ صراحةً:
+     العرضُ لا يُقدَّم إلّا على مدرّبٍ نشطٍ يفتح بوّابتَه ليراه. */
+  await makeReadyForApproval(prisma, made.app.id, adminId)
+  await review.decide(made.app.id, adminId, 'approve')
   return made
 }
 
@@ -120,7 +129,16 @@ async function mkCohort(courseId = COURSE, startsAt = new Date(Date.now() + 30 *
 
 /* ═══════════ ① الاعتماد ═══════════ */
 
-describe('الاعتمادُ يُنفِذ العقدَ ويفتح الحساب في فعلٍ واحد', () => {
+/* ═══ وقد انقلب هذا الحارسُ يومَ ٢٠ سبتمبر ٢٠٢٦ ═══
+
+   كان يُثبت أنّ اعتمادَ العقد **يفتح الحساب** — وهو ما كانت الشيفرة تفعله.
+   وقرارُ صاحب المنصّة أن يبقى القبولُ الكاملُ قرارَه هو: «حين يوقّع يصلني
+   خبرُه، فأقبله قبولا كاملا». فاعتمادُ العقد يُتمّ الخطوةَ الثالثةَ من
+   التجهيز ولا يتجاوز القرارَ الذي بعدها.
+
+   والحارسُ باقٍ مقلوبا لا محذوفا: يُثبت الآن أنّ الحالةَ **لا تتحرّك**،
+   فالرجوعُ إلى التفعيل الآليّ يُسقطه. */
+describe('الاعتمادُ يُنفِذ العقدَ — ولا يفتح الحساب', () => {
   it('الموقَّعُ يصير نافذا، ويحمل اسمَ المفوَّضِ في السجلّ ومن ضغط فعلا', async () => {
     const { contract } = await mkSigned()
     const r = await review.countersignContract(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بالهويّة' })
@@ -136,16 +154,25 @@ describe('الاعتمادُ يُنفِذ العقدَ ويفتح الحساب �
     expect(r.ok).toBe(true)
   })
 
-  it('ويُفتح الحسابُ معه: الطلبُ نشطٌ، وللملفِّ حسابٌ ودورُ مدرّب', async () => {
+  it('ولا يُفتح الحسابُ معه — ولا تتحرّك حالةُ الطلب', async () => {
     const { app, profile, contract, userId } = await mkSigned()
-    const r = await review.countersignContract(contract.id, adminId, {})
-    expect(r.activated, `لم يُفعَّل: ${r.activationBlockedAr ?? '—'}`).toBe(true)
+    const before = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
+    await review.countersignContract(contract.id, adminId, {})
     const appAfter = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
-    expect(appAfter.status).toBe('active')
+    expect(appAfter.status, 'اعتمادُ العقد حرّك الحالةَ — والقبولُ الكاملُ قرارُ إنسان').toBe(before.status)
+    expect(appAfter.status).not.toBe('active')
     const profAfter = await prisma.trainerProfile.findUniqueOrThrow({ where: { id: profile.id } })
-    expect(profAfter.userId, 'ملفٌّ «نشطٌ» بلا حسابٍ لا يفتح بوّابتَه').toBe(userId)
+    /* ولا يُمنَح دورُ المدرّب: منحُه هنا يفتح بوّابتَه قبل أن يُقبَل */
     const roles = await prisma.userRole.findMany({ where: { userId: userId! } })
-    expect(roles.map((x) => x.roleId)).toContain('trainer')
+    expect(roles.map((x) => x.roleId), 'مُنح دورُ المدرّب قبل القبول الكامل').not.toContain('trainer')
+    expect(profAfter.id).toBe(profile.id)
+  })
+
+  it('ويردّ الجاهزيّةَ مع النتيجة — فيُقرأ الباقي حيث ضُغط', async () => {
+    const { contract } = await mkSigned()
+    const r = await review.countersignContract(contract.id, adminId, {})
+    /* العقدُ صار موقَّعا، فخطوتُه خضراء — وما عداها يُقرأ من الرَّدّ نفسِه */
+    expect(r.readiness.steps.find((st) => st.key === 'contract')!.done).toBe(true)
   })
 
   it('ولا يُعتمَد إلّا موقَّع — والمسودّةُ تُردّ', async () => {
@@ -164,9 +191,7 @@ describe('الاعتمادُ يُنفِذ العقدَ ويفتح الحساب �
     /* `gatesActivation = false`: بندٌ يُوثَّق على ملفٍّ حيّ. ونقلُه إلى
        `contract_pending` كان يطرده من بوّابته — «حسابك التدريبيّ موقوف». */
     const { app, contract } = await mkSigned({ status: 'active', gatesActivation: false })
-    const r = await review.countersignContract(contract.id, adminId, {})
-    expect(r.activated).toBe(false)
-    expect(r.activationBlockedAr).toBeNull()
+    await review.countersignContract(contract.id, adminId, {})
     const appAfter = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
     expect(appAfter.status, 'مُسّت حالةُ مدرّبٍ يعمل').toBe('active')
   })

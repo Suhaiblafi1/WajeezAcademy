@@ -22,6 +22,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { CohortService } from '../../services/cohort.service'
@@ -259,6 +260,9 @@ describe('التفعيلُ النهائيّ ورفعُ الإيقاف', () => {
   })
 
   it('لا يُفعَّل مدرّبٌ بلا حساب — «نشطٌ» لا يستطيع الدخول حالةٌ تكذب', async () => {
+    /* ويُجهَّز أوّلا كي يكون المانعُ هو **الحسابَ** لا بوّابةَ التجهيز —
+       وإلّا خضرّ الحارسُ لسببٍ غيرِ الذي يحرسه (`readiness-gate.test.ts`). */
+    await makeReadyForApproval(prisma, appId, deciderId)
     await review.decide(appId, deciderId, 'start_onboarding')
     expect((await prisma.trainerApplication.findUnique({ where: { id: appId } }))!.status).toBe('onboarding')
     await expect(review.decide(appId, deciderId, 'activate')).rejects.toThrow(/لا حساب/)

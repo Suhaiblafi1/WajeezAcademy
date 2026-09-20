@@ -63,22 +63,36 @@ export const PURGEABLE_STATUSES: readonly TrainerStatus[] = SHARED_PURGEABLE
    وما لم يتغيّر: **الرفضُ والسحبُ نهايةٌ لا رجعةَ منها**، والاعتمادُ لا يُبلَغ
    من حالةٍ لم يُتحقّق فيها بريدُ صاحبها (`draft` و`email_verification_pending`)
    — فمن لم يُثبت أنّ البريدَ بريدُه لا يُفتح له حساب. */
+/* ═══ والقبولُ الداخليُّ وجهةٌ من كلّ حالةٍ يُقرأ فيها الطلب (٢٠ سبتمبر ٢٠٢٦) ═══
+
+   `conditionally_approved` كانت تُبلَغ من `academic_review` وحدَها — أي أنّ
+   من أراد أن يبدأ تجهيزَ مدرّبٍ اقتنع به وجب أن يمشيَ به السلسلةَ كلَّها
+   أوّلا: اختصارٌ فدرسٌ تجريبيٌّ فمراجعةٌ أكاديميّة. وهي خطواتٌ يجريها صاحبُ
+   المنصّة خارج المنصّة أصلا (قرارُ ٦ سبتمبر)، فكان البابُ الوحيدُ إلى
+   التجهيز مقفلا خلف توثيقٍ لا يقع.
+
+   فصارت وجهةً من كلّ حالةٍ حيّةٍ قُرئ فيها الطلب — كما صارت `active` قبلها.
+   والاستثناءُ هو الاستثناءُ نفسُه: `draft` و`email_verification_pending` لم
+   يُثبت فيهما أنّ البريدَ بريدُه، والقبولُ الداخليُّ يُنشئ له ملفّا ويُرسل
+   إليه عقدا — فلا يُبنى ذلك على بريدٍ مجهول. */
 export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   /* المسودّة: القسمُ الأوّل وصل ولم يُكمَل — تصير مقدَّمةً حين يُكمَل */
   draft: ['submitted', 'email_verification_pending', 'withdrawn'],
   email_verification_pending: ['submitted', 'withdrawn'],
-  submitted: ['under_review', 'interview_scheduled', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  under_review: ['information_requested', 'shortlisted', 'interview_scheduled', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  information_requested: ['under_review', 'interview_scheduled', 'active', 'rejected', 'withdrawn'],
-  shortlisted: ['interview_scheduled', 'demo_requested', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  interview_scheduled: ['submitted', 'under_review', 'information_requested', 'shortlisted', 'demo_requested', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  demo_requested: ['academic_review', 'active', 'rejected', 'withdrawn'],
+  submitted: ['under_review', 'interview_scheduled', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  under_review: ['information_requested', 'shortlisted', 'interview_scheduled', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  information_requested: ['under_review', 'interview_scheduled', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
+  shortlisted: ['interview_scheduled', 'demo_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  interview_scheduled: ['submitted', 'under_review', 'information_requested', 'shortlisted', 'demo_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  demo_requested: ['academic_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
   academic_review: ['conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  conditionally_approved: ['contract_pending', 'active', 'rejected', 'withdrawn'],
+  /* والرجوعُ إلى المراجعة مفتوح: من بدأ تجهيزَه ثمّ تبيّن له ما يوقفه لا
+     يُترك بين حالَين — يردُّه إلى الطابور، أو يردّه كلَّه. */
+  conditionally_approved: ['under_review', 'contract_pending', 'active', 'waitlisted', 'rejected', 'withdrawn'],
   contract_pending: ['onboarding', 'active', 'rejected', 'withdrawn'],
   onboarding: ['active', 'withdrawn'],
   active: ['suspended'],
-  waitlisted: ['under_review', 'active', 'rejected', 'withdrawn'],
+  waitlisted: ['under_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
   /* ═══ والرفضُ يُتراجَع عنه — بابٌ واحدٌ لا أكثر (١٩ سبتمبر ٢٠٢٦) ═══
 
      كان `rejected` بلا مخرج: من رُدّ خطأً — ضغطةٌ على الصفّ الخطأ، أو قرارٌ
@@ -98,6 +112,22 @@ export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   rejected: ['under_review'],
   withdrawn: [],
   suspended: ['active'],
+}
+
+/* ═══ أهذا الانتقالُ مشروع؟ — سؤالٌ بجوابٍ واحد ═══
+
+   يُسأل في موضعَين: `transition` تمنع به، و`decide` تسبق به بوّابةَ التجهيز.
+   وسببُ السَّبق أنّ الترتيبَ يغيّر ما يُقرأ: من ضغط «اعتمِدْه» على طلبٍ
+   **مردود** كان يُردّ بـ«لا يُعتمَد قبل أن يتمّ التجهيز» — وهي جملةٌ تدعوه
+   إلى تجهيزِ من لا سبيلَ إلى اعتماده أصلا. فالنهايةُ تُقال نهايةً أوّلا،
+   والتجهيزُ يُقال لمن يصلح أن يُجهَّز.
+
+   ودالّةٌ واحدةٌ لا نسختان: خريطةُ الانتقالات تُقرأ من موضعٍ واحدٍ فلا
+   يفترق مانعٌ عن مانع. */
+export function transitionProblemAr(from: TrainerStatus, to: TrainerStatus): string | null {
+  if (from === to) return null
+  if (ALLOWED_TRANSITIONS[from]?.includes(to)) return null
+  return `لا يمكن الانتقال من «${from}» إلى «${to}»`
 }
 
 /** الحالاتُ التي تسمح الخريطةُ بالاعتماد منها فعلا — تُقابَل بالقائمة
@@ -856,9 +886,8 @@ export class TrainerApplicationService {
       if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
       const from = app.status as TrainerStatus
       if (from === to) return
-      if (!ALLOWED_TRANSITIONS[from]?.includes(to)) {
-        throw new AuthError('bad_transition', `لا يمكن الانتقال من «${from}» إلى «${to}»`, 409)
-      }
+      const problem = transitionProblemAr(from, to)
+      if (problem) throw new AuthError('bad_transition', problem, 409)
       await db.trainerApplication.update({ where: { id: applicationId }, data: { status: to } })
       await db.trainerStatusHistory.create({
         data: { applicationId, fromStatus: from, toStatus: to, actorId, note },

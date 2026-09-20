@@ -24,6 +24,7 @@ import { BadgeCheck, Ban, FileSignature, FileText, Handshake, IdCard, RefreshCw,
 import { apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+import type { Readiness } from "@/application/trainer/readiness";
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS, type RequiredDocument,
 } from "@/application/trainer/contract-documents";
@@ -526,16 +527,20 @@ export default function TrainerContracts() {
                             />
                             <div className="flex flex-wrap gap-2">
                               <Button tone="confirm" icon={BadgeCheck} loading={busy}
+                                /* ولا يُفتح الحسابُ من هنا منذ ٢٠ سبتمبر ٢٠٢٦: القبولُ الكاملُ
+                                   قرارٌ تالٍ في ملفّ المدرّب. فتُقال الخطوةُ الباقيةُ بدل أن
+                                   يُنتظَر فتحُ حسابٍ لا يأتي من هذه الشاشة. */
                                 onClick={() => void run(async () => {
-                                  const r = await apiPost<{ activated: boolean; activationBlockedAr: string | null }>(
+                                  const r = await apiPost<{ readiness?: Readiness }>(
                                     `/api/admin/trainer-contracts/${c.id}/countersign`,
                                     { noteAr: signOff.noteAr.trim() || null });
                                   setSignOff(null);
                                   await load();
-                                  if (r.activationBlockedAr) {
-                                    setErr(`اعتُمد العقدُ، ولم يُفتح الحساب: ${r.activationBlockedAr}`);
-                                  }
-                                }, "اعتُمد العقدُ ونفَذ")}>
+                                  const left = r.readiness?.blockersAr ?? [];
+                                  setErr(left.length === 0
+                                    ? ""
+                                    : `نفَذ العقدُ. وبقي قبل اعتماده مدرّبا: ${left.join(" · ")}`);
+                                }, "اعتُمد العقدُ ونفَذ — والقبولُ الكاملُ من ملفّ المدرّب")}>
                                 اعتمِدِ التوقيع
                               </Button>
                               <Button tone="ghost" onClick={() => setSignOff(null)}>تراجعْ</Button>

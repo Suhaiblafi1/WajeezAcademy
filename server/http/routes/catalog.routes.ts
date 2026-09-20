@@ -11,6 +11,7 @@ import { skillSlugs } from '../../../src/domain/diagnostic/catalog'
 import { validateVideo } from '../../../src/application/content/module-video'
 import { validateScenario } from '../../../src/application/content/scenario'
 import { requirePermission } from '../auth-plugin'
+import { COURSE_DOMAIN_FAMILIES } from '../../../src/application/catalog/course-domain'
 
 export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const admin = new CatalogAdminService(prisma)
@@ -69,6 +70,21 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     return admin.setCourseSkills(courseId, skillIds, req.auth!.userId)
   })
 
+  /* ك-٥: دورةٌ تُرشَّح وحدَها في التشخيص — رمزُها ومجالُها يُضبطان معا.
+     وخلف `catalog.course.edit` كالمهارات: من يملك تعديلَ الدورة يملك هذا. */
+  app.put('/api/admin/catalog/courses/:courseId/standalone', {
+    preHandler: requirePermission('catalog.course.edit'),
+    schema: { tags: ['admin-catalog'], summary: 'إذنُ ترشيحِ دورةٍ وحدَها ومجالاتُها التشخيصيّة' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string() }).parse(req.params)
+    const body = z.object({
+      recommendable: z.boolean(),
+      domains: z.array(z.string().min(2).max(64)).max(4),
+      stages: z.array(z.string().min(2).max(64)).max(10).default([]),
+    }).parse(req.body)
+    return admin.setStandaloneRecommendation(courseId, body, req.auth!.userId)
+  })
+
   /* ═══ المعرّفُ يُعرض قبل الإنشاء ولا يُكتب ═══
 
      المؤلّفُ يرى ما سيُولَّد لحظةَ اختياره المسارَ الأمّ — لا بعد الحفظ.
@@ -78,9 +94,24 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
   app.get('/api/admin/catalog/courses/next-id', {
     preHandler: requirePermission('catalog.course.create'),
     schema: { tags: ['admin-catalog'], summary: 'معرّفُ الدورة القادم في مسارٍ — عرضٌ لا حجز' },
-  }, async (req) => {
-    const { pathwayId } = z.object({ pathwayId: z.string() }).parse(req.query)
-    return { id: await admin.mintCourseId(pathwayId) }
+  }, async (req, reply) => {
+    /* والعائلةُ بديلٌ عن المسار منذ ٢٠ سبتمبر ٢٠٢٦: دورةٌ قائمةٌ بنفسها
+       يُشتقّ معرّفُها من عائلةٍ تُسمّى، لا من مسارٍ يُخترع لها. */
+    const q = z.object({
+      pathwayId: z.string().optional(),
+      familyCode: z.string().optional(),
+    }).parse(req.query)
+    if (q.pathwayId) return { id: await admin.mintCourseId(q.pathwayId) }
+    const family = (q.familyCode ?? '').trim().toUpperCase()
+    if (!COURSE_DOMAIN_FAMILIES.includes(family)) {
+      return reply.status(422).send({
+        error: {
+          code: 'unknown_family',
+          message_ar: 'اذكر مسارا أمّا أو عائلةً مسمّاةً — منهما يُشتقّ معرّفُ الدورة',
+        },
+      })
+    }
+    return { id: await admin.mintCourseIdInFamily(family) }
   })
 
   app.post('/api/admin/catalog/courses', {
@@ -90,7 +121,11 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     /* ولا `id` في الحمولة: ما يرسله المتصفّحُ لا يُقرأ أصلا، فلا سبيلَ
        إلى فرض معرّفٍ من الخارج ولو عُدّل النداء بيد. */
     const body = z.object({
-      pathwayId: z.string(), sequence: z.number().int().min(1),
+      /* المسارُ الأمُّ اختياريّ، والعائلةُ تقوم مقامَه — والخدمةُ تردّ ما نقص
+         منهما معا برسالةٍ عربيّة، فالحكمُ في موضعٍ واحدٍ لا في اثنين. */
+      pathwayId: z.string().optional(),
+      sequence: z.number().int().min(1).optional(),
+      familyCode: z.string().max(12).optional(),
       titleAr: z.string().min(3), shortPromiseAr: z.string().optional(), levelAr: z.string().optional(),
       totalHours: z.number().int().min(1), skillIds: z.array(z.string()).default([]),
       modules: z.array(z.object({

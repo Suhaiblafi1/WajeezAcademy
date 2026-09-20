@@ -10,7 +10,7 @@ import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError, AuthService } from './auth.service'
 import { recordAudit } from './audit'
-import { seedProposalsFromApplication } from './course-proposal.service'
+import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import { bookingReminderMail, decisionMailFor, draftReminderMail, rejectionUndoneMail } from './trainer-decision-mail'
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
@@ -18,7 +18,7 @@ import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../s
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { LIVE_INTERVIEW, revertWhenNoLiveInterview } from './trainer-interview-state'
 import { buildIcs } from './calendar/ics'
-import { TrainerApplicationService } from './trainer-application.service'
+import { TrainerApplicationService, transitionProblemAr, type TrainerStatus } from './trainer-application.service'
 import { nextTrainerApplicationReference } from './trainer-application-reference'
 import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { sendStaffInviteEmail } from './account-mail'
@@ -49,6 +49,9 @@ import {
   hasRequiredIdentityDocument, readRequiredDocuments, type RequiredDocument,
 } from '../../src/application/trainer/contract-documents'
 import { CONTRACT_SIGNING_LINK_DAYS } from '../../src/application/trainer/notice-periods'
+import {
+  computeReadiness, overrideReasonProblemAr, readinessBlockMessageAr, type Readiness,
+} from '../../src/application/trainer/readiness'
 
 /** ما تُرسله شاشةُ التركيب — والأجرُ ليس منه: يُقرأ من قاعدة الماليّة ولا
     يُكتب من شاشة التعاقد. فمن يركّب العقدَ يرى الرقمَ ولا يملك تغييرَه. */
@@ -65,6 +68,19 @@ const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
 
 /* محاور الروبرك البشري التسعة — كل محور من 1 إلى 5 */
+/* ═══ ما يُمرَّر مع القرار ولا يُقرأ من الجسم وحدَه ═══
+
+   رتبةُ الفاعل تأتي من الحاجز (`req.auth.roles`) لا تُستنتَج هنا: الخدمةُ
+   لا تعرف الرتب، والحاجزُ يعرفها. وسببُ التجاوز يُكتب في الشاشة ويُحفظ في
+   الأثر وفي سجلّ الحالة معا — فمن سأل بعد شهرٍ «لمَ صار هذا نشطا بلا عقد؟»
+   وجد الجوابَ في الموضعَين اللذَين يُنظَر فيهما. */
+export interface DecideOptions {
+  /** سببُ تجاوز بوّابة التجهيز — للمدير الأعلى وحدَه، وبحدٍّ أدنى للطول */
+  overrideReasonAr?: string | null
+  /** رتبُ الفاعل كما قرأها الحاجز */
+  actorRoles?: string[]
+}
+
 export const RUBRIC_CRITERIA = [
   'domain_expertise', 'evidence_of_expertise', 'explanation_facilitation', 'demo_quality',
   'activity_assessment_design', 'feedback_skill', 'digital_training', 'values_fit', 'availability',
@@ -189,6 +205,15 @@ export class TrainerReviewService {
             },
             assignments: true,
             contracts: true,
+            /* اقتراحاتُه تُقرأ وتُصنَّف في ملفّه — وطابورُ `/admin/course-proposals`
+               يبقى للنظرة العابرة عبر المدرّبين كلِّهم. وهما مصدرٌ واحدٌ ومساران:
+               من يجهّز مدرّبا بعينه لا يغادر ملفَّه ليصنّف اقتراحَين. */
+            courseProposals: {
+              orderBy: { createdAt: 'asc' },
+              include: {
+                course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+              },
+            },
             /* شعبُه الحالية وجلساتُها — لوحُ الملخّص يقرؤها ولا يستنتجها */
             cohortTrainers: {
               include: {
@@ -243,8 +268,29 @@ export class TrainerReviewService {
       },
     })
 
+    /* والجاهزيّةُ تُحسب هنا لا في الشاشة: الشاشةُ تعرض ما ينقص، والخادمُ يمنع
+       به — ولو حسبت كلٌّ منهما بنفسها لظهر زرٌّ أخضرُ يردّه الخادم. */
+    const readiness = await this.readinessFor(app.profile?.id ?? null)
+
+    /* ═══ والقاعدةُ السارية يقولها الخادمُ لا تستنتجها الشاشة ═══
+
+       «أيُّ قاعدةٍ سارية؟» سؤالٌ له جوابٌ واحدٌ في `activeRule`: نطاقُ الشعبة
+       ثمّ الدورة ثمّ العامّة، والأحدثُ سريانا. وحسابُه في المتصفّح بمقارنةِ
+       تواريخَ نسخةٌ ثانيةٌ تفترق عنه في أوّل تعديل — وتقول للموظّف رقما غيرَ
+       الذي يُحتسب به أجرُ إنسان. */
+    const activeRule = app.profile
+      ? await new EarningsService(this.prisma).activeRule(app.profile.id)
+      : null
+
     return {
       ...app,
+      readiness,
+      activeCompensationRule: activeRule && {
+        id: activeRule.id, type: activeRule.type, rate: activeRule.rate.toString(),
+        currency: activeRule.currency, minSeats: activeRule.minSeats,
+        referralRate: activeRule.referralRate?.toString() ?? null,
+        effectiveFrom: activeRule.effectiveFrom,
+      },
       accessTokenHash: undefined, emailVerifyTokenHash: undefined,
       priorApplications: prior.map((p) => ({
         reference: p.reference, status: p.status, createdAt: p.createdAt,
@@ -273,6 +319,49 @@ export class TrainerReviewService {
         suspendedAt: app.profile?.suspendedAt ?? null,
       },
     }
+  }
+
+  /* ═══ جاهزيّةُ التجهيز — تُقرأ من القاعدة ويُحكَم بها في `readiness.ts` ═══
+
+     ولمَ القراءةُ هنا والحكمُ هناك: الحكمُ يُقرأ في الشاشة كذلك (تعرض ما
+     ينقص قبل أن يُضغط زرّ)، والقراءةُ لا تصلح في المتصفّح. فما يُقرأ في
+     موضعَين يسكن `src/application`، وما يمسّ القاعدةَ يبقى في الخدمة.
+
+     و`profileId` فارغٌ حين لا ملفَّ بعد — وهي حالُ من لم يُقبل داخليّا.
+     فتُردّ الخطواتُ الثلاثُ حمراءَ، ورسالةُ المنع تدلّه على أوّل الطريق. */
+  async readinessFor(profileId: string | null): Promise<Readiness> {
+    if (!profileId) {
+      return computeReadiness({
+        compensationRules: [], qualifiedCourses: 0, openProposals: 0, contracts: [],
+      })
+    }
+    const [rules, qualifiedCourses, openProposals, contracts] = await Promise.all([
+      this.prisma.trainerCompensationRule.findMany({
+        where: { profileId },
+        select: {
+          type: true, rate: true, courseId: true, cohortId: true,
+          effectiveFrom: true, effectiveTo: true,
+        },
+      }),
+      this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } }),
+      this.prisma.trainerCourseProposal.count({ where: { profileId, status: { in: [...OPEN_PROPOSAL] } } }),
+      this.prisma.trainerContract.findMany({ where: { profileId }, select: { status: true } }),
+    ])
+    return computeReadiness({
+      /* `Decimal` لا يُقارَن بـ`>` فيمرّ الصفرُ — والتحويلُ هنا مرّةً واحدة */
+      compensationRules: rules.map((r) => ({ ...r, rate: Number(r.rate) })),
+      qualifiedCourses,
+      openProposals,
+      contracts,
+    })
+  }
+
+  /** جاهزيّةُ طلبٍ بعينه — تُنادى من الشاشة عبر `getApplication` */
+  async readinessForApplication(applicationId: string): Promise<Readiness> {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { applicationId }, select: { id: true },
+    })
+    return this.readinessFor(profile?.id ?? null)
   }
 
   /* ─────────── أدوات المراجعة البشرية ─────────── */
@@ -420,7 +509,8 @@ export class TrainerReviewService {
     | 'approve'
     | 'move_to_review' | 'request_info' | 'shortlist' | 'request_demo' | 'academic_review'
     | 'conditionally_approve' | 'waitlist' | 'reject' | 'undo_reject'
-    | 'start_onboarding' | 'activate' | 'reinstate', note?: string): Promise<{
+    | 'start_onboarding' | 'activate' | 'reinstate', note?: string,
+    opts: DecideOptions = {}): Promise<{
     /* حالُ البريد حيث يكون للقرار بريدٌ يُقرأ خبرُه في الشاشة — و«تمّ» لا
        تُقال عن بريدٍ لم يخرج (`src/application/notifications/delivery.ts`).
        وهي اليومَ للتراجع وحدَه: بقيّةُ القرارات لا تقرأ الشاشةُ حالَ بريدها. */
@@ -470,6 +560,58 @@ export class TrainerReviewService {
     /* التفعيلُ يشترط حسابا: مدرّبٌ «نشط» بلا حسابٍ لا يفتح بوابتَه ولا يُسنَد
        إليه شيء، وحالتُه في الشاشة تقول غيرَ الحقيقة. ولا يُقال هذا بعد
        الضغط بل يُمنع قبله. */
+    /* ═══ بوّابةُ التجهيز — تُفحَص قبل كلّ أثر (٢٠ سبتمبر ٢٠٢٦) ═══
+
+       قرارُ صاحب المنصّة: «لا يُعتمَد أحدٌ اعتمادا كاملا قبل أن يتمّ تجهيزُه —
+       أتعابُه ودوراتُه وعقدُه الموقَّع». وكان الاعتمادُ يمرّ بلا فحصٍ واحدٍ من
+       أيّ حالة، فيصير «نشطا» بلا أجرٍ متّفقٍ عليه — و«مستحقّاتي» عنده صفرٌ
+       لأنّ `computeCohort` ترمي `no_rule`، ولا أحد يعلم لمَ.
+
+       **وتُفحَص قبل `ensureProfile` بقصد**: لو فُحصت بعده لأنشأ الضغطُ
+       المردودُ ملفَّ مدرّبٍ ومهامَّ تهيئةٍ ثمّ رُدّ — أثرٌ يبقى من فعلٍ لم
+       يقع. فمن لا ملفَّ له تُردّ خطواتُه الثلاثُ حمراءَ، والرسالةُ تدلّه على
+       «اقبَلْه داخليّا» أوّلا.
+
+       ── والبابُ الضيّق ──
+
+       قرارُ ٦ سبتمبر جعل الاعتمادَ نقرةً واحدة، وهذا يفحص قبلها. ولا
+       يتناقضان ما بقي للأوّل مخرجٌ **يُسمّى من سلكه ولماذا**: المديرُ الأعلى
+       وحدَه، بسببٍ مكتوبٍ يُحفظ في الأثر وفي سجلّ الحالة. ومن مرّ منه مرّ
+       معلوما، لا في صمت. */
+    /* ═══ والنهايةُ تُقال نهايةً قبل أن يُقال «جهِّزْه» ═══
+
+       ترتيبٌ مقصود: من ضغط «اعتمِدْه» على طلبٍ **مردود** كان يُردّ بـ«لا
+       يُعتمَد قبل أن يتمّ التجهيز» — وهي دعوةٌ إلى تجهيزِ من لا سبيلَ إلى
+       اعتماده. فالخريطةُ تُسأل أوّلا، ثمّ البوّابة. والسؤالُ من الدالّة
+       نفسِها التي تمنع في `transition` — لا نسخةَ ثانية. */
+    const transitionProblem = transitionProblemAr(app.status as TrainerStatus, targets[action])
+    if (transitionProblem) throw new AuthError('bad_transition', transitionProblem, 409)
+
+    let overrideReason: string | null = null
+    if (action === 'activate' || action === 'approve') {
+      const readiness = await this.readinessForApplication(applicationId)
+      if (!readiness.ready) {
+        if (!(opts.actorRoles ?? []).includes('super_admin')) {
+          throw new AuthError('not_ready', readinessBlockMessageAr(readiness), 409)
+        }
+        const reason = (opts.overrideReasonAr ?? '').trim()
+        const problem = overrideReasonProblemAr(reason)
+        if (problem) {
+          throw new AuthError(
+            'override_reason_required',
+            `${readinessBlockMessageAr(readiness)} — ولك أن تتجاوزها: ${problem}`,
+            422,
+          )
+        }
+        overrideReason = reason
+        await recordAudit(this.prisma, {
+          actorId, action: 'trainer.readiness.override',
+          entityType: 'trainer_application', entityId: applicationId,
+          meta: { decision: action, reasonAr: reason, missingAr: readiness.blockersAr },
+        })
+      }
+    }
+
     if (action === 'activate' || action === 'approve') {
       /* النقرةُ الواحدة تُنشئ الملفَّ إن لم يكن — فهي تختصر «القبولَ المشروط»
          الذي كان ينشئه. و`activate` تبقى على شرطها: ملفٌّ موجودٌ مسبقا. */
@@ -517,7 +659,12 @@ export class TrainerReviewService {
       )
     }
 
-    await this.apps.transition(applicationId, targets[action], actorId, note)
+    /* وسببُ التجاوز يُكتب في سجلّ الحالة مع الملاحظة — فالأثرُ يُقرأ بصلاحيّة،
+       وسجلُّ الحالة يُقرأ في ملفّ المدرّب أمام من يفتحه. */
+    const transitionNote = overrideReason
+      ? [note?.trim(), `تجاوزُ بوّابة التجهيز: ${overrideReason}`].filter(Boolean).join(' — ')
+      : note
+    await this.apps.transition(applicationId, targets[action], actorId, transitionNote)
 
     /* رفعُ الإيقاف يُعيد الملفَّ والحساب معا — وإلّا بقي «نشطا» وحسابُه موقوف */
     if (action === 'reinstate') {
@@ -1728,14 +1875,23 @@ export class TrainerReviewService {
       })
     } catch { /* البريدُ رفاهية — التوقيعُ وقع، والنسخةُ تُعاد من الإدارة */ }
 
+    /* ═══ والخبرُ يحمل الخطوةَ التالية لا وقوعَ الفعل وحدَه ═══
+
+       كانت الرسالةُ تقول «وقّع فلانٌ عقدَه» وتسكت. ومن قرأها لا يعرف أبقيَ
+       شيءٌ قبل أن يعتمده أم لا — فيفتح ملفَّه ليرى، أو ينتظر ولا شيءَ يأتي.
+       وتوقيعُ العقد آخرُ الخطوات الثلاث غالبا، فأكثرُ ما يُقال بعده: «اكتمل
+       تجهيزُه، اعتمِدْه». وهذه تقولها، وتعدّد الباقيَ حين يبقى. */
+    const readiness = await this.readinessForApplication(app.id)
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
       templateKey: 'trainer.contract.signed',
       title: 'وقّع مدرّبٌ عقدَه',
-      body: `وقّع ${legalName} «${c.title}» — يُراجَع توقيعُه ثمّ يُفعَّل حسابُه.`,
+      body: readiness.ready
+        ? `وقّع ${legalName} «${c.title}» — واكتمل تجهيزُه. افتح ملفَّه واعتمِدْه اعتمادا كاملا.`
+        : `وقّع ${legalName} «${c.title}» — وبقي قبل اعتماده: ${readiness.blockersAr.join(' · ')}`,
       data: { contractId: c.id, applicationId: app.id },
     })
-    return { ok: true, signedAt }
+    return { ok: true, signedAt, readiness }
   }
 
   /** الاعتذارُ — جوابٌ مشروعٌ لا عطب. والعقدُ عرضٌ يُقبَل ويُردّ. */
@@ -1832,22 +1988,23 @@ export class TrainerReviewService {
       })
     })
 
-    /* ═══ ثمّ يُفتح الحساب — وخارجَ المعاملة بقصد ═══
+    /* ═══ ولا يُفتح الحساب من هنا (٢٠ سبتمبر ٢٠٢٦) ═══
 
-       الاعتمادُ هو الفعلُ القانونيّ، والتفعيلُ أثرُه التشغيليّ. فلو تعذّر
-       التفعيلُ — لا حسابَ للمتقدّم مثلا — لم يُمحَ اعتمادٌ صحيحٌ من أجل خطوةٍ
-       تُعاد بزرّ. ويُقال ما جرى بلا تجميل: الشاشةُ تعرض ما منع. */
-    let activated = false
-    let activationBlockedAr: string | null = null
-    if (c.gatesActivation) {
-      try {
-        await this.decide(c.profile.applicationId, actorId, 'activate', `اعتمادُ العقد الموقَّع — ${c.title}`)
-        activated = true
-      } catch (e) {
-        if (!(e instanceof AuthError)) throw e
-        activationBlockedAr = e.message
-      }
-    }
+       كان الاعتمادُ يستدعي `decide('activate')` فيصير المدرّبُ نشطا بمجرّد
+       أن يُختم عقدُه. وقرارُ صاحب المنصّة أن يبقى القبولُ الكاملُ **قرارَه
+       هو**: «حين يوقّع يصلني خبرُه، فأقبله قبولا كاملا». فاعتمادُ العقد
+       يُتمّ الخطوةَ الثالثةَ من التجهيز ولا يتجاوز القرارَ الذي بعدها.
+
+       ── ولمَ هو تحسينٌ لا تعقيد ──
+
+       العقدُ واحدٌ من ثلاثة، والاثنان الآخران قد ينقصان وقتَ ختمه: يُوقَّع
+       عقدٌ ولا أتعابَ مضبوطةً بعد، فيصير نشطا ومستحقّاتُه صفر. والقرارُ بعده
+       يقرأ الثلاثَ معا (`readinessFor`) فلا يمرّ ناقص.
+
+       و`gatesActivation` يبقى في الصفّ كما هو: يقول إن كان هذا العقدُ حابسا
+       لتفعيل صاحبه أم بندا يُوثَّق على ملفٍّ حيّ — ويُقرأ في الشاشة. وإنّما
+       زال أثرُه الآليُّ هنا. */
+    const readiness = await this.readinessForApplication(c.profile.applicationId)
 
     /* ولا يُعتمَد عقدٌ في صمت: من وقّع ينتظر جوابا، وهو اليومَ ملزَمٌ بما وقّع */
     const app = c.profile.application
@@ -1857,15 +2014,16 @@ export class TrainerReviewService {
         subject: `اعتُمد عقدُك — ${c.title}`,
         ...renderMail({
           greetingName: c.signerLegalName ?? app.fullName,
-          heading: activated ? 'اعتُمد عقدُك، وفُتح حسابُك' : 'اعتُمد عقدُك',
+          heading: 'اعتُمد عقدُك',
           blocks: [
             {
               kind: 'p',
               text: `اعتمدت الأكاديميّةُ توقيعَك على «${c.title}» بتاريخ ${fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' })}، فصار العقدُ نافذا بين الطرفين.`,
             },
-            activated
-              ? { kind: 'callout' as const, text: 'حسابُك التدريبيُّ مفتوحٌ الآن — ادخل بوّابتَك لتقرأ دوراتِك المؤهَّل لها.' }
-              : { kind: 'note' as const, text: 'ويصلك فتحُ الحساب في رسالةٍ تالية.' },
+            /* ولا يُوعَد بحسابٍ في هذه الرسالة: فتحُه قرارٌ تالٍ بيد الأكاديميّة،
+               ورسالتُه تخرج عنده (`notifyApproved`). ووعدٌ هنا يجعل من ينتظر
+               ساعةً يظنّ أنّ شيئا تعطّل. */
+            { kind: 'note' as const, text: 'ويصلك فتحُ حسابك في رسالةٍ تالية حين يكتمل اعتمادُك.' },
             {
               kind: 'note',
               text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك عرضا مستقلّا تقبله أو تعتذر عنه.',
@@ -1875,7 +2033,9 @@ export class TrainerReviewService {
       })
     } catch { /* البريدُ رفاهية — الاعتمادُ وقع، والنسخةُ تُعاد من الإدارة */ }
 
-    return { ok: true, countersignedAt, activated, activationBlockedAr }
+    /* وتُردّ الجاهزيّةُ مع النتيجة: الشاشةُ تقول «بقي كذا» أو «اكتمل — اعتمِدْه»
+       في الموضع الذي ضُغط فيه، فلا يُبحَث عن الخطوة التالية في شاشةٍ أخرى. */
+    return { ok: true, countersignedAt, readiness }
   }
 
   /** رفضُ التوقيع — الاسمُ لا يطابق الوثيقةَ، أو الوثيقةُ ليست له.

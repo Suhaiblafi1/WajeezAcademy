@@ -45,6 +45,11 @@ export interface SkillEntry {
 
 export interface CatalogCourse {
   course_id: string
+  /* ═══ وفارغٌ يعني «قائمةٌ بنفسها» (٢٠ سبتمبر ٢٠٢٦) ═══
+
+     كان يُقرأ دائما مملوءا، وباني اللقطة يكتب `''` لمن لا مسارَ له منذ
+     كُتب — فالفراغُ حالٌ قائمةٌ في البيانات لا حالةٌ مستحيلة. وصار له معنى
+     معلَن: دورةٌ لا تنتمي إلى رحلة، تُقرأ وحدَها إن أُذن لها. */
   pathway_id: string
   sequence: number
   title_ar: string
@@ -54,6 +59,12 @@ export interface CatalogCourse {
   skill_slugs: string[]
   skill_ids: string[]
   skill_names_ar: string[]
+  /** تُرشَّح وحدَها في التشخيص — تغيب في اللقطات التي سبقت هذا البند */
+  recommendable_directly?: boolean
+  /** مجالاتُ التشخيص التي تخدمها — `DomainId` مُعلَنةٌ لا مشتقّة */
+  diagnostic_domains?: string[]
+  /** جمهورُها — `CareerStage` مُعلَنةٌ، والصمتُ يُخرجها من المنافسة لا يُدخلها */
+  diagnostic_stages?: string[]
 }
 
 export interface CatalogPathway {
@@ -277,7 +288,11 @@ export interface TrainerMatch {
 }
 
 export interface Recommendation {
-  kind: 'single_pathway' | 'composite_template' | 'advisor_referral' | 'guardrail_stop' | 'exploratory_direction'
+  /* و`single_course` منذ ٢٠ سبتمبر ٢٠٢٦: دورةٌ قائمةٌ بنفسها تقف حيث لا
+     مسارَ مؤهَّل. ولمَ نوعٌ جديدٌ لا `single_pathway`: الأثرُ واللقطةُ
+     والتقاريرُ تُقرأ بعد شهرٍ ليُعرف ما عُرض فعلا، و«مسارٌ واحد» عن دورةٍ
+     واحدةٍ كذبةٌ صامتةٌ في سجلٍّ يُحتكم إليه. */
+  kind: 'single_pathway' | 'single_course' | 'composite_template' | 'advisor_referral' | 'guardrail_stop' | 'exploratory_direction'
   primaryPathway: PathwayCandidate | null
   alternatives: PathwayCandidate[]
   composite: CompositeSelection | null

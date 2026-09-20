@@ -20,6 +20,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
 import { CohortService } from '../../services/cohort.service'
@@ -58,6 +59,12 @@ async function makeActiveTrainer(email: string, name: string) {
   await review.decide(app!.id, managerId, 'conditionally_approve')
   const contract = await review.createContract(app!.id, managerId, { title: 'عقد اختبار' })
   await review.signContract(contract.id, managerId)
+  /* ═══ والتجهيزُ يسبق الاعتماد منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+
+     بوّابةٌ من ثلاث خطوات قبل «نشط»: أتعابٌ سارية، ودورةٌ مؤهَّلٌ لها،
+     وعقدٌ موقَّع. وهذه الجولةُ تفحص الشعبَ لا الاعتماد، فتُتمّ ما ينقص
+     بأقصر طريقٍ صحيح. والبوّابةُ نفسُها في `trainer/readiness-gate.test.ts`. */
+  await makeReadyForApproval(prisma, app!.id, managerId)
   await review.decide(app!.id, managerId, 'activate')
   const profile = await prisma.trainerProfile.findUnique({ where: { applicationId: app!.id } })
   return { userId: profile!.userId!, profileId: profile!.id }

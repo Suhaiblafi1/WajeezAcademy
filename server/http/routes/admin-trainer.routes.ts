@@ -251,10 +251,19 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
         'undo_reject',
         'start_onboarding', 'activate', 'reinstate']),
       note: z.string().max(1000).optional(),
+      /* ═══ سببُ تجاوز بوّابة التجهيز ═══
+
+         يُقبل من كلّ أحدٍ في الحاجز ويُردّ في الخدمة لمن لا يملك التجاوزَ —
+         والرتبةُ تُقرأ هنا لا هناك: الحاجزُ يعرف الرتب، والخدمةُ لا تعرفها.
+         وردُّه في الخدمة يجعل الحكمَ واحدا مهما تعدّدت أبوابُ النداء. */
+      overrideReasonAr: z.string().trim().max(500).optional(),
     }).parse(req.body)
     /* وحالُ بريد القرار يُعاد كما ردّه الإرسالُ — لا تُكتب الشاشةُ «أُبلغ»
        على ظنٍّ (`src/application/notifications/delivery.ts`). */
-    const outcome = await review.decide(id, req.auth!.userId, body.action, body.note)
+    const outcome = await review.decide(id, req.auth!.userId, body.action, body.note, {
+      overrideReasonAr: body.overrideReasonAr,
+      actorRoles: req.auth!.roles,
+    })
     return { ok: true, ...outcome }
   })
 
@@ -883,6 +892,32 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       noteAr: z.string().trim().max(2000).nullish(),
     }).parse(req.body)
     return proposals.markBecameCourse(actorOf(req), id, body.courseId, body.noteAr)
+  })
+
+  /* ═══ نقضُ الربط، وتصحيحُ العنوان — بابا رجوعٍ لأضعف القرارات ═══
+
+     الربطُ حكمُ تشابهٍ يُخطأ فيه ويُكتشف بعد أسبوع، فله رجوع. والرفضُ
+     و«صارت دورةً» ليس لهما بابٌ هنا: الأوّلُ جوابٌ وصل صاحبَه، والثاني
+     أنشأ في الكتالوج شيئا له حياتُه — ونقضُهما بزرٍّ يعبث بقرارٍ وقع. */
+  app.post('/api/admin/course-proposals/:id/unlink', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'نقضُ ربطِ اقتراحٍ برمزٍ — يعود إلى الطابور غيرَ مبتوت' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ noteAr: z.string().trim().max(2000).nullish() }).parse(req.body ?? {})
+    return proposals.unlink(req.auth!.userId, id, body.noteAr)
+  })
+
+  app.patch('/api/admin/course-proposals/:id', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'تصحيحُ عنوانِ اقتراحٍ أو نبذته — يُكتب ما كان في الأثر' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      titleAr: z.string().trim().min(3).max(200).optional(),
+      summaryAr: z.string().trim().max(2000).nullish(),
+    }).parse(req.body)
+    return proposals.editByStaff(req.auth!.userId, id, body)
   })
 
   /* بابٌ ثالثٌ قبل القرار: اسأل صاحبَه.
