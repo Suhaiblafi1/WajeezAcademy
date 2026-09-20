@@ -44,6 +44,7 @@ afterAll(() => {
   else process.env.APP_URL = savedUrl
   if (savedEnv === undefined) delete process.env.NODE_ENV
   else process.env.NODE_ENV = savedEnv
+  delete process.env.WAJEEZ_PING_URL
   resetBuildStampCache()
 })
 
@@ -53,12 +54,12 @@ describe('البنودُ الأربعةُ تصل الشاشةَ فعلا', () =>
     const g = s.groups.find((x) => x.titleAr.includes('النسخةُ العاملة'))
     expect(g, 'بلا المجموعةِ يبقى الجوابُ في curl').toBeTruthy()
     expect(g!.items.map((i) => i.key)).toEqual(
-      expect.arrayContaining(['running_build', 'snapshot_sync', 'site_url', 'built_site_origin']),
+      expect.arrayContaining(['running_build', 'snapshot_sync', 'site_url', 'built_site_origin', 'deploy_alerting']),
     )
   })
 
   it('وكلُّ بندٍ يقول ما يعنيه — لا رقما مجرّدا', async () => {
-    for (const key of ['running_build', 'snapshot_sync', 'site_url', 'built_site_origin']) {
+    for (const key of ['running_build', 'snapshot_sync', 'site_url', 'built_site_origin', 'deploy_alerting']) {
       const i = await item(key)
       expect(i!.meaningAr.length, `${key} بلا معنًى مكتوب`).toBeGreaterThan(40)
       expect(i!.valueAr.length, `${key} بلا قيمةٍ مقروءة`).toBeGreaterThan(0)
@@ -95,6 +96,57 @@ describe('`site_url` — العطبُ الصامتُ يُعطى صوتا', () =>
     expect(i!.level).toBe('ok')
     expect(i!.valueAr).toBe('https://www.wajeezacademy.com')
     expect(i!.actionAr).toBeUndefined()
+  })
+})
+
+describe('`deploy_alerting` — الجرسُ المطفأُ يُقال قبل أن يُفتقد', () => {
+  /* ═══ العطبُ الذي كُتب له ═══
+
+     ٢٠ سبتمبر ٢٠٢٦: فشلت نشرةُ الإنتاج اثنتي عشرة ساعةً كلَّ دقيقة، والموقعُ
+     يخدم بناءً عمرَه نصفُ يوم، ورسالةٌ للمتقدّمين وصلت `main` ولم تبلغ أحدا.
+     والسجلُّ يكتب `✖` ولا أحدَ يقرأ سجلّا على خادم.
+
+     فموضعُ الخبر صار هذه الشاشةَ — تُفتح، والسجلُّ لا يُفتح إلّا بعد الشكّ. */
+
+  it('⚠️ غيابُ العنوان في الإنتاج «يحتاج نظرة» — ويقول ما العمل', async () => {
+    delete process.env.WAJEEZ_PING_URL
+    process.env.NODE_ENV = 'production'
+    const i = await item('deploy_alerting')
+    expect(i!.level, 'الجرسُ مطفأٌ ولا شيءَ يقوله').toBe('attention')
+    expect(i!.valueAr, 'لا يُقال إنّ الفشلَ يقع صامتا').toContain('صامتا')
+    expect(i!.actionAr, 'بلا إجراءٍ مكتوبٍ يبقى التنبيهُ بلا مخرج').toContain('WAJEEZ_PING_URL')
+    expect(i!.actionAr, 'لا يُسمّى الملفُّ الذي يُضبط فيه').toContain('deploy/.env.production')
+  })
+
+  it('⚠️ وليس «معطَّلا» — الموقعُ يعمل، والمطفأُ هو الجرسُ وحدَه', async () => {
+    /* حاجزٌ أحمرُ على ما لا يمنع أحدا يُعلّم قارئَه تجاهلَ الأحمر. */
+    delete process.env.WAJEEZ_PING_URL
+    process.env.NODE_ENV = 'production'
+    expect((await item('deploy_alerting'))!.level).not.toBe('broken')
+  })
+
+  it('وغيابُه في التطوير سليم — لا نشرَ آليّا على جهاز مطوّر', async () => {
+    delete process.env.WAJEEZ_PING_URL
+    process.env.NODE_ENV = 'test'
+    expect((await item('deploy_alerting'))!.level).toBe('ok')
+  })
+
+  it('وضبطُه يُطفئه ولا يبقى إجراءٌ معلَّق', async () => {
+    process.env.NODE_ENV = 'production'
+    process.env.WAJEEZ_PING_URL = 'https://hc-ping.com/abc'
+    const i = await item('deploy_alerting')
+    expect(i!.level).toBe('ok')
+    expect(i!.actionAr).toBeUndefined()
+    delete process.env.WAJEEZ_PING_URL
+  })
+
+  it('⚠️ وقيمةٌ من مسافاتٍ كالغياب — فلا يُطفأ الجرسُ بسطرٍ فارغ', async () => {
+    /* `WAJEEZ_PING_URL=` أو مسافاتٌ: المراقبُ يجرّدها فلا يبثّ، فلو عدّتها
+       هذه الشاشةُ ضبطا لَقالت «مضبوط» وهو صامت — وهو العطبُ نفسُه مقلوبا. */
+    process.env.NODE_ENV = 'production'
+    process.env.WAJEEZ_PING_URL = '   '
+    expect((await item('deploy_alerting'))!.level).toBe('attention')
+    delete process.env.WAJEEZ_PING_URL
   })
 })
 
