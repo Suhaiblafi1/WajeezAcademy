@@ -202,6 +202,13 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
            فصار شرطا: واحدٌ على الأقلّ. ومن لا يستطيع فصلا لا يُجدوَل. */
         seasons: z.array(z.enum(TRAINING_SEASON_VALUES)).min(1, 'اختر فصلا واحدا على الأقلّ تستطيع التدريس فيه').max(4),
       }),
+      /* تسجيلاتُ دوراته — والثاني تابعٌ للأوّل.
+
+         ولا يُفرض التبعيّةُ هنا بـ`refine`: موضعُها `recordingAnswerPatch`
+         في الوحدة المشتركة، تقرؤها الشاشةُ والخدمةُ معا. فالمخطّطُ يقبل
+         الشكلَ، والقرارُ في موضعٍ واحدٍ لا اثنين. */
+      hasCourseRecordings: z.boolean().optional(),
+      wantsToRecordCourses: z.boolean().optional(),
       demoConsent: z.literal(true),
       /* الرقمُ يُقبل هنا كما يُقبل في القسم الأوّل — وإلّا فتصحيحُه بعد إنشاء
          الطلب لا يبلغ الخادمَ أبدا: لا نداءَ بينهما يحمله. والحدُّ نفسُه. */

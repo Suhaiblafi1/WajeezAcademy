@@ -23,7 +23,7 @@ import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMP
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
 import { fmtDateLong } from '../../src/application/text/format-ar'
 import {
-  CONTACT_CHANNELS, contactChannelLabel,
+  boolToRecordingAnswer, CONTACT_CHANNELS, contactChannelLabel, recordingAnswerPatch,
   type ContactChannel, type TrainingSeason,
 } from '../../src/application/trainer/application-options'
 
@@ -701,6 +701,9 @@ export class TrainerApplicationService {
     teachableOther?: string
     teachableProposals?: { titleAr: string; summaryAr: string }[]
     availability: AvailabilityInput
+    /** تسجيلاتُ دوراته — والرغبةُ تابعةٌ للأولى، يفرضها `recordingAnswerPatch` */
+    hasCourseRecordings?: boolean
+    wantsToRecordCourses?: boolean
     demoConsent: boolean
     phoneCountryCode?: string
     phone?: string
@@ -777,6 +780,25 @@ export class TrainerApplicationService {
              الفارغَ والغائبَ سواءً، فلا حاجةَ إلى تمييزٍ لا يُقرأ. */
           teachableProposals: cleanProposals(input.teachableProposals ?? []) as unknown as Prisma.InputJsonValue,
           availability: input.availability as unknown as Prisma.InputJsonValue,
+          /* ═══ والرغبةُ تسقط متى كانت التسجيلاتُ موجودة ═══
+
+             بالقرار الواحد لا بشرطٍ يُكتب هنا: الشاشةُ تُخفي السؤالَ الثاني
+             بالدالّة نفسِها. ولو كُتب الشرطُ مرّتين لبقي «يرغب في التسجيل»
+             مكتوبا لمن عاد فقال إنّ عنده تسجيلاتٍ — تناقضٌ يقرؤه المراجعُ
+             ولا يعرف أيُّهما الصحيح.
+
+             و`?? null` لأنّ الجوابَ يُمحى كما يُكتب: من عاد وبدّل جوابَه لا
+             يُترك له القديمُ، و`undefined` وحدَها تعني «لا تمسّ العمود». */
+          ...(() => {
+            const patch = recordingAnswerPatch(
+              boolToRecordingAnswer(input.hasCourseRecordings),
+              boolToRecordingAnswer(input.wantsToRecordCourses),
+            )
+            return {
+              hasCourseRecordings: patch.hasCourseRecordings ?? null,
+              wantsToRecordCourses: patch.wantsToRecordCourses ?? null,
+            }
+          })(),
           demoConsent: input.demoConsent,
           ...(sentPhone ? { phone, phoneCountryCode } : {}),
           ...(contact ? { contactChannel: contact.channel, contactAltEmail } : {}),

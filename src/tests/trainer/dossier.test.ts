@@ -33,6 +33,7 @@ describe('ملفّ المتقدّم في شاشة المراجعة', () => {
     const mustShow = [
       'phone', 'employmentStatus', 'trainingYears', 'domainYears',
       'teachableCourseIds', 'teachableOther', 'availability', 'demoConsent',
+      'hasCourseRecordings', 'wantsToRecordCourses',
       'trainingLanguages', 'deliveryMode', 'hasAccreditation',
       'targetCountries', 'targetAudiences', 'youtubeUrl', 'instagramUrl', 'facebookUrl',
     ]

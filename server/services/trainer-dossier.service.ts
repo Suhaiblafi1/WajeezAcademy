@@ -32,7 +32,7 @@ import { proposalLine, readProposals } from '../../src/application/trainer/teach
 import { fmtDateLong, fmtDateTime, fmtDateWith } from '../../src/application/text/format-ar'
 import {
   APPLICANT_STATUS, contactChannelLabel, DELIVERY_MODES, DOMAIN_YEARS, EMPLOYMENT_STATUS,
-  labelOf, PERIODS, seasonLabel, TRAINING_YEARS,
+  labelOf, PERIODS, recordingsSummaryAr, seasonLabel, TRAINING_YEARS,
 } from '../../src/application/trainer/application-options'
 
 /** الأدوارُ التي تُشعَر بطلبات المدرّبين — وهي نفسُها التي يصلها الملفّ */
@@ -115,6 +115,8 @@ export interface DossierApplication {
   previousOrgs: string | null
   evidenceNotes: string | null
   availability: unknown
+  hasCourseRecordings: boolean | null
+  wantsToRecordCourses: boolean | null
   demoConsent: boolean
   contactChannel: string | null
   contactAltEmail: string | null
@@ -217,6 +219,16 @@ export function buildDossierHtml(
     { k: 'دوله المستهدفة', v: esc(app.targetCountries.join(' · ')) },
     { k: 'لغات تدريبه', v: esc(app.trainingLanguages.join(' · ')) },
     { k: 'نمط التدريب', v: esc(labelOf(DELIVERY_MODES, app.deliveryMode)) },
+    /* ═══ والصمتُ يُقال صمتا لا «لا» ═══
+
+       العمودُ يقبل العدم، و`null` فيه تعني «لم يُسأل» — وهي حالُ كلِّ طلبٍ
+       سبق هذا السؤال. فلو قُرئ `!app.hasCourseRecordings` جوابا بالنفي
+       لَقرأ المراجعُ عن مئةِ طلبٍ قديمٍ أنّهم قالوا «لا تسجيلات عندي»، وهم
+       لم يُسألوا. فالحالاتُ ثلاثٌ في القراءة كما هي في التخزين. */
+    {
+      k: 'تسجيلاتٌ جاهزة',
+      v: esc(recordingsSummaryAr(app.hasCourseRecordings, app.wantsToRecordCourses)),
+    },
   ])
 
   const availabilityRows = rows([

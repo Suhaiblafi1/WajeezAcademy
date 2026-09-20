@@ -307,6 +307,95 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
   },
 }
 
+/* ═══════════ تسجيلاتُ دوراته — سؤالٌ وجوابُه يفتح سؤالا ═══════════
+
+   قرارُ صاحب المنصّة (٢٠ سبتمبر ٢٠٢٦): يُسأل المتقدّمُ هل لديه تسجيلاتٌ
+   جاهزةٌ لدوراته. فإن قال لا، سُئل هل يرغب في تسجيلها — «لأنّ المحتوى الأفضل
+   يكون تسجيلاتٍ مسجّلةً وحلقاتٍ مباشرةً مع الطلاب».
+
+   ═══ ولماذا ثلاثةُ أحوالٍ لا اثنان ═══
+
+   الجوابُ منطقيٌّ في القاعدة، **وثالثُه أن لا جواب**: `null`. ولو كان مربّعا
+   يُؤشَّر (كما `hasAccreditation`) لَما فُرّق بين «قال لا» و«لم يصل إلى
+   السؤال بعد» — والفرقُ هو كلُّ شيءٍ هنا، إذ السؤالُ الثاني لا يُعرض إلّا
+   على من قال لا. فمربّعٌ فارغٌ يفتح على كلّ متقدّمٍ سؤالا لم يُسأله أحد.
+
+   ولهذا يُختار الجوابُ اختيارا صريحا: «نعم» أو «لا»، ولا شيءَ قبلهما.
+
+   ═══ والسؤالُ الثاني تابعٌ لا مستقلّ ═══
+
+   لا معنى لـ«هل ترغب في التسجيل؟» عند من يملك تسجيلاتٍ أصلا. فيُخزَّن
+   `wantsToRecordCourses` فارغا متى كان الأوّلُ «نعم» — لا يُحمل جوابٌ قديمٌ
+   عن حالٍ تغيّرت. و`recordingAnswerPatch` أدناه تفرض هذا في موضعٍ واحدٍ
+   تقرؤه الشاشةُ والخادمُ معا، فلا ينحرف أحدُهما عن الآخر. */
+
+/** جوابا السؤال الأوّل — القيمةُ تُخزَّن منطقيّةً والاسمُ يُقرأ */
+export const RECORDING_ANSWERS = [
+  { value: 'yes', label: 'نعم — عندي تسجيلاتٌ جاهزة' },
+  { value: 'no', label: 'لا — ليست عندي بعد' },
+] as const
+
+/** وجوابا السؤال الثاني — لا يُعرضان إلّا لمن قال «لا» */
+export const WANTS_RECORDING_ANSWERS = [
+  { value: 'yes', label: 'نعم — يهمّني أن أسجّلها معكم' },
+  { value: 'no', label: 'لا — أفضّل اللقاءات المباشرة وحدَها' },
+] as const
+
+/** لماذا نسأل — يُقرأ في النموذج، ويُكتب مرّةً واحدةً فلا يتفرّق نصُّه */
+export const RECORDINGS_WHY =
+  'أفضلُ ما يتعلّم به الطالبُ عندنا تسجيلاتٌ مُعدّةٌ مسبقا يتبعها لقاءاتٌ مباشرةٌ معك — '
+  + 'فنسأل لنعرف من أين نبدأ، لا لنشترط.'
+
+/** «نعم»/«لا» إلى منطقيّ — وما سواهما لا جواب (`undefined` لا `false`) */
+export function recordingAnswerToBool(v: string | null | undefined): boolean | undefined {
+  return v === 'yes' ? true : v === 'no' ? false : undefined
+}
+
+/** والمنطقيُّ إلى «نعم»/«لا» — و`null` يعود فراغا لا «لا» */
+export function boolToRecordingAnswer(v: boolean | null | undefined): string {
+  return v === true ? 'yes' : v === false ? 'no' : ''
+}
+
+/** ما يُخزَّن من الجوابَين معا — الرغبةُ تسقط متى كانت التسجيلاتُ موجودة.
+
+    موضعٌ واحدٌ تقرؤه الشاشةُ (لتُخفي السؤالَ الثاني) والخادمُ (لئلّا يكتب
+    رغبةً عن حالٍ لا تُسأل فيها). ولو كُتب الشرطُ مرّتين لبقي في القاعدة
+    «يرغب في التسجيل» لمن عاد وقال إنّ عنده تسجيلاتٍ — وهو تناقضٌ صامت. */
+export function recordingAnswerPatch(has: string | null | undefined, wants: string | null | undefined): {
+  hasCourseRecordings: boolean | undefined
+  wantsToRecordCourses: boolean | undefined
+} {
+  const hasBool = recordingAnswerToBool(has)
+  return {
+    hasCourseRecordings: hasBool,
+    /* لا تُسأل الرغبةُ إلّا عند «لا» صريحة — فلا عند «نعم» ولا قبل الجواب */
+    wantsToRecordCourses: hasBool === false ? recordingAnswerToBool(wants) : undefined,
+  }
+}
+
+/** كيف يُقرأ جوابُ التسجيلات عند من يراجع — نصٌّ واحدٌ لملفّ اللجنة ولشاشة
+    الإدارة معا.
+
+    ═══ ولماذا دالّةٌ لا سطرٌ في كلّ شاشة ═══
+
+    الشرطُ ثلاثيٌّ (`true` · `false` · لا جواب)، وثلاثيٌّ يُكتب مرّتين يصير
+    ثنائيّا في إحداهما بعد أوّل تعديل: يكتب كاتبٌ `!has` فيقرأ المراجعُ في
+    شاشةٍ «لا تسجيلات عنده» وفي أخرى «لم يُسأل» عن الرجل نفسِه. وهذا يقع في
+    هذا المستودَع — ولذلك يُفحص النصُّ هنا سلوكا، وتُفحص الشاشتان على أنّهما
+    تناديان لا تكرّران. */
+export function recordingsSummaryAr(
+  has: boolean | null | undefined,
+  wants: boolean | null | undefined,
+): string {
+  if (has === true) return 'نعم — عنده تسجيلاتٌ جاهزةٌ لدوراته'
+  /* وما ليس `false` صريحةً فهو صمت — لا نفي. وهي حالُ كلّ طلبٍ سبق السؤال */
+  if (has !== false) return 'لم يُسأل — طلبٌ سبق هذا السؤال'
+  const tail = wants === true ? ' — ويرغب في تسجيلها معنا'
+    : wants === false ? ' — ولا يرغب، يفضّل اللقاءات المباشرة'
+      : ''
+  return `لا تسجيلاتٍ عنده بعد${tail}`
+}
+
 /** الحالاتُ التي ما زال فيها الطلبُ حيّا ويجوز لصاحبه سحبُه */
 export const WITHDRAWABLE_STATUSES = [
   'draft', 'email_verification_pending', 'submitted', 'under_review', 'information_requested',
