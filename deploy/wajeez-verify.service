@@ -1,0 +1,26 @@
+# إثباتُ استرجاع النسخة الاحتياطيّة — أسبوعيّا. التثبيت:
+#   sudo cp deploy/wajeez-verify.* /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now wajeez-verify.timer
+#   systemctl list-timers wajeez-verify    للتأكّد من الموعد القادم
+#
+# ── ولماذا مؤقّتٌ ثانٍ لا سطرٌ في الأوّل ──
+#
+# `wajeez-backup` يأخذ النسخة، وهذا **يُثبت أنّها تُسترجَع**. وهما شيئان:
+# الأوّلُ يفشل فتضيع نسخةُ ليلة، والثاني يفشل فيتبيّن أنّ **النسخَ كلَّها**
+# لا تُسترجَع. وخلطُهما في وحدةٍ واحدةٍ يجعل فشلَ الإثبات يُقرأ فشلَ نسخة.
+#
+# وهو يكتب `backup.lastVerifiedRestore` في القاعدة — تقرؤه المنصّةُ، وتشترطه
+# **إعادةُ ضبط الحسابات** (محوٌ لا رجعةَ فيه). فبلا تجديده يُغلق ذلك البابُ
+# من نفسِه بعد ٣١ يوما.
+[Unit]
+Description=إثباتُ استرجاع نسخة وجيز الاحتياطيّة في قاعدة خدش
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/wajeez
+ExecStart=/usr/bin/bash deploy/backup.sh --verify
+# إخفاقُ الإثبات يجب أن يُرى: journalctl -u wajeez-verify
+StandardOutput=journal
+StandardError=journal

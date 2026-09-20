@@ -21,6 +21,7 @@ import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } fr
 import { lastVerifiedCommit } from '../catalog/snapshot-verified'
 import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
 import { getCalendlyConfig, getCalendlySync } from './integrations.service'
+import { attestationState, MAX_AGE_DAYS } from './backup-attestation'
 
 export type HealthLevel = 'ok' | 'attention' | 'broken' | 'unknown'
 
@@ -66,7 +67,7 @@ export class SystemHealthService {
       { titleAr: 'المالُ والمزوّدون', items: await this.money(now) },
       { titleAr: 'الأمنُ والدخول', items: await this.security(now) },
       { titleAr: 'الصلاحيّاتُ والأدوار', items: await this.rbac() },
-      { titleAr: 'التخزينُ والقاعدة', items: await this.storage() },
+      { titleAr: 'التخزينُ والقاعدة', items: await this.storage(now) },
       { titleAr: 'النسخةُ العاملةُ والبيئة', items: await this.deployment(now) },
     ]
     const order: HealthLevel[] = ['broken', 'attention', 'unknown', 'ok']
@@ -396,7 +397,8 @@ export class SystemHealthService {
   }
 
   /* ── التخزينُ والقاعدة ── */
-  private async storage(): Promise<HealthItem[]> {
+  private async storage(now: Date): Promise<HealthItem[]> {
+    const attest = await attestationState(this.prisma, now)
     const [docs, logRows, migration] = await Promise.all([
       this.prisma.trainerApplicationDocument.count({ where: { content: { not: null } } }),
       /* جداولُ السجلّ: تنمو بلا حدٍّ بطبيعتها، ولها الآن مدّةُ حفظٍ معلنة */
@@ -465,6 +467,39 @@ export class SystemHealthService {
           + 'والمنتظرُ في الطابور لا يُحذف بعمره — عملٌ لم يتمّ. '
           + 'والتقليمُ على دُفعاتٍ محدودةٍ كي لا تُقفل معاملةٌ جدولا.',
         actionAr: 'يُنفّذه العاملُ الخلفيُّ مرّةً في اليوم — ولا يعمل حتّى يوجد الخادمُ الدائم (المهمّة ٥٤).',
+      },
+      {
+        /* ═══ إثباتُ الاسترجاع — ولماذا له سطرٌ هنا ═══
+
+           `backup.sh --verify` ينزّل آخرَ نسخةٍ ويسترجعها في قاعدةِ خدشٍ
+           ويعدّ صفوفَها، ثمّ يكتب إثباتَه في القاعدة. ويشترطه **إعادةُ ضبط
+           الحسابات** — محوٌ لا رجعةَ فيه.
+
+           والإثباتُ **يشيخ** بعد ٣١ يوما (`MAX_AGE_DAYS`). فكان يُكتب مرّةً
+           بيدٍ ثمّ يُنسى، ويشيخ بلا أن يقول أحد — فيُغلق بابُ إعادة الضبط من
+           نفسِه، ولا يُعلَم إلّا عند محاولة فتحه. وأسوأُ منه أن يشيخ لأنّ
+           النسخَ **توقّفت** وهو لا يُميّز الحالَين.
+
+           فصار له سطرٌ هنا يشيخ في العين قبل أن يشيخ في القاعدة، ويجدّده
+           المؤقّتُ الأسبوعيّ (`deploy/wajeez-verify.timer`). */
+        key: 'backup_restore_proof',
+        titleAr: 'آخرُ استرجاعٍ مُثبَت للنسخة الاحتياطيّة',
+        valueAr: attest.attestation
+          ? `منذ ${attest.ageDays} يوما — ${attest.attestation.users} مستخدما و${attest.attestation.orders} طلبا من «${attest.attestation.file}»`
+          : 'لم يجرِ قطّ',
+        /* ولا يحمرّ لشيخوخةٍ قريبة: الأحمرُ لِما بطل، والأصفرُ لِما يقترب.
+           وحاجزٌ أحمرُ على ما زال صالحا يُعلّم قارئَه تجاهلَ الأحمر. */
+        level: !attest.attestation ? 'broken'
+          : !attest.ok ? 'broken'
+            : (attest.ageDays ?? 0) > MAX_AGE_DAYS - 10 ? 'attention' : 'ok',
+        meaningAr:
+          'نسخةٌ لم تُسترجَع مرّةً ليست نسخةً بل ملفّا يُرجى منه خير. وهذا السطرُ يقول متى استُرجعت آخرَ مرّةٍ فعلا، وكم صفّا خرج منها — '
+          + `فلقطةٌ فارغةٌ تنجح شكلا وتُقرأ هنا صفرا. والإثباتُ يشيخ بعد ${MAX_AGE_DAYS} يوما لأنّ المخطَّطَ يتغيّر وحجمَ البيانات يتغيّر، `
+          + 'وقد يكون المؤقّتُ توقّف بينهما. **وعليه تتوقّف إعادةُ ضبط الحسابات** — وهي محوٌ لا رجعةَ فيه.',
+        actionAr: attest.ok && (attest.ageDays ?? 0) <= MAX_AGE_DAYS - 10
+          ? undefined
+          : (attest.reasonAr
+            ?? 'يقترب الإثباتُ من الشيخوخة. يجدّده المؤقّتُ الأسبوعيُّ — فإن لم يتجدّد فتحقّق: systemctl list-timers wajeez-verify'),
       },
       {
         key: 'last_migration',
