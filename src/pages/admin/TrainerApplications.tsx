@@ -17,6 +17,7 @@ import { outcomeLabelAr } from "@/application/trainer/interview-outcome";
 import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
+import type { SyncTrust } from "@/application/trainer/interview-sync-trust";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
 import { useSearchParams } from "react-router";
@@ -409,6 +410,8 @@ export default function TrainerApplications() {
   /* والافتراضُ هو ما كان قبل الخيار: أقدمُ أوّلا — صاحبُه أطولُ انتظارا */
   const [sortKey, setSortKey] = useState<SortKey>("created");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  /* أيَثِقُ الطابورُ بما يعرفه عن الحجز؟ — `null` حتّى يُقرأ الجواب */
+  const [syncTrust, setSyncTrust] = useState<SyncTrust | null>(null);
   /* التحديدُ يبقى عبر الصفحات والبحث — والشريطُ يقول على كم يقع، فلا يُنفَّذ
      على صفٍّ غاب عن العين بلا علمِ صاحب القرار. */
   const [sel, setSel] = useState<Set<string>>(new Set());
@@ -473,6 +476,18 @@ export default function TrainerApplications() {
   }, [filter]);
 
   useEffect(() => { void load(); }, [load]);
+  /* ولا يُسقِط فشلُ هذا الطابورَ: هو خبرٌ عن الطابور لا الطابور */
+  useEffect(() => {
+    void apiGet<SyncTrust>("/api/admin/trainer-applications/interview-sync")
+      .then(setSyncTrust)
+      .catch(() => setSyncTrust(null));
+  }, []);
+  /* ولا يُسقِط فشلُه الطابورَ: هو خبرٌ عن الطابور لا الطابور */
+  useEffect(() => {
+    void apiGet<SyncTrust>("/api/admin/trainer-applications/interview-sync")
+      .then(setSyncTrust)
+      .catch(() => setSyncTrust(null));
+  }, []);
   /* نبض صامت كل دقيقة — طلبات الترشح الجديدة تظهر دون تحديث يدوي */
   const silentReload = useCallback(() => { void load(true); }, [load]);
   useAutoRefresh(silentReload, 60_000);
@@ -1509,6 +1524,30 @@ export default function TrainerApplications() {
           ولا يُعرض الرأسُ إلّا بلا ترشيحِ حالة: المحمَّلُ حينَها الطابورُ
           كلُّه. ومع ترشيحٍ يكون المحمَّلُ حالةً واحدةً، فعددٌ يُحسب منه
           يسمّي طابورا ليس هو. */}
+      {/* ═══ وخبرٌ لا يصل من يحتاجه ليس خبرا (٢٠ سبتمبر ٢٠٢٦) ═══
+
+          سقطت مزامنةُ Calendly بـ«ردّ 401» فبقي كلُّ ملفٍّ يقول «المقابلات
+          (0)»، ولم تظهر أزرارُ النتيجة قطّ، ولم تُكتب شارةٌ في صفّ، وصدق
+          «لم يحجز موعدا» على الجميع. والعطبُ **كان مكتوبا** في «صحّة
+          النظام» بنصّه وسببه ودوائه — غير أنّ تلك الشاشةَ خلف
+          `settings.manage`، ومن يقرأ الطابورَ لا يملكها. فبحث صاحبُ
+          المنصّة عن العلّة في سبع شكاوى قبل أن تُوجد.
+
+          فهو هنا، حيث يقع العملُ الذي يتعطّل. */}
+      {mode === "apps" && syncTrust && !syncTrust.trusted && (
+        <Card tone="warn" className="mb-4 flex flex-wrap items-start gap-2 !py-3">
+          <ServerOff className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
+          <div className="min-w-0 flex-1">
+            <p className="text-read font-bold">مواعيدُ المقابلات لا تصل الآن</p>
+            <p className="mt-1 text-read text-muted-foreground">{syncTrust.reasonAr}</p>
+            <p className="mt-1 text-read text-muted-foreground">
+              وما دامت ساقطةً فلا صفَّ مقابلةٍ يُنشأ، ولا نتيجةَ تُسجَّل، ولا شارةَ تظهر في الصفّ.
+              وتُسجَّل اللقاءاتُ الواقعةُ يدويّا من ملفّ صاحبها حتّى تعود.
+            </p>
+          </div>
+        </Card>
+      )}
+
       {mode === "apps" && filter === "" && (
         <WorkHeader
           loading={loading}
@@ -1580,11 +1619,19 @@ export default function TrainerApplications() {
               </summary>
               <Inset className="mt-2 flex flex-wrap items-center gap-2">
                 {/* سؤالٌ يُضغط بدل عدِّ الأصفار في عمود «مقابلة» */}
+                {/* ═══ ولا يُعرض عددٌ واثقٌ لا يُعرف ═══
+
+                    «لم يحجز موعدا» يُحسب ممّا وصلنا من حجوز. فإن سقطت
+                    المزامنةُ صدق على الجميع — ويُقرأ رقمٌ كبيرٌ يُفهَم
+                    إهمالا من المتقدّمين وهو عطبٌ عندنا. فحين لا يُوثَق
+                    يُعرض «؟» لا رقم: الفراغُ أصدقُ من يقينٍ كاذب. */}
                 <Button tone={onlyUnbooked ? "confirm" : "ghost"}
                   aria-pressed={onlyUnbooked}
                   onClick={() => { setOnlyUnbooked((v) => !v); setPage(1); }}>
                   <CalendarCheck className="h-3.5 w-3.5" /> لم يحجز موعدا
-                  <span className="mr-1 font-mono">{apps.filter(canRemind).length}</span>
+                  <span className="mr-1 font-mono">
+                    {syncTrust && !syncTrust.trusted ? "؟" : apps.filter(canRemind).length}
+                  </span>
                 </Button>
                 <Button tone="secondary" onClick={() => void load()}>
                   <RefreshCw className="h-3.5 w-3.5" /> تحديث

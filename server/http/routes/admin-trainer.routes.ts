@@ -19,6 +19,8 @@ import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog
 import { analyzeImpact } from '../../services/impact.service'
 import { COURSE_PREP_MIN_DAYS } from '../../../src/application/trainer/notice-periods'
 import { INTERVIEW_OUTCOME_KEYS } from '../../../src/application/trainer/interview-outcome'
+import { interviewSyncTrust } from '../../../src/application/trainer/interview-sync-trust'
+import { getCalendlyConfig, getCalendlySync } from '../../services/integrations.service'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -49,6 +51,34 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { status } = z.object({ status: z.string().optional() }).parse(req.query)
     return review.listApplications(status)
+  })
+
+  /* ═══ أيَثِقُ الطابورُ بما يعرفه عن الحجز؟ (٢٠ سبتمبر ٢٠٢٦) ═══
+
+     سقطت مزامنةُ Calendly بـ«ردّ 401» فبقي كلُّ ملفٍّ يقول «المقابلات (0)»،
+     وبقي «لم يحجز موعدا» يصدق على الجميع — وثلاثةُ أشياءَ انهارت خلفه
+     بصمت. والخبرُ **كان مكتوبا** في «صحّة النظام» بنصّه وسببه ودوائه،
+     غير أنّ تلك الشاشةَ خلف `settings.manage` ومن يقرأ الطابورَ لا
+     يملكها. فخبرٌ لا يصل من يحتاجه ليس خبرا.
+
+     فيُقرأ هنا بصلاحيّة الطابور نفسِها. **ولا سرَّ يغادر**: أيعمل أم لا،
+     ومتى كانت آخرُ دورة، وجملةٌ تقول لماذا — لا رمزَ ولا جزءَ رمز. */
+  app.get('/api/admin/trainer-applications/interview-sync', {
+    preHandler: requirePermission('trainer.applications.view'),
+    schema: { tags: ['admin-trainers'], summary: 'أيَثِقُ الطابورُ بما يعرفه عن حجز المقابلات — بلا أسرار' },
+  }, async () => {
+    const [config, sync] = await Promise.all([
+      getCalendlyConfig(prisma),
+      getCalendlySync(prisma),
+    ])
+    const trust = interviewSyncTrust({
+      hasToken: Boolean(config.token),
+      enabled: Boolean(config.enabled),
+      at: sync?.at ?? null,
+      errorAr: sync?.errorAr ?? null,
+      now: new Date(),
+    })
+    return { ...trust, at: sync?.at ?? null }
   })
 
   /* ── الحذف النهائيّ ──
