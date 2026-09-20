@@ -19,7 +19,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  bookingReminderMail, decisionMailFor, rejectionMail, waitlistMail,
+  bookingReminderMail, decisionMailFor, rejectionMail, rejectionUndoneMail, waitlistMail,
 } from '../../server/services/trainer-decision-mail'
 import { APPLICANT_STATUS } from '@/application/trainer/application-options'
 import { renderMail, type MailBlock } from '../../server/services/mail-template'
@@ -136,5 +136,58 @@ describe('تذكيرُ من لم يحجز', () => {
 
   it('وعنوانُ صفحة الطلب يخرج في النصّ الخامّ — فمن عطّل الـHTML يبلغ موعدَه', () => {
     expect(rendered(mail.doc).text).toContain(STATUS)
+  })
+})
+
+/* ═══ نقضُ الاعتذار — والسببُ يسافر هنا وحدَه ═══
+
+   قرارُ صاحب المنصّة (١٩ سبتمبر ٢٠٢٦): «عند رفض أيّ مدرّب أريد خيارَ التراجع
+   عن الرفض مع ذكر السبب، والذي يصل للمتقدّم بالإيميل».
+
+   وهو معكوسُ الحارس الأوّل في هذا الملفّ تماما، فيُقرآن معا: ما يُكتب عند
+   الردّ لا يسافر، وما يُكتب عند نقضه يسافر بنصّه. ولو وُصل أحدُهما بقالب
+   الآخر يوما سقط أحدُ الحارسَين. */
+describe('رسالةُ التراجع عن الرفض', () => {
+  const STATUS = 'https://example.test/join-trainer'
+  const WHY = 'قرأنا شهادةَ الاعتماد بعد القرار فتبيّن أنّ الخبرةَ تفي بما تطلبه الشعبة'
+  const mail = rejectionUndoneMail({ fullName: NAME, reference: REF, noteAr: WHY, statusUrl: STATUS })
+
+  it('السببُ يصل صاحبَ الطلب بنصّه — نصًّا وHTML', () => {
+    const out = rendered(mail.doc)
+    expect(out.text, 'سببُ التراجع لم يصل في النصّ الخامّ').toContain(WHY)
+    expect(out.html, 'سببُ التراجع لم يصل في الـHTML').toContain(WHY)
+  })
+
+  it('ولا تُقال بلا سبب — النوعُ يشترطه، فلا يمرّ نداءٌ بلا كلمة', () => {
+    /* بنيةً لا اتّفاقا: `noteAr` إلزاميٌّ في هذه بخلاف أختَيها. والفحصُ على
+       ما يقبله المترجم — ولو صار اختياريّا يوما لم يبقَ خطأٌ يُتوقَّع هنا،
+       فيسقط `@ts-expect-error` نفسُه في `tsc` (توجيهٌ بلا خطأ خطأ). */
+    const missing: Parameters<typeof rejectionUndoneMail>[0] = {
+      fullName: NAME, reference: REF, statusUrl: STATUS,
+      // @ts-expect-error — بلا سببٍ لا تُبنى الرسالةُ أصلا
+      noteAr: undefined,
+    }
+    expect(missing.noteAr).toBeUndefined()
+  })
+
+  it('وتقول ما وقع في عنوانها — «عُدنا في قرارنا» لا «طلبك تحت المراجعة»', () => {
+    /* من قرأ اعتذارا بالأمس ثمّ رأى عنوانا محايدا ظنّه رسالةً آليّةً مكرّرة */
+    expect(mail.subject, 'الموضوعُ لا يقول إنّنا عُدنا').toContain('عُدنا')
+    expect(mail.subject).toContain(REF)
+    expect(mail.doc.preheader, 'بلا سطرِ معاينةٍ يقرأ الصندوقُ التحيّةَ وحدَها').toBeTruthy()
+  })
+
+  it('وزرُّها إلى صفحة متابعة الطلب — فالبابُ الذي أُغلق يُفتح بنقرة', () => {
+    /* بخلاف رسالة الاعتذار: تلك بلا زرٍّ لأنّ لا شاشةَ تُفتح بعدها، وهذه
+       طلبُها عاد حيّا — و`BOOKABLE_STATUSES` تقبل «قيد المراجعة». */
+    const cta = mail.doc.blocks.find((b: MailBlock) => b.kind === 'cta')
+    expect(cta, 'لا زرَّ إلى صفحة الطلب').toBeTruthy()
+    expect(cta && cta.kind === 'cta' && cta.href).toBe(STATUS)
+    expect(rendered(mail.doc).text, 'العنوانُ لا يخرج في النصّ الخامّ').toContain(STATUS)
+  })
+
+  it('ورقمُ الطلب فيها — فيُسأل به إن سأل', () => {
+    const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
+    expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
   })
 })

@@ -10,6 +10,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { sendDirectEmail, publicSiteUrl, type DirectMailResult } from './notification.service'
 import { renderMail } from './mail-template'
+import { VERIFY_LINK_WINDOW_AR } from '../../src/application/links/verification-window'
 
 export function verifyEmailLink(token: string): string {
   return `${publicSiteUrl()}/auth/verify?token=${encodeURIComponent(token)}`
@@ -38,7 +39,7 @@ export async function sendVerifyEmail(
       blocks: [
         { kind: 'p', text: 'لتفعيل الشراء واستلام الشهادة نحتاج أن نتأكّد أن هذا البريد يصلك.' },
         { kind: 'cta', label: 'وثّق بريدي الآن', href: link },
-        { kind: 'callout', text: 'الرابط صالحٌ ثمانيَ وأربعين ساعة.' },
+        { kind: 'callout', text: `الرابط صالحٌ ${VERIFY_LINK_WINDOW_AR}.` },
         { kind: 'p', text: 'ويمكنك الدخول وتصفّح المنصّة والتشخيص من غير هذه الخطوة — التوثيق مطلوبٌ للشراء والشهادة فقط.' },
         { kind: 'note', text: 'إن لم تكن أنت من أنشأ الحساب فتجاهل هذه الرسالة.' },
       ],
@@ -65,12 +66,12 @@ export async function sendVerifyReminderEmail(
     subject: input.last ? 'تذكيرٌ أخير بتوثيق بريدك — أكاديمية وجيز' : 'بقي توثيقُ بريدك — أكاديمية وجيز',
     ...renderMail({
       greetingName: input.displayName,
-      preheader: 'رابطٌ جديدٌ صالحٌ ثمانيَ وأربعين ساعة.',
+      preheader: `رابطٌ جديدٌ صالحٌ ${VERIFY_LINK_WINDOW_AR}.`,
       heading: input.last ? 'تذكيرٌ أخير: بريدُك غيرُ موثَّقٍ بعد' : 'بريدُك غيرُ موثَّقٍ بعد',
       blocks: [
         { kind: 'p', text: 'أنشأتَ حسابَك عندنا ولم تُكمل توثيقَ بريدك. والرابطُ الأوّلُ انتهت صلاحيّتُه، فهذا رابطٌ جديد.' },
         { kind: 'cta', label: 'وثّق بريدي الآن', href: link },
-        { kind: 'callout', text: 'الرابط صالحٌ ثمانيَ وأربعين ساعة.' },
+        { kind: 'callout', text: `الرابط صالحٌ ${VERIFY_LINK_WINDOW_AR}.` },
         { kind: 'p', text: 'والدخولُ والتصفّحُ والتشخيصُ تعمل كلُّها من غير هذه الخطوة — التوثيقُ مطلوبٌ للشراء والشهادة فقط.' },
         /* وهذا هو السطرُ الذي من أجله كُتبت هذه الرسالةُ منفصلةً */
         input.last

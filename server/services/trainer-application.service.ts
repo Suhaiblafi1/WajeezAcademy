@@ -17,6 +17,7 @@ import { cleanProposals } from '../../src/application/trainer/teachable-proposal
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 import { deleteObject } from './object-store'
 import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/trainer/purgeable'
+import { VERIFY_LINK_TTL_MS, VERIFY_LINK_WINDOW_AR } from '../../src/application/links/verification-window'
 import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMPTS } from './trainer-application-reference'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
@@ -78,7 +79,23 @@ export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   onboarding: ['active', 'withdrawn'],
   active: ['suspended'],
   waitlisted: ['under_review', 'active', 'rejected', 'withdrawn'],
-  rejected: [],
+  /* ═══ والرفضُ يُتراجَع عنه — بابٌ واحدٌ لا أكثر (١٩ سبتمبر ٢٠٢٦) ═══
+
+     كان `rejected` بلا مخرج: من رُدّ خطأً — ضغطةٌ على الصفّ الخطأ، أو قرارٌ
+     بُني على وثيقةٍ لم تُقرأ، أو رأيٌ تبدّل بعد ساعة — لا سبيلَ إلى ردّه
+     إلّا أن يُطلب منه أن يتقدّم من جديد بطلبٍ ورقمٍ آخرَ، فيضيع تاريخُه
+     ومستنداتُه ومقابلتُه. وطلبه صاحبُ المنصّة: «عند رفض أيّ مدرّب أريد خيارَ
+     التراجع عن الرفض مع ذكر السبب، والذي يصل للمتقدّم بالإيميل».
+
+     والمخرجُ **واحدٌ** لا خريطةٌ كاملة: يعود إلى «قيد المراجعة» — أي إلى
+     طابور المراجعة من أوّله، لا إلى الحالة التي رُدّ منها. فالتراجعُ نقضٌ
+     للقرار لا استئنافٌ لموضعٍ فيه: من رُدّ وهو `contract_pending` لا يعود
+     إلى عقدٍ كان يُوقَّع، بل يُقرأ طلبُه من جديد.
+
+     ولا يُعتمد من `rejected` بنقرة: `ONE_CLICK_APPROVABLE_STATUSES` تُخرجه،
+     وهي مقابَلةٌ بهذه الخريطة في `one-click-approval.test.ts`. فالطريقُ
+     خطوتان مقصودتان — تراجعٌ عن الردّ، ثمّ قرارٌ جديد. */
+  rejected: ['under_review'],
   withdrawn: [],
   suspended: ['active'],
 }
@@ -119,8 +136,14 @@ const PHASE2_OPEN_STATUSES: TrainerStatus[] = [
 /* حالات نهائية تسمح بطلب جديد لنفس البريد */
 const TERMINAL_STATUSES: TrainerStatus[] = ['rejected', 'withdrawn']
 
-/* رابطُ التأكيد في بريدٍ يُقرأ بعد أيّام لا ساعات — سبعةُ أيّام */
-const VERIFY_TTL_MS = 7 * 24 * 3600_000
+/* مهلةُ رابط التأكيد — أربعٌ وعشرون ساعةً، ومن هنا لا بيدٍ هنا.
+
+   كانت سبعةَ أيّام، وحجّتُها أنّ البريدَ «يُقرأ بعد أيّامٍ لا ساعات». ونقضها
+   صاحبُ المنصّة (١٩ سبتمبر ٢٠٢٦): رابطٌ يبقى مفتوحا أسبوعا في صندوقِ بريدٍ
+   غيرُ احترافيّ. ومن فاتته المهلةُ لا يقف: `resendVerification` تفتح له
+   رابطا جديدا من صفحة الانضمام ببريده وحدَه. والسقفُ ونصُّه في
+   `src/application/links/verification-window.ts`. */
+const VERIFY_TTL_MS = VERIFY_LINK_TTL_MS
 
 export interface Phase1Input {
   fullName: string
@@ -381,7 +404,9 @@ export class TrainerApplicationService {
         blocks: [
           { kind: 'p', text: 'وقبل أن نبدأ مراجعته، نحتاج أن نتأكّد أنّ هذا البريد يصلك — فعليه وحدَه نتواصل معك.' },
           { kind: 'cta', label: 'وثّق بريدك', href: link },
-          { kind: 'callout', text: 'الرابط صالحٌ سبعةَ أيّام، ويُفتح مرّةً واحدة.' },
+          /* والمدّةُ من الثابت لا بيدٍ هنا: رقمٌ في الخدمة وجملةٌ في الرسالة
+             يفترقان عند أوّل تعديل — فيَعِد النصُّ بما لا يفي به الرمز. */
+          { kind: 'callout', text: `الرابط صالحٌ ${VERIFY_LINK_WINDOW_AR}، ويُفتح مرّةً واحدة.` },
           { kind: 'h', text: 'تفاصيل طلبك' },
           { kind: 'facts', rows: [
             { label: 'رقم الطلب', value: app.reference },
