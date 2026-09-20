@@ -234,11 +234,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
         'approve',
         'move_to_review', 'request_info', 'shortlist', 'request_demo', 'academic_review',
         'conditionally_approve', 'waitlist', 'reject',
+        /* والتراجعُ عن الردّ — يردّ الطلبَ إلى المراجعة، وسببُه إلزاميٌّ
+           يصل المتقدّمَ بنصّه. تفصيلُه في `decide` وفي خريطة الانتقالات. */
+        'undo_reject',
         'start_onboarding', 'activate', 'reinstate']),
       note: z.string().max(1000).optional(),
     }).parse(req.body)
-    await review.decide(id, req.auth!.userId, body.action, body.note)
-    return { ok: true }
+    /* وحالُ بريد القرار يُعاد كما ردّه الإرسالُ — لا تُكتب الشاشةُ «أُبلغ»
+       على ظنٍّ (`src/application/notifications/delivery.ts`). */
+    const outcome = await review.decide(id, req.auth!.userId, body.action, body.note)
+    return { ok: true, ...outcome }
   })
 
   /* ─────────── تعيينُ مدرّبٍ داخليّا ───────────

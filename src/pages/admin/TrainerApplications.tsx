@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, Clock, FileText, History,
-  KeyRound, Loader2, MailCheck, RefreshCw, ServerOff, Star, Trash2, UserPlus, XCircle,
+  KeyRound, Loader2, MailCheck, RefreshCw, RotateCcw, ServerOff, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -25,7 +25,7 @@ import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
 import { queueAge } from "@/application/trainer/queue-age";
-import { mailBatchOutcomeAr } from "@/application/notifications/delivery";
+import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/delivery";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { ONE_CLICK_APPROVABLE_STATUSES } from "@/application/trainer/approval";
@@ -81,7 +81,10 @@ const BULK_ACTIONS = ["move_to_review", "waitlist", "reject"];
    وبقرار صاحب المنصّة صار الاعتمادُ نقرةً واحدةً من أيّ حالة، وما عداه
    يجري خارج المنصّة. فهذان بارزان، والسلسلةُ التفصيليّةُ خلف مطويّة —
    لم يُحذف منها زرّ. */
-const PRIMARY_ACTIONS = ["approve", "reject"];
+/* و«تراجَعْ عن الرفض» ثالثُهما — لا لأنّه يتكرّر، بل لأنّه **الفعلُ الوحيدُ
+   الممكن** في الطلب المردود. ولو كان في المطويّة لَقالت شاشةُ المردود «لا
+   إجراءات متاحة» في شريطها، وهو خبرٌ كاذبٌ منذ أن صار للردّ بابُ رجوع. */
+const PRIMARY_ACTIONS = ["approve", "reject", "undo_reject"];
 
 const DECISIONS: { action: string; label: string; from: string[]; tone: "main" | "warn" | "danger" }[] = [
   { action: "approve", label: "اعتمِدْه مدرّبا — بنقرة", from: [...ONE_CLICK_APPROVABLE_STATUSES], tone: "main" },
@@ -93,6 +96,17 @@ const DECISIONS: { action: string; label: string; from: string[]; tone: "main" |
   { action: "conditionally_approve", label: "قبول مشروط", from: ["academic_review"], tone: "main" },
   { action: "waitlist", label: "قائمة الانتظار", from: ["submitted", "under_review", "shortlisted", "interview_scheduled", "academic_review"], tone: "warn" },
   { action: "reject", label: "رفض بلطف", from: ["submitted", "under_review", "information_requested", "shortlisted", "interview_scheduled", "demo_requested", "academic_review", "conditionally_approved", "contract_pending", "waitlisted"], tone: "danger" },
+  /* ─────────── والردُّ يُتراجَع عنه (١٩ سبتمبر ٢٠٢٦) ───────────
+
+     قرارُ صاحب المنصّة: «عند رفض أيّ مدرّب أريد خيارَ التراجع عن الرفض مع
+     ذكر السبب، والذي يصل للمتقدّم بالإيميل». وكان المردودُ بابا مغلقا: من
+     رُدّ بضغطةٍ على الصفّ الخطأ لا يُستعاد إلّا بطلبٍ جديدٍ يفقد رقمَه
+     ومستنداتِه ومقابلتَه.
+
+     ونبرتُه `main` لا `warn`: هو تصحيحٌ **في صالح** المتقدّم، ويُعرض وحدَه
+     في شاشةٍ لا فعلَ فيها غيرُه. والسببُ يُؤخذ في نافذةِ تأكيدٍ لا من خانة
+     الملاحظة العامّة — لأنّه يسافر إليه بنصّه، فيُقرأ قبل أن يُرسَل. */
+  { action: "undo_reject", label: "تراجَعْ عن الرفض", from: ["rejected"], tone: "main" },
   /* ─────────── آخرُ السلسلة — كان مفقودا ───────────
 
      كانت المصفوفةُ تنتهي عند «قبول مشروط»، فمن اجتاز المراجعةَ الأكاديميّة
@@ -285,6 +299,9 @@ export default function TrainerApplications() {
      ما كُتب عنه. */
   const [askNote, setAskNote] = useState("");
   const [askOpen, setAskOpen] = useState(false);
+  /* نافذةُ التراجع عن الرفض — مفتوحةٌ أو لا. والسببُ يُكتب فيها لا في خانة
+     الملاحظة: يسافر إلى المتقدّم بنصّه، والخادمُ يشترطه (٤٢٢ دونه). */
+  const [undoOpen, setUndoOpen] = useState(false);
   /* الوثيقةُ المفتوحةُ داخل الشاشة — لا لسانٌ ثانٍ يُفقِد المراجعُ موضعَه */
   const [openDoc, setOpenDoc] = useState<string | null>(null);
   /* الاقتراحُ الذي يُربط الآن — معرّفُ طلبه وترتيبُه ونصُّه، لا كائنُ الطلب */
@@ -480,15 +497,21 @@ export default function TrainerApplications() {
     const detailed = available.filter((d) => !PRIMARY_ACTIONS.includes(d.action));
     /* نبرةُ القرار تُترجَم إلى سلّم النظام: الرئيسُ ذهبيّ، والتحذيرُ بديلٌ
        متاح، وما لا يُتراجَع عنه أحمر. */
+    /* والتراجعُ لا يُنفَّذ من الزرّ رأسا: سببُه يسافر إلى المتقدّم، فيُكتب في
+       نافذةٍ تقول ذلك ويُقرأ قبل أن يُرسَل — لا في خانةِ ملاحظةٍ تُكتب لنا. */
+    const decisionClick = (d: (typeof DECISIONS)[number], decisionNote?: string) =>
+      d.action === "undo_reject"
+        ? setUndoOpen(true)
+        : void act(
+          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: decisionNote || undefined }),
+          "نُفذ القرار وسُجل في الأثر",
+        );
     const decisionButton = (d: (typeof DECISIONS)[number]) => (
       <Button
         key={d.action} disabled={busy}
         tone={d.tone === "main" ? "primary" : d.tone === "warn" ? "secondary" : "danger"}
-        icon={d.tone === "danger" ? XCircle : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
-        onClick={() => void act(
-          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: note || undefined }),
-          "نُفذ القرار وسُجل في الأثر",
-        )}
+        icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
+        onClick={() => decisionClick(d, note)}
         className="w-full"
       >
         {d.label}
@@ -499,11 +522,8 @@ export default function TrainerApplications() {
       <Button
         key={`bar-${d.action}`} disabled={busy}
         tone={d.tone === "main" ? "primary" : d.tone === "warn" ? "secondary" : "danger"}
-        icon={d.tone === "danger" ? XCircle : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
-        onClick={() => void act(
-          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: askNote || note || undefined }),
-          "نُفذ القرار وسُجل في الأثر",
-        )}
+        icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
+        onClick={() => decisionClick(d, askNote || note)}
       >
         {d.label}
       </Button>
@@ -1021,6 +1041,47 @@ export default function TrainerApplications() {
           </div>
 
         </div>
+
+        {/* ═══ حوارُ التراجع — السببُ يُقرأ قبل أن يُرسَل ═══
+
+            النافذةُ تقول صراحةً أين يذهب المكتوب: إلى بريد المتقدّم بنصّه.
+            وهي الموضعُ الوحيدُ في هذا المسار الذي يسافر فيه ما يكتبه
+            المراجعُ — فلو كُتب في خانة الملاحظة العامّة لَخُلط بما يُكتب
+            لعينِ مراجعٍ آخر. والحدُّ عشرةُ أحرفٍ كحدِّ الخادم، فلا يُردّ
+            الزرُّ بـ٤٢٢ بعد أن قُبل في الشاشة. */}
+        {undoOpen && (
+          <ConfirmAction
+            titleAr={`التراجعُ عن رفض «${a.fullName}»`}
+            confirmLabelAr="تراجَعْ وأبلِغه"
+            tone="default"
+            busy={busy}
+            reason={{ labelAr: "لماذا نتراجع؟ — يصل المتقدّمَ بنصّه في رسالته", minLength: 10 }}
+            onCancel={() => setUndoOpen(false)}
+            onConfirm={(reason) => {
+              if (!reason) return;
+              setUndoOpen(false);
+              void act(
+                () => apiPost<{ emailDelivery?: string }>(
+                  `/api/admin/trainer-applications/${a.id}/decision`, { action: "undo_reject", note: reason }),
+                /* والخبرُ يتبع الجواب: «وصله السببُ» لا تُقال إن لم يخرج
+                   البريد — فمن نُقض ردُّه ولم يبلغه شيءٌ يبقى على خبره الأوّل،
+                   ومن قرّر يجب أن يعلم ذلك ليُبلغه بنفسه. */
+                (result) => mailOutcomeAr(
+                  "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
+                  (result as { emailDelivery?: string } | null)?.emailDelivery,
+                ),
+              );
+            }}
+          >
+            <p className="text-read leading-6">
+              يعود الطلب <b dir="ltr">{a.reference}</b> إلى «قيد المراجعة» بملفّه ومستنداته كما هي،
+              ويصل <b>{a.email}</b> بريدٌ يقول إنّنا عُدنا في قرارنا — وفيه سببُك بنصّه.
+            </p>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              ولا يعود إلى الحالة التي رُدّ منها: يُقرأ طلبُه من أوّل الطابور، والقرارُ بعده جديد.
+            </p>
+          </ConfirmAction>
+        )}
 
       {/* ═══ حوارُ المحو — يُكتب فيه رقمُ الطلب بالحرف وسببٌ يبقى ═══
 

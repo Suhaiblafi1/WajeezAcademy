@@ -469,6 +469,32 @@ export default function JoinTrainer() {
     stepsRef.current?.focus({ preventScroll: true });
   }, [step]);
 
+  /* ═══ وشاشةُ «وصل طلبك» تُفتح من رأسها لا من تذييلها ═══
+
+     شكا صاحبُ المنصّة (١٩ سبتمبر ٢٠٢٦): «بعد إتمام طلب الانضمام والنقر على
+     احجز موعد ينتقل الزائر لأسفل الصفحة التالية — يجب أن يأخذه لأعلاها
+     ليحجز موعدا». وهي العلّةُ الموصوفةُ فوقَ هذا في «المضيّ»، بعينها:
+
+     كان `submit` ينادي `setPhase2Done(true)` ثمّ `window.scrollTo(0, 0)` في
+     النَّفَس نفسِه. و`html` عندنا `scroll-behavior: smooth` (`index.css`)،
+     فالنداءُ **رحلةٌ** تبدأ على النموذج الطويل (ستّةُ أقسامٍ ومستنداتٌ
+     ومقترحات) ولم يُرسَم بعدُ شيءٌ من شاشة النجاح. ثمّ يُستبدل المحتوى
+     بشاشةٍ قصيرة، فينكمش المستندُ ويُقصّ ما تبقّى من الرحلة، ويستقرّ
+     المتصفّح عند أقصى ما يسعه الآن — **تذييلُ الشاشة الجديدة**. فيرى
+     المتقدّمُ «العودة للرئيسية» وتحتَها التذييل، والتقويمُ الذي وعده به
+     الزرُّ فوق رأسه لا يعلم به.
+
+     فالمردُّ انتقل إلى أثرٍ يقع **بعد الرسم**، حين يكون المستندُ قد استقرّ
+     على طوله الجديد. وإلى مرساةٍ في رأس الشاشة لا إلى `window`: التركيزُ
+     ينتقل معها، فمن يسمع الشاشةَ أو يتنقّل بلوحة المفاتيح يبدأ من العنوان
+     لا من زرٍّ اختفى تحته. */
+  const doneRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!phase2Done) return;
+    doneRef.current?.scrollIntoView({ block: "start" });
+    doneRef.current?.focus({ preventScroll: true });
+  }, [phase2Done]);
+
   /* المقارنةُ تُطبَّع طرفاها: البريدُ لا يفرّق بين حرفٍ كبيرٍ وصغير، ومسافةٌ
      التقطها اللصقُ ليست خطأً يُوقف طلبا. وهي هنا مرّةً واحدةً يقرأ منها
      الفحصُ والشاشةُ معا — ولو حُسبت في موضعَين لافترقتا عند أوّل تعديل. */
@@ -640,7 +666,7 @@ export default function JoinTrainer() {
       setCompletion(res);
       setPhase2Done(true);
       clearDraft();
-      window.scrollTo(0, 0);
+      /* ولا تمريرَ هنا: يقع قبل الرسم فيُقصّ، وموضعُه أثرُ `phase2Done` */
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "تعذر إرسال الطلب — تحقق من اتصالك وحاول مجددا");
     } finally {
@@ -757,7 +783,10 @@ export default function JoinTrainer() {
     return (
       <SiteShell>
         <SeoHead title="طلبك وصل" description="طلب انضمام مدرب في أكاديمية وجيز" path="/join-trainer" />
-        <div className="mx-auto max-w-lg py-14 text-center">
+        {/* المرساةُ التي يُوثب إليها بعد الإرسال — و`scroll-mt` لأنّ الترويسة
+            لاصقةٌ فوق الصفحة فتحجب ما وُثب إليه بلا هامش، و`tabIndex={-1}`
+            كي يقبل العنصرُ التركيزَ فينتقل معه. */}
+        <div ref={doneRef} tabIndex={-1} className="mx-auto max-w-lg scroll-mt-24 py-14 text-center outline-none">
           <span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-teal/15">
             <CheckCircle2 className="h-8 w-8 text-teal-light-ink" />
           </span>
