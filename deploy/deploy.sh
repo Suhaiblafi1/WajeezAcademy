@@ -39,6 +39,37 @@ bash deploy/preflight-env.sh deploy/.env.production || exit 1
 # ── مصدر أصل الموقع للفحص الصحي وللإصدار ──
 SITE_DOMAIN="$(grep -E '^SITE_DOMAIN=' deploy/.env.production | cut -d= -f2-)"
 
+# ── والنطاقُ بلا www يُشتقّ حين لا يُضبط ──
+#
+# `deploy/.env.production` يسكن الخادمَ ولا يدخل Git. فمتغيّرٌ جديدٌ يُنتظَر
+# من يدٍ بشريّةٍ تفتح الملفَّ يبقى معطّلا إلى أن تفعل — وعطبُ النطاق المجرّد
+# قائمٌ حتّى تفعل. فيُشتقّ هنا: النشرةُ القادمةُ تُصلحه بلا انتظارِ أحد،
+# ومن أراد اسما آخر كتبه في الملفّ فغلب المشتقَّ (قيمةُ الصدفة تسبق
+# `--env-file` في docker compose).
+#
+# و`|| true` لازمةٌ: `set -o pipefail` أعلاه، وgrep بلا مطابقةٍ يخرج بواحد
+# فيُسقط الإسنادَ والسكربتَ معه — على متغيّرٍ **اختياريٍّ** لا يُشترط وجوده.
+SITE_ALT_DOMAIN="$(grep -E '^SITE_ALT_DOMAIN=' deploy/.env.production | tail -1 | cut -d= -f2- || true)"
+if [ -z "$SITE_ALT_DOMAIN" ]; then
+  case "$SITE_DOMAIN" in
+    www.*) SITE_ALT_DOMAIN="${SITE_DOMAIN#www.}" ;;
+    # لا `www.` يُحذف: النطاقُ الحيُّ مجرّدٌ أصلا، فلا ثانيَ له يُحوَّل
+    *)     SITE_ALT_DOMAIN="localhost" ;;
+  esac
+fi
+
+# ── وحارسُ الاسمَين المتطابقَين ──
+#
+# كتلتان بالعنوان نفسِه تُسقطان إعدادَ Caddy كلَّه لا الكتلةَ الزائدةَ
+# وحدَها — أي **الموقعُ كلُّه** ثمنا لتحويلٍ لا يلزم. فيُقاس قبل أن يُصدَّر.
+#
+# وهذا قياسٌ لا ظنّ — شُغّل `caddy validate` على هذا الملفّ بالاسمَين
+# متطابقَين (٢٠ سبتمبر ٢٠٢٦) فردّ وخرج بواحد:
+#
+#   Error: adapting config using caddyfile: ambiguous site definition: …
+[ "$SITE_ALT_DOMAIN" != "$SITE_DOMAIN" ] || SITE_ALT_DOMAIN="localhost"
+export SITE_ALT_DOMAIN
+
 step "١/٧ · جلب الشيفرة"
 if [ "${SKIP_PULL:-0}" != "1" ]; then
   git pull --ff-only
@@ -180,6 +211,28 @@ if [ "$public" = 1 ]; then
        printf '    المُرسَل: %s\n' "$csp" >&2
        printf '    جرّب: %s restart caddy\n' "$COMPOSE" >&2 ;;
   esac
+
+  # ── والتحويلُ من النطاق المجرّد يُقاس كما يُجيب ──
+  #
+  # درسُ الترويسة أعلاه نفسُه: `Caddyfile` نيّةٌ، والمُرسَلُ حقيقة. وهذا
+  # الاسمُ خاصّةً يسقط صامتا — لا اختبارَ يراه، ولا صفحةَ تحمرّ، ولا أحدَ
+  # يكتشفه إلّا زائرٌ ظنّ الموقعَ ميّتا فذهب.
+  #
+  # ولا يُسقط النشرةَ: الموقعُ على `SITE_DOMAIN` يخدم، والشهادةُ الجديدةُ
+  # تُجلب عند أوّل طلبٍ فقد تتأخّر ثوانيَ. فيُقال ولا يُهدَم ما نجح.
+  if [ "$SITE_ALT_DOMAIN" != "localhost" ]; then
+    alt="$(curl -sS -o /dev/null -w '%{http_code} %{redirect_url}' --max-time 8 "https://${SITE_ALT_DOMAIN}/" 2>/dev/null || true)"
+    case "$alt" in
+      "301 https://${SITE_DOMAIN}/"*)
+        printf '\033[32m✓ %s يحوّل إلى %s\033[0m\n' "$SITE_ALT_DOMAIN" "$SITE_DOMAIN" ;;
+      000*|"")
+        printf '\033[33m⚠️  لا تصافحَ مع %s بعد — الشهادةُ تُجلب عند أوّل طلب. أعد الفحص بعد دقيقة:\033[0m\n' "$SITE_ALT_DOMAIN" >&2
+        printf '    curl -sSI https://%s/\n' "$SITE_ALT_DOMAIN" >&2 ;;
+      *)
+        printf '\033[31m⚠️  %s لا يحوّل كما يجب — المُقاس: %s\033[0m\n' "$SITE_ALT_DOMAIN" "$alt" >&2
+        printf '    السجل: %s logs --tail=40 caddy\n' "$COMPOSE" >&2 ;;
+    esac
+  fi
 
   printf '\n\033[32m✓ نُشر الإصدار %s على https://%s\033[0m\n' "$COMMIT" "$SITE_DOMAIN"
   echo
