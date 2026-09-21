@@ -36,7 +36,10 @@ import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/d
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
-import { BAR_ACTIONS, BULK_ACTIONS, DECISIONS, recommendedFor, type Decision } from "@/application/trainer/decisions";
+import { BAR_ACTIONS, DECISIONS, recommendedFor, type Decision } from "@/application/trainer/decisions";
+import {
+  bulkDecisionsFor, bulkRemindersFor, pageSelection, togglePage, unselectedMatching,
+} from "@/application/trainer/bulk";
 import type { Readiness } from "@/application/trainer/readiness";
 import PreparationSteps, {
   type PrepContract, type PrepProposal, type PrepQualification, type PrepRule,
@@ -684,15 +687,19 @@ export default function TrainerApplications() {
      وترتيبُ الحالة يقرأ `STATUS_LABELS` نفسَه: هو مكتوبٌ بدورة الحياة
      أصلا، ونسخُ ترتيبِه في معجمٍ ثانٍ يعني معجمَين يفترقان عند أوّل
      حالةٍ تُضاف. */
+  /* المطابِقُ للفرز كلِّه — يُسمّى مرّةً ويُقرأ مرّتين: تُرقَّم منه الصفحةُ،
+     ويُحدَّد منه «الكلّ». ولو رُشّح مرّتين لَحدّد «الكلُّ» غيرَ ما يُعرض. */
+  const matching = sortApplications(
+    apps
+      .filter((a) => !filter || a.status === filter)
+      .filter((a) => !resultFilter || resultKey(a) === resultFilter)
+      .filter((a) => !onlyUnbooked || canRemind(a))
+      .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
+    sortKey, sortDir, Object.keys(STATUS_LABELS),
+  );
+
   const view = paginate(
-    sortApplications(
-      apps
-        .filter((a) => !filter || a.status === filter)
-        .filter((a) => !resultFilter || resultKey(a) === resultFilter)
-        .filter((a) => !onlyUnbooked || canRemind(a))
-        .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
-      sortKey, sortDir, Object.keys(STATUS_LABELS),
-    ),
+    matching,
     /* ═══ وخمسون في الصفحة لا عشرون (٢٠ سبتمبر ٢٠٢٦) ═══
 
        «زد عدد المتقدّمين في الصفحة الواحدة». وقد أمكن: الصفُّ صار أربعَ
@@ -707,18 +714,26 @@ export default function TrainerApplications() {
     return next;
   });
 
-  /* لا يُعرض إلّا ما يصلح للمحدَّد **كلِّه**: إجراءٌ يصلح لبعضه يُنتج إخفاقا
-     جزئيّا لا سببَ له إلّا أنّا عرضناه. */
+  /* لا يُعرض إلّا ما يصلح للمحدَّد **كلِّه** — والحكمُ في `bulk.ts` لا هنا:
+     إجراءٌ يصلح لبعضه يُنتج إخفاقا جزئيّا لا سببَ له إلّا أنّا عرضناه. */
   const selectedRows = apps.filter((a) => sel.has(a.id));
-  const commonActions = selectedRows.length === 0 ? [] :
-    DECISIONS.filter((d) => BULK_ACTIONS.includes(d.action) && selectedRows.every((a) => d.from.includes(a.status)));
+  const commonActions = bulkDecisionsFor(selectedRows, DECISIONS);
+
+  /* ═══ وتحديدُ الصفحة، ثمّ الكلِّ المطابقِ صراحةً ═══
+
+     المربّعُ في الترويسة للصفحة المعروضة وحدَها. وإن بقي وراءها مطابِقٌ لم
+     يُحدَّد عُرض عرضٌ ثانٍ بعدده — فمن ظنّ أنّه حدّد خمسين لا يرفض ثلاثمئة. */
+  const pageIds = view.rows.map((a) => a.id);
+  const pageSel = pageSelection(pageIds, sel);
+  const beyondPage = unselectedMatching(matching.map((a) => a.id), sel);
 
   /* السببُ يأتي من نافذة التأكيد لا من حوار متصفّح — و**لا يُقرأ من حالة
      الصفحة**: `note` أعلاه هو نصُّ مراجعةِ طلبٍ واحدٍ في نموذجٍ آخر، وخلطُه
      بالقرار الجماعيّ يُرسل ملاحظةَ مراجعٍ إلى عشراتٍ لم تُكتب لهم. */
-  /* ومن يصلح للتذكير: من يُقبل حجزُه ولم يحجز. وهو شرطُ الخادم نفسُه
-     (`remindToBookInterview`) — ولو افترقا لعرضت الشاشةُ زرّا يردّه ٤٠٩. */
-  const remindable = selectedRows.length > 0 && selectedRows.every(canRemind);
+  /* والتذكيراتُ بالشرط نفسِه: «أكمِلْ طلبَك» لمن كلُّهم مسوّدة، و«احجزْ
+     موعدَك» لمن كلُّهم يُقبل حجزُه ولم يحجز. وشرطُ كلٍّ مِحَكُّ الخادم بعينه
+     — ولو افترقا لعرضت الشاشةُ زرّا يردّه ٤٠٩. */
+  const reminders = bulkRemindersFor(selectedRows);
 
   /* ═══ ما يُعرض في قائمة أفعال الصفّ ═══
 
@@ -782,7 +797,9 @@ export default function TrainerApplications() {
     return items;
   };
 
-  const bulkRemind = async () => {
+  /* ورسالةٌ واحدةٌ للتذكيرَين: «أكمِلْ» و«احجزْ» يفترقان في المسار واللفظ
+     لا في العمل — وسطرا نداءٍ متطابقان ينحرف أحدُهما يوما. */
+  const bulkRemind = async (path: string, doneAr: string) => {
     if (busy || sel.size === 0) return;
     setBusy(true); setBulkProgress("");
     /* حالُ بريد كلّ رسالةٍ يُجمع — فدفعةٌ «نُفّذت» وبريدُها لم يخرج خبرٌ كاذب */
@@ -790,14 +807,14 @@ export default function TrainerApplications() {
     const outcome = await runBulk(
       [...sel],
       async (id) => {
-        const r = await apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/booking-reminder`, {});
+        const r = await apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/${path}`, {});
         deliveries.push(r.emailDelivery ?? null);
       },
       (done, total) => setBulkProgress(`${done} من ${total}`),
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    const said = mailBatchOutcomeAr(bulkMessage(outcome, "أُرسل التذكير"), deliveries);
+    const said = mailBatchOutcomeAr(bulkMessage(outcome, doneAr), deliveries);
     if (said.ok) toast(said.ar); else toastError(said.ar);
     setBusy(false);
     await load();
@@ -1780,11 +1797,15 @@ export default function TrainerApplications() {
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
             {/* التذكيرُ أوّلا: هو الأكثرُ وقوعا في هذا الطابور، وليس قرارا
                 يُتراجَع عنه — رسالةٌ تُرسَل لمن ننتظره وهو ينتظرنا. */}
-            {remindable && (
-              <Button size="sm" tone="secondary" onClick={() => void bulkRemind()}>
-                <CalendarCheck className="h-3.5 w-3.5" /> ذكّرهم بحجز الموعد — على {sel.size}
+            {reminders.map((r) => (
+              <Button key={r.key} size="sm" tone="secondary"
+                onClick={() => void bulkRemind(r.path, r.doneAr)}>
+                {r.key === "draft"
+                  ? <Send className="h-3.5 w-3.5" />
+                  : <CalendarCheck className="h-3.5 w-3.5" />}
+                {r.labelAr} — على {sel.size}
               </Button>
-            )}
+            ))}
             {commonActions.length === 0 ? (
               <span className="text-fine text-muted-foreground">
                 لا إجراءَ يصلح للمحدَّد كلِّه — الحالاتُ مختلفة، فاختر ما يتّحد حالُه.
@@ -1800,6 +1821,32 @@ export default function TrainerApplications() {
               </Button>
             ))}
           </BulkBar>
+          {/* ═══ مربّعُ الصفحة، ثمّ الكلُّ المطابقُ صراحةً (٢١ سبتمبر ٢٠٢٦) ═══
+
+              «أريد أن أختارَ الكلّ». و«الكلُّ» لفظٌ يحتمل صفحةً معروضةً
+              وطابورا مرشَّحا وراءها — وأخطرُ ما يقع أن يُقصَد الأوّلُ ويقع
+              الثاني. فهذا للصفحة، وما وراءها عرضٌ ثانٍ بعدده. */}
+          {view.total > 0 && (
+            <div className="mb-3 flex flex-wrap items-center gap-3 px-1">
+              <label className="flex cursor-pointer items-center gap-2 text-fine font-bold text-muted-foreground">
+                <input type="checkbox"
+                  checked={pageSel === "all"}
+                  ref={(el) => { if (el) el.indeterminate = pageSel === "some"; }}
+                  onChange={() => setSel(togglePage(sel, pageIds, pageSel !== "all"))}
+                  aria-label={`حدّد هذه الصفحة — ${view.rows.length} طلبا`}
+                  className="h-4 w-4 cursor-pointer accent-gold" />
+                حدّد هذه الصفحة ({view.rows.length})
+              </label>
+              {beyondPage > 0 && (
+                /* ولا يُعرض إلّا وراء الصفحة مطابِقٌ لم يُحدَّد — وعددُه فيه */
+                <button type="button"
+                  onClick={() => setSel(new Set(matching.map((a) => a.id)))}
+                  className="cursor-pointer text-fine font-bold text-teal underline-offset-4 hover:underline">
+                  حدّد الكلَّ المطابقَ للفرز ({view.total})
+                </button>
+              )}
+            </div>
+          )}
           {view.total === 0 && (
             <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
               لا طلب يطابق «{q.trim()}».

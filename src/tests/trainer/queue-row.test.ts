@@ -34,7 +34,17 @@ const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*
 /** صفُّ الطابور وحدَه — من `view.rows.map` إلى قائمة أفعاله */
 const queueRow = (): string => {
   const src = code(SCREEN)
-  const from = src.indexOf('view.rows.map')
+  /* ═══ والمرساةُ هي التصييرُ لا أوّلُ ذكرٍ للاسم (٢١ سبتمبر ٢٠٢٦) ═══
+
+     كانت `indexOf('view.rows.map')`، وكان ذلك صوابا ما دام أوّلُ ذكرٍ له هو
+     التصيير. ثمّ اشتُقّت `pageIds` من `view.rows` فوقَه — لمربّع «حدّد هذه
+     الصفحة» — فصار أوّلُ ذكرٍ سطرَ اشتقاقٍ لا صفّا، وامتدّت الشريحةُ حتّى
+     ابتلعت **فتحةَ الملفّ** وفيها المسمّى الوظيفيُّ والبلد. فحمّر الحارسُ
+     على ما ليس في الصفّ.
+
+     والمرساةُ الآن `{view.rows.map(` بقوسها — وهي التصييرُ بعينه، لا يشبهها
+     اشتقاقٌ فوقَه ولا تحتَه. */
+  const from = src.indexOf('{view.rows.map(')
   const to = src.indexOf('<RowActions')
   expect(from, 'صفُّ الطابور مفقود').toBeGreaterThan(-1)
   expect(to, 'قائمةُ أفعال الصفّ مفقودة — وهي حدُّه').toBeGreaterThan(from)
@@ -164,8 +174,12 @@ describe('④ والصفحةُ تبدأ بخمسين', () => {
   })
 
   it('ويُمرَّر إلى `paginate` — فالخيارُ يعمل لا يُعرض فحسب', () => {
+    /* والمحروسُ وصولُ الحجم لا اسمُ ما يُرقَّم: خرج الترشيحُ إلى `matching`
+       ليُقرأ مرّتين — مرّةً للصفحة ومرّةً لـ«حدّد الكلَّ المطابق» — فكُتب
+       `paginate(matching, …)` بدل `paginate(sortApplications(…))`. وذاك
+       تبدّلُ شكلٍ لا تبدّلُ حكم. */
     expect(code(SCREEN), 'الترقيمُ لا يقرأ الحجمَ المختار')
-      .toMatch(/paginate\(\s*sortApplications\(([\s\S]*?)page, size\);/)
+      .toMatch(/paginate\([\s\S]*?page, size\);/)
   })
 
   it('والمُبدِّلُ في الشريط — وإلّا فالحالةُ بلا يدٍ تغيّرها', () => {
