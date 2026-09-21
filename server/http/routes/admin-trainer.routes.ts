@@ -982,6 +982,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return changes.listForReview(status)
   })
 
+  /* ═══ وعددُ المنتظِر وحدَه — ليُعرف أيُعرض اللسانُ أصلا (٢١ سبتمبر ٢٠٢٦) ═══
+
+     الشاشةُ تسأل هذا قبل أن ترسم لسانَ الاقتراحات، فإن كان صفرا لم ترسمه.
+     ولا تُنادي القائمةَ لتعدّها: تلك تجلب البنودَ والملفَّ والدورةَ بإصدارها
+     والشعبةَ ودائرةَ الأثر لكلّ صفٍّ في التاريخ كلِّه — حمولةٌ تُطلَب لتُرمى
+     ويُقرأ منها رقمٌ واحد.
+
+     وترتيبُه قبل `/:id/...` لا يعنينا: مقطعٌ واحدٌ بعد الأصل لا مقطعان،
+     فلا يلتقيان. */
+  app.get('/api/admin/trainer-change-requests/open-count', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'كم اقتراحَ تعديلٍ ينتظر قرارا — عددٌ لا قائمة' },
+  }, async () => ({ open: await changes.countOpen() }))
+
   app.post('/api/admin/trainers/:profileId/catalog-scope', {
     preHandler: requirePermission('trainer.change.review'),
     schema: { tags: ['admin-trainers'], summary: 'منح أو سحب نطاق الكتالوج لمدرب — قرار مسجَّل بتاريخه ومانحه (هـ-١)' },

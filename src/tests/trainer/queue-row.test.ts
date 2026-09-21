@@ -42,12 +42,21 @@ const queueRow = (): string => {
 }
 
 describe('① الصفُّ أربعُ حقائقَ لا أربعةُ أسطر', () => {
-  it('يحمل الاسمَ والرقمَ والحالةَ ونتيجةَ اللقاء', () => {
+  it('يحمل الاسمَ والرقمَ والحالةَ ونتيجةَ اللقاء وموعدَه', () => {
     const row = queueRow()
     expect(row, 'الاسمُ غاب عن الصفّ').toContain('a.fullName')
     expect(row, 'الرقمُ المرجعيُّ غاب عن الصفّ').toContain('a.reference')
     expect(row, 'الحالةُ غابت عن الصفّ').toContain('STATUS_LABELS[a.status]')
-    expect(row, 'نتيجةُ اللقاء غابت — وهي ما يُقرَّر عليه').toContain('a.interviewOutcome')
+    /* ═══ والنتيجةُ صارت نتيجتين تُحسَبان لا حقلا يُقرأ (٢١ سبتمبر ٢٠٢٦) ═══
+
+       كان الصفُّ يقرأ `a.interviewOutcome` حرفا — وهي ما يسجّله مُجرِي
+       المقابلة وحدَه. فطُلب أن يُعرض معها قرارُ رابط التقييم، وأن يُطوى
+       أحدُهما في الآخر عند الاتّفاق. وحكمُ الطيّ في `queue-labels.ts`:
+       ما يُحرَس هنا أنّ الصفَّ يناديه، وأنّه لا يعود إلى حقلٍ واحد. */
+    expect(row, 'نتيجةُ اللقاء غابت — وهي ما يُقرَّر عليه').toContain('verdictBadges(a)')
+    /* وموعدُه: «ضعْ في الليبل موعدَ مقابلتهم القادمة، ومن لم يحجز… لم يحجز بعد» */
+    expect(row, 'ليبلُ الموعد غاب عن الصفّ').toContain('bookingLabel(a,')
+    expect(row, 'ليبلُ الموعد بلا تاريخٍ مقروء — عددٌ لا يقول متى').toContain('fmtDateTime(booking.at)')
   })
 
   it('ولا يعود إليه ما شُكي منه: تخصّصاتٌ وخبرةٌ وعدُّ وثائقَ وتقييمات', () => {
@@ -82,7 +91,7 @@ describe('② نتيجةُ اللقاء من معجمها', () => {
   it('الشاشةُ تترجمها بالدالّة لا بجدولٍ تكتبه', () => {
     const screen = code(SCREEN)
     expect(screen, 'عُرضت النتيجةُ بلا ترجمة — فيقرأ الموظّفُ `passed`')
-      .toContain('outcomeLabelAr(a.interviewOutcome)')
+      .toContain('outcomeLabelAr(b.key)')
     /* ولا تُكتب الأسماءُ العربيّةُ هنا ثانيةً بجانب المعجم */
     for (const o of INTERVIEW_OUTCOMES) {
       expect(screen, `«${o.labelAr}» مكتوبٌ بيدِ الشاشة لا مقروءٌ من المعجم`)

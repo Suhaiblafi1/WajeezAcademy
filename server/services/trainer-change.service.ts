@@ -35,6 +35,13 @@ export const CHANGE_TYPES = [
 
 export type ChangeType = (typeof CHANGE_TYPES)[number]
 
+/** ما وقع فيه قرارٌ نهائيّ فلا ينتظر منّا شيئا — وما عداه منتظِر.
+ *
+ *  والقائمةُ من تعليق `TrainerChangeRequest.status` في المخطَّط، وهي عقدُه:
+ *  حالةٌ تُضاف هناك ولا تُقرأ هنا تُعَدّ منتظِرةً — وذاك أسلمُ من أن تُطوى
+ *  بصمت. */
+export const DECIDED_CHANGE_STATUSES = ['published', 'rejected', 'withdrawn', 'superseded'] as const
+
 /* مفاتيح محظورة داخل afterValue — حماية عميقة فوق حصر أنواع التغيير */
 const FORBIDDEN_PAYLOAD_KEYS = [
   'priceUsd', 'price', 'status', 'publish', 'published', 'skills', 'skillIds', 'coreSkills',
@@ -189,6 +196,31 @@ export class TrainerChangeService {
    * تغييرا على دورة تستخدمها سبعة كيانات وهو لا يعلم.
    * الدوائر تُجمَع باستعلامات موحَّدة لا لكل اقتراح — الشاشة تعرض عشرات.
    */
+  /* ═══ كم اقتراحا ينتظر قرارا — عددٌ لا قائمة (٢١ سبتمبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة: «لماذا يوجد لسانُ اقتراحات التعديل؟». وجوابُه أنّه
+     **طابورٌ لا بابَ له**: مسالكُ الإرسال من جانب المدرّب حُذفت (٨ سبتمبر
+     ٢٠٢٦)، وقناةُ اسم الدورة أُغلقت بقراره (١٧ سبتمبر). فلا شيءَ يدخله
+     اليومَ، ولسانٌ فارغٌ أبدا يزاحم عينَ من يفرز الطابور.
+
+     **ولا يُحذف المسارُ من أجل ذلك.** `CHANGE_TYPES` فيها اثنا عشرَ نوعا
+     حيّا، وهجرةُ الإغلاق لم تمسّ إلّا `course_title_edit` — فقد يبقى في
+     القاعدة اقتراحٌ أُرسل قبل حذف الباب ولم يُبتَّ فيه. وحذفُ شاشته يتركه
+     بلا من يراه، وهو عينُ ما تعهّدت به هجرةُ الإغلاق: «لا يضيع عملُ
+     مدرّبٍ صامتا».
+
+     فاللسانُ يُطوى ولا يختفي: تُسأل هذه عن العدد، فإن كان صفرا لم يُعرض
+     اللسانُ أصلا — وإن وصل شيءٌ يوما عاد من نفسه بعدده مكتوبا عليه.
+
+     و«المنتظِر» ما لم يقع فيه قرارٌ نهائيّ: المعتمَدُ للشعبة أو للكتالوج
+     ينتظر نشرا، والمسوّدةُ عملُ مدرّبٍ لم يتمّ — وكلاهما يُرى خيرٌ من أن
+     يُطوى. */
+  async countOpen(): Promise<number> {
+    return this.prisma.trainerChangeRequest.count({
+      where: { status: { notIn: [...DECIDED_CHANGE_STATUSES] } },
+    })
+  }
+
   async listForReview(status?: string) {
     const rows = await this.prisma.trainerChangeRequest.findMany({
       where: status ? { status } : undefined,

@@ -15,7 +15,21 @@
    ④ **وتذكيرُ المسوّدة للمسوّدة وحدَها** — ومن أكمل لا يُقال له «أكمل».
       والحارسُ في الخدمة لا في الشاشة: المسارُ تناديه أدواتٌ أخرى.
    ⑤ **وإخفاقُ البريد لا يُبتلع** — حالُه يُعاد كما ردّه الإرسال، فالشاشةُ
-      لا تقول «أُرسل» على ظنّ. */
+      لا تقول «أُرسل» على ظنّ.
+
+   ═══ وما أُضيف (٢١ سبتمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «قلتَ لي مرارا إنّك ستضع نتيجةَ التقييم بجانب الحالة،
+   والتي اتّفقنا أن تأخذها من روابط التقييم التي استخدمناها لمقابلة
+   المدرّب»، و«للأشخاص الذين حجزوا موعدا ضعْ في الليبل موعدَ مقابلتهم
+   القادمة، وإن لم يحجز فيكون الليبلُ أنّه لم يحجز موعدا بعد».
+
+   ⑥ **قرارُ رابط التقييم يصل الصفَّ** — وهو غيرُ ما يسجّله مُجرِي المقابلة
+      في بطاقة الموعد. وكان لا يصله أصلا.
+   ⑦ **وموعدُه المعلَّق يصله تاريخا** — كان الصفُّ يحمل عددا (`1`) لا يقول
+      متى، فمن أراد أن يعرف متى يلقاه فتح ملفَّه.
+   ⑧ **ونتيجتُه لا تُمحى بحجزٍ جديد** — من اجتاز ثمّ حجز لقاءً ثانيا كان
+      موعدُه الجديدُ — وهو بلا نتيجةٍ بعد — يمحو قولَنا فيه من الصفّ. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -114,6 +128,118 @@ describe('نتيجةُ اللقاء في صفّ الطابور', () => {
       ],
     })
     expect((await rowOf(id)).interviewOutcome, 'قُرئ اللقاءُ الأقدمُ قولا لنا').toBe('passed')
+  })
+})
+
+describe('⑥ قرارُ رابط التقييم في صفّ الطابور', () => {
+  it('يصل الصفَّ كما كُتب في الرابط — وهو غيرُ ما يسجّله مُجرِي المقابلة', async () => {
+    const { id } = await submitted(10)
+    await prisma.trainerApplicationReview.create({
+      data: { applicationId: id, reviewerName: 'قارئٌ باسمه', scores: {}, verdict: 'passed' },
+    })
+    expect((await rowOf(id)).reviewVerdicts, 'قرارُ الرابط لا يصل الصفَّ').toEqual(['passed'])
+  })
+
+  it('وتقييمٌ بلا قرارٍ لا يُخترع له قرار', async () => {
+    const { id } = await submitted(11)
+    await prisma.trainerApplicationReview.create({
+      data: { applicationId: id, reviewerName: 'قارئٌ لم يحكم', scores: { evidence: 4 } },
+    })
+    expect((await rowOf(id)).reviewVerdicts, 'اختُرع قرارٌ لمن لم يحكم').toEqual([])
+  })
+
+  it('وقارئان اتّفقا قولٌ واحدٌ لا قولان', async () => {
+    const { id } = await submitted(12)
+    await prisma.trainerApplicationReview.createMany({
+      data: [
+        { applicationId: id, reviewerName: 'الأوّل', scores: {}, verdict: 'hold' },
+        { applicationId: id, reviewerName: 'الثاني', scores: {}, verdict: 'hold' },
+      ],
+    })
+    expect((await rowOf(id)).reviewVerdicts, 'كُرّر القولُ الواحد').toEqual(['hold'])
+  })
+
+  it('واختلافُهما يصل الصفَّ بقولين — لا يُكتَم أحدُهما', async () => {
+    const { id } = await submitted(13)
+    await prisma.trainerApplicationReview.createMany({
+      data: [
+        { applicationId: id, reviewerName: 'الأوّل', scores: {}, verdict: 'passed' },
+        { applicationId: id, reviewerName: 'الثاني', scores: {}, verdict: 'failed' },
+      ],
+    })
+    expect((await rowOf(id)).reviewVerdicts.slice().sort(), 'كُتم أحدُ القولين')
+      .toEqual(['failed', 'passed'])
+  })
+})
+
+describe('⑦ وموعدُه المعلَّق يصل الصفَّ تاريخا', () => {
+  /** بعد ساعةٍ من الآن — فلا يمضي الموعدُ أثناء الجولة */
+  const soon = () => new Date(Date.now() + 3_600_000)
+  const past = () => new Date(Date.now() - 3_600_000)
+
+  it('من حجز ولم يحن موعدُه — يُعرض تاريخُه', async () => {
+    const { id } = await submitted(14)
+    const at = soon()
+    await prisma.trainerInterview.create({ data: { applicationId: id, scheduledAt: at, mode: 'remote' } })
+    expect((await rowOf(id)).pendingInterviewAt, 'الموعدُ لا يصل الصفَّ').toEqual(at)
+  })
+
+  it('وله موعدان قادمان — فأقربُهما هو الذي يُنتظَر', async () => {
+    const { id } = await submitted(15)
+    const near = soon()
+    await prisma.trainerInterview.createMany({
+      data: [
+        { applicationId: id, scheduledAt: new Date(Date.now() + 7_200_000), mode: 'remote' },
+        { applicationId: id, scheduledAt: near, mode: 'remote' },
+      ],
+    })
+    expect((await rowOf(id)).pendingInterviewAt, 'قُرئ الأبعدُ موعدا').toEqual(near)
+  })
+
+  it('وموعدٌ مضى ولم تُسجَّل نتيجتُه يبقى معلَّقا — لقاءٌ ينتظر قولَنا فيه', async () => {
+    const { id } = await submitted(16)
+    const at = past()
+    await prisma.trainerInterview.create({ data: { applicationId: id, scheduledAt: at, mode: 'remote' } })
+    expect((await rowOf(id)).pendingInterviewAt, 'أُخفي لقاءٌ جرى ولم يُسجَّل').toEqual(at)
+  })
+
+  it('وما سُجّلت نتيجتُه لا ينتظر شيئا', async () => {
+    const { id } = await submitted(17)
+    await prisma.trainerInterview.create({
+      data: { applicationId: id, scheduledAt: past(), mode: 'remote', outcome: 'passed' },
+    })
+    expect((await rowOf(id)).pendingInterviewAt, 'موعدٌ انتهى أمرُه عُدّ معلَّقا').toBeNull()
+  })
+
+  it('والملغى لا موعدَ له — ولا يُعرض تاريخُه', async () => {
+    const { id } = await submitted(18)
+    await prisma.trainerInterview.create({
+      data: { applicationId: id, scheduledAt: soon(), mode: 'remote', canceledAt: new Date() },
+    })
+    expect((await rowOf(id)).pendingInterviewAt, 'عُرض موعدٌ مُلغًى').toBeNull()
+  })
+
+  it('ومن لم يحجز فلا تاريخَ له — وهو من يُقال له «لم يحجز موعدا بعد»', async () => {
+    const { id } = await submitted(19)
+    const row = await rowOf(id)
+    expect(row.pendingInterviewAt, 'اختُرع موعدٌ لمن لم يحجز').toBeNull()
+    expect(row.interviewsCount, 'عُدّ موعدٌ لمن لم يحجز').toBe(0)
+  })
+})
+
+describe('⑧ ونتيجتُه لا تُمحى بحجزٍ جديد', () => {
+  it('من سُجّلت نتيجتُه ثمّ حجز لقاءً ثانيا — يبقى قولُنا فيه وينضمّ موعدُه', async () => {
+    const { id } = await submitted(20)
+    const next = new Date(Date.now() + 3_600_000)
+    await prisma.trainerInterview.createMany({
+      data: [
+        { applicationId: id, scheduledAt: new Date('2026-09-10T09:00:00Z'), mode: 'remote', outcome: 'hold' },
+        { applicationId: id, scheduledAt: next, mode: 'remote' },
+      ],
+    })
+    const row = await rowOf(id)
+    expect(row.interviewOutcome, 'مُحيت النتيجةُ بحجزٍ لم يقع بعد').toBe('hold')
+    expect(row.pendingInterviewAt, 'الموعدُ الجديدُ لا يصل الصفَّ').toEqual(next)
   })
 })
 

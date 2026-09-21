@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   ArrowDownWideNarrow, ArrowUpNarrowWide,
-  CalendarCheck, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
+  CalendarCheck, CalendarX2, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
   KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff,
   SlidersHorizontal, Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
@@ -14,6 +14,8 @@ import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
 import { outcomeLabelAr } from "@/application/trainer/interview-outcome";
+import { QUICK_STATUSES, STATUS_LABELS } from "@/application/trainer/application-status";
+import { bookingLabel, verdictBadges } from "@/application/trainer/queue-labels";
 import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
@@ -68,16 +70,31 @@ const OUTCOME_TONE: Record<string, string> = {
   no_show: "border-white/20 text-muted-foreground",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: "مسودة — لم يُكمل", email_verification_pending: "بانتظار تحقق البريد",
-  submitted: "مُقدَّم", under_review: "قيد المراجعة",
-  information_requested: "بانتظار معلومات المرشح", shortlisted: "مختار أولي",
-  interview_scheduled: "مقابلة مجدولة", demo_requested: "بانتظار الديمو",
-  /* «قبولٌ داخليّ» لا «قبولٌ مشروط»: المشروطُ يُقرأ قبولا عُلّق على شرط،
-     وهذا قرارُ فريقٍ لم يُبلَّغ به صاحبُه بعد — وبينهما فرقٌ في العمل كلِّه. */
-  academic_review: "مراجعة أكاديمية", conditionally_approved: "قبولٌ داخليّ — قيد التجهيز",
-  contract_pending: "عقد قيد التوقيع", onboarding: "تهيئة", active: "نشط",
-  waitlisted: "انتظار", rejected: "مرفوض", withdrawn: "مسحوب", suspended: "موقوف",
+/* ═══ ومصدرُ النتيجة يُكتب حين يكون لها منازع (٢١ سبتمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «نتيجةُ التقييم… إذا كانت مطابقةً [للمسجَّلة] وإن
+   كانت مختلفةً نُظهر الاثنين. هذا سيكون لنا دليلٌ أنّ المقابلة تمّت وهذه
+   نتيجتُها».
+
+   فحين تُعرض واحدةٌ لا يُكتب مصدرُها: لا منازعَ لها، والبادئةُ ضجيجٌ في
+   كلّ صفّ. وحين تُعرض اثنتان **يلزم** أن يُعرف أيُّهما قولُ مُجرِي المقابلة
+   وأيُّهما قولُ القارئ في رابطه — وإلّا قُرئ صفٌّ يقول شيئين متناقضين بلا
+   قائل. */
+const VERDICT_SOURCE_AR: Record<string, string> = {
+  recorded: "المسجَّل",
+  review: "التقييم",
+};
+
+/* ═══ وليبلُ الموعد — ثلاثةُ أحوالٍ بثلاث نبرات ═══
+
+   «موعدُه القادم» خبرٌ هادئ: لا عملَ تحته حتّى يحين. و«مضى ولم تُسجَّل
+   نتيجتُه» ذهبيٌّ لأنّه **عملٌ علينا نحن** — لقاءٌ جرى وينتظر من يكتب قولَه
+   فيه، وهو ما يُبقي الطلبَ واقفا بصمت. و«لم يحجز» هادئٌ كذلك: هو خبرٌ عن
+   موعدٍ لم يُحجَز لا حكمٌ على صاحبه، وزرُّ التذكير في قائمة الصفّ هو عملُه. */
+const BOOKING_TONE: Record<string, string> = {
+  upcoming: "border-white/20 text-muted-foreground",
+  overdue: "border-gold/40 text-gold-ink",
+  unbooked: "border-white/15 text-muted-foreground/80",
 };
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
@@ -246,6 +263,10 @@ interface AppRow {
   documentsCount: number; reviewsCount: number; interviewsCount: number;
   /** نتيجةُ آخر لقاءٍ غيرِ ملغى — `null` لمن لم يُقابَل أو لم تُسجَّل نتيجتُه */
   interviewOutcome: string | null;
+  /** قراراتُ روابط التقييم بلا تكرار — أحدثُها أوّلا، وفارغةٌ لمن لم يُقرأ برابط */
+  reviewVerdicts: string[];
+  /** موعدُه المعلَّق — أقربُ قادمٍ بلا نتيجة، وإلّا فآخرُ ماضٍ ينتظر تسجيلَها */
+  pendingInterviewAt: string | null;
   /** لحظةُ آخر حركةٍ في الطلب — تُحسب بها شارةُ العمر */
   waitingSince: string;
 }
@@ -462,6 +483,32 @@ export default function TrainerApplications() {
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
   const [mode, setMode] = useState<"apps" | "run" | "changes">("apps");
+  /* ═══ اللسانان الآخران — لمن يستطيع، وحين يكون فيهما شيء ═══
+
+     سأل صاحبُ المنصّة (٢١ سبتمبر ٢٠٢٦): «لماذا يوجد لسانا التأهيل والإسناد
+     واقتراحات التعديل؟ هل نصل إليهما من حساب كلّ مدرّب؟ فلماذا هما هنا
+     إذًا؟». وتحت السؤال عطبان:
+
+     ① **لسانٌ يُعرض لمن يُردّ عند أوّل نقرة.** بابُ هذه الشاشة
+        `trainer.applications.view`، ونداءَا «التأهيل والإسناد» كلاهما
+        (`/trainers/ops` و`/qualification-requests`) يشترطان
+        `trainer.qualify`. فالمنسّقُ الأكاديميُّ ومديرُ العمليّات يريانه
+        ويُردّان عند التحميل نفسِه. وهو العطبُ الذي خرجت له «أتعاب
+        المدربين» إلى شاشتها، فلا يُعاد من باب آخر.
+
+     ② **ولسانٌ لا يدخله شيء.** «اقتراحات تعديل الدورات» طابورُ قرارٍ
+        بلا بريد: مسالكُ الإرسال من جانب المدرّب حُذفت (٨ سبتمبر ٢٠٢٦)
+        وقناةُ اسم الدورة أُغلقت بقراره (١٧ سبتمبر). فهو فارغٌ أبدا، وكان
+        يقول لقارئه «تصل من بوابة المدرب ← اقتراحاتي» — وذاك بابٌ لا وجودَ
+        له.
+
+     **ولا يُحذف مسارُه**: قد يبقى في القاعدة اقتراحٌ أُرسل قبل حذف الباب
+     ولم يُبتَّ فيه (هجرةُ الإغلاق لم تمسّ إلّا `course_title_edit`)، وحذفُ
+     شاشته يتركه بلا من يراه. فاللسانُ يُطوى ولا يختفي: لا يُعرض إلّا إذا
+     كان فيه ما ينتظر، وعددُه مكتوبٌ عليه. */
+  const canQualify = user?.permissions?.includes("trainer.qualify") ?? false;
+  const canReviewChanges = user?.permissions?.includes("trainer.change.review") ?? false;
+  const [openChanges, setOpenChanges] = useState(0);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
@@ -482,12 +529,15 @@ export default function TrainerApplications() {
       .then(setSyncTrust)
       .catch(() => setSyncTrust(null));
   }, []);
-  /* ولا يُسقِط فشلُه الطابورَ: هو خبرٌ عن الطابور لا الطابور */
+  /* وعددُ ما ينتظر في طابور الاقتراحات — ولا يُنادى من لا يملك بابَه، فنداءٌ
+     يُردّ ٤٠٣ في كلّ فتحةِ شاشةٍ ضجيجٌ في السجلّ لا خبرٌ فيه. ولا يُسقِط
+     فشلُه الطابورَ: هو خبرٌ عن لسانٍ آخر. */
   useEffect(() => {
-    void apiGet<SyncTrust>("/api/admin/trainer-applications/interview-sync")
-      .then(setSyncTrust)
-      .catch(() => setSyncTrust(null));
-  }, []);
+    if (!canReviewChanges) { setOpenChanges(0); return; }
+    void apiGet<{ open: number }>("/api/admin/trainer-change-requests/open-count")
+      .then((r) => setOpenChanges(r.open))
+      .catch(() => setOpenChanges(0));
+  }, [canReviewChanges]);
   /* نبض صامت كل دقيقة — طلبات الترشح الجديدة تظهر دون تحديث يدوي */
   const silentReload = useCallback(() => { void load(true); }, [load]);
   useAutoRefresh(silentReload, 60_000);
@@ -611,6 +661,22 @@ export default function TrainerApplications() {
       setBusy(false);
     }
   };
+
+  /* ═══ الألسنةُ المعروضة — وما لا يُعرض لا يُقصَد ═══
+
+     «الطلبات» لا شرطَ لها: بابُ الشاشة هو بابُها. و«التأهيل والإسناد»
+     بـ`trainer.qualify` — وهي ما يشترطه نداءاه كلاهما، فلا يُعرض لسانٌ
+     يُردّ عند تحميله. و«اقتراحات تعديل الدورات» بوجود ما ينتظر فيه، وعددُه
+     مكتوبٌ عليه: طابورٌ يُعرض فارغا أبدا يزاحم عينَ من يفرز. */
+  const tabs = ([
+    { key: "apps", label: "الطلبات", show: true },
+    { key: "run", label: "التأهيل والإسناد", show: canQualify },
+    { key: "changes", label: `اقتراحات تعديل الدورات (${openChanges})`, show: openChanges > 0 },
+  ] as const).filter((t) => t.show);
+
+  /* ومن كان في لسانٍ ثمّ لم يعد يُعرض يعود إلى «الطلبات» — ولا يُترك أمام
+     شاشةٍ بيضاء: اللسانُ المرسومُ والمحتوى المعروضُ يقرآن هذه لا `mode`. */
+  const shown: "apps" | "run" | "changes" = tabs.some((t) => t.key === mode) ? mode : "apps";
 
   /* ما ينتظر الفرزَ الأوّليَّ: `submitted` وحدَها — وهي الخطوةُ التي يقول
      شريطُ المسار فيها «أنت هنا». وما بعدها بيد اللجنة الأكاديميّة، فعدُّه
@@ -1534,7 +1600,7 @@ export default function TrainerApplications() {
           المنصّة عن العلّة في سبع شكاوى قبل أن تُوجد.
 
           فهو هنا، حيث يقع العملُ الذي يتعطّل. */}
-      {mode === "apps" && syncTrust && !syncTrust.trusted && (
+      {shown === "apps" && syncTrust && !syncTrust.trusted && (
         <Card tone="warn" className="mb-4 flex flex-wrap items-start gap-2 !py-3">
           <ServerOff className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
           <div className="min-w-0 flex-1">
@@ -1548,7 +1614,7 @@ export default function TrainerApplications() {
         </Card>
       )}
 
-      {mode === "apps" && filter === "" && (
+      {shown === "apps" && filter === "" && (
         <WorkHeader
           loading={loading}
           icon={ClipboardList}
@@ -1563,16 +1629,21 @@ export default function TrainerApplications() {
       )}
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-full border border-white/15 p-1">
-          {([["apps", "الطلبات"], ["run", "التأهيل والإسناد"], ["changes", "اقتراحات تعديل الدورات"]] as const).map(([k, label]) => (
-            /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
-               الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
-               يتنازعان العين — وهو ما استقرّ عليه لسانُ الشعبة قبله. */
-            <Button key={k} tone={mode === k ? "confirm" : "ghost"} onClick={() => setMode(k)}>
-              {label}
-            </Button>
-          ))}
-        </div>
+        {/* ولا يُرسَم شريطُ ألسنةٍ للسانٍ واحد: زرٌّ مختارٌ أبدا لا يُنقَر
+            ولا يُبدّل شيئا هو إطارٌ حول عنوانٍ لا لسان. فمن لم يبقَ له
+            غيرُ «الطلبات» رأى الطلباتِ بلا شريطٍ فوقها. */}
+        {tabs.length > 1 && (
+          <div className="flex rounded-full border border-white/15 p-1">
+            {tabs.map((t) => (
+              /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
+                 الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
+                 يتنازعان العين — وهو ما استقرّ عليه لسانُ الشعبة قبله. */
+              <Button key={t.key} tone={shown === t.key ? "confirm" : "ghost"} onClick={() => setMode(t.key)}>
+                {t.label}
+              </Button>
+            ))}
+          </div>
+        )}
         {/* ═══ ما يُستعمل ظاهرٌ، وما دونه يُطوى — ولا يختفي عاملٌ بصمت ═══
 
             قال صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦): «مرشِّحاتُ المدربين كثيرةٌ
@@ -1583,10 +1654,37 @@ export default function TrainerApplications() {
             وما دونهما خلف «مرشّحاتٌ أخرى» — **وعددُ العاملِ منها مكتوبٌ
             على الطيّة**، فلا يُقرأ طابورٌ منقوصٌ ويُظنّ تامّا. وذاك هو
             خطرُ الطيّ كلِّه: مرشِّحٌ يعمل ولا يُرى. */}
-        {mode === "apps" && (
+        {shown === "apps" && (
           <>
+            {/* ═══ أربعُ مرشِّحاتٍ خارجَ القائمة (٢١ سبتمبر ٢٠٢٦) ═══
+
+                «أريد أن تُخرج ٤ ليبلاتٍ للفرز خارجا، وهم الأكثرُ استخداما،
+                تضعهم بوضوحٍ لسهولة الوصول». وكانت الستَّ عشرةَ كلُّها في
+                القائمة: مرشِّحُ كلِّ جلسةٍ يفتحها ويقرأ ستَّ عشرةَ سطرا
+                ليجد أحدَ أربعة.
+
+                **والقائمةُ تبقى تحتها لا تُستبدَل بها**: فيها اثنتا عشرةَ
+                حالةً أخرى، ومرشِّحٌ سريعٌ يحذف بقيّةَ الحالات يقايض شكوى
+                بشكوى. والزرُّ المختارُ يُنقَر ثانيةً فيعود «كلُّ الحالات» —
+                فلا يُترك الطابورُ مرشَّحا بلا مخرجٍ ظاهر.
+
+                وهما موضعٌ واحدٌ للحقيقة: `filter` نفسُها تُقرأ في الاثنين،
+                فما اختير في القائمة يُضيء زرَّه وما نُقر في زرٍّ يُقرأ في
+                القائمة. */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {QUICK_STATUSES.map((qs) => (
+                <Button key={qs.status}
+                  size="sm"
+                  tone={filter === qs.status ? "confirm" : "secondary"}
+                  aria-pressed={filter === qs.status}
+                  onClick={() => { setFilter(filter === qs.status ? "" : qs.status); setPage(1); }}>
+                  {qs.shortAr}
+                </Button>
+              ))}
+            </div>
+
             <select
-              value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="رشّح بالحالة"
+              value={filter} onChange={(e) => { setFilter(e.target.value); setPage(1); }} aria-label="رشّح بالحالة"
               className={staffSelectCls}
             >
               <option value="">كل الحالات</option>
@@ -1642,14 +1740,14 @@ export default function TrainerApplications() {
         )}
       </div>
 
-      {mode === "run" && <TrainerRunOps />}
-      {mode === "changes" && <TrainerChangeRequests />}
+      {shown === "run" && <TrainerRunOps />}
+      {shown === "changes" && <TrainerChangeRequests />}
       {/* ونُقلت «مستحقات المدربين» إلى شاشتها (`/admin/trainer-compensation`):
           بابُ هذه الشاشة `trainer.applications.view` والأتعابُ محروسةٌ
           بـ`trainer.compensation.manage`، ولا تلتقيان إلّا في `super_admin`.
           فكانت الماليةُ تُردّ على الباب، والمديرُ الأكاديميُّ يبلغ اللسانَ
           ويُردّ عند أوّل فعل. */}
-      {mode === "apps" && (loading ? (
+      {shown === "apps" && (loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : apps.length === 0 ? (
         <Panel className="grid place-items-center py-20 text-center">
@@ -1733,16 +1831,54 @@ export default function TrainerApplications() {
                     الصفّ: الترتيبُ يضع الأقدمَ أوّلا، وملخّصُ الصباح ينادي
                     على من طال وقوفُه. و`queue-age.ts` باقٍ بدالّته
                     ومحكوماتِه إن أُريد في موضعٍ آخر. */}
+                {/* ═══ ليبلُ الموعد — أوّلُ ما يُقرأ في الصفّ (٢١ سبتمبر ٢٠٢٦) ═══
+
+                    «للأشخاص الذين حجزوا موعدا ضعْ في الليبل موعدَ مقابلتهم
+                    القادمة، وإن لم يحجز فيكون الليبلُ أنّه لم يحجز موعدا
+                    بعد». وترتيبُه أوّلا ترتيبٌ زمنيّ: الموعدُ ثمّ نتيجتُه
+                    ثمّ أين وقف الطلبُ بعدهما — تُقرأ الثلاثُ من اليمين
+                    فتُروى القصّةُ على وجهها.
+
+                    والحكمُ في `queue-labels.ts` لا هنا: من يُقال له «لم
+                    يحجز»، ومتى لا يُقال لأنّ المزامنةَ لا تُوثَق. */}
+                {(() => {
+                  const booking = bookingLabel(a, { trusted: !syncTrust || syncTrust.trusted, now: new Date() });
+                  if (!booking) return null;
+                  return (
+                    <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-fine font-bold ${BOOKING_TONE[booking.kind]}`}>
+                      {booking.kind === "unbooked"
+                        ? <><CalendarX2 className="h-3.5 w-3.5" aria-hidden="true" /> لم يحجز موعدا بعد</>
+                        : <>
+                            <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                            {booking.kind === "overdue" ? "مضى موعدُه — بلا نتيجة" : "موعدُه"} {fmtDateTime(booking.at)}
+                          </>}
+                    </span>
+                  );
+                })()}
                 {/* ونتيجةُ اللقاء قبل الحالة: الحالةُ تقول أين وقف، وهذه
                     تقول ماذا قلنا فيه — وهي الأحدثُ خبرا. ولا شارةَ لمن لم
-                    يُقابَل: فراغٌ أصدقُ من «بلا نتيجة» في كلّ صفّ. */}
-                {a.interviewOutcome && (
-                  <span className={`rounded-full border px-3 py-1 text-fine font-bold ${
-                    OUTCOME_TONE[a.interviewOutcome] ?? "border-white/20 text-muted-foreground"
-                  }`}>
-                    {outcomeLabelAr(a.interviewOutcome)}
+                    يُقابَل: فراغٌ أصدقُ من «بلا نتيجة» في كلّ صفّ.
+
+                    ── واثنتان حين تختلفان ──
+
+                    المسجَّلةُ من بطاقة الموعد، والتقييمُ من رابط القارئ.
+                    فإن اتّفقا فواحدةٌ بلا بادئةٍ تقول من قالها، وإن اختلفا
+                    فكلتاهما بمصدرها. ومعجمُ كلٍّ منهما معجمُه: `outcomeLabelAr`
+                    للمسجَّلة و`VERDICT_AR` لقرار القارئ — وهما ما يُقرأ في
+                    الملفّ نفسِه، فلا يجد فاتحُه لفظا ثالثا. */}
+                {verdictBadges(a).map((b, _i, all) => (
+                  <span key={`${b.source}-${b.key}`}
+                    className={`rounded-full border px-3 py-1 text-fine font-bold ${
+                      OUTCOME_TONE[b.key] ?? "border-white/20 text-muted-foreground"
+                    }`}>
+                    {all.length > 1 && (
+                      <span className="ml-1 font-normal opacity-70">{VERDICT_SOURCE_AR[b.source]}:</span>
+                    )}
+                    {b.source === "review"
+                      ? VERDICT_AR[b.key] ?? b.key
+                      : outcomeLabelAr(b.key)}
                   </span>
-                )}
+                ))}
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
