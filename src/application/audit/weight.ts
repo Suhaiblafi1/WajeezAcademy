@@ -218,6 +218,9 @@ const LOW: readonly string[] = [
   'trainer.application.phase2_complete',
   'trainer.application.account_created', 'trainer.application.account_linked',
   'trainer.interview.invite', 'trainer.interview.remind', 'trainer.interview.outcome',
+  /* وسحبُها حين يختلف القرّاء أخو تسجيلها — لا يمسّ المتقدّمَ في وصولٍ ولا
+     مالٍ ولا سجلٍّ يُقرَّر به عليه، وإنّما يقول إنّ قولَنا فيه لم يستقرّ. */
+  'trainer.interview.outcome_cleared',
   'trainer.application.draft_remind',
   'trainer.interview.dossier_sent', 'trainer.interview.self_booked',
   'trainer.interview.self_canceled',

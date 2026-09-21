@@ -189,7 +189,9 @@ export class TrainerReviewService {
         reviews: {
           where: { NOT: { verdict: null } },
           orderBy: { updatedAt: 'desc' },
-          select: { verdict: true },
+          /* والاسمُ معه: حين يختلف قارئان لا يكفي أن يُعرض القولان — يُعرض
+             قائلاهما، وإلّا قرأ المراجعُ تناقضا بلا صاحب. */
+          select: { verdict: true, reviewerName: true },
         },
         _count: { select: { documents: true, reviews: true, interviews: { where: LIVE_INTERVIEW } } },
       },
@@ -237,8 +239,9 @@ export class TrainerReviewService {
 
          والترتيبُ نازلٌ، فأوّلُ القائمة أحدثُها. و`null` لمن لا موعدَ له. */
       interviewAt: a.interviews[0]?.scheduledAt ?? null,
-      /* قراراتُ روابط التقييم — بلا تكرارٍ وأحدثُها أوّلا */
-      reviewVerdicts: [...new Set(a.reviews.map((r) => r.verdict!))],
+      /* قراراتُ روابط التقييم بأسماء قائليها — أحدثُها أوّلا، والطيُّ في
+         الشاشة: من اتّفقا قولٌ واحدٌ بلا اسم، ومن اختلفا قولان بأسمائهما. */
+      reviewVerdicts: a.reviews.map((r) => ({ verdict: r.verdict!, reviewerName: r.reviewerName })),
     }))
   }
 
@@ -508,7 +511,17 @@ export class TrainerReviewService {
      وشرطٌ زائدٌ باسم النتيجة يُقرأ حارسا وهو لا يحرس — والمقاسُ بالأثر
      أصدقُ: من أُلغي موعدُه الوحيدُ ثمّ كُتبت له نتيجةٌ متأخّرةٌ يعود كذلك،
      وهو صوابٌ كان يفوت. */
-  async recordInterviewOutcome(interviewId: string, actorId: string, outcome: string, notes?: string) {
+  /* ═══ ومن يسجّلها قد لا يكون له حساب (٢١ سبتمبر ٢٠٢٦) ═══
+
+     صار قرارُ رابط التقييم يُعكَس على الموعد: «وإن وضعنا في التقييم أنّه
+     اجتاز فليُعكَس على قسم المقابلة». وصاحبُ الرابط قارئٌ باسمه لا حسابَ
+     له، فـ`actorId` يقبل الفراغَ — واسمُه يُكتب في `byAr` فيُقرأ في الأثر
+     مَن سجّل. ولا يُفتح بذلك بابٌ: المسارُ الإداريُّ يمرّر معرّفَه كما كان،
+     والرابطُ يمرّ من خدمته وحدَها بعد تحقّقها منه. */
+  async recordInterviewOutcome(
+    interviewId: string, actorId: string | null, outcome: string,
+    notes?: string, byAr?: string,
+  ) {
     const interview = await this.prisma.trainerInterview.findUnique({ where: { id: interviewId } })
     if (!interview) throw new AuthError('not_found', 'المقابلة غير موجودة', 404)
 
@@ -524,9 +537,32 @@ export class TrainerReviewService {
 
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.interview.outcome', entityType: 'trainer_application', entityId: interview.applicationId,
-      meta: { interviewId, outcome, ...(revertedTo ? { revertedTo } : {}) },
+      meta: { interviewId, outcome, ...(byAr ? { byAr } : {}), ...(revertedTo ? { revertedTo } : {}) },
     })
     return { ...updated, revertedTo }
+  }
+
+  /* ═══ وسحبُ النتيجة حين يختلف القرّاء ═══
+
+     العمودُ لا يسع قولَين. فإن اختلف قارئان في اللقاء نفسِه لم يبقَ لنا فيه
+     قولٌ متّفَقٌ عليه — فيُسحَب المكتوبُ ويُترك فارغا، ويُعرض القولان في
+     الصفّ باسمَي صاحبَيهما.
+
+     ولا يُنادى `revertWhenNoLiveInterview` هنا: السحبُ ليس تسجيلَ نتيجة.
+     وما وقع بالغياب من إعادةِ الطلب إلى ما قبل الحجز **لا يُنقَض**: انتقالٌ
+     جرى في سجلّ الحالة لا يُمحى بخلافٍ بعده، وصاحبُ الطلب يحجز من جديد. */
+  async clearInterviewOutcome(interviewId: string, byAr: string, whyAr: string) {
+    const interview = await this.prisma.trainerInterview.findUnique({ where: { id: interviewId } })
+    if (!interview || interview.outcome === null) return null
+    const updated = await this.prisma.trainerInterview.update({
+      where: { id: interviewId }, data: { outcome: null },
+    })
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.interview.outcome_cleared',
+      entityType: 'trainer_application', entityId: interview.applicationId,
+      meta: { interviewId, was: interview.outcome, byAr, whyAr },
+    })
+    return updated
   }
 
   async recordDemoEvaluation(applicationId: string, evaluatorId: string, input: RubricScores, decision: 'pass' | 'retry' | 'fail', notes?: string) {

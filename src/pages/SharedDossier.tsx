@@ -18,33 +18,51 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router'
 import { apiGet, apiPut, ApiError } from '@/services/api'
 import { RUBRIC_AXES } from '@/application/trainer/rubric'
+import { INTERVIEW_OUTCOMES, outcomeLabelAr } from '@/application/trainer/interview-outcome'
 import ApplicationDossier, { type Dossier } from './admin/ApplicationDossier'
 import InterviewQuestions from './admin/InterviewQuestions'
 import { Panel, Inset } from '@/components/ui/Surface'
-import { fmtDateLong } from '@/application/text/format-ar'
+import { fmtDateLong, fmtDateTime } from '@/application/text/format-ar'
 
 interface MyReview {
   scores: Record<string, number> | null
   overallNote: string | null
   verdict: string | null
+  interviewId: string | null
   coursesNote: string | null
   feeExpectationAr: string | null
   feeProposalAr: string | null
   updatedAt: string
 }
 
+/** موعدُ لقاءٍ كما يراه القارئ — ليُعلَّق حكمُه بواحدٍ منها */
+interface SharedInterview {
+  id: string
+  scheduledAt: string
+  mode: string
+  canceledAt: string | null
+  outcome: string | null
+}
+
 interface SharedView {
   reviewer: { name: string; expiresAt: string }
-  application: Dossier & { reference: string; documents: { id: string; kind: string; originalName: string; storageKey: string }[] }
+  application: Dossier & {
+    reference: string
+    documents: { id: string; kind: string; originalName: string; storageKey: string }[]
+    interviews?: SharedInterview[]
+  }
   documentUrls: Record<string, string>
   myReview: MyReview | null
 }
 
-const VERDICTS = [
-  { key: 'passed', ar: 'يجتاز' },
-  { key: 'hold', ar: 'يُعاد لقاؤه' },
-  { key: 'failed', ar: 'لا يجتاز' },
-] as const
+/* ═══ والأربعةُ كلُّها من معجمها (٢١ سبتمبر ٢٠٢٦) ═══
+
+   كانت ثلاثةً مكتوبةً هنا بألفاظٍ أخرى: «يجتاز» و«يُعاد لقاؤه» و«لا يجتاز»
+   — بينما قسمُ المقابلة يقول «ناجح» و«تعليق» و«غير مناسب». لفظان لحقيقةٍ
+   واحدة، وهو ما شُكي منه: «لا أريد شيئين».
+
+   وقد صار الحكمُ معلَّقا بمقابلةٍ بعينها ويُكتب في عمودها، فالحاكمُ هو من
+   جلس إليها — و«لم يحضر» خبرٌ يملكه. فهي `INTERVIEW_OUTCOMES` بعينها. */
 
 const KIND_AR: Record<string, string> = {
   cv: 'السيرة الذاتيّة', certificate: 'شهادة', training_video: 'مادّةٌ تدريبيّة',
@@ -59,6 +77,8 @@ export default function SharedDossier() {
   const [scores, setScores] = useState<Record<string, number>>({})
   const [overallNote, setOverallNote] = useState('')
   const [verdict, setVerdict] = useState<string>('')
+  /* المقابلةُ التي يحكم فيها — لا قرارَ بلا موعدٍ يُنسَب إليه */
+  const [interviewId, setInterviewId] = useState<string>('')
   const [coursesNote, setCoursesNote] = useState('')
   /* الاتفاقُ الماليُّ — نصّا لا رقما، ويُملأ إن جرى ذكرُه ويُترك إن لم يُذكر */
   const [feeExpectation, setFeeExpectation] = useState('')
@@ -84,6 +104,7 @@ export default function SharedDossier() {
         setScores((v.myReview?.scores as Record<string, number>) ?? {})
         setOverallNote(v.myReview?.overallNote ?? '')
         setVerdict(v.myReview?.verdict ?? '')
+        setInterviewId(v.myReview?.interviewId ?? '')
         setCoursesNote(v.myReview?.coursesNote ?? '')
         setFeeExpectation(v.myReview?.feeExpectationAr ?? '')
         setFeeProposal(v.myReview?.feeProposalAr ?? '')
@@ -101,6 +122,7 @@ export default function SharedDossier() {
     try {
       const r = await apiPut<{ savedAt: string }>(`/api/r/${encodeURIComponent(token)}/review`, {
         scores, overallNote: overallNote || null, verdict: verdict || null, coursesNote: coursesNote || null,
+        interviewId: interviewId || null,
         feeExpectationAr: feeExpectation || null, feeProposalAr: feeProposal || null,
       })
       setSavedAt(r.savedAt)
@@ -110,7 +132,12 @@ export default function SharedDossier() {
     } finally {
       setSaving(false)
     }
-  }, [token, scores, overallNote, verdict, coursesNote, feeExpectation, feeProposal])
+  }, [token, scores, overallNote, verdict, interviewId, coursesNote, feeExpectation, feeProposal])
+
+  /* مواعيدُه مقسومةً: ما يُحكَم فيه وما أُلغي. والأحدثُ أوّلا كما يصل. */
+  const interviews = useMemo(() => view?.application.interviews ?? [], [view])
+  const bookable = useMemo(() => interviews.filter((iv) => !iv.canceledAt), [interviews])
+  const canceled = useMemo(() => interviews.filter((iv) => iv.canceledAt), [interviews])
 
   /* ما لم يُقيَّم بعد — يُقال عددُه ولا يُترك القارئُ يعدّ بعينه */
   const remaining = useMemo(
@@ -254,22 +281,76 @@ export default function SharedDossier() {
           </label>
         </Inset>
 
+        {/* ═══ في أيّ لقاءٍ تحكم؟ (٢١ سبتمبر ٢٠٢٦) ═══
+
+            «لا أريد التقييمَ العامّ، أريده مرتبطا بالمقابلات المجدولة — تقترح
+            التاريخَ واليومَ والوقتَ ونضغط عليه قبل الحفظ».
+
+            وهو أوّلُ القرار لا حاشيتُه: من لم يختر لقاءً لم يحكم في شيء،
+            فالاختيارُ فوق الأزرار لا تحتها. والملغى يُعرض معطَّلا ولا يُخفى:
+            من حكم في موعدٍ ثمّ أُلغي يقرأ لماذا لم يعد يُختار. */}
         <fieldset className="mt-4">
-          <legend className="text-read font-bold">قرارُك</legend>
+          <legend className="text-read font-bold">في أيّ مقابلةٍ تحكم؟</legend>
+          {bookable.length === 0 ? (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              لا مقابلةَ مجدولةٌ لهذا المتقدّم بعد — والقرارُ يُعلَّق بلقاءٍ وقع، فلا يُحفظ
+              قرارٌ قبلها. وما تكتبه من درجاتٍ وملاحظاتٍ يُحفَظ ويبقى.
+            </p>
+          ) : (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {bookable.map((iv) => (
+                <button key={iv.id} type="button"
+                  aria-pressed={interviewId === iv.id}
+                  onClick={() => setInterviewId((cur) => (cur === iv.id ? '' : iv.id))}
+                  /* ومستديرةٌ كأزرار القرار تحتها: هي اختيارٌ من بين خياراتٍ
+                     مثلُها، ومستطيلٌ بحدٍّ وانحناءٍ سطحٌ لا خيار. */
+                  className={`rounded-full border px-4 py-2 text-read transition ${
+                    interviewId === iv.id
+                      ? 'border-teal-light-ink bg-teal-light-ink/15 text-teal-light-ink'
+                      : 'border-white/15 text-muted-foreground hover:border-white/30'
+                  }`}>
+                  {fmtDateTime(new Date(iv.scheduledAt))}
+                </button>
+              ))}
+            </div>
+          )}
+          {canceled.length > 0 && (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              وملغاةٌ لا يُحكَم فيها: {canceled.map((iv) => fmtDateTime(new Date(iv.scheduledAt))).join(' · ')}
+            </p>
+          )}
+        </fieldset>
+
+        <fieldset className="mt-4">
+          <legend className="text-read font-bold">قرارُك في هذا اللقاء</legend>
+          {/* والقرارُ يُعرض معطَّلا قبل اختيار اللقاء — لا يُخفى: من لم يره
+              لم يعرف أنّ عليه أن يختار أوّلا. */}
           <div className="mt-2 flex flex-wrap gap-2">
-            {VERDICTS.map((v) => (
-              <button key={v.key} type="button"
-                aria-pressed={verdict === v.key}
-                onClick={() => setVerdict((cur) => (cur === v.key ? '' : v.key))}
-                className={`rounded-full border px-4 py-1.5 text-read transition ${
-                  verdict === v.key
+            {INTERVIEW_OUTCOMES.map((o) => (
+              <button key={o.key} type="button"
+                disabled={!interviewId}
+                title={o.whatAr}
+                aria-pressed={verdict === o.key}
+                onClick={() => setVerdict((cur) => (cur === o.key ? '' : o.key))}
+                className={`rounded-full border px-4 py-1.5 text-read transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                  verdict === o.key
                     ? 'border-teal-light-ink bg-teal-light-ink/15 text-teal-light-ink'
                     : 'border-white/15 text-muted-foreground hover:border-white/30'
                 }`}>
-                {v.ar}
+                {o.labelAr}
               </button>
             ))}
           </div>
+          {!interviewId && bookable.length > 0 && (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">اختر المقابلةَ أوّلا — القرارُ يُنسَب إلى لقاءٍ بعينه.</p>
+          )}
+          {/* وما يقع حين يُحفَظ: القرارُ يُكتب في الموعد نفسِه، فلا يُسجَّل مرّتين */}
+          {verdict && interviewId && (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              يُسجَّل «{outcomeLabelAr(verdict)}» نتيجةً لهذا اللقاء. وإن حكم فيه قارئٌ آخرُ
+              بغيره عُرض القولان معا بأسمائكما، ولم يُكتب في الموعد شيءٌ حتّى تتّفقا.
+            </p>
+          )}
         </fieldset>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">

@@ -8,6 +8,7 @@
 
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import { INTERVIEW_OUTCOME_KEYS } from '../../../src/application/trainer/interview-outcome'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { RUBRIC_CRITERIA } from '../../services/trainer-review.service'
@@ -36,8 +37,15 @@ export function registerDossierLinkRoutes(app: FastifyInstance, prisma: PrismaCl
     const body = z.object({
       scores: scoresSchema.optional(),
       overallNote: z.string().max(4000).nullable().optional(),
-      /* بمفردات `TrainerInterview.outcome` نفسِها — لا معجمَ ثانيا لشيءٍ واحد */
-      verdict: z.enum(['passed', 'hold', 'failed']).nullable().optional(),
+      /* ═══ والأربعةُ كلُّها — لا ثلاثةٌ منها (٢١ سبتمبر ٢٠٢٦) ═══
+
+         كان المعجمُ هنا ثلاثةً بحجّة أنّ «القارئَ يقرأ ملفّا فلا يغيب عنه».
+         وقد صار الحكمُ مربوطا بمقابلةٍ بعينها، فالحاكمُ هو من جلس إليها —
+         و«لم يحضر» خبرٌ لا يملكه غيرُه. فهي `INTERVIEW_OUTCOME_KEYS` بعينها:
+         معجمٌ واحدٌ لشيءٍ واحد، وما يُكتب هنا هو ما يُقرأ في قسم المقابلة. */
+      verdict: z.enum(INTERVIEW_OUTCOME_KEYS).nullable().optional(),
+      /* والمقابلةُ التي يحكم فيها — تلزم مع القرار، والخدمةُ تحرسها */
+      interviewId: z.string().uuid().nullable().optional(),
       coursesNote: z.string().max(4000).nullable().optional(),
       /* الاتفاقُ الماليُّ نصّا لا رقما — والسقفُ قصيرٌ لأنّه سطرٌ لا تقرير */
       feeExpectationAr: z.string().max(500).nullable().optional(),

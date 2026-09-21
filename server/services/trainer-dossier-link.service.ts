@@ -27,7 +27,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { TrainerApplicationService } from './trainer-application.service'
-import { assertRubric, cleanRubric, type RubricScores } from './trainer-review.service'
+import { assertRubric, cleanRubric, TrainerReviewService, type RubricScores } from './trainer-review.service'
 import { publicSiteUrl, sendDirectEmail, type DirectMailStatus } from './notification.service'
 import { renderMail } from './mail-template'
 import { fmtDateLong } from '../../src/application/text/format-ar'
@@ -65,6 +65,8 @@ export interface SavedReviewInput {
   scores?: RubricScores
   overallNote?: string | null
   verdict?: string | null
+  /** المقابلةُ التي يحكم فيها — تلزم مع القرار، ولا قرارَ معلَّقٌ في الهواء */
+  interviewId?: string | null
   coursesNote?: string | null
   /* الاتفاقُ الماليُّ إن جرى ذكرُه — نصّا لا رقما، ولا مالَ يتحرّك به */
   feeExpectationAr?: string | null
@@ -74,9 +76,14 @@ export interface SavedReviewInput {
 export class TrainerDossierLinkService {
   private prisma: PrismaClient
   private apps: TrainerApplicationService
+  /* ولتسجيلِ النتيجة مسارُها الواحد: عكسُ قرارِ القارئ على الموعد يمرّ بما
+     يمرّ به زرُّ الإدارة — فتقع انتقالاتُ الحالة وعودةُ الغائب إلى ما قبل
+     الحجز كما تقع هناك، ولا يُكتب العمودُ من بابٍ ثانٍ لا يعرف ذلك. */
+  private review: TrainerReviewService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.apps = new TrainerApplicationService(prisma)
+    this.review = new TrainerReviewService(prisma)
   }
 
   /* ─────────── الإدارة: إنشاءٌ وسردٌ وإلغاء ─────────── */
@@ -338,6 +345,18 @@ export class TrainerDossierLinkService {
         },
         /* أسماءُ المراجع وصلتُهم وملاحظاتُهم — ولا `contact`: هاتفُ طرفٍ ثالث */
         references: { select: { id: true, name: true, relation: true, note: true, verifiedAt: true } },
+        /* ═══ ومواعيدُ لقائه — ليُعلَّق الحكمُ بواحدٍ منها (٢١ سبتمبر ٢٠٢٦) ═══
+
+           «لا أريد التقييمَ العامّ، أريده مرتبطا بالمقابلات المجدولة». فتصل
+           القارئَ مواعيدُه ليختار أيَّها يحكم فيه.
+
+           والملغاةُ تصل كذلك ولا تُخفى: من حكم في موعدٍ ثمّ أُلغي يبقى حكمُه
+           منسوبا إليه ويُقرأ سببُه، وإخفاؤه يترك القارئَ أمام حكمٍ بلا موعد.
+           والشاشةُ تمنع اختيارَها، والخادمُ يردّها. */
+        interviews: {
+          orderBy: { scheduledAt: 'desc' },
+          select: { id: true, scheduledAt: true, mode: true, canceledAt: true, outcome: true },
+        },
       },
     })
     if (!app) throw INVALID()
@@ -358,7 +377,7 @@ export class TrainerDossierLinkService {
       myReview: mine
         ? {
             scores: mine.scores, overallNote: mine.overallNote,
-            verdict: mine.verdict, coursesNote: mine.coursesNote,
+            verdict: mine.verdict, interviewId: mine.interviewId, coursesNote: mine.coursesNote,
             feeExpectationAr: mine.feeExpectationAr, feeProposalAr: mine.feeProposalAr,
             updatedAt: mine.updatedAt,
           }
@@ -372,6 +391,27 @@ export class TrainerDossierLinkService {
     assertRubric(input.scores ?? {})
     const scores = cleanRubric(input.scores ?? {})
 
+    /* ═══ ولا قرارَ معلَّقٌ في الهواء (٢١ سبتمبر ٢٠٢٦) ═══
+
+       «لا أريد التقييمَ العامّ، أريده مرتبطا بالمقابلات المجدولة». فالقرارُ
+       يلزمه موعدٌ يحكم فيه — والموعدُ من مواعيد هذا الطلب وحدَه وغيرُ ملغًى.
+
+       والحارسُ في الخادم لا في الشاشة: الشاشةُ تمنع الاختيارَ الخاطئ، وهذا
+       يردّ من جاء من غيرها. ومعرّفُ موعدِ طلبٍ آخرَ يُردّ كذلك — فلا يُعلَّق
+       حكمٌ بلقاء إنسانٍ لم يُقرأ ملفُّه. */
+    const interviewId = input.interviewId || null
+    if (input.verdict && !interviewId) {
+      throw new AuthError('interview_required', 'اختر المقابلةَ التي تحكم فيها قبل حفظ القرار', 422)
+    }
+    if (interviewId) {
+      const iv = await this.prisma.trainerInterview.findFirst({
+        where: { id: interviewId, applicationId: link.applicationId },
+        select: { canceledAt: true },
+      })
+      if (!iv) throw new AuthError('interview_not_found', 'لا مقابلةَ بهذا المعرّف في هذا الطلب', 404)
+      if (iv.canceledAt) throw new AuthError('interview_canceled', 'هذه المقابلةُ ملغاة — لا يُحكَم في لقاءٍ لم يقع', 422)
+    }
+
     const before = await this.prisma.trainerApplicationReview.findFirst({
       where: { applicationId: link.applicationId, linkId: link.id },
     })
@@ -380,6 +420,7 @@ export class TrainerDossierLinkService {
       scores: scores as unknown as Prisma.InputJsonValue,
       overallNote: input.overallNote?.trim() || null,
       verdict: input.verdict || null,
+      interviewId,
       coursesNote: input.coursesNote?.trim() || null,
       feeExpectationAr: input.feeExpectationAr?.trim() || null,
       feeProposalAr: input.feeProposalAr?.trim() || null,
@@ -416,6 +457,54 @@ export class TrainerDossierLinkService {
       ? recordAudit(this.prisma, { ...trail, action: 'trainer.review.update' })
       : recordAudit(this.prisma, { ...trail, action: 'trainer.review.add' }))
 
-    return { savedAt: saved.updatedAt }
+    /* والموعدُ الذي حُكم فيه يأخذ قولَه — أو يفقده إن اختُلف عليه */
+    const reflected = interviewId ? await this.reflectOnInterview(interviewId, link.reviewerName) : null
+    /* والموعدُ السابقُ إن بُدّل: قولٌ خرج منه، فيُعاد حسابُه كذلك */
+    if (before?.interviewId && before.interviewId !== interviewId) {
+      await this.reflectOnInterview(before.interviewId, link.reviewerName)
+    }
+
+    return { savedAt: saved.updatedAt, interview: reflected }
+  }
+
+  /* ═══ عكسُ أحكام القرّاء على الموعد — وقاعدتُه الاتّفاق ═══
+
+     «وإن وضعنا في التقييم أنّه اجتاز فليُعكَس على قسم المقابلة ويظهر في
+     ملفّه. لا أريد شيئين: اجتاز واجتاز».
+
+     والعمودُ لا يسع قولَين. فإن اتّفق من حكموا في هذا اللقاء كُتب قولُهم
+     فيه — ويمرّ بمسار الإدارة نفسِه فتقع انتقالاتُ الحالة وعودةُ الغائب إلى
+     ما قبل الحجز. وإن اختلفوا سُحب المكتوبُ وتُرك فارغا: لا قولَ متّفَقا
+     علينا، والصفُّ يعرض القولَين باسمَي صاحبَيهما.
+
+     **ولا يُكتب ما هو مكتوب**: `outcome` المطابقُ لا يُعاد تسجيلُه، وإلّا
+     صار كلُّ حفظِ درجةٍ انتقالا جديدا في سجلّ الحالة وسطرا في الأثر. */
+  private async reflectOnInterview(interviewId: string, byAr: string) {
+    const verdicts = await this.prisma.trainerApplicationReview.findMany({
+      where: { interviewId, NOT: { verdict: null } },
+      select: { verdict: true },
+    })
+    const distinct = [...new Set(verdicts.map((v) => v.verdict!))]
+    const current = await this.prisma.trainerInterview.findUnique({
+      where: { id: interviewId }, select: { outcome: true },
+    })
+    if (!current) return null
+
+    if (distinct.length === 1) {
+      if (current.outcome === distinct[0]) return { outcome: current.outcome, agreed: true }
+      await this.review.recordInterviewOutcome(interviewId, null, distinct[0], undefined, byAr)
+      return { outcome: distinct[0], agreed: true }
+    }
+
+    if (distinct.length > 1) {
+      await this.review.clearInterviewOutcome(
+        interviewId, byAr, `اختلف القرّاء: ${distinct.join(' · ')}`,
+      )
+      return { outcome: null, agreed: false }
+    }
+
+    /* ولا حكمَ بقي: من سحب قرارَه سحب معه ما كُتب عنه في الموعد */
+    await this.review.clearInterviewOutcome(interviewId, byAr, 'سُحب آخرُ قرارٍ في هذا اللقاء')
+    return { outcome: null, agreed: true }
   }
 }
