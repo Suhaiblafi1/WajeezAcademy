@@ -17,7 +17,7 @@ import { bookingReminderMail, decisionMailFor, draftReminderMail, rejectionUndon
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
-import { LIVE_INTERVIEW, revertWhenNoLiveInterview } from './trainer-interview-state'
+import { LIVE_INTERVIEW, pendingInterview, revertWhenNoLiveInterview } from './trainer-interview-state'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService, transitionProblemAr, type TrainerStatus } from './trainer-application.service'
 import { nextTrainerApplicationReference } from './trainer-application-reference'
@@ -146,6 +146,7 @@ export class TrainerReviewService {
   /* ─────────── عرض الإدارة ─────────── */
 
   async listApplications(status?: string) {
+    const now = new Date()
     const rows = await this.prisma.trainerApplication.findMany({
       where: status ? { status } : undefined,
       orderBy: { createdAt: 'desc' },
@@ -163,13 +164,32 @@ export class TrainerReviewService {
            — يجتاز أو لا يجتاز». وكانت تُكتب في بطاقة المقابلة داخلَ الملفّ،
            فمن أراد أن يعرف من اجتاز فتح خمسةَ ملفّاتٍ ليقرأ خمسَ كلمات.
 
-           والملغاةُ لا تُقرأ: موعدٌ أُلغي لا نتيجةَ له. وتُؤخذ الأحدثُ
-           موعدا — من قوبل مرّتين فالثانيةُ قولُنا فيه. */
+           والملغاةُ لا تُقرأ: موعدٌ أُلغي لا نتيجةَ له. وتُجلَب القائمةُ
+           كلُّها لا صفٌّ واحد، لأنّ منها يُقرأ شيئان لا شيء: أحدثُ نتيجةٍ
+           سُجّلت، والموعدُ الذي ما زال ينتظر — وهما قد يكونان صفَّين. */
         interviews: {
           where: { canceledAt: null },
           orderBy: { scheduledAt: 'desc' },
-          take: 1,
-          select: { outcome: true },
+          select: { scheduledAt: true, outcome: true },
+        },
+        /* ═══ وقرارُ رابط التقييم — هو ما اتُّفق على عرضه (٢١ سبتمبر ٢٠٢٦) ═══
+
+           شكا صاحبُ المنصّة: «قلتَ مرارا إنّك ستضع نتيجةَ التقييم بجانب
+           الحالة، والتي اتّفقنا أن تأخذها من روابط التقييم التي استخدمناها
+           لمقابلة المدرّب». وكان الصفُّ يقرأ `TrainerInterview.outcome`
+           وحدَها — وهي ما يسجّله مُجرِي المقابلة في بطاقة الموعد، لا ما
+           يكتبه القارئُ في رابطه.
+
+           و`verdict` لا يُكتب إلّا من مسار الرابط (`dossier-link.routes`):
+           `addReview` الداخليّةُ لا تمسّه. فما يصل هنا **هو نتيجةُ رابط
+           التقييم بعينها** لا شيءٌ يشبهها.
+
+           والمكرَّرُ يُطوى في الشاشة لا هنا: من قرأه اثنان واتّفقا قولٌ
+           واحد، ومن اختلفا فيه قولان يُعرضان — وذاك حكمُ عرضٍ لا حكمُ جلب. */
+        reviews: {
+          where: { NOT: { verdict: null } },
+          orderBy: { updatedAt: 'desc' },
+          select: { verdict: true },
         },
         _count: { select: { documents: true, reviews: true, interviews: { where: LIVE_INTERVIEW } } },
       },
@@ -187,8 +207,24 @@ export class TrainerReviewService {
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
       /* `null` = لا لقاءَ أو لقاءٌ بلا نتيجةٍ بعد — والشاشةُ تفرّق بينهما
-         بالحالة لا بهذا الحقل، فلا تُخترع نتيجةٌ لمن لم يُقابَل. */
-      interviewOutcome: a.interviews[0]?.outcome ?? null,
+         بالحالة لا بهذا الحقل، فلا تُخترع نتيجةٌ لمن لم يُقابَل.
+
+         و«الأحدثُ ممّا سُجّلت نتيجتُه» لا «الأحدثُ مطلقا»: من اجتاز ثمّ
+         حجز لقاءً ثانيا كان موعدُه الجديدُ — وهو بلا نتيجةٍ بعد — يمحو
+         نتيجةَ الأوّل من الصفّ. والترتيبُ نازلٌ، فأوّلُ ما يحمل نتيجةً
+         هو أحدثُها. */
+      interviewOutcome: a.interviews.find((iv) => iv.outcome !== null)?.outcome ?? null,
+      /* ═══ موعدُه الذي ينتظر ═══
+
+         أقربُ قادمٍ لم تُسجَّل نتيجتُه، وإلّا فآخرُ ماضٍ ينتظر تسجيلَها.
+         و`null` لمن لا موعدَ معلَّقا له — حجز وسُجّلت نتيجتُه، أو لم يحجز
+         أصلا. والشاشةُ تفرّق بين الحالتين بـ`interviewsCount`.
+
+         والغيابُ ليس موعدا معلَّقا: نتيجتُه مسجَّلةٌ (`no_show`) والطلبُ
+         عاد إلى ما قبل الحجز، فصاحبُه في «لم يحجز» لا في «له موعد». */
+      pendingInterviewAt: pendingInterview(a.interviews, now),
+      /* قراراتُ روابط التقييم — بلا تكرارٍ وأحدثُها أوّلا */
+      reviewVerdicts: [...new Set(a.reviews.map((r) => r.verdict!))],
     }))
   }
 

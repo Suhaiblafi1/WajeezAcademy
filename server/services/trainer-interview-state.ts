@@ -32,6 +32,47 @@ export const LIVE_INTERVIEW = {
   OR: [{ outcome: null }, { outcome: { not: NO_SHOW } }],
 } satisfies Prisma.TrainerInterviewWhereInput
 
+/* ═══ الموعدُ المعلَّق — ما ينتظر أن يقع أو أن تُسجَّل نتيجتُه ═══
+
+   طلب صاحبُ المنصّة (٢١ سبتمبر ٢٠٢٦): «للأشخاص الذين حجزوا موعدا ضع في
+   الليبل موعدَ مقابلتهم القادمة، ومن لم يحجز يكون ليبلُه أنّه لم يحجز
+   موعدا بعد». وكان الصفُّ يعرض عددا لا تاريخا: `interviewsCount` يقول
+   «١» ولا يقول متى — فمن أراد أن يعرف متى يلقاه فتح ملفَّه.
+
+   ── ولمَ موعدان في حقلٍ واحد ──
+
+   القادمُ أولى بالعرض ما دام قادما. فإن مضى ولم تُسجَّل نتيجتُه فهو
+   **ما زال معلَّقا**: لقاءٌ جرى وينتظر من يكتب قولَه فيه، وإخفاؤه يترك
+   الصفَّ صامتا عمّن هو أحوجُ ما يكون إلى نظرة. فالحقلُ واحدٌ ويقول
+   «الموعدُ الذي ينتظر»، والشاشةُ تقرأ تاريخَه فتعرف أمضى أم لم يأتِ.
+
+   ── وما لا يُعَدّ معلَّقا ──
+
+   الملغى (لا موعدَ له)، والمسجَّلةُ نتيجتُه (انتهى أمرُه)، والغيابُ
+   (`no_show` نتيجةٌ سُجّلت، والطلبُ عاد إلى ما قبل الحجز فصاحبُه في
+   «لم يحجز» لا في «له موعد»). */
+export interface ScheduledInterview {
+  scheduledAt: Date
+  outcome: string | null
+  canceledAt?: Date | null
+}
+
+/**
+ * الموعدُ الذي ينتظر — أقربُ قادمٍ بلا نتيجة، وإلّا فآخرُ ماضٍ بلا نتيجة.
+ *
+ * `rows` تُقرأ بأيّ ترتيبٍ كانت: الاختيارُ بالمقارنة لا بموضعٍ في مصفوفة،
+ * فلا يتبدّل الجوابُ لو تبدّل `orderBy` في نداءٍ بعيد.
+ */
+export function pendingInterview(rows: readonly ScheduledInterview[], now: Date): Date | null {
+  const open = rows.filter((iv) => !iv.canceledAt && iv.outcome === null)
+  const upcoming = open.filter((iv) => iv.scheduledAt.getTime() > now.getTime())
+  /* أقربُ القادم؛ فإن لم يكن فأحدثُ ما مضى — وهو آخرُ ما جرى ولم يُسجَّل */
+  const pick = upcoming.length > 0
+    ? upcoming.reduce((a, b) => (a.scheduledAt <= b.scheduledAt ? a : b))
+    : open.reduce<ScheduledInterview | null>((a, b) => (a && a.scheduledAt >= b.scheduledAt ? a : b), null)
+  return pick?.scheduledAt ?? null
+}
+
 /** يعيد الطلبَ إلى ما قبل الحجز إن لم يبقَ له موعدٌ قائم — ويردّ ما عاد إليه */
 export async function revertWhenNoLiveInterview(
   tx: Prisma.TransactionClient,
