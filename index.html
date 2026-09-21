@@ -21,11 +21,32 @@
           ? saved
           : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         document.documentElement.dataset.theme = t;
+        /* علامةُ «جافاسكربت تعمل» — تُقرؤها قاعدةُ الإخفاء أسفلُ. وهي هنا
+           لا في الحزمة: الحزمةُ تصل بعد الرسمة الأولى، وبعدها لا ينفع
+           الإخفاء إذ قد وقع الوميضُ الذي نمنعه. */
+        document.documentElement.dataset.js = "1";
         var meta = document.querySelector('meta[name="theme-color"]');
         if (meta) meta.setAttribute("content", t === "light" ? "#F6F4EF" : "#0D0D0D");
         sessionStorage.removeItem("wajeez_theme");
       } catch (e) {}
     </script>
+    <style>
+      /* ═══ نصُّ الزاحف يُخفى عن الإنسان ولا يُحذف (٢١ سبتمبر ٢٠٢٦) ═══
+
+         `scripts/prerender-seo.ts` يكتب داخلَ `#root` عنوانَ الصفحة ووصفَها
+         وأسئلتَها الشائعةَ وروابطَ الموقع، ويمحوها React عند أوّل تصيير.
+         فيرسمها المتصفّحُ في الفجوة بين وصول HTML ووصولِ الحزمة — ومن فتح
+         الموقعَ رأى صفحةً غريبةً تومض أقلَّ من ثانية.
+
+         ولا تُحذف: زاحفاتُ محرّكات الإجابة (GPTBot وسواها) **لا تشغّل
+         جافاسكربت**، فما ليس في المصدر لا يصل إليها. فتُخفى عمّن يشغّلها
+         وحدَه — وهو الذي يصله التطبيقُ كاملا بعد أجزاءٍ من الثانية.
+
+         وذلك ليس إخفاءً عن زاحفٍ وإظهارا لإنسان: من لا يشغّل جافاسكربت
+         يراها كما كانت، ومن يشغّلها يرى ما هو أتمُّ منها. */
+      html[data-js="1"] #root > [data-seo] { display: none; }
+    </style>
+
     <!-- أيقونةُ اللسان: علامةُ وجيز نفسُها لا حرفٌ مرسوم.
 
          كانت `favicon.svg` مربّعا فيروزيّا عليه «و» مكتوبةٌ بعنصر `<text>` —

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { normalizeApplicantLink } from "@/application/trainer/applicant-link";
 import { Link, useSearchParams } from "react-router";
 import { CalendarClock,
   ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
@@ -6,7 +7,7 @@ import { CalendarClock,
 } from "lucide-react";
 import { InterviewPrep } from "@/components/InterviewPrep";
 import {
-  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldRow, FieldSet, invalidProps, OptionGrid, Question,
+  areaCls, ChoiceGrid, ConsentRow, controlCls, Field, FieldError, FieldRow, FieldSet, invalidProps, OptionGrid, Question,
 } from "@/components/FormKit";
 import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
@@ -394,6 +395,23 @@ export default function JoinTrainer() {
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [k]: e.target.value });
+
+  /* ═══ الرابطُ يُطبَّع عند المغادرة، والخطأُ يُقال تحته ═══
+
+     «اسمح للمتقدّم أن يضع الرابطَ بدون https — ضعها أنت بنفسك، أو أبلِغه
+     ما الخطأ إذا لم يضعها» (صاحبُ المنصّة، ٢١ سبتمبر ٢٠٢٦).
+
+     وعند المغادرة لا عند كلّ حرف: من يكتب `linkedin.com` حرفا حرفا يمرّ
+     بـ`l` و`li`، ولو طُبّع كلُّ حرفٍ لَقفز المؤشّرُ تحت يده وصار الحقلُ
+     يقاومه. فإذا خرج منه رأى `https://` مضافةً بعينه — لا مبدَّلةً في
+     الخفاء عند الإرسال. */
+  const [linkErrors, setLinkErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+
+  const normalizeLink = (k: keyof typeof form) => (e: React.FocusEvent<HTMLInputElement>) => {
+    const r = normalizeApplicantLink(e.target.value);
+    setLinkErrors((prev) => ({ ...prev, [k]: r.ok ? undefined : r.messageAr }));
+    if (r.ok && r.url !== e.target.value) setForm((f) => ({ ...f, [k]: r.url }));
+  };
 
   const toggle = (list: string[], v: string, fn: (x: string[]) => void) =>
     fn(list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
@@ -1313,20 +1331,32 @@ export default function JoinTrainer() {
                 n={7}
                 required
                 title="أدلتك"
-                hint="رابطٌ واحدٌ على الأقلّ — أيُّها كان. وهي ما يقرؤه المراجع قبل غيره، وتُمنح الأولوية للطلبات التي تعرض خبرة قابلة للتحقق ونماذج حقيقية من العمل أو التدريب."
+                hint="رابطٌ واحدٌ على الأقلّ — أيُّها كان، والصقه كما هو فلا حاجةَ لكتابة «https». وهي ما يقرؤه المراجع قبل غيره، وتُمنح الأولوية للطلبات التي تعرض خبرة قابلة للتحقق ونماذج حقيقية من العمل أو التدريب."
               >
                 <FieldRow>
                   <Field label="لينكدإن أو ملف أعمال" htmlFor="jt-links">
-                    <input id="jt-links" name="links" dir="ltr" placeholder="https://linkedin.com/in/..." value={form.linkedinUrl} onChange={set("linkedinUrl")} className={`${controlCls} text-left`} />
+                    <input id="jt-links" name="links" dir="ltr" placeholder="linkedin.com/in/..." value={form.linkedinUrl} onChange={set("linkedinUrl")} onBlur={normalizeLink("linkedinUrl")}
+                      aria-invalid={linkErrors.linkedinUrl ? true : undefined}
+                      className={`${controlCls} text-left ${linkErrors.linkedinUrl ? "border-gold/60" : ""}`} />
+                    <FieldError id="jt-links-err">{linkErrors.linkedinUrl}</FieldError>
                   </Field>
                   <Field label="فيديو تدريبي أو قناة" htmlFor="jt-youtube">
-                    <input id="jt-youtube" dir="ltr" placeholder="https://youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} className={`${controlCls} text-left`} />
+                    <input id="jt-youtube" dir="ltr" placeholder="youtube.com/@..." value={form.youtubeUrl} onChange={set("youtubeUrl")} onBlur={normalizeLink("youtubeUrl")}
+                      aria-invalid={linkErrors.youtubeUrl ? true : undefined}
+                      className={`${controlCls} text-left ${linkErrors.youtubeUrl ? "border-gold/60" : ""}`} />
+                    <FieldError id="jt-youtube-err">{linkErrors.youtubeUrl}</FieldError>
                   </Field>
                   <Field label="حساب إنستغرام" htmlFor="jt-instagram">
-                    <input id="jt-instagram" dir="ltr" placeholder="https://instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} className={`${controlCls} text-left`} />
+                    <input id="jt-instagram" dir="ltr" placeholder="instagram.com/..." value={form.instagramUrl} onChange={set("instagramUrl")} onBlur={normalizeLink("instagramUrl")}
+                      aria-invalid={linkErrors.instagramUrl ? true : undefined}
+                      className={`${controlCls} text-left ${linkErrors.instagramUrl ? "border-gold/60" : ""}`} />
+                    <FieldError id="jt-instagram-err">{linkErrors.instagramUrl}</FieldError>
                   </Field>
                   <Field label="صفحة فيسبوك" htmlFor="jt-facebook">
-                    <input id="jt-facebook" dir="ltr" placeholder="https://facebook.com/..." value={form.facebookUrl} onChange={set("facebookUrl")} className={`${controlCls} text-left`} />
+                    <input id="jt-facebook" dir="ltr" placeholder="facebook.com/..." value={form.facebookUrl} onChange={set("facebookUrl")} onBlur={normalizeLink("facebookUrl")}
+                      aria-invalid={linkErrors.facebookUrl ? true : undefined}
+                      className={`${controlCls} text-left ${linkErrors.facebookUrl ? "border-gold/60" : ""}`} />
+                    <FieldError id="jt-facebook-err">{linkErrors.facebookUrl}</FieldError>
                   </Field>
                 </FieldRow>
               </Question>

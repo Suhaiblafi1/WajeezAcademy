@@ -204,8 +204,26 @@ export function contentFor(page: PublicPage): string {
       `<ul style="list-style:none;margin:0;padding:0">${links}</ul></nav>`,
   )
 
+  /* ═══ `data-seo` — ولمَ يُخفى عن الإنسان ولا يُحذف (٢١ سبتمبر ٢٠٢٦) ═══
+
+     شكا صاحبُ المنصّة: «تظهر لي هذه الصفحةُ عند فتح الموقع أو الدخول أو
+     التحديث، لأقلّ من ثانية — ولا أدري من أين تأتي».
+
+     وهي هذه: يرسمها المتصفّحُ فور وصول HTML، ويمحوها `createRoot().render()`
+     عند أوّل تصيير. فالوميضُ هو الفجوةُ بين الرسمَتين — وكانت **مقصودةً**
+     بالبند الثالث أعلاه: «نصٌّ يُقرأ مكان شاشةٍ فارغة». غير أنّ ما يُقرأ في
+     جزءٍ من ثانيةٍ لا يُقرأ، وإنّما يُرى صفحةً غريبةً تومض فتُقلق.
+
+     فبقي البندان الأوّلان — وهما اللذان لا بديلَ لهما: الزاحفُ في قراءته
+     الأولى، ومحرّكاتُ الإجابة التي لا تشغّل جافاسكربت أصلا. وسقط الثالث
+     بقرار صاحبه.
+
+     وليس إخفاءً عن الزاحف وإظهارا للإنسان — بل عكسُه تماما: من لا يشغّل
+     جافاسكربت (وهو الزاحفُ الذي كُتب له هذا) يراه كما كان، ومن يشغّلها يصله
+     التطبيقُ نفسُه بعد أجزاءٍ من الثانية. فالمخفيُّ لا يُخفي شيئا عن أحد —
+     إنّما يمنع رسمَ ما سيُمحى بعد لحظة. */
   return (
-    `${SEO_START}<div style="max-width:48rem;margin:0 auto;padding:2.5rem 1.25rem;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif">` +
+    `${SEO_START}<div data-seo style="max-width:48rem;margin:0 auto;padding:2.5rem 1.25rem;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif">` +
     `<img src="/logo-mark.png" alt="أكاديمية وجيز" width="56" height="56" style="display:block;margin-bottom:1.25rem" />` +
     parts.join('\n      ') +
     `</div>${SEO_END}`
