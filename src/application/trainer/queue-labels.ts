@@ -73,14 +73,29 @@ export function verdictBadges(f: VerdictFacts): VerdictBadge[] {
 export type BookingLabel =
   /** حجز، ولم يحن موعدُه بعد */
   | { kind: 'upcoming'; at: string }
-  /** حجز، ومضى موعدُه ولم تُسجَّل نتيجتُه — لقاءٌ ينتظر من يكتب قولَه فيه */
+  /** حجز، ومضى موعدُه ولنا فيه قولٌ مكتوب — جرى اللقاءُ وانتهى أمرُه */
+  | { kind: 'held'; at: string }
+  /** حجز، ومضى موعدُه ولا قولَ لنا فيه — لقاءٌ ينتظر من يكتب نتيجتَه */
   | { kind: 'overdue'; at: string }
   /** يُقبل حجزُه ولم يحجز */
   | { kind: 'unbooked' }
   /** لا خبرَ يُقال: انتهى أمرُ موعده، أو حالتُه لا تحجز، أو لا يُوثَق ما نعرفه */
   | null
 
-export interface BookingFacts {
+/* ═══ وحقائقُ النتيجة منها — لا حقلُ الموعد وحدَه (٢١ سبتمبر ٢٠٢٦) ═══
+
+   شكا صاحبُ المنصّة: «لماذا مكتوبٌ هنا بلا نتيجة ونحن وضعنا نتيجتَه وهي
+   ظاهرة؟» — وصفُّه يحمل «مضى موعدُه — بلا نتيجة» و«يجتاز» جنبا إلى جنب.
+
+   وعلّتُه أنّ «المعلَّق» كان يُقاس بـ`TrainerInterview.outcome` وحدَها، وهي
+   ما يسجّله مُجرِي المقابلة في بطاقة الموعد. أمّا قرارُ رابط التقييم
+   (`TrainerApplicationReview.verdict`) فلم يكن يُقرأ هنا — **وهو قولُنا
+   فيه بعينه**، ومعروضٌ في الصفّ نفسِه على بُعد شارةٍ واحدة.
+
+   فصار الصفُّ يناقض نفسَه: يقول «لا قولَ لنا فيه» وإلى جانبه قولُنا فيه.
+   ولا تكفي أن تُبدَّل الكلمة: الشارةُ ذهبيّةٌ لأنّها **عملٌ علينا**، ومن
+   كُتب قرارُه لا عملَ علينا في نتيجته. فتُقرأ النتيجةُ من مصدرَيها معا. */
+export interface BookingFacts extends VerdictFacts {
   status: string
   /** المواعيدُ القائمة — لا ملغًى فيها ولا غياب */
   interviewsCount: number
@@ -98,6 +113,12 @@ export interface BookingFacts {
  * يُعرَض عليه زرُّ «ذكّره بحجز الموعد» هو من يُقال عنه إنّه لم يحجز، ولا
  * أحدَ غيره. ولو كُتب شرطٌ ثانٍ هنا لَافترق الليبلُ عن الزرّ تحته.
  *
+ * ═══ و«بلا نتيجة» لا تُقال لمن كُتب قولُنا فيه ═══
+ *
+ * الذهبيُّ هنا يعني **عملا علينا**: لقاءٌ جرى وينتظر من يكتب نتيجتَه. ومن
+ * كُتب قرارُه في رابط التقييم فلا عملَ علينا في نتيجته — فيُقال «جرى لقاؤه»
+ * هادئا، ويبقى التاريخُ مقروءا.
+ *
  * ═══ ولا يُقال «لم يحجز» حين لا يُعرف من حجز ═══
  *
  * حين تسقط مزامنةُ Calendly تصدق «لم يحجز» على الجميع — فيُقرأ إهمالا من
@@ -112,7 +133,15 @@ export function bookingLabel(
   if (f.pendingInterviewAt) {
     const at = new Date(f.pendingInterviewAt)
     if (Number.isNaN(at.getTime())) return null
-    return { kind: at.getTime() > opts.now.getTime() ? 'upcoming' : 'overdue', at: f.pendingInterviewAt }
+    if (at.getTime() > opts.now.getTime()) return { kind: 'upcoming', at: f.pendingInterviewAt }
+    /* ═══ ومضى — فهل لنا فيه قول؟ ═══
+
+       `verdictBadges` هي المِحَكُّ نفسُه الذي يُعرض به القولُ في الصفّ، فلا
+       يمكن أن تظهر شارةُ نتيجةٍ ويُقال «بلا نتيجة» إلى جانبها: مصدرُ
+       الحكمَين واحد. ولو كُتب الشرطُ هنا ثانيةً لانحرف أحدُهما يوما. */
+    return verdictBadges(f).length > 0
+      ? { kind: 'held', at: f.pendingInterviewAt }
+      : { kind: 'overdue', at: f.pendingInterviewAt }
   }
   if (!opts.trusted) return null
   return canRemindToBook({ status: f.status, liveInterviews: f.interviewsCount })

@@ -85,7 +85,19 @@ const VERDICT_SOURCE_AR: Record<string, string> = {
   review: "التقييم",
 };
 
-/* ═══ وليبلُ الموعد — ثلاثةُ أحوالٍ بثلاث نبرات ═══
+/* ═══ وصدرُ ليبل الموعد — كلمةٌ لكلّ حال ═══
+
+   و«مضى موعدُه — بلا نتيجة» لا تُقال إلّا حين لا قولَ لنا فيه أصلا: شكا
+   صاحبُ المنصّة (٢١ سبتمبر ٢٠٢٦) أنّ صفّا يحمل «بلا نتيجة» وإلى جانبه
+   شارةُ «يجتاز» — «ونحن وضعنا نتيجتَه وهي ظاهرة». والحكمُ في
+   `queue-labels.ts`، وهذه ألفاظُه. */
+const BOOKING_LEAD_AR: Record<string, string> = {
+  upcoming: "موعدُه",
+  held: "جرى لقاؤه",
+  overdue: "مضى موعدُه — بلا نتيجة",
+};
+
+/* ═══ وليبلُ الموعد — أربعةُ أحوالٍ بثلاث نبرات ═══
 
    «موعدُه القادم» خبرٌ هادئ: لا عملَ تحته حتّى يحين. و«مضى ولم تُسجَّل
    نتيجتُه» ذهبيٌّ لأنّه **عملٌ علينا نحن** — لقاءٌ جرى وينتظر من يكتب قولَه
@@ -93,6 +105,8 @@ const VERDICT_SOURCE_AR: Record<string, string> = {
    موعدٍ لم يُحجَز لا حكمٌ على صاحبه، وزرُّ التذكير في قائمة الصفّ هو عملُه. */
 const BOOKING_TONE: Record<string, string> = {
   upcoming: "border-white/20 text-muted-foreground",
+  /* و«جرى لقاؤه» هادئٌ كالقادم: خبرٌ عن موعدٍ وقع، وقولُنا فيه في شارته */
+  held: "border-white/20 text-muted-foreground",
   overdue: "border-gold/40 text-gold-ink",
   unbooked: "border-white/15 text-muted-foreground/80",
 };
@@ -1790,7 +1804,7 @@ export default function TrainerApplications() {
                         ? <><CalendarX2 className="h-3.5 w-3.5" aria-hidden="true" /> لم يحجز موعدا بعد</>
                         : <>
                             <CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                            {booking.kind === "overdue" ? "مضى موعدُه — بلا نتيجة" : "موعدُه"} {fmtDateTime(booking.at)}
+                            {BOOKING_LEAD_AR[booking.kind]} {fmtDateTime(booking.at)}
                           </>}
                     </span>
                   );

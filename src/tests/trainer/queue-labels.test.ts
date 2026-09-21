@@ -72,7 +72,10 @@ describe('② المتّفقان واحدٌ والمختلفان اثنان', ()
 })
 
 describe('③ «لم يحجز» تُقال لمن يُنتظَر منه حجزٌ وحدَه', () => {
-  const unbooked = { status: 'under_review', interviewsCount: 0, pendingInterviewAt: null }
+  const unbooked = {
+    status: 'under_review', interviewsCount: 0, pendingInterviewAt: null,
+    interviewOutcome: null, reviewVerdicts: [],
+  }
 
   it('من يُقبل حجزُه ولم يحجز — يُقال له ذلك', () => {
     expect(bookingLabel(unbooked, { trusted: true, now: NOW })).toEqual({ kind: 'unbooked' })
@@ -87,7 +90,7 @@ describe('③ «لم يحجز» تُقال لمن يُنتظَر منه حجزٌ
 
   it('ومن له موعدٌ قائمٌ لا يُقال له «لم يحجز» — ولو لم يكن معلَّقا', () => {
     expect(bookingLabel(
-      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: null },
+      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: null, interviewOutcome: null, reviewVerdicts: [] },
       { trusted: true, now: NOW },
     )).toBeNull()
   })
@@ -97,7 +100,7 @@ describe('③ «لم يحجز» تُقال لمن يُنتظَر منه حجزٌ
       .toBeNull()
     /* أمّا موعدٌ في القاعدة فواقعٌ ولو سقطت المزامنة — سُجّل يدويّا أو وصل قبلها */
     expect(bookingLabel(
-      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: SOON },
+      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: SOON, interviewOutcome: null, reviewVerdicts: [] },
       { trusted: false, now: NOW },
     )).toEqual({ kind: 'upcoming', at: SOON })
   })
@@ -106,22 +109,62 @@ describe('③ «لم يحجز» تُقال لمن يُنتظَر منه حجزٌ
 describe('④ وموعدُه يُقرأ في الصفّ', () => {
   it('القادمُ يُعرض تاريخا لا عددا', () => {
     expect(bookingLabel(
-      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: SOON },
+      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: SOON, interviewOutcome: null, reviewVerdicts: [] },
       { trusted: true, now: NOW },
     )).toEqual({ kind: 'upcoming', at: SOON })
   })
 
   it('وما مضى ولم تُسجَّل نتيجتُه يُنادى عليه — لا يُخفى', () => {
     expect(bookingLabel(
-      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: PAST },
+      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: PAST, interviewOutcome: null, reviewVerdicts: [] },
       { trusted: true, now: NOW },
     )).toEqual({ kind: 'overdue', at: PAST })
   })
 
   it('وتاريخٌ لا يُقرأ لا يُعرض حرفا خاما', () => {
     expect(bookingLabel(
-      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: 'ليس تاريخا' },
+      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: 'ليس تاريخا', interviewOutcome: null, reviewVerdicts: [] },
       { trusted: true, now: NOW },
     )).toBeNull()
+  })
+})
+
+/* ═══ ⑤ ولا يقول الصفُّ شيئا وضدَّه (٢١ سبتمبر ٢٠٢٦) ═══
+
+   شكا صاحبُ المنصّة: «لماذا مكتوبٌ هنا بلا نتيجة ونحن وضعنا نتيجتَه وهي
+   ظاهرة؟» — وصفُّه يحمل «مضى موعدُه — بلا نتيجة» وإلى جانبها «يجتاز».
+
+   وعلّتُه أنّ «المعلَّق» كان يُقاس بـ`TrainerInterview.outcome` وحدَها، أمّا
+   قرارُ رابط التقييم فلم يكن يُقرأ — وهو قولُنا فيه بعينه، معروضٌ في الصفّ
+   نفسِه. والشرطُ الآن `verdictBadges` نفسُها، فلا ينحرف الحكمان. */
+describe('⑤ ولا «بلا نتيجة» إلى جانب نتيجةٍ معروضة', () => {
+  const heldRow = (extra: { interviewOutcome?: string | null; reviewVerdicts?: string[] }) => ({
+    status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: PAST,
+    interviewOutcome: null, reviewVerdicts: [], ...extra,
+  })
+
+  it('قرارُ رابط التقييم يكفي — والموعدُ يُقرأ «جرى لقاؤه» لا «بلا نتيجة»', () => {
+    const row = heldRow({ reviewVerdicts: ['passed'] })
+    expect(verdictBadges(row), 'تعطّل الفحصُ: لا شارةَ نتيجةٍ أصلا').toHaveLength(1)
+    expect(bookingLabel(row, { trusted: true, now: NOW }), 'قيل «بلا نتيجة» وقولُنا فيه معروض')
+      .toEqual({ kind: 'held', at: PAST })
+  })
+
+  it('وكذلك نتيجةُ الموعد المسجَّلة — حين يبقى موعدٌ آخرُ بلا تسجيل', () => {
+    expect(bookingLabel(heldRow({ interviewOutcome: 'hold' }), { trusted: true, now: NOW }))
+      .toEqual({ kind: 'held', at: PAST })
+  })
+
+  it('ومن لا قولَ لنا فيه يبقى «بلا نتيجة» — وهي الحالُ التي وُضعت لها', () => {
+    const row = heldRow({})
+    expect(verdictBadges(row), 'تعطّل الفحصُ: له شارةُ نتيجة').toHaveLength(0)
+    expect(bookingLabel(row, { trusted: true, now: NOW })).toEqual({ kind: 'overdue', at: PAST })
+  })
+
+  it('والقادمُ يبقى قادما ولو كُتب فيه قولٌ سابق', () => {
+    expect(bookingLabel(
+      { ...heldRow({ reviewVerdicts: ['hold'] }), pendingInterviewAt: SOON },
+      { trusted: true, now: NOW },
+    )).toEqual({ kind: 'upcoming', at: SOON })
   })
 })
