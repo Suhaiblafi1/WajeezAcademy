@@ -24,6 +24,7 @@ let prisma: PrismaClient
 let app: FastifyInstance
 let svc: TrainerDossierLinkService
 let applicationId = ''
+let interviewId = ''
 let adminId = ''
 let adminCookie = ''
 
@@ -33,6 +34,15 @@ const SECRET_PHONE = '790654321'
 const SECRET_CC = '+962'
 const SECRET_ALT = 'alt-probe-9f3a@secret.invalid'
 const REFEREE_CONTACT = 'referee-probe-9f3a@secret.invalid'
+/* ═══ وقِيَمٌ في حقول اللقاء التي لا تُنتقى (٢١ سبتمبر ٢٠٢٦) ═══
+
+   صار ردُّ الرابط يحمل مواعيدَ المتقدّم ليختار القارئُ في أيّها يحكم. وبطاقةُ
+   الموعد تحمل ما لا يُعرض: ملاحظاتِ مُجرِي المقابلة، ورابطَي التأجيل والإلغاء
+   من Calendly — وهما يحملان ما يُتّصل به أحيانا.
+
+   فيُدَسُّ في كلٍّ منها مسبارٌ، ويجري عليه المسحُ العميقُ نفسُه. فإن وسّع
+   أحدٌ الانتقاءَ يوما سقط الحارسُ عليه — وهو المقصود. */
+const SECRET_INTERVIEW = 'interview-probe-9f3a@secret.invalid'
 
 /** كلُّ نصٍّ في البنية مهما عمُق — لا مفاتيحُ الجذر وحدَها */
 function allStrings(v: unknown, out: string[] = []): string[] {
@@ -79,6 +89,17 @@ beforeAll(async () => {
     },
   })
   applicationId = created.id
+
+  /* وموعدٌ قائمٌ له: القرارُ صار معلَّقا بلقاءٍ بعينه، فلا قرارَ بلا موعد */
+  const interview = await prisma.trainerInterview.create({
+    data: {
+      applicationId, scheduledAt: new Date('2026-09-18T09:00:00Z'), mode: 'remote',
+      notes: `ملاحظةُ مُجرِي المقابلة — ${SECRET_INTERVIEW}`,
+      rescheduleUrl: `https://calendly.test/reschedule/${SECRET_INTERVIEW}`,
+      cancelUrl: `https://calendly.test/cancel/${SECRET_INTERVIEW}`,
+    },
+  })
+  interviewId = interview.id
 }, 240_000)
 
 describe('الحجب: الردُّ لا يحمل ما يُتّصل به', () => {
@@ -89,7 +110,7 @@ describe('الحجب: الردُّ لا يحمل ما يُتّصل به', () => 
 
     const texts = allStrings(res.json())
     /* لا يُفحص حقلٌ بعينه: حقلٌ يُضاف غدا يجب أن يسقط الحارسُ عليه وحدَه */
-    for (const secret of [SECRET_EMAIL, SECRET_PHONE, SECRET_ALT, REFEREE_CONTACT]) {
+    for (const secret of [SECRET_EMAIL, SECRET_PHONE, SECRET_ALT, REFEREE_CONTACT, SECRET_INTERVIEW]) {
       const leaked = texts.filter((t) => t.includes(secret))
       expect(leaked, `تسرّب «${secret}» إلى الصفحة المشتركة: ${leaked.join(' | ')}`).toEqual([])
     }
@@ -134,18 +155,40 @@ describe('دورةُ حياةِ الرابط', () => {
     expect(row!.lastOpenedAt).toBeTruthy()
   })
 
-  it('يُحفَظ فيه التقييمُ ويعود في الفتحة التالية', async () => {
+  /* ═══ والقرارُ يُعلَّق بلقاءٍ بعينه (٢١ سبتمبر ٢٠٢٦) ═══
+
+     «لا أريد التقييمَ العامّ، أريده مرتبطا بالمقابلات المجدولة». فـ`interviewId`
+     جزءٌ من الحفظ لا زينةٌ فيه، ويعود في الفتحة التالية ليُعرف في أيّ لقاءٍ
+     حُكم. ونتيجةُ اللقاء تُكتب في عموده من هذا المسار نفسِه — وهو ما كان
+     مفقودا: قولٌ يُكتب في موضعٍ لا يقرؤه أحد. */
+  it('يُحفَظ فيه التقييمُ ويعود في الفتحة التالية — ويُكتب في عمود لقائه', async () => {
     const token = await newLink()
     const save = await app.inject({
       method: 'PUT', url: `/api/r/${token}/review`,
-      payload: { scores: { domain_expertise: 4, values_fit: 5 }, overallNote: 'مرشّحٌ واعد', verdict: 'passed', coursesNote: 'يراجع دوراته' },
+      payload: {
+        scores: { domain_expertise: 4, values_fit: 5 }, overallNote: 'مرشّحٌ واعد',
+        verdict: 'passed', interviewId, coursesNote: 'يراجع دوراته',
+      },
     })
-    expect(save.statusCode).toBe(200)
+    expect(save.statusCode, save.body).toBe(200)
 
     const body = (await app.inject({ method: 'GET', url: `/api/r/${token}` })).json()
     expect(body.myReview.scores).toEqual({ domain_expertise: 4, values_fit: 5 })
     expect(body.myReview.verdict).toBe('passed')
+    expect(body.myReview.interviewId, 'لا يُعرف في أيّ لقاءٍ حُكم').toBe(interviewId)
     expect(body.myReview.coursesNote).toBe('يراجع دوراته')
+
+    const held = await prisma.trainerInterview.findUnique({ where: { id: interviewId } })
+    expect(held!.outcome, 'القرارُ لم يصل عمودَ اللقاء — وهو أصلُ الشكوى').toBe('passed')
+  })
+
+  it('ولا قرارَ بلا لقاءٍ يُنسَب إليه — والقرارُ العامُّ هو ما شُكي منه', async () => {
+    const token = await newLink()
+    const save = await app.inject({
+      method: 'PUT', url: `/api/r/${token}/review`,
+      payload: { scores: { domain_expertise: 4 }, verdict: 'passed' },
+    })
+    expect(save.statusCode, 'قُبل قرارٌ لا يقول في أيّ لقاءٍ قيل').toBe(422)
   })
 
   it('⚠ والحفظُ الثاني يعدّل ولا يُنشئ صفّا ثانيا — تقييمٌ واحدٌ لكلّ قارئ', async () => {

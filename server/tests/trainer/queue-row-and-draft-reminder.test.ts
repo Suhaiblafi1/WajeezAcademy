@@ -38,6 +38,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { verdictBadges } from '@/application/trainer/queue-labels'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 
@@ -131,24 +132,34 @@ describe('نتيجةُ اللقاء في صفّ الطابور', () => {
   })
 })
 
+/* ═══ ولمَ صار الصفُّ يحمل القائلَ مع قوله (٢١ سبتمبر ٢٠٢٦) ═══
+
+   كان النداءُ يردّ أقوالا مجرّدةً منزوعةَ التكرار (`['hold']`). ثمّ قال صاحبُ
+   المنصّة: «إن كان عندنا تقييمان أحدهما اجتاز والآخر لم يجتز فليُعكَس الاثنان
+   — مقيّمان مختلفان». وقولان بلا قائلَيهما تناقضٌ يُقرأ ولا يُعرف من يُسأل عنه.
+
+   فصار الصفُّ يحمل حكمَ كلِّ قارئٍ باسمه، **وطيُّ المتّفقَين نزل إلى
+   `verdictBadges`**: لو طُويا في النداء لَضاع الاسمان قبل أن يصلا. فالمحروسُ
+   هنا أنّ الأسماءَ تصل، وأنّ الطيَّ لم يسقط في الطريق — يُفحَص من طرفَيه. */
 describe('⑥ قرارُ رابط التقييم في صفّ الطابور', () => {
   it('يصل الصفَّ كما كُتب في الرابط — وهو غيرُ ما يسجّله مُجرِي المقابلة', async () => {
     const { id } = await submitted(10)
     await prisma.trainerApplicationReview.create({
       data: { applicationId: id, reviewerName: 'قارئٌ باسمه', scores: {}, verdict: 'passed' },
     })
-    expect((await rowOf(id)).reviewVerdicts, 'قرارُ الرابط لا يصل الصفَّ').toEqual(['passed'])
+    expect((await rowOf(id)).reviewVerdicts, 'قرارُ الرابط لا يصل الصفَّ')
+      .toEqual([{ verdict: 'passed', reviewerName: 'قارئٌ باسمه' }])
   })
 
   it('وتقييمٌ بلا قرارٍ لا يُخترع له قرار', async () => {
     const { id } = await submitted(11)
     await prisma.trainerApplicationReview.create({
-      data: { applicationId: id, reviewerName: 'قارئٌ لم يحكم', scores: { evidence: 4 } },
+      data: { applicationId: id, reviewerName: 'قارئٌ لم يحكم', scores: { domain_expertise: 4 } },
     })
     expect((await rowOf(id)).reviewVerdicts, 'اختُرع قرارٌ لمن لم يحكم').toEqual([])
   })
 
-  it('وقارئان اتّفقا قولٌ واحدٌ لا قولان', async () => {
+  it('وقارئان اتّفقا: يصل قولاهما باسمَيهما، ويُطويان شارةً واحدة', async () => {
     const { id } = await submitted(12)
     await prisma.trainerApplicationReview.createMany({
       data: [
@@ -156,10 +167,19 @@ describe('⑥ قرارُ رابط التقييم في صفّ الطابور', ()
         { applicationId: id, reviewerName: 'الثاني', scores: {}, verdict: 'hold' },
       ],
     })
-    expect((await rowOf(id)).reviewVerdicts, 'كُرّر القولُ الواحد').toEqual(['hold'])
+    const row = await rowOf(id)
+    const byName = (a: { reviewerName: string | null }, b: { reviewerName: string | null }) =>
+      (a.reviewerName ?? '').localeCompare(b.reviewerName ?? '', 'ar')
+    expect([...row.reviewVerdicts].sort(byName),
+      'ضاع اسمُ أحد القارئَين قبل أن يصل').toEqual([
+      { verdict: 'hold', reviewerName: 'الأوّل' },
+      { verdict: 'hold', reviewerName: 'الثاني' },
+    ])
+    /* والطيُّ نفسُه — فلا تُعرض الكلمةُ مرّتين في الصفّ */
+    expect(verdictBadges(row).map((b) => b.key), 'كُرّر القولُ الواحد في الصفّ').toEqual(['hold'])
   })
 
-  it('واختلافُهما يصل الصفَّ بقولين — لا يُكتَم أحدُهما', async () => {
+  it('واختلافُهما يصل الصفَّ بقولين باسمَيهما — لا يُكتَم أحدُهما ولا يُجهَل قائله', async () => {
     const { id } = await submitted(13)
     await prisma.trainerApplicationReview.createMany({
       data: [
@@ -167,8 +187,15 @@ describe('⑥ قرارُ رابط التقييم في صفّ الطابور', ()
         { applicationId: id, reviewerName: 'الثاني', scores: {}, verdict: 'failed' },
       ],
     })
-    expect((await rowOf(id)).reviewVerdicts.slice().sort(), 'كُتم أحدُ القولين')
-      .toEqual(['failed', 'passed'])
+    const row = await rowOf(id)
+    expect([...row.reviewVerdicts].sort((a, b) => a.verdict.localeCompare(b.verdict)), 'كُتم أحدُ القولين')
+      .toEqual([
+        { verdict: 'failed', reviewerName: 'الثاني' },
+        { verdict: 'passed', reviewerName: 'الأوّل' },
+      ])
+    const badges = verdictBadges(row)
+    expect(badges.map((b) => b.byAr).sort(), 'وصل القولان بلا قائلَيهما')
+      .toEqual(['الأوّل', 'الثاني'])
   })
 })
 
