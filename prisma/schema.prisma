@@ -1121,21 +1121,21 @@ model TrainerApplicationReview {
 }
 
 model TrainerInterview {
-  id            String             @id @default(uuid()) @db.Uuid
-  applicationId String             @db.Uuid
+  id            String                     @id @default(uuid()) @db.Uuid
+  applicationId String                     @db.Uuid
   scheduledAt   DateTime
-  mode          String             @default("remote") // remote | in_person
-  provider      String             @default("manual") // manual | calendly
-  externalId    String?            @unique // Calendly invitee URI — idempotency + cancellation
+  mode          String                     @default("remote") // remote | in_person
+  provider      String                     @default("manual") // manual | calendly
+  externalId    String?                    @unique // Calendly invitee URI — idempotency + cancellation
   canceledAt    DateTime?
   // روابطُ Calendly للمدعوّ — تُعرض لصاحب الطلب فيغني عن التنقيب في بريده
   rescheduleUrl String?
   cancelUrl     String?
-  interviewerId String?            @db.Uuid
+  interviewerId String?                    @db.Uuid
   outcome       String? // passed | hold | failed | no_show — والغيابُ ليس حكما: لم يقع اللقاء، ويعود الطلبُ إلى ما قبل الحجز
   notes         String?
-  createdAt     DateTime           @default(now())
-  application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime                   @default(now())
+  application   TrainerApplication         @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   /// أحكامُ القرّاء في هذا اللقاء — و`outcome` أعلاه لا يُكتب إلّا باتّفاقهم
   reviews       TrainerApplicationReview[]
 
@@ -1290,6 +1290,7 @@ model TrainerProfile {
   blackouts             TrainerBlackout[]
   termAvailability      TrainerTermAvailability[]
   bankAccounts          TrainerBankAccount[]
+  issuedDiscounts       TrainerIssuedDiscount[]
 }
 
 model TrainerSkill {
@@ -2109,6 +2110,63 @@ model TrainerPayoutItem {
   payout      TrainerPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
 
   @@index([payoutId])
+}
+
+/// خصمٌ يصدره المدرّبُ من عنده لشخصٍ يسمّيه — ويُحسم من مستحقّاته لا من إيرادنا.
+///
+/// ─────────── ولمَ كيانٌ مستقلٌّ لا حقلٌ على `Coupon` ───────────
+///
+/// الكوبونُ أداةُ خصمٍ عامّة: تُصدره الإدارةُ حملةً، ويُصدره المستشارُ لعميلٍ
+/// باعتماد. وما يميّز خصمَ المدرّب ليس شكلَه بل **من يتحمّله**: دورةُ حياةٍ
+/// ماليّةٌ كاملةٌ تنتهي ببندٍ سالبٍ في كشف مستحقّاته. فهذه حقولٌ لا معنى لها
+/// على كوبونٍ عامّ (`settledItemId` · `usedOrderId` · `profileId`)، وإقحامُها
+/// عليه يجعل كلَّ قارئٍ للكوبونات يسأل عن معناها فيها.
+///
+/// وربطُهما واحدٌ لواحد: ذاك يفعل الخصمَ في السلّة (ولا يُعاد بناءُ مسار
+/// التسعير لأجل هذا)، وهذا يقول من يدفعه ومتى حُسم.
+///
+/// ─────────── ولمَ لا يُقصَر على شعبه ───────────
+///
+/// قد يُظنّ أنّه يجب أن يُقبل على ما يدرّبه هو وحدَه. والمالُ يقول غيرَ ذلك:
+/// الخصمُ يُحسم **من مستحقّاته** أينما استُعمل، فالأكاديميّةُ لا تخسر شيئا
+/// حيثما وقع. وقصرُه يصنع عطبا يقع على المتعلّم لا على المدرّب: رمزٌ يُردّ
+/// عند الدفع بلا أن يفهم صاحبُه لماذا.
+model TrainerIssuedDiscount {
+  id        String @id @default(uuid()) @db.Uuid
+  profileId String @db.Uuid
+  couponId  String @unique @db.Uuid
+
+  /// والدورةُ مشروحةٌ في `src/application/trainer/issued-discount.ts`. والقائمةُ
+  /// في تعليق السطر لا هنا: `scripts/status-checks.ts` يقرأ التعليقَ الذيليَّ
+  /// وحدَه ليولّد قيدَ القاعدة، فقائمةٌ في تعليقٍ توثيقيٍّ تمرّ بلا قيدٍ يحرسها.
+  status String @default("live") // live | used | settled | revoked
+
+  /// مبلغٌ لا نسبة — قرارُ صاحب المنصّة، وعلّتُه في ملفّ القواعد
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("USD")
+
+  /// لمن أصدره — نصٌّ يكتبه المدرّبُ ويُطبع في كشفه، فيعرف بعد شهرين عمّن حُسم
+  forWhomAr String
+  noteAr    String?
+
+  expiresAt DateTime?
+
+  /// استُعمل: في أيّ طلبٍ ومتى — والطلبُ مدفوعٌ لا مُنشأ
+  usedAt      DateTime?
+  usedOrderId String?   @db.Uuid
+
+  revokedAt DateTime?
+
+  /// حُسم: في أيّ بندٍ من أيّ كشف — والحقلُ هو ما يمنع الحسمَ مرّتين
+  settledItemId String?   @db.Uuid
+  settledAt     DateTime?
+
+  createdAt DateTime @default(now())
+
+  profile TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  coupon  Coupon         @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, status])
 }
 
 /**
@@ -3262,6 +3320,8 @@ model Coupon {
 
   orders          Order[]
   advisorRequests AdvisorRequest[]
+  /// وخصمُ المدرّب إن كان هذا الكوبونُ وجهَه — واحدٌ لواحد
+  trainerDiscount TrainerIssuedDiscount?
 
   @@index([restrictedToUserId])
 }

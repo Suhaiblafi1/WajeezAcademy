@@ -139,6 +139,19 @@ const HIGH: readonly string[] = [
 
 /* ═══ يُرسَل ويحترم تفضيلاتِه — ويصحّ جمعُه في خبرٍ يوميّ ═══ */
 const MEDIUM: readonly string[] = [
+  /* ═══ خصمُ المدرّب — مالُه يتحرّك، وهو من حرّكه ═══
+
+     الإصدارُ والإلغاءُ **فعلاه هو**، فلا يُوقَظ بخبرِ ما فعله للتوّ — لكنّه
+     يرهن بهما مستحقّا قادما، فيصحّ جمعُهما في خبرٍ يوميّ ويصحّ كتمُهما.
+     وهذا بعينه تعريفُ `medium`.
+
+     والاستعمالُ ليس فعلَه: يشتري غريبٌ برمزه فيُحسم منه مبلغٌ بعد شهر. وهو
+     أقربُ ما يكون إلى العالي، ويبقى `medium` بقصد: نتيجةٌ متوقَّعةٌ لفعلٍ
+     فعله هو وأقرّ به، وهي منشورةٌ له في «دعوتي» لحظةَ وقوعها. والعالي لا
+     يُكتَم — ومن أصدر عشرين خصما لا يُلزَم بعشرين بريدا لا يملك إيقافَها.
+
+     والإخفاقُ (`used_failed`) عطبُ نظامٍ لا خبرُ إنسان: يُقرأ في `LOW`. */
+  'trainer_discount.issue', 'trainer_discount.revoke', 'trainer_discount.used',
   /* مؤهّلٌ أُضيف، وإتاحةٌ تغيّرت */
   'trainer.qualify.auto',
   'trainer.availability.set', 'trainer.blackout.add', 'trainer.blackout.remove',
@@ -205,6 +218,9 @@ const LOW: readonly string[] = [
   'order.cancel_stale',
   'payment.webhook', 'refund.request', 'refund.provider_failed',
   'trainer_payout.generate_skipped',
+  /* خصمٌ استُعمل ولم يُقيَّد — عطبٌ يُقرأ في السجلّ ويُسوَّى بيد، ولا يُبلَّغ
+     به المدرّبُ: خبرٌ لا يفعل به شيئا، ومالُه محفوظٌ في الطلب المدفوع. */
+  'trainer_discount.used_failed',
   'rating.submit', 'submission.create',
   'support.ticket.create', 'support.ticket.priority',
   'staff.task.complete',

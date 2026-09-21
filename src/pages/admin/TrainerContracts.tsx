@@ -392,7 +392,7 @@ export default function TrainerContracts() {
           {preview && (
             <section className="mt-4">
               <h3 className="mb-2 text-sm font-bold">المعاينة</h3>
-              <pre dir="rtl" className="max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-4 text-sm leading-7">
+              <pre dir="rtl" className="contract-prose max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-4 text-sm leading-7">
                 {preview}
               </pre>
             </section>
@@ -781,7 +781,7 @@ export default function TrainerContracts() {
             <h2 className="text-lg font-black">{shownBody.title}</h2>
             <Button size="sm" onClick={() => setShownBody(null)}>أغلِقْ</Button>
           </div>
-          <pre dir="rtl" className="max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-4 text-sm leading-7">
+          <pre dir="rtl" className="contract-prose max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-4 text-sm leading-7">
             {shownBody.body}
           </pre>
         </Card>

@@ -17,6 +17,7 @@ import { getPaymentProvider, isTestProviderActive, verifyPaymentWebhook } from '
 import { getPaymentConfig } from './integrations.service'
 import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
+import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertSeasonOpen, cohortAcceptsRegistration, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
 
@@ -32,11 +33,15 @@ export class CommerceService {
   /* السلّةُ تُركَّب لا تُورَث: «بكم هذه وأيجوز شراؤها؟» سؤالٌ يُسأل، وهذه
      الخدمةُ تُحرّك المالَ بعد جوابه. */
   private cart: CartService
+  /* خصومُ المدرّب: تُقيَّد مستعمَلةً عند التسوية لا عند إنشاء الطلب — والعلّةُ
+     في رأس `trainer-discount.service.ts`. */
+  private trainerDiscounts: TrainerDiscountService
   constructor(prisma: PrismaClient) {
     this.referrals = new ReferralService(prisma)
     this.prisma = prisma
     this.enrollments = new EnrollmentService(prisma)
     this.cart = new CartService(prisma)
+    this.trainerDiscounts = new TrainerDiscountService(prisma)
   }
 
   /* ── طلب التسجيل وحجز المقعد ── */
@@ -737,6 +742,17 @@ export class CommerceService {
        والدفعة الواحدة تشتري الخطّة كلها، فتسويتها تحوّلها كلها. */
     const reqs = await this.prisma.enrollmentRequest.findMany({ where: { orderId, status: 'seat_held' } })
     const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { items: true } })
+
+    /* ═══ وخصمُ المدرّب يُقيَّد مستعمَلا هنا — لا عند إنشاء الطلب ═══
+
+       الطلبُ يُنشأ ثمّ يُهجَر فيُلغيه `reclaim_abandoned_orders`. فمن عدّه
+       مستعمَلا عند الإنشاء حسم من المدرّب مالا لم يُقبَض من أحد. وهذه
+       اللحظةُ — صيرورةُ الطلب مدفوعا — هي «شراء تم ودفع» في البند 4-10
+       حرفا بحرف.
+
+       ولا تُنتظَر ولا تُسقط شيئا: الدالّةُ لا ترمي أبدا (انظر رأسَها)، فعطبٌ
+       في قيدِ خصمٍ لا يترك متعلّما بلا تسجيلٍ عن مالٍ قُبض. */
+    await this.trainerDiscounts.markUsedForOrder(orderId, order?.couponId ?? null)
 
     /* الفاتورةُ هي الحجّة، لا سجلُّ الحجز.
 
