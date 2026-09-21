@@ -63,6 +63,7 @@ const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
 const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDepartures'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
+const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
 const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
@@ -302,6 +303,10 @@ export default function App() {
             <Route path="/admin/trainers" element={<AdminTrainerApps />} />
             {/* ج-١: بابٌ ثانٍ للإسناد يبدأ من المدرّب — وإسنادُ الشعبة يبقى في صفحتها */}
             <Route path="/admin/assign-by-trainer" element={<AssignByTrainer />} />
+            {/* سلسلةُ التشغيل شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك
+                محروسٌ بـ`trainer.applications.view` وهذه بـ`trainer.qualify`،
+                فكان المنسّقُ ومديرُ العمليّات يريان اللسانَ ويُردّان عند تحميله. */}
+            <Route path="/admin/trainer-run" element={<AdminTrainerRun />} />
             {/* ح-٤: دوراتٌ اقترحها المدرّبون — تُصنَّف قبل أن تدخل الكتالوج */}
             <Route path="/admin/course-proposals" element={<AdminCourseProposals />} />
             {/* ن-١: مراجعةُ ما يُعرض على الرفّ باسم مدرّب */}

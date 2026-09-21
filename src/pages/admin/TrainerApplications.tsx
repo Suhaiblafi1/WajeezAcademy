@@ -26,7 +26,6 @@ import { useSearchParams } from "react-router";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
-import TrainerRunOps from "./TrainerRunOps";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import ProposalsEditor from "./ProposalsEditor";
 import { teachableCountAr } from "@/application/trainer/teachable-proposals";
@@ -213,6 +212,8 @@ interface AppRow {
   reviewVerdicts: string[];
   /** موعدُه المعلَّق — أقربُ قادمٍ بلا نتيجة، وإلّا فآخرُ ماضٍ ينتظر تسجيلَها */
   pendingInterviewAt: string | null;
+  /** موعدُ آخر لقاءٍ قائمٍ له مهما كان حالُه — يُرتَّب به، ولا يُعرض */
+  interviewAt: string | null;
   /** لحظةُ آخر حركةٍ في الطلب — تُحسب بها شارةُ العمر */
   waitingSince: string;
 }
@@ -428,8 +429,20 @@ export default function TrainerApplications() {
   const [purging, setPurging] = useState<AppDetail | null>(null);
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
-  const [mode, setMode] = useState<"apps" | "run" | "changes">("apps");
-  /* ═══ اللسانان الآخران — لمن يستطيع، وحين يكون فيهما شيء ═══
+  const [mode, setMode] = useState<"apps" | "changes">("apps");
+  /* ═══ وما بقي من الألسنة — ولماذا خرج الآخران ═══
+
+     ═══ «التأهيل والإسناد» خرج إلى شاشته (٢١ سبتمبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة: «لماذا التأهيل والإسناد موجود هنا؟». وقد كان
+     محروسا بـ`trainer.qualify` فلا يُردّ من يراه — غير أنّ الحراسةَ
+     عالجت الردَّ ولم تعالج **الموضع**: هذه شاشةُ من لم يصر مدرّبا بعد،
+     وتلك سلسلةُ من صار. فصار له بابُه في «المدرّبون — التشغيل»
+     (`/admin/trainer-run`) بين أخواته: الإسنادُ والمساراتُ والرحيل.
+
+     وهو عرفُ «أتعاب المدرّبين» نفسُه: نقلُ البابِ لا توسيعُ المفتاح.
+
+     ═══ وما بقي: لسانٌ لا يدخله شيء ═══
 
      سأل صاحبُ المنصّة (٢١ سبتمبر ٢٠٢٦): «لماذا يوجد لسانا التأهيل والإسناد
      واقتراحات التعديل؟ هل نصل إليهما من حساب كلّ مدرّب؟ فلماذا هما هنا
@@ -452,7 +465,6 @@ export default function TrainerApplications() {
      ولم يُبتَّ فيه (هجرةُ الإغلاق لم تمسّ إلّا `course_title_edit`)، وحذفُ
      شاشته يتركه بلا من يراه. فاللسانُ يُطوى ولا يختفي: لا يُعرض إلّا إذا
      كان فيه ما ينتظر، وعددُه مكتوبٌ عليه. */
-  const canQualify = user?.permissions?.includes("trainer.qualify") ?? false;
   const canReviewChanges = user?.permissions?.includes("trainer.change.review") ?? false;
   const [openChanges, setOpenChanges] = useState(0);
 
@@ -616,13 +628,12 @@ export default function TrainerApplications() {
      مكتوبٌ عليه: طابورٌ يُعرض فارغا أبدا يزاحم عينَ من يفرز. */
   const tabs = ([
     { key: "apps", label: "الطلبات", show: true },
-    { key: "run", label: "التأهيل والإسناد", show: canQualify },
     { key: "changes", label: `اقتراحات تعديل الدورات (${openChanges})`, show: openChanges > 0 },
   ] as const).filter((t) => t.show);
 
   /* ومن كان في لسانٍ ثمّ لم يعد يُعرض يعود إلى «الطلبات» — ولا يُترك أمام
      شاشةٍ بيضاء: اللسانُ المرسومُ والمحتوى المعروضُ يقرآن هذه لا `mode`. */
-  const shown: "apps" | "run" | "changes" = tabs.some((t) => t.key === mode) ? mode : "apps";
+  const shown: "apps" | "changes" = tabs.some((t) => t.key === mode) ? mode : "apps";
 
   /* ما ينتظر الفرزَ الأوّليَّ: `submitted` وحدَها — وهي الخطوةُ التي يقول
      شريطُ المسار فيها «أنت هنا». وما بعدها بيد اللجنة الأكاديميّة، فعدُّه
@@ -1694,7 +1705,6 @@ export default function TrainerApplications() {
         )}
       </div>
 
-      {shown === "run" && <TrainerRunOps />}
       {shown === "changes" && <TrainerChangeRequests />}
       {/* ونُقلت «مستحقات المدربين» إلى شاشتها (`/admin/trainer-compensation`):
           بابُ هذه الشاشة `trainer.applications.view` والأتعابُ محروسةٌ

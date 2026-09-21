@@ -125,3 +125,94 @@ describe('ترتيبُ طابور الطلبات', () => {
     }
   })
 })
+
+/* ═══ وترتيبٌ بتاريخ المقابلة (٢١ سبتمبر ٢٠٢٦) ═══
+
+   «أحتاج ترتيبا إضافيّا للأسماء من خلال تاريخ المقابلة، من الأقدم للأحدث
+   مثلا». وكان الطابورُ يُرتَّب بتاريخ التقديم أو الاسم أو الرقم أو الحالة
+   — ولا شيءَ فيها يقول متى يلتقيه.
+
+   ═══ وحكمان فيه ليسا بديهيَّين ═══
+
+   ① **من لا موعدَ له يقع آخرا في الاتّجاهَين.** لو عُومل الفراغُ تاريخا
+      لَتصدّر النازلَ أو الصاعدَ، فيُقرأ ترتيبٌ بالمقابلة نصفُه بلا مقابلة.
+   ② **والمجهولُ يُقاس بوجوده لا بقيمته.** صفٌّ لم يُرسِل الحقلَ
+      (`undefined`) وصفٌّ أرسله فارغا (`null`) كلاهما «بلا موعد» —
+      ومقارنتُهما بالمساواة تُنتج مقارِنا متناقضا يُفسد الترتيبَ كلَّه. */
+describe('الترتيبُ بتاريخ المقابلة', () => {
+  const row = (reference: string, interviewAt: string | null | undefined) => ({
+    fullName: `متقدّمُ ${reference}`, reference, status: 'submitted',
+    createdAt: '2026-09-01T00:00:00.000Z', interviewAt,
+  })
+
+  const ORDER = ['submitted', 'under_review', 'rejected']
+
+  it('هو خيارٌ معروضٌ في الشاشة — لا مفتاحٌ لا يصل إليه أحد', () => {
+    expect(SORT_OPTIONS.map((o) => o.key)).toContain('interview')
+    expect(SORT_OPTIONS.find((o) => o.key === 'interview')!.labelAr).toContain('المقابلة')
+  })
+
+  it('صاعدا: الأقدمُ أوّلا — وهو ما طُلب بنصّه', () => {
+    const rows = [
+      row('TR-2', '2026-09-20T10:00:00.000Z'),
+      row('TR-1', '2026-09-10T10:00:00.000Z'),
+      row('TR-3', '2026-09-25T10:00:00.000Z'),
+    ]
+    expect(sortApplications(rows, 'interview', 'asc', ORDER).map((r) => r.reference))
+      .toEqual(['TR-1', 'TR-2', 'TR-3'])
+  })
+
+  it('ونازلا: الأحدثُ أوّلا', () => {
+    const rows = [
+      row('TR-1', '2026-09-10T10:00:00.000Z'),
+      row('TR-3', '2026-09-25T10:00:00.000Z'),
+      row('TR-2', '2026-09-20T10:00:00.000Z'),
+    ]
+    expect(sortApplications(rows, 'interview', 'desc', ORDER).map((r) => r.reference))
+      .toEqual(['TR-3', 'TR-2', 'TR-1'])
+  })
+
+  it('① ومن لا موعدَ له يقع آخرا — صعد الترتيبُ أم نزل', () => {
+    const rows = [
+      row('TR-9', null),
+      row('TR-2', '2026-09-20T10:00:00.000Z'),
+      row('TR-1', '2026-09-10T10:00:00.000Z'),
+    ]
+    for (const dir of ['asc', 'desc'] as const) {
+      const out = sortApplications(rows, 'interview', dir, ORDER).map((r) => r.reference)
+      expect(out[out.length - 1], `«بلا موعد» تصدّر الترتيبَ ${dir}`).toBe('TR-9')
+    }
+  })
+
+  /* ═══ ② ويُقاس بوجوده لا بقيمته — والفحصُ على التناظر لا على ترتيبٍ واحد ═══
+
+     مقارِنٌ يقول «أ بعد ب» **و**«ب بعد أ» متناقض. وناتجُ `sort` وحدَه لا
+     يكشفه: المحرّكُ يستعمل الإدراجَ في المصفوفات القصيرة فيخرج ترتيبٌ
+     يبدو سليما. (وقد جُرّب: حارسٌ يفحص ناتجَ أربعة صفوفٍ مرّ على النسخة
+     المعطوبة — فكان زينةً لا حارسا.)
+
+     فالفحصُ على ما يُعرّف التناقضَ نفسَه: المدخلُ المقلوبُ يُنتج المخرجَ
+     نفسَه. ومقارِنٌ متناقضٌ يقلب مخرجَه بقلب مدخله. */
+  it('② والمجهولُ مجهولٌ سواءٌ أُرسل فارغا أم لم يُرسَل — ولا يُفسد المقارِن', () => {
+    const missing = row('TR-8', undefined)
+    const empty = row('TR-9', null)
+    const forward = sortApplications([missing, empty], 'interview', 'asc', ORDER)
+    const backward = sortApplications([empty, missing], 'interview', 'asc', ORDER)
+    expect(forward.map((r) => r.reference), 'ترتيبُ المجهولَين يتبع ترتيبَ المدخل — مقارِنٌ متناقض')
+      .toEqual(backward.map((r) => r.reference))
+
+    /* ومعهما من له موعدٌ: يتصدّران أم يتذيّلان؟ */
+    const out = sortApplications(
+      [missing, row('TR-1', '2026-09-10T10:00:00.000Z'), empty, row('TR-2', '2026-09-20T10:00:00.000Z')],
+      'interview', 'asc', ORDER,
+    ).map((r) => r.reference)
+    expect(out.slice(0, 2), 'من له موعدٌ لم يتصدّر').toEqual(['TR-1', 'TR-2'])
+  })
+
+  it('ولا يُبدَّل ترتيبُ المتساوين بين تصييرٍ وآخر — الفاصلُ هو الرقم', () => {
+    const same = '2026-09-20T10:00:00.000Z'
+    const rows = [row('TR-3', same), row('TR-1', same), row('TR-2', same)]
+    expect(sortApplications(rows, 'interview', 'asc', ORDER).map((r) => r.reference))
+      .toEqual(['TR-1', 'TR-2', 'TR-3'])
+  })
+})

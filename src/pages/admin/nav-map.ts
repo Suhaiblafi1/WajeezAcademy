@@ -131,6 +131,12 @@ export const allSections: AdminNavSection[] = [
     title: "المدرّبون — التشغيل",
     icon: UserCheck,
     items: [
+      /* سلسلةُ التشغيل: البتُّ في طلبات التأهيل · التأهيلُ المباشر · الإسنادُ
+         لشعبة · اعتمادُ الظهور العامّ · الإيقاف. وكانت لسانا في «طلبات
+         المدربين»، وبابُ تلك `trainer.applications.view` وهذه `trainer.qualify`
+         — فيراها من لا يملكها ويُردّ عند تحميلها (٢١ سبتمبر ٢٠٢٦). */
+      { to: "/admin/trainer-run", label: "التأهيلُ والإسناد", icon: GraduationCap, need: "trainer.qualify",
+        descAr: "من صار مدرّبا: يُؤهَّل لدورةٍ ويُسنَد لشعبةٍ ويُعتمَد ظهورُه" },
       /* ج-١: «أجد صعوبةً بالبحث عن الدورات» — بابٌ يبدأ من الإنسان. وصلاحيّتُه
          `trainer.assign`: هي ما يفعله، والتأهيلُ في مكانه محروسٌ بمساره. */
       { to: "/admin/assign-by-trainer", label: "إسنادٌ من المدرّب", icon: UserCheck, need: "trainer.assign",

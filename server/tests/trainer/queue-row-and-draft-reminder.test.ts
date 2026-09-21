@@ -227,6 +227,53 @@ describe('⑦ وموعدُه المعلَّق يصل الصفَّ تاريخا',
   })
 })
 
+/* ═══ ⑨ ومتى موعدُ لقائه — للترتيب لا للعرض (٢١ سبتمبر ٢٠٢٦) ═══
+
+   «أحتاج ترتيبا إضافيّا للأسماء من خلال تاريخ المقابلة، من الأقدم للأحدث».
+   وهو غيرُ `pendingInterviewAt`: ذاك **المعلَّق** وحدَه ويسقط عمّن سُجّلت
+   نتيجتُه، فلو رُتّب به لَتذيّل كلُّ من قُوبل وانتهى أمرُه وكأنّه بلا
+   موعدٍ أصلا. */
+describe('⑨ وتاريخُ المقابلة يصل الصفَّ ليُرتَّب به', () => {
+  it('من سُجّلت نتيجتُه له تاريخٌ يُرتَّب به — وإن لم يبقَ له معلَّق', async () => {
+    const { id } = await submitted(21)
+    const at = new Date('2026-09-12T09:00:00Z')
+    await prisma.trainerInterview.create({
+      data: { applicationId: id, scheduledAt: at, mode: 'remote', outcome: 'passed' },
+    })
+    const row = await rowOf(id)
+    expect(row.interviewAt, 'من قُوبل وانتهى أمرُه بلا تاريخٍ يُرتَّب به').toEqual(at)
+    expect(row.pendingInterviewAt, 'موعدٌ انتهى أمرُه عُدّ معلَّقا').toBeNull()
+  })
+
+  it('ومن لم يحجز فلا تاريخَ له — فيقع آخرا في الترتيب', async () => {
+    const { id } = await submitted(22)
+    expect((await rowOf(id)).interviewAt, 'اختُرع تاريخُ مقابلةٍ لمن لم يحجز').toBeNull()
+  })
+
+  it('والملغى لا تاريخَ له — موعدٌ أُلغي لم يقع', async () => {
+    const { id } = await submitted(23)
+    await prisma.trainerInterview.create({
+      data: {
+        applicationId: id, scheduledAt: new Date('2026-09-12T09:00:00Z'), mode: 'remote',
+        canceledAt: new Date('2026-09-13T09:00:00Z'),
+      },
+    })
+    expect((await rowOf(id)).interviewAt, 'رُتّب بموعدٍ مُلغًى').toBeNull()
+  })
+
+  it('ومن قوبل مرّتين فالأحدثُ موعدا هو تاريخُه', async () => {
+    const { id } = await submitted(24)
+    const later = new Date('2026-09-18T09:00:00Z')
+    await prisma.trainerInterview.createMany({
+      data: [
+        { applicationId: id, scheduledAt: new Date('2026-09-02T09:00:00Z'), mode: 'remote', outcome: 'hold' },
+        { applicationId: id, scheduledAt: later, mode: 'remote', outcome: 'passed' },
+      ],
+    })
+    expect((await rowOf(id)).interviewAt, 'قُرئ الموعدُ الأقدمُ تاريخا له').toEqual(later)
+  })
+})
+
 describe('⑧ ونتيجتُه لا تُمحى بحجزٍ جديد', () => {
   it('من سُجّلت نتيجتُه ثمّ حجز لقاءً ثانيا — يبقى قولُنا فيه وينضمّ موعدُه', async () => {
     const { id } = await submitted(20)
