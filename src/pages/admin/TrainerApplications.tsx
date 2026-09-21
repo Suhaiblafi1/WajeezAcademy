@@ -483,6 +483,32 @@ export default function TrainerApplications() {
   /* رابط الدعوة بعد إنشائها — يُعرض للمسؤول ليسلّمه حين لا يصل البريد */
   const [invite, setInvite] = useState<{ url: string; delivery: string } | null>(null);
   const [mode, setMode] = useState<"apps" | "run" | "changes">("apps");
+  /* ═══ اللسانان الآخران — لمن يستطيع، وحين يكون فيهما شيء ═══
+
+     سأل صاحبُ المنصّة (٢١ سبتمبر ٢٠٢٦): «لماذا يوجد لسانا التأهيل والإسناد
+     واقتراحات التعديل؟ هل نصل إليهما من حساب كلّ مدرّب؟ فلماذا هما هنا
+     إذًا؟». وتحت السؤال عطبان:
+
+     ① **لسانٌ يُعرض لمن يُردّ عند أوّل نقرة.** بابُ هذه الشاشة
+        `trainer.applications.view`، ونداءَا «التأهيل والإسناد» كلاهما
+        (`/trainers/ops` و`/qualification-requests`) يشترطان
+        `trainer.qualify`. فالمنسّقُ الأكاديميُّ ومديرُ العمليّات يريانه
+        ويُردّان عند التحميل نفسِه. وهو العطبُ الذي خرجت له «أتعاب
+        المدربين» إلى شاشتها، فلا يُعاد من باب آخر.
+
+     ② **ولسانٌ لا يدخله شيء.** «اقتراحات تعديل الدورات» طابورُ قرارٍ
+        بلا بريد: مسالكُ الإرسال من جانب المدرّب حُذفت (٨ سبتمبر ٢٠٢٦)
+        وقناةُ اسم الدورة أُغلقت بقراره (١٧ سبتمبر). فهو فارغٌ أبدا، وكان
+        يقول لقارئه «تصل من بوابة المدرب ← اقتراحاتي» — وذاك بابٌ لا وجودَ
+        له.
+
+     **ولا يُحذف مسارُه**: قد يبقى في القاعدة اقتراحٌ أُرسل قبل حذف الباب
+     ولم يُبتَّ فيه (هجرةُ الإغلاق لم تمسّ إلّا `course_title_edit`)، وحذفُ
+     شاشته يتركه بلا من يراه. فاللسانُ يُطوى ولا يختفي: لا يُعرض إلّا إذا
+     كان فيه ما ينتظر، وعددُه مكتوبٌ عليه. */
+  const canQualify = user?.permissions?.includes("trainer.qualify") ?? false;
+  const canReviewChanges = user?.permissions?.includes("trainer.change.review") ?? false;
+  const [openChanges, setOpenChanges] = useState(0);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
@@ -503,6 +529,15 @@ export default function TrainerApplications() {
       .then(setSyncTrust)
       .catch(() => setSyncTrust(null));
   }, []);
+  /* وعددُ ما ينتظر في طابور الاقتراحات — ولا يُنادى من لا يملك بابَه، فنداءٌ
+     يُردّ ٤٠٣ في كلّ فتحةِ شاشةٍ ضجيجٌ في السجلّ لا خبرٌ فيه. ولا يُسقِط
+     فشلُه الطابورَ: هو خبرٌ عن لسانٍ آخر. */
+  useEffect(() => {
+    if (!canReviewChanges) { setOpenChanges(0); return; }
+    void apiGet<{ open: number }>("/api/admin/trainer-change-requests/open-count")
+      .then((r) => setOpenChanges(r.open))
+      .catch(() => setOpenChanges(0));
+  }, [canReviewChanges]);
   /* نبض صامت كل دقيقة — طلبات الترشح الجديدة تظهر دون تحديث يدوي */
   const silentReload = useCallback(() => { void load(true); }, [load]);
   useAutoRefresh(silentReload, 60_000);
@@ -626,6 +661,22 @@ export default function TrainerApplications() {
       setBusy(false);
     }
   };
+
+  /* ═══ الألسنةُ المعروضة — وما لا يُعرض لا يُقصَد ═══
+
+     «الطلبات» لا شرطَ لها: بابُ الشاشة هو بابُها. و«التأهيل والإسناد»
+     بـ`trainer.qualify` — وهي ما يشترطه نداءاه كلاهما، فلا يُعرض لسانٌ
+     يُردّ عند تحميله. و«اقتراحات تعديل الدورات» بوجود ما ينتظر فيه، وعددُه
+     مكتوبٌ عليه: طابورٌ يُعرض فارغا أبدا يزاحم عينَ من يفرز. */
+  const tabs = ([
+    { key: "apps", label: "الطلبات", show: true },
+    { key: "run", label: "التأهيل والإسناد", show: canQualify },
+    { key: "changes", label: `اقتراحات تعديل الدورات (${openChanges})`, show: openChanges > 0 },
+  ] as const).filter((t) => t.show);
+
+  /* ومن كان في لسانٍ ثمّ لم يعد يُعرض يعود إلى «الطلبات» — ولا يُترك أمام
+     شاشةٍ بيضاء: اللسانُ المرسومُ والمحتوى المعروضُ يقرآن هذه لا `mode`. */
+  const shown: "apps" | "run" | "changes" = tabs.some((t) => t.key === mode) ? mode : "apps";
 
   /* ما ينتظر الفرزَ الأوّليَّ: `submitted` وحدَها — وهي الخطوةُ التي يقول
      شريطُ المسار فيها «أنت هنا». وما بعدها بيد اللجنة الأكاديميّة، فعدُّه
@@ -1549,7 +1600,7 @@ export default function TrainerApplications() {
           المنصّة عن العلّة في سبع شكاوى قبل أن تُوجد.
 
           فهو هنا، حيث يقع العملُ الذي يتعطّل. */}
-      {mode === "apps" && syncTrust && !syncTrust.trusted && (
+      {shown === "apps" && syncTrust && !syncTrust.trusted && (
         <Card tone="warn" className="mb-4 flex flex-wrap items-start gap-2 !py-3">
           <ServerOff className="mt-0.5 h-4 w-4 shrink-0 text-gold" />
           <div className="min-w-0 flex-1">
@@ -1563,7 +1614,7 @@ export default function TrainerApplications() {
         </Card>
       )}
 
-      {mode === "apps" && filter === "" && (
+      {shown === "apps" && filter === "" && (
         <WorkHeader
           loading={loading}
           icon={ClipboardList}
@@ -1578,16 +1629,21 @@ export default function TrainerApplications() {
       )}
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <div className="flex rounded-full border border-white/15 p-1">
-          {([["apps", "الطلبات"], ["run", "التأهيل والإسناد"], ["changes", "اقتراحات تعديل الدورات"]] as const).map(([k, label]) => (
-            /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
-               الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
-               يتنازعان العين — وهو ما استقرّ عليه لسانُ الشعبة قبله. */
-            <Button key={k} tone={mode === k ? "confirm" : "ghost"} onClick={() => setMode(k)}>
-              {label}
-            </Button>
-          ))}
-        </div>
+        {/* ولا يُرسَم شريطُ ألسنةٍ للسانٍ واحد: زرٌّ مختارٌ أبدا لا يُنقَر
+            ولا يُبدّل شيئا هو إطارٌ حول عنوانٍ لا لسان. فمن لم يبقَ له
+            غيرُ «الطلبات» رأى الطلباتِ بلا شريطٍ فوقها. */}
+        {tabs.length > 1 && (
+          <div className="flex rounded-full border border-white/15 p-1">
+            {tabs.map((t) => (
+              /* الفيروزيُّ للسان المختار لا الذهبيّ: الذهبيُّ فعلُ الصفحة
+                 الأوّل (زرُّ الرأس)، ولسانٌ ذهبيٌّ إلى جانبه ذهبيّان
+                 يتنازعان العين — وهو ما استقرّ عليه لسانُ الشعبة قبله. */
+              <Button key={t.key} tone={shown === t.key ? "confirm" : "ghost"} onClick={() => setMode(t.key)}>
+                {t.label}
+              </Button>
+            ))}
+          </div>
+        )}
         {/* ═══ ما يُستعمل ظاهرٌ، وما دونه يُطوى — ولا يختفي عاملٌ بصمت ═══
 
             قال صاحبُ المنصّة (٢٠ سبتمبر ٢٠٢٦): «مرشِّحاتُ المدربين كثيرةٌ
@@ -1598,7 +1654,7 @@ export default function TrainerApplications() {
             وما دونهما خلف «مرشّحاتٌ أخرى» — **وعددُ العاملِ منها مكتوبٌ
             على الطيّة**، فلا يُقرأ طابورٌ منقوصٌ ويُظنّ تامّا. وذاك هو
             خطرُ الطيّ كلِّه: مرشِّحٌ يعمل ولا يُرى. */}
-        {mode === "apps" && (
+        {shown === "apps" && (
           <>
             {/* ═══ أربعُ مرشِّحاتٍ خارجَ القائمة (٢١ سبتمبر ٢٠٢٦) ═══
 
@@ -1684,14 +1740,14 @@ export default function TrainerApplications() {
         )}
       </div>
 
-      {mode === "run" && <TrainerRunOps />}
-      {mode === "changes" && <TrainerChangeRequests />}
+      {shown === "run" && <TrainerRunOps />}
+      {shown === "changes" && <TrainerChangeRequests />}
       {/* ونُقلت «مستحقات المدربين» إلى شاشتها (`/admin/trainer-compensation`):
           بابُ هذه الشاشة `trainer.applications.view` والأتعابُ محروسةٌ
           بـ`trainer.compensation.manage`، ولا تلتقيان إلّا في `super_admin`.
           فكانت الماليةُ تُردّ على الباب، والمديرُ الأكاديميُّ يبلغ اللسانَ
           ويُردّ عند أوّل فعل. */}
-      {mode === "apps" && (loading ? (
+      {shown === "apps" && (loading ? (
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
       ) : apps.length === 0 ? (
         <Panel className="grid place-items-center py-20 text-center">

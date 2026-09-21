@@ -425,7 +425,14 @@ export function TrainerChangeRequests() {
       {rows.length === 0 && (
         <Panel className="grid place-items-center py-16 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-3 text-sm text-muted-foreground">لا اقتراحات من المدربين بعد — تصل من بوابة المدرب ← «اقتراحاتي».</p>
+          {/* ولا يُحال القارئُ إلى بابٍ لا وجودَ له: مسالكُ الإرسال من جانب
+              المدرّب حُذفت (٨ سبتمبر ٢٠٢٦) وقناةُ اسم الدورة أُغلقت (١٧
+              سبتمبر). وكان يُقال هنا «تصل من بوابة المدرب ← اقتراحاتي»،
+              فيذهب من قرأها يبحث عن لسانٍ ليس عند المدرّب. */}
+          <p className="mt-3 text-sm text-muted-foreground">
+            لا اقتراحَ ينتظر قرارا. ولا بابَ يصل منه جديدٌ اليومَ — قناةُ اقتراح
+            التعديل مغلقةٌ من جانب المدرّب، وما هنا ما وصل قبل إغلاقها.
+          </p>
         </Panel>
       )}
       {rows.map((r) => (

@@ -312,3 +312,50 @@ describe('ق٥ بابُ اسم الدورة مغلقٌ من جذره', () => {
     expect(fresh.titleAr, 'تبدّل اسمُ الدورة في إصدارٍ لا بندَ اسمٍ فيه').toBe(titleBefore)
   })
 })
+
+/* ═══ وعددُ المنتظِر — به يُعرض لسانُ الطابور أو يُطوى (٢١ سبتمبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة: «لماذا يوجد لسانُ اقتراحات التعديل؟». وجوابُه أنّه
+   طابورٌ لا بابَ له: مسالكُ الإرسال من جانب المدرّب حُذفت، فلا يدخله جديد.
+   فصار لا يُعرض إلّا إذا كان فيه ما ينتظر — **ولا يُحذف مسارُه**، لأنّ في
+   القاعدة قد يبقى ما أُرسل قبل حذف الباب ولم يُبتَّ فيه.
+
+   وكلُّ الحملِ على هذا العدد: إن أخطأ فعدَّ المنتهيَ ظهر لسانٌ فارغٌ أبدا،
+   وإن أخطأ فأسقط المنتظِرَ اختفى اقتراحُ مدرّبٍ بلا من يراه — وهو ما
+   تعهّدت هجرةُ الإغلاق بخلافه: «لا يضيع عملُ مدرّبٍ صامتا». */
+describe('عددُ الاقتراحات المنتظِرة', () => {
+  it('⚠️ المُرسَلُ يُعَدّ، والمنشورُ والمرفوضُ والمسحوبُ والمتجاوَزُ لا يُعَدّون', async () => {
+    const before = await changes.countOpen()
+
+    const open = await changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اقتراحٌ ينتظر قرارا كي يُعَدّ',
+      items: [{ changeType: 'module_add', afterValue: { titleAr: 'محورٌ ينتظر', hours: 2 } }],
+    })
+    expect(await changes.countOpen(), 'المُرسَلُ لا يُعَدّ منتظِرا').toBe(before + 1)
+
+    /* والمرفوضُ قرارٌ وقع — فيخرج من العدّ بالمسار نفسِه لا بكتابةٍ في القاعدة */
+    await changes.decide(open.id, managerId, 'reject', 'لا يناسب الإصدارَ الحاليّ')
+    expect(await changes.countOpen(), 'المرفوضُ بقي يُعَدّ منتظِرا').toBe(before)
+
+    /* والباقيةُ تُكتب في القاعدة: لا مسارَ يُنتج `withdrawn` ولا `superseded`
+       من جانبنا، وهما حالتان حقيقيّتان في العمود (الأولى بسحب صاحبه،
+       والثانيةُ بهجرة إغلاق القناة). */
+    const rows = await prisma.trainerChangeRequest.findMany({ select: { id: true }, take: 1 })
+    for (const status of ['withdrawn', 'superseded', 'published']) {
+      await prisma.trainerChangeRequest.update({ where: { id: rows[0].id }, data: { status } })
+      expect(await changes.countOpen(), `«${status}» يُعَدّ منتظِرا وهو منتهٍ`)
+        .toBeLessThanOrEqual(before)
+    }
+  })
+
+  it('⚠️ وما ينتظر النشرَ منتظِرٌ كذلك — اعتمادٌ بلا نشرٍ عملٌ لم يتمّ', async () => {
+    const before = await changes.countOpen()
+    const req = await changes.submit(trainerUserId, {
+      courseId: COURSE, scope: 'catalog', reason: 'اقتراحٌ يُعتمَد ولا يُنشَر بعد',
+      items: [{ changeType: 'module_add', afterValue: { titleAr: 'محورٌ معتمَدٌ لم يُنشَر', hours: 2 } }],
+    })
+    await changes.decide(req.id, managerId, 'approve_for_catalog', 'في موضعه')
+    expect(await changes.countOpen(), 'المعتمَدُ الذي لم يُنشَر خرج من العدّ فاختفى لسانُه')
+      .toBe(before + 1)
+  })
+})
