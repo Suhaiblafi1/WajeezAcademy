@@ -104,13 +104,37 @@ export async function seedRbac(prisma: PrismaClient): Promise<{ roles: number; p
    والصلاحيّات لا يكشف منحا زائدا. فمصدرُه البذرُ في النشر
    (`deploy/deploy.sh` → `catalog:import`) لا مسارُ الطلب — وهو
    الموضعُ الصحيح: مطابقةُ المصفوفة عملُ إصدارٍ لا عملُ كلّ إقلاع. */
+/** مجموعُ المنحِ الذي تصفه المصفوفة — بلا تكرارٍ داخل الدور الواحد */
+export const EXPECTED_GRANTS = Object.values(ROLE_PERMISSIONS)
+  .reduce((sum, keys) => sum + new Set(keys).size, 0)
+
 export async function ensureRbacSeeded(prisma: PrismaClient): Promise<{ seeded: boolean }> {
   try {
-    const [permissions, roles] = await prisma.$transaction([
+    /* ═══ والمنحُ يُعَدّ كذلك (٢٠ سبتمبر ٢٠٢٦) ═══
+
+       كان الفحصُ يعدّ الصلاحيّاتِ والأدوارَ ولا يعدّ المنحَ بينهما. وهما
+       لا ينقصان إلّا بقاعدةٍ جديدة، **والمنحُ ينقص بغير ذلك**: بذرٌ انقطع
+       في منتصفه، أو حذفٌ يدويّ، أو `deleteMany` في `seedRbac` جرت بمصفوفةٍ
+       ناقصةٍ في إصدارٍ سابق. فتبقى الصفوفُ الناقصةُ أبدا: العددان تامّان
+       فلا يُعاد البذر، والصلاحيّاتُ تُقرأ من `RolePermission` في كلّ طلب.
+
+       وأثرُه أنّ شاشةً تخرج من شريط الإدارة بلا خطأٍ ولا تحذير: من فقد
+       `settings.manage` لا يرى «صحّة النظام»، ومن فقد `admin.users.view`
+       لا يرى «المستخدمون والأدوار» — ومجموعةٌ تفرغ بنودُها تختفي بعنوانها.
+       وقد وقع هذا بعينه، فبحث صاحبُ المنصّة عن شاشاتٍ «مفقودة» وهي قائمة.
+
+       ولا يُقاس بالمساواة: دورٌ خارجَ المصفوفة (مُضافٌ في قاعدةٍ بعينها)
+       يحمل منحَه فيزيد العددُ ولا ينقص. فالنقصُ وحدَه يُعيد البذر. */
+    const [permissions, roles, grants] = await prisma.$transaction([
       prisma.permission.count(),
       prisma.role.count(),
+      prisma.rolePermission.count(),
     ])
-    if (permissions >= PERMISSIONS.length && roles >= Object.keys(ROLE_PERMISSIONS).length) {
+    if (
+      permissions >= PERMISSIONS.length
+      && roles >= Object.keys(ROLE_PERMISSIONS).length
+      && grants >= EXPECTED_GRANTS
+    ) {
       return { seeded: false }
     }
   } catch {

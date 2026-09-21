@@ -20,6 +20,7 @@ import { PERMISSIONS, ROLE_PERMISSIONS } from '../auth/permissions'
 import { buildStamp, commitOfSnapshotLabel, runtimeEnvLabel, snapshotInSync } from '../build-stamp'
 import { lastVerifiedCommit } from '../catalog/snapshot-verified'
 import { hasExplicitSiteUrl, publicSiteUrl } from './notification.service'
+import { SYNC_STALE_MS } from '../../src/application/trainer/interview-sync-trust'
 import { getCalendlyConfig, getCalendlySync } from './integrations.service'
 import { attestationState, MAX_AGE_DAYS } from './backup-attestation'
 
@@ -148,8 +149,11 @@ export class SystemHealthService {
       }
     }
 
-    /* أكثرُ من ثلاث دورات بلا نبض: العاملُ متوقّفٌ لا التكامل */
-    if (staleMs > 16 * 60_000) {
+    /* أكثرُ من ثلاث دورات بلا نبض: العاملُ متوقّفٌ لا التكامل.
+       والحدُّ مشتركٌ مع حكم الطابور (`interview-sync-trust`): لو نُسخ رقمُه
+       هنا لَأمكن أن تقول هذه البطاقةُ «معطَّل» ويقول الطابورُ «يعمل» في
+       اللحظة نفسِها. */
+    if (staleMs > SYNC_STALE_MS) {
       return {
         ...base,
         valueAr: `آخرُ نبضٍ ${agoAr(at, now)}`,

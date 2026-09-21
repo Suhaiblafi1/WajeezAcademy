@@ -13,6 +13,7 @@
    ⑤ **والشاشةُ تبني أزرارَها من المعجم** — لا من قائمةٍ مكتوبةٍ بيدها،
       فزرٌّ رابعٌ يُضاف في موضعٍ ولا يُضاف في الآخر. */
 
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -20,6 +21,8 @@ import {
   INTERVIEW_OUTCOMES, INTERVIEW_OUTCOME_KEYS, NO_SHOW,
   interviewHeld, isLiveInterview, outcomeLabelAr,
 } from '@/application/trainer/interview-outcome'
+
+const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 
 const NOW = new Date('2026-09-19T12:00:00Z')
 const PAST = new Date('2026-09-17T10:00:00Z')
@@ -84,7 +87,6 @@ describe('④ المعجمُ نفسُه', () => {
 })
 
 describe('⑤ والشاشةُ والخادمُ يقرآن المعجمَ لا قائمةً بأيديهما', () => {
-  const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 
   it('أزرارُ النتيجة تُبنى من `INTERVIEW_OUTCOMES`', () => {
     const ops = read('src/pages/admin/TrainerOps.tsx')
@@ -111,5 +113,56 @@ describe('⑤ والشاشةُ والخادمُ يقرآن المعجمَ لا �
     const verdicts = /const VERDICT_AR[^}]+\}/.exec(screen)?.[0] ?? ''
     expect(verdicts, 'لم يُعثر على معجم القرار').toContain('passed')
     expect(verdicts, 'غيابٌ في معجم قرارِ المراجع').not.toContain(NO_SHOW)
+  })
+})
+
+/* ═══ ⑥ ومعجمُ النتيجة لا يغادر إلى المتقدّم ═══
+
+   بُدّلت «راسب» إلى «غير مناسب» (٢٠ سبتمبر ٢٠٢٦) بلا خوفٍ من أن يقرأها
+   صاحبُها مبدَّلةً في بريدٍ وصله أمسِ — لأنّها لا تصله أصلا. وهذا ليس
+   عرَضا يُعتمد عليه: لو استوردت صفحةُ «حالةُ طلبي» هذا المعجمَ يوما،
+   لَصار حكمُنا الداخليُّ في وجه صاحبه، **ولَصار كلُّ تحسينٍ في لفظه
+   خطابا إليه يتغيّر تحت قدميه**.
+
+   فالحارسُ على المستورِدين أنفسِهم لا على ورودِ حرف: من قرأ المعجمَ فهو
+   في هذه القائمة، ومن أُضيف إليها يُقرأ اسمُه هنا فيُسأل: أهذا موظّفٌ
+   يقرّر، أم متقدّمٌ يُقرَّر فيه؟ */
+describe('⑥ ومعجمُ النتيجة للموظّف وحدَه', () => {
+  /** من يقرأ المعجم اليومَ — وكلُّهم شاشاتُ إدارةٍ أو خدماتُ خادم */
+  const ALLOWED = [
+    'server/http/routes/admin-trainer.routes.ts',
+    'server/services/reports.service.ts',
+    'server/services/trainer-interview-state.ts',
+    'server/services/trainer-review.service.ts',
+    'src/pages/admin/TrainerApplications.tsx',
+    'src/pages/admin/TrainerOps.tsx',
+  ]
+
+  /** كلُّ ملفٍّ حيٍّ (لا اختبار) يستورد المعجمَ بأيّ صيغةٍ من صيغ مساره */
+  function importers(): string[] {
+    const out = execFileSync('grep', [
+      '-rl', '--include=*.ts', '--include=*.tsx',
+      '-e', "trainer/interview-outcome",
+      '-e', "from './interview-outcome'",
+      '-e', "from '../interview-outcome'",
+      'src', 'server',
+    ], { cwd: process.cwd(), encoding: 'utf8' })
+    return out.split('\n')
+      .filter(Boolean)
+      .filter((p) => !p.includes('/tests/'))
+      .filter((p) => !p.endsWith('application/trainer/interview-outcome.ts'))
+      .sort()
+  }
+
+  it('ولا يقرؤه إلّا موظّفٌ — فمن أُضيف يُسأل عنه هنا', () => {
+    expect(importers()).toEqual([...ALLOWED].sort())
+  })
+
+  it('وصفحةُ «حالةُ طلبي» لا تحمل لفظَ الحكم — لا استيرادا ولا حرفا', () => {
+    const applicant = read('src/pages/ApplicantStatus.tsx')
+    expect(applicant, 'صفحةُ المتقدّم تستورد معجمَ الحكم').not.toContain('interview-outcome')
+    for (const o of INTERVIEW_OUTCOMES) {
+      expect(applicant, `«${o.labelAr}» مكتوبٌ في وجه صاحبه`).not.toContain(o.labelAr)
+    }
   })
 })

@@ -10,13 +10,31 @@ type PageCounts = Omit<Page<unknown>, "rows">;
     مرّره بعينه، ومن أراد عدَّها عدّها بإصبعه.
 
     وشريطٌ واحدٌ لأربعتها لا أربعةُ أشرطة: أيُّ تحسينٍ فيه — تطبيعُ الهمزة،
-    لجمُ الصفحة، صيغةُ العدّ — يقع على الأربع معا. */
+    لجمُ الصفحة، صيغةُ العدّ — يقع على الأربع معا. (وهي أربعَ عشرةَ اليومَ
+    لا أربعا.)
+
+    ═══ وعددُ الصفوف اختياريٌّ لا مفروض (٢٠ سبتمبر ٢٠٢٦) ═══
+
+    قال صاحبُ المنصّة: «اجعلنا نختار عدد الخانات التي تظهر في الصفحة
+    الواحدة». وهو حقٌّ في كلّ قائمةٍ تطول — غير أنّ كلَّ شاشةٍ تملك حالةَ
+    صفحتها وحدَها، فلو فُرض الخيارُ لَوجب تعديلُ أربعَ عشرةَ شاشةً في نفَسٍ
+    واحدٍ لتسكينِ نوعٍ.
+
+    فـ`size` و`onSize` معا أو لا شيء: من مرّرهما رأى المُبدِّل، ومن لم
+    يمرّرهما بقي شريطُه حرفا بحرف كما كان. وتبنّيه سطرٌ في كلّ شاشةٍ متى
+    أُريد — لا نشرةٌ واحدةٌ تمسّ أربعَ عشرةَ. */
+/** ما يُعرض في المُبدِّل — وثلاثةٌ تكفي: ما يُمسح بالعين، وما يُفرز، وما يُمشَّط */
+export const PAGE_SIZES = [25, 50, 100] as const;
+
 export default function ListToolbar({
-  q, onQ, onPage, view, placeholder, unit = "صفّا",
+  q, onQ, onPage, view, placeholder, unit = "صفّا", size, onSize,
 }: {
   q: string;
   onQ: (next: string) => void;
   onPage: (next: number) => void;
+  /** عددُ الصفوف في الصفحة — مع `onSize` معا، أو لا مُبدِّلَ أصلا */
+  size?: number;
+  onSize?: (next: number) => void;
   /* الصفوفُ لا تعني الشريطَ في شيء: يقرأ الأعدادَ وحدَها. ولو أخذ
      `Page<T>` لعجز عن قائمةٍ يختلف نوعُها بحسب ما يُستعرَض. */
   view: PageCounts;
@@ -41,6 +59,19 @@ export default function ListToolbar({
       </label>
 
       <div className="flex items-center gap-2 text-fine text-muted-foreground">
+        {size != null && onSize && (
+          <label className="flex items-center gap-1.5">
+            <span className="sr-only">عددُ الصفوف في الصفحة</span>
+            <select
+              value={size}
+              onChange={(e) => { onSize(Number(e.target.value)); onPage(1); }}
+              aria-label="عددُ الصفوف في الصفحة"
+              className="cursor-pointer rounded-lg border border-white/12 bg-paper/30 px-2 py-1 text-fine text-foreground focus:border-teal focus:outline-none [&>option]:bg-surface"
+            >
+              {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} في الصفحة</option>)}
+            </select>
+          </label>
+        )}
         <span>
           {view.total === 0
             ? "لا نتائج"
