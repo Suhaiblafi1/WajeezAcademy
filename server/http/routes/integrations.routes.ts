@@ -4,6 +4,7 @@
 
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import { CALENDLY_TOKEN_MAX } from '../../../src/application/integrations/calendly-token'
 import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { SystemHealthService } from '../../services/system-health.service'
@@ -121,7 +122,7 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
       signingKey: z.string().max(400).optional(),
       /* الرمزُ يُحفظ منذ صارت المزامنةُ سؤالا دوريّا — يسأل العاملُ الخلفيُّ
          بلا إنسانٍ يلصقه كلَّ مرّة. وعلّةُ النقض في `CalendlyConfig`. */
-      token: z.string().max(400).optional(),
+      token: z.string().max(CALENDLY_TOKEN_MAX).optional(),
       /* يُقبل بأيّ صورةٍ صحيحة ويُطبَّع في الخدمة — والرفضُ يحمل سببَه نصّا */
       bookingUrl: z.string().max(400).optional(),
       guests: z.string().max(400).optional(),
@@ -145,7 +146,7 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     const body = z.object({
       /* الرمزُ صار محفوظا للمزامنة الدوريّة، فلا يُلصَق ثانيةً هنا. ويبقى
          تمريرُه ممكنا لفحص رمزٍ قبل حفظه. */
-      token: z.string().trim().min(10).max(400).optional(),
+      token: z.string().trim().min(10).max(CALENDLY_TOKEN_MAX).optional(),
       apply: z.boolean().optional().default(false),
     }).parse(req.body)
     const config = await getCalendlyConfig(prisma)
