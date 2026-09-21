@@ -37,6 +37,7 @@ import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { BAR_ACTIONS, DECISIONS, recommendedFor, type Decision } from "@/application/trainer/decisions";
+import { outreachAr, type LastOutreach } from "@/application/trainer/outreach";
 import {
   bulkDecisionsFor, bulkRemindersFor, pageSelection, togglePage, unselectedMatching,
 } from "@/application/trainer/bulk";
@@ -101,6 +102,38 @@ const VERDICT_SOURCE_AR: Record<string, string> = {
 const RESULT_LABEL_AR: Record<string, string> = {
   [RESULT_NONE]: "بلا نتيجة",
   [RESULT_CONTESTED]: "مختلَفٌ عليه",
+};
+
+/* ═══ ألفاظُ حوارِ قرارِ الصفّ — ثلاثةٌ في معجمٍ لا ثلاثيّاتٌ متداخلة ═══
+
+   كانت ثنائيّةً (`reject` أو غيرُه) مكتوبةً في خمسة مواضعَ من الحوار. فلمّا
+   صار ثالثٌ لزم أن تُقرأ كلُّها معجما: خمسةُ ثلاثيّاتٍ متداخلةٍ في JSX تُقرأ
+   ولا يُعرف أيُّها لأيّ فعل. */
+const ROW_DECISION_AR: Record<"reject" | "undo_reject" | "request_info", {
+  titleAr: (name: string) => string;
+  confirmAr: string;
+  reason: { labelAr: string; minLength: number };
+  bodyAr: string;
+}> = {
+  reject: {
+    titleAr: (n) => `رفضُ طلب «${n}»`,
+    confirmAr: "ارفضه بلطف",
+    reason: { labelAr: "السببُ — للأثر الداخليّ، ولا يصل المتقدّم", minLength: 5 },
+    bodyAr: "يصله بريدُ اعتذارٍ من المنصّة، وسببُك يبقى في الأثر عندنا ولا يُرسَل — فاكتبه لمن يراجع الطلبَ بعدك.",
+  },
+  undo_reject: {
+    titleAr: (n) => `التراجعُ عن رفض «${n}»`,
+    confirmAr: "تراجَعْ وأبلِغه",
+    reason: { labelAr: "لماذا نتراجع؟ — يصل المتقدّمَ بنصّه في رسالته", minLength: 10 },
+    bodyAr: "يعود الطلبُ إلى «قيد المراجعة» بملفّه ومستنداته، ويصله بريدٌ يقول إنّنا عُدنا في قرارنا — وفيه سببُك بنصّه.",
+  },
+  /* والعشرةُ حدُّ البطاقة نفسُه: «نحتاج معلومات» ليست طلبا يُعمَل به */
+  request_info: {
+    titleAr: (n) => `طلبُ معلوماتٍ من «${n}»`,
+    confirmAr: "أرسل الطلب إليه",
+    reason: { labelAr: "ما الذي تريده منه؟ — يصله بنصّه في رسالةٍ وفي صفحة حالته", minLength: 10 },
+    bodyAr: "ينتقل الطلبُ إلى «بانتظار معلومات المرشّح»، ويصله بريدٌ فيه نصُّ ما طلبتَه — ويبقى طلبُه مفتوحا للتعديل.",
+  },
 };
 
 const BOOKING_LEAD_AR: Record<string, string> = {
@@ -214,6 +247,15 @@ function RowActions({ items, label }: { items: RowAction[]; label: string }) {
    موضعٍ واحدٍ داخل ملفّ صاحبها — لا في ثلاث شاشاتٍ يُجمَع منها. */
 type DetailTab = "dossier" | "courses" | "prep";
 
+/** شارةُ آخر مراسَلة — ولا شارةَ لمن لم يُراسَل: فراغٌ أصدقُ من «لم يُراسَل» في كلّ صفّ */
+function OutreachBadge({ last, now }: { last: LastOutreach | null; now: Date }) {
+  const ar = outreachAr(last, now);
+  if (!ar) return null;
+  return (
+    <span className="rounded-full border border-white/15 px-3 py-1 text-fine text-muted-foreground">{ar}</span>
+  );
+}
+
 interface AppRow {
   id: string; reference: string; status: string; fullName: string; email: string;
   country: string | null; jobTitle: string | null; domainYears: string | null; trainingYears: string | null;
@@ -229,6 +271,8 @@ interface AppRow {
   interviewAt: string | null;
   /** لحظةُ آخر حركةٍ في الطلب — تُحسب بها شارةُ العمر */
   waitingSince: string;
+  /** آخرُ مراسَلةٍ ننتظر بها ردَّه — `null` لمن لم يُراسَل قطّ */
+  lastOutreach: LastOutreach | null;
 }
 
 interface AppDetail extends Record<string, unknown> {
@@ -397,7 +441,7 @@ export default function TrainerApplications() {
   const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
   /* قرارٌ على صفٍّ واحدٍ من قائمة أفعاله — والسببُ يُكتب في نافذته لا في
      خانةٍ عامّة، كما في نظيرَيه داخل الملفّ. */
-  const [rowDecision, setRowDecision] = useState<{ app: AppRow; action: "reject" | "undo_reject" } | null>(null);
+  const [rowDecision, setRowDecision] = useState<{ app: AppRow; action: "reject" | "undo_reject" | "request_info" } | null>(null);
   /* ═══ مرشِّحُ «لم يحجز موعدا» ═══
 
      الطابورُ يعرض عددَ المقابلات في كلّ صفّ، ومن أراد من لم يحجز عدَّ الأصفارَ
@@ -723,6 +767,10 @@ export default function TrainerApplications() {
 
      المربّعُ في الترويسة للصفحة المعروضة وحدَها. وإن بقي وراءها مطابِقٌ لم
      يُحدَّد عُرض عرضٌ ثانٍ بعدده — فمن ظنّ أنّه حدّد خمسين لا يرفض ثلاثمئة. */
+  /* ولحظةُ القراءة واحدةٌ للصفوف كلِّها: لو قُرئت لكلّ صفٍّ على حدة لَوقع
+     منتصفُ الليل بين صفَّين فقرأ أحدُهما «اليوم» وجارُه «أمس» للحظةٍ واحدة. */
+  const renderedAt = new Date();
+
   const pageIds = view.rows.map((a) => a.id);
   const pageSel = pageSelection(pageIds, sel);
   const beyondPage = unselectedMatching(matching.map((a) => a.id), sel);
@@ -780,6 +828,22 @@ export default function TrainerApplications() {
             (result as { emailDelivery?: string } | null)?.emailDelivery,
           ),
         ),
+      });
+    }
+    /* ═══ وطلبُ المعلومات يُفتح من الطابور (٢١ سبتمبر ٢٠٢٦) ═══
+
+       قال صاحبُ المنصّة: «كان هناك سابقا طلبُ معلوماتٍ إضافيّةٍ من المدرّب،
+       لم أعد أراها هنا». وهو لم يُحذف: بابُه في بطاقة القرار داخلَ الملفّ،
+       ولم يكن في قائمة الصفّ قطّ. وموضعُه هنا كموضع أخوَيه: هو مراسَلةٌ
+       ننتظر بها ردَّه كالتذكيرَين، وهو الفعلُ الثالثُ الذي تقوله شارةُ
+       المراسَلة في الصفّ — فيُفتَح من حيث تُقرأ.
+
+       ويُفتح بحوارٍ لا بنقرةٍ صمّاء: الرسالةُ تحمل **نصَّ ما نريده** لا اسمَ
+       الحالة، وبلا نصٍّ تصله «نحتاج معلوماتٍ إضافية» وهي لا تقول شيئا. */
+    if (allows("request_info", a.status)) {
+      items.push({
+        key: "request-info", label: "اطلب معلومات إضافية", icon: FileText,
+        run: () => setRowDecision({ app: a, action: "request_info" }),
       });
     }
     if (allows("reject", a.status)) {
@@ -1951,6 +2015,19 @@ export default function TrainerApplications() {
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
+                {/* ═══ وآخرُ ما بعثناه إليه — بجانب حالته (٢١ سبتمبر ٢٠٢٦) ═══
+
+                    «أضفْ بجانب كلّ شخصٍ قمنا بتذكيره بأخذ موعدٍ أو بإكمال
+                    الطلب أو طلبِ معلوماتٍ إضافيّة… بجانب حالته».
+
+                    والحالةُ لا تقوله: «بانتظار معلومات المرشّح» واحدةٌ سواءٌ
+                    طُلبت منه اليومَ أو قبل شهر، و«مسودة» واحدةٌ سواءٌ ذُكّر
+                    صاحبُها أم لم يُذكَّر قطّ. فكان الرجلُ يُذكَّر مرّتين في
+                    يومٍ أو لا يُذكَّر شهرا.
+
+                    وخافتةٌ لا ملوّنة: هي ما فعلناه نحن لا حالُ الطلب، فلا
+                    تزاحم الحالةَ ونتيجةَ اللقاء في العين. */}
+                <OutreachBadge last={a.lastOutreach} now={renderedAt} />
               </span>
             </button>
             <RowActions label={a.fullName} items={rowActions(a)} />
@@ -1966,15 +2043,11 @@ export default function TrainerApplications() {
           فلا تُكتب جملةٌ واحدةٌ لهما. */}
       {rowDecision && (
         <ConfirmAction
-          titleAr={rowDecision.action === "reject"
-            ? `رفضُ طلب «${rowDecision.app.fullName}»`
-            : `التراجعُ عن رفض «${rowDecision.app.fullName}»`}
-          confirmLabelAr={rowDecision.action === "reject" ? "ارفضه بلطف" : "تراجَعْ وأبلِغه"}
+          titleAr={ROW_DECISION_AR[rowDecision.action].titleAr(rowDecision.app.fullName)}
+          confirmLabelAr={ROW_DECISION_AR[rowDecision.action].confirmAr}
           tone={rowDecision.action === "reject" ? "danger" : "default"}
           busy={busy}
-          reason={rowDecision.action === "reject"
-            ? { labelAr: "السببُ — للأثر الداخليّ، ولا يصل المتقدّم", minLength: 5 }
-            : { labelAr: "لماذا نتراجع؟ — يصل المتقدّمَ بنصّه في رسالته", minLength: 10 }}
+          reason={ROW_DECISION_AR[rowDecision.action].reason}
           onCancel={() => setRowDecision(null)}
           onConfirm={(reason) => {
             if (!reason) return;
@@ -1987,10 +2060,12 @@ export default function TrainerApplications() {
               ),
               target.action === "reject"
                 ? "رُدَّ الطلبُ — وأُعلم صاحبُه، وسببُك في الأثر"
-                : (result) => mailOutcomeAr(
-                  "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
-                  (result as { emailDelivery?: string } | null)?.emailDelivery,
-                ),
+                : target.action === "request_info"
+                  ? "أُرسل الطلب إليه — ونصُّه في صفحة حالته"
+                  : (result) => mailOutcomeAr(
+                    "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
+                    (result as { emailDelivery?: string } | null)?.emailDelivery,
+                  ),
             );
           }}
         >
@@ -1998,9 +2073,7 @@ export default function TrainerApplications() {
             الطلب <b dir="ltr">{rowDecision.app.reference}</b> — {rowDecision.app.fullName}.
           </p>
           <p className="mt-2 text-read leading-6 text-muted-foreground">
-            {rowDecision.action === "reject"
-              ? "يصله بريدُ اعتذارٍ من المنصّة، وسببُك يبقى في الأثر عندنا ولا يُرسَل — فاكتبه لمن يراجع الطلبَ بعدك."
-              : "يعود الطلبُ إلى «قيد المراجعة» بملفّه ومستنداته، ويصله بريدٌ يقول إنّنا عُدنا في قرارنا — وفيه سببُك بنصّه."}
+            {ROW_DECISION_AR[rowDecision.action].bodyAr}
           </p>
         </ConfirmAction>
       )}

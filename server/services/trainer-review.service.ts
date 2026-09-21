@@ -17,6 +17,7 @@ import { bookingReminderMail, decisionMailFor, draftReminderMail, rejectionUndon
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
+import { OUTREACH_ACTIONS } from '../../src/application/trainer/outreach'
 import { LIVE_INTERVIEW, pendingInterview, revertWhenNoLiveInterview } from './trainer-interview-state'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService, transitionProblemAr, type TrainerStatus } from './trainer-application.service'
@@ -196,6 +197,32 @@ export class TrainerReviewService {
         _count: { select: { documents: true, reviews: true, interviews: { where: LIVE_INTERVIEW } } },
       },
     })
+
+    /* ═══ وآخرُ ما بعثناه إليه — من الأثر، لا من عمودٍ يُكتب مرّتين ═══
+
+       «أضفْ بجانب كلّ شخصٍ قمنا بتذكيره… موضَّحا بجانب حالته». والخبرُ
+       مسجَّلٌ أصلا في `AuditEvent` منذ أوّل تذكيرٍ خرج — فلا يُكتب عمودٌ
+       ثانٍ على الطلب يقول الشيءَ نفسَه وينحرف عنه أوّلَ مرّةٍ يُنسى فيه.
+
+       واستعلامٌ واحدٌ لا واحدٌ لكلّ صفّ: الفهرسُ `[entityType, entityId,
+       createdAt]` موضوعٌ لهذا، ونازلا يقع أحدثُ ما لكلّ طلبٍ أوّلا — فأوّلُ
+       ما يُرى لمعرّفٍ هو آخرُ مراسَلته. */
+    const outreach = new Map<string, { action: string; at: Date }>()
+    if (rows.length > 0) {
+      const events = await this.prisma.auditEvent.findMany({
+        where: {
+          entityType: 'trainer_application',
+          entityId: { in: rows.map((a) => a.id) },
+          action: { in: [...OUTREACH_ACTIONS] },
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { entityId: true, action: true, createdAt: true },
+      })
+      for (const e of events) {
+        if (!outreach.has(e.entityId)) outreach.set(e.entityId, { action: e.action, at: e.createdAt })
+      }
+    }
+
     return rows.map((a) => ({
       id: a.id, reference: a.reference, status: a.status, fullName: a.fullName, email: a.email,
       country: a.country, jobTitle: a.jobTitle, domainYears: a.domainYears, trainingYears: a.trainingYears,
@@ -242,6 +269,9 @@ export class TrainerReviewService {
       /* قراراتُ روابط التقييم بأسماء قائليها — أحدثُها أوّلا، والطيُّ في
          الشاشة: من اتّفقا قولٌ واحدٌ بلا اسم، ومن اختلفا قولان بأسمائهما. */
       reviewVerdicts: a.reviews.map((r) => ({ verdict: r.verdict!, reviewerName: r.reviewerName })),
+      /* آخرُ مراسَلةٍ ننتظر بها ردَّه — و`null` لمن لم يُراسَل قطّ، وهو خبرٌ
+         كالخبر: الحالةُ لا تفرّق بين من ذُكّر أمسِ ومن لم يُذكَّر أصلا. */
+      lastOutreach: outreach.get(a.id) ?? null,
     }))
   }
 
