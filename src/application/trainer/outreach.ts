@@ -27,19 +27,63 @@
    الشاشةُ لفظَه، فيُعرض مفتاحٌ لاتينيٌّ في صفٍّ عربيّ. */
 
 import { countAr, type CountForms } from '../text/count-ar'
+import { canRemindToBook } from './application-options'
+
+/** ما يُحكَم به على الصفّ: أفعل ما طُلب منه أم لا يزال معلَّقا؟ */
+export interface OutreachSubject {
+  status: string
+  /** عددُ مواعيده القائمة — الملغى لا يُحسب */
+  interviewsCount: number
+}
 
 export interface OutreachKind {
   /** اسمُ فعل الأثر كما يُسجَّل في `AuditEvent.action` */
   action: string
   /** ما يُكتب في الصفّ — فعلٌ ماضٍ مبنيٌّ للمجهول: الفاعلُ نحن ولا يعني القارئَ */
   ar: string
+  /** أما زال ما طُلب منه معلَّقا؟ — فإن فعله ذهبت الشارةُ من صفّه */
+  pending: (row: OutreachSubject) => boolean
 }
 
-/** المراسَلاتُ التي ننتظر بها ردَّه — وترتيبُها لا يعني شيئا، فالأحدثُ يُنتقى بتاريخه */
+/* ═══ والشارةُ تذهب حين يفعل ما ذُكّر به (٢١ سبتمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «في حالة ذكّرنا شخصا بأن يحجز موعدا وبعدها حجز — يجب
+   أن تختفي ليبل ذُكّر بحجز موعد. لأنّنا لن نذكّره مرّةً أخرى، وهذا الليبل
+   يحمينا فقط من تنبيه شخصٍ مرّتين، وهنا لا حاجةَ لهذا التنبيه. ونطبّق هذا
+   على من ذُكّر بإكمال المسوّدة: إذا أكملها تختفي الملاحظةُ ويصبح مقدَّما…
+   وكأنّه أوّلَ مرّة يقدّم».
+
+   وهو الحدُّ الصحيحُ للشارة: **هي حارسٌ من تكرار التنبيه لا سجلُّ مراسَلات**.
+   فحين يسقط سببُ التنبيه تسقط معه — وكان الصفُّ يقول «مقابلة مجدولة» و«ذُكّر
+   بحجز الموعد» معا، وهما نقيضان يُقرآن في سطرٍ واحد. والسجلُّ كلُّه باقٍ في
+   الأثر لمن أراد تاريخَ ما بُعث.
+
+   **والمِحَكُّ هو مِحَكُّ الإرسال نفسُه**: الشارةُ تُعرض إن كنّا **ما زلنا
+   نستطيع** أن نبعث التذكيرَ نفسَه. فلو افترقا لَظهرت شارةٌ تحمي من تنبيهٍ
+   لا يقع، أو سقطت شارةٌ عن تنبيهٍ يقع. */
 export const OUTREACH: readonly OutreachKind[] = [
-  { action: 'trainer.interview.remind', ar: 'ذُكّر بحجز الموعد' },
-  { action: 'trainer.application.draft_remind', ar: 'ذُكّر بإكمال الطلب' },
-  { action: 'trainer.info_requested.notify', ar: 'طُلبت منه معلومات' },
+  {
+    action: 'trainer.interview.remind',
+    ar: 'ذُكّر بحجز الموعد',
+    /* مِحَكُّ `remindToBookInterview` بعينه: حالةٌ يُحجَز فيها، ولا موعدَ قائم.
+       فمن حجز ذهبت شارتُه، ومن ألغى موعدَه عادت — وهو أحوجُ الناس إليها. */
+    pending: (a) => canRemindToBook({ status: a.status, liveInterviews: a.interviewsCount }),
+  },
+  {
+    action: 'trainer.application.draft_remind',
+    ar: 'ذُكّر بإكمال الطلب',
+    /* ومِحَكُّ `remindDraftApplicant`: «مسودة» وحدَها. فمن أكملها صار مقدَّما
+       كغيره — «وكأنّه أوّلَ مرّة يقدّم». */
+    pending: (a) => a.status === 'draft',
+  },
+  {
+    action: 'trainer.info_requested.notify',
+    ar: 'طُلبت منه معلومات',
+    /* وهذه تُقرأ من الحالة لا من مِحَكِّ الإرسال: بابُ الطلب مفتوحٌ في ثمانِ
+       حالات (`INFO_REQUESTABLE`)، لكنّ **المعلَّقَ** حالةٌ واحدة — أن يكون
+       الطلبُ واقفا ينتظر ردَّه. فإن نُقل عنها فقد أُجيب أو مضى الأمر. */
+    pending: (a) => a.status === 'information_requested',
+  },
 ]
 
 /** ما يُستعلَم به في الخادم — هو المعجمُ نفسُه لا قائمةٌ ثانيةٌ تُكتب هناك */
@@ -74,11 +118,20 @@ export function outreachAgoAr(at: string, now: Date = new Date()): string | null
   return `منذ ${countAr(days, DAY_FORMS)}`
 }
 
-/** سطرُ الصفّ كاملا — لفظُ المراسَلة وقِدَمُها، و`null` لمن لم يُراسَل */
-export function outreachAr(last: LastOutreach | null | undefined, now: Date = new Date()): string | null {
+/**
+ * سطرُ الصفّ كاملا — و`null` في ثلاثٍ: لم يُراسَل، أو راسلناه بما ليس تذكيرا،
+ * **أو فعل ما ذُكّر به**. والأخيرةُ هي المقصودةُ هنا: الشارةُ حارسٌ من تكرار
+ * التنبيه، فإن سقط سببُ التنبيه سقطت معه.
+ */
+export function outreachAr(
+  last: LastOutreach | null | undefined,
+  subject: OutreachSubject,
+  now: Date = new Date(),
+): string | null {
   if (!last) return null
-  const label = outreachLabelAr(last.action)
-  if (!label) return null
+  const kind = OUTREACH.find((o) => o.action === last.action)
+  if (!kind) return null
+  if (!kind.pending(subject)) return null
   const ago = outreachAgoAr(last.at, now)
-  return ago ? `${label} · ${ago}` : label
+  return ago ? `${kind.ar} · ${ago}` : kind.ar
 }

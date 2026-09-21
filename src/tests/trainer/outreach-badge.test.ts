@@ -26,6 +26,7 @@ import {
 } from '@/application/trainer/outreach'
 import { auditActionAr } from '@/application/audit/labels'
 import { DECISIONS } from '@/application/trainer/decisions'
+import { BOOKABLE_STATUSES, canRemindToBook } from '@/application/trainer/application-options'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -75,20 +76,91 @@ describe('① معجمٌ واحدٌ للمراسَلات', () => {
   })
 })
 
+/** صاحبُ الطلب كما يُحكَم عليه — والمعلَّقُ افتراضا ليُفحَص الذهابُ وحدَه */
+const unbooked = { status: 'under_review', interviewsCount: 0 }
+const drafting = { status: 'draft', interviewsCount: 0 }
+const asked = { status: 'information_requested', interviewsCount: 0 }
+
 describe('② ولا شارةَ لمن لم يُراسَل', () => {
   it('الفراغُ لا شارةَ له', () => {
-    expect(outreachAr(null, NOW)).toBeNull()
-    expect(outreachAr(undefined, NOW)).toBeNull()
+    expect(outreachAr(null, unbooked, NOW)).toBeNull()
+    expect(outreachAr(undefined, unbooked, NOW)).toBeNull()
   })
 
   it('وفعلٌ ليس مراسَلةً لا شارةَ له — فلا مفتاحٌ لاتينيٌّ في صفّ', () => {
-    expect(outreachAr({ action: 'trainer.status.transition', at: NOW.toISOString() }, NOW)).toBeNull()
+    expect(outreachAr({ action: 'trainer.status.transition', at: NOW.toISOString() }, unbooked, NOW))
+      .toBeNull()
   })
 
   it('وتاريخٌ فاسدٌ لا يُسقط الصفَّ ولا يُعرض «Invalid Date»', () => {
     expect(outreachAgoAr('ليس تاريخا', NOW)).toBeNull()
-    expect(outreachAr({ action: OUTREACH[0].action, at: 'ليس تاريخا' }, NOW))
-      .toBe(OUTREACH[0].ar)
+    expect(outreachAr({ action: 'trainer.interview.remind', at: 'ليس تاريخا' }, unbooked, NOW))
+      .toBe('ذُكّر بحجز الموعد')
+  })
+})
+
+/* ═══ ⑥ والشارةُ تذهب حين يفعل ما ذُكّر به (٢١ سبتمبر ٢٠٢٦) ═══
+
+   «في حالة ذكّرنا شخصا بأن يحجز موعدا وبعدها حجز — يجب أن تختفي ليبل ذُكّر
+   بحجز موعد. لأنّنا لن نذكّره مرّةً أخرى، وهذا الليبل يحمينا فقط من تنبيه
+   شخصٍ مرّتين… ونطبّق هذا على من ذُكّر بإكمال المسوّدة: إذا أكملها تختفي
+   الملاحظةُ ويصبح مقدَّما… وكأنّه أوّلَ مرّة يقدّم».
+
+   وكان الصفُّ يقول «مقابلة مجدولة» و«ذُكّر بحجز الموعد» معا — نقيضان في سطر. */
+describe('⑥ والشارةُ تذهب حين يفعل ما ذُكّر به', () => {
+  const booking = { action: 'trainer.interview.remind', at: NOW.toISOString() }
+  const draft = { action: 'trainer.application.draft_remind', at: NOW.toISOString() }
+  const info = { action: 'trainer.info_requested.notify', at: NOW.toISOString() }
+
+  it('ذُكّر بالحجز ولم يحجز — فالشارةُ قائمة', () => {
+    expect(outreachAr(booking, unbooked, NOW)).toBe('ذُكّر بحجز الموعد · اليوم')
+  })
+
+  it('ثمّ حجز — فتذهب، ولا يُقرأ «مقابلة مجدولة» و«ذُكّر بحجز الموعد» معا', () => {
+    expect(outreachAr(booking, { status: 'under_review', interviewsCount: 1 }, NOW),
+      'بقيت الشارةُ وقد حجز').toBeNull()
+    expect(outreachAr(booking, { status: 'interview_scheduled', interviewsCount: 1 }, NOW))
+      .toBeNull()
+  })
+
+  it('وإن ألغى موعدَه عادت — وهو أحوجُ الناس إليها', () => {
+    expect(outreachAr(booking, { status: 'under_review', interviewsCount: 0 }, NOW))
+      .toBe('ذُكّر بحجز الموعد · اليوم')
+  })
+
+  it('وذُكّر بالإكمال ولم يُكمل — فالشارةُ قائمة', () => {
+    expect(outreachAr(draft, drafting, NOW)).toBe('ذُكّر بإكمال الطلب · اليوم')
+  })
+
+  it('ثمّ أكمل — فتذهب، ويصير مقدَّما كأنّه أوّلَ مرّةٍ يقدّم', () => {
+    expect(outreachAr(draft, { status: 'submitted', interviewsCount: 0 }, NOW),
+      'بقيت الشارةُ وقد أكمل').toBeNull()
+  })
+
+  it('وطُلبت منه معلوماتٌ ولم يُجب — فالشارةُ قائمة، فإن نُقل عنها ذهبت', () => {
+    expect(outreachAr(info, asked, NOW)).toBe('طُلبت منه معلومات · اليوم')
+    expect(outreachAr(info, { status: 'shortlisted', interviewsCount: 0 }, NOW)).toBeNull()
+  })
+
+  it('ومِحَكُّ الشارة هو مِحَكُّ الإرسال نفسُه — فلا تحمي من تنبيهٍ لا يقع', () => {
+    /* التذكيرُ بالحجز: ما تعرضه الشارةُ هو ما يقبله `canRemindToBook` */
+    const kind = OUTREACH.find((o) => o.action === 'trainer.interview.remind')!
+    for (const st of [...BOOKABLE_STATUSES, 'interview_scheduled', 'active', 'rejected']) {
+      for (const n of [0, 1]) {
+        expect(kind.pending({ status: st, interviewsCount: n }),
+          `«${st}» بـ${n} موعدا: الشارةُ تخالف مِحَكَّ الإرسال`)
+          .toBe(canRemindToBook({ status: st, liveInterviews: n }))
+      }
+    }
+  })
+
+  it('ولكلّ مراسَلةٍ مِحَكُّ تعليقها — فلا شارةَ بلا حدّ', () => {
+    for (const o of OUTREACH) {
+      expect(typeof o.pending, `«${o.action}» بلا مِحَكّ`).toBe('function')
+      /* ولا يُقال «معلَّقٌ دائما»: حالةٌ بعد القرار تُسقطها كلَّها */
+      expect(o.pending({ status: 'active', interviewsCount: 0 }),
+        `«${o.action}» تبقى بعد أن صار مدرّبا نشطا`).toBe(false)
+    }
   })
 })
 
@@ -112,7 +184,7 @@ describe('③ والقِدَمُ يُقرأ لا يُحسب', () => {
   })
 
   it('والسطرُ يجمع اللفظَ والقِدَم', () => {
-    expect(outreachAr({ action: 'trainer.application.draft_remind', at: at(3) }, NOW))
+    expect(outreachAr({ action: 'trainer.application.draft_remind', at: at(3) }, drafting, NOW))
       .toBe('ذُكّر بإكمال الطلب · منذ 3 أيّام')
   })
 })
@@ -151,6 +223,16 @@ describe('⑤ وطلبُ المعلومات يُفتح من الطابور', () 
     const lex = /request_info: \{([\s\S]*?)\n {2}\},/.exec(screen)?.[1] ?? ''
     expect(lex, 'لا لفظَ للحوار').toBeTruthy()
     expect(lex, 'الحوارُ لا يشترط نصّا').toMatch(/minLength: 10/)
+  })
+
+  it('والشاشةُ تحكم بحالِ صاحب الصفّ — لا بحالٍ مكتوبةٍ بيدها', () => {
+    /* والوحدةُ محروسةٌ أعلاه بسلوكها، وهذا ما لا يُفحَص إلّا هنا: أنّ الذي
+       يُمرَّر إليها هو **هذا الصفُّ** لا قيمةٌ ثابتة. ولو مُرّرت ثابتةٌ
+       لَقرأت الصفوفُ كلُّها حالا واحدة، ولخضرّت حرّاسُ الوحدة كلُّها. */
+    expect(screen, 'الشارةُ تُحكَم بحالٍ غير حال صاحبها')
+      .toContain('outreachAr(app.lastOutreach, app, now)')
+    expect(screen, 'شارةٌ تُصيَّر بلا صفّها')
+      .toContain('<OutreachBadge app={a} now={renderedAt} />')
   })
 
   it('ولكلّ قرارِ صفٍّ ألفاظُه — لا ثلاثيّاتٌ متداخلةٌ في التصيير', () => {

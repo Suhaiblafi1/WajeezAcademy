@@ -247,9 +247,9 @@ function RowActions({ items, label }: { items: RowAction[]; label: string }) {
    موضعٍ واحدٍ داخل ملفّ صاحبها — لا في ثلاث شاشاتٍ يُجمَع منها. */
 type DetailTab = "dossier" | "courses" | "prep";
 
-/** شارةُ آخر مراسَلة — ولا شارةَ لمن لم يُراسَل: فراغٌ أصدقُ من «لم يُراسَل» في كلّ صفّ */
-function OutreachBadge({ last, now }: { last: LastOutreach | null; now: Date }) {
-  const ar = outreachAr(last, now);
+/** شارةُ آخر مراسَلة — ولا شارةَ لمن لم يُراسَل، ولا لمن فعل ما ذُكّر به */
+function OutreachBadge({ app, now }: { app: AppRow; now: Date }) {
+  const ar = outreachAr(app.lastOutreach, app, now);
   if (!ar) return null;
   return (
     <span className="rounded-full border border-white/15 px-3 py-1 text-fine text-muted-foreground">{ar}</span>
@@ -2039,7 +2039,7 @@ export default function TrainerApplications() {
 
                     وخافتةٌ لا ملوّنة: هي ما فعلناه نحن لا حالُ الطلب، فلا
                     تزاحم الحالةَ ونتيجةَ اللقاء في العين. */}
-                <OutreachBadge last={a.lastOutreach} now={renderedAt} />
+                <OutreachBadge app={a} now={renderedAt} />
               </span>
             </button>
             <RowActions label={a.fullName} items={rowActions(a)} />
