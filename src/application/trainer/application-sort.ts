@@ -22,12 +22,18 @@
       تصييرٍ وآخر، فيقفز الصفُّ تحت يد قارئه. والفاصلُ هو المعرّف — لا
       يتكرّر ولا يتغيّر. */
 
-export type SortKey = 'created' | 'name' | 'reference' | 'status'
+export type SortKey = 'created' | 'name' | 'reference' | 'status' | 'interview'
 export type SortDir = 'asc' | 'desc'
 
 /** ما يُرتَّب به — الشاشةُ تبني قائمتَها منه فلا تُكتب الأسماءُ مرّتين */
 export const SORT_OPTIONS: readonly { key: SortKey; labelAr: string }[] = [
   { key: 'created', labelAr: 'تاريخُ التقديم' },
+  /* ═══ وتاريخُ المقابلة (٢١ سبتمبر ٢٠٢٦) ═══
+
+     «أحتاج ترتيبا إضافيّا للأسماء من خلال تاريخ المقابلة، من الأقدم
+     للأحدث مثلا». وموضعُه بعد تاريخ التقديم لا آخرَ القائمة: كلاهما
+     تاريخٌ يُفرز به الطابور، والاسمُ والرقمُ بحثٌ لا فرز. */
+  { key: 'interview', labelAr: 'تاريخُ المقابلة' },
   { key: 'name', labelAr: 'الاسم' },
   { key: 'reference', labelAr: 'رقمُ الطلب' },
   { key: 'status', labelAr: 'الحالة' },
@@ -41,6 +47,8 @@ export interface SortableApp {
   reference: string
   status: string
   createdAt: string
+  /** موعدُ آخر لقاءٍ قائمٍ له — `null` لمن لا موعدَ له */
+  interviewAt?: string | null
 }
 
 /** موضعُ الحالة في رحلة الطلب — وما لا يُعرف يقع آخرا لا أوّلا */
@@ -75,6 +83,25 @@ export function sortApplications<T extends SortableApp>(
         return a.reference.localeCompare(b.reference, 'en', { numeric: true })
       case 'status':
         return statusRank(a.status, statusOrder) - statusRank(b.status, statusOrder)
+      case 'interview': {
+        /* ═══ ومن لا موعدَ له يقع آخرا في الاتّجاهَين ═══
+
+           لو عُومل الفراغُ تاريخا لَتصدّر النازلَ أو الصاعدَ بحسب ما يُوضع
+           مكانَه — فيُقرأ ترتيبٌ بالمقابلة نصفُه بلا مقابلة. وهو حكمُ
+           `statusRank` نفسُه: «وما لا يُعرف يقع آخرا لا أوّلا».
+
+           ويُضرب في `sign` هنا ليُلغيَه ضربُ المنادي أدناه (`sign²` واحدٌ
+           دائما) — فيبقى المجهولُ أسفلَ القائمة صعدت أم نزلت.
+
+           **ويُقاس الوجودُ لا القيمة**: صفٌّ لم يُرسِل الحقلَ أصلا
+           (`undefined`) وصفٌّ أرسله فارغا (`null`) كلاهما «بلا موعد»،
+           ومقارنتُهما بـ`===` تقول إنّهما مختلفان — فيردّ المقارِنُ أنّ
+           كلًّا منهما بعد الآخر، وذاك مقارِنٌ متناقضٌ يُفسد الترتيبَ كلَّه. */
+        const aHas = Boolean(a.interviewAt)
+        const bHas = Boolean(b.interviewAt)
+        if (!aHas || !bHas) return aHas === bHas ? 0 : (aHas ? -1 : 1) * sign
+        return a.interviewAt!.localeCompare(b.interviewAt!)
+      }
       case 'created':
       default:
         /* تواريخُ ISO تُقارَن حرفيّا فتصحّ — وهي كذلك في كلّ الصفوف */
