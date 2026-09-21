@@ -11,6 +11,27 @@
    فهي هنا: تُستورَد وتُفحَص بنيتُها، والشاشةُ تصيّر ما تردّه. */
 
 import { ONE_CLICK_APPROVABLE_STATUSES } from './approval'
+import { EDITABLE_STATUSES } from './application-options'
+
+/* ═══ ومن يُطلب منه المزيد: كلُّ ما قبل القرار (٢١ سبتمبر ٢٠٢٦) ═══
+
+   كانت `under_review` وحدَها. فمن تبيّن له بعد المقابلة أو في المراجعة
+   الأكاديميّة أنّ وثيقةً تنقص لم يجد بابا — إلّا أن يراسله من بريده هو،
+   فيقع الطلبُ خارجَ المنصّة ولا يعلم به من يراجع بعده. وقال صاحبُ المنصّة:
+   «اجعلها متاحةً في جميع الحالات قبل القرار النهائيّ».
+
+   **وهي `EDITABLE_STATUSES` نفسُها إلّا المسوّدة** — لا قائمةٌ تُكتب بيدها:
+   طلبُ المعلومات يقول لصاحبه «عدِّلْ طلبَك وأعِدْه»، فإن كان بابُ التعديل
+   مغلقا فالطلبُ دعوةٌ إلى بابٍ مغلق. وبابُ التعديل مفتوحٌ **حتّى القرار**
+   بعينه («ولا يُفتح بعد القرار: المقبولُ صار مدرّبا… والمردودُ بابُه طلبٌ
+   جديد») — فالقائمتان واحدةٌ بالضرورة لا بالمصادفة.
+
+   **والمسوّدةُ تخرج وحدَها**: صاحبُها لم يُعطِنا طلبا بعدُ، فلا «إضافةَ»
+   تُطلب على ما لم يُقدَّم — وله بابُه: «ذكّره بإكمال طلبه». ولو أُدرجت
+   لَنقلت الحالةَ عن `draft` فكسرت نموذجَه وهو يكتبه. */
+export const INFO_REQUESTABLE: readonly string[] =
+  EDITABLE_STATUSES.filter((s) => s !== 'draft')
+
 
 /* ما يصلح جماعيّا: قراراتُ الفرز التي تتكرّر على عشراتٍ في جلسةٍ واحدة.
    وما بعدها (المقابلة والدرس التجريبيّ والعقد) قرارٌ فرديّ بملفٍّ يُقرأ —
@@ -76,7 +97,7 @@ export interface Decision {
 export const DECISIONS: Decision[] = [
   /* ─────────── ① ما يُقدّم الطلبَ — بترتيب تقدّمه ─────────── */
   { action: "move_to_review", label: "بدء المراجعة", from: ["submitted", "waitlisted"], tone: "main" },
-  { action: "request_info", label: "اطلب معلومات إضافية", from: ["under_review"], tone: "warn" },
+  { action: "request_info", label: "اطلب معلومات إضافية", from: [...INFO_REQUESTABLE], tone: "warn" },
   { action: "shortlist", label: "اختصار أولي", from: ["under_review"], tone: "main" },
   { action: "request_demo", label: "اطلب درسا تجريبيا", from: ["shortlisted", "interview_scheduled"], tone: "warn" },
   { action: "academic_review", label: "مراجعة أكاديمية", from: ["demo_requested"], tone: "main" },
