@@ -79,20 +79,33 @@ export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   /* المسودّة: القسمُ الأوّل وصل ولم يُكمَل — تصير مقدَّمةً حين يُكمَل */
   draft: ['submitted', 'email_verification_pending', 'withdrawn'],
   email_verification_pending: ['submitted', 'withdrawn'],
-  submitted: ['under_review', 'interview_scheduled', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  submitted: ['under_review', 'information_requested', 'interview_scheduled', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
   under_review: ['information_requested', 'shortlisted', 'interview_scheduled', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  information_requested: ['under_review', 'interview_scheduled', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
-  shortlisted: ['interview_scheduled', 'demo_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  /* ═══ ومنها يعود إلى حيث كان — وإلّا فالطلبُ فخّ (٢١ سبتمبر ٢٠٢٦) ═══
+
+     لمّا فُتح طلبُ المعلومات من كلّ ما قبل القرار لزم أن يُفتح معه الرجوع:
+     من كان في «مراجعة أكاديميّة» فطُلبت منه ورقةٌ، ثمّ أرسلها — إلى أين
+     يعود؟ لو لم يُفتَح له بابُه لَعاد إلى «قيد المراجعة» أي إلى أوّل
+     الطابور، فيُقرأ طلبُه من جديدٍ وقد قُرئ، أو يُقفز به إلى القبول بلا
+     مراجعة. وكلاهما خسارةُ موضعٍ لم يخسره صاحبُه.
+
+     و«مُقدَّم» وحدَها لا تُردّ إليها: هي «لم يُقرأ بعد»، وقد قُرئ. ومخرجُها
+     `under_review` — وهو ما كانت تصل إليه أصلا. */
+  information_requested: [
+    'under_review', 'waitlisted', 'shortlisted', 'interview_scheduled', 'demo_requested',
+    'academic_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn',
+  ],
+  shortlisted: ['information_requested', 'interview_scheduled', 'demo_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
   interview_scheduled: ['submitted', 'under_review', 'information_requested', 'shortlisted', 'demo_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  demo_requested: ['academic_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
-  academic_review: ['conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
+  demo_requested: ['information_requested', 'academic_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
+  academic_review: ['information_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
   /* والرجوعُ إلى المراجعة مفتوح: من بدأ تجهيزَه ثمّ تبيّن له ما يوقفه لا
      يُترك بين حالَين — يردُّه إلى الطابور، أو يردّه كلَّه. */
   conditionally_approved: ['under_review', 'contract_pending', 'active', 'waitlisted', 'rejected', 'withdrawn'],
   contract_pending: ['onboarding', 'active', 'rejected', 'withdrawn'],
   onboarding: ['active', 'withdrawn'],
   active: ['suspended'],
-  waitlisted: ['under_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
+  waitlisted: ['under_review', 'information_requested', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
   /* ═══ والرفضُ يُتراجَع عنه — بابٌ واحدٌ لا أكثر (١٩ سبتمبر ٢٠٢٦) ═══
 
      كان `rejected` بلا مخرج: من رُدّ خطأً — ضغطةٌ على الصفّ الخطأ، أو قرارٌ

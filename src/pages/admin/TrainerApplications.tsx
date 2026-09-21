@@ -5,7 +5,7 @@ import {
   ArrowDownWideNarrow, ArrowUpNarrowWide,
   CalendarCheck, CalendarX2, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
   KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff,
-  SlidersHorizontal, Star, Trash2, UserPlus, XCircle,
+  Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -16,7 +16,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { INTERVIEW_OUTCOMES, outcomeLabelAr } from "@/application/trainer/interview-outcome";
 import { STATUS_LABELS } from "@/application/trainer/application-status";
 import { bookingLabel, facetsOf, resultKey, verdictBadges, RESULT_CONTESTED, RESULT_NONE, type ReviewVerdict } from "@/application/trainer/queue-labels";
-import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
+import { staffAreaCls, staffSelectCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
 import type { SyncTrust } from "@/application/trainer/interview-sync-trust";
@@ -1778,6 +1778,35 @@ export default function TrainerApplications() {
                   </Button>
                 ))}
               </div>
+              {/* ═══ والموعدُ بُعدٌ ثالثٌ صعد إلى الأعلى (٢١ سبتمبر ٢٠٢٦) ═══
+
+                  «أضفْ بالفلاتر العليا: لم يحجز موعد بعد» — و«لا داعيَ
+                  لمرشّحاتٍ أخرى». وكان هذا السؤالُ وحدَه تحت مطويّةٍ اسمُها
+                  «مرشّحاتٌ أخرى»، فمن أراد أن يعرف من لم يحجز فتحها أوّلا.
+                  ومطويّةٌ لواحدٍ بابٌ لا غرفةَ خلفه.
+
+                  وهو بُعدٌ ثالثٌ لا حالةٌ ولا نتيجة: متقدّمٌ «قيد المراجعة»
+                  و«يجتاز» قد يكون حجز وقد لا يكون — فيجتمع بالواو معهما
+                  كما يجتمعان.
+
+                  ── ولا يُعرض عددٌ واثقٌ لا يُعرف ──
+
+                  «لم يحجز موعدا» يُحسب ممّا وصلنا من حجوز. فإن سقطت
+                  المزامنةُ صدق على الجميع — ويُقرأ رقمٌ كبيرٌ يُفهَم إهمالا
+                  من المتقدّمين وهو عطبٌ عندنا. فحين لا يُوثَق يُعرض «؟» لا
+                  رقم: الفراغُ أصدقُ من يقينٍ كاذب. */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="ml-1 text-fine text-muted-foreground">الموعد</span>
+                <Button size="sm"
+                  tone={onlyUnbooked ? "confirm" : "secondary"}
+                  aria-pressed={onlyUnbooked}
+                  onClick={() => { setOnlyUnbooked((v) => !v); setPage(1); }}>
+                  <CalendarCheck className="h-3.5 w-3.5" /> لم يحجز موعدا بعد
+                  <span className="mr-1 font-mono opacity-70">
+                    {syncTrust && !syncTrust.trusted ? "؟" : apps.filter(canRemind).length}
+                  </span>
+                </Button>
+              </div>
             </div>
 
             <select
@@ -1795,44 +1824,27 @@ export default function TrainerApplications() {
             >
               {SORT_OPTIONS.map((o) => <option key={o.key} value={o.key}>رتّبْ بـ{o.labelAr}</option>)}
             </select>
-            {/* والاتّجاهُ زرٌّ لا خيارٌ ثالثٌ في قائمة: حالتان تُقلَبان بنقرة */}
+            {/* ═══ والاتّجاهُ أيقونةٌ لا كلمة (٢١ سبتمبر ٢٠٢٦) ═══
+
+                «اجعل تصاعديّا على شكل أيقونةٍ وليست كلمة، وضعها بجانب مربّع
+                رتّب بتاريخ التقديم». وكانت كلمةً تتبدّل بين «تصاعديّا»
+                و«تنازليّا» فيتبدّل عرضُ الزرّ معها، فيقفز ما بعده في الشريط
+                عند كلّ نقرة. والسهمُ يقولها بلا لفظ.
+
+                **واللفظُ باقٍ في `aria-label`** لا يُحذف: من يقرأ الشاشةَ
+                بصوتٍ لا يرى السهمَ، وأيقونةٌ بلا اسمٍ زرٌّ أخرس. */}
             <Button tone="ghost"
               aria-label={sortDir === "asc" ? "الترتيبُ صاعد — اقلِبْه نازلا" : "الترتيبُ نازل — اقلِبْه صاعدا"}
+              title={sortDir === "asc" ? "تصاعديّا — اقلِبْه" : "تنازليّا — اقلِبْه"}
               onClick={() => { setSortDir((d) => (d === "asc" ? "desc" : "asc")); setPage(1); }}>
               {sortDir === "asc"
-                ? <><ArrowUpNarrowWide className="h-3.5 w-3.5" /> تصاعديّا</>
-                : <><ArrowDownWideNarrow className="h-3.5 w-3.5" /> تنازليّا</>}
+                ? <ArrowUpNarrowWide className="h-3.5 w-3.5" />
+                : <ArrowDownWideNarrow className="h-3.5 w-3.5" />}
+            </Button>
+            <Button tone="secondary" onClick={() => void load()}>
+              <RefreshCw className="h-3.5 w-3.5" /> تحديث
             </Button>
 
-            <details className="group">
-              <summary className={`${staffControlCls} flex cursor-pointer list-none items-center gap-1.5 !w-auto text-muted-foreground transition hover:text-foreground`}>
-                <SlidersHorizontal className="h-3.5 w-3.5" />
-                مرشّحاتٌ أخرى
-                {onlyUnbooked && (
-                  <span className="rounded-full bg-teal/25 px-1.5 font-mono text-fine text-teal-light-ink">1</span>
-                )}
-              </summary>
-              <Inset className="mt-2 flex flex-wrap items-center gap-2">
-                {/* سؤالٌ يُضغط بدل عدِّ الأصفار في عمود «مقابلة» */}
-                {/* ═══ ولا يُعرض عددٌ واثقٌ لا يُعرف ═══
-
-                    «لم يحجز موعدا» يُحسب ممّا وصلنا من حجوز. فإن سقطت
-                    المزامنةُ صدق على الجميع — ويُقرأ رقمٌ كبيرٌ يُفهَم
-                    إهمالا من المتقدّمين وهو عطبٌ عندنا. فحين لا يُوثَق
-                    يُعرض «؟» لا رقم: الفراغُ أصدقُ من يقينٍ كاذب. */}
-                <Button tone={onlyUnbooked ? "confirm" : "ghost"}
-                  aria-pressed={onlyUnbooked}
-                  onClick={() => { setOnlyUnbooked((v) => !v); setPage(1); }}>
-                  <CalendarCheck className="h-3.5 w-3.5" /> لم يحجز موعدا
-                  <span className="mr-1 font-mono">
-                    {syncTrust && !syncTrust.trusted ? "؟" : apps.filter(canRemind).length}
-                  </span>
-                </Button>
-                <Button tone="secondary" onClick={() => void load()}>
-                  <RefreshCw className="h-3.5 w-3.5" /> تحديث
-                </Button>
-              </Inset>
-            </details>
           </>
         )}
       </div>
