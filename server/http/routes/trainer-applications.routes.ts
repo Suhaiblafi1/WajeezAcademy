@@ -5,6 +5,7 @@
 import type { FastifyInstance } from 'fastify'
 import { getObject, getObjectMeta, putObject } from '../../services/object-store'
 import { z } from 'zod'
+import { normalizeApplicantLink } from '../../../src/application/trainer/applicant-link'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
@@ -17,6 +18,31 @@ import { PUBLIC_TRAINER_WHERE } from '../../services/trainer-visibility'
 import { requirePermission } from '../auth-plugin'
 import { CONTACT_CHANNEL_VALUES, TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 import { assertNotBot } from '../honeypot'
+
+/* ═══ روابطُ المتقدّم: تُطبَّع ولا تُردّ لأجل «https» (٢١ سبتمبر ٢٠٢٦) ═══
+
+   كان الحاجزُ `z.string().url()`، وله وجهان كلاهما خطأ:
+
+   · **يردُّ ما يكتبه الناس** — `linkedin.com/in/x` و`www.google.com`، وهما
+     ما يُنسخ من شريط العنوان أو يُكتب باليد. وقال صاحبُ المنصّة: «اسمح له
+     أن يضع الرابطَ بدون https، وضعها أنت بنفسك أو أبلِغه ما الخطأ».
+   · **ويقبل `javascript:alert(1)` و`data:text/html,…`** — إذ يقبل كلَّ ما
+     يقبله `new URL()`. وهذه تُكتب في `href` في ملفّ المتقدّم عند المراجع،
+     والنموذجُ يقول له إنّ روابطَه «أوّلُ ما يقرؤه المراجع» — فما فيها
+     يُنقَر بحكم التصميم، فيُنفَّذ في جلسة من يقرؤه.
+
+   فالحكمُ في `normalizeApplicantLink` يقرؤه الخادمُ والنموذجُ معا، والردُّ
+   يحمل جملتَه العربيّةَ بنصّها لا «Invalid url». */
+const applicantLink = z.string().max(300).optional()
+  .transform((v) => (v ?? '').trim())
+  .superRefine((v, ctx) => {
+    const r = normalizeApplicantLink(v)
+    if (!r.ok) ctx.addIssue({ code: z.ZodIssueCode.custom, message: r.messageAr })
+  })
+  .transform((v) => {
+    const r = normalizeApplicantLink(v)
+    return r.ok ? r.url : v
+  })
 
 const IS_PROD = process.env.NODE_ENV === 'production'
 
@@ -54,10 +80,9 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       specialties: z.array(z.string().min(2)).min(1).max(12),
       domainYears: z.enum(['1-3', '4-7', '8-12', '12+']),
       trainingYears: z.string().min(1),
-      bio: z.string().max(2000).optional(), linkedinUrl: z.string().url().max(300).optional().or(z.literal('')),
-      youtubeUrl: z.string().url().max(300).optional().or(z.literal('')),
-      instagramUrl: z.string().url().max(300).optional().or(z.literal('')),
-      facebookUrl: z.string().url().max(300).optional().or(z.literal('')),
+      bio: z.string().max(2000).optional(),
+      linkedinUrl: applicantLink, youtubeUrl: applicantLink,
+      instagramUrl: applicantLink, facebookUrl: applicantLink,
       hasAccreditation: z.boolean().optional(),
       accreditationDetails: z.string().max(300).optional(),
       targetCountries: z.array(z.string().min(2)).max(25).optional(),
