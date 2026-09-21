@@ -36,13 +36,21 @@ export interface VerdictBadge {
   /** مفتاحٌ من معجم النتائج — لا لفظٌ، فالشاشةُ تترجمه */
   key: string
   source: VerdictSource
+  /** من قاله — يُكتب حين يختلف القرّاء وحدَه، فلا اسمَ على قولٍ لا منازعَ له */
+  byAr?: string
+}
+
+/** قرارُ قارئٍ باسمه — والاسمُ يلزم حين يُعرض قولان متخالفان */
+export interface ReviewVerdict {
+  verdict: string
+  reviewerName: string | null
 }
 
 export interface VerdictFacts {
   /** نتيجةُ آخر لقاءٍ سُجّلت — `null` لمن لم يُقابَل أو لم تُسجَّل نتيجتُه */
   interviewOutcome: string | null
-  /** قراراتُ روابط التقييم بلا تكرار — فارغةٌ لمن لم يقرأه أحدٌ برابط */
-  reviewVerdicts: readonly string[]
+  /** قراراتُ روابط التقييم بأسماء قائليها — فارغةٌ لمن لم يقرأه أحدٌ برابط */
+  reviewVerdicts: readonly ReviewVerdict[]
 }
 
 /**
@@ -57,16 +65,53 @@ export interface VerdictFacts {
  * مكرَّرةً في كلّ صفّ.
  */
 export function verdictBadges(f: VerdictFacts): VerdictBadge[] {
-  const reviewed = [...new Set(f.reviewVerdicts.filter(Boolean))]
-  if (!f.interviewOutcome) {
-    return reviewed.map((key) => ({ key, source: 'review' as const }))
+  /* القرّاءُ يُجمَّعون بقولهم لا بأسمائهم: ثلاثةٌ قالوا «ناجح» شارةٌ واحدة
+     لا ثلاث، وأسماؤهم عليها معا حين يكون لقولهم منازع. */
+  const groups = new Map<string, string[]>()
+  for (const r of f.reviewVerdicts) {
+    if (!r?.verdict) continue
+    const names = groups.get(r.verdict) ?? []
+    if (r.reviewerName) names.push(r.reviewerName)
+    groups.set(r.verdict, names)
   }
+
+  /* وعددُ الأقوال المعروضة هو ما يقرّر: قولٌ واحدٌ لا يحتاج قائلا، وقولان
+     متخالفان لا يُقرآن بلا قائلَيهما. */
+  const distinct = [...groups.keys()]
+  const contested = f.interviewOutcome
+    ? distinct.some((v) => v !== f.interviewOutcome)
+    : distinct.length > 1
+  const named = (key: string): VerdictBadge => {
+    const names = groups.get(key) ?? []
+    return { key, source: 'review', ...(contested && names.length > 0 ? { byAr: names.join(' · ') } : {}) }
+  }
+
+  if (!f.interviewOutcome) return distinct.map(named)
   return [
     { key: f.interviewOutcome, source: 'recorded' as const },
-    ...reviewed
-      .filter((v) => v !== f.interviewOutcome)
-      .map((key) => ({ key, source: 'review' as const })),
+    ...distinct.filter((v) => v !== f.interviewOutcome).map(named),
   ]
+}
+
+/* ═══ وما نتيجتُه في سطرٍ واحد — يُرشَّح به الطابور (٢١ سبتمبر ٢٠٢٦) ═══
+
+   طلب صاحبُ المنصّة ترشيحَين لا واحدا: «واحدٌ للّيبل الرئيسيّ وهو نشط أو
+   مرفوض، والثاني لنتيجة التقييم». والحالةُ عمودٌ في القاعدة يُرشَّح به، أمّا
+   النتيجةُ فمحسوبةٌ من مصدرَين — فلزمها مفتاحٌ واحدٌ يُعدّ ويُرشَّح به.
+
+   **ويُشتقّ من الشارات نفسِها** لا بحسابٍ ثانٍ: ما يُعرض هو ما يُرشَّح به،
+   فلا يُنقَر مرشِّحٌ فيُخرج صفّا يقول غيرَ ما قال المرشِّح. */
+
+/** لا قولَ لنا فيه بعد */
+export const RESULT_NONE = 'none'
+/** قولان متخالفان في اللقاء نفسِه — قارئان لم يتّفقا */
+export const RESULT_CONTESTED = 'contested'
+
+export function resultKey(f: VerdictFacts): string {
+  const badges = verdictBadges(f)
+  if (badges.length === 0) return RESULT_NONE
+  const distinct = [...new Set(badges.map((b) => b.key))]
+  return distinct.length === 1 ? distinct[0] : RESULT_CONTESTED
 }
 
 /** حالُ موعده كما يُقرأ في الصفّ */
@@ -147,4 +192,32 @@ export function bookingLabel(
   return canRemindToBook({ status: f.status, liveInterviews: f.interviewsCount })
     ? { kind: 'unbooked' }
     : null
+}
+
+/* ═══ شاراتُ المرشِّحات — تُحسب من الصفوف لا تُكتب (٢١ سبتمبر ٢٠٢٦) ═══
+
+   كانت الشاشةُ تحسبها بيدها مرّتين — مرّةً للحالة ومرّةً للنتيجة — بسطرَين
+   متطابقَين. وحارسٌ يقرأ نصَّ الشاشة بـ`regex` ليتثبّت من إسقاط الخالي كان
+   يقع على السطر الثاني وهو يقصد الأوّل: نُقض إسقاطُ الخالي من شاراتِ الحالة
+   فخضرّ الحارسُ لأنّ `resultFacets` أسفلَه فيه الشرطُ نفسُه.
+
+   فخرج الحسابُ إلى دالّةٍ واحدةٍ تُفحَص بنيتُها: الترتيبُ ترتيبُ `keys`
+   المعطاة — لا الأكثرَ عددا، فشارةٌ تقفز من موضعها كلّما تبدّل رقمٌ تُفقد
+   اليدَ موضعَها — وما خلا من الصفوف لا يُعرض أصلا. */
+
+/** شارةُ مرشِّحٍ: مفتاحُها وعددُ من تحتها في الطابور */
+export interface Facet { key: string; n: number }
+
+/** يعدّ الصفوفَ على `keys` بترتيبها، ويُسقط ما لا أحدَ تحته */
+export function facetsOf<T>(
+  keys: readonly string[],
+  rows: readonly T[],
+  keyOf: (row: T) => string,
+): Facet[] {
+  const counts = new Map<string, number>()
+  for (const row of rows) {
+    const key = keyOf(row)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return keys.map((key) => ({ key, n: counts.get(key) ?? 0 })).filter((f) => f.n > 0)
 }

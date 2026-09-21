@@ -108,11 +108,28 @@ describe('⑤ والشاشةُ والخادمُ يقرآن المعجمَ لا �
     expect(line, 'التعليقُ عقدُ القيد المولَّد — وبلا الغياب فيه ترفضه القاعدة').toContain(NO_SHOW)
   })
 
-  it('ومعجمُ قرارِ القارئ لا يحمل الغياب — القارئُ لا يغيب عن ملفّ', () => {
-    const screen = read('src/pages/admin/TrainerApplications.tsx')
-    const verdicts = /const VERDICT_AR[^}]+\}/.exec(screen)?.[0] ?? ''
-    expect(verdicts, 'لم يُعثر على معجم القرار').toContain('passed')
-    expect(verdicts, 'غيابٌ في معجم قرارِ المراجع').not.toContain(NO_SHOW)
+  /* ═══ ومعجمُ القارئ صار هو المعجمَ نفسَه (٢١ سبتمبر ٢٠٢٦) ═══
+
+     كان هنا حارسٌ يقول: «معجمُ قرارِ القارئ لا يحمل الغياب — القارئُ يقرأ
+     ملفّا فلا يغيب عنه». وقد كان صوابا يومَه: قرارُ الرابط حكمٌ على الطلب
+     لا على لقاء، فلا معنى لـ«لم يحضر» فيه.
+
+     ثمّ رُبط القرارُ بمقابلةٍ بعينها بقرار صاحب المنصّة: «لا أريد التقييمَ
+     العامّ، أريده مرتبطا بالمقابلات المجدولة». فالحاكمُ صار من جلس إلى
+     اللقاء، و«لم يحضر» خبرٌ يملكه — بل هو أصدقُ من يملكه.
+
+     فسقط سببُ المعجم الثاني وسقط معه (`VERDICT_AR`): «لا أريد شيئين».
+     والحارسُ الآن على **وحدة المعجم** لا على غياب الغياب منه. */
+  it('ولا معجمَ ثانيا للقرار — واحدٌ لشيءٍ واحد', () => {
+    for (const p of ['src/pages/admin/TrainerApplications.tsx', 'src/pages/SharedDossier.tsx']) {
+      expect(read(p), `${p}: عاد معجمٌ ثانٍ لقرار القارئ`).not.toMatch(/const VERDICT_AR|const VERDICTS\b/)
+    }
+  })
+
+  it('وصفحةُ القارئ تبني أزرارَها من المعجم — فالأربعةُ فيها كما في قسم المقابلة', () => {
+    const shared = read('src/pages/SharedDossier.tsx')
+    expect(shared, 'أزرارُ القرار مكتوبةٌ بيدها — يُنسى الرابعُ فيها')
+      .toMatch(/INTERVIEW_OUTCOMES\.map\(/)
   })
 })
 
@@ -131,11 +148,21 @@ describe('⑥ ومعجمُ النتيجة للموظّف وحدَه', () => {
   /** من يقرأ المعجم اليومَ — وكلُّهم شاشاتُ إدارةٍ أو خدماتُ خادم */
   const ALLOWED = [
     'server/http/routes/admin-trainer.routes.ts',
+    /* ٢١ سبتمبر ٢٠٢٦: مسارُ رابط التقييم يقبل الأربعةَ كلَّها بعد أن صار
+       القرارُ معلَّقا بمقابلة — والحارسُ هو `INTERVIEW_OUTCOME_KEYS` نفسُها. */
+    'server/http/routes/dossier-link.routes.ts',
     'server/services/reports.service.ts',
     'server/services/trainer-interview-state.ts',
     'server/services/trainer-review.service.ts',
     'src/pages/admin/TrainerApplications.tsx',
     'src/pages/admin/TrainerOps.tsx',
+    /* ═══ وصفحةُ القارئ — والسؤالُ يُجاب: أهذا موظّفٌ يقرّر؟ ═══
+
+       نعم. `SharedDossier` صفحةُ **من يحكم** لا من يُحكَم فيه: تُفتح برابطٍ
+       باسم قارئٍ بعينه أنشأته الإدارة، وفيها يكتب درجاتِه وقرارَه. وصفحةُ
+       المتقدّم (`ApplicantStatus`) شيءٌ آخرُ، وحارسُها أسفلُ قائمٌ كما هو:
+       لا تستورد المعجمَ ولا تحمل لفظا منه. */
+    'src/pages/SharedDossier.tsx',
   ]
 
   /** كلُّ ملفٍّ حيٍّ (لا اختبار) يستورد المعجمَ بأيّ صيغةٍ من صيغ مساره */

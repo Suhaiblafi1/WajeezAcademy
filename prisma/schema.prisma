@@ -1079,6 +1079,11 @@ model TrainerApplicationReview {
   /// كاتبٌ واحدٌ لا غير: موظّفٌ مسجَّلُ الدخول، أو صاحبُ رابطٍ باسمه.
   reviewerId       String?             @db.Uuid
   linkId           String?             @db.Uuid
+  /// المقابلةُ التي حكم فيها — `null` لتقييمٍ كُتب قبل الربط (٢١ سبتمبر ٢٠٢٦).
+  ///
+  /// «لا أريد التقييمَ العامّ، أريده مرتبطا بالمقابلات المجدولة». وبه يُعكَس
+  /// قرارُ القارئ على `TrainerInterview.outcome` فلا يُكتب القولُ مرّتين.
+  interviewId      String?             @db.Uuid
   /// يُنسَخ الاسمُ في الصفّ فيبقى ولو حُذف الرابط — والتقييمُ بلا اسمٍ لا يصلح مرجعا
   reviewerName     String?
   scores           Json // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
@@ -1106,10 +1111,13 @@ model TrainerApplicationReview {
   updatedAt        DateTime            @updatedAt
   application      TrainerApplication  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   link             TrainerDossierLink? @relation(fields: [linkId], references: [id], onDelete: SetNull)
+  /// وحذفُ المقابلة لا يمحو حكمَ من حكم فيها — يفقد نسبتَه إليها ويبقى مقروءا
+  interview        TrainerInterview?   @relation(fields: [interviewId], references: [id], onDelete: SetNull)
 
   /// لكلّ قارئٍ تقييمٌ واحدٌ يعود إليه فيراجعه، لا صفٌّ جديدٌ في كلّ حفظ
   @@unique([applicationId, linkId])
   @@index([applicationId])
+  @@index([interviewId])
 }
 
 model TrainerInterview {
@@ -1128,6 +1136,8 @@ model TrainerInterview {
   notes         String?
   createdAt     DateTime           @default(now())
   application   TrainerApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  /// أحكامُ القرّاء في هذا اللقاء — و`outcome` أعلاه لا يُكتب إلّا باتّفاقهم
+  reviews       TrainerApplicationReview[]
 
   @@index([applicationId])
 }

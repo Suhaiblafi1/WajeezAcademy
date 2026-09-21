@@ -13,9 +13,9 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
 import { matchesQuery } from "@/application/text/search-ar";
-import { outcomeLabelAr } from "@/application/trainer/interview-outcome";
-import { QUICK_STATUSES, STATUS_LABELS } from "@/application/trainer/application-status";
-import { bookingLabel, verdictBadges } from "@/application/trainer/queue-labels";
+import { INTERVIEW_OUTCOMES, outcomeLabelAr } from "@/application/trainer/interview-outcome";
+import { STATUS_LABELS } from "@/application/trainer/application-status";
+import { bookingLabel, facetsOf, resultKey, verdictBadges, RESULT_CONTESTED, RESULT_NONE, type ReviewVerdict } from "@/application/trainer/queue-labels";
 import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
@@ -90,6 +90,16 @@ const VERDICT_SOURCE_AR: Record<string, string> = {
    صاحبُ المنصّة (٢١ سبتمبر ٢٠٢٦) أنّ صفّا يحمل «بلا نتيجة» وإلى جانبه
    شارةُ «يجتاز» — «ونحن وضعنا نتيجتَه وهي ظاهرة». والحكمُ في
    `queue-labels.ts`، وهذه ألفاظُه. */
+/* ═══ وحالان ليستا في معجم النتائج — وهما مرشِّحان لا نتيجتان ═══
+
+   «بلا نتيجة» غيابُ قولٍ لا قول، و«مختلَفٌ عليه» قولان لا واحد. وكلاهما
+   يُرشَّح به فيلزمه لفظٌ — ولا يُقحمان في `INTERVIEW_OUTCOMES`: ذاك ما
+   يقبله الخادمُ ويُكتب في العمود، وهذان محسوبان في الشاشة. */
+const RESULT_LABEL_AR: Record<string, string> = {
+  [RESULT_NONE]: "بلا نتيجة",
+  [RESULT_CONTESTED]: "مختلَفٌ عليه",
+};
+
 const BOOKING_LEAD_AR: Record<string, string> = {
   upcoming: "موعدُه",
   held: "جرى لقاؤه",
@@ -208,8 +218,8 @@ interface AppRow {
   documentsCount: number; reviewsCount: number; interviewsCount: number;
   /** نتيجةُ آخر لقاءٍ غيرِ ملغى — `null` لمن لم يُقابَل أو لم تُسجَّل نتيجتُه */
   interviewOutcome: string | null;
-  /** قراراتُ روابط التقييم بلا تكرار — أحدثُها أوّلا، وفارغةٌ لمن لم يُقرأ برابط */
-  reviewVerdicts: string[];
+  /** قراراتُ روابط التقييم بأسماء قائليها — أحدثُها أوّلا */
+  reviewVerdicts: ReviewVerdict[];
   /** موعدُه المعلَّق — أقربُ قادمٍ بلا نتيجة، وإلّا فآخرُ ماضٍ ينتظر تسجيلَها */
   pendingInterviewAt: string | null;
   /** موعدُ آخر لقاءٍ قائمٍ له مهما كان حالُه — يُرتَّب به، ولا يُعرض */
@@ -217,14 +227,6 @@ interface AppRow {
   /** لحظةُ آخر حركةٍ في الطلب — تُحسب بها شارةُ العمر */
   waitingSince: string;
 }
-
-/** قرارُ القارئ كما يُقرأ — ثلاثتُها مفرداتُ `TrainerInterview.outcome`.
- *
- *  و«لم يحضر» ليست منها: القارئُ يقرأ ملفّا فلا يغيب عنه، والغيابُ خبرُ
- *  موعدٍ لا حكمُ مراجع. */
-const VERDICT_AR: Record<string, string> = {
-  passed: "يجتاز", hold: "يُعاد لقاؤه", failed: "لا يجتاز",
-};
 
 interface AppDetail extends Record<string, unknown> {
   id: string; reference: string; status: string; fullName: string; email: string;
@@ -372,6 +374,9 @@ export default function TrainerApplications() {
   const openApp = searchParams.get("app");
   const [apps, setApps] = useState<AppRow[]>([]);
   const [filter, setFilter] = useState("");
+  /* ومرشِّحُ النتيجة — بُعدٌ ثانٍ لا بديلٌ عن الأوّل: «واحدٌ للّيبل الرئيسيّ
+     وهو نشط أو مرفوض، والثاني لنتيجة التقييم». ويجتمعان بالواو لا بالأو. */
+  const [resultFilter, setResultFilter] = useState("");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(50);
@@ -468,17 +473,28 @@ export default function TrainerApplications() {
   const canReviewChanges = user?.permissions?.includes("trainer.change.review") ?? false;
   const [openChanges, setOpenChanges] = useState(0);
 
+  /* ═══ الطابورُ كلُّه يُجلَب مرّةً، ثمّ يُرشَّح هنا (٢١ سبتمبر ٢٠٢٦) ═══
+
+     كان يُجلَب مرشَّحا بالحالة من الخادم، فالشاشةُ لا ترى إلّا ما رُشِّح —
+     ولا تستطيع أن تقول «كم نشطا؟» وهي ترى المرفوضين وحدَهم. وعدُّ الشارات
+     يحتاج أن يُرى الطابورُ كلُّه، ومرشِّحُ النتيجة محسوبٌ من الصفّ لا عمودٌ
+     يُستعلَم عنه.
+
+     فنداءٌ واحدٌ بلا حالة، والترشيحُ والعدُّ من المصفوفة نفسِها: لا يفترق
+     عددٌ على شارةٍ عن الصفوف التي تفتحها، ولا يُنتظَر نداءٌ عند كلّ نقرة.
+
+     وحدُّه معروف: الصفوفُ تُجلَب كلُّها، وهي مئاتٌ اليومَ. فإن بلغت آلافا
+     لزم ترقيمٌ في الخادم — ويُقاس قبل أن يُبنى. */
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
     try {
-      const rows = await apiGet<AppRow[]>(`/api/admin/trainer-applications${filter ? `?status=${filter}` : ""}`);
-      setApps(rows);
+      setApps(await apiGet<AppRow[]>("/api/admin/trainer-applications"));
     } catch (err) {
       if (!silent) setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — شغّل واجهة API أولا");
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [filter]);
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
   /* ولا يُسقِط فشلُ هذا الطابورَ: هو خبرٌ عن الطابور لا الطابور */
@@ -644,7 +660,26 @@ export default function TrainerApplications() {
     .filter((a) => a.status === "submitted")
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  /* الحالةُ تُرشَّح في الخادم، والبحثُ هنا على ما وصل.
+  /* ═══ الشاراتُ تُبنى ممّا في الطابور لا من قائمةٍ مكتوبة (٢١ سبتمبر ٢٠٢٦) ═══
+
+     شكا صاحبُ المنصّة: «أشعر أنّ الفرزَ معقّد… اجعلْ ليبلاتِ الفرز الرئيسيّة
+     تخرج ممّا استعملناه فعلا: إن كان عندنا نشطٌ فضعْه في الأعلى، وإن كان
+     مرفوضٌ فضعْه، وهكذا».
+
+     وكانت أربعا مكتوبةً بيدها لا تتبدّل — فبقيت «موقوف» بلا شارةٍ وهي في
+     الطابور، وبقيت شارةٌ تُعرض لحالةٍ لا أحدَ فيها. فصارت تُحسب: ما وُجد
+     عُرض بعدده، وما خلا لم يُعرض أصلا.
+
+     وترتيبُها ترتيبُ `STATUS_LABELS` — دورةُ حياة الطلب — لا الأكثرَ عددا:
+     شارةٌ تقفز من موضعها كلّما تبدّل رقمٌ تُفقد اليدَ موضعَها. */
+  const statusFacets = facetsOf(Object.keys(STATUS_LABELS), apps, (a) => a.status);
+
+  /* والنتيجةُ بُعدٌ ثانٍ: «هو نشطٌ وتقييمُنا يقول اجتاز — وهما شيئان» */
+  const resultFacets = facetsOf(
+    [...INTERVIEW_OUTCOMES.map((o) => o.key), RESULT_CONTESTED, RESULT_NONE], apps, resultKey,
+  );
+
+  /* الترشيحُ كلُّه هنا على ما وصل — والبُعدان يجتمعان بالواو.
 
      وترتيبُ الحالة يقرأ `STATUS_LABELS` نفسَه: هو مكتوبٌ بدورة الحياة
      أصلا، ونسخُ ترتيبِه في معجمٍ ثانٍ يعني معجمَين يفترقان عند أوّل
@@ -652,6 +687,8 @@ export default function TrainerApplications() {
   const view = paginate(
     sortApplications(
       apps
+        .filter((a) => !filter || a.status === filter)
+        .filter((a) => !resultFilter || resultKey(a) === resultFilter)
         .filter((a) => !onlyUnbooked || canRemind(a))
         .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
       sortKey, sortDir, Object.keys(STATUS_LABELS),
@@ -1275,12 +1312,12 @@ export default function TrainerApplications() {
                           {r.reviewerName ?? "مراجعٌ من داخل الإدارة"}
                         </span>
                         {r.verdict && (
+                          /* والنبرةُ من جدول الصفّ نفسِه، واللفظُ من معجمه —
+                             فلا يقرأ فاتحُ الملفّ لفظا غيرَ الذي في الطابور. */
                           <span className={`rounded-full border px-2 py-0.5 text-read ${
-                            r.verdict === "passed" ? "border-teal-light-ink/50 text-teal-light-ink"
-                              : r.verdict === "failed" ? "border-red-400/50 text-red-300"
-                              : "border-gold/50 text-gold-ink"
+                            OUTCOME_TONE[r.verdict] ?? "border-white/20 text-muted-foreground"
                           }`}>
-                            {VERDICT_AR[r.verdict] ?? r.verdict}
+                            {outcomeLabelAr(r.verdict)}
                           </span>
                         )}
                       </div>
@@ -1621,31 +1658,45 @@ export default function TrainerApplications() {
             خطرُ الطيّ كلِّه: مرشِّحٌ يعمل ولا يُرى. */}
         {shown === "apps" && (
           <>
-            {/* ═══ أربعُ مرشِّحاتٍ خارجَ القائمة (٢١ سبتمبر ٢٠٢٦) ═══
+            {/* ═══ صفّا ترشيحٍ لا صفٌّ واحد (٢١ سبتمبر ٢٠٢٦) ═══
 
-                «أريد أن تُخرج ٤ ليبلاتٍ للفرز خارجا، وهم الأكثرُ استخداما،
-                تضعهم بوضوحٍ لسهولة الوصول». وكانت الستَّ عشرةَ كلُّها في
-                القائمة: مرشِّحُ كلِّ جلسةٍ يفتحها ويقرأ ستَّ عشرةَ سطرا
-                ليجد أحدَ أربعة.
+                «أحتاج ترشيحَين: واحدٌ للّيبل الرئيسيّ وهو نشط أو مرفوض أو
+                غيرُه، والثاني لنتيجة التقييم» — فالمتقدّمُ قد يكون نشطا
+                وتقييمُنا يقول «غير مناسب»، وهما بُعدان لا بُعدٌ واحد.
 
-                **والقائمةُ تبقى تحتها لا تُستبدَل بها**: فيها اثنتا عشرةَ
-                حالةً أخرى، ومرشِّحٌ سريعٌ يحذف بقيّةَ الحالات يقايض شكوى
-                بشكوى. والزرُّ المختارُ يُنقَر ثانيةً فيعود «كلُّ الحالات» —
-                فلا يُترك الطابورُ مرشَّحا بلا مخرجٍ ظاهر.
+                وكلُّ شارةٍ تُبنى ممّا في الطابور فعلا وعليها عددُه: ما خلا
+                لم يُعرض، وما وُجد عُرض. فلا «موقوف» في الطابور بلا شارة،
+                ولا شارةٌ تُنقَر فتُخرج لا شيء.
 
-                وهما موضعٌ واحدٌ للحقيقة: `filter` نفسُها تُقرأ في الاثنين،
-                فما اختير في القائمة يُضيء زرَّه وما نُقر في زرٍّ يُقرأ في
-                القائمة. */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              {QUICK_STATUSES.map((qs) => (
-                <Button key={qs.status}
-                  size="sm"
-                  tone={filter === qs.status ? "confirm" : "secondary"}
-                  aria-pressed={filter === qs.status}
-                  onClick={() => { setFilter(filter === qs.status ? "" : qs.status); setPage(1); }}>
-                  {qs.shortAr}
-                </Button>
-              ))}
+                والصفّان يجتمعان بالواو: «نشط» ثمّ «غير مناسب» نقرتان تُخرجان
+                من هو نشطٌ ولم يُوصَ به — وهو السؤالُ الذي لم يكن له باب. */}
+            <div className="flex w-full flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="ml-1 text-fine text-muted-foreground">الحالة</span>
+                {statusFacets.map((f) => (
+                  <Button key={f.key}
+                    size="sm"
+                    tone={filter === f.key ? "confirm" : "secondary"}
+                    aria-pressed={filter === f.key}
+                    onClick={() => { setFilter(filter === f.key ? "" : f.key); setPage(1); }}>
+                    {STATUS_LABELS[f.key] ?? f.key}
+                    <span className="mr-1 font-mono opacity-70">{f.n}</span>
+                  </Button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="ml-1 text-fine text-muted-foreground">نتيجةُ التقييم</span>
+                {resultFacets.map((f) => (
+                  <Button key={f.key}
+                    size="sm"
+                    tone={resultFilter === f.key ? "confirm" : "secondary"}
+                    aria-pressed={resultFilter === f.key}
+                    onClick={() => { setResultFilter(resultFilter === f.key ? "" : f.key); setPage(1); }}>
+                    {RESULT_LABEL_AR[f.key] ?? outcomeLabelAr(f.key)}
+                    <span className="mr-1 font-mono opacity-70">{f.n}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <select
@@ -1827,9 +1878,15 @@ export default function TrainerApplications() {
 
                     المسجَّلةُ من بطاقة الموعد، والتقييمُ من رابط القارئ.
                     فإن اتّفقا فواحدةٌ بلا بادئةٍ تقول من قالها، وإن اختلفا
-                    فكلتاهما بمصدرها. ومعجمُ كلٍّ منهما معجمُه: `outcomeLabelAr`
-                    للمسجَّلة و`VERDICT_AR` لقرار القارئ — وهما ما يُقرأ في
-                    الملفّ نفسِه، فلا يجد فاتحُه لفظا ثالثا. */}
+                    فكلتاهما بمصدرها واسمِ قائلها.
+
+                    ── ومعجمٌ واحدٌ لا اثنان (٢١ سبتمبر ٢٠٢٦) ──
+
+                    كان `VERDICT_AR` هنا يقول «يجتاز» وما يقابله في قسم
+                    المقابلة يقول «ناجح» — لفظان لحقيقةٍ واحدة، وهو ما شُكي
+                    منه: «لا أريد شيئين». وقد صار قرارُ الرابط مربوطا بمقابلةٍ
+                    بعينها ويُكتب في عمودها، فلم يبقَ ما يبرّر لفظا ثانيا —
+                    فذهب المعجمُ وبقي `outcomeLabelAr` وحدَه. */}
                 {verdictBadges(a).map((b, _i, all) => (
                   <span key={`${b.source}-${b.key}`}
                     className={`rounded-full border px-3 py-1 text-fine font-bold ${
@@ -1838,9 +1895,10 @@ export default function TrainerApplications() {
                     {all.length > 1 && (
                       <span className="ml-1 font-normal opacity-70">{VERDICT_SOURCE_AR[b.source]}:</span>
                     )}
-                    {b.source === "review"
-                      ? VERDICT_AR[b.key] ?? b.key
-                      : outcomeLabelAr(b.key)}
+                    {outcomeLabelAr(b.key)}
+                    {/* واسمُ القائل حين يختلف القرّاء — قولان بلا قائلَين
+                        تناقضٌ يُقرأ ولا يُعرف من يُسأل عنه. */}
+                    {b.byAr && <span className="mr-1 font-normal opacity-70">— {b.byAr}</span>}
                   </span>
                 ))}
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
