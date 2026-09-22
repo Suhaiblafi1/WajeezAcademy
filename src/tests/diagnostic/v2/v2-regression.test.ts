@@ -7,6 +7,7 @@ import { questionById } from '../../../domain/diagnostic/catalog'
 import { createEngineV2 } from '../../../domain/diagnostic/v2'
 import { questionMetaV2 } from '../../../domain/diagnostic/v2/data'
 import { buildPersonas, buildVariants, runSession, answerCurrent, type PersonaSpec } from '../../../../scripts/v2/sim-lib'
+import { STRONG_MEASURABLE_COVERAGE_MIN } from '../../../domain/diagnostic/v2/confidence'
 
 const SCHOOL: PersonaSpec = {
   id: 'test-school',
@@ -168,9 +169,36 @@ describe('قواعد Regression السبع', () => {
     expect(all.length).toBeGreaterThan(500)
   })
 
-  it('٤) لا تطابق قوي مع تغطية مهارات دون 50٪', () => {
-    const bad = all.filter((r) => r.outputKind === 'strong_match' && (r.measuredSkillCoverage ?? 0) < 0.5)
-    expect(bad).toEqual([])
+  /* ٤) لا تطابقَ قويٌّ بلا قياسٍ — وبالمسطرةِ التي يُعاير عليها المحرّك.
+
+     كانت القاعدةُ تقيس `measuredSkillCoverage` (المقيسُ من **كلّ** مهارات
+     المسار) وتشترط نصفَه. وهذه هي بعينها المسطرةُ التي هجرها المحرّكُ
+     وكتب سببَ هجرِها في `confidence.ts`: البنكُ لا يقيس إلّا جزءا من مهارات
+     أيِّ مسار، فأعلى مسارٍ يبلغ **٤٤٪** ومتوسّطُهم **٢٦٪**، ولا مسارَ واحدٌ
+     يبلغ الخمسين في عشرة آلاف جلسة. فالشرطُ هنا لم يكن صارما — كان
+     **غيرَ قابلٍ للتحقّق أصلا**، وبقي أخضرَ لأنّ «تطابق قوي» لم يُمنح قطّ
+     (صفرٌ من عشرة آلاف). فلمّا عُوير المانعُ في المحرّك على المسطرة المملوكة
+     (`measurableSkillCoverage`: المقيسُ ممّا **نستطيع** قياسَه، وسقفُه المئة)
+     نُقلت القاعدةُ هنا ولم تُنقل، فافترق الحارسُ عمّا يحرسه.
+
+     وانكشف الافتراقُ يومَ صار للدرجة العليا سبيل: PW-FAM-001 أوّلُ كيانٍ
+     يفوز بلا منافس، فمُنحت الدرجةُ لشخصيّات «ولي أمر» فسقطت هذه القاعدةُ
+     على ٢٨ جلسةً تغطيتُها الكاملةُ ٢٠٪ — ومانعُ المحرّك راضٍ عنها لأنّ
+     المقيسَ ممّا يُستطاع بلغ عتبتَه.
+
+     والمصدرُ واحدٌ لا نسخة: `STRONG_MEASURABLE_COVERAGE_MIN` نفسُها
+     (٠٫٦ — أشدُّ من النصف الذي كان)، فلو عُوير المانعُ غدا تحرّكت القاعدةُ
+     معه ولم تبقَ تصف عتبةً ماتت. */
+  it('٤) لا تطابق قوي قبل قياس ما نستطيع قياسه من مهارات المسار', () => {
+    const strong = all.filter((r) => r.outputKind === 'strong_match')
+    const bad = strong.filter((r) => (r.measurableSkillCoverage ?? 0) < STRONG_MEASURABLE_COVERAGE_MIN)
+    expect(
+      bad.map((r) => `${r.personaId}/${r.variant}: ${r.topPathwayId} بتغطيةِ الممكن ${(r.measurableSkillCoverage ?? 0).toFixed(2)}`),
+      'درجةٌ عليا مُنحت قبل قياسِ ما نملك قياسَه',
+    ).toEqual([])
+    /* ولا تخضرّ القاعدةُ بانعدامِ الحالات: خانةٌ ميّتةٌ لا تُحرَس، وموتُها
+       هو ما أخفى افتراقَ المسطرتين سبعةَ أشهر. */
+    expect(strong.length, 'لا جلسةَ واحدةٌ تبلغ «تطابق قوي» — القاعدةُ تحرس خانةً ميّتة').toBeGreaterThan(0)
   })
 
   it('٥) لا سؤال مكرر في أي جلسة', () => {

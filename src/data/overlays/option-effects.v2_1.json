@@ -120,6 +120,10 @@
         "goal_code_v21": "design_training"
       },
       "o15": {
+        "primary_goal": "family_wellbeing",
+        "goal_code_v21": "family_role"
+      },
+      "o16": {
         "primary_goal": "explore",
         "goal_code_v21": "unsure_goal",
         "goal_clarity": "low"
@@ -193,6 +197,9 @@
         "need_id": "need_self_understanding"
       },
       "o23": {
+        "need_id": "need_family"
+      },
+      "o24": {
         "need_id": "need_unsure"
       }
     },

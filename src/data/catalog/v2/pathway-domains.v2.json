@@ -18,7 +18,7 @@
     { "id": "cyber_risk", "name_ar": "المخاطر السيبرانية للأعمال", "desc_ar": "فهم المخاطر السيبرانية واتخاذ قرار حيالها." },
     { "id": "communication_influence", "name_ar": "التواصل والتأثير والتفاوض", "desc_ar": "خطابة تنفيذية وتفاوض وتأثير." },
     { "id": "learning_design", "name_ar": "تصميم التعلم وإعداد المدربين", "desc_ar": "تصميم تجارب تعلم وبرامج تدريبية." },
-    { "id": "family_parenting", "name_ar": "الأسرة والتربية", "desc_ar": "أهداف أسرية وتربوية — لا مسار حاليًا (فجوة كتالوج موثقة)." },
+    { "id": "family_parenting", "name_ar": "الأسرة والتربية", "desc_ar": "من يربّي طفلا أو يافعا ويريد قاعدةً يرجع إليها حين يشتدُّ الموقف. كانت فجوة كتالوج موثقة حتى أُضيف PW-FAM-001." },
     { "id": "personal_development", "name_ar": "التطوير الشخصي العام", "desc_ar": "نمو شخصي وثقافة عامة — فهم النفس والسلوك وقراءة ما يُقال عنهما. كانت فجوة كتالوج موثقة حتى أُضيف PW-PSY-001 و PW-PSY-002." },
     { "id": "visual_design", "name_ar": "التصميم البصريّ والهويّة", "desc_ar": "من يصنع أثرا بصريّا — تصميما أو هويّةً أو موادَّ منشورة — ويحتاج نظاما يُطبَّق وقرارا يُبرَّر." },
     { "id": "spatial_design", "name_ar": "التصميم الداخليّ والفراغ", "desc_ar": "من يصمّم فراغا يُستعمَل — توزيعا وخاماتٍ وإضاءةً وتأثيثا — ويحتاج قرارا يُنفَّذ بكلفتِه." },
@@ -50,7 +50,8 @@
     "PW-PSY-002": ["personal_development"],
     "PW-EDU-001": ["learning_design"],
     "PW-INTR-001": ["spatial_design"],
-    "PW-ENGR-001": ["construction_engineering"]
+    "PW-ENGR-001": ["construction_engineering"],
+    "PW-FAM-001": ["family_parenting"]
   },
   "goal_domains": {
     "employment_advancement": ["employment_readiness"],

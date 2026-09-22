@@ -370,11 +370,12 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
     expect(rec.composite?.templateId).toBe('TPL-ECOM-001')
   })
 
-  /* ٣٥←٤١ (2026-09-16): ستّةُ مساراتٍ جديدةٍ دخلت الفضاء النشط. */
-  it('١٠) لا فائز خارج الفضاء النشط الـ41 في أي رحلة (SMART-OPS موسوم needs_revision — إغلاق منطق V2.1)', () => {
+  /* ٣٥←٤١ (2026-09-16): ستّةُ مساراتٍ جديدةٍ دخلت الفضاء النشط.
+     و٤١←٤٢ (2026-09-22): PW-FAM-001 — مسارُ الأسرة والتربية. */
+  it('١٠) لا فائز خارج الفضاء النشط الـ42 في أي رحلة (SMART-OPS موسوم needs_revision — إغلاق منطق V2.1)', () => {
     const universe = recommendationUniverse()
     const activeIds = new Set(universe.active.map((e) => e.entity_id))
-    expect(activeIds.size).toBe(41)
+    expect(activeIds.size).toBe(42)
     for (const [name, j] of PROPERTY_JOURNEYS) {
       const { rec } = runJourneyTraced(name, j)
       const winner = rec.composite?.templateId ?? rec.primaryPathway?.pathwayId ?? null

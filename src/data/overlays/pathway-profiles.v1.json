@@ -238,6 +238,15 @@
       "min_weekly_load": "3_4",
       "goal_clarity_fit": ["medium", "high"],
       "notes_ar": "لمن يعمل في تنفيذ المشاريع الهندسيّة ويريد ما يُوثَّق ويصمد للمراجعة."
+    },
+    "PW-FAM-001": {
+      "personas": ["employee", "manager", "early_career", "trainer", "freelancer", "founder"],
+      "goals": ["family_wellbeing"],
+      "sectors": [],
+      "functions": [],
+      "min_weekly_load": "3_4",
+      "goal_clarity_fit": ["low", "medium", "high"],
+      "notes_ar": "لوالدٍ يربّي طفلا أو يافعا ويريد قاعدةً يرجع إليها حين يشتدُّ الموقف."
     }
   }
 }

@@ -40,7 +40,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createEngineV21 } from '../../src/domain/diagnostic/v2_1'
-import { GOALS_V21, Q, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
+import { GOALS_V21, NEEDS_V21, Q, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
 import { recommendationUniverse } from '../../src/domain/diagnostic/v2_1/universe'
 import { launchPathways } from '../../src/domain/diagnostic/catalog'
 import { domainLabelAr, domainsV2 } from '../../src/domain/diagnostic/v2/data'
@@ -53,9 +53,16 @@ const CHECK = process.argv.includes('--check')
 
 const STAGES: CareerStage[] = ['university_student', 'fresh_graduate', 'early_career', 'experienced',
   'manager', 'senior_manager', 'founder', 'freelancer', 'trainer_ld', 'other_unsure']
-/* أوسعُ من أطول قائمةِ خيارات — والمحرّكُ يقصُّ ما جاوز، فلا تركيبةَ تفوت */
-const MAX_GOAL = 15
-const MAX_NEED = 14
+/* أوسعُ من أطول قائمةِ خيارات — والمحرّكُ يقصُّ ما جاوز، فلا تركيبةَ تفوت.
+
+   ⚠ كانا رقمين مكتوبين (١٥ و١٤)، والثاني لم يكن أوسعَ من شيء: الاحتياجاتُ
+   صارت ثلاثةً وعشرين، ومرحلةُ «موظف ذو خبرة» تُعرض عليها عشرون — فكان المسحُ
+   يقفُ عند الرابعَ عشرَ ولا يبلغ السادسَ منها أبدا. فوثيقةٌ تقول «مسارٌ لم
+   يفز» عن مسارٍ لم يُجرَّب احتياجُه أصلا، وهو بعينه الخلطُ الذي كُتب هذا
+   الملفُّ ليزيله. والعلاجُ أن يُشتقَّ الحدُّ من القائمة لا يُكتب بجانبها،
+   فلا يعود يرثّ مع كلّ إضافة. */
+const MAX_GOAL = GOALS_V21.length
+const MAX_NEED = NEEDS_V21.length
 
 interface Outcome { top: string | null; kind: string; goal?: string }
 

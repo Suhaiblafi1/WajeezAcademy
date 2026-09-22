@@ -29,7 +29,7 @@ interface Governance {
 }
 
 export const ACADEMIC_GOVERNANCE: Record<string, Governance> = {
-  /* 75 مهارة — future_catalog_skill: صفر قياس/تغطية/متطلب (مؤكد من الكتالوج الحي) */
+  /* 64 مهارة — future_catalog_skill: صفر قياس/تغطية/متطلب (مؤكد من الكتالوج الحي) */
   ...Object.fromEntries([
     'ai_for_learning', 'competitive_analysis', 'social_media_strategy', 'ecommerce_basics',
     'legal_basics_business', 'career_transition', 'salary_negotiation', 'mentorship_use',
@@ -37,10 +37,8 @@ export const ACADEMIC_GOVERNANCE: Record<string, Governance> = {
     'ambiguity_tolerance', 'report_writing', 'cross_cultural_communication',
     'media_literacy', 'dashboard_reading', 'business_intelligence', 'information_search',
     'digital_file_management', 'cloud_collaboration', 'online_meetings', 'digital_productivity',
-    'basic_design_literacy', 'digital_wellbeing', 'remote_work_tools', 'parent_child_communication',
-    'positive_discipline', 'child_learning_support', 'child_financial_literacy', 'child_digital_safety',
-    'family_reading_culture', 'family_goal_setting', 'teen_confidence_support', 'family_dialogue',
-    'role_modeling', 'personal_budgeting', 'saving_habits', 'debt_management',
+    'basic_design_literacy', 'digital_wellbeing', 'remote_work_tools',
+    'personal_budgeting', 'saving_habits', 'debt_management',
     'emergency_fund', 'investment_basics', 'risk_return', 'financial_goal_setting',
     'consumer_awareness', 'tax_basics', 'public_economics_basics', 'family_financial_literacy',
     'public_service_mindset', 'government_correspondence', 'policy_literacy', 'public_finance_basics',
@@ -54,6 +52,15 @@ export const ACADEMIC_GOVERNANCE: Record<string, Governance> = {
   /* رُفع البند 2026-08-28: أُضيفت C-COMX-106 «الإنجليزية للأعمال» فصار للمهارة
      مقرر يُعلّمها، فعاد القياس حيّا وأُعيد تفعيل QB-M4-009 — وهو الشرط الذي
      كُتب هنا يوم علّقناها. */
+  /* ورُفع عشرُ مهاراتِ الأسرة 2026-09-22 — بالشرط نفسِه لا باستثناءٍ له.
+     نصُّ القيد يقول: «تصبح مخرجَ تعلّمٍ حين ترتبط بمنتجٍ فعليّ وبتفعيلٍ أكاديميٍّ
+     صريح»، وقد ارتبطت: PW-FAM-001 بأربعِ دوراتٍ (C-FAM-101..104) تحمل العشرَ
+     كلَّها مخرجاتِ تعلّمٍ لها تقييمٌ ودليلٌ مطلوب. وهذا التفعيلُ هو الصريحُ
+     المطلوب. المرفوعة: parent_child_communication · positive_discipline ·
+     child_learning_support · child_financial_literacy · child_digital_safety ·
+     family_reading_culture · family_goal_setting · teen_confidence_support ·
+     family_dialogue · role_modeling.
+     وبقيت `family_financial_literacy` محكومةً كما هي — لا دورةَ تحملها بعد. */
   /* مقاسة بلا فعل تخصيص مبرمج — لا تُسأل لمجرد جمع البيانات (قرار 2026-08-19) */
   creative_thinking: {
     academic_status: 'future_personalization_signal',

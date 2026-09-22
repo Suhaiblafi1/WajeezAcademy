@@ -160,6 +160,18 @@ export const GOALS_V21: GoalDefV21[] = [
   { code: 'grow_business', label_ar: 'تنمية مشروعي القائم وزيادة إيراداته', stages: ['founder'], legacy_goal: 'revenue_growth', domains: ['entrepreneurship'] },
   { code: 'grow_freelance', label_ar: 'زيادة دخلي وعملائي في العمل الحر', stages: ['freelancer'], legacy_goal: 'revenue_growth', domains: ['entrepreneurship', 'marketing_growth'] },
   { code: 'design_training', label_ar: 'تصميم تدريب أو برامج تعليمية', stages: ['trainer_ld', 'manager', 'senior_manager'], legacy_goal: 'design_training', domains: ['learning_design'] },
+  /* ── بابُ `family_parenting`، ورمزُ `family_wellbeing` الذي كان يَعِد ولا يقع ──
+
+     `goal_domains` في `pathway-domains.v2.json` يربط `family_wellbeing` بمجال
+     الأسرة منذ كُتب، وبنكُ V2 كان فيه خيارُ «أسرة ورفاه» يولّده. فلمّا انتقل
+     السطحُ إلى V2.1 سقط الخيارُ ولم يسقط الربط: بقي رمزٌ لا يعلنه سؤالٌ قطّ،
+     ومجالٌ لا يصله أحد. ولمّا أُضيف PW-FAM-001 لزم البابان معا — هذا الهدفُ
+     و`need_family` أسفله — وإلّا وُلد المسارُ ميّتا كما وُلد PW-GOV-002 قبله.
+
+     والمراحلُ ثمانٍ لا «all»: الأبوّةُ دورٌ يُحمل مع أيّ عمل، ولا تُعرض على
+     طالبٍ جامعيٍّ ولا على خريجٍ حديثٍ — فأغلبُهم ليسوا هناك بعد، وخيارٌ لا
+     يخصُّ من يراه يُنفق مقعدَ سؤالٍ بلا مقابل. */
+  { code: 'family_role', label_ar: 'تربية أبنائي والعلاقة في البيت', stages: ['early_career', 'experienced', 'manager', 'senior_manager', 'founder', 'freelancer', 'trainer_ld', 'other_unsure'], legacy_goal: 'family_wellbeing', domains: ['family_parenting'] },
   { code: 'unsure_goal', label_ar: 'غير متأكد — أريد أن يساعدني التشخيص', stages: 'all', legacy_goal: 'explore', domains: [] },
 ]
 
@@ -232,6 +244,9 @@ export const NEEDS_V21: NeedDefV21[] = [
      `specific_skill` مجالاتُه فارغةٌ عمدا (Goal ≠ Domain). فلمّا صار له
      مساران (PW-PSY-001 · PW-PSY-002) لزمه بابُ وصول. */
   { code: 'need_self_understanding', label_ar: 'فهم النفس والسلوك الإنساني', stages: ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'manager', 'trainer_ld', 'other_unsure'], domains: ['personal_development'] },
+  /* والاحتياجُ هو المحرّكُ الرئيس لاكتشاف المجال — فالهدفُ وحدَه لا يكفي بابا.
+     ومراحلُه مراحلُ `family_role` نفسُها، فلا يفترق البابان. */
+  { code: 'need_family', label_ar: 'تربية الأبناء والعلاقة في البيت', stages: ['early_career', 'experienced', 'manager', 'senior_manager', 'founder', 'freelancer', 'trainer_ld', 'other_unsure'], domains: ['family_parenting'] },
   { code: 'need_unsure', label_ar: 'غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي', stages: 'all', domains: [] },
 ]
 
