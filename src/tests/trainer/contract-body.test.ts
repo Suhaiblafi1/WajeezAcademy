@@ -24,7 +24,7 @@ import {
   PAYOUT_APPROVAL_DAYS, PAYOUT_OUTER_DAYS, PAYOUT_TRANSFER_DAYS,
 } from '@/application/trainer/notice-periods'
 import {
-  CONTRACT_BODY_VERSION, renderContractBodyAr,
+  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_VERSION, renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
 import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
@@ -518,5 +518,62 @@ describe('المثالُ الحسابيُّ في الملحق (ب) — ومقر�
     const noRule = renderContractBodyAr(base({ compensation: null }))
     expect(noRule, 'مثالٌ بلا قاعدةِ أتعاب').not.toContain(FEE_EXAMPLE_HEADING_AR)
     expect(noRule, 'إحالةٌ إلى مثالٍ لا وجودَ له').not.toMatch(/الملحق \(ب\) مثال حسابي/)
+  })
+})
+
+/* ═══ الإقرارُ السادس — خصمُه هو، لا خصمُنا (٢٢ سبتمبر ٢٠٢٦) ═══
+
+   البند 4-10 هو الالتزامُ المالـيُّ الوحيدُ في العقد الذي ينشأ **بفعلٍ يفعله
+   المدرّبُ بعد التوقيع**: نقرةٌ يختارها فيخرج بها مالٌ من كشفه بعد شهر. ومن
+   رأى سطرا سالبا في كشفه عن رجلٍ أعطاه رمزا قبل شهرين يسأل «ومتى قبلتُ هذا؟»
+   — فالمقيسُ أنّ الجوابَ موجودٌ في صفحة التوقيع.
+
+   ولا يُقاس ورودُ الجملة حرفا: تُعاد صياغتُها. والمقيسُ خصائصُها — أنّها
+   تحيل إلى البندين معا، وأنّ شطرَها الثاني قائم. */
+describe('إقراراتُ التوقيع تغطّي ما يُنازَع فيه — ومنه خصمُ المدرّب', () => {
+  const ack = (key: string) => CONTRACT_ACKS.find((a) => a.key === key)
+
+  it('لكلّ إقرارٍ مفتاحٌ فريدٌ ونصٌّ يُقرأ — ولا مفتاحَ بلا جملة', () => {
+    expect(CONTRACT_ACKS.length, 'الإقراراتُ نقصت عمّا كانت').toBeGreaterThanOrEqual(6)
+    const keys = CONTRACT_ACKS.map((a) => a.key)
+    expect(new Set(keys).size, 'مفتاحٌ مكرَّر — فيسقط أحدُهما من التحقّق').toBe(keys.length)
+    for (const a of CONTRACT_ACKS) {
+      expect(a.textAr.length, `الإقرار «${a.key}» بلا نصٍّ يُقرأ`).toBeGreaterThan(40)
+    }
+  })
+
+  it('وفيها إقرارٌ بخصمه هو — يحيل إلى 4-10 ويقول إنّه يتحمّله وحدَه', () => {
+    const a = ack('issued_discount')
+    expect(a, 'لا إقرارَ بالخصم الذي يصدره المدرّبُ بنفسه').toBeTruthy()
+    expect(a!.textAr, 'الإقرارُ لا يحيل إلى البند 4-10').toContain('4-10')
+    expect(a!.textAr, 'لا يقول إنّه يتحمّله هو').toMatch(/أتحمله أنا وحدي|أتحمله وحدي/)
+  })
+
+  /* وشطرُه الثاني ليس زينة: بلا ذكرِ 4-9 تُقرأ الجملةُ «الخصومُ كلُّها عليّ»،
+     فيمتنع عن إصدار خصمه ظانّا أنّ حملاتِنا تُحسم منه أيضا. */
+  it('ويقول في المقابل إنّ خصومَ الأكاديميّة لا تمسّه (4-9) — في الجملة نفسِها', () => {
+    const a = ack('issued_discount')!
+    expect(a.textAr, 'الإقرارُ لا يستثني خصومَ الأكاديميّة — فيُقرأ «الكلُّ عليّ»').toContain('4-9')
+  })
+
+  it('وكلُّ بندٍ يحيل إليه إقرارٌ موجودٌ في المتن فعلا', () => {
+    const body = renderContractBodyAr(base())
+    const clauses = new Map(clauseNumbers(body).map((n) => [n, subItems(body, n)]))
+    for (const a of CONTRACT_ACKS) {
+      for (const m of a.textAr.matchAll(/البند(?:ين)? (\d+)-(\d+)/g)) {
+        const [clause, sub] = [Number(m[1]), Number(m[2])]
+        expect(clauses.has(clause), `إقرارٌ يحيل إلى «البند ${clause}» ولا وجودَ له`).toBe(true)
+        expect(
+          clauses.get(clause)!.includes(sub),
+          `إقرارٌ يحيل إلى «البند ${clause}-${sub}» ولا وجودَ لهذه الفقرة`,
+        ).toBe(true)
+      }
+    }
+  })
+
+  /* وإصدارُ الإقرارات يتحرّك بتحرّكها: من وقّع `v1` أقرّ بخمسٍ لا سادسَ لها،
+     ولا يُعرف ذلك إن بقي الرمزُ كما كان. */
+  it('وإصدارُ الإقرارات ليس `v1` بعد أن دخلت السادسة', () => {
+    expect(CONTRACT_CONSENT_VERSION, 'أُضيف إقرارٌ ولم يتحرّك إصدارُه').not.toMatch(/^v1-/)
   })
 })

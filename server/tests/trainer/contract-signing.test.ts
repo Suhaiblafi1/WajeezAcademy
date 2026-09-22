@@ -175,6 +175,29 @@ describe('التوقيعُ يقع مرّةً واحدة', () => {
     expect(row.signerIp).toBe('203.0.113.9')
     expect(row.signedBodyHash).toBe(sha256(BODY))
     expect(row.consentTextAr, 'وُقّع بلا حفظِ نصّ الإقرار الذي عُرض').toBeTruthy()
+
+    /* ═══ والجملُ التي أقرّ بها تُحفَظ نصّا — لا مفاتيحَ ولا رقمَ إصدار ═══
+
+       كان رأسُ `contract-body.ts` يقول إنّها تُحفَظ ولم تكن تُحفَظ: يُكتب
+       `consentTextAr` (جملةُ التوقيع وحدَها) و`consentVersion` في الأثر. ولم
+       يظهر ما دام الإصدارُ واحدا — فمن قرأ `v1` وجد في الشيفرة خمسا لا سادسَ
+       لها. وقد صار اثنين بإضافة الإقرار السادس (البند 4-10)، فمن سُئل «بأيّ
+       الجمل أقرّ؟» عن عقدٍ وُقّع أمس لا يُجاب إلّا بالنبش في تاريخ Git.
+
+       والمقيسُ **النصُّ لا العدد**: عمودٌ يحمل ستّةَ مفاتيحَ بلا جملها لا
+       يجيب السؤالَ الذي وُضع له. */
+    const stored = row.consentAcksAr as { key: string; textAr: string }[] | null
+    expect(stored, 'وُقّع بلا حفظِ الجمل التي أقرّ بها').toBeTruthy()
+    expect(stored!.map((a) => a.key).sort(), 'المحفوظُ ليس ما عُرض عليه').toEqual([...ALL_ACKS].sort())
+    for (const a of stored!) {
+      const shown = CONTRACT_ACKS.find((x) => x.key === a.key)!
+      expect(a.textAr, `حُفظ مفتاحُ «${a.key}» بلا جملته`).toBe(shown.textAr)
+    }
+    /* والسادسُ منها بعينه: هو علّةُ العمود، فسقوطُه يُسقط الحارس */
+    const issued = stored!.find((a) => a.key === 'issued_discount')
+    expect(issued, 'الإقرارُ بخصمه هو لم يُحفَظ').toBeTruthy()
+    expect(issued!.textAr, 'الجملةُ المحفوظةُ لا تحيل إلى 4-10').toContain('4-10')
+
     expect(row.tokenHash, 'الرمزُ بقي حيّا بعد التوقيع — بابٌ يُفتح مرّتين').toBeNull()
 
     const task = await prisma.trainerOnboardingTask.findFirstOrThrow({
