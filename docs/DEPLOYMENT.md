@@ -295,7 +295,25 @@ crontab -e                               # ثمّ:
 
 #### ⚠️ وما يجب أن تفعله أنت — ثلاث خطواتٍ بالترتيب، وأولاها أهمُّها
 
-**① على الخادم: مفتاحٌ لا يفتح إلّا النشر.** ولّد زوجا خاصّا بهذا السير:
+**① على الخادم: مفتاحٌ لا يفتح إلّا النشر.** أمرٌ واحدٌ يفعلها كلَّها —
+[`scripts/install-github-deploy.sh`](../scripts/install-github-deploy.sh)،
+وحارسُه [`src/tests/deploy/install-github-deploy.test.ts`](../src/tests/deploy/install-github-deploy.test.ts):
+
+```bash
+cd /opt/wajeez && bash scripts/install-github-deploy.sh
+```
+
+يولّد المفتاحَ إن لم يكن (ولا يكتب فوق قائمٍ: ما في GitHub لن يوافق الجديدَ
+فتفشل النشرةُ بلا سببٍ ظاهر)، ويركّب سطرَ الأمر المفروض، ويضبط الإذنَ الذي
+يتجاهل sshd المفتاحَ بدونه بلا كلمة، ثمّ يطبع القيمَ الثلاثَ غيرَ السرّيّة.
+**والمفتاحُ الخاصُّ لا يُطبع إلّا بطلبٍ صريح** (`--print-key`) — فتشغيلٌ عاديٌّ
+يترك سرّا في سجلّ الطرفيّة. و`--check` يقول ما حالُه ولا يغيّر شيئا.
+
+وثلاثةُ أشياءَ يردّها قبل أن يركّب: مستخدِمٌ لا يملك الشجرة (النشرُ يجري
+بصلاحيّته)، ومستخدِمٌ لا يشغّل docker، وميناءُ SSH غيرُ ٢٢ — فالسيرُ لا يمرّر
+`-p`، فبابٌ عليه لا يُفتح أبدا.
+
+<details><summary>وباليد، إن أردت — ثلاثةُ أسطر</summary>
 
 ```bash
 ssh-keygen -t ed25519 -C 'github-deploy' -f ~/.ssh/github_deploy -N ''
@@ -306,6 +324,10 @@ ssh-keygen -t ed25519 -C 'github-deploy' -f ~/.ssh/github_deploy -N ''
 ```
 command="bash /opt/wajeez/deploy/deploy.sh",no-agent-forwarding,no-port-forwarding,no-pty,no-X11-forwarding ssh-ed25519 AAAA... github-deploy
 ```
+
+ثمّ: `chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys ~/.ssh/github_deploy`
+
+</details>
 
 > **وهذا السطرُ هو الأمانُ كلُّه، لا الباقي.** بدونه يفتح المفتاحُ صَدَفةً
 > كاملةً على خادم الإنتاج لكلِّ من يملك الكتابةَ في المستودَع — وهو ما رفضتَه
@@ -324,8 +346,8 @@ command="bash /opt/wajeez/deploy/deploy.sh",no-agent-forwarding,no-port-forwardi
 | السرّ | ما هو |
 |---|---|
 | `DEPLOY_SSH_KEY` | المفتاحُ **الخاصّ** الذي ولّدته في ① — كاملا بسطوره |
-| `DEPLOY_KNOWN_HOSTS` | مخرَجُ `ssh-keyscan -t ed25519 <عنوان-الخادم>` |
-| `DEPLOY_HOST` | عنوانُ الخادم |
+| `DEPLOY_KNOWN_HOSTS` | يطبعها السكربتُ من مفتاح المضيف على الخادم نفسِه — وهو أصدقُ من `ssh-keyscan` عبر الشبكة: تلك تسأل الطريقَ عن بصمة الطريق |
+| `DEPLOY_HOST` | **النطاق** لا الرقم: الخادمُ انتقل مرّةً فبقيت الوثائقُ تشير إلى عنوانٍ ميّت — فالاسمُ هو الثابت |
 | `DEPLOY_USER` | المستخدِمُ الذي يملك المستودَعَ على الخادم |
 
 **③ وجرّبه مرّةً بيدك**: Actions → «نشرُ الإنتاج» → `Run workflow`. فإن خضّر
