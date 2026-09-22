@@ -3,7 +3,7 @@
    2) docs/CATALOG_GAPS_FROM_DIAGNOSTIC_AR.md — فجوات الكتالوج المكتشفة من التشخيص
    الاستخدام: npx tsx scripts/report-v2-docs.ts */
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createEngine } from '../src/domain/diagnostic/engine'
@@ -125,7 +125,33 @@ ${rows
 V2 ليس «أسئلة أقل» فقط — بل قرارات قابلة للتدقيق: لا سؤال خارج مرحلة المتعلم، لا مهارة مفترضة، لا مسار خارج الأهلية، ولا ثقة مختلقة. ما يظهر كـ«تحفظ» في أرقام V2 (ثقة أقل إفراطًا، إحالات مستشار أكثر) هو في الحقيقة صدق منهجي: المنظومة تعترف بما لا تعرفه.
 `
 
-writeFileSync(join(root, 'docs/DIAGNOSTIC_V1_V2_COMPARISON_AR.md'), comparisonMd)
+/* ═══ ووضعُ المقارنة — خطُّ أساسٍ لا يُقارَن به شيءٌ ليس خطَّ أساس ═══
+
+   بقيت هذه الوثيقةُ سبعةَ أيّامٍ تصف كتالوجا من عشرين مسارا والكتالوجُ ستٌّ
+   وعشرون. ولم يحمرَّ شيء: لا بوّابةَ لها، فمن لم يشغّل المولّدَ بيده لم يعلم.
+
+   وكشف تجديدُها صفّا يُقرأ بعين: «طالب مدرسة — هدف personal_growth» صار
+   يُوصى له بـ`PW-ENGR-001` (الهندسة والتنفيذ) في المحرّكَين معا، بعد أن كان
+   `PW-FND-003`. وذاك أثرُ نموّ الكتالوج لا عطبٌ في محرّك — لكنّه لا يُرى
+   إلّا بتجديدٍ يُقارَن. فلولا البوّابةُ لَبقي سنةً لا يُرى.
+
+   و`--check` تحسب ولا تكتب، فتحمرّ إن خالف التشغيلُ الحيُّ الملتزَم. */
+const CHECK = process.argv.includes('--check')
+const COMPARISON = 'docs/DIAGNOSTIC_V1_V2_COMPARISON_AR.md'
+
+if (CHECK) {
+  const committed = readFileSync(join(root, COMPARISON), 'utf8')
+  if (committed !== comparisonMd) {
+    console.error(`❌ ${COMPARISON} لا يطابق المحرّكَين الحيَّين.`)
+    console.error('\nوثيقةٌ تصف كتالوجا غيرَ القائم تُقرأ فيُبنى عليها — وقد بقيت سبعةَ أيّام.')
+    console.error('شغّل «npm run report:v1-v2» والتزم الوثيقةَ في الطلب نفسِه.')
+    process.exit(1)
+  }
+  console.log(`✅ ${COMPARISON} يطابق المحرّكَين الحيَّين.`)
+} else {
+  writeFileSync(join(root, COMPARISON), comparisonMd)
+  console.log(`✅ ${COMPARISON}`)
+}
 
 /* ─── وثيقةُ فجوات الكتالوج لم تعد تُولَّد هنا ───
 
@@ -140,5 +166,4 @@ writeFileSync(join(root, 'docs/DIAGNOSTIC_V1_V2_COMPARISON_AR.md'), comparisonMd
 
    ولا تُعاد هنا: مولّدان لملفٍّ واحدٍ يتنازعانه، ومن شغّل هذا لَمحا ذاك. */
 
-console.log('✅ docs/DIAGNOSTIC_V1_V2_COMPARISON_AR.md')
 console.log(`V1 vs V2 — أسئلة: ${v1Q}/${v2Q} | غير مناسبة: ${v1Inapp}/${v2Inapp} | فجوات افتراضية: ${v1Unmeasured}/${v2Unmeasured} | مسارات متميزة: ${v1Distinct}/${v2Distinct}`)
