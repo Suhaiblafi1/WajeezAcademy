@@ -103,7 +103,10 @@ const SECTOR_BY_DOMAIN: Record<string, string> = {
   career_direction: 'التطوير المهني والتواصل',
   employment_readiness: 'التطوير المهني والتواصل',
   communication_influence: 'التطوير المهني والتواصل',
-  family_parenting: 'التطوير المهني والتواصل',
+  /* كان يقع في «التطوير المهني والتواصل» يومَ كان مجالا بلا مسار — أي أنّ
+     أحدا لم يكن يراه. ولمّا وُلد PW-FAM-001 صار الوقوعُ هناك خطأً يراه
+     الزائر: من يبحث عن التربية لا يفتح رقاقةَ التطوير المهنيّ. */
+  family_parenting: 'الأسرة والتربية',
   visual_design: 'التصميم والإبداع',
   spatial_design: 'التصميم والإبداع',
   construction_engineering: 'الهندسة والتنفيذ',
@@ -126,6 +129,7 @@ export const pathwayDomains = [
   'التطوير المهني والتواصل',
   'التصميم والإبداع',
   'الهندسة والتنفيذ',
+  'الأسرة والتربية',
 ]
 
 function skillsOf(raw: CoreCatalogRaw, courseIds: string[]): string[] {

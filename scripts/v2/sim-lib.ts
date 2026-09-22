@@ -41,6 +41,8 @@ export interface SessionResult {
   confidenceOverall: number | null
   domainTop: string | null
   measuredSkillCoverage: number | null
+  /** المقيسُ من المُمكن قياسُه — المسطرةُ التي يُعاير عليها مانعُ «تطابق قوي» */
+  measurableSkillCoverage: number | null
   gapSkillSlugs: string[]
   /** أعلى ٣ مرشحين بترتيبهم — لتوزيع Top3 */
   top3PathwayIds: string[]
@@ -164,6 +166,11 @@ export function runSession(spec: PersonaSpec, variant: string, maxSteps = 30): S
     confidenceOverall: v2?.confidence.overall ?? null,
     domainTop: v2?.explanation.domain_top ?? null,
     measuredSkillCoverage: v2 ? v2.confidence.skillEvidenceCoverage : null,
+    measurableSkillCoverage: v2
+      ? (v2.confidence.evidenceBasis.measurable === 0
+          ? 1
+          : v2.confidence.evidenceBasis.measured / v2.confidence.evidenceBasis.measurable)
+      : null,
     gapSkillSlugs: gap,
     top3PathwayIds: [rec.primaryPathway?.pathwayId, ...rec.alternatives.map((a) => a.pathwayId)].filter((x): x is string => Boolean(x)),
     unknownSkillSlugs: rec.primaryPathway ? (v2?.explanation.unknown_skills ?? []).map((s) => s.slug) : [],
