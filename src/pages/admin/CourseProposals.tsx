@@ -27,7 +27,7 @@
    يلزم في الخادم لا في الشاشة وحدَها. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookPlus, Check, Link2, Link2Off, Loader2, MessageCircleQuestion, Pencil, Sparkles, X } from "lucide-react";
+import { BookPlus, Check, Layers, Link2, Link2Off, Loader2, MessageCircleQuestion, Pencil, Sparkles, X } from "lucide-react";
 import { useNavigate } from "react-router";
 import AdminLayout from "./AdminLayout";
 import EmptyState from "@/components/EmptyState";
@@ -101,6 +101,156 @@ const SAID: Record<string, string> = {
   became_course: "صارت دورةً في الكتالوج",
   rejected: "لم تُقبل",
 };
+
+/* ═══ تقريرُ التجميع — أتتجمّع الاقتراحاتُ في مسارات؟ ═══
+
+   سأل صاحبُ المنصّة: أنجمعها كلَّ فترةٍ في مسارات بدل دورةٍ دورة؟ والقواعدُ
+   في `src/application/catalog/proposal-clusters.ts` تجيبه بقياس. وكان بابُها
+   سكربتا يُنادى بـSSH ودوكر — وتقريرٌ يُقرأ كلَّ فترةٍ ويحتاج ثلاثَ أدواتٍ
+   ليُفتح لا يُقرأ. فهو هنا، في الشاشة التي يُصنَّف فيها.
+
+   **ومطويٌّ حتّى يُطلَب**: مسحُه يقرأ الكتالوجَ كلَّه وفضاءَ التوصيات، ومن
+   فتح الشاشةَ ليصنّف اقتراحا واحدا لا يُحمَّل ذلك. */
+interface ClusterProposal {
+  id: string; titleAr: string; trainerName: string | null;
+  nearestCourseId: string; nearestTitleAr: string; score: number; sharedAr: string[];
+}
+interface ClusterRow {
+  domain: string; domainLabelAr: string;
+  verdict: "path_candidate" | "split_by_audience" | "standalone";
+  verdictAr: string; commonStagesAr: string[]; domainReachable: boolean;
+  proposals: ClusterProposal[];
+}
+interface ClusterReport {
+  totalProposals: number; pathCourseCount: number; headlineAr: string;
+  clusters: ClusterRow[];
+  unanchored: { id: string; titleAr: string; summaryAr: string | null; trainerName: string | null }[];
+}
+
+/** علامةُ الحكم — ◆ مرشَّحُ مسار · ◇ يُقسَم بالجمهور · · دورةٌ وحدَها */
+const VERDICT_AR: Record<ClusterRow["verdict"], { mark: string; cls: string }> = {
+  path_candidate: { mark: "◆", cls: "text-emerald-300" },
+  split_by_audience: { mark: "◇", cls: "text-amber-300" },
+  standalone: { mark: "·", cls: "text-muted-foreground" },
+};
+
+function ClusterPanel({ scope }: { scope: "open" | "all" }) {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<ClusterReport | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  /* ولا حالةَ «جارٍ التحميل»: هي مشتقّةٌ لا محفوظة — مفتوحٌ بلا نتيجةٍ ولا
+     خطأ. وحفظُها كان يلزمه `setLoading(true)` في جسم الأثر، وذاك دينُ
+     تلويمٍ أمسكه الحاجز (`react-hooks/set-state-in-effect`): كتابةٌ متزامنةٌ
+     في الأثر تُصيّر الشاشةَ مرّتين بلا سبب. */
+  const loading = open && data === null && err === null;
+
+  /* والمدى يُقرأ مع الفتح، واللوحةُ تُعاد بتبدّله (`key` في موضع تركيبها) —
+     فمن بدّل «أظهِر ما انتهى أمرُه» وهو مفتوحٌ لا يرى تقريرا عن مدى غيرِ
+     الذي يقرؤه في الطابور. */
+  useEffect(() => {
+    if (!open) return;
+    apiGet<ClusterReport>(`/api/admin/course-proposals/clusters?scope=${scope}`)
+      .then((r) => { setData(r); setErr(null); })
+      .catch((e) => setErr(e instanceof ApiError ? e.message : "تعذّر بناءُ التقرير"));
+  }, [open, scope]);
+
+  return (
+    <Card className="mb-4">
+      <Button tone="ghost" icon={Layers} onClick={() => setOpen(!open)} aria-expanded={open}>
+        {open ? "أخفِ تقريرَ التجميع" : "أتتجمّع هذه في مسارات؟ — اعرض التقرير"}
+      </Button>
+
+      {open ? (
+        <div className="mt-3">
+          {loading ? (
+            <div className="grid place-items-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جارٍ الحساب" />
+            </div>
+          ) : err ? (
+            <p role="alert" className="text-read font-bold text-red-300">{err}</p>
+          ) : data ? (
+            <>
+              <p className="text-sm leading-7 text-foreground">{data.headlineAr}</p>
+
+              {data.clusters.length > 0 ? (
+                <div className="mt-3 grid gap-3">
+                  {data.clusters.map((c) => (
+                    <Inset key={c.domain}>
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <span className={`text-lg font-black ${VERDICT_AR[c.verdict].cls}`} aria-hidden>
+                          {VERDICT_AR[c.verdict].mark}
+                        </span>
+                        <b className="text-read text-foreground">{c.domainLabelAr}</b>
+                        <span className="text-sm text-muted-foreground">
+                          {c.proposals.length} اقتراحا
+                        </span>
+                        {!c.domainReachable ? (
+                          <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-300">
+                            لا يصله هدفٌ اليوم
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <p className="mt-1 text-sm leading-7 text-muted-foreground">{c.verdictAr}</p>
+
+                      <div className="mt-1 text-xs text-muted-foreground/70">
+                        الجمهورُ المشترَك:{" "}
+                        {c.commonStagesAr.length > 0 ? c.commonStagesAr.join(" · ") : "— لا جمهورَ يجمعها —"}
+                      </div>
+
+                      <ul className="mt-2 grid gap-1.5">
+                        {c.proposals.map((p) => (
+                          <li key={p.id} className="text-sm text-muted-foreground">
+                            «<b className="text-foreground">{p.titleAr}</b>»
+                            {p.trainerName ? <span className="text-muted-foreground/70"> — {p.trainerName}</span> : null}
+                            <div className="text-xs text-muted-foreground/70">
+                              أقربُ رمز: {p.nearestCourseId} «{p.nearestTitleAr}»
+                              {p.sharedAr.length > 0 ? ` · تشترك في: ${p.sharedAr.join("، ")}` : null}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </Inset>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* وأهمُّ صفوفه: ما لا يشبه شيئا في الكتالوج — يُقرأ بعين */}
+              {data.unanchored.length > 0 ? (
+                <Inset className="mt-3">
+                  <b className="text-read text-foreground">
+                    بلا مرساة ({data.unanchored.length})
+                  </b>
+                  <p className="mt-1 text-sm leading-7 text-muted-foreground">
+                    لا تشترك كلمةٌ من عناوينها مع الكتالوج، فلا تُوضَع في مجال. وهي إمّا
+                    <b> بابٌ جديدٌ فعلا</b>، وإمّا عنوانٌ غامضٌ يُسأل صاحبُه عنه.
+                  </p>
+                  <ul className="mt-2 grid gap-1.5">
+                    {data.unanchored.map((p) => (
+                      <li key={p.id} className="text-sm text-muted-foreground">
+                        «<b className="text-foreground">{p.titleAr}</b>»
+                        {p.trainerName ? <span className="text-muted-foreground/70"> — {p.trainerName}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </Inset>
+              ) : null}
+
+              <p className="mt-3 text-sm leading-7 text-muted-foreground/70">
+                <b>◆ مرشَّحُ مسار</b> — {data.pathCourseCount} فأكثرُ بجمهورٍ واحد. يُقرأ ولا يُنفَّذ:
+                المسارُ وعدٌ ومخرَجٌ ختاميٌّ وشهادة، ولا يُولَد من عناوينَ اجتمعت في عمود.
+                {" · "}<b>◇ يُقسَم بالجمهور</b> — عددُه يكفي ولا جمهورَ يجمعه.
+                {" · "}<b>· دورةٌ قائمةٌ بنفسها</b> — ما دون ذلك.
+                {" "}ومجالٌ لا يصله هدفٌ: العلاجُ بنكُ الأسئلة لا مسارٌ جديد.
+              </p>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+    </Card>
+  );
+}
 
 export default function CourseProposals() {
   const nav = useNavigate();
@@ -181,6 +331,8 @@ export default function CourseProposals() {
         </div>
       ) : (
         <>
+          <ClusterPanel key={showDecided ? "all" : "open"} scope={showDecided ? "all" : "open"} />
+
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="اقتراحا"
             placeholder="ابحث بعنوانِ الدورة أو باسم المدرّب…" />
 

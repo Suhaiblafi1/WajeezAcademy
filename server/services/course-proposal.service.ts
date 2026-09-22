@@ -47,6 +47,14 @@ import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
 import { StaffTaskService, type Assigner } from './staff-task.service'
 import { suggestCourses, type ProposalMatch } from '../../src/application/trainer/proposal-match'
+import {
+  clusterHeadlineAr, clusterProposals, PATH_COURSE_COUNT,
+  type UniverseEntity,
+} from '../../src/application/catalog/proposal-clusters'
+import { recommendationUniverse } from '../../src/domain/diagnostic/v2_1/universe'
+import { domainLabelAr } from '../../src/domain/diagnostic/v2/data'
+import type { DomainId } from '../../src/domain/diagnostic/v2/types'
+import { CAREER_STAGE_LABELS_AR, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
 
 /** طولُ العنوان — ما يقبله الكتالوج نفسُه، فلا يُقبل هنا ما يُردّ هناك */
 export const MIN_PROPOSAL_TITLE = 3
@@ -354,6 +362,68 @@ export class CourseProposalService {
           .filter((m) => m.courseId !== r.courseId)
         : ([] as ProposalMatch[]),
     }))
+  }
+
+  /** أتتجمّع اقتراحاتُ المدرّبين في مسارات؟ — تقريرٌ يُقرأ في الشاشة.
+
+      ═══ ولمَ في الشاشة لا في طرفيّة ═══
+
+      القواعدُ في `src/application/catalog/proposal-clusters.ts` منذ ٢٢ سبتمبر
+      ٢٠٢٦، وكان بابُها الوحيدُ سكربتا يُنادى بـSSH ودوكر على الخادم. وقال
+      صاحبُ المنصّة وهو يحاول: تقريرٌ يُقرأ كلَّ فترةٍ لا يُشغَّل هكذا. وهو
+      حقّ: أداةٌ تُقرأ كلَّ شهرٍ وتحتاج ثلاثَ أدواتٍ لتُفتح لا تُقرأ.
+
+      ولا قواعدَ هنا: هذه قراءةٌ من القاعدة وتهيئةٌ للعرض. ما يُقرَّر به
+      مُختبَرٌ هناك، ويُنقض في `src/tests/catalog/proposal-clusters.test.ts`.
+
+      والمطابقةُ من `matchableCourses` نفسِها التي تُرشِّح في الطابور — فلا
+      يرى من يقرأ التقريرَ رمزا غيرَ الذي يراه في السطر. */
+  async clusters(scope: 'open' | 'all' = 'open') {
+    const rows = await this.prisma.trainerCourseProposal.findMany({
+      where: scope === 'open' ? { status: { in: [...QUEUE_VISIBLE] } } : {},
+      orderBy: [{ createdAt: 'asc' }],
+      select: {
+        id: true, titleAr: true, summaryAr: true,
+        profile: { select: { application: { select: { fullName: true } } } },
+      },
+    })
+
+    const courses = rows.length > 0 ? await this.matchableCourses() : []
+    const entities = recommendationUniverse().entities as unknown as UniverseEntity[]
+    const report = clusterProposals(
+      rows.map((r) => ({
+        id: r.id, titleAr: r.titleAr, summaryAr: r.summaryAr,
+        trainerName: r.profile.application.fullName,
+      })),
+      courses,
+      entities,
+    )
+
+    const stageAr = (s: string) => CAREER_STAGE_LABELS_AR[s as CareerStage] ?? s
+
+    return {
+      totalProposals: report.totalProposals,
+      pathCourseCount: PATH_COURSE_COUNT,
+      headlineAr: clusterHeadlineAr(report),
+      clusters: report.clusters.map((c) => ({
+        domain: c.domain,
+        domainLabelAr: domainLabelAr(c.domain as DomainId),
+        verdict: c.verdict,
+        verdictAr: c.verdictAr,
+        commonStagesAr: c.commonStages.map(stageAr),
+        domainReachable: c.domainReachable,
+        proposals: c.proposals.map((p) => ({
+          id: p.id, titleAr: p.titleAr, trainerName: p.trainerName ?? null,
+          nearestCourseId: p.nearestCourseId, nearestTitleAr: p.nearestTitleAr,
+          score: p.score, sharedAr: [...p.sharedAr],
+        })),
+      })),
+      /* وأهمُّ صفوفه: ما لا يشبه شيئا في كتالوجنا — بابٌ جديدٌ أو عنوانٌ يُسأل عنه */
+      unanchored: report.unanchored.map((p) => ({
+        id: p.id, titleAr: p.titleAr, summaryAr: p.summaryAr ?? null,
+        trainerName: p.trainerName ?? null,
+      })),
+    }
   }
 
   /** سؤالُ الإدارة قبل القرار — ينقل الاقتراحَ إلى صاحبه ويُشعره.

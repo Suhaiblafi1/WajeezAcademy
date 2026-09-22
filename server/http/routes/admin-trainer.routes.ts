@@ -900,6 +900,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return proposals.queue(scope ?? 'open')
   })
 
+  /* ═══ تقريرُ التجميع — يُقرأ في الشاشة لا في طرفيّة (٢٢ سبتمبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة: أنجمع الاقتراحاتِ كلَّ فترةٍ في مسارات بدل دورةٍ دورة؟
+     والجوابُ يُقاس لا يُرأى، والقواعدُ مكتوبةٌ ومُختبَرة — لكنّ بابَها كان
+     سكربتا يُنادى بـSSH ودوكر. وتقريرٌ يُقرأ كلَّ فترةٍ ويحتاج ثلاثَ أدواتٍ
+     ليُفتح لا يُقرأ. فصار نقطةَ نهايةٍ تقرؤها الشاشةُ التي يُصنَّف فيها. */
+  app.get('/api/admin/course-proposals/clusters', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'أتتجمّع الاقتراحاتُ في مسارات؟ — تقريرُ قراءةٍ لا بوّابة' },
+  }, async (req) => {
+    const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
+    return proposals.clusters(scope ?? 'open')
+  })
+
   app.post('/api/admin/course-proposals/:id/link', {
     preHandler: requirePermission('trainer.change.review'),
     schema: { tags: ['admin-trainers'], summary: 'تصنيفُ اقتراحٍ نسخةً من رمزٍ قائم — يُربط ولا يُنشأ إصدار' },
