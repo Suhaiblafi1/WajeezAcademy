@@ -28,7 +28,8 @@
    هنا يقود إلى بابٍ مغلق. */
 
 import type { MailDoc } from './mail-template'
-import { TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
+import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
+import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
 
 /** ما يُسلَّم إلى `sendDirectEmail` — الموضوعُ ووصفُ الرسالة */
 export interface DecisionMail {
@@ -188,32 +189,61 @@ export function rejectionUndoneMail(input: {
    الطلب بالبريد وحدَه مفتوحةٌ في `/join-trainer`، والحجزُ من تحتها.
 
    ولم يبقَ لـ`bookingUrl` مُنادٍ — فحُذف المعامَلُ ولم يُترك يُمرَّر إلى
-   حيث لا يُقرأ. */
+   حيث لا يُقرأ.
+
+   ═══ ودعوةٌ مكانَ «بقيت خطوةٌ واحدة» (٢٢ سبتمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أضفْ خاصيّةَ ‹احجز موعد› خاصّةً لمن لم يحجزوا موعدا:
+   أن نطلب منهم — إنّنا مهتمّون بملفّك ونرغب بلقائك، واحجز موعدا لنتعرّف
+   عليك وعلى خبراتك أكثر».
+
+   وكانت الرسالةُ تقول له إنّ **استمارتَه** ناقصة: «بقيت خطوةٌ واحدة… وهو
+   آخرُ ما نحتاجه منك» — صادقةٌ فيما تقول، وتسكت عن أنفعِ ما عندنا. فمن
+   قرأها لم يعرف أنّ أحدا نظر في ملفّه ولا أنّنا نريد أن نلتقيه، بل أنّ حقلا
+   بقي فارغا. فصارت **دعوةً**: سببُها أوّلا (نظرنا واهتممنا)، ثمّ ما نطلبه.
+
+   ونصُّها في `interview-invitation.ts` لا هنا: البطاقةُ في صفحة حالته تقول
+   الكلامَ نفسَه، وزرُّ هذه الرسالة يفتح تلك الصفحةَ بعينها — فلو كُتب مرّتين
+   لقرأ في بريدنا شيئا وفي موقعنا غيرَه بنقرةٍ واحدةٍ بينهما.
+
+   ═══ والزرُّ يبقى واحدا في الحالَين — ووقفُ الحجز يبدّل ما نطلبه ═══
+
+   `INTERVIEW_BOOKING_PAUSE` يُغلق التقويم. ووجهةُ الزرّ **صفحةُ الطلب** لا
+   التقويمُ — وهي تقول الصدقَ في الحالَين: تقويمٌ حين يُفتح الحجز، وإشعارُ
+   الوقف وشهرُ العودة حين يُوقَف. فلا يُحذف الزرُّ ولا يُستحدَث ثانٍ؛ وإنّما
+   يتبع **اسمُه** ما بعده، فلا يقول «احجز موعدك» وبابُ الحجز مغلق. */
 export function bookingReminderMail(input: {
   fullName: string; reference: string
   /** صفحةُ حالة الطلب — تُفتح بحسابه */
   statusUrl: string
+  /** هل الحجزُ موقوف؟ — يُمرَّر ليُفحص الطرفان، وافتراضُه حالُ المنصّة */
+  paused?: boolean
 }): DecisionMail {
+  const paused = input.paused ?? INTERVIEW_BOOKING_PAUSE.active
   return {
-    subject: `بقيت خطوةٌ واحدة — احجز موعدَ ${MEETING_AR} (${input.reference})`,
+    subject: `${INTERVIEW_INVITATION.headingAr} (${input.reference})`,
     doc: {
       greetingName: input.fullName,
-      preheader: `وصل طلبك كاملا، ولم يصلنا حجزُ موعدك بعد — وهي آخرُ خطوة.`,
-      heading: `بقيت خطوةٌ واحدة في طلبك: موعدُ ${MEETING_AR}`,
+      preheader: paused
+        ? `نظرنا في ملفّك ونرغب بلقائك — ويصلك رابطُ الحجز في ${INTERVIEW_BOOKING_PAUSE.resumeMonthAr}.`
+        : `نظرنا في ملفّك ونرغب بلقائك — واحجز موعدَ ${MEETING_AR} في الوقت الذي يناسبك.`,
+      heading: INTERVIEW_INVITATION.headingAr,
       blocks: [
-        {
-          kind: 'p',
-          text: 'شكرا لتقدّمك إلى أكاديمية وجيز. طلبك وصلنا كاملا وهو بين يدي فريقنا الأكاديميّ '
-            + `— ولم يصلنا حجزُ موعدِ ${MEETING_AR} بعد، وهو آخرُ ما نحتاجه منك.`,
-        },
-        {
-          kind: 'p',
-          text: 'سجّل الدخول إلى حسابك بالبريد الذي قدّمت به، وتفقّد صفحة طلبك: تجد فيها حالتَه، '
-            + 'وتحتها تقويمُ المواعيد تختار منه ما يناسبك.',
-        },
+        /* سببُ الرسالة أوّلا: من لم يُقَل له لماذا كُتب إليه قرأ الطلبَ
+           إجراءً آليّا — وهو ما كانت عليه الرسالةُ قبل هذا التغيير. */
+        { kind: 'p', text: INTERVIEW_INVITATION.interestAr },
+        /* ثمّ ما نطلبه — حجزٌ حين يُحجَز، وانتظارٌ بشهرٍ مسمّى حين يُوقَف */
+        { kind: 'p', text: invitationAskAr(paused) },
+        ...(paused
+          ? []
+          : ([{
+              kind: 'p',
+              text: 'ومن صفحة طلبك تختار الموعد: سجّل الدخول بالبريد الذي قدّمت به، '
+                + 'تجد حالةَ طلبك وتحتها تقويمُ المواعيد تختار منه ما يناسبك.',
+            }] as const)),
         {
           kind: 'cta',
-          label: 'تفقّد طلبك واحجز موعدك',
+          label: paused ? 'تفقّد حالة طلبك' : 'تفقّد طلبك واحجز موعدك',
           href: input.statusUrl,
           caption: 'يُفتح بحسابك — البريدُ الذي قدّمت به وكلمتُه.',
         },
