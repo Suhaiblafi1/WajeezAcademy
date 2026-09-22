@@ -96,8 +96,13 @@ export function derivePersona(facts: FactBag): PersonaResult {
   if (personaRaw.includes('خريج')) {
     const emp = g('employment_state')
     evidence.push('persona: خريج جديد')
-    if (emp === 'not_working') {
-      evidence.push('employment_state=not_working')
+    /* و`job_seeking` مع `not_working` سواء هنا. فالبنكان يسمّيان جوابا واحدا
+       باسمين: «أبحث عن عمل» في بنك V2 يختزل `not_working`، وفي بنك V2.1
+       يختزل `job_seeking` — وهذا الشرطُ لم يعرف إلّا الأوّل. فكان خرّيجٌ
+       يقول «أبحث عن عمل» حرفا لا يُعدّ باحثا عن عمل، ويُعدُّه من قال «لا
+       أعمل حاليًا». */
+    if (emp === 'not_working' || emp === 'job_seeking') {
+      evidence.push(`employment_state=${emp}`)
       return { key: 'job_seeker', confidence: 0.85, evidence, isMinor }
     }
     return { key: 'graduate', confidence: 0.9, evidence, isMinor }
