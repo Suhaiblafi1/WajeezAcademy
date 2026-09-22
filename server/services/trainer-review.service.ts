@@ -1957,6 +1957,16 @@ export class TrainerReviewService {
           signerIp: input.ip?.slice(0, 64) ?? null,
           signerUserAgent: input.userAgent?.slice(0, 300) ?? null,
           consentTextAr: CONTRACT_CONSENT_AR,
+          /* ═══ والجملُ الستُّ تُحفَظ نصّا لا مفاتيحَ ═══
+
+             رأسُ `contract-body.ts` كان يقول إنّها تُحفَظ ولم تكن تُحفَظ:
+             `consentTextAr` جملةُ التوقيع وحدَها، و`consentVersion` في الأثر
+             يقول ما قرأه **بدلالةِ شيفرةٍ تتغيّر**. وقد صار للإقرارات
+             إصداران، فيُكتب النصُّ كما عُرض عليه في هذه اللحظة.
+
+             وداخلَ المعاملة مع التوقيع نفسِه: توقيعٌ يُكتب وجملُه لا تُكتب
+             يترك الفجوةَ التي وُضع العمودُ لسدّها. */
+          consentAcksAr: CONTRACT_ACKS.map((a) => ({ key: a.key, textAr: a.textAr })),
           signedBodyHash: input.bodyHash,
           /* والرمزُ يموت بالتوقيع: وُقّع مرّةً، فلا بابَ يُفتح ثانية */
           tokenHash: null, tokenExpiresAt: null,
