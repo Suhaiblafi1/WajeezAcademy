@@ -28,18 +28,30 @@
    · `suspended`: له بابُه — «ارفع الإيقاف»، لا اعتمادٌ من جديد.
    · `active`: معتمَدٌ أصلا. */
 
-export const ONE_CLICK_APPROVABLE_STATUSES = [
-  'submitted',
-  'under_review',
-  'information_requested',
-  'shortlisted',
-  'interview_scheduled',
-  'demo_requested',
-  'academic_review',
-  'conditionally_approved',
-  'contract_pending',
-  'onboarding',
-  'waitlisted',
+/* ═══ الحالاتُ الحيّة — مصدرُ الشاشة والخادم معا (٢٢ سبتمبر ٢٠٢٦) ═══
+
+   حالةٌ حيّةٌ: صاحبُها ما زال **متقدّما** — طلبُه قُدِّم ولم يصر مدرّبا ولم
+   ينتهِ بردٍّ ولا انسحاب. وفيها تُفتح القراراتُ كلُّها بلا استثناء، بقرار
+   صاحب المنصّة: «أبقِ كلَّ الخيارات مفتوحةً مهما كانت الحالةُ الحاليّة».
+
+   وتُقرأ في ثلاثة مواضع: خريطةُ الانتقالات في الخادم، وقائمةُ القرارات في
+   `decisions.ts`، والاعتمادُ بنقرةٍ أسفلَه. وثلاثُ قوائمَ لشيءٍ واحدٍ
+   تفترق — فتُظهر الشاشةُ زرّا يردّه الخادمُ ٤٠٩. فالمصدرُ واحد. */
+export const REVIEW_OPEN_STATUSES = [
+  'submitted', 'under_review', 'information_requested', 'shortlisted',
+  'interview_scheduled', 'demo_requested', 'academic_review',
+  'conditionally_approved', 'contract_pending', 'onboarding', 'waitlisted',
 ] as const
+
+export type ReviewOpenStatus = (typeof REVIEW_OPEN_STATUSES)[number]
+
+/** كلُّ حيّةٍ سوى واحدة — فلا يُعرض قرارٌ ينقل الطلبَ إلى حالته نفسِها */
+export const openExcept = (self: string): string[] =>
+  REVIEW_OPEN_STATUSES.filter((s) => s !== self)
+
+/* والاعتمادُ بنقرةٍ من كلّ حالةٍ حيّة — وهي هي، لا قائمةٌ ثانيةٌ تُكتب. */
+export const ONE_CLICK_APPROVABLE_STATUSES = REVIEW_OPEN_STATUSES
+
+/* (القائمةُ القديمةُ رُفعت — صارت `REVIEW_OPEN_STATUSES` أعلاه بحروفها) */
 
 export type OneClickApprovableStatus = (typeof ONE_CLICK_APPROVABLE_STATUSES)[number]

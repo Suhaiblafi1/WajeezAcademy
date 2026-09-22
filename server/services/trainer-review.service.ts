@@ -781,6 +781,28 @@ export class TrainerReviewService {
     const transitionNote = overrideReason
       ? [note?.trim(), `تجاوزُ بوّابة التجهيز: ${overrideReason}`].filter(Boolean).join(' — ')
       : note
+    /* ═══ ومن طُلبت منه معلوماتٌ يعود إلى حيث كان (٢٢ سبتمبر ٢٠٢٦) ═══
+
+       لمّا فُتح طلبُ المعلومات من كلّ حالةٍ حيّة — ومنها ما بعد القبول
+       الداخليّ — صار الرجوعُ سؤالا: استكمالُ المرحلة الثانية كان ينقل
+       صاحبَه إلى `under_review` مسكوكةً، فمن كان في «التهيئة» فطُلبت منه
+       ورقةٌ ثمّ أرسلها يهبط إلى **أوّل الطابور** — يخسر تجهيزَه وعقدَه
+       وموضعَه لأنّه أجاب.
+
+       فيُحفظ موضعُه هنا، ويُعاد إليه هناك. ويُمحى حين يُقرَّر فيه شيءٌ
+       آخر، فلا يبقى وعدٌ بموضعٍ انقضى. */
+    if (action === 'request_info') {
+      await this.prisma.trainerApplication.update({
+        where: { id: applicationId },
+        data: { infoRequestedFrom: app.status },
+      })
+    } else if (app.infoRequestedFrom) {
+      await this.prisma.trainerApplication.update({
+        where: { id: applicationId },
+        data: { infoRequestedFrom: null },
+      })
+    }
+
     await this.apps.transition(applicationId, targets[action], actorId, transitionNote)
 
     /* رفعُ الإيقاف يُعيد الملفَّ والحساب معا — وإلّا بقي «نشطا» وحسابُه موقوف */

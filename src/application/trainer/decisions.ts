@@ -10,32 +10,24 @@
 
    فهي هنا: تُستورَد وتُفحَص بنيتُها، والشاشةُ تصيّر ما تردّه. */
 
-import { ONE_CLICK_APPROVABLE_STATUSES } from './approval'
-import { EDITABLE_STATUSES } from './application-options'
+import { openExcept, REVIEW_OPEN_STATUSES } from './approval'
 
-/* ═══ ومن يُطلب منه المزيد: كلُّ ما قبل القرار (٢١ سبتمبر ٢٠٢٦) ═══
+/* ═══ ومن يُطلب منه المزيد: كلُّ حالةٍ حيّة (٢٢ سبتمبر ٢٠٢٦) ═══
 
-   كانت `under_review` وحدَها. فمن تبيّن له بعد المقابلة أو في المراجعة
-   الأكاديميّة أنّ وثيقةً تنقص لم يجد بابا — إلّا أن يراسله من بريده هو،
-   فيقع الطلبُ خارجَ المنصّة ولا يعلم به من يراجع بعده. وقال صاحبُ المنصّة:
-   «اجعلها متاحةً في جميع الحالات قبل القرار النهائيّ».
+   كانت `under_review` وحدَها، ثمّ صارت ما قبلَ القرار (٢١ سبتمبر). وبقي
+   البابُ مقفلا **بعد** القبول الداخليّ — فمن تبيّن له وهو يجهّز مدرّبَه أنّ
+   وثيقةً تنقص لم يجد بابا، وهي عينُ الشكوى التي فُتح لها البابُ بالأمس.
+   فقال صاحبُ المنصّة (٢٢ سبتمبر ٢٠٢٦): «أضِف خانةَ طلب المعلومات الإضافية
+   من المدرّب حتى لو تمّ اعتمادُه داخليّا… وأبقِ كلَّ الخيارات مفتوحةً مهما
+   كانت الحالةُ الحاليّة».
 
-   **وهي `EDITABLE_STATUSES` نفسُها إلّا المسوّدة** — لا قائمةٌ تُكتب بيدها:
-   طلبُ المعلومات يقول لصاحبه «عدِّلْ طلبَك وأعِدْه»، فإن كان بابُ التعديل
-   مغلقا فالطلبُ دعوةٌ إلى بابٍ مغلق. وبابُ التعديل مفتوحٌ **حتّى القرار**
-   بعينه («ولا يُفتح بعد القرار: المقبولُ صار مدرّبا… والمردودُ بابُه طلبٌ
-   جديد») — فالقائمتان واحدةٌ بالضرورة لا بالمصادفة.
-
-   **والمسوّدةُ تخرج وحدَها**: صاحبُها لم يُعطِنا طلبا بعدُ، فلا «إضافةَ»
-   تُطلب على ما لم يُقدَّم — وله بابُه: «ذكّره بإكمال طلبه». ولو أُدرجت
-   لَنقلت الحالةَ عن `draft` فكسرت نموذجَه وهو يكتبه. */
-export const INFO_REQUESTABLE: readonly string[] =
-  EDITABLE_STATUSES.filter((s) => s !== 'draft')
+   **ولزم معه الرجوع**: طلبُ المعلومات يقول لصاحبه «أرسِلْ ما ينقص»، فإن
+   أرسله فإلى أين يعود؟ كان يعود إلى `under_review` مسكوكةً — أي أنّ من كان
+   في «التهيئة» يهبط إلى أوّل الطابور **لأنّه أجاب**. فصار موضعُه يُحفظ في
+   `infoRequestedFrom` ويُعاد إليه. */
+export const INFO_REQUESTABLE: readonly string[] = openExcept('information_requested')
 
 
-/* ما يصلح جماعيّا: قراراتُ الفرز التي تتكرّر على عشراتٍ في جلسةٍ واحدة.
-   وما بعدها (المقابلة والدرس التجريبيّ والعقد) قرارٌ فرديّ بملفٍّ يُقرأ —
-   لا يُجمَّع، ولو جُمّع لصار الاعتمادُ ختما لا مراجعة. */
 export const BULK_ACTIONS = ["move_to_review", "waitlist", "reject"];
 
 /* ═══ ما يسع الشريطَ اللاصق — عرضٌ لا أهمّيّة (٢١ سبتمبر ٢٠٢٦) ═══
@@ -96,44 +88,42 @@ export interface Decision {
 
 export const DECISIONS: Decision[] = [
   /* ─────────── ① ما يُقدّم الطلبَ — بترتيب تقدّمه ─────────── */
-  { action: "move_to_review", label: "بدء المراجعة", from: ["submitted", "waitlisted"], tone: "main" },
+  { action: "move_to_review", label: "بدء المراجعة", from: openExcept("under_review"), tone: "main" },
   { action: "request_info", label: "اطلب معلومات إضافية", from: [...INFO_REQUESTABLE], tone: "warn" },
-  { action: "shortlist", label: "اختصار أولي", from: ["under_review"], tone: "main" },
-  { action: "request_demo", label: "اطلب درسا تجريبيا", from: ["shortlisted", "interview_scheduled"], tone: "warn" },
-  { action: "academic_review", label: "مراجعة أكاديمية", from: ["demo_requested"], tone: "main" },
+  { action: "shortlist", label: "اختصار أولي", from: openExcept("shortlisted"), tone: "main" },
+  { action: "request_demo", label: "اطلب درسا تجريبيا", from: openExcept("demo_requested"), tone: "warn" },
+  { action: "academic_review", label: "مراجعة أكاديمية", from: openExcept("academic_review"), tone: "main" },
   /* ─────────── بابُ التجهيز (٢٠ سبتمبر ٢٠٢٦) ───────────
 
      كان من `academic_review` وحدَها، وهي حالةٌ لا تقع إلّا بعد درسٍ تجريبيٍّ
      ومراجعةٍ يوثّقهما أحدٌ في الشاشة — وأكثرُ ذلك يجري خارج المنصّة. فكان
      البابُ الوحيدُ إلى تجهيز المدرّب مقفلا خلف توثيقٍ اختياريّ.
 
-     و`from` هنا هي `ONE_CLICK_APPROVABLE_STATUSES` مطروحا منها ما بعد
-     التجهيز: من صار `conditionally_approved` فهو فيه، و`contract_pending`
-     و`onboarding` عبرَاه. والمصدرُ واحدٌ كي لا تفترق قائمتان. */
+     ثمّ فُتح من كلّ حالةٍ حيّةٍ سوى `conditionally_approved` نفسِها (٢٢
+     سبتمبر ٢٠٢٦): فمن جاوزه إلى العقد أو التهيئة قد يُراد ردُّه إلى بابه —
+     وكان ذلك مغلقا، فيبقى بين حالَين. والمستثنى واحد: هو فيها أصلا. */
   {
     action: "conditionally_approve", label: "اقبَلْه داخليّا — وابدأ تجهيزه",
-    from: [...ONE_CLICK_APPROVABLE_STATUSES].filter(
-      (st) => !["conditionally_approved", "contract_pending", "onboarding"].includes(st),
-    ),
+    from: openExcept("conditionally_approved"),
     tone: "main",
     /* ولمَ يُقال هذا تحت زرّه: «قبولٌ داخليّ» يُقرأ قبولا، ومن ظنّه بلغ
        صاحبَه انتظر ردّا لا يأتي — أو كتب إليه مهنّئا بما لم يُبلَّغ به. */
     noteAr: "قرارُ فريقٍ يفتح بابَ التجهيز — ولا يصل المتقدّمَ منه شيء.",
   },
-  { action: "start_onboarding", label: "ابدأ التهيئة", from: ["contract_pending"], tone: "main" },
-  { action: "activate", label: "فعّله مدرّبا نشطا", from: ["onboarding"], tone: "main" },
+  { action: "start_onboarding", label: "ابدأ التهيئة", from: openExcept("onboarding"), tone: "main" },
+  { action: "activate", label: "فعّله مدرّبا نشطا", from: [...REVIEW_OPEN_STATUSES], tone: "main" },
   /* وآخرُ الطريق: يختصر ما فوقه كلَّه من أيّ حالةٍ يقف فيها الطلب */
   {
-    action: "approve", label: "اعتمِدْه مدرّبا — بنقرة", from: [...ONE_CLICK_APPROVABLE_STATUSES], tone: "main",
+    action: "approve", label: "اعتمِدْه مدرّبا — بنقرة", from: [...REVIEW_OPEN_STATUSES], tone: "main",
     noteAr: "يُنشئ ملفَّه، ويفتح بوّابتَه بحسابه نفسِه، ويُعلمه بالبريد.",
   },
   { action: "reinstate", label: "ارفع الإيقاف", from: ["suspended"], tone: "main" },
 
   /* ─────────── ② ما يُعلّقه ─────────── */
-  { action: "waitlist", label: "قائمة الانتظار", from: ["submitted", "under_review", "shortlisted", "interview_scheduled", "academic_review"], tone: "warn" },
+  { action: "waitlist", label: "قائمة الانتظار", from: openExcept("waitlisted"), tone: "warn" },
 
   /* ─────────── ③ ما يُنهيه، وما يعكس الإنهاء ─────────── */
-  { action: "reject", label: "رفض بلطف", from: ["submitted", "under_review", "information_requested", "shortlisted", "interview_scheduled", "demo_requested", "academic_review", "conditionally_approved", "contract_pending", "waitlisted"], tone: "danger" },
+  { action: "reject", label: "رفض بلطف", from: [...REVIEW_OPEN_STATUSES], tone: "danger" },
   /* ─────────── والردُّ يُتراجَع عنه (١٩ سبتمبر ٢٠٢٦) ───────────
 
      قرارُ صاحب المنصّة: «عند رفض أيّ مدرّب أريد خيارَ التراجع عن الرفض مع
