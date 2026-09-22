@@ -187,19 +187,43 @@ export function reduceAnswer(
 /** قواعد اشتقاق موثقة — تطبق بعد كل إجابة (idempotent) */
 export function applyDerivedRules(facts: FactBag) {
   const g = (k: string) => facts[k]?.value
-  // employment_advancement → first_job | promotion
-  // القاعدة إعادة-تقييمية: تعمل أيضا على القيمتين المحسومتين لأن حالة العمل قد تصل
-  // لاحقا (ترتيب الأسئلة تكيفي)، والقيمتان لا تأتيان إلا من هذه القاعدة.
+  /* employment_advancement → first_job | promotion | employment_advancement
+
+     القاعدة إعادة-تقييمية: تعمل أيضا على القيم المحسومة لأن حالة العمل قد تصل
+     لاحقا (ترتيب الأسئلة تكيفي).
+
+     ─────────── ومن لا عملَ له لا يُوعَد بترقية ───────────
+
+     كان الحسمُ ثنائيّا: `first_job` لمن كان طالبا أو في أوّل الطريق ولا يعمل،
+     و`promotion` **لكلّ من سواه** ما دامت حالةُ عمله معروفة. فمن وصف نفسَه
+     بمرحلته («موظّف في بداية مساري» · «مدير») ثمّ قال «لا أعمل حاليًا» — وهو
+     من بين وظيفتَين، وحالٌ شائعةٌ لا نادرة — كان يُحسم هدفُه «ترقية»، فتقول
+     له الشاشة: «هدفك: ترقية في عملك الحالي» ولا عملَ له. ويُساق إلى مسارات
+     الترقية دون مسارات الجاهزية للتوظيف، وهي ما يحتاجه فعلا.
+
+     ومثلُه الباحثُ عن عمل في كلّ المراحل: `job_seeking` لم تكن تُستثنى أصلا،
+     فكان يُحسم «ترقية» ولو كان طالبا.
+
+     فصار المدارُ على «أفي عملٍ هو؟» لا على مرحلته وحدَها:
+     · لا عملَ له وهو في أوّل الطريق  → `first_job` (كما كان)
+     · لا عملَ له وقد جاوزها          → جوابُه كما هو: «وظيفة أو ترقية»، ولا
+       يُنسب إليه عملٌ لا يملكه، ولا يُقال له «أوّل فرصة» وقد جاوزها
+     · في عملٍ قائم                   → `promotion` (كما كان) */
   const goalVal = g('primary_goal')
   if (typeof goalVal === 'string' && ['employment_advancement', 'first_job', 'promotion'].includes(goalVal)) {
     const persona = g('persona_type')
     const emp = g('employment_state')
-    const resolved =
-      (persona === 'student' || persona === 'early_career') && (emp === 'not_working' || (emp === undefined && persona === 'student'))
+    const jobless = emp === 'not_working' || emp === 'job_seeking'
+    const early = persona === 'student' || persona === 'early_career'
+    const resolved = jobless
+      ? early
         ? 'first_job'
-        : emp === undefined
-          ? goalVal // لا حسم بلا دليل — يبقى قابلا لإعادة التقييم
-          : 'promotion'
+        : 'employment_advancement'
+      : emp === undefined
+        ? persona === 'student'
+          ? 'first_job'
+          : goalVal // لا حسم بلا دليل — يبقى قابلا لإعادة التقييم
+        : 'promotion'
     const src = facts.primary_goal
     facts.primary_goal = { ...src, value: resolved }
   }
