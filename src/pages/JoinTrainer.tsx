@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { normalizeApplicantLink } from "@/application/trainer/applicant-link";
+import { checkEvidenceLinks } from "@/application/trainer/evidence-links";
 import { Link, useSearchParams } from "react-router";
 import { CalendarClock,
   ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
@@ -431,15 +432,15 @@ export default function JoinTrainer() {
      بالكلمات لا بالحروف، لأنّ المعروضَ سطران لا صفحة. */
   const bioWords = form.bio.trim() ? form.bio.trim().split(/\s+/).length : 0;
 
-  /* أدلّتُك: أربعةُ حقولٍ ورابطٌ واحدٌ منها شرط. والصيغةُ تُفحص هنا لأنّ
-     الخادمَ يشترط `z.string().url()` — فرابطٌ بلا بروتوكولٍ يُردّ ٤٠٠ بعد
-     أن يظنّ المتقدّمُ أنّه مضى. */
-  const EVIDENCE_URL = /^https?:\/\/[^\s.]+\.[^\s]{2,}$/;
-  const evidenceLinks = [form.linkedinUrl, form.youtubeUrl, form.instagramUrl, form.facebookUrl]
-    .map((v) => v.trim())
-    .filter(Boolean);
-  const evidenceValid = evidenceLinks.filter((v) => EVIDENCE_URL.test(v));
-  const evidenceMalformed = evidenceLinks.length > evidenceValid.length;
+  /* أدلّتُك: أربعةُ حقولٍ ورابطٌ واحدٌ منها شرط. والحكمُ في صيغتها ليس هنا
+     ولا نسخةً منه: `checkEvidenceLinks` هي نفسُها التي يقرأ عنها الخادم.
+
+     وكان هنا تعبيرٌ نمطيٌّ `^https?://…` يشترط المخطَّطَ مكتوبا، فمن لصق
+     `www.linkedin.com/in/x` قيل له «رابطٌ في أدلتك بلا https://» — وهو
+     رابطٌ تامٌّ يقبله الخادمُ ويُطبّعه. وبقي كذلك ولو طُبّع عند المغادرة:
+     استعادةُ المسوّدة والملءُ الآليُّ من المتصفّح لا يُطلقان `onBlur`.
+     (٢٢ سبتمبر ٢٠٢٦) */
+  const evidence = useMemo(() => checkEvidenceLinks(form), [form]);
 
   /* الاعتماد يُركَّب من قائمةٍ ورقمٍ اختياريّ، ويصل الخادمَ سطرا واحدا كما كان */
   const accreditationName =
@@ -611,9 +612,11 @@ export default function JoinTrainer() {
     if (!form.deliveryMode) m[1].push("نمط التدريب");
     /* النبذةُ اختياريّة، فلا يُطلب كتبُها — ويُطلب ألّا تتجاوز السقف متى كُتبت */
     if (bioWords > BIO_MAX_WORDS) m[1].push(`نبذتك أطول من ${BIO_MAX_WORDS} كلمة — احذف ${countAr(bioWords - BIO_MAX_WORDS, WORD_FORMS)}`);
-    /* دليلٌ واحدٌ على الأقلّ — وصيغتُه صحيحة، لأنّ الخادمَ يفحصها */
-    if (evidenceValid.length === 0) m[1].push("رابطٌ واحدٌ على الأقلّ في «أدلتك»");
-    else if (evidenceMalformed) m[1].push("رابطٌ في «أدلتك» بلا https:// — أكمله أو احذفه");
+    /* دليلٌ واحدٌ على الأقلّ. والبندان يجتمعان ولا يتناوبان: من كتب رابطا
+       واحدا لا يصحّ ينقصه اثنان — دليلٌ يُقرأ، وحقلٌ يُصلَح. */
+    if (evidence.count === 0) m[1].push("رابطٌ واحدٌ على الأقلّ في «أدلتك»");
+    /* ولا يبقى مردودا إلّا ما يُنفَّذ ولا يُفتح — `javascript:` وأخواتُها */
+    if (evidence.rejected.length) m[1].push("رابطٌ في «أدلتك» ليس عنوانَ صفحةٍ تُفتح — أصلحه أو احذفه");
     if (motivationLen < MOTIVATION_MIN) m[1].push(`دافعك — بقي ${countAr(MOTIVATION_MIN - motivationLen, CHAR_FORMS)}`);
     if (!form.privacyConsent) m[1].push("الموافقة على سياسة الخصوصية");
     if (uploads.cv?.status !== "done") m[2].push("رفع سيرتك الذاتية");
@@ -638,7 +641,7 @@ export default function JoinTrainer() {
       if (channel.needsAltEmail && !/.+@.+\..+/.test(contactAltEmail)) m[3].push("البريد الآخر بصيغة صحيحة");
     }
     return m;
-  }, [form, bioWords, evidenceValid.length, evidenceMalformed,
+  }, [form, bioWords, evidence,
       specialties, languages, motivationLen, accreditationReady, uploads, teachable, proposals, demoConsent, seasons,
       password, passwordConfirm, result, contactChannel, contactAltEmail, emailConfirmMatches]);
 
@@ -759,9 +762,12 @@ export default function JoinTrainer() {
         employmentStatus: (form.employmentStatus || undefined) as "employed" | "own_business" | "full_time_training" | undefined,
         jobTitle: form.jobTitle || undefined,
         specialties, domainYears: form.domainYears, trainingYears: form.trainingYears,
-        bio: form.bio || undefined, linkedinUrl: form.linkedinUrl || undefined,
-        youtubeUrl: form.youtubeUrl || undefined, instagramUrl: form.instagramUrl || undefined,
-        facebookUrl: form.facebookUrl || undefined,
+        /* مطبَّعةً من الحكم المشترك — لا كما وقعت في الحقل: مغادرةُ المؤشّر
+           لا تقع في استعادةِ مسوّدةٍ ولا في ملءٍ آليٍّ من المتصفّح. */
+        bio: form.bio || undefined, linkedinUrl: evidence.normalized.linkedinUrl || undefined,
+        youtubeUrl: evidence.normalized.youtubeUrl || undefined,
+        instagramUrl: evidence.normalized.instagramUrl || undefined,
+        facebookUrl: evidence.normalized.facebookUrl || undefined,
         hasAccreditation: form.hasAccreditation,
         accreditationDetails: form.hasAccreditation ? accreditationDetails || undefined : undefined,
         targetCountries: targetCountries.length ? targetCountries : undefined,
