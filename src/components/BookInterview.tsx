@@ -33,6 +33,7 @@ import { CalendarClock, CalendarOff, CheckCircle2, ExternalLink, Loader2, MailCh
 import {
   INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW, trainerInterviewUrl,
 } from '@/application/trainer/application-options'
+import { INTERVIEW_INVITATION } from '@/application/trainer/interview-invitation'
 import { nextFrameHeight } from '@/lib/calendly-embed'
 import { Card, Inset } from '@/components/ui/Surface'
 import { usePlatformConfig } from '@/hooks/usePlatformConfig'
@@ -43,6 +44,15 @@ export interface BookInterviewProps {
   email?: string
   reference?: string
   className?: string
+  /* ═══ الدعوةُ — لمن نظرنا في ملفّه ونرغب بلقائه (٢٢ سبتمبر ٢٠٢٦) ═══
+
+     البطاقةُ نفسُها تُركَّب في موضعَين: شاشةُ ما بعد الإرسال، وصفحةُ الحالة.
+     وفي الأولى لم يُقرأ ملفُّه بعد — فلا يُقال له «اهتممنا بملفّك» وهو لم
+     يبرد بعدُ في الطابور. فالدعوةُ معامَلٌ يُمرَّر، ومن يُدعى مكتوبٌ في
+     `interview-invitation.ts` ويُقرأ من صفحة الحالة وحدَها.
+
+     ولا يُحكَم هنا: لو قرأت البطاقةُ الحالةَ بنفسها لَصار للحكم موضعان. */
+  invited?: boolean
 }
 
 /* ═══ ارتفاعُ الصندوق المرئيّ — قصيرٌ ثابت ═══
@@ -64,7 +74,7 @@ function isScheduledEvent(e: MessageEvent): boolean {
   return event === 'calendly.event_scheduled'
 }
 
-export default function BookInterview({ name, email, reference, className = '' }: BookInterviewProps) {
+export default function BookInterview({ name, email, reference, invited = false, className = '' }: BookInterviewProps) {
   const [done, setDone] = useState(false)
   /* ═══ ولماذا لوحٌ يُرى قبل التقويم ═══
 
@@ -170,6 +180,28 @@ export default function BookInterview({ name, email, reference, className = '' }
           ، ولا ينقصه منك شيءٌ الآن.
         </p>
 
+        {/* ═══ والاهتمامُ يُقال وإن وُقف الحجز (٢٢ سبتمبر ٢٠٢٦) ═══
+
+            الوقفُ يُغلق التقويمَ ولا يُسقط سببَ الدعوة: من نظرنا في ملفّه
+            ورغبنا بلقائه فهو كذلك في سبتمبر كما في أكتوبر. وهو أنفعُ ما
+            يُقال لمن سيُطلب منه أن ينتظر شهرا — فإن سكتنا عنه قرأ الوقفَ
+            ردّا على ملفّه لا امتلاءَ مواعيدَ عندنا.
+
+            **ولا يُطلب منه حجزٌ هنا**: ما يُطلب مكتوبٌ تحته في إشعار الوقف
+            (يصلك الرابطُ في شهرٍ مسمّى)، وسطرُ «احجز» فوقَ بابٍ مغلقٍ هو
+            عينُ التناقض الذي وُضع الإشعارُ ليزيله. */}
+        {invited && (
+          <div className="mt-4">
+            <p className="flex items-start gap-2 text-sm font-black text-foreground">
+              <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+              <span>{INTERVIEW_INVITATION.headingAr}</span>
+            </p>
+            <p className="mt-2 pr-6 text-read leading-7 text-muted-foreground">
+              {INTERVIEW_INVITATION.interestAr}
+            </p>
+          </div>
+        )}
+
         <Inset className="mt-4 text-read leading-7 text-muted-foreground">
           <p className="flex items-start gap-2 font-black text-foreground">
             <CalendarOff className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
@@ -207,9 +239,26 @@ export default function BookInterview({ name, email, reference, className = '' }
 
   return (
     <div ref={cardRef} className={`rounded-2xl border border-teal/30 bg-teal/[0.05] p-5 ${className}`}>
+      {/* ═══ عنوانان: دعوةٌ لمن دُعي، وتقويمٌ محيَّدٌ لمن لم يُدعَ ═══
+
+          «مهتمّون بملفّك» خبرٌ عن فعلٍ وقع عندنا، فلا يُقال لمن لم يُنظر في
+          ملفّه بعد — ومن يُدعى مكتوبٌ في `interview-invitation.ts`. ومن لم
+          يُدعَ يبقى له التقويمُ كما كان: يحجز متى شاء بلا دعوى نقولها له. */}
       <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
-        <CalendarClock className="h-4 w-4" /> احجز {TRAINER_INTERVIEW.labelAr} — اختر الوقت الذي يناسبك
+        <CalendarClock className="h-4 w-4" />
+        {invited
+          ? INTERVIEW_INVITATION.headingAr
+          : <>احجز {TRAINER_INTERVIEW.labelAr} — اختر الوقت الذي يناسبك</>}
       </p>
+      {/* وسببُ الدعوة ثمّ ما نطلبه — سطران لا سطرٌ واحد: الأوّلُ يقول لماذا
+          كتبنا إليه، والثاني ما يفعله الآن. وجملةٌ واحدةٌ تحملهما تُقرأ
+          نصفَها ويُهمَل نصفُها. */}
+      {invited && (
+        <>
+          <p className="mt-3 text-read leading-7 text-foreground">{INTERVIEW_INVITATION.interestAr}</p>
+          <p className="mt-1.5 text-read leading-7 text-foreground">{INTERVIEW_INVITATION.askAr}</p>
+        </>
+      )}
 
       <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-read leading-5 text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">

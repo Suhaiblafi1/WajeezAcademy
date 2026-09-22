@@ -10,6 +10,7 @@ import { readRoles, signOut } from "@/services/auth";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { APPLICANT_STATUS, BOOKABLE_STATUSES, EDITABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
 import BookInterview from "@/components/BookInterview";
+import { isInvitedToBook } from "@/application/trainer/interview-invitation";
 
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -41,6 +42,8 @@ interface Mine {
   }[];
   statusHistory: { toStatus: string; note: string | null; createdAt: string }[];
   profile: { userId: string | null } | null;
+  /** متى خرجت إليه دعوةُ حجز الموعد — من الأثر، و`null` لمن لم تخرج إليه */
+  interviewInvitedAt: string | null;
 }
 
 const DOC_AR: Record<string, string> = { cv: "السيرة الذاتية", evidence: "ملف أعمال", certificate: "شهادات واعتمادات", other: "وثيقة" };
@@ -233,9 +236,25 @@ export default function ApplicantStatus() {
                 ولا يُعرض بعد القرار: من قُبل صار مدرّبا، ومن رُدّ لا يُدعى إلى
                 مقابلة. والمسوّدةُ وانتظارُ توثيق البريد قبلَ ذلك — يُكمل طلبَه
                 أوّلا فلا يحجز موعدا لطلبٍ لم يصل. */}
+            {/* ═══ ومن دعوناه تُقال له الدعوةُ هنا كما قيلت في بريده ═══
+
+                الدعوةُ («مهتمّون بملفّك ونرغب بلقائك») تخرج بريدا وزرُّها
+                يفتح هذه الصفحةَ بعينها. فمن جاء منها كان يجد تقويما محيَّدا
+                بلا كلمةٍ عمّا قرأه قبل لحظة — فيشكّ أنّه في الموضع الصحيح،
+                أو يقرأ الرسالةَ آليّةً لا تعني ملفَّه.
+
+                ومن يُدعى قرارٌ في `interview-invitation.ts` لا شرطٌ يُكتب
+                هنا: «اهتممنا بملفّك» خبرٌ عن فعلٍ وقع، فلا يُقال لمن لم
+                يُنظر في ملفّه بعد — ويبقى له التقويمُ كما كان. */}
             {BOOKABLE_STATUSES.includes(mine.status) && mine.interviews.length === 0 && (
               <BookInterview
                 name={mine.fullName} email={mine.email} reference={mine.reference}
+                invited={isInvitedToBook({
+                  status: mine.status,
+                  /* والمواعيدُ القائمةُ وحدَها تصل من الخادم (`LIVE_INTERVIEW`) */
+                  liveInterviews: mine.interviews.length,
+                  invitedAt: mine.interviewInvitedAt,
+                })}
               />
             )}
 

@@ -1,4 +1,4 @@
-/* تذكيرُ من وصل طلبُه ولم يحجز موعدَ لقاء التعارف.
+/* دعوةُ من وصل طلبُه ولم يحجز موعدَ لقاء التعارف.
 
    ═══ العطبُ الذي كُتب له ═══
 
@@ -41,7 +41,7 @@ const base = {
   password: 'Trainer#12345',
 }
 
-/** متقدّمٌ كامل: طلبٌ مقدَّمٌ وبريدٌ موثَّق — وهو من يُذكَّر */
+/** متقدّمٌ كامل: طلبٌ مقدَّمٌ وبريدٌ موثَّق — وهو من يُدعى */
 async function applicant(email: string, fullName: string) {
   const res = await apps.submitPhase1({ ...base, email, fullName })
   const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference: res.reference } })
@@ -50,7 +50,8 @@ async function applicant(email: string, fullName: string) {
     demoConsent: true, contact: { channel: 'email' },
   })
   await prisma.trainerApplication.update({ where: { id: row.id }, data: { emailVerifiedAt: new Date() } })
-  return { id: row.id, reference: res.reference }
+  /* وحسابُه يُردّ معه: صفحةُ حالته تُقرأ به، وفيها تُعرض الدعوةُ التي بُعثت */
+  return { id: row.id, reference: res.reference, userId: res.userId }
 }
 
 const remindersOf = (applicationId: string) => prisma.auditEvent.findMany({
@@ -121,6 +122,33 @@ describe('تذكيرُ المتقدّم بحجز موعده', () => {
     await expect(review.remindToBookInterview(a.id, adminId))
       .rejects.toMatchObject({ code: 'not_bookable' })
     expect(await remindersOf(a.id)).toHaveLength(0)
+  })
+
+  /* ═══ والدعوةُ تُقرأ في صفحته — لا في بريده وحدَه (٢٢ سبتمبر ٢٠٢٦) ═══
+
+     زرُّ الرسالة يفتح صفحةَ حالته بعينها (قرارُ ١٨ سبتمبر). فمن جاء منها كان
+     يجد تقويما محيَّدا بلا كلمةٍ عمّا قرأه قبل لحظة — فيشكّ أنّه في الموضع
+     الصحيح، أو يقرأ الرسالةَ آليّةً لا تعني ملفَّه.
+
+     والمفحوصُ هنا **وصلُ الطرفَين**: فعلُ الأثر الذي يكتبه المُرسِل هو الذي
+     تقرؤه `myApplication`. ولو افترقا لخرج البريدُ ولم تظهر الدعوةُ في
+     الشاشة — عطبٌ لا يُحمِّر شيئا. أمّا مَن تُعرض له فحكمُه في الوحدة النقيّة
+     ويُنقَض هناك: `src/tests/trainer/interview-invitation.test.ts`. */
+  it('⚠️ وتاريخُها يصل صفحةَ حالته — فيجد في الموقع ما قرأه في بريده', async () => {
+    const a = await applicant('remind-5@test.local', 'لمى المدرّبة')
+    const before = await apps.myApplication(a.userId)
+    expect(before.interviewInvitedAt, 'تاريخُ دعوةٍ لم تُبعَث').toBeNull()
+
+    await review.remindToBookInterview(a.id, adminId)
+
+    const after = await apps.myApplication(a.userId)
+    expect(after.interviewInvitedAt, 'دُعي ولا تعرف صفحتُه').toBeInstanceOf(Date)
+    /* وأحدثُ دعوةٍ لا أقدمُها: من دُعي مرّتين يُقرأ آخرُ ما بُعث إليه */
+    const first = after.interviewInvitedAt!
+    await review.remindToBookInterview(a.id, adminId)
+    const again = await apps.myApplication(a.userId)
+    expect(again.interviewInvitedAt!.getTime(), 'يُقرأ أوّلُ ما بُعث لا آخرُه')
+      .toBeGreaterThanOrEqual(first.getTime())
   })
 
   it('وطلبٌ لا وجود له يُردّ ٤٠٤ لا ٥٠٠', async () => {

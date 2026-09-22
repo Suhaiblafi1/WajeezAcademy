@@ -19,6 +19,7 @@ import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './s
 import { deleteObject } from './object-store'
 import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/trainer/purgeable'
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
+import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
 import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMPTS } from './trainer-application-reference'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
@@ -682,6 +683,9 @@ export class TrainerApplicationService {
     const app = await this.prisma.trainerApplication.findUnique({
       where: { userId },
       select: {
+        /* و`id` يُقرأ للاستعلام عن الأثر أدناه ثمّ يُنزَع — فلا يخرج معرّفٌ
+           داخليٌّ في جوابٍ لم يكن فيه، ولا يُستعلَم بمعرّفٍ غيرِ مقروء. */
+        id: true,
         reference: true, status: true, fullName: true, email: true,
         phoneCountryCode: true, phone: true,
         contactChannel: true, contactAltEmail: true,
@@ -702,7 +706,27 @@ export class TrainerApplicationService {
       },
     })
     if (!app) throw new AuthError('no_application', 'لا طلب مرتبط بحسابك', 404)
-    return app
+    /* ═══ ومتى دُعي إلى حجز موعده — فتُقرأ الدعوةُ في صفحته لا في بريده وحدَه ═══
+
+       الدعوةُ تخرج بريدا من الطابور، وزرُّها إلى هذه الصفحةِ بعينها (قرارُ
+       ١٨ سبتمبر ٢٠٢٦). فمن فتحها بعد رسالةٍ تقول «مهتمّون بملفّك ونرغب
+       بلقائك» كان يجد تقويما محيَّدا بلا كلمةٍ عمّا قرأه قبل لحظة — فيشكّ
+       أنّه في الموضع الصحيح، أو أنّ الرسالةَ آليّةٌ لا تعني ملفَّه.
+
+       ولا عمودٌ يُستحدَث لها: الأثرُ يحملها مؤرَّخةً باسم من أرسلها، وهو
+       مصدرُها في ملخّص الإدارة كذلك (`digestUnbookedApplicants`) — فلو كُتبت
+       في عمودٍ ثانٍ لَصار للخبر الواحد مصدران يفترقان.
+
+       والفعلُ من الوحدة المشتركة لا حرفا هنا: لو رُقّم الفعلُ يوما بغير اسمه
+       سقطت الدعوةُ من الصفحة صامتةً — فالبريدُ يخرج ولا شيءَ في الشاشة. */
+    /* والمعرّفُ يُستعمل في الاستعلام ثمّ لا يخرج في الجواب — شكلُه كما كان */
+    const { id, ...mine } = app
+    const invited = await this.prisma.auditEvent.findFirst({
+      where: { entityType: 'trainer_application', entityId: id, action: INVITATION_ACTION },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    })
+    return { ...mine, interviewInvitedAt: invited?.createdAt ?? null }
   }
 
   /** مفتاحُ استئناف الطلب لصاحب الحساب — يُبدَّل الرمزُ ويُعاد، ما دام الطلبُ يقبل الاستكمال */
