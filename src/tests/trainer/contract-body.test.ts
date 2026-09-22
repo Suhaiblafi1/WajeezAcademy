@@ -27,6 +27,7 @@ import {
   CONTRACT_BODY_VERSION, renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
+import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
 
 const COURSES = [
   { courseId: 'C-A', titleAr: 'أساسيّاتُ تحليل البيانات' },
@@ -76,6 +77,19 @@ function clauseSection(body: string, n: number): string {
     ما قُصد — وذاك عطبٌ لا يُرى بالعين في وثيقةٍ من عشرين بندا. */
 const subItems = (body: string, n: number) =>
   [...clauseSection(body, n).matchAll(new RegExp(`^${n}-(\\d+) `, 'gm'))].map((m) => Number(m[1]))
+
+/** موضعُ عنوانِ ملحقٍ بعينه — عنوانا في رأس سطرٍ لا إحالةً في وسط جملة.
+
+    و`indexOf('الملحق (ب)')` لا يصلح: المتنُ يحيل إلى ملاحقه في تضاعيفه
+    (البندُ 4-1 يحيل إلى (ب)، والتمهيدُ إلى (أ))، فأوّلُ ورودٍ قد يسبق
+    العنوانَ بمئات الأسطر — فيخرج «قسمُ الملحق» فارغا أو مقلوبا، **ويمرّ
+    الحارسُ على فراغٍ ظانّا أنّه فحص**. وقد وقع ذلك فعلا حين دخلت إحالةُ
+    4-1 إلى الملحق (ب). */
+function annexAt(body: string, letter: string): number {
+  const at = new RegExp(`^الملحق \\(${letter}\\) —`, 'm').exec(body)
+  expect(at, `لا عنوانَ للملحق (${letter}) في رأس سطر`).toBeTruthy()
+  return at!.index
+}
 
 describe('متنُ العقد — لا يخرج ناقصا ولا يحمل أثرَ قالب', () => {
   it('لا قالبَ بقي بلا تعويض، ولا قيمةَ برمجيّةٍ تسرّبت إلى وثيقة', () => {
@@ -147,8 +161,7 @@ describe('الملحق (أ) صورةُ ما أُدخل — وهو صلبُ ال�
 
   it('وبلا دوراتٍ يقول الملحقُ ذلك صراحةً — لا جدولا خاليا يُقرأ سهوا', () => {
     const empty = renderContractBodyAr(base({ courses: [] }))
-    const idx = empty.indexOf('الملحق (أ)')
-    const section = empty.slice(idx, empty.indexOf('الملحق (ب)'))
+    const section = empty.slice(annexAt(empty, 'أ'), annexAt(empty, 'ب'))
     expect(section.length, 'الملحقُ (أ) خرج قسما فارغا').toBeGreaterThan(80)
     expect(section).toContain('لا دورات مدرجة')
   })
@@ -450,16 +463,60 @@ describe('واثنان أصغرُ أُلحقا — المصاريفُ والمح
    التوقيع ولا يُدرَج في الملحق. وعلّتُه أنّ البند 18-4 يجعل «الاتفاقيةَ
    وملاحقها» كاملَ ما اتّفق عليه الطرفان — فجدولٌ وُضع ليُقنع، إن دخل، صار
    بندا يُحتجّ به يومَ يخيب التسجيل. وهذا الحارسُ يمنع عودتَه سهوا. */
-describe('ولا مثالَ حسابيّا في المتن الموقَّع — فالإقناعُ في البريد لا في الملحق', () => {
-  it('لا صفوفَ مثالٍ ولا مجموعَ له في العقد', () => {
+/* ═══ والمثالُ الحسابيُّ دخل الملحقَ (ب) — قرارُ ٢١ سبتمبر ٢٠٢٦ ═══
+
+   كان هنا حارسٌ يمنع أن يظهر المثالُ في المتن الموقَّع أصلا، وعلّتُه أنّ
+   البندَ 18-4 يجعل الملاحقَ من «كامل ما اتّفق عليه الطرفان» — فجدولٌ وُضع
+   ليُقنع يصير بندا يُحتجّ به يومَ يخيب التسجيل.
+
+   ونقض صاحبُ المنصّة الموضعَ: «المثال… يجب أن يكون داخل العقد كمثال هناك،
+   وأوضح أنّه مثال فقط». فتغيّر ما يُحرَس لا مستوى الحراسة: العلّةُ لم تسقط،
+   وإنّما انتقلت من **المنع** إلى **الاستثناء المكتوب**. والمقيسُ الآن أنّ
+   الثلاثةَ التي تجعله يُقرأ مثالا موجودةٌ كلُّها — وسقوطُ أيٍّ منها يعيد
+   المثالَ بندا بلا أن يظهر في النصّ شيءٌ غريب. */
+describe('المثالُ الحسابيُّ في الملحق (ب) — ومقروءا مثالا لا بندا', () => {
+  it('يظهر في الملحق (ب) لا في موضعٍ آخرَ من الوثيقة', () => {
     const body = renderContractBodyAr(base())
-    for (const mark of ['مجموعُ هذا المثال', 'مجموع هذا المثال', 'مثال حسابي', 'مثالٌ حسابيّ']) {
-      expect(body, `تسرّب «${mark}» إلى وثيقةٍ تُوقَّع`).not.toContain(mark)
-    }
+    const at = body.indexOf(FEE_EXAMPLE_HEADING_AR)
+    expect(at, 'لا مثالَ في الوثيقة أصلا').toBeGreaterThan(-1)
+    const annexB = annexAt(body, 'ب')
+    const annexC = annexAt(body, 'ج')
+    expect(at, 'المثالُ قبل الملحق (ب)').toBeGreaterThan(annexB)
+    expect(at, 'المثالُ خرج من الملحق (ب) إلى ما بعده').toBeLessThan(annexC)
   })
 
-  it('ولا عددَ مسجّلين مفترضا يُقرأ وعدا', () => {
+  it('وأرقامُه هي أرقامُ المحرّك — لا حسابٌ ثانٍ يفترق عن الكشف', () => {
+    const c = base().compensation!
+    const ex = buildFeeExampleAr(c)!
     const body = renderContractBodyAr(base())
-    expect(body, 'عددُ مسجّلين مفترضٌ في وثيقةٍ تُوقَّع').not.toMatch(/\d+\s*مسجّلا|\d+\s*مسجلا/)
+    for (const r of ex.rows) {
+      expect(body, `صفٌّ بقيمة ${r.amount} غائبٌ عن المثال في العقد`).toContain(String(r.amount))
+    }
+    expect(body, 'مجموعُ المثال غائبٌ أو مخالف').toContain(`مجموع هذا المثال: ${ex.total}`)
+  })
+
+  it('وثلاثةٌ تجعله يُقرأ مثالا: صدرُه، وإحالةُ 4-1، واستثناءُ 18-4', () => {
+    const body = renderContractBodyAr(base())
+    /* ① صدرُ المثال نفسِه */
+    expect(body, 'صدرُ المثال لا يقول إنّه استرشاديّ').toContain(FEE_EXAMPLE_HEADING_AR)
+    expect(body, 'المثالُ لا يقول إنّ الأعدادَ مفترضة').toMatch(/مفترضة للإيضاح/)
+    /* ② إحالةٌ من البند 4-1 — يقرؤها قبل أن يبلغ الملحق */
+    expect(clauseSection(body, 4), 'البندُ 4 لا يحيل إلى المثال').toMatch(/الملحق \(ب\) مثال حسابي/)
+    /* ③ واستثناءٌ بحروفه في 18-4 — وهو البندُ الذي كان يجعله بندا */
+    expect(clauseSection(body, 18), 'البندُ 18 لا يستثني المثال').toMatch(/يستثنى من ذلك المثال الحسابي/)
+  })
+
+  it('وحيث لا مثالَ لا تبقى إحالةٌ إليه — فإحالةٌ إلى غائبٍ أسوأُ من غيابهما', () => {
+    /* نسبةُ الإيراد لا يُبنى لها مثال: رقمُها دالّةٌ في سعرٍ نملكه نحن */
+    const share = renderContractBodyAr(base({
+      compensation: { type: 'revenue_share', rate: '40', currency: 'USD', minSeats: null, referralRate: null },
+    }))
+    expect(buildFeeExampleAr({ type: 'revenue_share', rate: '40', currency: 'USD', minSeats: null, referralRate: null })).toBeNull()
+    expect(share, 'مثالٌ حيث لا يصحّ').not.toContain(FEE_EXAMPLE_HEADING_AR)
+    expect(share, 'إحالةٌ إلى مثالٍ لا وجودَ له').not.toMatch(/الملحق \(ب\) مثال حسابي/)
+
+    const noRule = renderContractBodyAr(base({ compensation: null }))
+    expect(noRule, 'مثالٌ بلا قاعدةِ أتعاب').not.toContain(FEE_EXAMPLE_HEADING_AR)
+    expect(noRule, 'إحالةٌ إلى مثالٍ لا وجودَ له').not.toMatch(/الملحق \(ب\) مثال حسابي/)
   })
 })

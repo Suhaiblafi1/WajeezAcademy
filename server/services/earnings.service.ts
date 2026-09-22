@@ -10,6 +10,7 @@ import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { perSeatBreakdown } from '../../src/application/trainer/seat-fee'
+import { settleAgainst } from '../../src/application/trainer/issued-discount'
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/ // «2026-08»
 
@@ -40,7 +41,7 @@ export class EarningsService {
        كانت الصفحةُ تعرض ما قُبض وما يُنتظر، ولا تعرض **على أيّ أساس**: القاعدةُ
        التي أكّدتها الإدارةُ تبقى في شاشة الإدارة، فيقرأ المدرّبُ رقما لا يعرف
        من أين جاء. والاتفاقُ المسبقُ حقُّه أن يراه قبل أن يُحسب له شيء. */
-    const [agreement, rules, cohortRows] = await Promise.all([
+    const [agreement, rules, cohortRows, awaiting] = await Promise.all([
       this.activeRule(profile.id),
       this.listRules(profile.id),
       /* ═══ شعبةً شعبة: كم عامّا وكم عبر رابطك، وبأيّ أجر ═══
@@ -50,6 +51,16 @@ export class EarningsService {
       this.prisma.cohortTrainer.findMany({
         where: { profileId: profile.id },
         include: { cohort: { select: { id: true, title: true, courseId: true, status: true } } },
+      }),
+      /* ═══ وخصومُه المنتظِرةُ للحسم — تُقال قبل أن تقع ═══
+
+         البند 4-10 يحسمها في «أوّل كشفٍ يُحرَّر بعد ذلك». والمدرّبُ يقرأ
+         كشوفَه هنا، فلو لم يرَ ما ينتظره لَفوجئ برقمٍ أصغرَ ممّا حسب — وهو
+         بعينه ما تمنعه هذه الصفحةُ في كلّ لوحةٍ فيها. */
+      this.prisma.trainerIssuedDiscount.findMany({
+        where: { profileId: profile.id, status: 'used', settledItemId: null },
+        include: { coupon: { select: { code: true } } },
+        orderBy: { usedAt: 'asc' },
       }),
     ])
     const cohorts = await Promise.all(cohortRows.map(async (ct) => {
@@ -75,7 +86,15 @@ export class EarningsService {
         projected: breakdown === null ? null : breakdown.total,
       }
     }))
-    return { payouts, summary, agreement, rules, cohorts }
+    const awaitingDiscounts = {
+      total: awaiting.reduce((sum, d) => sum + Number(d.amount), 0),
+      currency: awaiting[0]?.currency ?? summary.currency,
+      rows: awaiting.map((d) => ({
+        id: d.id, code: d.coupon.code, amount: Number(d.amount),
+        currency: d.currency, forWhomAr: d.forWhomAr, usedAt: d.usedAt,
+      })),
+    }
+    return { payouts, summary, agreement, rules, cohorts, awaitingDiscounts }
   }
 
   /* ═══ ملخّصُ كلّ مدرّبٍ في سطر — للإدارة ═══
@@ -460,19 +479,28 @@ export class EarningsService {
         minSeats: rule.minSeats,
       })
       const minNote = b.floorApplied ? ` (فعلي ${actual} — طُبق الحد الأدنى ${rule.minSeats})` : ''
+      /* ═══ والأعلى يُذكَر أوّلا (٢١ سبتمبر ٢٠٢٦) ═══
+
+         قرارُ صاحب المنصّة: «ابدأ بالأعلى وهو رابط الإحالة الخاص به وبعدها
+         نذكر السعر الاعتيادي». وكان بندُ العامّ يتصدّر الكشفَ وبندُ الإحالة
+         يتبعه بكلمة «منهم» — وهي تحيل إلى ما قبلها، فلمّا تقدّم لم يبقَ لها
+         مرجع. فصار نصُّه قائما بنفسه.
+
+         والمجموعُ لا يتأثّر: ترتيبُ البنود عرضٌ، وجمعُها يقع على مصفوفةٍ
+         كاملة. وسقفُ الكشف ومنعُ التكرار يقرآن `sourceRef` لا الموضع. */
+      if (referred > 0) {
+        const r = rule.referralRate === null ? Number(rule.rate) : Number(rule.referralRate)
+        items.push({
+          description: `تدريب «${courseTitle}» — عبر رابطك ${referred} متعلماً × ${r} ${rule.currency}`,
+          amount: b.referralAmount,
+          sourceRef: `cohort:${cohortId}:referral`,
+        })
+      }
       items.push({
         description: `تدريب «${courseTitle}» — ${b.generalSeats} متعلماً عامّا × ${Number(rule.rate)} ${rule.currency}${minNote}`,
         amount: b.generalAmount,
         sourceRef: `cohort:${cohortId}`,
       })
-      if (referred > 0) {
-        const r = rule.referralRate === null ? Number(rule.rate) : Number(rule.referralRate)
-        items.push({
-          description: `منهم عبر رابطك — ${referred} متعلماً × ${r} ${rule.currency}`,
-          amount: b.referralAmount,
-          sourceRef: `cohort:${cohortId}:referral`,
-        })
-      }
     } else if (rule.type === 'fixed_per_cohort') {
       items.push({
         description: `أتعاب ثابتة — شعبة «${cohort.title}» (${courseTitle})`,
@@ -529,21 +557,78 @@ export class EarningsService {
     })
     if (duplicate) throw new AuthError('duplicate_cohort', 'ولّدت مستحقات هذه الشعبة لهذا المدرب من قبل', 409)
 
-    const payout = await this.prisma.trainerPayout.create({
-      data: {
-        profileId: computed.profile.id, period: finalPeriod,
-        currency: computed.rule.currency, total: computed.total,
-        items: { create: computed.items },
-      },
-      include: { items: true },
+    /* ═══ وخصومُه هو تُحسم هنا — البند 4-10 ═══
+
+       «أدرج المبلغ المستعمل بندا مستقلا باسمه في أول كشف مستحقات يحرر
+       للمدرب بعد ذلك، وحسم منه، وبين في الكشف لمن صدر ومتى استعمل».
+
+       وثلاثةٌ في هذا السطر لا واحد: **بندٌ مستقلٌّ** (لا رقمٌ مطروحٌ من بندِ
+       تدريبٍ فلا يُرى)، **وباسمه** (يقرأ عمّن حُسم بعد شهرين)، **وفي أوّل
+       كشفٍ يليه** (لا في كشف الشعبة التي استُعمل فيها — قد لا تكون له شعبةٌ
+       فيها أصلا).
+
+       والسقفُ من البند نفسِه: «لا يتجاوز مجموع ما يحسم… قيمة ذلك الكشف، وما
+       زاد أجل إلى الكشف الذي يليه». فيبقى الكشفُ موجبا أبدا — وكشفٌ سالبٌ
+       يصير مطالبةً بمالٍ في ذمّته، وذلك ما يمنعه الذيلُ صراحةً. */
+    /* ويُقرأ الصفُّ هنا لا عبر `TrainerDiscountService`: تلك تنادي هذه الخدمةَ
+       لتحسب رصيدَ المدرّب، فاستيرادُها هنا حلقةُ وحداتٍ في زمن التشغيل. */
+    const pending = await this.prisma.trainerIssuedDiscount.findMany({
+      where: { profileId: computed.profile.id, status: 'used', settledItemId: null },
+      include: { coupon: { select: { code: true } } },
+      orderBy: { usedAt: 'asc' },
+    })
+    const { taken } = settleAgainst(
+      computed.total,
+      pending.map((d) => ({ id: d.id, amount: Number(d.amount) })),
+    )
+    const byId = new Map(pending.map((d) => [d.id, d]))
+    const discountItems = taken.map((t) => {
+      const d = byId.get(t.id)!
+      const usedOn = d.usedAt ? ` · استُعمل ${d.usedAt.toISOString().slice(0, 10)}` : ''
+      return {
+        description: `حسم خصم أصدرتَه — ${d.forWhomAr} (${d.coupon.code})${usedOn}`,
+        amount: -Number(d.amount),
+        sourceRef: `trainer_discount:${d.id}`,
+      }
+    })
+    const items = [...computed.items, ...discountItems]
+    const total = items.reduce((sum, i) => sum + i.amount, 0)
+
+    const payout = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.trainerPayout.create({
+        data: {
+          profileId: computed.profile.id, period: finalPeriod,
+          currency: computed.rule.currency, total,
+          items: { create: items },
+        },
+        include: { items: true },
+      })
+      /* والوسمُ داخلَ المعاملة: كشفٌ يحمل بندَ حسمٍ وخصمٌ ما زال «مستعمَلا»
+         يُحسم ثانيةً في الكشف الذي يليه. و`settledItemId` هو ما يمنع ذلك،
+         فيُكتب مع الكشف أو لا يُكتب كلاهما. */
+      for (const t of taken) {
+        const item = created.items.find((i) => i.sourceRef === `trainer_discount:${t.id}`)
+        await tx.trainerIssuedDiscount.updateMany({
+          where: { id: t.id, status: 'used', settledItemId: null },
+          data: { status: 'settled', settledAt: new Date(), settledItemId: item?.id ?? null },
+        })
+      }
+      return created
     })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer_payout.generate', entityType: 'TrainerPayout', entityId: payout.id,
-      meta: { cohortId, period: finalPeriod, total: computed.total, rule: computed.rule },
+      meta: {
+        cohortId, period: finalPeriod, total, gross: computed.total, rule: computed.rule,
+        discountsSettled: taken.length,
+      },
     })
+    /* والإشعارُ يقول الصافيَ لا الإجماليَّ حين حُسم منه شيء — ورقمٌ في
+       الإشعار يخالف ما في الكشف أسوأُ من إشعارٍ لا يُرسَل. */
+    const deducted = discountItems.reduce((sum, i) => sum - i.amount, 0)
     await this.notifyTrainer(computed.profile.id, 'وُلّد كشف مستحقاتك تلقائياً',
-      `اكتملت شعبة «${computed.cohort.title}» وحُسبت مستحقاتك عنها: ${computed.total} ${payout.currency} لفترة ${finalPeriod} — بانتظار اعتماد الإدارة المالية.`,
-      { payoutId: payout.id, cohortId, period: finalPeriod, total: computed.total })
+      `اكتملت شعبة «${computed.cohort.title}» وحُسبت مستحقاتك عنها: ${total} ${payout.currency} لفترة ${finalPeriod}`
+      + `${deducted > 0 ? ` (بعد حسم ${deducted} من خصومٍ أصدرتَها بنفسك)` : ''} — بانتظار اعتماد الإدارة المالية.`,
+      { payoutId: payout.id, cohortId, period: finalPeriod, total, gross: computed.total, deducted })
     return payout
   }
 

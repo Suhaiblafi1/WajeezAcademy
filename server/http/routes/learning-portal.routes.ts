@@ -23,6 +23,7 @@ import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { resourceSourceBlockerAr } from '../../../src/application/trainer/module-body'
 import { ReferralService } from '../../services/referral.service'
+import { TrainerDiscountService } from '../../services/trainer-discount.service'
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
 import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
 import { AuthError } from '../../services/auth.service'
@@ -393,6 +394,45 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       referrals.reachOf(req.auth!.userId),
     ])
     return { ...link, ...reach }
+  })
+
+  /* ═══ خصومُه هو — تُصدَر من «دعوتي» وتُحسم من «مستحقّاتي» ═══
+
+     قرارُ صاحب المنصّة (٢١ سبتمبر ٢٠٢٦): «يحقّ له إصدارُ خصمٍ بقيمةٍ ماديّةٍ
+     معيّنةٍ وليست نسبة، لتُخصم من حسابه في مستحقّاتي لاحقا». والقواعدُ في
+     `src/application/trainer/issued-discount.ts`، والخدمةُ في
+     `trainer-discount.service.ts`، وهذه أبوابُها.
+
+     وبوّابتُها `trainer.cohort.plan` كأخواتها في الصفحة نفسِها: صفحةٌ واحدةٌ
+     بصلاحيّتين تنكسر نصفَها لمن يملك إحداهما. */
+  const trainerDiscounts = new TrainerDiscountService(prisma)
+
+  app.get('/api/trainer/me/discounts', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'خصومي التي أصدرتُها، ورصيدي القابل للخصم' },
+  }, async (req) => trainerDiscounts.listFor(req.auth!.userId))
+
+  app.post('/api/trainer/me/discounts', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'أصدِرْ خصما بمبلغٍ من حسابي لشخصٍ أسمّيه' },
+  }, async (req, reply) => {
+    const body = z.object({
+      /* مبلغٌ لا نسبة — ولا حقلَ للنسبة أصلا، فما لا بابَ له لا يُطلَب */
+      amount: z.number().positive(),
+      forWhomAr: z.string().min(2).max(200),
+      noteAr: z.string().max(500).optional(),
+      expiresAt: z.coerce.date().optional(),
+    }).parse(req.body)
+    const out = await trainerDiscounts.issue(req.auth!.userId, body)
+    return reply.code(201).send(out)
+  })
+
+  app.post('/api/trainer/me/discounts/:id/revoke', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'ألغِ خصما أصدرتُه ولم يُستعمَل بعد' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return trainerDiscounts.revoke(req.auth!.userId, id)
   })
 
   const planContent = z.object({

@@ -33,6 +33,11 @@ interface RealEarnings {
   rules: Rule[];
   /* شعبةً شعبة: كم عامّا وكم عبر رابطك وبأيّ أجر — قبل أن يُولَّد الكشف */
   cohorts: { cohortId: string; title: string; status: string; general: number; referred: number; rate: number | null; referralRate: number | null; currency: string; ruleType: string | null; projected: number | null }[];
+  /* وما أصدره هو من خصومٍ واستُعمل ولم يُحسم بعد — البند 4-10 */
+  awaitingDiscounts: {
+    total: number; currency: string;
+    rows: { id: string; code: string; amount: number; currency: string; forWhomAr: string; usedAt: string | null }[];
+  };
 }
 
 interface MaskedBank {
@@ -233,7 +238,7 @@ function RealEarningsView() {
     );
   }
 
-  const { summary, payouts, agreement, rules, cohorts } = data;
+  const { summary, payouts, agreement, rules, cohorts, awaitingDiscounts } = data;
   const scoped = (rules ?? []).filter((r) => (r.cohortId || r.courseId) && !r.effectiveTo);
   return (
     <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
@@ -246,11 +251,30 @@ function RealEarningsView() {
         <p className="flex items-center gap-2 text-sm font-black"><ShieldCheck className="h-4 w-4 text-teal-light-ink" /> اتفاقُك المسبق</p>
         {agreement ? (
           <>
+            {/* ═══ والأعلى يُذكَر أوّلا (٢١ سبتمبر ٢٠٢٦) ═══
+
+                قرارُ صاحب المنصّة: «ابدأ بالأعلى وهو رابط الإحالة الخاص به
+                وبعدها نذكر السعر الاعتيادي». وكان العامُّ يتصدّر فيقرأ
+                المدرّبُ الأصغرَ أوّلا ويثبت في ذهنه، ويأتيه سعرُ رابطه
+                ذيلا مسبوقا بنقطة. والرقمان كلاهما مكتوبان — الترتيبُ
+                وحدَه انقلب.
+
+                ولا يُقلَب حيث لا «أعلى»: بلا `referralRate` يبقى السعرُ
+                العامُّ وحدَه في صدر السطر كما كان. */}
             <p className="mt-2 text-lg font-black text-foreground">
-              {RULE_TYPE_AR[agreement.type] ?? agreement.type} — <span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency}
-              {agreement.type === "per_seat" && " عن كلّ متعلّمٍ عامّ"}
-              {agreement.type === "per_seat" && agreement.referralRate != null && <> · و<span dir="ltr" className="font-mono">{Number(agreement.referralRate)}</span> {agreement.currency} عن كلّ متعلّمٍ جاء عبر رابطك</>}
-              {agreement.type === "revenue_share" && " من إيراد الشعبة"}
+              {RULE_TYPE_AR[agreement.type] ?? agreement.type} —{" "}
+              {agreement.type === "per_seat" && agreement.referralRate != null ? (
+                <>
+                  <span dir="ltr" className="font-mono">{Number(agreement.referralRate)}</span> {agreement.currency} عن كلّ متعلّمٍ جاء عبر رابطك
+                  {" · و"}<span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency} عن كلّ متعلّمٍ عامّ
+                </>
+              ) : (
+                <>
+                  <span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency}
+                  {agreement.type === "per_seat" && " عن كلّ متعلّمٍ عامّ"}
+                  {agreement.type === "revenue_share" && " من إيراد الشعبة"}
+                </>
+              )}
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
               {agreement.minSeats > 0 && <>يُحسب لك {agreement.minSeats} مقاعدَ على الأقلّ ولو سجّل أقلّ. </>}
@@ -276,14 +300,15 @@ function RealEarningsView() {
       {/* ═══ شعبةً شعبة — من أين جاء طلابك وماذا يُحسب لك عنهم ═══ */}
       {(cohorts ?? []).length > 0 && (
         <Panel as="section" className="mb-6">
-          <p className="text-sm font-black">شعبك — عامٌّ وعبر رابطك</p>
+          <p className="text-sm font-black">شعبك — عبر رابطك وعامٌّ</p>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-read">
               <thead>
                 <tr className="text-right text-muted-foreground">
                   <th className="pb-2 pl-3 font-bold">الشعبة</th>
-                  <th className="pb-2 pl-3 font-bold">عامّ</th>
+                  {/* الأعلى أوّلا — العمودُ قبل العمود، بالقرار نفسِه */}
                   <th className="pb-2 pl-3 font-bold">عبر رابطك</th>
+                  <th className="pb-2 pl-3 font-bold">عامّ</th>
                   <th className="pb-2 font-bold">المتوقَّع</th>
                 </tr>
               </thead>
@@ -291,14 +316,43 @@ function RealEarningsView() {
                 {cohorts.map((c) => (
                   <tr key={c.cohortId} className="border-t border-white/10">
                     <td className="py-2 pl-3 font-bold">{c.title}</td>
-                    <td className="py-2 pl-3 tabular-nums">{c.general}{c.rate != null && <span className="text-muted-foreground"> × {c.rate}</span>}</td>
                     <td className="py-2 pl-3 tabular-nums">{c.referred}{c.referralRate != null && <span className="text-muted-foreground"> × {c.referralRate}</span>}</td>
+                    <td className="py-2 pl-3 tabular-nums">{c.general}{c.rate != null && <span className="text-muted-foreground"> × {c.rate}</span>}</td>
                     <td className="py-2 tabular-nums" dir="ltr">{c.projected == null ? "—" : `${fmt(c.projected)} ${c.currency}`}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        </Panel>
+      )}
+
+      {/* ═══ وخصومٌ أصدرتَها أنت تنتظر الحسم — البند 4-10 ═══
+
+          تُقال هنا قبل أن تقع: الحسمُ يجري في «أوّل كشفٍ يُحرَّر بعد ذلك»،
+          فمن لم يرَ ما ينتظره فُوجئ برقمٍ أصغرَ ممّا حسب. وهي أخت اللوحات
+          التي قبلها: هذه الصفحةُ تقول الأساسَ قبل الرقم، وهذا رقمٌ سالبٌ
+          فيلزمه أساسُه أكثر.
+
+          ولا تُعرض حين لا شيءَ ينتظر: لوحةٌ بصفرٍ تُعلّم القارئَ تخطّيها. */}
+      {(awaitingDiscounts?.rows.length ?? 0) > 0 && (
+        <Panel as="section" tone="warn" className="mb-6">
+          <p className="text-sm font-black text-gold-ink">خصومٌ أصدرتَها بنفسك — تُحسم من كشفك القادم</p>
+          <p className="mt-2 text-read leading-7 text-muted-foreground">
+            هذه خصومٌ أصدرتَها من «دعوتي» واستُعملت في مشترياتٍ دُفعت. تُدرج بندا باسمها في أوّل كشفٍ يُحرَّر لك
+            وتُحسم منه، ولا يتجاوز ما يُحسم في كشفٍ واحدٍ قيمتَه — وما زاد يُؤجَّل إلى الذي يليه (البند 4-10 من عقدك).
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {awaitingDiscounts.rows.map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 text-read text-muted-foreground">
+                <span>{d.forWhomAr} <span dir="ltr" className="font-mono text-fine">({d.code})</span>{d.usedAt && <> · استُعمل {fmtDateAr(d.usedAt)}</>}</span>
+                <span dir="ltr" className="font-mono font-bold text-gold-ink">−{fmt(d.amount)} {d.currency}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-read font-bold text-gold-ink">
+            المجموع المنتظَر حسمُه: <span dir="ltr" className="font-mono">{fmt(awaitingDiscounts.total)}</span> {awaitingDiscounts.currency}
+          </p>
         </Panel>
       )}
 
@@ -346,7 +400,11 @@ function RealEarningsView() {
                 {p.items.map((i) => (
                   <li key={i.id} className="flex items-center justify-between gap-3 text-read text-muted-foreground">
                     <span>{i.description}</span>
-                    <span dir="ltr" className="font-mono font-bold text-foreground">{fmt(i.amount)} {p.currency}</span>
+                    {/* والبندُ السالبُ يُرى سالبا: حسمٌ بلون الأتعاب يُقرأ زيادةً
+                        في مسحةِ عينٍ سريعة، وهو ما يُقرأ به الكشفُ فعلا. */}
+                    <span dir="ltr" className={`font-mono font-bold ${Number(i.amount) < 0 ? "text-gold-ink" : "text-foreground"}`}>
+                      {fmt(i.amount)} {p.currency}
+                    </span>
                   </li>
                 ))}
               </ul>

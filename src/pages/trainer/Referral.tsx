@@ -26,23 +26,219 @@
 
    ــ وما زال قائما: **لا يُبنى مسارٌ هنا**. صفحتان تبنيان مسارا تفترقان
    يوما، والمسارُ عقدٌ على متعلّمٍ لا شاشةُ عرض. */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Link2, Loader2, UserPlus, Wallet } from "lucide-react";
+import { Link2, Loader2, TicketPercent, UserPlus, Wallet } from "lucide-react";
 import PortalFrame from "../PortalFrame";
-import { apiGet, permissionMessage } from "@/services/api";
+import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import { staffControlCls } from "@/components/FormKit";
+import { staffControlCls, staffAreaCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
+import { fmtDateAr } from "@/utils/format";
+import {
+  MAX_ISSUED_DISCOUNT, MIN_ISSUED_DISCOUNT, issueBlockerAr, type DiscountBudget,
+} from "@/application/trainer/issued-discount";
 
 interface MyReferral { code: string; slug: string; url: string; publicReady: boolean; registered: number }
+/** خصمٌ أصدره المدرّبُ — كما يرسله `TrainerDiscountService.listFor` */
+interface IssuedDiscount {
+  id: string; code: string; status: string; statusAr: string;
+  amount: number; currency: string; forWhomAr: string; noteAr: string | null;
+  expiresAt: string | null; usedAt: string | null; settledAt: string | null;
+  revokedAt: string | null; createdAt: string;
+}
+interface DiscountsState { budget: DiscountBudget; discounts: IssuedDiscount[] }
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
 interface CohortLink {
   cohortId: string; title: string; termTitleAr: string | null; status: string
   registrationOpen: boolean; learners: number; code: string; url: string
 }
 const REGISTERED_FORMS = { one: "متعلّمٌ واحد", two: "متعلّمان", few: "متعلّمين", many: "متعلّما" } as const;
+
+
+/* ═══ خصومي — مبلغٌ من حسابي لشخصٍ أسمّيه ═══
+
+   قرارُ صاحب المنصّة (٢١ سبتمبر ٢٠٢٦): «يحقّ له إصدارُ خصمٍ بقيمةٍ ماديّةٍ
+   معيّنةٍ وليست نسبة… لتُخصم من حسابه في مستحقّاتي لاحقا». وموضعُها «دعوتي»
+   بنصّ القرار — وهي أخت الرابط: كلاهما شيءٌ ينشره باسمه.
+
+   ─────────── وثلاثةٌ تُقال قبل أن يُكتب الرقم ───────────
+
+   · **أنّه من حسابه هو** — لا من الأكاديميّة. ومن لم يقرأها قبل أن يُصدر
+     قرأها في كشفه بعد شهر، وذاك أسوأُ مواضع القراءة.
+   · **ورصيدُه** — فلا يكتب رقما ثمّ يُردّ. والحدُّ يُحسب في الخادم ويُعرض
+     هنا، ويُقرأ من قواعدَ واحدةٍ (`issue-blocker`) فلا تقول الشاشةُ شيئا
+     ويقول الخادمُ غيرَه.
+   · **وأنّ خصومنا نحن لا تمسّه** — البند 4-9. وهي الجملةُ التي تمنع أن
+     يُقرأ هذا البابُ على أنّه «الخصومُ كلُّها صارت عليّ».
+
+   ولا خانةَ للنسبة: ما لا بابَ له لا يُطلَب، ولا يُقال «النسبةُ غير متاحة». */
+function MyDiscounts() {
+  const [state, setState] = useState<DiscountsState | null>(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ amount: "", forWhomAr: "", noteAr: "" });
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    apiGet<DiscountsState>("/api/trainer/me/discounts")
+      .then((d) => { setState(d); setErr(""); })
+      .catch((e) => setErr(permissionMessage(e, "تعذّر تحميلُ خصومك")));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  if (!state) return null;
+  const { budget, discounts } = state;
+
+  const amount = Number(form.amount);
+  /* الحاجزُ من قواعدَ يقرؤها الخادمُ نفسُه — لا نصٌّ ثانٍ يُكتب هنا */
+  const blocker = form.amount.trim() === "" ? null : issueBlockerAr(amount, budget);
+  const ready = form.amount.trim() !== "" && blocker === null && form.forWhomAr.trim().length >= 2;
+
+  const issue = async () => {
+    setBusy(true); setErr("");
+    try {
+      await apiPost("/api/trainer/me/discounts", {
+        amount,
+        forWhomAr: form.forWhomAr.trim(),
+        ...(form.noteAr.trim() ? { noteAr: form.noteAr.trim() } : {}),
+      });
+      setForm({ amount: "", forWhomAr: "", noteAr: "" });
+      setOpen(false);
+      load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "تعذّر إصدارُ الخصم");
+    } finally { setBusy(false); }
+  };
+
+  const revoke = async (id: string) => {
+    setBusy(true); setErr("");
+    try {
+      await apiPost(`/api/trainer/me/discounts/${id}/revoke`);
+      load();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "تعذّر إلغاءُ الخصم");
+    } finally { setBusy(false); }
+  };
+
+  const copy = (code: string) => {
+    void navigator.clipboard?.writeText(code).then(() => {
+      setCopied(code);
+      setTimeout(() => setCopied((c) => (c === code ? null : c)), 2000);
+    });
+  };
+
+  return (
+    <Panel as="section" className="mb-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="flex items-center gap-2 text-sm font-black">
+          <TicketPercent className="h-4 w-4 text-gold-ink" aria-hidden="true" /> خصمٌ أصدره بنفسي
+        </p>
+        <span className="text-read font-bold text-teal-light-ink" dir="rtl">
+          رصيدُك القابل للخصم: <span dir="ltr" className="font-mono">{budget.remaining}</span> {budget.currency}
+        </span>
+      </div>
+
+      <p className="mt-2 text-read leading-7 text-muted-foreground">
+        لك أن تعطيَ شخصا بعينه خصما <b className="text-foreground">بمبلغٍ تحدّده أنت</b> على ما يشتريه من الأكاديميّة.
+        وهذا الخصمُ <b className="text-foreground">من مستحقّاتك أنت</b>: إن استُعمل في شراءٍ دُفع، ظهر بندا باسمه
+        في أوّل كشفٍ يُحرَّر لك ثمّ حُسم منه (البند 4-10 من عقدك). وما لم يُستعمَل لا يُحسم، ولك إلغاؤه ما دام كذلك.
+      </p>
+      <p className="mt-2 text-read leading-7 text-muted-foreground">
+        وما تطرحه الأكاديميّةُ من خصومها هي — خصمُ الباقة والحملاتُ وأكوادُنا — لا يُنقص أتعابَك بشيء (البند 4-9).
+      </p>
+
+      {err && <Inset as="p" tone="danger" className="mt-3 px-4 py-3 text-read leading-6 text-red-200">{err}</Inset>}
+
+      {!open ? (
+        <Button
+          tone="secondary" size="sm" className="mt-3"
+          disabled={budget.remaining < MIN_ISSUED_DISCOUNT}
+          onClick={() => setOpen(true)}
+        >
+          أصدِرْ خصما
+        </Button>
+      ) : (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <StaffField
+            label={`المبلغ (${budget.currency})`}
+            hint={`بين ${MIN_ISSUED_DISCOUNT} و${Math.min(MAX_ISSUED_DISCOUNT, budget.remaining)} — مبلغٌ لا نسبة.`}
+          >
+            <input
+              type="number" inputMode="decimal" dir="ltr" min={MIN_ISSUED_DISCOUNT} step="0.01"
+              value={form.amount} disabled={busy}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              className={`${staffControlCls} text-left`}
+            />
+          </StaffField>
+          <StaffField label="لمن؟" hint="اسمٌ تعرفه به — يُطبع في كشفك لتعرف بعد شهرين عمّن حُسم.">
+            <input
+              value={form.forWhomAr} disabled={busy} maxLength={200}
+              onChange={(e) => setForm({ ...form, forWhomAr: e.target.value })}
+              className={staffControlCls}
+            />
+          </StaffField>
+          <StaffField label="ملاحظة (اختيارية)" wide>
+            <textarea
+              rows={2} value={form.noteAr} disabled={busy} maxLength={500}
+              onChange={(e) => setForm({ ...form, noteAr: e.target.value })}
+              className={staffAreaCls}
+            />
+          </StaffField>
+          {blocker && (
+            <Inset as="p" tone="danger" className="px-4 py-3 text-read leading-6 text-red-200 sm:col-span-2">{blocker}</Inset>
+          )}
+          <div className="flex flex-wrap gap-2 sm:col-span-2">
+            <Button tone="confirm" size="sm" loading={busy} disabled={!ready} onClick={() => void issue()}>
+              أصدِرْ ويُحسم منّي
+            </Button>
+            <Button tone="ghost" size="sm" disabled={busy} onClick={() => { setOpen(false); setForm({ amount: "", forWhomAr: "", noteAr: "" }); }}>
+              تراجعْ
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {discounts.length > 0 && (
+        <ul className="mt-4 space-y-3">
+          {discounts.map((d) => (
+            <Inset as="li" key={d.id} className="px-4 py-3">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <span className="text-read font-bold text-foreground">
+                  <span dir="ltr" className="font-mono">{d.amount} {d.currency}</span> — {d.forWhomAr}
+                </span>
+                <span className="text-read text-muted-foreground">{d.statusAr}</span>
+              </div>
+              {d.noteAr && <p className="mt-1 text-read leading-6 text-muted-foreground">{d.noteAr}</p>}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <input
+                  readOnly dir="ltr" value={d.code} aria-label={`رمزُ خصمِ ${d.forWhomAr}`}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className={`${staffControlCls} min-w-0 flex-1 text-left font-mono`}
+                />
+                <Button tone="secondary" size="sm" onClick={() => copy(d.code)}>
+                  {copied === d.code ? "نُسخ" : "انسخ الرمز"}
+                </Button>
+                {d.status === "live" && (
+                  <Button tone="danger" size="sm" disabled={busy} onClick={() => void revoke(d.id)}>ألغِه</Button>
+                )}
+              </div>
+              {/* والتواريخُ تُقال حين تقع: «استُعمل» بلا متى خبرٌ ناقص */}
+              {(d.usedAt || d.settledAt) && (
+                <p className="mt-2 text-read leading-6 text-muted-foreground">
+                  {d.usedAt && <>استُعمل {fmtDateAr(d.usedAt)}</>}
+                  {d.settledAt && <> · حُسم من كشفك {fmtDateAr(d.settledAt)}</>}
+                </p>
+              )}
+            </Inset>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
 
 export default function Referral() {
   const [referral, setReferral] = useState<MyReferral | null>(null);
@@ -199,6 +395,8 @@ export default function Referral() {
               )}
             </Panel>
           )}
+
+          <MyDiscounts />
 
           {/* ف-١: يُقال إنّ الإحالةَ أعلى، ولا يُكتب رقمُها هنا — مصدرُه
               «مستحقاتي» حيث يُعرض أجرُ الإحالة لكلّ شعبةٍ بعينها. ورقمٌ

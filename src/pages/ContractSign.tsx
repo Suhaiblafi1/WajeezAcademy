@@ -205,7 +205,7 @@ export default function ContractSign() {
         tabIndex={0}
         dir="rtl"
         aria-label="نصُّ الاتفاقية — مرِّرْ إلى آخره"
-        className="mb-2 max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/20 p-4 leading-8"
+        className="contract-prose mb-2 max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/20 p-4 leading-8"
       >
         {v.bodyAr}
       </pre>
