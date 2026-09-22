@@ -3,12 +3,12 @@
    2) docs/CATALOG_GAPS_FROM_DIAGNOSTIC_AR.md — فجوات الكتالوج المكتشفة من التشخيص
    الاستخدام: npx tsx scripts/report-v2-docs.ts */
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createEngine } from '../src/domain/diagnostic/engine'
 import { derivePersona } from '../src/domain/diagnostic/v2'
-import { launchPathways, questionById } from '../src/domain/diagnostic/catalog'
+import { questionById } from '../src/domain/diagnostic/catalog'
 import { buildPersonas, buildVariants, runSession, answerCurrent, type PersonaSpec } from './v2/sim-lib'
 import type { DiagnosticEngineV2 } from '../src/domain/diagnostic/v2'
 
@@ -127,51 +127,18 @@ V2 ليس «أسئلة أقل» فقط — بل قرارات قابلة للتد
 
 writeFileSync(join(root, 'docs/DIAGNOSTIC_V1_V2_COMPARISON_AR.md'), comparisonMd)
 
-/* ─── وثيقة فجوات الكتالوج ─── */
-const personasReport = JSON.parse(
-  readFileSync(join(root, 'docs/diagnostic-v2/personas-report.json'), 'utf8'),
-) as { summary: { pathwayDistribution: Record<string, number>; sessions: number; domainDistribution: Record<string, number> } }
-const winners = new Set(Object.keys(personasReport.summary.pathwayDistribution).filter((k) => !k.startsWith('template:')))
-const unreachable = launchPathways.filter((p) => !winners.has(p.id))
-const gapsMd = `# فجوات الكتالوج كما كشفها تشخيص V2
+/* ─── وثيقةُ فجوات الكتالوج لم تعد تُولَّد هنا ───
 
-> وُلّدت آليًا من محاكاة 525 جلسة حتمية + 10,000 جلسة مزروعة البذرة.
-> المبدأ: عندما لا يغطي الكتالوج حاجة حقيقية، يقول المحرك «فجوة» ويحيل لمستشار — بدل إعادة ترشيح نفس المسار للجميع.
+   كانت تُولَّد من هذا الملفّ ومن `personas-report.json` المحفوظِ معه — أي من
+   محاكاةِ محرّك **V2**. ثمّ يُلحَق بها سببٌ جذريٌّ **مكتوبٌ باليد هنا**:
+   «سؤال الهدف ينتج ٧ رموز فقط». فكانت الأرقامُ تتجدّد والتعليلُ لا يتجدّد،
+   وانتقلت المنصّةُ إلى V2.1 فبقي يصف محرّكا لا يخدم أحدا — وقياسُ المحرّك
+   الحيّ نقض دعواه: المساراتُ التي عدّها لا تُوصَل كلُّها تفوز.
 
-## ١) مجالات بلا مسار (فجوة صريحة)
+   فصارت في `scripts/v2_1/audit-catalog-gaps.ts` تُقاس من المحرّك الحيّ،
+   ويقارنها `npm run ci:catalog-gaps` في `verify` فلا تبيد ثانيةً صامتة.
 
-| المجال | الحاجة | الجلسات التي وصلته | التوصية |
-|---|---|---|---|
-| الأسرة والتربية (family_parenting) | أولياء أمور بهدف أسري | ${personasReport.summary.domainDistribution['family_parenting'] ?? 0} من 525 | مسار أسري حقيقي أو شراكة محتوى |
-| التطوير الشخصي العام (personal_development) | «ثقافة عامة» بلا مسار مخصص | جزء من جلسات personal_growth | مسار تعلم عام أو توجيه لملخصات وجيز |
-
-## ٢) مسارات لم تفز بالمرتبة الأولى في 525 جلسة (${unreachable.length} من 20)
-
-${unreachable.map((p) => `- \`${p.id}\` — ${p.title}`).join('\n')}
-
-**السبب الجذري الموثق:** سؤال الهدف في البنك ينتج ٧ رموز فقط، بينما بروفايلات هذه المسارات تنتظر أهدافًا لا يولّدها البنك (مثل digital_transformation وfinancial_decision وproduct_launch وsupply_chain_resilience). المسارات ليست «ميتة» — بل **غير قابلة للوصول من أسئلة الهدف الحالية**.
-
-**الحلول المقترحة (قرارات أكاديمية مطلوبة):**
-1. توسيع خيارات سؤال الهدف أو إضافة سؤال «مجال العمل/الاهتمام» يولّد الرموز الناقصة.
-2. أو قبول هذه المسارات كمسارات «تخصصية» تُفتح من سياق الوظيفة (function_specialization) لا من الهدف المعلن — جزء منه مطبق فعلًا في طبقة المجالات.
-
-## ٣) أهداف تضغط إلى مسار واحد
-
-- \`personal_growth\` (ثقافة عامة) ينتهي غالبًا إلى \`PW-FND-003\` (AI للإنتاجية) لأنه أقرب مسار متاح — مقبول كبداية آمنة، لكنه يؤكد فجوة «التطوير الشخصي العام».
-- \`career_direction\` للموظفين لا مسار له (مسارا STU للطلبة) — موظف يريد تغيير مساره يُحال لمستشار اليوم.
-
-## ٤) توزيع المرتبة الأولى (525 جلسة)
-
-${Object.entries(personasReport.summary.pathwayDistribution)
-  .map(([k, v]) => `| ${k} | ${v} | ${((v / personasReport.summary.sessions) * 100).toFixed(1)}٪ |`)
-  .join('\n')}
-
-## ٥) قاعدة القرار
-
-عندما تُضاف مسارات جديدة لهذه المجالات، يكفي ربطها في \`src/data/catalog/v2/pathway-domains.v2.json\` وبروفايلات الجمهور — المحرك يلتقطها تلقائيًا دون تغيير كود، وسيظهر أثرها في التوزيع عند إعادة المحاكاة.
-`
-writeFileSync(join(root, 'docs/CATALOG_GAPS_FROM_DIAGNOSTIC_AR.md'), gapsMd)
+   ولا تُعاد هنا: مولّدان لملفٍّ واحدٍ يتنازعانه، ومن شغّل هذا لَمحا ذاك. */
 
 console.log('✅ docs/DIAGNOSTIC_V1_V2_COMPARISON_AR.md')
-console.log('✅ docs/CATALOG_GAPS_FROM_DIAGNOSTIC_AR.md')
 console.log(`V1 vs V2 — أسئلة: ${v1Q}/${v2Q} | غير مناسبة: ${v1Inapp}/${v2Inapp} | فجوات افتراضية: ${v1Unmeasured}/${v2Unmeasured} | مسارات متميزة: ${v1Distinct}/${v2Distinct}`)

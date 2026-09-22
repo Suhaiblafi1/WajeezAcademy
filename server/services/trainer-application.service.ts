@@ -13,6 +13,7 @@ import { recordAudit } from './audit'
 import { LIVE_INTERVIEW } from './trainer-interview-state'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { renderMail } from './mail-template'
+import { REVIEW_OPEN_STATUSES, type ReviewOpenStatus } from '../../src/application/trainer/approval'
 import { cleanProposals } from '../../src/application/trainer/teachable-proposals'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 import { deleteObject } from './object-store'
@@ -75,55 +76,76 @@ export const PURGEABLE_STATUSES: readonly TrainerStatus[] = SHARED_PURGEABLE
    والاستثناءُ هو الاستثناءُ نفسُه: `draft` و`email_verification_pending` لم
    يُثبت فيهما أنّ البريدَ بريدُه، والقبولُ الداخليُّ يُنشئ له ملفّا ويُرسل
    إليه عقدا — فلا يُبنى ذلك على بريدٍ مجهول. */
+/* ═══ وكلُّ الأبواب مفتوحةٌ ما دام صاحبُها متقدّما (٢٢ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «أضِف خانةَ طلب المعلومات الإضافية من المدرّب حتى لو تمّ
+   اعتمادُه داخليّا… وأبقِ كلَّ الخيارات مفتوحةً مهما كانت الحالةُ الحاليّة».
+
+   وكانت الخريطةُ تُكتب صفّا صفّا بيد، فكلُّ بابٍ يُفتح يُنسى أخوه: فُتح طلبُ
+   المعلومات من كلّ ما **قبلَ** القرار في ٢١ سبتمبر، وبقي مقفلا بعد القبول
+   الداخليّ — فمن تبيّن له وهو يجهّز مدرّبَه أنّ وثيقةً تنقص لم يجد بابا،
+   وهي عينُ الشكوى التي فُتح لها البابُ بالأمس.
+
+   فصارت تُولَّد: كلُّ حالةٍ حيّةٍ تصل كلَّ حالةٍ حيّةٍ أخرى، وتصل الاعتمادَ
+   والردَّ والانسحاب. فلا صفَّ يُنسى، ولا بابَ يُفتح وحدَه.
+
+   **وما يبقى خارجَها بقصد:**
+
+   · `draft` و`email_verification_pending` — لا طلبَ بعدُ ولا بريدٌ ثبت أنّه
+     بريدُه. ونقلُهما يكسر نموذجَ صاحبه وهو يكتبه، والاعتمادُ يفتح حسابا على
+     بريدٍ مجهول.
+   · `active` و`suspended` — صار مدرّبا له بوّابةٌ وإسنادٌ ومستحقّات، وردُّه
+     إلى طابور المتقدّمين يكسر ذلك كلَّه. (اختارها صاحبُ المنصّة صراحةً حين
+     عُرض عليه الحدّان، ٢٢ سبتمبر ٢٠٢٦.)
+   · `rejected` و`withdrawn` — نهاية. ومخرجُ المردود بابٌ واحدٌ موثَّقٌ أسفلَه.
+
+   ولا تُعاد كتابةُ ما فُتح في موضعَين: `REVIEW_OPEN_STATUSES` مصدرُ الشاشة
+   والخادم معا (`src/application/trainer/decisions.ts` يستوردها)، فلا تفترق
+   قائمتان فتُظهر الشاشةُ زرّا يردّه الخادمُ ٤٠٩. */
+/* والقائمةُ في `src/application/trainer/approval.ts` — تُستورَد أعلاه */
+
+/** وجهاتُ حالةٍ حيّة: كلُّ حيّةٍ سواها، والاعتمادُ والردُّ والانسحاب.
+
+    ═══ و«مُقدَّم» وجهةٌ إلّا من «بانتظار معلوماته» ═══
+
+    معنى `submitted` «قُدِّم ولم يُقرأ بعد». ومن طُلبت منه معلوماتٌ فقد قُرئ
+    طلبُه وسُئل فيه، فردُّه إلى «لم يُقرأ» يجعل الحالةَ تكذب على من يقرؤها —
+    ومخرجُه «قيد المراجعة» كما كان.
+
+    **ولا تُقفَل من سواها.** أوّلُ صياغةٍ لهذا الملفّ أقصتها من الوجهات
+    كلِّها — فكسرت ردَّ الغياب: من حُجز له موعدٌ وهو `submitted` ثمّ لم يحضر
+    لا يُعاد إلى موضعه، فيقف الطلبُ بلا مآل. وأمسكه حارسٌ قائم
+    (`no-show.test.ts`) على قاعدةٍ حقيقيّةٍ في CI، وهو يشترط أن يُعاد إلى
+    كلّ حالةٍ يُحجَز منها. فالقيدُ على المصدر لا على الوجهة. */
+const openTargets = (from: TrainerStatus): TrainerStatus[] => [
+  ...REVIEW_OPEN_STATUSES.filter(
+    (s) => s !== from && !(from === 'information_requested' && s === 'submitted'),
+  ),
+  'active', 'rejected', 'withdrawn',
+]
+
 export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
   /* المسودّة: القسمُ الأوّل وصل ولم يُكمَل — تصير مقدَّمةً حين يُكمَل */
   draft: ['submitted', 'email_verification_pending', 'withdrawn'],
   email_verification_pending: ['submitted', 'withdrawn'],
-  submitted: ['under_review', 'information_requested', 'interview_scheduled', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  under_review: ['information_requested', 'shortlisted', 'interview_scheduled', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  /* ═══ ومنها يعود إلى حيث كان — وإلّا فالطلبُ فخّ (٢١ سبتمبر ٢٠٢٦) ═══
-
-     لمّا فُتح طلبُ المعلومات من كلّ ما قبل القرار لزم أن يُفتح معه الرجوع:
-     من كان في «مراجعة أكاديميّة» فطُلبت منه ورقةٌ، ثمّ أرسلها — إلى أين
-     يعود؟ لو لم يُفتَح له بابُه لَعاد إلى «قيد المراجعة» أي إلى أوّل
-     الطابور، فيُقرأ طلبُه من جديدٍ وقد قُرئ، أو يُقفز به إلى القبول بلا
-     مراجعة. وكلاهما خسارةُ موضعٍ لم يخسره صاحبُه.
-
-     و«مُقدَّم» وحدَها لا تُردّ إليها: هي «لم يُقرأ بعد»، وقد قُرئ. ومخرجُها
-     `under_review` — وهو ما كانت تصل إليه أصلا. */
-  information_requested: [
-    'under_review', 'waitlisted', 'shortlisted', 'interview_scheduled', 'demo_requested',
-    'academic_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn',
-  ],
-  shortlisted: ['information_requested', 'interview_scheduled', 'demo_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  interview_scheduled: ['submitted', 'under_review', 'information_requested', 'shortlisted', 'demo_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  demo_requested: ['information_requested', 'academic_review', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
-  academic_review: ['information_requested', 'conditionally_approved', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  /* والرجوعُ إلى المراجعة مفتوح: من بدأ تجهيزَه ثمّ تبيّن له ما يوقفه لا
-     يُترك بين حالَين — يردُّه إلى الطابور، أو يردّه كلَّه. */
-  conditionally_approved: ['under_review', 'contract_pending', 'active', 'waitlisted', 'rejected', 'withdrawn'],
-  contract_pending: ['onboarding', 'active', 'rejected', 'withdrawn'],
-  onboarding: ['active', 'withdrawn'],
-  active: ['suspended'],
-  waitlisted: ['under_review', 'information_requested', 'conditionally_approved', 'active', 'rejected', 'withdrawn'],
+  ...(Object.fromEntries(
+    REVIEW_OPEN_STATUSES.map((st) => [st, openTargets(st)]),
+  ) as Record<ReviewOpenStatus, TrainerStatus[]>),
   /* ═══ والرفضُ يُتراجَع عنه — بابٌ واحدٌ لا أكثر (١٩ سبتمبر ٢٠٢٦) ═══
 
      كان `rejected` بلا مخرج: من رُدّ خطأً — ضغطةٌ على الصفّ الخطأ، أو قرارٌ
-     بُني على وثيقةٍ لم تُقرأ، أو رأيٌ تبدّل بعد ساعة — لا سبيلَ إلى ردّه
-     إلّا أن يُطلب منه أن يتقدّم من جديد بطلبٍ ورقمٍ آخرَ، فيضيع تاريخُه
-     ومستنداتُه ومقابلتُه. وطلبه صاحبُ المنصّة: «عند رفض أيّ مدرّب أريد خيارَ
-     التراجع عن الرفض مع ذكر السبب، والذي يصل للمتقدّم بالإيميل».
+     بُني على وثيقةٍ لم تُقرأ — لا سبيلَ إلى ردّه إلّا أن يتقدّم من جديدٍ
+     برقمٍ آخرَ فيضيع تاريخُه ومستنداتُه ومقابلتُه.
 
      والمخرجُ **واحدٌ** لا خريطةٌ كاملة: يعود إلى «قيد المراجعة» — أي إلى
      طابور المراجعة من أوّله، لا إلى الحالة التي رُدّ منها. فالتراجعُ نقضٌ
-     للقرار لا استئنافٌ لموضعٍ فيه: من رُدّ وهو `contract_pending` لا يعود
-     إلى عقدٍ كان يُوقَّع، بل يُقرأ طلبُه من جديد.
+     للقرار لا استئنافٌ لموضعٍ فيه. ومن هناك تُفتح له الأبوابُ كلُّها.
 
      ولا يُعتمد من `rejected` بنقرة: `ONE_CLICK_APPROVABLE_STATUSES` تُخرجه،
-     وهي مقابَلةٌ بهذه الخريطة في `one-click-approval.test.ts`. فالطريقُ
-     خطوتان مقصودتان — تراجعٌ عن الردّ، ثمّ قرارٌ جديد. */
+     وهي مقابَلةٌ بهذه الخريطة في `one-click-approval.test.ts`. */
   rejected: ['under_review'],
   withdrawn: [],
+  active: ['suspended'],
   suspended: ['active'],
 }
 
@@ -828,9 +850,21 @@ export class TrainerApplicationService {
       if (firstCompletion) {
         await this.transition(app.id, 'submitted', app.userId, 'اكتمل التقديم', tx)
       }
-      /* استكمال المرحلة الثانية بعد طلب معلومات يعيد الطلب للمراجعة تلقائيا */
+      /* ═══ استكمالُ المرحلة الثانية بعد طلب معلوماتٍ يعيده إلى موضعه ═══
+
+         كان يعيده إلى `under_review` مسكوكةً. وكان ذلك يصحّ حين لم يكن طلبُ
+         المعلومات يُفتح إلّا من أوائل الطريق — فلمّا فُتح من كلّ حالةٍ حيّة
+         (٢٢ سبتمبر ٢٠٢٦، بقرار صاحب المنصّة) صار يَسلب: من كان في «التهيئة»
+         فطُلبت منه ورقةٌ ثمّ أرسلها يهبط إلى أوّل الطابور — **يُعاقَب لأنّه
+         أجاب**، ويخسر تجهيزَه وعقدَه وقراءةً سبقت.
+
+         فيعود إلى حيث طُلبت منه، و`under_review` احتياطٌ لطلبٍ قديمٍ لا
+         موضعَ محفوظٌ له. ويُمحى المحفوظُ بالرجوع فلا يُعاد إليه مرّتين. */
       if (app.status === 'information_requested') {
-        await this.transition(app.id, 'under_review', app.userId, 'استكمال المرحلة الثانية', tx)
+        const back = (app.infoRequestedFrom ?? 'under_review') as TrainerStatus
+        const to = transitionProblemAr('information_requested', back) === null ? back : 'under_review'
+        await this.transition(app.id, to, app.userId, 'استكمال المرحلة الثانية', tx)
+        await tx.trainerApplication.update({ where: { id: app.id }, data: { infoRequestedFrom: null } })
       }
     })
 

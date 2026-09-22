@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { DECISIONS, INFO_REQUESTABLE } from '@/application/trainer/decisions'
 import { EDITABLE_STATUSES } from '@/application/trainer/application-options'
+import { REVIEW_OPEN_STATUSES } from '@/application/trainer/approval'
 import { STATUS_LABELS } from '@/application/trainer/application-status'
 import { ALLOWED_TRANSITIONS } from '../../../server/services/trainer-application.service'
 
@@ -30,9 +31,23 @@ const SERVER = 'server/services/trainer-application.service.ts'
 const requestInfo = DECISIONS.find((d) => d.action === 'request_info')!
 
 describe('① القائمةُ مشتقّةٌ لا مكتوبة', () => {
-  it('هي `EDITABLE_STATUSES` إلّا المسوّدة — لا قائمةٌ ثانيةٌ تُكتب', () => {
+  /* ═══ ومصدرُها تبدّل (٢٢ سبتمبر ٢٠٢٦) ═══
+
+     كانت `EDITABLE_STATUSES` إلّا المسوّدة، والحجّةُ أنّ طلبَ المعلومات يقول
+     «عدِّلْ طلبَك وأعِدْه» فلا يُفتح حيث بابُ التعديل مغلق. ثمّ قال صاحبُ
+     المنصّة: «أضِف خانةَ طلب المعلومات… حتى لو تمّ اعتمادُه داخليّا».
+
+     والحجّةُ لم تسقط — بل تحقّقت على وجهٍ آخر: الطلبُ ينقل صاحبَه إلى
+     `information_requested`، **وهي في `EDITABLE_STATUSES`**. فبابُ التعديل
+     يُفتح بالطلب نفسِه، ولا يلزم أن يكون مفتوحا قبله. */
+  it('هي كلُّ حالةٍ حيّةٍ سوى التي هو فيها — لا قائمةٌ ثانيةٌ تُكتب', () => {
     expect([...INFO_REQUESTABLE].sort())
-      .toEqual([...EDITABLE_STATUSES].filter((s) => s !== 'draft').sort())
+      .toEqual([...REVIEW_OPEN_STATUSES].filter((s) => s !== 'information_requested').sort())
+  })
+
+  it('وبابُ التعديل يُفتح بالطلب نفسِه — فليست دعوةً إلى بابٍ مغلق', () => {
+    expect(EDITABLE_STATUSES, 'طُلبت منه معلوماتٌ ولا يستطيع تعديلَ طلبه')
+      .toContain('information_requested')
   })
 
   it('والقرارُ يقرؤها — فلا تفترق عمّا يُعرض', () => {
@@ -46,11 +61,22 @@ describe('① القائمةُ مشتقّةٌ لا مكتوبة', () => {
   })
 })
 
-describe('② وما بعد القرار خارجُها — والمسوّدةُ كذلك', () => {
-  it('لا تُطلب معلوماتٌ ممّن وقع فيه القرار', () => {
-    for (const s of ['conditionally_approved', 'contract_pending', 'onboarding', 'active',
-      'rejected', 'withdrawn', 'suspended']) {
-      expect(INFO_REQUESTABLE, `«${s}» بعد القرار ومع ذلك تُطلب منه`).not.toContain(s)
+describe('② ومن خرج من الطابور خارجُها — والمسوّدةُ كذلك', () => {
+  /* ═══ والحدُّ انتقل، ولم يُرفَع (٢٢ سبتمبر ٢٠٢٦) ═══
+
+     كان الحدُّ «وقع فيه القرار»، فكان `conditionally_approved` خارجَها —
+     وهو بعينه ما شكا منه صاحبُ المنصّة: من يجهّز مدرّبَه فتنقصه ورقةٌ لا
+     يجد بابا. فصار الحدُّ «خرج من الطابور»: المدرّبُ النشطُ له بوّابةٌ
+     وإسنادٌ ومستحقّات، وردُّه إلى طابور المتقدّمين يكسر ذلك كلَّه. */
+  it('لا تُطلب معلوماتٌ ممّن لم يعد متقدّما', () => {
+    for (const s of ['active', 'suspended', 'rejected', 'withdrawn']) {
+      expect(INFO_REQUESTABLE, `«${s}» خرج من الطابور ومع ذلك تُطلب منه`).not.toContain(s)
+    }
+  })
+
+  it('وتُطلب ممّن قُبل داخليّا أو جاوزه — وهو نصُّ ما طُلب', () => {
+    for (const s of ['conditionally_approved', 'contract_pending', 'onboarding']) {
+      expect(INFO_REQUESTABLE, `«${s}» ما زال مقفلا`).toContain(s)
     }
   })
 

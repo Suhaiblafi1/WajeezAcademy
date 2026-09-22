@@ -953,6 +953,13 @@ model TrainerApplication {
   userId               String?                       @unique @db.Uuid
   user                 User?                         @relation("TrainerApplicant", fields: [userId], references: [id], onDelete: SetNull)
   status               String                        @default("email_verification_pending")
+  /* من أين طُلبت منه المعلوماتُ الإضافيّة — ليعود إليه لا إلى أوّل الطابور.
+
+     ولمَ عمودٌ لا أثرٌ يُقرأ: الرجوعُ يقع في معاملةٍ واحدةٍ مع استكمال
+     المرحلة الثانية، وقراءةُ الأثر فيها بحثٌ عن آخرِ سطرٍ بفعلٍ بعينه —
+     يصحّ اليومَ ويكذب يومَ يُعاد الطلبُ مرّتين. والعمودُ يقول الموضعَ
+     بلا تأويل، ويُمحى حين يعود فلا يبقى وعدٌ منقضٍ. */
+  infoRequestedFrom    String?
   // draft | email_verification_pending | submitted | under_review | information_requested
   // | shortlisted | interview_scheduled | demo_requested | academic_review
   // | conditionally_approved | contract_pending | onboarding | active
