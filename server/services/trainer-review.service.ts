@@ -13,7 +13,12 @@ import { holdsRoleBeyondTrainer } from '../auth/permissions'
 import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
-import { bookingReminderMail, decisionMailFor, draftReminderMail, rejectionUndoneMail } from './trainer-decision-mail'
+import {
+  bookingReminderMail, decisionMailFor, draftReminderMail, noShowFollowupMail, rejectionUndoneMail,
+} from './trainer-decision-mail'
+import {
+  FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
+} from '../../src/application/trainer/no-show-followup'
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
@@ -1031,6 +1036,113 @@ export class TrainerReviewService {
       meta: { sentTo: app.email, emailDelivery: sent.status },
     })
     return { emailDelivery: sent.status }
+  }
+
+  /* ═══ متابعةُ من لم يحضر — رسالةٌ تُختار ومتنٌ يُعدَّل (٢٣ سبتمبر ٢٠٢٦) ═══
+
+     طلبُ صاحب المنصّة: زرٌّ يُرسل لمن غاب رسالةَ اطمئنان، «فبعضُهم نريده أن
+     يعود ويحجز موعدا آخر، وبعضُهم لا نريد عودتَه — فنشكره بلطفٍ ولا ندعوه».
+     والرسالتان ونصُّهما ومن يُتابَع في `no-show-followup.ts`.
+
+     ═══ وما يحرسه هذا المسار ═══
+
+     ① **لا يُتابَع إلّا غائب** — بالمِحَكّ المشترك نفسِه الذي يعرض الزرَّ في
+        الشاشة. فرسالةُ «لاحظنا أنّك لم تحضر» تصل من حضر ولُقي فتُقرأ إهمالا
+        منّا، أو من رُدَّ طلبُه فتُقرأ أملا كاذبا.
+     ② **ولا يُتابَع غيابٌ مرّتين** — الأثرُ يحمل معرّفَ الموعد، فيُسأل عنه
+        قبل الإرسال. ورسالةُ اطمئنانٍ ثانيةٌ على الغياب نفسِه تُقرأ آليّةً،
+        وتنقض أوّلَ ما جاءت له: أن يشعر بأنّ إنسانا كتب إليه.
+     ③ **والمتنُ يُقاس لا يُصدَّق** — صندوقٌ فرّغه الموظّفُ سهوا ثمّ ضغط
+        يُنتج رسالةً بعنوانٍ ولا متنَ فيها. فالحدُّ في الوحدة المشتركة،
+        تقرؤه الشاشةُ لتُعطّل الزرَّ ويقرؤه الخادمُ ليردّ.
+     ④ **والحالةُ تُنقل قبل أن يُرسَل البريد** — لا بعده. فإن تعثّر النقلُ
+        لم تخرج رسالةٌ تقول «نتطلّع إلى فرصٍ أخرى» وصاحبُها ما زال يُدعى إلى
+        الحجز في صفحته. والعكسُ أهونُ: حالةٌ نُقلت وبريدٌ لم يخرج **يُقال
+        صريحا** في جواب المسار، فيُعاد إرسالُه بيدٍ لا يُكتشف بعد شهر. */
+  async followUpNoShow(
+    applicationId: string, actorId: string,
+    input: { variant: string; bodyAr: string },
+  ): Promise<{ emailDelivery: string; movedTo: string | null }> {
+    const followup = followupOf(input.variant)
+    if (!followup) throw new AuthError('unknown_variant', 'رسالةٌ لا نعرفها', 400)
+
+    const bodyAr = input.bodyAr.trim()
+    if (bodyAr.length < FOLLOWUP_BODY_MIN || bodyAr.length > FOLLOWUP_BODY_MAX) {
+      throw new AuthError(
+        'body_out_of_range',
+        `متنُ الرسالة بين ${FOLLOWUP_BODY_MIN} و${FOLLOWUP_BODY_MAX} حرفا — والفارغُ يُنتج رسالةً بعنوانٍ بلا متن`,
+        400,
+      )
+    }
+
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: {
+        email: true, fullName: true, reference: true, status: true,
+        /* أحدثُ ما سُجّلت نتيجتُه — وهو المِحَكُّ نفسُه الذي يبني به الطابورُ
+           `interviewOutcome`، فلا يقرأ الزرُّ غيابا لا يراه الصفّ. */
+        interviews: {
+          where: { outcome: { not: null } },
+          orderBy: { scheduledAt: 'desc' },
+          take: 1,
+          select: { id: true, outcome: true },
+        },
+      },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+
+    const last = app.interviews[0]
+    if (!canFollowUpNoShow({ status: app.status, interviewOutcome: last?.outcome ?? null })) {
+      throw last?.outcome === NO_SHOW
+        ? new AuthError(
+            'not_followable',
+            `حالةُ الطلب «${app.status}» بُتَّ فيها — فلا يُدعى صاحبُها إلى موعدٍ ولا يُنقل إلى انتظار`,
+            409,
+          )
+        : new AuthError('no_absence', 'لم يُسجَّل له غيابٌ — ولا يُقال لمن حضر إنّه لم يحضر', 409)
+    }
+
+    const already = await this.prisma.auditEvent.count({
+      where: {
+        entityType: 'trainer_application', entityId: applicationId,
+        action: 'trainer.no_show.followup',
+        meta: { path: ['interviewId'], equals: last!.id },
+      },
+    })
+    if (already > 0) {
+      throw new AuthError('already_followed_up', 'تُوبع غيابُه هذا فعلا — ورسالةٌ ثانيةٌ عليه تُقرأ آليّة', 409)
+    }
+
+    /* والنقلُ أوّلا — ولمَ، مكتوبٌ فوقُ في ④ */
+    let movedTo: string | null = null
+    if (followup.movesTo && app.status !== followup.movesTo) {
+      await this.apps.transition(
+        applicationId, followup.movesTo, actorId,
+        'لم يحضر لقاءَ التعارف — وتُوبع برسالة شكرٍ بلا دعوة',
+      )
+      movedTo = followup.movesTo
+    }
+
+    const mail = noShowFollowupMail({
+      followup,
+      fullName: app.fullName,
+      reference: app.reference,
+      bodyAr,
+      statusUrl: `${publicSiteUrl()}/join-trainer/status`,
+    })
+    const sent = await sendDirectEmail(this.prisma, {
+      to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.no_show.followup', entityType: 'trainer_application', entityId: applicationId,
+      /* والمتنُ يُكتب في الأثر كما خرج: رسالةٌ يكتبها إنسانٌ إلى إنسانٍ
+         تُسأل عنها بعد شهر — «ماذا قلنا له؟» لا يُجاب عنه بمفتاح. */
+      meta: {
+        interviewId: last!.id, variant: followup.key, bodyAr,
+        sentTo: app.email, emailDelivery: sent.status, ...(movedTo ? { movedTo } : {}),
+      },
+    })
+    return { emailDelivery: sent.status, movedTo }
   }
 
   async remindToBookInterview(applicationId: string, actorId: string): Promise<{ emailDelivery: string }> {

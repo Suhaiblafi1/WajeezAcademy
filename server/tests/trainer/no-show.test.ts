@@ -17,7 +17,15 @@
 
    ⚠️ ولا يخرج بريدٌ إلى المتقدّم بالغياب: تذكيرُه يدويٌّ بقرار صاحب المنصّة.
    وعودتُه إلى حالةٍ تقبل الحجز هي ما يُعيده إلى ملخّص الصباح وإلى مرشّح
-   «لم يحجز موعدا» — فيصله التذكيرُ بيدٍ تضغط، كغيره. */
+   «لم يحجز موعدا» — فيصله التذكيرُ بيدٍ تضغط، كغيره.
+
+   ═══ ومتابعةُ الغياب — بيدٍ تضغط كذلك (٢٣ سبتمبر ٢٠٢٦) ═══
+
+   صار للغياب بابٌ ثانٍ يُفتح بيد: رسالةُ اطمئنانٍ تُختار من اثنتَين ويُعدَّل
+   متنُها. والمفحوصُ هنا **أثرُها في القاعدة**: ①تُبقي الطلبَ حيث هو فيحجز
+   من جديد، و②تنقله إلى قائمة الانتظار — فلا يبقى الموقعُ يدعوه وقد شكرناه.
+   وأمّا نصُّها ومن يُتابَع فحكمُهما في وحدةٍ نقيّةٍ يُنقَض هناك:
+   `src/tests/trainer/no-show-followup.test.ts`. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -202,5 +210,100 @@ describe('تسجيلُ الغياب', () => {
       after.hasInterview,
       'تعرض صفحتُه موعدا مضى ولم يحضره — فيقرأ أنّ له لقاءً وهو مدعوٌّ إلى حجزٍ جديد',
     ).toBe(false)
+  })
+})
+
+/* ═══ متابعةُ من لم يحضر — ما يقع في القاعدة بعد الضغط ═══
+
+   والمقيسُ هنا ما لا تقوله دالّةٌ خالصة: حالةُ الطلب بعد الإرسال، وأثرٌ
+   يُكتب بمعرّف الموعد فيمنع رسالةً ثانيةً على الغياب نفسِه، وردُّ من لم
+   يُسجَّل له غيابٌ أصلا. */
+describe('متابعةُ الغياب', () => {
+  const BODY = 'أتمنّى أن تكون بخير. لاحظنا أنّك لم تتمكّن من حضور الموعد، ونأمل أن يكون المانعُ خيرا.'
+
+  it('⚠️ ①«نحبّ أن نلتقيه» تُبقي الطلبَ حيث هو — فيحجز موعدا آخر', async () => {
+    const app = await shortlisted('fu-invite')
+    const interview = await book(app.id, 2)
+    await review.recordInterviewOutcome(interview.id, adminId, NO_SHOW)
+    expect(await statusOf(app.id), 'نقطةُ البداية ليست «قائمةً قصيرة»').toBe('shortlisted')
+
+    const out = await review.followUpNoShow(app.id, adminId, { variant: 'invite_again', bodyAr: BODY })
+    /* والبريدُ لا يخرج في الاختبار (بوّابةُ `mail-gate`) — فالمقيسُ أنّ حالَه
+       يُعاد ويُكتب، لا أنّه وصل. */
+    expect(out.emailDelivery).toBeTruthy()
+    expect(out.movedTo, 'الدعوةُ نقلت حالةَ من ندعوه').toBeNull()
+    expect(await statusOf(app.id), 'نُقل طلبُه وهو مدعوٌّ إلى موعدٍ آخر').toBe('shortlisted')
+
+    const [event] = await prisma.auditEvent.findMany({
+      where: { entityId: app.id, action: 'trainer.no_show.followup' },
+      orderBy: { createdAt: 'desc' }, take: 1,
+    })
+    expect(event, 'تُوبع بلا أثر').toBeTruthy()
+    expect(event.actorId).toBe(adminId)
+    const meta = event.meta as { interviewId?: string; variant?: string; bodyAr?: string }
+    expect(meta.interviewId, 'الأثرُ لا يقول على أيّ غيابٍ وقعت').toBe(interview.id)
+    expect(meta.variant).toBe('invite_again')
+    /* والمتنُ في الأثر كما خرج: «ماذا قلنا له؟» يُسأل بعد شهرٍ ولا يُجاب بمفتاح */
+    expect(meta.bodyAr, 'المتنُ المُرسَلُ لا يُكتب في الأثر').toBe(BODY)
+  })
+
+  it('⚠️ و②«اطمئنانٌ وشكر» تنقله إلى قائمة الانتظار — فلا يُدعى وقد شُكر', async () => {
+    const app = await shortlisted('fu-thanks')
+    const interview = await book(app.id, 3)
+    await review.recordInterviewOutcome(interview.id, adminId, NO_SHOW)
+
+    const out = await review.followUpNoShow(app.id, adminId, { variant: 'thanks', bodyAr: BODY })
+    expect(out.movedTo).toBe('waitlisted')
+    expect(await statusOf(app.id), 'بقي في حالةٍ تقبل الحجز بعد رسالةِ شكر').toBe('waitlisted')
+    /* وسببُ النقل مكتوبٌ في السجلّ — فمن قرأه بعد شهرٍ عرف لمَ نُقل */
+    const [moved] = await prisma.trainerStatusHistory.findMany({
+      where: { applicationId: app.id, toStatus: 'waitlisted' },
+      orderBy: { createdAt: 'desc' }, take: 1,
+    })
+    expect(moved?.note, 'نُقل بلا سببٍ مكتوب').toMatch(/لم يحضر/)
+  })
+
+  it('⚠️ ولا يُتابَع غيابٌ مرّتين — ورسالةٌ ثانيةٌ عليه تُقرأ آليّة', async () => {
+    const app = await shortlisted('fu-twice')
+    const interview = await book(app.id, 4)
+    await review.recordInterviewOutcome(interview.id, adminId, NO_SHOW)
+    await review.followUpNoShow(app.id, adminId, { variant: 'invite_again', bodyAr: BODY })
+
+    await expect(review.followUpNoShow(app.id, adminId, { variant: 'invite_again', bodyAr: BODY }))
+      .rejects.toMatchObject({ code: 'already_followed_up' })
+    const n = await prisma.auditEvent.count({
+      where: { entityId: app.id, action: 'trainer.no_show.followup' },
+    })
+    expect(n, 'كُتب أثرٌ ثانٍ لرسالةٍ لم تُرسَل').toBe(1)
+  })
+
+  it('⚠️ ولا يُتابَع من لم يُسجَّل له غياب', async () => {
+    const app = await shortlisted('fu-present')
+    const interview = await book(app.id, 5)
+    await review.recordInterviewOutcome(interview.id, adminId, 'passed')
+
+    await expect(review.followUpNoShow(app.id, adminId, { variant: 'thanks', bodyAr: BODY }))
+      .rejects.toMatchObject({ code: 'no_absence' })
+  })
+
+  it('⚠️ ولا مَن بُتَّ في طلبه — فالدعوةُ أملٌ كاذبٌ والنقلُ نقضٌ لقرار', async () => {
+    const app = await shortlisted('fu-decided')
+    const interview = await book(app.id, 6)
+    await review.recordInterviewOutcome(interview.id, adminId, NO_SHOW)
+    await review.decide(app.id, adminId, 'reject', 'سببٌ داخليٌّ لا يُرسَل')
+
+    await expect(review.followUpNoShow(app.id, adminId, { variant: 'invite_again', bodyAr: BODY }))
+      .rejects.toMatchObject({ code: 'not_followable' })
+  })
+
+  it('ومتنٌ فارغٌ يُردّ — لا رسالةٌ بعنوانٍ بلا متن', async () => {
+    const app = await shortlisted('fu-empty')
+    const interview = await book(app.id, 7)
+    await review.recordInterviewOutcome(interview.id, adminId, NO_SHOW)
+
+    await expect(review.followUpNoShow(app.id, adminId, { variant: 'thanks', bodyAr: '   ' }))
+      .rejects.toMatchObject({ code: 'body_out_of_range' })
+    await expect(review.followUpNoShow(app.id, adminId, { variant: 'لا.أعرفها', bodyAr: BODY }))
+      .rejects.toMatchObject({ code: 'unknown_variant' })
   })
 })

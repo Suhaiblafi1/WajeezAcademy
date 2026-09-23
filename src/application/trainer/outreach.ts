@@ -77,6 +77,18 @@ export const OUTREACH: readonly OutreachKind[] = [
     pending: (a) => a.status === 'draft',
   },
   {
+    action: 'trainer.no_show.followup',
+    ar: 'تُوبع بعد غيابه',
+    /* ═══ ومِحَكٌّ واحدٌ يخدم الرسالتَين معا ═══
+
+       `canRemindToBook` هو الجواب في الحالَين بلا تفريع: من تُوبع برسالة
+       «نحبّ أن نلتقيك» بقي في حالةٍ تقبل الحجز — فالشارةُ تُعرض حتّى يحجز،
+       وهي تحمي من تذكيرٍ ثانٍ على أثرها. ومن تُوبع بـ«شكرٍ بلا دعوة» نُقل
+       إلى قائمة الانتظار — وهي ليست من `BOOKABLE_STATUSES`، فتسقط الشارةُ
+       وحدَها: لا شيءَ ننتظره منه، وحالتُه تقول قصّتَها. */
+    pending: (a) => canRemindToBook({ status: a.status, liveInterviews: a.interviewsCount }),
+  },
+  {
     action: 'trainer.info_requested.notify',
     ar: 'طُلبت منه معلومات',
     /* وهذه تُقرأ من الحالة لا من مِحَكِّ الإرسال: بابُ الطلب مفتوحٌ في ثمانِ

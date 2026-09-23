@@ -32,6 +32,9 @@ import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
+import {
+  FOLLOWUP_BODY_MIN, NO_SHOW_FOLLOWUPS, canFollowUpNoShow, followupOf,
+} from "@/application/trainer/no-show-followup";
 import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/delivery";
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -450,6 +453,11 @@ export default function TrainerApplications() {
      وهو في الشاشة لا في الخادم: الحالةُ تُرشَّح هناك، وهذا يعمل على ما وصل
      فيُقرأ أثرُه فورا بلا نداءٍ ثانٍ. */
   const [onlyUnbooked, setOnlyUnbooked] = useState(false);
+  /* ═══ حوارُ متابعة الغياب — رسالةٌ تُختار ومتنٌ يُعدَّل (٢٣ سبتمبر ٢٠٢٦) ═══
+
+     والمتنُ في الحالة لا في الحقل: اختيارُ الرسالة يُبدّله، وتعديلُ الموظّف
+     يبقى ما لم يُبدّل اختيارَه. ولو قُرئ من الـDOM لَضاع أحدُهما. */
+  const [followUp, setFollowUp] = useState<{ app: AppRow; variant: string; bodyAr: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   const [selected, setSelected] = useState<AppDetail | null>(null);
@@ -815,6 +823,18 @@ export default function TrainerApplications() {
             (result as { emailDelivery?: string } | null)?.emailDelivery,
           ),
         ),
+      });
+    }
+    /* ═══ ومتابعةُ من لم يحضر — بالمِحَكّ المشترك لا بشرطٍ يُكتب هنا ═══
+
+       يُعرض لمن سُجِّل غيابُه ولم يُبَتّ أمرُه. والحوارُ يفتح الرسالتَين:
+       واحدةٌ تدعوه إلى موعدٍ آخر، وأخرى تشكره وتنقله إلى قائمة الانتظار. */
+    if (canFollowUpNoShow({ status: a.status, interviewOutcome: a.interviewOutcome })) {
+      items.push({
+        key: "no-show-followup", label: "تابِعْ غيابَه — رسالةُ اطمئنان", icon: MailCheck,
+        run: () => setFollowUp({
+          app: a, variant: NO_SHOW_FOLLOWUPS[0].key, bodyAr: NO_SHOW_FOLLOWUPS[0].bodyAr,
+        }),
       });
     }
     /* وتذكيرُ المسوّدة للمسوّدة وحدَها — والخادمُ يشترطها (٤٠٩ دونها) */
@@ -2089,6 +2109,80 @@ export default function TrainerApplications() {
           </p>
         </ConfirmAction>
       )}
+
+      {/* ═══ متابعةُ الغياب: اختيارٌ بين رسالتَين، ومتنٌ يُعدَّل قبل الإرسال ═══
+
+          وما يقع بالضغط مكتوبٌ تحت كلّ خيار (`whatAr`): إحداهما تنقل الطلبَ
+          إلى قائمة الانتظار، والأخرى تُبقيه — ومن لم يُقَل له ذلك قبل الضغط
+          يُغيّر حالةَ طلبٍ وهو يظنّ أنّه أرسل رسالةً فحسب. */}
+      {followUp && (() => {
+        const chosen = followupOf(followUp.variant);
+        const ready = followUp.bodyAr.trim().length >= FOLLOWUP_BODY_MIN;
+        return (
+          <ConfirmAction
+            titleAr={`متابعةُ غياب ${followUp.app.fullName}`}
+            confirmLabelAr={ready ? "أرسِلْ الرسالة" : `اكتب المتن — ${FOLLOWUP_BODY_MIN} حرفا على الأقلّ`}
+            tone="default"
+            busy={busy || !ready}
+            onCancel={() => setFollowUp(null)}
+            onConfirm={() => {
+              if (!ready || !chosen) return;
+              const target = followUp;
+              setFollowUp(null);
+              void act(
+                () => apiPost<{ emailDelivery?: string; movedTo?: string | null }>(
+                  `/api/admin/trainer-applications/${target.app.id}/no-show-followup`,
+                  { variant: target.variant, bodyAr: target.bodyAr.trim() },
+                ),
+                (result) => {
+                  const r = result as { emailDelivery?: string; movedTo?: string | null } | null;
+                  /* والخبرُ يقول ما وقع للطلب كذلك — لا «أُرسلت الرسالة» وحدَها */
+                  return mailOutcomeAr(
+                    r?.movedTo
+                      ? "أُرسلت الرسالة — ونُقل طلبُه إلى قائمة الانتظار"
+                      : "أُرسلت الرسالة — وطلبُه حيث هو، يحجز موعدا آخر",
+                    r?.emailDelivery,
+                  );
+                },
+              );
+            }}
+          >
+            <p className="text-read leading-6">
+              الطلب <b dir="ltr">{followUp.app.reference}</b> — سُجِّل غيابُه عن لقاء التعارف.
+            </p>
+            <div className="mt-3 space-y-2">
+              {NO_SHOW_FOLLOWUPS.map((f) => (
+                <Inset key={f.key} as="label" className="flex cursor-pointer items-start gap-2">
+                  <input
+                    type="radio" name="no-show-followup" value={f.key}
+                    checked={followUp.variant === f.key}
+                    /* وتبديلُ الاختيار يُبدّل المتنَ: لكلِّ رسالةٍ نصُّها،
+                       ونصٌّ باقٍ من اختيارٍ سابقٍ يُرسل دعوةً في رسالةِ شكر. */
+                    onChange={() => setFollowUp({ ...followUp, variant: f.key, bodyAr: f.bodyAr })}
+                    className="mt-1 accent-teal"
+                  />
+                  <span>
+                    <span className="block font-bold text-foreground">{f.labelAr}</span>
+                    <span className="block text-read leading-5 text-muted-foreground">{f.whatAr}</span>
+                  </span>
+                </Inset>
+              ))}
+            </div>
+            <label htmlFor="followup-body" className="mt-3 block text-read font-bold text-muted-foreground">
+              متنُ الرسالة — يصله بنصّه، وعدِّلْه كما تشاء
+            </label>
+            <textarea
+              id="followup-body" rows={7} value={followUp.bodyAr}
+              onChange={(e) => setFollowUp({ ...followUp, bodyAr: e.target.value })}
+              className={`${staffAreaCls} mt-1`}
+            />
+            <p className="mt-1 text-read leading-5 text-muted-foreground">
+              التحيّةُ باسمه ورقمُ طلبه {chosen?.ctaAr ? "وزرُّ «" + chosen.ctaAr + "»" : ""} من القالب —
+              اكتب المتنَ وحدَه. وسطرٌ فارغٌ بين فقرتَين يُقرأ فاصلا.
+            </p>
+          </ConfirmAction>
+        );
+      })()}
 
       {bulkDecision && (
         <ConfirmAction

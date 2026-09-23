@@ -30,6 +30,7 @@
 import type { MailDoc } from './mail-template'
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
+import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
 
 /** ما يُسلَّم إلى `sendDirectEmail` — الموضوعُ ووصفُ الرسالة */
 export interface DecisionMail {
@@ -313,4 +314,54 @@ export function decisionMailFor(
   return action === 'reject'
     ? rejectionMail({ fullName: input.fullName, reference: input.reference })
     : waitlistMail(input)
+}
+
+/* ═══ متابعةُ من لم يحضر — متنٌ يكتبه إنسانٌ في قالبٍ يحرس ما حوله ═══
+
+   القرارُ ولماذا، ونصُّ الرسالتَين، في `no-show-followup.ts`. وهذه الدالّةُ
+   تركّب: عنوانا من الرسالة المختارة، ومتنا **كما كتبه الموظّف**، وزرّا إن
+   كان لها زرّ، ورقمَ الطلب.
+
+   ═══ والمتنُ يُقسَم فقراتٍ لا يُلقى سطرا واحدا ═══
+
+   الموظّفُ يكتب في صندوقٍ نصّيّ، وسطرٌ فارغٌ بين فقرتَين هو ما يُقرأ فاصلا.
+   ولو مُرّر النصُّ كتلةً واحدةً لَخرج في الـHTML فقرةً واحدةً ملتصقةً —
+   والفراغُ الذي تركه الكاتبُ ليُقرأ لا يُرى. فيُقسَم على السطر الفارغ،
+   وتُهمَل الفقراتُ الفارغة.
+
+   ولا اسمَ يُبنى هنا: `greetingName` في القالب يقول «مرحبا فلان،» — ومكتوبٌ
+   في `no-show-followup.ts` لمَ خلا المتنُ من الاسم. */
+export function noShowFollowupMail(input: {
+  followup: NoShowFollowup
+  fullName: string
+  reference: string
+  /** المتنُ بعد تعديل الموظّف — لا المقترَح، وإلّا لم يكن للتعديل معنى */
+  bodyAr: string
+  /** صفحةُ حالة الطلب — وجهةُ الزرّ في الرسالة التي لها زرّ */
+  statusUrl: string
+}): DecisionMail {
+  const paragraphs = input.bodyAr.split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean)
+  return {
+    subject: `${input.followup.subjectAr} (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      /* وسطرُ المعاينة أوّلُ فقرةٍ كتبها الموظّف — فالصندوقُ يعرض ما كُتب
+         لا جملةً ثابتةً تناقضه إن بدّل النصَّ كلَّه. */
+      preheader: paragraphs[0],
+      heading: input.followup.headingAr,
+      blocks: [
+        ...paragraphs.map((text) => ({ kind: 'p', text }) as const),
+        ...(input.followup.ctaAr
+          ? ([{
+              kind: 'cta',
+              label: input.followup.ctaAr,
+              href: input.statusUrl,
+              caption: 'يُفتح بحسابك — البريدُ الذي قدّمت به وكلمتُه.',
+            }] as const)
+          : []),
+        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        ...(input.followup.noteAr ? ([{ kind: 'note', text: input.followup.noteAr }] as const) : []),
+      ],
+    },
+  }
 }
