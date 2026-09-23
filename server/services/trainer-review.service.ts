@@ -33,6 +33,9 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, deadlineFrom,
 } from '../../src/application/trainer/conditional-offer'
+import {
+  AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, isAmendmentRequested,
+} from '../../src/application/trainer/contract-endings'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -80,9 +83,21 @@ export interface ContractComposeInput {
      فلا مهلةَ له حتّى يُكتب ويصله خبرُه — ومتنُه يقول ذلك بنصّه. */
   orientationAt?: string | null
   orientationUrl?: string | null
+  /* ═══ والأتعابُ تُضبَط في هذه الشاشة نفسِها ═══
+
+     قرارُ صاحب المنصّة: لا شاشةَ ثانية. وحين تحضر تمرّ بمسلك `setRule`
+     نفسِه لا بنسخةٍ عنه — فيبقى كاتبُ القاعدة واحدا، ويبقى أثرُها وتاريخُ
+     سريانها كما هما. وإن غابت بقيت القاعدةُ القائمةُ على حالها. */
+  compensation?: {
+    type: string
+    rate: number
+    minSeats?: number
+    referralRate?: number | null
+  } | null
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
+
 const newToken = () => randomBytes(32).toString('base64url')
 
 /* محاور الروبرك البشري التسعة — كل محور من 1 إلى 5 */
@@ -1862,8 +1877,37 @@ export class TrainerReviewService {
     /* ولا أجرَ مسكوتٌ عنه: بلا قاعدةٍ قائمةٍ وبلا سببٍ مكتوبٍ يُردّ التركيب.
        فعقدٌ يُوقَّع ولا أساسَ لأتعابه يترك «مستحقّاتي» صفرا إلى الأبد، ولا
        يعرف أحدٌ بعد شهرين أكان ذلك قصدا أم سهوا. */
-    if (!pre.compensation && !input.rateWaivedReasonAr?.trim()) {
-      throw new AuthError('no_rate', 'لا قاعدةَ أتعابٍ لهذا المدرّب — اضبطها الماليّةُ أوّلا، أو اكتب سببَ إرساله بلا أجرٍ متّفقٍ عليه', 422)
+    /* ═══ والأتعابُ المضبوطةُ في الشاشة تغلب القائمة ═══
+
+       وهي تُكتب في المعاملة أدناه. لكنّ المتنَ يُركَّب **قبلها**، ولقطةَ
+       الأعمدة تُنسخ معه — فلولا هذا السطرُ لَقُرئت القاعدةُ القديمةُ في
+       الاثنين، ولَخرج عقدٌ يقول رقما وتقول القاعدةُ غيرَه بعد ثوانٍ.
+
+       فتُبنى هنا الصورةُ النافذةُ مرّةً، ويقرؤها المتنُ واللقطةُ معا. */
+    const effective = input.compensation
+      ? {
+          ruleId: null as string | null,
+          type: input.compensation.type,
+          rate: String(input.compensation.rate),
+          currency: pre.compensation?.currency ?? LEDGER_CURRENCY,
+          minSeats: input.compensation.minSeats ?? null,
+          referralRate: input.compensation.referralRate == null
+            ? null
+            : String(input.compensation.referralRate),
+        }
+      : pre.compensation
+        ? {
+            ruleId: pre.compensation.ruleId as string | null,
+            type: pre.compensation.type,
+            rate: pre.compensation.rate,
+            currency: pre.compensation.currency,
+            minSeats: pre.compensation.minSeats,
+            referralRate: pre.compensation.referralRate,
+          }
+        : null
+
+    if (!effective && !input.rateWaivedReasonAr?.trim()) {
+      throw new AuthError('no_rate', 'لا قاعدةَ أتعابٍ لهذا المدرّب — اضبطها في هذه الشاشة، أو اكتب سببَ إرساله بلا أجرٍ متّفقٍ عليه', 422)
     }
     if (!hasRequiredIdentityDocument(input.requiredDocuments)) {
       throw new AuthError('no_identity_document', 'وثيقةُ هويّةٍ واحدةٌ إلزاميّةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله', 422)
@@ -1883,9 +1927,9 @@ export class TrainerReviewService {
       courses: chosen,
       gatesActivation: pre.gatesActivation,
       orientationAt,
-      compensation: pre.compensation
-        ? { type: pre.compensation.type, rate: pre.compensation.rate, currency: pre.compensation.currency,
-            minSeats: pre.compensation.minSeats, referralRate: pre.compensation.referralRate }
+      compensation: effective
+        ? { type: effective.type, rate: effective.rate, currency: effective.currency,
+            minSeats: effective.minSeats, referralRate: effective.referralRate }
         : null,
       hoursNoteAr: input.hoursNoteAr?.trim() || null,
       rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
@@ -1894,6 +1938,22 @@ export class TrainerReviewService {
     }))
 
     return this.prisma.$transaction(async (tx) => {
+      /* في المعاملة نفسِها: فإن ردَّ التركيبُ بعدها لم تبقَ قاعدةُ أتعابٍ
+         جديدةٌ على مدرّبٍ بلا عقدٍ يفسّرها. */
+      let ruleId = effective?.ruleId ?? null
+      if (input.compensation) {
+        const rule = await new EarningsService(tx as unknown as PrismaClient).setRule(actorId, {
+          profileId: pre.profileId,
+          type: input.compensation.type,
+          rate: input.compensation.rate,
+          minSeats: input.compensation.minSeats,
+          referralRate: input.compensation.referralRate ?? undefined,
+        })
+        /* ويُحفَظ معرّفُ القاعدة المولودةِ هنا لا `null`: العمودُ للتتبّع
+           («من أيّ قاعدةٍ نُقلت هذه الأرقام؟»)، وقاعدةٌ بلا أثرٍ تصل إليها
+           تجعل السؤالَ بلا جواب بعد شهور. */
+        ruleId = rule.id
+      }
       const contract = await tx.trainerContract.create({
         data: {
           profileId: pre.profileId,
@@ -1903,12 +1963,12 @@ export class TrainerReviewService {
           bodyVersion: CONTRACT_BODY_VERSION,
           bodyAr,
           bodyHash: sha256(bodyAr),
-          compensationRuleId: pre.compensation?.ruleId ?? null,
-          compensationType: pre.compensation?.type ?? null,
-          compensationRate: pre.compensation?.rate ?? null,
-          currency: pre.compensation?.currency ?? LEDGER_CURRENCY,
-          compensationMinSeats: pre.compensation?.minSeats ?? null,
-          compensationReferralRate: pre.compensation?.referralRate ?? null,
+          compensationRuleId: ruleId,
+          compensationType: effective?.type ?? null,
+          compensationRate: effective?.rate ?? null,
+          currency: effective?.currency ?? LEDGER_CURRENCY,
+          compensationMinSeats: effective?.minSeats ?? null,
+          compensationReferralRate: effective?.referralRate ?? null,
           hoursNoteAr: input.hoursNoteAr?.trim() || null,
           rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
           qualifiedSnapshot: chosen as unknown as Prisma.InputJsonValue,
@@ -2199,6 +2259,12 @@ export class TrainerReviewService {
     if (c.status === 'signed') {
       return { state: 'signed' as const, title: c.title, signedAt: c.signedAt, signerLegalName: c.signerLegalName }
     }
+    if (isAmendmentRequested(c.status)) {
+      return {
+        state: 'amendment_requested' as const, title: c.title,
+        requestedAt: c.amendmentRequestedAt, requestAr: c.amendmentRequestAr,
+      }
+    }
     if (c.status === 'declined') return { state: 'declined' as const, title: c.title, declinedAt: c.declinedAt }
     if (c.status === 'revoked') return { state: 'revoked' as const, title: c.title }
     if (c.status !== 'sent') throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
@@ -2238,7 +2304,12 @@ export class TrainerReviewService {
   /** عقدٌ مفتوحٌ للكتابة — يُستعمل قبل كلّ فعلٍ يغيّر شيئا من الرابط */
   private async openByToken(token: string) {
     const c = await this.byToken(token)
-    if (c.status !== 'sent') {
+    /* والقائمةُ مصدرُ الحقيقة، لا حرفُ 'sent' مكرّرا في مواضع — فطلبُ
+       التعديل يوقف التوقيعَ بها وحدَها، في كلّ فعلٍ يُفعَل من الرابط. */
+    if (!canRespondToContract(c.status)) {
+      if (isAmendmentRequested(c.status)) {
+        throw new AuthError('amendment_pending', 'طلبُك بالتعديل عندنا — ننظر فيه ونعيد إليك العرضَ مصحَّحا أو نجيبك', 409)
+      }
       throw new AuthError('bad_state', 'هذا العقدُ لم يعد بانتظار التوقيع', 409)
     }
     if (c.tokenExpiresAt && c.tokenExpiresAt < new Date()) {
@@ -2302,12 +2373,26 @@ export class TrainerReviewService {
       ومقابلةُ الهاش قبل كلِّ شيء: من فتح الصفحةَ ثمّ بُدّل المتنُ تحته —
       بإلغاءٍ وتركيبٍ جديدٍ مثلا — لا يمرّ توقيعُه على ما لم يره. */
   async signContractByToken(token: string, input: {
-    legalName: string; bodyHash: string; acks: string[]; ip?: string | null; userAgent?: string | null
+    legalName: string; addressAr: string; phone: string
+    bodyHash: string; acks: string[]; ip?: string | null; userAgent?: string | null
   }) {
     const c = await this.openByToken(token)
     const legalName = input.legalName.trim()
     if (legalName.length < 4) {
       throw new AuthError('bad_name', 'اكتب اسمَك القانونيَّ كاملا كما في وثيقة هويّتك', 422)
+    }
+    /* ═══ ويكتب عنوانَه وهاتفَه بخطّه ═══
+
+       ولا يُنقلان من نموذج التقديم: ذاك بياناتُ ترشُّحٍ تُملأ على عجل وقد
+       تمضي شهورٌ قبل العقد، وهذه بياناتُ **طرفٍ في عقد** يُراسَل بها ويُعرَف
+       بها. ومن نُقلت عنه بياناتُه بلا أن يراها له أن يقول إنّه لم يثبتها. */
+    const addressAr = input.addressAr.trim()
+    const phone = input.phone.trim()
+    if (addressAr.length < 5) {
+      throw new AuthError('bad_address', 'اكتب عنوانَك الكامل — وهو بيانُ طرفٍ في العقد', 422)
+    }
+    if (phone.length < 6) {
+      throw new AuthError('bad_phone', 'اكتب رقمَ هاتفك', 422)
     }
     if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
       throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
@@ -2337,6 +2422,8 @@ export class TrainerReviewService {
         data: {
           status: 'signed', signedAt,
           signerLegalName: legalName,
+          signerAddressAr: addressAr.slice(0, 300),
+          signerPhone: phone.slice(0, 40),
           signerIp: input.ip?.slice(0, 64) ?? null,
           signerUserAgent: input.userAgent?.slice(0, 300) ?? null,
           consentTextAr: CONTRACT_CONSENT_AR,
@@ -2411,6 +2498,42 @@ export class TrainerReviewService {
   }
 
   /** الاعتذارُ — جوابٌ مشروعٌ لا عطب. والعقدُ عرضٌ يُقبَل ويُردّ. */
+  /** النهايةُ الثالثة: يطلب تعديلا فيقف التوقيعُ ويصل طلبُه طابورَ الإدارة.
+
+      ولا يُمحى الرمزُ هنا خلافا للاعتذار: العقدُ باقٍ ينتظر جوابَنا، فإمّا
+      أُلغي وأُرسل مصحَّحا وإمّا رُدَّ عليه بأنّه يبقى — وفي الحالين يعود
+      إليه بابٌ. والاعتذارُ نهايةٌ، وهذا وقفةٌ. */
+  async requestContractAmendment(token: string, textAr: string) {
+    const c = await this.openByToken(token)
+    const body = textAr.trim()
+    if (body.length < 5) {
+      throw new AuthError('no_text', 'اكتب ما تريد تعديلَه — سطرٌ واحدٌ يكفي', 422)
+    }
+    const requestedAt = new Date()
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: c.id, status: 'sent' },
+      data: {
+        status: CONTRACT_AMENDMENT_REQUESTED,
+        amendmentRequestAr: body.slice(0, AMENDMENT_TEXT_MAX),
+        amendmentRequestedAt: requestedAt,
+      },
+    })
+    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.amendment_requested',
+      entityType: 'trainer_contract', entityId: c.id,
+      meta: { textAr: body.slice(0, AMENDMENT_TEXT_MAX) },
+    })
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      templateKey: 'trainer.contract.amendment_requested',
+      title: 'طلب مدرّبٌ تعديلا على عرضه',
+      body: `طلب ${c.profile.application.fullName} تعديلا على «${c.title}» — ونصُّه: ${body.slice(0, 200)}`,
+      data: { contractId: c.id, applicationId: c.profile.applicationId },
+    })
+    return { requestedAt }
+  }
+
   async declineContractByToken(token: string, reasonAr: string) {
     const c = await this.openByToken(token)
     const reason = reasonAr.trim()

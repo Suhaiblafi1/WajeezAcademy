@@ -20,6 +20,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { AMENDMENT_TEXT_MAX } from '../../../src/application/trainer/contract-endings'
 
 /** يكفي قارئا يوقّع، ويضيق على من يجرّب الرموز */
 const SIGN_RATE = { max: 30, timeWindow: '1 minute' }
@@ -59,6 +60,9 @@ export function registerContractSignRoutes(app: FastifyInstance, prisma: PrismaC
     const { token } = params.parse(req.params)
     const body = z.object({
       legalName: z.string().trim().min(4).max(120),
+      /* بخطّه هو، لا منقولَين من نموذج تقديمه */
+      addressAr: z.string().trim().min(5).max(300),
+      phone: z.string().trim().min(6).max(40),
       /* هاشُ ما عُرض عليه — يُقابَل بالمحفوظ، فمن بُدّل تحته النصُّ يُردّ */
       bodyHash: z.string().length(64),
       acks: z.array(z.string().min(1).max(40)).max(20),
@@ -69,6 +73,19 @@ export function registerContractSignRoutes(app: FastifyInstance, prisma: PrismaC
     return svc.signContractByToken(token, {
       ...body, ip: req.ip, userAgent: req.headers['user-agent'] ?? null,
     })
+  })
+
+  /* النهايةُ الثالثة — ويقف بها التوقيعُ ولا يُغلَق العقد. وحدُّ النصّ أوسعُ
+     من حدِّ سببِ الاعتذار: الاعتذارُ سطرٌ يُعلَّل به، وهذا قائمةُ تعديلاتٍ
+     يكتبها بندا بندا. */
+  app.post('/api/c/:token/amend', {
+    config: { rateLimit: SIGN_RATE },
+    schema: { tags: ['trainer-contracts'], summary: 'طلبُ المدرّب تعديلا — يوقف التوقيعَ ولا يُنهي العرض' },
+  }, async (req, reply) => {
+    const { token } = params.parse(req.params)
+    const { textAr } = z.object({ textAr: z.string().trim().min(5).max(AMENDMENT_TEXT_MAX) }).parse(req.body)
+    reply.header('X-Robots-Tag', 'noindex, nofollow')
+    return svc.requestContractAmendment(token, textAr)
   })
 
   app.post('/api/c/:token/decline', {

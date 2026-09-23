@@ -145,6 +145,7 @@ describe('ما لا يمرّ عند التوقيع', () => {
     const { contract } = await mkContract()
     const token = await sendAndToken(contract.id)
     await expect(review.signContractByToken(token, {
+      addressAr: 'عمّان — الدوّار السابع، بناية ١٢', phone: '+962790000000',
       legalName: 'سارة عبد الله الحربي', bodyHash: sha256('نصٌّ آخر'), acks: [...ALL_ACKS],
     })).rejects.toMatchObject({ code: 'body_changed' })
   })
@@ -153,6 +154,7 @@ describe('ما لا يمرّ عند التوقيع', () => {
     const { contract } = await mkContract()
     const token = await sendAndToken(contract.id)
     await expect(review.signContractByToken(token, {
+      addressAr: 'عمّان — الدوّار السابع، بناية ١٢', phone: '+962790000000',
       legalName: 'سارة عبد الله الحربي', bodyHash: sha256(BODY), acks: [...ALL_ACKS],
     })).rejects.toMatchObject({ code: 'documents_missing' })
   })
@@ -161,6 +163,7 @@ describe('ما لا يمرّ عند التوقيع', () => {
     const { contract } = await mkContract('conditionally_approved', [])
     const token = await sendAndToken(contract.id)
     await expect(review.signContractByToken(token, {
+      addressAr: 'عمّان — الدوّار السابع، بناية ١٢', phone: '+962790000000',
       legalName: 'سارة عبد الله الحربي', bodyHash: sha256(BODY), acks: ALL_ACKS.slice(1),
     })).rejects.toMatchObject({ code: 'acks_missing' })
   })
@@ -169,6 +172,7 @@ describe('ما لا يمرّ عند التوقيع', () => {
     const { contract } = await mkContract('conditionally_approved', [])
     const token = await sendAndToken(contract.id)
     await expect(review.signContractByToken(token, {
+      addressAr: 'عمّان — الدوّار السابع، بناية ١٢', phone: '+962790000000',
       legalName: 'سا', bodyHash: sha256(BODY), acks: [...ALL_ACKS],
     })).rejects.toMatchObject({ code: 'bad_name' })
   })
@@ -179,6 +183,7 @@ describe('التوقيعُ يقع مرّةً واحدة', () => {
     const { profile, contract } = await mkContract('conditionally_approved', [])
     const token = await sendAndToken(contract.id)
     await review.signContractByToken(token, {
+      addressAr: 'عمّان — الدوّار السابع، بناية ١٢', phone: '+962790000000',
       legalName: 'سارة عبد الله الحربي', bodyHash: sha256(BODY), acks: [...ALL_ACKS],
       ip: '203.0.113.9', userAgent: 'Mozilla/5.0 (اختبار)',
     })
@@ -223,6 +228,7 @@ describe('التوقيعُ يقع مرّةً واحدة', () => {
     const { contract } = await mkContract('conditionally_approved', [])
     const token = await sendAndToken(contract.id)
     const once = () => review.signContractByToken(token, {
+      addressAr: 'عمّان — الدوّار السابع، بناية ١٢', phone: '+962790000000',
       legalName: 'سارة عبد الله الحربي', bodyHash: sha256(BODY), acks: [...ALL_ACKS],
     })
     await once()
@@ -300,5 +306,55 @@ describe('رفعُ الوثائق من الرابط', () => {
     expect(rows.length).toBe(1)
     expect(rows[0].originalName).toBe('صحيحة.jpg')
     expect(rows[0].storageKey).not.toBe(first.storageKey)
+  })
+})
+
+/* ═══ بياناتُ الموقّع بخطّه هو ═══
+
+   قرارُ صاحب المنصّة (٢٣ سبتمبر ٢٠٢٦): يكتب اسمَه القانونيَّ وعنوانَه
+   وهاتفَه بنفسه عند التوقيع، ولا تُنقل من نموذج التقديم. فذاك بياناتُ
+   ترشُّحٍ تُملأ على عجل وقد تمضي شهورٌ قبل العقد، وهذه بياناتُ **طرفٍ في
+   عقد** يُراسَل بها ويُعرَف بها. */
+describe('عنوانُ الموقّع وهاتفُه بخطّه', () => {
+  it('يُحفَظان كما كتبهما — لا كما في نموذج تقديمه', async () => {
+    const { contract } = await mkContract('conditionally_approved', [])
+    const token = await sendAndToken(contract.id)
+    await review.signContractByToken(token, {
+      legalName: 'عبد الرحمن محمد علي',
+      addressAr: 'إربد — حيُّ الجامعة، شارع الياسمين، بناية ٤٤',
+      phone: '+962791234567',
+      bodyHash: sha256(BODY), acks: [...ALL_ACKS],
+    })
+    const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
+    expect(row.signerAddressAr).toBe('إربد — حيُّ الجامعة، شارع الياسمين، بناية ٤٤')
+    expect(row.signerPhone).toBe('+962791234567')
+  })
+
+  it('ولا يُقبل توقيعٌ بلا عنوانٍ ولا بلا هاتف', async () => {
+    const a = await mkContract('conditionally_approved', [])
+    const tokenA = await sendAndToken(a.contract.id)
+    await expect(review.signContractByToken(tokenA, {
+      legalName: 'عبد الرحمن محمد علي', addressAr: '   ', phone: '+962791234567',
+      bodyHash: sha256(BODY), acks: [...ALL_ACKS],
+    })).rejects.toMatchObject({ code: 'bad_address' })
+
+    const b = await mkContract('conditionally_approved', [])
+    const tokenB = await sendAndToken(b.contract.id)
+    await expect(review.signContractByToken(tokenB, {
+      legalName: 'عبد الرحمن محمد علي', addressAr: 'إربد — حيُّ الجامعة', phone: '',
+      bodyHash: sha256(BODY), acks: [...ALL_ACKS],
+    })).rejects.toMatchObject({ code: 'bad_phone' })
+  })
+
+  it('ويبقى العقدُ مرسَلا بعد الردّ — فالتوقيعُ لم يقع', async () => {
+    const { contract } = await mkContract('conditionally_approved', [])
+    const token = await sendAndToken(contract.id)
+    await expect(review.signContractByToken(token, {
+      legalName: 'عبد الرحمن محمد علي', addressAr: '', phone: '',
+      bodyHash: sha256(BODY), acks: [...ALL_ACKS],
+    })).rejects.toMatchObject({ code: 'bad_address' })
+    const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
+    expect(row.status, 'رُدَّ التوقيعُ وقد تغيّرت الحالة').toBe('sent')
+    expect(row.signedAt).toBeNull()
   })
 })
