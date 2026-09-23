@@ -12,7 +12,7 @@
    · **والعملةُ من القاعدة** لا كلمةٌ مكتوبة. */
 
 import { describe, expect, it } from 'vitest'
-import { buildFeeExampleAr, feeExampleFactsAr } from '@/application/trainer/fee-example'
+import { buildFeeExampleAr } from '@/application/trainer/fee-example'
 import { perSeatBreakdown } from '@/application/trainer/seat-fee'
 import type { ContractCompensation } from '@/application/trainer/contract-body'
 
@@ -82,9 +82,7 @@ describe('المثالُ يُبنى من أرقامه هو، ولا يُبنى �
 
   it('والعملةُ من القاعدة لا كلمةً مكتوبة', () => {
     const ex = buildFeeExampleAr(perSeat({ currency: 'JOD' }))!
-    const facts = feeExampleFactsAr(ex)
-    expect(facts.every((f) => f.value.endsWith('JOD')), 'عملةٌ غيرُ عملة القاعدة').toBe(true)
-    expect(facts.map((f) => f.label).join(' '), 'لا مجموعَ للمثال').toMatch(/مجموعُ هذا المثال/)
+    expect(ex.currency, 'عملةٌ غيرُ عملة القاعدة').toBe('JOD')
     expect(JSON.stringify(ex), 'اسمُ عملةٍ مكتوبٌ حرفا في المولِّد').not.toMatch(/دولار/)
   })
 

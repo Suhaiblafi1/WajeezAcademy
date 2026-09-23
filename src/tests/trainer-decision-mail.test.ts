@@ -21,6 +21,12 @@ import { describe, expect, it } from 'vitest'
 import {
   bookingReminderMail, decisionMailFor, draftReminderMail, rejectionMail, rejectionUndoneMail, waitlistMail,
 } from '../../server/services/trainer-decision-mail'
+import {
+  conditionalOfferMail, finalApprovalMail,
+  type ConditionalOfferMailInput, type FinalApprovalMailInput,
+} from '../../server/services/trainer-decision-mail'
+import { FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
+
 import { APPLICANT_STATUS } from '@/application/trainer/application-options'
 import { renderMail, type MailBlock } from '../../server/services/mail-template'
 
@@ -237,5 +243,134 @@ describe('رسالةُ تذكير المسوّدة', () => {
     expect(mail.subject).toContain(REF)
     const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
     expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
+  })
+})
+
+/* ═══ العرضُ المشروط والاعتمادُ النهائيّ — أوّلُ الطور وآخرُه ═══
+
+   وهما البريدان اللذان طُلب نصُّهما. ويُفحَصان هنا لا في جولةِ الخادم لأنّ
+   نصَّهما دالّتان خالصتان: تأخذان اسما وتاريخا وتردّان رسالة. */
+describe('بريدُ العرض المشروط', () => {
+  const OFFER: ConditionalOfferMailInput = {
+    fullName: 'عبد الرحمن العتيبي',
+    reference: 'WJ-TR-2026-00041',
+    url: 'https://wajeezacademy.com/c/tok',
+    expiresAt: new Date('2026-09-30T12:00:00Z'),
+    orientationOnAr: 'الخميس 1 أكتوبر 2026، 7:00 م',
+    orientationUrl: 'https://meet.example.com/wajeez',
+    deadlineOnAr: '8 أكتوبر 2026',
+    windowDays: 7,
+    extensionDays: 2,
+    requiredDocumentsAr: ['صورةُ الهويّة', 'شهادةُ الخبرة'],
+    portalUrl: 'https://wajeezacademy.com/trainer',
+  }
+  const flat = (m: ReturnType<typeof conditionalOfferMail>) =>
+    JSON.stringify(m.doc)
+
+  it('عنوانُها يقول «عرضٌ مشروط» — لا «اكتمل اعتمادُك»', () => {
+    const m = conditionalOfferMail(OFFER)
+    expect(m.subject).toContain('عرضُك المشروط')
+    expect(m.subject, 'رقمُ الطلب لا يُقرأ في العنوان').toContain(OFFER.reference)
+    expect(m.doc.heading, 'بُشِّر باعتمادٍ لم يقع').not.toMatch(/اكتمل اعتمادُك/)
+    expect(flat(m), 'قيل له «عقد» والعرضُ مشروط').toMatch(/عرضٌ مشروطٌ\*\* لا عقدٌ نهائيّ/)
+  })
+
+  it('وتقول إنّ الشرطَ الوحيدَ الباقيَ اعتمادُ موادّه، ولكلّ دورةٍ على حدة', () => {
+    const body = flat(conditionalOfferMail(OFFER))
+    expect(body).toMatch(/الشرطُ الوحيدُ الباقي/)
+    expect(body).toMatch(/لكلّ دورةٍ على حدة/)
+  })
+
+  it('وجلستُه ومهلتُه ورابطُ حضوره فيها', () => {
+    const body = flat(conditionalOfferMail(OFFER))
+    expect(body).toContain(OFFER.orientationOnAr!)
+    expect(body).toContain(OFFER.deadlineOnAr!)
+    expect(body).toContain(OFFER.orientationUrl!)
+    expect(body, 'المهلةُ بلا عدد').toMatch(/7 أيّام/)
+  })
+
+  /* ولا يُقال «أمامك سبعةٌ» بلا مبدإٍ: من قرأها عدَّها من يوم قراءته فظنّ
+     نفسَه متأخّرا وهو في وقته — أو العكسُ وهو أسوأ. */
+  it('ومن لم يُعرَف موعدُ جلسته يُقال له إنّه يصله — ولا تاريخَ يُخترَع', () => {
+    const body = flat(conditionalOfferMail({
+      ...OFFER, orientationOnAr: null, orientationUrl: null, deadlineOnAr: null,
+    }))
+    expect(body).toMatch(/ويصلك موعدُها/)
+    expect(body).not.toContain(OFFER.orientationOnAr!)
+    expect(body).not.toContain(OFFER.deadlineOnAr!)
+  })
+
+  it('ويُقال له إنّ بوّابتَه تُفتح بتوقيعه — فلا ينتظر الجلسةَ عاطلا', () => {
+    const body = flat(conditionalOfferMail(OFFER))
+    expect(body).toMatch(/ولا يلزمك الانتظارُ إلى الجلسة/)
+    expect(body).toContain(OFFER.portalUrl)
+  })
+
+  it('وسطرُ الوثائق يُطبَع عند الحاجة وحدَها', () => {
+    expect(flat(conditionalOfferMail(OFFER))).toMatch(/وما نحتاجه منك مع التوقيع/)
+    expect(
+      flat(conditionalOfferMail({ ...OFFER, requiredDocumentsAr: [] })),
+      'سطرٌ فارغٌ في بريدِ إنسان',
+    ).not.toMatch(/وما نحتاجه منك مع التوقيع/)
+  })
+
+  it('وتعرض المخرجَ إن لم يتحقّق الشرط', () => {
+    const body = flat(conditionalOfferMail(OFFER))
+    expect(body).toMatch(/فلا إخلالَ من أحد/)
+    expect(body).toMatch(/تؤجّل إلى الموسم القادم/)
+  })
+
+  /* ═══ الحارسُ المزدوج: المثالُ في المتن لا في البريد ═══
+
+     جوابُ صاحب المنصّة «في العقد وحدَه». ونقضُ كلٍّ من الطرفَين يسقط على
+     الآخر: فإن عاد المثالُ إلى البريد سقط هذا، وإن غاب عن المتن سقط حارسُه
+     في `contract-body.test.ts`. */
+  it('ولا مثالَ حسابيّا فيها — موضعُه متنُ العقد', () => {
+    const body = flat(conditionalOfferMail(OFFER))
+    expect(body, 'المثالُ عاد إلى البريد').not.toContain(FEE_EXAMPLE_HEADING_AR)
+    expect(body, 'أرقامُ أتعابٍ في بريدٍ لا مثالَ فيه').not.toMatch(/مجموعُ هذا المثال/)
+  })
+
+  it('وزرٌّ واحدٌ إلى صفحة التوقيع', () => {
+    const ctas = conditionalOfferMail(OFFER).doc.blocks.filter((b) => b.kind === 'cta')
+    expect(ctas.length, 'زرّان في رسالةٍ واحدة').toBe(1)
+    expect((ctas[0] as { href: string }).href).toBe(OFFER.url)
+  })
+})
+
+describe('بريدُ الاعتماد النهائيّ', () => {
+  const APPROVED: FinalApprovalMailInput = {
+    fullName: 'عبد الرحمن العتيبي',
+    reference: 'WJ-TR-2026-00041',
+    approvedCoursesAr: ['دورةُ الحوار الأسريّ', 'دورةُ الحدود'],
+    contractUrl: null,
+    portalUrl: 'https://wajeezacademy.com/trainer',
+    approvedOnAr: '9 أكتوبر 2026',
+  }
+
+  it('تقول إنّ الشرطَ تحقّق وإنّ العرضَ صار عقدا موقَّعا من الطرفَين', () => {
+    const m = finalApprovalMail(APPROVED)
+    expect(m.subject).toMatch(/اعتُمدتَ مدرّبا/)
+    expect(JSON.stringify(m.doc)).toMatch(/موقَّعا من الطرفَين/)
+  })
+
+  /* و«اعتُمدت موادُّك» بلا تسميةٍ تُقرأ اعتمادا لكلّ ما قدّم — ومنه ما أُعيد
+     إليه. فيُدرَّس ما لم يُعتمَد. */
+  it('وتسمّي ما اعتُمد بأسمائه، وتقول إنّ ما أُعيد يبقى عنده', () => {
+    const body = JSON.stringify(finalApprovalMail(APPROVED).doc)
+    for (const t of APPROVED.approvedCoursesAr) expect(body).toContain(t)
+    expect(body).toMatch(/ولا يُدرَّس إلّا ما اعتُمد/)
+  })
+
+  it('وتقول إنّ حسابَه البنكيَّ صار يُكتب — وهو ما تغيّر باعتماده', () => {
+    expect(JSON.stringify(finalApprovalMail(APPROVED).doc)).toMatch(/حسابَك البنكيَّ/)
+  })
+
+  it('ولا زرَّ لمستندٍ لا رابطَ له — ووعدٌ بزرٍّ لا يفتح شيئا أسوأُ من غيابه', () => {
+    const none = finalApprovalMail(APPROVED).doc.blocks.filter((b) => b.kind === 'cta')
+    expect(none.length, 'زرٌّ إلى مستندٍ بلا رابط').toBe(1)
+    const withDoc = finalApprovalMail({ ...APPROVED, contractUrl: 'https://x/y' })
+      .doc.blocks.filter((b) => b.kind === 'cta')
+    expect(withDoc.length).toBe(2)
   })
 })

@@ -55,6 +55,7 @@ import { recommendationUniverse } from '../../src/domain/diagnostic/v2_1/univers
 import { domainLabelAr } from '../../src/domain/diagnostic/v2/data'
 import type { DomainId } from '../../src/domain/diagnostic/v2/types'
 import { CAREER_STAGE_LABELS_AR, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
+import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 
 /** طولُ العنوان — ما يقبله الكتالوج نفسُه، فلا يُقبل هنا ما يُردّ هناك */
 export const MIN_PROPOSAL_TITLE = 3
@@ -173,9 +174,12 @@ export class CourseProposalService {
       where: { userId }, include: { application: { select: { status: true } } },
     })
     if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب مرتبطا بهذا الحساب', 404)
-    if (profile.suspendedAt || profile.application.status !== 'active') {
-      throw new AuthError('suspended', 'حسابك التدريبي موقوف — تواصل مع الإدارة', 403)
-    }
+    /* بابُ الموادّ: يُفتح بتوقيع العرض المشروط لا بالاعتماد النهائيّ —
+       والشرطُ مسمًّى في `portal-access.ts` يقرؤه الخادمُ والشاشةُ معا. */
+    const problem = portalDoorProblemAr('materials', {
+      status: profile.application.status, suspendedAt: profile.suspendedAt,
+    })
+    if (problem) throw new AuthError('suspended', problem, 403)
     return profile
   }
 

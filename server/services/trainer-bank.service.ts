@@ -39,6 +39,7 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
   assertBankVaultEnabled, bankAad, bankVaultEnabled, openBankValue, sealBankValue,
 } from './bank-crypto'
+import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 
 /** الحدُّ الأدنى لطولِ رقمِ حسابٍ يُقبَل — أقصرُ IBAN في العالم ١٥ */
 export const MIN_ACCOUNT_LEN = 15
@@ -179,9 +180,13 @@ export class TrainerBankService {
   async setMine(userId: string, input: BankAccountInput) {
     assertBankVaultEnabled()
     const profile = await this.profileForUser(userId)
-    if (profile.suspendedAt || profile.application.status !== 'active') {
-      throw new AuthError('not_active', 'حسابك التدريبيُّ موقوف', 403)
-    }
+    /* ويبقى مغلقا في الطور المشروط — البندُ 2-11 من عرضه: «ولا يستحق
+       المدرب قبل تحقق هذا الشرط إسناد شعبة، ولا أتعابا». والقراءةُ مفتوحةٌ
+       أصلا، فيرى «مستحقّاتي» صفرا ويعرف أنّ البابَ لم يُفتح بعد. */
+    const problem = portalDoorProblemAr('active_only', {
+      status: profile.application.status, suspendedAt: profile.suspendedAt,
+    })
+    if (problem) throw new AuthError('not_active', problem, 403)
     /* ومن فُتح له ملفُّ رحيلٍ لا يُبدّل وجهةَ المال: تلك اللحظةُ بعينها
        التي يُنتظَر فيها تغييرُ حسابٍ من غير صاحبه. */
     const leaving = await this.prisma.trainerDeparture.count({

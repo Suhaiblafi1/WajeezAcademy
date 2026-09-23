@@ -14,8 +14,7 @@ import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import {
-  bookingReminderMail, decisionMailFor, draftReminderMail, noShowFollowupMail, rejectionUndoneMail,
-} from './trainer-decision-mail'
+  bookingReminderMail, decisionMailFor, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -31,7 +30,9 @@ import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMail
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { buildFeeExampleAr, feeExampleFactsAr, type FeeExample } from '../../src/application/trainer/fee-example'
+import {
+  EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, deadlineFrom,
+} from '../../src/application/trainer/conditional-offer'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -47,14 +48,13 @@ import {
   academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
 } from '../../src/data/academy-legal'
 import {
-  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION,
+  CONTRACT_BODY_VERSION, CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
   renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation, type ContractCourseRow,
 } from '../../src/application/trainer/contract-body'
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS,
-  hasRequiredIdentityDocument, readRequiredDocuments, type RequiredDocument,
-} from '../../src/application/trainer/contract-documents'
+  hasRequiredIdentityDocument, readRequiredDocuments, type RequiredDocument, requiredDocumentLabelsAr } from '../../src/application/trainer/contract-documents'
 import { CONTRACT_SIGNING_LINK_DAYS } from '../../src/application/trainer/notice-periods'
 import {
   computeReadiness, overrideReasonProblemAr, readinessBlockMessageAr, type Readiness,
@@ -69,6 +69,17 @@ export interface ContractComposeInput {
   requiredDocuments: RequiredDocument[]
   hoursNoteAr?: string | null
   rateWaivedReasonAr?: string | null
+  /* ═══ جلسةُ التهيئة تُكتب هنا لا في شاشةٍ أخرى (§٩ من التصميم) ═══
+
+     ومنها يُحسب تاريخُ انتهاء المهلة، **ويُطبَعان في المتن**. ولهذا يُكتبان
+     عند التركيب لا عند الإرسال: المتنُ يُركَّب مرّةً ويُجمَّد ويُهشَّم، فلو
+     أُخِّرا إلى الإرسال لَوُقِّع مستندٌ يقول «تبدأ من تاريخ تخطرك به» وفي
+     القاعدة تاريخٌ لم يقرأه. والتركيبُ والإرسالُ دقائقُ بينهما.
+
+     ولا يلزمان: من رُكِّب له عرضٌ ولمّا يُعرَف موعدُ جلسته يُرسَل بلا تاريخ،
+     فلا مهلةَ له حتّى يُكتب ويصله خبرُه — ومتنُه يقول ذلك بنصّه. */
+  orientationAt?: string | null
+  orientationUrl?: string | null
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -851,9 +862,16 @@ export class TrainerReviewService {
 
     /* ولا يُعتمَد أحدٌ في صمت: النقرةُ الواحدة تُنهي المسارَ كلَّه، فلو لم
        تُعلمه لَبقي ينتظر ردّا وصل ولا يعلم. وإخفاقُ البريد لا يُسقط الاعتماد
-       — هو حقيقةٌ في القاعدة، والرسالةُ إشعارٌ بها؛ فيُسجَّل الإخفاقُ ويُكمَل. */
-    if (action === 'approve') {
-      await this.notifyApproved(app.email, app.fullName, app.reference, actorId, applicationId)
+       — هو حقيقةٌ في القاعدة، والرسالةُ إشعارٌ بها؛ فيُسجَّل الإخفاقُ ويُكمَل.
+
+       ═══ و`activate` تُبلّغ كما تُبلّغ `approve` (٢٣ سبتمبر ٢٠٢٦) ═══
+
+       كان البريدُ على `approve` وحدَها — وهي النقرةُ الواحدةُ التي تختصر
+       المسار. أمّا من مشى السلسلةَ (عرضٌ ← توقيعٌ ← تفعيل) فيصير نشطا
+       **في صمت**: بوّابتُه تُفتح ولا يعلم، فلا يدخلها. وهو أسوأُ صمتٍ في
+       المسار كلِّه، إذ يقع في آخره بعد أن وقّع وانتظر. */
+    if (action === 'approve' || action === 'activate') {
+      await this.completeConditionalOffer(applicationId, app, actorId)
     }
 
     /* ═══ ولا يُطلب من أحدٍ شيءٌ في صمت ═══
@@ -1236,10 +1254,23 @@ export class TrainerReviewService {
     const have = new Set(existing.map((q) => q.courseId))
     const added = known.map((c) => c.id).filter((id) => !have.has(id))
     if (added.length === 0) return { added: [] }
+    /* ═══ `pending` لا `qualified` — علامتان لا واحدة (§٥ من التصميم) ═══
+
+       `pending` تعني **اخترنا له هذه الدورة** بما نراه مناسبا، و`qualified`
+       تعني **قُبلت موادُّه** لها فله أن يدرّسها.
+
+       ولمَ لا تكفي واحدة: لو كانت «مؤهَّل» تعني ما كُتب يومَ الاعتماد
+       الداخليّ، لصار المدرّبُ مؤهَّلا لدورتَين **قبل أن يرفع ملفّا واحدا** —
+       فيضيء زرُّ التفعيل يومَ وقّع عرضَه، وتسقط الحمايةُ كلُّها. وما يُكتب
+       هنا مصدرُه **قولُه في طلبه** لا تقييمُ موادّه: فهو اختيارٌ منّا على
+       كلامه، لا حكمٌ على مادّةٍ رأيناها.
+
+       ولا عمودَ جديد: الكلمتان في القاعدة أصلا. */
     await this.prisma.trainerCourseQualification.createMany({
       data: added.map((courseId) => ({
-        profileId, courseId, status: 'qualified', qualifiedBy: actorId,
-        note: 'من طلب الانضمام — الدوراتُ التي قال إنّه يستطيع تدريسَها', decidedAt: new Date(),
+        profileId, courseId, status: 'pending', qualifiedBy: actorId,
+        note: 'من طلب الانضمام — الدوراتُ التي قال إنّه يستطيع تدريسَها، قيد تقييم موادّها',
+        decidedAt: new Date(),
       })),
       skipDuplicates: true,
     })
@@ -1285,29 +1316,124 @@ export class TrainerReviewService {
     })
   }
 
-  /** بريدُ الاعتماد — يُرسَل ولا يُسقط الاعتمادَ إن أخفق */
-  private async notifyApproved(
-    to: string, fullName: string, reference: string, actorId: string, applicationId: string,
+  /* ═══ إتمامُ العرض المشروط — توقيعُنا وبريدُه في لحظةٍ واحدة ═══
+
+     تُنادى حين يصير المتقدّمُ `active`، من `approve` أو من `activate`. وثلاثةٌ
+     تقع فيها معا لأنّها حقيقةٌ واحدة: **تحقّق الشرط**.
+
+     · يُختَم العرضُ (`countersigned`) فيصير عقدا نهائيّا موقَّعا من الطرفَين.
+     · وتُكتب `conditionMetAt` فتنتهي المهلةُ — فلا يذكّره العاملُ بعدها ولا
+       يوسمه متأخّرا، وهو محروسٌ بفحص.
+     · ويصله بريدُ الاعتماد بأسماء ما اعتُمد له.
+
+     ولمَ الترتيبُ هكذا: الخَتمُ في معاملةٍ قبل البريد، فبريدٌ يقول «موقَّعٌ من
+     الطرفَين» عن عقدٍ لم يُختَم كذبٌ يقرؤه بنفسه. والبريدُ بعدها خارجَها على
+     عرف هذا الملفّ: إخفاقُه لا ينقض اعتمادا وقع.
+
+     ═══ ومن لا عرضَ مشروطَ له يُبلَّغ كذلك ═══
+
+     مدرّبٌ عُيّن داخليّا، أو مرّ بتجاوز بوّابة التجهيز، أو عقدُه وُثِّق وهو
+     نشطٌ أصلا. فلا خَتمَ له ولا مهلةَ — ويبقى بريدُ الاعتماد، فصيرورتُه نشطا
+     خبرٌ يخصّه في الحالتَين. */
+  private async completeConditionalOffer(
+    applicationId: string,
+    app: { email: string; fullName: string; reference: string },
+    actorId: string,
   ): Promise<void> {
-    const portalUrl = `${publicSiteUrl()}/trainer`
-    const mail = await sendDirectEmail(this.prisma, {
-      to,
-      subject: 'اعتُمدتَ مدرّبا في أكاديمية وجيز',
-      ...renderMail({
-        greetingName: fullName,
-        heading: `اعتُمد طلبك (${reference}) — أهلا بك مدرّبا في أكاديمية وجيز`,
-        blocks: [
-          { kind: 'p', text: 'بوّابتك مفتوحةٌ الآن بالحساب نفسِه الذي تابعتَ به طلبك.' },
-          { kind: 'cta', label: 'افتح بوّابة المدرّب', href: portalUrl },
-          { kind: 'p', text: 'تجد فيها ملفَّك ومهامَّ التهيئة، وتصلك الشعبُ حين تُسنَد إليك.' },
-        ],
-      }),
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { applicationId },
+      select: { id: true },
+    })
+
+    /* المعتمَدُ وحدَه يُسمّى: `pending` هي ما اخترناه له، ولم تُقيَّم موادُّها.
+       فذكرُها في «وما اعتمدناه» يُقرأ اعتمادا لم يقع. */
+    const approved = profile
+      ? await this.prisma.trainerCourseQualification.findMany({
+        where: { profileId: profile.id, status: 'qualified' },
+        select: { courseId: true },
+      })
+      : []
+    const approvedCoursesAr = await Promise.all(
+      approved.map((q) => this.courseTitleAr(q.courseId)),
+    )
+
+    /* والعرضُ الموقَّعُ الذي يُختَم: المشروطُ وحدَه، وأحدثُه إن كانا اثنين */
+    const offer = profile
+      ? await this.prisma.trainerContract.findFirst({
+        where: { profileId: profile.id, status: 'signed', gatesActivation: true },
+        orderBy: { signedAt: 'desc' },
+        select: { id: true, signerLegalName: true, signedBodyHash: true, bodyVersion: true },
+      })
+      : null
+
+    const countersignedAt = new Date()
+    if (offer) {
+      await this.prisma.$transaction(async (tx) => {
+        /* قارنْ واضبطْ كما في التوقيع والاعتماد: نقرتان متزامنتان على
+           «فعّلْه» لا تكتبان خَتمَين ولا تُرسلان بريدَين. */
+        const done = await tx.trainerContract.updateMany({
+          where: { id: offer.id, status: 'signed' },
+          data: {
+            status: 'countersigned', countersignedAt, countersignedBy: actorId,
+            academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
+            academySignatoryTitle: ACADEMY_LEGAL.signatoryTitleAr,
+            countersignNoteAr: 'خَتمٌ باعتماد الموادّ وتفعيل الحساب — تحقّق شرطُ البند 2-10',
+            /* وانتهت المهلةُ بتحقّق الشرط، ولا تجميدَ يبقى معلّقا */
+            conditionMetAt: countersignedAt,
+            conditionPausedAt: null,
+          },
+        })
+        if (done.count === 0) return
+        await recordAudit(tx, {
+          actorId, action: 'trainer.contract.countersign',
+          entityType: 'trainer_contract', entityId: offer.id,
+          meta: {
+            signerLegalName: offer.signerLegalName, signedBodyHash: offer.signedBodyHash,
+            bodyVersion: offer.bodyVersion, gatesActivation: true,
+            academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
+            countersignedAt, conditionMet: true, approvedCourses: approved.length,
+          },
+        })
+      })
+    }
+
+    const mail = finalApprovalMail({
+      fullName: app.fullName,
+      reference: app.reference,
+      approvedCoursesAr,
+      /* ولا رابطَ للمستند بعد: صفحةُ الرمز لا تخدم المختومَ اليوم، ووعدٌ
+         بزرٍّ لا يفتح شيئا أسوأُ من غيابه. وبابُه بوّابتُه. */
+      contractUrl: null,
+      portalUrl: `${publicSiteUrl()}/trainer`,
+      approvedOnAr: fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
+    })
+    const sent = await sendDirectEmail(this.prisma, {
+      to: app.email, subject: mail.subject, ...renderMail(mail.doc),
     })
     await recordAudit(this.prisma, {
-      actorId, action: 'trainer.approved.notify', entityType: 'trainer_application', entityId: applicationId,
-      meta: { sentTo: to, emailDelivery: mail.status },
+      /* والاسمُ هو هو (`trainer.approved.notify`) ولم يُبدَّل: الفعلُ نفسُه
+         — «أُشعِر مدرّبٌ باعتماده» — وصفوفُ الأثر القديمةُ تُقرأ مع الجديدة
+         في خطٍّ واحد. واسمٌ جديدٌ لفعلٍ قائمٍ يقطع تاريخَه بلا فائدة. */
+      actorId, action: 'trainer.approved.notify',
+      entityType: 'trainer_application', entityId: applicationId,
+      meta: {
+        sentTo: app.email, emailDelivery: sent.status,
+        countersignedContractId: offer?.id ?? null,
+        approvedCourses: approvedCoursesAr.length,
+      },
     })
   }
+
+  /* ═══ وحُذف من هنا `notifyApproved` (٢٣ سبتمبر ٢٠٢٦) ═══
+
+     كانت رسالةً من ثلاثة أسطر: «اعتُمد طلبك، وبوّابتك مفتوحة». ولا تقول ما
+     اعتُمد من دوراته، ولا أنّ عرضَه صار عقدا نهائيّا موقَّعا من الطرفَين،
+     ولا أنّ حسابَه البنكيَّ صار يُكتب — وهي الحقائقُ الثلاثُ التي تتغيّر
+     بالاعتماد فعلا.
+
+     ومحلُّها `finalApprovalMail` في `trainer-decision-mail.ts` دالّةً خالصةً
+     يحرسها المسارُ السريع، تُنادى من `completeConditionalOffer` أعلاه مع
+     الخَتم في لحظةٍ واحدة. */
 
   /* ═══════════ جرسُ المدرّب — ولمَ كان فارغا ═══════════
 
@@ -1591,12 +1717,25 @@ export class TrainerReviewService {
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (!app.profile) throw new AuthError('no_profile', 'لا ملف مدرب لهذا الطلب — القبول المشروط أولا', 409)
 
+    /* ═══ ويُقرأ المختارُ مع المعتمَد ═══
+
+       العرضُ المشروطُ يُرسَل ولا دورةَ `qualified` بعد — وذاك مقصودُ الطور
+       كلِّه. فلو قُرئ المعتمَدُ وحدَه لَطُبع الملحقُ (أ) فارغا، وهو قبيحٌ في
+       مستندٍ يُوقَّع. فيُقرأ **ما اخترناه له** (`pending`) كذلك، وتحته في
+       المتن سطرٌ أنّ موادَّ كلِّ دورةٍ قيد التقييم.
+
+       والمعتمَدُ يبقى مقروءا لبندٍ يُوثَّق على مدرّبٍ نشطٍ أصلا: تلك دوراتٌ
+       قُبلت موادُّها فعلا. */
     const quals = await this.prisma.trainerCourseQualification.findMany({
-      where: { profileId: app.profile.id, status: 'qualified' },
-      select: { courseId: true },
+      where: { profileId: app.profile.id, status: { in: ['pending', 'qualified'] } },
+      select: { courseId: true, status: true },
     })
     const courses = await Promise.all(
-      quals.map(async (q) => ({ courseId: q.courseId, titleAr: await this.courseTitleAr(q.courseId) })),
+      quals.map(async (q) => ({
+        courseId: q.courseId, titleAr: await this.courseTitleAr(q.courseId),
+        /* تُعرَض للموظّف كي يرى ما اختاره ممّا اعتُمد — ولا تُطبَع في المتن */
+        mark: q.status,
+      })),
     )
     const rule = await new EarningsService(this.prisma).activeRule(app.profile.id)
 
@@ -1636,6 +1775,9 @@ export class TrainerReviewService {
     hoursNoteAr: string | null; rateWaivedReasonAr: string | null
     requiredDocuments: RequiredDocument[]
     issuedOn: Date
+    /** `true` لعرضٍ مشروط — و`false` لبندٍ يُوثَّق على مدرّبٍ نشط */
+    gatesActivation: boolean
+    orientationAt: Date | null
   }): ContractBodyInput {
     return {
       academyPartyLineAr: academyPartyLineAr(),
@@ -1652,6 +1794,24 @@ export class TrainerReviewService {
       rateWaivedReasonAr: args.rateWaivedReasonAr,
       hoursNoteAr: args.hoursNoteAr,
       requiredDocuments: args.requiredDocuments,
+      /* والشرطُ يتبع `gatesActivation` لا تاريخَ الجلسة: عرضٌ بلا تاريخٍ
+         مشروطٌ كذلك — وبندُه 2-7 يقول إنّ المهلةَ تبدأ من تاريخٍ يُخطَر به.
+         فمن قرأ العرضَ قرأ شرطَه ولو لم يُعرَف موعدُ جلسته بعد. */
+      conditional: args.gatesActivation
+        ? {
+          orientationOnAr: args.orientationAt
+            ? fmtDateWith(args.orientationAt, {
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+              hour: 'numeric', minute: '2-digit',
+            })
+            : null,
+          deadlineOnAr: args.orientationAt
+            ? fmtDateWith(deadlineFrom(args.orientationAt)!, { year: 'numeric', month: 'long', day: 'numeric' })
+            : null,
+          windowDays: MATERIALS_WINDOW_DAYS,
+          extensionDays: EXTENSION_DAYS,
+        }
+        : null,
     }
   }
 
@@ -1663,6 +1823,8 @@ export class TrainerReviewService {
     return renderContractBodyAr(this.contractBodyInput({
       fullName: pre.fullName, email: pre.email, reference: pre.reference,
       courses: chosen,
+      gatesActivation: pre.gatesActivation,
+      orientationAt: input.orientationAt ? new Date(input.orientationAt) : null,
       compensation: pre.compensation
         ? { type: pre.compensation.type, rate: pre.compensation.rate, currency: pre.compensation.currency,
             minSeats: pre.compensation.minSeats, referralRate: pre.compensation.referralRate }
@@ -1707,10 +1869,20 @@ export class TrainerReviewService {
       throw new AuthError('no_identity_document', 'وثيقةُ هويّةٍ واحدةٌ إلزاميّةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله', 422)
     }
 
+    /* تاريخُ الجلسة يُقرأ مرّةً: منه يُطبَع المتنُ ومنه تُحسب المهلةُ
+       المخزونة، فلا يفترق ما وُقّع عليه عمّا يُحسب به. */
+    const orientationAt = input.orientationAt ? new Date(input.orientationAt) : null
+    if (input.orientationAt && Number.isNaN(orientationAt!.getTime())) {
+      throw new AuthError('bad_orientation', 'تاريخُ جلسة التهيئة غيرُ مقروء', 422)
+    }
+    const conditionDeadlineAt = pre.gatesActivation ? deadlineFrom(orientationAt) : null
+
     const issuedOn = new Date()
     const bodyAr = renderContractBodyAr(this.contractBodyInput({
       fullName: pre.fullName, email: pre.email, reference: pre.reference,
       courses: chosen,
+      gatesActivation: pre.gatesActivation,
+      orientationAt,
       compensation: pre.compensation
         ? { type: pre.compensation.type, rate: pre.compensation.rate, currency: pre.compensation.currency,
             minSeats: pre.compensation.minSeats, referralRate: pre.compensation.referralRate }
@@ -1743,6 +1915,10 @@ export class TrainerReviewService {
           requiredDocuments: input.requiredDocuments as unknown as Prisma.InputJsonValue,
           signerEmail: pre.email,
           gatesActivation: pre.gatesActivation,
+          /* ولا مهلةَ لبندٍ يُوثَّق على مدرّبٍ نشط — لا شرطَ يُلحَق بملفٍّ حيّ */
+          orientationAt: pre.gatesActivation ? orientationAt : null,
+          orientationUrl: pre.gatesActivation ? (input.orientationUrl?.trim() || null) : null,
+          conditionDeadlineAt,
           createdBy: actorId,
         },
       })
@@ -1795,38 +1971,90 @@ export class TrainerReviewService {
 
      ولا يُرسَل حين لا قاعدةَ أتعابٍ أو حين تكون نسبةً من الإيراد — فالرقمُ
      هناك دالّةٌ في سعرٍ نملكه نحن. */
-  private async contractFeeExample(compensationRuleId: string | null) {
-    if (!compensationRuleId) return null
-    const rule = await this.prisma.trainerCompensationRule.findUnique({ where: { id: compensationRuleId } })
-    if (!rule) return null
-    return buildFeeExampleAr({
-      type: rule.type, rate: rule.rate.toString(), currency: rule.currency,
-      minSeats: rule.minSeats, referralRate: rule.referralRate?.toString() ?? null,
-    })
-  }
+  /* ═══ بريدُ العقد — طريقان لا واحد ═══
 
+     · **عرضٌ مشروط** (`gatesActivation`): بريدُ العرض المشروط بنصّه الكامل في
+       `trainer-decision-mail.ts` — شرطُه وجلستُه ومهلتُه وما بعد التوقيع.
+     · **بندٌ يُوثَّق على مدرّبٍ نشطٍ أصلا**: رسالةٌ قصيرةٌ لا شرطَ فيها ولا
+       مهلة — فإرسالُ «بلغتَ مرحلةَ العرض المشروط» إلى مدرّبٍ يدرّس منذ شهرين
+       كذبٌ يقرؤه بنفسه.
+
+     ولمَ `gatesActivation` هو الفرقُ: هي بعينها القيمةُ التي تقول «أيحبس هذا
+     العقدُ التفعيل؟»، وتُحسب عند التركيب من حالة الطلب. فلا مِحَكَّ ثانيَ
+     يفترق عنها.
+
+     ═══ ولا مثالَ حسابيّا في البريد ═══
+
+     جوابُ صاحب المنصّة: «في العقد وحدَه». وهو مطبوعٌ في المتن أصلا (بندُ 4-1
+     والملحق ب)، فحُذف من هنا وحدَه — ولا رقمَ يتغيّر، موضعُ قراءته وحدَه.
+     وبهذا فقدت `feeExampleFactsAr` قارئَها الوحيد فحُذفت. */
   private async mailContract(args: {
-    to: string; fullName: string; title: string; url: string; expiresAt: Date; resend: boolean
-    feeExample?: FeeExample | null
+    contract: {
+      title: string
+      gatesActivation: boolean
+      orientationAt: Date | null
+      orientationUrl: string | null
+      conditionDeadlineAt: Date | null
+      requiredDocuments: unknown
+    }
+    to: string; fullName: string; reference: string; url: string; expiresAt: Date; resend: boolean
   }) {
-    const example = args.feeExample
-      ? [
-        { kind: 'h' as const, text: 'مثالٌ حسابيٌّ بأرقام أتعابك أنت' },
-        { kind: 'facts' as const, rows: feeExampleFactsAr(args.feeExample) },
-        { kind: 'note' as const, text: args.feeExample.noteAr },
-      ]
-      : []
+    const { contract } = args
+
+    /* والتجديدُ رسالتُه: من ضاع منه الرابطُ لا يُعاد عليه شرحُ الطور كلِّه،
+       وإنّما يُعطى بابا جديدا. */
+    if (args.resend) {
+      return sendDirectEmail(this.prisma, {
+        to: args.to,
+        subject: `رابطٌ جديدٌ للتوقيع — ${contract.title}`,
+        ...renderMail({
+          greetingName: args.fullName,
+          heading: contract.gatesActivation ? 'هذا رابطٌ جديدٌ لتوقيع عرضك' : 'هذا رابطٌ جديدٌ لتوقيع عقدك',
+          blocks: [
+            { kind: 'p', text: 'اقرأ الوثيقة كاملة قبل التوقيع — وما فيها لم يتغيّر، الرابطُ وحدَه هو الجديد.' },
+            { kind: 'cta', label: 'اقرأ ووقّع', href: args.url },
+            { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
+            { kind: 'facts', rows: [{ label: 'رقم الطلب', value: args.reference }] },
+          ],
+        }),
+      })
+    }
+
+    if (contract.gatesActivation) {
+      const mail = conditionalOfferMail({
+        fullName: args.fullName,
+        reference: args.reference,
+        url: args.url,
+        expiresAt: args.expiresAt,
+        orientationOnAr: contract.orientationAt
+          ? fmtDateWith(contract.orientationAt, {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+            hour: 'numeric', minute: '2-digit',
+          })
+          : null,
+        orientationUrl: contract.orientationUrl,
+        deadlineOnAr: contract.conditionDeadlineAt
+          ? fmtDateWith(contract.conditionDeadlineAt, { year: 'numeric', month: 'long', day: 'numeric' })
+          : null,
+        windowDays: MATERIALS_WINDOW_DAYS,
+        extensionDays: EXTENSION_DAYS,
+        requiredDocumentsAr: requiredDocumentLabelsAr(contract.requiredDocuments),
+        portalUrl: `${publicSiteUrl()}/trainer`,
+      })
+      return sendDirectEmail(this.prisma, { to: args.to, subject: mail.subject, ...renderMail(mail.doc) })
+    }
+
     return sendDirectEmail(this.prisma, {
       to: args.to,
-      subject: args.resend ? `رابطٌ جديدٌ لتوقيع عقدك — ${args.title}` : `عقدُك مع أكاديمية وجيز — للقراءة والتوقيع`,
+      subject: `عقدُك مع أكاديمية وجيز — للقراءة والتوقيع (${args.reference})`,
       ...renderMail({
         greetingName: args.fullName,
-        heading: args.resend ? 'هذا رابطٌ جديدٌ لتوقيع عقدك' : 'اكتمل اعتمادُك، وهذا عقدُك للقراءة والتوقيع',
+        heading: 'هذا عقدُك للقراءة والتوقيع',
         blocks: [
           { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
           { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
           { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
-          ...example,
+          { kind: 'facts', rows: [{ label: 'رقم الطلب', value: args.reference }] },
           { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
         ],
       }),
@@ -1870,9 +2098,8 @@ export class TrainerReviewService {
        وقع. والرابطُ يُعاد للموظّف كذلك — فقناةُ البريد قد تتعثّر، ومن يملك
        الصلاحيّةَ يحتاج نسخةً يسلّمها بيده. */
     const mail = await this.mailContract({
-      to: app.email, fullName: app.fullName, title: contract.title,
+      contract, to: app.email, fullName: app.fullName, reference: app.reference,
       url: this.signingUrl(token), expiresAt, resend: false,
-      feeExample: await this.contractFeeExample(contract.compensationRuleId),
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
@@ -1897,9 +2124,8 @@ export class TrainerReviewService {
       meta: { sentTo: app.email, expiresAt },
     })
     const mail = await this.mailContract({
-      to: app.email, fullName: app.fullName, title: contract.title,
+      contract, to: app.email, fullName: app.fullName, reference: app.reference,
       url: this.signingUrl(token), expiresAt, resend: true,
-      feeExample: await this.contractFeeExample(contract.compensationRuleId),
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
@@ -1983,7 +2209,9 @@ export class TrainerReviewService {
       requiredDocuments: required,
       /* أسماءٌ وأنواعٌ فقط — ولا مفاتيحَ تخزينٍ إلى واجهةٍ عامّة */
       uploaded: c.documents.map((d) => ({ id: d.id, kind: d.kind, originalName: d.originalName })),
-      acks: CONTRACT_ACKS,
+      /* والسابعُ لمن عرضُه مشروطٌ وحدَه — تُسأل الدالّةُ ولا تُقرأ قائمةٌ،
+         فما عُرض هو ما يُفحَص هو ما يُحفَظ (علّتُه في `contract-body.ts`). */
+      acks: contractAcks(c.gatesActivation),
       consentTextAr: CONTRACT_CONSENT_AR,
       consentVersion: CONTRACT_CONSENT_VERSION,
     }
@@ -2066,7 +2294,7 @@ export class TrainerReviewService {
     if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
       throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
     }
-    const missingAcks = CONTRACT_ACKS.filter((a) => !input.acks.includes(a.key))
+    const missingAcks = contractAcks(c.gatesActivation).filter((a) => !input.acks.includes(a.key))
     if (missingAcks.length > 0) {
       throw new AuthError('acks_missing', 'لم تُقرّ ببنودٍ لا بدّ من الإقرار بها قبل التوقيع', 422)
     }
@@ -2103,7 +2331,7 @@ export class TrainerReviewService {
 
              وداخلَ المعاملة مع التوقيع نفسِه: توقيعٌ يُكتب وجملُه لا تُكتب
              يترك الفجوةَ التي وُضع العمودُ لسدّها. */
-          consentAcksAr: CONTRACT_ACKS.map((a) => ({ key: a.key, textAr: a.textAr })),
+          consentAcksAr: contractAcks(c.gatesActivation).map((a) => ({ key: a.key, textAr: a.textAr })),
           signedBodyHash: input.bodyHash,
           /* والرمزُ يموت بالتوقيع: وُقّع مرّةً، فلا بابَ يُفتح ثانية */
           tokenHash: null, tokenExpiresAt: null,
@@ -2220,6 +2448,24 @@ export class TrainerReviewService {
     if (c.status !== 'signed') {
       throw new AuthError('bad_state', 'لا يُعتمَد إلّا عقدٌ وقّعه صاحبُه ولم يُعتمَد بعد', 409)
     }
+    /* ═══ والعرضُ المشروطُ لا يُوقَّع منّا هنا (٢٣ سبتمبر ٢٠٢٦) ═══
+
+       بيانُ صاحب المنصّة: «وحين نقبل موادَّه كلَّها يصير مقبولا رسميّا،
+       ويُعاد إليه العقدُ موقَّعا منّا». فتوقيعُنا في **آخر** الطور لا في
+       أوّله، ويقع في اللحظة نفسِها التي يُفعَّل فيها حسابُه.
+
+       ولو أُتيح ختمُه هنا لَصار العرضُ عقدا نافذا **قبل أن تُقيَّم موادُّه** —
+       فيعود «لم نقبل موادَّك» سببَ فسخٍ لا شرطا لم يتحقّق، وتسقط الحمايةُ
+       التي بُني الطورُ كلُّه لها.
+
+       والبابُ باقٍ لما لا شرطَ فيه: بندٌ يُوثَّق على مدرّبٍ نشطٍ أصلا. */
+    if (c.gatesActivation) {
+      throw new AuthError(
+        'conditional_offer',
+        'هذا عرضٌ مشروط — يُوقَّع منّا حين تُعتمَد موادُّه ويُفعَّل حسابُه، لا قبلَه. فاعتمِدْ موادَّه ثمّ فعّلْه، ويُختَم العرضُ ويصله موقَّعا في اللحظة نفسِها.',
+        409,
+      )
+    }
     /* حارسُ التضارب نفسُه الذي في `decide`: من يعتمد عقدا يفتح به حسابا
        ويمنح دورا. وهو يجري هنا أيضا لأنّ العقدَ قد لا يحبس التفعيلَ
        (`gatesActivation = false`)، فلا يُنادى `decide` أصلا ولا يجري حارسُها. */
@@ -2291,7 +2537,7 @@ export class TrainerReviewService {
               text: `اعتمدت الأكاديميّةُ توقيعَك على «${c.title}» بتاريخ ${fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' })}، فصار العقدُ نافذا بين الطرفين.`,
             },
             /* ولا يُوعَد بحسابٍ في هذه الرسالة: فتحُه قرارٌ تالٍ بيد الأكاديميّة،
-               ورسالتُه تخرج عنده (`notifyApproved`). ووعدٌ هنا يجعل من ينتظر
+               ورسالتُه تخرج عنده (`completeConditionalOffer`). ووعدٌ هنا يجعل من ينتظر
                ساعةً يظنّ أنّ شيئا تعطّل. */
             { kind: 'note' as const, text: 'ويصلك فتحُ حسابك في رسالةٍ تالية حين يكتمل اعتمادُك.' },
             {

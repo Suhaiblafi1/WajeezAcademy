@@ -145,13 +145,14 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
   }
 }
 
-/** صفوفُ «حقائق» جاهزةٌ للبريد — نصٌّ لا حساب، فالحسابُ تمّ أعلاه */
-export function feeExampleFactsAr(ex: FeeExample): { label: string; value: string }[] {
-  return [
-    ...ex.rows.map((r) => ({ label: r.labelAr, value: `${num(r.amount)} ${ex.currency}` })),
-    { label: 'مجموعُ هذا المثال', value: `${num(ex.total)} ${ex.currency}` },
-  ]
-}
+/* ═══ وحُذف من هنا مُنسِّقُ صفوف البريد (٢٣ سبتمبر ٢٠٢٦) ═══
+
+   كان `feeExampleFactsAr` يبني صفوفَ «حقائق» للمثال في بريد العقد. وجوابُ
+   صاحب المنصّة أن يكون المثالُ «في العقد وحدَه»، فخرج من البريد — فبقيت
+   الدالّةُ بلا قارئٍ إلّا اختبارَها، وذاك حارسٌ يحرس نفسَه.
+
+   وصياغةُ الوثيقة (`feeExampleContractAr` أدناه) هي الباقيةُ، وهي المقصودةُ
+   أصلا: المثالُ يُقرأ بجانب القاعدة التي يشرحها في الملحق (ب). */
 
 /** صدرُ المثال في العقد — العبارةُ التي تجعله يُقرأ مثالا لا بندا.
 

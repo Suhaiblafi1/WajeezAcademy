@@ -27,10 +27,11 @@
    بعد القرار — و`BOOKABLE_STATUSES` تُخرج `rejected` من الحجز أصلا، فزرٌّ
    هنا يقود إلى بابٍ مغلق. */
 
-import type { MailDoc } from './mail-template'
+import type { MailBlock, MailDoc } from './mail-template'
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
+import { fmtDateWith } from '../../src/application/text/format-ar'
 
 /** ما يُسلَّم إلى `sendDirectEmail` — الموضوعُ ووصفُ الرسالة */
 export interface DecisionMail {
@@ -361,6 +362,192 @@ export function noShowFollowupMail(input: {
           : []),
         { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
         ...(input.followup.noteAr ? ([{ kind: 'note', text: input.followup.noteAr }] as const) : []),
+      ],
+    },
+  }
+}
+
+/* ═══ العرضُ المشروط — أوّلُ ما يصل المتقدّمَ عن قبوله ═══
+
+   ولمَ هو أوّلُ ما يصله: القبولُ الداخليُّ (`conditionally_approved`) لا يصله
+   منه شيءٌ بقصدٍ مكتوب — نضبط فيه أتعابَه ونختار دوراتِه ونركّب عرضَه، وقد
+   ينتهي بردٍّ لا بقبول. فمن قرأ «قُبلتَ» ثمّ رُدّ بعد أسبوعَين قُرئ عليه وعدٌ
+   نقضناه نحن.
+
+   ═══ وما كان يُرسَل مكانَها ═══
+
+   `mailContract` القديمةُ عنوانُها «اكتمل اعتمادُك، وهذا عقدُك للقراءة
+   والتوقيع» — **وهو نقيضُ المشروط حرفا**: تقول إنّ الاعتمادَ اكتمل وهو لم
+   يبدأ، ولا تذكر شرطا ولا مهلةً ولا جلسةً ولا ما يجري بعد التوقيع.
+
+   ═══ ولا مثالَ حسابيّا فيها ═══
+
+   جوابُ صاحب المنصّة: «في العقد وحدَه». والمثالُ مطبوعٌ في المتن أصلا (بندُ
+   4-1 والملحق ب)، فحُذف من البريد وحدَه. ولا رقمَ يتغيّر بهذا ولا معادلةَ
+   أتعاب — موضعُ قراءته وحدَه. */
+export interface ConditionalOfferMailInput {
+  fullName: string
+  reference: string
+  /** رابطُ صفحة التوقيع */
+  url: string
+  expiresAt: Date
+  /** جلسةُ التهيئة — مكتوبةً منسَّقةً، و`null` لعرضٍ لم يُعرَف موعدُها بعد */
+  orientationOnAr: string | null
+  orientationUrl: string | null
+  /** تاريخُ انتهاء المهلة مكتوبا — يسقط مع سقوط موعد الجلسة */
+  deadlineOnAr: string | null
+  windowDays: number
+  extensionDays: number
+  /** ما نحتاجه منه من وثائق — ومن لا وثيقةَ عليه لا يقرأ سطرا فارغا */
+  requiredDocumentsAr: readonly string[]
+  /** بوّابتُه تُفتح بتوقيعه، فيُدَلُّ عليها */
+  portalUrl: string
+}
+
+export function conditionalOfferMail(input: ConditionalOfferMailInput): DecisionMail {
+  const expiresAr = fmtDateWith(input.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })
+
+  /* ═══ والجلسةُ تُقال على وجهَين، ولا ثالثَ ═══
+
+     فإن عُرف موعدُها قيل بتاريخه ومنه تُحسب مهلتُه. وإن لم يُعرَف **لم
+     يُخترَع رقم**: يُقال إنّ الموعدَ يصله ومنه تبدأ السبعة. ورسالةٌ تقول
+     «أمامك سبعةُ أيّام» بلا مبدإٍ تجعله يعدّها من يوم قراءته — فيظنّ نفسَه
+     متأخّرا وهو في وقته، أو العكسُ وهو أسوأ. */
+  const sessionBlocks: MailBlock[] = input.orientationOnAr
+    ? ([
+      { kind: 'h', text: `جلسةُ التهيئة — ${input.orientationOnAr}` },
+      {
+        kind: 'p',
+        text: 'جلسةٌ جماعيّةٌ نعقدها أسبوعيّا: نعلّمك فيها استخدامَ المنصّة، وكيف تضيف موادَّك ومحاورَك، وما نعتمده وما نعيده.',
+      },
+      ...(input.orientationUrl
+        ? ([{ kind: 'p', text: ['ورابطُ الحضور: ', { text: 'انضمّ إلى الجلسة', href: input.orientationUrl }] } as MailBlock])
+        : []),
+      { kind: 'h', text: `ومن تاريخها تبدأ مهلتُك — ${input.windowDays} أيّام${input.deadlineOnAr ? `، حتّى ${input.deadlineOnAr}` : ''}` },
+    ])
+    : ([
+      { kind: 'h', text: 'جلسةُ التهيئة — ويصلك موعدُها' },
+      {
+        kind: 'p',
+        text: 'جلسةٌ جماعيّةٌ نعقدها أسبوعيّا: نعلّمك فيها استخدامَ المنصّة، وكيف تضيف موادَّك ومحاورَك، وما نعتمده وما نعيده. ويصلك موعدُ القادمة منها.',
+      },
+      { kind: 'h', text: `ومن تاريخها تبدأ مهلتُك — ${input.windowDays} أيّام` },
+    ])
+
+  return {
+    subject: `عرضُك المشروط من أكاديمية وجيز — للقراءة والتوقيع (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: 'بقي شرطٌ واحد: أن نعتمد موادَّك. وهذه خطواتُه كلُّها.',
+      heading: 'بلغتَ مرحلةَ العرض المشروط',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وضُبطت أتعابُك، ورُكِّب عرضُك. وهذا **عرضٌ مشروطٌ** لا عقدٌ نهائيّ: اقرأ بنودَه كاملةً قبل أن توقّعه.',
+        },
+        {
+          kind: 'p',
+          text: '**والشرطُ الوحيدُ الباقي:** أن نعتمد موادَّك ومحاورَ دوراتك. والاعتمادُ لكلّ دورةٍ على حدة: فما اعتمدناه تدرّسه، وما أعدناه يصلك بملاحظاتنا لتعدّله.',
+        },
+        { kind: 'cta', label: 'اقرأ العرضَ ووقّعه', href: input.url },
+        { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${expiresAr}، ولك أن تعتذر عنه بلا حرج.` },
+        ...sessionBlocks,
+        {
+          kind: 'p',
+          text: `ترفع فيها موادَّك كلَّها وتبني مسارَك التعليميَّ، ثمّ تعلن اكتمالَها بزرٍّ في بوّابتك. وتتجمّد المهلةُ ما دامت الموادُّ عندنا للتقييم — فوقتُ مراجعتنا لا يُحسب عليك. ولك تمديدُها ${input.extensionDays} يومين مرّةً واحدةً بطلبك.`,
+        },
+        {
+          kind: 'p',
+          text: [
+            '**ولا يلزمك الانتظارُ إلى الجلسة:** ',
+            { text: 'بوّابتُك', href: input.portalUrl },
+            ' تُفتح بتوقيعك — فادخلها من الآن، واستطلعْها، وجهّزْ موادَّك، لتأتي الجلسةَ وأنت جاهز.',
+          ],
+        },
+        ...(input.requiredDocumentsAr.length > 0
+          ? ([{ kind: 'p', text: `**وما نحتاجه منك مع التوقيع:** ${input.requiredDocumentsAr.join(' · ')}.` }] as const)
+          : []),
+        { kind: 'h', text: 'وبعد اعتماد موادّك' },
+        {
+          kind: 'list',
+          items: [
+            'يُعتمَد قبولُك رسميّا، ويُعاد إليك عرضُك **موقَّعا منّا** — عقدا نهائيّا غيرَ مشروط.',
+            'يُنشَر ملفُّك، وتُفتح دوراتُك للتسجيل.',
+            'ويبدأ تدريسُك في موعد دورتك المعلَن.',
+          ],
+        },
+        {
+          kind: 'p',
+          text: '**وإن لم يتحقّق الشرطُ فلا إخلالَ من أحد**: لك أن تؤجّل إلى الموسم القادم، أو تطلب حذفَ حسابك. وهو مكتوبٌ في بنود عرضك لا في هذه الرسالة وحدَها.',
+        },
+        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        {
+          kind: 'note',
+          text: 'وردُّك على هذه الرسالة يصل فريقَنا. وإن انقضى الرابطُ قبل أن توقّع فاطلب إعادةَ إرساله.',
+        },
+      ],
+    },
+  }
+}
+
+/* ═══ الاعتمادُ النهائيّ — آخرُ الطور ═══
+
+   ومعه المستندُ موقَّعا من الطرفَين: بيانُ صاحب المنصّة «ويُعاد إليه العقدُ
+   موقَّعا منّا عقدا نهائيّا لا عرضا مشروطا». فتوقيعُنا يقع في اللحظة التي
+   يُفعَّل فيها حسابُه، لا في أوّل الطور — وما بين توقيعه واعتمادِنا لا وثيقةَ
+   نافذةً على أحد، فإن لم يتحقّق الشرطُ لم يكن ثَمَّ عقدٌ يُفسَخ أصلا.
+
+   ولمَ تُسمّى الدوراتُ المعتمَدةُ بأسمائها: «اعتُمدت موادُّك» بلا تسميةٍ
+   تُقرأ اعتمادا لكلّ ما قدّم — ومنه ما أُعيد إليه. فيُدرَّس ما لم يُعتمَد. */
+export interface FinalApprovalMailInput {
+  fullName: string
+  reference: string
+  /** أسماءُ الدورات المعتمَدة — وبلا واحدةٍ لا يقع الاعتماد أصلا */
+  approvedCoursesAr: readonly string[]
+  /** رابطُ العقد موقَّعا من الطرفَين */
+  contractUrl: string | null
+  portalUrl: string
+  approvedOnAr: string
+}
+
+export function finalApprovalMail(input: FinalApprovalMailInput): DecisionMail {
+  return {
+    subject: `اعتُمدتَ مدرّبا في أكاديمية وجيز — وهذا عقدُك موقَّعا (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: 'تحقّق الشرط: اعتُمدت موادُّك، وصار عرضُك عقدا نهائيّا.',
+      heading: 'اعتُمدت موادُّك — وتمّ قبولُك',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'قيّمنا ما رفعتَه واعتمدناه. وبهذا تحقّق شرطُ عرضك، فصار **عقدا نهائيّا غيرَ مشروطٍ موقَّعا من الطرفَين**.',
+        },
+        ...(input.contractUrl
+          ? ([{ kind: 'cta', label: 'اقرأ عقدَك موقَّعا', href: input.contractUrl }] as const)
+          : []),
+        { kind: 'h', text: 'وما اعتمدناه' },
+        { kind: 'list', items: input.approvedCoursesAr.map((t) => t) },
+        {
+          kind: 'p',
+          text: 'وما أُعيد إليك بملاحظاتٍ يبقى عندك في بوّابتك: تعدّله وتعيد رفعَه في أيّ وقت، ولا يُدرَّس إلّا ما اعتُمد.',
+        },
+        { kind: 'h', text: 'وما صار لك الآن' },
+        {
+          kind: 'list',
+          items: [
+            'أنت مدرّبٌ نشطٌ في الأكاديمية — يُنشَر ملفُّك وتُفتح دوراتُك للتسجيل.',
+            'وبوّابتُك كاملةٌ: تعلن ساعاتَك، وتُقرأ مستحقّاتُك، وتُسنَد إليك الشعب.',
+            'واكتب حسابَك البنكيَّ في «مستحقّاتي» — فبه تُصرَف أتعابُك، ولم يكن يُكتب قبل اليوم.',
+          ],
+        },
+        { kind: 'cta', label: 'افتح بوّابتَك', href: input.portalUrl },
+        {
+          kind: 'facts',
+          rows: [
+            { label: 'رقم الطلب', value: input.reference },
+            { label: 'تاريخ الاعتماد', value: input.approvedOnAr },
+          ],
+        },
       ],
     },
   }

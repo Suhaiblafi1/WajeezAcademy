@@ -118,3 +118,22 @@ export function readRequiredDocuments(value: unknown): RequiredDocument[] {
 export function hasRequiredIdentityDocument(docs: readonly RequiredDocument[]): boolean {
   return docs.some((d) => d.required && IDENTITY_KINDS.includes(d.kind))
 }
+
+/* ═══ ما نحتاجه منه من وثائق، مقروءا في بريده ═══
+
+   الإلزاميّةُ وحدَها: أمّا ما اختير اختياريّا فذكرُه في سطرِ «وما نحتاجه منك»
+   يجعله يظنّه شرطا للتوقيع فيتوقّف عنه حتّى يجمعه — والعقدُ لا يحبسه عليه.
+
+   ويقبل `unknown` لأنّ مصدرَه عمودُ JSON: ما في القاعدة نُسخةٌ كُتبت يومَ
+   التركيب، لا قائمةٌ مطابقةٌ لهذا الملفّ اليوم. فيُقرأ بحذرٍ ويُرَدُّ الفارغُ
+   فارغا — ولا سطرَ فارغٌ في بريدِ إنسان. */
+export function requiredDocumentLabelsAr(stored: unknown): string[] {
+  if (!Array.isArray(stored)) return []
+  return stored
+    .filter((d): d is RequiredDocument =>
+      !!d && typeof d === 'object'
+      && typeof (d as RequiredDocument).labelAr === 'string'
+      && (d as RequiredDocument).required === true)
+    .map((d) => d.labelAr.trim())
+    .filter((l) => l.length > 0)
+}

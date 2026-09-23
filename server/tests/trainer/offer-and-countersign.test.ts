@@ -94,7 +94,6 @@ async function mkSigned(opts: { status?: string; gatesActivation?: boolean; with
 /** مدرّبٌ نشطٌ مؤهَّلٌ لدورةٍ — نقطةُ انطلاق العروض */
 async function mkActiveTrainer(courseIds: string[] = [COURSE]) {
   const made = await mkSigned()
-  await review.countersignContract(made.contract.id, adminId, {})
   for (const courseId of courseIds) {
     await prisma.trainerCourseQualification.upsert({
       where: { profileId_courseId: { profileId: made.profile.id, courseId } },
@@ -102,12 +101,14 @@ async function mkActiveTrainer(courseIds: string[] = [COURSE]) {
       create: { profileId: made.profile.id, courseId, status: 'qualified' },
     })
   }
-  /* ═══ والاعتمادُ لا يقع باعتماد العقد منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+  /* ═══ والختمُ في لحظة التفعيل منذ ٢٣ سبتمبر ٢٠٢٦ (§٨-٧) ═══
 
-     كان `countersignContract` يستدعي `decide('activate')`، فيكفي ختمُ العقد
-     ليصير المدرّبُ نشطا. وصار القبولُ الكاملُ قرارَ إنسانٍ بعده — وهو ما
-     يُثبته أوّلُ describe في هذا الملفّ. فتُتمّ هذه السقالةُ الطريقَ صراحةً:
-     العرضُ لا يُقدَّم إلّا على مدرّبٍ نشطٍ يفتح بوّابتَه ليراه. */
+     كان السطرُ `countersignContract` هنا يسبق الاعتماد. وصار العرضُ المشروطُ
+     يُختَم **في `decide('approve')` نفسِها**: توقيعُنا في آخر الطور لا في
+     أوّله، فما بين توقيعه واعتمادِنا لا وثيقةَ نافذةً على أحد. ومحاولةُ
+     ختمِه بيدٍ قبل ذلك تُردّ — وهو ما يُثبته أوّلُ describe في هذا الملفّ.
+
+     والعرضُ لا يُقدَّم إلّا على مدرّبٍ نشطٍ يفتح بوّابتَه ليراه. */
   await makeReadyForApproval(prisma, made.app.id, adminId)
   await review.decide(made.app.id, adminId, 'approve')
   return made
@@ -138,9 +139,13 @@ async function mkCohort(courseId = COURSE, startsAt = new Date(Date.now() + 30 *
 
    والحارسُ باقٍ مقلوبا لا محذوفا: يُثبت الآن أنّ الحالةَ **لا تتحرّك**،
    فالرجوعُ إلى التفعيل الآليّ يُسقطه. */
+/** بندٌ يُوثَّق على مدرّبٍ نشطٍ أصلا — وهو المسارُ الذي يبقى فيه الختمُ بيدٍ
+    مشروعا: لا شرطَ فيه ولا مهلةَ، فلا شيءَ يُنتظر قبل نفاذه. */
+const mkDocumented = () => mkSigned({ status: 'active', gatesActivation: false })
+
 describe('الاعتمادُ يُنفِذ العقدَ — ولا يفتح الحساب', () => {
   it('الموقَّعُ يصير نافذا، ويحمل اسمَ المفوَّضِ في السجلّ ومن ضغط فعلا', async () => {
-    const { contract } = await mkSigned()
+    const { contract } = await mkDocumented()
     const r = await review.countersignContract(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بالهويّة' })
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
     expect(after.status).toBe('countersigned')
@@ -154,35 +159,58 @@ describe('الاعتمادُ يُنفِذ العقدَ — ولا يفتح ال�
     expect(r.ok).toBe(true)
   })
 
-  it('ولا يُفتح الحسابُ معه — ولا تتحرّك حالةُ الطلب', async () => {
-    const { app, profile, contract, userId } = await mkSigned()
-    const before = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
-    await review.countersignContract(contract.id, adminId, {})
+  /* ═══ والعرضُ المشروطُ لا يُختَم بيدٍ قبل موضعه (٢٣ سبتمبر ٢٠٢٦) ═══
+
+     لو أُتيح ختمُه هنا لَصار العرضُ عقدا نافذا **قبل أن تُقيَّم موادُّه** —
+     فيعود «لم نقبل موادَّك» سببَ فسخٍ لا شرطا لم يتحقّق، وتسقط الحمايةُ
+     التي بُني الطورُ كلُّه لها. */
+  it('والعرضُ المشروطُ يُردّ ختمُه بيدٍ — فيبقى موقَّعا منه وحدَه', async () => {
+    const { app, contract, userId } = await mkSigned()
+    await expect(review.countersignContract(contract.id, adminId, {}))
+      .rejects.toThrow(/عرضٌ مشروط/)
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
+    expect(after.status, 'خُتم عرضٌ مشروطٌ قبل تقييم موادّه').toBe('signed')
+    expect(after.countersignedAt).toBeNull()
+    /* ولا تتحرّك حالتُه ولا يُمنَح دورُ المدرّب: القبولُ الكاملُ قرارٌ بعدَه */
     const appAfter = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
-    expect(appAfter.status, 'اعتمادُ العقد حرّك الحالةَ — والقبولُ الكاملُ قرارُ إنسان').toBe(before.status)
     expect(appAfter.status).not.toBe('active')
-    const profAfter = await prisma.trainerProfile.findUniqueOrThrow({ where: { id: profile.id } })
-    /* ولا يُمنَح دورُ المدرّب: منحُه هنا يفتح بوّابتَه قبل أن يُقبَل */
     const roles = await prisma.userRole.findMany({ where: { userId: userId! } })
     expect(roles.map((x) => x.roleId), 'مُنح دورُ المدرّب قبل القبول الكامل').not.toContain('trainer')
-    expect(profAfter.id).toBe(profile.id)
+  })
+
+  /* ═══ وفي لحظة التفعيل يُختَم ويُقال إنّ الشرطَ تحقّق ═══
+
+     بيانُ صاحب المنصّة: «ويُعاد إليه العقدُ موقَّعا منّا عقدا نهائيّا لا
+     عرضا مشروطا». فالخَتمُ و`conditionMetAt` والبريدُ حقيقةٌ واحدة. */
+  it('والتفعيلُ يختمه ويكتب أنّ الشرطَ تحقّق', async () => {
+    const { app, contract } = await mkSigned()
+    await makeReadyForApproval(prisma, app.id, adminId)
+    await review.decide(app.id, adminId, 'approve')
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
+    expect(after.status, 'صار نشطا وعرضُه لم يُختَم').toBe('countersigned')
+    expect(after.countersignedAt).toBeTruthy()
+    expect(after.countersignedBy).toBe(adminId)
+    expect(after.academySignatoryName).toBe(ACADEMY_LEGAL.signatoryNameAr)
+    expect(after.conditionMetAt, 'اكتمل الشرطُ ولم يُكتب').toBeTruthy()
+    /* ولا يبقى تجميدٌ معلَّقٌ بعد انتهاء المهلة */
+    expect(after.conditionPausedAt).toBeNull()
   })
 
   it('ويردّ الجاهزيّةَ مع النتيجة — فيُقرأ الباقي حيث ضُغط', async () => {
-    const { contract } = await mkSigned()
+    const { contract } = await mkDocumented()
     const r = await review.countersignContract(contract.id, adminId, {})
     /* العقدُ صار موقَّعا، فخطوتُه خضراء — وما عداها يُقرأ من الرَّدّ نفسِه */
     expect(r.readiness.steps.find((st) => st.key === 'contract')!.done).toBe(true)
   })
 
   it('ولا يُعتمَد إلّا موقَّع — والمسودّةُ تُردّ', async () => {
-    const { contract } = await mkSigned()
+    const { contract } = await mkDocumented()
     await prisma.trainerContract.update({ where: { id: contract.id }, data: { status: 'draft' } })
     await expect(review.countersignContract(contract.id, adminId, {})).rejects.toThrow()
   })
 
   it('ولا يُعتمَد مرّتين — فالنافذُ لا يُنفَّذ ثانية', async () => {
-    const { contract } = await mkSigned()
+    const { contract } = await mkDocumented()
     await review.countersignContract(contract.id, adminId, {})
     await expect(review.countersignContract(contract.id, adminId, {})).rejects.toThrow()
   })
@@ -199,7 +227,7 @@ describe('الاعتمادُ يُنفِذ العقدَ — ولا يفتح ال�
   it('ولا يعتمد أحدٌ عقدا مرتبطا ببريده', async () => {
     /* والطلبُ بلا حساب، ثمّ يُسجَّل الموظّفُ ببريده هو — فالبريدُ فريدٌ
        في `User`، ولا يُصطنع تعارضٌ بحسابين على بريدٍ واحد. */
-    const { contract, email } = await mkSigned({ withUser: false })
+    const { contract, email } = await mkSigned({ withUser: false, status: 'active', gatesActivation: false })
     const self = await auth.register(email, 'Admin#12345', 'هو نفسُه')
     await auth.setRoles(self.userId, ['academic_manager'])
     await expect(review.countersignContract(contract.id, self.userId, {})).rejects.toThrow(/بريدك/)

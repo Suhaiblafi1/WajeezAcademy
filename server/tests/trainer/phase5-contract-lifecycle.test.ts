@@ -78,8 +78,8 @@ async function mkContracted(opts: { qualify?: boolean } = {}) {
       gatesActivation: true,
     },
   })
-  await review.countersignContract(contract.id, adminId, {})
-  /* ولا يُفعَّل بختم العقد منذ ٢٠ سبتمبر ٢٠٢٦ — فيُتمّ الطريقُ صراحةً */
+  /* والعرضُ المشروطُ يُختَم في لحظة التفعيل نفسِها منذ ٢٣ سبتمبر ٢٠٢٦
+     (§٨-٧)، فلا ختمَ بيدٍ قبله — ويُتمّ الطريقُ صراحةً */
   await makeReadyForApproval(prisma, app.id, adminId)
   await review.decide(app.id, adminId, 'approve')
   if (opts.qualify !== false) {

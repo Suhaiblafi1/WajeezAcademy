@@ -12,6 +12,7 @@ import { safeNotify } from './notification.service'
 import { blastRadiusSentenceAr, courseBlastRadius, planHoursImpactOf } from './catalog-impact.service'
 import { checkHoursProposal, planHoursWarnings } from '../../src/application/catalog/hours-policy'
 import { catalogScopeGate } from '../../src/application/catalog/scope-policy'
+import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 
 /* ═══ ولمَ ليس في الأنواع نوعٌ لاسم الدورة ═══
 
@@ -85,9 +86,12 @@ export class TrainerChangeService {
       where: { userId }, include: { application: true, qualifications: true, assignments: true },
     })
     if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب مرتبطا بهذا الحساب', 404)
-    if (profile.suspendedAt || profile.application.status !== 'active') {
-      throw new AuthError('suspended', 'حسابك التدريبي موقوف — تواصل مع الإدارة', 403)
-    }
+    /* بابُ الموادّ: يُفتح بتوقيع العرض المشروط لا بالاعتماد النهائيّ —
+       والشرطُ مسمًّى في `portal-access.ts` يقرؤه الخادمُ والشاشةُ معا. */
+    const problem = portalDoorProblemAr('materials', {
+      status: profile.application.status, suspendedAt: profile.suspendedAt,
+    })
+    if (problem) throw new AuthError('suspended', problem, 403)
     return profile
   }
 
