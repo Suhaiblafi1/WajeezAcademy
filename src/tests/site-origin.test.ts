@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CANONICAL_ORIGIN, DEFAULT_SENDER_EMAIL, EMAIL_DOMAIN, siteOrigin } from '../application/site/origin'
+import { ACADEMY_CONTACT_EMAIL } from '../data/academy-email'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -101,8 +102,8 @@ describe('الأصل القانوني للموقع', () => {
    يُكتب في `lastError` داخل صفّ الإشعار، فالمتعلّمُ ينتظر رسالةً لا تأتي ولا
    أحدَ يعلم.
 
-   وقد كان القالبُ يقول `Academy@wajeez.co` — نطاقٌ غيرُ نطاق الموقع وغيرُ
-   الافتراض في الشيفرة (`ACADEMY_EMAIL`). ومتغيّرُ البيئة **يغلب شاشةَ
+   وقد كان القالبُ يقول `Academy@wajeez.co` للمُرسِل — نطاقٌ غيرُ موثَّقٍ في
+   Resend. (وهو اليومَ عنوانُ الردّ، والردُّ لا يحتاج توثيقا.) ومتغيّرُ البيئة **يغلب شاشةَ
    الإدارة**، فتصحيحُه من `/admin/integrations` كان سيبدو ناجحا ولا يفعل شيئا.
 
    وهو الخطأُ نفسُه الذي كان في `SITE_DOMAIN` في هذا الملفّ بعينه: قيمةٌ من
@@ -112,11 +113,18 @@ describe('نطاقُ المُرسِل في قالب الإنتاج', () => {
   const live = read2('deploy/.env.production.example')
     .split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
 
-  it.each(['RESEND_FROM_EMAIL', 'RESEND_REPLY_TO'])('«%s» على نطاق الموقع لا على نطاقٍ آخر', (key) => {
-    const m = live.match(new RegExp(`^${key}=(\\S+)`, 'm'))
-    expect(m, `${key} غائبٌ عن القالب`).not.toBeNull()
+  it('«RESEND_FROM_EMAIL» على نطاق الموقع لا على نطاقٍ آخر', () => {
+    const m = live.match(/^RESEND_FROM_EMAIL=(\S+)/m)
+    expect(m, 'RESEND_FROM_EMAIL غائبٌ عن القالب').not.toBeNull()
     expect(m![1], 'نطاقٌ غيرُ موثَّقٍ في Resend يُسقط كلَّ رسالة، ورفضُه لا يظهر في شاشة')
       .toContain('@' + new URL(CANONICAL_ORIGIN).hostname.replace(/^www\./, ''))
+  })
+
+  /* وReply-To لا يحتاج توثيقا — فهو العنوانُ الواحدُ الظاهر (قرارُ ٢٣ سبتمبر ٢٠٢٦) */
+  it('«RESEND_REPLY_TO» هو العنوانُ الواحدُ الظاهر للمستخدم', () => {
+    const m = live.match(/^RESEND_REPLY_TO=(\S+)/m)
+    expect(m, 'RESEND_REPLY_TO غائبٌ عن القالب').not.toBeNull()
+    expect(m![1]).toBe(ACADEMY_CONTACT_EMAIL)
   })
 
   it('ولا يُترك المفتاحُ مملوءا في قالبٍ يُرفع إلى Git', () => {

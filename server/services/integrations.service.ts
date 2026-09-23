@@ -61,14 +61,16 @@ export async function getPaymentConfig(prisma: PrismaClient): Promise<PaymentCon
    لا يستورد الخادمُ من `src/`، فالتكرارُ لازم؛ ويحرس تطابقَهما
    `src/tests/academy-email.test.ts`. تُغيَّر النسختان معا أبدا.
 
-   والتقسيمُ بالغاية مشروحٌ في الأصل: العناوينُ رخيصةٌ والصناديقُ ليست كذلك،
-   فتُنشأ أسماءً مستعارةً تصبّ في صندوقٍ واحد. */
+   والقرارُ مشروحٌ في الأصل: عنوانٌ ظاهرٌ واحدٌ (`Academy@wajeez.co`) لكلّ ما
+   يراه المستخدم، والمُرسِلُ الآليُّ وحدَه على النطاق الموثَّق في Resend. */
+export const ACADEMY_CONTACT_EMAIL = 'Academy@wajeez.co'
+
 export const ACADEMY_EMAIL_DOMAIN = 'wajeezacademy.com'
 
 export const ACADEMY_EMAILS = {
   noReply: `no-reply@${ACADEMY_EMAIL_DOMAIN}`,
-  support: `support@${ACADEMY_EMAIL_DOMAIN}`,
-  calendar: `calendar@${ACADEMY_EMAIL_DOMAIN}`,
+  support: ACADEMY_CONTACT_EMAIL,
+  calendar: ACADEMY_CONTACT_EMAIL,
 } as const
 
 /** المُرسِلُ الافتراضيُّ لكلّ رسالةٍ آليّة — لا يُقرأ ما يصله */

@@ -62,8 +62,8 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
       from: `${config.fromName} <${config.fromEmail}>`,
       to: input.to,
       /* المُرسِلُ `no-reply@` صادقٌ في اسمه — لا يُقرأ ما يصله. لكنّ من يضغط
-         «ردّ» على رسالةِ توثيقٍ إنسانٌ ينتظر جوابا، فيُوجَّه ردُّه إلى الدعم
-         بدل أن يذهب إلى صندوقٍ لا يفتحه أحد. */
+         «ردّ» على رسالةِ توثيقٍ إنسانٌ ينتظر جوابا، فيُوجَّه ردُّه إلى عنوان
+         الأكاديميّة الواحد بدل أن يذهب إلى صندوقٍ لا يفتحه أحد. */
       replyTo: config.replyTo || ACADEMY_EMAILS.support,
       subject: input.subject,
       text: input.text,
