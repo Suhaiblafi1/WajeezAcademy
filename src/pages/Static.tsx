@@ -1,12 +1,17 @@
 import { Link, useParams } from "react-router";
 import { ArrowRight, CheckCircle2, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { lazy, useState } from "react";
 import { staticPageBySlug, faqs } from "@/data/siteContent";
 import SeoHead from "@/components/SeoHead";
 import { publicPageByPath, seoFor } from "@/application/site/public-pages";
 import ThemeToggle from "@/components/ThemeToggle";
 
 import { Panel, Card } from "@/components/ui/Surface";
+
+/* «من نحن» صفحةٌ لها رسمُها (`pages/About.tsx`) لا قالبُ الفقرات أدناه —
+   وتُحمَّل عند الطلب: رسمُها وجدارُ شعاراتها لا يُثقلان حزمةَ كلّ صفحة. */
+const AboutPage = lazy(() => import("./About"));
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
@@ -36,7 +41,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ─── صفحة محتوى عامة (من نحن، الخصوصية، الشروط، الاسترداد) ─── */
+/* ─── صفحة محتوى عامة (الخصوصية، الشروط، الاسترداد) — و«من نحن» في `About.tsx` ─── */
 function StaticContent({ slug }: { slug: string }) {
   const page = staticPageBySlug(slug);
   const staticSeo = publicPageByPath(`/p/${slug}`);
@@ -141,5 +146,6 @@ function FaqPage() {
 export default function StaticPage() {
   const { slug } = useParams();
   if (slug === "faq") return <FaqPage />;
+  if (slug === "about") return <AboutPage />;
   return <StaticContent slug={slug ?? ""} />;
 }

@@ -114,6 +114,10 @@ const PAGES: PageSpec[] = [
   { path: '/stories', labelAr: 'قصصُ المتعلّمين' },
   { path: '/trainers', labelAr: 'المدرّبون' },
   { path: '/contact', labelAr: 'تواصلْ معنا' },
+  /* «من نحن» صارت حكايةً برسمٍ وخطّ رقعة وروابطَ على محطّاته (٢٣ سبتمبر ٢٠٢٦)
+     — تُفحَص من أوّل يوم: خطُّ اليد يُقاس تباينُه في المظهرين، وروابطُ
+     المحطّات أهدافُ لمسٍ على هاتف. */
+  { path: '/p/about', labelAr: 'من نحن', readySel: '#about-app-title' },
 
   /* ── بوّابةُ المتعلّم ── */
   { path: '/student/learning', labelAr: 'تعلّمي', as: 'learner' },
