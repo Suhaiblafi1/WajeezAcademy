@@ -58,9 +58,9 @@ describe('المثالُ يُبنى من أرقامه هو، ولا يُبنى �
     expect(ex, 'لا مثالَ أصلا').toBeTruthy()
     expect(ex.rows).toHaveLength(3)
     const expected = [
+      perSeatBreakdown({ general: 20, referred: 0, rate: 25, referralRate: 30, minSeats: 8 }).total,
       perSeatBreakdown({ general: 10, referred: 10, rate: 25, referralRate: 30, minSeats: 8 }).total,
-      perSeatBreakdown({ general: 9, referred: 3, rate: 25, referralRate: 30, minSeats: 8 }).total,
-      perSeatBreakdown({ general: 3, referred: 2, rate: 25, referralRate: 30, minSeats: 8 }).total,
+      perSeatBreakdown({ general: 0, referred: 20, rate: 25, referralRate: 30, minSeats: 8 }).total,
     ]
     expect(ex.rows.map((r) => r.amount)).toEqual(expected)
     expect(ex.total).toBe(expected.reduce((a, b) => a + b, 0))
@@ -103,5 +103,58 @@ describe('المثالُ يُبنى من أرقامه هو، ولا يُبنى �
     expect(ex.total).toBe(1200)
     const all = [...ex.rows.map((r) => r.labelAr), ex.noteAr].join(' ')
     expect(all, 'ثابتٌ لكلّ شعبةٍ ومع ذلك افترض عددَ مسجّلين').not.toMatch(/مسجّلا:|عبر رابط/)
+  })
+})
+
+/* ═══ دورةٌ واحدةٌ بعشرين مسجّلا، وثلاثةُ مصادر ═══
+
+   قرارُ صاحب المنصّة (٢٣ سبتمبر ٢٠٢٦). وكان المثالُ ثلاثَ شعبٍ بأعدادٍ
+   مختلفة، فيقارن القارئُ رقمَين يختلفان في شيئين معا — العددِ والمصدر — ولا
+   يعزل أثرَ أيّهما. فثُبّت العددُ وتغيّر المصدرُ وحدَه: ما يراه هو ثمنُ
+   رابطه صافيا، وهو الدرسُ المقصود. */
+describe('مثالُ الدورة الواحدة بثلاثة مصادر', () => {
+  const c = { type: 'per_seat', rate: '30', currency: 'USD', minSeats: 8, referralRate: '45' }
+
+  it('ثلاثةُ صفوفٍ لدورةٍ واحدةٍ بعشرين مقعدا: ٦٠٠ · ٧٥٠ · ٩٠٠', () => {
+    const ex = buildFeeExampleAr(c)!
+    expect(ex.rows.map((r) => r.amount)).toEqual([600, 750, 900])
+    expect(
+      ex.rows.map((r) => r.seats),
+      'العشرون ثابتةٌ في الصفوف الثلاثة — المتغيّرُ مصدرُهم لا عددُهم',
+    ).toEqual([20, 20, 20])
+    expect(ex.rows.map((r) => r.referred)).toEqual([0, 10, 20])
+  })
+
+  it('والحدُّ الأدنى لا يُطبَّق في أيّ صفّ — فهو على مجموع المقاعد المحتسَبة لا على العامّة وحدَها', () => {
+    const ex = buildFeeExampleAr(c)!
+    expect(ex.rows.some((r) => r.floorApplied)).toBe(false)
+  })
+
+  it('وسعرُ الإحالة الأعلى يعطي الصفَّ الأعلى — وإلّا انقلب الحافز', () => {
+    const [general, mixed, referred] = buildFeeExampleAr(c)!.rows.map((r) => r.amount)
+    expect(general).toBeLessThan(mixed)
+    expect(mixed).toBeLessThan(referred)
+  })
+
+  it('ولا يُسمَّى الصفُّ شعبةً — فالمثالُ صار دورةً واحدةً لا ثلاثَ شعب', () => {
+    const ex = buildFeeExampleAr(c)!
+    expect(
+      ex.rows.map((r) => r.labelAr).join(' '),
+      'بقيت تسميةُ الشعب وقد صار المثالُ دورةً واحدة',
+    ).not.toMatch(/الشعبة/)
+  })
+})
+
+describe('وبلا سعرِ إحالةٍ لا يُبنى مثالُ المصادر أصلا', () => {
+  /* أُدخل هذا العطبُ فعلا عند تغيير المثال: صارت التسميةُ تقول «عبر رابط
+     إحالتك» لمن لا سعرَ إحالةٍ له — وعدٌ بقناةٍ لا تُحتسب. وأمسكه الحارسُ
+     القائمُ، فأُضيف هذا معه ليقول لمَ صفٌّ واحدٌ لا ثلاثة. */
+  it('صفٌّ واحدٌ لا ثلاثةٌ متطابقة، ولا ذكرَ لرابطٍ لا يزيده شيئا', () => {
+    const ex = buildFeeExampleAr({
+      type: 'per_seat', rate: '30', currency: 'USD', minSeats: 8, referralRate: null,
+    })!
+    expect(ex.rows, 'ثلاثةُ صفوفٍ متطابقةٍ تقول شيئا واحدا ثلاثَ مرّات').toHaveLength(1)
+    expect(ex.rows[0].amount).toBe(600)
+    expect([...ex.rows.map((r) => r.labelAr), ex.noteAr].join(' ')).not.toMatch(/رابط/)
   })
 })

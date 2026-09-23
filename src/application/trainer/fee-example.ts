@@ -45,12 +45,35 @@
 import type { ContractCompensation } from './contract-body'
 import { perSeatBreakdown } from './seat-fee'
 
-/** الشعبُ المفترَضةُ في المثال — أعدادٌ تُعلَن أنّها افتراض، لا توقُّعُ تسجيل */
+/* ═══ دورةٌ واحدةٌ بعشرين مسجّلا، وثلاثةُ مصادر ═══
+
+   قرارُ صاحب المنصّة (٢٣ سبتمبر ٢٠٢٦). وكان المثالُ ثلاثَ شعبٍ بأعدادٍ
+   مختلفة، فيقارن القارئُ رقمَين يختلفان في **شيئين معا** — العددِ والمصدر —
+   ولا يعزل أثرَ أيّهما. فثُبّت العددُ وتغيّر المصدرُ وحدَه: ما يراه هو
+   **ثمنُ رابطه صافيا**، وهو الدرسُ المقصود.
+
+   والأعدادُ تُعلَن أنّها افتراض، لا توقُّعُ تسجيل. */
 const SCENARIO = [
+  { seats: 20, referred: 0 },
   { seats: 20, referred: 10 },
-  { seats: 12, referred: 3 },
-  { seats: 5, referred: 2 },
+  { seats: 20, referred: 20 },
 ] as const
+
+/** ووصفُ كلِّ صفٍّ بمصدره — والأعلى أوّلا في داخل الصفّ لا في ترتيبها،
+    فالترتيبُ هنا تصاعديٌّ ليُرى أثرُ الرابط وهو يرتفع. */
+const SOURCE_LABELS_AR = [
+  'كلُّهم من الأكاديميّة',
+  'نصفُهم عبر رابط إحالتك',
+  'كلُّهم عبر رابط إحالتك',
+] as const
+
+/* ═══ والثابتُ لكلّ شعبةٍ يبقى على الشعب ═══
+
+   فالمثالُ الجديدُ يعزل أثرَ **مصدرِ المسجّل**، ولا مصدرَ في أجرٍ ثابتٍ لا
+   يتغيّر بعددهم أصلا. فلو أُعطي الصفوفَ الثلاثةَ نفسَها لَقرأ المدرّبُ دورةً
+   واحدةً مكرّرةً ثلاثا بالمبلغ نفسِه، وهو هراء. وثلاثُ شعبٍ تقول شيئا صحيحا:
+   المبلغُ عن كلِّ شعبةٍ تُسنَد إليه. */
+const FIXED_COHORT_LABELS_AR = ['الشعبة الأولى', 'الشعبة الثانية', 'الشعبة الثالثة'] as const
 
 export interface FeeExampleRow {
   labelAr: string
@@ -88,10 +111,7 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
   if (!Number.isFinite(rate) || rate <= 0) return null
 
   if (c.type === 'fixed_per_cohort') {
-    const rows = SCENARIO.map((_, i) => ({
-      labelAr: `الشعبة ${['الأولى', 'الثانية', 'الثالثة'][i]}`,
-      amount: rate,
-    }))
+    const rows = FIXED_COHORT_LABELS_AR.map((labelAr) => ({ labelAr, amount: rate }))
     return {
       rows,
       total: rate * rows.length,
@@ -108,7 +128,17 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
   const minSeats = c.minSeats ?? 0
   const rows: FeeExampleRow[] = []
 
-  for (const [i, s] of SCENARIO.entries()) {
+  /* ═══ وبلا سعرِ إحالةٍ يسقط المثالُ إلى صفٍّ واحد ═══
+
+     فالصفوفُ الثلاثةُ تعزل أثرَ **مصدرِ المسجّل**، ولا أثرَ له حين يُحتسب
+     المقعدُ المحالُ بالسعر العامّ: تخرج ثلاثةُ صفوفٍ متطابقةٍ تقول شيئا
+     واحدا ثلاثَ مرّات، وكلُّها تذكر رابطا لا يزيده شيئا.
+
+     وذكرُ الرابط هنا ليس ركاكةً في الصياغة بل **وعدٌ بقناةٍ لا تُحتسب**،
+     وهو ممنوعٌ في هذا الملفّ بنصّه. فيخرج صفٌّ واحدٌ صادق. */
+  const scenario = referralRate === null ? [SCENARIO[0]] : SCENARIO
+
+  for (const [i, s] of scenario.entries()) {
     const referred = referralRate === null ? 0 : s.referred
     const b = perSeatBreakdown({
       general: s.seats - referred, referred, rate, referralRate, minSeats,
@@ -119,8 +149,9 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
     const parts: string[] = []
     if (referred > 0) parts.push(`${referred} عبر رابط إحالتك`)
     parts.push(`${b.generalSeats} مقعدا عامّا${b.floorApplied ? ` (احتُسبت على الحدّ الأدنى ${minSeats} مقعدا)` : ''}`)
+    const sourceAr = referralRate === null ? '' : `، ${SOURCE_LABELS_AR[i]}`
     rows.push({
-      labelAr: `الشعبة ${['الأولى', 'الثانية', 'الثالثة'][i]} — ${s.seats} مسجّلا: ${parts.join('، و')}`,
+      labelAr: `${s.seats} مسجّلا${sourceAr}: ${parts.join('، و')}`,
       amount: b.total,
       seats: s.seats,
       referred,
