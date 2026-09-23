@@ -91,9 +91,20 @@ describe('المعتمَدُ مؤهَّلٌ لما ذكره في طلبه', () =
     await review.decide(applicationId, adminId, 'approve')
     const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId } })
     profileId = profile.id
-    const quals = await prisma.trainerCourseQualification.findMany({ where: { profileId }, orderBy: { courseId: 'asc' } })
-    expect(quals.map((q) => q.courseId)).toEqual([...TEACHABLE].sort())
-    expect(quals.every((q) => q.status === 'qualified')).toBe(true)
+    /* ═══ ويُبذَر `pending` لا `qualified` منذ ٢٣ سبتمبر ٢٠٢٦ (§٥) ═══
+
+       `pending` تعني «اخترنا له هذه الدورة» بما قاله في طلبه، و`qualified`
+       تعني «قُبلت موادُّه» لها. ومصدرُ ما يُبذَر هنا **قولُه** لا تقييمُ
+       مادّةٍ رأيناها — فلو كُتب `qualified` لصار مؤهَّلا قبل أن يرفع ملفّا
+       واحدا، فيضيء زرُّ التفعيل يومَ وقّع عرضَه وتسقط الحمايةُ كلُّها. */
+    const seeded = await prisma.trainerCourseQualification.findMany({
+      where: { profileId, status: 'pending' }, orderBy: { courseId: 'asc' },
+    })
+    expect(seeded.map((q) => q.courseId)).toEqual([...TEACHABLE].sort())
+    expect(
+      seeded.every((q) => q.status !== 'qualified'),
+      'ما قاله في طلبه صار «قُبلت موادُّه» بلا تقييم',
+    ).toBe(true)
     /* والأثرُ يقول من أين جاء التأهيل */
     const audit = await prisma.auditEvent.findFirst({
       where: { action: 'trainer.qualify.auto', entityType: 'trainer_profile', entityId: profileId },

@@ -24,7 +24,7 @@ import {
   PAYOUT_APPROVAL_DAYS, PAYOUT_OUTER_DAYS, PAYOUT_TRANSFER_DAYS,
 } from '@/application/trainer/notice-periods'
 import {
-  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_VERSION, renderContractBodyAr,
+  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_VERSION, contractAcks, renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
 import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
@@ -49,8 +49,19 @@ const base = (over: Partial<ContractBodyInput> = {}): ContractBodyInput => ({
   rateWaivedReasonAr: null,
   hoursNoteAr: null,
   requiredDocuments: [{ kind: 'national_id', labelAr: 'الهوية الوطنية', required: true }],
+  /* والأصلُ اتفاقيّةٌ مطلقةٌ لا عرضٌ مشروط: فحرّاسُ المتن القائمةُ تفحص
+     الوثيقةَ كما كانت، وللمشروط حرّاسُه أسفلَ الملفّ. */
+  conditional: null,
   ...over,
 })
+
+/** شروطُ عرضٍ مشروطٍ عُرف موعدُ جلسته — وللمجهولِ موعدُها اختبارٌ بعينه */
+const CONDITIONAL: NonNullable<ContractBodyInput['conditional']> = {
+  orientationOnAr: 'الخميس 1 أكتوبر 2026، 7:00 م',
+  deadlineOnAr: '8 أكتوبر 2026',
+  windowDays: 7,
+  extensionDays: 2,
+}
 
 /** أرقامُ البنود كما وردت في المتن، بترتيب ورودها */
 const clauseNumbers = (body: string) =>
@@ -575,5 +586,111 @@ describe('إقراراتُ التوقيع تغطّي ما يُنازَع فيه 
      ولا يُعرف ذلك إن بقي الرمزُ كما كان. */
   it('وإصدارُ الإقرارات ليس `v1` بعد أن دخلت السادسة', () => {
     expect(CONTRACT_CONSENT_VERSION, 'أُضيف إقرارٌ ولم يتحرّك إصدارُه').not.toMatch(/^v1-/)
+  })
+})
+
+/* ═══ العرضُ المشروط — ما يفترق فيه المتنُ، وما لا يجوز أن يفترق ═══ */
+describe('العرضُ المشروط', () => {
+  const offer = (over: Partial<NonNullable<ContractBodyInput['conditional']>> = {}) =>
+    renderContractBodyAr(base({ conditional: { ...CONDITIONAL, ...over } }))
+  const plain = () => renderContractBodyAr(base())
+
+  it('عنوانُه يقول إنّه عرضٌ مشروطٌ لا اتفاقيّة', () => {
+    expect(offer().split('\n')[0]).toContain('عرض مشروط')
+    expect(plain().split('\n')[0], 'بندٌ يُوثَّق على مدرّبٍ نشطٍ صار عرضا مشروطا').not.toContain('عرض مشروط')
+  })
+
+  it('وبندُ الشرط ستُّ فقراتٍ في البند 2 — ولا واحدةَ منها في المطلق', () => {
+    const body = offer()
+    for (const n of ['2-6', '2-7', '2-8', '2-9', '2-10', '2-11']) {
+      expect(body, `فقرةٌ ناقصةٌ من بند الشرط: ${n}`).toContain(`\n${n} `)
+    }
+    const p = plain()
+    for (const n of ['2-6', '2-7', '2-8', '2-9', '2-10', '2-11']) {
+      expect(p, `شرطٌ في عقدٍ لا شرطَ فيه: ${n}`).not.toContain(`\n${n} `)
+    }
+  })
+
+  /* ═══ الحارسُ الذي يمنع كارثةَ إعادة الترقيم ═══
+
+     ثلاثةُ إقراراتٍ تُحيل على أرقام بنودٍ (4-10 و4-9 و15)، وبنودٌ تُحيل على
+     18-4. فلو أُضيف بندُ الشرط **بندا جديدا** في وسط المستند لَانزاحت
+     الأرقامُ كلُّها وصارت الإحالاتُ إلى غير موضعها. */
+  it('ولا يُعاد ترقيمُ بندٍ واحد — الأرقامُ في المشروط هي هي', () => {
+    expect(clauseNumbers(offer())).toEqual(clauseNumbers(plain()))
+  })
+
+  it('وملحقُه (أ) يقول إنّ موادَّ كلِّ دورةٍ قيد التقييم', () => {
+    const body = offer()
+    const at = body.indexOf('الملحق (أ)')
+    expect(at, 'لا ملحقَ (أ)').toBeGreaterThan(0)
+    const tail = body.slice(at)
+    expect(tail).toMatch(/قيد التقييم/)
+    expect(tail, 'لم يُقل إنّه لا يُدرَّس قبل الاعتماد').toMatch(/لا يقدم المدرب منها شيئا/)
+    expect(plain().slice(plain().indexOf('الملحق (أ)')), 'تقييمٌ في عقدٍ لا شرطَ فيه').not.toMatch(/قيد التقييم/)
+  })
+
+  it('وموعدُ الجلسة ومهلتُها مطبوعان حين يُعرفان', () => {
+    const body = offer()
+    expect(body).toContain(CONDITIONAL.orientationOnAr!)
+    expect(body).toContain(CONDITIONAL.deadlineOnAr!)
+    expect(body, 'المهلةُ لم تُذكر بعددها').toMatch(/مهلة 7 أيام/)
+  })
+
+  /* ومن أُرسل إليه عرضٌ ولمّا يُعرَف موعدُ جلسته: لا يُخترَع له تاريخٌ ولا
+     يُقال «أمامك سبعةٌ» بلا مبدإٍ — بل يُقال إنّ المهلةَ لا تبدأ قبل إخطاره. */
+  it('ومن لا موعدَ لجلسته يقول متنُه إنّ المهلةَ لا تبدأ قبل إخطاره', () => {
+    const body = offer({ orientationOnAr: null, deadlineOnAr: null })
+    expect(body).toMatch(/ولا تبدأ المهلة قبل إخطاره به/)
+    expect(body, 'تاريخٌ اختُرع لجلسةٍ لم يُعرَف موعدُها').not.toContain(CONDITIONAL.orientationOnAr!)
+    expect(body, 'مهلةٌ انتهت إلى تاريخٍ لا مبدأَ له').not.toMatch(/وتنتهي هذه المهلة بتاريخ/)
+  })
+
+  it('وديباجتُه تقول إنّ نفاذَه معلَّقٌ على الشرط', () => {
+    expect(offer()).toMatch(/نفاذه معلق على تحقق الشرط/)
+    expect(plain()).not.toMatch(/نفاذه معلق/)
+  })
+
+  /* والفقرةُ الخامسةُ (2-9) هي ما يشتري الحمايةَ: بلا «لا إخلال» يبقى عدمُ
+     قبول الموادّ سببَ فسخٍ لا شرطا لم يتحقّق. */
+  it('و«لا إخلالَ من أحد» منصوصةٌ — وهي مِلاكُ الحماية', () => {
+    const body = offer()
+    expect(body).toMatch(/فلا يعد ذلك إخلالا من أي من الطرفين/)
+    expect(body, 'لم يُعرَض عليه المخرجان').toMatch(/تأجيل عرضه إلى الموسم التدريبي القادم/)
+    expect(body).toMatch(/حذف حسابه/)
+  })
+
+  it('ويقول إنّ توقيعَنا في آخر الطور يجعله نهائيّا', () => {
+    expect(offer()).toMatch(/وتوقع الأكاديمية هذا العرض من جهتها يوم يتحقق الشرط/)
+  })
+
+  it('والمثالُ الحسابيُّ في متنه — وهو موضعُه وحدَه', () => {
+    expect(offer(), 'المثالُ غاب عن المتن وقد حُذف من البريد، فلا يقرؤه أحد')
+      .toContain(FEE_EXAMPLE_HEADING_AR)
+  })
+})
+
+describe('إقراراتُ التوقيع', () => {
+  it('سبعةٌ للمشروط وستٌّ لغيره', () => {
+    expect(contractAcks(true).length).toBe(CONTRACT_ACKS.length + 1)
+    expect(contractAcks(false).length).toBe(CONTRACT_ACKS.length)
+    expect(contractAcks(true).map((a) => a.key)).toContain('offer_is_conditional')
+    expect(contractAcks(false).map((a) => a.key), 'إقرارٌ بشرطٍ في عقدٍ لا شرطَ فيه')
+      .not.toContain('offer_is_conditional')
+  })
+
+  it('والسابعُ يقرّ بالشرط ويُحيل على بنوده', () => {
+    const ack = contractAcks(true).find((a) => a.key === 'offer_is_conditional')!
+    expect(ack.textAr).toMatch(/عرض مشروط لا عقد نهائي/)
+    expect(ack.textAr, 'لم يُحِل على بنود الشرط').toMatch(/2-6 إلى 2-11/)
+    expect(ack.textAr, 'لم يُقرّ بأنّ الاعتمادَ لكلّ دورةٍ على حدة').toMatch(/لكل دورة على حدة/)
+  })
+
+  it('وإصدارُ الإقرارات ارتفع مع السابع', () => {
+    expect(CONTRACT_CONSENT_VERSION).toMatch(/^v3-/)
+  })
+
+  it('وإصدارُ المتن ارتفع مع بند الشرط', () => {
+    expect(CONTRACT_BODY_VERSION).toMatch(/^v4-/)
   })
 })

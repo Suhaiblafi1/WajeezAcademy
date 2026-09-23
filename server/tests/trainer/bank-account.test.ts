@@ -77,20 +77,24 @@ async function mkTrainer(legalName = 'محمد علي حسن') {
     },
   })
   const profile = await prisma.trainerProfile.create({ data: { applicationId: app.id } })
-  const contract = await prisma.trainerContract.create({
+  /* والعرضُ الموقَّعُ سقالةٌ تُقرأ من القاعدة لا مرجعٌ يُمسَك: التفعيلُ
+     أدناه هو الذي يختمه، فلا حاجةَ إلى معرّفه هنا. */
+  await prisma.trainerContract.create({
     data: {
       profileId: profile.id, title: `اتفاقيّةٌ ${seq}`, status: 'signed',
       bodyVersion: 'v-test', bodyAr: BODY, signerEmail: email,
       signerLegalName: legalName, signedAt: new Date(), gatesActivation: true,
     },
   })
-  await review.countersignContract(contract.id, adminId, {})
-  /* ═══ ولا يفتح الاعتمادُ الحسابَ منذ ٢٠ سبتمبر ٢٠٢٦ ═══
+  /* ═══ ولا يُختَم العرضُ بيدٍ هنا منذ ٢٣ سبتمبر ٢٠٢٦ ═══
 
-     كان `countersignContract` يستدعي `decide('activate')` فيصير المدرّبُ
-     نشطا ويُربط حسابُه بملفّه. وصار القبولُ الكاملُ قرارَ إنسانٍ بعده
-     (`offer-and-countersign.test.ts`). وهذه الجولةُ تفحص الحسابَ البنكيَّ
-     لا الاعتماد، فتُتمّ الطريقَ صراحةً لتصل إلى ما كُتبت لفحصه. */
+     كان السطرُ `countersignContract` يسبق الاعتماد. وصار العرضُ المشروطُ
+     يُختَم **في لحظة التفعيل نفسِها** (§٨-٧): توقيعُنا في آخر الطور لا في
+     أوّله، فما بين توقيعه واعتمادِنا لا وثيقةَ نافذةً على أحد. فالختمُ يقع
+     ضمنَ `decide('approve')` أدناه ولا يُستدعى قبله — ومحاولتُه تُردّ.
+
+     وهذه الجولةُ تفحص الحسابَ البنكيَّ لا الاعتماد، فتُتمّ الطريقَ صراحةً
+     لتصل إلى ما كُتبت لفحصه. */
   await makeReadyForApproval(prisma, app.id, adminId)
   await review.decide(app.id, adminId, 'approve')
   return { app, profile, userId: user.userId }

@@ -83,11 +83,17 @@ beforeAll(async () => {
 
 describe('القبولُ المشروطُ يبذر المؤهّلات — وإلّا خرج الملحقُ (أ) خاليا', () => {
   it('دوراتُ الطلب تصير تأهيلا قائما لحظةَ القبول المشروط', async () => {
+    /* و«اخترناها له» (`pending`) هي ما يُطبَع في الملحق (أ) من العرض
+       المشروط — ولا `qualified` بعد، إذ لم تُقيَّم موادُّه (§٥). */
     const rows = await prisma.trainerCourseQualification.findMany({
-      where: { profileId: pendingProfileId, status: 'qualified' },
+      where: { profileId: pendingProfileId, status: 'pending' },
       select: { courseId: true },
     })
     expect(rows.map((r) => r.courseId), 'لم يُبذَر شيءٌ عند القبول المشروط').toContain(COURSE)
+    const approved = await prisma.trainerCourseQualification.count({
+      where: { profileId: pendingProfileId, status: 'qualified' },
+    })
+    expect(approved, 'قُبلت موادُّه ولم تُقدَّم بعد').toBe(0)
   })
 })
 

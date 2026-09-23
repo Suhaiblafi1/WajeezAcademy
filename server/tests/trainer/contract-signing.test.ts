@@ -21,7 +21,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
-import { CONTRACT_ACKS } from '../../../src/application/trainer/contract-body'
+import { contractAcks } from '../../../src/application/trainer/contract-body'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -29,7 +29,12 @@ let review: TrainerReviewService
 let adminId = ''
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
-const ALL_ACKS = CONTRACT_ACKS.map((a) => a.key)
+/* ═══ وعقودُ هذا الملفّ عروضٌ مشروطة ═══
+
+   فالمتقدّمُ ليس نشطا، و`gatesActivation` تُحسب `true` — فيُعرَض عليه
+   الإقرارُ السابعُ (بأنّ العرضَ مشروط) ويُشترط. والقائمةُ تُسأل ولا تُكتب
+   بيدها، وإلّا مرّت الاختباراتُ بستٍّ والخادمُ يطلب سبعا. */
+const ALL_ACKS = contractAcks(true).map((a) => a.key)
 const BODY = 'نصُّ اتفاقيّةٍ للاختبار — البند 1 وما بعده.'
 const DOCS = [{ kind: 'national_id', labelAr: 'الهوية الوطنية', required: true }]
 
@@ -190,7 +195,7 @@ describe('التوقيعُ يقع مرّةً واحدة', () => {
     expect(stored, 'وُقّع بلا حفظِ الجمل التي أقرّ بها').toBeTruthy()
     expect(stored!.map((a) => a.key).sort(), 'المحفوظُ ليس ما عُرض عليه').toEqual([...ALL_ACKS].sort())
     for (const a of stored!) {
-      const shown = CONTRACT_ACKS.find((x) => x.key === a.key)!
+      const shown = contractAcks(true).find((x) => x.key === a.key)!
       expect(a.textAr, `حُفظ مفتاحُ «${a.key}» بلا جملته`).toBe(shown.textAr)
     }
     /* والسادسُ منها بعينه: هو علّةُ العمود، فسقوطُه يُسقط الحارس */

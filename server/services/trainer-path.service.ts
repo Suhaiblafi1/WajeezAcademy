@@ -29,6 +29,7 @@ import { slugifyName, uniqueSlug } from '../../src/application/trainer/public-sl
 import {
   canTrainerEdit, pathBlockersAr, MAX_PATH_BLURB, MAX_PATH_COURSES, MAX_PATH_TITLE,
 } from '../../src/application/trainer/path-rules'
+import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 
 export interface PathInput {
   titleAr: string
@@ -65,9 +66,12 @@ export class TrainerPathService {
       },
     })
     if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب مرتبطا بهذا الحساب', 404)
-    if (profile.suspendedAt || profile.application.status !== 'active') {
-      throw new AuthError('suspended', 'حسابك التدريبي موقوف — تواصل مع الإدارة', 403)
-    }
+    /* بابُ الموادّ: يُفتح بتوقيع العرض المشروط لا بالاعتماد النهائيّ —
+       والشرطُ مسمًّى في `portal-access.ts` يقرؤه الخادمُ والشاشةُ معا. */
+    const problem = portalDoorProblemAr('materials', {
+      status: profile.application.status, suspendedAt: profile.suspendedAt,
+    })
+    if (problem) throw new AuthError('suspended', problem, 403)
     return {
       profileId: profile.id,
       fullName: profile.application.fullName,
