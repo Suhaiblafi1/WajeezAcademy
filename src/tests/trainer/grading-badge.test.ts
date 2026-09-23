@@ -22,7 +22,11 @@ const queue = readFileSync(join(root, 'src/pages/trainer/GradingQueue.tsx'), 'ut
 
 describe('عدّادُ ما ينتظر تصحيحَه', () => {
   it('الرقمُ من الخادم لا من الواجهة — فلا يُخمَّن ولا يُحسب مرّتين', () => {
-    expect(layout).toMatch(/apiGet<\{ pendingGrading\?: number \}>\("\/api\/trainer\/me"\)/)
+    expect(layout).toMatch(/apiGet<PortalMe>\("\/api\/trainer\/me"\)/)
+    /* وصار النداءُ يخدم اثنين — العدّادَ وشريطَ العرض المشروط — فتوسّع
+       نوعُه. والمحروسُ واحدٌ لم يتغيّر: الرقمُ من ذلك المسار لا يُحسب هنا. */
+    expect(layout).toMatch(/pendingGrading\?: number/)
+    expect(layout).toMatch(/me\?\.pendingGrading \?\? 0/)
     expect(route).toMatch(/pendingGrading/)
   })
 
@@ -68,9 +72,9 @@ describe('والشارةُ تنطفئ بفعلِ المدرّب لا بإعاد�
   })
 
   it('والإطارُ يسمعها — ولو أطلقها أحدٌ ولا سامعَ لبقيت الشارةُ كما هي', () => {
-    expect(layout).toMatch(/addEventListener\(GRADING_CHANGED, refreshPending\)/)
+    expect(layout).toMatch(/addEventListener\(GRADING_CHANGED, refreshMe\)/)
     expect(layout, 'المستمعُ لا يُنزَع عند التفكيك — تراكمُ المستمعين تسريبٌ صامت')
-      .toMatch(/removeEventListener\(GRADING_CHANGED, refreshPending\)/)
+      .toMatch(/removeEventListener\(GRADING_CHANGED, refreshMe\)/)
   })
 
   it('والاسمُ مصدَّرٌ من موضعٍ واحدٍ لا مكتوبٌ حرفا في الطرفَين', () => {

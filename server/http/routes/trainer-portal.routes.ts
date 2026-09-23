@@ -135,13 +135,24 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
            ولا شاشةَ في بوّابته تقرأ منه حرفا اليوم (لا مستهلِكَ له في
            `src/pages/trainer/`)، فالخارجُ كلُّه فائضٌ يُسرَّب ولا يُعرَض.
-           فيُنتقى ما يصلح أن يُقرأ: ما اسمُه، وأين صار، ومتى. */
+           فيُنتقى ما يصلح أن يُقرأ: ما اسمُه، وأين صار، ومتى.
+
+           ── وأعمدةُ الشرط الأربعة تلحق ──
+
+           وقد صار له مستهلِك: شريطُ العرض المشروط (`ConditionStrip`) يقرأ
+           منها طورَ المدرّب وما بقي من مهلته — وبدونها تسير على إنسانٍ
+           مهلةٌ لا يراها. وهي تواريخُ عن عقدِه هو، يقرؤها في بوّابته هو.
+
+           و`conditionRemindedAt` ليس منها: دفترُ العامل كي لا يُذكّر
+           مرّتين، ولا شأنَ للمدرّب بمتى طُرِق بابُه. */
         contracts: {
           orderBy: { createdAt: 'desc' }, take: 1,
           select: {
             id: true, title: true, status: true, kind: true, revision: true,
             sentAt: true, signedAt: true, countersignedAt: true,
             terminatedAt: true, createdAt: true,
+            conditionDeadlineAt: true, conditionPausedAt: true,
+            conditionExtendedAt: true, conditionMetAt: true,
           },
         },
       },
