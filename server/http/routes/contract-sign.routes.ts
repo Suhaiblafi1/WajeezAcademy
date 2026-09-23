@@ -59,6 +59,9 @@ export function registerContractSignRoutes(app: FastifyInstance, prisma: PrismaC
     const { token } = params.parse(req.params)
     const body = z.object({
       legalName: z.string().trim().min(4).max(120),
+      /* بخطّه هو، لا منقولَين من نموذج تقديمه */
+      addressAr: z.string().trim().min(5).max(300),
+      phone: z.string().trim().min(6).max(40),
       /* هاشُ ما عُرض عليه — يُقابَل بالمحفوظ، فمن بُدّل تحته النصُّ يُردّ */
       bodyHash: z.string().length(64),
       acks: z.array(z.string().min(1).max(40)).max(20),

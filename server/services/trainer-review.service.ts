@@ -2302,12 +2302,26 @@ export class TrainerReviewService {
       ومقابلةُ الهاش قبل كلِّ شيء: من فتح الصفحةَ ثمّ بُدّل المتنُ تحته —
       بإلغاءٍ وتركيبٍ جديدٍ مثلا — لا يمرّ توقيعُه على ما لم يره. */
   async signContractByToken(token: string, input: {
-    legalName: string; bodyHash: string; acks: string[]; ip?: string | null; userAgent?: string | null
+    legalName: string; addressAr: string; phone: string
+    bodyHash: string; acks: string[]; ip?: string | null; userAgent?: string | null
   }) {
     const c = await this.openByToken(token)
     const legalName = input.legalName.trim()
     if (legalName.length < 4) {
       throw new AuthError('bad_name', 'اكتب اسمَك القانونيَّ كاملا كما في وثيقة هويّتك', 422)
+    }
+    /* ═══ ويكتب عنوانَه وهاتفَه بخطّه ═══
+
+       ولا يُنقلان من نموذج التقديم: ذاك بياناتُ ترشُّحٍ تُملأ على عجل وقد
+       تمضي شهورٌ قبل العقد، وهذه بياناتُ **طرفٍ في عقد** يُراسَل بها ويُعرَف
+       بها. ومن نُقلت عنه بياناتُه بلا أن يراها له أن يقول إنّه لم يثبتها. */
+    const addressAr = input.addressAr.trim()
+    const phone = input.phone.trim()
+    if (addressAr.length < 5) {
+      throw new AuthError('bad_address', 'اكتب عنوانَك الكامل — وهو بيانُ طرفٍ في العقد', 422)
+    }
+    if (phone.length < 6) {
+      throw new AuthError('bad_phone', 'اكتب رقمَ هاتفك', 422)
     }
     if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
       throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
@@ -2337,6 +2351,8 @@ export class TrainerReviewService {
         data: {
           status: 'signed', signedAt,
           signerLegalName: legalName,
+          signerAddressAr: addressAr.slice(0, 300),
+          signerPhone: phone.slice(0, 40),
           signerIp: input.ip?.slice(0, 64) ?? null,
           signerUserAgent: input.userAgent?.slice(0, 300) ?? null,
           consentTextAr: CONTRACT_CONSENT_AR,

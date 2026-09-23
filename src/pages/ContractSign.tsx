@@ -68,6 +68,8 @@ export default function ContractSign() {
 
   const [readToEnd, setReadToEnd] = useState(false)
   const [legalName, setLegalName] = useState('')
+  const [addressAr, setAddressAr] = useState('')
+  const [phone, setPhone] = useState('')
   const [acked, setAcked] = useState<Set<string>>(new Set())
   const [consented, setConsented] = useState(false)
   const [declining, setDeclining] = useState(false)
@@ -146,7 +148,9 @@ export default function ContractSign() {
     .filter((d) => d.required && !v.uploaded.some((u) => u.kind === d.kind))
   const allAcked = v.acks.every((a) => acked.has(a.key))
   const canSign = readToEnd && allAcked && consented
-    && legalName.trim().length >= 4 && missingDocs.length === 0
+    && legalName.trim().length >= 4
+    && addressAr.trim().length >= 5 && phone.trim().length >= 6
+    && missingDocs.length === 0
 
   const upload = async (doc: RequiredDoc, file: File) => {
     setBusy(true); setErr('')
@@ -169,7 +173,8 @@ export default function ContractSign() {
     setBusy(true); setErr('')
     try {
       await apiPost(`/api/c/${encodeURIComponent(token)}/sign`, {
-        legalName: legalName.trim(), bodyHash: v.bodyHash, acks: [...acked],
+        legalName: legalName.trim(), addressAr: addressAr.trim(), phone: phone.trim(),
+        bodyHash: v.bodyHash, acks: [...acked],
       })
       await load()
     } catch (e) {
@@ -284,6 +289,33 @@ export default function ContractSign() {
           className="mb-3 w-full rounded-lg border border-white/15 bg-black/20 p-3"
           placeholder="الاسم الأول واسم الأب واسم العائلة"
         />
+
+        {/* ═══ وعنوانُه وهاتفُه بخطّه ═══
+
+            ولا يُملآن من نموذج تقديمه: ذاك بياناتُ ترشُّحٍ تُملأ على عجل وقد
+            تمضي شهورٌ قبل العقد، وهذه بياناتُ طرفٍ في عقدٍ يُراسَل بها. */}
+        <label className="mb-1 block font-bold" htmlFor="signer-address">
+          عنوانُك الكامل
+        </label>
+        <input
+          id="signer-address" value={addressAr} onChange={(e) => setAddressAr(e.target.value)}
+          className="mb-1 w-full rounded-lg border border-white/15 bg-black/20 p-3"
+          placeholder="المدينة، والحيّ أو الشارع، ورقمُ البناية"
+        />
+        <p className="mb-3 text-sm opacity-70">
+          كما تريده مثبَّتا في العقد — ولا يُنقل من نموذج تقديمك.
+        </p>
+
+        <label className="mb-1 block font-bold" htmlFor="signer-phone">
+          رقمُ هاتفك
+        </label>
+        <input
+          id="signer-phone" value={phone} onChange={(e) => setPhone(e.target.value)}
+          inputMode="tel" dir="ltr"
+          className="mb-3 w-full rounded-lg border border-white/15 bg-black/20 p-3 text-right"
+          placeholder="+962 7X XXX XXXX"
+        />
+
         <label className="mb-4 flex items-start gap-3">
           <input type="checkbox" className="mt-1" checked={consented}
             onChange={(e) => setConsented(e.target.checked)} />
@@ -295,6 +327,8 @@ export default function ContractSign() {
             يبقى: {[
               !readToEnd && 'قراءةُ النصّ إلى آخره',
               legalName.trim().length < 4 && 'اسمُك القانونيّ',
+              addressAr.trim().length < 5 && 'عنوانُك',
+              phone.trim().length < 6 && 'رقمُ هاتفك',
               missingDocs.length > 0 && `رفعُ ${missingDocs.map((d) => d.labelAr).join(' و')}`,
               !allAcked && 'الإقراراتُ كلُّها',
               !consented && 'الموافقةُ على التوقيع الإلكترونيّ',
