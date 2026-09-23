@@ -22,8 +22,9 @@ import {
   bookingReminderMail, decisionMailFor, draftReminderMail, rejectionMail, rejectionUndoneMail, waitlistMail,
 } from '../../server/services/trainer-decision-mail'
 import {
-  conditionalOfferMail, finalApprovalMail,
+  conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail,
   type ConditionalOfferMailInput, type FinalApprovalMailInput,
+  type ConditionReminderMailInput, type ConditionLapsedMailInput,
 } from '../../server/services/trainer-decision-mail'
 import { FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
 
@@ -372,5 +373,84 @@ describe('بريدُ الاعتماد النهائيّ', () => {
     const withDoc = finalApprovalMail({ ...APPROVED, contractUrl: 'https://x/y' })
       .doc.blocks.filter((b) => b.kind === 'cta')
     expect(withDoc.length).toBe(2)
+  })
+})
+
+/* ═══ بريدا العامل — التذكيرُ والانقضاء ═══ */
+describe('بريدُ التذكير بالمهلة', () => {
+  const BASE: ConditionReminderMailInput = {
+    fullName: 'عبد الرحمن العتيبي',
+    reference: 'WJ-TR-2026-00041',
+    deadlineOnAr: '8 أكتوبر 2026',
+    daysLeft: 2,
+    extensionDays: 2,
+    portalUrl: 'https://wajeezacademy.com/trainer',
+    extensionSpent: false,
+  }
+  const flat = (i: ConditionReminderMailInput) => JSON.stringify(conditionReminderMail(i).doc)
+
+  it('يعدّ ما بقي بصيغته العربيّة، ويسمّي تاريخَ الانتهاء', () => {
+    expect(conditionReminderMail(BASE).subject).toContain('يومان')
+    expect(conditionReminderMail({ ...BASE, daysLeft: 1 }).subject).toContain('يومٌ واحد')
+    expect(flat(BASE)).toContain(BASE.deadlineOnAr)
+  })
+
+  it('ويطمئنه أنّ وقتَ مراجعتنا لا يُحسب عليه', () => {
+    expect(flat(BASE)).toMatch(/لا يُحسب عليك/)
+  })
+
+  it('ويعرض البابَين لمن لم يُنفق تمديدَه', () => {
+    const body = flat(BASE)
+    expect(body).toMatch(/تمديدُ 2 يومين/)
+    expect(body).toMatch(/التأجيلُ إلى الموسم القادم/)
+  })
+
+  /* ولا يُعرَض تمديدٌ أُنفِق: يطلبه فيُردّ، وقد ضاع يومٌ في انتظار جوابٍ معروف */
+  it('ولا يعرض التمديدَ على من مُنحه مرّة — ويدلّه على التأجيل', () => {
+    const body = flat({ ...BASE, extensionSpent: true })
+    expect(body, 'عُرض تمديدٌ لا يُمنَح').not.toMatch(/أمامك بابان/)
+    expect(body).toMatch(/ولا يُمنَح ثانية/)
+    expect(body).toMatch(/التأجيلَ إلى الموسم القادم/)
+  })
+
+  it('وزرُّه إلى بوّابته — فهناك يرفع', () => {
+    const ctas = conditionReminderMail(BASE).doc.blocks.filter((b) => b.kind === 'cta')
+    expect(ctas.length).toBe(1)
+    expect((ctas[0] as { href: string }).href).toBe(BASE.portalUrl)
+  })
+})
+
+describe('بريدُ انقضاء المهلة', () => {
+  const LAPSED: ConditionLapsedMailInput = {
+    fullName: 'عبد الرحمن العتيبي',
+    reference: 'WJ-TR-2026-00041',
+    deadlineOnAr: '8 أكتوبر 2026',
+    portalUrl: 'https://wajeezacademy.com/trainer',
+  }
+  const flat = () => JSON.stringify(conditionLapsedMail(LAPSED).doc)
+
+  /* البندُ 2-10 يقول إنّ عدمَ تحقّق الشرط ليس إخلالا من أحد — فلا تُكتب
+     الرسالةُ بلغةِ مخالفةٍ ولا إنذار. */
+  it('يقول إنّ لا إخلالَ من أحد — ويُحيل على البند', () => {
+    const body = flat()
+    expect(body).toMatch(/ولا يُعدُّ هذا إخلالا/)
+    expect(body, 'لم يُحِل على بند الشرط').toMatch(/2-10/)
+  })
+
+  it('ويعرض المخرجَين معا — التأجيلَ والحذف', () => {
+    const body = flat()
+    expect(body).toMatch(/التأجيلُ إلى الموسم القادم/)
+    expect(body).toMatch(/حذفُ حسابك/)
+  })
+
+  it('ويقول إنّ ما رفعه يبقى — فلا يظنّ عملَه ضاع', () => {
+    expect(flat()).toMatch(/لا يُمحى بانقضاء المهلة/)
+  })
+
+  it('ولا لغةَ إنذارٍ فيه', () => {
+    const body = flat()
+    for (const word of ['مخالف', 'إنذار', 'إخلالك', 'تقصير']) {
+      expect(body, `لغةُ إنذارٍ في رسالةٍ شرطُها لم يتحقّق: ${word}`).not.toContain(word)
+    }
   })
 })

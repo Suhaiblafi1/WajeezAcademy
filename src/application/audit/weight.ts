@@ -48,6 +48,12 @@ const HIGH: readonly string[] = [
   'trainer.suspend', 'trainer.reinstate', 'trainer.publish_approve',
   'trainer.qualify', 'trainer.qualify.reject',
   'trainer.approved.notify', 'trainer.info_requested.notify',
+  /* ═══ ومهلتُه لا تُكتَم ولا تُجمَع في خبرٍ يوميّ ═══
+
+     من يفقد طورَه بعد يومَين يُبلَّغ اليوم، ومن انقضت مهلتُه يعرف أنّ بابَه
+     تغيّر — ولا يُترك ذلك لتفضيلٍ يُسكته ولا لملخّصٍ يُقرأ بعد أسبوع. وهذا
+     بعينه ما يشتريه العاملُ: حمايةٌ تعمل سواءٌ انتبهتَ أم لم تنتبه. */
+  'trainer.condition.remind', 'trainer.condition.lapsed',
   'trainer.status.transition', 'trainer.contract.sign',
   /* ═══ وتجاوزُ بوّابة التجهيز أعلاها ═══
 

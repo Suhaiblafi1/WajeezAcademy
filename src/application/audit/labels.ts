@@ -99,6 +99,8 @@ const PHRASES: Record<string, string> = {
   'trainer.application.reapply': 'تقدّمٌ من جديدٍ بعد طلبٍ منتهٍ — يُفكّ القديمُ عن الحساب',
   'trainer.invitation.create': 'دعوةُ مدرّبٍ لإنشاء حسابه',
   'trainer.approved.notify': 'إشعارُ مدرّبٍ باعتماده',
+  'trainer.condition.remind': 'تذكيرُ مدرّبٍ بقُرب انقضاء مهلة موادّه',
+  'trainer.condition.lapsed': 'إبلاغُ مدرّبٍ بانقضاء مهلة موادّه',
   'trainer.info_requested.notify': 'إشعارُ متقدّمٍ بطلبِ معلوماتٍ إضافية',
   'trainer.interview.self_booked': 'حجزُ متقدّمٍ موعدَ مقابلته بنفسه',
   'trainer.interview.self_canceled': 'إلغاءُ متقدّمٍ موعدَ مقابلته',

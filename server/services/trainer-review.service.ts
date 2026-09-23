@@ -14,7 +14,7 @@ import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import {
-  bookingReminderMail, decisionMailFor, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail } from './trainer-decision-mail'
+  bookingReminderMail, decisionMailFor, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -31,7 +31,8 @@ import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
-  EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, deadlineFrom,
+  EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft,
+  deadlineFrom, dueReminder,
 } from '../../src/application/trainer/conditional-offer'
 import {
   AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, isAmendmentRequested,
@@ -3678,5 +3679,161 @@ export class TrainerReviewService {
       throw new AuthError('not_live', 'ملفُّ المدرّب ليس في طورٍ يُؤهَّل فيه — القبولُ المشروطُ أوّلا', 409)
     }
     return profile
+  }
+  /* ═══════════ مهلةُ العرض المشروط — عملُ العامل ═══════════
+
+     «التذكيرُ ووسمُ التأخّر عملُ العامل لا نقرةٌ يتذكّرها إنسان — وهذا بعينه
+     ما يجعل الحمايةَ تعمل سواءٌ انتبهتَ أم لم تنتبه» (§٣ من التصميم).
+
+     ولا يُغيَّر حالُ أحدٍ هنا: «لم يستوفِ الشروط» **وسمٌ محسوبٌ لا حالةٌ
+     جديدة** — فهو لم ينتقل مكانا، بل تأخّر في مكانه. فالعاملُ يُبلِّغ ويكتب
+     أنّه أبلغ، والقرارُ بعده لإنسان: يمدّد، أو يؤجّل، أو يحذف.
+
+     ═══ ومن يُقصَد بهذا كلِّه ═══
+
+     عرضٌ **وقّعه صاحبُه** (`signed`) ولم نختمه بعد، مشروطٌ (`gatesActivation`)،
+     له مهلةٌ مكتوبة، ولم يتحقّق شرطُه. فتُستثنى بذلك ثلاثةٌ لا يُطرَق بابُها:
+
+     · **المسودّةُ والمرسَلُ** — كُتبت لهما مهلةٌ عند التركيب، لكنّ صاحبَهما
+       لم يوقّع فلم يقبل مهلةً ولا شرطا. فتذكيرُه بمهلةٍ لم يلتزم بها عبثٌ
+       يُقرأ تهديدا.
+     · **ومن لا تاريخَ لجلسته** — مهلتُه `NULL`، ولا يُذكَّر قطّ. وهو ضمانُ
+       الترحيل نفسُه (§١٢): من كان في التهيئة قبل النشر لا تبدأ عليه ساعةٌ
+       صامتة.
+     · **ومن تجمّدت مهلتُه** بإعلان الاكتمال — الكرةُ عندنا لا عنده. */
+
+  /** تذكيرُ من قاربت مهلتُه — مرّةً واحدةً لكلّ عرض */
+  async remindConditionDeadlines(now = new Date()): Promise<{ reminded: number }> {
+    const candidates = await this.prisma.trainerContract.findMany({
+      where: {
+        status: 'signed',
+        gatesActivation: true,
+        conditionMetAt: null,
+        conditionPausedAt: null,
+        conditionRemindedAt: null,
+        conditionDeadlineAt: { not: null },
+        profile: { application: { status: 'onboarding' } },
+      },
+      select: {
+        id: true, conditionDeadlineAt: true, conditionExtendedAt: true,
+        profile: { select: { application: { select: { fullName: true, email: true, reference: true } } } },
+      },
+      take: 200,
+    })
+
+    let reminded = 0
+    for (const c of candidates) {
+      /* والمِحَكُّ من الوحدة الخالصة لا من شرطِ الاستعلام: الاستعلامُ يُضيّق
+         المسحَ، والحكمُ واحدٌ يقرؤه العاملُ والشاشةُ معا. */
+      const facts = {
+        conditionDeadlineAt: c.conditionDeadlineAt,
+        conditionExtendedAt: c.conditionExtendedAt,
+        now,
+      }
+      if (!dueReminder(facts)) continue
+      const left = daysLeft(facts)
+      if (left == null) continue
+
+      const app = c.profile.application
+      const mail = conditionReminderMail({
+        fullName: app.fullName,
+        reference: app.reference,
+        deadlineOnAr: fmtDateWith(c.conditionDeadlineAt!, { year: 'numeric', month: 'long', day: 'numeric' }),
+        daysLeft: left,
+        extensionDays: EXTENSION_DAYS,
+        portalUrl: `${publicSiteUrl()}/trainer`,
+        extensionSpent: c.conditionExtendedAt != null,
+      })
+
+      /* ═══ ويُكتب «ذُكِّر» قبل الإرسال ═══
+
+         فبريدٌ يخرج ولا يُكتب أثرُه يُعاد في الدورة التالية — ويُطرَق بابُه
+         كلَّ ساعةٍ حتّى تنتهي مهلتُه. والعكسُ أهونُ ويُقرأ في الأثر: أُشِّر
+         ولم يخرج، فيُرى `emailDelivery` ويُعاد بيد. */
+      const marked = await this.prisma.trainerContract.updateMany({
+        where: { id: c.id, conditionRemindedAt: null },
+        data: { conditionRemindedAt: now },
+      })
+      if (marked.count === 0) continue
+
+      const sent = await sendDirectEmail(this.prisma, {
+        to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+      })
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'trainer.condition.remind',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: { sentTo: app.email, emailDelivery: sent.status, daysLeft: left, deadlineAt: c.conditionDeadlineAt },
+      })
+      reminded += 1
+    }
+    return { reminded }
+  }
+
+  /** إبلاغُ من انقضت مهلتُه — ولا يُغيَّر حالُه، فالوسمُ محسوب */
+  async noticeLapsedConditions(now = new Date()): Promise<{ noticed: number }> {
+    const candidates = await this.prisma.trainerContract.findMany({
+      where: {
+        status: 'signed',
+        gatesActivation: true,
+        conditionMetAt: null,
+        conditionPausedAt: null,
+        conditionDeadlineAt: { not: null, lt: now },
+        profile: { application: { status: 'onboarding' } },
+      },
+      select: {
+        id: true, conditionDeadlineAt: true,
+        profile: { select: { application: { select: { fullName: true, email: true, reference: true } } } },
+      },
+      take: 200,
+    })
+    if (candidates.length === 0) return { noticed: 0 }
+
+    /* ═══ ومن أُبلِغ لا يُبلَّغ ثانية — والأثرُ هو السجلّ ═══
+
+       ولمَ الأثرُ لا عمودٌ جديد: الإبلاغُ **فعلٌ وقع**، وموضعُ ما وقع هو
+       الأثر. وعمودٌ سابعٌ عشرَ في العقد يقول ما يقوله الأثرُ أصلا. وهو عرفُ
+       متابعةِ الغياب نفسُه (`already_followed_up`).
+
+       ويُقرأ للمجموعة كلِّها في استعلامٍ واحد، لا استعلامٌ لكلّ صفّ. */
+    const already = await this.prisma.auditEvent.findMany({
+      where: {
+        action: 'trainer.condition.lapsed',
+        entityType: 'trainer_contract',
+        entityId: { in: candidates.map((c) => c.id) },
+      },
+      select: { entityId: true },
+    })
+    const told = new Set(already.map((a) => a.entityId))
+
+    let noticed = 0
+    for (const c of candidates) {
+      if (told.has(c.id)) continue
+      /* ═══ وحاجزان على الانقضاء بقصد ═══
+
+         `lt: now` في الاستعلام يضيّق المسحَ، وهذا يحكم — والحكمُ من الوحدة
+         الخالصة لا من شرطِ استعلام، فما يقرؤه العاملُ هو ما تقرؤه الشاشةُ
+         وطابورُ الإدارة. وأحدُهما يكفي وحدَه، وبقاؤهما معا مقصود: رفعُ
+         أحدِهما لا يُخرج بريدا إلى من مهلتُه قائمة (ومقيسٌ أنّ رفعَهما معا
+         يُخرجه، فالحارسُ ليس زينة). */
+      if (conditionPhase({ conditionDeadlineAt: c.conditionDeadlineAt, now }) !== 'lapsed') continue
+
+      const app = c.profile.application
+      const mail = conditionLapsedMail({
+        fullName: app.fullName,
+        reference: app.reference,
+        deadlineOnAr: fmtDateWith(c.conditionDeadlineAt!, { year: 'numeric', month: 'long', day: 'numeric' }),
+        portalUrl: `${publicSiteUrl()}/trainer`,
+      })
+      const sent = await sendDirectEmail(this.prisma, {
+        to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+      })
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'trainer.condition.lapsed',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: { sentTo: app.email, emailDelivery: sent.status, deadlineAt: c.conditionDeadlineAt },
+      })
+      noticed += 1
+    }
+    return { noticed }
   }
 }

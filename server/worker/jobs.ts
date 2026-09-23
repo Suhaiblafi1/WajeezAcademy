@@ -31,6 +31,7 @@ import { CohortService } from '../services/cohort.service'
 import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { TrainerOfferService } from '../services/trainer-offer.service'
+import { TrainerReviewService } from '../services/trainer-review.service'
 import { recordAudit } from '../services/audit'
 import { notPermanentAuditWhere } from '../../src/application/audit/retention'
 import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
@@ -1012,6 +1013,43 @@ export async function runTrainerOfferDeadlines(prisma: PrismaClient, now = new D
   }
 }
 
+/* ═══════════ ١٣ · مهلةُ العرض المشروط ═══════════
+
+   مهلةُ سبعةِ أيّامٍ تُكتب في العقد عند تركيبه، ولا مُشغِّلَ لها: تقارب
+   فينقضي يومُها بلا تذكير، ثمّ تنقضي بلا أن يعلم صاحبُها أنّ بابَه تغيّر.
+
+   وهذا بعينه ما يجعل الحمايةَ تعمل **سواءٌ انتبهتَ أم لم تنتبه**: لا نقرةَ
+   يتذكّرها إنسان، ولا مدرّبٌ يبقى في طورٍ انقضى وهو يظنّ أنّه فيه.
+
+   **ولا يُغيَّر حالُ أحدٍ هنا.** «لم يستوفِ الشروط» وسمٌ محسوبٌ لا حالةٌ
+   جديدة: لم ينتقل مكانا بل تأخّر في مكانه. فالعاملُ يُبلِّغ ويكتب أنّه
+   أبلغ، والقرارُ بعده لإنسانٍ ينظر — يمدّد، أو يؤجّل، أو يحذف بطلبه.
+
+   والثانيتان مستقلّتان: من انقضت مهلتُه لا يُترك بلا خبرٍ لأنّ تذكيرَ
+   غيره تعثّر. */
+export async function runConditionDeadlines(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const review = new TrainerReviewService(prisma)
+  let done = 0
+  let failed = 0
+  const parts: string[] = []
+  try {
+    const { reminded } = await review.remindConditionDeadlines(now)
+    done += reminded
+    if (reminded > 0) parts.push(`ذُكِّر ${reminded} بقُرب انقضاء مهلة موادّه`)
+  } catch { failed += 1; parts.push('تعثّر تذكيرُ المهل المقاربة') }
+  try {
+    const { noticed } = await review.noticeLapsedConditions(now)
+    done += noticed
+    if (noticed > 0) parts.push(`أُبلِغ ${noticed} بانقضاء مهلته`)
+  } catch { failed += 1; parts.push('تعثّر إبلاغُ المهل المنقضية') }
+  return {
+    job: 'condition_deadlines',
+    summaryAr: parts.length === 0 ? 'لا مهلةَ عرضٍ مشروطٍ قاربت ولا انقضت' : parts.join(' · '),
+    done, failed, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسالُ ما في طابور البريد' },
@@ -1034,6 +1072,10 @@ export const JOBS = [
   /* كلَّ ساعة: مهلةُ الردّ أيّامٌ وأجلُ الإعداد أيّام، فساعةٌ دقّةٌ كافيةٌ
      لا تُثقل. والتذكيرُ يسأل عن «قبل يومٍ من الأجل» فيصيبها في كلّ حال. */
   { key: 'trainer_offer_deadlines', everyMs: HOUR, run: runTrainerOfferDeadlines, titleAr: 'آجالُ عروض الإسناد وإعدادِها' },
+  /* كلَّ ساعة: المهلةُ سبعةُ أيّامٍ وعتبةُ التذكير يومان، فساعةٌ دقّةٌ
+     كافيةٌ لا تُثقل. والوظيفةُ تسأل عن «بقي يومان أو أقلّ» فتصيبها في كلّ
+     حال، ولا تذكّر مرّتين — `conditionRemindedAt` يمنع. */
+  { key: 'condition_deadlines', everyMs: HOUR, run: runConditionDeadlines, titleAr: 'مهلةُ العرض المشروط' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },
