@@ -376,6 +376,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
        بلا مهلةٍ ولا يوسمه العاملُ متأخّرا. */
   })
 
+  /* «أعِدْها بملاحظات» — تُستأنف المهلةُ مضافا إليها مدّةُ التجميد بالضبط */
+  app.post('/api/admin/trainer-contracts/:contractId/return-materials', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'إعادةُ موادّ المدرّب بملاحظاتٍ — وتُستأنف مهلتُه' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { notesAr } = z.object({ notesAr: z.string().trim().min(5).max(4000) }).parse(req.body)
+    return review.returnMaterialsWithNotes(contractId, req.auth!.userId, notesAr)
+  })
+
   app.get('/api/admin/trainer-contracts', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'قائمةُ العقود، ومن ينتظر عقدا ولا عقدَ له' },

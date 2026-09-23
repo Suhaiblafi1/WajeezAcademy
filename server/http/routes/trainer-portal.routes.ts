@@ -39,6 +39,20 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const availability = new TrainerAvailabilityService(prisma)
   const terms = new TermService(prisma)
 
+  /* ═══ مهلةُ العرض المشروط — ما يفعله المدرّبُ بها ═══
+
+     ولا صلاحيّةَ جديدة: `trainer.portal` بابُ بوّابته، والملفُّ يُستخرَج من
+     حسابه لا من جسم الطلب — فلا يُعلن أحدٌ عن موادّ غيره ولا يمدّد مهلتَه. */
+  app.post('/api/trainer/condition/declare-complete', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'أعلنتُ اكتمالَ موادّي — تتجمّد المهلةُ وتصل الطابور' },
+  }, async (req) => review.declareMaterialsComplete(req.auth!.userId))
+
+  app.post('/api/trainer/condition/extend', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'امنحني يومين — مرّةً واحدةً، والثانيةُ تُردّ بنصّها' },
+  }, async (req) => review.requestConditionExtension(req.auth!.userId))
+
   app.get('/api/trainer/earnings', {
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'كشوف مستحقاتي وبنودها وملخصها — للمدرب نفسه فقط' },

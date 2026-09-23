@@ -70,6 +70,8 @@ const HIGH: readonly string[] = [
      والثالثُ إشعارا إلى من ينتظر قرارَه. */
   'trainer.contract.send', 'trainer.contract.resend',
   'trainer.contract.sign_by_trainer', 'trainer.contract.decline',
+  'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
+  'trainer.contract.condition_extended',
   'trainer.contract.amendment_requested',
   /* ═══ والاعتمادُ ورفضُه (المرحلة ٣) ═══
 

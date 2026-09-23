@@ -32,7 +32,7 @@ import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft,
-  deadlineFrom, dueReminder,
+  deadlineAfterPause, deadlineFrom, dueReminder, extendProblemAr, extendedDeadline,
 } from '../../src/application/trainer/conditional-offer'
 import {
   AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, isAmendmentRequested,
@@ -1856,6 +1856,135 @@ export class TrainerReviewService {
     if (!picked) return all
     const want = new Set(picked)
     return all.filter((c) => want.has(c.courseId))
+  }
+
+  /* ═══════════ ما يفعله المدرّبُ بمهلته ═══════════
+
+     العاملُ (#272) يقرأ `conditionPausedAt` ويحترمها، **ولا أحدَ يكتبها**:
+     تُمحى في ثلاثة مواضعَ ولا تُكتب في موضعٍ واحد. فالتجميدُ الذي بُني له
+     كلُّ شيءٍ لا يقع، ومن رفع موادَّه في اليوم السادس وأخذت مراجعتُنا يومين
+     **يخرج من المهلة بلا ذنبٍ منه** — وهي الشكوى الوحيدةُ التي تصمد في وجه
+     عقدٍ كُتب للحماية.
+
+     و`conditionExtendedAt` كذلك: بلا كاتبٍ البتّة، وبريدُ التذكير يَعِد به.
+
+     ومعجمُ الأثر يحمل أسماءَ الثلاثة (`materials_declared` و
+     `materials_returned` و`condition_extended`) ولا كاتبَ لأيٍّ منها —
+     مفرداتٌ لأفعالٍ لم تُبنَ. وهذه تبنيها. */
+
+  /** عقدُ الطور المفتوحُ لصاحب هذه الجلسة — أو لا شيء */
+  private async openConditionContract(userId: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { userId }, include: { application: true },
+    })
+    if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب مرتبطا بهذا الحساب', 404)
+    const contract = await this.prisma.trainerContract.findFirst({
+      where: { profileId: profile.id, conditionDeadlineAt: { not: null }, conditionMetAt: null },
+      orderBy: { createdAt: 'desc' },
+    })
+    if (!contract) throw new AuthError('no_condition', 'لا مهلةَ قائمةً على حسابك', 409)
+    return { profile, contract }
+  }
+
+  /** «أعلنتُ اكتمالها» — تتجمّد المهلةُ ويصل الطابورَ أنّ موادَّه تنتظر تقييما */
+  async declareMaterialsComplete(userId: string, now = new Date()) {
+    const { profile, contract } = await this.openConditionContract(userId)
+    const phase = conditionPhase({ ...contract, now })
+    if (phase === 'under_review') {
+      throw new AuthError('already_declared', 'موادُّك عندنا للتقييم أصلا — سيصلك خبرُها', 409)
+    }
+    /* ويُقبل الإعلانُ ولو انقضت المهلة: من تأخّر يوما ثمّ أتمّ موادَّه أولى
+       به أن تُقرأ من أن يُردَّ بابُه، والقرارُ بعدُ لإنسانٍ ينظر. */
+    if (phase !== 'running' && phase !== 'lapsed') {
+      throw new AuthError('bad_phase', 'لا مهلةَ تسير على حسابك الآن', 409)
+    }
+    await this.prisma.trainerContract.update({
+      where: { id: contract.id }, data: { conditionPausedAt: now },
+    })
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.materials_declared',
+      entityType: 'trainer_contract', entityId: contract.id,
+      meta: { lateDeclare: phase === 'lapsed' },
+    })
+    try {
+      await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+        channel: 'in_app',
+        templateKey: 'trainer.contract.materials_declared',
+        title: 'أعلن مدرّبٌ اكتمالَ موادّه',
+        body: `أعلن ${profile.application.fullName} اكتمالَ موادّه — والمهلةُ متجمّدةٌ حتّى يُردّ عليه.`,
+        data: { contractId: contract.id, applicationId: profile.applicationId },
+      })
+    } catch { /* الإشعارُ رفاهيةٌ لا تُسقط التجميد */ }
+    return { pausedAt: now }
+  }
+
+  /** «امنحني يومين» — مرّةً واحدة، والثانيةُ تُردّ بنصٍّ يُقرأ لا بزرٍّ مطفإ */
+  async requestConditionExtension(userId: string, now = new Date()) {
+    const { contract } = await this.openConditionContract(userId)
+    const problem = extendProblemAr({ ...contract, now })
+    if (problem) throw new AuthError('cannot_extend', problem, 409)
+    const next = extendedDeadline({ ...contract, now })
+    if (!next) throw new AuthError('cannot_extend', 'لا مهلةَ تُمدَّد', 409)
+    await this.prisma.trainerContract.update({
+      where: { id: contract.id },
+      data: {
+        conditionDeadlineAt: next,
+        conditionExtendedAt: now,
+        /* ويُمحى خَتمُ التذكير: المهلةُ الجديدةُ تستحقّ تذكيرَها قبل يومين
+           منها هي، لا أن يُحسَب مذكَّرا بمهلةٍ لم تعد قائمة. */
+        conditionRemindedAt: null,
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.condition_extended',
+      entityType: 'trainer_contract', entityId: contract.id,
+      meta: { until: next.toISOString(), days: EXTENSION_DAYS },
+    })
+    /* وهو طلبَه، لكنّ **الرقمَ الجديدَ هو الخبر**: مهلةٌ تُمدَّد بلا أن يُقال
+       إلى متى تترك صاحبَها يحسبها بنفسه. */
+    await this.notifyTrainerUser(contract.profileId, {
+      templateKey: 'trainer.contract.condition_extended',
+      title: `مُدّت مهلتُك ${EXTENSION_DAYS} يومين`,
+      body: `تنتهي مهلتُك الآن في ${fmtDateWith(next, { year: 'numeric', month: 'long', day: 'numeric' })}. وهو التمديدُ الوحيد.`,
+      data: { contractId: contract.id, deadlineAt: next.toISOString() },
+    })
+    return { deadlineAt: next }
+  }
+
+  /** «أعِدْها بملاحظات» — تُستأنف المهلةُ **مضافا إليها مدّةُ التجميد بالضبط** */
+  async returnMaterialsWithNotes(contractId: string, actorId: string, notesAr: string, now = new Date()) {
+    const notes = notesAr.trim()
+    if (notes.length < 5) {
+      throw new AuthError('no_notes', 'اكتب ما ينقص موادَّه — سطرٌ واحدٌ يكفي، وهو ما سيقرؤه', 422)
+    }
+    const c = await this.prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
+    if (!c.conditionPausedAt) {
+      throw new AuthError('not_paused', 'موادُّه ليست عندنا للتقييم — لا شيءَ يُعاد', 409)
+    }
+    /* والمهلةُ تُزاد بمقدار مدّةِ التجميد بالضبط: وقتُ مراجعتنا لا يُحسب
+       عليه، ولا يُهدى له يوما لم ننتظره فيه. */
+    const resumed = deadlineAfterPause({ ...c, now }, now)
+    await this.prisma.trainerContract.update({
+      where: { id: contractId },
+      data: { conditionDeadlineAt: resumed, conditionPausedAt: null, conditionRemindedAt: null },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.materials_returned',
+      entityType: 'trainer_contract', entityId: contractId,
+      meta: { notesAr: notes.slice(0, 500), deadlineAt: resumed?.toISOString() ?? null },
+    })
+    /* ═══ والملاحظاتُ تصله، وإلّا فلا معنى لكتابتها ═══
+
+       حلقةُ «يعدّل ويقدّم ثانيةً» تدور بما يقرؤه هو. فملاحظاتٌ تُكتب في
+       عمودٍ لا يراه توقف الحلقةَ عند أوّل دورة: تُستأنف مهلتُه ولا يعرف ما
+       ينقصه، فيعيد رفعَ ما رُدّ عليه. */
+    await this.notifyTrainerUser(c.profileId, {
+      templateKey: 'trainer.contract.materials_returned',
+      title: 'أُعيدت موادُّك بملاحظات',
+      body: `ما ينقص: ${notes.slice(0, 300)}`,
+      data: { contractId, deadlineAt: resumed?.toISOString() ?? null },
+    })
+    return { deadlineAt: resumed }
   }
 
   /** ═══ التركيبُ والتجميد ═══
