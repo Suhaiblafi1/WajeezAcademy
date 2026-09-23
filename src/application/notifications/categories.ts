@@ -154,6 +154,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
          توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. ومن لم يعلم
          بالتوقيع تركَ مدرّبا وقّع ينتظر حسابا لا يُفتح. */
       'trainer.contract.signed', 'trainer.contract.declined',
+      'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
+      'trainer.contract.condition_extended',
       'trainer.contract.amendment_requested',
       /* ═══ وعروضُ الإسناد — وهي عملٌ من الطرفين ═══
 
