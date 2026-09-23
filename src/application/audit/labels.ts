@@ -263,6 +263,7 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.document_register': 'رفعُ المدرّبِ وثيقةً مع عقده',
   'trainer.contract.sign_by_trainer': 'توقيعُ المدرّبِ عقدَه بنفسه',
   'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',
+  'trainer.contract.amendment_requested': 'طلبُ المدرّبِ تعديلا على عرضه',
   'trainer.contract.document_view': 'اطّلاعُ موظّفٍ على وثيقةِ هويّةٍ مع عقد',
   'trainer.contract.countersign': 'اعتمادُ الأكاديميّةِ توقيعَ المدرّب',
   /* تجاوزُ بوّابة التجهيز — بابٌ للمدير الأعلى وحدَه بسببٍ مكتوب (٢٠ سبتمبر ٢٠٢٦) */

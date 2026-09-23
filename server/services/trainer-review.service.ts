@@ -33,6 +33,9 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, deadlineFrom,
 } from '../../src/application/trainer/conditional-offer'
+import {
+  AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, isAmendmentRequested,
+} from '../../src/application/trainer/contract-endings'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -2199,6 +2202,12 @@ export class TrainerReviewService {
     if (c.status === 'signed') {
       return { state: 'signed' as const, title: c.title, signedAt: c.signedAt, signerLegalName: c.signerLegalName }
     }
+    if (isAmendmentRequested(c.status)) {
+      return {
+        state: 'amendment_requested' as const, title: c.title,
+        requestedAt: c.amendmentRequestedAt, requestAr: c.amendmentRequestAr,
+      }
+    }
     if (c.status === 'declined') return { state: 'declined' as const, title: c.title, declinedAt: c.declinedAt }
     if (c.status === 'revoked') return { state: 'revoked' as const, title: c.title }
     if (c.status !== 'sent') throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
@@ -2238,7 +2247,12 @@ export class TrainerReviewService {
   /** عقدٌ مفتوحٌ للكتابة — يُستعمل قبل كلّ فعلٍ يغيّر شيئا من الرابط */
   private async openByToken(token: string) {
     const c = await this.byToken(token)
-    if (c.status !== 'sent') {
+    /* والقائمةُ مصدرُ الحقيقة، لا حرفُ 'sent' مكرّرا في مواضع — فطلبُ
+       التعديل يوقف التوقيعَ بها وحدَها، في كلّ فعلٍ يُفعَل من الرابط. */
+    if (!canRespondToContract(c.status)) {
+      if (isAmendmentRequested(c.status)) {
+        throw new AuthError('amendment_pending', 'طلبُك بالتعديل عندنا — ننظر فيه ونعيد إليك العرضَ مصحَّحا أو نجيبك', 409)
+      }
       throw new AuthError('bad_state', 'هذا العقدُ لم يعد بانتظار التوقيع', 409)
     }
     if (c.tokenExpiresAt && c.tokenExpiresAt < new Date()) {
@@ -2427,6 +2441,42 @@ export class TrainerReviewService {
   }
 
   /** الاعتذارُ — جوابٌ مشروعٌ لا عطب. والعقدُ عرضٌ يُقبَل ويُردّ. */
+  /** النهايةُ الثالثة: يطلب تعديلا فيقف التوقيعُ ويصل طلبُه طابورَ الإدارة.
+
+      ولا يُمحى الرمزُ هنا خلافا للاعتذار: العقدُ باقٍ ينتظر جوابَنا، فإمّا
+      أُلغي وأُرسل مصحَّحا وإمّا رُدَّ عليه بأنّه يبقى — وفي الحالين يعود
+      إليه بابٌ. والاعتذارُ نهايةٌ، وهذا وقفةٌ. */
+  async requestContractAmendment(token: string, textAr: string) {
+    const c = await this.openByToken(token)
+    const body = textAr.trim()
+    if (body.length < 5) {
+      throw new AuthError('no_text', 'اكتب ما تريد تعديلَه — سطرٌ واحدٌ يكفي', 422)
+    }
+    const requestedAt = new Date()
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: c.id, status: 'sent' },
+      data: {
+        status: CONTRACT_AMENDMENT_REQUESTED,
+        amendmentRequestAr: body.slice(0, AMENDMENT_TEXT_MAX),
+        amendmentRequestedAt: requestedAt,
+      },
+    })
+    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.amendment_requested',
+      entityType: 'trainer_contract', entityId: c.id,
+      meta: { textAr: body.slice(0, AMENDMENT_TEXT_MAX) },
+    })
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      templateKey: 'trainer.contract.amendment_requested',
+      title: 'طلب مدرّبٌ تعديلا على عرضه',
+      body: `طلب ${c.profile.application.fullName} تعديلا على «${c.title}» — ونصُّه: ${body.slice(0, 200)}`,
+      data: { contractId: c.id, applicationId: c.profile.applicationId },
+    })
+    return { requestedAt }
+  }
+
   async declineContractByToken(token: string, reasonAr: string) {
     const c = await this.openByToken(token)
     const reason = reasonAr.trim()

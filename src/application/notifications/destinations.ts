@@ -133,6 +133,7 @@ const STAFF: Table = {
      الموقَّعُ يُراجَع توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. */
   'trainer.contract.signed': { path: '/admin/trainer-contracts', ctaAr: 'راجِع التوقيعَ وفعّلْ حسابَه' },
   'trainer.contract.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سببَ الاعتذار' },
+  'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديلَه' },
   /* والعروضُ في شاشة العقود نفسِها: العرضُ فرعٌ عن عقدٍ نافذ، ومن يتابع
      الواحدَ يتابع الآخر — فلا تُفرَّق شاشتان لمسارٍ واحد. */
   'trainer.offer.accepted': { path: '/admin/trainer-contracts', ctaAr: 'افتح العروض' },

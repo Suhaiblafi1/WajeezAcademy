@@ -53,6 +53,7 @@ type View =
   | OpenView
   | { state: 'signed'; title: string; signedAt: string | null; signerLegalName: string | null }
   | { state: 'declined'; title: string; declinedAt: string | null }
+  | { state: 'amendment_requested'; title: string; requestedAt: string | null; requestAr: string | null }
   | { state: 'revoked'; title: string }
   | { state: 'expired'; title: string; expiredAt: string | null }
 
@@ -74,6 +75,8 @@ export default function ContractSign() {
   const [consented, setConsented] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [declineReason, setDeclineReason] = useState('')
+  const [amending, setAmending] = useState(false)
+  const [amendText, setAmendText] = useState('')
   const bodyRef = useRef<HTMLPreElement | null>(null)
 
   const load = useCallback(async () => {
@@ -118,12 +121,16 @@ export default function ContractSign() {
     const HEAD: Record<string, string> = {
       signed: 'وُقّع هذا العقد',
       declined: 'اعتُذر عن هذا العقد',
+      amendment_requested: 'طلبُك بالتعديل عندنا',
       revoked: 'أُلغي هذا العقد',
       expired: 'انقضى أجلُ هذا الرابط',
     }
     const BODY: Record<string, string> = {
       signed: 'سُجّل توقيعُك، ووصلتك نسختُك بالبريد. تراجعه الأكاديميّةُ ثمّ يُفتح حسابُك.',
       declined: 'سُجّل اعتذارُك ووصل فريقَنا. وإن كان ذلك سهوا فتواصل معنا.',
+      amendment_requested: 'وصل طلبُك فريقَنا وننظر فيه. ويقف التوقيعُ حتّى نجيبك: '
+        + 'فإمّا أعدنا إليك العرضَ مصحَّحا، وإمّا كتبنا لك لماذا يبقى البندُ كما هو. '
+        + 'وفي الحالين يصلك منّا خبر.',
       revoked: 'سحبت الأكاديميّةُ هذا العقد. وإن كنتَ تنتظر عقدا فسيصلك غيرُه.',
       expired: 'لم يعد هذا الرابطُ صالحا. اطلب من فريق الأكاديمية إعادةَ إرساله وسيصلك رابطٌ جديد.',
     }
@@ -179,6 +186,16 @@ export default function ContractSign() {
       await load()
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ التوقيع')
+    } finally { setBusy(false) }
+  }
+
+  const requestAmendment = async () => {
+    setBusy(true); setErr('')
+    try {
+      await apiPost(`/api/c/${encodeURIComponent(token)}/amend`, { textAr: amendText.trim() })
+      await load()
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ طلبِ التعديل')
     } finally { setBusy(false) }
   }
 
@@ -340,13 +357,45 @@ export default function ContractSign() {
           <Button tone="confirm" size="lg" disabled={!canSign} loading={busy} onClick={() => void sign()}>
             وقّعِ الاتفاقية
           </Button>
-          {!declining && (
+          {!amending && !declining && (
+            <Button tone="ghost" onClick={() => setAmending(true)}>
+              أطلبُ تعديلا
+            </Button>
+          )}
+          {!declining && !amending && (
             <Button tone="ghost" onClick={() => setDeclining(true)}>
               أعتذرُ عن التوقيع
             </Button>
           )}
         </div>
       </section>
+
+      {amending && (
+        <Panel tone="warn" className="p-4">
+          <h2 className="mb-1 text-lg font-black">طلبُ تعديلٍ على العرض</h2>
+          <p className="mb-3">
+            والعقدُ عرضٌ يُفاوَض. اكتبْ ما تريد تغييرَه بندا بندا — رقمَ البند
+            وما تقترحه فيه — فيقف التوقيعُ ويصل طلبُك فريقَنا. ولا يُلغى عرضُك
+            بهذا: إمّا أعدناه إليك مصحَّحا، وإمّا كتبنا لك لماذا يبقى كما هو.
+          </p>
+          <label className="sr-only" htmlFor="amend-text">ما تريد تعديلَه</label>
+          <textarea
+            id="amend-text" rows={5} value={amendText}
+            onChange={(e) => setAmendText(e.target.value)}
+            placeholder="مثال: البند ٤-١ — أقترح أن يكون سعرُ المقعد عبر رابطي…"
+            className="mb-3 w-full rounded-lg border border-white/15 bg-black/20 p-3"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button tone="confirm" disabled={amendText.trim().length < 5} loading={busy}
+              onClick={() => void requestAmendment()}>
+              أرسلْ طلبَ التعديل
+            </Button>
+            <Button tone="ghost" onClick={() => { setAmending(false); setAmendText('') }}>
+              تراجعْ
+            </Button>
+          </div>
+        </Panel>
+      )}
 
       {declining && (
         <Panel tone="warn" className="p-4">

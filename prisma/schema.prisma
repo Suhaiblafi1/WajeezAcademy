@@ -1718,7 +1718,7 @@ model TrainerContract {
   /// يقول إنّه أُلغي ومن ألغاه ولماذا. و`declined`: المدرّبُ قرأه ولم يقبله،
   /// وهو **جوابٌ مشروعٌ لا عطب** — فالعقدُ عرضٌ يُقبَل ويُردّ.
   /// و`countersigned` و`superseded` تأتيان مع المرحلة الثالثة.
-  status    String  @default("draft") // draft | sent | declined | revoked | signed | countersigned | expired | terminated
+  status    String  @default("draft") // draft | sent | amendment_requested | declined | revoked | signed | countersigned | expired | terminated
   /// رقمُ النسخة في السلسلة — ١ للأصل ثمّ ما يليه
   revision  Int     @default(1)
   /// النافذُ الذي هذا ملحقٌ له أو بديلٌ عنه
@@ -1897,6 +1897,17 @@ model TrainerContract {
   declinedAt      DateTime?
   /// سببُ الاعتذار بخطّه — لا قائمةَ أسبابٍ تُختار، فأسبابُ الردّ لا تُحصى
   declineReasonAr String?
+  /// ═══ النهايةُ الثالثة: يطلب تعديلا فلا يوقّع ولا يعتذر ═══
+  ///
+  /// وكانت النهايتان اثنتين، فمن أراد تغييرَ بندٍ واحدٍ لم يجد إلّا الاعتذارَ
+  /// عن العرض كلِّه أو التوقيعَ على ما لا يرضاه. والعقدُ عرضٌ يُفاوَض.
+  ///
+  /// والعقدُ لا يُغلَق بهذا: الصفُّ باقٍ ينتظر نسخةً مصحّحة. لكنّ التوقيعَ
+  /// يقف ما دامت الحالةُ كذلك (`canRespondToContract` تقبل `sent` وحدَها) —
+  /// وإلّا وقّع على ما طلب تغييرَه بنقرةٍ ثانيةٍ في التبويب نفسِه.
+  amendmentRequestAr   String?
+  amendmentRequestedAt DateTime?
+
   revokedAt       DateTime?
   revokedBy       String?   @db.Uuid
   revokeReasonAr  String?
