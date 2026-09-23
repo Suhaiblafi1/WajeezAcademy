@@ -139,6 +139,43 @@ describe('المهلةُ تُخزَّن محسوبةً من تاريخ الجل�
   })
 })
 
+/* ═══ الدرزُ: عرضٌ رُكِّب قبل بند الشرط ═══
+
+   وهو حقيقةٌ في الإنتاج لا فرضٌ: كلُّ عرضٍ رُكِّب قبل هذا التغيير يحمل
+   `gatesActivation = true` ولا شرطا في متنه. */
+describe('لا يُرسَل عرضٌ مشروطٌ متنُه لا يحمل شرطَه', () => {
+  it('يُردّ الإرسالُ ويُقال ما يُفعَل — ولا يخرج بريدٌ يَعِد بما لا تحمله الوثيقة', async () => {
+    const { profile } = await mkCandidate()
+    const stale = await prisma.trainerContract.create({
+      data: {
+        profileId: profile.id, title: 'عرضٌ من قبل بند الشرط', status: 'draft',
+        bodyVersion: 'v3-2026-09-21', bodyAr: 'اتفاقية تقديم خدمات تدريبية — عمل حر\n\nالبند 1 وما بعده.',
+        gatesActivation: true,
+      },
+    })
+    await expect(review.sendContract(stale.id, academicId))
+      .rejects.toMatchObject({ code: 'body_without_condition' })
+    /* ولا يتحرّك شيء: لا حالةُ العقد ولا حالةُ الطلب */
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: stale.id } })
+    expect(after.status, 'أُرسل عرضٌ بلا شرطٍ في متنه').toBe('draft')
+    expect(after.sentAt).toBeNull()
+  })
+
+  it('وبندٌ يُوثَّق على مدرّبٍ نشطٍ يُرسَل بلا شرط — فلا شرطَ فيه أصلا', async () => {
+    const { app, profile } = await mkCandidate()
+    await prisma.trainerApplication.update({ where: { id: app.id }, data: { status: 'active' } })
+    const documented = await prisma.trainerContract.create({
+      data: {
+        profileId: profile.id, title: 'بندٌ يُوثَّق', status: 'draft',
+        bodyVersion: 'v3-2026-09-21', bodyAr: 'اتفاقية تقديم خدمات تدريبية — عمل حر\n\nالبند 1.',
+        gatesActivation: false,
+      },
+    })
+    const r = await review.sendContract(documented.id, academicId)
+    expect(r.ok, 'رُدَّ عقدٌ لا شرطَ فيه بحجّة أنّه بلا شرط').toBe(true)
+  })
+})
+
 describe('العلامتان لا تختلطان', () => {
   it('القبولُ الداخليُّ يبذر «اخترناها له» لا «قُبلت موادُّها»', async () => {
     const { profile } = await mkCandidate()

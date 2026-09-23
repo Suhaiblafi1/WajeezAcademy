@@ -21,7 +21,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
-import { contractAcks } from '../../../src/application/trainer/contract-body'
+import { CONDITION_CLAUSE_MARK, contractAcks } from '../../../src/application/trainer/contract-body'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -35,7 +35,15 @@ const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
    الإقرارُ السابعُ (بأنّ العرضَ مشروط) ويُشترط. والقائمةُ تُسأل ولا تُكتب
    بيدها، وإلّا مرّت الاختباراتُ بستٍّ والخادمُ يطلب سبعا. */
 const ALL_ACKS = contractAcks(true).map((a) => a.key)
-const BODY = 'نصُّ اتفاقيّةٍ للاختبار — البند 1 وما بعده.'
+/* ═══ ومتنُ هذه السقالة يحمل بندَ الشرط ═══
+
+   عقودُ هذا الملفّ عروضٌ مشروطة (`gatesActivation = true`). والإرسالُ يردّ
+   عرضا مشروطا لا يحمل متنُه شرطَه — فبريدُه يحدّث المتقدّمَ عن شرطٍ ومهلةٍ
+   لا تحملهما الوثيقة. فتُبنى السقالةُ من العلامة نفسِها لا من جملةٍ تُشبهها:
+   لو غُيّرت صياغةُ البند تحرّكت السقالةُ معها. */
+const BODY = `نصُّ اتفاقيّةٍ للاختبار — البند 1 وما بعده.
+
+${CONDITION_CLAUSE_MARK} لا عقد نهائي. ونفاذه معلق على قبول الأكاديمية لمواد المدرب.`
 const DOCS = [{ kind: 'national_id', labelAr: 'الهوية الوطنية', required: true }]
 
 beforeAll(async () => {
