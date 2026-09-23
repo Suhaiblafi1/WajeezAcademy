@@ -238,6 +238,13 @@ const LOW: readonly string[] = [
      مالٍ ولا سجلٍّ يُقرَّر به عليه، وإنّما يقول إنّ قولَنا فيه لم يستقرّ. */
   'trainer.interview.outcome_cleared',
   'trainer.application.draft_remind',
+  /* ═══ ومتابعةُ الغياب رسالةٌ كأخواتها — وإن نقلت إحداهما الحالة ═══
+
+     «تُوبع بعد غيابه» خبرُ **مراسَلةٍ خرجت**: لا وصولَ يتغيّر ولا مالَ ولا
+     سجلٌّ يُقرَّر به عليه. وأمّا نقلُ الطلب إلى قائمة الانتظار في الرسالة
+     الثانية فله أثرُه المستقلُّ (`trainer.status.transition`) بوزنه — فلا
+     يُثقَل هذا الفعلُ بوزنِ فعلٍ آخرَ مكتوبٍ بجانبه في السجلّ نفسِه. */
+  'trainer.no_show.followup',
   'trainer.interview.dossier_sent', 'trainer.interview.self_booked',
   'trainer.interview.self_canceled',
   'trainer.dossier_link.create', 'trainer.dossier_link.revoke',

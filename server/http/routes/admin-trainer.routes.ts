@@ -19,6 +19,9 @@ import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog
 import { analyzeImpact } from '../../services/impact.service'
 import { COURSE_PREP_MIN_DAYS } from '../../../src/application/trainer/notice-periods'
 import { INTERVIEW_OUTCOME_KEYS } from '../../../src/application/trainer/interview-outcome'
+import {
+  FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, NO_SHOW_FOLLOWUP_KEYS,
+} from '../../../src/application/trainer/no-show-followup'
 import { interviewSyncTrust } from '../../../src/application/trainer/interview-sync-trust'
 import { getCalendlyConfig, getCalendlySync } from '../../services/integrations.service'
 
@@ -193,6 +196,23 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await review.remindToBookInterview(id, req.auth!.userId))
+  })
+
+  /* ═══ متابعةُ من لم يحضر — رسالةٌ تُختار ومتنٌ يُعدَّل (٢٣ سبتمبر ٢٠٢٦) ═══
+
+     غيرُ التذكير فوقَها: ذاك لمن لم يحجز، وهذه لمن حجز وغاب. والمتنُ يصل
+     كما كتبه الموظّف — فحدُّه مقروءٌ من الوحدة المشتركة لا مكتوبٌ هنا،
+     فلا يفترق ما يُقاس في الشاشة عمّا يُردّ في الخادم. */
+  app.post('/api/admin/trainer-applications/:id/no-show-followup', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'متابعةُ متقدّمٍ لم يحضر لقاءَ التعارف — برسالةٍ يُعدَّل متنُها' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      variant: z.enum(NO_SHOW_FOLLOWUP_KEYS),
+      bodyAr: z.string().min(FOLLOWUP_BODY_MIN).max(FOLLOWUP_BODY_MAX),
+    }).parse(req.body)
+    return reply.status(201).send(await review.followUpNoShow(id, req.auth!.userId, body))
   })
 
   /* تذكيرُ المسوّدة — لمن أكمل القسمَ الأوّل وأغلق الصفحة. وهو لا يعلم أنّ
