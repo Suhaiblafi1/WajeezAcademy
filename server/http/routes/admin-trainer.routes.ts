@@ -364,6 +364,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     requiredDocuments: requiredDocumentsSchema,
     hoursNoteAr: z.string().trim().max(500).nullish(),
     rateWaivedReasonAr: z.string().trim().max(500).nullish(),
+    /* الأتعابُ في شاشة التركيب نفسِها — لا شاشةَ ثانية. وتمرّ بمسلك
+       `setRule` نفسِه، فيبقى كاتبُ القاعدة واحدا. */
+    compensation: z.object({
+      type: z.enum(['per_seat', 'fixed_per_cohort', 'revenue_share']),
+      rate: z.number().positive(),
+      minSeats: z.number().int().min(0).optional(),
+      referralRate: z.number().positive().nullish(),
+    }).nullish(),
+    /* وتاريخُ جلسة التهيئة — ومنه تُحسب المهلة. وبلا تاريخٍ يُرسَل العرضُ
+       بلا مهلةٍ ولا يوسمه العاملُ متأخّرا. */
   })
 
   app.get('/api/admin/trainer-contracts', {

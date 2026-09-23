@@ -83,9 +83,21 @@ export interface ContractComposeInput {
      فلا مهلةَ له حتّى يُكتب ويصله خبرُه — ومتنُه يقول ذلك بنصّه. */
   orientationAt?: string | null
   orientationUrl?: string | null
+  /* ═══ والأتعابُ تُضبَط في هذه الشاشة نفسِها ═══
+
+     قرارُ صاحب المنصّة: لا شاشةَ ثانية. وحين تحضر تمرّ بمسلك `setRule`
+     نفسِه لا بنسخةٍ عنه — فيبقى كاتبُ القاعدة واحدا، ويبقى أثرُها وتاريخُ
+     سريانها كما هما. وإن غابت بقيت القاعدةُ القائمةُ على حالها. */
+  compensation?: {
+    type: string
+    rate: number
+    minSeats?: number
+    referralRate?: number | null
+  } | null
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
+
 const newToken = () => randomBytes(32).toString('base64url')
 
 /* محاور الروبرك البشري التسعة — كل محور من 1 إلى 5 */
@@ -1865,8 +1877,37 @@ export class TrainerReviewService {
     /* ولا أجرَ مسكوتٌ عنه: بلا قاعدةٍ قائمةٍ وبلا سببٍ مكتوبٍ يُردّ التركيب.
        فعقدٌ يُوقَّع ولا أساسَ لأتعابه يترك «مستحقّاتي» صفرا إلى الأبد، ولا
        يعرف أحدٌ بعد شهرين أكان ذلك قصدا أم سهوا. */
-    if (!pre.compensation && !input.rateWaivedReasonAr?.trim()) {
-      throw new AuthError('no_rate', 'لا قاعدةَ أتعابٍ لهذا المدرّب — اضبطها الماليّةُ أوّلا، أو اكتب سببَ إرساله بلا أجرٍ متّفقٍ عليه', 422)
+    /* ═══ والأتعابُ المضبوطةُ في الشاشة تغلب القائمة ═══
+
+       وهي تُكتب في المعاملة أدناه. لكنّ المتنَ يُركَّب **قبلها**، ولقطةَ
+       الأعمدة تُنسخ معه — فلولا هذا السطرُ لَقُرئت القاعدةُ القديمةُ في
+       الاثنين، ولَخرج عقدٌ يقول رقما وتقول القاعدةُ غيرَه بعد ثوانٍ.
+
+       فتُبنى هنا الصورةُ النافذةُ مرّةً، ويقرؤها المتنُ واللقطةُ معا. */
+    const effective = input.compensation
+      ? {
+          ruleId: null as string | null,
+          type: input.compensation.type,
+          rate: String(input.compensation.rate),
+          currency: pre.compensation?.currency ?? LEDGER_CURRENCY,
+          minSeats: input.compensation.minSeats ?? null,
+          referralRate: input.compensation.referralRate == null
+            ? null
+            : String(input.compensation.referralRate),
+        }
+      : pre.compensation
+        ? {
+            ruleId: pre.compensation.ruleId as string | null,
+            type: pre.compensation.type,
+            rate: pre.compensation.rate,
+            currency: pre.compensation.currency,
+            minSeats: pre.compensation.minSeats,
+            referralRate: pre.compensation.referralRate,
+          }
+        : null
+
+    if (!effective && !input.rateWaivedReasonAr?.trim()) {
+      throw new AuthError('no_rate', 'لا قاعدةَ أتعابٍ لهذا المدرّب — اضبطها في هذه الشاشة، أو اكتب سببَ إرساله بلا أجرٍ متّفقٍ عليه', 422)
     }
     if (!hasRequiredIdentityDocument(input.requiredDocuments)) {
       throw new AuthError('no_identity_document', 'وثيقةُ هويّةٍ واحدةٌ إلزاميّةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله', 422)
@@ -1886,9 +1927,9 @@ export class TrainerReviewService {
       courses: chosen,
       gatesActivation: pre.gatesActivation,
       orientationAt,
-      compensation: pre.compensation
-        ? { type: pre.compensation.type, rate: pre.compensation.rate, currency: pre.compensation.currency,
-            minSeats: pre.compensation.minSeats, referralRate: pre.compensation.referralRate }
+      compensation: effective
+        ? { type: effective.type, rate: effective.rate, currency: effective.currency,
+            minSeats: effective.minSeats, referralRate: effective.referralRate }
         : null,
       hoursNoteAr: input.hoursNoteAr?.trim() || null,
       rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
@@ -1897,6 +1938,22 @@ export class TrainerReviewService {
     }))
 
     return this.prisma.$transaction(async (tx) => {
+      /* في المعاملة نفسِها: فإن ردَّ التركيبُ بعدها لم تبقَ قاعدةُ أتعابٍ
+         جديدةٌ على مدرّبٍ بلا عقدٍ يفسّرها. */
+      let ruleId = effective?.ruleId ?? null
+      if (input.compensation) {
+        const rule = await new EarningsService(tx as unknown as PrismaClient).setRule(actorId, {
+          profileId: pre.profileId,
+          type: input.compensation.type,
+          rate: input.compensation.rate,
+          minSeats: input.compensation.minSeats,
+          referralRate: input.compensation.referralRate ?? undefined,
+        })
+        /* ويُحفَظ معرّفُ القاعدة المولودةِ هنا لا `null`: العمودُ للتتبّع
+           («من أيّ قاعدةٍ نُقلت هذه الأرقام؟»)، وقاعدةٌ بلا أثرٍ تصل إليها
+           تجعل السؤالَ بلا جواب بعد شهور. */
+        ruleId = rule.id
+      }
       const contract = await tx.trainerContract.create({
         data: {
           profileId: pre.profileId,
@@ -1906,12 +1963,12 @@ export class TrainerReviewService {
           bodyVersion: CONTRACT_BODY_VERSION,
           bodyAr,
           bodyHash: sha256(bodyAr),
-          compensationRuleId: pre.compensation?.ruleId ?? null,
-          compensationType: pre.compensation?.type ?? null,
-          compensationRate: pre.compensation?.rate ?? null,
-          currency: pre.compensation?.currency ?? LEDGER_CURRENCY,
-          compensationMinSeats: pre.compensation?.minSeats ?? null,
-          compensationReferralRate: pre.compensation?.referralRate ?? null,
+          compensationRuleId: ruleId,
+          compensationType: effective?.type ?? null,
+          compensationRate: effective?.rate ?? null,
+          currency: effective?.currency ?? LEDGER_CURRENCY,
+          compensationMinSeats: effective?.minSeats ?? null,
+          compensationReferralRate: effective?.referralRate ?? null,
           hoursNoteAr: input.hoursNoteAr?.trim() || null,
           rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
           qualifiedSnapshot: chosen as unknown as Prisma.InputJsonValue,

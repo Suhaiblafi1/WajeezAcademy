@@ -112,6 +112,12 @@ export default function TrainerContracts() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [docs, setDocs] = useState<RequiredDocument[]>(DEFAULT_REQUIRED_DOCUMENTS);
   const [hoursNoteAr, setHoursNoteAr] = useState("");
+  /* الأتعابُ وجلسةُ التهيئة في هذه الشاشة — لا شاشةَ ثانية */
+  const [feeRate, setFeeRate] = useState("");
+  const [feeReferralRate, setFeeReferralRate] = useState("");
+  const [feeMinSeats, setFeeMinSeats] = useState("");
+  const [orientationAt, setOrientationAt] = useState("");
+  const [orientationUrl, setOrientationUrl] = useState("");
   const [waivedAr, setWaivedAr] = useState("");
   const [preview, setPreview] = useState("");
   const [shownBody, setShownBody] = useState<{ title: string; body: string } | null>(null);
@@ -196,16 +202,40 @@ export default function TrainerContracts() {
       setPicked(new Set(p.courses.map((x) => x.courseId)));
       setDocs(DEFAULT_REQUIRED_DOCUMENTS);
       setHoursNoteAr(""); setWaivedAr("");
+      /* وتُملأ خاناتُ الأتعاب بالقاعدة القائمة إن كانت — فالموظّفُ يعدّل
+         رقما قائما لا يكتبه من فراغٍ فينسى أحدَها. */
+      setFeeRate(p.compensation?.rate ?? "");
+      setFeeReferralRate(p.compensation?.referralRate ?? "");
+      setFeeMinSeats(p.compensation?.minSeats != null ? String(p.compensation.minSeats) : "");
+      setOrientationAt(""); setOrientationUrl("");
     } catch (e) { setErr(permissionMessage(e, "تعذّر تجهيز الشاشة")); }
   };
 
-  const composeBody = useMemo(() => ({
-    title,
-    courseIds: [...picked],
-    requiredDocuments: docs,
-    hoursNoteAr: hoursNoteAr.trim() || null,
-    rateWaivedReasonAr: waivedAr.trim() || null,
-  }), [title, picked, docs, hoursNoteAr, waivedAr]);
+  const composeBody = useMemo(() => {
+    const rate = Number(feeRate);
+    const referral = feeReferralRate.trim() === "" ? null : Number(feeReferralRate);
+    /* ولا تُرسَل قاعدةٌ إلّا إن كُتب سعرٌ صالح: الخانةُ الفارغةُ تعني «اتركِ
+       القاعدةَ القائمةَ كما هي»، لا «اجعلها صفرا». */
+    const compensation = feeRate.trim() !== "" && Number.isFinite(rate) && rate > 0
+      ? {
+          type: "per_seat" as const,
+          rate,
+          minSeats: feeMinSeats.trim() === "" ? undefined : Number(feeMinSeats),
+          referralRate: referral !== null && Number.isFinite(referral) && referral > 0 ? referral : null,
+        }
+      : null;
+    return {
+      title,
+      courseIds: [...picked],
+      requiredDocuments: docs,
+      hoursNoteAr: hoursNoteAr.trim() || null,
+      rateWaivedReasonAr: waivedAr.trim() || null,
+      compensation,
+      orientationAt: orientationAt.trim() === "" ? null : new Date(orientationAt).toISOString(),
+      orientationUrl: orientationUrl.trim() || null,
+    };
+  }, [title, picked, docs, hoursNoteAr, waivedAr, feeRate, feeReferralRate, feeMinSeats,
+      orientationAt, orientationUrl]);
 
   const run = async (fn: () => Promise<void>, ok: string) => {
     setBusy(true); setErr(""); setNote("");
@@ -360,6 +390,60 @@ export default function TrainerContracts() {
             <p className="mt-2 text-read opacity-70">
               وثيقةُ هويّةٍ واحدةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله.
             </p>
+          </Inset>
+
+          {/* ═══ الأتعاب — تُضبَط هنا ثمّ يُركَّب العقد ═══ */}
+          <Inset className="mb-4">
+            <h4 className="mb-1 font-black">الأتعاب</h4>
+            <p className="mb-3 text-read opacity-70">
+              تُضبَط هنا ثمّ يُركَّب العقد — فلا شاشةَ ثانية. والكتابةُ تمرّ
+              بمسلك قاعدة الأتعاب نفسِه، فيبقى كاتبُ القاعدة واحدا. واتركِ
+              الخاناتِ كما هي إن لم ترد تغييرَ القاعدة القائمة.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold">سعرُ المقعد عبر رابطه</span>
+                <input inputMode="decimal" value={feeReferralRate}
+                  onChange={(e) => setFeeReferralRate(e.target.value)}
+                  className={`${areaCls} w-full`} placeholder="45" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold">سعرُ المقعد العامّ</span>
+                <input inputMode="decimal" value={feeRate}
+                  onChange={(e) => setFeeRate(e.target.value)}
+                  className={`${areaCls} w-full`} placeholder="30" />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold">الحدُّ الأدنى للمقاعد</span>
+                <input inputMode="numeric" value={feeMinSeats}
+                  onChange={(e) => setFeeMinSeats(e.target.value)}
+                  className={`${areaCls} w-full`} placeholder="8" />
+              </label>
+            </div>
+          </Inset>
+
+          {/* ═══ جلسةُ التهيئة — ومنها تبدأ المهلة ═══ */}
+          <Inset className="mb-4">
+            <h4 className="mb-1 font-black">جلسةُ التهيئة</h4>
+            <p className="mb-3 text-read opacity-70">
+              ومن تاريخها تبدأ مهلتُه: سبعةُ أيّام. واتركْه فارغا إن لم يُعرَف
+              بعد — فيُرسَل العرضُ بلا مهلة، ولا يوسمه العاملُ متأخّرا، ويُكتب
+              التاريخُ لاحقا فيصله خبرُه وتبدأ.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold">تاريخُها ووقتُها</span>
+                <input type="datetime-local" value={orientationAt}
+                  onChange={(e) => setOrientationAt(e.target.value)}
+                  className={`${areaCls} w-full`} />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-sm font-bold">رابطُ الحضور</span>
+                <input type="url" value={orientationUrl}
+                  onChange={(e) => setOrientationUrl(e.target.value)}
+                  className={`${areaCls} w-full`} placeholder="https://" dir="ltr" />
+              </label>
+            </div>
           </Inset>
 
           <label className="mb-1 block text-sm font-bold" htmlFor="hours-note">
