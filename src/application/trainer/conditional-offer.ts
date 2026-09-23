@@ -106,6 +106,31 @@ export function isLapsed(f: ConditionFacts): boolean {
   return conditionPhase(f) === 'lapsed'
 }
 
+/* ═══ أيُعرَض شريطُ الشرط أصلا ═══
+
+   والجوابُ هنا هو بعينه شرطُ `openConditionContract` في الخادم: مهلةٌ
+   مكتوبةٌ لم يُعتمَد ما بعدها. ولو افترقا لَظهر للمدرّب زرٌّ
+   يردُّه الخادمُ بـ«لا مهلةَ قائمةً على حسابك»، أو اختفى زرٌّ يقبله.
+
+   والأهمُّ ما يمنعه: `conditionPhase` يردّ `none` لمن لا مهلةَ له — ومدرّبٌ
+   نشطٌ منذ سنةٍ عقدُه الأخيرُ بلا أعمدةِ شرطٍ أصلا طورُه `none`. فلو عُلّق
+   الشريطُ على الطورِ وحدَه لَقرأ مدرّبو المنصّة كلُّهم «عرضٌ مشروط — ويصلك
+   موعدُ جلسة التهيئة». */
+export function hasOpenCondition(f: ConditionFacts): boolean {
+  const phase = conditionPhase(f)
+  return phase === 'running' || phase === 'under_review' || phase === 'lapsed'
+}
+
+/* زرُّ «أعلنتُ اكتمالها» — والمنقضيةُ منها بقصد
+
+   فالخادمُ يقبلها متأخّرةً بنصّه: «من تأخّر يوما ثمّ أتمّ موادَّه أولى
+   به أن تُقرأ من أن يُردّ بابُه». والمجمّدةُ وحدَها تُرَدّ (`already_declared`) —
+   فزرٌّ يُعرَض لمن أعلن أصلا يعدُ بفعلٍ لا يقع. */
+export function canDeclareMaterials(f: ConditionFacts): boolean {
+  const phase = conditionPhase(f)
+  return phase === 'running' || phase === 'lapsed'
+}
+
 /* ═══ التذكيرُ مرّةً واحدة، ولا تذكيرَ بلا مهلة ═══
 
    والشرطُ الأخيرُ هو ضمانُ الترحيل نفسُه: من في التهيئة اليومَ بلا عرضٍ
@@ -150,6 +175,19 @@ export function extendProblemAr(f: ConditionFacts): string | null {
 export function extendedDeadline(f: ConditionFacts): Date | null {
   const due = asDate(f.conditionDeadlineAt)
   return due ? new Date(due.getTime() + EXTENSION_DAYS * DAY_MS) : null
+}
+
+/* ═══ زرُّ التمديد — أضيقُ من قبول الخادم بقصد ═══
+
+   `extendProblemAr` يأذن للمنقضية: لا تمديدَ سابقا، ومهلةٌ مكتوبةٌ، ولم
+   تُعتمَد. لكنّ `extendedDeadline` يزيد يومَين على **تاريخِها هي** لا على
+   اليوم — فمن انقضت مهلتُه قبل ثلاثةِ أيّامٍ يخرج من الزرّ إلى مهلةٍ
+   انقضت قبل يوم. زرٌّ يعمل ولا ينفع.
+
+   ولا يُحرَم صاحبُها طريقا: بابُه «أعلنتُ اكتمالها» والخادمُ يقبلها
+   متأخّرةً بنصّه. والمجمّدةُ مثلُها: مهلةٌ واقفةٌ لا تُمدّد. */
+export function canAskExtension(f: ConditionFacts): boolean {
+  return conditionPhase(f) === 'running' && extendProblemAr(f) === null
 }
 
 /* ═══ ما يُقرأ في الشاشات — موضعٌ واحدٌ لا ثلاثة ═══

@@ -7,6 +7,7 @@ import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
+import ConditionStrip, { type ConditionContract, type OnboardingTask } from "@/components/ConditionStrip";
 import { useRealSession } from "@/services/session";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
@@ -97,6 +98,15 @@ function MoreTabs({ items, pathname }: { items: { to: string; label: string; ico
   );
 }
 
+/* ما يقرؤه الإطارُ من `/api/trainer/me` — لا الملفُّ كلُّه.
+   ونداءٌ واحدٌ يخدم اثنين: عدّادَ التصحيح، وشريطَ العرض المشروط.
+   فنداءان لمسارٍ واحدٍ في الإطار نفسِه طلبٌ زائدٌ في كلّ شاشةٍ تُفتح. */
+interface PortalMe {
+  pendingGrading?: number;
+  contracts?: ConditionContract[];
+  onboardingTasks?: OnboardingTask[];
+}
+
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, checked } = useRealSession();
@@ -116,20 +126,24 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
      كان المدرّبُ لا يعرف أنّ أحدا ينتظره حتّى يفتح الطابورَ بيده. والرقمُ
      هنا أنفعُ من إشعارٍ: يُرى بلا فتحِ شيء، ويبقى ما بقي العمل، ويصير صفرا
      وحدَه حين يفرغ. والسقوطُ يُبتلع — عدّادٌ لم يصل لا يمنع أحدا من عمله. */
-  const [pending, setPending] = useState(0);
-  /* والعددُ يُعاد جلبُه بعد فعلِ المدرّب لا بإعادة تحميل الصفحة: كان يقبل
+  const [me, setMe] = useState<PortalMe | null>(null);
+  /* ويُعاد جلبُه بعد فعلِ المدرّب لا بإعادة تحميل الصفحة: كان يقبل
      آخرَ تسليمٍ فيصير المتنُ «الطابورُ نظيف» والشارةُ فوقه «١». والإطارُ
-     لا يرى ما يفعله ابنُه، فيسمع إشارتَه (`GRADING_CHANGED`). */
-  const refreshPending = useCallback(() => {
-    void apiGet<{ pendingGrading?: number }>("/api/trainer/me")
-      .then((me) => setPending(me.pendingGrading ?? 0))
+     لا يرى ما يفعله ابنُه، فيسمع إشارتَه (`GRADING_CHANGED`).
+
+     وشريطُ الشرط يركب النداءَ نفسَه: فمن أعلن اكتمالَ موادّه يجب أن
+     يرى السطرَ يتبدّل في مكانه لا أن يُعيد التحميل ليصدّق أنّ شيئا وقع. */
+  const refreshMe = useCallback(() => {
+    void apiGet<PortalMe>("/api/trainer/me")
+      .then(setMe)
       .catch(() => { /* لا رقمَ خيرٌ من رقمٍ كاذب */ });
   }, []);
   useEffect(() => {
-    refreshPending();
-    window.addEventListener(GRADING_CHANGED, refreshPending);
-    return () => window.removeEventListener(GRADING_CHANGED, refreshPending);
-  }, [refreshPending]);
+    refreshMe();
+    window.addEventListener(GRADING_CHANGED, refreshMe);
+    return () => window.removeEventListener(GRADING_CHANGED, refreshMe);
+  }, [refreshMe]);
+  const pending = me?.pendingGrading ?? 0;
   const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
 
   /* ═══ ارتفاعُ الشريط يُقاس ويُنشَر — فوق كلّ عودةٍ مبكّرة ═══
@@ -310,6 +324,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
                 (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
                 التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
       <div className="mx-auto max-w-6xl px-5 py-8">
+        {/* وفوقَ عنوان الشاشة لا داخلَها: المهلةُ حالُ المدرّب لا حالُ
+            صفحة، فتُرى في كلّ شاشةٍ يفتحها وهو في يومه السادس. */}
+        <ConditionStrip contract={me?.contracts?.[0]} tasks={me?.onboardingTasks} onDone={refreshMe} />
         <h1 className="mb-6 text-2xl font-black">{title}</h1>
         {children}
       </div>
