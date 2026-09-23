@@ -133,7 +133,13 @@ describe('المهلةُ تُخزَّن محسوبةً من تاريخ الجل�
     const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
     expect(row.bodyAr!.split('\n')[0]).toContain('عرض مشروط')
     expect(row.bodyAr, 'بندُ الشرط غائبٌ عن متنٍ يُوقَّع').toMatch(/\n2-6 وهذا عرض مشروط/)
-    expect(row.bodyVersion).toMatch(/^v4-/)
+    /* والإصدارُ يُقرأ رقما لا مطابقةَ حرف: تثبيتُه على «v4» بعينه يجعل هذا
+       الحارسَ يحمرّ عند كلّ رفعٍ مشروعٍ للإصدار فيطلب تعديلَ نفسِه. والمقيسُ
+       أنّ ما خُزِّن لا ينزل عن الجيل الذي دخل فيه بندُ الشرط. */
+    const gen = /^v(\d+)-\d{4}-\d{2}-\d{2}$/.exec(row.bodyVersion ?? '')
+    expect(gen, 'إصدارُ المتن المخزَّن على غير صيغة vN-YYYY-MM-DD').toBeTruthy()
+    expect(Number(gen![1]), 'نزل إصدارُ المتن عن الجيل الذي حمل بندَ الشرط')
+      .toBeGreaterThanOrEqual(4)
     /* والهاشُ على ما خُزِّن — فمن وقّع على صفحةٍ ثمّ بُدّل تحته النصُّ لا يمرّ */
     expect(row.bodyHash).toBeTruthy()
   })

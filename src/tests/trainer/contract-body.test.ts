@@ -693,8 +693,15 @@ describe('إقراراتُ التوقيع', () => {
     expect(CONTRACT_CONSENT_VERSION).toMatch(/^v3-/)
   })
 
-  it('وإصدارُ المتن ارتفع مع بند الشرط', () => {
-    expect(CONTRACT_BODY_VERSION).toMatch(/^v4-/)
+  /* والإصدارُ يُقرأ رقما لا مطابقةَ حرف: كان مثبَّتا على «v4» بعينه، فكان
+     يحمرّ عند كلّ رفعٍ مشروعٍ للإصدار ويطلب تعديلَ نفسِه — وحارسٌ يُعدَّل في
+     كلّ مرّةٍ يُعطَّل بعد ثالثة. والمقيسُ ما كان يعنيه: بندُ الشرط دخل في
+     الجيل الرابع، فما حمل الشرطَ لا ينزل إصدارُه عنه. */
+  it('وإصدارُ المتن لا ينزل عن الجيل الذي دخل فيه بندُ الشرط', () => {
+    const shape = /^v(\d+)-\d{4}-\d{2}-\d{2}$/.exec(CONTRACT_BODY_VERSION)
+    expect(shape, 'إصدارُ المتن على غير صيغة vN-YYYY-MM-DD').toBeTruthy()
+    expect(Number(shape![1]), 'نزل إصدارُ المتن عن الجيل الذي حمل بندَ الشرط')
+      .toBeGreaterThanOrEqual(4)
   })
 })
 
@@ -729,5 +736,131 @@ describe('بندُ الشرط يُفحَص في المتن قبل الإرسال
       .toContain('\n${CONDITION_CLAUSE_MARK} لا عقد نهائي')
     expect(source, 'الجملةُ مكتوبةٌ حرفا في المتن إلى جانب الثابت')
       .not.toContain('\n2-6 وهذا عرض مشروط لا عقد نهائي')
+  })
+})
+
+/* ═══ «الخلاصة في سطور» — §٨-٢، والقرارُ الخامسُ في §١٥ ═══
+
+   ── ولمَ تُحرَس وحدةُ مصدرها لا حسنُ صياغتها ──
+
+   الخطرُ فيها واحدٌ بعينه: أن تفترق عن البنود. فخلاصةٌ تقول أتعابا غيرَ التي
+   في 4-1، أو مُدَدَ صرفٍ غيرَ التي في 4-2، تُقرأ ويُحتجّ بها **وقد كذبت** —
+   وهي حينها أسوأُ من غيابها، إذ صارت الوثيقةُ تقول رقمَين لشيءٍ واحد.
+
+   فالمقيسُ هنا أنّ ما تطبعه الخلاصةُ **هو ما يطبعه البندُ نفسُه**، لا أنّه
+   يشبهه. وموضعُها مقيسٌ كذلك: خلاصةٌ تحت عشرين بندا لا تُقرأ، فلا معنى لها. */
+describe('الخلاصةُ في سطور', () => {
+  const offer = (over: Partial<NonNullable<ContractBodyInput['conditional']>> = {}) =>
+    renderContractBodyAr(base({ conditional: { ...CONDITIONAL, ...over } }))
+
+  /** نصُّ الخلاصة وحدَه — من عنوانها إلى الديباجة */
+  function summaryOf(body: string): string {
+    const at = /^الخلاصة في سطور$/m.exec(body)
+    expect(at, 'لا عنوانَ للخلاصة في رأس سطر').toBeTruthy()
+    const preamble = /^الديباجة$/m.exec(body)
+    expect(preamble, 'لا ديباجةَ في المتن').toBeTruthy()
+    expect(at!.index, 'الخلاصةُ بعد الديباجة — وهي إنّما تُقرأ في الرأس')
+      .toBeLessThan(preamble!.index)
+    return body.slice(at!.index, preamble!.index)
+  }
+
+  /** سطرٌ من الخلاصة يبدأ بعنوانه — ونصُّه بلا العنوان */
+  function line(body: string, headAr: string): string {
+    const found = summaryOf(body).split('\n').find((l) => l.startsWith(`· ${headAr}`))
+    expect(found, `لا سطرَ «${headAr}» في الخلاصة`).toBeTruthy()
+    return found!.slice(`· ${headAr}`.length).trim()
+  }
+
+  it('١) في الرأس قبل البند الأوّل — لا في آخر الوثيقة', () => {
+    const body = renderContractBodyAr(base())
+    const at = body.indexOf('الخلاصة في سطور')
+    const first = /^البند 1 —/m.exec(body)!.index
+    expect(at, 'الخلاصةُ بعد البند الأوّل').toBeLessThan(first)
+    expect(body.indexOf(CONTRACT_BODY_VERSION), 'الخلاصةُ قبل ترويسة المرجع والإصدار')
+      .toBeLessThan(at)
+  })
+
+  it('٢) ولا تكسر ترقيمَ البنود ولا عناوينَ الملاحق', () => {
+    /* وهو خطرٌ حقيقيّ لا نظريّ: سطرٌ في الخلاصة يبدأ بـ«البند 4 —» يُحسَب
+       عنوانَ بندٍ رابعٍ ثانٍ، فينكسر الترقيمُ المتّصلُ الذي تقوم عليه
+       الإحالاتُ كلُّها. فإحالاتُها بين قوسَين في وسط السطر لا في رأسه. */
+    for (const body of [renderContractBodyAr(base()), offer()]) {
+      expect(clauseNumbers(body), 'ترقيمُ البنود انكسر بدخول الخلاصة')
+        .toEqual([...Array(20)].map((_, i) => i + 1))
+      for (const letter of ['أ', 'ب']) expect(annexAt(body, letter)).toBeGreaterThan(0)
+    }
+  })
+
+  it('٣) وسطرُ الأتعاب فيها هو نفسُه الذي يطبعه البند 4-1', () => {
+    /* أقوى ما يُقاس في هذا الباب: لا يُطابَق معنى بمعنى بل **نصٌّ بنصّ**.
+       فلو صِيغت الأتعابُ في الخلاصة صياغةً ثانيةً — ولو صحيحةً اليومَ —
+       سقط هذا الحارس، وهو مقصودُه: المصدرُ واحدٌ أو لا خلاصة. */
+    const body = renderContractBodyAr(base())
+    const feeLine = line(body, 'والأتعاب:').replace(/\s*\(البند 4-1\)$/, '')
+    expect(feeLine.length, 'سطرُ الأتعاب في الخلاصة فارغ').toBeGreaterThan(20)
+    expect(clauseSection(body, 4), 'أتعابُ الخلاصة ليست نصَّ البند 4-1 نفسَه')
+      .toContain(feeLine)
+  })
+
+  it('٤) ومُدَدُ الصرف فيها هي ثوابتُ البند 4-2 نفسُها', () => {
+    const payout = line(renderContractBodyAr(base()), 'وصرفها:')
+    for (const d of [PAYOUT_APPROVAL_DAYS, PAYOUT_TRANSFER_DAYS, PAYOUT_OUTER_DAYS]) {
+      expect(payout, `مدّةٌ في الخلاصة لا تطابق ثابتَها: ${d}`).toContain(String(d))
+    }
+  })
+
+  it('٥) والمشروطُ تُعلن خلاصتُه مهلتَه وتاريخَ انتهائها', () => {
+    const mudda = line(offer(), 'والمهلة:')
+    expect(mudda).toContain(String(CONDITIONAL.windowDays))
+    expect(mudda, 'لا تاريخَ لجلسة التهيئة').toContain(CONDITIONAL.orientationOnAr!)
+    expect(mudda, 'لا تاريخَ لانتهاء المهلة').toContain(CONDITIONAL.deadlineOnAr!)
+  })
+
+  /* ═══ وهذا أهمُّ ما يُقاس فيها ═══
+
+     عرضٌ يُرسَل ولمّا يُعرَف موعدُ جلسته **لا مهلةَ له أصلا** — القرارُ
+     الرابعُ في §١٥، وضمانُ الترحيل نفسُه. فخلاصةٌ تُعلن له تاريخا تُنشئ
+     التزاما نفاه البندُ 2-8 بنصّه، وهي أوّلُ ما يقرأ. */
+  it('٦) ومن لا تاريخَ لجلسته لا تُعلن له خلاصتُه تاريخا', () => {
+    const mudda = line(offer({ orientationOnAr: null, deadlineOnAr: null }), 'والمهلة:')
+    /* والمقيسُ **ألّا يُعلَن انتهاءٌ أصلا** لا أن يخلو السطرُ من تاريخٍ
+       بعينه: ذاك لا يُنقَض بحال — فالتاريخُ غيرُ ممرَّرٍ أصلا فلا سبيلَ إلى
+       طبعه، وحارسٌ لا يُنقَض زينة. أمّا «وتنتهي» فتُطبَع بنقضٍ واحد. */
+    expect(mudda, 'أُعلن انتهاءُ مهلةٍ لمن لا تاريخَ لجلسته').not.toMatch(/وتنتهي/)
+    expect(mudda, 'لم تُحَل إلى إخطارٍ لاحقٍ بالتاريخ').toMatch(/تخطرك/)
+  })
+
+  it('٧) والاتفاقيّةُ المطلقةُ لا خلاصةَ شرطٍ فيها ولا مهلة', () => {
+    const summary = summaryOf(renderContractBodyAr(base()))
+    expect(summary, 'خلاصةُ عقدٍ مطلقٍ تتحدّث عن مهلة').not.toMatch(/والمهلة:/)
+    expect(summary, 'خلاصةُ عقدٍ مطلقٍ تقول إنّه عرضٌ مشروط').not.toMatch(/عرض مشروط/)
+  })
+
+  it('٨) وتحتها سطرٌ ينفي عنها الإلزام — وهو آخرُها', () => {
+    for (const body of [renderContractBodyAr(base()), offer()]) {
+      const summary = summaryOf(body)
+      const lines = summary.trim().split('\n')
+      const last = lines[lines.length - 1]
+      expect(last, 'آخرُ الخلاصة ليس سطرَ نفي الإلزام').toMatch(/ليست بندا/)
+      expect(last, 'لا يقول أين المُلزِم').toMatch(/البنود والملاحق/)
+      /* وموضعُه تحتها لا فوقها: بنودُها تُقرأ أوّلا ثمّ يُقال ما حكمُها */
+      expect(summary.indexOf('· الصفة:'), 'سطرُ النفي فوق الخلاصة لا تحتها')
+        .toBeLessThan(summary.indexOf(last))
+    }
+  })
+
+  it('٩) ولا قيمةَ برمجيّةٍ تسرّبت إليها في أيٍّ من أشكالها الثلاثة', () => {
+    /* والأشكالُ ثلاثةٌ لأنّ سطرَ المهلة فيه تعويضان متداخلان: تاريخُ الجلسة
+       وتاريخُ الانتهاء، وكلٌّ منهما يقبل الفراغ. */
+    for (const body of [
+      renderContractBodyAr(base()),
+      offer(),
+      offer({ orientationOnAr: null, deadlineOnAr: null }),
+    ]) {
+      const summary = summaryOf(body)
+      for (const leak of ['undefined', 'null', 'NaN', '[object', '{{']) {
+        expect(summary, `أثرُ قيمةٍ برمجيّةٍ في خلاصةٍ تُقرأ: ${leak}`).not.toContain(leak)
+      }
+    }
   })
 })
