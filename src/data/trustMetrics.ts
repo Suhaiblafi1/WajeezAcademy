@@ -4,6 +4,11 @@
    قواعد صارمة (بقرار المالك، 2026-08-20):
    1) شريط الثقة في الصفحة الرئيسية يقرأ source_scope === 'wajeez_skills' حصراً.
    2) ممنوع أي رقم من تطبيق وجيز العام (B2C) مهما كان أكبر أو أجمل.
+      ── ونُسخت لصفحة «من نحن» وحدَها (قرارُ صاحب المنصّة، ٢٣ سبتمبر ٢٠٢٦) ──
+      طلب أن تروي الصفحةُ الحكايةَ كاملةً بأرقامها: مستخدمو التطبيق ومكتبتُه،
+      ثمّ وجيز مهارات، ثمّ الأكاديمية. فأرقامُ التطبيق في `wajeezAppStats`
+      أدناه، تُعرض **في فصل التطبيق وباسمه** — لا في شريط الرئيسية، ولا
+      بجوار اسم الأكاديمية. والشريطُ باقٍ على القاعدة ١ كما هو.
    3) لا رقم يُعرض بلا source_url + source_context + last_verified_at.
    4) approved_for_display = false ⇒ لا يظهر في Production إطلاقاً.
    5) الأرقام تُنسب لـ«وجيز مهارات» لا للأكاديمية — لا خلط بين
@@ -163,9 +168,79 @@ export const wajeezSkillsStats: TrustMetric[] = [
   },
 ]
 
+/* ══ تطبيق وجيز (B2C) — لفصل التطبيق في «من نحن» وحدَه (انظر القاعدة ٢) ══
+
+   ── وكيف تُحقِّق منها، بصراحة ──
+
+   موقعُ وجيز محجوبٌ عن بيئة البناء (سياسةُ الشبكة فيها)، فلم تُفتح الصفحةُ
+   نفسُها في ٢٣ سبتمبر ٢٠٢٦. والنصُّ المقتبسُ أدناه هو ما فهرسه محرّكُ البحث
+   من صفحة «من نحن» في الموقع ومن وصف التطبيق في متجر Google Play، وتطابقه
+   تغطياتٌ صحفيّة. فمن عدّل قيمةً فتح المصدرَ بعينه أوّلا.
+
+   ── والستّةُ لا السبعة ──
+
+   قال صاحبُ المنصّة «نحو سبعة ملايين» وأحال إلى الموقع، والموقعُ يقول ستّة.
+   فالمعروضُ ما في المصدر — ويُرفع يومَ يرفعه المصدر، لا قبله. */
+const APP_ABOUT_URL = 'https://wajeez.com/about-us'
+const APP_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.faylasof.android.waamda'
+const APP_VERIFIED = '2026-09-23'
+
+export const wajeezAppStats: TrustMetric[] = [
+  {
+    key: 'app_users',
+    value: 6_000_000,
+    display_value: '+6 ملايين',
+    label_ar: 'مستخدم حول العالم',
+    source_scope: 'wajeez_app',
+    source_url: APP_ABOUT_URL,
+    source_context: 'صفحة «من نحن» في موقع وجيز كما فهرسها محرّك البحث: «…وحقق تقييماً عالمياً بلغ 4.6 نجوم، بفضل ثقة 6 ملايين مستخدم حول العالم»',
+    last_verified_at: APP_VERIFIED,
+    approved_for_display: true,
+    selected_for_home: false, // القاعدة ١: الشريطُ لوجيز مهارات وحدها
+  },
+  {
+    key: 'app_countries',
+    value: 137,
+    display_value: '+137',
+    label_ar: 'دولة يصلها التطبيق',
+    source_scope: 'wajeez_app',
+    source_url: APP_ABOUT_URL,
+    source_context: 'صفحة «من نحن» في موقع وجيز كما فهرسها محرّك البحث: «التطبيق موجود في أكثر من 137 دولة»',
+    last_verified_at: APP_VERIFIED,
+    approved_for_display: true,
+    selected_for_home: false,
+  },
+  {
+    key: 'app_book_summaries',
+    value: 3500,
+    display_value: '+3,500',
+    label_ar: 'ملخّص كتاب يُسمع ويُقرأ',
+    source_scope: 'wajeez_app',
+    source_url: APP_PLAY_URL,
+    source_context: 'وصف التطبيق في Google Play كما فهرسه محرّك البحث: «over 3,500 audiobook summaries, hundreds of captivating audio novels…» — ويطابقه بيانُ شراكة أنغامي (أغسطس 2022): «more than 3,500 audiobook summaries»',
+    last_verified_at: APP_VERIFIED,
+    approved_for_display: true,
+    selected_for_home: false,
+  },
+]
+
 /** المرشّح الوحيد المسموح لمكوّن شريط الثقة في الصفحة الرئيسية */
 export function homeTrustMetrics(): TrustMetric[] {
   return wajeezSkillsStats.filter(
     (m) => m.source_scope === 'wajeez_skills' && m.approved_for_display && m.selected_for_home,
   )
+}
+
+/** أرقامٌ بأعيانها من نطاقٍ واحد، بترتيب طلبها — لفصول «من نحن».
+
+    تسقط على مفتاحٍ لا وجودَ له أو غيرِ معتمد: رقمٌ يختفي بصمتٍ من فصلٍ يرويه
+    أسوأُ من خطأٍ يُرى في الاختبار. والنطاقُ شرطٌ لا اقتراح — القاعدة ٥. */
+export function metricsFor(scope: TrustScope, keys: readonly string[]): TrustMetric[] {
+  const pool = [...wajeezSkillsStats, ...wajeezAppStats].filter((m) => m.source_scope === scope)
+  return keys.map((key) => {
+    const m = pool.find((x) => x.key === key)
+    if (!m) throw new Error(`لا رقمَ بالمفتاح «${key}» في نطاق ${scope}`)
+    if (!m.approved_for_display) throw new Error(`الرقمُ «${key}» غيرُ معتمدٍ للعرض`)
+    return m
+  })
 }

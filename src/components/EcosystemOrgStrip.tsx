@@ -36,7 +36,9 @@ import { Inset } from '@/components/ui/Surface'
    مساند، وحارسُ «رئيسيٌّ واحدٌ في الشاشة» يعدّه ويسقط على الثاني. */
 const MOBILE_VISIBLE = 8
 
-export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean } = {}) {
+/* `headingAs`: في «من نحن» يقع الجدارُ داخلَ فصل «وجيز مهارات» وعنوانُه
+   `h2` — فعنوانُ الجدار هناك فرعٌ منه (`h3`)، لا فصلٌ يوازيه. */
+export default function EcosystemOrgStrip({ nested = false, headingAs: Heading = 'h2' }: { nested?: boolean; headingAs?: 'h2' | 'h3' } = {}) {
   const orgs = displayedEcosystemOrgs()
   const [showAll, setShowAll] = useState(false)
   if (orgs.length === 0) return null
@@ -46,7 +48,7 @@ export default function EcosystemOrgStrip({ nested = false }: { nested?: boolean
     <Wrapper aria-label="مؤسسات وثقت بمنظومة وجيز" className={nested ? 'mt-12 border-t border-white/5 pt-12 md:mt-16 md:pt-16' : 'py-12 md:py-14'}>
       <div className={nested ? '' : 'shell'}>
         <div className="reveal text-center">
-          <h2 className="text-sm font-bold text-teal-light-ink md:text-base">مؤسسات وثقت بمنظومة وجيز</h2>
+          <Heading className="text-sm font-bold text-teal-light-ink md:text-base">مؤسسات وثقت بمنظومة وجيز</Heading>
           <p className="mx-auto mt-2 max-w-xl text-read leading-relaxed text-muted-foreground">
             خبرة مؤسسية تراكمت عبر حلول منظومة وجيز — منها وجيز مهارات — في تطوير فرق العمل وبناء ثقافة التعلّم.
           </p>
