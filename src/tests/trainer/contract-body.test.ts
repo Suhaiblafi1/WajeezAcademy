@@ -19,12 +19,15 @@
      تُقرأ ولا تُحتسب. */
 
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   payoutTimingNoteAr,
   PAYOUT_APPROVAL_DAYS, PAYOUT_OUTER_DAYS, PAYOUT_TRANSFER_DAYS,
 } from '@/application/trainer/notice-periods'
 import {
-  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_VERSION, contractAcks, renderContractBodyAr,
+  CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_VERSION,
+  bodyCarriesConditionClause, contractAcks, renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
 import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
@@ -692,5 +695,39 @@ describe('إقراراتُ التوقيع', () => {
 
   it('وإصدارُ المتن ارتفع مع بند الشرط', () => {
     expect(CONTRACT_BODY_VERSION).toMatch(/^v4-/)
+  })
+})
+
+/* ═══ الدرزُ بين القديم والجديد — عرضٌ بلا شرطٍ في متنه ═══
+
+   عرضٌ رُكِّب قبل بند الشرط يحمل `gatesActivation = true` ولا شرطا في متنه،
+   فبريدُه يحدّث المتقدّمَ عن جلسةٍ ومهلةٍ لا تحملهما الوثيقةُ التي يوقّعها. */
+describe('بندُ الشرط يُفحَص في المتن قبل الإرسال', () => {
+  it('متنُ العرض المشروط يحمل العلامةَ، ومتنُ المطلق لا يحملها', () => {
+    expect(bodyCarriesConditionClause(renderContractBodyAr(base({ conditional: CONDITIONAL })))).toBe(true)
+    expect(bodyCarriesConditionClause(renderContractBodyAr(base()))).toBe(false)
+  })
+
+  it('والمتنُ الفارغُ والمعدومُ لا يحملانها', () => {
+    expect(bodyCarriesConditionClause(null)).toBe(false)
+    expect(bodyCarriesConditionClause(undefined)).toBe(false)
+    expect(bodyCarriesConditionClause('')).toBe(false)
+  })
+
+  /* ═══ والعلامةُ تُعوَّض في المتن ولا تُكتب فيه بيدها ═══
+
+     فما دامت مُعوَّضةً استحال أن تفترق عن المفحوص: صياغةٌ واحدةٌ تُطبَع
+     وتُفحَص. والخطرُ الحقيقيُّ أن يعود أحدٌ فيكتب الجملةَ حرفا في المتن —
+     يومَها يُفحَص عن جملةٍ لا وجودَ لها ويمرّ كلُّ عرض، وهو حارسٌ يقول
+     «سليم» عن كلّ شيء.
+
+     فيُقاس المصدرُ نفسُه: صدرُ الفقرة تعويضٌ لا نصّ. ولا يُقاس المتنُ
+     المطبوع — ذاك يمرّ دائما بحكم التعويض، فلا يقيس شيئا. */
+  it('وصدرُ الفقرة تعويضٌ في المصدر لا جملةٌ مكتوبةٌ بيدها', () => {
+    const source = readFileSync(join(process.cwd(), 'src/application/trainer/contract-body.ts'), 'utf8')
+    expect(source, 'صدرُ بند الشرط كُتب حرفا — فانفصل الفحصُ عن الطباعة')
+      .toContain('\n${CONDITION_CLAUSE_MARK} لا عقد نهائي')
+    expect(source, 'الجملةُ مكتوبةٌ حرفا في المتن إلى جانب الثابت')
+      .not.toContain('\n2-6 وهذا عرض مشروط لا عقد نهائي')
   })
 })

@@ -48,7 +48,7 @@ import {
   academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
 } from '../../src/data/academy-legal'
 import {
-  CONTRACT_BODY_VERSION, CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
+  CONTRACT_BODY_VERSION, bodyCarriesConditionClause, CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
   renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation, type ContractCourseRow,
 } from '../../src/application/trainer/contract-body'
@@ -2073,6 +2073,24 @@ export class TrainerReviewService {
     }
     if (!contract.bodyAr) {
       throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. ركّبْ عقدا جديدا', 409)
+    }
+    /* ═══ ولا يُرسَل عرضٌ مشروطٌ متنُه لا يحمل شرطَه (٢٣ سبتمبر ٢٠٢٦) ═══
+
+       عرضٌ رُكِّب قبل بند الشرط يحمل `gatesActivation = true` في القاعدة ولا
+       شرطا في متنه. فإن أُرسل خرج **بريدُ العرض المشروط** يحدّثه عن جلسةٍ
+       ومهلةٍ وشرطٍ، والوثيقةُ التي يفتحها لا تذكر من ذلك حرفا. ورسالةٌ تَعِد
+       بما لا تحمله الوثيقةُ أسوأُ من رسالةٍ ناقصة: يوقّع على أحدهما ويُحاسَب
+       بالآخر.
+
+       فيُردّ الإرسالُ ويُقال ما يُفعَل. ولا يُصلَح المتنُ هنا: التركيبُ
+       يُجمَّد ويُهشَّم مرّةً بقصد، فمن بُدّل متنُه تحته صار له هاشان.
+       وترحيلُ العقود القائمة سكربتٌ يُشغَّل بيدٍ (§١٢ من التصميم). */
+    if (contract.gatesActivation && !bodyCarriesConditionClause(contract.bodyAr)) {
+      throw new AuthError(
+        'body_without_condition',
+        'هذا عرضٌ مشروطٌ ومتنُه رُكِّب قبل بند الشرط — فبريدُه يحدّث المتقدّمَ عن شرطٍ ومهلةٍ لا تحملهما الوثيقة. ألغِ هذا العرضَ وركّبْ غيرَه، فيخرج متنُه ببند الشرط وتاريخِ جلسة التهيئة.',
+        409,
+      )
     }
     const app = contract.profile.application
     const { token, tokenHash, expiresAt } = this.mintContractToken()
