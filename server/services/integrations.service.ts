@@ -91,7 +91,22 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
   if (env.RESEND_FROM_NAME) base.fromName = env.RESEND_FROM_NAME
   if (env.RESEND_FROM_EMAIL) base.fromEmail = env.RESEND_FROM_EMAIL
   if (env.RESEND_REPLY_TO) base.replyTo = env.RESEND_REPLY_TO
+  base.replyTo = currentReplyTo(base.replyTo)
   return base
+}
+
+/* عنوانُ الردّ المهجورُ لا يعود من الإعدادات.
+
+   حين تقرّر أن يكون العنوانُ الظاهرُ واحدا (٢٣ سبتمبر ٢٠٢٦) نُشرت الشيفرةُ
+   وبقيت الرسائلُ تقول `Reply-To: support@wajeezacademy.com`: فـ`deploy/.env.production`
+   يسكن الخادمَ ولا يدخل Git، ونُسخ عن قالبٍ كان يقول ذلك، والبيئةُ تغلب الشيفرة.
+   فأيُّ عنوانِ ردٍّ على نطاق الإرسال — وهو نطاقٌ لا يستقبل، والمُرسِلُ عليه
+   `no-reply@` — يُستبدل بالعنوان الواحد، أينما ضُبط. وما كان على نطاقٍ آخر
+   اختيارٌ صريحٌ يُحترم. */
+function currentReplyTo(value: string | undefined): string | undefined {
+  const v = value?.trim()
+  if (!v) return undefined
+  return v.toLowerCase().endsWith('@' + ACADEMY_EMAIL_DOMAIN) ? ACADEMY_CONTACT_EMAIL : v
 }
 
 /* ── الحفظ من شاشة الإدارة — قناع لا يكتب، وكل تغيير موثق ── */
