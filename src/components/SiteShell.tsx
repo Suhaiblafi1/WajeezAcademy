@@ -53,12 +53,17 @@ function SiteNav() {
     return () => document.removeEventListener('keydown', onKey)
   }, [open])
 
-  /* في الصفحات الداخلية يشير «مؤشر وجيز» إلى قسمه في الرئيسية */
+  /* في الصفحات الداخلية يشير «مؤشر وجيز» إلى قسمه في الرئيسية.
+
+     و«من نحن» أوّلُ الشريط، في مكان «منهجية وجيز» — قرارُ صاحب المنصّة (٢٣
+     سبتمبر ٢٠٢٦) حين صارت حكايةَ وجيز كاملة. والمنهجيّةُ خرجت من الشريط لا
+     من الموقع: في التذييل أدناه، ومن محطّة التشخيص في «من نحن» نفسِها.
+     والروابطُ نفسُها في رأس الرئيسيّة — يحرس تطابقَهما `site-nav-size.test.ts`. */
   const links: { label: string; href: string; route?: boolean }[] = [
+    { label: 'من نحن', href: '/p/about', route: true },
     { label: 'مؤشر وجيز', href: '/#diagnostic' },
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
-    { label: 'منهجية وجيز', href: '/methodology', route: true },
     { label: 'انضم كمدرب', href: '/join-trainer', route: true },
   ]
   const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
