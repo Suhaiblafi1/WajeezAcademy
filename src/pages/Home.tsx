@@ -96,11 +96,12 @@ function Nav() {
     return () => document.removeEventListener('keydown', onKey)
   }, [open])
 
+  /* «من نحن» أوّلُ الشريط، في مكان «المنهجية» — كما في `SiteShell` وبسببه */
   const links: { label: string; href: string; route?: boolean }[] = [
+    { label: 'من نحن', href: '/p/about', route: true },
     { label: 'مؤشر وجيز', href: '#diagnostic' },
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
-    { label: 'المنهجية', href: '/methodology', route: true },
     { label: 'انضم كمدرب', href: '/join-trainer', route: true },
   ]
   const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
