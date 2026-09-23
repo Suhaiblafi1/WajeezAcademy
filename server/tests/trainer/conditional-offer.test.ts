@@ -176,6 +176,123 @@ describe('لا يُرسَل عرضٌ مشروطٌ متنُه لا يحمل شر�
   })
 })
 
+/* ═══ عملُ العامل: يذكّر ويُبلّغ، ولا يغيّر حالَ أحد ═══
+
+   وأهمُّ ما يُقاس هنا **من لا يُطرَق بابُه**: ثلاثةٌ لهم مهلةٌ في القاعدة
+   ولا يُذكَّرون — من لم يوقّع، ومن لا تاريخَ لجلسته، ومن تجمّدت مهلتُه. */
+describe('مهلةُ العرض المشروط في العامل', () => {
+  const DEADLINE_IN = (days: number) => new Date(Date.now() + days * DAY)
+
+  /** مدرّبٌ وقّع عرضَه فصار في التهيئة، بمهلةٍ تنتهي بعد `days` */
+  async function mkSignedWithDeadline(days: number, extra: Record<string, unknown> = {}) {
+    const made = await mkCandidate()
+    await prisma.trainerApplication.update({
+      where: { id: made.app.id }, data: { status: 'onboarding' },
+    })
+    const contract = await prisma.trainerContract.create({
+      data: {
+        profileId: made.profile.id, title: 'عرضٌ موقَّع', status: 'signed',
+        gatesActivation: true, signedAt: new Date(),
+        orientationAt: new Date(Date.now() - (MATERIALS_WINDOW_DAYS - days) * DAY),
+        conditionDeadlineAt: DEADLINE_IN(days),
+        ...extra,
+      },
+    })
+    return { ...made, contract }
+  }
+
+  const remindersFor = (contractId: string) => prisma.auditEvent.count({
+    where: { action: 'trainer.condition.remind', entityId: contractId },
+  })
+  const noticesFor = (contractId: string) => prisma.auditEvent.count({
+    where: { action: 'trainer.condition.lapsed', entityId: contractId },
+  })
+
+  it('يذكّر من بقي له يومان — ويكتب أنّه ذكّره', async () => {
+    const { contract } = await mkSignedWithDeadline(2)
+    const { reminded } = await review.remindConditionDeadlines()
+    expect(reminded).toBeGreaterThan(0)
+    const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
+    expect(row.conditionRemindedAt, 'ذُكِّر ولم يُكتب أنّه ذُكِّر — فيُذكَّر كلَّ ساعة').toBeTruthy()
+    expect(await remindersFor(contract.id)).toBe(1)
+  })
+
+  it('ولا يذكّر مرّتين', async () => {
+    const { contract } = await mkSignedWithDeadline(2)
+    await review.remindConditionDeadlines()
+    await review.remindConditionDeadlines()
+    expect(await remindersFor(contract.id), 'طُرق بابُه مرّتين').toBe(1)
+  })
+
+  it('ولا يذكّر من أمامه أسبوع', async () => {
+    const { contract } = await mkSignedWithDeadline(6)
+    await review.remindConditionDeadlines()
+    expect(await remindersFor(contract.id)).toBe(0)
+  })
+
+  /* ═══ الثلاثةُ الذين لا يُطرَق بابُهم ═══ */
+
+  it('ولا يذكّر من لم يوقّع — فلم يقبل مهلةً ولا شرطا', async () => {
+    const { contract } = await mkSignedWithDeadline(2)
+    await prisma.trainerContract.update({ where: { id: contract.id }, data: { status: 'sent' } })
+    await review.remindConditionDeadlines()
+    expect(await remindersFor(contract.id), 'ذُكِّر بمهلةٍ لم يوقّع عليها').toBe(0)
+  })
+
+  /* ضمانُ الترحيل: من كان في التهيئة قبل النشر مهلتُه NULL */
+  it('ولا يذكّر قطُّ من لا مهلةَ له', async () => {
+    const { contract } = await mkSignedWithDeadline(2)
+    await prisma.trainerContract.update({
+      where: { id: contract.id },
+      data: { conditionDeadlineAt: null, orientationAt: null },
+    })
+    await review.remindConditionDeadlines()
+    await review.noticeLapsedConditions()
+    expect(await remindersFor(contract.id), 'بدأت ساعةٌ صامتةٌ على من لم يقبلها').toBe(0)
+    expect(await noticesFor(contract.id)).toBe(0)
+  })
+
+  it('ولا يذكّر من تجمّدت مهلتُه — فالكرةُ عندنا', async () => {
+    const { contract } = await mkSignedWithDeadline(2, { conditionPausedAt: new Date() })
+    await review.remindConditionDeadlines()
+    expect(await remindersFor(contract.id)).toBe(0)
+  })
+
+  it('ولا يذكّر من اكتمل شرطُه', async () => {
+    const { contract } = await mkSignedWithDeadline(2, { conditionMetAt: new Date() })
+    await review.remindConditionDeadlines()
+    expect(await remindersFor(contract.id)).toBe(0)
+  })
+
+  describe('والانقضاء', () => {
+    it('يُبلَّغ صاحبُه مرّةً واحدة', async () => {
+      const { contract } = await mkSignedWithDeadline(-1)
+      const { noticed } = await review.noticeLapsedConditions()
+      expect(noticed).toBeGreaterThan(0)
+      await review.noticeLapsedConditions()
+      expect(await noticesFor(contract.id), 'أُبلِغ مرّتين').toBe(1)
+    })
+
+    /* «لم يستوفِ الشروط» وسمٌ محسوبٌ لا حالةٌ جديدة: لم ينتقل مكانا، بل
+       تأخّر في مكانه. والقرارُ بعده لإنسانٍ ينظر. */
+    it('ولا يُغيَّر حالُه ولا يُختَم عرضُه — فالوسمُ محسوبٌ لا حالة', async () => {
+      const { app, contract } = await mkSignedWithDeadline(-1)
+      await review.noticeLapsedConditions()
+      const appAfter = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
+      expect(appAfter.status, 'نقل العاملُ حالةَ إنسانٍ بمؤقّت').toBe('onboarding')
+      const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
+      expect(row.status, 'بُتَّ في عقدٍ بمؤقّت').toBe('signed')
+      expect(row.conditionMetAt).toBeNull()
+    })
+
+    it('ولا يُبلَّغ من مهلتُه قائمة', async () => {
+      const { contract } = await mkSignedWithDeadline(3)
+      await review.noticeLapsedConditions()
+      expect(await noticesFor(contract.id)).toBe(0)
+    })
+  })
+})
+
 describe('العلامتان لا تختلطان', () => {
   it('القبولُ الداخليُّ يبذر «اخترناها له» لا «قُبلت موادُّها»', async () => {
     const { profile } = await mkCandidate()
