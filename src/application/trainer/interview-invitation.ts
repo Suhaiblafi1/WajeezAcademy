@@ -47,7 +47,7 @@
    طرفاه معا — فطرفُ العودة لا يُنسى يومَ تُفتح المواعيد. */
 
 import {
-  INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW, canRemindToBook,
+  INTERVIEW_BOOKING_INVITE_ONLY, INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW, canRemindToBook,
 } from './application-options'
 
 /** نصُّ الدعوة — يُقرأ في البطاقة وفي البريد، ويُكتب هنا وحدَه */
@@ -107,4 +107,38 @@ export interface InvitationSubject {
 export function isInvitedToBook(app: InvitationSubject): boolean {
   if (!canRemindToBook({ status: app.status, liveInterviews: app.liveInterviews })) return false
   return app.invitedAt != null || INTEREST_SHOWN_STATUSES.includes(app.status)
+}
+
+/* ═══ بابُ الحجز — حكمٌ واحدٌ تقرؤه الشاشةُ والبريدُ معا ═══
+
+   ثلاثةُ أحوالٍ لا اثنتان، ولكلٍّ منها ما يُقال فيه:
+
+   ① `paused` — الوقفُ عامٌّ على الناس جميعا، ويُقال فيه شهرُ العودة.
+   ② `not_invited` — قدّم طلبَه ولم يُنظر فيه بعد. ولا يُقال له «امتلأت
+      المواعيد» فهي لم تمتلئ، ولا يُترك أمام تقويمٍ يحجز منه قبل أن يُقرأ
+      ملفُّه — بل يُقال له إنّ طلبَه وصل، وإنّنا نعود إليه.
+   ③ `open` — دُعي فله التقويم.
+
+   ولماذا دالّةٌ لا شرطان في البطاقة: البطاقةُ ليست القارئَ الوحيد. والبريدُ
+   يبني زرَّه على الحكم نفسِه — فلو كُتب الشرطُ في الشاشة وحدَها لَخرجت رسالةٌ
+   تدعو إلى تقويمٍ لا يُعرض، وهو عينُ التناقض الذي وُضعت هذه الوحدةُ لتمنعَه.
+
+   والترتيبُ مقصود: الوقفُ يسبق الدعوة. فمن دُعي ثمّ وُقف الحجزُ على الناس
+   جميعا لا يُفتح له تقويمٌ خاصّ — وقتُنا ممتلئٌ عنه وعن غيره سواء. */
+export type BookingGate = 'paused' | 'not_invited' | 'open'
+
+/**
+ * أيُفتح له التقويم؟ ولمَ لا، إن لم يُفتح؟
+ *
+ * والطرفان يُمرَّران ليُفحصا معا في الاختبار، وافتراضُهما حالُ المنصّة —
+ * فلا يُقرأ المفتاحُ في موضعَين.
+ */
+export function bookingGate(input: {
+  invited: boolean
+  paused?: boolean
+  inviteOnly?: boolean
+}): BookingGate {
+  if (input.paused ?? INTERVIEW_BOOKING_PAUSE.active) return 'paused'
+  if ((input.inviteOnly ?? INTERVIEW_BOOKING_INVITE_ONLY.active) && !input.invited) return 'not_invited'
+  return 'open'
 }

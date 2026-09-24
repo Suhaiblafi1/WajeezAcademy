@@ -970,9 +970,29 @@ export class TrainerReviewService {
      حين لا بديل. والبريدُ كان يأخذ المضمَّنَ دائما — فمن بدّل التقويمَ من
      شاشة التكاملات بدّلَه في الموقع وحدَه، وبقيت الرسائلُ تدعو إلى تقويمٍ
      لم يعد أحدٌ يفتحه. والوجهتان يجب أن تكونا واحدة. */
+  /* ═══ والحاضرون يركبون رابطَ البريد كما يركبون رابطَ الشاشة ═══
+
+     `guests=` يُضاف في `BookInterview.tsx` من إعداد التكاملات، فمن حجز من
+     الموقع خرجت دعوتُه وفيها من ضُبطوا. وكان بريدُ الدعوة يبني رابطَه هنا
+     **بلا `guests`** — فمن حجز من البريد خرجت دعوتُه ناقصةً منهم صامتةً:
+     لا خطأَ يظهر، ولا فرقَ يُرى إلّا في التقويم يومَ الموعد.
+
+     وصاحبُ المنصّة وصفه بعينه (٢٤ سبتمبر ٢٠٢٦): أن يُرفَق بدعوةِ البريد
+     مَن يُرفَق بدعوةِ الموقع — «كما هو الحال لو وصلها من طلب التقديم سابقا».
+     والوجهةُ واحدةٌ فالحمولةُ واحدة.
+
+     ولا يُسمَّى أحدُهم هنا: من ضُبطوا في شاشة التكاملات هم من يُرفَقون،
+     ويُبدَّلون من هناك بلا نشر. وعنوانٌ يُكتب حرفا في هذا الملفّ يفترق يوما
+     عن ذاك — وله حارسٌ يمنعه (`academy-email`).
+
+     ⚠ وشرطُ Calendly باقٍ: «Invitees can add guests» مفعَّلا في نوع الحدث،
+     وإلّا تجاهل المعامَلَ صامتا هنا كما يتجاهله هناك. */
   private async bookingLink(input: { name: string; email: string; reference: string }): Promise<string> {
     const calendly = await getCalendlyConfig(this.prisma)
-    return trainerInterviewUrl(input, calendly.bookingUrl || undefined)
+    return trainerInterviewUrl(
+      { ...input, guests: calendly.guests || undefined },
+      calendly.bookingUrl || undefined,
+    )
   }
 
   /* ═══ دعوةٌ إلى حجزِ موعدٍ آخر — بنقرةٍ واحدة ═══
@@ -1202,10 +1222,15 @@ export class TrainerReviewService {
           )
     }
 
+    /* والرابطُ يُبنى هنا لا في الرسالة: بناؤه يقرأ إعدادَ التكاملات (تقويمٌ
+       بديلٌ وحاضرون)، والرسالةُ دالّةٌ خالصةٌ لا تلمس قاعدةَ بيانات. */
     const mail = bookingReminderMail({
       fullName: app.fullName,
       reference: app.reference,
       statusUrl: `${publicSiteUrl()}/join-trainer/status`,
+      bookingUrl: await this.bookingLink({
+        name: app.fullName, email: app.email, reference: app.reference,
+      }),
     })
     const sent = await sendDirectEmail(this.prisma, {
       to: app.email, subject: mail.subject, ...renderMail(mail.doc),
