@@ -28,6 +28,7 @@ import { Panel, Inset } from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
 import { fmtDateLong } from '@/application/text/format-ar'
 import { parseContractDoc } from '@/application/trainer/contract-sections'
+import { contractHasBodyAr } from '@/application/trainer/contract-body'
 import ContractDocument from '@/components/ContractDocument'
 
 interface RequiredDoc { kind: string; labelAr: string; required: boolean }
@@ -70,6 +71,10 @@ export default function ContractSign() {
   const [busy, setBusy] = useState(false)
 
   const [readToEnd, setReadToEnd] = useState(false)
+  /* والسؤالُ من موضع الخادم نفسِه: شاشةٌ تسأل سؤالا آخرَ تَعِد بما يُردّ */
+  const hasBody = contractHasBodyAr(
+    view?.state === 'open' ? view.bodyAr : null,
+  )
   const [legalName, setLegalName] = useState('')
   const [addressAr, setAddressAr] = useState('')
   const [phone, setPhone] = useState('')
@@ -92,13 +97,22 @@ export default function ContractSign() {
   useEffect(() => { void load() }, [load])
 
   /* يُقاس البلوغُ بالتمرير، ويُقاس كذلك عند أوّل رسم: نصٌّ قصيرٌ لا شريطَ له
-     لا يُمرَّر أبدا — فلو انتُظر التمريرُ وحدَه لبقي الزرُّ مقفلا إلى الأبد. */
+     لا يُمرَّر أبدا — فلو انتُظر التمريرُ وحدَه لبقي الزرُّ مقفلا إلى الأبد.
+
+     ═══ وبينَ «قصيرٍ» و«معدومٍ» فرقٌ كان يضيع ═══
+
+     العقدُ بلا متنٍ لا شريطَ له كذلك، فكان يُرضي الشرطَ الأوّلَ ويُفتح
+     التوقيعُ على صفحةٍ فيها «لا متنَ لهذا العقد». وبوّابةٌ حارسُها أنّه
+     «قرأ إلى آخره» تُفتَح على لا شيء ليست بوّابة.
+
+     فيُسأل عن وجود المتن أوّلا. والخادمُ يردّ التوقيعَ في الحالَين، وهذه
+     الشاشةُ لا تَعِد بما سيُردّ. */
   const checkRead = useCallback(() => {
     const el = bodyRef.current
-    if (!el) return
+    if (!el || !hasBody) return
     if (el.scrollHeight - el.clientHeight <= 24) { setReadToEnd(true); return }
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 24) setReadToEnd(true)
-  }, [])
+  }, [hasBody])
 
   useEffect(() => {
     if (view?.state === 'open') checkRead()
@@ -161,7 +175,7 @@ export default function ContractSign() {
   const missingDocs = v.requiredDocuments
     .filter((d) => d.required && !v.uploaded.some((u) => u.kind === d.kind))
   const allAcked = v.acks.every((a) => acked.has(a.key))
-  const canSign = readToEnd && allAcked && consented
+  const canSign = hasBody && readToEnd && allAcked && consented
     && legalName.trim().length >= 4
     && addressAr.trim().length >= 5 && phone.trim().length >= 6
     && missingDocs.length === 0
@@ -240,12 +254,21 @@ export default function ContractSign() {
       >
         {doc
           ? <ContractDocument doc={doc} />
-          : <p className="p-4 opacity-70">لا متنَ لهذا العقد.</p>}
+          : (
+            <p className="p-4 font-bold">
+              لا متنَ لهذا العقد، فلا يُوقَّع.
+              <span className="block font-normal opacity-80">
+                راسلِ الأكاديميةَ ليُرسَل إليك عقدٌ بمتنه.
+              </span>
+            </p>
+          )}
       </div>
-      <p className={`mb-6 ${readToEnd ? 'opacity-60' : 'font-bold'}`}>
-        {readToEnd
-          ? 'بلغتَ آخرَ النصّ — وما بعده خانةُ التوقيع.'
-          : 'يُفتح التوقيعُ حين تبلغ آخرَ النصّ. اقرأه كاملا، فهو ما ستلتزم به.'}
+      <p className={`mb-6 ${readToEnd && hasBody ? 'opacity-60' : 'font-bold'}`}>
+        {!hasBody
+          ? 'لا نصَّ يُقرأ هنا، ولن يُفتح التوقيع.'
+          : readToEnd
+            ? 'بلغتَ آخرَ النصّ — وما بعده خانةُ التوقيع.'
+            : 'يُفتح التوقيعُ حين تبلغ آخرَ النصّ. اقرأه كاملا، فهو ما ستلتزم به.'}
       </p>
 
       {/* ═══ الوثائق ═══ */}
@@ -353,7 +376,8 @@ export default function ContractSign() {
         {!canSign && (
           <p className="mb-3 opacity-75">
             يبقى: {[
-              !readToEnd && 'قراءةُ النصّ إلى آخره',
+              !hasBody && 'متنُ العقد — ولا يُوقَّع عقدٌ بلا متن',
+              hasBody && !readToEnd && 'قراءةُ النصّ إلى آخره',
               legalName.trim().length < 4 && 'اسمُك القانونيّ',
               addressAr.trim().length < 5 && 'عنوانُك',
               phone.trim().length < 6 && 'رقمُ هاتفك',
