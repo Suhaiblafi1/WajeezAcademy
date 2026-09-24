@@ -32,7 +32,7 @@
 import type { ContractDoc, ContractSection, ContractBlock } from '@/application/trainer/contract-sections'
 import {
   sectionHeadingAr, summaryItem, exampleRow, exampleTotal,
-  isExampleHeading, isAdvisoryNote, feeRuleRows,
+  isExampleHeading, isAdvisoryNote, feeRuleRows, feeRuleCells,
 } from '@/application/trainer/contract-sections'
 
 /** فاصلٌ يُقرأ ولا يُرى — فالنصُّ يبقى تامّا والعينُ تقرأ اللوح */
@@ -128,9 +128,44 @@ function Blocks({ section }: { section: ContractSection }) {
     )
   }
 
-  const rule = feeRuleRows(section, 0)
+  /* ═══ قاعدةُ الأتعاب — قارئتان لإصدارَين ═══
+
+     `v7` يكتبها صفوفا معنونةً في المتن، فتُقرأ ثلاثةَ أعمدةٍ كما أُقرّت
+     العيّنة. و`v6` وما قبله جملةٌ واحدة، ومتونُها مجمَّدةٌ في عقودٍ وُقّعت
+     — فتبقى قارئتُها بعمودها الواحد.
+
+     والأولى تُقدَّم: متنُ `v7` جملُه صفوفٌ، فلو سُئلت القارئةُ القديمةُ
+     أوّلا لَقرأت أوّلَ صفٍّ جملةً وحجبت الجدول. */
+  const isAnnex = section.kind === 'annex'
+  const cells = isAnnex
+    ? section.blocks.map((b) => ({ b, c: feeRuleCells(b) })).filter((x) => x.c)
+    : []
+  /* والقديمةُ لمن لا صفوفَ له وحدَه */
+  const rule = isAnnex && cells.length === 0 ? feeRuleRows(section, 0) : null
 
   section.blocks.forEach((b, i) => {
+    /* صفوفُ `v7` تُجمَع في جدولٍ واحدٍ عند أوّلها، وتُتخطّى بعده */
+    const c = isAnnex ? feeRuleCells(b) : null
+    if (c) {
+      if (b !== cells[0].b) return
+      out.push(
+        <table key={`rule${i}`}>
+          <thead>
+            <tr><th>البند</th><th>القيمة</th><th>متى يُحتسب</th></tr>
+          </thead>
+          <tbody>
+            {cells.map(({ c: r }, n) => (
+              <tr key={n}>
+                <td>{r!.labelAr}<Sep t=" — " /></td>
+                <td className="cd-amt">{r!.amountAr}<Sep t=": " /></td>
+                <td>{r!.whenAr}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>,
+      )
+      return
+    }
     /* ═══ قاعدةُ الأتعاب صفوفا — وهي وحدَها المُلزِمة ═══
 
        الجملةُ بحروفها في الصفّ، والمبلغُ مُبرَزٌ في موضعه لا منقولا إلى

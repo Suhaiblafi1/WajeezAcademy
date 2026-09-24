@@ -16,12 +16,13 @@ import { describe, expect, it } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import ContractDocument from '@/components/ContractDocument'
+import type { ContractDoc } from '@/application/trainer/contract-sections'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   parseContractDoc, documentLinesAr, blockLineAr, sectionHeadingAr,
-  summaryItem, exampleRow, exampleTotal, feeRuleRows,
+  summaryItem, exampleRow, exampleTotal, feeRuleRows, feeRuleCells,
 } from '@/application/trainer/contract-sections'
 import { renderContractBodyAr, type ConditionalTerms } from '@/application/trainer/contract-body'
 import { ACADEMY_LEGAL, academyPartyLineAr } from '@/data/academy-legal'
@@ -269,108 +270,152 @@ describe('القراءاتُ الثانيةُ تُشتقّ من السطر', () 
   })
 })
 
-/* ═══ قاعدةُ الأتعاب صفوفا — والصفُّ مقتطَعٌ لا مكتوب ═══
 
-   ── العطبُ الذي يحرسه ──
+/* ═══ قاعدةُ الأتعاب — ثلاثةُ أعمدةٍ في `v7`، وعمودٌ في المجمَّد ═══
 
-   عيّنةُ التصميم بنتها جدولا بعنوانٍ («المقعد عبر رابط إحالتك») وعمودِ
-   شرحٍ («كلُّ مسجّلٍ دخل من رابطك») — وكلاهما **ليس في العقد**. ولو نُقلا
-   لَقرأ الموقِّعُ في وثيقته كلاما لم يوقّع عليه، وهو أخطرُ من نقصِ سطرٍ:
-   نقصُ السطر يُخفي، والزيادةُ تُلزِم بما لم يُكتب.
+   ── العطبُ الذي تحرسه ──
 
-   وعطبٌ ثانٍ أخفى: إعادةُ الترتيب. «وتحتسب الأتعاب على 8 مقعدا على الأقل»
-   لو نُقل مبلغُها إلى خانةٍ أولى بقي «وتحتسب الأتعاب على … على الأقل»
-   جملةً مكسورة — ولا يسقط عليها حارسُ التمام لأنّ الحروفَ كلَّها حاضرة.
-   فالحارسُ هنا على **الترتيب** لا على الحضور. */
-describe('قاعدةُ الأتعاب تُقرأ صفوفا من سطرها', () => {
+   العيّنةُ بنت القاعدةَ ثلاثةَ أعمدة: عنوانٌ وقيمةٌ ومتى يُحتسب. ورُدّ في
+   #285 لأنّ العنوانَ والشرحَ **لم يكونا في العقد**، وطبعُ ما ليس فيه
+   يُلزِم بما لم يُكتب. فكُتبا في المتن بأمر صاحب المنصّة (`v7`)، وصارت
+   الخاناتُ مقروءةً منه.
+
+   وخطرُ هذا التحوّل أنّ في الملحق (ب) **جدولَين**: القاعدةُ وصفوفُ المثال.
+   ولو خلط المحلّلُ بينهما لَقرأ «1. 20 كلهم من الأكاديمية — 20 × 30: 600
+   USD» قاعدةَ أتعابٍ مُلزِمة — وهو مثالٌ نفى العقدُ إلزامَه في 18-4. */
+describe('قاعدةُ `v7` تُقرأ ثلاثةَ أعمدةٍ من متنها', () => {
   const annexB = doc.sections.find((s) => s.kind === 'annex' && s.titleAr === 'أساس الأتعاب')!
-  const rows = feeRuleRows(annexB, 0)
+  const cells = annexB.blocks.map(feeRuleCells).filter(Boolean)
 
-  it('تُقرأ من المتن الحيّ، ولكلِّ جملةٍ صفُّها', () => {
-    expect(annexB, 'لا ملحقَ أتعابٍ في المتن الحيّ').toBeTruthy()
-    expect(rows, 'لا تُقرأ القاعدةُ صفوفا — فترتدّ فقرةً').not.toBeNull()
-    expect(rows!.length, 'عددُ الصفوف ليس عددَ جمل القاعدة').toBe(3)
-    /* والمبلغُ مقروءٌ من السطر: كلُّ صفٍّ فيه رقم، ولا رقمَ مكتوبٌ هنا */
-    for (const r of rows!) expect(r.amountAr, `صفٌّ بلا مبلغ: ${r.beforeAr}`).toMatch(/\d/)
-  })
-
-  /* ═══ التمامُ بالبناء لا بالوعد ═══
-     جمعُ الصفوف يردّ سطرَ القاعدة حرفا بحرف — فلا حرفَ يسقط ولا يُزاد. */
-  it('وجمعُ الصفوف يردّ السطرَ حرفا بحرف', () => {
-    const back = rows!.map((r) => r.beforeAr + r.amountAr + r.afterAr).join('')
-    expect(back, 'الصفوفُ لا تردّ السطرَ — فالمعروضُ غيرُ الموقَّع عليه')
-      .toBe((annexB.blocks[0] as { textAr: string }).textAr)
-  })
-
-  /* والمبلغُ يبقى حيث كُتب: ما قبله في المتن قبله في الصفّ */
-  it('ولا يُنقل المبلغُ من موضعه في الجملة', () => {
-    const line = (annexB.blocks[0] as { textAr: string }).textAr
-    for (const r of rows!) {
-      const whole = r.beforeAr + r.amountAr + r.afterAr
-      expect(line, 'جملةٌ أُعيد ترتيبُها').toContain(whole)
-      if (r.beforeAr) {
-        expect(whole.indexOf(r.beforeAr), 'ما قبل المبلغ جاء بعده').toBeLessThan(whole.indexOf(r.amountAr))
-      }
+  it('ثلاثةُ صفوفٍ بعناوينها وقيمها من المتن الحيّ', () => {
+    expect(cells.length, 'لا تُقرأ القاعدةُ خاناتٍ — فترتدّ فقرات').toBe(3)
+    /* والقيمُ من السطر لا من ثابتٍ هنا: كلُّ قيمةٍ فيها رقم */
+    for (const c of cells) expect(c!.amountAr, `صفٌّ بلا قيمة: ${c!.labelAr}`).toMatch(/\d/)
+    /* ولكلِّ صفٍّ عنوانٌ وشرحٌ — وهما ما لم يكن في `v6` */
+    for (const c of cells) {
+      expect(c!.labelAr.length, 'صفٌّ بلا عنوان').toBeGreaterThan(2)
+      expect(c!.whenAr.length, 'صفٌّ بلا شرح').toBeGreaterThan(10)
     }
   })
 
-  /* ═══ وما ليس قاعدةً يرتدّ فقرةً ═══ */
-  it('وما ليس أوّلَ ملحقِ الأتعاب لا يُصفّ', () => {
-    /* البندُ الذي يذكر الأسعارَ في ذيل الملحق جملُه كلُّها بأرقام — فلولا
-       قيدُ الموضع لَصار جدولا وهو تعليقٌ لا قاعدة. */
-    expect(feeRuleRows(annexB, 1), 'كتلةٌ ليست الأولى قُرئت قاعدةً').toBeNull()
-    /* والقياسُ بنصّ القاعدة بعينه: لو وُضع في بندٍ لَما صار صفوفا، وإلّا
-       فالحارسُ يمرّ لأنّ البندَ لا يطابق الشكلَ لا لأنّ الموضعَ مُنع. */
-    const ruleText = (annexB.blocks[0] as { textAr: string }).textAr
-    for (const kind of ['clause', 'summary', 'preamble'] as const) {
-      expect(feeRuleRows({ kind, numAr: null, titleAr: '', blocks: [{ kind: 'text', textAr: ruleText }] }, 0),
-        `قسمٌ (${kind}) قُرئ قاعدةً`).toBeNull()
-    }
-    for (const a of doc.sections.filter((s) => s.kind === 'annex' && s.titleAr !== 'أساس الأتعاب')) {
-      expect(feeRuleRows(a, 0), `ملحقٌ (${a.numAr}) قُرئ قاعدةً`).toBeNull()
-    }
-  })
-
-  it('وجملةٌ بلا رقمٍ تردّ القاعدةَ كلَّها نثرا', () => {
-    const asAnnex = (textAr: string) => ({
-      kind: 'annex' as const, numAr: 'ب', titleAr: 'أساس الأتعاب',
-      blocks: [{ kind: 'text' as const, textAr }],
+  it('وجمعُ الخانات يردّ السطرَ حرفا بحرف', () => {
+    const rows = annexB.blocks.filter((b) => feeRuleCells(b))
+    rows.forEach((b, i) => {
+      const c = cells[i]!
+      expect(`${c.labelAr} — ${c.amountAr}: ${c.whenAr}`, 'الخاناتُ لا تردّ السطر')
+        .toBe((b as { textAr: string }).textAr)
     })
-    /* حالُ عقدٍ لم يُتّفق فيه على أتعابٍ بعد — شطرُه الثاني بلا رقم */
-    expect(feeRuleRows(asAnnex('لم يتفق الطرفان بعد على أساس الأتعاب، ويحدد باتفاق مكتوب قبل أول إسناد.'), 0),
-      'نثرٌ بلا أرقامٍ صار صفوفا').toBeNull()
-    /* ولا صفوفَ من لا شيء: كتلةٌ خاويةٌ تردّ `null` لا مصفوفةً فارغة */
-    expect(feeRuleRows(asAnnex(''), 0), 'كتلةٌ خاويةٌ ردّت صفوفا').toBeNull()
-    /* وترقيمُ قائمةٍ ليس شرطَ مال: «1. » رقمٌ بلا نطق. ولولا اشتراطُ الحرف
-       لَصار كلُّ ملحقٍ مرقَّمٍ بنودُه أرقامٌ جدولَ أتعاب. */
-    expect(feeRuleRows(asAnnex('1. الهوية سارية 6 أشهر. 2. السيرة في 3 صفحات.'), 0),
-      'قائمةٌ مرقّمةٌ صارت قاعدةَ أتعاب').toBeNull()
-    /* وذيلٌ بلا نقطةٍ تُغلقه: لا يُقتطَع نصفُ نصٍّ ويُترَك نصفُه */
-    expect(feeRuleRows(asAnnex('20 مقعدا. وذيلٌ بلا حدّ'), 0), 'ذيلٌ مفتوحٌ قُبل').toBeNull()
-    /* وكسرةُ العدد ليست حدَّ جملة */
-    const frac = feeRuleRows(asAnnex('12.5 USD عن كل مقعد.'), 0)
-    expect(frac, 'كسرةٌ رُدّت').not.toBeNull()
-    expect(frac!.length, 'قُطعت الجملةُ عند كسرة العدد').toBe(1)
-    expect(frac![0].amountAr, 'المبلغُ بُتر عند الكسرة').toBe('12.5 USD')
   })
 
-  /* ═══ وما يُطبَع فعلا — ومن الصفوف وحدَها ═══
+  /* ═══ ولا يُقرأ المثالُ قاعدةً ═══ */
+  it('وصفوفُ المثال لا تُقرأ قاعدةً ولو شابهت شكلَها', () => {
+    const exampleLines = annexB.blocks.filter((b) => exampleRow(b))
+    expect(exampleLines.length, 'لا صفوفَ مثالٍ في الملحق').toBe(3)
+    for (const b of exampleLines) {
+      expect(feeRuleCells(b), 'صفُّ مثالٍ قُرئ قاعدةً مُلزِمة').toBeNull()
+    }
+  })
 
-     ── ولمَ لا يُفتَّش في الوثيقة كلِّها ──
+  it('وسطرٌ بلا قيمةٍ رقميّةٍ ليس قاعدة', () => {
+    expect(feeRuleCells({ kind: 'text', textAr: 'عنوان — قيمة: شرح' })).toBeNull()
+    expect(feeRuleCells({ kind: 'text', textAr: 'بلا شرطةٍ ولا نقطتين' })).toBeNull()
+    expect(feeRuleCells({ kind: 'bullet', textAr: 'نقطة — 5 USD: شرح' })).toBeNull()
+  })
 
-     سطرُ القاعدة **مطبوعٌ مرّتين**: البندُ 4-1 يطبع `feeClause` نفسَه ثمّ
-     يذيّله بإحالةٍ إلى الملحق. فحارسٌ يسأل «أفي الوثيقة هذا السطر؟» يجده
-     في البند ويمرّ — ولو ضاع من الملحق كلُّه. وقد مرّ هكذا فعلا: نُقض
-     `afterAr` فلم يسقط.
+  /* ═══ وما يُطبَع فعلا — من خانات الجدول وحدَها ═══
 
-     فالمقابلةُ على وسم الصفوف وحدَه، ومساواةً لا احتواءً. */
-  it('والصفوفُ تُصيَّر صفوفا، وجمعُها وحدَه يردّ سطرَ القاعدة', () => {
+     ولا يُفتَّش في الوثيقة كلِّها: أسطرُ القاعدة لا تتكرّر بعد `v7` (نُزعت
+     من 4-1)، لكنّ الدرسَ من #285 باقٍ — المقابلةُ على وسم الصفّ ومساواةً. */
+  it('والجدولُ يُصيَّر ثلاثةَ أعمدة، وكلُّ سطرٍ يعود تامّا منه', () => {
     const html = renderToStaticMarkup(createElement(ContractDocument, { doc }))
-    const cells = [...html.matchAll(/<p[^>]*class="cd-rrow"[^>]*>([\s\S]*?)<\/p>/g)]
-    expect(cells.length, 'عددُ الصفوف المُصيَّرة ليس عددَ الجمل').toBe(rows!.length)
-    expect(html, 'لا مبلغَ مُبرَزٌ في الصفوف').toContain('cd-ramt')
-    const back = cells.map((m) => m[1].replace(/<[^>]+>/g, '')).join('')
-    expect(back, 'الصفوفُ المُصيَّرةُ لا تردّ سطرَ القاعدة حرفا بحرف')
-      .toBe((annexB.blocks[0] as { textAr: string }).textAr)
+    expect(html, 'لا عنوانَ لعمود «متى يُحتسب»').toContain('متى يُحتسب')
+    const rows = [...html.matchAll(/<tr[^>]*>((?:(?!<\/tr>)[\s\S])*)<\/tr>/g)]
+      .map((m) => m[1].replace(/<[^>]+>/g, ''))
+    const lines = annexB.blocks.filter((b) => feeRuleCells(b))
+      .map((b) => (b as { textAr: string }).textAr)
+    for (const l of lines) {
+      expect(rows, `سطرُ قاعدةٍ لا يخرج تامّا مرتَّبا في صفّه:\n${l}`).toContain(l)
+    }
+  })
+})
+
+/* ═══ والقارئةُ القديمةُ تبقى للمتون المجمَّدة ═══
+
+   عقودُ `v6` وما قبلها وُقّعت وجُمّد متنُها جملةً واحدة. فلو نُزعت قارئتُها
+   لَارتدّ ملحقُها فقرةً — لا نقصَ في حرف، لكنّه يُفقِد من وقّع شكلا كان له.
+   فتُقاس على متنٍ من ذلك الإصدار لا على الحيّ. */
+describe('وقاعدةُ `v6` المجمَّدةُ تبقى مقروءةً صفوفا', () => {
+  const V6_RULE = '45 USD عن كل متعلم يسجل في الشعبة التي يقبلها ويقدمها عبر رابط'
+    + ' الإحالة الخاص به، و30 USD عن كل متعلم سواه مسجل في الشعبة نفسها.'
+    + ' وتحتسب الأتعاب على 8 مقعدا على الأقل ولو قل عدد المسجلين فعلا عن ذلك.'
+  const asAnnexB = (textAr: string) => ({
+    kind: 'annex' as const, numAr: 'ب', titleAr: 'أساس الأتعاب',
+    blocks: [{ kind: 'text' as const, textAr }],
+  })
+
+  it('جملةُ `v6` تُقرأ ثلاثةَ صفوفٍ بعمودٍ واحد', () => {
+    const rows = feeRuleRows(asAnnexB(V6_RULE), 0)
+    expect(rows, 'متنٌ مجمَّدٌ ارتدّ فقرةً').not.toBeNull()
+    expect(rows!.length).toBe(3)
+    expect(rows!.map((r) => r.beforeAr + r.amountAr + r.afterAr).join(''), 'لا تردّ السطر')
+      .toBe(V6_RULE)
+  })
+
+  /* ولا تُقرأ خاناتٍ ثلاثا: ليس فيها عنوانٌ ولا شرحٌ مفصولان */
+  it('ولا تُقرأ جملةُ `v6` ثلاثةَ أعمدةٍ لا وجودَ لها فيها', () => {
+    expect(feeRuleCells({ kind: 'text', textAr: V6_RULE }), 'اختُرعت خاناتٌ ليست في المتن')
+      .toBeNull()
+  })
+
+  /* ═══ والقارئتان تلتقيان على صفّ `v7` — وهي علّةُ القيد ═══
+
+     صفُّ `v7` تقرؤه القديمةُ أيضا: جملةٌ فيها رقمٌ وحرفٌ تنتهي بنقطة.
+     فلولا قيدُ «لا تُسأل القديمةُ إذا وُجدت خانات» لَطُبعت القاعدةُ
+     مرّتين في الملحق المختلط أعلاه.
+
+     ولا يكفي ترتيبُ الفرعين في العارض: القيدُ يُسقط القديمةَ أصلا، فلا
+     يبقى للترتيب أثر. وهذا ما يُثبته هذا الحارس — أنّ الالتقاءَ واقعٌ
+     لا مفترَض. */
+  it('وصفُّ `v7` تقرؤه القديمةُ أيضا — فلزم القيدُ لا الترتيب', () => {
+    const v7 = 'المقعد العام — 30 USD: عن كل متعلم سواه مسجل في الشعبة نفسها.'
+    expect(feeRuleCells({ kind: 'text', textAr: v7 }), 'لا تقرؤه الجديدة').not.toBeNull()
+    expect(feeRuleRows(asAnnexB(v7), 0), 'لا تقرؤه القديمة — فالتقديمُ بلا معنى')
+      .not.toBeNull()
+  })
+})
+
+/* ═══ وملحقٌ يخلط الإصدارين لا يُطبَع مرّتين ═══
+
+   العارضُ يسأل القارئتين معا. وشكلٌ لا يصنعه متنٌ اليومَ يصنعه غدا: ملحقٌ
+   صدرُه فقرةٌ نثريّةٌ فيها أرقام، وصفوفُ `v7` بعدها. فلو سُئلت القديمةُ عن
+   الصدر بلا قيدٍ لَطُبعت القاعدةُ مرّتين — جدولا وصفوفَ نثر — وقرأ الموقِّعُ
+   قاعدتين لشيءٍ واحدٍ يقبضه.
+
+   فالقيدُ أنّ القديمةَ لا تُسأل إذا وُجدت خاناتٌ في الملحق أصلا. */
+describe('ملحقٌ فيه الشكلان لا يطبع القاعدةَ مرّتين', () => {
+  const mixed: ContractDoc = {
+    titleAr: 'اتفاقيّة',
+    meta: [],
+    sections: [{
+      kind: 'annex', numAr: 'ب', titleAr: 'أساس الأتعاب',
+      blocks: [
+        /* صدرٌ نثريٌّ كلُّ جملةٍ فيه برقمٍ وحرف — تقرؤه القارئةُ القديمة */
+        { kind: 'text', textAr: 'تحتسب الأتعاب على 8 مقاعد على الأقل.' },
+        /* وصفٌّ من `v7` بعده */
+        { kind: 'text', textAr: 'المقعد العام — 30 USD: عن كل متعلم مسجل في الشعبة.' },
+      ],
+    }],
+  }
+
+  it('الصدرُ يخرج فقرةً والصفُّ جدولا — ولا صفوفَ نثرٍ معهما', () => {
+    const html = renderToStaticMarkup(createElement(ContractDocument, { doc: mixed }))
+    expect(html, 'لا جدولَ قاعدةٍ للصفّ').toContain('متى يُحتسب')
+    expect(html, 'طُبع الصدرُ صفوفَ نثرٍ أيضا — فقاعدتان لشيءٍ واحد')
+      .not.toContain('cd-rrow')
+    /* ولا يسقط الصدرُ: يخرج نصّا كما هو */
+    const text = html.replace(/<[^>]+>/g, '')
+    for (const b of mixed.sections[0].blocks) {
+      expect(text, 'سطرٌ سقط من الملحق المختلط').toContain((b as { textAr: string }).textAr)
+    }
   })
 })
