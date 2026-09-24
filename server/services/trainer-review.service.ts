@@ -53,7 +53,8 @@ import {
   academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
 } from '../../src/data/academy-legal'
 import {
-  CONTRACT_BODY_VERSION, bodyCarriesConditionClause, CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
+  CONTRACT_BODY_VERSION, bodyCarriesConditionClause, contractHasBodyAr,
+  CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
   renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation, type ContractCourseRow,
 } from '../../src/application/trainer/contract-body'
@@ -2317,7 +2318,7 @@ export class TrainerReviewService {
     if (contract.status !== 'draft') {
       throw new AuthError('bad_state', 'لا يُرسَل إلّا عقدٌ مسودّة — الملغى والموقَّعُ والمرسَلُ لها أبوابُها', 409)
     }
-    if (!contract.bodyAr) {
+    if (!contractHasBodyAr(contract.bodyAr)) {
       throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. ركّبْ عقدا جديدا', 409)
     }
     /* ═══ ولا يُرسَل عرضٌ مشروطٌ متنُه لا يحمل شرطَه (٢٣ سبتمبر ٢٠٢٦) ═══
@@ -2393,6 +2394,15 @@ export class TrainerReviewService {
       include: { profile: { include: { application: true } } },
     })
     if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    /* ═══ وهذا إرسالٌ ثانٍ، فيُسأل ما يُسأل عنه الأوّل ═══
+
+       الردُّ يردّ العقدَ إلى `sent` ويسكّ رمزا جديدا — أي يفتح بابَ توقيعٍ
+       يعمل. و`sendContract` يمنع الخروجَ بلا متن، وهذا كان يخرج منه بلا
+       سؤال: عقدٌ من البابِ القديم يقف في «طُلب تعديلُه» يصله رابطٌ يعمل
+       على وثيقةٍ خاوية. فالقيدُ يُعاد حيث يقع الفعل. */
+    if (!contractHasBodyAr(contract.bodyAr)) {
+      throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. ألغِه وركّبْ عقدا جديدا', 409)
+    }
 
     const { token, tokenHash, expiresAt } = this.mintContractToken()
     /* قارنْ واضبطْ في نداءٍ واحد: نقرتان متزامنتان تكتبان جوابَين */
@@ -2688,6 +2698,15 @@ export class TrainerReviewService {
     }
     if (phone.length < 6) {
       throw new AuthError('bad_phone', 'اكتب رقمَ هاتفك', 422)
+    }
+    /* ═══ ولا تُوقَّع وثيقةٌ خاوية ═══
+
+       كان المنعُ بالعرَض: `bodyHash` يُكتب مع المتن فيسقط بسقوطه، فترتدّ
+       المقابلةُ أدناه. لكنّ `sha256('')` هاشٌ صحيحٌ تامّ — فمتنٌ خاوٍ لا
+       `null` يمرّ نظيفا. ورسالةُ «تغيّر نصُّ العقد» تكذب على من لا نصَّ
+       عنده أصلا: تأمره أن يعيد التحميلَ ويقرأ، ولا شيءَ يُقرأ. */
+    if (!contractHasBodyAr(c.bodyAr)) {
+      throw new AuthError('no_body', 'لا متنَ لهذا العقد، فلا يُوقَّع. راسلِ الأكاديميةَ ليُرسَل إليك عقدٌ بمتنه', 409)
     }
     if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
       throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
