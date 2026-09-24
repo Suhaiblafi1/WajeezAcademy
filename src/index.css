@@ -68,6 +68,118 @@
   font-family: "Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif;
 }
 
+/* ═══ وثيقةُ العقد — لوحٌ لها وحدَها ═══
+
+   العقدُ وثيقةٌ تُطبَع وتُحفَظ ويُرجَع إليها، ويقرؤها الموقِّعُ قراءةً
+   طويلة. فلها ورقٌ فاتحٌ وحبرٌ داكن، لا نبرةُ الشاشة حولَها. والمتغيّراتُ
+   مقصورةٌ على `.contract-doc` فلا تسيل إلى ما حولَها، ولا تتبدّل بمظهر
+   المنصّة: وثيقةٌ تختلف ألوانُها بزرّ المظهر ليست واحدة. */
+.contract-doc {
+  --cd-ink: #16211F;
+  --cd-paper: #F6F4EF;
+  --cd-surface: #fff;
+  --cd-panel: #DCECEE;
+  --cd-teal: #38A7B4;
+  --cd-teal-deep: #247B84;
+  --cd-teal-darker: #1E666E;
+  --cd-line: rgba(22, 33, 31, 0.10);
+  --cd-muted: rgba(22, 33, 31, 0.62);
+
+  background: var(--cd-paper);
+  color: var(--cd-ink);
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 15.5px;
+  line-height: 1.85;
+  text-align: right;
+}
+.contract-doc p { margin: 0 0 11px }
+.contract-doc p:last-child { margin-bottom: 0 }
+
+.contract-doc .cd-head {
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-top: 5px solid var(--cd-teal);
+  border-radius: 16px;
+  padding: 22px 20px;
+  margin-bottom: 14px;
+}
+.contract-doc .cd-kicker {
+  font-size: 12.5px; letter-spacing: 0.06em; font-weight: 700;
+  color: var(--cd-teal-deep); margin: 0 0 6px;
+}
+.contract-doc .cd-title { font-size: 24px; line-height: 1.4; margin: 0; font-weight: 800; color: var(--cd-ink) }
+.contract-doc .cd-meta {
+  display: flex; flex-wrap: wrap; gap: 8px 22px;
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--cd-line);
+  font-size: 13.5px; color: var(--cd-muted);
+}
+.contract-doc .cd-meta b { color: var(--cd-ink) }
+
+.contract-doc .cd-summary {
+  background: var(--cd-panel);
+  border: 1px solid rgba(36, 123, 132, 0.22);
+  border-radius: 16px; padding: 18px 20px; margin-bottom: 22px;
+}
+.contract-doc .cd-summary h3 { font-size: 15px; margin: 0 0 12px; color: var(--cd-teal-darker); font-weight: 800 }
+
+.contract-doc .cd-section { margin: 0 0 22px }
+.contract-doc .cd-part { display: flex; align-items: center; gap: 11px; margin: 0 0 11px }
+.contract-doc .cd-part h3 { font-size: 18px; margin: 0; font-weight: 800; color: var(--cd-ink) }
+.contract-doc .cd-num {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px;
+  background: var(--cd-teal-deep); color: #fff;
+  font-weight: 800; font-size: 14px; display: grid; place-items: center;
+}
+.contract-doc .cd-num-annex { background: var(--cd-teal-darker) }
+.contract-doc .cd-card {
+  background: var(--cd-surface); border: 1px solid var(--cd-line);
+  border-radius: 14px; padding: 16px 18px;
+}
+/* ورقمُ البند يُبرَز ولا يُطرَح — فهو جزءٌ من السطر الموقَّع عليه */
+.contract-doc .cd-no {
+  color: var(--cd-teal-deep); font-weight: 800;
+  margin-left: 7px; font-variant-numeric: tabular-nums;
+}
+/* والنقطةُ نصٌّ في الوثيقة لا `content` هنا — ما يرسمه CSS لا يُنسَخ
+   ولا يُقرأ بقارئ الشاشة، وهو من السطر الموقَّع عليه. */
+.contract-doc .cd-bullet { padding-right: 16px; text-indent: -16px }
+.contract-doc .cd-dot { color: var(--cd-teal-deep); font-weight: 800 }
+
+/* ═══ قراءاتٌ ثانيةٌ لنصٍّ لا يتغيّر ═══
+
+   والفواصلُ («:» و«—» والنقطة) تبقى في النصّ مقروءةً بـ`sr-only`:
+   تحلّ محلَّها العينُ بنَسقِ اللوح، ويقرؤها قارئُ الشاشة وتُنسَخ مع النصّ —
+   فالمطبوعُ يبقى هو الموقَّعَ عليه حرفا بحرف. */
+.contract-doc .cd-sgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(205px, 1fr)); gap: 14px 18px;
+}
+.contract-doc .cd-sitem { background: rgba(255, 255, 255, 0.72); border-radius: 10px; padding: 11px 13px }
+.contract-doc .cd-k { font-size: 12px; color: var(--cd-teal-darker); font-weight: 700; margin-bottom: 3px }
+.contract-doc .cd-v { font-size: 15px; font-weight: 700; line-height: 1.6 }
+.contract-doc .cd-n { font-size: 12.5px; color: var(--cd-muted); margin-top: 3px; line-height: 1.7 }
+.contract-doc .cd-ref { font-size: 11.5px; color: var(--cd-teal-deep); margin-top: 4px; font-weight: 700 }
+
+.contract-doc .cd-h4 { font-size: 15.5px; margin: 18px 0 8px; color: var(--cd-teal-darker); font-weight: 800 }
+.contract-doc table { width: 100%; border-collapse: collapse; margin: 6px 0 4px; font-size: 14.5px }
+.contract-doc th, .contract-doc td {
+  padding: 10px 12px; border-bottom: 1px solid var(--cd-line); text-align: right;
+}
+.contract-doc thead th {
+  background: rgba(56, 167, 180, 0.10); color: var(--cd-teal-darker);
+  font-weight: 800; font-size: 13.5px; border-bottom: 2px solid rgba(36, 123, 132, 0.28);
+}
+.contract-doc tbody tr:last-child td { border-bottom: none }
+.contract-doc td.cd-amt { font-weight: 800; white-space: nowrap }
+.contract-doc tfoot td {
+  background: rgba(22, 33, 31, 0.04); font-weight: 800; border-top: 2px solid var(--cd-line);
+}
+/* والتنبيهُ بحافّةٍ ذهبيّة: «مثالٌ لا وعد» أولى ما يُرى في ملحق الأتعاب */
+.contract-doc .cd-note {
+  border-right: 4px solid #FABC05; background: #FFFBEF;
+  border-radius: 0 10px 10px 0; padding: 13px 16px; font-size: 14px; margin: 14px 0 0;
+}
+
 @layer base {
   :root {
     /* Wajeez dark identity */

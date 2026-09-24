@@ -21,12 +21,14 @@
    العقدُ عرضٌ يُقبَل ويُردّ. وصفحةٌ لا سبيلَ فيها إلّا التوقيع تُنتج توقيعا
    بلا رضا، وهو أسوأُ ما يُجمع في وثيقة. */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router'
 import { apiGet, apiPost, ApiError } from '@/services/api'
 import { Panel, Inset } from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
 import { fmtDateLong } from '@/application/text/format-ar'
+import { parseContractDoc } from '@/application/trainer/contract-sections'
+import ContractDocument from '@/components/ContractDocument'
 
 interface RequiredDoc { kind: string; labelAr: string; required: boolean }
 interface UploadedDoc { id: string; kind: string; originalName: string }
@@ -77,7 +79,7 @@ export default function ContractSign() {
   const [declineReason, setDeclineReason] = useState('')
   const [amending, setAmending] = useState(false)
   const [amendText, setAmendText] = useState('')
-  const bodyRef = useRef<HTMLPreElement | null>(null)
+  const bodyRef = useRef<HTMLDivElement | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -101,6 +103,11 @@ export default function ContractSign() {
   useEffect(() => {
     if (view?.state === 'open') checkRead()
   }, [view, checkRead])
+
+  /* والبنيةُ تُشتقّ مرّةً لا في كلّ رسم: التمريرُ يُعيد الرسمَ مرارا،
+     وتحليلُ ثلاثمئة سطرٍ في كلّ إطارٍ يُثقل صفحةً يجب أن تُقرأ بسلاسة. */
+  const bodyAr = view?.state === 'open' ? view.bodyAr : null
+  const doc = useMemo(() => (bodyAr ? parseContractDoc(bodyAr) : null), [bodyAr])
 
   if (fatal) {
     return (
@@ -221,16 +228,20 @@ export default function ContractSign() {
 
       {/* ═══ المتن ═══ */}
       <h2 className="mb-2 text-lg font-black">نصُّ الاتفاقية</h2>
-      <pre
+      {/* والمُمَرَّرُ هو المقيسُ بلوغُ آخره: `checkRead` يقرأ `scrollHeight`
+          من هذا العنصر بعينه، فلو عُلِّق على غيره لَانفتح التوقيعُ بلا قراءة. */}
+      <div
         ref={bodyRef}
         onScroll={checkRead}
         tabIndex={0}
         dir="rtl"
         aria-label="نصُّ الاتفاقية — مرِّرْ إلى آخره"
-        className="contract-prose mb-2 max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg border border-white/10 bg-black/20 p-4 leading-8"
+        className="mb-2 max-h-[60vh] overflow-auto rounded-lg border border-white/10"
       >
-        {v.bodyAr}
-      </pre>
+        {doc
+          ? <ContractDocument doc={doc} />
+          : <p className="p-4 opacity-70">لا متنَ لهذا العقد.</p>}
+      </div>
       <p className={`mb-6 ${readToEnd ? 'opacity-60' : 'font-bold'}`}>
         {readToEnd
           ? 'بلغتَ آخرَ النصّ — وما بعده خانةُ التوقيع.'
