@@ -8,7 +8,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { readRoles, signOut } from "@/services/auth";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
-import { APPLICANT_STATUS, BOOKABLE_STATUSES, EDITABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
+import { APPLICANT_STATUS, BOOKABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
 import BookInterview from "@/components/BookInterview";
 import { isInvitedToBook } from "@/application/trainer/interview-invitation";
 
@@ -163,14 +163,24 @@ export default function ApplicantStatus() {
               <h2 className="mt-4 text-xl font-black">{st.label}</h2>
               <p className="mt-2 text-sm leading-7 opacity-90">{st.explain}</p>
 
-              {/* التعديلُ مفتوحٌ طولَ الانتظار لا للمسوّدة وحدَها.
+              {/* ═══ «عدّلْ طلبك» سُحب من المُرسَل — والمسوّدةُ وحدَها تُكمَل ═══
 
-                  كان الزرُّ يظهر لـ`draft` فقط، فمن تذكّر شهادةً نسيها بعد أن
-                  صار طلبُه «قيد المراجعة» لا يملك إلّا أن يراسل ويطلب — والخادمُ
-                  كان يسمح بالتعديل في تلك الحالات أصلا. فالنقصُ كان في الشاشة. */}
-              {EDITABLE_STATUSES.includes(mine.status) && (
+                  كان الزرُّ يُعرض في كلّ حالةٍ من `EDITABLE_STATUSES`. وشكاه
+                  صاحبُ المنصّة (٢٤ سبتمبر ٢٠٢٦): «لا داعي لـ‹عدّل طلبك›،
+                  لأنّه إذا نقر عليها يعود له فارغا».
+
+                  وزرٌّ يفتح استمارةً فارغةً أسوأُ من غيابه: من نقره ظنّ طلبَه
+                  ضاع، فأعاد ملأه من أوّله أو راسلنا خائفا.
+
+                  والمسوّدةُ تبقى: هي **نصفُ طلبٍ لم يصلنا**، وبابُها هو
+                  طريقُها الوحيد إلى أن يصل — وغيابُه يترك صاحبَه بلا سبيل.
+
+                  ولا تُمَسّ `EDITABLE_STATUSES` ولا `PHASE2_OPEN_STATUSES`:
+                  إذنُ الخادم بالتعديل باقٍ كما هو، والمسحوبُ زرٌّ في شاشة.
+                  ومن طُلبت منه إضافةٌ يُجيب بالردّ على رسالتنا — أدناه. */}
+              {mine.status === "draft" && (
                 <Button tone="primary" type="button" onClick={resume} className="mt-4">
-                  {mine.status === "draft" ? "أكمل طلبك" : "عدّل طلبك"} <ArrowLeft className="h-4 w-4" />
+                  أكمل طلبك <ArrowLeft className="h-4 w-4" />
                 </Button>
               )}
               {(mine.status === "active" || isTrainer) && (
@@ -193,12 +203,11 @@ export default function ApplicantStatus() {
                 ويختفي تماما متى وُثّق: لا يبقى في الصفحة أثرٌ لخطوةٍ انتهت. */}
             {!mine.emailVerifiedAt && mine.status !== "draft" && (
               <Card tone="warn">
-                <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
-                  <MailWarning className="h-4 w-4" /> وثّق بريدك — وهي الخطوةُ الباقية
-                </p>
-                <p className="mt-2 text-read leading-6 text-foreground">
-                  أرسلنا رابطَ التأكيد إلى <b dir="ltr" className="font-mono">{mine.email}</b>. افتحه مرّةً واحدة،
-                  فعلى هذا البريد وحدَه نتواصل معك — ولا يُعتمد طلبٌ ببريدٍ لم يُوثَّق.
+                {/* سطرٌ واحد (٢٤ سبتمبر ٢٠٢٦) — كما في `EmailVerifyStatus`،
+                    وبالقرار نفسِه. والزرُّ تحته هو الفعل. */}
+                <p className="flex flex-wrap items-center gap-2 text-sm font-black text-gold-ink">
+                  <MailWarning className="h-4 w-4 shrink-0" /> وثّق بريدك — افتح رابطَ التأكيد في{' '}
+                  <b dir="ltr" className="font-mono">{mine.email}</b>
                 </p>
                 <button
                   type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
@@ -220,10 +229,18 @@ export default function ApplicantStatus() {
                   <FileText className="h-4 w-4" /> ما نحتاجه منك
                 </p>
                 <p className="mt-2 whitespace-pre-line text-read leading-7 text-foreground">{infoAsked}</p>
-                {/* ولا زرَّ ثانٍ هنا: «عدّل طلبك» في بطاقة الحالة فوقَه، وذهبيّان
-                    في شاشةٍ واحدةٍ يُلغيان بعضَهما — يحرسه `one-primary-per-screen`. */}
+                {/* ═══ والطريقُ الردُّ لا زرٌّ سُحب (٢٤ سبتمبر ٢٠٢٦) ═══
+
+                    كان هنا «عدّلْ طلبك من زرّ ‹عدّل طلبك› أعلاه». وسُحب ذاك
+                    الزرُّ لأنّه يفتح استمارةً فارغة — فبقاءُ السطر يُحيل إلى
+                    ما ليس هناك، وهو أسوأُ من الصمت.
+
+                    والرسالةُ التي طلبت منه الإضافةَ وصلته فعلا
+                    (`notifyInfoRequested`) — فالردُّ عليها طريقٌ قائمٌ لا
+                    يُبنى، ويصل إلى الصندوق الذي راسلناه منه. */}
                 <p className="mt-2 text-read leading-6 text-muted-foreground">
-                  عدّلْ طلبك من زرّ «عدّل طلبك» أعلاه، ثمّ أرسله من جديد.
+                  أرسلنا لك هذا الطلبَ على بريدك — <b className="text-foreground">ردَّ على رسالتنا</b> بما نحتاجه،
+                  ويصل فريقَنا مباشرةً.
                 </p>
               </Card>
             )}
