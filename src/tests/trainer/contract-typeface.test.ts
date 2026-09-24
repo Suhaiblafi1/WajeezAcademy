@@ -34,21 +34,30 @@ const CONTRACT_SURFACES = [
   'src/pages/admin/TrainerContracts.tsx',
 ] as const
 
+/** الوثيقةُ المبنيّةُ التي تمرّ بها الصفحاتُ كلُّها */
+const DOCUMENT = 'src/components/ContractDocument.tsx'
+
 /** وسمُ `<pre …>` كاملا بخصائصه — ولا يلزم أكثرُ من رأسه */
 const preTags = (src: string) => [...src.matchAll(/<pre\b[^>]*>/g)].map((m) => m[0])
 
 describe('متنُ الاتفاقية يُعرض بخطِّ قراءةٍ لا بخطِّ شيفرة', () => {
-  it('كلُّ `<pre>` في صفحات العقد يحمل الصنفَ — لا موضعا بعينه', () => {
-    let seen = 0
+  /* ── والوسمُ انتقل من `<pre>` إلى وثيقةٍ مبنيّة ──
+
+     كان المتنُ كتلةً واحدةً في `<pre>`، فصار `ContractDocument` يشتقّ بنيتَه من
+     المتن نفسِه. والمطلوبُ لم يتغيّر — وثيقةٌ تُلزِم إنسانا بمالٍ تُقرأ بخطِّ
+     قراءة — وإنّما انتقل موضعُ الصنف إلى الوثيقة، وزيد عليه أنّ لا صفحةَ
+     تعرض المتنَ خاما دونَها — فهي وحدَها التي يُثبَت أنّها لا تُسقِط سطرا
+     (`src/tests/trainer/contract-document.test.ts`). */
+  it('كلُّ صفحةٍ تعرض المتنَ تمرّ بـ`ContractDocument` — لا موضعا بعينه', () => {
     for (const file of CONTRACT_SURFACES) {
-      const tags = preTags(read(file))
-      expect(tags.length, `${file}: لم يُقرأ وسمُ <pre> واحد — أتغيّر العرض؟`).toBeGreaterThan(0)
-      for (const tag of tags) {
-        expect(tag, `${file}: <pre> بلا «contract-prose» — يرتدّ إلى خطّ الشيفرة`).toContain('contract-prose')
-        seen += 1
-      }
+      const src = read(file)
+      expect(src, `${file}: لا يعرض الوثيقةَ المبنيّة`).toMatch(/<ContractDocument\b/)
+      expect(preTags(src), `${file}: عاد المتنُ كتلةً في <pre>`).toEqual([])
     }
-    expect(seen, 'لم يُفحَص شيءٌ أصلا').toBeGreaterThanOrEqual(3)
+  })
+
+  it('والوثيقةُ تحمل الصنفَ — وإلّا ارتدّت إلى خطّ المتصفّح', () => {
+    expect(read(DOCUMENT)).toMatch(/className="contract-doc contract-prose"/)
   })
 
   it('ولا يُترك للمتصفّح خطُّه: الصنفُ معرَّفٌ في ورقة النمط وأوّلُ خطوطه Avenir Arabic', () => {
@@ -72,11 +81,10 @@ describe('متنُ الاتفاقية يُعرض بخطِّ قراءةٍ لا ب
     expect(faces.length, 'لا `@font-face` لـAvenir Arabic — فالاسمُ وحدَه لا يجلب خطّا').toBeGreaterThan(0)
   })
 
-  it('ولا يُنقَض المكسبُ بصنفِ خطِّ شيفرةٍ على الوسم نفسِه', () => {
+  it('ولا يُنقَض المكسبُ بصنفِ خطِّ شيفرةٍ على الوثيقة نفسِها', () => {
+    expect(read(DOCUMENT), '«font-mono» على الوثيقة — أيّهما يفوز رهنُ الترتيب').not.toMatch(/font-mono/)
     for (const file of CONTRACT_SURFACES) {
-      for (const tag of preTags(read(file))) {
-        expect(tag, `${file}: «font-mono» على وسمٍ يحمل «contract-prose» — أيّهما يفوز رهنُ الترتيب`).not.toContain('font-mono')
-      }
+      expect(read(file), `${file}: «font-mono» في صفحةٍ تعرض المتن`).not.toMatch(/font-mono/)
     }
   })
 })

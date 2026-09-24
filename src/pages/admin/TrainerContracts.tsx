@@ -38,6 +38,8 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import AdminLayout from "./AdminLayout";
+import { parseContractDoc } from '@/application/trainer/contract-sections'
+import ContractDocument from '@/components/ContractDocument'
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
@@ -476,9 +478,11 @@ export default function TrainerContracts() {
           {preview && (
             <section className="mt-4">
               <h3 className="mb-2 text-sm font-bold">المعاينة</h3>
-              <pre dir="rtl" className="contract-prose max-h-[28rem] overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-4 text-sm leading-7">
-                {preview}
-              </pre>
+              {/* وتُراجَع بالشكل الذي تُوقَّع به — فلا يُجاز متنٌ رآه الموظّفُ
+                  في صورةٍ غيرِ التي يراها المدرّبُ قبل أن يوقّع. */}
+              <div dir="rtl" className="max-h-[28rem] overflow-auto rounded-lg">
+                <ContractDocument doc={parseContractDoc(preview)} />
+              </div>
             </section>
           )}
         </Card>
@@ -865,9 +869,9 @@ export default function TrainerContracts() {
             <h2 className="text-lg font-black">{shownBody.title}</h2>
             <Button size="sm" onClick={() => setShownBody(null)}>أغلِقْ</Button>
           </div>
-          <pre dir="rtl" className="contract-prose max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-4 text-sm leading-7">
-            {shownBody.body}
-          </pre>
+          <div dir="rtl" className="max-h-[32rem] overflow-auto rounded-lg">
+            <ContractDocument doc={parseContractDoc(shownBody.body)} />
+          </div>
         </Card>
       )}
     </AdminLayout>

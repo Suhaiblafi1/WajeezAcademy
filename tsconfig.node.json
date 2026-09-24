@@ -14,6 +14,13 @@
     },
     "skipLibCheck": true,
 
+    /* jsx لأجل حارسٍ يُصيَّر وثيقةَ العقد ويقابل مُخرَجَها بالمتن:
+       `src/tests/trainer/contract-document.test.ts` يستورد `ContractDocument.tsx`،
+       ومشروعٌ بلا `jsx` يردّ استيرادَ أيّ وحدةٍ .tsx بـTS6142 — ولو لم
+       يكتب الملفُ حرفَ JSX واحدا. والتصييرُ هو الدليلُ على أنّ المعروض
+       هو الموقَّعُ عليه، فلا يُستغنى عنه لإعداد. */
+    "jsx": "react-jsx",
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
