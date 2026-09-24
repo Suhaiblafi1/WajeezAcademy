@@ -21,7 +21,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   parseContractDoc, documentLinesAr, blockLineAr, sectionHeadingAr,
-  summaryItem, exampleRow, exampleTotal,
+  summaryItem, exampleRow, exampleTotal, feeRuleRows,
 } from '@/application/trainer/contract-sections'
 import { renderContractBodyAr, type ConditionalTerms } from '@/application/trainer/contract-body'
 import { ACADEMY_LEGAL, academyPartyLineAr } from '@/data/academy-legal'
@@ -266,5 +266,111 @@ describe('القراءاتُ الثانيةُ تُشتقّ من السطر', () 
       expect(code, `${f}: رقمٌ مكتوبٌ باليد — والعقدُ يطبع ما في متنه لا ما هنا`)
         .not.toMatch(/\bUSD\b|\b45\b|\b30\b/)
     }
+  })
+})
+
+/* ═══ قاعدةُ الأتعاب صفوفا — والصفُّ مقتطَعٌ لا مكتوب ═══
+
+   ── العطبُ الذي يحرسه ──
+
+   عيّنةُ التصميم بنتها جدولا بعنوانٍ («المقعد عبر رابط إحالتك») وعمودِ
+   شرحٍ («كلُّ مسجّلٍ دخل من رابطك») — وكلاهما **ليس في العقد**. ولو نُقلا
+   لَقرأ الموقِّعُ في وثيقته كلاما لم يوقّع عليه، وهو أخطرُ من نقصِ سطرٍ:
+   نقصُ السطر يُخفي، والزيادةُ تُلزِم بما لم يُكتب.
+
+   وعطبٌ ثانٍ أخفى: إعادةُ الترتيب. «وتحتسب الأتعاب على 8 مقعدا على الأقل»
+   لو نُقل مبلغُها إلى خانةٍ أولى بقي «وتحتسب الأتعاب على … على الأقل»
+   جملةً مكسورة — ولا يسقط عليها حارسُ التمام لأنّ الحروفَ كلَّها حاضرة.
+   فالحارسُ هنا على **الترتيب** لا على الحضور. */
+describe('قاعدةُ الأتعاب تُقرأ صفوفا من سطرها', () => {
+  const annexB = doc.sections.find((s) => s.kind === 'annex' && s.titleAr === 'أساس الأتعاب')!
+  const rows = feeRuleRows(annexB, 0)
+
+  it('تُقرأ من المتن الحيّ، ولكلِّ جملةٍ صفُّها', () => {
+    expect(annexB, 'لا ملحقَ أتعابٍ في المتن الحيّ').toBeTruthy()
+    expect(rows, 'لا تُقرأ القاعدةُ صفوفا — فترتدّ فقرةً').not.toBeNull()
+    expect(rows!.length, 'عددُ الصفوف ليس عددَ جمل القاعدة').toBe(3)
+    /* والمبلغُ مقروءٌ من السطر: كلُّ صفٍّ فيه رقم، ولا رقمَ مكتوبٌ هنا */
+    for (const r of rows!) expect(r.amountAr, `صفٌّ بلا مبلغ: ${r.beforeAr}`).toMatch(/\d/)
+  })
+
+  /* ═══ التمامُ بالبناء لا بالوعد ═══
+     جمعُ الصفوف يردّ سطرَ القاعدة حرفا بحرف — فلا حرفَ يسقط ولا يُزاد. */
+  it('وجمعُ الصفوف يردّ السطرَ حرفا بحرف', () => {
+    const back = rows!.map((r) => r.beforeAr + r.amountAr + r.afterAr).join('')
+    expect(back, 'الصفوفُ لا تردّ السطرَ — فالمعروضُ غيرُ الموقَّع عليه')
+      .toBe((annexB.blocks[0] as { textAr: string }).textAr)
+  })
+
+  /* والمبلغُ يبقى حيث كُتب: ما قبله في المتن قبله في الصفّ */
+  it('ولا يُنقل المبلغُ من موضعه في الجملة', () => {
+    const line = (annexB.blocks[0] as { textAr: string }).textAr
+    for (const r of rows!) {
+      const whole = r.beforeAr + r.amountAr + r.afterAr
+      expect(line, 'جملةٌ أُعيد ترتيبُها').toContain(whole)
+      if (r.beforeAr) {
+        expect(whole.indexOf(r.beforeAr), 'ما قبل المبلغ جاء بعده').toBeLessThan(whole.indexOf(r.amountAr))
+      }
+    }
+  })
+
+  /* ═══ وما ليس قاعدةً يرتدّ فقرةً ═══ */
+  it('وما ليس أوّلَ ملحقِ الأتعاب لا يُصفّ', () => {
+    /* البندُ الذي يذكر الأسعارَ في ذيل الملحق جملُه كلُّها بأرقام — فلولا
+       قيدُ الموضع لَصار جدولا وهو تعليقٌ لا قاعدة. */
+    expect(feeRuleRows(annexB, 1), 'كتلةٌ ليست الأولى قُرئت قاعدةً').toBeNull()
+    /* والقياسُ بنصّ القاعدة بعينه: لو وُضع في بندٍ لَما صار صفوفا، وإلّا
+       فالحارسُ يمرّ لأنّ البندَ لا يطابق الشكلَ لا لأنّ الموضعَ مُنع. */
+    const ruleText = (annexB.blocks[0] as { textAr: string }).textAr
+    for (const kind of ['clause', 'summary', 'preamble'] as const) {
+      expect(feeRuleRows({ kind, numAr: null, titleAr: '', blocks: [{ kind: 'text', textAr: ruleText }] }, 0),
+        `قسمٌ (${kind}) قُرئ قاعدةً`).toBeNull()
+    }
+    for (const a of doc.sections.filter((s) => s.kind === 'annex' && s.titleAr !== 'أساس الأتعاب')) {
+      expect(feeRuleRows(a, 0), `ملحقٌ (${a.numAr}) قُرئ قاعدةً`).toBeNull()
+    }
+  })
+
+  it('وجملةٌ بلا رقمٍ تردّ القاعدةَ كلَّها نثرا', () => {
+    const asAnnex = (textAr: string) => ({
+      kind: 'annex' as const, numAr: 'ب', titleAr: 'أساس الأتعاب',
+      blocks: [{ kind: 'text' as const, textAr }],
+    })
+    /* حالُ عقدٍ لم يُتّفق فيه على أتعابٍ بعد — شطرُه الثاني بلا رقم */
+    expect(feeRuleRows(asAnnex('لم يتفق الطرفان بعد على أساس الأتعاب، ويحدد باتفاق مكتوب قبل أول إسناد.'), 0),
+      'نثرٌ بلا أرقامٍ صار صفوفا').toBeNull()
+    /* ولا صفوفَ من لا شيء: كتلةٌ خاويةٌ تردّ `null` لا مصفوفةً فارغة */
+    expect(feeRuleRows(asAnnex(''), 0), 'كتلةٌ خاويةٌ ردّت صفوفا').toBeNull()
+    /* وترقيمُ قائمةٍ ليس شرطَ مال: «1. » رقمٌ بلا نطق. ولولا اشتراطُ الحرف
+       لَصار كلُّ ملحقٍ مرقَّمٍ بنودُه أرقامٌ جدولَ أتعاب. */
+    expect(feeRuleRows(asAnnex('1. الهوية سارية 6 أشهر. 2. السيرة في 3 صفحات.'), 0),
+      'قائمةٌ مرقّمةٌ صارت قاعدةَ أتعاب').toBeNull()
+    /* وذيلٌ بلا نقطةٍ تُغلقه: لا يُقتطَع نصفُ نصٍّ ويُترَك نصفُه */
+    expect(feeRuleRows(asAnnex('20 مقعدا. وذيلٌ بلا حدّ'), 0), 'ذيلٌ مفتوحٌ قُبل').toBeNull()
+    /* وكسرةُ العدد ليست حدَّ جملة */
+    const frac = feeRuleRows(asAnnex('12.5 USD عن كل مقعد.'), 0)
+    expect(frac, 'كسرةٌ رُدّت').not.toBeNull()
+    expect(frac!.length, 'قُطعت الجملةُ عند كسرة العدد').toBe(1)
+    expect(frac![0].amountAr, 'المبلغُ بُتر عند الكسرة').toBe('12.5 USD')
+  })
+
+  /* ═══ وما يُطبَع فعلا — ومن الصفوف وحدَها ═══
+
+     ── ولمَ لا يُفتَّش في الوثيقة كلِّها ──
+
+     سطرُ القاعدة **مطبوعٌ مرّتين**: البندُ 4-1 يطبع `feeClause` نفسَه ثمّ
+     يذيّله بإحالةٍ إلى الملحق. فحارسٌ يسأل «أفي الوثيقة هذا السطر؟» يجده
+     في البند ويمرّ — ولو ضاع من الملحق كلُّه. وقد مرّ هكذا فعلا: نُقض
+     `afterAr` فلم يسقط.
+
+     فالمقابلةُ على وسم الصفوف وحدَه، ومساواةً لا احتواءً. */
+  it('والصفوفُ تُصيَّر صفوفا، وجمعُها وحدَه يردّ سطرَ القاعدة', () => {
+    const html = renderToStaticMarkup(createElement(ContractDocument, { doc }))
+    const cells = [...html.matchAll(/<p[^>]*class="cd-rrow"[^>]*>([\s\S]*?)<\/p>/g)]
+    expect(cells.length, 'عددُ الصفوف المُصيَّرة ليس عددَ الجمل').toBe(rows!.length)
+    expect(html, 'لا مبلغَ مُبرَزٌ في الصفوف').toContain('cd-ramt')
+    const back = cells.map((m) => m[1].replace(/<[^>]+>/g, '')).join('')
+    expect(back, 'الصفوفُ المُصيَّرةُ لا تردّ سطرَ القاعدة حرفا بحرف')
+      .toBe((annexB.blocks[0] as { textAr: string }).textAr)
   })
 })

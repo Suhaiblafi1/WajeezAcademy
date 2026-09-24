@@ -167,6 +167,27 @@
 .contract-doc .cd-n { color: var(--cd-muted) }
 .contract-doc .cd-ref { color: var(--cd-teal-deep); font-weight: 700; font-size: 12px; white-space: nowrap }
 
+/* ═══ قاعدةُ الأتعاب — صفٌّ لكلّ جملة، والمبلغُ بارزٌ في موضعه ═══
+
+   ولا تُنقل الأرقامُ إلى خانةٍ أولى: «وتحتسب الأتعاب على 8 مقعدا على
+   الأقل» لو نُزع منها المبلغُ انكسرت. فالإبرازُ حجمٌ ولونٌ لا ترتيب. */
+.contract-doc .cd-rule { margin: 2px 0 4px }
+.contract-doc .cd-rrow {
+  padding: 12px 14px; margin: 0;
+  font-size: 14.5px; line-height: 1.95;
+  border-top: 1px solid rgba(36, 123, 132, 0.16);
+  background: rgba(56, 167, 180, 0.05);
+}
+.contract-doc .cd-rrow:first-child {
+  border-top: none; border-radius: 10px 10px 0 0;
+}
+.contract-doc .cd-rrow:last-child { border-radius: 0 0 10px 10px }
+.contract-doc .cd-rrow:only-child { border-radius: 10px }
+.contract-doc .cd-ramt {
+  font-size: 17px; font-weight: 800; color: var(--cd-teal-darker);
+  white-space: nowrap;
+}
+
 .contract-doc .cd-h4 { font-size: 15.5px; margin: 18px 0 8px; color: var(--cd-teal-darker); font-weight: 800 }
 .contract-doc table { width: 100%; border-collapse: collapse; margin: 6px 0 4px; font-size: 14.5px }
 .contract-doc th, .contract-doc td {
