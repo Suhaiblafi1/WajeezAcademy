@@ -32,7 +32,7 @@
 import type { ContractDoc, ContractSection, ContractBlock } from '@/application/trainer/contract-sections'
 import {
   sectionHeadingAr, summaryItem, exampleRow, exampleTotal,
-  isExampleHeading, isAdvisoryNote,
+  isExampleHeading, isAdvisoryNote, feeRuleRows,
 } from '@/application/trainer/contract-sections'
 
 /** فاصلٌ يُقرأ ولا يُرى — فالنصُّ يبقى تامّا والعينُ تقرأ اللوح */
@@ -98,9 +98,11 @@ function Summary({ section }: { section: ContractSection }) {
 /* ═══ المثالُ الحسابيُّ جدولٌ — وأرقامُه من أسطره ═══
 
    الأسطرُ في المتن مرقّمةٌ بشكلٍ جدوليٍّ أصلا («1. الشعبة الأولى — 20
-   مسجلا…: 600 USD»)، فيُقرأ منها الجدولُ ولا يُكتب رقمٌ هنا. وجدولُ
-   **قاعدة** الأتعاب لم يُبنَ: قاعدتُه جملةٌ قانونيّةٌ لا صفوف، وتقطيعُها
-   إلى خاناتٍ اجتهادٌ في مالٍ يقبضه إنسان. */
+   مسجلا…: 600 USD»)، فيُقرأ منها الجدولُ ولا يُكتب رقمٌ هنا.
+
+   وقاعدةُ الأتعاب فوقه صفوفٌ لا جدولُ خانات: خاناتُ العيّنة عنوانٌ وشرحٌ
+   ليسا في العقد، وترتيبُها ينقل المبلغَ من موضعه فتنكسر الجملة. فالصفُّ
+   جملةُ القاعدة بحروفها، والمبلغُ مُبرَزٌ حيث كُتب. */
 function Blocks({ section }: { section: ContractSection }) {
   const out: React.ReactNode[] = []
   let rows: { b: ContractBlock; r: NonNullable<ReturnType<typeof exampleRow>> }[] = []
@@ -126,7 +128,27 @@ function Blocks({ section }: { section: ContractSection }) {
     )
   }
 
+  const rule = feeRuleRows(section, 0)
+
   section.blocks.forEach((b, i) => {
+    /* ═══ قاعدةُ الأتعاب صفوفا — وهي وحدَها المُلزِمة ═══
+
+       الجملةُ بحروفها في الصفّ، والمبلغُ مُبرَزٌ في موضعه لا منقولا إلى
+       خانةٍ أولى. وإن لم تُقرأ القاعدةُ صفوفا مرّت فقرةً كما هي. */
+    if (i === 0 && rule) {
+      out.push(
+        <div key="rule" className="cd-rule">
+          {rule.map((r, n) => (
+            <p key={n} className="cd-rrow">
+              {r.beforeAr}
+              <b className="cd-ramt">{r.amountAr}</b>
+              {r.afterAr}
+            </p>
+          ))}
+        </div>,
+      )
+      return
+    }
     const r = exampleRow(b)
     if (r) { rows.push({ b, r }); return }
     flush(`t${i}`)
