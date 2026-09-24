@@ -37,6 +37,7 @@ import {
 import {
   AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, isAmendmentRequested,
 } from '../../src/application/trainer/contract-endings'
+import { isUntouchableContract } from '../../src/application/trainer/contract-untouchable'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -1702,6 +1703,10 @@ export class TrainerReviewService {
           signerLegalName: true, declinedAt: true, declineReasonAr: true,
           countersignedAt: true, academySignatoryName: true,
           academySignatoryTitle: true, countersignNoteAr: true,
+          /* وطلبُ التعديل وجوابُه: كانت القائمةُ تعرض الحالةَ ولا تعرض
+             ما طُلِب — فيرى الموظّفُ «amendment_requested» ولا يدري ما المطلوب. */
+          amendmentRequestAr: true, amendmentRequestedAt: true,
+          amendmentReplyAr: true, amendmentRepliedAt: true,
           documents: { select: { id: true, kind: true, originalName: true, mime: true, uploadedAt: true }, orderBy: { uploadedAt: 'asc' } },
           profile: {
             select: {
@@ -2363,6 +2368,115 @@ export class TrainerReviewService {
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
 
+  /* ═══ جوابُ الإدارة على طلب التعديل ═══
+
+     كان الطلبُ يصل ويُحفَظ ويُشعِر، **ولا شيءَ يردّه**: لا شاشةَ تقرؤه
+     ولا فعلَ يُنهيه، فيقف العقدُ في `amendment_requested` أبدا — وهو ما رآه
+     صاحبُ المنصّة في قائمته (٢٤ سبتمبر ٢٠٢٦).
+
+     والجوابان مكتوبان في رأس `requestContractAmendment` منذ كُتِبت: «فإمّا
+     أُلغي وأُرسل مصحَّحا وإمّا رُدَّ عليه بأنّه يبقى». فهذا الثاني،
+     والأوّلُ صار ممكنا بقبول `revokeContract` لهذه الحالة.
+
+     ── ولمَ يُجدَّد الرابط ──
+
+     الرمزُ لم يُمحَ يومَ طلب التعديل، لكنّا لا نملك نصَّه (المحفوظُ هاشُه)،
+     فلا سبيلَ إلى إرسالِه مرّةً أخرى. وجوابٌ لا يصل صاحبَه ليس جوابا —
+     فيُسكَّ رمزٌ جديدٌ ويُرسَل، كما يفعل `resendContract` بنصّه. */
+  async replyToAmendment(contractId: string, actorId: string, replyAr: string) {
+    const reply = replyAr.trim()
+    if (reply.length < 5) {
+      throw new AuthError('no_reply', 'اكتب ردَّك — يقرؤه المدرّبُ وهو أمام زرّ التوقيع', 422)
+    }
+    const contract = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+
+    const { token, tokenHash, expiresAt } = this.mintContractToken()
+    /* قارنْ واضبطْ في نداءٍ واحد: نقرتان متزامنتان تكتبان جوابَين */
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: contractId, status: CONTRACT_AMENDMENT_REQUESTED },
+      data: {
+        status: 'sent',
+        amendmentReplyAr: reply.slice(0, AMENDMENT_TEXT_MAX),
+        amendmentRepliedAt: new Date(),
+        amendmentRepliedBy: actorId,
+        tokenHash, tokenExpiresAt: expiresAt,
+      },
+    })
+    if (done.count === 0) {
+      throw new AuthError('bad_state', 'لا طلبَ تعديلٍ قائمٌ على هذا العقد', 409)
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.amendment_replied',
+      entityType: 'trainer_contract', entityId: contractId,
+      meta: { replyAr: reply.slice(0, AMENDMENT_TEXT_MAX) },
+    })
+    const app = contract.profile.application
+    const mail = await this.mailContract({
+      contract, to: app.email, fullName: app.fullName, reference: app.reference,
+      url: this.signingUrl(token), expiresAt, resend: true,
+    })
+    return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
+  }
+
+  /* ═══ الحذف — وما لا يُحذَف أبدا ═══
+
+     طلبَه صاحبُ المنصّة (٢٤ سبتمبر ٢٠٢٦): قائمةُ العقود تمتلئ بمسودّاتٍ
+     وملغَياتٍ لا تُفيد أحدا.
+
+     **والموقَّعُ لا يُحذَف ولو طُلِب.** وثيقةٌ وقّعها إنسانٌ دليلٌ يُحتَجّ
+     به له وعليه، ومحوُها يمحو ما التزم به الطرفان. والمميِّزُ هو
+     `isUntouchableContract` في `contract-untouchable.ts` — وموضعاه
+     يسألان السؤالَ نفسَه: أمَسَّ هذا العقدَ توقيعٌ؟
+
+     والأثرُ يبقى بعد الصفّ: من حذف، ومتى، وما كان عنوانُه وحالتُه. */
+  async deleteContract(contractId: string, actorId: string) {
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      select: {
+        id: true, title: true, status: true, revision: true,
+        signedAt: true, countersignedAt: true, profileId: true,
+      },
+    })
+    if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (isUntouchableContract(c)) {
+      throw new AuthError(
+        'signed_contract',
+        'لا يُحذَف عقدٌ مسَّه توقيع — وهو دليلٌ يُحتَجّ به للمدرّب وعليه',
+        409,
+      )
+    }
+    /* والأثرُ يُكتب قبل المحو: بعده لا يبقى ما يُقرأ منه عنوانٌ ولا حالة */
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.delete',
+      entityType: 'trainer_contract', entityId: contractId,
+      meta: { title: c.title, status: c.status, revision: c.revision, profileId: c.profileId },
+    })
+    const done = await this.prisma.trainerContract.deleteMany({
+      /* والقيدُ يُعاد في المحو نفسِه: بين القراءة والمحو قد يُوقَّع */
+      where: { id: contractId, signedAt: null, countersignedAt: null },
+    })
+    if (done.count === 0) {
+      throw new AuthError('signed_contract', 'وُقِّع العقدُ قبل أن يُحذَف — فلا يُحذَف', 409)
+    }
+    /* ويُخبَر به إنسان: محوٌ لا رجعةَ فيه يقع بنقرةٍ واحدة، ومن كان
+       يعمل على هذا الملفّ يجدُه غائبا ولا يدري أذهب أم لم يكن. والأثرُ
+       يُقرأ بطلب، والإشعارُ يصل بلا طلب. */
+    try {
+      await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+        channel: 'in_app',
+        templateKey: 'trainer.contract.deleted',
+        title: 'حُذِف عقدٌ لم يُوقّع',
+        body: `حُذِف «${c.title}» (حالتُه ${c.status}) — ولم يمسّه توقيع. والأثرُ يحفظ تفصيلَه.`,
+        data: { contractId, profileId: c.profileId },
+      })
+    } catch { /* الإشعارُ رفاهيةٌ لا تُعيد صفّا مُحي */ }
+    return { ok: true }
+  }
+
   /** تجديدُ الرابط — الرمزُ القديم يموت لحظتَها، فلا يبقى بابان */
   async resendContract(contractId: string, actorId: string) {
     const contract = await this.prisma.trainerContract.findUnique({
@@ -2397,7 +2511,7 @@ export class TrainerReviewService {
     /* قارنْ واضبطْ في نداءٍ واحد: قراءةٌ ثمّ كتابةٌ تسمح لنقرتين متزامنتين
        أن تمرّا معا، فيُكتب سببان ويُسجَّل أثران لإلغاءٍ واحد. */
     const done = await this.prisma.trainerContract.updateMany({
-      where: { id: contractId, status: { in: ['draft', 'sent'] } },
+      where: { id: contractId, status: { in: ['draft', 'sent', CONTRACT_AMENDMENT_REQUESTED] } },
       /* والرمزُ يموت مع الإلغاء: رابطٌ حيٌّ لعقدٍ ملغًى بابٌ مفتوحٌ على
          وثيقةٍ لم تعد قائمة — ومن يفتحه يوقّع ما سُحب من تحته. */
       data: {

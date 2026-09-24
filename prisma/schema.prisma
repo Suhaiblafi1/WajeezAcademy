@@ -1913,6 +1913,18 @@ model TrainerContract {
   amendmentRequestAr   String?
   amendmentRequestedAt DateTime?
 
+  /// ─────────── وجوابُنا عليه ───────────
+  ///
+  /// كان الطلبُ يصل ويُحفَظ ويُشعِر، ولا شيءَ يردّه: لا شاشةَ تقرؤه ولا فعلَ
+  /// يُنهيه، فيقف العقدُ في `amendment_requested` أبدا. وهذا موضعُ الجواب.
+  ///
+  /// ويُحفَظ ولا يُكتفى بالبريد: المدرّبُ يفتح رابطَه فيجب أن يرى **لماذا**
+  /// بقي العرضُ كما هو قبل أن يوقّع — ورسالةٌ في بريده لا تكون أمام عينه
+  /// وهو يوقّع. وهي كلمةُ موظّفٍ إلى إنسانٍ يُلزَم بمال، فتُحفَظ مع العقد.
+  amendmentReplyAr   String?
+  amendmentRepliedAt DateTime?
+  amendmentRepliedBy String?   @db.Uuid
+
   revokedAt       DateTime?
   revokedBy       String?   @db.Uuid
   revokeReasonAr  String?
