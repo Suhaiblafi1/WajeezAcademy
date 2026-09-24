@@ -3,7 +3,7 @@ import { normalizeApplicantLink } from "@/application/trainer/applicant-link";
 import { checkEvidenceLinks } from "@/application/trainer/evidence-links";
 import { Link, useSearchParams } from "react-router";
 import { CalendarClock,
-  ArrowLeft, ArrowRight, AtSign, BadgeCheck, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
+  ArrowLeft, ArrowRight, AtSign, Check, CheckCircle2, ChevronDown, Compass, Eye, EyeOff,
   FileUp, KeyRound, Loader2, Mail, MessageCircle, Mic2, Phone, RefreshCcw, Search, Sparkles, Users,
 } from "lucide-react";
 import { InterviewPrep } from "@/components/InterviewPrep";
@@ -816,10 +816,8 @@ export default function JoinTrainer() {
      بدء الطلب في الخلفية تفصيلٌ تقني، وإظهار شاشة النجاح عنده يوهم المتقدّم
      أنه انتهى وقد بقي نصف طلبه. */
   if (result && phase2Done) {
-    const channel = CONTACT_CHANNELS.find((c) => c.value === contactChannel);
-    const channelValue = contactChannel === "other_email" ? contactAltEmail.trim()
-      : contactChannel === "email" ? form.email.trim()
-      : `${form.phoneCountryCode}${normalizeDigits(form.phone)}`;
+    /* ولا قناةَ تُحسب هنا بعد اليوم: كانت لبطاقة «وفي أثناء ذلك» وحدَها
+       (حُذفت ٢٤ سبتمبر ٢٠٢٦)، وحسابُها الآن عملٌ لا يُقرأ. */
     return (
       <SiteShell>
         <SeoHead title="طلبك وصل" description="طلب انضمام مدرب في أكاديمية وجيز" path="/join-trainer" />
@@ -862,17 +860,12 @@ export default function JoinTrainer() {
               name={form.fullName.trim()} email={form.email.trim()} reference={result.reference}
             />
 
-            <Card>
-              <p className="flex items-center gap-2 text-sm font-black">
-                <BadgeCheck className="h-4 w-4 text-teal-light-ink" /> وفي أثناء ذلك
-              </p>
-              <p className="mt-2 text-sm leading-8 text-muted-foreground">
-                يقرأ فريقنا الأكاديميُّ طلبك ومستنداتك. وإن احتجنا شيئا قبل الموعد
-                {" "}<b className="text-foreground">نتواصل معك عبر {channel?.label ?? "البريد"}</b>
-                {channelValue && <> على <b dir="ltr" className="text-foreground">{channelValue}</b></>}.
-              </p>
-            </Card>
+            {/* ═══ حُذف «وفي أثناء ذلك» (٢٤ سبتمبر ٢٠٢٦) ═══
 
+                قرارُ صاحب المنصّة: «كلام كثير لا داعي له». وكانت تقول ما
+                تقوله بطاقةُ الحالة فوقَها بألفاظٍ أخرى — أنّ فريقنا يقرأ
+                الطلب، وأنّنا نتواصل. فالشاشةُ تُعيد على قارئها ما قرأه قبل
+                سطرَين، وكلُّ إعادةٍ تُنقص ما يُقرأ من البقيّة. */}
             {/* ═══ حالةُ البريد تُقاس ولا تُوعَد ═══
 
                 كانت هنا بطاقةٌ تقول «أرسلنا بريد تأكيد» ثمّ تصمت إلى الأبد:
@@ -885,19 +878,20 @@ export default function JoinTrainer() {
               delivery={completion?.emailDelivery ?? null}
             />
 
+            {/* ═══ والزرُّ وحدَه (٢٤ سبتمبر ٢٠٢٦) ═══
+
+                كان فوقَه عنوانٌ وفقرةٌ تشرح ما يراه بعد الدخول. وقرارُ صاحب
+                المنصّة: «اترك فقط زرّ سجّل الدخول».
+
+                والزرُّ يقول ما يفعل باسمه، والبريدُ الذي يدخل به هو الذي
+                قدّم به — يعرفه ولا يُذكَّر. فالفقرةُ كانت تصف ما يراه بعد
+                النقرة لمن هو على بُعد نقرةٍ منه. */}
             <Card>
-              <p className="flex items-center gap-2 text-sm font-black">
-                <KeyRound className="h-4 w-4 text-teal-light-ink" /> تابع حالة طلبك من حسابك
-              </p>
-              <p className="mt-2 text-read leading-7 text-muted-foreground">
-                سجّل الدخول ببريدك <b dir="ltr" className="text-foreground">{form.email.trim()}</b> وكلمة المرور التي اختَرتها.
-                سترى حالة طلبك في كل مرحلة، وإن اعتُمدت تُفتح لك بوابة المدربين من الحساب نفسه.
-              </p>
               <Link
                 to="/auth"
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90"
+                className="inline-flex items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90"
               >
-                سجّل الدخول <ArrowLeft className="h-4 w-4" />
+                <KeyRound className="h-4 w-4" /> سجّل الدخول لمتابعة طلبك <ArrowLeft className="h-4 w-4" />
               </Link>
             </Card>
           </div>

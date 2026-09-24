@@ -139,12 +139,11 @@ export default function EmailVerifyStatus({
   if (verified === 'done') {
     return (
       <Card tone="positive" className={className}>
-        <p className="flex items-center gap-2 text-sm font-black text-emerald-300">
-          <CheckCircle2 className="h-4 w-4" /> تمّ التوثيق — بريدك موثَّق
-        </p>
-        <p className="mt-2 text-read leading-7 text-foreground">
-          <b dir="ltr" className="font-mono text-foreground">{email}</b> صار موثَّقا، ولا يبقى عليك شيءٌ فيه.
-          وعلى هذا البريد تصلك أخبارُ طلبك ودعوةُ لقاء التعارف.
+        {/* سطرٌ واحد (٢٤ سبتمبر ٢٠٢٦): خطوةٌ انتهت لا تُشرح — ومن وثّق
+            بريدَه لا يحتاج فقرةً تخبره بما صار إليه. */}
+        <p className="flex flex-wrap items-center gap-2 text-sm font-black text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0" /> تمّ التوثيق —{' '}
+          <b dir="ltr" className="font-mono">{email}</b> موثَّق
         </p>
       </Card>
     )
@@ -178,29 +177,23 @@ export default function EmailVerifyStatus({
             ? <><MailWarning className="h-4 w-4" /> تعذّر التحقّق من حالة بريدك الآن</>
             : <><MailWarning className="h-4 w-4" /> حالة بريدك: غير موثَّق</>}
       </p>
-      {notSent ? (
-        <p className="mt-2 text-read leading-7 text-foreground">
-          تعذّر إرسالُ رسالة التأكيد إلى <b dir="ltr" className="font-mono text-foreground">{email}</b> الآن.
-          <b className="text-foreground"> وطلبك محفوظٌ ومقدَّمٌ على أيّ حال</b> — اطلب الرسالةَ من الزرّ
-          أدناه، أو من صفحة حالتك بعد الدخول.
-        </p>
-      ) : (
-        <p className="mt-2 text-read leading-7 text-foreground">
-          افتح بريد <b dir="ltr" className="font-mono text-foreground">{email}</b> الآن، وانقر رابطَ التأكيد
-          في رسالتنا — نقرةٌ واحدة تكفي. وإن لم تجدها خلال دقائق فراجع مجلّد
-          الرسائل غير المرغوبة (Spam) قبل أن تطلبها ثانية.
-        </p>
-      )}
-      <p className="mt-2 text-read leading-7 text-muted-foreground">
-        تتحدّث هذه البطاقةُ وحدَها حين تعود إلى هذه الصفحة بعد النقر — فلا تُعد تعبئةَ شيء.
+      {/* ═══ سطرٌ واحدٌ وفعلان (٢٤ سبتمبر ٢٠٢٦) ═══
+
+          قرارُ صاحب المنصّة: «اجعل التوثيق سطرا واحدا فقط». وكانت البطاقةُ
+          أربعَ فقرات: ما يفعل، ومجلّدُ الرسائل غير المرغوبة، وأنّ البطاقةَ
+          تتحدّث وحدَها، وسببُ تعذّر القياس.
+
+          والمحذوفُ شرحٌ لا عمل. والباقي: ما يفعله في سطر، والزرّان —
+          وهما الفعلُ نفسُه لا وصفُه. ومن لم يجد الرسالةَ يضغط «أعد الإرسال»،
+          فلا يلزمه سطرٌ يذكّره بمجلّدٍ يعرفه.
+
+          وحالُ الإرسال المتعذّر تبقى مقولةً: هي خبرٌ عندنا لا إرشادٌ له —
+          من لم تخرج رسالتُه ينتظر ما لا يجيء. */}
+      <p className="mt-2 text-read leading-7 text-foreground">
+        {notSent
+          ? <>تعذّر إرسالُ الرسالة إلى <b dir="ltr" className="font-mono text-foreground">{email}</b> — وطلبك محفوظٌ على أيّ حال.</>
+          : <>افتح بريد <b dir="ltr" className="font-mono text-foreground">{email}</b> وانقر رابطَ التأكيد — نقرةٌ واحدة تكفي.</>}
       </p>
-      {stale && (
-        <p className="mt-2 text-read leading-6 text-muted-foreground">
-          {unknown
-            ? "لم نستطع قراءةَ حالة بريدك من خادمنا الآن — وطلبك محفوظ. وثّق بريدك كما فوق، ثمّ حدّث الحالة من الزرّ."
-            : "تعذّر التحقّقُ الآن — حالتُك عندنا سليمةٌ على أيّ حال، وسنحدّثها بعد قليل."}
-        </p>
-      )}
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
         <button
           type="button" onClick={() => void ask(true)} disabled={busy}

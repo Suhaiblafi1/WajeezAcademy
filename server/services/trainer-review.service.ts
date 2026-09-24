@@ -14,7 +14,7 @@ import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import {
-  bookingReminderMail, decisionMailFor, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail } from './trainer-decision-mail'
+  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -931,6 +931,27 @@ export class TrainerReviewService {
       })
     }
 
+    /* ═══ وطلبُ الدرس التجريبيّ يصل صاحبَه — لا يُقلب في دفترنا وحدَه ═══
+
+       كان هذا القرارُ يقلب الحالةَ إلى «بانتظار الدرس التجريبي» ولا يُرسل
+       حرفا: فننتظر درسا لم نطلبه منه، وينتظر هو طلبا لم يصله. وشكاه صاحبُ
+       المنصّة (٢٤ سبتمبر ٢٠٢٦).
+
+       وملاحظةُ المراجع تسافر معه كما تسافر في الردّ وقائمة الانتظار: «درسا
+       تجريبيا» بلا موضوعٍ ولا مدّةٍ يُجيب عنها بسؤالٍ لا بدرس.
+
+       ولا يُسقِط تعذُّرُ البريدِ القرارَ: الحالةُ انتقلت، والشاشةُ تقرأ حالَ
+       البريد من سجلّ الإرسال لا من هنا — وقرارٌ يُنقَض لأنّ خادمَ بريدٍ تأخّر
+       أسوأُ من رسالةٍ تُعاد. */
+    if (action === 'request_demo') {
+      const mail = demoRequestMail({
+        fullName: app.fullName, reference: app.reference, noteAr: note,
+      })
+      await sendDirectEmail(this.prisma, {
+        to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+      })
+    }
+
     /* ═══ والتراجعُ يصل صاحبَه بسببه — وإلّا فهو تصحيحٌ في دفترنا لا عنده ═══
 
        من رُدّ طلبُه قرأ اعتذارا وأغلق الباب. فلو نُقض الردُّ في القاعدة وحدَها
@@ -1177,12 +1198,17 @@ export class TrainerReviewService {
       movedTo = followup.movesTo
     }
 
+    /* والتقويمُ يُبنى هنا لا في الرسالة: بناؤه يقرأ إعدادَ التكاملات
+       (تقويمٌ بديلٌ وحاضرون)، والرسالةُ دالّةٌ خالصة. */
     const mail = noShowFollowupMail({
       followup,
       fullName: app.fullName,
       reference: app.reference,
       bodyAr,
       statusUrl: `${publicSiteUrl()}/join-trainer/status`,
+      bookingUrl: await this.bookingLink({
+        name: app.fullName, email: app.email, reference: app.reference,
+      }),
     })
     const sent = await sendDirectEmail(this.prisma, {
       to: app.email, subject: mail.subject, ...renderMail(mail.doc),
