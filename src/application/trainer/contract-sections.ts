@@ -192,7 +192,10 @@ export interface ExampleTotal { labelAr: string; amountAr: string }
 
 export function exampleTotal(b: ContractBlock): ExampleTotal | null {
   if (b.kind !== 'text') return null
-  const m = /^(مجموع[^:]*):\s*(.+)$/.exec(b.textAr)
+  /* ذيلان لا واحد: «مجموع…» للأجر الثابت عن الشعبة (وجمعُها صحيح)،
+     و«وعلى فرض… في الموسم…» لأجر المقعد — فصفوفُه حالاتٌ متنافيةٌ
+     لدورةٍ واحدةٍ لا تُجمَع. */
+  const m = /^(مجموع[^:]*|وعلى فرض[^:]*):\s*(.+)$/.exec(b.textAr)
   return m ? { labelAr: m[1].trim(), amountAr: m[2].trim() } : null
 }
 

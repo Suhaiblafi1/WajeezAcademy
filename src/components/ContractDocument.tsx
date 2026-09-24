@@ -67,18 +67,28 @@ function Summary({ section }: { section: ContractSection }) {
   const loose = items.filter((x) => !x.it)
   return (
     <>
+      {/* ═══ صفوفٌ لا مربّعات — قرارُ صاحب المنصّة (٢٤ سبتمبر) ═══
+
+          كانت خمسَ بطاقاتٍ في شبكةٍ متساويةِ العرض، ونصُّ بنودِ الخلاصة جملٌ
+          طويلةٌ لا كلمات: فبطاقةُ «الصفة» سطران، و«الأتعاب» عشرةٌ محشورةٌ في
+          عمودٍ ضيّق. فتخرج صناديقُ متفاوتةُ الطول تثقُل العينَ ولا تُبسِّط.
+
+          والصفُّ بعرضٍ كاملٍ يحلّ الأمرين معا: لا تفاوتَ طولٍ يُرى، والجملةُ
+          الطويلةُ تأخذ سطرَها. ولا يسقط حرفٌ — التبديلُ في النَّسق وحدَه. */}
       {carded.length > 0 && (
-        <div className="cd-sgrid">
+        <dl className="cd-slist">
           {carded.map(({ it }, i) => (
-            <div key={i} className="cd-sitem">
+            <div key={i} className="cd-srow">
               <Sep t="· " />
-              <div className="cd-k">{it!.keyAr}<Sep t=": " /></div>
-              <div className="cd-v">{it!.valueAr}</div>
-              {it!.noteAr && <div className="cd-n"><Sep t=" — " />{it!.noteAr}</div>}
-              {it!.refAr && <div className="cd-ref"><Sep t=" " />{it!.refAr}</div>}
+              <dt className="cd-k">{it!.keyAr}<Sep t=": " /></dt>
+              <dd className="cd-v">
+                {it!.valueAr}
+                {it!.noteAr && <><Sep t=" — " /><span className="cd-n">{it!.noteAr}</span></>}
+                {it!.refAr && <><Sep t=" " /><span className="cd-ref">{it!.refAr}</span></>}
+              </dd>
             </div>
           ))}
-        </div>
+        </dl>
       )}
       {loose.map(({ b }, i) => <Para key={i} b={b} />)}
     </>
@@ -101,7 +111,7 @@ function Blocks({ section }: { section: ContractSection }) {
     out.push(
       <table key={key}>
         <thead>
-          <tr><th>الشعبة</th><th>المسجّلون</th><th>الأتعاب</th></tr>
+          <tr><th>مصدر المسجّلين</th><th>الحساب</th><th>أتعابك</th></tr>
         </thead>
         <tbody>
           {mine.map(({ r }, i) => (
