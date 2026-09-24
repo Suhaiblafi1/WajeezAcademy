@@ -284,3 +284,40 @@ export function feeRuleRows(s: ContractSection, blockIndex: number): FeeRuleRow[
   if (at !== text.length || rows.length === 0) return null
   return rows
 }
+
+/* ═══ وقاعدةُ `v7` صفوفٌ معنونةٌ في المتن نفسِه ═══
+
+   `v6` وما قبله يكتب القاعدةَ جملةً، فتُقرأ بـ`feeRuleRows` أعلاه صفّا
+   لكلّ جملةٍ بعمودٍ واحد — وهو أقصى ما تحتمله جملة.
+
+   و`v7` يكتبها «عنوان — قيمة: متى» بأمر صاحب المنصّة، فصار للعنوان
+   والشرح موضعٌ **في العقد** لا في العارض، وصحّت الأعمدةُ الثلاثةُ التي
+   أقرّتها العيّنة. والنحوُ هو نحوُ المثال الحسابيّ نفسُه («عنوان — حساب:
+   مبلغ») فلا يُخترع في وثيقةٍ واحدةٍ نحوان.
+
+   والقارئتان تبقيان معا: متونُ `v6` مجمَّدةٌ في عقودٍ وُقّعت، فلو نُزعت
+   الأولى لَارتدّ ملحقُها فقرةً — لا نقصَ فيها، لكنّها تُفقِد من وقّع
+   شكلا كان له. */
+
+/** خاناتُ صفٍّ من قاعدة `v7`: «المقعد العام — 30 USD: عن كل متعلم…» */
+export interface FeeRuleCells {
+  labelAr: string
+  amountAr: string
+  whenAr: string
+}
+
+/* العنوانُ بلا شرطةٍ ولا نقطتين، والقيمةُ بلا نقطتين — وما بعدهما الشرح.
+   وبه تُردّ الأسطرُ التي فيها شرطةٌ ونقطتان لغير هذا المعنى. */
+const FEE_CELLS_RE = /^([^—:]+) — ([^:—]+): (.+)$/
+/** صفُّ المثال يبدأ برقمٍ ونقطة — وذاك جدولٌ آخرُ في الملحق نفسِه */
+const EXAMPLE_PREFIX_RE = /^\d+\.\s/
+
+export function feeRuleCells(b: ContractBlock): FeeRuleCells | null {
+  if (b.kind !== 'text' || EXAMPLE_PREFIX_RE.test(b.textAr)) return null
+  const m = FEE_CELLS_RE.exec(b.textAr)
+  if (!m) return null
+  const [, labelAr, amountAr, whenAr] = m
+  /* والقيمةُ رقمٌ: عنوانٌ وشرحٌ بلا مبلغٍ ليسا قاعدةَ أتعاب */
+  if (!/\d/.test(amountAr)) return null
+  return { labelAr: labelAr.trim(), amountAr: amountAr.trim(), whenAr: whenAr.trim() }
+}

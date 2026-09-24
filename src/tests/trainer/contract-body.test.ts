@@ -27,9 +27,10 @@ import {
 } from '@/application/trainer/notice-periods'
 import {
   CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_VERSION,
-  bodyCarriesConditionClause, contractAcks, renderContractBodyAr,
+  bodyCarriesConditionClause, contractAcks, renderContractBodyAr, feeBasisAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
+import { parseContractDoc, feeRuleCells } from '@/application/trainer/contract-sections'
 import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR, SEASON_COURSES } from '@/application/trainer/fee-example'
 
 const COURSES = [
@@ -522,8 +523,15 @@ describe('المثالُ الحسابيُّ في الملحق (ب) — ومقر�
     /* ① صدرُ المثال نفسِه */
     expect(body, 'صدرُ المثال لا يقول إنّه استرشاديّ').toContain(FEE_EXAMPLE_HEADING_AR)
     expect(body, 'المثالُ لا يقول إنّ الأعدادَ مفترضة').toMatch(/مفترضة للإيضاح/)
-    /* ② إحالةٌ من البند 4-1 — يقرؤها قبل أن يبلغ الملحق */
-    expect(clauseSection(body, 4), 'البندُ 4 لا يحيل إلى المثال').toMatch(/الملحق \(ب\) مثال حسابي/)
+    /* ② إحالةٌ من البند 4 — يقرؤها قبل أن يبلغ الملحق.
+
+       والمقيسُ وجودُها لا لفظُها: كان يُطابَق «الملحق (ب) مثال حسابي»
+       بحروفه، فسقط يومَ صار 4-1 مُحيلا على الملحق (v7) فلم يَعُد يسمّيه
+       مرّتين في نفَسٍ واحد. والمحروسُ أنّ البندَ يذكر أنّ ثَمّ مثالا
+       وأين هو — لا الصياغةُ التي يُذكَران بها. */
+    const clause4 = clauseSection(body, 4)
+    expect(clause4, 'البندُ 4 لا يذكر أنّ ثَمّ مثالا حسابيّا').toMatch(/مثال حسابي/)
+    expect(clause4, 'البندُ 4 لا يدلّ على موضع المثال').toMatch(/الملحق \(ب\)/)
     /* ③ واستثناءٌ بحروفه في 18-4 — وهو البندُ الذي كان يجعله بندا */
     expect(clauseSection(body, 18), 'البندُ 18 لا يستثني المثال').toMatch(/يستثنى من ذلك المثال الحسابي/)
   })
@@ -535,11 +543,11 @@ describe('المثالُ الحسابيُّ في الملحق (ب) — ومقر�
     }))
     expect(buildFeeExampleAr({ type: 'revenue_share', rate: '40', currency: 'USD', minSeats: null, referralRate: null })).toBeNull()
     expect(share, 'مثالٌ حيث لا يصحّ').not.toContain(FEE_EXAMPLE_HEADING_AR)
-    expect(share, 'إحالةٌ إلى مثالٍ لا وجودَ له').not.toMatch(/الملحق \(ب\) مثال حسابي/)
+    expect(clauseSection(share, 4), 'إحالةٌ إلى مثالٍ لا وجودَ له').not.toMatch(/مثال حسابي/)
 
     const noRule = renderContractBodyAr(base({ compensation: null }))
     expect(noRule, 'مثالٌ بلا قاعدةِ أتعاب').not.toContain(FEE_EXAMPLE_HEADING_AR)
-    expect(noRule, 'إحالةٌ إلى مثالٍ لا وجودَ له').not.toMatch(/الملحق \(ب\) مثال حسابي/)
+    expect(clauseSection(noRule, 4), 'إحالةٌ إلى مثالٍ لا وجودَ له').not.toMatch(/مثال حسابي/)
   })
 })
 
@@ -799,15 +807,50 @@ describe('الخلاصةُ في سطور', () => {
     }
   })
 
-  it('٣) وسطرُ الأتعاب فيها هو نفسُه الذي يطبعه البند 4-1', () => {
+  it('٣) وسطرُ الأتعاب فيها هو نصُّ المصدر نفسُه — لا صياغةٌ ثانية', () => {
     /* أقوى ما يُقاس في هذا الباب: لا يُطابَق معنى بمعنى بل **نصٌّ بنصّ**.
        فلو صِيغت الأتعابُ في الخلاصة صياغةً ثانيةً — ولو صحيحةً اليومَ —
-       سقط هذا الحارس، وهو مقصودُه: المصدرُ واحدٌ أو لا خلاصة. */
+       سقط هذا الحارس، وهو مقصودُه: المصدرُ واحدٌ أو لا خلاصة.
+
+       وكان يُقابَل بالبند 4-1، فذاك موضعُ النصّ. وقد صارت القاعدةُ صفوفا
+       في الملحق (ب) و4-1 مُحيلا عليها (v7)، فلم يبقَ في المتن نصٌّ نثريٌّ
+       يُطابَق به. فالمقابلةُ على `feeBasisAr` — المصدرِ الذي كان 4-1 يطبعه
+       — فيبقى المحروسُ هو هو: صياغةٌ واحدةٌ لا ثانيةَ لها. */
+    const c = base().compensation!
     const body = renderContractBodyAr(base())
-    const feeLine = line(body, 'والأتعاب:').replace(/\s*\(البند 4-1\)$/, '')
+    const feeLine = line(body, 'والأتعاب:').replace(/\s*\(الملحق ب\)$/, '')
     expect(feeLine.length, 'سطرُ الأتعاب في الخلاصة فارغ').toBeGreaterThan(20)
-    expect(clauseSection(body, 4), 'أتعابُ الخلاصة ليست نصَّ البند 4-1 نفسَه')
-      .toContain(feeLine)
+    expect(feeLine, 'أتعابُ الخلاصة صياغةٌ ثانيةٌ لا نصُّ المصدر')
+      .toBe(feeBasisAr(c))
+  })
+
+  /* ═══ والصياغتان لا تفترقان في رقم ═══
+
+     بعد `v7` تُكتب القاعدةُ مرّتين بلفظين: صفوفا مُلزِمةً في الملحق (ب)،
+     ونثرا في الخلاصة. وكلتاهما من `compensation` فاستحال الافتراقُ بالبناء
+     — وهذا يُثبته بدل أن يَعِد به: كلُّ مبلغٍ في الصفوف مذكورٌ في النثر،
+     وكلُّ مبلغٍ في النثر مذكورٌ في الصفوف.
+
+     ولو افترقا لَقالت الوثيقةُ رقمَين لشيءٍ واحدٍ يقبضه إنسان. */
+  it('٣ب) وصفوفُ الملحق (ب) والنثرُ لا يفترقان في مبلغ', () => {
+    const c = base().compensation!
+    const body = renderContractBodyAr(base())
+    const rows = parseContractDoc(body).sections
+      .find((s) => s.kind === 'annex' && s.titleAr === 'أساس الأتعاب')!
+      .blocks.map(feeRuleCells).filter(Boolean)
+    expect(rows.length, 'لا صفوفَ قاعدةٍ في الملحق (ب)').toBeGreaterThan(0)
+
+    const prose = feeBasisAr(c)
+    const nums = (t: string) => [...t.matchAll(/\d+/g)].map((m) => m[0])
+    for (const r of rows) {
+      for (const n of nums(r!.amountAr)) {
+        expect(prose, `مبلغٌ في الصفوف لا يقابله في النثر: ${r!.amountAr}`).toContain(n)
+      }
+    }
+    const inRows = rows.map((r) => r!.amountAr).join(' ')
+    for (const n of nums(prose)) {
+      expect(inRows, `مبلغٌ في النثر لا يقابله في الصفوف: ${n}`).toContain(n)
+    }
   })
 
   it('٤) ومُدَدُ الصرف فيها هي ثوابتُ البند 4-2 نفسُها', () => {
