@@ -21,6 +21,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   parseContractDoc, documentLinesAr, blockLineAr, sectionHeadingAr,
+  summaryItem, exampleRow, exampleTotal,
 } from '@/application/trainer/contract-sections'
 import { renderContractBodyAr, type ConditionalTerms } from '@/application/trainer/contract-body'
 import { ACADEMY_LEGAL, academyPartyLineAr } from '@/data/academy-legal'
@@ -141,7 +142,11 @@ describe('الترقيمُ يُبرَز ولا يُطرَح', () => {
 describe('البنيةُ مشتقّةٌ من المتن لا مكتوبةٌ إلى جانبه', () => {
   it('لا قائمةَ بنودٍ مكتوبةً بيدٍ في وحدة البنية', () => {
     /* مصدرٌ ثانٍ يفترق عن المتن يومَ يُعدَّل أحدُهما، فيوقّع على غير ما رأى */
+    /* والتعليقُ يُنزَع أوّلا: رأسُ الوحدة يشرح لمَ لا تُكتب قائمةُ البنود
+       باليد، فيسوق أسماءَها في سياقه — ولو قُرئ النصُّ خاما لَسقط الحارسُ
+       على شرحِ ما يحرسُه. وهي مصيدةُ «طابقوا نصّا في تعليق» بعينِها. */
     const src = read('src/application/trainer/contract-sections.ts')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
     expect(src).not.toMatch(/الأتعاب|السرّيّة|الملكية الفكرية/)
     expect(src).toMatch(/export function parseContractDoc/)
   })
@@ -152,7 +157,7 @@ describe('والوثيقةُ تعرض كلّ ما حلّله المحلّل', ()
      تغيب عن عين الموقِّع كما تغيب لو أسقطها المحلّل. */
   it('أنواعُ الكتل الثلاثةُ تُرسَم نصّا — ولا واحدٌ منها يُرسَم عدما', () => {
     const src = read('src/components/ContractDocument.tsx')
-    const blocks = src.slice(src.indexOf('function Blocks'), src.indexOf('export default'))
+    const blocks = src.slice(src.indexOf('function Para'), src.indexOf('function Summary'))
     expect(blocks.length, 'لم تُقرأ دالّةُ الكتل أصلا').toBeGreaterThan(200)
     /* والفحصُ على **ما يُخرَج** لا على ورودِ اسم النوع: `kind === 'bullet'`
        يبقى مكتوبا ولو صار فرعُه `return null`، وهي مصيدةُ الخضرة الكاذبة
@@ -160,7 +165,7 @@ describe('والوثيقةُ تعرض كلّ ما حلّله المحلّل', ()
     expect(
       (blocks.match(/\{b\.textAr\}/g) ?? []).length,
       'فرعٌ من فروع الكتل لا يطبع نصَّها — وقِّع على ما لم يُعرَض',
-    ).toBe(3)
+    ).toBe(5)
     expect(blocks, 'كتلةٌ تُرسَم عدما — تغيب عن عين الموقِّع وتبقى في المهشّم').not.toMatch(/return null/)
     for (const kind of ['clause', 'bullet']) {
       expect(blocks, `نوعُ كتلةٍ لا يُمَيَّز: ${kind}`).toMatch(new RegExp(`kind === '${kind}'`))
@@ -222,5 +227,44 @@ describe('ما يُطبَع فعلا هو المتنُ نفسُه', () => {
     const html = rendered(doc)
     expect(html).toContain('4-1')
     expect(html, 'حُوّلت الأرقامُ — فالمعروضُ غيرُ الموقَّع عليه').not.toContain('٤-١')
+  })
+})
+
+/* ═══ القراءاتُ الثانية — شكلٌ مشتقٌّ لا رقمٌ مكتوب ═══
+
+   عيّنةُ التصميم بنت جدولَ الأتعاب وشبكةَ الخلاصة نصّا مكتوبا باليد فيه
+   ٤٥ و٣٠ و٨، وتُحلّ محلّ متن الملحق (ب). ولو نُقل كما هو لَطبع العقدُ
+   أرقاما ثابتةً مهما كان ما وُقّع عليه — وهو ما تحرسُه هذه. */
+describe('القراءاتُ الثانيةُ تُشتقّ من السطر', () => {
+  const blocks = doc.sections.flatMap((s) => s.blocks)
+
+  it('بنودُ الخلاصة تُقرأ مفتاحا وقيمةً من المتن الحيّ', () => {
+    const items = blocks.map(summaryItem).filter(Boolean)
+    expect(items.length, 'لا يُقرأ بندٌ من الخلاصة — فالشبكةُ ترتدّ فقرات').toBeGreaterThanOrEqual(4)
+    expect(items[0]!.keyAr).toBe('الصفة')
+    expect(items[0]!.valueAr).toBe('عمل حر')
+  })
+
+  it('وصفوفُ المثال تُقرأ مع مجموعها', () => {
+    const rows = blocks.map(exampleRow).filter(Boolean)
+    expect(rows.length, 'لا يُقرأ صفٌّ — فالجدولُ يرتدّ فقرات').toBe(3)
+    expect(blocks.map(exampleTotal).filter(Boolean)).toHaveLength(1)
+    /* والمبلغُ من السطر لا من ثابتٍ في الشيفرة */
+    expect(rows[0]!.amountAr).toMatch(/USD$/)
+  })
+
+  it('وما لا يطابق شكلَه يرتدّ ولا يُخترَع له شيء', () => {
+    expect(summaryItem({ kind: 'text', textAr: 'سطرٌ عاديّ' })).toBeNull()
+    expect(summaryItem({ kind: 'bullet', textAr: 'بلا نقطتين أصلا' })).toBeNull()
+    expect(exampleRow({ kind: 'text', textAr: 'ليس صفّا' })).toBeNull()
+  })
+
+  /* وهذا حارسُ العيّنة بعينه: لا رقمَ مالٍ في العارض */
+  it('ولا رقمَ أتعابٍ مكتوبٌ في الوثيقة ولا في المحلّل', () => {
+    for (const f of ['src/components/ContractDocument.tsx', 'src/application/trainer/contract-sections.ts']) {
+      const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+      expect(code, `${f}: رقمٌ مكتوبٌ باليد — والعقدُ يطبع ما في متنه لا ما هنا`)
+        .not.toMatch(/\bUSD\b|\b45\b|\b30\b/)
+    }
   })
 })

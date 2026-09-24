@@ -127,3 +127,81 @@ export function documentLinesAr(doc: ContractDoc): string[] {
   }
   return out
 }
+
+/* ═══ قراءاتٌ ثانيةٌ للكتلة — شكلٌ أوضحُ لنصٍّ لا يتغيّر ═══
+
+   ─────────── القاعدةُ التي تحكمها جميعا ───────────
+
+   **تُشتقّ من السطر، ولا تُكتب إلى جانبه.** عيّنةُ التصميم بنت جدولَ الأتعاب
+   وشبكةَ الخلاصة نصّا مكتوبا باليد فيه ٤٥ و٣٠ و٨ — ولو نُقل كما هو لَطبع
+   العقدُ أرقاما ثابتةً مهما كان ما وُقّع عليه. فهذه تقرأ السطرَ وتردّ `null`
+   إن لم يطابق شكلَه، فيرتدّ العارضُ إلى الفقرة العاديّة.
+
+   والسلامةُ مبنيّةٌ لا موعودة: أيُّ قراءةٍ تُسقط حرفا أو تبدّله يسقط عليها
+   حارسُ التمام (`documentLinesAr`) وحارسُ التصيير معا. */
+
+/** بندُ الخلاصة: «· الصفة: عمل حر — والمدرب متعاقد… (البند 1)» */
+export interface SummaryItem {
+  keyAr: string
+  valueAr: string
+  /** ما بعد الشرطة — و`''` لبندٍ بلا تفصيل */
+  noteAr: string
+  /** «(البند 1)» — و`''` لبندٍ بلا إحالة */
+  refAr: string
+}
+
+const REF_RE = /\s*(\((?:البند|البندان|الملحق)[^)]*\))\s*$/
+
+export function summaryItem(b: ContractBlock): SummaryItem | null {
+  if (b.kind !== 'bullet') return null
+  let rest = b.textAr
+  let refAr = ''
+  const r = REF_RE.exec(rest)
+  if (r) { refAr = r[1]; rest = rest.slice(0, r.index) }
+  const c = rest.indexOf(':')
+  if (c < 1) return null
+  const keyAr = rest.slice(0, c).trim()
+  let valueAr = rest.slice(c + 1).trim()
+  let noteAr = ''
+  /* والشرطةُ تفصل القيمةَ عن تفصيلها — وليست كلُّ بنودِ الخلاصة بشرطة */
+  const d = valueAr.indexOf(' — ')
+  if (d > 0) { noteAr = valueAr.slice(d + 3).trim(); valueAr = valueAr.slice(0, d).trim() }
+  if (!keyAr || !valueAr) return null
+  return { keyAr, valueAr, noteAr, refAr }
+}
+
+/** صفٌّ من المثال الحسابيّ: «1. الشعبة الأولى — 20 مسجلا…: 600 USD» */
+export interface ExampleRow {
+  numAr: string
+  labelAr: string
+  byAr: string
+  amountAr: string
+}
+
+const EXAMPLE_RE = /^(\d+)\.\s+(.+?)\s+—\s+(.+):\s*([^:]+)$/
+
+export function exampleRow(b: ContractBlock): ExampleRow | null {
+  if (b.kind !== 'text') return null
+  const m = EXAMPLE_RE.exec(b.textAr)
+  if (!m) return null
+  return { numAr: m[1], labelAr: m[2].trim(), byAr: m[3].trim(), amountAr: m[4].trim() }
+}
+
+/** «مجموع هذا المثال: 2250 USD» — ذيلُ الجدول */
+export interface ExampleTotal { labelAr: string; amountAr: string }
+
+export function exampleTotal(b: ContractBlock): ExampleTotal | null {
+  if (b.kind !== 'text') return null
+  const m = /^(مجموع[^:]*):\s*(.+)$/.exec(b.textAr)
+  return m ? { labelAr: m[1].trim(), amountAr: m[2].trim() } : null
+}
+
+/* رأسُ المثال الحسابيّ ونبذتُه — شكلٌ يُعطى لهما، وإن تبدّل النصُّ ارتدّا
+   فقرتَين عاديّتَين بلا نقصٍ في حرف. */
+export function isExampleHeading(b: ContractBlock): boolean {
+  return b.kind === 'text' && /^مثال حسابي/.test(b.textAr)
+}
+
+export function isAdvisoryNote(b: ContractBlock): boolean {
+  return b.kind === 'text' && b.textAr.includes('استرشادي') && b.textAr.length > 80
+}
