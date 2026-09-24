@@ -65,10 +65,19 @@ describe('المفتاحُ — مصدرٌ واحدٌ تقرؤه الشاشاتُ
 describe('البطاقةُ — الإشعارُ يحلّ محلَّ التقويم، ولا يُعرض معه', () => {
   const card = () => code('src/components/BookInterview.tsx')
 
-  /** كتلةُ الوقف وحدَها: من شرطِ الخروج إلى أوّل سطرٍ بعده يبني الرابط */
+  /* ═══ ومِرساةُ الكتلة صارت حكمَ البوّابة (٢٤ سبتمبر ٢٠٢٦) ═══
+
+     كان الشرطُ `if (INTERVIEW_BOOKING_PAUSE.active)` يُقرأ في البطاقة، ثمّ
+     صار الحكمُ في `bookingGate` وثلاثةَ أحوالٍ لا اثنَين. فالكتلةُ تنتهي عند
+     حالِ «لم يُدعَ» بعدها لا عند بناء الرابط — ولو بقيت المِرساةُ الأولى
+     لَابتلعت الكتلتَين معا فمرّ الوقفُ بنصِّ غيره. */
+  const PAUSE_FROM = "if (gate === 'paused')"
+  const PAUSE_TO = "if (gate === 'not_invited')"
+
+  /** كتلةُ الوقف وحدَها: من فرعها إلى أوّل فرعٍ بعده */
   const pauseBlock = (src: string): string => {
-    const from = src.indexOf('if (INTERVIEW_BOOKING_PAUSE.active)')
-    const to = src.indexOf('const url = trainerInterviewUrl(')
+    const from = src.indexOf(PAUSE_FROM)
+    const to = src.indexOf(PAUSE_TO)
     return from >= 0 && to > from ? src.slice(from, to) : ''
   }
 
@@ -76,7 +85,7 @@ describe('البطاقةُ — الإشعارُ يحلّ محلَّ التقوي
     /* لو جاء الخروجُ بعد الإطار لعُرض التقويمُ ثمّ الإشعارُ تحته: فيحجز من
        وصل إلى الأعلى، ويقرأ الوقفَ من نزل — والشاشةُ الواحدةُ تقول شيئَين. */
     const src = card()
-    const gate = src.indexOf('if (INTERVIEW_BOOKING_PAUSE.active)')
+    const gate = src.indexOf(PAUSE_FROM)
     expect(gate, 'لا خروجَ على المفتاح أصلا — البطاقةُ تعرض التقويمَ دائما').toBeGreaterThan(-1)
     expect(gate, 'الخروجُ بعد بناء الرابط').toBeLessThan(src.indexOf('trainerInterviewUrl('))
     expect(gate, 'الخروجُ بعد الإطار — فيُعرض التقويمُ ثمّ يُقال إنّه موقوف')

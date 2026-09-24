@@ -185,8 +185,10 @@ describe('الدعوةُ تُقال في البريد وفي البطاقة — 
 
   it('⚠️ ولا تطلب حجزا في كتلة الوقف — الاهتمامُ يُقال والتقويمُ مغلق', () => {
     const card = code('src/components/BookInterview.tsx')
-    const from = card.indexOf('if (INTERVIEW_BOOKING_PAUSE.active)')
-    const to = card.indexOf('const url = trainerInterviewUrl(')
+    /* والمِرساةُ حكمُ البوّابة لا المفتاح، ومنتهاها فرعُ «لم يُدعَ» بعدها
+       (٢٤ سبتمبر ٢٠٢٦) — وإلّا ابتُلعت الكتلتان معا. */
+    const from = card.indexOf("if (gate === 'paused')")
+    const to = card.indexOf("if (gate === 'not_invited')")
     expect(from, 'لا خروجَ على المفتاح').toBeGreaterThan(-1)
     const block = card.slice(from, to)
     expect(block, 'الاهتمامُ لا يُقال لمن ينتظر شهرا').toContain('INTERVIEW_INVITATION.interestAr')

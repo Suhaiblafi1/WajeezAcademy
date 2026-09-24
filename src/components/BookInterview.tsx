@@ -33,7 +33,7 @@ import { CalendarClock, CalendarOff, CheckCircle2, ExternalLink, Loader2, MailCh
 import {
   INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW, trainerInterviewUrl,
 } from '@/application/trainer/application-options'
-import { INTERVIEW_INVITATION } from '@/application/trainer/interview-invitation'
+import { INTERVIEW_INVITATION, bookingGate } from '@/application/trainer/interview-invitation'
 import { nextFrameHeight } from '@/lib/calendly-embed'
 import { Card, Inset } from '@/components/ui/Surface'
 import { usePlatformConfig } from '@/hooks/usePlatformConfig'
@@ -167,7 +167,13 @@ export default function BookInterview({ name, email, reference, invited = false,
         يقلّب التقويمَ نفسَه.
      ④ **ولا يُعيد التقديم.** وهو أوّلُ ما يفعله من وجد بابا مغلقا، فيزدحم
         الطابورُ بنسخٍ من طلبٍ واحد — وهي الشكوى التي وُقف الحجزُ لأجلها. */
-  if (INTERVIEW_BOOKING_PAUSE.active) {
+  /* ═══ الحكمُ من الوحدة المشتركة لا من مفتاحٍ يُقرأ هنا ═══
+
+     ثلاثةُ أحوالٍ (`bookingGate`)، ولكلٍّ منها بطاقتُه. ولو قُرئ المفتاحان
+     هنا لَصار للحكم موضعان: هذا، وبريدُ الدعوة الذي يبني زرَّه عليه. */
+  const gate = bookingGate({ invited })
+
+  if (gate === 'paused') {
     return (
       <Card tone="warn" className={className}>
         <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
@@ -224,6 +230,68 @@ export default function BookInterview({ name, email, reference, invited = false,
             ولا يلزمك شيءٌ الآن: يصلك رابطُ الحجز على بريدك حين تُفتح المواعيد،
             و<b className="text-foreground">لا حاجةَ إلى إعادة تقديم طلبك</b> — طلبٌ واحدٌ يكفي،
             ومكانُك في الطابور محفوظٌ بتاريخ وصوله.
+          </span>
+        </p>
+      </Card>
+    )
+  }
+
+  /* ═══════════ قدّم طلبَه ولم يُدعَ بعد — لا تقويمَ ولا وقف ═══════════
+
+     ═══ ما كان، ولماذا بُدّل ═══
+
+     كان التقويمُ يُعرض تحت الاستمارة لكلّ من أرسلها، فيحجز قبل أن يقرأ أحدٌ
+     ملفَّه — فامتلأ تقويمُ المُقابِل بمواعيدَ لم يُنظر في أصحابها. وقرارُ
+     صاحب المنصّة (٢٤ سبتمبر ٢٠٢٦): بابُ الحجز من الاستمارة يُغلق، ويبقى
+     مفتوحا لمن يصله رابطُ الدعوة في بريده.
+
+     ═══ وثلاثةُ أشياءَ تُقال هنا — لا اثنان ═══
+
+     ① **طلبُه وصل، وشكرا له.** وهي أوّلُ ما يُطمئنه: من أرسل استمارةً من
+        أربعة أقسامٍ ثمّ لم يجد شيئا بعدها ظنّ أنّها ضاعت.
+     ② **وما يحدث الآن ولمن الدور**: يُقرأ ملفُّه، ثمّ يصله الرابطُ إن رغبنا
+        بلقائه. و«سنتواصل معك» وحدَها لا تكفي — لا تقول بأيّ طريقٍ يجيء.
+     ③ **ولا يُعيد التقديم.** وهو أوّلُ ما يفعله من انتظر بلا خبر، فيزدحم
+        الطابورُ بنسخٍ من طلبٍ واحدٍ ويطول الانتظارُ على الناس جميعا.
+
+     ═══ وما لا يُقال هنا ═══
+
+     **لا «امتلأت المواعيد»** — فهي لم تمتلئ، والكذبةُ الصغيرةُ تُكتشف يومَ
+     يصله الرابطُ بعد يومَين. ولا شهرَ عودةٍ مسمّى: `INTERVIEW_BOOKING_PAUSE`
+     يعد بشهرٍ لأنّ وقفَه زمنٌ يمضي، وهذا الدورُ ملفٌّ يُقرأ — ومن وعد بموعدٍ
+     لا يملكه أخلف. */
+  if (gate === 'not_invited') {
+    return (
+      <Card tone="positive" className={className}>
+        <p className="flex items-center gap-2 text-sm font-black text-emerald-200">
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          وصلنا طلبك — شكرا لك
+        </p>
+        <p className="mt-3 text-read leading-7 text-foreground">
+          طلبك كاملٌ ومحفوظٌ عند فريقنا
+          {reference && <> برقم <b className="font-mono text-foreground" dir="ltr">{reference}</b></>}
+          ، ولا ينقصه منك شيءٌ الآن.
+        </p>
+
+        <Inset className="mt-4 text-read leading-7 text-muted-foreground">
+          <p className="flex items-start gap-2 font-black text-foreground">
+            <MailCheck className="mt-1 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+            <span>وما يحدث الآن</span>
+          </p>
+          <p className="mt-2 pr-6">
+            يقرأ فريقنا الأكاديميُّ ملفّك وخبراتك. فإن رغبنا بلقائك{' '}
+            <b className="text-foreground">
+              وصلك رابطُ حجز {TRAINER_INTERVIEW.labelAr} على بريدك
+            </b>{' '}
+            — ومنه تختار الوقت الذي يناسبك.
+          </p>
+        </Inset>
+
+        <p className="mt-4 flex items-start gap-2 text-read leading-7 text-muted-foreground">
+          <CalendarClock className="mt-1 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+          <span>
+            ولا يلزمك شيءٌ الآن، و<b className="text-foreground">لا حاجةَ إلى إعادة تقديم طلبك</b> —
+            طلبٌ واحدٌ يكفي، ومكانُك في الطابور محفوظٌ بتاريخ وصوله.
           </span>
         </p>
       </Card>
