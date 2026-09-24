@@ -30,7 +30,7 @@ import {
   bodyCarriesConditionClause, contractAcks, renderContractBodyAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
-import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
+import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR, SEASON_COURSES } from '@/application/trainer/fee-example'
 
 const COURSES = [
   { courseId: 'C-A', titleAr: 'أساسيّاتُ تحليل البيانات' },
@@ -506,7 +506,15 @@ describe('المثالُ الحسابيُّ في الملحق (ب) — ومقر�
     for (const r of ex.rows) {
       expect(body, `صفٌّ بقيمة ${r.amount} غائبٌ عن المثال في العقد`).toContain(String(r.amount))
     }
-    expect(body, 'مجموعُ المثال غائبٌ أو مخالف').toContain(`مجموع هذا المثال: ${ex.total}`)
+    /* وذيلُ المثال تبدّل (٢٤ سبتمبر): كان مجموعَ الصفوف، وهي في أجر
+       المقعد حالاتٌ متنافيةٌ لدورةٍ واحدة — فجمعُها يعدُ بما لا يقع. وصار
+       توقّعَ موسمٍ بالحالة الوسطى. والمحروسُ واحدٌ لم يتغيّر: الرقمُ
+       المطبوعُ حسابُ المحرّك لا حسابٌ ثانٍ يفترق عنه. */
+    const middle = ex.rows[Math.floor(ex.rows.length / 2)]!
+    expect(body, 'توقّعُ الموسم غائبٌ أو مخالفٌ للمحرّك')
+      .toContain(`وعلى فرض ${SEASON_COURSES} دورات في الموسم بالحالة الوسطى: ${middle.amount * SEASON_COURSES}`)
+    /* ولا يعود جمعُ المتنافيات إلى أجر المقعد */
+    expect(body, 'عاد جمعُ حالاتٍ متنافيةٍ إلى المثال').not.toContain(`مجموع هذا المثال: ${ex.total}`)
   })
 
   it('وثلاثةٌ تجعله يُقرأ مثالا: صدرُه، وإحالةُ 4-1، واستثناءُ 18-4', () => {

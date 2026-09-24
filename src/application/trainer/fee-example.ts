@@ -198,20 +198,56 @@ export const FEE_EXAMPLE_HEADING_AR = 'مثال حسابي توضيحي — اس
     أوّله إلى آخره، ونصُّ البريد مشكول. ووثيقةٌ يُشكَل نصفُها وحدَه تُقرأ
     قطعتين ألصقتا. والأرقامُ واحدةٌ في الصيغتين: كلتاهما تقرأ `FeeExample`
     الذي بناه `perSeatBreakdown` مرّةً. */
+/* ═══ خلايا المثال كما أُقرّت في العيّنة ═══
+
+   عيّنةُ ٢٣ سبتمبر تجعل المثالَ ثلاثةَ أعمدة: **مصدر المسجّلين · الحساب ·
+   أتعابك**. وكان المتنُ يطبع «الشعبة الأولى/الثانية» بلا مصدرٍ ولا حساب —
+   وهي الصياغةُ التي نُسِخت يومَ صار المثالُ دورةً واحدةً بثلاثةِ مصادر.
+
+   وبلسان الوثيقة: مجرّدٌ من الشكل وبضمير الغائب، فلا تُنسَخ `SOURCE_LABELS_AR`
+   المشكولةُ بضمير المخاطب. ويُشتقّ من العددَين لا من ترتيب الصفّ: فهرسٌ
+   يربط الوصفَ بموضعه يكذب يومَ يتغيّر `SCENARIO`. */
+function sourceContractAr(seats: number, referred: number): string {
+  if (referred === 0) return `${seats} كلهم من الأكاديمية`
+  if (referred === seats) return `${seats} كلهم عبر رابط إحالته`
+  return `${referred} منه و${seats - referred} من الأكاديمية`
+}
+
+/** عمودُ «الحساب»: «20 × 30» أو «(10 × 45) + (10 × 30)» — من أعداد الصفّ لا من ثابت */
+function calcContractAr(r: FeeExampleRow, c: ContractCompensation): string {
+  const parts: string[] = []
+  if (r.referred && c.referralRate) parts.push(`${r.referred} × ${num(Number(c.referralRate))}`)
+  if (r.generalSeats) parts.push(`${r.generalSeats} × ${num(Number(c.rate))}`)
+  if (parts.length === 0) return ''
+  return parts.length > 1 ? parts.map((x) => `(${x})`).join(' + ') : parts[0]
+}
+
+/** دوراتُ الموسم المفترَضة في ذيل المثال — ثلاثٌ بقرار صاحب المنصّة (٢٤ سبتمبر)،
+    وكانت خمسا في العيّنة. والعددُ مفترَضٌ يُعلَن افتراضُه في المتن نفسِه. */
+export const SEASON_COURSES = 3
+
 export function feeExampleContractAr(ex: FeeExample, c: ContractCompensation): string {
+  /* و«الشعبة الأولى/الثانية» للأجر الثابت وحدَه: تلك شعبٌ ثلاثٌ فعلا،
+     وجمعُها صحيح. وفي أجر المقعد الصفوفُ حالاتٌ متنافيةٌ لدورةٍ واحدة،
+     فجمعُها يعدُ بما لا يقع. */
   const order = ['الأولى', 'الثانية', 'الثالثة']
   const rows = ex.rows.map((r, i) => {
-    const label = order[i] ?? String(i + 1)
-    if (r.seats === undefined) return `${i + 1}. الشعبة ${label}: ${num(r.amount)} ${ex.currency}`
-    const parts: string[] = []
-    /* الأعلى أوّلا هنا أيضا — قرارُ ٢١ سبتمبر ٢٠٢٦ */
-    if (r.referred) parts.push(`${r.referred} منهم عبر رابط إحالته`)
-    parts.push(
-      `${r.generalSeats} مقعدا عاما`
-      + (r.floorApplied ? ` (احتسبت على الحد الأدنى ${c.minSeats} مقعدا)` : ''),
-    )
-    return `${i + 1}. الشعبة ${label} — ${r.seats} مسجلا، ${parts.join('، و')}: ${num(r.amount)} ${ex.currency}`
+    if (r.seats === undefined) {
+      return `${i + 1}. الشعبة ${order[i] ?? String(i + 1)}: ${num(r.amount)} ${ex.currency}`
+    }
+    const calc = calcContractAr(r, c)
+    const floor = r.floorApplied ? ` (احتسبت على الحد الأدنى ${c.minSeats} مقعدا)` : ''
+    return `${i + 1}. ${sourceContractAr(r.seats, r.referred ?? 0)} — ${calc}${floor}: ${num(r.amount)} ${ex.currency}`
   })
+
+  /* ذيلُ الجدول: في أجر المقعد توقّعُ موسمٍ بالحالة الوسطى كما في العيّنة،
+     وفي الأجر الثابت مجموعُ الشعب وهو جمعٌ صحيح. ولا ذيلَ لصفٍّ واحد. */
+  const middle = ex.rows[Math.floor(ex.rows.length / 2)]
+  const tail = c.type === 'fixed_per_cohort'
+    ? [`مجموع هذا المثال: ${num(ex.total)} ${ex.currency}`]
+    : ex.rows.length > 1 && middle
+      ? [`وعلى فرض ${SEASON_COURSES} دورات في الموسم بالحالة الوسطى: ${num(middle.amount * SEASON_COURSES)} ${ex.currency}`]
+      : []
 
   const basis = c.type === 'fixed_per_cohort'
     ? 'وأتعاب المدرب في هذا المثال مبلغ ثابت عن الشعبة، فلا تتغير بعدد المسجلين، وعدد الشعب أعلاه مفترض.'
@@ -227,8 +263,11 @@ export function feeExampleContractAr(ex: FeeExample, c: ContractCompensation): s
     + ' ولا يرتب على الأكاديمية التزاما بإسناد دورة ولا بفتح شعبة ولا بعدد مسجلين، ولا يحتسب على'
     + ' أساسه مستحق. والملزم للطرفين هو قاعدة الأتعاب أعلاه وحدها.',
     '',
+    ...(c.type === 'fixed_per_cohort'
+      ? []
+      : ['دورة واحدة، عشرون مسجلا. والفرق بين الصفوف هو من أين جاء المسجل:', '']),
     ...rows,
-    `مجموع هذا المثال: ${num(ex.total)} ${ex.currency}`,
+    ...tail,
     '',
     basis,
   ].join('\n')
