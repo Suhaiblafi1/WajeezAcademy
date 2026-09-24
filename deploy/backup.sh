@@ -4,6 +4,7 @@
 #   bash deploy/backup.sh              النسخة الليلية (يشغّلها المؤقّت)
 #   bash deploy/backup.sh --pre-deploy نسخةٌ قبل الهجرة (يشغّلها deploy.sh)
 #   bash deploy/backup.sh --verify     ينزّل آخر نسخة ويسترجعها في قاعدة خدش
+#   bash deploy/backup.sh --prune      التقليمُ وحدَه بلا أخذ — لقرصٍ امتلأ
 #
 # ── ولماذا صارت شيئَين (البند ⑤) ──
 #
@@ -141,6 +142,71 @@ MSG
   exit 1
 fi
 
+# ── التقليم: ما يبقى من النسخ، وكم ──
+#
+# ═══ العطبُ الذي كُتب له هذا (٢٤ سبتمبر ٢٠٢٦) ═══
+#
+# كان التقليمُ لليليّة وحدَها (ما جاوز ثلاثين يوما)، ونسخُ ما قبل النشر لا يُحذف
+# منها شيءٌ قطّ. وكلُّ نشرةٍ تأخذ واحدة — قاعدةٌ وأرشيفُ تخزين، نحوُ ٧٠٠
+# ميغابايت يومَها — والنشرُ آليٌّ على كلّ دمجة. فبلغت ٤١٩ ملفّا بستّةٍ وخمسين
+# غيغابايتا من قرصٍ سعتُه خمسةٌ وسبعون، ثمّ لم تجد القاعدةُ ما تكتب فيه ملفَّ
+# قفلها (`could not write lock file "postmaster.pid"`) فسقطت، وسقط معها كلُّ
+# دخولٍ إلى المنصّة عشرَ ساعاتٍ — ومنه دخولُ صاحبها.
+#
+# ═══ وكم يبقى ═══
+#
+# نسخةُ ما قبل النشر لغرضٍ واحد: الرجوعُ إلى ما قبل هجرةٍ أخيرة. فأحدثُها هو
+# المطلوب، وما قبلها تغطّيه الليليّة. فيبقى أحدثُ ثلاث (`BACKUP_KEEP_PREDEPLOY`)،
+# **ولا تنزل عن واحدة**: صفرٌ كان سيحذف النسخةَ التي أُخذت للتوّ قبل الهجرة.
+#
+# ═══ والترتيبُ بالاسم لا بالتاريخ ═══
+#
+# الختمُ في الاسم بصيغة UTC مرتّبة (`20260923T220603Z`)، فالترتيبُ الأبجديُّ
+# ترتيبٌ زمنيٌّ على كلّ وجهة — وتاريخُ الملفّ على وجهةٍ بعيدةٍ قد يكون يومَ
+# الرفع لا يومَ الأخذ. والنمطُ صارمٌ بقصد: اسمُ نسخةِ ما قبل النشر بختمها
+# كاملا، فلا تُمَسّ ليليّةٌ ولا ملفٌّ وُضع في المجلّد بيد.
+KEEP_PRE="${BACKUP_KEEP_PREDEPLOY:-3}"
+case "$KEEP_PRE" in ''|*[!0-9]*) KEEP_PRE=3 ;; esac
+[ "$KEEP_PRE" -ge 1 ] || KEEP_PRE=1
+
+# يُبقي أحدثَ KEEP_PRE ممّا يطابق النمطَ ويحذف ما سواه
+prune_predeploy() {
+  # `|| true` بعد grep: وجهةٌ بلا نسخةٍ قبل نشرٍ بعدُ ليست عطبا، و`pipefail`
+  # كان سيجعلها واحدا
+  rclone lsf "$BACKUP_REMOTE" --files-only \
+    | { grep -E "$1" || true; } \
+    | LC_ALL=C sort -r \
+    | tail -n +"$((KEEP_PRE + 1))" \
+    | while IFS= read -r f; do
+        if rclone deletefile "$BACKUP_REMOTE/$f"; then
+          echo "  حُذف: $f"
+        else
+          echo "  ⚠ تعذّر حذفُ $f" >&2
+        fi
+      done
+}
+
+prune_all() {
+  local keep="${BACKUP_KEEP_DAYS:-30}"
+  rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*.sql.gz' --min-age "${keep}d" || true
+  rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*-storage.tar.gz' --min-age "${keep}d" || true
+  echo "✓ حُذف ما تجاوز ${keep} يوما من النسخ الليلية (القاعدةُ والتخزينُ معا)"
+
+  # وتعذُّرُ التقليم لا يُسقط نسخةً أُخذت: السطرُ يُقال، والنشرُ يمضي
+  if prune_predeploy '^wajeez-predeploy-[0-9]{8}T[0-9]{6}Z\.sql\.gz$' \
+    && prune_predeploy '^wajeez-predeploy-[0-9]{8}T[0-9]{6}Z-storage\.tar\.gz$'; then
+    echo "✓ بقي من نسخ ما قبل النشر أحدثُ ${KEEP_PRE} (القاعدةُ والتخزينُ معا)"
+  else
+    echo "⚠ تعذّر تقليمُ نسخ ما قبل النشر — راجع: rclone lsf $BACKUP_REMOTE" >&2
+  fi
+}
+
+# التقليمُ وحدَه: لقرصٍ امتلأ، بلا حاجةٍ إلى قاعدةٍ تعمل ولا إلى Docker
+if [ "$MODE" = "--prune" ]; then
+  prune_all
+  exit 0
+fi
+
 # ── الاسترجاع: الاختبار الوحيد الذي يثبت أنّ ما نأخذه نسخةٌ فعلا ──
 if [ "$MODE" = "--verify" ]; then
   echo "── اختبار الاسترجاع ──"
@@ -233,8 +299,5 @@ rclone copy "$WORK/$STORE_FILE" "$BACKUP_REMOTE" \
   || { echo "✗ أخفق رفعُ أرشيف التخزين إلى $BACKUP_REMOTE" >&2; exit 1; }
 echo "✓ رُفع $STORE_FILE ($(numfmt --to=iec "$STORE_SIZE" 2>/dev/null || echo "$STORE_SIZE bytes")) إلى $BACKUP_REMOTE"
 
-# ── التقليم ──
-KEEP="${BACKUP_KEEP_DAYS:-30}"
-rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*.sql.gz' --min-age "${KEEP}d" || true
-rclone delete "$BACKUP_REMOTE" --include 'wajeez-nightly-*-storage.tar.gz' --min-age "${KEEP}d" || true
-echo "✓ حُذف ما تجاوز ${KEEP} يوما من النسخ الليلية (القاعدةُ والتخزينُ معا)"
+# ── التقليم — بعد الأخذ لا قبله: لا يُحذف قديمٌ قبل أن يُكتب جديدٌ سليم ──
+prune_all
