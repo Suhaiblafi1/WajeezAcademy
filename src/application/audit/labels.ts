@@ -266,6 +266,8 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.sign_by_trainer': 'توقيعُ المدرّبِ عقدَه بنفسه',
   'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',
   'trainer.contract.amendment_requested': 'طلبُ المدرّبِ تعديلا على عرضه',
+  'trainer.contract.amendment_replied': 'جوابُ الإدارة على طلب التعديل',
+  'trainer.contract.delete': 'حذفُ عقدٍ لم يمسّه توقيع',
   'trainer.contract.materials_declared': 'إعلانُ المدرّبِ اكتمالَ موادّه',
   'trainer.contract.materials_returned': 'إعادةُ موادّ المدرّبِ إليه بملاحظات',
   'trainer.contract.condition_extended': 'تمديدُ مهلةِ المدرّبِ يومين',

@@ -20,8 +20,9 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, FileSignature, FileText, Handshake, IdCard, RefreshCw, Send, X } from "lucide-react";
-import { apiGet, apiPost, permissionMessage } from "@/services/api";
+import { BadgeCheck, Ban, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, RefreshCw, Send, Trash2, X } from "lucide-react";
+import ConfirmAction from "@/components/ConfirmAction";
+import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import type { Readiness } from "@/application/trainer/readiness";
@@ -63,6 +64,8 @@ interface ContractRow {
   signerLegalName: string | null; declinedAt: string | null; declineReasonAr: string | null;
   countersignedAt: string | null; academySignatoryName: string | null;
   academySignatoryTitle: string | null; countersignNoteAr: string | null;
+  amendmentRequestAr: string | null; amendmentRequestedAt: string | null;
+  amendmentReplyAr: string | null; amendmentRepliedAt: string | null;
   documents: { id: string; kind: string; originalName: string; mime: string; uploadedAt: string }[];
   qualifiedSnapshot: { courseId: string; titleAr: string }[] | null;
   profile: { id: string; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
@@ -133,6 +136,10 @@ export default function TrainerContracts() {
      تفويضِه الخطّيِّ إن لم يكن هو المفوَّضَ في السجلّ. فحقلٌ إلى جانب الزرّ
      لا `window.prompt`: نصٌّ يُقرأ بعد سنةٍ لا يُكتب في صندوقٍ بسطر. */
   const [signOff, setSignOff] = useState<{ id: string; noteAr: string } | null>(null);
+  /* والحذفُ لا رجعةَ فيه، فلا يقع بنقرةٍ واحدة — ولا بـ`window.confirm`
+     الذي يملك المتصفّحُ كتمَه فيردّ `false` صامتا (رأسُ `ConfirmAction`). */
+  const [deleting, setDeleting] = useState<ContractRow | null>(null);
+  const [replying, setReplying] = useState<{ id: string; replyAr: string } | null>(null);
 
   /* ═══ العروضُ في هذه الشاشة لا في شاشةٍ ثالثة ═══
 
@@ -549,7 +556,9 @@ export default function TrainerContracts() {
                             المتن
                           </Button>
                         )}
-                        {(c.status === "draft" || c.status === "sent") && (
+                        {/* والموقوفُ على طلب تعديلٍ يُلغى أيضا: هو الطريقُ إلى
+                            «أُلغي وأُرسل مصحَّحا» — وهو أحدُ الجوابَين المكتوبَين في الخادم. */}
+                        {(c.status === "draft" || c.status === "sent" || c.status === "amendment_requested") && (
                           <Button size="sm" tone="danger" icon={Ban}
                             onClick={() => void run(async () => {
                               const reasonAr = window.prompt("سببُ الإلغاء — يُقرأ بعد شهرٍ حين يُسأل عنه:");
@@ -558,6 +567,18 @@ export default function TrainerContracts() {
                               await load();
                             }, "أُلغي العقد")}>
                             ألغِ
+                          </Button>
+                        )}
+                        {/* ═══ الحذف — وما مسَّه توقيعٌ لا زرَّ له ═══
+
+                            والشرطُ هنا صورةُ `isUntouchableContract` في الخادم، والحكمُ هناك:
+                            هذا يمنع زرّا يُرَدّ، وذاك يمنع الفعل. ومن اكتفى بإخفاء
+                            الزرّ حذف بـ`curl`. */}
+                        {!c.signedAt && !c.countersignedAt
+                          && !["signed", "countersigned", "terminated", "superseded"].includes(c.status) && (
+                          <Button size="sm" tone="danger" icon={Trash2}
+                            onClick={() => setDeleting(c)}>
+                            احذِفْ
                           </Button>
                         )}
                       </span>
@@ -573,6 +594,57 @@ export default function TrainerContracts() {
                     )}
                     {c.declineReasonAr && (
                       <p className="mt-1 text-read opacity-70">سببُ الاعتذار: {c.declineReasonAr}</p>
+                    )}
+
+                    {/* ═══ طلبُ التعديل — يُقرأ ويُجاب ═══
+
+                        كان يصل ويُحفَظ ويُشعِر، ولا شيءَ يردّه: فيرى الموظّفُ
+                        الحالةَ وحدَها ولا يدري ما المطلوب، فيقف العقدُ أبدا.
+
+                        والجوابان مكتوبان في الخادم منذ كُتِب: إمّا يُرَدّ عليه فيبقى
+                        العرضُ، وإمّا يُلغى ويُرسَل مصحَّحا (زرُّ «ألغِ» أعلاه). */}
+                    {c.status === "amendment_requested" && (
+                      <Panel tone="warn" className="mt-2 p-3">
+                        <p className="mb-1 font-black">طلب تعديلا — والتوقيعُ واقفٌ حتّى تجيبَه</p>
+                        {c.amendmentRequestedAt && (
+                          <p className="text-read opacity-70">{fmtDateTime(c.amendmentRequestedAt)}</p>
+                        )}
+                        <p className="mt-2 whitespace-pre-wrap leading-7">{c.amendmentRequestAr}</p>
+                        {replying?.id === c.id ? (
+                          <div className="mt-3">
+                            <textarea
+                              value={replying.replyAr}
+                              onChange={(e) => setReplying({ id: c.id, replyAr: e.target.value })}
+                              rows={3}
+                              placeholder="ردُّك — يقرؤه وهو أمام زرّ التوقيع"
+                              className={`${areaCls} w-full`}
+                            />
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <Button size="sm" tone="confirm" icon={MessageSquareReply}
+                                disabled={replying.replyAr.trim().length < 5}
+                                onClick={() => void run(async () => {
+                                  await apiPost(`/api/admin/trainer-contracts/${c.id}/amendment-reply`,
+                                    { replyAr: replying.replyAr.trim() });
+                                  setReplying(null);
+                                  await load();
+                                }, "وصلَه جوابُك — وعاد العرضُ إلى التوقيع")}>
+                                أرسِلْ الردّ — يبقى العرضُ كما هو
+                              </Button>
+                              <Button size="sm" tone="ghost" onClick={() => setReplying(null)}>صرفُ النظر</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <Button size="sm" tone="confirm" icon={MessageSquareReply} className="mt-3"
+                            onClick={() => setReplying({ id: c.id, replyAr: "" })}>
+                            رُدَّ عليه
+                          </Button>
+                        )}
+                      </Panel>
+                    )}
+                    {c.amendmentReplyAr && c.status !== "amendment_requested" && (
+                      <p className="mt-1 text-read opacity-70">
+                        ردُّنا على طلب التعديل: {c.amendmentReplyAr}
+                      </p>
                     )}
 
                     {/* ═══ وقّعه صاحبُه — والاعتمادُ مطابقةُ اسمٍ بوثيقة ═══
@@ -665,10 +737,20 @@ export default function TrainerContracts() {
                         {c.countersignNoteAr ? ` · ${c.countersignNoteAr}` : ""}
                       </p>
                     )}
+                    {/* ═══ الملحق (أ) يُطوى — قرارُ صاحب المنصّة (٢٤ سبتمبر) ═══
+
+                        كان الصفُّ يسكب عناوينَ الدورات كلَّها — أربعًا وثلاثين عنوانا
+                        في عقدٍ واحد — فتصير القائمةُ جدارا لا تُميَّز فيه عقدةٌ من عقدة.
+                        والعددُ هو ما يُقرأ في قائمة، والعناوينُ تُطلب لمن أرادها. */}
                     {c.qualifiedSnapshot && c.qualifiedSnapshot.length > 0 && (
-                      <p className="mt-1 text-read opacity-70">
-                        الملحق (أ): {c.qualifiedSnapshot.map((q) => q.titleAr).join(" · ")}
-                      </p>
+                      <details className="mt-1">
+                        <summary className="cursor-pointer text-read opacity-70 hover:opacity-100">
+                          الملحق (أ): {c.qualifiedSnapshot.length} دورةً مؤهّلا لها
+                        </summary>
+                        <p className="mt-1 text-read leading-6 opacity-70">
+                          {c.qualifiedSnapshot.map((q) => q.titleAr).join(" · ")}
+                        </p>
+                      </details>
                     )}
                   </Inset>
                 </li>
@@ -874,6 +956,30 @@ export default function TrainerContracts() {
           </div>
         </Card>
       )}
+
+      {/* ═══ الحذفُ يقول ماذا سيحدث بالضبط — ولا يطال موقَّعا ═══ */}
+      {deleting && (
+        <ConfirmAction
+          titleAr={`حذفُ «${deleting.title}»`}
+          confirmLabelAr="احذِفْ"
+          onCancel={() => setDeleting(null)}
+          onConfirm={() => void run(async () => {
+            await apiDelete(`/api/admin/trainer-contracts/${deleting.id}`);
+            setDeleting(null);
+            await load();
+          }, "حُذِف العقد")}
+        >
+          <p className="leading-7">
+            يُمحى الصفُّ ولا يُستعاد: متنُه وبصمتُه وحالتُه ومرفقاتُه. ويبقى في
+            سجلّ الأثر من حذفه ومتى، وعنوانُه وحالتُه يومَ حُذف.
+          </p>
+          <p className="mt-2 leading-7">
+            وهذا العقدُ لم يمسّه توقيع — والموقَّعُ لا يُحذف أصلا، فهو دليلٌ
+            يُحتَجّ به للمدرّب وعليه.
+          </p>
+        </ConfirmAction>
+      )}
+
     </AdminLayout>
   );
 }

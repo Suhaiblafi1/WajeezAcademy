@@ -157,6 +157,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
       'trainer.contract.condition_extended',
       'trainer.contract.amendment_requested',
+      'trainer.contract.deleted',
       /* ═══ وعروضُ الإسناد — وهي عملٌ من الطرفين ═══
 
          العرضُ التزامٌ بوقتٍ ومال يُوضع أمام المدرّب، ومهلتُه أيّامٌ معدودة؛

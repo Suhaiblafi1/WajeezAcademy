@@ -24,6 +24,7 @@ import {
 } from '../../../src/application/trainer/no-show-followup'
 import { interviewSyncTrust } from '../../../src/application/trainer/interview-sync-trust'
 import { getCalendlyConfig, getCalendlySync } from '../../services/integrations.service'
+import { AMENDMENT_TEXT_MAX } from '../../../src/application/trainer/contract-endings'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -455,6 +456,32 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
     return review.revokeContract(contractId, req.auth!.userId, reasonAr)
+  })
+
+  /* ═══ جوابُ طلب التعديل — والعقدُ يعود إلى التوقيع ═══
+
+     الطلبُ كان يصل ويُحفَظ ويُشعِر ولا شيءَ يردّه، فيقف العقدُ أبدا.
+     والصلاحيّةُ هي صلاحيّةُ إدارة العقد نفسُها: من يملك إلغاءَه يملك
+     أن يردّ على طلب تعديله. */
+  app.post('/api/admin/trainer-contracts/:contractId/amendment-reply', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'الردّ على طلب تعديل — يبقى العرضُ ويصلُه جوابُك' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { replyAr } = z.object({ replyAr: z.string().trim().min(5).max(AMENDMENT_TEXT_MAX) }).parse(req.body)
+    return review.replyToAmendment(contractId, req.auth!.userId, replyAr)
+  })
+
+  /* ═══ الحذف — وما مسَّه توقيعٌ لا يُحذَف ═══
+
+     طلبَه صاحبُ المنصّة (٢٤ سبتمبر): قائمةُ العقود تمتلئ بما لا يفيد.
+     والحدُّ في الخدمة لا هنا: المسارُ يسأل، والخدمةُ تحكم وتكتب الأثر. */
+  app.delete('/api/admin/trainer-contracts/:contractId', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'حذفُ عقدٍ لم يمسّه توقيع' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    return review.deleteContract(contractId, req.auth!.userId)
   })
 
   /* وثيقةُ الهويّة تُفتَح قبل الاعتماد — فالاعتمادُ مطابقةٌ بها.

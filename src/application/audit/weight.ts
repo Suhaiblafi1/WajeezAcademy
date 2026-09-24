@@ -73,6 +73,10 @@ const HIGH: readonly string[] = [
   'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
   'trainer.contract.condition_extended',
   'trainer.contract.amendment_requested',
+  /* وجوابُ الإدارة مثلُه: يُعيد العقدَ إلى التوقيع ويُجدّد رابطَه */
+  'trainer.contract.amendment_replied',
+  /* والحذفُ أثقلُها: ما بعده لا يُقرأ الصفُّ أصلا، فالأثرُ وحدَه يقول ما كان */
+  'trainer.contract.delete',
   /* ═══ والاعتمادُ ورفضُه (المرحلة ٣) ═══
 
      بالاعتماد ينفذ العقدُ ويُفتح الحسابُ ويُمنح الدور — أثقلُ نقرةٍ في
