@@ -165,7 +165,7 @@ SKIP_PULL=1 bash deploy/deploy.sh  # نشرُ ما في مجلّد العمل ب
 
 | الخطوة | إن لم تعمل |
 |---|---|
-| `bash deploy/preflight-disk.sh` | **يُرفض النشرُ قبل أن يلمس شيئا** إن قلّ المتاحُ عن ٥ غيغابايتات — والموقعُ القائمُ يخدم (§٢-أ) |
+| `bash deploy/preflight-disk.sh` | إن قلّ المتاحُ عن ٣٠٠٠ م.ب كُنس ما يُستغنى عنه من Docker ثمّ قيس ثانيةً — فإن بقي ناقصا **رُفض النشرُ قبل أن يلمس شيئا** والموقعُ القائمُ يخدم (§٢-أ) |
 | `docker compose build app` | لا صورةَ جديدة — ولا يُلمس القائم، وهذا مقصود |
 | `prisma migrate deploy` | **انحرافُ مخطَّط**: مساراتُ الخادم تسقط بـ٥٠٠ على أعمدةٍ غيرِ موجودة |
 | **`npm run catalog:import`** | **الكتالوجُ الذي يراه المتعلّمُ مجمَّد** — `‎/api/public/core-catalog` يقرأ الجداولَ الحيّة |
@@ -202,9 +202,9 @@ FATAL:  could not write lock file "postmaster.pid": No space left on device
 
 | ما ملأه | كم | وما يمنع عودتَه |
 |---|---|---|
-| نسخُ ما قبل النشر — واحدةٌ مع كلّ نشرة، **ولا تُقلَّم قطّ** | ٥٦ غيغابايتا · ٤١٩ ملفّا | `backup.sh` يُبقي أحدثَ ثلاث (`BACKUP_KEEP_PREDEPLOY`) بعد كلّ أخذ |
-| ذاكرةُ بناء Docker وصورٌ بلا اسم | ١١ غيغابايتا | `deploy.sh` يكنسها بعد كلّ نشرةٍ نجحت (ويُبقي ذاكرةَ اليوم الأخير) |
-| نشرةٌ تبدأ على قرصٍ لا يسعها | — | `deploy/preflight-disk.sh` يرفضها قبل أن تلمس شيئا |
+| نسخُ ما قبل النشر — واحدةٌ مع كلّ نشرة، **ولا تُقلَّم قطّ** | ٥٦ غيغابايتا · ٤١٩ ملفّا | `backup.sh` يُبقي أحدثَ ثلاث (`BACKUP_KEEP_PREDEPLOY`) بعد كلّ أخذ (#278) |
+| ذاكرةُ بناء Docker وصورٌ بلا وسم | ١١ غيغابايتا | `deploy.sh` يُسقط المعلَّقَ وذاكرةَ ما جاوز أسبوعا بعد كلّ تبديل (#277) |
+| نشرةٌ تبدأ على قرصٍ لا يسعها | — | `deploy/preflight-disk.sh` يكنس Docker ثمّ يرفضها إن بقي ناقصا (#277) |
 
 **وإن امتلأ مع ذلك** — والأوامرُ من `/opt/wajeez` على الخادم، ولا يمسّ أيٌّ منها
 القاعدةَ ولا الملفّاتِ المرفوعة:
@@ -218,8 +218,10 @@ curl -s https://www.wajeezacademy.com/api/health   # {"ok":true,…}
 ```
 
 ⚠️ **ولا يُكتب أبدا** `down -v` ولا `docker volume prune` ولا `system prune --volumes`:
-الأحجامُ فيها القاعدةُ والملفّاتُ المرفوعة. ويحرس خلوَّ سكربتات النشر منها
-[`src/tests/deploy/disk-guards.test.ts`](../src/tests/deploy/disk-guards.test.ts).
+الأحجامُ فيها القاعدةُ والملفّاتُ المرفوعة. ويحرس خلوَّ مسار النشر منها
+[`src/tests/deploy/disk-before-deploy.test.ts`](../src/tests/deploy/disk-before-deploy.test.ts)،
+ويحرس تقليمَ النسخ — ألّا يمسّ الليليّةَ ولا الأحدثَ —
+[`src/tests/deploy/backup-prune.test.ts`](../src/tests/deploy/backup-prune.test.ts).
 
 ### ٢-ب) ما كان يُسمّى نشرا آليّا — ولم ينشر شيئا قطّ
 
