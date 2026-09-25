@@ -56,7 +56,9 @@ const META_RE = new RegExp(`^(${META_KEYS.join('|')}):\\s*(.*)$`)
 const CLAUSE_HEAD_RE = /^البند (\d+) — (.+)$/
 const ANNEX_HEAD_RE = /^الملحق \((.)\) — (.+)$/
 const SUMMARY_HEAD = 'الخلاصة في سطور'
-const PREAMBLE_HEADS = ['الديباجة', 'تمهيد'] as const
+/* و«ما تعنيه الكلمات» قسمٌ برأسه (v8): يُفتَح له قسمٌ كما يُفتَح للديباجة،
+   وإلّا انضمّت بنودُه إلى الخلاصة قبله فقُرئت منها. */
+const PREAMBLE_HEADS = ['الديباجة', 'تمهيد', 'ما تعنيه الكلمات في هذا العقد'] as const
 /** بندٌ مرقّم داخل قسم: «4-10 ويتحمل…» — والرقمُ يُبرَز ولا يُطرَح */
 const NUMBERED_RE = /^(\d+-\d+)\s+(.+)$/
 const BULLET_RE = /^·\s*(.+)$/
