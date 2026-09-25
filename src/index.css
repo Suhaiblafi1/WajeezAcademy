@@ -313,6 +313,61 @@
   font-size: 11.5px; word-break: break-all; color: var(--ce-teal-deep);
 }
 
+/* ═══ ملحقُ الدورات المعتمدة — ملحقٌ ثالثٌ على الورقة ═══
+
+   ولوحُه لوحُ الوثيقة نفسِه لأنّه يُطبَع معها، ورأسُه يقول «ملحقٌ للعقد» لا
+   «سجلُّ تنفيذ»: الأوّلُ بندٌ وعد به المتنُ (2-11)، والثاني دليلُ فعلٍ وقع.
+   فحافّتُه خضراءُ الوثيقة لا ذهبيّةُ السجلّ — فهو من العقد، منه لا عنه. */
+.contract-annex {
+  --ca-ink: #16211F;
+  --ca-paper: #F6F4EF;
+  --ca-surface: #fff;
+  --ca-teal: #38A7B4;
+  --ca-teal-deep: #247B84;
+  --ca-teal-darker: #1E666E;
+  --ca-line: rgba(22, 33, 31, 0.10);
+  --ca-muted: rgba(22, 33, 31, 0.62);
+
+  background: var(--ca-paper);
+  color: var(--ca-ink);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 14px;
+  font-size: 15.5px;
+  line-height: 1.85;
+  text-align: right;
+}
+.contract-annex p { margin: 0 0 11px }
+.contract-annex .ca-head {
+  background: var(--ca-surface);
+  border: 1px solid var(--ca-line);
+  border-top: 5px solid var(--ca-teal);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.contract-annex .ca-kicker {
+  font-size: 12.5px; letter-spacing: 0.06em; font-weight: 800;
+  color: var(--ca-teal-deep); margin: 0 0 6px;
+}
+.contract-annex .ca-title { font-size: 21px; margin: 0 0 8px; font-weight: 800 }
+.contract-annex .ca-lede { font-size: 14.5px; color: var(--ca-muted); margin: 0 }
+
+/* والدوراتُ مرقَّمةٌ لا منقَّطة: ملحقٌ يُحتَجّ به يُشار إلى بنده برقمه */
+.contract-annex .ca-list {
+  background: var(--ca-surface); border: 1px solid var(--ca-line);
+  border-radius: 14px; padding: 14px 40px 14px 18px; margin: 0 0 12px;
+  font-size: 15px;
+}
+.contract-annex .ca-list li { margin: 0 0 8px; line-height: 1.8; font-weight: 700 }
+.contract-annex .ca-list li:last-child { margin-bottom: 0 }
+.contract-annex .ca-note {
+  border-right: 4px solid var(--ca-teal);
+  background: rgba(56, 167, 180, 0.07);
+  border-radius: 0 10px 10px 0;
+  padding: 13px 16px; font-size: 14px; margin: 0;
+}
+
 /* ═══ وطباعةُ الوثيقة: ورقةٌ تُحفَظ لا لقطةُ شاشة ═══
 
    وقواعدُ الطباعةِ العامّةُ (في آخر الملفّ) تحمل الثقلَ: تُسطّح الأسطحَ
@@ -327,7 +382,8 @@
       حبرا على فراغ — فيُعاد له حدٌّ ليُقرأ رقمَ بندٍ لا كلمةً في سطر. */
 @media print {
   .contract-doc,
-  .contract-exec {
+  .contract-exec,
+  .contract-annex {
     padding: 0 !important;
     margin: 0 !important;
     border-radius: 0 !important;
@@ -339,7 +395,9 @@
   .contract-exec .ce-head,
   .contract-exec .ce-party,
   .contract-exec .ce-acks,
-  .contract-exec .ce-hash {
+  .contract-exec .ce-hash,
+  .contract-annex .ca-head,
+  .contract-annex .ca-list {
     border: 1px solid #c8ced5 !important;
     border-radius: 0 !important;
     padding: 8pt 10pt !important;
@@ -349,10 +407,16 @@
     break-inside: avoid;
     page-break-inside: avoid;
   }
-  /* والسجلُّ يبدأ صفحةً جديدة: توقيعٌ في ذيل بندٍ يُقرأ ذيلا له */
+  /* والسجلُّ يبدأ صفحةً جديدة: توقيعٌ في ذيل بندٍ يُقرأ ذيلا له. والملحقُ
+     لا يُقطَع: قائمةُ دوراتٍ معتمدةٍ نصفُها في صفحةٍ ونصفُها في أخرى تُقرأ
+     ناقصةً — وهي ما يُحتَجّ به. */
   .contract-exec {
     break-before: page;
     page-break-before: always;
+  }
+  .contract-annex {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .contract-doc .cd-num {
     border: 1px solid #c8ced5 !important;

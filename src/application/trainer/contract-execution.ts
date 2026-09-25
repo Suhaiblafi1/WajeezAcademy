@@ -106,3 +106,43 @@ export function bodyIntact(seal: ContractSeal): boolean {
   if (!shown || !signed) return false
   return shown === signed
 }
+
+/* ═══ ملحقُ الدورات المعتمدة — وعدٌ في المتن الموقَّع ═══
+
+   البندُ 2-11 يقول بحرفه: «وتوقع الأكاديمية هذا العرض من جهتها يوم يتحقق
+   الشرط، فيصير عقدا نهائيا غير مشروط موقعا من الطرفين، **ويعاد إلى المدرب مع
+   ملحق يبين الدورات المعتمدة له**».
+
+   فهذا الملحقُ التزامٌ وقّعه الطرفان لا زينةَ عرض — ولم يكن يُبنى. والعقدُ
+   يُختَم، وتُحسب أسماءُ الدورات للبريد وحدَه ثمّ تُنسى: الصفُّ يحفظ عددَها في
+   الأثر ولا يحفظ أسماءَها.
+
+   وهو **ملحقٌ ثانٍ بجانب سجلّ التوقيع** لا فصلٌ فيه: ذاك يقول من وقّع وبم
+   يُثبَت، وهذا يقول ما اعتمدناه فتحقّق الشرط. وكلاهما لا يدخل `bodyAr`. */
+
+/** دورةٌ في ملحق الاعتماد — ولا رمزَ لاتينيٌّ يُقرأ، فالاسمُ هو المعروض */
+export interface ApprovedCourse {
+  courseId: string
+  titleAr: string
+}
+
+/** يقرأ عمودَ `approvedCoursesSnapshot` — عمودُ JSON لا نوعَ له.
+
+    على نمط `readConsentAcks` و`readRequiredDocuments`: عقودٌ خُتمت قبل هذا
+    العمود تقرؤه `null`، وعقدٌ غيرُ مشروطٍ لا اعتمادَ موادَّ فيه أصلا. فما لا
+    يُفهَم يسقط بصمت، والفراغُ قائمةٌ فارغةٌ لا انهيار.
+
+    ولا يُقبَل عنوانٌ فارغ: صفٌّ بلا `titleAr` يُعرَض سطرا خاويا في ملحقٍ
+    قانونيّ — وسطرٌ خاوٍ في ملحقٍ يُقرأ نقصا في الاعتماد لا عطبا في شاشة. */
+export function readApprovedCourses(value: unknown): ApprovedCourse[] {
+  if (!Array.isArray(value)) return []
+  const out: ApprovedCourse[] = []
+  for (const row of value) {
+    if (!row || typeof row !== 'object') continue
+    const r = row as Record<string, unknown>
+    if (typeof r.courseId !== 'string' || typeof r.titleAr !== 'string') continue
+    if (!r.courseId.trim() || !r.titleAr.trim()) continue
+    out.push({ courseId: r.courseId, titleAr: r.titleAr })
+  }
+  return out
+}

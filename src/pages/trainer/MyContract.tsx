@@ -33,6 +33,7 @@ import { Card, Inset, Panel } from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
 import ContractDocument from '@/components/ContractDocument'
 import ContractExecution from '@/components/ContractExecution'
+import ContractApproval from '@/components/ContractApproval'
 import { parseContractDoc } from '@/application/trainer/contract-sections'
 import { contractHasBodyAr } from '@/application/trainer/contract-body'
 import { executionStage } from '@/application/trainer/contract-execution'
@@ -59,6 +60,7 @@ interface MyContract {
   academySignatoryTitle: string | null
   conditionMetAt: string | null
   terminatedAt: string | null
+  approvedCoursesSnapshot: unknown
   academyLegalNameAr: string
 }
 
@@ -191,6 +193,16 @@ export default function MyContract() {
             </Card>
           )}
         <ContractExecution seal={data} academyLegalNameAr={data.academyLegalNameAr} />
+        {/* ═══ والملحقُ الثالث: ما اعتمدناه فتحقّق الشرط ═══
+
+            وعدُ البند 2-11 في المتن الذي وقّعه: «ويعاد إلى المدرب مع ملحق
+            يبين الدورات المعتمدة له». وترتيبُه بعد سجلّ التوقيع بقصد:
+            الوثيقةُ، ثمّ من وقّعها، ثمّ ما تحقّق به شرطُها.
+
+            و`conditionMetAt` هو تاريخُ تحقّق الشرط بعينه — وهو ما يُطبَع في
+            الملحق، لا `countersignedAt`: الخَتمُ قد يقع بيدٍ في مسارٍ آخر بلا
+            اعتمادِ موادّ، وهذا الملحقُ عن الاعتماد. */}
+        <ContractApproval snapshot={data.approvedCoursesSnapshot} approvedAt={data.conditionMetAt} />
       </div>
     </TrainerLayout>
   )
