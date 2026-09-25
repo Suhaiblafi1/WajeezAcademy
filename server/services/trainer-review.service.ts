@@ -1840,7 +1840,9 @@ export class TrainerReviewService {
          `offerGatesActivation`. ويُقرأ من عقوده كلِّها لا من أحدثِها —
          فالأحدثُ قد يكون مسوّدةً لم تُختَم بعد. */
       gatesActivation: offerGatesActivation(
-        (app.profile?.contracts ?? []).map((c) => c.conditionMetAt),
+        (app.profile?.contracts ?? []).map((c) => ({
+          conditionMetAt: c.conditionMetAt, countersignedAt: c.countersignedAt,
+        })),
       ),
       courses,
       compensation: rule && {
@@ -2369,8 +2371,18 @@ export class TrainerReviewService {
         data: { status: 'sent', sentAt: new Date(), tokenHash, tokenExpiresAt: expiresAt, signerEmail: app.email },
       })
       if (moved.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد مسودّة', 409)
-      /* والبوّابةُ تُطبَّق هنا: حالةُ الطلب لا تتحرّك إلّا لمن لم يُفعَّل بعد */
-      if (contract.gatesActivation && app.status !== 'contract_pending') {
+      /* ═══ وحالةُ الطلب تُسأل بنفسها لا بعلَم الاشتراط ═══
+
+         كان الشرطُ `contract.gatesActivation`، وكان يساوي `status !== 'active'`
+         بحكم حسابه — فأدّى العملَين معا: يطبع بندَ الشرط، ويحرّك الحالة.
+
+         ثمّ صار الاشتراطُ يُقاس **باعتماد الموادّ** (٢٥ سبتمبر)، فافترق
+         المعنيان: مدرّبٌ نشطٌ لم تُعتمَد موادُّه يُشترَط عقدُه — ولو حرّكنا
+         حالتَه لَرُدّ إلى `contract_pending`، أي **عُطّل مدرّبٌ يعمل**.
+
+         فسؤالُ الحالة يُسأل بنفسه. والمحصّلةُ قبل التغيير هي هي: كان
+         `gatesActivation` يعني `status !== 'active'` فحُلّ محلَّه نصّا. */
+      if (app.status !== 'active' && app.status !== 'contract_pending') {
         await this.apps.transition(app.id, 'contract_pending', actorId, 'إرسالُ العقد للتوقيع', tx)
       }
       await recordAudit(tx, {

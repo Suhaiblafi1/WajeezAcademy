@@ -242,16 +242,28 @@ export function conditionLineAr(f: ConditionFacts): string {
 
    ولا عقودَ أصلا — مرشّحٌ جديد — فيُشترَط: فالعدمُ ليس اعتمادا. */
 
-/** أسبق لهذا المدرّب عقدٌ اعتُمدت به موادُّه؟ */
-export function materialsEverApproved(
-  pastConditionMetAt: readonly (Date | string | null | undefined)[],
-): boolean {
-  return pastConditionMetAt.some((d) => d != null)
+/* ═══ وختمان لا واحد ═══
+
+   `conditionMetAt` يكتبه اعتمادُ الموادّ في المسار المشروط. لكنّ الخَتمَ
+   المفرد (`countersignContract`) يكتب `countersignedAt` **ولا يكتبه** —
+   وبه خُتمت عقودٌ قبل أن يوجد المسارُ المشروط أصلا.
+
+   فلو اقتُصر على الأوّل لَأُعيد اشتراطُ كلّ مدرّبٍ خُتم عقدُه بالباب
+   القديم — وهم من يعملون اليوم. وكلاهما ختمُ الأكاديميّة: أنّا نظرنا
+   فقبلنا. */
+export interface PriorContractSeal {
+  /** يُكتب باعتماد الموادّ — المسارُ المشروط */
+  conditionMetAt?: Date | string | null
+  /** يُكتب بخَتم الأكاديميّة — وبه خُتمت عقودُ الباب القديم */
+  countersignedAt?: Date | string | null
+}
+
+/** أسبق لهذا المدرّب عقدٌ ختمناه؟ */
+export function materialsEverApproved(prior: readonly PriorContractSeal[]): boolean {
+  return prior.some((c) => c.conditionMetAt != null || c.countersignedAt != null)
 }
 
 /** أيُشترَط عقدُه الجديدُ باعتماد الموادّ؟ */
-export function offerGatesActivation(
-  pastConditionMetAt: readonly (Date | string | null | undefined)[],
-): boolean {
-  return !materialsEverApproved(pastConditionMetAt)
+export function offerGatesActivation(prior: readonly PriorContractSeal[]): boolean {
+  return !materialsEverApproved(prior)
 }

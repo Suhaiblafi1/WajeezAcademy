@@ -27,26 +27,38 @@ describe('الشرطُ يُقاس باعتماد الموادّ', () => {
     expect(offerGatesActivation([])).toBe(true)
   })
 
+  const unsealed = { conditionMetAt: null, countersignedAt: null }
+
   it('ومن له عقودٌ لم يُختَم منها شيء — يُشترَط', () => {
-    expect(offerGatesActivation([null, null])).toBe(true)
+    expect(offerGatesActivation([unsealed, unsealed])).toBe(true)
   })
 
   /* ═══ وهذه الصورةُ بعينها هي التي كانت تسقط ═══
      عقدٌ قائمٌ لم يُعتمَد بعد، وحسابٌ صار نشطا لأنّه قبل الدعوة. */
   it('وعقدٌ قائمٌ بلا ختمٍ يُشترَط ولو نشط حسابُه', () => {
-    expect(offerGatesActivation([null])).toBe(true)
+    expect(offerGatesActivation([unsealed])).toBe(true)
   })
 
   it('ومن اعتُمدت موادُّه مرّةً لا يُعاد اشتراطُه', () => {
-    expect(offerGatesActivation([new Date('2026-09-01')])).toBe(false)
-    /* ولو كان الأحدثُ مسوّدةً لم تُختَم بعد — فالعبرةُ بأيِّ عقدٍ اعتُمد */
-    expect(offerGatesActivation([null, new Date('2026-09-01')])).toBe(false)
+    expect(offerGatesActivation([{ conditionMetAt: new Date('2026-09-01') }])).toBe(false)
+    /* ولو كان الأحدثُ مسوّدةً لم تُختَم بعد — فالعبرةُ بأيِّ عقدٍ خُتم */
+    expect(offerGatesActivation([unsealed, { conditionMetAt: new Date('2026-09-01') }])).toBe(false)
+  })
+
+  /* ═══ وختمُ البابِ القديم يُحسَب ═══
+
+     الخَتمُ المفرد يكتب `countersignedAt` ولا يكتب `conditionMetAt`، وبه
+     خُتمت عقودٌ قبل أن يوجد المسارُ المشروط. فلو اقتُصر على الأوّل لَأُعيد
+     اشتراطُ كلّ من خُتم عقدُه بالباب القديم — وهم من يعملون اليوم. */
+  it('وختمُ الأكاديميّة وحدَه يكفي ولو لم يُكتب ختمُ الموادّ', () => {
+    expect(offerGatesActivation([{ countersignedAt: new Date('2026-05-01') }]), 
+      'أُعيد اشتراطُ من خُتم عقدُه بالباب القديم').toBe(false)
   })
 
   /* والتواريخُ تصل نصّا من JSON أحيانا، فلا يُقاس النوعُ بل الوجود */
   it('ويُقرأ التاريخُ نصّا كما يُقرأ تاريخا', () => {
-    expect(materialsEverApproved(['2026-09-01T00:00:00Z'])).toBe(true)
-    expect(materialsEverApproved([undefined, null])).toBe(false)
+    expect(materialsEverApproved([{ conditionMetAt: '2026-09-01T00:00:00Z' }])).toBe(true)
+    expect(materialsEverApproved([{}, unsealed])).toBe(false)
   })
 })
 
@@ -67,7 +79,10 @@ describe('والخادمُ يقيس بهذا لا بحالة الحساب', () =
        ختمُها `null` — فيُعاد اشتراطُه وقد اعتُمد. */
     const call = body.slice(body.indexOf('offerGatesActivation('))
     const arg = call.slice(0, call.indexOf('),\n'))
-    expect(arg, 'لا يُقرأ الختمُ أصلا').toContain('conditionMetAt')
+    expect(arg, 'لا يُقرأ ختمُ الموادّ').toContain('conditionMetAt')
+    /* وختمُ البابِ القديم معه — وإلّا أُعيد اشتراطُ من يعملون اليوم */
+    expect(arg, 'لا يُقرأ ختمُ الأكاديميّة — فيُعاد اشتراطُ عقود الباب القديم')
+      .toContain('countersignedAt')
     expect(arg, 'تُمَرُّ العقودُ مرورا لا يُقرأ منها إلّا واحد').toContain('.map(')
     expect(arg, 'يُؤخَذ أحدثُ عقدٍ وحدَه — ومن اعتُمد قديما يُشترَط ثانيةً')
       .not.toMatch(/\[0\]/)
