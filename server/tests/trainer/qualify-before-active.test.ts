@@ -155,12 +155,50 @@ describe('وأرضيّةٌ تحت التخفيف — لا يُؤهَّل من ل
   })
 })
 
-describe('وبوّابةُ التفعيل تُحسب من حالة الطلب لا من رأي', () => {
-  it('المرشّحُ يحبس عقدُه تفعيلَه، والنشطُ لا تُمسُّ حالتُه', async () => {
-    const forPending = await review.contractPrefill(pendingAppId)
-    const forActive = await review.contractPrefill(activeAppId)
-    expect(forPending.gatesActivation, 'عقدُ المرشّح لا يحبس شيئا').toBe(true)
-    expect(forActive.gatesActivation, 'عقدُ النشطِ يطرده من بوّابته').toBe(false)
+/* ═══ وكان هذا حارسا واحدا فصار اثنين ═══
+
+   كان يقول: «المرشّحُ يحبس عقدُه تفعيلَه، والنشطُ لا تُمسُّ حالتُه» —
+   ويقيسهما بقيمةٍ واحدة (`gatesActivation`)، إذ كانت تساوي
+   `status !== 'active'` فتؤدّي العملَين.
+
+   ثمّ صار الاشتراطُ يُقاس **باعتماد الموادّ** (قرارُ ٢٥ سبتمبر)، فافترق
+   المعنيان: مدرّبٌ نشطٌ لم تُعتمَد موادُّه **يُشترَط عقدُه** — وهذا هو
+   الإصلاحُ بعينه — **ولا تُمَسّ حالتُه**، فلا يُردّ إلى `contract_pending`
+   مدرّبٌ يعمل.
+
+   فصار لكلِّ معنًى حارسُه، ولا يُقاس أحدُهما بالآخر. */
+describe('الاشتراطُ يُقاس باعتماد الموادّ', () => {
+  it('المرشّحُ يُشترَط عقدُه — ولم تُعتمَد موادُّه', async () => {
+    expect((await review.contractPrefill(pendingAppId)).gatesActivation,
+      'عقدُ المرشّح لا يحبس شيئا').toBe(true)
+  })
+
+  /* وهذه هي التي كانت تقول `false` بحكم الحالة وحدَها — وهي الصورةُ التي
+     خرج بها عقدٌ بلا شرطٍ ولا خَتم، فرآه صاحبُ المنصّة «اتفاقيةً». */
+  it('والنشطُ الذي لم تُعتمَد موادُّه يُشترَط كذلك', async () => {
+    expect((await review.contractPrefill(activeAppId)).gatesActivation,
+      'خرج عقدُ من لم تُعتمَد موادُّه بلا شرط').toBe(true)
+  })
+})
+
+describe('وحالةُ النشطِ لا تُمَسّ بإرسال عقدٍ إليه', () => {
+  /* ═══ وهذا ما كان مخبوءا في القيمة الواحدة ═══
+     الإرسالُ يحرّك الحالةَ إلى `contract_pending`. فلو تبع علَمَ الاشتراط
+     بعد أن صار يُقاس بالموادّ لَرُدّ مدرّبٌ يعمل إلى ما قبل التفعيل. */
+  it('يبقى `active` بعد إرسال عقدٍ جديدٍ إليه', async () => {
+    const profile = await prisma.trainerProfile.findUniqueOrThrow({
+      where: { applicationId: activeAppId },
+    })
+    const contract = await prisma.trainerContract.create({
+      data: {
+        profileId: profile.id, title: 'عقدٌ لمدرّبٍ نشط', status: 'draft',
+        bodyVersion: 'v-test', bodyAr: 'متنٌ للاختبار', requiredDocuments: [],
+        gatesActivation: false,
+      },
+    })
+    await review.sendContract(contract.id, academicId)
+    const after = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: activeAppId } })
+    expect(after.status, 'رُدَّ مدرّبٌ يعمل إلى ما قبل التفعيل').toBe('active')
   })
 })
 
