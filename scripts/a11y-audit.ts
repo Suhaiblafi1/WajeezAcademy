@@ -138,6 +138,7 @@ const PAGES: PageSpec[] = [
   { path: '/trainer/learners', labelAr: 'طلبةُ المدرّب', as: 'trainer' },
   { path: '/trainer/proposals', labelAr: 'اقتراحاتُ المدرّب', as: 'trainer' },
   { path: '/trainer/earnings', labelAr: 'مستحقّاتُ المدرّب', as: 'trainer' },
+  { path: '/trainer/contract', labelAr: 'عقدُ المدرّب', as: 'trainer' },
   { path: '/trainer/ratings', labelAr: 'ما قيل عن المدرّب', as: 'trainer' },
 
   /* ── بوّابةُ المستشار ── */

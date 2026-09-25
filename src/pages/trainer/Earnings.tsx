@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Banknote, CheckCircle2, Clock3, Loader2, ShieldCheck, TicketPercent, XCircle } from "lucide-react";
+import { Banknote, CheckCircle2, Clock3, FileSignature, Loader2, ShieldCheck, TicketPercent, XCircle } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
@@ -295,6 +295,24 @@ function RealEarningsView() {
           </p>
         )}
       </Panel>
+
+      {/* ═══ وأين الوثيقةُ التي على أساسها يُحسب هذا كلُّه ═══
+
+          سطرُ «اتفاقُك المسبق» فوقَه يقول الأرقامَ ولا يقول من أين جاءت —
+          وهي بندٌ في عقدٍ وقّعه بيده. وبلاغُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦)
+          جعل موضعَ النسخة «ضمن قسم المستحقات والعقد»، فهذه الوصلةُ هي ما
+          يصل بين البابين: الرقمُ هنا، والوثيقةُ التي أنشأته هناك.
+
+          وسطحٌ من سطوح المنصّة لا صيغٌ مكتوبةٌ بيدها. */}
+      <Inset
+        as={Link}
+        interactive
+        to="/trainer/contract"
+        className="mb-6 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground"
+      >
+        <FileSignature className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+        <span>نسختُك الموقَّعةُ من العقد — بتوقيعك وتوقيعنا وبصمةِ نصّه — في <b>«عقدي»</b>، تُقرأ وتُطبَع.</span>
+      </Inset>
 
       <BankAccountPanel />
 

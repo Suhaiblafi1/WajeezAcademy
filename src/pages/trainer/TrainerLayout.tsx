@@ -1,5 +1,5 @@
 import { Link, NavLink, useLocation } from "react-router";
-import { Award, BookPlus, CalendarDays, ChevronDown, ClipboardCheck, GraduationCap, Handshake, LayoutDashboard, Link2, MoreHorizontal, Route, Star, Users, Wallet } from "lucide-react";
+import { Award, BookPlus, CalendarDays, ChevronDown, ClipboardCheck, FileSignature, GraduationCap, Handshake, LayoutDashboard, Link2, MoreHorizontal, Route, Star, Users, Wallet } from "lucide-react";
 import { Inset } from "@/components/ui/Surface";
 import { NavPill, NavPillButton } from "@/components/ui/NavPill";
 import NotificationBell from "@/components/NotificationBell";
@@ -209,11 +209,13 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   /* «شعبي وجلساتها» دخلت التبويبات — وهي ورشةُ عمله الفعليّة (الحضور والمواد
      والتكليفات والدرجات) ولم تكن فيها، فلا يبلغها إلا من يكتب مسارها بيده. */
   const tabs = [
-    /* ═══ خمسةٌ تُرى، وستٌّ في «المزيد» — قرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦) ═══
+    /* ═══ خمسةٌ تُرى، والباقي في «المزيد» — قرارُ صاحب المنصّة (١٨ سبتمبر ٢٠٢٦) ═══
 
        الخمسةُ الأولى ما يفتحه في يومه: لوحتُه، وشعبُه، وطلبتُه، وما ينتظر
-       تصحيحَه، وجدولُه. والستّةُ الباقيةُ يُقصَد كلٌّ منها قصدا (مؤهّلاتي ·
-       مقترحاتي · مساراتي · مستحقّاتي · ما قيل عنّي · دعوتي) فلا تُزاحم. */
+       تصحيحَه، وجدولُه. والباقيةُ يُقصَد كلٌّ منها قصدا (مؤهّلاتي · عروضي ·
+       مقترحاتي · مساراتي · مستحقّاتي · عقدي · ما قيل عنّي · دعوتي) فلا
+       تُزاحم. والقرارُ في «خمسةٍ تُرى» لا في عدد ما خلفها — وهو ما يحرسه
+       `mobile-and-domain.test.ts`: سقفٌ على `primary` وحدَه. */
     { to: "/trainer", label: "الرئيسية", icon: LayoutDashboard, end: true, primary: true },
     { to: "/trainer/board", label: "شعبي", icon: Users, primary: true },
     { to: "/trainer/learners", label: "طلبتي", icon: GraduationCap, primary: true },
@@ -231,6 +233,10 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
        ما عندنا في مسارٍ باسمه. والسؤالان متجاوران في ذهنه. */
     { to: "/trainer/paths", label: "مساراتي", icon: Route },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
+    /* وبعدها «عقدي» مباشرةً — قرارُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦): «الملف
+       يكون في منصته ضمن قسم المستحقات والعقد». فهما بابان متجاوران: ما
+       تستحقّه، والوثيقةُ التي على أساسها تستحقّه. */
+    { to: "/trainer/contract", label: "عقدي", icon: FileSignature },
     { to: "/trainer/ratings", label: "ما قيل عنّي", icon: Star },
     /* ب-٥: بعد «ما قيل عنّي» مباشرةً — قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) */
     { to: "/trainer/referral", label: "دعوتي", icon: Link2 },

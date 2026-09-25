@@ -58,6 +58,19 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['trainer-portal'], summary: 'كشوف مستحقاتي وبنودها وملخصها — للمدرب نفسه فقط' },
   }, async (req) => earnings.listForTrainer(req.auth!.userId))
 
+  /* ═══ عقدي — نسختي الموقَّعة، أقرؤها وأطبعها ═══
+
+     والصلاحيّةُ `trainer.portal` كسائر بوّابته، **والملفُّ يُستخرَج من جلسته
+     لا من جسم الطلب** — فلا يقرأ أحدٌ عقدَ غيره من هنا. ولا معرّفَ في المسار
+     أصلا: «عقدي» لا «عقدُ كذا»، فلا يُجرَّب رقمٌ بعد رقم.
+
+     وموضعُه بعد «مستحقاتي» بقصد — قال صاحبُ المنصّة: «الملف يكون في منصته
+     ضمن قسم المستحقات والعقد»، فهما بابان متجاوران لا بابٌ يُبحث عنه. */
+  app.get('/api/trainer/me/contract', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'نسختي الموقَّعة من العقد وسجلُّ تنفيذها — للمدرب نفسه' },
+  }, async (req) => review.myContract(req.auth!.userId))
+
   /* ═══ عروضُ الإسناد — والجوابُ له وحدَه ═══
 
      ولا صلاحيةَ جديدةً لها: `trainer.portal` هي بابُ بوّابته كلِّها، والعرضُ
