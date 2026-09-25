@@ -46,6 +46,11 @@ export interface AdminNavItem {
   end?: boolean;
   need?: string | string[];
   open?: true;
+  /** شارةُ عددٍ تُعرَض إلى جانب الاسم — ومفتاحُها يقول أيَّ عددٍ تقرأ.
+
+      ولمَ مفتاحٌ لا رقم: الخريطةُ ثابتةٌ تُقرأ مرّةً، والعددُ يتغيّر مع
+      كلّ توقيع. فالخريطةُ تقول **أين** تُعرض الشارة، والإطارُ يجلب **كم**. */
+  badge?: 'awaitingCountersign';
   /** سطرٌ يقول ما تفعله الشاشة — يقرؤه دليلُ «كلّ الشاشات» في الرئيسية.
       وهو لازمٌ لا زينة: العنوانُ وحدَه لا يفرّق بين «طلبات المتعلّمين»
       و«الطلبة المسجَّلون»، ومن لا يفرّق يفتح الاثنتين ليعرف. */
@@ -116,6 +121,7 @@ export const allSections: AdminNavSection[] = [
       /* ص-١: العقدُ بيدِ من يقرّر لا بيدِ من يدفع — `trainer.contract.manage`
          عند المدير الأكاديميّ، و`trainer.compensation.manage` تبقى للماليّة. */
       { to: "/admin/trainer-contracts", label: "العقود", icon: FileSignature, need: "trainer.contract.manage",
+        badge: "awaitingCountersign",
         descAr: "وثيقةٌ تُركَّب من أجره ودوراته المؤهَّل لها، وتُجمَّد ثمّ تُوقَّع" },
       /* ═══ ولماذا الأتعابُ هنا لا في «التشغيل والمالية» ═══
 

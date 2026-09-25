@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { Crown, Search, X } from "lucide-react";
 import { sectionsFor } from "./nav-map";
@@ -9,6 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
+import { apiGet } from "@/services/api";
 
 import BuildStampLine from "@/components/BuildStampLine";
 /** إطار لوحة الإدارة والعمليات — هويّة الإداريّ من جلسته وحدها.
@@ -32,6 +33,25 @@ export default function AdminLayout({ children, title }: { children: React.React
      ولا يُحفظ في المتصفّح: مرشِّحٌ يبقى بعد إغلاق الصفحة يُخفي شاشاتٍ
      لا يعرف صاحبُها لمَ غابت. */
   const [navQuery, setNavQuery] = useState("");
+  /* ═══ ما ينتظر ختمَنا — شارةٌ تبقى بعد أن يمضي الإشعار ═══
+
+     الإشعارُ يُرسَل ساعةَ التوقيع ثمّ يمضي. ومن لم يقرأه ساعتَه لا يجد
+     ما يناديه، والعقدُ الموقَّعُ يقف حتّى نختمه — وبه يُفعَّل حسابُ
+     المدرّب وتُعتمَد موادُّه. فعددٌ يبقى إلى جانب «العقود» في كلّ شاشة.
+
+     ويُجلَب مرّةً عند فتح الإطار لا دوريّا: تواترُ التوقيع بالأيّام لا
+     بالثواني، ونداءٌ كلَّ نصفِ دقيقةٍ في كلّ شاشةِ إدارةٍ حِملٌ بلا مقابل.
+
+     ويسقط صامتا: من لا يملك `trainer.contract.manage` يُردّ نداؤه،
+     وشارةٌ غائبةٌ أهونُ من خطأٍ يُعرَض له في كلّ شاشة. */
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let alive = true;
+    void apiGet<{ count: number }>("/api/admin/trainer-contracts/awaiting-countersign-count")
+      .then((r) => { if (alive) setBadges((b) => ({ ...b, awaitingCountersign: r.count })); })
+      .catch(() => { /* لا صلاحيّةَ أو لا شبكة — لا شارة، ولا خطأٌ يُعرَض */ });
+    return () => { alive = false; };
+  }, []);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -188,6 +208,17 @@ export default function AdminLayout({ children, title }: { children: React.React
                   <NavLink key={t.to} to={t.to} end={t.end} className={({ isActive }) => linkCls(isActive)}>
                     <t.icon className="h-4 w-4 shrink-0" />
                     {t.label}
+                    {/* والعددُ يُقرأ بلسانه لا بالرقم وحدَه: «٣» إلى جانب
+                        «العقود» لا تقول ماذا تعدّ لمن يسمعها بقارئ شاشة. */}
+                    {!!t.badge && badges[t.badge] > 0 && (
+                      <span
+                        className="mr-auto grid h-5 min-w-[1.25rem] shrink-0 place-items-center rounded-full bg-[#FABC05] px-1.5 text-fine font-black tabular-nums text-[#161F1D]"
+                        title={`${badges[t.badge]} عقدٍ موقَّعٍ ينتظر ختمَك واعتمادَ صاحبه`}
+                      >
+                        <span aria-hidden="true">{badges[t.badge]}</span>
+                        <span className="sr-only">{badges[t.badge]} عقدٍ موقَّعٍ ينتظر ختمَك</span>
+                      </span>
+                    )}
                   </NavLink>
                 ))}
               </nav>
