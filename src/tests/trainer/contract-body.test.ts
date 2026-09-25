@@ -30,7 +30,7 @@ import {
   bodyCarriesConditionClause, contractAcks, renderContractBodyAr, feeBasisAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
-import { parseContractDoc, feeRuleCells } from '@/application/trainer/contract-sections'
+import { parseContractDoc, feeRuleCells, blockLineAr } from '@/application/trainer/contract-sections'
 import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR, SEASON_COURSES } from '@/application/trainer/fee-example'
 
 const COURSES = [
@@ -262,9 +262,10 @@ describe('التحصيلُ المباشرُ ممنوع — والاستثناء�
     expect(section, 'المنعُ بلا استثناءٍ لما تدفعه الأكاديميّةُ هي').toMatch(/ويستثنى/)
   })
 
-  it('ورابطُ الإحالة مستثنى بالاسم — فالمنصّةُ تدفع عليه فعلا', () => {
+  /* واسمُه «رابط الدعوة» منذ `v8` — وحّد لسانَ العقد بلسان البوّابة */
+  it('ورابطُ الدعوة مستثنى بالاسم — فالمنصّةُ تدفع عليه فعلا', () => {
     const section = clauseSection(renderContractBodyAr(base()), 13)
-    expect(section, 'رابطُ الإحالة غيرُ مستثنى، والمنصّةُ تدفع عليه').toMatch(/رابط إحالته/)
+    expect(section, 'رابطُ الدعوة غيرُ مستثنى، والمنصّةُ تدفع عليه').toMatch(/رابط دعوته/)
   })
 
   it('وما حُصّل خلافا لذلك يُردّ ولا يُعدّ حسما — فلا يُنقَض منعُ الحسم', () => {
@@ -769,15 +770,26 @@ describe('الخلاصةُ في سطور', () => {
   const offer = (over: Partial<NonNullable<ContractBodyInput['conditional']>> = {}) =>
     renderContractBodyAr(base({ conditional: { ...CONDITIONAL, ...over } }))
 
-  /** نصُّ الخلاصة وحدَه — من عنوانها إلى الديباجة */
+  /** نصُّ الخلاصة وحدَه — بحدود المحلّل لا بقصٍّ بين عنوانين.
+
+      كان يُقَصُّ من «الخلاصة في سطور» إلى «الديباجة». فلمّا دخل قسمُ
+      «ما تعنيه الكلمات» بينهما (v8) ابتلعه القصُّ، فقرأ الحارسُ **نفيَ
+      إلزام التعريفات** حاسبا إيّاه نفيَ إلزام الخلاصة — وسقط لسببٍ صحيح
+      على شيفرةٍ سليمة.
+
+      فالحدُّ من `parseContractDoc` نفسِه: هو الذي يرسم الأقسامَ للوثيقة،
+      فلا يفترق الحارسُ عنه يومَ يدخل قسمٌ ثالث. */
   function summaryOf(body: string): string {
-    const at = /^الخلاصة في سطور$/m.exec(body)
-    expect(at, 'لا عنوانَ للخلاصة في رأس سطر').toBeTruthy()
-    const preamble = /^الديباجة$/m.exec(body)
-    expect(preamble, 'لا ديباجةَ في المتن').toBeTruthy()
-    expect(at!.index, 'الخلاصةُ بعد الديباجة — وهي إنّما تُقرأ في الرأس')
-      .toBeLessThan(preamble!.index)
-    return body.slice(at!.index, preamble!.index)
+    const doc = parseContractDoc(body)
+    const summary = doc.sections.find((x) => x.kind === 'summary')
+    expect(summary, 'لا خلاصةَ في المتن').toBeTruthy()
+    /* وموضعُها في الرأس: قبل الديباجة وقبل أوّل بند — خلاصةٌ تحت عشرين
+       بندا لا تُقرأ، فلا معنى لها. */
+    const at = doc.sections.indexOf(summary!)
+    const preamble = doc.sections.findIndex((x) => x.titleAr === 'الديباجة')
+    expect(preamble, 'لا ديباجةَ في المتن').toBeGreaterThan(-1)
+    expect(at, 'الخلاصةُ بعد الديباجة — وهي إنّما تُقرأ في الرأس').toBeLessThan(preamble)
+    return [summary!.titleAr, ...summary!.blocks.map(blockLineAr)].join('\n')
   }
 
   /** سطرٌ من الخلاصة يبدأ بعنوانه — ونصُّه بلا العنوان */
@@ -913,5 +925,134 @@ describe('الخلاصةُ في سطور', () => {
         expect(summary, `أثرُ قيمةٍ برمجيّةٍ في خلاصةٍ تُقرأ: ${leak}`).not.toContain(leak)
       }
     }
+  })
+})
+
+/* ═══ ما تعنيه الكلمات — قرارُ ٢٥ سبتمبر ٢٠٢٦ ═══
+
+   ── العطبُ الذي يحرسه ──
+
+   «شعبة» ترد إحدى وستّين مرّةً في المتن، و«إسناد» ستّا وعشرين، و«تأهيل»
+   إحدى عشرة — ولم يكن لواحدةٍ منها تعريف. ومن لا يفرّق بين التأهيل
+   والإسناد **لا يعرف ما وقّع عليه**: أحدُهما إذنٌ لا يرتّب شيئا، والآخرُ
+   هو الذي تنشأ به الأتعاب. */
+describe('قسمُ التعريفات يُقرأ قبل أن تَرِد الكلمات', () => {
+  const doc = () => parseContractDoc(renderContractBodyAr(base()))
+  const gloss = () => doc().sections.find((s) => s.titleAr === 'ما تعنيه الكلمات في هذا العقد')
+
+  it('قسمٌ قائمٌ بذاته لا سطورٌ تنضمّ إلى الخلاصة', () => {
+    expect(gloss(), 'لا قسمَ تعريفات — أو انضمّ إلى ما قبله').toBeTruthy()
+  })
+
+  /* وموضعُه: بعد الخلاصة وقبل الديباجة. فتعريفٌ بعد عشرين بندا استُعملت
+     فيه الكلمةُ يأتي بعد أن احتار القارئ. */
+  it('وموضعُه بين الخلاصة والديباجة', () => {
+    const ss = doc().sections
+    const g = ss.findIndex((s) => s.titleAr === 'ما تعنيه الكلمات في هذا العقد')
+    const sum = ss.findIndex((s) => s.kind === 'summary')
+    const pre = ss.findIndex((s) => s.titleAr === 'الديباجة')
+    expect(g, 'التعريفاتُ قبل الخلاصة').toBeGreaterThan(sum)
+    expect(g, 'التعريفاتُ بعد الديباجة').toBeLessThan(pre)
+  })
+
+  /* والكلماتُ التي سأل عنها صاحبُ المنصّة بأعيانها، وكلُّها **مستعمَلةٌ
+     في المتن فعلا** — فتعريفُ ما لا يَرِد حشوٌ، وتركُ ما يَرِد هو العطب. */
+  it('ويعرّف ما سُئل عنه، ولا يعرّف ما لا يَرِد', () => {
+    /* والمفتاحُ ما قبل النقطتين، ويُجرَّد من المقابل الإنجليزيّ بين قوسين:
+       «رابط الدعوة (referral link)» لا تَرِد في المتن بهذا التمام، وإنّما
+       يَرِد المصطلحُ وحدَه. */
+    /* والتعريفاتُ نقاطٌ وحدَها: ذيلُ القسم فقرةٌ تنفي الإلزام، ليست تعريفا */
+    const keys = gloss()!.blocks
+      .filter((b) => b.kind === 'bullet')
+      .map((b) => ('textAr' in b ? b.textAr.split(':')[0].replace(/\s*\([^)]*\)\s*$/, '').trim() : ''))
+    expect(keys.length, 'لا تعريفاتٍ في القسم').toBeGreaterThanOrEqual(6)
+    for (const k of ['الشعبة', 'التأهيل', 'الإسناد', 'كشف المستحقات']) {
+      expect(keys, `لا تعريفَ لـ«${k}»`).toContain(k)
+    }
+    /* والمقيسُ صدرُ المصطلح مجرَّدا من «ال»: العربيّةُ تعرّف وتنكّر، فالمتنُ
+       يقول «كشف مستحقات» والتعريفُ «كشف المستحقات» — وهما واحد. ومطابقةٌ
+       حرفيّةٌ تردّ ما هو وارد. */
+    const bare2 = (t: string) => t.replace(/\bال/g, '')
+    const body = bare2(renderContractBodyAr(base()))
+    for (const k of keys.filter(Boolean)) {
+      const head = bare2(k.split(/\s+/)[0])
+      expect(body.split(head).length - 1, `عُرّفت كلمةٌ لا تَرِد في المتن: ${k}`).toBeGreaterThan(1)
+    }
+  })
+
+  /* ولا إلزامَ فيه: بيانٌ يشرح ليس بندا، وإلّا احتُجّ بلفظِ شرحٍ على بند */
+  it('وينفي عن نفسه الإلزام ويقول أين المُلزِم', () => {
+    const last = gloss()!.blocks.slice(-1)[0]
+    const t = 'textAr' in last ? last.textAr : ''
+    expect(t, 'التعريفاتُ لا تنفي عن نفسها الإلزام').toMatch(/ليس بندا/)
+    expect(t, 'لا تقول أين المُلزِم عند الخلاف').toMatch(/فما في البنود هو المعتبر/)
+  })
+})
+
+/* ═══ وقاعدةُ الأتعاب تُقرأ بمصدر المتعلّم ═══
+
+   قال صاحبُ المنصّة إنّ هذا أهمُّ ما يقرؤه المدرّب وإنّه غيرُ واضح:
+   «٢٥ إذا كان من الرابط و١٥ من عندنا» لا تقول **ما الذي يغيّر السعر**. */
+describe('الملحقُ (ب) يقول الأساسَ قبل الأرقام', () => {
+  const annex = (b: string) => parseContractDoc(b).sections
+    .find((s) => s.kind === 'annex' && s.titleAr === 'أساس الأتعاب')!
+
+  it('صدرٌ يقول على أيّ شيء تُحتسب، وما الذي يغيّرها', () => {
+    const first = annex(renderContractBodyAr(base())).blocks[0]
+    const t = 'textAr' in first ? first.textAr : ''
+    expect(t, 'الملحقُ يبدأ بالرقم لا بالأساس').toMatch(/عن كل متعلم يسجل في شعبته/)
+    expect(t, 'لا يُنفى ما ليس أساسا').toMatch(/لا عن الساعة/)
+    expect(t, 'لا يُقال ما الذي يغيّر السعر').toMatch(/الجهة التي جاء منها المتعلم/)
+  })
+
+  it('وصفوفُه تُعنوَن بمصدر المتعلّم لا بنوع المقعد', () => {
+    const rows = annex(renderContractBodyAr(base())).blocks.map(feeRuleCells).filter(Boolean)
+    const labels = rows.map((r) => r!.labelAr)
+    expect(labels, 'لا صفَّ لمن جاء عبر رابط المدرّب').toContain('من جاء عبر رابط دعوة المدرب')
+    expect(labels, 'لا صفَّ لمن جاء من تسويقنا').toContain('من جاء من تسويق الأكاديمية')
+    /* والتسميةُ القديمةُ لا تعود */
+    expect(labels.join(' '), 'عادت تسميةُ «المقعد العام» المبهمة').not.toMatch(/المقعد العام/)
+  })
+
+  /* والحدُّ الأدنى في **صالح** المدرّب، وكان يُسمّى «الحد الأدنى للشعبة»
+     فيُقرأ قيدا عليه. فيُسمّى بما هو، ويُقال صراحةً إنّه لا يحدّ أعلاه. */
+  it('والحدُّ الأدنى يُسمّى مضمونا ويُنفى أن يكون سقفا', () => {
+    const rows = annex(renderContractBodyAr(base())).blocks.map(feeRuleCells).filter(Boolean)
+    const floor = rows.find((r) => /الحد الأدنى/.test(r!.labelAr))
+    expect(floor, 'لا صفَّ للحدّ الأدنى').toBeTruthy()
+    expect(floor!.labelAr, 'يُقرأ قيدا على المدرّب لا ضمانا له').toContain('المضمون')
+    expect(floor!.whenAr, 'لا يُنفى أن يكون سقفا').toMatch(/ولا يحد أعلاه/)
+  })
+
+  /* ═══ وصيغةُ العدد ═══
+     «8 مقعدا» خطأٌ نحويّ كان مطبوعا في عقودٍ وُقّعت — والثلاثةُ إلى
+     العشرة جمع. ويُقرأ في أهمّ سطرٍ في الوثيقة. */
+  it('وعددُ المقاعد بصيغته الصحيحة في المدى كلِّه', () => {
+    const seats = (n: number) => {
+      const b = renderContractBodyAr(base({
+        compensation: { type: 'per_seat', rate: '30', currency: 'USD', minSeats: n, referralRate: '45' },
+      }))
+      const rows = annex(b).blocks.map(feeRuleCells).filter(Boolean)
+      return rows.find((r) => /الحد الأدنى/.test(r!.labelAr))!.amountAr
+    }
+    expect(seats(1)).toBe('1 مقعد')
+    expect(seats(2)).toBe('2 مقعدين')
+    expect(seats(8), 'ثمانيةٌ جمعٌ لا مفردٌ منصوب').toBe('8 مقاعد')
+    expect(seats(12), 'ما فوق العشرة مفردٌ منصوب').toBe('12 مقعدا')
+  })
+})
+
+/* ولا يبقى «رابط الإحالة» في المتن: البوّابةُ تسمّيه «دعوتي» والبندُ 4-10
+   يحيل إليها بهذا الاسم منذ كُتب — فلسانان لشيءٍ واحدٍ يُربكان قارئَه. */
+describe('لسانُ العقد ولسانُ الشاشة واحد', () => {
+  it('«رابط الدعوة» لا «رابط الإحالة»', () => {
+    for (const body of [renderContractBodyAr(base()), renderContractBodyAr(base({ conditional: CONDITIONAL }))]) {
+      expect(body, 'بقي «رابط الإحالة» في المتن').not.toMatch(/رابط الإحالة|رابط إحالته/)
+      expect(body, 'لا ذكرَ لرابط الدعوة').toMatch(/رابط الدعوة|رابط دعوته/)
+    }
+  })
+
+  it('ويُذكَر مرّةً بالإنجليزيّة لمن يعرفها بها', () => {
+    expect(renderContractBodyAr(base()), 'لا مقابلَ إنجليزيٌّ للمصطلح').toContain('referral link')
   })
 })

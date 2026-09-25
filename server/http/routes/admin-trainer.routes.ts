@@ -392,6 +392,13 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'قائمةُ العقود، ومن ينتظر عقدا ولا عقدَ له' },
   }, async () => review.listContracts())
 
+  /* ومسارٌ ثابتٌ قبل `:contractId` — وإلّا التُقط «awaiting-countersign-count»
+     معرّفَ عقدٍ. وهو نداءٌ يتكرّر في كلّ شاشةِ إدارة، فلا يحمل إلّا عددا. */
+  app.get('/api/admin/trainer-contracts/awaiting-countersign-count', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'عددُ العقود الموقَّعة التي تنتظر ختمَ الأكاديميّة' },
+  }, async () => review.countAwaitingCountersign())
+
   /* المتنُ في نداءٍ مستقلّ: القائمةُ تحمل عشراتِ الصفوف، ومتنُ العقد آلافُ
      الأحرف. فحملُه في القائمة يجعل كلَّ فتحةِ شاشةٍ تنقل ما لا يُقرأ. */
   app.get('/api/admin/trainer-contracts/:contractId/body', {

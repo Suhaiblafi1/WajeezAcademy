@@ -86,7 +86,7 @@ export interface FeeExampleRow {
      الأعدادُ إلى حقولها، والصياغةُ تُبنى عليها لا تُقرأ منها. */
   /** عددُ المسجّلين المفترَض في هذا الصفّ — غائبٌ في الأجر الثابت */
   seats?: number
-  /** منهم عبر رابط إحالته */
+  /** منهم عبر رابط دعوته */
   referred?: number
   /** والمحتسَبُ عامّا — قد يفوق الفعليَّ حين يُكمَّل الحدُّ الأدنى */
   generalSeats?: number
@@ -209,7 +209,7 @@ export const FEE_EXAMPLE_HEADING_AR = 'مثال حسابي توضيحي — اس
    يربط الوصفَ بموضعه يكذب يومَ يتغيّر `SCENARIO`. */
 function sourceContractAr(seats: number, referred: number): string {
   if (referred === 0) return `${seats} كلهم من الأكاديمية`
-  if (referred === seats) return `${seats} كلهم عبر رابط إحالته`
+  if (referred === seats) return `${seats} كلهم عبر رابط دعوته`
   return `${referred} منه و${seats - referred} من الأكاديمية`
 }
 
@@ -252,7 +252,7 @@ export function feeExampleContractAr(ex: FeeExample, c: ContractCompensation): s
   const basis = c.type === 'fixed_per_cohort'
     ? 'وأتعاب المدرب في هذا المثال مبلغ ثابت عن الشعبة، فلا تتغير بعدد المسجلين، وعدد الشعب أعلاه مفترض.'
     : `والأسعار المطبقة أعلاه هي المبينة في هذا الملحق (${
-      c.referralRate ? `${c.referralRate} ${c.currency} للمقعد عبر رابط إحالته، و${c.rate} للمقعد العام` : `${c.rate} ${c.currency} للمقعد`
+      c.referralRate ? `${c.referralRate} ${c.currency} للمقعد عبر رابط دعوته، و${c.rate} للمقعد العام` : `${c.rate} ${c.currency} للمقعد`
     }${c.minSeats && c.minSeats > 0 ? `، وحد أدنى ${c.minSeats} مقعدا` : ''}).`
 
   return [

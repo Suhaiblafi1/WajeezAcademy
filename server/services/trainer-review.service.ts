@@ -1690,6 +1690,18 @@ export class TrainerReviewService {
       والثاني هو نصفُ الشاشة الذي يُنسى: قائمةُ عقودٍ تُري ما صُنع ولا تُري
       **من ينتظر**. فمن قُبل قبولا مشروطا منذ أسبوعين ولم يُرسَل له شيءٌ لا
       يظهر في أيّ موضع، ولا يُكتشف إلّا حين يسأل هو. */
+/* ═══ عدُّ ما ينتظر ختمَنا — شارةٌ تبقى بعد أن يمضي الإشعار ═══
+
+     الإشعارُ يُرسَل ساعةَ التوقيع («وقّع مدرّبٌ عقدَه»)، ومن لم يقرأه
+     ساعتَه لا يجد بعده ما يناديه: لا عدّادَ ولا شارة. والعقدُ الموقَّعُ
+     يقف حتّى نختمه — وبه يُفعَّل حسابُ المدرّب وتُعتمَد موادُّه.
+
+     والحالةُ `signed` بعينها: وُقّع ولم يُختَم. وما قبلها لا ينتظرنا،
+     وما بعدها (`countersigned`) تمّ. */
+  async countAwaitingCountersign(): Promise<{ count: number }> {
+    return { count: await this.prisma.trainerContract.count({ where: { status: 'signed' } }) }
+  }
+
   async listContracts() {
     const [contracts, candidates] = await Promise.all([
       this.prisma.trainerContract.findMany({
