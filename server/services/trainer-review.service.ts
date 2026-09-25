@@ -33,6 +33,7 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft,
   deadlineAfterPause, deadlineFrom, dueReminder, extendProblemAr, extendedDeadline,
+  offerGatesActivation,
 } from '../../src/application/trainer/conditional-offer'
 import {
   AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, isAmendmentRequested,
@@ -1832,8 +1833,15 @@ export class TrainerReviewService {
       email: app.email,
       applicationStatus: app.status,
       /* يُحسب هنا أيضا كي تقوله الشاشةُ للموظّف قبل أن ينقر — فأثرُ الإرسال
-         على مدرّبٍ نشطٍ يختلف عنه على مرشّح، ولا يُكتشف الفرقُ بعد وقوعه. */
-      gatesActivation: app.status !== 'active',
+         على مدرّبٍ اعتُمدت موادُّه يختلف عنه على مرشّح، ولا يُكتشف الفرقُ
+         بعد وقوعه.
+
+         والمقياسُ اعتمادُ الموادّ لا حالةُ الحساب: علّتُه في رأس
+         `offerGatesActivation`. ويُقرأ من عقوده كلِّها لا من أحدثِها —
+         فالأحدثُ قد يكون مسوّدةً لم تُختَم بعد. */
+      gatesActivation: offerGatesActivation(
+        (app.profile?.contracts ?? []).map((c) => c.conditionMetAt),
+      ),
       courses,
       compensation: rule && {
         ruleId: rule.id, type: rule.type, rate: rule.rate.toString(), currency: rule.currency,

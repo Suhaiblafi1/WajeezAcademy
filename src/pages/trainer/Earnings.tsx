@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Banknote, CheckCircle2, Clock3, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import { Link } from "react-router";
+import { Banknote, CheckCircle2, Clock3, Loader2, ShieldCheck, TicketPercent, XCircle } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
@@ -355,6 +356,32 @@ function RealEarningsView() {
           </p>
         </Panel>
       )}
+
+      {/* ═══ وأين تُصدَر — سطرٌ يبقى ولو لم يكن ثَمّ خصم ═══
+
+          سأل صاحبُ المنصّة عن «الكود الذي يُنشئه في قسم مستحقّاته»، وموضعُ
+          إصداره «دعوتي» بقراره في ٢١ سبتمبر — والبندُ 4-10 يحيل إليها
+          بهذا الاسم. فالعلّةُ أنّ من بحث عنه هنا لم يجد ما يدلّه: اللوحةُ
+          التي فوقَه لا تُعرَض إلّا حين ينتظر خصمٌ حسمَه، ومن لم يُصدر شيئا
+          قطّ يرى صفحةً لا تذكره.
+
+          فسطرٌ يبقى: يقول أين يُصدَر وأين يُحسَم، فيصل بين الشاشتين. ولا
+          يُكرّر ما تقوله اللوحةُ حين تُعرَض — تلك تعدّد ما ينتظر، وهذا
+          يدلّ على الباب. */}
+      {/* وسطحٌ من سطوح المنصّة لا صيغٌ مكتوبةٌ بيدها: الحدُّ والانحناءُ
+          والأرضيّةُ من `Inset`، وحلقةُ التركيز والتحويمُ من `interactive`
+          — فلا يُعاد رسمُ ما رُسم، ولا يزيد دَينُ التلويم. */}
+      <Inset
+        as={Link}
+        interactive
+        to="/trainer/referral"
+        className="mb-6 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground"
+      >
+        <TicketPercent className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+        <span>
+          الخصومُ التي تُصدرها بنفسك تُدار في <b className="text-foreground">«دعوتي»</b> — وتُحسم من كشفك هنا (البند 4-10).
+        </span>
+      </Inset>
 
       <div className="grid grid-cols-3 gap-4">
         <Card tone="warn">
