@@ -1426,12 +1426,38 @@ export class TrainerReviewService {
     const approvedCoursesAr = await Promise.all(
       approved.map((q) => this.courseTitleAr(q.courseId)),
     )
+    /* ═══ ولقطةُ الملحق تُبنى هنا — البندُ 2-11 يَعِد بها ═══
 
-    /* والعرضُ الموقَّعُ الذي يُختَم: المشروطُ وحدَه، وأحدثُه إن كانا اثنين */
+       «ويعاد إلى المدرب مع ملحق يبين الدورات المعتمدة له» — نصُّ المتن الذي
+       وقّعه. وكانت الأسماءُ تُحسب للبريد وحدَه ثمّ تُنسى: الصفُّ يحفظ عددَها
+       (`approvedCourses: approved.length` في الأثر) ولا يحفظ أسماءَها، فلا
+       يُبنى الملحقُ بعدها من شيء.
+
+       ولا رموزَ لاتينيّةٌ في المعروض: `courseId` للتتبّع، و`titleAr` هو ما
+       يُقرأ — على نمط `qualifiedSnapshot`. */
+    const approvedSnapshot = approved.map((q, i) => ({
+      courseId: q.courseId, titleAr: approvedCoursesAr[i] ?? '',
+    }))
+
+    /* ═══ والعرضُ الموقَّعُ الذي يُختَم: المشروطُ وحدَه، وأحدثُه إن كانا اثنين ═══
+
+       و`nulls: 'last'` ليست زينة: PostgreSQL يرتّب الفراغَ **أوّلا** في
+       `DESC`. فصفٌّ حالُه `signed` وتاريخُ توقيعه فارغٌ يتقدّم على كلّ موقَّعٍ
+       حقيقيّ، فيُختَم هو ويُكتب ملحقُه — ويبقى العرضُ الذي وقّعه المدرّبُ
+       فعلا `signed` بلا خَتم.
+
+       ومسالكُ الإنتاج اليومَ تكتب التاريخَ مع الحالة في تحديثٍ واحد (توقيعُ
+       الرابط، وإعادةُ العقد بعد سحب طلب التعديل)، فلا صفَّ كهذا **اليوم**.
+       لكنّ الترتيبَ كان يتعلّق بذلك ولا يقوله، وصفٌّ من البابِ القديم أو
+       تصحيحٌ بيدٍ في القاعدة يكفي لنقضه. فيُقال صريحا.
+
+       وقد انكشف هذا بسقالةِ اختبارٍ تكتب `status: 'signed'` بلا تاريخ
+       (`makeReadyForApproval`): فخُتم صفُّ السقالة وبقي العرضُ الحقيقيُّ
+       معلَّقا — وهي الصورةُ بعينها. */
     const offer = profile
       ? await this.prisma.trainerContract.findFirst({
         where: { profileId: profile.id, status: 'signed', gatesActivation: true },
-        orderBy: { signedAt: 'desc' },
+        orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
         select: { id: true, signerLegalName: true, signedBodyHash: true, bodyVersion: true },
       })
       : null
@@ -1451,6 +1477,9 @@ export class TrainerReviewService {
             /* وانتهت المهلةُ بتحقّق الشرط، ولا تجميدَ يبقى معلّقا */
             conditionMetAt: countersignedAt,
             conditionPausedAt: null,
+            /* وداخلَ المعاملة مع الخَتم نفسِه: خَتمٌ يُكتب وملحقُه لا يُكتب
+               يترك عقدا نافذا بلا الملحق الذي وعد به متنُه. */
+            approvedCoursesSnapshot: approvedSnapshot,
           },
         })
         if (done.count === 0) return
@@ -1462,6 +1491,9 @@ export class TrainerReviewService {
             bodyVersion: offer.bodyVersion, gatesActivation: true,
             academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
             countersignedAt, conditionMet: true, approvedCourses: approved.length,
+            /* والأسماءُ مع العدد: من سأل «أيَّ الدورات اعتمدتم؟» عن ختمٍ
+               قديمٍ لا يُجاب بعددٍ. والملحقُ في الصفّ، وهذا خطُّ الأثر. */
+            approvedCourseIds: approved.map((q) => q.courseId),
           },
         })
       })
@@ -1471,9 +1503,13 @@ export class TrainerReviewService {
       fullName: app.fullName,
       reference: app.reference,
       approvedCoursesAr,
-      /* ولا رابطَ للمستند بعد: صفحةُ الرمز لا تخدم المختومَ اليوم، ووعدٌ
-         بزرٍّ لا يفتح شيئا أسوأُ من غيابه. وبابُه بوّابتُه. */
-      contractUrl: null,
+      /* ═══ وصار للمستند بابٌ (٢٥ سبتمبر ٢٠٢٦) ═══
+
+         كان هنا `null` وتعليقُه: «لا رابطَ للمستند بعد… ووعدٌ بزرٍّ لا يفتح
+         شيئا أسوأُ من غيابه». وقد فُتحت «عقدي» فصار الزرُّ يفتح الوثيقةَ
+         بتوقيعَيها وملحقِها. وهذه الرسالةُ موضعُه: تُرسَل في اللحظة التي
+         يصير فيها العقدُ نافذا ويُفتح فيها حسابُه. */
+      contractUrl: `${publicSiteUrl()}/trainer/contract`,
       portalUrl: `${publicSiteUrl()}/trainer`,
       approvedOnAr: fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
     })
@@ -1991,6 +2027,7 @@ export class TrainerReviewService {
         consentTextAr: true, consentAcksAr: true, signedBodyHash: true,
         countersignedAt: true, academySignatoryName: true, academySignatoryTitle: true,
         conditionMetAt: true, terminatedAt: true,
+        approvedCoursesSnapshot: true,
       },
     })
     if (!c) throw new AuthError('no_contract', 'لا عقدَ موقَّعا في ملفك بعد', 404)
