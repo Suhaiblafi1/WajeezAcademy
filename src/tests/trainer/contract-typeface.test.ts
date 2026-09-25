@@ -20,7 +20,7 @@
    فعلا** وأنّ أوّلَ خطٍّ فيه هو المطلوب — فصنفٌ مكتوبٌ في JSX ولا وجودَ له
    في CSS زينةٌ تمرّ خضراء. */
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -28,11 +28,25 @@ import { describe, expect, it } from 'vitest'
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
-/** الصفحاتُ التي تعرض متنَ الاتفاقية — ما يقرؤه الموقِّع، وما تراجعه الإدارة */
-const CONTRACT_SURFACES = [
-  'src/pages/ContractSign.tsx',
-  'src/pages/admin/TrainerContracts.tsx',
-] as const
+/** الصفحاتُ التي تعرض متنَ الاتفاقية — **تُكتشَف ولا تُعَدّ**.
+
+    ورأسُ هذا الملفّ يقول: «من أضاف رابعا غدا وقع في العطب نفسِه بلا أن يحمرَّ
+    شيءٌ لو كان الحارسُ يعدّ ثلاثة». وكانت القائمةُ مكتوبةً باليد اثنتين —
+    فوقع ما حذّر منه بالحرف: أُضيفت «عقدي» في بوّابة المدرّب (٢٥ سبتمبر ٢٠٢٦)
+    ولم يكن للحارس بها علم.
+
+    فالقائمةُ تُشتقّ من الشيفرة: كلُّ ملفٍّ تحت `src/pages` يستورد
+    `ContractDocument`. ويُشترط ألّا تقلَّ عن المعروف — فمسحٌ يعود فارغا
+    (بتبدّلِ صيغةِ الاستيراد مثلا) يُخضِرّ الحارسَ على لا شيء. */
+const PAGES = 'src/pages'
+
+const walk = (dir: string): string[] => readdirSync(join(root, dir), { withFileTypes: true })
+  .flatMap((e) => (e.isDirectory() ? walk(`${dir}/${e.name}`) : [`${dir}/${e.name}`]))
+
+const CONTRACT_SURFACES = walk(PAGES)
+  .filter((f) => f.endsWith('.tsx'))
+  .filter((f) => /from ['"][^'"]*components\/ContractDocument['"]/.test(read(f)))
+  .sort()
 
 /** الوثيقةُ المبنيّةُ التي تمرّ بها الصفحاتُ كلُّها */
 const DOCUMENT = 'src/components/ContractDocument.tsx'
@@ -41,6 +55,22 @@ const DOCUMENT = 'src/components/ContractDocument.tsx'
 const preTags = (src: string) => [...src.matchAll(/<pre\b[^>]*>/g)].map((m) => m[0])
 
 describe('متنُ الاتفاقية يُعرض بخطِّ قراءةٍ لا بخطِّ شيفرة', () => {
+  /* ═══ ومسحٌ يعود فارغا خضرةٌ على لا شيء ═══
+
+     كلُّ فحصٍ أدناه حلقةٌ على `CONTRACT_SURFACES`. فلو تبدّلت صيغةُ الاستيراد
+     يوما (مسارٌ نسبيٌّ بدل `@/`، أو استيرادٌ كسولٌ بـ`lazy`) لعاد المسحُ
+     فارغا — وتمرّ الحلقاتُ كلُّها بلا أن تقيس حرفا. فيُشترَط أنّه وجد
+     المعروفَ: صفحةَ التوقيع، ولوحَ الإدارة، وصفحةَ «عقدي» في بوّابة المدرّب. */
+  it('والصفحاتُ المكتشَفةُ ليست فارغةً — ولا تقلُّ عن المعروف', () => {
+    for (const known of [
+      'src/pages/ContractSign.tsx',
+      'src/pages/admin/TrainerContracts.tsx',
+      'src/pages/trainer/MyContract.tsx',
+    ]) {
+      expect(CONTRACT_SURFACES, `لم تُكتشَف صفحةٌ تعرض المتن: ${known}`).toContain(known)
+    }
+  })
+
   /* ── والوسمُ انتقل من `<pre>` إلى وثيقةٍ مبنيّة ──
 
      كان المتنُ كتلةً واحدةً في `<pre>`، فصار `ContractDocument` يشتقّ بنيتَه من

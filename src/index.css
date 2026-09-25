@@ -208,6 +208,164 @@
   border-radius: 0 10px 10px 0; padding: 13px 16px; font-size: 14px; margin: 14px 0 0;
 }
 
+/* ═══ سجلُّ التنفيذ — بجانب الوثيقة لا فيها ═══
+
+   وألوانُه ألوانُ الوثيقة نفسِها لأنّه يُطبع معها في ورقةٍ واحدة، ونَسَقُه
+   يفترق عنها بقصد: كتلةٌ بلا بطاقاتٍ بيضاء، ورأسٌ يقول «سجلُّ تنفيذ». فلا
+   يُقرأ بندا من العقد وهو ليس منه — والمتنُ مهشَّشٌ لا يُزاد عليه حرف.
+
+   والمتغيّراتُ معرَّفةٌ هنا لا موروثةٌ من `.contract-doc`: المكوّنان أخوان
+   في الصفحة لا أبٌ وابن، فوراثةٌ منها تجعل السجلَّ بلا لونٍ حيث يُعرَض
+   وحدَه. */
+.contract-exec {
+  --ce-ink: #16211F;
+  --ce-paper: #F6F4EF;
+  --ce-surface: #fff;
+  --ce-teal-deep: #247B84;
+  --ce-teal-darker: #1E666E;
+  --ce-line: rgba(22, 33, 31, 0.10);
+  --ce-muted: rgba(22, 33, 31, 0.62);
+
+  background: var(--ce-paper);
+  color: var(--ce-ink);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 14px;
+  font-size: 15.5px;
+  line-height: 1.85;
+  text-align: right;
+}
+.contract-exec p { margin: 0 0 11px }
+.contract-exec .ce-head {
+  background: var(--ce-surface);
+  border: 1px solid var(--ce-line);
+  border-top: 5px solid #FABC05;
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.contract-exec .ce-kicker {
+  font-size: 12.5px; letter-spacing: 0.06em; font-weight: 800;
+  color: #7d6118; margin: 0 0 6px;
+}
+.contract-exec .ce-title { font-size: 21px; margin: 0 0 8px; font-weight: 800 }
+.contract-exec .ce-lede { font-size: 14.5px; color: var(--ce-muted); margin: 0 }
+
+/* خانتا التوقيع — صفّان على الورقة وصفٌّ واحدٌ على الهاتف */
+.contract-exec .ce-parties {
+  display: grid; gap: 12px; grid-template-columns: 1fr; margin-bottom: 14px;
+}
+@media (min-width: 720px) {
+  .contract-exec .ce-parties { grid-template-columns: 1fr 1fr }
+}
+.contract-exec .ce-party {
+  background: var(--ce-surface); border: 1px solid var(--ce-line);
+  border-radius: 14px; padding: 16px 18px;
+}
+/* والخانةُ التي تنتظر تُرى منتظرةً: حدٌّ مقطَّعٌ لا مصمَت */
+.contract-exec .ce-party-wait { border-style: dashed }
+.contract-exec .ce-role {
+  font-size: 12px; font-weight: 800; letter-spacing: 0.01em;
+  color: var(--ce-teal-darker); margin: 0 0 14px;
+}
+/* الاسمُ مطبوعٌ لا مخطوطٌ بيد — ولا يُرسَم خطُّ يدٍ لم يخطّه صاحبُه */
+.contract-exec .ce-name { font-size: 20px; font-weight: 800; margin: 0 0 6px; line-height: 1.5 }
+.contract-exec .ce-pending { color: var(--ce-muted); font-weight: 700; font-size: 17px }
+.contract-exec .ce-rule {
+  height: 0; margin: 0 0 8px;
+  border-bottom: 1.5px solid rgba(22, 33, 31, 0.35);
+}
+.contract-exec .ce-how { font-size: 13px; color: var(--ce-muted); margin: 0 }
+.contract-exec .ce-rows { margin: 12px 0 0 }
+.contract-exec .ce-row {
+  display: flex; gap: 10px; padding: 7px 0;
+  border-top: 1px solid var(--ce-line); font-size: 14px;
+}
+.contract-exec .ce-row dt { flex: 0 0 auto; color: var(--ce-muted) }
+.contract-exec .ce-row dd { margin: 0; font-weight: 700 }
+
+.contract-exec .ce-acks,
+.contract-exec .ce-hash {
+  background: var(--ce-surface); border: 1px solid var(--ce-line);
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 12px;
+}
+.contract-exec .ce-acks h3,
+.contract-exec .ce-hash h3 {
+  font-size: 14.5px; font-weight: 800; margin: 0 0 10px; color: var(--ce-teal-darker);
+}
+.contract-exec .ce-acks ol { margin: 0; padding-right: 20px; font-size: 14.5px }
+.contract-exec .ce-acks li { margin: 0 0 8px; line-height: 1.8 }
+.contract-exec .ce-acks li:last-child { margin-bottom: 0 }
+.contract-exec .ce-consent {
+  font-size: 14px; color: var(--ce-muted); padding: 0 2px;
+}
+.contract-exec .ce-consent b { color: var(--ce-ink) }
+.contract-exec .ce-hash p { font-size: 14px; margin: 0 }
+/* وبصمةٌ لم تُحفَظ تُقال ولا تُموَّه: حافّةٌ ذهبيّةٌ لا خضراء */
+.contract-exec .ce-hash-off { border-right: 4px solid #FABC05 }
+.contract-exec .ce-digest {
+  margin-top: 10px !important; padding-top: 10px;
+  border-top: 1px solid var(--ce-line);
+  display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline;
+}
+.contract-exec .ce-digest span { font-size: 12px; color: var(--ce-muted) }
+.contract-exec .ce-digest code {
+  font-size: 11.5px; word-break: break-all; color: var(--ce-teal-deep);
+}
+
+/* ═══ وطباعةُ الوثيقة: ورقةٌ تُحفَظ لا لقطةُ شاشة ═══
+
+   وقواعدُ الطباعةِ العامّةُ (في آخر الملفّ) تحمل الثقلَ: تُسطّح الأسطحَ
+   الداكنةَ، وتحجب الرأسَ والتبويباتِ والأزرار، وتضبط هوامشَ A4. وما يلزم
+   الوثيقةَ بعدها ثلاثةٌ لا تصلح قواعدَ عامّة:
+
+   ① **الحدودُ تبقى** حيث تعني شيئا. القاعدةُ العامّةُ ترفع الحدودَ عن كلّ
+      `section` — وفي الوثيقة هي ما يفصل بندا عن بند، وخطُّ التوقيع نفسُه
+      حدٌّ سفليّ: بلا استثناءٍ يخرج الاسمُ معلَّقا بلا خطٍّ تحته.
+   ② **البندُ لا يُقطَع** بين صفحتين، وخانةُ التوقيع كذلك.
+   ③ **الرقمُ يبقى رقما محاطا**: مربّعُه أخضرُ بحبرٍ أبيض، والتسطيحُ يجعله
+      حبرا على فراغ — فيُعاد له حدٌّ ليُقرأ رقمَ بندٍ لا كلمةً في سطر. */
+@media print {
+  .contract-doc,
+  .contract-exec {
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    font-size: 11pt;
+  }
+  .contract-doc .cd-head,
+  .contract-doc .cd-summary,
+  .contract-doc .cd-card,
+  .contract-exec .ce-head,
+  .contract-exec .ce-party,
+  .contract-exec .ce-acks,
+  .contract-exec .ce-hash {
+    border: 1px solid #c8ced5 !important;
+    border-radius: 0 !important;
+    padding: 8pt 10pt !important;
+  }
+  .contract-doc .cd-section,
+  .contract-exec .ce-party {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  /* والسجلُّ يبدأ صفحةً جديدة: توقيعٌ في ذيل بندٍ يُقرأ ذيلا له */
+  .contract-exec {
+    break-before: page;
+    page-break-before: always;
+  }
+  .contract-doc .cd-num {
+    border: 1px solid #c8ced5 !important;
+    width: 22pt; height: 22pt;
+  }
+  .contract-exec .ce-rule {
+    border-bottom: 1.5px solid #111111 !important;
+  }
+  /* وخانتا التوقيع جنبا إلى جنبٍ في الورقة أيضا — لا واحدةٌ فوق الأخرى */
+  .contract-exec .ce-parties { grid-template-columns: 1fr 1fr }
+}
+
+
 @layer base {
   :root {
     /* Wajeez dark identity */

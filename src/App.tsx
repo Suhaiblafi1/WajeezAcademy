@@ -54,6 +54,7 @@ const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
 const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
 const Earnings = lazy(() => import('./pages/trainer/Earnings'))
+const TrainerMyContract = lazy(() => import('./pages/trainer/MyContract'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTerms = lazy(() => import('./pages/admin/Terms'))
@@ -282,6 +283,9 @@ export default function App() {
                 قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦). */}
             <Route path="/trainer/cohort/:id" element={<CohortWorkspace />} />
             <Route path="/trainer/earnings" element={<Earnings />} />
+            {/* «عقدي» بجانب «مستحقاتي» — قرارُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦):
+                «الملف يكون في منصته ضمن قسم المستحقات والعقد». */}
+            <Route path="/trainer/contract" element={<TrainerMyContract />} />
             {/* «اقتراحاتي» حُذفت: «ليس اقتراحا بل واجبٌ عليه» — الشعبةُ تُجهَّز من ورشتها */}
             <Route path="/trainer/proposals" element={<Navigate to="/trainer/board" replace />} />
             <Route path="/trainer/board" element={<CohortBoard />} />

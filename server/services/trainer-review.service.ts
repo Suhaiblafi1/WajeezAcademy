@@ -1951,6 +1951,54 @@ export class TrainerReviewService {
      `materials_returned` و`condition_extended`) ولا كاتبَ لأيٍّ منها —
      مفرداتٌ لأفعالٍ لم تُبنَ. وهذه تبنيها. */
 
+  /** ═══ نسختي الموقَّعة — يقرؤها المدرّبُ في بوّابته ويطبعها ═══
+
+      بلاغُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦): «عندما يصل العقد الموقع للمدرب
+      يصله نصا طويلا غير موقع!! اين نضع توقيعنا؟ … ويجب أن يكون ملف بي دي
+      اف يقوم بطباعته هو من جهته، وأيضا الملف يكون في منصته».
+
+      والدليلُ كلُّه محفوظٌ منذ وُقّع — اثنا عشرَ عمودا في صفّ العقد — **ولا
+      واحدٌ منها كان يُعرَض له**. فهذا بابُه إليه.
+
+      ── ويُعاد المتنُ المجمَّد لا يُركَّب من جديد ──
+
+      `bodyAr` هو ما وُقّع عليه وبصمتُه محفوظة، فيُعاد بحرفه. ومن ركّبه ثانيةً
+      من القالب أعطاه **صياغةَ اليوم** عن عقدٍ وقّعه بصياغة أمس.
+
+      ── وما لا يُقرأ لا يُعاد ──
+
+      `signerIp` و`signerUserAgent` دليلُ فعلٍ للنزاع لا سطرٌ يُقرأ في ورقة،
+      و`countersignNoteAr` نصُّ موظّفٍ عن مطابقةٍ يكتبه لعين موظّفٍ آخر. فلا
+      يخرج منها حرفٌ إلى بوّابته، على نمط انتقاءِ العقد في `/api/trainer/me`.
+
+      ── والموقَّعُ وحدَه ──
+
+      مسوّدةٌ لم تُرسَل، وعقدٌ أُرسل ولم يُوقَّع، لا سجلَّ تنفيذٍ لهما: الأوّلُ
+      ليس وثيقةً بعد، والثاني يُوقَّع من رابط بريده لا من هنا. فالشرطُ
+      `signedAt: { not: null }`. */
+  async myContract(userId: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { userId }, select: { id: true },
+    })
+    if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب مرتبطا بهذا الحساب', 404)
+    const c = await this.prisma.trainerContract.findFirst({
+      where: { profileId: profile.id, signedAt: { not: null } },
+      orderBy: { signedAt: 'desc' },
+      select: {
+        id: true, title: true, status: true, kind: true, revision: true,
+        bodyAr: true, bodyVersion: true, bodyHash: true,
+        signedAt: true, signerLegalName: true, signerAddressAr: true, signerPhone: true,
+        consentTextAr: true, consentAcksAr: true, signedBodyHash: true,
+        countersignedAt: true, academySignatoryName: true, academySignatoryTitle: true,
+        conditionMetAt: true, terminatedAt: true,
+      },
+    })
+    if (!c) throw new AuthError('no_contract', 'لا عقدَ موقَّعا في ملفك بعد', 404)
+    /* واسمُ الطرف الأوّل يُعاد من المصدر الواحد لا يُكتب في الشاشة حرفا —
+       `src/tests/academy-legal.test.ts` يحرس أن لا تُنسخ هذه القيمُ في ملفّ. */
+    return { ...c, academyLegalNameAr: ACADEMY_LEGAL.legalNameAr }
+  }
+
   /** عقدُ الطور المفتوحُ لصاحب هذه الجلسة — أو لا شيء */
   private async openConditionContract(userId: string) {
     const profile = await this.prisma.trainerProfile.findUnique({
@@ -2805,8 +2853,27 @@ export class TrainerReviewService {
       })
     })
 
-    /* ونسخةُ صاحبِه تصله — فمن وقّع يملك ما وقّع عليه، لا يطلبه منّا */
+    /* ═══ ونسخةُ صاحبِه تصله — وصلةً لا سكبَ متن ═══
+
+       كانت الرسالةُ تسكب `bodyAr` كلَّه في فقرةٍ واحدة، فتصل نسختُه «نصّا
+       طويلا غير موقَّع» — سطورُ القالب بلا أثرٍ لأنّه وقّعها. وسأل صاحبُ
+       المنصّة (٢٥ سبتمبر ٢٠٢٦): «اين نضع توقيعنا؟».
+
+       فالرسالةُ تقول ما يُثبت توقيعَه — اسمُه القانونيُّ كما كتبه، وتاريخُه،
+       وبصمةُ النصّ الذي عُرض عليه — ثمّ تُحيل إلى «عقدي» حيث الوثيقةُ كاملةً
+       تحتها سجلُّ التنفيذ، تُقرأ وتُطبَع إلى PDF. والبريدُ لا يصلح موضعا
+       لوثيقةٍ تُطبَع: عملاءُ البريد يقطعون الرسائلَ الطويلةَ ويكسرون أسطرَها،
+       فالنصُّ المسكوبُ قد لا يصل تامّا أصلا.
+
+       ── والوصلةُ تُقال بشرطها لا بإطلاق ──
+
+       من وقّع قبل أن يُنشئ حسابَه لا يفتح بوّابتَه اليومَ (`profile.userId`
+       فارغٌ حتّى `consumeInvitation`). فيُسأل الشرطُ ويُقال له الصدقُ: إمّا
+       «هذا بابُها» وإمّا «تُفتح مع حسابك». ولا وعدٌ برابطٍ يردُّه إلى شاشة
+       دخول. */
     const app = c.profile.application
+    const hasPortal = c.profile.userId != null
+    const contractUrl = `${publicSiteUrl()}/trainer/contract`
     try {
       await sendDirectEmail(this.prisma, {
         to: c.signerEmail ?? app.email,
@@ -2815,14 +2882,29 @@ export class TrainerReviewService {
           greetingName: legalName,
           heading: 'سُجّل توقيعُك، وهذه نسختُك',
           blocks: [
-            { kind: 'p', text: `وقّعتَ «${c.title}» بتاريخ ${fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' })}.` },
+            { kind: 'p', text: `وقّعتَ «${c.title}» بتاريخ ${fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' })}، وحُفظ توقيعُك بهذه البيانات:` },
+            {
+              kind: 'facts',
+              rows: [
+                { label: 'الاسمُ القانونيُّ الذي وقّعتَ به', value: legalName },
+                { label: 'تاريخُ التوقيع', value: fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' }) },
+                { label: 'بصمةُ النصّ الذي وقّعتَ عليه (sha256)', value: c.bodyHash ?? '—' },
+              ],
+            },
             { kind: 'callout', text: 'تراجعه الأكاديميّةُ الآن، وتصلك رسالةٌ حين يُعتمَد ويُفتح حسابُك.' },
-            { kind: 'note', text: 'النصُّ الكاملُ مرفقٌ أدناه للحفظ.' },
-            { kind: 'p', text: c.bodyAr ?? '' },
+            ...(hasPortal
+              ? ([
+                  { kind: 'p', text: 'ونسختُك الكاملةُ في بوّابتك تحت «عقدي»: الوثيقةُ بحروفها، وتحتها سجلُّ التوقيعَين والإقراراتُ التي أقررتَ بها. ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.' },
+                  { kind: 'cta', label: 'افتح «عقدي» واطبع نسختك', href: contractUrl },
+                ] as const)
+              : ([
+                  { kind: 'p', text: 'ونسختُك الكاملةُ محفوظةٌ لك في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها، وتحتها سجلُّ التوقيعَين والإقراراتُ التي أقررتَ بها، وزرُّ طباعةٍ يحفظها ملفَّ PDF عندك. وتُفتح لك مع حسابك حين يُعتمَد توقيعُك.' },
+                ] as const)),
+            { kind: 'note', text: 'ولو أردتَ نسخةً قبل ذلك، ردَّ على هذه الرسالة.' },
           ],
         }),
       })
-    } catch { /* البريدُ رفاهية — التوقيعُ وقع، والنسخةُ تُعاد من الإدارة */ }
+    } catch { /* البريدُ رفاهية — التوقيعُ وقع، والنسخةُ في بوّابته */ }
 
     /* ═══ والخبرُ يحمل الخطوةَ التالية لا وقوعَ الفعل وحدَه ═══
 
@@ -3027,6 +3109,20 @@ export class TrainerReviewService {
                ورسالتُه تخرج عنده (`completeConditionalOffer`). ووعدٌ هنا يجعل من ينتظر
                ساعةً يظنّ أنّ شيئا تعطّل. */
             { kind: 'note' as const, text: 'ويصلك فتحُ حسابك في رسالةٍ تالية حين يكتمل اعتمادُك.' },
+            /* ═══ وسجلُّ التوقيعَين تمّ الآن، فيُقال أين يُقرأ ═══
+
+               ولحظةُ الاعتماد هي أوّلُ لحظةٍ يصير فيها للنسخة **توقيعان**:
+               قبلها كان توقيعُه وحدَه. فهذه الرسالةُ موضعُ الإحالة الطبيعيّ —
+               ومن كان حسابُه مفتوحا يفتحها الآن، ومن لم يُفتح بعدُ يجدها
+               فيه حين يُفتح.
+
+               ولا `cta` ههنا: الرسالةُ تحمل وعدَ فتحِ الحساب في السطر الذي
+               قبلها، وزرٌّ إلى بوّابةٍ قد لا تكون مفتوحةً يردُّه إلى شاشة
+               دخولٍ يقرأها إخلافا للوعد. فسطرُ ملحوظةٍ يقول الموضعَ بلا وعد. */
+            {
+              kind: 'note',
+              text: 'ونسختُك بتوقيع الطرفين في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها وتحتها سجلُّ التوقيعَين، ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.',
+            },
             {
               kind: 'note',
               text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك عرضا مستقلّا تقبله أو تعتذر عنه.',
