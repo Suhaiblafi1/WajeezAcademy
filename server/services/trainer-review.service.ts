@@ -1753,6 +1753,19 @@ export class TrainerReviewService {
           signerLegalName: true, declinedAt: true, declineReasonAr: true,
           countersignedAt: true, academySignatoryName: true,
           academySignatoryTitle: true, countersignNoteAr: true,
+          /* ═══ وأعمدةُ الشرط — بدونها الطابورُ أعمى عن طورٍ يحبس إنسانا ═══
+
+             `returnMaterialsWithNotes` مبنيّةٌ ولها مسارُها المحروس، **ولا
+             شاشةَ تنادِيها** — ولا عجب: القائمةُ لم تكن تعرف أنّ للعقد طورا
+             أصلا. فيرى الموظّفُ صفّا حالُه `signed` ولا شيءَ يقول إنّ موادَّ
+             المدرّب عنده للتقييم منذ أسبوع.
+
+             والعاملان يتخطّيان المجمَّد (`conditionPausedAt: null` في
+             شرطَيهما)، فلا تذكيرَ يأتي ولا وسمَ تأخّرٍ يُكتب. فمن جمّد
+             موادَّه يبقى معلَّقا أبدا، والمخرجان المتاحان «اعتمِدْ» أو
+             «ألغِ» — وكلاهما جوابٌ عن سؤالٍ آخر. */
+          conditionDeadlineAt: true, conditionPausedAt: true,
+          conditionExtendedAt: true, conditionMetAt: true, orientationAt: true,
           /* وطلبُ التعديل وجوابُه: كانت القائمةُ تعرض الحالةَ ولا تعرض
              ما طُلِب — فيرى الموظّفُ «amendment_requested» ولا يدري ما المطلوب. */
           amendmentRequestAr: true, amendmentRequestedAt: true,
