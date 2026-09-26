@@ -92,7 +92,9 @@ export const DECISIONS: Decision[] = [
   { action: "request_info", label: "اطلب معلومات إضافية", from: [...INFO_REQUESTABLE], tone: "warn" },
   { action: "shortlist", label: "اختصار أولي", from: openExcept("shortlisted"), tone: "main" },
   { action: "request_demo", label: "اطلب درسا تجريبيا", from: openExcept("demo_requested"), tone: "warn" },
-  { action: "academic_review", label: "مراجعة أكاديمية", from: openExcept("academic_review"), tone: "main" },
+  /* واللفظُ لفظُ الحالة نفسِها (`application-status.ts`): زرٌّ يقول «مراجعة
+     أكاديميّة» وصفٌّ يقول «رأيٌ ثانٍ» خبران عن فعلٍ واحد. */
+  { action: "academic_review", label: "اطلبْ رأيا ثانيا", from: openExcept("academic_review"), tone: "main" },
   /* ─────────── بابُ التجهيز (٢٠ سبتمبر ٢٠٢٦) ───────────
 
      كان من `academic_review` وحدَها، وهي حالةٌ لا تقع إلّا بعد درسٍ تجريبيٍّ
