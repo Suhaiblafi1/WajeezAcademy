@@ -267,6 +267,10 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',
   'trainer.contract.amendment_requested': 'طلبُ المدرّبِ تعديلا على عرضه',
   'trainer.contract.amendment_replied': 'جوابُ الإدارة على طلب التعديل',
+  /* الجوابُ الثالث: يُقبَل الطلبُ فيُغلَق العرضُ ويُعاد تركيبُه مصحَّحا.
+     وفعلٌ مستقلٌّ عن `revoke` بقصد: من سأل بعد سنةٍ «لمَ أُغلق هذا العرض؟»
+     يفرّق بين إلغاءٍ وبين قبولِ تعديلٍ مهّد لعقدٍ آخر. */
+  'trainer.contract.amendment_reissue': 'قبولُ طلبِ التعديل وإعادةُ تركيب العقد مصحَّحا',
   'trainer.contract.delete': 'حذفُ عقدٍ لم يمسّه توقيع',
   'trainer.contract.materials_declared': 'إعلانُ المدرّبِ اكتمالَ موادّه',
   'trainer.contract.materials_returned': 'إعادةُ موادّ المدرّبِ إليه بملاحظات',
