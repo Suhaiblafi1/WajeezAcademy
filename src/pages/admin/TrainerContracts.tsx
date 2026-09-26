@@ -629,6 +629,22 @@ export default function TrainerContracts() {
                           <p className="text-read opacity-70">{fmtDateTime(c.amendmentRequestedAt)}</p>
                         )}
                         <p className="mt-2 whitespace-pre-wrap leading-7">{c.amendmentRequestAr}</p>
+                        {/* ═══ والجوابانِ يُقالان هنا لا في تعليقٍ يقرؤه المبرمج ═══
+
+                            الجوابُ الثاني مبنيٌّ وزرُّه قائمٌ (زرُّ «ألغِ» في صفّ
+                            الأفعال أعلاه)، وتعليقُ الشيفرة يشير إليه — **والموظّفُ
+                            لا يقرأ التعليقات**. فمن قرأ الطلبَ في هذا اللوح رأى
+                            جوابا واحدا، وهو المصيدةُ نفسُها التي وُجدت في إعادة
+                            الموادّ: قرارٌ مبنيٌّ لا يُرى عند موضع القرار.
+
+                            ولا يُكرَّر زرُّ الإلغاء هنا: فعلٌ لا رجعةَ فيه لا
+                            يُنسَخ في موضعَين من شاشةٍ واحدة. فيُسمّى ويُدَلّ عليه. */}
+                        <p className="mt-3 text-read leading-6 opacity-80">
+                          وجوابُك أحدُ اثنين: <b>تردُّ عليه فيبقى العرضُ كما هو</b> — وذلك أدناه؛
+                          أو <b>تُلغيه وتركّب عرضا مصحَّحا</b> بالتعديل الذي طلبه، بزرّ «ألغِ» في
+                          صفّ الأفعال أعلاه ثمّ تركيبِ عقدٍ جديد. ولا يُعدَّل متنُ عرضٍ أُرسل:
+                          هو مجمَّدٌ مهشَّش، فالتصحيحُ عرضٌ جديدٌ لا كتابةٌ فوق القائم.
+                        </p>
                         {replying?.id === c.id ? (
                           <div className="mt-3">
                             <textarea
@@ -641,12 +657,27 @@ export default function TrainerContracts() {
                             <div className="mt-2 flex flex-wrap gap-2">
                               <Button size="sm" tone="confirm" icon={MessageSquareReply}
                                 disabled={replying.replyAr.trim().length < 5}
+                                /* ═══ والرابطُ الجديدُ لا يُهدَر ═══
+
+                                   الردُّ يسكّ رمزا جديدا، و`tokenHash` عمودٌ فريدٌ
+                                   يُكتب فوقَ القديم — **فرابطُ المدرّب القديمُ
+                                   يموت في هذه اللحظة**. والخادمُ يُعيد الجديدَ
+                                   للموظّف لعلّةٍ مكتوبةٍ في رأسه: «فقناةُ البريد
+                                   قد تتعثّر، ومن يملك الصلاحيّةَ يحتاج نسخةً
+                                   يسلّمها بيده».
+
+                                   وكان هذا الموضعُ **يُهمله** — خلافا لـ«أرسِلْه»
+                                   و«جدِّدِ الرابط» وكلاهما يعرضه. فإن تعثّر البريدُ
+                                   هنا مات رابطُ المدرّب ولا نسخةَ عند أحد، ولا شيءَ
+                                   يقول للموظّف إنّ الرابطَ تبدّل أصلا. */
                                 onClick={() => void run(async () => {
-                                  await apiPost(`/api/admin/trainer-contracts/${c.id}/amendment-reply`,
+                                  const r = await apiPost<{ signingUrl: string }>(
+                                    `/api/admin/trainer-contracts/${c.id}/amendment-reply`,
                                     { replyAr: replying.replyAr.trim() });
+                                  setLink({ id: c.id, url: r.signingUrl });
                                   setReplying(null);
                                   await load();
-                                }, "وصلَه جوابُك — وعاد العرضُ إلى التوقيع")}>
+                                }, "وصلَه جوابُك — وجُدِّد رابطُ التوقيع، والقديمُ بطل")}>
                                 أرسِلْ الردّ — يبقى العرضُ كما هو
                               </Button>
                               <Button size="sm" tone="ghost" onClick={() => setReplying(null)}>صرفُ النظر</Button>
