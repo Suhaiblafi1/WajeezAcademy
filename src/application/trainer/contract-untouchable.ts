@@ -25,8 +25,14 @@
 
 export interface ContractSignatureFacts {
   status: string
-  signedAt: Date | null
-  countersignedAt: Date | null
+  /* ═══ ولمَ `string` مع `Date` ═══
+
+     تقرؤه الخدمةُ من Prisma فيأتي `Date`، وتقرؤه الشاشةُ من JSON فيأتي نصّا.
+     والسؤالُ واحدٌ في الموضعَين: **أفيه تاريخٌ أم لا شيء؟** فلا يُنسَخ الحكمُ
+     نسختَين لأنّ نوعَ العمود يُقرأ بوجهَين — وحكمٌ مكتوبٌ مرّتين يفترق يوما،
+     فيُخفي أحدُهما زرّا يسمح به الآخر. */
+  signedAt: Date | string | null
+  countersignedAt: Date | string | null
 }
 
 /** الحالاتُ التي لا تكون إلّا بعد توقيع */

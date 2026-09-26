@@ -167,6 +167,23 @@
 .contract-doc .cd-n { color: var(--cd-muted) }
 .contract-doc .cd-ref { color: var(--cd-teal-deep); font-weight: 700; font-size: 12px; white-space: nowrap }
 
+/* ═══ المعجم — صفُّ مصطلحٍ وتعريف (٢٦ سبتمبر ٢٠٢٦) ═══
+
+   نَسَقُ الخلاصة بعينه، وبلوحٍ أهدأ: الخلاصةُ لوحٌ مميَّزٌ في الرأس يُقرأ
+   أوّلا، والمعجمُ في متن الوثيقة بين أقسامها — فلو حمل لونَها لَتنازعا
+   العينَ. فالمصطلحُ وحدَه يحمل لونَ المفتاح. */
+.contract-doc .cd-glist { margin: 0 }
+.contract-doc .cd-grow {
+  padding: 9px 0;
+  border-top: 1px solid rgba(36, 123, 132, 0.12);
+}
+.contract-doc .cd-grow:first-child { border-top: none; padding-top: 0 }
+.contract-doc .cd-term {
+  font-size: 12.5px; color: var(--cd-teal-darker); font-weight: 800;
+  margin: 0 0 3px; letter-spacing: 0.01em;
+}
+.contract-doc .cd-def { font-size: 14.5px; line-height: 1.85; margin: 0 }
+
 /* ═══ قاعدةُ الأتعاب — صفٌّ لكلّ جملة، والمبلغُ بارزٌ في موضعه ═══
 
    ولا تُنقل الأرقامُ إلى خانةٍ أولى: «وتحتسب الأتعاب على 8 مقعدا على
@@ -897,6 +914,32 @@
      أخرى في الموقع (ملفُّ المتقدّم، نتيجةُ التشخيص) بشيءٍ ممّا هنا. */
   body[data-printing="advisor-brief"] #root {
     display: none !important;
+  }
+
+  /* ─── وثيقةُ العقد: تُطبع وحدَها من شاشةٍ فيها عشراتُ الصفوف ───
+
+     بلاغُ صاحب المنصّة (٢٦ سبتمبر ٢٠٢٦): «العقد الملغى لم يظهر لي زرّ تحميل».
+     وبابُ التحميل الأوّلُ هو الطباعةُ إلى PDF — ولا تنفع حتّى تخرجَ الوثيقةُ
+     وحدَها: شاشةُ العقود تحمل مئتَي صفٍّ وشاشةَ تركيبٍ كاملة.
+
+     وعكسُ قاعدة المستشار أعلاه: تلك تُخفي `#root` لأنّ ورقتَها **أختُه**
+     (بوّابةٌ إلى `body`)، وهذه ورقتُها **داخلَه** — فيُخفى كلُّ ما ليس الورقةَ
+     ولا جدّا لها ولا فيها. و`:has()` هي التي تعرف الأجداد، وهي مستعملةٌ في
+     هذا الملفّ أصلا.
+
+     ولمَ لا تُرسَم الوثيقةُ ثانيةً في بوّابةٍ للطباعة: المطبوعُ يجب أن يكون
+     **المعروضَ نفسَه**. ووثيقةٌ تُرسم مرّتين تفترقان يوما، وأخطرُ افتراقٍ
+     افتراقُ الورقةِ عن الشاشة في ورقةٍ يُحتَجّ بها. */
+  body[data-printing="contract-body"] #root
+    *:not(:has(#contract-sheet)):not(#contract-sheet):not(#contract-sheet *) {
+    display: none !important;
+  }
+  /* والنافذةُ تقصّ متنَها على الشاشة (`max-h-[32rem] overflow-auto`) — وهو
+     صوابٌ هناك: مئةُ بندٍ لا تُدفع الصفحةَ كلَّها. وفي الورقة قصٌّ عند ثلث
+     العقد: يخرج البندُ الرابعُ آخرَ ما يُقرأ. */
+  body[data-printing="contract-body"] #contract-sheet {
+    max-height: none !important;
+    overflow: visible !important;
   }
   body[data-printing="advisor-brief"] [role="dialog"] {
     max-width: none !important;
