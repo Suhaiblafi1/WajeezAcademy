@@ -265,9 +265,29 @@ export default function TrainerContracts() {
   }, [title, picked, docs, hoursNoteAr, waivedAr, feeRate, feeReferralRate, feeMinSeats,
       orientationAt, orientationUrl]);
 
-  const run = async (fn: () => Promise<void>, ok: string) => {
-    setBusy(true); setErr(""); setNote("");
-    try { await fn(); setNote(ok); } catch (e) { setErr(permissionMessage(e, "تعذّر الإجراء")); }
+  /* ═══ وخطأُ الصفّ يُرسَم في الصفّ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «عندما أقوم بتوقيع الاتفاقية منّي كأدمن لا يتمّ
+     التوقيع ولا يتغيّر شيءٌ بالصفحة». وقد كان الخادمُ يردّ برسالةٍ مفصَّلةٍ
+     تقول لماذا — لكنّها تُرسَم في رأس الصفحة، والقائمةُ عشرةُ عقودٍ في كلّ
+     صفحة، وموضعُ الضغط قد يكون تحت الرأس بشاشتَين. فمن ضغط لم يرَ شيئا.
+
+     فمن ضغط زرّا في صفٍّ يقرأ جوابَه في ذلك الصفّ. والرأسُ يبقى لما يخصّ
+     الصفحةَ كلَّها — تعذُّرُ التحميل، وتركيبُ عقدٍ جديد. */
+  const [rowErr, setRowErr] = useState<{ id: string; text: string } | null>(null);
+
+  /* و`fn` لها أن تردّ نصَّ نجاحها: فعلٌ واحدٌ يقع أثرُه على وجهَين — يُختَم
+     عرضٌ فيُفتح حسابٌ، أو يُوثَّق بندٌ على نشطٍ فلا تُمسّ حالتُه — لا يُقال
+     عنه نصٌّ واحدٌ يصدق في إحداهما. وما لم تردّ شيئا فنصُّ `ok`. */
+  const run = async (fn: () => Promise<void | string>, ok: string, rowId?: string) => {
+    setBusy(true); setErr(""); setNote(""); setRowErr(null);
+    try {
+      const said = await fn();
+      setNote(typeof said === "string" ? said : ok);
+    } catch (e) {
+      const text = permissionMessage(e, "تعذّر الإجراء");
+      if (rowId) setRowErr({ id: rowId, text }); else setErr(text);
+    }
     finally { setBusy(false); }
   };
 
@@ -708,8 +728,15 @@ export default function TrainerContracts() {
                           وقّع باسم <b>{c.signerLegalName ?? "—"}</b>
                           {c.signedAt ? ` بتاريخ ${fmtDateTime(c.signedAt)}` : ""}. طابِقِ الاسمَ
                           بوثيقة هويّته قبل الاعتماد — فبالاعتماد ينفذ العقدُ
-                          {c.gatesActivation ? " ويُفتح حسابُه" : ", ولا تُمسّ حالتُه فهو نشطٌ أصلا"}.
+                          {c.gatesActivation
+                            ? " ويصير مدرّبا نشطا، وتُفتح بوّابتُه، ويصله العقدُ مختوما منّا"
+                            : ", ولا تُمسّ حالتُه فهو نشطٌ أصلا"}.
                         </p>
+                        {rowErr?.id === c.id && (
+                          <Panel tone="danger" className="mt-2 p-3 text-read" role="alert">
+                            {rowErr.text}
+                          </Panel>
+                        )}
                         {c.documents.length > 0 ? (
                           <div className="mt-2 flex flex-wrap gap-2">
                             {c.documents.map((d) => (
@@ -782,7 +809,7 @@ export default function TrainerContracts() {
                                             { notesAr: sendBack.notesAr.trim() });
                                           setSendBack(null);
                                           await load();
-                                        }, "أُعيدت موادُّه بملاحظاتك — واستأنفت مهلتُه")}>
+                                        }, "أُعيدت موادُّه بملاحظاتك — واستأنفت مهلتُه", c.id)}>
                                         أعِدْها وأبلِغْه
                                       </Button>
                                       <Button tone="ghost" onClick={() => setSendBack(null)}>تراجعْ</Button>
@@ -816,21 +843,28 @@ export default function TrainerContracts() {
                             />
                             <div className="flex flex-wrap gap-2">
                               <Button tone="confirm" icon={BadgeCheck} loading={busy}
-                                /* ولا يُفتح الحسابُ من هنا منذ ٢٠ سبتمبر ٢٠٢٦: القبولُ الكاملُ
-                                   قرارٌ تالٍ في ملفّ المدرّب. فتُقال الخطوةُ الباقيةُ بدل أن
-                                   يُنتظَر فتحُ حسابٍ لا يأتي من هذه الشاشة. */
+                                /* ═══ والحسابُ يُفتح من هنا (٢٦ سبتمبر ٢٠٢٦) ═══
+
+                                   قرارُ صاحب المنصّة، ناسخا قرارَ ٢٠ سبتمبر: العرضُ
+                                   المشروطُ يُختَم بهذا الزرّ ويصير صاحبُه نشطا في
+                                   اللحظة نفسِها. وعلّةُ النسخ في `countersignContract`.
+
+                                   وما ينقص من تجهيزه يردّه الخادمُ برسالةٍ تعدّده —
+                                   وتُرسَم في هذا الصفّ لا في رأس الصفحة (`rowErr`). */
                                 onClick={() => void run(async () => {
-                                  const r = await apiPost<{ readiness?: Readiness }>(
+                                  const r = await apiPost<{ readiness?: Readiness; activated?: boolean }>(
                                     `/api/admin/trainer-contracts/${c.id}/countersign`,
                                     { noteAr: signOff.noteAr.trim() || null });
                                   setSignOff(null);
                                   await load();
                                   const left = r.readiness?.blockersAr ?? [];
-                                  setErr(left.length === 0
-                                    ? ""
-                                    : `نفَذ العقدُ. وبقي قبل اعتماده مدرّبا: ${left.join(" · ")}`);
-                                }, "اعتُمد العقدُ ونفَذ — والقبولُ الكاملُ من ملفّ المدرّب")}>
-                                اعتمِدِ التوقيع
+                                  return r.activated
+                                    ? "خُتم العقدُ وصار مدرّبا نشطا — فُتحت بوّابتُه ووصله العقدُ مختوما"
+                                    : left.length === 0
+                                      ? "اعتُمد العقدُ ونفَذ — ولم تُمسّ حالتُه، فهو نشطٌ أصلا"
+                                      : `نفَذ العقدُ. وبقي قبل اعتماده مدرّبا: ${left.join(" · ")}`;
+                                }, "اعتُمد العقدُ ونفَذ", c.id)}>
+                                {c.gatesActivation ? "اعتمِدْ وفعِّلْ" : "اعتمِدِ التوقيع"}
                               </Button>
                               <Button tone="ghost" onClick={() => setSignOff(null)}>تراجعْ</Button>
                             </div>
@@ -839,7 +873,7 @@ export default function TrainerContracts() {
                           <div className="mt-3 flex flex-wrap gap-2">
                             <Button tone="confirm" icon={BadgeCheck}
                               onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
-                              طابقتُ الاسمَ — اعتمِدْ
+                              {c.gatesActivation ? "طابقتُ الاسمَ — اعتمِدْ وفعِّلْ" : "طابقتُ الاسمَ — اعتمِدْ"}
                             </Button>
                             {/* ورفضُ التوقيع يُغلق العقدَ ولا يمحو دليلَه: من وقّع
                                 باسمٍ غيرِ اسمه وقّع وثيقةً تسمّي طرفا آخر، ولا
@@ -850,7 +884,7 @@ export default function TrainerContracts() {
                                 if (!reasonAr) return;
                                 await apiPost(`/api/admin/trainer-contracts/${c.id}/reject-signature`, { reasonAr });
                                 await load();
-                              }, "رُفض التوقيعُ ووصل صاحبَه")}>
+                              }, "رُفض التوقيعُ ووصل صاحبَه", c.id)}>
                               لم يطابق — ارفضْ
                             </Button>
                           </div>

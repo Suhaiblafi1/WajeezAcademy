@@ -67,7 +67,7 @@ export default function ContractSign() {
   const { token = '' } = useParams()
   const [view, setView] = useState<View | null>(null)
   const [err, setErr] = useState('')
-  const [fatal, setFatal] = useState('')
+  const [fatal, setFatal] = useState<{ code: string; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
   const [readToEnd, setReadToEnd] = useState(false)
@@ -90,7 +90,18 @@ export default function ContractSign() {
     try {
       setView(await apiGet<View>(`/api/c/${encodeURIComponent(token)}`))
     } catch (e) {
-      setFatal(e instanceof ApiError ? e.message : 'تعذّر فتحُ العقد')
+      /* ═══ والرابطُ المنتهي ليس عطبا (٢٦ سبتمبر ٢٠٢٦) ═══
+
+         الرمزُ يموت بالتوقيع وبالاعتذار وبالإلغاء — قصدا، فبابٌ حيٌّ على
+         وثيقةٍ تحمل اسمَ إنسانٍ وأتعابَه يبقى مفتوحا لمن وصله الرابطُ يوما.
+         ومن فتحه بعد ذلك كان يُقرأ عليه لوحٌ أحمرُ: «تعذّر فتحُ العقد».
+
+         وهو يقول لمن وقّع أمسِ إنّ شيئا خرب، لا إنّ بابا أُغلق بعد أن أدّى
+         عملَه. فيُفرَّق بينهما: المنتهي لوحُ تنبيهٍ يقول ما جرى وأين نسختُه،
+         وما عداه يبقى أحمر. */
+      setFatal(e instanceof ApiError
+        ? { code: e.code, text: e.message }
+        : { code: 'unknown', text: 'تعذّر فتحُ العقد' })
     }
   }, [token])
 
@@ -124,14 +135,35 @@ export default function ContractSign() {
   const doc = useMemo(() => (bodyAr ? parseContractDoc(bodyAr) : null), [bodyAr])
 
   if (fatal) {
+    const spent = fatal.code === 'invalid_token'
     return (
       <Shell>
-        <Panel tone="danger" className="p-5">
-          <h1 className="mb-2 text-xl font-black">تعذّر فتحُ العقد</h1>
-          <p>{fatal}</p>
-          <p className="mt-2 text-sm opacity-80">
-            إن كان الرابطُ قديما فاطلب من فريق الأكاديمية إعادةَ إرساله.
-          </p>
+        <Panel tone={spent ? 'warn' : 'danger'} className="p-5">
+          <h1 className="mb-2 text-xl font-black">
+            {spent ? 'انتهى هذا الرابط' : 'تعذّر فتحُ العقد'}
+          </h1>
+          {spent
+            ? (
+              <>
+                <p>
+                  رابطُ التوقيع يُفتح مرّةً واحدة، ثمّ يُغلَق — حمايةً لوثيقةٍ
+                  تحمل اسمَك وأتعابَك.
+                </p>
+                <p className="mt-2">
+                  فإن كنتَ قد وقّعتَ فتوقيعُك مسجَّلٌ عندنا ووصلتك نسختُك بالبريد،
+                  ولا يلزمك شيءٌ الآن. وإن لم توقّع بعدُ فاطلب من فريق الأكاديميّة
+                  رابطا جديدا ويصلك على بريدك.
+                </p>
+              </>
+            )
+            : (
+              <>
+                <p>{fatal.text}</p>
+                <p className="mt-2 text-sm opacity-80">
+                  إن كان الرابطُ قديما فاطلب من فريق الأكاديمية إعادةَ إرساله.
+                </p>
+              </>
+            )}
         </Panel>
       </Shell>
     )
@@ -197,14 +229,31 @@ export default function ContractSign() {
     } finally { setBusy(false) }
   }
 
+  /* ═══ وما أغلق البابَ خلفه لا يطرقه ثانيةً (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «بعد أن يوقّع المدرّب العقد تظهر له صفحة "تعذّر فتحُ
+     العقد" بالرغم أنّه يظهر لنا أنّه قام بالتوقيع».
+
+     وعلّتُه أنّ هذَين الفعلَين يميتان الرمزَ في الخادم — التوقيعُ والاعتذارُ
+     كلاهما يكتب `tokenHash: null` — ثمّ كانت الشاشةُ تستدعي `load()` بالرمز
+     الميّت، فيُردّ ٤٠٤ فيُرسَم لوحٌ أحمرُ فوق فعلٍ **نجح**. فيظنّ الموقِّعُ
+     أنّ توقيعَه ضاع، ويوقّع ثانيةً أو يراسلنا.
+
+     والجوابُ أنّ جوابَ الفعل هو الحقيقة: الخادمُ ردّ «تمّ» ومعه تاريخُه،
+     فتُبنى منه الحالُ ولا يُسأل بابٌ أغلقناه نحن. وطلبُ التعديل ليس منهما —
+     رمزُه يبقى حيّا لأنّ العقدَ ينتظر جوابَنا — فيبقى على `load()` وتُقرأ
+     حالُه من الخادم. */
   const sign = async () => {
     setBusy(true); setErr('')
     try {
-      await apiPost(`/api/c/${encodeURIComponent(token)}/sign`, {
+      const r = await apiPost<{ signedAt: string }>(`/api/c/${encodeURIComponent(token)}/sign`, {
         legalName: legalName.trim(), addressAr: addressAr.trim(), phone: phone.trim(),
         bodyHash: v.bodyHash, acks: [...acked],
       })
-      await load()
+      setView({
+        state: 'signed', title: v.title,
+        signedAt: r.signedAt, signerLegalName: legalName.trim(),
+      })
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ التوقيع')
     } finally { setBusy(false) }
@@ -223,8 +272,10 @@ export default function ContractSign() {
   const decline = async () => {
     setBusy(true); setErr('')
     try {
-      await apiPost(`/api/c/${encodeURIComponent(token)}/decline`, { reasonAr: declineReason.trim() })
-      await load()
+      const r = await apiPost<{ declinedAt: string }>(
+        `/api/c/${encodeURIComponent(token)}/decline`, { reasonAr: declineReason.trim() },
+      )
+      setView({ state: 'declined', title: v.title, declinedAt: r.declinedAt })
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ الاعتذار')
     } finally { setBusy(false) }
