@@ -80,6 +80,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
         familyCode: d.pathwayId ? undefined : d.familyCode || undefined,
         titleAr: d.titleAr.trim(), shortPromiseAr: d.shortPromiseAr.trim() || undefined,
         levelAr: d.levelAr.trim() || undefined, totalHours: Number(d.totalHours),
+        recordedHours: d.recordedHours.trim() === '' ? undefined : Number(d.recordedHours),
         skillIds: d.skillIds,
         modules: d.modules.map((m, i) => ({
           sequence: i + 1, titleAr: m.titleAr.trim(),
@@ -159,6 +160,15 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
           )}
           <input value={d.titleAr} onChange={(e) => setD({ ...d, titleAr: e.target.value })} placeholder="اسم الدورة" className={`${inputCls} sm:col-span-2`} />
           <input value={d.totalHours} onChange={(e) => setD({ ...d, totalHours: e.target.value })} type="number" min={1} placeholder="إجمالي الساعات" className={inputCls} />
+          {/* ═══ وكم منها مسجَّلةٌ لا مباشرة (٢٦ سبتمبر ٢٠٢٦) ═══
+
+              يُطبَع في الملحق (أ) من عقد المدرّب: «٢٠ ساعة (١٦ مباشرة + ٤
+              مسجَّلة)». والتزامُه فيهما مختلفُ الجنس — المباشرةُ حضورٌ في وقتٍ
+              مضروب، والمسجَّلةُ مادّةٌ تُعَدّ مرّةً وتُعاد.
+
+              وفراغُه يعني «كلُّها مباشرة»، فلا يُكتب صفرٌ في وثيقة. */}
+          <input value={d.recordedHours} onChange={(e) => setD({ ...d, recordedHours: e.target.value })}
+            type="number" min={0} placeholder="منها مسجَّلة (اختياري)" className={inputCls} />
           <input value={d.shortPromiseAr} onChange={(e) => setD({ ...d, shortPromiseAr: e.target.value })} placeholder="الوعد المختصر (اختياري)" className={`${inputCls} sm:col-span-2`} />
           <input value={d.levelAr} onChange={(e) => setD({ ...d, levelAr: e.target.value })} placeholder="المستوى (اختياري)" className={inputCls} />
 

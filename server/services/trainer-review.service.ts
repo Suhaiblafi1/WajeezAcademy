@@ -1686,11 +1686,35 @@ export class TrainerReviewService {
 
   /** عنوانُ الدورة بالعربية — أو معرِّفُها إن لم يكن لها إصدار */
   private async courseTitleAr(courseId: string): Promise<string> {
+    return (await this.courseFacts(courseId)).titleAr
+  }
+
+  /** عنوانُ الدورة وساعاتُها من أحدث نسخةٍ في الكتالوج.
+   *
+   *  ═══ وتُقرأ عند التركيب لا عند العرض (٢٦ سبتمبر ٢٠٢٦) ═══
+   *
+   *  الرقمُ يُنسَخ في `qualifiedSnapshot` مع العقد كما يُنسَخ العنوان. ولو
+   *  قُرئ من الكتالوج كلَّما عُرض العقدُ لَتبدّل ما في وثيقةٍ موقَّعةٍ بتعديلٍ
+   *  في دورة — وهو نقضُ القاعدة التي بُني عليها المتنُ كلُّه: المعروضُ هو
+   *  الموقَّع. */
+  private async courseFacts(courseId: string): Promise<{
+    titleAr: string; totalHours: number | null; recordedHours: number | null
+  }> {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } },
+      select: {
+        versions: {
+          orderBy: { version: 'desc' }, take: 1,
+          select: { titleAr: true, totalHours: true, recordedHours: true },
+        },
+      },
     })
-    return course?.versions[0]?.titleAr ?? courseId
+    const v = course?.versions[0]
+    return {
+      titleAr: v?.titleAr ?? courseId,
+      totalHours: v?.totalHours ?? null,
+      recordedHours: v?.recordedHours ?? null,
+    }
   }
 
   /* ═══════════ تعيينُ مدرّبٍ داخليّا — نقرةٌ واحدة ═══════════
@@ -2001,7 +2025,7 @@ export class TrainerReviewService {
     })
     const courses = await Promise.all(
       quals.map(async (q) => ({
-        courseId: q.courseId, titleAr: await this.courseTitleAr(q.courseId),
+        courseId: q.courseId, ...(await this.courseFacts(q.courseId)),
         /* تُعرَض للموظّف كي يرى ما اختاره ممّا اعتُمد — ولا تُطبَع في المتن */
         mark: q.status,
       })),
