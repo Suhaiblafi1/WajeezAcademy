@@ -20,11 +20,14 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, RefreshCw, Send, Trash2, X } from "lucide-react";
+import { BadgeCheck, Ban, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, RefreshCw, Send, Trash2, Undo2, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+/* وطورُ الشرط من موضعه الواحد لا مشتقًّا هنا — ورأسُ `conditional-offer.ts`
+   يقول إنّ هذه التسمياتَ لـ«صفّ الطابور» كذلك، ولم تكن تصله. */
+import { conditionPhase, CONDITION_PHASE_LABELS_AR } from "@/application/trainer/conditional-offer";
 import type { Readiness } from "@/application/trainer/readiness";
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS, type RequiredDocument,
@@ -66,10 +69,23 @@ interface ContractRow {
   academySignatoryTitle: string | null; countersignNoteAr: string | null;
   amendmentRequestAr: string | null; amendmentRequestedAt: string | null;
   amendmentReplyAr: string | null; amendmentRepliedAt: string | null;
+  conditionDeadlineAt: string | null; conditionPausedAt: string | null;
+  conditionExtendedAt: string | null; conditionMetAt: string | null;
+  orientationAt: string | null;
   documents: { id: string; kind: string; originalName: string; mime: string; uploadedAt: string }[];
   qualifiedSnapshot: { courseId: string; titleAr: string }[] | null;
   profile: { id: string; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
 }
+
+/** وقائعُ الشرط كما يقرؤها `conditional-offer.ts` — تُشتقّ من الصفّ مرّةً
+    واحدةً، فلا يُعاد تركيبُ الكائن في كلّ موضعٍ يُسأل فيه عن الطور. */
+const conditionFactsOf = (c: ContractRow) => ({
+  orientationAt: c.orientationAt,
+  conditionDeadlineAt: c.conditionDeadlineAt,
+  conditionPausedAt: c.conditionPausedAt,
+  conditionExtendedAt: c.conditionExtendedAt,
+  conditionMetAt: c.conditionMetAt,
+});
 
 interface Prefill {
   applicationId: string; reference: string; fullName: string; email: string;
@@ -136,6 +152,9 @@ export default function TrainerContracts() {
      تفويضِه الخطّيِّ إن لم يكن هو المفوَّضَ في السجلّ. فحقلٌ إلى جانب الزرّ
      لا `window.prompt`: نصٌّ يُقرأ بعد سنةٍ لا يُكتب في صندوقٍ بسطر. */
   const [signOff, setSignOff] = useState<{ id: string; noteAr: string } | null>(null);
+  /* ونافذةُ «أعِدْها بملاحظات» مستقلّةٌ عن نافذة الاعتماد: قرارانِ متضادّان،
+     وحقلٌ واحدٌ لهما يجعل ملاحظةَ الإعادة تُرسَل في خانة مطابقةِ الهويّة. */
+  const [sendBack, setSendBack] = useState<{ id: string; notesAr: string } | null>(null);
   /* والحذفُ لا رجعةَ فيه، فلا يقع بنقرةٍ واحدة — ولا بـ`window.confirm`
      الذي يملك المتصفّحُ كتمَه فيردّ `false` صامتا (رأسُ `ConfirmAction`). */
   const [deleting, setDeleting] = useState<ContractRow | null>(null);
@@ -676,6 +695,85 @@ export default function TrainerContracts() {
                         ) : (
                           <p className="mt-2 text-read opacity-70">لا وثيقةَ مرفوعةٌ مع هذا العقد.</p>
                         )}
+
+                        {/* ═══ والقرارُ الثالث: «أعِدِ الموادَّ بملاحظات» ═══
+
+                            كان للموظّف على العرض الموقَّع جوابانِ يبلغهما:
+                            **اعتمِدْ**، أو **ارفضِ التوقيع**. والثاني عن
+                            مطابقة الهويّة لا عن الموادّ — فمن رأى موادَّ
+                            ناقصةً لم يجد ما يقوله.
+
+                            و`returnMaterialsWithNotes` مبنيّةٌ منذ بُني الطورُ
+                            المشروط، ولها مسارٌ محروس: تستأنف المهلةَ مضافا
+                            إليها **مدّةُ التجميد بالضبط**، وتُرسل ملاحظاتَه
+                            إليه نصّا، وتكتب فعلَها في الأثر. ولا شاشةَ كانت
+                            تنادِيها.
+
+                            والعاملان يتخطّيان المجمَّد، فلا تذكيرَ ولا وسمَ
+                            تأخّر. فمن جمّد موادَّه بقي معلَّقا أبدا — ولا
+                            مخرجَ إلّا اعتمادُ ما لم يُعتمَد، أو إلغاءُ عقدٍ
+                            وقّعه. وهذا هو المخرجُ الثالثُ الصحيح. */}
+                        {c.gatesActivation
+                          && conditionPhase(conditionFactsOf(c)) !== "none"
+                          && conditionPhase(conditionFactsOf(c)) !== "met" ? (
+                          <Inset className="mt-3 px-4 py-3">
+                            <p className="text-read font-black text-foreground">
+                              {CONDITION_PHASE_LABELS_AR[conditionPhase(conditionFactsOf(c))]}
+                            </p>
+                            {c.conditionPausedAt ? (
+                              <>
+                                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                                  أعلن اكتمالَ موادّه في {fmtDateTime(c.conditionPausedAt)}، ومهلتُه
+                                  مجمّدةٌ حتّى يصله جوابُك. وبالإعادةِ تُستأنف مضافا إليها مدّةُ
+                                  التجميد بالضبط — فوقتُ مراجعتك لا يُحسب عليه.
+                                </p>
+                                {sendBack?.id === c.id ? (
+                                  <div className="mt-3 grid gap-2">
+                                    {/* ولا نصٌّ مقترَحٌ يُملأ سلفا: هذا السطرُ يصل المدرّبَ
+                                        بحرفه، وعبارةٌ عامّةٌ تُرسَل كما هي توقف حلقةَ
+                                        «يعدّل ويقدّم ثانيةً» عند أوّل دورة. فيُعرَض شكلُ
+                                        الملاحظة النافعة مثالا لا قيمة. */}
+                                    <textarea
+                                      className={areaCls} rows={3} maxLength={4000}
+                                      placeholder="ما ينقص بعينه — مثال: «ينقص محورُ التقويم في الوحدة الثالثة، ومدّةُ الجلسة الثانية غيرُ مبيّنة»"
+                                      value={sendBack.notesAr}
+                                      onChange={(e) => setSendBack({ id: c.id, notesAr: e.target.value })}
+                                    />
+                                    <p className="text-read text-muted-foreground">
+                                      يصله هذا النصُّ بحرفه — فاكتبْه له لا لنا.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button tone="confirm" icon={Undo2} loading={busy}
+                                        disabled={sendBack.notesAr.trim().length < 5}
+                                        onClick={() => void run(async () => {
+                                          await apiPost(
+                                            `/api/admin/trainer-contracts/${c.id}/return-materials`,
+                                            { notesAr: sendBack.notesAr.trim() });
+                                          setSendBack(null);
+                                          await load();
+                                        }, "أُعيدت موادُّه بملاحظاتك — واستأنفت مهلتُه")}>
+                                        أعِدْها وأبلِغْه
+                                      </Button>
+                                      <Button tone="ghost" onClick={() => setSendBack(null)}>تراجعْ</Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Button className="mt-3" icon={Undo2}
+                                    onClick={() => setSendBack({ id: c.id, notesAr: "" })}>
+                                    أعِدِ الموادَّ بملاحظات
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              /* ولا زرَّ يُعرَض معطَّلا بلا سبب: الموادُّ ليست عندك بعد،
+                                 فيُقال ذلك بدل زرٍّ يُنقَر فيُردّ من الخادم. */
+                              <p className="mt-1 text-read leading-6 text-muted-foreground">
+                                ولم يُعلن اكتمالَ موادّه بعد، فلا شيءَ يُعاد إليه اليوم. وحين
+                                يُعلنه تتجمّد مهلتُه ويظهر هنا زرُّ الإعادة بملاحظاتك.
+                              </p>
+                            )}
+                          </Inset>
+                        ) : null}
 
                         {signOff?.id === c.id ? (
                           <div className="mt-3 grid gap-2">
