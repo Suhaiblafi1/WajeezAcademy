@@ -495,6 +495,21 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
      طلبَه صاحبُ المنصّة (٢٤ سبتمبر): قائمةُ العقود تمتلئ بما لا يفيد.
      والحدُّ في الخدمة لا هنا: المسارُ يسأل، والخدمةُ تحكم وتكتب الأثر. */
+  /* إعادةُ تركيب العقد مصحَّحا باسم الطرف الثاني — ينشأ بديلٌ ويُرسَل.
+     وصلاحيّتُه صلاحيّةُ إدارة العقد: هو تركيبٌ وإلغاءٌ وإرسالٌ في نقرة،
+     وثلاثتُها خلفها. ولا يمسّ قرارَ المدرّبين، فلا `decide` معه. */
+  app.post('/api/admin/trainer-contracts/:contractId/name-reissue', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'إعادةُ العقد مصحَّحا باسم الطرف الثاني كما في وثيقة هويّته' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    /* وبلا اسمٍ يُقرأ ما قاله المدرّبُ في طلبه — فالنقرةُ الواحدةُ تكفي */
+    const { legalNameAr } = z.object({
+      legalNameAr: z.string().trim().min(4).max(120).nullish(),
+    }).parse(req.body ?? {})
+    return review.reissueWithCorrectedName(contractId, req.auth!.userId, { legalNameAr })
+  })
+
   app.delete('/api/admin/trainer-contracts/:contractId', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'حذفُ عقدٍ لم يمسّه توقيع' },

@@ -137,6 +137,7 @@ const STAFF: Table = {
   'trainer.contract.materials_returned': { path: '/trainer', ctaAr: 'اقرأ الملاحظاتِ وعدّلْ' },
   'trainer.contract.condition_extended': { path: '/trainer', ctaAr: 'افتح بوّابتك' },
   'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديلَه' },
+  'trainer.contract.name_correction_requested': { path: '/admin/trainer-contracts', ctaAr: 'طابِقْ هويّتَه وأعِدْه مصحَّحا' },
   /* والمحذوفُ لا صفَّ له يُفتح — فالوجهةُ القائمةُ نفسُها */
   'trainer.contract.deleted': { path: '/admin/trainer-contracts', ctaAr: 'افتح العقود' },
   /* والعروضُ في شاشة العقود نفسِها: العرضُ فرعٌ عن عقدٍ نافذ، ومن يتابع

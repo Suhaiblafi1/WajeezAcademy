@@ -58,7 +58,7 @@ import {
   CONTRACT_BODY_VERSION, bodyCarriesConditionClause, contractHasBodyAr,
   CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
   renderContractBodyAr,
-  type ContractBodyInput, type ContractCompensation, type ContractCourseRow,
+  type ContractBodyInput, type ContractCompensation, type ContractCourseRow, readContractCourses,
 } from '../../src/application/trainer/contract-body'
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS,
@@ -72,6 +72,9 @@ import {
     يُكتب من شاشة التعاقد. فمن يركّب العقدَ يرى الرقمَ ولا يملك تغييرَه. */
 export interface ContractComposeInput {
   title: string
+  /** اسمُ الطرف الثاني كما في وثيقة هويّته — يُطبَع في الديباجة ويُحفَظ في
+      الملفّ فيَرِثه كلُّ عقدٍ بعده. وبلا قيمةٍ يبقى ما في الملفّ أو الطلب. */
+  trainerLegalNameAr?: string | null
   /** الدوراتُ المختارةُ من مؤهّلاته — وبلا قيمةٍ تُدرَج كلُّها */
   courseIds?: string[]
   requiredDocuments: RequiredDocument[]
@@ -1788,6 +1791,9 @@ export class TrainerReviewService {
              ما طُلِب — فيرى الموظّفُ «amendment_requested» ولا يدري ما المطلوب. */
           amendmentRequestAr: true, amendmentRequestedAt: true,
           amendmentReplyAr: true, amendmentRepliedAt: true,
+          /* وبه تعرف الشاشةُ أنّ هذا الوقوفَ تصحيحُ اسمٍ لا اعتراضٌ على بند
+             — فتعرض نقرةَ الإعادة بدل صندوق الجواب. */
+          nameCorrectionAr: true, nameCorrectionAt: true,
           documents: { select: { id: true, kind: true, originalName: true, mime: true, uploadedAt: true }, orderBy: { uploadedAt: 'asc' } },
           profile: {
             select: {
@@ -1897,6 +1903,18 @@ export class TrainerReviewService {
       profileId: app.profile.id,
       reference: app.reference,
       fullName: app.fullName,
+      /* ═══ واسمُ الطرف الثاني يُقرأ من الملفّ لا من الطلب (٢٦ سبتمبر ٢٠٢٦) ═══
+
+         `app.fullName` ما كتبه في نموذجه أو أُخذ من حسابه — ثنائيٌّ غالبا،
+         وقد لا يطابق وثيقةَ هويّته. وكان يُطبَع طرفا ثانيا في الديباجة، ثمّ
+         يوقّع المدرّبُ باسمه القانونيّ في خانة التوقيع — فتخرج وثيقةٌ
+         **تسمّي طرفا ويوقّعها آخر**، وهو ما بلّغ به صاحبُ المنصّة.
+
+         فـ`profile.legalNameAr` هو المصدرُ حين يكون، ويكتبه الموظّفُ مطابقا
+         للوثيقة أو يكتبه المدرّبُ بنفسه قبل أن يوقّع. و`legalNameSource`
+         تقول للشاشة أيُّهما تقرأ، فتُنبّه حين يكون الاسمُ من الحساب بعدُ. */
+      legalNameAr: app.profile.legalNameAr ?? app.fullName,
+      legalNameSource: app.profile.legalNameAr ? ('verified' as const) : ('account' as const),
       email: app.email,
       applicationStatus: app.status,
       /* يُحسب هنا أيضا كي تقوله الشاشةُ للموظّف قبل أن ينقر — فأثرُ الإرسال
@@ -1983,7 +2001,10 @@ export class TrainerReviewService {
     const pre = await this.contractPrefill(applicationId)
     const chosen = this.chosenCourses(pre.courses, input.courseIds)
     return renderContractBodyAr(this.contractBodyInput({
-      fullName: pre.fullName, email: pre.email, reference: pre.reference,
+      /* والمعاينةُ تُري ما سيُطبَع: الاسمُ المكتوبُ الآن في الشاشة إن كُتب،
+         وإلّا المعتمَدُ في الملفّ — فلا يُفاجأ الموظّفُ باسمٍ غيرِ الذي رأى. */
+      fullName: input.trainerLegalNameAr?.trim() || pre.legalNameAr,
+      email: pre.email, reference: pre.reference,
       courses: chosen,
       gatesActivation: pre.gatesActivation,
       orientationAt: input.orientationAt ? new Date(input.orientationAt) : null,
@@ -2246,9 +2267,16 @@ export class TrainerReviewService {
     }
     const conditionDeadlineAt = pre.gatesActivation ? deadlineFrom(orientationAt) : null
 
+    /* ═══ واسمُ الطرف الثاني يُثبَّت قبل أن يُجمَّد المتن ═══
+
+       فما دخل `bodyAr` دخل البصمةَ ولا يُحرَّر بعدها. وتصحيحُه بعد الإرسال
+       عقدٌ بديلٌ لا تعديلُ حقل — وهذا هو الموضعُ الوحيدُ الذي يُكتب فيه
+       بلا ثمن. */
+    const legalNameAr = input.trainerLegalNameAr?.trim() || pre.legalNameAr
+
     const issuedOn = new Date()
     const bodyAr = renderContractBodyAr(this.contractBodyInput({
-      fullName: pre.fullName, email: pre.email, reference: pre.reference,
+      fullName: legalNameAr, email: pre.email, reference: pre.reference,
       courses: chosen,
       gatesActivation: pre.gatesActivation,
       orientationAt,
@@ -2278,6 +2306,20 @@ export class TrainerReviewService {
            («من أيّ قاعدةٍ نُقلت هذه الأرقام؟»)، وقاعدةٌ بلا أثرٍ تصل إليها
            تجعل السؤالَ بلا جواب بعد شهور. */
         ruleId = rule.id
+      }
+      /* ═══ ويُحفَظ في الملفّ لا في هذا العقد وحدَه ═══
+
+         فالاسمُ صفةُ الإنسان لا صفةُ الورقة: من صُحّح اسمُه مرّةً لا يُسأل
+         عنه في كلّ عقدٍ بعده، ولا يعود الخطأُ من الباب نفسِه. */
+      if (legalNameAr && legalNameAr !== pre.legalNameAr) {
+        await tx.trainerProfile.update({
+          where: { id: pre.profileId }, data: { legalNameAr },
+        })
+        await recordAudit(tx, {
+          actorId, action: 'trainer.legal_name.set',
+          entityType: 'trainer_profile', entityId: pre.profileId,
+          meta: { legalNameAr, wasAr: pre.legalNameAr, source: 'compose' },
+        })
       }
       const contract = await tx.trainerContract.create({
         data: {
@@ -2383,8 +2425,18 @@ export class TrainerReviewService {
       requiredDocuments: unknown
     }
     to: string; fullName: string; reference: string; url: string; expiresAt: Date; resend: boolean
+    /** سطرٌ يُقدَّم على كلّ شيءٍ حين يكون لهذا الإرسالِ بعينه سببٌ يخصّه —
+        كأنّ يكون بديلا صُحّح فيه اسمُ الطرف الثاني. وبلا قيمةٍ لا يُرسَم. */
+    noticeAr?: string | null
   }) {
     const { contract } = args
+    /* ═══ والسببُ يُقدَّم على المتن ═══
+
+       من طلب تصحيحَ اسمه ثمّ وصلته رسالةُ «هذا عقدُك للقراءة والتوقيع»
+       بحرفها لا يعرف أهذا جوابُ طلبه أم إرسالٌ ثانٍ بالخطأ — فيقرأ الوثيقةَ
+       كلَّها باحثا عمّا تغيّر، أو يتركها. */
+    const notice = args.noticeAr?.trim()
+    const lead = notice ? ([{ kind: 'callout' as const, text: notice }] as const) : ([] as const)
 
     /* والتجديدُ رسالتُه: من ضاع منه الرابطُ لا يُعاد عليه شرحُ الطور كلِّه،
        وإنّما يُعطى بابا جديدا. */
@@ -2396,6 +2448,7 @@ export class TrainerReviewService {
           greetingName: args.fullName,
           heading: contract.gatesActivation ? 'هذا رابطٌ جديدٌ لتوقيع عرضك' : 'هذا رابطٌ جديدٌ لتوقيع عقدك',
           blocks: [
+            ...lead,
             { kind: 'p', text: 'اقرأ الوثيقة كاملة قبل التوقيع — وما فيها لم يتغيّر، الرابطُ وحدَه هو الجديد.' },
             { kind: 'cta', label: 'اقرأ ووقّع', href: args.url },
             { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
@@ -2410,6 +2463,7 @@ export class TrainerReviewService {
         fullName: args.fullName,
         reference: args.reference,
         url: args.url,
+        noticeAr: notice ?? null,
         expiresAt: args.expiresAt,
         orientationOnAr: contract.orientationAt
           ? fmtDateWith(contract.orientationAt, {
@@ -2436,6 +2490,7 @@ export class TrainerReviewService {
         greetingName: args.fullName,
         heading: 'هذا عقدُك للقراءة والتوقيع',
         blocks: [
+          ...lead,
           { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
           { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
           { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
@@ -2447,7 +2502,7 @@ export class TrainerReviewService {
   }
 
   /** الإرسالُ — معاملةٌ واحدةٌ، والبريدُ بعدها */
-  async sendContract(contractId: string, actorId: string) {
+  async sendContract(contractId: string, actorId: string, noticeAr?: string | null) {
     const contract = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
       include: { profile: { include: { application: true } } },
@@ -2512,7 +2567,7 @@ export class TrainerReviewService {
        الصلاحيّةَ يحتاج نسخةً يسلّمها بيده. */
     const mail = await this.mailContract({
       contract, to: app.email, fullName: app.fullName, reference: app.reference,
-      url: this.signingUrl(token), expiresAt, resend: false,
+      url: this.signingUrl(token), expiresAt, resend: false, noticeAr,
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
   }
@@ -2853,7 +2908,10 @@ export class TrainerReviewService {
       state: 'open' as const,
       contractId: c.id,
       title: c.title,
-      trainerName: c.profile.application.fullName,
+      /* والمعروضُ في رأس الصفحة هو **المطبوعُ في الديباجة** لا اسمُ الحساب:
+         رأسٌ يقول اسما والوثيقةُ تحته تقول آخرَ يجعل القارئَ يظنّ الفرقَ
+         خطأً في الرأس فيمضي — وهو الفرقُ الذي وُضع زرُّ التصحيح له. */
+      trainerName: c.profile.legalNameAr ?? c.profile.application.fullName,
       trainerEmail: c.signerEmail ?? c.profile.application.email,
       bodyAr: c.bodyAr,
       bodyVersion: c.bodyVersion,
@@ -3356,6 +3414,240 @@ export class TrainerReviewService {
     return { ok: true as const, countersignedAt, readiness, activated: false as const }
   }
 
+  /* ═══════════ اسمُ الطرف الثاني — تصحيحُه قبل التوقيع وبعده ═══════════
+
+     بلاغُ صاحب المنصّة (٢٦ سبتمبر ٢٠٢٦): «الطرف الثاني كاسم يجب أن يكون
+     مطابقا للهويّة أو أعطِه الحقَّ بكتابته بنفسه، لأنّ الاسم الموجود هنا هو
+     ما أُخذ من حسابه وغالبا ليس اسما ثلاثيّا ولا يشبه جواز السفر أو الهويّة».
+
+     وهو أخطرُ ما في هذا المسار: وثيقةٌ تسمّي طرفا في ديباجتها ويوقّعها إنسانٌ
+     باسمٍ آخرَ في خانة التوقيع ليست وثيقةً تامّة، ومن ينازع فيها بعد سنةٍ
+     يجد الثغرةَ مكتوبةً في متنها.
+
+     والبابان اثنان، ولا يغني أحدُهما عن الآخر:
+
+     ① **قبل التجميد** — الموظّفُ يكتب الاسمَ مطابقا للوثيقة في شاشة التركيب،
+        ويُحفَظ في الملفّ فيَرِثه كلُّ عقدٍ بعده (`composeContract`).
+     ② **قبل التوقيع** — المدرّبُ يقول «اسمي في هويّتي غيرُ هذا» ويكتبه بخطّه،
+        فيقف التوقيعُ ويصل طلبُه. وهو الأصدق: صاحبُ الاسم أعلمُ به منّا.
+
+     وثالثٌ بعد وقوع الخطأ: يُرفَض التوقيعُ فيُعاد العقدُ مصحَّحا بنقرةٍ
+     (`reissueWithCorrectedName`) — فيُوفى بما وعد به بريدُ الرفض. */
+
+  /** «اسمي في هويّتي غيرُ هذا» — يقف التوقيعُ ويصل الاسمُ الصحيحُ إلينا.
+   *
+   *  ولا يُوقَّع ثمّ يُصحَّح: من وقّع وثيقةً تسمّي غيرَه فقد وقّع وثيقةً
+   *  تسمّي غيرَه، ولا يُمحى ذلك بتصحيحٍ بعده. فالوقوفُ قبل التوقيع هو
+   *  الحمايةُ، ورفضُ التوقيع بعده إصلاحُ ما فات. */
+  async requestNameCorrection(token: string, legalNameAr: string) {
+    const c = await this.openByToken(token)
+    const name = (legalNameAr ?? '').trim()
+    if (name.length < 4) {
+      throw new AuthError('no_name', 'اكتب اسمَك كاملا كما في وثيقة هويّتك', 422)
+    }
+    if (name.length > 120) {
+      throw new AuthError('name_too_long', 'الاسمُ أطولُ ممّا تتّسع له خانةُ الطرف الثاني', 422)
+    }
+    /* والمطبوعُ في وثيقته هو ما نقارن به: اسمٌ يطابق ما في المتن ليس تصحيحا،
+       ومن أرسله ظانّا أنّه يصحّح يقف عقدُه بلا سببٍ ويُنتظَر جوابٌ لا معنى له. */
+    const printed = (c.profile.legalNameAr ?? c.profile.application.fullName ?? '').trim()
+    if (name === printed) {
+      throw new AuthError(
+        'same_name',
+        'هذا هو الاسمُ المكتوبُ في العقد نفسُه — فإن كان صحيحا فوقّعْ، وإن كان فيه فرقٌ فاكتبْه بفرقه',
+        422,
+      )
+    }
+
+    const requestedAt = new Date()
+    const requestAr = `تصحيحُ اسم الطرف الثاني — يقول المدرّبُ إنّ اسمَه في وثيقة هويّته: ${name}`
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: c.id, status: 'sent' },
+      data: {
+        /* ويقف التوقيعُ بالحالة نفسِها التي يقف بها طلبُ التعديل: هي التي
+           تعرفها `canRespondToContract` والشاشاتُ والعاملون. وحالةٌ جديدةٌ
+           لفرقٍ في السبب تُوجب تعديلَ كلّ من يقرأ الحالةَ بلا فائدة. */
+        status: CONTRACT_AMENDMENT_REQUESTED,
+        amendmentRequestAr: requestAr.slice(0, AMENDMENT_TEXT_MAX),
+        amendmentRequestedAt: requestedAt,
+        /* والاسمُ في عموده هو: منه يُبنى البديلُ بنقرةٍ واحدة، ومنه تعرف
+           الشاشةُ أنّ هذا الوقوفَ تصحيحُ اسمٍ لا اعتراضٌ على بند. */
+        nameCorrectionAr: name,
+        nameCorrectionAt: requestedAt,
+      },
+    })
+    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.name_correction_requested',
+      entityType: 'trainer_contract', entityId: c.id,
+      meta: { legalNameAr: name, printedAr: printed },
+    })
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      templateKey: 'trainer.contract.name_correction_requested',
+      title: 'طلب مدرّبٌ تصحيحَ اسمه في عقده',
+      body: `يقول ${c.profile.application.fullName} إنّ اسمَه في وثيقة هويّته «${name}» — والمطبوعُ في عقده «${printed}». وتصحيحُه بنقرةٍ من شاشة العقود.`,
+      data: { contractId: c.id, applicationId: c.profile.applicationId },
+    })
+    return { ok: true, requestedAt }
+  }
+
+  /** يُعاد العقدُ مصحَّحا باسمه القانونيّ — بنقرةٍ واحدةٍ تُنشئ البديلَ وترسله.
+   *
+   *  ═══ ولمَ بديلٌ لا تحريرُ حقل ═══
+   *
+   *  اسمُ الطرف الثاني في **متن** الوثيقة، والمتنُ مجمَّدٌ ومهشَّشٌ بـ
+   *  `bodyHash` وعليه يُقابَل ما وُقّع. فتحريرُ الاسم يجعل المعروضَ غيرَ
+   *  الموقَّع عليه — وهو القيدُ الذي بُنيت عليه هذه الوحدةُ كلُّها.
+   *
+   *  ═══ والبنودُ تُنسَخ من الصفّ لا تُعادُ من الحاضر ═══
+   *
+   *  الأتعابُ والدوراتُ والوثائقُ وموعدُ الجلسة تُقرأ من **العقد القديم**،
+   *  لا من حال المدرّب اليوم. فالبديلُ تصحيحُ اسمٍ لا إعادةُ تفاوض: لو قُرئ
+   *  الحاضرُ لَتبدّل معه أجرُه أو دوراتُه بلا أن يقصد أحدٌ ذلك، ولَوقّع على
+   *  غير ما اتُّفق عليه.
+   */
+  async reissueWithCorrectedName(
+    contractId: string, actorId: string, input: { legalNameAr?: string | null } = {},
+  ) {
+    const old = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!old) throw new AuthError('not_found', 'العقد غير موجود', 404)
+
+    /* الاسمُ: ما كتبه الموظّفُ الآن، وإلّا ما قاله المدرّبُ في طلبه */
+    const name = (input.legalNameAr ?? old.nameCorrectionAr ?? '').trim()
+    if (name.length < 4) {
+      throw new AuthError('no_name', 'اكتب الاسمَ القانونيَّ كما في وثيقة الهويّة', 422)
+    }
+    if (!contractHasBodyAr(old.bodyAr)) {
+      throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. ركّبْ عقدا جديدا', 409)
+    }
+    /* ولا يُعاد عن عقدٍ نافذ: ما خُتم بين الطرفين لا يُستبدَل بنقرة، وبابُه
+       الفسخُ لا التصحيح. والموقَّعُ الذي لم يُرفَض توقيعُه بعدُ كذلك: يُرفَض
+       أوّلا بسببٍ مكتوبٍ يصل صاحبَه، ثمّ يُعاد. */
+    const REPLACEABLE = ['draft', 'sent', CONTRACT_AMENDMENT_REQUESTED, 'revoked', 'declined', 'expired']
+    if (!REPLACEABLE.includes(old.status)) {
+      throw new AuthError(
+        'bad_state',
+        'لا يُستبدَل عقدٌ مسَّه ختمُنا أو ينتظره — ارفضِ التوقيعَ أوّلا بسببٍ يصل صاحبَه، ثمّ أعِدْه مصحَّحا',
+        409,
+      )
+    }
+
+    const app = old.profile.application
+    const pre = await this.contractPrefill(old.profile.applicationId)
+    const issuedOn = new Date()
+    const bodyAr = renderContractBodyAr(this.contractBodyInput({
+      fullName: name,
+      email: old.signerEmail ?? app.email,
+      reference: app.reference,
+      /* الملحق (أ) كما كان: لقطةُ يومِ التركيب لا مؤهّلاتُ اليوم */
+      courses: readContractCourses(old.qualifiedSnapshot),
+      gatesActivation: old.gatesActivation,
+      orientationAt: old.orientationAt,
+      compensation: old.compensationType
+        ? {
+          type: old.compensationType,
+          rate: old.compensationRate == null ? '0' : String(old.compensationRate),
+          currency: old.currency ?? LEDGER_CURRENCY,
+          minSeats: old.compensationMinSeats,
+          referralRate: old.compensationReferralRate == null ? null : String(old.compensationReferralRate),
+        }
+        : null,
+      hoursNoteAr: old.hoursNoteAr,
+      rateWaivedReasonAr: old.rateWaivedReasonAr,
+      requiredDocuments: readRequiredDocuments(old.requiredDocuments),
+      issuedOn,
+    }))
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      /* ① ويُغلَق القائمُ إن كان مفتوحا — ولا يبقى بابان على وثيقتَين */
+      if (['draft', 'sent', CONTRACT_AMENDMENT_REQUESTED].includes(old.status)) {
+        await tx.trainerContract.updateMany({
+          where: { id: old.id, status: old.status },
+          data: {
+            status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
+            revokeReasonAr: `أُعيد تركيبُه مصحَّحا باسم الطرف الثاني: ${name}`.slice(0, 500),
+            tokenHash: null, tokenExpiresAt: null,
+          },
+        })
+      }
+      /* ② والاسمُ يُحفَظ في الملفّ فلا يعود الخطأُ من البابِ نفسِه */
+      await tx.trainerProfile.update({
+        where: { id: old.profileId }, data: { legalNameAr: name },
+      })
+      /* ③ والبديلُ يُنشأ مسودّةً، ويقول صفُّه من حلَّ محلَّه */
+      const next = await tx.trainerContract.create({
+        data: {
+          profileId: old.profileId,
+          title: old.title,
+          kind: 'replacement',
+          revision: old.revision + 1,
+          replacesContractId: old.id,
+          status: 'draft',
+          bodyVersion: CONTRACT_BODY_VERSION,
+          bodyAr,
+          bodyHash: sha256(bodyAr),
+          compensationRuleId: old.compensationRuleId,
+          compensationType: old.compensationType,
+          compensationRate: old.compensationRate,
+          currency: old.currency,
+          compensationMinSeats: old.compensationMinSeats,
+          compensationReferralRate: old.compensationReferralRate,
+          hoursNoteAr: old.hoursNoteAr,
+          rateWaivedReasonAr: old.rateWaivedReasonAr,
+          qualifiedSnapshot: old.qualifiedSnapshot as Prisma.InputJsonValue,
+          requiredDocuments: old.requiredDocuments as Prisma.InputJsonValue,
+          signerEmail: old.signerEmail ?? app.email,
+          /* ويُقرأ الاشتراطُ من الحاضر لا من الصفّ القديم: قد تكون موادُّه
+             اعتُمدت بين الإرسالَين، فيصير عقدُه نهائيّا لا عرضا مشروطا. */
+          gatesActivation: pre.gatesActivation,
+          orientationAt: pre.gatesActivation ? old.orientationAt : null,
+          orientationUrl: pre.gatesActivation ? old.orientationUrl : null,
+          conditionDeadlineAt: pre.gatesActivation ? old.conditionDeadlineAt : null,
+          createdBy: actorId,
+        },
+      })
+      await recordAudit(tx, {
+        actorId, action: 'trainer.contract.name_reissue',
+        entityType: 'trainer_contract', entityId: next.id,
+        meta: {
+          replacesContractId: old.id, legalNameAr: name,
+          wasAr: old.profile.legalNameAr ?? app.fullName,
+          revision: next.revision, bodyHash: next.bodyHash,
+        },
+      })
+      await recordAudit(tx, {
+        actorId, action: 'trainer.legal_name.set',
+        entityType: 'trainer_profile', entityId: old.profileId,
+        meta: { legalNameAr: name, wasAr: old.profile.legalNameAr, source: 'reissue' },
+      })
+      return next
+    })
+
+    /* ④ ويعلم صاحبُه أنّ اسمَه صار كما قال — في جرسه إن كان له حساب.
+       والبريدُ يخرج في ⑤ بالرابط، وهذا خبرُ **ما تغيّر في سجلّه**: من
+       أُعيدت تسميتُه في وثائقنا يجب أن يعرف، ولو لم يفتح بريدَه. */
+    if (old.profile.userId) {
+      await safeNotify(this.prisma, {
+        userId: old.profile.userId, channel: 'in_app', audience: 'trainer',
+        templateKey: 'trainer.contract.name_reissued',
+        title: 'أُعيد عقدُك مصحَّحا باسمك',
+        body: `صار اسمُك في الطرف الثاني «${name}» كما في وثيقة هويّتك، وأُعيد عقدُك بهذا الاسم. ورابطُ توقيعه في بريدك — والرابطُ السابقُ بطل.`,
+        data: { contractId: created.id, replacesContractId: old.id },
+      })
+    }
+
+    /* ⑤ ويُرسَل بسببه مقولا: من طلب تصحيحا يعرف أنّ هذا جوابُ طلبه */
+    const sent = await this.sendContract(
+      created.id, actorId,
+      `هذا عقدُك مصحَّحا: صار اسمُك في الطرف الثاني «${name}» كما في وثيقة هويّتك. والنسخةُ السابقةُ أُلغيت ورابطُها بطل — فوقّعْ هذه وحدَها.`,
+    )
+    return { ...sent, ok: true as const, contractId: created.id, revision: created.revision }
+  }
+
   /** رفضُ التوقيع — الاسمُ لا يطابق الوثيقةَ، أو الوثيقةُ ليست له.
 
       ولا يُمحى توقيعُه: ما فعله وقع، وأعمدةُ الدليل (`signedAt` والاسمُ
@@ -3386,6 +3678,17 @@ export class TrainerReviewService {
       actorId, action: 'trainer.contract.reject_signature',
       entityType: 'trainer_contract', entityId: contractId,
       meta: { reasonAr: reason.slice(0, 500), signerLegalName: c.signerLegalName },
+    })
+    /* ═══ وتُفتَح مهمّةُ «توقيع العقد» ثانيةً (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       `signContractByToken` تغلقها بالتوقيع (`doneAt`)، ورفضُ التوقيع كان
+       يتركها مغلقة. فيقرأ المدرّبُ في تهيئته «توقيع العقد ✓» وعقدُه ملغًى
+       وتوقيعُه مرفوض — والمهمّةُ تقول إنّ شيئا تمّ ولم يتمّ.
+
+       ولا يُمَسّ دليلُ التوقيع نفسُه: `signedAt` والاسمُ والهاشُ تبقى في
+       الصفّ كما هي. المهمّةُ حالٌ في تهيئته، لا شهادةٌ على ما فعل. */
+    await this.prisma.trainerOnboardingTask.updateMany({
+      where: { profileId: c.profileId, key: 'sign_contract' }, data: { doneAt: null },
     })
 
     const app = c.profile.application

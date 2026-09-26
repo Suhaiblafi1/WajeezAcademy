@@ -157,6 +157,13 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
       'trainer.contract.condition_extended',
       'trainer.contract.amendment_requested',
+      /* ═══ واسمُ الطرف الثاني (٢٦ سبتمبر ٢٠٢٦) ═══
+
+         الطلبُ عملٌ ينتظر الموظّفَ: وثيقةٌ تسمّي غيرَ من يوقّعها واقفةٌ حتّى
+         يطابقَ هويّتَه ويُعيدها مصحَّحة. والإعادةُ عملٌ ينتظر المدرّبَ:
+         عقدٌ جديدٌ برابطٍ جديدٍ لا يُوقَّع إلّا بيده. وكلاهما لا يُكتَم —
+         الأوّلُ يُبقي إنسانا موقوفا، والثاني يُبقي عقدا بلا توقيع. */
+      'trainer.contract.name_correction_requested', 'trainer.contract.name_reissued',
       'trainer.contract.deleted',
       /* ═══ وعروضُ الإسناد — وهي عملٌ من الطرفين ═══
 

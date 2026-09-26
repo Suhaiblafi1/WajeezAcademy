@@ -357,6 +357,27 @@ export interface ContractCourseRow {
   titleAr: string
 }
 
+/** يقرأ لقطةَ الملحق (أ) المحفوظةَ في الصفّ (`qualifiedSnapshot`).
+ *
+ *  ولمَ قارئةٌ لا `as`: العمودُ `Json`، وما فيه كُتب بإصدارٍ سابقٍ قد يختلف
+ *  شكلُه. و`as` تمرّر صفّا ناقصا فيخرج في الملحق سطرٌ باسمٍ فارغٍ أو
+ *  `undefined` مطبوعا في وثيقةٍ تُوقَّع. فيُتخطّى ما لا يكتمل.
+ *
+ *  والصفُّ المحفوظُ يحمل `mark` معها (ما اخترناه ممّا اعتُمد) — وهي للشاشة
+ *  لا للمتن، فتُطرح هنا. */
+export function readContractCourses(value: unknown): ContractCourseRow[] {
+  if (!Array.isArray(value)) return []
+  const out: ContractCourseRow[] = []
+  for (const row of value) {
+    if (!row || typeof row !== 'object') continue
+    const r = row as Record<string, unknown>
+    if (typeof r.courseId !== 'string' || typeof r.titleAr !== 'string') continue
+    if (!r.courseId.trim() || !r.titleAr.trim()) continue
+    out.push({ courseId: r.courseId, titleAr: r.titleAr })
+  }
+  return out
+}
+
 export interface ContractCompensation {
   /** per_seat | fixed_per_cohort | revenue_share */
   type: string
