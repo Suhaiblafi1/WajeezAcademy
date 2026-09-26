@@ -116,6 +116,9 @@ export interface DecideOptions {
   overrideReasonAr?: string | null
   /** رتبُ الفاعل كما قرأها الحاجز */
   actorRoles?: string[]
+  /** ما طابقه المعتمِدُ بوثيقة الهويّة — يأتي من شاشة العقود وحدَها، ويُكتب
+      في ملحوظة خَتمِ العرض. ولا معنى له في قرارٍ لا عرضَ مشروطَ فيه. */
+  sealNoteAr?: string | null
 }
 
 export const RUBRIC_CRITERIA = [
@@ -134,6 +137,12 @@ export type RubricScores = Record<string, number | undefined>
    والمدّةُ ونصُّها في `src/application/links/mail-link-window.ts`، ومن فاتته
    يطلب من الفريق إعادةَ إرسالها — وهو مقولٌ في الرسالة نفسِها. */
 const INVITATION_TTL_MS = MAIL_LINK_TTL_MS
+
+/* ملحوظةُ خَتمِ العرض المشروط — تُكتب في الصفّ فتُقرأ بعد سنةٍ حين يُسأل
+   «بأيّ شيءٍ خُتم هذا العرض؟». وهي في ثابتٍ واحدٍ لأنّها تُكتب في موضعَين:
+   الخَتمُ نفسُه، وضمُّ ملحوظةِ مطابقةِ الهويّة إليها حين يأتي القرارُ من
+   شاشة العقود — ونسختان منها تفترقان في أوّل تحريرٍ يلحق إحداهما. */
+const CONDITION_SEAL_NOTE_AR = 'خَتمٌ باعتماد الموادّ وتفعيل الحساب — تحقّق شرطُ البند 2-10'
 
 /* ═══ الناقصُ يُقبل، والمجهولُ يُرَدّ ═══
 
@@ -890,7 +899,7 @@ export class TrainerReviewService {
        **في صمت**: بوّابتُه تُفتح ولا يعلم، فلا يدخلها. وهو أسوأُ صمتٍ في
        المسار كلِّه، إذ يقع في آخره بعد أن وقّع وانتظر. */
     if (action === 'approve' || action === 'activate') {
-      await this.completeConditionalOffer(applicationId, app, actorId)
+      await this.completeConditionalOffer(applicationId, app, actorId, opts.sealNoteAr)
     }
 
     /* ═══ ولا يُطلب من أحدٍ شيءٌ في صمت ═══
@@ -1409,6 +1418,9 @@ export class TrainerReviewService {
     applicationId: string,
     app: { email: string; fullName: string; reference: string },
     actorId: string,
+    /** ما طابقه المعتمِدُ بوثيقة الهويّة — يأتي حين يُضغَط الاعتمادُ من
+        شاشة العقود، ويكون فارغا حين يُفعَّل من ملفّ المدرّب. */
+    sealNoteAr?: string | null,
   ): Promise<void> {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { applicationId },
@@ -1473,7 +1485,12 @@ export class TrainerReviewService {
             status: 'countersigned', countersignedAt, countersignedBy: actorId,
             academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
             academySignatoryTitle: ACADEMY_LEGAL.signatoryTitleAr,
-            countersignNoteAr: 'خَتمٌ باعتماد الموادّ وتفعيل الحساب — تحقّق شرطُ البند 2-10',
+            /* وملحوظةُ مطابقةِ الهويّة تُضَمّ إليها حين تأتي: من ضغط
+               «اعتمِدْ وفعِّلْ» في شاشة العقود كتب ما طابقه بوثيقته — وهو
+               محلُّ الحجّة إن نُوزع في الاسم بعد سنة، فلا يُطرح. */
+            countersignNoteAr: sealNoteAr
+              ? `${CONDITION_SEAL_NOTE_AR} — ومطابقةُ الهويّة: ${sealNoteAr}`.slice(0, 500)
+              : CONDITION_SEAL_NOTE_AR,
             /* وانتهت المهلةُ بتحقّق الشرط، ولا تجميدَ يبقى معلّقا */
             conditionMetAt: countersignedAt,
             conditionPausedAt: null,
@@ -2901,6 +2918,38 @@ export class TrainerReviewService {
           consentVersion: CONTRACT_CONSENT_VERSION, signedAt,
         },
       })
+
+      /* ═══ والتوقيعُ ينقل الطلبَ إلى «تهيئة» (٢٦ سبتمبر ٢٠٢٦) ═══
+
+         كان لا ينقله: يوقّع المدرّبُ عرضَه المشروطَ ويبقى طلبُه
+         `contract_pending` أبدا. وثلاثةُ أشياءَ تنبني على ذلك وتسقط معه:
+
+         · **بابُ الموادّ يبقى مقفلا في وجهه.** `MATERIALS_STATUSES` هي
+           `onboarding` و`active` وحدَهما، فيدخل بوّابتَه بعد التوقيع فيُقرأ
+           عليه: «بوّابتك تُفتح بتوقيع عرضك المشروط — وقّعْه ثمّ ادخلها» وقد
+           وقّعه. فيُطالَب برفعِ موادٍّ من بابٍ لا يُفتح إلّا بما فعله.
+         · **والعاملان يتخطّيانه.** `remindConditionDeadlines` و
+           `noticeLapsedConditions` كلتاهما تشترط `application.status =
+           'onboarding'` — فلا يُذكَّر بقُرب انقضاء مهلته ولا يُبلَّغ
+           بانقضائها. تنقضي مهلتُه في صمتٍ تامّ.
+         · ومهلتُه تجري عليه في الحالَين: تُحسب من جلسة التهيئة لا من حالة
+           طلبه. فالقفلُ لا يوقفها، وإنّما يمنعه من الوفاء بها.
+
+         وهو الطورُ الذي سُمّي به: «تهيئة الانضمام» تبدأ بتوقيعه العرضَ.
+         والمسارُ القديمُ (`signContract` المهجورة) كان ينقله فعلا — وضاع
+         النقلُ حين صار التوقيعُ من رابطه.
+
+         ── وشرطُه شرعيّةُ النقل لا نوعُ العقد ──
+
+         بندٌ يُوثَّق على مدرّبٍ **نشطٍ أصلا** لا تهيئةَ له: طلبُه `active`،
+         و`active → onboarding` لا تُجيزه الخريطة. فيُسأل الجوازُ من الدالّة
+         التي تمنع في `transition` نفسِها — لا بمِحَكٍّ ثانٍ يفترق عنها يوما.
+         ومن لم يجز نقلُه وقّع ولم يتحرّك طلبُه، وهو الصواب. */
+      if (transitionProblemAr(c.profile.application.status as TrainerStatus, 'onboarding') === null) {
+        await this.apps.transition(
+          c.profile.applicationId, 'onboarding', null, 'توقيعُ العقد من رابطه', tx,
+        )
+      }
     })
 
     /* ═══ ونسخةُ صاحبِه تصله — وصلةً لا سكبَ متن ═══
@@ -3039,7 +3088,9 @@ export class TrainerReviewService {
       body: `اعتذر ${c.profile.application.fullName} عن «${c.title}» — وسببُه: ${reason.slice(0, 200)}`,
       data: { contractId: c.id, applicationId: c.profile.applicationId },
     })
-    return { ok: true }
+    /* ويُعاد تاريخُه: الرمزُ مات بالاعتذار، فالشاشةُ تبني حالَها من هذا
+       الجواب ولا تسأل بابا أغلقناه (رأسُ `sign` في `ContractSign.tsx`). */
+    return { ok: true, declinedAt }
   }
 
   /* ═══════════ الاعتماد — وبه ينفذ العقد، وبه يُفتح الحساب ═══════════
@@ -3057,7 +3108,8 @@ export class TrainerReviewService {
       وتكتب أثرَها. ونسخُها هنا يعني مسارَ تفعيلٍ ثانيا يتخلّف عن الأوّل في
       أوّل تعديلٍ يلحق ذاك ولا يلحق هذا. */
   async countersignContract(
-    contractId: string, actorId: string, input: { noteAr?: string | null } = {},
+    contractId: string, actorId: string,
+    input: { noteAr?: string | null; actorRoles?: string[] } = {},
   ) {
     const c = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -3067,23 +3119,50 @@ export class TrainerReviewService {
     if (c.status !== 'signed') {
       throw new AuthError('bad_state', 'لا يُعتمَد إلّا عقدٌ وقّعه صاحبُه ولم يُعتمَد بعد', 409)
     }
-    /* ═══ والعرضُ المشروطُ لا يُوقَّع منّا هنا (٢٣ سبتمبر ٢٠٢٦) ═══
+    /* ═══ والعرضُ المشروطُ يُختَم من هنا ويُفعَّل صاحبُه (٢٦ سبتمبر ٢٠٢٦) ═══
 
-       بيانُ صاحب المنصّة: «وحين نقبل موادَّه كلَّها يصير مقبولا رسميّا،
-       ويُعاد إليه العقدُ موقَّعا منّا». فتوقيعُنا في **آخر** الطور لا في
-       أوّله، ويقع في اللحظة نفسِها التي يُفعَّل فيها حسابُه.
+       قرارُ صاحب المنصّة، ناسخا قرارَ ٢٠ سبتمبر: «بعد أن أقوم بالتوقيع كأدمن
+       يتحوّل إلى مدرّب نشط مباشرةً وتتفعّل منصّتُه ويصله إيميل بالعقد الموقَّع
+       من جهتنا». فالزرُّ الذي يضغطه واحدٌ، وأثرُه تامّ.
 
-       ولو أُتيح ختمُه هنا لَصار العرضُ عقدا نافذا **قبل أن تُقيَّم موادُّه** —
-       فيعود «لم نقبل موادَّك» سببَ فسخٍ لا شرطا لم يتحقّق، وتسقط الحمايةُ
-       التي بُني الطورُ كلُّه لها.
+       ── وما الذي كان يقع قبل هذا اليوم ──
 
-       والبابُ باقٍ لما لا شرطَ فيه: بندٌ يُوثَّق على مدرّبٍ نشطٍ أصلا. */
+       كان يُردّ بـ409 `conditional_offer`: «اعتمِدْ موادَّه ثمّ فعّلْه». وهي
+       جملةٌ صحيحةٌ في الشيفرة تُقرأ في شاشةٍ أخرى — لكنّ الزرَّ يبقى معروضا
+       هنا على كلّ عرضٍ موقَّع، ورسالةُ الردّ تُرسَم في رأس صفحةٍ طويلةٍ بعيدا
+       عن موضع الضغط. فمن ضغطه رأى أنّ **لا شيءَ حدث**، وهو ما بلّغ به صاحبُ
+       المنصّة. وزرٌّ يردّه الخادمُ في كلّ مرّةٍ ليس زرّا.
+
+       ── ولا نسخةَ ثانيةً من التفعيل ──
+
+       والنداءُ `decide('activate')` بعينها لا محاكاةٌ لها: هي التي تفحص
+       بوّابةَ التجهيز، وتربط حسابَ المتقدّم بالملفّ، وتمنحه دورَ المدرّب،
+       وتبذر مؤهّلاتِه، وتنقل حالتَه، وتكتب أثرَها — ثمّ تنادي
+       `completeConditionalOffer` فتختم العرضَ وتكتب ملحقَه وترسل العقدَ
+       المختوم. فالحمايةُ التي بُني الطورُ لها باقيةٌ بحروفها: البوّابةُ
+       تمنع من لم تُعتمَد موادُّه (لا دورةَ `qualified` له)، ورسالةُ المنع
+       تعدّد ما ينقص. وإنّما زال بابٌ مسدودٌ كان يُعرَض مفتوحا.
+
+       وحارسُ التضارب وحارسُ الرتبة داخلَها، فلا يُكرَّران هنا. */
     if (c.gatesActivation) {
-      throw new AuthError(
-        'conditional_offer',
-        'هذا عرضٌ مشروط — يُوقَّع منّا حين تُعتمَد موادُّه ويُفعَّل حسابُه، لا قبلَه. فاعتمِدْ موادَّه ثمّ فعّلْه، ويُختَم العرضُ ويصله موقَّعا في اللحظة نفسِها.',
-        409,
+      await this.decide(
+        c.profile.applicationId, actorId, 'activate', 'اعتمادُ التوقيع وتفعيلُ الحساب من شاشة العقود',
+        { actorRoles: input.actorRoles, sealNoteAr: (input.noteAr ?? '').trim().slice(0, 300) || null },
       )
+      /* ويُقرأ الخَتمُ من الصفّ لا يُفترَض: `completeConditionalOffer` تختم
+         **أحدثَ** عرضٍ موقَّعٍ للملفّ، وهو هذا في كلّ مسلكٍ قائم. فإن لم
+         يكن — صفّان موقَّعان بيدٍ في القاعدة — قالت الشاشةُ الحقيقةَ ولم
+         تدّعِ ختما لم يقع على هذا الصفّ بعينه. */
+      const sealed = await this.prisma.trainerContract.findUnique({
+        where: { id: c.id }, select: { countersignedAt: true },
+      })
+      return {
+        ok: true as const,
+        countersignedAt: sealed?.countersignedAt ?? null,
+        readiness: await this.readinessForApplication(c.profile.applicationId),
+        /* وبه تعرف الشاشةُ أنّ الحسابَ فُتح، فتقول ذلك بدل «وبقي قبل اعتماده» */
+        activated: true as const,
+      }
     }
     /* حارسُ التضارب نفسُه الذي في `decide`: من يعتمد عقدا يفتح به حسابا
        ويمنح دورا. وهو يجري هنا أيضا لأنّ العقدَ قد لا يحبس التفعيلَ
@@ -3184,7 +3263,9 @@ export class TrainerReviewService {
 
     /* وتُردّ الجاهزيّةُ مع النتيجة: الشاشةُ تقول «بقي كذا» أو «اكتمل — اعتمِدْه»
        في الموضع الذي ضُغط فيه، فلا يُبحَث عن الخطوة التالية في شاشةٍ أخرى. */
-    return { ok: true, countersignedAt, readiness }
+    /* و`activated: false` صريحةً لا مسكوتا عنها: هذا بندٌ يُوثَّق على مدرّبٍ
+       نشطٍ أصلا، فلا حسابَ يُفتح به — والشاشةُ تقرأ الحقلَ نفسَه في الحالَين. */
+    return { ok: true as const, countersignedAt, readiness, activated: false as const }
   }
 
   /** رفضُ التوقيع — الاسمُ لا يطابق الوثيقةَ، أو الوثيقةُ ليست له.

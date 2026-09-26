@@ -532,7 +532,11 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { noteAr } = z.object({ noteAr: z.string().trim().max(500).nullish() }).parse(req.body ?? {})
-    return review.countersignContract(contractId, req.auth!.userId, { noteAr })
+    /* والرتبُ تُمرَّر لأنّ العرضَ المشروطَ يُختَم بـ`decide('activate')` —
+       وتجاوزُ بوّابة التجهيز للمدير الأعلى وحدَه، وهي تقرأ رتبتَه من هنا. */
+    return review.countersignContract(contractId, req.auth!.userId, {
+      noteAr, actorRoles: req.auth!.roles,
+    })
   })
 
   app.post('/api/admin/trainer-contracts/:contractId/reject-signature', {
