@@ -27,7 +27,9 @@ import { fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 /* وطورُ الشرط من موضعه الواحد لا مشتقًّا هنا — ورأسُ `conditional-offer.ts`
    يقول إنّ هذه التسمياتَ لـ«صفّ الطابور» كذلك، ولم تكن تصله. */
-import { conditionPhase, CONDITION_PHASE_LABELS_AR } from "@/application/trainer/conditional-offer";
+import {
+  conditionPhase, materialsGateProblemAr, CONDITION_PHASE_LABELS_AR,
+} from "@/application/trainer/conditional-offer";
 import type { Readiness } from "@/application/trainer/readiness";
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS, type RequiredDocument,
@@ -1179,10 +1181,31 @@ export default function TrainerContracts() {
                           </div>
                         ) : (
                           <div className="mt-3 flex flex-wrap gap-2">
-                            <Button tone="confirm" icon={BadgeCheck}
-                              onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
-                              {c.gatesActivation ? "طابقتُ الاسمَ — اعتمِدْ وفعِّلْ" : "طابقتُ الاسمَ — اعتمِدْ"}
-                            </Button>
+                            {/* ═══ ولا يُعرَض زرُّ الختم قبل أن تُعرَض الموادّ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+                                الخادمُ يمنع (`materialsGateProblemAr` في `decide`)، وهذا
+                                يمنع زرّا يُرَدّ — والحكمُ **واحدٌ يُستدعى** لا نسختان.
+                                ومن عرض زرّا يردّه الخادمُ علّم الموظّفَ ألّا يثق بما يرى.
+
+                                والسببُ يُقال مكانَه: «لم يُعلنْ اكتمالَ موادّه — وأمامه
+                                خمسةُ أيّام» أنفعُ من زرٍّ رماديٍّ بلا تفسير. */}
+                            {c.gatesActivation && materialsGateProblemAr(conditionFactsOf(c))
+                              ? (
+                                <Panel tone="warn" className="w-full p-2 text-read leading-6">
+                                  <b>لا يُختَم بعد:</b>{" "}
+                                  {materialsGateProblemAr(conditionFactsOf(c))}
+                                  <span className="block opacity-80">
+                                    فطورُ الموادِّ هو ما بُني له العرضُ المشروط — ويُختَم حين
+                                    تصير موادُّه بين يديك، لا قبلها.
+                                  </span>
+                                </Panel>
+                              )
+                              : (
+                                <Button tone="confirm" icon={BadgeCheck}
+                                  onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
+                                  {c.gatesActivation ? "طابقتُ الاسمَ — اعتمِدْ وفعِّلْ" : "طابقتُ الاسمَ — اعتمِدْ"}
+                                </Button>
+                              )}
                             {/* ورفضُ التوقيع يُغلق العقدَ ولا يمحو دليلَه: من وقّع
                                 باسمٍ غيرِ اسمه وقّع وثيقةً تسمّي طرفا آخر، ولا
                                 تُصحَّح تسميةُ طرفٍ بتعديل حقل — يُركَّب عقدٌ جديد. */}

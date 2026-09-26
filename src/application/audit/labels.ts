@@ -279,6 +279,7 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.countersign': 'اعتمادُ الأكاديميّةِ توقيعَ المدرّب',
   /* تجاوزُ بوّابة التجهيز — بابٌ للمدير الأعلى وحدَه بسببٍ مكتوب (٢٠ سبتمبر ٢٠٢٦) */
   'trainer.readiness.override': 'اعتمادُ مدرّبٍ قبل أن يتمّ تجهيزُه',
+  'trainer.materials.override': 'اعتمادُ مدرّبٍ قبل أن تُعرَض موادُّه',
   'trainer.contract.reject_signature': 'رفضُ توقيعٍ لعدمِ مطابقتِه وثيقةَ الهويّة',
   /* ═══ واسمُ الطرف الثاني — ثلاثةُ أفعالٍ لا واحد ═══
 
