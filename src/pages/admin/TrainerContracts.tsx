@@ -67,6 +67,7 @@ interface ContractRow {
   signerLegalName: string | null; declinedAt: string | null; declineReasonAr: string | null;
   countersignedAt: string | null; academySignatoryName: string | null;
   academySignatoryTitle: string | null; countersignNoteAr: string | null;
+  nameCorrectionAr: string | null; nameCorrectionAt: string | null;
   amendmentRequestAr: string | null; amendmentRequestedAt: string | null;
   amendmentReplyAr: string | null; amendmentRepliedAt: string | null;
   conditionDeadlineAt: string | null; conditionPausedAt: string | null;
@@ -89,6 +90,7 @@ const conditionFactsOf = (c: ContractRow) => ({
 
 interface Prefill {
   applicationId: string; reference: string; fullName: string; email: string;
+  legalNameAr: string; legalNameSource: "verified" | "account";
   applicationStatus: string; gatesActivation: boolean;
   courses: { courseId: string; titleAr: string }[];
   compensation: { ruleId: string; type: string; rate: string; currency: string; minSeats: number | null; referralRate: string | null } | null;
@@ -130,6 +132,13 @@ export default function TrainerContracts() {
   const [openFor, setOpenFor] = useState<CandidateRow | null>(null);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [title, setTitle] = useState("");
+  /* ═══ اسمُ الطرف الثاني يُحرَّر قبل أن يُجمَّد المتن (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «الطرف الثاني كاسم يجب أن يكون مطابقا للهويّة…
+     لأنّ الاسم الموجود هنا هو ما أُخذ من حسابه وغالبا ليس اسما ثلاثيّا».
+     وهذا الحقلُ هو الموضعُ الوحيدُ الذي يُصحَّح فيه بلا ثمن: بعد التجميد
+     يصير التصحيحُ عقدا بديلا. */
+  const [legalNameAr, setLegalNameAr] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [docs, setDocs] = useState<RequiredDocument[]>(DEFAULT_REQUIRED_DOCUMENTS);
   const [hoursNoteAr, setHoursNoteAr] = useState("");
@@ -158,6 +167,9 @@ export default function TrainerContracts() {
   /* والحذفُ لا رجعةَ فيه، فلا يقع بنقرةٍ واحدة — ولا بـ`window.confirm`
      الذي يملك المتصفّحُ كتمَه فيردّ `false` صامتا (رأسُ `ConfirmAction`). */
   const [deleting, setDeleting] = useState<ContractRow | null>(null);
+  /* واسمُ التصحيح بعد رفض التوقيع: المدرّبُ لم يقترح شيئا هنا — الموظّفُ
+     يقرؤه من وثيقة هويّته التي بين يديه، فيكتبه. */
+  const [fixName, setFixName] = useState<{ id: string; nameAr: string } | null>(null);
   const [replying, setReplying] = useState<{ id: string; replyAr: string } | null>(null);
 
   /* ═══ العروضُ في هذه الشاشة لا في شاشةٍ ثالثة ═══
@@ -226,7 +238,8 @@ export default function TrainerContracts() {
     try {
       const p = await apiGet<Prefill>(`/api/admin/trainer-applications/${c.id}/contract-prefill`);
       setPrefill(p); setOpenFor(c);
-      setTitle(`اتفاقية تقديم خدمات تدريبية — ${c.fullName}`);
+      setLegalNameAr(p.legalNameAr);
+      setTitle(`اتفاقية تقديم خدمات تدريبية — ${p.legalNameAr}`);
       setPicked(new Set(p.courses.map((x) => x.courseId)));
       setDocs(DEFAULT_REQUIRED_DOCUMENTS);
       setHoursNoteAr(""); setWaivedAr("");
@@ -254,6 +267,7 @@ export default function TrainerContracts() {
       : null;
     return {
       title,
+      trainerLegalNameAr: legalNameAr.trim() || null,
       courseIds: [...picked],
       requiredDocuments: docs,
       hoursNoteAr: hoursNoteAr.trim() || null,
@@ -262,7 +276,7 @@ export default function TrainerContracts() {
       orientationAt: orientationAt.trim() === "" ? null : new Date(orientationAt).toISOString(),
       orientationUrl: orientationUrl.trim() || null,
     };
-  }, [title, picked, docs, hoursNoteAr, waivedAr, feeRate, feeReferralRate, feeMinSeats,
+  }, [title, legalNameAr, picked, docs, hoursNoteAr, waivedAr, feeRate, feeReferralRate, feeMinSeats,
       orientationAt, orientationUrl]);
 
   /* ═══ وخطأُ الصفّ يُرسَم في الصفّ (٢٦ سبتمبر ٢٠٢٦) ═══
@@ -353,6 +367,22 @@ export default function TrainerContracts() {
               ? "هذا العقدُ يحبس التفعيل: يُنقل الطلبُ إلى «عقد قيد التوقيع»، ولا يُفتح حسابُه حتّى يُعتمَد توقيعُه."
               : "المدرّبُ نشطٌ أصلا — فهذا العقدُ توثيقٌ على ملفٍّ حيّ، ولا تُمسُّ حالةُ طلبه ولا وصولُه إلى بوّابته."}
           </Panel>
+
+          {/* ═══ واسمُ الطرف الثاني أوّلُ ما يُملأ ═══
+
+              فهو أوّلُ ما يُطابَق بوثيقة الهويّة، وآخرُ ما يُمكن تصحيحُه بلا
+              ثمن: ما دخل المتنَ دخل بصمتَه، وتصحيحُه بعد الإرسال عقدٌ بديل. */}
+          <label className="mb-1 block text-sm font-bold" htmlFor="legal-name">
+            اسمُ الطرف الثاني — كما في وثيقة هويّته
+          </label>
+          <input id="legal-name" value={legalNameAr} maxLength={120}
+            onChange={(e) => setLegalNameAr(e.target.value)}
+            className={`${inputCls} w-full`} />
+          <p className="mb-4 mt-1 text-read leading-6 text-muted-foreground">
+            {prefill.legalNameSource === "account"
+              ? "وهذا ما وصلنا من حسابه — وغالبا ليس اسما ثلاثيّا ولا يطابق جوازَه. طابِقْه بوثيقته قبل التركيب: ما يُطبَع هنا يصير اسمَ الطرف الثاني في الوثيقة، ويوقّع هو باسمه القانونيّ تحته."
+              : "وهذا اسمُه القانونيُّ المثبَّتُ في ملفّه — يُطبَع طرفا ثانيا، ولك تعديلُه إن تغيّرت وثيقتُه."}
+          </p>
 
           <label className="mb-1 block text-sm font-bold" htmlFor="contract-title">عنوانُ العقد</label>
           <input id="contract-title" value={title} onChange={(e) => setTitle(e.target.value)}
@@ -628,6 +658,47 @@ export default function TrainerContracts() {
                         <code className="block break-all">{link.url}</code>
                       </Panel>
                     )}
+                    {/* ═══ ورفضُ التوقيع وعدٌ يُوفى بنقرة (٢٦ سبتمبر ٢٠٢٦) ═══
+
+                        بريدُ الرفض يقول لصاحبه: «ويصلك عقدٌ جديدٌ برابطٍ جديدٍ
+                        بعد تصحيحه». وكان لا يُنشأ شيء: الصفُّ يُغلَق، ورمزُه
+                        ميّتٌ منذ التوقيع، ولا صفَّ مسودّةٍ ينتظر. فمن رُفض
+                        توقيعُه يبقى بلا بابٍ إلى الأبد، والوعدُ مكتوبٌ في
+                        بريده. فهذا هو البابُ الذي وُعد به. */}
+                    {c.status === "revoked" && (c.revokeReasonAr ?? "").startsWith("رُفض التوقيع") && (
+                      <Panel tone="warn" className="mt-2 p-3">
+                        <p className="mb-1 font-black">رُفض توقيعُه — ووُعِد بعقدٍ مصحَّح</p>
+                        <p className="text-read leading-6 opacity-80">
+                          وقّع باسم <b>{c.signerLegalName ?? "—"}</b>، والوثيقةُ تسمّيه{" "}
+                          <b>{c.profile?.application?.fullName ?? "—"}</b>. اكتبِ اسمَه كما في
+                          وثيقة هويّته، فيُركَّب بديلٌ به ويُرسَل إليه برابطٍ جديد — وبنودُه
+                          وأتعابُه كما هي.
+                        </p>
+                        {rowErr?.id === c.id && (
+                          <Panel tone="danger" className="mt-2 p-3 text-read" role="alert">{rowErr.text}</Panel>
+                        )}
+                        <div className="mt-3 grid gap-2">
+                          <input
+                            className={inputCls} maxLength={120}
+                            placeholder="الاسمُ الكاملُ كما في الهويّة أو جواز السفر"
+                            value={fixName?.id === c.id ? fixName.nameAr : ""}
+                            onChange={(e) => setFixName({ id: c.id, nameAr: e.target.value })}
+                          />
+                          <div className="flex flex-wrap gap-2">
+                            <Button tone="confirm" icon={FilePlus2} loading={busy}
+                              disabled={(fixName?.id !== c.id) || fixName.nameAr.trim().length < 4}
+                              onClick={() => void run(async () => {
+                                await apiPost(`/api/admin/trainer-contracts/${c.id}/name-reissue`,
+                                  { legalNameAr: fixName!.nameAr.trim() });
+                                setFixName(null);
+                                await load();
+                              }, "رُكِّب البديلُ باسمه الصحيحِ ووصلَه برابطٍ جديد", c.id)}>
+                              صحّحِ الاسمَ وأعِدْ إرساله
+                            </Button>
+                          </div>
+                        </div>
+                      </Panel>
+                    )}
                     {c.revokeReasonAr && (
                       <p className="mt-1 text-read opacity-70">سببُ الإلغاء: {c.revokeReasonAr}</p>
                     )}
@@ -642,7 +713,41 @@ export default function TrainerContracts() {
 
                         والجوابان مكتوبان في الخادم منذ كُتِب: إمّا يُرَدّ عليه فيبقى
                         العرضُ، وإمّا يُلغى ويُرسَل مصحَّحا (زرُّ «ألغِ» أعلاه). */}
-                    {c.status === "amendment_requested" && (
+                    {/* ═══ تصحيحُ الاسم جوابُه نقرةٌ لا صندوقُ نصّ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+                        الوقوفُ واحدٌ في الحالة، والجوابُ مختلف: طلبُ التعديل
+                        يُجاب بنعم أو لا، وتصحيحُ الاسم لا يُجاب إلّا بفعلٍ —
+                        وثيقةٌ تسمّي غيرَه لا تُوقَّع، ولا رأيَ لنا في اسمه.
+                        فيُعرَض ما قاله وزرٌّ واحدٌ يُنفّذه. */}
+                    {c.status === "amendment_requested" && c.nameCorrectionAr && (
+                      <Panel tone="warn" className="mt-2 p-3">
+                        <p className="mb-1 font-black">يقول إنّ اسمَه في هويّته غيرُ المكتوب — والتوقيعُ واقف</p>
+                        {c.nameCorrectionAt && (
+                          <p className="text-read opacity-70">{fmtDateTime(c.nameCorrectionAt)}</p>
+                        )}
+                        <p className="mt-2 leading-7">
+                          المكتوبُ في الوثيقة: <b>{c.profile?.application?.fullName ?? "—"}</b>
+                          {" · "}وما يقوله هو: <b>{c.nameCorrectionAr}</b>
+                        </p>
+                        <p className="mt-2 text-read leading-6 opacity-80">
+                          طابِقْه بوثيقة هويّته، ثمّ أعِدْ بنقرةٍ: يُلغى هذا العرضُ ويُركَّب
+                          بديلٌ باسمه الصحيح ويُرسَل إليه برابطٍ جديد — وبنودُه وأتعابُه
+                          كما هي، لا يتغيّر إلّا الاسم. ويُحفَظ في ملفّه فلا يُسأل عنه ثانية.
+                        </p>
+                        {rowErr?.id === c.id && (
+                          <Panel tone="danger" className="mt-2 p-3 text-read" role="alert">{rowErr.text}</Panel>
+                        )}
+                        <Button className="mt-3" tone="confirm" icon={FilePlus2} loading={busy}
+                          onClick={() => void run(async () => {
+                            await apiPost(`/api/admin/trainer-contracts/${c.id}/name-reissue`, {});
+                            await load();
+                          }, "أُعيد العقدُ مصحَّحا باسمه، ووصلَه برابطٍ جديد", c.id)}>
+                          طابقتُ هويّتَه — أعِدْه مصحَّحا
+                        </Button>
+                      </Panel>
+                    )}
+
+                    {c.status === "amendment_requested" && !c.nameCorrectionAr && (
                       <Panel tone="warn" className="mt-2 p-3">
                         <p className="mb-1 font-black">طلب تعديلا — والتوقيعُ واقفٌ حتّى تجيبَه</p>
                         {c.amendmentRequestedAt && (

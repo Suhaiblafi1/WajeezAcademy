@@ -452,6 +452,10 @@ export interface ConditionalOfferMailInput {
   requiredDocumentsAr: readonly string[]
   /** بوّابتُه تُفتح بتوقيعه، فيُدَلُّ عليها */
   portalUrl: string
+  /** سببُ هذا الإرسالِ بعينه حين يكون له سبب — كأن يكون بديلا صُحّح فيه
+      اسمُ الطرف الثاني. ويُقدَّم على كلّ شيء: من طلب تصحيحا ثمّ قرأ
+      «بلغتَ مرحلةَ العرض المشروط» بحرفها ظنّها إرسالا بالخطأ. */
+  noticeAr?: string | null
 }
 
 /* ═══ طلبُ الدرس التجريبيّ — الحالةُ وحدَها لا تُوصِل شيئا ═══
@@ -557,8 +561,9 @@ export function conditionalOfferMail(input: ConditionalOfferMailInput): Decision
     doc: {
       greetingName: input.fullName,
       preheader: 'بقي شرطٌ واحد: أن نعتمد موادَّك. وهذه خطواتُه كلُّها.',
-      heading: 'بلغتَ مرحلةَ العرض المشروط',
+      heading: input.noticeAr ? 'وهذا عرضُك مصحَّحا' : 'بلغتَ مرحلةَ العرض المشروط',
       blocks: [
+        ...(input.noticeAr ? ([{ kind: 'callout' as const, text: input.noticeAr }] as const) : ([] as const)),
         {
           kind: 'p',
           text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وضُبطت أتعابُك، ورُكِّب عرضُك. وهذا **عرضٌ مشروطٌ** لا عقدٌ نهائيّ: اقرأ بنودَه كاملةً قبل أن توقّعه.',

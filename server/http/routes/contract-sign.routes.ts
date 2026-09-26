@@ -88,6 +88,23 @@ export function registerContractSignRoutes(app: FastifyInstance, prisma: PrismaC
     return svc.requestContractAmendment(token, textAr)
   })
 
+  /* ═══ الجوابُ الرابع: «اسمي في هويّتي غيرُ هذا» ═══
+
+     أضيقُ من طلب التعديل وأكثرُ منه وقوعا: لا يعترض على بندٍ، وإنّما الوثيقةُ
+     تسمّيه باسمٍ أُخذ من حسابه وليس اسمَه في وثيقة هويّته. ويقف التوقيعُ به
+     كما يقف بطلب التعديل — فوثيقةٌ تسمّي طرفا ويوقّعها آخرُ ليست تامّة. */
+  app.post('/api/c/:token/name-correction', {
+    config: { rateLimit: SIGN_RATE },
+    schema: { tags: ['trainer-contracts'], summary: 'تصحيحُ اسم الطرف الثاني — يقف التوقيعُ ويصلنا اسمُه كما في هويّته' },
+  }, async (req, reply) => {
+    const { token } = params.parse(req.params)
+    const { legalNameAr } = z.object({
+      legalNameAr: z.string().trim().min(4).max(120),
+    }).parse(req.body)
+    reply.header('X-Robots-Tag', 'noindex, nofollow')
+    return svc.requestNameCorrection(token, legalNameAr)
+  })
+
   app.post('/api/c/:token/decline', {
     config: { rateLimit: SIGN_RATE },
     schema: { tags: ['trainer-contracts'], summary: 'اعتذارُ المدرّب عن العقد — جوابٌ مشروع' },

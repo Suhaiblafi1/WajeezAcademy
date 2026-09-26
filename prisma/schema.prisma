@@ -1275,6 +1275,18 @@ model TrainerProfile {
    */
   catalogScopeGrantedAt DateTime?
   catalogScopeGrantedBy String?                      @db.Uuid
+  /// ─────────── اسمُه القانونيُّ كما في وثيقة هويّته ───────────
+  ///
+  /// و`application.fullName` **ليس** هو: ذاك ما كتبه في نموذج تقديمه أو ما
+  /// أُخذ من حسابه — ثنائيٌّ غالبا، وقد يكون بالإنجليزيّة، ولا يطابق جوازَه.
+  /// وكان يُطبَع في ديباجة العقد طرفا ثانيا، ثمّ يوقّع المدرّبُ باسمه
+  /// القانونيّ في خانة التوقيع — فتخرج وثيقةٌ **تسمّي طرفا ويوقّعها آخر**.
+  ///
+  /// فهذا العمودُ هو مصدرُ اسم الطرف الثاني في كلّ عقدٍ يُركَّب بعده. يكتبه
+  /// الموظّفُ حين يركّب العقدَ مطابقا للوثيقة، أو يكتبه المدرّبُ بنفسه حين
+  /// يقول «اسمي في هويّتي غيرُ هذا» قبل أن يوقّع. وبلا قيمةٍ يعود إلى
+  /// `application.fullName` كما كان.
+  legalNameAr           String?
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
   application           TrainerApplication           @relation(fields: [applicationId], references: [id])
@@ -1912,13 +1924,13 @@ model TrainerContract {
   /// يُعرَض له ملحقٌ يدّعي اعتمادا لم يقع.
   approvedCoursesSnapshot Json?
   /// ملحوظةُ المعتمِد: ما طابقه بالوثيقة، أو تفويضُه الخطّيُّ إن لم يكن هو المفوَّض
-  countersignNoteAr     String?
+  countersignNoteAr       String?
 
-  sentAt          DateTime?
-  signedAt        DateTime?
-  declinedAt      DateTime?
+  sentAt               DateTime?
+  signedAt             DateTime?
+  declinedAt           DateTime?
   /// سببُ الاعتذار بخطّه — لا قائمةَ أسبابٍ تُختار، فأسبابُ الردّ لا تُحصى
-  declineReasonAr String?
+  declineReasonAr      String?
   /// ═══ النهايةُ الثالثة: يطلب تعديلا فلا يوقّع ولا يعتذر ═══
   ///
   /// وكانت النهايتان اثنتين، فمن أراد تغييرَ بندٍ واحدٍ لم يجد إلّا الاعتذارَ
@@ -1942,9 +1954,26 @@ model TrainerContract {
   amendmentRepliedAt DateTime?
   amendmentRepliedBy String?   @db.Uuid
 
-  revokedAt       DateTime?
-  revokedBy       String?   @db.Uuid
-  revokeReasonAr  String?
+  /// ─────────── «اسمي في هويّتي غيرُ هذا» ───────────
+  ///
+  /// جوابٌ رابعٌ للمدرّب أمام عرضه، وأضيقُ من طلب التعديل وأكثرُ منه وقوعا:
+  /// لا يعترض على بندٍ، وإنّما الوثيقةُ تسمّيه باسمٍ ليس اسمَه في وثيقة
+  /// هويّته. ولا يُصحَّح ذلك بتحرير حقل: المتنُ مجمَّدٌ مهشَّشٌ، واسمُ الطرف
+  /// جزءٌ منه — فالتصحيحُ عقدٌ بديلٌ (`kind: 'replacement'`) بمتنٍ جديدٍ
+  /// وبصمةٍ جديدة.
+  ///
+  /// ويُحفَظ ما كتبه بحرفه: منه يُبنى البديلُ، وهو الحجّةُ على أنّ الاسمَ
+  /// الجديدَ جاء منه هو لا من عندنا.
+  nameCorrectionAr String?
+  nameCorrectionAt DateTime?
+
+  /// العقدُ الذي حلّ هذا محلَّه — فسلسلةُ «رُفض فأُعيد مصحَّحا» تُقرأ صفّا
+  /// صفّا بعد سنة، ولا تبقى صفوفا متجاورةً لا رابطَ بينها.
+  replacesContractId String? @db.Uuid
+
+  revokedAt      DateTime?
+  revokedBy      String?   @db.Uuid
+  revokeReasonAr String?
 
   /// ─────────── الفسخ — نهايةُ عقدٍ نفَذ ───────────
   ///

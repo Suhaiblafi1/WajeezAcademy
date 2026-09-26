@@ -84,6 +84,16 @@ export default function ContractSign() {
   const [declineReason, setDeclineReason] = useState('')
   const [amending, setAmending] = useState(false)
   const [amendText, setAmendText] = useState('')
+  /* ═══ «اسمي في هويّتي غيرُ هذا» — جوابٌ رابع (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «الاسم الموجود هنا هو ما أُخذ من حسابه وغالبا ليس
+     اسما ثلاثيّا ولا يشبه جواز السفر أو الهويّة». وصاحبُ الاسم أعلمُ به
+     منّا، فله أن يكتبه بخطّه قبل أن يوقّع.
+
+     وهو مستقلٌّ عن طلب التعديل وإن وقف به التوقيعُ مثلَه: ذاك يُجاب بنعم أو
+     لا، وهذا يُجاب بنقرةٍ تُعيد العقدَ مصحَّحا — فلا يُخلَطان في صندوقٍ واحد. */
+  const [naming, setNaming] = useState(false)
+  const [idName, setIdName] = useState('')
   const bodyRef = useRef<HTMLDivElement | null>(null)
 
   const load = useCallback(async () => {
@@ -256,6 +266,19 @@ export default function ContractSign() {
       })
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ التوقيع')
+    } finally { setBusy(false) }
+  }
+
+  const requestNameCorrection = async () => {
+    setBusy(true); setErr('')
+    try {
+      await apiPost(`/api/c/${encodeURIComponent(token)}/name-correction`, {
+        legalNameAr: idName.trim(),
+      })
+      /* ويقف التوقيعُ كما يقف بطلب التعديل — فالحالُ تُقرأ من الخادم */
+      await load()
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ تصحيح الاسم')
     } finally { setBusy(false) }
   }
 
@@ -448,13 +471,49 @@ export default function ContractSign() {
               أطلبُ تعديلا
             </Button>
           )}
-          {!declining && !amending && (
+          {!amending && !declining && !naming && (
+            <Button tone="ghost" onClick={() => { setNaming(true); setIdName('') }}>
+              اسمي في هويّتي غيرُ هذا
+            </Button>
+          )}
+          {!declining && !amending && !naming && (
             <Button tone="ghost" onClick={() => setDeclining(true)}>
               أعتذرُ عن التوقيع
             </Button>
           )}
         </div>
       </section>
+
+      {naming && (
+        <Panel tone="warn" className="p-4">
+          <h2 className="mb-1 text-lg font-black">اسمُك كما في وثيقة هويّتك</h2>
+          <p className="mb-3">
+            هذه الوثيقةُ تسمّيك في ديباجتها <b>{v.trainerName}</b> — وهو ما وصلنا
+            من حسابك. فإن كان اسمُك في هويّتك أو جوازك غيرَ هذا فاكتبْه هنا كاملا
+            كما هو مكتوبٌ فيها بالضبط.
+          </p>
+          <p className="mb-3 opacity-80">
+            ويقف التوقيعُ حتّى يصلك العقدُ مصحَّحا برابطٍ جديد — فلا تُوقَّع وثيقةٌ
+            تسمّي غيرَك. ولا يتغيّر فيها شيءٌ سوى اسمك: بنودُك وأتعابُك كما قرأتَها.
+          </p>
+          <label className="sr-only" htmlFor="id-name">اسمُك كما في وثيقة هويّتك</label>
+          <input
+            id="id-name" type="text" value={idName} maxLength={120}
+            onChange={(e) => setIdName(e.target.value)}
+            placeholder="الاسمُ الكاملُ كما في الهويّة أو جواز السفر"
+            className="mb-3 w-full rounded-lg border border-white/15 bg-black/20 p-3"
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button tone="confirm" disabled={idName.trim().length < 4} loading={busy}
+              onClick={() => void requestNameCorrection()}>
+              أرسلْ الاسمَ الصحيح
+            </Button>
+            <Button tone="ghost" onClick={() => { setNaming(false); setIdName('') }}>
+              تراجعْ
+            </Button>
+          </div>
+        </Panel>
+      )}
 
       {amending && (
         <Panel tone="warn" className="p-4">
