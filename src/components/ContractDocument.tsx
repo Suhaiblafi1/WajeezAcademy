@@ -33,6 +33,7 @@ import type { ContractDoc, ContractSection, ContractBlock } from '@/application/
 import {
   sectionHeadingAr, summaryItem, exampleRow, exampleTotal,
   isExampleHeading, isAdvisoryNote, feeRuleRows, feeRuleCells,
+  glossaryItem, GLOSSARY_HEAD,
 } from '@/application/trainer/contract-sections'
 
 /** فاصلٌ يُقرأ ولا يُرى — فالنصُّ يبقى تامّا والعينُ تقرأ اللوح */
@@ -86,6 +87,39 @@ function Summary({ section }: { section: ContractSection }) {
                 {it!.noteAr && <><Sep t=" — " /><span className="cd-n">{it!.noteAr}</span></>}
                 {it!.refAr && <><Sep t=" " /><span className="cd-ref">{it!.refAr}</span></>}
               </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {loose.map(({ b }, i) => <Para key={i} b={b} />)}
+    </>
+  )
+}
+
+/* ═══ المعجمُ صفوفُ مصطلحٍ وتعريف — نَسَقُ الخلاصة بعينه ═══
+
+   طلبُ صاحب المنصّة (٢٦ سبتمبر ٢٠٢٦): «ما تعنيه الكلمات مرتّبه كما في الملخّص
+   أعلاه لتوضيح الكلمة الرئيسيّة بدلا من أنّها ضمن النصّ».
+
+   وكان المصطلحُ يُقرأ داخل الجملة، فمن يبحث عن «الإسناد» يمسح ثمانيَ فقراتٍ
+   متشابهةٍ بعينه. والخلاصةُ فوقَه تفصل المفتاحَ عن قيمته، فيُعطى نَسَقَها.
+
+   ولا يتغيّر حرفٌ من المتن: النقطةُ والنقطتان تبقيان في النصّ بـ`sr-only`
+   كما في الخلاصة — فالمنسوخُ والمطبوعُ والمهشَّشُ سواء. والبندُ الذي لا
+   يطابق شكلَ «مصطلح: تعريف» يرتدّ فقرةً كما هو. */
+function Glossary({ section }: { section: ContractSection }) {
+  const items = section.blocks.map((b) => ({ b, it: glossaryItem(b) }))
+  const rows = items.filter((x) => x.it)
+  const loose = items.filter((x) => !x.it)
+  return (
+    <>
+      {rows.length > 0 && (
+        <dl className="cd-glist">
+          {rows.map(({ it }, i) => (
+            <div key={i} className="cd-grow">
+              <Sep t="· " />
+              <dt className="cd-term">{it!.termAr}<Sep t=": " /></dt>
+              <dd className="cd-def">{it!.defAr}</dd>
             </div>
           ))}
         </dl>
@@ -250,7 +284,9 @@ export default function ContractDocument({ doc }: { doc: ContractDoc }) {
               <h3>{sectionHeadingAr(s)}</h3>
             </div>
           )}
-          <div className="cd-card"><Blocks section={s} /></div>
+          <div className="cd-card">
+            {s.titleAr === GLOSSARY_HEAD ? <Glossary section={s} /> : <Blocks section={s} />}
+          </div>
         </section>
       ))}
     </article>
