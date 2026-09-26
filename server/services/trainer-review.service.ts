@@ -14,7 +14,8 @@ import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import {
-  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail } from './trainer-decision-mail'
+  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail,
+  contractRevokedMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -2571,12 +2572,115 @@ export class TrainerReviewService {
       entityType: 'trainer_contract', entityId: contractId,
       meta: { replyAr: reply.slice(0, AMENDMENT_TEXT_MAX) },
     })
+    /* ═══ والجوابُ يصل في الرسالة لا في الصفّ وحدَه (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       كان يُرسَل هنا بريدُ `mailContract({ resend: true })`، ونصُّه: «اقرأ
+       الوثيقة كاملة قبل التوقيع — وما فيها لم يتغيّر، الرابطُ وحدَه هو
+       الجديد». فجوابُ الموظّف يُحفَظ في `amendmentReplyAr` **ولا يخرج**،
+       ويُقرأ على من طلب تعديلا: وقّعْ ثانية.
+
+       وهو بلاغُ صاحب المنصّة بحرفه (٢٦ سبتمبر): «أرسل له أنّنا لن نغيّر
+       العقد ولم تظهر له رسالتي في الإيميل وإنّما طُلب منه التوقيع مرّةً
+       أخرى». */
     const app = contract.profile.application
-    const mail = await this.mailContract({
-      contract, to: app.email, fullName: app.fullName, reference: app.reference,
-      url: this.signingUrl(token), expiresAt, resend: true,
+    const doc = amendmentAnsweredMail({
+      fullName: app.fullName,
+      reference: app.reference,
+      title: contract.title,
+      replyAr: reply.slice(0, AMENDMENT_TEXT_MAX),
+      url: this.signingUrl(token),
+      expiresOnAr: fmtDateWith(expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
+    })
+    const mail = await sendDirectEmail(this.prisma, {
+      to: app.email, subject: doc.subject, ...renderMail(doc.doc),
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
+  }
+
+  /* ═══ الجوابُ الثالث: «سنعدّل ونرسل عقدا جديدا» (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «وإذا أردت أن أردّ عليه بأنّنا سنعدّل العقد ونرسل
+     لك عقدا جديدا لا يوجد زرٌّ لهذا الأمر — والذي يجب أن يستقبل المدرّبُ
+     رسالةً تقول إنّنا سنرسل العقد مرّةً أخرى مع التعديلات المقبولة فقط».
+
+     وكان البابُ موجودا بمعناه لا باسمه: يُلغى العقدُ بزرّ «ألغِ» ثمّ يُركَّب
+     غيرُه. وفيه عطبان: الإلغاءُ كان لا يرسل شيئا أصلا، وسببُه يُكتب في خانةٍ
+     عامّةٍ لا تقول إنّ طلبَه قُبل. فمن قُبل طلبُه كان يقرأ — لو قرأ شيئا —
+     «أُلغي عقدُك»، وهو عكسُ ما وقع.
+
+     ولمَ يُلغى ولا يُعدَّل: متنُ العقد مجمَّدٌ ومهشَّمٌ بـ`bodyHash`، وما
+     عُرض للتوقيع لا يُحرَّر تحت قارئه. فالتصحيحُ عرضٌ جديدٌ بمتنٍ جديدٍ
+     وبصمةٍ جديدة، والقديمُ يُغلَق بسببٍ يقول الحقيقة. */
+  async answerAmendmentWithNewContract(contractId: string, actorId: string, replyAr: string) {
+    const reply = (replyAr ?? '').trim()
+    if (reply.length < 5) {
+      throw new AuthError('no_reply', 'اكتب ما قبلتَه من تعديله — يصل صاحبَه بحرفه', 422)
+    }
+    const contract = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+
+    const revokedAt = new Date()
+    /* قارنْ واضبطْ في نداءٍ واحد: نقرتان متزامنتان لا تكتبان جوابَين */
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: contractId, status: CONTRACT_AMENDMENT_REQUESTED },
+      data: {
+        status: 'revoked', revokedAt, revokedBy: actorId,
+        revokeReasonAr: `قُبل طلبُ التعديل ويُعاد تركيبُه مصحَّحا: ${reply}`.slice(0, 500),
+        /* والجوابُ يُحفَظ في خانته هو كذلك: خطُّ زمنِ طلب التعديل يُقرأ
+           كاملا — طُلب، وأُجيب، وبمَ أُجيب — ولو أُغلق الصفُّ بعده. */
+        amendmentReplyAr: reply.slice(0, AMENDMENT_TEXT_MAX),
+        amendmentRepliedAt: revokedAt, amendmentRepliedBy: actorId,
+        /* والرمزُ يموت: رابطٌ حيٌّ على متنٍ قبلنا تعديلَه بابٌ يوقّع منه
+           صاحبُه ما اتّفقنا على تغييره. */
+        tokenHash: null, tokenExpiresAt: null,
+      },
+    })
+    if (done.count === 0) {
+      throw new AuthError('bad_state', 'لا طلبَ تعديلٍ قائمٌ على هذا العقد', 409)
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.amendment_reissue',
+      entityType: 'trainer_contract', entityId: contractId,
+      meta: { replyAr: reply.slice(0, AMENDMENT_TEXT_MAX), revokedAt },
+    })
+    const emailDelivery = await this.notifyContractRevoked(contract, reply, true)
+    return { ok: true, emailDelivery }
+  }
+
+  /** يصل صاحبَ العقد أنّ عقدَه أُغلق ولماذا — ولا يُرسَل عن مسودّةٍ لم يرَها.
+   *
+   *  فالمسودّةُ لم تخرج إليه أصلا: رسالةٌ عنها تُخبره بوجود عقدٍ ثمّ بإلغائه
+   *  في نفَسٍ واحد، وهو خبرٌ لا يعنيه ويُقلقه. */
+  private async notifyContractRevoked(
+    contract: {
+      status: string; title: string
+      signerEmail: string | null
+      profile: { application: { email: string; fullName: string; reference: string } }
+    },
+    reasonAr: string,
+    reissue: boolean,
+  ): Promise<DirectMailStatus | null> {
+    /* و`null` تعني «لا رسالةَ مستحقّة» — لا «حاولنا فتعذّر». والفرقُ يُقرأ:
+       `not_configured` تقول إنّ قناةَ البريد مغلقة، وهي حالٌ تُصلَح. وصفٌّ
+       لم يخرج إلى صاحبه لا يُوصف بأنّ بريدَه تعذّر. */
+    if (contract.status === 'draft') return null
+    const app = contract.profile.application
+    try {
+      const doc = contractRevokedMail({
+        fullName: app.fullName, reference: app.reference,
+        title: contract.title, reasonAr, reissue,
+      })
+      const sent = await sendDirectEmail(this.prisma, {
+        to: contract.signerEmail ?? app.email, subject: doc.subject, ...renderMail(doc.doc),
+      })
+      return sent.status
+    } catch {
+      /* البريدُ رفاهية — الإلغاءُ وقع، والأثرُ يحفظه */
+      return 'failed'
+    }
   }
 
   /* ═══ الحذف — وما لا يُحذَف أبدا ═══
@@ -2663,10 +2767,23 @@ export class TrainerReviewService {
   /** الإلغاء — وما أُرسل لا يُحذف. الصفُّ يبقى دليلا على ما رُكّب ومن ألغاه */
   async revokeContract(contractId: string, actorId: string, reasonAr: string) {
     if (reasonAr.trim().length < 5) {
-      throw new AuthError('no_reason', 'سببُ الإلغاء يُكتب — يُقرأ بعد شهرٍ حين يُسأل عنه', 422)
+      throw new AuthError('no_reason', 'سببُ الإلغاء يُكتب — يُقرأ بعد شهرٍ حين يُسأل عنه، ويصل صاحبَه بحرفه', 422)
     }
-    /* قارنْ واضبطْ في نداءٍ واحد: قراءةٌ ثمّ كتابةٌ تسمح لنقرتين متزامنتين
-       أن تمرّا معا، فيُكتب سببان ويُسجَّل أثران لإلغاءٍ واحد. */
+    /* ═══ ويُقرأ الصفُّ قبل إغلاقه — لا لحارسٍ بل لرسالةٍ تخرج (٢٦ سبتمبر) ═══
+
+       الإلغاءُ كان يحدّث الصفَّ ويكتب أثرَه ويميت رمزَه ثمّ **يسكت**. فمن
+       ينتظر عقدا يفتح رابطَه فلا يعمل، ولا خبرَ عنده أنّه أُلغي ولا لماذا.
+       وبلاغُ صاحب المنصّة (٢٦ سبتمبر): «يجب أن يكون زرُّ إلغاء العقد فيرسل
+       للمدرّب أنّ العقد قد أُلغي ولماذا».
+
+       والحارسُ يبقى حيث كان — `updateMany` بشرط الحالة — فالقراءةُ هنا
+       للبريد لا للتحقّق: بين القراءة والكتابة قد يُوقَّع، والكتابةُ وحدَها
+       تحكم. وحالُه المقروءةُ تقول أكان الصفُّ قد خرج إليه أصلا. */
+    const before = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!before) throw new AuthError('not_found', 'العقد غير موجود', 404)
     const done = await this.prisma.trainerContract.updateMany({
       where: { id: contractId, status: { in: ['draft', 'sent', CONTRACT_AMENDMENT_REQUESTED] } },
       /* والرمزُ يموت مع الإلغاء: رابطٌ حيٌّ لعقدٍ ملغًى بابٌ مفتوحٌ على
@@ -2681,7 +2798,9 @@ export class TrainerReviewService {
       actorId, action: 'trainer.contract.revoke', entityType: 'trainer_contract', entityId: contractId,
       meta: { reasonAr: reasonAr.trim() },
     })
-    return { ok: true }
+    /* والسببُ يصل بحرفه: ما كُتب ليُقرأ بعد شهرٍ يُقرأ اليومَ ممّن يخصّه */
+    const emailDelivery = await this.notifyContractRevoked(before, reasonAr.trim(), false)
+    return { ok: true, emailDelivery }
   }
 
   /* ═══════════ من الرابط — حيث يقرأ المدرّبُ ويوقّع ═══════════
@@ -2952,56 +3071,25 @@ export class TrainerReviewService {
       }
     })
 
-    /* ═══ ونسخةُ صاحبِه تصله — وصلةً لا سكبَ متن ═══
+    /* ═══ ونسخةُ صاحبِه تصله — وصلةً لا سكبَ متن، ولا وعدَ طباعةٍ قبل أوانها ═══
 
-       كانت الرسالةُ تسكب `bodyAr` كلَّه في فقرةٍ واحدة، فتصل نسختُه «نصّا
-       طويلا غير موقَّع» — سطورُ القالب بلا أثرٍ لأنّه وقّعها. وسأل صاحبُ
-       المنصّة (٢٥ سبتمبر ٢٠٢٦): «اين نضع توقيعنا؟».
-
-       فالرسالةُ تقول ما يُثبت توقيعَه — اسمُه القانونيُّ كما كتبه، وتاريخُه،
-       وبصمةُ النصّ الذي عُرض عليه — ثمّ تُحيل إلى «عقدي» حيث الوثيقةُ كاملةً
-       تحتها سجلُّ التنفيذ، تُقرأ وتُطبَع إلى PDF. والبريدُ لا يصلح موضعا
-       لوثيقةٍ تُطبَع: عملاءُ البريد يقطعون الرسائلَ الطويلةَ ويكسرون أسطرَها،
-       فالنصُّ المسكوبُ قد لا يصل تامّا أصلا.
-
-       ── والوصلةُ تُقال بشرطها لا بإطلاق ──
-
-       من وقّع قبل أن يُنشئ حسابَه لا يفتح بوّابتَه اليومَ (`profile.userId`
-       فارغٌ حتّى `consumeInvitation`). فيُسأل الشرطُ ويُقال له الصدقُ: إمّا
-       «هذا بابُها» وإمّا «تُفتح مع حسابك». ولا وعدٌ برابطٍ يردُّه إلى شاشة
-       دخول. */
+       نصُّها ودواعيه في رأس `signedCopyMail` (`trainer-decision-mail.ts`):
+       سُحبت من هنا إلى دالّةٍ خالصةٍ ليُقاس ما يصل الإنسانَ بفحصٍ يقرؤه كما
+       يقرؤه هو، لا بمسحٍ على شيفرة هذه الخدمة. */
     const app = c.profile.application
-    const hasPortal = c.profile.userId != null
-    const contractUrl = `${publicSiteUrl()}/trainer/contract`
     try {
+      const mail = signedCopyMail({
+        legalName,
+        title: c.title,
+        signedOnAr: fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
+        bodyHash: c.bodyHash ?? '—',
+        conditional: c.gatesActivation,
+        portalUrl: `${publicSiteUrl()}/trainer`,
+        /* من وقّع قبل أن يُربَط حسابُه لا يُعطى زرّا يردّه إلى شاشة دخول */
+        hasPortal: c.profile.userId != null,
+      })
       await sendDirectEmail(this.prisma, {
-        to: c.signerEmail ?? app.email,
-        subject: `نسختُك من العقد الموقَّع — ${c.title}`,
-        ...renderMail({
-          greetingName: legalName,
-          heading: 'سُجّل توقيعُك، وهذه نسختُك',
-          blocks: [
-            { kind: 'p', text: `وقّعتَ «${c.title}» بتاريخ ${fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' })}، وحُفظ توقيعُك بهذه البيانات:` },
-            {
-              kind: 'facts',
-              rows: [
-                { label: 'الاسمُ القانونيُّ الذي وقّعتَ به', value: legalName },
-                { label: 'تاريخُ التوقيع', value: fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' }) },
-                { label: 'بصمةُ النصّ الذي وقّعتَ عليه (sha256)', value: c.bodyHash ?? '—' },
-              ],
-            },
-            { kind: 'callout', text: 'تراجعه الأكاديميّةُ الآن، وتصلك رسالةٌ حين يُعتمَد ويُفتح حسابُك.' },
-            ...(hasPortal
-              ? ([
-                  { kind: 'p', text: 'ونسختُك الكاملةُ في بوّابتك تحت «عقدي»: الوثيقةُ بحروفها، وتحتها سجلُّ التوقيعَين والإقراراتُ التي أقررتَ بها. ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.' },
-                  { kind: 'cta', label: 'افتح «عقدي» واطبع نسختك', href: contractUrl },
-                ] as const)
-              : ([
-                  { kind: 'p', text: 'ونسختُك الكاملةُ محفوظةٌ لك في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها، وتحتها سجلُّ التوقيعَين والإقراراتُ التي أقررتَ بها، وزرُّ طباعةٍ يحفظها ملفَّ PDF عندك. وتُفتح لك مع حسابك حين يُعتمَد توقيعُك.' },
-                ] as const)),
-            { kind: 'note', text: 'ولو أردتَ نسخةً قبل ذلك، ردَّ على هذه الرسالة.' },
-          ],
-        }),
+        to: c.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
       })
     } catch { /* البريدُ رفاهية — التوقيعُ وقع، والنسخةُ في بوّابته */ }
 

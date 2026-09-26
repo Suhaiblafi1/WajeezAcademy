@@ -20,7 +20,7 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, RefreshCw, Send, Trash2, Undo2, X } from "lucide-react";
+import { BadgeCheck, Ban, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, RefreshCw, Send, Trash2, Undo2, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -660,10 +660,11 @@ export default function TrainerContracts() {
                             ولا يُكرَّر زرُّ الإلغاء هنا: فعلٌ لا رجعةَ فيه لا
                             يُنسَخ في موضعَين من شاشةٍ واحدة. فيُسمّى ويُدَلّ عليه. */}
                         <p className="mt-3 text-read leading-6 opacity-80">
-                          وجوابُك أحدُ اثنين: <b>تردُّ عليه فيبقى العرضُ كما هو</b> — وذلك أدناه؛
-                          أو <b>تُلغيه وتركّب عرضا مصحَّحا</b> بالتعديل الذي طلبه، بزرّ «ألغِ» في
-                          صفّ الأفعال أعلاه ثمّ تركيبِ عقدٍ جديد. ولا يُعدَّل متنُ عرضٍ أُرسل:
-                          هو مجمَّدٌ مهشَّش، فالتصحيحُ عرضٌ جديدٌ لا كتابةٌ فوق القائم.
+                          اكتبْ جوابَك ثمّ اخترْ ما يترتّب عليه: <b>يبقى العرضُ كما هو</b> فيعود
+                          إليه برابطٍ جديدٍ ليوقّعه أو يعتذر؛ أو <b>تقبل تعديلَه</b> فيُغلَق هذا
+                          العرضُ ويصله أنّ عقدا مصحَّحا يُعَدّ له، ثمّ تركّبه من «عقدٌ جديد» أعلاه.
+                          وفي الحالين يصله جوابُك بحرفه. ولا يُعدَّل متنُ عرضٍ أُرسل: هو مجمَّدٌ
+                          مهشَّش، فالتصحيحُ عرضٌ جديدٌ لا كتابةٌ فوق القائم.
                         </p>
                         {replying?.id === c.id ? (
                           <div className="mt-3">
@@ -697,8 +698,27 @@ export default function TrainerContracts() {
                                   setLink({ id: c.id, url: r.signingUrl });
                                   setReplying(null);
                                   await load();
-                                }, "وصلَه جوابُك — وجُدِّد رابطُ التوقيع، والقديمُ بطل")}>
+                                }, "وصلَه جوابُك — وجُدِّد رابطُ التوقيع، والقديمُ بطل", c.id)}>
                                 أرسِلْ الردّ — يبقى العرضُ كما هو
+                              </Button>
+                              {/* ═══ والجوابُ الثاني صار زرّا يُرى (٢٦ سبتمبر ٢٠٢٦) ═══
+
+                                  بلاغُ صاحب المنصّة: «وإذا أردت أن أردّ عليه بأنّنا
+                                  سنعدّل العقد ونرسل لك عقدا جديدا لا يوجد زرٌّ لهذا
+                                  الأمر». وكان البابُ موجودا بمعناه لا باسمه: يُلغى
+                                  بزرّ «ألغِ» ثمّ يُركَّب غيرُه — وهو ما لا يخطر لمن
+                                  يقرأ طلبَ تعديلٍ في لوحه، فضلا عن أنّ الإلغاءَ كان
+                                  لا يرسل شيئا وسببُه لا يقول إنّ طلبَه قُبل. */}
+                              <Button size="sm" tone="confirm" icon={FilePlus2}
+                                disabled={replying.replyAr.trim().length < 5}
+                                onClick={() => void run(async () => {
+                                  await apiPost(
+                                    `/api/admin/trainer-contracts/${c.id}/amendment-reissue`,
+                                    { replyAr: replying.replyAr.trim() });
+                                  setReplying(null);
+                                  await load();
+                                }, "وصلَه أنّ عقدا مصحَّحا يُعَدّ له — ركّبْه الآن من «عقدٌ جديد»", c.id)}>
+                                قبِلتُ التعديل — سأرسل عقدا مصحَّحا
                               </Button>
                               <Button size="sm" tone="ghost" onClick={() => setReplying(null)}>صرفُ النظر</Button>
                             </div>

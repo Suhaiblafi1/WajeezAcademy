@@ -479,6 +479,18 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.replyToAmendment(contractId, req.auth!.userId, replyAr)
   })
 
+  /* والجوابُ الثالث: يُقبَل الطلبُ فيُغلَق العرضُ ويُعاد تركيبُه مصحَّحا.
+     وصلاحيّتُه صلاحيّةُ الإلغاء نفسُها — فهو إلغاءٌ بسببٍ مسمّى، ومن ملك
+     أن يُلغي ملك أن يُلغيَ قبولا لطلب صاحبه. */
+  app.post('/api/admin/trainer-contracts/:contractId/amendment-reissue', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'قبولُ طلب التعديل — يُغلَق العرضُ ويصلُه أنّ عقدا مصحَّحا يُعَدّ له' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { replyAr } = z.object({ replyAr: z.string().trim().min(5).max(AMENDMENT_TEXT_MAX) }).parse(req.body)
+    return review.answerAmendmentWithNewContract(contractId, req.auth!.userId, replyAr)
+  })
+
   /* ═══ الحذف — وما مسَّه توقيعٌ لا يُحذَف ═══
 
      طلبَه صاحبُ المنصّة (٢٤ سبتمبر): قائمةُ العقود تمتلئ بما لا يفيد.
