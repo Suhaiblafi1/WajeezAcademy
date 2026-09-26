@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   ArrowDownWideNarrow, ArrowUpNarrowWide,
-  CalendarCheck, CalendarX2, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
+  CalendarCheck, CalendarPlus, CalendarX2, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
   KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff,
   Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
@@ -32,6 +32,7 @@ import { teachableCountAr } from "@/application/trainer/teachable-proposals";
 import InterviewSheet from "./InterviewSheet";
 import ReviewerLinks from "./ReviewerLinks";
 import { canRemindToBook, yearsLabel } from "@/application/trainer/application-options";
+import { awaitsBookingInvite } from "@/application/trainer/interview-invitation";
 import {
   FOLLOWUP_BODY_MIN, NO_SHOW_FOLLOWUPS, canFollowUpNoShow, followupOf,
 } from "@/application/trainer/no-show-followup";
@@ -62,6 +63,19 @@ const PURGEABLE: string[] = [...PURGEABLE_STATUSES];
     المسار في الخادم. ولا يُعاد كتابتُه هنا: نسختان تنحرفان. */
 const canRemind = (a: { status: string; interviewsCount: number }): boolean =>
   canRemindToBook({ status: a.status, liveInterviews: a.interviewsCount });
+
+/* ═══ ومن لم نطلبْ منه شيئا بعد (٢٦ سبتمبر ٢٠٢٦) ═══
+
+   «لم يحجز موعدا بعد» تجمع من دُعي فلم يحجز ومن لم يُدعَ أصلا — فيقرأ
+   الموظّفُ أربعين اسما ولا يعرف أيُّهم ينتظره هو. وهذه تعزل الثانيَ وحدَه.
+
+   والحكمُ في `interview-invitation.ts` لا هنا: يقرؤه الخادمُ في صفحة
+   المتقدّم كذلك، ونسختان تفترقان يوما. */
+const awaitsInvite = (a: {
+  status: string; interviewsCount: number; interviewInvitedAt?: string | null;
+}): boolean => awaitsBookingInvite({
+  status: a.status, liveInterviews: a.interviewsCount, invitedAt: a.interviewInvitedAt ?? null,
+});
 
 /* ═══ نتيجةُ اللقاء في الصفّ — بلونها لا بلونٍ واحد ═══
 
@@ -297,6 +311,8 @@ interface AppDetail extends Record<string, unknown> {
     feeExpectationAr?: string | null; feeProposalAr?: string | null;
   }[];
   interviews: { id: string; scheduledAt: string; outcome: string | null; canceledAt: string | null }[];
+  /* متى خرجت إليه دعوةُ حجزٍ — `null` لمن لم تخرج إليه قطّ */
+  interviewInvitedAt?: string | null;
   statusHistory: { fromStatus: string | null; toStatus: string; note: string | null; createdAt: string }[];
   profile: {
     id: string; userId: string | null;
@@ -453,6 +469,7 @@ export default function TrainerApplications() {
      وهو في الشاشة لا في الخادم: الحالةُ تُرشَّح هناك، وهذا يعمل على ما وصل
      فيُقرأ أثرُه فورا بلا نداءٍ ثانٍ. */
   const [onlyUnbooked, setOnlyUnbooked] = useState(false);
+  const [onlyUninvited, setOnlyUninvited] = useState(false);
   /* ═══ حوارُ متابعة الغياب — رسالةٌ تُختار ومتنٌ يُعدَّل (٢٣ سبتمبر ٢٠٢٦) ═══
 
      والمتنُ في الحالة لا في الحقل: اختيارُ الرسالة يُبدّله، وتعديلُ الموظّف
@@ -746,6 +763,7 @@ export default function TrainerApplications() {
       .filter((a) => !filter || a.status === filter)
       .filter((a) => !resultFilter || resultKey(a) === resultFilter)
       .filter((a) => !onlyUnbooked || canRemind(a))
+      .filter((a) => !onlyUninvited || awaitsInvite(a))
       .filter((a) => matchesQuery(q, [a.fullName, a.email, a.reference, a.jobTitle, ...a.specialties])),
     sortKey, sortDir, Object.keys(STATUS_LABELS),
   );
@@ -1825,6 +1843,22 @@ export default function TrainerApplications() {
                   <span className="mr-1 font-mono opacity-70">
                     {syncTrust && !syncTrust.trusted ? "؟" : apps.filter(canRemind).length}
                   </span>
+                </Button>
+                {/* ═══ ومن ينتظرنا نحن (٢٦ سبتمبر ٢٠٢٦) ═══
+
+                    طلبُ صاحب المنصّة. والذي قبله يجمع الاثنين — من دُعي فلم
+                    يحجز، ومن لم تخرج إليه دعوةٌ أصلا — وهما خبران عن رجلَين
+                    في موضعَين: الأوّلُ ينتظره هو، والثاني ينتظرنا نحن.
+
+                    وعدُّه لا يُعلَّق على ثقة المزامنة كأخيه: ذاك يُقاس بما
+                    وصلنا من حجوز فيكذب حين تسقط، وهذا يُقاس بما **أرسلناه**
+                    نحن — والأثرُ عندنا لا عند قوقل. */}
+                <Button size="sm"
+                  tone={onlyUninvited ? "confirm" : "secondary"}
+                  aria-pressed={onlyUninvited}
+                  onClick={() => { setOnlyUninvited((v) => !v); setPage(1); }}>
+                  <CalendarPlus className="h-3.5 w-3.5" /> لم يُطلب منه تحديدُ موعد
+                  <span className="mr-1 font-mono opacity-70">{apps.filter(awaitsInvite).length}</span>
                 </Button>
               </div>
             </div>

@@ -112,16 +112,27 @@ describe('المهلةُ تُخزَّن محسوبةً من تاريخ الجل�
       .not.toBe(rb.createdAt.getTime())
   })
 
-  /* وضمانُ الترحيل: لا ساعةَ صامتةٌ تبدأ على من لم يُعلَم بها */
-  it('وعرضٌ بلا تاريخِ جلسةٍ لا مهلةَ له', async () => {
+  /* ═══ وقُلب هذا الحارسُ يومَ صارت الجلسةُ لازمة (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     كان يقيس أنّ «عرضا بلا تاريخِ جلسةٍ لا مهلةَ له» — وهو صوابٌ يومَ كُتب:
+     الجلسةُ اختياريّةٌ، والضمانُ أن لا تبدأ ساعةٌ صامتةٌ على من لم يُعلَم بها.
+
+     ونسخه قرارُ صاحب المنصّة: «نعم — بعد أن يوقّعوا ونوقّعَ العرضَ المشروط،
+     تصلهم دعوةُ جلسة التهيئة». وعلّتُه أنّ «بلا مهلة» **لم تكن حالةً عابرة**
+     تُكتب لاحقا: لا مسارَ يكتب المهلةَ بعد التركيب إلّا التمديدُ، وهو يشترط
+     مهلةً قائمة. فمن رُكّب عرضُه بلا جلسةٍ بقي بلا مهلةٍ أبدا، ولا يستطيع أن
+     يُعلن اكتمالَ موادّه، فيُعتمَد والشرطُ في متنه لا يُنفَّذ منه شيء.
+
+     والضمانُ الذي وُضع له هذا الحارسُ باقٍ في موضعه الصحيح: لا ساعةَ صامتة —
+     لأنّه **لا ساعةَ بلا جلسةٍ يُعلَم بها** أصلا. فيُقاس المنعُ مكانَ الفراغ. */
+  it('ولا يُركَّب عرضٌ مشروطٌ بلا تاريخِ جلسة', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const { app } = await mkCandidate()
-    const made = await review.composeContract(app.id, academicId, {
+    await expect(review.composeContract(app.id, academicId, {
       title: 'عرضٌ بلا جلسة', requiredDocuments: DOCS,
-    })
-    const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
-    expect(row.orientationAt).toBeNull()
-    expect(row.conditionDeadlineAt, 'بدأت مهلةٌ بلا جلسةٍ يُعلَم بها').toBeNull()
+    })).rejects.toMatchObject({ code: 'orientation_required' })
+    expect(await prisma.trainerContract.count({ where: { profile: { applicationId: app.id } } }),
+      'رُدَّ التركيبُ وبقي صفٌّ يتيم').toBe(0)
   })
 
   it('ومتنُه يحمل بندَ الشرط وعنوانَ «عرض مشروط»', async () => {

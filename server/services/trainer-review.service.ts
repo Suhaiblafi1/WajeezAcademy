@@ -23,6 +23,7 @@ import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/lin
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { OUTREACH_ACTIONS } from '../../src/application/trainer/outreach'
+import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
 import { LIVE_INTERVIEW, pendingInterview, revertWhenNoLiveInterview } from './trainer-interview-state'
 import { buildIcs } from './calendar/ics'
 import { TrainerApplicationService, transitionProblemAr, type TrainerStatus } from './trainer-application.service'
@@ -88,8 +89,21 @@ export interface ContractComposeInput {
      أُخِّرا إلى الإرسال لَوُقِّع مستندٌ يقول «تبدأ من تاريخ تخطرك به» وفي
      القاعدة تاريخٌ لم يقرأه. والتركيبُ والإرسالُ دقائقُ بينهما.
 
-     ولا يلزمان: من رُكِّب له عرضٌ ولمّا يُعرَف موعدُ جلسته يُرسَل بلا تاريخ،
-     فلا مهلةَ له حتّى يُكتب ويصله خبرُه — ومتنُه يقول ذلك بنصّه. */
+     ═══ وصار الموعدُ لازما في المشروط (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     كان يُكتب هنا: «ولا يلزمان: من رُكِّب له عرضٌ ولمّا يُعرَف موعدُ جلسته
+     يُرسَل بلا تاريخ، فلا مهلةَ له حتّى يُكتب ويصله خبرُه». ونسخه قرارُ صاحب
+     المنصّة: «نعم — بعد أن يوقّعوا ونوقّعَ العرضَ المشروط، تصلهم دعوةُ جلسة
+     التهيئة».
+
+     وعلّةُ النسخ أنّ «المهلةَ تُكتب لاحقا» **لم تكن تقع**: لا مسارَ يكتب
+     `conditionDeadlineAt` بعد التركيب إلّا التمديدُ — وهو يشترط مهلةً قائمة.
+     فمن رُكّب عرضُه بلا جلسةٍ بقي بلا مهلةٍ أبدا، وبلا مهلةٍ لا يستطيع أن
+     يُعلن اكتمالَ موادّه (`openConditionContract`)، فيُوقَّع العرضُ ويُعتمَد
+     مباشرةً والشرطُ مكتوبٌ في متنه لا يُنفَّذ منه شيء.
+
+     والشرطُ على `gatesActivation` وحدَه: العقدُ العاديُّ لا طورَ له ولا مهلة.
+     و`orientationUrl` يبقى اختياريّا — رابطُ الحضور يُضاف بعد حجز الغرفة. */
   orientationAt?: string | null
   orientationUrl?: string | null
   /* ═══ والأتعابُ تُضبَط في هذه الشاشة نفسِها ═══
@@ -257,6 +271,18 @@ export class TrainerReviewService {
        createdAt]` موضوعٌ لهذا، ونازلا يقع أحدثُ ما لكلّ طلبٍ أوّلا — فأوّلُ
        ما يُرى لمعرّفٍ هو آخرُ مراسَلته. */
     const outreach = new Map<string, { action: string; at: Date }>()
+    /* ═══ ومتى خرجت إليه دعوةُ الحجز بعينها (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       طلبُ صاحب المنصّة: «أضفْ لي فلترا بجانب "لم يحجز موعدا" وهو: لم يُطلب
+       منه تحديد موعد مقابلة».
+
+       و`outreach` أعلاه لا تكفي: هي تحفظ **آخرَ مراسَلةٍ** أيّا كانت، فمن
+       دُعي إلى الحجز ثمّ أُرسل إليه شيءٌ آخرُ بعده تُخفي دعوتَه. والسؤالُ
+       هنا غيرُه: أخرجت الدعوةُ **يوما**؟
+
+       ومن الحلقة نفسِها لا باستعلامٍ ثانٍ: الفعلُ مجلوبٌ أصلا ضمن
+       `OUTREACH_ACTIONS`، فلا يُسأل الأثرُ مرّتين عن صفٍّ واحد. */
+    const invited = new Map<string, Date>()
     if (rows.length > 0) {
       const events = await this.prisma.auditEvent.findMany({
         where: {
@@ -269,6 +295,10 @@ export class TrainerReviewService {
       })
       for (const e of events) {
         if (!outreach.has(e.entityId)) outreach.set(e.entityId, { action: e.action, at: e.createdAt })
+        /* نازلا: فأوّلُ ما يُرى لمعرّفٍ أحدثُ دعوةٍ خرجت إليه */
+        if (e.action === INVITATION_ACTION && !invited.has(e.entityId)) {
+          invited.set(e.entityId, e.createdAt)
+        }
       }
     }
 
@@ -284,6 +314,9 @@ export class TrainerReviewService {
       waitingSince: a.statusHistory[0]?.createdAt ?? a.phase2CompletedAt ?? a.createdAt,
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
+      /* `null` = لم تخرج إليه دعوةُ حجزٍ قطّ — وبها يفرّق الطابورُ بين من
+         ينتظرنا ومن ننتظره (`awaitsBookingInvite`). */
+      interviewInvitedAt: invited.get(a.id) ?? null,
       /* `null` = لا لقاءَ أو لقاءٌ بلا نتيجةٍ بعد — والشاشةُ تفرّق بينهما
          بالحالة لا بهذا الحقل، فلا تُخترع نتيجةٌ لمن لم يُقابَل.
 
@@ -2294,6 +2327,33 @@ export class TrainerReviewService {
     const pre = await this.contractPrefill(applicationId)
     if (pre.openContract) {
       throw new AuthError('contract_open', 'لهذا المدرّب عقدٌ مفتوحٌ — يُلغى أوّلا ثمّ يُركَّب غيرُه', 409)
+    }
+
+    /* ═══ ولا عرضَ مشروطٌ بلا جلسةِ تهيئة (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       قرارُ صاحب المنصّة، جوابا على سؤالٍ عُرض عليه: «نعم — بعد أن يوقّعوا
+       ونوقّعَ العرضَ المشروط، تصلهم دعوةُ جلسة التهيئة».
+
+       وكانت الجلسةُ اختياريّةً في شاشة التركيب، **وعليها يقوم الطورُ كلُّه**:
+       المهلةُ تُحسَب منها (`deadlineFrom(orientationAt)`)، وبلا مهلةٍ لا طورَ
+       موادٍّ ولا إعلانَ اكتمال — بل لا يستطيع المدرّبُ أن يُعلن أصلا
+       (`openConditionContract` تشترط مهلةً قائمة).
+
+       فعرضٌ مشروطٌ بلا جلسةٍ عرضٌ يُوقَّع ويُعتمَد مباشرةً: الشرطُ مكتوبٌ في
+       متنه ولا يُنفَّذ منه شيء. وهي الثغرةُ التي بقيت مفتوحةً بعد حارس
+       الموادّ — ويسدُّها **الشرطُ عند التركيب** لا منعُ الاعتماد بعده: من
+       رُكّب عرضُه بلا جلسةٍ لا ذنبَ له، وحبسُه عقوبةٌ على خطإِ غيره.
+
+       والدعوةُ نفسُها قائمةٌ منذ بُني الطور: رسالةُ العرض المشروط تحمل كتلةَ
+       «جلسةُ التهيئة — {التاريخ}» ورابطَ الحضور (`trainer-decision-mail.ts`).
+       فما يُضاف هنا شرطٌ لا قناةٌ جديدة. */
+    if (pre.gatesActivation && !input.orientationAt) {
+      throw new AuthError(
+        'orientation_required',
+        'العرضُ المشروط لا يُركَّب بلا جلسةِ تهيئة: منها تُحسَب مهلةُ الموادّ، '
+        + 'وبلا مهلةٍ لا يستطيع المدرّبُ أن يُعلن اكتمالَها أصلا. حدِّدْ موعدَ الجلسة.',
+        422,
+      )
     }
     const chosen = this.chosenCourses(pre.courses, input.courseIds)
 
