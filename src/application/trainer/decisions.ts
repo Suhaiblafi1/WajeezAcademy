@@ -90,8 +90,18 @@ export const DECISIONS: Decision[] = [
   /* ─────────── ① ما يُقدّم الطلبَ — بترتيب تقدّمه ─────────── */
   { action: "move_to_review", label: "بدء المراجعة", from: openExcept("under_review"), tone: "main" },
   { action: "request_info", label: "اطلب معلومات إضافية", from: [...INFO_REQUESTABLE], tone: "warn" },
-  { action: "shortlist", label: "اختصار أولي", from: openExcept("shortlisted"), tone: "main" },
-  { action: "request_demo", label: "اطلب درسا تجريبيا", from: openExcept("demo_requested"), tone: "warn" },
+  /* ═══ وقرارانِ رُفعا من هنا (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     «اختصارٌ أوّليّ» (`shortlist`) و«اطلبْ درسا تجريبيّا» (`request_demo`)
+     — بحذف حالتَيهما، وهو ما طلبه صاحبُ المنصّة إذ رأى الحالاتِ كثيرةً.
+
+     **وطلبُ الدرس التجريبيّ لم يذهب**: هو `trainer.demo.request` في
+     `outreach.ts` مراسَلةً تُبعَث ويُقرأ أثرُها، لا حالةً يُنقَل إليها.
+     فالرسالةُ التي شكا غيابَها في ٢٤ سبتمبر باقيةٌ بنصّها، والفرقُ أنّ
+     الطلبَ لا يعيد وسمَ صاحبه — ومن طُلب منه درسٌ وهو في «رأيٌ ثانٍ» كان
+     يفقد وسمَ الرأي الثاني بنقرةٍ لا تعني ذلك. و«الاختصارُ الأوّليّ» ذهب
+     بتمامه: كان يفتح جدولةَ المقابلة ومعه «قيد المراجعة» نفسُها، فلم يكن
+     يفتح شيئا. */
   /* واللفظُ لفظُ الحالة نفسِها (`application-status.ts`): زرٌّ يقول «مراجعة
      أكاديميّة» وصفٌّ يقول «رأيٌ ثانٍ» خبران عن فعلٍ واحد. */
   { action: "academic_review", label: "اطلبْ رأيا ثانيا", from: openExcept("academic_review"), tone: "main" },
@@ -122,6 +132,9 @@ export const DECISIONS: Decision[] = [
   { action: "reinstate", label: "ارفع الإيقاف", from: ["suspended"], tone: "main" },
 
   /* ─────────── ② ما يُعلّقه ─────────── */
+  /* وعُرض هذا للحذف في ٢٦ سبتمبر ٢٠٢٦ ثمّ بقي: هو الوجهةُ الوحيدةُ التي
+     تُخرج من طابور الحجز بلا حكمٍ على صاحبها، وعليها يقوم «اطمئنانٌ وشكرٌ
+     ولا دعوة» في `no-show-followup.ts`. والقولُ في `TRAINER_STATUSES`. */
   { action: "waitlist", label: "قائمة الانتظار", from: openExcept("waitlisted"), tone: "warn" },
 
   /* ─────────── ③ ما يُنهيه، وما يعكس الإنهاء ─────────── */

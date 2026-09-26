@@ -121,8 +121,7 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
     const adminId = adminUser!.id
 
     await review.decide(aid, adminId, 'move_to_review')
-    await review.decide(aid, adminId, 'shortlist')
-    await review.decide(aid, adminId, 'request_demo')
+    await review.requestDemo(aid, adminId)
     await review.recordDemoEvaluation(aid, adminId, scores(), 'pass')
     await review.decide(aid, adminId, 'academic_review')
     await review.decide(aid, adminId, 'conditionally_approve')

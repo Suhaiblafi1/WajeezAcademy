@@ -53,15 +53,22 @@ describe('① معجمٌ واحدٌ للمراسَلات', () => {
     expect(outreachLabelAr('لا.شيء')).toBeNull()
   })
 
-  /* ═══ وصارت أربعا (٢٣ سبتمبر ٢٠٢٦) ═══
+  /* ═══ وصارت أربعا (٢٣ سبتمبر ٢٠٢٦) ثمّ خمسا (٢٦ سبتمبر ٢٠٢٦) ═══
 
      أضاف صاحبُ المنصّة متابعةَ من لم يحضر اللقاء — وهي مراسَلةٌ كأخواتها:
      خرجت إليه بيدٍ تضغط، ونحمي بها من أن يُراسَل مرّتين. والقائمةُ تُقفَل
      بعددها بقصد: فعلٌ يُضاف إلى المعجم بلا نظرٍ في هذا السطر يُنتج شارةً
-     لا يعرف أحدٌ متى تذهب — و`pending` هو الذي يقرّر ذهابَها. */
-  it('وهي أربعٌ: موعدٌ وإكمالٌ ومعلوماتٌ وغياب', () => {
+     لا يعرف أحدٌ متى تذهب — و`pending` هو الذي يقرّر ذهابَها.
+
+     **وخامسُها طلبُ الدرس التجريبيّ**: كان قرارا يقلب الحالةَ إلى
+     «بانتظار الديمو»، فحُذفت الحالةُ بأمر صاحب المنصّة إذ رآها كثيرةً
+     وبقيت الرسالةُ — فصارت مراسَلةً موضعُها هذا المعجم. وهذا السطرُ سقط
+     بحقٍّ يومَ أُضيفت فقُلب ولم يُحذَف: العددُ يُحرَس، ولا يُحرَس بأن يُترك
+     مفتوحا. ومِحَكُّها مفحوصٌ في `statuses-pruned.test.ts`. */
+  it('وهي خمسٌ: موعدٌ وإكمالٌ ومعلوماتٌ وغيابٌ ودرسٌ تجريبيّ', () => {
     expect([...OUTREACH_ACTIONS].sort()).toEqual([
       'trainer.application.draft_remind',
+      'trainer.demo.request',
       'trainer.info_requested.notify',
       'trainer.interview.remind',
       'trainer.no_show.followup',
@@ -83,10 +90,11 @@ describe('① معجمٌ واحدٌ للمراسَلات', () => {
   })
 })
 
-/** صاحبُ الطلب كما يُحكَم عليه — والمعلَّقُ افتراضا ليُفحَص الذهابُ وحدَه */
-const unbooked = { status: 'under_review', interviewsCount: 0 }
-const drafting = { status: 'draft', interviewsCount: 0 }
-const asked = { status: 'information_requested', interviewsCount: 0 }
+/** صاحبُ الطلب كما يُحكَم عليه — والمعلَّقُ افتراضا ليُفحَص الذهابُ وحدَه.
+    و`demosCount` صفرٌ فيها كلِّها: هؤلاء موضوعُ التذكير بالحجز لا الدرس. */
+const unbooked = { status: 'under_review', interviewsCount: 0, demosCount: 0 }
+const drafting = { status: 'draft', interviewsCount: 0, demosCount: 0 }
+const asked = { status: 'information_requested', interviewsCount: 0, demosCount: 0 }
 
 describe('② ولا شارةَ لمن لم يُراسَل', () => {
   it('الفراغُ لا شارةَ له', () => {
@@ -124,14 +132,14 @@ describe('⑥ والشارةُ تذهب حين يفعل ما ذُكّر به', (
   })
 
   it('ثمّ حجز — فتذهب، ولا يُقرأ «مقابلة مجدولة» و«ذُكّر بحجز الموعد» معا', () => {
-    expect(outreachAr(booking, { status: 'under_review', interviewsCount: 1 }, NOW),
+    expect(outreachAr(booking, { status: 'under_review', interviewsCount: 1, demosCount: 0 }, NOW),
       'بقيت الشارةُ وقد حجز').toBeNull()
-    expect(outreachAr(booking, { status: 'interview_scheduled', interviewsCount: 1 }, NOW))
+    expect(outreachAr(booking, { status: 'interview_scheduled', interviewsCount: 1, demosCount: 0 }, NOW))
       .toBeNull()
   })
 
   it('وإن ألغى موعدَه عادت — وهو أحوجُ الناس إليها', () => {
-    expect(outreachAr(booking, { status: 'under_review', interviewsCount: 0 }, NOW))
+    expect(outreachAr(booking, { status: 'under_review', interviewsCount: 0, demosCount: 0 }, NOW))
       .toBe('ذُكّر بحجز الموعد · اليوم')
   })
 
@@ -140,13 +148,13 @@ describe('⑥ والشارةُ تذهب حين يفعل ما ذُكّر به', (
   })
 
   it('ثمّ أكمل — فتذهب، ويصير مقدَّما كأنّه أوّلَ مرّةٍ يقدّم', () => {
-    expect(outreachAr(draft, { status: 'submitted', interviewsCount: 0 }, NOW),
+    expect(outreachAr(draft, { status: 'submitted', interviewsCount: 0, demosCount: 0 }, NOW),
       'بقيت الشارةُ وقد أكمل').toBeNull()
   })
 
   it('وطُلبت منه معلوماتٌ ولم يُجب — فالشارةُ قائمة، فإن نُقل عنها ذهبت', () => {
     expect(outreachAr(info, asked, NOW)).toBe('طُلبت منه معلومات · اليوم')
-    expect(outreachAr(info, { status: 'shortlisted', interviewsCount: 0 }, NOW)).toBeNull()
+    expect(outreachAr(info, { status: 'academic_review', interviewsCount: 0, demosCount: 0 }, NOW)).toBeNull()
   })
 
   it('ومِحَكُّ الشارة هو مِحَكُّ الإرسال نفسُه — فلا تحمي من تنبيهٍ لا يقع', () => {
@@ -154,7 +162,7 @@ describe('⑥ والشارةُ تذهب حين يفعل ما ذُكّر به', (
     const kind = OUTREACH.find((o) => o.action === 'trainer.interview.remind')!
     for (const st of [...BOOKABLE_STATUSES, 'interview_scheduled', 'active', 'rejected']) {
       for (const n of [0, 1]) {
-        expect(kind.pending({ status: st, interviewsCount: n }),
+        expect(kind.pending({ status: st, interviewsCount: n, demosCount: 0 }),
           `«${st}» بـ${n} موعدا: الشارةُ تخالف مِحَكَّ الإرسال`)
           .toBe(canRemindToBook({ status: st, liveInterviews: n }))
       }
@@ -165,7 +173,7 @@ describe('⑥ والشارةُ تذهب حين يفعل ما ذُكّر به', (
     for (const o of OUTREACH) {
       expect(typeof o.pending, `«${o.action}» بلا مِحَكّ`).toBe('function')
       /* ولا يُقال «معلَّقٌ دائما»: حالةٌ بعد القرار تُسقطها كلَّها */
-      expect(o.pending({ status: 'active', interviewsCount: 0 }),
+      expect(o.pending({ status: 'active', interviewsCount: 0, demosCount: 0 }),
         `«${o.action}» تبقى بعد أن صار مدرّبا نشطا`).toBe(false)
     }
   })

@@ -40,11 +40,12 @@ const at = (action: string) => DECISIONS.findIndex((d) => d.action === action)
 
 describe('① الترتيبُ ترتيبُ رحلة الطلب', () => {
   it('كلُّ قرارٍ يسبق ما يليه في المسار — لا ترتيبَ كتابةٍ ولا صدفة', () => {
-    /* أزواجٌ من الرحلة نفسِها: الأوّلُ يقع قبل الثاني في حياة الطلب */
+    /* أزواجٌ من الرحلة نفسِها: الأوّلُ يقع قبل الثاني في حياة الطلب.
+       وسقطت منها حلقتان في ٢٦ سبتمبر ٢٠٢٦ بحذف حالتَيهما — `shortlist`
+       و`request_demo`، والسلسلةُ تُوصَل فوقَهما: من «بدء المراجعة» إلى
+       «رأيٌ ثانٍ» مباشرةً. */
     const before: [string, string][] = [
-      ['move_to_review', 'shortlist'],
-      ['shortlist', 'request_demo'],
-      ['request_demo', 'academic_review'],
+      ['move_to_review', 'academic_review'],
       ['academic_review', 'conditionally_approve'],
       ['conditionally_approve', 'start_onboarding'],
       ['start_onboarding', 'activate'],

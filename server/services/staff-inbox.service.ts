@@ -39,8 +39,10 @@ import type { TrainerStatus } from './trainer-application.service'
    `TrainerStatus` يجعل اسما مخترَعا يسقط في `tsc`. ومصفوفةُ نصوصٍ حرّةٍ لا
    يحرسها شيء: تُكتب مرّةً وتُقرأ سنةً وهي تنقص، ولا أحدَ يرى نقصَها — فبطاقةٌ
    تعدّ أقلَّ ممّا في الطابور لا تصرخ، بل تُطمئن كذبا. */
+/* ورُفعت `shortlisted` منها في ٢٦ سبتمبر ٢٠٢٦ بحذف الحالة نفسِها — والتنميطُ
+   المذكورُ فوقَه هو الذي يجعل ذلك خطأً يُمسَك في `tsc` لا نقصا يُطمئن كذبا. */
 const TRAINER_INBOX_STATUSES: TrainerStatus[] = [
-  'submitted', 'under_review', 'shortlisted', 'academic_review', 'conditionally_approved',
+  'submitted', 'under_review', 'academic_review', 'conditionally_approved',
 ]
 
 /** بندٌ واحدٌ في اللوح: ما هو، كم، وأين يُعمَل */

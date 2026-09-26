@@ -264,6 +264,17 @@ const LOW: readonly string[] = [
   'trainer.application.phase2_complete',
   'trainer.application.account_created', 'trainer.application.account_linked',
   'trainer.interview.invite', 'trainer.interview.remind', 'trainer.interview.outcome',
+  /* ═══ وطلبُ الدرس التجريبيّ مراسَلةٌ كأخواته (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     كان قرارا ينقل الحالةَ إلى «بانتظار الديمو»، فحُذفت الحالةُ وبقيت
+     الرسالةُ — فصار خبرَ **مراسَلةٍ خرجت**: لا وصولَ يتغيّر ولا مالَ ولا
+     سجلٌّ يُقرَّر به عليه، وإنّما نطلب منه شيئا وهو حرٌّ في جوابه. ووزنُه
+     وزنُ `trainer.interview.remind` فوقَه سواءً بسواء.
+
+     ولا يُرفَع إلى `high` بحجّة أنّ رسالةً تخرج: ذاك بابُ من لا يُسكته
+     تفضيلٌ ولا يُجمَع في ملخّصٍ — مهلةٌ تنقضي أو اعتمادٌ يقع. وطلبُ درسٍ
+     لا يُفقده شيئا إن قرأه بعد يومَين. */
+  'trainer.demo.request',
   /* وسحبُها حين يختلف القرّاء أخو تسجيلها — لا يمسّ المتقدّمَ في وصولٍ ولا
      مالٍ ولا سجلٍّ يُقرَّر به عليه، وإنّما يقول إنّ قولَنا فيه لم يستقرّ. */
   'trainer.interview.outcome_cleared',

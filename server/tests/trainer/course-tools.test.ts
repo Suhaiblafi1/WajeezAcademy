@@ -48,8 +48,7 @@ async function makeTrainer(email: string, name: string, password: string) {
   const id = row!.id
   await review.decide(id, adminId, 'move_to_review')
   await review.addReview(id, adminId, scores(), 'مؤهل')
-  await review.decide(id, adminId, 'shortlist')
-  await review.decide(id, adminId, 'request_demo')
+  await review.requestDemo(id, adminId)
   await review.recordDemoEvaluation(id, adminId, scores(), 'pass')
   await review.decide(id, adminId, 'academic_review')
   await review.decide(id, adminId, 'conditionally_approve')

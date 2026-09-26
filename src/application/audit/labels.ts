@@ -115,6 +115,7 @@ const PHRASES: Record<string, string> = {
   'trainer.dossier_link.rotate': 'تجديدُ رابطِ سجلٍّ — يبطل القديم',
   'trainer.dossier_link.revoke': 'إلغاءُ رابطِ سجلٍّ',
   'trainer.interview.invite': 'دعوةُ متقدّمٍ إلى حجزِ موعدِ مقابلة',
+  'trainer.demo.request': 'طلبُ درسٍ تجريبيٍّ من متقدّم',
   'trainer.interview.remind': 'تذكيرُ متقدّمٍ بحجزِ موعدِ لقاء التعارف',
   'trainer.no_show.followup': 'متابعةُ متقدّمٍ بعد غيابه عن لقاء التعارف',
   'trainer.application.draft_remind': 'تذكيرُ متقدّمٍ بإكمال طلبه المسوّدة',

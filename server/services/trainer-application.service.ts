@@ -32,9 +32,59 @@ import {
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
 
+/* ═══ أربعةَ عشرَ لا سبعةَ عشرَ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+   شكا صاحبُ المنصّة: «أرى أنّ الحالاتِ كثيرةٌ الآنَ أصبحت لطلب المدرّب…
+   لخّصْ لي إيّاها كلَّها وشرحا عن كلّ حالة، واقترحْ حذفَ جزءٍ منها». فعُدَّت
+   السبعَ عشرةَ وقيل في كلّ واحدةٍ من يكتبها وما تفتحه، فحُذفت ثلاث:
+
+   · `email_verification_pending` — **لا يكتبها مسارٌ واحد**. كانت القيمةَ
+     الافتراضيّةَ في المخطّط، وكلُّ موضعِ إنشاءٍ يكتب غيرَها صريحا (`draft`
+     من نموذج التقدّم، و`active` من التعيين الداخليّ). فالافتراضُ صار `draft`
+     وهو ما تكتبه اليدُ أصلا. وصفوفُها — إن بقي منها شيءٌ من قبلِ ذلك —
+     تصير `draft`: فكلتاهما «طلبٌ لم يُرسَل ولا بريدٌ ثبت أنّه بريدُه»،
+     وتُعامَلان معاملةً واحدةً في كلّ موضعٍ يفرّق (`purgeable.ts`
+     و`queue-age.ts` و`INFO_REQUESTABLE` والاعتمادُ بنقرة).
+   · `shortlisted` — كانت تفتح جدولةَ المقابلة **ومعها `under_review`
+     نفسُها**، فهي اسمٌ ثانٍ لحالةٍ واحدة. وصفوفُها صفرٌ في الإنتاج.
+   · `demo_requested` — وسمٌ ينتظر درسا. **ورسالتُه باقيةٌ**: «اطلبْ درسا
+     تجريبيّا» صارت مراسَلةً يُقرأ أثرُها لا حالةً يُنقَل إليها
+     (`outreach.ts`). وصفوفُها صفرٌ في الإنتاج.
+   ═══ و`waitlisted` عُرضت للحذف فبقيت — وخطأُ القراءةِ يُقال ═══
+
+   قيل في عرضها إنّها «وسمٌ لا شيءَ له في الشيفرة»، وقُرّر حذفُها على ذلك.
+   **وذاك خطأٌ**: هي وجهةُ «اطمئنانٌ وشكرٌ ولا دعوةَ إلى موعد» في
+   `no-show-followup.ts` — وهي الوجهةُ التي اختارها صاحبُ المنصّة نفسُه حين
+   سُئل: «ماذا يصير حالُ الطلب بعد ②؟».
+
+   ولمَ لا تُنزَع الوجهةُ ويُحذَف الوسم: تسجيلُ الغياب **يعيد صاحبَه إلى
+   حالةٍ تقبل الحجز** بقصدٍ مكتوب (`interview-outcome.ts`) ليحجز من جديد.
+   فمن قيل له «نتطلّع إلى فرصٍ أخرى مستقبلا» ثمّ بقي هناك: صفحتُه تعرض
+   تقويما وتقول «احجزْ موعدَ لقاء التعارف»، ويبقى في ملخّص الصباح وفي مرشّح
+   «لم يحجز موعدا» فيُذكّره فريقُنا بحجزِ موعدٍ لا نريده. وهو التناقضُ
+   بعينه الذي وُضعت له.
+
+   و`rejected` لا تنوب عنها: «الغيابُ ليس حكما على أحد» — قد يكون عطلا في
+   الاتّصال أو موعدا نُسي. فهي الحالةُ الوحيدةُ التي تقول «موقوفٌ ولا حكمَ
+   عليه»، ولا ثانيةَ لها بعد حذفِ ما حُذف.
+
+   **وصفوفُها الخمسةُ نُقلت كما أُمر**: «والصفوفُ انقلها لـ﴿رأيٌ ثانٍ — قبل
+   قرار المقابلة﴾» (٢٦ سبتمبر ٢٠٢٦) — أي إلى `academic_review`. فالأمرُ
+   قائمٌ بنفسه: أولئك الخمسةُ يُنظَر في ملفّاتهم من جديدٍ لا يُتركون موقوفين.
+   والحالةُ تبقى بابا لمن يغيب بعد اليوم.
+
+   و`academic_review` باقيةٌ بقوله: «أستعمل `academic_review` وحدَها لمن
+   أتردّد في دعوته إلى مقابلةٍ وأريد أن يقرأ ملفَّه أحدٌ آخرُ من فريقي».
+   ومن هنا لزم أن **تُجدوَل المقابلةُ منها** وأن **يُدعى صاحبُها إلى الحجز**
+   — وكانا ممنوعَين، وهما عطبان أُصلحا في `scheduleInterview` وفي
+   `BOOKABLE_STATUSES`.
+
+   والصفوفُ في الترحيل `20260926230000_trainer_statuses_prune`، وأثرُ ما
+   وقع في `TrainerStatusHistory` **لا يُمَسّ**: هو خبرٌ عمّا كان، ونقضُه
+   تزويرُ سجلٍّ لا تنظيفُ بيانات. */
 export const TRAINER_STATUSES = [
-  'draft', 'email_verification_pending', 'submitted', 'under_review', 'information_requested',
-  'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
+  'draft', 'submitted', 'under_review', 'information_requested',
+  'interview_scheduled', 'academic_review',
   'conditionally_approved', 'contract_pending', 'onboarding', 'active',
   'waitlisted', 'rejected', 'withdrawn', 'suspended',
 ] as const
@@ -63,8 +113,8 @@ export const PURGEABLE_STATUSES: readonly TrainerStatus[] = SHARED_PURGEABLE
    الواحدة صارت ممكنةً من أيّ نقطة — لا أنّ التفصيلَ صار ممنوعا.
 
    وما لم يتغيّر: **الرفضُ والسحبُ نهايةٌ لا رجعةَ منها**، والاعتمادُ لا يُبلَغ
-   من حالةٍ لم يُتحقّق فيها بريدُ صاحبها (`draft` و`email_verification_pending`)
-   — فمن لم يُثبت أنّ البريدَ بريدُه لا يُفتح له حساب. */
+   من حالةٍ لم يُتحقّق فيها بريدُ صاحبها (`draft`) — فمن لم يُثبت أنّ البريدَ
+   بريدُه لا يُفتح له حساب. */
 /* ═══ والقبولُ الداخليُّ وجهةٌ من كلّ حالةٍ يُقرأ فيها الطلب (٢٠ سبتمبر ٢٠٢٦) ═══
 
    `conditionally_approved` كانت تُبلَغ من `academic_review` وحدَها — أي أنّ
@@ -74,9 +124,9 @@ export const PURGEABLE_STATUSES: readonly TrainerStatus[] = SHARED_PURGEABLE
    التجهيز مقفلا خلف توثيقٍ لا يقع.
 
    فصارت وجهةً من كلّ حالةٍ حيّةٍ قُرئ فيها الطلب — كما صارت `active` قبلها.
-   والاستثناءُ هو الاستثناءُ نفسُه: `draft` و`email_verification_pending` لم
-   يُثبت فيهما أنّ البريدَ بريدُه، والقبولُ الداخليُّ يُنشئ له ملفّا ويُرسل
-   إليه عقدا — فلا يُبنى ذلك على بريدٍ مجهول. */
+   والاستثناءُ هو الاستثناءُ نفسُه: `draft` لم يُثبت فيها أنّ البريدَ بريدُه،
+   والقبولُ الداخليُّ يُنشئ له ملفّا ويُرسل إليه عقدا — فلا يُبنى ذلك على
+   بريدٍ مجهول. */
 /* ═══ وكلُّ الأبواب مفتوحةٌ ما دام صاحبُها متقدّما (٢٢ سبتمبر ٢٠٢٦) ═══
 
    قرارُ صاحب المنصّة: «أضِف خانةَ طلب المعلومات الإضافية من المدرّب حتى لو تمّ
@@ -92,9 +142,9 @@ export const PURGEABLE_STATUSES: readonly TrainerStatus[] = SHARED_PURGEABLE
 
    **وما يبقى خارجَها بقصد:**
 
-   · `draft` و`email_verification_pending` — لا طلبَ بعدُ ولا بريدٌ ثبت أنّه
-     بريدُه. ونقلُهما يكسر نموذجَ صاحبه وهو يكتبه، والاعتمادُ يفتح حسابا على
-     بريدٍ مجهول.
+   · `draft` — لا طلبَ بعدُ ولا بريدٌ ثبت أنّه بريدُه. ونقلُها يكسر نموذجَ
+     صاحبه وهو يكتبه، والاعتمادُ يفتح حسابا على بريدٍ مجهول. (وكانت معها
+     `email_verification_pending` حتّى رُفعت في ٢٦ سبتمبر ٢٠٢٦.)
    · `active` و`suspended` — صار مدرّبا له بوّابةٌ وإسنادٌ ومستحقّات، وردُّه
      إلى طابور المتقدّمين يكسر ذلك كلَّه. (اختارها صاحبُ المنصّة صراحةً حين
      عُرض عليه الحدّان، ٢٢ سبتمبر ٢٠٢٦.)
@@ -126,9 +176,10 @@ const openTargets = (from: TrainerStatus): TrainerStatus[] => [
 ]
 
 export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
-  /* المسودّة: القسمُ الأوّل وصل ولم يُكمَل — تصير مقدَّمةً حين يُكمَل */
-  draft: ['submitted', 'email_verification_pending', 'withdrawn'],
-  email_verification_pending: ['submitted', 'withdrawn'],
+  /* المسودّة: القسمُ الأوّل وصل ولم يُكمَل — تصير مقدَّمةً حين يُكمَل.
+     وكانت تنتقل إلى `email_verification_pending` حتّى رُفعت (٢٦ سبتمبر
+     ٢٠٢٦) — ولم يكن أحدٌ ينتقل إليها أصلا. */
+  draft: ['submitted', 'withdrawn'],
   ...(Object.fromEntries(
     REVIEW_OPEN_STATUSES.map((st) => [st, openTargets(st)]),
   ) as Record<ReviewOpenStatus, TrainerStatus[]>),
@@ -196,7 +247,7 @@ export const APPROVABLE_BY_MAP: TrainerStatus[] = TRAINER_STATUSES.filter(
    والمسحوبُ بابُهما طلبٌ جديد لا تعديلُ قديم. */
 const PHASE2_OPEN_STATUSES: TrainerStatus[] = [
   'draft', 'submitted', 'under_review', 'waitlisted',
-  'information_requested', 'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
+  'information_requested', 'interview_scheduled', 'academic_review',
 ]
 
 /* حالات نهائية تسمح بطلب جديد لنفس البريد */
@@ -536,10 +587,12 @@ export class TrainerApplicationService {
         action: 'trainer.application.verify_email', entityType: 'trainer_application', entityId: app.id,
         meta: { reference },
       })
-      /* طلباتُ الدورة القديمة كانت تقف عند بوّابة البريد — تمضي الآن */
-      if (app.status === 'email_verification_pending') {
-        await this.transition(app.id, 'submitted', null, 'تحقق البريد', tx)
-      }
+      /* وكان هنا مرورٌ من `email_verification_pending` إلى `submitted`:
+         «طلباتُ الدورة القديمة كانت تقف عند بوّابة البريد — تمضي الآن».
+         ورُفع بحذف الحالة (٢٦ سبتمبر ٢٠٢٦) — ولا صفَّ يقف عندها بعدُ،
+         فالترحيلُ نقل ما بقي منها إلى `draft`. والتحقّقُ يظلّ يكتب
+         `emailVerifiedAt` ويُسجّل أثرَه كما كان: هو خبرٌ عن البريد لا
+         نقلةٌ في الطابور. */
     })
     const row = await this.prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id }, select: { status: true } })
     return { status: row.status as TrainerStatus, alreadyVerified: false }

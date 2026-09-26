@@ -965,7 +965,7 @@ model TrainerApplication {
   /// الطلبات السابقة بلا حساب تبقى تُتابَع برمزها.
   userId               String?                       @unique @db.Uuid
   user                 User?                         @relation("TrainerApplicant", fields: [userId], references: [id], onDelete: SetNull)
-  status               String                        @default("email_verification_pending")
+  status               String                        @default("draft")
   /**
    * من أين طُلبت منه المعلوماتُ الإضافيّة — ليعود إليه لا إلى أوّل الطابور.
    * ولمَ عمودٌ لا أثرٌ يُقرأ: الرجوعُ يقع في معاملةٍ واحدةٍ مع استكمال
@@ -974,10 +974,19 @@ model TrainerApplication {
    * بلا تأويل، ويُمحى حين يعود فلا يبقى وعدٌ منقضٍ.
    */
   infoRequestedFrom    String?
-  // draft | email_verification_pending | submitted | under_review | information_requested
-  // | shortlisted | interview_scheduled | demo_requested | academic_review
+  // draft | submitted | under_review | information_requested
+  // | interview_scheduled | academic_review
   // | conditionally_approved | contract_pending | onboarding | active
   // | waitlisted | rejected | withdrawn | suspended
+  //
+  // ورُفعت ثلاثٌ في ٢٦ سبتمبر ٢٠٢٦ (email_verification_pending · shortlisted
+  // · demo_requested) وصفوفُها في 20260926230000_trainer_statuses_prune،
+  // والقولُ فيها كلِّه في TRAINER_STATUSES بـ trainer-application.service.ts.
+  //
+  // وتنبيهٌ لمن يقرأ: هذا العمودُ **بلا قيد CHECK** — فالمولِّد
+  // (scripts/status-checks.ts) يقرأ التعليقَ من سطر الحقل نفسِه، وهذا
+  // مكتوبٌ على أسطرٍ تاليةٍ بعد حقلٍ آخر. فالتعليقُ هنا وثيقةٌ لا حارس،
+  // والحارسُ نوعُ TrainerStatus في TypeScript. ومثلُه عشرون عمودا.
   email                String
   emailVerifiedAt      DateTime?
   emailVerifyTokenHash String?                       @unique // رمز تحقق البريد — هاش فقط

@@ -45,13 +45,23 @@ describe('من يدخل الملخّص', () => {
     expect(lateToBook([row({ liveInterviews: 0 })], NOW)).toHaveLength(1)
   })
 
-  it('② وما وقع فيه قرارٌ أو حُدّد موعدُه يخرج', () => {
-    const decided = ['rejected', 'waitlisted', 'interview_scheduled', 'approved', 'withdrawn', 'academic_review']
+  /* ═══ و«رأيٌ ثانٍ» انتقلت من الخارج إلى الداخل (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     كانت معدودةً فيمن «وقع فيه قرار»، على أنّ `academic_review` مرحلةٌ بعد
+     المقابلة. ونسخ ذلك صاحبُ المنصّة إذ قال ما يستعملها له: «لمن أتردّد في
+     دعوته إلى **مقابلة** وأريد أن يقرأ ملفَّه أحدٌ آخرُ من فريقي» — فهي
+     **قبلَ** قرار المقابلة، وباسمها في الشاشة: «رأيٌ ثانٍ — قبل قرار
+     المقابلة». فصاحبُها أحقُّ الناس بملخّص «لم يحجز»، وكان يخرج منه.
+
+     فلم يُحذَف هذا الحارسُ بل قُلب: ما وقع فيه قرارٌ يخرج، و«رأيٌ ثانٍ»
+     ليست قرارا. */
+  it('② وما وقع فيه قرارٌ أو حُدّد موعدُه يخرج — و«رأيٌ ثانٍ» ليست قرارا', () => {
+    const decided = ['rejected', 'waitlisted', 'interview_scheduled', 'approved', 'withdrawn']
     for (const status of decided) {
       expect(lateToBook([row({ status })], NOW), status).toEqual([])
     }
-    /* وما يقبل الحجزَ يدخل */
-    for (const status of ['submitted', 'under_review', 'information_requested', 'shortlisted']) {
+    /* وما يقبل الحجزَ يدخل — ومنه «رأيٌ ثانٍ» منذ ٢٦ سبتمبر ٢٠٢٦ */
+    for (const status of ['submitted', 'under_review', 'information_requested', 'academic_review']) {
       expect(lateToBook([row({ status })], NOW), status).toHaveLength(1)
     }
   })

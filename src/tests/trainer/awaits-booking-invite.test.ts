@@ -15,18 +15,23 @@
  * يحجز من لا ينتظرنا (دُعي وتأخّر). ولو تساويا لَصار الزرُّ الجديدُ نسخةً
  * من القديم، ولو تباعدا لَأخفى أحدُهما إنسانا.
  *
- * ── و`shortlisted` دعوةٌ بلا بريد ──
+ * ── ولا دعوةَ تُستنتَج من حالة (٢٦ سبتمبر ٢٠٢٦) ──
  *
- * الفرزُ الأوّليُّ نظرٌ وقع (`INTEREST_SHOWN_STATUSES`): صاحبُه يرى دعوةَ
- * الحجز في صفحته ولو لم يخرج إليه بريد. فعدُّه «ينتظرنا» يُرسل إليه دعوةً
- * ثانيةً عن شيءٍ يراه أمامه.
+ * كان `shortlisted` يُحسَب دعوةً بلا بريد (`INTEREST_SHOWN_STATUSES`): صاحبُه
+ * يرى دعوةَ الحجز في صفحته ولو لم يخرج إليه شيء. فحُذفت الحالةُ بأمر صاحب
+ * المنصّة، ولم يُبحَث لها عن خليفةٍ **بقصد**.
+ *
+ * فالحدُّ الآن واحدٌ لا اثنان: **ما أرسلناه**. وهذا الملفُّ يقيسه من طرفَيه —
+ * أنّ الدعوةَ المرسلةَ تُخرج صاحبَها من المنتظِرين، وأنّ **لا حالةَ** تفعل
+ * ذلك بلا بريد. والثانيةُ هي الحارسُ الذي حلّ محلَّ حارس `shortlisted`: لو
+ * عاد أحدٌ يستنتج الدعوةَ من الحالة لَسقط هنا.
  */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  awaitsBookingInvite, isInvitedToBook, INTEREST_SHOWN_STATUSES,
+  awaitsBookingInvite, isInvitedToBook,
 } from '@/application/trainer/interview-invitation'
 import { BOOKABLE_STATUSES, canRemindToBook } from '@/application/trainer/application-options'
 
@@ -47,10 +52,21 @@ describe('من ينتظرنا نحن', () => {
     expect(awaitsBookingInvite(subject({ liveInterviews: 1 }))).toBe(false)
   })
 
-  it('و`shortlisted` دعوةٌ بلا بريد — فلا يُدعى ثانيةً', () => {
-    expect(INTEREST_SHOWN_STATUSES).toContain('shortlisted')
-    expect(awaitsBookingInvite(subject({ status: 'shortlisted' })),
-      'عُدَّ من يرى الدعوةَ في صفحته ممّن لم تُطلب منه').toBe(false)
+  /* ═══ ولا حالةَ تنوب عن بريدٍ خرج ═══
+
+     هذا هو حارسُ `shortlisted` بعد حذفها، مقلوبا: كان يُثبّت أنّ حالةً بعينها
+     تُحسَب دعوةً، وصار يُثبّت أنّ **لا حالةَ** تُحسَب دعوةً. ولو أُعيد
+     الاستنتاجُ من الحالة — بحالةٍ جديدةٍ أو بإحياء القديمة — سقط هنا.
+
+     والمقيسُ كلُّ حالةٍ يُحجَز فيها: من لم تخرج إليه دعوةٌ ينتظرنا فيها
+     كلِّها بلا استثناء. */
+  it('ولا حالةَ تُحسَب دعوةً بلا بريدٍ خرج — الحدُّ ما أرسلناه', () => {
+    for (const st of BOOKABLE_STATUSES) {
+      expect(awaitsBookingInvite(subject({ status: st, invitedAt: null })),
+        `«${st}» عُدَّت دعوةً بلا بريد — والحدُّ ما أرسلناه`).toBe(true)
+      expect(isInvitedToBook({ status: st, liveInterviews: 0, invitedAt: null }),
+        `«${st}» تُرى دعوةً في صفحة صاحبها بلا بريدٍ خرج`).toBe(false)
+    }
   })
 
   it('وحالةٌ لا يُحجَز فيها: خارجُ السؤال كلِّه', () => {

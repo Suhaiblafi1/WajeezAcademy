@@ -147,7 +147,6 @@ describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
   it('ويُعتمَد كذلك من منتصف السلسلة — فالطلباتُ العالقةُ لا تحتاج إتمامَها', async () => {
     const a = await applicant('oneclick-3@test.local', 'رنا المدرّبة')
     await review.decide(a.id, adminId, 'move_to_review')
-    await review.decide(a.id, adminId, 'shortlist')
     await prepare(a.id)
     await review.decide(a.id, adminId, 'approve')
     const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })
@@ -156,9 +155,20 @@ describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
 
   it('والسلسلةُ التفصيليّةُ باقيةٌ تعمل — لم يُحذف طريقٌ بل أُضيف', async () => {
     const a = await applicant('oneclick-4@test.local', 'زيد المدرّب')
-    for (const step of ['move_to_review', 'shortlist', 'request_demo', 'academic_review',
+    /* وكانت السلسلةُ تمرّ بـ`shortlist` و`request_demo` — حُذفت حالتاهما في
+       ٢٦ سبتمبر ٢٠٢٦، وطلبُ الدرس صار مراسَلةً تُبعَث بلا نقلةٍ في الطابور.
+       فيُنادى هنا بموضعه من السلسلة: يُثبَت أنّه لا يقلب الحالةَ، والسلسلةُ
+       تمضي فوقَه كما كانت. */
+    for (const step of ['move_to_review', 'academic_review',
       'conditionally_approve'] as const) {
       await review.decide(a.id, adminId, step)
+      if (step === 'academic_review') {
+        await review.requestDemo(a.id, adminId)
+        expect(
+          (await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status,
+          'طلبُ الدرس قلب الحالةَ — وهو مراسَلةٌ لا قرار',
+        ).toBe('academic_review')
+      }
     }
     const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })
     expect(row.status).toBe('conditionally_approved')
@@ -184,7 +194,8 @@ describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
   })
 
   it('ولا اعتمادَ لبريدٍ لم يُوثَّق — الاعتمادُ يفتح حسابا، فلا يُفتح لبريدٍ مجهول', () => {
-    for (const s of ['draft', 'email_verification_pending'] as const) {
+    /* وكانت معها `email_verification_pending` حتّى حُذفت في ٢٦ سبتمبر ٢٠٢٦ */
+    for (const s of ['draft'] as const) {
       expect(ALLOWED_TRANSITIONS[s], `«${s}» يسمح بالاعتماد`).not.toContain('active')
     }
   })
@@ -206,7 +217,7 @@ describe('اعتمادُ المدرّب بنقرةٍ واحدة', () => {
     expect([...ONE_CLICK_APPROVABLE_STATUSES].sort()).toEqual([...APPROVABLE_BY_MAP].sort())
     /* وكلُّ حالةٍ حيّةٍ في القائمة: لو أُضيفت حالةٌ جديدةٌ ونُسيت، فُضحت هنا */
     const live = TRAINER_STATUSES.filter(
-      (s) => !['draft', 'email_verification_pending', 'rejected', 'withdrawn', 'suspended', 'active'].includes(s),
+      (s) => !['draft', 'rejected', 'withdrawn', 'suspended', 'active'].includes(s),
     )
     expect([...ONE_CLICK_APPROVABLE_STATUSES].sort()).toEqual([...live].sort())
   })

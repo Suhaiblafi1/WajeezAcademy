@@ -25,7 +25,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  INTERVIEW_INVITATION, INVITATION_ACTION, INTEREST_SHOWN_STATUSES,
+  INTERVIEW_INVITATION, INVITATION_ACTION,
   invitationAskAr, isInvitedToBook,
 } from '@/application/trainer/interview-invitation'
 import {
@@ -41,9 +41,19 @@ const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 
 describe('من يُدعى إلى حجز موعده', () => {
-  it('من اجتاز الفرزَ الأوّليَّ ولا موعدَ له — نظرٌ وقع فيصدُق الاهتمام', () => {
-    for (const status of INTEREST_SHOWN_STATUSES) {
-      expect(isInvitedToBook({ status, liveInterviews: 0 }), status).toBe(true)
+  /* ═══ وكان هنا بابٌ ثانٍ فسُدّ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     «من اجتاز الفرزَ الأوّليَّ ولا موعدَ له — نظرٌ وقع فيصدُق الاهتمام»:
+     `INTEREST_SHOWN_STATUSES` كانت `['shortlisted']`، فحُذفت الحالةُ بأمر
+     صاحب المنصّة ولم يُبحَث لها عن خليفة.
+
+     فصار البابُ واحدا — البريدُ — ويُقاس أدناه. وهذا الموضعُ يُثبّت انسدادَ
+     الثاني: **لا حالةَ** تصدُق فيها دعوةٌ بلا بريدٍ خرج، فلو أُعيد
+     الاستنتاجُ من الحالة سقط. */
+  it('ولا حالةَ يصدُق فيها الاهتمامُ بلا بريدٍ خرج — الحدُّ ما أرسلناه', () => {
+    for (const status of BOOKABLE_STATUSES) {
+      expect(isInvitedToBook({ status, liveInterviews: 0 }),
+        `«${status}» تصدُق فيها دعوةٌ لم تُرسَل`).toBe(false)
     }
   })
 
@@ -60,7 +70,6 @@ describe('من يُدعى إلى حجز موعده', () => {
     /* «مقدَّم» و«قيد المراجعة» و«طُلبت معلومات» طلبٌ في الطابور لم يُقل فيه
        قولٌ بعد. ولهؤلاء التقويمُ كما كان: يحجز متى شاء بلا دعوى نقولها له. */
     for (const status of BOOKABLE_STATUSES) {
-      if (INTEREST_SHOWN_STATUSES.includes(status)) continue
       expect(isInvitedToBook({ status, liveInterviews: 0 }), status).toBe(false)
       expect(isInvitedToBook({ status, liveInterviews: 0, invitedAt: null }), status).toBe(false)
     }
@@ -90,10 +99,13 @@ describe('من يُدعى إلى حجز موعده', () => {
     expect(src, 'الوحدةُ تكتب شرطَ الحجز بيدها لا بالمِحَكّ المشترك').toContain('canRemindToBook(')
   })
 
-  it('وكلُّ حالةٍ يصدُق فيها الاهتمامُ حالةٌ يُحجَز فيها أصلا', () => {
-    for (const status of INTEREST_SHOWN_STATUSES) {
-      expect(BOOKABLE_STATUSES, `«${status}» لا يُحجَز فيها`).toContain(status)
-      expect(APPLICANT_STATUS[status], `حالةٌ لا وجود لها: ${status}`).toBeDefined()
+  /* وكلُّ حالةٍ يُحجَز فيها حالةٌ لها لفظٌ يُقرأ في صفحة صاحبها. كان هذا
+     يُقاس على `INTEREST_SHOWN_STATUSES` وحدَها، فلمّا سُدّ بابُها صار
+     يُقاس على القائمة كلِّها — وهو أوسعُ وأصدق: حالةٌ يُعرض فيها التقويمُ
+     بلا لفظٍ في المعجم تُخرج بطاقةً فارغةً لصاحبها. */
+  it('وكلُّ حالةٍ يُحجَز فيها لها لفظٌ يقرؤه صاحبُها', () => {
+    for (const status of BOOKABLE_STATUSES) {
+      expect(APPLICANT_STATUS[status], `حالةٌ يُحجَز فيها بلا لفظٍ في المعجم: ${status}`).toBeDefined()
     }
   })
 })

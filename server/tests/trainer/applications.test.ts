@@ -252,10 +252,9 @@ describe('دورة طلب المدرب', () => {
   })
 
   it('9) مقابلة ثم ديمو ثم مراجعة أكاديمية', async () => {
-    await review.decide(applicationId, adminId, 'shortlist')
     const interview = await review.scheduleInterview(applicationId, adminId, { scheduledAt: new Date(Date.now() + 86400000) })
     await review.recordInterviewOutcome(interview.id, adminId, 'passed')
-    await review.decide(applicationId, adminId, 'request_demo')
+    await review.requestDemo(applicationId, adminId)
     await review.recordDemoEvaluation(applicationId, adminId, scores(), 'pass')
     await review.decide(applicationId, adminId, 'academic_review')
     const row = await prisma.trainerApplication.findUnique({ where: { id: applicationId } })

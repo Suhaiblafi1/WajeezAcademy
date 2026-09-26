@@ -47,7 +47,6 @@ async function withInterview(n: number, at = new Date('2026-09-20T14:00:00Z')) {
   const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference: res.reference } })
   await apps.transition(row.id, 'submitted', null, 'اكتمال الطلب')
   await apps.transition(row.id, 'under_review', null, 'بدء المراجعة')
-  await apps.transition(row.id, 'shortlisted', null, 'اختصار أوّليّ')
   await apps.transition(row.id, 'interview_scheduled', null, 'جدولة مقابلة')
   const iv = await prisma.trainerInterview.create({
     data: { applicationId: row.id, scheduledAt: at, mode: 'remote' },
