@@ -33,6 +33,7 @@ import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft,
+  materialsGateProblemAr,
   deadlineAfterPause, deadlineFrom, dueReminder, extendProblemAr, extendedDeadline,
   offerGatesActivation,
 } from '../../src/application/trainer/conditional-offer'
@@ -773,6 +774,68 @@ export class TrainerReviewService {
           actorId, action: 'trainer.readiness.override',
           entityType: 'trainer_application', entityId: applicationId,
           meta: { decision: action, reasonAr: reason, missingAr: readiness.blockersAr },
+        })
+      }
+    }
+
+    /* ═══════════ ولا يُعتمَد مَن لم تُقرأ موادُّه (٢٦ سبتمبر ٢٠٢٦) ═══════════
+
+       بلاغُ صاحب المنصّة: «ما وجدتُ بالتجربة أنّك اعتمدتَ المدرّبَ رسميّا عند
+       توقيعي — وهذا خطأ. اعتمدِ العقدَ المشروط وينتقل لمرحلة وضع المواد، وبعد
+       أن يضع المواد كاملا أقول إنّه ١٠٠٪ نشط».
+
+       وهو خطأٌ منّي: نُفِّذ قرارُه الأوّلُ («بعد أن أوقّع كأدمن يتحوّل إلى
+       مدرّب نشط مباشرة») بحرفه بلا الحارس الذي يجعله **اعتمادَ موادَّ** لا
+       تخطّيا لها. فكان الزرُّ يعمل بعد توقيع المدرّب بثانية.
+
+       ── ولمَ هنا لا في `countersignContract` ──
+
+       بابا الاعتماد اثنان: زرُّ شاشة العقود (يمرّ من هنا)، وزرُّ شاشة الطلبات
+       (`activate` و`approve` مباشرةً). ولو وُضع الحارسُ في الأوّل وحدَه لَبقي
+       الثاني مفتوحا — وهو المخنقُ الذي تُنادى منه `completeConditionalOffer`
+       أصلا. فالحارسُ حيث يقع القرارُ لا حيث تُضغط إحدى نقراته.
+
+       ── وترتيبُه بعد بوّابة التجهيز بقصد ──
+
+       تلك تقول «لم نجهّزه نحن»، وهذه تقول «لم يفرغْ هو». وقولُ الثانية لمن لم
+       تُضبَط أتعابُه بعدُ يُقدّم آخرَ الطريق على أوّله. */
+    if (action === 'activate' || action === 'approve') {
+      const openOffer = await this.prisma.trainerContract.findFirst({
+        where: {
+          profile: { applicationId },
+          gatesActivation: true, status: 'signed', conditionMetAt: null,
+        },
+        orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
+        select: {
+          id: true, orientationAt: true, conditionDeadlineAt: true,
+          conditionPausedAt: true, conditionExtendedAt: true, conditionMetAt: true,
+        },
+      })
+      const materialsProblem = openOffer
+        ? materialsGateProblemAr({ ...openOffer, now: new Date() })
+        : null
+      if (materialsProblem) {
+        if (!(opts.actorRoles ?? []).includes('super_admin')) {
+          throw new AuthError('materials_pending', materialsProblem, 409)
+        }
+        /* والمخرجُ مخرجُ بوّابة التجهيز نفسُه: المديرُ الأعلى وحدَه، بسببٍ
+           يُكتب. ولا حقلَ ثانٍ له — فمن تجاوز البوّابتَين كتب سببا واحدا،
+           وكلُّ واحدةٍ تكتب أثرَها بما نقص عندها. */
+        const reason = (opts.overrideReasonAr ?? '').trim()
+        const problem = overrideReasonProblemAr(reason)
+        if (problem) {
+          throw new AuthError(
+            'override_reason_required', `${materialsProblem} — ولك أن تتجاوزه: ${problem}`, 422,
+          )
+        }
+        overrideReason = overrideReason ?? reason
+        await recordAudit(this.prisma, {
+          actorId, action: 'trainer.materials.override',
+          entityType: 'trainer_application', entityId: applicationId,
+          meta: {
+            decision: action, reasonAr: reason,
+            contractId: openOffer!.id, problemAr: materialsProblem,
+          },
         })
       }
     }

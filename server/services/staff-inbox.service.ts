@@ -14,6 +14,34 @@
    فلا طابورَ يبلى، ولا عدّادَ يفترق عمّا في الشاشة. */
 
 import type { PrismaClient } from '@prisma/client'
+import type { TrainerStatus } from './trainer-application.service'
+
+/* ═══ الحالاتُ التي تنتظرك أنت في طلبات الانضمام (٢٦ سبتمبر ٢٠٢٦) ═══
+
+   ─────────── عطبان أُصلحا معا ───────────
+
+   ① **اسمان لا وجودَ لهما.** كان المرشِّحُ يقرأ `'in_review'` و
+     `'demo_scheduled'` — وليستا من حالات طلب المدرّب في شيء: الصحيحُ
+     `under_review` و`demo_requested`. و`in_review` حالةٌ صحيحةٌ **لنماذجَ
+     أخرى** (طلبُ المتعلّم، وطلبُ تعديل المحتوى، ومسوّدةُ التأليف)، وتُقرأ
+     في هذا الملفّ نفسِه على بُعد عشرين سطرا — فالأرجحُ أنّها نُسخت من هناك.
+
+     وأثرُه أنّ **«قيد المراجعة» — أكثرَ حالات الطابور ورودا — لم تكن تُعَدّ
+     أصلا**. بطاقةٌ تقول «ثلاثة» والطابورُ فيه أربعون.
+
+   ② **وما تعدّه البطاقةُ صار ما يعنيه عنوانُها.** «في مرحلةٍ تنتظرك»:
+     فخرجت `demo_requested` — تنتظر المتقدّمَ أن يقدّم ديمو، لا تنتظرك —
+     ودخلت `conditionally_approved`: هي عندك فعلا (أتعابُه ودوراتُه وعقدُه).
+     قرارُ صاحب المنصّة، ٢٦ سبتمبر ٢٠٢٦.
+
+   ─────────── ولمَ مُنَمَّطة ───────────
+
+   `TrainerStatus` يجعل اسما مخترَعا يسقط في `tsc`. ومصفوفةُ نصوصٍ حرّةٍ لا
+   يحرسها شيء: تُكتب مرّةً وتُقرأ سنةً وهي تنقص، ولا أحدَ يرى نقصَها — فبطاقةٌ
+   تعدّ أقلَّ ممّا في الطابور لا تصرخ، بل تُطمئن كذبا. */
+const TRAINER_INBOX_STATUSES: TrainerStatus[] = [
+  'submitted', 'under_review', 'shortlisted', 'academic_review', 'conditionally_approved',
+]
 
 /** بندٌ واحدٌ في اللوح: ما هو، كم، وأين يُعمَل */
 export interface InboxItem {
@@ -196,7 +224,7 @@ export class StaffInboxService {
     /* ── طلباتُ انضمام المدرّبين ── */
     if (can('trainer.applications.review')) {
       const waiting = await this.prisma.trainerApplication.count({
-        where: { status: { in: ['submitted', 'in_review', 'shortlisted', 'demo_scheduled', 'academic_review'] } },
+        where: { status: { in: TRAINER_INBOX_STATUSES } },
       })
       push({
         key: 'trainer_applications',
