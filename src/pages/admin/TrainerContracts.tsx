@@ -20,7 +20,7 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, RefreshCw, Send, Trash2, Undo2, X } from "lucide-react";
+import { BadgeCheck, Ban, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -44,6 +44,8 @@ import { matchesQuery } from "@/application/text/search-ar";
 import AdminLayout from "./AdminLayout";
 import { parseContractDoc } from '@/application/trainer/contract-sections'
 import ContractDocument from '@/components/ContractDocument'
+import { nameMatch } from '@/application/trainer/contract-names'
+import { isUntouchableContract } from '@/application/trainer/contract-untouchable'
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
@@ -75,7 +77,46 @@ interface ContractRow {
   orientationAt: string | null;
   documents: { id: string; kind: string; originalName: string; mime: string; uploadedAt: string }[];
   qualifiedSnapshot: { courseId: string; titleAr: string }[] | null;
-  profile: { id: string; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
+  profile: { id: string; legalNameAr: string | null; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
+}
+
+/* ═══ الاسمان في صفٍّ واحد (٢٦ سبتمبر ٢٠٢٦) ═══
+
+   بلاغُ صاحب المنصّة: «اسم الطرف الثاني يجب أن يكون مطابقا للهوية». وأوّلُ
+   ما يلزم لذلك أن يكون الاسمان **منظورَين معا**: الشاشةُ كانت تعرض اسمَ
+   الحساب وحدَه، فلا يُرى فرقٌ ولو كان قائما.
+
+   و`documentNameAr` هو المطبوعُ في الوثيقة: `legalNameAr` إن كان قد صُحّح،
+   وإلّا فاسمُ الحساب — وهو ترتيبُ `contractPrefill` و`composeContract`
+   نفسُه، فما تعرضه الشاشةُ هو ما طُبع لا تقديرٌ لما طُبع. */
+const namesOf = (c: ContractRow) => ({
+  documentNameAr: c.profile?.legalNameAr ?? c.profile?.application?.fullName ?? null,
+  signedNameAr: c.signerLegalName,
+});
+const docNameOf = (c: ContractRow) => namesOf(c).documentNameAr ?? "—";
+
+/** ما يمسّه الإغلاقُ — كما يقرؤه الخادمُ من المواضع التي يمسّها الرحيلُ فعلا */
+interface Impact {
+  isLive: boolean; liveCohorts: number; enrolledLearners: number;
+  openOffers: number; unpaidPayouts: number; owedByCurrency: Record<string, number>;
+}
+
+/** أفي هذا الأثرِ ما يُوقِف القارئَ؟ — فنافذةٌ تقول «لا شيءَ سيُمَسّ» أنفعُ من
+ *  نافذةٍ تعدّد أربعةَ أصفار. */
+const impactBites = (i: Impact) =>
+  i.liveCohorts > 0 || i.enrolledLearners > 0 || i.openOffers > 0 || i.unpaidPayouts > 0;
+
+/** تنزيلُ المتن كما بُصم — نصّا لا صورةً له.
+ *
+ *  والاسمُ يُنقّى ممّا لا يقبله نظامُ ملفّات: عنوانُ العقد يحمل نقطتَين
+ *  وشرطاتٍ، وويندوز يرفض بعضَها فيسقط التنزيلُ صامتا. */
+function downloadBodyAr(doc: { title: string; body: string }) {
+  const url = URL.createObjectURL(new Blob([doc.body], { type: "text/plain;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${doc.title.replace(/[\\/:*?"<>|]/g, "-").slice(0, 80)}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /** وقائعُ الشرط كما يقرؤها `conditional-offer.ts` — تُشتقّ من الصفّ مرّةً
@@ -171,6 +212,34 @@ export default function TrainerContracts() {
      يقرؤه من وثيقة هويّته التي بين يديه، فيكتبه. */
   const [fixName, setFixName] = useState<{ id: string; nameAr: string } | null>(null);
   const [replying, setReplying] = useState<{ id: string; replyAr: string } | null>(null);
+  /* ═══ الإغلاقُ يقول أثرَه قبل أن يقع (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «والنظام يجب أن يحذّرني إذا كان للإلغاء أثر». وكان
+     السببُ يُطلَب بـ`window.prompt` بلا رقمٍ ولا سياق: سطرٌ واحدٌ يسأل «لماذا»
+     ولا يقول «وهذا ما سيمسّه».
+
+     و`impact === null` ليس صفرا: هو «لم تُقرأ الأرقامُ بعد». فالنافذةُ لا
+     تُفتح إلّا بها (`closeWith` تقرأ ثمّ تفتح)، ولو تعثّرت القراءةُ لم
+     تُفتَح — فلا يقع إغلاقٌ على أرقامٍ مجهولةٍ تُقرأ صفرا. */
+  const [closing, setClosing] = useState<
+    { row: ContractRow; mode: "revoke" | "depart"; impact: Impact } | null
+  >(null);
+  /* ═══ وبقيّةُ `window.prompt` في هذه الشاشة ═══
+
+     بقي منه بابان بعد نافذة الإغلاق، ونصُّهما **يصل المدرّبَ حرفا بحرف**:
+     «ما الذي لم يطابق؟» في رفض التوقيع، و«سببُ السحب» في سحب العرض. وحوارُ
+     المتصفّح أسوأُ ما يُكتب فيه ما يُقرأ بعد سنة: سطرٌ واحدٌ لا يُنسَّق ولا
+     يُراجَع، **ويملك المتصفّحُ كتمَه** — فمن ضغط «امنع هذا الموقع من إظهار
+     الحوارات» صار الزرُّ عنده لا يفعل شيئا ولا يقول لماذا (رأسُ
+     `ConfirmAction`).
+
+     وحالةٌ واحدةٌ للبابَين لا نافذتان: السؤالُ واحدٌ — سببٌ مكتوبٌ يُشترَط
+     ثمّ يُرسَل. والفرقُ في المسار وحدَه، فيُحمَل معه. */
+  const [asking, setAsking] = useState<{
+    titleAr: string; confirmLabelAr: string; labelAr: string;
+    whatAr: string; okAr: string; rowId?: string;
+    post: (reasonAr: string) => Promise<void>;
+  } | null>(null);
 
   /* ═══ العروضُ في هذه الشاشة لا في شاشةٍ ثالثة ═══
 
@@ -196,6 +265,18 @@ export default function TrainerContracts() {
   const [contractPage, setContractPage] = useState(1);
   const [offerQ, setOfferQ] = useState("");
   const [offerPage, setOfferPage] = useState(1);
+
+  /* ═══ وسمُ الطباعة ═══
+
+     القاعدةُ في `@media print` معلَّقةٌ عليه، فلا تُعدَّل طباعةُ شاشةٍ أخرى
+     بشيءٍ منها. ويُرفَع بإغلاق النافذة لا بعد الطباعة: `window.print` تحبس
+     الخيطَ في متصفّحاتٍ وتعود فورا في أخرى، فمن رفعه بعدها رفعه قبل أن
+     تُرسَم الورقةُ في بعضها. */
+  useEffect(() => {
+    if (!shownBody) return;
+    document.body.setAttribute("data-printing", "contract-body");
+    return () => document.body.removeAttribute("data-printing");
+  }, [shownBody]);
 
   const contractView = useMemo(() => paginate(
     contracts.filter((c) => matchesQuery(contractQ, [
@@ -301,6 +382,20 @@ export default function TrainerContracts() {
     } catch (e) {
       const text = permissionMessage(e, "تعذّر الإجراء");
       if (rowId) setRowErr({ id: rowId, text }); else setErr(text);
+    }
+    finally { setBusy(false); }
+  };
+
+  /** يقرأ أثرَ الإغلاق ثمّ يفتح النافذة — ولا يفتحها إن لم يُقرأ.
+   *
+   *  ولا `run` هنا: هذه قراءةٌ لا إجراء، و«تمّ» فوق نافذةٍ تسأل «أمتأكّد؟»
+   *  تقول إنّ شيئا وقع ولم يقع شيء. */
+  const closeWith = async (row: ContractRow, mode: "revoke" | "depart") => {
+    setBusy(true); setErr(""); setNote(""); setRowErr(null);
+    try {
+      setClosing({ row, mode, impact: await apiGet<Impact>(`/api/admin/trainer-contracts/${row.id}/impact`) });
+    } catch (e) {
+      setRowErr({ id: row.id, text: permissionMessage(e, "تعذّرت قراءةُ أثر الإغلاق — ولا يُغلَق على غير علم") });
     }
     finally { setBusy(false); }
   };
@@ -586,7 +681,7 @@ export default function TrainerContracts() {
                   <Inset className="p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span>
-                        <b>{c.profile?.application?.fullName ?? "—"}</b>
+                        <b>{docNameOf(c)}</b>
                         <span className="opacity-70">
                           {" "}— {STATUS_AR[c.status] ?? c.status}
                           {c.bodyVersion ? ` · صياغة ${c.bodyVersion}` : " · بلا متن (البابُ القديم)"}
@@ -628,30 +723,76 @@ export default function TrainerContracts() {
                         {/* والموقوفُ على طلب تعديلٍ يُلغى أيضا: هو الطريقُ إلى
                             «أُلغي وأُرسل مصحَّحا» — وهو أحدُ الجوابَين المكتوبَين في الخادم. */}
                         {(c.status === "draft" || c.status === "sent" || c.status === "amendment_requested") && (
-                          <Button size="sm" tone="danger" icon={Ban}
-                            onClick={() => void run(async () => {
-                              const reasonAr = window.prompt("سببُ الإلغاء — يُقرأ بعد شهرٍ حين يُسأل عنه:");
-                              if (!reasonAr) return;
-                              await apiPost(`/api/admin/trainer-contracts/${c.id}/revoke`, { reasonAr });
-                              await load();
-                            }, "أُلغي العقد")}>
+                          <Button size="sm" tone="danger" icon={Ban} loading={busy}
+                            onClick={() => void closeWith(c, "revoke")}>
                             ألغِ
                           </Button>
                         )}
-                        {/* ═══ الحذف — وما مسَّه توقيعٌ لا زرَّ له ═══
+                        {/* ═══ والنافذُ يُفسَخ من صفّه — بالطريق المحروس (٢٦ سبتمبر ٢٠٢٦) ═══
 
-                            والشرطُ هنا صورةُ `isUntouchableContract` في الخادم، والحكمُ هناك:
-                            هذا يمنع زرّا يُرَدّ، وذاك يمنع الفعل. ومن اكتفى بإخفاء
-                            الزرّ حذف بـ`curl`. */}
-                        {!c.signedAt && !c.countersignedAt
-                          && !["signed", "countersigned", "terminated", "superseded"].includes(c.status) && (
-                          <Button size="sm" tone="danger" icon={Trash2}
-                            onClick={() => setDeleting(c)}>
-                            احذِفْ
+                            كان الزرُّ الوحيدُ على النافذ هو «اعتمِدْ»، وهو مضغوطٌ
+                            أصلا: فلا مخرجَ من عقدٍ نافذٍ في هذه الشاشة أبدا. ومن
+                            أراد إنهاءَه ذهب إلى شاشةِ الرحيل إن عرفها.
+
+                            والزرُّ يمشي في `trainer-departures` لا في مسارٍ ثانٍ
+                            يفسخ العقدَ وحدَه: الرحيلُ يفسخ العقدَ **ويفتح صفّا
+                            لكلّ متعلّمٍ ويسحب العروضَ المعلَّقة**. ومن فسخ العقدَ
+                            وحدَه ترك شعبا بلا مدرّبٍ وعروضا تنتظر جوابَ راحل. */}
+                        {c.status === "countersigned" && c.profile?.id && (
+                          <Button size="sm" tone="danger" icon={UserMinus} loading={busy}
+                            onClick={() => void closeWith(c, "depart")}>
+                            أنهِ تعاقدَه
                           </Button>
                         )}
+                        {/* ═══ الحذف — وما مسَّه توقيعٌ لا زرَّ له، ويُقال لماذا ═══
+
+                            والشرطُ **هو** `isUntouchableContract` لا صورةٌ منه: كان
+                            منسوخا هنا بقائمةِ حالاتٍ مكتوبةٍ باليد، ونسختان من حكمٍ
+                            تفترقان يوما فيُخفي أحدُهما زرّا يسمح به الآخر. والحكمُ
+                            في الخادم كما كان: هذا يمنع زرّا يُرَدّ، وذاك يمنع الفعلَ
+                            نفسَه. ومن اكتفى بإخفاء الزرّ حذف بـ`curl`.
+
+                            وغيابُ الزرّ صامتا هو ما شكا منه صاحبُ المنصّة (٢٦
+                            سبتمبر ٢٠٢٦): «العقد الملغى لم يظهر لي زرّ تحميل أو
+                            حذف». والملغى الذي كان بين يديه **موقَّعا** رُفض
+                            توقيعُه — فالمنعُ صوابٌ والصمتُ خطأ. فيُقال السببُ
+                            وتُذكر النسخةُ التي يملكها بدلَه. */}
+                        {isUntouchableContract(c)
+                          ? (
+                            <span className="self-center text-xs opacity-70">
+                              مسَّه توقيعٌ — فلا يُحذَف، وتُطبَع نسختُه وتُنزَّل
+                            </span>
+                          )
+                          : (
+                            <Button size="sm" tone="danger" icon={Trash2}
+                              onClick={() => setDeleting(c)}>
+                              احذِفْ
+                            </Button>
+                          )}
                       </span>
                     </div>
+                    {/* ═══ الاسمان معا — وما وراء التنبيه ═══
+
+                        `differs` لا تقول «مزوَّر»: تقول إنّ ثَمَّ ما يُنظَر فيه.
+                        والنظرُ مقابلةُ وثيقة الهويّة بعين الموظّف — ولذلك يُذكَر
+                        المخرجُ معه: من كان الموقَّعُ به هو الصحيحَ رَدَّ التوقيعَ،
+                        فيُركَّب بديلٌ باسمه. */}
+                    {nameMatch(namesOf(c)) !== "unsigned" && (
+                      <Panel tone={nameMatch(namesOf(c)) === "differs" ? "warn" : "positive"}
+                        className="mt-2 p-2 text-read leading-6">
+                        <span className="opacity-70">في الوثيقة:</span> <b>{docNameOf(c)}</b>
+                        <span className="opacity-40">{"  ×  "}</span>
+                        <span className="opacity-70">وقّع به:</span> <b>{c.signerLegalName ?? "—"}</b>
+                        {nameMatch(namesOf(c)) === "differs"
+                          ? (
+                            <span className="block opacity-80">
+                              الاسمان مختلفان — قابِلْهما بوثيقة هويّته قبل الاعتماد. فإن كان
+                              الموقَّعُ به هو الصحيحَ فاردُدِ التوقيعَ، ويُركَّب بديلٌ باسمه.
+                            </span>
+                          )
+                          : <span className="opacity-70">{" — مطابق"}</span>}
+                      </Panel>
+                    )}
                     {link?.id === c.id && (
                       <Panel tone="positive" className="mt-2 p-2">
                         <p className="mb-1 text-read">رابطُ التوقيع — انسخْه الآن، فلا يُعرض ثانية:</p>
@@ -670,7 +811,7 @@ export default function TrainerContracts() {
                         <p className="mb-1 font-black">رُفض توقيعُه — ووُعِد بعقدٍ مصحَّح</p>
                         <p className="text-read leading-6 opacity-80">
                           وقّع باسم <b>{c.signerLegalName ?? "—"}</b>، والوثيقةُ تسمّيه{" "}
-                          <b>{c.profile?.application?.fullName ?? "—"}</b>. اكتبِ اسمَه كما في
+                          <b>{docNameOf(c)}</b>. اكتبِ اسمَه كما في
                           وثيقة هويّته، فيُركَّب بديلٌ به ويُرسَل إليه برابطٍ جديد — وبنودُه
                           وأتعابُه كما هي.
                         </p>
@@ -726,7 +867,7 @@ export default function TrainerContracts() {
                           <p className="text-read opacity-70">{fmtDateTime(c.nameCorrectionAt)}</p>
                         )}
                         <p className="mt-2 leading-7">
-                          المكتوبُ في الوثيقة: <b>{c.profile?.application?.fullName ?? "—"}</b>
+                          المكتوبُ في الوثيقة: <b>{docNameOf(c)}</b>
                           {" · "}وما يقوله هو: <b>{c.nameCorrectionAr}</b>
                         </p>
                         <p className="mt-2 text-read leading-6 opacity-80">
@@ -1004,12 +1145,18 @@ export default function TrainerContracts() {
                                 باسمٍ غيرِ اسمه وقّع وثيقةً تسمّي طرفا آخر، ولا
                                 تُصحَّح تسميةُ طرفٍ بتعديل حقل — يُركَّب عقدٌ جديد. */}
                             <Button tone="danger" icon={X}
-                              onClick={() => void run(async () => {
-                                const reasonAr = window.prompt("ما الذي لم يطابق؟ يصل صاحبَه نصّا:");
-                                if (!reasonAr) return;
-                                await apiPost(`/api/admin/trainer-contracts/${c.id}/reject-signature`, { reasonAr });
-                                await load();
-                              }, "رُفض التوقيعُ ووصل صاحبَه", c.id)}>
+                              onClick={() => setAsking({
+                                titleAr: `رفضُ توقيعِ «${c.title}»`,
+                                confirmLabelAr: "ارفضِ التوقيعَ وأبلغْه",
+                                labelAr: "ما الذي لم يطابق؟ — يصل صاحبَه بنصّه",
+                                whatAr: "يُغلَق هذا العقدُ ولا يُحذَف: دليلُ توقيعه يبقى. ويصل المدرّبَ ما لم"
+                                  + " يطابق ووعدٌ بعقدٍ مصحَّحٍ برابطٍ جديد — ويُوفى بنقرةٍ من صفّه بعد ذلك."
+                                  + " وتُعاد مهمّةُ التوقيع في قائمته إلى «لم تُنجَز».",
+                                okAr: "رُفض التوقيعُ ووصل صاحبَه",
+                                rowId: c.id,
+                                post: (reasonAr) =>
+                                  apiPost(`/api/admin/trainer-contracts/${c.id}/reject-signature`, { reasonAr }),
+                              })}>
                               لم يطابق — ارفضْ
                             </Button>
                           </div>
@@ -1197,12 +1344,14 @@ export default function TrainerContracts() {
                       </span>
                       {o.status === "offered" && (
                         <Button size="sm" tone="danger" icon={Ban}
-                          onClick={() => void run(async () => {
-                            const reasonAr = window.prompt("سببُ السحب — يصل صاحبَه نصّا:");
-                            if (!reasonAr) return;
-                            await apiPost(`/api/admin/trainer-offers/${o.id}/withdraw`, { reasonAr });
-                            await load();
-                          }, "سُحب العرضُ ووصل صاحبَه")}>
+                          onClick={() => setAsking({
+                            titleAr: `سحبُ عرضِ «${o.courseTitleAr}»`,
+                            confirmLabelAr: "اسحبِ العرضَ وأبلغْه",
+                            labelAr: "سببُ السحب — يصل صاحبَه بنصّه",
+                            whatAr: "يُسحب هذا العرضُ فلا يعود قابلا للجواب، ويصل المدرّبَ أنّه سُحب وبِمَ.",
+                            okAr: "سُحب العرضُ ووصل صاحبَه",
+                            post: (reasonAr) => apiPost(`/api/admin/trainer-offers/${o.id}/withdraw`, { reasonAr }),
+                          })}>
                           اسحبْه
                         </Button>
                       )}
@@ -1233,16 +1382,142 @@ export default function TrainerContracts() {
         </Card>
       )}
 
+      {/* ═══ نسخةٌ تُحمَل لا تُقرأ على الشاشة وحدَها (٢٦ سبتمبر ٢٠٢٦) ═══
+
+          بلاغُ صاحب المنصّة: «العقد الملغى لم يظهر لي زرّ تحميل أو حذف». والمتنُ
+          كان يُعرض ولا يُخرَج: من طُلب منه العقدُ في ملفٍّ ورقيٍّ أو بريدٍ لم
+          يجد بابا.
+
+          وبابان لا واحد، لأنّهما شيئان:
+          · **الطباعة** صورةٌ للقراءة — ورقةٌ أو PDF بنَسَق الوثيقة نفسِه.
+          · **تنزيلُ المتن** هو الحروفُ التي بُصمت (`bodyHash`) حرفا بحرف. فمن
+            أراد أن يقابل بصمةً يقابلها بهذا لا بصورةٍ معادِ رسمُها.
+
+          والمطبوعُ هو المعروضُ نفسُه لا رسمٌ ثانٍ له: وثيقةٌ تُرسم مرّتين
+          تفترقان يوما، وأخطرُ افتراقٍ في الدنيا افتراقُ الورقةِ عن الشاشة. */}
       {shownBody && (
         <Card className="mt-6 p-4">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-black">{shownBody.title}</h2>
-            <Button size="sm" onClick={() => setShownBody(null)}>أغلِقْ</Button>
+            <span className="flex flex-wrap gap-2">
+              <Button size="sm" icon={Printer} onClick={() => window.print()}>
+                اطبعْه أو احفظْه PDF
+              </Button>
+              <Button size="sm" icon={Download} onClick={() => downloadBodyAr(shownBody)}>
+                نزّلِ المتن
+              </Button>
+              <Button size="sm" onClick={() => setShownBody(null)}>أغلِقْ</Button>
+            </span>
           </div>
-          <div dir="rtl" className="max-h-[32rem] overflow-auto rounded-lg">
+          {/* والمعرّفُ مفتاحُ الطباعة: قاعدةُ `@media print` تُخفي كلَّ ما ليس
+              هذا ولا جدّا له، فتخرج الوثيقةُ وحدَها بلا شريطٍ ولا قائمة. */}
+          <div id="contract-sheet" dir="rtl" className="max-h-[32rem] overflow-auto rounded-lg">
             <ContractDocument doc={parseContractDoc(shownBody.body)} />
           </div>
         </Card>
+      )}
+
+      {/* والسببُ الذي يصل إنسانا يُكتب في نافذةٍ تُقرأ، لا في سطر متصفّح */}
+      {asking && (
+        <ConfirmAction
+          titleAr={asking.titleAr}
+          confirmLabelAr={asking.confirmLabelAr}
+          busy={busy}
+          reason={{ labelAr: asking.labelAr, minLength: 5 }}
+          onCancel={() => setAsking(null)}
+          onConfirm={(reasonText) => void run(async () => {
+            await asking.post(reasonText ?? "");
+            setAsking(null);
+            await load();
+          }, asking.okAr, asking.rowId)}
+        >
+          <p className="text-read leading-7">{asking.whatAr}</p>
+        </ConfirmAction>
+      )}
+
+      {/* ═══ الإغلاقُ على أرقامٍ لا على تقدير (٢٦ سبتمبر ٢٠٢٦) ═══
+
+          نافذةٌ واحدةٌ لبابَين، لأنّ السؤالَ واحد: **ما سيمسّه هذا؟** والفرقُ
+          بينهما في الجواب لا في السؤال:
+          · `revoke` يُغلِق عرضا لم يُوقَّع — فالأرقامُ سياقٌ يُطمئن أو يُوقِف.
+          · `depart` يفسخ نافذا — فهي عواقبُ تقع بالنقرة.
+
+          ولذلك يختلف نصُّ السبب: سببُ الإلغاء **يصل المدرّبَ بحرفه** (رسالةُ
+          `notifyContractRevoked`)، وسببُ الرحيل يُكتب في ملفّه ولا يُنقل إليه —
+          رسالةُ الرحيل تقول إنّ التعاقد انتهى ولا تنقل سببَه. ومن وعد بما لا
+          يُرسَل صنع شكوى المرحلة السادسة نفسَها. */}
+      {closing && (
+        <ConfirmAction
+          titleAr={closing.mode === "revoke"
+            ? `إلغاءُ «${closing.row.title}»`
+            : `إنهاءُ تعاقدِ ${docNameOf(closing.row)}`}
+          confirmLabelAr={closing.mode === "revoke" ? "ألغِ العقد" : "أنهِ التعاقدَ وافتحْ ملفَّ الرحيل"}
+          busy={busy}
+          reason={{
+            labelAr: closing.mode === "revoke"
+              ? "سببُ الإلغاء — يصل المدرّبَ بنصّه، ويُقرأ في السجلّ بعد سنة"
+              : "سببُ الرحيل — يُكتب في ملفّه ويُقرأ بعد سنة (ولا يُنقل إليه في رسالته)",
+            minLength: 5,
+          }}
+          onCancel={() => setClosing(null)}
+          onConfirm={(reasonText) => void run(async () => {
+            if (closing.mode === "revoke") {
+              await apiPost(`/api/admin/trainer-contracts/${closing.row.id}/revoke`, { reasonAr: reasonText });
+            } else {
+              await apiPost(`/api/admin/trainer-departures`,
+                { profileId: closing.row.profile!.id, reasonAr: reasonText });
+            }
+            setClosing(null);
+            await load();
+          }, closing.mode === "revoke"
+            ? "أُلغي العقدُ ووصلَه سببُه"
+            : "انتهى التعاقدُ وفُتح ملفُّ الرحيل — ولكلّ متعلّمٍ صفٌّ يُختار")}
+        >
+          <p className="text-read leading-7">
+            {closing.mode === "revoke"
+              ? "يُغلَق هذا العقدُ ولا يُحذَف: يبقى في القائمة بحالة «ملغًى» وسببُه معه، ويبطل رابطُ توقيعه. ويصل المدرّبَ أنّه أُلغي وبِمَ."
+              : "يُفسَخ هذا العقدُ للمستقبل، ويُفتح ملفُّ رحيلٍ يُعرَض فيه على كلّ متعلّمٍ صفُّه، وتُسحب العروضُ التي تنتظر جوابَه. ولا يمحو ذلك ما كان: نسختُه ودليلُ توقيعه يبقيان، وما استحقّه عن عملٍ أدّاه يبقى مستحقّا له."}
+          </p>
+          {impactBites(closing.impact)
+            ? (
+              <Inset className="mt-3 p-3 text-read leading-7">
+                <p className="mb-1 font-black">
+                  {closing.mode === "depart" ? "وهذا ما سيُمَسّ:" : "ولهذا المدرّبِ اليومَ ما يلي — فانظرْ فيه قبل الإغلاق:"}
+                </p>
+                <ul className="list-inside list-disc">
+                  {closing.impact.liveCohorts > 0 && (
+                    <li>شعبٌ حيّةٌ يدرّسها: <b>{closing.impact.liveCohorts}</b></li>
+                  )}
+                  {closing.impact.enrolledLearners > 0 && (
+                    <li>متعلّمون مسجَّلون فيها: <b>{closing.impact.enrolledLearners}</b></li>
+                  )}
+                  {closing.impact.openOffers > 0 && (
+                    <li>عروضُ إسنادٍ تنتظر جوابَه: <b>{closing.impact.openOffers}</b></li>
+                  )}
+                  {closing.impact.unpaidPayouts > 0 && (
+                    <li>
+                      مستحقّاتٌ لم تُصرَف: <b>{closing.impact.unpaidPayouts}</b>
+                      {" — "}
+                      {Object.entries(closing.impact.owedByCurrency)
+                        .map(([cur, amount]) => `${amount} ${cur}`).join(" · ")}
+                    </li>
+                  )}
+                </ul>
+                {closing.mode === "revoke" && (
+                  <p className="mt-2 opacity-80">
+                    وهذه قائمةٌ بعقدٍ آخر — إلغاءُ هذا العرضِ لا يمسّها. وإنّما تُقرأ
+                    لتعرفَ أنّ للرجلِ عملا قائما قبل أن تُغلِق بابَه.
+                  </p>
+                )}
+              </Inset>
+            )
+            : (
+              <Inset className="mt-3 p-3 text-read leading-7">
+                لا شعبَ حيّةً لهذا المدرّب، ولا متعلّمين، ولا عرضا ينتظر جوابَه، ولا
+                مستحقّا لم يُصرَف. فلا شيءَ سيُمَسّ غيرَ هذا العقد.
+              </Inset>
+            )}
+        </ConfirmAction>
       )}
 
       {/* ═══ الحذفُ يقول ماذا سيحدث بالضبط — ولا يطال موقَّعا ═══ */}

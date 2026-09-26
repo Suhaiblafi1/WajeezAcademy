@@ -1798,6 +1798,10 @@ export class TrainerReviewService {
           profile: {
             select: {
               id: true,
+              /* الاسمُ الذي طُبع في الوثيقة — والقائمةُ تقابله بالاسم الموقَّع
+                 به. وبلا هذا العمود تقابل الشاشةُ التوقيعَ باسم **الحساب**،
+                 فتُنبّه على فرقٍ صحّحه الموظّفُ بنفسه وتسكت عن فرقٍ قائم. */
+              legalNameAr: true,
               application: { select: { id: true, reference: true, fullName: true, email: true, status: true } },
             },
           },
@@ -2735,6 +2739,75 @@ export class TrainerReviewService {
     } catch {
       /* البريدُ رفاهية — الإلغاءُ وقع، والأثرُ يحفظه */
       return 'failed'
+    }
+  }
+
+  /* ═══════════ أثرُ الإغلاق — يُقرأ قبل النقرة لا بعدها ═══════════
+
+     بلاغُ صاحب المنصّة (٢٦ سبتمبر ٢٠٢٦): «يجب أن يكون زرُّ إلغاء العقد فيرسل
+     للمدرّب أنّ العقد قد أُلغي ولماذا.. **والنظام يجب أن يحذّرني إذا كان
+     للإلغاء أثر**».
+
+     وهو طلبٌ في محلّه: الإلغاءُ والفسخُ نقرتان متشابهتان في الشاشة وأثرُهما
+     مختلفٌ اختلافا تامّا. فعرضٌ لم يُوقَّع يُغلَق ولا يمسّ شيئا؛ وعقدٌ نافذٌ
+     على مدرّبٍ يدرّس يمسّ **شعبَه ومتعلّميه وعروضَه ومستحقّاتِه**. والموظّفُ
+     لا يعرف أيُّهما بين يديه من صفٍّ يقول «نافذ».
+
+     ولا يُحسَب الأثرُ من نوع العقد وحدَه: المدرّبُ قد يكون نشطا بعقدٍ آخرَ
+     فيبقى ما له قائما. فتُقرأ أرقامُه هو، وتُعرَض كما هي، ويقرّر الإنسان. */
+
+  /** ما لهذا المدرّب اليومَ من ارتباطاتٍ حيّة — عددا لا حكما.
+   *
+   *  والقراءةُ من المواضع التي يمسّها الرحيلُ فعلا
+   *  (`TrainerDepartureService.open`) لا من تقديرٍ مستقلّ: أرقامٌ تُعرَض
+   *  للتحذير ثمّ يقع غيرُها عند التنفيذ أسوأُ من لا تحذير. */
+  async contractCloseImpact(contractId: string) {
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      select: { id: true, status: true, profileId: true, gatesActivation: true },
+    })
+    if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
+
+    /* الشعبُ الحيّةُ وحدَها: المنتهيةُ لا يمسّها رحيلٌ ولا فسخ — وهي
+       الحالاتُ الأربعُ نفسُها التي يقرؤها `open`. */
+    const live = await this.prisma.cohortTrainer.findMany({
+      where: { profileId: c.profileId, cohort: { status: { in: ['draft', 'open', 'full', 'active'] } } },
+      select: { cohortId: true },
+    })
+    const cohortIds = live.map((x) => x.cohortId)
+    const [learners, openOffers, owed] = await Promise.all([
+      cohortIds.length === 0
+        ? Promise.resolve(0)
+        : this.prisma.enrollment.count({
+          where: { cohortId: { in: cohortIds }, status: 'enrolled' },
+        }),
+      this.prisma.trainerAssignmentOffer.count({
+        where: { profileId: c.profileId, status: 'offered' },
+      }),
+      /* ما استحقّ ولم يُصرَف: `pending` و`approved`. والمصروفُ انتهى أمرُه،
+         والملغى لا يُطالَب به. */
+      this.prisma.trainerPayout.findMany({
+        where: { profileId: c.profileId, status: { in: ['pending', 'approved'] } },
+        select: { total: true, currency: true },
+      }),
+    ])
+
+    /* والمبالغُ تُجمَع بعملتها: مجموعٌ واحدٌ لعملتَين رقمٌ لا معنى له */
+    const owedByCurrency: Record<string, number> = {}
+    for (const p of owed) {
+      owedByCurrency[p.currency] = (owedByCurrency[p.currency] ?? 0) + Number(p.total)
+    }
+
+    return {
+      contractId: c.id,
+      status: c.status,
+      /* أيُنهي إغلاقُ هذا الصفِّ عقدا **نافذا**؟ فالتحذيرُ يختلف به */
+      isLive: c.status === 'countersigned',
+      liveCohorts: cohortIds.length,
+      enrolledLearners: learners,
+      openOffers,
+      unpaidPayouts: owed.length,
+      owedByCurrency,
     }
   }
 

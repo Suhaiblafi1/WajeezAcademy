@@ -510,6 +510,17 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.reissueWithCorrectedName(contractId, req.auth!.userId, { legalNameAr })
   })
 
+  /* أثرُ الإغلاق — يُقرأ قبل النقرة. وصلاحيّتُه صلاحيّةُ الإغلاق نفسُها:
+     من يملك أن يُلغيَ يملك أن يرى ما سيمسّه إلغاؤه، ومنعُه من الرؤية يجعله
+     يقرّر على غير علم. */
+  app.get('/api/admin/trainer-contracts/:contractId/impact', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'ما يمسّه إغلاقُ هذا العقد — شعبٌ ومتعلّمون وعروضٌ ومستحقّات' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    return review.contractCloseImpact(contractId)
+  })
+
   app.delete('/api/admin/trainer-contracts/:contractId', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'حذفُ عقدٍ لم يمسّه توقيع' },
