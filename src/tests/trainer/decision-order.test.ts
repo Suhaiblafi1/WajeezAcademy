@@ -29,6 +29,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { BAR_ACTIONS, DECISIONS, recommendedFor } from '@/application/trainer/decisions'
 import { STATUS_LABELS } from '@/application/trainer/application-status'
+import { APPLICANT_STATUS } from '@/application/trainer/application-options'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -178,6 +179,23 @@ describe('تسميةُ «رأيٌ ثانٍ» في موضعَيها', () => {
     const d = DECISIONS.find((x) => x.action === 'academic_review')
     expect(d, 'سقط قرارُ الرأي الثاني من القائمة').toBeTruthy()
     expect(d!.label).toBe('اطلبْ رأيا ثانيا')
+  })
+
+  it('وما يقرؤه المتقدّمُ لا يخبره بوقائعَ لم تقع', () => {
+    /* ═══ وهذا الموضعُ الثالثُ فاتني أوّلَ مرّة ═══
+
+       بحثتُ عن «مراجعة أكاديمية» فأصبتُ موضعَين وفاتني هذا — لفظُه
+       «مراجعة أكاديمية **نهائية**»، فلم يطابق. وأمسكه مسحُ الحزمة المنشورة
+       بعد النشر لا قبله.
+
+       وهو أخطرُ الثلاثة: يقرؤه **المتقدّمُ نفسُه**، وكان يقول إنّ لقاءَ
+       تعارفٍ ودرسا تجريبيّا مضيا — وهذه الحالةُ تقع **قبل** المقابلة. */
+    const step = APPLICANT_STATUS.academic_review
+    expect(step, 'سقطت الحالةُ من صفحة المتقدّم').toBeTruthy()
+    for (const lie of ['بعد لقاء التعارف', 'الدرس التجريبي', 'نهائي']) {
+      expect(`${step.label} ${step.explain}`, `يُخبَر المتقدّمُ بما لم يقع: ${lie}`)
+        .not.toContain(lie)
+    }
   })
 
   it('ولا يبقى الاسمُ القديمُ في وجهٍ يراه الموظّف', () => {
