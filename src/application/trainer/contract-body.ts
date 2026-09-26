@@ -100,6 +100,7 @@ import {
   RESCHEDULE_NOTICE_HOURS,
   TRAINER_WITHDRAWAL_NOTICE_DAYS,
 } from './notice-periods'
+import { courseHoursLineAr, HOURS_TOLERANCE_PERCENT } from '../catalog/course-hours'
 import { RULE_TYPE_AR } from './compensation-labels'
 /* صيغةُ العدد: «8 مقعدا» خطأٌ نحويّ كان مطبوعا في عقودٍ وُقّعت — والثلاثةُ
    إلى العشرة جمعٌ. ويقرؤه المدرّبُ في أهمّ سطرٍ في وثيقته. */
@@ -181,7 +182,7 @@ import { ACADEMY_EMAILS } from '../../data/academy-email'
     ما يقبضه في `v7` بعينه، والبنودُ العشرون كما هي. ومن وقّع `v7` وقّع
     الحقوقَ ذاتَها بألفاظٍ أقلَّ إبانةً — فلا يُمَسّ مستحقٌّ ولا تُعاد
     عقدةٌ موقّعة. */
-export const CONTRACT_BODY_VERSION = 'v8-2026-09-25'
+export const CONTRACT_BODY_VERSION = 'v9-2026-09-26'
 
 /* ═══ إقراراتُ التوقيع — ستّةٌ تُقرأ واحدا واحدا ═══
 
@@ -355,6 +356,21 @@ export const CONTRACT_CONSENT_AR =
 export interface ContractCourseRow {
   courseId: string
   titleAr: string
+  /* ═══ وساعاتُها معها (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     طلبُ صاحب المنصّة: «هل عددُ الساعات للدورة موجودٌ بالعقد؟ أعتقد أنّه
+     مهمّ». وكان الملحقُ يعدّد العناوينَ وحدَها، فيوقّع المدرّبُ على تأهيلٍ
+     لدورةٍ لا يعرف حجمَها.
+
+     **ولقطةٌ لا إحالة**: الرقمُ يُنسَخ في `qualifiedSnapshot` مع العقد كما
+     تُنسَخ العناوين. ولو قُرئ من الكتالوج عند العرض لَتبدّل ما في وثيقةٍ
+     موقَّعةٍ بتعديلٍ في دورة — وهو نقضُ القاعدة التي بُني عليها المتنُ كلُّه.
+
+     واختياريّان: عقودُ ما قبل هذا التاريخ لا تحملهما، وتُقرأ لقطاتُها كما
+     هي فلا يُخترَع لها رقم. */
+  totalHours?: number | null
+  /** كم منها مسجَّلة — و`null` أو صفرٌ يعني «كلُّها مباشرة» */
+  recordedHours?: number | null
 }
 
 /** يقرأ لقطةَ الملحق (أ) المحفوظةَ في الصفّ (`qualifiedSnapshot`).
@@ -372,8 +388,16 @@ export function readContractCourses(value: unknown): ContractCourseRow[] {
     if (!row || typeof row !== 'object') continue
     const r = row as Record<string, unknown>
     if (typeof r.courseId !== 'string' || typeof r.titleAr !== 'string') continue
-    if (!r.courseId.trim() || !r.titleAr.trim()) continue
-    out.push({ courseId: r.courseId, titleAr: r.titleAr })
+    /* والرقمُ يُقرأ عددا صحيحا أو لا يُقرأ: لقطةٌ قديمةٌ بلا ساعاتٍ تُقرأ
+       بلا ساعات، ولا يُلفَّق لها صفرٌ يُطبَع في وثيقة. */
+    const num = (v: unknown): number | null =>
+      typeof v === 'number' && Number.isFinite(v) ? v : null
+    out.push({
+      courseId: r.courseId,
+      titleAr: r.titleAr,
+      totalHours: num(r.totalHours),
+      recordedHours: num(r.recordedHours),
+    })
   }
   return out
 }
@@ -559,11 +583,26 @@ function lateCancellationFeeAr(c: ContractCompensation | null): string {
   return floor
 }
 
+/** أفي هذه اللقطة ساعاتٌ تُطبَع؟ — فبندُ التسامح لا يُقال حيث لا رقمَ يُتسامَح فيه.
+ *
+ *  ولقطاتُ ما قبل ٢٦ سبتمبر ٢٠٢٦ بلا ساعات: تُعرَض وتُطبَع كما وُقّعت، ولا
+ *  يُزاد في وثيقةٍ موقَّعةٍ بندٌ لم يقرأه صاحبُها. */
+function coursesHaveHours(courses: readonly ContractCourseRow[]): boolean {
+  return courses.some((c) => typeof c.totalHours === 'number' && c.totalHours > 0)
+}
+
 function coursesTableAr(courses: readonly ContractCourseRow[]): string {
   if (courses.length === 0) {
     return 'لا دورات مدرجة بتاريخ هذا العقد. وتضاف الدورات التي يؤهل لها لاحقا وفق البند 2-4 دون حاجة إلى تعديل هذا العقد.'
   }
-  return courses.map((c, i) => `${i + 1}. ${c.titleAr}`).join('\n')
+  return courses.map((c, i) => {
+    /* ولقطةٌ قديمةٌ بلا ساعاتٍ تُطبَع كما كانت — عنوانا وحدَه. فوثيقةٌ
+       تُعرَض اليومَ وقّعها صاحبُها أمسِ لا يُزاد فيها رقم. */
+    const hours = typeof c.totalHours === 'number' && c.totalHours > 0
+      ? ` — ${courseHoursLineAr({ totalHours: c.totalHours, recordedHours: c.recordedHours })}`
+      : ''
+    return `${i + 1}. ${c.titleAr}${hours}`
+  }).join('\n')
 }
 
 function documentsListAr(docs: readonly RequiredDocument[]): string {
@@ -1061,7 +1100,7 @@ ${hoursNoteAr ? `
 
 الملحق (أ) — الدورات المؤهل لها
 
-هذه هي الدورات التي رأت الأكاديمية أن المدرب مؤهل لتقديمها بتاريخ هذا العقد. ويقرأ هذا الملحق مع البند 2: ورود الدورة هنا تأهيل لا إسناد، ولا يلزم الأكاديمية بإسناد أي منها.${conditional ? '\n\nومواد كل دورة من هذه الدورات قيد التقييم، ولا يقدم المدرب منها شيئا قبل أن تعتمد الأكاديمية موادها اعتمادا مستقلا لكل دورة، وفق البند 2-7.' + (conditional.orientationOnAr ? `\n\nوجلسة التهيئة الجماعية بتاريخ ${conditional.orientationOnAr}، ومنها تبدأ مهلة ${conditional.windowDays} أيام المبينة في البند 2-8.` : '') : ''}
+هذه هي الدورات التي رأت الأكاديمية أن المدرب مؤهل لتقديمها بتاريخ هذا العقد. ويقرأ هذا الملحق مع البند 2: ورود الدورة هنا تأهيل لا إسناد، ولا يلزم الأكاديمية بإسناد أي منها.${coursesHaveHours(courses) ? `\n\nوعدد الساعات المبين أمام كل دورة تقدير استرشادي بحسب خطتها في الكتالوج بتاريخ هذا العقد، وقد يزيد أو ينقص بما لا يجاوز ${HOURS_TOLERANCE_PERCENT}٪ بحسب سير الشعبة. والساعات المسجلة مادة يعدها المدرب وتعاد، والمباشرة حضوره في وقتها المجدول.` : ''}${conditional ? '\n\nومواد كل دورة من هذه الدورات قيد التقييم، ولا يقدم المدرب منها شيئا قبل أن تعتمد الأكاديمية موادها اعتمادا مستقلا لكل دورة، وفق البند 2-7.' + (conditional.orientationOnAr ? `\n\nوجلسة التهيئة الجماعية بتاريخ ${conditional.orientationOnAr}، ومنها تبدأ مهلة ${conditional.windowDays} أيام المبينة في البند 2-8.` : '') : ''}
 
 ${coursesTableAr(courses)}
 

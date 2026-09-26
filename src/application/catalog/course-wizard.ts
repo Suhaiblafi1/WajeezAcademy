@@ -43,13 +43,15 @@ export interface CourseWizardDraft {
   shortPromiseAr: string
   levelAr: string
   totalHours: string
+  /** كم منها مسجَّلة — وفراغُه يعني «كلُّها مباشرة» (يُطبَع في الملحق أ) */
+  recordedHours: string
   skillIds: string[]
   modules: CourseModuleDraft[]
 }
 
 export const EMPTY_COURSE_DRAFT: CourseWizardDraft = {
   pathwayId: '', familyCode: '', sequence: '1', titleAr: '', shortPromiseAr: '', levelAr: '',
-  totalHours: '', skillIds: [], modules: [EMPTY_MODULE],
+  totalHours: '', recordedHours: '', skillIds: [], modules: [EMPTY_MODULE],
 }
 
 /** ما يمنع الانتقال من الخطوة — قائمة فارغة تعني «امضِ» */

@@ -3,6 +3,7 @@
    لا تعديل بأثر رجعي على المنشور — كل تعديل إصدار جديد. */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
+import { hoursProblemAr } from '../../src/application/catalog/course-hours'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
@@ -427,9 +428,19 @@ export class CatalogAdminService {
     /** عائلةُ المعرِّف حين لا مسارَ يُشتقّ منه (`MKT` ← `C-MKT-101`) */
     familyCode?: string | null
     titleAr: string; shortPromiseAr?: string
-    levelAr?: string; totalHours: number; skillIds: string[]
+    levelAr?: string; totalHours: number; recordedHours?: number; skillIds: string[]
     modules: { sequence: number; titleAr: string; outcomeAr?: string; activityAr?: string; artifactAr?: string; bodyAr?: string; checksAr?: string; videoAr?: string; scenarioAr?: string; hours: number }[]
   }, actorId?: string) {
+    /* ═══ ولا رقمَ لا يُقرأ في وثيقةٍ تُوقَّع (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       ساعاتُ الدورة تُطبَع في الملحق (أ) من عقد المدرّب. ومسجَّلةٌ أكثرُ من
+       الإجماليّ تخرج «٢٠ ساعة (‎-٤ مباشرة + ٢٤ مسجَّلة)» — رقمٌ سالبٌ في
+       مستندٍ يُحتَجّ به. فيُردّ عند الكتابة لا عند العرض. */
+    const hoursProblem = hoursProblemAr({
+      totalHours: input.totalHours, recordedHours: input.recordedHours ?? null,
+    })
+    if (hoursProblem) throw new AuthError('bad_hours', hoursProblem, 422)
+
     let id: string
     if (input.pathwayId) {
       const pathway = await this.prisma.pathway.findUnique({ where: { id: input.pathwayId } })
@@ -472,7 +483,9 @@ export class CatalogAdminService {
         versions: {
           create: {
             version: 1, titleAr: input.titleAr, shortPromiseAr: input.shortPromiseAr,
-            levelAr: input.levelAr, totalHours: input.totalHours, status: 'draft', createdBy: actorId,
+            levelAr: input.levelAr, totalHours: input.totalHours,
+            recordedHours: input.recordedHours ?? null,
+            status: 'draft', createdBy: actorId,
           },
         },
         skillLinks: { create: input.skillIds.map((skillId) => ({ skillId })) },

@@ -127,7 +127,11 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
       sequence: z.number().int().min(1).optional(),
       familyCode: z.string().max(12).optional(),
       titleAr: z.string().min(3), shortPromiseAr: z.string().optional(), levelAr: z.string().optional(),
-      totalHours: z.number().int().min(1), skillIds: z.array(z.string()).default([]),
+      totalHours: z.number().int().min(1),
+      /* كم من ساعاتها مسجَّلة — يُطبَع في الملحق (أ) من العقد، فيُردّ ما لا
+         يُقرأ فيه: مسجَّلةٌ أكثرُ من الإجماليّ رقمٌ في وثيقةٍ تُوقَّع. */
+      recordedHours: z.number().int().min(0).optional(),
+      skillIds: z.array(z.string()).default([]),
       modules: z.array(z.object({
         sequence: z.number().int().min(1), titleAr: z.string().min(3),
         outcomeAr: z.string().optional(), activityAr: z.string().optional(), artifactAr: z.string().optional(),
