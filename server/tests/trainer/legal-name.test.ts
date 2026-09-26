@@ -90,6 +90,9 @@ async function compose(applicationId: string, trainerLegalNameAr?: string | null
     title: 'اتفاقية تقديم خدمات تدريبية',
     trainerLegalNameAr,
     requiredDocuments: DOCS,
+    /* والجلسةُ لازمةٌ في العرض المشروط منذ ٢٦ سبتمبر ٢٠٢٦ — وهي سقالةٌ هنا
+       لا موضوعَ فحص: هذا الملفُّ يقيس الاسمَ لا الطور. */
+    orientationAt: new Date(Date.now() + 3 * 86_400_000).toISOString(),
   })
 }
 
