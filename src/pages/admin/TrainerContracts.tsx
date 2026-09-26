@@ -32,6 +32,7 @@ import type { Readiness } from "@/application/trainer/readiness";
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS, type RequiredDocument,
 } from "@/application/trainer/contract-documents";
+import { isContractClosed } from "@/application/trainer/contract-endings";
 import {
   ASSIGNMENT_OFFER_RESPONSE_DAYS, COURSE_PREP_DEFAULT_DAYS, COURSE_PREP_MIN_DAYS,
 } from "@/application/trainer/notice-periods";
@@ -45,6 +46,7 @@ import AdminLayout from "./AdminLayout";
 import { parseContractDoc } from '@/application/trainer/contract-sections'
 import ContractDocument from '@/components/ContractDocument'
 import { nameMatch } from '@/application/trainer/contract-names'
+import { groupContracts, readLineage } from '@/application/trainer/contract-lineage'
 import { isUntouchableContract } from '@/application/trainer/contract-untouchable'
 
 const STATUS_AR: Record<string, string> = {
@@ -70,6 +72,7 @@ interface ContractRow {
   countersignedAt: string | null; academySignatoryName: string | null;
   academySignatoryTitle: string | null; countersignNoteAr: string | null;
   nameCorrectionAr: string | null; nameCorrectionAt: string | null;
+  replacesContractId: string | null;
   amendmentRequestAr: string | null; amendmentRequestedAt: string | null;
   amendmentReplyAr: string | null; amendmentRepliedAt: string | null;
   conditionDeadlineAt: string | null; conditionPausedAt: string | null;
@@ -94,6 +97,18 @@ const namesOf = (c: ContractRow) => ({
   signedNameAr: c.signerLegalName,
 });
 const docNameOf = (c: ContractRow) => namesOf(c).documentNameAr ?? "—";
+
+/* ═══ أمغلَقٌ هذا العقد؟ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+   عطبٌ شُحن صباحَ اليوم: لوحةُ مقابلة الاسمَين تُرسَم على كلِّ عقدٍ موقَّعٍ
+   — **بما فيه المغلَق** — ونصيحتُها ثابتة: «فاردُدِ التوقيعَ، ويُركَّب
+   بديلٌ باسمه». وفي عقدٍ ملغًى أو مفسوخٍ لا توقيعَ يُردّ. فالمقابلةُ نفسُها
+   نافعةٌ سجلّا يُقرأ بعد سنة، والأمرُ الذي معها خطأ.
+
+   والقائمةُ في `contract-endings.ts` لا هنا: هو «مصدرُ الحقيقة الوحيد»
+   لقوائم حالات العقد، والخادمُ يقرأ منه. وقائمةٌ تُكتب باليد في شاشةٍ
+   تفترق يوما عن أختها. */
+const isClosed = (c: ContractRow) => isContractClosed(c.status);
 
 /** ما يمسّه الإغلاقُ — كما يقرؤه الخادمُ من المواضع التي يمسّها الرحيلُ فعلا */
 interface Impact {
@@ -278,13 +293,29 @@ export default function TrainerContracts() {
     return () => document.body.removeAttribute("data-printing");
   }, [shownBody]);
 
-  const contractView = useMemo(() => paginate(
-    contracts.filter((c) => matchesQuery(contractQ, [
+  /* ═══ السلسلةُ صفٌّ واحدٌ لا ثلاثة (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     «لم أفهم لماذا هذا التكرار؟» — ولم يكن تكرارا: ثلاثةُ أجيالٍ لعقدٍ
+     واحد. فيُعرَض **رأسُ السلسلة** صفّا، وتُطوى أجيالُه تحته: القصّةُ
+     الواحدةُ تُقرأ واحدةً، وما مضى يبقى مفتوحا لمن أراده.
+
+     والترقيمُ على الرؤوس لا على الصفوف: عشرةُ عقودٍ في الصفحة تعني عشرةَ
+     **عقود**، لا عشرةَ أوراقٍ منها ثمانٍ أجيالٌ لعقدَين. */
+  const lineage = useMemo(() => readLineage(contracts), [contracts]);
+
+  const contractView = useMemo(() => {
+    const hit = (c: ContractRow) => matchesQuery(contractQ, [
       c.title, c.profile?.application?.fullName, c.profile?.application?.email,
       c.profile?.application?.reference, c.signerLegalName, STATUS_AR[c.status] ?? c.status,
-    ])),
-    contractPage, 10,
-  ), [contracts, contractQ, contractPage]);
+    ]);
+    /* والمجموعةُ تُطابق بأيِّ عقدٍ فيها: من بحث باسمٍ وُقّع به في عقدٍ مضى
+       يريد ما آل إليه أمرُه، لا «لا نتائج». */
+    return paginate(
+      groupContracts(contracts, (c) => c.profile?.id ?? null)
+        .filter((g) => hit(g.head) || g.past.some(hit)),
+      contractPage, 10,
+    );
+  }, [contracts, contractQ, contractPage]);
 
   const offerView = useMemo(() => paginate(
     offers.filter((o) => matchesQuery(offerQ, [
@@ -667,7 +698,7 @@ export default function TrainerContracts() {
         </div>
         {contracts.length > 0 && (
           <ListToolbar q={contractQ} onQ={setContractQ} onPage={setContractPage}
-            view={contractView} unit="عقدا"
+            view={contractView} unit="مدرّبا"
             placeholder="ابحث باسم المدرّب أو بريده أو مرجعه أو حالة عقده…" />
         )}
         {contracts.length === 0
@@ -676,7 +707,9 @@ export default function TrainerContracts() {
             ? <p className="text-sm opacity-70">لا عقدَ يطابق بحثَك.</p>
             : (
             <ul className="space-y-2">
-              {contractView.rows.map((c) => (
+              {contractView.rows.map((g) => {
+                const c = g.head;
+                return (
                 <li key={c.id}>
                   <Inset className="p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -783,14 +816,23 @@ export default function TrainerContracts() {
                         <span className="opacity-70">في الوثيقة:</span> <b>{docNameOf(c)}</b>
                         <span className="opacity-40">{"  ×  "}</span>
                         <span className="opacity-70">وقّع به:</span> <b>{c.signerLegalName ?? "—"}</b>
-                        {nameMatch(namesOf(c)) === "differs"
-                          ? (
-                            <span className="block opacity-80">
-                              الاسمان مختلفان — قابِلْهما بوثيقة هويّته قبل الاعتماد. فإن كان
-                              الموقَّعُ به هو الصحيحَ فاردُدِ التوقيعَ، ويُركَّب بديلٌ باسمه.
-                            </span>
-                          )
-                          : <span className="opacity-70">{" — مطابق"}</span>}
+                        {nameMatch(namesOf(c)) !== "differs"
+                          ? <span className="opacity-70">{" — مطابق"}</span>
+                          : isClosed(c)
+                            ? (
+                              /* وعقدٌ أُغلق لا توقيعَ فيه يُردّ: تبقى المقابلةُ
+                                 سجلّا يُقرأ بعد سنة، ويسقط الأمرُ الذي معها. */
+                              <span className="block opacity-80">
+                                الاسمان مختلفان — وهذا العقدُ مغلَقٌ فلا إجراءَ عليه. يبقى
+                                الفرقُ مكتوبا هنا لمن يسأل عنه بعدُ.
+                              </span>
+                            )
+                            : (
+                              <span className="block opacity-80">
+                                الاسمان مختلفان — قابِلْهما بوثيقة هويّته قبل الاعتماد. فإن كان
+                                الموقَّعُ به هو الصحيحَ فاردُدِ التوقيعَ، ويُركَّب بديلٌ باسمه.
+                              </span>
+                            )}
                       </Panel>
                     )}
                     {link?.id === c.id && (
@@ -1188,8 +1230,69 @@ export default function TrainerContracts() {
                       </details>
                     )}
                   </Inset>
+                  {/* ═══ وما مضى يُطوى تحت الحيّ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+                      «لم أفهم لماذا هذا التكرار؟» — وكانت الصفوفُ الثلاثةُ
+                      عقدا واحدا في ثلاثة أجيال، مصفوفةً بلا رابطٍ يُرى.
+
+                      والمطويُّ يُعرَض **مختصَرا**: اسمٌ وحالةٌ وتاريخٌ ومتنٌ
+                      يُطبَع ويُنزَّل. ولا زرَّ قرارٍ فيه — لا لأنّ الشاشةَ
+                      تخفيه، بل لأنّ عقدا مضى لا يُتَّخذ فيه قرار. وهذا وحدَه
+                      يُغلق بابا كان مفتوحا: صفُّ من رُفض توقيعُه كان يعرض
+                      «صحّحِ الاسمَ وأعِدْ إرساله» وقد أُرسل البديلُ فعلا —
+                      فمن ضغطه ثانيةً ركّب جيلا رابعا وأبطل رابطَ الثالث. */}
+                  {g.past.length > 0 && (
+                    <details className="mt-1 ps-3 text-read">
+                      <summary className="cursor-pointer opacity-70">
+                        عقودٌ سابقةٌ لهذا المدرّب ({g.past.length}) — مضت، وهذا ما آل إليه أمرُه
+                      </summary>
+                      <ul className="mt-2 space-y-2">
+                        {g.past.map((p) => (
+                          <li key={p.id}>
+                            <Inset className="p-3 opacity-80">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span>
+                                  <b>{docNameOf(p)}</b>
+                                  <span className="opacity-70">
+                                    {" "}— {STATUS_AR[p.status] ?? p.status}
+                                    {/* والجيلُ لا يُقال إلّا حيث سُجّل الأبُ فعلا
+                                        — وعقودُ ما قبل المرحلة الثالثة بلا أبٍ
+                                        مكتوب، فلا يُلفَّق لها واحد. */}
+                                    {lineage.get(p.id)?.generation && lineage.get(p.id)!.generation > 1
+                                      ? ` · الجيل ${lineage.get(p.id)!.generation}`
+                                      : ""}
+                                    {" · "}{fmtDateTime(p.createdAt)}
+                                  </span>
+                                </span>
+                                {p.bodyHash && (
+                                  <Button size="sm" icon={FileText}
+                                    onClick={() => void run(async () => {
+                                      const full = await apiGet<{ bodyAr: string | null }>(
+                                        `/api/admin/trainer-contracts/${p.id}/body`);
+                                      setShownBody({ title: p.title, body: full.bodyAr ?? "" });
+                                    }, "عُرض المتن")}>
+                                    المتن
+                                  </Button>
+                                )}
+                              </div>
+                              {nameMatch(namesOf(p)) === "differs" && (
+                                <p className="mt-1 opacity-70">
+                                  في الوثيقة: <b>{docNameOf(p)}</b>{"  ×  "}
+                                  وقّع به: <b>{p.signerLegalName ?? "—"}</b> — اختلفا
+                                </p>
+                              )}
+                              {p.revokeReasonAr && (
+                                <p className="mt-1 opacity-70">سببُ إغلاقه: {p.revokeReasonAr}</p>
+                              )}
+                            </Inset>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
       </Card>

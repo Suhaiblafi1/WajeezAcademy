@@ -1794,6 +1794,16 @@ export class TrainerReviewService {
           /* وبه تعرف الشاشةُ أنّ هذا الوقوفَ تصحيحُ اسمٍ لا اعتراضٌ على بند
              — فتعرض نقرةَ الإعادة بدل صندوق الجواب. */
           nameCorrectionAr: true, nameCorrectionAt: true,
+          /* ═══ ونسبُ العقد — كان يُكتب ولا يُقرأ ═══
+
+             `replacesContractId` تكتبه المرحلةُ الثالثة في موضعَي إعادة
+             التركيب، **ولم تكن شاشةٌ تطلبه**. فثلاثةُ أجيالٍ لعقدٍ واحدٍ
+             تُعرَض ثلاثةَ صفوفٍ لا رابطَ بينها — وهو ما سأل عنه صاحبُ
+             المنصّة (٢٦ سبتمبر): «لم أفهم لماذا هذا التكرار؟».
+
+             وأخطرُ من الحيرة: بلا خلَفٍ معروفٍ يبقى «صحّحِ الاسمَ وأعِدْ
+             إرساله» معروضا على صفٍّ أُرسل بديلُه فعلا. */
+          replacesContractId: true,
           documents: { select: { id: true, kind: true, originalName: true, mime: true, uploadedAt: true }, orderBy: { uploadedAt: 'asc' } },
           profile: {
             select: {
