@@ -19,7 +19,7 @@ import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
-import { assertSeasonOpen, cohortAcceptsRegistration, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
+import { assertSeasonOpen, cohortAcceptsRegistration, PLAN_GATE_SELECT, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
 
 /* اللبِناتُ المشتركةُ انتقلت إلى `commerce/cart-types` كي لا يصير الاستيرادُ
    حلقةً بين السلّة والخدمة. ويُعاد تصديرُها من هنا: مواضعُ الاستيراد القائمة
@@ -70,7 +70,7 @@ export class CommerceService {
 
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
-      include: { term: TERM_WINDOW_SELECT },
+      include: { term: TERM_WINDOW_SELECT, plans: PLAN_GATE_SELECT },
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (!['open', 'full'].includes(cohort.status)) {

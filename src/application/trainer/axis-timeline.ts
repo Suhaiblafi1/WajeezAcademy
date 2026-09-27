@@ -305,6 +305,24 @@ export function slotIndexOf(slots: readonly PlanSlot[], moduleId: string): numbe
   return slots.findIndex((s) => s.moduleIds.includes(moduleId))
 }
 
+/* ═══ آخرُ الالتحاق — بدءُ الموعد الثاني (٣ج) ═══
+
+   «التسجيلُ يُغلق يومَ البدء، والالتحاقُ المتأخّرُ حتّى الموعد الثاني» (قرارُ
+   صاحب المنصّة، ٢٧ سبتمبر ٢٠٢٦). فمن جاء بعد بدء الشعبة وقبل موعدها الثاني
+   فاته لقاءٌ واحدٌ يُستدرك بتسجيله ومتنه؛ ومن جاء بعده فاته ما لا يُستدرك.
+
+   وموعدٌ واحدٌ لا ثانيَ له: يُغلق يومَ البدء. وبلا مواعيدَ لا حدّ — ما اعتُمد
+   قبل المواعيد يمضي كما بدأ. والمواعيدُ بترتيب بدئها لا بترتيب حفظها. */
+export function joinClosesAt(period: CohortPeriod, slots: readonly PlanSlot[] | null | undefined): Date | null {
+  const dated = (slots ?? [])
+    .filter((s) => realDate(s.startsOn) && realDate(s.endsOn))
+    .slice()
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn))
+  if (dated.length === 0) return null
+  if (dated.length === 1) return periodBounds(period).from
+  return periodBounds({ startsOn: dated[1].startsOn, endsOn: dated[1].endsOn }).from
+}
+
 /* ═══ ما يمنع خطوةَ اللقاءات — وما يُنبَّه إليه ولا يمنع ═══
 
    المانعُ: محورٌ بلا لقاءٍ مباشر (②)، ولقاءٌ بلا محورٍ أو بأكثرَ من محورين،

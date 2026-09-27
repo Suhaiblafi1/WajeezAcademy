@@ -15,6 +15,7 @@ import CurriculumReview from "@/components/CurriculumReview";
 import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
 import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
+import { whenAr } from "@/application/learning/cohort-gate";
 import type { CohortTab } from "./cohort-tabs";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -58,6 +59,8 @@ interface TrainerPlan {
   period: { startsOn: string; endsOn: string } | null;
   sessions: CurriculumInput["sessions"];
   assessments: CurriculumInput["assessments"];
+  /* التسجيلُ كما يُحكَم — لا يُفتح قبل الاعتماد، والالتحاقُ حتّى الموعد الثاني (٣ج) */
+  registration?: { awaitingPlan: boolean; joinClosesAt: string | null };
   content: {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
@@ -393,6 +396,22 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               {trainerPlan.submittedAt ? <> · أُرسلت {fmtDateTimeAr(trainerPlan.submittedAt)}</> : null}
               {trainerPlan.trainerConfirmedAt ? <> · وأكّد موافقتَه على كلّ ما فيها</> : null}
             </p>
+            {/* ═══ ومتى يُفتح التسجيل — لا يُفتح قبل الاعتماد وإن رُفع علمُه (٣ج) ═══
+
+                «التسجيلُ يُفتح بعد الاعتماد، ويُغلق يومَ البدء، والالتحاقُ المتأخّرُ حتّى
+                الموعد الثاني» (صاحب المنصّة). فيُقال للمعتمِد ما يحكم به الخادم: علمٌ
+                مرفوعٌ على خطّةٍ لم تُعتمَد لا يُدخل أحدا — وكان يُقرأ «مفتوحا». */}
+            {trainerPlan.registration?.awaitingPlan ? (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                التسجيل: يُفتح باعتمادك هذه الخطّة — ولا يقبل أحدا قبلها وإن رُفع علمُه.
+              </p>
+            ) : trainerPlan.registration?.joinClosesAt ? (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                {new Date(trainerPlan.registration.joinClosesAt).getTime() > Date.now()
+                  ? <>الالتحاقُ مفتوحٌ حتّى <b className="text-foreground">{whenAr(trainerPlan.registration.joinClosesAt)}</b> — بدءِ موعدها الثاني.</>
+                  : <>أُغلق الالتحاق <b className="text-foreground">{whenAr(trainerPlan.registration.joinClosesAt)}</b> — ببدء موعدها الثاني.</>}
+              </p>
+            ) : null}
             {/* ═══ المدّةُ أوّلُ ما يُقرأ — وهي ما يُعتمَد (٢٧ سبتمبر ٢٠٢٦) ═══
                 صار المدرّبُ يحدّد متى تبدأ شعبتُه ومتى تنتهي، وباعتمادك تصير
                 حدودَها المعلَنة ويُشتقّ فصلُها من تاريخ بدئها. */}

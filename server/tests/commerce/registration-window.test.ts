@@ -26,7 +26,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { PublicCatalogService } from '../../services/public-catalog.service'
 import { CartService } from '../../services/commerce/cart.service'
-import { termWindowVerdict, cohortAcceptsRegistration } from '../../services/registration-window'
+import { termWindowVerdict, cohortAcceptsRegistration, awaitingTrainerPlan } from '../../services/registration-window'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -88,6 +88,14 @@ async function cohort(courseId: string, termId: string | null) {
   })
 }
 
+/* ═══ وخطّةُ المدرّب (٣ج) ═══ — مدرّبٌ واحدٌ لكلّ ما يلي، وخطّتُه تُكتب بحالها */
+let trainerProfileId = ''
+async function trainerPlan(cohortId: string, status: string) {
+  return prisma.cohortDeliveryPlan.create({
+    data: { cohortId, trainerId: trainerProfileId, status, content: { kind: 'trainer', modules: [], resources: [] } },
+  })
+}
+
 beforeAll(async () => {
   await setupTestDb()
   prisma = await testPrisma()
@@ -97,6 +105,12 @@ beforeAll(async () => {
   enrollments = new EnrollmentService(prisma)
   publicCatalog = new PublicCatalogService(prisma)
   cart = new CartService(prisma)
+
+  const tUser = await prisma.user.create({ data: { email: `win-trainer-${Date.now()}@test.local`, displayName: 'مدرّبُ الشعب', passwordHash: 'x' } })
+  const application = await prisma.trainerApplication.create({
+    data: { reference: `WJ-TR-WIN-${Date.now()}`, fullName: 'مدرّبُ الشعب', email: tUser.email, status: 'active' },
+  })
+  trainerProfileId = (await prisma.trainerProfile.create({ data: { userId: tUser.id, applicationId: application.id } })).id
 }, 240_000)
 
 describe('الشرطُ نفسُه — قبل أن يُوصَل بموضع', () => {
@@ -128,10 +142,46 @@ describe('الشرطُ نفسُه — قبل أن يُوصَل بموضع', () =
 
   it('علمُ الشعبة يسبق نافذةَ الفصل — منعان لا يختلطان', () => {
     const open = { titleAr: 'ف', registrationOpensAt: null, registrationClosesAt: null }
-    const off = cohortAcceptsRegistration({ registrationOpen: false, title: 'شعبتي', term: open })
+    const off = cohortAcceptsRegistration({ registrationOpen: false, title: 'شعبتي', term: open, plans: [], joinClosesAt: null })
     expect(off.open).toBe(false)
     expect(off.open === false && off.code).toBe('flag_off')
     expect(off.open === false && off.reasonAr).toContain('شعبتي')
+  })
+
+  /* ═══ وشرطا خطّة المدرّب (٣ج) ═══ */
+  const base = { registrationOpen: true, title: 'شعبةُ المدرّب', term: null, joinClosesAt: null }
+
+  it('⚠️ خطّةٌ بدأها مدرّبُها ولم تُعتمَد قطّ تمنع — والعلمُ مرفوع', () => {
+    for (const status of ['draft', 'submitted', 'changes_requested']) {
+      const v = cohortAcceptsRegistration({ ...base, plans: [{ status }] })
+      expect(v.open, `خطّةٌ «${status}» فتحت التسجيل`).toBe(false)
+      expect(v.open === false && v.code).toBe('awaiting_plan')
+      expect(v.open === false && v.reasonAr).toContain('حين تُعتمَد خطّةُ مدرّبها')
+    }
+  })
+
+  it('⚠️ وما اعتُمد مرّةً يفتح — وإن كانت مراجعتُه مسودّةً الآن', () => {
+    for (const status of ['approved', 'published', 'superseded']) {
+      expect(cohortAcceptsRegistration({ ...base, plans: [{ status: 'draft' }, { status }] }).open, status).toBe(true)
+    }
+    /* وشعبةٌ لا خطّةَ لمدرّبها أصلا لا تُمنع — القائمُ لا يُبطَل */
+    expect(cohortAcceptsRegistration({ ...base, plans: [] }).open).toBe(true)
+    expect(awaitingTrainerPlan([])).toBe(false)
+  })
+
+  it('⚠️ والالتحاقُ حتّى بدء الموعد الثاني — لا بعده ولا عنده', () => {
+    const at = new Date('2099-03-13T21:00:00.000Z')
+    const plan = [{ status: 'approved' }]
+    expect(cohortAcceptsRegistration({ ...base, plans: plan, joinClosesAt: at }, new Date(at.getTime() - 1)).open).toBe(true)
+    const closed = cohortAcceptsRegistration({ ...base, plans: plan, joinClosesAt: at }, at)
+    expect(closed.open).toBe(false)
+    expect(closed.open === false && closed.code).toBe('late_closed')
+    expect(closed.open === false && closed.reasonAr).toContain('بدأ موعدُها الثاني')
+  })
+
+  it('والعلمُ يسبقها كلَّها — «مغلق» غيرُ «بانتظار الاعتماد»', () => {
+    const v = cohortAcceptsRegistration({ ...base, registrationOpen: false, plans: [{ status: 'draft' }] })
+    expect(v.open === false && v.code).toBe('flag_off')
   })
 })
 
@@ -237,5 +287,100 @@ describe('والقائمُ لا يُبطَل — شعبةٌ بلا فصلٍ تم
 
     const rows = await publicCatalog.cohorts()
     expect(rows.map((r) => r.id)).toContain(c.id)
+  })
+})
+
+/* ═══ وشعبةُ مدرّبٍ لم تُعتمَد خطّتُه تُردّ في المواضع الستّة (٣ج) ═══
+
+   «التسجيلُ يُفتح بعد الاعتماد». والشرطُ يُقرأ في كائن الشعبة (السلّة والتسجيل
+   والتبديل والطلب) وفي لغة الاستعلام (الخطّة والكتالوج) — ويُسأل كلٌّ بعينه: لو
+   نُسي تحميلُ الخطط في موضعٍ لباع مقعدا في شعبةٍ لم يقرأ أحدٌ منهجَها. */
+describe('المواضعُ الستّة — شعبةٌ خطّةُ مدرّبها لم تُعتمَد تُردّ', () => {
+  const awaiting = async (courseId: string) => {
+    const c = await cohort(courseId, null)
+    await trainerPlan(c.id, 'submitted')
+    return c
+  }
+
+  it('١· السلّة: تُستبعد بسببها', async () => {
+    const u = await learner()
+    const c = await awaiting(nextCourse())
+    const classified = await cart.classifyCart(u, [c.id])
+    expect(classified.buyable.map((b) => b.id)).not.toContain(c.id)
+    const out = classified.excluded.find((e) => e.cohortId === c.id)!
+    expect(out.reason).toBe('awaiting_plan')
+    expect(out.messageAr).toContain('حين تُعتمَد خطّةُ مدرّبها')
+  })
+
+  it('٢· التسجيل المباشر: يُرفض بـ409', async () => {
+    const u = await learner()
+    const c = await awaiting(nextCourse())
+    await expect(enrollments.enroll(c.id, u, null)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('٣· التبديل: لا يُنقل إليها', async () => {
+    const u = await learner()
+    const courseId = nextCourse()
+    const from = await cohort(courseId, null)
+    const to = await awaiting(courseId)
+    const e = await enrollments.enroll(from.id, u, null)
+    await expect(enrollments.switchCohort(u, e.id, to.id)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('٤· إنشاءُ الطلب: يُرفض بـ409', async () => {
+    const u = await learner()
+    const c = await awaiting(nextCourse())
+    await expect(commerce.requestEnrollment(u, c.id)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('٥· شعبُ الخطّة: الدورةُ «بانتظار شعبة»', async () => {
+    const u = await learner()
+    const courseId = nextCourse()
+    await awaiting(courseId)
+    await plans.adopt(u, { nameAr: 'خطّتي', composed: true, courseIds: [courseId] })
+    const item = (await plans.active(u))!.items.find((i) => i.courseId === courseId)
+    expect(item!.state).toBe('awaiting_cohort')
+  })
+
+  it('٦· الكتالوجُ العامّ: لا تُعرض — وتُعرض حين تُعتمَد', async () => {
+    const c = await awaiting(nextCourse())
+    expect((await publicCatalog.cohorts()).map((r) => r.id)).not.toContain(c.id)
+    /* والاعتمادُ يفتحها — فالشرطُ لا يحجب ما اعتُمد */
+    await prisma.cohortDeliveryPlan.updateMany({ where: { cohortId: c.id }, data: { status: 'approved' } })
+    expect((await publicCatalog.cohorts()).map((r) => r.id)).toContain(c.id)
+  })
+})
+
+/* ═══ والالتحاقُ حتّى الموعد الثاني (٣ج) ═══ */
+describe('بعد بدء الموعد الثاني — يُردّ الالتحاق، وقبله يُقبل', () => {
+  const started = async (courseId: string, closesInMs: number) => {
+    const c = await cohort(courseId, null)
+    await trainerPlan(c.id, 'approved')
+    await prisma.cohort.update({ where: { id: c.id }, data: { joinClosesAt: new Date(Date.now() + closesInMs) } })
+    return c
+  }
+
+  it('⚠️ السلّةُ والتسجيل: يُردّان بعده بسببهما', async () => {
+    const u = await learner()
+    const c = await started(nextCourse(), -DAY)
+    const out = (await cart.classifyCart(u, [c.id])).excluded.find((e) => e.cohortId === c.id)!
+    expect(out.reason).toBe('late_closed')
+    await expect(enrollments.enroll(c.id, u, null)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('⚠️ والخطّةُ والكتالوج: لا تُعرض بعده', async () => {
+    const u = await learner()
+    const courseId = nextCourse()
+    const c = await started(courseId, -DAY)
+    expect((await publicCatalog.cohorts()).map((r) => r.id)).not.toContain(c.id)
+    await plans.adopt(u, { nameAr: 'خطّتي', composed: true, courseIds: [courseId] })
+    expect((await plans.active(u))!.items.find((i) => i.courseId === courseId)!.state).toBe('awaiting_cohort')
+  })
+
+  it('⚠️ وقبله تُشترى وتُعرض — ملتحقٌ متأخّرٌ يُقبل', async () => {
+    const u = await learner()
+    const c = await started(nextCourse(), DAY)
+    expect((await cart.classifyCart(u, [c.id])).buyable.map((b) => b.id)).toContain(c.id)
+    expect((await publicCatalog.cohorts()).map((r) => r.id)).toContain(c.id)
   })
 })

@@ -10,6 +10,7 @@ import { notifyPlanWaiters } from './catalog-readiness.service'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { awaitingTrainerPlan } from './registration-window'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
@@ -384,6 +385,12 @@ export class CohortService {
     if (!cohort.capacity || cohort.capacity < 1) missing.push('لا سعة محددة')
     if (!cohort.plans.some((p) => ['approved', 'published'].includes(p.status)) && !cohort.plans.length) {
       missing.push('لا خطة تقديم للشعبة — اكتبها من بطاقة الشعبة')
+    }
+    /* وخطّةُ مدرّبٍ بدأها ولم تُعتمَد لا تُفتح شعبتُها (٣ج): «التسجيلُ يُفتح بعد
+       الاعتماد». وكان الشرطُ أعلاه يُوفى بأيّ صفِّ خطّةٍ ولو مسودّة — فتُفتح شعبةٌ
+       لم يقرأ أحدٌ منهجَها. والقاعدةُ قاعدةُ التسجيل نفسُها (`awaitingTrainerPlan`) */
+    if (awaitingTrainerPlan(cohort.plans.filter((p) => p.trainerId !== null))) {
+      missing.push('خطّةُ المدرّب لم تُعتمَد بعد — تُفتح الشعبةُ للتسجيل باعتمادها')
     }
     if (!cohort.financialReady || cohort.price === null) missing.push('الإعداد المالي غير مكتمل (السعر والعملة)')
     return { ready: missing.length === 0, missing }
@@ -1604,7 +1611,8 @@ export class CohortService {
       where: { cohortId, trainerId: { not: null } },
       select: { status: true },
     })
-    return plans.length > 0 && !plans.some((p) => p.status === 'approved' || p.status === 'published' || p.status === 'superseded')
+    /* والقاعدةُ قاعدةُ التسجيل نفسُها: خطّةٌ تُكتب ولم تُعتمَد قطّ */
+    return awaitingTrainerPlan(plans)
   }
 
   /** اللقاءاتُ المنتظِرةُ قرارا — للطابور الذي تراجع فيه الإدارةُ الشعبة.

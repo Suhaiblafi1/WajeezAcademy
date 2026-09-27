@@ -119,6 +119,10 @@ const REASON_AR: Record<string, string> = {
   capacity_full: "لا مقاعد",
   closed: "التسجيل مغلق",
   no_price: "بلا سعر معلن",
+  /* ومن نافذة الفصل وخطّة المدرّب (٣ج) — والنصُّ الكاملُ من الخادم تحتها */
+  not_yet: "لم يُفتح التسجيل",
+  awaiting_plan: "تُفتح باعتماد خطّتها",
+  late_closed: "أُغلق الالتحاق",
 };
 
 export default function BuyPanel({

@@ -69,6 +69,7 @@ import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import { blockingBeforeSubmit, trainerOwned } from "@/application/trainer/plan-gate";
 import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
+import { whenAr } from "@/application/learning/cohort-gate";
 import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
@@ -78,7 +79,7 @@ import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
-  appendToSlots, axesLabelAr, canMerge, dayLabelAr, defaultSlots, dropFromSlots, mergeSlots, reflowSlots,
+  appendToSlots, axesLabelAr, canMerge, dayLabelAr, defaultSlots, dropFromSlots, joinClosesAt, mergeSlots, reflowSlots,
   sessionProblems, slotIndexOf, slotProblems, splitSlot, workbookDone, workbookProblems,
   type PlanSlot, type SlotWorkbook,
 } from "@/application/trainer/axis-timeline";
@@ -1993,6 +1994,20 @@ export default function CohortWorkspace() {
             بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومدّتَها، ومحاورَها ومواعيدَها وتطبيقَها العمليّ، وكرّاساتِها، ولقاءاتِها المباشرة وجلساتِها المسجّلة، ومهامَّها ومصادرَها. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
+          {/* ═══ ومتى يدخلها متعلّموه — يُقال قبل الإرسال (٣ج) ═══
+
+              «التسجيلُ يُفتح بعد الاعتماد، ويُغلق يومَ البدء، والالتحاقُ المتأخّرُ
+              حتّى الموعد الثاني». والتاريخُ من مواعيده بالقاعدة نفسِها التي يكتبه
+              بها الاعتمادُ (`joinClosesAt`) — فلا يقرأ هنا تاريخا غيرَ ما سيُكتب. */}
+          {planPeriod && (() => {
+            const closes = joinClosesAt(planPeriod, content.slots);
+            return (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                {approved ? "فُتحت الشعبةُ للتسجيل باعتمادها" : "تُفتح الشعبةُ للتسجيل حين تُعتمَد"}
+                {closes && <>، ويُقبل الملتحقون حتّى بدء موعدها الثاني — <b className="text-foreground">{whenAr(closes)}</b></>}.
+              </p>
+            );
+          })()}
           {/* والباقي يُسمّى بأسمائه لا بعدد: «بقي ١» تركت المدرّبَ يفتح
               المراحلَ واحدةً واحدةً ليجد أيَّها — وكان الواحدُ الباقي هو هذه
               المرحلةَ نفسَها فلا يجده أبدا. */}

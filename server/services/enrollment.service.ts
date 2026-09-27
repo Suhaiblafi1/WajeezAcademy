@@ -7,7 +7,7 @@ import { projectPlanForLearner, PLAN_VISIBLE_STATUSES } from '../../src/applicat
 import { recordAudit } from './audit'
 import { NotificationService, safeNotify } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
+import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
 import { CohortService } from './cohort.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { assessmentOpensAt, gateAssessment, learnerGate, meetingOver } from '../../src/application/learning/cohort-gate'
@@ -68,7 +68,7 @@ export class EnrollmentService {
       : null
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
-      include: { term: TERM_WINDOW_SELECT },
+      include: { term: TERM_WINDOW_SELECT, plans: PLAN_GATE_SELECT },
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (!['open', 'full', 'active'].includes(cohort.status)) {
@@ -224,7 +224,7 @@ export class EnrollmentService {
 
     const to = await this.prisma.cohort.findUnique({
       where: { id: toCohortId },
-      include: { term: TERM_WINDOW_SELECT },
+      include: { term: TERM_WINDOW_SELECT, plans: PLAN_GATE_SELECT },
     })
     if (!to) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (to.courseId !== enrollment.cohort.courseId) {

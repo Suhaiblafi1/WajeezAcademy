@@ -20,6 +20,8 @@ export type CartCohort = Prisma.CohortGetPayload<{
   /* نافذةُ الفصل تُقرأ مع الشعبة لا بعدها: `cohortBlocker` يفحص صفّا صفّا
      في حلقة، فقراءةُ الفصل داخلها استعلامٌ لكلّ بندٍ في السلّة. */
   term: TermWindow | null
+  /* وخططُ مدرّبها بحالاتها — شعبةٌ لم تُعتمَد خطّتُها لا تُباع (٣ج) */
+  plans: { status: string }[]
 }
 
 export const cartTitleOf = (c: CartCohort) =>
