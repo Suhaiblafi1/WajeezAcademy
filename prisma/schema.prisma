@@ -966,14 +966,6 @@ model TrainerApplication {
   userId               String?                       @unique @db.Uuid
   user                 User?                         @relation("TrainerApplicant", fields: [userId], references: [id], onDelete: SetNull)
   status               String                        @default("draft")
-  /**
-   * من أين طُلبت منه المعلوماتُ الإضافيّة — ليعود إليه لا إلى أوّل الطابور.
-   * ولمَ عمودٌ لا أثرٌ يُقرأ: الرجوعُ يقع في معاملةٍ واحدةٍ مع استكمال
-   * المرحلة الثانية، وقراءةُ الأثر فيها بحثٌ عن آخرِ سطرٍ بفعلٍ بعينه —
-   * يصحّ اليومَ ويكذب يومَ يُعاد الطلبُ مرّتين. والعمودُ يقول الموضعَ
-   * بلا تأويل، ويُمحى حين يعود فلا يبقى وعدٌ منقضٍ.
-   */
-  infoRequestedFrom    String?
   // draft | submitted | under_review | information_requested
   // | interview_scheduled | academic_review
   // | conditionally_approved | contract_pending | onboarding | active
@@ -983,10 +975,17 @@ model TrainerApplication {
   // · demo_requested) وصفوفُها في 20260926230000_trainer_statuses_prune،
   // والقولُ فيها كلِّه في TRAINER_STATUSES بـ trainer-application.service.ts.
   //
-  // وتنبيهٌ لمن يقرأ: هذا العمودُ **بلا قيد CHECK** — فالمولِّد
-  // (scripts/status-checks.ts) يقرأ التعليقَ من سطر الحقل نفسِه، وهذا
-  // مكتوبٌ على أسطرٍ تاليةٍ بعد حقلٍ آخر. فالتعليقُ هنا وثيقةٌ لا حارس،
-  // والحارسُ نوعُ TrainerStatus في TypeScript. ومثلُه عشرون عمودا.
+  // وكانت هذه القائمةُ مكتوبةً أسفلَ `infoRequestedFrom`، فلا يراها مولِّدُ
+  // القيود — وهو يقرأ ما يتّصل بسطر الحقل. فنُقلت إلى موضعها (٢٧ سبتمبر
+  // ٢٠٢٦) وصار للعمود قيدُ CHECK كغيره، بعد أن كان تعليقُه وثيقةً لا حارسا.
+  /**
+   * من أين طُلبت منه المعلوماتُ الإضافيّة — ليعود إليه لا إلى أوّل الطابور.
+   * ولمَ عمودٌ لا أثرٌ يُقرأ: الرجوعُ يقع في معاملةٍ واحدةٍ مع استكمال
+   * المرحلة الثانية، وقراءةُ الأثر فيها بحثٌ عن آخرِ سطرٍ بفعلٍ بعينه —
+   * يصحّ اليومَ ويكذب يومَ يُعاد الطلبُ مرّتين. والعمودُ يقول الموضعَ
+   * بلا تأويل، ويُمحى حين يعود فلا يبقى وعدٌ منقضٍ.
+   */
+  infoRequestedFrom    String?
   email                String
   emailVerifiedAt      DateTime?
   emailVerifyTokenHash String?                       @unique // رمز تحقق البريد — هاش فقط
@@ -1869,6 +1868,11 @@ model TrainerContract {
 
   /// تمديدُ اليومين، يُمنح مرّةً واحدةً بطلبه — والثانيةُ تُردّ إلى التأجيل
   conditionExtendedAt DateTime?
+  /// كم مرّةً مُنح التمديد — والسقفُ `MAX_EXTENSIONS` في `conditional-offer.ts`.
+  /// ولمَ عدّادٌ لا يكفي التاريخُ فوقَه: التاريخُ يقول «مُدّد» لا «كم مرّة»،
+  /// وصاحبُ المنصّة جعلها مرّتين (٢٧ سبتمبر ٢٠٢٦) فصار السؤالُ عددا.
+  /// والتاريخُ يبقى: هو **آخرُ** تمديدٍ مُنح، يُقرأ في الشاشة وفي بريد التذكير.
+  conditionExtensionsUsed Int @default(0)
 
   /// تذكيرُ «يومان» من العامل — فلا يُطرَق بابٌ مرّتين
   conditionRemindedAt DateTime?

@@ -47,7 +47,7 @@ beforeAll(async () => {
   const app = await prisma.trainerApplication.create({
     data: {
       reference: 'WJ-TR-MB-1', email: 'mb-trainer@test.local', fullName: 'مدرّبُ الشعبة',
-      phoneCountryCode: '+962', phone: '779000111', country: 'الأردن', status: 'approved',
+      phoneCountryCode: '+962', phone: '779000111', country: 'الأردن', status: 'active',
     },
   })
   /* والرابطُ عمودُ `userId` على الملفّ — هو ما تقرؤه المنصّةُ كلُّها

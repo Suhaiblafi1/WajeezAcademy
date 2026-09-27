@@ -14,6 +14,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { EXTENSION_DAYS } from '../../../src/application/trainer/conditional-offer'
 
 let prisma: PrismaClient
 let review: TrainerReviewService
@@ -100,7 +101,7 @@ describe('المدرّبُ يعلن اكتمالَ موادّه', () => {
   })
 })
 
-describe('التمديدُ يومين — مرّةً واحدة', () => {
+describe('التمديدُ يومين — مرّتان', () => {
   it('١) تُزاد المهلةُ ويُمحى خَتمُ التذكير', async () => {
     const { user, contract } = await trainerInPhase({ conditionRemindedAt: NOW })
     const before = (await row(contract.id)).conditionDeadlineAt!
@@ -111,11 +112,30 @@ describe('التمديدُ يومين — مرّةً واحدة', () => {
     expect(after.conditionRemindedAt, 'بقي مذكَّرا بمهلةٍ لم تعد قائمة').toBeNull()
   })
 
-  it('٢) والثانيةُ تُردّ بنصٍّ يُقرأ لا بصمت', async () => {
-    const { user } = await trainerInPhase()
+  /* ═══ ومرّتان لا مرّة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     «ويحقّ له طلبُ تمديدٍ ليومين مرّتين» — قرارُ صاحب المنصّة. فقُلب هذا
+     الحارسُ: الثانيةُ تُقبَل وتزيد المهلةَ فعلا، والثالثةُ تُردّ.
+
+     ويُقاس الأثرُ لا القبولُ وحدَه: قبولٌ لا يزيد المهلةَ زرٌّ يقول «مُدّت»
+     ولا يمدّ شيئا. */
+  it('٢) والثانيةُ تُقبَل وتزيد المهلةَ، والثالثةُ تُردّ بنصٍّ يُقرأ', async () => {
+    const { user, contract } = await trainerInPhase()
+    const start = (await row(contract.id)).conditionDeadlineAt!
+
     await review.requestConditionExtension(user.id, NOW)
-    await expect(review.requestConditionExtension(user.id, NOW))
-      .rejects.toMatchObject({ code: 'cannot_extend' })
+    const afterFirst = (await row(contract.id)).conditionDeadlineAt!
+    await review.requestConditionExtension(user.id, NOW)
+    const afterSecond = await row(contract.id)
+
+    expect(afterSecond.conditionDeadlineAt!.getTime(), 'قُبلت الثانيةُ ولم تزد المهلةَ')
+      .toBeGreaterThan(afterFirst.getTime())
+    expect(afterSecond.conditionDeadlineAt!.getTime() - start.getTime(),
+      'المجموعُ ليس تمديدَين').toBe(2 * EXTENSION_DAYS * 86_400_000)
+    expect(afterSecond.conditionExtensionsUsed, 'العدُّ لم يُزَد مرّتين').toBe(2)
+
+    await expect(review.requestConditionExtension(user.id, NOW),
+      'قُبلت الثالثة').rejects.toMatchObject({ code: 'cannot_extend' })
   })
 })
 

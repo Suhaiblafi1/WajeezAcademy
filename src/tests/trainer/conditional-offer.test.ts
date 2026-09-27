@@ -147,7 +147,7 @@ describe('التجميدُ يزيد المهلةَ بمقدار مدّته با�
   })
 })
 
-describe('التمديدُ يُمنح مرّةً', () => {
+describe('التمديدُ يُمنح مرّتين', () => {
   it('ويزيد يومَين بالضبط', () => {
     expect(EXTENSION_DAYS).toBe(2)
     expect(extendProblemAr({ conditionDeadlineAt: DUE })).toBeNull()
@@ -155,14 +155,29 @@ describe('التمديدُ يُمنح مرّةً', () => {
       .toBe(EXTENSION_DAYS * DAY)
   })
 
-  it('والثانيةُ تُردّ بنصٍّ يدلّه على التأجيل', () => {
-    const problem = extendProblemAr({ conditionDeadlineAt: DUE, conditionExtendedAt: SIGNED })
+  /* ═══ ومرّتان لا مرّة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     «ويحقّ له طلبُ تمديدٍ ليومين مرّتين» — قرارُ صاحب المنصّة. وكان الحارسُ
+     يقيس أنّ **الثانيةَ** تُردّ، والمِحَكُّ عنده تاريخُ التمديد. فقُلب إلى
+     الثالثة، وصار المِحَكُّ العدّادَ — فتاريخُ الأوّل مكتوبٌ ولصاحبه ثانيةٌ
+     بعدُ، ومن قاس عليه أغلق بابا مفتوحا. */
+  it('والثانيةُ تُقبَل ولو كُتب تاريخُ الأولى', () => {
+    expect(extendProblemAr({
+      conditionDeadlineAt: DUE, conditionExtendedAt: SIGNED, conditionExtensionsUsed: 1,
+    }), 'رُدّت الثانيةُ — وقياسُها على التاريخ يغلق بابا مفتوحا').toBeNull()
+  })
+
+  it('والثالثةُ تُردّ بنصٍّ يدلّه على التأجيل', () => {
+    const problem = extendProblemAr({
+      conditionDeadlineAt: DUE, conditionExtendedAt: SIGNED, conditionExtensionsUsed: 2,
+    })
     expect(problem).not.toBeNull()
     expect(problem).toMatch(/التأجيل/)
   })
 
   it('ولا يُمدَّد ما لا مهلةَ له ولا ما اكتمل شرطُه', () => {
-    expect(extendProblemAr({})).toMatch(/تاريخَ جلسة/)
+    /* وكان النصُّ يحيل إلى تاريخ الجلسة — وهي لم تعد أصلَ المهلة */
+    expect(extendProblemAr({})).toMatch(/تبدأ بتوقيعه/)
     expect(extendProblemAr({ conditionDeadlineAt: DUE, conditionMetAt: DUE })).toMatch(/اعتُمدت/)
   })
 })

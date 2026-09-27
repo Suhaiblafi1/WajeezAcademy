@@ -51,23 +51,62 @@ export interface StatusColumn {
    أو `plan_resource` — وتعليقُه عقدٌ لا يمنع شيئا بلا قيد. */
 const STATUS_NAMES = /^(status|state|kind|type|level|result|outcome|purpose)$/
 
+/** القيمُ من نصّ التعليق، أو `null` إن لم يكن قائمةً نظيفة */
+function valuesOf(comment: string): string[] | null {
+  const head = comment.split('—')[0].split(' - ')[0].trim()
+  if (!head.includes('|')) return null
+  const values = head.split('|').map((v) => v.trim()).filter(Boolean)
+  if (values.length < 2 || values.some((v) => !/^[a-z0-9_]+$/.test(v))) return null
+  return values
+}
+
+/* ═══ والقائمةُ تُقرأ ولو تلت سطرَ الحقل (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   كان المُفسِّرُ يشترط أن يكون التعليقُ على **سطر الحقل نفسِه**. وقوائمُ
+   Prisma تُكتب على أسطرٍ تاليةٍ حين تطول — فأفلت منه ثلاثةُ أعمدةٍ لها
+   قوائمُ موثَّقةٌ فعلا، منها `TrainerApplication.status` وهو أوسعُ عمودِ
+   حالةٍ في المنصّة.
+
+   ورأسُ هذا الملفّ يقول: «التعليقُ عقدٌ، أو ليس شيئا» — وكان فيها ليس شيئا.
+
+   فصار يُجمَع ما بعد الحقل من أسطر `//` متّصلةٍ إلى تعليقه، ثمّ يُقرأ
+   المجموعُ قائمةً. ولا تُخلَط قائمتان: الجمعُ يقف عند أوّل سطرٍ ليس تعليقا،
+   وحقلٌ تالٍ بتعليقه يكسر الاتّصالَ فلا يُنسَب إلى سابقه. */
 export function statusColumns(schema = readFileSync(join(root, 'prisma/schema.prisma'), 'utf8')): StatusColumn[] {
   const out: StatusColumn[] = []
+  const lines = schema.split('\n')
   let model: string | null = null
-  for (const line of schema.split('\n')) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i]
     const m = /^model\s+(\w+)\s*\{/.exec(line)
     if (m) { model = m[1]; continue }
     if (/^\}/.test(line)) { model = null; continue }
     if (!model) continue
-    const c = /^\s*(\w+)\s+String\??\s.*?\/\/\s*(.+)$/.exec(line)
-    if (!c) continue
-    const [, field, comment] = c
+    const f = /^\s*(\w+)\s+String\??\s/.exec(line)
+    if (!f) continue
+    const field = f[1]
     if (!STATUS_NAMES.test(field)) continue
-    const head = comment.split('—')[0].split(' - ')[0].trim()
-    if (!head.includes('|')) continue
-    const values = head.split('|').map((v) => v.trim()).filter(Boolean)
-    if (values.length < 2 || values.some((v) => !/^[a-z0-9_]+$/.test(v))) continue
-    out.push({ model, field, values })
+
+    /* ① التعليقُ على سطر الحقل — وهو الأكثر */
+    const inline = /\/\/\s*(.+)$/.exec(line)
+    let values = inline ? valuesOf(inline[1]) : null
+
+    /* ② فإن لم يكن، فأسطرُ `//` المتّصلةُ بعده تُجمَع وتُقرأ مجموعا */
+    if (!values) {
+      const tail: string[] = []
+      for (let j = i + 1; j < lines.length; j += 1) {
+        const c = /^\s*\/\/\s?(.*)$/.exec(lines[j])
+        if (!c) break
+        /* والسطرُ الفارغُ (`//` وحدَه) يفصل القائمةَ عن شرحها. ولولا الوقوفُ
+           عنده لَدخل النثرُ في القيم: «ورُفعت ثلاثٌ في ٢٦ سبتمبر» تُقرأ
+           قيمةً، فتسقط في فحص الحروف ويضيع العمودُ كلُّه بلا قيد. */
+        if (c[1].trim() === '') break
+        tail.push(c[1].trim())
+      }
+      if (tail.length) values = valuesOf(tail.join(' '))
+    }
+
+    if (values) out.push({ model, field, values })
   }
   return out
 }
