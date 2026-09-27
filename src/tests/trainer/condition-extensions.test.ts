@@ -86,12 +86,12 @@ describe('② والمتنُ يقول المرّاتِ والسقفَ معا', (
     },
   } satisfies ContractBodyInput)
 
-  const clause29 = () => /^2-9 .*$/m.exec(body)![0]
+  const clauseExtend = () => /^2-10 .*$/m.exec(body)![0]
 
-  it('البند 2-9 يقول «مرتين» ويقول السقف', () => {
-    expect(clause29(), 'ما زال يَعِد بمرّةٍ واحدة').not.toContain('مرة واحدة')
-    expect(clause29()).toContain('مرتين')
-    expect(clause29(), 'السقفُ غيرُ مذكورٍ — فيحسبه صاحبُه ويحتجّ بحسابه')
+  it('البند 2-10 يقول «مرتين» ويقول السقف', () => {
+    expect(clauseExtend(), 'ما زال يَعِد بمرّةٍ واحدة').not.toContain('مرة واحدة')
+    expect(clauseExtend()).toContain('مرتين')
+    expect(clauseExtend(), 'السقفُ غيرُ مذكورٍ — فيحسبه صاحبُه ويحتجّ بحسابه')
       .toContain(`${MAX_TOTAL_WINDOW_DAYS} أيام`)
   })
 
@@ -100,14 +100,14 @@ describe('② والمتنُ يقول المرّاتِ والسقفَ معا', (
      الفقرةُ نفسُها تقول إنّ المهلةَ تتوقّف مدّةَ التقييم. فسقفٌ يُقاس «من
      تاريخ التوقيع» يناقضها في السطر الواحد. */
   it('ولا يقول «من تاريخ التوقيع» — فالمهلةُ تتوقّف مدّةَ التقييم', () => {
-    expect(clause29(), 'سقفٌ تقويميٌّ يناقض التوقّفَ المنصوصَ في الفقرة نفسِها')
+    expect(clauseExtend(), 'سقفٌ تقويميٌّ يناقض التوقّفَ المنصوصَ في الفقرة نفسِها')
       .not.toMatch(/فلا تجاوز.*من تاريخ التوقيع/)
-    expect(clause29()).toContain('في مجموعها')
-    expect(clause29(), 'سقط نصُّ التوقّف').toContain('وتتوقف عن الجريان مدة بقاء مواده')
+    expect(clauseExtend()).toContain('في مجموعها')
+    expect(clauseExtend(), 'سقط نصُّ التوقّف').toContain('وتتوقف عن الجريان مدة بقاء مواده')
   })
 
   it('والخلاصةُ تقول ما يقوله البند — لا مرّةً واحدة', () => {
-    const line = body.split('\n').find((l) => l.startsWith('· والمهلة:'))!
+    const line = body.split('\n').find((l) => l.startsWith('· وما يلزمك الآن:'))!
     expect(line).toContain('مرتين')
     expect(line).toContain(`${MAX_TOTAL_WINDOW_DAYS} أيام`)
     expect(line, 'الخلاصةُ تَعِد بمرّةٍ والبندُ بمرّتين').not.toContain('مرة واحدة')

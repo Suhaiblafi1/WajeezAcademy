@@ -33,6 +33,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { signedCopyMail } from '../../../server/services/trainer-decision-mail'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -81,13 +82,27 @@ describe('بريدُ النسخة الموقَّعة يُحيل ولا يسكب'
 
   /* ═══ والوعدُ يُقال بشرطه ═══
 
-     من وقّع قبل أن يُنشئ حسابَه لا يفتح بوّابتَه اليومَ: `profile.userId`
-     فارغٌ حتّى `consumeInvitation`. فزرٌّ يُرسَل إليه يردُّه إلى شاشة دخول —
-     وهو أسوأُ من لا زرّ: وعدٌ يُخلَف في أوّل نقرة.
+     من وقّع قبل أن يُنشئ حسابَه لا يفتح بوّابتَه: `profile.userId` فارغٌ
+     حتّى نعتمد توقيعَه. فزرٌّ يُرسَل إليه يردُّه إلى شاشة دخول — وهو أسوأُ
+     من لا زرّ: وعدٌ يُخلَف في أوّل نقرة.
 
-     والشرطُ نفسُه صار داخلَ الدالّة الخالصة (`hasPortal`)، ويُقاس أثرُه هناك
-     نصّا. والباقي هنا: أن تُقرأ قيمتُه من الصفّ لا تُمرَّر `true` دائما. */
-  it('ولا يُوعَد بزرٍّ من لا حسابَ له بعد', () => {
-    expect(SIGN, 'لا يُسأل أصلا عن وجود الحساب').toMatch(/hasPortal:\s*c\.profile\.userId != null/)
+     ═══ وقد سقط الشرطُ لأنّ الزرَّ سقط (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان `hasPortal` يمنع الزرَّ عمّن لا حسابَ له، ويُعطيه لمن له حساب. وقد
+     صار فتحُ البوّابة **باعتمادنا** لا بتوقيعه، فلا أحدَ يفتحها لحظةَ هذه
+     الرسالة — فما كان ممنوعا عن بعضهم صار ممنوعا عن الجميع، وسقط الحقلُ
+     والشرطُ معا.
+
+     فيُقاس ما حلّ محلَّه: **لا زرَّ في هذه الرسالة البتّة**. */
+  it('ولا زرَّ في رسالة التوقيع — فالبوّابةُ لا تُفتح إلّا باعتمادنا', () => {
+    expect(SIGN, 'عاد يُسأل عن حسابٍ لا زرَّ له').not.toMatch(/hasPortal/)
+    for (const conditional of [true, false]) {
+      const mail = signedCopyMail({
+        legalName: 'صهيب الخوالدة', title: 'عرضٌ مشروط',
+        signedOnAr: '27 سبتمبر 2026', bodyHash: 'abc', conditional,
+      })
+      expect(mail.doc.blocks.some((b) => b.kind === 'cta'),
+        `عاد زرٌّ إلى بوّابةٍ لم تُفتح (conditional=${conditional})`).toBe(false)
+    }
   })
 })

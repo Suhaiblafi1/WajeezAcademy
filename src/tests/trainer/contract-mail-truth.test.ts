@@ -30,12 +30,27 @@ function allText(doc: { subject: string; doc: { heading: string; preheader?: str
   const rich = (v: unknown): string => (typeof v === 'string'
     ? v
     : Array.isArray(v) ? v.map((x) => (typeof x === 'string' ? x : String((x as { text: string }).text))).join('') : '')
+  /* ═══ وتُستوفى الأنواعُ كلُّها، ويُصاح على ما جُهل (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كانت سلسلةَ `else if` بلا ذيل، فنوعٌ جديدٌ يمرّ **صامتا**: أُضيف نوعُ
+     `steps` فصارت خمسُ خطواتٍ تُكتب في رسالةٍ يقرؤها مدرّبٌ ولا يبلغها هذا
+     الحارسُ أصلا — فكلُّ ما يُقال فيها غيرُ محروس، ووعدٌ كاذبٌ فيها يمرّ.
+
+     والصمتُ هنا أسوأُ من الحمرة: فحصٌ يقول «لا وعدَ كاذبا» وهو لم يقرأ نصفَ
+     الرسالة. فيُرمى على المجهول، فمن أضاف نوعا أضافه هنا. */
   for (const b of doc.doc.blocks) {
-    if (b.kind === 'p' || b.kind === 'callout' || b.kind === 'note') parts.push(rich(b.text))
-    else if (b.kind === 'h') parts.push(b.text)
-    else if (b.kind === 'list') parts.push(b.items.map(rich).join(' '))
-    else if (b.kind === 'facts') parts.push(b.rows.map((r) => `${r.label}: ${r.value}`).join(' '))
-    else if (b.kind === 'cta') parts.push(`${b.label} ${b.href}`)
+    switch (b.kind) {
+      case 'p': case 'callout': case 'note': parts.push(rich(b.text)); break
+      case 'h': parts.push(b.text); break
+      case 'list': parts.push(b.items.map(rich).join(' ')); break
+      case 'steps': parts.push(b.items.map((i) => i.textAr).join(' ')); break
+      case 'facts': parts.push(b.rows.map((r) => `${r.label}: ${r.value}`).join(' ')); break
+      case 'cta': parts.push(`${b.label} ${b.href}`); break
+      default: {
+        const never: never = b
+        throw new Error(`نوعُ بلوكٍ لا يقرؤه حارسُ البريد: ${JSON.stringify(never)}`)
+      }
+    }
   }
   return parts.join('\n')
 }
@@ -135,7 +150,7 @@ describe('③ بريدُ التوقيع لا يَعِد بطباعةٍ قبل خ
     bodyHash: 'a'.repeat(64),
     portalUrl: 'https://www.wajeezacademy.com/trainer',
   }
-  const conditional = signedCopyMail({ ...base, conditional: true, hasPortal: true })
+  const conditional = signedCopyMail({ ...base, conditional: true })
 
   it('لا يدعوه إلى الطباعة ولا يسمّي توقيعا واحدا «سجلَّ التوقيعَين»', () => {
     const t = allText(conditional)
@@ -156,21 +171,38 @@ describe('③ بريدُ التوقيع لا يَعِد بطباعةٍ قبل خ
     expect(t, 'ضاعت بصمةُ النصّ الموقَّع عليه').toContain(base.bodyHash)
   })
 
-  it('والعرضُ المشروطُ تُقال خطوتُه التالية — وهي عندَه لا عندنا', () => {
-    /* وبابُ الموادّ يُفتح بالتوقيع نفسِه منذ ٢٦ سبتمبر. فمن لم يُقَل له ذلك
-       انتظر جوابا لا يأتي حتّى يرفع. */
+  /* ═══ والخطوةُ التاليةُ انتقلت إلينا (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كانت الرسالةُ تقول «ارفعْ موادَّ دوراتك في بوّابتك» وتعطيه زرّا إليها.
+     وهي دعوةٌ إلى بابٍ مقفل: بوّابتُه تُفتح باعتمادنا لا بتوقيعه — ولم تكن
+     تُفتح بتوقيعه قطّ، لأنّ دورَه بعده `trainer_applicant`.
+
+     فصارت تقول موضعَه من الخارطة: ما تمّ، وأنّ الدورَ علينا الآن، وما يليه.
+     ولا زرَّ: «ولا يلزمك شيءٌ الآن». */
+  it('والعرضُ المشروطُ تُقال خطوتُه التالية — وهي عندنا لا عندَه', () => {
     const t = allText(conditional)
-    expect(t, 'وقّع عرضا مشروطا ولم يُقَل له أن يرفع موادَّه').toContain('ارفعْ موادَّ')
-    expect(conditional.doc.blocks.some((b) => b.kind === 'cta'), 'لا بابَ إلى بوّابته').toBe(true)
+    expect(t, 'عادت تدعوه إلى بوّابةٍ لا تُفتح له').not.toContain('ارفعْ موادَّ')
+    expect(t, 'لم يُقَل له أنّ الدورَ علينا').toMatch(/والخطوةُ عندنا الآن/)
+    expect(t, 'لم يُطمأنْ أنّه لا يلزمه شيء').toMatch(/ولا يلزمك شيءٌ الآن/)
+    expect(conditional.doc.blocks.some((b) => b.kind === 'cta'),
+      'عاد زرٌّ إلى بوّابةٍ لم تُفتح بعد').toBe(false)
   })
 
-  it('ولا يُعطى زرَّ بوّابةٍ من لا حسابَ له — فيردُّه إلى شاشة دخول', () => {
-    const noPortal = signedCopyMail({ ...base, conditional: true, hasPortal: false })
-    expect(noPortal.doc.blocks.some((b) => b.kind === 'cta'), 'وُعِد ببوّابةٍ لا حسابَ له فيها').toBe(false)
+  it('وخارطتُه خمسُ خطوات، الثانيةُ منها دورُنا الآن', () => {
+    const steps = conditional.doc.blocks.filter((b) => b.kind === 'steps')
+    expect(steps.length, 'لا خارطةَ في رسالة التوقيع').toBe(1)
+    const items = (steps[0] as { items: readonly { state?: string }[] }).items
+    expect(items.length).toBe(5)
+    expect(items[0].state, 'توقيعُه لم يُعَدّ تامّا').toBe('done')
+    expect(items[1].state, 'الدورُ ليس علينا').toBe('now')
+    expect(items.filter((i) => i.state === 'now').length, 'أكثرُ من دورٍ واحدٍ مُعلَّم').toBe(1)
   })
 
-  it('ولا تُقال خطوةُ الموادّ لبندٍ يُوثَّق على نشطٍ — لا شرطَ فيه ولا موادّ', () => {
-    const documented = signedCopyMail({ ...base, conditional: false, hasPortal: true })
-    expect(allText(documented), 'طُلبت موادُّ من عقدٍ لا شرطَ فيه').not.toContain('ارفعْ موادَّ')
+  it('وخارطةُ بندٍ يُوثَّق على نشطٍ ثلاثٌ لا خمس — لا شرطَ فيه ولا موادّ', () => {
+    const documented = signedCopyMail({ ...base, conditional: false })
+    expect(allText(documented), 'طُلبت موادُّ من عقدٍ لا شرطَ فيه').not.toContain('موادّ دوراتك')
+    const steps = documented.doc.blocks.filter((b) => b.kind === 'steps')
+    const items = (steps[0] as { items: readonly unknown[] }).items
+    expect(items.length, 'عُرضت خارطةُ العرض المشروط على بندٍ لا شرطَ فيه').toBe(3)
   })
 })

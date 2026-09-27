@@ -125,8 +125,23 @@ describe('ولا يُعرَض زرٌّ يردّه الخادم', () => {
     const body = SERVICE.slice(at, SERVICE.indexOf('\n  async ', at + 1))
     expect(body, 'بوّابةُ الموادّ ليست في `decide` — فبابُ شاشة الطلبات مفتوح')
       .toMatch(/materialsGateProblemAr\(/)
-    expect(body, 'تُقرأ البوّابةُ على غير العرض المشروط الموقَّع المفتوح')
-      .toMatch(/gatesActivation: true, status: 'signed', conditionMetAt: null/)
+    /* ═══ ويُقاس الشرطُ بأجزائه لا بسطرٍ يُطابَق حرفا (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       كان هنا مطابقةُ السطر بنصّه: `gatesActivation: true, status: 'signed',
+       conditionMetAt: null`. فلمّا صارت حالُ العرض في طور الموادّ
+       `countersigned` — واتّسع الشرطُ إلى الحالتَين — سقط الحارسُ على
+       **تنسيقٍ** لا على معنى. وذاك ما تحذّر منه قاعدةُ المستودَع: الفحصُ
+       على البنية لا على ورودِ حرف.
+
+       فيُقاس ما يعنيه الشرطُ: أنّه على عرضٍ مشروطٍ (`gatesActivation`)، وأنّ
+       الموقَّعَ والمعتمَدَ كلاهما داخلٌ فيه، وأنّ ما تحقّق شرطُه خارجٌ منه. */
+    const scope = body.slice(body.indexOf('gatesActivation'))
+      .slice(0, 260)
+    expect(scope, 'البوّابةُ تُقرأ على غير العرض المشروط').toMatch(/gatesActivation:\s*true/)
+    expect(scope, 'الموقَّعُ الذي لم يُعتمَد خارجٌ من البوّابة').toContain("'signed'")
+    expect(scope, 'المعتمَدُ في طور موادّه خارجٌ من البوّابة — وهي حالُه اليومَ')
+      .toContain("'countersigned'")
+    expect(scope, 'تُقرأ البوّابةُ على عرضٍ تحقّق شرطُه').toMatch(/conditionMetAt:\s*null/)
   })
 
   it('والردُّ برمزٍ يُقرأ لا برسالةٍ تُطابَق نصّا', () => {

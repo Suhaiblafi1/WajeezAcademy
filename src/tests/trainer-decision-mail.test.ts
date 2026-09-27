@@ -22,6 +22,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bookingReminderMail, decisionMailFor, draftReminderMail, rejectionMail, rejectionUndoneMail, waitlistMail,
 } from '../../server/services/trainer-decision-mail'
+import { renderMail, type MailBlock } from '../../server/services/mail-template'
 import {
   conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail,
   type ConditionalOfferMailInput, type FinalApprovalMailInput,
@@ -30,7 +31,6 @@ import {
 import { FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
 
 import { APPLICANT_STATUS } from '@/application/trainer/application-options'
-import { renderMail, type MailBlock } from '../../server/services/mail-template'
 
 const NAME = 'سلمى العمري'
 const REF = 'WJ-TR-2026-00041'
@@ -281,13 +281,32 @@ describe('بريدُ العرض المشروط', () => {
     expect(m.subject).toContain('عرضُك المشروط')
     expect(m.subject, 'رقمُ الطلب لا يُقرأ في العنوان').toContain(OFFER.reference)
     expect(m.doc.heading, 'بُشِّر باعتمادٍ لم يقع').not.toMatch(/اكتمل اعتمادُك/)
-    expect(flat(m), 'قيل له «عقد» والعرضُ مشروط').toMatch(/عرضٌ مشروطٌ\*\* لا عقدٌ نهائيّ/)
+    expect(flat(m), 'قيل له «عقد» والعرضُ مشروط').toMatch(/وهو عرضٌ مشروطٌ/)
+    /* ═══ ونجمتان كانتا تُطبَعان نجمتَين (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       كان هذا الفحصُ نفسُه يطابق `عرضٌ مشروطٌ\*\* لا عقدٌ نهائيّ` — أي أنّه
+       **يحرس النجمتَين**. و`richHtml` لا يفسّر Markdown، فكانتا تصلان
+       المدرّبَ حرفَين. ستَّ عشرةَ مرّةً في هذا الملفّ.
+
+       فيُثبَّت نفيُهما في كلّ ما يُرسَل: ما لا مفسِّرَ له لا يُكتب. */
+    expect(flat(m), 'عادت النجمتان تُطبَعان في نصٍّ يصل المدرّب').not.toContain('**')
   })
 
-  it('وتقول إنّ الشرطَ الوحيدَ الباقيَ اعتمادُ موادّه، ولكلّ دورةٍ على حدة', () => {
-    const body = flat(conditionalOfferMail(OFFER))
-    expect(body).toMatch(/الشرطُ الوحيدُ الباقي/)
-    expect(body).toMatch(/لكلّ دورةٍ على حدة/)
+  /* ═══ والرسالةُ صارت خارطةً مرقّمة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «هي ليست عمليّة — يجب أن يكون فيها تفاصيلُ المرحلة
+     الحاليّة والقادمة». فيُقاس أنّ الخطواتِ الخمسَ فيها، **وأنّ واحدةً منها
+     وحدَها مُعلَّمةٌ `now`** — فخمسةٌ متساويةٌ لا تقول أين هو. */
+  it('وتحمل خارطةَ الخطوات الخمس، وواحدةً وحدَها هي دورُه الآن', () => {
+    const doc = conditionalOfferMail(OFFER).doc
+    const steps = doc.blocks.filter((b) => b.kind === 'steps')
+    expect(steps.length, 'لا خارطةَ خطواتٍ في رسالة إصدار العرض').toBe(1)
+    const items = (steps[0] as { items: readonly { textAr: string; state?: string }[] }).items
+    expect(items.length, 'الخطواتُ ليست خمسا').toBe(5)
+    expect(items.filter((i) => i.state === 'now').length, 'لا خطوةَ واحدةٌ مُعلَّمةٌ دورَه الآن').toBe(1)
+    expect(items[0].state, 'دورُه ليس الأولى — وهو لم يوقّع بعد').toBe('now')
+    /* وآخرُها استقبالُ الطلبات: هو ما يريده، فلا تنتهي الخارطةُ دونه */
+    expect(items[4].textAr).toMatch(/تبدأ باستقبال الطلبات/)
   })
 
   it('وجلستُه ومهلتُه ورابطُ حضوره فيها', () => {
@@ -309,10 +328,16 @@ describe('بريدُ العرض المشروط', () => {
     expect(body).not.toContain(OFFER.deadlineOnAr!)
   })
 
-  it('ويُقال له إنّ بوّابتَه تُفتح بتوقيعه — فلا ينتظر الجلسةَ عاطلا', () => {
+  /* ═══ ولا يُدعى إلى بابٍ لا يُفتح له (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كانت تقول: «بوّابتُك تُفتح بتوقيعك — فادخلها من الآن». وهي دعوةٌ إلى
+     بابٍ مقفل: من وقّع دورُه `trainer_applicant` ولا يملك `trainer.portal`،
+     وبوّابتُه لا تُفتح إلّا باعتمادنا. فيُثبَّت نفيُها. */
+  it('ولا يُقال له إنّ بوّابتَه تُفتح بتوقيعه — فالبابُ يُفتح باعتمادنا', () => {
     const body = flat(conditionalOfferMail(OFFER))
-    expect(body).toMatch(/ولا يلزمك الانتظارُ إلى الجلسة/)
-    expect(body).toContain(OFFER.portalUrl)
+    expect(body, 'عادت تدعوه إلى بوّابةٍ لا تُفتح له').not.toMatch(/تُفتح بتوقيعك/)
+    expect(body, 'لا يُقال متى تُفتح').toMatch(/تُفتح لك بوّابتُك على المنصّة/)
+    expect(body, 'لا يُقال إنّ المهلةَ من الاعتماد').toMatch(/تبدأ يومَ نعتمد توقيعَك/)
   })
 
   it('وسطرُ الوثائق يُطبَع عند الحاجة وحدَها', () => {
@@ -326,7 +351,7 @@ describe('بريدُ العرض المشروط', () => {
   it('وتعرض المخرجَ إن لم يتحقّق الشرط', () => {
     const body = flat(conditionalOfferMail(OFFER))
     expect(body).toMatch(/فلا إخلالَ من أحد/)
-    expect(body).toMatch(/تؤجّل إلى الموسم القادم/)
+    expect(body).toMatch(/تؤجّل التحاقَك إلى فصل التدريب القادم/)
   })
 
   /* ═══ الحارسُ المزدوج: المثالُ في المتن لا في البريد ═══
@@ -393,7 +418,7 @@ describe('بريدُ التذكير بالمهلة', () => {
     daysLeft: 2,
     extensionDays: 2,
     portalUrl: 'https://wajeezacademy.com/trainer',
-    extensionSpent: false,
+    extensionsLeft: 2,
   }
   const flat = (i: ConditionReminderMailInput) => JSON.stringify(conditionReminderMail(i).doc)
 
@@ -407,18 +432,33 @@ describe('بريدُ التذكير بالمهلة', () => {
     expect(flat(BASE)).toMatch(/لا يُحسب عليك/)
   })
 
-  it('ويعرض البابَين لمن لم يُنفق تمديدَه', () => {
+  /* ═══ وهذا الحارسُ كان يُثبّت اللحنَ نفسَه (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان يطابق `/تمديدُ 2 يومين/` — أي أنّه **يحرس الخطأ**: «٢ يومين» لحنٌ،
+     والمثنّى لا يحمل عددَه. وقد صُحّح في متن العقد يومَ كُتب، وبقي في البريد
+     لأنّ حارسَه يمنع تصحيحَه.
+
+     فصار يُثبّت الصوابَ ونفيَ اللحن معا. */
+  it('ويعرض البابَين لمن بقيت له مرّاتُ تمديد، بلا لحنٍ في المثنّى', () => {
     const body = flat(BASE)
-    expect(body).toMatch(/تمديدُ 2 يومين/)
-    expect(body).toMatch(/التأجيلُ إلى الموسم القادم/)
+    expect(body, 'عاد لحنُ «2 يومين»').not.toMatch(/2 يومين/)
+    expect(body, 'لا يُقال بكم يُمدَّد').toMatch(/تمديدُها يومين/)
+    expect(body, 'لا يُقال كم بقي له').toMatch(/وبقيت لك مرّتين/)
+    expect(body).toMatch(/التأجيلُ إلى فصل التدريب القادم/)
+  })
+
+  it('وحين تبقى واحدةٌ يقولها واحدةً — فلا يُعِدُّ مرّتَين', () => {
+    const body = flat({ ...BASE, extensionsLeft: 1 })
+    expect(body, 'قيل له مرّتان وقد بقيت واحدة').not.toMatch(/وبقيت لك مرّتين/)
+    expect(body).toMatch(/وبقيت لك مرّةً واحدة/)
   })
 
   /* ولا يُعرَض تمديدٌ أُنفِق: يطلبه فيُردّ، وقد ضاع يومٌ في انتظار جوابٍ معروف */
-  it('ولا يعرض التمديدَ على من مُنحه مرّة — ويدلّه على التأجيل', () => {
-    const body = flat({ ...BASE, extensionSpent: true })
+  it('ولا يعرض التمديدَ على من أنفق مرّاتِه — ويدلّه على التأجيل', () => {
+    const body = flat({ ...BASE, extensionsLeft: 0 })
     expect(body, 'عُرض تمديدٌ لا يُمنَح').not.toMatch(/أمامك بابان/)
-    expect(body).toMatch(/ولا يُمنَح ثانية/)
-    expect(body).toMatch(/التأجيلَ إلى الموسم القادم/)
+    expect(body).toMatch(/أُنفقت مرّاتُ التمديد/)
+    expect(body).toMatch(/التأجيلَ إلى فصل التدريب القادم/)
   })
 
   it('وزرُّه إلى بوّابته — فهناك يرفع', () => {
@@ -460,5 +500,59 @@ describe('بريدُ انقضاء المهلة', () => {
     for (const word of ['مخالف', 'إنذار', 'إخلالك', 'تقصير']) {
       expect(body, `لغةُ إنذارٍ في رسالةٍ شرطُها لم يتحقّق: ${word}`).not.toContain(word)
     }
+  })
+})
+
+/* ═══ هيئةُ القالب: ما يُرسَم لا ما يُكتب — قرارُ ٢٧ سبتمبر ٢٠٢٦ ═══
+
+   بلاغُ صاحب المنصّة: «حسِّنِ التصميم، ولا تستخدم بولد بالكلمات لتكون أنعمَ
+   النصوص». وموضعُ ذلك القالبُ لا القوالبُ التي تكتب النصّ — فالوزنُ مكتوبٌ
+   في `mail-template.ts` مرّةً واحدة، ويرثه كلُّ بريدٍ في المنصّة.
+
+   ولمَ يُحرَس أصلا: نُقض القالبُ بإعادة `font-weight:700` إلى التنبيه فلم
+   يحمرّ شيء. وهيئةٌ لا يحرسها أحدٌ تعود في أوّل تعديلٍ يمرّ عليها. */
+describe('هيئةُ قالب البريد', () => {
+  const html = (blocks: MailBlock[]) => renderMail({
+    heading: 'عنوان', blocks,
+  }).html
+
+  it('لا بولدَ في صندوق التنبيه — والتمييزُ بالأرضيّة والإطار واللون', () => {
+    /* ويُقتطَع الصندوقُ وحدَه: القالبُ فيه `font-weight:700` مشروعةٌ في
+       الزرّ وفي جدول الحقائق، فمسحُ الوثيقة كلِّها يخضرّ على غيره. */
+    const out = html([{ kind: 'callout', text: 'تنبيهٌ يُقرأ' }])
+    const cell = /<td bgcolor[^>]*>تنبيهٌ يُقرأ<\/td>/.exec(out)
+    expect(cell, 'لم يُقرأ صندوقُ التنبيه').not.toBeNull()
+    expect(cell![0], 'عاد وزنُ البولد إلى التنبيه').not.toContain('font-weight:700')
+  })
+
+  /* والخطواتُ تُرسَم مرقَّمةً وواحدةٌ منها مميَّزةٌ — وإلّا فهي قائمةٌ منقّطة
+     بأرقام، لا تقول أين هو. */
+  it('وخارطةُ الخطوات تُرقَّم، والحاليّةُ وحدَها ملوَّنة', () => {
+    const out = html([{
+      kind: 'steps',
+      items: [
+        { textAr: 'مضت', state: 'done' },
+        { textAr: 'الآن', state: 'now' },
+        { textAr: 'تأتي' },
+      ],
+    }])
+    expect(out, 'ما مضى بلا علامة').toContain('&#10003;')
+    expect(out, 'الأرقامُ لا تُطبَع').toMatch(/>2</)
+    /* ويُعَدُّ ما يملأ القرصَ وحدَه (`bgcolor`): لونُ العلامة يَرِد في
+       الترويسة والروابط نصّا، فعدُّه في الوثيقة كلِّها يقيس غيرَ ما يُقصَد. */
+    const filled = out.split('bgcolor="#1F6E77"').length - 1
+    expect(filled, 'المميَّزُ ليس واحدا — فما يُميَّز اثنان لا يُميَّز واحد').toBe(1)
+  })
+
+  it('والنصُّ الخامُّ يقول أين هو كذلك — فمن قرأه نصّا لم يضع', () => {
+    const text = renderMail({
+      heading: 'عنوان',
+      blocks: [{
+        kind: 'steps',
+        items: [{ textAr: 'مضت', state: 'done' }, { textAr: 'الآن', state: 'now' }],
+      }],
+    }).text
+    expect(text).toMatch(/1\. مضت\s+✓/)
+    expect(text).toMatch(/2\. الآن\s+←/)
   })
 })

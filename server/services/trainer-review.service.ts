@@ -917,7 +917,14 @@ export class TrainerReviewService {
       const openOffer = await this.prisma.trainerContract.findFirst({
         where: {
           profile: { applicationId },
-          gatesActivation: true, status: 'signed', conditionMetAt: null,
+          /* ═══ وحالتان لا واحدة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+             صار الاعتمادُ يقع **قبل** طور الموادّ، فالعرضُ في أثناء الطور
+             `countersigned` لا `signed`. ولو بقي الشرطُ على `signed` وحدَها
+             لَما وجدت هذه البوّابةُ عرضا مفتوحا أصلا — فتمرّ وتُنشَر حساباتٌ
+             لم تُعتمَد موادُّها. و`signed` تبقى: من وُقِّع عرضُه ولم نعتمد
+             توقيعَه بعدُ أولى بالمنع. */
+          gatesActivation: true, status: { in: ['signed', 'countersigned'] }, conditionMetAt: null,
         },
         orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
         select: {
@@ -1633,9 +1640,16 @@ export class TrainerReviewService {
        معلَّقا — وهي الصورةُ بعينها. */
     const offer = profile
       ? await this.prisma.trainerContract.findFirst({
-        where: { profileId: profile.id, status: 'signed', gatesActivation: true },
+        where: {
+          profileId: profile.id, gatesActivation: true,
+          status: { in: ['signed', 'countersigned'] },
+        },
         orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
-        select: { id: true, signerLegalName: true, signedBodyHash: true, bodyVersion: true },
+        select: {
+          id: true, signerLegalName: true, signedBodyHash: true, bodyVersion: true,
+          /* وبهما يُعرَف أمختومٌ هو سلفا: الاعتمادُ صار حدثا سابقا لهذا */
+          status: true, countersignedAt: true,
+        },
       })
       : null
 
@@ -1644,18 +1658,34 @@ export class TrainerReviewService {
       await this.prisma.$transaction(async (tx) => {
         /* قارنْ واضبطْ كما في التوقيع والاعتماد: نقرتان متزامنتان على
            «فعّلْه» لا تكتبان خَتمَين ولا تُرسلان بريدَين. */
+        /* ═══ والخَتمُ لا يُعاد على مختوم (٢٧ سبتمبر ٢٠٢٦) ═══
+
+           صار الاعتمادُ يقع في `countersignContract` قبل طور الموادّ. فما
+           يبقى لهذه اللحظة هو **تحقّقُ الشرط**: `conditionMetAt` وملحقُ
+           الدورات المعتمدة. ولو أُعيد الخَتمُ هنا لَتبدّل تاريخُ توقيعنا
+           إلى يوم النشر — فيقرأ العقدُ أنّنا وقّعناه بعد أن رفع موادَّه، وهو
+           خلافُ ما جرى.
+
+           وتُكتب حقولُ الخَتم إن كانت فارغةً وحدَها: صفٌّ من قبل هذا اليوم
+           يصل هنا وهو `signed` بعدُ، فيُختَم كما كان يُختَم. */
+        const alreadySealed = offer.countersignedAt != null
         const done = await tx.trainerContract.updateMany({
-          where: { id: offer.id, status: 'signed' },
+          where: { id: offer.id, status: { in: ['signed', 'countersigned'] } },
           data: {
-            status: 'countersigned', countersignedAt, countersignedBy: actorId,
-            academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
-            academySignatoryTitle: ACADEMY_LEGAL.signatoryTitleAr,
+            status: 'countersigned',
+            ...(alreadySealed ? {} : {
+              countersignedAt, countersignedBy: actorId,
+              academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
+              academySignatoryTitle: ACADEMY_LEGAL.signatoryTitleAr,
+            }),
             /* وملحوظةُ مطابقةِ الهويّة تُضَمّ إليها حين تأتي: من ضغط
                «اعتمِدْ وفعِّلْ» في شاشة العقود كتب ما طابقه بوثيقته — وهو
                محلُّ الحجّة إن نُوزع في الاسم بعد سنة، فلا يُطرح. */
-            countersignNoteAr: sealNoteAr
-              ? `${CONDITION_SEAL_NOTE_AR} — ومطابقةُ الهويّة: ${sealNoteAr}`.slice(0, 500)
-              : CONDITION_SEAL_NOTE_AR,
+            ...(alreadySealed && !sealNoteAr ? {} : {
+              countersignNoteAr: sealNoteAr
+                ? `${CONDITION_SEAL_NOTE_AR} — ومطابقةُ الهويّة: ${sealNoteAr}`.slice(0, 500)
+                : CONDITION_SEAL_NOTE_AR,
+            }),
             /* وانتهت المهلةُ بتحقّق الشرط، ولا تجميدَ يبقى معلّقا */
             conditionMetAt: countersignedAt,
             conditionPausedAt: null,
@@ -1672,7 +1702,11 @@ export class TrainerReviewService {
             signerLegalName: offer.signerLegalName, signedBodyHash: offer.signedBodyHash,
             bodyVersion: offer.bodyVersion, gatesActivation: true,
             academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
-            countersignedAt, conditionMet: true, approvedCourses: approved.length,
+            /* ويُقال في الأثر أيُّهما وقع: خَتمٌ الآن، أم تحقُّقُ شرطٍ على
+               عقدٍ خُتم يومَ اعتُمد توقيعُه. فمن قرأ السجلَّ بعد سنةٍ يعرف. */
+            countersignedAt: alreadySealed ? offer.countersignedAt : countersignedAt,
+            sealedEarlier: alreadySealed,
+            conditionMet: true, approvedCourses: approved.length,
             /* والأسماءُ مع العدد: من سأل «أيَّ الدورات اعتمدتم؟» عن ختمٍ
                قديمٍ لا يُجاب بعددٍ. والملحقُ في الصفّ، وهذا خطُّ الأثر. */
             approvedCourseIds: approved.map((q) => q.courseId),
@@ -3377,19 +3411,18 @@ export class TrainerReviewService {
              يترك الفجوةَ التي وُضع العمودُ لسدّها. */
           consentAcksAr: contractAcks(c.gatesActivation).map((a) => ({ key: a.key, textAr: a.textAr })),
           signedBodyHash: input.bodyHash,
-          /* ═══ ومن هنا تبدأ مهلةُ الموادّ (٢٧ سبتمبر ٢٠٢٦) ═══
+          /* ═══ ولا مهلةَ تُكتب هنا — أصلُها الاعتمادُ (٢٧ سبتمبر ٢٠٢٦) ═══
 
-             «معه ٥ أيّام من بعد التوقيع لإتمام الموادّ التعليميّة» — قرارُ
-             صاحب المنصّة. وكانت تُحسَب عند التركيب من جلسة التهيئة.
+             كانت تُكتب من `signedAt`. وقولُ صاحب المنصّة في خطواته: «② نراجع
+             توقيعَك ونعتمده … ④ **بعدها** لديك ٥ أيّام». فـ«بعدها» اعتمادُنا
+             لا توقيعُه.
 
-             وموضعُها هنا لا هناك لأنّ أصلَها **فعلُ المدرّب**: لا تجري ساعةٌ
-             على من لم يوقّع بعد. وعرضٌ رُكّب في الأوّل من الشهر ووُقّع في
-             الخامس مهلتُه من الخامس — ولو حُسبت عند التركيب لَأكلت أربعةَ
-             أيّامٍ من مهلته قبل أن يقرأ العرضَ أصلا.
+             وهو الأصحُّ أثرا: المهلةُ كانت تجري على من لا يستطيع الوفاءَ بها،
+             لأنّ بوّابةَ الموادّ لا تُفتح له قبل أن يُمنَح دورَ المدرّب —
+             ولا يُمنَحه إلّا بالاعتماد. فكانت ساعةٌ تدور على بابٍ مقفل.
 
-             ولا تُكتب لعقدٍ لا يحبس التفعيل: ذاك بندٌ يُوثَّق على مدرّبٍ نشط،
-             لا شرطَ فيه ولا طورَ موادّ. */
-          conditionDeadlineAt: c.gatesActivation ? deadlineFrom(signedAt) : null,
+             وموضعُها الآن في `countersignContract` مع فتح البوّابة ومنحِ
+             الدور، ثلاثتُها في معاملةٍ واحدة. */
           /* والرمزُ يموت بالتوقيع: وُقّع مرّةً، فلا بابَ يُفتح ثانية */
           tokenHash: null, tokenExpiresAt: null,
         },
@@ -3410,37 +3443,20 @@ export class TrainerReviewService {
         },
       })
 
-      /* ═══ والتوقيعُ ينقل الطلبَ إلى «تهيئة» (٢٦ سبتمبر ٢٠٢٦) ═══
+      /* ═══ ولا ينقل التوقيعُ الطلبَ — الاعتمادُ ينقله (٢٧ سبتمبر ٢٠٢٦) ═══
 
-         كان لا ينقله: يوقّع المدرّبُ عرضَه المشروطَ ويبقى طلبُه
-         `contract_pending` أبدا. وثلاثةُ أشياءَ تنبني على ذلك وتسقط معه:
+         كان التوقيعُ ينقله إلى `onboarding` فورا. وثلاثةٌ تُبنى على النقل:
+         بابُ الموادّ، وعاملُ التذكير، وعاملُ الانقضاء — كلُّها تشترط
+         `onboarding`.
 
-         · **بابُ الموادّ يبقى مقفلا في وجهه.** `MATERIALS_STATUSES` هي
-           `onboarding` و`active` وحدَهما، فيدخل بوّابتَه بعد التوقيع فيُقرأ
-           عليه: «بوّابتك تُفتح بتوقيع عرضك المشروط — وقّعْه ثمّ ادخلها» وقد
-           وقّعه. فيُطالَب برفعِ موادٍّ من بابٍ لا يُفتح إلّا بما فعله.
-         · **والعاملان يتخطّيانه.** `remindConditionDeadlines` و
-           `noticeLapsedConditions` كلتاهما تشترط `application.status =
-           'onboarding'` — فلا يُذكَّر بقُرب انقضاء مهلته ولا يُبلَّغ
-           بانقضائها. تنقضي مهلتُه في صمتٍ تامّ.
-         · ومهلتُه تجري عليه في الحالَين: تُحسب من جلسة التهيئة لا من حالة
-           طلبه. فالقفلُ لا يوقفها، وإنّما يمنعه من الوفاء بها.
+         والعطبُ أنّ البابَ لم يكن يُفتح بالنقل وحدَه: من وقّع يبقى دورُه
+         `trainer_applicant`، ولا `trainer.portal` فيه. فكان النقلُ يوقظ
+         عامِلَي المهلة على مدرّبٍ لا يستطيع الدخولَ أصلا — يُذكَّر بمهلةٍ
+         ويُنذَر بانقضائها وبابُه مقفل.
 
-         وهو الطورُ الذي سُمّي به: «تهيئة الانضمام» تبدأ بتوقيعه العرضَ.
-         والمسارُ القديمُ (`signContract` المهجورة) كان ينقله فعلا — وضاع
-         النقلُ حين صار التوقيعُ من رابطه.
-
-         ── وشرطُه شرعيّةُ النقل لا نوعُ العقد ──
-
-         بندٌ يُوثَّق على مدرّبٍ **نشطٍ أصلا** لا تهيئةَ له: طلبُه `active`،
-         و`active → onboarding` لا تُجيزه الخريطة. فيُسأل الجوازُ من الدالّة
-         التي تمنع في `transition` نفسِها — لا بمِحَكٍّ ثانٍ يفترق عنها يوما.
-         ومن لم يجز نقلُه وقّع ولم يتحرّك طلبُه، وهو الصواب. */
-      if (transitionProblemAr(c.profile.application.status as TrainerStatus, 'onboarding') === null) {
-        await this.apps.transition(
-          c.profile.applicationId, 'onboarding', null, 'توقيعُ العقد من رابطه', tx,
-        )
-      }
+         فصار النقلُ حيث يُفتح البابُ فعلا: في الاعتماد، ومعه منحُ الدور
+         وبدءُ المهلة. ومن وقّع يبقى `contract_pending` حتّى ننظر في توقيعه
+         — وهي الحالُ الصادقة: عقدٌ أُرسل ووُقّع وينتظر جوابَنا. */
     })
 
     /* ═══ ونسخةُ صاحبِه تصله — وصلةً لا سكبَ متن، ولا وعدَ طباعةٍ قبل أوانها ═══
@@ -3456,9 +3472,6 @@ export class TrainerReviewService {
         signedOnAr: fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
         bodyHash: c.bodyHash ?? '—',
         conditional: c.gatesActivation,
-        portalUrl: `${publicSiteUrl()}/trainer`,
-        /* من وقّع قبل أن يُربَط حسابُه لا يُعطى زرّا يردّه إلى شاشة دخول */
-        hasPortal: c.profile.userId != null,
       })
       await sendDirectEmail(this.prisma, {
         to: c.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
@@ -3579,51 +3592,40 @@ export class TrainerReviewService {
     if (c.status !== 'signed') {
       throw new AuthError('bad_state', 'لا يُعتمَد إلّا عقدٌ وقّعه صاحبُه ولم يُعتمَد بعد', 409)
     }
-    /* ═══ والعرضُ المشروطُ يُختَم من هنا ويُفعَّل صاحبُه (٢٦ سبتمبر ٢٠٢٦) ═══
+    /* ═══ والاعتمادُ يفتح طورَ الموادّ، ولا يَنشُر الحساب (٢٧ سبتمبر ٢٠٢٦) ═══
 
-       قرارُ صاحب المنصّة، ناسخا قرارَ ٢٠ سبتمبر: «بعد أن أقوم بالتوقيع كأدمن
-       يتحوّل إلى مدرّب نشط مباشرةً وتتفعّل منصّتُه ويصله إيميل بالعقد الموقَّع
-       من جهتنا». فالزرُّ الذي يضغطه واحدٌ، وأثرُه تامّ.
+       خطواتُ صاحب المنصّة بنصّها: «① تقرأه وتوقّعه · ② نراجع توقيعَك ونطابق
+       الاسمَ القانونيَّ ونعتمده · ③ نرسل لك أنّنا اعتمدنا توقيعَك ونمنحك حقَّ
+       فتح الحساب · ④ بعدها لديك ٥ أيّام لتعديل محاور ومصادر دوراتك · ⑤ يُنشر
+       حسابُك رسميّا وتبدأ باستقبال الطلبات».
 
-       ── وما الذي كان يقع قبل هذا اليوم ──
+       فالاعتمادُ والنشرُ **قراران لا قرار**، وبينهما طورُ الموادّ.
 
-       كان يُردّ بـ409 `conditional_offer`: «اعتمِدْ موادَّه ثمّ فعّلْه». وهي
-       جملةٌ صحيحةٌ في الشيفرة تُقرأ في شاشةٍ أخرى — لكنّ الزرَّ يبقى معروضا
-       هنا على كلّ عرضٍ موقَّع، ورسالةُ الردّ تُرسَم في رأس صفحةٍ طويلةٍ بعيدا
-       عن موضع الضغط. فمن ضغطه رأى أنّ **لا شيءَ حدث**، وهو ما بلّغ به صاحبُ
-       المنصّة. وزرٌّ يردّه الخادمُ في كلّ مرّةٍ ليس زرّا.
+       ── وما كان يقع قبل اليوم: قفلٌ مغلقٌ على نفسه ──
 
-       ── ولا نسخةَ ثانيةً من التفعيل ──
+       كان هذا الموضعُ ينادي `decide('activate')` فورا — أي أنّ زرَّ الاعتماد
+       ينشر الحسابَ ويتخطّى طورَ الموادّ كلَّه. وكان التوقيعُ وحدَه ينقل الطلبَ
+       إلى `onboarding` ويبدأ المهلة.
 
-       والنداءُ `decide('activate')` بعينها لا محاكاةٌ لها: هي التي تفحص
-       بوّابةَ التجهيز، وتربط حسابَ المتقدّم بالملفّ، وتمنحه دورَ المدرّب،
-       وتبذر مؤهّلاتِه، وتنقل حالتَه، وتكتب أثرَها — ثمّ تنادي
-       `completeConditionalOffer` فتختم العرضَ وتكتب ملحقَه وترسل العقدَ
-       المختوم. فالحمايةُ التي بُني الطورُ لها باقيةٌ بحروفها: البوّابةُ
-       تمنع من لم تُعتمَد موادُّه (لا دورةَ `qualified` له)، ورسالةُ المنع
-       تعدّد ما ينقص. وإنّما زال بابٌ مسدودٌ كان يُعرَض مفتوحا.
+       **ولم يكن أحدٌ يبلغ ذلك الطور.** `trainer_applicant` — دورُ من وقّع ولم
+       يُنشَر حسابُه — لا يملك `trainer.portal` أصلا (`server/auth/permissions.ts`:
+       «حتى ذلك الحين لا يملك إلا رؤية طلبه»). فبوّابةُ الموادّ مفتوحةٌ في
+       `portal-access.ts` لحالة `onboarding`، وحارسُ الصلاحيّة فوقها يردّه قبل
+       أن تُسأل الحالةُ أصلا. فالمهلةُ تجري عليه وهو محبوسٌ خارجَ البوّابة،
+       والتذكيرُ يصله بمهلةٍ لا يستطيع الوفاءَ بها.
 
-       وحارسُ التضارب وحارسُ الرتبة داخلَها، فلا يُكرَّران هنا. */
-    if (c.gatesActivation) {
-      await this.decide(
-        c.profile.applicationId, actorId, 'activate', 'اعتمادُ التوقيع وتفعيلُ الحساب من شاشة العقود',
-        { actorRoles: input.actorRoles, sealNoteAr: (input.noteAr ?? '').trim().slice(0, 300) || null },
-      )
-      /* ويُقرأ الخَتمُ من الصفّ لا يُفترَض: `completeConditionalOffer` تختم
-         **أحدثَ** عرضٍ موقَّعٍ للملفّ، وهو هذا في كلّ مسلكٍ قائم. فإن لم
-         يكن — صفّان موقَّعان بيدٍ في القاعدة — قالت الشاشةُ الحقيقةَ ولم
-         تدّعِ ختما لم يقع على هذا الصفّ بعينه. */
-      const sealed = await this.prisma.trainerContract.findUnique({
-        where: { id: c.id }, select: { countersignedAt: true },
-      })
-      return {
-        ok: true as const,
-        countersignedAt: sealed?.countersignedAt ?? null,
-        readiness: await this.readinessForApplication(c.profile.applicationId),
-        /* وبه تعرف الشاشةُ أنّ الحسابَ فُتح، فتقول ذلك بدل «وبقي قبل اعتماده» */
-        activated: true as const,
-      }
-    }
+       فصار الاعتمادُ يفعل ما وُصف في ③: يختم توقيعَنا، **ويمنحه حقَّ الولوج
+       فعلا** (ربطُ الحساب ودورُ المدرّب)، وينقل حالتَه إلى طور الموادّ، ومن
+       هذه اللحظة تبدأ مهلتُه. والنشرُ (`decide('activate')`) يبقى قرارا
+       تاليا بعد اعتماد الموادّ — وهو الخطوة ⑤.
+
+       ── وأمانُ منح الدور مقيسٌ لا مفترَض ──
+
+       دورُ `trainer` يحمل معه أبوابَ الشعب والمال. وهي مغلقةٌ عليه بعدُ:
+       بابُ الحساب البنكيّ محروسٌ بـ`active_only` في `trainer-bank.service`،
+       وأبوابُ الشعب تُقيَّد بشعبه هو — ولا شعبةَ له قبل الإسناد، والإسنادُ
+       لا يقع قبل النشر (البند 2-11). فما يُفتح بهذا الدور اليومَ هو طورُ
+       الموادّ وحدَه. */
     /* حارسُ التضارب نفسُه الذي في `decide`: من يعتمد عقدا يفتح به حسابا
        ويمنح دورا. وهو يجري هنا أيضا لأنّ العقدَ قد لا يحبس التفعيلَ
        (`gatesActivation = false`)، فلا يُنادى `decide` أصلا ولا يجري حارسُها. */
@@ -3660,6 +3662,54 @@ export class TrainerReviewService {
           noteAr: note.length > 0 ? note : null, countersignedAt,
         },
       })
+
+      /* ═══ وهنا يُفتح طورُ الموادّ — ومن هنا تبدأ مهلتُه ═══
+
+         ثلاثةٌ معا في المعاملة نفسِها، لأنّ واحدا منها بلا أخيه يترك المدرّبَ
+         في حالٍ لا مخرجَ منها: مهلةٌ تجري بلا بوّابةٍ تُفتح، أو بوّابةٌ تُفتح
+         بلا مهلةٍ تُقاس، أو حالةٌ تنتقل بلا دورٍ يعبر بها حارسَ الصلاحيّة.
+
+         ولا شيءَ منها لعقدٍ لا يحبس التفعيل (`gatesActivation = false`): ذاك
+         بندٌ يُوثَّق على مدرّبٍ نشطٍ أصلا — لا طورَ موادٍّ له ولا مهلة. */
+      if (c.gatesActivation) {
+        /* ① المهلةُ من الاعتماد لا من التوقيع: «بعدها لديك ٥ أيّام» — ﻭ«بعدها»
+              في كلام صاحب المنصّة هي الخطوةُ ③، اعتمادُنا. وهو الأصحُّ قانونا
+              كذلك: كانت تجري عليه قبل أن تسري الاتفاقيّةُ من الطرفين. */
+        await tx.trainerContract.update({
+          where: { id: c.id },
+          data: { conditionDeadlineAt: deadlineFrom(countersignedAt) },
+        })
+
+        /* ② وحقُّ الولوج يُمنَح فعلا لا اسما: ربطُ حسابِ المتقدّم بالملفّ،
+              ورفعُه من `trainer_applicant` إلى `trainer`. وبلا هذا تبقى
+              البوّابةُ مقفلةً مهما قالت الحالةُ — وهي العلّةُ التي جعلت طورَ
+              الموادّ غيرَ مطروقٍ منذ بُني. */
+        const applicantUserId = c.profile.application.userId
+        if (applicantUserId) {
+          if (c.profile.userId == null) {
+            await tx.trainerProfile.update({
+              where: { id: c.profileId }, data: { userId: applicantUserId },
+            })
+          }
+          await tx.userRole.deleteMany({
+            where: { userId: applicantUserId, roleId: 'trainer_applicant' },
+          })
+          await tx.userRole.upsert({
+            where: { userId_roleId: { userId: applicantUserId, roleId: 'trainer' } },
+            create: { userId: applicantUserId, roleId: 'trainer' },
+            update: {},
+          })
+        }
+
+        /* ③ والحالةُ تنتقل إلى طور الموادّ. وشرطُه شرعيّةُ النقل من الخريطة
+              نفسِها التي تمنع في `transition` — لا بمِحَكٍّ ثانٍ يفترق عنها. */
+        if (transitionProblemAr(c.profile.application.status as TrainerStatus, 'onboarding') === null) {
+          await this.apps.transition(
+            c.profile.applicationId, 'onboarding', actorId,
+            'اعتمادُ التوقيع — وبه يُفتح طورُ الموادّ', tx,
+          )
+        }
+      }
     })
 
     /* ═══ ولا يُفتح الحساب من هنا (٢٠ سبتمبر ٢٠٢٦) ═══
@@ -3688,26 +3738,52 @@ export class TrainerReviewService {
         subject: `اعتُمد عقدُك — ${c.title}`,
         ...renderMail({
           greetingName: c.signerLegalName ?? app.fullName,
-          heading: 'اعتُمد عقدُك',
+          heading: c.gatesActivation ? 'اعتُمد توقيعُك — وبوّابتُك مفتوحة' : 'اعتُمد عقدُك',
           blocks: [
             {
               kind: 'p',
               text: `اعتمدت الأكاديميّةُ توقيعَك على «${c.title}» بتاريخ ${fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' })}، فصار العقدُ نافذا بين الطرفين.`,
             },
-            /* ولا يُوعَد بحسابٍ في هذه الرسالة: فتحُه قرارٌ تالٍ بيد الأكاديميّة،
-               ورسالتُه تخرج عنده (`completeConditionalOffer`). ووعدٌ هنا يجعل من ينتظر
-               ساعةً يظنّ أنّ شيئا تعطّل. */
-            { kind: 'note' as const, text: 'ويصلك فتحُ حسابك في رسالةٍ تالية حين يكتمل اعتمادُك.' },
+            /* ═══ وفتحُ البوّابة يُقال هنا لأنّه وقع هنا (٢٧ سبتمبر ٢٠٢٦) ═══
+
+               كان السطرُ: «ويصلك فتحُ حسابك في رسالةٍ تالية حين يكتمل
+               اعتمادُك» — وعلّتُه أنّ الفتحَ كان قرارا تاليا.
+
+               وقرارُ صاحب المنصّة: «هنا اعتُمد التوقيع، واتّفقنا أنّه يمنح
+               حقَّ الولوج لمنصّته تلقائيّا وتتحوّل حالتُه إلى الحالة التي
+               تليها ليقوم بتعبئة موادّه ومحاوره». وقد صار كذلك في المعاملة
+               نفسِها التي تكتب هذا الاعتماد.
+
+               فيُقال له إنّ بابَه مفتوحٌ الآن، ويُعطى الزرَّ — وقد كان
+               يُمنَع منه لأنّ البوّابةَ قد لا تكون مفتوحة. */
+            ...(c.gatesActivation
+              ? ([
+                  {
+                    kind: 'p' as const,
+                    text: 'وبذلك فُتحت لك بوّابتُك على المنصّة، وبدأت مهلتُك لوضع محاور دوراتك ومصادرها وواجباتها.',
+                  },
+                  { kind: 'h' as const, text: 'وماذا بعد' },
+                  {
+                    kind: 'steps' as const,
+                    items: [
+                      { textAr: 'قرأتَ العرضَ ووقّعتَه.', state: 'done' as const },
+                      { textAr: 'راجعنا توقيعَك وطابقنا اسمَك القانونيَّ واعتمدناه.', state: 'done' as const },
+                      { textAr: 'ادخلْ بوّابتَك وضَعْ محاورَ دوراتك ومصادرَها، ثمّ أعلِنْ اكتمالَها — والدورُ عليك الآن.', state: 'now' as const },
+                      { textAr: 'نراجع موادَّك: ما اعتمدناه تدرّسه، وما أعدناه يصلك بملاحظاتنا لتعدّله.' },
+                      { textAr: 'وباعتمادها يُنشَر حسابُك رسميّا وتبدأ باستقبال الطلبات.' },
+                    ],
+                  },
+                  {
+                    kind: 'cta' as const,
+                    label: 'افتح بوّابتَك وضَعْ موادَّك',
+                    href: `${publicSiteUrl()}/trainer`,
+                  },
+                ] as const)
+              : ([] as const)),
             /* ═══ وسجلُّ التوقيعَين تمّ الآن، فيُقال أين يُقرأ ═══
 
                ولحظةُ الاعتماد هي أوّلُ لحظةٍ يصير فيها للنسخة **توقيعان**:
-               قبلها كان توقيعُه وحدَه. فهذه الرسالةُ موضعُ الإحالة الطبيعيّ —
-               ومن كان حسابُه مفتوحا يفتحها الآن، ومن لم يُفتح بعدُ يجدها
-               فيه حين يُفتح.
-
-               ولا `cta` ههنا: الرسالةُ تحمل وعدَ فتحِ الحساب في السطر الذي
-               قبلها، وزرٌّ إلى بوّابةٍ قد لا تكون مفتوحةً يردُّه إلى شاشة
-               دخولٍ يقرأها إخلافا للوعد. فسطرُ ملحوظةٍ يقول الموضعَ بلا وعد. */
+               قبلها كان توقيعُه وحدَه. فهذه الرسالةُ موضعُ الإحالة الطبيعيّ. */
             {
               kind: 'note',
               text: 'ونسختُك بتوقيع الطرفين في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها وتحتها سجلُّ التوقيعَين، ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.',
@@ -3715,8 +3791,7 @@ export class TrainerReviewService {
             {
               kind: 'note',
               text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك عرضا مستقلّا تقبله أو تعتذر عنه.',
-            },
-          ],
+            },          ],
         }),
       })
     } catch { /* البريدُ رفاهية — الاعتمادُ وقع، والنسخةُ تُعاد من الإدارة */ }
@@ -3738,73 +3813,39 @@ export class TrainerReviewService {
      باسمٍ آخرَ في خانة التوقيع ليست وثيقةً تامّة، ومن ينازع فيها بعد سنةٍ
      يجد الثغرةَ مكتوبةً في متنها.
 
-     والبابان اثنان، ولا يغني أحدُهما عن الآخر:
+     والأبوابُ ثلاثةٌ كانت، فصارت اثنين (٢٧ سبتمبر ٢٠٢٦):
 
      ① **قبل التجميد** — الموظّفُ يكتب الاسمَ مطابقا للوثيقة في شاشة التركيب،
         ويُحفَظ في الملفّ فيَرِثه كلُّ عقدٍ بعده (`composeContract`).
-     ② **قبل التوقيع** — المدرّبُ يقول «اسمي في هويّتي غيرُ هذا» ويكتبه بخطّه،
-        فيقف التوقيعُ ويصل طلبُه. وهو الأصدق: صاحبُ الاسم أعلمُ به منّا.
+     ② **في التوقيع نفسِه** — المدرّبُ يكتب اسمَه القانونيَّ في خانة التوقيع،
+        فيكون هو `signerLegalName` الذي نطابقه بوثيقته قبل أن نعتمد. وهو
+        الأصدق: صاحبُ الاسم أعلمُ به منّا. وفوق الخانة تنبيهٌ يقول له أن
+        يتأكّد أنّه ما في هويّته أو جوازه.
+     ③ **وبعد وقوع الخطأ** — يُرفَض التوقيعُ فيُعاد العقدُ مصحَّحا بنقرةٍ
+        (`reissueWithCorrectedName`) — فيُوفى بما وعد به بريدُ الرفض.
 
-     وثالثٌ بعد وقوع الخطأ: يُرفَض التوقيعُ فيُعاد العقدُ مصحَّحا بنقرةٍ
-     (`reissueWithCorrectedName`) — فيُوفى بما وعد به بريدُ الرفض. */
+     ــ وبابٌ رابعٌ أُغلق: زرُّ «اسمي في هويّتي غيرُ هذا» قبل التوقيع. علّتُه
+     أدناه، وخلاصتُها أنّه كان بابا ثانيا إلى ما يفعله ② أصلا، ويوقف العقدَ
+     بحالةِ اعتراضٍ على بند. */
 
-  /** «اسمي في هويّتي غيرُ هذا» — يقف التوقيعُ ويصل الاسمُ الصحيحُ إلينا.
-   *
-   *  ولا يُوقَّع ثمّ يُصحَّح: من وقّع وثيقةً تسمّي غيرَه فقد وقّع وثيقةً
-   *  تسمّي غيرَه، ولا يُمحى ذلك بتصحيحٍ بعده. فالوقوفُ قبل التوقيع هو
-   *  الحمايةُ، ورفضُ التوقيع بعده إصلاحُ ما فات. */
-  async requestNameCorrection(token: string, legalNameAr: string) {
-    const c = await this.openByToken(token)
-    const name = (legalNameAr ?? '').trim()
-    if (name.length < 4) {
-      throw new AuthError('no_name', 'اكتب اسمَك كاملا كما في وثيقة هويّتك', 422)
-    }
-    if (name.length > 120) {
-      throw new AuthError('name_too_long', 'الاسمُ أطولُ ممّا تتّسع له خانةُ الطرف الثاني', 422)
-    }
-    /* والمطبوعُ في وثيقته هو ما نقارن به: اسمٌ يطابق ما في المتن ليس تصحيحا،
-       ومن أرسله ظانّا أنّه يصحّح يقف عقدُه بلا سببٍ ويُنتظَر جوابٌ لا معنى له. */
-    const printed = (c.profile.legalNameAr ?? c.profile.application.fullName ?? '').trim()
-    if (name === printed) {
-      throw new AuthError(
-        'same_name',
-        'هذا هو الاسمُ المكتوبُ في العقد نفسُه — فإن كان صحيحا فوقّعْ، وإن كان فيه فرقٌ فاكتبْه بفرقه',
-        422,
-      )
-    }
+  /** ═══ وبابُ المدرّب أُغلق — قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) ═══
 
-    const requestedAt = new Date()
-    const requestAr = `تصحيحُ اسم الطرف الثاني — يقول المدرّبُ إنّ اسمَه في وثيقة هويّته: ${name}`
-    const done = await this.prisma.trainerContract.updateMany({
-      where: { id: c.id, status: 'sent' },
-      data: {
-        /* ويقف التوقيعُ بالحالة نفسِها التي يقف بها طلبُ التعديل: هي التي
-           تعرفها `canRespondToContract` والشاشاتُ والعاملون. وحالةٌ جديدةٌ
-           لفرقٍ في السبب تُوجب تعديلَ كلّ من يقرأ الحالةَ بلا فائدة. */
-        status: CONTRACT_AMENDMENT_REQUESTED,
-        amendmentRequestAr: requestAr.slice(0, AMENDMENT_TEXT_MAX),
-        amendmentRequestedAt: requestedAt,
-        /* والاسمُ في عموده هو: منه يُبنى البديلُ بنقرةٍ واحدة، ومنه تعرف
-           الشاشةُ أنّ هذا الوقوفَ تصحيحُ اسمٍ لا اعتراضٌ على بند. */
-        nameCorrectionAr: name,
-        nameCorrectionAt: requestedAt,
-      },
-    })
-    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
-    await recordAudit(this.prisma, {
-      actorId: null, action: 'trainer.contract.name_correction_requested',
-      entityType: 'trainer_contract', entityId: c.id,
-      meta: { legalNameAr: name, printedAr: printed },
-    })
-    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
-      channel: 'in_app',
-      templateKey: 'trainer.contract.name_correction_requested',
-      title: 'طلب مدرّبٌ تصحيحَ اسمه في عقده',
-      body: `يقول ${c.profile.application.fullName} إنّ اسمَه في وثيقة هويّته «${name}» — والمطبوعُ في عقده «${printed}». وتصحيحُه بنقرةٍ من شاشة العقود.`,
-      data: { contractId: c.id, applicationId: c.profile.applicationId },
-    })
-    return { ok: true, requestedAt }
-  }
+      كان هنا `requestNameCorrection`: المدرّبُ يضغط «اسمي في هويّتي غيرُ هذا»
+      فيقف عقدُه. وعلّةُ حذفه أنّ الوقوفَ كان بحالة `amendment_requested`
+      نفسِها — فيُرسَم له لوحُ «طلبُك بالتعديل عندنا… ويقف التوقيعُ حتّى
+      نجيبك». ووقع ذلك لمدرّبٍ حقيقيّ: صحّح اسمَه فظنّ أنّه اعترض على بند،
+      وظنّ صاحبُ المنصّة أنّ تصحيحا داخليّا حُسب توقيعا.
+
+      وقولُ صاحب المنصّة: «لا داعيَ للزرّ أصلا — قبل التوقيع يضع المدرّبُ
+      اسمَه القانونيَّ فنطابقه». وخانةُ `legalName` في شاشة التوقيع تفعل
+      ذلك بعينه: ما يُكتب فيها هو `signerLegalName`، وعليه تقع المطابقةُ قبل
+      الاعتماد. فالزرُّ كان بابا ثانيا إلى بابٍ مفتوح.
+
+      ── وما بقي عمدا ──
+
+      `reissueWithCorrectedName` أدناه، وعمودا `nameCorrection*`، وعرضُهما في
+      شاشة العقود، ومعجمُ الأثر. فصفوفٌ سلكت هذا البابَ قبل إغلاقه **قائمةٌ
+      في الإنتاج** — وأداةُ إصلاحها تبقى، وإلّا بقي أصحابُها بلا مخرج. */
 
   /** يُعاد العقدُ مصحَّحا باسمه القانونيّ — بنقرةٍ واحدةٍ تُنشئ البديلَ وترسله.
    *
@@ -4983,7 +5024,15 @@ export class TrainerReviewService {
   async remindConditionDeadlines(now = new Date()): Promise<{ reminded: number }> {
     const candidates = await this.prisma.trainerContract.findMany({
       where: {
-        status: 'signed',
+        /* ═══ وحالُ العرض في طور الموادّ صارت `countersigned` (٢٧ سبتمبر) ═══
+
+           كان الطورُ يبدأ بتوقيعه، فالعرضُ فيه `signed`. وصار يبدأ باعتمادنا،
+           فهو فيه `countersigned`. ولو بقي الشرطُ على `signed` لَوجد العاملُ
+           صفرا أبدا — فلا يُذكَّر أحدٌ ولا يُنذَر، **وينقضي في صمت**. وهو
+           بعينه العطبُ الذي بُني هذا العاملُ ليدفعه، يعود من بابٍ آخر.
+
+           وسقوطُه هذا أمسكه حارسُ `approval-opens-the-materials-door`. */
+        status: 'countersigned',
         gatesActivation: true,
         conditionMetAt: null,
         conditionPausedAt: null,
@@ -5020,7 +5069,7 @@ export class TrainerReviewService {
         daysLeft: left,
         extensionDays: EXTENSION_DAYS,
         portalUrl: `${publicSiteUrl()}/trainer`,
-        extensionSpent: extensionsLeft(c) === 0,
+        extensionsLeft: extensionsLeft(c),
       })
 
       /* ═══ ويُكتب «ذُكِّر» قبل الإرسال ═══
@@ -5051,7 +5100,15 @@ export class TrainerReviewService {
   async noticeLapsedConditions(now = new Date()): Promise<{ noticed: number }> {
     const candidates = await this.prisma.trainerContract.findMany({
       where: {
-        status: 'signed',
+        /* ═══ وحالُ العرض في طور الموادّ صارت `countersigned` (٢٧ سبتمبر) ═══
+
+           كان الطورُ يبدأ بتوقيعه، فالعرضُ فيه `signed`. وصار يبدأ باعتمادنا،
+           فهو فيه `countersigned`. ولو بقي الشرطُ على `signed` لَوجد العاملُ
+           صفرا أبدا — فلا يُذكَّر أحدٌ ولا يُنذَر، **وينقضي في صمت**. وهو
+           بعينه العطبُ الذي بُني هذا العاملُ ليدفعه، يعود من بابٍ آخر.
+
+           وسقوطُه هذا أمسكه حارسُ `approval-opens-the-materials-door`. */
+        status: 'countersigned',
         gatesActivation: true,
         conditionMetAt: null,
         conditionPausedAt: null,
