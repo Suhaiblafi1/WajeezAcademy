@@ -43,8 +43,21 @@
    يكن حكما قائما بنفسه، بل نتيجةَ أنّ المهلةَ تُحسَب منها. */
 export const MATERIALS_WINDOW_DAYS = 5
 
-/** تمديدٌ يُمنح مرّةً واحدةً بطلبه — والثانيةُ تُردّ */
+/** طولُ التمديد الواحد */
 export const EXTENSION_DAYS = 2
+
+/* ═══ ومرّتان لا مرّة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «ويحقّ له طلبُ تمديدٍ ليومين **مرّتين**، أي النتيجةُ
+   ٩ أيّامٍ لو مدّد» — خمسةٌ من التوقيع، ويومان، ويومان.
+
+   وكان الحارسُ `conditionExtendedAt` وحدَه: وجودُه يعني «مُدّد» ولا يقول كم
+   مرّة. فصار العدُّ في عمودٍ (`conditionExtensionsUsed`)، والتاريخُ يبقى
+   آخرَ تمديدٍ مُنح — يُقرأ في الشاشة وفي بريد التذكير. */
+export const MAX_EXTENSIONS = 2
+
+/** أقصى ما تبلغه المهلةُ لو مُدّدت كلَّ مرّاتها — يُقرأ في العقد والشاشة */
+export const MAX_TOTAL_WINDOW_DAYS = MATERIALS_WINDOW_DAYS + MAX_EXTENSIONS * EXTENSION_DAYS
 
 /** قبل يومَين يذكّر العاملُ مرّةً واحدة */
 export const REMINDER_LEAD_DAYS = 2
@@ -80,6 +93,8 @@ export interface ConditionFacts {
   /** يُكتب حين يُعلن الاكتمال؛ ويُمحى عند الردّ بملاحظات */
   conditionPausedAt?: DateLike
   conditionExtendedAt?: DateLike
+  /** كم مرّةً مُنح التمديد — والغائبُ صفر */
+  conditionExtensionsUsed?: number | null
   conditionRemindedAt?: DateLike
   /** اعتُمدت موادُّه — انتهت المهلة */
   conditionMetAt?: DateLike
@@ -170,19 +185,28 @@ export function deadlineAfterPause(f: ConditionFacts, resumedAt: Date): Date | n
   return new Date(due.getTime() + frozen)
 }
 
-/* ═══ التمديدُ مرّةً واحدة ═══
+/* ═══ التمديدُ مرّتان ═══
 
-   والثانيةُ تُردّ بنصٍّ يُقرأ، لا بصمتٍ ولا بزرٍّ مطفإ: من طلب مرّتين يحتاج
-   أن يعرف أنّ الأولى مُنحت وأنّ بابَه الآن التأجيلُ إلى الموسم القادم. */
+   والثالثةُ تُردّ بنصٍّ يُقرأ، لا بصمتٍ ولا بزرٍّ مطفإ: من طلب ثالثةً يحتاج
+   أن يعرف أنّ مرّتيه أُنفقتا وأنّ بابَه الآن التأجيلُ إلى الموسم القادم.
+
+   والعدُّ من العمود لا من التاريخ: التاريخُ يقول «مُدّد» ولا يقول كم مرّة.
+   ويُقرأ الغائبُ صفرا — فصفوفُ ما قبل العمود مضبوطةٌ في ترحيلها. */
 export function extendProblemAr(f: ConditionFacts): string | null {
-  if (asDate(f.conditionExtendedAt)) {
-    return `مُنح التمديدَ مرّةً (${EXTENSION_DAYS} يومين) ولا يُمنح ثانية — وبابُه الآن التأجيلُ إلى الموسم القادم.`
+  const used = f.conditionExtensionsUsed ?? 0
+  if (used >= MAX_EXTENSIONS) {
+    return `أُنفقت مرّاتُ التمديد (${MAX_EXTENSIONS} × ${EXTENSION_DAYS} يومين) ولا تُمنح ثالثة — وبابُه الآن التأجيلُ إلى الموسم القادم.`
   }
   if (!asDate(f.conditionDeadlineAt)) {
-    return 'لا مهلةَ لهذا العرض — اكتب تاريخَ جلسة التهيئة أوّلا، فمنه تُحسب.'
+    return 'لا مهلةَ لهذا العرض — وهي تبدأ بتوقيعه.'
   }
   if (asDate(f.conditionMetAt)) return 'اعتُمدت موادُّه — لا مهلةَ تُمدَّد.'
   return null
+}
+
+/** كم تمديدا بقي له — يُقرأ تحت الزرّ فلا يضغط ليعرف */
+export function extensionsLeft(f: ConditionFacts): number {
+  return Math.max(0, MAX_EXTENSIONS - (f.conditionExtensionsUsed ?? 0))
 }
 
 export function extendedDeadline(f: ConditionFacts): Date | null {

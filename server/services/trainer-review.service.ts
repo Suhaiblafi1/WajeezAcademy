@@ -34,7 +34,7 @@ import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
-  EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft,
+  EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft, extensionsLeft,
   materialsGateProblemAr,
   deadlineAfterPause, deadlineFrom, dueReminder, extendProblemAr, extendedDeadline,
   offerGatesActivation,
@@ -923,6 +923,7 @@ export class TrainerReviewService {
         select: {
           id: true, orientationAt: true, conditionDeadlineAt: true,
           conditionPausedAt: true, conditionExtendedAt: true, conditionMetAt: true,
+          conditionExtensionsUsed: true,
         },
       })
       const materialsProblem = openOffer
@@ -1971,6 +1972,7 @@ export class TrainerReviewService {
              «ألغِ» — وكلاهما جوابٌ عن سؤالٍ آخر. */
           conditionDeadlineAt: true, conditionPausedAt: true,
           conditionExtendedAt: true, conditionMetAt: true, orientationAt: true,
+          conditionExtensionsUsed: true,
           /* وطلبُ التعديل وجوابُه: كانت القائمةُ تعرض الحالةَ ولا تعرض
              ما طُلِب — فيرى الموظّفُ «amendment_requested» ولا يدري ما المطلوب. */
           amendmentRequestAr: true, amendmentRequestedAt: true,
@@ -2338,7 +2340,7 @@ export class TrainerReviewService {
     return { pausedAt: now }
   }
 
-  /** «امنحني يومين» — مرّةً واحدة، والثانيةُ تُردّ بنصٍّ يُقرأ لا بزرٍّ مطفإ */
+  /** «امنحني يومين» — مرّتان، والثالثةُ تُردّ بنصٍّ يُقرأ لا بزرٍّ مطفإ */
   async requestConditionExtension(userId: string, now = new Date()) {
     const { contract } = await this.openConditionContract(userId)
     const problem = extendProblemAr({ ...contract, now })
@@ -2350,22 +2352,31 @@ export class TrainerReviewService {
       data: {
         conditionDeadlineAt: next,
         conditionExtendedAt: now,
+        /* والعدُّ يُزاد ذرّيّا: نقرتان متزامنتان تقرآن العددَ نفسَه ثمّ تكتبانه
+           فيُمنَح تمديدان بحساب واحد. و`increment` يَعُدّ في القاعدة لا هنا. */
+        conditionExtensionsUsed: { increment: 1 },
         /* ويُمحى خَتمُ التذكير: المهلةُ الجديدةُ تستحقّ تذكيرَها قبل يومين
            منها هي، لا أن يُحسَب مذكَّرا بمهلةٍ لم تعد قائمة. */
         conditionRemindedAt: null,
       },
     })
+    const left = extensionsLeft({
+      conditionExtensionsUsed: (contract.conditionExtensionsUsed ?? 0) + 1,
+    })
     await recordAudit(this.prisma, {
       actorId: null, action: 'trainer.contract.condition_extended',
       entityType: 'trainer_contract', entityId: contract.id,
-      meta: { until: next.toISOString(), days: EXTENSION_DAYS },
+      meta: { until: next.toISOString(), days: EXTENSION_DAYS, extensionsLeft: left },
     })
     /* وهو طلبَه، لكنّ **الرقمَ الجديدَ هو الخبر**: مهلةٌ تُمدَّد بلا أن يُقال
        إلى متى تترك صاحبَها يحسبها بنفسه. */
     await this.notifyTrainerUser(contract.profileId, {
       templateKey: 'trainer.contract.condition_extended',
       title: `مُدّت مهلتُك ${EXTENSION_DAYS} يومين`,
-      body: `تنتهي مهلتُك الآن في ${fmtDateWith(next, { year: 'numeric', month: 'long', day: 'numeric' })}. وهو التمديدُ الوحيد.`,
+      /* وكم بقي له يُقال في الخبر نفسِه: «وهو التمديدُ الوحيد» كانت تصدُق
+         يومَ كان واحدا. وصارت مرّتين، فيُقال ما بقي — لا يُترك يحسبه. */
+      body: `تنتهي مهلتُك الآن في ${fmtDateWith(next, { year: 'numeric', month: 'long', day: 'numeric' })}. `
+        + (left > 0 ? `ولك تمديدٌ ${left === 1 ? 'واحدٌ' : `${left}`} بعدُ.` : 'وهو آخرُ تمديدٍ لك.'),
       data: { contractId: contract.id, deadlineAt: next.toISOString() },
     })
     return { deadlineAt: next }
@@ -4982,6 +4993,7 @@ export class TrainerReviewService {
       },
       select: {
         id: true, conditionDeadlineAt: true, conditionExtendedAt: true,
+        conditionExtensionsUsed: true,
         profile: { select: { application: { select: { fullName: true, email: true, reference: true } } } },
       },
       take: 200,
@@ -5008,7 +5020,7 @@ export class TrainerReviewService {
         daysLeft: left,
         extensionDays: EXTENSION_DAYS,
         portalUrl: `${publicSiteUrl()}/trainer`,
-        extensionSpent: c.conditionExtendedAt != null,
+        extensionSpent: extensionsLeft(c) === 0,
       })
 
       /* ═══ ويُكتب «ذُكِّر» قبل الإرسال ═══

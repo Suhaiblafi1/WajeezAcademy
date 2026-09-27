@@ -76,9 +76,21 @@ describe('زرُّ التمديد أضيقُ من قبول الخادم بقصد
     expect(canAskExtension(lapsed)).toBe(false)
   })
 
-  it('ولا لمن مُنح التمديدَ مرّةً', () => {
-    const once = { ...running, conditionExtendedAt: new Date(NOW.getTime() - DAY) }
-    expect(canAskExtension(once)).toBe(false)
+  /* ═══ ومرّتان لا مرّة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان يقيس أنّ من مُدّد له **مرّةً** لا يُعرض له الزرّ. وقرارُ صاحب
+     المنصّة: «ويحقّ له طلبُ تمديدٍ ليومين مرّتين». فقُلب: تُقاس الثانيةُ
+     مفتوحةً والثالثةُ مغلقة.
+
+     والمِحَكُّ العدّادُ لا التاريخُ: من مُدّد مرّةً تاريخُه مكتوبٌ وله
+     ثانيةٌ بعدُ — فقياسٌ على التاريخ يغلق بابا مفتوحا. */
+  it('وتُعرض ثانيةً لمن مُدّد مرّةً، وتُغلق بعد مرّتين', () => {
+    const after = (used: number) => ({
+      ...running, conditionExtendedAt: new Date(NOW.getTime() - DAY),
+      conditionExtensionsUsed: used,
+    })
+    expect(canAskExtension(after(1)), 'أُغلق بابٌ مفتوح — وله تمديدٌ ثانٍ').toBe(true)
+    expect(canAskExtension(after(2)), 'فُتح بابٌ أُنفقت مرّاتُه').toBe(false)
   })
 
   it('ولا للمجمَّدة — موادُّه عندنا، والمهلةُ واقفةٌ أصلا', () => {

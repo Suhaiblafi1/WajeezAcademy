@@ -53,6 +53,8 @@ export interface ConditionContract {
   conditionDeadlineAt?: string | null;
   conditionPausedAt?: string | null;
   conditionExtendedAt?: string | null;
+  /** كم مرّةً مُدّدت — والسقفُ مرّتان (`MAX_EXTENSIONS`) */
+  conditionExtensionsUsed?: number | null;
   conditionMetAt?: string | null;
 }
 

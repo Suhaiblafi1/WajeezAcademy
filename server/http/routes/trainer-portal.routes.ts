@@ -166,6 +166,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
             terminatedAt: true, createdAt: true,
             conditionDeadlineAt: true, conditionPausedAt: true,
             conditionExtendedAt: true, conditionMetAt: true,
+            conditionExtensionsUsed: true,
           },
         },
       },

@@ -78,7 +78,8 @@ interface ContractRow {
   amendmentRequestAr: string | null; amendmentRequestedAt: string | null;
   amendmentReplyAr: string | null; amendmentRepliedAt: string | null;
   conditionDeadlineAt: string | null; conditionPausedAt: string | null;
-  conditionExtendedAt: string | null; conditionMetAt: string | null;
+  conditionExtendedAt: string | null; conditionExtensionsUsed?: number | null;
+  conditionMetAt: string | null;
   orientationAt: string | null;
   documents: { id: string; kind: string; originalName: string; mime: string; uploadedAt: string }[];
   qualifiedSnapshot: { courseId: string; titleAr: string }[] | null;
@@ -143,6 +144,7 @@ const conditionFactsOf = (c: ContractRow) => ({
   conditionDeadlineAt: c.conditionDeadlineAt,
   conditionPausedAt: c.conditionPausedAt,
   conditionExtendedAt: c.conditionExtendedAt,
+  conditionExtensionsUsed: c.conditionExtensionsUsed,
   conditionMetAt: c.conditionMetAt,
 });
 

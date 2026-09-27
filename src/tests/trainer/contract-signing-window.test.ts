@@ -141,6 +141,6 @@ describe('⑤ وما يلزمه قبل أن نوقّع — الفجوةُ الت
 
 describe('⑥ وصياغةُ المتن تُرفَع — فلا يُقرأ متنٌ جديدٌ بإصدارٍ قديم', () => {
   it('الإصدارُ بعد اليوم', () => {
-    expect(CONTRACT_BODY_VERSION).toBe('v10-2026-09-27')
+    expect(CONTRACT_BODY_VERSION).toBe('v11-2026-09-27')
   })
 })
