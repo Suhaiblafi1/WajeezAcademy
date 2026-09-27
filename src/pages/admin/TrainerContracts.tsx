@@ -179,6 +179,9 @@ interface OfferOption {
   courses: OfferOptionCourse[];
 }
 
+/** وجهةُ خطإ المركِّب — ليست معرّفَ صفٍّ، فلا يلتبس بعقدٍ في القائمة */
+const COMPOSE_ERR = "__compose__";
+
 export default function TrainerContracts() {
   const [contracts, setContracts] = useState<ContractRow[]>([]);
   const [candidates, setCandidates] = useState<CandidateRow[]>([]);
@@ -348,7 +351,7 @@ export default function TrainerContracts() {
   useEffect(() => { void load(); }, [load]);
 
   const openComposer = async (c: CandidateRow) => {
-    setErr(""); setNote(""); setPreview("");
+    setErr(""); setNote(""); setPreview(""); setComposeErr("");
     try {
       const p = await apiGet<Prefill>(`/api/admin/trainer-applications/${c.id}/contract-prefill`);
       setPrefill(p); setOpenFor(c);
@@ -404,17 +407,34 @@ export default function TrainerContracts() {
      الصفحةَ كلَّها — تعذُّرُ التحميل، وتركيبُ عقدٍ جديد. */
   const [rowErr, setRowErr] = useState<{ id: string; text: string } | null>(null);
 
+  /* ═══ وخطأُ المركِّب يُرسَم عند زرّه (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «why can't i ركب عقد؟».
+
+     والخادمُ كان يجيبه فعلا — «لهذا المدرّبِ عقدٌ مفتوح»، أو «لا قاعدةَ
+     أتعاب»، أو «وثيقةُ هويّةٍ إلزاميّة» — لكنّ الجوابَ يُرسَم في **رأس
+     الصفحة**، وزرُّ التركيب في آخر نموذجٍ طويل: عنوانٌ واسمٌ قانونيٌّ ودوراتٌ
+     ووثائقُ وأتعابٌ وجلسةٌ وحجمُ عمل. فمن ضغطه لم يرَ شيئا يتغيّر.
+
+     وهو العطبُ نفسُه الذي أُصلح لصفوف العقود في ٢٦ سبتمبر بعد بلاغه «لا يتمّ
+     التوقيع ولا يتغيّر شيءٌ بالصفحة» — أُصلح هناك وتُرك هنا. */
+  const [composeErr, setComposeErr] = useState("");
+
   /* و`fn` لها أن تردّ نصَّ نجاحها: فعلٌ واحدٌ يقع أثرُه على وجهَين — يُختَم
      عرضٌ فيُفتح حسابٌ، أو يُوثَّق بندٌ على نشطٍ فلا تُمسّ حالتُه — لا يُقال
      عنه نصٌّ واحدٌ يصدق في إحداهما. وما لم تردّ شيئا فنصُّ `ok`. */
   const run = async (fn: () => Promise<void | string>, ok: string, rowId?: string) => {
-    setBusy(true); setErr(""); setNote(""); setRowErr(null);
+    setBusy(true); setErr(""); setNote(""); setRowErr(null); setComposeErr("");
     try {
       const said = await fn();
       setNote(typeof said === "string" ? said : ok);
     } catch (e) {
       const text = permissionMessage(e, "تعذّر الإجراء");
-      if (rowId) setRowErr({ id: rowId, text }); else setErr(text);
+      /* وثلاثةُ مواضعَ للرسم لا اثنان: الصفُّ لمن ضغط في صفّ، والمركِّبُ لمن
+         ضغط في نموذجه، والرأسُ لما يعمّ الصفحةَ (تعذُّرُ التحميل). */
+      if (rowId === COMPOSE_ERR) setComposeErr(text);
+      else if (rowId) setRowErr({ id: rowId, text });
+      else setErr(text);
     }
     finally { setBusy(false); }
   };
@@ -665,7 +685,7 @@ export default function TrainerContracts() {
                 const r = await apiPost<{ bodyAr: string }>(
                   `/api/admin/trainer-applications/${prefill.applicationId}/contract-preview`, composeBody);
                 setPreview(r.bodyAr);
-              }, "عُرضت المعاينة")}>
+              }, "عُرضت المعاينة", COMPOSE_ERR)}>
               عايِنِ المتنَ كما يراه
             </Button>
             <Button tone="confirm" icon={FileSignature} loading={busy}
@@ -674,10 +694,14 @@ export default function TrainerContracts() {
                 await apiPost(`/api/admin/trainer-applications/${prefill.applicationId}/contracts/compose`, composeBody);
                 setOpenFor(null); setPrefill(null); setPreview("");
                 await load();
-              }, "رُكّب العقدُ وجُمّد متنُه")}>
+              }, "رُكّب العقدُ وجُمّد متنُه", COMPOSE_ERR)}>
               ركّبْ وجمّدِ المتن
             </Button>
           </div>
+
+          {composeErr && (
+            <Panel tone="danger" className="mt-3 p-3 text-read" role="alert">{composeErr}</Panel>
+          )}
 
           {preview && (
             <section className="mt-4">

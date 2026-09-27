@@ -44,6 +44,7 @@
 
 import type { ContractCompensation } from './contract-body'
 import { perSeatBreakdown } from './seat-fee'
+import { countAr } from '../text/count-ar'
 
 /* ═══ دورةٌ واحدةٌ بعشرين مسجّلا، وثلاثةُ مصادر ═══
 
@@ -253,7 +254,12 @@ export function feeExampleContractAr(ex: FeeExample, c: ContractCompensation): s
     ? 'وأتعاب المدرب في هذا المثال مبلغ ثابت عن الشعبة، فلا تتغير بعدد المسجلين، وعدد الشعب أعلاه مفترض.'
     : `والأسعار المطبقة أعلاه هي المبينة في هذا الملحق (${
       c.referralRate ? `${c.referralRate} ${c.currency} للمقعد عبر رابط دعوته، و${c.rate} للمقعد العام` : `${c.rate} ${c.currency} للمقعد`
-    }${c.minSeats && c.minSeats > 0 ? `، وحد أدنى ${c.minSeats} مقعدا` : ''}).`
+    }${c.minSeats && c.minSeats > 0
+      /* والتمييزُ بالمعجم لا بلفظٍ واحدٍ لكلّ عدد: كان «وحد أدنى 5 مقعدا»،
+         وصوابُه «5 مقاعد» — وهو مكتوبٌ صحيحا في الملحق نفسِه قبله بأسطر،
+         فتقرأ الوثيقةُ العددَ نفسَه بلفظين. */
+      ? `، وحد أدنى ${countAr(c.minSeats, { one: 'مقعد', two: 'مقعدين', few: 'مقاعد', many: 'مقعدا' })}`
+      : ''}).`
 
   return [
     FEE_EXAMPLE_HEADING_AR,
