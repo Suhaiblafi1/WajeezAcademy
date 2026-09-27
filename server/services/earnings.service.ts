@@ -4,15 +4,20 @@
    النماذج كانت موجودة في القاعدة (TrainerPayout/TrainerPayoutItem) — هذه الخدمة
    هي أول من يفعّلها فعليًا. */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { perSeatBreakdown } from '../../src/application/trainer/seat-fee'
-import { settleAgainst } from '../../src/application/trainer/issued-discount'
+import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
+import { cohortLeadTrainer } from './cohort-lead'
 
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/ // «2026-08»
+
+/* مرجعا بنود الحسم في الكشف — بهما يُعرف عند إلغاء الكشف ما يُعاد وإلى أين */
+const LEGACY_REF = 'trainer_discount:'
+const CODE_REF = 'trainer_code:'
 
 export class EarningsService {
   private prisma: PrismaClient
@@ -41,7 +46,7 @@ export class EarningsService {
        كانت الصفحةُ تعرض ما قُبض وما يُنتظر، ولا تعرض **على أيّ أساس**: القاعدةُ
        التي أكّدتها الإدارةُ تبقى في شاشة الإدارة، فيقرأ المدرّبُ رقما لا يعرف
        من أين جاء. والاتفاقُ المسبقُ حقُّه أن يراه قبل أن يُحسب له شيء. */
-    const [agreement, rules, cohortRows, awaiting] = await Promise.all([
+    const [agreement, rules, cohortRows, awaiting, awaitingCodes] = await Promise.all([
       this.activeRule(profile.id),
       this.listRules(profile.id),
       /* ═══ شعبةً شعبة: كم عامّا وكم عبر رابطك، وبأيّ أجر ═══
@@ -61,6 +66,13 @@ export class EarningsService {
         where: { profileId: profile.id, status: 'used', settledItemId: null },
         include: { coupon: { select: { code: true } } },
         orderBy: { usedAt: 'asc' },
+      }),
+      /* وكودُه بالنسبة من دفتره: ما لم يُقابَل ببندٍ بعد — حسمٌ ينتظر، أو
+         إعادةٌ عن شراءٍ رُدّ ثمنُه بعد أن حُسم */
+      this.prisma.trainerCodeRedemption.findMany({
+        where: { profileId: profile.id, pending: { not: 0 } },
+        include: { code: { select: { labelAr: true, coupon: { select: { code: true } } } } },
+        orderBy: { paidAt: 'asc' },
       }),
     ])
     const cohorts = await Promise.all(cohortRows.map(async (ct) => {
@@ -86,12 +98,26 @@ export class EarningsService {
         projected: breakdown === null ? null : breakdown.total,
       }
     }))
-    const awaitingDiscounts = {
-      total: awaiting.reduce((sum, d) => sum + Number(d.amount), 0),
-      currency: awaiting[0]?.currency ?? summary.currency,
-      rows: awaiting.map((d) => ({
+    const codeDue = awaitingCodes.filter((r) => Number(r.pending) > 0)
+    const codeBack = awaitingCodes.filter((r) => Number(r.pending) < 0)
+    const awaitingRows = [
+      ...awaiting.map((d) => ({
         id: d.id, code: d.coupon.code, amount: Number(d.amount),
         currency: d.currency, forWhomAr: d.forWhomAr, usedAt: d.usedAt,
+      })),
+      ...codeDue.map((r) => ({
+        id: r.id, code: r.code.coupon.code, amount: Number(r.pending),
+        currency: r.currency, forWhomAr: r.code.labelAr, usedAt: r.paidAt,
+      })),
+    ]
+    const awaitingDiscounts = {
+      total: Math.round(awaitingRows.reduce((sum, d) => sum + d.amount, 0) * 100) / 100,
+      currency: awaitingRows[0]?.currency ?? summary.currency,
+      rows: awaitingRows,
+      /* وما يُعاد إليه في الكشف التالي — شراءٌ رُدّ ثمنُه بعد أن حُسم خصمُه */
+      credits: codeBack.map((r) => ({
+        id: r.id, code: r.code.coupon.code, amount: -Number(r.pending),
+        currency: r.currency, forWhomAr: r.code.labelAr, refundedAt: r.refundedAt,
       })),
     }
     return { payouts, summary, agreement, rules, cohorts, awaitingDiscounts }
@@ -235,20 +261,30 @@ export class EarningsService {
   private async transition(
     id: string, actorId: string,
     from: string[], to: string, action: string, extra: Record<string, unknown> = {}, reason?: string,
+    /* ما يقع مع الانتقال في معاملته نفسِها — ويعود أثرُه في سجلّ التدقيق.
+       وأوّلُه إعادةُ ما حُسم حين يُلغى الكشف: انتقالٌ وقع وإعادةٌ لم تقع
+       تُضيّع حسما أو تحسمه مرّتين. */
+    effects?: (tx: Prisma.TransactionClient) => Promise<Record<string, unknown>>,
   ) {
     const payout = await this.prisma.trainerPayout.findUnique({ where: { id } })
     if (!payout) throw new AuthError('unknown_payout', 'الكشف غير موجود', 404)
     if (!from.includes(payout.status)) {
       throw new AuthError('bad_transition', `لا يمكن تنفيذ هذا الإجراء على كشف بحالة «${payout.status}»`, 409)
     }
-    const updated = await this.prisma.trainerPayout.update({
-      where: { id },
-      data: { status: to, ...extra },
-      include: { items: true },
+    let effected: Record<string, unknown> = {}
+    const updated = await this.prisma.$transaction(async (tx) => {
+      /* بشرطِ الحالة في الكتابة نفسِها: إلغاءان متزامنان يُعيدان الحسمَ مرّتين
+         لو مرّ كلاهما، ومن قرأ «معتمَد» ثمّ صُرف الكشفُ قبله لا يُلغيه */
+      const moved = await tx.trainerPayout.updateMany({ where: { id, status: { in: from } }, data: { status: to, ...extra } })
+      if (moved.count === 0) {
+        throw new AuthError('bad_transition', 'تبدّلت حالةُ الكشف قبل تنفيذ هذا الإجراء — حدّث الصفحة', 409)
+      }
+      if (effects) effected = await effects(tx)
+      return tx.trainerPayout.findUniqueOrThrow({ where: { id }, include: { items: true } })
     })
     await recordAudit(this.prisma, {
       actorId, action, entityType: 'TrainerPayout', entityId: id,
-      reason, meta: { from: payout.status, to, period: payout.period, total: Number(payout.total) },
+      reason, meta: { from: payout.status, to, period: payout.period, total: Number(payout.total), ...effected },
     })
     const NOTICES: Record<string, { title: string; body: string }> = {
       approved: {
@@ -321,8 +357,49 @@ export class EarningsService {
     return this.transition(id, actorId, ['approved'], 'paid', 'trainer_payout.pay', { paidAt: new Date() })
   }
 
+  /** الإلغاء — ويعود ما حُسم فيه من خصوم المدرّب إلى الانتظار.
+
+      كان الإلغاءُ يترك الخصمَ القديمَ «محسوما» يشير إلى بندٍ في كشفٍ لن يُصرف:
+      لا يُحسم ثانيةً (`settledItemId` يمنعه) ولا حُسم فعلا — فيضيع على
+      الأكاديميّة ما التزم به المدرّبُ في البند 4-10. فصار يعود في المعاملة نفسِها:
+      الخصمُ القديمُ إلى `used` ليُحسم في الكشف التالي، وكودُه بالنسبة يستردّ
+      دفترُه ما أخذه البند (وإعادةٌ أُلغيت تعود إعادةً تنتظر). */
   cancel(id: string, actorId: string, reason: string) {
-    return this.transition(id, actorId, ['pending', 'approved'], 'cancelled', 'trainer_payout.cancel', {}, reason)
+    return this.transition(id, actorId, ['pending', 'approved'], 'cancelled', 'trainer_payout.cancel', {}, reason,
+      (tx) => this.returnLedgerItems(tx, id))
+  }
+
+  private async returnLedgerItems(tx: Prisma.TransactionClient, payoutId: string) {
+    const items = await tx.trainerPayoutItem.findMany({ where: { payoutId }, select: { id: true, amount: true, sourceRef: true } })
+    let discountsReturned = 0
+    let codesReturned = 0
+    for (const item of items) {
+      const ref = item.sourceRef ?? ''
+      if (ref.startsWith(LEGACY_REF)) {
+        const row = await tx.trainerIssuedDiscount.findUnique({
+          where: { id: ref.slice(LEGACY_REF.length) }, select: { id: true, status: true, settledItemId: true, usedOrderId: true },
+        })
+        if (!row || row.status !== 'settled' || row.settledItemId !== item.id) continue
+        /* وشراءٌ رُدّ ثمنُه وهو محسومٌ لا يعود «مستعمَلا» فيُحسم ثانيةً */
+        const order = row.usedOrderId
+          ? await tx.order.findUnique({ where: { id: row.usedOrderId }, select: { status: true } })
+          : null
+        await tx.trainerIssuedDiscount.update({
+          where: { id: row.id },
+          data: { status: order?.status === 'refunded' ? 'refunded' : 'used', settledItemId: null, settledAt: null },
+        })
+        discountsReturned += 1
+      } else if (ref.startsWith(CODE_REF)) {
+        /* البندُ أخذ من الدفتر قدرَ مبلغه — فيُعاد إليه قدرُه بعينه: حسمٌ
+           (سالبٌ في الكشف) يعود دَينا، وإعادةٌ (موجبةٌ) تعود إعادةً تنتظر */
+        const back = await tx.trainerCodeRedemption.updateMany({
+          where: { id: ref.slice(CODE_REF.length) },
+          data: { pending: { increment: -Number(item.amount) } },
+        })
+        codesReturned += back.count
+      }
+    }
+    return { discountsReturned, codesReturned }
   }
 
   /* ═══════════ قواعد الأتعاب والتوليد التلقائي من الشعب ═══════════ */
@@ -424,27 +501,8 @@ export class EarningsService {
     return { referred, general: total - referred }
   }
 
-  /* ═══ الأصيلُ يُرشَّح بدوره لا بترتيبٍ أبجديّ ═══
-
-     كان هنا `orderBy: { role: 'asc' }` وفي تعليقه «lead قبل assistant
-     أبجدياً» — **والتعليقُ خاطئ**: `'assistant' < 'lead'`. فكلُّ شعبةٍ فيها
-     مساعدٌ كانت تُحتسب أتعابُها بقاعدة المساعد وبإحالاته هو، والأصيلُ الذي
-     وقّع العقدَ لا يرى مقاعدَ رابطه. وبقيّةُ المستودَع كلُّها ترشّح
-     `role: 'lead'` صراحةً (التقارير · تقويمُ الفصل · خطّةُ الشعبة)، وهذا
-     الموضعُ وحدَه كان يخالفها.
-
-     وشعبةٌ بلا أصيلٍ لا تُحتسب لمساعدٍ سهوا: تسقط إلى الإسناد، ثمّ إلى
-     `no_trainer` — وخطأٌ يُقرأ خيرٌ من صرفٍ لغير صاحبه. */
-  private async cohortLeadTrainer(cohortId: string) {
-    const lead = await this.prisma.cohortTrainer.findFirst({
-      where: { cohortId, role: 'lead' },
-    })
-    if (lead) return lead.profileId
-    const assignment = await this.prisma.trainerCourseAssignment.findFirst({
-      where: { cohortId, status: 'active' },
-    })
-    return assignment?.profileId ?? null
-  }
+  /* ومدرّبُ الشعبة الذي تُحتسب له في `cohort-lead.ts` — يسأله كودُ المدرّب
+     كذلك («أهذه من دوراته؟»)، فالجوابان واحدٌ بالبناء لا بالاتّفاق. */
 
   /* حاسبة مستحقات شعبة — تقرأ القاعدة السارية وتحسب البنود دون إنشاء شيء */
   async computeCohort(cohortId: string) {
@@ -454,7 +512,7 @@ export class EarningsService {
     })
     if (!cohort) throw new AuthError('unknown_cohort', 'الشعبة غير موجودة', 404)
 
-    const profileId = await this.cohortLeadTrainer(cohortId)
+    const profileId = await cohortLeadTrainer(this.prisma, cohortId)
     if (!profileId) throw new AuthError('no_trainer', 'لا مدرب مسنداً لهذه الشعبة', 409)
     /* القاعدة الأدق نطاقاً تفوز: شعبة ← دورة ← عامة */
     const rule = await this.activeRule(profileId, { cohortId, courseId: cohort.courseId })
@@ -572,27 +630,65 @@ export class EarningsService {
        يصير مطالبةً بمالٍ في ذمّته، وذلك ما يمنعه الذيلُ صراحةً. */
     /* ويُقرأ الصفُّ هنا لا عبر `TrainerDiscountService`: تلك تنادي هذه الخدمةَ
        لتحسب رصيدَ المدرّب، فاستيرادُها هنا حلقةُ وحداتٍ في زمن التشغيل. */
-    const pending = await this.prisma.trainerIssuedDiscount.findMany({
-      where: { profileId: computed.profile.id, status: 'used', settledItemId: null },
-      include: { coupon: { select: { code: true } } },
-      orderBy: { usedAt: 'asc' },
-    })
-    const { taken } = settleAgainst(
-      computed.total,
-      pending.map((d) => ({ id: d.id, amount: Number(d.amount) })),
-    )
-    const byId = new Map(pending.map((d) => [d.id, d]))
-    const discountItems = taken.map((t) => {
-      const d = byId.get(t.id)!
-      const usedOn = d.usedAt ? ` · استُعمل ${d.usedAt.toISOString().slice(0, 10)}` : ''
-      return {
-        description: `حسم خصم أصدرتَه — ${d.forWhomAr} (${d.coupon.code})${usedOn}`,
-        amount: -Number(d.amount),
-        sourceRef: `trainer_discount:${d.id}`,
-      }
-    })
-    const items = [...computed.items, ...discountItems]
-    const total = items.reduce((sum, i) => sum + i.amount, 0)
+    const [pending, codeRows] = await Promise.all([
+      this.prisma.trainerIssuedDiscount.findMany({
+        where: { profileId: computed.profile.id, status: 'used', settledItemId: null },
+        include: { coupon: { select: { code: true } } },
+        orderBy: { usedAt: 'asc' },
+      }),
+      /* ═══ وكودُه بالنسبة من دفتره — ما لم يُقابَل ببندٍ بعد ═══
+
+         موجبُه حسمٌ، وسالبُه إعادةٌ عن شراءٍ رُدّ ثمنُه بعد أن حُسم. وعملةُ
+         الكشف شرط: حسمُ ريالٍ من كشفٍ بالدولار رقمٌ بلا معنى — والكتالوجُ
+         كلُّه بالدولار اليوم، فالشرطُ حارسٌ لا مُرشِّح. */
+      this.prisma.trainerCodeRedemption.findMany({
+        where: { profileId: computed.profile.id, pending: { not: 0 }, currency: computed.rule.currency },
+        include: { code: { select: { labelAr: true, percentOff: true, coupon: { select: { code: true } } } } },
+        orderBy: { paidAt: 'asc' },
+      }),
+    ])
+    const legacyById = new Map(pending.map((d) => [`${LEGACY_REF}${d.id}`, d]))
+    const codeById = new Map(codeRows.map((r) => [`${CODE_REF}${r.id}`, r]))
+    const deductions: LedgerEntry[] = [
+      ...pending.map((d) => ({ ref: `${LEGACY_REF}${d.id}`, amount: Number(d.amount), at: d.usedAt ?? d.createdAt })),
+      ...codeRows.filter((r) => Number(r.pending) > 0)
+        .map((r) => ({ ref: `${CODE_REF}${r.id}`, amount: Number(r.pending), at: r.paidAt ?? r.createdAt })),
+    ]
+    const credits: LedgerEntry[] = codeRows.filter((r) => Number(r.pending) < 0)
+      .map((r) => ({ ref: `${CODE_REF}${r.id}`, amount: -Number(r.pending), at: r.refundedAt ?? r.paidAt ?? r.createdAt }))
+    const plan = planLedger(computed.total, deductions, credits)
+
+    const day = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : '')
+    const ledgerItems = [
+      ...plan.taken.map((t) => {
+        const legacy = legacyById.get(t.ref)
+        if (legacy) {
+          const usedOn = legacy.usedAt ? ` · استُعمل ${day(legacy.usedAt)}` : ''
+          return {
+            description: `حسم خصم أصدرتَه — ${legacy.forWhomAr} (${legacy.coupon.code})${usedOn}`,
+            amount: -t.amount,
+            sourceRef: t.ref,
+          }
+        }
+        const r = codeById.get(t.ref)!
+        const partly = Number(r.owed) < Number(r.amount) ? ' · بعد ردّ جزءٍ من الثمن' : ''
+        return {
+          description: `حسم كودك ${r.code.coupon.code} (${r.code.percentOff}٪) — ${r.code.labelAr} · شراء ${day(r.paidAt)}${partly}`,
+          amount: -t.amount,
+          sourceRef: t.ref,
+        }
+      }),
+      ...plan.credits.map((c) => {
+        const r = codeById.get(c.ref)!
+        return {
+          description: `إعادة ما حُسم من كودك ${r.code.coupon.code} — رُدّ ثمنُ الشراء${r.status === 'refunded' ? '' : ' جزئيا'}`,
+          amount: c.amount,
+          sourceRef: c.ref,
+        }
+      }),
+    ]
+    const items = [...computed.items, ...ledgerItems]
+    const total = Math.round(items.reduce((sum, i) => sum + i.amount, 0) * 100) / 100
 
     const payout = await this.prisma.$transaction(async (tx) => {
       const created = await tx.trainerPayout.create({
@@ -606,29 +702,46 @@ export class EarningsService {
       /* والوسمُ داخلَ المعاملة: كشفٌ يحمل بندَ حسمٍ وخصمٌ ما زال «مستعمَلا»
          يُحسم ثانيةً في الكشف الذي يليه. و`settledItemId` هو ما يمنع ذلك،
          فيُكتب مع الكشف أو لا يُكتب كلاهما. */
-      for (const t of taken) {
-        const item = created.items.find((i) => i.sourceRef === `trainer_discount:${t.id}`)
+      for (const t of plan.taken) {
+        if (!legacyById.has(t.ref)) continue
+        const item = created.items.find((i) => i.sourceRef === t.ref)
         await tx.trainerIssuedDiscount.updateMany({
-          where: { id: t.id, status: 'used', settledItemId: null },
+          where: { id: t.ref.slice(LEGACY_REF.length), status: 'used', settledItemId: null },
           data: { status: 'settled', settledAt: new Date(), settledItemId: item?.id ?? null },
+        })
+      }
+      /* ودفترُ الكود ينقص بما أخذه البندُ بعينه — لا يُصفَّر: ردٌّ وقع بين
+         القراءة وهذه الكتابة يبقى أثرُه في الدفتر لكشفٍ تالٍ، ولا يُمحى. */
+      for (const t of plan.taken) {
+        if (!codeById.has(t.ref)) continue
+        await tx.trainerCodeRedemption.update({
+          where: { id: t.ref.slice(CODE_REF.length) }, data: { pending: { decrement: t.amount } },
+        })
+      }
+      for (const c of plan.credits) {
+        await tx.trainerCodeRedemption.update({
+          where: { id: c.ref.slice(CODE_REF.length) }, data: { pending: { increment: c.amount } },
         })
       }
       return created
     })
+    const taken = plan.taken
     await recordAudit(this.prisma, {
       actorId, action: 'trainer_payout.generate', entityType: 'TrainerPayout', entityId: payout.id,
       meta: {
         cohortId, period: finalPeriod, total, gross: computed.total, rule: computed.rule,
-        discountsSettled: taken.length,
+        discountsSettled: taken.length, creditsReturned: plan.credits.length,
       },
     })
     /* والإشعارُ يقول الصافيَ لا الإجماليَّ حين حُسم منه شيء — ورقمٌ في
        الإشعار يخالف ما في الكشف أسوأُ من إشعارٍ لا يُرسَل. */
-    const deducted = discountItems.reduce((sum, i) => sum - i.amount, 0)
+    const deducted = Math.round(taken.reduce((sum, t) => sum + t.amount, 0) * 100) / 100
+    const credited = plan.credited
     await this.notifyTrainer(computed.profile.id, 'وُلّد كشف مستحقاتك تلقائياً',
       `اكتملت شعبة «${computed.cohort.title}» وحُسبت مستحقاتك عنها: ${total} ${payout.currency} لفترة ${finalPeriod}`
-      + `${deducted > 0 ? ` (بعد حسم ${deducted} من خصومٍ أصدرتَها بنفسك)` : ''} — بانتظار اعتماد الإدارة المالية.`,
-      { payoutId: payout.id, cohortId, period: finalPeriod, total, gross: computed.total, deducted })
+      + `${deducted > 0 ? ` (بعد حسم ${deducted} من خصومٍ أصدرتَها بنفسك)` : ''}`
+      + `${credited > 0 ? ` (وأُعيد إليك ${credited} عن شراءٍ رُدّ ثمنُه)` : ''} — بانتظار اعتماد الإدارة المالية.`,
+      { payoutId: payout.id, cohortId, period: finalPeriod, total, gross: computed.total, deducted, credited })
     return payout
   }
 

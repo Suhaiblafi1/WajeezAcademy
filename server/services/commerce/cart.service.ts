@@ -24,6 +24,8 @@ import { priceCart } from '../../../src/application/commerce/cart-pricing'
 import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
 import { getEmailConfig } from '../integrations.service'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
+import { CODE_USE_COUNTS, CODE_USED_AR } from './coupon-ledger'
+import { cohortLeadTrainers } from '../cohort-lead'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 
 export class CartService {
@@ -252,10 +254,25 @@ export class CartService {
 
   async couponFor(userId: string, couponCode?: string) {
     if (!couponCode) return null
-    const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
+    const coupon = await this.prisma.coupon.findUnique({
+      where: { code: couponCode.trim().toUpperCase() },
+      include: { trainerCode: { select: { id: true, profileId: true, percentOff: true } } },
+    })
     assertCouponUsable(coupon, userId)
     /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
     if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+    /* ═══ وكودُ المدرّب مرّةً لكلّ متعلّم ═══
+
+       يُقال هنا عند التسعير — قبل أن يضغط «ادفع» — لا عند الطلب وحدَه. والقيدُ
+       الجزئيُّ في القاعدة هو الحارسُ الحقيقيّ للمتزامنَين (`reserveCouponUse`)؛
+       وهذا لتُقال الجملةُ في موضعها. */
+    if (coupon.trainerCode) {
+      const used = await this.prisma.trainerCodeRedemption.findFirst({
+        where: { codeId: coupon.trainerCode.id, userId, status: { in: [...CODE_USE_COUNTS] } },
+        select: { id: true },
+      })
+      if (used) throw new AuthError('code_used', CODE_USED_AR, 409)
+    }
     return coupon
   }
 
@@ -269,14 +286,41 @@ export class CartService {
   ) {
     const gift = await this.giftFor(userId, new Set(cohorts.map((c) => c.courseId)))
     const coupon = await this.couponFor(userId, couponCode)
+    const trainerCode = coupon?.trainerCode ?? null
+    /* ═══ كودُ المدرّب على دوراته وحدَها ═══
+
+       و«دوراتُه» هي الشعبُ التي تُحتسب له أتعابُها (`cohort-lead.ts`) — فلا يقع
+       كودُه على شعبةٍ يقبض غيرُه أتعابَها، ولا يمتنع عن شعبةٍ يقبضها هو.
+       والنسبةُ من صفّ الكود لا من الكوبون: قيدُ السقف (٣٠) على ذاك العمود. */
+    let scope: string[] | null = null
+    if (trainerCode) {
+      const leads = await cohortLeadTrainers(this.prisma, cohorts.map((c) => c.id))
+      scope = cohorts.filter((c) => leads.get(c.id) === trainerCode.profileId).map((c) => c.id)
+    }
     const pricing = priceCart(
       cohorts.map((c) => ({
         cohortId: c.id, courseId: c.courseId, titleAr: cartTitleOf(c), listPrice: num(c.price),
       })),
       gift,
-      coupon ? { percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff) } : null,
+      coupon
+        ? trainerCode
+          ? { percentOff: trainerCode.percentOff, amountOff: null, cohortIds: scope }
+          : { percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff) }
+        : null,
       currency ?? this.cartCurrency(cohorts, cohorts),
     )
-    return { pricing, couponId: coupon?.id, couponCode: coupon?.code ?? null }
+    /* كودٌ لا يخصّ شيئا في السلّة يُقال لصاحبه — لا يُقبَل صامتا بخصمِ صفر،
+       فيظنّ أنّ الكودَ عطِب أو أنّه خُصم له ما لم يُخصم. ولا يُسمّى المدرّب:
+       اسمُه لا يُعرض قبل اعتماد نشره (قواعدُ المستودَع). */
+    if (trainerCode && pricing.couponLines === 0) {
+      throw new AuthError('code_not_applicable', 'هذا الكودُ لدوراتِ مدرّبٍ بعينه، وليس في سلّتك دورةٌ مدفوعةٌ منها', 409)
+    }
+    return {
+      pricing,
+      couponId: coupon?.id,
+      couponCode: coupon?.code ?? null,
+      couponMaxUses: coupon?.maxUses ?? null,
+      trainerCode: trainerCode ? { id: trainerCode.id, profileId: trainerCode.profileId } : null,
+    }
   }
 }

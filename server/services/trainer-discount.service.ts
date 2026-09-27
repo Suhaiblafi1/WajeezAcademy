@@ -214,16 +214,12 @@ export class TrainerDiscountService {
 
   /* ═══════════ ما ينادى من خارج بوّابة المدرّب ═══════════ */
 
-  /* ═══ وطلبٌ هُجر يحرق الرمزَ ولا يحسم شيئا ═══
+  /* ═══ والطلبُ المهجورُ لم يعد يحرق الرمز (٢٧ سبتمبر ٢٠٢٦) ═══
 
-     `usedCount` على الكوبون يزيد عند **إنشاء** الطلب لا عند دفعه — وذاك
-     سلوكُ الكوبونات القائمُ في هذه المنصّة، تشترك فيه أكوادُ الحملات
-     وكوبوناتُ المستشارين. فمن بدأ شراءً برمزِ مدرّبٍ ثمّ هجره: الرمزُ
-     استُنفد (`maxUses: 1`) والخصمُ ما زال `live`.
-
-     والاتّجاهُ آمنٌ في الجهة التي تهمّ: **لا يُحسم من المدرّب شيء**. وما
-     يخسره رمزٌ لا ينفع، وبابُه مفتوح — يُلغيه فيسترجع رصيدَه ويُصدر غيرَه.
-     وتغييرُ لحظةِ العدّ يمسّ مسارَ الشراء كلَّه، وهو أوسعُ من هذا الباب. */
+     كان `usedCount` يزيد عند **إنشاء** الطلب ولا ينقص أبدا، فمن بدأ شراءً
+     برمزِ مدرّبٍ ثمّ هجره احترق الرمزُ (`maxUses: 1`) والخصمُ ما زال `live`.
+     وصار إلغاءُ الطلب — بيد صاحبه أو آليّا بعد ساعة — يُعيد الاستعمال
+     (`commerce/coupon-ledger.ts`)، فيعود الرمزُ صالحا لمن أُعطيه. */
 
   /** استُعمل: يُنادى من `settleOrder` لحظةَ أن يصير الطلبُ مدفوعا.
 
@@ -251,6 +247,54 @@ export class TrainerDiscountService {
         meta: { couponId, error: e instanceof Error ? e.message : String(e) },
         reason: 'خصمُ مدرّبٍ استُعمل ولم يُقيَّد — تسويةٌ يدويّةٌ مطلوبة',
       }).catch(() => { /* الأثرُ نفسُه لا يُسقط تسويةَ دفعة */ })
+    }
+  }
+
+  /** رُدّ ثمنُ الطلب كلُّه: الخصمُ المستعمَلُ فيه لا يُحسم — البند 4-10.
+
+      «ولا يحسم … ما استعمل في شراء استرد». وكان الردُّ لا يمسّ هذا الجدول،
+      فيُحسم من المدرّب خصمٌ عن مالٍ أُعيد إلى صاحبه.
+
+      وما حُسم قبل الردّ لا يُعاد هنا آليّا: الصفُّ خصمٌ واحدٌ لاستعمالٍ واحد،
+      وإعادتُه بندٌ موجبٌ في كشفٍ لم يُولَّد بعد — ولا موضعَ لذلك في هذا الجدول
+      (وكودُ المدرّب الجديد له دفترٌ يفعله: `coupon-ledger.ts`). فيُقيَّد أثرا
+      يقرؤه المسؤولُ الماليّ فيُضيف البندَ بيده. وهو نادرٌ بطبعه: الحسمُ عند
+      انتهاء الشعبة، والردُّ قلّما يتأخّر إليه.
+
+      ولا يرمي — كأخيه `markUsedForOrder`: الردُّ وقع عند المزوّد. */
+  async markRefundedForOrder(orderId: string) {
+    try {
+      const rows = await this.prisma.trainerIssuedDiscount.findMany({
+        where: { usedOrderId: orderId, status: { in: ['used', 'settled'] } },
+      })
+      for (const row of rows) {
+        if (row.status === 'used') {
+          const moved = await this.prisma.trainerIssuedDiscount.updateMany({
+            where: { id: row.id, status: 'used', settledItemId: null },
+            data: { status: 'refunded' },
+          })
+          if (moved.count === 0) continue
+          await recordAudit(this.prisma, {
+            actorId: null, action: 'trainer_discount.refund',
+            entityType: 'trainer_profile', entityId: row.profileId,
+            meta: { discountId: row.id, orderId, amount: num(row.amount) },
+          })
+        } else {
+          await recordAudit(this.prisma, {
+            actorId: null, action: 'trainer_discount.refund_after_settlement',
+            entityType: 'trainer_profile', entityId: row.profileId,
+            meta: { discountId: row.id, orderId, amount: num(row.amount), settledItemId: row.settledItemId },
+            reason: 'خصمُ مدرّبٍ حُسم ثمّ رُدّ ثمنُ شرائه — يُعاد إليه بندا موجبا بيد المسؤول الماليّ',
+          })
+        }
+      }
+    } catch (e) {
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'trainer_discount.used_failed',
+        entityType: 'order', entityId: orderId,
+        meta: { step: 'refund', error: e instanceof Error ? e.message : String(e) },
+        reason: 'خصمُ مدرّبٍ رُدّ ثمنُ شرائه ولم يُقيَّد — تسويةٌ يدويّةٌ مطلوبة',
+      }).catch(() => { /* الأثرُ نفسُه لا يُسقط ردّا وقع */ })
     }
   }
 

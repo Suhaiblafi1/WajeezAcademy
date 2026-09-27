@@ -182,6 +182,9 @@ const MEDIUM: readonly string[] = [
 
      والإخفاقُ (`used_failed`) عطبُ نظامٍ لا خبرُ إنسان: يُقرأ في `LOW`. */
   'trainer_discount.issue', 'trainer_discount.revoke', 'trainer_discount.used',
+  /* وردُّ الثمن يُسقط الحسمَ أو ينقصه — مالُه يتحرّك لصالحه، والعلّةُ نفسُها */
+  'trainer_discount.refund', 'trainer_discount.refund_after_settlement',
+  'trainer_code.use', 'trainer_code.refund',
   /* مؤهّلٌ أُضيف، وإتاحةٌ تغيّرت */
   'trainer.qualify.auto',
   'trainer.availability.set', 'trainer.blackout.add', 'trainer.blackout.remove',
@@ -265,6 +268,7 @@ const LOW: readonly string[] = [
   /* خصمٌ استُعمل ولم يُقيَّد — عطبٌ يُقرأ في السجلّ ويُسوَّى بيد، ولا يُبلَّغ
      به المدرّبُ: خبرٌ لا يفعل به شيئا، ومالُه محفوظٌ في الطلب المدفوع. */
   'trainer_discount.used_failed',
+  'trainer_code.ledger_failed',
   'rating.submit', 'submission.create',
   'support.ticket.create', 'support.ticket.priority',
   'staff.task.complete',
