@@ -2438,6 +2438,11 @@ model CohortDeliveryPlan {
   reviewedBy            String?         @db.Uuid
   reviewedAt            DateTime?
   reviewerNote          String?
+  /// ملاحظاتُ الردّ لكلّ خطوةٍ في خطوتها (المرحلة ٣ب): `{general?, identity?, modules?,
+  /// workbooks?, sessions?, assignments?}` — و`reviewerNote` نصُّها مجموعا للجرس والأثر.
+  /// تبقى عند إعادة الإرسال ليقابل المعتمِدُ ما طلبه بما عُدّل، وتُرفع بالاعتماد.
+  /// والشكلُ في `src/application/trainer/review-notes.ts`.
+  reviewerNotes         Json?
   sourceChangeRequestId String?         @db.Uuid // إن نُشرت من اقتراح مدرب بنطاق شعبة
   createdBy             String?         @db.Uuid
   createdAt             DateTime        @default(now())

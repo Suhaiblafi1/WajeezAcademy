@@ -1453,10 +1453,13 @@ export class CohortService {
       approvalState: 'pending',
       wantsZoom: cohort.deliveryMode !== 'in_person',
     })
-    await this.notifyAdminsOfPendingSession(session.id, cohortId, session.title)
+    /* ولقاءٌ يُعتمَد مع خطّته لا يُنادى عليه وحدَه (٣ب): الإدارةُ تعتمده حين
+       تعتمد الخطّة، ونداءٌ لكلّ لقاءٍ قبلها يدعوها إلى قرارٍ ليس هذا موضعَه. */
+    const withPlan = await this.ridesWithPlan(cohortId)
+    if (!withPlan) await this.notifyAdminsOfPendingSession(session.id, cohortId, session.title)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.propose', entityType: 'cohort_session', entityId: session.id,
-      meta: { cohortId, startsAt: session.startsAt, deliveryMode: cohort.deliveryMode },
+      meta: { cohortId, startsAt: session.startsAt, deliveryMode: cohort.deliveryMode, withPlan },
     })
     /* ولا عددَ مبلَّغين يُقال: لم يُبلَّغ أحد، وقولُ «بُلِّغ ٠» يُقرأ عطبا */
     return { session, zoom: null, notified: 0, pending: true as const }
@@ -1470,8 +1473,12 @@ export class CohortService {
      وإنشاءُ الاجتماع قد يسقط (مفاتيحُ ناقصةٌ أو Zoom لا يستجيب). فلا يُكتب
      الاعتمادُ قبله: لقاءٌ «معتمَدٌ» بلا اجتماعٍ موعدٌ بلا باب، ويراه
      المسجَّلون فيقفون عنده. فتُرتَّب: الاجتماعُ أوّلا، ثمّ الختمُ، ثمّ
-     التبليغ. */
-  async decideSession(actorId: string, sessionId: string, approve: boolean, note?: string) {
+     التبليغ.
+
+     و`quiet` لاعتماد الخطّة (٣ب): يعتمد لقاءاتِها كلَّها بهذا المسلك نفسِه،
+     ويُخبر المدرّبَ خبرا واحدا عن الخطّة ولقاءاتها — فلا يصله خبرٌ لكلّ لقاء.
+     والمسجَّلون يُبلَّغون كما هم: لكلّ لقاءٍ موعدُه في تقويمهم. */
+  async decideSession(actorId: string, sessionId: string, approve: boolean, note?: string, opts: { quiet?: boolean } = {}) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       select: { id: true, cohortId: true, title: true, startsAt: true, approvalState: true, wantsMeeting: true, placeholder: true, zoom: { select: { id: true } } },
@@ -1522,12 +1529,14 @@ export class CohortService {
     /* وأوّلُ لقاءٍ يُعتمَد من جدول المدرّب يرفع الجدولَ المبدئيّ — فلا يرى
        المسجَّلون جدولين معا: مثالَ الإدارة ومواعيدَ مدرّبهم. */
     if (!session.placeholder) await this.clearPlaceholders(actorId, session.cohortId)
-    await this.notifyCohortTrainers(session.cohortId, {
-      templateKey: 'cohort.session.approved',
-      title: `اعتُمد لقاءُ «${session.title}»`,
-      body: `وصل المسجَّلين في تقويمهم وبالبريد${zoom ? '، ومعه رابطُ الاجتماع' : ''}.`,
-      data: { cohortId: session.cohortId, sessionId },
-    })
+    if (!opts.quiet) {
+      await this.notifyCohortTrainers(session.cohortId, {
+        templateKey: 'cohort.session.approved',
+        title: `اعتُمد لقاءُ «${session.title}»`,
+        body: `وصل المسجَّلين في تقويمهم وبالبريد${zoom ? '، ومعه رابطُ الاجتماع' : ''}.`,
+        data: { cohortId: session.cohortId, sessionId },
+      })
+    }
     return { session: approved, zoom, notified }
   }
 
@@ -1582,17 +1591,37 @@ export class CohortService {
     return idle.length
   }
 
-  /** اللقاءاتُ المنتظِرةُ قرارا — للطابور الذي تراجع فيه الإدارةُ الشعبة */
+  /* ═══ لقاءٌ يُعتمَد مع خطّته — أم وحدَه (٣ب) ═══
+
+     اعتمادُ الخطّة يعتمد لقاءاتِها المنتظِرةَ معها. فما دامت الشعبةُ لم
+     تُعتمَد لمدرّبها خطّةٌ قطّ — وله خطّةٌ تُكتب — فلقاءاتُه تنتظر خطّتَها،
+     ولا تُعرض على الإدارة بطاقةً بطاقة. وبعد أوّل اعتمادٍ كلُّ لقاءٍ يُضاف
+     أو يُنقل تغييرٌ على معتمَد، فيُعتمَد وحدَه كما كان.
+
+     وشعبةٌ لا خطّةَ لمدرّبها أصلا تبقى على البطاقات: لا خطّةَ تحملها. */
+  async ridesWithPlan(cohortId: string): Promise<boolean> {
+    const plans = await this.prisma.cohortDeliveryPlan.findMany({
+      where: { cohortId, trainerId: { not: null } },
+      select: { status: true },
+    })
+    return plans.length > 0 && !plans.some((p) => p.status === 'approved' || p.status === 'published' || p.status === 'superseded')
+  }
+
+  /** اللقاءاتُ المنتظِرةُ قرارا — للطابور الذي تراجع فيه الإدارةُ الشعبة.
+   *  و`withPlan` لما يُعتمَد مع خطّة شعبته لا وحدَه */
   async pendingSessions(cohortId?: string) {
-    return this.prisma.cohortSession.findMany({
+    const rows = await this.prisma.cohortSession.findMany({
       where: { approvalState: 'pending', ...(cohortId ? { cohortId } : {}) },
       orderBy: { startsAt: 'asc' },
       select: {
-        id: true, title: true, startsAt: true, endsAt: true, noteAr: true,
+        id: true, title: true, startsAt: true, endsAt: true, noteAr: true, placeholder: true,
         attachmentKey: true, attachmentName: true, attachmentMime: true, createdAt: true,
         cohort: { select: { id: true, title: true } },
       },
     })
+    const rides = new Map<string, boolean>()
+    for (const id of new Set(rows.map((r) => r.cohort.id))) rides.set(id, await this.ridesWithPlan(id))
+    return rows.map(({ placeholder, ...r }) => ({ ...r, withPlan: !placeholder && rides.get(r.cohort.id) === true }))
   }
 
   /** مدرّبو الشعبة — يُبلَّغون بقرار الإدارة على لقاءاتهم */

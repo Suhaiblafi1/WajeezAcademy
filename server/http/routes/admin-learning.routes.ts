@@ -4,6 +4,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { isDayCode } from '../../../src/application/schedule/days'
+import { REVIEW_NOTE_MAX } from '../../../src/application/trainer/review-notes'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
 import { openAllCohorts, alignCohortPrices } from '../../services/catalog-readiness.service'
@@ -90,11 +91,20 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohort-plans/:id/decide', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ أو ردُّها بتعديلاتٍ مكتوبة' },
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ ولقاءاتِها معا، أو ردُّها بملاحظةٍ لكلّ خطوة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const text = z.string().max(REVIEW_NOTE_MAX).optional()
     const body = z.object({
-      approve: z.boolean(), note: z.string().max(2000).optional(),
+      approve: z.boolean(),
+      /* نصٌّ واحدٌ كما كان — أو لكلّ خطوةٍ ملاحظتُها، والمفاتيحُ خطواتُ المدرّب
+         (`review-notes.ts`) ولا مفتاحَ غيرُها */
+      note: z.union([
+        z.string().max(REVIEW_NOTE_MAX),
+        z.object({
+          general: text, identity: text, modules: text, workbooks: text, sessions: text, assignments: text,
+        }).strict(),
+      ]).optional(),
     }).parse(req.body)
     return plans.decide(req.auth!.userId, id, body.approve, body.note)
   })

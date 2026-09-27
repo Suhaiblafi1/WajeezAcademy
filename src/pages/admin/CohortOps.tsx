@@ -12,6 +12,8 @@ import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import type { PlanSlot } from "@/application/trainer/axis-timeline";
 import CurriculumReview from "@/components/CurriculumReview";
+import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
+import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import type { CohortTab } from "./cohort-tabs";
 
@@ -48,6 +50,8 @@ const QUALIFICATION_LABEL: Record<EligibleTrainer["qualification"], string> = {
 type Done = (msg: string) => void;
 interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
+  /* ملاحظاتُ الردّ لكلّ خطوة — تبقى بعد إعادة الإرسال ليُقابَل بها ما عُدّل (٣ب) */
+  reviewerNotes?: ReviewNotes;
   submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
   /* المنهجُ كاملا للمعتمِد — لقاءاتُ الشعبة ومهامُّها مع خطّتها (المرحلة ٣) */
   cohortTitle: string;
@@ -67,6 +71,22 @@ interface PendingSession {
   id: string; title: string; startsAt: string; endsAt: string | null; noteAr: string | null;
   attachmentName: string | null; createdAt: string;
   cohort: { id: string; title: string };
+  /* يُعتمَد مع خطّة الشعبة لا وحدَه — ما دامت لم تُعتمَد لمدرّبها خطّةٌ قطّ (٣ب) */
+  withPlan?: boolean;
+}
+/** ما يعود من اعتماد الخطّة — ولقاءاتُها التي اعتُمدت معها أو تعذّرت */
+interface PlanDecision {
+  status: string;
+  meetings?: { approved: number; failed: { id: string; title: string; reason: string }[] };
+}
+/** ما يقوله الاعتمادُ لمن نقره — باللقاءات التي اعتُمدت معه، وبما تعذّر باسمه */
+function approvedMsg(r: PlanDecision): string {
+  const m = r.meetings;
+  const withMeetings = m && m.approved > 0 ? ` ومعها ${m.approved === 1 ? "لقاؤها" : `لقاءاتُها (${m.approved})`}` : "";
+  const failed = m?.failed.length
+    ? ` — وتعذّر اعتمادُ ${m.failed.map((f) => `«${f.title}»`).join(" و")}: ${m.failed[0].reason}. أعِد المحاولةَ من بطاقته أدناه.`
+    : " — وأُخبر المدرّب";
+  return `اعتُمدت خطّةُ المدرّب${withMeetings}${failed}`;
 }
 const PLAN_AR: Record<string, string> = {
   draft: "مسودّةٌ عند المدرّب", submitted: "بانتظار اعتمادك", changes_requested: "رُدّت إليه بتعديلات",
@@ -150,13 +170,22 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
     catch { setPendingSessions([]); }
   }, [cohort.id]);
   useEffect(() => { void loadPendingSessions(); }, [loadPendingSessions]);
+  /* ═══ الاعتمادُ واحد، والردُّ لكلّ خطوةٍ ملاحظتُها (٣ب) ═══
+
+     ما يُعتمَد مع الخطّة من اللقاءات لا يُعرض بطاقةً بطاقة — يُعدّ على زرّ
+     اعتمادها. وما بقي بطاقاتٍ فتغييرٌ بعد اعتمادٍ سابق يُقرَّر وحدَه. */
+  const riding = pendingSessions.filter((p) => p.withPlan);
+  const individual = pendingSessions.filter((p) => !p.withPlan);
+  const [asking, setAsking] = useState(false);
   const picked = trainers.find((t) => t.profileId === assignForm.profileId) ?? null;
 
-  const act = useCallback(async (fn: () => Promise<unknown>, msg: string) => {
-    if (busy) return;
+  /* ويعود بنجاحه — فنموذجٌ كُتب فيه لا يُطوى على خطأ فيضيع ما كُتب. والرسالةُ
+     قد تُبنى ممّا عاد (اعتمادُ الخطّة يقول لقاءاتِه) */
+  const act = useCallback(async (fn: () => Promise<unknown>, msg: string | ((r: unknown) => string)): Promise<boolean> => {
+    if (busy) return false;
     setBusy(true); setLocalMsg("");
-    try { await fn(); setLocalMsg(msg); onDone(msg); }
-    catch (e) { setLocalMsg(e instanceof ApiError ? e.message : "فشل الإجراء"); }
+    try { const r = await fn(); const m = typeof msg === "function" ? msg(r) : msg; setLocalMsg(m); onDone(m); return true; }
+    catch (e) { setLocalMsg(e instanceof ApiError ? e.message : "فشل الإجراء"); return false; }
     finally { setBusy(false); }
   }, [busy, onDone]);
 
@@ -395,25 +424,46 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 />
               </div>
             </details>
-            {trainerPlan.reviewerNote && <Inset tone="warn" className="mt-2 text-read leading-6">{trainerPlan.reviewerNote}</Inset>}
+            {/* وما طُلب منه يُقرأ بأقسامه — وبعد إعادة الإرسال «ما طلبتَه» ليُقابَل
+                بما عُدّل في المنهج أعلاه، لا ليُتذكَّر من الذاكرة */}
+            {(() => {
+              const notes: ReviewNotes = trainerPlan.reviewerNotes ?? (trainerPlan.reviewerNote ? { general: trainerPlan.reviewerNote } : {});
+              if (!hasReviewNotes(notes)) return null;
+              const heading = trainerPlan.status === "submitted"
+                ? "ما طلبتَه في الردّ السابق — قابِله بما عُدّل"
+                : trainerPlan.status === "changes_requested" ? "ما طُلب منه" : "ملاحظةُ القرار";
+              return (
+                <Inset tone="warn" className="mt-2">
+                  <p className="text-read font-black text-gold-ink">{heading}</p>
+                  <ReviewNotesList notes={notes} />
+                </Inset>
+              );
+            })()}
             {/* وسقط هنا صندوقُ «يقترح المدرّبُ اسما آخر» (د-٦): اعتمادُ خطّةٍ
                 لا يُعيد تسميةَ دورةٍ في الكتالوج. واقتراحُ الاسم يصل الإدارةَ
                 في طابور اقتراحات المدرّبين، ويُعتمَد فيصير إصدارا جديدا (ح-٣). */}
           </>
         )}
+        {/* والاعتمادُ يقول ما يُطلقه قبل النقر: اللقاءاتُ المنتظِرةُ تُعتمَد معه،
+            ولكلٍّ اجتماعُه وإعلانُه (`decide` ← `decideSession`) */}
+        {trainerPlan?.status === "submitted" && canApprovePlan && riding.length > 0 && (
+          <p className="mt-3 text-read leading-6 text-muted-foreground">
+            باعتمادها {riding.length === 1 ? "يُعتمَد لقاؤها المنتظِرُ معها" : `تُعتمَد لقاءاتُها المنتظِرةُ (${riding.length}) معها`}:
+            {" "}يُنشأ لكلٍّ اجتماعُ Zoom، ويُنشَر للمسجَّلين بتاريخه ويصلهم بالبريد — وأوّلُها يرفع ما بقي من الجدول المبدئيّ إن كان.
+          </p>
+        )}
         <div className="mt-3 flex flex-wrap gap-2">
-          {trainerPlan?.status === "submitted" && canApprovePlan && (
+          {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
             <>
               <Button tone="confirm" size="sm" disabled={busy}
-                onClick={() => act(() => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true }).then(loadPlan), "اعتُمدت خطّةُ المدرّب — وأُخبر")}>
-                اعتمدها
+                onClick={() => act(
+                  () => apiPost<PlanDecision>(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true })
+                    .then(async (r) => { await Promise.all([loadPlan(), loadPendingSessions()]); return r; }),
+                  (r) => approvedMsg(r as PlanDecision),
+                )}>
+                {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}
               </Button>
-              <Button tone="danger" size="sm" disabled={busy}
-                onClick={() => {
-                  const note = window.prompt("ما الذي يُعدَّل؟ يصله بنصّه:");
-                  if (!note?.trim()) return;
-                  void act(() => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: note.trim() }).then(loadPlan), "رُدّت إليه بالتعديلات");
-                }}>
+              <Button tone="danger" size="sm" disabled={busy} onClick={() => setAsking(true)}>
                 اطلب تعديلات
               </Button>
             </>
@@ -428,16 +478,35 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             </Button>
           )}
         </div>
+        {trainerPlan?.status === "submitted" && canApprovePlan && asking && (
+          <ReviewNotesForm
+            busy={busy}
+            onCancel={() => setAsking(false)}
+            onSend={(notes) => void act(
+              () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: notes }).then(loadPlan),
+              "رُدّت إليه — وكلُّ ملاحظةٍ في رأس خطوتها عنده",
+            ).then((ok) => { if (ok) setAsking(false); })}
+          />
+        )}
 
         {/* ═══ لقاءاتٌ مباشرةٌ تنتظر قرارك ═══
 
             وبالاعتماد يقع كلُّ شيء: يُنشأ اجتماعُ Zoom، ويُنشَر اللقاءُ في
             منصّة الطلبة بتاريخه، ويصلهم البريدُ به. فيُقال ذلك على الزرّ
             صراحةً — من يعتمد يعرف ما يُطلقه، لا يكتشفه بعد النقر. */}
-        {pendingSessions.length > 0 && canApprovePlan && (
+        {/* ولقاءاتٌ تنتظر خطّتَها التي لم تُرسَل بعد — تُقال ولا تُقرَّر هنا:
+            تُعتمَد معها حين تصل (وحين تصل يعدّها زرُّ الاعتماد أعلاه) */}
+        {riding.length > 0 && canApprovePlan && trainerPlan?.status !== "submitted" && (
+          <p className="mt-4 border-t border-white/10 pt-4 text-read leading-6 text-muted-foreground">
+            {riding.length === 1
+              ? "لقاءٌ واحدٌ ينتظر خطّةَ الشعبة — يُعتمَد معها حين يرسلها المدرّب، فلا قرارَ عليه وحدَه."
+              : `لقاءاتٌ (${riding.length}) تنتظر خطّةَ الشعبة — تُعتمَد معها حين يرسلها المدرّب، فلا قرارَ عليها وحدَها.`}
+          </p>
+        )}
+        {individual.length > 0 && canApprovePlan && (
           <div className="mt-4 border-t border-white/10 pt-4">
             <p className="text-read font-black text-foreground">
-              لقاءاتٌ مباشرةٌ تنتظر قرارك ({pendingSessions.length})
+              لقاءاتٌ مباشرةٌ تنتظر قرارك ({individual.length})
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
               باعتمادك يُنشأ اجتماعُ Zoom ويُنشَر اللقاءُ للمسجَّلين بتاريخه ويصلهم بالبريد.
@@ -446,7 +515,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               {" "}وأوّلُ لقاءٍ تعتمده يرفع ما بقي من الجدول المبدئيّ الذي فُتحت به الشعبة، إن كان — فيرى المسجَّلون مواعيدَ مدرّبهم وحدَها.
             </p>
             <ul className="mt-3 space-y-2">
-              {pendingSessions.map((ps) => (
+              {individual.map((ps) => (
                 <Inset as="li" key={ps.id}>
                   <p className="text-read font-bold text-foreground">{ps.title}</p>
                   <p className="mt-1 text-read text-muted-foreground">
