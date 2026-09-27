@@ -49,6 +49,7 @@ interface PillBodyProps {
   /** اختياريّة: شريطُ المدرّب بلا رموزٍ كي تسع التبويباتُ الثلاثةَ عشر سطرَها */
   icon?: LucideIcon
   label: string
+  /** ما يلحق الاسمَ داخل الحبّة — شارةُ عددٍ مثلا */
   children?: ReactNode
 }
 
