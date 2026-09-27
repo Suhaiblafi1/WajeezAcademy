@@ -68,6 +68,8 @@ import BodyEditor from "@/components/BodyEditor";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import { blockingBeforeSubmit, trainerOwned } from "@/application/trainer/plan-gate";
+import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
+import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -131,6 +133,8 @@ interface Workspace {
   course: { id: string; titleAr: string; baseModules: PlanModule[] };
   plan: {
     id: string; status: string; content: PlanContent | null; reviewerNote: string | null;
+    /* لكلّ خطوةٍ ملاحظتُها — والقديمُ نصٌّ واحدٌ يصل ملاحظةً عامّة (٣ب) */
+    reviewerNotes?: ReviewNotes;
     submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
   } | null;
   sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; approvalState?: string; moduleIds?: string[]; placeholder: boolean; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
@@ -175,6 +179,9 @@ const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent"
    فذهبت «المصادر» خطوةً على حدة: المسجَّلُ منها صار جلساتٍ في «اللقاءات»
    بمحاورها، والباقي صار مع المهامّ مربوطا بمحوره. وحلّت محلَّها «الكرّاسات». */
 type Stage = "identity" | "modules" | "workbooks" | "sessions" | "assignments" | "approval";
+/* والأسماءُ هي أسماءُ أقسام ملاحظات المعتمِد (`STAGE_LABELS` في `review-notes.ts`):
+   يكتب ملاحظتَه تحت اسم الخطوة الذي يقرؤه المدرّبُ هنا — ويحرس تطابقَهما
+   `review-notes.test.ts` (٣ب) */
 const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
   { key: "identity", label: "المعلومات الأساسيّة", icon: IdCard },
   { key: "modules", label: "المحاور ومواعيدها", icon: BookOpen },
@@ -505,6 +512,11 @@ export default function CohortWorkspace() {
   const st = PLAN_STATUS_AR[planStatus] ?? PLAN_STATUS_AR.draft;
   const locked = planStatus === "submitted";
   const approved = planStatus === "approved" || planStatus === "published";
+  /* ═══ ملاحظاتُ الإدارة — كلٌّ في خطوته (٣ب) ═══
+
+     تُقرأ ما دامت الخطّةُ مردودةً إليه وحدَه (`notesForTrainer`). */
+  const reviewNotes: ReviewNotes = notesForTrainer(ws.plan);
+  const notedStages = notedSections(reviewNotes);
   /* حالةُ كلّ مرحلةٍ من قائمة الخادم — والمفتاحُ واحدٌ هنا وهناك */
   const byKey = new Map(ws.checklist.map((c) => [c.key, c]));
   /* ما يحجب الإرسال — من `plan-gate`، القاعدةِ نفسِها التي يحتجّ بها الخادم.
@@ -832,7 +844,9 @@ export default function CohortWorkspace() {
                 const selected = phase === "prepare" && stage === s.key;
                 const open = canOpen(i);
                 /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
-                const stateAr = dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "مقفلةٌ حتّى تُتمّ ما قبلها" : "لم تتمّ بعد";
+                /* وعليها ملاحظةٌ من الإدارة — تُقال في الاسم المسموع وتُرى علامةً (٣ب) */
+                const noted = (notedStages as readonly string[]).includes(s.key);
+                const stateAr = `${dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "مقفلةٌ حتّى تُتمّ ما قبلها" : "لم تتمّ بعد"}${noted ? " · عليها ملاحظةٌ من الإدارة" : ""}`;
                 const blocker = STAGES.slice(0, i).find((x) => !doneOf(x.key));
                 return (
                   /* بلا `min-w-0`: الدرجةُ لا تنضغط دون زرّها فيركب اسمُها على جارتها
@@ -861,6 +875,11 @@ export default function CohortWorkspace() {
                         {/* ① تعديلٌ في اليد لا يُكتم لتوفير سطر — ولا لتوفير صفّ */}
                         {dirty[s.key] && (
                           <span className="absolute -end-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-gold" aria-hidden="true" />
+                        )}
+                        {/* ② وملاحظةُ الإدارة علامةٌ في الركن المقابل — فلا تختلط
+                            بعلامة «لم يُحفظ» الذهبيّة ولا تغطّيها */}
+                        {noted && (
+                          <span data-noted className="absolute -bottom-0.5 -end-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-red-400" aria-hidden="true" />
                         )}
                       </span>
                       {/* والاسمُ للنشطة من عرض اللوح فما فوق، ولكلّها ساكنا من ١٢٨٠
@@ -932,13 +951,10 @@ export default function CohortWorkspace() {
             </p>
           )}
 
-          {/* ② وملاحظةُ الإدارة تبقى لاصقةً: يقرؤها وهو ينزل ويصعد يصحّح */}
-          {ws.plan?.reviewerNote && planStatus === "changes_requested" && (
-            <Inset tone="warn" className="mt-2">
-              <p className="text-read font-black text-gold-ink">ملاحظةُ الإدارة</p>
-              <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{ws.plan.reviewerNote}</p>
-            </Inset>
-          )}
+          {/* ② وملاحظةُ الإدارة تبقى لاصقةً: يقرؤها وهو ينزل ويصعد يصحّح.
+              والعامّةُ بنصّها، وملاحظاتُ الخطوات أسماءُ خطواتها — كلٌّ زرٌّ
+              يفتح خطوتَه، ونصُّها في رأسها هناك (٣ب). */}
+          <ReviewNotesBanner notes={reviewNotes} current={phase === "prepare" ? stage : null} onOpen={openStage} />
 
           {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
               كالملاحظة: يقرؤه وهو ينزل إلى الحقل الذي يصحّحه. */}
@@ -978,6 +994,12 @@ export default function CohortWorkspace() {
         value={phase}
         onChange={setPhase}
       />
+
+      {/* ═══ ملاحظةُ الإدارة على هذه الخطوة — في رأسها (٣ب) ═══
+
+          كانت الملاحظةُ نصّا واحدا في رأس الشاشة، فينزل المدرّبُ إلى خطوةٍ وقد
+          غاب عنه ما قيل فيها. فصار لكلّ خطوةٍ ملاحظتُها، تُقرأ حيث يُعدَّل. */}
+      {phase === "prepare" && stage !== "approval" && <StageReviewNote stage={stage} text={reviewNotes[stage]} />}
 
       {phase === "prepare" && locked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">

@@ -21,9 +21,10 @@ import { resourceKind } from '@/application/trainer/plan-overlay'
 import type {
   CurriculumMeeting, CurriculumResource, CurriculumTask, CurriculumView,
 } from '@/application/trainer/curriculum-view'
+import type { ReviewSection } from '@/application/trainer/review-notes'
 
-/** الخطوةُ التي يعود إليها المدرّبُ ليعدّل ما قرأه */
-export type CurriculumEditStage = 'identity' | 'modules' | 'workbooks' | 'sessions' | 'assignments'
+/** الخطوةُ التي يعود إليها المدرّبُ ليعدّل ما قرأه — وهي أقسامُ ملاحظات المعتمِد نفسُها */
+export type CurriculumEditStage = ReviewSection
 
 const TASK_TYPE: Record<string, string> = { assignment: 'واجب', quiz: 'اختبار', project: 'مشروع' }
 const MEETING_STATE: Record<CurriculumMeeting['state'], { label: string; tone: 'positive' | 'warn' | 'neutral' }> = {
