@@ -1,10 +1,14 @@
-/* مسارات بوابة المدرب — ملفي، تأهيلي وإسناداتي، مخطط دورة مؤهل لها،
-   اقتراح تعديل، وسحب اقتراح. كلها تتطلب صلاحيات دور trainer الفعلية. */
+/* مسارات بوابة المدرب — ملفي، تأهيلي وإسناداتي، دوراتي المقترحة، مساراتي،
+   عقدي، حسابي البنكي، وإرسالُ اقتراحِ تعديلٍ على دورةٍ مؤهَّلٍ لها وقائمتُه
+   وسحبُه. كلها تتطلب صلاحيات دور trainer الفعلية.
+
+   وكان هذا الرأسُ يَعِد بـ«مخطط دورة» لا مسلكَ له — حُذف يومَ حُذفت مسالكُه
+   ولم يُحذف من الرأس. */
 
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
-import { TrainerChangeService } from '../../services/trainer-change.service'
+import { CHANGE_TYPES, TrainerChangeService } from '../../services/trainer-change.service'
 import {
   CourseProposalService, MAX_PROPOSAL_QUESTION, MAX_PROPOSAL_SUMMARY,
   MAX_PROPOSAL_TITLE, MIN_PROPOSAL_TITLE,
@@ -17,6 +21,13 @@ import { TrainerBankService, MAX_ACCOUNT_LEN } from '../../services/trainer-bank
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
+
+/* حدودُ اقتراح التعديل — والأدنى في السبب هو حدُّ الخدمة نفسِها (١٠) فلا
+   يفترق ما يردّه المسلكُ عمّا تردّه هي، ولا يُقال للمدرّب حدّان. */
+const MIN_CHANGE_REASON = 10
+const MAX_CHANGE_REASON = 4000
+const MAX_CHANGE_NOTE = 2000
+const MAX_CHANGE_ITEMS = 40
 
 /* جسمُ المسار — واحدٌ للإنشاء والتعديل، فلا يفترق حدّان لشيءٍ واحد */
 const pathBody = z.object({
@@ -238,6 +249,57 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
      فلا مسلكَ اسمٍ هنا، ولا نوعَ `course_title_edit` في `CHANGE_TYPES`
      أصلا — والإغلاقُ من الجذر لا من الشاشة وحدَها. */
+
+  /* ═══ وعاد بابُ اقتراحِ التعديل — بشاشته (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     حُذف في ٨ سبتمبر لأنّه كان بلا شاشة، وكان الحذفُ صحيحا يومَه. ثمّ وعد
+     العقدُ الذي يوقّعه المدرّب، في طوره المشروط، بحرفه: «خمسةُ أيّامٍ لوضع
+     محاور دوراتك ومصادرها» — فصار الوعدُ منشورا والبابُ مغلقا. وقِيس: لا
+     `submit` ولا `listMine` ولا `withdraw` ينادِيها مسلكٌ واحد، وجانبُ
+     الإدارة موصولٌ كاملا يراجع اقتراحاتٍ لا سبيلَ لأحدٍ أن يرسلها.
+
+     ولم يُعَد البابُ وحدَه: شاشتُه `src/pages/trainer/MyCourseEdits.tsx` في
+     الدفعة نفسها — فعلّةُ الحذف لم تُنقَض، بل استُوفيت.
+
+     والصلاحيّةُ `trainer.portal` كما لسائر بوّابته، والملفُّ يُستخرَج من
+     حسابه لا من جسم الطلب. والنطاقُ يُحكَم في الخدمة عن **الدورة** لا عن
+     المدرّب (هـ-١): من أُهِّل لدورةٍ لا يستخدمها مسارٌ ولا قالبٌ ولا شعبةٌ
+     فتعديلُه لا يصل أحدا. */
+  const changeItemBody = z.object({
+    changeType: z.enum(CHANGE_TYPES),
+    targetKey: z.string().trim().min(1).max(200).optional(),
+    beforeValue: z.unknown().optional(),
+    afterValue: z.unknown().optional(),
+    note: z.string().trim().max(MAX_CHANGE_NOTE).optional(),
+  })
+
+  app.get('/api/trainer/changes', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'اقتراحاتي على دوراتي وقرارُ الإدارة في كلٍّ منها' },
+  }, async (req) => changes.listMine(req.auth!.userId))
+
+  app.post('/api/trainer/changes', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'إرسالُ اقتراحِ تعديلٍ على دورةٍ مؤهَّلٍ لها' },
+  }, async (req, reply) => {
+    const body = z.object({
+      courseId: z.string().trim().min(2).max(64),
+      scope: z.enum(['cohort', 'catalog']),
+      cohortId: z.string().uuid().optional(),
+      reason: z.string().trim().min(MIN_CHANGE_REASON).max(MAX_CHANGE_REASON),
+      evidence: z.string().trim().max(MAX_CHANGE_REASON).optional(),
+      items: z.array(changeItemBody).min(1).max(MAX_CHANGE_ITEMS),
+    }).parse(req.body)
+    return reply.status(201).send(await changes.submit(req.auth!.userId, body))
+  })
+
+  app.post('/api/trainer/changes/:id/withdraw', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'سحبُ اقتراحي ما لم يُبتّ فيه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return changes.withdraw(req.auth!.userId, id)
+  })
 
   /* ═══ دوراتي المقترحة — ما أقدر عليه وليس في كتالوجكم (ح-٢) ═══
 

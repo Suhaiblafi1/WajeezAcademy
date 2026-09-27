@@ -35,14 +35,23 @@ export interface ScopeFacts {
   grantedAt: string | null
   /** اقتراحات هذا المدرب التي نُشرت في نطاق الشعبة */
   publishedCohortProposals: number
+  /**
+   * هذه الدورةُ بعينها أُهِّل لها — من `TrainerCourseQualification` الحيّ.
+   * وحقيقةٌ لدورةٍ واحدةٍ لا للمدرّب، فمن سأل بلا دورةٍ تركها.
+   */
+  qualifiedForCourse?: boolean
+  /** ولا مسارَ ولا قالبَ ولا شعبةَ تستخدمها — من `courseBlastRadius` */
+  courseUnused?: boolean
 }
 
 export interface ScopeGate {
   allowed: boolean
-  /** earned | granted | none — لماذا سُمح أو لم يُسمح */
-  basis: 'earned' | 'granted' | 'none'
+  /** لماذا سُمح أو لم يُسمح */
+  basis: ScopeBasis
   reasonAr: string
 }
+
+export type ScopeBasis = 'earned' | 'granted' | 'qualified_unused' | 'none'
 
 /** هل يحقّ لهذا المدرب اقتراح تعديل بنطاق الكتالوج؟ */
 export function catalogScopeGate(f: ScopeFacts): ScopeGate {
@@ -61,6 +70,27 @@ export function catalogScopeGate(f: ScopeFacts): ScopeGate {
         'وهو ما يفتح نطاق الكتالوج.',
     }
   }
+  /* ودورتُه هو — ولمَ هذا ليس ثغرةً في البوّابة بل قياسٌ لعلّتها.
+
+     البوّابةُ تحرس الوصولَ: «يصل إلى كل مسار وقالب وشعبة تستخدم الدورة».
+     و«اقتراحان منشوران» **بديلٌ** عن قياس ذلك الوصول — سجلٌّ يُستأنس به
+     حين لا يُقاس المدى. فحيث يُقاس المدى ويكون صفرا، فلا شيءَ تحرسه: لا
+     مسارَ يتبدّل ولا قالبَ ولا متعلّمَ في شعبة.
+
+     وهو ما يَعِد به العقدُ صراحةً في طوره المشروط: «خمسةُ أيّامٍ لوضع محاور
+     دوراتك ومصادرها». ودورةٌ أُدخلت الكتالوجَ من أجله لا يستخدمها بعدُ شيء.
+
+     والقيدان معا لا أحدُهما: الخلوُّ وحدَه ليس إذنا لمن لم يُؤهَّل، والتأهيلُ
+     وحدَه لا يفتح دورةً قائمةً يتّكئ عليها سبعةُ كيانات. */
+  if (f.qualifiedForCourse && f.courseUnused) {
+    return {
+      allowed: true,
+      basis: 'qualified_unused',
+      reasonAr:
+        'هذه الدورةُ أُهِّلتَ لها، ولا يستخدمها مسارٌ ولا قالبٌ ولا شعبةٌ بعد — ' +
+        'فتعديلُها لا يصل إلى أحدٍ غيرِك، ونطاقُ الكتالوج مفتوحٌ فيها.',
+    }
+  }
   const remaining = CATALOG_SCOPE_MIN_PUBLISHED - f.publishedCohortProposals
   return {
     allowed: false,
@@ -69,6 +99,8 @@ export function catalogScopeGate(f: ScopeFacts): ScopeGate {
       `نطاق الكتالوج يصل إلى كل مسار وقالب وشعبة تستخدم الدورة، فيُفتح بعد سجل مثبت: ` +
       `${CATALOG_SCOPE_MIN_PUBLISHED} اقتراحا منشورا في نطاق الشعبة (لك ${f.publishedCohortProposals}، ` +
       `بقي ${remaining}) — أو بمنح صريح من الإدارة. واقترح الآن بنطاق شعبتك: ` +
-      'هو المكان الذي تجرّب فيه بلا مخاطرة على أحد.',
+      'هو المكان الذي تجرّب فيه بلا مخاطرة على أحد. ' +
+      'ودوراتُك التي أُهِّلتَ لها ولا يستخدمها مسارٌ ولا قالبٌ ولا شعبةٌ ' +
+      'مفتوحةٌ لك الآن بنطاق الكتالوج — فيها تضع محاورَك ومصادرَك.',
   }
 }

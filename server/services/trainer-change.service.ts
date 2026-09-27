@@ -141,7 +141,10 @@ export class TrainerChangeService {
        نطاق الشعبة مفتوح للجميع — وهو الافتراضي في الشاشة والرسالة هنا.
        وكان اقتراحُ الاسمِ وحدَه مستثنى، فأُغلق بابُه (ق٥) فزال الاستثناء. */
     if (input.scope === 'catalog') {
-      const gate = await this.catalogScopeFor(profile.id)
+      /* وعن الدورةِ يُسأل لا عن المدرّب (٢٧ سبتمبر ٢٠٢٦): من أُهِّل لدورةٍ
+         لا يستخدمها مسارٌ ولا قالبٌ ولا شعبةٌ فتعديلُه لا يصل أحدا. وهو ما
+         يَعِد به العقدُ في طوره المشروط، وكان يُردّ. */
+      const gate = await this.catalogScopeForCourse(profile.id, input.courseId)
       if (!gate.allowed) throw new AuthError('scope_not_granted', gate.reasonAr, 403)
     }
 
@@ -365,6 +368,42 @@ export class TrainerChangeService {
     return catalogScopeGate({
       grantedAt: profile?.catalogScopeGrantedAt?.toISOString() ?? null,
       publishedCohortProposals: published,
+    })
+  }
+
+  /**
+   * أهليةُ النطاق **لدورةٍ بعينها** — وفيها الأساسُ الثالث (البند هـ-١).
+   *
+   * ولمَ دالّةٌ ثانيةٌ لا توسيعُ الأولى: `catalogScopeFor` جوابٌ عن المدرّب
+   * («أيملك النطاقَ عموما؟») تقرؤه شاشةُ «مؤهّلاتي»، وهذه جوابٌ عن دورةٍ
+   * («أيملكه فيها؟») يقرؤها الإرسال. ولو دُمجتا لَصارت الأولى تسأل عن دورةٍ
+   * لا تعرفها.
+   *
+   * والخلوُّ يُقاس بـ`courseBlastRadius` نفسِها التي تُعرَض للمراجع، وبشرطها
+   * الحرفيِّ في `blastRadiusSentenceAr` — «لا مسار ولا قالب ولا شعبة» — فلا
+   * تقولَ الشاشةُ للمراجع شيئا وتحكمَ البوّابةُ بغيره.
+   */
+  async catalogScopeForCourse(profileId: string, courseId: string) {
+    const [profile, published, qual, radius] = await Promise.all([
+      this.prisma.trainerProfile.findUnique({
+        where: { id: profileId },
+        select: { catalogScopeGrantedAt: true },
+      }),
+      this.prisma.trainerChangeRequest.count({
+        where: { profileId, scope: 'cohort', status: 'published' },
+      }),
+      this.prisma.trainerCourseQualification.findUnique({
+        where: { profileId_courseId: { profileId, courseId } },
+        select: { status: true },
+      }),
+      courseBlastRadius(this.prisma, [courseId]),
+    ])
+    const r = radius.get(courseId)
+    return catalogScopeGate({
+      grantedAt: profile?.catalogScopeGrantedAt?.toISOString() ?? null,
+      publishedCohortProposals: published,
+      qualifiedForCourse: qual?.status === 'qualified',
+      courseUnused: r != null && r.entityCount === 0 && r.cohorts.total === 0,
     })
   }
 
