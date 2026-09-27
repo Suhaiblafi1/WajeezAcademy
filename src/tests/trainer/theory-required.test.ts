@@ -18,10 +18,17 @@ const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const code = (p: string) => read(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
 const body = (n: number) => 'ن'.repeat(n)
+/* ومنذ صار للمحاور مواعيدُ (٢٧ سبتمبر ٢٠٢٦) فالمرحلةُ تتمّ بمتونها ومواعيدها
+   معا — والمواعيدُ هنا سليمةٌ كي يُقاس المتنُ وحدَه: لكلّ محورٍ أسبوعُه. */
 const plan = (bodies: (string | null)[]) => ({
   kind: 'trainer' as const,
   modules: bodies.map((b, i) => ({ moduleId: `M${i}`, titleAr: `محور ${i}`, bodyAr: b })),
   resources: [{ title: 'مرجع', url: 'https://x.test/a' }],
+  slots: bodies.map((_, i) => ({
+    startsOn: `2027-02-${String(7 + i * 7).padStart(2, '0')}`,
+    endsOn: `2027-02-${String(13 + i * 7).padStart(2, '0')}`,
+    moduleIds: [`M${i}`],
+  })),
 })
 const build = (bodies: (string | null)[]) => buildChecklist({
   cohort: { title: 'شعبة' },

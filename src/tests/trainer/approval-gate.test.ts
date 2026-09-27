@@ -27,7 +27,11 @@ const body = 'ن'.repeat(MIN_MODULE_BODY)
 const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-14' }
 const INSIDE = new Date('2027-02-09T15:00:00.000Z')
 
-/** شعبةٌ أتمّ صاحبُها كلَّ ما يُطلب منه — ولم تُعتمَد بعد */
+/** شعبةٌ أتمّ صاحبُها كلَّ ما يُطلب منه — ولم تُعتمَد بعد.
+
+    ومنذ صار للمحاور مواعيدُ (٢٧ سبتمبر ٢٠٢٦) فالتامّةُ تامّةٌ بها: محورُها في
+    موعدٍ داخلَ المدّة وله كرّاستُه، ولقاؤه مربوطٌ به في موعده، ومهمّتُها
+    مربوطةٌ به. ومحورٌ واحدٌ يكفيه موعدٌ واحد — الحدُّ «أربعةٌ أو عددُ المحاور». */
 const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => buildChecklist({
   cohort: { title: 'الدفعة الأولى' },
   period: PERIOD,
@@ -35,9 +39,11 @@ const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => b
     kind: 'trainer',
     modules: [{ moduleId: 'M0', titleAr: 'محور', bodyAr: body }],
     resources: [{ title: 'كرّاسة', url: 'https://x.test/a' }],
+    slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['M0'], workbook: { url: 'https://x.test/wb' } }],
   } as never,
-  sessions: [{ startsAt: INSIDE, recordings: [] }],
+  sessions: [{ startsAt: INSIDE, recordings: [], moduleIds: ['M0'] }],
   assessmentsCount: 1,
+  assessmentModuleIds: ['M0'],
   planStatus: 'draft',
   ...over,
 })
@@ -78,7 +84,7 @@ describe('بوّابةُ الإرسال للاعتماد', () => {
      والتسجيلاتُ باقيةٌ اختياريّةً: تُنتَج **بعد** اللقاء، فاشتراطُها قبل
      الاعتماد يحبس الشعبةَ على شيءٍ لم يحن وقتُه. */
   it('⚠️ والمهامُّ تحجب — مهمّةٌ واحدةٌ على الأقلّ', () => {
-    const noTasks = complete({ assessmentsCount: 0 })
+    const noTasks = complete({ assessmentsCount: 0, assessmentModuleIds: [] })
     expect(readyToSubmit(noTasks), 'مرّت شعبةٌ بلا مهمّةٍ واحدة').toBe(false)
     expect(blockingBeforeSubmit(noTasks).map((c) => c.key)).toContain('assignments')
     /* وواحدةٌ تكفي — حدٌّ أدنى لا نطاق */

@@ -10,6 +10,7 @@ import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
+import { dayLabelAr, workbookDone, type PlanSlot } from "@/application/trainer/axis-timeline";
 import type { CohortTab } from "./cohort-tabs";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -50,6 +51,8 @@ interface TrainerPlan {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
     startsOn?: string | null; endsOn?: string | null;
+    /* ومواعيدُ المحاور وكرّاساتُها — `application/trainer/axis-timeline.ts` */
+    slots?: PlanSlot[] | null;
   } | null;
 }
 /** لقاءٌ مباشرٌ ينتظر قرارَ الإدارة — يجدوله المدرّبُ ولا يُعلَن حتّى يُعتمَد */
@@ -365,7 +368,30 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               </p>
             )}
             {trainerPlan.content?.summaryAr && <p className="mt-2 text-read leading-6 text-muted-foreground">{trainerPlan.content.summaryAr}</p>}
-            {(trainerPlan.content?.modules?.length ?? 0) > 0 && (
+            {/* ═══ والمحاورُ على مواعيدها — وهي ما سيحكم متى يُفتح كلُّ شيء (٢٧ سبتمبر ٢٠٢٦) ═══
+
+                من يعتمد يرى أيَّ محورٍ في أيّ موعد، ومتى، وهل لموعده كرّاستُه —
+                قبل أن يعتمد ما سيقرّر متى يرى المتعلّمُ كلَّ شيء. وصفحةُ المنهج
+                الكاملة مرحلتُها التالية؛ وهذا سطرٌ لكلّ موعدٍ لا يُغني عنها. */}
+            {(trainerPlan.content?.slots?.length ?? 0) > 0 ? (() => {
+              const mods = trainerPlan.content!.modules ?? [];
+              const axisNo = new Map(mods.map((m, i) => [m.moduleId, i + 1]));
+              return (
+                <ol className="mt-2 space-y-1.5 text-read leading-6 text-foreground" aria-label="مواعيدُ المحاور">
+                  {trainerPlan.content!.slots!.map((slot, si) => (
+                    <li key={`${si}-${slot.moduleIds[0] ?? "empty"}`}>
+                      <b>الموعد {si + 1}</b>
+                      <span className="text-muted-foreground"> · {dayLabelAr(slot.startsOn)} – {dayLabelAr(slot.endsOn)} · </span>
+                      {slot.moduleIds.map((id) => `${axisNo.get(id) ?? "؟"}. ${mods.find((m) => m.moduleId === id)?.titleAr ?? id}`).join(" + ")}
+                      {" · "}
+                      {workbookDone(slot.workbook)
+                        ? <span className="text-muted-foreground">له كرّاستُه</span>
+                        : <span className="font-bold text-gold-ink">بلا كرّاسة</span>}
+                    </li>
+                  ))}
+                </ol>
+              );
+            })() : (trainerPlan.content?.modules?.length ?? 0) > 0 && (
               <ol className="mt-2 space-y-1 text-read text-foreground">
                 {trainerPlan.content!.modules!.map((m, i) => <li key={m.moduleId}>{i + 1}. {m.titleAr}</li>)}
               </ol>

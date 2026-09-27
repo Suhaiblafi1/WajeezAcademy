@@ -1,0 +1,196 @@
+/* ═══ خطُّ المحاور في الخادم — مواعيدُ تُحفظ، ولقاءاتٌ بمحاورها، ومهامُّ بمواعيدها ═══
+
+   قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) وقراراتُه العشرة بكلمة «go». والقاعدةُ
+   المحضةُ في `src/application/trainer/axis-timeline.ts`؛ وهنا ما يقع فعلا على
+   قاعدةٍ حقيقيّةٍ وعبر المسالك:
+
+   ① الخطّةُ تحفظ مواعيدَها وكرّاساتِها ومحاورَ مصادرها — لا يُسقطها المخطّطُ صامتا.
+   ② اللقاءُ يُنشأ بمحوره أو محوريه، والأوّلُ في العمود القديم — وثلاثةٌ تُردّ.
+   ③ الربطُ لا يُسقط المعتمَدَ إلى الانتظار، ولا يمسّ المبدئيَّ ولا الملغى.
+   ④ المهمّةُ بمحورها تأخذ آخرَ موعده موعدا ما لم يُكتب غيرُه (⑥).
+   ⑤ والإرسالُ يحجبه محورٌ بلا لقاءٍ مباشر — ويسمّيه. */
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { PrismaClient } from '@prisma/client'
+import type { FastifyInstance } from 'fastify'
+import { setupTestDb, testPrisma } from '../helpers/db'
+import { AuthService } from '../../services/auth.service'
+import { CohortPlanService, type TrainerPlanContent } from '../../services/cohort-plan.service'
+import { buildApp } from '../../http/app'
+import { SESSION_COOKIE } from '../../http/auth-plugin'
+import { periodBounds } from '../../../src/application/trainer/cohort-period'
+
+let prisma: PrismaClient
+let app: FastifyInstance
+let plans: CohortPlanService
+let trainerUserId = ''
+let cookie = ''
+let cohortId = ''
+
+/* أربعةُ محاورَ في أربعة أسابيع — والمدّةُ في مستقبلٍ لا يمضي */
+const PERIOD = { startsOn: '2027-03-07', endsOn: '2027-04-03' }
+const IDS = ['AX-M1', 'AX-M2', 'AX-M3', 'AX-M4']
+const SLOTS = [
+  { startsOn: '2027-03-07', endsOn: '2027-03-13', moduleIds: ['AX-M1'], workbook: { url: 'https://x.test/wb-1.pdf' } },
+  { startsOn: '2027-03-14', endsOn: '2027-03-20', moduleIds: ['AX-M2'], workbook: { url: 'https://x.test/wb-2.pdf' } },
+  { startsOn: '2027-03-21', endsOn: '2027-03-27', moduleIds: ['AX-M3'], workbook: { url: 'https://x.test/wb-3.pdf' } },
+  { startsOn: '2027-03-28', endsOn: '2027-04-03', moduleIds: ['AX-M4'], workbook: { bodyFileKey: 'wb-4-key', bodyFileName: 'wb-4.pdf' } },
+]
+const body = 'الشرحُ المكتوب الذي يقرؤه المتعلّمُ قبل اللقاء، وفيه ما يكفيه ليبدأ عملَه في هذا المحور.'
+const content: TrainerPlanContent = {
+  kind: 'trainer', summaryAr: 'شعبةٌ على خطّ المحاور', ...PERIOD,
+  modules: IDS.map((moduleId, i) => ({ moduleId, titleAr: `المحور ${i + 1}`, bodyAr: body })),
+  resources: [
+    { title: 'مرجعُ المحور الثالث', url: 'https://x.test/ref-3', category: 'reading', moduleId: 'AX-M3' },
+    { title: 'قراءةٌ قبل لقاء الرابع', url: 'https://x.test/pre-4', category: 'reading', moduleId: 'AX-M4', preReading: true },
+  ],
+  slots: SLOTS,
+}
+/** اليومُ الثاني من الموعد، الثامنةَ مساءً بعمّان (الخامسة بغرينتش) — ساعتان */
+const when = (slot: number) => ({
+  startsAt: `${SLOTS[slot].startsOn.slice(0, 8)}${String(Number(SLOTS[slot].startsOn.slice(8)) + 1).padStart(2, '0')}T17:00:00.000Z`,
+  endsAt: `${SLOTS[slot].startsOn.slice(0, 8)}${String(Number(SLOTS[slot].startsOn.slice(8)) + 1).padStart(2, '0')}T19:00:00.000Z`,
+})
+const post = (url: string, payload: unknown) => app.inject({ method: 'POST', url, payload: payload as object, headers: { cookie } })
+const patch = (url: string, payload: unknown) => app.inject({ method: 'PATCH', url, payload: payload as object, headers: { cookie } })
+
+beforeAll(async () => {
+  await setupTestDb()
+  prisma = await testPrisma()
+  app = await buildApp(prisma)
+  plans = new CohortPlanService(prisma)
+  const auth = new AuthService(prisma)
+
+  const t = await auth.register('axis-trainer@test.local', 'Trainer#12345', 'مدرّبُ المحاور')
+  trainerUserId = t.userId
+  await auth.setRoles(trainerUserId, ['trainer'])
+  cookie = `${SESSION_COOKIE}=${(await auth.login('axis-trainer@test.local', 'Trainer#12345')).token}`
+  const application = await prisma.trainerApplication.create({
+    data: { reference: `WJ-TR-AX-${Date.now()}`, fullName: 'مدرّبُ المحاور', email: 'axis-trainer@test.local', status: 'active', userId: trainerUserId },
+  })
+  const profile = await prisma.trainerProfile.create({ data: { userId: trainerUserId, applicationId: application.id } })
+
+  const course = await prisma.course.findFirst({ select: { id: true } })
+  /* حضوريّةٌ عمدا: الاعتمادُ لا يُنشئ اجتماعَ Zoom فلا شبكةَ في الاختبار */
+  const cohort = await prisma.cohort.create({
+    data: { courseId: course!.id, title: 'شعبةُ خطّ المحاور', status: 'draft', price: 100, currency: 'USD', deliveryMode: 'in_person', timezone: 'Asia/Amman' },
+  })
+  cohortId = cohort.id
+  await prisma.cohortTrainer.create({ data: { cohortId, profileId: profile.id, role: 'lead', assignedBy: trainerUserId } })
+})
+
+afterAll(async () => { await app.close() })
+
+describe('① الخطّةُ تحفظ مواعيدَها', () => {
+  it('⚠️ المواعيدُ والكرّاساتُ ومحاورُ المصادر تمرّ من المسلك كما هي', async () => {
+    const res = await app.inject({ method: 'PUT', url: `/api/trainer/cohorts/${cohortId}/plan`, payload: content as object, headers: { cookie } })
+    expect(res.statusCode, res.body).toBe(200)
+    const ws = await plans.workspace(trainerUserId, cohortId)
+    expect(ws.plan?.content?.slots, 'سقطت المواعيدُ في المخطّط').toEqual(SLOTS)
+    const [ref, pre] = ws.plan!.content!.resources
+    expect(ref.moduleId).toBe('AX-M3')
+    expect(pre.preReading, 'سقطت القراءةُ المسبقة').toBe(true)
+    /* والمحاورُ ومواعيدُها وكرّاساتُها تامّةٌ في القائمة */
+    const byKey = new Map(ws.checklist.map((c) => [c.key, c.done]))
+    expect(byKey.get('modules')).toBe(true)
+    expect(byKey.get('workbooks')).toBe(true)
+    expect(byKey.get('sessions'), 'تمّت اللقاءاتُ بلا لقاء').toBe(false)
+  })
+})
+
+describe('② اللقاءُ بمحوره أو محوريه', () => {
+  it('⚠️ يُنشأ بمحوريه، والأوّلُ في العمود القديم', async () => {
+    const res = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ المحورين', ...when(0), moduleIds: ['AX-M1', 'AX-M2'] })
+    expect(res.statusCode, res.body).toBe(201)
+    const id = (res.json() as { session: { id: string } }).session.id
+    const row = await prisma.cohortSession.findUniqueOrThrow({ where: { id } })
+    expect(row.moduleIds).toEqual(['AX-M1', 'AX-M2'])
+    expect(row.moduleId, 'العمودُ القديمُ لا يحمل أوّلَهما').toBe('AX-M1')
+    await prisma.cohortSession.delete({ where: { id } })
+  })
+
+  it('⚠️ وثلاثةُ محاورَ للقاءٍ واحدٍ تُردّ — والمكرّرُ كذلك', async () => {
+    const three = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'ثلاثيّ', ...when(0), moduleIds: ['AX-M1', 'AX-M2', 'AX-M3'] })
+    expect(three.statusCode).toBe(422)
+    const twice = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'مكرّر', ...when(0), moduleIds: ['AX-M1', 'AX-M1'] })
+    expect(twice.statusCode).toBe(422)
+    expect(await prisma.cohortSession.count({ where: { cohortId } }), 'حُفظ ما رُدّ').toBe(0)
+  })
+})
+
+describe('③ الربطُ بنيةُ منهجٍ لا موعدُ حضور', () => {
+  it('⚠️ لا يُسقط المعتمَدَ إلى الانتظار — ويُكتب أثرُه', async () => {
+    const made = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ الأوّل', ...when(0), moduleIds: ['AX-M1'] })
+    const id = (made.json() as { session: { id: string } }).session.id
+    await prisma.cohortSession.update({ where: { id }, data: { approvalState: 'approved', approvedAt: new Date() } })
+
+    const res = await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1', 'AX-M2'] })
+    expect(res.statusCode, res.body).toBe(200)
+    const row = await prisma.cohortSession.findUniqueOrThrow({ where: { id } })
+    expect(row.approvalState, 'أُسقط المعتمَدُ إلى الانتظار لأجل رقم محور').toBe('approved')
+    expect(row.moduleIds).toEqual(['AX-M1', 'AX-M2'])
+    const audit = await prisma.auditEvent.findFirst({ where: { action: 'cohort.session.axes', entityId: id } })
+    expect(audit, 'الربطُ بلا أثر').toBeTruthy()
+
+    /* وبلا محورٍ يُردّ — «لكلّ لقاءٍ محورٌ أو محوران» — وثلاثةٌ كذلك */
+    expect((await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: [] })).statusCode).toBe(422)
+    expect((await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1', 'AX-M2', 'AX-M3'] })).statusCode).toBe(422)
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id } })).moduleIds, 'حُفظ ربطٌ مردود').toEqual(['AX-M1', 'AX-M2'])
+    await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1'] })
+  })
+
+  it('⚠️ والمبدئيُّ لا يُربط من باب المدرّب، ولا الملغى', async () => {
+    const ph = await prisma.cohortSession.create({ data: { cohortId, title: 'الجلسة ١', startsAt: new Date('2027-03-08T17:00:00.000Z'), placeholder: true } })
+    const r1 = await patch(`/api/trainer/sessions/${ph.id}/axes`, { moduleIds: ['AX-M1'] })
+    expect(r1.statusCode).toBe(409)
+    expect(r1.json()).toMatchObject({ error: { code: 'placeholder_session' } })
+    const gone = await prisma.cohortSession.create({ data: { cohortId, title: 'مردود', startsAt: new Date('2027-03-09T17:00:00.000Z'), status: 'cancelled', approvalState: 'rejected' } })
+    expect((await patch(`/api/trainer/sessions/${gone.id}/axes`, { moduleIds: ['AX-M1'] })).statusCode).toBe(409)
+    await prisma.cohortSession.deleteMany({ where: { id: { in: [ph.id, gone.id] } } })
+  })
+})
+
+describe('④ آخرُ موعد المهمّة آخرُ موعد محورها', () => {
+  it('⚠️ بلا موعدٍ مكتوبٍ يُفترض آخرُ ثانيةٍ في موعد محورها بعمّان — والمكتوبُ يبقى', async () => {
+    const res = await post(`/api/trainer/cohorts/${cohortId}/assessments`, { title: 'مهمّةُ المحور الثالث', type: 'assignment', moduleId: 'AX-M3' })
+    expect(res.statusCode, res.body).toBe(201)
+    const due = (res.json() as { dueAt: string }).dueAt
+    expect(new Date(due).toISOString()).toBe(periodBounds(SLOTS[2]).to.toISOString())
+    expect(new Date(due).toISOString()).toBe('2027-03-27T20:59:59.999Z')
+
+    const mine = await post(`/api/trainer/cohorts/${cohortId}/assessments`, { title: 'بموعدٍ مكتوب', type: 'assignment', moduleId: 'AX-M3', dueAt: '2027-03-24T20:00:00.000Z' })
+    expect(new Date((mine.json() as { dueAt: string }).dueAt).toISOString(), 'كُتب فوق ما كتبه بيده').toBe('2027-03-24T20:00:00.000Z')
+  })
+
+  it('وربطُ مهمّةٍ بلا موعدٍ بمحورها يمنحها آخرَ موعده — وما كُتب بيدٍ لا يُمسّ', async () => {
+    const a = await prisma.cohortAssessment.create({ data: { cohortId, title: 'بلا محور', type: 'assignment' } })
+    const r = await patch(`/api/trainer/assessments/${a.id}`, { moduleId: 'AX-M2' })
+    expect(r.statusCode, r.body).toBe(200)
+    const row = await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: a.id } })
+    expect(row.moduleId).toBe('AX-M2')
+    expect(row.dueAt?.toISOString()).toBe(periodBounds(SLOTS[1]).to.toISOString())
+
+    const hand = await prisma.cohortAssessment.create({ data: { cohortId, title: 'بموعده', type: 'assignment', dueAt: new Date('2027-03-15T10:00:00.000Z') } })
+    await patch(`/api/trainer/assessments/${hand.id}`, { moduleId: 'AX-M2' })
+    expect((await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: hand.id } })).dueAt?.toISOString()).toBe('2027-03-15T10:00:00.000Z')
+    await prisma.cohortAssessment.deleteMany({ where: { id: { in: [a.id, hand.id] } } })
+  })
+})
+
+describe('⑤ الإرسالُ على خطّ المحاور', () => {
+  it('⚠️ محورٌ بلا لقاءٍ مباشرٍ يحجب الإرسالَ ويُسمّى — وبلقائه يُرسَل', async () => {
+    /* لقاءُ الأوّل قائمٌ من قبل؛ ولقاءان للثاني والثالث — والرابعُ بلا لقاء */
+    for (const [slot, id] of [[1, 'AX-M2'], [2, 'AX-M3']] as const) {
+      const r = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: `لقاءُ ${id}`, ...when(slot), moduleIds: [id] })
+      expect(r.statusCode, r.body).toBe(201)
+    }
+    await expect(plans.submit(trainerUserId, cohortId, true)).rejects.toMatchObject({
+      code: 'stages_incomplete', message: expect.stringContaining('لقاءٌ لكلّ محورٍ في موعده (3/4)'),
+    })
+
+    const last = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ الرابع', ...when(3), moduleIds: ['AX-M4'] })
+    expect(last.statusCode, last.body).toBe(201)
+    const sent = await plans.submit(trainerUserId, cohortId, true)
+    expect(sent.status).toBe('submitted')
+  })
+})

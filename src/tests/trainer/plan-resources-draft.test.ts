@@ -26,8 +26,19 @@ const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*(\/\/|--).*$/gm, '')
 
 const WS = code('src/pages/trainer/CohortWorkspace.tsx')
-/** كتلةُ المصادر وحدَها — الملفُّ فيه خمسُ خطواتٍ لكلٍّ حقولُها */
-const RES = WS.slice(WS.indexOf('RESOURCE_CATEGORIES.map((cat)'), WS.indexOf('احفظ المصادر'))
+/** كتلةُ المصادر وحدَها — الملفُّ فيه ستُّ خطواتٍ لكلٍّ حقولُها.
+
+    وانتقلت الكتلةُ إلى درجة «المهامّ والمصادر» (٢٧ سبتمبر ٢٠٢٦)، وأصنافُها
+    تُقرأ من `resourceCats` — الثلاثةُ لشعبةٍ اعتُمدت قبل المواعيد، واثنان
+    بعدها (المسجَّلُ صار في «اللقاءات»). والمقتطَعُ من أصنافها إلى لوحة
+    التسليمات تحتها. */
+const RES = (() => {
+  const from = WS.indexOf('resourceCats.map((cat)')
+  const to = WS.indexOf('<CohortSubmissions', from)
+  expect(from, 'لا كتلةَ مصادر').toBeGreaterThan(-1)
+  expect(to, 'الكتلةُ بلا نهاية').toBeGreaterThan(from)
+  return WS.slice(from, to)
+})()
 
 describe('③ ملفٌّ في خانة الكتب لا يبقى «كتابا»', () => {
   it('⚠️ الاشتقاق: صنفٌ صريحٌ ومعه ملفٌّ ← «ملفّ» لا «كتاب»', () => {

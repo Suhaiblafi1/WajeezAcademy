@@ -170,3 +170,40 @@ describe('② شعبةٌ بلا قواعدِ إكمالٍ لا تُصدِر لك
     expect(out.failures).toEqual([])
   })
 })
+
+/* ═══ ③ واللقاءُ لمحورين يُتِمُّهما معا (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   صار اللقاءُ «لمحورٍ أو محورين» (`moduleIds`)، وبقي الحسابُ يقرأ العمودَ
+   القديمَ `moduleId` — وهو أوّلُ المحورين وحدَه. فمن حضر لقاءً شرح محورين
+   تمَّ له أوّلُهما، وبقي الثاني «لم يبدأ» وقد شهد شرحَه كاملا. */
+describe('③ اللقاءُ لمحورين يُتِمُّهما معا', () => {
+  it('⚠️ حضر لقاءً لمحورين لا عملَ عليهما — فيتمّان كلاهما', async () => {
+    const first = await prisma.courseModule.create({ data: { id: `${COURSE}-M4`, courseId: COURSE, status: 'published' } })
+    const second = await prisma.courseModule.create({ data: { id: `${COURSE}-M5`, courseId: COURSE, status: 'published' } })
+    const s = await prisma.cohortSession.create({
+      data: {
+        cohortId, title: 'لقاءُ المحورين', moduleId: first.id, moduleIds: [first.id, second.id], status: 'done',
+        startsAt: new Date(Date.now() - 6 * 86_400_000), endsAt: new Date(Date.now() - 6 * 86_400_000 + 7_200_000),
+      },
+    })
+    const enrollmentId = await freshEnrollment(`evid-g-${STAMP}@test.local`)
+    await attend(enrollmentId, s.id)
+    await progress.recomputeProgress(enrollmentId)
+    const done = (await completedModules(enrollmentId)).map((m) => m.moduleId).sort()
+    expect(done, 'تمّ أوّلُ المحورين وحدَه — قُرئ العمودُ القديم').toEqual([first.id, second.id].sort())
+  })
+
+  it('وما جُدول قبل المحورين — `moduleId` وحدَه — يُقرأ كما كان', async () => {
+    const legacy = await prisma.courseModule.create({ data: { id: `${COURSE}-M6`, courseId: COURSE, status: 'published' } })
+    const s = await prisma.cohortSession.create({
+      data: {
+        cohortId, title: 'لقاءٌ قديم', moduleId: legacy.id, status: 'done',
+        startsAt: new Date(Date.now() - 5 * 86_400_000), endsAt: new Date(Date.now() - 5 * 86_400_000 + 7_200_000),
+      },
+    })
+    const enrollmentId = await freshEnrollment(`evid-h-${STAMP}@test.local`)
+    await attend(enrollmentId, s.id)
+    await progress.recomputeProgress(enrollmentId)
+    expect((await completedModules(enrollmentId)).map((m) => m.moduleId)).toEqual([legacy.id])
+  })
+})

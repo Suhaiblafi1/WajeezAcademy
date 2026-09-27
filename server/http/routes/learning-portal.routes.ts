@@ -29,6 +29,19 @@ import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trai
 import { AuthError } from '../../services/auth.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
 import { requireAuth, requirePermission } from '../auth-plugin'
+import { MAX_AXES_PER_SESSION } from '../../../src/application/trainer/axis-timeline'
+
+/** محورا اللقاء: اثنان على الأكثر بلا تكرار — «ولكلّ لقاءٍ محورٌ أو محوران» */
+const axesArray = z.array(z.string().trim().min(1).max(64))
+  .max(MAX_AXES_PER_SESSION, 'اللقاءُ لمحورٍ أو محورين — لا أكثر')
+const uniqueAxes = (ids: string[]) => new Set(ids).size === ids.length
+const sessionAxesSchema = axesArray.refine(uniqueAxes, 'محورٌ مكرّرٌ في اللقاء نفسِه')
+/* والربطُ بعد الإنشاء لا يترك اللقاءَ بلا محور: الإنشاءُ القديمُ يأتي بلا
+   محاور (جدولةُ ما قبل المواعيد)، أمّا من ربط فقد اختار — ومحوُ الربط كلِّه
+   يُعيد لقاءً لا يُعرف ما شرح. */
+const sessionAxesRequired = axesArray
+  .min(1, 'اختر محورا واحدا على الأقلّ — لكلّ لقاءٍ محورٌ أو محوران')
+  .refine(uniqueAxes, 'محورٌ مكرّرٌ في اللقاء نفسِه')
 
 /* يحوّل محتوى شعبة خاما إلى نسخة آمنة للعرض: روابط موقعة بدل مفاتيح التخزين */
 function signCohortContent<T extends {
@@ -504,6 +517,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
          باختيارِ فصلٍ آخر، ومصدرٌ يُردُّ حفظُه لتاريخٍ صار خارجَ المدى
          يَحبِس المدرّبَ عن حفظ خطّته كلِّها — والعرضُ يحكم لا الحفظ. */
       opensAt: z.string().datetime().nullish(),
+      /* محورُ المصدر — ومنه متى يُفتح: بعد لقاء محوره، أو مع كرّاسته إن كان
+         للقراءة المسبقة (`preReading`). وبلا محورٍ فهو للشعبة كلِّها. */
+      moduleId: z.string().trim().max(64).nullish(),
+      preReading: z.boolean().nullish(),
       bodyFileKey: z.string().trim().max(120).nullish(),
       bodyFileName: z.string().trim().max(200).nullish(),
       bodyFileMime: z.string().trim().max(120).nullish(),
@@ -523,6 +540,26 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
        المفتاحين كان المخطّطُ يُسقطهما صامتا، فيحفظ المدرّبُ مدّتَه ولا تُحفظ. */
     startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
     endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+    /* ═══ مواعيدُ المحاور وكرّاساتُها (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       الشكلُ وحدَه هنا، كالمدّة: المعنى — أربعةُ مواعيدَ على الأقلّ، والجمعُ
+       لمتجاورَين، والتواريخُ داخلَ المدّة ومتتابعة — قاعدةٌ في
+       `application/trainer/axis-timeline.ts` تمنع الإرسالَ لا الحفظ: من رتّب
+       نصفَ مواعيده ثمّ أغلق حاسوبه يجد نصفَه حين يعود. */
+    slots: z.array(z.object({
+      startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      moduleIds: z.array(z.string().max(64)).max(40),
+      /* كرّاسةُ الموعد — ملفٌّ أو رابط، كالمصدر. والناقصُ يُحفظ ويُسمّى في
+         قائمة التجهيز، ولا يُردّ حفظُ الخطّة كلِّها لأجله. */
+      workbook: z.object({
+        title: z.string().max(200).nullish(),
+        url: z.string().max(500).nullish(),
+        bodyFileKey: z.string().trim().max(120).nullish(),
+        bodyFileName: z.string().trim().max(200).nullish(),
+        bodyFileMime: z.string().trim().max(120).nullish(),
+      }).nullish(),
+    })).max(40).nullish(),
     /* وسقط `proposals` من المخطّط (د-٦): كان اسمُ الدورة يُكتب على النسخة
        القائمة من داخل خطّة شعبة فيُعيد تسميةَ الشهادات الصادرة. ثمّ مرّ
        بقناته (ح-٣)، ثمّ أُغلق بابُه كلُّه (ق٥ · ١٧ سبتمبر ٢٠٢٦). والمحفوظُ
@@ -692,7 +729,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       title: z.string().min(3), type: z.enum(['assignment', 'quiz', 'project']),
-      moduleId: z.string().optional(), briefAr: z.string().max(4000).optional(), maxScore: z.number().int().min(1).optional(),
+      moduleId: z.string().trim().min(1).max(64).optional(), briefAr: z.string().max(4000).optional(), maxScore: z.number().int().min(1).optional(),
       passScore: z.number().int().optional(), dueAt: z.coerce.date().optional(), rubricId: z.string().uuid().optional(),
       /* المرفقات — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */
       attachments: z.array(z.object({
@@ -723,6 +760,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       type: z.enum(['assignment', 'quiz', 'project']).optional(),
       maxScore: z.number().int().min(1).optional(),
       dueAt: z.coerce.date().nullable().optional(),
+      /* محورُ المهمّة — منه متى تُفتح وآخرُ موعدها الافتراضيّ (٢٧ سبتمبر ٢٠٢٦) */
+      moduleId: z.string().trim().min(1).max(64).nullable().optional(),
       /* المصفوفةُ الفارغةُ تعني «امحُ المرفقات» — كالنصّ الفارغ للتعليمات */
       attachments: z.array(z.object({
         title: z.string().min(2).max(200), url: z.string().url().max(500),
@@ -799,6 +838,10 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       endsAt: z.coerce.date(),
       timezone: z.string().max(64).optional(),
       moduleId: z.string().max(64).optional(),
+      /* ومحورا اللقاء — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦).
+         والسقفُ اثنان هنا لا في الشاشة وحدَها: قاعدةٌ في الزرّ وحدَه لا
+         تمنع طلبا يُرسَل بيدٍ أخرى. */
+      moduleIds: sessionAxesSchema.optional(),
       /* نبذةُ اللقاء — صارت لكلّ لقاءٍ لا للشعبة كلِّها */
       noteAr: z.string().max(2000).nullish(),
       /* وملفٌّ اختياريٌّ يُرفق به */
@@ -844,6 +887,17 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       }
     }).parse(req.body)
     return cohorts.trainerMoveSession(req.auth!.userId, sessionId, body)
+  })
+
+  /* ═══ ربطُ لقاءٍ بمحوره أو محوريه — بلا نقلٍ ولا انتظار ═══
+     والعلّةُ في رأس `trainerSetSessionAxes`. */
+  app.patch('/api/trainer/sessions/:sessionId/axes', {
+    preHandler: requirePermission('trainer.cohort.schedule'),
+    schema: { tags: ['trainer-ops'], summary: 'ربطُ لقاءٍ في شعبتي بمحوره أو محوريه' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    const { moduleIds } = z.object({ moduleIds: sessionAxesRequired }).strict().parse(req.body)
+    return cohorts.trainerSetSessionAxes(req.auth!.userId, sessionId, moduleIds)
   })
 
   /* ═══ حذفُ لقاء — لأنّ الشاشةَ كانت تأمر به ولا بابَ له ═══

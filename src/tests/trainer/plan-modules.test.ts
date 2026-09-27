@@ -124,10 +124,19 @@ describe('الشاشةُ تنادي المنطقَ ولا تعيد اشتقاق�
     expect(ws, 'الاشتقاقُ من الطول ما زال في الشاشة').not.toMatch(/-T\$\{[^}]*\.length/)
   })
 
+  /* ═══ والنقلُ صار يحمل المواعيدَ معه (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     للمحاور مواعيدُ، ونقلُ محورٍ بلا مواعيده يترك المحورَ الثالثَ في موعد
+     الثاني. فالزرّان ينقلان عبر `moveAxis` — تنادي `moveModule` نفسَها ثمّ
+     تعيد صبَّ المحاور في المواعيد (`reflowSlots`). والمحروسُ الأصليُّ باقٍ:
+     المنطقُ مستورَدٌ لا مُعاد اشتقاقُه، وخطوةٌ واحدةٌ في الاتّجاهين. */
   it('والنقلُ خطوةً واحدةً في الاتّجاهين، ومعطَّلٌ عند الطرف', () => {
     const ws = src(WS)
-    expect(ws).toContain('moveModule(content.modules, i, -1)')
-    expect(ws).toContain('moveModule(content.modules, i, 1)')
+    expect(ws).toContain('onClick={() => moveAxis(i, -1)}')
+    expect(ws).toContain('onClick={() => moveAxis(i, 1)}')
+    const move = ws.slice(ws.indexOf('const moveAxis'), ws.indexOf('const moveAxis') + 400)
+    expect(move, 'النقلُ لا ينادي المنطقَ المستورَد').toContain('moveModule(content.modules, i, delta)')
+    expect(move, 'النقلُ يترك المواعيدَ خلفه').toContain('reflowSlots(')
     /* ولا يُترك الزرُّ يعمل عند الطرف فيبدو مكسورا */
     expect(ws).toMatch(/disabled=\{locked \|\| i === 0\}/)
     expect(ws).toMatch(/disabled=\{locked \|\| i === content\.modules\.length - 1\}/)

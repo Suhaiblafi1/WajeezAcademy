@@ -65,6 +65,8 @@ const PHRASES: Record<string, string> = {
      ويُفرَّق عن `session.reschedule.*` عمدا: ذاك طلبٌ يُبَتّ، وهذا فعلٌ وقع. */
   'cohort.session.move': 'نقلُ موعدِ لقاءٍ داخلَ نافذة الجدولة',
   'cohort.session.delete': 'حذفُ مدرّبٍ لقاءً لم ينعقد',
+  /* «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦) — بنيةُ منهجٍ لا موعدُ حضور */
+  'cohort.session.axes': 'ربطُ لقاءٍ بمحوره أو محوريه',
   /* المبدئيُّ ما ولّدته الإدارةُ لتُفتح به الشعبة، ويُرفع بأوّل لقاءٍ يُعتمَد
      من جدول مدرّبها (٢٧ سبتمبر ٢٠٢٦) */
   'cohort.placeholders.clear': 'رفعُ الجدولِ المبدئيّ باعتماد أوّلِ لقاءٍ من جدول المدرّب',
@@ -358,6 +360,7 @@ const PHRASES: Record<string, string> = {
      من `JOBS` لا من تعليق.) */
   'worker.calendly_interview_sync': 'مزامنةُ مقابلاتِ Calendly',
   'worker.cleanup_expired': 'تنظيفُ ما انتهت صلاحيّتُه',
+  'worker.close_ended_sessions': 'إغلاقُ اللقاءاتِ التي انتهت وإعادةُ حساب التقدّم',
   'worker.cohort_status_sync': 'مزامنةُ حالاتِ الشعب',
   'worker.dispatch_notifications': 'إرسالُ الإشعاراتِ المنتظِرة',
   'worker.enforce_retention': 'تطبيقُ مددِ الحفظ',
