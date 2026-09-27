@@ -42,12 +42,12 @@ describe("ثبات الصفحة على الهاتف", () => {
   });
 });
 
-/* ── شريطُ بوّابة المدرّب ──
+/* ── شريطُ البوّابات ──
 
-   رصدت جولةُ ٢٠٢٦-٠٩ تسعةَ رموزٍ **بلا كلمة** بعرض ٣٩٠: النصُّ
-   `hidden sm:inline`، فيصير كلُّ عنصرٍ ٣٨×٤٤ بكسلا يُميَّز بالرمز وحدَه.
-   والعرضُ فوق ٢٤ التي تشترطها WCAG 2.5.8 فليس مخالفةً — لكنّ تسعةَ أهدافٍ
-   متشابهةٍ بلا اسمٍ ليست تنقّلا.
+   رصدت جولةُ ٢٠٢٦-٠٩ في بوّابة المدرّب تسعةَ رموزٍ **بلا كلمة** بعرض ٣٩٠:
+   النصُّ `hidden sm:inline`، فيصير كلُّ عنصرٍ ٣٨×٤٤ بكسلا يُميَّز بالرمز
+   وحدَه. والعرضُ فوق ٢٤ التي تشترطها WCAG 2.5.8 فليس مخالفةً — لكنّ تسعةَ
+   أهدافٍ متشابهةٍ بلا اسمٍ ليست تنقّلا.
 
    ووجد إصلاحُه ما لم يره التقرير: **امتدادٌ أفقيٌّ في المقاسات الثلاثة
    جميعا** — التسعةُ بأسمائها ٨٦٧ بكسلا في صفٍّ مع الشعار والأدوات. ويشتدّ
@@ -66,7 +66,7 @@ describe("ثبات الصفحة على الهاتف", () => {
    فارغا. ثمّ قرّر صاحبُ المنصّة (٢٧ سبتمبر ٢٠٢٦): «اجعل قائمةَ العناوين
    مكتملةً ليست داخلَ المزيد، إلّا إذا استُخدم الهاتفُ والشاشةُ صغيرة — هناك
    نستخدم المزيدَ لمن لا يظهر». فصار الشريطُ يقيس ويعرض ما وسعه، وسقطت
-   الرموزُ منه كي تسع الثلاثةَ عشرَ سطرَها (والتعليلُ بأرقامه في `TabsBar`).
+   الرموزُ منه كي تسع الثلاثةَ عشرَ سطرَها (والتعليلُ بأرقامه في `ui/PortalTabs`).
 
    وقِيس بالمتصفّح وخطُّ IBM Plex Sans Arabic محمَّلٌ فعلا. وأوّلُ قياسٍ جرى
    بخطٍّ بديلٍ لم يصل خطُّ الويب إلى متصفّحه، فجاءت نصوصُه أعرضَ بأكثرَ من
@@ -79,58 +79,78 @@ describe("ثبات الصفحة على الهاتف", () => {
      · ١٤٤٠ و١٧٢٨ — ٥ و٨ ← ١٣ بلا «المزيد»
      · ولا امتدادَ أفقيّا في أيٍّ منها، ولا تبويبٌ مقصوصُ الطرف
 
+   ── ثمّ «طبّق نفس الشيء على بوابة المستشار والطالب» (٢٧ سبتمبر) ──
+
+   فصار الشريطُ مكوّنا واحدا (`ui/PortalTabs`) تركّبه البوّاباتُ الثلاث، وقِيس
+   ما كان قبله في الاثنتين الأخريين:
+
+     · المستشار — ٣٢٠–٤٣٠: أربعةُ رموزٍ بلا اسم، وزرُّ الحساب مقصوصٌ عند الحافّة
+       (وعلى ٣٢٠ زرُّ الثيم معه). ٧٦٨ و١٠٢٤: «ما قيل عنّي» في ثلاثة أسطرٍ داخل
+       حبّته، وزرّا الثيم والحساب خارجَ الشاشة. ١٢٨٠: الانطواءُ وحدَه.
+       ← بعده: الأربعةُ بأسمائها من ٣٢٠ فما فوق، ولا قَصّ ولا انطواء.
+     · المتعلّم، صفحاتُ «خزانتي» — ٣٢٠–٣٩٠: الخامسةُ خلف تمريرٍ لا علامةَ عليه.
+       ← بعده: ٢–٣ و«المزيد»، والخمسُ من ٤٣٠.
+     · المتعلّم، الأقسام — ثلاثةٌ تسع كلَّ شاشة. ومتى نُشرت «المكتبة» (قِيس بلقطة
+       الكتالوج المنشورة ومادّةٍ واحدة): على ٧٦٨ لصق الشريطُ الشعارَ وخرج زرُّ
+       الحساب عن الشاشة. ← بعده: الأربعةُ على ٧٦٨ وزرُّ الحساب في مكانه.
+
    ── وحدُّ هذا الحارس ──
 
    يقرأ البنيةَ لا الصفحةَ المصيَّرة: فحصُ الإتاحة في CI للصفحات العامّة،
-   وهذه خلف جلسةِ مدرّب. فالأرقامُ أعلاه قِيست بيدٍ ولا يُعيدها شيءٌ آليّا —
-   ومن غيّر الشريطَ أعادها. وقرارُ «كم يُعرض» نفسُه يُحرَس بأرقامٍ في
+   وهذه خلف جلساتٍ. فالأرقامُ أعلاه قِيست بيدٍ ولا يُعيدها شيءٌ آليّا — ومن
+   غيّر الشريطَ أعادها. وقرارُ «كم يُعرض» نفسُه يُحرَس بأرقامٍ في
    `trainer/nav-fit.test.ts`، فهو دالّةٌ نقيّةٌ لا تحتاج متصفّحا. */
-describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن", () => {
-  /* التعليقاتُ تُمحى أوّلا. وهذه ليست احتياطا نظريّا: أوّلُ صياغةٍ لهذا
-     الحارس **مرّت خضراءَ على نقضِها** — نُزعت `min-h-11` و`shrink-0` من
-     `className` فبقي التعليقُ الذي يشرحهما داخلَ الكتلة، فطابقهما الحارسُ
-     في شرحِهما. وهي مصيدةُ `CLAUDE.md` بنصّها: الفحصُ على البنية لا على
-     ورودِ حرفٍ في ملفّ. */
-  const layout = read("src/pages/trainer/TrainerLayout.tsx")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/^\s*\/\/.*$/gm, " ");
-  /* كتلةُ الشريط وحدَها: الملفُّ فيه شاشاتُ رفضٍ ثلاثٌ لها أزرارُها */
-  const navBlock = layout.slice(layout.indexOf("<nav "), layout.indexOf("</nav>"));
-  /* ═══ والحبّةُ انتقلت إلى السلّم — فالفحصُ يتبعها ═══
+
+/* التعليقاتُ تُمحى أوّلا. وهذه ليست احتياطا نظريّا: أوّلُ صياغةٍ لهذا
+   الحارس **مرّت خضراءَ على نقضِها** — نُزعت `min-h-11` و`shrink-0` من
+   `className` فبقي التعليقُ الذي يشرحهما داخلَ الكتلة، فطابقهما الحارسُ
+   في شرحِهما. وهي مصيدةُ `CLAUDE.md` بنصّها: الفحصُ على البنية لا على
+   ورودِ حرفٍ في ملفّ. */
+const code = (p: string) =>
+  read(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ").replace(/^\s*\/\/.*$/gm, " ");
+
+describe("شريطُ البوّابات يُقرأ لا يُخمَّن", () => {
+  const bar = code("src/components/ui/PortalTabs.tsx");
+  /* المكوّنُ وحدَه — ما قبله `MoreTabs` وقائمتُه، ولها حارسُها في ١٢ */
+  const comp = bar.slice(bar.indexOf("export function PortalTabs"));
+  /* ═══ والحبّةُ درجةٌ في السلّم — فالفحصُ يتبعها ═══
 
      صارت صيغةُ الحبّة درجةً في `ui/NavPill.tsx` لأنّ الشريط احتاج **زرّا**
      إلى جانب روابطه («المزيد»)، والزرُّ المكتوبُ بيده يزيد عدّادَ
      `design-system.test.ts` — وقاعدتُه: «من احتاج صيغةً لا يغطّيها السلّم
-     فالنقصُ في السلّم». فيُفحص الموضعان: القاعدةُ في موضعها الجديد، وأنّ
-     الشريطَ يستعملها — وإلّا حرسنا قاعدةً لا تحرس الشريط. */
-  const pill = read("src/components/ui/NavPill.tsx")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/^\s*\/\/.*$/gm, " ");
+     فالنقصُ في السلّم». فيُفحص الموضعان: القاعدةُ في موضعها، وأنّ الشريطَ
+     يستعملها — وإلّا حرسنا قاعدةً لا تحرس الشريط. */
+  const pill = code("src/components/ui/NavPill.tsx");
   /* ═══ والصفُّ المرئيُّ يُعرَف بموضعه لا بصنفه ═══
 
      في الشريط صفّان يقصّان: المرئيُّ، وحاويةُ الأشباح التي يُقاس بها. فمن
      بحث عن `overflow-hidden` في الكتلة وجده في الأشباح ولو نُزع من المرئيّ —
      حارسٌ أخضرُ لسببٍ خاطئ. فالمرئيُّ هو الوسمُ الذي يفتح قبل أوّل حبّةٍ
      حقيقيّة (`<NavPill ` لا `<NavPillGhost`)، وينغلق قبل أيّ شيءٍ بعدها. */
-  const firstPill = navBlock.search(/<NavPill\s/);
-  const rowOpen = navBlock.lastIndexOf("<div", firstPill);
-  const rowTag = rowOpen > -1 ? navBlock.slice(rowOpen, navBlock.indexOf(">", rowOpen) + 1) : "";
-  const rowClose = navBlock.indexOf("</div>", firstPill);
+  const firstPill = comp.search(/<NavPill\s/);
+  const rowOpen = comp.lastIndexOf("<div", firstPill);
+  const tagAt = (i: number) => (i > -1 ? comp.slice(i, comp.indexOf(">", i) + 1) : "");
+  const rowTag = tagAt(rowOpen);
+  const rowClose = comp.indexOf("</div>", firstPill);
 
   it("٧) الاسمُ مرئيٌّ على الهاتف — لا رمزٌ يُخمَّن معناه", () => {
-    expect(
-      /hidden\s+sm:inline/.test(navBlock + pill),
-      "نصُّ التبويب مخفيٌّ تحت `sm`، فيصير الشريطُ تسعةَ رموزٍ متشابهةٍ "
-      + "بعرض ٣٨ بكسلا — والمراجعُ توصي بخمسةٍ فأقلَّ في شريطٍ أوّل بلا أسماء.",
-    ).toBe(false);
+    /* والبوّاباتُ الثلاث معه: كان شريطُ المستشار يُخفي أسماءه تحت `sm` حتّى
+       ٢٧ سبتمبر — أربعةُ رموزٍ على الهاتف لا يُعرف أيُّها «عمولتي». */
+    for (const [name, src] of [
+      ["الشريط", bar + pill],
+      ["المدرّب", code("src/pages/trainer/TrainerLayout.tsx")],
+      ["المستشار", code("src/pages/advisor/AdvisorLayout.tsx")],
+      ["المتعلّم", code("src/pages/student/PortalLayout.tsx")],
+    ] as const) {
+      expect(
+        /hidden\s+sm:inline/.test(src),
+        `${name}: نصُّ التبويب مخفيٌّ تحت \`sm\`، فيصير الشريطُ رموزا متشابهةً `
+        + "بعرض ٣٨ بكسلا — والمراجعُ توصي بخمسةٍ فأقلَّ في شريطٍ أوّل بلا أسماء.",
+      ).toBe(false);
+    }
   });
 
-  it("٨) والشريطُ في سطره، وصفُّه يقصّ ولا يُمرِّر — فلا يدفع الصفحةَ عرضا", () => {
-    expect(
-      /w-full/.test(navBlock),
-      "الشريطُ يقتسم سطرَ الرأس، وتسعةُ تبويباتٍ بأسمائها ٨٦٧ بكسلا — "
-      + "فتفوق `body.scrollWidth` إطارَ العرض ويُمسَك الامتدادُ بالإصبع.",
-    ).toBe(true);
+  it("٨) والصفُّ يقصّ ولا يُمرِّر — وحلقةُ التركيز لا تُقَصّ معه", () => {
     expect(firstPill, "لا حبّةَ في الشريط أصلا").toBeGreaterThan(-1);
     expect(rowTag, "لا صفَّ يحمل الحبّات").not.toBe("");
     /* القصُّ لا التمرير: ما لم يسعه الشريطُ يُبلَغ من «المزيد»، وقياسٌ بائتٌ
@@ -139,8 +159,11 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
       rowTag,
       "الصفُّ المرئيُّ لا يقصّ — فأوّلُ إطارٍ يسبق فيه الرسمُ القياسَ يمدّ الصفحةَ عرضا.",
     ).toMatch(/\boverflow-hidden\b/);
+    /* وحشوُه يسبق قصَّه: حلقةُ التركيز ترتسم خارج الحبّة بأربعة بكسلات، وصفٌّ
+       يقصّ عند حدّ حبّاته يقطعها من فوقُ ومن تحتُ في كلّ تبويب */
+    expect(rowTag, "الصفُّ يقصّ عند حدّ حبّاته — فتُقطَع حلقةُ التركيز").toMatch(/(^|\s|`)-m-1\s[^`]*\bp-1\b/);
     expect(
-      /overflow-x-auto|scrollbar-hide/.test(navBlock),
+      /overflow-x-auto|scrollbar-hide/.test(bar),
       "عاد التمريرُ الخفيّ — والتبويبُ بعد الحافّة موجودٌ ولا شيءَ يقول إنّه هناك "
       + "(قرارُ ١٨ سبتمبر ٢٠٢٦: نقرةٌ معلومةٌ خيرٌ من تمريرٍ مقدَّر).",
     ).toBe(false);
@@ -150,14 +173,16 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
     /* ⚠ والفحصُ على **صيغة الحبّة** لا على الملفّ: نُزعت `shrink-0` من
        `PILL` فبقي الحارسُ أخضرَ — طابقها في `className` أيقونةٍ داخلَ
        الحبّة. وهي مصيدةُ `CLAUDE.md` بعينها، وقد وقع فيها هذا الحارسُ
-       نفسُه مرّةً قبلها في تعليقٍ لا في أيقونة. */
-    const pillCls = /const PILL = '([^']*)'/.exec(pill)?.[1] ?? "";
-    expect(pillCls, "لا صيغةَ حبّةٍ في السلّم أصلا").not.toBe("");
-    expect(pillCls, "بلا `min-h-11` يصير الهدفُ ٢٨ بكسلا ارتفاعا").toContain("min-h-11");
-    /* و`shrink-0` كي يُرسم ما قيس: الشبحُ يقيس العرضَ الطبيعيّ، فحبّةٌ تنضغط
-       تُرسم أضيقَ ممّا حُسب لها */
-    expect(pillCls, "بلا `shrink-0` تنضغط الحبّةُ فيُرسم غيرُ ما قاسه الشبح").toContain("shrink-0");
-    expect(navBlock, "الشريطُ لا يستعمل الحبّةَ — فالقاعدةُ فوقه لا تحرسه").toContain("<NavPill");
+       نفسُه مرّةً قبلها في تعليقٍ لا في أيقونة. والرقاقةُ مثلُها. */
+    for (const name of ["PILL", "CHIP"]) {
+      const cls = new RegExp(`const ${name} = '([^']*)'`).exec(pill)?.[1] ?? "";
+      expect(cls, `لا صيغةَ ${name} في السلّم أصلا`).not.toBe("");
+      expect(cls, `${name}: بلا \`min-h-11\` يصير الهدفُ ٢٨ بكسلا ارتفاعا`).toContain("min-h-11");
+      /* و`shrink-0` كي يُرسم ما قيس: الشبحُ يقيس العرضَ الطبيعيّ، فحبّةٌ
+         تنضغط تُرسم أضيقَ ممّا حُسب لها */
+      expect(cls, `${name}: بلا \`shrink-0\` تنضغط الحبّةُ فيُرسم غيرُ ما قاسه الشبح`).toContain("shrink-0");
+    }
+    expect(comp, "الشريطُ لا يستعمل الحبّةَ — فالقاعدةُ فوقه لا تحرسه").toContain("<NavPill");
   });
 
   /* ═══ لا سقفَ على ما يُرى — قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -166,24 +191,23 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
      ما وسعه، و«المزيد» لما لم يسعه وحدَه، ولا يظهر حين يسع الكلّ. فالمحروسُ
      الآن أنّ العددَ **يُقاس** — لا يعود رقما مكتوبا يُبقي الحاسوبَ على خمسة. */
   it("⚠️ ١٠) ولا سقفَ على ما يُرى — يُقاس، و«المزيد» لما لم يسعه وحدَه", () => {
-    expect(layout, "عاد تصنيفٌ ثابتٌ لما يُرى — فيبقى الحاسوبُ العريضُ على بعضها").not.toMatch(/\bprimary\s*:/);
-    expect(navBlock, "عاد عددٌ مكتوبٌ لما يُرى").not.toMatch(/\.slice\(0,\s*\d+\)/);
+    expect(code("src/pages/trainer/TrainerLayout.tsx"), "عاد تصنيفٌ ثابتٌ لما يُرى — فيبقى الحاسوبُ العريضُ على بعضها").not.toMatch(/\bprimary\s*:/);
+    expect(comp, "عاد عددٌ مكتوبٌ لما يُرى").not.toMatch(/\.slice\(0,\s*\d+\)/);
     /* المرئيُّ أوّلُ ما قيس، و«المزيد» يأخذ الباقي نفسَه — فلا تبويبٌ في الموضعين
        ولا تبويبٌ في أيٍّ منهما */
-    expect(navBlock, "المرئيُّ ليس أوّلَ ما قيس").toMatch(/\{tabs\.slice\(0, shown\)\.map\(/);
-    expect(navBlock, "«المزيد» لا يأخذ ما بعد المقيس").toMatch(/<MoreTabs key=\{pathname\} items=\{tabs\.slice\(shown\)\}/);
+    expect(comp, "المرئيُّ ليس أوّلَ ما قيس").toMatch(/\{tabs\.slice\(0, shown\)\.map\(/);
+    expect(comp, "«المزيد» لا يأخذ ما بعد المقيس").toMatch(/<MoreTabs key=\{pathname\} items=\{tabs\.slice\(shown\)\}/);
     /* ولا يظهر حين يسع الكلّ — وهو نصُّ القرار: «ليست داخلَ المزيد» */
-    expect(navBlock, "«المزيد» يظهر ولو وسع الشريطُ كلَّ التبويبات").toMatch(/\{shown < tabs\.length && <MoreTabs /);
+    expect(comp, "«المزيد» يظهر ولو وسع الشريطُ كلَّ التبويبات").toMatch(/\{shown < tabs\.length && <MoreTabs /);
     /* والعددُ من القياس: من `fitCount` في مراقب الحجم، لا من غيره */
-    expect(layout, "العددُ لا يأتي من دالّة القياس").toMatch(/const next = fitCount\(/);
-    expect(layout).toMatch(/flushSync\(\(\) => setShown\(next\)\)/);
-    expect(layout, "لا مراقبَ لحجم المسار والأشباح").toMatch(/ro\.observe\(track\);\s*ro\.observe\(ghost\);/);
+    expect(comp, "العددُ لا يأتي من دالّة القياس").toMatch(/const next = fitCount\(/);
+    expect(comp).toMatch(/flushSync\(\(\) => setShown\(next\)\)/);
   });
 
   it("⚠️ ١١) وزرُّ «المزيد» خارجَ الصفّ القاصّ — وإلّا قُصَّت قائمتُه عند الحافّة", () => {
     /* `overflow-hidden` يقصُّ كلَّ `absolute` في داخله. فلو وُضع الزرُّ داخلَ
        الصفّ القاصّ لانفتحت القائمةُ مقصوصةً — عطبٌ يُرى ولا يُفهَم سببُه. */
-    const more = navBlock.indexOf("<MoreTabs");
+    const more = comp.indexOf("<MoreTabs");
     expect(rowClose, "لم يُغلَق الصفُّ المرئيّ").toBeGreaterThan(firstPill);
     expect(more, "لا زرَّ «المزيد»").toBeGreaterThan(-1);
     expect(more, "الزرُّ داخلَ الصفّ القاصّ — فقائمتُه تُقَصُّ عند حافّته").toBeGreaterThan(rowClose);
@@ -192,13 +216,13 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
   it("⚠️ ١٢) والقائمةُ تُغلَق بالمفتاح وبالنقر خارجَها — ولا ستارةَ `fixed`", () => {
     /* الترويسةُ تحمل `backdrop-blur`، و`backdrop-filter` يجعل حاملَه كتلةً
        حاضنةً لكلّ `fixed` في ذرّيّته — فالستارةُ تمتدّ على الترويسة وحدَها
-       (`h-16`) ولا تغلق شيئا. وهي علّةٌ وقعت في هذه الترويسة بعينها مع
+       ولا تغلق شيئا. وهي علّةٌ وقعت في ترويسة المدرّب بعينها مع
        `StaffAccountMenu`، فلا تُعاد. */
-    const menu = layout.slice(layout.indexOf("function MoreTabs"), layout.indexOf("export default function TrainerLayout"));
+    const menu = bar.slice(bar.indexOf("function MoreTabs"), bar.indexOf("export function PortalTabs"));
     expect(menu, "لا مكوّنَ قائمةٍ أصلا").not.toBe("");
-    expect(menu, "لا مستمعَ نقرٍ على المستند").toContain('document.addEventListener("mousedown"');
-    expect(menu, "لا تُغلَق بـ`Escape`").toContain('e.key === "Escape"');
-    expect(menu, "ستارةٌ `fixed` — وهي لا تغطّي شيئا تحت `backdrop-blur`").not.toMatch(/fixed\s+inset-0/);
+    expect(menu, "لا مستمعَ نقرٍ على المستند").toMatch(/document\.addEventListener\(['"]mousedown['"]/);
+    expect(menu, "لا تُغلَق بـ`Escape`").toMatch(/e\.key === ['"]Escape['"]/);
+    expect(bar, "ستارةٌ `fixed` — وهي لا تغطّي شيئا تحت `backdrop-blur`").not.toMatch(/fixed\s+inset-0/);
     /* والزرُّ يقول لقارئ الشاشة إنّه يفتح قائمةً وهل هي مفتوحة */
     expect(pill, "الزرُّ لا يُعلن أنّه يفتح قائمة").toContain('aria-haspopup="menu"');
     expect(pill, "لا يُعلن حالتَه مفتوحةً أو مغلقة").toContain("aria-expanded={expanded}");
@@ -211,12 +235,11 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
      مرّتين، وإن حمل روابطَ صار في الصفحة ثلاثةَ عشرَ هدفا لا يُرى تمرّ بها
      لوحةُ المفاتيح. وإن حمل بعضَها قاس المرئيَّ وحدَه فلا يعود ما خرج أبدا. */
   it("⚠️ ١٣) وصفُّ القياس لا يُرى ولا يُقرأ ولا يُركَّز — ويحمل الكلَّ لا المرئيَّ وحدَه", () => {
-    const ghostAt = navBlock.search(/<NavPillGhost\s/);
+    const ghostAt = comp.search(/<NavPillGhost\s/);
     expect(ghostAt, "لا أشباحَ يُقاس بها").toBeGreaterThan(-1);
     /* وسمان يفتحان قبل أوّل شبح: الصفُّ المقيس، وقبله الغلافُ الذي يُخفيه */
-    const measured = navBlock.lastIndexOf("<div", ghostAt);
-    const wrapper = navBlock.lastIndexOf("<div", measured - 1);
-    const tagAt = (i: number) => navBlock.slice(i, navBlock.indexOf(">", i) + 1);
+    const measured = comp.lastIndexOf("<div", ghostAt);
+    const wrapper = comp.lastIndexOf("<div", measured - 1);
     expect(wrapper, "الأشباحُ بلا غلاف").toBeGreaterThan(rowClose);
     expect(tagAt(wrapper), "الغلافُ يُقرأ لقارئ الشاشة").toContain('aria-hidden="true"');
     expect(tagAt(wrapper), "الغلافُ يُرى").toMatch(/\binvisible\b/);
@@ -224,19 +247,99 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
     expect(tagAt(measured), "الصفُّ المقيسُ لا يُمسَك به").toContain("ref={ghostRef}");
     expect(tagAt(measured), "الصفُّ المقيسُ يضيق فتنضغط أشباحُه").toMatch(/\bw-max\b/);
     /* الكلُّ لا المرئيّ: شبحُ ما خرج هو الذي يقول متى يعود — ثمّ شبحُ «المزيد» */
-    expect(navBlock.slice(measured, ghostAt), "الأشباحُ لبعض التبويبات لا لكلّها").toContain("{tabs.map((t) => (");
-    expect(navBlock.slice(ghostAt), "لا شبحَ لـ«المزيد» — فلا يُحجَز له مكان").toContain('<NavPillGhost label="المزيد">');
+    expect(comp.slice(measured, ghostAt), "الأشباحُ لبعض التبويبات لا لكلّها").toContain("{tabs.map((t) => (");
+    expect(comp.slice(ghostAt), "لا شبحَ لـ«المزيد» — فلا يُحجَز له مكان").toMatch(/<NavPillGhost look=\{look\} label="المزيد">/);
     /* والشارةُ في الأشباح محجوزةٌ قبل وصول عددها: العدّادُ يصل بعد التركيب،
        فشبحٌ بلا شارته يُدخل التبويبَ الشريطَ ثمّ يُخرجه حين يصل — في كلّ انتقال */
-    expect(navBlock.slice(ghostAt), "شبحُ التبويب يُقاس بلا شارته حتّى يصل عددُها").toContain("<CountBadge count={reservedCount(t.count)} />");
-    expect(navBlock.slice(ghostAt), "شبحُ «المزيد» يُقاس بلا شارته حتّى يصل عددُها").toContain("<CountBadge count={reservedCount(waitingAll)} />");
+    expect(comp.slice(ghostAt), "شبحُ التبويب يُقاس بلا شارته حتّى يصل عددُها").toContain("<CountBadge count={reservedCount(t.count)} label={countLabel} />");
+    expect(comp.slice(ghostAt), "شبحُ «المزيد» يُقاس بلا شارته حتّى يصل عددُها").toContain("<CountBadge count={reservedCount(waitingAll)} label={countLabel} />");
     /* والشبحُ وسمٌ صامت: لا رابطَ ولا زرّ */
-    const ghostFn = pill.slice(pill.indexOf("export function NavPillGhost"));
+    const ghostFn = pill.slice(pill.indexOf("export function NavPillGhost"), pill.indexOf("export interface NavPillMenuItemProps"));
     expect(ghostFn, "لا مكوّنَ للشبح في السلّم").not.toBe("");
-    expect(ghostFn, "الشبحُ ليس وسما صامتا بصيغة الحبّة").toMatch(/return \(\s*<span className=\{pillCls\(false\)\}>/);
-    expect(ghostFn, "الشبحُ رابطٌ أو زرٌّ — فيُركَّز ويُنقَر وهو لا يُرى").not.toMatch(/<NavLink|<button|<a\s/);
-    /* والجسمُ واحدٌ في الأشكال الثلاثة — وإلّا قاس الشبحُ غيرَ ما يُرسم */
-    expect(pill.match(/<PillBody /g) ?? [], "شكلٌ يرسم جسمَه بيده").toHaveLength(3);
+    expect(ghostFn, "الشبحُ ليس وسما صامتا بصيغة الحبّة").toMatch(/return \(\s*<span className=\{pillCls\(false, look\)\}>/);
+    expect(ghostFn, "الشبحُ رابطٌ أو زرٌّ — فيُركَّز ويُنقَر وهو لا يُرى").not.toMatch(/<NavLink|<Link|<button|<a\s/);
+    /* والجسمُ واحدٌ في الأشكال الثلاثة — والرابطُ اثنان منها (بمطابقة المسار
+       وبنشاطٍ يقرّره الإطار) — وإلّا قاس الشبحُ غيرَ ما يُرسم */
+    const shapes = pill.slice(0, pill.indexOf("export interface NavPillMenuItemProps"));
+    expect(shapes.match(/<PillBody /g) ?? [], "شكلٌ يرسم جسمَه بيده").toHaveLength(4);
+  });
+
+  /* ═══ والفسحةُ تُقاس لا الشريط، والحاشيةُ من الأشباح ═══
+
+     الشريطُ الملتفُّ على حبّاته (أقسامُ المتعلّم) عرضُه عرضُ ما فيه، فلو قيس
+     هو لما اتّسع بعد أن ضاق: يُخرج تبويبا فيضيق فلا يرى مكانا لما خرج. فتُقاس
+     الفسحةُ التي هو فيها. وللشريط حدٌّ وحشوٌ يأكلان منها، ورقمٌ يُكتب لهما
+     يصير غيرَه تحت معامل التكبير — فيحملهما صفُّ الأشباح نفسُه ويُقرآن منه. */
+  it("⚠️ ١٤) والمقيسُ الفسحةُ لا الشريط — وحاشيتُه تُقرأ من الأشباح لا تُكتب", () => {
+    expect(comp, "المقيسُ ليس الغلافَ الخارجيّ").toMatch(/return \(\s*<div ref=\{slotRef\}/);
+    expect(comp, "الشريطُ نفسُه مقيس — فالملتفُّ لا يتّسع بعد أن يضيق").not.toMatch(/<nav[^>]*\bref=/);
+    expect(comp, "لا مراقبَ على الفسحة والأشباح").toMatch(/ro\.observe\(slot\)\s*\n\s*ro\.observe\(ghost\)/);
+    expect(comp, "المتاحُ لا يُنقَص منه ما تأكله الحاشية").toMatch(/slot\.getBoundingClientRect\(\)\.width - chrome/);
+    /* والحاشيةُ نفسُها على الشريط وعلى صفّ الأشباح — والفرقُ بينهما هو ما يُطرح */
+    const navTag = tagAt(comp.indexOf("<nav "));
+    const ghostRowTag = tagAt(comp.lastIndexOf("<div", comp.search(/<NavPillGhost\s/)));
+    expect(navTag, "الشريطُ بلا حاشيته").toContain("${chrome}");
+    expect(ghostRowTag, "صفُّ الأشباح بلا حاشية الشريط — فتُطرح حاشيةٌ لا يعرفها").toContain("${chrome}");
+    expect(comp, "الحاشيةُ عددٌ مكتوب").toMatch(/const chrome = Math\.max\(0, ghost\.getBoundingClientRect\(\)\.width - span\)/);
+  });
+});
+
+/* ── والبوّاباتُ الثلاث تركّبه — لا نسخةَ تفترق ──
+
+   قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦): «طبّق نفس الشيء على بوابة المستشار
+   والطالب». ونسخُ الشريط في كلّ بوّابةٍ يُعيد العلّةَ التي جاء السلّمُ لرفعها:
+   ثلاثُ نسخٍ تفترق أوّلَ يومٍ يُبدَّل فيه أحدُها. فالمحروسُ هنا التركيبُ:
+   أنّ كلَّ شريطٍ هو `PortalTabs`، وأنّ النسخَ القديمة لا تعود. */
+describe("والبوّاباتُ الثلاث تركّبه — لا نسخةَ تفترق", () => {
+  const trainer = code("src/pages/trainer/TrainerLayout.tsx");
+  const advisor = code("src/pages/advisor/AdvisorLayout.tsx");
+  const student = code("src/pages/student/PortalLayout.tsx");
+  const navs = (src: string) => src.match(/<nav\b/g)?.length ?? 0;
+  /* كلُّ `<PortalTabs … />` كاملا: خصائصُه قد تحمل `=>` فلا يوقفها `[^>]` */
+  const uses = (src: string) =>
+    [...src.matchAll(/<PortalTabs\b/g)].map((m) => src.slice(m.index, src.indexOf("/>", m.index) + 2));
+
+  it("⚠️ ١٥) المدرّب: الشريطُ في سطره، وعدّادُه يُقرأ — ولا نسخةَ محلّيّة", () => {
+    const [bar, ...extra] = uses(trainer);
+    expect(extra, "شريطان في إطار المدرّب").toHaveLength(0);
+    expect(bar ?? "", "لا شريطَ مشتركا، أو ليس في سطره").toContain('className="order-last w-full"');
+    expect(bar ?? "", "العدّادُ بلا ما يُقرأ قبله").toContain('countLabel="ينتظر تصحيحَك: "');
+    expect(navs(trainer), "شريطٌ مكتوبٌ باليد عاد إلى الإطار").toBe(0);
+    for (const fn of ["TabsBar", "MoreTabs", "CountBadge"]) {
+      expect(trainer, `نسخةٌ محلّيّةٌ من ${fn} — تفترق عن المشتركة`).not.toMatch(new RegExp(`function ${fn}\\b`));
+    }
+  });
+
+  it("⚠️ ١٦) المستشار: الشريطُ سطرٌ تحت الأدوات بلونه — لا حبّاتٌ تقتسم سطرَها", () => {
+    /* كان يقتسم سطرَ الترويسة مع الشعار والأدوات: على ٧٦٨ انطوى «ما قيل عنّي»
+       ثلاثةَ أسطرٍ وخرج زرُّ الحساب عن الشاشة */
+    const [bar, ...extra] = uses(advisor);
+    expect(extra, "شريطان في إطار المستشار").toHaveLength(0);
+    expect(bar ?? "", "الشريطُ بغير لون البوّابة").toContain('look="gold"');
+    expect(bar ?? "", "الشريطُ ليس في سطره — فيعود يزاحم الأدوات").toContain('className="order-last w-full"');
+    expect(advisor, "الترويسةُ سطرٌ واحدٌ لا ينطوي — فيعود الشريطُ يزاحم الأدوات").toMatch(/className="mx-auto flex max-w-6xl flex-wrap /);
+    expect(navs(advisor), "شريطٌ مكتوبٌ باليد عاد إلى الإطار").toBe(0);
+  });
+
+  it("⚠️ ١٧) المتعلّم: الأقسامُ ملتفّةٌ بنشاطها، والصفحاتُ رقائق — والترويسةُ سطرٌ واحد", () => {
+    const bars = uses(student);
+    const sections = bars.find((b) => b.includes('label="أقسام المنصة"')) ?? "";
+    const pages = bars.find((b) => b.includes("tabs={activeSection.items}")) ?? "";
+    expect(bars, "شريطٌ ثالثٌ أو ناقص").toHaveLength(2);
+    expect(sections, "الأقسامُ ليست الشريطَ المشترك").not.toBe("");
+    expect(sections, "الأقسامُ تمتدّ بين الشعار والأدوات — لا تلتفّ على حبّاتها").toContain("fill={false}");
+    /* النشاطُ من القسم لا من المسار: «تعلّمي» نشِطٌ في `/student/review` */
+    expect(sections, "نشاطُ القسم يعود إلى مطابقة المسار").toContain("active: activeSection?.id === sec.id");
+    expect(pages, "صفحاتُ القسم ليست الشريطَ المشترك").not.toBe("");
+    expect(pages, "صفحاتُ القسم بغير صيغة الرقائق").toContain('look="chip"');
+    expect(student, "عاد التمريرُ الخفيّ إلى صفحات القسم").not.toMatch(/<nav[^>]*overflow-x-auto/);
+    /* وشريطٌ مكتوبٌ باليد واحدٌ فقط: السفليُّ على الهاتف، وهو نسقٌ آخر */
+    expect(navs(student), "شريطٌ مكتوبٌ باليد غيرُ السفليّ").toBe(1);
+    expect(student).toMatch(/<nav aria-label="أقسام المنصة" className=\{`fixed inset-x-0 bottom-0/);
+    /* والترويسةُ لا تطول: `ModuleStudy` يُلصِق خطواتِه تحتها بـ`top-16`، فسطرٌ
+       ثانٍ فيها يُغطّي أوّلَ الخطوات */
+    expect(student, "ترويسةُ المتعلّم صارت سطرين").toMatch(/className="mx-auto flex h-16 max-w-6xl /);
+    expect(code("src/pages/student/ModuleStudy.tsx"), "تغيّر ما تُلصَق به خطواتُ الوحدة — فراجِع ارتفاعَ الترويسة").toMatch(/sticky top-16/);
   });
 });
 

@@ -14,6 +14,7 @@ import { getLibraryResources } from "@/data/core-catalog-source";
 
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { PortalTabs } from "@/components/ui/PortalTabs";
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
 
 /** قسمٌ في التنقّل الرئيسي: عنوانه وسؤاله، وصفحاتُه تنقّلٌ ثانويّ تحته */
@@ -286,26 +287,37 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">أكاديمية وجيز</span>
           </Link>
-          <nav aria-label="أقسام المنصة" className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 md:flex">
-            {sections.map((sec) => (
-              <Link
-                key={sec.id}
-                to={sec.to}
-                aria-current={activeSection?.id === sec.id ? "page" : undefined}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition ${
-                  activeSection?.id === sec.id ? "bg-teal text-on-teal" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <sec.icon className="h-3.5 w-3.5" />
-                {sec.label}
-              </Link>
-            ))}
-          </nav>
+          {/* ═══ الأقسامُ بشريط المدرّب — قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+              «طبّق نفس الشيء على بوابة المستشار والطالب». والأقسامُ هنا ثلاثةٌ
+              تسع الحاسوبَ كلُّها، ويحملها على الهاتف الشريطُ السفليُّ كلَّها. لكنّ
+              رابعَها «المكتبة» يظهر متى نُشرت فيها مادّة، فقِيس بلقطة الكتالوج
+              المنشورة ومادّةٍ واحدة: على ٧٦٨ لصق الشريطُ الشعارَ وخرج زرُّ الحساب
+              عن الشاشة. فصار الشريطُ يقيس (`ui/PortalTabs`) وما لم يسعه يخرج إلى
+              «المزيد» — لا يدفع زرَّ الحساب خارجَ الشاشة.
+
+              وبلا `fill`: يلتفّ على حبّاته في وسط الفسحة كما كان، لا يمتدّ بين
+              الشعار والأدوات. والترويسةُ سطرٌ واحدٌ لا سطران كترويسة المدرّب:
+              `ModuleStudy` يُلصِق خطواتِه تحتها بـ`top-16`. والنشاطُ من
+              `activeSection` لا من المسار — «تعلّمي» نشِطٌ في صفحاتٍ خارجَ
+              `/student/learning`.
+
+              وبلا رموزٍ كشريطَي المدرّب والمستشار: برموزها لم يسع ٧٦٨ إلّا اثنين
+              من الأربعة، وبلاها الأربعة. والرموزُ في قائمة «المزيد» وفي الشريط
+              السفليّ على الهاتف. */}
+          <div className="hidden min-w-0 flex-1 md:flex">
+            <PortalTabs
+              tabs={sections.map((sec) => ({ to: sec.to, label: sec.label, icon: sec.icon, active: activeSection?.id === sec.id }))}
+              label="أقسام المنصة"
+              fill={false}
+              className="w-full justify-center"
+            />
+          </div>
           <div className="flex items-center gap-2 text-read leading-5 text-muted-foreground">
             {/* جرس الإشعارات */}
             <div ref={bellRef} className="relative">
@@ -424,23 +436,15 @@ export default function PortalLayout({ children, title }: { children: React.Reac
           <VerifyEmailNotice email={sessionUser.email} className="mb-6" />
         )}
         {/* التنقّل الثانوي داخل القسم — صفحاتُه هنا لا في الشريط الأعلى.
-            يُمرَّر أفقيا داخل حاويته وحدها كي لا تُمرَّر الصفحة كلها (ت-٤). */}
+
+            وكان يُمرَّر أفقيا داخل حاويته كي لا تُمرَّر الصفحةُ كلُّها (ت-٤).
+            فقِيس: على ٣٢٠–٣٩٠ خامسةُ «خزانتي» («رأيي في التدريب») خلف الحافّة،
+            ولا شيءَ يقول إنّها هناك — وهو التمريرُ الخفيُّ الذي ردّه صاحبُ
+            المنصّة في شريط المدرّب (١٨ سبتمبر ٢٠٢٦). فصار كشريط المدرّب
+            (٢٧ سبتمبر): يُرى ما وسعه، وما لم يسعه في «المزيد». والرقائقُ
+            بصيغتها كما كانت (`look="chip"`) — تنقّلٌ ثانٍ لا ينافس الأوّل. */}
         {activeSection && activeSection.items.length > 0 && (
-          <nav aria-label={`صفحات ${activeSection.label}`} className="-mx-1 mb-6 flex gap-1.5 overflow-x-auto px-1 pb-1">
-            {activeSection.items.map((it) => (
-              <NavLink
-                key={it.to}
-                to={it.to}
-                className={({ isActive }) =>
-                  `shrink-0 rounded-full border px-4 py-1.5 text-xs font-bold transition ${
-                    isActive ? "border-teal/60 bg-teal/15 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:border-white/30 hover:text-foreground"
-                  }`
-                }
-              >
-                {it.label}
-              </NavLink>
-            ))}
-          </nav>
+          <PortalTabs tabs={activeSection.items} label={`صفحات ${activeSection.label}`} look="chip" className="mb-6" />
         )}
         {children}
       </div>

@@ -1,9 +1,6 @@
-import { Link, NavLink, useLocation } from "react-router";
-import { flushSync } from "react-dom";
-import { Award, BookPlus, CalendarDays, ChevronDown, ClipboardCheck, FileSignature, GraduationCap, Handshake, LayoutDashboard, Link2, Route, Star, Users, Wallet, type LucideIcon } from "lucide-react";
-import { Inset } from "@/components/ui/Surface";
-import { NavPill, NavPillButton, NavPillGhost } from "@/components/ui/NavPill";
-import { fitCount, reservedCount } from "@/components/ui/nav-fit";
+import { Link } from "react-router";
+import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Handshake, LayoutDashboard, Link2, Route, Star, Users, Wallet } from "lucide-react";
+import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -11,239 +8,10 @@ import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
 import ConditionStrip, { type ConditionContract, type OnboardingTask } from "@/components/ConditionStrip";
 import { useRealSession } from "@/services/session";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
-
-/** تبويبٌ في شريط البوّابة — وترتيبُه في القائمة أولويّتُه */
-interface Tab {
-  to: string;
-  label: string;
-  /** يُرسم في قائمة «المزيد» وحدَها: الشريطُ بلا رموز (انظر `TabsBar`) */
-  icon: LucideIcon;
-  end?: boolean;
-  count?: number;
-}
-
-/* العددُ يُقرأ للعين وللقارئ معا: الرقمُ وحدَه لا يقول ماذا يعدّ. ويختفي عند
-   الصفر — «٠ ينتظر» ضجيجٌ لا خبر.
-
-   وصار مكوّنا لأنّه يُرسم في أربعة مواضع: حبّةِ التبويب، وشبحِها الذي يُقاس
-   به عرضُها، وبندِه في «المزيد»، وزرِّ «المزيد» حين يكون التبويبُ خلفه.
-   وأربعُ نسخٍ تفترق — وافتراقُ الشبح عن الحبّة خاصّةً يُفسد القياس بصمت. */
-function CountBadge({ count }: { count?: number }) {
-  if (!count) return null;
-  return (
-    <span className="rounded-full bg-gold px-1.5 text-fine font-black text-on-gold">
-      <span className="sr-only">ينتظر تصحيحَك: </span>{count}
-    </span>
-  );
-}
-
-/* ═══ «المزيد» — لما لم يسعه الشريط، بابٌ يُرى لا تمريرٌ لا يُرى ═══
-
-   الشريطُ كان يحمل أحدَ عشرَ بندا في `overflow-x-auto` و`scrollbar-hide`:
-   فالبنودُ بعد الحافّة موجودةٌ ولا شيءَ في الشاشة يقول إنّها هناك. فجاء
-   هذا الزرّ (قرارُ صاحب المنصّة، ١٨ سبتمبر ٢٠٢٦): نقرةٌ معلومةٌ خيرٌ من
-   تمريرٍ مقدَّر. وكان يحمل ثمانيةً ثابتةً على كلّ شاشة، فصار يحمل ما لم
-   يسعه الشريطُ وحدَه (٢٧ سبتمبر ٢٠٢٦، انظر `TabsBar`) — ولا يظهر أصلا حين
-   يسع الكلّ.
-
-   ── وأربعةٌ تبيت في البنية ──
-
-   · المستمعُ على `document` لا ستارةٌ `fixed`: الترويسةُ تحمل `backdrop-blur`
-     و`backdrop-filter` يجعل حاملَه كتلةً حاضنةً لكلّ `fixed` في ذرّيّته،
-     فالستارةُ تمتدّ على الترويسة وحدَها. وهي علّةٌ وقعت في هذه الترويسة
-     بعينها مع `StaffAccountMenu`، فلا تُعاد.
-   · والزرُّ **خارجَ** الصفّ القاصّ: `overflow-hidden` يقصُّ كلَّ `absolute`
-     في داخله، فالقائمةُ كانت ستُقصّ عند حافّته.
-   · والزرُّ يحمل حالةَ النشاط حين يكون المفتوحُ من بنوده: من فتح
-     «مستحقّاتي» يرى أين هو، وإلّا بدا الشريطُ بلا موضعٍ نشط.
-   · ويحمل عدّادَ ما خلفه: «طابورُ التقييم» رابعُ القائمة، فيخرج إليه على
-     الهاتف — ورقمُه وُضع في الشريط ليُرى بلا فتحِ شيء، فلا يُدفن خلف نقرة.
-     وهو مجموعُ عدّادات المخفيّ، والطابورُ اليومَ وحدَه يعدّ؛ فمن أضاف عدّادا
-     بمعنًى آخر فرّق بينهما هنا، وإلّا قرأ القارئُ «ينتظر تصحيحَك» لغير التصحيح.
-
-   وتُغلَق عند تبدّل المسار بـ`key={pathname}` من أبيها لا بأثرٍ جانبيٍّ
-   يكتب الحالةَ في `useEffect`: النقرُ في بنودها يغلقها بيده، والباقي رجوعُ
-   المتصفّح وما جرى خارجَها — وإعادةُ التركيب تضبطها بلا دَينِ تلويم. */
-function MoreTabs({ items, pathname }: { items: Tab[]; pathname: string }) {
-  const [open, setOpen] = useState(false);
-  const boxRef = useRef<HTMLDivElement>(null);
-  /* و`end` يُحترَم هنا كما في `NavLink`: «الرئيسية» جذرُ البوّابة، فلو طوبق
-     بالبادئة لنشِط الزرُّ في كلّ صفحاتها متى خرجت إليه على شاشةٍ ضيّقة. */
-  const here = items.some((t) => pathname === t.to || (!t.end && pathname.startsWith(`${t.to}/`)));
-  const waiting = items.reduce((sum, t) => sum + (t.count ?? 0), 0);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  return (
-    <div ref={boxRef} className="relative shrink-0">
-      <NavPillButton
-        active={here}
-        label="المزيد"
-        expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <CountBadge count={waiting} />
-        <ChevronDown className={`h-3 w-3 shrink-0 transition ${open ? "rotate-180" : ""}`} aria-hidden="true" />
-      </NavPillButton>
-
-      {open && (
-        <Inset role="menu" tone="solid" className="absolute left-0 top-12 z-50 w-64 p-1.5 shadow-2xl">
-          {items.map((t) => (
-            <NavLink
-              key={t.to}
-              to={t.to}
-              end={t.end}
-              role="menuitem"
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                `flex min-h-11 items-center gap-2.5 rounded-xl px-3 text-xs font-bold transition ${
-                  isActive ? "bg-teal text-on-teal" : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
-                }`
-              }
-            >
-              <t.icon className="h-4 w-4 shrink-0" />
-              <span>{t.label}</span>
-              <CountBadge count={t.count} />
-            </NavLink>
-          ))}
-        </Inset>
-      )}
-    </div>
-  );
-}
-
-/* ═══ الشريطُ يعرض ما وسعه، و«المزيد» لما لم يسعه ═══
-
-   قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦): «اجعل قائمةَ العناوين مكتملةً ليست
-   داخلَ المزيد، إلّا إذا استُخدم الهاتفُ والشاشةُ صغيرة — هناك نستخدم
-   المزيدَ لمن لا يظهر». نسخا لـ«خمسةٍ تُرى والباقي في المزيد» (١٨ سبتمبر):
-   كانت الخمسةُ على كلّ شاشة، حتّى العريضةِ التي يبقى فيها نصفُ الشريط
-   فارغا بين «جدولي» والزرّ. فالعددُ لا يُكتب: يُقاس.
-
-   ── كيف يُقاس ──
-
-   صفٌّ ثانٍ لا يُرى (`invisible` و`aria-hidden`) يحمل **كلَّ** التبويبات
-   وزرَّ «المزيد» بعرضها الطبيعيّ، ويُقرأ منه عرضُ كلِّ حبّة. والصفُّ
-   المرئيُّ لا يصلح للقياس: ما خرج منه لا عرضَ له، فلا يُعرف متى يعود إن
-   اتّسعت الشاشة. ثمّ تقرّر `fitCount` كم يُعرض (`ui/nav-fit.ts`).
-
-   و`ResizeObserver` على الاثنين: على المسار لأنّ عرضَه يتبدّل بالشاشة
-   وبمعامل التكبير `--app-scale`، وعلى صفّ الأشباح لأنّ عرضَ الحبّات يتبدّل
-   بالخطّ حين يصل وبشارة العدّاد حين تظهر.
-
-   والأشباحُ تحجز مكانَ الشارة قبل أن يصل عددُها (`reservedCount`): العدّادُ
-   يصل بعد التركيب، فبلا حجزٍ يقفز «طابورُ التقييم» إلى «المزيد» على الهاتف
-   في كلّ انتقال. وشبحُ «المزيد» يحمل عدّادَ الكلّ لا عدّادَ المخفيّ:
-   المخفيُّ لا يُعرف إلّا بعد القياس. وأسوأُ ما في الحجزين تبويبٌ يخرج قبل
-   أوانه بعرض شارة — لا حبّةٌ تُقَصّ، ولا شريطٌ يقفز.
-
-   ── ولماذا `flushSync` ──
-
-   التحديثُ من مراقب الحجم يُجدوَل بعد الرسم، فيرى الهاتفُ إطارا فيه
-   التبويباتُ كلُّها مقصوصةً بلا «المزيد» ثمّ تُصحَّح. والمراقبُ يُنادى بعد
-   التخطيط وقبل الرسم، فالتصييرُ المتزامنُ فيه يجعل أوّلَ ما يُرسم صحيحا —
-   والإطارُ يُعاد تركيبُه مع كلّ شاشةٍ في البوّابة، فذاك الإطارُ الخاطئُ كان
-   سيُرى في كلّ انتقال. ويُركَّب المراقبُ في `useLayoutEffect` لا `useEffect`
-   كي يسبق أوّلَ رسمٍ هو أيضا.
-
-   ── ولماذا بلا رموز ──
-
-   قِيس بالمتصفّح وخطُّ IBM Plex Sans Arabic محمَّل (بكسلاتٌ فعليّةٌ قبل
-   معامل التكبير): التبويباتُ الثلاثةَ عشرَ برموزها وحشوِها الأوّل تطلب ١٣٠٨،
-   وبأضيق حشوٍ يُحتمل ١١٠٤ — والشريطُ يقف عند ١١٠٢ على أعرض شاشة
-   (`max-w-6xl`). فما بقيت الرموزُ لا تسع سطرَها على أيّ حاسوب، وتبقى
-   «المزيد» حيث أراد صاحبُ المنصّة ألّا تكون. وبلا رموزٍ ٨٩٦، فتسع كلُّها من
-   إطارٍ عرضُه نحوُ ١٢٣٠ فما فوق. والاسمُ هو ما يُقرأ، فحُذف الرمزُ من الشريط
-   وبقي في قائمة «المزيد» حيث يُمسَح بالعين عموديّا.
-
-   ── وما يبيت في البنية ──
-
-   · الصفُّ المرئيُّ يقصّ (`overflow-hidden`): قياسٌ بائتٌ لإطارٍ واحدٍ
-     يُخفي طرفَ حبّةٍ ولا يمدّ الصفحةَ عرضا.
-   · ولا تمريرَ فيه: ما لم يسعه يُبلَغ من «المزيد» بنقرةٍ معلومة، لا بتمريرٍ
-     لا علامةَ عليه — وذاك من قرار ١٨ سبتمبر وما زال قائما.
-   · ولا فراغَ بين الحبّات (`gap`): غيرُ النشطة بلا خلفية، فحشوُها هو ما
-     بين اسمين (٢٤ بكسلا) — و`gap-1` كان يزيد ٤٨ بكسلا لا تُرى إلّا في
-     الحساب. وهو واحدٌ في المسار والصفّين: الحسابُ يقرؤه من الأشباح ويطبّقه
-     على المرئيّ، فلو افترقا لقاس غيرَ ما يُرسم. */
-function TabsBar({ tabs, pathname }: { tabs: Tab[]; pathname: string }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const ghostRef = useRef<HTMLDivElement>(null);
-  const [shown, setShown] = useState(tabs.length);
-
-  useLayoutEffect(() => {
-    const track = trackRef.current;
-    const ghost = ghostRef.current;
-    if (!track || !ghost || typeof ResizeObserver === "undefined") return;
-    const measure = () => {
-      const rects = Array.from(ghost.children, (el) => el.getBoundingClientRect());
-      const more = rects.pop();
-      if (!more) return;
-      /* الفراغُ من موضع حبّتين لا من الأسلوب المحسوب: `getBoundingClientRect`
-         يعيد القيمَ مكبَّرةً بمعامل `--app-scale` و`getComputedStyle` يعيدها
-         بلا تكبير — ومزجُهما خطأٌ بنسبة ١٫٣ على الحاسوب. وأيُّ الفرقين موجبٌ
-         هو الفراغ، في اليمين إلى اليسار وعكسِه. */
-      const gap = rects.length > 1
-        ? Math.max(0, rects[0].left - rects[1].right, rects[1].left - rects[0].right)
-        : 0;
-      const next = fitCount(rects.map((r) => r.width), gap, more.width, track.getBoundingClientRect().width);
-      flushSync(() => setShown(next));
-    };
-    const ro = new ResizeObserver(measure);
-    ro.observe(track);
-    ro.observe(ghost);
-    return () => ro.disconnect();
-  }, []);
-
-  const counted = tabs.filter((t) => t.count !== undefined);
-  const waitingAll = counted.length ? counted.reduce((sum, t) => sum + (t.count ?? 0), 0) : undefined;
-
-  return (
-    <nav aria-label="تبويبات بوّابة المدرّب" className="order-last w-full rounded-full border border-white/10 bg-white/[0.03] p-1">
-      <div ref={trackRef} className="relative flex items-center">
-        <div className="flex min-w-0 flex-1 items-center overflow-hidden">
-          {/* والحبّةُ درجةٌ في السلّم (`ui/NavPill`) لا صيغةٌ تُكتب هنا:
-              الزرُّ والشبحُ إلى جانبها يجب أن يطابقاها شكلا، ونسختان تفترقان. */}
-          {tabs.slice(0, shown).map((t) => (
-            <NavPill key={t.to} to={t.to} end={t.end} label={t.label}>
-              <CountBadge count={t.count} />
-            </NavPill>
-          ))}
-        </div>
-        {shown < tabs.length && <MoreTabs key={pathname} items={tabs.slice(shown)} pathname={pathname} />}
-        <div aria-hidden="true" className="pointer-events-none invisible absolute inset-0 overflow-hidden">
-          <div ref={ghostRef} className="flex w-max items-center">
-            {tabs.map((t) => (
-              <NavPillGhost key={t.to} label={t.label}>
-                <CountBadge count={reservedCount(t.count)} />
-              </NavPillGhost>
-            ))}
-            <NavPillGhost label="المزيد">
-              <CountBadge count={reservedCount(waitingAll)} />
-              <ChevronDown className="h-3 w-3 shrink-0" />
-            </NavPillGhost>
-          </div>
-        </div>
-      </div>
-    </nav>
-  );
-}
 
 /* ما يقرؤه الإطارُ من `/api/trainer/me` — لا الملفُّ كلُّه.
    ونداءٌ واحدٌ يخدم اثنين: عدّادَ التصحيح، وشريطَ العرض المشروط.
@@ -257,7 +25,6 @@ interface PortalMe {
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
 export default function TrainerLayout({ children, title }: { children: React.ReactNode; title: string }) {
   const { user, checked } = useRealSession();
-  const { pathname } = useLocation();
   /* الصلاحيّةُ تكفي للدخول، ولا تكفي للعمل: مديرُ النظام يملكها بلا ملفٍّ في
      هذه البوّابة، فكانت كلُّ شاشةٍ تسقط وحدَها بـ«لا ملف مدرب مرتبطا بهذا
      الحساب». فيُسأل مرّةً هنا، ويُقال مرّةً واحدة. */
@@ -355,10 +122,10 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
 
   /* «شعبي وجلساتها» دخلت التبويبات — وهي ورشةُ عمله الفعليّة (الحضور والمواد
      والتكليفات والدرجات) ولم تكن فيها، فلا يبلغها إلا من يكتب مسارها بيده. */
-  const tabs: Tab[] = [
+  const tabs: PortalTab[] = [
     /* ═══ الترتيبُ أولويّة — كلُّها تُرى ما وسعها الشريط (٢٧ سبتمبر ٢٠٢٦) ═══
 
-       لا سقفَ على ما يُرى: الشريطُ يقيس ويعرض ما وسعه (`TabsBar`)، وما لم
+       لا سقفَ على ما يُرى: الشريطُ يقيس ويعرض ما وسعه (`ui/PortalTabs`)، وما لم
        يسعه يخرج إلى «المزيد» **من آخر القائمة**. فالترتيبُ هو الذي يقرّر ما
        يبقى على الهاتف: أوّلُها ما يفتحه في يومه — لوحتُه، وشعبُه، وطلبتُه،
        وما ينتظر تصحيحَه، وجدولُه — ثمّ ما يُقصَد كلٌّ منه قصدا. وكانت الخمسةُ
@@ -434,13 +201,18 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             `overflow-x-auto` و`scrollbar-hide` يخفيان الأخيرةَ بلا علامةٍ تدلّ
             عليها؛ ثمّ صارت خمسةً ثابتةً وزرَّ «المزيد» (١٨ سبتمبر ٢٠٢٦)؛ ثمّ
             صار الشريطُ يقيس ويعرض ما وسعه (٢٧ سبتمبر ٢٠٢٦) — وتفصيلُه في
-            `TabsBar`. */}
+            `ui/PortalTabs`، وهو نفسُه في بوّابتَي المستشار والمتعلّم. */}
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-5 py-2">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">وجيز — بوابة المدرب</span>
           </Link>
-          <TabsBar tabs={tabs} pathname={pathname} />
+          <PortalTabs
+            tabs={tabs}
+            label="تبويبات بوّابة المدرّب"
+            countLabel="ينتظر تصحيحَك: "
+            className="order-last w-full"
+          />
           <div className="flex items-center gap-3">
             {/* بحث سريع Ctrl+K — لجلسة المدرب الحقيقية فقط: يضرب نقطة الخادم المقيدة بإسناداته */}
             {realTrainer && (
