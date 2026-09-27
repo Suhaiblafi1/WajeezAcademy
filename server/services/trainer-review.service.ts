@@ -21,6 +21,7 @@ import {
 } from '../../src/application/trainer/no-show-followup'
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
+import { REVIEW_OPEN_STATUSES } from '../../src/application/trainer/approval'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { OUTREACH_ACTIONS } from '../../src/application/trainer/outreach'
 import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
@@ -257,7 +258,7 @@ export class TrainerReviewService {
              قائلاهما، وإلّا قرأ المراجعُ تناقضا بلا صاحب. */
           select: { verdict: true, reviewerName: true },
         },
-        _count: { select: { documents: true, reviews: true, interviews: { where: LIVE_INTERVIEW } } },
+        _count: { select: { documents: true, reviews: true, demoEvaluations: true, interviews: { where: LIVE_INTERVIEW } } },
       },
     })
 
@@ -314,6 +315,9 @@ export class TrainerReviewService {
       waitingSince: a.statusHistory[0]?.createdAt ?? a.phase2CompletedAt ?? a.createdAt,
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
+      /* ويُقرأ به «طُلب منه درسٌ تجريبيّ» في `outreach.ts`: الطلبُ معلَّقٌ ما
+         لم يُسجَّل تقييم. وكان الطلبُ حالةً في الطابور حتّى ٢٦ سبتمبر ٢٠٢٦. */
+      demosCount: a._count.demoEvaluations,
       /* `null` = لم تخرج إليه دعوةُ حجزٍ قطّ — وبها يفرّق الطابورُ بين من
          ينتظرنا ومن ننتظره (`awaitsBookingInvite`). */
       interviewInvitedAt: invited.get(a.id) ?? null,
@@ -535,7 +539,17 @@ export class TrainerReviewService {
   async addReview(applicationId: string, reviewerId: string, input: RubricScores, overallNote?: string) {
     assertRubric(input)
     const scores = cleanRubric(input)
-    await this.requireStatus(applicationId, ['under_review', 'academic_review', 'shortlisted', 'interview_scheduled', 'demo_requested', 'information_requested'])
+    /* ═══ والحدُّ حالةٌ حيّةٌ — قائمةً واحدةً لا مكتوبةً بيد (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       كانت ستّا تُعدَّ بيدٍ هنا، فيهنّ `shortlisted` و`demo_requested`. ولمّا
+       حُذفتا لزم أن تُنقَص القائمة — ونقصُها بيدٍ يُبقي العطبَ الذي يحذّر
+       منه هذا الملفّ: قائمتان لشيءٍ واحدٍ تفترقان.
+
+       فصار الحدُّ `REVIEW_OPEN_STATUSES` نفسَه: من كان متقدّما يُكتَب فيه
+       تقييم. وهو قرارُ صاحب المنصّة في ٢٢ سبتمبر ٢٠٢٦ بحرفه — «أبقِ كلَّ
+       الخيارات مفتوحةً مهما كانت الحالةُ الحاليّة» — وقد عُمِّم به قبلَ
+       اليومِ طلبُ المعلومات وخريطةُ الانتقالات. */
+    await this.requireStatus(applicationId, [...REVIEW_OPEN_STATUSES])
     const review = await this.prisma.trainerApplicationReview.create({
       data: { applicationId, reviewerId, scores: scores as unknown as Prisma.InputJsonValue, overallNote },
     })
@@ -553,7 +567,21 @@ export class TrainerReviewService {
      وآبل وأوتلوك. والإرسالُ لا يُعيق: تعذُّرُ البريد لا يُلغي الجدولة،
      ويعود حالُه في الردّ فيراه من جدول. */
   async scheduleInterview(applicationId: string, actorId: string, input: { scheduledAt: Date; mode?: string; notes?: string }) {
-    await this.requireStatus(applicationId, ['shortlisted', 'under_review'])
+    /* ═══ وعطبٌ أُصلح هنا (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       كان الحدُّ `['shortlisted', 'under_review']` — أي أنّ **من كان في
+       «رأيٌ ثانٍ» لا يُجدوَل له موعد**. وهي عينُ الحالة التي قال صاحبُ
+       المنصّة إنّه يستعملها لهذا بالضبط: «أستعملها لمن أتردّد في دعوته إلى
+       مقابلةٍ وأريد أن يقرأ ملفَّه أحدٌ آخرُ من فريقي». فالخطوةُ التالية
+       للرأي الثاني هي المقابلةُ نفسُها، وكانت مقفلةً دونها — واسمُ الحالة
+       في الشاشة يقول ذلك صريحا: «رأيٌ ثانٍ — قبل قرار المقابلة».
+
+       ولم يظهر العطبُ لأنّ `shortlisted` كانت تسترُه: من أراد الجدولةَ نقله
+       إليها أوّلا. فلمّا حُذفت بانَ.
+
+       والحدُّ الآن حالةٌ حيّةٌ — `REVIEW_OPEN_STATUSES`، قائمةً واحدةً كما
+       في `addReview` أعلاه. */
+    await this.requireStatus(applicationId, [...REVIEW_OPEN_STATUSES])
     const interview = await this.prisma.trainerInterview.create({
       data: { applicationId, scheduledAt: input.scheduledAt, mode: input.mode ?? 'remote', interviewerId: actorId, notes: input.notes },
     })
@@ -677,10 +705,61 @@ export class TrainerReviewService {
     return updated
   }
 
+  /* ═══ طلبُ الدرس التجريبيّ — مراسَلةٌ لا حالة (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     كان قرارا في `decide` يقلب الحالةَ إلى «بانتظار الدرس التجريبيّ». وقبله
+     كان يقلبها **ولا يُرسل حرفا**: «فننتظر درسا لم نطلبه منه، وينتظر هو
+     طلبا لم يصله» — شكاه صاحبُ المنصّة في ٢٤ سبتمبر ٢٠٢٦ فوُصلت الرسالة.
+
+     ثمّ رأى (٢٦ سبتمبر) أنّ حالاتِ الطلب كثيرةٌ فحُذفت `demo_requested`
+     فيمن حُذف. **والرسالةُ هي المقصودُ منها**، فبقيت هنا وذهبت الحالة: من
+     طُلب منه درسٌ يبقى حيث هو في الطابور — «قيد المراجعة» أو «رأيٌ ثانٍ» —
+     ويُقرأ الطلبُ على صفّه من الأثر (`trainer.demo.request` في
+     `OUTREACH`)، كما تُقرأ دعوةُ حجز الموعد.
+
+     وربحٌ لم يكن مقصودا: كانت النقلةُ تمحو حالتَه السابقةَ، فمن طُلب منه
+     درسٌ وهو في «رأيٌ ثانٍ» يفقد وسمَ الرأي الثاني بنقرةٍ لا تعني ذلك.
+
+     ولا يُطلب ممّن ليس متقدّما: `REVIEW_OPEN_STATUSES` هو الحدّ. ورسالةٌ
+     تُطلب من مردودٍ أو مسحوبٍ أو مدرّبٍ نشطٍ خبرٌ يُحيّر قارئَه.
+
+     وملاحظةُ المراجع تسافر معه كما كانت: «درسا تجريبيا» بلا موضوعٍ ولا
+     مدّةٍ يُجيب عنها بسؤالٍ لا بدرس. */
+  async requestDemo(applicationId: string, actorId: string, note?: string): Promise<{ emailDelivery: DirectMailStatus }> {
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: { email: true, fullName: true, reference: true, status: true },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    if (!(REVIEW_OPEN_STATUSES as readonly string[]).includes(app.status)) {
+      throw new AuthError(
+        'not_open',
+        `حالةُ الطلب «${app.status}» ليست حالةَ متقدّمٍ يُنتظَر منه درس — فالطلبُ يصله خبرا لا معنى له`,
+        409,
+      )
+    }
+    const mail = demoRequestMail({ fullName: app.fullName, reference: app.reference, noteAr: note })
+    /* والأثرُ يُكتب قبل البريد: هو الذي تُقرأ منه الشارةُ، فلو كُتب بعده
+       لَسقط عن رسالةٍ خرجت حين يتعذّر ردُّ الخادم بعد الإرسال. */
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.demo.request',
+      entityType: 'trainer_application', entityId: applicationId,
+      meta: { reference: app.reference, noteAr: note ?? null },
+    })
+    /* ولا يُسقِط تعذُّرُ البريدِ الطلبَ: حالُه يعود إلى الشاشة فيراه من طلب. */
+    const sent = await sendDirectEmail(this.prisma, {
+      to: app.email, subject: mail.subject, ...renderMail(mail.doc),
+    })
+    return { emailDelivery: sent.status }
+  }
+
   async recordDemoEvaluation(applicationId: string, evaluatorId: string, input: RubricScores, decision: 'pass' | 'retry' | 'fail', notes?: string) {
     assertRubric(input)
     const scores = cleanRubric(input)
-    await this.requireStatus(applicationId, ['demo_requested', 'academic_review', 'interview_scheduled'])
+    /* والحدُّ حالةٌ حيّة: كان `demo_requested` أوّلَ القائمة، ولمّا صار
+       الطلبُ مراسَلةً لا نقلةً (`requestDemo` أعلاه) بقي صاحبُه حيث هو —
+       فحدٌّ لا يقبل «قيد المراجعة» يمنع تسجيلَ درسٍ طُلب فعلا ووقع. */
+    await this.requireStatus(applicationId, [...REVIEW_OPEN_STATUSES])
     const demo = await this.prisma.trainerDemoEvaluation.create({
       data: { applicationId, evaluatorId, scores: scores as unknown as Prisma.InputJsonValue, decision, notes },
     })
@@ -706,7 +785,7 @@ export class TrainerReviewService {
 
   async decide(applicationId: string, actorId: string, action:
     | 'approve'
-    | 'move_to_review' | 'request_info' | 'shortlist' | 'request_demo' | 'academic_review'
+    | 'move_to_review' | 'request_info' | 'academic_review'
     | 'conditionally_approve' | 'waitlist' | 'reject' | 'undo_reject'
     | 'start_onboarding' | 'activate' | 'reinstate', note?: string,
     opts: DecideOptions = {}): Promise<{
@@ -734,8 +813,10 @@ export class TrainerReviewService {
       approve: 'active',
       move_to_review: 'under_review',
       request_info: 'information_requested',
-      shortlist: 'shortlisted',
-      request_demo: 'demo_requested',
+      /* ورُفع من هنا اثنان في ٢٦ سبتمبر ٢٠٢٦ بحذف حالتَيهما: `shortlist`
+         و`request_demo`. وطلبُ الدرس التجريبيّ صار `requestDemo` أسفلَه —
+         مراسَلةً بلا نقلةٍ في الطابور، فرسالتُه باقيةٌ وحالتُه ذهبت.
+         والقولُ في `TRAINER_STATUSES`. */
       academic_review: 'academic_review',
       conditionally_approve: 'conditionally_approved',
       waitlist: 'waitlisted',
@@ -1043,26 +1124,9 @@ export class TrainerReviewService {
       })
     }
 
-    /* ═══ وطلبُ الدرس التجريبيّ يصل صاحبَه — لا يُقلب في دفترنا وحدَه ═══
-
-       كان هذا القرارُ يقلب الحالةَ إلى «بانتظار الدرس التجريبي» ولا يُرسل
-       حرفا: فننتظر درسا لم نطلبه منه، وينتظر هو طلبا لم يصله. وشكاه صاحبُ
-       المنصّة (٢٤ سبتمبر ٢٠٢٦).
-
-       وملاحظةُ المراجع تسافر معه كما تسافر في الردّ وقائمة الانتظار: «درسا
-       تجريبيا» بلا موضوعٍ ولا مدّةٍ يُجيب عنها بسؤالٍ لا بدرس.
-
-       ولا يُسقِط تعذُّرُ البريدِ القرارَ: الحالةُ انتقلت، والشاشةُ تقرأ حالَ
-       البريد من سجلّ الإرسال لا من هنا — وقرارٌ يُنقَض لأنّ خادمَ بريدٍ تأخّر
-       أسوأُ من رسالةٍ تُعاد. */
-    if (action === 'request_demo') {
-      const mail = demoRequestMail({
-        fullName: app.fullName, reference: app.reference, noteAr: note,
-      })
-      await sendDirectEmail(this.prisma, {
-        to: app.email, subject: mail.subject, ...renderMail(mail.doc),
-      })
-    }
+    /* (وكانت هنا كتلةُ «طلبِ الدرس التجريبيّ» — انتقلت إلى `requestDemo`
+       أسفلَه حين رُفعت حالتُها في ٢٦ سبتمبر ٢٠٢٦: صار الطلبُ مراسَلةً
+       لا قرارا يقلب الحالة، فلا موضعَ له في خريطة القرارات.) */
 
     /* ═══ والتراجعُ يصل صاحبَه بسببه — وإلّا فهو تصحيحٌ في دفترنا لا عنده ═══
 

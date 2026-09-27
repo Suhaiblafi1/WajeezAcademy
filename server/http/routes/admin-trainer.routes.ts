@@ -216,6 +216,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return reply.status(201).send(await review.followUpNoShow(id, req.auth!.userId, body))
   })
 
+  /* ═══ طلبُ الدرس التجريبيّ — مراسَلةٌ بمسارها (٢٦ سبتمبر ٢٠٢٦) ═══
+
+     كان قرارا في `/:id/decision`، فحُذفت حالتُه وبقيت رسالتُه. وموضعُه هنا
+     مع التذكيرات لا هناك مع القرارات: ما يُبعَث ولا يقلب حالةَ صاحبه.
+     والملاحظةُ تسافر معه في المتن، ولذلك تُقبَل هنا كما تُقبل في القرار. */
+  app.post('/api/admin/trainer-applications/:id/demo-request', {
+    preHandler: requirePermission('trainer.applications.review'),
+    schema: { tags: ['admin-trainers'], summary: 'طلبُ درسٍ تجريبيٍّ من متقدّم — رسالةٌ بلا نقلةِ حالة' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ note: z.string().max(1000).optional() }).parse(req.body ?? {})
+    return reply.status(201).send(await review.requestDemo(id, req.auth!.userId, body.note))
+  })
+
   /* تذكيرُ المسوّدة — لمن أكمل القسمَ الأوّل وأغلق الصفحة. وهو لا يعلم أنّ
      طلبَه لم يصلنا، ونحن نراه في الطابور ولا نراه ينتظرنا. */
   app.post('/api/admin/trainer-applications/:id/draft-reminder', {
@@ -297,7 +311,10 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
            ويُعلم صاحبَه، من أيّ حالةٍ حيّة. وما بعده السلسلةُ التفصيليّةُ
            لمن أرادها: لم يُحذف منها زرّ. */
         'approve',
-        'move_to_review', 'request_info', 'shortlist', 'request_demo', 'academic_review',
+        /* ورُفع من هنا اثنان في ٢٦ سبتمبر ٢٠٢٦ بحذف حالتَيهما (`shortlist`
+           و`request_demo`). وطلبُ الدرس التجريبيّ صار مسارَه
+           `/:id/demo-request` أسفلَه: مراسَلةٌ لا قرارٌ يقلب الحالة. */
+        'move_to_review', 'request_info', 'academic_review',
         'conditionally_approve', 'waitlist', 'reject',
         /* والتراجعُ عن الردّ — يردّ الطلبَ إلى المراجعة، وسببُه إلزاميٌّ
            يصل المتقدّمَ بنصّه. تفصيلُه في `decide` وفي خريطة الانتقالات. */

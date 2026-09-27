@@ -71,9 +71,10 @@ describe('ما تعدّه بطاقةُ طلبات الانضمام', () => {
 
   it('وتعدّ ما ينتظرك أنت — قرارُ ٢٦ سبتمبر ٢٠٢٦', () => {
     /* خرجت `demo_requested`: تنتظر المتقدّمَ أن يقدّم ديمو لا تنتظرك.
-       ودخلت `conditionally_approved`: عندك فعلا — أتعابُه ودوراتُه وعقدُه. */
+       ودخلت `conditionally_approved`: عندك فعلا — أتعابُه ودوراتُه وعقدُه.
+       ثمّ خرجت `shortlisted` بحذف الحالة نفسِها (٢٦ سبتمبر ٢٠٢٦). */
     expect(inboxStatuses().sort()).toEqual(
-      ['academic_review', 'conditionally_approved', 'shortlisted', 'submitted', 'under_review'],
+      ['academic_review', 'conditionally_approved', 'submitted', 'under_review'],
     )
   })
 

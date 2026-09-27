@@ -73,7 +73,9 @@ beforeAll(async () => {
       userId: user.id,
       email: EMAIL,
       fullName: 'مدرّبُ السؤال الدوريّ',
-      status: 'shortlisted',
+      /* و«قيد المراجعة» لا «مختار أوّليّ»: حُذفت الثانيةُ في ٢٦ سبتمبر ٢٠٢٦،
+         وكلتاهما حالةٌ يُحجَز فيها — وهو المطلوبُ هنا. */
+      status: 'under_review',
       emailVerifiedAt: new Date(),
     },
   })
@@ -194,7 +196,7 @@ describe('الإلغاءُ المقروءُ يُلغي المقابلة', () => 
     const interview = await prisma.trainerInterview.findUnique({ where: { externalId: INVITEE_URI } })
     expect(interview?.canceledAt).not.toBeNull()
     const application = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: applicationId } })
-    expect(application.status).toBe('shortlisted')
+    expect(application.status).toBe('under_review')
   })
 })
 

@@ -28,13 +28,13 @@ import { ALLOWED_TRANSITIONS, transitionProblemAr } from '../../../server/servic
 /** وجهةُ كلّ قرار — كما في `targets` داخل `decide` */
 const TARGET: Record<string, string> = {
   approve: 'active', move_to_review: 'under_review', request_info: 'information_requested',
-  shortlist: 'shortlisted', request_demo: 'demo_requested', academic_review: 'academic_review',
+  academic_review: 'academic_review',
   conditionally_approve: 'conditionally_approved', waitlist: 'waitlisted', reject: 'rejected',
   undo_reject: 'under_review', start_onboarding: 'onboarding', activate: 'active', reinstate: 'active',
 }
 
 /** من خرج من الطابور — لا يُجَرّ إليه */
-const OUT = ['draft', 'email_verification_pending', 'active', 'withdrawn'] as const
+const OUT = ['draft', 'active', 'withdrawn'] as const
 
 describe('طلبُ المعلومات الإضافيّة مفتوحٌ في كلّ حالةٍ حيّة', () => {
   it('ومنها ما بعد القبول الداخليّ — وهو نصُّ ما طُلب', () => {
@@ -74,7 +74,7 @@ describe('وكلُّ قرارٍ متاحٌ من كلّ حالةٍ حيّة', () 
   it('لا قرارَ يقفل حالةً حيّةً إلّا التي هو فيها', () => {
     const SELF: Record<string, string> = {
       move_to_review: 'under_review', request_info: 'information_requested',
-      shortlist: 'shortlisted', request_demo: 'demo_requested', academic_review: 'academic_review',
+      academic_review: 'academic_review',
       conditionally_approve: 'conditionally_approved', start_onboarding: 'onboarding',
       waitlist: 'waitlisted',
     }

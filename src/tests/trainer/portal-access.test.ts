@@ -35,7 +35,9 @@ describe('بابُ الموادّ يُفتح في الطور المشروط', ()
   })
 
   it('ويبقى مغلقا لمن لم يبلغ الطورَ أصلا ولمن رُدَّ طلبُه', () => {
-    for (const status of ['submitted', 'shortlisted', 'conditionally_approved', 'rejected', 'waitlisted']) {
+    /* وسقطت `shortlisted` من القائمة بحذف الحالة (٢٦ سبتمبر ٢٠٢٦): حالةٌ
+       لا وجودَ لها تُقاس فراغا — تخضرّ لأنّها مجهولةٌ لا لأنّ البابَ مغلق. */
+    for (const status of ['submitted', 'under_review', 'conditionally_approved', 'rejected', 'waitlisted']) {
       expect(portalDoorProblemAr('materials', { status }), `بابٌ فُتح في ${status}`).not.toBeNull()
     }
   })

@@ -188,9 +188,10 @@ export const INTERVIEW_BOOKING_PAUSE = {
 
    ═══ ومن يُدعى مكتوبٌ في مكانٍ واحد ═══
 
-   `isInvitedToBook` في `interview-invitation.ts` — من اجتاز الفرزَ الأوّليَّ
-   أو خرجت إليه الدعوةُ بالبريد. ولا يُكتب المِحَكُّ هنا ثانيةً: موضعان
-   للحكم يفترقان في أوّل تعديل.
+   `isInvitedToBook` في `interview-invitation.ts` — من خرجت إليه الدعوةُ
+   بالبريد. ولا يُكتب المِحَكُّ هنا ثانيةً: موضعان للحكم يفترقان في أوّل
+   تعديل. (وكان يصدُق لمن اجتاز الفرزَ الأوّليَّ كذلك، فسُدّ ذاك البابُ
+   بحذف حالته في ٢٦ سبتمبر ٢٠٢٦.)
 
    ═══ ومفتاحٌ يبقى — كالوقف سواءً بسواء ═══
 
@@ -244,11 +245,6 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
     explain: 'حفظنا القسم الأول من طلبك. أكمل مستنداتك ووسيلة التواصل ليصل الطلب إلى فريق المراجعة.',
     tone: 'warn',
   },
-  email_verification_pending: {
-    label: 'بانتظار تأكيد البريد',
-    explain: 'افتح رابط التأكيد الذي أرسلناه إلى بريدك ليصبح طلبك مُقدَّما رسميا.',
-    tone: 'warn',
-  },
   submitted: {
     label: 'وصل طلبك — بانتظار المراجعة',
     /* ═══ والشرحُ يتبع المفتاح — وإلّا وعد بزرٍّ لا يُعرض ═══
@@ -276,21 +272,9 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
     explain: 'راجع بريدك: طلبنا منك استكمال شيء في ملفك، وبعده يعود طلبك إلى المراجعة.',
     tone: 'warn',
   },
-  shortlisted: {
-    label: 'اختيار أولي',
-    explain: INTERVIEW_BOOKING_PAUSE.active
-      ? `اجتاز طلبك الفرز الأوّليّ، والخطوةُ التالية ${TRAINER_INTERVIEW.labelAr}. وحجزُ المواعيد موقوفٌ مؤقّتا لامتلائها — يصلك رابطُ الحجز في ${INTERVIEW_BOOKING_PAUSE.resumeMonthAr}.`
-      : 'اجتاز طلبك الفرز الأوّليّ. الخطوةُ التالية لقاءُ تعارفٍ قصير — احجز موعدَه من الزرّ أدناه.',
-    tone: 'progress',
-  },
   interview_scheduled: {
     label: 'موعدُك محجوز',
     explain: 'حُجز موعدُ لقاء التعارف. راجع بريدك لتفاصيله — ومنه تغيّره أو تلغيه إن لزم.',
-    tone: 'progress',
-  },
-  demo_requested: {
-    label: 'بانتظار الدرس التجريبي',
-    explain: 'نطلب منك درسا تجريبيا قصيرا تقيّمه لجنتنا الأكاديمية.',
     tone: 'progress',
   },
   /* ═══ وما يقرؤه المتقدّمُ صار صادقا (٢٦ سبتمبر ٢٠٢٦) ═══
@@ -463,21 +447,38 @@ export function recordingsSummaryAr(
 
 /** الحالاتُ التي ما زال فيها الطلبُ حيّا ويجوز لصاحبه سحبُه */
 export const WITHDRAWABLE_STATUSES = [
-  'draft', 'email_verification_pending', 'submitted', 'under_review', 'information_requested',
-  'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
+  'draft', 'submitted', 'under_review', 'information_requested',
+  'interview_scheduled', 'academic_review',
   'conditionally_approved', 'contract_pending', 'waitlisted',
 ] as const
 
 /** الحالاتُ التي يُعرض فيها حجزُ المقابلة — والحدُّ من طرفَيه مقصود.
 
-    لا قبلها: `draft` و`email_verification_pending` طلبٌ لم يصل بعد، فيُكمله
-    أوّلا ولا يحجز موعدا لما لا يُقرأ.
+    لا قبلها: `draft` طلبٌ لم يصل بعد، فيُكمله أوّلا ولا يحجز موعدا لما
+    لا يُقرأ.
 
     ولا بعدها: `interview_scheduled` موعدُه محجوزٌ فعلا — وزرُّ «احجز» فوقه
-    يدعوه إلى حجزٍ ثانٍ. وما بعده (ديمو · مراجعة · عقد · نشط) مرّ المقابلةَ،
-    و`rejected` و`withdrawn` انتهيا. */
+    يدعوه إلى حجزٍ ثانٍ. وما بعده (عقدٌ · نشط) مرّ المقابلةَ، و`rejected`
+    و`withdrawn` انتهيا.
+
+    ═══ و«رأيٌ ثانٍ» دخلت — عطبٌ في فلترِ أمسٍ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+    كانت القائمةُ `['submitted', 'under_review', 'information_requested',
+    'shortlisted']`، و`academic_review` خارجَها بحجّة أنّها «مرّت المقابلةَ».
+    وهي حجّةٌ نسخها صاحبُ المنصّة إذ قال ما يستعملها له: «لمن أتردّد في
+    دعوته إلى **مقابلة** وأريد أن يقرأ ملفَّه أحدٌ آخرُ من فريقي» — فهي
+    **قبلَ** قرار المقابلة لا بعدَه، وباسمها في الشاشة: «رأيٌ ثانٍ — قبل
+    قرار المقابلة».
+
+    **وأثرُ الخطأ أنّ فلترَ أمسٍ لا يُصيب أحدا فيها**: «لم يُطلب منه تحديدُ
+    موعد» مبنيٌّ على `canRemindToBook`، وهي تقرأ هذه القائمة. فمن كان في
+    «رأيٌ ثانٍ» — وهو أحقُّ الناس بالفلتر — لا يظهر فيه أبدا، ولا يُذكَّر
+    بالحجز، ولا يُعرض له زرُّ الحجز في صفحته.
+
+    وبانَ حين حُذفت `shortlisted`: كانت تستره، إذ من أراد أن يدعوَه نقله
+    إليها أوّلا. */
 export const BOOKABLE_STATUSES: readonly string[] = [
-  'submitted', 'under_review', 'information_requested', 'shortlisted',
+  'submitted', 'under_review', 'information_requested', 'academic_review',
 ]
 
 /* ═══ من يُذكَّر بحجز موعده — مِحَكٌّ واحدٌ للشاشة وللخادم ═══
@@ -499,7 +500,7 @@ export function canRemindToBook(app: { status: string; liveInterviews: number })
     الخادم — ولو افترقتا لَأظهرت الشاشةُ زرّا يردّه الخادمُ ٤٠٩. */
 export const EDITABLE_STATUSES: readonly string[] = [
   'draft', 'submitted', 'under_review', 'waitlisted',
-  'information_requested', 'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
+  'information_requested', 'interview_scheduled', 'academic_review',
 ]
 
 /* سنواتُ الخبرة كما تُقرأ — يقرؤها ملفُّ المتقدّم وشريطُ الحقائق معا.

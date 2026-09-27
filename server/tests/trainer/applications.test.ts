@@ -252,10 +252,9 @@ describe('دورة طلب المدرب', () => {
   })
 
   it('9) مقابلة ثم ديمو ثم مراجعة أكاديمية', async () => {
-    await review.decide(applicationId, adminId, 'shortlist')
     const interview = await review.scheduleInterview(applicationId, adminId, { scheduledAt: new Date(Date.now() + 86400000) })
     await review.recordInterviewOutcome(interview.id, adminId, 'passed')
-    await review.decide(applicationId, adminId, 'request_demo')
+    await review.requestDemo(applicationId, adminId)
     await review.recordDemoEvaluation(applicationId, adminId, scores(), 'pass')
     await review.decide(applicationId, adminId, 'academic_review')
     const row = await prisma.trainerApplication.findUnique({ where: { id: applicationId } })
@@ -313,9 +312,11 @@ describe('دورة طلب المدرب', () => {
   it('14) كل الانتقالات موثقة في سجل الحالة وسجل التدقيق', async () => {
     const history = await prisma.trainerStatusHistory.findMany({ where: { applicationId }, orderBy: { createdAt: 'asc' } })
     const statuses = history.map((h) => h.toStatus)
+    /* وسقطت `shortlisted` و`demo_requested` من السلسلة بحذف حالتَيهما
+       (٢٦ سبتمبر ٢٠٢٦) — والمحروسُ هو هو: كلُّ نقلةٍ وقعت مكتوبةٌ في السجلّ. */
     expect(statuses).toEqual(expect.arrayContaining([
       'draft', 'submitted', 'under_review', 'information_requested',
-      'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
+      'interview_scheduled', 'academic_review',
       'conditionally_approved', 'contract_pending', 'onboarding', 'active',
     ]))
     const audits = await prisma.auditEvent.findMany({

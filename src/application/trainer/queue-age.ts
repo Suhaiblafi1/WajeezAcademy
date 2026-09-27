@@ -37,14 +37,14 @@ import { countAr, type CountForms } from '../text/count-ar'
 
 /** الحالاتُ التي تنتظرنا نحن — وفيها وحدَها يتلوّن العمر */
 export const AWAITING_US: readonly string[] = [
-  'submitted', 'under_review', 'shortlisted', 'interview_scheduled',
-  'demo_requested', 'academic_review', 'conditionally_approved',
+  'submitted', 'under_review', 'interview_scheduled',
+  'academic_review', 'conditionally_approved',
   'contract_pending', 'onboarding',
 ]
 
 /** الحالاتُ التي تنتظر صاحبَ الطلب — يُقال عمرُها ولا يُلوَّن */
 export const AWAITING_APPLICANT: readonly string[] = [
-  'draft', 'email_verification_pending', 'information_requested',
+  'draft', 'information_requested',
 ]
 
 /** ما بعد الحدّ الأوّل يُنبَّه عليه، وما بعد الثاني يُنادى */

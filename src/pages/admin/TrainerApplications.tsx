@@ -41,6 +41,7 @@ import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { BAR_ACTIONS, DECISIONS, recommendedFor, type Decision } from "@/application/trainer/decisions";
+import { REVIEW_OPEN_STATUSES } from "@/application/trainer/approval";
 import { outreachAr, type LastOutreach } from "@/application/trainer/outreach";
 import {
   bulkDecisionsFor, bulkRemindersFor, pageSelection, togglePage, unselectedMatching,
@@ -278,6 +279,8 @@ interface AppRow {
   country: string | null; jobTitle: string | null; domainYears: string | null; trainingYears: string | null;
   specialties: string[]; createdAt: string; emailVerified: boolean; phase2Done: boolean;
   documentsCount: number; reviewsCount: number; interviewsCount: number;
+  /** عددُ تقييمات درسه التجريبيّ — به تسقط شارةُ «طُلب منه درسٌ تجريبيّ» */
+  demosCount: number;
   /** نتيجةُ آخر لقاءٍ غيرِ ملغى — `null` لمن لم يُقابَل أو لم تُسجَّل نتيجتُه */
   interviewOutcome: string | null;
   /** قراراتُ روابط التقييم بأسماء قائليها — أحدثُها أوّلا */
@@ -853,6 +856,27 @@ export default function TrainerApplications() {
         run: () => setFollowUp({
           app: a, variant: NO_SHOW_FOLLOWUPS[0].key, bodyAr: NO_SHOW_FOLLOWUPS[0].bodyAr,
         }),
+      });
+    }
+    /* ═══ وطلبُ الدرس التجريبيّ — مراسَلةٌ في الصفّ (٢٦ سبتمبر ٢٠٢٦) ═══
+
+       كان قرارا في بطاقة الملفّ يقلب الحالةَ إلى «بانتظار الديمو». فحُذفت
+       الحالةُ بأمر صاحب المنصّة، وبقيت الرسالةُ — فموضعُها هنا مع أخواتها
+       من المراسَلات: ما يُبعَث ولا يقلب حالةَ صاحبه.
+
+       ويُعرض لمن كان متقدّما ولم يُسجَّل له تقييمُ درسٍ بعد. والشرطُ الثاني
+       هو مِحَكُّ الشارة نفسُه في `outreach.ts` — فلا يُعرض زرٌّ لمن وقع
+       المطلوبُ منه، ولا تسقط شارةٌ عن زرٍّ يُعرض. */
+    if (REVIEW_OPEN_STATUSES.includes(a.status as typeof REVIEW_OPEN_STATUSES[number]) && a.demosCount === 0) {
+      items.push({
+        key: "request-demo", label: "اطلبْ منه درسا تجريبيّا", icon: MailCheck,
+        run: () => void act(
+          () => apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${a.id}/demo-request`, {}),
+          (result) => mailOutcomeAr(
+            "أُرسل إليه طلبُ الدرس التجريبيّ",
+            (result as { emailDelivery?: string } | null)?.emailDelivery,
+          ),
+        ),
       });
     }
     /* وتذكيرُ المسوّدة للمسوّدة وحدَها — والخادمُ يشترطها (٤٠٩ دونها) */

@@ -32,7 +32,7 @@ const main = async () => {
     ? await prisma.trainerApplication.findMany({ where: { reference: ONE } })
     : await prisma.trainerApplication.findMany({
         where: {
-          status: { in: ['withdrawn', 'rejected', 'draft', 'email_verification_pending'] },
+          status: { in: ['withdrawn', 'rejected', 'draft'] },
           OR: TEST_NAME_MARKERS.map((m) => ({ fullName: { contains: m } })),
         },
         orderBy: { reference: 'asc' },

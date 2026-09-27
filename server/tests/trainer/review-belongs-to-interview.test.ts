@@ -47,7 +47,6 @@ async function withInterview(n: number, at = new Date('2026-09-20T14:00:00Z')) {
   const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { reference: res.reference } })
   await apps.transition(row.id, 'submitted', null, 'اكتمال الطلب')
   await apps.transition(row.id, 'under_review', null, 'بدء المراجعة')
-  await apps.transition(row.id, 'shortlisted', null, 'اختصار أوّليّ')
   await apps.transition(row.id, 'interview_scheduled', null, 'جدولة مقابلة')
   const iv = await prisma.trainerInterview.create({
     data: { applicationId: row.id, scheduledAt: at, mode: 'remote' },
@@ -142,7 +141,10 @@ describe('③④ وقرارُ القارئ يُكتب في عمود الموعد
     const app = await prisma.trainerApplication.findUniqueOrThrow({
       where: { id: applicationId }, select: { status: true },
     })
-    expect(app.status, 'بقي الطلبُ في «حُدّد موعدُه» وموعدُه لم يقع').toBe('shortlisted')
+    /* و«قيد المراجعة» لا «مختار أوّليّ»: الحالةُ الثانيةُ حُذفت في ٢٦ سبتمبر
+       ٢٠٢٦، فسلسلةُ التركيب فوقَها صارت تقف عند «قيد المراجعة» — وهي التي
+       يعود إليها. والمحروسُ هو هو: أنّ الغيابَ يُرجعه إلى ما قبل الحجز. */
+    expect(app.status, 'بقي الطلبُ في «حُدّد موعدُه» وموعدُه لم يقع').toBe('under_review')
   })
 })
 
