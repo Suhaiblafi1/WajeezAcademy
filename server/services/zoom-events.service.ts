@@ -14,6 +14,7 @@ import type { PrismaClient } from '@prisma/client'
 import { fetchZoomParticipants, getZoomConfig, zoomReady } from './zoom.service'
 import { pickRecording } from '../../src/application/learning/zoom-recording'
 import { recordAudit } from './audit'
+import { ProgressService } from './progress.service'
 
 /** ملفٌّ واحدٌ من تسجيلٍ سحابيّ — التسجيلُ الواحدُ عدّةُ ملفّات */
 export interface ZoomRecordingFile {
@@ -73,6 +74,15 @@ export class ZoomEventService {
             actualEndAt: asDate(object.end_time) ?? new Date(),
             durationMin: typeof object.duration === 'number' ? object.duration : undefined,
           },
+        })
+        /* ═══ والحالةُ مع الساعة (٢٧ سبتمبر ٢٠٢٦) ═══
+           كان الحدثُ يكتب متى انتهى الاجتماعُ ولا يكتب أنّ اللقاءَ انعقد —
+           فبقي `scheduled` أبدا، وحضورُ كلّ متعلّمٍ صفرا. وتكتبه كذلك دورةُ
+           «انتهاءُ اللقاءات» لما لا اجتماعَ له. والمعتمَدُ وحدَه: ما لا يراه
+           المتعلّمُ لا يُعدّ عليه. */
+        await this.prisma.cohortSession.updateMany({
+          where: { id: meeting.sessionId, status: { in: ['scheduled', 'live'] }, approvalState: 'approved' },
+          data: { status: 'done' },
         })
         /* وتقريرُ من حضر بعده. ولا يُسقط الحدثَ إن تعذّر: النهايةُ كُتبت
            أعلاه، والسببُ يُكتب في `syncError` فيُقرأ في الشاشة. */
@@ -288,6 +298,11 @@ export class ZoomEventService {
       actorId: null, action: 'zoom.attendance_sync', entityType: 'cohort_session', entityId: sessionId,
       meta: { participants: people.length, written, durationMin },
     })
+    /* ═══ والحضورُ المكتوبُ يُحسب في التقدّم (٢٧ سبتمبر ٢٠٢٦) ═══
+       كان تسجيلُ المدرّب بيده وحدَه يعيد الحساب، والمزامنةُ من Zoom تكتب
+       الحضورَ ولا تعيده — فيبقى الرقمُ الذي يراه المتعلّمُ قبلَها. */
+    const owner = await this.prisma.cohortSession.findUnique({ where: { id: sessionId }, select: { cohortId: true } })
+    if (owner) await new ProgressService(this.prisma).recomputeCohort(owner.cohortId)
   }
 
   /** أمضيفُ هذه الجلسة؟ — مدرّبُها المُسنَد أو بريدُ المضيف في الإعداد */

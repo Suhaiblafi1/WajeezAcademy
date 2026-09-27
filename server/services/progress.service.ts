@@ -12,6 +12,14 @@ import { LEARNER_SESSION_WHERE } from './session-visibility'
 const ATTENDANCE_STATUSES = ['present', 'late', 'absent', 'excused'] as const
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number]
 
+/** محاورُ اللقاء — `moduleIds` منذ صار اللقاءُ لمحورٍ أو محورين (٢٧ سبتمبر ٢٠٢٦)،
+    و`moduleId` وحدَه لما جُدول قبل ذلك ولم يُنقل. فمن حضر لقاءً لمحورين
+    حضرهما معا — لا أوّلَهما وحدَه كما كان يُقرأ من العمود القديم. */
+function sessionAxes(s: { moduleId: string | null; moduleIds?: readonly string[] | null }): readonly string[] {
+  if (s.moduleIds && s.moduleIds.length > 0) return s.moduleIds
+  return s.moduleId ? [s.moduleId] : []
+}
+
 export class ProgressService {
   private prisma: PrismaClient
   private enrollments: EnrollmentService
@@ -43,6 +51,22 @@ export class ProgressService {
     return row
   }
 
+  /** يعيد حسابَ تقدّم من له مقعدٌ في الشعبة — ولا يُسقط الدفعةَ متعلّمٌ واحدٌ يتعثّر.
+      يناديه انتهاءُ اللقاء (الدورةُ وحدثُ Zoom) ومزامنةُ الحضور من Zoom: كلاهما
+      يغيّر الحضورَ لكلّ من في الشعبة، لا لمتعلّمٍ بعينه كتسجيل المدرّب. */
+  async recomputeCohort(cohortId: string): Promise<{ recomputed: number; failed: number }> {
+    const seats = await this.prisma.enrollment.findMany({
+      where: { cohortId, status: { in: ['enrolled', 'completed'] } },
+      select: { id: true },
+    })
+    let recomputed = 0
+    let failed = 0
+    for (const e of seats) {
+      try { await this.recomputeProgress(e.id); recomputed += 1 } catch { failed += 1 }
+    }
+    return { recomputed, failed }
+  }
+
   /** إكمال وحدة — بدليل حقيقي: تسليم مقبول أو تقييم مجتاز أو حضور جلسة الوحدة */
   async recomputeProgress(enrollmentId: string) {
     const e = await this.prisma.enrollment.findUnique({
@@ -64,7 +88,22 @@ export class ProgressService {
     if (!e) throw new AuthError('not_found', 'التسجيل غير موجود', 404)
 
     /* حضور: حاضر/متأخر يحتسب، معذور نصف، غائب صفر */
-    const doneSessions = e.cohort.sessions.filter((s) => s.status === 'done')
+    /* ═══ والمنعقدُ الذي أُخذ فيه الحضور — لا كلُّ ما انتهى (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       صار اللقاءُ يُكتب `done` حين تمضي نهايتُه (دورةُ «انتهاءُ اللقاءات»)،
+       وكان لا يُكتب أبدا فالحضورُ صفرٌ لكلّ متعلّم. ولو عُدّ كلُّ منتهٍ لنقص
+       حضورُ الجميع بلقاءٍ لم يُسجِّل فيه أحدٌ حضورا — تعثّرت مزامنةُ Zoom أو
+       نسي المدرّب. فالمقامُ ما انعقد **وأُخذ فيه الحضور**: من غاب عنه غاب،
+       وما لم يُسأل فيه أحدٌ لا يُحسب على أحد. */
+    const ended = e.cohort.sessions.filter((s) => s.status === 'done')
+    const taken = ended.length
+      ? new Set((await this.prisma.attendance.findMany({
+          where: { sessionId: { in: ended.map((s) => s.id) } },
+          distinct: ['sessionId'],
+          select: { sessionId: true },
+        })).map((a) => a.sessionId))
+      : new Set<string>()
+    const doneSessions = ended.filter((s) => taken.has(s.id))
     const attendedWeight = e.attendance.reduce((sum, a) => {
       if (!doneSessions.some((s) => s.id === a.sessionId)) return sum
       return sum + (a.status === 'present' ? 1 : a.status === 'late' ? 0.75 : a.status === 'excused' ? 0.5 : 0)
@@ -100,7 +139,7 @@ export class ProgressService {
       const byAssessment = passedAttempts.some((a) => a.assessment.moduleId === m.id)
       const attended = e.attendance.some((att) => {
         const session = e.cohort.sessions.find((s) => s.id === att.sessionId)
-        return session?.moduleId === m.id && ['present', 'late'].includes(att.status)
+        return session !== undefined && sessionAxes(session).includes(m.id) && ['present', 'late'].includes(att.status)
       })
       const via = byWork ? 'submission'
         : byAssessment ? 'assessment'
