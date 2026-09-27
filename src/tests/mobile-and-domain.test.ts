@@ -226,6 +226,10 @@ describe("شريطُ بوّابة المدرّب يُقرأ لا يُخمَّن"
     /* الكلُّ لا المرئيّ: شبحُ ما خرج هو الذي يقول متى يعود — ثمّ شبحُ «المزيد» */
     expect(navBlock.slice(measured, ghostAt), "الأشباحُ لبعض التبويبات لا لكلّها").toContain("{tabs.map((t) => (");
     expect(navBlock.slice(ghostAt), "لا شبحَ لـ«المزيد» — فلا يُحجَز له مكان").toContain('<NavPillGhost label="المزيد">');
+    /* والشارةُ في الأشباح محجوزةٌ قبل وصول عددها: العدّادُ يصل بعد التركيب،
+       فشبحٌ بلا شارته يُدخل التبويبَ الشريطَ ثمّ يُخرجه حين يصل — في كلّ انتقال */
+    expect(navBlock.slice(ghostAt), "شبحُ التبويب يُقاس بلا شارته حتّى يصل عددُها").toContain("<CountBadge count={reservedCount(t.count)} />");
+    expect(navBlock.slice(ghostAt), "شبحُ «المزيد» يُقاس بلا شارته حتّى يصل عددُها").toContain("<CountBadge count={reservedCount(waitingAll)} />");
     /* والشبحُ وسمٌ صامت: لا رابطَ ولا زرّ */
     const ghostFn = pill.slice(pill.indexOf("export function NavPillGhost"));
     expect(ghostFn, "لا مكوّنَ للشبح في السلّم").not.toBe("");

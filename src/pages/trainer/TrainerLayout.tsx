@@ -3,7 +3,7 @@ import { flushSync } from "react-dom";
 import { Award, BookPlus, CalendarDays, ChevronDown, ClipboardCheck, FileSignature, GraduationCap, Handshake, LayoutDashboard, Link2, Route, Star, Users, Wallet, type LucideIcon } from "lucide-react";
 import { Inset } from "@/components/ui/Surface";
 import { NavPill, NavPillButton, NavPillGhost } from "@/components/ui/NavPill";
-import { fitCount } from "@/components/ui/nav-fit";
+import { fitCount, reservedCount } from "@/components/ui/nav-fit";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -147,9 +147,11 @@ function MoreTabs({ items, pathname }: { items: Tab[]; pathname: string }) {
    وبمعامل التكبير `--app-scale`، وعلى صفّ الأشباح لأنّ عرضَ الحبّات يتبدّل
    بالخطّ حين يصل وبشارة العدّاد حين تظهر.
 
-   وشبحُ «المزيد» يحمل عدّادَ الكلّ لا عدّادَ المخفيّ: المخفيُّ لا يُعرف إلّا
-   بعد القياس، فيُحجَز للشارة مكانُها احتياطا. وأسوأُ ما فيه تبويبٌ يخرج قبل
-   أوانه بعرض شارة — لا حبّةٌ تُقَصّ.
+   والأشباحُ تحجز مكانَ الشارة قبل أن يصل عددُها (`reservedCount`): العدّادُ
+   يصل بعد التركيب، فبلا حجزٍ يقفز «طابورُ التقييم» إلى «المزيد» على الهاتف
+   في كلّ انتقال. وشبحُ «المزيد» يحمل عدّادَ الكلّ لا عدّادَ المخفيّ:
+   المخفيُّ لا يُعرف إلّا بعد القياس. وأسوأُ ما في الحجزين تبويبٌ يخرج قبل
+   أوانه بعرض شارة — لا حبّةٌ تُقَصّ، ولا شريطٌ يقفز.
 
    ── ولماذا `flushSync` ──
 
@@ -209,7 +211,8 @@ function TabsBar({ tabs, pathname }: { tabs: Tab[]; pathname: string }) {
     return () => ro.disconnect();
   }, []);
 
-  const waitingAll = tabs.reduce((sum, t) => sum + (t.count ?? 0), 0);
+  const counted = tabs.filter((t) => t.count !== undefined);
+  const waitingAll = counted.length ? counted.reduce((sum, t) => sum + (t.count ?? 0), 0) : undefined;
 
   return (
     <nav aria-label="تبويبات بوّابة المدرّب" className="order-last w-full rounded-full border border-white/10 bg-white/[0.03] p-1">
@@ -228,11 +231,11 @@ function TabsBar({ tabs, pathname }: { tabs: Tab[]; pathname: string }) {
           <div ref={ghostRef} className="flex w-max items-center">
             {tabs.map((t) => (
               <NavPillGhost key={t.to} label={t.label}>
-                <CountBadge count={t.count} />
+                <CountBadge count={reservedCount(t.count)} />
               </NavPillGhost>
             ))}
             <NavPillGhost label="المزيد">
-              <CountBadge count={waitingAll} />
+              <CountBadge count={reservedCount(waitingAll)} />
               <ChevronDown className="h-3 w-3 shrink-0" />
             </NavPillGhost>
           </div>

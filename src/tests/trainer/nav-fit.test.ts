@@ -13,7 +13,7 @@
    وأمّا `<` والسماحُ باقٍ فلا يُرى، ولا يضرّ: الفرقُ دون نصف بكسل. */
 
 import { describe, expect, it } from 'vitest'
-import { fitCount } from '@/components/ui/nav-fit'
+import { fitCount, reservedCount } from '@/components/ui/nav-fit'
 
 const TABS = [100, 100, 100] as const
 const GAP = 10
@@ -59,3 +59,28 @@ describe('كم تبويبا يسعه الشريط', () => {
     expect(fitCount([], GAP, MORE, 500)).toBe(0)
   })
 })
+
+/* ── ومكانُ الشارة محجوزٌ قبل وصول عددها ──
+
+   العدّادُ يصل بعد تركيب الإطار — والإطارُ يُعاد تركيبُه مع كلّ شاشة. فقِيس
+   على ٣٩٠ بلا حجز: أربعةُ تبويباتٍ تُرسم، ثمّ يصل العددُ فيقفز «طابورُ
+   التقييم» إلى «المزيد» (٤ ← ٣) في كلّ انتقال. والشبحُ يُقاس بما تُعيده هذه. */
+describe('عددُ الشارة في الشبح', () => {
+  it('⚠️ صفرٌ أو لم يصل بعدُ — ويُحجَز له مكانُ رقمٍ', () => {
+    /* لو أُعيد الصفرُ صفرا لاختفت الشارةُ من الشبح (`CountBadge` لا يرسم
+       الصفر) فقِيس التبويبُ بلا شارته — وهو القفزُ بعينه */
+    expect(reservedCount(0)).toBeGreaterThan(0)
+    expect(String(reservedCount(0))).toHaveLength(1)
+  })
+
+  it('ورقمٌ من خانتين يُقاس بخانتيه — لا يُحجَز له أقلُّ ممّا يُرسم', () => {
+    expect(reservedCount(3)).toBeGreaterThanOrEqual(3)
+    expect(String(reservedCount(3))).toHaveLength(1)
+    expect(reservedCount(12)).toBe(12)
+  })
+
+  it('وتبويبٌ بلا عدّادٍ أصلا لا يُحجَز له شيء', () => {
+    expect(reservedCount(undefined)).toBeUndefined()
+  })
+})
+
