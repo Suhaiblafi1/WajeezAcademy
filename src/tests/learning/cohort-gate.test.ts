@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ACCESS_MONTHS, accessState, addMonths, assessmentOpensAt, cohortWindow, gateAssessment,
-  learnerGate, learnerPeriod, meetingOver, MEETING_GRACE_MS, MEETING_MAX_LIVE_MS, submitVerdict,
+  learnerGate, learnerPeriod, meetingOver, MEETING_GRACE_MS, MEETING_MAX_LIVE_MS, submitVerdict, whenAr,
 } from '@/application/learning/cohort-gate'
 import { overlayModules, projectPlanForLearner } from '@/application/trainer/plan-overlay'
 import { canSubmitNow, pendingAssessmentCount, type EnrollmentDetail } from '@/services/enrollment-detail'
@@ -109,6 +109,16 @@ describe('مدّةُ الشعبة وبوّابتُها', () => {
     /* واللقاءُ القديمُ بعمود `moduleId` وحدَه يُحسب لمحوره */
     const legacyRow = learnerGate({ content, cohort, now: new Date(), sessions: [{ ...early[0], moduleIds: [], moduleId: 'M2' }] })
     expect(assessmentOpensAt(legacyRow, 'M2')!.toISOString()).toBe('2027-02-14T11:00:00.000Z')
+  })
+})
+
+describe('اللحظةُ بلغة المتعلّم', () => {
+  it('⚠️ منتصفُ ليل عمّان يومٌ لا ساعة — وما سواه بساعته', () => {
+    /* ٢١:٠٠ بغرينتش منتصفُ الليل في عمّان: موعدٌ يُفتح أوّلَ يومه */
+    expect(whenAr('2027-02-20T21:00:00.000Z'), '«في ١٢:٠٠ ص» على موعدِ يوم').not.toMatch(/\d:\d\d/)
+    expect(whenAr('2027-02-20T21:00:00.000Z')).toContain('21')
+    /* ونهايةُ لقاءٍ في الثامنة مساءً تُقال بساعتها — فهي ما يُنتظر */
+    expect(whenAr('2027-02-15T17:00:00.000Z')).toMatch(/\d:\d\d/)
   })
 })
 

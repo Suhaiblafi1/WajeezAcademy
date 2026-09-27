@@ -137,9 +137,15 @@ export function assessmentOpensAt(gate: LearnerGate, moduleId: string | null | u
   return gate.timeline.workOpensAt(moduleId)
 }
 
-/** اللحظةُ بلغة المتعلّم وبتوقيت عمّان — «الثلاثاء ١٤ فبراير، ٦:٠٠ م» */
+/** اللحظةُ بلغة المتعلّم وبتوقيت عمّان — «الثلاثاء ١٤ فبراير، ٦:٠٠ م».
+    ومنتصفُ الليل موعدُ يومٍ لا ساعة: الموعدُ يُفتح أوّلَ يومه، و«في ١٢:٠٠ ص»
+    حشوٌ يُقرأ خطأً (أظهرَ الأحدِ أم ليلتَه؟) — فيُقال اليومُ وحدَه. */
 export function whenAr(at: Date | string): string {
-  return fmtDateWith(at, {
+  const d = new Date(at)
+  const clock = new Intl.DateTimeFormat('en-US', { timeZone: ACADEMY_ZONE, hourCycle: 'h23', hour: '2-digit', minute: '2-digit' })
+    .formatToParts(d).filter((p) => p.type === 'hour' || p.type === 'minute').map((p) => p.value).join(':')
+  if (clock === '00:00') return fmtDateWith(d, { weekday: 'long', day: 'numeric', month: 'long', timeZone: ACADEMY_ZONE })
+  return fmtDateWith(d, {
     weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: ACADEMY_ZONE,
   })
 }
