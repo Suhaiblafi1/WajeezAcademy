@@ -96,6 +96,9 @@ describe('ما يمنع المواعيد — بلغة من يصحّحها', () =
   it('والمتداخلُ مردود — والفجوةُ جائزة', () => {
     const overlap = good.map((s, i) => (i === 1 ? { ...s, startsOn: '2026-10-09' } : s))
     expect(slotProblems(overlap, EIGHT, PERIOD).join()).toContain('متداخلة')
+    /* ⚠️ والحدُّ نفسُه: موعدٌ يبدأ في يوم انتهاء سابقه يتقاسمان يوما — متداخلان */
+    const touching = good.map((s, i) => (i === 1 ? { ...s, startsOn: '2026-10-10' } : s))
+    expect(slotProblems(touching, EIGHT, PERIOD).join(), 'موعدان يتقاسمان يوما مرّا').toContain('متداخلة')
     const gap = good.map((s, i) => (i === 1 ? { ...s, startsOn: '2026-10-13' } : s))
     expect(slotProblems(gap, EIGHT, PERIOD)).toEqual([])
   })

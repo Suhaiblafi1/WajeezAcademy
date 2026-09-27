@@ -165,3 +165,15 @@ describe('المسالك', () => {
     expect(plan).toMatch(/preReading: z\.boolean\(\)\.nullish\(\)/)
   })
 })
+
+describe('والمعتمِدُ يرى المواعيد', () => {
+  const OPS = code('src/pages/admin/CohortOps.tsx')
+
+  it('⚠️ لكلّ موعدٍ سطرٌ في بطاقة الخطّة: تاريخاه ومحاورُه وكرّاستُه — بقاعدة الخادم', () => {
+    expect(OPS).toContain('trainerPlan.content!.slots!.map((slot, si)')
+    expect(OPS).toContain('dayLabelAr(slot.startsOn)')
+    expect(OPS, 'الكرّاسةُ لا تُحكم بقاعدة الخادم').toContain('workbookDone(slot.workbook)')
+    /* والخطّةُ التي سبقت المواعيدَ تُعرض محاورُها كما كانت */
+    expect(OPS).toMatch(/\)\(\) : \(trainerPlan\.content\?\.modules\?\.length \?\? 0\) > 0 && \(/)
+  })
+})
