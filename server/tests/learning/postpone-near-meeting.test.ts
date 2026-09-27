@@ -35,6 +35,8 @@ const ZOOM_ENV = ['ZOOM_ACCOUNT_ID', 'ZOOM_CLIENT_ID', 'ZOOM_CLIENT_SECRET', 'ZO
 /** طلباتُ النقل إلى Zoom — `PATCH /meetings/:id` بجسمها */
 const patches: { meetingId: string; body: { start_time?: string; duration?: number } }[] = []
 let zoomDown = false
+/** والشبكةُ نفسُها تنقطع — لا ردَّ من Zoom أصلا، فيرمي النداءُ لا يعود */
+let zoomThrows = false
 
 function stubZoom() {
   process.env.ZOOM_ACCOUNT_ID = 'acc'
@@ -46,6 +48,7 @@ function stubZoom() {
       return { ok: true, status: 200, json: async () => ({ access_token: 't', expires_in: 3600 }) }
     }
     if (init?.method === 'PATCH') {
+      if (zoomThrows) throw new Error('انقطعت الشبكةُ دون Zoom')
       const meetingId = decodeURIComponent(String(url).split('/meetings/')[1] ?? '')
       patches.push({ meetingId, body: JSON.parse(init.body ?? '{}') })
       return zoomDown ? { ok: false, status: 500, json: async () => ({}) } : { ok: true, status: 204, json: async () => ({}) }
@@ -188,6 +191,21 @@ describe('② وما عداه يعود إلى الانتظار — واجتما�
 })
 
 describe('③ وسقوطُ Zoom لا يُسقط النقل', () => {
+  /* ردٌّ بخطأٍ (٥٠٠) يعود من النداء نتيجةً — والانقطاعُ يرمي. فالحالتان كلتاهما:
+     الأولى وحدَها لا تمرّ بفرع الاعتراض أصلا، فيمرّ حارسُها وإن زال الاعتراض */
+  it('⚠️ وانقطاعُ الشبكة كذلك — لا يرمي النقلُ ولا يبقى نصفَ نقل', async () => {
+    const s = await approvedMeeting(23)
+    zoomThrows = true
+    try {
+      const moved = await move(s.id, new Date(s.startsAt.getTime() + 5 * H))
+      expect(moved.approvalState).toBe('approved')
+      expect(((await lastMoveAudit(s.id)).meta as { zoomMoved: boolean }).zoomMoved).toBe(false)
+      expect(await toldLearners(s.id), 'نُقل ولم يُبلَّغ أحد — نصفُ نقل').toHaveLength(enrolled.length)
+    } finally {
+      zoomThrows = false
+    }
+  })
+
   it('⚠️ يُنقل اللقاءُ ويبقى معتمَدا — ويُكتب في الأثر أنّ اجتماعَه لم يُنقل', async () => {
     const s = await approvedMeeting(22)
     zoomDown = true
