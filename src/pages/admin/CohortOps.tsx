@@ -9,7 +9,7 @@ import {
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
-import { fmtDateTimeAr } from "@/utils/format";
+import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import type { CohortTab } from "./cohort-tabs";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -29,10 +29,9 @@ interface EligibleTrainer {
   qualification: "qualified" | "pending" | "rejected" | "retired" | "none";
   qualificationId: string | null;
   assignedRole: string | null;
-  /* إشارتا الإتاحة (المهمّة ٧١) — تُقرآن قبل النقر لا بعد الرفض */
-  onLeave: boolean;
-  /** `null` = لم يُعلن ساعاته · رقمٌ = جلساتٌ خارجها. والصفرُ معلومةٌ لا غياب */
-  outsideDeclaredHours: number | null;
+  /* وذهبت إشارتا الإتاحة («غائبٌ في هذه المدّة» و«خارج ساعاته») بذهاب
+     الإتاحة كلِّها (٢٧ سبتمبر ٢٠٢٦): لقاءاتُ الشعبة يجدولها مدرّبُها بيده
+     داخلَ مدّتها. والتعارضُ مع شعبةٍ أخرى له يُفحص عند الإسناد كما كان. */
 }
 
 const QUALIFICATION_LABEL: Record<EligibleTrainer["qualification"], string> = {
@@ -49,6 +48,8 @@ interface TrainerPlan {
   submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
   content: {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
+    /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
+    startsOn?: string | null; endsOn?: string | null;
   } | null;
 }
 /** لقاءٌ مباشرٌ ينتظر قرارَ الإدارة — يجدوله المدرّبُ ولا يُعلَن حتّى يُعتمَد */
@@ -173,8 +174,6 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             {trainers.map((t) => (
               <option key={t.profileId} value={t.profileId}>
                 {t.name} — {QUALIFICATION_LABEL[t.qualification]}{t.assignedRole ? " · مُسنَد" : ""}
-                {t.onLeave ? " · غائب في هذه المدّة" : ""}
-                {t.outsideDeclaredHours ? ` · ${t.outsideDeclaredHours} جلسة خارج ساعاته` : ""}
               </option>
             ))}
           </select>
@@ -202,19 +201,6 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             </Button>
           )}
         </div>
-
-        {/* الغيابُ يُقال أوّلا لأنّه **مانعٌ** لا تنبيه: الزرُّ سيُردّ بـ409،
-            فمن حقّ المُسنِد أن يعرف قبل أن يضغط. والساعاتُ تنبيهٌ بعده. */}
-        {picked?.onLeave && (
-          <Inset as="p" tone="danger" className="mt-2 p-2 text-read font-bold leading-5 text-red-200" role="status">
-            المدرّبُ أعلن غيابَه في مدّةٍ تقع فيها جلسةٌ من جلسات هذه الشعبة — الإسنادُ سيُردّ. اختر غيرَه، أو راجعه ليحدّث إتاحته.
-          </Inset>
-        )}
-        {!picked?.onLeave && picked?.outsideDeclaredHours ? (
-          <Inset as="p" tone="warn" className="mt-2 p-2 text-read font-bold leading-5 text-gold-ink" role="status">
-            {picked.outsideDeclaredHours} من جلسات هذه الشعبة تقع خارجَ ساعاته المعلنة — الإسنادُ جائزٌ، والقرارُ لك.
-          </Inset>
-        ) : null}
 
         {picked && (
           <p className="mt-2 text-read leading-5 text-muted-foreground">
@@ -368,6 +354,16 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               {trainerPlan.submittedAt ? <> · أُرسلت {fmtDateTimeAr(trainerPlan.submittedAt)}</> : null}
               {trainerPlan.trainerConfirmedAt ? <> · وأكّد موافقتَه على كلّ ما فيها</> : null}
             </p>
+            {/* ═══ المدّةُ أوّلُ ما يُقرأ — وهي ما يُعتمَد (٢٧ سبتمبر ٢٠٢٦) ═══
+                صار المدرّبُ يحدّد متى تبدأ شعبتُه ومتى تنتهي، وباعتمادك تصير
+                حدودَها المعلَنة ويُشتقّ فصلُها من تاريخ بدئها. فتُقال هنا قبل
+                المحاور: من يعتمد يعرف أيَّ موعدٍ يُعلن. */}
+            {trainerPlan.content?.startsOn && trainerPlan.content?.endsOn && (
+              <p className="mt-2 text-read leading-6 text-foreground">
+                المدّة: من <b>{fmtDateAr(trainerPlan.content.startsOn)}</b> إلى <b>{fmtDateAr(trainerPlan.content.endsOn)}</b>
+                {" "}<span className="text-muted-foreground">— تصير حدودَ الشعبة المعلَنة باعتمادك.</span>
+              </p>
+            )}
             {trainerPlan.content?.summaryAr && <p className="mt-2 text-read leading-6 text-muted-foreground">{trainerPlan.content.summaryAr}</p>}
             {(trainerPlan.content?.modules?.length ?? 0) > 0 && (
               <ol className="mt-2 space-y-1 text-read text-foreground">
@@ -423,6 +419,9 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
               باعتمادك يُنشأ اجتماعُ Zoom ويُنشَر اللقاءُ للمسجَّلين بتاريخه ويصلهم بالبريد.
+              {/* والأوّلُ منها يرفع الجدولَ المبدئيّ (`clearPlaceholders`) — يُقال
+                  قبل النقر، فمن يعتمد يعرف ما يُخرجه من تقاويم المسجَّلين. */}
+              {" "}وأوّلُ لقاءٍ تعتمده يرفع ما بقي من الجدول المبدئيّ الذي فُتحت به الشعبة، إن كان — فيرى المسجَّلون مواعيدَ مدرّبهم وحدَها.
             </p>
             <ul className="mt-3 space-y-2">
               {pendingSessions.map((ps) => (

@@ -23,15 +23,20 @@ import { MIN_MODULE_BODY } from '@/application/trainer/plan-overlay'
 
 const body = 'ن'.repeat(MIN_MODULE_BODY)
 
+/** مدّةُ الشعبة كما يحدّدها مدرّبُها (٢٧ سبتمبر ٢٠٢٦) — ولقاءٌ في وسطها */
+const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-14' }
+const INSIDE = new Date('2027-02-09T15:00:00.000Z')
+
 /** شعبةٌ أتمّ صاحبُها كلَّ ما يُطلب منه — ولم تُعتمَد بعد */
 const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => buildChecklist({
-  cohort: { title: 'الدفعة الأولى', termId: 'T-winter' },
+  cohort: { title: 'الدفعة الأولى' },
+  period: PERIOD,
   content: {
     kind: 'trainer',
     modules: [{ moduleId: 'M0', titleAr: 'محور', bodyAr: body }],
     resources: [{ title: 'كرّاسة', url: 'https://x.test/a' }],
   } as never,
-  sessions: [{ recordings: [] }],
+  sessions: [{ startsAt: INSIDE, recordings: [] }],
   assessmentsCount: 1,
   planStatus: 'draft',
   ...over,
@@ -81,7 +86,7 @@ describe('بوّابةُ الإرسال للاعتماد', () => {
   })
 
   it('والتسجيلاتُ لا تحجب — تُنتَج بعد اللقاء لا قبل الاعتماد', () => {
-    const noRecordings = complete({ sessions: [{ recordings: [] }] })
+    const noRecordings = complete({ sessions: [{ startsAt: INSIDE, recordings: [] }] })
     expect(blockingBeforeSubmit(noRecordings).map((c) => c.key), 'التسجيلاتُ حجبت الإرسال')
       .not.toContain('recordings')
   })
@@ -94,28 +99,27 @@ describe('بوّابةُ الإرسال للاعتماد', () => {
 
 /* ═══ وما يحجب ليس بالضرورة ما يُعدُّ عليه ═══
 
-   صفّانِ ليسا من عمل المدرّب: `approval` بيدِ المديرِ الأكاديميّ، و`term`
-   تسمّيه الإدارةُ عند الإسناد (١٧ سبتمبر ٢٠٢٦). وخلطُهما بعمله أوقع عطبين
-   من جنسٍ واحد:
+   صفُّ `approval` بيدِ المديرِ الأكاديميّ: يحجب الإرسالَ في مكانه، ولا يُعدُّ
+   في «أنجزتَ كذا من كذا» — وإلّا لم يبلغ خطُّه التمامَ أبدا مهما أتمّ.
 
-     ① يحجبان الإرسالَ فيبقى الزرُّ مطفأً — وهو صوابٌ في الفصل (لا خطّةَ
-       تُرفع بلا حدود) وخطأٌ في الاعتماد (يحجب نفسَه)، وقد فُصل ذاك.
-     ② ويُعدّان في «أنجزتَ كذا من كذا» فلا يبلغ خطُّه التمامَ أبدا مهما
-       أتمّ — وهو ما يقيسه هذا الوصف.
+   وكان معه صفُّ `term` تسمّيه الإدارة (١٧ سبتمبر ٢٠٢٦). ثمّ صارت المدّةُ
+   للمدرّب (٢٧ سبتمبر ٢٠٢٦) فسقط الصفّ: ما كان يحجبه صار عملَه هو، فيُعدُّ
+   عليه في صفّ الهُويّة ويحجب الإرسالَ حتّى يحدّده.
 
    والعدُّ قاعدةٌ في موضعٍ واحد (`trainerOwned`) يقرؤها خطُّ الشاشة وبطاقةُ
    «شعبي» معا؛ ولو حُسبت في كلٍّ بيدٍ لافترق الرقمان. */
 describe('عدُّ التقدّم: ما بيدِ المدرّب وحدَه', () => {
-  it('⚠️ شعبةٌ لم تُسمَّ فصلُها: الفصلُ يحجب الإرسالَ ولا يُعدُّ على صاحبها', () => {
-    const list = complete({ cohort: { title: 'الدفعة الأولى', termId: null } })
+  it('⚠️ لا صفَّ للفصل بعد اليوم — والمدّةُ عملُه يُعدُّ عليه ويحجب', () => {
+    const list = complete({ period: null })
 
-    expect(blockingBeforeSubmit(list).map((c) => c.key), 'مرّت خطّةٌ بلا فصلٍ إلى الاعتماد').toContain('term')
-    expect(readyToSubmit(list), 'أُرسلت شعبةٌ بلا حدودٍ تُشتقُّ منها').toBe(false)
+    expect(list.map((c) => c.key), 'عاد صفٌّ للفصل بيدِ الإدارة').not.toContain('term')
+    expect(blockingBeforeSubmit(list).map((c) => c.key), 'مرّت خطّةٌ بلا مدّةٍ إلى الاعتماد').toContain('identity')
+    expect(readyToSubmit(list), 'أُرسلت شعبةٌ بلا مدّة').toBe(false)
 
-    /* وهذا هو المقيس: الصفُّ ليس في مقام عمله فلا يُنقص عدَدَه */
-    expect(trainerOwned(list).map((c) => c.key), 'عُدَّ الفصلُ من عمل المدرّب').not.toContain('term')
+    /* وهذا هو المقيس: صارت في مقام عمله، فتُنقص عدَدَه حتّى يحدّدها */
     const mine = trainerOwned(list).filter((c) => !c.optional)
-    expect(mine.every((c) => c.done), 'بقي على المدرّب شيءٌ وقد أتمّ كلَّ ما يملكه').toBe(true)
+    expect(mine.map((c) => c.key), 'المدّةُ خرجت من عمل المدرّب').toContain('identity')
+    expect(mine.every((c) => c.done), 'عُدَّت شعبةٌ بلا مدّةٍ تامّة').toBe(false)
   })
 
   it('⚠️ والاعتمادُ كذلك — وكانت البطاقةُ تقول «٥ من ٦» لشعبةٍ تامّة', () => {

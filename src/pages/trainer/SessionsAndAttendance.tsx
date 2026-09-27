@@ -51,6 +51,8 @@ interface OpsRow {
       id: string; title: string; startsAt: string; endsAt: string | null; status: string;
       /* موقفُ الإدارة من اللقاء — والفارغُ معتمَدٌ (صفوفُ ما قبل العمود) */
       approvalState?: string | null; reviewNote?: string | null;
+      /* موعدٌ مبدئيٌّ فُتحت به الشعبة — ليس لقاءَه (٢٧ سبتمبر ٢٠٢٦) */
+      placeholder?: boolean | null;
       zoom: {
         joinUrl: string; passcode: string | null;
         /* ما وقع فعلا — يملؤه webhook زووم لا يدٌ. والمجدولُ نيّةٌ، وهذا خبر. */
@@ -135,15 +137,22 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
 
   const c = row.cohort;
   const active = c.enrollments.filter((e) => e.status !== "waitlisted");
+  /* ═══ لقاءاتُه وحدَها — لا المبدئيُّ الذي فُتحت به الشعبة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة: «امنحه أن يضيفها بنفسه لا ينقلها، لأنّ ما هو موجودٌ
+     مثالٌ فقط». وكان المثالُ يُسرد هنا لقاءاتٍ بزرّ «انقل الموعد» — فيقرؤه
+     المدرّبُ جدولَه الذي يُعدَّل، لا مثالا يُستبدَل. فلا يُسرد: يُقال عنه
+     سطرٌ في رأس الخطوة، ويُرفع وحدَه حين يُعتمَد أوّلُ لقاءٍ من جدوله. */
+  const sessions = c.sessions.filter((s) => !s.placeholder);
 
   return (
     <Panel as="section">
       <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> اللقاءات والحضور</h3>
-      {c.sessions.length === 0 ? (
-        <p className="mt-2 text-read text-muted-foreground">لا لقاءات مجدولة بعد — حدّدها في مرحلة «اللقاءات» من التجهيز.</p>
+      {sessions.length === 0 ? (
+        <p className="mt-2 text-read text-muted-foreground">لا لقاءَ من جدولك بعد — أضِف لقاءاتِك من النموذج أعلاه.</p>
       ) : (
         <div className="mt-3 space-y-3">
-          {c.sessions.map((s) => (
+          {sessions.map((s) => (
             <Card key={s.id}>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-0 flex-1">

@@ -21,21 +21,15 @@ const code = (p: string) => raw(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replac
 const WS = 'src/pages/trainer/CohortWorkspace.tsx'
 const KIT = 'src/components/FormKit.tsx'
 
-/* ═══ ولوحةُ الهُويّة لم تعد درجةً في السلّم (ق٧ · ١٧ سبتمبر ٢٠٢٦) ═══
+/* ═══ ولوحةُ الهُويّة عادت درجةً أولى (٢٧ سبتمبر ٢٠٢٦) ═══
 
-   انطوت درجتُها لمّا لم يبقَ فيها قرار، وصار حقلاها يُفتحان من اسم الشعبة
-   في الشريط. فحقلاها قائمان يُشرَحان كسائرهما — وإنّما يُقتطعان من بابهما
-   لا من شرطِ خطوة. والمحروسُ لم يتبدّل: **ما بقي مشروحٌ كلُّه**. */
+   كانت قد انطوت إلى بابٍ بقلمٍ في اسم الشعبة (ق٧ · ١٧ سبتمبر ٢٠٢٦)، فكان
+   المقتطَعُ هنا من ذلك الباب. ثمّ عادت درجةً بقرار صاحب المنصّة وفيها
+   المدّة، فصار المقتطَعُ من شرط خطوتها كسائر الخطوات. والمحروسُ لم يتبدّل:
+   **ما بقي مشروحٌ كلُّه**. */
 
-/** نصُّ لوحةٍ بعينها — درجةٌ في السلّم، أو بابُ الهُويّة */
+/** نصُّ درجةٍ بعينها من السلّم — من شرطها إلى شرط التي تليها */
 function stageBlock(src: string, stage: string, nextStage: string): string {
-  if (stage === 'identity') {
-    const from = src.indexOf('{identityOpen && (')
-    expect(from, 'لا بابَ لحقلَي الهُويّة').toBeGreaterThan(-1)
-    const to = src.indexOf('</Modal>', from)
-    expect(to, 'بابُ الهُويّة ليس لوحةً مُحكَمة').toBeGreaterThan(from)
-    return src.slice(from, to)
-  }
   const from = src.indexOf(`stage === "${stage}" &&`)
   const to = src.indexOf(`stage === "${nextStage}" &&`)
   expect(from, `لا خطوةَ ${stage}`).toBeGreaterThan(-1)
@@ -156,15 +150,22 @@ describe('الحقلُ في الخطوة التي يخصّها', () => {
   })
 
   it('وحفظُ الخطوة الأولى يحفظ الخطّةَ معها — وإلّا ضاع الوصفُ صامتا', () => {
-    /* الوصفُ في الخطّة لا في الشعبة، وزرُّ الخطوة الأولى كان يُرسل الشعبةَ
-       وحدَها. فلو لم يُرسَل الاثنان لكتب المدرّبُ وصفا ورآه يختفي. */
-    const fn = ws.slice(ws.indexOf('const saveIdentity'), ws.indexOf('const submit'))
+    /* الوصفُ والمدّةُ في الخطّة لا في الشعبة، والاسمُ في الشعبة. وكان زرُّ
+       الخطوة الأولى يُرسل الشعبةَ وحدَها، فلو لم يُرسَل الاثنان لكتب المدرّبُ
+       وصفا ورآه يختفي. وصار الحفظُ واحدا لكلّ الخطوات (`persist`، ٢٧ سبتمبر
+       ٢٠٢٦) — فيُفحص أنّه يحمل الاثنين. */
+    const fn = ws.slice(ws.indexOf('const persist'), ws.indexOf('const gapsFor'))
+    expect(fn, 'لا حفظَ واحدا يحفظ ما في اليد').toBeTruthy()
     expect(fn, 'الخطّةُ لا تُحفظ مع بيانات الشعبة').toContain('/plan`, content)')
     expect(fn).toContain('apiPatch(')
   })
 
   it('وبصمةُ «لم يُحفَظ» تتبع الحقلَ إلى موضعه الجديد', () => {
-    expect(ws, 'بصمةُ الخطوة الأولى لا تشمل الوصف').toMatch(/identity: JSON\.stringify\(identity\) \+ summaryKey\(content\)/)
+    expect(ws, 'بصمةُ الخطوة الأولى لا تشمل الوصفَ والمدّة').toMatch(/identity: JSON\.stringify\(identity\) \+ basicsKey\(content\)/)
+    /* والمدّةُ في البصمة (٢٧ سبتمبر ٢٠٢٦): من غيّر تاريخا ولم يحفظ يُعلَّم */
+    const key = ws.slice(ws.indexOf('const basicsKey'), ws.indexOf('const basicsKey') + 160)
+    expect(key, 'تاريخُ البدء خارجَ البصمة').toContain('c.startsOn')
+    expect(key, 'تاريخُ الانتهاء خارجَ البصمة').toContain('c.endsOn')
     /* وخطوةُ «اللقاءات» لم تعد تحمل مسودّةً: حقلُها الوحيدُ ذهب إلى كلّ
        لقاءٍ على حدة، واللقاءُ يُحفظ بنداءٍ خاصٍّ به لحظةَ إرساله للاعتماد.
        فبصمتُها `false` صراحةً — لا محذوفةً فتُقرأ `undefined` بسهو. */

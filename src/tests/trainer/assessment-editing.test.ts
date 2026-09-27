@@ -117,18 +117,20 @@ describe('نموذجُ التكليف — ينشئ ويعدّل', () => {
 })
 
 describe('«لم يُحفَظ» — لكلّ مرحلةٍ وحدَها', () => {
-  it('أزرارُ الحفظ الثلاثةُ لا تعمل بلا تغييرٍ في مرحلتها', () => {
+  /* ═══ وصارت الأزرارُ الثلاثةُ زرًّا واحدا (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان لكلّ مرحلةٍ زرُّ حفظها يُطفأ بلا تغييرٍ فيها («احفظ البيانات» ·
+     «احفظ المحاور» · «احفظ المصادر»). وصار زرُّ الشريط «احفظ وتابِع» يحفظ
+     ما في اليد ويتقدّم — والمحروسُ لم يتبدّل: **لا حفظَ بلا تغيير**. فالحفظُ
+     الواحدُ (`persist`) لا يُرسل شيئا ما لم تتغيّر مرحلةٌ من الثلاث، وشرطُه
+     يسبق النداء لا يتبعه. */
+  it('الحفظُ الواحدُ لا يُرسل شيئا بلا تغييرٍ في مرحلةٍ من الثلاث', () => {
     const ws = code(WS)
-    for (const [stage, handler] of [
-      ['identity', 'saveIdentity'],
-      ['modules', 'savePlan'],
-      ['resources', 'savePlan'],
-    ] as const) {
-      /* الزرُّ يُعرف بمعالجه ومرحلتِه معا: `savePlan` زرّان، ويُفرَّق بينهما
-         بالشرط الذي يحمله كلٌّ منهما. */
-      const re = new RegExp(`disabled=\\{[^}]*!dirty\\.${stage}[^}]*\\}[^>]*onClick=\\{${handler}\\}`)
-      expect(ws, `زرُّ «${stage}» يعمل بلا تغيير`).toMatch(re)
-    }
+    const fn = ws.slice(ws.indexOf('const persist'), ws.indexOf('const gapsFor'))
+    expect(fn, 'لا حفظَ واحدا').toBeTruthy()
+    const guard = fn.indexOf('if (!dirty.identity && !dirty.modules && !dirty.resources) return true')
+    expect(guard, 'الحفظُ يُرسل بلا تغيير').toBeGreaterThan(0)
+    expect(guard, 'شرطُ التغيير بعد النداء لا قبله').toBeLessThan(fn.indexOf('apiPut('))
   })
 
   it('والمرحلتان اللتان تتقاسمان الخطّةَ تُقاسان كلٌّ على حدة', () => {

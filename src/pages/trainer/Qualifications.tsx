@@ -1,161 +1,56 @@
-/* «أيُّ الدورات أنا مؤهَّلٌ لها؟ ومتى أنا متاح؟» — سؤالان للمدرّب لا شاشةَ
-   لهما (المهمّة ٧١).
+/* «أيُّ الدورات أنا مؤهَّلٌ لها؟» — سؤالٌ للمدرّب لم تكن له شاشة (المهمّة ٧١).
 
-   والأوّلُ أغربُ من الثاني: **الخادمُ يجيبه منذ زمن.** `/api/trainer/me/qualifications`
-   و`/api/trainer/catalog-scope` موجودان ومحروسان بصلاحيّاتهما، ولا تنادِيهما
-   شاشةٌ واحدة — فالمدرّبُ يسأل الإدارةَ عمّا تعرفه المنصّةُ عنه. وهذه الشاشةُ
-   تعرضهما لا أكثر.
+   وأغربُ ما فيه: **الخادمُ يجيبه منذ زمن.** `/api/trainer/me/qualifications`
+   و`/api/trainer/catalog-scope` موجودان ومحروسان بصلاحيّاتهما، ولم تكن
+   تنادِيهما شاشةٌ واحدة — فالمدرّبُ يسأل الإدارةَ عمّا تعرفه المنصّةُ عنه.
+   وهذه الشاشةُ تعرضهما لا أكثر.
 
-   والثاني جديد: لم يكن للمدرّب موضعٌ يقول فيه «صباحي مشغول» ولا «سأسافر
-   الأسبوعَ القادم». والحكمان مختلفان بقصدٍ ومكتوبان في المخطّط:
+   ═══ وذهبت الإتاحةُ كلُّها (٢٧ سبتمبر ٢٠٢٦) ═══
 
-   · **الغيابُ مانع** — إعلانٌ صريحٌ بمدّةٍ بعينها يردُّ إسنادَ أيّ جلسةٍ فيها.
-   · **الساعاتُ إرشاد** — من لم يُعلن لا يُمنَع من شيء، ومن أعلن يظهر لمن
-     يُسنِد عددُ الجلسات الواقعة خارج ساعاته، والقرارُ له.
+   كانت هنا ثلاثةُ أقسامٍ أخرى: «ساعاتي الأسبوعيّة» و«فصولي» و«فترات
+   غيابي» — يُعلن فيها المدرّبُ وقتَه لمن يُسنِد إليه الجلسات. وقرارُ صاحب
+   المنصّة: «احذف ساعاتي وفصولي وفترات غيابي.. لأنه هو من يتحكم بكل شي..
+   واضح له أن اللقاءات بيده ويجب أن تكون ضمن فترة الشعبة نفسها التي وضعها
+   بنفسه ابتداءً حتى النهاية».
 
-   وتُقال هذه التفرقةُ للمدرّب في الشاشة نفسِها: إعلانٌ لا يُفهَم أثرُه إمّا
-   يُترك فراغا أو يُملأ خوفا. */
+   فالإعلانُ كان جوابا عن سؤالٍ لم يعد يُسأل: «متى أجدول له؟». المدرّبُ
+   اليوم يجدول لقاءاتِه بيده داخلَ مدّةِ شعبته، فلا يحتاج أن يُخبر أحدا
+   بوقته كي لا يُجدوَل فيه. وحُذفت معها مساراتُها وجداولُها الثلاثة
+   وفحوصُها في الإسناد — لا شاشتُها وحدَها. */
 
 import { useCallback, useEffect, useState } from "react";
-import { Award, CalendarCheck, CalendarOff, Clock, Loader2, Lock, Plus, ServerOff, Trash2 } from "lucide-react";
+import { Award, Loader2, Lock, ServerOff } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
-import { toast, toastError } from "@/components/Toast";
-import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import { apiGet } from "@/services/api";
 
 import { Card } from "@/components/ui/Surface";
-import Button from "@/components/ui/Button";
 import { fmtDateLong } from "@/application/text/format-ar";
 interface Qualification { courseId: string; title: string; currentVersion: number; qualifiedAt: string }
 interface ScopeGate { allowed: boolean; basis: "earned" | "granted" | "none"; reasonAr: string }
-interface Window { weekday: number; startMinute: number; endMinute: number }
-interface Blackout { id: string; startsAt: string; endsAt: string; reason: string | null; past: boolean }
-interface Availability { windows: Window[]; blackouts: Blackout[]; meaningAr: string }
-
-/* ── فصولي (البند ٥٣) ──
-   `myStatus` ثلاثيّةٌ لا ثنائيّة: `null` تعني «لم أُسأل بعدُ ولم أقل شيئا»،
-   وهي ليست موافقةً ولا اعتذارا. و`declared` ما ورّثه الترحيلُ من مواسمَ
-   أعلنها في طلبه — إعلانٌ قديمٌ لم يؤكّده بعد. */
-interface MyTerm {
-  id: string; titleAr: string; season: string;
-  startsOn: string; endsOn: string;
-  registrationOpensAt: string | null; registrationClosesAt: string | null;
-  termStatus: string;
-  myStatus: "declared" | "confirmed" | "declined" | null;
-  maxCohorts: number | null; note: string | null;
-  assignedCohorts: { id: string; title: string; courseId: string; startsAt: string | null; status: string }[];
-}
-
-const TERM_STATE: Record<string, { label: string; cls: string }> = {
-  confirmed: { label: "أكّدتُ إتاحتي", cls: "border-teal/50 bg-teal/10 text-teal-light-ink" },
-  declined: { label: "اعتذرتُ عنه", cls: "border-white/15 bg-white/[0.03] text-muted-foreground" },
-  declared: { label: "معلَنٌ من طلبك — لم تؤكّده", cls: "border-gold/50 bg-gold/10 text-gold-ink" },
-};
-
-const DAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-
-/** دقائقُ منتصفِ الليل ↔ `HH:MM` — الحقلُ يعرض وقتا والخادمُ يخزّن رقما */
-const toTime = (m: number) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-const toMinutes = (t: string) => {
-  const [h, m] = t.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
-};
 
 const fmtDate = fmtDateLong;
 
 export default function TrainerQualifications() {
   const [quals, setQuals] = useState<Qualification[] | null>(null);
   const [scope, setScope] = useState<ScopeGate | null>(null);
-  const [avail, setAvail] = useState<Availability | null>(null);
   const [down, setDown] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [draft, setDraft] = useState<Window[]>([]);
-  const [leave, setLeave] = useState({ startsAt: "", endsAt: "", reason: "" });
-  const [leaveErr, setLeaveErr] = useState("");
-  const [terms, setTerms] = useState<MyTerm[] | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const [q, s, a, t] = await Promise.all([
-        apiGet<Qualification[]>("/api/trainer/me/qualifications"),
-        apiGet<ScopeGate>("/api/trainer/catalog-scope"),
-        apiGet<Availability>("/api/trainer/me/availability"),
-        /* الفصولُ لا تُسقط الشاشةَ إن تعذّرت: المؤهّلاتُ والساعاتُ أسبقُ منها،
-           ولا يُحرَم المدرّبُ منهما لأنّ جدولا ثالثا لم يُجب. */
-        apiGet<MyTerm[]>("/api/trainer/me/terms").catch(() => null),
-      ]);
-      setQuals(q); setScope(s); setAvail(a); setDraft(a.windows); setTerms(t); setDown(false);
-    } catch {
-      setDown(true);
-    }
-  }, []);
+  /* والكتابةُ في ردّ النداء لا في جسم الأثر (`react-hooks/set-state-in-effect`):
+     ما يصل من الخادم يُكتب حين يصل. */
+  const load = useCallback(() =>
+    Promise.all([
+      apiGet<Qualification[]>("/api/trainer/me/qualifications"),
+      apiGet<ScopeGate>("/api/trainer/catalog-scope"),
+    ])
+      .then(([q, s]) => { setQuals(q); setScope(s); setDown(false); })
+      .catch(() => setDown(true)), []);
 
   useEffect(() => { void load(); }, [load]);
 
-  const saveWindows = async () => {
-    setBusy(true);
-    try {
-      const next = await apiPut<Availability>("/api/trainer/me/availability", { windows: draft });
-      setAvail(next); setDraft(next.windows);
-      toast("حُفظت ساعاتك المعلنة");
-    } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ — أعد المحاولة");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const addLeave = async () => {
-    /* الخطأُ عند الحقل قبل الإرسال — لا نُرسل ما نعرف أنّه مردود */
-    if (!leave.startsAt || !leave.endsAt) { setLeaveErr("اكتب تاريخَ البداية والنهاية"); return; }
-    if (new Date(leave.endsAt) <= new Date(leave.startsAt)) { setLeaveErr("تاريخُ النهاية بعد البداية"); return; }
-    setLeaveErr(""); setBusy(true);
-    try {
-      await apiPost("/api/trainer/me/blackouts", {
-        startsAt: new Date(leave.startsAt).toISOString(),
-        endsAt: new Date(leave.endsAt).toISOString(),
-        reason: leave.reason.trim() || undefined,
-      });
-      setLeave({ startsAt: "", endsAt: "", reason: "" });
-      await load();
-      toast("سُجّل غيابك — ولن تُسنَد لك جلسةٌ فيه");
-    } catch (e) {
-      setLeaveErr(e instanceof ApiError ? e.message : "تعذّر التسجيل");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  /** تأكيدٌ أو اعتذارٌ عن فصل — والقرارُ للمدرّب لا يُعلَن نيابةً عنه */
-  const answerTerm = async (termId: string, status: "confirmed" | "declined") => {
-    setBusy(true);
-    try {
-      await apiPost(`/api/trainer/me/terms/${termId}`, { status });
-      await load();
-      toast(status === "confirmed" ? "أُثبتت إتاحتك في هذا الفصل" : "سُجّل اعتذارك — ولن تُخطَّط لك شعبةٌ فيه");
-    } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ — أعد المحاولة");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const removeLeave = async (id: string) => {
-    setBusy(true);
-    try {
-      await apiDelete(`/api/trainer/me/blackouts/${id}`);
-      await load();
-      toast("حُذف سجلُّ الغياب");
-    } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر الحذف");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (down) {
     return (
-      <TrainerLayout title="مؤهّلاتي وإتاحتي">
+      <TrainerLayout title="مؤهّلاتي">
         <EmptyState
           icon={ServerOff}
           titleAr="تعذّر الوصول إلى الخادم"
@@ -166,9 +61,9 @@ export default function TrainerQualifications() {
     );
   }
 
-  if (!quals || !avail) {
+  if (!quals) {
     return (
-      <TrainerLayout title="مؤهّلاتي وإتاحتي">
+      <TrainerLayout title="مؤهّلاتي">
         <div className="grid place-items-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
         </div>
@@ -176,11 +71,8 @@ export default function TrainerQualifications() {
     );
   }
 
-  const upcoming = avail.blackouts.filter((b) => !b.past);
-  const dirty = JSON.stringify(draft) !== JSON.stringify(avail.windows);
-
   return (
-    <TrainerLayout title="مؤهّلاتي وإتاحتي">
+    <TrainerLayout title="مؤهّلاتي">
       <div className="space-y-8">
         {/* ── ما أنا مؤهَّلٌ له ── */}
         <section>
@@ -239,191 +131,6 @@ export default function TrainerQualifications() {
             <p className="mt-2 text-sm leading-7 text-muted-foreground">{scope.reasonAr}</p>
           </Card>
         )}
-
-        {/* ── ساعاتي الأسبوعيّة ── */}
-        <section>
-          <h2 className="flex items-center gap-2 text-lg font-black">
-            <Clock className="h-5 w-5 text-teal" aria-hidden="true" />
-            ساعاتي الأسبوعيّة
-          </h2>
-          <p className="mt-1 text-sm leading-7 text-muted-foreground">{avail.meaningAr}</p>
-
-          <ul className="mt-4 space-y-2">
-            {draft.map((w, i) => (
-              <Card as="li" key={i} className="flex flex-wrap items-center gap-2">
-                <label className="sr-only" htmlFor={`day-${i}`}>اليوم</label>
-                <select
-                  id={`day-${i}`}
-                  value={w.weekday}
-                  onChange={(e) => setDraft(draft.map((x, j) => j === i ? { ...x, weekday: Number(e.target.value) } : x))}
-                  className="min-h-[44px] rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
-                >
-                  {DAYS.map((d, di) => <option key={di} value={di}>{d}</option>)}
-                </select>
-                <label className="sr-only" htmlFor={`from-${i}`}>من</label>
-                <input
-                  id={`from-${i}`} type="time" value={toTime(w.startMinute)}
-                  onChange={(e) => setDraft(draft.map((x, j) => j === i ? { ...x, startMinute: toMinutes(e.target.value) } : x))}
-                  className="min-h-[44px] rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
-                />
-                <span className="text-xs text-muted-foreground">إلى</span>
-                <label className="sr-only" htmlFor={`to-${i}`}>إلى</label>
-                <input
-                  id={`to-${i}`} type="time" value={toTime(w.endMinute)}
-                  onChange={(e) => setDraft(draft.map((x, j) => j === i ? { ...x, endMinute: toMinutes(e.target.value) } : x))}
-                  className="min-h-[44px] rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
-                />
-                <Button
-                  type="button" icon={Trash2} className="ms-auto"
-                  onClick={() => setDraft(draft.filter((_, j) => j !== i))}
-                  aria-label={`احذف نافذة ${DAYS[w.weekday]}`}
-                />
-              </Card>
-            ))}
-          </ul>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button type="button" icon={Plus}
-              onClick={() => setDraft([...draft, { weekday: 0, startMinute: 540, endMinute: 720 }])}>
-              أضف نافذة
-            </Button>
-            {/* حفظُ ساعاتِ المدرّب فعلٌ مُثبِتٌ في قسمِه — وكان ممتلئا
-                بالفيروزيّ مكتوبا بيده، أي `confirm` بلا اسمه. و`loading`
-                يُعلن الانتظارَ لقارئ الشاشة، والدوّامةُ كانت تُرى ولا تُقال. */}
-            <Button type="button" tone="confirm"
-              loading={busy} onClick={() => void saveWindows()}>
-              احفظ ساعاتي
-            </Button>
-            {dirty && <span className="text-fine font-bold text-gold-ink">تغييراتٌ لم تُحفظ</span>}
-          </div>
-        </section>
-
-        {/* ── فصولي (البند ٥٣) ── */}
-        {terms && terms.length > 0 && (
-          <section>
-            <h2 className="flex items-center gap-2 text-lg font-black">
-              <CalendarCheck className="h-5 w-5 text-teal" aria-hidden="true" />
-              فصولي
-            </h2>
-            <p className="mt-1 text-sm leading-7 text-muted-foreground">
-              <b>الإتاحةُ إعلانُك أنت:</b> تُبنى عليها قائمةُ «المدرّبون المتاحون لهذا الفصل» قبل أن تُنشأ
-              شعبةٌ واحدة. ومن اعتذر لا تُخطَّط له شعبةٌ في ذلك الفصل.
-            </p>
-
-            <ul className="mt-4 space-y-3">
-              {terms.map((t) => {
-                const state = t.myStatus ? TERM_STATE[t.myStatus] : null;
-                return (
-                  <Card as="li" key={t.id}>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                      <span className="text-sm font-black">{t.titleAr}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {fmtDate(t.startsOn)} — {fmtDate(t.endsOn)}
-                      </span>
-                      <span
-                        className={`rounded-full border px-2.5 py-0.5 text-fine font-black ${
-                          state ? state.cls : "border-white/15 text-muted-foreground"
-                        }`}
-                      >
-                        {state ? state.label : "لم تُجب بعد"}
-                      </span>
-                    </div>
-
-                    {/* ما خُطِّط له فيه — فالاعتذارُ عن فصلٍ فيه ثلاثُ شعبٍ قرارٌ آخر */}
-                    {t.assignedCohorts.length > 0 && (
-                      <p className="mt-2 text-read leading-6 text-gold-ink">
-                        مُسنَدٌ إليك فيه {t.assignedCohorts.length}{" "}
-                        {t.assignedCohorts.length === 1 ? "شعبة" : t.assignedCohorts.length === 2 ? "شعبتان" : "شعب"} —{" "}
-                        {t.assignedCohorts.map((c) => c.title).join(" · ")}
-                      </p>
-                    )}
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Button
-                        type="button" tone="confirm"
-                        disabled={busy || t.myStatus === "confirmed"}
-                        onClick={() => void answerTerm(t.id, "confirmed")}
-                      >
-                        أنا متاحٌ فيه
-                      </Button>
-                      <Button
-                        type="button"
-                        disabled={busy || t.myStatus === "declined"}
-                        onClick={() => void answerTerm(t.id, "declined")}
-                      >
-                        أعتذر عنه
-                      </Button>
-                    </div>
-                  </Card>
-                );
-              })}
-            </ul>
-          </section>
-        )}
-
-        {/* ── غيابي ── */}
-        <section>
-          <h2 className="flex items-center gap-2 text-lg font-black">
-            <CalendarOff className="h-5 w-5 text-teal" aria-hidden="true" />
-            فترات غيابي
-          </h2>
-          <p className="mt-1 text-sm leading-7 text-muted-foreground">
-            <b>الغيابُ مانعٌ لا تنبيه:</b> لن تُسنَد إليك شعبةٌ تقع جلسةٌ من جلساتها في مدّةٍ سجّلتَها هنا.
-          </p>
-
-          {upcoming.length > 0 && (
-            <ul className="mt-4 space-y-2">
-              {upcoming.map((b) => (
-                <Card as="li" key={b.id} className="flex flex-wrap items-center gap-3">
-                  <span className="text-sm font-bold">{fmtDate(b.startsAt)} — {fmtDate(b.endsAt)}</span>
-                  {b.reason && <span className="text-xs text-muted-foreground">{b.reason}</span>}
-                  <Button type="button" icon={Trash2} size="sm" className="ms-auto"
-                    disabled={busy} onClick={() => void removeLeave(b.id)}>
-                    احذف
-                  </Button>
-                </Card>
-              ))}
-            </ul>
-          )}
-
-          <Card className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_1.4fr_auto]">
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-muted-foreground" htmlFor="leave-from">من</label>
-              <input
-                id="leave-from" type="date" value={leave.startsAt}
-                onChange={(e) => setLeave({ ...leave, startsAt: e.target.value })}
-                aria-invalid={leaveErr ? true : undefined}
-                aria-describedby={leaveErr ? "leave-err" : undefined}
-                className="min-h-[44px] w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-muted-foreground" htmlFor="leave-to">إلى</label>
-              <input
-                id="leave-to" type="date" value={leave.endsAt}
-                onChange={(e) => setLeave({ ...leave, endsAt: e.target.value })}
-                aria-invalid={leaveErr ? true : undefined}
-                className="min-h-[44px] w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-muted-foreground" htmlFor="leave-why">السبب (اختياري)</label>
-              <input
-                id="leave-why" type="text" maxLength={120} value={leave.reason}
-                onChange={(e) => setLeave({ ...leave, reason: e.target.value })}
-                placeholder="سفر · امتحانات · التزامٌ آخر"
-                className="min-h-[44px] w-full rounded-xl border border-white/15 bg-white/[0.04] px-3 text-sm"
-              />
-            </div>
-            <Button type="button" tone="confirm" icon={Plus} className="mt-auto"
-              loading={busy} onClick={() => void addLeave()}>
-              سجّل
-            </Button>
-            {leaveErr && (
-              <p id="leave-err" role="alert" className="text-read font-bold text-red-300 sm:col-span-4">{leaveErr}</p>
-            )}
-          </Card>
-        </section>
       </div>
     </TrainerLayout>
   );

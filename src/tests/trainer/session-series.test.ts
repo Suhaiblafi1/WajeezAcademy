@@ -145,7 +145,7 @@ describe('السلسلةُ: المتكرّرُ سلفا، ومعاينةٌ قب�
     const rows = buildSeries({ startDate: '2026-04-19', weekdays: [0], count: 4, ...TERM })
     expect(rows).toHaveLength(4)
     expect(rows.map((r) => r.outside)).toEqual([false, false, true, true])
-    expect(rows[2].reasonAr).toBe('خارج الفصل')
+    expect(rows[2].reasonAr).toBe('خارج مدّة الشعبة')
     expect(rows[0].reasonAr).toBe('')
   })
 

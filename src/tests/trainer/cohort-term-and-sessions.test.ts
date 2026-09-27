@@ -25,7 +25,13 @@
    ② «عددُ الجلسات يجب أن يكون بحدٍّ أدنى لا يقلّ عن عدد المحاور للجلسة،
       ويحقّ له الزيادةُ كما يشاء موزّعةً على الفصل كاملا».
 
-      وكان الشرطُ «لقاءٌ واحدٌ فأكثر»: ثمانيةُ محاورَ تمرّ بلقاءٍ واحد. */
+      وكان الشرطُ «لقاءٌ واحدٌ فأكثر»: ثمانيةُ محاورَ تمرّ بلقاءٍ واحد.
+
+   ── ثمّ انقلب ① (٢٧ سبتمبر ٢٠٢٦) ──
+
+   صارت مدّةُ الشعبة للمدرّب يحدّدها في خطوتها الأولى، ولقاءاتُه داخلها،
+   والفصلُ يُشتقّ من تاريخ البدء عند الاعتماد. فالهُويّةُ اسمٌ ومدّة، ولا صفَّ
+   للفصل — والشرحُ عند وصف ① أدناه. و② باقٍ، وزاد عليه: اللقاءُ داخلَ المدّة. */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -34,10 +40,14 @@ import { MIN_MODULE_BODY } from '@/application/trainer/plan-overlay'
 
 const body = 'ن'.repeat(MIN_MODULE_BODY)
 const mods = (n: number) => Array.from({ length: n }, (_, i) => ({ moduleId: `M${i}`, titleAr: `محور ${i}`, bodyAr: body }))
-const sessions = (n: number) => Array.from({ length: n }, () => ({ recordings: [] as unknown[] }))
+/* مدّةُ الشعبة كما يحدّدها مدرّبُها (٢٧ سبتمبر ٢٠٢٦) — واللقاءاتُ في وسطها */
+const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-14' }
+const inside = (i: number) => new Date(Date.UTC(2027, 1, 9 + i, 15))
+const sessions = (n: number) => Array.from({ length: n }, (_, i) => ({ startsAt: inside(i), recordings: [] as unknown[] }))
 
 const build = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => buildChecklist({
-  cohort: { title: 'الدفعة الأولى', termId: 'T-winter' },
+  cohort: { title: 'الدفعة الأولى' },
+  period: PERIOD,
   content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never,
   sessions: sessions(1),
   assessmentsCount: 0,
@@ -47,31 +57,37 @@ const build = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => buil
 const item = (key: string, over?: Partial<Parameters<typeof buildChecklist>[0]>) =>
   build(over).find((c) => c.key === key)!
 
-describe('① الهُويّة: اسمٌ وحدَه — والفصلُ صفٌّ باسم فاعله', () => {
-  const termless = { cohort: { title: 'الدفعة الأولى', termId: null } }
+/* ═══ ① ثمّ صارت المدّةُ للمدرّب (٢٧ سبتمبر ٢٠٢٦) ═══
 
-  it('⚠️ شعبةٌ لم تُسمَّ فصلُها: الهُويّةُ تتمّ باسمها — ولا يُكتب «لم يتمّ» على عملٍ أتمّه', () => {
-    expect(item('identity', termless).done, 'حُوسب المدرّبُ على بابٍ ليس في يده').toBe(true)
+   قرارُ صاحب المنصّة: «في تعديل المعلومات الأساسيّة اجعله أن يعتمد متى تبدأ
+   الشعبةُ ومتى تنتهي… واضحٌ له أنّ اللقاءات بيده ويجب أن تكون ضمن فترة
+   الشعبة نفسها التي وضعها بنفسه».
+
+   فانقلب ما كان هنا ولم يُحذف: كانت الهُويّةُ «اسمٌ وحدَه» والفصلُ صفٌّ
+   يسمّي فاعلَه (الإدارة). وصارت الهُويّةُ **اسما ومدّةً صالحة** — والمدّةُ
+   عملُه لا بابٌ مغلقٌ دونه — وسقط صفُّ الفصل: يُشتقّ من تاريخ البدء عند
+   الاعتماد. والمحروسُ الأصليُّ باقٍ بنصّه: **لا يُكتب «لم يتمّ» على ما ليس
+   بيده** — وما بقي في الصفّ كلُّه بيده. */
+describe('① الهُويّة: اسمٌ ومدّة — ولا صفَّ للفصل', () => {
+  it('⚠️ اسمٌ ومدّةٌ صالحةٌ تُتمّانها — ولا فصلَ يُنتظر', () => {
+    expect(item('identity').done, 'اسمٌ ومدّةٌ لم يكفيا').toBe(true)
+    expect(build().map((c) => c.key), 'عاد صفُّ الفصل بيد الإدارة').not.toContain('term')
   })
 
-  it('⚠️ والفصلُ صفٌّ قائمٌ بذاته، يتبع تسميةَ الإدارة لا شيئا سواها', () => {
-    const row = item('term', termless)
-    expect(row, 'لا صفَّ للفصل أصلا — فلا يعرف المدرّبُ لماذا وقف').toBeTruthy()
-    expect(row.done, 'شعبةٌ بلا فصلٍ عُدَّت مفتوحة').toBe(false)
-    expect(item('term').done, 'سُمّي فصلُها وبقي الصفُّ أحمر').toBe(true)
+  it('⚠️ وبلا مدّةٍ لا تتمّ — فهي قرارُه الأوّل', () => {
+    expect(item('identity', { period: null }).done, 'تمّت الهُويّةُ بلا مدّة').toBe(false)
   })
 
-  it('واسمُ الصفّ يسمّي فاعلَه — لا يُقرأ أمرا للمدرّب', () => {
-    /* «لم يتمّ» أمامَ سطرٍ بصيغة الأمر تهمةٌ؛ وأمامَ سطرٍ فاعلُه الإدارةُ خبر */
-    expect(item('term', termless).labelAr, 'سطرُ الفصل لا يقول من يفعله').toContain('الإدارة')
+  it('والمدّةُ الفاسدةُ كالغائبة — نهايةٌ قبل البداية لا تُتمّ شيئا', () => {
+    expect(item('identity', { period: { startsOn: '2027-03-14', endsOn: '2027-02-07' } }).done).toBe(false)
   })
 
   it('والاسمُ القصيرُ لا يمرّ — «شعبة» لا تصف دفعة', () => {
-    expect(item('identity', { cohort: { title: 'أ', termId: 'T-winter' } }).done).toBe(false)
+    expect(item('identity', { cohort: { title: 'أ' } }).done).toBe(false)
   })
 
-  it('ولا مواعيدَ تُكتب بيد — الحقولُ المشطوبةُ ليست في التوقيع أصلا', () => {
-    expect(item('identity').done, 'اسمٌ لم يكفِ').toBe(true)
+  it('واسمُ الصفّ يقول ما يُطلب — الاسمَ والمدّة', () => {
+    expect(item('identity').labelAr).toContain('مدّتها')
   })
 })
 
@@ -93,15 +109,28 @@ describe('② اللقاءات: لقاءٌ لكلّ محورٍ على الأقل
     expect(item('sessions', { ...none, sessions: [] }).done, 'مرّت شعبةٌ بلا لقاءٍ واحد').toBe(false)
   })
 
+  /* «ويجب أن تكون ضمن فترة الشعبة نفسها» (٢٧ سبتمبر ٢٠٢٦). ومن غيّر المدّةَ
+     بعد أن جدول صار في يده لقاءٌ خارجَها — فتعود الخطوةُ «لم تتمّ» وتسمّي كم. */
+  it('⚠️ ولقاءٌ خارجَ مدّة الشعبة لا يُعَدّ تمامًا — ويُسمّى في السطر', () => {
+    const late = { startsAt: new Date('2027-03-20T15:00:00.000Z'), recordings: [] as unknown[] }
+    const row = item('sessions', { sessions: [late] })
+    expect(row.done, 'تمّت اللقاءاتُ ولقاءٌ خارجَ المدّة').toBe(false)
+    expect(row.labelAr, 'السطرُ لا يقول إنّ لقاءً خرج').toContain('خارجَ مدّة الشعبة')
+    expect(item('sessions', { sessions: sessions(1) }).done, 'رُدّ لقاءٌ داخلَ المدّة').toBe(true)
+  })
+
   it('والعددُ المطلوبُ مكتوبٌ في السطر — لا يُترك يحزره', () => {
     const three = { content: { kind: 'trainer', modules: mods(3), resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never }
     expect(item('sessions', { ...three, sessions: sessions(1) }).labelAr).toContain('1/3')
   })
 })
 
-/* ═══ ③ ولا بابَ للمدرّب إلى الفصل ═══
+/* ═══ ③ ولا بابَ للمدرّب إلى الفصل — وإن صارت المدّةُ له ═══
 
-   القاعدةُ أعلاه تُقرأ من القائمة، والقائمةُ لا تمنع أحدا من إعادة فتح
+   المدّةُ في خطّته (٢٧ سبتمبر ٢٠٢٦)، والفصلُ يُشتقّ من تاريخ بدئها عند
+   الاعتماد — لا يُسأل عنه ولا يكتبه. فالبابُ المغلقُ هنا باقٍ مغلقا.
+
+   والقاعدةُ أعلاه تُقرأ من القائمة، والقائمةُ لا تمنع أحدا من إعادة فتح
    البابِ الذي أُغلق: مسلكٌ في مسارات المدرّب أو نداءُ كتابةٍ من شاشته
    يعيد الحلقةَ كلَّها — يختار فصلا فتتحرّك حدودُ شعبته ونافذتُها بلا
    قرارٍ إداريّ، وهو ما أُلغي.

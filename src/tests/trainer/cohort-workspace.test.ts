@@ -27,17 +27,24 @@ describe('ورشةُ الشعبة', () => {
     expect(ws).toContain('/plan/submit')
   })
 
-  it('والسعرُ يُقرأ ولا يُكتب — لا حقلَ له في الورشة', () => {
+  /* ═══ والسعرُ لا يُكتب — ولم يعد يُعرَض في الخطوة الأولى (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان يُقرأ في لوحة الهُويّة بسطرٍ يقول «السعرُ والسعةُ بيد الإدارة». وقال
+     صاحبُ المنصّة عن الخطوة الأولى: «ولا داعيَ لوجود السعر هناك، وأهمُّها
+     موعدُ الشعبة كاملا من — إلى». فالمحروسُ الأصليُّ باقٍ بنصّه — **لا يكتبه
+     المدرّب**: لا حقلَ ولا مفتاحَ في حمولة التعديل، والخادمُ يردّه باسمه —
+     وزاد عليه: لا يُعرَض في درجة المعلومات الأساسيّة. */
+  it('والسعرُ لا يُكتب ولا يُعرَض في الخطوة الأولى — والخادمُ يردّه باسمه', () => {
     const ws = code(WS)
-    /* الفحصُ على ما يُكتب لا على ما يُقرأ: لا حقلَ إدخالٍ للسعر، ولا سعرَ في
-       حمولة التعديل — أمّا `readOnly.price` فيُعرَض ويُقال إنّه بيد الإدارة */
     expect(ws, 'حقلُ إدخالٍ للسعر في ورشة المدرّب').not.toMatch(/<(input|select)[^>]*\bprice\b/i)
     const patch = /apiPatch\(`\/api\/trainer\/cohorts\/\$\{ws\.cohort\.id\}`, \{[\s\S]*?\}\)/.exec(ws)?.[0] ?? ''
     expect(patch, 'حمولةُ التعديل مفقودة').toBeTruthy()
     expect(patch, 'السعرُ يُرسَل في تعديل المدرّب').not.toMatch(/\bprice\b|\bcurrency\b|\bcapacity\b/)
-    expect(ws, 'السعرُ لا يُقال إنّه بيد الإدارة').toContain('السعرُ والسعةُ بيد الإدارة')
+    const step = ws.slice(ws.indexOf('stage === "identity" &&'), ws.indexOf('stage === "modules" &&'))
+    expect(step, 'لا درجةَ للمعلومات الأساسيّة').toBeTruthy()
+    expect(step, 'عاد السعرُ إلى الخطوة الأولى').not.toMatch(/readOnly\.price|السعرُ والسعةُ/)
     const svc = code('server/services/cohort-plan.service.ts')
-    expect(svc, 'الخدمةُ لا تردّ الحقلَ الماليّ باسمه').toContain("'price', 'currency', 'capacity', 'registrationOpen', 'financialReady'")
+    expect(svc, 'الخدمةُ لا تردّ الحقلَ الماليَّ باسمه').toContain("'price', 'currency', 'capacity', 'registrationOpen', 'financialReady'")
   })
 
   it('و«اقتراحاتي» حُذفت من الصفحات والقائمة — والمسارُ القديم يحوّل إلى «شعبي»', () => {

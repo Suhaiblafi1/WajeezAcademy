@@ -12,9 +12,12 @@ const schema = read('prisma/schema.prisma')
 const migration = read('prisma/migrations/20260906120000_term_system/migration.sql')
 
 describe('٤٦ · الفصلُ كيانٌ مستقلٌّ لا حقلٌ على الشعبة', () => {
-  it('لأنّ «المدرّبون المتاحون لهذا الفصل» يجب أن توجد قبل الشعب', () => {
+  /* وكان السببُ الحاسمُ يومَ أُنشئ: «المدرّبون المتاحون لهذا الفصل» تُسأل
+     قبل أن توجد الشعب — فكان معه `TrainerTermAvailability`. وذهبت الإتاحةُ
+     كلُّها بقرار صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦)، وغيابُها يُحرَس في
+     `src/tests/trainer/availability-removed.test.ts`. والفصلُ باقٍ بما سواها. */
+  it('الفصلُ نموذجٌ باسمه', () => {
     expect(schema).toMatch(/model Term \{/)
-    expect(schema).toMatch(/model TrainerTermAvailability \{/)
   })
 
   it('وللفصل حالتُه ونافذتُه ونشرُ تقويمه — لا تُكرَّر على كلّ شعبة', () => {

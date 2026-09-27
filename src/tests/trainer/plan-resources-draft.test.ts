@@ -128,9 +128,11 @@ describe('④ «أزِل» تحذف الملفَّ — بعد الحفظ لا ق
     /* الصفُّ ما زال في الخطّة المحفوظة حتّى يُحفظ ما بعده. فحذفُ الملفّ
        لحظةَ الإزالة يترك خطّةً محفوظةً تشير إلى ملفٍّ مُحيَ — وهو أسوأُ
        من ملفٍّ يتيم. */
-    const at = WS.indexOf('const savePlan =')
+    /* والحفظُ صار واحدا لكلّ الخطوات (`persist`، ٢٧ سبتمبر ٢٠٢٦) — والترتيبُ
+       المحروسُ هو هو: الحذفُ بعد نجاح الحفظ. */
+    const at = WS.indexOf('const persist =')
     expect(at, 'لا دالّةَ حفظ').toBeGreaterThan(0)
-    const body = WS.slice(at, at + 700)
+    const body = WS.slice(at, WS.indexOf('const gapsFor', at))
     const put = body.indexOf('apiPut(')
     const drop = body.indexOf('dropFile(')
     expect(put, 'لا حفظ').toBeGreaterThan(-1)

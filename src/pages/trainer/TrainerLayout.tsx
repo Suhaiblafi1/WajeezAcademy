@@ -135,7 +135,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     { to: "/trainer/learners", label: "طلبتي", icon: GraduationCap },
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck, count: pending },
     { to: "/trainer/schedule", label: "جدولي", icon: CalendarDays },
-    { to: "/trainer/qualifications", label: "مؤهّلاتي وإتاحتي", icon: Award },
+    /* «مؤهّلاتي» وحدَها: ذهبت الإتاحةُ من صفحتها بقرار صاحب المنصّة
+       (٢٧ سبتمبر ٢٠٢٦)، فاسمٌ يَعِد بـ«إتاحتي» يقود إلى ما لا وجودَ له. */
+    { to: "/trainer/qualifications", label: "مؤهّلاتي", icon: Award },
     /* وبعدها «عروضي» مباشرةً: ما أُهِّلتُ له، ثمّ ما عُرض عليّ منه. ولم
        تتقدّم على الخمسة الأولى — والعرضُ يصله جرسُه بوجهته، والبطاقةُ في
        رئيسته، فلا يُكتشَف بتصفّحٍ مصادفةً. */

@@ -24,9 +24,11 @@ const plan = (bodies: (string | null)[]) => ({
   resources: [{ title: 'مرجع', url: 'https://x.test/a' }],
 })
 const build = (bodies: (string | null)[]) => buildChecklist({
-  cohort: { title: 'شعبة', termId: 'T-winter' },
+  cohort: { title: 'شعبة' },
+  /* المدّةُ بيد المدرّب منذ ٢٧ سبتمبر ٢٠٢٦ — وهنا ما يخصّ المحاورَ وحدَها */
+  period: { startsOn: '2027-02-07', endsOn: '2027-03-14' },
   content: plan(bodies) as never,
-  sessions: [{ recordings: [] }],
+  sessions: [{ startsAt: new Date('2027-02-09T15:00:00.000Z'), recordings: [] }],
   assessmentsCount: 0,
   planStatus: 'draft',
 })

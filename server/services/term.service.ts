@@ -1,8 +1,9 @@
-/* خدمةُ الفصول — إنشاؤها، وإتاحةُ المدرّبين فيها، والفصلُ القادم (البند ٤٦).
+/* خدمةُ الفصول — إنشاؤها ونافذتُها وحالتُها، والفصلُ القادم (البند ٤٦).
 
-   الفصلُ كيانٌ لا حقل، والسببُ الحاسمُ مكتوبٌ في المخطَّط: **قائمةُ
-   «المدرّبون المتاحون لهذا الفصل» يجب أن توجد قبل أن توجد الشعب**. وهذه
-   الخدمةُ هي التي تجيب ذلك السؤالَ لأوّل مرّة.
+   الفصلُ كيانٌ لا حقل: يحمل نافذةَ التسجيل ونشرَ التقويم وحالتَه، فلا
+   تُكرَّر على كلّ شعبة. وكان السببُ الحاسمُ يومَ أُنشئ قائمةَ «المدرّبون
+   المتاحون لهذا الفصل» — وقد ذهبت بذهاب الإتاحة (٢٧ سبتمبر ٢٠٢٦)، وبقي
+   الفصلُ بما سواها.
 
    وحدودُ الفصل تُحسب في `src/application/terms/season` لا هنا: الخادمُ
    والواجهةُ يقرآن الحسابَ نفسَه، فلا يفترق ما يُعرض عمّا يُخزَّن. */
@@ -26,7 +27,7 @@ export class TermService {
     return this.prisma.term.findMany({
       where: options.includeClosed ? {} : { status: { in: [...LIVE_TERM_STATUSES] } },
       orderBy: { startsOn: 'asc' },
-      include: { _count: { select: { cohorts: true, trainerAvailability: true } } },
+      include: { _count: { select: { cohorts: true } } },
     })
   }
 
@@ -180,101 +181,12 @@ export class TermService {
     return termWindowVerdict({ titleAr: '', ...term }, now).open
   }
 
-  /* ─────────── السؤالُ الذي لم يكن له جواب ───────────
+  /* ═══ وذهب سؤالُ «من المتاحُ في هذا الفصل؟» (٢٧ سبتمبر ٢٠٢٦) ═══
 
-     «من يستطيع التدريسَ في فصل الربيع؟» — لا جوابَ له اليوم بالبناء: دالّةُ
-     «من يصلح لهذه الشعبة؟» تتخطّى قراءةَ التوفّر كلَّها حين لا جلساتِ بعد.
-     وهنا يُسأل عن الفصل لا عن الشعبة، فيُجاب قبل أن تُنشأ شعبةٌ واحدة. */
-  async availableTrainers(termId: string, options: { courseId?: string } = {}) {
-    const rows = await this.prisma.trainerTermAvailability.findMany({
-      where: { termId, status: { in: ['declared', 'confirmed'] } },
-      include: {
-        profile: {
-          include: {
-            application: { select: { fullName: true, email: true, status: true } },
-            qualifications: { where: { status: 'qualified' }, select: { courseId: true } },
-          },
-        },
-      },
-    })
-    return rows
-      /* الموقوفُ أو غيرُ النشط لا يُعرض متاحا — الإعلانُ لا يتجاوز الحالة */
-      .filter((r) => !r.profile.suspendedAt && r.profile.application.status === 'active')
-      .filter((r) => !options.courseId || r.profile.qualifications.some((q) => q.courseId === options.courseId))
-      .map((r) => ({
-        profileId: r.profileId,
-        name: r.profile.application.fullName,
-        email: r.profile.application.email,
-        status: r.status,
-        maxCohorts: r.maxCohorts,
-        qualifiedCourseIds: r.profile.qualifications.map((q) => q.courseId),
-      }))
-  }
-
-  /** إعلانُ المدرّب إتاحتَه — أو اعتذارُه عن فصلٍ تخطّط له الإدارة */
-  async setTrainerAvailability(
-    profileId: string, termId: string, actorId: string,
-    input: { status: 'declared' | 'confirmed' | 'declined'; maxCohorts?: number | null; note?: string | null },
-  ) {
-    const row = await this.prisma.trainerTermAvailability.upsert({
-      where: { profileId_termId: { profileId, termId } },
-      update: { status: input.status, maxCohorts: input.maxCohorts ?? null, note: input.note ?? null },
-      create: {
-        profileId, termId, status: input.status,
-        maxCohorts: input.maxCohorts ?? null, note: input.note ?? null,
-      },
-    })
-    await recordAudit(this.prisma, {
-      actorId, action: 'term.trainer_availability', entityType: 'term', entityId: termId,
-      meta: { profileId, status: input.status },
-    })
-    return row
-  }
-
-  /* ─────────── «فصولي» — الطرفُ الغائبُ من الجدول (البند ٥٣) ───────────
-
-     `TrainerTermAvailability` لها ثلاثُ حالات — `declared` و`confirmed`
-     و`declined` — ولم يكن للمدرّب بابٌ يبلغ أيّا منها: المسلكُ الوحيدُ
-     محروسٌ بـ`trainer.assign`، أي أنّ **الإدارةَ وحدَها تُعلن نيابةً عنه**.
-     فصار «المتاحون لهذا الفصل» قائمةَ ما وَرِثه الترحيلُ من ملفّه القديم،
-     لا ما يقوله هو اليوم.
-
-     وهذا يجيبه: يقرأ فصولَه الحيّةَ وموقفَه من كلٍّ، **ومعها ما خطّطته
-     الإدارةُ له فيها** — فالاعتذارُ عن فصلٍ أُسندت فيه ثلاثُ شعبٍ قرارٌ
-     آخرُ غيرُ الاعتذار عن فصلٍ فارغ، ولا يُتّخذ على غير علم. */
-  async trainerTerms(profileId: string) {
-    const terms = await this.prisma.term.findMany({
-      where: { status: { in: [...LIVE_TERM_STATUSES] } },
-      orderBy: { startsOn: 'asc' },
-      include: {
-        trainerAvailability: { where: { profileId } },
-        cohorts: {
-          where: { trainers: { some: { profileId } } },
-          select: { id: true, title: true, courseId: true, startsAt: true, status: true },
-          orderBy: { startsAt: 'asc' },
-        },
-      },
-    })
-    return terms.map((t) => {
-      const mine = t.trainerAvailability[0] ?? null
-      return {
-        id: t.id,
-        titleAr: t.titleAr,
-        season: t.season,
-        startsOn: t.startsOn,
-        endsOn: t.endsOn,
-        registrationOpensAt: t.registrationOpensAt,
-        registrationClosesAt: t.registrationClosesAt,
-        termStatus: t.status,
-        /* `null` = لم يُعلن شيئا بعدُ — وهي حالةٌ ثالثةٌ غيرُ «متاح» و«معتذر»،
-           ولا تُطوى في إحداهما: الصمتُ ليس موافقةً ولا رفضا. */
-        myStatus: mine?.status ?? null,
-        maxCohorts: mine?.maxCohorts ?? null,
-        note: mine?.note ?? null,
-        assignedCohorts: t.cohorts,
-      }
-    })
-  }
+     كانت هنا ثلاثُ دوالّ على `TrainerTermAvailability`: المتاحون لفصلٍ،
+     وإعلانُ الإتاحة، و«فصولي» للمدرّب. وقرارُ صاحب المنصّة حذفُ الإتاحة
+     كلِّها — المدرّبُ يجدول لقاءاتِه بيده داخلَ مدّة شعبته، فلا إعلانَ
+     وقتٍ يُبنى عليه. والعلّةُ في رأس `src/pages/trainer/Qualifications.tsx`. */
 
   /* ─────────── «الفصل القادم» — جوابٌ حقيقيٌّ لسؤالٍ حقيقيّ (البند ٥٢) ───────────
 
