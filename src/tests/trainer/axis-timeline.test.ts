@@ -299,7 +299,8 @@ describe('آخرُ الالتحاق — بدءُ الموعد الثاني', () 
   it('وبلا مواعيدَ لا حدّ — وموعدٌ بلا تاريخٍ صحيحٍ لا يُعدّ', () => {
     expect(joinClosesAt(PERIOD, [])).toBeNull()
     expect(joinClosesAt(PERIOD, undefined)).toBeNull()
-    const broken: PlanSlot[] = [slots[0], { startsOn: '2026-02-30', endsOn: 'x', moduleIds: ['m3'] }]
+    /* والمعطوبُ يقع بعد الصحيح في الترتيب — فلو عُدّ لكان هو «الثاني» */
+    const broken: PlanSlot[] = [slots[0], { startsOn: '2026-10-40', endsOn: '2026-10-41', moduleIds: ['m3'] }]
     expect(joinClosesAt(PERIOD, broken)?.toISOString(), 'موعدٌ معطوبٌ عُدّ ثانيا').toBe('2026-10-03T21:00:00.000Z')
   })
 })
