@@ -15,6 +15,8 @@ import CurriculumReview from "@/components/CurriculumReview";
 import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
 import { PendingTasks } from "@/components/PendingTasks";
 import { awaitingTasks } from "@/application/trainer/task-approval";
+import { PlanDiffList } from "@/components/PlanDiff";
+import { planDiff } from "@/application/trainer/plan-diff";
 import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { whenAr } from "@/application/learning/cohort-gate";
@@ -65,6 +67,8 @@ interface TrainerPlan {
   registration?: { awaitingPlan: boolean; joinClosesAt: string | null };
   /* اعتُمدت للمدرّب خطّةٌ قطّ — فما يغيّره في مهامّه بعدها ينتظر قرارَك (٣ج-٣) */
   approvedOnce?: boolean;
+  /* والمعتمَدةُ التي تراجعها هذه إن كانت مراجعة — منها «ما تغيّر» (٣ج-٤) */
+  approvedPlan?: { content: unknown; reviewedAt: string | null } | null;
   content: {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
@@ -441,6 +445,28 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 المدّة: من <b>{fmtDateAr(trainerPlan.content.startsOn)}</b> إلى <b>{fmtDateAr(trainerPlan.content.endsOn)}</b>
                 {" "}<span className="text-muted-foreground">— تصير حدودَ الشعبة المعلَنة باعتمادك.</span>
               </p>
+            )}
+            {/* ═══ وما تغيّر عن المعتمَد — مراجعةٌ لخطّةٍ معتمَدة (٣ج-٤) ═══
+
+                المنهجُ أدناه كما سيكون، ولا يقول ما الذي تغيّر: فإمّا يقرأ المعتمِدُ
+                عشرين موعدا ليجد التعديلَ الواحد، وإمّا يعتمد ما لم يره. فيُقال هنا
+                بخطوات المدرّب — حيث يكتب ملاحظتَه إن ردّ. */}
+            {trainerPlan.status === "submitted" && trainerPlan.approvedPlan && (
+              <Inset className="mt-3" role="region" aria-label="ما تغيّر عن المعتمَد">
+                <p className="text-read font-black text-foreground">
+                  ما تغيّر عن المعتمَد
+                  {trainerPlan.approvedPlan.reviewedAt && <span className="font-normal text-muted-foreground"> — اعتُمدت {fmtDateAr(trainerPlan.approvedPlan.reviewedAt)}</span>}
+                </p>
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  هذه مراجعةٌ لخطّةٍ معتمَدة — وهذا ما تغيّر فيها بخطوات المدرّب. والمنهجُ أدناه كما سيكون باعتمادك.
+                </p>
+                <div className="mt-2">
+                  <PlanDiffList
+                    sections={planDiff(trainerPlan.approvedPlan.content, trainerPlan.content, { date: fmtDateAr })}
+                    emptyText="لم يتغيّر في الخطّة نفسِها شيء — وما يُعتمَد معها من لقاءاتٍ ومهامّ مذكورٌ أدناه."
+                  />
+                </div>
+              </Inset>
             )}
             {/* ═══ والمنهجُ كاملا — ما قرأه المدرّبُ قبل أن يرسل (المرحلة ٣) ═══
 

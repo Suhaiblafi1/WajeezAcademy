@@ -86,6 +86,8 @@ import {
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
 import { curriculumView } from "@/application/trainer/curriculum-view";
+import { PlanDiffList } from "@/components/PlanDiff";
+import { planDiff } from "@/application/trainer/plan-diff";
 import Chip from "@/components/ui/Chip";
 import {
   TASK_REVIEW_TRAINER_AR, changeLines, proposedTask, readTaskChange, taskReview, taskValues, type TaskValueFormat,
@@ -148,6 +150,8 @@ interface Workspace {
   assessments: { id: string; title: string; briefAr: string | null; attachments?: unknown; type: string; maxScore: number; dueAt: string | null; status: string; moduleId?: string | null; submissions: number; pendingChange?: unknown; reviewerNote?: string | null }[];
   /* اعتُمدت له خطّةٌ قطّ — فما يضيفه ويعدّله ويحذفه من مهامّه ينتظر الإدارة (٣ج-٣) */
   approvedOnce?: boolean;
+  /* والمعتمَدةُ التي يراجعها إن كانت أحدثُ خطّته مراجعة — منها «ما غيّرتَه» (٣ج-٤) */
+  approvedPlan?: { content: unknown; reviewedAt: string | null } | null;
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
 }
 
@@ -2134,6 +2138,20 @@ export default function CohortWorkspace() {
               السابقة» (صاحب المنصّة). فهي قبل الموافقة لا بعدها: يقرأ ثمّ يُقرّ.
               وهي الصفحةُ نفسُها التي يقرؤها المعتمِد — فلا يُعتمَد غيرُ ما رآه —
               وفي كلّ قسمٍ «عدّل» يعيده إلى خطوته. */}
+          {/* ═══ وما غيّرتَه عن المعتمَد — ما يقرؤه المعتمِدُ أوّلا (٣ج-٤) ═══
+              المراجعةُ تُقرأ بما تغيّر فيها لا بالمنهج كلِّه — والسطورُ هنا من
+              القاعدة نفسِها التي يقرأ بها المعتمِد، على ما في يدك الآن. */}
+          {ws.approvedPlan && (
+            <div className="mt-5" role="region" aria-label="ما غيّرتَه عن المعتمَد">
+              <p className="text-read font-black text-foreground">ما غيّرتَه عن الخطّة المعتمَدة — وهو أوّلُ ما يقرؤه المعتمِد</p>
+              <div className="mt-2">
+                <PlanDiffList
+                  sections={planDiff(ws.approvedPlan.content, content, { date: fmtDateAr })}
+                  emptyText="لم تغيّر في الخطّة نفسِها شيئا بعد — وما تغيّره في اللقاءات والمهامّ يُقرَّر وحدَه."
+                />
+              </div>
+            </div>
+          )}
           <div className="mt-5">
             <p className="text-read font-black text-foreground">منهجُ شعبتك كما سيقرؤه المعتمِد — ثمّ متعلّموك بالترتيب</p>
             <div className="mt-2">

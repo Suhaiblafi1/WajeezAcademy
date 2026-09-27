@@ -50,7 +50,7 @@ import {
 } from '../../src/application/trainer/axis-timeline'
 import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
-import { resourceCategory } from '../../src/application/trainer/plan-overlay'
+import { PLAN_VISIBLE_STATUSES, resourceCategory } from '../../src/application/trainer/plan-overlay'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -427,6 +427,21 @@ export class CohortPlanService {
     })
   }
 
+  /* ═══ والمعتمَدةُ خلف المراجعة — ليُقرأ ما تغيّر عنها (٣ج-٤) ═══
+
+     بعد الاعتماد يُنشئ حفظُ المدرّب صفَّ خطّةٍ جديدا (مراجعة)، ويبقى المعتمَدُ
+     نافذا حتّى تُعتمَد المراجعة. فإن كانت أحدثُ خطّةٍ مراجعةً أُعيد معها المعتمَدُ
+     الذي تراجعه — تقرأ منه الشاشتان «ما تغيّر» (`plan-diff.ts`). وإن كانت أحدثُها
+     هي المعتمَدةَ فلا شيءَ خلفها يُقارَن. */
+  private async approvedBehind(cohortId: string, latest: { id: string; status: string }) {
+    if ((PLAN_VISIBLE_STATUSES as readonly string[]).includes(latest.status)) return null
+    return this.prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId, trainerId: { not: null }, id: { not: latest.id }, status: { in: [...PLAN_VISIBLE_STATUSES] } },
+      orderBy: { createdAt: 'desc' },
+      select: { content: true, reviewedAt: true },
+    })
+  }
+
   /* ─────────── الورشة: كلُّ ما يحتاجه ليعرف ماذا يفعل ─────────── */
 
   async workspace(userId: string, cohortId: string) {
@@ -461,6 +476,7 @@ export class CohortPlanService {
     })
     const plan = await this.latestTrainerPlan(cohortId)
     const content = (plan?.content ?? null) as TrainerPlanContent | null
+    const approvedPlan = plan ? await this.approvedBehind(cohortId, plan) : null
 
     /* المحاورُ الأساسيّة من القاعدة — وإن خلت، من الكتالوج الثابت */
     const dbModules: TrainerPlanModule[] = cohort.course.modules.map((m) => {
@@ -539,6 +555,8 @@ export class CohortPlanService {
         pendingChange: a.pendingChange, reviewerNote: a.reviewerNote,
       })),
       approvedOnce: planApprovedOnce(cohort.plans),
+      /* والمعتمَدةُ التي يراجعها — ليقرأ ما غيّره عنها قبل أن يرسل (٣ج-٤) */
+      approvedPlan,
       checklist,
     }
   }
@@ -789,7 +807,7 @@ export class CohortPlanService {
   async latestForCohort(cohortId: string) {
     const plan = await this.latestTrainerPlan(cohortId)
     if (!plan) return null
-    const [trainer, cohort] = await Promise.all([
+    const [trainer, cohort, approvedPlan] = await Promise.all([
       plan.trainerId
         ? this.prisma.trainerProfile.findUnique({ where: { id: plan.trainerId }, select: { application: { select: { fullName: true } } } })
         : null,
@@ -818,6 +836,8 @@ export class CohortPlanService {
           },
         },
       }),
+      /* والمعتمَدةُ التي تراجعها هذه — ليقرأ المعتمِدُ ما تغيّر عنها (٣ج-٤) */
+      this.approvedBehind(cohortId, plan),
     ])
     const content = plan.content as TrainerPlanContent | null
     return {
@@ -829,10 +849,12 @@ export class CohortPlanService {
       period: cohort ? resolvePeriod(content, cohort, plan.status as PlanStatus) : null,
       sessions: cohort?.sessions ?? [],
       assessments: cohort?.assessments ?? [],
-      /* التسجيلُ كما يُحكَم لا كما يقول علمُه: شعبةٌ خطّتُها لم تُعتمَد لا تقبل
-         أحدا وإن رُفع العلم، والالتحاقُ يُغلق ببدء الموعد الثاني (٣ج) */
       /* اعتُمدت له خطّةٌ قطّ — فما يضيفه ويعدّله في مهامّه ينتظر قرارَك (٣ج-٣) */
       approvedOnce: cohort ? planApprovedOnce(cohort.plans) : false,
+      /* والمعتمَدةُ التي تراجعها هذه إن كانت مراجعة — منها «ما تغيّر» (٣ج-٤) */
+      approvedPlan,
+      /* التسجيلُ كما يُحكَم لا كما يقول علمُه: شعبةٌ خطّتُها لم تُعتمَد لا تقبل
+         أحدا وإن رُفع العلم، والالتحاقُ يُغلق ببدء الموعد الثاني (٣ج) */
       registration: {
         awaitingPlan: cohort ? awaitingTrainerPlan(cohort.plans) : false,
         joinClosesAt: cohort?.joinClosesAt ?? null,
