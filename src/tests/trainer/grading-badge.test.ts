@@ -17,6 +17,8 @@ import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const layout = readFileSync(join(root, 'src/pages/trainer/TrainerLayout.tsx'), 'utf8')
+/* الشيفرةُ بلا تعليقاتها — لما يُفحص بنيةً لا نصّا (أعرافُ `CLAUDE.md`) */
+const code = layout.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 const route = readFileSync(join(root, 'server/http/routes/trainer-portal.routes.ts'), 'utf8')
 const queue = readFileSync(join(root, 'src/pages/trainer/GradingQueue.tsx'), 'utf8')
 
@@ -45,7 +47,30 @@ describe('عدّادُ ما ينتظر تصحيحَه', () => {
   })
 
   it('ويختفي عند الصفر — «٠ ينتظر» ضجيجٌ لا خبر', () => {
-    expect(layout).toMatch(/\{!!t\.count && \(/)
+    /* صارت الشارةُ مكوّنا واحدا (`CountBadge`) يُرسم في أربعة مواضع: الحبّة،
+       وشبحِها الذي يُقاس به عرضُها، وبندِ «المزيد»، وزرِّه. فالشرطُ فيه مرّةً —
+       ورقمٌ يُرسم خامَ في موضعٍ خامس يتجاوزه، فلا يُرسم رقمٌ خامٌ أصلا. */
+    const badge = code.slice(code.indexOf('function CountBadge'), code.indexOf('function MoreTabs'))
+    expect(badge, 'لا مكوّنَ للشارة').not.toBe('')
+    expect(badge, 'الشارةُ تُرسم والعددُ صفر').toMatch(/^function CountBadge\(\{ count \}[^{]*\{[^}]*\}\) \{\s*if \(!count\) return null;/)
+    /* ابنُ وسمٍ لا قيمةُ خاصّيّة: `count={t.count}` تمريرٌ إلى الشارة، و`{t.count}`
+       بلا `=` قبلها رسمٌ خام. وأوّلُ صياغةٍ لهذا الفحص طابقت التمريرَ نفسَه */
+    expect(code.match(/(?<!=)\{t\.count\}/g) ?? [], 'عددٌ يُرسم خاما خارجَ الشارة — فيظهر «٠» ويفقد اسمَه').toHaveLength(0)
+  })
+
+  it('⚠️ ويبقى مرئيّا حين يخرج تبويبُه إلى «المزيد» — على الزرّ نفسِه لا خلف نقرة', () => {
+    /* الشريطُ يعرض ما وسعه (٢٧ سبتمبر ٢٠٢٦)، و«طابورُ التقييم» رابعُ القائمة
+       فيخرج إلى «المزيد» على الهاتف — ثلاثةٌ تسع ٣٩٠. والرقمُ وُضع في الشريط
+       ليُرى بلا فتحِ شيء، فلو بقي في بند القائمة وحدَه لدُفن خلف نقرةٍ على
+       أكثر الشاشات استعمالا. */
+    const more = code.slice(code.indexOf('function MoreTabs'), code.indexOf('function TabsBar'))
+    expect(more, 'لا مكوّنَ لـ«المزيد»').not.toBe('')
+    expect(more, 'الزرُّ لا يجمع عدّادَ ما خلفه').toMatch(/const waiting = items\.reduce\(/)
+    const button = more.slice(more.indexOf('<NavPillButton'), more.indexOf('</NavPillButton>'))
+    expect(button, 'عدّادُ المخفيّ لا يُرسم على الزرّ').toContain('<CountBadge count={waiting} />')
+    /* وبندُه في القائمة يحمله أيضا — فمن فتحها عرف أين ينتظره العمل */
+    const menu = more.slice(more.indexOf('role="menu"'))
+    expect(menu, 'بندُ القائمة بلا عدّاد').toContain('<CountBadge count={t.count} />')
   })
 
   it('وسقوطُ العدّاد لا يُسقط البوّابة', () => {
