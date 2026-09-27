@@ -1,17 +1,22 @@
 /* خدمة الواجبات والتقييم — إنشاء، تسليم، مراجعة المدرب على شعبه فقط،
    إعادة تسليم، قبول/رفض بسبب، درجة بالروبرك، تغذية راجعة، وسجل تعديل درجة لا يُمحى. */
 
-import type { PrismaClient, Prisma } from '@prisma/client'
+import { Prisma, type CohortAssessment, type PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import type { TypedLink } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
-import { safeNotify } from './notification.service'
+import { notifyRole, safeNotify } from './notification.service'
+import { PLAN_GATE_SELECT, planApprovedOnce } from './registration-window'
 import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { periodBounds, realDate } from '../../src/application/trainer/cohort-period'
 import { assessmentOpensAt, submitVerdict } from '../../src/application/learning/cohort-gate'
 import { loadLearnerGate } from './learner-gate'
+import {
+  awaitsDecision, nextEditChange, planApprovalApplies, proposedTask, readTaskChange, taskReview, taskValues, toTaskPatch,
+  type TaskChange, type TaskPatch, type TaskReview, type TaskValues,
+} from '../../src/application/trainer/task-approval'
 
 const MAX_SUBMISSION_BYTES = 100 * 1024 * 1024 // 100MB
 
@@ -55,6 +60,42 @@ export class AssessmentService {
     return periodBounds(slot).to
   }
 
+  /* ═══ وبعد الاعتماد كلُّ تغييرٍ باعتماد — والمهامُّ منه (٣ج-٣) ═══
+
+     القاعدةُ ومآلاتُها في رأس `application/trainer/task-approval.ts`. وهنا
+     ما تحتاجه الخدمة: أاعتُمدت للشعبة خطّةٌ قطّ، وكم ينتظر فيها، ومن يُخبَر. */
+
+  /** اعتُمدت لمدرّب الشعبة خطّةٌ قطّ؟ — منه تنتظر المهامُّ الإدارة */
+  private async approvedOnce(cohortId: string): Promise<boolean> {
+    const plans = await this.prisma.cohortDeliveryPlan.findMany({
+      where: { cohortId, ...PLAN_GATE_SELECT.where }, select: PLAN_GATE_SELECT.select,
+    })
+    return planApprovedOnce(plans)
+  }
+
+  /** ما ينتظر قرارَ الإدارة في الشعبة — بالقاعدة نفسِها التي تعرض بها قائمتَها */
+  private async awaitingCount(cohortId: string): Promise<number> {
+    const rows = await this.prisma.cohortAssessment.findMany({
+      where: { cohortId, status: { in: ['draft', 'published'] } },
+      select: { status: true, pendingChange: true, reviewerNote: true },
+    })
+    return rows.filter((r) => awaitsDecision(taskReview(r, true))).length
+  }
+
+  /* الخبرُ عند انتقال قائمة الشعبة من فارغةٍ إلى غيرِ فارغة — كطابور التصحيح:
+     مدرّبٌ يعدّل خمسَ مهامّ متتاليةً لا يُرسل إلى الإدارة خمسةَ أخبار، فتتعلّم
+     أن تتجاوزها كلَّها. ويعود الخبرُ إن فرغت القائمةُ ثمّ امتلأت. */
+  private async notifyAdminsOfTaskQueue(cohortId: string, assessmentId: string) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
+    await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+      channel: 'in_app',
+      title: 'مهامُّ تنتظر قرارك',
+      body: `أضاف مدرّبُ «${cohort?.title ?? 'الشعبة'}» مهمّةً أو طلب تعديلَها أو حذفَها بعد اعتماد خطّته — ولا يصل المتعلّمين شيءٌ منها حتّى تعتمده. راجِعها من بطاقة الشعبة.`,
+      templateKey: 'cohort.assessment.pending',
+      data: { cohortId, assessmentId },
+    })
+  }
+
   /* ── إنشاء الواجبات/التقييمات (إدارة أو مدرب الشعبة) ── */
 
   async createAssessment(actorId: string, input: {
@@ -62,7 +103,7 @@ export class AssessmentService {
     moduleId?: string; briefAr?: string; maxScore?: number; passScore?: number; dueAt?: Date; rubricId?: string
     attachments?: TypedLink[]
     items?: { prompt: string; kind?: string; maxScore?: number }[]
-  }) {
+  }, opts: { byTrainer?: boolean } = {}) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: input.cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (input.rubricId) {
@@ -70,11 +111,16 @@ export class AssessmentService {
       if (!rubric || rubric.status !== 'active') throw new AuthError('unknown_rubric', 'الروبرك غير موجود أو مؤرشف', 404)
     }
     const dueAt = input.dueAt ?? (await this.slotDueAt(input.cohortId, input.moduleId)) ?? undefined
+    /* ومهمّةٌ يضيفها المدرّبُ بعد اعتماد خطّته تُنشأ مسودّةً تنتظر الإدارة (٣ج-٣) —
+       والإدارةُ إن أنشأت نشرت: هي المعتمِد */
+    const awaiting = opts.byTrainer === true && (await this.approvedOnce(input.cohortId))
+    const queueWasEmpty = awaiting && (await this.awaitingCount(input.cohortId)) === 0
     const assessment = await this.prisma.cohortAssessment.create({
       data: {
         cohortId: input.cohortId, title: input.title, type: input.type, moduleId: input.moduleId,
         briefAr: input.briefAr, maxScore: input.maxScore ?? 100, passScore: input.passScore, dueAt,
         rubricId: input.rubricId, createdBy: actorId,
+        ...(awaiting ? { status: 'draft' } : {}),
         /* عمودُ JSON: Prisma يطلب `InputJsonValue` لا نوعَنا — والتحويلُ
            هنا صريحٌ في موضعٍ واحد، لا `any` ينتشر في الخدمة. */
         attachments: (input.attachments ?? undefined) as Prisma.InputJsonValue | undefined,
@@ -82,8 +128,12 @@ export class AssessmentService {
       },
       include: { items: true },
     })
-    await recordAudit(this.prisma, { actorId, action: 'assessment.create', entityType: 'cohort_assessment', entityId: assessment.id, meta: { cohortId: input.cohortId, type: input.type } })
-    return assessment
+    await recordAudit(this.prisma, {
+      actorId, action: 'assessment.create', entityType: 'cohort_assessment', entityId: assessment.id,
+      meta: { cohortId: input.cohortId, type: input.type, ...(awaiting ? { awaitingApproval: true } : {}) },
+    })
+    if (queueWasEmpty) await this.notifyAdminsOfTaskQueue(input.cohortId, assessment.id)
+    return { ...assessment, review: taskReview(assessment, awaiting) }
   }
 
   /* ── تعديلُ التكليف وحذفُه — مدرّبُ الشعبة وحدَه ──
@@ -113,23 +163,25 @@ export class AssessmentService {
     moduleId?: string | null
   }) {
     const before = await this.assertAssessmentTrainer(actorId, assessmentId)
+    /* ═══ وبعد الاعتماد: تعديلُ المنشورة طلبٌ ينتظر الإدارة (٣ج-٣) ═══
+
+       المتعلّمون يقرؤون الصفَّ نفسَه — فلا يُكتب فيه ما لم يُعتمَد. والطلبُ
+       يُحفظ بجانبه (`pendingChange`)، وتعديلُ الطلب يعدّل الطلبَ لا المعتمَد.
+       والمسودّةُ تُعدَّل كما كانت: لا يراها أحدٌ بعد. */
+    const approved = await this.approvedOnce(before.cohortId)
+    const gated = approved && before.status === 'published'
+    const live = taskValues(before)
+    const previous = gated ? readTaskChange(before.pendingChange) : null
     /* ومهمّةٌ رُبطت بمحورها ولا موعدَ لها يُفترض لها آخرُ موعده — وما كتبه
        صاحبُها بيده لا يُمسّ، ولا ما محاه قصدا في النداء نفسِه */
-    const fallbackDue = patch.moduleId && patch.dueAt === undefined && before.dueAt === null
+    const fallbackDue = patch.moduleId && patch.dueAt === undefined && proposedTask(live, previous).dueAt === null
       ? await this.slotDueAt(before.cohortId, patch.moduleId)
       : null
-    /* الدرجةُ العظمى لا تنزل تحت درجةٍ رُصدت فعلا — وإلّا صار متعلّمٌ
-       حاصلا على أكثرَ من النهاية. */
-    if (patch.maxScore !== undefined && patch.maxScore < before.maxScore) {
-      const top = await this.prisma.grade.aggregate({
-        where: { submission: { assessmentId } },
-        _max: { score: true },
-      })
-      /* `Grade.score` عشريٌّ في القاعدة — يُقارَن رقما لا كائنا */
-      const highest = Number(top._max.score ?? 0)
-      if (highest > patch.maxScore) {
-        throw new AuthError('score_below_awarded', `درجةٌ مرصودةٌ تبلغ ${highest} — لا تُخفَض النهايةُ دونها`)
-      }
+    /* الدرجةُ العظمى لا تنزل تحت درجةٍ رُصدت فعلا — ويُفحص عند الطلب كما عند
+       تطبيقه: لا يُرسَل إلى الإدارة ما لا يُطبَّق */
+    if (patch.maxScore !== undefined) await this.assertMaxScoreFits(assessmentId, before.maxScore, patch.maxScore)
+    if (gated) {
+      return this.requestEdit(actorId, before, live, previous, toTaskPatch({ ...patch, ...(fallbackDue ? { dueAt: fallbackDue } : {}) }))
     }
     const updated = await this.prisma.cohortAssessment.update({
       where: { id: assessmentId },
@@ -142,13 +194,56 @@ export class AssessmentService {
         ...(patch.moduleId !== undefined ? { moduleId: patch.moduleId } : {}),
         /* المصفوفةُ الفارغةُ محوٌ مقصودٌ لا إهمال — ولذلك `!== undefined` */
         ...(patch.attachments !== undefined ? { attachments: patch.attachments as unknown as Prisma.InputJsonValue } : {}),
+        /* ومسودّةٌ ردّتها الإدارةُ فعدّلها صاحبُها تعود تنتظرها — بلا السبب القديم */
+        reviewerNote: null,
       },
     })
     await recordAudit(this.prisma, {
       actorId, action: 'assessment.update', entityType: 'cohort_assessment', entityId: assessmentId,
       meta: { cohortId: before.cohortId, fields: Object.keys(patch) },
     })
-    return updated
+    if (approved && before.status === 'draft' && before.reviewerNote && (await this.awaitingCount(before.cohortId)) === 1) {
+      await this.notifyAdminsOfTaskQueue(before.cohortId, assessmentId)
+    }
+    return { ...updated, review: taskReview(updated, approved) }
+  }
+
+  /** الدرجةُ العظمى لا تنزل تحت درجةٍ رُصدت فعلا — وإلّا صار متعلّمٌ حاصلا على أكثرَ من النهاية */
+  private async assertMaxScoreFits(assessmentId: string, currentMax: number, nextMax: number) {
+    if (nextMax >= currentMax) return
+    const top = await this.prisma.grade.aggregate({
+      where: { submission: { assessmentId } },
+      _max: { score: true },
+    })
+    /* `Grade.score` عشريٌّ في القاعدة — يُقارَن رقما لا كائنا */
+    const highest = Number(top._max.score ?? 0)
+    if (highest > nextMax) {
+      throw new AuthError('score_below_awarded', `درجةٌ مرصودةٌ تبلغ ${highest} — لا تُخفَض النهايةُ دونها`)
+    }
+  }
+
+  /** طلبُ تعديلٍ على منشورةٍ بعد الاعتماد — يُحفظ بجانبها، ولا يمسّ ما يقرؤه المتعلّم */
+  private async requestEdit(
+    actorId: string, before: CohortAssessment, live: TaskValues, previous: TaskChange | null, requested: TaskPatch,
+  ) {
+    const change = nextEditChange(live, previous, requested, new Date())
+    /* لا شيءَ يُطلب ولا طلبَ تعديلٍ يُسحب — ومن طلب الحذفَ ثمّ حفظ بلا تغييرٍ لم يسحبه */
+    if (!change && previous?.kind !== 'edit') return { ...before, review: taskReview(before, true) }
+    const queueWasEmpty = change !== null && (await this.awaitingCount(before.cohortId)) === 0
+    const updated = await this.prisma.cohortAssessment.update({
+      where: { id: before.id },
+      data: change
+        ? { pendingChange: change as unknown as Prisma.InputJsonValue, reviewerNote: null }
+        /* أعاد القيمَ إلى المعتمَد: سحب طلبَه */
+        : { pendingChange: Prisma.DbNull },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: change ? 'assessment.change.request' : 'assessment.change.withdraw',
+      entityType: 'cohort_assessment', entityId: before.id,
+      meta: { cohortId: before.cohortId, kind: 'edit', ...(change?.kind === 'edit' ? { fields: Object.keys(change.fields) } : {}) },
+    })
+    if (queueWasEmpty) await this.notifyAdminsOfTaskQueue(before.cohortId, before.id)
+    return { ...updated, review: taskReview(updated, true) }
   }
 
   async deleteAssessment(actorId: string, assessmentId: string) {
@@ -160,12 +255,183 @@ export class AssessmentService {
         409,
       )
     }
+    /* وبعد الاعتماد: حذفُ المنشورة طلبٌ ينتظر الإدارة (٣ج-٣) — تبقى عند
+       المتعلّمين حتّى يُعتمَد. والمسودّةُ تُحذف كما كانت: لا يراها أحد */
+    if (before.status === 'published' && (await this.approvedOnce(before.cohortId))) {
+      return this.requestRemoval(actorId, before)
+    }
     await this.prisma.cohortAssessment.delete({ where: { id: assessmentId } })
     await recordAudit(this.prisma, {
       actorId, action: 'assessment.delete', entityType: 'cohort_assessment', entityId: assessmentId,
       meta: { cohortId: before.cohortId, title: before.title },
     })
     return { deleted: true }
+  }
+
+  /** طلبُ حذفِ منشورةٍ بعد الاعتماد — تبقى عند المتعلّمين حتّى يُعتمَد */
+  private async requestRemoval(actorId: string, before: CohortAssessment) {
+    if (readTaskChange(before.pendingChange)?.kind === 'remove') return { deleted: false, review: 'remove' as const }
+    const queueWasEmpty = (await this.awaitingCount(before.cohortId)) === 0
+    const change: TaskChange = { kind: 'remove', requestedAt: new Date().toISOString() }
+    await this.prisma.cohortAssessment.update({
+      where: { id: before.id },
+      data: { pendingChange: change as unknown as Prisma.InputJsonValue, reviewerNote: null },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'assessment.change.request', entityType: 'cohort_assessment', entityId: before.id,
+      meta: { cohortId: before.cohortId, kind: 'remove', title: before.title },
+    })
+    if (queueWasEmpty) await this.notifyAdminsOfTaskQueue(before.cohortId, before.id)
+    return { deleted: false, review: 'remove' as const }
+  }
+
+  /** سحبُ المدرّب طلبَه — والمعتمَدُ باقٍ كما هو */
+  async withdrawChange(actorId: string, assessmentId: string) {
+    const before = await this.assertAssessmentTrainer(actorId, assessmentId)
+    const change = readTaskChange(before.pendingChange)
+    if (!change) throw new AuthError('nothing_pending', 'لا طلبَ على هذه المهمّة يُسحب', 409)
+    const updated = await this.prisma.cohortAssessment.update({
+      where: { id: assessmentId }, data: { pendingChange: Prisma.DbNull },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'assessment.change.withdraw', entityType: 'cohort_assessment', entityId: assessmentId,
+      meta: { cohortId: before.cohortId, kind: change.kind },
+    })
+    return { ...updated, review: taskReview(updated, true) }
+  }
+
+  /* ═══ قرارُ الإدارة في مهمّةٍ تنتظر (٣ج-٣) ═══
+
+     الجديدةُ تُنشر، والتعديلُ يُكتب في الصفّ الذي يقرؤه المتعلّمون، والحذفُ
+     يقع. والردُّ لا يمسّ المعتمَد: يُمحى الطلبُ ويصل المدرّبَ سببُه، والمسودّةُ
+     المردودةُ تبقى عنده — يعدّلها فتعود إلى الإدارة، أو يحذفها. ولا ردَّ بلا
+     سبب: من رُدّ عليه بلا سببٍ يخمّن. */
+  async decideTask(actorId: string, assessmentId: string, approve: boolean, note?: string) {
+    const task = await this.prisma.cohortAssessment.findUnique({
+      where: { id: assessmentId }, include: { _count: { select: { submissions: true } } },
+    })
+    if (!task) throw new AuthError('not_found', 'هذه المهمّة غير موجودة', 404)
+    const review = taskReview(task, await this.approvedOnce(task.cohortId))
+    if (!awaitsDecision(review)) throw new AuthError('nothing_pending', 'لا شيءَ في هذه المهمّة ينتظر قرارا', 409)
+    const said = note?.trim() || null
+    if (!approve && !said) {
+      throw new AuthError('reason_required', 'قل للمدرّب لماذا — الردُّ بلا سببٍ يتركه يخمّن', 400)
+    }
+    if (approve) await this.applyReview(task, review)
+    else {
+      await this.prisma.cohortAssessment.update({
+        where: { id: task.id }, data: { pendingChange: Prisma.DbNull, reviewerNote: said },
+      })
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: approve ? 'assessment.change.approve' : 'assessment.change.reject',
+      entityType: 'cohort_assessment', entityId: task.id,
+      meta: { cohortId: task.cohortId, kind: review, title: task.title, ...(said ? { note: said } : {}) },
+    })
+    await this.tellTrainersOfDecision(task, review, approve, said)
+    return { status: approve ? ('approved' as const) : ('declined' as const), kind: review }
+  }
+
+  /** يُنفذ ما ينتظر — وما يمنعه يُقال بسببه، لا يُتجاوَز */
+  private async applyReview(task: CohortAssessment & { _count: { submissions: number } }, review: TaskReview) {
+    if (review === 'new' || review === 'draft') {
+      await this.prisma.cohortAssessment.update({ where: { id: task.id }, data: { status: 'published', reviewerNote: null } })
+      return
+    }
+    const change = readTaskChange(task.pendingChange)
+    if (change?.kind === 'remove') {
+      /* سلّم فيها أحدٌ بعد الطلب — وعملُه ليس ملكَ المدرّب ولا الإدارة */
+      if (task._count.submissions > 0) {
+        throw new AuthError(
+          'has_submissions',
+          `سلّم فيها ${task._count.submissions} بعد طلب حذفها — لا تُحذف مهمّةٌ فيها عملُ متعلّمين. ردَّ الطلبَ بسببه.`,
+          409,
+        )
+      }
+      await this.prisma.cohortAssessment.delete({ where: { id: task.id } })
+      return
+    }
+    if (change?.kind !== 'edit') return
+    const f = change.fields
+    if (f.maxScore !== undefined) await this.assertMaxScoreFits(task.id, task.maxScore, f.maxScore)
+    await this.prisma.cohortAssessment.update({
+      where: { id: task.id },
+      data: {
+        ...(f.title !== undefined ? { title: f.title } : {}),
+        ...(f.briefAr !== undefined ? { briefAr: f.briefAr } : {}),
+        ...(f.type !== undefined ? { type: f.type } : {}),
+        ...(f.maxScore !== undefined ? { maxScore: f.maxScore } : {}),
+        ...(f.dueAt !== undefined ? { dueAt: f.dueAt === null ? null : new Date(f.dueAt) } : {}),
+        ...(f.moduleId !== undefined ? { moduleId: f.moduleId } : {}),
+        ...(f.attachments !== undefined ? { attachments: f.attachments as unknown as Prisma.InputJsonValue } : {}),
+        pendingChange: Prisma.DbNull,
+        reviewerNote: null,
+      },
+    })
+  }
+
+  /** المدرّبُ يعلم ما قُرّر في طلبه — ولماذا إن رُدّ */
+  private async tellTrainersOfDecision(
+    task: { id: string; cohortId: string; title: string }, review: TaskReview, approve: boolean, note: string | null,
+  ) {
+    const cohort = await this.prisma.cohort.findUnique({
+      where: { id: task.cohortId },
+      select: { title: true, trainers: { select: { profile: { select: { userId: true } } } } },
+    })
+    if (!cohort) return
+    const approvedTitle: Partial<Record<TaskReview, string>> = {
+      new: `اعتُمدت مهمّتُك «${task.title}»`,
+      edit: `اعتُمد تعديلُ «${task.title}»`,
+      remove: `اعتُمد حذفُ «${task.title}»`,
+    }
+    const approvedBody = review === 'remove'
+      ? `حُذفت من «${cohort.title}» ولم تعد تظهر لمتعلّميك.`
+      : `صارت في منهج «${cohort.title}» كما كتبتَها — وتُفتح لمتعلّميك في موعدها.`
+    const declinedBody = review === 'new'
+      ? `${note} — ولا تظهر لمتعلّميك: عدّلها فتعود إلى الإدارة، أو احذفها.`
+      : `${note} — وما اعتُمد قبلُ باقٍ كما هو عند متعلّميك.`
+    for (const t of cohort.trainers) {
+      /* ملفٌّ بلا حسابٍ مربوطٍ لا صندوقَ له */
+      if (!t.profile.userId) continue
+      await safeNotify(this.prisma, {
+        userId: t.profile.userId, channel: 'in_app', audience: 'trainer',
+        templateKey: 'cohort.assessment.decision',
+        title: approve ? (approvedTitle[review] ?? `اعتُمد ما طلبتَه في «${task.title}»`) : `ردّت الإدارةُ ما طلبتَه في «${task.title}»`,
+        body: approve ? approvedBody : declinedBody,
+        data: { cohortId: task.cohortId, assessmentId: task.id },
+      })
+    }
+  }
+
+  /* ═══ واعتمادُ الخطّة يعتمد ما ينتظر من مهامّها — الاعتمادُ واحد (٣ج-٣) ═══
+
+     المعتمِدُ قرأ المنهجَ كلَّه قبل أن يعتمد، ومهامُّه فيه بما طُلب فيها. فكما
+     يعتمد اعتمادُها لقاءاتِها المنتظِرة، يعتمد ما ينتظر من مهامّها — بالمسلك
+     نفسِه الذي تمرّ به المهمّةُ وحدَها (`applyReview`) — ومسودّاتِ ما قبل أوّل
+     اعتماد. وما يمنعه مانعٌ (سلّم فيها أحدٌ بعد طلب حذفها) يبقى منتظِرا ويُسمّى. */
+  async applyPendingForPlan(actorId: string, cohortId: string, planId: string) {
+    const rows = await this.prisma.cohortAssessment.findMany({
+      where: { cohortId, status: { in: ['draft', 'published'] } },
+      orderBy: { createdAt: 'asc' },
+      include: { _count: { select: { submissions: true } } },
+    })
+    const out = { applied: 0, failed: [] as { id: string; title: string; reason: string }[] }
+    for (const row of rows) {
+      /* تُقرأ بعد الاعتماد — فمسودّةُ ما قبله «جديدة»، وكلتاهما تُعتمَد */
+      const review = taskReview(row, true)
+      if (!planApprovalApplies(review)) continue
+      try {
+        await this.applyReview(row, review)
+        out.applied += 1
+        await recordAudit(this.prisma, {
+          actorId, action: 'assessment.change.approve', entityType: 'cohort_assessment', entityId: row.id,
+          meta: { cohortId, kind: review, title: row.title, planId },
+        })
+      } catch (e) {
+        out.failed.push({ id: row.id, title: row.title, reason: e instanceof AuthError ? e.message : 'خطأ غير متوقّع' })
+      }
+    }
+    return out
   }
 
   /* ── تسليم المتعلم ── */

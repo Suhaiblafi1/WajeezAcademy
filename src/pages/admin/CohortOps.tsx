@@ -13,6 +13,8 @@ import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import type { PlanSlot } from "@/application/trainer/axis-timeline";
 import CurriculumReview from "@/components/CurriculumReview";
 import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
+import { PendingTasks } from "@/components/PendingTasks";
+import { awaitingTasks } from "@/application/trainer/task-approval";
 import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { whenAr } from "@/application/learning/cohort-gate";
@@ -61,6 +63,8 @@ interface TrainerPlan {
   assessments: CurriculumInput["assessments"];
   /* التسجيلُ كما يُحكَم — لا يُفتح قبل الاعتماد، والالتحاقُ حتّى الموعد الثاني (٣ج) */
   registration?: { awaitingPlan: boolean; joinClosesAt: string | null };
+  /* اعتُمدت للمدرّب خطّةٌ قطّ — فما يغيّره في مهامّه بعدها ينتظر قرارَك (٣ج-٣) */
+  approvedOnce?: boolean;
   content: {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
@@ -81,15 +85,29 @@ interface PendingSession {
 interface PlanDecision {
   status: string;
   meetings?: { approved: number; failed: { id: string; title: string; reason: string }[] };
+  /* ومهامُّها المنتظِرةُ التي اعتُمدت معها — وما بقي منها بسببه (٣ج-٣) */
+  tasks?: { applied: number; failed: { id: string; title: string; reason: string }[] };
 }
 /** ما يقوله الاعتمادُ لمن نقره — باللقاءات التي اعتُمدت معه، وبما تعذّر باسمه */
 function approvedMsg(r: PlanDecision): string {
   const m = r.meetings;
   const withMeetings = m && m.approved > 0 ? ` ومعها ${m.approved === 1 ? "لقاؤها" : `لقاءاتُها (${m.approved})`}` : "";
+  const t = r.tasks;
+  const withTasks = t && t.applied > 0 ? ` و${t.applied === 1 ? "مهمّتُها المنتظِرة" : `مهامُّها المنتظِرة (${t.applied})`}` : "";
   const failed = m?.failed.length
     ? ` — وتعذّر اعتمادُ ${m.failed.map((f) => `«${f.title}»`).join(" و")}: ${m.failed[0].reason}. أعِد المحاولةَ من بطاقته أدناه.`
     : " — وأُخبر المدرّب";
-  return `اعتُمدت خطّةُ المدرّب${withMeetings}${failed}`;
+  const tasksLeft = t?.failed.length
+    ? ` وبقي من المهامّ ${t.failed.map((f) => `«${f.title}»`).join(" و")}: ${t.failed[0].reason}`
+    : "";
+  return `اعتُمدت خطّةُ المدرّب${withMeetings}${withTasks}${failed}${tasksLeft}`;
+}
+/** ما يقوله قرارُ المهمّة الواحدة — بما وقع فعلا */
+function taskDecisionMsg(r: { status?: string; kind?: string } | null): string {
+  if (r?.status === "declined") return "رُدّ إلى المدرّب بسببه — والمعتمَدُ باقٍ كما هو عند المتعلّمين";
+  if (r?.kind === "remove") return "اعتُمد الحذف — لم تعد تظهر للمتعلّمين، وأُخبر المدرّب";
+  if (r?.kind === "edit") return "اعتُمد التعديل — يقرؤه المتعلّمون الآن، وأُخبر المدرّب";
+  return "اعتُمدت المهمّة — صارت في المنهج وتُفتح للمتعلّمين في موعدها، وأُخبر المدرّب";
 }
 const PLAN_AR: Record<string, string> = {
   draft: "مسودّةٌ عند المدرّب", submitted: "بانتظار اعتمادك", changes_requested: "رُدّت إليه بتعديلات",
@@ -179,6 +197,9 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
      اعتمادها. وما بقي بطاقاتٍ فتغييرٌ بعد اعتمادٍ سابق يُقرَّر وحدَه. */
   const riding = pendingSessions.filter((p) => p.withPlan);
   const individual = pendingSessions.filter((p) => !p.withPlan);
+  /* ومهامُّ ما بعد الاعتماد المنتظِرة — بالقاعدة التي يحكم بها الخادم (٣ج-٣) */
+  const waitingTasks = trainerPlan ? awaitingTasks(trainerPlan.assessments, trainerPlan.approvedOnce ?? false) : [];
+  const axisNo = new Map((trainerPlan?.content?.modules ?? []).map((m, i) => [m.moduleId, i + 1] as const));
   const [asking, setAsking] = useState(false);
   const picked = trainers.find((t) => t.profileId === assignForm.profileId) ?? null;
 
@@ -439,6 +460,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                     content: trainerPlan.content,
                     sessions: trainerPlan.sessions,
                     assessments: trainerPlan.assessments,
+                    approvedOnce: trainerPlan.approvedOnce,
                   })}
                 />
               </div>
@@ -469,6 +491,14 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           <p className="mt-3 text-read leading-6 text-muted-foreground">
             باعتمادها {riding.length === 1 ? "يُعتمَد لقاؤها المنتظِرُ معها" : `تُعتمَد لقاءاتُها المنتظِرةُ (${riding.length}) معها`}:
             {" "}يُنشأ لكلٍّ اجتماعُ Zoom، ويُنشَر للمسجَّلين بتاريخه ويصلهم بالبريد — وأوّلُها يرفع ما بقي من الجدول المبدئيّ إن كان.
+          </p>
+        )}
+        {/* ومهامُّها المنتظِرةُ كذلك — الاعتمادُ واحد (٣ج-٣) */}
+        {trainerPlan?.status === "submitted" && canApprovePlan && waitingTasks.length > 0 && (
+          <p className="mt-2 text-read leading-6 text-muted-foreground">
+            {waitingTasks.length === 1
+              ? "وباعتمادها تُعتمَد معها المهمّةُ المنتظِرةُ أدناه — كما تقرؤها في المنهج أعلاه."
+              : `وباعتمادها تُعتمَد معها المهامُّ المنتظِرةُ (${waitingTasks.length}) أدناه — كما تقرؤها في المنهج أعلاه.`}
           </p>
         )}
         <div className="mt-3 flex flex-wrap gap-2">
@@ -505,6 +535,22 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: notes }).then(loadPlan),
               "رُدّت إليه — وكلُّ ملاحظةٍ في رأس خطوتها عنده",
             ).then((ok) => { if (ok) setAsking(false); })}
+          />
+        )}
+
+        {/* ═══ ومهامُّ ما بعد الاعتماد تنتظر قرارك (٣ج-٣) ═══
+            «وبعد الاعتماد كلُّ تغييرٍ باعتماد» — جديدةٌ أو تعديلٌ أو حذف، والمتعلّمون
+            على المعتمَد حتّى تقرّر. والردُّ بسببه يصل المدرّب. */}
+        {canApprovePlan && (
+          <PendingTasks
+            tasks={waitingTasks}
+            axisNo={axisNo}
+            busy={busy}
+            onDecide={(id, approve, note) => act(
+              () => apiPost(`/api/admin/cohort-assessments/${id}/decide`, { approve, note })
+                .then(async (r) => { await loadPlan(); return r; }),
+              (r) => taskDecisionMsg(r as { status?: string; kind?: string } | null),
+            )}
           />
         )}
 

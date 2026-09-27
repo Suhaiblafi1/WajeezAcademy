@@ -79,9 +79,14 @@ export type CohortVerdict =
 /** حالاتُ خطّةٍ اعتُمدت — و`superseded` معتمَدةٌ نزلت لما بعدها: الشعبةُ اعتُمدت */
 export const APPROVED_PLAN_STATUSES = ['approved', 'published', 'superseded'] as const
 
+/** اعتُمدت لمدرّب الشعبة خطّةٌ قطّ — فكلُّ تغييرٍ بعدها باعتماد (٣ج-٣) */
+export function planApprovedOnce(plans: readonly { status: string }[]): boolean {
+  return plans.some((p) => (APPROVED_PLAN_STATUSES as readonly string[]).includes(p.status))
+}
+
 /** شعبةٌ بدأ مدرّبُها خطّتَها ولم تُعتمَد له خطّةٌ قطّ — لا تقبل تسجيلا بعد */
 export function awaitingTrainerPlan(plans: readonly { status: string }[]): boolean {
-  return plans.length > 0 && !plans.some((p) => (APPROVED_PLAN_STATUSES as readonly string[]).includes(p.status))
+  return plans.length > 0 && !planApprovedOnce(plans)
 }
 
 /** الشعبةُ تقبل تسجيلا الآن؟ — العلمُ والنافذةُ معا، والسببُ يُقال.

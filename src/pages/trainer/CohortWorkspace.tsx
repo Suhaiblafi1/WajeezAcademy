@@ -86,6 +86,10 @@ import {
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
 import { curriculumView } from "@/application/trainer/curriculum-view";
+import Chip from "@/components/ui/Chip";
+import {
+  TASK_REVIEW_TRAINER_AR, changeLines, proposedTask, readTaskChange, taskReview, taskValues, type TaskValueFormat,
+} from "@/application/trainer/task-approval";
 
 /* ─────────── ما يصل من الخادم ─────────── */
 
@@ -141,7 +145,9 @@ interface Workspace {
   sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; approvalState?: string; moduleIds?: string[]; placeholder: boolean; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
   materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
   learners: { enrollmentId: string; name: string; status: string; progress: number; referredByMe: boolean }[];
-  assessments: { id: string; title: string; briefAr: string | null; attachments?: unknown; type: string; maxScore: number; dueAt: string | null; status: string; moduleId?: string | null; submissions: number }[];
+  assessments: { id: string; title: string; briefAr: string | null; attachments?: unknown; type: string; maxScore: number; dueAt: string | null; status: string; moduleId?: string | null; submissions: number; pendingChange?: unknown; reviewerNote?: string | null }[];
+  /* اعتُمدت له خطّةٌ قطّ — فما يضيفه ويعدّله ويحذفه من مهامّه ينتظر الإدارة (٣ج-٣) */
+  approvedOnce?: boolean;
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
 }
 
@@ -205,6 +211,23 @@ const stageOfKey = (key: string): Stage | null =>
   (STAGES.find((s) => STAGE_KEYS[s.key].includes(key))?.key ?? null);
 type Phase = "prepare" | "run";
 const ASSESSMENT_TYPES: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع تخرج" };
+
+/* ═══ ما يقوله حفظُ المهمّة — بما حكم به الخادمُ لا بما ظنّته الشاشة (٣ج-٣) ═══
+
+   بعد اعتماد الخطّة لا يصل المسجَّلين ما يُحفظ هنا حتّى تعتمده الإدارة. فرسالةٌ
+   ثابتةٌ «يراه المسجّلون كما هو الآن» تكذب على من طلب تعديلا ينتظر. */
+function savedTaskMsg(review: string | undefined, editing: boolean): string {
+  if (review === "edit") return "أُرسل تعديلُك إلى الإدارة — ويرى المسجّلون المعتمَدَ حتّى تعتمده";
+  if (review === "new") {
+    return editing
+      ? "حُفظت المهمّة — وما زالت تنتظر اعتمادَ الإدارة"
+      : "أُضيفت المهمّة — وتنتظر اعتمادَ الإدارة، فلا يراها المسجّلون قبله";
+  }
+  if (review === "draft") return "حُفظت المهمّة — وتُنشر مع اعتماد خطّتك";
+  return editing
+    ? "حُفظ التعديل — يراه المسجّلون كما هو الآن"
+    : "أُنشئت المهمّة — تظهر للمسجّلين ويعود إليك تسليمُهم في طابور المراجعة";
+}
 const MODULE_FORMS = { one: "محور", two: "محوران", few: "محاور", many: "محورا" } as const;
 
 /* ═══ الأصنافُ الثلاثةُ كما يقرؤها المدرّب ═══
@@ -485,10 +508,11 @@ export default function CohortWorkspace() {
     return () => document.removeEventListener("keydown", onKey);
   }, [draft, cancelDraft]);
 
-  const act = async (fn: () => Promise<unknown>, done: string) => {
+  /* والرسالةُ قد تُقرأ ممّا عاد — «أُرسل إلى الإدارة» غيرُ «حُفظ» (٣ج-٣) */
+  const act = async (fn: () => Promise<unknown>, done: string | ((r: unknown) => string)) => {
     if (busy) return;
     setBusy(true);
-    try { await fn(); toast(done); await load(); }
+    try { const r = await fn(); toast(typeof done === "function" ? done(r) : done); await load(); }
     catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ"); }
     finally { setBusy(false); }
   };
@@ -733,8 +757,10 @@ export default function CohortWorkspace() {
     setEditingId(a.id);
     /* «عدّل» يفتح الانسدالَ نفسَه — لا شاشةَ ثانيةً ولا حقولٌ تُكرَّر */
     setTaskFormOpen(true);
-    setTaskForm({ title: a.title, briefAr: a.briefAr ?? "", type: a.type, maxScore: a.maxScore, dueAt: a.dueAt ? zonedDay(a.dueAt) : "", moduleId: a.moduleId ?? "" });
-    setTaskAttachments(readTypedLinks(a.attachments));
+    /* وما طلب تعديلَه بعد الاعتماد يُفتح بطلبه لا بالمعتمَد — فتعديلُه يعدّل الطلب (٣ج-٣) */
+    const v = proposedTask(taskValues(a), readTaskChange(a.pendingChange));
+    setTaskForm({ title: v.title, briefAr: v.briefAr ?? "", type: v.type, maxScore: v.maxScore, dueAt: v.dueAt ? zonedDay(v.dueAt) : "", moduleId: v.moduleId ?? "" });
+    setTaskAttachments(readTypedLinks(v.attachments));
   };
   const saveAssessment = () => act(async () => {
     const payload = {
@@ -752,14 +778,24 @@ export default function CohortWorkspace() {
         .filter((r) => r.title.trim() && /^https?:\/\//.test((r.url ?? "").trim()))
         .map((r) => ({ title: r.title.trim(), url: (r.url ?? "").trim(), kind: resourceKind(r.kind) })),
     };
-    if (editingId) await apiPatch(`/api/trainer/assessments/${editingId}`, payload);
-    else await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined, moduleId: payload.moduleId ?? undefined });
+    const saved = editingId
+      ? await apiPatch(`/api/trainer/assessments/${editingId}`, payload)
+      : await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined, moduleId: payload.moduleId ?? undefined });
     cancelEdit();
-  }, editingId ? "حُفظ التعديل — يراه المسجّلون كما هو الآن" : "أُنشئت المهمّة — تظهر للمسجّلين ويعود إليك تسليمُهم في طابور المراجعة");
+    return saved;
+  }, (r) => savedTaskMsg((r as { review?: string } | null)?.review, Boolean(editingId)));
   const deleteAssessment = (a: Workspace["assessments"][number]) => act(async () => {
-    await apiDelete(`/api/trainer/assessments/${a.id}`);
+    const gone = await apiDelete(`/api/trainer/assessments/${a.id}`);
     if (editingId === a.id) cancelEdit();
-  }, "حُذفت المهمّة");
+    return gone;
+  }, (r) => ((r as { review?: string } | null)?.review === "remove"
+    ? "أُرسل طلبُ حذفها إلى الإدارة — وتبقى عند المسجّلين حتّى تعتمده"
+    : "حُذفت المهمّة"));
+  /* سحبُ طلبٍ لم تقرّره الإدارةُ بعد — والمعتمَدُ باقٍ كما هو (٣ج-٣) */
+  const withdrawChange = (a: Workspace["assessments"][number]) => act(
+    () => apiPost(`/api/trainer/assessments/${a.id}/withdraw-change`, {}),
+    "سُحب طلبُك — والمهمّةُ كما اعتُمدت",
+  );
 
   const setModule = (i: number, patch: Partial<PlanModule>) =>
     setContent({ ...content, modules: content.modules.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
@@ -773,6 +809,12 @@ export default function CohortWorkspace() {
   const slotsOn = slots.length > 0;
   const moduleIds = content.modules.map((m) => m.moduleId);
   const axisNo = new Map(moduleIds.map((mid, i) => [mid, i + 1]));
+  /* قيمُ المهمّة مقروءةً — لسطور «ما طلبتَه» تحت المهمّة */
+  const taskFmt: TaskValueFormat = {
+    type: (t) => ASSESSMENT_TYPES[t] ?? t,
+    date: (v) => fmtDateTimeAr(v),
+    axis: (id) => (axisNo.has(id) ? `المحور ${axisNo.get(id)}` : "محورٌ خارجَ الخطّة"),
+  };
   const ownPeriod = asPeriod(content);
   const planPeriod = ownPeriod && periodProblem(ownPeriod) === null ? ownPeriod : ws.cohort.period;
   const setSlots = (next: PlanSlot[]) => setContent({ ...content, slots: next });
@@ -1543,11 +1585,15 @@ export default function CohortWorkspace() {
             <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
           ) : (
             <ul className="mt-3 space-y-2">
-              {ws.assessments.map((a) => (
+              {ws.assessments.map((a) => {
+                /* ما ينتظر الإدارةَ فيها بعد اعتماد خطّته، وما طلبه — بالقاعدة التي يحكم بها الخادم (٣ج-٣) */
+                const review = taskReview(a, ws.approvedOnce ?? false);
+                const asked = changeLines(taskValues(a), readTaskChange(a.pendingChange), taskFmt);
+                return (
                 <Inset as="li" key={a.id} className={editingId === a.id ? "ring-1 ring-teal/50" : undefined}>
                   <div className="flex flex-wrap items-start gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="text-read font-bold text-foreground">{a.title}</p>
+                      <p className={`text-read font-bold text-foreground${review === "remove" ? " line-through" : ""}`}>{a.title}</p>
                       {/* التعليماتُ تُرى في القائمة: من يراجع تكاليفَه قبل الإرسال
                           يقرأ ما سيقرؤه المتعلّم، لا عنوانا وحدَه. */}
                       {a.briefAr
@@ -1562,25 +1608,61 @@ export default function CohortWorkspace() {
                       {slotsOn && (!a.moduleId || !axisNo.has(a.moduleId)) && (
                         <p className="mt-1 text-read font-bold text-gold-ink">غيرُ مربوطةٍ بمحور — عدّلها واختر محورَها، فمنه متى تُفتح للمتعلّم.</p>
                       )}
+                      {TASK_REVIEW_TRAINER_AR[review] && (
+                        <p className="mt-1.5">
+                          <Chip tone={review === "declined" ? "danger" : "warn"}>{TASK_REVIEW_TRAINER_AR[review]}</Chip>
+                        </p>
+                      )}
+                      {review === "declined" && a.reviewerNote && (
+                        <p className="mt-1 whitespace-pre-line text-read leading-6 text-foreground">{a.reviewerNote}</p>
+                      )}
+                      {asked.length > 0 && (
+                        <dl className="mt-1.5 space-y-0.5 text-read leading-6" aria-label="ما طلبتَ تعديلَه">
+                          {asked.map((l) => (
+                            <div key={l.field} className="flex flex-wrap gap-x-1.5">
+                              <dt className="font-bold text-foreground">{l.label}:</dt>
+                              <dd className="text-muted-foreground"><s>{l.before}</s> ← <span className="text-foreground">{l.after}</span></dd>
+                            </div>
+                          ))}
+                        </dl>
+                      )}
+                      {/* والسحبُ تحت ما يسحبه — لا زرّا ثالثا في صفّ الأفعال يعصر النصَّ على الهاتف */}
+                      {review === "edit" && (
+                        <Button tone="ghost" size="sm" className="mt-1" disabled={busy} onClick={() => withdrawChange(a)}>تراجَع عن التعديل</Button>
+                      )}
                     </div>
                     <div className="flex shrink-0 gap-1">
-                      <Button tone="ghost" size="sm" disabled={busy} onClick={() => editAssessment(a)}>عدّل</Button>
-                      {/* ما سُلّم فيه لا يُحذف — والسببُ يُقال قبل النقر لا بعده */}
-                      <Button
-                        tone="ghost" size="sm"
-                        disabled={busy || a.submissions > 0}
-                        title={a.submissions > 0 ? "سلّم فيه متعلّمون — أغلِقه بدل حذفه" : undefined}
-                        onClick={() => setPendingDelete(a)}
-                      >احذف</Button>
+                      {review === "remove" ? (
+                        <Button tone="ghost" size="sm" disabled={busy} onClick={() => withdrawChange(a)}>تراجَع عن الحذف</Button>
+                      ) : (
+                        <>
+                          <Button tone="ghost" size="sm" disabled={busy} onClick={() => editAssessment(a)}>عدّل</Button>
+                          {/* ما سُلّم فيه لا يُحذف — والسببُ يُقال قبل النقر لا بعده */}
+                          <Button
+                            tone="ghost" size="sm"
+                            disabled={busy || a.submissions > 0}
+                            title={a.submissions > 0 ? "سلّم فيه متعلّمون — أغلِقه بدل حذفه" : undefined}
+                            onClick={() => setPendingDelete(a)}
+                          >احذف</Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </Inset>
-              ))}
+                );
+              })}
             </ul>
           )}
 
           {/* ── نموذجٌ واحدٌ: يؤلّف تكليفا أو يعدّل واحدا قائما — وينسدل ── */}
           <div className="mt-5 border-t border-white/10 pt-4">
+            {/* وبعد الاعتماد يُقال قبل الإضافة لا بعدها: لا يصل المسجَّلين شيءٌ حتّى
+                تعتمده الإدارة (٣ج-٣) */}
+            {ws.approvedOnce && (
+              <p className="mb-3 text-read leading-6 text-muted-foreground">
+                خطّتُك معتمَدة — فما تضيفه هنا أو تعدّله أو تحذفه يصل الإدارةَ أوّلا، ويبقى المسجّلون على المعتمَد حتّى تعتمده.
+              </p>
+            )}
             {!taskFormOpen ? (
               <Button tone="secondary" disabled={locked} onClick={() => setTaskFormOpen(true)}>
                 + مهمّةٌ جديدة
@@ -1975,13 +2057,15 @@ export default function CohortWorkspace() {
       {pendingDelete && (
         <ConfirmAction
           titleAr="حذفُ المهمّة"
-          confirmLabelAr="احذفه"
+          confirmLabelAr={ws.approvedOnce && pendingDelete.status === "published" ? "اطلب حذفها" : "احذفه"}
           busy={busy}
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => { const a = pendingDelete; setPendingDelete(null); void deleteAssessment(a); }}
         >
           <p className="text-read leading-7">
-            يُحذف «{pendingDelete.title}» من الشعبة فلا يراه المسجّلون بعد الآن. ولا تسليمَ فيه، فلا عملَ لأحدٍ يضيع.
+            {ws.approvedOnce && pendingDelete.status === "published"
+              ? <>يُرسَل طلبُ حذف «{pendingDelete.title}» إلى الإدارة، ويبقى عند المسجّلين حتّى تعتمده. ولا تسليمَ فيه، فلا عملَ لأحدٍ يضيع.</>
+              : <>يُحذف «{pendingDelete.title}» من الشعبة فلا يراه المسجّلون بعد الآن. ولا تسليمَ فيه، فلا عملَ لأحدٍ يضيع.</>}
           </p>
         </ConfirmAction>
       )}
@@ -2060,6 +2144,7 @@ export default function CohortWorkspace() {
                   content,
                   sessions: ws.sessions,
                   assessments: ws.assessments,
+                  approvedOnce: ws.approvedOnce,
                 })}
                 onEdit={(s) => openStage(s)}
               />

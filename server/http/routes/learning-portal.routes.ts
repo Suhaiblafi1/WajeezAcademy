@@ -739,7 +739,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       items: z.array(z.object({ prompt: z.string().min(2), kind: z.enum(['text', 'choice', 'file']).optional(), maxScore: z.number().int().optional() })).optional(),
     }).parse(req.body)
     await enrollments.assertCohortTrainer(req.auth!.userId, id)
-    return reply.status(201).send(await assessments.createAssessment(req.auth!.userId, { ...body, cohortId: id }))
+    /* وبعد اعتماد خطّته تُنشأ مسودّةً تنتظر الإدارة (٣ج-٣) — والخدمةُ تحكم بذلك */
+    return reply.status(201).send(await assessments.createAssessment(req.auth!.userId, { ...body, cohortId: id }, { byTrainer: true }))
   })
 
   /* ── تعديلُ تكليفٍ وحذفُه ──
@@ -777,6 +778,18 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   }, async (req) => {
     const { assessmentId } = z.object({ assessmentId: z.string().uuid() }).parse(req.params)
     return assessments.deleteAssessment(req.auth!.userId, assessmentId)
+  })
+
+  /* ── وسحبُ طلبٍ لم تقرّره الإدارةُ بعد (٣ج-٣) ──
+
+     بعد اعتماد الخطّة يصير تعديلُ المنشورة وحذفُها طلبا ينتظر. ومن غيّر رأيه
+     قبل القرار يسحبه — ويبقى المعتمَدُ كما هو عند متعلّميه. */
+  app.post('/api/trainer/assessments/:assessmentId/withdraw-change', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'سحبُ طلب تعديلِ مهمّةٍ أو حذفِها قبل قرار الإدارة' },
+  }, async (req) => {
+    const { assessmentId } = z.object({ assessmentId: z.string().uuid() }).parse(req.params)
+    return assessments.withdrawChange(req.auth!.userId, assessmentId)
   })
 
   /* ── مخاطبة الشعبة، واقتراح تأجيل جلسة ──
