@@ -83,7 +83,7 @@ beforeAll(async () => {
   })
   trainerUserId = tUser.id
   const application = await prisma.trainerApplication.create({
-    data: { reference: `WJ-TR-WD-${Date.now()}`, fullName: 'مدرّبُ الشعبة', email: tUser.email, status: 'approved' },
+    data: { reference: `WJ-TR-WD-${Date.now()}`, fullName: 'مدرّبُ الشعبة', email: tUser.email, status: 'active' },
   })
   const profile = await prisma.trainerProfile.create({ data: { userId: tUser.id, applicationId: application.id } })
 
