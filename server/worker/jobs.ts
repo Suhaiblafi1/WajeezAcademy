@@ -33,6 +33,8 @@ import { TrainerChangeService } from '../services/trainer-change.service'
 import { TrainerOfferService } from '../services/trainer-offer.service'
 import { TrainerReviewService } from '../services/trainer-review.service'
 import { recordAudit } from '../services/audit'
+import { ProgressService } from '../services/progress.service'
+import { MIN_SESSION_MS } from '../../src/application/trainer/session-length'
 import { notPermanentAuditWhere } from '../../src/application/audit/retention'
 import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
 import { LIVE_INTERVIEW } from '../services/trainer-interview-state'
@@ -69,7 +71,9 @@ const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_0
      المزوّد طوالَها، ولا تُمسك الدورةَ عن بقيّة الوظائف. */
   outbox: 60,
   /* سقفُ ما يُقرأ من طابور الطلبات لملخّص الصباح — والطابورُ أصغرُ منه بكثير */
-  unbooked: 200 }
+  unbooked: 200,
+  /* لقاءاتٌ انتهت في دورةٍ واحدة — ودورتُها خمسُ دقائق، فالباقي في التالية */
+  endedSessions: 300 }
 
 /** تذكيرتان لكلّ جلسة: قبل يومٍ وقبل ساعة. المفتاحُ هو ما يمنع التكرار. */
 const REMINDERS = [
@@ -309,6 +313,68 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
   }
 }
 
+/* ═══════════ انتهاءُ اللقاء — حالةٌ تُكتب لا تُستنتَج (٢٧ سبتمبر ٢٠٢٦) ═══════════
+
+   `CohortSession.status` بقي `scheduled` إلى الأبد: لا سطرَ في الشيفرة يكتب
+   `done` — وحدثُ Zoom «انتهى الاجتماع» يكتب الساعةَ ولا يكتب الحالة. فكان:
+   · حضورُ كلّ متعلّمٍ صفرا (يُحسب على ما انعقد وحدَه)،
+   · وتقريرُ «لقاءاتٌ انعقدت» للمدرّب صفرا،
+   · وإيقاعُ المتعلّم في لوحته «٠ من ٨»،
+   · وتذكيرُ «ارفع تسجيلَ لقائك» لا يصل، و«· انتهت» لا تُرى.
+
+   فصار اللقاءُ المعتمَدُ الذي مضت نهايتُه `done` — بهذه الدورة، أو بحدث Zoom
+   قبلها. والمبدئيُّ لا يُكتب منعقدا: مثالٌ لم يحضره أحد، ولو عُدّ لنقص به
+   حضورُ كلّ متعلّم. ولا المنتظرُ ولا الملغى. ثمّ يُعاد حسابُ تقدّم من في
+   الشعبة: الحضورُ صار يُحسب.
+
+   واللقاءُ بلا نهايةٍ مكتوبةٍ ساعتان — أقلُّ لقاءٍ يُقبل (`session-length.ts`). */
+export async function closeEndedSessions(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const ended = await prisma.cohortSession.findMany({
+    where: {
+      status: { in: ['scheduled', 'live'] },
+      approvalState: 'approved',
+      placeholder: false,
+      cohort: { status: { not: 'cancelled' } },
+      OR: [
+        { endsAt: { lte: now } },
+        { endsAt: null, startsAt: { lte: new Date(now.getTime() - MIN_SESSION_MS) } },
+      ],
+    },
+    take: LIMITS.endedSessions,
+    select: { id: true, cohortId: true },
+  })
+  if (ended.length === 0) {
+    return { job: 'close_ended_sessions', summaryAr: 'لا لقاءَ انتهى', done: 0, failed: 0, ms: Date.now() - started }
+  }
+  /* والشرطُ يُعاد في الكتابة: حدثُ Zoom قد يسبق الدورةَ إلى اللقاء نفسِه */
+  const { count } = await prisma.cohortSession.updateMany({
+    where: { id: { in: ended.map((s) => s.id) }, status: { in: ['scheduled', 'live'] } },
+    data: { status: 'done' },
+  })
+  const cohortIds = [...new Set(ended.map((s) => s.cohortId))]
+  const { recomputed, failed } = await recomputeCohorts(prisma, cohortIds)
+  return {
+    job: 'close_ended_sessions',
+    summaryAr: `انتهى ${count} لقاءً في ${cohortIds.length} شعبة · وأُعيد حسابُ تقدّم ${recomputed}`
+      + (failed > 0 ? ` · وتعثّر ${failed}` : ''),
+    done: count, failed, ms: Date.now() - started,
+  }
+}
+
+/** يعيد حسابَ تقدّم من له مقعدٌ في هذه الشعب — والقاعدةُ في `ProgressService.recomputeCohort` */
+async function recomputeCohorts(prisma: PrismaClient, cohortIds: readonly string[]) {
+  const progress = new ProgressService(prisma)
+  let recomputed = 0
+  let failed = 0
+  for (const cohortId of cohortIds) {
+    const r = await progress.recomputeCohort(cohortId)
+    recomputed += r.recomputed
+    failed += r.failed
+  }
+  return { recomputed, failed }
+}
+
 /* ═══════════ ٢ · تذكيرُ الجلسات ═══════════
 
    «سنُعلمك قبل الجلسة» وعدٌ في الواجهة لا يقع. والغيابُ عن جلسةٍ مدفوعةٍ
@@ -329,6 +395,12 @@ export async function sendSessionReminders(prisma: PrismaClient, now = new Date(
       where: {
         startsAt: { gte: now, lte: new Date(now.getTime() + window.withinMs) },
         cohort: { status: { in: ['open', 'full', 'active'] } },
+        /* ═══ والتذكيرُ بما يراه المتعلّمُ وحدَه (٢٧ سبتمبر ٢٠٢٦) ═══
+           كان يُذكَّر بكلّ لقاءٍ في النافذة — ومنه ما ينتظر اعتمادَ الإدارة
+           فلا يراه المتعلّمُ في صفحته، وما رُدّ فأُلغي. فيصله «جلستُك غدا»
+           عن لقاءٍ لا وجودَ له عنده. والشرطُ شرطُ `LEARNER_SESSION_WHERE`. */
+        approvalState: 'approved',
+        status: { not: 'cancelled' },
       },
       take: LIMITS.reminders,
       select: {
@@ -1054,6 +1126,8 @@ export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسالُ ما في طابور البريد' },
   { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكيرُ الجلسات' },
+  /* كلَّ خمس دقائق: ما يُفتح «بعد انتهاء اللقاء» ينتظر هذه الحالة */
+  { key: 'close_ended_sessions', everyMs: 5 * 60_000, run: closeEndedSessions, titleAr: 'انتهاءُ اللقاءات' },
   /* ي-٥: ودورتُه ساعةٌ لا خمسُ دقائق — عتبتُه يومٌ وأربعةٌ، فدقّةُ الدقائق
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
   { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكيرُ توثيق البريد' },

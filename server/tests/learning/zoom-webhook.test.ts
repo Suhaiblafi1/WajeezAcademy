@@ -163,6 +163,17 @@ describe('والحدثُ الموقَّعُ يُكتب في موضعه', () => {
     expect(zoom?.durationMin).toBe(86)
   })
 
+  /* ═══ وكان يكتب الساعةَ وحدَها (٢٧ سبتمبر ٢٠٢٦) ═══
+     فبقي اللقاءُ `scheduled` أبدا، وحضورُ كلّ متعلّمٍ صفرا — يُحسب على ما
+     انعقد وحدَه، ولا شيءَ في الشيفرة كان يكتب أنّه انعقد. */
+  it('⚠️ و«انتهى» يكتب أنّ اللقاءَ انعقد — لا الساعةَ وحدَها', async () => {
+    const session = await untilWritten(
+      () => prisma.cohortSession.findUnique({ where: { id: sessionId } }),
+      (x) => x?.status === 'done',
+    )
+    expect(session?.status, 'انتهى الاجتماعُ وبقي اللقاءُ «مجدولا»').toBe('done')
+  })
+
   /* ── ويُقاس هذا على الخدمة لا على المسار ──
 
      المسارُ يردّ ٢٠٠ **قبل** أن يعمل (Zoom يُعطّل نقطةً تتأخّر)، ويبتلع ما
@@ -176,6 +187,49 @@ describe('والحدثُ الموقَّعُ يُكتب في موضعه', () => {
       svc.handle('meeting.ended', { id: '404040404', end_time: '2026-12-01T10:30:00Z' }),
       'بلاغٌ عن اجتماعٍ غريبٍ ليس خطأً في منصّتنا — والرميُ يملأ السجلَّ ضجيجا',
     ).resolves.toBe(false)
+  })
+
+  /* ═══ والحضورُ المشتقُّ من تقرير Zoom يُحسب في التقدّم (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان تسجيلُ المدرّب بيده وحدَه يعيد حسابَ التقدّم، والمزامنةُ من Zoom
+     تكتب الحضورَ ولا تعيده — فيبقى الرقمُ الذي يراه المتعلّمُ قبلها. ويُقاس
+     على الخدمة لا على المسار: المسارُ يردّ قبل أن يعمل. */
+  it('⚠️ حضورٌ من تقرير Zoom يصل تقدّمَ المتعلّم بلا يدِ المدرّب', async () => {
+    const { ZoomEventService } = await import('../../services/zoom-events.service')
+    const { forgetZoomToken } = await import('../../services/zoom.service')
+    const course = await prisma.cohort.findFirstOrThrow({ where: { title: 'شعبةُ الأحداث' }, select: { id: true } })
+    const s2 = await prisma.cohortSession.create({
+      data: { cohortId: course.id, title: 'لقاءٌ بتقرير', startsAt: new Date('2026-12-02T09:00:00Z'), endsAt: new Date('2026-12-02T11:00:00Z') },
+    })
+    await prisma.zoomMeeting.create({ data: { sessionId: s2.id, provider: 'zoom_api', joinUrl: 'https://zoom.us/j/55', meetingId: '5566' } })
+    const u = await prisma.user.create({ data: { email: 'zoom-report-learner@test.local', displayName: 'متعلّمٌ حضر', passwordHash: 'x' } })
+    const e = await prisma.enrollment.create({ data: { cohortId: course.id, userId: u.id, status: 'enrolled' } })
+    await prisma.sessionJoinLink.create({ data: { sessionId: s2.id, enrollmentId: e.id, registrantId: 'r-1', joinUrl: 'https://zoom.us/w/55?tk=1' } })
+
+    const real = globalThis.fetch
+    globalThis.fetch = (async (url: string) => {
+      if (String(url).includes('/oauth/token')) {
+        return { ok: true, status: 200, json: async () => ({ access_token: 't', expires_in: 3600 }) }
+      }
+      return {
+        ok: true, status: 200,
+        json: async () => ({
+          participants: [{ name: 'متعلّمٌ حضر', user_email: 'zoom-report-learner@test.local', join_time: '2026-12-02T09:02:00Z', leave_time: '2026-12-02T10:58:00Z', duration: 6960 }],
+          next_page_token: '',
+        }),
+      }
+    }) as unknown as typeof fetch
+    forgetZoomToken()
+    try {
+      await new ZoomEventService(prisma).handle('meeting.ended', { id: '5566', uuid: 'uuid-5566', end_time: '2026-12-02T11:00:00Z', duration: 120 })
+    } finally {
+      globalThis.fetch = real
+      forgetZoomToken()
+    }
+    const att = await prisma.attendance.findUnique({ where: { sessionId_enrollmentId: { sessionId: s2.id, enrollmentId: e.id } } })
+    expect(att?.status, 'لم يُكتب الحضورُ من التقرير').toBe('present')
+    const progress = await prisma.courseProgress.findUnique({ where: { enrollmentId: e.id } })
+    expect((progress?.evidence as { attendancePct?: number } | null)?.attendancePct, 'الحضورُ المشتقُّ لم يصل تقدّمَه').toBe(100)
   })
 
   it('والمسارُ يردّ ٢٠٠ عليه كذلك — فلا يُعطّل Zoom النقطةَ', async () => {

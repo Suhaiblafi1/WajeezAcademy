@@ -360,6 +360,7 @@ const PHRASES: Record<string, string> = {
      من `JOBS` لا من تعليق.) */
   'worker.calendly_interview_sync': 'مزامنةُ مقابلاتِ Calendly',
   'worker.cleanup_expired': 'تنظيفُ ما انتهت صلاحيّتُه',
+  'worker.close_ended_sessions': 'إغلاقُ اللقاءاتِ التي انتهت وإعادةُ حساب التقدّم',
   'worker.cohort_status_sync': 'مزامنةُ حالاتِ الشعب',
   'worker.dispatch_notifications': 'إرسالُ الإشعاراتِ المنتظِرة',
   'worker.enforce_retention': 'تطبيقُ مددِ الحفظ',
