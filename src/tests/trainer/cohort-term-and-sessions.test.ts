@@ -91,37 +91,84 @@ describe('① الهُويّة: اسمٌ ومدّة — ولا صفَّ للفص
   })
 })
 
-describe('② اللقاءات: لقاءٌ لكلّ محورٍ على الأقلّ', () => {
-  it('⚠️ لقاءٌ واحدٌ لثلاثة محاورَ لا يكفي — وكان يكفي', () => {
-    const three = { content: { kind: 'trainer', modules: mods(3), resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never }
-    expect(item('sessions', { ...three, sessions: sessions(1) }).done, 'محورانِ بلا لقاء').toBe(false)
-    expect(item('sessions', { ...three, sessions: sessions(2) }).done, 'محورٌ بلا لقاء').toBe(false)
-    expect(item('sessions', { ...three, sessions: sessions(3) }).done, 'رُفض ما بلغ العددَ تماما').toBe(true)
+/* ═══ ② ثمّ صار «لقاءٌ لكلّ محورٍ في موعده» (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   كان الحكمُ على العدد وحدَه: لقاءاتٌ بعدد المحاور فأكثر. وصار كلُّ لقاءٍ
+   مربوطا بمحوره أو محوريه، والحكمُ على الربط: لكلّ محورٍ لقاءٌ مباشرٌ داخلَ
+   موعده — «ولكلّ لقاءٍ محورٌ أو محوران».
+
+   والعددُ باقٍ حكما لما اعتُمد قبل المواعيد: شعبةٌ جاريةٌ لا يُكتب عليها
+   «لم يتمّ» لأنّ قاعدةً وُلدت بعدها. فحرّاسُه باقون تحت حالته. */
+const res = [{ title: 'ك', url: 'https://x.test/a' }]
+/** ثلاثةُ محاورَ في ثلاثة مواعيدَ متتابعة داخلَ المدّة — أو بما يُمرَّر */
+const slotted = (n: number, groups?: string[][]) => ({
+  kind: 'trainer', modules: mods(n), resources: res,
+  slots: (groups ?? Array.from({ length: n }, (_, i) => [`M${i}`])).map((ids, i) => ({
+    startsOn: `2027-02-${String(7 + i * 7).padStart(2, '0')}`,
+    endsOn: `2027-02-${String(13 + i * 7).padStart(2, '0')}`,
+    moduleIds: ids, workbook: { url: 'https://x.test/wb' },
+  })),
+})
+/** لقاءٌ في اليوم الثاني من الموعد رقم `slot` (من صفر)، مربوطٌ بما يُمرَّر */
+const meet = (slot: number, moduleIds: string[]) =>
+  ({ startsAt: new Date(Date.UTC(2027, 1, 8 + slot * 7, 15)), endsAt: new Date(Date.UTC(2027, 1, 8 + slot * 7, 17)), recordings: [] as unknown[], moduleIds })
+
+describe('② اللقاءات: لقاءٌ لكلّ محورٍ في موعده', () => {
+  it('⚠️ لكلّ محورٍ لقاؤه — ولقاءٌ واحدٌ لثلاثة محاورَ لا يكفي', () => {
+    const content = slotted(3) as never
+    expect(item('sessions', { content, sessions: [meet(0, ['M0'])] }).done, 'محورانِ بلا لقاء').toBe(false)
+    expect(item('sessions', { content, sessions: [meet(0, ['M0']), meet(1, ['M1'])] }).done, 'محورٌ بلا لقاء').toBe(false)
+    expect(item('sessions', { content, sessions: [meet(0, ['M0']), meet(1, ['M1']), meet(2, ['M2'])] }).done, 'رُفض ما غطّى كلَّ محور').toBe(true)
+  })
+
+  it('⚠️ والعددُ وحدَه لا يكفي بعد اليوم — لقاءاتٌ بعدد المحاور بلا ربطٍ لا تُتمّها', () => {
+    const content = slotted(3) as never
+    expect(item('sessions', { content, sessions: sessions(3) }).done, 'تمّت بلقاءاتٍ لا يُعرف محورُها').toBe(false)
+  })
+
+  it('واللقاءُ لمحورين من موعدٍ مجموعٍ يغطّيهما معا', () => {
+    const content = slotted(4, [['M0', 'M1'], ['M2'], ['M3']]) as never
+    expect(item('sessions', { content, sessions: [meet(0, ['M0', 'M1']), meet(1, ['M2']), meet(2, ['M3'])] }).done).toBe(true)
+  })
+
+  it('⚠️ واللقاءُ خارجَ موعد محوره لا يُتمّها — وإن كان داخلَ المدّة', () => {
+    const content = slotted(3) as never
+    expect(item('sessions', { content, sessions: [meet(1, ['M0']), meet(1, ['M1']), meet(2, ['M2'])] }).done, 'مرّ لقاءُ المحور الأوّل في موعد الثاني').toBe(false)
   })
 
   it('والزيادةُ حقُّه — لا سقفَ من هذه القاعدة', () => {
-    const two = { content: { kind: 'trainer', modules: mods(2), resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never }
-    expect(item('sessions', { ...two, sessions: sessions(9) }).done, 'عوقب على الزيادة').toBe(true)
+    const content = slotted(2) as never
+    const many = [meet(0, ['M0']), meet(0, ['M0']), meet(1, ['M1']), meet(1, ['M1']), meet(1, ['M1'])]
+    expect(item('sessions', { content, sessions: many }).done, 'عوقب على الزيادة').toBe(true)
   })
 
   it('وبلا لقاءٍ أصلا لا تتمّ، ولو خلت الخطّةُ من المحاور', () => {
-    const none = { content: { kind: 'trainer', modules: [], resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never }
+    const none = { content: { kind: 'trainer', modules: [], resources: res } as never }
     expect(item('sessions', { ...none, sessions: [] }).done, 'مرّت شعبةٌ بلا لقاءٍ واحد').toBe(false)
   })
 
   /* «ويجب أن تكون ضمن فترة الشعبة نفسها» (٢٧ سبتمبر ٢٠٢٦). ومن غيّر المدّةَ
      بعد أن جدول صار في يده لقاءٌ خارجَها — فتعود الخطوةُ «لم تتمّ» وتسمّي كم. */
   it('⚠️ ولقاءٌ خارجَ مدّة الشعبة لا يُعَدّ تمامًا — ويُسمّى في السطر', () => {
-    const late = { startsAt: new Date('2027-03-20T15:00:00.000Z'), recordings: [] as unknown[] }
-    const row = item('sessions', { sessions: [late] })
+    const content = slotted(1) as never
+    const late = { startsAt: new Date('2027-03-20T15:00:00.000Z'), recordings: [] as unknown[], moduleIds: ['M0'] }
+    const row = item('sessions', { content, sessions: [meet(0, ['M0']), late] })
     expect(row.done, 'تمّت اللقاءاتُ ولقاءٌ خارجَ المدّة').toBe(false)
     expect(row.labelAr, 'السطرُ لا يقول إنّ لقاءً خرج').toContain('خارجَ مدّة الشعبة')
-    expect(item('sessions', { sessions: sessions(1) }).done, 'رُدّ لقاءٌ داخلَ المدّة').toBe(true)
+    expect(item('sessions', { content, sessions: [meet(0, ['M0'])] }).done, 'رُدّ لقاءٌ داخلَ المدّة').toBe(true)
   })
 
-  it('والعددُ المطلوبُ مكتوبٌ في السطر — لا يُترك يحزره', () => {
-    const three = { content: { kind: 'trainer', modules: mods(3), resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never }
+  it('والمغطّى من المحاور مكتوبٌ في السطر — لا يُترك يحزره', () => {
+    expect(item('sessions', { content: slotted(3) as never, sessions: [meet(0, ['M0'])] }).labelAr).toContain('1/3')
+  })
+
+  it('⚠️ وما اعتُمد قبل المواعيد يُحكم بالعدد كما اعتُمد — لا يُكتب عليه «لم يتمّ»', () => {
+    const three = { content: { kind: 'trainer', modules: mods(3), resources: res } as never, planStatus: 'approved' as const }
+    expect(item('sessions', { ...three, sessions: sessions(2) }).done, 'محورٌ بلا لقاءٍ في المعتمَد القديم').toBe(false)
+    expect(item('sessions', { ...three, sessions: sessions(3) }).done, 'رُدّ المعتمَدُ القديمُ بعد اكتماله').toBe(true)
     expect(item('sessions', { ...three, sessions: sessions(1) }).labelAr).toContain('1/3')
+    /* والمسودّةُ بلا مواعيدَ لا تُعفى: صارت على القاعدة الجديدة */
+    expect(item('sessions', { content: three.content, sessions: sessions(3) }).done, 'أُعفيت مسودّةٌ بلا مواعيد').toBe(false)
   })
 })
 

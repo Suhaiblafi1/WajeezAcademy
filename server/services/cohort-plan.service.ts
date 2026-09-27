@@ -41,6 +41,10 @@ import { readableModuleVersion } from '../catalog/module-version-visibility'
 import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
+import {
+  sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
+} from '../../src/application/trainer/axis-timeline'
+import { resourceCategory } from '../../src/application/trainer/plan-overlay'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -68,6 +72,10 @@ export interface TrainerPlanResource {
   opensAt?: string | null
   /** د-٣: مصدرٌ مرفوعٌ بدل رابطٍ مُلصَق */
   bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null
+  /** محورُه — ومنه متى يُفتح (٢٧ سبتمبر ٢٠٢٦). وبلا محورٍ فهو للشعبة كلِّها */
+  moduleId?: string | null
+  /** للقراءة المسبقة: يُفتح مع كرّاسة موعده لا بعد لقائه */
+  preReading?: boolean | null
 }
 export interface TrainerPlanContent {
   kind: 'trainer'
@@ -82,6 +90,12 @@ export interface TrainerPlanContent {
       لحظةَ الحفظ. والقاعدةُ في `src/application/trainer/cohort-period.ts`. */
   startsOn?: string | null
   endsOn?: string | null
+  /** ═══ مواعيدُ المحاور وكرّاساتُها (٢٧ سبتمبر ٢٠٢٦) ═══
+
+      لكلّ موعدٍ من يومٍ إلى يوم، ومحورٌ أو محاورُ متجاورةٌ فيه، وكرّاستُه.
+      ومنه يُحكم متى يُفتح كلُّ شيءٍ للمتعلّم. والقاعدةُ كاملةً في
+      `src/application/trainer/axis-timeline.ts`. */
+  slots?: PlanSlot[] | null
   /* ── وحُذف `proposals` من هنا (د-٦ · ١٤ سبتمبر ٢٠٢٦) ──
 
      كان حقلَين — اسمٌ مقترحٌ للدورة وآخرُ للمسار — يركبان مع الخطّة،
@@ -168,9 +182,17 @@ export function buildChecklist(input: {
   period: CohortPeriod | null
   content: TrainerPlanContent | null
   /** لقاءاتُ المدرّب وحدَها — بلا المبدئيّ ولا الملغى (`countableSessions`) */
-  sessions: { startsAt?: Date | string; endsAt?: Date | string | null; recordings: unknown[] }[]
+  sessions: {
+    title?: string | null; startsAt?: Date | string; endsAt?: Date | string | null; recordings: unknown[]
+    /** محورا اللقاء (٢٧ سبتمبر ٢٠٢٦) — ومنهما «لكلّ محورٍ لقاءٌ في موعده» */
+    moduleIds?: readonly string[] | null
+  }[]
   assessmentsCount: number
+  /** محورُ كلّ مهمّة — ومنه «كلُّ مهمّةٍ مربوطةٌ بمحور». وغيابُه لا يحكم بشيء */
+  assessmentModuleIds?: readonly (string | null)[]
   planStatus: PlanStatus
+  /** اللحظةُ التي يُحكم بها — وما انعقد قبلها لا يُحاسَب (`sessionProblems`) */
+  now?: Date
 }): ChecklistItem[] {
   const c = input.cohort
   /* ═══ الهُويّةُ صارت: اسمٌ وفصل ═══
@@ -219,8 +241,28 @@ export function buildChecklist(input: {
      (`moduleBodyDone`) يقرؤه الخادمُ وشاشةُ المدرّب معا — ورقمان يقولان
      الشيءَ نفسَه يفترقان، فيُقال له «تمّ» ويُردّ إرسالُه. */
   const mods = input.content?.modules ?? []
-  const modulesDone = mods.length > 0 && mods.every(moduleBodyDone)
-  const resourcesDone = (input.content?.resources?.length ?? 0) > 0
+  const moduleIds = mods.map((m) => m.moduleId)
+  /* ═══ والمحاورُ على مواعيدها (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     «وبعدها المحاورُ ومواعيدُها التي يجب أن تكون ضمن كلّ فترة الشعبة».
+     فخطوةُ المحاور تتمّ بمتونها **ومواعيدها** معا: أربعةُ مواعيدَ على الأقلّ،
+     والجمعُ لمتجاورَين، والتواريخُ داخلَ المدّة (`axis-timeline.ts`).
+
+     ── والخطّةُ التي سبقت المواعيدَ تمضي كما بدأت ──
+
+     ما أُرسل أو اعتُمد قبل أن تولد المواعيد قُرئ واعتُمد بلا مواعيد — ولا
+     يُكتب «لم يتمّ» على شعبةٍ جاريةٍ لأنّ حقلا جديدا وُلد بعدها («الشعبُ
+     الجاريةُ تنتهي بطريقتها»). ومتى عُدّلت صارت مسودّةً فلزمتها المواعيد. */
+  const slots = input.content?.slots ?? []
+  const legacy = slots.length === 0 && ['submitted', 'approved', 'published'].includes(input.planStatus)
+  const slotIssues = legacy ? [] : slotProblems(slots, moduleIds, input.period)
+  const modulesDone = mods.length > 0 && mods.every(moduleBodyDone) && slotIssues.length === 0
+  /* ⑦ لكلّ موعدٍ كرّاستُه — ملفٌّ أو رابط */
+  const workbooksDone = legacy || (slots.length > 0 && workbookProblems(slots, moduleIds).length === 0)
+  const resources = input.content?.resources ?? []
+  /* والمصدرُ المربوطُ بمحورٍ حُذف من الخطّة لا يُفتح أبدا — يُسمّى ليُصلَح */
+  const orphanResources = legacy ? 0 : resources.filter((r) => r.moduleId && !moduleIds.includes(r.moduleId)).length
+  const resourcesDone = resources.length > 0 && orphanResources === 0
   /* ═══ لقاءٌ لكلّ محورٍ على الأقلّ ═══
 
      «عددُ الجلسات يجب أن يكون بحدٍّ أدنى لا يقلّ عن عدد المحاور، ويحقّ له
@@ -235,23 +277,67 @@ export function buildChecklist(input: {
      «ويجب أن تكون ضمن فترة الشعبة نفسها التي وضعها بنفسه». ومن غيّر
      المدّةَ بعد أن جدول صار في يده لقاءٌ خارجَها — فلا يُمنع الحفظ (المدّةُ
      قرارُه)، وإنّما تعود خطوةُ اللقاءات «لم تتمّ» وتسمّي كم خرج منها. */
+  /* وما انعقد قبل اليوم لا يُحاسَب بالمدّة — واقعةٌ لا مسودّة (`sessionProblems`) */
+  const now = input.now ?? new Date()
+  const upcoming = (x: { startsAt?: Date | string; endsAt?: Date | string | null }) =>
+    Boolean(x.startsAt) && sessionEnd({ startsAt: x.startsAt!, endsAt: x.endsAt ?? null }).getTime() >= now.getTime()
   const outside = input.period
-    ? input.sessions.filter((x) => x.startsAt && !withinPeriod({ startsAt: x.startsAt, endsAt: x.endsAt ?? null }, input.period!)).length
+    ? input.sessions.filter((x) => upcoming(x) && !withinPeriod({ startsAt: x.startsAt!, endsAt: x.endsAt ?? null }, input.period!)).length
     : 0
-  const sessionsDone = input.sessions.length >= Math.max(1, sessionsNeeded) && outside === 0
-  const recordingsDone = input.sessions.some((s) => s.recordings.length > 0)
+  /* ═══ ثمّ صار «لقاءٌ لكلّ محورٍ في موعده» (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     العددُ وحدَه كان يمرّ بثمانية لقاءاتٍ في أسبوعٍ واحدٍ لمحورٍ واحد. وصار
+     كلُّ لقاءٍ مربوطا بمحوره أو محوريه، والحكمُ على الربط: لكلّ محورٍ لقاءٌ
+     مباشر، واللقاءُ داخلَ موعد محوره (②③). والمسجَّلُ من مصادر الخطّة
+     يُحكم معها: بمحوره ولحظةِ فتحه داخلَ موعده. */
+  const recorded = resources.filter((r) => resourceCategory(r) === 'recorded')
+  const linked = legacy ? null : sessionProblems({
+    slots, moduleIds,
+    sessions: input.sessions.filter((x) => x.startsAt).map((x) => ({
+      title: x.title ?? null, startsAt: x.startsAt!, endsAt: x.endsAt ?? null, moduleIds: x.moduleIds ?? [],
+    })),
+    recordings: recorded.map((r) => ({ title: r.title, moduleId: r.moduleId ?? null, opensAt: r.opensAt ?? null })),
+    now,
+  })
+  const coveredCount = moduleIds.filter((id) => input.sessions.some((x) => (x.moduleIds ?? []).includes(id))).length
+  const sessionsDone = linked
+    ? input.sessions.length > 0 && outside === 0 && linked.blocking.length === 0
+    : input.sessions.length >= Math.max(1, sessionsNeeded) && outside === 0
+  /* ومهمّةٌ بلا محورٍ لا يُعرف متى تُفتح ولا متى تُسلَّم — فتُربط كلُّها */
+  const unlinkedTasks = legacy || !input.assessmentModuleIds
+    ? 0
+    : input.assessmentModuleIds.filter((id) => !id || !moduleIds.includes(id)).length
   const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
+  /* وما ينقص الصفَّين يُقال في سطرهما — بعددِه لا بإشارة */
+  const tasksNote = unlinkedTasks > 0
+    ? ` · ${unlinkedTasks === 1 ? 'مهمّةٌ غيرُ مربوطةٍ' : `${unlinkedTasks} مهامَّ غيرُ مربوطةٍ`} بمحور` : ''
+  const resourcesNote = orphanResources > 0
+    ? ` · ${orphanResources === 1 ? 'مصدرٌ مربوطٌ' : `${orphanResources} مصادرُ مربوطةٌ`} بمحورٍ حُذف` : ''
   return [
     { key: 'identity', labelAr: 'سمِّ الشعبةَ وحدّد مدّتها — من متى إلى متى', done: identityDone, optional: false },
-    { key: 'modules', labelAr: 'اكتب المحتوى النظريَّ لكلّ محور', done: modulesDone, optional: false },
-    { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم', done: resourcesDone, optional: false },
+    {
+      key: 'modules',
+      labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',
+      done: modulesDone, optional: false,
+    },
+    { key: 'workbooks', labelAr: 'ضع لكلّ موعدٍ كرّاستَه — ملفّا أو رابطا', done: workbooksDone, optional: false },
     {
       key: 'sessions',
-      labelAr: `حدّد مواعيدَ اللقاءات المباشرة — لقاءٌ لكلّ محورٍ على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`
-        + (outside > 0 ? ` · ${outside === 1 ? 'لقاءٌ خارجَ' : `${outside} لقاءاتٍ خارجَ`} مدّة الشعبة` : ''),
+      labelAr: (linked
+        ? `حدّد لقاءاتك المباشرة — لقاءٌ لكلّ محورٍ في موعده (${coveredCount}/${moduleIds.length})`
+        : `حدّد مواعيدَ اللقاءات المباشرة — لقاءٌ لكلّ محورٍ على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`)
+        + (outside > 0 ? ` · ${outside === 1 ? 'لقاءٌ خارجَ' : `${outside} لقاءاتٍ خارجَ`} مدّة الشعبة` : '')
+        /* ومحاورُ مغطّاةٌ كلُّها والخطوةُ لم تتمّ: يُسمّى أوّلُ ما يمنعها — وإلّا
+           قيل للمدرّب «٤ من ٤» ورُدّ إرسالُه بلا سببٍ يراه */
+        + (linked && coveredCount === moduleIds.length && linked.blocking.length > 0 ? ` · ${linked.blocking[0]}` : ''),
       done: sessionsDone, optional: false,
     },
-    { key: 'recordings', labelAr: 'ارفع الجلساتِ المسجّلة — إن وُجدت', done: recordingsDone, optional: true },
+    /* ═══ وسقط صفُّ «ارفع الجلساتِ المسجّلة — إن وُجدت» (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       كان اختياريّا يُقرأ من تسجيلاتٍ تُرفع على لقاءٍ بعد انعقاده. وصار
+       المسجَّلُ جلسةً في خطوة اللقاءات بمحوره ولحظةِ فتحه — «لا بأس أن جمعت
+       بين اللقاءات المسجّلة واللقاءات المباشرة في واحدة لأنّهم نفسُ الأثر» —
+       ويُحكم مع اللقاءات في صفّها. وتسجيلُ Zoom يلحق لقاءه وحدَه بعد انتهائه. */
     /* ═══ تكليفٌ واحدٌ على الأقلّ — وصار شرطا (ق٨ · ١٧ سبتمبر ٢٠٢٦) ═══
 
        دخلت التكاليفُ التجهيزَ أوّلا لأنّ صاحبَ المنصّة سأل: «أين تفاصيل
@@ -265,7 +351,10 @@ export function buildChecklist(input: {
        ومقابلَه في القرار نفسِه: **المحورُ تامٌّ بمتنٍ من الأكاديميّة أو
        منه** — وهو قائمٌ في `moduleBodyDone`، إذ يُحمَل متنُ الكتالوج في
        `baseModules` فيُقرأ تماما بلا أن يُعيد المدرّبُ كتابتَه. */
-    { key: 'assignments', labelAr: 'ألّف مهمّةً واحدةً على الأقلّ — واجبٌ أو مشروعٌ يُسلَّم ويُقيَّم', done: input.assessmentsCount > 0, optional: false },
+    { key: 'assignments', labelAr: 'ألّف مهمّةً واحدةً على الأقلّ — واجبٌ أو مشروعٌ يُسلَّم ويُقيَّم' + tasksNote, done: input.assessmentsCount > 0 && unlinkedTasks === 0, optional: false },
+    /* والمصادرُ في الخطوة نفسِها بعد المهامّ — «وبعدها المهامُّ والواجباتُ وغيرُها
+       والتي تُربط بالمحاور» (٢٧ سبتمبر ٢٠٢٦) */
+    { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم' + resourcesNote, done: resourcesDone, optional: false },
     { key: 'approval', labelAr: 'أكّد أنّك توافق على كلّ ما فيها وأرسلها للاعتماد', done: approvalDone, optional: false },
   ]
 }
@@ -356,7 +445,7 @@ export class CohortPlanService {
         },
         assessments: {
           where: { status: { not: 'closed' } }, orderBy: { createdAt: 'asc' },
-          select: { id: true, title: true, briefAr: true, attachments: true, type: true, maxScore: true, dueAt: true, status: true, _count: { select: { submissions: true } } },
+          select: { id: true, title: true, briefAr: true, attachments: true, type: true, maxScore: true, dueAt: true, status: true, moduleId: true, _count: { select: { submissions: true } } },
         },
       },
     })
@@ -378,7 +467,9 @@ export class CohortPlanService {
     const period = resolvePeriod(content, cohort, status)
     const checklist = buildChecklist({
       cohort, period, content, sessions: countableSessions(cohort.sessions),
-      assessmentsCount: cohort.assessments.length, planStatus: status,
+      assessmentsCount: cohort.assessments.length,
+      assessmentModuleIds: cohort.assessments.map((a) => a.moduleId),
+      planStatus: status,
     })
     /* الحدودُ المعلَنةُ للمسجَّلين الآن — تُقال بجانب مدّته إن افترقتا */
     const publicPeriod = cohort.startsAt && cohort.endsAt
@@ -409,6 +500,7 @@ export class CohortPlanService {
         : null,
       sessions: cohort.sessions.map((s) => ({
         id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, status: s.status, moduleId: s.moduleId,
+        moduleIds: s.moduleIds, approvalState: s.approvalState,
         placeholder: s.placeholder,
         joinUrl: s.zoom?.joinUrl ?? null,
         recordings: s.recordings.map((r) => ({
@@ -429,6 +521,7 @@ export class CohortPlanService {
       /* التكاليفُ مع عدد ما سُلّم — لمرحلة «التكاليف» في التجهيز */
       assessments: cohort.assessments.map((a) => ({
         id: a.id, title: a.title, briefAr: a.briefAr, attachments: a.attachments, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
+        moduleId: a.moduleId,
         submissions: a._count.submissions,
       })),
       checklist,
@@ -448,10 +541,11 @@ export class CohortPlanService {
             course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
             sessions: {
               select: {
-                id: true, startsAt: true, endsAt: true, status: true, placeholder: true,
+                id: true, title: true, startsAt: true, endsAt: true, status: true, placeholder: true, moduleIds: true,
                 recordings: { where: { status: 'active' }, select: { id: true } },
               },
             },
+            assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true } },
             plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1 },
             _count: {
               select: {
@@ -471,7 +565,8 @@ export class CohortPlanService {
       const planContent = (plan?.content ?? null) as TrainerPlanContent | null
       const checklist = buildChecklist({
         cohort: c, period: resolvePeriod(planContent, c, planStatus), content: planContent,
-        sessions: countableSessions(c.sessions), assessmentsCount: c._count.assessments, planStatus,
+        sessions: countableSessions(c.sessions), assessmentsCount: c._count.assessments,
+        assessmentModuleIds: c.assessments.map((a) => a.moduleId), planStatus,
       })
       /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» ولا «الفصلَ»
          اللذين ليسا بيده. وكانت تعدّ الاعتمادَ، فبطاقةُ شعبةٍ تامّةٍ تقول
@@ -600,8 +695,12 @@ export class CohortPlanService {
       select: {
         title: true, startsAt: true, endsAt: true,
         sessions: {
-          select: { startsAt: true, endsAt: true, status: true, placeholder: true, recordings: { select: { id: true } } },
+          select: {
+            title: true, startsAt: true, endsAt: true, status: true, placeholder: true, moduleIds: true,
+            recordings: { select: { id: true } },
+          },
         },
+        assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true } },
         _count: { select: { assessments: true } },
       },
     })
@@ -611,6 +710,7 @@ export class CohortPlanService {
       content,
       sessions: countableSessions(gateCohort.sessions),
       assessmentsCount: gateCohort._count.assessments,
+      assessmentModuleIds: gateCohort.assessments.map((a) => a.moduleId),
       planStatus: latest.status as PlanStatus,
     }))
     if (blocking.length) {

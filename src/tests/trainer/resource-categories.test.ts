@@ -100,11 +100,16 @@ describe('بوّابةُ «متى تُفتح للطالب»', () => {
 
 describe('الشاشةُ: خانةٌ لكلّ صنف، ولا «موادُّ شعبة»', () => {
   const WS = code('src/pages/trainer/CohortWorkspace.tsx')
-  const stage = WS.slice(WS.indexOf('stage === "resources"'), WS.indexOf('④ اللقاءات'))
+  /* وانتقلت خاناتُ المصادر إلى درجة «المهامّ والمصادر» (٢٧ سبتمبر ٢٠٢٦):
+     المقتطَعُ من أصنافها إلى لوحة التسليمات تحتها. */
+  const stage = WS.slice(WS.indexOf('resourceCats.map((cat)'), WS.indexOf('<CohortSubmissions', WS.indexOf('resourceCats.map((cat)')))
 
   it('⚠️ لا قائمةَ أنواعٍ في صفّ المصدر — كان يختارها لكلّ ملفّ', () => {
+    expect(stage.length, 'لا كتلةَ مصادر').toBeGreaterThan(200)
     expect(stage, 'ما زال يختار النوعَ بنفسه').not.toMatch(/aria-label=\{`نوع المصدر/)
-    expect(stage, 'الخاناتُ لا تُبنى من قائمة الأصناف').toContain('RESOURCE_CATEGORIES.map')
+    /* والخاناتُ من قائمة الأصناف — والمسجَّلُ منها في «اللقاءات» ما دامت للشعبة مواعيد */
+    expect(stage, 'الخاناتُ لا تُبنى من قائمة الأصناف').toContain('resourceCats.map')
+    expect(WS, 'الأصنافُ ليست من قائمتها').toMatch(/const resourceCats[^\n]*RESOURCE_CATEGORIES/)
   })
 
   it('والنوعُ يُكتب مشتقًّا عند الإضافة — لا يُترك فارغا فيُقرأ رابطا', () => {

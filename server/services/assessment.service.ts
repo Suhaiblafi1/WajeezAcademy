@@ -8,6 +8,8 @@ import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
 import { safeNotify } from './notification.service'
+import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
+import { periodBounds, realDate } from '../../src/application/trainer/cohort-period'
 
 const MAX_SUBMISSION_BYTES = 100 * 1024 * 1024 // 100MB
 
@@ -34,6 +36,23 @@ export class AssessmentService {
     return rubric
   }
 
+  /* ═══ آخرُ موعدٍ افتراضيٌّ للمهمّة: آخرُ موعدِ محورها (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     «موعدُ التسليم الافتراضيُّ نهايةُ الموعد، والمتأخّرُ يُقبل ويُعلَّم» —
+     من قرارات صاحب المنصّة. والخطّةُ المقروءةُ آخرُ خطّةٍ كتبها المدرّب:
+     هي ما يرتّبه الآن، والمهمّةُ تُكتب في الخطوة نفسِها. ومهمّةٌ بلا محورٍ أو
+     محورٌ بلا موعدٍ لا موعدَ يُفترَض لها — يُترك لمن يكتبه. */
+  private async slotDueAt(cohortId: string, moduleId: string | null | undefined): Promise<Date | null> {
+    if (!moduleId) return null
+    const plan = await this.prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId, trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { content: true },
+    })
+    const slots = ((plan?.content ?? null) as { slots?: PlanSlot[] | null } | null)?.slots ?? []
+    const slot = slots[slotIndexOf(slots, moduleId)]
+    if (!slot || !realDate(slot.startsOn) || !realDate(slot.endsOn)) return null
+    return periodBounds(slot).to
+  }
+
   /* ── إنشاء الواجبات/التقييمات (إدارة أو مدرب الشعبة) ── */
 
   async createAssessment(actorId: string, input: {
@@ -48,10 +67,11 @@ export class AssessmentService {
       const rubric = await this.prisma.gradingRubric.findUnique({ where: { id: input.rubricId } })
       if (!rubric || rubric.status !== 'active') throw new AuthError('unknown_rubric', 'الروبرك غير موجود أو مؤرشف', 404)
     }
+    const dueAt = input.dueAt ?? (await this.slotDueAt(input.cohortId, input.moduleId)) ?? undefined
     const assessment = await this.prisma.cohortAssessment.create({
       data: {
         cohortId: input.cohortId, title: input.title, type: input.type, moduleId: input.moduleId,
-        briefAr: input.briefAr, maxScore: input.maxScore ?? 100, passScore: input.passScore, dueAt: input.dueAt,
+        briefAr: input.briefAr, maxScore: input.maxScore ?? 100, passScore: input.passScore, dueAt,
         rubricId: input.rubricId, createdBy: actorId,
         /* عمودُ JSON: Prisma يطلب `InputJsonValue` لا نوعَنا — والتحويلُ
            هنا صريحٌ في موضعٍ واحد، لا `any` ينتشر في الخدمة. */
@@ -88,8 +108,14 @@ export class AssessmentService {
   async updateAssessment(actorId: string, assessmentId: string, patch: {
     title?: string; briefAr?: string | null; type?: 'assignment' | 'quiz' | 'project'
     maxScore?: number; dueAt?: Date | null; attachments?: TypedLink[]
+    moduleId?: string | null
   }) {
     const before = await this.assertAssessmentTrainer(actorId, assessmentId)
+    /* ومهمّةٌ رُبطت بمحورها ولا موعدَ لها يُفترض لها آخرُ موعده — وما كتبه
+       صاحبُها بيده لا يُمسّ، ولا ما محاه قصدا في النداء نفسِه */
+    const fallbackDue = patch.moduleId && patch.dueAt === undefined && before.dueAt === null
+      ? await this.slotDueAt(before.cohortId, patch.moduleId)
+      : null
     /* الدرجةُ العظمى لا تنزل تحت درجةٍ رُصدت فعلا — وإلّا صار متعلّمٌ
        حاصلا على أكثرَ من النهاية. */
     if (patch.maxScore !== undefined && patch.maxScore < before.maxScore) {
@@ -110,7 +136,8 @@ export class AssessmentService {
         ...(patch.briefAr !== undefined ? { briefAr: patch.briefAr } : {}),
         ...(patch.type !== undefined ? { type: patch.type } : {}),
         ...(patch.maxScore !== undefined ? { maxScore: patch.maxScore } : {}),
-        ...(patch.dueAt !== undefined ? { dueAt: patch.dueAt } : {}),
+        ...(patch.dueAt !== undefined ? { dueAt: patch.dueAt } : fallbackDue ? { dueAt: fallbackDue } : {}),
+        ...(patch.moduleId !== undefined ? { moduleId: patch.moduleId } : {}),
         /* المصفوفةُ الفارغةُ محوٌ مقصودٌ لا إهمال — ولذلك `!== undefined` */
         ...(patch.attachments !== undefined ? { attachments: patch.attachments as unknown as Prisma.InputJsonValue } : {}),
       },

@@ -70,6 +70,12 @@ const content: TrainerPlanContent = {
     bodyAr: 'الشرحُ المكتوب الذي يقرؤه المتعلّمُ داخل المنصّة قبل اللقاء الأوّل، وفيه ما يكفي ليبدأ.',
   }],
   resources: [{ title: 'كرّاسة الوحدة الأولى', url: 'https://example.com/unit-1.pdf' }],
+  /* ومنذ صار للمحاور مواعيدُ (٢٧ سبتمبر ٢٠٢٦) فالمسودّةُ المكتملةُ مكتملةٌ بها:
+     محورُها الواحدُ في موعدٍ يملأ المدّةَ، وله كرّاستُه */
+  slots: [{
+    startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['C-BIZ-101-M1'],
+    workbook: { url: 'https://example.com/workbook-1.pdf' },
+  }],
 }
 
 describe('ملكيّةُ الشعبة واعتمادُها', () => {
@@ -126,8 +132,13 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(before!.done).toBe(false)
     await prisma.cohortAssessment.create({ data: { cohortId, title: 'واجبُ الوحدة الأولى', type: 'assignment', maxScore: 100 } })
     const ws = await plans.workspace(trainerUserId, cohortId)
-    expect(ws.checklist.find((c) => c.key === 'assignments')!.done).toBe(true)
     expect(ws.assessments.map((a) => a.title)).toContain('واجبُ الوحدة الأولى')
+    /* ═══ ومنذ صار للمهمّة محورٌ تُفتح بعد لقائه (٢٧ سبتمبر ٢٠٢٦) ═══
+       لا تُتمّ المرحلةَ مهمّةٌ لا يُعرف محورُها — ويُقال ذلك في سطرها. وتتمّ
+       حين تُربط بمحورٍ في الخطّة (الحالةُ التي تلي الحفظ). */
+    const row = ws.checklist.find((c) => c.key === 'assignments')!
+    expect(row.done, 'تمّت المرحلةُ بمهمّةٍ بلا محور').toBe(false)
+    expect(row.labelAr).toContain('غيرُ مربوطةٍ بمحور')
   })
 
   it('وموجزُ «شعبي» يقرأ القائمةَ نفسَها — فلا تفترق الحلقةُ عن الورشة', async () => {
@@ -230,6 +241,10 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     await plans.savePlan(trainerUserId, cohortId, content)
     expect(ws.checklist.find((c) => c.key === 'resources')?.done).toBe(true)
     expect(ws.checklist.find((c) => c.key === 'approval')?.done).toBe(false)
+    /* والمهمّةُ التي أُنشئت بلا محورٍ تُتمّ مرحلتَها حين تُربط بمحور الخطّة */
+    await prisma.cohortAssessment.updateMany({ where: { cohortId, moduleId: null }, data: { moduleId: content.modules[0].moduleId } })
+    const linked = await plans.workspace(trainerUserId, cohortId)
+    expect(linked.checklist.find((c) => c.key === 'assignments')?.done, 'مهمّةٌ مربوطةٌ لم تُتمّ مرحلتَها').toBe(true)
   })
 
   /* ═══ ما صار الإرسالُ يشترطه (١٥ سبتمبر ٢٠٢٦) ═══
@@ -253,19 +268,28 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     termId = term.id
     /* والفصلُ لا يُسمّى هنا بيدٍ بعد اليوم (٢٧ سبتمبر ٢٠٢٦): يُشتقّ من تاريخ
        البدء عند الاعتماد — والاختبارُ الذي يليه يقيس أنّه اشتُقّ فعلا. */
-    /* لقاءٌ لكلّ محورٍ في الخطّة — والخطّةُ محورٌ واحد، وداخلَ المدّة */
+    /* لقاءٌ لكلّ محورٍ في الخطّة — والخطّةُ محورٌ واحد، وداخلَ موعده.
+       ومنذ صار اللقاءُ مربوطا بمحوره (٢٧ سبتمبر ٢٠٢٦) يُربط هنا كما يربطه
+       مدرّبُه في بطاقة موعده — وما أُنشئ قبلُ بلا محورٍ يُربط كذلك. */
+    const first = content.modules[0].moduleId
+    await prisma.cohortSession.updateMany({ where: { cohortId, moduleIds: { isEmpty: true } }, data: { moduleIds: [first], moduleId: first } })
     const have = await prisma.cohortSession.count({ where: { cohortId } })
     for (let i = have; i < content.modules.length; i += 1) {
       await prisma.cohortSession.create({
-        data: { cohortId, title: `لقاءُ المحور ${i + 1}`, startsAt: new Date(`2027-02-${String(i + 3).padStart(2, '0')}T15:00:00.000Z`) },
+        data: {
+          cohortId, title: `لقاءُ المحور ${i + 1}`, startsAt: new Date(`2027-02-${String(i + 3).padStart(2, '0')}T15:00:00.000Z`),
+          moduleIds: [content.modules[i].moduleId], moduleId: content.modules[i].moduleId,
+        },
       })
     }
+    /* والمهمّةُ مربوطةٌ بمحورها كذلك — ومنه متى تُفتح */
+    await prisma.cohortAssessment.updateMany({ where: { cohortId, moduleId: null }, data: { moduleId: first } })
     /* ومهمّةٌ واحدةٌ على الأقلّ — صارت شرطا (ق٨). وتُنشأ هنا إن لم تكن:
        الحالةُ التي تسبقها تُنشئ واحدةً، والاتّكالُ على أثرِ حالةٍ أخرى
        يجعل هذه تسقط إن سقطت تلك — وهو ما وقع فعلا. */
     if ((await prisma.cohortAssessment.count({ where: { cohortId } })) === 0) {
       await prisma.cohortAssessment.create({
-        data: { cohortId, title: 'مهمّةُ الإرسال', type: 'assignment', maxScore: 100 },
+        data: { cohortId, title: 'مهمّةُ الإرسال', type: 'assignment', maxScore: 100, moduleId: first },
       })
     }
   }
@@ -325,22 +349,27 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(told, 'لم يُبلَّغ من التحق بأنّ حدودَ شعبته تحدّدت').toBeTruthy()
   })
 
-  it('ولقاءٌ له تسجيلٌ يُتِمُّ مرحلةَ التسجيلات — أيًّا كان مصدرُه', async () => {
-    /* كان الفحصُ يمرّ عبر `addRecordingLink` — بابُ «تسجيلٌ من رابط».
-       وأُغلق البابُ (١٧ سبتمبر ٢٠٢٦) لأنّه كان الخانةَ الوحيدةَ في شاشة
-       اللقاءات التي تقبل رابطا، فيلصق فيها من يملك زووم خاصًّا رابطَ
-       اجتماعه هو. والقاعدةُ المحروسةُ هنا ليست البابَ بل الأثر: لقاءٌ له
-       تسجيلٌ يُتِمّ المرحلة. فيُكتب الصفُّ مباشرةً — كما يكتبه رفعُ الملفّ
-       اليومَ، وكما ستكتبه سحابةُ زووم غدا. */
-    /* وداخلَ مدّة الشعبة (٢٧ سبتمبر ٢٠٢٦): لقاءٌ خارجَها يعيد خطوةَ اللقاءات
-       «لم تتمّ»، فيُردّ الإرسالُ في الاختبار الذي يلي هذا */
-    const session = await prisma.cohortSession.create({ data: { cohortId, title: 'اللقاء الأوّل', startsAt: new Date('2027-02-10T15:00:00.000Z') } })
+  /* ═══ وسقطت «مرحلةُ التسجيلات» من القائمة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كانت صفًّا اختياريّا يتمّ بلقاءٍ له تسجيل. وصار المسجَّلُ جلسةً في خطوة
+     اللقاءات بمحوره ولحظةِ فتحه — «لا بأس أن جمعت بين المسجّلة والمباشرة
+     لأنّهم نفسُ الأثر». والأثرُ المحروسُ هنا باقٍ بلا صفّ: تسجيلُ اللقاء —
+     رفعا أو من سحابة زووم — يلحق لقاءه ويُرى معه في الورشة. */
+  it('وتسجيلُ اللقاء يلحق لقاءه ويُرى معه — بلا صفٍّ في القائمة', async () => {
+    /* واللقاءُ مربوطٌ بمحوره كما يربطه مدرّبُه — فلقاءٌ بلا محورٍ يحجب الإرسالَ
+       في الحالة التي تلي، وليس ذلك ما يُقاس هنا */
+    const first = content.modules[0].moduleId
+    const session = await prisma.cohortSession.create({
+      data: { cohortId, title: 'اللقاء الأوّل', startsAt: new Date('2027-02-10T15:00:00.000Z'), moduleIds: [first], moduleId: first },
+    })
     const rec = await prisma.recording.create({
       data: { sessionId: session.id, title: 'تسجيل اللقاء الأوّل', externalUrl: 'https://example.com/rec-1' },
     })
     expect(rec.storageKey).toBeNull()
     const ws = await plans.workspace(trainerUserId, cohortId)
-    expect(ws.checklist.find((c) => c.key === 'recordings')?.done).toBe(true)
+    expect(ws.checklist.map((c) => c.key), 'عاد صفُّ التسجيلات').not.toContain('recordings')
+    const seen = ws.sessions.find((x) => x.id === session.id)
+    expect(seen?.recordings.map((r) => r.externalUrl), 'التسجيلُ لا يُرى مع لقائه').toEqual(['https://example.com/rec-1'])
   })
 
   /* آخرَ السلسلة: يُرسل خطّةً جديدةً ويعتمدها، فلا يغيّر حالةَ ما قبله */

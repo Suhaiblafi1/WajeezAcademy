@@ -41,11 +41,24 @@ describe('صفحةُ الشعبة — مراحلُ على خطّ', () => {
 
      والمحروسُ الأصليُّ باقٍ: **صفُّ `identity` في قائمة الخادم له مفتاحٌ في
      الشاشة** — درجةٌ أولى الآن لا لوحةٌ تنبثق. */
+  /* ═══ وصار ترتيبُها ترتيبَ المنهج (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     «المعلوماتُ الأساسيّة ← المحاورُ ومواعيدُها ← الكرّاسات ← اللقاءات
+     (المسجّلةُ والمباشرةُ معا) ← المهامُّ وغيرُها ← المرحلةُ الأخيرة». فحلّت
+     «الكرّاسات» محلَّ «المصادر»، وصار صفّا المهامّ والمصادر في درجةٍ واحدة.
+
+     والمحروسُ الأصليُّ يتّسع ولا ينقص: **كلُّ صفٍّ إلزاميٍّ في قائمة الخادم
+     له درجةٌ في الشاشة** — فلا يبقى صفٌّ يحجب الإرسالَ ولا بابَ يُفتح إليه. */
   it('المراحلُ الستُّ بمفاتيح قائمة الخادم، والتكاليفُ بينها', () => {
-    for (const key of ['identity', 'modules', 'resources', 'sessions', 'assignments', 'approval']) {
+    for (const key of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval']) {
       expect(ws, `مرحلةٌ مفقودة: ${key}`).toMatch(new RegExp(`key: "${key}"`))
     }
     expect(ws, 'الحالةُ لا تُقرأ من قائمة الخادم').toMatch(/new Map\(ws\.checklist\.map\(/)
+    /* وكلُّ صفٍّ في قائمة الخادم في درجةٍ من درجات الشاشة */
+    const svcKeys = [...code(SVC).matchAll(/\{\s*key: '(\w+)'/g)].map((m) => m[1])
+    expect(svcKeys.length, 'لم تُقرأ صفوفُ القائمة').toBeGreaterThanOrEqual(7)
+    const map = ws.slice(ws.indexOf('const STAGE_KEYS'), ws.indexOf('const stageOfKey'))
+    for (const k of svcKeys) expect(map, `صفُّ «${k}» بلا درجة`).toContain(`"${k}"`)
   })
 
   it('⚠️ والمعلوماتُ الأساسيّةُ درجةٌ أولى — لا بابٌ بقلمٍ ولا لوحةٌ تنبثق', () => {

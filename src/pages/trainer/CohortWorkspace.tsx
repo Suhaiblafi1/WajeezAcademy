@@ -46,15 +46,16 @@
      في الدرجات و«أرسِلها للاعتماد» في آخرها. زرٌّ واحدٌ يتبدّل اسمُه، لا
      زرّان يتنازعان العين. */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, IdCard, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, IdCard, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import CohortOps from "./CohortOps";
 import SessionsAndAttendance from "./SessionsAndAttendance";
+import SlotSessions from "./SlotSessions";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -73,7 +74,12 @@ import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
-import { periodDays, periodProblem, zonedDay } from "@/application/trainer/cohort-period";
+import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
+import {
+  appendToSlots, axesLabelAr, canMerge, dayLabelAr, defaultSlots, dropFromSlots, mergeSlots, reflowSlots,
+  sessionProblems, slotIndexOf, slotProblems, splitSlot, workbookDone, workbookProblems,
+  type PlanSlot, type SlotWorkbook,
+} from "@/application/trainer/axis-timeline";
 import { countAr } from "@/application/text/count-ar";
 
 /* ─────────── ما يصل من الخادم ─────────── */
@@ -90,6 +96,8 @@ interface PlanResource {
   category?: string | null; opensAt?: string | null;
   /* د-٣: مصدرٌ مرفوعٌ لا مُلصَق — «ملفّ» كان نوعا يُختار بلا ما يُرفَع */
   bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null;
+  /* محورُه ومتى يُفتح (٢٧ سبتمبر ٢٠٢٦): بعد لقاء محوره، أو مع كرّاسته إن كان للقراءة المسبقة */
+  moduleId?: string | null; preReading?: boolean | null;
 }
 /* ما بقي من صندوق «اقتراحٌ للإدارة» المحذوف (د-٦): خطّةٌ حُفظت قبل حذفه قد
    تحمل `proposals` في عمود JSON. يُقرأ منه اسمُ الدورة وحدَه ليُعرض مهيّأً في
@@ -102,6 +110,8 @@ interface PlanContent {
   kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: LegacyPlanProposals | null;
   /* مدّةُ الشعبة — تاريخان بلا ساعة، تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
   startsOn?: string | null; endsOn?: string | null;
+  /* مواعيدُ المحاور وكرّاساتُها — `application/trainer/axis-timeline.ts` */
+  slots?: PlanSlot[] | null;
 }
 /** مدّةٌ كما يرسلها الخادم — تاريخان `YYYY-MM-DD` */
 interface Period { startsOn: string; endsOn: string }
@@ -121,10 +131,10 @@ interface Workspace {
     id: string; status: string; content: PlanContent | null; reviewerNote: string | null;
     submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
   } | null;
-  sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; placeholder: boolean; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
+  sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; approvalState?: string; moduleIds?: string[]; placeholder: boolean; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
   materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
   learners: { enrollmentId: string; name: string; status: string; progress: number; referredByMe: boolean }[];
-  assessments: { id: string; title: string; briefAr: string | null; attachments?: unknown; type: string; maxScore: number; dueAt: string | null; status: string; submissions: number }[];
+  assessments: { id: string; title: string; briefAr: string | null; attachments?: unknown; type: string; maxScore: number; dueAt: string | null; status: string; moduleId?: string | null; submissions: number }[];
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
 }
 
@@ -152,15 +162,37 @@ const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent"
    والمفاتيحُ مفاتيحُ قائمة الخادم، فحالةُ كلٍّ (تمّ / لم يتمّ) تُقرأ من هناك
    لا تُخمَّن هنا. والأسماءُ قصيرةٌ لتُرى كلُّها في الشريط، والطويلُ في رأس
    كلّ خطوة. و«التسجيلات» الاختياريّةُ تُطوى داخل «اللقاءات». */
-type Stage = "identity" | "modules" | "resources" | "sessions" | "assignments" | "approval";
+/* ═══ ثمّ صار الترتيبُ ترتيبَ المنهج نفسِه (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   «معلوماتٌ عن الشعبة الأساسيّة… وبعدها المحاورُ ومواعيدُها التي يجب أن
+   تكون ضمن كلّ فترة الشعبة، وبعدها الكرّاساتُ لكلّ محور… بعدها اللقاءاتُ
+   المسجّلة إن وُجدت… بعدها اللقاءاتُ المباشرة… وبعدها المهامُّ والواجباتُ
+   وغيرُها… وبعدها المرحلةُ الأخيرة». والمسجَّلُ والمباشرُ خطوةٌ واحدة: «لا
+   بأس أن جمعت بينهما لأنّهم نفسُ الأثر».
+
+   فذهبت «المصادر» خطوةً على حدة: المسجَّلُ منها صار جلساتٍ في «اللقاءات»
+   بمحاورها، والباقي صار مع المهامّ مربوطا بمحوره. وحلّت محلَّها «الكرّاسات». */
+type Stage = "identity" | "modules" | "workbooks" | "sessions" | "assignments" | "approval";
 const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
   { key: "identity", label: "المعلومات الأساسيّة", icon: IdCard },
-  { key: "modules", label: "المحاور", icon: BookOpen },
-  { key: "resources", label: "المصادر", icon: FileText },
+  { key: "modules", label: "المحاور ومواعيدها", icon: BookOpen },
+  { key: "workbooks", label: "الكرّاسات", icon: BookMarked },
   { key: "sessions", label: "اللقاءات", icon: CalendarDays },
-  { key: "assignments", label: "المهامّ", icon: ClipboardCheck },
+  { key: "assignments", label: "المهامّ والمصادر", icon: ClipboardCheck },
   { key: "approval", label: "الاعتماد", icon: Send },
 ];
+/* والخطوةُ تتمّ بصفوفها في قائمة الخادم — و«المهامُّ والمصادر» صفّان في درجة */
+const STAGE_KEYS: Record<Stage, readonly string[]> = {
+  identity: ["identity"],
+  modules: ["modules"],
+  workbooks: ["workbooks"],
+  sessions: ["sessions"],
+  assignments: ["assignments", "resources"],
+  approval: ["approval"],
+};
+/** الدرجةُ التي فيها صفُّ القائمة — أو `null` لصفٍّ لا درجةَ له */
+const stageOfKey = (key: string): Stage | null =>
+  (STAGES.find((s) => STAGE_KEYS[s.key].includes(key))?.key ?? null);
 type Phase = "prepare" | "run";
 const ASSESSMENT_TYPES: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع تخرج" };
 const MODULE_FORMS = { one: "محور", two: "محوران", few: "محاور", many: "محورا" } as const;
@@ -214,24 +246,24 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
     minutes: "نحو ثلاث دقائق",
   },
   modules: {
-    title: "المحاور والتطبيق العمليّ",
-    purpose: "خارطةُ ما ستدرّسه. تبدأ من محاور الكتالوج وتعدّلها لهذه الشعبة — ولا تمسّ الكتالوجَ نفسَه.",
+    title: "المحاور ومواعيدها",
+    purpose: "خارطةُ ما ستدرّسه وموعدُ كلّ محورٍ داخلَ مدّة الشعبة: أوّلَ يومِ الموعد تُفتح للمتعلّم كرّاستُه ومادّتُه النظريّة. ولك أن تجمع محورين متجاورين في موعدٍ واحد ما بقيت المواعيدُ أربعةً فأكثر.",
     minutes: "نحو ١٥ دقيقة",
   },
-  resources: {
-    title: "المصادر",
-    purpose: "ما يحتاجه المتعلّمُ خارجَ اللقاء: كرّاسةٌ أو مقالٌ أو فيديو. تُفتح له مع أوّل يوم.",
+  workbooks: {
+    title: "الكرّاسات",
+    purpose: "لكلّ موعدٍ كرّاستُه — ملفٌّ ترفعه أو رابطٌ تلصقه — تُفتح للمتعلّم أوّلَ يومٍ في الموعد، قبل اللقاء. والمحوران المجموعان يتقاسمان كرّاسةً واحدة.",
     minutes: "نحو ٥ دقائق",
   },
   sessions: {
-    title: "اللقاءات والتسجيلات",
-    purpose: "مواعيدُ لقاءاتك المباشرة — تضعها بنفسك داخلَ مدّة شعبتك — وتسجيلاتُها بعد انتهائها.",
-    minutes: "نحو ٧ دقائق",
+    title: "اللقاءات المباشرة والمسجّلة",
+    purpose: "لكلّ محورٍ لقاءٌ مباشرٌ على الأقلّ داخلَ موعده، واللقاءُ لمحورٍ أو محورين. والجلساتُ المسجّلةُ اختياريّة، تُربط بمحورها وتُفتح في لحظةٍ تحدّدها داخلَ موعده. وبعد انتهاء أوّل لقاءٍ للمحور تُفتح مهامُّه ومصادرُه.",
+    minutes: "نحو ١٠ دقائق",
   },
   assignments: {
-    title: "المهامّ والتطبيق العمليّ",
-    purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم. ومهمّةٌ واحدةٌ على الأقلّ شرطٌ للاعتماد — لا تكون المحاضرةُ إلزاميّةً والمُخرَجُ اختياريّا.",
-    minutes: "نحو ٥ دقائق",
+    title: "المهامّ والمصادر",
+    purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم، وما يقرؤه خارجَ اللقاء — وكلٌّ مربوطٌ بمحوره فيُفتح بعد لقائه. ومهمّةٌ واحدةٌ على الأقلّ شرطٌ للاعتماد — لا تكون المحاضرةُ إلزاميّةً والمُخرَجُ اختياريّا.",
+    minutes: "نحو ١٠ دقائق",
   },
   approval: {
     title: "الموافقة والإرسال للاعتماد",
@@ -255,14 +287,17 @@ function StageIntro({ stage }: { stage: Stage }) {
   );
 }
 
-/** التاريخُ كما يقبله `<input type="date">` */
-const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 
 /* بصمتا المرحلتين اللتين تتقاسمان `content` — «المحاور» و«المصادر» تُحفظان
    معا في `persist`، لكنّ المدرّبَ يحرّر واحدةً في كلّ مرّة. فلو قيست
    البصمةُ على الكائن كلِّه لأضاءت المرحلتان معا بتعديلٍ في إحداهما. */
-const modulesKey = (c: PlanContent) => JSON.stringify(c.modules);
-const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources);
+/* والمواعيدُ مع المحاور (بلا كرّاساتها)، والكرّاساتُ وحدَها، والمسجَّلُ مع
+   اللقاءات، والباقي مع المهامّ — كلٌّ حيث يُحرَّر (٢٧ سبتمبر ٢٠٢٦) */
+const modulesKey = (c: PlanContent) =>
+  JSON.stringify({ modules: c.modules, slots: (c.slots ?? []).map((x) => ({ startsOn: x.startsOn, endsOn: x.endsOn, moduleIds: x.moduleIds })) });
+const workbooksKey = (c: PlanContent) => JSON.stringify((c.slots ?? []).map((x) => x.workbook ?? null));
+const recordedKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) => resourceCategory(r) === "recorded"));
+const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) => resourceCategory(r) !== "recorded"));
 
 
 /* والوصفُ صار مع الاسم والنبذة، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
@@ -300,7 +335,7 @@ export default function CohortWorkspace() {
   const [confirm, setConfirm] = useState(false);
   /* نموذجُ التكليف — واحدٌ للإنشاء والتعديل. `editingId` يقرّر أيَّهما:
      فارغٌ فإنشاء، وفيه معرّفٌ فتعديلُ ذاك التكليف بعينه. */
-  const [taskForm, setTaskForm] = useState({ title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "" });
+  const [taskForm, setTaskForm] = useState({ title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "", moduleId: "" });
   /* مرفقاتُ التكليف تحت اليد — منفصلةٌ عن `taskForm` لأنّها مصفوفةٌ تُضاف
      ويُحذف منها، لا حقلٌ نصّيّ. */
   const [taskAttachments, setTaskAttachments] = useState<PlanResource[]>([]);
@@ -324,7 +359,9 @@ export default function CohortWorkspace() {
   const [openModule, setOpenModule] = useState<string | null>(null);
   /* بصمةُ آخرِ ما حُفظ — يُقاس عليها «فيه تغييرٌ لم يُحفظ» لكلّ مرحلةٍ وحدَها.
      كانت المرحلةُ تُغادَر بتعديلٍ في يدها فيضيع بلا كلمة. */
-  const [baseline, setBaseline] = useState({ identity: "", modules: "", resources: "" });
+  const [baseline, setBaseline] = useState({ identity: "", modules: "", workbooks: "", recorded: "", resources: "" });
+  /* طلبُ إعادة توزيع المواعيد — يمحو ترتيبَ المدرّب فلا يقع بنقرةٍ واحدة */
+  const [pendingReflow, setPendingReflow] = useState(false);
   /* ═══ «أضف» تفتح مسوّدةً لا صفًّا حقيقيّا ═══
 
      كانت تدفع صفًّا فارغا إلى `content.resources` فورا. وشرطُ زرِّ الحفظ
@@ -348,23 +385,39 @@ export default function CohortWorkspace() {
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
       setWs(w);
-      const nextContent: PlanContent = w.plan?.content ?? { kind: "trainer", summaryAr: "", modules: w.course.baseModules, resources: [], liveNoteAr: "" };
+      const saved: PlanContent = w.plan?.content ?? { kind: "trainer", summaryAr: "", modules: w.course.baseModules, resources: [], liveNoteAr: "" };
+      /* ═══ المواعيدُ الأولى تُرتَّب له — ولا تُحفظ حتّى يحفظها ═══
+
+         «الخطوةُ الثانية تُفتح على مواعيدَ أسبوعيّةٍ مرتّبةٍ من تاريخ البدء،
+         والمدرّبُ يعدّلها». فمن حدّد مدّتَه ولا مواعيدَ في خطّته وُجد له
+         توزيعٌ أوّل في اليد — والبصمةُ من المحفوظ، فيُعلَّم «لم يُحفَظ» حتّى
+         يحفظه. والمرسَلةُ والمعتمَدةُ لا يُرتَّب لها شيء: تُتصفَّح. */
+      const status = w.plan?.status ?? "draft";
+      const period = asPeriod(saved);
+      const editable = status === "draft" || status === "changes_requested";
+      const nextContent: PlanContent = editable && !(saved.slots?.length) && period && periodProblem(period) === null
+        ? { ...saved, slots: defaultSlots(saved.modules.map((m) => m.moduleId), period) }
+        : saved;
       const nextIdentity = { title: w.cohort.title };
       setContent(nextContent);
       setIdentity(nextIdentity);
       /* البصمةُ تُؤخذ ممّا وصل لا ممّا في اليد — فبعد كلّ حفظٍ يعود كلُّ شيءٍ نظيفا */
       setBaseline({
-        identity: JSON.stringify(nextIdentity) + basicsKey(nextContent),
-        modules: modulesKey(nextContent),
-        resources: resourcesKey(nextContent),
+        identity: JSON.stringify(nextIdentity) + basicsKey(saved),
+        modules: modulesKey(saved),
+        workbooks: workbooksKey(saved),
+        recorded: recordedKey(saved),
+        resources: resourcesKey(saved),
       });
       /* أوّلُ فتح: المعتمَدةُ تُفتح على التشغيل، وغيرُها على أوّل مرحلةٍ لم تتمّ —
          وهي أبعدُ ما يُفتح له، فكلُّ ما قبلها تامّ. */
       if (first) {
-        const status = w.plan?.status ?? "draft";
         if (status === "approved" || status === "published") setPhase("run");
         else {
-          const next = STAGES.find((s) => { const c = w.checklist.find((x) => x.key === s.key); return c && !c.done && !c.optional; });
+          const next = STAGES.find((s) => STAGE_KEYS[s.key].some((k) => {
+            const c = w.checklist.find((x) => x.key === k);
+            return c && !c.done && !c.optional;
+          }));
           setStage(next?.key ?? "identity");
         }
       }
@@ -458,7 +511,7 @@ export default function CohortWorkspace() {
   const blocking = blockingBeforeSubmit(ws.checklist);
   const remaining = blocking.length;
   /* وأوّلُ ما يستطيع هو فتحَه من الباقي — لا كلُّ الباقي خطوةٌ في يده */
-  const firstMine = blocking.find((b) => STAGES.some((s) => s.key === b.key)) ?? null;
+  const firstMine = blocking.find((b) => stageOfKey(b.key) !== null) ?? null;
   /* والخطُّ يمتلئ بقدر ما **يملك المدرّبُ** إنجازَه — فيبلغ تمامَه حين لا يبقى
      إلّا قرارُ الإدارة، لا يقف دون التمام ينتظر قرارا ليس بيده. وصفُّ الفصل
      مثلُ صفِّ الاعتماد في هذا: تسمّيه الإدارةُ عند الإسناد، فلا يُعدُّ عليه. */
@@ -481,7 +534,7 @@ export default function CohortWorkspace() {
      الخادم لا من ظنّ الشاشة. والمرسَلةُ والمعتمَدةُ تُتصفَّح كلُّها — فيها
      ما يُراجَع لا ما يُبنى. وما صار ناقصا بعد تمامه (مدّةٌ تغيّرت فخرج منها
      لقاء) يُقفل ما بعده ثانيةً حتّى يُصلَح: الترتيبُ قاعدةٌ لا ذكرى. */
-  const doneOf = (k: Stage) => byKey.get(k)?.done ?? false;
+  const doneOf = (k: Stage) => STAGE_KEYS[k].every((key) => byKey.get(key)?.done ?? false);
   const canOpen = (i: number) => approved || locked || STAGES.slice(0, i).every((x) => doneOf(x.key));
   /* اليومُ في عمّان — منه يُحكَم على «البدءُ مضى» كما يحكم الخادم */
   const today = zonedDay(new Date());
@@ -499,9 +552,10 @@ export default function CohortWorkspace() {
   const dirty: Record<string, boolean> = {
     identity: JSON.stringify(identity) + basicsKey(content) !== baseline.identity,
     modules: modulesKey(content) !== baseline.modules,
-    resources: resourcesKey(content) !== baseline.resources,
-    /* واللقاءاتُ تُحفظ بنفسها — لا مسودّةَ لها في اليد */
-    sessions: false,
+    workbooks: workbooksKey(content) !== baseline.workbooks,
+    /* واللقاءاتُ المباشرةُ تُحفظ بنفسها — والمسجَّلةُ في الخطّة، فهي ما يُحفظ هنا */
+    sessions: recordedKey(content) !== baseline.recorded,
+    assignments: resourcesKey(content) !== baseline.resources,
   };
   dirtyRef.current = Object.values(dirty).some(Boolean);
 
@@ -527,7 +581,11 @@ export default function CohortWorkspace() {
       if (m.titleAr.trim().length < 2) out.push(`المحور ${i + 1} بلا عنوان — اكتبه أو احذف المحور`);
     });
     content.resources.forEach((r, i) => {
-      if (!r.title.trim() || !resourceHasSource(r)) out.push(`مصدرٌ ناقص (${r.title.trim() || `رقم ${i + 1}`}) — له اسمٌ ورابطٌ أو ملفّ`);
+      if (resourceCategory(r) === "recorded" && (!r.title.trim() || !resourceHasSource(r))) {
+        out.push(`جلسةٌ مسجّلةٌ ناقصة (${r.title.trim() || `رقم ${i + 1}`}) — لها اسمٌ ورابط، أو أزِلها من خطوة «اللقاءات»`);
+      } else if (!r.title.trim() || !resourceHasSource(r)) {
+        out.push(`مصدرٌ ناقص (${r.title.trim() || `رقم ${i + 1}`}) — له اسمٌ ورابطٌ أو ملفّ`);
+      }
     });
     return out;
   };
@@ -540,7 +598,7 @@ export default function CohortWorkspace() {
      محفوظا. والمرسَلةُ للاعتماد لا تُحفظ، تُتصفَّح. */
   const persist = async (): Promise<boolean> => {
     if (locked) return true;
-    if (!dirty.identity && !dirty.modules && !dirty.resources) return true;
+    if (!Object.values(dirty).some(Boolean)) return true;
     const problems = saveProblems();
     if (problems.length) { setGaps(problems); return false; }
     await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content);
@@ -565,16 +623,46 @@ export default function CohortWorkspace() {
       if (p) out.push(p);
       return out.length ? out : [label];
     }
+    const ids = (saved?.modules ?? []).map((m) => m.moduleId);
+    const legacySlots = !(saved?.slots?.length);
     if (k === "modules") {
       const mods = saved?.modules ?? [];
       if (mods.length === 0) return ["أضِف محورا واحدا على الأقلّ"];
+      const out: string[] = [];
       const miss = mods.map((m, i) => ({ m, n: i + 1 })).filter(({ m }) => !moduleBodyDone(m));
-      return miss.length
-        ? [`ينقص المحتوى النظريُّ في: ${miss.map(({ m, n }) => `${n}. ${m.titleAr || "بلا عنوان"}`).join(" · ")}`]
-        : [label];
+      if (miss.length) out.push(`ينقص المحتوى النظريُّ في: ${miss.map(({ m, n }) => `${n}. ${m.titleAr || "بلا عنوان"}`).join(" · ")}`);
+      /* والمواعيدُ بالقاعدة نفسِها التي يحكم بها الخادم — `axis-timeline.ts` */
+      out.push(...slotProblems(saved?.slots, ids, w.cohort.period));
+      return out.length ? out : [label];
     }
-    if (k === "resources") return ["أضِف مصدرا واحدا على الأقلّ — كرّاسةً أو كتابا أو رابطا"];
-    if (k === "assignments") return ["ألِّف مهمّةً واحدةً على الأقلّ — واجبا أو مشروعا يُسلَّم ويُقيَّم"];
+    if (k === "workbooks") {
+      const out = workbookProblems(saved?.slots, ids);
+      return out.length ? out : [label];
+    }
+    if (k === "sessions") {
+      if (legacySlots) return [label];
+      const mine = w.sessions.filter((x) => !x.placeholder && x.status !== "cancelled");
+      const { blocking: out } = sessionProblems({
+        slots: saved?.slots, moduleIds: ids,
+        sessions: mine.map((x) => ({ title: x.title, startsAt: x.startsAt, endsAt: x.endsAt, moduleIds: x.moduleIds ?? [] })),
+        recordings: (saved?.resources ?? []).filter((r) => resourceCategory(r) === "recorded")
+          .map((r) => ({ title: r.title, moduleId: r.moduleId ?? null, opensAt: r.opensAt ?? null })),
+        now: new Date(),
+      });
+      return out.length ? out : [label];
+    }
+    if (k === "assignments") {
+      const out: string[] = [];
+      if (w.assessments.length === 0) out.push("ألِّف مهمّةً واحدةً على الأقلّ — واجبا أو مشروعا يُسلَّم ويُقيَّم");
+      if (!legacySlots) {
+        const loose = w.assessments.filter((a) => !a.moduleId || !ids.includes(a.moduleId));
+        if (loose.length) out.push(`اربط كلَّ مهمّةٍ بمحورها: ${loose.map((a) => `«${a.title}»`).join("، ")}`);
+      }
+      if ((saved?.resources ?? []).length === 0) out.push("أضِف مصدرا واحدا على الأقلّ — كرّاسةً أو كتابا أو رابطا");
+      const orphan = (saved?.resources ?? []).filter((r) => r.moduleId && !ids.includes(r.moduleId));
+      if (orphan.length) out.push(`مصادرُ مربوطةٌ بمحورٍ حُذف: ${orphan.map((r) => `«${r.title}»`).join("، ")} — اختر لها محورا`);
+      return out.length ? out : [label];
+    }
     return [label];
   };
   /* ═══ «احفظ وتابِع» — الزرُّ المضاء ═══
@@ -592,7 +680,7 @@ export default function CohortWorkspace() {
       const fresh = await load();
       if (!fresh) return;
       const at = STAGES.findIndex((x) => x.key === stage);
-      if (fresh.checklist.find((c) => c.key === stage)?.done) {
+      if (STAGE_KEYS[stage].every((k) => fresh.checklist.find((c) => c.key === k)?.done)) {
         const next = STAGES[at + 1];
         if (next) {
           setStage(next.key);
@@ -624,13 +712,13 @@ export default function CohortWorkspace() {
 
      النموذجُ واحدٌ للفعلين: ما كُتب فيه يُرسَل `POST` إن لم يكن تحت اليد
      تكليفٌ يُعدَّل، و`PATCH` إن كان. فلا شاشةٌ ثانيةٌ ولا حقولٌ تُكرَّر. */
-  const blankTask = { title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "" };
+  const blankTask = { title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "", moduleId: "" };
   const cancelEdit = () => { setEditingId(null); setTaskForm(blankTask); setTaskAttachments([]); setTaskFormOpen(false); };
   const editAssessment = (a: Workspace["assessments"][number]) => {
     setEditingId(a.id);
     /* «عدّل» يفتح الانسدالَ نفسَه — لا شاشةَ ثانيةً ولا حقولٌ تُكرَّر */
     setTaskFormOpen(true);
-    setTaskForm({ title: a.title, briefAr: a.briefAr ?? "", type: a.type, maxScore: a.maxScore, dueAt: toDateInput(a.dueAt) });
+    setTaskForm({ title: a.title, briefAr: a.briefAr ?? "", type: a.type, maxScore: a.maxScore, dueAt: a.dueAt ? zonedDay(a.dueAt) : "", moduleId: a.moduleId ?? "" });
     setTaskAttachments(readTypedLinks(a.attachments));
   };
   const saveAssessment = () => act(async () => {
@@ -638,14 +726,19 @@ export default function CohortWorkspace() {
       title: taskForm.title.trim(), type: taskForm.type, maxScore: taskForm.maxScore,
       /* الفراغُ يعني «بلا تعليمات» — يُرسَل `null` عند التعديل كي يُمحى ما كان */
       briefAr: taskForm.briefAr.trim() || null,
-      dueAt: taskForm.dueAt ? new Date(taskForm.dueAt).toISOString() : null,
+      /* ═══ وآخرُ الموعد آخرُ ذلك اليوم بتوقيت الشعبة (٢٧ سبتمبر ٢٠٢٦) ═══
+         كان `new Date(يوم)` — منتصفَ ليلِ أوّله بغرينتش، أي الثالثةَ فجرا في
+         عمّان: من اختار «الخميس» أُغلق عليه فجرَ الخميس لا ليلَه. */
+      dueAt: taskForm.dueAt ? zonedInstant(taskForm.dueAt, [23, 59, 59, 999]).toISOString() : null,
+      /* ومحورُها — منه متى تُفتح للمتعلّم */
+      moduleId: taskForm.moduleId || null,
       /* الناقصُ يُسقَط لا يُرسَل نصفَ مرفق — والمصفوفةُ الفارغةُ محوٌ مقصود */
       attachments: taskAttachments
         .filter((r) => r.title.trim() && /^https?:\/\//.test((r.url ?? "").trim()))
         .map((r) => ({ title: r.title.trim(), url: (r.url ?? "").trim(), kind: resourceKind(r.kind) })),
     };
     if (editingId) await apiPatch(`/api/trainer/assessments/${editingId}`, payload);
-    else await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined });
+    else await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined, moduleId: payload.moduleId ?? undefined });
     cancelEdit();
   }, editingId ? "حُفظ التعديل — يراه المسجّلون كما هو الآن" : "أُنشئت المهمّة — تظهر للمسجّلين ويعود إليك تسليمُهم في طابور المراجعة");
   const deleteAssessment = (a: Workspace["assessments"][number]) => act(async () => {
@@ -655,6 +748,30 @@ export default function CohortWorkspace() {
 
   const setModule = (i: number, patch: Partial<PlanModule>) =>
     setContent({ ...content, modules: content.modules.map((m, j) => (j === i ? { ...m, ...patch } : m)) });
+
+  /* ═══ المحاورُ ومواعيدُها معا — والقاعدةُ في `axis-timeline.ts` ═══
+
+     المواعيدُ تتبع المحاور ولا تنكسر: النقلُ يعيد صبَّ المحاور في المواعيد
+     بأحجامها وتواريخها، والجديدُ يلحق آخرَها، والمحذوفُ يخرج من موعده. والمدّةُ
+     مدّةُ الخطّة التي في اليد إن صلحت — وإلّا المحفوظةُ كما حكم بها الخادم. */
+  const slots = content.slots ?? [];
+  const slotsOn = slots.length > 0;
+  const moduleIds = content.modules.map((m) => m.moduleId);
+  const axisNo = new Map(moduleIds.map((mid, i) => [mid, i + 1]));
+  const ownPeriod = asPeriod(content);
+  const planPeriod = ownPeriod && periodProblem(ownPeriod) === null ? ownPeriod : ws.cohort.period;
+  const setSlots = (next: PlanSlot[]) => setContent({ ...content, slots: next });
+  /* والمسجَّلُ صار في «اللقاءات» بمحوره — إلّا في شعبةٍ اعتُمدت قبل المواعيد */
+  const resourceCats: readonly ResourceCategory[] = slotsOn ? RESOURCE_CATEGORIES.filter((c) => c !== "recorded") : RESOURCE_CATEGORIES;
+  const moveAxis = (i: number, delta: -1 | 1) => {
+    const modules = moveModule(content.modules, i, delta);
+    setContent({ ...content, modules, slots: slotsOn ? reflowSlots(slots, modules.map((m) => m.moduleId)) : content.slots });
+  };
+  const setWorkbook = (si: number, patch: Partial<SlotWorkbook> | null) =>
+    setSlots(slots.map((x, j) => (j === si ? { ...x, workbook: patch === null ? null : { ...(x.workbook ?? {}), ...patch } } : x)));
+  /* المسجَّلُ من مصادر الخطّة — يُحرَّر في «اللقاءات» بموضعه في المصفوفة الواحدة */
+  const patchResource = (i: number, patch: Partial<PlanResource>) =>
+    setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
 
 
   return (
@@ -707,8 +824,9 @@ export default function CohortWorkspace() {
 
             <ol className="flex w-full min-w-0 items-center sm:w-auto sm:flex-1">
               {STAGES.map((s, i) => {
-                const item = byKey.get(s.key);
-                const done = item?.done ?? false;
+                /* تمامُ الدرجة بصفوفها كلِّها — «المهامُّ والمصادر» صفّان، ولا تُعلَّم
+                   تامّةً بأحدهما (قِيس في المتصفّح: عُلّمت تامّةً والمصادرُ ناقصة) */
+                const done = doneOf(s.key);
                 const selected = phase === "prepare" && stage === s.key;
                 const open = canOpen(i);
                 /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
@@ -950,16 +1068,15 @@ export default function CohortWorkspace() {
         </Panel>
       )}
 
-      {/* ─────────── ② المحاور والتطبيق ─────────── */}
-      {phase === "prepare" && stage === "modules" && (
-        <Panel as="section">
-          <StageIntro stage="modules" />
-          {content.modules.length === 0 && (
-            <Inset tone="warn" className="mt-4 text-read leading-6 text-gold-ink">لا محاورَ لهذه الدورة في الكتالوج بعد — أضف محورا أدناه وابدأ منه.</Inset>
-          )}
-          <p className="mt-4 text-read text-muted-foreground">{countAr(content.modules.length, MODULE_FORMS)} · اضغط العنوانَ لتفتحه</p>
-          <ol className="mt-3 space-y-3">
-            {content.modules.map((m, i) => {
+      {/* ─────────── ② المحاور ومواعيدها ───────────
+
+          «وبعدها المحاورُ ومواعيدُها التي يجب أن تكون ضمن كلّ فترة الشعبة»
+          (صاحب المنصّة، ٢٧ سبتمبر ٢٠٢٦). فالمحاورُ تُعرض داخلَ مواعيدها:
+          بطاقةٌ لكلّ موعدٍ بتاريخيه، وفيها محورُه أو محوراه المتجاوران. وبين
+          محورين في موعدٍ واحد «افصِلهما»، وبين موعدين «اجمعهما» ما بقيت
+          المواعيدُ أربعةً فأكثر. والقاعدةُ في `application/trainer/axis-timeline.ts`. */}
+      {phase === "prepare" && stage === "modules" && (() => {
+        const moduleCard = (m: PlanModule, i: number) => {
               const open = openModule === m.moduleId;
               const filled = m.titleAr.trim().length > 1 && (m.outcomeAr ?? "").trim().length > 1;
               /* ═══ ولماذا يتلوّن المحورُ المفتوح ═══
@@ -1000,11 +1117,11 @@ export default function CohortWorkspace() {
                   <div className="flex shrink-0 items-center gap-1">
                     <Button tone="ghost" size="sm" disabled={locked || i === 0}
                       aria-label={`انقل «${m.titleAr || `المحور ${i + 1}`}» إلى أعلى`}
-                      onClick={() => setContent({ ...content, modules: moveModule(content.modules, i, -1) })}
+                      onClick={() => moveAxis(i, -1)}
                     ><ChevronUp className="h-4 w-4" aria-hidden="true" /></Button>
                     <Button tone="ghost" size="sm" disabled={locked || i === content.modules.length - 1}
                       aria-label={`انقل «${m.titleAr || `المحور ${i + 1}`}» إلى أسفل`}
-                      onClick={() => setContent({ ...content, modules: moveModule(content.modules, i, 1) })}
+                      onClick={() => moveAxis(i, 1)}
                     ><ChevronDown className="h-4 w-4" aria-hidden="true" /></Button>
                     <Button tone="ghost" size="sm" disabled={locked}
                       aria-label={`احذف «${m.titleAr || `المحور ${i + 1}`}»`}
@@ -1054,38 +1171,520 @@ export default function CohortWorkspace() {
                 )}
               </Card>
               );
-            })}
-          </ol>
+        };
+        const problems = slotProblems(slots, moduleIds, planPeriod);
+        return (
+        <Panel as="section">
+          <StageIntro stage="modules" />
+          {content.modules.length === 0 && (
+            <Inset tone="warn" className="mt-4 text-read leading-6 text-gold-ink">لا محاورَ لهذه الدورة في الكتالوج بعد — أضف محورا أدناه وابدأ منه.</Inset>
+          )}
+          <p className="mt-4 text-read text-muted-foreground">
+            {countAr(content.modules.length, MODULE_FORMS)}
+            {slotsOn && <> على {slots.length} مواعيد</>}
+            {planPeriod && <> · من {dayLabelAr(planPeriod.startsOn)} إلى {dayLabelAr(planPeriod.endsOn)}</>}
+            {" "}· اضغط العنوانَ لتفتحه
+          </p>
+          {/* ما يمنع المواعيدَ يُقال وهو يرتّبها — بالقاعدة التي يحكم بها الخادم */}
+          {slotsOn && problems.length > 0 && (
+            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
+              <ul className="list-inside list-disc space-y-0.5">{problems.map((x) => <li key={x}>{x}</li>)}</ul>
+            </Inset>
+          )}
+          {!slotsOn && (
+            <Inset className="mt-3 flex flex-wrap items-center gap-3 text-read leading-6 text-muted-foreground">
+              <span className="min-w-0 flex-1">
+                {planPeriod
+                  ? "لم تُوزَّع المحاورُ على مواعيدها بعد — رتّبها أسبوعيّةً من تاريخ البدء، ثمّ عدّلها كما تشاء."
+                  : "حدّد مدّةَ الشعبة في «المعلومات الأساسيّة» أوّلا — فالمواعيدُ داخلها."}
+              </span>
+              {planPeriod && (
+                <Button tone="secondary" size="sm" disabled={locked || content.modules.length === 0}
+                  onClick={() => setSlots(defaultSlots(moduleIds, planPeriod))}>
+                  رتّب المواعيد
+                </Button>
+              )}
+            </Inset>
+          )}
+
+          {slotsOn ? (
+            <ol className="mt-3 space-y-3">
+              {slots.map((slot, si) => (
+                <li key={`${si}-${slot.moduleIds[0] ?? "empty"}`} className="grid gap-2">
+                  <Card tone="default" className="grid gap-3">
+                    <p className="text-read font-black text-teal-light-ink">
+                      الموعد {si + 1} <span className="font-bold text-foreground">· {axesLabelAr(slot.moduleIds, axisNo)}</span>
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <StaffField label="يبدأ" hint="أوّلُ يومٍ فيه: تُفتح فيه كرّاستُه ومادّتُه النظريّة.">
+                        <input type="date" dir="ltr" value={slot.startsOn} disabled={locked}
+                          min={planPeriod?.startsOn} max={planPeriod?.endsOn}
+                          aria-label={`بدايةُ الموعد ${si + 1}`}
+                          onChange={(e) => e.target.value && setSlots(slots.map((x, j) => (j === si ? { ...x, startsOn: e.target.value } : x)))}
+                          className={`${controlCls} text-left`} />
+                      </StaffField>
+                      <StaffField label="وينتهي" hint="آخرُ يومٍ فيه — وهو آخرُ موعدٍ لتسليم مهامّه ما لم تحدّد غيرَه.">
+                        <input type="date" dir="ltr" value={slot.endsOn} disabled={locked}
+                          min={slot.startsOn} max={planPeriod?.endsOn}
+                          aria-label={`نهايةُ الموعد ${si + 1}`}
+                          onChange={(e) => e.target.value && setSlots(slots.map((x, j) => (j === si ? { ...x, endsOn: e.target.value } : x)))}
+                          className={`${controlCls} text-left`} />
+                      </StaffField>
+                    </div>
+                    <ol className="space-y-3">
+                      {slot.moduleIds.map((id, j) => {
+                        const i = moduleIds.indexOf(id);
+                        const m = content.modules[i];
+                        if (!m) return null;
+                        return (
+                          <Fragment key={id}>
+                            {moduleCard(m, i)}
+                            {/* الفصلُ بين محورين في موعدٍ واحد — يقسم أيّامَه بقدرهما */}
+                            {j < slot.moduleIds.length - 1 && (
+                              <li className="flex justify-center">
+                                <Button tone="ghost" size="sm" disabled={locked}
+                                  aria-label={`افصِل المحور ${axisNo.get(id)} عن المحور ${axisNo.get(slot.moduleIds[j + 1])}`}
+                                  onClick={() => setSlots(splitSlot(slots, si, j + 1))}>
+                                  افصِلهما في موعدين
+                                </Button>
+                              </li>
+                            )}
+                          </Fragment>
+                        );
+                      })}
+                    </ol>
+                  </Card>
+                  {/* والجمعُ بين موعدين متجاورين — ما بقيت المواعيدُ فوق الحدّ */}
+                  {si < slots.length - 1 && (
+                    <div className="flex justify-center">
+                      <Button tone="ghost" size="sm" disabled={locked || !canMerge(slots, si, moduleIds.length)}
+                        title={canMerge(slots, si, moduleIds.length) ? undefined : "المواعيدُ أربعةٌ على الأقلّ — لا يُجمع دونها"}
+                        onClick={() => setSlots(mergeSlots(slots, si))}>
+                        اجمع الموعدين {si + 1} و{si + 2}
+                      </Button>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <ol className="mt-3 space-y-3">
+              {content.modules.map((m, i) => moduleCard(m, i))}
+            </ol>
+          )}
           <div className="mt-4 flex flex-wrap gap-2">
             {/* المعرّفُ من أكبرِ ما أُعطي لا من الطول — فلا يرث محورٌ جديدٌ
-                معرّفَ محذوف. الشرحُ في `application/trainer/plan-modules`. */}
+                معرّفَ محذوف. الشرحُ في `application/trainer/plan-modules`.
+                والجديدُ يلحق آخرَ موعد، وللمدرّب أن يفصله. */}
             <Button tone="secondary" disabled={locked} onClick={() => {
               const moduleId = nextTrainerModuleId(ws.course.id, content.modules);
-              setContent({ ...content, modules: [...content.modules, { moduleId, titleAr: "" }] });
+              setContent({ ...content, modules: [...content.modules, { moduleId, titleAr: "" }], slots: slotsOn ? appendToSlots(slots, moduleId) : content.slots });
               setOpenModule(moduleId);
             }}>+ محور</Button>
+            {slotsOn && planPeriod && (
+              <Button tone="ghost" disabled={locked} onClick={() => setPendingReflow(true)}>
+                أعِد توزيعَ المواعيد
+              </Button>
+            )}
             {/* وزرُّ «احفظ المحاور» صار زرَّ الشريط «احفظ وتابِع» — واحدٌ يحفظ
                 ويتقدّم، لا اثنان يُحفظ بأحدهما ويُظنّ الآخر (٢٧ سبتمبر ٢٠٢٦) */}
           </div>
         </Panel>
+        );
+      })()}
+
+      {/* ─────────── ③ الكرّاسات ───────────
+
+          «وبعدها الكرّاساتُ لكلّ محورٍ التي تظهر بفترة كلّ محورٍ مثبَتٍ سابقا»
+          (صاحب المنصّة، ٢٧ سبتمبر ٢٠٢٦). ولكلّ موعدٍ كرّاسةٌ واحدة — المحوران
+          المجموعان يتقاسمانها — ملفٌّ يُرفع أو رابطٌ يُلصَق، ولا يجتمعان: من
+          أراد الآخرَ أزال الأوّل. وتُفتح للمتعلّم أوّلَ يومٍ في الموعد، قبل
+          اللقاء. والحكمُ عليها `workbookDone` نفسُها التي يحكم بها الخادم. */}
+      {phase === "prepare" && stage === "workbooks" && (
+        <Panel as="section">
+          <StageIntro stage="workbooks" />
+          {!slotsOn ? (
+            <Inset className="mt-4 text-read leading-6 text-muted-foreground">
+              لكلّ موعدٍ كرّاستُه — وزّع المحاورَ على مواعيدها في «المحاور ومواعيدها» أوّلا.
+            </Inset>
+          ) : (
+            <ol className="mt-4 space-y-3">
+              {slots.map((slot, si) => {
+                const wb = slot.workbook ?? null;
+                const hasFile = Boolean((wb?.bodyFileKey ?? "").trim());
+                const done = workbookDone(wb);
+                return (
+                  <Card as="li" key={`${si}-${slot.moduleIds[0] ?? "empty"}`} tone={done ? "default" : "accent"} className="grid gap-3">
+                    <div>
+                      <p className="text-read font-black text-teal-light-ink">
+                        الموعد {si + 1} <span className="font-bold text-foreground">· {axesLabelAr(slot.moduleIds, axisNo)}</span>
+                      </p>
+                      <p className="mt-0.5 text-read text-muted-foreground">
+                        تُفتح للمتعلّم {dayLabelAr(slot.startsOn)} — أوّلَ يومٍ في الموعد — وتبقى له بعده.
+                      </p>
+                    </div>
+                    <StaffField label="اسمُ الكرّاسة (اختياريّ)" hint="ما يراه المتعلّم — «كرّاسة المحور الأوّل · التحرير». وإن تركته سُمّيت بمحاورها.">
+                      <input value={wb?.title ?? ""} disabled={locked} maxLength={200}
+                        aria-label={`اسمُ كرّاسة الموعد ${si + 1}`}
+                        onChange={(e) => setWorkbook(si, { title: e.target.value || null })}
+                        className={controlCls} />
+                    </StaffField>
+                    {hasFile ? (
+                      <ModuleBodyUpload
+                        cohortId={ws.cohort.id}
+                        purpose="plan_resource"
+                        refId={`workbook-${slot.moduleIds[0] ?? si}`}
+                        value={wb ?? {}}
+                        onChange={(next) => setWorkbook(si, next)}
+                        disabled={locked}
+                        label="ارفع الكرّاسة"
+                        hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
+                      />
+                    ) : (
+                      <div className="grid gap-2">
+                        <StaffField label="رابطُ الكرّاسة" hint="رابطٌ يبدأ بـ https:// — أو ارفع ملفّا بدلا منه.">
+                          <input dir="ltr" value={wb?.url ?? ""} disabled={locked} placeholder="https://…"
+                            aria-label={`رابطُ كرّاسة الموعد ${si + 1}`}
+                            onChange={(e) => setWorkbook(si, { url: e.target.value || null })}
+                            className={`${controlCls} text-left`} />
+                        </StaffField>
+                        {!(wb?.url ?? "").trim() && (
+                          <ModuleBodyUpload
+                            cohortId={ws.cohort.id}
+                            purpose="plan_resource"
+                            refId={`workbook-${slot.moduleIds[0] ?? si}`}
+                            value={wb ?? {}}
+                            onChange={(next) => setWorkbook(si, { ...next, url: null })}
+                            disabled={locked}
+                            label="أو ارفع ملفّا"
+                            hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
+                          />
+                        )}
+                      </div>
+                    )}
+                    {!done && <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد — ملفٌّ أو رابط.</p>}
+                  </Card>
+                );
+              })}
+            </ol>
+          )}
+        </Panel>
       )}
 
-      {/* ─────────── ③ المصادر ─────────── */}
-      {phase === "prepare" && stage === "resources" && (
+      {/* ─────────── ④ اللقاءات المباشرة ─────────── */}
+      {phase === "prepare" && stage === "sessions" && (
+        <div className="space-y-5">
+          <Panel as="section">
+            <StageIntro stage="sessions" />
+            {/* حدودُه تُقال حيث يجدول داخلها — لا في لافتةٍ فوق المتن كلِّه */}
+            {ws.cohort.period && (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                مدّةُ شعبتك: من <b className="text-foreground">{fmtDateAr(ws.cohort.period.startsOn)}</b> إلى{" "}
+                <b className="text-foreground">{fmtDateAr(ws.cohort.period.endsOn)}</b> — وتغييرُها من «المعلومات الأساسيّة».
+              </p>
+            )}
+            {/* ═══ والمبدئيُّ يُقال سطرا لا يُسرد لقاءات (٢٧ سبتمبر ٢٠٢٦) ═══
+                «امنحه أن يضيفها بنفسه لا ينقلها، لأنّ ما هو موجودٌ مثالٌ فقط».
+                فلا يُسرد المثالُ بأزرار نقل — يُقال ما هو ومتى يذهب. */}
+            {ws.sessions.some((x) => x.placeholder) && (
+              <Inset className="mt-3 text-read leading-6 text-muted-foreground">
+                فُتحت الشعبةُ للتسجيل بـ{ws.sessions.filter((x) => x.placeholder).length} مواعيدَ مبدئيّةٍ وضعتها الإدارة — مثالٌ يراه
+                من يسجّل، <b className="text-foreground">لا لقاءاتٌ لك</b>: لا تُنقل ولا تُحسب في عددك. أضِف لقاءاتِك بنفسك، ويُرفع
+                المثالُ كلُّه حين تعتمد الإدارةُ أوّلَها.
+              </Inset>
+            )}
+          </Panel>
+
+          {/* ═══ بطاقةٌ لكلّ موعد — والمسجَّلُ مع المباشر (٢٧ سبتمبر ٢٠٢٦) ═══
+
+              «اللقاءاتُ المباشرة التي يحدّدها المدرّبُ بفترة كلّ محور بحسب
+              ربطه لأيّ محاور»، و«لا بأس أن جمعت بين اللقاءات المسجّلة
+              واللقاءات المباشرة في واحدة لأنّهم نفسُ الأثر». والشعبةُ التي
+              اعتُمدت قبل المواعيد تجدول كما كانت. */}
+          {slotsOn ? (() => {
+            const mine = ws.sessions.filter((x) => !x.placeholder && x.status !== "cancelled");
+            const slotOf = (x: { moduleIds?: string[] }) => slotIndexOf(slots, (x.moduleIds ?? [])[0] ?? "");
+            const loose = mine.filter((x) => slotOf(x) === -1);
+            const recordedRows = content.resources.map((r, i) => ({ r, i })).filter(({ r }) => resourceCategory(r) === "recorded");
+            const looseRecorded = recordedRows.filter(({ r }) => slotIndexOf(slots, r.moduleId ?? "") === -1);
+            return (
+              <>
+                <ol className="space-y-4">
+                  {slots.map((slot, si) => (
+                    <SlotSessions
+                      key={`${si}-${slot.moduleIds[0] ?? "empty"}`}
+                      cohortId={ws.cohort.id}
+                      slot={slot}
+                      index={si}
+                      axisNo={axisNo}
+                      sessions={mine.filter((x) => slotOf(x) === si)}
+                      recorded={recordedRows.filter(({ r }) => slotIndexOf(slots, r.moduleId ?? "") === si).map(({ r, i }) => ({ row: r, i }))}
+                      locked={locked}
+                      onDone={() => void load()}
+                      onAddRecorded={(row) => setContent({
+                        ...content,
+                        resources: [...content.resources, { ...row, title: row.title, category: "recorded", kind: kindForCategory("recorded", false) }],
+                      })}
+                      onPatchRecorded={(i, patch) => patchResource(i, patch)}
+                      onRemoveRecorded={(i) => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })}
+                    />
+                  ))}
+                </ol>
+                {/* ما جُدول قبل المحاور أو رُبط بمحورٍ حُذف — يُربط هنا ولا يضيع */}
+                {(loose.length > 0 || looseRecorded.length > 0) && (
+                  <Card tone="accent" className="grid gap-3">
+                    <p className="text-read font-black text-foreground">لم تُربط بمحورٍ بعد</p>
+                    <p className="text-read leading-6 text-muted-foreground">
+                      كلُّ لقاءٍ لمحورٍ أو محورين، وكلُّ جلسةٍ مسجّلةٍ لمحورها — اختر لكلٍّ محورَه، فينتقل إلى بطاقة موعده.
+                      وما انعقد منها لا يمنع الإرسال: ربطُه يحسبه لمحوره.
+                    </p>
+                    <ul className="grid gap-2">
+                      {loose.map((x) => (
+                        <Inset as="li" key={x.id} className="flex flex-wrap items-center gap-3">
+                          <span className="min-w-0 flex-1 text-read">
+                            <b className="text-foreground">{x.title}</b>
+                            <span className="text-muted-foreground"> · {fmtDateTimeAr(x.startsAt)}{new Date(x.endsAt ?? x.startsAt).getTime() < Date.now() ? " · انعقد" : ""}</span>
+                          </span>
+                          <select defaultValue="" disabled={locked || busy} aria-label={`محورُ «${x.title}»`}
+                            onChange={(e) => e.target.value && void act(
+                              () => apiPatch(`/api/trainer/sessions/${x.id}/axes`, { moduleIds: [e.target.value] }),
+                              `رُبط «${x.title}» بمحوره`,
+                            )}
+                            className={`${controlCls} w-auto [&>option]:bg-surface`}>
+                            <option value="">اختر محورا</option>
+                            {content.modules.map((m, k) => <option key={m.moduleId} value={m.moduleId}>المحور {k + 1} — {m.titleAr || "بلا عنوان"}</option>)}
+                          </select>
+                        </Inset>
+                      ))}
+                      {looseRecorded.map(({ r, i }) => (
+                        <Inset as="li" key={`r${i}`} className="flex flex-wrap items-center gap-3">
+                          <span className="min-w-0 flex-1 text-read">
+                            <Film className="me-1 inline h-4 w-4 text-teal-light-ink" aria-hidden="true" />
+                            <b className="text-foreground">{r.title || "جلسةٌ مسجّلة"}</b>
+                          </span>
+                          <select value="" disabled={locked} aria-label={`محورُ الجلسة المسجّلة «${r.title}»`}
+                            onChange={(e) => {
+                              const mid = e.target.value;
+                              const slot = slots[slotIndexOf(slots, mid)];
+                              if (!mid || !slot) return;
+                              /* وتُفتح أوّلَ يومِ موعد محورها ما لم يكن لها وقتٌ داخله */
+                              const inside = r.opensAt && zonedDay(r.opensAt) >= slot.startsOn && zonedDay(r.opensAt) <= slot.endsOn;
+                              patchResource(i, { moduleId: mid, opensAt: inside ? r.opensAt : zonedInstant(slot.startsOn, [8, 0, 0, 0]).toISOString() });
+                            }}
+                            className={`${controlCls} w-auto [&>option]:bg-surface`}>
+                            <option value="">اختر محورا</option>
+                            {content.modules.map((m, k) => <option key={m.moduleId} value={m.moduleId}>المحور {k + 1} — {m.titleAr || "بلا عنوان"}</option>)}
+                          </select>
+                        </Inset>
+                      ))}
+                    </ul>
+                  </Card>
+                )}
+              </>
+            );
+          })() : (
+            /* الجدولةُ بيده داخلَ مدّة شعبته، والاعتمادُ بيد الإدارة */
+            <TrainerSchedule
+              cohortId={ws.cohort.id}
+              onDone={() => void load()}
+              minSessions={Math.max(1, content.modules.length)}
+              haveSessions={ws.sessions.filter((x) => !x.placeholder && x.status !== "cancelled").length}
+            />
+          )}
+
+          {/* واللقاءاتُ المجدولةُ وحضورُها — انتقلت من «التشغيل» (د-٤). من
+              جدول لقاءه يرى في الموضع نفسِه ما جدوله ومن حضره. */}
+          <SessionsAndAttendance cohortId={ws.cohort.id} />
+
+          {/* ═══ وسقطت «ملاحظاتٌ عن اللقاءات المباشرة» من هنا (١٥ سبتمبر ٢٠٢٦) ═══
+
+              كانت خانةً واحدةً لكلّ لقاءات الشعبة: «ما تودّ أن يعرفه المتعلّم
+              عن أسلوب لقاءاتك». وقال صاحبُ المنصّة: «لا داعيَ لوجود ملاحظاتٌ
+              عن اللقاءات المباشرة (اختياريّ) بالأسفل» — وصارت **لكلّ لقاءٍ
+              على حدة** في نموذج إنشائه.
+
+              وملاحظةٌ واحدةٌ عن عشرة لقاءاتٍ تُكتب عامّةً فلا تقول شيئا عن
+              أيٍّ منها؛ ومن أراد أن يقول «هذا اللقاء يُسجَّل وذاك لا» لم يكن
+              يملك أين يقوله. */}
+        </div>
+      )}
+
+      {/* ─────────── ⑤ التكاليف ─────────── */}
+      {phase === "prepare" && stage === "assignments" && (
         <div className="space-y-5">
         <Panel as="section">
-          <StageIntro stage="resources" />
-          {/* ═══ ثلاثةُ أصنافٍ لا قائمةُ أنواعٍ لكلّ صفّ ═══
+          <StageIntro stage="assignments" />
+          {ws.assessments.length === 0 ? (
+            <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {ws.assessments.map((a) => (
+                <Inset as="li" key={a.id} className={editingId === a.id ? "ring-1 ring-teal/50" : undefined}>
+                  <div className="flex flex-wrap items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-read font-bold text-foreground">{a.title}</p>
+                      {/* التعليماتُ تُرى في القائمة: من يراجع تكاليفَه قبل الإرسال
+                          يقرأ ما سيقرؤه المتعلّم، لا عنوانا وحدَه. */}
+                      {a.briefAr
+                        ? <p className="mt-1 whitespace-pre-line text-read leading-6 text-muted-foreground">{a.briefAr}</p>
+                        : <p className="mt-1 text-read text-gold-ink">بلا تعليمات — المتعلّم يرى العنوانَ وحدَه</p>}
+                      <p className="mt-1 text-read text-muted-foreground">
+                        {a.moduleId && axisNo.has(a.moduleId) && <>المحور {axisNo.get(a.moduleId)} · </>}
+                        {ASSESSMENT_TYPES[a.type] ?? a.type} · من {a.maxScore}
+                        {a.dueAt && <> · يُسلَّم قبل {fmtDateTimeAr(a.dueAt)}</>}
+                        {" · "}سلّم {a.submissions}
+                      </p>
+                      {slotsOn && (!a.moduleId || !axisNo.has(a.moduleId)) && (
+                        <p className="mt-1 text-read font-bold text-gold-ink">غيرُ مربوطةٍ بمحور — عدّلها واختر محورَها، فمنه متى تُفتح للمتعلّم.</p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      <Button tone="ghost" size="sm" disabled={busy} onClick={() => editAssessment(a)}>عدّل</Button>
+                      {/* ما سُلّم فيه لا يُحذف — والسببُ يُقال قبل النقر لا بعده */}
+                      <Button
+                        tone="ghost" size="sm"
+                        disabled={busy || a.submissions > 0}
+                        title={a.submissions > 0 ? "سلّم فيه متعلّمون — أغلِقه بدل حذفه" : undefined}
+                        onClick={() => setPendingDelete(a)}
+                      >احذف</Button>
+                    </div>
+                  </div>
+                </Inset>
+              ))}
+            </ul>
+          )}
 
-              كانت الصفحةُ صفوفا متشابهةً في كلٍّ منها قائمةُ أنواعٍ من ستّة
-              يختار منها المدرّبُ بنفسه — «عشوائيّة» كما سمّاها صاحبُ المنصّة
-              (١٥ سبتمبر ٢٠٢٦). فيختلف ترتيبُ شعبتين لمدرّبٍ واحد، ولا يعرف
-              المتعلّمُ أين يبحث.
+          {/* ── نموذجٌ واحدٌ: يؤلّف تكليفا أو يعدّل واحدا قائما — وينسدل ── */}
+          <div className="mt-5 border-t border-white/10 pt-4">
+            {!taskFormOpen ? (
+              <Button tone="secondary" disabled={locked} onClick={() => setTaskFormOpen(true)}>
+                + مهمّةٌ جديدة
+              </Button>
+            ) : (
+              <>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              aria-expanded
+              className="flex w-full items-center justify-between gap-2 text-start"
+            >
+              <span className="text-read font-black text-foreground">
+                {editingId ? "تعديلُ المهمّة" : "مهمّةٌ جديدة"}
+              </span>
+              <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </button>
+            <div className="mt-3 grid gap-3">
+              <label className="block">
+                <span className="block text-read font-bold text-foreground">العنوان</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">يظهر في قائمة مهامّ المتعلّم وفي طابور تقييمك.</span>
+                <input aria-label="عنوان المهمّة" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
+                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} className={controlCls} />
+              </label>
+              <label className="block">
+                <span className="block text-read font-bold text-foreground">التعليمات</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">ما يفعله بالضبط، ومقدارُه، وما يُسلَّم. العنوانُ وحدَه لا يكفي للعمل.</span>
+                <textarea rows={3} aria-label="تعليمات المهمّة" value={taskForm.briefAr}
+                  placeholder="اذكر المطلوبَ ومقدارَه وما يُسلَّم — فالعنوانُ وحدَه لا يكفي للعمل."
+                  onChange={(e) => setTaskForm({ ...taskForm, briefAr: e.target.value })} className={areaCls} />
+              </label>
+              {/* مرفقاتُ التكليف — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */}
+              <div className="block">
+                <span className="block text-read font-bold text-foreground">المرفقات</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">نموذجٌ يملؤه، أو مرجعٌ يقرؤه قبل التسليم. يراها المتعلّمُ تحت التعليمات بنوعِ كلٍّ منها.</span>
+                <ul className="space-y-2">
+                  {taskAttachments.map((att, i) => {
+                    const patch = (next: Partial<PlanResource>) =>
+                      setTaskAttachments(taskAttachments.map((x, j) => (j === i ? { ...x, ...next } : x)));
+                    return (
+                      <li key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
+                        <input value={att.title} onChange={(e) => patch({ title: e.target.value })} placeholder="اسم المرفق" aria-label={`اسم المرفق ${i + 1}`} className={controlCls} />
+                        <input dir="ltr" value={att.url ?? ""} onChange={(e) => patch({ url: e.target.value })} placeholder="https://…" aria-label={`رابط المرفق ${i + 1}`} className={`${controlCls} text-left`} />
+                        <select value={resourceKind(att.kind)} onChange={(e) => patch({ kind: e.target.value })} aria-label={`نوع المرفق ${i + 1}`} className={controlCls}>
+                          {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
+                        </select>
+                        <Button tone="ghost" size="sm" onClick={() => setTaskAttachments(taskAttachments.filter((_, j) => j !== i))}>أزل</Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button tone="ghost" size="sm" className="mt-2" onClick={() => setTaskAttachments([...taskAttachments, { title: "", url: "", kind: "link" }])}>+ مرفق</Button>
+              </div>
+              {/* ═══ محورُ المهمّة — منه متى تُفتح وآخرُ موعدها (٢٧ سبتمبر ٢٠٢٦) ═══
+                  «المهامُّ… تُربط بالمحاور لتظهر للمتعلّم بعد انتهاء كلّ جلسةٍ
+                  مباشرةٍ أو مسجّلة». وآخرُ موعدها آخرُ يومٍ في موعد محورها ما لم
+                  يحدّد غيرَه — يُملأ حين يُختار المحور، وله أن يغيّره. */}
+              {slotsOn && (
+                <label className="block">
+                  <span className="block text-read font-bold text-foreground">المحور</span>
+                  <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">تُفتح للمتعلّم بعد انتهاء أوّل لقاءٍ لمحورها، وآخرُ موعدها آخرُ يومٍ في موعده ما لم تحدّد غيرَه.</span>
+                  <select aria-label="محور المهمّة" value={taskForm.moduleId}
+                    onChange={(e) => {
+                      const mid = e.target.value;
+                      const before = slots[slotIndexOf(slots, taskForm.moduleId)];
+                      const after = slots[slotIndexOf(slots, mid)];
+                      /* ما ملأه المحورُ السابقُ يتبع الجديد — وما كتبه بيده يبقى */
+                      const auto = !taskForm.dueAt || (before && taskForm.dueAt === before.endsOn);
+                      setTaskForm({ ...taskForm, moduleId: mid, dueAt: auto ? (after?.endsOn ?? "") : taskForm.dueAt });
+                    }}
+                    className={`${controlCls} [&>option]:bg-surface`}>
+                    <option value="">اختر محورا</option>
+                    {content.modules.map((m, k) => <option key={m.moduleId} value={m.moduleId}>المحور {k + 1} — {m.titleAr || "بلا عنوان"}</option>)}
+                  </select>
+                </label>
+              )}
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label className="block">
+                  <span className="block text-read font-bold text-foreground">النوع</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يُسلَّم مرّة، و«اختبار» له درجة، و«مشروع تخرّج» يُحتسب في الإكمال.</span>
+                  <select aria-label="نوع المهمّة" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
+                    {Object.entries(ASSESSMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="block text-read font-bold text-foreground">الدرجة العظمى</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">عليها تُحسب نسبتُه. لا تُخفَض بعد رصد درجةٍ أعلى منها.</span>
+                  <input type="number" min={1} dir="ltr" aria-label="الدرجة العظمى" value={taskForm.maxScore}
+                    onChange={(e) => setTaskForm({ ...taskForm, maxScore: Math.max(1, Number(e.target.value) || 1) })}
+                    className={`${controlCls} text-left`} />
+                </label>
+                <label className="block">
+                  <span className="block text-read font-bold text-foreground">آخر موعد</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">حتّى آخر ذلك اليوم بتوقيت الشعبة. وبعده يُقبل المتأخّرُ ويُعلَّم، ويظهر في «من يحتاج تدخّلك» إن لم يسلّم.</span>
+                  <input type="date" dir="ltr" aria-label="آخر موعد للتسليم" value={taskForm.dueAt}
+                    onChange={(e) => setTaskForm({ ...taskForm, dueAt: e.target.value })} className={`${controlCls} text-left`} />
+                </label>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button tone="confirm" disabled={busy || taskForm.title.trim().length < 3 || (slotsOn && !taskForm.moduleId)} onClick={saveAssessment}>
+                  {editingId ? "احفظ التعديل" : "أكِّدِ المهمّة"}
+                </Button>
+                {/* والإلغاءُ يُطوى بالانسدال: من فتحه ليجرّب يغلقه بلا أثر */}
+                <Button tone="ghost" disabled={busy} onClick={cancelEdit}>
+                  {editingId ? "أَلْغِ التعديل" : "أغلِق"}
+                </Button>
+              </div>
+            </div>
+              </>
+            )}
+          </div>
+        </Panel>
 
-              فصارت ثلاثَ خاناتٍ لكلٍّ بابُها: المسجَّلُ بتاريخ فتحه، والكتبُ
-              بهدفها، والعامُّ بلا شرط. والنوعُ يُشتقّ من الصنف فلا يُسأل. */}
+        {/* ═══ والمصادرُ هنا مع المهامّ (٢٧ سبتمبر ٢٠٢٦) ═══
+
+            «وبعدها المهامُّ والواجباتُ وغيرُها، والتي تُربط بالمحاور». فذهبت
+            خطوةُ «المصادر» على حدة: المسجَّلُ منها صار جلساتٍ في «اللقاءات»
+            بمحاورها، والكتبُ والروابطُ هنا — كلٌّ بمحوره. وشعبةٌ اعتُمدت قبل
+            المواعيد تبقى أصنافُها الثلاثةُ هنا كما كانت. */}
+        <Panel as="section">
+          <h3 className="flex items-center gap-2 text-sm font-black">
+            <FileText className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> المصادر
+          </h3>
+          <p className="mt-1.5 text-read leading-7 text-muted-foreground">
+            ما يحتاجه المتعلّمُ خارجَ اللقاء: كرّاسةٌ أو مقالٌ أو فيديو.
+            {slotsOn ? " واربط كلَّ مصدرٍ بمحوره فيُفتح بعد لقائه — أو اجعله قراءةً مسبقةً تُفتح مع الكرّاسة." : " تُفتح له مع أوّل يوم."}
+          </p>
           <div className="mt-4 space-y-5">
-            {RESOURCE_CATEGORIES.map((cat) => {
+            {resourceCats.map((cat) => {
               const meta = RESOURCE_CATEGORY_META[cat];
               /* الموضعُ الأصليُّ يُحمل مع الصفّ: التعديلُ والحذفُ يقعان على
                  المصفوفة الواحدة، والترشيحُ يعيد ترقيما لا يطابقها. */
@@ -1176,6 +1775,31 @@ export default function CohortWorkspace() {
                                 className={`${controlCls} text-left`}
                               />
                             </StaffField>
+                          )}
+                          {/* ═══ ومحورُه ومتى يُفتح (٢٧ سبتمبر ٢٠٢٦) ═══
+
+                              «وبعدها المهامُّ والواجباتُ وغيرُها، والتي تُربط
+                              بالمحاور لتظهر للمتعلّم بعد انتهاء كلّ جلسة». فالمصدرُ
+                              المربوطُ يُفتح بعد أوّل لقاءٍ لمحوره، والمسبقُ منه مع
+                              كرّاسة موعده، والذي بلا محورٍ للشعبة كلِّها مع أوّل يوم. */}
+                          {slotsOn && cat !== "recorded" && (
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <StaffField label="محورُه" hint="يُفتح للمتعلّم بعد انتهاء أوّل لقاءٍ لمحوره. و«للشعبة كلّها» يُفتح مع أوّل يومٍ فيها.">
+                                <select value={r.moduleId ?? ""} onChange={(e) => patch({ moduleId: e.target.value || null, ...(e.target.value ? {} : { preReading: null }) })}
+                                  disabled={locked} aria-label={`محورُ المصدر ${i + 1}`} className={`${controlCls} [&>option]:bg-surface`}>
+                                  <option value="">للشعبة كلّها</option>
+                                  {content.modules.map((m, k) => <option key={m.moduleId} value={m.moduleId}>المحور {k + 1} — {m.titleAr || "بلا عنوان"}</option>)}
+                                </select>
+                              </StaffField>
+                              {r.moduleId && (
+                                <label className="flex min-h-11 cursor-pointer items-center gap-2.5 self-end text-read leading-6">
+                                  <input type="checkbox" checked={Boolean(r.preReading)} disabled={locked}
+                                    onChange={(e) => patch({ preReading: e.target.checked || null })}
+                                    className="h-4 w-4 shrink-0 accent-teal" />
+                                  قراءةٌ مسبقة — يُفتح مع كرّاسة الموعد، قبل اللقاء
+                                </label>
+                              )}
+                            </div>
                           )}
                         </Card>
                       );
@@ -1268,200 +1892,6 @@ export default function CohortWorkspace() {
               المخزن — فيُرفع ثمّ لا يُحفظ (`resourceHasSource` في `saveProblems`). */}
         </Panel>
 
-        {/* ═══ و«موادُّ الشعبة» حُذفت كلّيّا (١٥ سبتمبر ٢٠٢٦) ═══
-
-            كانت لوحةً ثانيةً تحت المصادر ترفع ملفّاتٍ لا تمرّ باعتماد.
-            وقال صاحبُ المنصّة: «لا داعيَ لخانة مواد الشعبة كلّيّا».
-
-            وما كانت تحمله له بابُه الآن: ملفٌّ للمتعلّم يُرفع في «كتبٌ
-            وملفّات» ويمرّ بالاعتماد كسائر المصادر، وملفُّ لقاءٍ بعينه
-            يُرفق باللقاء في خطوته. ولوحتان ترفعان ملفّاتٍ للمتعلّم
-            إحداهما محروسةٌ والأخرى لا — بابٌ حول الاعتماد لا خانةُ راحة. */}
-        </div>
-      )}
-
-      {/* ─────────── ④ اللقاءات المباشرة ─────────── */}
-      {phase === "prepare" && stage === "sessions" && (
-        <div className="space-y-5">
-          <Panel as="section">
-            <StageIntro stage="sessions" />
-            {/* حدودُه تُقال حيث يجدول داخلها — لا في لافتةٍ فوق المتن كلِّه */}
-            {ws.cohort.period && (
-              <p className="mt-2 text-read leading-6 text-muted-foreground">
-                مدّةُ شعبتك: من <b className="text-foreground">{fmtDateAr(ws.cohort.period.startsOn)}</b> إلى{" "}
-                <b className="text-foreground">{fmtDateAr(ws.cohort.period.endsOn)}</b> — وتغييرُها من «المعلومات الأساسيّة».
-              </p>
-            )}
-            {/* ═══ والمبدئيُّ يُقال سطرا لا يُسرد لقاءات (٢٧ سبتمبر ٢٠٢٦) ═══
-                «امنحه أن يضيفها بنفسه لا ينقلها، لأنّ ما هو موجودٌ مثالٌ فقط».
-                فلا يُسرد المثالُ بأزرار نقل — يُقال ما هو ومتى يذهب. */}
-            {ws.sessions.some((x) => x.placeholder) && (
-              <Inset className="mt-3 text-read leading-6 text-muted-foreground">
-                فُتحت الشعبةُ للتسجيل بـ{ws.sessions.filter((x) => x.placeholder).length} مواعيدَ مبدئيّةٍ وضعتها الإدارة — مثالٌ يراه
-                من يسجّل، <b className="text-foreground">لا لقاءاتٌ لك</b>: لا تُنقل ولا تُحسب في عددك. أضِف لقاءاتِك بنفسك، ويُرفع
-                المثالُ كلُّه حين تعتمد الإدارةُ أوّلَها.
-              </Inset>
-            )}
-          </Panel>
-
-          {/* الجدولةُ بيده داخلَ مدّة شعبته، والاعتمادُ بيد الإدارة */}
-          <TrainerSchedule
-            cohortId={ws.cohort.id}
-            onDone={() => void load()}
-            minSessions={Math.max(1, content.modules.length)}
-            haveSessions={ws.sessions.filter((x) => !x.placeholder && x.status !== "cancelled").length}
-          />
-
-          {/* واللقاءاتُ المجدولةُ وحضورُها — انتقلت من «التشغيل» (د-٤). من
-              جدول لقاءه يرى في الموضع نفسِه ما جدوله ومن حضره. */}
-          <SessionsAndAttendance cohortId={ws.cohort.id} />
-
-          {/* ═══ وسقطت «ملاحظاتٌ عن اللقاءات المباشرة» من هنا (١٥ سبتمبر ٢٠٢٦) ═══
-
-              كانت خانةً واحدةً لكلّ لقاءات الشعبة: «ما تودّ أن يعرفه المتعلّم
-              عن أسلوب لقاءاتك». وقال صاحبُ المنصّة: «لا داعيَ لوجود ملاحظاتٌ
-              عن اللقاءات المباشرة (اختياريّ) بالأسفل» — وصارت **لكلّ لقاءٍ
-              على حدة** في نموذج إنشائه.
-
-              وملاحظةٌ واحدةٌ عن عشرة لقاءاتٍ تُكتب عامّةً فلا تقول شيئا عن
-              أيٍّ منها؛ ومن أراد أن يقول «هذا اللقاء يُسجَّل وذاك لا» لم يكن
-              يملك أين يقوله. */}
-        </div>
-      )}
-
-      {/* ─────────── ⑤ التكاليف ─────────── */}
-      {phase === "prepare" && stage === "assignments" && (
-        <div className="space-y-5">
-        <Panel as="section">
-          <StageIntro stage="assignments" />
-          {ws.assessments.length === 0 ? (
-            <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {ws.assessments.map((a) => (
-                <Inset as="li" key={a.id} className={editingId === a.id ? "ring-1 ring-teal/50" : undefined}>
-                  <div className="flex flex-wrap items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-read font-bold text-foreground">{a.title}</p>
-                      {/* التعليماتُ تُرى في القائمة: من يراجع تكاليفَه قبل الإرسال
-                          يقرأ ما سيقرؤه المتعلّم، لا عنوانا وحدَه. */}
-                      {a.briefAr
-                        ? <p className="mt-1 whitespace-pre-line text-read leading-6 text-muted-foreground">{a.briefAr}</p>
-                        : <p className="mt-1 text-read text-gold-ink">بلا تعليمات — المتعلّم يرى العنوانَ وحدَه</p>}
-                      <p className="mt-1 text-read text-muted-foreground">
-                        {ASSESSMENT_TYPES[a.type] ?? a.type} · من {a.maxScore}
-                        {a.dueAt && <> · يُسلَّم قبل {fmtDateTimeAr(a.dueAt)}</>}
-                        {" · "}سلّم {a.submissions}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-1">
-                      <Button tone="ghost" size="sm" disabled={busy} onClick={() => editAssessment(a)}>عدّل</Button>
-                      {/* ما سُلّم فيه لا يُحذف — والسببُ يُقال قبل النقر لا بعده */}
-                      <Button
-                        tone="ghost" size="sm"
-                        disabled={busy || a.submissions > 0}
-                        title={a.submissions > 0 ? "سلّم فيه متعلّمون — أغلِقه بدل حذفه" : undefined}
-                        onClick={() => setPendingDelete(a)}
-                      >احذف</Button>
-                    </div>
-                  </div>
-                </Inset>
-              ))}
-            </ul>
-          )}
-
-          {/* ── نموذجٌ واحدٌ: يؤلّف تكليفا أو يعدّل واحدا قائما — وينسدل ── */}
-          <div className="mt-5 border-t border-white/10 pt-4">
-            {!taskFormOpen ? (
-              <Button tone="secondary" disabled={locked} onClick={() => setTaskFormOpen(true)}>
-                + مهمّةٌ جديدة
-              </Button>
-            ) : (
-              <>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              aria-expanded
-              className="flex w-full items-center justify-between gap-2 text-start"
-            >
-              <span className="text-read font-black text-foreground">
-                {editingId ? "تعديلُ المهمّة" : "مهمّةٌ جديدة"}
-              </span>
-              <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-            </button>
-            <div className="mt-3 grid gap-3">
-              <label className="block">
-                <span className="block text-read font-bold text-foreground">العنوان</span>
-                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">يظهر في قائمة مهامّ المتعلّم وفي طابور تقييمك.</span>
-                <input aria-label="عنوان المهمّة" placeholder="عنوان الواجب أو المشروع" value={taskForm.title}
-                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} className={controlCls} />
-              </label>
-              <label className="block">
-                <span className="block text-read font-bold text-foreground">التعليمات</span>
-                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">ما يفعله بالضبط، ومقدارُه، وما يُسلَّم. العنوانُ وحدَه لا يكفي للعمل.</span>
-                <textarea rows={3} aria-label="تعليمات المهمّة" value={taskForm.briefAr}
-                  placeholder="اذكر المطلوبَ ومقدارَه وما يُسلَّم — فالعنوانُ وحدَه لا يكفي للعمل."
-                  onChange={(e) => setTaskForm({ ...taskForm, briefAr: e.target.value })} className={areaCls} />
-              </label>
-              {/* مرفقاتُ التكليف — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */}
-              <div className="block">
-                <span className="block text-read font-bold text-foreground">المرفقات</span>
-                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">نموذجٌ يملؤه، أو مرجعٌ يقرؤه قبل التسليم. يراها المتعلّمُ تحت التعليمات بنوعِ كلٍّ منها.</span>
-                <ul className="space-y-2">
-                  {taskAttachments.map((att, i) => {
-                    const patch = (next: Partial<PlanResource>) =>
-                      setTaskAttachments(taskAttachments.map((x, j) => (j === i ? { ...x, ...next } : x)));
-                    return (
-                      <li key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
-                        <input value={att.title} onChange={(e) => patch({ title: e.target.value })} placeholder="اسم المرفق" aria-label={`اسم المرفق ${i + 1}`} className={controlCls} />
-                        <input dir="ltr" value={att.url ?? ""} onChange={(e) => patch({ url: e.target.value })} placeholder="https://…" aria-label={`رابط المرفق ${i + 1}`} className={`${controlCls} text-left`} />
-                        <select value={resourceKind(att.kind)} onChange={(e) => patch({ kind: e.target.value })} aria-label={`نوع المرفق ${i + 1}`} className={controlCls}>
-                          {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
-                        </select>
-                        <Button tone="ghost" size="sm" onClick={() => setTaskAttachments(taskAttachments.filter((_, j) => j !== i))}>أزل</Button>
-                      </li>
-                    );
-                  })}
-                </ul>
-                <Button tone="ghost" size="sm" className="mt-2" onClick={() => setTaskAttachments([...taskAttachments, { title: "", url: "", kind: "link" }])}>+ مرفق</Button>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <label className="block">
-                  <span className="block text-read font-bold text-foreground">النوع</span>
-                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يُسلَّم مرّة، و«اختبار» له درجة، و«مشروع تخرّج» يُحتسب في الإكمال.</span>
-                  <select aria-label="نوع المهمّة" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
-                    {Object.entries(ASSESSMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                  </select>
-                </label>
-                <label className="block">
-                  <span className="block text-read font-bold text-foreground">الدرجة العظمى</span>
-                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">عليها تُحسب نسبتُه. لا تُخفَض بعد رصد درجةٍ أعلى منها.</span>
-                  <input type="number" min={1} dir="ltr" aria-label="الدرجة العظمى" value={taskForm.maxScore}
-                    onChange={(e) => setTaskForm({ ...taskForm, maxScore: Math.max(1, Number(e.target.value) || 1) })}
-                    className={`${controlCls} text-left`} />
-                </label>
-                <label className="block">
-                  <span className="block text-read font-bold text-foreground">آخر موعد</span>
-                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">بعده يظهر المتعلّم في «من يحتاج تدخّلك» إن لم يسلّم.</span>
-                  <input type="date" dir="ltr" aria-label="آخر موعد للتسليم" value={taskForm.dueAt}
-                    onChange={(e) => setTaskForm({ ...taskForm, dueAt: e.target.value })} className={`${controlCls} text-left`} />
-                </label>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button tone="confirm" disabled={busy || taskForm.title.trim().length < 3} onClick={saveAssessment}>
-                  {editingId ? "احفظ التعديل" : "أكِّدِ المهمّة"}
-                </Button>
-                {/* والإلغاءُ يُطوى بالانسدال: من فتحه ليجرّب يغلقه بلا أثر */}
-                <Button tone="ghost" disabled={busy} onClick={cancelEdit}>
-                  {editingId ? "أَلْغِ التعديل" : "أغلِق"}
-                </Button>
-              </div>
-            </div>
-              </>
-            )}
-          </div>
-        </Panel>
-
         {/* ما سُلّم وما ينتظر — انتقلت من «التشغيل» (ع-١). من كتب المهمّةَ
             يرى تحتها من استجاب لها، بالمقام الصحيح لا بعدد قائمة الانتظار. */}
         <CohortSubmissions cohortId={ws.cohort.id} />
@@ -1474,7 +1904,12 @@ export default function CohortWorkspace() {
           confirmLabelAr="احذفه من خطّتي"
           onCancel={() => setPendingModule(null)}
           onConfirm={() => {
-            setContent({ ...content, modules: content.modules.filter((_, j) => j !== pendingModule.index) });
+            setContent({
+              ...content,
+              modules: content.modules.filter((_, j) => j !== pendingModule.index),
+              /* ويخرج من موعده، ويسقط الموعدُ إن فرغ — فلا تتحرّك تواريخُ غيره */
+              slots: slotsOn ? dropFromSlots(slots, pendingModule.module.moduleId) : content.slots,
+            });
             setPendingModule(null);
           }}
         >
@@ -1488,6 +1923,27 @@ export default function CohortWorkspace() {
               هذا محورٌ من الكتالوج — حذفُه من خطّتك لا يحذفه من الدورة نفسِها، ويظلّ محسوبا في تقدّم المتعلّم.
             </Inset>
           )}
+        </ConfirmAction>
+      )}
+
+      {pendingReflow && planPeriod && (
+        <ConfirmAction
+          titleAr="إعادةُ توزيع المواعيد"
+          confirmLabelAr="أعِد توزيعَها"
+          onCancel={() => setPendingReflow(false)}
+          onConfirm={() => {
+            /* والكرّاسةُ تتبع أوّلَ محاور موعدها — فلا يضيع ما رُفع لأجل ترتيبٍ جديد */
+            const next = defaultSlots(moduleIds, planPeriod).map((x) => ({
+              ...x, workbook: slots.find((o) => o.moduleIds[0] === x.moduleIds[0])?.workbook ?? null,
+            }));
+            setSlots(next);
+            setPendingReflow(false);
+          }}
+        >
+          <p className="text-read leading-7">
+            تُرتَّب المواعيدُ من جديدٍ أسبوعيّةً من تاريخ البدء، وتذهب تواريخُك وما جمعتَ وفصلتَ منها.
+            ولا يقع شيءٌ حتّى تحفظ.
+          </p>
         </ConfirmAction>
       )}
 
@@ -1510,7 +1966,7 @@ export default function CohortWorkspace() {
         <Panel as="section" tone={st.tone}>
           <StageIntro stage="approval" />
           <p className="mt-2 text-read leading-7 text-foreground">
-            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومواعيدَها، ومحاورَها وتطبيقَها العمليّ، ومصادرَها، ومواعيدَ لقاءاتها المباشرة، ومهامَّها، وجلساتِها المسجّلة إن وُجدت. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
+            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومدّتَها، ومحاورَها ومواعيدَها وتطبيقَها العمليّ، وكرّاساتِها، ولقاءاتِها المباشرة وجلساتِها المسجّلة، ومهامَّها ومصادرَها. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
           {/* والباقي يُسمّى بأسمائه لا بعدد: «بقي ١» تركت المدرّبَ يفتح
@@ -1550,7 +2006,7 @@ export default function CohortWorkspace() {
           )}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
             <input id="plan-confirm" type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
-            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها ومهامَّها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
+            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
           </label>
           {/* والإرسالُ بزرّ الشريط نفسِه — «أرسِلها للاعتماد» في هذه الدرجة: ذهبيٌّ
               واحدٌ يتبدّل اسمُه، لا ذهبيّان يتنازعان العين. */}
