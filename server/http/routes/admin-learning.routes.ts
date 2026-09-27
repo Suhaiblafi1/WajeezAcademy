@@ -135,6 +135,19 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return cohorts.decideSession(req.auth!.userId, id, body.approve, body.note)
   })
 
+  /* ═══ ومهامُّ ما بعد الاعتماد — جديدةٌ أو تعديلٌ أو حذفٌ ينتظر (٣ج-٣) ═══
+
+     «وبعد الاعتماد كلُّ تغييرٍ باعتماد». وبالصلاحيّة نفسِها التي تُعتمَد بها
+     الخطّةُ ولقاءاتُها: من اعتمد المنهجَ يعتمد ما يُغيَّر فيه. والردُّ بسببه. */
+  app.post('/api/admin/cohort-assessments/:id/decide', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ مهمّةٍ جديدةٍ أو تعديلِها أو حذفِها بعد اعتماد الخطّة، أو ردُّه بسبب' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
+    return assessments.decideTask(req.auth!.userId, id, body.approve, body.note)
+  })
+
   app.post('/api/admin/cohorts/:cohortId/remind-trainer', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-cohorts'], summary: 'تذكيرُ مدرّب الشعبة بإكمال تجهيزها — جرسٌ وبريد' },

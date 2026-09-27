@@ -21,6 +21,7 @@
 import type { CohortPeriod } from './cohort-period'
 import { resourceCategory, displayKind } from './plan-overlay'
 import { workbookDone, type PlanSlot } from './axis-timeline'
+import { proposedTask, readTaskChange, taskReview, taskValues } from './task-approval'
 
 export interface CurriculumInput {
   title: string
@@ -47,7 +48,13 @@ export interface CurriculumInput {
     briefAr?: string | null
     attachments?: unknown
     status?: string | null
+    maxScore?: number | null
+    /** طلبُ المدرّب عليها بعد الاعتماد، وسببُ ردّ آخرِ طلب (٣ج-٣) */
+    pendingChange?: unknown
+    reviewerNote?: string | null
   }[]
+  /** اعتُمدت للمدرّب خطّةٌ قطّ — فما ينتظر من المهامّ يُعلَّم بما ينتظره (٣ج-٣) */
+  approvedOnce?: boolean
   /** اللحظةُ التي يُحكم بها على «انعقد» — تُمرَّر فتُختبر بلا انتظار */
   now?: Date
 }
@@ -85,6 +92,9 @@ export interface CurriculumTask {
   dueAt: string | null
   briefAr: string | null
   attachments: number
+  /** ما ينتظر قرارَ الإدارة فيها بعد الاعتماد — جديدةٌ أو تعديلٌ أو حذف (٣ج-٣).
+      ولا مفتاحَ لما لا ينتظر شيئا */
+  review?: 'new' | 'edit' | 'remove'
 }
 
 export interface CurriculumResource {
@@ -243,14 +253,28 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
     ;(g ? g.meetings : general.meetings).push(row)
   }
 
+  /* ═══ ومهامُّ ما بعد الاعتماد بما طُلب فيها (٣ج-٣) ═══
+
+     الصفحةُ ما يُعتمَد — فالمعدَّلةُ تُقرأ بقيمها المقترَحة وموضعِها المقترَح،
+     وتُعلَّم هي والجديدةُ والمطلوبُ حذفُها. والمسودّةُ التي ردّها المعتمِدُ ليست
+     ممّا يُعتمَد: لا يعتمدها اعتمادُ الخطّة حتّى يعدّلها صاحبُها. */
+  let tasks = 0
   for (const a of input.assessments) {
     if (a.status === 'closed') continue
+    const review = taskReview({ status: a.status ?? 'published', pendingChange: a.pendingChange, reviewerNote: a.reviewerNote }, input.approvedOnce ?? false)
+    if (review === 'declined' && a.status === 'draft') continue
+    const change = readTaskChange(a.pendingChange)
+    const v = proposedTask(taskValues({ ...a, maxScore: a.maxScore ?? 0 }), change)
     const row: CurriculumTask = {
-      id: a.id, title: a.title, type: a.type, dueAt: iso(a.dueAt ?? null), briefAr: text(a.briefAr),
-      attachments: Array.isArray(a.attachments) ? a.attachments.length : 0,
+      id: a.id, title: v.title, type: v.type, dueAt: iso(v.dueAt), briefAr: text(v.briefAr),
+      attachments: change?.kind === 'edit' && change.fields.attachments
+        ? change.fields.attachments.length
+        : Array.isArray(a.attachments) ? a.attachments.length : 0,
+      ...(review === 'new' || review === 'edit' || review === 'remove' ? { review } : {}),
     }
-    const g = a.moduleId ? groupOf.get(a.moduleId) : undefined
+    const g = v.moduleId ? groupOf.get(v.moduleId) : undefined
     ;(g ? g.tasks : general.tasks).push(row)
+    tasks += 1
   }
 
   let recordings = 0
@@ -279,7 +303,7 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
       axes: modules.length,
       groups: groups.length,
       meetings: meetings.length,
-      tasks: input.assessments.filter((a) => a.status !== 'closed').length,
+      tasks,
       resources: resources.length - recordings,
       recordings,
     },

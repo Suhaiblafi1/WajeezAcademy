@@ -2774,6 +2774,12 @@ model CohortAssessment {
   dueAt       DateTime?
   rubricId    String?                @db.Uuid
   status      String                 @default("published") // draft | published | closed
+  /// طلبُ المدرّب على مهمّةٍ منشورةٍ بعد اعتماد خطّته (٣ج-٣): `{ kind: 'edit', fields, requestedAt }`
+  /// أو `{ kind: 'remove', requestedAt }` — والقاعدةُ في `application/trainer/task-approval.ts`.
+  /// المتعلّمون يقرؤون الصفَّ نفسَه حتّى يُعتمَد الطلب، ولا يصلهم هذا العمود.
+  pendingChange Json?
+  /// سببُ ردّ الإدارة آخرَ طلبٍ على المهمّة — يقرؤه المدرّبُ فيها، ويُمحى بطلبه التالي.
+  reviewerNote String?
   createdBy   String?                @db.Uuid
   createdAt   DateTime               @default(now())
   cohort      Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)

@@ -27,6 +27,12 @@ import type { ReviewSection } from '@/application/trainer/review-notes'
 export type CurriculumEditStage = ReviewSection
 
 const TASK_TYPE: Record<string, string> = { assignment: 'واجب', quiz: 'اختبار', project: 'مشروع' }
+/* ومهامُّ ما بعد الاعتماد بما ينتظر فيها (٣ج-٣) — والمعدَّلةُ مقروءةٌ بقيمها المقترَحة */
+const TASK_REVIEW: Record<NonNullable<CurriculumTask['review']>, string> = {
+  new: 'جديدةٌ — تنتظر الاعتماد',
+  edit: 'معدَّلةٌ — تنتظر الاعتماد',
+  remove: 'تُحذف باعتمادها',
+}
 const MEETING_STATE: Record<CurriculumMeeting['state'], { label: string; tone: 'positive' | 'warn' | 'neutral' }> = {
   approved: { label: 'معتمَد', tone: 'positive' },
   pending: { label: 'بانتظار الاعتماد', tone: 'warn' },
@@ -67,7 +73,8 @@ function Tasks({ list }: { list: CurriculumTask[] }) {
         <li key={t.id} className="text-read leading-6">
           <p className="flex flex-wrap items-center gap-x-2">
             <Send className="h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
-            <span className="font-bold text-foreground">{t.title}</span>
+            <span className={`font-bold text-foreground${t.review === 'remove' ? ' line-through' : ''}`}>{t.title}</span>
+            {t.review && <Chip tone="warn">{TASK_REVIEW[t.review]}</Chip>}
             <span className="text-muted-foreground">
               · {TASK_TYPE[t.type] ?? t.type}
               {t.dueAt ? ` · آخرُ موعدها ${whenAr(t.dueAt)}` : ' · بلا آخرِ موعد'}

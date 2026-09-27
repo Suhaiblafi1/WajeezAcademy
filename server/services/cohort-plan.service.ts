@@ -48,7 +48,8 @@ import {
 import {
   joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
-import { APPROVED_PLAN_STATUSES, awaitingTrainerPlan } from './registration-window'
+import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
+import { AssessmentService } from './assessment.service'
 import { resourceCategory } from '../../src/application/trainer/plan-overlay'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -391,9 +392,11 @@ export function countableSessions<T extends { placeholder?: boolean | null; stat
 export class CohortPlanService {
   private prisma: PrismaClient
   private cohorts: CohortService
+  private assessments: AssessmentService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.cohorts = new CohortService(prisma)
+    this.assessments = new AssessmentService(prisma)
   }
 
   /* ─────────── الملكيّة ─────────── */
@@ -450,8 +453,10 @@ export class CohortPlanService {
         },
         assessments: {
           where: { status: { not: 'closed' } }, orderBy: { createdAt: 'asc' },
-          select: { id: true, title: true, briefAr: true, attachments: true, type: true, maxScore: true, dueAt: true, status: true, moduleId: true, _count: { select: { submissions: true } } },
+          select: { id: true, title: true, briefAr: true, attachments: true, type: true, maxScore: true, dueAt: true, status: true, moduleId: true, pendingChange: true, reviewerNote: true, _count: { select: { submissions: true } } },
         },
+        /* أاعتُمدت له خطّةٌ قطّ — منه ينتظر ما يضيفه ويعدّله في مهامّه قرارَ الإدارة (٣ج-٣) */
+        plans: PLAN_GATE_SELECT,
       },
     })
     const plan = await this.latestTrainerPlan(cohortId)
@@ -530,7 +535,10 @@ export class CohortPlanService {
         id: a.id, title: a.title, briefAr: a.briefAr, attachments: a.attachments, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
         moduleId: a.moduleId,
         submissions: a._count.submissions,
+        /* طلبُه على المنشورة وسببُ ردّها — لا يصلان المتعلّم (٣ج-٣) */
+        pendingChange: a.pendingChange, reviewerNote: a.reviewerNote,
       })),
+      approvedOnce: planApprovedOnce(cohort.plans),
       checklist,
     }
   }
@@ -803,7 +811,10 @@ export class CohortPlanService {
           },
           assessments: {
             orderBy: { createdAt: 'asc' },
-            select: { id: true, title: true, type: true, dueAt: true, moduleId: true, briefAr: true, attachments: true, status: true },
+            select: {
+              id: true, title: true, type: true, dueAt: true, moduleId: true, briefAr: true, attachments: true, status: true,
+              maxScore: true, pendingChange: true, reviewerNote: true,
+            },
           },
         },
       }),
@@ -820,6 +831,8 @@ export class CohortPlanService {
       assessments: cohort?.assessments ?? [],
       /* التسجيلُ كما يُحكَم لا كما يقول علمُه: شعبةٌ خطّتُها لم تُعتمَد لا تقبل
          أحدا وإن رُفع العلم، والالتحاقُ يُغلق ببدء الموعد الثاني (٣ج) */
+      /* اعتُمدت له خطّةٌ قطّ — فما يضيفه ويعدّله في مهامّه ينتظر قرارَك (٣ج-٣) */
+      approvedOnce: cohort ? planApprovedOnce(cohort.plans) : false,
       registration: {
         awaitingPlan: cohort ? awaitingTrainerPlan(cohort.plans) : false,
         joinClosesAt: cohort?.joinClosesAt ?? null,
@@ -916,6 +929,13 @@ export class CohortPlanService {
       }
     }
 
+    /* ═══ ومهامُّها كذلك (٣ج-٣) ═══
+
+       بعد أوّل اعتمادٍ ينتظر ما يضيفه المدرّبُ ويعدّله ويحذفه من مهامّه قرارا —
+       ومراجعةُ الخطّة تحمله في منهجها. فاعتمادُها يعتمده معها، بالمسلك نفسِه
+       الذي تمرّ به المهمّةُ وحدَها. وما يمنعه مانعٌ يبقى منتظِرا ويُسمّى. */
+    const tasks = await this.assessments.applyPendingForPlan(actorId, plan.cohort.id, planId)
+
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.plan.approve', entityType: 'cohort', entityId: plan.cohort.id,
       meta: {
@@ -923,6 +943,8 @@ export class CohortPlanService {
         ...(applied ? { period: applied.period, termId: applied.termId, moved: applied.moved } : {}),
         meetingsApproved: meetings.approved,
         ...(meetings.failed.length ? { meetingsFailed: meetings.failed.map((f) => f.id) } : {}),
+        ...(tasks.applied ? { tasksApplied: tasks.applied } : {}),
+        ...(tasks.failed.length ? { tasksFailed: tasks.failed.map((f) => f.id) } : {}),
       },
     })
 
@@ -935,13 +957,14 @@ export class CohortPlanService {
       : meetings.failed.length === 1
         ? ' وبقي لقاءٌ واحدٌ عند الإدارة تُتمّ اعتمادَه.'
         : ` وبقيت لقاءاتٌ (${meetings.failed.length}) عند الإدارة تُتمّ اعتمادَها.`
+    const withTasks = tasks.applied > 0 ? ` واعتُمد معها ما انتظر من مهامّك (${tasks.applied}).` : ''
     await this.tellTrainer(plan.trainer, plan.cohort, {
       title: `اعتُمدت خطّةُ «${plan.cohort.title}»`,
-      body: said || `شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.${withMeetings}${stillWaiting}`,
+      body: said || `شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.${withMeetings}${stillWaiting}${withTasks}`,
       heading: 'اعتُمدت خطّةُ شعبتك — وهي جاهزةٌ الآن',
       cta: 'افتح شعبتك',
     })
-    return { status: 'approved' as const, meetings }
+    return { status: 'approved' as const, meetings, tasks }
   }
 
   /* ═══ الاعتمادُ يكتب المدّة — والفصلُ يُشتقّ منها ═══

@@ -22,6 +22,14 @@ const LEARNER_TRAINER_SELECT = {
   select: { role: true, profile: { select: { application: { select: { fullName: true } } } } },
 } as const
 
+/* ═══ والمهمّةُ كما يراها متعلّمُها: المعتمَدُ وحدَه (٣ج-٣) ═══
+
+   طلبُ المدرّب على مهمّةٍ منشورةٍ يُحفظ في صفّها نفسِه (`pendingChange`) حتّى
+   تقرّره الإدارة، وسببُ ردّها بجانبه (`reviewerNote`). والصفُّ يخرج إلى المتعلّم
+   كاملا — فلو لم يُستثنَ العمودان لقرأ في متصفّحه عنوانا لم يُعتمَد، وخلافا بين
+   مدرّبه والإدارة لا شأنَ له به. */
+const LEARNER_ASSESSMENT_OMIT = { pendingChange: true, reviewerNote: true } as const
+
 export class EnrollmentService {
   private prisma: PrismaClient
   private notifications: NotificationService
@@ -457,7 +465,7 @@ export class EnrollmentService {
               include: { zoom: true, recordings: { where: { status: 'active' } } },
             },
             materials: { where: { status: 'active' } },
-            assessments: { where: { status: 'published' }, include: { items: true, rubric: { include: { criteria: true } } } },
+            assessments: { where: { status: 'published' }, omit: LEARNER_ASSESSMENT_OMIT, include: { items: true, rubric: { include: { criteria: true } } } },
             trainers: LEARNER_TRAINER_SELECT,
             /* خطّةُ مدرّبِ الشعبة المعتمَدة — أحدثُها. والترشيحُ هنا على
                الحالة كذلك لا على الانتقاء وحدَه: لو عاد المشروعُ يوما بلا
@@ -473,8 +481,8 @@ export class EnrollmentService {
         attendance: true,
         courseProgress: true,
         moduleProgress: true,
-        submissions: { include: { grades: { include: { history: true } }, feedback: true, assessment: true } },
-        attempts: { include: { grades: true, assessment: true } },
+        submissions: { include: { grades: { include: { history: true } }, feedback: true, assessment: { omit: LEARNER_ASSESSMENT_OMIT } } },
+        attempts: { include: { grades: true, assessment: { omit: LEARNER_ASSESSMENT_OMIT } } },
         certificates: { include: { revocation: true } },
       },
     })
