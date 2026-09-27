@@ -41,6 +41,16 @@ function placeholderNotYours() {
   )
 }
 
+/* ═══ محورا اللقاء يُكتبان معا — والأوّلُ في العمود القديم ═══
+
+   `moduleIds` هو الحقّ، و`moduleId` يُكتب أوّلَهما لأنّ `progress.service`
+   يقرؤه («أكمل المحورَ بحضور لقائه»). وعمودان يكتبهما موضعان يفترقان، فيُكتبان
+   من هنا وحدَه. والمكرّرُ يُسقَط، والفارغُ لا يُحفظ محورا. */
+function sessionAxes(moduleIds: readonly string[] | undefined, moduleId?: string | null) {
+  const ids = [...new Set((moduleIds ?? (moduleId ? [moduleId] : [])).map((x) => x.trim()).filter(Boolean))]
+  return { moduleIds: ids, moduleId: ids[0] ?? null }
+}
+
 export class CohortService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -530,6 +540,8 @@ export class CohortService {
 
   async addSession(actorId: string, cohortId: string, input: {
     title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
+    /** محورا اللقاء — والعلّةُ في تعليق `CohortSession.moduleIds` */
+    moduleIds?: string[]
     /* ما يجدوله المدرّبُ ينتظر قرارا، وما تجدوله الإدارةُ معتمَدٌ بحكم من
        جدوله — والافتراضُ هو الثاني، فالنداءاتُ الإداريّةُ لا تُبدّل. */
     noteAr?: string | null
@@ -548,7 +560,8 @@ export class CohortService {
     const session = await this.prisma.cohortSession.create({
       data: {
         cohortId, title: input.title, startsAt: input.startsAt, endsAt: input.endsAt,
-        timezone: input.timezone, moduleId: input.moduleId,
+        timezone: input.timezone,
+        ...sessionAxes(input.moduleIds, input.moduleId),
         noteAr: input.noteAr?.trim() || null,
         attachmentKey: input.attachmentKey ?? null,
         attachmentName: input.attachmentName ?? null,
@@ -944,6 +957,36 @@ export class CohortService {
         'نقله مدرّبُك ويُراجَع الآن عند الإدارة. ويصلك موعدُه الجديدُ حين يُعتمَد.')
     }
     return moved
+  }
+
+  /* ═══ ربطُ لقاءٍ بمحوره — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     الربطُ بنيةُ المنهج لا موعدُ حضور: لا يغيّر متى يحضر المتعلّمُ ولا
+     أين، فلا يُسقط لقاءً معتمَدا إلى الانتظار كما يُسقطه النقل — ولو أسقطه
+     لغاب اللقاءُ عن تقاويم عشرين إنسانا لأجل تصحيحِ رقمِ محور. وأثرُه في
+     «متى تُفتح المهامّ» محكومٌ بموعد المحور نفسِه: لا يُفتح شيءٌ قبل أوّل
+     موعده مهما رُبط (`axis-timeline.ts`).
+
+     واعتمادُ ما يتغيّر بعد اعتماد الخطّة كلِّه — ومنه هذا — مرحلةٌ لاحقةٌ
+     لها قرارُها (المراجعاتُ والاعتمادُ الواحد). */
+  async trainerSetSessionAxes(userId: string, sessionId: string, moduleIds: string[]) {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      select: { id: true, cohortId: true, placeholder: true, status: true, moduleIds: true },
+    })
+    if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
+    if (!(await this.isCohortTrainer(userId, session.cohortId))) {
+      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+    }
+    if (session.placeholder) throw placeholderNotYours()
+    if (session.status === 'cancelled') throw new AuthError('bad_state', 'لقاءٌ مردودٌ أو ملغًى لا يُربط', 409)
+    const axes = sessionAxes(moduleIds)
+    const updated = await this.prisma.cohortSession.update({ where: { id: sessionId }, data: axes })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'cohort.session.axes', entityType: 'cohort_session', entityId: sessionId,
+      meta: { cohortId: session.cohortId, from: session.moduleIds, to: axes.moduleIds },
+    })
+    return updated
   }
 
   /* ═══ وما كان في تقويمه ثمّ لم يعد — يُقال له ═══
@@ -1360,6 +1403,7 @@ export class CohortService {
   /** المدرّبُ يجدول لقاءه واجتماعَه — بالحدّ نفسِه الذي تُفحص به جدولةُ الإدارة */
   async trainerAddSessionWithMeeting(userId: string, cohortId: string, input: {
     title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
+    moduleIds?: string[]
     noteAr?: string | null
     attachmentKey?: string | null; attachmentName?: string | null; attachmentMime?: string | null
   }) {

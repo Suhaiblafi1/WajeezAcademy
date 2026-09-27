@@ -83,7 +83,9 @@ describe('③ وما بعد أوّلِ ناقصةٍ مقفل', () => {
     const rule = WS.slice(WS.indexOf('const canOpen'), WS.indexOf('\n', WS.indexOf('const canOpen')))
     expect(rule, 'لا قاعدةَ للقفل').toBeTruthy()
     expect(rule, 'القفلُ لا يقرأ ما قبل الدرجة').toMatch(/STAGES\.slice\(0, i\)\.every\(/)
-    expect(WS, 'التمامُ لا يُقرأ من قائمة الخادم').toMatch(/const doneOf = \(k: Stage\) => byKey\.get\(k\)\?\.done/)
+    /* والدرجةُ تتمّ بصفوفها في قائمة الخادم كلِّها (٢٧ سبتمبر ٢٠٢٦) — «المهامُّ
+       والمصادر» صفّان في درجةٍ واحدة، ولا تتمّ بأحدهما */
+    expect(WS, 'التمامُ لا يُقرأ من قائمة الخادم').toMatch(/const doneOf = \(k: Stage\) => STAGE_KEYS\[k\]\.every\(\(key\) => byKey\.get\(key\)\?\.done/)
   })
 
   it('⚠️ وزرُّ الدرجة المقفلة مطفأٌ فعلا — لا يُرى مقفلا ويُفتح بنقرة', () => {

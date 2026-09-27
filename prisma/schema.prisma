@@ -2558,6 +2558,17 @@ model CohortSession {
   /// ما جدولته الإدارةُ بيدها أيضا، واستنتاجُ الصفة من أثرٍ جانبيٍّ يفترق
   /// عنها أوّلَ يومٍ يُضاف فيه مسلكٌ جديد.
   placeholder    Boolean                    @default(false)
+  /// ═══ محورا اللقاء — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦) ═══
+  ///
+  /// كان للّقاء `moduleId` واحدٌ لا تملؤه شاشةٌ قطّ، فلا يُعرف أيَّ محورٍ
+  /// شرح، ولا يكتمل محورٌ بحضوره. وصار المدرّبُ يربط لقاءه بمحوره أو
+  /// بمحورين من موعدٍ واحد — ومنه يُحكم أنّ لكلّ محورٍ لقاءً، ومتى تُفتح
+  /// مهامُّه (`application/trainer/axis-timeline.ts`).
+  ///
+  /// و`moduleId` باقٍ ويُكتب أوّلَ الاثنين: يقرؤه `progress.service` في
+  /// «أكمل المحورَ بحضور لقائه»، ونقلُ ذلك القارئ تغييرٌ في رقمٍ يراه
+  /// المتعلّمُ لا يُركَب هنا.
+  moduleIds      String[]                   @default([])
   createdAt      DateTime                   @default(now())
   cohort         Cohort                     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   zoom           ZoomMeeting?

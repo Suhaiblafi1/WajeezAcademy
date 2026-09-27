@@ -42,7 +42,8 @@ describe('لكلّ خطوةٍ رأسٌ يقول ما هي وكم تأخذ', () =
 
   it('الخطواتُ الستُّ كلُّها في معجم الرؤوس — بغرضٍ ووقت', () => {
     const block = ws.slice(ws.indexOf('const STAGE_INTRO'), ws.indexOf('function StageIntro'))
-    for (const key of ['identity', 'modules', 'resources', 'sessions', 'assignments', 'approval']) {
+    /* و«الكرّاسات» حلّت محلَّ «المصادر» (٢٧ سبتمبر ٢٠٢٦) — والمصادرُ صارت مع المهامّ */
+    for (const key of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval']) {
       expect(block, `لا رأسَ للخطوة ${key}`).toMatch(new RegExp(`${key}:\\s*\\{`))
     }
     /* الغرضُ والوقتُ كلاهما — ورأسٌ بلا وقتٍ لا يجيب «أأبدأ الآن؟».
@@ -55,7 +56,7 @@ describe('لكلّ خطوةٍ رأسٌ يقول ما هي وكم تأخذ', () =
   it('وكلُّ خطوةٍ تُصيّر رأسَها لا عنوانا مكتوبا بيدها', () => {
     /* وبابُ الهُويّة يحمل رأسَه كذلك وإن لم يكن درجةً — فالمُقتطَعُ من
        السلّم لا يُقتطَع من الشرح. */
-    for (const s of ['identity', 'modules', 'resources', 'assignments', 'approval']) {
+    for (const s of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval']) {
       expect(ws, `الخطوة ${s} بلا رأس`).toContain(`<StageIntro stage="${s}" />`)
     }
   })
@@ -73,7 +74,7 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
   }
 
   it('كلُّ حقلٍ في «المحاور» مشروحٌ — لا واحدَ بلا تلميح', () => {
-    const { all, hinted } = everyFieldHinted(stageBlock(ws, 'modules', 'resources'))
+    const { all, hinted } = everyFieldHinted(stageBlock(ws, 'modules', 'workbooks'))
     expect(all, 'لا حقولَ موصوفةً أصلا').toBeGreaterThanOrEqual(5)
     expect(hinted, `${all - hinted} حقلا بلا تلميح`).toBe(all)
   })
@@ -108,7 +109,7 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
   it('ولا يبقى في الخطوتين حقلٌ بالصيغة القديمة — عنوانٌ عارٍ بلا تلميح', () => {
     /* الصيغةُ القديمة: `<span className="mb-1.5 block text-read font-bold …">`
        تحت `<label>` — عنوانٌ بلا موضعٍ للشرح. ووجودُها يعني حقلا أُفلت. */
-    for (const [a, b] of [['identity', 'modules'], ['modules', 'resources']] as const) {
+    for (const [a, b] of [['identity', 'modules'], ['modules', 'workbooks'], ['workbooks', 'sessions']] as const) {
       expect(stageBlock(ws, a, b), `حقلٌ بالصيغة القديمة في ${a}`).not.toMatch(/mb-1\.5 block text-read font-bold/)
     }
   })
@@ -125,7 +126,7 @@ describe('الحقلُ في الخطوة التي يخصّها', () => {
 
   it('وصفُ الشعبة مع اسمها في بابهما — لا في «المحاور»', () => {
     expect(stageBlock(ws, 'identity', 'modules'), 'الوصفُ ليس مع الاسم في بابه').toContain('content.summaryAr')
-    expect(stageBlock(ws, 'modules', 'resources'), 'الوصفُ ما زال في «المحاور»').not.toContain('summaryAr')
+    expect(stageBlock(ws, 'modules', 'workbooks'), 'الوصفُ ما زال في «المحاور»').not.toContain('summaryAr')
   })
 
   /* ═══ ونُقضت ملاحظةُ الشعبة كلِّها بقرار (١٥ سبتمبر ٢٠٢٦) ═══
@@ -142,7 +143,7 @@ describe('الحقلُ في الخطوة التي يخصّها', () => {
      «المحاور» ولا يبقى واحدا للشعبة، ويسكن حيث يُنشأ اللقاء. */
   it('⚠️ وملاحظةُ اللقاء صارت لكلّ لقاءٍ — لا واحدةً للشعبة كلِّها', () => {
     expect(ws, 'عادت ملاحظةٌ واحدةٌ للشعبة في الشاشة').not.toContain('content.liveNoteAr')
-    expect(stageBlock(ws, 'modules', 'resources'), 'الملاحظةُ عادت إلى «المحاور»').not.toContain('liveNoteAr')
+    expect(stageBlock(ws, 'modules', 'workbooks'), 'الملاحظةُ عادت إلى «المحاور»').not.toContain('liveNoteAr')
     /* وموضعُها الجديدُ نموذجُ إنشاء اللقاء — تُرسَل مع اللقاء نفسِه */
     const sched = code('src/pages/trainer/TrainerSchedule.tsx')
     expect(sched, 'لا ملاحظةَ في نموذج اللقاء').toContain('ملاحظاتٌ عن اللقاء (اختياريّ)')
@@ -166,12 +167,22 @@ describe('الحقلُ في الخطوة التي يخصّها', () => {
     const key = ws.slice(ws.indexOf('const basicsKey'), ws.indexOf('const basicsKey') + 160)
     expect(key, 'تاريخُ البدء خارجَ البصمة').toContain('c.startsOn')
     expect(key, 'تاريخُ الانتهاء خارجَ البصمة').toContain('c.endsOn')
-    /* وخطوةُ «اللقاءات» لم تعد تحمل مسودّةً: حقلُها الوحيدُ ذهب إلى كلّ
-       لقاءٍ على حدة، واللقاءُ يُحفظ بنداءٍ خاصٍّ به لحظةَ إرساله للاعتماد.
-       فبصمتُها `false` صراحةً — لا محذوفةً فتُقرأ `undefined` بسهو. */
-    expect(ws, 'عادت للّقاءات مسودّةٌ لا حقلَ لها').toMatch(/sessions: false,/)
-    /* وبصمةُ المحاور تخلّصت منهما معا */
-    expect(ws).toMatch(/const modulesKey = \(c: PlanContent\) => JSON\.stringify\(c\.modules\)/)
+    /* ═══ ثمّ عادت للّقاءات بصمةٌ — بحقلٍ حقيقيٍّ هذه المرّة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       كانت `false` صراحةً: حقلُها الوحيدُ (`liveNoteAr`) ذهب إلى كلّ لقاءٍ على
+       حدة. ثمّ صارت الجلساتُ المسجّلةُ في خطوة اللقاءات — «لا بأس أن جمعت
+       بين المسجّلة والمباشرة» — وهي في الخطّة تُحفظ بزرّ الشريط. فبصمتُها
+       المسجَّلُ من المصادر، لا الملاحظةُ التي ذهبت. والمحروسُ الأصليُّ باقٍ:
+       لا مسودّةَ لحقلٍ لا وجودَ له في الخطوة. */
+    expect(ws, 'بصمةُ اللقاءات لا تقرأ المسجَّل').toMatch(/sessions: recordedKey\(content\) !== baseline\.recorded,/)
+    expect(ws, 'عادت الملاحظةُ الواحدةُ إلى بصمة اللقاءات').not.toMatch(/sessions: [^\n]*liveNoteAr/)
+    /* وبصمةُ المحاور تخلّصت من الوصف والملاحظة معا — وصارت تحمل مواعيدَها
+       بلا كرّاساتها: الكرّاسةُ تُحرَّر في درجتها وتُعلَّم هناك */
+    const mk = ws.slice(ws.indexOf('const modulesKey'), ws.indexOf('const workbooksKey'))
+    expect(mk, 'بصمةُ المحاور لا تحمل المحاور').toContain('modules: c.modules')
+    expect(mk, 'بصمةُ المحاور لا تحمل مواعيدَها').toContain('slots:')
+    expect(mk, 'الكرّاسةُ في بصمة المحاور').not.toContain('workbook')
+    expect(mk, 'الوصفُ عاد إلى بصمة المحاور').not.toMatch(/summaryAr|liveNoteAr/)
   })
 })
 
@@ -180,7 +191,7 @@ describe('المحورُ يُطوى فلا تصير الخطوةُ جدارا', 
 
   it('واحدٌ مفتوحٌ في كلّ مرّة، وحالتُه معلَنةٌ لقارئ الشاشة', () => {
     expect(ws).toMatch(/const \[openModule, setOpenModule\]/)
-    const block = stageBlock(ws, 'modules', 'resources')
+    const block = stageBlock(ws, 'modules', 'workbooks')
     /* والفتحُ **مشتقٌّ من الحالة** لا ثابتا: `const open = true` يُبقي
        العلامةَ والشرطَ في مكانهما ويُلغي الطيَّ — فالفحصُ على الاشتقاق. */
     expect(block, 'الفتحُ غيرُ مشتقٍّ من المحور المفتوح').toMatch(/const open = openModule === m\.moduleId/)
@@ -189,12 +200,12 @@ describe('المحورُ يُطوى فلا تصير الخطوةُ جدارا', 
   })
 
   it('والمحورُ المضافُ يُفتح فورا — وإلّا أُضيف ولا يُرى', () => {
-    const block = stageBlock(ws, 'modules', 'resources')
+    const block = stageBlock(ws, 'modules', 'workbooks')
     expect(block).toMatch(/setOpenModule\(moduleId\)/)
   })
 
   it('والمطويُّ يقول ما ينقصه لا يسكت', () => {
-    const block = stageBlock(ws, 'modules', 'resources')
+    const block = stageBlock(ws, 'modules', 'workbooks')
     expect(block).toContain('ينقصه العنوانُ أو المخرَج')
   })
 })
