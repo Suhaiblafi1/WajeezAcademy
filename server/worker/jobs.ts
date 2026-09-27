@@ -34,6 +34,12 @@ import { TrainerOfferService } from '../services/trainer-offer.service'
 import { TrainerReviewService } from '../services/trainer-review.service'
 import { recordAudit } from '../services/audit'
 import { ProgressService } from '../services/progress.service'
+import { LEARNER_PLAN_QUERY } from '../services/learner-gate'
+import { LEARNER_SESSION_WHERE } from '../services/session-visibility'
+import { learnerGate, whenAr } from '../../src/application/learning/cohort-gate'
+import { timelineEvents, type TimelineEvent } from '../../src/application/learning/timeline-events'
+import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
+import { sessionEnd } from '../../src/application/trainer/axis-timeline'
 import { MIN_SESSION_MS } from '../../src/application/trainer/session-length'
 import { notPermanentAuditWhere } from '../../src/application/audit/retention'
 import { BOOKABLE_STATUSES } from '../../src/application/trainer/application-options'
@@ -73,7 +79,9 @@ const LIMITS = { notifications: 100, reminders: 200, publishes: 20, cleanup: 5_0
   /* سقفُ ما يُقرأ من طابور الطلبات لملخّص الصباح — والطابورُ أصغرُ منه بكثير */
   unbooked: 200,
   /* لقاءاتٌ انتهت في دورةٍ واحدة — ودورتُها خمسُ دقائق، فالباقي في التالية */
-  endedSessions: 300 }
+  endedSessions: 300,
+  /* شعبٌ على خطّ المحاور تُقرأ أخبارُها في دورةٍ واحدة */
+  timelineCohorts: 200 }
 
 /** تذكيرتان لكلّ جلسة: قبل يومٍ وقبل ساعة. المفتاحُ هو ما يمنع التكرار. */
 const REMINDERS = [
@@ -310,6 +318,150 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
     summaryAr: (parts.length === 0 ? 'لا تذكيرَ مستحقّا' : `ذُكِّر ${parts.join('، ')}`)
       + (failed > 0 ? ` · وسقط ${failed} عند المزوّد` : ''),
     done, failed, ms: Date.now() - started,
+  }
+}
+
+/* ═══════════ ٢ج · ما يُفتح للمتعلّم يُقال له (٢٧ سبتمبر ٢٠٢٦) ═══════════
+
+   المرحلة ٢(ب-٣). خطُّ المحاور يفتح الكرّاسةَ والمتنَ أوّلَ يوم الموعد،
+   والمهامَّ بعد أوّل لقاءٍ للمحور (`cohort-gate.ts`). وما يُفتح ولا يُقال
+   يُكتشف صدفة: من لم يفتح رحلتَه يومَ فُتحت مهمّتُه عرف بها يومَ فات موعدُها.
+
+   فثلاثةُ أخبارٍ للمسجَّل في شعبةٍ على الخطّ (`timelineEvents`): فُتح موعد،
+   وفُتحت مهامُّ محور، وآخرُ موعد مهمّةٍ لم يسلّمها خلال يوم. ولكلّ خبرٍ مفتاحٌ
+   (`dedupe`) يُسأل عنه قبل الإرسال — فالدورةُ تمرّ كلَّ ربع ساعةٍ ولا يتكرّر.
+   وهي في صنفٍ يُكتَم («ما يُفتح في شعبتي»): خبرٌ لا يترتّب عليه حقّ، والموعدُ
+   باقٍ في رحلته على كلّ حال. وما اعتُمد بلا مواعيدَ لا أخبارَ خطٍّ له. */
+export async function notifyTimeline(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const notifications = new NotificationService(prisma)
+  let done = 0
+  let failed = 0
+  const sent = { slot_opened: 0, tasks_opened: 0, due_soon: 0 }
+
+  const cohorts = await prisma.cohort.findMany({
+    where: {
+      status: { in: ['open', 'full', 'active'] },
+      plans: { some: { trainerId: { not: null }, status: { in: [...PLAN_VISIBLE_STATUSES] } } },
+    },
+    take: LIMITS.timelineCohorts,
+    select: {
+      id: true, title: true, startsAt: true, endsAt: true,
+      sessions: {
+        where: LEARNER_SESSION_WHERE,
+        select: { startsAt: true, endsAt: true, moduleId: true, moduleIds: true, placeholder: true, status: true },
+      },
+      plans: LEARNER_PLAN_QUERY,
+      assessments: { where: { status: 'published' }, select: { id: true, title: true, moduleId: true, dueAt: true } },
+      /* المسجَّلُ وحدَه: المنتظرُ لا وصولَ له، والمنسحبُ ترك، والمكتملُ فرغ */
+      enrollments: {
+        where: { status: 'enrolled' },
+        select: { userId: true, submissions: { select: { assessmentId: true } }, attempts: { select: { assessmentId: true } } },
+      },
+    },
+  })
+
+  for (const c of cohorts) {
+    const plan = c.plans[0] ?? null
+    const gate = learnerGate({ content: plan?.content ?? null, cohort: c, sessions: c.sessions, now })
+    const events = timelineEvents({ cohortId: c.id, gate, assessments: c.assessments, now })
+    if (events.length === 0) continue
+    const label = axisLabels(plan?.content)
+    for (const ev of events) {
+      const msg = timelineMessage(ev, { title: c.title, label, assessments: c.assessments, sessions: c.sessions, now })
+      if (!msg) continue
+      for (const e of c.enrollments) {
+        /* «غدا» لمن لم يسلّم — من سلّم لا يُطالَب */
+        if (ev.kind === 'due_soon'
+          && (e.submissions.some((x) => x.assessmentId === ev.assessmentId) || e.attempts.some((x) => x.assessmentId === ev.assessmentId))) continue
+        const already = await prisma.notification.count({
+          where: { userId: e.userId, templateKey: msg.templateKey, data: { path: ['dedupe'], equals: ev.dedupe } },
+        })
+        if (already > 0) continue
+        try {
+          const row = await notifications.notify({
+            userId: e.userId, channel: 'in_app', templateKey: msg.templateKey,
+            title: msg.title, body: msg.body,
+            data: { cohortId: c.id, dedupe: ev.dedupe, ...msg.data },
+            audience: 'learner',
+          })
+          /* من كتم الصنفَ لا يُنشأ له صفّ (`null`) — فلا يُعدّ مرسَلا، ولا
+             يُحسب في كلّ دورةٍ «إرسالا» لم يقع */
+          if (row) {
+            sent[ev.kind] += 1
+            done += 1
+          }
+        } catch {
+          failed += 1
+        }
+      }
+    }
+  }
+
+  const parts = [
+    sent.slot_opened ? `${sent.slot_opened} «فُتح موعد»` : '',
+    sent.tasks_opened ? `${sent.tasks_opened} «فُتحت مهامّ»` : '',
+    sent.due_soon ? `${sent.due_soon} «آخرُ موعدٍ غدا»` : '',
+  ].filter(Boolean)
+  return {
+    job: 'notify_timeline',
+    summaryAr: parts.length ? `أُرسل ${parts.join(' و')}` : 'لا جديدَ على خطوط المحاور',
+    done, failed, ms: Date.now() - started,
+  }
+}
+
+/** «المحور ٣: عنوانُه» — من ترتيب الخطّة، فيُسمّى المحورُ كما يراه المتعلّم */
+function axisLabels(content: unknown): (moduleId: string) => string {
+  const mods = ((content ?? null) as { modules?: { moduleId: string; titleAr?: string | null }[] } | null)?.modules ?? []
+  const at = new Map(mods.map((m, i) => [m.moduleId, { n: i + 1, title: (m.titleAr ?? '').trim() }]))
+  return (id) => {
+    const m = at.get(id)
+    if (!m) return 'المحور'
+    return m.title ? `المحور ${m.n}: ${m.title}` : `المحور ${m.n}`
+  }
+}
+
+/** نصُّ الخبر — ومفتاحُ قالبه مكتوبٌ حرفا ليقرأه حارسُ الأصناف */
+function timelineMessage(
+  ev: TimelineEvent,
+  ctx: {
+    title: string
+    label: (moduleId: string) => string
+    assessments: readonly { id: string; title: string; moduleId: string | null; dueAt: Date | null }[]
+    sessions: readonly { startsAt: Date; endsAt: Date | null; moduleId: string | null; moduleIds: string[]; placeholder: boolean; status: string }[]
+    now: Date
+  },
+): { templateKey: string; title: string; body: string; data: Record<string, string> } | null {
+  if (ev.kind === 'slot_opened') {
+    const next = ctx.sessions
+      .filter((s) => !s.placeholder && s.status !== 'cancelled' && sessionEnd(s).getTime() > ctx.now.getTime())
+      .filter((s) => (s.moduleIds.length ? s.moduleIds : s.moduleId ? [s.moduleId] : []).some((id) => ev.moduleIds.includes(id)))
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0]
+    return {
+      templateKey: 'timeline.slot_opened',
+      title: `فُتح موعدٌ جديدٌ في «${ctx.title}»`,
+      body: `${ev.moduleIds.map(ctx.label).join(' و')} — كرّاستُه ومتنُه في رحلتك الآن.`
+        + (next ? ` ولقاؤه المباشر ${whenAr(next.startsAt)}، وبعده تُفتح مهامُّه.` : ''),
+      data: { slotStartsOn: ev.dedupe.split(':slot:')[1] ?? '' },
+    }
+  }
+  if (ev.kind === 'tasks_opened') {
+    const tasks = ctx.assessments.filter((a) => ev.assessmentIds.includes(a.id))
+    const due = tasks.map((a) => a.dueAt).filter((d): d is Date => d !== null).sort((a, b) => a.getTime() - b.getTime())[0]
+    return {
+      templateKey: 'timeline.tasks_opened',
+      title: `فُتحت مهامُّ ${ctx.label(ev.moduleId)}`,
+      body: `في «${ctx.title}»: ${tasks.map((a) => `«${a.title}»`).join('، ')}${due ? ` — آخرُ موعدها ${whenAr(due)}` : ''}. تجدها في «الواجبات».`,
+      data: { moduleId: ev.moduleId },
+    }
+  }
+  const task = ctx.assessments.find((a) => a.id === ev.assessmentId)
+  if (!task) return null
+  return {
+    templateKey: 'timeline.due_soon',
+    title: `آخرُ موعدٍ لـ«${task.title}»: ${whenAr(ev.dueAt)}`,
+    body: `في «${ctx.title}» — ولم تسلّمها بعد. وما يصل بعد موعده يُقبل ويُعلَّم متأخّرا.`,
+    data: { assessmentId: ev.assessmentId },
   }
 }
 
@@ -1128,6 +1280,7 @@ export const JOBS = [
   { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكيرُ الجلسات' },
   /* كلَّ خمس دقائق: ما يُفتح «بعد انتهاء اللقاء» ينتظر هذه الحالة */
   { key: 'close_ended_sessions', everyMs: 5 * 60_000, run: closeEndedSessions, titleAr: 'انتهاءُ اللقاءات' },
+  { key: 'notify_timeline', everyMs: 15 * 60_000, run: notifyTimeline, titleAr: 'أخبارُ خطوط المحاور' },
   /* ي-٥: ودورتُه ساعةٌ لا خمسُ دقائق — عتبتُه يومٌ وأربعةٌ، فدقّةُ الدقائق
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
   { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكيرُ توثيق البريد' },
