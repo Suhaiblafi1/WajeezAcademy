@@ -30,7 +30,9 @@ import { AuthService } from '../../services/auth.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { CHANGE_TYPES } from '../../services/trainer-change.service'
 import { courseBlastRadius } from '../../services/catalog-impact.service'
-import { CHANGE_TYPE_LABELS_AR } from '../../../src/application/catalog/change-types'
+import {
+  CHANGE_TYPE_LABELS_AR, NEEDS_MODULE, TEXT_TYPES, afterValueFor, emptyChangeDraft,
+} from '../../../src/application/catalog/change-types'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 
@@ -44,6 +46,11 @@ const STAMP = Date.now()
 const FRESH = `C-FRESH-${STAMP}`
 /** ودورةٌ مبذورةٌ يتّكئ عليها غيرُه — تُتحقَّق حالُها لا تُفترَض */
 const USED = 'C-BIZ-101'
+/* ودورةٌ **شعبتُها وحدَها** تستخدمها: لا مسارَ ولا قالب. وهي التي تحرس
+   النصفَ الثانيَ من الخلوّ — فمن قصر الفحصَ على `entityCount` وحدَه ظنّها
+   خاليةً، وفيها متعلّمون. ولا تُلتمَس في البذر: تُخلَق هنا فتكون الحالُ
+   مضمونةً لا محظوظة. */
+const COHORT_ONLY = `C-COHORT-${STAMP}`
 
 let trainerCookie = ''
 let trainerProfileId = ''
@@ -96,6 +103,14 @@ beforeAll(async () => {
     data: {
       id: FRESH, currentVersion: 1,
       versions: { create: { version: 1, titleAr: 'دورةٌ أُدخلت لمدرّبها', status: 'published', totalHours: 12 } },
+    },
+  })
+
+  await prisma.course.create({
+    data: {
+      id: COHORT_ONLY, currentVersion: 1,
+      versions: { create: { version: 1, titleAr: 'دورةٌ تستخدمها شعبتُها', status: 'published', totalHours: 8 } },
+      cohorts: { create: { title: 'شعبةٌ قائمة' } },
     },
   })
 
@@ -189,6 +204,25 @@ describe('والبوّابةُ عن الدورة لا عن المدرّب', () =
     expect(res.body).toMatch(/سجل مثبت|منح صريح/)
   })
 
+  it('ودورةٌ لا يستخدمها إلّا شعبةٌ: تُردّ — فالخلوُّ ليس عدَّ كياناتٍ وحدَه', async () => {
+    const r = await courseBlastRadius(prisma, [COHORT_ONLY])
+    const row = r.get(COHORT_ONLY)!
+    expect(row.entityCount, 'صار لها مسارٌ أو قالب، فالحارسُ يقيس حالا أخرى').toBe(0)
+    expect(row.cohorts.total, 'ذهبت شعبتُها').toBeGreaterThan(0)
+
+    await qualify(trainerProfileId, COHORT_ONLY)
+    expect((await changes.catalogScopeForCourse(trainerProfileId, COHORT_ONLY)).allowed).toBe(false)
+
+    const res = await app.inject({
+      method: 'POST', url: '/api/trainer/changes', headers: { cookie: trainerCookie },
+      payload: {
+        courseId: COHORT_ONLY, scope: 'catalog', reason: REASON,
+        items: [{ changeType: 'module_add', afterValue: { titleAr: 'محورٌ في دورةٍ لها شعبة' } }],
+      },
+    })
+    expect(res.statusCode).toBe(403)
+  })
+
   it('وغيرُ المؤهَّلِ لدورةٍ خاليةٍ يُردّ — الخلوُّ وحدَه ليس إذنا', async () => {
     const res = await app.inject({
       method: 'POST', url: '/api/trainer/changes', headers: { cookie: otherCookie },
@@ -217,5 +251,114 @@ describe('معجمُ أنواعِ التغيير والقائمةُ لا يفت�
     const known = new Set<string>(CHANGE_TYPES)
     const stray = Object.keys(CHANGE_TYPE_LABELS_AR).filter((k) => !known.has(k))
     expect(stray, `أسماءٌ لأنواعٍ لا وجودَ لها: ${stray.join(' · ')}`).toEqual([])
+  })
+})
+
+/* ══════════ وأنّ ما يُرسَل يُطبَّق فعلا ══════════
+
+   أخطرُ ما في هذا الباب ليس ردّا صريحا بل **صمتا**: نموذجٌ يبني `afterValue`
+   بمفاتيحَ لا يقرؤها `publishToCatalog`، فيمرّ الاقتراحُ بالمراجعة ويُعتمَد
+   ويُنشَر — **ولا يتغيّر في الدورة حرف**. والمدرّبُ يرى «نُشر في الدورة» ثمّ
+   لا يجد محورَه. والردُّ يُقرأ، والصمتُ لا.
+
+   فلا يكفي أن تُقابَل المفاتيحُ بقائمةٍ مكتوبةٍ بيدي — القائمةُ قد تكذب مثلَ
+   النموذج. والسلسلةُ كلُّها تُشتغَل: نموذجُ الشاشة ← المسلك ← قرارُ المراجع ←
+   النشر ← ثمّ **تُقرأ الدورةُ من القاعدة** ويُسأل: أوجدتَ ما وضعه؟ */
+describe('وما بناه النموذجُ يصل إلى الدورة نفسِها', () => {
+  const STAMP2 = `${STAMP}-e2e`
+  const COURSE = `C-E2E-${STAMP2}`
+  let checkerId = ''
+  let profileId = ''
+  let cookie = ''
+
+  beforeAll(async () => {
+    await prisma.course.create({
+      data: {
+        id: COURSE, currentVersion: 1,
+        versions: { create: { version: 1, titleAr: 'دورةُ الطرَف إلى الطرَف', status: 'published', totalHours: 10 } },
+      },
+    })
+    const t = await makeMaterialsPhaseTrainer('e2e')
+    profileId = t.profileId
+    cookie = t.cookie
+    await qualify(profileId, COURSE)
+    const c = await auth.register(`checker-${STAMP2}@test.local`, 'Checker#12345', 'مدير أكاديمي')
+    await auth.setRoles(c.userId, ['academic_manager'])
+    checkerId = c.userId
+  }, 120_000)
+
+  /** يمرّ باقتراحٍ من إرساله إلى نشره، ويردّ معرّفَه */
+  async function throughTheWholeChain(items: unknown[], reason: string) {
+    const res = await app.inject({
+      method: 'POST', url: '/api/trainer/changes', headers: { cookie },
+      payload: { courseId: COURSE, scope: 'catalog', reason, items },
+    })
+    expect(res.statusCode, `الإرسالُ سقط: ${res.body.slice(0, 250)}`).toBe(201)
+    const id = res.json().id as string
+    await changes.decide(id, checkerId, 'approve_for_catalog', 'معتمَد')
+    /* بوّابةُ ب-٢ تشترط فحصَ أثرٍ بعد الاعتماد — تُستوفى لا تُلتفّ عليها */
+    await prisma.impactAnalysisRun.create({
+      data: { changeRef: TrainerChangeService.impactRef(id), summary: { note: 'فحصٌ في الاختبار' } },
+    })
+    await changes.publish(id, checkerId)
+    return id
+  }
+
+  it('«إضافةُ محور» تصير محورا في الدورة بعنوانه — وهو وعدُ العقد بحرفه', async () => {
+    const d = { ...emptyChangeDraft(), changeType: 'module_add', titleAr: 'المحورُ الأوّلُ الذي وضعتُه', hours: '3' }
+    await throughTheWholeChain(
+      [{ changeType: d.changeType, afterValue: afterValueFor(d) }],
+      'أضعُ أوّلَ محاورِ دورتي في طور الموادّ',
+    )
+    const mods = await prisma.courseModule.findMany({
+      where: { courseId: COURSE },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    })
+    const titles = mods.map((m) => m.versions[0]?.titleAr)
+    expect(titles, 'المحورُ لم يصل الدورةَ وقد نُشر الاقتراح').toContain('المحورُ الأوّلُ الذي وضعتُه')
+  })
+
+  it('و«إضافةُ مصدر» تصل نصَّها إلى المحور — وهي «ومصادرها» في العقد', async () => {
+    const target = (await prisma.courseModule.findFirstOrThrow({ where: { courseId: COURSE } })).id
+    const d = { ...emptyChangeDraft(), changeType: 'material_add', targetKey: target, text: 'مصدرٌ وضعتُه بنفسي' }
+    await throughTheWholeChain(
+      [{ changeType: d.changeType, targetKey: target, afterValue: afterValueFor(d) }],
+      'أضيفُ مصدرا إلى محوري كما يقتضي العقد',
+    )
+    const m = await prisma.courseModule.findUniqueOrThrow({
+      where: { id: target },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    })
+    expect(m.versions[0]?.activityAr ?? '', 'نصُّ المصدرِ لم يصل المحورَ').toContain('مصدرٌ وضعتُه بنفسي')
+  })
+
+  it('و«اقتراحُ مدّة» يبدّل مجموعَ ساعاتِ الدورة', async () => {
+    const d = { ...emptyChangeDraft(), changeType: 'duration_propose', hours: '18' }
+    await throughTheWholeChain(
+      [{ changeType: d.changeType, afterValue: afterValueFor(d) }],
+      'أقترحُ مدّةً تناسب ما وضعتُه من محاور',
+    )
+    const course = await prisma.course.findUniqueOrThrow({
+      where: { id: COURSE },
+      include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+    })
+    expect(course.versions[0]?.totalHours, 'المدّةُ لم تتبدّل وقد نُشر الاقتراح').toBe(18)
+  })
+
+  it('ومفاتيحُ كلِّ نوعٍ ليست فارغةً — فلا نوعٌ يُرسَل بحمولةٍ خالية', () => {
+    for (const t of CHANGE_TYPES) {
+      const d = { ...emptyChangeDraft(), changeType: t, titleAr: 'عنوان', text: 'نصّ', hours: '4', order: ['a', 'b'] }
+      const keys = Object.keys(afterValueFor(d))
+      expect(keys.length, `النوعُ ${t} يُبنى بحمولةٍ خالية`).toBeGreaterThan(0)
+    }
+  })
+
+  it('وكلُّ نوعٍ يحتاج محورا هو من الثمانية النصّيّة أو تعديلُ عنوان — فلا ثالثَ يُنسى', () => {
+    for (const t of NEEDS_MODULE) {
+      expect(
+        TEXT_TYPES.has(t) || t === 'module_title_edit',
+        `النوعُ ${t} يحتاج محورا ولا يُعرَف شكلُه في النموذج`,
+      ).toBe(true)
+    }
   })
 })

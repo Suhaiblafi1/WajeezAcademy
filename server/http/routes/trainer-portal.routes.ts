@@ -228,11 +228,36 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     await review.syncQualificationsFromApplication(profile.id, null)
     const quals = await prisma.trainerCourseQualification.findMany({
       where: { profileId: profile.id, status: 'qualified' },
-      include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } } },
+      include: {
+        course: {
+          include: {
+            versions: { orderBy: { version: 'desc' }, take: 1 },
+            /* ومحاورُها من القاعدة الحيّة لا من اللقطة المنشورة: دورةٌ أُدخلت
+               لهذا المدرّب قبل قليلٍ ليست في اللقطة بعد، **وهي بعينها ما يعمل
+               عليه** في طور الموادّ. فلقطةٌ هنا تعرض له صفرَ محاورَ لدورةٍ
+               له فيها محاور. */
+            modules: {
+              where: { status: { not: 'archived' } },
+              include: { versions: { orderBy: { version: 'desc' }, take: 1 } },
+            },
+          },
+        },
+      },
     })
+    /* وحكمُ البوّابة لكلّ دورةٍ يُقرأ هنا لا في الشاشة: الشاشةُ تعرضه ولا
+       تحكمه، فلا يفترق ما تقوله عمّا يردّه الإرسال. ومجمَّعٌ لا لكلّ سطر. */
+    const scopes = await changes.catalogScopeForCourses(profile.id, quals.map((q) => q.courseId))
     return quals.map((q) => ({
       courseId: q.courseId, title: q.course.versions[0]?.titleAr ?? '',
       currentVersion: q.course.currentVersion, qualifiedAt: q.createdAt,
+      scope: scopes.get(q.courseId) ?? null,
+      modules: q.course.modules
+        .map((m) => ({
+          id: m.id,
+          titleAr: m.versions[0]?.titleAr ?? m.id,
+          sequence: m.versions[0]?.sequence ?? 0,
+        }))
+        .sort((a, b) => a.sequence - b.sequence),
     }))
   })
 

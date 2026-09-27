@@ -12,6 +12,7 @@ import { safeNotify } from './notification.service'
 import { blastRadiusSentenceAr, courseBlastRadius, planHoursImpactOf } from './catalog-impact.service'
 import { checkHoursProposal, planHoursWarnings } from '../../src/application/catalog/hours-policy'
 import { catalogScopeGate } from '../../src/application/catalog/scope-policy'
+import type { ScopeGate } from '../../src/application/catalog/scope-policy'
 import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 
 /* ═══ ولمَ ليس في الأنواع نوعٌ لاسم الدورة ═══
@@ -384,7 +385,22 @@ export class TrainerChangeService {
    * تقولَ الشاشةُ للمراجع شيئا وتحكمَ البوّابةُ بغيره.
    */
   async catalogScopeForCourse(profileId: string, courseId: string) {
-    const [profile, published, qual, radius] = await Promise.all([
+    const one = await this.catalogScopeForCourses(profileId, [courseId])
+    return one.get(courseId)!
+  }
+
+  /**
+   * وأحكامُ عدّةِ دوراتٍ دفعةً — وهي الأصلُ، و`catalogScopeForCourse` غلافُها.
+   *
+   * ولمَ مجمَّعةٌ: شاشةُ المدرّب تعرض مؤهّلاتِه كلَّها ومعها حكمُ كلٍّ، فلو
+   * سُئل لكلّ دورةٍ على حدها لصارت أربعةَ استعلاماتٍ في كلّ سطر. وهو التحذيرُ
+   * نفسُه في رأس `catalog-impact.service.ts` بحرفه.
+   */
+  async catalogScopeForCourses(profileId: string, courseIds: string[]) {
+    const ids = [...new Set(courseIds.filter(Boolean))]
+    const out = new Map<string, ScopeGate>()
+    if (ids.length === 0) return out
+    const [profile, published, quals, radius] = await Promise.all([
       this.prisma.trainerProfile.findUnique({
         where: { id: profileId },
         select: { catalogScopeGrantedAt: true },
@@ -392,19 +408,24 @@ export class TrainerChangeService {
       this.prisma.trainerChangeRequest.count({
         where: { profileId, scope: 'cohort', status: 'published' },
       }),
-      this.prisma.trainerCourseQualification.findUnique({
-        where: { profileId_courseId: { profileId, courseId } },
-        select: { status: true },
+      this.prisma.trainerCourseQualification.findMany({
+        where: { profileId, courseId: { in: ids }, status: 'qualified' },
+        select: { courseId: true },
       }),
-      courseBlastRadius(this.prisma, [courseId]),
+      courseBlastRadius(this.prisma, ids),
     ])
-    const r = radius.get(courseId)
-    return catalogScopeGate({
-      grantedAt: profile?.catalogScopeGrantedAt?.toISOString() ?? null,
-      publishedCohortProposals: published,
-      qualifiedForCourse: qual?.status === 'qualified',
-      courseUnused: r != null && r.entityCount === 0 && r.cohorts.total === 0,
-    })
+    const qualified = new Set(quals.map((q) => q.courseId))
+    const grantedAt = profile?.catalogScopeGrantedAt?.toISOString() ?? null
+    for (const id of ids) {
+      const r = radius.get(id)
+      out.set(id, catalogScopeGate({
+        grantedAt,
+        publishedCohortProposals: published,
+        qualifiedForCourse: qualified.has(id),
+        courseUnused: r != null && r.entityCount === 0 && r.cohorts.total === 0,
+      }))
+    }
+    return out
   }
 
   /** أهلية النطاق لحساب مستخدم — لتُعرض في بوابة المدرب قبل أن يكتب اقتراحا */
