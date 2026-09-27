@@ -35,6 +35,9 @@ import { staffAreaCls, staffControlCls, staffSelectCls, StaffField } from "@/com
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { fmtDateLong } from "@/application/text/format-ar";
+import ListToolbar from "@/components/admin/ListToolbar";
+import { paginate } from "@/application/admin/paginate";
+import { matchesQuery } from "@/application/text/search-ar";
 import {
   CHANGE_TYPE_LABELS_AR, MIN_CHANGE_REASON_LEN, NEEDS_MODULE, TEXT_TYPES,
   afterValueFor, changeTypeLabelAr, draftProblemsAr, emptyChangeDraft,
@@ -85,6 +88,11 @@ export default function TrainerMyCourseEdits() {
   const [items, setItems] = useState<{ draft: ChangeDraft; afterValue: Record<string, unknown> }[]>([]);
   const [reason, setReason] = useState("");
   const [sending, setSending] = useState(false);
+  /* طابورُ اقتراحاتي ينمو بكلّ فصلٍ ودورة، فيُبحَث ويُصفَّح كسائر طوابير
+     المنصّة (`src/tests/design/staff-surface.test.ts`). والبحثُ على ما يُقرأ
+     في السطر: اسمُ الدورة، وسببُ التعديل، وحالُه بالعربيّة. */
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   const load = useCallback(() =>
     Promise.all([
@@ -97,6 +105,10 @@ export default function TrainerMyCourseEdits() {
   useEffect(() => { void load(); }, [load]);
 
   const course = useMemo(() => quals?.find((q) => q.courseId === courseId) ?? null, [quals, courseId]);
+  const matched = (mine ?? []).filter((r) => matchesQuery(query, [
+    r.course?.versions?.[0]?.titleAr, r.reason, STATUS_AR[r.status] ?? r.status,
+  ]));
+  const view = paginate(matched, page, 20);
   const modules = course?.modules ?? [];
 
   /* وتبديلُ الدورة يُفرِغ ما بُني: عنصرٌ يشير إلى محورٍ في دورةٍ أخرى
@@ -216,7 +228,7 @@ export default function TrainerMyCourseEdits() {
                   <option value="">— اختَرْ دورةً من مؤهّلاتك —</option>
                   {quals.map((q) => (
                     <option key={q.courseId} value={q.courseId}>
-                      {q.title || q.courseId}
+                      {q.title || "دورةٌ بلا اسمٍ في الكتالوج"}
                     </option>
                   ))}
                 </select>
@@ -403,12 +415,19 @@ export default function TrainerMyCourseEdits() {
           {mine.length === 0 ? (
             <p className="mt-2 text-sm text-muted-foreground">لم تُرسِلْ اقتراحا بعد.</p>
           ) : (
-            <ul className="mt-3 space-y-3">
-              {mine.map((r) => (
+            <>
+              <div className="mt-3">
+                <ListToolbar
+                  q={query} onQ={setQuery} onPage={setPage} view={view}
+                  unit="اقتراحا" placeholder="ابحَثْ باسم الدورة أو بالسبب أو بالحال"
+                />
+              </div>
+              <ul className="space-y-3">
+                {view.rows.map((r) => (
                 <Card as="li" key={r.id} className="space-y-2 p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-black">
-                      {r.course?.versions?.[0]?.titleAr || r.courseId}
+                      {r.course?.versions?.[0]?.titleAr || "دورةٌ بلا اسمٍ في الكتالوج"}
                     </span>
                     <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs font-bold">
                       {STATUS_AR[r.status] ?? r.status}
@@ -416,7 +435,7 @@ export default function TrainerMyCourseEdits() {
                     <span className="text-xs text-muted-foreground">{fmtDateLong(r.createdAt)}</span>
                   </div>
                   <p className="text-sm leading-7 text-muted-foreground">{r.reason}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-read text-muted-foreground">
                     {r.items.map((i) => changeTypeLabelAr(i.changeType)).join(" · ")}
                   </p>
                   {r.checkerComment && (
@@ -430,8 +449,12 @@ export default function TrainerMyCourseEdits() {
                     </Button>
                   )}
                 </Card>
-              ))}
-            </ul>
+                ))}
+              </ul>
+              {view.total === 0 && (
+                <p className="text-sm text-muted-foreground">لا اقتراحَ يطابق بحثَك.</p>
+              )}
+            </>
           )}
         </section>
       </div>
