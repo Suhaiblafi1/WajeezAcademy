@@ -16,11 +16,14 @@ import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MA
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify, notifyRole } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, zoomMissing, zoomReady } from './zoom.service'
+import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, updateZoomMeeting, zoomMissing, zoomReady } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
-import { meetingOver } from '../../src/application/learning/cohort-gate'
+import { meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
+import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
+import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
+import { LEARNER_PLAN_QUERY } from './learner-gate'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -913,7 +916,13 @@ export class CohortService {
   async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, cohortId: true, title: true, startsAt: true, approvalState: true, placeholder: true },
+      select: {
+        id: true, cohortId: true, title: true, startsAt: true, approvalState: true, placeholder: true,
+        moduleId: true, moduleIds: true, timezone: true,
+        zoom: { select: { meetingId: true, provider: true } },
+        /* موعدُ محوره من الخطّة التي يراها المتعلّم — منه يُحكم على «داخلَ موعده» (٣ج) */
+        cohort: { select: { timezone: true, plans: LEARNER_PLAN_QUERY } },
+      },
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
@@ -945,26 +954,73 @@ export class CohortService {
        ولأنّه يرجع إلى الانتظار سقط بابُ «اقترح موعدا» كلُّه: من يملك النقلَ
        لا يستأذن فيه، والاعتمادُ يقع بعدَه لا قبلَه. */
     const wasApproved = session.approvalState === 'approved'
+    /* ═══ إلّا التأجيلَ القريب — يبقى معتمَدا (٣ج) ═══
+
+       «وبعد الاعتماد كلُّ تغييرٍ باعتماد — إلّا تأجيلَ لقاءٍ بعده أقلُّ من ثمانٍ
+       وأربعين ساعة». والقاعدةُ وحدودُها (تأجيلٌ لا تقديم، قبل البدء، داخلَ موعد
+       محوره) في `application/trainer/postpone.ts`. */
+    const slots = ((session.cohort.plans[0]?.content ?? null) as { slots?: PlanSlot[] | null } | null)?.slots ?? []
+    const axis = session.moduleIds[0] ?? session.moduleId
+    const slot = axis ? slots[slotIndexOf(slots, axis)] ?? null : null
+    const postponed = keepsApprovalOnMove({
+      approved: wasApproved, startsAt: session.startsAt, newStartsAt: input.startsAt, newEndsAt: input.endsAt ?? null,
+      now: new Date(), slot,
+    })
+    const backToPending = wasApproved && !postponed
     const moved = await this.prisma.cohortSession.update({
       where: { id: sessionId },
       data: {
         startsAt: input.startsAt,
         endsAt: input.endsAt,
-        ...(wasApproved ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
+        ...(backToPending ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
       },
     })
+    /* واجتماعُه يُنقل معه — معتمَدا بقي أو منتظِرا: الاعتمادُ يعيد استعمالَ
+       الاجتماع القائم، فلو بقي على موعده القديم لَبقي في Zoom على ساعةٍ غيرِ ساعته */
+    const zoomMoved = await this.moveZoomMeeting(session, moved)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.move', entityType: 'cohort_session', entityId: sessionId,
-      meta: { from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending: wasApproved },
+      meta: {
+        from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending, postponed,
+        ...(zoomMoved === null ? {} : { zoomMoved }),
+      },
     })
     /* والإدارةُ تُعلَم أنّ في طابورها صفًّا جديدا — وإلّا بقي اللقاءُ محجوبا
        عن متعلّميه ولا أحدَ يعلم أنّه ينتظر. */
-    if (wasApproved) {
+    if (backToPending) {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
       await this.tellCohortScheduleChanged(session.cohortId, session,
         'نقله مدرّبُك ويُراجَع الآن عند الإدارة. ويصلك موعدُه الجديدُ حين يُعتمَد.')
+    } else if (postponed) {
+      /* والمؤجَّلُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع» */
+      await this.tellCohortScheduleChanged(session.cohortId, session,
+        `أجّله مدرّبُك إلى ${whenAr(moved.startsAt)} — ورابطُ الانضمام نفسُه.`)
     }
     return moved
+  }
+
+  /** ينقل اجتماعَ Zoom مع لقائه — ويعود بما وقع: `null` لا اجتماعَ في Zoom يُنقل */
+  private async moveZoomMeeting(
+    session: { zoom: { meetingId: string | null; provider: string } | null; timezone: string | null; cohort: { timezone: string | null } },
+    moved: { startsAt: Date; endsAt: Date | null },
+  ): Promise<boolean | null> {
+    const meetingId = session.zoom?.provider === 'zoom_api' ? session.zoom.meetingId : null
+    if (!meetingId) return null
+    try {
+      const cfg = await getZoomConfig(this.prisma)
+      if (!zoomReady(cfg)) return false
+      const durationMinutes = moved.endsAt
+        ? Math.max(15, Math.round((moved.endsAt.getTime() - moved.startsAt.getTime()) / 60_000))
+        : 120
+      const r = await updateZoomMeeting(cfg, meetingId, {
+        startsAt: moved.startsAt, durationMinutes, timezone: session.timezone ?? session.cohort.timezone ?? undefined,
+      })
+      if (!r.ok) console.error('[zoom] تعذّر نقلُ الاجتماع مع لقائه', meetingId, r.reason)
+      return r.ok
+    } catch (e) {
+      console.error('[zoom] تعذّر نقلُ الاجتماع مع لقائه', meetingId, e)
+      return false
+    }
   }
 
   /* ═══ ربطُ لقاءٍ بمحوره — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦) ═══

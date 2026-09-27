@@ -263,6 +263,35 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
   }
 }
 
+/* ── نقلُ اجتماعٍ قائمٍ إلى موعده الجديد (٣ج) ──
+
+   كان نقلُ لقاءٍ معتمَدٍ يُعيده إلى الانتظار ولا يمسّ اجتماعَه في Zoom، ثمّ يُعيد
+   الاعتمادُ استعمالَ الاجتماع القائم (`decideSession`) — فيبقى في Zoom على الموعد
+   القديم: تذكيراتُ Zoom وتقويمُ المضيف وتسجيلُه على ساعةٍ لم تعد ساعتَه. فصار
+   النقلُ ينقل الاجتماعَ معه.
+
+   ولا يرمي، كالإلغاء: الموعدُ عندنا تغيّر وإخفاقُ Zoom لا يردّه. يعود بما وقع،
+   ويُكتب في أثر النقل — ويبقى الرابطُ نفسُه صالحا (`join_before_host`). */
+export async function updateZoomMeeting(
+  c: ZoomConfig,
+  meetingId: string,
+  input: { startsAt: Date; durationMinutes: number; timezone?: string },
+): Promise<{ ok: boolean; reason?: string }> {
+  const token = await zoomToken(c)
+  const res = await fetch(`${ZOOM_API_BASE_URL}/meetings/${encodeURIComponent(meetingId)}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      start_time: input.startsAt.toISOString(),
+      duration: input.durationMinutes,
+      timezone: input.timezone || 'Asia/Amman',
+    }),
+  })
+  /* ٢٠٤ نُقل · وما سواه لم يُنقل — ويُقال برقمه */
+  if (res.status === 204) return { ok: true }
+  return { ok: false, reason: `ردُّ Zoom عند النقل (HTTP ${res.status})` }
+}
+
 /* ── إلغاءُ اجتماع ──
 
    يُنادى حين يُحذف اللقاءُ من عندنا. ولولاه لبقي في حساب الأكاديميّة موعدٌ
