@@ -10,7 +10,9 @@ import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
-import { dayLabelAr, workbookDone, type PlanSlot } from "@/application/trainer/axis-timeline";
+import type { PlanSlot } from "@/application/trainer/axis-timeline";
+import CurriculumReview from "@/components/CurriculumReview";
+import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import type { CohortTab } from "./cohort-tabs";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -47,6 +49,11 @@ type Done = (msg: string) => void;
 interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
   submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
+  /* المنهجُ كاملا للمعتمِد — لقاءاتُ الشعبة ومهامُّها مع خطّتها (المرحلة ٣) */
+  cohortTitle: string;
+  period: { startsOn: string; endsOn: string } | null;
+  sessions: CurriculumInput["sessions"];
+  assessments: CurriculumInput["assessments"];
   content: {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
@@ -359,46 +366,35 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             </p>
             {/* ═══ المدّةُ أوّلُ ما يُقرأ — وهي ما يُعتمَد (٢٧ سبتمبر ٢٠٢٦) ═══
                 صار المدرّبُ يحدّد متى تبدأ شعبتُه ومتى تنتهي، وباعتمادك تصير
-                حدودَها المعلَنة ويُشتقّ فصلُها من تاريخ بدئها. فتُقال هنا قبل
-                المحاور: من يعتمد يعرف أيَّ موعدٍ يُعلن. */}
+                حدودَها المعلَنة ويُشتقّ فصلُها من تاريخ بدئها. */}
             {trainerPlan.content?.startsOn && trainerPlan.content?.endsOn && (
               <p className="mt-2 text-read leading-6 text-foreground">
                 المدّة: من <b>{fmtDateAr(trainerPlan.content.startsOn)}</b> إلى <b>{fmtDateAr(trainerPlan.content.endsOn)}</b>
                 {" "}<span className="text-muted-foreground">— تصير حدودَ الشعبة المعلَنة باعتمادك.</span>
               </p>
             )}
-            {trainerPlan.content?.summaryAr && <p className="mt-2 text-read leading-6 text-muted-foreground">{trainerPlan.content.summaryAr}</p>}
-            {/* ═══ والمحاورُ على مواعيدها — وهي ما سيحكم متى يُفتح كلُّ شيء (٢٧ سبتمبر ٢٠٢٦) ═══
+            {/* ═══ والمنهجُ كاملا — ما قرأه المدرّبُ قبل أن يرسل (المرحلة ٣) ═══
 
-                من يعتمد يرى أيَّ محورٍ في أيّ موعد، ومتى، وهل لموعده كرّاستُه —
-                قبل أن يعتمد ما سيقرّر متى يرى المتعلّمُ كلَّ شيء. وصفحةُ المنهج
-                الكاملة مرحلتُها التالية؛ وهذا سطرٌ لكلّ موعدٍ لا يُغني عنها. */}
-            {(trainerPlan.content?.slots?.length ?? 0) > 0 ? (() => {
-              const mods = trainerPlan.content!.modules ?? [];
-              const axisNo = new Map(mods.map((m, i) => [m.moduleId, i + 1]));
-              return (
-                <ol className="mt-2 space-y-1.5 text-read leading-6 text-foreground" aria-label="مواعيدُ المحاور">
-                  {trainerPlan.content!.slots!.map((slot, si) => (
-                    <li key={`${si}-${slot.moduleIds[0] ?? "empty"}`}>
-                      <b>الموعد {si + 1}</b>
-                      <span className="text-muted-foreground"> · {dayLabelAr(slot.startsOn)} – {dayLabelAr(slot.endsOn)} · </span>
-                      {slot.moduleIds.map((id) => `${axisNo.get(id) ?? "؟"}. ${mods.find((m) => m.moduleId === id)?.titleAr ?? id}`).join(" + ")}
-                      {" · "}
-                      {workbookDone(slot.workbook)
-                        ? <span className="text-muted-foreground">له كرّاستُه</span>
-                        : <span className="font-bold text-gold-ink">بلا كرّاسة</span>}
-                    </li>
-                  ))}
-                </ol>
-              );
-            })() : (trainerPlan.content?.modules?.length ?? 0) > 0 && (
-              <ol className="mt-2 space-y-1 text-read text-foreground">
-                {trainerPlan.content!.modules!.map((m, i) => <li key={m.moduleId}>{i + 1}. {m.titleAr}</li>)}
-              </ol>
-            )}
-            {(trainerPlan.content?.resources?.length ?? 0) > 0 && (
-              <p className="mt-2 text-read text-muted-foreground">{trainerPlan.content!.resources!.length} مصدرا.</p>
-            )}
+                «وهو ما سنقرؤه عند الموافقة» (صاحب المنصّة). وكانت البطاقةُ سطرا
+                لكلّ موعدٍ وعددا للمصادر، ولا ترى مهمّةً ولا لقاءً — فيُعتمَد
+                منهجٌ لم يُقرأ نصفُه. فصارت الصفحةَ نفسَها التي يقرؤها المدرّبُ في
+                خطوته الأخيرة (`CurriculumReview`): لكلّ موعدٍ محاورُه ومتونُها
+                وكرّاستُه ولقاءاتُه ومهامُّه ومصادرُه، بالترتيب. وتُفتح مطويّةً
+                إلّا حين تنتظر قرارا. */}
+            <details className="mt-3" open={trainerPlan.status === "submitted"}>
+              <summary className="cursor-pointer text-read font-bold text-teal-light-ink">المنهجُ كاملا — من الألف إلى الياء</summary>
+              <div className="mt-3">
+                <CurriculumReview
+                  view={curriculumView({
+                    title: trainerPlan.cohortTitle || cohort.title,
+                    period: trainerPlan.period,
+                    content: trainerPlan.content,
+                    sessions: trainerPlan.sessions,
+                    assessments: trainerPlan.assessments,
+                  })}
+                />
+              </div>
+            </details>
             {trainerPlan.reviewerNote && <Inset tone="warn" className="mt-2 text-read leading-6">{trainerPlan.reviewerNote}</Inset>}
             {/* وسقط هنا صندوقُ «يقترح المدرّبُ اسما آخر» (د-٦): اعتمادُ خطّةٍ
                 لا يُعيد تسميةَ دورةٍ في الكتالوج. واقتراحُ الاسم يصل الإدارةَ

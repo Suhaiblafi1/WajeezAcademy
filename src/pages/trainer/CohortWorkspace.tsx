@@ -81,6 +81,8 @@ import {
   type PlanSlot, type SlotWorkbook,
 } from "@/application/trainer/axis-timeline";
 import { countAr } from "@/application/text/count-ar";
+import CurriculumReview from "@/components/CurriculumReview";
+import { curriculumView } from "@/application/trainer/curriculum-view";
 
 /* ─────────── ما يصل من الخادم ─────────── */
 
@@ -2004,6 +2006,28 @@ export default function CohortWorkspace() {
               </Button>
             </Inset>
           )}
+          {/* ═══ المنهجُ كما سيُعتمَد (المرحلة ٣) ═══
+
+              «صفحةٌ توضح كلَّ ما كتبه بالترتيب… وكأنّها منهجٌ متكاملٌ لدورته من
+              الألف إلى الياء، يقرؤه فتلهمه أيَّ تعديلات فيعود للتعديل بالمراحل
+              السابقة» (صاحب المنصّة). فهي قبل الموافقة لا بعدها: يقرأ ثمّ يُقرّ.
+              وهي الصفحةُ نفسُها التي يقرؤها المعتمِد — فلا يُعتمَد غيرُ ما رآه —
+              وفي كلّ قسمٍ «عدّل» يعيده إلى خطوته. */}
+          <div className="mt-5">
+            <p className="text-read font-black text-foreground">منهجُ شعبتك كما سيقرؤه المعتمِد — ثمّ متعلّموك بالترتيب</p>
+            <div className="mt-2">
+              <CurriculumReview
+                view={curriculumView({
+                  title: identity.title.trim() || ws.cohort.title,
+                  period: planPeriod,
+                  content,
+                  sessions: ws.sessions,
+                  assessments: ws.assessments,
+                })}
+                onEdit={(s) => openStage(s)}
+              />
+            </div>
+          </div>
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
             <input id="plan-confirm" type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
             <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
