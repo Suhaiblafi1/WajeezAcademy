@@ -98,8 +98,29 @@ async function signedOffer(opts: { ready: boolean }) {
     phone: '+962790000000', bodyHash: sha256(BODY),
     acks: contractAcks(true).map((a) => a.key),
   })
-  /* والتجهيزُ يُتمّ أو يُترك ناقصا بقصد — وهو مِحَكُّ الفحصَين */
-  if (opts.ready) await makeReadyForApproval(prisma, application.id, adminId)
+  /* ═══ ويُعلن اكتمالَ موادّه مع التجهيز (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     وكان يُختَم بلا إعلانٍ فيمرّ، لأنّ هذا المُعِدَّ يكتب صفَّ العقد في
+     القاعدة بلا جلسةٍ ولا مهلة — فطورُ الشرط `none`، وحارسُ الموادّ يُجيزه
+     عمدا لئلّا يُحبَس من لا يملك أن يُعلن. فلمّا صار أصلُ المهلة التوقيعَ
+     صار لكلّ موقَّعٍ مهلةٌ، وعمل الحارسُ كما يعمل على مدرّبٍ حقيقيّ.
+
+     ومع `ready` لا قبلَه: الفحصُ الثاني يترك التجهيزَ ناقصا بقصدٍ ليُثبِت
+     أنّ البوّابةَ تردّ — ولو أُعلن فيه لَبقي الردُّ قائما بعلّةٍ أخرى
+     فاختلط مِحَكّا الفحصَين. */
+  if (opts.ready) {
+    /* والإعلانُ يُكتب في العمود لا يُنادى بالخدمة: `declareMaterialsComplete`
+       تقرأ ملفَّ المدرّب **من حسابه**، وملفُّ هذا المُعِدِّ غيرُ مرتبطٍ بحسابٍ
+       بقصد — فالربطُ هو ممّا يُثبِته الفحصُ نفسُه في `decide('activate')`.
+       فلو رُبط هنا لأجل الإعلان لَخضرّ الفحصُ على ربطٍ صنعناه نحن.
+
+       و`conditionPausedAt` هو ما تكتبه الخدمةُ بعينه — فالمحاكاةُ في العمود
+       الذي تكتبه لا في أثرٍ جانبيّ. */
+    await prisma.trainerContract.update({
+      where: { id: contract.id }, data: { conditionPausedAt: new Date() },
+    })
+    await makeReadyForApproval(prisma, application.id, adminId)
+  }
   return { application, profile, contract, userId: user.userId }
 }
 

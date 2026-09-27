@@ -1,25 +1,30 @@
-/* لا عرضَ مشروطٌ بلا جلسةِ تهيئة — بقاعدةٍ حقيقيّة.
+/* جلسةُ التهيئة وعدٌ لا شرطٌ عند التركيب — بقاعدةٍ حقيقيّة.
  *
- * ── القرارُ الذي وُلد منه ──
+ * ── وكان هذا الملفُّ يقيس نقيضَه ──
  *
- * سُئل صاحبُ المنصّة (٢٦ سبتمبر ٢٠٢٦): أتُجعل جلسةُ التهيئة إلزاميّةً في
- * العرض المشروط؟ فأجاب: «نعم — بعد أن يوقّعوا ونوقّعَ العرضَ المشروط، تصلهم
- * دعوةُ جلسة التهيئة».
+ * سُئل صاحبُ المنصّة (٢٦ سبتمبر ٢٠٢٦): أتُجعل جلسةُ التهيئة إلزاميّةً؟ فقال
+ * «نعم». وعلّةُ ذلك أنّ المهلةَ كانت تُحسَب منها، وبلا مهلةٍ لا طورَ موادٍّ:
+ * `openConditionContract` تشترط `conditionDeadlineAt` غيرَ فارغ، فلا يستطيع
+ * المدرّبُ أن يُعلن اكتمالَ موادّه — ولا حارسُ الموادّ يعترض اعتمادَه.
  *
- * ── ولمَ هي شرطٌ لا زينة ──
+ * ── ثمّ نُسخ المبدأُ فسقط الشرطُ معه (٢٧ سبتمبر ٢٠٢٦) ──
  *
- * المهلةُ تُحسَب منها (`deadlineFrom(orientationAt)`)، وبلا مهلةٍ لا طورَ
- * موادٍّ أصلا: `openConditionContract` تشترط `conditionDeadlineAt` غيرَ فارغ،
- * فلا يستطيع المدرّبُ أن يُعلن اكتمالَ موادّه — ولا حارسُ الموادّ يعترض
- * اعتمادَه (وهو يُجيز `none` عمدا، وإلّا حُبس من لا يملك أن يُعلن).
+ * «معه ٥ أيّام من بعد التوقيع لإتمام الموادّ… وأبلغهم أنّ هناك ستكون جلسةُ
+ * توتوريال **تُحدَّد بعد التوقيع**». فصار أصلُ المهلة التوقيعَ، وصارت الجلسةُ
+ * موعدا يُبلَّغ به بعده.
  *
- * فعرضٌ بلا جلسةٍ عرضٌ شرطُه مكتوبٌ في متنه ولا يُنفَّذ منه شيء — يُوقَّع
- * ويُعتمَد مباشرةً كما كان قبل الحارس.
+ * فالشرطُ لم يُنقَض حكمُه اعتباطا: سقطت علّتُه. لم يكن حكما قائما بنفسه، بل
+ * يحرس أنّ للمهلة أصلا — وأصلُها اليومَ فعلُ المدرّب نفسِه، يقع ويُكتب في
+ * الصفّ لحظتَه فلا يحتاج إلى وعدٍ من أحد.
  *
- * ── وأدقُّ ما يُقاس: أنّ الشرطَ على المشروط وحدَه ──
+ * **والضمانُ الذي اشتراه الشرطُ باقٍ بتمامه**: لا يُعتمَد عرضٌ مشروطٌ إلّا
+ * بعد أن يُعلن صاحبُه اكتمالَ موادّه — بل صار أقوى: كان يُفلت من لا مهلةَ
+ * له (حارسُ الموادّ يُجيز `none` عمدا)، وصار لكلّ موقَّعٍ مهلةٌ فلا مُفلِت.
  *
- * العقدُ العاديُّ لا طورَ له ولا مهلة. فلو عمّ الشرطُ لَامتنع تركيبُ كلّ
- * عقدٍ لمدرّبٍ اعتُمدت موادُّه من قبل — وهو أكثرُ ما يُركَّب بعد أوّل موسم.
+ * ── وأدقُّ ما يُقاس: أنّ الطورَ على المشروط وحدَه ──
+ *
+ * العقدُ العاديُّ لا طورَ له ولا مهلة. فلو عمّ لَحُبس كلُّ مدرّبٍ اعتُمدت
+ * موادُّه من قبل — وهو أكثرُ ما يُركَّب بعد أوّل موسم.
  */
 
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -27,7 +32,6 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
-import { deadlineFrom } from '../../../src/application/trainer/conditional-offer'
 import { DEFAULT_REQUIRED_DOCUMENTS } from '../../../src/application/trainer/contract-documents'
 
 let prisma: PrismaClient
@@ -94,25 +98,36 @@ const compose = (applicationId: string, orientationAt?: string) =>
     ...(orientationAt ? { orientationAt } : {}),
   })
 
-describe('العرضُ المشروط يُشترَط فيه موعدُ الجلسة', () => {
-  it('بلا جلسةٍ: يُردّ ولا يُنشأ صفّ', async () => {
+describe('العرضُ المشروط يُركَّب بجلسةٍ وبلا جلسة', () => {
+  it('بلا جلسةٍ: يُركَّب — ولا يُخترَع له موعد', async () => {
     const t = await readyToCompose({ materialsApprovedBefore: false })
-    await expect(compose(t.applicationId)).rejects.toMatchObject({ code: 'orientation_required' })
-    expect(await prisma.trainerContract.count({ where: { profileId: t.profileId } }),
-      'رُدَّ التركيبُ وبقي صفٌّ يتيم').toBe(0)
+    await compose(t.applicationId)
+    const c = await prisma.trainerContract.findFirstOrThrow({ where: { profileId: t.profileId } })
+    expect(c.gatesActivation, 'رُكّب غيرَ مشروطٍ فسقط الفحصُ كلُّه').toBe(true)
+    expect(c.orientationAt, 'اختُرعت جلسةٌ لم تُعطَ').toBeNull()
   })
 
-  it('وبها: يُركَّب، والمهلةُ تُحسَب منها', async () => {
+  it('وبها: تُحفَظ — فمن عُرف موعدُها طُبع في متنه', async () => {
     const t = await readyToCompose({ materialsApprovedBefore: false })
     const at = new Date(Date.now() + 3 * 86_400_000)
     await compose(t.applicationId, at.toISOString())
     const c = await prisma.trainerContract.findFirstOrThrow({ where: { profileId: t.profileId } })
-    expect(c.gatesActivation, 'رُكّب غيرَ مشروطٍ فسقط الفحصُ كلُّه').toBe(true)
     expect(c.orientationAt, 'لم تُحفظ الجلسة').not.toBeNull()
-    expect(c.conditionDeadlineAt, 'رُكّب مشروطا بلا مهلة').not.toBeNull()
-    /* والمهلةُ من الجلسة لا من يوم التركيب */
-    expect(c.conditionDeadlineAt!.getTime())
-      .toBe(deadlineFrom(c.orientationAt!)!.getTime())
+  })
+
+  /* ═══ ولا ساعةَ تجري قبل أن يلتزم ═══
+
+     وهو الضمانُ الذي حُفظ عبر التبديل: كان «لا ساعةَ بلا جلسةٍ يُعلَم بها»،
+     فصار «لا ساعةَ قبل أن يوقّع». ويُقاس في الحالَين معا — فلو كُتبت المهلةُ
+     عند التركيب لَجرت على من لم يقرأ العرضَ بعد. */
+  it('ولا مهلةَ تُكتب عند التركيب — بجلسةٍ كان أو بلا', async () => {
+    for (const withSession of [true, false]) {
+      const t = await readyToCompose({ materialsApprovedBefore: false })
+      await compose(t.applicationId,
+        withSession ? new Date(Date.now() + 3 * 86_400_000).toISOString() : undefined)
+      const c = await prisma.trainerContract.findFirstOrThrow({ where: { profileId: t.profileId } })
+      expect(c.conditionDeadlineAt, `جرت ساعةٌ على عرضٍ لم يُوقَّع (بجلسة: ${withSession})`).toBeNull()
+    }
   })
 })
 
