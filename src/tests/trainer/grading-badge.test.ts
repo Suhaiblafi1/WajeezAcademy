@@ -18,7 +18,11 @@ import { fileURLToPath } from 'node:url'
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const layout = readFileSync(join(root, 'src/pages/trainer/TrainerLayout.tsx'), 'utf8')
 /* الشيفرةُ بلا تعليقاتها — لما يُفحص بنيةً لا نصّا (أعرافُ `CLAUDE.md`) */
-const code = layout.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
+const strip = (src: string) => src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
+const code = strip(layout)
+/* والشارةُ والقائمةُ صارتا في الشريط المشترك بين البوّابات الثلاث (٢٧ سبتمبر
+   ٢٠٢٦) — فيُفحصان في موضعهما، والإطارُ يُفحص فيما بقي له: العددُ وما يُقرأ قبله */
+const bar = strip(readFileSync(join(root, 'src/components/ui/PortalTabs.tsx'), 'utf8'))
 const route = readFileSync(join(root, 'server/http/routes/trainer-portal.routes.ts'), 'utf8')
 const queue = readFileSync(join(root, 'src/pages/trainer/GradingQueue.tsx'), 'utf8')
 
@@ -43,19 +47,24 @@ describe('عدّادُ ما ينتظر تصحيحَه', () => {
   })
 
   it('ويُقرأ لمن لا يرى — رقمٌ عائمٌ لا يقول ماذا يعدّ', () => {
-    expect(layout).toMatch(/sr-only">ينتظر تصحيحَك: /)
+    /* الإطارُ يقول ماذا يعدّ، والشارةُ تقرؤه قبل الرقم — الشريطُ لا يعرف أنّ
+       المعدودَ عند المدرّب تسليماتٌ تنتظر تصحيحَه */
+    expect(code, 'الإطارُ لا يقول ماذا يعدّ').toContain('countLabel="ينتظر تصحيحَك: "')
+    expect(bar, 'الشارةُ لا تقرأ ما يُعطى لها').toContain('<span className="sr-only">{label}</span>')
   })
 
   it('ويختفي عند الصفر — «٠ ينتظر» ضجيجٌ لا خبر', () => {
     /* صارت الشارةُ مكوّنا واحدا (`CountBadge`) يُرسم في أربعة مواضع: الحبّة،
        وشبحِها الذي يُقاس به عرضُها، وبندِ «المزيد»، وزرِّه. فالشرطُ فيه مرّةً —
        ورقمٌ يُرسم خامَ في موضعٍ خامس يتجاوزه، فلا يُرسم رقمٌ خامٌ أصلا. */
-    const badge = code.slice(code.indexOf('function CountBadge'), code.indexOf('function MoreTabs'))
+    const badge = bar.slice(bar.indexOf('function CountBadge'), bar.indexOf('function MoreTabs'))
     expect(badge, 'لا مكوّنَ للشارة').not.toBe('')
-    expect(badge, 'الشارةُ تُرسم والعددُ صفر').toMatch(/^function CountBadge\(\{ count \}[^{]*\{[^}]*\}\) \{\s*if \(!count\) return null;/)
+    expect(badge, 'الشارةُ تُرسم والعددُ صفر').toMatch(/^function CountBadge\(\{ count, label \}[^)]*\) \{\s*if \(!count\) return null\b/)
     /* ابنُ وسمٍ لا قيمةُ خاصّيّة: `count={t.count}` تمريرٌ إلى الشارة، و`{t.count}`
        بلا `=` قبلها رسمٌ خام. وأوّلُ صياغةٍ لهذا الفحص طابقت التمريرَ نفسَه */
-    expect(code.match(/(?<!=)\{t\.count\}/g) ?? [], 'عددٌ يُرسم خاما خارجَ الشارة — فيظهر «٠» ويفقد اسمَه').toHaveLength(0)
+    for (const [name, src] of [['الإطار', code], ['الشريط', bar]] as const) {
+      expect(src.match(/(?<!=)\{t\.count\}/g) ?? [], `${name}: عددٌ يُرسم خاما خارجَ الشارة — فيظهر «٠» ويفقد اسمَه`).toHaveLength(0)
+    }
   })
 
   it('⚠️ ويبقى مرئيّا حين يخرج تبويبُه إلى «المزيد» — على الزرّ نفسِه لا خلف نقرة', () => {
@@ -63,14 +72,14 @@ describe('عدّادُ ما ينتظر تصحيحَه', () => {
        فيخرج إلى «المزيد» على الهاتف — ثلاثةٌ تسع ٣٩٠. والرقمُ وُضع في الشريط
        ليُرى بلا فتحِ شيء، فلو بقي في بند القائمة وحدَه لدُفن خلف نقرةٍ على
        أكثر الشاشات استعمالا. */
-    const more = code.slice(code.indexOf('function MoreTabs'), code.indexOf('function TabsBar'))
+    const more = bar.slice(bar.indexOf('function MoreTabs'), bar.indexOf('export function PortalTabs'))
     expect(more, 'لا مكوّنَ لـ«المزيد»').not.toBe('')
     expect(more, 'الزرُّ لا يجمع عدّادَ ما خلفه').toMatch(/const waiting = items\.reduce\(/)
     const button = more.slice(more.indexOf('<NavPillButton'), more.indexOf('</NavPillButton>'))
-    expect(button, 'عدّادُ المخفيّ لا يُرسم على الزرّ').toContain('<CountBadge count={waiting} />')
+    expect(button, 'عدّادُ المخفيّ لا يُرسم على الزرّ').toContain('<CountBadge count={waiting} label={countLabel} />')
     /* وبندُه في القائمة يحمله أيضا — فمن فتحها عرف أين ينتظره العمل */
     const menu = more.slice(more.indexOf('role="menu"'))
-    expect(menu, 'بندُ القائمة بلا عدّاد').toContain('<CountBadge count={t.count} />')
+    expect(menu, 'بندُ القائمة بلا عدّاد').toContain('<CountBadge count={t.count} label={countLabel} />')
   })
 
   it('وسقوطُ العدّاد لا يُسقط البوّابة', () => {

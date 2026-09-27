@@ -1,5 +1,6 @@
-import { Link, NavLink } from "react-router";
+import { Link } from "react-router";
 import { GraduationCap, Headset, Star, Wallet } from "lucide-react";
+import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
@@ -52,7 +53,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
 
   /* صفحتان أُضيفتا لاحقا لأن ما تراه الإدارة عن المستشار الآن — عمولته
      وتقييمه — لم يكن للمستشار نفسه نافذة عليه. */
-  const tabs = [
+  const tabs: PortalTab[] = [
     { to: "/advisor", label: "حالاتي", icon: Headset, end: true },
     { to: "/advisor/learners", label: "طلبتي", icon: GraduationCap },
     { to: "/advisor/earnings", label: "عمولتي", icon: Wallet },
@@ -81,28 +82,30 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/10 bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+        {/* ═══ شريطُ المدرّب نفسُه — قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+            «طبّق نفس الشيء على بوابة المستشار والطالب». وكان الشريطُ هنا
+            يقتسم سطرَ الترويسة مع الشعار والأدوات، فقِيس بالمتصفّح:
+
+            · على الهاتف (٣٢٠–٤٣٠) أربعةُ رموزٍ **بلا اسم** — النصُّ
+              `hidden sm:inline` — وزرُّ الحساب مقصوصٌ عند حافّة الشاشة.
+            · وعلى ٧٦٨ و١٠٢٤ انطوى «ما قيل عنّي» في ثلاثة أسطرٍ داخل حبّته،
+              وانطوى «Ctrl K» في زرّ البحث، وخرج زرُّ الحساب عن الشاشة.
+
+            فصار كما في بوّابة المدرّب: الشعارُ والأدواتُ سطرا، والشريطُ سطرا
+            تحته بأسمائه كلِّها، و«المزيد» لما لم يسعه وحدَه (`ui/PortalTabs`).
+            والذهبُ لونُ هذه البوّابة كما كان.
+
+            وبلا رموزٍ كشريط المدرّب: برموزها لم يسع الهاتفُ منها إلّا اثنين
+            (٣٢٠–٣٦٠) والباقيان خلف «المزيد»، وبلا رموزٍ تسع الأربعةُ كلُّها من
+            ٣٢٠ فما فوق — فلا «مزيدَ» هنا على أيّ هاتفٍ اليوم. والرموزُ باقيةٌ
+            في قائمة «المزيد» إن جاءها يومٌ تبويبٌ خامس. */}
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-5 py-2">
           <Link to="/" className="flex shrink-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="hidden font-black sm:block">وجيز — بوابة المستشار</span>
           </Link>
-          <nav className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1">
-            {tabs.map((t) => (
-              <NavLink
-                key={t.to}
-                to={t.to}
-                end={t.end}
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 ${
-                    isActive ? "bg-gold text-on-gold" : "text-muted-foreground hover:text-foreground"
-                  }`
-                }
-              >
-                <t.icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{t.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+          <PortalTabs tabs={tabs} label="تبويبات بوّابة المستشار" look="gold" className="order-last w-full" />
           <div className="flex items-center gap-3">
             {/* بحث سريع Ctrl+K — لجلسة المستشار الحقيقية فقط: مقيد بحالاته المسندة */}
             {realAdvisor && (
