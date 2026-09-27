@@ -47,6 +47,10 @@ const LEARNER: Table = {
   'session.reminder': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.24h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.1h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  /* ٢(ب-٣): ما يُفتح على خطّ المحاور — والخطُّ نفسُه في «الدروس» من رحلتي */
+  'timeline.slot_opened': { path: '/student/learning', ctaAr: 'افتح موعدَك' },
+  'timeline.tasks_opened': { path: '/student/learning', ctaAr: 'افتح الواجبات' },
+  'timeline.due_soon': { path: '/student/learning', ctaAr: 'سلّم قبل موعده' },
   'enrollment.approved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.confirmed': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.rejected': { path: '/student/learning', ctaAr: 'افتح رحلتك' },

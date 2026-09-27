@@ -364,6 +364,7 @@ const PHRASES: Record<string, string> = {
   'worker.cohort_status_sync': 'مزامنةُ حالاتِ الشعب',
   'worker.dispatch_notifications': 'إرسالُ الإشعاراتِ المنتظِرة',
   'worker.enforce_retention': 'تطبيقُ مددِ الحفظ',
+  'worker.notify_timeline': 'إخبارُ المتعلّمين بما فُتح على خطّ المحاور',
   'worker.publish_scheduled_changes': 'نشرُ التغييراتِ المجدولة',
   'worker.reclaim_abandoned_orders': 'استرجاعُ الطلباتِ المهجورة',
   'worker.session_reminders': 'تذكيراتُ الجلسات',
