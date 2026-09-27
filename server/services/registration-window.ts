@@ -24,7 +24,20 @@
    · **فصلٌ بلا نافذةٍ محدَّدة** لا يمنع: `null` تعني «لم تُحدَّد» لا «مغلقة».
      ولا يُسكَت متعلّمٌ عن الشراء لأنّ إداريّا لم يملأ حقلا.
    · **والسببُ يُقال**: من رُدَّ يعرف أَقَبْلَ الموعد جاء أم بعده — «يبدأ
-     التسجيل في…» غيرُ «أُغلق التسجيل». */
+     التسجيل في…» غيرُ «أُغلق التسجيل».
+
+   ─────────── وشرطان من خطّة المدرّب (٣ج) ───────────
+
+   قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦): «التسجيلُ يُفتح بعد الاعتماد، ويُغلق
+   يومَ البدء، والالتحاقُ المتأخّرُ حتّى الموعد الثاني».
+
+   ٣) **خطّةُ مدرّبها معتمَدة**: شعبةٌ بدأ مدرّبُها خطّتَها ولم تُعتمَد لا تقبل
+      أحدا — وإن رُفع علمُها بيدٍ لا تعرف أنّ خطّتَها لم تُقرأ بعد. وشعبةٌ لا
+      خطّةَ لمدرّبها أصلا (ما قبل هذا النظام، وما تديره الإدارةُ بنفسها) لا
+      تُمنع: الجديدُ لا يُبطل القائم.
+   ٤) **والالتحاقُ حتّى الموعد الثاني** (`joinClosesAt`): يُكتب عند الاعتماد من
+      مواعيد الخطّة. ومن جاء بعد بدء الشعبة وقبل موعدها الثاني ملتحقٌ متأخّرٌ
+      يُقبل؛ وبعده لا — قد فاته من المنهج ما لا يُستدرك. */
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { fmtDateLong } from '../../src/application/text/format-ar'
@@ -61,20 +74,44 @@ export function termWindowVerdict(term: TermWindow | null, now = new Date()): Wi
 
 export type CohortVerdict =
   | { open: true }
-  | { open: false; reasonAr: string; code: 'not_yet' | 'closed' | 'flag_off' }
+  | { open: false; reasonAr: string; code: 'not_yet' | 'closed' | 'flag_off' | 'awaiting_plan' | 'late_closed' }
+
+/** حالاتُ خطّةٍ اعتُمدت — و`superseded` معتمَدةٌ نزلت لما بعدها: الشعبةُ اعتُمدت */
+export const APPROVED_PLAN_STATUSES = ['approved', 'published', 'superseded'] as const
+
+/** شعبةٌ بدأ مدرّبُها خطّتَها ولم تُعتمَد له خطّةٌ قطّ — لا تقبل تسجيلا بعد */
+export function awaitingTrainerPlan(plans: readonly { status: string }[]): boolean {
+  return plans.length > 0 && !plans.some((p) => (APPROVED_PLAN_STATUSES as readonly string[]).includes(p.status))
+}
 
 /** الشعبةُ تقبل تسجيلا الآن؟ — العلمُ والنافذةُ معا، والسببُ يُقال.
 
     والعنوانُ يُذكَر إن عُرف: من يشتري ثلاثَ شعبٍ في سلّةٍ واحدة يحتاج أن
     يعرف **أيَّتُها** رُدَّت، لا أنّ «شعبةً» رُدَّت. */
 export function cohortAcceptsRegistration(
-  cohort: { registrationOpen: boolean; title?: string; term?: TermWindow | null },
+  cohort: {
+    registrationOpen: boolean; title?: string; term?: TermWindow | null
+    /** خططُ **مدرّب** الشعبة بحالاتها — `PLAN_GATE_SELECT`. مطلوبةٌ لا اختياريّة:
+        موضعٌ ينسى قراءتَها يمرّر شعبةً لم تُعتمَد خطّتُها وهو لا يدري */
+    plans: readonly { status: string }[]
+    joinClosesAt: Date | null
+  },
   now = new Date(),
 ): CohortVerdict {
+  const named = cohort.title ? `«${cohort.title}»` : 'هذه الشعبة'
   if (!cohort.registrationOpen) {
     return {
       open: false, code: 'flag_off',
       reasonAr: cohort.title ? `التسجيل مغلق في «${cohort.title}»` : 'التسجيل في هذه الشعبة غير مفتوح',
+    }
+  }
+  if (awaitingTrainerPlan(cohort.plans)) {
+    return { open: false, code: 'awaiting_plan', reasonAr: `تُفتح ${named} للتسجيل حين تُعتمَد خطّةُ مدرّبها` }
+  }
+  if (cohort.joinClosesAt && now >= cohort.joinClosesAt) {
+    return {
+      open: false, code: 'late_closed',
+      reasonAr: `أُغلق الالتحاقُ بـ${named} — بدأ موعدُها الثاني ${fmtDateLong(cohort.joinClosesAt)}، وتُعلَن شعبتُها التالية في موعدها`,
     }
   }
   return termWindowVerdict(cohort.term ?? null, now)
@@ -88,17 +125,32 @@ export function cohortAcceptsRegistration(
 export function openRegistrationWhere(now = new Date()): Prisma.CohortWhereInput {
   return {
     registrationOpen: true,
-    OR: [
-      /* بلا فصل: القائمُ قبل هذا النظام لا يُبطَل */
-      { termId: null },
+    /* ثلاثةُ شروطٍ كلٌّ منها «أو» — فتُجمع في `AND` لا تُنشَر: مفتاحا `OR` في
+       كائنٍ واحدٍ يمحو ثانيهما أوّلَهما */
+    AND: [
       {
-        term: {
-          AND: [
-            { OR: [{ registrationOpensAt: null }, { registrationOpensAt: { lte: now } }] },
-            { OR: [{ registrationClosesAt: null }, { registrationClosesAt: { gte: now } }] },
-          ],
-        },
+        OR: [
+          /* بلا فصل: القائمُ قبل هذا النظام لا يُبطَل */
+          { termId: null },
+          {
+            term: {
+              AND: [
+                { OR: [{ registrationOpensAt: null }, { registrationOpensAt: { lte: now } }] },
+                { OR: [{ registrationClosesAt: null }, { registrationClosesAt: { gte: now } }] },
+              ],
+            },
+          },
+        ],
       },
+      /* وخطّةُ مدرّبها — لا خطّةَ له أصلا، أو خطّةٌ اعتُمدت (`awaitingTrainerPlan`) */
+      {
+        OR: [
+          { plans: { none: { trainerId: { not: null } } } },
+          { plans: { some: { trainerId: { not: null }, status: { in: [...APPROVED_PLAN_STATUSES] } } } },
+        ],
+      },
+      /* والالتحاقُ قبل موعدها الثاني */
+      { OR: [{ joinClosesAt: null }, { joinClosesAt: { gt: now } }] },
     ],
   }
 }
@@ -106,6 +158,12 @@ export function openRegistrationWhere(now = new Date()): Prisma.CohortWhereInput
 /** حمولةُ القراءة التي يحتاجها الفحصُ — تُستعمل في `include` فلا يُنسى حقل */
 export const TERM_WINDOW_SELECT = {
   select: { titleAr: true, registrationOpensAt: true, registrationClosesAt: true },
+} as const
+
+/** وخططُ المدرّب بحالاتها — `include: { plans: PLAN_GATE_SELECT }` بجانب الفصل */
+export const PLAN_GATE_SELECT = {
+  where: { trainerId: { not: null } },
+  select: { status: true },
 } as const
 
 /* ═══════════ بابُ الموسم: قفلٌ فوق القفلَين ═══════════

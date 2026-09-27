@@ -24,7 +24,7 @@ import { priceCart } from '../../../src/application/commerce/cart-pricing'
 import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
 import { getEmailConfig } from '../integrations.service'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
-import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from '../registration-window'
+import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 
 export class CartService {
   private prisma: PrismaClient
@@ -133,6 +133,7 @@ export class CartService {
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         term: TERM_WINDOW_SELECT,
+        plans: PLAN_GATE_SELECT,
       },
     })
     if (cohorts.length !== unique.length) throw new AuthError('not_found', 'شعبة غير موجودة ضمن طلبك', 404)

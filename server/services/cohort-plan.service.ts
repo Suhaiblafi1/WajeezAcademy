@@ -46,8 +46,9 @@ import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
 import {
-  sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
+  joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
+import { APPROVED_PLAN_STATUSES, awaitingTrainerPlan } from './registration-window'
 import { resourceCategory } from '../../src/application/trainer/plan-overlay'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -626,8 +627,18 @@ export class CohortPlanService {
        اعتماد. ولو انتظرت اعتمادَ الخطّة لَما استطاع أن يجدول لقاءً واحدا
        قبل أن يُرسل خطّةً تشترط لقاءاتِه: الحلقةُ نفسُها التي حبسته وراء
        تسمية الفصل. والحدودُ المعلَنةُ (`startsAt` و`endsAt`) لا تُمَسّ هنا —
-       يكتبها الاعتمادُ وحدَه. */
-    if (period) {
+       يكتبها الاعتمادُ وحدَه.
+
+       ═══ إلّا المراجعة — «وبعد الاعتماد كلُّ تغييرٍ باعتماد» (٣ج) ═══
+
+       شعبةٌ اعتُمدت لها خطّةٌ قبلُ نافذتُها نافذةُ ما اعتُمد. ومراجعةٌ تمدّ المدّةَ
+       أو تنقلها كانت تنقل النافذةَ لحظةَ حفظها — فيجدول المدرّبُ لقاءاتٍ في مدّةٍ
+       لم يقرأها أحد. فتبقى النافذةُ كما اعتُمدت، ويكتبها اعتمادُ المراجعة
+       (`applyPeriod`). */
+    const approvedBefore = await this.prisma.cohortDeliveryPlan.count({
+      where: { cohortId, trainerId: { not: null }, status: { in: [...APPROVED_PLAN_STATUSES] } },
+    })
+    if (period && approvedBefore === 0) {
       const { from, to } = periodBounds(period)
       await this.prisma.cohort.update({
         where: { id: cohortId },
@@ -783,7 +794,9 @@ export class CohortPlanService {
       this.prisma.cohort.findUnique({
         where: { id: cohortId },
         select: {
-          title: true, startsAt: true, endsAt: true,
+          title: true, startsAt: true, endsAt: true, joinClosesAt: true,
+          /* أاعتُمدت للمدرّب خطّةٌ قطّ — منه يُقال للمعتمِد متى يُفتح التسجيل (٣ج) */
+          plans: { where: { trainerId: { not: null } }, select: { status: true } },
           sessions: {
             orderBy: { startsAt: 'asc' },
             select: { id: true, title: true, startsAt: true, endsAt: true, moduleId: true, moduleIds: true, approvalState: true, status: true, placeholder: true },
@@ -805,6 +818,12 @@ export class CohortPlanService {
       period: cohort ? resolvePeriod(content, cohort, plan.status as PlanStatus) : null,
       sessions: cohort?.sessions ?? [],
       assessments: cohort?.assessments ?? [],
+      /* التسجيلُ كما يُحكَم لا كما يقول علمُه: شعبةٌ خطّتُها لم تُعتمَد لا تقبل
+         أحدا وإن رُفع العلم، والالتحاقُ يُغلق ببدء الموعد الثاني (٣ج) */
+      registration: {
+        awaitingPlan: cohort ? awaitingTrainerPlan(cohort.plans) : false,
+        joinClosesAt: cohort?.joinClosesAt ?? null,
+      },
     }
   }
 
@@ -954,6 +973,9 @@ export class CohortPlanService {
       where: { id: cohortId },
       data: {
         startsAt: from, endsAt: to, scheduleWindowStart: from, scheduleWindowEnd: to,
+        /* وآخرُ الالتحاق من مواعيدها — بدءُ الموعد الثاني (٣ج)، يُقرأ في
+           `registration-window.ts`. ويُعاد حسابُه مع كلّ مراجعةٍ تُعتمَد */
+        joinClosesAt: joinClosesAt(period, (content as { slots?: PlanSlot[] | null } | null)?.slots),
         ...(term ? { termId: term.id } : {}),
       },
     })
