@@ -18,6 +18,8 @@
  * قاعدةُ أتعابه بعد التركيب، ويُقاس أنّ متنَ البديل ما زال يحمل الأوّلَ.
  */
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
@@ -126,43 +128,50 @@ describe('اسمُ الطرف الثاني يُطابَق قبل التجميد'
   })
 })
 
-describe('«اسمي في هويّتي غيرُ هذا» — جوابُ المدرّب الرابع', () => {
-  async function sentContract() {
+/* ═══ والبابُ الرابعُ أُغلق — فالحارسُ يُقلَب (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   كان هنا فحصان يُثبّتان «اسمي في هويّتي غيرُ هذا»: يقف التوقيعُ ويُحفَظ
+   الاسمُ. وقد حُذف البابُ بقرار صاحب المنصّة — لأنّ وقوفَه كان بحالة
+   `amendment_requested` نفسِها، فيُقرأ للمدرّب أنّه اعترض على بند.
+
+   فلا يُحذف الحارسُ بحذف ما يحرسه، بل يُقلَب: يُثبّت أنّ البابَ **مغلق**،
+   وأنّ ما كان يفعله يقع في خانة التوقيع نفسِها. وحارسٌ يُحذَف يترك البابَ
+   يعود بلا أن ينبّه أحدٌ. */
+describe('بابُ تصحيح الاسم قبل التوقيع — مغلقٌ عمدا', () => {
+  it('لا دالّةَ `requestNameCorrection` على الخدمة', () => {
+    expect(
+      (review as unknown as Record<string, unknown>).requestNameCorrection,
+      'عاد بابُ تصحيح الاسم — وهو يوقف العقدَ بحالة اعتراضٍ على بند',
+    ).toBeUndefined()
+  })
+
+  it('ولا مسلكَ `/name-correction` في مسالك التوقيع', () => {
+    const src = readFileSync(
+      resolve(__dirname, '../../http/routes/contract-sign.routes.ts'), 'utf8',
+    )
+    expect(src, 'عاد المسلكُ ولو لم تعد الدالّة').not.toContain('name-correction')
+  })
+
+  /* وما يحلّ محلَّه يُقاس: الاسمُ الذي يكتبه في خانة التوقيع هو الذي
+     يُثبَّت طرفا ثانيا — لا ما وصلنا من حسابه. */
+  it('والاسمُ المكتوبُ في التوقيع هو المحفوظُ، ولو خالف ما في المتن', async () => {
     const made = await candidate()
     const c = await compose(made.application.id)
     const sent = await review.sendContract(c.id, adminId)
-    return { ...made, contract: c, token: decodeURIComponent(sent.signingUrl.split('/c/')[1]) }
-  }
-
-  it('يقف التوقيعُ ويُحفَظ ما قاله بحرفه', async () => {
-    const { contract, token } = await sentContract()
-    await review.requestNameCorrection(token, ID_NAME)
-
-    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
-    expect(after.status, 'لم يقف التوقيعُ').toBe('amendment_requested')
-    expect(after.nameCorrectionAr, 'ضاع الاسمُ الذي كتبه').toBe(ID_NAME)
-    expect(after.nameCorrectionAt).not.toBeNull()
-
-    /* ولا يُوقَّع بعده: البابُ الذي يوقّع منه يشترط `sent`.
-       والوثيقةُ مرفوعةٌ كي يكون الردُّ عن الحالة لا عن نقص وثيقة. */
+    const token = decodeURIComponent(sent.signingUrl.split('/c/')[1])
     await prisma.trainerContractDocument.create({
       data: {
-        contractId: contract.id, kind: 'national_id', storageKey: `k2-${contract.id}`,
+        contractId: c.id, kind: 'national_id', storageKey: `k3-${c.id}`,
         originalName: 'id.pdf', mime: 'application/pdf', sizeBytes: 1024,
       },
     })
-    await expect(review.signContractByToken(token, {
+    await review.signContractByToken(token, {
       legalName: ID_NAME, addressAr: 'عمّان — بناية ١٢', phone: '+962790000000',
-      bodyHash: sha256(contract.bodyAr ?? ''), acks: contractAcks(true).map((a) => a.key),
-    })).rejects.toBeTruthy()
-  })
-
-  it('ويُردّ اسمٌ هو المكتوبُ نفسُه — فلا يقف عقدٌ بلا سبب', async () => {
-    const { contract, token } = await sentContract()
-    await expect(review.requestNameCorrection(token, ACCOUNT_NAME))
-      .rejects.toMatchObject({ code: 'same_name' })
-    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
-    expect(after.status, 'وقف العقدُ على تصحيحٍ لا تصحيحَ فيه').toBe('sent')
+      bodyHash: sha256(c.bodyAr ?? ''), acks: contractAcks(true).map((a) => a.key),
+    })
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
+    expect(after.signerLegalName, 'ضاع الاسمُ الذي وقّع به').toBe(ID_NAME)
+    expect(after.signerLegalName, 'حُفظ اسمُ الحساب بدل ما كتبه').not.toBe(ACCOUNT_NAME)
   })
 })
 
@@ -171,10 +180,10 @@ describe('البديلُ يُصحّح الاسمَ ولا يُعيد التفا�
     const made = await candidate()
     const c = await compose(made.application.id)
     const sent = await review.sendContract(c.id, adminId)
-    const token = decodeURIComponent(sent.signingUrl.split('/c/')[1])
-    await review.requestNameCorrection(token, ID_NAME)
-
-    const out = await review.reissueWithCorrectedName(c.id, adminId, {})
+    /* ولا يُمهَّد له بالباب المحذوف: الاسمُ يُمرَّر إلى الأداة نفسِها، وهو
+       ما يفعله الموظّفُ اليومَ حين يطابق الوثيقةَ ويجد فرقا. */
+    void sent
+    const out = await review.reissueWithCorrectedName(c.id, adminId, { legalNameAr: ID_NAME })
 
     const oldRow = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
     expect(oldRow.status, 'بقي العرضُ الأوّلُ مفتوحا — فبابان على وثيقتَين').toBe('revoked')

@@ -78,12 +78,19 @@ async function signSent(contractId: string) {
   return prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
 }
 
-/** يُركّب عرضا مشروطا ثمّ يوقّعه — ويردّ الصفَّ بعد التوقيع */
+/** يوقّع ثمّ يُعتمَد توقيعُه — وبه تُكتب المهلةُ ويُفتح طورُ الموادّ */
+async function approveSent(contractId: string) {
+  await signSent(contractId)
+  await review.countersignContract(contractId, academicId)
+  return prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
+}
+
+/** يُركّب عرضا مشروطا ثمّ يوقّعه ويُعتمَد — ويردّ الصفَّ بعد الاعتماد */
 async function signOffer(appId: string, title: string, orientationAt?: string) {
   const made = await review.composeContract(appId, academicId, {
     title, requiredDocuments: DOCS, ...(orientationAt ? { orientationAt } : {}),
   })
-  return signSent(made.id)
+  return approveSent(made.id)
 }
 
 beforeAll(async () => {
@@ -108,7 +115,13 @@ beforeAll(async () => {
    قرارُ صاحب المنصّة: «معه ٥ أيّام من بعد التوقيع لإتمام الموادّ». وكانت
    تُحسَب عند التركيب من جلسة التهيئة، فقُلبت هذه المجموعةُ كلُّها ولم تُحذَف:
    الجلسةُ تُحفَظ كما كانت، والمهلةُ تُكتب حيث صار أصلُها. */
-describe('المهلةُ تُكتب عند التوقيع لا عند التركيب', () => {
+/* ═══ وأصلُ المهلة صار **اعتمادَ التوقيع** (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   كان التوقيعُ يكتبها. وقولُ صاحب المنصّة في خطواته: «② نراجع توقيعَك
+   ونعتمده … ④ **بعدها** لديك ٥ أيّام». وعلّتُه العمليّةُ أنّ بوّابةَ الموادّ
+   لا تُفتح قبل أن يُمنَح دورَ المدرّب، ولا يُمنَحه إلّا بالاعتماد — فكانت
+   ساعةٌ تدور على بابٍ مقفل. */
+describe('المهلةُ تُكتب عند اعتماد التوقيع لا عند التركيب ولا بالتوقيع وحدَه', () => {
   it('التركيبُ يكتب الجلسةَ ورابطَها ولا يكتب مهلةً', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const { app } = await mkCandidate()
@@ -126,22 +139,24 @@ describe('المهلةُ تُكتب عند التوقيع لا عند الترك
     expect(row.conditionDeadlineAt, 'جرت ساعةٌ على عرضٍ لم يُوقَّع بعد').toBeNull()
   })
 
-  /* ═══ الحارسُ الذي يثبت أنّ المبدأَ التوقيعُ لا الجلسة ═══
+  /* ═══ الحارسُ الذي يثبت أنّ المبدأَ اعتمادُنا لا الجلسة ولا التوقيع ═══
 
-     كان يقيس عكسَه: «عرضان بجلسةٍ واحدةٍ تنتهي مهلتُهما في اللحظة نفسِها».
-     فقُلب — عرضان بجلسةٍ واحدةٍ يُوقَّعان في لحظتَين مهلتاهما مختلفتان. */
-  it('وعرضان بجلسةٍ واحدةٍ يُوقَّعان في لحظتَين مهلتاهما مختلفتان', async () => {
+     مرّ هذا الحارسُ بثلاث صياغات، وكلُّ واحدةٍ نقضُ ما قبلها: «عرضان بجلسةٍ
+     واحدةٍ تنتهي مهلتُهما معا»، ثمّ «يُوقَّعان في لحظتَين فتختلف مهلتاهما»،
+     وهذه: **يُعتمَدان** في لحظتَين فتختلف مهلتاهما — والفرقُ يُقاس من
+     `countersignedAt` لا من `signedAt`. */
+  it('وعرضان بجلسةٍ واحدةٍ يُعتمَدان في لحظتَين مهلتاهما مختلفتان', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const first = await mkCandidate()
     const second = await mkCandidate()
     const ra = await signOffer(first.app.id, 'عرضٌ أوّل', SESSION.toISOString())
     const rb = await signOffer(second.app.id, 'عرضٌ ثانٍ', SESSION.toISOString())
-    expect(ra.signedAt!.getTime(), 'وُقِّعا في اللحظة نفسِها فلا يقيس الحارسُ شيئا')
-      .not.toBe(rb.signedAt!.getTime())
-    expect(ra.conditionDeadlineAt!.getTime() - ra.signedAt!.getTime(),
-      'المهلةُ لا تُقاس من التوقيع').toBe(MATERIALS_WINDOW_DAYS * DAY)
+    expect(ra.countersignedAt!.getTime(), 'اعتُمدا في اللحظة نفسِها فلا يقيس الحارسُ شيئا')
+      .not.toBe(rb.countersignedAt!.getTime())
+    expect(ra.conditionDeadlineAt!.getTime() - ra.countersignedAt!.getTime(),
+      'المهلةُ لا تُقاس من الاعتماد').toBe(MATERIALS_WINDOW_DAYS * DAY)
     expect(ra.conditionDeadlineAt!.getTime(),
-      'تساوت مهلتاهما — فالأصلُ ليس التوقيع').not.toBe(rb.conditionDeadlineAt!.getTime())
+      'تساوت مهلتاهما — فالأصلُ ليس الاعتماد').not.toBe(rb.conditionDeadlineAt!.getTime())
   })
 
   /* ═══ وسقط شرطُ الجلسة عند التركيب (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -153,7 +168,7 @@ describe('المهلةُ تُكتب عند التوقيع لا عند الترك
      وقد زالت العلّةُ نفسُها: التوقيعُ يكتب المهلةَ لكلّ عرضٍ مشروط. فلم يعد
      ثمّ «عرضٌ بلا مهلةٍ أبدا»، فلا موجبَ لردّ التركيب. ويُقاس هنا المنعُ
      الذي زال: يُركَّب، ثمّ يُوقَّع فتُكتب مهلتُه. */
-  it('ويُركَّب عرضٌ مشروطٌ بلا تاريخِ جلسة — ومهلتُه تُكتب بتوقيعه', async () => {
+  it('ويُركَّب عرضٌ مشروطٌ بلا تاريخِ جلسة — ومهلتُه تُكتب باعتماد توقيعه', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const { app } = await mkCandidate()
     const made = await review.composeContract(app.id, academicId, {
@@ -164,9 +179,14 @@ describe('المهلةُ تُكتب عند التوقيع لا عند الترك
     expect(row.orientationAt, 'اختُرعت جلسةٌ لم تُعطَ').toBeNull()
     expect(row.conditionDeadlineAt, 'جرت ساعةٌ على عرضٍ لم يُوقَّع').toBeNull()
 
-    const after = await signSent(made.id)
-    expect(after.conditionDeadlineAt, 'وُقِّع ولا مهلةَ — فلا طورَ موادّ').not.toBeNull()
-    expect(after.conditionDeadlineAt!.getTime() - after.signedAt!.getTime())
+    /* والتوقيعُ وحدَه لا يكتبها — وهو الحدُّ الذي انتقل */
+    const signedOnly = await signSent(made.id)
+    expect(signedOnly.conditionDeadlineAt, 'جرت ساعتُه قبل أن نعتمد توقيعَه').toBeNull()
+
+    await review.countersignContract(made.id, academicId)
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
+    expect(after.conditionDeadlineAt, 'اعتُمد ولا مهلةَ — فلا طورَ موادّ').not.toBeNull()
+    expect(after.conditionDeadlineAt!.getTime() - after.countersignedAt!.getTime())
       .toBe(MATERIALS_WINDOW_DAYS * DAY)
   })
 
@@ -243,8 +263,10 @@ describe('مهلةُ العرض المشروط في العامل', () => {
     })
     const contract = await prisma.trainerContract.create({
       data: {
-        profileId: made.profile.id, title: 'عرضٌ موقَّع', status: 'signed',
-        gatesActivation: true, signedAt: new Date(),
+        /* وحالُ العرض في طور الموادّ `countersigned`: اعتُمد توقيعُه فانفتحت
+           بوّابتُه وبدأت مهلتُه، وبقي أن تُعتمَد موادُّه فيُنشَر. */
+        profileId: made.profile.id, title: 'عرضٌ معتمَدٌ توقيعُه', status: 'countersigned',
+        gatesActivation: true, signedAt: new Date(), countersignedAt: new Date(),
         orientationAt: new Date(Date.now() - (MATERIALS_WINDOW_DAYS - days) * DAY),
         conditionDeadlineAt: DEADLINE_IN(days),
         ...extra,
@@ -283,6 +305,19 @@ describe('مهلةُ العرض المشروط في العامل', () => {
   })
 
   /* ═══ الثلاثةُ الذين لا يُطرَق بابُهم ═══ */
+
+  /* ═══ والموقَّعُ الذي لم نعتمده بعدُ لا يُذكَّر ═══
+
+     مهلتُه لم تبدأ أصلا، وبوّابتُه لم تُفتح. وتذكيرٌ بمهلةٍ لم تبدأ يجعله
+     يطرق بابا لم نفتحه بعد. */
+  it('ولا يذكّر من وُقِّع عرضُه ولم يُعتمَد توقيعُه بعد', async () => {
+    const { contract } = await mkSignedWithDeadline(2)
+    await prisma.trainerContract.update({
+      where: { id: contract.id }, data: { status: 'signed', countersignedAt: null },
+    })
+    await review.remindConditionDeadlines()
+    expect(await remindersFor(contract.id), 'ذُكِّر بمهلةٍ لم تبدأ بعد').toBe(0)
+  })
 
   it('ولا يذكّر من لم يوقّع — فلم يقبل مهلةً ولا شرطا', async () => {
     const { contract } = await mkSignedWithDeadline(2)
@@ -333,7 +368,7 @@ describe('مهلةُ العرض المشروط في العامل', () => {
       const appAfter = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
       expect(appAfter.status, 'نقل العاملُ حالةَ إنسانٍ بمؤقّت').toBe('onboarding')
       const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
-      expect(row.status, 'بُتَّ في عقدٍ بمؤقّت').toBe('signed')
+      expect(row.status, 'بُتَّ في عقدٍ بمؤقّت').toBe('countersigned')
       expect(row.conditionMetAt).toBeNull()
     })
 

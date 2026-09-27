@@ -128,24 +128,42 @@ describe('البابُ الأوّل: زرُّ شاشة الطلبات', () => {
   })
 })
 
-describe('البابُ الثاني: زرُّ شاشة العقود', () => {
-  it('الختمُ يُردّ ما دامت موادُّه لم تُعرَض', async () => {
+/* ═══ والبابُ الثاني انتقل (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   كان زرُّ شاشة العقود يختم ويُفعّل معا، فكان حارسُ الموادّ عليه. وقد صار
+   الاعتمادُ **يسبق** طورَ الموادّ بقرار صاحب المنصّة، فلا معنى لأن يُشترَط
+   فيه ما لم يبدأ طورُه بعد.
+
+   فانتقل الحارسُ إلى موضعه الصحيح: **النشر**. ويُقاس هنا الانتقالُ نفسُه —
+   أنّ الاعتمادَ يمرّ، وأنّ النشرَ يُردّ. ولو سقط أحدُ الطرفَين لَعاد العطبُ:
+   إمّا زرٌّ يُردّ أبدا، وإمّا حسابٌ يُنشَر بلا موادّ. */
+describe('البابُ الثاني: زرُّ شاشة العقود — يعتمد ولا ينشر', () => {
+  it('الاعتمادُ يمرّ ولو لم تُعرَض موادُّه — فهو نظرٌ في توقيعه لا في موادّه', async () => {
     const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
     await expect(review.countersignContract(t.contractId, adminId, {}))
-      .rejects.toMatchObject({ code: 'materials_pending' })
+      .resolves.toMatchObject({ ok: true, activated: false })
     const c = await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })
-    expect(c.status, 'خُتم العقدُ ولم تُقرأ موادُّه').toBe('signed')
-    expect(c.countersignedAt).toBeNull()
+    expect(c.status).toBe('countersigned')
+    expect(c.conditionMetAt, 'تحقّق شرطُ موادّه باعتماد توقيعه').toBeNull()
+    expect(await statusOf(t.applicationId), 'نُشر حسابُه باعتماد توقيعه').toBe('onboarding')
   })
 
-  it('ويمرّ بعد إعلانها — فيُختَم ويصير نشطا في اللحظة نفسِها', async () => {
+  it('والنشرُ بعده يُردّ ما دامت موادُّه لم تُعرَض', async () => {
+    const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+    await review.countersignContract(t.contractId, adminId, {})
+    await expect(review.decide(t.applicationId, adminId, 'activate'))
+      .rejects.toMatchObject({ code: 'materials_pending' })
+    expect(await statusOf(t.applicationId), 'نُشر ولم تُقرأ موادُّه').toBe('onboarding')
+  })
+
+  it('ويمرّ النشرُ بعد إعلانها — فيُكتب تحقّقُ الشرط ويصير نشطا', async () => {
     const t = await readyButForMaterials({ deadlineDays: 5, declared: true })
-    const out = await review.countersignContract(t.contractId, adminId, {})
-    expect(out.activated).toBe(true)
+    await review.countersignContract(t.contractId, adminId, {})
+    await review.decide(t.applicationId, adminId, 'activate')
     expect(await statusOf(t.applicationId)).toBe('active')
     const c = await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })
     expect(c.status).toBe('countersigned')
-    expect(c.conditionMetAt, 'خُتم ولم يُكتب تحقّقُ شرطه').not.toBeNull()
+    expect(c.conditionMetAt, 'نُشر ولم يُكتب تحقّقُ شرطه').not.toBeNull()
   })
 })
 
