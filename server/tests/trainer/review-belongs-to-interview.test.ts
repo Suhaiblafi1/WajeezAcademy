@@ -141,7 +141,10 @@ describe('③④ وقرارُ القارئ يُكتب في عمود الموعد
     const app = await prisma.trainerApplication.findUniqueOrThrow({
       where: { id: applicationId }, select: { status: true },
     })
-    expect(app.status, 'بقي الطلبُ في «حُدّد موعدُه» وموعدُه لم يقع').toBe('shortlisted')
+    /* و«قيد المراجعة» لا «مختار أوّليّ»: الحالةُ الثانيةُ حُذفت في ٢٦ سبتمبر
+       ٢٠٢٦، فسلسلةُ التركيب فوقَها صارت تقف عند «قيد المراجعة» — وهي التي
+       يعود إليها. والمحروسُ هو هو: أنّ الغيابَ يُرجعه إلى ما قبل الحجز. */
+    expect(app.status, 'بقي الطلبُ في «حُدّد موعدُه» وموعدُه لم يقع').toBe('under_review')
   })
 })
 

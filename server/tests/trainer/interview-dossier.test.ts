@@ -64,7 +64,9 @@ beforeAll(async () => {
       userId: applicant.id,
       email: EMAIL,
       fullName: 'سلمى المهندس',
-      status: 'shortlisted',
+      /* و«قيد المراجعة» لا «مختار أوّليّ»: حُذفت الثانيةُ في ٢٦ سبتمبر ٢٠٢٦،
+         وكلتاهما حالةٌ يُحجَز فيها — وهو المطلوبُ هنا. */
+      status: 'under_review',
       emailVerifiedAt: new Date(),
       country: 'الأردن',
       timezone: 'Asia/Amman',
@@ -109,8 +111,8 @@ describe('بناءُ صفحة الملفّ', () => {
     expect(html, 'السيرةُ لا تُذكر باسم ملفّها').toContain('salma-cv.pdf')
     expect(html, 'الموسمُ يُعرض بمفتاحه لا باسمه').not.toContain('nov_jan')
     /* الحالةُ بالعربيّة: «interview_scheduled» في وجه المُقابِل سجلُّ مبرمج */
-    expect(html, 'الحالةُ تُعرض بمفتاحها').not.toContain('shortlisted')
-    expect(html, 'الحالةُ بلا اسمٍ عربيّ').toContain('اختيار أولي')
+    expect(html, 'الحالةُ تُعرض بمفتاحها').not.toContain('under_review')
+    expect(html, 'الحالةُ بلا اسمٍ عربيّ').toContain('قيد المراجعة')
     /* والموعدُ منسوبٌ إلى منطقةٍ صراحةً — وإلّا قُرئ بثلاث ساعاتٍ خطأ */
     expect(html, 'الموعدُ بلا منطقةٍ زمنيّة').toContain('بتوقيت Asia/Amman')
   })

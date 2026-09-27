@@ -30,6 +30,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { digestUnbookedApplicants } from '../../worker/jobs'
+import { BOOKABLE_STATUSES } from '../../../src/application/trainer/application-options'
 
 const DIGEST_KEY = 'admin.trainer_unbooked'
 /** السابعةُ والنصف صباحا بتوقيت عمّان (+٣) */
@@ -189,7 +190,11 @@ describe('ملخّصُ من لم يحجز', () => {
   it('ولا يخرج فارغا — صباحٌ لا متأخّرَ فيه لا رسالةَ له', async () => {
     /* يُحجز لكلّ من في الطابور، فلا يبقى متأخّر */
     const open = await prisma.trainerApplication.findMany({
-      where: { status: { in: ['submitted', 'under_review', 'information_requested', 'shortlisted'] } },
+      /* والقائمةُ من الوحدة المشتركة لا مكتوبةً هنا: نسختان تفترقان تُبقيان
+         متأخّرا في الطابور فيخرج الملخّصُ غيرَ فارغٍ ويسقط الفحصُ بلا سبب.
+         وقد وقع ذلك في ٢٦ سبتمبر ٢٠٢٦ حين حُذفت `shortlisted` ودخلت
+         `academic_review` — فصارت تُقرأ من مصدرها. */
+      where: { status: { in: [...BOOKABLE_STATUSES] } },
       select: { id: true },
     })
     for (const app of open) {

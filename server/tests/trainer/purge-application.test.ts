@@ -130,8 +130,9 @@ describe('حذف طلب المدرّب نهائيّا', () => {
      و`contract_pending` تبقى خارجا: قيدُ نظرٍ بينه وبين المنصّة قرارٌ لم
      يُبَتّ — يُرفض أوّلا ثمّ يُحذف، فيصير الرفضُ فعلا مسجَّلا لا صمتا. */
   it('٣) المنتهيةُ وحالاتُ المدرّب المعتمَد — والقائمة صريحة', () => {
+    /* وخرجت `email_verification_pending` بحذف الحالة (٢٦ سبتمبر ٢٠٢٦) */
     expect([...PURGEABLE_STATUSES].sort()).toEqual(
-      ['active', 'draft', 'email_verification_pending', 'onboarding', 'rejected', 'suspended', 'withdrawn'],
+      ['active', 'draft', 'onboarding', 'rejected', 'suspended', 'withdrawn'],
     )
     expect(PURGEABLE_STATUSES, 'قيدُ نظرٍ يُرفض أوّلا').not.toContain('contract_pending')
     expect(PURGEABLE_STATUSES).not.toContain('under_review')

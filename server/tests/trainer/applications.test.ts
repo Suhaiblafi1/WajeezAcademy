@@ -312,9 +312,11 @@ describe('دورة طلب المدرب', () => {
   it('14) كل الانتقالات موثقة في سجل الحالة وسجل التدقيق', async () => {
     const history = await prisma.trainerStatusHistory.findMany({ where: { applicationId }, orderBy: { createdAt: 'asc' } })
     const statuses = history.map((h) => h.toStatus)
+    /* وسقطت `shortlisted` و`demo_requested` من السلسلة بحذف حالتَيهما
+       (٢٦ سبتمبر ٢٠٢٦) — والمحروسُ هو هو: كلُّ نقلةٍ وقعت مكتوبةٌ في السجلّ. */
     expect(statuses).toEqual(expect.arrayContaining([
       'draft', 'submitted', 'under_review', 'information_requested',
-      'shortlisted', 'interview_scheduled', 'demo_requested', 'academic_review',
+      'interview_scheduled', 'academic_review',
       'conditionally_approved', 'contract_pending', 'onboarding', 'active',
     ]))
     const audits = await prisma.auditEvent.findMany({
