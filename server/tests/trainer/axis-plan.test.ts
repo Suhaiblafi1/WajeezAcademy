@@ -194,3 +194,26 @@ describe('⑤ الإرسالُ على خطّ المحاور', () => {
     expect(sent.status).toBe('submitted')
   })
 })
+
+/* ═══ ⑥ والمعتمِدُ يقرأ المنهجَ كاملا (المرحلة ٣) ═══
+
+   «وهو ما سنقرؤه عند الموافقة». بطاقتُه كانت تقرأ الخطّةَ وحدَها — لا لقاءً
+   ولا مهمّة. فصار مسلكُها يحمل لقاءاتِ الشعبة ومهامَّها ومدّتَها، وتُبنى منها
+   الصفحةُ نفسُها التي قرأها المدرّبُ قبل الإرسال (`curriculumView`). */
+describe('⑥ بطاقةُ المعتمِد تحمل المنهجَ كاملا', () => {
+  it('⚠️ الخطّةُ ولقاءاتُها ومهامُّها ومدّتُها — وتُبنى منها الصفحةُ بمواعيدها', async () => {
+    const { curriculumView } = await import('../../../src/application/trainer/curriculum-view')
+    const card = await plans.latestForCohort(cohortId)
+    expect(card).not.toBeNull()
+    expect(card!.status).toBe('submitted')
+    expect(card!.cohortTitle).toBe('شعبةُ خطّ المحاور')
+    expect(card!.period).toEqual(PERIOD)
+    expect(card!.sessions.length, 'البطاقةُ بلا لقاءات').toBeGreaterThanOrEqual(4)
+    expect(card!.assessments.some((a) => a.moduleId === 'AX-M3'), 'البطاقةُ بلا مهامّ').toBe(true)
+
+    const view = curriculumView({ title: card!.cohortTitle, period: card!.period, content: card!.content, sessions: card!.sessions, assessments: card!.assessments })
+    expect(view.groups.map((g) => g.label)).toEqual(['المحور 1', 'المحور 2', 'المحور 3', 'المحور 4'])
+    expect(view.groups.every((g) => g.meetings.length > 0), 'موعدٌ بلا لقاءٍ في صفحة المعتمِد').toBe(true)
+    expect(view.groups[2].tasks.length).toBeGreaterThan(0)
+  })
+})

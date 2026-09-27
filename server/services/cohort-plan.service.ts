@@ -758,13 +758,40 @@ export class CohortPlanService {
   async latestForCohort(cohortId: string) {
     const plan = await this.latestTrainerPlan(cohortId)
     if (!plan) return null
-    const trainer = plan.trainerId
-      ? await this.prisma.trainerProfile.findUnique({ where: { id: plan.trainerId }, select: { application: { select: { fullName: true } } } })
-      : null
+    const [trainer, cohort] = await Promise.all([
+      plan.trainerId
+        ? this.prisma.trainerProfile.findUnique({ where: { id: plan.trainerId }, select: { application: { select: { fullName: true } } } })
+        : null,
+      /* ═══ والمنهجُ كاملا للمعتمِد (المرحلة ٣) ═══
+
+         «وهو ما سنقرؤه عند الموافقة» — فالمعتمِدُ يقرأ ما قرأه المدرّبُ قبل
+         الإرسال: الخطّةَ ومعها لقاءاتُ الشعبة ومهامُّها، بالصفحة نفسِها
+         (`CurriculumReview`). وكانت بطاقتُه تعدّ المصادرَ عدّا، ولا ترى مهمّةً
+         ولا لقاءً — فيعتمد منهجا لم يقرأ نصفَه. */
+      this.prisma.cohort.findUnique({
+        where: { id: cohortId },
+        select: {
+          title: true, startsAt: true, endsAt: true,
+          sessions: {
+            orderBy: { startsAt: 'asc' },
+            select: { id: true, title: true, startsAt: true, endsAt: true, moduleId: true, moduleIds: true, approvalState: true, status: true, placeholder: true },
+          },
+          assessments: {
+            orderBy: { createdAt: 'asc' },
+            select: { id: true, title: true, type: true, dueAt: true, moduleId: true, briefAr: true, attachments: true, status: true },
+          },
+        },
+      }),
+    ])
+    const content = plan.content as TrainerPlanContent | null
     return {
       id: plan.id, status: plan.status, content: plan.content, reviewerNote: plan.reviewerNote,
       submittedAt: plan.submittedAt, trainerConfirmedAt: plan.trainerConfirmedAt, reviewedAt: plan.reviewedAt,
       trainerName: trainer?.application.fullName ?? null,
+      cohortTitle: cohort?.title ?? '',
+      period: cohort ? resolvePeriod(content, cohort, plan.status as PlanStatus) : null,
+      sessions: cohort?.sessions ?? [],
+      assessments: cohort?.assessments ?? [],
     }
   }
 

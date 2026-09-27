@@ -174,11 +174,15 @@ describe('المسالك', () => {
 describe('والمعتمِدُ يرى المواعيد', () => {
   const OPS = code('src/pages/admin/CohortOps.tsx')
 
-  it('⚠️ لكلّ موعدٍ سطرٌ في بطاقة الخطّة: تاريخاه ومحاورُه وكرّاستُه — بقاعدة الخادم', () => {
-    expect(OPS).toContain('trainerPlan.content!.slots!.map((slot, si)')
-    expect(OPS).toContain('dayLabelAr(slot.startsOn)')
-    expect(OPS, 'الكرّاسةُ لا تُحكم بقاعدة الخادم').toContain('workbookDone(slot.workbook)')
-    /* والخطّةُ التي سبقت المواعيدَ تُعرض محاورُها كما كانت */
-    expect(OPS).toMatch(/\)\(\) : \(trainerPlan\.content\?\.modules\?\.length \?\? 0\) > 0 && \(/)
+  /* المرحلة ٣: صار سطرُ الموعد صفحةَ المنهج كاملة — الصفحةَ نفسَها التي يقرؤها
+     المدرّبُ قبل الإرسال. وتواريخُ الموعد ومحاورُه وكرّاستُه بقاعدة الخادم
+     (`workbookDone`) يحرسها بناؤها المحضُ في `curriculum-view.test.ts`، وما
+     لا مواعيدَ له يُقرأ محورا محورا هناك كذلك. وهنا أنّ البطاقةَ تبنيها فعلا
+     من الخطّة **ولقاءاتها ومهامّها** — لا من الخطّة وحدَها. */
+  it('⚠️ بطاقةُ الخطّة تعرض المنهجَ كاملا — بالخطّة ولقاءاتها ومهامّها', () => {
+    expect(OPS).toMatch(/<CurriculumReview\s+view=\{curriculumView\(\{/)
+    expect(OPS).toContain('content: trainerPlan.content')
+    expect(OPS, 'المنهجُ بلا لقاءات').toContain('sessions: trainerPlan.sessions')
+    expect(OPS, 'المنهجُ بلا مهامّ').toContain('assessments: trainerPlan.assessments')
   })
 })
