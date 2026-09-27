@@ -109,6 +109,18 @@ export type MailBlock =
   | { kind: 'cta'; label: string; href: string; caption?: string }
   /** تنبيهٌ مؤطَّرٌ بلونٍ ذهبيّ — لما يُفوَّت إن قُرئ فقرةً */
   | { kind: 'callout'; text: MailRich }
+  /** خارطةُ الطور: خطواتٌ مرقّمةٌ يُبيَّن فيها أين هو الآن وما بعده.
+   *
+   *  ═══ ولمَ نوعٌ خاصٌّ لا `list` منقّطة ═══
+   *
+   *  بلاغُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) عن رسالة إصدار العقد: «هي ليست
+   *  عمليّة — يجب أن يكون فيها تفاصيلُ المرحلة الحاليّة والقادمة». والقائمةُ
+   *  المنقّطةُ تقول **ما سيقع** ولا تقول **أين هو منه**: يقرأ خمسةَ أسطرٍ
+   *  متساويةٍ فلا يعرف أيُّها دورُه الآن.
+   *
+   *  و`state` هو الفرق: `done` ما مضى، و`now` ما عليه أن يفعله الآن،
+   *  و`next` ما ينتظره. فتُقرأ الرسالةُ خارطةً لا وعدا. */
+  | { kind: 'steps'; items: readonly { textAr: string; state?: 'done' | 'now' | 'next' }[] }
   /** سطرٌ خافتٌ في آخر المتن: «إن لم تكن أنت…».
    *
    *  و`link` اختياريٌّ لأنّ عنوانا في سطرٍ خافتٍ كان يخرج **نصّا لا يُضغط**:
@@ -151,6 +163,12 @@ function textOf(doc: MailDoc): string {
       case 'h': out.push(`── ${b.text} ──`, ''); break
       case 'list': out.push(...b.items.map((i) => `· ${richText(i)}`), ''); break
       case 'facts': out.push(...b.rows.map((r) => `${r.label}: ${r.value}`), ''); break
+      case 'steps':
+        out.push(...b.items.map((it, i) => {
+          const mark = it.state === 'done' ? '✓' : it.state === 'now' ? '←' : ' '
+          return `${i + 1}. ${it.textAr}${mark.trim() ? `  ${mark}` : ''}`
+        }), '')
+        break
       /* و`caption` لا يُكتب في النصّ: هو وصفٌ للزرّ، ولا زرَّ هنا — والوجهةُ
          نفسُها معروضةٌ في السطر التالي عنوانا كاملا. */
       case 'cta':
@@ -225,6 +243,31 @@ function htmlOf(doc: MailDoc): string {
           + `</table>`,
         )
         break
+      case 'steps':
+        /* والرقمُ في قرصٍ لا نقطةٌ: خمسةُ أسطرٍ متساويةٍ لا تُقرأ خارطة.
+           والحاليُّ وحدَه ملوَّن — فما يُميَّز اثنان لا يُميَّز واحد. */
+        parts.push(
+          `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:2px 0 18px;">`
+          + b.items.map((it, i) => {
+            const now = it.state === 'now'
+            const done = it.state === 'done'
+            const fill = now ? BRAND.teal : done ? BRAND.hairline : BRAND.paper
+            const digit = now ? '#FFFFFF' : BRAND.muted
+            const body = now ? BRAND.ink : BRAND.muted
+            return `<tr>`
+              + `<td width="30" valign="top" style="padding:4px 0 4px 10px;">`
+              + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
+              + `<td align="center" bgcolor="${fill}" width="24" height="24" `
+              + `style="width:24px;height:24px;border-radius:999px;font-size:12px;`
+              + `line-height:24px;color:${digit};">${done ? '&#10003;' : i + 1}</td>`
+              + `</tr></table></td>`
+              + `<td style="padding:4px 0;font-size:15px;line-height:1.9;color:${body};">`
+              + `${esc(it.textAr)}</td>`
+              + `</tr>`
+          }).join('')
+          + `</table>`,
+        )
+        break
       case 'facts':
         parts.push(
           `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px;border:1px solid ${BRAND.hairline};border-radius:10px;">`
@@ -258,7 +301,13 @@ function htmlOf(doc: MailDoc): string {
         parts.push(
           `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;">`
           + `<tr><td bgcolor="${BRAND.goldFill}" style="padding:12px 16px;border-radius:10px;border:1px solid #EADFBF;`
-          + `font-size:14px;line-height:1.8;color:${BRAND.gold};font-weight:700;">${richHtml(b.text)}</td></tr></table>`,
+          /* ═══ وبلا بولد (٢٧ سبتمبر ٢٠٢٦) ═══
+
+             كان الصندوقُ كلُّه `font-weight:700`، فيُقرأ صياحا لا تنبيها.
+             وقولُ صاحب المنصّة: «لا تستخدم بولد بالكلمات لتكون أنعمَ
+             النصوص». والتمييزُ باقٍ بالأرضيّة والإطار واللون — وثلاثةُ
+             فوارقَ تكفي، والرابعُ يصير ضجيجا. */
+          + `font-size:14px;line-height:1.8;color:${BRAND.gold};">${richHtml(b.text)}</td></tr></table>`,
         )
         break
       case 'note':
