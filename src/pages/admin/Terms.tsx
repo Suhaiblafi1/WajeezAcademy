@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BellRing, CalendarCheck, CalendarPlus, CalendarRange, DoorClosed, DoorOpen, Loader2, Play, Users, Trash2 } from "lucide-react";
+import { BellRing, CalendarCheck, CalendarPlus, CalendarRange, DoorClosed, DoorOpen, Loader2, Play, Trash2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError, permissionMessage } from "@/services/api";
@@ -38,7 +38,7 @@ interface Term {
   startsOn: string; endsOn: string; status: string;
   registrationOpensAt: string | null; registrationClosesAt: string | null;
   calendarPublishedAt: string | null;
-  _count: { cohorts: number; trainerAvailability: number };
+  _count: { cohorts: number };
 }
 interface PlanResult {
   applied: boolean; termTitleAr: string; opened: number; prepared: number;
@@ -47,7 +47,6 @@ interface PlanResult {
   skipped: { courseId: string; titleAr: string; whyAr: string }[];
   loadByMonth: Record<number, number>;
 }
-interface AvailableTrainer { profileId: string; name: string; status: string; maxCohorts: number | null; qualifiedCourseIds: string[] }
 
 /** بابُ الموسم كما يقرؤه الخادم — العلّةُ في `server/services/registration-window.ts` */
 interface SeasonGate { open: boolean; seasonKey: string; seasonAr: string; messageAr: string }
@@ -66,7 +65,7 @@ const toLocal = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
 /** شعبةٌ لم يُسمَّ فصلُها بعد — «لم تُفتَح» لا «معطوبة» */
 interface TermlessCohort {
   id: string; title: string; courseTitleAr: string;
-  learners: number; sessions: number; trainers: string[]; blocksTrainer: boolean;
+  learners: number; sessions: number; trainers: string[];
 }
 
 export default function Terms() {
@@ -77,7 +76,6 @@ export default function Terms() {
   const [windows, setWindows] = useState<Record<string, { opensAt: string; closesAt: string }>>({});
   const [plans, setPlans] = useState<Record<string, PlanResult>>({});
   const [showAllTerms, setShowAllTerms] = useState(false);
-  const [trainers, setTrainers] = useState<Record<string, AvailableTrainer[]>>({});
   /* الحذفُ بضغطتين: الأولى تكشف زرَّ التأكيد، والثانية تحذف — لا حوارَ متصفّح */
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   /* شعبٌ لها مدرّبٌ ولم يُسمَّ فصلُها — ومدرّبوها محبوسون عن الجدولة */
@@ -178,10 +176,6 @@ export default function Terms() {
     await apiDelete(`/api/admin/terms/${t.id}`);
     setConfirmDelete(null);
   }, "حُذف الموسم");
-  const loadTrainers = (t: Term) => act(`trainers-${t.id}`, async () => {
-    const rows = await apiGet<AvailableTrainer[]>(`/api/admin/terms/${t.id}/available-trainers`);
-    setTrainers((x) => ({ ...x, [t.id]: rows }));
-  }, "قُرئ المدرّبون المتاحون");
 
   const seasonLabel = (s: string) => TRAINING_SEASONS.find((x) => x.value === s)?.months ?? s;
 
@@ -308,14 +302,19 @@ export default function Terms() {
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
             <CalendarPlus className="h-4 w-4" aria-hidden="true" /> شعبٌ لم يُسمَّ فصلُها ({termless.length})
           </h2>
+          {/* ═══ ولم تعد «تحبس مدرّبَها» (٢٧ سبتمبر ٢٠٢٦) ═══
+              المدرّبُ يحدّد مدّةَ شعبته بنفسه فتُفتح جدولتُه داخلها، والفصلُ
+              يُشتقّ من تاريخ البدء حين تُعتمَد خطّتُه. فتسميتُه هنا تضع حدودا
+              مبدئيّةً لما لم يحدّد مدرّبُه مدّتَه بعد — لا تفكّ حبسا. */}
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الشعبةُ بلا فصلٍ <b className="text-foreground">لم تُفتَح بعد</b> — لا معطوبة. لكنّ مَن أُسنِدت إليه
-            لا يستطيع جدولةَ لقاءٍ واحدٍ حتّى يُسمَّى فصلُها، فيرى ورشةً لا تعمل.
+            الشعبةُ بلا فصلٍ <b className="text-foreground">لم تُفتَح بعد</b> — لا معطوبة. ومدرّبُها لا ينتظر التسمية:
+            يحدّد مدّتَها بنفسه ويجدول داخلها، ويُشتقّ فصلُها من تاريخ بدئها حين تُعتمَد خطّتُه. وتسميتُه هنا
+            تضع لها حدودا مبدئيّةً حتّى ذلك الحين.
             {terms !== null && terms.length === 0 && " وأنشئ موسما أوّلا — لا فصلَ يُسمّى به بعد."}
           </p>
           <ul className="mt-4 space-y-3">
             {termless.map((c) => (
-              <Card as="li" key={c.id} tone={c.blocksTrainer ? "warn" : undefined}>
+              <Card as="li" key={c.id}>
                 <div className="flex flex-wrap items-end justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-read font-bold text-foreground">{c.title}</p>
@@ -324,10 +323,8 @@ export default function Terms() {
                       {c.learners > 0 && <> · {c.learners} التحقوا</>}
                       {c.sessions > 0 && <> · {c.sessions} لقاء</>}
                     </p>
-                    {c.blocksTrainer && (
-                      <p className="mt-1 text-read font-bold text-gold-ink">
-                        محبوسٌ: {c.trainers.join("، ")} — لا يجدول حتّى يُسمَّى الفصل.
-                      </p>
+                    {c.trainers.length > 0 && (
+                      <p className="mt-1 text-read text-muted-foreground">المدرّب: {c.trainers.join("، ")}</p>
                     )}
                   </div>
                   <div className="flex flex-wrap items-end gap-2">
@@ -378,7 +375,7 @@ export default function Terms() {
                     <p className="mt-1 text-read text-muted-foreground">
                       {seasonLabel(t.season)} · {fmtDateAr(t.startsOn)} إلى {fmtDateAr(t.endsOn)} · {TERM_STATUS_AR[t.status as TermStatus] ?? t.status}
                     </p>
-                    <p className="mt-1 text-read text-muted-foreground">{t._count.cohorts} شعبة · {t._count.trainerAvailability} مدرّبا أعلن إتاحته</p>
+                    <p className="mt-1 text-read text-muted-foreground">{t._count.cohorts} شعبة</p>
                     {/* ═══ بابُ الحالة ═══
 
                         كان العمودُ يُقرأ ولا يُكتب: خمسُ قيمٍ وخمسةُ قرّاءَ ولا
@@ -441,7 +438,6 @@ export default function Terms() {
                     {plan && !plan.applied && plan.rows.length > 0 && (
                       <Button tone="confirm" disabled={busy !== null} onClick={() => apply(t)}>طبّق التوزيع — افتح {plan.rows.length} شعبة</Button>
                     )}
-                    <Button tone="ghost" disabled={busy !== null} onClick={() => loadTrainers(t)}><Users className="h-3.5 w-3.5" /> من المتاح للتدريس؟</Button>
                   </div>
                   {plan && (
                     <Inset className="mt-3">
@@ -465,14 +461,12 @@ export default function Terms() {
                       )}
                     </Inset>
                   )}
-                  {trainers[t.id] && (
-                    <Inset className="mt-3">
-                      <p className="text-read font-bold text-foreground">المتاحون لهذا الموسم ({trainers[t.id].length})</p>
-                      {trainers[t.id].length === 0
-                        ? <p className="mt-1 text-read text-muted-foreground">لم يُعلن أحدٌ إتاحتَه بعد — المدرّبون يعلنونها من «مؤهّلاتي وإتاحتي».</p>
-                        : <ul className="mt-1 grid gap-1 sm:grid-cols-2">{trainers[t.id].map((tr) => <li key={tr.profileId} className="text-read text-muted-foreground">{tr.name} · {tr.status === "confirmed" ? "أكّد" : "أعلن"} · {tr.qualifiedCourseIds.length} دورة مؤهَّل لها</li>)}</ul>}
-                    </Inset>
-                  )}
+                  {/* ═══ وذهب «من المتاحُ للتدريس؟» (٢٧ سبتمبر ٢٠٢٦) ═══
+
+                      كان زرًّا يقرأ من أعلن إتاحتَه لهذا الموسم. وذهبت الإتاحةُ
+                      بقرار صاحب المنصّة: المدرّبُ يجدول لقاءاتِه بيده داخلَ مدّة
+                      شعبته، فلا إعلانَ وقتٍ يُقرأ هنا. ومن يصلح للتدريس يُعرف
+                      بتأهيله للدورة عند إسناد الشعبة. */}
                 </Card>
 
                 {/* ④ النشر — الذهبيُّ الواحد */}

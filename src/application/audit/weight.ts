@@ -124,7 +124,7 @@ const HIGH: readonly string[] = [
   'trainer.account.activate', 'trainer.invitation.create',
   'trainer.scope.grant', 'trainer.scope.revoke',
   /* شعبةٌ أُسندت إليه */
-  'cohort.trainer.assign', 'cohort.trainer_update',
+  'cohort.trainer.assign',
   /* تسجيلُه: دخولُه شعبةً أو خروجُه منها */
   'enrollment.create', 'enrollment.drop', 'enrollment.switch_cohort',
   'enrollment.waitlist.promote',
@@ -192,6 +192,10 @@ const MEDIUM: readonly string[] = [
      ينتظره، ولا يمسّ وصولَه ولا مالَه ولا سجلَّه. والمسجَّلون يُبلَّغون
      بمفتاح `cohort.schedule_changed` لا بهذا — هذا أثرٌ لا إشعار. */
   'cohort.session.delete',
+  /* ورفعُ الجدول المبدئيّ وزنُه وزنُ الحذف (٢٧ سبتمبر ٢٠٢٦): مواعيدُ خرجت من
+     تقاويم المسجَّلين وحلّت محلَّها مواعيدُ مدرّبهم — ولهم إشعارُهم بمفتاح
+     `cohort.schedule_changed`. */
+  'cohort.placeholders.clear',
   'cohort.schedule_window.open', 'cohort.schedule_window.close',
   'cohort.term.set', 'cohort.term.assign',
   /* وفتحُ شعبةٍ لمدرّب: إسنادٌ يصله خبرُه، ووزنُه وزنُ الإسناد */
@@ -242,6 +246,13 @@ const LOW: readonly string[] = [
   'cohort.create', 'cohort.update', 'cohort.duplicate', 'cohort.publish',
   'cohort.status', 'cohort.status.sync', 'cohort.delivery_plan.set',
   'cohort.plan.save', 'cohort.plan.submit', 'cohort.message.send',
+  /* ═══ وتعديلُ المدرّب صفَّ شعبته نزل من العالي (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان عاليا لأنّه يحرّك **متى يحضر المتعلّمُ وأين** — البدءَ والأيّامَ
+     والساعة — ومعالجُه يُبلّغ المسجَّلين (ي-٤). ثمّ صارت المدّةُ في الخطّة
+     تُعتمَد معها، وبالاعتماد يُبلَّغون (`cohort.plan.approve`). فلم يبقَ في
+     هذا الفعل إلّا الاسمُ واللغة: عملٌ في الشعبة لا في الإنسان، كحفظ الخطّة. */
+  'cohort.trainer_update',
   'cohort.file.upload', 'cohort.file.remove',
   'admin.user.invite_resend',
   'enrollment_request.create',

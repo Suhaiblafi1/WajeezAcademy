@@ -192,16 +192,6 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
     })
   })
 
-  /* السؤالُ الذي لم يكن له جوابٌ بالبناء: «من يستطيع التدريسَ في هذا الفصل؟» */
-  app.get('/api/admin/terms/:id/available-trainers', {
-    preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-terms'], summary: 'المدرّبون المتاحون لهذا الفصل — قبل أن تُنشأ شعبةٌ واحدة' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const { courseId } = z.object({ courseId: z.string().optional() }).parse(req.query)
-    return terms.availableTrainers(id, { courseId })
-  })
-
   /* ─── «افتح الفصل» بدل «افتح كلَّ الشعب» (البندان ٤٨ · ٤٩) ───
 
      والمعاينةُ هي الافتراضيّ: `apply` يُمرَّر صراحةً أو لا يقع شيء. وهذا
@@ -217,20 +207,5 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
       capacity: z.number().int().min(1).max(500).optional(),
     }).parse(req.body ?? {})
     return planning.planAndOpen(id, { ...body, actorId: req.auth!.userId })
-  })
-
-  app.post('/api/admin/terms/:id/trainers/:profileId', {
-    preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-terms'], summary: 'إتاحةُ مدرّبٍ في فصل — إعلانٌ أو تأكيدٌ أو اعتذار' },
-  }, async (req) => {
-    const { id, profileId } = z.object({
-      id: z.string().uuid(), profileId: z.string().uuid(),
-    }).parse(req.params)
-    const body = z.object({
-      status: z.enum(['declared', 'confirmed', 'declined']),
-      maxCohorts: z.number().int().min(1).max(20).nullable().optional(),
-      note: z.string().max(500).nullable().optional(),
-    }).parse(req.body)
-    return terms.setTrainerAvailability(profileId, id, req.auth!.userId, body)
   })
 }

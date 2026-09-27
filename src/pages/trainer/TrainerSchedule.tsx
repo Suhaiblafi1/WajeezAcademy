@@ -49,6 +49,7 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { capReached } from "@/application/trainer/schedule-window";
+import { zonedDay } from "@/application/trainer/cohort-period";
 import {
   SHORT_SESSION_AR, firstToFor, fromSlots, sessionTooShort, slotLabelAr, toSlotsFor,
 } from "@/application/trainer/session-length";
@@ -122,7 +123,11 @@ export default function TrainerSchedule({
 
   if (!win) return null;
 
-  const day = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
+  /* ═══ ويومُ الحدّ يُقرأ في عمّان — لا من أوّل عشرة أحرف ═══
+     صارت النافذةُ مدّةَ المدرّب (٢٧ سبتمبر ٢٠٢٦)، وأوّلُها منتصفُ ليل يومها
+     في عمّان — أي التاسعةُ مساءَ **أمسه** بغرينتش. فقصُّ السلسلة كان يعرض
+     اليومَ السابق ويسمح باختياره ثمّ يردّه الخادم. */
+  const day = (iso: string | null) => (iso ? zonedDay(iso) : "");
 
   /* ═══ نافذةٌ مغلقةٌ تُخبِر ولا تأمر ═══
 
@@ -131,11 +136,14 @@ export default function TrainerSchedule({
      ١٧ سبتمبر ٢٠٢٦). ومن يُؤمَر بما لا يستطيع يدور في الخطوات يبحث عن
      زرٍّ لا وجودَ له، ثمّ يظنّ العطبَ في نفسه. فيُقال له ما يقع، ومن
      يفعله، ومتى يعلم أنّه وقع. */
+  /* ═══ والمغلقةُ صار مفتاحُها في يده (٢٧ سبتمبر ٢٠٢٦) ═══
+     كانت تنتظر أن تسمّي الإدارةُ الفصل. وصارت المدّةُ للمدرّب يحدّدها في
+     الخطوة الأولى — فيُقال له أين بابُها لا متى يُفتح له. */
   if (!win.open) {
     return (
       <Inset as="p" className="text-read leading-6 text-muted-foreground">
-        لم تُفتَح هذه الشعبةُ بعد — تسمّي الإدارةُ فصلَها عند الإسناد، فتُفتح لك أشهرُه لتجدول
-        فيها لقاءاتك. ويصلك إشعارٌ حين يُسمَّى.
+        حدّد مدّةَ شعبتك في خطوتها الأولى («المعلومات الأساسيّة») — من متى إلى متى — فتُفتح لك
+        جدولةُ اللقاءات داخلها.
       </Inset>
     );
   }
@@ -169,7 +177,7 @@ export default function TrainerSchedule({
         <CalendarPlus className="h-4 w-4 shrink-0 text-teal-light-ink" /> لقاءاتُ الشعبة
       </p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        تجدولها داخلَ أشهر فصلك: من <b className="text-foreground">{day(win.start)}</b> إلى{" "}
+        تجدولها داخلَ مدّة شعبتك: من <b className="text-foreground">{day(win.start)}</b> إلى{" "}
         <b className="text-foreground">{day(win.end)}</b>
         {win.maxSessions ? <> · استُهلك {win.used} من {win.maxSessions}</> : null}.
         {" "}وبعد إنشائها <b className="text-foreground">تعتمدها الإدارة</b>، فتُنشَر للمسجَّلين بتواريخها ويصلهم رابطُها بالبريد.
@@ -181,7 +189,7 @@ export default function TrainerSchedule({
       {short > 0 && (
         <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
           بقي عليك {short === 1 ? "لقاءٌ واحد" : `${short} لقاءات`} — لكلّ محورٍ لقاءٌ على الأقلّ ({haveSessions}/{minSessions}).
-          ولك أن تزيد عليها ما شئت موزّعا على الفصل.
+          ولك أن تزيد عليها ما شئت موزّعا على مدّة الشعبة.
         </Inset>
       )}
 
@@ -224,7 +232,7 @@ export default function TrainerSchedule({
           </StaffField>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <StaffField label={mode === "series" ? "أوّلُ يومٍ يُنظَر فيه" : "التاريخ واليوم"} hint="داخلَ أشهر الفصل وحدَها.">
+            <StaffField label={mode === "series" ? "أوّلُ يومٍ يُنظَر فيه" : "التاريخ واليوم"} hint="داخلَ مدّة الشعبة وحدَها.">
               <input type="date" dir="ltr"
                 value={mode === "series" ? rule.startDate : form.date}
                 min={day(win.start)} max={day(win.end)}
@@ -316,7 +324,7 @@ export default function TrainerSchedule({
                 <Inset as="div" className="grid gap-2">
                   <p className="text-read leading-6 text-muted-foreground">
                     <b className="text-foreground">{keep.length} لقاءً ستُرسَل للاعتماد</b>
-                    {rows.length > keep.length && <> · و{rows.length - keep.length} خارجَ الفصل لا تُرسَل</>}.
+                    {rows.length > keep.length && <> · و{rows.length - keep.length} خارجَ مدّة الشعبة لا تُرسَل</>}.
                     {" "}كلُّ تاريخٍ هنا يصير اجتماعَ زووم — فاقرأها قبل الإرسال. وإعادةُ العرض تُلغي تعديلاتِك.
                   </p>
 
@@ -342,7 +350,7 @@ export default function TrainerSchedule({
                               || (day(win.end) && date > day(win.end)),
                             );
                             setRows(rows.map((x) => (x.key === r.key
-                              ? { ...x, date, outside, reasonAr: outside ? "خارج الفصل" : "" }
+                              ? { ...x, date, outside, reasonAr: outside ? "خارج مدّة الشعبة" : "" }
                               : x)));
                           }}
                           className={`${staffControlCls} w-auto shrink-0 text-left ${r.outside ? "line-through opacity-70" : ""}`} />

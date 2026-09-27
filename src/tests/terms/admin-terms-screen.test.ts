@@ -28,8 +28,9 @@ describe('شاشةُ المواسم', () => {
       '/api/admin/terms?all=true', '"/api/admin/terms"',
       '/api/admin/terms/${t.id}/registration-window',
       '/api/admin/terms/${t.id}/plan', '/api/admin/terms/${t.id}/publish-calendar',
-      '/api/admin/terms/${t.id}/available-trainers',
     ]) expect(screen, `لا تنادي: ${path}`).toContain(path)
+    /* و«من المتاحُ للتدريس؟» ذهب مع الإتاحة كلِّها (٢٧ سبتمبر ٢٠٢٦) */
+    expect(screen).not.toContain('/available-trainers')
   })
 
   it('والتوزيعُ معاينةٌ أوّلا وتطبيقٌ بطلبٍ صريح — والتواريخُ لا تُكتب باليد', () => {

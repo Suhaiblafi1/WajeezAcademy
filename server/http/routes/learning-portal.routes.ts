@@ -514,6 +514,15 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       }
     })).max(60),
     liveNoteAr: z.string().max(2000).nullish(),
+    /* ═══ مدّةُ الشعبة — من متى إلى متى (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       تاريخان بلا ساعة، والشكلُ وحدَه يُفحص هنا: المعنى (النهايةُ بعد
+       البداية، والبدءُ لم يمضِ، والطرفان معا) قاعدةٌ في
+       `application/trainer/cohort-period.ts` تُحكَم في الخدمة وتردّ بلغة من
+       يصحّح — ولو حُكمت هنا لقيل للمدرّب «Invalid string». وبلا هذين
+       المفتاحين كان المخطّطُ يُسقطهما صامتا، فيحفظ المدرّبُ مدّتَه ولا تُحفظ. */
+    startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
+    endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullish(),
     /* وسقط `proposals` من المخطّط (د-٦): كان اسمُ الدورة يُكتب على النسخة
        القائمة من داخل خطّة شعبة فيُعيد تسميةَ الشهادات الصادرة. ثمّ مرّ
        بقناته (ح-٣)، ثمّ أُغلق بابُه كلُّه (ق٥ · ١٧ سبتمبر ٢٠٢٦). والمحفوظُ
@@ -531,7 +540,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.put('/api/trainer/cohorts/:id/plan', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'حفظُ محتوى شعبتي مسودّةً: المحاورُ والتطبيقُ والمصادر' },
+    schema: { tags: ['trainer-ops'], summary: 'حفظُ محتوى شعبتي مسودّةً: مدّتُها ومحاورُها وتطبيقُها ومصادرُها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return plans.savePlan(req.auth!.userId, id, planContent.parse(req.body))
@@ -539,7 +548,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.patch('/api/trainer/cohorts/:id', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'تعديلُ بيانات شعبتي — الاسمُ والمواعيدُ واللغةُ والنمط، لا السعر' },
+    schema: { tags: ['trainer-ops'], summary: 'تعديلُ بيانات شعبتي — الاسمُ واللغة. والمدّةُ مع الخطّة، والسعرُ للإدارة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     /* لا `strict`: المفتاحُ الماليُّ يصل الخدمةَ فتردّه باسمه، لا يُبتلع بصمت */

@@ -171,11 +171,20 @@ describe('② ويضمر بالتمرير — مقاسان لا مقاسٌ وا�
    لا يُحوِّم — فإن لم تعد له بالتركيز، فقد اشتُري الضيقُ بإخراجه من الشاشة.
    ولذلك يُفحَص `group-focus-visible` مع `group-hover` معا لا أحدُهما. */
 describe('③ الشكل «ب»: صفٌّ واحدٌ وخيطٌ لا يرتفع', () => {
-  it('⚠️ الهُويّةُ والسلّمُ وزرُّ التالي في صفٍّ واحد — لا ثلاثةِ صفوف', () => {
-    const row = head.slice(head.indexOf('<div className="flex items-center gap-3">'), head.indexOf('</ol>'))
-    expect(row, 'لا صفَّ يجمعها').toBeTruthy()
-    expect(row, 'اسمُ الشعبة خرج من الصفّ').toMatch(/ws\.cohort\.title/)
+  /* ═══ ① صار: السلّمُ وزرُّه المضاءُ في صفٍّ واحد (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان الصفُّ يجمع ثلاثة: اسمَ الشعبة (وهو بابُ القلم) والسلّمَ وزرَّ
+     «التالي». ثمّ ذهب القلمُ — «المرحلةُ الأولى هي تعديلُ المعلومات الأساسيّة
+     وليس زرَّ القلم» — فنزل الاسمُ إلى سطر الحقائق، وبقي الصفُّ صفًّا:
+     السلّمُ وزرُّه الذهبيّ. والمحروسُ لم يتبدّل — لا ثلاثةُ صفوفٍ تعود. */
+  it('⚠️ السلّمُ وزرُّه المضاءُ في صفٍّ واحد — والاسمُ في سطر الحقائق لا صفّا ثالثا', () => {
+    const rowStart = head.indexOf('<div className="flex flex-wrap items-center gap-x-3 gap-y-2">')
+    expect(rowStart, 'لا صفَّ يجمعها').toBeGreaterThan(-1)
+    const row = head.slice(rowStart, head.indexOf('{!compact && (\n            <p'))
     expect(row, 'السلّمُ خرج من الصفّ').toContain('STAGES.map')
+    expect(row, 'الزرُّ المضاءُ خرج من الصفّ').toMatch(/tone="primary"/)
+    const facts = head.slice(head.indexOf('{!compact && (\n            <p'))
+    expect(facts, 'اسمُ الشعبة غاب عن الرأس').toMatch(/ws\.cohort\.title/)
   })
 
   it('⚠️ وخيطُ التقدّم مطلقُ الموضع — لا يرفع الشريطَ بكسلا', () => {

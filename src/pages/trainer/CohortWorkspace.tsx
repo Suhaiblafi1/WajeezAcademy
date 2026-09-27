@@ -22,16 +22,34 @@
    واحدةٍ هادئة. أسلوبٌ مؤسّسيّ: لا نقاطَ ولا أوسمةَ ولا مقارنةَ بغيره —
    الشعبةُ نفسُها هي اللعبة، وإتمامُها هو الفوز.
 
+   ═══ ثمّ صار الشريطُ سلّما يُصعد درجةً درجة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «مراحلُ تعديل الشعبة معقّدة، يجب أن تظهر بشريطٍ
+   واضح، والمرحلةُ الأولى هي تعديلُ المعلومات الأساسيّة للشعبة وليس زرَّ
+   القلم… موضّحةً بشريطٍ سهلٍ معرفةُ أين وصل. زرُّ التالي يجب أن يكون مضاءً
+   لأنّه الأهمّ هنا، ولا ينتقل للتالي إلّا بعد أن يتمّ النقطةَ السابقة
+   ويقوم: تمّ وحفظ».
+
+   فصار:
+   · **ستُّ درجاتٍ بأسمائها** — والأولى «المعلومات الأساسيّة»: الاسمُ والنبذةُ
+     ومدّةُ الشعبة من متى إلى متى. بلا قلمٍ ولا لوحةٍ تنبثق، وبلا سعر.
+   · **وزرٌّ واحدٌ مضاءٌ في الشريط: «احفظ وتابِع»** — يحفظ الخطوة، ثمّ يسأل
+     الخادمَ أتمّت: فإن تمّت انتقل، وإلّا بقي وسمّى ما ينقص بأسمائه.
+   · **وما بعد أوّلِ درجةٍ لم تتمّ مقفل**: يُرى اسمُه ولا يُفتح — فالترتيبُ
+     قاعدةٌ لا اقتراح. وما تمّ قبلها يُعاد إليه متى شاء.
+
    ═══ ثلاثةُ حرّاسٍ تحكم الشكل ═══
 
    • `staff-surface`: المتنُ أربعةَ عشر — `text-read` لا `text-xs` في فقرة.
    • `design-system`: لا سطحَ مكتوبا بيده — `Panel` و`Card` و`Inset` وحدَها.
-   • `one-primary-per-screen`: ذهبيٌّ واحد — «أرسلها للاعتماد». */
+   • `one-primary-per-screen`: ذهبيٌّ واحد — زرُّ الشريط، يقول «احفظ وتابِع»
+     في الدرجات و«أرسِلها للاعتماد» في آخرها. زرٌّ واحدٌ يتبدّل اسمُه، لا
+     زرّان يتنازعان العين. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, Link2, Loader2, Lock, MessageSquarePlus, Pencil, Send, Sparkles,
+  ArrowLeft, ArrowRight, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, IdCard, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -40,7 +58,6 @@ import SessionsAndAttendance from "./SessionsAndAttendance";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
-import Modal from "@/components/Modal";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES, readTypedLinks, resourceKind, resourceCategory, kindForCategory } from "@/application/trainer/plan-overlay";
 import type { ResourceCategory } from "@/application/trainer/plan-overlay";
@@ -56,6 +73,7 @@ import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
+import { periodDays, periodProblem, zonedDay } from "@/application/trainer/cohort-period";
 import { countAr } from "@/application/text/count-ar";
 
 /* ─────────── ما يصل من الخادم ─────────── */
@@ -80,7 +98,13 @@ interface PlanResource {
 interface LegacyPlanProposals { courseTitleAr?: string | null }
 /** الفصلُ الدراسيّ — حدودُه هي حدودُ الشعبة ونافذةُ جدولتها */
 interface Term { id: string; titleAr: string; season: string; year: number; startsOn: string; endsOn: string; status: string }
-interface PlanContent { kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: LegacyPlanProposals | null }
+interface PlanContent {
+  kind: "trainer"; summaryAr?: string | null; modules: PlanModule[]; resources: PlanResource[]; liveNoteAr?: string | null; proposals?: LegacyPlanProposals | null;
+  /* مدّةُ الشعبة — تاريخان بلا ساعة، تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
+  startsOn?: string | null; endsOn?: string | null;
+}
+/** مدّةٌ كما يرسلها الخادم — تاريخان `YYYY-MM-DD` */
+interface Period { startsOn: string; endsOn: string }
 interface Workspace {
   role: string;
   trainer: { name: string };
@@ -88,6 +112,8 @@ interface Workspace {
     id: string; title: string; status: string; startsAt: string | null; endsAt: string | null; daysOfWeek: string[];
     startTime: string | null; timezone: string | null; language: string; deliveryMode: string;
     termId: string | null; term: Term | null;
+    /* مدّتُه كما تُحكَم، والمعلَنةُ للمسجَّلين الآن — تُقالان معا إن افترقتا */
+    period: Period | null; publicPeriod: Period | null;
     readOnly: { price: number | null; currency: string; capacity: number | null };
   };
   course: { id: string; titleAr: string; baseModules: PlanModule[] };
@@ -95,7 +121,7 @@ interface Workspace {
     id: string; status: string; content: PlanContent | null; reviewerNote: string | null;
     submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
   } | null;
-  sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
+  sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; placeholder: boolean; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
   materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
   learners: { enrollmentId: string; name: string; status: string; progress: number; referredByMe: boolean }[];
   assessments: { id: string; title: string; briefAr: string | null; attachments?: unknown; type: string; maxScore: number; dueAt: string | null; status: string; submissions: number }[];
@@ -111,27 +137,28 @@ const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent"
   superseded: { label: "نسخةٌ قديمة", tone: "default" },
 };
 
-/* ═══ المراحلُ خمسٌ — والسادسةُ انطوت (ق٧ · ١٧ سبتمبر ٢٠٢٦) ═══
+/* ═══ المراحلُ ستٌّ، وأولاها المعلوماتُ الأساسيّة (٢٧ سبتمبر ٢٠٢٦) ═══
 
-   كانت ستًّا، أولاها «الاسمُ والمواعيد». ثمّ خرج منها الفصلُ (ق١) وصندوقُ
-   اسمِ الدورة (ق٥)، فلم يبقَ فيها **قرارٌ**: اسمٌ كتبته الإدارةُ عند الفتح
-   يعدّله إن شاء، ونبذةٌ في سطرين. ودرجةٌ في سلّمٍ تعني «قف هنا واقرر»، فلا
-   تُنفَق على حقلين لا قرارَ فيهما.
+   كانت ستًّا وأولاها «الاسمُ والمواعيد»، ثمّ انطوت الأولى (ق٧ · ١٧ سبتمبر
+   ٢٠٢٦) إلى بابٍ في اسم الشعبة يُفتح بقلم: لم يبقَ فيها قرار — اسمٌ ونبذة،
+   والمواعيدُ حدودُ فصلٍ تسمّيه الإدارة.
 
-   فصارت الهُويّةُ **بابا في اسم الشعبة نفسِه** في الشريط: يُنقَر فيُفتح
-   حقلاها. وصفُّها في قائمة الخادم باقٍ كما هو — الاسمُ شرطٌ للاعتماد ولم
-   يسقط، وإنّما تبدّل مكانُ بابه.
+   ثمّ عاد فيها القرارُ الأكبر: **مدّةُ الشعبة من متى إلى متى** صارت للمدرّب
+   (قرارُ صاحب المنصّة، ٢٧ سبتمبر ٢٠٢٦) — «وهي الفترةُ المخصّصة للّقاءات
+   المباشرة ومدّةُ رؤية المتعلّمين موارده». ودرجةٌ فيها قرارٌ تُصعد لا تُفتح
+   بقلم: «المرحلةُ الأولى هي تعديلُ المعلومات الأساسيّة للشعبة وليس زرَّ
+   القلم».
 
-   ومفاتيحُها مفاتيحُ قائمة الخادم، فحالةُ كلٍّ (تمّ / لم يتمّ) تُقرأ من
-   هناك لا تُخمَّن هنا. و«التسجيلات» الاختياريّةُ تُطوى داخل «اللقاءات». */
-type Stage = "modules" | "resources" | "sessions" | "assignments" | "approval";
-/** ما يُفتح في لوحةٍ مستقلّة — درجةٌ في السلّم أو بابُ الهُويّة */
-type Step = Stage | "identity";
+   والمفاتيحُ مفاتيحُ قائمة الخادم، فحالةُ كلٍّ (تمّ / لم يتمّ) تُقرأ من هناك
+   لا تُخمَّن هنا. والأسماءُ قصيرةٌ لتُرى كلُّها في الشريط، والطويلُ في رأس
+   كلّ خطوة. و«التسجيلات» الاختياريّةُ تُطوى داخل «اللقاءات». */
+type Stage = "identity" | "modules" | "resources" | "sessions" | "assignments" | "approval";
 const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
+  { key: "identity", label: "المعلومات الأساسيّة", icon: IdCard },
   { key: "modules", label: "المحاور", icon: BookOpen },
   { key: "resources", label: "المصادر", icon: FileText },
-  { key: "sessions", label: "لقاءات مباشرة", icon: CalendarDays },
-  { key: "assignments", label: "المهامّ والتطبيق العمليّ", icon: ClipboardCheck },
+  { key: "sessions", label: "اللقاءات", icon: CalendarDays },
+  { key: "assignments", label: "المهامّ", icon: ClipboardCheck },
   { key: "approval", label: "الاعتماد", icon: Send },
 ];
 type Phase = "prepare" | "run";
@@ -177,15 +204,14 @@ const RESOURCE_CATEGORY_META: Record<string, {
    كان المدرّبُ يفتح الخطوةَ فيجد حقولا بلا مقدّمة، فلا يعرف أهي دقيقتان
    أم ساعة، ولا لمن يُكتب ما يكتبه. والوقتُ المذكور تقديرٌ صادقٌ لا وعد:
    يُقال ليقرّر أيبدأها الآن أم يؤجّلها، وهو أنفعُ ما يُقال له قبلها. */
-const STAGE_INTRO: Record<Step, { title: string; purpose: string; minutes: string }> = {
+const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: string }> = {
   identity: {
-    title: "اسمُ الشعبة ونبذتُها",
-    /* وكان يَعِدُ بما لم يعد فيها: «متى تبدأ وتنتهي وأيّامُ لقاءاتها» —
-       والبدءُ والانتهاءُ يُشتقّان من الفصل الذي تسمّيه الإدارة، ومواعيدُ
-       اللقاءات تُحدَّد لقاءً لقاءً في خطوتها. ومقدّمةٌ تَعِدُ بحقولٍ لا
-       وجودَ لها تجعل المدرّبَ يبحث عمّا ليس هنا ويظنّ الشاشةَ ناقصة. */
-    purpose: "تعريفُ الدفعة كما يراها المتعلّمُ قبل أن يسجّل: اسمُها وسطرانِ عمّا يخرج به منها.",
-    minutes: "نحو دقيقتين",
+    title: "المعلومات الأساسيّة",
+    /* وعادت تَعِد بالمدّة لأنّها فيها (٢٧ سبتمبر ٢٠٢٦): كانت قد سقطت يومَ
+       صار البدءُ والانتهاءُ حدودَ فصلٍ تسمّيه الإدارة — ومقدّمةٌ تَعِد بحقلٍ
+       لا وجودَ له تجعل المدرّبَ يبحث عمّا ليس هنا. واليومَ الحقلُ هنا. */
+    purpose: "تعريفُ الدفعة كما يراها المتعلّمُ قبل أن يسجّل — اسمُها ونبذتُها — ومدّتُها كاملةً: من متى إلى متى. فيها تُعقد لقاءاتُك، وفيها يرى المتعلّمون موارده.",
+    minutes: "نحو ثلاث دقائق",
   },
   modules: {
     title: "المحاور والتطبيق العمليّ",
@@ -199,7 +225,7 @@ const STAGE_INTRO: Record<Step, { title: string; purpose: string; minutes: strin
   },
   sessions: {
     title: "اللقاءات والتسجيلات",
-    purpose: "مواعيدُ اللقاءات المباشرة داخلَ النافذة التي حدّدتها الإدارة، وتسجيلاتُها بعد انتهائها.",
+    purpose: "مواعيدُ لقاءاتك المباشرة — تضعها بنفسك داخلَ مدّة شعبتك — وتسجيلاتُها بعد انتهائها.",
     minutes: "نحو ٧ دقائق",
   },
   assignments: {
@@ -214,7 +240,7 @@ const STAGE_INTRO: Record<Step, { title: string; purpose: string; minutes: strin
   },
 };
 
-function StageIntro({ stage }: { stage: Step }) {
+function StageIntro({ stage }: { stage: Stage }) {
   const it = STAGE_INTRO[stage];
   const Icon = STAGES.find((s) => s.key === stage)?.icon ?? BookOpen;
   return (
@@ -233,15 +259,16 @@ function StageIntro({ stage }: { stage: Step }) {
 const toDateInput = (iso: string | null) => (iso ? iso.slice(0, 10) : "");
 
 /* بصمتا المرحلتين اللتين تتقاسمان `content` — «المحاور» و«المصادر» تُحفظان
-   معا بـ`savePlan`، لكنّ المدرّبَ يحرّر واحدةً في كلّ مرّة. فلو قيست
+   معا في `persist`، لكنّ المدرّبَ يحرّر واحدةً في كلّ مرّة. فلو قيست
    البصمةُ على الكائن كلِّه لأضاءت المرحلتان معا بتعديلٍ في إحداهما. */
 const modulesKey = (c: PlanContent) => JSON.stringify(c.modules);
 const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources);
 
 
 /* والوصفُ صار مع الاسم والنبذة، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
-   حيث صار الحقلُ لا حيث كان. */
-const summaryKey = (c: PlanContent) => c.summaryAr ?? "";
+   حيث صار الحقلُ لا حيث كان. ومعهما المدّةُ منذ صارت في الخطوة الأولى
+   (٢٧ سبتمبر ٢٠٢٦): من غيّر تاريخا ولم يحفظ يُعلَّم كمن غيّر الاسم. */
+const basicsKey = (c: PlanContent) => `${c.summaryAr ?? ""}|${c.startsOn ?? ""}|${c.endsOn ?? ""}`;
 /* ═══ ولم تعد لخطوة «اللقاءات» مسودّةٌ تُحفظ ═══
 
    كانت تحمل حقلا واحدا (`liveNoteAr`) يُحفظ مع الخطّة، فتُعلَّم «لم يُحفَظ»
@@ -257,9 +284,11 @@ export default function CohortWorkspace() {
   const [ws, setWs] = useState<Workspace | null>(null);
   const [err, setErr] = useState("");
   const [phase, setPhase] = useState<Phase>("prepare");
-  const [stage, setStage] = useState<Stage>("modules");
-  /* بابُ الهُويّة — يُفتح من اسم الشعبة في الشريط لا من درجةٍ في السلّم */
-  const [identityOpen, setIdentityOpen] = useState(false);
+  const [stage, setStage] = useState<Stage>("identity");
+  /* ما ينقص الخطوةَ كي تتمّ — يُقال بعد «احفظ وتابِع» حين لا تتمّ، بأسمائه لا
+     بعدد، ويُمحى بأوّل محاولةٍ تالية. «لا ينتقل للتالي إلّا بعد أن يتمّ
+     النقطةَ السابقة» — والمنعُ بلا سببٍ يُقال عطبٌ لا قاعدة. */
+  const [gaps, setGaps] = useState<string[] | null>(null);
   const [busy, setBusy] = useState(false);
 
   /* النسخةُ التي يحرّرها — تبدأ من الخطّة إن كانت، وإلّا من محاور الكتالوج */
@@ -314,8 +343,8 @@ export default function CohortWorkspace() {
      يتيما — وهو أهونُ من صفٍّ يقود إلى لا شيء. */
   const [orphans, setOrphans] = useState<string[]>([]);
 
-  const load = useCallback(async (first = false) => {
-    if (!id) return;
+  const load = useCallback(async (first = false): Promise<Workspace | null> => {
+    if (!id) return null;
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
       setWs(w);
@@ -325,20 +354,22 @@ export default function CohortWorkspace() {
       setIdentity(nextIdentity);
       /* البصمةُ تُؤخذ ممّا وصل لا ممّا في اليد — فبعد كلّ حفظٍ يعود كلُّ شيءٍ نظيفا */
       setBaseline({
-        identity: JSON.stringify(nextIdentity) + summaryKey(nextContent),
+        identity: JSON.stringify(nextIdentity) + basicsKey(nextContent),
         modules: modulesKey(nextContent),
         resources: resourcesKey(nextContent),
       });
-      /* أوّلُ فتح: المعتمَدةُ تُفتح على التشغيل، وغيرُها على أوّل مرحلةٍ لم تتمّ */
+      /* أوّلُ فتح: المعتمَدةُ تُفتح على التشغيل، وغيرُها على أوّل مرحلةٍ لم تتمّ —
+         وهي أبعدُ ما يُفتح له، فكلُّ ما قبلها تامّ. */
       if (first) {
         const status = w.plan?.status ?? "draft";
         if (status === "approved" || status === "published") setPhase("run");
         else {
-          const next = w.checklist.find((c) => !c.done && !c.optional && STAGES.some((s) => s.key === c.key));
-          setStage((next?.key as Stage) ?? "modules");
+          const next = STAGES.find((s) => { const c = w.checklist.find((x) => x.key === s.key); return c && !c.done && !c.optional; });
+          setStage(next?.key ?? "identity");
         }
       }
-    } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح صفحة الشعبة"); }
+      return w;
+    } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح صفحة الشعبة"); return null; }
   }, [id]);
   useEffect(() => { void load(true); }, [load]);
 
@@ -441,11 +472,23 @@ export default function CohortWorkspace() {
     .map((m, i) => ({ ...m, n: i + 1 }))
     .filter((m) => !moduleBodyDone(m));
   const ready = gated.length ? Math.round((doneCount / gated.length) * 100) : 0;
-  const nextStage = STAGES.find((s) => { const c = byKey.get(s.key); return c && !c.done && !c.optional; }) ?? null;
-  /* موضعُ الخطوة الحاليّة — يُقال بالضمور بدل اسم الشعبة: المضمورُ يجيب
-     «أين أنا» لا «ما شعبتي». */
+  /* موضعُ الخطوة الحاليّة — يُقال بالضمور: المضمورُ يجيب «أين أنا» */
   const here = STAGES.find((s) => s.key === stage) ?? null;
   const stepNo = STAGES.findIndex((s) => s.key === stage) + 1;
+  /* ═══ الدرجةُ تُفتح إن تمّ كلُّ ما قبلها (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     «لا ينتقل للتالي إلّا بعد أن يتمّ النقطةَ السابقة». والتمامُ من قائمة
+     الخادم لا من ظنّ الشاشة. والمرسَلةُ والمعتمَدةُ تُتصفَّح كلُّها — فيها
+     ما يُراجَع لا ما يُبنى. وما صار ناقصا بعد تمامه (مدّةٌ تغيّرت فخرج منها
+     لقاء) يُقفل ما بعده ثانيةً حتّى يُصلَح: الترتيبُ قاعدةٌ لا ذكرى. */
+  const doneOf = (k: Stage) => byKey.get(k)?.done ?? false;
+  const canOpen = (i: number) => approved || locked || STAGES.slice(0, i).every((x) => doneOf(x.key));
+  /* اليومُ في عمّان — منه يُحكَم على «البدءُ مضى» كما يحكم الخادم */
+  const today = zonedDay(new Date());
+  /* والدرجةُ الأخيرةُ يُسمّى زرُّها «أرسِلها للاعتماد» — والاسمُ لا يُكتب
+     `stage === "approval" &&` في الشريط: تلك صيغةُ **بدءِ لوحة الدرجة** التي
+     تُقتطع بها في الحرّاس، ونسخةٌ منها في الشريط تُضلّ من يقتطع. */
+  const atApproval = stage === "approval";
 
   /* ── «فيه تغييرٌ لم يُحفظ» ──
 
@@ -454,7 +497,7 @@ export default function CohortWorkspace() {
      كتب بلا كلمة. فصارت المرحلةُ المعدَّلةُ تُعلَّم على الخطّ، وزرُّ حفظها
      لا يعمل بلا تغيير، والخروجُ من الصفحة يُستأذَن فيه. */
   const dirty: Record<string, boolean> = {
-    identity: JSON.stringify(identity) + summaryKey(content) !== baseline.identity,
+    identity: JSON.stringify(identity) + basicsKey(content) !== baseline.identity,
     modules: modulesKey(content) !== baseline.modules,
     resources: resourcesKey(content) !== baseline.resources,
     /* واللقاءاتُ تُحفظ بنفسها — لا مسودّةَ لها في اليد */
@@ -468,23 +511,115 @@ export default function CohortWorkspace() {
     try { await apiDelete(`/api/trainer/cohorts/${ws.cohort.id}/files/${encodeURIComponent(key)}`); }
     catch { /* لا يُعطَّل الحفظُ لأجل ملفٍّ لم يُحذف */ }
   };
-  const savePlan = () => act(async () => {
+  /* ═══ ما يمنع الحفظَ نفسَه — يُقال قبل أن يُرسَل ═══
+
+     الحفظُ يرسل الخطّةَ كاملةً (المدّةَ والمحاورَ والمصادر)، فمحورٌ بلا
+     عنوانٍ تُرك في خطوةٍ أخرى يُسقط حفظَ الخطوة الأولى بخطإٍ لا يسمّيه. فيُفحص
+     هنا بالقواعد نفسِها التي يردّ بها الخادم، ويُقال بأسمائه. */
+  const saveProblems = (): string[] => {
+    const out: string[] = [];
+    if (identity.title.trim().length < 3) out.push("اسمُ الشعبة ثلاثةُ أحرفٍ فأكثر");
+    if (content.startsOn || content.endsOn) {
+      const p = periodProblem(content, { today, approvedStart: ws.cohort.publicPeriod?.startsOn ?? null });
+      if (p) out.push(p);
+    }
+    content.modules.forEach((m, i) => {
+      if (m.titleAr.trim().length < 2) out.push(`المحور ${i + 1} بلا عنوان — اكتبه أو احذف المحور`);
+    });
+    content.resources.forEach((r, i) => {
+      if (!r.title.trim() || !resourceHasSource(r)) out.push(`مصدرٌ ناقص (${r.title.trim() || `رقم ${i + 1}`}) — له اسمٌ ورابطٌ أو ملفّ`);
+    });
+    return out;
+  };
+  /* ═══ الحفظُ واحدٌ لكلّ الخطوات ═══
+
+     كان لكلّ خطوةٍ زرُّ حفظها («احفظ البيانات» · «احفظ المحاور» · «احفظ
+     المصادر») وزرُّ «التالي» في الشريط لا يحفظ شيئا — فمن نقر «التالي» ترك
+     ما كتبه. وصار زرُّ الشريط يحفظ ما في اليد كلَّه: الخطّةَ واسمَ الشعبة
+     معا — وزرّان في خطوةٍ واحدةٍ يجعلان المدرّبَ يحفظ أحدَهما ويظنّ الآخرَ
+     محفوظا. والمرسَلةُ للاعتماد لا تُحفظ، تُتصفَّح. */
+  const persist = async (): Promise<boolean> => {
+    if (locked) return true;
+    if (!dirty.identity && !dirty.modules && !dirty.resources) return true;
+    const problems = saveProblems();
+    if (problems.length) { setGaps(problems); return false; }
     await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content);
+    if (identity.title.trim() !== ws.cohort.title) {
+      await apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, { title: identity.title.trim() });
+    }
     /* وبعد نجاح الحفظ — لا قبله: الخطّةُ المحفوظةُ لم تعد تشير إليها */
     const keys = orphans;
     setOrphans([]);
     for (const k of keys) await dropFile(k);
-  }, "حُفظت مسودّتك");
-  /* زرٌّ واحدٌ يحفظ الاثنين: بياناتُ الشعبة في الشعبة، ووصفُها في الخطّة.
-     وزرّان في خطوةٍ واحدةٍ يجعل المدرّبَ يحفظ أحدَهما ويظنّ الآخرَ محفوظا. */
-  const saveIdentity = () => act(async () => {
-    await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content);
-    await apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, { title: identity.title.trim() });
-  }, "حُفظت بياناتُ الشعبة");
-  /* الفصلُ يُحفظ وحدَه لا مع الاسم: اختيارُه يحرّك حدودَ الشعبةَ ونافذةَ
-     جدولتها، وقد يُردّ إن كان في الجدول لقاءٌ خارجَه — فلا يُبتلع في زرٍّ
-     اسمُه «احفظ البيانات» ويظنُّ صاحبُه أنّ الاسمَ لم يُحفظ. */
-  const submit = () => act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
+    return true;
+  };
+  /* ما ينقص خطوةً كي تتمّ — بلغة من يصحّحه. والحكمُ على المحفوظ: القائمةُ
+     التي قالت «لم تتمّ» قرأت ما في الخادم، فالسببُ يُقرأ منه أيضا. */
+  const gapsFor = (k: Stage, w: Workspace): string[] => {
+    const saved = w.plan?.content ?? null;
+    const label = w.checklist.find((c) => c.key === k)?.labelAr ?? "";
+    if (k === "identity") {
+      const out: string[] = [];
+      if (w.cohort.title.trim().length < 3) out.push("اكتب اسمَ الشعبة — ثلاثةُ أحرفٍ فأكثر");
+      const p = periodProblem(w.cohort.period);
+      if (p) out.push(p);
+      return out.length ? out : [label];
+    }
+    if (k === "modules") {
+      const mods = saved?.modules ?? [];
+      if (mods.length === 0) return ["أضِف محورا واحدا على الأقلّ"];
+      const miss = mods.map((m, i) => ({ m, n: i + 1 })).filter(({ m }) => !moduleBodyDone(m));
+      return miss.length
+        ? [`ينقص المحتوى النظريُّ في: ${miss.map(({ m, n }) => `${n}. ${m.titleAr || "بلا عنوان"}`).join(" · ")}`]
+        : [label];
+    }
+    if (k === "resources") return ["أضِف مصدرا واحدا على الأقلّ — كرّاسةً أو كتابا أو رابطا"];
+    if (k === "assignments") return ["ألِّف مهمّةً واحدةً على الأقلّ — واجبا أو مشروعا يُسلَّم ويُقيَّم"];
+    return [label];
+  };
+  /* ═══ «احفظ وتابِع» — الزرُّ المضاء ═══
+
+     يحفظ، ثمّ يسأل الخادمَ: أتمّت هذه الخطوة؟ فإن تمّت انتقل إلى التي
+     تليها، وإلّا بقي وسمّى ما ينقص. فالانتقالُ ثمرةُ التمام لا نقرةٌ تسبقه —
+     وهو نصُّ صاحب المنصّة: «ولا ينتقل للتالي إلّا بعد أن يتمّ النقطةَ
+     السابقة ويقوم: تمّ وحفظ». */
+  const saveAndContinue = async () => {
+    if (busy) return;
+    setBusy(true);
+    setGaps(null);
+    try {
+      if (!(await persist())) return;
+      const fresh = await load();
+      if (!fresh) return;
+      const at = STAGES.findIndex((x) => x.key === stage);
+      if (fresh.checklist.find((c) => c.key === stage)?.done) {
+        const next = STAGES[at + 1];
+        if (next) {
+          setStage(next.key);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          toast(locked ? `«${next.label}»` : `حُفظت «${STAGES[at].label}» — إلى «${next.label}»`);
+        }
+      } else {
+        setGaps(gapsFor(stage, fresh));
+      }
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
+    } finally {
+      setBusy(false);
+    }
+  };
+  /* والدرجةُ الأخيرة: الزرُّ نفسُه يُرسل. وما يمنع الإرسالَ يُقال بأسمائه
+     قبل النداء — والخادمُ يردّ الشيءَ نفسَه إن وصل (`plan-gate`). */
+  const submitNow = async () => {
+    setGaps(null);
+    if (blocking.length) { setGaps(blocking.map((b) => b.labelAr)); return; }
+    if (!confirm) {
+      setGaps(["أكّد موافقتك على كلّ ما في الشعبة — المربّعُ أسفلَ هذه الخطوة"]);
+      document.getElementById("plan-confirm")?.focus();
+      return;
+    }
+    await act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
+  };
   /* ── التكاليف: إنشاءٌ وتعديلٌ وحذف ──
 
      النموذجُ واحدٌ للفعلين: ما كُتب فيه يُرسَل `POST` إن لم يكن تحت اليد
@@ -534,34 +669,26 @@ export default function CohortWorkspace() {
         <ArrowRight className="h-4 w-4" /> شعبي
       </Link>
 
-      {/* ═══ الشريطُ «ب» — صفٌّ واحدٌ يحمل كلَّ ما كان في ثلاثة ═══
+      {/* ═══ الشريطُ سلّمٌ بأسمائه، وزرٌّ مضاءٌ واحد (٢٧ سبتمبر ٢٠٢٦) ═══
 
-          شكواه الأولى (١٧ سبتمبر ٢٠٢٦): «القائمة العلويّة آخذةٌ حيّزا كبيرا
-          من الصفحة… ألغِ الفراغَ فوقها واجعلها ملاصقةً للسقف عند النزول».
-          وكان خلفها رقم: **٦٠٦ بكسلا من الزينة قبل أوّل حقلٍ يكتب فيه**، في
-          شاشةٍ ارتفاعُها الفعّالُ ٦٩٢ (بمقياس `--app-scale: 1.3` على العريض).
-          أي ٨٨٪ منها. فالكتابةُ في الخطوة الأولى بلا تمرير **مستحيلةٌ بنيةً**
-          لا صعبة.
+          شكواه الأولى (١٧ سبتمبر ٢٠٢٦): «القائمة العلويّة آخذةٌ حيّزا كبيرا».
+          فصار صفًّا واحدا لاصقا بالسقف، والأسماءُ تغيب إلّا اسمَ النشطة.
+          ثمّ قال (٢٧ سبتمبر ٢٠٢٦): «يجب أن تظهر بشريطٍ واضح… سهلٍ معرفةُ
+          أين وصل. زرُّ التالي يجب أن يكون مضاءً لأنّه الأهمّ».
 
-          وقد سبق في الموجة ٠ أن لُحِم بالسقف وذهب الفراغُ الميّتُ فوقه. وهذا
-          تمامُه: ثلاثةُ صفوفٍ (هُويّةُ الشعبة · لسانا الطور · سلّمُ الخطوات)
-          تصير **صفًّا واحدا**، وقد صار ممكنا لأنّ الخطوةَ الأولى انطوت.
-
-          ── وكيف يقرأ ──
-
-          ساكنا: اسمُ الشعبة (وهو بابُ تعديله)، ثمّ العلاماتُ الخمس والنشطةُ
-          وحدَها تحمل اسمَها، ثمّ زرُّ «التالي». وتحتها سطرُ حقائقَ واحد.
-          ومضمورا: موضعُ الخطوة بدل الاسم، والعلاماتُ في الوسط، ويسقط سطرُ
-          الحقائق. وحلقةُ التقدّم صارت **خيطا هو الحدُّ السفليُّ نفسُه** — لا
-          عنصرا يُضاف إلى الارتفاع.
+          فالصفُّ باقٍ صفًّا — والسلّمُ صار **درجاتٍ موصولةً بخطّ** تُرى أسماؤها
+          كلُّها على الشاشة العريضة، والتامُّ منها بعلامة، والنشطةُ بحلقةٍ
+          ذهبيّة، وما بعد أوّلِ ناقصةٍ مقفلٌ يُرى ولا يُفتح. وزرُّ «التالي»
+          الثانويُّ صار **الذهبيَّ الوحيدَ في الشاشة**: «احفظ وتابِع».
+          واسمُ الشعبة نزل إلى سطر الحقائق — والمضمورُ يُسقط ذلك السطر.
 
           ── وأربعةُ عهودٍ لا تُمَسّ (من وثيقة القرار) ──
 
           ① النقطةُ الذهبيّةُ «لم يُحفَظ» تبقى على علامتها مهما ضمر الشريط.
           ② ملاحظةُ الإدارة حين تُردُّ الخطّةُ تبقى في المنطقة اللاصقة.
           ③ الشريطُ يبقى ظاهرا ولا يُشرَط بالطور (قرارُ ١٥ سبتمبر).
-          ④ والأسماءُ تبقى مسموعةً كاملةً: كلُّ علامةٍ تحمل «الخطوة ن من ٥:
-            اسمُها» وإن غاب الاسمُ عن العين. */}
+          ④ والأسماءُ تبقى مسموعةً كاملةً: كلُّ علامةٍ تحمل «الخطوة ن من ٦:
+            اسمُها — حالُها» وإن غاب الاسمُ عن العين. */}
       <Bar
         as="section"
         tone="solid"
@@ -569,93 +696,119 @@ export default function CohortWorkspace() {
         style={{ top: "var(--staff-sticky-top, 0px)" }}
       >
         <div>
-          <div className="flex items-center gap-3">
-            {/* الاسمُ ساكنا، وموضعُ الخطوة مضمورا — ولا يجتمعان فيضيق الصفّ */}
-            {compact ? (
-              <p className="shrink-0 text-read font-black text-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            {/* المضمورُ يقول أين هو — والساكنُ يقوله بالسلّم وأسمائه */}
+            {compact && (
+              <p className="hidden shrink-0 text-read font-black text-foreground sm:block">
                 الخطوة {stepNo} من {STAGES.length}
                 <span className="font-bold text-muted-foreground"> · {here?.label}</span>
               </p>
-            ) : (
-              /* واسمُ الشعبة بابُ هُويّتها: ما انطوى لم يُحذف، وإنّما صار
-                 يُفتح من الاسم نفسِه — وهو أقربُ موضعٍ يُطلب فيه. */
-              <button
-                type="button"
-                onClick={() => setIdentityOpen(true)}
-                className="group flex shrink-0 items-center gap-1.5 text-start"
-              >
-                <span className="text-read font-black leading-6 text-foreground">{ws.cohort.title}</span>
-                <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-hover:text-teal-light-ink" aria-hidden="true" />
-                <span className="sr-only">عدّل اسمَ الشعبة ونبذتَها</span>
-              </button>
             )}
 
-            <ol className={`flex min-w-0 flex-1 items-center gap-1 ${compact ? "justify-center" : ""}`}>
+            <ol className="flex w-full min-w-0 items-center sm:w-auto sm:flex-1">
               {STAGES.map((s, i) => {
                 const item = byKey.get(s.key);
                 const done = item?.done ?? false;
-                const optional = item?.optional ?? false;
-                const isNext = nextStage?.key === s.key;
                 const selected = phase === "prepare" && stage === s.key;
+                const open = canOpen(i);
                 /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
-                const stateAr = dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : isNext ? "التالية" : optional ? "اختياريّة" : "لم تتمّ بعد";
+                const stateAr = dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "مقفلةٌ حتّى تُتمّ ما قبلها" : "لم تتمّ بعد";
+                const blocker = STAGES.slice(0, i).find((x) => !doneOf(x.key));
                 return (
-                  <li key={s.key} className="min-w-0">
+                  /* بلا `min-w-0`: الدرجةُ لا تنضغط دون زرّها فيركب اسمُها على جارتها
+                     (قِيس على ٣٢٠ و٣٩٠) — والخطُّ الواصلُ هو ما يتّسع ويضيق */
+                  <li key={s.key} className={`flex items-center ${i < STAGES.length - 1 ? "flex-1" : ""}`}>
                     <button
                       type="button"
                       onClick={() => openStage(s.key)}
+                      disabled={!open}
                       aria-current={selected ? "step" : undefined}
                       aria-label={`الخطوة ${i + 1} من ${STAGES.length}: ${s.label} — ${stateAr}`}
-                      className={`group flex items-center gap-1.5 rounded-full p-1 transition ${selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"}`}
+                      title={!open && blocker ? `أكمِل «${blocker.label}» أوّلا` : undefined}
+                      /* وعلى الهاتف مساحةُ لمسٍ ٣٦×٤٤ حول دائرةٍ من ٢٨: ستُّ درجاتٍ
+                         وخطوطُها تسع ٢٨٠ بكسلا (شاشةُ ٣٢٠) — وكانت تزيد ستّةَ عشرَ
+                         فتُقصّ الدرجةُ الأخيرة عند الحافّة. */
+                      className={`group flex min-h-11 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full transition sm:min-w-0 sm:justify-start sm:px-1 ${
+                        !open ? "cursor-not-allowed opacity-50" : selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"
+                      }`}
                     >
-                      <span className={`relative grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 text-fine font-black transition ${
+                      <span className={`relative grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 text-fine font-black transition ${
                         done ? "border-teal bg-teal text-on-teal"
-                          : isNext ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_3px_rgba(250,188,5,0.15)]"
+                          : selected ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_3px_rgba(250,188,5,0.15)]"
                           : "border-white/15 bg-surface text-muted-foreground"
                       }`}>
-                        {done ? <Check className="h-3 w-3" aria-hidden="true" /> : i + 1}
+                        {done ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : !open ? <Lock className="h-3 w-3" aria-hidden="true" /> : i + 1}
                         {/* ① تعديلٌ في اليد لا يُكتم لتوفير سطر — ولا لتوفير صفّ */}
                         {dirty[s.key] && (
                           <span className="absolute -end-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-gold" aria-hidden="true" />
                         )}
                       </span>
-                      {/* والاسمُ للنشطة دائما، ولغيرها عند التحويم وعند تركيز
-                          لوحة المفاتيح — فمن يتنقّل بالمفتاح يقرأ ما يقرؤه
-                          صاحبُ الفأرة، لا أقلَّ منه. */}
+                      {/* والاسمُ للنشطة من عرض اللوح فما فوق، ولكلّها ساكنا من ١٢٨٠
+                          (قِيس: على ١٠٢٤ يكبّر الإطارُ المتنَ ١٫٣ فتفيض السادسة) — ولغيرها عند التحويم وعند تركيز لوحة
+                          المفاتيح، فمن يتنقّل بالمفتاح يقرأ ما يقرؤه صاحبُ الفأرة.
+                          وعلى الهاتف لا اسمَ في الصفّ: ستُّ دوائرَ متساويةٌ، والاسمُ
+                          في سطرٍ تحتها — فقد رُكّب على جارته حين وُضع بينها. */}
                       <span
                         aria-hidden="true"
                         className={`overflow-hidden whitespace-nowrap text-read font-bold transition-[max-width] duration-200 ${
                           selected
-                            ? "max-w-[11rem] text-foreground"
-                            : "max-w-0 text-muted-foreground group-hover:max-w-[11rem] group-focus-visible:max-w-[11rem]"
+                            ? "max-w-0 text-foreground sm:max-w-[11rem]"
+                            : `max-w-0 text-muted-foreground sm:group-hover:max-w-[11rem] sm:group-focus-visible:max-w-[11rem] ${compact ? "" : "xl:max-w-[11rem]"}`
                         }`}
                       >
                         {s.label}
                       </span>
                     </button>
+                    {/* والخطُّ بين درجتين يمتلئ حين تتمّ التي قبله — فيُقرأ
+                        السلّمُ طريقا يُقطع لا أزرارا متجاورة */}
+                    {i < STAGES.length - 1 && (
+                      <span aria-hidden="true" className={`mx-0.5 h-0.5 min-w-1 flex-1 rounded-full sm:mx-1 sm:min-w-2 ${done ? "bg-teal" : "bg-white/10"}`} />
+                    )}
                   </li>
                 );
               })}
             </ol>
 
-            {approved ? (
+            {/* وعلى الهاتف يُقال موضعُ الخطوة سطرا تحت الدوائر — فالدائرةُ وحدَها
+                رقمٌ لا يقول أين هو */}
+            <p className="w-full text-read font-black text-foreground sm:hidden">
+              الخطوة {stepNo} من {STAGES.length}
+              <span className="font-bold text-muted-foreground"> · {here?.label}</span>
+            </p>
+
+            {/* ═══ الذهبيُّ الوحيد — «احفظ وتابِع» ═══
+
+                يحفظ الخطوةَ ثمّ ينتقل إن تمّت، ويقول ما ينقص إن لم تتمّ.
+                وفي الدرجة الأخيرة يصير «أرسِلها للاعتماد». والمعتمَدةُ تحمل
+                شارتَها مكانَه — ما لم يتغيّر فيها شيءٌ يُحفظ. */}
+            {approved && !Object.values(dirty).some(Boolean) && atApproval ? (
               <span className="stage-seal inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-0.5 text-read font-black text-emerald-300">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> معتمَدة
               </span>
-            ) : nextStage ? (
-              <Button tone="secondary" size="sm" type="button" className="shrink-0" onClick={() => openStage(nextStage.key)}>
-                التالي: {nextStage.label}
+            ) : (
+              <Button
+                tone="primary"
+                type="button"
+                className="w-full shrink-0 sm:w-auto"
+                loading={busy}
+                disabled={busy || (atApproval && (locked || approved))}
+                onClick={() => void (atApproval ? submitNow() : saveAndContinue())}
+              >
+                {atApproval
+                  ? <><Send className="h-4 w-4" aria-hidden="true" /> {locked ? "بانتظار قرار الإدارة" : "أرسِلها للاعتماد"}</>
+                  : <>{locked ? "التالي" : "احفظ وتابِع"} <ArrowLeft className="h-4 w-4" aria-hidden="true" /></>}
               </Button>
-            ) : null}
+            )}
           </div>
 
-          {/* سطرُ الحقائق: ما كان في أربعة أسطرَ في صفٍّ واحد. ويسقط بالضمور
-              — فالمضمورُ يجيب «أين أنا» لا «ما شعبتي». */}
+          {/* سطرُ الحقائق: اسمُ الشعبة وما حولها. ويسقط بالضمور — فالمضمورُ
+              يجيب «أين أنا» لا «ما شعبتي». */}
           {!compact && (
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              {doneCount} من {gated.length} · {ws.course.titleAr} · {ws.learners.length} التحقوا · {ws.sessions.length} لقاء
-              {ws.cohort.term ? <> · {ws.cohort.term.titleAr}</> : <> · <span className="text-gold-ink">لم تُفتَح بعد</span></>}
-              {!approved && <> · {st.label}</>}
+              <b className="font-black text-foreground">{ws.cohort.title}</b>
+              {" "}· {doneCount} من {gated.length} · {ws.course.titleAr} · {ws.learners.length} التحقوا
+              {" "}· {ws.sessions.filter((x) => !x.placeholder && x.status !== "cancelled").length} لقاء
+              {approved ? <> · <span className="font-bold text-emerald-300">معتمَدة</span></> : <> · {st.label}</>}
             </p>
           )}
 
@@ -667,17 +820,23 @@ export default function CohortWorkspace() {
             </Inset>
           )}
 
+          {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
+              كالملاحظة: يقرؤه وهو ينزل إلى الحقل الذي يصحّحه. */}
+          {gaps && gaps.length > 0 && (
+            <Inset tone="warn" className="mt-2" role="alert">
+              <p className="text-read font-black text-gold-ink">لم تتمّ «{here?.label}» بعد — ينقصها:</p>
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
+                {gaps.map((g) => <li key={g}>{g}</li>)}
+              </ul>
+            </Inset>
+          )}
         </div>
 
         {/* ═══ الخيطُ: حلقةُ التقدّم صارت الحدَّ السفليَّ نفسَه ═══
 
             كانت `ProgressRing` مربّعا من ٧٦ بكسلا في رأسٍ لاصق. وصارت خيطا
             من بكسلَين **مطلقَ الموضع على حافّة الشريط** — فلا يضيف إلى
-            ارتفاعه شيئا، ويجلس فوق الحدِّ الذي ترسمه `Bar` مباشرةً.
-
-            وقياسُه من `Bar` نفسِها (`relative` عليها) لا من صندوقٍ داخلَ
-            حشوها: الحشوُ يسكن الدرجةَ في `Surface.tsx` وقد يتبدّل، وخيطٌ
-            يُزاح بمقدارٍ مكتوبٍ بيدٍ يفترق عنه عند أوّل تبديل. */}
+            ارتفاعه شيئا، ويجلس فوق الحدِّ الذي ترسمه `Bar` مباشرةً. */}
         <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5">
           <span className="stage-fill block h-full bg-teal" style={{ width: `${ready}%` }} />
         </span>
@@ -707,65 +866,23 @@ export default function CohortWorkspace() {
         </Inset>
       )}
 
-{/* ═══ لافتةُ الفصل — فوقَ المتن كلِّه لا داخلَ خطوةٍ واحدة ═══
+      {/* ═══ وذهبت لافتةُ الفصل (٢٧ سبتمبر ٢٠٢٦) ═══
 
-          كانت داخلَ الخطوة الأولى. وقد انطوت (ق٧)، ولافتةُ الفصل ليست من
-          الهُويّة أصلا: هي حدودُ ما يستطيعه في **كلّ** خطوة، وأشدُّ ما
-          تُطلب في «لقاءات مباشرة» حيث يجدول داخلَها. */}
-      {phase === "prepare" && (
-        <div className="mb-4">
-          {/* ═══ الفصلُ حقيقةٌ تُقرأ، لا سؤالٌ يُسأل ═══
+          كانت فوق المتن كلِّه: «هذه الشعبةُ معتمَدةٌ لفصل كذا — ولقاءاتُك
+          داخلَ أشهره» أو «لم تُفتَح بعد — تسمّي الإدارةُ فصلَها». وصارت المدّةُ
+          للمدرّب يحدّدها في الخطوة الأولى، فحدودُه تُقال حيث يكتبها وحيث
+          يجدول داخلها (خطوة «اللقاءات») — لا لافتةً عن قرارٍ ليس قرارَه. */}
+      {/* ─────────── ① المعلومات الأساسيّة ───────────
 
-              كانت هنا شبكةُ فصولٍ ينقر فيها المدرّب. وصحّح صاحبُ المنصّة
-              (١٧ سبتمبر ٢٠٢٦): «القصدُ كان لدينا في الإدارة نكون قد اعتمدنا
-              الدورةَ في فصلٍ معيّن فتتقيّد إجاباتُه حول أوقات الجلسات في هذه
-              المدّة فقط»، وصاغ الفعلَ: «عندما نقوم بإسناد دورةٍ لمدرّب نحدّد
-              لأيّ فصلٍ ستكون، وبهذا نكون فتحنا شعبةً له».
-
-              فالفصلُ يحكم نافذةَ التسجيل والتقويمَ المنشورَ وموسمَ الإيراد،
-              ويكتب `startsAt` الذي يقرؤه الكتالوجُ العامُّ — وكان القرارَ
-              الإداريَّ المحضَ الوحيدَ المفوَّضَ في هذه الشاشة، ويُكتب بنقرةٍ
-              بلا بوّابةٍ بينما كلُّ ما عداه يمرّ باعتماد. */}
-          {ws.cohort.term ? (
-            <Inset tone="accent" className="flex items-start gap-2 text-read leading-7">
-              <CalendarDays className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>
-                هذه الشعبةُ معتمَدةٌ لـ<b className="text-foreground">«{ws.cohort.term.titleAr}»</b> —
-                من <b className="text-foreground">{fmtDateAr(ws.cohort.term.startsOn)}</b> إلى{" "}
-                <b className="text-foreground">{fmtDateAr(ws.cohort.term.endsOn)}</b>.
-                ولقاءاتُك تُجدوَل داخلَ هذه الأشهر وحدَها، لقاءً لقاءً في خطوة «لقاءات مباشرة».
-              </span>
-            </Inset>
-          ) : (
-            /* ═══ وحالةٌ لم يكن لها اسم ═══
-
-               شعبةٌ بلا فصلٍ ليست معطوبةً بل **لم تُفتَح بعد**. وكان يُقال
-               له «اخترْه في خطوة الاسم والمواعيد» — أي يُؤمَر بفعلٍ صار ليس
-               له. والصوابُ أن يُقال ما يقع، ومن يفعله، وما يستطيعه هو الآن. */
-            <Inset tone="warn" className="flex items-start gap-2 text-read leading-7 text-gold-ink">
-              <CalendarDays className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>
-                <b>لم تُفتَح هذه الشعبةُ بعد</b> — تسمّي الإدارةُ فصلَها عند الإسناد، ومنه تُشتقّ حدودُها
-                وتُفتح لك جدولةُ اللقاءات. ويصلك إشعارٌ حين يُسمَّى.
-                {" "}وحتّى ذلك الحين أعِدَّ محاورَك ومصادرَك — فهي لا تنتظر الفصل.
-              </span>
-            </Inset>
-          )}
-        </div>
-      )}
-
-      {/* ═══ بابُ الهُويّة — لوحةٌ تُفتح من اسم الشعبة في الشريط ═══
-
-          كانت الخطوةَ الأولى في السلّم. ولم يبقَ فيها قرارٌ بعد ق١ و ق٥ —
-          اسمٌ ونبذةٌ لا غير — فدرجةٌ في سلّمٍ تُنفَق عليهما زينةٌ بلا مقابل.
-          وحقلاها لم يُحذفا: صارا يُفتحان من الاسم نفسِه، وهو أقربُ موضعٍ
-          يخطر فيه تعديلُه. ولوحةٌ مُحكَمةٌ (`Modal`) لا تُفقد التركيزَ ولا
-          مخرجَ الهروب. */}
-      {identityOpen && (
-        <Modal onClose={() => setIdentityOpen(false)} label="اسمُ الشعبة ونبذتُها" panelClassName="w-full max-w-2xl">
-          <Panel as="section">
-            <StageIntro stage="identity" />
-            <div className="mt-5 grid gap-5">
+          كانت لوحةً تُفتح بقلمٍ من اسم الشعبة (ق٧ · ١٧ سبتمبر ٢٠٢٦)، وفيها
+          الاسمُ والنبذةُ وسطرٌ يقول إنّ السعرَ والسعةَ بيد الإدارة. وصارت
+          الدرجةَ الأولى وفيها قرارُها الأكبر — مدّةُ الشعبة — بلا سعر: «ولا
+          داعيَ لوجود السعر هناك، وأهمُّها موعدُ الشعبة كاملا من — إلى»
+          (صاحب المنصّة، ٢٧ سبتمبر ٢٠٢٦). */}
+      {phase === "prepare" && stage === "identity" && (
+        <Panel as="section">
+          <StageIntro stage="identity" />
+          <div className="mt-5 grid gap-5">
             <StaffField wide label="اسم الشعبة" hint="ما يراه المتعلّم في الكتالوج وفي شهادته. صِفِ الدفعةَ لا الدورة — «الدفعة الثالثة · مساء الأحد».">
               <input value={identity.title} onChange={(e) => setIdentity({ title: e.target.value })} disabled={locked} className={controlCls} />
             </StaffField>
@@ -774,37 +891,65 @@ export default function CohortWorkspace() {
             <StaffField wide label="نبذةٌ عن الشعبة" hint="سطران يقرؤهما المتعلّم قبل أن يدفع. قل ما سيخرج به، لا ما ستشرحه.">
               <textarea rows={2} value={content.summaryAr ?? ""} onChange={(e) => setContent({ ...content, summaryAr: e.target.value })} disabled={locked} className={areaCls} />
             </StaffField>
+
+            {/* ═══ المدّةُ — من متى إلى متى ═══
+
+                «لأنّها هي الفترةُ المخصّصة للّقاءات المباشرة ومدّةُ رؤية
+                المتعلّمين موارده». ولقاءاتُه كلُّها داخلها، والقاعدةُ في
+                `application/trainer/cohort-period.ts` يقرؤها الخادمُ معها. */}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <StaffField label="تبدأ الشعبة" hint="أوّلُ يومٍ فيها: تُفتح فيه موارده للمتعلّمين، ولقاءاتُك من يومه فما بعده.">
+                <input
+                  type="date" dir="ltr"
+                  value={content.startsOn ?? ""}
+                  min={today}
+                  onChange={(e) => setContent({ ...content, startsOn: e.target.value || null })}
+                  disabled={locked}
+                  aria-label="تاريخُ بدء الشعبة"
+                  className={`${controlCls} text-left`}
+                />
+              </StaffField>
+              <StaffField label="وتنتهي" hint="آخرُ يومٍ فيها: آخرُ لقاءاتك فيه أو قبله.">
+                <input
+                  type="date" dir="ltr"
+                  value={content.endsOn ?? ""}
+                  min={content.startsOn || today}
+                  onChange={(e) => setContent({ ...content, endsOn: e.target.value || null })}
+                  disabled={locked}
+                  aria-label="تاريخُ انتهاء الشعبة"
+                  className={`${controlCls} text-left`}
+                />
+              </StaffField>
+            </div>
+            {(() => {
+              /* ما يقوله التاريخان — مدّتُهما، أو ما يمنعهما — قبل أن يُحفظا */
+              if (!content.startsOn && !content.endsOn) {
+                return <p className="text-read leading-6 text-muted-foreground">لم تُحدَّد المدّةُ بعد — ولا تُفتح جدولةُ اللقاءات حتّى تُحدَّد.</p>;
+              }
+              const problem = periodProblem(content, { today, approvedStart: ws.cohort.publicPeriod?.startsOn ?? null });
+              if (problem) return <p className="text-read font-bold leading-6 text-gold-ink">{problem}</p>;
+              const days = periodDays({ startsOn: content.startsOn!, endsOn: content.endsOn! });
+              const weeks = Math.round(days / 7);
+              return (
+                <p className="text-read leading-6 text-muted-foreground">
+                  مدّتُها <b className="text-foreground">{days} يوما</b>
+                  {weeks >= 1 && <> — نحو {weeks === 1 ? "أسبوع" : weeks === 2 ? "أسبوعين" : `${weeks} أسابيع`}</>}.
+                  {" "}وتصير حدودَ الشعبة المعلَنة حين تُعتمَد خطّتُك، وجدولتُك داخلها تُفتح لحظةَ الحفظ.
+                </p>
+              );
+            })()}
+            {/* والمعلَنُ للمسجَّلين الآن يُقال إن افترق عمّا يكتبه — فلا يظنّ
+                أنّ ما كتبه وصل الناسَ قبل أن يُعتمَد */}
+            {ws.cohort.publicPeriod && (ws.cohort.publicPeriod.startsOn !== content.startsOn || ws.cohort.publicPeriod.endsOn !== content.endsOn) && (
+              <Inset className="text-read leading-6 text-muted-foreground">
+                المعلَنُ للمسجَّلين الآن: من <b className="text-foreground">{fmtDateAr(ws.cohort.publicPeriod.startsOn)}</b> إلى{" "}
+                <b className="text-foreground">{fmtDateAr(ws.cohort.publicPeriod.endsOn)}</b> — ويتبدّل بمدّتك حين تعتمد الإدارةُ خطّتك.
+              </Inset>
+            )}
           </div>
-
-          {/* السعرُ يُقرأ ولا يُكتب — ويُقال لماذا، لا يُخفى */}
-          <Inset className="mt-5 flex items-start gap-2 text-read leading-6 text-muted-foreground">
-            <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>
-              السعرُ والسعةُ بيد الإدارة: {ws.cohort.readOnly.price === null ? "لم يُحدَّد بعد" : <b dir="ltr" className="font-mono text-foreground">{ws.cohort.readOnly.price} {ws.cohort.readOnly.currency}</b>}
-              {ws.cohort.readOnly.capacity ? <> · السعة {ws.cohort.readOnly.capacity}</> : null}. وما تقبضه عن كلّ متعلّم في «مستحقاتي».
-            </span>
-          </Inset>
-          <Button tone="confirm" disabled={busy || locked || !dirty.identity || identity.title.trim().length < 3} onClick={saveIdentity} className="mt-4">احفظ البيانات</Button>
-
-          {/* ═══ ولا سؤالَ عن اسم الدورة هنا (ق٥ · ١٧ سبتمبر ٢٠٢٦) ═══
-
-              كان هنا صندوقُ «اقترِح اسما لهذه الدورة»: حلَّ محلَّ «اقتراحٌ
-              للإدارة (اختياريّ)» وأصلح عطبَه — إصدارٌ جديدٌ لا كتابةٌ فوق
-              القائم فتُعاد تسميةُ الشهادات الصادرة.
-
-              وسأل صاحبُ المنصّة عنه: «لماذا هذا السؤال هنا؟». والجوابُ أنّه
-              لم يكن له موضعٌ صحيحٌ أصلا في شاشةِ تجهيزِ شعبة: المدرّبُ جاء
-              يعدّ دفعتَه، فيُسأل عن اسم الدورة في الكتالوج كلِّه. ثمّ أغلق
-              القناةَ كلَّها (ق٥) — قناةٌ لا يملكها أحدٌ أسوأُ من لا قناة.
-
-              فلم يبقَ في الخطوة الأولى قرارٌ ليس من عمله: اسمُ شعبته
-              ونبذتُها، وكلاهما يملكه. */}
-            <Button tone="ghost" className="mt-3" onClick={() => setIdentityOpen(false)}>إغلاق</Button>
-          </Panel>
-        </Modal>
+        </Panel>
       )}
 
-      
       {/* ─────────── ② المحاور والتطبيق ─────────── */}
       {phase === "prepare" && stage === "modules" && (
         <Panel as="section">
@@ -919,7 +1064,8 @@ export default function CohortWorkspace() {
               setContent({ ...content, modules: [...content.modules, { moduleId, titleAr: "" }] });
               setOpenModule(moduleId);
             }}>+ محور</Button>
-            <Button tone="confirm" disabled={busy || locked || !dirty.modules || content.modules.some((m) => m.titleAr.trim().length < 2)} onClick={savePlan}>احفظ المحاور</Button>
+            {/* وزرُّ «احفظ المحاور» صار زرَّ الشريط «احفظ وتابِع» — واحدٌ يحفظ
+                ويتقدّم، لا اثنان يُحفظ بأحدهما ويُظنّ الآخر (٢٧ سبتمبر ٢٠٢٦) */}
           </div>
         </Panel>
       )}
@@ -1117,11 +1263,9 @@ export default function CohortWorkspace() {
               );
             })}
           </div>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {/* والمرفوعُ لا يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ
-                مصدرٍ ملفُّه في المخزن — فيُرفع ثمّ لا يُحفظ. */}
-            <Button tone="confirm" disabled={busy || locked || !dirty.resources || content.resources.some((r) => !r.title.trim() || !resourceHasSource(r))} onClick={savePlan}>احفظ المصادر</Button>
-          </div>
+          {/* وحفظُها بزرّ الشريط «احفظ وتابِع» (٢٧ سبتمبر ٢٠٢٦). والمرفوعُ لا
+              يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ مصدرٍ ملفُّه في
+              المخزن — فيُرفع ثمّ لا يُحفظ (`resourceHasSource` في `saveProblems`). */}
         </Panel>
 
         {/* ═══ و«موادُّ الشعبة» حُذفت كلّيّا (١٥ سبتمبر ٢٠٢٦) ═══
@@ -1139,14 +1283,33 @@ export default function CohortWorkspace() {
       {/* ─────────── ④ اللقاءات المباشرة ─────────── */}
       {phase === "prepare" && stage === "sessions" && (
         <div className="space-y-5">
-          <Panel as="section"><StageIntro stage="sessions" /></Panel>
+          <Panel as="section">
+            <StageIntro stage="sessions" />
+            {/* حدودُه تُقال حيث يجدول داخلها — لا في لافتةٍ فوق المتن كلِّه */}
+            {ws.cohort.period && (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                مدّةُ شعبتك: من <b className="text-foreground">{fmtDateAr(ws.cohort.period.startsOn)}</b> إلى{" "}
+                <b className="text-foreground">{fmtDateAr(ws.cohort.period.endsOn)}</b> — وتغييرُها من «المعلومات الأساسيّة».
+              </p>
+            )}
+            {/* ═══ والمبدئيُّ يُقال سطرا لا يُسرد لقاءات (٢٧ سبتمبر ٢٠٢٦) ═══
+                «امنحه أن يضيفها بنفسه لا ينقلها، لأنّ ما هو موجودٌ مثالٌ فقط».
+                فلا يُسرد المثالُ بأزرار نقل — يُقال ما هو ومتى يذهب. */}
+            {ws.sessions.some((x) => x.placeholder) && (
+              <Inset className="mt-3 text-read leading-6 text-muted-foreground">
+                فُتحت الشعبةُ للتسجيل بـ{ws.sessions.filter((x) => x.placeholder).length} مواعيدَ مبدئيّةٍ وضعتها الإدارة — مثالٌ يراه
+                من يسجّل، <b className="text-foreground">لا لقاءاتٌ لك</b>: لا تُنقل ولا تُحسب في عددك. أضِف لقاءاتِك بنفسك، ويُرفع
+                المثالُ كلُّه حين تعتمد الإدارةُ أوّلَها.
+              </Inset>
+            )}
+          </Panel>
 
-          {/* الجدولةُ بيده داخلَ أشهر فصله، والاعتمادُ بيد الإدارة */}
+          {/* الجدولةُ بيده داخلَ مدّة شعبته، والاعتمادُ بيد الإدارة */}
           <TrainerSchedule
             cohortId={ws.cohort.id}
             onDone={() => void load()}
             minSessions={Math.max(1, content.modules.length)}
-            haveSessions={ws.sessions.length}
+            haveSessions={ws.sessions.filter((x) => !x.placeholder && x.status !== "cancelled").length}
           />
 
           {/* واللقاءاتُ المجدولةُ وحضورُها — انتقلت من «التشغيل» (د-٤). من
@@ -1386,12 +1549,16 @@ export default function CohortWorkspace() {
             </Inset>
           )}
           <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
-            <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
+            <input id="plan-confirm" type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
             <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها ومصادرَها ولقاءاتِها ومهامَّها وتسجيلاتِها — وأتحمّل تقديمَها كما هي.</span>
           </label>
-          <Button tone="primary" disabled={busy || locked || !confirm || remaining > 0 || approved} onClick={submit} className="mt-4">
-            <Send className="h-4 w-4" /> أرسلها للاعتماد
-          </Button>
+          {/* والإرسالُ بزرّ الشريط نفسِه — «أرسِلها للاعتماد» في هذه الدرجة: ذهبيٌّ
+              واحدٌ يتبدّل اسمُه، لا ذهبيّان يتنازعان العين. */}
+          {!approved && !locked && (
+            <p className="mt-3 text-read leading-6 text-muted-foreground">
+              أكّد، ثمّ اضغط <b className="text-foreground">«أرسِلها للاعتماد»</b> في الشريط أعلاه.
+            </p>
+          )}
         </Panel>
       )}
 

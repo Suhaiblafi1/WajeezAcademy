@@ -6,7 +6,9 @@
    ٣) والردُّ بتعديلاتٍ يحتاج نصّا، ويعيدها إليه بالنصّ.
    ٤) والاعتمادُ يجعلها `approved` — فتوفي شرطَ فتح الشعبة الخامس.
    ٥) ومدرّبٌ آخرُ لا يبلغها: ٤٠٣ لا ٤٠٤.
-   ٦) والتسجيلُ يُضاف من رابطٍ بلا ملفّ. */
+   ٦) والتسجيلُ يُضاف من رابطٍ بلا ملفّ.
+   ٧) ومدّةُ الشعبة له (٢٧ سبتمبر ٢٠٢٦): تُحفظ في الخطّة فتفتح نافذتَه لحظتَها،
+      وتُردّ من بابها الخلفيّ، وبالاعتماد تصير حدودَ الشعبة ويُشتقّ فصلُها. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -18,6 +20,7 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { CohortPlanService, staticModulesFor, type TrainerPlanContent } from '../../services/cohort-plan.service'
 import { CohortService } from '../../services/cohort.service'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
+import { periodBounds } from '../../../src/application/trainer/cohort-period'
 
 let prisma: PrismaClient
 let plans: CohortPlanService
@@ -25,6 +28,7 @@ let adminId = ''
 let trainerUserId = ''
 let otherTrainerUserId = ''
 let cohortId = ''
+let termId = ''
 
 const phase1 = (email: string, name: string) => ({
   fullName: name, email, country: 'الأردن', timezone: 'Asia/Amman',
@@ -50,9 +54,13 @@ async function approvedTrainer(auth: AuthService, apps: TrainerApplicationServic
   return { userId: app.userId!, profileId: profile.id }
 }
 
+/* مدّةُ الشعبة كما يحدّدها مدرّبُها (٢٧ سبتمبر ٢٠٢٦) — في مستقبلٍ لا يمضي */
+const PERIOD = { startsOn: '2027-02-01', endsOn: '2027-04-30' }
+
 const content: TrainerPlanContent = {
   kind: 'trainer',
   summaryAr: 'شعبةٌ تطبيقيّة — كلُّ وحدةٍ تنتهي بمهمّةٍ من واقع العمل',
+  ...PERIOD,
   /* والمتنُ مكتوبٌ بقصد: صار «المحتوى النظريّ» شرطا لتمام مرحلة المحاور
      (د-١، ١٣ سبتمبر ٢٠٢٦)، وهذه الخطّةُ تمثّل مسودّةً **مكتملة** — فلو
      تُركت بلا متنٍ لاختبرت نقصا لا اكتمالا. */
@@ -87,26 +95,23 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
 
   /* ═══ وما «لم يتمّ» في شعبةٍ وُلدت للتوّ ═══
 
-     كان الفحصُ: **كلُّ** الإلزاميّات لم تتمّ. وصحّ يومَه لأنّ صفّ الهُويّة
-     كان يشترط اسما **وفصلا**، والشعبةُ تُولد بلا فصل. ثمّ خرج الفصلُ إلى
-     صفٍّ يسمّي فاعلَه (ق١ · ١٧ سبتمبر ٢٠٢٦) ورجعت الهُويّةُ إلى ما يملكه
-     المدرّب: اسمُها. والشعبةُ تُولد باسمها، فصفُّها تامٌّ منذ أوّل نظرة —
-     وهذا هو المقصود: لا يُكتب «لم يتمّ» على عملٍ وقع.
-
-     فالمحروسُ صار أدقَّ: الاسمُ تمَّ، وما لم يُعمَل بعدُ لم يتمّ، والفصلُ
-     في صفِّه هو لا في صفِّ الاسم. */
-  it('الورشةُ تقول ما بقي — والاسمُ وحدَه تمَّ لأنّها وُلدت به', async () => {
+     كان: «الاسمُ وحدَه تمّ لأنّها وُلدت به»، والفصلُ في صفٍّ يسمّي فاعلَه
+     (الإدارة). ثمّ صارت المدّةُ للمدرّب (٢٧ سبتمبر ٢٠٢٦) فانقلب: الهُويّةُ
+     اسمٌ **ومدّة**، والشعبةُ تُولد بلا مدّة — فصفُّها ينتظره، ولا صفَّ للفصل.
+     والمحروسُ الأصليُّ باقٍ: لا يُكتب «لم يتمّ» على ما ليس بيده — والمدّةُ
+     بيده. */
+  it('الورشةُ تقول ما بقي — والهُويّةُ تنتظر مدّتَه، ولا صفَّ للفصل', async () => {
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.plan).toBeNull()
     expect(ws.cohort.readOnly.price).toBe(120)
     expect(ws.course.baseModules.length).toBeGreaterThan(0)
+    expect(ws.cohort.period, 'مدّةٌ لم يحدّدها أحد').toBeNull()
 
     const byKey = new Map(ws.checklist.map((c) => [c.key, c]))
-    expect(byKey.get('identity')!.done, 'سُمّيت الشعبةُ وبقي صفُّ اسمها «لم يتمّ»').toBe(true)
-    expect(byKey.get('term'), 'لا صفَّ للفصل — فلا يعرف المدرّبُ لماذا وقف').toBeTruthy()
-    expect(byKey.get('term')!.done, 'شعبةٌ لم تُسنَد بفصلٍ عُدَّت مفتوحة').toBe(false)
+    expect(byKey.get('identity')!.done, 'تمّت الهُويّةُ بلا مدّة').toBe(false)
+    expect(byKey.get('term'), 'عاد صفُّ الفصل بيد الإدارة').toBeUndefined()
 
-    const rest = ws.checklist.filter((c) => !c.optional && c.key !== 'identity')
+    const rest = ws.checklist.filter((c) => !c.optional)
     expect(rest.every((c) => !c.done), 'عُدَّ تامًّا ما لم يُعمَل بعد').toBe(true)
   })
 
@@ -150,7 +155,8 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
        تسمّي الإدارةُ فصلَ الشعبة» لا «اكتب المحاور» — وإلّا ساقته البطاقةُ
        إلى عملٍ بابُه مغلقٌ حتّى تُفتح الشعبة. */
     expect(me!.next?.key).toBe(blockingBeforeSubmit(ws.checklist)[0]!.key)
-    expect(me!.next?.key, 'بطاقةُ شعبةٍ بلا فصلٍ لا تقول ما تنتظره').toBe('term')
+    /* والتالي أوّلُ ما بيده الآن: مدّتُه — لا فصلٌ ينتظر أن تسمّيه الإدارة */
+    expect(me!.next?.key, 'بطاقةُ شعبةٍ بلا مدّةٍ لا تقول ما ينقصها').toBe('identity')
     /* ومدرّبٌ آخرُ لا يرى شعبةَ غيره في موجزه */
     expect((await plans.summaries(otherTrainerUserId)).map((r) => r.id)).not.toContain(cohortId)
   })
@@ -173,13 +179,46 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(Number(after.price)).toBe(120)
   })
 
+  /* ═══ والبابُ الخلفيُّ إلى المواعيد أُغلق (٢٧ سبتمبر ٢٠٢٦) ═══
+     كان المدرّبُ يكتب البدءَ والانتهاءَ على الشعبة مباشرةً — فتصل المسجَّلين
+     بلا اعتماد. وصارت المدّةُ في الخطّة تُعتمَد معها، فالمفتاحُ يُردّ باسمه. */
+  it('⚠️ ولا يكتب مواعيدَ الشعبة مباشرةً — تُردّ باسمها وتُحال إلى الخطّة', async () => {
+    await expect(plans.updateCohort(trainerUserId, cohortId, { startsAt: new Date('2027-02-01') }))
+      .rejects.toMatchObject({ code: 'period_in_plan' })
+    await expect(plans.updateCohort(trainerUserId, cohortId, { title: 'اسمٌ جديدٌ صالح', daysOfWeek: ['sun'] }))
+      .rejects.toMatchObject({ code: 'period_in_plan' })
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId } })
+    expect(row.startsAt, 'كُتب البدءُ من البابِ الخلفيّ').toBeNull()
+  })
+
   it('ومدرّبٌ آخرُ لا يبلغها — ٤٠٣', async () => {
     await expect(plans.workspace(otherTrainerUserId, cohortId)).rejects.toMatchObject({ code: 'not_your_cohort' })
+  })
+
+  /* ═══ والمدّةُ تُفحص عند الحفظ — والناقصُ لا يُحفظ نصفا ═══ */
+  it('⚠️ ومدّةٌ فاسدةٌ أو ناقصةٌ تُردّ بلغة من يصحّحها — ولا تُفتح بها نافذة', async () => {
+    await expect(plans.savePlan(trainerUserId, cohortId, { ...content, startsOn: '2027-04-30', endsOn: '2027-02-01' }))
+      .rejects.toMatchObject({ code: 'bad_period' })
+    await expect(plans.savePlan(trainerUserId, cohortId, { ...content, endsOn: null }))
+      .rejects.toMatchObject({ code: 'bad_period' })
+    await expect(plans.savePlan(trainerUserId, cohortId, { ...content, startsOn: '2020-01-05', endsOn: '2020-02-05' }))
+      .rejects.toMatchObject({ code: 'bad_period', message: expect.stringContaining('مضى') })
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId } })
+    expect(row.scheduleWindowStart, 'فُتحت نافذةٌ بمدّةٍ مردودة').toBeNull()
   })
 
   it('يحفظ المحاورَ والمصادرَ مسودّةً، فتُقفل بنودُها في القائمة', async () => {
     const plan = await plans.savePlan(trainerUserId, cohortId, content)
     expect(plan.status).toBe('draft')
+
+    /* ═══ ونافذتُه تتبع مدّتَه لحظةَ الحفظ — والحدودُ المعلَنةُ لا تُمَسّ ═══ */
+    const { from, to } = periodBounds(PERIOD)
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId } })
+    expect(row.scheduleWindowStart?.toISOString(), 'النافذةُ لا تتبع المدّة').toBe(from.toISOString())
+    expect(row.scheduleWindowEnd?.toISOString()).toBe(to.toISOString())
+    expect(row.startsAt, 'كُتبت الحدودُ المعلَنةُ قبل الاعتماد').toBeNull()
+    const saved = await plans.workspace(trainerUserId, cohortId)
+    expect(saved.checklist.find((c) => c.key === 'identity')?.done, 'اسمٌ ومدّةٌ لم يُتمّا الهُويّة').toBe(true)
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'modules')?.done).toBe(true)
     /* ⚠️ ولو غاب المتنُ لم تتمّ المرحلةُ — والحفظُ يمرّ على أيّ حال (د-١) */
@@ -211,8 +250,10 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
         startsOn: new Date('2027-02-01'), endsOn: new Date('2027-04-30'), status: 'open',
       },
     })
-    await prisma.cohort.update({ where: { id: cohortId }, data: { termId: term.id } })
-    /* لقاءٌ لكلّ محورٍ في الخطّة — والخطّةُ محورٌ واحد */
+    termId = term.id
+    /* والفصلُ لا يُسمّى هنا بيدٍ بعد اليوم (٢٧ سبتمبر ٢٠٢٦): يُشتقّ من تاريخ
+       البدء عند الاعتماد — والاختبارُ الذي يليه يقيس أنّه اشتُقّ فعلا. */
+    /* لقاءٌ لكلّ محورٍ في الخطّة — والخطّةُ محورٌ واحد، وداخلَ المدّة */
     const have = await prisma.cohortSession.count({ where: { cohortId } })
     for (let i = have; i < content.modules.length; i += 1) {
       await prisma.cohortSession.create({
@@ -261,12 +302,27 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     })
     await plans.submit(trainerUserId, cohortId, true)
     const latest = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId }, orderBy: { createdAt: 'desc' } })
+    /* ومتعلّمٌ التحق قبل الاعتماد — يُبلَّغ بأنّ حدودَ شعبته تحدّدت */
+    const learner = await prisma.user.create({
+      data: { email: `plan-learner-${Date.now()}@test.local`, displayName: 'متعلّمٌ التحق مبكّرا', passwordHash: 'x' },
+    })
+    await prisma.enrollment.create({ data: { cohortId, userId: learner.id, status: 'enrolled' } })
+
     const r = await plans.decide(adminId, latest.id, true)
     expect(r.status).toBe('approved')
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'approval')?.done).toBe(true)
     const check = await new CohortService(prisma).openChecklist(cohortId)
     expect(check.missing.some((m) => m.includes('خطة تقديم'))).toBe(false)
+
+    /* ═══ والاعتمادُ يكتب المدّةَ حدودا معلَنة، ويشتقّ الفصل (٢٧ سبتمبر ٢٠٢٦) ═══ */
+    const { from, to } = periodBounds(PERIOD)
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId } })
+    expect(row.startsAt?.toISOString(), 'لم تصر المدّةُ حدودَ الشعبة المعلَنة').toBe(from.toISOString())
+    expect(row.endsAt?.toISOString()).toBe(to.toISOString())
+    expect(row.termId, 'لم يُشتقّ الفصلُ من تاريخ البدء').toBe(termId)
+    const told = await prisma.notification.findFirst({ where: { userId: learner.id, templateKey: 'cohort.schedule_changed' } })
+    expect(told, 'لم يُبلَّغ من التحق بأنّ حدودَ شعبته تحدّدت').toBeTruthy()
   })
 
   it('ولقاءٌ له تسجيلٌ يُتِمُّ مرحلةَ التسجيلات — أيًّا كان مصدرُه', async () => {
@@ -276,7 +332,9 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
        اجتماعه هو. والقاعدةُ المحروسةُ هنا ليست البابَ بل الأثر: لقاءٌ له
        تسجيلٌ يُتِمّ المرحلة. فيُكتب الصفُّ مباشرةً — كما يكتبه رفعُ الملفّ
        اليومَ، وكما ستكتبه سحابةُ زووم غدا. */
-    const session = await prisma.cohortSession.create({ data: { cohortId, title: 'اللقاء الأوّل', startsAt: new Date(Date.now() + 86400_000) } })
+    /* وداخلَ مدّة الشعبة (٢٧ سبتمبر ٢٠٢٦): لقاءٌ خارجَها يعيد خطوةَ اللقاءات
+       «لم تتمّ»، فيُردّ الإرسالُ في الاختبار الذي يلي هذا */
+    const session = await prisma.cohortSession.create({ data: { cohortId, title: 'اللقاء الأوّل', startsAt: new Date('2027-02-10T15:00:00.000Z') } })
     const rec = await prisma.recording.create({
       data: { sessionId: session.id, title: 'تسجيل اللقاء الأوّل', externalUrl: 'https://example.com/rec-1' },
     })

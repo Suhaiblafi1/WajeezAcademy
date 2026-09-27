@@ -15,8 +15,6 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
 import { TrainerBankService, MAX_ACCOUNT_LEN } from '../../services/trainer-bank.service'
 import { EarningsService } from '../../services/earnings.service'
-import { TrainerAvailabilityService } from '../../services/trainer-availability.service'
-import { TermService } from '../../services/term.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
 
@@ -36,8 +34,6 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
   const earnings = new EarningsService(prisma)
-  const availability = new TrainerAvailabilityService(prisma)
-  const terms = new TermService(prisma)
 
   /* ═══ مهلةُ العرض المشروط — ما يفعله المدرّبُ بها ═══
 
@@ -361,82 +357,13 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['trainer-portal'], summary: 'أهليتي لنطاق الكتالوج — تُقرأ قبل كتابة اقتراح (هـ-١)' },
   }, async (req) => changes.myCatalogScope(req.auth!.userId))
 
-  /* ═══ إتاحتي: ساعاتٌ أسبوعيّةٌ وغياب (المهمّة ٧١) ═══
-     الصلاحيّةُ `trainer.portal` نفسُها: هذا إعلانُ المدرّبِ عن وقتِه، لا
-     تصرّفٌ في شعبةٍ ولا في مال. والحكمُ على ما يُعلنه في `cohort.service.ts`:
-     الغيابُ يردّ الإسناد، والساعاتُ تُعَدُّ للمُسنِد ولا تمنعه. */
-  app.get('/api/trainer/me/availability', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'ساعاتي المعلنة وفترات غيابي' },
-  }, async (req) => availability.mine(req.auth!.userId))
+  /* ═══ وذهبت «إتاحتي» و«فصولي» (٢٧ سبتمبر ٢٠٢٦) ═══
 
-  app.put('/api/trainer/me/availability', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'إعلانُ ساعات الأسبوع — استبدالٌ كامل لا إضافة' },
-  }, async (req) => {
-    const body = z.object({
-      windows: z.array(z.object({
-        weekday: z.number().int().min(0).max(6),
-        startMinute: z.number().int().min(0).max(1440),
-        endMinute: z.number().int().min(0).max(1440),
-      })).max(21),
-    }).parse(req.body)
-    return availability.replaceWindows(req.auth!.userId, body.windows)
-  })
-
-  app.post('/api/trainer/me/blackouts', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'تسجيلُ فترة غياب — تردُّ إسنادَ أيّ جلسةٍ تقع فيها' },
-  }, async (req, reply) => {
-    const body = z.object({
-      startsAt: z.coerce.date(), endsAt: z.coerce.date(),
-      reason: z.string().trim().max(120).optional(),
-    }).parse(req.body)
-    const created = await availability.addBlackout(req.auth!.userId, body)
-    return reply.status(201).send(created)
-  })
-
-  app.delete('/api/trainer/me/blackouts/:id', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'حذفُ فترة غياب سجّلها المدرّب' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return availability.removeBlackout(req.auth!.userId, id)
-  })
-
-  /* ═══ فصولي — الطرفُ الغائبُ من الجدول (البند ٥٣) ═══
-
-     `TrainerTermAvailability` لها ثلاثُ حالاتٍ منذ أُنشئت، والمسلكُ الوحيدُ
-     الذي يكتبها محروسٌ بـ`trainer.assign`: **الإدارةُ تُعلن نيابةً عن
-     المدرّب**، وهو لا يملك أن يؤكّد ولا أن يعتذر. فبقيت القائمةُ ما ورّثه
-     الترحيلُ من مواسمَ أعلنها في طلبه قبل شهور.
-
-     والصلاحيّةُ هنا `trainer.portal` كإعلان ساعاته وغيابه: هذا قولُ المدرّب
-     عن وقتِه، لا تصرّفٌ في شعبةٍ ولا في مال. **والملفُّ يُشتقّ من الجلسة لا
-     من الطلب** — فلا يُعلن أحدٌ نيابةً عن غيره من هنا. */
-  app.get('/api/trainer/me/terms', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'فصولي — موقفي من كلّ فصلٍ حيّ وما خُطِّط لي فيه' },
-  }, async (req) => {
-    const profile = await changes.profileForUser(req.auth!.userId)
-    return terms.trainerTerms(profile.id)
-  })
-
-  app.post('/api/trainer/me/terms/:termId', {
-    preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أتاحُ في هذا الفصل — أو أعتذر عنه' },
-  }, async (req) => {
-    const { termId } = z.object({ termId: z.string().uuid() }).parse(req.params)
-    const body = z.object({
-      /* و`declared` ليست خيارا هنا: هي ما يكتبه الترحيلُ والإدارة. وما يقوله
-         المدرّبُ بنفسه تأكيدٌ أو اعتذار — لا حالةٌ ثالثةٌ ملتبسة. */
-      status: z.enum(['confirmed', 'declined']),
-      maxCohorts: z.number().int().min(1).max(20).nullable().optional(),
-      note: z.string().trim().max(500).nullable().optional(),
-    }).parse(req.body)
-    const profile = await changes.profileForUser(req.auth!.userId)
-    return terms.setTrainerAvailability(profile.id, termId, req.auth!.userId, body)
-  })
+     كانت هنا ستّةُ مساراتٍ يُعلن بها المدرّبُ ساعاتِه الأسبوعيّةَ وغيابَه
+     وموقفَه من كلّ فصل. وقرارُ صاحب المنصّة: «احذف ساعاتي وفصولي وفترات
+     غيابي.. لأنه هو من يتحكم بكل شي» — لقاءاتُه بيده داخلَ مدّة شعبته،
+     فلا وقتَ يُعلنه لغيره كي لا يُجدوَل فيه. والعلّةُ كاملةً في رأس
+     `src/pages/trainer/Qualifications.tsx`. */
 
   /* عام: صفحة المدربين بالموقع واسم مدرب الدورة */
   app.get('/api/trainers/public', {

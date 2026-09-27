@@ -90,13 +90,14 @@ export function buildSeries(input: SeriesInput): SeriesRow[] {
     const t = start + i * DAY_MS
     const d = new Date(t).getUTCDay()
     if (!days.includes(d)) continue
-    /* والسببُ بكلمة: «خارج الفصل» تقول ما وقع ومن يملك حلَّه */
+    /* والسببُ بكلمة: «خارج مدّة الشعبة» تقول ما وقع ومن يملك حلَّه — وهو
+       المدرّبُ نفسُه منذ صارت المدّةُ له (٢٧ سبتمبر ٢٠٢٦) */
     const outside = (from !== null && t < from) || (to !== null && t > to)
     rows.push({
       date: ymd(t),
       weekdayAr: WEEKDAYS_AR[d],
       outside,
-      reasonAr: outside ? 'خارج الفصل' : '',
+      reasonAr: outside ? 'خارج مدّة الشعبة' : '',
     })
   }
   return rows

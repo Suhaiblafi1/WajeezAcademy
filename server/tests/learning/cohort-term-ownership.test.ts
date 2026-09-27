@@ -151,9 +151,15 @@ describe('② والشعبُ القائمةُ تُسمَّى فصولُها من
     await cohorts.assignTrainer(legacyId, profileId, adminId, 'lead')
   })
 
-  it('⚠️ ومدرّبُها محبوسٌ حتّى يُسمَّى الفصل', async () => {
+  /* ═══ وكان هنا: «ومدرّبُها محبوسٌ حتّى يُسمَّى الفصل» ═══
+
+     صارت المدّةُ للمدرّب (٢٧ سبتمبر ٢٠٢٦): يحدّدها في خطّته فتُفتح نافذتُه
+     لحظةَ الحفظ — ولا ينتظر تسمية الفصل. فالنافذةُ مغلقةٌ هنا لأنّ أحدا لم
+     يحدّد مدّةً ولم يُسمِّ فصلا بعد، لا لأنّه محبوسٌ دون بابٍ ليس بيده.
+     وفتحُها بمدّته يقيسه `server/tests/trainer/cohort-plan.test.ts`. */
+  it('⚠️ ونافذتُها مغلقةٌ ما لم تُحدَّد مدّةٌ ولم يُسمَّ فصل', async () => {
     const win = await cohorts.scheduleWindowFor(trainerUserId, legacyId)
-    expect(win.open, 'شعبةٌ بلا فصلٍ فتحت نافذةَ جدولة').toBe(false)
+    expect(win.open, 'شعبةٌ بلا مدّةٍ ولا فصلٍ فتحت نافذةَ جدولة').toBe(false)
   })
 
   it('⚠️ فتُسمّيه الإدارةُ — ومنه حدودُها ونافذتُها', async () => {
@@ -176,15 +182,20 @@ describe('② والشعبُ القائمةُ تُسمَّى فصولُها من
   })
 })
 
-describe('③ والمحبوسُ يُرى — لا حبسَ صامت', () => {
-  it('⚠️ شعبةٌ لها مدرّبٌ ولا فصلَ لها تظهر في الطابور، وتُوسَم أنّها تحبسه', async () => {
-    const c = await cohorts.create(adminId, { courseId: COURSE, title: 'شعبةٌ محبوسةٌ بلا فصل' })
+/* ═══ ③ وما بلا فصلٍ يُرى — ولم يعد «يحبس» أحدا (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   كان وسمُ `blocksTrainer` يقول للإدارة إنّ مدرّبا محبوسٌ لا يجدول حتّى
+   يُسمَّى الفصل. وصار المدرّبُ يحدّد مدّتَه فتُفتح جدولتُه — فسقط الوسمُ،
+   وبقي الطابورُ يسرد الشعبَ بلا فصلٍ لمن يريد أن يسمّيها. */
+describe('③ وما بلا فصلٍ يُرى في طابوره', () => {
+  it('⚠️ شعبةٌ لها مدرّبٌ ولا فصلَ لها تظهر في الطابور — بلا وسمِ حبسٍ لا يقع', async () => {
+    const c = await cohorts.create(adminId, { courseId: COURSE, title: 'شعبةٌ بلا فصل' })
     await cohorts.assignTrainer(c.id, profileId, adminId, 'lead')
 
     const queue = await cohorts.cohortsWithoutTerm()
     const mine = queue.find((q) => q.id === c.id)
-    expect(mine, 'الشعبةُ المحبوسةُ لا تظهر لأحدٍ في الإدارة').toBeTruthy()
-    expect(mine!.blocksTrainer, 'لم تُوسَم أنّها تحبس مدرّبَها').toBe(true)
+    expect(mine, 'الشعبةُ بلا فصلٍ لا تظهر لأحدٍ في الإدارة').toBeTruthy()
+    expect('blocksTrainer' in mine!, 'عاد وسمُ «تحبس مدرّبَها» — والمدرّبُ يفتح نافذتَه بمدّته').toBe(false)
     expect(mine!.courseTitleAr, 'اسمُ الدورة لا يُقرأ — فلا يُعرف ما هي').toBeTruthy()
   })
 

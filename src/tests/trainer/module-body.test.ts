@@ -175,7 +175,9 @@ describe('د-٣ · المصدرُ ملفّا', () => {
   }
 
   it('والطرفان يقرآن المالكَ نفسَه — لا شرطَ رابطٍ مكتوبٌ بيده', () => {
-    const ws = near(code('src/pages/trainer/CohortWorkspace.tsx'), 'content.resources.some(')
+    /* وشرطُ الحفظ صار في `saveProblems` (٢٧ سبتمبر ٢٠٢٦): الحفظُ واحدٌ لكلّ
+       الخطوات، وما يمنعه يُقال بأسمائه قبل النداء — والمصادرُ منه. */
+    const ws = near(code('src/pages/trainer/CohortWorkspace.tsx'), 'content.resources.forEach(')
     expect(ws, 'لم يُعثر على شرط حفظ المصادر في الشاشة').toBeTruthy()
     expect(ws, 'الشاشةُ تفحص صيغةَ الرابط بيدها فتُنكر المرفوع').not.toMatch(/\^https\?:/)
     expect(ws).toContain('resourceHasSource')
