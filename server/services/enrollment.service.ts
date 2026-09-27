@@ -10,6 +10,17 @@ import { fmtDateWith } from '../../src/application/text/format-ar'
 import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
 import { CohortService } from './cohort.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
+import { assessmentOpensAt, gateAssessment, learnerGate, meetingOver } from '../../src/application/learning/cohort-gate'
+
+/* ═══ مدرّبُ الشعبة كما يراه متعلّمُها: اسمُه، لا ملفُّه ═══
+
+   كان الاستعلامُ `include: { profile: … }` — فيخرج صفُّ `TrainerProfile`
+   كاملا إلى متصفّح كلّ متعلّم: اسمُه القانونيّ، ومعرّفُ حسابه، ومفتاحُ صورةٍ
+   لم تُعتمد بعد، وحالةُ إيقافه. والشاشةُ لا تقرأ منه إلّا الاسم. فصار انتقاءً
+   لا تضمينا — وحقلٌ يُضاف إلى الملفّ غدا لا يصل متعلّما. */
+const LEARNER_TRAINER_SELECT = {
+  select: { role: true, profile: { select: { application: { select: { fullName: true } } } } },
+} as const
 
 export class EnrollmentService {
   private prisma: PrismaClient
@@ -433,7 +444,7 @@ export class EnrollmentService {
   }
 
   /** محتوى المتعلم لشعبة — جلسات + روابط zoom + تسجيلات ومواد بروابط موقعة + حضوره */
-  async learnerCohortView(enrollmentId: string) {
+  async learnerCohortView(enrollmentId: string, now = new Date()) {
     const e = await this.prisma.enrollment.findUnique({
       where: { id: enrollmentId },
       include: {
@@ -447,7 +458,7 @@ export class EnrollmentService {
             },
             materials: { where: { status: 'active' } },
             assessments: { where: { status: 'published' }, include: { items: true, rubric: { include: { criteria: true } } } },
-            trainers: { include: { profile: { include: { application: { select: { fullName: true } } } } } },
+            trainers: LEARNER_TRAINER_SELECT,
             /* خطّةُ مدرّبِ الشعبة المعتمَدة — أحدثُها. والترشيحُ هنا على
                الحالة كذلك لا على الانتقاء وحدَه: لو عاد المشروعُ يوما بلا
                بوّابة، لم يصل هذا الاستعلامُ مسودّةً أصلا. */
@@ -472,7 +483,38 @@ export class EnrollmentService {
        على الإدارة وملاحظتَه على اللقاءات، وليستا للمتعلّم. والصفُّ نفسُه
        يُنزع من الحمولة كي لا يخرج من بابٍ آخرَ غدا. */
     const { plans, ...cohort } = e.cohort
-    return { ...e, cohort: { ...cohort, trainerPlan: projectPlanForLearner(plans[0] ?? null) } }
+    const plan = plans[0] ?? null
+
+    /* ═══ لكلّ شيءٍ وقتُه — والخادمُ يحجب لا الشاشة (٢(ب-٢)) ═══
+
+       قراراتُ صاحب المنصّة بكلمة «go»: المتنُ والكرّاسةُ أوّلَ يوم الموعد،
+       والمهامُّ والمصادرُ بعد أوّل لقاءٍ للمحور، وبعد انتهاء الشعبة ستّةُ
+       أشهرٍ للقراءة ثمّ ينتهي الوصول. والقاعدةُ في `cohort-gate.ts`، وما
+       اعتُمد بلا مواعيد لا بوّابةَ فيه — يمضي كما بدأ. */
+    const gate = learnerGate({ content: plan?.content ?? null, cohort, sessions: cohort.sessions, now })
+    const ended = gate.access === 'ended'
+    return {
+      ...e,
+      cohort: {
+        ...cohort,
+        /* ولقاءٌ انتهى لا يُدخَل: يسقط رابطُه ورمزُه، ويبقى موعدُه وحضورُه
+           وتسجيلُه. وبعد انتهاء الوصول لا تسجيلَ ولا مادّة. */
+        sessions: cohort.sessions.map((s) => ({
+          ...s,
+          zoom: ended || meetingOver(s, s.zoom, now) ? null : s.zoom,
+          recordings: ended ? [] : s.recordings,
+        })),
+        materials: ended ? [] : cohort.materials,
+        assessments: cohort.assessments.map((a) => gateAssessment(a, assessmentOpensAt(gate, a.moduleId), gate.access, now)),
+        trainerPlan: projectPlanForLearner(plan, now, gate),
+      },
+      /* ما يقوله للمتعلّم عن وقته في الشعبة — والشاشةُ تشرحه ولا تحسبه */
+      access: {
+        state: gate.access,
+        closesAt: gate.window?.closesAt.toISOString() ?? null,
+        accessEndsAt: gate.window?.accessEndsAt.toISOString() ?? null,
+      },
+    }
   }
 
   /** نواتج المتعلم — كلُّ ما سلّمه عبر تسجيلاته، مرتّبا بالأحدث.
@@ -519,7 +561,7 @@ export class EnrollmentService {
         cohort: {
           include: {
             course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
-            trainers: { include: { profile: { include: { application: { select: { fullName: true } } } } } },
+            trainers: LEARNER_TRAINER_SELECT,
           },
         },
         courseProgress: true,

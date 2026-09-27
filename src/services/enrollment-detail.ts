@@ -6,6 +6,7 @@
 
 import { apiGet } from './api'
 import type { LearnerPlanView } from '@/application/trainer/plan-overlay'
+import { submitVerdict, type AccessState } from '@/application/learning/cohort-gate'
 
 export interface EnrollmentCertificate {
   id: string
@@ -34,6 +35,13 @@ export interface CohortMaterial {
 export interface CohortAssessment {
   id: string
   title: string
+  /** محورُها — به تُجمع تحت موعده في خطّ الشعبة */
+  moduleId?: string | null
+  /* ٢(ب-٢): لم تُفتح بعد — تُفتح بعد أوّل لقاءٍ لمحورها. والمحجوبةُ تصل
+     بعنوانها وموعدها وحدَهما: لا تعليماتِ ولا مرفقاتِ ولا أسئلة. */
+  locked?: boolean
+  /** متى تُفتح — `null`: مفتوحةٌ بلا بوّابة، أو انتهى الوصول */
+  opensAt?: string | null
   /* تعليماتُ التكليف — ما يفعله المتعلّم. كانت تُكتب ولا تُعرض له. */
   briefAr: string | null
   /* مرفقاتُه — عمودُ JSON، فيُقرأ بـ`readTypedLinks` لا يُصدَّق كما هو */
@@ -51,6 +59,8 @@ export interface MySubmission {
   status: string
   reviewNote: string | null
   submittedAt: string
+  /** سُلّم بعد آخر موعده — «المتأخّرُ يُقبل ويُعلَّم» */
+  late?: boolean
   grades: {
     score: string
     maxScore: string
@@ -77,6 +87,9 @@ export interface EnrollmentDetail {
        خطّةَ معتمَدة. انظر `src/application/trainer/plan-overlay.ts`. */
     trainerPlan: LearnerPlanView | null
   }
+  /* ٢(ب-٢): وقتُه في الشعبة — مفتوحة، ثمّ للقراءة ستّةَ أشهرٍ بعد انتهائها،
+     ثمّ انتهى الوصول. `closesAt` فارغٌ لما اعتُمد بلا مواعيد: لا أجلَ له. */
+  access?: { state: AccessState; closesAt: string | null; accessEndsAt: string | null }
   attendance: { sessionId: string; status: string }[]
   submissions: MySubmission[]
   moduleProgress: { moduleId: string; status: string; completedAt: string | null }[]
@@ -97,10 +110,29 @@ export function latestSubmission(detail: EnrollmentDetail, assessmentId: string)
   )
 }
 
-/** ما لم يُسلَّم بعد أو طُلبت إعادتُه — عددٌ يُعرض على التبويب */
-export function pendingAssessmentCount(detail: EnrollmentDetail): number {
-  return detail.cohort.assessments.filter((a) => {
-    const mine = latestSubmission(detail, a.id)
-    return !mine || mine.status === 'resubmit_requested'
-  }).length
+/** ما لم يُسلَّم بعد أو طُلبت إعادتُه — عددٌ يُعرض على التبويب.
+    وما لا يُسلَّم الآن لا يُعدّ عليه (٢(ب-٢)): مهمّةٌ لم تُفتح، أو شعبةٌ انتهت. */
+export function pendingAssessmentCount(detail: EnrollmentDetail, now = new Date()): number {
+  return detail.cohort.assessments.filter((a) => canSubmitNow(detail, a, now)).length
+}
+
+/** أيستطيع أن يسلّمها الآن؟ — بـ`submitVerdict` نفسِها التي يحكم بها الخادم،
+    فلا تعرض الشاشةُ نموذجا يردّه الخادم، ولا تُخفي نموذجا يقبله. */
+export function canSubmitNow(detail: EnrollmentDetail, a: CohortAssessment, now = new Date()): boolean {
+  if (a.locked) return false
+  const mine = latestSubmission(detail, a.id)
+  const resubmitRequested = mine?.status === 'resubmit_requested'
+  /* سلّم وينتظر حكمَ مدرّبه — لا تسليمَ ثانيا بلا طلب */
+  if (mine && !resubmitRequested) return false
+  const acc = detail.access
+  const window = acc?.closesAt && acc.accessEndsAt
+    ? { closesAt: new Date(acc.closesAt), accessEndsAt: new Date(acc.accessEndsAt) }
+    : null
+  return submitVerdict({
+    opensAt: a.opensAt ? new Date(a.opensAt) : null,
+    dueAt: a.dueAt,
+    window,
+    now,
+    resubmitRequested,
+  }).ok
 }

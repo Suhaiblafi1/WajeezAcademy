@@ -35,6 +35,9 @@
       يبقى بمتنِ الكتالوج حتّى يصير التقدّمُ واعيا بالخطّة، وذلك تغييرٌ
       يمسّ أرقاما رآها الناسُ فلا يُركَب هنا. */
 
+import { workbookDone } from './axis-timeline'
+import type { LearnerGate } from '../learning/cohort-gate'
+
 /** أنواعُ المصدر التي يعرفها المتعلّم — وما عداها يُعرض رابطا */
 export const RESOURCE_KINDS = ['link', 'video', 'book', 'audiobook', 'social', 'file'] as const
 export type ResourceKind = (typeof RESOURCE_KINDS)[number]
@@ -182,9 +185,44 @@ export interface PlanModuleLike {
 
 /** ما تعلو به الخطّةُ — المشروعُ من محتواها إلى المتعلّم لا كلُّه */
 export interface LearnerPlanView {
-  modules: PlanModuleLike[]
+  modules: LearnerPlanModule[]
   resources: LearnerPlanResource[]
   summaryAr?: string | null
+  /** مواعيدُ المحاور بكرّاساتها — فارغةٌ لما اعتُمد بلا مواعيد (٢(ب-٢)) */
+  slots?: LearnerSlot[]
+}
+
+/** محورُ الخطّة كما يصل المتعلّم — والمحجوبُ عنوانٌ وموعدٌ بلا متن */
+export interface LearnerPlanModule extends PlanModuleLike {
+  /** لم يحن موعدُه بعد، أو انتهى الوصولُ إلى الشعبة — فلا متنَ فيه ولا ملفّ */
+  locked?: boolean
+  /** متى يُفتح متنُه — أوّلَ يوم موعده (`null`: بلا بوّابة، أو انتهى الوصول) */
+  opensAt?: string | null
+}
+
+/** كرّاسةُ الموعد حين تُفتح — ملفٌّ يُقرأ من المسار المحروس، أو رابط */
+export interface LearnerWorkbook {
+  title: string | null
+  url: string | null
+  bodyFileKey: string | null
+  bodyFileName: string | null
+  bodyFileMime: string | null
+}
+
+/** موعدٌ على خطّ الشعبة كما يراه المتعلّم */
+export interface LearnerSlot {
+  startsOn: string
+  endsOn: string
+  moduleIds: string[]
+  /** أوّلُ لحظةٍ فيه — فيها تُفتح كرّاستُه ومادّتُه النظريّة */
+  opensAt: string
+  /** آخرُ لحظةٍ فيه — آخرُ موعدٍ افتراضيٌّ لتسليم مهامّه */
+  closesAt: string
+  locked: boolean
+  /** أثمّ كرّاسةٌ — فتقول الشاشةُ «تُفتح كرّاستُه» قبل موعده لا «لا كرّاسة» */
+  hasWorkbook: boolean
+  /** الكرّاسةُ نفسُها — `null` حتّى يُفتح الموعد: لا رابطَ يصل قبل أوانه */
+  workbook: LearnerWorkbook | null
 }
 
 export interface LearnerPlanResource {
@@ -196,6 +234,8 @@ export interface LearnerPlanResource {
   category?: string | null
   /** متى فُتح — يُقرأ للعرض، والمحجوبُ لا يصل أصلا */
   opensAt?: string | null
+  /** محورُه — فتجمعه الشاشةُ تحت موعده. `null`: للشعبة كلِّها */
+  moduleId?: string | null
   /* د-٣: مصدرٌ مرفوعٌ — يُفتح من مسارٍ محروسٍ لا من رابطٍ خارجيّ. واسمُه
      ونوعُه لقطةٌ تسكن الخطّةَ، فتعرف الشاشةُ أتعرضه أم تُنزّله بلا طلبٍ ثانٍ. */
   bodyFileKey?: string | null
@@ -223,6 +263,12 @@ function written(v: string | null | undefined): string | null {
   return s.length > 0 ? s : null
 }
 
+/** رابطٌ يُفتح — http(s) وحدَه، وما عداه `null` */
+function httpUrl(v: string | null | undefined): string | null {
+  const s = written(v)
+  return s && /^https?:\/\/\S+$/i.test(s) ? s : null
+}
+
 /**
  * وحداتُ المتعلّم بعد علوّ الخطّة.
  *
@@ -237,6 +283,9 @@ type Overlaid<T> = T & {
   bodyFileKey: string | null
   bodyFileName: string | null
   bodyFileMime: string | null
+  /** ٢(ب-٢): محجوبٌ حتّى موعده — فلا متن، ولا يُقرأ متنُ الكتالوج بدلا منه */
+  locked: boolean
+  opensAt: string | null
 }
 
 export function overlayModules<T extends CatalogModuleLike>(
@@ -246,10 +295,10 @@ export function overlayModules<T extends CatalogModuleLike>(
   /* بلا خطّةٍ لا ملفَّ متن: الكتالوجُ لا يحمله. وتُكتب `null` صراحةً فلا
      يتسرّب `undefined` إلى شاشةٍ تسأل «أثمّ ملفّ؟». */
   const bare = (m: T): Overlaid<T> =>
-    ({ ...m, fromTrainer: false, bodyFileKey: null, bodyFileName: null, bodyFileMime: null })
+    ({ ...m, fromTrainer: false, bodyFileKey: null, bodyFileName: null, bodyFileMime: null, locked: false, opensAt: null })
 
   if (!plan || plan.modules.length === 0) return catalog.map(bare)
-  const byId = new Map<string, PlanModuleLike>()
+  const byId = new Map<string, LearnerPlanModule>()
   for (const m of plan.modules) byId.set(m.moduleId, m)
 
   const out: Overlaid<T>[] = catalog.map((m) => {
@@ -262,19 +311,27 @@ export function overlayModules<T extends CatalogModuleLike>(
     const body = written(over.bodyAr)
     /* ع-٢: الملفُّ من الخطّة وحدَها — والكتالوجُ لا يحمل ملفَّ متن */
     const bodyFileKey = written(over.bodyFileKey)
+    /* ═══ والمحجوبُ لا يُملأ من الكتالوج (٢(ب-٢)) ═══
+
+       الخادمُ يُفرغ متنَ المحور الذي لم يحن موعدُه. ولو بقي «الفارغُ لا
+       يمحو» (②) على حاله لَقرأت الشاشةُ متنَ الكتالوج مكانه — فيُقال
+       للمتعلّم «يُفتح الأحد» ويُعرض له المتنُ اليوم. فالحجبُ أعلى من العلوّ. */
+    const locked = over.locked === true
     return {
       ...m,
       title: title ?? m.title,
       outcome: outcome ?? m.outcome ?? null,
       activity: activity ?? m.activity ?? null,
       artifact: artifact ?? m.artifact ?? null,
-      body: body ?? m.body ?? null,
-      bodyFileKey,
-      bodyFileName: written(over.bodyFileName),
-      bodyFileMime: written(over.bodyFileMime),
+      body: locked ? null : body ?? m.body ?? null,
+      bodyFileKey: locked ? null : bodyFileKey,
+      bodyFileName: locked ? null : written(over.bodyFileName),
+      bodyFileMime: locked ? null : written(over.bodyFileMime),
       /* «من مدرّبك» تُقال حين كتب شيئا فعلا — لا لمجرّد بقاءِ المحور
          في خطّته بحقولٍ فارغة. وملفٌّ رفعه كتابةٌ منه أيضا. */
       fromTrainer: Boolean(title ?? outcome ?? activity ?? artifact ?? body ?? bodyFileKey),
+      locked,
+      opensAt: over.opensAt ?? null,
     } as Overlaid<T>
   })
 
@@ -282,14 +339,20 @@ export function overlayModules<T extends CatalogModuleLike>(
   const catalogIds = new Set(catalog.map((m) => m.id))
   for (const m of plan.modules) {
     if (catalogIds.has(m.moduleId)) continue
+    const locked = m.locked === true
     out.push({
       id: m.moduleId,
       title: written(m.titleAr) ?? m.moduleId,
       outcome: written(m.outcomeAr),
       activity: written(m.activityAr),
       artifact: written(m.artifactAr),
-      body: written(m.bodyAr),
+      body: locked ? null : written(m.bodyAr),
+      bodyFileKey: locked ? null : written(m.bodyFileKey),
+      bodyFileName: locked ? null : written(m.bodyFileName),
+      bodyFileMime: locked ? null : written(m.bodyFileMime),
       fromTrainer: true,
+      locked,
+      opensAt: m.opensAt ?? null,
     } as unknown as Overlaid<T>)
   }
   return out
@@ -321,28 +384,80 @@ export function projectPlanForLearner(
   /* واللحظةُ تُمرَّر ولا تُؤخذ من الساعة داخلَ الدالّة: بوّابةٌ زمنيّةٌ لا
      تُختبَر إلّا بانتظارٍ حقيقيٍّ بوّابةٌ لا يحرسها أحد. */
   now = new Date(),
+  /* ٢(ب-٢): خطُّ المحاور ونافذةُ الشعبة — يبنيهما المستدعي من خطّتها
+     ولقاءاتها (`learnerGate` في `learning/cohort-gate.ts`). وبلا خطٍّ تُسقَط
+     الخطّةُ كما كانت قبله: ما اعتُمد بلا مواعيد يمضي كما بدأ. */
+  gate: LearnerGate | null = null,
 ): LearnerPlanView | null {
   if (!plan || !planIsVisible(plan.status)) return null
   const c = plan.content as
-    | { modules?: PlanModuleLike[]; resources?: LearnerPlanResource[]; summaryAr?: string | null }
+    | {
+        modules?: PlanModuleLike[]
+        resources?: (LearnerPlanResource & { preReading?: boolean | null })[]
+        summaryAr?: string | null
+      }
     | null
   if (!c || typeof c !== 'object') return null
+  const timeline = gate?.timeline ?? null
+  /* ④ بعد ستّة أشهرٍ من انتهاء الشعبة ينتهي الوصول: عناوينُ ما درسه تبقى
+     خريطةً لما مضى، ولا متنَ ولا كرّاسةَ ولا مصدر. */
+  const ended = gate?.access === 'ended'
+  const iso = (d: Date | null) => (d ? d.toISOString() : null)
+  const notYet = (at: Date | null) => at !== null && at.getTime() > now.getTime()
   return {
     summaryAr: written(c.summaryAr),
     modules: Array.isArray(c.modules)
-      ? c.modules.map((m) => ({
-          moduleId: m.moduleId,
-          titleAr: m.titleAr,
-          outcomeAr: m.outcomeAr ?? null,
-          activityAr: m.activityAr ?? null,
-          artifactAr: m.artifactAr ?? null,
-          bodyAr: m.bodyAr ?? null,
-          /* ع-٢: يصل المتعلّمَ مفتاحُ الملفّ لا الملفّ — وقراءتُه تمرّ
-             بحارسٍ يتحقّق من التحاقه بالشعبة. */
-          bodyFileKey: m.bodyFileKey ?? null,
-          bodyFileName: m.bodyFileName ?? null,
-          bodyFileMime: m.bodyFileMime ?? null,
-        }))
+      ? c.modules.map((m) => {
+          /* «الكرّاسةُ والمادّةُ النظريّةُ تُفتح مباشرةً قبل اللقاء» — أوّلَ يوم
+             موعده. وقبله يصل عنوانُه وما يخرج به ليرى المتعلّمُ طريقَه، ولا
+             يصل متنُه ولا ملفُّه: بوّابةٌ في الشاشة وحدَها يقرؤها المتصفّح. */
+          const opensAt = timeline?.theoryOpensAt(m.moduleId) ?? null
+          const locked = ended || notYet(opensAt)
+          return {
+            moduleId: m.moduleId,
+            titleAr: m.titleAr,
+            outcomeAr: m.outcomeAr ?? null,
+            activityAr: m.activityAr ?? null,
+            artifactAr: m.artifactAr ?? null,
+            bodyAr: locked ? null : m.bodyAr ?? null,
+            /* ع-٢: يصل المتعلّمَ مفتاحُ الملفّ لا الملفّ — وقراءتُه تمرّ
+               بحارسٍ يتحقّق من التحاقه بالشعبة. */
+            bodyFileKey: locked ? null : m.bodyFileKey ?? null,
+            bodyFileName: locked ? null : m.bodyFileName ?? null,
+            bodyFileMime: locked ? null : m.bodyFileMime ?? null,
+            locked,
+            opensAt: ended ? null : iso(opensAt),
+          }
+        })
+      : [],
+    /* ═══ ومواعيدُ المحاور بكرّاساتها ═══
+
+       الكرّاسةُ تُفتح أوّلَ يوم موعدها (⑦)، وقبله يُقال إنّ لها كرّاسةً ومتى
+       تُفتح — ولا يصل رابطُها ولا مفتاحُ ملفّها. */
+    slots: timeline
+      ? timeline.slots.map((s) => {
+          const open = !ended && !notYet(s.opensAt)
+          const hasWorkbook = workbookDone(s.workbook)
+          return {
+            startsOn: s.startsOn,
+            endsOn: s.endsOn,
+            moduleIds: [...s.moduleIds],
+            opensAt: s.opensAt.toISOString(),
+            closesAt: s.closesAt.toISOString(),
+            locked: !open,
+            hasWorkbook,
+            workbook: open && hasWorkbook
+              ? {
+                  title: written(s.workbook?.title),
+                  /* والرابطُ ما كان http(s) وحدَه — لا يصير `javascript:` زرّا */
+                  url: httpUrl(s.workbook?.url),
+                  bodyFileKey: written(s.workbook?.bodyFileKey),
+                  bodyFileName: written(s.workbook?.bodyFileName),
+                  bodyFileMime: written(s.workbook?.bodyFileMime),
+                }
+              : null,
+          }
+        })
       : [],
     /* ═══ والمسجَّلُ الذي لم يحن وقتُه لا يصل المتعلّمَ أصلا ═══
 
@@ -350,17 +465,22 @@ export function projectPlanForLearner(
        وحدَها ليست بوّابة: الرابطُ يصل الجهازَ فيُقرأ من أدوات المتصفّح، أو
        من نداءٍ مباشر. فالحجبُ هنا — في الإسقاط الذي يبني ما يُرسَل.
 
-       والفارغُ لا يحجب: مصدرٌ بلا تاريخِ فتحٍ مفتوحٌ مع أوّل يوم. */
-    resources: Array.isArray(c.resources)
+       والفارغُ لا يحجب: مصدرٌ بلا تاريخِ فتحٍ مفتوحٌ مع أوّل يوم.
+
+       ٢(ب-٢): وعلى خطّ المحاور يحكم الخطُّ نفسُه — مصادرُ المحور بعد أوّل
+       لقاءٍ له، والقراءةُ المسبقةُ مع كرّاسته، وما لا محورَ له مع أوّل يومٍ
+       في الشعبة (`resourceOpensAt`). */
+    resources: Array.isArray(c.resources) && !ended
       ? c.resources
-          .filter((r) => resourceOpen(r, now))
+          .filter((r) => (timeline ? !notYet(timeline.resourceOpensAt(r)) : resourceOpen(r, now)))
           .map((r) => ({
             title: r.title,
             url: r.url,
             /* والنوعُ يُشتقّ لمن له صنفٌ صريح — فيُشفى ما حُفظ خطأً */
             kind: displayKind(r),
             category: resourceCategory(r),
-            opensAt: typeof r.opensAt === 'string' ? r.opensAt : null,
+            opensAt: timeline ? iso(timeline.resourceOpensAt(r)) : typeof r.opensAt === 'string' ? r.opensAt : null,
+            moduleId: written(r.moduleId),
             noteAr: written(r.noteAr),
             bodyFileKey: written(r.bodyFileKey),
             bodyFileName: written(r.bodyFileName),

@@ -10,6 +10,8 @@ import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } f
 import { safeNotify } from './notification.service'
 import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { periodBounds, realDate } from '../../src/application/trainer/cohort-period'
+import { assessmentOpensAt, submitVerdict } from '../../src/application/learning/cohort-gate'
+import { loadLearnerGate } from './learner-gate'
 
 const MAX_SUBMISSION_BYTES = 100 * 1024 * 1024 // 100MB
 
@@ -168,6 +170,31 @@ export class AssessmentService {
 
   /* ── تسليم المتعلم ── */
 
+  /* ═══ متى يُقبل التسليم — ومتى يُعلَّم متأخّرا (٢(ب-٢)) ═══
+
+     قراراتُ صاحب المنصّة بكلمة «go»: المهمّةُ تُفتح بعد أوّل لقاءٍ لمحورها،
+     والتسليمُ يتوقّف بانتهاء الشعبة، و«المتأخّرُ يُقبل ويُعلَّم». والحكمُ في
+     `submitVerdict` — القاعدةُ نفسُها التي تقول بها شاشةُ المتعلّم «تُفتح
+     الثلاثاء»، فلا تقول الشاشةُ «مفتوحة» ويردّ الخادم. وما اعتُمد بلا مواعيد
+     لا بوّابةَ فيه: يُقبل كما كان ويُعلَّم متأخّرا بعد موعده. */
+  private async submitGate(
+    assessment: { cohortId: string; moduleId: string | null; dueAt: Date | null },
+    resubmitRequested: boolean,
+    now = new Date(),
+  ): Promise<{ late: boolean }> {
+    const loaded = await loadLearnerGate(this.prisma, assessment.cohortId, now)
+    const gate = loaded?.gate ?? null
+    const verdict = submitVerdict({
+      opensAt: gate ? assessmentOpensAt(gate, assessment.moduleId) : null,
+      dueAt: assessment.dueAt,
+      window: gate?.window ?? null,
+      now,
+      resubmitRequested,
+    })
+    if (!verdict.ok) throw new AuthError(verdict.code, verdict.messageAr, 409)
+    return { late: verdict.late }
+  }
+
   /** تسليم واجب — نص أو ملف خاص؛ المتعلم المسجل فقط */
   async submitAssignment(userId: string, assessmentId: string, input: {
     textAnswer?: string; file?: { originalName: string; mime: string; sizeBytes: number }
@@ -176,6 +203,12 @@ export class AssessmentService {
     if (!assessment || assessment.status !== 'published') throw new AuthError('not_open', 'هذا التكليف غير متاح للتسليم', 404)
     const enrollment = await this.enrollments.assertEnrolled(userId, assessment.cohortId)
     if (!input.textAnswer && !input.file) throw new AuthError('empty_submission', 'التسليم فارغ — نص أو ملف مطلوب')
+    /* إعادةٌ طلبها المدرّبُ تُقبل بعد انتهاء الشعبة ولا تُعلَّم متأخّرة — تُعرف
+       بآخر تسليمٍ له على المهمّة، أيّا كان البابُ الذي جاء منه */
+    const last = await this.prisma.assignmentSubmission.findFirst({
+      where: { assessmentId, enrollmentId: enrollment.id }, orderBy: { submittedAt: 'desc' }, select: { status: true },
+    })
+    const { late } = await this.submitGate(assessment, last?.status === 'resubmit_requested')
 
     let storageKey: string | undefined
     let uploadUrl: string | undefined
@@ -191,9 +224,9 @@ export class AssessmentService {
       where: { assessmentId, status: { in: ['submitted', 'under_review'] } },
     })
     const submission = await this.prisma.assignmentSubmission.create({
-      data: { assessmentId, enrollmentId: enrollment.id, textAnswer: input.textAnswer, storageKey },
+      data: { assessmentId, enrollmentId: enrollment.id, textAnswer: input.textAnswer, storageKey, late },
     })
-    await recordAudit(this.prisma, { actorId: userId, action: 'submission.create', entityType: 'assignment_submission', entityId: submission.id, meta: { assessmentId } })
+    await recordAudit(this.prisma, { actorId: userId, action: 'submission.create', entityType: 'assignment_submission', entityId: submission.id, meta: { assessmentId, late } })
     if (pendingBefore === 0) await this.notifyTrainersOfQueue(assessment)
     return { submission, uploadUrl }
   }
@@ -251,15 +284,17 @@ export class AssessmentService {
     const enrollment = await this.enrollments.assertEnrolled(userId, assessment.cohortId)
     const itemIds = new Set(assessment.items.map((i) => i.id))
     for (const r of responses) if (!itemIds.has(r.itemId)) throw new AuthError('bad_item', 'بند لا ينتمي لهذا التقييم')
+    /* ولا «إعادةَ بطلب» في الاختبار: المحاولةُ محاولة */
+    const { late } = await this.submitGate(assessment, false)
 
     const attempt = await this.prisma.assessmentAttempt.create({
       data: {
-        assessmentId, enrollmentId: enrollment.id,
+        assessmentId, enrollmentId: enrollment.id, late,
         responses: { create: responses.map((r) => ({ itemId: r.itemId, answer: r.answer as Prisma.InputJsonValue })) },
       },
       include: { responses: true },
     })
-    await recordAudit(this.prisma, { actorId: userId, action: 'attempt.create', entityType: 'assessment_attempt', entityId: attempt.id, meta: { assessmentId } })
+    await recordAudit(this.prisma, { actorId: userId, action: 'attempt.create', entityType: 'assessment_attempt', entityId: attempt.id, meta: { assessmentId, late } })
     return attempt
   }
 

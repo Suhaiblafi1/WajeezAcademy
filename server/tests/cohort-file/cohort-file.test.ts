@@ -24,6 +24,22 @@ let cohortId: string
 let trainerUserId: string
 let learnerId: string
 let strangerId: string
+let profileId: string
+
+/* ═══ والمتعلّمُ يقرأ ما في خطّة شعبته المعتمَدة (٢(ب-٢)) ═══
+
+   صار الحارسُ للمتعلّم «أمفتاحُ الملفّ فيما يصله الآن من الخطّة المعتمَدة؟»
+   لا «أله صفُّ تسجيل؟» — فملفٌّ رُفع ولم يدخل خطّةً معتمَدةً لا يقرؤه
+   (`learner-timeline-gate.test.ts` يحرس ذلك). فالملفّاتُ التي يقرؤها
+   المتعلّمُ هنا تُكتب في خطّةٍ معتمَدة، كما تصله في الحقيقة. */
+const planned: { modules: { moduleId: string; titleAr: string; bodyFileKey: string }[]; resources: { title: string; url: string; bodyFileKey: string }[] } = { modules: [], resources: [] }
+async function approveWith(entry: { moduleKey?: string; resourceKey?: string }) {
+  if (entry.moduleKey) planned.modules.push({ moduleId: `M-${planned.modules.length + 1}`, titleAr: 'محورٌ بملفّ', bodyFileKey: entry.moduleKey })
+  if (entry.resourceKey) planned.resources.push({ title: 'مصدرٌ بملفّ', url: '', bodyFileKey: entry.resourceKey })
+  await prisma.cohortDeliveryPlan.create({
+    data: { cohortId, trainerId: profileId, status: 'approved', content: { kind: 'trainer', ...planned } as never },
+  })
+}
 
 beforeAll(async () => {
   await setupTestDb()
@@ -56,6 +72,7 @@ beforeAll(async () => {
   const profile = await prisma.trainerProfile.create({
     data: { applicationId: app.id, userId: trainerUserId },
   })
+  profileId = profile.id
   await prisma.cohortTrainer.create({ data: { cohortId, profileId: profile.id, role: 'lead' } })
   await prisma.enrollment.create({ data: { cohortId, userId: learnerId, status: 'enrolled' } })
 }, 180_000)
@@ -95,6 +112,7 @@ describe('ع-٢ · ومن يقرأ', () => {
       mime: PDF, originalName: 'درسٌ.pdf',
     })
     key = r.storageKey
+    await approveWith({ moduleKey: key })
   })
 
   it('من التحق بالشعبة يقرأ', async () => {
@@ -156,6 +174,7 @@ describe('د-٣ · ملفُّ المصدر', () => {
     })
     key = r.storageKey
     expect(r.storageKey).toBeTruthy()
+    await approveWith({ resourceKey: key })
 
     await expect(
       bodies.startUpload(trainerUserId, cohortId, 'module_body', 'M5', {

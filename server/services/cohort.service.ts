@@ -19,6 +19,7 @@ import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomPartic
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
+import { meetingOver } from '../../src/application/learning/cohort-gate'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -1341,6 +1342,20 @@ export class CohortService {
     const isActiveLearner = enrollment !== undefined && (enrollment.status === 'enrolled' || enrollment.status === 'completed')
     if (!isTrainer && !isActiveLearner) {
       throw new AuthError('forbidden', 'هذه الجلسة ليست من شعبك', 403)
+    }
+    /* ═══ والمتعلّمُ لا يدخل ما لم يُعتمَد، ولا ما انتهى (٢(ب-٢)) ═══
+
+       لقاءٌ لم تعتمده الإدارةُ لا يراه المتعلّمُ أصلا (`LEARNER_SESSION_WHERE`)
+       — ومعرّفٌ يصل إلى هنا من غير شاشته لا يفتح بابا أُغلق هناك. ولقاءٌ
+       انتهى لا يُدخَل: «بعد انتهاء الشعبة تتوقّف اللقاءات»، وتسجيلُه هو ما
+       يبقى. والانتهاءُ بخبر Zoom أوّلا ثمّ بالساعة (`meetingOver`) — فمن
+       انقطع في لقاءٍ امتدّ بعد موعده يعود إليه. والمضيفُ لا يُردّ: الاجتماعُ
+       اجتماعُه. */
+    if (!isTrainer) {
+      if (session.approvalState !== 'approved') throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
+      if (meetingOver(session, session.zoom, new Date())) {
+        throw new AuthError('session_ended', 'انتهى هذا اللقاء — تسجيلُه يظهر في «مصادر هذه المرحلة» حين يجهز', 409)
+      }
     }
 
     const role: ZoomSdkRole = isTrainer ? 1 : 0

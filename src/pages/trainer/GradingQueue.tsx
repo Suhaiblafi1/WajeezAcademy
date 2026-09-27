@@ -46,6 +46,8 @@ const SUBMISSION_STATUS: Record<string, string> = {
 interface RubricCriterion { id: string; title: string; maxScore: number }
 interface QueueItem {
   id: string; status: string; textAnswer: string | null; submittedAt: string; reviewNote: string | null;
+  /** سُلّم بعد آخر موعده — «المتأخّرُ يُقبل ويُعلَّم» (٢٧ سبتمبر ٢٠٢٦) */
+  late?: boolean;
   /** بابُ ملفِّ التسليم — محروسٌ بالجلسة، ولا يخرج مفتاحُ التخزين */
   fileUrl: string | null;
   assessment: {
@@ -233,6 +235,8 @@ export default function GradingQueue() {
                   <p className="font-black">{q.enrollment.user?.displayName ?? "متعلّمٌ بلا اسمٍ مسجَّل"}</p>
                   <p className="mt-0.5 text-read text-muted-foreground">
                     {q.assessment.title} · {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
+                    {/* والمتأخّرُ يُقال لمن يصحّحه — قُبل، والحكمُ فيه لمدرّبه */}
+                    {q.late && <span className="font-bold text-gold-ink"> · سُلّم بعد موعده</span>}
                   </p>
                 </div>
                 {q.grades[0] && (

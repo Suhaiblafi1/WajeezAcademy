@@ -21,6 +21,8 @@ import { deleteObject } from './object-store'
 import {
   fileBlockerAr, MAX_BODY_FILE_BYTES, type FilePurpose,
 } from '../../src/application/trainer/module-body'
+import { projectPlanForLearner } from '../../src/application/trainer/plan-overlay'
+import { loadLearnerGate } from './learner-gate'
 
 export class CohortFileService {
   private prisma: PrismaClient
@@ -133,12 +135,6 @@ export class CohortFileService {
     if (auth.permissions.includes('cohort.plan.approve') || auth.permissions.includes('cohort.manage')) {
       return row
     }
-    const enrolled = await this.prisma.enrollment.findFirst({
-      where: { cohortId: row.cohortId, userId: auth.userId },
-      select: { id: true },
-    })
-    if (enrolled) return row
-
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { userId: auth.userId }, select: { id: true },
     })
@@ -149,6 +145,36 @@ export class CohortFileService {
       if (isTrainer) return row
     }
 
+    /* ═══ والمتعلّمُ يقرأ ما فُتح له — لا كلَّ ما في الشعبة (٢(ب-٢)) ═══
+
+       كان الحارسُ «أله صفُّ تسجيلٍ في الشعبة؟» — فيقرأ المنسحبُ والمنتظرُ في
+       القائمة، ويقرأ المسجَّلُ كلَّ ملفٍّ رفعه المدرّب: متنَ محورٍ لم يحن
+       موعدُه، وكرّاسةَ موعدٍ قادم، وملفّا في مسودّةٍ لم تُعتمد بعد. والشاشةُ
+       تحجبها، والمفتاحُ يُقرأ من نداءٍ مباشر.
+
+       فصار الحكمُ ما يحكم به محتوى الشعبة نفسُه: الملفُّ مقروءٌ حين يكون
+       مفتاحُه فيما يصل المتعلّمَ الآن من خطّتها المعتمَدة
+       (`projectPlanForLearner` بالبوّابة نفسِها) — ولا ملفَّ بعد انتهاء الوصول. */
+    const enrolled = await this.prisma.enrollment.findFirst({
+      where: { cohortId: row.cohortId, userId: auth.userId, status: { in: ['enrolled', 'completed'] } },
+      select: { id: true },
+    })
+    if (enrolled && (await this.openToLearner(row.cohortId, storageKey))) return row
+
     throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
+  }
+
+  /** أيصل هذا المفتاحُ المتعلّمَ الآن — متنُ محورٍ فُتح، أو كرّاسةُ موعدٍ فُتح، أو مصدرٌ فُتح */
+  private async openToLearner(cohortId: string, storageKey: string, now = new Date()): Promise<boolean> {
+    const loaded = await loadLearnerGate(this.prisma, cohortId, now)
+    if (!loaded || loaded.gate.access === 'ended') return false
+    const view = projectPlanForLearner(loaded.plan, now, loaded.gate)
+    if (!view) return false
+    const keys = [
+      ...view.modules.map((m) => m.bodyFileKey),
+      ...(view.slots ?? []).map((s) => s.workbook?.bodyFileKey),
+      ...view.resources.map((r) => r.bodyFileKey),
+    ]
+    return keys.includes(storageKey)
   }
 }

@@ -2793,6 +2793,8 @@ model AssessmentAttempt {
   enrollmentId String               @db.Uuid
   status       String               @default("submitted") // submitted | under_review | graded | returned
   submittedAt  DateTime             @default(now())
+  /// بعد آخر موعد التقييم — كـ`AssignmentSubmission.late` سواءً
+  late         Boolean              @default(false)
   gradedAt     DateTime?
   assessment   CohortAssessment     @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   enrollment   Enrollment           @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
@@ -2848,6 +2850,10 @@ model AssignmentSubmission {
   // submitted | under_review | resubmit_requested | accepted | rejected
   reviewNote   String?
   submittedAt  DateTime          @default(now())
+  /// سُلّم بعد آخر موعده — «المتأخّرُ يُقبل ويُعلَّم» (٢٧ سبتمبر ٢٠٢٦). يُكتب
+  /// لحظةَ التسليم لا يُحسب عند العرض: موعدٌ مُدَّ بعدها لا يمحو تأخّرا وقع،
+  /// وإعادةٌ طلبها المدرّبُ لا تُعلَّم — تأخّرُها من الطلب لا من المتعلّم.
+  late         Boolean           @default(false)
   reviewedAt   DateTime?
   reviewedBy   String?           @db.Uuid
   assessment   CohortAssessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
