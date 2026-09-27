@@ -194,6 +194,23 @@ describe('اللقاءاتُ على المواعيد', () => {
     expect(dayInSlot('2026-10-08T17:00:00.000Z', slots[0])).toBe(5)
   })
 
+  /* ═══ وما انعقد واقعةٌ لا مسودّة ═══
+     لقاءٌ انتهى لا يُنقل ولا يُحذف إن حضره أحد — فلو حُوسب بالربط والموعد
+     لبقيت شعبةٌ جاريةٌ حبيسةً خطوتَها لا تستطيع إصلاحَه ولا التخلّصَ منه. */
+  it('⚠️ لقاءٌ انعقد بلا محورٍ أو خارجَ موعده لا يمنع — ويُحسب لمحوره إن رُبط', () => {
+    const held = { title: 'انعقد', startsAt: '2026-09-01T17:00:00.000Z', endsAt: '2026-09-01T19:00:00.000Z', moduleIds: [] as string[] }
+    const NOW = new Date('2026-10-20T12:00:00.000Z')
+    expect(sessionProblems({ slots, moduleIds: EIGHT, sessions: [...full, held], now: NOW }).blocking, 'حُوسب ما انعقد').toEqual([])
+    /* وبلا لحظةٍ يُحكم بها لا يُعفى شيء — فالإعفاءُ لما مضى فعلا لا لكلّ لقاء */
+    expect(sessionProblems({ slots, moduleIds: EIGHT, sessions: [...full, held] }).blocking.join()).toContain('«انعقد» غيرُ مربوطٍ بمحور')
+    /* والمنعقدُ المربوطُ يُحسب لمحوره: لقاءُ ١+٢ مضى فلا يُطلب لهما لقاءٌ جديد */
+    const heldFirst = { ...full[0], startsAt: '2026-10-04T17:00:00.000Z', endsAt: '2026-10-04T19:00:00.000Z' }
+    expect(sessionProblems({ slots, moduleIds: EIGHT, sessions: [heldFirst, ...full.slice(1)], now: NOW }).blocking).toEqual([])
+    /* والقادمُ بلا محورٍ يُحاسَب وإن حُكم بلحظة */
+    const soon = { ...held, title: 'قادم', startsAt: '2026-10-21T17:00:00.000Z', endsAt: '2026-10-21T19:00:00.000Z' }
+    expect(sessionProblems({ slots, moduleIds: EIGHT, sessions: [...full, soon], now: NOW }).blocking.join()).toContain('«قادم» غيرُ مربوطٍ بمحور')
+  })
+
   it('والمسجَّلةُ بلا محورٍ أو خارجَ موعده مردودة', () => {
     const r = sessionProblems({
       slots, moduleIds: EIGHT, sessions: full,

@@ -647,6 +647,7 @@ export default function CohortWorkspace() {
         sessions: mine.map((x) => ({ title: x.title, startsAt: x.startsAt, endsAt: x.endsAt, moduleIds: x.moduleIds ?? [] })),
         recordings: (saved?.resources ?? []).filter((r) => resourceCategory(r) === "recorded")
           .map((r) => ({ title: r.title, moduleId: r.moduleId ?? null, opensAt: r.opensAt ?? null })),
+        now: new Date(),
       });
       return out.length ? out : [label];
     }
@@ -823,8 +824,9 @@ export default function CohortWorkspace() {
 
             <ol className="flex w-full min-w-0 items-center sm:w-auto sm:flex-1">
               {STAGES.map((s, i) => {
-                const item = byKey.get(s.key);
-                const done = item?.done ?? false;
+                /* تمامُ الدرجة بصفوفها كلِّها — «المهامُّ والمصادر» صفّان، ولا تُعلَّم
+                   تامّةً بأحدهما (قِيس في المتصفّح: عُلّمت تامّةً والمصادرُ ناقصة) */
+                const done = doneOf(s.key);
                 const selected = phase === "prepare" && stage === s.key;
                 const open = canOpen(i);
                 /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
@@ -1434,13 +1436,14 @@ export default function CohortWorkspace() {
                     <p className="text-read font-black text-foreground">لم تُربط بمحورٍ بعد</p>
                     <p className="text-read leading-6 text-muted-foreground">
                       كلُّ لقاءٍ لمحورٍ أو محورين، وكلُّ جلسةٍ مسجّلةٍ لمحورها — اختر لكلٍّ محورَه، فينتقل إلى بطاقة موعده.
+                      وما انعقد منها لا يمنع الإرسال: ربطُه يحسبه لمحوره.
                     </p>
                     <ul className="grid gap-2">
                       {loose.map((x) => (
                         <Inset as="li" key={x.id} className="flex flex-wrap items-center gap-3">
                           <span className="min-w-0 flex-1 text-read">
                             <b className="text-foreground">{x.title}</b>
-                            <span className="text-muted-foreground"> · {fmtDateTimeAr(x.startsAt)}</span>
+                            <span className="text-muted-foreground"> · {fmtDateTimeAr(x.startsAt)}{new Date(x.endsAt ?? x.startsAt).getTime() < Date.now() ? " · انعقد" : ""}</span>
                           </span>
                           <select defaultValue="" disabled={locked || busy} aria-label={`محورُ «${x.title}»`}
                             onChange={(e) => e.target.value && void act(

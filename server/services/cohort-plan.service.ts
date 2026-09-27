@@ -42,7 +42,7 @@ import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
 import {
-  sessionProblems, slotProblems, workbookProblems, type PlanSlot,
+  sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
 import { resourceCategory } from '../../src/application/trainer/plan-overlay'
 import { readFile } from 'node:fs/promises'
@@ -191,6 +191,8 @@ export function buildChecklist(input: {
   /** محورُ كلّ مهمّة — ومنه «كلُّ مهمّةٍ مربوطةٌ بمحور». وغيابُه لا يحكم بشيء */
   assessmentModuleIds?: readonly (string | null)[]
   planStatus: PlanStatus
+  /** اللحظةُ التي يُحكم بها — وما انعقد قبلها لا يُحاسَب (`sessionProblems`) */
+  now?: Date
 }): ChecklistItem[] {
   const c = input.cohort
   /* ═══ الهُويّةُ صارت: اسمٌ وفصل ═══
@@ -275,8 +277,12 @@ export function buildChecklist(input: {
      «ويجب أن تكون ضمن فترة الشعبة نفسها التي وضعها بنفسه». ومن غيّر
      المدّةَ بعد أن جدول صار في يده لقاءٌ خارجَها — فلا يُمنع الحفظ (المدّةُ
      قرارُه)، وإنّما تعود خطوةُ اللقاءات «لم تتمّ» وتسمّي كم خرج منها. */
+  /* وما انعقد قبل اليوم لا يُحاسَب بالمدّة — واقعةٌ لا مسودّة (`sessionProblems`) */
+  const now = input.now ?? new Date()
+  const upcoming = (x: { startsAt?: Date | string; endsAt?: Date | string | null }) =>
+    Boolean(x.startsAt) && sessionEnd({ startsAt: x.startsAt!, endsAt: x.endsAt ?? null }).getTime() >= now.getTime()
   const outside = input.period
-    ? input.sessions.filter((x) => x.startsAt && !withinPeriod({ startsAt: x.startsAt, endsAt: x.endsAt ?? null }, input.period!)).length
+    ? input.sessions.filter((x) => upcoming(x) && !withinPeriod({ startsAt: x.startsAt!, endsAt: x.endsAt ?? null }, input.period!)).length
     : 0
   /* ═══ ثمّ صار «لقاءٌ لكلّ محورٍ في موعده» (٢٧ سبتمبر ٢٠٢٦) ═══
 
@@ -291,6 +297,7 @@ export function buildChecklist(input: {
       title: x.title ?? null, startsAt: x.startsAt!, endsAt: x.endsAt ?? null, moduleIds: x.moduleIds ?? [],
     })),
     recordings: recorded.map((r) => ({ title: r.title, moduleId: r.moduleId ?? null, opensAt: r.opensAt ?? null })),
+    now,
   })
   const coveredCount = moduleIds.filter((id) => input.sessions.some((x) => (x.moduleIds ?? []).includes(id))).length
   const sessionsDone = linked

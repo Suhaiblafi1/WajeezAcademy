@@ -318,6 +318,8 @@ export function sessionProblems(input: {
   moduleIds: readonly string[]
   sessions: readonly TimelineSession[]
   recordings?: readonly TimelineRecording[]
+  /** اللحظةُ التي يُحكم بها — وما انتهى قبلها واقعةٌ لا مسودّة */
+  now?: Date | null
 }): { blocking: string[]; warnings: string[] } {
   const blocking: string[] = []
   const warnings: string[] = []
@@ -333,6 +335,13 @@ export function sessionProblems(input: {
   }
 
   input.sessions.forEach((s, i) => {
+    /* ═══ وما انعقد واقعةٌ لا مسودّة ═══
+
+       لقاءٌ انتهى لا يُنقل ولا يُحذف (`trainerDeleteSession` يردّه إن حضره
+       أحد) — فلو حُكم عليه بالربط والموعد لبقيت شعبةٌ جاريةٌ حبيسةً خطوتَها
+       إلى الأبد: لا تستطيع إصلاحَه ولا التخلّصَ منه. فيُحسب لمحوره إن رُبط
+       (التغطيةُ أعلاه تقرؤه)، ولا يُحاسَب على ما لم يعد بيد أحد. */
+    if (input.now && sessionEnd(s).getTime() < input.now.getTime()) return
     const label = `لقاء «${name(s.title, `رقم ${i + 1}`)}»`
     const ids = s.moduleIds.filter((id) => pos.has(id))
     if (ids.length === 0) { blocking.push(`${label} غيرُ مربوطٍ بمحور — اختر محورَه`); return }

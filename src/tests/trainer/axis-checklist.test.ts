@@ -96,6 +96,18 @@ describe('اللقاءاتُ بمحاورها', () => {
     expect(row(list, 'sessions').labelAr).toContain('6/8')
   })
 
+  it('⚠️ وما انعقد قبل اليوم لا يحجب — لا بالربط ولا بالمدّة', () => {
+    /* لقاءٌ حضره متعلّمون قبل أن تُحدَّد المدّةُ الجديدة: لا يُحذف ولا يُنقل */
+    const held = { title: 'انعقد', startsAt: new Date('2026-09-01T17:00:00.000Z'), endsAt: new Date('2026-09-01T19:00:00.000Z'), recordings: [] as unknown[], moduleIds: [] as string[] }
+    const NOW = new Date('2027-01-10T12:00:00.000Z')
+    const list = complete({ sessions: [...meetings, held], now: NOW })
+    expect(row(list, 'sessions').done, 'حُوسب ما انعقد').toBe(true)
+    expect(row(list, 'sessions').labelAr, 'عُدَّ المنعقدُ خارجَ المدّة').not.toContain('خارجَ مدّة الشعبة')
+    /* والقادمُ خارجَ المدّة يحجب كما كان */
+    const later = { ...held, moduleIds: ['M1'], startsAt: new Date('2027-03-20T17:00:00.000Z'), endsAt: new Date('2027-03-20T19:00:00.000Z') }
+    expect(row(complete({ sessions: [...meetings, later], now: NOW }), 'sessions').done).toBe(false)
+  })
+
   it('⚠️ والجلسةُ المسجّلةُ خارجَ موعد محورها تحجب — وداخلَه لا', () => {
     const outside = [{ title: 'مسجّل', url: 'https://x.test/v', category: 'recorded', moduleId: 'M3', opensAt: '2027-02-08T06:00:00.000Z' }]
     expect(row(complete({}, { resources: [...outside, { title: 'مرجع', url: 'https://x.test/a' }] }), 'sessions').done).toBe(false)

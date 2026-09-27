@@ -35,6 +35,11 @@ describe('الدرجاتُ بترتيب المنهج', () => {
 
   it('⚠️ و«المهامُّ والمصادر» تتمّ بصفّيها معا — لا بأحدهما', () => {
     expect(WS).toMatch(/assignments: \["assignments", "resources"\]/)
+    /* والشريطُ يعلّم الدرجةَ بالقاعدة نفسِها — وكان يقرأ صفَّ مفتاحها وحدَه،
+       فعلّم «المهامّ والمصادر» تامّةً والمصادرُ ناقصة (قِيس في المتصفّح) */
+    const rail = WS.slice(WS.indexOf('{STAGES.map((s, i) => {'), WS.indexOf('</ol>', WS.indexOf('{STAGES.map((s, i) => {')))
+    expect(rail, 'الشريطُ لا يقرأ تمامَ الدرجة').toContain('const done = doneOf(s.key)')
+    expect(rail, 'الشريطُ يقرأ صفّا واحدا').not.toMatch(/byKey\.get\(s\.key\)/)
   })
 })
 
