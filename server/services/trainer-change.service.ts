@@ -12,6 +12,7 @@ import { safeNotify } from './notification.service'
 import { blastRadiusSentenceAr, courseBlastRadius, planHoursImpactOf } from './catalog-impact.service'
 import { checkHoursProposal, planHoursWarnings } from '../../src/application/catalog/hours-policy'
 import { catalogScopeGate } from '../../src/application/catalog/scope-policy'
+import type { ScopeGate } from '../../src/application/catalog/scope-policy'
 import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 
 /* ═══ ولمَ ليس في الأنواع نوعٌ لاسم الدورة ═══
@@ -141,7 +142,10 @@ export class TrainerChangeService {
        نطاق الشعبة مفتوح للجميع — وهو الافتراضي في الشاشة والرسالة هنا.
        وكان اقتراحُ الاسمِ وحدَه مستثنى، فأُغلق بابُه (ق٥) فزال الاستثناء. */
     if (input.scope === 'catalog') {
-      const gate = await this.catalogScopeFor(profile.id)
+      /* وعن الدورةِ يُسأل لا عن المدرّب (٢٧ سبتمبر ٢٠٢٦): من أُهِّل لدورةٍ
+         لا يستخدمها مسارٌ ولا قالبٌ ولا شعبةٌ فتعديلُه لا يصل أحدا. وهو ما
+         يَعِد به العقدُ في طوره المشروط، وكان يُردّ. */
+      const gate = await this.catalogScopeForCourse(profile.id, input.courseId)
       if (!gate.allowed) throw new AuthError('scope_not_granted', gate.reasonAr, 403)
     }
 
@@ -366,6 +370,62 @@ export class TrainerChangeService {
       grantedAt: profile?.catalogScopeGrantedAt?.toISOString() ?? null,
       publishedCohortProposals: published,
     })
+  }
+
+  /**
+   * أهليةُ النطاق **لدورةٍ بعينها** — وفيها الأساسُ الثالث (البند هـ-١).
+   *
+   * ولمَ دالّةٌ ثانيةٌ لا توسيعُ الأولى: `catalogScopeFor` جوابٌ عن المدرّب
+   * («أيملك النطاقَ عموما؟») تقرؤه شاشةُ «مؤهّلاتي»، وهذه جوابٌ عن دورةٍ
+   * («أيملكه فيها؟») يقرؤها الإرسال. ولو دُمجتا لَصارت الأولى تسأل عن دورةٍ
+   * لا تعرفها.
+   *
+   * والخلوُّ يُقاس بـ`courseBlastRadius` نفسِها التي تُعرَض للمراجع، وبشرطها
+   * الحرفيِّ في `blastRadiusSentenceAr` — «لا مسار ولا قالب ولا شعبة» — فلا
+   * تقولَ الشاشةُ للمراجع شيئا وتحكمَ البوّابةُ بغيره.
+   */
+  async catalogScopeForCourse(profileId: string, courseId: string) {
+    const one = await this.catalogScopeForCourses(profileId, [courseId])
+    return one.get(courseId)!
+  }
+
+  /**
+   * وأحكامُ عدّةِ دوراتٍ دفعةً — وهي الأصلُ، و`catalogScopeForCourse` غلافُها.
+   *
+   * ولمَ مجمَّعةٌ: شاشةُ المدرّب تعرض مؤهّلاتِه كلَّها ومعها حكمُ كلٍّ، فلو
+   * سُئل لكلّ دورةٍ على حدها لصارت أربعةَ استعلاماتٍ في كلّ سطر. وهو التحذيرُ
+   * نفسُه في رأس `catalog-impact.service.ts` بحرفه.
+   */
+  async catalogScopeForCourses(profileId: string, courseIds: string[]) {
+    const ids = [...new Set(courseIds.filter(Boolean))]
+    const out = new Map<string, ScopeGate>()
+    if (ids.length === 0) return out
+    const [profile, published, quals, radius] = await Promise.all([
+      this.prisma.trainerProfile.findUnique({
+        where: { id: profileId },
+        select: { catalogScopeGrantedAt: true },
+      }),
+      this.prisma.trainerChangeRequest.count({
+        where: { profileId, scope: 'cohort', status: 'published' },
+      }),
+      this.prisma.trainerCourseQualification.findMany({
+        where: { profileId, courseId: { in: ids }, status: 'qualified' },
+        select: { courseId: true },
+      }),
+      courseBlastRadius(this.prisma, ids),
+    ])
+    const qualified = new Set(quals.map((q) => q.courseId))
+    const grantedAt = profile?.catalogScopeGrantedAt?.toISOString() ?? null
+    for (const id of ids) {
+      const r = radius.get(id)
+      out.set(id, catalogScopeGate({
+        grantedAt,
+        publishedCohortProposals: published,
+        qualifiedForCourse: qualified.has(id),
+        courseUnused: r != null && r.entityCount === 0 && r.cohorts.total === 0,
+      }))
+    }
+    return out
   }
 
   /** أهلية النطاق لحساب مستخدم — لتُعرض في بوابة المدرب قبل أن يكتب اقتراحا */

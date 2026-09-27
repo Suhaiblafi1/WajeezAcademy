@@ -75,6 +75,7 @@ const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
 const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCourseProposals'))
+const TrainerMyCourseEdits = lazy(() => import('./pages/trainer/MyCourseEdits'))
 const TrainerMyPaths = lazy(() => import('./pages/trainer/MyPaths'))
 const TrainerMyOffers = lazy(() => import('./pages/trainer/MyOffers'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
@@ -274,6 +275,8 @@ export default function App() {
             <Route path="/trainer/offers" element={<TrainerMyOffers />} />
             {/* ح-٢: دوراتٌ يقترحها وليست في الكتالوج — من طلبه، ثمّ بيده */}
             <Route path="/trainer/course-proposals" element={<TrainerCourseProposals />} />
+            {/* وبابُ العقد: محاورُ ما أُهِّل له ومصادرُها، اقتراحا يمرّ بالمراجعة */}
+            <Route path="/trainer/course-edits" element={<TrainerMyCourseEdits />} />
             {/* ن-١: مسارٌ يبنيه المدرّبُ من دوراته ويُعرض على الرفّ العامّ */}
             <Route path="/trainer/paths" element={<TrainerMyPaths />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />

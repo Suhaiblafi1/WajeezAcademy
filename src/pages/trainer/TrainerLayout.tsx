@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Handshake, LayoutDashboard, Link2, Route, Star, Users, Wallet } from "lucide-react";
+import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Handshake, Layers, LayoutDashboard, Link2, Route, Star, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -145,6 +145,11 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     /* ح-٢: بعد «مؤهّلاتي» — السؤالان جارانِ: ما أُهِّلتُ له، وما أقترحه ولم
        يدخل الكتالوجَ بعد. وقرارُ الإدارة يصل هنا، فلا يُدفن في صفحةٍ طويلة. */
     { to: "/trainer/course-proposals", label: "دوراتي المقترحة", icon: BookPlus },
+    /* وبعدها مباشرةً: الأولى دوراتٌ **ليست** في كتالوجنا، وهذه محاورُ ما
+       أُهِّل له **فيه**. والسؤالان متجاوران: ما أقدر عليه ولا تملكونه، وما
+       تملكونه وأُهِّلتُ له فأضع محاورَه. وهي بابُ «خمسةِ أيّامٍ لوضع محاور
+       دوراتك ومصادرها» في العقد — فلا يبحث عنها من وعده العقدُ بها. */
+    { to: "/trainer/course-edits", label: "تعديلاتي على دوراتي", icon: Layers },
     /* ن-١: بعد «دوراتي المقترحة» — الأولى دوراتٌ ليست عندنا، وهذه ترتيبُ
        ما عندنا في مسارٍ باسمه. والسؤالان متجاوران في ذهنه. */
     { to: "/trainer/paths", label: "مساراتي", icon: Route },
