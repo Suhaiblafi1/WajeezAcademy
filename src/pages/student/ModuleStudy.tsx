@@ -18,7 +18,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle2, Clock, FileText,
-  Loader2, PenLine, Sparkles, Target,
+  Loader2, Lock, PenLine, Sparkles, Target,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import LessonBody from "@/components/LessonBody";
@@ -41,6 +41,7 @@ import { courseFullById } from "@/data/courses";
 import { overlayModule, overlayModules } from "@/application/trainer/plan-overlay";
 import { fetchEnrollmentDetail } from "@/services/enrollment-detail";
 import type { LearnerPlanView } from "@/application/trainer/plan-overlay";
+import { whenAr } from "@/application/learning/cohort-gate";
 
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -80,14 +81,19 @@ export default function ModuleStudy() {
      وبلا `?e=` — رابطٌ نُسخ أو حُفظ — يُقرأ متنُ الكتالوج كما كان. */
   const enrollmentId = params.get("e")?.trim() ?? "";
   const [plan, setPlan] = useState<LearnerPlanView | null>(null);
+  /* ٢(ب-٢): ولا يُعرض متنُ الكتالوج قبل أن تصل الخطّة — فقد تقول إنّ المحورَ
+     محجوبٌ حتّى موعده، فيومض للمتعلّم متنٌ ثمّ يُطوى. */
+  const [planFor, setPlanFor] = useState<string | null>(null);
   useEffect(() => {
     if (!enrollmentId) return;
     let alive = true;
     fetchEnrollmentDetail(enrollmentId)
       .then((d) => { if (alive) setPlan(d.cohort.trainerPlan); })
-      .catch(() => { /* تعذّرت الخطّةُ — يُقرأ الكتالوجُ ولا تسقط الشاشة */ });
+      .catch(() => { /* تعذّرت الخطّةُ — يُقرأ الكتالوجُ ولا تسقط الشاشة */ })
+      .finally(() => { if (alive) setPlanFor(enrollmentId); });
     return () => { alive = false; };
   }, [enrollmentId]);
+  const planPending = enrollmentId !== "" && planFor !== enrollmentId;
 
   const modules = useMemo(() => overlayModules(full?.modules ?? [], plan), [full?.modules, plan]);
   const mod = useMemo(
@@ -138,7 +144,7 @@ export default function ModuleStudy() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [pos, moduleId, steps.length]);
 
-  if (!checked) {
+  if (!checked || planPending) {
     return <PortalLayout title="الوحدة"><div className="grid place-items-center py-24"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground" /></div></PortalLayout>;
   }
   if (!user) { navigate("/auth", { replace: true }); return null; }
@@ -150,6 +156,40 @@ export default function ModuleStudy() {
           <BookOpen className="h-12 w-12 text-muted-foreground" />
           <p className="mt-5 text-sm text-muted-foreground">لم نجد هذه الوحدة في هذه الدورة.</p>
           <Link to={`/student/course/${courseId}`} className="mt-6 rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40">
+            عُد إلى محطّات الدورة
+          </Link>
+        </Panel>
+      </PortalLayout>
+    );
+  }
+
+  /* ═══ ٢(ب-٢): محورٌ لم يحن موعدُه — أو انتهى الوصولُ إلى شعبته ═══
+
+     الخادمُ لا يرسل متنَه ولا ملفَّه، والعلوُّ لا يملؤه من الكتالوج
+     (`overlayModules`). فلا يُقال «قيد التأليف» عن محورٍ مكتوبٍ ينتظر
+     موعدَه — يُقال متى يُفتح، وما يفتح معه. */
+  if (mod.locked) {
+    return (
+      <PortalLayout title={mod.title}>
+        <Panel as="section" className="py-14 text-center">
+          <Lock className="mx-auto h-10 w-10 text-gold-ink" aria-hidden="true" />
+          <p className="mt-5 text-sm font-black text-foreground">
+            {mod.opensAt ? `يُفتح هذا المحورُ ${whenAr(mod.opensAt)}` : "انتهت مدّةُ الوصول إلى هذه الشعبة"}
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
+            {mod.opensAt
+              ? "متنُه وكرّاستُه تُفتحان أوّلَ يومٍ في موعده، قبل لقائه المباشر — ومهامُّه ومصادرُه بعد اللقاء."
+              : "تبقى درجاتُك وتسليماتُك وشهادتُك في رحلتك، وتُطوى موادُّ الشعبة بعد ستّة أشهرٍ من انتهائها."}
+          </p>
+          {mod.outcome && (
+            <Card as="p" className="mx-auto mt-4 max-w-md px-4 py-3 text-read leading-6 text-muted-foreground">
+              <span className="font-bold text-foreground">ما ستخرج به منها: </span>{mod.outcome}
+            </Card>
+          )}
+          <Link
+            to={`/student/course/${courseId}`}
+            className="mt-6 inline-flex rounded-full border border-white/15 px-6 py-3 text-sm font-bold text-foreground hover:border-white/40"
+          >
             عُد إلى محطّات الدورة
           </Link>
         </Panel>

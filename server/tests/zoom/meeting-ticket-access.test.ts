@@ -150,3 +150,46 @@ describe('تذكرةُ فتح الجلسة — من يُوقَّع له وبأي
     }
   })
 })
+
+/* ═══ والمتعلّمُ لا يدخل ما لم يُعتمَد، ولا ما انتهى (٢(ب-٢)) ═══
+
+   «بعد انتهاء الشعبة تتوقّف اللقاءات» — ولقاءٌ انتهى لا يُدخَل. والانتهاءُ
+   بخبر Zoom أوّلا ثمّ بالساعة: من انقطع في لقاءٍ امتدّ بعد موعده يعود إليه. */
+describe('تذكرةُ اللقاء بعد انتهائه وقبل اعتماده', () => {
+  const HOUR = 3_600_000
+  let cohortId = ''
+  beforeAll(async () => {
+    cohortId = (await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })).cohortId
+  })
+  const meeting = async (title: string, over: { startsAt: Date; endsAt: Date; approvalState?: string }, zoom: { actualStartAt?: Date; actualEndAt?: Date } = {}) => {
+    const s = await prisma.cohortSession.create({ data: { cohortId, title, status: 'scheduled', ...over } })
+    await prisma.zoomMeeting.create({ data: { sessionId: s.id, joinUrl: 'https://zoom.us/j/9', meetingId: `9${Date.now() % 1e9}`, ...zoom } })
+    return s.id
+  }
+
+  it('⚠️ لقاءٌ لم يُعتمد لا يُدخله متعلّم — ومدرّبُه يدخله', async () => {
+    const id = await meeting('بانتظار الاعتماد', { startsAt: new Date(Date.now() + 86_400_000), endsAt: new Date(Date.now() + 86_400_000 + 2 * HOUR), approvalState: 'pending' })
+    await expect(cohorts.meetingSdkTicket(learnerId, id)).rejects.toMatchObject({ status: 404 })
+    await expect(cohorts.meetingSdkTicket(trainerUserId, id)).resolves.toMatchObject({ role: 1 })
+  })
+
+  it('⚠️ لقاءٌ أنهاه Zoom لا يُدخَل — والمضيفُ لا يُردّ', async () => {
+    const id = await meeting('أنهاه Zoom', { startsAt: new Date(Date.now() - 3 * HOUR), endsAt: new Date(Date.now() + HOUR) },
+      { actualStartAt: new Date(Date.now() - 3 * HOUR), actualEndAt: new Date(Date.now() - HOUR) })
+    await expect(cohorts.meetingSdkTicket(learnerId, id)).rejects.toMatchObject({ code: 'session_ended', status: 409 })
+    await expect(cohorts.meetingSdkTicket(trainerUserId, id)).resolves.toMatchObject({ role: 1 })
+  })
+
+  it('⚠️ وبلا خبرٍ من Zoom: ساعةٌ بعد نهايته المجدولة ثمّ يُغلق', async () => {
+    const past = await meeting('مضى بلا خبر', { startsAt: new Date(Date.now() - 5 * HOUR), endsAt: new Date(Date.now() - 2 * HOUR) })
+    await expect(cohorts.meetingSdkTicket(learnerId, past)).rejects.toMatchObject({ code: 'session_ended' })
+    const grace = await meeting('في المهلة', { startsAt: new Date(Date.now() - 3 * HOUR), endsAt: new Date(Date.now() - 0.5 * HOUR) })
+    await expect(cohorts.meetingSdkTicket(learnerId, grace), 'رُدّ في مهلة الساعة').resolves.toMatchObject({ role: 0 })
+  })
+
+  it('⚠️ ولقاءٌ جارٍ بعد موعده يُدخَل — من انقطع يعود', async () => {
+    const id = await meeting('امتدّ', { startsAt: new Date(Date.now() - 4 * HOUR), endsAt: new Date(Date.now() - 2 * HOUR) },
+      { actualStartAt: new Date(Date.now() - 3 * HOUR) })
+    await expect(cohorts.meetingSdkTicket(learnerId, id), 'رُدّ من لقاءٍ جارٍ').resolves.toMatchObject({ role: 0 })
+  })
+})
