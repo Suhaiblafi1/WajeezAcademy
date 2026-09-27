@@ -198,9 +198,11 @@ describe('الطريقُ من الخادم إلى الشريط', () => {
 })
 
 describe('الثوابتُ تُقرأ من موضعها', () => {
-  it('لا يُكتب «٧» ولا «يومان» رقما في الشريط', () => {
-    expect(MATERIALS_WINDOW_DAYS).toBe(7)
+  it('لا يُكتب «٥» ولا «يومان» رقما في الشريط', () => {
+    /* وصارت خمسةً في ٢٧ سبتمبر ٢٠٢٦ — والمحروسُ أنّ الشريطَ يقرؤها من
+       موضعها لا يكتبها حرفا، فيتبعُها إذا تبدّلت. */
+    expect(MATERIALS_WINDOW_DAYS).toBe(5)
     expect(EXTENSION_DAYS).toBe(2)
-    expect(strip).not.toMatch(/\b7 (أيّام|ايام)\b/)
+    expect(strip).not.toMatch(new RegExp(`\\b${MATERIALS_WINDOW_DAYS} (أيّام|ايام)\\b`))
   })
 })

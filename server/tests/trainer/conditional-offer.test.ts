@@ -22,6 +22,10 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { CourseProposalService } from '../../services/course-proposal.service'
 import { missingAcademyLegalFields } from '../../../src/data/academy-legal'
 import { MATERIALS_WINDOW_DAYS } from '../../../src/application/trainer/conditional-offer'
+import { contractAcks } from '../../../src/application/trainer/contract-body'
+import { createHash } from 'node:crypto'
+
+const sha256 = (v: string) => createHash('sha256').update(v).digest('hex')
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -56,6 +60,32 @@ async function mkCandidate() {
   return { app, profile, userId: user.userId }
 }
 
+/** يُرسِل العرضَ ويرفع وثيقةَ الهويّة ثمّ يوقّع — والوثيقةُ لازمةٌ (البند 15-2) */
+async function signSent(contractId: string) {
+  const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
+  const sent = await review.sendContract(contractId, academicId)
+  await prisma.trainerContractDocument.create({
+    data: {
+      contractId, kind: 'national_id', storageKey: `cond-${contractId}`,
+      originalName: 'id.pdf', mime: 'application/pdf', sizeBytes: 1024,
+    },
+  })
+  await review.signContractByToken(decodeURIComponent(sent.signingUrl.split('/c/')[1]), {
+    legalName: 'الاسمُ القانونيّ', addressAr: 'عمّان — بناية ١٢',
+    phone: '+962790000000', bodyHash: sha256(row.bodyAr!),
+    acks: contractAcks(true).map((a) => a.key),
+  })
+  return prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
+}
+
+/** يُركّب عرضا مشروطا ثمّ يوقّعه — ويردّ الصفَّ بعد التوقيع */
+async function signOffer(appId: string, title: string, orientationAt?: string) {
+  const made = await review.composeContract(appId, academicId, {
+    title, requiredDocuments: DOCS, ...(orientationAt ? { orientationAt } : {}),
+  })
+  return signSent(made.id)
+}
+
 beforeAll(async () => {
   await setupTestDb()
   prisma = await testPrisma()
@@ -73,8 +103,13 @@ beforeAll(async () => {
   })
 }, 240_000)
 
-describe('المهلةُ تُخزَّن محسوبةً من تاريخ الجلسة', () => {
-  it('التركيبُ يكتب الجلسةَ ورابطَها والمهلةَ = الجلسة + سبعة', async () => {
+/* ═══ والمهلةُ انتقل أصلُها إلى التوقيع (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «معه ٥ أيّام من بعد التوقيع لإتمام الموادّ». وكانت
+   تُحسَب عند التركيب من جلسة التهيئة، فقُلبت هذه المجموعةُ كلُّها ولم تُحذَف:
+   الجلسةُ تُحفَظ كما كانت، والمهلةُ تُكتب حيث صار أصلُها. */
+describe('المهلةُ تُكتب عند التوقيع لا عند التركيب', () => {
+  it('التركيبُ يكتب الجلسةَ ورابطَها ولا يكتب مهلةً', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const { app } = await mkCandidate()
     const made = await review.composeContract(app.id, academicId, {
@@ -85,54 +120,54 @@ describe('المهلةُ تُخزَّن محسوبةً من تاريخ الجل�
     const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
     expect(row.orientationAt?.toISOString()).toBe(SESSION.toISOString())
     expect(row.orientationUrl).toBe('https://meet.example.com/wajeez')
-    expect(row.conditionDeadlineAt?.getTime())
-      .toBe(SESSION.getTime() + MATERIALS_WINDOW_DAYS * DAY)
+    /* ولا تجري ساعةٌ على من لم يوقّع بعد — وهو الضمانُ الذي حُفظ عبر
+       التبديل: كان «لا ساعةَ بلا جلسةٍ يُعلَم بها»، فصار «لا ساعةَ قبل
+       أن يلتزم بها». */
+    expect(row.conditionDeadlineAt, 'جرت ساعةٌ على عرضٍ لم يُوقَّع بعد').toBeNull()
   })
 
-  /* ═══ الحارسُ الذي يثبت أنّ المبدأَ الجلسةُ لا لحظةُ التركيب ═══
+  /* ═══ الحارسُ الذي يثبت أنّ المبدأَ التوقيعُ لا الجلسة ═══
 
-     لو حُسبت المهلةُ من `now` لَاختلف التاريخان بين عرضَين رُكِّبا في وقتَين.
-     ويُقاس بلا انتظار: العرضان يحملان جلسةً واحدةً وتاريخُهما واحد. */
-  it('وعرضان بجلسةٍ واحدةٍ تنتهي مهلتُهما في اللحظة نفسِها', async () => {
+     كان يقيس عكسَه: «عرضان بجلسةٍ واحدةٍ تنتهي مهلتُهما في اللحظة نفسِها».
+     فقُلب — عرضان بجلسةٍ واحدةٍ يُوقَّعان في لحظتَين مهلتاهما مختلفتان. */
+  it('وعرضان بجلسةٍ واحدةٍ يُوقَّعان في لحظتَين مهلتاهما مختلفتان', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const first = await mkCandidate()
     const second = await mkCandidate()
-    const a = await review.composeContract(first.app.id, academicId, {
-      title: 'عرضٌ أوّل', requiredDocuments: DOCS, orientationAt: SESSION.toISOString(),
-    })
-    const b = await review.composeContract(second.app.id, academicId, {
-      title: 'عرضٌ ثانٍ', requiredDocuments: DOCS, orientationAt: SESSION.toISOString(),
-    })
-    const [ra, rb] = await Promise.all([
-      prisma.trainerContract.findUniqueOrThrow({ where: { id: a.id } }),
-      prisma.trainerContract.findUniqueOrThrow({ where: { id: b.id } }),
-    ])
-    expect(ra.conditionDeadlineAt?.getTime()).toBe(rb.conditionDeadlineAt?.getTime())
-    expect(ra.createdAt.getTime(), 'رُكِّبا في اللحظة نفسِها فلا يقيس الحارسُ شيئا')
-      .not.toBe(rb.createdAt.getTime())
+    const ra = await signOffer(first.app.id, 'عرضٌ أوّل', SESSION.toISOString())
+    const rb = await signOffer(second.app.id, 'عرضٌ ثانٍ', SESSION.toISOString())
+    expect(ra.signedAt!.getTime(), 'وُقِّعا في اللحظة نفسِها فلا يقيس الحارسُ شيئا')
+      .not.toBe(rb.signedAt!.getTime())
+    expect(ra.conditionDeadlineAt!.getTime() - ra.signedAt!.getTime(),
+      'المهلةُ لا تُقاس من التوقيع').toBe(MATERIALS_WINDOW_DAYS * DAY)
+    expect(ra.conditionDeadlineAt!.getTime(),
+      'تساوت مهلتاهما — فالأصلُ ليس التوقيع').not.toBe(rb.conditionDeadlineAt!.getTime())
   })
 
-  /* ═══ وقُلب هذا الحارسُ يومَ صارت الجلسةُ لازمة (٢٦ سبتمبر ٢٠٢٦) ═══
+  /* ═══ وسقط شرطُ الجلسة عند التركيب (٢٧ سبتمبر ٢٠٢٦) ═══
 
-     كان يقيس أنّ «عرضا بلا تاريخِ جلسةٍ لا مهلةَ له» — وهو صوابٌ يومَ كُتب:
-     الجلسةُ اختياريّةٌ، والضمانُ أن لا تبدأ ساعةٌ صامتةٌ على من لم يُعلَم بها.
+     كان التركيبُ يُردّ بلا جلسة، وعلّتُه أنّ «بلا مهلة» لم تكن حالةً عابرة:
+     لا مسارَ يكتب المهلةَ بعد التركيب إلّا التمديدُ، وهو يشترط مهلةً قائمة.
+     فمن رُكّب عرضُه بلا جلسةٍ بقي بلا مهلةٍ أبدا.
 
-     ونسخه قرارُ صاحب المنصّة: «نعم — بعد أن يوقّعوا ونوقّعَ العرضَ المشروط،
-     تصلهم دعوةُ جلسة التهيئة». وعلّتُه أنّ «بلا مهلة» **لم تكن حالةً عابرة**
-     تُكتب لاحقا: لا مسارَ يكتب المهلةَ بعد التركيب إلّا التمديدُ، وهو يشترط
-     مهلةً قائمة. فمن رُكّب عرضُه بلا جلسةٍ بقي بلا مهلةٍ أبدا، ولا يستطيع أن
-     يُعلن اكتمالَ موادّه، فيُعتمَد والشرطُ في متنه لا يُنفَّذ منه شيء.
-
-     والضمانُ الذي وُضع له هذا الحارسُ باقٍ في موضعه الصحيح: لا ساعةَ صامتة —
-     لأنّه **لا ساعةَ بلا جلسةٍ يُعلَم بها** أصلا. فيُقاس المنعُ مكانَ الفراغ. */
-  it('ولا يُركَّب عرضٌ مشروطٌ بلا تاريخِ جلسة', async () => {
+     وقد زالت العلّةُ نفسُها: التوقيعُ يكتب المهلةَ لكلّ عرضٍ مشروط. فلم يعد
+     ثمّ «عرضٌ بلا مهلةٍ أبدا»، فلا موجبَ لردّ التركيب. ويُقاس هنا المنعُ
+     الذي زال: يُركَّب، ثمّ يُوقَّع فتُكتب مهلتُه. */
+  it('ويُركَّب عرضٌ مشروطٌ بلا تاريخِ جلسة — ومهلتُه تُكتب بتوقيعه', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const { app } = await mkCandidate()
-    await expect(review.composeContract(app.id, academicId, {
+    const made = await review.composeContract(app.id, academicId, {
       title: 'عرضٌ بلا جلسة', requiredDocuments: DOCS,
-    })).rejects.toMatchObject({ code: 'orientation_required' })
-    expect(await prisma.trainerContract.count({ where: { profile: { applicationId: app.id } } }),
-      'رُدَّ التركيبُ وبقي صفٌّ يتيم').toBe(0)
+    })
+    const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
+    expect(row.gatesActivation, 'رُكّب غيرَ مشروطٍ فسقط الفحصُ كلُّه').toBe(true)
+    expect(row.orientationAt, 'اختُرعت جلسةٌ لم تُعطَ').toBeNull()
+    expect(row.conditionDeadlineAt, 'جرت ساعةٌ على عرضٍ لم يُوقَّع').toBeNull()
+
+    const after = await signSent(made.id)
+    expect(after.conditionDeadlineAt, 'وُقِّع ولا مهلةَ — فلا طورَ موادّ').not.toBeNull()
+    expect(after.conditionDeadlineAt!.getTime() - after.signedAt!.getTime())
+      .toBe(MATERIALS_WINDOW_DAYS * DAY)
   })
 
   it('ومتنُه يحمل بندَ الشرط وعنوانَ «عرض مشروط»', async () => {

@@ -10,45 +10,55 @@ import {
 } from '@/application/trainer/conditional-offer'
 
 const DAY = 86_400_000
-const SESSION = new Date('2026-10-01T16:00:00Z')
-const DUE = new Date(SESSION.getTime() + MATERIALS_WINDOW_DAYS * DAY)
+/* التوقيعُ — وهو أصلُ الأجل منذ ٢٧ سبتمبر ٢٠٢٦ */
+const SIGNED = new Date('2026-10-01T16:00:00Z')
+const DUE = new Date(SIGNED.getTime() + MATERIALS_WINDOW_DAYS * DAY)
 
-describe('المهلةُ سبعةُ أيّامٍ من تاريخ الجلسة', () => {
-  it('تُحسب من تاريخ الجلسة زائدَ سبعة', () => {
-    expect(MATERIALS_WINDOW_DAYS).toBe(7)
-    expect(deadlineFrom(SESSION)!.toISOString()).toBe(DUE.toISOString())
+/* ═══ الأصلُ صار التوقيعَ لا الجلسة (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «معه ٥ أيّام من بعد التوقيع لإتمام الموادّ». وكانت
+   سبعةً من جلسة التهيئة.
+
+   وهذا يُبدّل **المبدأ** لا الرقمَ وحدَه، ومقياسُه في آخر هذه المجموعة:
+   عرضان يُوقَّعان في يومَين مهلتاهما مختلفتان. وكان الحارسُ هنا يقيس عكسَه
+   بحرفه — «تنتهي مهلتُهما في اللحظة نفسِها» — فقُلب ولم يُحذَف. */
+describe('المهلةُ خمسةُ أيّامٍ من التوقيع', () => {
+  it('تُحسب من التوقيع زائدَ خمسة', () => {
+    expect(MATERIALS_WINDOW_DAYS).toBe(5)
+    expect(deadlineFrom(SIGNED)!.toISOString()).toBe(DUE.toISOString())
   })
 
-  it('ولا مهلةَ لعرضٍ بلا تاريخِ جلسة', () => {
+  it('ولا مهلةَ لعرضٍ لم يُوقَّع', () => {
     expect(deadlineFrom(null)).toBeNull()
     expect(deadlineFrom(undefined)).toBeNull()
     expect(deadlineFrom('ليس تاريخا')).toBeNull()
   })
 
-  /* الحارسُ الذي يثبت أنّ المبدأَ الجلسةُ لا التوقيع: لو حُسبت من التوقيع
-     لَاختلف اليومان. وهو مقيسٌ على البنية — الدالّةُ لا تعرف التوقيعَ أصلا. */
-  it('وعرضان يُوقَّعان في يومَين بجلسةٍ واحدةٍ تنتهي مهلتُهما في اللحظة نفسِها', () => {
-    const first = deadlineFrom(SESSION)
-    const second = deadlineFrom(new Date(SESSION))
-    expect(first!.getTime()).toBe(second!.getTime())
-    expect(deadlineFrom.length).toBeLessThanOrEqual(2)
+  /* والمقياسُ الذي يُثبت أنّ المبدأَ التوقيعُ لا الجلسة: لو كانت الجلسةُ
+     لَتساوت مهلتا موقِّعَين في يومَين — وهي حالٌ تقع كثيرا: عرضٌ يُركَّب
+     لاثنين بجلسةٍ واحدةٍ فيوقّع أحدُهما اليومَ والآخرُ غدا. */
+  it('وعرضان يُوقَّعان في يومَين مهلتاهما مختلفتان بمقدار ما بينهما', () => {
+    const today = deadlineFrom(SIGNED)!
+    const tomorrow = deadlineFrom(new Date(SIGNED.getTime() + DAY))!
+    expect(tomorrow.getTime() - today.getTime(),
+      'تساوت مهلتا موقِّعَين في يومَين — فالأصلُ ليس التوقيع').toBe(DAY)
   })
 })
 
 describe('أطوارُ الشرط', () => {
   it('بلا مهلةٍ فطورُه «لا مهلة» — ولو مضى شهر', () => {
-    const f = { now: new Date(SESSION.getTime() + 30 * DAY) }
+    const f = { now: new Date(SIGNED.getTime() + 30 * DAY) }
     expect(conditionPhase(f)).toBe('none')
     expect(isLapsed(f)).toBe(false)
     expect(daysLeft(f)).toBeNull()
   })
 
   it('وتسير ما لم تنقضِ', () => {
-    expect(conditionPhase({ conditionDeadlineAt: DUE, now: SESSION })).toBe('running')
+    expect(conditionPhase({ conditionDeadlineAt: DUE, now: SIGNED })).toBe('running')
   })
 
   it('وتتجمّد بإعلان الاكتمال', () => {
-    const f = { conditionDeadlineAt: DUE, conditionPausedAt: SESSION, now: new Date(DUE.getTime() + 5 * DAY) }
+    const f = { conditionDeadlineAt: DUE, conditionPausedAt: SIGNED, now: new Date(DUE.getTime() + 5 * DAY) }
     expect(conditionPhase(f)).toBe('under_review')
     /* ولا تنقضي وهي مجمَّدةٌ ولو تجاوز الوقتُ تاريخَها — وهو المقصود */
     expect(isLapsed(f)).toBe(false)
@@ -74,8 +84,8 @@ describe('أطوارُ الشرط', () => {
 })
 
 describe('ما بقي من الأيّام', () => {
-  it('سبعةٌ في لحظة الجلسة', () => {
-    expect(daysLeft({ conditionDeadlineAt: DUE, now: SESSION })).toBe(7)
+  it('خمسةٌ في لحظة التوقيع', () => {
+    expect(daysLeft({ conditionDeadlineAt: DUE, now: SIGNED })).toBe(MATERIALS_WINDOW_DAYS)
   })
 
   it('ويُجبَر الكسرُ إلى أعلى — فمن بقي له ساعةٌ له «يومٌ» لا صفر', () => {
@@ -83,8 +93,8 @@ describe('ما بقي من الأيّام', () => {
   })
 
   it('ولا عددَ لمن لا مهلةَ له ولا لمن تجمّدت ولا لمن انقضت', () => {
-    expect(daysLeft({ now: SESSION })).toBeNull()
-    expect(daysLeft({ conditionDeadlineAt: DUE, conditionPausedAt: SESSION, now: SESSION })).toBeNull()
+    expect(daysLeft({ now: SIGNED })).toBeNull()
+    expect(daysLeft({ conditionDeadlineAt: DUE, conditionPausedAt: SIGNED, now: SIGNED })).toBeNull()
     expect(daysLeft({ conditionDeadlineAt: DUE, now: new Date(DUE.getTime() + DAY) })).toBeNull()
   })
 })
@@ -98,7 +108,7 @@ describe('التذكيرُ مرّةً واحدة', () => {
   })
 
   it('ولا يُستحقّ مبكّرا', () => {
-    expect(dueReminder({ conditionDeadlineAt: DUE, now: SESSION })).toBe(false)
+    expect(dueReminder({ conditionDeadlineAt: DUE, now: SIGNED })).toBe(false)
   })
 
   it('ولا يُطرَق بابٌ مرّتين', () => {
@@ -133,7 +143,7 @@ describe('التجميدُ يزيد المهلةَ بمقدار مدّته با�
   })
 
   it('ومن لا مهلةَ له لا يكسبها بالتجميد', () => {
-    expect(deadlineAfterPause({ conditionPausedAt: SESSION }, new Date())).toBeNull()
+    expect(deadlineAfterPause({ conditionPausedAt: SIGNED }, new Date())).toBeNull()
   })
 })
 
@@ -146,7 +156,7 @@ describe('التمديدُ يُمنح مرّةً', () => {
   })
 
   it('والثانيةُ تُردّ بنصٍّ يدلّه على التأجيل', () => {
-    const problem = extendProblemAr({ conditionDeadlineAt: DUE, conditionExtendedAt: SESSION })
+    const problem = extendProblemAr({ conditionDeadlineAt: DUE, conditionExtendedAt: SIGNED })
     expect(problem).not.toBeNull()
     expect(problem).toMatch(/التأجيل/)
   })
@@ -167,7 +177,7 @@ describe('سطرُ الشريط', () => {
   })
 
   it('ويقول للمجمَّدة إنّ وقتَ المراجعة لا يُحسب عليه', () => {
-    expect(conditionLineAr({ conditionDeadlineAt: DUE, conditionPausedAt: SESSION, now: SESSION }))
+    expect(conditionLineAr({ conditionDeadlineAt: DUE, conditionPausedAt: SIGNED, now: SIGNED }))
       .toMatch(/مجمَّد/)
   })
 
@@ -178,7 +188,7 @@ describe('سطرُ الشريط', () => {
   })
 
   it('ومن لا مهلةَ له يُقال له إنّ الجلسةَ تبدؤها — لا يُقال «صفرُ أيّام»', () => {
-    const l = conditionLineAr({ now: SESSION })
+    const l = conditionLineAr({ now: SIGNED })
     expect(l).toMatch(/جلسة التهيئة/)
     expect(l).not.toMatch(/0|صفر/)
   })

@@ -32,6 +32,7 @@ import {
 } from '@/application/trainer/contract-body'
 import { parseContractDoc, feeRuleCells, blockLineAr } from '@/application/trainer/contract-sections'
 import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR, SEASON_COURSES } from '@/application/trainer/fee-example'
+import { EXTENSION_DAYS, MATERIALS_WINDOW_DAYS } from '@/application/trainer/conditional-offer'
 
 const COURSES = [
   { courseId: 'C-A', titleAr: 'أساسيّاتُ تحليل البيانات' },
@@ -60,11 +61,13 @@ const base = (over: Partial<ContractBodyInput> = {}): ContractBodyInput => ({
 })
 
 /** شروطُ عرضٍ مشروطٍ عُرف موعدُ جلسته — وللمجهولِ موعدُها اختبارٌ بعينه */
+/* والمهلةُ من موضعها لا رقما يُكتب هنا: نسختان تفترقان فيخضرّ الفحصُ على
+   رقمٍ لا يُرسَل. وقد وقع ذلك في ٢٧ سبتمبر ٢٠٢٦ حين صارت خمسةً. */
 const CONDITIONAL: NonNullable<ContractBodyInput['conditional']> = {
   orientationOnAr: 'الخميس 1 أكتوبر 2026، 7:00 م',
   deadlineOnAr: '8 أكتوبر 2026',
-  windowDays: 7,
-  extensionDays: 2,
+  windowDays: MATERIALS_WINDOW_DAYS,
+  extensionDays: EXTENSION_DAYS,
 }
 
 /** أرقامُ البنود كما وردت في المتن، بترتيب ورودها */
@@ -654,14 +657,23 @@ describe('العرضُ المشروط', () => {
     const body = offer()
     expect(body).toContain(CONDITIONAL.orientationOnAr!)
     expect(body).toContain(CONDITIONAL.deadlineOnAr!)
-    expect(body, 'المهلةُ لم تُذكر بعددها').toMatch(/مهلة 7 أيام/)
+    expect(body, 'المهلةُ لم تُذكر بعددها').toMatch(new RegExp(`مهلة ${MATERIALS_WINDOW_DAYS} أيام`))
   })
 
-  /* ومن أُرسل إليه عرضٌ ولمّا يُعرَف موعدُ جلسته: لا يُخترَع له تاريخٌ ولا
-     يُقال «أمامك سبعةٌ» بلا مبدإٍ — بل يُقال إنّ المهلةَ لا تبدأ قبل إخطاره. */
-  it('ومن لا موعدَ لجلسته يقول متنُه إنّ المهلةَ لا تبدأ قبل إخطاره', () => {
+  /* ═══ ومن لمّا يُعرَف موعدُ جلسته (٢٧ سبتمبر ٢٠٢٦) ═══
+
+     كان متنُه يقول «ولا تبدأ المهلة قبل إخطاره به» — لأنّ الجلسةَ كانت أصلَ
+     الأجل، فبلا موعدها لا مبدأَ للمهلة. وصار الأصلُ التوقيعَ، فللمهلة مبدأٌ
+     دائما ولو لم يُعرَف موعدُ الجلسة بعد.
+
+     فالمحروسُ انتقل: لا يُقال «لا تبدأ»، ويُقال المبدأُ صريحا — ولا يُخترَع
+     موعدٌ لجلسةٍ لم تُحدَّد، ولا يُطبَع انتهاءٌ في متنٍ يُجمَّد قبل التوقيع. */
+  it('ومن لا موعدَ لجلسته يقول متنُه مبدأَ المهلة ويَعِد بالجلسة بلا تاريخ', () => {
     const body = offer({ orientationOnAr: null, deadlineOnAr: null })
-    expect(body).toMatch(/ولا تبدأ المهلة قبل إخطاره به/)
+    expect(body, 'المبدأُ لم يُقَلْ').toMatch(/تبدأ من تاريخ توقيعه هذا العرض/)
+    expect(body, 'ما زال يقول إنّ المهلةَ لا تبدأ — ولها مبدأٌ الآن')
+      .not.toMatch(/ولا تبدأ المهلة قبل إخطاره به/)
+    expect(body, 'لم يُوعَدْ بالجلسة').toMatch(/ويبلغ المدرب بموعدها كتابة بعد توقيعه/)
     expect(body, 'تاريخٌ اختُرع لجلسةٍ لم يُعرَف موعدُها').not.toContain(CONDITIONAL.orientationOnAr!)
     expect(body, 'مهلةٌ انتهت إلى تاريخٍ لا مبدأَ له').not.toMatch(/وتنتهي هذه المهلة بتاريخ/)
   })
@@ -889,8 +901,12 @@ describe('الخلاصةُ في سطور', () => {
     /* والمقيسُ **ألّا يُعلَن انتهاءٌ أصلا** لا أن يخلو السطرُ من تاريخٍ
        بعينه: ذاك لا يُنقَض بحال — فالتاريخُ غيرُ ممرَّرٍ أصلا فلا سبيلَ إلى
        طبعه، وحارسٌ لا يُنقَض زينة. أمّا «وتنتهي» فتُطبَع بنقضٍ واحد. */
-    expect(mudda, 'أُعلن انتهاءُ مهلةٍ لمن لا تاريخَ لجلسته').not.toMatch(/وتنتهي/)
-    expect(mudda, 'لم تُحَل إلى إخطارٍ لاحقٍ بالتاريخ').toMatch(/تخطرك/)
+    expect(mudda, 'أُعلن انتهاءُ مهلةٍ لم يبدأ سريانُها').not.toMatch(/وتنتهي/)
+    /* وكان يُقاس أنّ السطرَ يُحيل إلى إخطارٍ لاحقٍ بتاريخ الجلسة — وذاك
+       يومَ كانت الجلسةُ أصلَ الأجل. والمبدأُ الآن التوقيعُ فيُقال صريحا،
+       والجلسةُ وعدٌ يُبلَّغ موعدُه بعده. */
+    expect(mudda, 'لم يُقَلْ مبدأُ المهلة').toMatch(/تبدأ من يوم توقيعك/)
+    expect(mudda, 'لم يُوعَدْ بالجلسة').toMatch(/يبلغك بموعدها بعد التوقيع/)
   })
 
   it('٧) والاتفاقيّةُ المطلقةُ لا خلاصةَ شرطٍ فيها ولا مهلة', () => {

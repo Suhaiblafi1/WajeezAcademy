@@ -118,14 +118,26 @@ describe('التوقيعُ يفتح بابَ الموادّ', () => {
     /* والغايةُ لا الوسيلة: البابُ يُسأل بالدالّة التي تسأله في الخادم */
     expect(canWorkOnMaterials({ status: after.status }), 'وقّع والبابُ مقفلٌ دونه').toBe(true)
 
+    /* ═══ ومهلتُه تُكتب بتوقيعه (٢٧ سبتمبر ٢٠٢٦) ═══
+
+       وهي خمسةُ أيّامٍ من هذه اللحظة، والمذكِّرُ لا يخرج إلّا قبل يومَين من
+       الأجل (`REMINDER_LEAD_DAYS`). فتُقرَّب المهلةُ هنا إلى نافذة التذكير:
+       المقيسُ **أنّ العاملَ يجده** — وهو الذي كان يتخطّاه قبل أن يُفتح بابُه
+       — لا مقدارُ المهلة، وذاك مقيسٌ في `conditional-offer.test.ts`. */
+    const profileId = (await prisma.trainerProfile.findUniqueOrThrow({
+      where: { applicationId: application.id },
+    })).id
+    const signed = await prisma.trainerContract.findFirstOrThrow({ where: { profileId } })
+    expect(signed.conditionDeadlineAt, 'وُقِّع ولا مهلةَ — فلا طورَ موادّ').not.toBeNull()
+    await prisma.trainerContract.update({
+      where: { id: signed.id },
+      data: { conditionDeadlineAt: new Date(Date.now() + 86_400_000) },
+    })
+
     /* والعاملُ يجده الآن — وهو الذي كان يتخطّاه */
     const { reminded } = await review.remindConditionDeadlines(new Date())
     expect(reminded, 'انقضت مهلتُه ولا مذكِّر').toBeGreaterThanOrEqual(1)
-    const c = await prisma.trainerContract.findFirstOrThrow({
-      where: { profileId: (await prisma.trainerProfile.findUniqueOrThrow({
-        where: { applicationId: application.id },
-      })).id },
-    })
+    const c = await prisma.trainerContract.findFirstOrThrow({ where: { profileId } })
     expect(c.conditionRemindedAt, 'ذُكِّر ولم يُؤشَّر — فيُطرَق بابُه كلَّ ساعة').not.toBeNull()
   })
 
