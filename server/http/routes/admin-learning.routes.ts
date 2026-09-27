@@ -249,12 +249,13 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      فورا: يُشتكى منه المدرّبُ بعد أسبوعٍ حين يعجز عن الجدولة. */
   app.post('/api/admin/cohorts/open-for-trainer', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-learning'], summary: 'فتحُ شعبةٍ لمدرّب — دورةٌ ومدرّبٌ وفصلٌ في فعلٍ واحد' },
+    schema: { tags: ['admin-learning'], summary: 'فتحُ شعبةٍ لمدرّب — دورةٌ ومدرّبٌ في فعلٍ واحد، والفصلُ اختياريٌّ يُشتقّ من مدّته عند الاعتماد' },
   }, async (req, reply) => {
     const body = z.object({
       courseId: z.string().min(3).max(40),
       profileId: z.string().uuid(),
-      termId: z.string().uuid(),
+      /* اختياريّ (٣ج-٥): بلا فصلٍ يُشتقّ من تاريخ البدء الذي يحدّده المدرّبُ حين تُعتمَد خطّتُه */
+      termId: z.string().uuid().optional(),
       title: z.string().min(3).max(200),
       pathwayId: z.string().optional(),
       capacity: z.number().int().min(1).optional(),

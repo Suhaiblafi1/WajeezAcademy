@@ -751,18 +751,28 @@ export class CohortService {
      نسيانا الفصلُ لأنّه الوحيدُ الذي لا يُشتكى من غيابه فورا — بل يُشتكى
      منه المدرّبُ بعد أسبوعٍ حين يعجز عن الجدولة.
 
-     فالثلاثةُ في معاملةٍ واحدة: ما لم يتمّ كلُّه لم يقع منه شيء. */
+     فالثلاثةُ في معاملةٍ واحدة: ما لم يتمّ كلُّه لم يقع منه شيء.
+
+     ═══ والفصلُ اختياريّ (٣ج-٥) ═══
+
+     صارت المدّةُ للمدرّب يحدّدها في خطّته، والفصلُ يُشتقّ من تاريخ بدئها حين
+     تُعتمَد (`applyPeriod`) — «الفصلُ لا يُسأل عنه المدرّب» (صاحب المنصّة،
+     ٢٧ سبتمبر ٢٠٢٦). فمن فُتحت له شعبةٌ بلا فصلٍ لا ينتظر أحدا: حفظُ مدّته
+     يفتح نافذةَ جدولته. وإن سمّت الإدارةُ فصلا بقي كما كان — حدودٌ مبدئيّةٌ
+     حتّى يحدّد مدرّبُها مدّتَه. */
   async openForTrainer(actorId: string, input: {
-    courseId: string; profileId: string; termId: string; title: string
+    courseId: string; profileId: string; termId?: string | null; title: string
     pathwayId?: string; capacity?: number; price?: number; currency?: string
     language?: string; deliveryMode?: 'remote' | 'in_person' | 'hybrid'
   }) {
-    const term = await this.prisma.term.findUnique({
-      where: { id: input.termId },
-      select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
-    })
-    if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
-    if (['closed', 'cancelled'].includes(term.status)) {
+    const term = input.termId
+      ? await this.prisma.term.findUnique({
+          where: { id: input.termId },
+          select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
+        })
+      : null
+    if (input.termId && !term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
+    if (term && ['closed', 'cancelled'].includes(term.status)) {
       throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
     }
 
@@ -784,20 +794,22 @@ export class CohortService {
 
     const cohort = await this.create(actorId, {
       courseId: input.courseId, pathwayId: input.pathwayId, title: input.title,
-      termId: term.id,
-      startsAt: term.startsOn, endsAt: term.endsOn,
+      ...(term ? { termId: term.id, startsAt: term.startsOn, endsAt: term.endsOn } : {}),
       capacity: input.capacity, price: input.price, currency: input.currency,
       language: input.language, deliveryMode: input.deliveryMode,
     })
-    /* والنافذةُ تُفتح من حدود الفصل في الصفّ نفسِه — لا بنداءٍ ثانٍ يُنسى */
-    await this.prisma.cohort.update({
-      where: { id: cohort.id },
-      data: { scheduleWindowStart: term.startsOn, scheduleWindowEnd: term.endsOn },
-    })
+    /* والنافذةُ تُفتح من حدود الفصل في الصفّ نفسِه — لا بنداءٍ ثانٍ يُنسى.
+       وبلا فصلٍ تفتحها مدّةُ المدرّب لحظةَ يحفظها (`savePlan`) */
+    if (term) {
+      await this.prisma.cohort.update({
+        where: { id: cohort.id },
+        data: { scheduleWindowStart: term.startsOn, scheduleWindowEnd: term.endsOn },
+      })
+    }
     await this.assignTrainer(cohort.id, input.profileId, actorId, 'lead')
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.open_for_trainer', entityType: 'cohort', entityId: cohort.id,
-      meta: { courseId: input.courseId, profileId: input.profileId, termId: term.id, termTitle: term.titleAr },
+      meta: { courseId: input.courseId, profileId: input.profileId, termId: term?.id ?? null, termTitle: term?.titleAr ?? null },
     })
     return { cohortId: cohort.id, title: cohort.title, term }
   }

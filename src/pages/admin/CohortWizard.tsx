@@ -56,11 +56,13 @@ export default function CohortWizard({
   onError,
 }: {
   courses: WizardCourse[];
-  /* ═══ ولمَ الفصلُ في المعالج لا بعده ═══
+  /* ═══ والفصلُ في المعالج اختياريّ (٣ج-٥) ═══
 
-     قرارُ صاحب المنصّة (١٧ سبتمبر ٢٠٢٦): «عندما نقوم بإسناد دورةٍ لمدرّب
-     نحدّد لأيّ فصلٍ ستكون، وبهذا نكون فتحنا شعبةً له». فالشعبةُ تُولَد
-     بفصلها أو لا تُولَد — وشعبةٌ بلا فصلٍ تحبس مدرّبَها عن الجدولة كلِّها. */
+     كان قرارُ ١٧ سبتمبر ٢٠٢٦: «عندما نقوم بإسناد دورةٍ لمدرّب نحدّد لأيّ فصلٍ
+     ستكون» — لأنّ شعبةً بلا فصلٍ كانت تحبس مدرّبَها عن الجدولة. ثمّ صارت المدّةُ
+     للمدرّب يحدّدها في خطّته فتُفتح جدولتُه لحظةَ يحفظها، والفصلُ يُشتقّ من تاريخ
+     بدئها حين تُعتمَد — «الفصلُ لا يُسأل عنه المدرّب» (٢٧ سبتمبر ٢٠٢٦). فلا
+     يُمنع الإنشاءُ بلا فصل، ومن سمّاه هنا وضع حدودا مبدئيّةً حتّى ذلك الحين. */
   terms: WizardTerm[];
   onDone: (message: string) => void;
   onError: (message: string) => void;
@@ -164,7 +166,6 @@ export default function CohortWizard({
     const m: string[] = [];
     if (step === 0) {
       if (!courseId) m.push("اختر الدورةَ من القائمة");
-      if (!termId) m.push("اختر الفصلَ — الشعبةُ تُولَد بفصلها، وبلا فصلٍ يُحبَس مدرّبُها عن الجدولة");
       if (title.trim().length < 3) m.push("اكتب عنوانا للشعبة — ثلاثةُ أحرفٍ على الأقلّ");
     } else if (step === 1) {
       if (days.length === 0) m.push("اختر يوما واحدا على الأقلّ");
@@ -177,7 +178,7 @@ export default function CohortWizard({
       if (price !== "" && Number(price) < 0) m.push("السعرُ صفرٌ أو أكثر");
     }
     return m;
-  }, [step, courseId, termId, title, days, startTime, weeks, duration, preview.length, capacity, price]);
+  }, [step, courseId, title, days, startTime, weeks, duration, preview.length, capacity, price]);
 
   const canNext = stepMissing.length === 0;
 
@@ -318,28 +319,28 @@ export default function CohortWizard({
               </Inset>
             )}
 
-            {/* ═══ الفصلُ يُسمَّى هنا لا بعدُ ═══
+            {/* ═══ والفصلُ اختياريٌّ هنا (٣ج-٥) ═══
 
-                الشعبةُ تُولَد بفصلها: منه حدودُها، ومنه نافذةُ جدولة مدرّبها.
-                وشعبةٌ بلا فصلٍ تحبس من يُسنَد إليها عن الجدولة كلِّها — وهي
-                الحالةُ التي يُفرَغ منها طابورُ «شعبٌ لم يُسمَّ فصلُها». */}
-            <label className="mt-3 block text-xs text-muted-foreground" htmlFor="wiz-term">الفصل</label>
+                يُشتقّ من تاريخ البدء الذي يحدّده المدرّبُ في خطّته حين تُعتمَد.
+                ومن سمّاه هنا وضع للشعبة حدودا مبدئيّةً ونافذةَ جدولةٍ حتّى ذلك
+                الحين — ولا يُمنع الإنشاءُ بدونه. */}
+            <label className="mt-3 block text-xs text-muted-foreground" htmlFor="wiz-term">الفصل (اختياريّ)</label>
             <select id="wiz-term" value={termId} onChange={(e) => setTermId(e.target.value)} className={inputCls}>
-              <option value="">اختر الفصل…</option>
+              <option value="">بلا فصل — يُشتقّ من تاريخ البدء</option>
               {terms
                 .filter((t) => !["closed", "cancelled"].includes(t.status))
                 .map((t) => <option key={t.id} value={t.id}>{t.titleAr}</option>)}
             </select>
-            {terms.length === 0 ? (
-              <p className="mt-2 text-read leading-6 text-gold-ink">
-                لا موسمَ مفتوحٌ بعد — أنشئه في «المواسم»، فلا تُفتح شعبةٌ بلا فصل.
-              </p>
-            ) : (
-              <p className="mt-2 text-read leading-6 text-muted-foreground">
-                حدودُ الفصل حدودُ الشعبة، وداخلَها يجدول مدرّبُها لقاءاته.
-                {term && <> يبدأ {term.startsOn.slice(0, 10)} وينتهي {term.endsOn.slice(0, 10)}.</>}
-              </p>
-            )}
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              {term ? (
+                <>حدودٌ مبدئيّةٌ حتّى يحدّد مدرّبُها مدّتَه: يبدأ {term.startsOn.slice(0, 10)} وينتهي {term.endsOn.slice(0, 10)}.</>
+              ) : (
+                <>
+                  يحدّد مدرّبُها متى تبدأ ومتى تنتهي في خطّته، ويُشتقّ فصلُها من تاريخ بدئها حين تُعتمَد.
+                  {terms.length === 0 && " ولا موسمَ مفتوحٌ بعد — فلا فصلَ يُسمّى هنا الآن."}
+                </>
+              )}
+            </p>
           </div>
         </div>
       )}
