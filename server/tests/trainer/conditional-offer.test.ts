@@ -309,11 +309,22 @@ describe('مهلةُ العرض المشروط في العامل', () => {
   /* ═══ والموقَّعُ الذي لم نعتمده بعدُ لا يُذكَّر ═══
 
      مهلتُه لم تبدأ أصلا، وبوّابتُه لم تُفتح. وتذكيرٌ بمهلةٍ لم تبدأ يجعله
-     يطرق بابا لم نفتحه بعد. */
-  it('ولا يذكّر من وُقِّع عرضُه ولم يُعتمَد توقيعُه بعد', async () => {
+     يطرق بابا لم نفتحه بعد.
+
+     ── وصِيغ هذا الفحصُ أوّلا على حالٍ لا تقع (٢٧ سبتمبر ٢٠٢٦) ──
+
+     كان يضع الصفَّ `signed` **ويُبقي مهلتَه مكتوبةً**، ثمّ يتوقّع ألّا
+     يُذكَّر. وتلك هيئةٌ لا ينتجها المسارُ بعد اليوم — التوقيعُ لا يكتب مهلةً
+     — ولا توجد إلّا في صفٍّ من قبل تبدّل المسار، **وذاك يجب أن يُذكَّر**
+     لا أن يُترك (`inflight-at-cutover.test.ts`).
+
+     فالحدُّ الصادقُ أن يُقاس الموقَّعُ **بلا مهلة**: هو الشكلُ الوحيدُ الذي
+     يكتبه التوقيعُ اليوم. */
+  it('ولا يذكّر من وُقِّع عرضُه ولم يُعتمَد توقيعُه بعد — فلا مهلةَ له', async () => {
     const { contract } = await mkSignedWithDeadline(2)
     await prisma.trainerContract.update({
-      where: { id: contract.id }, data: { status: 'signed', countersignedAt: null },
+      where: { id: contract.id },
+      data: { status: 'signed', countersignedAt: null, conditionDeadlineAt: null },
     })
     await review.remindConditionDeadlines()
     expect(await remindersFor(contract.id), 'ذُكِّر بمهلةٍ لم تبدأ بعد').toBe(0)

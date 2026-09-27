@@ -2525,14 +2525,19 @@ export class TrainerReviewService {
       throw new AuthError('no_identity_document', 'وثيقةُ هويّةٍ واحدةٌ إلزاميّةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله', 422)
     }
 
-    /* تاريخُ الجلسة يُقرأ مرّةً: منه يُطبَع المتنُ ومنه تُحسب المهلةُ
-       المخزونة، فلا يفترق ما وُقّع عليه عمّا يُحسب به. */
+    /* وتاريخُ الجلسة يُقرأ مرّةً فيُطبَع في المتن. ولم يعد تُحسب منه مهلةٌ
+       (٢٧ سبتمبر ٢٠٢٦): الجلسةُ وعدٌ علينا لا أصلٌ لأجل. */
     const orientationAt = input.orientationAt ? new Date(input.orientationAt) : null
     if (input.orientationAt && Number.isNaN(orientationAt!.getTime())) {
       throw new AuthError('bad_orientation', 'تاريخُ جلسة التهيئة غيرُ مقروء', 422)
     }
-    /* ولا مهلةَ تُكتب هنا: أصلُها التوقيعُ ولمّا يقع. و`signContractByToken`
-       تكتبها لحظةَ توقيعه — وهو الموضعُ الوحيدُ الذي يُعرَف فيه أصلُها. */
+    /* ولا مهلةَ تُكتب هنا: أصلُها **اعتمادُنا لتوقيعه** ولمّا يقع.
+       و`countersignContract` تكتبها في اللحظة التي تُفتح فيها بوّابتُه ويُمنَح
+       فيها دورَه — ثلاثتُها في معاملةٍ واحدة، وهو الموضعُ الوحيد.
+
+       (وكان هذا التعليقُ يُحيل إلى `signContractByToken`، وصدَق يوما: أصلُ
+       المهلة كان التوقيعَ. فنُقل الأصلُ وبقي التعليقُ يدلّ على موضعٍ لا
+       يكتب شيئا.) */
 
     /* ═══ واسمُ الطرف الثاني يُثبَّت قبل أن يُجمَّد المتن ═══
 
@@ -5024,15 +5029,33 @@ export class TrainerReviewService {
   async remindConditionDeadlines(now = new Date()): Promise<{ reminded: number }> {
     const candidates = await this.prisma.trainerContract.findMany({
       where: {
-        /* ═══ وحالُ العرض في طور الموادّ صارت `countersigned` (٢٧ سبتمبر) ═══
+        /* ═══ حالُ العرض في طور الموادّ — والصفوفُ التي كانت في الطريق ═══
+
+           ── أوّلا: الحالُ تبدّلت (٢٧ سبتمبر ٢٠٢٦) ──
 
            كان الطورُ يبدأ بتوقيعه، فالعرضُ فيه `signed`. وصار يبدأ باعتمادنا،
            فهو فيه `countersigned`. ولو بقي الشرطُ على `signed` لَوجد العاملُ
            صفرا أبدا — فلا يُذكَّر أحدٌ ولا يُنذَر، **وينقضي في صمت**. وهو
            بعينه العطبُ الذي بُني هذا العاملُ ليدفعه، يعود من بابٍ آخر.
 
-           وسقوطُه هذا أمسكه حارسُ `approval-opens-the-materials-door`. */
-        status: 'countersigned',
+           ── وثانيا: ومن كان في الطريق يومَ تبدّلت ──
+
+           وقُصر الشرطُ على `countersigned` وحدَها، **فسقط من كان في مهلته
+           تلك اللحظة**: صفٌّ وُقِّع أمسِ حالُه `signed`، وطلبُه `onboarding`
+           لأنّ التوقيعَ كان ينقله، ومهلتُه مكتوبةٌ تجري. فلا يجده عاملٌ بعد
+           اليوم. وقِيس ذلك بصفٍّ حقيقيّ: **صفرٌ في التذكير وصفرٌ في الانقضاء**
+           — العطبُ نفسُه، لمن كان في الطريق.
+
+           فالحالتان معا. ولا يلتقط هذا صفّا جديدا بالخطأ: `signed` بعد اليوم
+           **لا مهلةَ له أصلا** — لا يكتبها إلّا الاعتماد — والشرطُ أدناه
+           يقتضي `conditionDeadlineAt: { not: null }`. فاجتماعُهما لا يقع إلّا
+           في صفٍّ من العالم القديم، وهو يخلو بانقضاء آخرِ مهلةٍ منه.
+
+           ── ولمَ لا تُنقَل الصفوفُ إلى `countersigned` ──
+
+           ذاك أسهلُ استعلاما، وهو **إثباتُ توقيعٍ لم يقع**: الحالةُ تقول إنّ
+           الأكاديميّةَ وقّعت، ولم توقّعْ. فتزويرُ سجلٍّ لأجل راحةِ شرط. */
+        status: { in: ['signed', 'countersigned'] },
         gatesActivation: true,
         conditionMetAt: null,
         conditionPausedAt: null,
@@ -5100,15 +5123,11 @@ export class TrainerReviewService {
   async noticeLapsedConditions(now = new Date()): Promise<{ noticed: number }> {
     const candidates = await this.prisma.trainerContract.findMany({
       where: {
-        /* ═══ وحالُ العرض في طور الموادّ صارت `countersigned` (٢٧ سبتمبر) ═══
-
-           كان الطورُ يبدأ بتوقيعه، فالعرضُ فيه `signed`. وصار يبدأ باعتمادنا،
-           فهو فيه `countersigned`. ولو بقي الشرطُ على `signed` لَوجد العاملُ
-           صفرا أبدا — فلا يُذكَّر أحدٌ ولا يُنذَر، **وينقضي في صمت**. وهو
-           بعينه العطبُ الذي بُني هذا العاملُ ليدفعه، يعود من بابٍ آخر.
-
-           وسقوطُه هذا أمسكه حارسُ `approval-opens-the-materials-door`. */
-        status: 'countersigned',
+        /* الحالتان معا — وعلّتُهما في `remindConditionDeadlines` أعلاه:
+           الطورُ صار يبدأ بالاعتماد، ومن كان في الطريق يومَ تبدّل بقي
+           `signed` ومهلتُه تجري. ولا يلتقط هذا صفّا جديدا: الجديدُ
+           `signed` بلا مهلة، والشرطُ أدناه يقتضي مهلةً قائمة. */
+        status: { in: ['signed', 'countersigned'] },
         gatesActivation: true,
         conditionMetAt: null,
         conditionPausedAt: null,
