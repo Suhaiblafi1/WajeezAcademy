@@ -19,12 +19,23 @@ import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
-import { assertSeasonOpen, cohortAcceptsRegistration, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
+import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse } from './commerce/coupon-ledger'
+import { nextInvoiceNumber } from './commerce/invoice-number'
+import { refundedShare } from '../../src/application/trainer/trainer-code'
+import { assertSeasonOpen, cohortAcceptsRegistration, PLAN_GATE_SELECT, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
 
 /* اللبِناتُ المشتركةُ انتقلت إلى `commerce/cart-types` كي لا يصير الاستيرادُ
    حلقةً بين السلّة والخدمة. ويُعاد تصديرُها من هنا: مواضعُ الاستيراد القائمة
    تبقى عاملةً — الضمانُ لم يتغيّر، تغيّر بيتُه. */
 export { assertCouponUsable, type UsableCoupon } from './commerce/cart-types'
+
+/* كودُ المدرّب يُستعمل في الشراء المباشر وحدَه.
+
+   مسلكا الموافقة الإداريّة (طلبُ الخطّة وطلبُ الشعبة) يحسبان الكوبونَ على
+   المجموع الخام بلا `priceCart` — فلا نطاقَ فيهما يقصر الكودَ على دورات صاحبه،
+   ولا دفترَ استعمال. وقبولُه فيهما يُطبّق نسبتَه على دوراتِ غيره فيُحسم منه
+   ما لم يمنحه. فيُردّ بجملةٍ تقول أين يُستعمل. */
+const TRAINER_CODE_CHECKOUT_ONLY_AR = 'كودُ المدرّب يُستعمل عند الشراء المباشر من صفحة الدورة — لا في موافقة الطلبات'
 
 export class CommerceService {
   private referrals: ReferralService
@@ -70,7 +81,7 @@ export class CommerceService {
 
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
-      include: { term: TERM_WINDOW_SELECT },
+      include: { term: TERM_WINDOW_SELECT, plans: PLAN_GATE_SELECT },
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (!['open', 'full'].includes(cohort.status)) {
@@ -182,11 +193,14 @@ export class CommerceService {
     const subtotal = reqs.reduce((sum, r) => sum + num(r.cohort.price), 0)
     let discount = 0
     let couponId: string | undefined
+    let couponMaxUses: number | null = null
     if (couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } } } })
       assertCouponUsable(coupon, userId)
       /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+      if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
+      couponMaxUses = coupon.maxUses
       discount = coupon.percentOff ? Math.round((subtotal * coupon.percentOff) / 100 * 100) / 100 : num(coupon.amountOff)
       if (discount > subtotal) discount = subtotal
       couponId = coupon.id
@@ -208,12 +222,15 @@ export class CommerceService {
           },
         },
       })
-      const count = await tx.invoice.count()
-      const year = new Date().getFullYear()
+      /* الرقمُ بقفلٍ في المعاملة نفسِها — لا عدٌّ يتسابق عليه شراءان (`invoice-number.ts`) */
       await tx.invoice.create({
-        data: { number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`, orderId: o.id, amount: total, currency },
+        data: { number: await nextInvoiceNumber(tx), orderId: o.id, amount: total, currency },
       })
-      if (couponId) await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } })
+      if (couponId) {
+        await reserveCouponUse(tx, {
+          couponId, maxUses: couponMaxUses, orderId: o.id, userId, trainerCode: null, discount, currency,
+        })
+      }
       await tx.enrollmentRequest.updateMany({
         where: { id: { in: reqs.map((r) => r.id) } },
         data: { status: 'seat_held', orderId: o.id, decidedBy: actorId, decidedAt: new Date() },
@@ -312,6 +329,8 @@ export class CommerceService {
       items: pricing.lines.map((l) => ({
         cohortId: l.cohortId, courseId: l.courseId, titleAr: l.titleAr,
         listPrice: l.listPrice, unitPrice: l.unitPrice, isGift: l.isGift,
+        /* أيُّ الدورات خصمها الكود — كودُ المدرّب على دوراته وحدَها، فيُرى ذلك */
+        couponApplies: l.couponApplies,
       })),
     }
   }
@@ -337,7 +356,7 @@ export class CommerceService {
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds, true)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
-    const { pricing, couponId } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
+    const { pricing, couponId, couponMaxUses, trainerCode, trainerPurchase } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
     const { subtotal, discount, total } = pricing
 
     const order = await this.prisma.$transaction(async (tx) => {
@@ -353,15 +372,24 @@ export class CommerceService {
           },
         },
       })
-      const count = await tx.invoice.count()
-      const year = new Date().getFullYear()
+      /* الرقمُ بقفلٍ في المعاملة نفسِها — لا عدٌّ يتسابق عليه شراءان (`invoice-number.ts`) */
       const invoice = await tx.invoice.create({
         data: {
-          number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`,
+          number: await nextInvoiceNumber(tx),
           orderId: o.id, amount: total, currency,
         },
       })
-      if (couponId) await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } })
+      /* والكوبونُ يُحجز استعمالُه مع الطلب — ولكود المدرّب صفٌّ بما مُنح منه،
+         يصير دَينا عليه حين يُدفع لا الآن (`coupon-ledger.ts`) */
+      if (couponId) {
+        await reserveCouponUse(tx, {
+          couponId, maxUses: couponMaxUses, orderId: o.id, userId, trainerCode,
+          discount: pricing.couponDiscount, currency,
+          budgetCovers: trainerCode
+            ? (lockedTx) => this.cart.codeBudgetCovers(trainerCode.profileId, trainerPurchase, pricing.couponDiscount, lockedTx)
+            : undefined,
+        })
+      }
       /* حجزُ المقعد فورا — لا حالة `pending` تنتظر بشرا */
       for (const c of cohorts) {
         const referralCode = referral?.cohortId === c.id ? referral.code : undefined
@@ -391,6 +419,7 @@ export class CommerceService {
         bundlePct: pricing.bundlePct, bundleDiscount: pricing.bundleDiscount,
         couponDiscount: pricing.couponDiscount, discount,
         gift: pricing.lines.find((l) => l.isGift)?.courseId ?? null,
+        ...(trainerCode ? { trainerCodeId: trainerCode.id, trainerProfileId: trainerCode.profileId } : {}),
       },
     })
     /* ═══ والساعةُ التي تنقضي تُقال لصاحبها (ي-٤) ═══
@@ -447,13 +476,16 @@ export class CommerceService {
     /* الكوبون */
     let discount = 0
     let couponId: string | undefined
+    let couponMaxUses: number | null = null
     if (couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() } })
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } } } })
       /* المشتري صاحبُ الطلب لا الإداريُّ المعتمِد — والكوبونُ المقصور
          يُقاس على من تُصدَر له الفاتورة. */
       assertCouponUsable(coupon, req.userId)
       /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+      if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
+      couponMaxUses = coupon.maxUses
       const price = num(req.cohort.price)
       discount = coupon.percentOff ? Math.round(price * coupon.percentOff / 100 * 100) / 100 : num(coupon.amountOff)
       if (discount > price) discount = price
@@ -471,12 +503,16 @@ export class CommerceService {
           items: { create: [{ kind: 'cohort', refId: req.cohortId, titleAr: `${title} — ${req.cohort.title}`, unitPrice: subtotal }] },
         },
       })
-      const count = await tx.invoice.count()
-      const year = new Date().getFullYear()
+      /* الرقمُ بقفلٍ في المعاملة نفسِها — لا عدٌّ يتسابق عليه شراءان (`invoice-number.ts`) */
       await tx.invoice.create({
-        data: { number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`, orderId: o.id, amount: total, currency: req.cohort.currency },
+        data: { number: await nextInvoiceNumber(tx), orderId: o.id, amount: total, currency: req.cohort.currency },
       })
-      if (couponId) await tx.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } })
+      if (couponId) {
+        await reserveCouponUse(tx, {
+          couponId, maxUses: couponMaxUses, orderId: o.id, userId: req.userId, trainerCode: null,
+          discount, currency: req.cohort.currency,
+        })
+      }
       await tx.enrollmentRequest.update({
         where: { id: requestId }, data: { status: 'seat_held', orderId: o.id, decidedBy: actorId, decidedAt: new Date() },
       })
@@ -753,6 +789,8 @@ export class CommerceService {
        ولا تُنتظَر ولا تُسقط شيئا: الدالّةُ لا ترمي أبدا (انظر رأسَها)، فعطبٌ
        في قيدِ خصمٍ لا يترك متعلّما بلا تسجيلٍ عن مالٍ قُبض. */
     await this.trainerDiscounts.markUsedForOrder(orderId, order?.couponId ?? null)
+    /* وكودُه بالنسبة كذلك — اللحظةُ نفسُها والعلّةُ نفسُها (`coupon-ledger.ts`) */
+    await markCodeUsePaid(this.prisma, orderId)
 
     /* الفاتورةُ هي الحجّة، لا سجلُّ الحجز.
 
@@ -885,15 +923,26 @@ export class CommerceService {
       throw new AuthError('refund_provider_failed', `تعذّر ردّ المبلغ عند المزود، فلم يُقيَّد الاسترداد: ${msg}`, 502)
     }
 
+    let refundedTotal = 0
     const result = await this.prisma.$transaction(async (tx) => {
       const r = await tx.refund.update({ where: { id: refundId }, data: { status: 'processed', approvedBy: actorId, processedAt: new Date() } })
       const processed = await tx.refund.findMany({ where: { paymentId: refund.paymentId, status: 'processed' } })
       const totalRefunded = processed.reduce((s, x) => s + num(x.amount), 0)
+      refundedTotal = totalRefunded
       const fully = totalRefunded >= num(refund.payment.amount)
       await tx.payment.update({ where: { id: refund.paymentId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
       await tx.order.update({ where: { id: refund.payment.invoice.orderId }, data: { status: fully ? 'refunded' : 'partially_refunded' } })
       return r
     })
+    /* ═══ وخصمُ المدرّب يتبع الثمنَ في الردّ — البند 4-10 ═══
+
+       «ولا يحسم … ما استعمل في شراء استرد». كان الردُّ لا يمسّ شيئا من خصوم
+       المدرّب، فيُحسم منه خصمٌ عن مالٍ أُعيد إلى صاحبه. فصار كودُه بالنسبة ينقص
+       بقدر ما رُدّ (ويُعاد إليه ما حُسم زيادةً)، والخصمُ القديمُ بالمبلغ يسقط
+       إن رُدّ الثمنُ كلُّه. وكلاهما لا يرمي: الردُّ وقع عند المزوّد. */
+    const share = refundedShare(refundedTotal, num(refund.payment.amount))
+    await applyCodeRefund(this.prisma, refund.payment.invoice.orderId, share)
+    if (share >= 1) await this.trainerDiscounts.markRefundedForOrder(refund.payment.invoice.orderId)
     await recordAudit(this.prisma, {
       actorId, action: 'refund.process', entityType: 'refund', entityId: refundId,
       meta: { amount: num(refund.amount), provider: provider.name, providerRefundRef },
@@ -930,7 +979,14 @@ export class CommerceService {
   }
 
   async listCoupons() {
-    return this.prisma.coupon.findMany({ orderBy: { id: 'desc' } })
+    /* ومعها من يتحمّلها إن كانت لمدرّب — فلا يُقرأ كودُه حملةً من حملاتنا */
+    return this.prisma.coupon.findMany({
+      orderBy: { id: 'desc' },
+      include: {
+        trainerCode: { select: { percentOff: true, status: true } },
+        trainerDiscount: { select: { status: true } },
+      },
+    })
   }
 
   async createPlan(actorId: string, input: { code: string; nameAr: string; descriptionAr?: string; price: number; currency?: string; intervalMonths?: number; features?: string[] }) {
@@ -974,19 +1030,26 @@ export class CommerceService {
       throw new AuthError('has_payment', 'وصلتنا دفعةٌ عن هذا الطلب — راسل الدعم بدل الإلغاء', 409)
     }
 
+    /* النقلُ بشرطِ الحالة لا بعدها: إلغاءٌ من صاحبه ومن المُشغِّل الخلفيّ في
+       اللحظة نفسِها ينقل أحدُهما وحدَه — فلا يُفرَج عن استعمال الكوبون مرّتين. */
+    let released = false
     const cancelled = await this.prisma.$transaction(async (tx) => {
-      const o = await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled' } })
+      const moved = await tx.order.updateMany({ where: { id: orderId, status: 'pending_payment' }, data: { status: 'cancelled' } })
+      if (moved.count === 0) return null
       if (order.invoice) await tx.invoice.update({ where: { id: order.invoice.id }, data: { status: 'void' } })
       await tx.enrollmentRequest.updateMany({
         where: { orderId, status: 'seat_held' },
         data: { status: 'cancelled', orderId: null },
       })
-      return o
+      /* والكوبونُ يعود استعمالُه: الطلبُ لم يُدفع، فلم يُستعمَل شيء */
+      released = await releaseCouponUse(tx, order)
+      return tx.order.findUniqueOrThrow({ where: { id: orderId } })
     })
+    if (!cancelled) return this.prisma.order.findUniqueOrThrow({ where: { id: orderId } })
 
     await recordAudit(this.prisma, {
       actorId: userId, action: 'order.cancel', entityType: 'order', entityId: orderId,
-      meta: { total: num(order.total), currency: order.currency },
+      meta: { total: num(order.total), currency: order.currency, couponReleased: released },
       reason: 'ألغاه صاحبُه قبل الدفع — فُكّت حجوزُه',
     })
     return cancelled

@@ -17,6 +17,9 @@
    ③ **والشعبُ القائمةُ تُسمَّى فصولُها** بمسلكٍ إداريّ، ومنه تُفتح نافذتُها.
    ④ **والمحبوسُ يُرى**: شعبةٌ لها مدرّبٌ ولا فصلَ لها تظهر في طابورٍ —
      وهذا وحدَه ما يمنع أن يصير نقلُ الملكيّة حبسا صامتا.
+   ⑤ **والفصلُ صار اختياريّا عند الفتح (٣ج-٥)**: المدّةُ للمدرّب، والفصلُ يُشتقّ
+     من تاريخ بدئها حين تُعتمَد. فتُفتح الشعبةُ بلا فصلٍ ويُسنَد مدرّبُها، وحفظُ
+     مدّته يفتح نافذتَه — من الخدمة ومن المسلك معا.
 
    ولا يُقاس بقراءة نصّ: العطبُ كان في **وصل** القاعدة بالخادم، لا في
    القاعدة. */
@@ -26,6 +29,11 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { CohortService } from '../../services/cohort.service'
 import { TermService } from '../../services/term.service'
+import { CohortPlanService } from '../../services/cohort-plan.service'
+import { AuthService } from '../../services/auth.service'
+import { buildApp } from '../../http/app'
+import { SESSION_COOKIE } from '../../http/auth-plugin'
+import { zonedDay } from '../../../src/application/trainer/cohort-period'
 
 let prisma: PrismaClient
 let cohorts: CohortService
@@ -205,4 +213,46 @@ describe('③ وما بلا فصلٍ يُرى في طابوره', () => {
     const queue = await cohorts.cohortsWithoutTerm()
     expect(queue.map((q) => q.id), 'بقيت في طابور «بلا فصل» بعد تسميتها').not.toContain(c.id)
   })
+})
+
+describe('⑤ والفصلُ اختياريٌّ عند الفتح — يُشتقّ من مدّة المدرّب (٣ج-٥)', () => {
+  const DAY = 86_400_000
+  const day = (n: number) => zonedDay(new Date(Date.now() + n * DAY))
+
+  it('⚠️ بلا فصل: تُفتح الشعبةُ ويُسنَد مدرّبُها — ونافذتُه تفتحها مدّتُه لا فصلٌ يُنتظر', async () => {
+    const out = await cohorts.openForTrainer(adminId, { courseId: COURSE, profileId, title: 'شعبةٌ تُفتح بلا فصل' })
+    expect(out.term).toBeNull()
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: out.cohortId }, include: { trainers: true } })
+    expect(row.termId).toBeNull()
+    expect(row.startsAt, 'حدودٌ لُفّقت لشعبةٍ لم يحدّد أحدٌ مدّتَها').toBeNull()
+    expect(row.trainers.map((t) => t.profileId)).toEqual([profileId])
+
+    expect((await cohorts.scheduleWindowFor(trainerUserId, out.cohortId)).open).toBe(false)
+    await new CohortPlanService(prisma).savePlan(trainerUserId, out.cohortId, {
+      kind: 'trainer', modules: [], resources: [], startsOn: day(10), endsOn: day(40),
+    })
+    expect((await cohorts.scheduleWindowFor(trainerUserId, out.cohortId)).open, 'حفظُ مدّته لم يفتح نافذتَه').toBe(true)
+  })
+
+  it('⚠️ والمسلكُ يقبل الفتحَ بلا فصل — والفصلُ الغريبُ يُردّ كما كان', async () => {
+    const app = await buildApp(prisma)
+    const auth = new AuthService(prisma)
+    const email = `to-super-${Date.now()}@test.local`
+    const sa = await auth.register(email, 'Super#12345', 'مديرُ النظام')
+    await auth.setRoles(sa.userId, ['super_admin'])
+    const cookie = `${SESSION_COOKIE}=${(await auth.login(email, 'Super#12345')).token}`
+    const res = await app.inject({
+      method: 'POST', url: '/api/admin/cohorts/open-for-trainer', headers: { cookie },
+      payload: { courseId: COURSE, profileId, title: 'شعبةٌ من المسلك بلا فصل' },
+    })
+    expect(res.statusCode).toBe(201)
+    const opened = await prisma.cohort.findUniqueOrThrow({ where: { id: res.json().cohortId } })
+    expect(opened.termId).toBeNull()
+
+    const ghost = await app.inject({
+      method: 'POST', url: '/api/admin/cohorts/open-for-trainer', headers: { cookie },
+      payload: { courseId: COURSE, profileId, title: 'فصلٌ لا وجودَ له', termId: '00000000-0000-4000-8000-000000000000' },
+    })
+    expect(ghost.statusCode).toBe(404)
+  }, 120_000)
 })

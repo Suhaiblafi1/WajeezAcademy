@@ -84,10 +84,11 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
   }, [cohortId]);
   useEffect(() => { void load(); }, [load]);
 
-  const act = async (fn: () => Promise<unknown>, doneMsg: string) => {
+  /* والرسالةُ قد تُبنى ممّا عاد — النقلُ يقول أبقي معتمَدا أم عاد للانتظار (٣ج) */
+  const act = async (fn: () => Promise<unknown>, doneMsg: string | ((r: unknown) => string)) => {
     if (busy) return;
     setBusy(true);
-    try { await fn(); toast(doneMsg); await load(); }
+    try { const r = await fn(); toast(typeof doneMsg === "function" ? doneMsg(r) : doneMsg); await load(); }
     catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر تنفيذ الإجراء"); }
     finally { setBusy(false); }
   };
@@ -118,15 +119,21 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
 
      وقرارُه في النقل: «يغيّرُه فيرجع لانتظار الإدارة». فالنقلُ ينفُذ في
      الحال، ويسقط اللقاءُ المعتمَدُ إلى الانتظار، ويُبلَّغ مسجَّلوه. */
+  /* ═══ إلّا التأجيلَ القريب (٣ج) ═══ — «وبعد الاعتماد كلُّ تغييرٍ باعتماد، إلّا
+     تأجيلَ لقاءٍ بعده أقلُّ من ثمانٍ وأربعين ساعة». والخادمُ يحكم بحدوده
+     (`postpone.ts`)، والشاشةُ تقول ما حكم به لا ما تظنّه. */
   const moveSession = (sessionId: string) =>
     act(async () => {
-      await apiPatch(`/api/trainer/sessions/${sessionId}`, {
+      const moved = (await apiPatch(`/api/trainer/sessions/${sessionId}`, {
         startsAt: new Date(`${moveForm.date}T${moveForm.from}`).toISOString(),
         endsAt: new Date(`${moveForm.date}T${moveForm.to}`).toISOString(),
-      });
+      })) as { approvalState?: string };
       setMoveFor(null);
       setMoveForm(EMPTY_MOVE);
-    }, "نُقل الموعد — ويعود للاعتماد قبل أن يصل متعلّميك");
+      return moved;
+    }, (r) => ((r as { approvalState?: string } | null)?.approvalState === "approved"
+      ? "أُجِّل الموعد وبقي معتمَدا — ووصل متعلّميك موعدُه الجديد"
+      : "نُقل الموعد — ويعود للاعتماد قبل أن يصل متعلّميك"));
 
   /* والحذفُ فعلٌ كانت الشاشةُ تأمر به ولا بابَ له — وصار له مسلكٌ محروس */
   const removeSession = (sessionId: string) =>
@@ -259,6 +266,8 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                   <p className="text-read leading-relaxed text-foreground">
                     الموعدُ لك داخلَ أشهر فصلك. وما تنقله <b>يعود لانتظار الإدارة</b> —
                     فيغيب عن شاشات متعلّميك حتّى تعتمده، ويصلهم خبرُ التغيير.
+                    {" "}إلّا <b>تأجيلَ لقاءٍ معتمَدٍ يبدأ خلال يومين</b> إلى وقتٍ أبعدَ داخلَ موعد محوره:
+                    يبقى معتمَدا، ويصلهم موعدُه الجديد بالرابط نفسِه.
                   </p>
                   <div className="grid gap-2.5 sm:grid-cols-3">
                     <div>

@@ -182,6 +182,13 @@ const MEDIUM: readonly string[] = [
 
      والإخفاقُ (`used_failed`) عطبُ نظامٍ لا خبرُ إنسان: يُقرأ في `LOW`. */
   'trainer_discount.issue', 'trainer_discount.revoke', 'trainer_discount.used',
+  /* وردُّ الثمن يُسقط الحسمَ أو ينقصه — مالُه يتحرّك لصالحه، والعلّةُ نفسُها */
+  'trainer_discount.refund', 'trainer_discount.refund_after_settlement',
+  'trainer_code.use', 'trainer_code.refund',
+  /* وأفعالُه في كوده — فعلُه هو كالإصدار والإلغاء قبلها. وقبولُ البند بصيغته
+     الجديدة منها: يقرّ به هو بنقرةٍ يفعلها، ونصُّه محفوظٌ في الأثر نفسِه */
+  'trainer_code.create', 'trainer_code.pause', 'trainer_code.resume', 'trainer_code.revoke',
+  'trainer_code.terms_accept',
   /* مؤهّلٌ أُضيف، وإتاحةٌ تغيّرت */
   'trainer.qualify.auto',
   'trainer.availability.set', 'trainer.blackout.add', 'trainer.blackout.remove',
@@ -247,8 +254,9 @@ const LOW: readonly string[] = [
   'cohort.status', 'cohort.status.sync', 'cohort.delivery_plan.set',
   'cohort.plan.save', 'cohort.plan.submit', 'cohort.message.send',
   /* وربطُ لقاءٍ بمحوره تحريرٌ في الخطّة كحفظها: لا موعدَ يتحرّك ولا مالَ
-     ولا وصول (٢٧ سبتمبر ٢٠٢٦) */
-  'cohort.session.axes',
+     ولا وصول (٢٧ سبتمبر ٢٠٢٦) — والمسجَّلُ بوزنه: ربطٌ بلا اعتماد، ومحورُه في
+     الخطّة لا على صفّ (٢٨ سبتمبر ٢٠٢٦) */
+  'cohort.session.axes', 'cohort.plan.recorded_axes',
   /* ═══ وتعديلُ المدرّب صفَّ شعبته نزل من العالي (٢٧ سبتمبر ٢٠٢٦) ═══
 
      كان عاليا لأنّه يحرّك **متى يحضر المتعلّمُ وأين** — البدءَ والأيّامَ
@@ -265,6 +273,7 @@ const LOW: readonly string[] = [
   /* خصمٌ استُعمل ولم يُقيَّد — عطبٌ يُقرأ في السجلّ ويُسوَّى بيد، ولا يُبلَّغ
      به المدرّبُ: خبرٌ لا يفعل به شيئا، ومالُه محفوظٌ في الطلب المدفوع. */
   'trainer_discount.used_failed',
+  'trainer_code.ledger_failed',
   'rating.submit', 'submission.create',
   'support.ticket.create', 'support.ticket.priority',
   'staff.task.complete',

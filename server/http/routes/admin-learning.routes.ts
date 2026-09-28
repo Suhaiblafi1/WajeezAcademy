@@ -4,6 +4,7 @@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { isDayCode } from '../../../src/application/schedule/days'
+import { REVIEW_NOTE_MAX } from '../../../src/application/trainer/review-notes'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
 import { openAllCohorts, alignCohortPrices } from '../../services/catalog-readiness.service'
@@ -90,11 +91,20 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohort-plans/:id/decide', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ أو ردُّها بتعديلاتٍ مكتوبة' },
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ ولقاءاتِها معا، أو ردُّها بملاحظةٍ لكلّ خطوة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const text = z.string().max(REVIEW_NOTE_MAX).optional()
     const body = z.object({
-      approve: z.boolean(), note: z.string().max(2000).optional(),
+      approve: z.boolean(),
+      /* نصٌّ واحدٌ كما كان — أو لكلّ خطوةٍ ملاحظتُها، والمفاتيحُ خطواتُ المدرّب
+         (`review-notes.ts`) ولا مفتاحَ غيرُها */
+      note: z.union([
+        z.string().max(REVIEW_NOTE_MAX),
+        z.object({
+          general: text, identity: text, modules: text, workbooks: text, sessions: text, assignments: text,
+        }).strict(),
+      ]).optional(),
     }).parse(req.body)
     return plans.decide(req.auth!.userId, id, body.approve, body.note)
   })
@@ -123,6 +133,19 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
     return cohorts.decideSession(req.auth!.userId, id, body.approve, body.note)
+  })
+
+  /* ═══ ومهامُّ ما بعد الاعتماد — جديدةٌ أو تعديلٌ أو حذفٌ ينتظر (٣ج-٣) ═══
+
+     «وبعد الاعتماد كلُّ تغييرٍ باعتماد». وبالصلاحيّة نفسِها التي تُعتمَد بها
+     الخطّةُ ولقاءاتُها: من اعتمد المنهجَ يعتمد ما يُغيَّر فيه. والردُّ بسببه. */
+  app.post('/api/admin/cohort-assessments/:id/decide', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ مهمّةٍ جديدةٍ أو تعديلِها أو حذفِها بعد اعتماد الخطّة، أو ردُّه بسبب' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
+    return assessments.decideTask(req.auth!.userId, id, body.approve, body.note)
   })
 
   app.post('/api/admin/cohorts/:cohortId/remind-trainer', {
@@ -226,12 +249,13 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      فورا: يُشتكى منه المدرّبُ بعد أسبوعٍ حين يعجز عن الجدولة. */
   app.post('/api/admin/cohorts/open-for-trainer', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-learning'], summary: 'فتحُ شعبةٍ لمدرّب — دورةٌ ومدرّبٌ وفصلٌ في فعلٍ واحد' },
+    schema: { tags: ['admin-learning'], summary: 'فتحُ شعبةٍ لمدرّب — دورةٌ ومدرّبٌ في فعلٍ واحد، والفصلُ اختياريٌّ يُشتقّ من مدّته عند الاعتماد' },
   }, async (req, reply) => {
     const body = z.object({
       courseId: z.string().min(3).max(40),
       profileId: z.string().uuid(),
-      termId: z.string().uuid(),
+      /* اختياريّ (٣ج-٥): بلا فصلٍ يُشتقّ من تاريخ البدء الذي يحدّده المدرّبُ حين تُعتمَد خطّتُه */
+      termId: z.string().uuid().optional(),
       title: z.string().min(3).max(200),
       pathwayId: z.string().optional(),
       capacity: z.number().int().min(1).optional(),

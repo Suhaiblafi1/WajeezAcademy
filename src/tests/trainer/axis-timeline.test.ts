@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  appendToSlots, buildTimeline, canMerge, dayInSlot, defaultSlots, dropFromSlots, mergeSlots, minSlots,
+  appendToSlots, buildTimeline, canMerge, dayInSlot, defaultSlots, dropFromSlots, joinClosesAt, mergeSlots, minSlots,
   reflowSlots, sessionProblems, slotProblems, splitSlot, workbookDone, workbookProblems, type PlanSlot,
 } from '@/application/trainer/axis-timeline'
 
@@ -273,5 +273,34 @@ describe('متى يُفتح كلُّ شيء', () => {
   it('وخطّةٌ بلا مواعيد لا خطَّ لها — تمضي كما بدأت', () => {
     expect(buildTimeline({ slots: [], sessions: [live] })).toBeNull()
     expect(buildTimeline({ slots: undefined, sessions: [] })).toBeNull()
+  })
+})
+
+/* آخرُ الالتحاق — «التسجيلُ يُغلق يومَ البدء، والالتحاقُ المتأخّرُ حتّى الموعد
+   الثاني» (٣ج). وأثرُه في المواضع الستّة في `registration-window.test.ts` */
+describe('آخرُ الالتحاق — بدءُ الموعد الثاني', () => {
+  const slots = defaultSlots(EIGHT, PERIOD)
+
+  it('⚠️ منتصفُ ليل أوّلِ يومٍ في الموعد الثاني بعمّان', () => {
+    /* الموعدُ الثاني يبدأ الأحد ١١ أكتوبر — وعمّانُ +٣، فمنتصفُ ليلها ٢١:٠٠ يومَ ١٠ */
+    expect(joinClosesAt(PERIOD, slots)?.toISOString()).toBe('2026-10-10T21:00:00.000Z')
+  })
+
+  it('⚠️ بترتيب البدء لا بترتيب الحفظ', () => {
+    const shuffled = [slots[3], slots[0], slots[4], slots[1], slots[2]]
+    expect(joinClosesAt(PERIOD, shuffled)?.toISOString()).toBe('2026-10-10T21:00:00.000Z')
+  })
+
+  it('⚠️ وموعدٌ واحدٌ لا ثانيَ له يُغلقه يومَ البدء', () => {
+    const one: PlanSlot[] = [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['m1'] }]
+    expect(joinClosesAt(PERIOD, one)?.toISOString()).toBe('2026-10-03T21:00:00.000Z')
+  })
+
+  it('وبلا مواعيدَ لا حدّ — وموعدٌ بلا تاريخٍ صحيحٍ لا يُعدّ', () => {
+    expect(joinClosesAt(PERIOD, [])).toBeNull()
+    expect(joinClosesAt(PERIOD, undefined)).toBeNull()
+    /* والمعطوبُ يقع بعد الصحيح في الترتيب — فلو عُدّ لكان هو «الثاني» */
+    const broken: PlanSlot[] = [slots[0], { startsOn: '2026-10-40', endsOn: '2026-10-41', moduleIds: ['m3'] }]
+    expect(joinClosesAt(PERIOD, broken)?.toISOString(), 'موعدٌ معطوبٌ عُدّ ثانيا').toBe('2026-10-03T21:00:00.000Z')
   })
 })

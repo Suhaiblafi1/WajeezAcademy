@@ -325,6 +325,11 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
       modules: [{ ...content.modules[0], bodyAr: 'مثالٌ تطبيقيٌّ أُضيف بعد ردِّ الإدارة، يشرح الخطوةَ بالتفصيل كما يقرؤها المتعلّم' }],
     })
     await plans.submit(trainerUserId, cohortId, true)
+    /* وما طلبه المعتمِدُ يبقى مع الإرسال — ليقابله بما عُدّل (٣ب). وكان يُمحى
+       هنا، فيفتح الخطّةَ المعادةَ ولا يدري ما طلبه منها */
+    const resent = await plans.latestForCohort(cohortId)
+    expect(resent?.status).toBe('submitted')
+    expect(resent?.reviewerNotes, 'مُحي ما طلبه المعتمِدُ قبل أن يقابله').toEqual({ general: 'أضف مثالا تطبيقيّا في المحور الأوّل' })
     const latest = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId }, orderBy: { createdAt: 'desc' } })
     /* ومتعلّمٌ التحق قبل الاعتماد — يُبلَّغ بأنّ حدودَ شعبته تحدّدت */
     const learner = await prisma.user.create({
@@ -334,6 +339,8 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
 
     const r = await plans.decide(adminId, latest.id, true)
     expect(r.status).toBe('approved')
+    /* والاعتمادُ يرفعها: ما طُلب قد عُدّل واعتُمد */
+    expect((await plans.latestForCohort(cohortId))?.reviewerNotes).toEqual({})
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'approval')?.done).toBe(true)
     const check = await new CohortService(prisma).openChecklist(cohortId)

@@ -28,9 +28,13 @@
    مفتاحٍ ماليٍّ صراحةً — `price` و`currency` و`capacity` و`registrationOpen`
    و`financialReady` — والشاشةُ تقول إنّه بيد الإدارة. */
 
-import type { Prisma, PrismaClient } from '@prisma/client'
+import { Prisma, type PrismaClient } from '@prisma/client'
 import { moduleBodyDone } from '../../src/application/trainer/module-body'
 import { blockingBeforeSubmit, trainerOwned } from '../../src/application/trainer/plan-gate'
+import {
+  REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
+  type ReviewNotes,
+} from '../../src/application/trainer/review-notes'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
@@ -42,9 +46,12 @@ import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
 import {
-  sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
+  joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
-import { resourceCategory } from '../../src/application/trainer/plan-overlay'
+import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
+import { AssessmentService } from './assessment.service'
+import { PLAN_VISIBLE_STATUSES, resourceCategory } from '../../src/application/trainer/plan-overlay'
+import { applyRecordedRelinks, recordedRelinks, samePlanContent } from '../../src/application/trainer/recorded-links'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -386,9 +393,11 @@ export function countableSessions<T extends { placeholder?: boolean | null; stat
 export class CohortPlanService {
   private prisma: PrismaClient
   private cohorts: CohortService
+  private assessments: AssessmentService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.cohorts = new CohortService(prisma)
+    this.assessments = new AssessmentService(prisma)
   }
 
   /* ─────────── الملكيّة ─────────── */
@@ -419,6 +428,21 @@ export class CohortPlanService {
     })
   }
 
+  /* ═══ والمعتمَدةُ خلف المراجعة — ليُقرأ ما تغيّر عنها (٣ج-٤) ═══
+
+     بعد الاعتماد يُنشئ حفظُ المدرّب صفَّ خطّةٍ جديدا (مراجعة)، ويبقى المعتمَدُ
+     نافذا حتّى تُعتمَد المراجعة. فإن كانت أحدثُ خطّةٍ مراجعةً أُعيد معها المعتمَدُ
+     الذي تراجعه — تقرأ منه الشاشتان «ما تغيّر» (`plan-diff.ts`). وإن كانت أحدثُها
+     هي المعتمَدةَ فلا شيءَ خلفها يُقارَن. */
+  private async approvedBehind(cohortId: string, latest: { id: string; status: string }) {
+    if ((PLAN_VISIBLE_STATUSES as readonly string[]).includes(latest.status)) return null
+    return this.prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId, trainerId: { not: null }, id: { not: latest.id }, status: { in: [...PLAN_VISIBLE_STATUSES] } },
+      orderBy: { createdAt: 'desc' },
+      select: { content: true, reviewedAt: true },
+    })
+  }
+
   /* ─────────── الورشة: كلُّ ما يحتاجه ليعرف ماذا يفعل ─────────── */
 
   async workspace(userId: string, cohortId: string) {
@@ -445,12 +469,15 @@ export class CohortPlanService {
         },
         assessments: {
           where: { status: { not: 'closed' } }, orderBy: { createdAt: 'asc' },
-          select: { id: true, title: true, briefAr: true, attachments: true, type: true, maxScore: true, dueAt: true, status: true, moduleId: true, _count: { select: { submissions: true } } },
+          select: { id: true, title: true, briefAr: true, attachments: true, type: true, maxScore: true, dueAt: true, status: true, moduleId: true, pendingChange: true, reviewerNote: true, _count: { select: { submissions: true } } },
         },
+        /* أاعتُمدت له خطّةٌ قطّ — منه ينتظر ما يضيفه ويعدّله في مهامّه قرارَ الإدارة (٣ج-٣) */
+        plans: PLAN_GATE_SELECT,
       },
     })
     const plan = await this.latestTrainerPlan(cohortId)
     const content = (plan?.content ?? null) as TrainerPlanContent | null
+    const approvedPlan = plan ? await this.approvedBehind(cohortId, plan) : null
 
     /* المحاورُ الأساسيّة من القاعدة — وإن خلت، من الكتالوج الثابت */
     const dbModules: TrainerPlanModule[] = cohort.course.modules.map((m) => {
@@ -495,6 +522,8 @@ export class CohortPlanService {
       plan: plan
         ? {
             id: plan.id, status, content, reviewerNote: plan.reviewerNote,
+            /* لكلّ خطوةٍ ملاحظتُها — تُقرأ في رأس الخطوة نفسِها (٣ب) */
+            reviewerNotes: readReviewNotes(plan),
             submittedAt: plan.submittedAt, trainerConfirmedAt: plan.trainerConfirmedAt, reviewedAt: plan.reviewedAt,
           }
         : null,
@@ -523,7 +552,12 @@ export class CohortPlanService {
         id: a.id, title: a.title, briefAr: a.briefAr, attachments: a.attachments, type: a.type, maxScore: a.maxScore, dueAt: a.dueAt, status: a.status,
         moduleId: a.moduleId,
         submissions: a._count.submissions,
+        /* طلبُه على المنشورة وسببُ ردّها — لا يصلان المتعلّم (٣ج-٣) */
+        pendingChange: a.pendingChange, reviewerNote: a.reviewerNote,
       })),
+      approvedOnce: planApprovedOnce(cohort.plans),
+      /* والمعتمَدةُ التي يراجعها — ليقرأ ما غيّره عنها قبل أن يرسل (٣ج-٤) */
+      approvedPlan,
       checklist,
     }
   }
@@ -608,6 +642,32 @@ export class CohortPlanService {
       })
       if (problem) throw new AuthError('bad_period', problem, 400)
     }
+    /* ═══ ومحورُ الجلسة المسجّلة يسري بلا اعتماد (٢٨ سبتمبر ٢٠٢٦) ═══
+
+       يُكتب في الخطّة التي يراها المتعلّمون لحظةَ الحفظ، وما سواه في الحفظ نفسِه
+       مراجعةٌ كما كان — والقاعدةُ وعلّتُها في `recorded-links.ts`. وحفظٌ ليس فيه
+       غيرُه لا يفتح مراجعةً: لا شيءَ فيها يُقرأ. */
+    const visible = await this.prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId, trainerId: { not: null }, status: { in: [...PLAN_VISIBLE_STATUSES] } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, content: true },
+    })
+    if (visible) {
+      const approved = visible.content as unknown as TrainerPlanContent
+      const relinks = recordedRelinks(approved, content)
+      if (relinks.length > 0) {
+        const relinked = applyRecordedRelinks(approved, relinks)
+        const row = await this.prisma.cohortDeliveryPlan.update({
+          where: { id: visible.id },
+          data: { content: relinked as unknown as Prisma.InputJsonValue },
+        })
+        await recordAudit(this.prisma, {
+          actorId: userId, action: 'cohort.plan.recorded_axes', entityType: 'cohort', entityId: cohortId,
+          meta: { planId: visible.id, relinks },
+        })
+        if (latest?.id === visible.id && samePlanContent(relinked, content)) return row
+      }
+    }
     const data = { content: content as unknown as Prisma.InputJsonValue }
     const plan = latest && (latest.status === 'draft' || latest.status === 'changes_requested')
       ? await this.prisma.cohortDeliveryPlan.update({ where: { id: latest.id }, data })
@@ -620,8 +680,18 @@ export class CohortPlanService {
        اعتماد. ولو انتظرت اعتمادَ الخطّة لَما استطاع أن يجدول لقاءً واحدا
        قبل أن يُرسل خطّةً تشترط لقاءاتِه: الحلقةُ نفسُها التي حبسته وراء
        تسمية الفصل. والحدودُ المعلَنةُ (`startsAt` و`endsAt`) لا تُمَسّ هنا —
-       يكتبها الاعتمادُ وحدَه. */
-    if (period) {
+       يكتبها الاعتمادُ وحدَه.
+
+       ═══ إلّا المراجعة — «وبعد الاعتماد كلُّ تغييرٍ باعتماد» (٣ج) ═══
+
+       شعبةٌ اعتُمدت لها خطّةٌ قبلُ نافذتُها نافذةُ ما اعتُمد. ومراجعةٌ تمدّ المدّةَ
+       أو تنقلها كانت تنقل النافذةَ لحظةَ حفظها — فيجدول المدرّبُ لقاءاتٍ في مدّةٍ
+       لم يقرأها أحد. فتبقى النافذةُ كما اعتُمدت، ويكتبها اعتمادُ المراجعة
+       (`applyPeriod`). */
+    const approvedBefore = await this.prisma.cohortDeliveryPlan.count({
+      where: { cohortId, trainerId: { not: null }, status: { in: [...APPROVED_PLAN_STATUSES] } },
+    })
+    if (period && approvedBefore === 0) {
       const { from, to } = periodBounds(period)
       await this.prisma.cohort.update({
         where: { id: cohortId },
@@ -717,10 +787,16 @@ export class CohortPlanService {
       throw new AuthError('stages_incomplete', `بقي قبل الإرسال: ${blocking.map((b) => b.labelAr).join(' · ')}`, 409)
     }
 
+    /* ═══ وملاحظاتُ الردّ الأخير تبقى مع الإرسال (٣ب) ═══
+
+       كانت تُمحى هنا، فيفتح المعتمِدُ الخطّةَ المعادةَ ولا يدري ما طلبه منها —
+       يقرأ المنهجَ كلَّه ثانيةً ليتذكّر. فتبقى، ويقرؤها في بطاقته «ما طلبتَه
+       في الردّ السابق» فيقابلها بما عُدّل. والمدرّبُ لا يراها بعد الإرسال: شاشتُه
+       تعرضها ما دامت الخطّةُ مردودةً إليه وحدَه. والاعتمادُ يرفعها. */
     const now = new Date()
     const plan = await this.prisma.cohortDeliveryPlan.update({
       where: { id: latest.id },
-      data: { status: 'submitted', submittedAt: now, trainerConfirmedAt: now, reviewerNote: null },
+      data: { status: 'submitted', submittedAt: now, trainerConfirmedAt: now },
     })
     const cohort = await this.prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { title: true } })
     await recordAudit(this.prisma, {
@@ -758,17 +834,66 @@ export class CohortPlanService {
   async latestForCohort(cohortId: string) {
     const plan = await this.latestTrainerPlan(cohortId)
     if (!plan) return null
-    const trainer = plan.trainerId
-      ? await this.prisma.trainerProfile.findUnique({ where: { id: plan.trainerId }, select: { application: { select: { fullName: true } } } })
-      : null
+    const [trainer, cohort, approvedPlan] = await Promise.all([
+      plan.trainerId
+        ? this.prisma.trainerProfile.findUnique({ where: { id: plan.trainerId }, select: { application: { select: { fullName: true } } } })
+        : null,
+      /* ═══ والمنهجُ كاملا للمعتمِد (المرحلة ٣) ═══
+
+         «وهو ما سنقرؤه عند الموافقة» — فالمعتمِدُ يقرأ ما قرأه المدرّبُ قبل
+         الإرسال: الخطّةَ ومعها لقاءاتُ الشعبة ومهامُّها، بالصفحة نفسِها
+         (`CurriculumReview`). وكانت بطاقتُه تعدّ المصادرَ عدّا، ولا ترى مهمّةً
+         ولا لقاءً — فيعتمد منهجا لم يقرأ نصفَه. */
+      this.prisma.cohort.findUnique({
+        where: { id: cohortId },
+        select: {
+          title: true, startsAt: true, endsAt: true, joinClosesAt: true,
+          /* أاعتُمدت للمدرّب خطّةٌ قطّ — منه يُقال للمعتمِد متى يُفتح التسجيل (٣ج) */
+          plans: { where: { trainerId: { not: null } }, select: { status: true } },
+          sessions: {
+            orderBy: { startsAt: 'asc' },
+            select: { id: true, title: true, startsAt: true, endsAt: true, moduleId: true, moduleIds: true, approvalState: true, status: true, placeholder: true },
+          },
+          assessments: {
+            orderBy: { createdAt: 'asc' },
+            select: {
+              id: true, title: true, type: true, dueAt: true, moduleId: true, briefAr: true, attachments: true, status: true,
+              maxScore: true, pendingChange: true, reviewerNote: true,
+            },
+          },
+        },
+      }),
+      /* والمعتمَدةُ التي تراجعها هذه — ليقرأ المعتمِدُ ما تغيّر عنها (٣ج-٤) */
+      this.approvedBehind(cohortId, plan),
+    ])
+    const content = plan.content as TrainerPlanContent | null
     return {
       id: plan.id, status: plan.status, content: plan.content, reviewerNote: plan.reviewerNote,
+      reviewerNotes: readReviewNotes(plan),
       submittedAt: plan.submittedAt, trainerConfirmedAt: plan.trainerConfirmedAt, reviewedAt: plan.reviewedAt,
       trainerName: trainer?.application.fullName ?? null,
+      cohortTitle: cohort?.title ?? '',
+      period: cohort ? resolvePeriod(content, cohort, plan.status as PlanStatus) : null,
+      sessions: cohort?.sessions ?? [],
+      assessments: cohort?.assessments ?? [],
+      /* اعتُمدت له خطّةٌ قطّ — فما يضيفه ويعدّله في مهامّه ينتظر قرارَك (٣ج-٣) */
+      approvedOnce: cohort ? planApprovedOnce(cohort.plans) : false,
+      /* والمعتمَدةُ التي تراجعها هذه إن كانت مراجعة — منها «ما تغيّر» (٣ج-٤) */
+      approvedPlan,
+      /* التسجيلُ كما يُحكَم لا كما يقول علمُه: شعبةٌ خطّتُها لم تُعتمَد لا تقبل
+         أحدا وإن رُفع العلم، والالتحاقُ يُغلق ببدء الموعد الثاني (٣ج) */
+      registration: {
+        awaitingPlan: cohort ? awaitingTrainerPlan(cohort.plans) : false,
+        joinClosesAt: cohort?.joinClosesAt ?? null,
+      },
     }
   }
 
-  async decide(actorId: string, planId: string, approve: boolean, note?: string) {
+  /* ═══ القرار — اعتمادٌ واحدٌ للخطّة ولقاءاتها، أو ردٌّ بملاحظةٍ لكلّ خطوة (٣ب) ═══
+
+     `note` نصٌّ واحدٌ كما كان (ويُقرأ ملاحظةً عامّة)، أو ملاحظاتٌ لكلّ خطوةٍ
+     في خطوتها. والردُّ يحتاج واحدةً منها على الأقلّ. */
+  async decide(actorId: string, planId: string, approve: boolean, note?: string | ReviewNotes) {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({
       where: { id: planId },
       include: {
@@ -779,21 +904,35 @@ export class CohortPlanService {
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     if (plan.status !== 'submitted') throw new AuthError('not_submitted', 'هذه الخطّة ليست بانتظار قرار', 409)
     const now = new Date()
+    /* وكلمةُ الاعتماد — إن كُتبت — نصٌّ واحد */
+    const said = (typeof note === 'string' ? note : note?.general)?.trim() || null
 
     if (!approve) {
-      if (!note?.trim()) throw new AuthError('reason_required', 'قل له ما الذي يُعدَّل — الردُّ بلا سببٍ يترك المدرّبَ يخمّن', 400)
+      const asked = normalizeReviewNotes(typeof note === 'string' ? { general: note } : note)
+      if (!hasReviewNotes(asked)) {
+        throw new AuthError('reason_required', 'قل له ما الذي يُعدَّل — في خطوته أو عامّةً. الردُّ بلا سببٍ يترك المدرّبَ يخمّن', 400)
+      }
+      const composed = composeReviewNote(asked)!
       await this.prisma.cohortDeliveryPlan.update({
-        where: { id: planId }, data: { status: 'changes_requested', reviewedBy: actorId, reviewedAt: now, reviewerNote: note.trim() },
+        where: { id: planId },
+        data: {
+          status: 'changes_requested', reviewedBy: actorId, reviewedAt: now,
+          reviewerNote: composed, reviewerNotes: asked as Prisma.InputJsonValue,
+        },
       })
       await recordAudit(this.prisma, {
-        actorId, action: 'cohort.plan.changes_requested', entityType: 'cohort', entityId: plan.cohort.id, meta: { planId, note: note.trim() },
+        actorId, action: 'cohort.plan.changes_requested', entityType: 'cohort', entityId: plan.cohort.id,
+        meta: { planId, note: composed, sections: notedSections(asked) },
       })
+      /* والبريدُ يقول الخطواتِ بأسمائها — ما يبحث عنه في شريطه */
+      const bySection = REVIEW_SECTIONS.filter((s) => asked[s.key]).map((s) => ({ label: s.label, text: asked[s.key]! }))
       await this.tellTrainer(plan.trainer, plan.cohort, {
         title: `طُلبت تعديلاتٌ على «${plan.cohort.title}»`,
-        body: note.trim(),
+        body: asked.general ?? 'كتبنا ملاحظاتِنا في الخطوات التي تحتاج تعديلا — تجد كلَّ ملاحظةٍ في رأس خطوتها.',
         heading: 'راجعنا خطّةَ شعبتك ونحتاج تعديلا قبل اعتمادها',
         cta: 'عدّل الخطّة وأعد إرسالها',
-      })
+        sections: bySection,
+      }, composed)
       return { status: 'changes_requested' as const }
     }
 
@@ -804,23 +943,77 @@ export class CohortPlanService {
         data: { status: 'superseded' },
       })
       await tx.cohortDeliveryPlan.update({
-        where: { id: planId }, data: { status: 'approved', reviewedBy: actorId, reviewedAt: now, reviewerNote: note?.trim() || null },
+        where: { id: planId },
+        data: {
+          status: 'approved', reviewedBy: actorId, reviewedAt: now, reviewerNote: said,
+          /* ما طُلب قبلُ قد عُدّل واعتُمد — فلا يبقى في شاشةٍ «ملاحظةً» */
+          reviewerNotes: Prisma.DbNull,
+        },
       })
     })
     const applied = await this.applyPeriod(plan.cohort.id, plan.content as unknown as TrainerPlanContent | null)
+
+    /* ═══ والاعتمادُ واحدٌ: الخطّةُ ولقاءاتُها معا (٣ب) ═══
+
+       كان المعتمِدُ يعتمد الخطّةَ ثمّ يعتمد لقاءاتِها بطاقةً بطاقة — وقد قرأها
+       كلَّها في المنهج قبل أن يعتمد. فصار اعتمادُ الخطّة يعتمد كلَّ لقاءٍ
+       منتظِرٍ في الشعبة، بالمسلك نفسِه الذي تمرّ به البطاقةُ الواحدة
+       (`decideSession`): يُنشأ اجتماعُه، ويُنشَر للمسجَّلين بتاريخه.
+
+       وإنشاءُ الاجتماع قد يسقط (Zoom لا يستجيب). فلا يُسقط اعتمادَ الخطّة:
+       يبقى ذلك اللقاءُ منتظِرا في بطاقته تُعاد محاولتُه منها، ويُقال للمعتمِد
+       باسمه. والمدرّبُ يصله خبرٌ واحدٌ عن الخطّة ولقاءاتها — لا خبرٌ لكلّ لقاء. */
+    const waiting = await this.prisma.cohortSession.findMany({
+      where: { cohortId: plan.cohort.id, approvalState: 'pending', placeholder: false, status: { not: 'cancelled' } },
+      orderBy: { startsAt: 'asc' },
+      select: { id: true, title: true },
+    })
+    const meetings = { approved: 0, failed: [] as { id: string; title: string; reason: string }[] }
+    for (const s of waiting) {
+      try {
+        await this.cohorts.decideSession(actorId, s.id, true, undefined, { quiet: true })
+        meetings.approved += 1
+      } catch (e) {
+        meetings.failed.push({ id: s.id, title: s.title, reason: e instanceof AuthError ? e.message : 'خطأ غير متوقّع' })
+      }
+    }
+
+    /* ═══ ومهامُّها كذلك (٣ج-٣) ═══
+
+       بعد أوّل اعتمادٍ ينتظر ما يضيفه المدرّبُ ويعدّله ويحذفه من مهامّه قرارا —
+       ومراجعةُ الخطّة تحمله في منهجها. فاعتمادُها يعتمده معها، بالمسلك نفسِه
+       الذي تمرّ به المهمّةُ وحدَها. وما يمنعه مانعٌ يبقى منتظِرا ويُسمّى. */
+    const tasks = await this.assessments.applyPendingForPlan(actorId, plan.cohort.id, planId)
+
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.plan.approve', entityType: 'cohort', entityId: plan.cohort.id,
-      meta: { planId, ...(applied ? { period: applied.period, termId: applied.termId, moved: applied.moved } : {}) },
+      meta: {
+        planId,
+        ...(applied ? { period: applied.period, termId: applied.termId, moved: applied.moved } : {}),
+        meetingsApproved: meetings.approved,
+        ...(meetings.failed.length ? { meetingsFailed: meetings.failed.map((f) => f.id) } : {}),
+        ...(tasks.applied ? { tasksApplied: tasks.applied } : {}),
+        ...(tasks.failed.length ? { tasksFailed: tasks.failed.map((f) => f.id) } : {}),
+      },
     })
 
-
+    const withMeetings = meetings.approved > 0
+      ? ` واعتُمدت معها لقاءاتُك (${meetings.approved}) ووصلت المسجَّلين في تقاويمهم.`
+      : ''
+    /* والعددُ بين قوسين كعدد المعتمَد — فلا يُكتب «٢ لقاءات» */
+    const stillWaiting = meetings.failed.length === 0
+      ? ''
+      : meetings.failed.length === 1
+        ? ' وبقي لقاءٌ واحدٌ عند الإدارة تُتمّ اعتمادَه.'
+        : ` وبقيت لقاءاتٌ (${meetings.failed.length}) عند الإدارة تُتمّ اعتمادَها.`
+    const withTasks = tasks.applied > 0 ? ` واعتُمد معها ما انتظر من مهامّك (${tasks.applied}).` : ''
     await this.tellTrainer(plan.trainer, plan.cohort, {
       title: `اعتُمدت خطّةُ «${plan.cohort.title}»`,
-      body: note?.trim() || 'شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.',
+      body: said || `شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.${withMeetings}${stillWaiting}${withTasks}`,
       heading: 'اعتُمدت خطّةُ شعبتك — وهي جاهزةٌ الآن',
       cta: 'افتح شعبتك',
     })
-    return { status: 'approved' as const }
+    return { status: 'approved' as const, meetings, tasks }
   }
 
   /* ═══ الاعتمادُ يكتب المدّة — والفصلُ يُشتقّ منها ═══
@@ -852,6 +1045,9 @@ export class CohortPlanService {
       where: { id: cohortId },
       data: {
         startsAt: from, endsAt: to, scheduleWindowStart: from, scheduleWindowEnd: to,
+        /* وآخرُ الالتحاق من مواعيدها — بدءُ الموعد الثاني (٣ج)، يُقرأ في
+           `registration-window.ts`. ويُعاد حسابُه مع كلّ مراجعةٍ تُعتمَد */
+        joinClosesAt: joinClosesAt(period, (content as { slots?: PlanSlot[] | null } | null)?.slots),
         ...(term ? { termId: term.id } : {}),
       },
     })
@@ -900,17 +1096,20 @@ export class CohortPlanService {
   /** تسجيلُ جلسةٍ من رابط — لا ملفَّ يُرفع */
   /* ─────────── إخبارُ المدرّب — جرسٌ وبريد ─────────── */
 
+  /* و`sections` ملاحظاتُ الخطوات بأسمائها — قائمةً في البريد تحت التنبيه،
+     و`bellBody` نصُّ الجرس إن اختلف عن التنبيه (الردُّ بأقسامه نصٌّ واحد). */
   private async tellTrainer(
     trainer: { userId: string | null; application: { fullName: string; email: string } } | null,
     cohort: { id: string; title: string },
-    msg: { title: string; body: string; heading: string; cta: string },
+    msg: { title: string; body: string; heading: string; cta: string; sections?: readonly { label: string; text: string }[] },
+    bellBody?: string,
   ) {
     if (!trainer) return
     const url = `${publicSiteUrl()}/trainer/cohort/${cohort.id}`
     if (trainer.userId) {
       await safeNotify(this.prisma, {
         audience: 'trainer', userId: trainer.userId, channel: 'in_app',
-        title: msg.title, body: msg.body, templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id },
+        title: msg.title, body: bellBody ?? msg.body, templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id },
       })
     }
     await sendDirectEmail(this.prisma, {
@@ -922,6 +1121,9 @@ export class CohortPlanService {
         blocks: [
           { kind: 'facts', rows: [{ label: 'الشعبة', value: cohort.title }] },
           { kind: 'callout', text: msg.body },
+          ...(msg.sections?.length
+            ? [{ kind: 'list' as const, items: msg.sections.map((x) => `«${x.label}»: ${x.text}`) }]
+            : []),
           { kind: 'cta', label: msg.cta, href: url },
         ],
       }),

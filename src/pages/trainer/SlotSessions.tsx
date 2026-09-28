@@ -59,7 +59,7 @@ const clockOf = (iso: string) => {
 };
 
 export default function SlotSessions({
-  cohortId, slot, index, axisNo, sessions, recorded, locked, onDone,
+  cohortId, slot, index, axisNo, sessions, recorded, locked, approvedOnce, onDone,
   onAddRecorded, onPatchRecorded, onRemoveRecorded,
 }: {
   cohortId: string;
@@ -72,6 +72,8 @@ export default function SlotSessions({
   /** جلساتُه المسجّلة — بموضعها في مصادر الخطّة */
   recorded: { row: RecordedRow; i: number }[];
   locked: boolean;
+  /** اعتُمدت خطّتُه من قبل — فيُقال له ما يسري لحظتَه وما ينتظر الإدارة */
+  approvedOnce: boolean;
   onDone: () => void;
   onAddRecorded: (row: RecordedRow) => void;
   onPatchRecorded: (i: number, patch: Partial<RecordedRow>) => void;
@@ -102,7 +104,11 @@ export default function SlotSessions({
     setBusy(true);
     try {
       await apiPatch(`/api/trainer/sessions/${s.id}/axes`, { moduleIds: next });
-      toast(`رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)}`);
+      /* ويسري فورا بلا اعتماد، ولو بعد اعتماد الخطّة (٢٨ سبتمبر ٢٠٢٦): المعتمَدُ
+         يبقى معتمَدا، ومتعلّموه يرون أثرَه في «متى تُفتح المهامّ» — فيُقال له */
+      toast(s.approvalState === "approved"
+        ? `رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)} — ويسري لمتعلّميك فورا بلا اعتماد`
+        : `رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)}`);
       onDone();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الربط");
@@ -280,6 +286,14 @@ export default function SlotSessions({
         <p className="flex items-center gap-2 text-read font-black text-foreground">
           <Film className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" /> جلساتٌ مسجّلة (اختياريّ)
         </p>
+        {/* وبعد الاعتماد يُقال أيُّها يسري لحظتَه وأيُّها ينتظر (٢٨ سبتمبر ٢٠٢٦):
+            المحورُ ربطٌ يُكتب في المعتمَدة متى حفظ، والباقي مراجعة (`recorded-links.ts`) */}
+        {approvedOnce && (
+          <p className="text-read leading-6 text-muted-foreground">
+            خطّتُك معتمَدة — فمحورُ الجلسة المسجّلة يسري لمتعلّميك متى حفظت، بلا اعتماد. أمّا اسمُها ورابطُها ويومُ فتحها،
+            وما تضيفه منها أو تزيله، فيصل الإدارةَ أوّلا مع الخطّة.
+          </p>
+        )}
         {recorded.map(({ row, i }) => {
           const date = row.opensAt ? zonedDay(row.opensAt) : slot.startsOn;
           const clock = row.opensAt ? clockOf(row.opensAt) : "08:00";

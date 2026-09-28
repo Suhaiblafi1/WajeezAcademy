@@ -1329,6 +1329,8 @@ model TrainerProfile {
   cohortTrainers        CohortTrainer[]
   bankAccounts          TrainerBankAccount[]
   issuedDiscounts       TrainerIssuedDiscount[]
+  codes                 TrainerCode[]
+  codeRedemptions       TrainerCodeRedemption[]
 }
 
 model TrainerSkill {
@@ -2251,7 +2253,7 @@ model TrainerIssuedDiscount {
   /// والدورةُ مشروحةٌ في `src/application/trainer/issued-discount.ts`. والقائمةُ
   /// في تعليق السطر لا هنا: `scripts/status-checks.ts` يقرأ التعليقَ الذيليَّ
   /// وحدَه ليولّد قيدَ القاعدة، فقائمةٌ في تعليقٍ توثيقيٍّ تمرّ بلا قيدٍ يحرسها.
-  status String @default("live") // live | used | settled | revoked
+  status String @default("live") // live | used | settled | revoked | refunded
 
   /// مبلغٌ لا نسبة — قرارُ صاحب المنصّة، وعلّتُه في ملفّ القواعد
   amount   Decimal @db.Decimal(10, 2)
@@ -2279,6 +2281,80 @@ model TrainerIssuedDiscount {
   coupon  Coupon         @relation(fields: [couponId], references: [id], onDelete: Cascade)
 
   @@index([profileId, status])
+}
+
+/// كودُ خصمٍ يصدره المدرّبُ **بنسبةٍ على دوراته هو** — ويُحسم ما منحه من مستحقّاته.
+///
+/// قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦) نسخا لـ«مبلغٍ لا نسبة» الذي كان قبله:
+/// «اصدار كود وليس خصم مباشر، والخصم يكون نسبة وليس رقما، ويعطيه لمن يريد
+/// ليضعه في خانة الكودات» — و«السقفُ ٣٠٪، لدوراته وحدَها، إن اشترى أحدٌ
+/// دوراتٍ أخرى مع مدرّبين غيره». والقواعدُ في `src/application/trainer/trainer-code.ts`.
+///
+/// ولمَ كيانٌ جديدٌ لا أعمدةٌ على `TrainerIssuedDiscount`: ذاك **خصمٌ واحدٌ
+/// لاستعمالٍ واحد** — حالتُه (`used` · `settled`) حالةُ الاستعمال نفسِه. وهذا
+/// كودٌ يُنشَر فيُستعمَل مرّاتٍ، فحالتُه حالةُ الكود، ولكلّ استعمالٍ صفٌّ
+/// في `TrainerCodeRedemption` يحمل مالَه. وخلطُ الاثنين في جدولٍ يجعل «مستعمَل»
+/// تعني شيئين.
+model TrainerCode {
+  id        String @id @default(uuid()) @db.Uuid
+  profileId String @db.Uuid
+  couponId  String @unique @db.Uuid
+
+  /// ما قبله المدرّبُ ويُحسم منه — ومنه يُسعَّر لا من الكوبون: القاعدةُ
+  /// تقيّده بين ١ و٣٠ (البند 4-10)، والكوبونُ عامٌّ يقبل المئة.
+  percentOff Int
+
+  status String @default("live") // live | paused | revoked
+
+  /// لمن أو أين نشره — يُطبع في كشفه فيعرف بعد شهرين عمّ حُسم
+  labelAr String
+
+  pausedAt  DateTime?
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  profile     TrainerProfile          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  coupon      Coupon                  @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  redemptions TrainerCodeRedemption[]
+
+  @@index([profileId, status])
+}
+
+/// استعمالُ كود المدرّب في طلب — ومنه وحدَه يُحسب ما يُحسم (البند 4-10).
+///
+/// يُنشأ **محجوزا** مع الطلب، ويصير **مدفوعا** حين يُدفع، ويُفرَج عنه إن هُجر
+/// الطلبُ أو أُلغي — فلا يحرق الهجرُ استعمالا ولا يُحسم ما لم يُقبض.
+///
+/// ودفترُه ثلاثةُ أرقام: `amount` ما مُنح عند الشراء ولا يتغيّر، و`owed` ما
+/// عليه منه الآن (ينقص بقدر ما رُدّ من الثمن)، و`pending` ما لم يُقابَل بعدُ
+/// ببندٍ في كشف — موجبٌ يُحسم، وسالبٌ يُعاد إليه. والكشفُ ينقصه بما أخذ،
+/// وإلغاءُ الكشف يُعيده؛ فلا حالةَ «حُسم» تُنسى إعادتُها.
+model TrainerCodeRedemption {
+  id        String @id @default(uuid()) @db.Uuid
+  codeId    String @db.Uuid
+  /// من يتحمّله — منقولٌ من الكود ليُقرأ دفترُ المدرّب بلا ربط
+  profileId String @db.Uuid
+  orderId   String @unique @db.Uuid
+  userId    String @db.Uuid
+
+  status String @default("held") // held | paid | released | refunded
+
+  amount   Decimal @db.Decimal(10, 2)
+  currency String  @default("USD")
+  owed     Decimal @default(0) @db.Decimal(10, 2)
+  pending  Decimal @default(0) @db.Decimal(10, 2)
+
+  createdAt  DateTime  @default(now())
+  paidAt     DateTime?
+  releasedAt DateTime?
+  refundedAt DateTime?
+
+  code    TrainerCode    @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  profile TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, status])
+  @@index([codeId, userId])
 }
 
 /**
@@ -2352,6 +2428,12 @@ model Cohort {
   language            String                    @default("العربية")
   deliveryMode        String                    @default("remote") // remote | in_person | hybrid
   registrationOpen    Boolean                   @default(false)
+  /// آخرُ لحظةٍ يُقبل فيها الالتحاق — بدءُ الموعد الثاني (٣ج). «التسجيلُ يُغلق يومَ
+  /// البدء، والالتحاقُ المتأخّرُ حتّى الموعد الثاني» (قرارُ صاحب المنصّة، ٢٧ سبتمبر
+  /// ٢٠٢٦). يُكتب عند اعتماد خطّة المدرّب من مواعيدها، و`null` لما اعتُمد بلا
+  /// مواعيد ولما قبل هذا الحقل: لا حدَّ يُلفَّق لشعبةٍ لم يُقرَّر لها. ويُقرأ في
+  /// `registration-window.ts` مع علمِ الشعبة ونافذةِ فصلها.
+  joinClosesAt        DateTime?
   financialReady      Boolean                   @default(false) // إعداد مالي مكتمل — شرط فتح الشعبة
   /// الفصلُ الذي تنتمي إليه — **قابلٌ للإفراغ عمدا**: المسوّداتُ تُنشأ قبل أن
   /// يُقرَّر فصلُها، وشعبُ ما قبل نظام الفصول لا فصلَ لها ولا تُلفَّق لها واحد.
@@ -2438,6 +2520,11 @@ model CohortDeliveryPlan {
   reviewedBy            String?         @db.Uuid
   reviewedAt            DateTime?
   reviewerNote          String?
+  /// ملاحظاتُ الردّ لكلّ خطوةٍ في خطوتها (المرحلة ٣ب): `{general?, identity?, modules?,
+  /// workbooks?, sessions?, assignments?}` — و`reviewerNote` نصُّها مجموعا للجرس والأثر.
+  /// تبقى عند إعادة الإرسال ليقابل المعتمِدُ ما طلبه بما عُدّل، وتُرفع بالاعتماد.
+  /// والشكلُ في `src/application/trainer/review-notes.ts`.
+  reviewerNotes         Json?
   sourceChangeRequestId String?         @db.Uuid // إن نُشرت من اقتراح مدرب بنطاق شعبة
   createdBy             String?         @db.Uuid
   createdAt             DateTime        @default(now())
@@ -2763,6 +2850,12 @@ model CohortAssessment {
   dueAt       DateTime?
   rubricId    String?                @db.Uuid
   status      String                 @default("published") // draft | published | closed
+  /// طلبُ المدرّب على مهمّةٍ منشورةٍ بعد اعتماد خطّته (٣ج-٣): `{ kind: 'edit', fields, requestedAt }`
+  /// أو `{ kind: 'remove', requestedAt }` — والقاعدةُ في `application/trainer/task-approval.ts`.
+  /// المتعلّمون يقرؤون الصفَّ نفسَه حتّى يُعتمَد الطلب، ولا يصلهم هذا العمود.
+  pendingChange Json?
+  /// سببُ ردّ الإدارة آخرَ طلبٍ على المهمّة — يقرؤه المدرّبُ فيها، ويُمحى بطلبه التالي.
+  reviewerNote String?
   createdBy   String?                @db.Uuid
   createdAt   DateTime               @default(now())
   cohort      Cohort                 @relation(fields: [cohortId], references: [id], onDelete: Cascade)
@@ -3445,6 +3538,8 @@ model Coupon {
   advisorRequests AdvisorRequest[]
   /// وخصمُ المدرّب إن كان هذا الكوبونُ وجهَه — واحدٌ لواحد
   trainerDiscount TrainerIssuedDiscount?
+  /// وكودُ المدرّب بالنسبة إن كان هذا الكوبونُ وجهَه — واحدٌ لواحد
+  trainerCode     TrainerCode?
 
   @@index([restrictedToUserId])
 }
@@ -3514,6 +3609,8 @@ model Order {
   coupon    Coupon?     @relation(fields: [couponId], references: [id])
   items     OrderItem[]
   invoice   Invoice?
+  /// استعمالُ كودِ مدرّبٍ في هذا الطلب — كودٌ واحدٌ للطلب، فاستعمالٌ واحد
+  trainerCodeRedemption TrainerCodeRedemption?
 
   @@index([userId, status])
 }

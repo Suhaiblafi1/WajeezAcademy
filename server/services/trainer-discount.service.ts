@@ -1,4 +1,12 @@
-/* خصومُ المدرّب — إصدارُها وإلغاؤها وتسويتُها.
+/* خصومُ المدرّب القديمةُ بالمبلغ — قراءتُها وإلغاؤها وتسويتُها.
+
+   ═══ ولا يُصدَر جديدٌ منها (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة نسخَ «المبلغ» بـ«الكود بالنسبة»: «اصدار كود وليس خصم
+   مباشر، والخصم يكون نسبة وليس رقما». فالإصدارُ هنا أُغلق وحلّ محلَّه
+   `trainer-code.service.ts`. وما صدر قبل ذلك يبقى على شروطه حتّى يُستعمل أو
+   ينتهي أو يُلغى — ذيلُ البند 4-10 بصيغته الجديدة — فبقي هنا ما يقرؤه
+   ويُلغيه ويقيّد استعمالَه وردَّه. وما يلي من القرار الأوّل تاريخُه.
 
    ═══ القرار ═══
 
@@ -30,32 +38,15 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { EarningsService } from './earnings.service'
-import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
-import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
-import {
-  discountBudget, issueBlockerAr, ISSUED_DISCOUNT_STATUS_AR, OUTSTANDING_STATUSES,
-  type DiscountBudget,
-} from '../../src/application/trainer/issued-discount'
-
-/** رمزُ الخصم — `WD-` تمييزا عن رمز الدعوة `WJ-`.
-
-    ولمَ بادئةٌ مختلفة: الرمزان يُنشران من الصفحة نفسِها («دعوتي»)، وأحدُهما
-    رابطُ تسجيلٍ لا يخصم شيئا والآخرُ مالٌ من جيبه. فمن نسخ الخطأَ يراه في
-    الحرف الثاني لا بعد أن يُردّ عند الدفع. و«D» من discount. */
-function newDiscountCode(): string {
-  return `WD-${randomUnambiguousCode(8)}`
-}
+import { ISSUED_DISCOUNT_STATUS_AR } from '../../src/application/trainer/issued-discount'
 
 const num = (d: Prisma.Decimal | number | null | undefined) => Number(d ?? 0)
 
 export class TrainerDiscountService {
   private prisma: PrismaClient
-  private earnings: EarningsService
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
-    this.earnings = new EarningsService(prisma)
   }
 
   private async activeProfile(userId: string) {
@@ -66,44 +57,15 @@ export class TrainerDiscountService {
     return profile
   }
 
-  /** رصيدُه القابل للخصم — ما له عندنا ناقصا ما أصدره ولم يُسوَّ.
-
-      و«ما له عندنا» هو الأرقامُ المعروضةُ له في «مستحقّاتي» نفسِها: المنتظَرُ
-      والمعتمَدُ والمتوقَّعُ من شعبه المفتوحة. ولا يُخترع هنا رقمٌ رابع —
-      فرقمان لشيءٍ واحدٍ يفترقان يوما، ويقرأ المدرّبُ أحدَهما ويحسب على
-      الآخر. والمدفوعُ ليس منه: مالٌ خرج إليه ولا يُحسم منه. */
-  async budgetFor(userId: string): Promise<DiscountBudget> {
-    const profile = await this.activeProfile(userId)
-    const [mine, outstanding] = await Promise.all([
-      this.earnings.listForTrainer(userId),
-      this.prisma.trainerIssuedDiscount.aggregate({
-        where: { profileId: profile.id, status: { in: [...OUTSTANDING_STATUSES] } },
-        _sum: { amount: true },
-      }),
-    ])
-    const projected = mine.cohorts.reduce((s, c) => s + (c.projected ?? 0), 0)
-    return discountBudget({
-      pending: mine.summary.pending,
-      approved: mine.summary.approved,
-      projected,
-      outstanding: num(outstanding._sum.amount),
-      currency: mine.summary.currency || LEDGER_CURRENCY,
-    })
-  }
-
-  /** ما أصدره — أحدثُ أوّلا، ومعه رصيدُه فلا نداءان لشاشةٍ واحدة */
+  /** ما أصدره قبل الكود — أحدثُ أوّلا. ولا رصيدَ معه: لا يُصدَر جديدٌ يُقاس عليه */
   async listFor(userId: string) {
     const profile = await this.activeProfile(userId)
-    const [rows, budget] = await Promise.all([
-      this.prisma.trainerIssuedDiscount.findMany({
-        where: { profileId: profile.id },
-        include: { coupon: { select: { code: true } } },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.budgetFor(userId),
-    ])
+    const rows = await this.prisma.trainerIssuedDiscount.findMany({
+      where: { profileId: profile.id },
+      include: { coupon: { select: { code: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
     return {
-      budget,
       discounts: rows.map((d) => ({
         id: d.id,
         code: d.coupon.code,
@@ -120,62 +82,6 @@ export class TrainerDiscountService {
         createdAt: d.createdAt,
       })),
     }
-  }
-
-  /** الإصدار — كوبونٌ يفعل الخصمَ، وصفٌّ يقول من يتحمّله */
-  async issue(userId: string, input: { amount: number; forWhomAr: string; noteAr?: string; expiresAt?: Date }) {
-    const profile = await this.activeProfile(userId)
-    const forWhom = input.forWhomAr.trim()
-    if (forWhom.length < 2) {
-      throw new AuthError('no_recipient', 'اكتب لمن هذا الخصم — يُطبع في كشفك لتعرف بعد شهرين عمّن حُسم', 400)
-    }
-    const budget = await this.budgetFor(userId)
-    const blocker = issueBlockerAr(input.amount, budget)
-    if (blocker) throw new AuthError('bad_amount', blocker, 400)
-    if (input.expiresAt && input.expiresAt.getTime() <= Date.now()) {
-      throw new AuthError('bad_expiry', 'تاريخُ الانتهاء في الماضي', 400)
-    }
-
-    /* ═══ اصطدامُ الرمز يُعاد لا يُردّ ═══
-
-       الرمزُ عشوائيٌّ من اثنين وثلاثين حرفا في ثمانية مواضع، والاصطدامُ
-       بعيدٌ ولا يُعتمَد على بُعده: خطأُ فرادةٍ يصل المدرّبَ «تعذّر الحفظ»
-       بلا سبب. ومحاولاتٌ ثلاثٌ تكفي لاحتمالٍ كهذا. */
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const code = newDiscountCode()
-      try {
-        return await this.prisma.$transaction(async (tx) => {
-          const coupon = await tx.coupon.create({
-            data: {
-              code,
-              amountOff: input.amount,
-              currency: budget.currency,
-              /* مرّةٌ واحدة: أصدره لشخصٍ بعينه، لا حملةً تُنشر */
-              maxUses: 1,
-              expiresAt: input.expiresAt ?? null,
-              active: true,
-            },
-          })
-          const row = await tx.trainerIssuedDiscount.create({
-            data: {
-              profileId: profile.id, couponId: coupon.id,
-              amount: input.amount, currency: budget.currency,
-              forWhomAr: forWhom, noteAr: input.noteAr?.trim() || null,
-              expiresAt: input.expiresAt ?? null,
-            },
-          })
-          await recordAudit(tx, {
-            actorId: userId, action: 'trainer_discount.issue',
-            entityType: 'trainer_profile', entityId: profile.id,
-            meta: { discountId: row.id, code, amount: input.amount, currency: budget.currency, forWhom },
-          })
-          return { id: row.id, code, amount: input.amount, currency: budget.currency }
-        })
-      } catch (e) {
-        if (attempt === 2 || !isUniqueViolation(e)) throw e
-      }
-    }
-    throw new AuthError('code_conflict', 'تعذّر سكُّ رمزٍ فريد — أعِد المحاولة', 409)
   }
 
   /** الإلغاء — ما لم يُستعمَل وحدَه.
@@ -214,16 +120,12 @@ export class TrainerDiscountService {
 
   /* ═══════════ ما ينادى من خارج بوّابة المدرّب ═══════════ */
 
-  /* ═══ وطلبٌ هُجر يحرق الرمزَ ولا يحسم شيئا ═══
+  /* ═══ والطلبُ المهجورُ لم يعد يحرق الرمز (٢٧ سبتمبر ٢٠٢٦) ═══
 
-     `usedCount` على الكوبون يزيد عند **إنشاء** الطلب لا عند دفعه — وذاك
-     سلوكُ الكوبونات القائمُ في هذه المنصّة، تشترك فيه أكوادُ الحملات
-     وكوبوناتُ المستشارين. فمن بدأ شراءً برمزِ مدرّبٍ ثمّ هجره: الرمزُ
-     استُنفد (`maxUses: 1`) والخصمُ ما زال `live`.
-
-     والاتّجاهُ آمنٌ في الجهة التي تهمّ: **لا يُحسم من المدرّب شيء**. وما
-     يخسره رمزٌ لا ينفع، وبابُه مفتوح — يُلغيه فيسترجع رصيدَه ويُصدر غيرَه.
-     وتغييرُ لحظةِ العدّ يمسّ مسارَ الشراء كلَّه، وهو أوسعُ من هذا الباب. */
+     كان `usedCount` يزيد عند **إنشاء** الطلب ولا ينقص أبدا، فمن بدأ شراءً
+     برمزِ مدرّبٍ ثمّ هجره احترق الرمزُ (`maxUses: 1`) والخصمُ ما زال `live`.
+     وصار إلغاءُ الطلب — بيد صاحبه أو آليّا بعد ساعة — يُعيد الاستعمال
+     (`commerce/coupon-ledger.ts`)، فيعود الرمزُ صالحا لمن أُعطيه. */
 
   /** استُعمل: يُنادى من `settleOrder` لحظةَ أن يصير الطلبُ مدفوعا.
 
@@ -254,6 +156,54 @@ export class TrainerDiscountService {
     }
   }
 
+  /** رُدّ ثمنُ الطلب كلُّه: الخصمُ المستعمَلُ فيه لا يُحسم — البند 4-10.
+
+      «ولا يحسم … ما استعمل في شراء استرد». وكان الردُّ لا يمسّ هذا الجدول،
+      فيُحسم من المدرّب خصمٌ عن مالٍ أُعيد إلى صاحبه.
+
+      وما حُسم قبل الردّ لا يُعاد هنا آليّا: الصفُّ خصمٌ واحدٌ لاستعمالٍ واحد،
+      وإعادتُه بندٌ موجبٌ في كشفٍ لم يُولَّد بعد — ولا موضعَ لذلك في هذا الجدول
+      (وكودُ المدرّب الجديد له دفترٌ يفعله: `coupon-ledger.ts`). فيُقيَّد أثرا
+      يقرؤه المسؤولُ الماليّ فيُضيف البندَ بيده. وهو نادرٌ بطبعه: الحسمُ عند
+      انتهاء الشعبة، والردُّ قلّما يتأخّر إليه.
+
+      ولا يرمي — كأخيه `markUsedForOrder`: الردُّ وقع عند المزوّد. */
+  async markRefundedForOrder(orderId: string) {
+    try {
+      const rows = await this.prisma.trainerIssuedDiscount.findMany({
+        where: { usedOrderId: orderId, status: { in: ['used', 'settled'] } },
+      })
+      for (const row of rows) {
+        if (row.status === 'used') {
+          const moved = await this.prisma.trainerIssuedDiscount.updateMany({
+            where: { id: row.id, status: 'used', settledItemId: null },
+            data: { status: 'refunded' },
+          })
+          if (moved.count === 0) continue
+          await recordAudit(this.prisma, {
+            actorId: null, action: 'trainer_discount.refund',
+            entityType: 'trainer_profile', entityId: row.profileId,
+            meta: { discountId: row.id, orderId, amount: num(row.amount) },
+          })
+        } else {
+          await recordAudit(this.prisma, {
+            actorId: null, action: 'trainer_discount.refund_after_settlement',
+            entityType: 'trainer_profile', entityId: row.profileId,
+            meta: { discountId: row.id, orderId, amount: num(row.amount), settledItemId: row.settledItemId },
+            reason: 'خصمُ مدرّبٍ حُسم ثمّ رُدّ ثمنُ شرائه — يُعاد إليه بندا موجبا بيد المسؤول الماليّ',
+          })
+        }
+      }
+    } catch (e) {
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'trainer_discount.used_failed',
+        entityType: 'order', entityId: orderId,
+        meta: { step: 'refund', error: e instanceof Error ? e.message : String(e) },
+        reason: 'خصمُ مدرّبٍ رُدّ ثمنُ شرائه ولم يُقيَّد — تسويةٌ يدويّةٌ مطلوبة',
+      }).catch(() => { /* الأثرُ نفسُه لا يُسقط ردّا وقع */ })
+    }
+  }
+
   /** الخصومُ المنتظرةُ للحسم — أقدمُ استعمالا أوّلا (وعلّةُ الترتيب في القواعد) */
   pendingFor(profileId: string) {
     return this.prisma.trainerIssuedDiscount.findMany({
@@ -261,9 +211,4 @@ export class TrainerDiscountService {
       orderBy: { usedAt: 'asc' },
     })
   }
-}
-
-/** خطأُ فرادةٍ من Prisma — بلا استيراد نوعٍ من زمن التشغيل */
-function isUniqueViolation(e: unknown): boolean {
-  return typeof e === 'object' && e !== null && 'code' in e && (e as { code?: string }).code === 'P2002'
 }

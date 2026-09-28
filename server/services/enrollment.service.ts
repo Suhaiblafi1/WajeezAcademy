@@ -7,7 +7,7 @@ import { projectPlanForLearner, PLAN_VISIBLE_STATUSES } from '../../src/applicat
 import { recordAudit } from './audit'
 import { NotificationService, safeNotify } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { cohortAcceptsRegistration, TERM_WINDOW_SELECT } from './registration-window'
+import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
 import { CohortService } from './cohort.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { assessmentOpensAt, gateAssessment, learnerGate, meetingOver } from '../../src/application/learning/cohort-gate'
@@ -21,6 +21,14 @@ import { assessmentOpensAt, gateAssessment, learnerGate, meetingOver } from '../
 const LEARNER_TRAINER_SELECT = {
   select: { role: true, profile: { select: { application: { select: { fullName: true } } } } },
 } as const
+
+/* ═══ والمهمّةُ كما يراها متعلّمُها: المعتمَدُ وحدَه (٣ج-٣) ═══
+
+   طلبُ المدرّب على مهمّةٍ منشورةٍ يُحفظ في صفّها نفسِه (`pendingChange`) حتّى
+   تقرّره الإدارة، وسببُ ردّها بجانبه (`reviewerNote`). والصفُّ يخرج إلى المتعلّم
+   كاملا — فلو لم يُستثنَ العمودان لقرأ في متصفّحه عنوانا لم يُعتمَد، وخلافا بين
+   مدرّبه والإدارة لا شأنَ له به. */
+const LEARNER_ASSESSMENT_OMIT = { pendingChange: true, reviewerNote: true } as const
 
 export class EnrollmentService {
   private prisma: PrismaClient
@@ -68,7 +76,7 @@ export class EnrollmentService {
       : null
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
-      include: { term: TERM_WINDOW_SELECT },
+      include: { term: TERM_WINDOW_SELECT, plans: PLAN_GATE_SELECT },
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (!['open', 'full', 'active'].includes(cohort.status)) {
@@ -224,7 +232,7 @@ export class EnrollmentService {
 
     const to = await this.prisma.cohort.findUnique({
       where: { id: toCohortId },
-      include: { term: TERM_WINDOW_SELECT },
+      include: { term: TERM_WINDOW_SELECT, plans: PLAN_GATE_SELECT },
     })
     if (!to) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (to.courseId !== enrollment.cohort.courseId) {
@@ -457,7 +465,7 @@ export class EnrollmentService {
               include: { zoom: true, recordings: { where: { status: 'active' } } },
             },
             materials: { where: { status: 'active' } },
-            assessments: { where: { status: 'published' }, include: { items: true, rubric: { include: { criteria: true } } } },
+            assessments: { where: { status: 'published' }, omit: LEARNER_ASSESSMENT_OMIT, include: { items: true, rubric: { include: { criteria: true } } } },
             trainers: LEARNER_TRAINER_SELECT,
             /* خطّةُ مدرّبِ الشعبة المعتمَدة — أحدثُها. والترشيحُ هنا على
                الحالة كذلك لا على الانتقاء وحدَه: لو عاد المشروعُ يوما بلا
@@ -473,8 +481,8 @@ export class EnrollmentService {
         attendance: true,
         courseProgress: true,
         moduleProgress: true,
-        submissions: { include: { grades: { include: { history: true } }, feedback: true, assessment: true } },
-        attempts: { include: { grades: true, assessment: true } },
+        submissions: { include: { grades: { include: { history: true } }, feedback: true, assessment: { omit: LEARNER_ASSESSMENT_OMIT } } },
+        attempts: { include: { grades: true, assessment: { omit: LEARNER_ASSESSMENT_OMIT } } },
         certificates: { include: { revocation: true } },
       },
     })

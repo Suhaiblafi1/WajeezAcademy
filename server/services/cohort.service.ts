@@ -10,16 +10,20 @@ import { notifyPlanWaiters } from './catalog-readiness.service'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { awaitingTrainerPlan } from './registration-window'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify, notifyRole } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, zoomMissing, zoomReady } from './zoom.service'
+import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, updateZoomMeeting, zoomMissing, zoomReady } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
-import { meetingOver } from '../../src/application/learning/cohort-gate'
+import { meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
+import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
+import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
+import { LEARNER_PLAN_QUERY } from './learner-gate'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -385,6 +389,12 @@ export class CohortService {
     if (!cohort.plans.some((p) => ['approved', 'published'].includes(p.status)) && !cohort.plans.length) {
       missing.push('لا خطة تقديم للشعبة — اكتبها من بطاقة الشعبة')
     }
+    /* وخطّةُ مدرّبٍ بدأها ولم تُعتمَد لا تُفتح شعبتُها (٣ج): «التسجيلُ يُفتح بعد
+       الاعتماد». وكان الشرطُ أعلاه يُوفى بأيّ صفِّ خطّةٍ ولو مسودّة — فتُفتح شعبةٌ
+       لم يقرأ أحدٌ منهجَها. والقاعدةُ قاعدةُ التسجيل نفسُها (`awaitingTrainerPlan`) */
+    if (awaitingTrainerPlan(cohort.plans.filter((p) => p.trainerId !== null))) {
+      missing.push('خطّةُ المدرّب لم تُعتمَد بعد — تُفتح الشعبةُ للتسجيل باعتمادها')
+    }
     if (!cohort.financialReady || cohort.price === null) missing.push('الإعداد المالي غير مكتمل (السعر والعملة)')
     return { ready: missing.length === 0, missing }
   }
@@ -741,18 +751,28 @@ export class CohortService {
      نسيانا الفصلُ لأنّه الوحيدُ الذي لا يُشتكى من غيابه فورا — بل يُشتكى
      منه المدرّبُ بعد أسبوعٍ حين يعجز عن الجدولة.
 
-     فالثلاثةُ في معاملةٍ واحدة: ما لم يتمّ كلُّه لم يقع منه شيء. */
+     فالثلاثةُ في معاملةٍ واحدة: ما لم يتمّ كلُّه لم يقع منه شيء.
+
+     ═══ والفصلُ اختياريّ (٣ج-٥) ═══
+
+     صارت المدّةُ للمدرّب يحدّدها في خطّته، والفصلُ يُشتقّ من تاريخ بدئها حين
+     تُعتمَد (`applyPeriod`) — «الفصلُ لا يُسأل عنه المدرّب» (صاحب المنصّة،
+     ٢٧ سبتمبر ٢٠٢٦). فمن فُتحت له شعبةٌ بلا فصلٍ لا ينتظر أحدا: حفظُ مدّته
+     يفتح نافذةَ جدولته. وإن سمّت الإدارةُ فصلا بقي كما كان — حدودٌ مبدئيّةٌ
+     حتّى يحدّد مدرّبُها مدّتَه. */
   async openForTrainer(actorId: string, input: {
-    courseId: string; profileId: string; termId: string; title: string
+    courseId: string; profileId: string; termId?: string | null; title: string
     pathwayId?: string; capacity?: number; price?: number; currency?: string
     language?: string; deliveryMode?: 'remote' | 'in_person' | 'hybrid'
   }) {
-    const term = await this.prisma.term.findUnique({
-      where: { id: input.termId },
-      select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
-    })
-    if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
-    if (['closed', 'cancelled'].includes(term.status)) {
+    const term = input.termId
+      ? await this.prisma.term.findUnique({
+          where: { id: input.termId },
+          select: { id: true, titleAr: true, startsOn: true, endsOn: true, status: true },
+        })
+      : null
+    if (input.termId && !term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
+    if (term && ['closed', 'cancelled'].includes(term.status)) {
       throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
     }
 
@@ -774,20 +794,22 @@ export class CohortService {
 
     const cohort = await this.create(actorId, {
       courseId: input.courseId, pathwayId: input.pathwayId, title: input.title,
-      termId: term.id,
-      startsAt: term.startsOn, endsAt: term.endsOn,
+      ...(term ? { termId: term.id, startsAt: term.startsOn, endsAt: term.endsOn } : {}),
       capacity: input.capacity, price: input.price, currency: input.currency,
       language: input.language, deliveryMode: input.deliveryMode,
     })
-    /* والنافذةُ تُفتح من حدود الفصل في الصفّ نفسِه — لا بنداءٍ ثانٍ يُنسى */
-    await this.prisma.cohort.update({
-      where: { id: cohort.id },
-      data: { scheduleWindowStart: term.startsOn, scheduleWindowEnd: term.endsOn },
-    })
+    /* والنافذةُ تُفتح من حدود الفصل في الصفّ نفسِه — لا بنداءٍ ثانٍ يُنسى.
+       وبلا فصلٍ تفتحها مدّةُ المدرّب لحظةَ يحفظها (`savePlan`) */
+    if (term) {
+      await this.prisma.cohort.update({
+        where: { id: cohort.id },
+        data: { scheduleWindowStart: term.startsOn, scheduleWindowEnd: term.endsOn },
+      })
+    }
     await this.assignTrainer(cohort.id, input.profileId, actorId, 'lead')
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.open_for_trainer', entityType: 'cohort', entityId: cohort.id,
-      meta: { courseId: input.courseId, profileId: input.profileId, termId: term.id, termTitle: term.titleAr },
+      meta: { courseId: input.courseId, profileId: input.profileId, termId: term?.id ?? null, termTitle: term?.titleAr ?? null },
     })
     return { cohortId: cohort.id, title: cohort.title, term }
   }
@@ -906,7 +928,13 @@ export class CohortService {
   async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, cohortId: true, title: true, startsAt: true, approvalState: true, placeholder: true },
+      select: {
+        id: true, cohortId: true, title: true, startsAt: true, approvalState: true, placeholder: true,
+        moduleId: true, moduleIds: true, timezone: true,
+        zoom: { select: { meetingId: true, provider: true } },
+        /* موعدُ محوره من الخطّة التي يراها المتعلّم — منه يُحكم على «داخلَ موعده» (٣ج) */
+        cohort: { select: { timezone: true, plans: LEARNER_PLAN_QUERY } },
+      },
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
@@ -938,26 +966,73 @@ export class CohortService {
        ولأنّه يرجع إلى الانتظار سقط بابُ «اقترح موعدا» كلُّه: من يملك النقلَ
        لا يستأذن فيه، والاعتمادُ يقع بعدَه لا قبلَه. */
     const wasApproved = session.approvalState === 'approved'
+    /* ═══ إلّا التأجيلَ القريب — يبقى معتمَدا (٣ج) ═══
+
+       «وبعد الاعتماد كلُّ تغييرٍ باعتماد — إلّا تأجيلَ لقاءٍ بعده أقلُّ من ثمانٍ
+       وأربعين ساعة». والقاعدةُ وحدودُها (تأجيلٌ لا تقديم، قبل البدء، داخلَ موعد
+       محوره) في `application/trainer/postpone.ts`. */
+    const slots = ((session.cohort.plans[0]?.content ?? null) as { slots?: PlanSlot[] | null } | null)?.slots ?? []
+    const axis = session.moduleIds[0] ?? session.moduleId
+    const slot = axis ? slots[slotIndexOf(slots, axis)] ?? null : null
+    const postponed = keepsApprovalOnMove({
+      approved: wasApproved, startsAt: session.startsAt, newStartsAt: input.startsAt, newEndsAt: input.endsAt ?? null,
+      now: new Date(), slot,
+    })
+    const backToPending = wasApproved && !postponed
     const moved = await this.prisma.cohortSession.update({
       where: { id: sessionId },
       data: {
         startsAt: input.startsAt,
         endsAt: input.endsAt,
-        ...(wasApproved ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
+        ...(backToPending ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
       },
     })
+    /* واجتماعُه يُنقل معه — معتمَدا بقي أو منتظِرا: الاعتمادُ يعيد استعمالَ
+       الاجتماع القائم، فلو بقي على موعده القديم لَبقي في Zoom على ساعةٍ غيرِ ساعته */
+    const zoomMoved = await this.moveZoomMeeting(session, moved)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.move', entityType: 'cohort_session', entityId: sessionId,
-      meta: { from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending: wasApproved },
+      meta: {
+        from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending, postponed,
+        ...(zoomMoved === null ? {} : { zoomMoved }),
+      },
     })
     /* والإدارةُ تُعلَم أنّ في طابورها صفًّا جديدا — وإلّا بقي اللقاءُ محجوبا
        عن متعلّميه ولا أحدَ يعلم أنّه ينتظر. */
-    if (wasApproved) {
+    if (backToPending) {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
       await this.tellCohortScheduleChanged(session.cohortId, session,
         'نقله مدرّبُك ويُراجَع الآن عند الإدارة. ويصلك موعدُه الجديدُ حين يُعتمَد.')
+    } else if (postponed) {
+      /* والمؤجَّلُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع» */
+      await this.tellCohortScheduleChanged(session.cohortId, session,
+        `أجّله مدرّبُك إلى ${whenAr(moved.startsAt)} — ورابطُ الانضمام نفسُه.`)
     }
     return moved
+  }
+
+  /** ينقل اجتماعَ Zoom مع لقائه — ويعود بما وقع: `null` لا اجتماعَ في Zoom يُنقل */
+  private async moveZoomMeeting(
+    session: { zoom: { meetingId: string | null; provider: string } | null; timezone: string | null; cohort: { timezone: string | null } },
+    moved: { startsAt: Date; endsAt: Date | null },
+  ): Promise<boolean | null> {
+    const meetingId = session.zoom?.provider === 'zoom_api' ? session.zoom.meetingId : null
+    if (!meetingId) return null
+    try {
+      const cfg = await getZoomConfig(this.prisma)
+      if (!zoomReady(cfg)) return false
+      const durationMinutes = moved.endsAt
+        ? Math.max(15, Math.round((moved.endsAt.getTime() - moved.startsAt.getTime()) / 60_000))
+        : 120
+      const r = await updateZoomMeeting(cfg, meetingId, {
+        startsAt: moved.startsAt, durationMinutes, timezone: session.timezone ?? session.cohort.timezone ?? undefined,
+      })
+      if (!r.ok) console.error('[zoom] تعذّر نقلُ الاجتماع مع لقائه', meetingId, r.reason)
+      return r.ok
+    } catch (e) {
+      console.error('[zoom] تعذّر نقلُ الاجتماع مع لقائه', meetingId, e)
+      return false
+    }
   }
 
   /* ═══ ربطُ لقاءٍ بمحوره — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -968,8 +1043,15 @@ export class CohortService {
      «متى تُفتح المهامّ» محكومٌ بموعد المحور نفسِه: لا يُفتح شيءٌ قبل أوّل
      موعده مهما رُبط (`axis-timeline.ts`).
 
-     واعتمادُ ما يتغيّر بعد اعتماد الخطّة كلِّه — ومنه هذا — مرحلةٌ لاحقةٌ
-     لها قرارُها (المراجعاتُ والاعتمادُ الواحد). */
+     ═══ وبعد اعتماد الخطّة كذلك — بلا اعتماد (٢٨ سبتمبر ٢٠٢٦) ═══
+
+     سُئل صاحبُ المنصّة: أيحتاج تغييرُ محاور لقاءٍ بعد اعتماد الخطّة اعتمادَ
+     الإدارة؟ فقال بنصّه: «no need for admin approval for links… access to
+     whatever» — لا اعتمادَ للربط ولا لما يُفتح به. فيسري فورا: لا يُسقط
+     المعتمَدَ إلى الانتظار، ولا يفتح مراجعةً للخطّة، ويصل المتعلّمَ في طلبه
+     التالي — مهامُّ المحور ومصادرُه تُفتح بعد أوّل لقاءٍ مربوطٍ به، ولا قبل أوّل
+     موعده (`learner-gate.ts`). ونقلُ اللقاء غيرُه، له قاعدتُه (`postpone.ts`).
+     ويحرسه `server/tests/trainer/axis-plan.test.ts` ⑧. */
   async trainerSetSessionAxes(userId: string, sessionId: string, moduleIds: string[]) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
@@ -1453,10 +1535,13 @@ export class CohortService {
       approvalState: 'pending',
       wantsZoom: cohort.deliveryMode !== 'in_person',
     })
-    await this.notifyAdminsOfPendingSession(session.id, cohortId, session.title)
+    /* ولقاءٌ يُعتمَد مع خطّته لا يُنادى عليه وحدَه (٣ب): الإدارةُ تعتمده حين
+       تعتمد الخطّة، ونداءٌ لكلّ لقاءٍ قبلها يدعوها إلى قرارٍ ليس هذا موضعَه. */
+    const withPlan = await this.ridesWithPlan(cohortId)
+    if (!withPlan) await this.notifyAdminsOfPendingSession(session.id, cohortId, session.title)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.propose', entityType: 'cohort_session', entityId: session.id,
-      meta: { cohortId, startsAt: session.startsAt, deliveryMode: cohort.deliveryMode },
+      meta: { cohortId, startsAt: session.startsAt, deliveryMode: cohort.deliveryMode, withPlan },
     })
     /* ولا عددَ مبلَّغين يُقال: لم يُبلَّغ أحد، وقولُ «بُلِّغ ٠» يُقرأ عطبا */
     return { session, zoom: null, notified: 0, pending: true as const }
@@ -1470,8 +1555,12 @@ export class CohortService {
      وإنشاءُ الاجتماع قد يسقط (مفاتيحُ ناقصةٌ أو Zoom لا يستجيب). فلا يُكتب
      الاعتمادُ قبله: لقاءٌ «معتمَدٌ» بلا اجتماعٍ موعدٌ بلا باب، ويراه
      المسجَّلون فيقفون عنده. فتُرتَّب: الاجتماعُ أوّلا، ثمّ الختمُ، ثمّ
-     التبليغ. */
-  async decideSession(actorId: string, sessionId: string, approve: boolean, note?: string) {
+     التبليغ.
+
+     و`quiet` لاعتماد الخطّة (٣ب): يعتمد لقاءاتِها كلَّها بهذا المسلك نفسِه،
+     ويُخبر المدرّبَ خبرا واحدا عن الخطّة ولقاءاتها — فلا يصله خبرٌ لكلّ لقاء.
+     والمسجَّلون يُبلَّغون كما هم: لكلّ لقاءٍ موعدُه في تقويمهم. */
+  async decideSession(actorId: string, sessionId: string, approve: boolean, note?: string, opts: { quiet?: boolean } = {}) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       select: { id: true, cohortId: true, title: true, startsAt: true, approvalState: true, wantsMeeting: true, placeholder: true, zoom: { select: { id: true } } },
@@ -1522,12 +1611,14 @@ export class CohortService {
     /* وأوّلُ لقاءٍ يُعتمَد من جدول المدرّب يرفع الجدولَ المبدئيّ — فلا يرى
        المسجَّلون جدولين معا: مثالَ الإدارة ومواعيدَ مدرّبهم. */
     if (!session.placeholder) await this.clearPlaceholders(actorId, session.cohortId)
-    await this.notifyCohortTrainers(session.cohortId, {
-      templateKey: 'cohort.session.approved',
-      title: `اعتُمد لقاءُ «${session.title}»`,
-      body: `وصل المسجَّلين في تقويمهم وبالبريد${zoom ? '، ومعه رابطُ الاجتماع' : ''}.`,
-      data: { cohortId: session.cohortId, sessionId },
-    })
+    if (!opts.quiet) {
+      await this.notifyCohortTrainers(session.cohortId, {
+        templateKey: 'cohort.session.approved',
+        title: `اعتُمد لقاءُ «${session.title}»`,
+        body: `وصل المسجَّلين في تقويمهم وبالبريد${zoom ? '، ومعه رابطُ الاجتماع' : ''}.`,
+        data: { cohortId: session.cohortId, sessionId },
+      })
+    }
     return { session: approved, zoom, notified }
   }
 
@@ -1582,17 +1673,38 @@ export class CohortService {
     return idle.length
   }
 
-  /** اللقاءاتُ المنتظِرةُ قرارا — للطابور الذي تراجع فيه الإدارةُ الشعبة */
+  /* ═══ لقاءٌ يُعتمَد مع خطّته — أم وحدَه (٣ب) ═══
+
+     اعتمادُ الخطّة يعتمد لقاءاتِها المنتظِرةَ معها. فما دامت الشعبةُ لم
+     تُعتمَد لمدرّبها خطّةٌ قطّ — وله خطّةٌ تُكتب — فلقاءاتُه تنتظر خطّتَها،
+     ولا تُعرض على الإدارة بطاقةً بطاقة. وبعد أوّل اعتمادٍ كلُّ لقاءٍ يُضاف
+     أو يُنقل تغييرٌ على معتمَد، فيُعتمَد وحدَه كما كان.
+
+     وشعبةٌ لا خطّةَ لمدرّبها أصلا تبقى على البطاقات: لا خطّةَ تحملها. */
+  async ridesWithPlan(cohortId: string): Promise<boolean> {
+    const plans = await this.prisma.cohortDeliveryPlan.findMany({
+      where: { cohortId, trainerId: { not: null } },
+      select: { status: true },
+    })
+    /* والقاعدةُ قاعدةُ التسجيل نفسُها: خطّةٌ تُكتب ولم تُعتمَد قطّ */
+    return awaitingTrainerPlan(plans)
+  }
+
+  /** اللقاءاتُ المنتظِرةُ قرارا — للطابور الذي تراجع فيه الإدارةُ الشعبة.
+   *  و`withPlan` لما يُعتمَد مع خطّة شعبته لا وحدَه */
   async pendingSessions(cohortId?: string) {
-    return this.prisma.cohortSession.findMany({
+    const rows = await this.prisma.cohortSession.findMany({
       where: { approvalState: 'pending', ...(cohortId ? { cohortId } : {}) },
       orderBy: { startsAt: 'asc' },
       select: {
-        id: true, title: true, startsAt: true, endsAt: true, noteAr: true,
+        id: true, title: true, startsAt: true, endsAt: true, noteAr: true, placeholder: true,
         attachmentKey: true, attachmentName: true, attachmentMime: true, createdAt: true,
         cohort: { select: { id: true, title: true } },
       },
     })
+    const rides = new Map<string, boolean>()
+    for (const id of new Set(rows.map((r) => r.cohort.id))) rides.set(id, await this.ridesWithPlan(id))
+    return rows.map(({ placeholder, ...r }) => ({ ...r, withPlan: !placeholder && rides.get(r.cohort.id) === true }))
   }
 
   /** مدرّبو الشعبة — يُبلَّغون بقرار الإدارة على لقاءاتهم */

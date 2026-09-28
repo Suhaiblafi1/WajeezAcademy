@@ -101,6 +101,20 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     ],
   },
   {
+    /* ═══ ما يُفتح في شعبتي (٢(ب-٣)) ═══
+
+       خطُّ المحاور يفتح الكرّاسةَ والمتنَ أوّلَ يوم الموعد والمهامَّ بعد
+       لقاء المحور، والدورةُ تُخبر بها حين تُفتح وقبل آخر موعدٍ لم يُسلَّم.
+       وهو صنفٌ يُكتَم: خبرٌ لا يترتّب عليه حقٌّ ولا واجب — الموعدُ باقٍ في
+       رحلته، والتأخّرُ يُقبل ويُعلَّم. ولم يُضمَّ إلى «مواعيد الجلسات»: من
+       كتم الجرسَ عن اللقاءات لم يكتمه عن مهمّةٍ فُتحت، ولا العكس. */
+    key: 'cohort_timeline',
+    labelAr: 'ما يُفتح في شعبتي',
+    whatAr: 'فتحُ موعدٍ بكرّاسته ومتنه · فتحُ مهامِّ محورٍ بعد لقائه · وقبل آخر موعد مهمّةٍ لم تسلّمها بيوم',
+    silenceable: true,
+    templateKeys: ['timeline.slot_opened', 'timeline.tasks_opened', 'timeline.due_soon'],
+  },
+  {
     key: 'announcements',
     labelAr: 'إعلاناتُ الأكاديمية',
     whatAr: 'ما تُرسله الإدارةُ للعموم أو لشعبتك',
@@ -214,7 +228,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'cohort_plan',
     labelAr: 'تجهيزُ شعبتي',
-    whatAr: 'إرسالُ خطّةِ شعبتك للاعتماد · قرارُ الإدارة فيها · تذكيرٌ بإكمال تجهيزها',
+    whatAr: 'إرسالُ خطّةِ شعبتك للاعتماد · قرارُ الإدارة فيها وفي ما تغيّره بعد اعتمادها · تذكيرٌ بإكمال تجهيزها',
     silenceable: false,
     lockedWhyAr: 'قرارُ الإدارة في خطّتك يُبنى عليه فتحُ الشعبة، والتذكيرُ يحمل ما بقي عليك — وكتمُهما يُبقي شعبةً بلا مدرّبٍ يعلم أنّ عليه شيئا.',
     /* واللقاءُ المباشرُ من هذا الصنف نفسِه (١٥ سبتمبر ٢٠٢٦): جدولتُه
@@ -224,9 +238,13 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
 
        ولا يُكتَم كأخيه: من ردَّ عليه لقاءٌ ولم يعلم وقف يومَ اللقاء ينتظر
        طلبةً لا يأتون، ومن اعتُمد لقاؤه ولم يعلم لم يحضّر له. */
+    /* ومهامُّ ما بعد الاعتماد كذلك (٣ج-٣): «وبعد الاعتماد كلُّ تغييرٍ باعتماد».
+       `pending` يصل الإدارةَ كأخويه، و`decision` يصل المدرّبَ — ولا يُكتَم: من
+       رُدّ طلبُه ولم يعلم ظنّ متعلّميه يقرؤون ما كتبه. */
     templateKeys: [
       'cohort.plan.submitted', 'cohort.plan.decision',
       'cohort.session.pending', 'cohort.session.approved', 'cohort.session.rejected',
+      'cohort.assessment.pending', 'cohort.assessment.decision',
     ],
   },
   {

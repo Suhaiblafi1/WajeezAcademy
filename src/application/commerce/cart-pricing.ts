@@ -20,7 +20,16 @@
    الكود لا بعده: هو حدُّ **سعرِ المسار**، لا حدُّ ما يدفعه صاحبُ كودٍ — ولو
    جاء بعده لَابتلع الكودَ كلَّه فوق السقف فصار الكودُ بلا أثرٍ لمن استحقّه.
 
-   الحارس: server/tests/commerce/cart-pricing.test.ts */
+   ═══ وكودُ المدرّب على دوراته وحدَها (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   الكوبونُ كان يقع على السلّة كلِّها. وكودُ المدرّب يحسم **من مستحقّاته**،
+   فلو وقع على السلّة كلِّها لتحمّل عن دوراتِ مدرّبين غيره — وقرارُ صاحب
+   المنصّة صريح: «لدوراته وحدَها، إن اشترى أحدٌ دوراتٍ أخرى مع مدرّبين غيره».
+   فصار للكوبون **نطاقٌ** اختياريّ (`cohortIds`): بلا نطاقٍ يعمّ كما كان، وبه
+   يقع على حصّة تلك الشعب ممّا بقي بعد الباقة والسقف — بنسبة سعرها من المجموع.
+
+   الحارس: server/tests/commerce/cart-pricing.test.ts
+   ونطاقُ الكود: src/tests/commerce/scoped-coupon.test.ts */
 
 import { buildDiscountPct, bundleCapDiscount, money, MAX_BUNDLE_TOTAL_CURRENCY } from './discount-policy'
 
@@ -36,12 +45,17 @@ export interface CartLine {
 export interface CartCoupon {
   percentOff: number | null
   amountOff: number | null
+  /** الشعبُ التي يقع عليها وحدَها — كودُ المدرّب على دوراته. وبلا قيمةٍ يعمّ
+      السلّةَ كما كان كلُّ كوبون. */
+  cohortIds?: readonly string[] | null
 }
 
 export interface PricedLine extends CartLine {
   /** ما يدخل الفاتورة فعلا — صفرٌ للهديّة */
   unitPrice: number
   isGift: boolean
+  /** أوقع عليها الكوبون؟ — ليُرى أيُّ الدورات خصمها كودُ المدرّب */
+  couponApplies: boolean
 }
 
 export interface CartPricing {
@@ -56,6 +70,9 @@ export interface CartPricing {
   /** ما اقتُطع بحكم سقف مبلغ السلّة — صفرٌ في السواد الأعظم من السلال */
   capDiscount: number
   couponDiscount: number
+  /** عددُ الدورات المدفوعة التي وقع عليها الكوبون — صفرٌ يعني أنّ الكودَ لا
+      يخصّ شيئا في هذه السلّة، فيُقال ذلك للمشتري لا يُقبَل صامتا */
+  couponLines: number
   discount: number
   total: number
 }
@@ -71,9 +88,12 @@ export function priceCart(
   /* الهديّةُ بندٌ بصفر لا بندٌ محذوف: تبقى في الفاتورة ليقرأ المشتري أنّه
      أخذها، ويقرأ الخادمُ أنّه استحقّها. وحذفُها من البنود يُخفي الوعدَ عن
      الورقة الوحيدة التي تُحفظ منه. */
+  const scope = coupon?.cohortIds ? new Set(coupon.cohortIds) : null
   const priced: PricedLine[] = lines.map((l) => {
     const isGift = giftCourseId !== null && l.courseId === giftCourseId
-    return { ...l, isGift, unitPrice: isGift ? 0 : l.listPrice }
+    /* الهديّةُ لا يقع عليها كوبون: سعرُها صفرٌ فلا شيءَ يُخصم منه */
+    const couponApplies = coupon !== null && !isGift && (scope === null || scope.has(l.cohortId))
+    return { ...l, isGift, unitPrice: isGift ? 0 : l.listPrice, couponApplies }
   })
 
   const paid = priced.filter((l) => !l.isGift)
@@ -91,11 +111,22 @@ export function priceCart(
   const afterBundle = money(subtotal - bundleDiscount - capDiscount)
 
   let couponDiscount = 0
-  if (coupon) {
+  const couponed = paid.filter((l) => l.couponApplies)
+  if (coupon && couponed.length > 0) {
+    /* وعاءُ الكوبون: ما بقي بعد الباقة والسقف — كلُّه لكوبونٍ عامّ، وحصّةُ
+       شعب النطاق منه لكودِ مدرّب. والحصّةُ بنسبة السعر: خصمُ الباقة نسبةٌ
+       تقع على كلّ بندٍ بقدره، والسقفُ يُوزَّع كذلك — فلا تتحمّل دورتُه من
+       خصوم الأكاديميّة أقلَّ من غيرها ولا أكثر.
+
+       والعامُّ يأخذ `afterBundle` نفسَه لا حاصلَ ضربٍ وقسمة: `x·s/s` قد يفترق
+       عن `x` في آخر منزلة، فيقلب تقريبَ قرشٍ في كوبونٍ لم يتغيّر فيه شيء. */
+    const base = scope === null
+      ? afterBundle
+      : subtotal > 0 ? (afterBundle * couponed.reduce((s, l) => s + l.unitPrice, 0)) / subtotal : 0
     couponDiscount = coupon.percentOff
-      ? money((afterBundle * coupon.percentOff) / 100)
+      ? money((base * coupon.percentOff) / 100)
       : money(coupon.amountOff ?? 0)
-    if (couponDiscount > afterBundle) couponDiscount = afterBundle
+    if (couponDiscount > money(base)) couponDiscount = money(base)
   }
 
   const discount = money(bundleDiscount + capDiscount + couponDiscount)
@@ -108,6 +139,7 @@ export function priceCart(
     bundleDiscount,
     capDiscount,
     couponDiscount,
+    couponLines: couponed.length,
     discount,
     total: money(Math.max(0, subtotal - discount)),
   }

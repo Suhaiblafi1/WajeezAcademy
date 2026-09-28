@@ -47,6 +47,10 @@ const LEARNER: Table = {
   'session.reminder': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.24h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
   'session.reminder.1h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  /* ٢(ب-٣): ما يُفتح على خطّ المحاور — والخطُّ نفسُه في «الدروس» من رحلتي */
+  'timeline.slot_opened': { path: '/student/learning', ctaAr: 'افتح موعدَك' },
+  'timeline.tasks_opened': { path: '/student/learning', ctaAr: 'افتح الواجبات' },
+  'timeline.due_soon': { path: '/student/learning', ctaAr: 'سلّم قبل موعده' },
   'enrollment.approved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.confirmed': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.rejected': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
@@ -103,6 +107,8 @@ const TRAINER: Table = {
   'cohort.session.pending': { path: '/admin/cohorts', ctaAr: 'راجِع اللقاءَ واعتمِده' },
   'cohort.session.approved': { path: '/trainer/board', ctaAr: 'افتح لقاءاتِ شعبتك' },
   'cohort.session.rejected': { path: '/trainer/board', ctaAr: 'اقرأ الملاحظةَ وأعِد جدولتَه' },
+  /* وقرارُ الإدارة في مهمّته بعد الاعتماد (٣ج-٣) — مهامُّه في شعبته من لوحه */
+  'cohort.assessment.decision': { path: '/trainer/board', ctaAr: 'افتح مهامَّ شعبتك' },
   /* ومفاتيحُ تذكيرِ المدرّب غيرُ مفاتيحِ المتعلّم — `session.reminder.trainer.*`
      في `worker/jobs.ts`. وكنتُ كتبتُ هنا مفاتيحَ المتعلّم للمدرّب، فكانت
      أسطرا ميّتةً: لا يصل المدرّبَ `session.reminder.24h` أبدا، ولا وجهةَ
@@ -150,6 +156,8 @@ const STAFF: Table = {
   'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفِّذ ما اختاره' },
   'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },
   'cohort.plan.submitted': { path: '/admin/cohorts', ctaAr: 'راجِع خطّةَ الشعبة' },
+  /* ومهامُّ ما بعد الاعتماد تنتظر في بطاقة الشعبة نفسِها (٣ج-٣) */
+  'cohort.assessment.pending': { path: '/admin/cohorts', ctaAr: 'راجِع المهامَّ واعتمِدها' },
 }
 
 const BY_AUDIENCE: Record<MailAudience, Table> = {
