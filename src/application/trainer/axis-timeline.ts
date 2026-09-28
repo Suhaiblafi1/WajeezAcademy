@@ -387,13 +387,22 @@ export function sessionProblems(input: {
     if (idx === -1) return
     if (!r.opensAt || Number.isNaN(new Date(r.opensAt).getTime())) { blocking.push(`${label} بلا موعدِ فتح`); return }
     const slot = slots[idx]
-    const { from, to } = periodBounds(slot)
-    const t = new Date(r.opensAt).getTime()
-    if (t < from.getTime() || t > to.getTime()) {
+    if (!opensInsideSlot(r.opensAt, slot)) {
       blocking.push(`${label} تُفتح خارجَ موعد ${axesLabelAr([r.moduleId], pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`)
     }
   })
   return { blocking, warnings }
+}
+
+/** أتُفتح الجلسةُ المسجّلةُ داخلَ موعد محورها؟ — بحدوده في عمّان: منتصفِ ليل يومه
+    الأوّل إلى آخر ثانيةٍ من يومه الأخير. به يحجب الإرسالُ ما خرج (فوق)، وبه يسري
+    يومُ فتحها بعد الاعتماد بلا اعتماد (`recorded-links.ts`) — فلا يفترق الحكمان */
+export function opensInsideSlot(opensAt: string | Date | null | undefined, slot: CohortPeriod): boolean {
+  if (!opensAt) return false
+  const t = new Date(opensAt).getTime()
+  if (Number.isNaN(t)) return false
+  const { from, to } = periodBounds(slot)
+  return t >= from.getTime() && t <= to.getTime()
 }
 
 /* ═══ متى يُفتح كلُّ شيء — الخطُّ نفسُه ═══
