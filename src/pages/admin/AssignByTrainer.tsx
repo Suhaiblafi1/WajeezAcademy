@@ -37,6 +37,7 @@ import { toast, toastError } from "@/components/Toast";
 import { fmtDate } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
+import { QUALIFICATION_LABELS } from "@/application/trainer/qualification-labels";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { controlCls } from "@/components/FormKit";
@@ -70,13 +71,8 @@ interface CohortRow {
   trainers: { profileId: string; name: string; role: string }[];
 }
 
-/** حالةُ التأهيل بلغة من يقرأ — لا بحالة قاعدة البيانات */
-const QUAL_AR: Record<string, string> = {
-  qualified: "مؤهَّل",
-  pending: "طلبُ تأهيلٍ ينتظر قرارَك",
-  rejected: "رُفض تأهيلُه",
-  retired: "سُحب تأهيلُه",
-};
+/** حالةُ التأهيل بلغة من يقرأ — ومصدرُها مشتركٌ مع تقرير «دوراتُ المدرّبين المقبولين» */
+const QUAL_AR = QUALIFICATION_LABELS;
 
 /* الشعبةُ المنتهيةُ لا يُسنَد إليها أحد — ولا تُعرض فتُشغل النظر */
 const OPEN_COHORT = ["draft", "open", "full", "active"];
