@@ -33,6 +33,7 @@ import { TrainerChangeService } from '../services/trainer-change.service'
 import { TrainerOfferService } from '../services/trainer-offer.service'
 import { TrainerReviewService } from '../services/trainer-review.service'
 import { recordAudit } from '../services/audit'
+import { releaseCouponUse } from '../services/commerce/coupon-ledger'
 import { ProgressService } from '../services/progress.service'
 import { LEARNER_PLAN_QUERY } from '../services/learner-gate'
 import { LEARNER_SESSION_WHERE } from '../services/session-visibility'
@@ -909,18 +910,26 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
   for (const order of stale) {
     if ((order.invoice?.payments ?? []).length > 0) { withPayment++; continue }
     try {
-      await prisma.$transaction(async (tx) => {
-        await tx.order.update({ where: { id: order.id }, data: { status: 'cancelled' } })
+      let released = false
+      const moved = await prisma.$transaction(async (tx) => {
+        /* بشرطِ الحالة: صاحبُه قد يُلغيه أو يدفعه في اللحظة نفسِها — فلا يُلغى
+           مدفوعٌ، ولا يُفرَج عن استعمالِ كوبونٍ مرّتين */
+        const m = await tx.order.updateMany({ where: { id: order.id, status: 'pending_payment' }, data: { status: 'cancelled' } })
+        if (m.count === 0) return false
         if (order.invoice) await tx.invoice.update({ where: { id: order.invoice.id }, data: { status: 'void' } })
         /* المقعدُ يعود إلى العدّ، والحجزُ يُفكّ عن الطلب فلا يبقى معلَّقا به */
         await tx.enrollmentRequest.updateMany({
           where: { orderId: order.id, status: 'seat_held' },
           data: { status: 'cancelled', orderId: null },
         })
+        /* والكوبونُ يعود استعمالُه — الطلبُ المهجورُ لا يحرق الكود (`coupon-ledger.ts`) */
+        released = await releaseCouponUse(tx, order)
+        return true
       })
+      if (!moved) continue
       await recordAudit(prisma, {
         actorId: null, action: 'order.cancel', entityType: 'order', entityId: order.id,
-        meta: { userId: order.userId, total: String(order.total), currency: order.currency, ageMs: now.getTime() - order.createdAt.getTime() },
+        meta: { userId: order.userId, total: String(order.total), currency: order.currency, ageMs: now.getTime() - order.createdAt.getTime(), couponReleased: released },
         reason: 'طلبٌ مهجورٌ لم يُدفع — أُلغي آليّا وأُفرِج عن مقاعده',
       })
       /* ═══ ويُقال لصاحبه (ي-٤) ═══
