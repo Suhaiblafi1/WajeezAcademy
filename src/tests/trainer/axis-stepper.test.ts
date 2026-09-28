@@ -103,6 +103,13 @@ describe('④ اللقاءات — بطاقةٌ لكلّ موعد', () => {
     expect(block).toContain('<TrainerSchedule')
   })
 
+  it('⚠️ والربطُ يُقال إنّه يسري فورا بلا اعتماد — لا «يُقرَّر وحدَه» (٢٨ سبتمبر ٢٠٢٦)', () => {
+    expect(SLOT, 'لا يُقال للمدرّب إنّ ربطَ المعتمَد يسري فورا')
+      .toMatch(/s\.approvalState === "approved"\s*\?\s*`رُبط[^`]*ويسري لمتعلّميك فورا بلا اعتماد`/)
+    expect(WS, 'قيل للمدرّب إنّ الربطَ يُقرَّر وحدَه').not.toContain('وما تغيّره في اللقاءات والمهامّ يُقرَّر وحدَه')
+    expect(WS).toContain('أمّا ربطُ لقاءٍ بمحاوره فيسري فورا بلا اعتماد')
+  })
+
   it('⚠️ وما لم يُربط بمحورٍ يُربط هنا ولا يضيع', () => {
     expect(block).toContain('/api/trainer/sessions/${x.id}/axes')
     expect(block).toContain('const loose = mine.filter((x) => slotOf(x) === -1)')

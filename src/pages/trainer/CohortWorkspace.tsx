@@ -2147,7 +2147,7 @@ export default function CohortWorkspace() {
               <div className="mt-2">
                 <PlanDiffList
                   sections={planDiff(ws.approvedPlan.content, content, { date: fmtDateAr })}
-                  emptyText="لم تغيّر في الخطّة نفسِها شيئا بعد — وما تغيّره في اللقاءات والمهامّ يُقرَّر وحدَه."
+                  emptyText="لم تغيّر في الخطّة نفسِها شيئا بعد — ونقلُ اللقاءات وتعديلُ المهامّ يُعتمَد وحدَه، أمّا ربطُ لقاءٍ بمحاوره فيسري فورا بلا اعتماد."
                 />
               </div>
             </div>

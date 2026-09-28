@@ -8,7 +8,8 @@
    ② اللقاءُ يُنشأ بمحوره أو محوريه، والأوّلُ في العمود القديم — وثلاثةٌ تُردّ.
    ③ الربطُ لا يُسقط المعتمَدَ إلى الانتظار، ولا يمسّ المبدئيَّ ولا الملغى.
    ④ المهمّةُ بمحورها تأخذ آخرَ موعده موعدا ما لم يُكتب غيرُه (⑥).
-   ⑤ والإرسالُ يحجبه محورٌ بلا لقاءٍ مباشر — ويسمّيه. */
+   ⑤ والإرسالُ يحجبه محورٌ بلا لقاءٍ مباشر — ويسمّيه.
+   ⑧ وبعد الاعتماد يسري الربطُ فورا بلا اعتماد — ويصل المتعلّمَ في طلبه التالي. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -265,5 +266,41 @@ describe('⑦ الاعتمادُ يفتح التسجيلَ ويحدّ الالت
     await plans.decide(adminId, draft.id, true)
     const approved = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { scheduleWindowEnd: true } })
     expect(approved.scheduleWindowEnd?.toISOString()).toBe(periodBounds(longer).to.toISOString())
+  })
+})
+
+/* ═══ ⑧ وبعد الاعتماد: الربطُ يسري فورا بلا اعتماد (٢٨ سبتمبر ٢٠٢٦) ═══
+
+   سُئل صاحبُ المنصّة: أيحتاج تغييرُ محاور لقاءٍ بعد اعتماد الخطّة اعتمادَ
+   الإدارة؟ فقال: «no need for admin approval for links… access to whatever».
+   و③ يقيس الربطَ قبل الاعتماد؛ وهنا بعده، على خطّةٍ معتمَدةٍ ولقاءاتٍ اعتمدها
+   اعتمادُها (⑦): لا انتظار، ولا مراجعة، والمتعلّمُ يرى أثرَه في طلبه التالي. */
+describe('⑧ بعد الاعتماد: الربطُ يسري فورا بلا اعتماد', () => {
+  it('⚠️ لا يُسقط المعتمَدَ ولا يفتح مراجعة — ومهامُّ المحور تُفتح للمتعلّم بلقائه الجديد', async () => {
+    const { loadLearnerGate } = await import('../../services/learner-gate')
+    const { assessmentOpensAt } = await import('../../../src/application/learning/cohort-gate')
+    const session = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId, title: 'لقاءُ AX-M3' } })
+    expect(session.approvalState, 'لم يعتمد اعتمادُ الخطّة لقاءَها').toBe('approved')
+    const latest = () => prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId }, orderBy: { createdAt: 'desc' } })
+    expect((await latest()).status).toBe('approved')
+    const plansBefore = await prisma.cohortDeliveryPlan.count({ where: { cohortId } })
+
+    /* قبل الربط: مهامُّ الرابع بعد لقائه هو، في يومه الثاني */
+    const before = (await loadLearnerGate(prisma, cohortId))!.gate
+    expect(assessmentOpensAt(before, 'AX-M4')?.toISOString()).toBe(new Date(when(3).endsAt).toISOString())
+
+    const res = await patch(`/api/trainer/sessions/${session.id}/axes`, { moduleIds: ['AX-M3', 'AX-M4'] })
+    expect(res.statusCode, res.body).toBe(200)
+
+    const row = await prisma.cohortSession.findUniqueOrThrow({ where: { id: session.id } })
+    expect(row.approvalState, 'أُسقط لقاءٌ معتمَدٌ إلى الانتظار لأجل ربط').toBe('approved')
+    expect(row.approvedAt?.toISOString()).toBe(session.approvedAt?.toISOString())
+    expect(await prisma.cohortDeliveryPlan.count({ where: { cohortId } }), 'فتح الربطُ مراجعةً للخطّة').toBe(plansBefore)
+    expect((await latest()).status, 'أعاد الربطُ الخطّةَ إلى الاعتماد').toBe('approved')
+
+    /* وبعده: لقاءُ الثالث يغطّي الرابعَ أيضا — فمهامُّه تُفتح أوّلَ موعده لا بعد لقائه هو */
+    const after = (await loadLearnerGate(prisma, cohortId))!.gate
+    expect(assessmentOpensAt(after, 'AX-M4')?.toISOString(), 'لم يصل الربطُ المتعلّمَ')
+      .toBe(periodBounds(SLOTS[3]).from.toISOString())
   })
 })

@@ -102,7 +102,11 @@ export default function SlotSessions({
     setBusy(true);
     try {
       await apiPatch(`/api/trainer/sessions/${s.id}/axes`, { moduleIds: next });
-      toast(`رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)}`);
+      /* ويسري فورا بلا اعتماد، ولو بعد اعتماد الخطّة (٢٨ سبتمبر ٢٠٢٦): المعتمَدُ
+         يبقى معتمَدا، ومتعلّموه يرون أثرَه في «متى تُفتح المهامّ» — فيُقال له */
+      toast(s.approvalState === "approved"
+        ? `رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)} — ويسري لمتعلّميك فورا بلا اعتماد`
+        : `رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)}`);
       onDone();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الربط");
