@@ -122,7 +122,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      حرف يُكتب محاولةً فاشلة، فيرى المتعلم رفضا وهو في منتصف كلمة. */
   const [promoInput, setPromoInput] = useState("");
   const [promoApplied, setPromoApplied] = useState<string | null>(null);
-  const [promoError, setPromoError] = useState(false);
+  /* كودٌ لا تعرفه الصفحة — كودُ مدرّبٍ أو فئة: يُحمل إلى لوح الدفع ويحكم فيه الخادم */
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
   /* ما تجاوز السقف يُحفظ لمرحلة تالية بدل أن يُرفض بصمت */
   const [deferred, setDeferred] = useState<string[]>([]);
 
@@ -226,20 +227,24 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     setPicked((p) => p.filter((x) => x !== id));
   };
 
-  /* الكود واحد لا اثنان: كود التشجيع أو كود فئة يُصدَر بعد التحقق. وكود الفئة
+  /* الكود واحد لا اثنان: كود التشجيع، أو كودٌ يُصدَر لصاحبه — كودُ فئةٍ بعد
+     التحقق، أو كودُ مدرّبٍ ينشره لجمهوره (٢٧ سبتمبر ٢٠٢٦). وما سوى كود التشجيع
      لا يُتحقّق منه هنا — الواجهة لا تعرف الأكواد المُصدَرة، والفوترة تعرفها.
-     فما نقوله صادق: نطبّق ما نعرفه، ونقول للباقي إنه يُراجَع عند الدفع. */
+     فما نقوله صادق: نطبّق ما نعرفه، ونحمل الباقي إلى لوح الدفع حيث يُسعَّر.
+
+     وكانت الصفحةُ تقول للباقي «لم نتعرّف على هذا الكود» وتُسقطه — فمن جاءه كودُ
+     مدرّبه صالحا قيل له إنّه غيرُ معروف، ولم يصل الكودُ اللوحَ أصلا. */
   const applyPromo = () => {
     const code = promoInput.trim().toUpperCase();
     if (!code) return;
     if (isFirstTimePromo(code)) {
       setPromoApplied(code);
-      setPromoError(false);
+      setPendingCode(null);
       track("promo_applied", { code });
       return;
     }
     setPromoApplied(null);
-    setPromoError(true);
+    setPendingCode(code);
   };
   const promoPct = promoApplied ? FIRST_TIME_PROMO.percentOff : 0;
   const finalPayable = Math.round(pricing.payable * (1 - promoPct / 100));
@@ -580,14 +585,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <input
                   id="promo"
                   value={promoInput}
-                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPromoError(false); }}
+                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPendingCode(null); }}
                   onKeyDown={(e) => { if (e.key === "Enter") applyPromo(); }}
                   placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
                   aria-label="كود الخصم"
                   dir="ltr"
                   maxLength={24}
                   className={`${couponFieldCls} tracking-widest placeholder:tracking-normal ${
-                    promoApplied ? "border-teal-light text-teal-light-ink" : promoError ? "border-gold/60" : "border-white/15 focus:border-teal-light"
+                    promoApplied ? "border-teal-light text-teal-light-ink" : pendingCode ? "border-gold/50" : "border-white/15 focus:border-teal-light"
                   }`}
                 />
                 <Button tone="secondary"
@@ -600,8 +605,10 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               {promoApplied && (
                 <p className="mt-1.5 text-read font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
               )}
-              {promoError && (
-                <p className="mt-1.5 text-read text-gold-ink">لم نتعرّف على هذا الكود. راجع كتابته، أو تحقّق من أهليتك لخصم فئة أدناه.</p>
+              {pendingCode && (
+                <p className="mt-1.5 text-read leading-6 text-gold-ink">
+                  يُحسب الكود <span dir="ltr" className="font-mono">{pendingCode}</span> عند الدفع — نتحقّق منه هناك ونقول على أيّ دوراتك يقع.
+                </p>
               )}
               {/* الفئات من مصدر السياسة لا من نصٍّ مكتوب هنا: نسبةٌ تُذكر في
                   صفحة الشراء وتُخالف ما يُصدره الإداري كودا هي وعدٌ مكسور.
@@ -838,7 +845,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         <BuyPanel
           title={checkout.title}
           email={session?.email ?? ""}
-          initialCoupon={promoApplied ?? ""}
+          initialCoupon={promoApplied ?? pendingCode ?? ""}
           lines={picked.map((cid) => ({
             courseId: cid,
             name: courseById(cid)?.name ?? cid,

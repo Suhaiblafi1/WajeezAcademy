@@ -1,77 +1,25 @@
-/* خصمُ المدرّب — مبلغٌ من حسابه هو، بسقفٍ وتسويةٍ لا تُجزَّأ.
+/* خصمُ المدرّب — ما بقي من المبلغ، وبابُ النسبة الذي حلّ محلَّه.
 
    ─────────── ما يُحرَس هنا، ولمَ هو بعينه ───────────
 
-   هذا البابُ يُخرج مالا من جيب إنسانٍ بعد شهرٍ من نقرةٍ يفعلها اليوم. وثلاثةُ
-   أعطابٍ فيه تقع **صامتةً** ولا تظهر إلّا في كشفٍ بعد شهر:
+   كان هذا الملفُّ يحرس «مبلغا لا نسبة» (قرار ٢١ سبتمبر ٢٠٢٦): رصيدٌ يُصدَر
+   تحته، وحاجزٌ بنصٍّ واحد، وبابٌ لا يستقبل نسبة. ثمّ نسخه صاحبُ المنصّة في ٢٧
+   سبتمبر: «اصدار كود وليس خصم مباشر، والخصم يكون نسبة وليس رقما» — وسقفُه ٣٠٪
+   على دوراته وحدَها. فذهبت حراسةُ الرصيد مع الرصيد (لا يُصدَر جديدٌ بالمبلغ يُقاس
+   عليه)، وانقلب حارسُ الباب: **النسبةُ بابُه الوحيد، والمبلغُ مغلق**.
 
-   ① **سقفٌ لا يُطبَّق** — فيُصدر ألفا على مئتين، ويُستعمَل المال، ثمّ لا
-      يُحسم لأنّ البند 4-10 يمنع أن يُطالَب دَينا — فتتحمّله الأكاديميّة،
-      وهو عكسُ القرار نفسِه.
-   ② **وكشفٌ يخرج سالبا** — وهو مطالبةٌ بمالٍ في ذمّته، يمنعها البندُ صراحة.
-   ③ **ونصّان لحدٍّ واحد** — الشاشةُ تقول «لا يتجاوز رصيدَك» ويردّ الخادمُ
-      «مبلغ غير صالح»، فيقرأ المدرّبُ جوابين لسؤالٍ واحد.
+   وبقي ما لا يتغيّر بالقرار: التسويةُ التي لا تُجزَّأ ولا تُخرج كشفا سالبا —
+   يستعملها الكودُ الجديدُ كما استعملها المبلغ.
 
-   والمقيسُ سلوكُ القواعد لا ورودُ عبارةٍ فيها. */
+   والمقيسُ بنيةُ الباب والتسوية لا ورودُ عبارةٍ فيهما. */
 
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import {
-  MAX_ISSUED_DISCOUNT, MIN_ISSUED_DISCOUNT,
-  discountBudget, issueBlockerAr, settleAgainst,
-} from '@/application/trainer/issued-discount'
+import { settleAgainst } from '@/application/trainer/issued-discount'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
-
-const budget = (over: Partial<Parameters<typeof discountBudget>[0]> = {}) => discountBudget({
-  pending: 100, approved: 50, projected: 200, outstanding: 0, currency: 'USD', ...over,
-})
-
-describe('الرصيدُ: ما له عندنا ناقصا ما أصدره ولم يُسوَّ', () => {
-  it('يجمع المنتظَرَ والمعتمَدَ والمتوقَّع، ويطرح ما أصدره', () => {
-    const b = budget({ outstanding: 80 })
-    expect(b.allowance, 'الجمعُ ليس جمعَ الثلاثة').toBe(350)
-    expect(b.outstanding).toBe(80)
-    expect(b.remaining).toBe(270)
-  })
-
-  /* والمدفوعُ ليس منه بالبناء: `discountBudget` لا تأخذه أصلا — فلو أُضيف
-     يوما لَحُسب للمدرّب مالٌ خرج إليه فعلا ولا يُحسم منه. */
-  it('ولا ينزل المتبقّي تحت الصفر مهما تجاوز ما أصدره', () => {
-    const b = budget({ outstanding: 900 })
-    expect(b.remaining, 'رصيدٌ سالبٌ يُقرأ دَينا').toBe(0)
-  })
-})
-
-describe('الحاجزُ نصٌّ واحدٌ تقرؤه الشاشةُ والخادم', () => {
-  it('يمرّ المبلغُ داخلَ الرصيد، ويُردّ ما فوقه بذكر الرقمين', () => {
-    expect(issueBlockerAr(100, budget()), 'رُدّ مبلغٌ داخلَ الرصيد').toBeNull()
-    const over = issueBlockerAr(400, budget())
-    expect(over, 'مرّ مبلغٌ فوق الرصيد').toBeTruthy()
-    expect(over, 'الرسالةُ لا تقول الرصيدَ فلا يعرف كم يكتب').toContain('350')
-  })
-
-  it('ويُردّ الصفرُ والسالبُ وما ليس رقما', () => {
-    for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(issueBlockerAr(bad, budget()), `مرّ ${bad}`).toBeTruthy()
-    }
-  })
-
-  it('ويُردّ ما دون الأدنى وما فوق سقفِ المرّة الواحدة', () => {
-    expect(issueBlockerAr(MIN_ISSUED_DISCOUNT - 0.5, budget()), 'مرّ ما دون الأدنى').toBeTruthy()
-    /* برصيدٍ يتّسع: المردودُ هو السقفُ لا الرصيد */
-    const wide = budget({ projected: 100_000 })
-    expect(issueBlockerAr(MAX_ISSUED_DISCOUNT + 1, wide), 'مرّ ما فوق سقفِ المرّة').toBeTruthy()
-    expect(issueBlockerAr(MAX_ISSUED_DISCOUNT, wide), 'رُدّ ما يساوي السقفَ تماما').toBeNull()
-  })
-
-  it('وثلاثُ منازلَ عشريّةٍ تُردّ — فالمال منزلتان ولا يُقرَّب صامتا', () => {
-    expect(issueBlockerAr(10.125, budget()), 'مرّ مبلغٌ بثلاث منازل').toBeTruthy()
-    expect(issueBlockerAr(10.12, budget())).toBeNull()
-  })
-})
 
 describe('التسويةُ: الكشفُ لا يخرج سالبا، وما لا يسعه يُؤجَّل كاملا', () => {
   const d = (id: string, amount: number) => ({ id, amount })
@@ -114,45 +62,52 @@ describe('التسويةُ: الكشفُ لا يخرج سالبا، وما لا 
   })
 })
 
-/* ═══ «مبلغ لا نسبة» قرارٌ يُحرَس في البابِ لا في النيّة ═══
+/* ═══ والبابُ نسبةٌ لا مبلغ — القرارُ الجديدُ يُحرَس في الباب لا في النيّة ═══
 
-   القواعدُ أعلاه لا تعرف شيئا عن النسب — لأنّها لا تستقبلها أصلا. وذاك
-   يُثبت أنّ الحسابَ سليم، ولا يُثبت أنّ البابَ لا يفتح لها: يكفي أن يضيف
-   أحدٌ `percentOff` إلى مخطّط المسار أو حقلا في الشاشة ليصير الخصمُ نسبةً
-   بلا أن يحمرَّ شيءٌ ممّا سبق.
+   القواعدُ تحسب ما يُعطى لها، ولا تُثبت أيَّ بابٍ يُفتح: يكفي أن يُعاد مسارُ
+   «أصدِرْ خصما بمبلغ» أو حقلُ مبلغٍ في الشاشة ليعود المبلغُ بلا أن يحمرّ شيء.
+   والسقفُ نفسُه: بابٌ يقبل الأربعين يُحسم به من المدرّب فوق ما في عقده.
 
-   وعلّةُ المنع في رأس `issued-discount.ts`: النسبةُ تجعل ما يتحمّله المدرّبُ
-   دالّةً في سعرٍ نملكه نحن، وتُطبَّق على السلّة كلِّها فيتحمّل عن خمسِ دوراتٍ
-   ما نواه عن واحدة. */
-describe('ولا بابَ للنسبة في خصم المدرّب — لا في المسار ولا في الشاشة', () => {
+   والتعليقُ يُنزع قبل القياس: في هذه الملفّات تعليقاتٌ تذكر المبلغَ تاريخا، ولا
+   يُحكم على بابٍ بما يُحكى عنه. */
+describe('وبابُ خصم المدرّب نسبةٌ مسقوفة — والمبلغُ مغلق', () => {
   const read = (p: string) => readFileSync(join(root, p), 'utf8')
+  const code = (p: string) => read(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-  /** قسمُ خصوم المدرّب من ملفّ المسارات — من تعليق بابها إلى ما بعد آخرِها */
-  function discountRoutes(): string {
-    const src = read('server/http/routes/learning-portal.routes.ts')
-    const at = src.indexOf('/api/trainer/me/discounts')
-    expect(at, 'لا بابَ لخصوم المدرّب أصلا — أنُقل المسار؟').toBeGreaterThan(-1)
-    const end = src.indexOf("/api/trainer/me/discounts/:id/revoke")
-    expect(end, 'بابُ الإلغاء غائب').toBeGreaterThan(at)
-    return src.slice(at, end + 400)
+  /** قسمُ أكواد المدرّب من ملفّ المسارات — من بابها الأوّل إلى باب الإلغاء */
+  function codeRoutes(): string {
+    const src = code('server/http/routes/learning-portal.routes.ts')
+    const at = src.indexOf("'/api/trainer/me/codes'")
+    expect(at, 'لا بابَ لأكواد المدرّب أصلا — أنُقل المسار؟').toBeGreaterThan(-1)
+    const end = src.indexOf('/api/trainer/me/discounts', at)
+    expect(end, 'بابُ الخصوم القديمة غائبٌ بعد أبواب الأكواد').toBeGreaterThan(at)
+    return src.slice(at, end)
   }
 
-  it('مخطّطُ الإصدار يستقبل `amount` ولا يستقبل نسبةً بأيّ اسم', () => {
-    const section = discountRoutes()
-    expect(section, 'المسارُ لا يستقبل مبلغا').toMatch(/amount:\s*z\.number\(\)/)
-    for (const word of ['percentOff', 'percent', 'pct']) {
-      expect(section, `دخل «${word}» بابَ خصمِ المدرّب — فصار الخصمُ نسبةً`).not.toContain(word)
-    }
+  it('⚠️ الإصدارُ يستقبل نسبةً صحيحةً بين حدَّي القواعد — ولا مبلغا', () => {
+    const section = codeRoutes()
+    expect(section, 'النسبةُ ليست بين حدَّي القواعد').toMatch(
+      /percentOff:\s*z\.number\(\)\.int\(\)\.min\(MIN_TRAINER_CODE_PERCENT\)\.max\(MAX_TRAINER_CODE_PERCENT\)/,
+    )
+    expect(section, 'دخل المبلغُ بابَ الكود').not.toMatch(/\bamount\s*:/)
   })
 
-  it('وشاشةُ «دعوتي» لا تعرض حقلَ نسبةٍ ولا ترسلها', () => {
-    const page = read('src/pages/trainer/Referral.tsx')
-    const at = page.indexOf('function MyDiscounts')
-    expect(at, 'لوحةُ الخصوم غائبةٌ عن «دعوتي»').toBeGreaterThan(-1)
-    const panel = page.slice(at, page.indexOf('export default function Referral'))
-    expect(panel, 'اللوحةُ لا ترسل مبلغا').toContain('amount')
-    for (const word of ['percentOff', 'percent:']) {
-      expect(panel, `حقلُ «${word}» في لوحةِ خصمِ المدرّب`).not.toContain(word)
-    }
+  it('⚠️ وبابُ الإصدار بالمبلغ أُغلق — يبقى الإلغاءُ والقراءة', () => {
+    const src = code('server/http/routes/learning-portal.routes.ts')
+    expect(src, 'عاد بابُ «أصدِرْ خصما بمبلغ»').not.toMatch(/app\.post\(\s*'\/api\/trainer\/me\/discounts'\s*,/)
+    expect(src, 'غاب إلغاءُ الخصم القديم — وما صدر يبقى على شروطه').toContain("'/api/trainer/me/discounts/:id/revoke'")
+  })
+
+  it('⚠️ وشاشةُ «دعوتي» ترسل نسبةً، ولا تُصدر مبلغا', () => {
+    const page = code('src/pages/trainer/Referral.tsx')
+    const at = page.indexOf('function MyCodes')
+    expect(at, 'لوحةُ الأكواد غائبةٌ عن «دعوتي»').toBeGreaterThan(-1)
+    const panel = page.slice(at, page.indexOf('function LegacyDiscounts'))
+    expect(panel, 'اللوحةُ لا ترسل نسبة').toMatch(/percentOff:\s*input\.percentOff/)
+    expect(panel, 'حاجزُ الشاشة ليس حاجزَ الخادم').toContain('codeBlockerAr(')
+    expect(panel, 'دخل المبلغُ لوحةَ الأكواد').not.toMatch(/\bamount\s*[:,]/)
+    /* ولوحةُ القديم تقرأ وتُلغي — ولا تُصدر */
+    const legacy = page.slice(page.indexOf('function LegacyDiscounts'), page.indexOf('export default function Referral'))
+    expect(legacy, 'لوحةُ الخصوم القديمة تُصدر خصما').not.toMatch(/apiPost\(\s*"\/api\/trainer\/me\/discounts"/)
   })
 })

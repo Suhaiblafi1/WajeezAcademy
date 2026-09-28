@@ -76,7 +76,17 @@ interface QuoteItem {
   listPrice: number;
   unitPrice: number;
   isGift: boolean;
+  /** أوقع عليها الكود؟ — كودُ المدرّب على دوراته وحدَها */
+  couponApplies?: boolean;
 }
+
+/* ═══ خطأُ الكود لا يُسقط السعر (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   كان كلُّ خطأٍ في التسعير يمحو اللوحَ كلَّه: كودٌ غيرُ صالحٍ فلا سعرَ ولا
+   زرَّ دفع، والمشتري يبحث عن السبب. ومع كود المدرّب صار للكود أسبابُ ردٍّ
+   مفهومة (لدوراتِ مدرّبٍ ليست في سلّتك · استعملتَه من قبل)، فيُقال السببُ تحت
+   خانته ويُسعَّر الطلبُ بلا كود — والقرارُ للمشتري. */
+const COUPON_ERRORS: ReadonlySet<string> = new Set(["bad_coupon", "code_used", "code_not_applicable"]);
 
 /** ما استبعده الخادمُ من السلّة وسببُه — نصُّ السبب منه لا مُلفَّقٌ هنا */
 interface ExcludedLine {
@@ -170,6 +180,7 @@ export default function BuyPanel({
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoting, setQuoting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
 
   useEffect(() => { track("buy_panel_opened", { courses: lines.length }); }, [lines.length]);
@@ -222,7 +233,14 @@ export default function BuyPanel({
         cohortIds,
         ...(code ? { couponCode: code } : {}),
       }));
+      if (code) setCouponError(null);
     } catch (e) {
+      /* الكودُ وحدَه رُدّ: يُقال سببُه تحت خانته، ويُعاد التسعيرُ بلا كود */
+      if (code && e instanceof ApiError && COUPON_ERRORS.has(e.code)) {
+        setCouponError(e.message);
+        setApplied("");
+        return;
+      }
       setQuote(null);
       setError(e instanceof ApiError ? e.message : "تعذّر تسعير طلبك — أعد المحاولة");
     } finally {
@@ -449,10 +467,11 @@ export default function BuyPanel({
               </span>
               <input
                 value={coupon}
-                onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+                onChange={(e) => { setCoupon(e.target.value.toUpperCase()); setCouponError(null); }}
                 placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
+                aria-label="كود الخصم"
                 dir="ltr"
-                className={`${couponFieldCls} border-white/12 focus:border-gold/50`}
+                className={`${couponFieldCls} ${couponError ? "border-gold/60" : "border-white/12"} focus:border-gold/50`}
               />
               <button
                 onClick={() => setApplied(coupon.trim())}
@@ -462,6 +481,14 @@ export default function BuyPanel({
                 طبّق
               </button>
             </div>
+            {couponError && <p className="mt-1.5 text-read leading-6 text-gold-ink">{couponError}</p>}
+            {/* كودٌ وقع على بعض الدورات دون بعض — كودُ المدرّب على دوراته وحدَها،
+                فيُسمّى ما خصمه، ولا يُظنّ أنّه خصم الطلبَ كلَّه */}
+            {quote && quote.couponDiscount > 0 && quote.items.some((i) => !i.isGift && i.couponApplies === false) && (
+              <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+                خصمُ الكود على: <span className="text-foreground">{quote.items.filter((i) => i.couponApplies).map((i) => i.titleAr).join("، ")}</span>
+              </p>
+            )}
 
             {/* لا شيء يُشترى: كلُّه مملوكٌ أو محجوز — يُقال صراحةً بدل صفٍّ
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}

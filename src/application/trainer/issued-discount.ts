@@ -1,4 +1,11 @@
-/* خصمُ المدرّب — مبلغٌ يصدره من عنده، ويُحسم من مستحقّاته لا من إيرادنا.
+/* خصمُ المدرّب القديمُ — مبلغٌ أصدره من عنده، ويُحسم من مستحقّاته لا من إيرادنا.
+
+   ═══ ولا يُصدَر جديدٌ منه منذ ٢٧ سبتمبر ٢٠٢٦ ═══
+
+   قرارُ صاحب المنصّة نسخ «المبلغ» بـ«الكود بالنسبة على دوراته» — وقواعدُه في
+   `trainer-code.ts`. فذهب من هذا الملفّ ما كان للإصدار (الرصيدُ وحدّاه
+   وحاجزُه)، وبقي ما يلزم ما صدر قبل ذلك: حالاتُه، والتسويةُ التي لا تُجزَّأ
+   (ويستعملها الكودُ الجديدُ كذلك). وما يلي من القرار الأوّل تاريخُه وعلّتُه.
 
    ═══ القرار ═══
 
@@ -40,16 +47,6 @@
    نصفُه هنا ونصفُه هناك يجعل المدرّبَ يقابل كشفَين ليعرف ما حُسم عن رجلٍ
    واحد، ويجعل الحارسَ الذي يمنع الحسمَ مرّتين يعدّ مبالغَ لا صفوفا. */
 
-/** أدنى ما يُصدَر — خصمٌ بأقلَّ من هذا صفٌّ في القاعدة لا منفعةَ فيه لأحد */
-export const MIN_ISSUED_DISCOUNT = 1
-
-/** أقصى ما يُصدَر في مرّةٍ واحدةٍ مهما اتّسع رصيدُه.
-
-    ولمَ سقفٌ ثانٍ فوق الرصيد: غلطةُ صفرٍ زائدٍ (٢٠٠ بدل ٢٠) تلتهم رصيدَ
-    فصلٍ كاملٍ في نقرةٍ واحدة، ولا يظهر أثرُها إلّا بعد شهرٍ في كشفه. وهذا
-    حدٌّ يُقرأ في الشاشة قبل أن يُكتب الرقم. */
-export const MAX_ISSUED_DISCOUNT = 500
-
 /** حالاتُ الخصم — والدورةُ مكتوبةٌ هنا لتُقرأ مرّةً واحدة.
 
     · `live`    — صدر ولم يُستعمل، وللمدرّب إلغاؤه.
@@ -63,58 +60,6 @@ export const ISSUED_DISCOUNT_STATUS_AR: Record<string, string> = {
   settled: 'حُسم من كشفك',
   revoked: 'ألغيتَه',
   refunded: 'رُدّ ثمنُ الشراء — فلا يُحسم',
-}
-
-/** ما يُحتسب دَينا عليه: ما هو صالحٌ قد يُستعمل، وما استُعمل ولم يُحسم بعد */
-export const OUTSTANDING_STATUSES = ['live', 'used'] as const
-
-export interface DiscountBudget {
-  /** ما له عندنا: منتظَرٌ + معتمَدٌ + متوقَّعٌ من شعبه المفتوحة */
-  allowance: number
-  /** ما أصدره ولم يُسوَّ — صالحا كان أو مستعمَلا */
-  outstanding: number
-  /** الفرقُ، ولا ينزل تحت الصفر */
-  remaining: number
-  currency: string
-}
-
-export function discountBudget(input: {
-  pending: number
-  approved: number
-  projected: number
-  outstanding: number
-  currency: string
-}): DiscountBudget {
-  const allowance = round2(input.pending + input.approved + input.projected)
-  const outstanding = round2(input.outstanding)
-  return {
-    allowance,
-    outstanding,
-    remaining: round2(Math.max(0, allowance - outstanding)),
-    currency: input.currency,
-  }
-}
-
-/** لمَ لا يُصدَر — جملةٌ تُقال له، أو `null` إن جاز.
-
-    والرسالةُ تخرج من هنا لا من الخادم ولا من الشاشة: الشاشةُ تعطّل الزرَّ
-    بها، والخادمُ يردّ بها — فيقرأ الاثنين نصّا واحدا. ولو كُتبت مرّتين
-    لقالت الشاشةُ «لا يتجاوز رصيدَك» ويقول الخادمُ «مبلغ غير صالح». */
-export function issueBlockerAr(amount: number, budget: DiscountBudget): string | null {
-  if (!Number.isFinite(amount) || amount <= 0) return 'اكتب مبلغَ الخصم بالأرقام.'
-  if (round2(amount) !== amount) return 'المبلغُ بمنزلتين عشريّتين على الأكثر.'
-  if (amount < MIN_ISSUED_DISCOUNT) {
-    return `أقلُّ خصمٍ يُصدَر ${MIN_ISSUED_DISCOUNT} ${budget.currency}.`
-  }
-  if (amount > MAX_ISSUED_DISCOUNT) {
-    return `أكبرُ خصمٍ يُصدَر في المرّة الواحدة ${MAX_ISSUED_DISCOUNT} ${budget.currency}.`
-  }
-  if (amount > budget.remaining) {
-    return `رصيدُك القابل للخصم ${budget.remaining} ${budget.currency} — وهو ما لك عندنا `
-      + `(${budget.allowance}) ناقصا ما أصدرته ولم يُحسم بعد (${budget.outstanding}). `
-      + 'وما يُحسم يُحسم من مستحقّاتك أنت، فلا يُصدَر فوق ما لك.'
-  }
-  return null
 }
 
 /** التسوية: أيُّ الخصوم يسعها هذا الكشف، وأيُّها يُؤجَّل كاملا.

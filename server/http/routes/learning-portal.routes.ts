@@ -24,6 +24,8 @@ import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../service
 import { resourceSourceBlockerAr } from '../../../src/application/trainer/module-body'
 import { ReferralService } from '../../services/referral.service'
 import { TrainerDiscountService } from '../../services/trainer-discount.service'
+import { TrainerCodeService } from '../../services/trainer-code.service'
+import { MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, MIN_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
 import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
 import { AuthError } from '../../services/auth.service'
@@ -409,36 +411,66 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return { ...link, ...reach }
   })
 
-  /* ═══ خصومُه هو — تُصدَر من «دعوتي» وتُحسم من «مستحقّاتي» ═══
+  /* ═══ أكوادُه — تُصدَر من «دعوتي» وتُحسم من «مستحقّاتي» (٢٧ سبتمبر ٢٠٢٦) ═══
 
-     قرارُ صاحب المنصّة (٢١ سبتمبر ٢٠٢٦): «يحقّ له إصدارُ خصمٍ بقيمةٍ ماديّةٍ
-     معيّنةٍ وليست نسبة، لتُخصم من حسابه في مستحقّاتي لاحقا». والقواعدُ في
-     `src/application/trainer/issued-discount.ts`، والخدمةُ في
-     `trainer-discount.service.ts`، وهذه أبوابُها.
+     قرارُ صاحب المنصّة: «اصدار كود وليس خصم مباشر، والخصم يكون نسبة وليس
+     رقما» — وسقفُه ٣٠٪ على دوراته وحدَها. والقواعدُ في
+     `src/application/trainer/trainer-code.ts`، والخدمةُ في
+     `trainer-code.service.ts`، وهذه أبوابُها.
 
      وبوّابتُها `trainer.cohort.plan` كأخواتها في الصفحة نفسِها: صفحةٌ واحدةٌ
      بصلاحيّتين تنكسر نصفَها لمن يملك إحداهما. */
+  const trainerCodes = new TrainerCodeService(prisma)
+
+  app.get('/api/trainer/me/codes', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'أكوادي، وما استُعمل منها وما حُسم، وقبولي البند 4-10' },
+  }, async (req) => trainerCodes.listFor(req.auth!.userId))
+
+  app.post('/api/trainer/me/codes', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'أصدِرْ كودَ خصمٍ بنسبةٍ على دوراتي، يُحسم ما يمنحه من مستحقّاتي' },
+  }, async (req, reply) => {
+    const body = z.object({
+      /* نسبةٌ لا مبلغ — والحدّان من القواعد نفسِها التي يقيّدها قيدُ القاعدة */
+      percentOff: z.number().int().min(MIN_TRAINER_CODE_PERCENT).max(MAX_TRAINER_CODE_PERCENT),
+      labelAr: z.string().min(2).max(100),
+      maxUses: z.number().int().min(1).max(MAX_TRAINER_CODE_USES).optional(),
+      expiresAt: z.coerce.date().optional(),
+    }).parse(req.body)
+    const out = await trainerCodes.create(req.auth!.userId, body)
+    return reply.code(201).send(out)
+  })
+
+  app.post('/api/trainer/me/codes/terms/accept', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'أقبل البندَ 4-10 بصيغته الجديدة — مرّةً واحدة' },
+  }, async (req) => trainerCodes.acceptTerms(req.auth!.userId, req.ip))
+
+  for (const [verb, summary] of [
+    ['pause', 'أوقِفْ كودا — لا يُستعمل حتّى أستأنفه'],
+    ['resume', 'استأنِفْ كودا أوقفتُه'],
+    ['revoke', 'ألغِ كودا — نهائيّا'],
+  ] as const) {
+    app.post(`/api/trainer/me/codes/:id/${verb}`, {
+      preHandler: requirePermission('trainer.cohort.plan'),
+      schema: { tags: ['trainer-ops'], summary },
+    }, async (req) => {
+      const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+      return trainerCodes[verb](req.auth!.userId, id)
+    })
+  }
+
+  /* ═══ وخصومُه القديمةُ بالمبلغ — تُقرأ وتُلغى، ولا يُصدَر جديدٌ منها ═══
+
+     ما أصدره قبل الكود يبقى على شروطه حتّى يُستعمل أو ينتهي أو يُلغى (ذيلُ البند
+     4-10 بصيغته الجديدة). فبابا القراءة والإلغاء باقيان، وبابُ الإصدار أُغلق. */
   const trainerDiscounts = new TrainerDiscountService(prisma)
 
   app.get('/api/trainer/me/discounts', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'خصومي التي أصدرتُها، ورصيدي القابل للخصم' },
+    schema: { tags: ['trainer-ops'], summary: 'خصومي القديمةُ بالمبلغ — ما بقي منها وما حُسم' },
   }, async (req) => trainerDiscounts.listFor(req.auth!.userId))
-
-  app.post('/api/trainer/me/discounts', {
-    preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أصدِرْ خصما بمبلغٍ من حسابي لشخصٍ أسمّيه' },
-  }, async (req, reply) => {
-    const body = z.object({
-      /* مبلغٌ لا نسبة — ولا حقلَ للنسبة أصلا، فما لا بابَ له لا يُطلَب */
-      amount: z.number().positive(),
-      forWhomAr: z.string().min(2).max(200),
-      noteAr: z.string().max(500).optional(),
-      expiresAt: z.coerce.date().optional(),
-    }).parse(req.body)
-    const out = await trainerDiscounts.issue(req.auth!.userId, body)
-    return reply.code(201).send(out)
-  })
 
   app.post('/api/trainer/me/discounts/:id/revoke', {
     preHandler: requirePermission('trainer.cohort.plan'),
