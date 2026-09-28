@@ -1043,8 +1043,15 @@ export class CohortService {
      «متى تُفتح المهامّ» محكومٌ بموعد المحور نفسِه: لا يُفتح شيءٌ قبل أوّل
      موعده مهما رُبط (`axis-timeline.ts`).
 
-     واعتمادُ ما يتغيّر بعد اعتماد الخطّة كلِّه — ومنه هذا — مرحلةٌ لاحقةٌ
-     لها قرارُها (المراجعاتُ والاعتمادُ الواحد). */
+     ═══ وبعد اعتماد الخطّة كذلك — بلا اعتماد (٢٨ سبتمبر ٢٠٢٦) ═══
+
+     سُئل صاحبُ المنصّة: أيحتاج تغييرُ محاور لقاءٍ بعد اعتماد الخطّة اعتمادَ
+     الإدارة؟ فقال بنصّه: «no need for admin approval for links… access to
+     whatever» — لا اعتمادَ للربط ولا لما يُفتح به. فيسري فورا: لا يُسقط
+     المعتمَدَ إلى الانتظار، ولا يفتح مراجعةً للخطّة، ويصل المتعلّمَ في طلبه
+     التالي — مهامُّ المحور ومصادرُه تُفتح بعد أوّل لقاءٍ مربوطٍ به، ولا قبل أوّل
+     موعده (`learner-gate.ts`). ونقلُ اللقاء غيرُه، له قاعدتُه (`postpone.ts`).
+     ويحرسه `server/tests/trainer/axis-plan.test.ts` ⑧. */
   async trainerSetSessionAxes(userId: string, sessionId: string, moduleIds: string[]) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
