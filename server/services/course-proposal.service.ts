@@ -46,7 +46,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
 import { StaffTaskService, type Assigner } from './staff-task.service'
-import { suggestCourses, type ProposalMatch } from '../../src/application/trainer/proposal-match'
+import { suggestCourses, type MatchableCourse, type ProposalMatch } from '../../src/application/trainer/proposal-match'
 import {
   clusterHeadlineAr, clusterProposals, PATH_COURSE_COUNT,
   type UniverseEntity,
@@ -119,6 +119,30 @@ interface RawProposal {
 
 /** نصٌّ من حمولةٍ غيرِ موثوقة — وما ليس نصّا فراغ */
 const rawText = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
+
+/** الكتالوجُ كما يقرؤه المرشِّح — نصُّ الإصدار الجاري ومهاراتُه، بلا المؤرشف.
+
+    خرجت من الصنف دالّةً (٢٨ سبتمبر ٢٠٢٦) لأنّ تقريرَ «دوراتُ المدرّبين
+    المقبولين» يرشّح أقربَ رمزٍ كما يرشّحه الطابور — ومرشِّحان يقرآن كتالوجَين
+    يفترقان يوما، فيرى قارئُ الجدول رمزا غيرَ الذي يراه في الشاشة. */
+export async function readMatchableCourses(db: Db): Promise<MatchableCourse[]> {
+  const rows = await db.course.findMany({
+    where: { status: { not: 'archived' } },
+    select: {
+      id: true, currentVersion: true,
+      versions: { select: { version: true, titleAr: true, shortPromiseAr: true } },
+      skillLinks: { select: { skill: { select: { nameAr: true } } } },
+    },
+  })
+  return rows.map((c) => {
+    const v = c.versions.find((x) => x.version === c.currentVersion)
+    return {
+      id: c.id,
+      titleAr: v?.titleAr ?? c.id,
+      extraAr: [v?.shortPromiseAr, ...c.skillLinks.map((l) => l.skill.nameAr)],
+    }
+  })
+}
 
 /** يُبذَر جدولُ الاقتراحات من طلبِ المتقدّم مرّةً — عند ميلاد ملفّه.
 
@@ -301,22 +325,7 @@ export class CourseProposalService {
      وحسابُه في المتصفّح يعني تحميلَ ذلك كلِّه إلى كلّ من يفتح الشاشة، ثمّ
      إعادةَ حسابه عند كلّ إعادةِ تصيير. وهو هنا مرّةً واحدةً لكلّ نداء. */
   private async matchableCourses() {
-    const rows = await this.prisma.course.findMany({
-      where: { status: { not: 'archived' } },
-      select: {
-        id: true, currentVersion: true,
-        versions: { select: { version: true, titleAr: true, shortPromiseAr: true } },
-        skillLinks: { select: { skill: { select: { nameAr: true } } } },
-      },
-    })
-    return rows.map((c) => {
-      const v = c.versions.find((x) => x.version === c.currentVersion)
-      return {
-        id: c.id,
-        titleAr: v?.titleAr ?? c.id,
-        extraAr: [v?.shortPromiseAr, ...c.skillLinks.map((l) => l.skill.nameAr)],
-      }
-    })
+    return readMatchableCourses(this.prisma)
   }
 
   /** طابورُ ما لم يُصنَّف — عبرَ المدرّبين كلِّهم، وهو ما لا يقدر عليه عمودُ JSON.

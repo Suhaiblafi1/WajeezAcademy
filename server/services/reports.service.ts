@@ -6,6 +6,11 @@
 import type { PrismaClient } from '@prisma/client'
 import ExcelJS from 'exceljs'
 import { NO_SHOW, interviewHeld } from '../../src/application/trainer/interview-outcome'
+import {
+  ACCEPTED_TRAINER_STATUSES, PAST_TITLE_ACTIONS, acceptedCourseRows, pastTitleFromAudit,
+} from '../../src/application/trainer/accepted-courses'
+import { suggestCourses } from '../../src/application/trainer/proposal-match'
+import { readMatchableCourses } from './course-proposal.service'
 
 export interface ReportFilter {
   from?: Date
@@ -45,6 +50,9 @@ const COLUMN_AR: Record<string, string> = {
   pct: 'النسبة ٪', base: 'الأساس', medianDays: 'وسيط الأيام',
   reference: 'المرجع', email: 'البريد', state: 'الحال', activeSince: 'نشطٌ منذ',
   lastContract: 'آخرُ عقد', nextStepAr: 'الخطوةُ التالية',
+  trainerStatus: 'حالُ المدرّب', source: 'المصدر', title: 'العنوان', summary: 'النبذة',
+  itemStatus: 'حالُ البند', qualification: 'التأهيل', nearest: 'أقربُ دورةٍ في الكتالوج',
+  note: 'ملحوظة', proposalId: 'معرّفُ الاقتراح',
 }
 const colAr = (k: string) => COLUMN_AR[k] ?? k
 
@@ -525,6 +533,109 @@ export class ReportsService {
               })),
             },
           ]
+        },
+      },
+      /* ═══ دوراتُ المدرّبين المقبولين — جردٌ لا سلسلةٌ زمنيّة (٢٨ سبتمبر ٢٠٢٦) ═══
+
+         طلب صاحبُ المنصّة أن يرى ما اقترحه كلُّ مقبولٍ من دورات ليقرّر فيها
+         ويؤهّله لها. وطابورُ التصنيف يُخفي ثلاثةً ممّا يُقرَّر فيه — الفقرةَ
+         الحرّةَ القديمة، واقتراحَ الطلب بعد إنشاء الملفّ، واختيارَه من الكتالوج
+         — والقولُ فيها وفي قواعد الصفّ في `accepted-courses.ts`. وهذا قراءةٌ
+         وتهيئةٌ لا غير.
+
+         ولمَ تقريرٌ لا شاشة: الجدولُ يُقرأ ويُصدَّر ويُرسَل، والقرارُ فيه يقع
+         في شاشتَي التصنيف والإسناد القائمتَين — ولا يُبنى لعرضه بابٌ ثالث. */
+      {
+        key: 'accepted-trainer-courses', titleAr: 'دوراتُ المدرّبين المقبولين',
+        methodAr: 'كلُّ طلبٍ حالتُه قبولٌ داخليٌّ فما بعده (قبولٌ داخليّ · عقدٌ قيد التوقيع · تهيئة · نشط)، والموقوفُ خارجُها. صفٌّ لكلّ دورةٍ تتّصل بالمدرّب: اقتراحُه في طابور التصنيف بحالته وما رُبط به، وأقربُ رمزٍ إليه ما لم يُبتّ فيه · واقتراحٌ في طلبه لا مقابلَ له في الطابور (لا ملفَّ له، أو أُضيف بعد إنشاء ملفّه) · والفقرةُ الحرّةُ من نموذج التقديم القديم كما كُتبت · ودوراتُ الكتالوج التي اختارها في طلبه وحالُ تأهيله لها · وكلُّ تأهيلٍ قائمٍ لم يُذكر قبله. ومن لا بندَ له صفٌّ يقول ذلك. لا بريدَ ولا هاتف، والمدى لا ينطبق: هذا جردٌ لا سلسلةٌ زمنيّة.',
+        run: async () => {
+          const apps = await p.trainerApplication.findMany({
+            where: { status: { in: [...ACCEPTED_TRAINER_STATUSES] } },
+            select: {
+              fullName: true, reference: true, status: true,
+              teachableCourseIds: true, teachableOther: true, teachableProposals: true,
+              profile: {
+                select: {
+                  userId: true,
+                  courseProposals: {
+                    orderBy: { createdAt: 'asc' },
+                    select: {
+                      id: true, titleAr: true, summaryAr: true, status: true, courseId: true,
+                      questionAr: true, answerAr: true, decisionNoteAr: true,
+                    },
+                  },
+                  qualifications: { orderBy: { createdAt: 'asc' }, select: { courseId: true, status: true } },
+                },
+              },
+            },
+          })
+          if (apps.length === 0) return []
+
+          /* ═══ عناوينُ فارقتها اقتراحاتُ الطابور — من الأثر ═══
+
+             بها يُعرف أيُّ اقتراحات الطلب لم يدخل الطابور: ما أُعيدت تسميتُه
+             أو حذفه صاحبُه ليس «لم يُبذَر». والتعديلُ يُنسَب بمعرّف الاقتراح،
+             والحذفُ بصاحبه — فالصفُّ المحذوفُ لا معرّفَ له يُسأل عنه. */
+          const byProposal = new Map<string, number>()
+          const byUser = new Map<string, number>()
+          apps.forEach((a, i) => {
+            for (const pr of a.profile?.courseProposals ?? []) byProposal.set(pr.id, i)
+            if (a.profile?.userId) byUser.set(a.profile.userId, i)
+          })
+          const past: string[][] = apps.map(() => [])
+          const events = await p.auditEvent.findMany({
+            where: {
+              OR: [
+                {
+                  entityType: 'trainer_course_proposal', entityId: { in: [...byProposal.keys()] },
+                  action: { in: [PAST_TITLE_ACTIONS.ownerEdit, PAST_TITLE_ACTIONS.staffEdit] },
+                },
+                { action: PAST_TITLE_ACTIONS.ownerDelete, actorId: { in: [...byUser.keys()] } },
+              ],
+            },
+            select: { action: true, actorId: true, entityId: true, meta: true, before: true },
+          })
+          for (const e of events) {
+            const i = e.action === PAST_TITLE_ACTIONS.ownerDelete
+              ? (e.actorId ? byUser.get(e.actorId) : undefined)
+              : byProposal.get(e.entityId)
+            const title = pastTitleFromAudit(e)
+            if (i !== undefined && title) past[i].push(title)
+          }
+
+          /* العنوانُ من الإصدار الجاري ولو أُرشفت الدورة — اختيارٌ قديمٌ لرمزٍ
+             مؤرشفٍ يُقرأ باسمه. والترشيحُ من المرشِّح نفسِه الذي في الطابور. */
+          const [matchable, all] = await Promise.all([
+            readMatchableCourses(p),
+            p.course.findMany({
+              select: { id: true, currentVersion: true, versions: { select: { version: true, titleAr: true } } },
+            }),
+          ])
+          const titles = new Map(all.map((c) => [
+            c.id, c.versions.find((v) => v.version === c.currentVersion)?.titleAr ?? c.id,
+          ]))
+
+          return acceptedCourseRows(
+            apps.map((a, i) => ({
+              fullName: a.fullName, reference: a.reference, status: a.status,
+              teachableCourseIds: a.teachableCourseIds, teachableOther: a.teachableOther,
+              teachableProposals: a.teachableProposals,
+              profile: a.profile
+                ? {
+                  proposals: a.profile.courseProposals,
+                  qualifications: a.profile.qualifications,
+                  pastQueueTitles: past[i],
+                }
+                : null,
+            })),
+            {
+              titleOf: (id) => titles.get(id) ?? null,
+              nearest: (pr) => {
+                const m = suggestCourses(pr, matchable, 1)[0]
+                return m ? { courseId: m.courseId, titleAr: m.titleAr } : null
+              },
+            },
+          )
         },
       },
       {
