@@ -41,7 +41,12 @@ interface Invoice {
   payments: { id: string; amount: string; status: string; method?: string | null; refunds: { id: string }[] }[];
 }
 interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; invoice: { id: string } } }
-interface Coupon { id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null }
+interface Coupon {
+  id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null
+  /** كودُ مدرّبٍ بالنسبة، أو خصمُه القديمُ بالمبلغ — يُحسم ما يمنحه من مستحقّاته لا من إيرادنا */
+  trainerCode?: { percentOff: number; status: string } | null
+  trainerDiscount?: { status: string } | null
+}
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
 const REQ_FORMS = { one: "طلبُ تسجيلٍ", two: "طلبا تسجيلٍ", few: "طلباتِ تسجيلٍ", many: "طلبَ تسجيلٍ" };
@@ -453,7 +458,11 @@ export default function Finance() {
                   <span className="font-mono font-bold text-gold-ink" dir="ltr">{c.code}</span>
                   <span className="text-muted-foreground">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
                   <span className="text-muted-foreground">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
-                  {!c.active && <Chip tone="danger">معطّل</Chip>}
+                  {/* كوبونُ المدرّب يُسمّى: ما يمنحه يُحسم منه لا منّا (البند 4-10)،
+                      فلا يُقرأ حملةً من حملاتنا في القائمة نفسِها */}
+                  {c.trainerCode && <Chip tone="accent">كودُ مدرّب — على دوراته</Chip>}
+                  {c.trainerDiscount && <Chip>خصمُ مدرّبٍ بالمبلغ</Chip>}
+                  {!c.active && <Chip tone="danger">{c.trainerCode?.status === "paused" ? "أوقفه مدرّبُه" : "معطّل"}</Chip>}
                 </Inset>
               ))}
             </ul>

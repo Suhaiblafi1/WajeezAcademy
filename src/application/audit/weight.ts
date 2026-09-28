@@ -185,6 +185,10 @@ const MEDIUM: readonly string[] = [
   /* وردُّ الثمن يُسقط الحسمَ أو ينقصه — مالُه يتحرّك لصالحه، والعلّةُ نفسُها */
   'trainer_discount.refund', 'trainer_discount.refund_after_settlement',
   'trainer_code.use', 'trainer_code.refund',
+  /* وأفعالُه في كوده — فعلُه هو كالإصدار والإلغاء قبلها. وقبولُ البند بصيغته
+     الجديدة منها: يقرّ به هو بنقرةٍ يفعلها، ونصُّه محفوظٌ في الأثر نفسِه */
+  'trainer_code.create', 'trainer_code.pause', 'trainer_code.resume', 'trainer_code.revoke',
+  'trainer_code.terms_accept',
   /* مؤهّلٌ أُضيف، وإتاحةٌ تغيّرت */
   'trainer.qualify.auto',
   'trainer.availability.set', 'trainer.blackout.add', 'trainer.blackout.remove',

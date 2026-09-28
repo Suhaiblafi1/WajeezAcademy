@@ -978,7 +978,14 @@ export class CommerceService {
   }
 
   async listCoupons() {
-    return this.prisma.coupon.findMany({ orderBy: { id: 'desc' } })
+    /* ومعها من يتحمّلها إن كانت لمدرّب — فلا يُقرأ كودُه حملةً من حملاتنا */
+    return this.prisma.coupon.findMany({
+      orderBy: { id: 'desc' },
+      include: {
+        trainerCode: { select: { percentOff: true, status: true } },
+        trainerDiscount: { select: { status: true } },
+      },
+    })
   }
 
   async createPlan(actorId: string, input: { code: string; nameAr: string; descriptionAr?: string; price: number; currency?: string; intervalMonths?: number; features?: string[] }) {

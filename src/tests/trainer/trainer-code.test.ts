@@ -4,11 +4,14 @@
    ① **الردُّ ينقص ما عليه بقدره** — لا يبقى عليه خصمٌ كاملٌ عن شراءٍ رُدّ نصفُه،
       ولا يُعفى من كلّه.
    ② **والإعادةُ تُؤخذ دائما، وتفسح للحسم** — مالٌ له لا يُؤجَّل، ومكانٌ فتحه.
-   ③ **والحسمُ كاملٌ بالأقدم أوّلا، ولا ينزل الكشفُ تحت الصفر** — البند 4-10. */
+   ③ **والحسمُ كاملٌ بالأقدم أوّلا، ولا ينزل الكشفُ تحت الصفر** — البند 4-10.
+   ④ **والإصدارُ يُردّ بجملةٍ واحدة** تقرؤها الشاشةُ والخادم — والسقفُ فيها.
+   ⑤ **وحالُ الكود تُقال بما هي** — ما انتهى أو نفد لا يُقال «يعمل». */
 
 import { describe, expect, it } from 'vitest'
 import {
-  MAX_TRAINER_CODE_PERCENT, owedAfterRefund, planLedger, refundedShare, type LedgerEntry,
+  MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, codeBlockerAr, codeStateAr,
+  owedAfterRefund, planLedger, refundedShare, type LedgerEntry,
 } from '@/application/trainer/trainer-code'
 
 const at = (d: number) => new Date(Date.UTC(2026, 9, d))
@@ -64,5 +67,56 @@ describe('③ والحسمُ كاملٌ بالأقدم أوّلا، ولا ين�
     expect(plan.taken.map((t) => t.ref)).toEqual(['a', 'c'])
     expect(taken).toBeLessThanOrEqual(30)
     for (const t of plan.taken) expect([12, 25, 10], 'حسمٌ شُطر').toContain(t.amount)
+  })
+})
+
+describe('④ الإصدار: الحاجزُ نصٌّ واحدٌ تقرؤه الشاشةُ والخادم', () => {
+  const ok = { percentOff: 20, labelAr: 'متابعو القناة' }
+
+  it('⚠️ النسبةُ عددٌ صحيحٌ بين الحدّين — والسقفُ نفسُه يمرّ', () => {
+    expect(codeBlockerAr(ok)).toBeNull()
+    expect(codeBlockerAr({ ...ok, percentOff: MAX_TRAINER_CODE_PERCENT }), 'رُدّ السقفُ نفسُه').toBeNull()
+    expect(codeBlockerAr({ ...ok, percentOff: MAX_TRAINER_CODE_PERCENT + 1 }), 'مرّ ما فوق السقف').toBeTruthy()
+    expect(codeBlockerAr({ ...ok, percentOff: 0 }), 'مرّ الصفر').toBeTruthy()
+    expect(codeBlockerAr({ ...ok, percentOff: 12.5 }), 'مرّت نسبةٌ بكسر').toBeTruthy()
+    expect(codeBlockerAr({ ...ok, percentOff: Number.NaN })).toBeTruthy()
+  })
+
+  it('⚠️ ولمن يُنشَر يُكتب — يُطبع في كشفه', () => {
+    expect(codeBlockerAr({ ...ok, labelAr: ' ' })).toBeTruthy()
+  })
+
+  it('والاستعمالاتُ عددٌ صحيحٌ موجب — أو بلا حدّ', () => {
+    expect(codeBlockerAr({ ...ok, maxUses: null })).toBeNull()
+    expect(codeBlockerAr({ ...ok, maxUses: 10 })).toBeNull()
+    expect(codeBlockerAr({ ...ok, maxUses: 0 })).toBeTruthy()
+    expect(codeBlockerAr({ ...ok, maxUses: 2.5 })).toBeTruthy()
+    expect(codeBlockerAr({ ...ok, maxUses: MAX_TRAINER_CODE_USES + 1 })).toBeTruthy()
+  })
+
+  it('وتاريخُ الانتهاء لا يكون ماضيا', () => {
+    const now = new Date('2026-10-01T10:00:00Z')
+    expect(codeBlockerAr({ ...ok, expiresAt: new Date('2026-09-30T10:00:00Z') }, now)).toBeTruthy()
+    expect(codeBlockerAr({ ...ok, expiresAt: new Date('2026-10-30T10:00:00Z') }, now)).toBeNull()
+  })
+})
+
+describe('⑤ حالُ الكود كما تُقال — المخزَّنةُ وما يُشتقّ منها', () => {
+  const now = new Date('2026-10-01T10:00:00Z')
+  const c = (over: Partial<Parameters<typeof codeStateAr>[0]> = {}) =>
+    codeStateAr({ status: 'live', expiresAt: null, maxUses: null, usedCount: 0, ...over }, now).key
+
+  it('⚠️ يعمل، ويُوقَف، ويُلغى', () => {
+    expect(c()).toBe('live')
+    expect(c({ status: 'paused' })).toBe('paused')
+    expect(c({ status: 'revoked' })).toBe('revoked')
+  })
+
+  it('⚠️ وما انتهت مدّتُه أو استُنفدت استعمالاتُه يُقال — لا «يعمل»', () => {
+    expect(c({ expiresAt: new Date('2026-09-30T10:00:00Z') })).toBe('expired')
+    expect(c({ maxUses: 5, usedCount: 5 })).toBe('exhausted')
+    expect(c({ maxUses: 5, usedCount: 4 })).toBe('live')
+    /* والملغى ملغى ولو انتهت مدّتُه: الإلغاءُ فعلُه هو، والانتهاءُ وقتٌ مرّ */
+    expect(c({ status: 'revoked', expiresAt: new Date('2026-09-30T10:00:00Z') })).toBe('revoked')
   })
 })

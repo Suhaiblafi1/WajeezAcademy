@@ -1,4 +1,11 @@
-/* خصمُ المدرّب — الحلقةُ كاملةً في الخادم: يُصدره، فيُستعمَل، فيُحسم منه.
+/* خصمُ المدرّب القديمُ بالمبلغ — الحلقةُ كاملةً في الخادم: يُستعمَل، فيُحسم منه.
+
+   ═══ ولا يُصدَر جديدٌ منه (٢٧ سبتمبر ٢٠٢٦) ═══
+
+   حلّ محلَّه كودٌ بالنسبة (`trainer-code.service.ts`، وحلقتُه في
+   `server/tests/commerce/trainer-code-ledger.test.ts`). وما صدر قبل ذلك يبقى على
+   شروطه حتّى يُستعمل أو ينتهي أو يُلغى — فالحلقةُ هنا تبدأ من صفٍّ صدر، كما
+   سيجده الخادمُ في القاعدة، لا من بابِ إصدارٍ أُغلق.
 
    قرارُ صاحب المنصّة (٢١ سبتمبر ٢٠٢٦): «لا يتحمّل أيّ خصوماتٍ تطرحها
    الأكاديميّةُ من نفسها، ولكن يتحمّل هو أيَّ خصوماتٍ قرّر إعطاءها لأشخاصٍ
@@ -47,6 +54,16 @@ const phase1 = (email: string, name: string) => ({
   privacyConsent: true as const, password: 'Trainer#12345',
 })
 
+/** خصمٌ قديمٌ كما صدر قبل الكود: كوبونٌ بمبلغٍ لمرّةٍ واحدة، وصفٌّ يقول من يتحمّله */
+let seq = 0
+async function legacyDiscount(amount: number, forWhomAr: string) {
+  seq += 1
+  const code = `WD-LEGACY${seq}`
+  const coupon = await prisma.coupon.create({ data: { code, amountOff: amount, currency: 'USD', maxUses: 1, active: true } })
+  const row = await prisma.trainerIssuedDiscount.create({ data: { profileId, couponId: coupon.id, amount, forWhomAr } })
+  return { id: row.id, code }
+}
+
 /** مشترٍ جديدٌ يدفع فاتورتَه كاملةً — فالتسويةُ هي اللحظةُ التي تهمّ هنا */
 async function buyAndPay(userId: string, couponCode?: string) {
   const order = await commerce.checkout(userId, [cohortId], couponCode)
@@ -94,26 +111,13 @@ describe('خصمُ المدرّب — من جيبه لا من إيرادنا', (
     await earnings.setRule(adminId, { profileId, type: 'per_seat', rate: 100 })
   })
 
-  it('رصيدُه يُبنى ممّا له عندنا — ولا يُصدر فوقه', async () => {
-    const budget = await discounts.budgetFor(trainerUserId)
-    expect(budget.remaining, 'رصيدٌ بلا شعبةٍ ولا كشف').toBe(0)
-    await expect(
-      discounts.issue(trainerUserId, { amount: 20, forWhomAr: 'أحمد' }),
-    ).rejects.toMatchObject({ code: 'bad_amount' })
-  })
-
-  it('ويُصدره حين يكون له متوقَّعٌ من شعبه — والرمزُ يخصم من المشتري فعلا', async () => {
+  it('الرمزُ يخصم من المشتري فعلا — ويُقيَّد مستعمَلا حين يُدفع', async () => {
     const auth = new AuthService(prisma)
-    /* مشترٍ أوّلُ بلا رمز: يصير للمدرّب متوقَّعٌ فيتّسع رصيدُه */
+    /* مشترٍ أوّلُ بلا رمز: للمدرّب مقعدٌ يُحتسب له */
     const first = (await auth.register('tdisc-buyer-1@test.local', 'Buyer#12345', 'مشترٍ أوّل')).userId
     await buyAndPay(first)
 
-    const budget = await discounts.budgetFor(trainerUserId)
-    expect(budget.remaining, 'لم يتّسع رصيدُه بمقعدٍ اشتُري').toBeGreaterThanOrEqual(20)
-
-    const issued = await discounts.issue(trainerUserId, { amount: 20, forWhomAr: 'ابن الجيران' })
-    expect(issued.code, 'الرمزُ لا يتميّز عن رمز الدعوة').toMatch(/^WD-/)
-
+    const issued = await legacyDiscount(20, 'ابن الجيران')
     const second = (await auth.register('tdisc-buyer-2@test.local', 'Buyer#12345', 'مشترٍ ثانٍ')).userId
     const order = await buyAndPay(second, issued.code)
     expect(order.total, 'الرمزُ عُرض ولم يُقتطع').toBe(80)
@@ -126,7 +130,7 @@ describe('خصمُ المدرّب — من جيبه لا من إيرادنا', (
   /* ② العطبُ الذي يحسم مالا لم يُقبَض: طلبٌ يُنشأ ثمّ يُهجَر */
   it('ولا يُقيَّد مستعمَلا بإنشاء طلبٍ لم يُدفَع', async () => {
     const auth = new AuthService(prisma)
-    const issued = await discounts.issue(trainerUserId, { amount: 10, forWhomAr: 'من لم يدفع' })
+    const issued = await legacyDiscount(10, 'من لم يدفع')
     const buyer = (await auth.register('tdisc-buyer-3@test.local', 'Buyer#12345', 'مشترٍ ثالث')).userId
     const order = await commerce.checkout(buyer, [cohortId], issued.code)
     const invoice = await prisma.invoice.findFirstOrThrow({ where: { orderId: order.orderId } })
@@ -141,7 +145,7 @@ describe('خصمُ المدرّب — من جيبه لا من إيرادنا', (
   })
 
   it('وما لم يُستعمَل يُلغى، وما استُعمل لا يُلغى — فالمالُ نقص فعلا', async () => {
-    const live = await discounts.issue(trainerUserId, { amount: 5, forWhomAr: 'من سيُلغى له' })
+    const live = await legacyDiscount(5, 'من سيُلغى له')
     await discounts.revoke(trainerUserId, live.id)
     const after = await prisma.trainerIssuedDiscount.findUniqueOrThrow({ where: { id: live.id } })
     expect(after.status).toBe('revoked')

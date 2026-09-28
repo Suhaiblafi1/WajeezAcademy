@@ -38,6 +38,8 @@ interface RealEarnings {
   awaitingDiscounts: {
     total: number; currency: string;
     rows: { id: string; code: string; amount: number; currency: string; forWhomAr: string; usedAt: string | null }[];
+    /** ما يُعاد إليه — شراءٌ بكوده رُدّ ثمنُه بعد أن حُسم */
+    credits?: { id: string; code: string; amount: number; currency: string; forWhomAr: string; refundedAt: string | null }[];
   };
 }
 
@@ -356,10 +358,10 @@ function RealEarningsView() {
           ولا تُعرض حين لا شيءَ ينتظر: لوحةٌ بصفرٍ تُعلّم القارئَ تخطّيها. */}
       {(awaitingDiscounts?.rows.length ?? 0) > 0 && (
         <Panel as="section" tone="warn" className="mb-6">
-          <p className="text-sm font-black text-gold-ink">خصومٌ أصدرتَها بنفسك — تُحسم من كشفك القادم</p>
+          <p className="text-sm font-black text-gold-ink">أكوادٌ وخصومٌ أصدرتَها بنفسك — تُحسم من كشفك القادم</p>
           <p className="mt-2 text-read leading-7 text-muted-foreground">
-            هذه خصومٌ أصدرتَها من «دعوتي» واستُعملت في مشترياتٍ دُفعت. تُدرج بندا باسمها في أوّل كشفٍ يُحرَّر لك
-            وتُحسم منه، ولا يتجاوز ما يُحسم في كشفٍ واحدٍ قيمتَه — وما زاد يُؤجَّل إلى الذي يليه (البند 4-10 من عقدك).
+            هذا ما منحته أكوادُك (وخصومُك القديمةُ بالمبلغ) في مشترياتٍ دُفعت. يُدرج بندا باسمه في أوّل كشفٍ يُحرَّر لك
+            ويُحسم منه، ولا يتجاوز ما يُحسم في كشفٍ واحدٍ قيمتَه — وما زاد يُؤجَّل إلى الذي يليه (البند 4-10 من عقدك).
           </p>
           <ul className="mt-3 space-y-1.5">
             {awaitingDiscounts.rows.map((d) => (
@@ -372,6 +374,28 @@ function RealEarningsView() {
           <p className="mt-3 text-read font-bold text-gold-ink">
             المجموع المنتظَر حسمُه: <span dir="ltr" className="font-mono">{fmt(awaitingDiscounts.total)}</span> {awaitingDiscounts.currency}
           </p>
+        </Panel>
+      )}
+
+      {/* ═══ وما يُعاد إليك — شراءٌ رُدّ ثمنُه بعد أن حُسم ما منحه كودُك ═══
+
+          البند 4-10 بصيغته الجديدة: «وما حسم زيادة على ذلك أعيد إلى المدرب في
+          الكشف الذي يليه». فيُقال قبل أن يقع — كما يُقال الحسمُ قبل أن يقع —
+          ولا تُعرض اللوحةُ حين لا شيءَ يُعاد. */}
+      {(awaitingDiscounts?.credits?.length ?? 0) > 0 && (
+        <Panel as="section" tone="accent" className="mb-6">
+          <p className="text-sm font-black text-teal-light-ink">يُعاد إليك في كشفك القادم</p>
+          <p className="mt-2 text-read leading-7 text-muted-foreground">
+            رُدّ ثمنُ مشترياتٍ بأكوادك بعد أن حُسم ما منحته، فيُعاد إليك ما حُسم زيادةً بندا موجبا (البند 4-10 من عقدك).
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {(awaitingDiscounts?.credits ?? []).map((d) => (
+              <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 text-read text-muted-foreground">
+                <span>{d.forWhomAr} <span dir="ltr" className="font-mono text-fine">({d.code})</span>{d.refundedAt && <> · رُدّ {fmtDateAr(d.refundedAt)}</>}</span>
+                <span dir="ltr" className="font-mono font-bold text-teal-light-ink">+{fmt(d.amount)} {d.currency}</span>
+              </li>
+            ))}
+          </ul>
         </Panel>
       )}
 
@@ -397,7 +421,7 @@ function RealEarningsView() {
       >
         <TicketPercent className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
         <span>
-          الخصومُ التي تُصدرها بنفسك تُدار في <b className="text-foreground">«دعوتي»</b> — وتُحسم من كشفك هنا (البند 4-10).
+          أكوادُ الخصم التي تُصدرها بنفسك تُدار في <b className="text-foreground">«دعوتي»</b> — وخصوماتُها تُحسم من كشفك هنا (البند 4-10).
         </span>
       </Inset>
 
