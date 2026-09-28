@@ -254,8 +254,9 @@ const LOW: readonly string[] = [
   'cohort.status', 'cohort.status.sync', 'cohort.delivery_plan.set',
   'cohort.plan.save', 'cohort.plan.submit', 'cohort.message.send',
   /* وربطُ لقاءٍ بمحوره تحريرٌ في الخطّة كحفظها: لا موعدَ يتحرّك ولا مالَ
-     ولا وصول (٢٧ سبتمبر ٢٠٢٦) */
-  'cohort.session.axes',
+     ولا وصول (٢٧ سبتمبر ٢٠٢٦) — والمسجَّلُ بوزنه: ربطٌ بلا اعتماد، ومحورُه في
+     الخطّة لا على صفّ (٢٨ سبتمبر ٢٠٢٦) */
+  'cohort.session.axes', 'cohort.plan.recorded_axes',
   /* ═══ وتعديلُ المدرّب صفَّ شعبته نزل من العالي (٢٧ سبتمبر ٢٠٢٦) ═══
 
      كان عاليا لأنّه يحرّك **متى يحضر المتعلّمُ وأين** — البدءَ والأيّامَ

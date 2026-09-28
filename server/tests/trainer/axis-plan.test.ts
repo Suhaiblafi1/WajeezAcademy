@@ -9,7 +9,8 @@
    ③ الربطُ لا يُسقط المعتمَدَ إلى الانتظار، ولا يمسّ المبدئيَّ ولا الملغى.
    ④ المهمّةُ بمحورها تأخذ آخرَ موعده موعدا ما لم يُكتب غيرُه (⑥).
    ⑤ والإرسالُ يحجبه محورٌ بلا لقاءٍ مباشر — ويسمّيه.
-   ⑧ وبعد الاعتماد يسري الربطُ فورا بلا اعتماد — ويصل المتعلّمَ في طلبه التالي. */
+   ⑧ وبعد الاعتماد يسري الربطُ فورا بلا اعتماد — ويصل المتعلّمَ في طلبه التالي.
+   ⑨ والجلسةُ المسجّلةُ كذلك: محورُها يُكتب في المعتمَدة لحظةَ الحفظ، وما سواه مراجعة. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -302,5 +303,89 @@ describe('⑧ بعد الاعتماد: الربطُ يسري فورا بلا ا�
     const after = (await loadLearnerGate(prisma, cohortId))!.gate
     expect(assessmentOpensAt(after, 'AX-M4')?.toISOString(), 'لم يصل الربطُ المتعلّمَ')
       .toBe(periodBounds(SLOTS[3]).from.toISOString())
+  })
+})
+
+/* ═══ ⑨ والجلسةُ المسجّلةُ كذلك — محورُها يسري بلا اعتماد (٢٨ سبتمبر ٢٠٢٦) ═══
+
+   ثمّ سُئل صاحبُ المنصّة عن الجلسة المسجّلة — ومحورُها في محتوى الخطّة لا على
+   صفّ لقاء، فكان تغييرُه بعد الاعتماد مراجعةً تنتظر — فقال: «no need for
+   approval for this!». فحفظُ الخطّة يكتب محورَها في المعتمَدة لحظتَه، وما سواه
+   في الحفظ نفسِه مراجعةٌ كما كان — ويومُ فتحها منه: موعدٌ كموعد اللقاء
+   (`recorded-links.ts`). */
+describe('⑨ محورُ الجلسة المسجّلة يسري بلا اعتماد', () => {
+  const REC = {
+    title: 'تسجيلُ المحور الثالث', url: 'https://x.test/rec-3', category: 'recorded', kind: 'video',
+    moduleId: 'AX-M3', opensAt: '2027-03-21T09:00:00.000Z',
+  }
+  const approvedContent = async () =>
+    (await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId, status: 'approved' } })).content as unknown as TrainerPlanContent
+  const recOf = (c: TrainerPlanContent) => c.resources.find((r) => r.url === REC.url)!
+  const withRec = (c: TrainerPlanContent, patch: Partial<typeof REC>) =>
+    ({ ...c, resources: c.resources.map((r) => (r.url === REC.url ? { ...r, ...patch } : r)) })
+  /** متى تُفتح للمتعلّم — من بوّابته هو، بالخطّة التي يراها */
+  const opensForLearner = async () => {
+    const { loadLearnerGate } = await import('../../services/learner-gate')
+    const loaded = (await loadLearnerGate(prisma, cohortId))!
+    return loaded.gate.timeline!.resourceOpensAt(recOf(loaded.plan!.content as TrainerPlanContent))?.toISOString()
+  }
+
+  beforeAll(async () => {
+    /* خطّةٌ معتمَدةٌ فيها جلسةٌ مسجّلة — بالمسلك نفسِه: مراجعةٌ تُرسَل فتُعتمَد */
+    const adminId = (await prisma.user.create({ data: { email: `axis-admin-rec-${Date.now()}@test.local`, displayName: 'المعتمِد', passwordHash: 'x' } })).id
+    const base = await approvedContent()
+    await plans.savePlan(trainerUserId, cohortId, { ...base, resources: [...base.resources, REC] })
+    const draft = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId, status: 'draft' }, orderBy: { createdAt: 'desc' } })
+    await prisma.cohortDeliveryPlan.update({ where: { id: draft.id }, data: { status: 'submitted' } })
+    await plans.decide(adminId, draft.id, true)
+  })
+
+  it('⚠️ محورُها وحدَه: يُكتب في المعتمَدة، ولا تُفتح مراجعة، والمتعلّمُ يراها في موعد محورها الجديد', async () => {
+    const before = await approvedContent()
+    expect(recOf(before).moduleId).toBe('AX-M3')
+    expect(await opensForLearner(), 'تُفتح في يومها داخلَ موعدها').toBe(REC.opensAt)
+    const plansBefore = await prisma.cohortDeliveryPlan.count({ where: { cohortId } })
+
+    await plans.savePlan(trainerUserId, cohortId, withRec(before, { moduleId: 'AX-M4' }))
+
+    expect(await prisma.cohortDeliveryPlan.count({ where: { cohortId } }), 'فتح ربطُ الجلسة المسجّلة مراجعةً').toBe(plansBefore)
+    const after = await approvedContent()
+    expect(recOf(after).moduleId, 'لم يُكتب المحورُ في المعتمَدة').toBe('AX-M4')
+    expect(recOf(after).opensAt).toBe(REC.opensAt)
+    /* وتُفتح أوّلَ موعد محورها الجديد — لا قبله */
+    expect(await opensForLearner(), 'لم يصل الربطُ المتعلّمَ').toBe(periodBounds(SLOTS[3]).from.toISOString())
+    const audit = await prisma.auditEvent.findFirst({ where: { action: 'cohort.plan.recorded_axes', entityId: cohortId }, orderBy: { createdAt: 'desc' } })
+    expect((audit?.meta as { relinks?: unknown[] } | null)?.relinks, 'الربطُ بلا أثر')
+      .toEqual([expect.objectContaining({ title: REC.title, from: 'AX-M3', to: 'AX-M4' })])
+  })
+
+  it('⚠️ ومعه تغييرٌ آخر: المحورُ يسري لحظتَه، والآخرُ مراجعةٌ تنتظر — لا يُقرأ فيها الربط', async () => {
+    const { planDiff } = await import('../../../src/application/trainer/plan-diff')
+    const before = await approvedContent()
+    const renamed = 'المحورُ الأوّل بعنوانٍ جديد'
+    const edited = withRec({ ...before, modules: before.modules.map((m, i) => (i === 0 ? { ...m, titleAr: renamed } : m)) }, { moduleId: 'AX-M3' })
+
+    await plans.savePlan(trainerUserId, cohortId, edited)
+
+    const after = await approvedContent()
+    expect(recOf(after).moduleId, 'انتظر الربطُ مع غيره').toBe('AX-M3')
+    expect(after.modules[0].titleAr, 'سرى تعديلٌ غيرُ الربط بلا اعتماد').toBe(before.modules[0].titleAr)
+    const draft = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId, status: 'draft' }, orderBy: { createdAt: 'desc' } })
+    const lines = planDiff(after, draft.content, { date: String }).flatMap((s) => s.lines)
+    expect(lines.join(' · ')).toContain(renamed)
+    expect(lines.join(' · '), 'قرأ المعتمِدُ ربطا سرى من قبل').not.toContain(REC.title)
+  })
+
+  it('⚠️ ويومُ فتحها موعدٌ — ينتظر المراجعةَ كنقل اللقاء، ولو جاء مع ربطها في حفظٍ واحد', async () => {
+    const draft = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId, status: 'draft' }, orderBy: { createdAt: 'desc' } })
+    const later = '2027-03-22T09:00:00.000Z'
+
+    await plans.savePlan(trainerUserId, cohortId, withRec(draft.content as unknown as TrainerPlanContent, { moduleId: 'AX-M4', opensAt: later }))
+
+    const approved = recOf(await approvedContent())
+    expect(approved.moduleId, 'انتظر الربطُ مراجعةً مفتوحة').toBe('AX-M4')
+    expect(approved.opensAt, 'سرى يومُ الفتح مع الربط بلا اعتماد').toBe(REC.opensAt)
+    const kept = recOf((await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: draft.id } })).content as unknown as TrainerPlanContent)
+    expect(kept).toMatchObject({ moduleId: 'AX-M4', opensAt: later })
   })
 })
