@@ -13,6 +13,9 @@ import { perSeatBreakdown } from '../../src/application/trainer/seat-fee'
 import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
 import { cohortLeadTrainer } from './cohort-lead'
 
+/** القاعدةُ أو معاملةٌ مفتوحةٌ عليها — ما يُتوقَّع له يُقرأ في معاملة الطلب أيضا */
+type Db = PrismaClient | Prisma.TransactionClient
+
 const PERIOD_RE = /^\d{4}-(0[1-9]|1[0-2])$/ // «2026-08»
 
 /* مرجعا بنود الحسم في الكشف — بهما يُعرف عند إلغاء الكشف ما يُعاد وإلى أين */
@@ -414,9 +417,9 @@ export class EarningsService {
   }
 
   /* القاعدة السارية لمدرب الآن — بدقة النطاق: شعبة محددة ← دورة محددة ← عامة، والأحدث سرياناً */
-  async activeRule(profileId: string, scope: { cohortId?: string; courseId?: string } = {}, at = new Date()) {
+  async activeRule(profileId: string, scope: { cohortId?: string; courseId?: string } = {}, at = new Date(), db: Db = this.prisma) {
     const latest = (extra: Record<string, unknown>) =>
-      this.prisma.trainerCompensationRule.findFirst({
+      db.trainerCompensationRule.findFirst({
         where: {
           profileId, ...extra,
           effectiveFrom: { lte: at },
@@ -492,11 +495,11 @@ export class EarningsService {
      والعامُّ يُحسب طرحا لا بشرط `NOT`: في SQL لا يُطابق `NOT (x = y)` الصفَّ
      الذي `x` فيه فارغ — وأكثرُ المقاعد فارغةُ الإحالة، فكان العامُّ يُقرأ صفرا.
      والطرحُ يقرأ الجملةَ مرّةً ويأخذ الباقيَ، فلا يضيع صفٌّ بين الشرطين. */
-  private async seatsBySource(cohortId: string, profileId: string) {
+  private async seatsBySource(cohortId: string, profileId: string, db: Db = this.prisma) {
     const where = { cohortId, status: { in: ['enrolled', 'completed'] } }
     const [total, referred] = await Promise.all([
-      this.prisma.enrollment.count({ where }),
-      this.prisma.enrollment.count({ where: { ...where, referralProfileId: profileId } }),
+      db.enrollment.count({ where }),
+      db.enrollment.count({ where: { ...where, referralProfileId: profileId } }),
     ])
     return { referred, general: total - referred }
   }
@@ -593,6 +596,40 @@ export class EarningsService {
       },
       items, total,
     }
+  }
+
+  /* ═══ ما يُتوقَّع له من شعبةٍ مفتوحة — لرصيد أكواده (٢٨ سبتمبر ٢٠٢٦) ═══
+
+     بالقاعدة نفسِها التي يُحسب بها كشفُها (`computeCohort`)، ومعها ما يزيده شراءٌ
+     يُسعَّر الآن: مقعدٌ عامٌّ يُضاف إلى المقاعد، وثمنُه إلى الإيراد. فشراءٌ يغطّي
+     أجرُه خصمَ كوده يمرّ ولو كان رصيدُه قبله صفرا.
+
+     والمقعدُ الزائدُ عامٌّ لا عبر رابطه: الإحالةُ لا تُعرف إلّا عند الدفع، والعامُّ
+     أدنى الأجرين في الغالب — فالتقديرُ لا يتجاوز ما سيُدفع له. وبلا قاعدةٍ سارية
+     لا يُتوقَّع له شيء: لا يُبنى رصيدٌ على أجرٍ لم يُتّفق عليه.
+
+     و`db` معاملةُ الطلب حين يُسأل بعد قفل المدرّب — فيُقرأ على اتّصالها لا على
+     اتّصالٍ ثانٍ من المجمَّع ينتظره كلُّ شراءٍ واقفٍ على القفل نفسِه. */
+  async projectCohort(profileId: string, cohortId: string, extra: { seats: number; revenue: number } = { seats: 0, revenue: 0 }, db: Db = this.prisma) {
+    const cohort = await db.cohort.findUnique({ where: { id: cohortId }, select: { courseId: true } })
+    if (!cohort) return 0
+    const rule = await this.activeRule(profileId, { cohortId, courseId: cohort.courseId }, new Date(), db)
+    if (!rule) return 0
+    if (rule.type === 'per_seat') {
+      const { referred, general } = await this.seatsBySource(cohortId, profileId, db)
+      return perSeatBreakdown({
+        general: general + extra.seats, referred, rate: Number(rule.rate),
+        referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
+        minSeats: rule.minSeats,
+      }).total
+    }
+    if (rule.type === 'fixed_per_cohort') return Number(rule.rate)
+    const paidItems = await db.orderItem.findMany({
+      where: { kind: 'cohort', refId: cohortId, order: { status: 'paid' } },
+      select: { unitPrice: true, quantity: true },
+    })
+    const revenue = paidItems.reduce((s, i) => s + Number(i.unitPrice) * i.quantity, 0) + extra.revenue
+    return Math.round(revenue * Number(rule.rate)) / 100
   }
 
   /* توليد كشف حقيقي من شعبة مكتملة — يمنع التكرار عبر sourceRef */

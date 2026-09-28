@@ -133,3 +133,56 @@ export function contractCarriesCodeTerms(bodyVersion: string | null | undefined)
   const m = /^v(\d+)-/.exec(bodyVersion ?? '')
   return m !== null && Number(m[1]) >= CODE_TERMS_FIRST_BODY
 }
+
+/* ═══════════ الرصيد — لا يمنح كودُه ما ليس له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══════════
+
+   قرارُ صاحب المنصّة بنصّه: «capped with the amount he has». فالكودُ لا يقع على
+   شراءٍ يزيد خصمُه على ما للمدرّب عندنا ناقصا ما التزم به ولم يُحسم — وإلّا
+   حُسم منه ما لا يجد كشفا يسعه، فتأجّل حتّى يرحل المدرّبُ فتتحمّله الأكاديميّة.
+   وهو عكسُ البند 4-10 نفسِه: «ويتحمل المدرب وحده ما يمنحه من خصم».
+
+   ─────────── وما «له عندنا» ───────────
+
+   مستحقّاتٌ لم تُصرف (منتظرةٌ ومعتمَدة)، وما يُعاد إليه عن شراءٍ رُدّ ثمنُه، وما
+   يُتوقَّع له من شعبه المفتوحة التي تُحتسب له — **والشراءُ الذي يُسعَّر الآن منها**:
+   مقعدُه يزيد أجرَ المدرّب، فشراءٌ يغطّي أجرُه خصمَه يمرّ ولو كان الرصيدُ قبله
+   صفرا. وإلّا لم يعمل كودٌ لمدرّبٍ جديدٍ قطّ — وهو أحوجُ من ينشره.
+
+   ─────────── وما «التزم به» ───────────
+
+   خصومُه القديمةُ بالمبلغ ما لم تُحسم (صالحةً قد تُستعمل، ومستعمَلةً تنتظر)، وما
+   مُنح بأكواده ولم يُحسم بعد، وما حُجز منها في طلباتٍ لم تُدفع بعد.
+
+   والرصيدُ لا يُفحص عند الإصدار: الكودُ لا يكلّف شيئا حتّى يُستعمل. يُفحص عند كلّ
+   شراء — في التسعير ليُقال للمشتري في موضعه، وفي معاملة الطلب بقفلٍ لكلّ مدرّب
+   فلا يمرّ شراءان على آخر ما في الرصيد. */
+
+export interface CodeBudget {
+  /** ما له عندنا — مستحقّاتٌ لم تُصرف، وما يُعاد إليه، وما يُتوقَّع من شعبه المفتوحة */
+  allowance: number
+  /** ما التزم به ولم يُحسم — خصومٌ قديمةٌ، وما منحته أكوادُه، وما حُجز منها */
+  committed: number
+  /** الفرق، ولا ينزل تحت الصفر */
+  remaining: number
+  currency: string
+}
+
+export function codeBudget(input: {
+  owed: number
+  credits: number
+  projected: number
+  committed: number
+  currency: string
+}): CodeBudget {
+  const allowance = round2(input.owed + input.credits + input.projected)
+  const committed = round2(input.committed)
+  return { allowance, committed, remaining: round2(Math.max(0, allowance - committed)), currency: input.currency }
+}
+
+/** أيسع الرصيدُ هذا الخصم؟ — بالقرش، فلا يُردّ خصمٌ يساوي الرصيدَ تماما */
+export function budgetCovers(budget: CodeBudget, discount: number): boolean {
+  return round2(discount) <= budget.remaining
+}
+
+/** ما يُقال للمشتري حين لا يسع الرصيدُ خصمَه — ولا تُكشف له مستحقّاتُ أحد */
+export const CODE_UNAVAILABLE_AR = 'بلغ هذا الكودُ حدَّه الآن — أكمل الشراءَ بدونه أو جرّبه لاحقا'

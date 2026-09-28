@@ -28,7 +28,8 @@
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
 import { recordAudit } from '../audit'
-import { owedAfterRefund } from '../../../src/application/trainer/trainer-code'
+import { CODE_UNAVAILABLE_AR, owedAfterRefund } from '../../../src/application/trainer/trainer-code'
+import { COMMERCE_LOCKS } from './invoice-number'
 
 type Tx = Prisma.TransactionClient
 
@@ -55,6 +56,8 @@ export async function reserveCouponUse(tx: Tx, input: {
   /** ما مُنح بهذا الكوبون في الطلب — ولكود المدرّب هو ما يُحسم منه */
   discount: number
   currency: string
+  /** أيسع رصيدُ المدرّب هذا الخصم؟ — يُسأل بعد قفله وعلى معاملته، فيرى ما حجزه شراءٌ سبقه (`trainer-code-budget.ts`) */
+  budgetCovers?: (tx: Tx) => Promise<boolean>
 }): Promise<void> {
   /* العدُّ بشرطِ الحدّ في الكتابة نفسِها — لا فحصا قبلها. فمن قرأ «بقي
      استعمال» مع غيره في اللحظة نفسِها يُردّ أحدُهما هنا لا يمرّان معا. */
@@ -65,6 +68,16 @@ export async function reserveCouponUse(tx: Tx, input: {
   if (bumped.count === 0) throw new AuthError('bad_coupon', 'استنفد الكوبون عدد استخداماته', 409)
 
   if (!input.trainerCode || !(input.discount > 0)) return
+  /* ═══ ورصيدُه بقفلٍ لكلّ مدرّب ═══
+
+     الفحصُ في التسعير يقول للمشتري في موضعه، ولا يمنع شراءين متزامنين: كلاهما
+     يقرأ الرصيدَ قبل أن يحجز الآخر. فيُقفل هنا لهذا المدرّب وحدَه حتّى تُثبَّت
+     المعاملة، ثمّ يُسأل الرصيدُ ثانيةً — فيرى ما حجزه من سبقه. والقفلُ بعد قفل
+     رقم الفاتورة دائما (الطلبُ يُكتب ثمّ فاتورتُه ثمّ هذا)، فلا يتعاكس القفلان. */
+  if (input.budgetCovers) {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${COMMERCE_LOCKS}::int, ${trainerLockKey(input.trainerCode.profileId)}::int)`
+    if (!(await input.budgetCovers(tx))) throw new AuthError('code_unavailable', CODE_UNAVAILABLE_AR, 409)
+  }
   try {
     await tx.trainerCodeRedemption.create({
       data: {
@@ -195,6 +208,15 @@ async function ledgerFailed(prisma: PrismaClient, orderId: string, step: 'use' |
     meta: { step, error: e instanceof Error ? e.message : String(e) },
     reason: 'استعمالُ كودِ مدرّبٍ لم يُقيَّد في دفتره — تسويةٌ يدويّةٌ مطلوبة',
   }).catch(() => { /* الأثرُ نفسُه لا يُسقط تسويةَ دفعةٍ ولا ردَّها */ })
+}
+
+/** مفتاحُ قفل رصيد المدرّب — من معرّفه، في فضاء أقفال التجارة. والاصطدامُ بين
+    مدرّبَين لا يُفسد شيئا: يُصفّ شراءاهما وحسب */
+export function trainerLockKey(profileId: string): number {
+  const hex = profileId.replace(/-/g, '').slice(0, 8)
+  const n = Number.parseInt(hex, 16)
+  /* إلى ما بعد مفتاح تسلسل الفواتير، وفي مدى int4 الموجب */
+  return 1000 + (Number.isFinite(n) ? n % 2_000_000_000 : 0)
 }
 
 /** خطأُ فرادةٍ من Prisma — بلا استيراد نوعٍ من زمن التشغيل */

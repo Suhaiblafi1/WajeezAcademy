@@ -18,7 +18,7 @@
    تحريك المال. وشرطُه الثالثُ موضعُ الدقّة: يسقط الحاجزُ حين لا تكون قناةُ
    البريد موصولةً أصلا — وإلّا صار قفلا بلا مفتاح. */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
 import { priceCart } from '../../../src/application/commerce/cart-pricing'
 import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
@@ -26,12 +26,23 @@ import { getEmailConfig } from '../integrations.service'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
 import { CODE_USE_COUNTS, CODE_USED_AR } from './coupon-ledger'
 import { cohortLeadTrainers } from '../cohort-lead'
+import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-budget'
+import { budgetCovers, CODE_UNAVAILABLE_AR } from '../../../src/application/trainer/trainer-code'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 
 export class CartService {
   private prisma: PrismaClient
+  private budgets: TrainerCodeBudgetService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
+    this.budgets = new TrainerCodeBudgetService(prisma)
+  }
+
+  /** أيسع رصيدُ صاحب الكود خصمَه في هذا الشراء؟ — يسأله التسعيرُ، وتسأله معاملةُ الطلب بعد قفله (`tx`) */
+  async codeBudgetCovers(
+    profileId: string, purchase: readonly PurchaseLine[], discount: number, tx?: Prisma.TransactionClient,
+  ): Promise<boolean> {
+    return budgetCovers(await this.budgets.budgetFor(profileId, purchase, tx), discount)
   }
 
   /** هل بريد صاحب الطلب موثَّق؟ — قراءةٌ واحدة، والحاجز يقرّر بها */
@@ -315,12 +326,24 @@ export class CartService {
     if (trainerCode && pricing.couponLines === 0) {
       throw new AuthError('code_not_applicable', 'هذا الكودُ لدوراتِ مدرّبٍ بعينه، وليس في سلّتك دورةٌ مدفوعةٌ منها', 409)
     }
+    /* ═══ ورصيدُه — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══
+
+       يُقال هنا للمشتري في موضعه، ويُفحص ثانيةً بقفلٍ في معاملة الطلب. والشراءُ
+       نفسُه من رصيده: مقاعدُ شعبه في السلّة (والهديّةُ منها مقعدٌ بلا ثمن). */
+    const purchase: PurchaseLine[] = scope === null
+      ? []
+      : pricing.lines.filter((l) => scope!.includes(l.cohortId)).map((l) => ({ cohortId: l.cohortId, unitPrice: l.unitPrice }))
+    if (trainerCode && pricing.couponDiscount > 0
+      && !(await this.codeBudgetCovers(trainerCode.profileId, purchase, pricing.couponDiscount))) {
+      throw new AuthError('code_unavailable', CODE_UNAVAILABLE_AR, 409)
+    }
     return {
       pricing,
       couponId: coupon?.id,
       couponCode: coupon?.code ?? null,
       couponMaxUses: coupon?.maxUses ?? null,
       trainerCode: trainerCode ? { id: trainerCode.id, profileId: trainerCode.profileId } : null,
+      trainerPurchase: purchase,
     }
   }
 }

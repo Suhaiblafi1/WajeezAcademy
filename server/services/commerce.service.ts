@@ -356,7 +356,7 @@ export class CommerceService {
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds, true)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
-    const { pricing, couponId, couponMaxUses, trainerCode } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
+    const { pricing, couponId, couponMaxUses, trainerCode, trainerPurchase } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
     const { subtotal, discount, total } = pricing
 
     const order = await this.prisma.$transaction(async (tx) => {
@@ -385,6 +385,9 @@ export class CommerceService {
         await reserveCouponUse(tx, {
           couponId, maxUses: couponMaxUses, orderId: o.id, userId, trainerCode,
           discount: pricing.couponDiscount, currency,
+          budgetCovers: trainerCode
+            ? (lockedTx) => this.cart.codeBudgetCovers(trainerCode.profileId, trainerPurchase, pricing.couponDiscount, lockedTx)
+            : undefined,
         })
       }
       /* حجزُ المقعد فورا — لا حالة `pending` تنتظر بشرا */

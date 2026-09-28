@@ -86,7 +86,7 @@ interface QuoteItem {
    زرَّ دفع، والمشتري يبحث عن السبب. ومع كود المدرّب صار للكود أسبابُ ردٍّ
    مفهومة (لدوراتِ مدرّبٍ ليست في سلّتك · استعملتَه من قبل)، فيُقال السببُ تحت
    خانته ويُسعَّر الطلبُ بلا كود — والقرارُ للمشتري. */
-const COUPON_ERRORS: ReadonlySet<string> = new Set(["bad_coupon", "code_used", "code_not_applicable"]);
+const COUPON_ERRORS: ReadonlySet<string> = new Set(["bad_coupon", "code_used", "code_not_applicable", "code_unavailable"]);
 
 /** ما استبعده الخادمُ من السلّة وسببُه — نصُّ السبب منه لا مُلفَّقٌ هنا */
 interface ExcludedLine {

@@ -18,6 +18,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { TrainerCodeService } from '../../services/trainer-code.service'
+import { EarningsService } from '../../services/earnings.service'
 import { CODE_TERMS_VERSION } from '../../../src/application/trainer/trainer-code'
 import { CLAUSE_4_10_AR } from '../../../src/application/trainer/contract-body'
 
@@ -134,6 +135,9 @@ describe('③ الإيقافُ والإلغاءُ يُطفئان الكوبون'
       data: { courseId: course.id, title: 'شعبةُ الكود', status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 10 },
     })
     await prisma.cohortTrainer.create({ data: { cohortId: cohort.id, profileId: t.profileId, role: 'lead', assignedBy: adminId } })
+    /* وله أجرٌ يقع عليه الكود: الكودُ يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦)، ومن لا
+       قاعدةَ أتعابٍ له لا رصيدَ له — فيُردّ كودُه بعلّةٍ غير التي يقيسها هذا */
+    await new EarningsService(prisma).setRule(adminId, { profileId: t.profileId, type: 'per_seat', rate: 50 })
     await expect(commerce.quote(learner, [cohort.id], made.code), 'خصم كودٌ موقوف').rejects.toMatchObject({ code: 'bad_coupon' })
 
     await codes.resume(t.userId, made.id)
