@@ -56,6 +56,24 @@ const COLUMN_AR: Record<string, string> = {
 }
 const colAr = (k: string) => COLUMN_AR[k] ?? k
 
+/* ═══ جدولٌ فيه قيدُ `CHECK` معلَّقٌ ← التقريرُ الذي يقرأ توزيعَ عموده ═══
+
+   قيدٌ يُضاف `NOT VALID` يُنفِذ ما وُضع له — كلُّ كتابةٍ جديدةٍ تُفحَص — ويؤجّل
+   فحصَ ما مضى. والتأجيلُ لا يُرفَع إلّا بمعرفةِ توزيعِ القيم في الإنتاج، ولا
+   سبيلَ إلى استعلامٍ مباشرٍ من حاويةِ تطوير. فهذه التقاريرُ هي السبيل.
+
+   وليس التصديقُ هو المقصودَ الأوّل، بل: أفي الإنتاج صفٌّ يحمل حالةً **لم تعد
+   موجودةً في الشيفرة**؟ فمن فُوِّت من صفوف حالةٍ حُذفت يجلس في حالٍ لا تعرضها
+   شاشةٌ ولا ينقله انتقال — لا يبدو معطوبا، بل لا يبدو أصلا.
+
+   ويحرس الاقترانَ `server/tests/schema/unvalidated-checks-are-readable.test.ts`:
+   قيدٌ معلَّقٌ بلا تقريرٍ يُسقِط البوّابة. */
+export const STATUS_DISTRIBUTION_REPORTS: Record<string, string> = {
+  TrainerApplication: 'trainer-applications',
+  TrainerChangeRequest: 'trainer-change-requests',
+  AssignmentSubmission: 'assignment-submissions',
+}
+
 export class ReportsService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -645,6 +663,32 @@ export class ReportsService {
           const rows = await p.trainerApplication.groupBy({
             by: ['status'], _count: true,
             where: hasRange(f) ? { createdAt: dayRange(f) } : undefined,
+          })
+          return rows.map((r) => ({ status: r.status, count: r._count }))
+        },
+      },
+      /* ═══ وتوزيعُ حالتَين أخريَين — لهما قيدٌ معلَّقٌ يُصدَّق بهما ═══
+
+         ومنفعتُهما تشغيليّةٌ قبل ذلك: كم اقتراحا ينتظر مراجعةً، وكم تسليما
+         ينتظر تصحيحا — سؤالان يُسألان بلا أن يُسأل عن قيد. */
+      {
+        key: 'trainer-change-requests', titleAr: 'اقتراحاتُ تعديل الدورات',
+        methodAr: 'اقتراحاتُ المدرّبين على دوراتهم بحالتها — من `TrainerChangeRequest` بتاريخ إنشائها',
+        run: async (f) => {
+          const rows = await p.trainerChangeRequest.groupBy({
+            by: ['status'], _count: true,
+            where: hasRange(f) ? { createdAt: dayRange(f) } : undefined,
+          })
+          return rows.map((r) => ({ status: r.status, count: r._count }))
+        },
+      },
+      {
+        key: 'assignment-submissions', titleAr: 'تسليماتُ المهامّ',
+        methodAr: 'تسليماتُ المتعلّمين للمهامّ بحالتها — والنطاقُ على `submittedAt` لا `createdAt`، فلا عمودَ إنشاءٍ في هذا الجدول',
+        run: async (f) => {
+          const rows = await p.assignmentSubmission.groupBy({
+            by: ['status'], _count: true,
+            where: hasRange(f) ? { submittedAt: dayRange(f) } : undefined,
           })
           return rows.map((r) => ({ status: r.status, count: r._count }))
         },
