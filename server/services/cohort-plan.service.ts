@@ -51,6 +51,7 @@ import {
 import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
 import { PLAN_VISIBLE_STATUSES, resourceCategory } from '../../src/application/trainer/plan-overlay'
+import { applyRecordedRelinks, recordedRelinks, samePlanContent } from '../../src/application/trainer/recorded-links'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -640,6 +641,32 @@ export class CohortPlanService {
         approvedStart: cohortRow.startsAt ? zonedDay(cohortRow.startsAt) : null,
       })
       if (problem) throw new AuthError('bad_period', problem, 400)
+    }
+    /* ═══ ومحورُ الجلسة المسجّلة يسري بلا اعتماد (٢٨ سبتمبر ٢٠٢٦) ═══
+
+       يُكتب في الخطّة التي يراها المتعلّمون لحظةَ الحفظ، وما سواه في الحفظ نفسِه
+       مراجعةٌ كما كان — والقاعدةُ وعلّتُها في `recorded-links.ts`. وحفظٌ ليس فيه
+       غيرُه لا يفتح مراجعةً: لا شيءَ فيها يُقرأ. */
+    const visible = await this.prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId, trainerId: { not: null }, status: { in: [...PLAN_VISIBLE_STATUSES] } },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, content: true },
+    })
+    if (visible) {
+      const approved = visible.content as unknown as TrainerPlanContent
+      const relinks = recordedRelinks(approved, content)
+      if (relinks.length > 0) {
+        const relinked = applyRecordedRelinks(approved, relinks)
+        const row = await this.prisma.cohortDeliveryPlan.update({
+          where: { id: visible.id },
+          data: { content: relinked as unknown as Prisma.InputJsonValue },
+        })
+        await recordAudit(this.prisma, {
+          actorId: userId, action: 'cohort.plan.recorded_axes', entityType: 'cohort', entityId: cohortId,
+          meta: { planId: visible.id, relinks },
+        })
+        if (latest?.id === visible.id && samePlanContent(relinked, content)) return row
+      }
     }
     const data = { content: content as unknown as Prisma.InputJsonValue }
     const plan = latest && (latest.status === 'draft' || latest.status === 'changes_requested')

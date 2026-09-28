@@ -1491,6 +1491,7 @@ export default function CohortWorkspace() {
                       sessions={mine.filter((x) => slotOf(x) === si)}
                       recorded={recordedRows.filter(({ r }) => slotIndexOf(slots, r.moduleId ?? "") === si).map(({ r, i }) => ({ row: r, i }))}
                       locked={locked}
+                      approvedOnce={ws.approvedOnce ?? false}
                       onDone={() => void load()}
                       onAddRecorded={(row) => setContent({
                         ...content,
