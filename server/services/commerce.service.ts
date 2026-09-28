@@ -20,6 +20,7 @@ import { CartService } from './commerce/cart.service'
 import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse } from './commerce/coupon-ledger'
+import { nextInvoiceNumber } from './commerce/invoice-number'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { assertSeasonOpen, cohortAcceptsRegistration, PLAN_GATE_SELECT, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
 
@@ -221,10 +222,9 @@ export class CommerceService {
           },
         },
       })
-      const count = await tx.invoice.count()
-      const year = new Date().getFullYear()
+      /* الرقمُ بقفلٍ في المعاملة نفسِها — لا عدٌّ يتسابق عليه شراءان (`invoice-number.ts`) */
       await tx.invoice.create({
-        data: { number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`, orderId: o.id, amount: total, currency },
+        data: { number: await nextInvoiceNumber(tx), orderId: o.id, amount: total, currency },
       })
       if (couponId) {
         await reserveCouponUse(tx, {
@@ -372,11 +372,10 @@ export class CommerceService {
           },
         },
       })
-      const count = await tx.invoice.count()
-      const year = new Date().getFullYear()
+      /* الرقمُ بقفلٍ في المعاملة نفسِها — لا عدٌّ يتسابق عليه شراءان (`invoice-number.ts`) */
       const invoice = await tx.invoice.create({
         data: {
-          number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`,
+          number: await nextInvoiceNumber(tx),
           orderId: o.id, amount: total, currency,
         },
       })
@@ -501,10 +500,9 @@ export class CommerceService {
           items: { create: [{ kind: 'cohort', refId: req.cohortId, titleAr: `${title} — ${req.cohort.title}`, unitPrice: subtotal }] },
         },
       })
-      const count = await tx.invoice.count()
-      const year = new Date().getFullYear()
+      /* الرقمُ بقفلٍ في المعاملة نفسِها — لا عدٌّ يتسابق عليه شراءان (`invoice-number.ts`) */
       await tx.invoice.create({
-        data: { number: `WJ-INV-${year}-${String(count + 1).padStart(5, '0')}`, orderId: o.id, amount: total, currency: req.cohort.currency },
+        data: { number: await nextInvoiceNumber(tx), orderId: o.id, amount: total, currency: req.cohort.currency },
       })
       if (couponId) {
         await reserveCouponUse(tx, {
