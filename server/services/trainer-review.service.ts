@@ -14,7 +14,7 @@ import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import {
-  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail,
+  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
@@ -3738,66 +3738,17 @@ export class TrainerReviewService {
     /* ولا يُعتمَد عقدٌ في صمت: من وقّع ينتظر جوابا، وهو اليومَ ملزَمٌ بما وقّع */
     const app = c.profile.application
     try {
+      const mail = contractApprovedMail({
+        legalName: c.signerLegalName ?? app.fullName,
+        title: c.title,
+        approvedOnAr: fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
+        portalUrl: `${publicSiteUrl()}/trainer`,
+        gatesActivation: c.gatesActivation,
+      })
       await sendDirectEmail(this.prisma, {
         to: c.signerEmail ?? app.email,
-        subject: `اعتُمد عقدُك — ${c.title}`,
-        ...renderMail({
-          greetingName: c.signerLegalName ?? app.fullName,
-          heading: c.gatesActivation ? 'اعتُمد توقيعُك — وبوّابتُك مفتوحة' : 'اعتُمد عقدُك',
-          blocks: [
-            {
-              kind: 'p',
-              text: `اعتمدت الأكاديميّةُ توقيعَك على «${c.title}» بتاريخ ${fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' })}، فصار العقدُ نافذا بين الطرفين.`,
-            },
-            /* ═══ وفتحُ البوّابة يُقال هنا لأنّه وقع هنا (٢٧ سبتمبر ٢٠٢٦) ═══
-
-               كان السطرُ: «ويصلك فتحُ حسابك في رسالةٍ تالية حين يكتمل
-               اعتمادُك» — وعلّتُه أنّ الفتحَ كان قرارا تاليا.
-
-               وقرارُ صاحب المنصّة: «هنا اعتُمد التوقيع، واتّفقنا أنّه يمنح
-               حقَّ الولوج لمنصّته تلقائيّا وتتحوّل حالتُه إلى الحالة التي
-               تليها ليقوم بتعبئة موادّه ومحاوره». وقد صار كذلك في المعاملة
-               نفسِها التي تكتب هذا الاعتماد.
-
-               فيُقال له إنّ بابَه مفتوحٌ الآن، ويُعطى الزرَّ — وقد كان
-               يُمنَع منه لأنّ البوّابةَ قد لا تكون مفتوحة. */
-            ...(c.gatesActivation
-              ? ([
-                  {
-                    kind: 'p' as const,
-                    text: 'وبذلك فُتحت لك بوّابتُك على المنصّة، وبدأت مهلتُك لوضع محاور دوراتك ومصادرها وواجباتها.',
-                  },
-                  { kind: 'h' as const, text: 'وماذا بعد' },
-                  {
-                    kind: 'steps' as const,
-                    items: [
-                      { textAr: 'قرأتَ العرضَ ووقّعتَه.', state: 'done' as const },
-                      { textAr: 'راجعنا توقيعَك وطابقنا اسمَك القانونيَّ واعتمدناه.', state: 'done' as const },
-                      { textAr: 'ادخلْ بوّابتَك وضَعْ محاورَ دوراتك ومصادرَها، ثمّ أعلِنْ اكتمالَها — والدورُ عليك الآن.', state: 'now' as const },
-                      { textAr: 'نراجع موادَّك: ما اعتمدناه تدرّسه، وما أعدناه يصلك بملاحظاتنا لتعدّله.' },
-                      { textAr: 'وباعتمادها يُنشَر حسابُك رسميّا وتبدأ باستقبال الطلبات.' },
-                    ],
-                  },
-                  {
-                    kind: 'cta' as const,
-                    label: 'افتح بوّابتَك وضَعْ موادَّك',
-                    href: `${publicSiteUrl()}/trainer`,
-                  },
-                ] as const)
-              : ([] as const)),
-            /* ═══ وسجلُّ التوقيعَين تمّ الآن، فيُقال أين يُقرأ ═══
-
-               ولحظةُ الاعتماد هي أوّلُ لحظةٍ يصير فيها للنسخة **توقيعان**:
-               قبلها كان توقيعُه وحدَه. فهذه الرسالةُ موضعُ الإحالة الطبيعيّ. */
-            {
-              kind: 'note',
-              text: 'ونسختُك بتوقيع الطرفين في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها وتحتها سجلُّ التوقيعَين، ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.',
-            },
-            {
-              kind: 'note',
-              text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك عرضا مستقلّا تقبله أو تعتذر عنه.',
-            },          ],
-        }),
+        subject: mail.subject,
+        ...renderMail(mail.doc),
       })
     } catch { /* البريدُ رفاهية — الاعتمادُ وقع، والنسخةُ تُعاد من الإدارة */ }
 

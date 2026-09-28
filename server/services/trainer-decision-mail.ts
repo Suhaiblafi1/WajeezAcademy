@@ -33,6 +33,9 @@ import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/tra
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { MAX_EXTENSIONS } from '../../src/application/trainer/conditional-offer'
+import {
+  ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR, ORIENTATION_INVITE_AR,
+} from '../../src/application/trainer/orientation-session'
 
 /** ما يُسلَّم إلى `sendDirectEmail` — الموضوعُ ووصفُ الرسالة */
 export interface DecisionMail {
@@ -1018,6 +1021,100 @@ export function signedCopyMail(input: SignedCopyMailInput): DecisionMail {
           text: 'وتوقيعُك إقرارُ طرفٍ واحد: لا يصير العقدُ نافذا بين الطرفين حتّى نعتمده من جهتنا. وحين نعتمده تصلك رسالةٌ بذلك، وفيها نسختُك بتوقيع الطرفين تُقرأ وتُطبَع.',
         },
         { kind: 'note', text: 'ولو أردتَ نسخةً من الوثيقة قبل اعتمادها فردَّ على هذه الرسالة.' },
+      ],
+    },
+  }
+}
+
+export interface ContractApprovedMailInput {
+  /** الاسمُ الذي وقّع به — وهو ما نطابقه بوثيقته، فهو ما يُخاطَب به */
+  legalName: string
+  title: string
+  approvedOnAr: string
+  portalUrl: string
+  /**
+   * أهذا العقدُ حابسٌ لتفعيل صاحبه؟ فإن كان، فهذه اللحظةُ تفتح بوّابتَه وتبدأ
+   * مهلةَ موادّه — وإلّا فهو بندٌ يُوثَّق على مدرّبٍ نشطٍ أصلا، لا طورَ موادَّ
+   * بعده ولا جلسةَ تهيئةٍ تُعرَض عليه.
+   */
+  gatesActivation: boolean
+}
+
+/* ═══ اعتُمد توقيعُك — وسُحبت الرسالةُ من الخدمة إلى هنا (٢٨ سبتمبر ٢٠٢٦) ═══
+
+   كانت كتلةَ بريدٍ مكتوبةً في `countersignContract` داخلَ
+   `trainer-review.service.ts`. ورأسُ هذا الملفّ يقول لِمَ لا تكون كذلك: «نصُّ
+   ما يصل إنسانا يُقاس بفحصٍ يقرؤه كما يقرؤه هو — لا بمسحٍ على شيفرة الخدمة
+   يخضرّ على تعليقٍ فيها».
+
+   وما أوجب النقلَ الآن أنّ `sendDirectEmail` يذهب إلى Resend ولا يُبقي صفّا،
+   فلا سبيلَ إلى قراءة ما أُرسل من اختبار. فرابطٌ يُضاف في الكتلة لا يحرسه
+   شيءٌ إلّا مسحٌ نصّيّ — وذاك لا يرى أنّ الرابطَ وصل **حرفا ميّتا** لا يُنقر.
+
+   والنقلُ أمينٌ: النصُّ هو هو، وإنّما زِيدت دعوةُ الجلسة. */
+export function contractApprovedMail(input: ContractApprovedMailInput): DecisionMail {
+  return {
+    subject: `اعتُمد عقدُك — ${input.title}`,
+    doc: {
+      greetingName: input.legalName,
+      heading: input.gatesActivation ? 'اعتُمد توقيعُك — وبوّابتُك مفتوحة' : 'اعتُمد عقدُك',
+      blocks: [
+        {
+          kind: 'p',
+          text: `اعتمدت الأكاديميّةُ توقيعَك على «${input.title}» بتاريخ ${input.approvedOnAr}، فصار العقدُ نافذا بين الطرفين.`,
+        },
+        ...(input.gatesActivation
+          ? ([
+              {
+                kind: 'p' as const,
+                text: 'وبذلك فُتحت لك بوّابتُك على المنصّة، وبدأت مهلتُك لوضع محاور دوراتك ومصادرها وواجباتها.',
+              },
+              { kind: 'h' as const, text: 'وماذا بعد' },
+              {
+                kind: 'steps' as const,
+                items: [
+                  { textAr: 'قرأتَ العرضَ ووقّعتَه.', state: 'done' as const },
+                  { textAr: 'راجعنا توقيعَك وطابقنا اسمَك القانونيَّ واعتمدناه.', state: 'done' as const },
+                  { textAr: 'ادخلْ بوّابتَك وضَعْ محاورَ دوراتك ومصادرَها، ثمّ أعلِنْ اكتمالَها — والدورُ عليك الآن.', state: 'now' as const },
+                  { textAr: 'نراجع موادَّك: ما اعتمدناه تدرّسه، وما أعدناه يصلك بملاحظاتنا لتعدّله.' },
+                  { textAr: 'وباعتمادها يُنشَر حسابُك رسميّا وتبدأ باستقبال الطلبات.' },
+                ],
+              },
+              {
+                kind: 'cta' as const,
+                label: 'افتح بوّابتَك وضَعْ موادَّك',
+                href: input.portalUrl,
+              },
+              /* ═══ ودعوةُ جلسة التهيئة — وفاءٌ بالبند 2-8 ═══
+
+                 البندُ يَعِد بجلسةٍ ويَعِد بإبلاغ موعدها كتابةً بعد اعتماد
+                 التوقيع. وهذه هي الرسالةُ التي يقع فيها الاعتماد، فهي موضعُ
+                 الوفاء. والحجزُ بنفسه أوفى من موعدٍ نختاره له.
+
+                 و`note` لا `cta` ثانيا: الفعلُ الأوّلُ أن يدخل بوّابتَه ويضع
+                 موادَّه، وزرّان متساويان يقسمان الانتباه. وهذه عرضٌ عند
+                 الحاجة — «حضورها حقٌّ له لا التزامٌ عليه» بنصّ البند.
+
+                 ورابطُها في `link` لا في المتن: `richHtml` يهرّب النصَّ
+                 الخالصَ ولا يُلقِّم الروابطَ العارية، فرابطٌ في فقرةٍ يصل
+                 حرفا لا يُنقر. */
+              {
+                kind: 'note' as const,
+                text: ORIENTATION_INVITE_AR,
+                link: { label: ORIENTATION_CTA_AR, href: ORIENTATION_BOOKING_URL },
+              },
+            ] as const)
+          : ([] as const)),
+        /* وسجلُّ التوقيعَين تمّ الآن، فيُقال أين يُقرأ: قبل هذه اللحظة كان
+           توقيعُه وحدَه، فهذه الرسالةُ موضعُ الإحالة الطبيعيّ. */
+        {
+          kind: 'note',
+          text: 'ونسختُك بتوقيع الطرفين في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها وتحتها سجلُّ التوقيعَين، ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.',
+        },
+        {
+          kind: 'note',
+          text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك عرضا مستقلّا تقبله أو تعتذر عنه.',
+        },
       ],
     },
   }
