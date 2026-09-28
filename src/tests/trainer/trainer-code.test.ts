@@ -6,11 +6,13 @@
    ② **والإعادةُ تُؤخذ دائما، وتفسح للحسم** — مالٌ له لا يُؤجَّل، ومكانٌ فتحه.
    ③ **والحسمُ كاملٌ بالأقدم أوّلا، ولا ينزل الكشفُ تحت الصفر** — البند 4-10.
    ④ **والإصدارُ يُردّ بجملةٍ واحدة** تقرؤها الشاشةُ والخادم — والسقفُ فيها.
-   ⑤ **وحالُ الكود تُقال بما هي** — ما انتهى أو نفد لا يُقال «يعمل». */
+   ⑤ **وحالُ الكود تُقال بما هي** — ما انتهى أو نفد لا يُقال «يعمل».
+   ⑥ **والرصيدُ لا يمنح ما ليس له** — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦). وجمعُ
+      أرقامه من القاعدة في `server/tests/commerce/trainer-code-budget.test.ts`. */
 
 import { describe, expect, it } from 'vitest'
 import {
-  MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, codeBlockerAr, codeStateAr,
+  MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, budgetCovers, codeBlockerAr, codeBudget, codeStateAr,
   owedAfterRefund, planLedger, refundedShare, type LedgerEntry,
 } from '@/application/trainer/trainer-code'
 
@@ -118,5 +120,36 @@ describe('⑤ حالُ الكود كما تُقال — المخزَّنةُ و�
     expect(c({ maxUses: 5, usedCount: 4 })).toBe('live')
     /* والملغى ملغى ولو انتهت مدّتُه: الإلغاءُ فعلُه هو، والانتهاءُ وقتٌ مرّ */
     expect(c({ status: 'revoked', expiresAt: new Date('2026-09-30T10:00:00Z') })).toBe('revoked')
+  })
+})
+
+describe('⑥ الرصيدُ — ما له ناقصا ما التزم به', () => {
+  const budget = (over: Partial<Parameters<typeof codeBudget>[0]> = {}) =>
+    codeBudget({ owed: 0, credits: 0, projected: 0, committed: 0, currency: 'USD', ...over })
+
+  it('⚠️ ما له ثلاثةُ مصادر — كشوفٌ لم تُصرف، وما يُعاد إليه، وما يُتوقَّع من شعبه', () => {
+    const b = budget({ owed: 120, credits: 15.5, projected: 200, committed: 60 })
+    expect(b.allowance, 'سقط مصدرٌ مما له').toBe(335.5)
+    expect(b.committed).toBe(60)
+    expect(b.remaining).toBe(275.5)
+  })
+
+  it('⚠️ ولا ينزل تحت الصفر — ما التزم به فوق ما له لا يصير رصيدا سالبا يُقرأ', () => {
+    expect(budget({ owed: 50, committed: 80 }).remaining).toBe(0)
+  })
+
+  it('⚠️ يسع خصما يساويه تماما — وقرشٌ فوقه لا', () => {
+    const b = budget({ projected: 30 })
+    expect(budgetCovers(b, 30), 'رُدّ خصمٌ يساوي الرصيد').toBe(true)
+    expect(budgetCovers(b, 30.01), 'مرّ خصمٌ فوق الرصيد').toBe(false)
+    expect(budgetCovers(budget(), 0.01), 'مرّ خصمٌ على رصيدٍ فارغ').toBe(false)
+  })
+
+  it('وبالقرش لا بكسور الفاصلة العائمة — ٠٫١ + ٠٫٢ رصيدٌ يسع ٠٫٣', () => {
+    const b = budget({ owed: 0.1, credits: 0.2 })
+    expect(b.remaining).toBe(0.3)
+    expect(budgetCovers(b, 0.3)).toBe(true)
+    /* والخصمُ نفسُه بالقرش: ما جُمع من كسورٍ لا يُردّ بجزءٍ من مليار */
+    expect(budgetCovers(budget({ projected: 0.3 }), 0.1 + 0.2), 'رُدّ خصمٌ بكسرٍ عائم').toBe(true)
   })
 })

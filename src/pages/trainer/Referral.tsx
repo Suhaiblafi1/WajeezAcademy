@@ -59,7 +59,9 @@ interface TrainerCodeRow {
 }
 /** قبولُه البندَ 4-10 بصيغته الجديدة — ونصُّه كما يُطبع في العقد */
 interface CodeTerms { accepted: boolean; via: "contract" | "consent" | null; acceptedAt: string | null; version: string; clauseAr: string }
-interface CodesState { terms: CodeTerms; codes: TrainerCodeRow[] }
+/** رصيدُ أكواده — ما له عندنا ناقصا ما التزم به ولم يُحسم (`trainer-code-budget.ts`) */
+interface CodeBudget { allowance: number; committed: number; remaining: number; currency: string }
+interface CodesState { terms: CodeTerms; codes: TrainerCodeRow[]; budget: CodeBudget }
 const EMPTY_CODE_FORM = { percentOff: "", labelAr: "", maxUses: "", expiresAt: "" };
 const PURCHASE_FORMS = { one: "شراءٍ مدفوع", two: "شراءين مدفوعين", few: "مشترياتٍ مدفوعة", many: "شراءً مدفوعا" } as const;
 const USE_FORMS = { one: "استعمال", two: "استعمالين", few: "استعمالات", many: "استعمالا" } as const;
@@ -103,7 +105,7 @@ function MyCodes() {
   useEffect(() => { load(); }, [load]);
 
   if (!state) return err ? <Inset as="p" tone="danger" className="mb-6 px-4 py-3 text-read leading-6 text-red-200">{err}</Inset> : null;
-  const { terms, codes } = state;
+  const { terms, codes, budget } = state;
 
   const pct = Number(form.percentOff);
   const input = {
@@ -156,6 +158,20 @@ function MyCodes() {
         كشفٍ يُحرَّر لك ثمّ يُحسم منه، وإن رُدّ الثمنُ نقص الحسمُ بقدره (البند 4-10 من عقدك). وما تطرحه الأكاديميّةُ من
         خصومها هي لا يُنقص أتعابَك بشيء (البند 4-9).
       </p>
+
+      {/* ═══ ورصيدُه — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══
+
+          يُقرأ قبل أن يُفاجأ بكودٍ لم يقع: المشتري يرى «بلغ حدَّه الآن» ولا يرى
+          السبب — فالسببُ يُقال لصاحبه هنا. والرقمُ قبل أيّ شراء، وكلُّ شراءٍ
+          يزيده بأجر مقعده؛ فهو أدنى ما يسعه كودُه لا أقصاه. */}
+      {terms.accepted && (
+        <Inset as="p" className="mt-3 px-4 py-3 text-read leading-7 text-muted-foreground">
+          رصيدُ أكوادك الآن: <b dir="ltr" className="font-mono text-foreground">{budget.remaining} {budget.currency}</b> —
+          ما لك عندنا (كشوفٌ لم تُصرف، وما يُتوقَّع لك من شعبك المفتوحة) ناقصا ما منحته أكوادُك ولم يُحسم بعد.
+          ويقع الكودُ على شراءٍ ما وسع هذا الرصيدُ خصمَه، ومعه أجرُ المقعد الذي يأتي به الشراءُ نفسُه؛ وإلّا قيل للمشتري
+          إنّ الكودَ بلغ حدَّه الآن، فأكمل بدونه — ولا يُحسم منك شيء.
+        </Inset>
+      )}
 
       {err && <Inset as="p" tone="danger" className="mt-3 px-4 py-3 text-read leading-6 text-red-200">{err}</Inset>}
 

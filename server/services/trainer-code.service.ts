@@ -31,6 +31,7 @@ import {
   CODE_TERMS_VERSION, codeBlockerAr, codeStateAr, contractCarriesCodeTerms,
 } from '../../src/application/trainer/trainer-code'
 import { CLAUSE_4_10_AR } from '../../src/application/trainer/contract-body'
+import { TrainerCodeBudgetService } from './trainer-code-budget'
 
 /** رمزُ الكود — `WD-` كالخصم قبله: الرمزان يُنشران من «دعوتي» بجانب رابط الدعوة
     `WJ-`، وأحدُهما مالٌ من جيبه والآخرُ رابطُ تسجيل. فمن نسخ الخطأَ يراه في
@@ -44,9 +45,11 @@ const round2 = (n: number) => Math.round(n * 100) / 100
 
 export class TrainerCodeService {
   private prisma: PrismaClient
+  private budgets: TrainerCodeBudgetService
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
+    this.budgets = new TrainerCodeBudgetService(prisma)
   }
 
   private async activeProfile(userId: string) {
@@ -101,7 +104,7 @@ export class TrainerCodeService {
   /** أكوادُه — أحدثُ أوّلا، وما استُعمل منها وما حُسم، والبندُ وقبولُه */
   async listFor(userId: string) {
     const profile = await this.activeProfile(userId)
-    const [rows, terms] = await Promise.all([
+    const [rows, terms, budget] = await Promise.all([
       this.prisma.trainerCode.findMany({
         where: { profileId: profile.id },
         include: {
@@ -111,10 +114,13 @@ export class TrainerCodeService {
         orderBy: { createdAt: 'desc' },
       }),
       this.termsFor(profile.id, userId),
+      /* رصيدُه الذي تقع عليه أكوادُه — يُقرأ قبل أن يُفاجأ بكودٍ لم يقع */
+      this.budgets.budgetFor(profile.id),
     ])
     const now = new Date()
     return {
       terms,
+      budget,
       codes: rows.map((c) => {
         const paid = c.redemptions.filter((r) => r.status === 'paid' || r.status === 'refunded')
         const state = codeStateAr({ status: c.status, expiresAt: c.coupon.expiresAt, maxUses: c.coupon.maxUses, usedCount: c.coupon.usedCount }, now)

@@ -41,6 +41,12 @@ describe('① «دعوتي»: القبولُ أوّلا، وبنصّ الخاد�
   it('⚠️ والقبولُ لا يُنقر بلا إقرارٍ صريح', () => {
     expect(MY_CODES).toMatch(/disabled=\{!agree\}[\s\S]{0,200}"\/api\/trainer\/me\/codes\/terms\/accept"/)
   })
+
+  it('⚠️ ورصيدُ أكواده يُقال له — رقمُ الخادم لا حسابٌ في الشاشة', () => {
+    /* المشتري يرى «بلغ حدَّه الآن» بلا سبب؛ فالسببُ يُقال لصاحبه هنا */
+    expect(MY_CODES).toMatch(/const \{ terms, codes, budget \} = state/)
+    expect(MY_CODES, 'الرصيدُ غائبٌ عن اللوحة').toMatch(/\{terms\.accepted && \([\s\S]{0,300}\{budget\.remaining\} \{budget\.currency\}/)
+  })
 })
 
 describe('② لوحُ الدفع: خطأُ الكود لا يمحو السعر', () => {
@@ -67,7 +73,8 @@ describe('② لوحُ الدفع: خطأُ الكود لا يمحو السعر'
     for (const c of codes) {
       expect(server, `«${c}» في اللوح ولا يرمي به الخادم`).toContain(`AuthError('${c}'`)
     }
-    expect(codes).toEqual(expect.arrayContaining(['bad_coupon', 'code_used', 'code_not_applicable']))
+    /* و«بلغ حدَّه الآن» منها: رصيدُ صاحب الكود لا يسعه (٢٨ سبتمبر ٢٠٢٦) — فيُسعَّر بلا كودٍ لا يُمحى السعر */
+    expect(codes).toEqual(expect.arrayContaining(['bad_coupon', 'code_used', 'code_not_applicable', 'code_unavailable']))
   })
 })
 
