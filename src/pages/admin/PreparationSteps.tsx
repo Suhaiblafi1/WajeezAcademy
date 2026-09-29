@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  BadgeCheck, BookPlus, Check, CircleDashed, Coins, FileSignature,
+  BadgeCheck, BookPlus, Check, ChevronDown, ChevronUp, CircleDashed, Coins, FileSignature,
   Link2, Link2Off, Pencil, Send, Trash2,
 } from "lucide-react";
 import { apiGet, apiPost, apiPatch, ApiError } from "@/services/api";
@@ -36,6 +36,7 @@ import Button from "@/components/ui/Button";
 import CoursePicker from "@/components/admin/CoursePicker";
 import { staffControlCls as inputCls, staffAreaCls as areaCls } from "@/components/FormKit";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+import { foldProposals } from "@/application/trainer/proposal-fold";
 import { fmtDateLong } from "@/application/text/format-ar";
 import {
   READINESS_LABELS_AR, type Readiness, type ReadinessStepKey,
@@ -289,17 +290,173 @@ function CoursesStep({
   const [editSummary, setEditSummary] = useState("");
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
+  const [showDecided, setShowDecided] = useState(false);
 
   const qualified = qualifications.filter((q) => q.status === "qualified");
-  /* المفتوحُ والمربوطُ معا — والمربوطُ يُراجَع (انظر `QUEUE_VISIBLE`) */
-  const shown = proposals.filter((p) => p.status !== "rejected" && p.status !== "became_course");
-  const open = proposals.filter((p) => ["draft", "submitted", "info_requested"].includes(p.status));
+  /* المفتوحُ بطاقاتٌ، والمبتوتُ سطرٌ يُفتح — والعلّةُ في `proposal-fold.ts` */
+  const { open, decided, decidedSummaryAr } = foldProposals(proposals);
 
   const close = () => {
     setLinkFor(null); setLinkCourse("");
     setEditFor(null); setEditTitle(""); setEditSummary("");
     setRejectFor(null); setRejectNote("");
   };
+
+  /* بطاقةُ اقتراحٍ واحد — مفتوحا كان أو مبتوتا. وما صار دورةً أو رُدّ يُقرأ ولا
+     يُعمل فيه من هنا؛ والمربوطُ يبقى ببابَي رجوعه (اربِطْها بغيرها · انقُضِ الربط). */
+  const renderProposal = (p: PrepProposal) => (
+    <li key={p.id}>
+      <Card className="bg-paper/20 p-3.5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="min-w-[12rem] flex-1">
+            <div className="text-read font-bold text-foreground">{p.titleAr}</div>
+            {p.summaryAr && (
+              <p className="mt-1 whitespace-pre-wrap text-read leading-6 text-muted-foreground">
+                {p.summaryAr}
+              </p>
+            )}
+            {p.status === "linked" && (
+              /* ولا يختفي المربوطُ: الربطُ حكمُ تشابهٍ يُراجَع */
+              <p className="mt-1.5 text-read font-bold text-teal-light-ink">
+                رُبطت بـ «{courseTitle(p.course, p.courseId ?? "—")}»
+              </p>
+            )}
+            {p.status === "became_course" && (
+              <p className="mt-1.5 text-read font-bold text-teal-light-ink">
+                صارت «{courseTitle(p.course, p.courseId ?? "—")}»
+              </p>
+            )}
+            {p.status === "rejected" && p.decisionNoteAr && (
+              <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+                سببُ الردّ: {p.decisionNoteAr}
+              </p>
+            )}
+          </div>
+          <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-fine text-muted-foreground">
+            {PROPOSAL_STATUS_AR[p.status] ?? p.status}
+          </span>
+        </div>
+
+        {canClassify && p.status !== "became_course" && p.status !== "rejected" && (
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            <Button
+              tone="secondary" size="sm" icon={Link2}
+              onClick={() => { close(); setLinkFor(p.id); setLinkCourse(p.courseId ?? ""); }}
+            >
+              {p.status === "linked" ? "اربِطْها بغيرها" : "اربِطْها برمزٍ قائم"}
+            </Button>
+            {p.status === "linked" && (
+              <Button
+                tone="ghost" size="sm" icon={Link2Off} loading={busy}
+                onClick={() => void run(async () => {
+                  await apiPost(`/api/admin/course-proposals/${p.id}/unlink`, {});
+                  await onChanged();
+                }, "نُقض الربطُ — عادت إلى الطابور")}
+              >
+                انقُضِ الربط
+              </Button>
+            )}
+            <Button
+              tone="ghost" size="sm" icon={Pencil}
+              onClick={() => {
+                close(); setEditFor(p.id);
+                setEditTitle(p.titleAr); setEditSummary(p.summaryAr ?? "");
+              }}
+            >
+              صحِّحْ نصَّها
+            </Button>
+            {p.status !== "linked" && (
+              <Button
+                tone="danger" size="sm" icon={Trash2}
+                onClick={() => { close(); setRejectFor(p.id); }}
+              >
+                ردَّها
+              </Button>
+            )}
+          </div>
+        )}
+
+        {linkFor === p.id && (
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            <label className="sr-only" htmlFor={`link-${p.id}`}>الرمزُ الذي تُربط به</label>
+            <div className="min-w-[16rem] flex-1">
+              <CoursePicker
+                id={`link-${p.id}`} courses={courses}
+                value={linkCourse} onChange={setLinkCourse}
+                labelAr="الرمزُ الذي تُربط به"
+              />
+            </div>
+            <Button
+              tone="confirm" size="sm" loading={busy} disabled={!linkCourse}
+              onClick={() => void run(async () => {
+                await apiPost(`/api/admin/course-proposals/${p.id}/link`, { courseId: linkCourse });
+                close();
+                await onChanged();
+              }, "رُبط الاقتراحُ بالرمز")}
+            >
+              اربِطْ
+            </Button>
+            <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
+          </div>
+        )}
+
+        {editFor === p.id && (
+          <div className="mt-2.5 grid gap-2">
+            <input
+              value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
+              maxLength={200} placeholder="عنوانُ الدورة" className={inputCls}
+            />
+            <textarea
+              value={editSummary} onChange={(e) => setEditSummary(e.target.value)}
+              rows={2} maxLength={2000} placeholder="نبذةٌ عنها" className={areaCls}
+            />
+            <p className="text-read leading-5 text-muted-foreground">
+              وهي كلماتُ صاحبها — فما كان يُكتب في سجلّ الأثر كاملا.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                tone="confirm" size="sm" loading={busy} disabled={editTitle.trim().length < 3}
+                onClick={() => void run(async () => {
+                  await apiPatch(`/api/admin/course-proposals/${p.id}`, {
+                    titleAr: editTitle.trim(),
+                    summaryAr: editSummary.trim() || null,
+                  });
+                  close();
+                  await onChanged();
+                }, "صُحِّح نصُّ الاقتراح")}
+              >
+                احفظْ
+              </Button>
+              <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
+            </div>
+          </div>
+        )}
+
+        {rejectFor === p.id && (
+          <div className="mt-2.5 grid gap-2">
+            <textarea
+              value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
+              rows={2} maxLength={2000} className={areaCls}
+              placeholder="لمَ رُدَّت — يصل صاحبَها، وبلا سببٍ يعيدها كما هي"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                tone="danger" size="sm" loading={busy} disabled={rejectNote.trim().length < 5}
+                onClick={() => void run(async () => {
+                  await apiPost(`/api/admin/course-proposals/${p.id}/reject`, { noteAr: rejectNote.trim() });
+                  close();
+                  await onChanged();
+                }, "رُدَّ الاقتراحُ بسببه")}
+              >
+                ردَّها
+              </Button>
+              <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
+            </div>
+          </div>
+        )}
+      </Card>
+    </li>
+  );
 
   return (
     <div className="grid gap-4">
@@ -350,10 +507,10 @@ function CoursesStep({
         )}
       </div>
 
-      {/* ── دوراتٌ يقترحها هو ── */}
+      {/* ── دوراتٌ يقترحها هو: المفتوحُ بطاقاتٌ، والمبتوتُ سطرٌ يُفتح (`proposal-fold.ts`) ── */}
       <div className="border-t border-white/10 pt-3.5">
         <h5 className="text-read font-black text-foreground">
-          دوراتٌ يقترحها — {shown.length}
+          دوراتٌ يقترحها — {proposals.length}
           {open.length > 0 && (
             <span className="ms-2 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-fine font-bold text-amber-300">
               {open.length} بانتظار التصنيف
@@ -361,156 +518,32 @@ function CoursesStep({
           )}
         </h5>
 
-        {shown.length === 0 ? (
+        {proposals.length === 0 ? (
           <p className="mt-1.5 text-read leading-6 text-muted-foreground">
             لا اقتراحَ منه خارجَ الكتالوج.
           </p>
         ) : (
-          <ul className="mt-2.5 grid gap-2.5">
-            {shown.map((p) => (
-              <li key={p.id}>
-                <Card className="bg-paper/20 p-3.5">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-[12rem] flex-1">
-                      <div className="text-read font-bold text-foreground">{p.titleAr}</div>
-                      {p.summaryAr && (
-                        <p className="mt-1 whitespace-pre-wrap text-read leading-6 text-muted-foreground">
-                          {p.summaryAr}
-                        </p>
-                      )}
-                      {p.status === "linked" && (
-                        /* ولا يختفي المربوطُ: الربطُ حكمُ تشابهٍ يُراجَع */
-                        <p className="mt-1.5 text-read font-bold text-teal-light-ink">
-                          رُبطت بـ «{courseTitle(p.course, p.courseId ?? "—")}»
-                        </p>
-                      )}
-                    </div>
-                    <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-fine text-muted-foreground">
-                      {PROPOSAL_STATUS_AR[p.status] ?? p.status}
-                    </span>
-                  </div>
+          <>
+            {open.length > 0 ? (
+              <ul className="mt-2.5 grid gap-2.5">{open.map(renderProposal)}</ul>
+            ) : (
+              <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+                لا اقتراحَ ينتظر قرارا — بُتّ فيها كلِّها.
+              </p>
+            )}
 
-                  {canClassify && (
-                    <div className="mt-2.5 flex flex-wrap gap-2">
-                      <Button
-                        tone="secondary" size="sm" icon={Link2}
-                        onClick={() => { close(); setLinkFor(p.id); setLinkCourse(p.courseId ?? ""); }}
-                      >
-                        {p.status === "linked" ? "اربِطْها بغيرها" : "اربِطْها برمزٍ قائم"}
-                      </Button>
-                      {p.status === "linked" && (
-                        <Button
-                          tone="ghost" size="sm" icon={Link2Off} loading={busy}
-                          onClick={() => void run(async () => {
-                            await apiPost(`/api/admin/course-proposals/${p.id}/unlink`, {});
-                            await onChanged();
-                          }, "نُقض الربطُ — عادت إلى الطابور")}
-                        >
-                          انقُضِ الربط
-                        </Button>
-                      )}
-                      <Button
-                        tone="ghost" size="sm" icon={Pencil}
-                        onClick={() => {
-                          close(); setEditFor(p.id);
-                          setEditTitle(p.titleAr); setEditSummary(p.summaryAr ?? "");
-                        }}
-                      >
-                        صحِّحْ نصَّها
-                      </Button>
-                      {p.status !== "linked" && (
-                        <Button
-                          tone="danger" size="sm" icon={Trash2}
-                          onClick={() => { close(); setRejectFor(p.id); }}
-                        >
-                          ردَّها
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
-                  {linkFor === p.id && (
-                    <div className="mt-2.5 flex flex-wrap gap-2">
-                      <label className="sr-only" htmlFor={`link-${p.id}`}>الرمزُ الذي تُربط به</label>
-                      <div className="min-w-[16rem] flex-1">
-                        <CoursePicker
-                          id={`link-${p.id}`} courses={courses}
-                          value={linkCourse} onChange={setLinkCourse}
-                          labelAr="الرمزُ الذي تُربط به"
-                        />
-                      </div>
-                      <Button
-                        tone="confirm" size="sm" loading={busy} disabled={!linkCourse}
-                        onClick={() => void run(async () => {
-                          await apiPost(`/api/admin/course-proposals/${p.id}/link`, { courseId: linkCourse });
-                          close();
-                          await onChanged();
-                        }, "رُبط الاقتراحُ بالرمز")}
-                      >
-                        اربِطْ
-                      </Button>
-                      <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
-                    </div>
-                  )}
-
-                  {editFor === p.id && (
-                    <div className="mt-2.5 grid gap-2">
-                      <input
-                        value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
-                        maxLength={200} placeholder="عنوانُ الدورة" className={inputCls}
-                      />
-                      <textarea
-                        value={editSummary} onChange={(e) => setEditSummary(e.target.value)}
-                        rows={2} maxLength={2000} placeholder="نبذةٌ عنها" className={areaCls}
-                      />
-                      <p className="text-read leading-5 text-muted-foreground">
-                        وهي كلماتُ صاحبها — فما كان يُكتب في سجلّ الأثر كاملا.
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          tone="confirm" size="sm" loading={busy} disabled={editTitle.trim().length < 3}
-                          onClick={() => void run(async () => {
-                            await apiPatch(`/api/admin/course-proposals/${p.id}`, {
-                              titleAr: editTitle.trim(),
-                              summaryAr: editSummary.trim() || null,
-                            });
-                            close();
-                            await onChanged();
-                          }, "صُحِّح نصُّ الاقتراح")}
-                        >
-                          احفظْ
-                        </Button>
-                        <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {rejectFor === p.id && (
-                    <div className="mt-2.5 grid gap-2">
-                      <textarea
-                        value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
-                        rows={2} maxLength={2000} className={areaCls}
-                        placeholder="لمَ رُدَّت — يصل صاحبَها، وبلا سببٍ يعيدها كما هي"
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          tone="danger" size="sm" loading={busy} disabled={rejectNote.trim().length < 5}
-                          onClick={() => void run(async () => {
-                            await apiPost(`/api/admin/course-proposals/${p.id}/reject`, { noteAr: rejectNote.trim() });
-                            close();
-                            await onChanged();
-                          }, "رُدَّ الاقتراحُ بسببه")}
-                        >
-                          ردَّها
-                        </Button>
-                        <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              </li>
-            ))}
-          </ul>
+            {decided.length > 0 && (
+              <div className="mt-2.5">
+                <Button
+                  tone="ghost" size="sm" icon={showDecided ? ChevronUp : ChevronDown}
+                  onClick={() => setShowDecided(!showDecided)} aria-expanded={showDecided}
+                >
+                  ما بُتّ فيه — {decidedSummaryAr}
+                </Button>
+                {showDecided && <ul className="mt-2.5 grid gap-2.5">{decided.map(renderProposal)}</ul>}
+              </div>
+            )}
+          </>
         )}
 
         <p className="mt-2.5 text-read leading-5 text-muted-foreground">
