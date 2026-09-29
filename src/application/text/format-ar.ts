@@ -1,3 +1,5 @@
+import { withCurrencyAr } from '../commerce/presentment'
+
 /* تنسيقُ الأرقام والتواريخ — لغةٌ واحدة للرقم في الواجهة كلِّها.
 
    كانت الشاشةُ الواحدة تعرض نظامَي أرقام معا: بطاقةُ القِمع تقول «99» و«64»
@@ -32,10 +34,17 @@ export function fmtNum(n: number, opts: Intl.NumberFormatOptions = { maximumFrac
   return Number.isFinite(n) ? n.toLocaleString(UI_LOCALE, opts) : '—'
 }
 
-/** مبلغ بعملته: «120.00 USD» — الرمزُ بعد الرقم لا قبله في RTL */
+/** مبلغ بعملته: «$120.00» و«120.00 ر.س».
+ *
+ *  وموضعُ الرمز من `PRESENTMENT_CURRENCIES` لا مكتوبا هنا — فجدولٌ واحدٌ
+ *  يقول عُرفَ كلّ عملة، وشاشاتُ المنصّة والعقدُ تنطق نطقا واحدا.
+ *  (قرارُ صاحب المنصّة ٢٩ سبتمبر ٢٠٢٦: «use $ sign».) */
 export function fmtMoney(n: number, currency = 'USD'): string {
   if (!Number.isFinite(n)) return '—'
-  return `${n.toLocaleString(UI_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`
+  return withCurrencyAr(
+    n.toLocaleString(UI_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    currency,
+  )
 }
 
 /** تاريخٌ مختصر: «31‏/8‏/2026» */

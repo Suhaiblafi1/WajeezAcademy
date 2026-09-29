@@ -33,6 +33,7 @@ import {
 import { parseContractDoc, feeRuleCells, blockLineAr } from '@/application/trainer/contract-sections'
 import { buildFeeExampleAr, FEE_EXAMPLE_HEADING_AR, SEASON_COURSES } from '@/application/trainer/fee-example'
 import { EXTENSION_DAYS, MATERIALS_WINDOW_DAYS } from '@/application/trainer/conditional-offer'
+import { withCurrencyAr } from '@/application/commerce/presentment'
 
 const COURSES = [
   { courseId: 'C-A', titleAr: 'أساسيّاتُ تحليل البيانات' },
@@ -320,8 +321,11 @@ describe('المسؤوليّةُ والتعويض — بندٌ قائمٌ بنف
   it('ولا سقفَ للمسؤوليّة — ونفيُ الضرر غير المباشر باقٍ', () => {
     const section = clauseSection(renderContractBodyAr(base()), 19)
     expect(section, 'عاد سقفُ المسؤوليّة').not.toMatch(/لا يتجاوز مجموع ما يلتزم به/)
+    /* و«قبل الآخر» صارت «في مواجهة الآخر» (الملاحظة ٣، ٢٩ سبتمبر ٢٠٢٦):
+       «قِبَل» بلا شكلٍ تُقرأ زمانا فينقلب المعنى. والمحروسُ لم يتغيّر —
+       أنّ نفيَ الضرر غير المباشر باقٍ بعد حذف السقف. */
     expect(section, 'سقط معه نفيُ الضرر غير المباشر — وهو غيرُ السقف')
-      .toMatch(/ولا يسأل أي من الطرفين قبل الآخر عن الضرر غير المباشر/)
+      .toMatch(/ولا يسأل أي من الطرفين في مواجهة الآخر عن الضرر غير المباشر/)
   })
 
   it('والبندُ يبقى بعد الإنهاء — وإلّا انتهى بانتهاء العقد وهو أحوجُ ما يكون', () => {
@@ -537,10 +541,14 @@ describe('المثالُ الحسابيُّ في الملحق (ب) — ومقر�
        توقّعَ موسمٍ بالحالة الوسطى. والمحروسُ واحدٌ لم يتغيّر: الرقمُ
        المطبوعُ حسابُ المحرّك لا حسابٌ ثانٍ يفترق عنه. */
     const middle = ex.rows[Math.floor(ex.rows.length / 2)]!
+    /* والمبلغُ يحمل رمزَ عملته منذ ٢٩ سبتمبر ٢٠٢٦ (الملاحظة ٨): «$1650»
+       لا «1650 USD». والمقيسُ هو هو — أنّ الرقمَ حسابُ المحرّك. */
     expect(body, 'توقّعُ الموسم غائبٌ أو مخالفٌ للمحرّك')
-      .toContain(`وعلى فرض ${SEASON_COURSES} دورات في الموسم بالحالة الوسطى: ${middle.amount * SEASON_COURSES}`)
+      .toContain(`وعلى فرض ${SEASON_COURSES} دورات في الموسم بالحالة الوسطى: ${
+        withCurrencyAr(String(middle.amount * SEASON_COURSES), ex.currency)}`)
     /* ولا يعود جمعُ المتنافيات إلى أجر المقعد */
-    expect(body, 'عاد جمعُ حالاتٍ متنافيةٍ إلى المثال').not.toContain(`مجموع هذا المثال: ${ex.total}`)
+    expect(body, 'عاد جمعُ حالاتٍ متنافيةٍ إلى المثال')
+      .not.toContain(`مجموع هذا المثال: ${withCurrencyAr(String(ex.total), ex.currency)}`)
   })
 
   it('وثلاثةٌ تجعله يُقرأ مثالا: صدرُه، وإحالةُ 4-1، واستثناءُ 18-4', () => {
@@ -1081,7 +1089,9 @@ describe('الملحقُ (ب) يقول الأساسَ قبل الأرقام', ()
     const floor = rows.find((r) => /الحد الأدنى/.test(r!.labelAr))
     expect(floor, 'لا صفَّ للحدّ الأدنى').toBeTruthy()
     expect(floor!.labelAr, 'يُقرأ قيدا على المدرّب لا ضمانا له').toContain('المضمون')
-    expect(floor!.whenAr, 'لا يُنفى أن يكون سقفا').toMatch(/ولا يحد أعلاه/)
+    /* و«ولا يحد أعلاه» صارت «لا سقف لأتعابه» (الملاحظة ٤): الأولى
+       ملتوية، والثانية تقول النفيَ نفسَه صريحا. والمقيسُ واحد. */
+    expect(floor!.whenAr, 'لا يُنفى أن يكون سقفا').toMatch(/لا سقف لأتعابه/)
   })
 
   /* ═══ وصيغةُ العدد ═══
@@ -1101,8 +1111,9 @@ describe('الملحقُ (ب) يقول الأساسَ قبل الأرقام', ()
     expect(seats(2)).toMatch(/ عن 2 مقعدين$/)
     expect(seats(8), 'ثمانيةٌ جمعٌ لا مفردٌ منصوب').toMatch(/ عن 8 مقاعد$/)
     expect(seats(12), 'ما فوق العشرة مفردٌ منصوب').toMatch(/ عن 12 مقعدا$/)
-    /* والمبلغُ محسوبٌ لا منقول: 30 × 12 = 360 */
-    expect(seats(12), 'المبلغُ ليس حاصلَ الضرب').toMatch(/^360 USD /)
+    /* والمبلغُ محسوبٌ لا منقول: 30 × 12 = 360 — ويحمل رمزَ عملته */
+    expect(seats(12), 'المبلغُ ليس حاصلَ الضرب')
+      .toMatch(new RegExp(`^${withCurrencyAr('360', 'USD').replace('$', '\\$')} `))
   })
 })
 
