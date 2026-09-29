@@ -16,7 +16,15 @@
 
    ما يكتبه المدرّبُ هنا **اقتراحٌ لا دورة**: لا يظهر في «الدورات» ولا
    يُحسب في التشخيص المهنيّ حتّى تُصنّفه الإدارة (ح-٤). وهذا يُقال له في
-   الشاشة صراحةً — فمن ظنّ اقتراحَه دورةً انتظر طلّابا لا يأتون. */
+   الشاشة صراحةً — فمن ظنّ اقتراحَه دورةً انتظر طلّابا لا يأتون.
+
+   ═══ والفورمُ أسئلةٌ لا خانتان (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «حسّن شكلَ فورم إضافة الدورات وأضِفِ الأسئلةَ التي
+   تسهّل علينا دمجَ الدورة أو إضافتَها للكتالوج». فصار أقساما مرقّمة — عن
+   الدورة · لمن هي · محتواها · الدمجُ أو الإضافة · جاهزيّتُك — والأسئلةُ
+   وعلّتُها في `application/trainer/proposal-details.ts`. والعنوانُ وحدَه
+   يلزم؛ ما سواه يُجاب بقدر ما يعرف. */
 
 import { useCallback, useEffect, useState } from "react";
 import { BookPlus, Check, Link2, Loader2, MessageCircleQuestion, Pencil, Trash2, X } from "lucide-react";
@@ -24,10 +32,15 @@ import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
-import { staffControlCls, StaffField } from "@/components/FormKit";
+import { OptionGrid, staffAreaCls, staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { fmtDateLong } from "@/application/text/format-ar";
+import {
+  MAX_DETAIL_LINE, MAX_DETAIL_TEXT, MAX_PROPOSAL_HOURS,
+  PROPOSAL_EXPERIENCE, PROPOSAL_FORMATS, PROPOSAL_LEVELS, PROPOSAL_MATERIALS, PROPOSAL_MERGE,
+  proposalDetailRows, type ProposalDetails,
+} from "@/application/trainer/proposal-details";
 
 /** حدودُ الحقول — نسخةُ الواجهة ممّا يفرضه `course-proposal.service` */
 const MIN_TITLE = 3;
@@ -42,6 +55,7 @@ interface Proposal {
   id: string;
   titleAr: string;
   summaryAr: string | null;
+  details: ProposalDetails | null;
   status: string;
   courseId: string | null;
   questionAr: string | null;
@@ -52,6 +66,145 @@ interface Proposal {
   decidedAt: string | null;
   createdAt: string;
   course: { id: string; status: string; titleAr: string | null } | null;
+}
+
+/** ما يُكتب في الفورم — العنوانُ والنبذةُ وأجوبةُ الأسئلة معا */
+interface Draft { titleAr: string; summaryAr: string; details: ProposalDetails }
+const EMPTY: Draft = { titleAr: "", summaryAr: "", details: {} };
+
+const opts = (dict: Record<string, string>) => Object.entries(dict).map(([value, label]) => ({ value, label }));
+
+/** قسمٌ مرقّمٌ في الفورم — عنوانٌ صغيرٌ ثمّ حقولُه، بلا بطاقةٍ داخلَ بطاقة */
+function Section({ n, title, hint, children }: { n: number; title: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="grid gap-3 border-t border-white/10 pt-4 first:border-t-0 first:pt-0">
+      <legend className="contents">
+        <span className="flex items-center gap-2 text-read font-bold text-foreground">
+          <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-teal/15 text-fine font-black tabular-nums text-teal-light-ink">{n}</span>
+          {title}
+        </span>
+      </legend>
+      {hint ? <p className="-mt-1 text-sm leading-6 text-muted-foreground">{hint}</p> : null}
+      {children}
+    </fieldset>
+  );
+}
+
+/* ═══ الفورمُ واحدٌ للإضافة والتعديل ═══
+
+   كان التعديلُ خانتين والإضافةُ خانتين، فلمّا صارت أسئلةً لزم أن يكون
+   فورما واحدا: فورمٌ للإضافة وآخرُ أنحفُ للتعديل يُسقط الأجوبةَ عند أوّل
+   حفظ. */
+function ProposalForm({
+  value, onChange,
+}: { value: Draft; onChange: (d: Draft) => void }) {
+  const d = value.details;
+  const set = (patch: Partial<ProposalDetails>) => onChange({ ...value, details: { ...d, ...patch } });
+  /* الخيارُ الواحدُ يُلغى بالضغط عليه ثانيةً — فلا يعلق جوابٌ لم يقصده */
+  const one = <K extends keyof ProposalDetails>(k: K) => (v: string) =>
+    set({ [k]: d[k] === v ? undefined : v } as Partial<ProposalDetails>);
+  const materials = d.materials ?? [];
+  return (
+    <div className="grid gap-5">
+      <Section n={1} title="عن الدورة">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <StaffField label="عنوانُ الدورة *" hint="كما تريد أن يقرأه المتدرّب">
+            <input
+              value={value.titleAr} maxLength={MAX_TITLE} className={staffControlCls}
+              placeholder="مثلا: أتمتةُ التقارير الماليّة بالجداول"
+              onChange={(e) => onChange({ ...value, titleAr: e.target.value })}
+            />
+          </StaffField>
+          <StaffField label="لمن هي؟" hint="الوظيفةُ أو المرحلةُ المهنيّة">
+            <input
+              value={d.audienceAr ?? ""} maxLength={MAX_DETAIL_LINE} className={staffControlCls}
+              placeholder="مثلا: محاسبون في سنواتهم الأولى"
+              onChange={(e) => set({ audienceAr: e.target.value })}
+            />
+          </StaffField>
+        </div>
+        <StaffField label="نبذةٌ عن الدورة" hint="فقرةٌ تُقرأ قبل أن تُصنَّف">
+          <textarea
+            value={value.summaryAr} maxLength={MAX_SUMMARY} rows={3} className={staffAreaCls}
+            placeholder="ماذا فيها، ولماذا يحتاجها من تستهدفه"
+            onChange={(e) => onChange({ ...value, summaryAr: e.target.value })}
+          />
+        </StaffField>
+      </Section>
+
+      <Section n={2} title="شكلُها">
+        <StaffField as="div" label="المستوى">
+          <OptionGrid cols={2} name="المستوى" items={opts(PROPOSAL_LEVELS)} isOn={(v) => d.level === v} onToggle={one("level")} />
+        </StaffField>
+        <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
+          <StaffField label="عددُ الساعات" hint="تقديرُك">
+            <input
+              type="number" inputMode="numeric" min={1} max={MAX_PROPOSAL_HOURS} dir="ltr"
+              value={d.hours ?? ""} className={staffControlCls} placeholder="12"
+              onChange={(e) => set({ hours: e.target.value ? Number(e.target.value) : undefined })}
+            />
+          </StaffField>
+          <StaffField as="div" label="الصيغة">
+            <OptionGrid cols={2} name="الصيغة" items={opts(PROPOSAL_FORMATS)} isOn={(v) => d.format === v} onToggle={one("format")} />
+          </StaffField>
+        </div>
+      </Section>
+
+      <Section n={3} title="محتواها" hint="بالمحاور والمخرجات نقارنها بكتالوجنا — فنعرف أهي جديدةٌ أم قريبةٌ من دورةٍ قائمة.">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <StaffField label="المحاورُ الرئيسة" hint="محورٌ في كلّ سطر">
+            <textarea
+              value={d.topicsAr ?? ""} maxLength={MAX_DETAIL_TEXT} rows={4} className={staffAreaCls}
+              placeholder={"بناءُ جدولٍ مرجعيّ\nالدوالُّ الشرطيّة\nلوحةُ مؤشّرات"}
+              onChange={(e) => set({ topicsAr: e.target.value })}
+            />
+          </StaffField>
+          <StaffField label="ما الذي يخرج به المتدرّب؟" hint="ما يقدر عليه بعدها ولم يكن يقدر">
+            <textarea
+              value={d.outcomesAr ?? ""} maxLength={MAX_DETAIL_TEXT} rows={4} className={staffAreaCls}
+              placeholder="مثلا: يبني تقريرا شهريّا يتحدّث وحدَه"
+              onChange={(e) => set({ outcomesAr: e.target.value })}
+            />
+          </StaffField>
+        </div>
+      </Section>
+
+      <Section n={4} title="دمجٌ أم دورةٌ جديدة؟" hint="قد تكون عندنا دورةٌ قريبة، فتصير هذه نسختَك منها بدل أن تتكرّر في الكتالوج.">
+        <StaffField label="أقربُ دورةٍ تعرفها في كتالوجنا" hint="اسمُها إن وُجدت — ولا بأس إن لم تعرف">
+          <input
+            value={d.closestCourseAr ?? ""} maxLength={MAX_DETAIL_LINE} className={staffControlCls}
+            placeholder="مثلا: دورةُ تحليل البيانات للمبتدئين"
+            onChange={(e) => set({ closestCourseAr: e.target.value })}
+          />
+        </StaffField>
+        <StaffField as="div" label="إن وجدنا دورةً قريبة">
+          <OptionGrid cols={3} name="الدمج" items={opts(PROPOSAL_MERGE)} isOn={(v) => d.merge === v} onToggle={one("merge")} />
+        </StaffField>
+      </Section>
+
+      <Section n={5} title="جاهزيّتُك" hint="بها نقدّر متى يمكن أن تنطلق.">
+        <StaffField as="div" label="هل درّستها من قبل؟">
+          <OptionGrid cols={3} name="الخبرة" items={opts(PROPOSAL_EXPERIENCE)} isOn={(v) => d.experience === v} onToggle={one("experience")} />
+        </StaffField>
+        <StaffField as="div" label="ما الجاهزُ لديك منها؟" hint="اختر كلَّ ما ينطبق">
+          <OptionGrid
+            cols={3} name="الموادّ الجاهزة" items={opts(PROPOSAL_MATERIALS)}
+            isOn={(v) => materials.includes(v as never)}
+            onToggle={(v) => set({
+              materials: (materials as string[]).includes(v)
+                ? materials.filter((m) => m !== v)
+                : [...materials, v as (typeof materials)[number]],
+            })}
+          />
+        </StaffField>
+      </Section>
+    </div>
+  );
+}
+
+/** ما يُرسَل — نصوصٌ مشذّبةٌ، والنظافةُ الأخيرةُ في الخادم */
+function payloadOf(d: Draft) {
+  return { titleAr: d.titleAr.trim(), summaryAr: d.summaryAr.trim() || null, details: d.details };
 }
 
 /* حالُ كلِّ اقتراحٍ بجملةٍ تقول ما جرى وما بقي — لا بكلمةٍ تُترجَم في الذهن */
@@ -110,11 +263,9 @@ export default function MyCourseProposals() {
   const [busy, setBusy] = useState(false);
 
   /* صفُّ الإضافة، وصفُّ التعديل — واحدٌ في كلِّ وقت */
-  const [newTitle, setNewTitle] = useState("");
-  const [newSummary, setNewSummary] = useState("");
+  const [draft, setDraft] = useState<Draft>(EMPTY);
   const [editId, setEditId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editSummary, setEditSummary] = useState("");
+  const [edit, setEdit] = useState<Draft>(EMPTY);
   /* جوابُ سؤالٍ واحدٍ في كلّ وقت — والمسوّدةُ بمعرّف اقتراحها كي لا يُكتب
      جوابٌ في بطاقةٍ ويُرسَل في أخرى. */
   const [answerFor, setAnswerFor] = useState<string | null>(null);
@@ -141,20 +292,17 @@ export default function MyCourseProposals() {
     }
   }
 
-  const canAdd = newTitle.trim().length >= MIN_TITLE;
+  const canAdd = draft.titleAr.trim().length >= MIN_TITLE;
 
   return (
     <TrainerLayout title="دوراتي المقترحة">
       {/* ما هذه الشاشة — تُقال مرّةً في رأسها لا في رسالةِ خطأٍ بعد الإرسال */}
-      <Card className="mb-4">
-        <h2 className="mb-1 text-read font-bold text-foreground">دوراتٌ أقدر عليها وليست في الكتالوج</h2>
-        <p className="text-sm leading-7 text-muted-foreground">
-          ما تكتبه هنا <b>اقتراحٌ لا دورة</b>: لا يظهر في «الدورات» ولا يُحسب في التشخيص المهنيّ
-          حتّى تصنّفه الإدارة. وقد تجعله <b>نسختَك من دورةٍ قائمةٍ عندنا</b> إن كانت قريبةً منها،
-          أو <b>دورةً جديدةً</b> تدخل الكتالوجَ بمهاراتها.
-          {" "}وما كتبتَه في طلبِ انضمامك موجودٌ هنا — تعدّله كما تشاء.
-        </p>
-      </Card>
+      <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
+        دوراتٌ تقدر عليها وليست في كتالوجنا. ما تكتبه هنا <b className="text-foreground">اقتراحٌ لا دورة</b>:
+        لا يظهر في «الدورات» ولا يُحسب في التشخيص المهنيّ حتّى تصنّفه الإدارة — فتجعله
+        <b className="text-foreground"> نسختَك من دورةٍ قائمة</b> إن كانت قريبةً منها، أو
+        <b className="text-foreground"> دورةً جديدةً</b> تدخل الكتالوجَ بمهاراتها. وما كتبتَه في طلبِ انضمامك موجودٌ أدناه.
+      </p>
 
       {err ? (
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
@@ -165,39 +313,26 @@ export default function MyCourseProposals() {
       ) : (
         <>
           {/* ── الإضافة ── */}
-          <Card className="mb-4">
-            <h3 className="mb-3 flex items-center gap-2 text-read font-bold text-foreground">
-              <BookPlus className="h-4 w-4 text-teal" aria-hidden />
-              أضِف دورةً تقترحها
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <StaffField label="عنوانُ الدورة">
-                <input
-                  value={newTitle} maxLength={MAX_TITLE} className={staffControlCls}
-                  placeholder="مثلا: أتمتةُ التقارير الماليّة بالجداول"
-                  onChange={(e) => setNewTitle(e.target.value)}
-                />
-              </StaffField>
-              <StaffField label="نبذةٌ عن الدورة" hint="لا تلزم — وهي ما تُقرأ قبل أن تُصنَّف">
-                <textarea
-                  value={newSummary} maxLength={MAX_SUMMARY} rows={3} className={staffControlCls}
-                  placeholder="ماذا فيها، ولمن، وما الذي يخرج به المتدرّب"
-                  onChange={(e) => setNewSummary(e.target.value)}
-                />
-              </StaffField>
+          <Card className="mb-6 sm:p-6">
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-base font-black text-foreground">
+                <BookPlus className="h-5 w-5 text-teal" aria-hidden />
+                أضِف دورةً تقترحها
+              </h2>
+              <p className="text-sm text-muted-foreground">العنوانُ وحدَه يلزم — وكلُّ جوابٍ يوفّر سؤالا تنتظره.</p>
             </div>
-            <div className="mt-3">
+            <ProposalForm value={draft} onChange={setDraft} />
+            <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
               <Button
                 tone="confirm" icon={BookPlus} loading={busy} disabled={!canAdd}
                 onClick={() => run(
-                  () => apiPost("/api/trainer/course-proposals", {
-                    titleAr: newTitle.trim(), summaryAr: newSummary.trim() || null,
-                  }).then(() => { setNewTitle(""); setNewSummary(""); }),
+                  () => apiPost("/api/trainer/course-proposals", payloadOf(draft)).then(() => setDraft(EMPTY)),
                   "وصلت الإدارةَ",
                 )}
               >
                 أرسِلها للإدارة
               </Button>
+              {!canAdd ? <span className="text-sm text-muted-foreground">اكتب عنوانَ الدورة أوّلا</span> : null}
             </div>
           </Card>
 
@@ -217,27 +352,15 @@ export default function MyCourseProposals() {
                 return (
                   <Card key={p.id}>
                     {editing ? (
-                      <div className="grid gap-3">
-                        <StaffField label="عنوانُ الدورة">
-                          <input
-                            value={editTitle} maxLength={MAX_TITLE} className={staffControlCls}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                          />
-                        </StaffField>
-                        <StaffField label="نبذةٌ عن الدورة" hint="لا تلزم">
-                          <textarea
-                            value={editSummary} maxLength={MAX_SUMMARY} rows={4} className={staffControlCls}
-                            onChange={(e) => setEditSummary(e.target.value)}
-                          />
-                        </StaffField>
-                        <div className="flex gap-2">
+                      <div className="grid gap-4">
+                        <ProposalForm value={edit} onChange={setEdit} />
+                        <div className="flex gap-2 border-t border-white/10 pt-4">
                           <Button
                             tone="confirm" icon={Check} loading={busy}
-                            disabled={editTitle.trim().length < MIN_TITLE}
+                            disabled={edit.titleAr.trim().length < MIN_TITLE}
                             onClick={() => run(
-                              () => apiPatch(`/api/trainer/course-proposals/${p.id}`, {
-                                titleAr: editTitle.trim(), summaryAr: editSummary.trim() || null,
-                              }).then(() => setEditId(null)),
+                              () => apiPatch(`/api/trainer/course-proposals/${p.id}`, payloadOf(edit))
+                                .then(() => setEditId(null)),
                               "حُفظ التعديل",
                             )}
                           >
@@ -254,6 +377,16 @@ export default function MyCourseProposals() {
                             <div className="mt-1 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
                               {p.summaryAr}
                             </div>
+                          ) : null}
+                          {proposalDetailRows(p.details).length > 0 ? (
+                            <dl className="mt-2 grid gap-x-5 gap-y-1 text-sm sm:grid-cols-2">
+                              {proposalDetailRows(p.details).map((r) => (
+                                <div key={r.labelAr} className="min-w-0">
+                                  <dt className="inline text-muted-foreground">{r.labelAr}: </dt>
+                                  <dd className="inline whitespace-pre-wrap text-foreground">{r.valueAr}</dd>
+                                </div>
+                              ))}
+                            </dl>
                           ) : null}
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <span
@@ -279,8 +412,7 @@ export default function MyCourseProposals() {
                               tone="ghost" icon={Pencil} disabled={busy}
                               onClick={() => {
                                 setEditId(p.id);
-                                setEditTitle(p.titleAr);
-                                setEditSummary(p.summaryAr ?? "");
+                                setEdit({ titleAr: p.titleAr, summaryAr: p.summaryAr ?? "", details: p.details ?? {} });
                               }}
                             >
                               عدّل

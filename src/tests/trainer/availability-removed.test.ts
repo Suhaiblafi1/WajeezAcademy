@@ -83,9 +83,19 @@ describe('المسارات', () => {
 describe('شاشةُ المؤهّلات — ما بقي منها', () => {
   const screen = code('src/pages/trainer/Qualifications.tsx')
 
-  it('تنادي المسارَين اللذين كانا مكتوبَين بلا شاشة — ولا تنادي غيرَهما', () => {
+  /* وصارت تنادي عروضَه واقتراحاتِه معها (٢٩ سبتمبر ٢٠٢٦): «عروضي» دخلتها،
+     وحالُ كلّ مؤهَّلٍ يُقرأ من الثلاثة. ولا إتاحةَ ولا نطاقَ فيها — القائمةُ
+     مغلقةٌ كما كانت، فمن زاد نداءً عاد إلى هنا. */
+  it('تنادي مؤهّلاتِه وعروضَه واقتراحاتِه وأفعالَ العرض — ولا تنادي غيرَها', () => {
     const calls = [...screen.matchAll(/api(?:Get|Post|Put|Patch|Delete)<?[^(]*\(\s*["'`]([^"'`]+)/g)].map((m) => m[1])
-    expect(calls.sort()).toEqual(['/api/trainer/catalog-scope', '/api/trainer/me/qualifications'])
+    expect([...new Set(calls)].sort()).toEqual([
+      '/api/trainer/course-proposals',
+      '/api/trainer/me/qualifications',
+      '/api/trainer/offers',
+      '/api/trainer/offers/${lead.id}/prep-confirm',
+      '/api/trainer/offers/${open.id}/accept',
+      '/api/trainer/offers/${open.id}/decline',
+    ])
   })
 
   it('ولها مسارٌ في التطبيق وبندٌ في قائمة المدرّب — باسمٍ لا يَعِد بما ذهب', () => {

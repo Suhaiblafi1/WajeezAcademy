@@ -110,8 +110,11 @@ const HIGH: readonly string[] = [
      وصولُه أو مكانتُه أو مالُه أو سجلُّه».
 
      وتُخبر صاحبَها في معالجها: من بُدّل حسابُه بلا علمه يجب أن يعرف في
-     اللحظة — فتلك أمارةُ حسابٍ مخترَق، وهو أوّلُ من يكتشفها. */
-  'trainer.bank.set',
+     اللحظة — فتلك أمارةُ حسابٍ مخترَق، وهو أوّلُ من يكتشفها.
+
+     وإلغاؤه مثلُها (٢٩ سبتمبر ٢٠٢٦): يوقف صرفَ مالِه كلِّه حتّى يكتب
+     غيرَه، ويصله بريدا للعلّة نفسِها. */
+  'trainer.bank.set', 'trainer.bank.remove',
   /* ═══ وعروضُ الإسناد ═══
 
      العرضُ يضع أمام المدرّب التزاما بوقتٍ ومال، والسحبُ يرفعه من تحته،
@@ -121,6 +124,9 @@ const HIGH: readonly string[] = [
      المدرّبَ، والقبولُ والاعتذارُ من ينتظر الجواب. */
   'trainer.offer.create', 'trainer.offer.accept', 'trainer.offer.decline',
   'trainer.offer.withdraw', 'trainer.offer.lapse', 'trainer.offer.prep_lapse',
+  /* والملصقُ: صورتُه واسمُه على ما يُنشر للعامّة — مكانتُه بعينها. يصله
+     إرسالُه إشعارا، وقرارُه يصل من صمّمه؛ ولا استعمالَ عامًّا قبل موافقته. */
+  'trainer.poster.submit', 'trainer.poster.approve', 'trainer.poster.request_changes',
   'trainer.account.activate', 'trainer.invitation.create',
   'trainer.scope.grant', 'trainer.scope.revoke',
   /* شعبةٌ أُسندت إليه */
@@ -350,6 +356,9 @@ const LOW: readonly string[] = [
   'trainer.change.publish', 'trainer.change.apply_catalog',
   'trainer.course_proposal.create', 'trainer.course_proposal.update',
   'trainer.course_proposal.delete',
+  /* وفيديوهاتُ التسويق وصورُه: يكتبها صاحبُها لنفسه، ولا يُخبَر بها أحد */
+  'trainer.marketing.video.set', 'trainer.marketing.video.remove',
+  'trainer.marketing.photo.add', 'trainer.marketing.photo.remove',
   /* والسؤالُ عن اقتراحٍ وجوابُه: خبرُ عملٍ في الطابور لا خبرُ إنسان. ويصل
      صاحبَه إشعارا في بوّابته على كلّ حال (`trainer.course_proposal.question`
      في صنفٍ لا يُكتم) — وهذا وزنُ الأثر لا وزنُ الإشعار. */

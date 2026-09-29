@@ -188,6 +188,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.offer.received', 'trainer.offer.withdrawn', 'trainer.offer.lapsed',
       'trainer.offer.accepted', 'trainer.offer.declined',
       'trainer.prep.reminder', 'trainer.prep.lapsed',
+      /* والملصقُ عملٌ من الطرفين كذلك (٢٩ سبتمبر ٢٠٢٦): لا يُستعمل علنا حتّى
+         يوافق المدرّب، فكتمُ إرساله يُوقف تسويقَ دورته؛ وقرارُه عملٌ ينتظر
+         من صمّم — نسخةٌ جديدةٌ أو إطلاق. */
+      'trainer.poster.submitted', 'trainer.poster.decided',
       /* وملخّصُ الصباح بمن أتمّ طلبَه ولم يحجز — عملٌ ينتظر الموظّفَ لا خبرٌ
          يُساق إليه. ولا يُكتَم لسببٍ عمليّ: كتمُه يُعيد المنصّةَ إلى ما قبلَه
          بالضبط — طابورٌ لا يفتحه أحدٌ حتّى يتذكّر، والمتقدّمُ ينتظر يدا لا

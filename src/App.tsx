@@ -62,6 +62,7 @@ const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const AssignByTrainer = lazy(() => import('./pages/admin/AssignByTrainer'))
 const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
+const AdminTrainerMarketing = lazy(() => import('./pages/admin/TrainerMarketing'))
 const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDepartures'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
@@ -75,9 +76,8 @@ const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
 const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCourseProposals'))
-const TrainerMyCourseEdits = lazy(() => import('./pages/trainer/MyCourseEdits'))
 const TrainerMyPaths = lazy(() => import('./pages/trainer/MyPaths'))
-const TrainerMyOffers = lazy(() => import('./pages/trainer/MyOffers'))
+const TrainerMarketing = lazy(() => import('./pages/trainer/Marketing'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const CohortWorkspace = lazy(() => import('./pages/trainer/CohortWorkspace'))
@@ -270,15 +270,18 @@ export default function App() {
             <Route path="/trainer" element={<TrainerDashboard />} />
             <Route path="/trainer/account" element={<AccountPage />} />
             <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
-            {/* عروضُ الإسناد — والبندُ الثالثُ يجعل الإسنادَ عرضا يُقبَل ويُردّ،
-                فله موضعٌ يُفتح ويُجاب فيه لا جرسٌ يُقرأ ويُنسى. */}
-            <Route path="/trainer/offers" element={<TrainerMyOffers />} />
+            {/* «عروضي» دخلت «مؤهّلاتي» (٢٩ سبتمبر ٢٠٢٦) — العرضُ حالُ مؤهَّلٍ
+                يُقرَّر عنده. ويبقى المسارُ القديمُ تحويلا: إشعاراتٌ مضت تحمله. */}
+            <Route path="/trainer/offers" element={<Navigate to="/trainer/qualifications" replace />} />
             {/* ح-٢: دوراتٌ يقترحها وليست في الكتالوج — من طلبه، ثمّ بيده */}
             <Route path="/trainer/course-proposals" element={<TrainerCourseProposals />} />
-            {/* وبابُ العقد: محاورُ ما أُهِّل له ومصادرُها، اقتراحا يمرّ بالمراجعة */}
-            <Route path="/trainer/course-edits" element={<TrainerMyCourseEdits />} />
+            {/* و«تعديلاتي على دوراتي» ذهبت بقرار صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦):
+                «لا داعيَ لهذا القسم كلّيّا». والمسارُ تحويلٌ لا صفحةٌ مفقودة. */}
+            <Route path="/trainer/course-edits" element={<Navigate to="/trainer/qualifications" replace />} />
             {/* ن-١: مسارٌ يبنيه المدرّبُ من دوراته ويُعرض على الرفّ العامّ */}
             <Route path="/trainer/paths" element={<TrainerMyPaths />} />
+            {/* التسويق: فيديوهاتُه وصورُه، وملصقاتٌ لا تُستعمل علنا إلّا بموافقته */}
+            <Route path="/trainer/marketing" element={<TrainerMarketing />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
@@ -318,6 +321,7 @@ export default function App() {
             <Route path="/admin/course-proposals" element={<AdminCourseProposals />} />
             {/* ن-١: مراجعةُ ما يُعرض على الرفّ باسم مدرّب */}
             <Route path="/admin/trainer-paths" element={<AdminTrainerPaths />} />
+            <Route path="/admin/trainer-marketing" element={<AdminTrainerMarketing />} />
             {/* ن-٩ · ن-١٠: رحيلُ مدرّب — بديلٌ ثمّ نظيرٌ ثمّ اختيارُ صاحبه */}
             <Route path="/admin/trainer-departures" element={<AdminTrainerDepartures />} />
             {/* الأتعابُ شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك محروسٌ

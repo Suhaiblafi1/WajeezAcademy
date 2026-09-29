@@ -5,7 +5,7 @@
  * مكوّن — فتصديرُها من `AdminLayout.tsx` يكسر التحديثَ الساخن.
  */
 
-import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
 
 /* ═══ سبعُ مجموعاتٍ لا ثلاثةُ أبواب ═══
 
@@ -151,6 +151,10 @@ export const allSections: AdminNavSection[] = [
          وهذا إدراجٌ عامٌّ يحمل اسمَه. */
       { to: "/admin/trainer-paths", label: "مساراتُ المدرّبين", icon: Route, need: "trainer.publish",
         descAr: "ما يُعرض على الرفّ باسم مدرّب — يُراجَع قبل أن يراه أحد" },
+      /* التسويق (٢٩ سبتمبر ٢٠٢٦): وصلاحيّتُه `trainer.publish` — الملصقُ ظهورُ
+         المدرّب للعامّة بعينه، ولا يُستعمل إلّا بموافقته. */
+      { to: "/admin/trainer-marketing", label: "تسويقُ المدرّبين", icon: Megaphone, need: "trainer.publish",
+        descAr: "فيديوهاتُهم وصورُهم، وملصقاتٌ تُصمَّم لهم ويوافقون عليها" },
       /* ن-٩: رحيلُ مدرّب — وصلاحيّتُه `trainer.assign`، فالبديلُ إسنادٌ
          والنقلُ إسناد، وهما عملُ هذا الباب لا عملُ الماليّة. */
       { to: "/admin/trainer-departures", label: "رحيلُ مدرّب", icon: UserMinus, need: "trainer.assign",

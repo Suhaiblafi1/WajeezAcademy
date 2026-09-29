@@ -363,7 +363,7 @@ describe('عروضُ الإسناد في طابور المدرّب', () => {
     const items = buildWorkQueue([], 0, NOW, [], [offer()])
     const it0 = items.find((x) => x.kind === 'offer_pending')
     expect(it0, 'عرضٌ ينتظر جوابَه ولا بندَ له').toBeTruthy()
-    expect(it0!.href).toBe('/trainer/offers')
+    expect(it0!.href).toBe('/trainer/qualifications')
     expect(it0!.external).toBe(false)
     expect(it0!.count).toBe(1)
   })

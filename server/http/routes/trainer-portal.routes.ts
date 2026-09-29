@@ -17,7 +17,7 @@ import { TrainerPathService } from '../../services/trainer-path.service'
 import { MAX_PATH_BLURB, MAX_PATH_COURSES, MAX_PATH_TITLE } from '../../../src/application/trainer/path-rules'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
-import { TrainerBankService, MAX_ACCOUNT_LEN } from '../../services/trainer-bank.service'
+import { TrainerBankService, MAX_ACCOUNT_LEN, BANK_ACCOUNT_KINDS } from '../../services/trainer-bank.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
@@ -97,14 +97,25 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['trainer-portal'], summary: 'كتابةُ الحساب البنكيّ أو تبديلُه — يُخزَّن معمّى ويصله خبرُه' },
   }, async (req) => {
     const body = z.object({
-      iban: z.string().trim().min(8).max(MAX_ACCOUNT_LEN + 8),
+      iban: z.string().trim().min(6).max(MAX_ACCOUNT_LEN + 8),
       holderName: z.string().trim().min(4).max(160),
       bankNameAr: z.string().trim().min(2).max(120),
       branchAr: z.string().trim().max(120).nullish(),
       swiftBic: z.string().trim().max(16).nullish(),
+      accountKind: z.enum(BANK_ACCOUNT_KINDS).optional(),
+      countryCode: z.string().trim().max(2).nullish(),
+      routingCode: z.string().trim().max(34).nullish(),
+      ownNameConfirmed: z.boolean().optional(),
     }).parse(req.body)
     return bank.setMine(req.auth!.userId, body)
   })
+
+  /* وإلغاؤه بيده — قرارُ صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦): «اسمح له بإلغائه
+     أو تبديله». يُزاح ولا يُمحى، والعلّةُ في `removeMine`. */
+  app.delete('/api/trainer/bank-account', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'إلغاءُ حسابي البنكيّ — يُزاح ولا يُمحى، ويصله خبرُه' },
+  }, async (req) => bank.removeMine(req.auth!.userId))
 
   app.get('/api/trainer/offers', {
     preHandler: requirePermission('trainer.portal'),
@@ -283,8 +294,15 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      `submit` ولا `listMine` ولا `withdraw` ينادِيها مسلكٌ واحد، وجانبُ
      الإدارة موصولٌ كاملا يراجع اقتراحاتٍ لا سبيلَ لأحدٍ أن يرسلها.
 
-     ولم يُعَد البابُ وحدَه: شاشتُه `src/pages/trainer/MyCourseEdits.tsx` في
-     الدفعة نفسها — فعلّةُ الحذف لم تُنقَض، بل استُوفيت.
+     ولم يُعَد البابُ وحدَه: كانت شاشتُه `MyCourseEdits.tsx` في الدفعة نفسها.
+
+     ═══ ثمّ ذهبت الشاشةُ وبقي البابُ (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة عن «تعديلاتي على دوراتي»: «لا داعيَ لهذا القسم
+     كلّيّا». فحُذفت الشاشةُ وبندُها وتحوّل مسارُها إلى «مؤهّلاتي». وبقيت
+     هذه المسالكُ ومعها `catalog-scope`: جانبُ الإدارة يراجع ما وصل منها،
+     وحارسُها في `server/tests/trainer/own-course-authoring.test.ts`. فإن
+     تقرّر ألّا يعود البابُ حُذفت بحارسها معا.
 
      والصلاحيّةُ `trainer.portal` كما لسائر بوّابته، والملفُّ يُستخرَج من
      حسابه لا من جسم الطلب. والنطاقُ يُحكَم في الخدمة عن **الدورة** لا عن
@@ -348,6 +366,8 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     const body = z.object({
       titleAr: z.string().trim().min(MIN_PROPOSAL_TITLE).max(MAX_PROPOSAL_TITLE),
       summaryAr: z.string().trim().max(MAX_PROPOSAL_SUMMARY).nullish(),
+      /* أسئلةُ الفورم — تُنظَّف في الخدمة بمصدرها الواحد، فلا يُكرَّر شكلُها هنا */
+      details: z.record(z.string(), z.unknown()).nullish(),
     }).parse(req.body)
     return reply.status(201).send(await proposals.add(req.auth!.userId, body))
   })
@@ -360,6 +380,8 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     const body = z.object({
       titleAr: z.string().trim().min(MIN_PROPOSAL_TITLE).max(MAX_PROPOSAL_TITLE),
       summaryAr: z.string().trim().max(MAX_PROPOSAL_SUMMARY).nullish(),
+      /* أسئلةُ الفورم — تُنظَّف في الخدمة بمصدرها الواحد، فلا يُكرَّر شكلُها هنا */
+      details: z.record(z.string(), z.unknown()).nullish(),
     }).parse(req.body)
     return proposals.edit(req.auth!.userId, id, body)
   })

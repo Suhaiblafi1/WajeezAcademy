@@ -100,7 +100,7 @@ async function mkTrainer(legalName = 'محمد علي حسن') {
   return { app, profile, userId: user.userId }
 }
 
-const GOOD = { iban: IBAN, holderName: 'محمد علي حسن', bankNameAr: 'البنك العربيّ' }
+const GOOD = { iban: IBAN, holderName: 'محمد علي حسن', bankNameAr: 'البنك العربيّ', ownNameConfirmed: true }
 
 /* ═══════════ ① الظرفُ نفسُه ═══════════ */
 
@@ -323,5 +323,61 @@ describe('لا صرفَ إلّا على حسابٍ كُشف لهذا المست�
     const t = await mkTrainer()
     const p = await mkPayout(t.profile.id)
     await expect(bank.revealForPayout(p.id, adminId)).rejects.toThrow(/بوّابته/)
+  })
+})
+
+/* ═══════════ ⑥ لكلّ الدول، وباسمه، ويُلغى (٢٩ سبتمبر ٢٠٢٦) ═══════════ */
+
+describe('حسابٌ يصلح لكلّ دولة — باسم صاحبه — ويُلغى بيده', () => {
+  async function codeOf(work: Promise<unknown>): Promise<string> {
+    try { await work; return 'لم يُردّ' } catch (e) { return (e as { code?: string }).code ?? 'بلا رمز' }
+  }
+
+  it('⚠️ لا يُحفظ بلا إقرارِه أنّ الحسابَ باسمه الشخصيّ', async () => {
+    const t = await mkTrainer()
+    const { ownNameConfirmed: _drop, ...noConfirm } = GOOD
+    void _drop
+    expect(await codeOf(bank.setMine(t.userId, noConfirm))).toBe('not_own_name')
+    expect(await prisma.trainerBankAccount.count({ where: { profileId: t.profile.id } })).toBe(0)
+  })
+
+  it('⚠️ ورقمٌ محلّيٌّ بلا IBAN يُقبَل بدولته ورمزِ توجيهه — لا يُسجَّل أردنيّا', async () => {
+    const t = await mkTrainer()
+    const saved = await bank.setMine(t.userId, {
+      ...GOOD, accountKind: 'local', iban: '000123456789', countryCode: 'us',
+      routingCode: '021000021', swiftBic: 'CHASUS33',
+    })
+    expect(saved.countryCode, 'خُمّنت الدولةُ بدل أن تُقرأ ممّا اختاره').toBe('US')
+    expect(saved.accountKind).toBe('local')
+    expect(saved.routingCode).toBe('021000021')
+    const raw = await prisma.trainerBankAccount.findFirstOrThrow({ where: { profileId: t.profile.id, status: 'active' } })
+    expect(raw.ownNameConfirmedAt).toBeTruthy()
+    expect(openBankValue(raw.ibanSealed, bankAad(t.profile.id))).toBe('000123456789')
+  })
+
+  it('والمحلّيُّ بلا دولةٍ يُردّ — ولا يُفترض لها قيمة', async () => {
+    const t = await mkTrainer()
+    expect(await codeOf(bank.setMine(t.userId, { ...GOOD, accountKind: 'local', iban: '000123456789' }))).toBe('bad_country')
+  })
+
+  it('والـIBAN الذي لا يبدأ برمز دولةٍ ورقمين يُردّ', async () => {
+    const t = await mkTrainer()
+    expect(await codeOf(bank.setMine(t.userId, { ...GOOD, iban: '123456789012345678' }))).toBe('bad_iban')
+  })
+
+  it('⚠️ والإلغاءُ يُزيح الفعّالَ ولا يمحوه — ولا يُكشف بعده شيء', async () => {
+    const t = await mkTrainer()
+    await bank.setMine(t.userId, GOOD)
+    expect((await bank.removeMine(t.userId)).removed).toBe(true)
+    const rows = await prisma.trainerBankAccount.findMany({ where: { profileId: t.profile.id } })
+    expect(rows.length, 'مُحي الصفُّ — ولا يُعرف إلى أين ذهب مستحقٌّ قديم').toBe(1)
+    expect(rows[0].status).toBe('superseded')
+    expect((await bank.mine(t.userId)).account).toBeNull()
+    const trail = await prisma.auditEvent.count({ where: { action: 'trainer.bank.remove', entityId: t.profile.id } })
+    expect(trail).toBe(1)
+    const p = await prisma.trainerPayout.create({
+      data: { profileId: t.profile.id, period: '2026-09', status: 'approved', total: 100, currency: 'USD' },
+    })
+    expect(await codeOf(bank.revealForPayout(p.id, adminId))).toBe('no_bank_account')
   })
 })

@@ -22,6 +22,7 @@ import { registerDossierLinkRoutes } from './routes/dossier-link.routes'
 import { registerContractSignRoutes } from './routes/contract-sign.routes'
 import { registerAdminTrainerRoutes } from './routes/admin-trainer.routes'
 import { registerTrainerPortalRoutes } from './routes/trainer-portal.routes'
+import { registerTrainerMarketingRoutes } from './routes/trainer-marketing.routes'
 import { registerAdminLearningRoutes } from './routes/admin-learning.routes'
 import { registerLearningPortalRoutes } from './routes/learning-portal.routes'
 import { registerLearnerRoutes } from './routes/learners.routes'
@@ -303,6 +304,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerContractSignRoutes(app, prisma)
   registerAdminTrainerRoutes(app, prisma)
   registerTrainerPortalRoutes(app, prisma)
+  registerTrainerMarketingRoutes(app, prisma)
   registerAdminLearningRoutes(app, prisma)
   registerLearningPortalRoutes(app, prisma)
   registerZoomWebhookRoutes(app, prisma)

@@ -118,14 +118,17 @@ const TRAINER: Table = {
   'session.reminder.trainer.1h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابورَ التصحيح' },
   /* عروضُ الإسناد — والوجهةُ حيث يُجاب لا حيث يُقرأ الخبر ثانيةً */
-  'trainer.offer.received': { path: '/trainer/offers', ctaAr: 'اقرأ العرضَ وأجِبْ' },
-  'trainer.offer.withdrawn': { path: '/trainer/offers', ctaAr: 'افتح عروضَك' },
-  'trainer.offer.lapsed': { path: '/trainer/offers', ctaAr: 'افتح عروضَك' },
-  'trainer.prep.reminder': { path: '/trainer/offers', ctaAr: 'أقِرّ بجاهزيّتك' },
+  'trainer.offer.received': { path: '/trainer/qualifications', ctaAr: 'اقرأ العرضَ وأجِبْ' },
+  'trainer.offer.withdrawn': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  'trainer.offer.lapsed': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقِرّ بجاهزيّتك' },
+  /* والملصقُ يُوافَق عليه حيث يُرى — قسمُ التسويق */
+  'trainer.poster.submitted': { path: '/trainer/marketing', ctaAr: 'راجِع الملصقَ ووافِق عليه' },
 }
 
 const STAFF: Table = {
   'staff.task.assigned': { path: '/admin/tasks', ctaAr: 'افتح مهمّتك' },
+  'trainer.poster.decided': { path: '/admin/trainer-marketing', ctaAr: 'افتح ملصقاتِ المدرّب' },
   'staff.task.done': { path: '/admin/tasks', ctaAr: 'افتح المهامّ' },
   'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },

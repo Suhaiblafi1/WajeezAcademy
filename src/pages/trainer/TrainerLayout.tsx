@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Handshake, Layers, LayoutDashboard, Link2, Route, Star, Users, Wallet } from "lucide-react";
+import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, LayoutDashboard, Link2, Megaphone, Route, Star, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -136,23 +136,21 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     { to: "/trainer/grading", label: "طابور التقييم", icon: ClipboardCheck, count: pending },
     { to: "/trainer/schedule", label: "جدولي", icon: CalendarDays },
     /* «مؤهّلاتي» وحدَها: ذهبت الإتاحةُ من صفحتها بقرار صاحب المنصّة
-       (٢٧ سبتمبر ٢٠٢٦)، فاسمٌ يَعِد بـ«إتاحتي» يقود إلى ما لا وجودَ له. */
+       (٢٧ سبتمبر ٢٠٢٦)، فاسمٌ يَعِد بـ«إتاحتي» يقود إلى ما لا وجودَ له.
+       و«عروضي» دخلتها (٢٩ سبتمبر ٢٠٢٦): العرضُ حالُ مؤهَّلٍ يُقرَّر عنده،
+       لا بابٌ ثانٍ يُقابَل بالأوّل بالعين. */
     { to: "/trainer/qualifications", label: "مؤهّلاتي", icon: Award },
-    /* وبعدها «عروضي» مباشرةً: ما أُهِّلتُ له، ثمّ ما عُرض عليّ منه. ولم
-       تتقدّم على الخمسة الأولى — والعرضُ يصله جرسُه بوجهته، والبطاقةُ في
-       رئيسته، فلا يُكتشَف بتصفّحٍ مصادفةً. */
-    { to: "/trainer/offers", label: "عروضي", icon: Handshake },
     /* ح-٢: بعد «مؤهّلاتي» — السؤالان جارانِ: ما أُهِّلتُ له، وما أقترحه ولم
        يدخل الكتالوجَ بعد. وقرارُ الإدارة يصل هنا، فلا يُدفن في صفحةٍ طويلة. */
     { to: "/trainer/course-proposals", label: "دوراتي المقترحة", icon: BookPlus },
-    /* وبعدها مباشرةً: الأولى دوراتٌ **ليست** في كتالوجنا، وهذه محاورُ ما
-       أُهِّل له **فيه**. والسؤالان متجاوران: ما أقدر عليه ولا تملكونه، وما
-       تملكونه وأُهِّلتُ له فأضع محاورَه. وهي بابُ «خمسةِ أيّامٍ لوضع محاور
-       دوراتك ومصادرها» في العقد — فلا يبحث عنها من وعده العقدُ بها. */
-    { to: "/trainer/course-edits", label: "تعديلاتي على دوراتي", icon: Layers },
+    /* وكانت بعدها «تعديلاتي على دوراتي» — وذهبت بقرار صاحب المنصّة
+       (٢٩ سبتمبر ٢٠٢٦): «لا داعيَ لهذا القسم كلّيّا». */
     /* ن-١: بعد «دوراتي المقترحة» — الأولى دوراتٌ ليست عندنا، وهذه ترتيبُ
        ما عندنا في مسارٍ باسمه. والسؤالان متجاوران في ذهنه. */
     { to: "/trainer/paths", label: "مساراتي", icon: Route },
+    /* وبعدها «التسويق» (٢٩ سبتمبر ٢٠٢٦): التعريفُ بدوراته ومساراته وملصقاتُها —
+       فهو جارُ ما يُسوَّق له. */
+    { to: "/trainer/marketing", label: "التسويق", icon: Megaphone },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
     /* وبعدها «عقدي» مباشرةً — قرارُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦): «الملف
        يكون في منصته ضمن قسم المستحقات والعقد». فهما بابان متجاوران: ما
