@@ -292,6 +292,37 @@ export async function updateZoomMeeting(
   return { ok: false, reason: `ردُّ Zoom عند النقل (HTTP ${res.status})` }
 }
 
+/* ── رابطُ المضيف ساعةَ يُطلب — ولا يُحفظ ──
+
+   `start_url` يفتح الاجتماعَ **بصلاحيّة المضيف**: من ملكه أدار الغرفة، يُخرج
+   ويكتم ويُنهي. ولذلك لا يُحفظ عند الإنشاء (`attachApiZoom`)، ويُطلب من Zoom
+   طازجا لحظةَ يضغط مدرّبُ الشعبة «ابدأ» — وعمرُه عند Zoom ساعتان، فما يُحفظ
+   اليومَ ميّتٌ يومَ اللقاء.
+
+   ويحتاج التطبيقُ صلاحيّةَ القراءة (`meeting:read:admin`) فوق صلاحيّة الإنشاء —
+   ونقصُها يُقال باسمه، فلا يُقرأ «تعذّر» عطبا في الشبكة. */
+export async function zoomStartUrl(
+  c: ZoomConfig,
+  meetingId: string,
+): Promise<{ ok: true; startUrl: string } | { ok: false; reason: string }> {
+  const token = await zoomToken(c)
+  const res = await fetch(`${ZOOM_API_BASE_URL}/meetings/${encodeURIComponent(meetingId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) {
+    /* Zoom يردّ ٤٠٠ لرمزٍ تنقصه صلاحيّة (الرمز ٤٧١١)، و٤٠١/٤٠٣ لما سواه من الرفض */
+    const reason = res.status === 404
+      ? 'لا اجتماعَ بهذا الرقم عند Zoom — رُبّما حُذف من لوحته'
+      : res.status === 400 || res.status === 401 || res.status === 403
+        ? 'رفض Zoom الطلب — تأكّد أنّ التطبيق يملك صلاحيّة `meeting:read:admin`'
+        : `ردُّ Zoom غير متوقّع (HTTP ${res.status})`
+    return { ok: false, reason }
+  }
+  const j = (await res.json()) as { start_url?: string }
+  if (!j.start_url) return { ok: false, reason: 'ردّ Zoom بلا رابطِ مضيف' }
+  return { ok: true, startUrl: j.start_url }
+}
+
 /* ── إلغاءُ اجتماع ──
 
    يُنادى حين يُحذف اللقاءُ من عندنا. ولولاه لبقي في حساب الأكاديميّة موعدٌ

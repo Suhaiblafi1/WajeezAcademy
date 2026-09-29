@@ -30,10 +30,12 @@ export interface ZoomRecordingFile {
 export interface ZoomEventObject {
   id?: number | string
   uuid?: string
+  /** معرّفُ مستخدم Zoom المضيف — ومن دخل بحسابه يحمل المعرّفَ نفسَه في `participant.id` */
+  host_id?: string
   start_time?: string
   end_time?: string
   duration?: number
-  participant?: { user_name?: string; email?: string; join_time?: string; leave_time?: string }
+  participant?: { id?: string; user_name?: string; email?: string; join_time?: string; leave_time?: string }
   /* ما يصل مع `recording.completed` وحدَه */
   share_url?: string
   recording_play_passcode?: string
@@ -102,9 +104,14 @@ export class ZoomEventService {
         /* دخولُ المضيف يُكتب وحدَه: منه تُقرأ «تأخّر المدرّبُ عن لقائه».
            والمشاركون يُقرأون من تقرير ما بعد اللقاء لا من هذه الأحداث —
            فهي تصل مبعثرةً ويُخطئ رصفُها، والتقريرُ يعطيها مجموعةً. */
+        /* ═══ والمضيفُ مضيفٌ بحسابه لا ببريده وحدَه (٢٩ سبتمبر ٢٠٢٦) ═══
+           من بدأ اللقاءَ برابط المضيف (`trainerHostStart`) دخل بحساب الأكاديميّة
+           لا ببريده، فلا يطابقه بريدُ مدرّبٍ ولا يُكتب دخولُه — فيُقرأ «تأخّر
+           المدرّبُ» عن لقاءٍ بدأه في موعده. وZoom يحمل في الحدث معرّفَ المضيف
+           ومعرّفَ الداخل معا، فتطابقُهما دخولُ المضيف أيّا كان بريدُه. */
+        const byAccount = Boolean(object.host_id && object.participant?.id && object.participant.id === object.host_id)
         const email = object.participant?.email?.toLowerCase()
-        if (!email) return false
-        const isHost = await this.isHostEmail(meeting.sessionId, email)
+        const isHost = byAccount || (email ? await this.isHostEmail(meeting.sessionId, email) : false)
         if (!isHost) return false
         await this.prisma.zoomMeeting.update({
           where: { sessionId: meeting.sessionId },
@@ -305,7 +312,8 @@ export class ZoomEventService {
     if (owner) await new ProgressService(this.prisma).recomputeCohort(owner.cohortId)
   }
 
-  /** أمضيفُ هذه الجلسة؟ — مدرّبُها المُسنَد أو بريدُ المضيف في الإعداد */
+  /** أمضيفُ هذه الجلسة ببريده؟ — مدرّبُها المُسنَد. ومن دخل بحساب المضيف
+   *  (رابطُ `trainerHostStart`) يُعرف بمعرّفه في الحدث نفسِه (`host_id`) لا هنا */
   private async isHostEmail(sessionId: string, email: string): Promise<boolean> {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },

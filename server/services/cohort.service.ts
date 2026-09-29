@@ -16,7 +16,7 @@ import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MA
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify, notifyRole } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, updateZoomMeeting, zoomMissing, zoomReady } from './zoom.service'
+import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, updateZoomMeeting, zoomMissing, zoomReady, zoomStartUrl } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
@@ -1007,6 +1007,54 @@ export class CohortService {
         `${verb} مدرّبُك إلى ${whenAr(moved.startsAt)} — ورابطُ الانضمام نفسُه.`)
     }
     return moved
+  }
+
+  /* ═══ المدرّبُ يبدأ لقاءه مضيفا — من بوّابته (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة: «link it to trainer admin where they can use it to set
+     live sessions directly as host». واختار أن تبقى الاجتماعاتُ في حساب
+     الأكاديميّة لا في مقعد Zoom لكلّ مدرّب — فلا رخصةَ لكلّ مدرّب، ولا يضيع
+     اجتماعٌ ولا تسجيلُه بخروجه.
+
+     وكانت شاشتُه تعطيه `joinUrl` — رابطَ المشارك. والاجتماعُ مُنشأٌ بتسجيلٍ
+     مسبق، فيفتح له صفحةَ تسجيلٍ ثمّ يُدخله مشاركا لا مضيفا: لا يُخرج أحدا ولا
+     يكتم ولا يُنهي، والغرفةُ بلا مضيف.
+
+     فالرابطُ هنا رابطُ المضيف، طازجا من Zoom لحظةَ الطلب (`zoomStartUrl`)،
+     ولمدرّب الشعبة وحدَه، وللمعتمَد وحدَه — ما لم تعتمده الإدارةُ لا يراه
+     متعلّموه، فلا يُفتح له بابٌ يُعقد فيه بلا حاضرين. ولا يُحفظ الرابطُ ولا
+     يُكتب في الأثر: الأثرُ يقول «بدأ» لا «بماذا». */
+  async trainerHostStart(userId: string, sessionId: string): Promise<{ startUrl: string }> {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true, cohortId: true, status: true, approvalState: true,
+        zoom: { select: { provider: true, meetingId: true } },
+      },
+    })
+    if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
+    if (!(await this.isCohortTrainer(userId, session.cohortId))) {
+      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+    }
+    if (session.status === 'cancelled') throw new AuthError('session_cancelled', 'هذا اللقاء ملغًى', 409)
+    if (session.approvalState !== 'approved') {
+      throw new AuthError('not_approved', 'هذا اللقاء بانتظار اعتماد الإدارة — يُبدأ بعد أن يُعتمَد', 409)
+    }
+    const meetingId = session.zoom?.provider === 'zoom_api' ? session.zoom.meetingId : null
+    if (!meetingId) {
+      throw new AuthError('no_api_meeting', 'هذا اللقاء بلا اجتماعٍ أنشأته المنصّة — افتح رابطَه كما هو', 409)
+    }
+    const cfg = await getZoomConfig(this.prisma)
+    if (!zoomReady(cfg)) {
+      throw new AuthError('zoom_not_configured', `تكاملُ Zoom غير مكتمل — ينقصه: ${zoomMissing(cfg).join(' · ')}`, 409)
+    }
+    const r = await zoomStartUrl(cfg, meetingId)
+    if (!r.ok) throw new AuthError('zoom_start_failed', r.reason, 502)
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'zoom.host_start', entityType: 'cohort_session', entityId: sessionId,
+      meta: { cohortId: session.cohortId, meetingId },
+    })
+    return { startUrl: r.startUrl }
   }
 
   /** ينقل اجتماعَ Zoom مع لقائه — ويعود بما وقع: `null` لا اجتماعَ في Zoom يُنقل */
