@@ -507,8 +507,24 @@ export class CourseProposalService {
      يبدأ — والمدرّبُ ينتظر في الطرف الآخر وقد قيل له إنّ دورتَه قُبلت. */
   private async openQualificationTask(
     actor: Assigner,
-    input: { proposalId: string; titleAr: string; courseId: string; trainerName: string; wasLinked: boolean },
+    input: {
+      proposalId: string; profileId: string; titleAr: string; courseId: string
+      trainerName: string; wasLinked: boolean
+    },
   ) {
+    /* ═══ ومن أُهِّل لها قبلُ لا تُفتح له مهمّة (٢٩ سبتمبر ٢٠٢٦) ═══
+
+       المهمّةُ تقول «أهِّله لها»، ومن رُبط اقتراحُه بدورةٍ هو مؤهَّلٌ لها أصلا
+       — كمن يقترح ما يدرّسه عندنا بعنوانٍ آخر — تُفتح له مهمّةٌ أُنجز ما فيها
+       قبل أن تُفتح. فتبقى في «مهامّي» عالية الأولويّة تقول ما ليس عملا، ومن
+       رآها يفتح شاشةَ الإسناد ليجد لا شيءَ يُفعل: وذاك يعلّم تجاهلَ المهامّ.
+       وملفُّ القرارات يؤهِّل قبل أن يربط لهذا بعينه. */
+    const current = await this.prisma.trainerCourseQualification.findUnique({
+      where: { profileId_courseId: { profileId: input.profileId, courseId: input.courseId } },
+      select: { status: true },
+    })
+    if (current?.status === 'qualified') return
+
     const tasks = new StaffTaskService(this.prisma)
     await tasks.assign(actor, {
       assigneeId: actor.userId,
@@ -551,7 +567,7 @@ export class CourseProposalService {
       meta: { courseId, titleAr: row.titleAr },
     })
     await this.openQualificationTask(actor, {
-      proposalId: id, titleAr: row.titleAr, courseId,
+      proposalId: id, profileId: row.profileId, titleAr: row.titleAr, courseId,
       trainerName: row.profile.application.fullName, wasLinked: true,
     })
     return out
@@ -583,7 +599,7 @@ export class CourseProposalService {
       meta: { courseId, titleAr: row.titleAr },
     })
     await this.openQualificationTask(actor, {
-      proposalId: id, titleAr: row.titleAr, courseId,
+      proposalId: id, profileId: row.profileId, titleAr: row.titleAr, courseId,
       trainerName: row.profile.application.fullName, wasLinked: false,
     })
     return out
@@ -678,5 +694,29 @@ export class CourseProposalService {
       },
     })
     return out
+  }
+
+  /** ═══ اقتراحٌ تُدخله الإدارةُ طابورَ صاحبه (٢٩ سبتمبر ٢٠٢٦) ═══
+
+      الطابورُ يُبذَر من الطلب مرّةً عند ميلاد الملفّ (`seedProposalsFromApplication`)،
+      ومن بوّابة المدرّب بعدها. فما كُتب في الفقرة الحرّة القديمة لم يدخله قطّ —
+      وهو ما يقوله تقريرُ «دوراتُ المدرّبين المقبولين» بصفّ «لم تدخل الطابور».
+      فمن قرأ الفقرةَ وسمّى أفكارَها يُدخلها هنا ليُقرَّر فيها كغيرها: تُربط أو
+      تصير دورةً أو يُسأل صاحبُها.
+
+      وهي كلماتُه لا كلماتُنا، فتُنسب في الأثر إلى من أدخلها لا إليه — ويبقى
+      نصُّها قابلا للتصحيح من بوّابته كأيّ اقتراحٍ مقدَّم. */
+  async addByStaff(actorId: string, profileId: string, input: ProposalInput) {
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { id: profileId }, select: { id: true } })
+    if (!profile) throw new AuthError('no_profile', 'ملفُّ المدرّب غير موجود', 404)
+    const data = this.clean(input)
+    const row = await this.prisma.trainerCourseProposal.create({
+      data: { ...data, profileId, status: 'submitted' },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.course_proposal.create',
+      entityType: 'trainer_course_proposal', entityId: row.id, meta: { titleAr: row.titleAr, byStaff: true },
+    })
+    return row
   }
 }

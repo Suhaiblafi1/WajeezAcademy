@@ -4940,8 +4940,11 @@ export class TrainerReviewService {
 
      وبهذا يبقى «مؤهَّلٌ ≠ مُسنَدٌ إليه» — وهو نفسُه البندُ الذي يقوم عليه
      العقد — محروسا في مواضعه الثلاثة، ولا يصير هذا التخفيفُ بابا خلفيّا
-     حوله. ويحرسه `server/tests/trainer/qualify-before-active.test.ts`. */
-  private static readonly QUALIFIABLE_STATUSES = [
+     حوله. ويحرسه `server/tests/trainer/qualify-before-active.test.ts`.
+
+     وعامّةٌ لا خاصّة: ملفُّ القرارات (`course-decisions.service.ts`) يسأل بها
+     قبل أن يطبّق «هل يُؤهَّل هذا؟» — وقائمةٌ ثانيةٌ هناك تفترق عن هذه يوما. */
+  static readonly QUALIFIABLE_STATUSES = [
     'conditionally_approved', 'contract_pending', 'onboarding', 'active',
   ] as const
 

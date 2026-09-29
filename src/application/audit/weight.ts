@@ -354,6 +354,10 @@ const LOW: readonly string[] = [
      صاحبَه إشعارا في بوّابته على كلّ حال (`trainer.course_proposal.question`
      في صنفٍ لا يُكتم) — وهذا وزنُ الأثر لا وزنُ الإشعار. */
   'trainer.course_proposal.ask', 'trainer.course_proposal.answer',
+  /* وتطبيقُ ملفِّ القرارات صفٌّ يجمع لا فعلٌ يقع: كلُّ خطوةٍ منه تكتب أثرَها
+     بفعل زرّها ووزنه — ربطٌ وتأهيلٌ وإيقاف — فيصل صاحبَها ما يصله لو ضُغط الزرّ.
+     ولو وُزن هذا الصفُّ عاليا لبلغ الناسَ خبرُ الشيء الواحد مرّتين. */
+  'trainer.course_decisions.apply',
   'trainer.path.create', 'trainer.path.update',
   'trainer.path.submit', 'trainer.path.delete',
   'trainer.departure.open', 'trainer.departure.close',
