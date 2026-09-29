@@ -22,9 +22,10 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
   ACADEMY_LEGAL, LEGAL_FIELD_LABELS_AR, REQUIRED_LEGAL_FIELDS,
-  academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
+  academyEntityLineAr, academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
 } from '@/data/academy-legal'
 import { CONTACT } from '@/data/stories'
+import { ECOSYSTEM_NOTE, staticPageBySlug, staticPages } from '@/data/siteContent'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -165,5 +166,52 @@ describe('ولا تُكتب هذه القيمُ حرفا في ملفٍّ آخر'
     for (const f of WATCHED) {
       expect(read(f).includes(ACADEMY_LEGAL.legalNameAr), `${f}: الاسمُ المسجَّلُ مكتوبٌ حرفا هنا`).toBe(false)
     }
+  })
+})
+
+describe('وصفحتا الخصوصيّة والشروط تقرآن الكيانَ من مصدره (٢٩ سبتمبر ٢٠٢٦)', () => {
+  /* كانتا تقولان «التابعة لكيان Faylasof — السجل التجاري: [يُعبأ من السجل
+     الرسمي]» والمسجَّلُ في السجلّ غيرُه — يقرؤه كلُّ شريكٍ يتحقّق منّا قبل أن
+     يتعاقد. والفحصُ على ما يُعرض للزائر لا على نصّ الملفّ: فتعليقٌ يذكر القوسَ
+     لا يُسقطه، وقيمةٌ تُقرأ من مصدرها تُعَدّ. */
+  const pageText = (slug: string) => {
+    const p = staticPageBySlug(slug)
+    if (!p) throw new Error(`لا صفحةَ بالمعرّف «${slug}»`)
+    return [p.title, p.intro, ...p.sections.flatMap((s) => [s.heading ?? '', ...(s.paragraphs ?? []), ...(s.bullets ?? [])])].join('\n')
+  }
+  const LEGAL_PAGES = ['privacy', 'terms']
+
+  for (const slug of LEGAL_PAGES) {
+    it(`«${slug}» تطبع سطرَ الكيان نفسَه — الاسمَ المسجَّلَ ورقمَ السجلّ`, () => {
+      expect(pageText(slug)).toContain(academyEntityLineAr())
+    })
+  }
+
+  it('⚠️ والطرفُ في الشروط هو المسجَّل — في قسم «الطرفان» بعينه لا في أيّ موضع', () => {
+    const parties = staticPageBySlug('terms')?.sections.find((s) => s.heading === 'الطرفان والخدمة')
+    expect(parties, 'لا قسمَ للطرفين في الشروط').toBeTruthy()
+    expect((parties!.paragraphs ?? []).join(' ')).toContain(ACADEMY_LEGAL.legalNameAr)
+  })
+
+  it('⚠️ ولا بيانَ بين قوسين معقوفين في أيّ صفحةٍ ثابتة — فهو فراغٌ لم يُعبَّأ', () => {
+    for (const p of staticPages) {
+      expect(pageText(p.slug).match(/\[[^\]]*\]/g), `«${p.slug}» فيها بيانٌ لم يُعبَّأ`).toBeNull()
+    }
+  })
+
+  it('والرقمُ الضريبيُّ لا يُذكر فيهما ما دام فارغا — ويعود مع سطر الكيان يومَ يُكتب', () => {
+    const bare = (t: string) => t.replace(/[\u064B-\u0652]/g, '')
+    for (const slug of LEGAL_PAGES) {
+      expect(bare(pageText(slug)).includes('الرقم الضريبي'), `«${slug}»`).toBe(Boolean(String(ACADEMY_LEGAL.taxNo).trim()))
+    }
+  })
+
+  it('والانتماءُ إلى وجيز بنصّه المعتمد لا بصيغةٍ ثانية', () => {
+    for (const slug of LEGAL_PAGES) expect(pageText(slug)).toContain(ECOSYSTEM_NOTE)
+  })
+
+  it('وسطرُ العقد يبدأ بسطر الكيان نفسِه — فلا يفترق الموقعُ والعقدُ في تعريفه', () => {
+    expect(academyPartyLineAr().startsWith(academyEntityLineAr())).toBe(true)
+    expect(academyPartyLineAr(FULL as typeof ACADEMY_LEGAL).startsWith(academyEntityLineAr(FULL as typeof ACADEMY_LEGAL))).toBe(true)
   })
 })
