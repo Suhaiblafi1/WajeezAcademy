@@ -2713,8 +2713,9 @@ model ZoomMeeting {
   syncState        String    @default("pending") // pending | synced | failed
   syncError        String?
 
-  session   CohortSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  joinLinks SessionJoinLink[]
+  session    CohortSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  joinLinks  SessionJoinLink[]
+  guestLinks SessionGuestLink[]
 }
 
 /**
@@ -2734,6 +2735,27 @@ model SessionJoinLink {
   enrollment   Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, enrollmentId])
+}
+
+/**
+ * رابطُ دخولٍ لمدعوٍّ بعنوانه لا بمقعده (٢٩ سبتمبر ٢٠٢٦).
+ * قرارُ صاحب المنصّة: suhaib@wajeez.co وAcademy@wajeez.co يُدعيان إلى كلّ لقاءٍ
+ * يُعتمَد، حاضرَين. والاجتماعُ بتسجيلٍ مسبق، فرابطُه المشتركُ يفتح صفحةَ تسجيلٍ
+ * في كلّ مرّة — فيُسجَّل المدعوُّ مرّةً ويُحفظ رابطُه هنا، وتحديثُ الدعوة بعده
+ * يحمل الرابطَ نفسَه. وأخو `SessionJoinLink` لا جزءٌ منه: ذاك معلَّقٌ بمقعدٍ
+ * في الشعبة، وهذا بعنوانٍ لا مقعدَ له. والقاعدةُ في `session-invite.service.ts`.
+ */
+model SessionGuestLink {
+  id           String      @id @default(uuid()) @db.Uuid
+  sessionId    String      @db.Uuid
+  /// بحروفٍ صغيرة — العنوانُ يُقارَن لا يُعرض
+  email        String
+  registrantId String // معرّفُ المسجَّل عند Zoom
+  joinUrl      String
+  createdAt    DateTime    @default(now())
+  meeting      ZoomMeeting @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
+
+  @@unique([sessionId, email])
 }
 
 /**
@@ -4055,6 +4077,11 @@ model OutboxMail {
   purpose   String?
   /// مرجعُ الدفعة (ل-٦): تُقرأ رسائلُ عمليّةٍ واحدةٍ معا لا متفرّقةً
   batchId   String?   @db.Uuid
+  /// دعوةُ تقويمٍ تُرفق بالرسالة — وتُمحى مع متنها ساعةَ تخرج
+  icsContent  String?
+  /// منهجُ الدعوة — `REQUEST` تدعو أو تحدّث، و`CANCEL` ترفع من التقويم
+  icsMethod   String?
+  icsFilename String?
   /// queued | sent | failed
   status    String    @default("queued")
   attempts  Int       @default(0)

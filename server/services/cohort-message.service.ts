@@ -13,6 +13,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
+import { SessionInviteService } from './session-invite.service'
 
 const MAX_BODY = 2000
 
@@ -265,6 +266,10 @@ export class CohortMessageService {
 
     /* المتعلّمون يُخبَرون بالاعتماد وحده — والرفضُ شأنُ المدرب والإدارة */
     if (input.action === 'approve') {
+      /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه (`session-invite.service.ts`) — ولا
+         يُسقط إخفاقُها قرارا وقع */
+      await new SessionInviteService(this.prisma).announce(req.sessionId, 'update')
+        .catch((e: unknown) => console.error('[invite] تعذّرت كتابةُ تحديث الدعوة', e))
       const learners = await this.prisma.enrollment.findMany({
         where: { cohortId: req.session.cohortId, status: { not: 'dropped' } },
         select: { userId: true },

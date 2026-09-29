@@ -24,6 +24,16 @@
    · `Notification` — ما يصل **صاحبَ حسابٍ قائم**، وله جرسٌ في المنصّة.
    · `OutboxMail`  — ما يصل **عنوانا** بلا حسابٍ يبقى خلفه.
 
+   ═══ ودعواتُ التقويم معه — لسببٍ بنيويٍّ ثانٍ (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   دعوةُ اللقاء المباشر (`session-invite.service.ts`) تصل مسجَّلا له حسابٌ قائم،
+   فحقُّها الطابورُ الأوّل بحكم الحدّ أعلاه. لكنّها تخرج **دفعةً** — مسجَّلو شعبةٍ
+   كلُّهم ساعةَ يُعتمَد لقاء — وصفُّ الإشعار يُرسَل في الطلب نفسِه بلا مهلة،
+   فيردّ المزوّدُ ٤٢٩ على ما زاد، وهي العقدةُ التي وُضع لها هذا الجدولُ أصلا.
+   وتحمل **مرفقا** (`icsContent`) لا يحمله صفُّ الإشعار. فتُكتب هنا، وجرسُها في
+   المنصّة يبقى في `Notification` كما كان: الرسالةُ هنا والجرسُ هناك. ويُعرف
+   صنفُها بغرضها (`session.invite.*`).
+
    ═══ وما يبقى منه بعد الإرسال ═══
 
    متنُ الرسالة يُمحى ساعةَ تخرج. فمن مُحي حسابُه بسجلّه كلِّه لا يبقى نصُّ
@@ -60,6 +70,14 @@ export interface OutboxEntry {
   purpose?: string
   /** مرجعُ الدفعة (ل-٦): تُقرأ رسائلُ عمليّةٍ واحدةٍ معا */
   batchId?: string
+  /** دعوةُ تقويمٍ مرفقة — ومنهجُها يطابق سطرَ `METHOD` فيها */
+  ics?: OutboxIcs
+}
+
+export interface OutboxIcs {
+  content: string
+  method: 'REQUEST' | 'CANCEL' | 'PUBLISH'
+  filename: string
 }
 
 /** يكتب رسالةً في الطابور — يُستعمل داخل المعاملة وخارجَها */
@@ -68,6 +86,7 @@ export async function enqueueMail(db: Db, entry: OutboxEntry): Promise<void> {
     data: {
       to: entry.to, subject: entry.subject, text: entry.text, html: entry.html ?? null,
       purpose: entry.purpose ?? null, batchId: entry.batchId ?? null,
+      icsContent: entry.ics?.content ?? null, icsMethod: entry.ics?.method ?? null, icsFilename: entry.ics?.filename ?? null,
     },
   })
 }
@@ -94,7 +113,9 @@ export interface OutboxRun {
    وقد كُتب له حارسٌ أوّلَ مرّةٍ يكتب التبديلَ بيده ثمّ يقرؤه، فمرّ أخضرَ وهو
    يفحص القاعدةَ لا الشيفرة: نُزع محوُ المتن من الدالّة فبقي أخضر. فالمُرسِلُ
    يُحقَن، وافتراضُه المُرسِلُ الحقيقيّ — والعاملُ لا يمرّر شيئا. */
-export type OutboxSender = (to: string, subject: string, text: string, html?: string) => Promise<DirectMailResult>
+export type OutboxSender = (
+  to: string, subject: string, text: string, html?: string, ics?: OutboxIcs,
+) => Promise<DirectMailResult>
 
 export async function drainOutbox(
   prisma: PrismaClient,
@@ -102,7 +123,10 @@ export async function drainOutbox(
 ): Promise<OutboxRun> {
   const gap = opts.gapMs ?? OUTBOX_GAP_MS
   const send: OutboxSender = opts.send
-    ?? ((to, subject, text, html) => sendDirectEmail(prisma, { to, subject, text, html }))
+    ?? ((to, subject, text, html, ics) => sendDirectEmail(prisma, {
+      to, subject, text, html,
+      ...(ics ? { icsContent: ics.content, icsMethod: ics.method, icsFilename: ics.filename } : {}),
+    }))
   const due = await prisma.outboxMail.findMany({
     where: { status: 'queued', attempts: { lt: OUTBOX_MAX_ATTEMPTS } },
     /* الأقدمُ أوّلا — الوعدُ الأقدمُ أحقُّ بالوفاء */
@@ -116,15 +140,23 @@ export async function drainOutbox(
     /* المهلةُ **بين** الرسائل لا قبل أولاها: دورةٌ فيها رسالةٌ واحدةٌ لا تنام */
     if (i > 0 && gap > 0) await sleep(gap)
 
-    const out = await send(row.to, row.subject, row.text ?? '', row.html ?? undefined)
+    const ics: OutboxIcs | undefined = row.icsContent
+      ? {
+          content: row.icsContent,
+          method: (row.icsMethod as OutboxIcs['method'] | null) ?? 'REQUEST',
+          filename: row.icsFilename ?? 'wajeez-event.ics',
+        }
+      : undefined
+    const out = await send(row.to, row.subject, row.text ?? '', row.html ?? undefined, ics)
 
     if (out.status === 'sent') {
       await prisma.outboxMail.update({
         where: { id: row.id },
-        /* والمتنُ يُمحى هنا: أُدّي الغرضُ، وما بقي يُسأل عنه «أأُخبر ومتى» */
+        /* والمتنُ يُمحى هنا: أُدّي الغرضُ، وما بقي يُسأل عنه «أأُخبر ومتى».
+           والدعوةُ المرفقةُ متنٌ كذلك — فيها اسمُه ورابطُ دخوله */
         data: {
           status: 'sent', sentAt: new Date(), attempts: { increment: 1 },
-          lastError: null, text: null, html: null,
+          lastError: null, text: null, html: null, icsContent: null,
         },
       })
       sent += 1

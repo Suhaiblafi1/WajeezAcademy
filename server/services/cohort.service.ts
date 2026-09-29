@@ -24,6 +24,7 @@ import { meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
 import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
+import { SessionInviteService } from './session-invite.service'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -929,11 +930,11 @@ export class CohortService {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       select: {
-        id: true, cohortId: true, title: true, startsAt: true, approvalState: true, placeholder: true,
+        id: true, cohortId: true, title: true, startsAt: true, endsAt: true, approvalState: true, placeholder: true,
         moduleId: true, moduleIds: true, timezone: true,
         zoom: { select: { meetingId: true, provider: true } },
         /* موعدُ محوره من الخطّة التي يراها المتعلّم — منه يُحكم على «داخلَ موعده» (٣ج) */
-        cohort: { select: { timezone: true, plans: LEARNER_PLAN_QUERY } },
+        cohort: { select: { title: true, timezone: true, plans: LEARNER_PLAN_QUERY } },
       },
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
@@ -999,7 +1000,17 @@ export class CohortService {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
       await this.tellCohortScheduleChanged(session.cohortId, session,
         'نقله مدرّبُك ويُراجَع الآن عند الإدارة. ويصلك موعدُه الجديدُ حين يُعتمَد.')
+      /* ويُرفع من تقاويمهم بموعده القديم — فلا يحضر أحدٌ ساعةً لم يعد فيها لقاء */
+      await this.inviteSafely('move-out', () => this.invites.withdraw(
+        {
+          id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
+          title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
+        },
+        'نقله مدرّبُك ويُراجَع الآن عند الإدارة — وتصلك دعوتُه بموعده الجديد حين يُعتمَد.',
+      ))
     } else if (kept) {
+      /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — يتحرّك الموعدُ في تقاويمهم لا يتكرّر */
+      await this.inviteSafely('move', () => this.invites.announce(sessionId, 'update'))
       /* والمنقولُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع»،
          وأنّه أُخّر أو قُدّم: التقديمُ أشدُّ على من رتّب يومَه، فلا يُسمّى تأجيلا */
       const verb = moved.startsAt.getTime() < session.startsAt.getTime() ? 'قدّمه' : 'أجّله'
@@ -1181,7 +1192,8 @@ export class CohortService {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       select: {
-        id: true, cohortId: true, title: true, startsAt: true, approvalState: true, placeholder: true,
+        id: true, cohortId: true, title: true, startsAt: true, endsAt: true, approvalState: true, placeholder: true,
+        cohort: { select: { title: true } },
         zoom: { select: { meetingId: true, actualStartAt: true } },
         _count: { select: { attendance: true } },
       },
@@ -1210,6 +1222,16 @@ export class CohortService {
     const told = wasAnnounced
       ? await this.tellCohortScheduleChanged(session.cohortId, session, 'أُلغي هذا اللقاء. ويصلك بديلُه إن جُدوِل.')
       : 0
+    /* وتُرفع دعوتُه من التقاويم قبل صفّه — والرسالةُ تُبنى ممّا يُمحى بعد سطر */
+    if (wasAnnounced) {
+      await this.inviteSafely('delete', () => this.invites.withdraw(
+        {
+          id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
+          title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
+        },
+        'أُلغي هذا اللقاء — ويصلك بديلُه إن جُدوِل.',
+      ))
+    }
 
     await this.prisma.cohortSession.delete({ where: { id: sessionId } })
     await recordAudit(this.prisma, {
@@ -1540,6 +1562,8 @@ export class CohortService {
       }
     }
     const notified = await this.notifyCohortOfSession(cohortId, session, zoom)
+    /* وما جدولته الإدارةُ باجتماعه معتمَدٌ بحكم من جدوله — فتخرج دعوتُه الآن */
+    await this.inviteSafely('add', () => this.invites.announce(session.id, 'new'))
     return { session, zoom, notified }
   }
 
@@ -1654,6 +1678,10 @@ export class CohortService {
       meta: { cohortId: session.cohortId, hasMeeting: Boolean(zoom) },
     })
     const notified = await this.notifyCohortOfSession(session.cohortId, approved, zoom)
+    /* ═══ ودعوةُ التقويم — لمسجَّليه وللعنوانَين (٢٩ سبتمبر ٢٠٢٦) ═══
+       بعد الاجتماع وروابط المسجَّلين (`attachApiZoom` أعلاه) لا قبلها: الدعوةُ تحمل
+       رابطَ كلٍّ منهم. والقاعدةُ في `session-invite.service.ts`. */
+    await this.inviteSafely('approve', () => this.invites.announce(sessionId, 'new'))
     /* وأوّلُ لقاءٍ يُعتمَد من جدول المدرّب يرفع الجدولَ المبدئيّ — فلا يرى
        المسجَّلون جدولين معا: مثالَ الإدارة ومواعيدَ مدرّبهم. */
     if (!session.placeholder) await this.clearPlaceholders(actorId, session.cohortId)
@@ -1931,6 +1959,27 @@ export class CohortService {
         body: `${session.title} — ${when}. تجد رابطَ الانضمام في جدولك.`,
         data,
       })
+    }
+    /* ودعوةُ التقويم تتحدّث فتحمل الرابط — وما لم يُعتمَد لا دعوةَ له أصلا */
+    await this.inviteSafely('linked', () => this.invites.announce(sessionId, 'update'))
+  }
+
+  /* ═══ دعوةُ التقويم بعد ما يُعلن موعدا أو يرفعه (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     والقاعدةُ في `session-invite.service.ts`. ولا تُسقط ما قبلها: الموعدُ اعتُمد أو
+     نُقل أو حُذف في القاعدة، وإخفاقُ الكتابة في طابور البريد لا يردّه — يُكتب في
+     السجلّ كما يُكتب إخفاقُ Zoom، ولا يُعاقَب المدرّبُ بمنع فعله. */
+  private _invites: SessionInviteService | null = null
+  private get invites(): SessionInviteService {
+    if (!this._invites) this._invites = new SessionInviteService(this.prisma)
+    return this._invites
+  }
+  private async inviteSafely(label: string, fn: () => Promise<number>): Promise<number> {
+    try {
+      return await fn()
+    } catch (e) {
+      console.error(`[invite] تعذّرت كتابةُ دعوات اللقاء (${label})`, e)
+      return 0
     }
   }
 
