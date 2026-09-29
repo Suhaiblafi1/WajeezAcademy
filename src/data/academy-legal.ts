@@ -127,11 +127,16 @@ export function academyLegalGapMessageAr(missing: readonly AcademyLegalField[]):
   }`
 }
 
-/** سطرُ الطرف الأوّل كما يُطبَع في ديباجة العقد.
+/** سطرُ الكيان وحدَه — اسمُه المسجَّلُ وشكلُه وسجلُّه وعنوانه، بلا صفةِ توقيع.
 
-    ولا يُستدعى إلّا بعد `missingAcademyLegalFields()` خاليةً — ومن استدعاه
-    قبلها طبع فراغاتٍ في وثيقة. */
-export function academyPartyLineAr(source = ACADEMY_LEGAL): string {
+    ── لماذا انفصل عن سطر الطرف الأوّل ──
+
+    صفحتا الخصوصيّة والشروط كانتا تقولان «التابعة لكيان Faylasof — السجل
+    التجاري: [يُعبأ من السجل الرسمي]»، والمسجَّلُ في السجلّ غيرُه. والصفحةُ لا
+    توقيعَ فيها فلا تأخذ سطرَ الديباجة كلَّه: تأخذ ما قبل التوقيع — وهو هذا
+    حرفا بحرف. فتعريفُ الكيان واحدٌ في الموقع والعقد، ولا يفترقان بتعديلٍ في
+    أحدهما. */
+export function academyEntityLineAr(source = ACADEMY_LEGAL): string {
   /* والرقمُ الضريبيُّ جملةٌ تُزاد لا حقلٌ يُترك فارغا: خرج من المطلوب
      (أعلاه)، فلو بقي في السطر بلا شرطٍ لخرجت الوثيقةُ تقول «والرقم الضريبيّ
      ،» — فراغٌ في عقدٍ يوقّعه إنسان. ويعود وحدَه يومَ يُكتب. */
@@ -139,7 +144,16 @@ export function academyPartyLineAr(source = ACADEMY_LEGAL): string {
   return `${source.legalNameAr}، ${source.entityFormAr}، المسجَّلة في ${
     source.countryAr} بالسجلّ التجاريّ رقم ${source.registrationNo}${
     taxAr ? ` والرقم الضريبيّ ${taxAr}` : ''}، وعنوانها ${
-    source.registeredAddressAr}، ${source.cityAr}` +
+    source.registeredAddressAr}، ${source.cityAr}`
+}
+
+/** سطرُ الطرف الأوّل كما يُطبَع في ديباجة العقد: سطرُ الكيان، ثمّ الاسمُ الذي
+    يعمل به، ثمّ من يوقّع عنه.
+
+    ولا يُستدعى إلّا بعد `missingAcademyLegalFields()` خاليةً — ومن استدعاه
+    قبلها طبع فراغاتٍ في وثيقة. */
+export function academyPartyLineAr(source = ACADEMY_LEGAL): string {
+  return academyEntityLineAr(source) +
     `، وتعمل باسم «${source.tradingNameAr}»` +
     `، ويمثّلها في توقيع هذا العقد ${source.signatoryNameAr} بصفته ${source.signatoryTitleAr}`
 }

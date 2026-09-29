@@ -1,4 +1,5 @@
 import { ACADEMY_EMAILS } from './academy-email'
+import { ACADEMY_LEGAL, academyEntityLineAr } from './academy-legal'
 import { aboutStaticPage } from './about'
 
 /* محتوى الصفحات الثابتة والأسئلة الشائعة — مصدر واحد يستخدمه الرئيسية والصفحات الداخلية */
@@ -8,6 +9,12 @@ import { aboutStaticPage } from './about'
    ولا يُنسخ حرفيا في أي ملف آخر. */
 export const ECOSYSTEM_NOTE = 'أكاديمية وجيز — جزء من منظومة وجيز للمعرفة والتطوير'
 export const ECOSYSTEM_URL = 'https://wajeez.com'
+
+/* الكيانُ في صفحتَي الخصوصيّة والشروط — يُقرأ من `academy-legal.ts` ولا يُكتب
+   هنا حرفا (يحرسه `academy-legal.test.ts`)، والانتماءُ إلى وجيز بنصّه المعتمد
+   أعلاه لا بصيغةٍ ثانية. وكانتا تقولان «التابعة لكيان Faylasof — السجل
+   التجاري: [يُعبأ من السجل الرسمي]» والمسجَّلُ غيرُه. */
+const ECOSYSTEM_LINE = `${ECOSYSTEM_NOTE} (${new URL(ECOSYSTEM_URL).host})`
 
 export const faqs = [
   {
@@ -83,7 +90,7 @@ export const staticPages: StaticPage[] = [
       {
         heading: 'من نحن قانونيا',
         paragraphs: [
-          'أكاديمية وجيز جزء من مجموعة وجيز (wajeez.com) التابعة لكيان «Faylasof». السجل التجاري: [يُعبأ من السجل الرسمي] — الرقم الضريبي: [يُعبأ من السجل الرسمي].',
+          `${ECOSYSTEM_LINE}، وتشغّلها ${academyEntityLineAr()}.`,
           `لأي طلب متعلق بخصوصيتك: ${ACADEMY_EMAILS.privacy} — أو على العنوان: الرياض — حي الياسمين — شارع أنس بن مالك.`,
         ],
       },
@@ -148,7 +155,7 @@ export const staticPages: StaticPage[] = [
       {
         heading: 'الطرفان والخدمة',
         paragraphs: [
-          'هذه الشروط بينك وبين أكاديمية وجيز، جزء من مجموعة وجيز (wajeez.com) التابعة لكيان «Faylasof» — السجل التجاري: [يُعبأ من السجل الرسمي].',
+          `هذه الشروط بينك وبين ${academyEntityLineAr()}، وتعمل باسم «${ACADEMY_LEGAL.tradingNameAr}». ${ECOSYSTEM_LINE}.`,
         ],
         bullets: [
           'التشخيص أداة فهم تعليمية: توصياته مفسَّرة وقابلة للمراجعة، لكنها ليست اختبارا نفسيا ولا طبيا ولا وعدا بوظيفة أو دخل.',
@@ -188,7 +195,7 @@ export const staticPages: StaticPage[] = [
       {
         heading: 'القانون الحاكم',
         paragraphs: [
-          `تخضع هذه الشروط لقوانين المملكة الأردنية الهاشمية — بلد تأسيس الكيان الأم — وتُحسم النزاعات وديا أولا عبر ${ACADEMY_EMAILS.legal}.`,
+          `تخضع هذه الشروط لقوانين ${ACADEMY_LEGAL.governingLawAr} — بلد تسجيل الشركة المشغّلة — وتُحسم النزاعات وديا أولا عبر ${ACADEMY_EMAILS.legal}.`,
         ],
       },
     ],
