@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 import {
   renderContractBodyAr, type ContractBodyInput, CONTRACT_BODY_VERSION,
 } from '@/application/trainer/contract-body'
+import { parseContractDoc, summaryItem } from '@/application/trainer/contract-sections'
 import { WITHDRAWAL_RECOVERY_CAP_USD } from '@/application/trainer/notice-periods'
 import { ACADEMY_LEGAL, academyPartyLineAr, academyEntityLineAr } from '@/data/academy-legal'
 import { PRESENTMENT_CURRENCIES } from '@/application/commerce/presentment'
@@ -35,6 +36,8 @@ const INPUT: ContractBodyInput = {
   conditional: { orientationOnAr: '٥ أكتوبر ٢٠٢٦', deadlineOnAr: '١٠ أكتوبر ٢٠٢٦', windowDays: 5, extensionDays: 2 },
 }
 const body = renderContractBodyAr(INPUT)
+/** الوثيقةُ محلَّلةً — تُقرأ كما يقرؤها العارض */
+const doc = () => parseContractDoc(body)
 
 /** سطرُ البند بعينه — فالجملةُ تُقاس في موضعها لا في الوثيقة كلِّها */
 const clause = (no: string): string => {
@@ -195,5 +198,37 @@ describe('وإصدارُ الصياغة رُفع — فلا يُقرأ متنٌ 
   it('الإصدارُ الحاليُّ في المتن وفي ترويسته', () => {
     expect(CONTRACT_BODY_VERSION).toBe('v16-2026-09-29')
     expect(body).toContain(CONTRACT_BODY_VERSION)
+  })
+})
+
+/* ═══ وإحالةُ الجمع تُقرأ كأخواتها (٢٩ سبتمبر ٢٠٢٦) ═══
+ *
+ * وُجد بتصيير الوثيقة في المتصفّح ورؤيتها — لا باختبار. فحارسُ التمام يخضرّ
+ * والنصُّ تامٌّ، لكنّ صفَّين من ستّةٍ يُعرضان على نَسَقٍ آخر: إحالتُهما تبقى
+ * في متن التفصيل بلا لون الإحالة ولا وزنِها، وتُقطَع بين سطرَين.
+ *
+ * وعلّتُه أنّ `REF_RE` كان يعرف «البند» و«البندان» و«الملحق» ولا يعرف الجمع.
+ */
+describe('إحالاتُ الخلاصة تُقتطَع كلُّها — والجمعُ منها', () => {
+  const items = (doc().sections.find((s) => s.kind === 'summary')?.blocks ?? [])
+    .map(summaryItem).filter((i): i is NonNullable<typeof i> => i !== null)
+
+  it('وفي الخلاصة إحالةُ جمعٍ أصلا — فلا يخضرّ الفحصُ على لا شيء', () => {
+    const line = body.split('\n').find((l) => l.includes('(البنود '))
+    expect(line, 'لا إحالةَ جمعٍ في المتن — فما تحته لا يقيس').toBeTruthy()
+  })
+
+  it('⚠️ كلُّ بندٍ في الخلاصة له إحالةٌ مقتطَعة', () => {
+    expect(items.length).toBeGreaterThan(3)
+    for (const it of items) {
+      expect(it.refAr, `بندُ «${it.keyAr}» بلا إحالةٍ مقتطَعة — تبقى في متنه`)
+        .toMatch(/^\((البند|البندان|البنود|الملحق)/)
+    }
+  })
+
+  it('ولا تبقى الإحالةُ في التفصيل', () => {
+    for (const it of items) {
+      expect(it.noteAr, `إحالةٌ بقيت في تفصيل «${it.keyAr}»`).not.toMatch(/\(البنود [^)]*\)$/)
+    }
   })
 })
