@@ -419,7 +419,14 @@ export class CatalogAdminService {
 
       والثلاثةُ صارت مشروطةً بوجوده: بلا مسارٍ تُسمّى العائلةُ صراحةً، ولا
       يُكتب صفُّ ربط. وما تبقّى — المهاراتُ والوحداتُ وتقييمُ القياس — هو هو،
-      فالدورةُ دورةٌ سواءٌ كانت في رحلةٍ أم قائمةً وحدَها. */
+      فالدورةُ دورةٌ سواءٌ كانت في رحلةٍ أم قائمةً وحدَها.
+
+      ═══ والمنشئُ إلزاميٌّ لا اختياريّ (٢٩ سبتمبر ٢٠٢٦) ═══
+
+      `createdBy` هو ما يميّز دورةَ اللوحة من دورة ملفّ الكتالوج، وعليه يمتنع
+      المستوردُ عن أرشفتها وعن حذف رابط مسارها وعن الكتابة فوقها
+      (`server/catalog/importer.ts`). ودورةٌ تولد هنا بلا منشئٍ يحسبها
+      المستوردُ من دوراته، فيطفئها أوّلُ نشرٍ للموقع. */
   async createCourse(input: {
     /** المسارُ الأمّ — وفارغٌ يعني دورةً قائمةً بنفسها */
     pathwayId?: string | null
@@ -430,7 +437,7 @@ export class CatalogAdminService {
     titleAr: string; shortPromiseAr?: string
     levelAr?: string; totalHours: number; recordedHours?: number; skillIds: string[]
     modules: { sequence: number; titleAr: string; outcomeAr?: string; activityAr?: string; artifactAr?: string; bodyAr?: string; checksAr?: string; videoAr?: string; scenarioAr?: string; hours: number }[]
-  }, actorId?: string) {
+  }, actorId: string) {
     /* ═══ ولا رقمَ لا يُقرأ في وثيقةٍ تُوقَّع (٢٦ سبتمبر ٢٠٢٦) ═══
 
        ساعاتُ الدورة تُطبَع في الملحق (أ) من عقد المدرّب. ومسجَّلةٌ أكثرُ من

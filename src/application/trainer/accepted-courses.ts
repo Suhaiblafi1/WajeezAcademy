@@ -58,6 +58,33 @@ export const ACCEPTED_TRAINER_STATUSES = [
   'conditionally_approved', 'contract_pending', 'onboarding', 'active',
 ] as const
 
+/* ═══ ومقبولٌ حالُه غيرُ حالات القبول (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   كانت القائمةُ أعلاه هي الحدَّ كلَّه، فغاب عن الجدول مقبولٌ طُلبت منه
+   معلومات: طلبُ المعلومات يُفتح من كلّ حالةٍ حيّةٍ منذ ٢٢ سبتمبر — ومنها ما
+   بعد القبول الداخليّ — فيصير حالُه `information_requested` وموضعُه محفوظٌ في
+   `infoRequestedFrom` ليعود إليه حين يجيب. وهو مقبولٌ في كلّ معنى: ملفُّه
+   قائم، ومؤهّلاتُه مبذورة، وينتظر ورقةً لا قرارا. وكذا كلُّ حالةٍ حيّةٍ
+   يُنقَل إليها مقبول — فكلُّها تصل كلَّها منذ ذلك اليوم.
+
+   فالحدُّ **ملفُّ المدرّب** لا اسمُ الحالة: الملفُّ لا يولد إلّا بقبول
+   (القبولُ الداخليّ، والنقرةُ الواحدة، والتعيينُ الداخليّ) — إلّا من انتهى
+   أمرُه أو وقف، وهي هذه. والقائمةُ أعلاه باقيةٌ حدّا ثانيا: حالُ قبولٍ بلا
+   ملفٍّ طلبٌ قديمٌ سبق الملفّات، والجدولُ يقول «لا ملفَّ له بعد» ولا يُسقطه. */
+export const ENDED_TRAINER_STATUSES = ['rejected', 'withdrawn', 'suspended'] as const
+
+/** حالُ المدرّب كما يُقرأ في الجدول — ويقول لمَ هو فيه حين لا تقوله الحالة */
+export function trainerStatusCell(t: Pick<AcceptedTrainerIn, 'status' | 'infoRequestedFrom' | 'profile'>): string {
+  const label = STATUS_LABELS[t.status] ?? t.status
+  if (t.status === 'information_requested' && t.infoRequestedFrom) {
+    return `${label} — طُلبت منه في «${STATUS_LABELS[t.infoRequestedFrom] ?? t.infoRequestedFrom}»، ويعود إليها حين يجيب`
+  }
+  if (t.profile && !(ACCEPTED_TRAINER_STATUSES as readonly string[]).includes(t.status)) {
+    return `${label} — وله ملفُّ مدرّبٍ من قبولٍ سابق`
+  }
+  return label
+}
+
 /** ما لم يُبتّ فيه من الاقتراحات — ويُقابَل بـ`OPEN_PROPOSAL` في الخادم
     في اختبارٍ واحد، فلا تفترق قائمتان. */
 export const OPEN_PROPOSAL_STATUSES: readonly string[] = ['draft', 'submitted', 'info_requested']
@@ -98,6 +125,8 @@ export interface AcceptedTrainerIn {
   fullName: string
   reference: string
   status: string
+  /** الحالُ التي طُلبت منه فيها معلوماتٌ ويعود إليها حين يجيب — و`null` لغيره */
+  infoRequestedFrom: string | null
   teachableCourseIds: readonly string[]
   teachableOther: string | null
   /** عمودُ الطلب كما هو في القاعدة — يُقرأ بـ`readProposals` */
@@ -193,7 +222,7 @@ export function acceptedCourseRows(
     const push = (r: Body) => rows.push({
       trainer: t.fullName,
       reference: t.reference,
-      trainerStatus: STATUS_LABELS[t.status] ?? t.status,
+      trainerStatus: trainerStatusCell(t),
       source: r.source ?? DASH,
       title: r.title ?? DASH,
       summary: r.summary?.trim() || DASH,

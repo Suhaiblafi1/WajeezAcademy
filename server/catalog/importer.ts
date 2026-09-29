@@ -147,6 +147,35 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
   const templates = templatesFile.templates as RawTemplate[]
   const references = refsFile.references as RawReference[]
 
+  /* ═══ ولا يكتب المستودعُ فوق دورةٍ وُلدت في لوحة الإدارة ═══
+
+     للدورات بابان: هذا الملفّ، ومعالجُ الإضافة في اللوحة — ومنه تصير أفكارُ
+     المدرّبين دورات. والمعالجُ يولّد المعرّفَ التاليَ في العائلة من القاعدة
+     (`mintCourseIdInFamily`)، والملفُّ يُكتب معرّفُه بيد. فدورةٌ يضيفها
+     المستودعُ برقمٍ سبقته إليه اللوحةُ — كما وُلدت C-COMX-107 في اللوحة ولا
+     ذكرَ لها في الملفّ — كان `upsert` أدناه يكتب عليها عنوانَ غيرِها وساعاتِه
+     ومخرجاتِه، ويقلّم ما ليس في الملفّ من أبنائها. فتذهب دورةٌ راجعها إنسانٌ
+     واعتمدها بلا أثر، ويبقى اقتراحُ المدرّب «صار دورةً» على دورةٍ أخرى.
+
+     فيقف الاستيرادُ قبل أيّ كتابةٍ ويسمّي المعرّف — ولا يتخطّاها صامتا:
+     دورةٌ في الملفّ لا تُستورد تترك روابطَ مسارٍ وقوالبَ تشير إلى غيرها.
+     والإصلاحُ في المستودع: رقمٌ آخرُ للدورة الجديدة.
+
+     وعلامةُ الميلاد `createdBy`: المعالجُ يكتبه في كلّ دورة (والمعامِلُ فيه
+     إلزاميّ)، وهذا الملفُّ لا يكتبه أبدا.
+     الحارس: server/tests/catalog/importer-prune.test.ts */
+  const bornInAdmin = await prisma.course.findMany({
+    where: { id: { in: courses.map((c) => c.course_id) }, createdBy: { not: null } },
+    select: { id: true },
+    orderBy: { id: 'asc' },
+  })
+  if (bornInAdmin.length > 0) {
+    throw new Error(
+      `ملفُّ الكتالوج يحمل معرّفاتٍ وُلدت دوراتُها في لوحة الإدارة: ${bornInAdmin.map((c) => c.id).join('، ')} — `
+      + 'والاستيرادُ يكتب فوقها ويقلّم أبناءها. أعطِ دورةَ المستودع رقما آخر.',
+    )
+  }
+
   let links = 0
 
   /* 1) المهارات */
@@ -309,10 +338,22 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
      والأرشفة لا الحذف: الدورة قد تحمل شعبا وتسجيلات وطلبات دفع وشهادات،
      وحذفُ صفّها يأخذها معه بالتتابع. والأرشفة تُخرجها من كلّ مسلك عامّ
      (كلّها تشترط status = 'published') ويبقى سجلّ من دفع كما هو.
-     الحارس: server/tests/catalog/importer-prune.test.ts */
+     الحارس: server/tests/catalog/importer-prune.test.ts
+
+     ── وما لم يولد في المستودع لا «يزول» منه ──
+
+     كان الشرطُ «منشورةٌ وليست في الملفّ» — كأنّ الملفَّ بابُ الدورات
+     الوحيد. واللوحةُ بابٌ ثانٍ: دوراتُها تُراجَع وتُعتمَد وتُنشر ولا تدخل
+     الملفَّ أبدا. فكان كلُّ نشرٍ للموقع يطفئ ما نشرته اللوحةُ قبله، بلا سجلٍّ
+     ولا شكوى — وهكذا خرجت C-COMX-107 من الكتالوج بعد نشرها، واقتراحُ
+     المدرّب الذي صارت إليه يقول «صار دورةً في الكتالوج».
+
+     فالتقليمُ حقٌّ على ما يملكه الملفّ: ما وُلد منه (`createdBy` فارغ). وما
+     وُلد في اللوحة تحكمه اللوحة — مراجعتُها واعتمادُها ونشرُها. وما أطفأه
+     الشرطُ القديم يعيده الترحيلُ `20260929120000_restore_admin_courses`. */
   const sourceCourseIds = courses.map((c) => c.course_id)
   const retired = await prisma.course.updateMany({
-    where: { status: 'published', id: { notIn: noneIfEmpty(sourceCourseIds) } },
+    where: { status: 'published', createdBy: null, id: { notIn: noneIfEmpty(sourceCourseIds) } },
     data: { status: 'archived' },
   })
   if (retired.count > 0) console.log(`   أُرشفت ${retired.count} دورة زالت من المستودع — لم تُحذف، وسجلّاتها باقية`)
@@ -358,8 +399,17 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         links++
       }
     }
+    /* ويقلّم روابطَ دوراتِه هو — لا رابطَ دورةٍ وُلدت في اللوحة داخل هذا
+       المسار. فالمعالجُ يربط الدورةَ بمسارها عند ميلادها، ولا بابَ في اللوحة
+       يعيد ربطَها بمسارٍ من مسارات الملفّ بعدُ — فكان كلُّ نشرٍ للموقع يحذف
+       الرابطَ حذفا لا رجعةَ منه، ولو كانت الدورةُ مسوّدةً لم تُنشر، فتخرج
+       إلى الكتالوج بلا مسارٍ ولا يدري أحدٌ لماذا. */
     await prisma.pathwayCourse.deleteMany({
-      where: { pathwayId: p.id, courseId: { notIn: noneIfEmpty([...p.course_ids, ...supports.map((x) => x.course_id)]) } },
+      where: {
+        pathwayId: p.id,
+        courseId: { notIn: noneIfEmpty([...p.course_ids, ...supports.map((x) => x.course_id)]) },
+        course: { createdBy: null },
+      },
     })
     await prisma.pathwaySkillRequirement.deleteMany({
       where: { pathwayId: p.id, skillId: { notIn: noneIfEmpty([...seen]) } },
