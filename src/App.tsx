@@ -62,6 +62,7 @@ const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const AssignByTrainer = lazy(() => import('./pages/admin/AssignByTrainer'))
 const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
+const AdminTrainerMarketing = lazy(() => import('./pages/admin/TrainerMarketing'))
 const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDepartures'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
 const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
@@ -76,6 +77,7 @@ const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
 const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCourseProposals'))
 const TrainerMyPaths = lazy(() => import('./pages/trainer/MyPaths'))
+const TrainerMarketing = lazy(() => import('./pages/trainer/Marketing'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const CohortWorkspace = lazy(() => import('./pages/trainer/CohortWorkspace'))
@@ -278,6 +280,8 @@ export default function App() {
             <Route path="/trainer/course-edits" element={<Navigate to="/trainer/qualifications" replace />} />
             {/* ن-١: مسارٌ يبنيه المدرّبُ من دوراته ويُعرض على الرفّ العامّ */}
             <Route path="/trainer/paths" element={<TrainerMyPaths />} />
+            {/* التسويق: فيديوهاتُه وصورُه، وملصقاتٌ لا تُستعمل علنا إلّا بموافقته */}
+            <Route path="/trainer/marketing" element={<TrainerMarketing />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />
             <Route path="/trainer/grading" element={<GradingQueue />} />
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
@@ -317,6 +321,7 @@ export default function App() {
             <Route path="/admin/course-proposals" element={<AdminCourseProposals />} />
             {/* ن-١: مراجعةُ ما يُعرض على الرفّ باسم مدرّب */}
             <Route path="/admin/trainer-paths" element={<AdminTrainerPaths />} />
+            <Route path="/admin/trainer-marketing" element={<AdminTrainerMarketing />} />
             {/* ن-٩ · ن-١٠: رحيلُ مدرّب — بديلٌ ثمّ نظيرٌ ثمّ اختيارُ صاحبه */}
             <Route path="/admin/trainer-departures" element={<AdminTrainerDepartures />} />
             {/* الأتعابُ شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك محروسٌ

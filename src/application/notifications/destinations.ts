@@ -122,10 +122,13 @@ const TRAINER: Table = {
   'trainer.offer.withdrawn': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
   'trainer.offer.lapsed': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
   'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقِرّ بجاهزيّتك' },
+  /* والملصقُ يُوافَق عليه حيث يُرى — قسمُ التسويق */
+  'trainer.poster.submitted': { path: '/trainer/marketing', ctaAr: 'راجِع الملصقَ ووافِق عليه' },
 }
 
 const STAFF: Table = {
   'staff.task.assigned': { path: '/admin/tasks', ctaAr: 'افتح مهمّتك' },
+  'trainer.poster.decided': { path: '/admin/trainer-marketing', ctaAr: 'افتح ملصقاتِ المدرّب' },
   'staff.task.done': { path: '/admin/tasks', ctaAr: 'افتح المهامّ' },
   'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },

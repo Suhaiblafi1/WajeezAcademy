@@ -317,6 +317,14 @@ const PHRASES: Record<string, string> = {
   'trainer.bank.set': 'كتابةُ المدرّبِ حسابَه البنكيَّ أو تبديلُه',
   'trainer.bank.reveal': 'كشفُ رقمِ حسابٍ بنكيٍّ لصرفِ مستحقّ',
   'trainer.bank.remove': 'إلغاءُ المدرّبِ حسابَه البنكيَّ',
+  /* التسويق — فيديوهاتُ المدرّب وصورُه، وملصقاتٌ لا تُستعمل إلّا بموافقته */
+  'trainer.marketing.video.set': 'رابطُ فيديو تعريفيٍّ من المدرّب',
+  'trainer.marketing.video.remove': 'حذفُ المدرّبِ فيديو تعريفيّا',
+  'trainer.marketing.photo.add': 'صورةٌ للملصقات من المدرّب',
+  'trainer.marketing.photo.remove': 'حذفُ المدرّبِ صورةً للملصقات',
+  'trainer.poster.submit': 'إرسالُ ملصقٍ إلى المدرّب ليوافق عليه',
+  'trainer.poster.approve': 'موافقةُ المدرّبِ على ملصقه',
+  'trainer.poster.request_changes': 'طلبُ المدرّبِ تعديلَ ملصقه',
   /* عروضُ الإسناد — دعوةٌ تُقبَل وتُردّ، لا توجيهٌ يقع */
   'trainer.offer.create': 'عرضُ دورةٍ على مدرّبٍ مؤهَّلٍ لها',
   'trainer.offer.accept': 'قبولُ المدرّبِ عرضَ إسناد',

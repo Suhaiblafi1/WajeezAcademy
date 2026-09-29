@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, LayoutDashboard, Link2, Route, Star, Users, Wallet } from "lucide-react";
+import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, LayoutDashboard, Link2, Megaphone, Route, Star, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -148,6 +148,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     /* ن-١: بعد «دوراتي المقترحة» — الأولى دوراتٌ ليست عندنا، وهذه ترتيبُ
        ما عندنا في مسارٍ باسمه. والسؤالان متجاوران في ذهنه. */
     { to: "/trainer/paths", label: "مساراتي", icon: Route },
+    /* وبعدها «التسويق» (٢٩ سبتمبر ٢٠٢٦): التعريفُ بدوراته ومساراته وملصقاتُها —
+       فهو جارُ ما يُسوَّق له. */
+    { to: "/trainer/marketing", label: "التسويق", icon: Megaphone },
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
     /* وبعدها «عقدي» مباشرةً — قرارُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦): «الملف
        يكون في منصته ضمن قسم المستحقات والعقد». فهما بابان متجاوران: ما

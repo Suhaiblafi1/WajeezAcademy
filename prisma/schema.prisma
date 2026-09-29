@@ -1328,6 +1328,9 @@ model TrainerProfile {
   cohortPlans           CohortDeliveryPlan[]
   cohortTrainers        CohortTrainer[]
   bankAccounts          TrainerBankAccount[]
+  marketingVideos       TrainerMarketingVideo[]
+  marketingPhotos       TrainerMarketingPhoto[]
+  posters               TrainerPoster[]
   issuedDiscounts       TrainerIssuedDiscount[]
   codes                 TrainerCode[]
   codeRedemptions       TrainerCodeRedemption[]
@@ -4107,4 +4110,70 @@ model RegistrationInterest {
 
   @@unique([email, seasonKey])
   @@index([seasonKey, notifiedAt])
+}
+
+/// ═══ «التسويق» في بوّابة المدرّب (٢٩ سبتمبر ٢٠٢٦) ═══
+///
+/// قرارُ صاحب المنصّة: قسمٌ يرفع فيه المدرّبُ رابطَ فيديو يعرّف فيه بنفسه
+/// وبدوراته أو مساراته ليقنع الناسَ بالانضمام، وصورتَه — ثمّ تصمّم الإدارةُ
+/// ملصقا لكلّ دورةٍ أو مسار، **ولا يُستعمل علنا حتّى يوافق عليه المدرّب**.
+/// والشرحُ كاملا في رأس `server/services/trainer-marketing.service.ts`.
+
+/// فيديو تعريفيٌّ برابط — عن نفسه (`bio`) أو عن دورةٍ أو مسارٍ له.
+/// والرابطُ لا الملفّ بقرارٍ قديم: الفيديو لا يُرفع إلى المنصّة، يُلصق رابطُه.
+model TrainerMarketingVideo {
+  id         String         @id @default(uuid()) @db.Uuid
+  profileId  String         @db.Uuid
+  /// bio | course | path
+  targetKind String
+  /// رمزُ الدورة أو معرّفُ المسار — وفارغٌ لـ`bio`، لا `null`: القيدُ الفريد
+  /// لا يرى `null` مساويا لـ`null`، فيصير للمدرّب فيديوهان تعريفيّان.
+  targetId   String         @default("")
+  url        String
+  noteAr     String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, targetKind, targetId])
+}
+
+/// صورُ المدرّب للملصقات — يرفعها بنفسه، وتختار منها الإدارةُ ما يصلح.
+/// ملفٌّ في المخزن (`storageKey`) أو رابطٌ حين يكون الرفعُ مطفأً.
+model TrainerMarketingPhoto {
+  id         String         @id @default(uuid()) @db.Uuid
+  profileId  String         @db.Uuid
+  storageKey String?        @unique
+  url        String?
+  captionAr  String?
+  createdAt  DateTime       @default(now())
+  profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+/// ملصقٌ تصمّمه الإدارةُ لدورةٍ أو مسارٍ للمدرّب — ويوافق عليه صاحبُه قبل
+/// أيّ استعمالٍ عامّ.
+model TrainerPoster {
+  id            String         @id @default(uuid()) @db.Uuid
+  profileId     String         @db.Uuid
+  /// course | path
+  targetKind    String
+  targetId      String
+  /// نسخةٌ بعد نسخة — كلُّ تعديلٍ يطلبه المدرّبُ يعود بنسخةٍ جديدة
+  version       Int            @default(1)
+  storageKey    String?        @unique
+  url           String?
+  status        String         @default("draft") // draft | pending | approved | changes_requested | superseded
+  /// ما تقوله الإدارةُ مع النسخة، وما يطلبه المدرّبُ حين لا يوافق
+  staffNoteAr   String?
+  trainerNoteAr String?
+  createdBy     String?        @db.Uuid
+  createdAt     DateTime       @default(now())
+  submittedAt   DateTime?
+  decidedAt     DateTime?
+  profile       TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, targetKind, targetId])
+  @@index([status])
 }

@@ -122,6 +122,8 @@ describe('كلُّ نموذجٍ يحمل مفتاحَ تخزينٍ يعرفه ا
     'AssessmentResponse', 'AssignmentSubmission', 'CvSubmission',
     'CohortFile', 'LearningMaterial', 'Recording', 'TrainerApplicationDocument',
     'TrainerContractDocument',
+    /* صورةُ التسويق والملصق (٢٩ سبتمبر ٢٠٢٦) — `resolveStorageOwner` يعرفهما */
+    'TrainerMarketingPhoto', 'TrainerPoster',
   ].sort()
 
   it('المسحُ يقرأ المخطَّطَ فعلا', () => {

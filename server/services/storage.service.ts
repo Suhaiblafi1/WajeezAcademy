@@ -159,6 +159,9 @@ export const MAX_PHOTO_BYTES = 1024 * 1024
 /* والصورُ صيغٌ ثلاثٌ لا أكثر: ما يعرضه كلُّ متصفّحٍ بلا تحويل */
 export const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp'] as const
 
+/** صورةُ الملصق وصورةُ التسويق — بدقّةِ طباعة، فسقفُها سقفُ الرفع كلِّه */
+export const MAX_MARKETING_IMAGE_BYTES = MAX_UPLOAD_ANY
+
 /* ═══ كيف تُميَّز الصورةُ المخزَّنةُ عن رابطٍ خارجيّ ═══
 
    `TrainerProfile.photoUrl` عمودُ نصٍّ واحد، ويحمل أحدَ شكلَين: رابطا
@@ -211,6 +214,7 @@ export function newStorageKey(): string {
 export type StorageOwnerKind =
   | 'trainer_document' | 'contract_document' | 'cv' | 'recording' | 'material' | 'submission'
   | 'assessment_response' | 'trainer_photo' | 'avatar' | 'cohort_file'
+  | 'marketing_photo' | 'poster'
 
 export interface StorageOwner {
   kind: StorageOwnerKind
@@ -326,6 +330,18 @@ export async function resolveStorageOwner(
     }
   }
 
+  /* ═══ والعاشرُ والحادي عشر: صورةُ التسويق والملصق (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     صورةُ التسويق غيرُ صورة الحساب: تُطبع على ملصقٍ لا في بطاقةٍ بعرض
+     مئتي بكسل، فسقفُها سقفُ الرفع كلِّه (أربعةُ ميغابايت) لا ميغابايتُ
+     الصورة الشخصيّة. والملصقُ مثلُها — تصميمٌ بدقّةِ طباعة. وكلاهما صورةٌ
+     تُسأل عنها بايتاتُها (`kindRequiresImage`). */
+  const mPhoto = await prisma.trainerMarketingPhoto.findUnique({ where: { storageKey }, select: { id: true } })
+  if (mPhoto) return { kind: 'marketing_photo', maxBytes: MAX_MARKETING_IMAGE_BYTES }
+
+  const poster = await prisma.trainerPoster.findUnique({ where: { storageKey }, select: { id: true } })
+  if (poster) return { kind: 'poster', maxBytes: MAX_MARKETING_IMAGE_BYTES }
+
   return null
 }
 
@@ -361,7 +377,7 @@ export function sniffImageMime(buffer: Buffer): string | null {
 
 /** الأنواعُ التي لا يُقبل فيها إلّا ما ثبت أنّه صورة */
 export function kindRequiresImage(kind: StorageOwnerKind): boolean {
-  return kind === 'trainer_photo' || kind === 'avatar'
+  return kind === 'trainer_photo' || kind === 'avatar' || kind === 'marketing_photo' || kind === 'poster'
 }
 
 /* الحجمُ يبقى في سجلّ وثيقة المتقدّم — تقرؤه شاشةُ المراجعة. والبايتاتُ
