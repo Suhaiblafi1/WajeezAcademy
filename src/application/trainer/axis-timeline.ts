@@ -368,9 +368,7 @@ export function sessionProblems(input: {
     if (at.has(-1)) return /* محورٌ بلا موعد — تقوله خطوةُ المحاور، لا تُكرَّر هنا */
     if (at.size > 1) { blocking.push(`${label} يجمع محورين من موعدين — اللقاءُ لمحاورِ موعدٍ واحد`); return }
     const slot = slots[[...at][0]]
-    const { from, to } = periodBounds(slot)
-    const start = new Date(s.startsAt).getTime()
-    if (start < from.getTime() || sessionEnd(s).getTime() > to.getTime()) {
+    if (!sessionInsideSlot(s, slot)) {
       blocking.push(`${label} خارجَ موعد ${axesLabelAr(ids, pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`)
       return
     }
@@ -392,6 +390,16 @@ export function sessionProblems(input: {
     }
   })
   return { blocking, warnings }
+}
+
+/** أيقع اللقاءُ المباشرُ داخلَ موعد محوره؟ — بدؤه ونهايتُه (أو أدنى مدّةٍ له إن لم
+    تُكتب) بين حدّيه بعمّان. به يحجب الإرسالُ ما خرج (فوق)، وبه يبقى اللقاءُ المنقولُ
+    معتمَدا بلا اعتماد (`postpone.ts`) — فلا يفترق الحكمان */
+export function sessionInsideSlot(s: { startsAt: Date | string; endsAt?: Date | string | null }, slot: CohortPeriod): boolean {
+  const start = new Date(s.startsAt).getTime()
+  if (Number.isNaN(start)) return false
+  const { from, to } = periodBounds(slot)
+  return start >= from.getTime() && sessionEnd(s).getTime() <= to.getTime()
 }
 
 /** أتُفتح الجلسةُ المسجّلةُ داخلَ موعد محورها؟ — بحدوده في عمّان: منتصفِ ليل يومه
