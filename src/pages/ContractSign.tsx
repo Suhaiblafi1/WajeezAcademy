@@ -54,7 +54,10 @@ interface OpenView {
 
 type View =
   | OpenView
-  | { state: 'signed'; title: string; signedAt: string | null; signerLegalName: string | null }
+  | {
+      state: 'signed'; title: string; signedAt: string | null; signerLegalName: string | null
+      bodyAr: string | null; bodyHash: string | null
+    }
   | { state: 'declined'; title: string; declinedAt: string | null }
   | { state: 'amendment_requested'; title: string; requestedAt: string | null; requestAr: string | null }
   | { state: 'revoked'; title: string }
@@ -131,7 +134,7 @@ export default function ContractSign() {
 
   /* والبنيةُ تُشتقّ مرّةً لا في كلّ رسم: التمريرُ يُعيد الرسمَ مرارا،
      وتحليلُ ثلاثمئة سطرٍ في كلّ إطارٍ يُثقل صفحةً يجب أن تُقرأ بسلاسة. */
-  const bodyAr = view?.state === 'open' ? view.bodyAr : null
+  const bodyAr = view?.state === 'open' || view?.state === 'signed' ? view.bodyAr : null
   const doc = useMemo(() => (bodyAr ? parseContractDoc(bodyAr) : null), [bodyAr])
 
   if (fatal) {
@@ -145,14 +148,25 @@ export default function ContractSign() {
           {spent
             ? (
               <>
+                {/* ═══ ويُقال سببُه لا سببٌ غيرُه (٢٩ سبتمبر ٢٠٢٦) ═══
+
+                    كان هنا: «رابطُ التوقيع يُفتح مرّةً واحدة، ثمّ يُغلَق».
+                    وهو غيرُ واقع: الرابطُ يُفتح ما شاء صاحبُه —
+                    و`firstOpenedAt` و`lastOpenedAt` عمودانِ لا معنى لهما لو
+                    فُتح مرّةً. وصار الموقِّعُ يقرأ منه نسختَه كذلك، فبقيت
+                    الجملةُ تعتذر عن حمايةٍ لا تقع عن بابٍ لم يُغلَق.
+
+                    وما يُسقط الرمزَ حقّا ثلاثة: اعتذارٌ، وسحبٌ، وعقدٌ أحدثُ
+                    يُبطل ما قبله. فتُقال هي — إذ من يقف أمام بابٍ مغلقٍ
+                    يحتاج أن يعرف أيَّ بابٍ هو. */}
                 <p>
-                  رابطُ التوقيع يُفتح مرّةً واحدة، ثمّ يُغلَق — حمايةً لوثيقةٍ
-                  تحمل اسمَك وأتعابَك.
+                  هذا الرابطُ لم يبقَ صالحا: إمّا اعتُذر عن هذا العقد، أو سحبته
+                  الأكاديميّة، أو أرسلنا إليك بدلا منه عقدا أحدثَ فبطل ما قبله.
                 </p>
                 <p className="mt-2">
-                  فإن كنتَ قد وقّعتَ فتوقيعُك مسجَّلٌ عندنا ووصلتك نسختُك بالبريد،
-                  ولا يلزمك شيءٌ الآن. وإن لم توقّع بعدُ فاطلب من فريق الأكاديميّة
-                  رابطا جديدا ويصلك على بريدك.
+                  وإن كنتَ قد وقّعتَ فتوقيعُك مسجَّلٌ عندنا، ونسختُك تُقرأ من
+                  الرابط الذي وقّعتَ منه. وإن أردتَ رابطا جديدا فاطلبه من فريق
+                  الأكاديميّة ويصلك على بريدك.
                 </p>
               </>
             )
@@ -179,7 +193,7 @@ export default function ContractSign() {
       expired: 'انقضى أجلُ هذا الرابط',
     }
     const BODY: Record<string, string> = {
-      signed: 'سُجّل توقيعُك، ووصلتك نسختُك بالبريد. تراجعه الأكاديميّةُ ثمّ يُفتح حسابُك.',
+      signed: 'سُجّل توقيعُك، ونسختُك أدناه تُقرأ وتُطبَع. تراجعه الأكاديميّةُ ثمّ يُفتح حسابُك.',
       declined: 'سُجّل اعتذارُك ووصل فريقَنا. وإن كان ذلك سهوا فتواصل معنا.',
       amendment_requested: 'وصل طلبُك فريقَنا وننظر فيه. ويقف التوقيعُ حتّى نجيبك: '
         + 'فإمّا أعدنا إليك العرضَ مصحَّحا، وإمّا كتبنا لك لماذا يبقى البندُ كما هو. '
@@ -199,6 +213,26 @@ export default function ContractSign() {
             </p>
           )}
         </Panel>
+        {/* ═══ ونسختُه تُعرَض له تحتَ خبرِ توقيعه (٢٩ سبتمبر ٢٠٢٦) ═══
+
+            كان اللوحُ خبرا بلا وثيقة: «سُجّل توقيعُك» ثمّ لا شيء. ومن نقر
+            «افتح العقد» أراد العقدَ لا خبرا عنه. وهذا موضعُه الوحيدُ قبل أن
+            يُختَم العقدُ ويُفتح حسابُه على المنصّة.
+
+            وخارجَ اللوح لا داخلَه: رأسُ `Surface.tsx` يقول «وتفصيلٌ داخله لا
+            يحتاج إطارا ثالثا»، ونغمةُ `positive` تصبغ أرضيَّتَها — ووثيقةٌ
+            قانونيّةٌ تُقرأ على سطحٍ محايدٍ كما تُقرأ قبل التوقيع بالصندوق
+            نفسِه. */}
+        {view.state === 'signed' && doc && (
+          <div
+            dir="rtl"
+            tabIndex={0}
+            aria-label="نصُّ الاتفاقية التي وقّعتَها"
+            className="mt-4 max-h-[70vh] overflow-auto rounded-lg border border-white/10"
+          >
+            <ContractDocument doc={doc} />
+          </div>
+        )}
       </Shell>
     )
   }
@@ -253,6 +287,9 @@ export default function ContractSign() {
       setView({
         state: 'signed', title: v.title,
         signedAt: r.signedAt, signerLegalName: legalName.trim(),
+        /* والمتنُ يُنقل معه: لولاه لرأى من وقّع لوحا بلا وثيقةٍ حتّى يُحدّث
+           الصفحة، وهو ما يردّه الخادمُ من الرابط نفسِه. */
+        bodyAr: v.bodyAr, bodyHash: v.bodyHash,
       })
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ التوقيع')
