@@ -221,6 +221,10 @@ for (const t of trainers.profiles as { trainer_id: string; verified_source?: str
 if (problems.length > 0) {
   console.error(`\n❌ فشل التدقيق — ${problems.length} مشكلة:`)
   for (const p of problems.slice(0, 50)) console.error(`  - ${p}`)
+  /* النسخةُ المتقادمةُ لا تُصحَّح باليد موضعا موضعا — مولّدُها يعيدها كلَّها */
+  if (problems.some((p) => /(عنوان|اسم مسار) مضمن متقادم|ساعات مضمنة متقادمة/.test(p))) {
+    console.error('\n  النسخُ المضمّنةُ في القوالب تُشتقّ من الكتالوج: npm run catalog:sync-templates')
+  }
   process.exit(1)
 }
 console.log('✅ تدقيق بيانات التشخيص ناجح:')
