@@ -179,7 +179,7 @@ describe('ما لا يمرّ عند التوقيع', () => {
 })
 
 describe('التوقيعُ يقع مرّةً واحدة', () => {
-  it('يُسجَّل بدليله، وتُغلَق مهمّتُه، ويموت رمزُه', async () => {
+  it('يُسجَّل بدليله، وتُغلَق مهمّتُه، ويبقى بابُ نسخته', async () => {
     const { profile, contract } = await mkContract('conditionally_approved', [])
     const token = await sendAndToken(contract.id)
     await review.signContractByToken(token, {
@@ -216,7 +216,16 @@ describe('التوقيعُ يقع مرّةً واحدة', () => {
     expect(issued, 'الإقرارُ بخصمه هو لم يُحفَظ').toBeTruthy()
     expect(issued!.textAr, 'الجملةُ المحفوظةُ لا تحيل إلى 4-10').toContain('4-10')
 
-    expect(row.tokenHash, 'الرمزُ بقي حيّا بعد التوقيع — بابٌ يُفتح مرّتين').toBeNull()
+    /* ═══ والرمزُ يبقى حيّا (٢٩ سبتمبر ٢٠٢٦) ═══
+
+       كان هذا السطرُ يشترط مسحَه: «بابٌ يُفتح مرّتين». وكان يقيس **الوسيلةَ**
+       لا الخصلة: الذي يمنع توقيعا ثانيا شرطُ `status: 'sent'` في المعاملة، لا
+       غيابُ الرمز — والفحصُ الذي يليه يقيس ذلك المنعَ بعينه ويعدّ الأثر. أمّا
+       مسحُ الرمز فكان يمنع قراءةً: يُسقط `byToken` على `invalid_token` فلا
+       يُقرأ فرعُ `signed`، فيُقال لمن وقّع «انتهى هذا الرابط» بدلَ عقده.
+
+       وتفصيلُه في `contract-link-after-signing.test.ts`. */
+    expect(row.tokenHash, 'مُسح الرمزُ فمات بابُ الموقِّع إلى نسخته').toBeTruthy()
 
     const task = await prisma.trainerOnboardingTask.findFirstOrThrow({
       where: { profileId: profile.id, key: 'sign_contract' },
@@ -232,7 +241,9 @@ describe('التوقيعُ يقع مرّةً واحدة', () => {
       legalName: 'سارة عبد الله الحربي', bodyHash: sha256(BODY), acks: [...ALL_ACKS],
     })
     await once()
-    await expect(once()).rejects.toMatchObject({ code: 'invalid_token' })
+    /* و`bad_state` لا `invalid_token`: الرمزُ يبقى حيّا ليقرأ الموقِّعُ نسختَه،
+       والرادُّ شرطُ الحالة. والمقيسُ أنّه لا يمرّ، والأثرُ يُعدّ أدناه. */
+    await expect(once()).rejects.toMatchObject({ code: 'bad_state' })
     const audits = await prisma.auditEvent.count({
       where: { action: 'trainer.contract.sign_by_trainer', entityId: contract.id },
     })
