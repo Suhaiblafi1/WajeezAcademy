@@ -488,6 +488,15 @@
         "PW-PSY-001"
       ]
     },
+    "backend_databases": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "backlog_management": {
       "layers": [
         "pathway_requirement",
@@ -886,6 +895,15 @@
       "pathway_ids": [
         "PW-FAM-001"
       ]
+    },
+    "circular_economy": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "circulation_flow": {
       "layers": [
@@ -1718,6 +1736,15 @@
         "PW-SCM-001"
       ]
     },
+    "deployment_version_control": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "design_brief": {
       "layers": [
         "diagnostic",
@@ -1948,6 +1975,15 @@
         "PW-LND-001"
       ]
     },
+    "donor_reporting": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "drawing_clash_review": {
       "layers": [
         "pathway_requirement",
@@ -2128,6 +2164,15 @@
       "pathway_ids": [
         "PW-EDU-001"
       ]
+    },
+    "esg_standards": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "ethical_influence": {
       "layers": [
@@ -2520,6 +2565,15 @@
       "merged_into": "SK-DATA-014",
       "decision_role_ar": "مدموجة في SK-DATA-014 بقرار أكاديمي موثق (2026-08-19) — مرجع تاريخي فقط، لا تدخل التشخيص."
     },
+    "grant_proposal_writing": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "grid_layout": {
       "layers": [
         "pathway_requirement",
@@ -2590,6 +2644,15 @@
       "pathway_ids": [
         "PW-ENGR-001"
       ]
+    },
+    "html_css_basics": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "human_ai_collaboration": {
       "layers": [
@@ -2811,6 +2874,15 @@
       "diagnostic_active": false,
       "academic_status": "future_catalog_skill",
       "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
+    },
+    "javascript_programming": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "job_analysis": {
       "layers": [
@@ -3053,6 +3125,15 @@
         "PW-STU-002"
       ]
     },
+    "logical_framework": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "logo_systems": {
       "layers": [
         "pathway_requirement",
@@ -3273,6 +3354,15 @@
       "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "model_quantity_takeoff": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
+    "monitoring_evaluation": {
       "layers": [
         "learning_outcome"
       ],

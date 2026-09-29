@@ -4027,6 +4027,561 @@
         "تحديد أهداف عائلية",
         "نمو المراهق"
       ]
+    },
+    {
+      "course_id": "C-COMX-108",
+      "pathway_id": "PW-COM-001",
+      "sequence": 6,
+      "title_ar": "دورة العلاقات العامة والاتصال المؤسسي: بناء السمعة وإدارة الرسائل والتعامل مع الإعلام",
+      "subtitle_ar": "خريطةُ جمهورٍ ودليلُ رسائل · بيانٌ صحفيٌّ وخطّةُ ساعةٍ أولى في الأزمة",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "media_literacy",
+        "message_design",
+        "crisis_management",
+        "arabic_business_writing"
+      ],
+      "skill_ids": [
+        "SK-COM-018",
+        "SK-X-COM-001",
+        "SK-LEAD-011",
+        "SK-COM-003"
+      ],
+      "skill_names_ar": [
+        "الثقافة الإعلامية",
+        "تصميم الرسالة",
+        "إدارة الأزمات",
+        "الكتابة العربية المهنية"
+      ]
+    },
+    {
+      "course_id": "C-COMX-109",
+      "pathway_id": "PW-COM-001",
+      "sequence": 7,
+      "title_ar": "دورة الحضور التنفيذي للقادة: الثبات والوضوح والتأثير في المواقف عالية الأثر",
+      "subtitle_ar": "افتتاحيّةُ دقيقتين أمام مجلس · ردٌّ ثابتٌ على اعتراضٍ حادٍّ تحت الضغط",
+      "level_ar": "ممارس",
+      "total_hours": 8,
+      "skill_slugs": [
+        "voice_and_presence",
+        "strategic_communication",
+        "decision_under_pressure",
+        "persuasion"
+      ],
+      "skill_ids": [
+        "SK-COM-019",
+        "SK-LEAD-016",
+        "SK-LEAD-017",
+        "SK-COM-010"
+      ],
+      "skill_names_ar": [
+        "الحضور والصوت",
+        "التواصل القيادي الاستراتيجي",
+        "القرار تحت الضغط",
+        "الإقناع"
+      ]
+    },
+    {
+      "course_id": "C-COMX-110",
+      "pathway_id": "PW-COM-001",
+      "sequence": 8,
+      "title_ar": "دورة العمل بروح الفريق: كيف تكون عضوا يرفع أداء فريقه",
+      "subtitle_ar": "اتّفاقُ أدوارٍ مكتوبٌ مع زملائك · ملاحظةٌ مستقبَلةٌ وخلافٌ محسومٌ بلا قطيعة",
+      "level_ar": "تأسيسي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "active_listening",
+        "feedback_receiving",
+        "conflict_resolution"
+      ],
+      "skill_ids": [
+        "SK-COM-001",
+        "SK-COM-014",
+        "SK-COM-012"
+      ],
+      "skill_names_ar": [
+        "الإصغاء الفعال",
+        "استقبال الملاحظات",
+        "حل النزاعات"
+      ]
+    },
+    {
+      "course_id": "C-BIZ-106",
+      "pathway_id": "PW-BIZ-001",
+      "sequence": 5,
+      "title_ar": "دورة خطة العمل للمشاريع الصغيرة: من نموذج العمل إلى خطةٍ مكتوبةٍ يقرؤها مموِّل",
+      "subtitle_ar": "افتراضاتٌ ماليّةٌ معلَنة وتوقّعاتُ سنة · خطّةٌ في عشر صفحاتٍ بملخّصٍ تنفيذيّ",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "business_model",
+        "budgeting_forecasting",
+        "executive_summary"
+      ],
+      "skill_ids": [
+        "SK-BIZ-001",
+        "SK-X-FIN-002",
+        "SK-COM-006"
+      ],
+      "skill_names_ar": [
+        "نموذج العمل",
+        "الموازنة والتنبؤ المالي",
+        "كتابة الملخص التنفيذي"
+      ]
+    },
+    {
+      "course_id": "C-BIZ-107",
+      "pathway_id": "PW-BIZ-001",
+      "sequence": 6,
+      "title_ar": "دورة الاستدامة والاقتصاد الدائري للمشاريع الصغيرة والمتوسطة: من متطلبات ESG إلى فرص أعمال",
+      "subtitle_ar": "تقييمُ جاهزيّةٍ لمتطلّبات ESG · فرصةُ دائريّةٌ واحدةٌ محسوبةُ الأثر والتكلفة",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "regulatory_compliance",
+        "esg_standards",
+        "circular_economy"
+      ],
+      "skill_ids": [
+        "SK-GOV-007",
+        "SK-X-BIZ-001",
+        "SK-X-BIZ-002"
+      ],
+      "skill_names_ar": [
+        "الامتثال والتنظيم",
+        "الاستدامة ومعايير ESG",
+        "الاقتصاد الدائري"
+      ]
+    },
+    {
+      "course_id": "C-BIZ-108",
+      "pathway_id": "PW-BIZ-001",
+      "sequence": 7,
+      "title_ar": "دورة تمويل المشاريع الناشئة: من مصادر التمويل إلى عرضٍ يقنع المموِّل",
+      "subtitle_ar": "خريطةُ مصادرِ تمويلٍ تناسب مرحلتك · عرضٌ تمويليٌّ وجدولُ ملكيّةٍ بعد الجولة",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "budgeting_forecasting",
+        "risk_return",
+        "unit_economics",
+        "persuasion"
+      ],
+      "skill_ids": [
+        "SK-X-FIN-002",
+        "SK-FIN-006",
+        "SK-FIN-012",
+        "SK-COM-010"
+      ],
+      "skill_names_ar": [
+        "الموازنة والتنبؤ المالي",
+        "العلاقة بين المخاطر والعائد",
+        "اقتصاديات الوحدة",
+        "الإقناع"
+      ]
+    },
+    {
+      "course_id": "C-MGR-106",
+      "pathway_id": "PW-EMP-005",
+      "sequence": 5,
+      "title_ar": "دورة بناء فرق العمل الفعالة: الأدوار والثقة والأداء المشترك",
+      "subtitle_ar": "ميثاقُ فريقٍ بأدوارٍ ومعاييرِ عمل · تشخيصُ ثقةٍ وخطّةُ ثلاثين يوما",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "team_leadership",
+        "feedback_giving",
+        "motivation_design"
+      ],
+      "skill_ids": [
+        "SK-LEAD-002",
+        "SK-COM-013",
+        "SK-LEAD-013"
+      ],
+      "skill_names_ar": [
+        "قيادة الفريق",
+        "إعطاء الملاحظات",
+        "تصميم الدافعية"
+      ]
+    },
+    {
+      "course_id": "C-MGR-107",
+      "pathway_id": "PW-EMP-005",
+      "sequence": 6,
+      "title_ar": "دورة التخطيط الاستراتيجي والتشغيلي: من الرؤية إلى خطة سنوية تُقاس",
+      "subtitle_ar": "تحليلُ واقعٍ يقود إلى ثلاث أولويّات · خطّةٌ سنويّةٌ بأهدافٍ ومؤشّراتٍ وإيقاعِ مراجعة",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "strategic_thinking",
+        "goal_setting_okrs",
+        "prioritization",
+        "kpi_design"
+      ],
+      "skill_ids": [
+        "SK-COG-007",
+        "SK-LEAD-006",
+        "SK-COG-015",
+        "SK-DATA-007"
+      ],
+      "skill_names_ar": [
+        "التفكير الاستراتيجي",
+        "تحديد الأهداف وOKRs",
+        "ترتيب الأولويات",
+        "تصميم مؤشرات الأداء"
+      ]
+    },
+    {
+      "course_id": "C-PM-106",
+      "pathway_id": "PW-EMP-003",
+      "sequence": 5,
+      "title_ar": "دورة منهجيات إدارة المشاريع: متى تختار Waterfall ومتى Agile، وكيف تُطبَّق Scrum وKanban",
+      "subtitle_ar": "قرارُ منهجيّةٍ مبرَّرٌ لمشروعٍ حقيقيّ · سبرنتٌ أو لوحةُ Kanban تعمل أسبوعين",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "project_management",
+        "prioritization",
+        "meeting_cadence"
+      ],
+      "skill_ids": [
+        "SK-BIZ-017",
+        "SK-COG-015",
+        "SK-LEAD-015"
+      ],
+      "skill_names_ar": [
+        "إدارة المشاريع",
+        "ترتيب الأولويات",
+        "إيقاع الاجتماعات والمتابعة"
+      ]
+    },
+    {
+      "course_id": "C-PM-107",
+      "pathway_id": "PW-EMP-003",
+      "sequence": 6,
+      "title_ar": "دورة أدوات إدارة المشاريع: Trello وJira وSlack في مشروع واحد",
+      "subtitle_ar": "مساحةُ عملٍ مبنيّةٌ لمشروعٍ حقيقيّ · قواعدُ استعمالٍ يلتزم بها الفريق",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "cloud_collaboration",
+        "remote_work_tools",
+        "project_management"
+      ],
+      "skill_ids": [
+        "SK-DIG-005",
+        "SK-DIG-016",
+        "SK-BIZ-017"
+      ],
+      "skill_names_ar": [
+        "التعاون السحابي",
+        "أدوات العمل عن بعد",
+        "إدارة المشاريع"
+      ]
+    },
+    {
+      "course_id": "C-PM-108",
+      "pathway_id": "PW-EMP-003",
+      "sequence": 7,
+      "title_ar": "دورة المشاريع الممولة: من مقترح يقنع المانح إلى تقرير يرضيه",
+      "subtitle_ar": "مقترحُ منحةٍ بإطارٍ منطقيٍّ وميزانيّة · خطّةُ متابعةٍ وتقييمٍ وتقريرُ مانحٍ دوريّ",
+      "level_ar": "تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "grant_proposal_writing",
+        "logical_framework",
+        "monitoring_evaluation",
+        "donor_reporting",
+        "kpi_design"
+      ],
+      "skill_ids": [
+        "SK-X-GRANT-001",
+        "SK-X-GRANT-002",
+        "SK-X-GRANT-003",
+        "SK-X-GRANT-004",
+        "SK-DATA-007"
+      ],
+      "skill_names_ar": [
+        "كتابة مقترحات المنح",
+        "الإطار المنطقي",
+        "المتابعة والتقييم",
+        "تقارير المانحين",
+        "تصميم مؤشرات الأداء"
+      ]
+    },
+    {
+      "course_id": "C-PSY-109",
+      "pathway_id": "PW-PSY-001",
+      "sequence": 5,
+      "title_ar": "دورة عقلية النمو والحوار الداخلي: بناء ثقة بالنفس تقوم على الدليل",
+      "subtitle_ar": "سجلُّ حوارٍ داخليٍّ لأسبوعين · تجربةٌ صغيرةٌ تختبر اعتقادا مقيِّدا",
+      "level_ar": "تأسيسي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "self_leadership",
+        "cognitive_appraisal",
+        "reflection",
+        "stress_resilience_nonclinical",
+        "emotion_regulation"
+      ],
+      "skill_ids": [
+        "SK-LEAD-001",
+        "SK-PSY-024",
+        "SK-LEARN-009",
+        "SK-WELL-006",
+        "SK-PSY-025"
+      ],
+      "skill_names_ar": [
+        "قيادة الذات",
+        "التقدير المعرفي للموقف",
+        "التأمل والمراجعة الذاتية",
+        "المرونة تحت الضغط غير السريرية",
+        "تنظيم الانفعال"
+      ]
+    },
+    {
+      "course_id": "C-JOB-106",
+      "pathway_id": "PW-STU-002",
+      "sequence": 5,
+      "title_ar": "دورة إتيكيت الأعمال والبروتوكول المهني: الانطباع الأول والتواصل والمناسبات",
+      "subtitle_ar": "تقديمُ نفسك في ثلاثين ثانية · بريدٌ ومناسبةٌ مهنيّةٌ بلا حرج",
+      "level_ar": "تأسيسي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "personal_branding",
+        "networking",
+        "cross_cultural_communication",
+        "arabic_business_writing"
+      ],
+      "skill_ids": [
+        "SK-CAREER-008",
+        "SK-CAREER-007",
+        "SK-COM-017",
+        "SK-COM-003"
+      ],
+      "skill_names_ar": [
+        "العلامة المهنية الشخصية",
+        "بناء العلاقات المهنية",
+        "التواصل بين الثقافات",
+        "الكتابة العربية المهنية"
+      ]
+    },
+    {
+      "course_id": "C-WEL-101",
+      "pathway_id": "PW-PSY-001",
+      "sequence": 6,
+      "title_ar": "دورة إدارة الوقت والتركيز: أسبوع مخطط بالأولويات والطاقة",
+      "subtitle_ar": "تدقيقُ وقتٍ لأسبوعٍ فعليّ · أسبوعٌ مخطَّطٌ بكتلِ تركيزٍ في ساعات الطاقة",
+      "level_ar": "تأسيسي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "time_management",
+        "focus_management",
+        "energy_management",
+        "distraction_reduction"
+      ],
+      "skill_ids": [
+        "SK-WELL-002",
+        "SK-WELL-001",
+        "SK-WELL-003",
+        "SK-WELL-005"
+      ],
+      "skill_names_ar": [
+        "إدارة الوقت",
+        "إدارة التركيز",
+        "إدارة الطاقة",
+        "تقليل التشتت"
+      ]
+    },
+    {
+      "course_id": "C-MKT-106",
+      "pathway_id": "PW-MKT-001",
+      "sequence": 5,
+      "title_ar": "دورة كتابة المحتوى الاستراتيجي لوسائل التواصل الاجتماعي",
+      "subtitle_ar": "ركائزُ محتوى من تحليل الجمهور · تقويمُ شهرٍ مكتوبٌ ومقروءُ الأداء",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "social_media_strategy",
+        "digital_content_creation",
+        "audience_analysis"
+      ],
+      "skill_ids": [
+        "SK-BIZ-013",
+        "SK-DIG-011",
+        "SK-X-COM-002"
+      ],
+      "skill_names_ar": [
+        "استراتيجية الشبكات الاجتماعية",
+        "إنشاء المحتوى الرقمي",
+        "تحليل الجمهور"
+      ]
+    },
+    {
+      "course_id": "C-FIN-101",
+      "pathway_id": "PW-FIN-001",
+      "sequence": 5,
+      "title_ar": "دورة إدارة المال الشخصي والأسري: من الدخل إلى ميزانية تصمد",
+      "subtitle_ar": "ميزانيّةٌ شهريّةٌ من أرقامك الفعليّة · خطّةُ دَينٍ وصندوقُ طوارئ",
+      "level_ar": "تأسيسي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "personal_budgeting",
+        "debt_management",
+        "saving_habits",
+        "investment_basics"
+      ],
+      "skill_ids": [
+        "SK-FIN-001",
+        "SK-FIN-003",
+        "SK-FIN-002",
+        "SK-FIN-005"
+      ],
+      "skill_names_ar": [
+        "إعداد الميزانية الشخصية",
+        "إدارة الديون",
+        "عادات الادخار",
+        "أساسيات الاستثمار"
+      ]
+    },
+    {
+      "course_id": "C-WEB-101",
+      "pathway_id": "PW-PRD-001",
+      "sequence": 5,
+      "title_ar": "دورة برمجة تطبيقات الويب: من الفكرة إلى تطبيق منشور",
+      "subtitle_ar": "صفحاتٌ بـHTML وCSS وتفاعلٌ بـJavaScript · خادمٌ وقاعدةُ بياناتٍ وتطبيقٌ منشورٌ برابط",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "html_css_basics",
+        "javascript_programming",
+        "backend_databases",
+        "deployment_version_control"
+      ],
+      "skill_ids": [
+        "SK-X-WEB-001",
+        "SK-X-WEB-002",
+        "SK-X-WEB-003",
+        "SK-X-WEB-004"
+      ],
+      "skill_names_ar": [
+        "أساسيات HTML وCSS",
+        "البرمجة بلغة JavaScript",
+        "الخدمات الخلفية وقواعد البيانات",
+        "نشر التطبيق وإدارة الشيفرة"
+      ]
+    },
+    {
+      "course_id": "C-EDU-107",
+      "pathway_id": "PW-EDU-001",
+      "sequence": 7,
+      "title_ar": "دورة استراتيجيات التعلم النشط: من التلقين إلى متعلم يُنتج",
+      "subtitle_ar": "حصّةٌ مُعادُ تصميمُها بثلاث استراتيجيّات · ملاحظةُ زميلٍ وأثرٌ في نواتج الطلبة",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "facilitation",
+        "peer_learning",
+        "retrieval_practice",
+        "memory_encoding_retrieval"
+      ],
+      "skill_ids": [
+        "SK-X-LND-008",
+        "SK-LEARN-013",
+        "SK-EDU-006",
+        "SK-PSY-006"
+      ],
+      "skill_names_ar": [
+        "تيسير التعلم",
+        "التعلم مع الأقران",
+        "الاسترجاع كأداة تعلم",
+        "الترميز والاسترجاع"
+      ]
+    },
+    {
+      "course_id": "C-LND-106",
+      "pathway_id": "PW-LND-001",
+      "sequence": 5,
+      "title_ar": "دورة قياس أثر التدريب: من رضا المتدرب إلى العائد على الاستثمار",
+      "subtitle_ar": "خطّةُ تقييمٍ بمستوياتٍ أربعة قبل التدريب · تقريرُ أثرٍ يقرؤه صاحبُ القرار",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "learning_evaluation",
+        "learning_transfer",
+        "assessment_design",
+        "kpi_design"
+      ],
+      "skill_ids": [
+        "SK-X-LND-010",
+        "SK-LEARN-008",
+        "SK-X-LND-005",
+        "SK-DATA-007"
+      ],
+      "skill_names_ar": [
+        "تقييم أثر التعلم",
+        "نقل التعلم إلى التطبيق",
+        "تصميم التقييم",
+        "تصميم مؤشرات الأداء"
+      ]
+    },
+    {
+      "course_id": "C-LND-107",
+      "pathway_id": "PW-LND-001",
+      "sequence": 6,
+      "title_ar": "دورة تصميم الألعاب التدريبية والتعليمية: من هدف التعلم إلى لعبة ودليل ميسر",
+      "subtitle_ar": "لعبةٌ مصمَّمةٌ من هدف تعلّم · جلسةُ تجريبٍ ودليلُ ميسّرٍ يشغّلها غيرُك",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "learning_experience_design",
+        "instructional_material_design",
+        "creative_thinking",
+        "digital_learning_design",
+        "design_thinking"
+      ],
+      "skill_ids": [
+        "SK-X-LND-004",
+        "SK-X-LND-007",
+        "SK-COG-003",
+        "SK-X-LND-009",
+        "SK-COG-013"
+      ],
+      "skill_names_ar": [
+        "تصميم تجربة التعلم",
+        "تصميم المواد التعليمية",
+        "التفكير الإبداعي",
+        "تصميم التعلم الرقمي",
+        "التفكير التصميمي"
+      ]
+    },
+    {
+      "course_id": "C-LND-108",
+      "pathway_id": "PW-LND-001",
+      "sequence": 7,
+      "title_ar": "دورة الذكاء الاصطناعي للمدربين والمعلمين: المحتوى والأنشطة والتقييم",
+      "subtitle_ar": "مادّةٌ تدريبيّةٌ منتَجةٌ بمساعدة AI ومراجَعة · تقييمٌ لا يُخترق بالنسخ من AI",
+      "level_ar": "تطبيقي",
+      "total_hours": 8,
+      "skill_slugs": [
+        "ai_for_writing",
+        "ai_output_evaluation",
+        "instructional_material_design",
+        "assessment_design"
+      ],
+      "skill_ids": [
+        "SK-AI-009",
+        "SK-AI-004",
+        "SK-X-LND-007",
+        "SK-X-LND-005"
+      ],
+      "skill_names_ar": [
+        "استخدام AI في الكتابة والتحرير",
+        "تقييم مخرجات الذكاء الاصطناعي",
+        "تصميم المواد التعليمية",
+        "تصميم التقييم"
+      ]
     }
   ],
   "skill_extensions": [
@@ -5541,6 +6096,76 @@
       "name_ar": "مستندات العقد",
       "family_id": "ENGR",
       "family_ar": "الهندسة والتنفيذ في المشاريع"
+    },
+    {
+      "skill_id": "SK-X-WEB-001",
+      "slug": "html_css_basics",
+      "name_ar": "أساسيات HTML وCSS",
+      "family_id": "WEB",
+      "family_ar": "البرمجة وتطوير الويب"
+    },
+    {
+      "skill_id": "SK-X-WEB-002",
+      "slug": "javascript_programming",
+      "name_ar": "البرمجة بلغة JavaScript",
+      "family_id": "WEB",
+      "family_ar": "البرمجة وتطوير الويب"
+    },
+    {
+      "skill_id": "SK-X-WEB-003",
+      "slug": "backend_databases",
+      "name_ar": "الخدمات الخلفية وقواعد البيانات",
+      "family_id": "WEB",
+      "family_ar": "البرمجة وتطوير الويب"
+    },
+    {
+      "skill_id": "SK-X-WEB-004",
+      "slug": "deployment_version_control",
+      "name_ar": "نشر التطبيق وإدارة الشيفرة",
+      "family_id": "WEB",
+      "family_ar": "البرمجة وتطوير الويب"
+    },
+    {
+      "skill_id": "SK-X-BIZ-001",
+      "slug": "esg_standards",
+      "name_ar": "الاستدامة ومعايير ESG",
+      "family_id": "BIZ",
+      "family_ar": "الأعمال وريادة المشاريع"
+    },
+    {
+      "skill_id": "SK-X-BIZ-002",
+      "slug": "circular_economy",
+      "name_ar": "الاقتصاد الدائري",
+      "family_id": "BIZ",
+      "family_ar": "الأعمال وريادة المشاريع"
+    },
+    {
+      "skill_id": "SK-X-GRANT-001",
+      "slug": "grant_proposal_writing",
+      "name_ar": "كتابة مقترحات المنح",
+      "family_id": "GRANT",
+      "family_ar": "المنح والمشاريع الممولة"
+    },
+    {
+      "skill_id": "SK-X-GRANT-002",
+      "slug": "logical_framework",
+      "name_ar": "الإطار المنطقي",
+      "family_id": "GRANT",
+      "family_ar": "المنح والمشاريع الممولة"
+    },
+    {
+      "skill_id": "SK-X-GRANT-003",
+      "slug": "monitoring_evaluation",
+      "name_ar": "المتابعة والتقييم",
+      "family_id": "GRANT",
+      "family_ar": "المنح والمشاريع الممولة"
+    },
+    {
+      "skill_id": "SK-X-GRANT-004",
+      "slug": "donor_reporting",
+      "name_ar": "تقارير المانحين",
+      "family_id": "GRANT",
+      "family_ar": "المنح والمشاريع الممولة"
     }
   ]
 }
