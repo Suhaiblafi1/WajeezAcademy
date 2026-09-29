@@ -1,15 +1,17 @@
-/* ═══ تأجيلُ لقاءٍ قريبٍ يبقى معتمَدا — واجتماعُه يُنقل معه (٣ج) ═══
+/* ═══ نقلُ لقاءٍ معتمَدٍ داخلَ موعد محوره يبقى معتمَدا — واجتماعُه يُنقل معه ═══
 
-   «وبعد الاعتماد كلُّ تغييرٍ باعتماد — إلّا تأجيلَ لقاءٍ بعده أقلُّ من ثمانٍ
-   وأربعين ساعة» (قراراتُ صاحب المنصّة بكلمة «go»، ٢٧ سبتمبر ٢٠٢٦). والقاعدةُ
-   بحدودها محضةٌ في `postpone.ts` (`src/tests/trainer/postpone.test.ts`)؛ وهنا
-   ما يقع على قاعدةٍ حقيقيّة:
+   كان «التأجيلَ القريبَ» وحدَه (٣ج، ٢٧ سبتمبر ٢٠٢٦)؛ ثمّ قال صاحبُ المنصّة في النقل
+   (٢٩ سبتمبر ٢٠٢٦): «free it, keep it inside the axis window». فكان ② هنا يحرس أنّ
+   البعيدَ والمقدَّمَ يرجعان إلى الانتظار — فتغيّر القرارُ فتغيّر حارسُه. والقاعدةُ
+   بحدودها محضةٌ في `postpone.ts` (`src/tests/trainer/postpone.test.ts`)؛ وهنا ما
+   يقع على قاعدةٍ حقيقيّة:
 
    ① المؤجَّلُ القريبُ داخلَ موعده يبقى معتمَدا، ويُنقل اجتماعُه في Zoom، ويصل
       مسجَّليه موعدُه الجديد — ولا يُنادى على الإدارة.
-   ② وما عداه يعود إلى الانتظار كما قرّر ١٧ سبتمبر: البعيدُ، والمقدَّمُ، وما خرج
-      عن موعد محوره — واجتماعُه يُنقل معه مع ذلك.
-   ③ وسقوطُ Zoom لا يُسقط النقل — ويُكتب في أثره.
+   ② والبعيدُ والمقدَّمُ داخلَ موعده كذلك — ويُقال للمسجَّلين «قدّمه» لا «أجّله».
+   ③ وما خرج عن موعد محوره يعود إلى الانتظار كما قرّر ١٧ سبتمبر — واجتماعُه يُنقل
+      معه مع ذلك.
+   ④ وسقوطُ Zoom لا يُسقط النقل — ويُكتب في أثره.
 
    ولا شبكةَ هنا: `fetch` مُلتقَط، وطلباتُ النقل تُعدّ. */
 
@@ -156,41 +158,51 @@ describe('① التأجيلُ القريبُ داخلَ موعده يبقى م�
     const told = await toldLearners(s.id)
     expect(told).toHaveLength(enrolled.length)
     expect(told[0].body).toContain('أجّله مدرّبُك إلى')
-    const meta = (await lastMoveAudit(s.id)).meta as { postponed: boolean; backToPending: boolean; zoomMoved: boolean }
-    expect(meta).toMatchObject({ postponed: true, backToPending: false, zoomMoved: true })
+    const meta = (await lastMoveAudit(s.id)).meta as { keptApproval: boolean; backToPending: boolean; zoomMoved: boolean }
+    expect(meta).toMatchObject({ keptApproval: true, backToPending: false, zoomMoved: true })
   })
 })
 
-describe('② وما عداه يعود إلى الانتظار — واجتماعُه يُنقل معه', () => {
-  it('⚠️ البعيدُ (بعد أكثرَ من يومين) يعود إلى الانتظار ويُنادى على الإدارة — واجتماعُه يُنقل', async () => {
+describe('② والبعيدُ والمقدَّمُ داخلَ موعده يبقيان معتمَدَين (٢٩ سبتمبر ٢٠٢٦)', () => {
+  it('⚠️ البعيدُ (بعد أكثرَ من يومين) داخلَ موعده يبقى معتمَدا — ولا يُنادى على الإدارة، واجتماعُه يُنقل', async () => {
     const s = await approvedMeeting(72)
     const before = await pendingNotices()
     const to = new Date(s.startsAt.getTime() + 3 * H)
 
     const moved = await move(s.id, to)
 
+    expect(moved.approvalState, 'عاد البعيدُ داخلَ موعده إلى الانتظار').toBe('approved')
+    expect(await pendingNotices(), 'نُودي على الإدارة بنقلٍ لا يحتاجها').toBe(before)
+    expect(patches.find((p) => p.meetingId === `mtg-${STAMP}-${seq}`)?.body.start_time, 'بقي اجتماعُه على موعده القديم').toBe(to.toISOString())
+    expect((await toldLearners(s.id))[0]?.body).toContain('أجّله مدرّبُك إلى')
+  })
+
+  it('⚠️ والمقدَّمُ داخلَ موعده يبقى معتمَدا — ويُقال «قدّمه» لا «أجّله»', async () => {
+    const s = await approvedMeeting(30)
+    const moved = await move(s.id, new Date(s.startsAt.getTime() - 4 * H))
+    expect(moved.approvalState, 'عاد المقدَّمُ داخلَ موعده إلى الانتظار').toBe('approved')
+    const told = await toldLearners(s.id)
+    expect(told).toHaveLength(enrolled.length)
+    expect(told[0].body, 'سُمّي التقديمُ تأجيلا').toContain('قدّمه مدرّبُك إلى')
+  })
+})
+
+describe('③ وما خرج عن موعد محوره يعود إلى الانتظار — واجتماعُه يُنقل معه', () => {
+  it('⚠️ خارجَ موعد محوره — وإن كان تأجيلا قريبا — يعود إلى الانتظار ويُنادى على الإدارة', async () => {
+    const s = await approvedMeeting(20)
+    const before = await pendingNotices()
+    /* موعدُ الأوّل ينتهي بعد خمسة أيّام — وهذا بعد سبعة */
+    const to = new Date(Date.now() + 7 * DAY)
+    const moved = await move(s.id, to)
     expect(moved.approvalState).toBe('pending')
     expect(await pendingNotices(), 'عاد إلى الانتظار ولم يُنادَ على أحد').toBe(before + 1)
     expect(patches.find((p) => p.meetingId === `mtg-${STAMP}-${seq}`)?.body.start_time, 'بقي اجتماعُه على موعده القديم').toBe(to.toISOString())
     expect((await toldLearners(s.id))[0]?.body).toContain('يُراجَع الآن عند الإدارة')
-  })
-
-  it('⚠️ والمقدَّمُ — وإن كان قريبا — يعود إلى الانتظار', async () => {
-    const s = await approvedMeeting(30)
-    const moved = await move(s.id, new Date(s.startsAt.getTime() - 4 * H))
-    expect(moved.approvalState).toBe('pending')
-  })
-
-  it('⚠️ وما خرج عن موعد محوره — وإن كان تأجيلا قريبا — يعود إلى الانتظار', async () => {
-    const s = await approvedMeeting(20)
-    /* موعدُ الأوّل ينتهي بعد خمسة أيّام — وهذا بعد سبعة */
-    const moved = await move(s.id, new Date(Date.now() + 7 * DAY))
-    expect(moved.approvalState).toBe('pending')
-    expect(((await lastMoveAudit(s.id)).meta as { postponed: boolean }).postponed).toBe(false)
+    expect(((await lastMoveAudit(s.id)).meta as { keptApproval: boolean }).keptApproval).toBe(false)
   })
 })
 
-describe('③ وسقوطُ Zoom لا يُسقط النقل', () => {
+describe('④ وسقوطُ Zoom لا يُسقط النقل', () => {
   /* ردٌّ بخطأٍ (٥٠٠) يعود من النداء نتيجةً — والانقطاعُ يرمي. فالحالتان كلتاهما:
      الأولى وحدَها لا تمرّ بفرع الاعتراض أصلا، فيمرّ حارسُها وإن زال الاعتراض */
   it('⚠️ وانقطاعُ الشبكة كذلك — لا يرمي النقلُ ولا يبقى نصفَ نقل', async () => {

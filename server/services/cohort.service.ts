@@ -956,29 +956,25 @@ export class CohortService {
         session.cohortId,
       )
     }
-    /* ═══ والمنقولُ يرجع إلى الانتظار ═══
+    /* ═══ والمنقولُ داخلَ موعد محوره يبقى معتمَدا (٢٩ سبتمبر ٢٠٢٦) ═══
 
-       قرارُ صاحب المنصّة (١٧ سبتمبر ٢٠٢٦): «يغيّرُه فيرجع لانتظار الإدارة».
-       فاللقاءُ المعتمَدُ صار في تقاويم عشرين إنسانا وله اجتماعُ زووم قائم،
-       ونقلُه يُسقطه إلى `pending` فيغيب عن شاشات المتعلّمين حتّى تعتمده
-       الإدارةُ ثانيةً — فلا يصل الناسَ موعدٌ لم يُراجَع.
+       كان قرارُ ١٧ سبتمبر: «يغيّرُه فيرجع لانتظار الإدارة» — يسقط إلى `pending`
+       فيغيب عن شاشات المتعلّمين حتّى تعتمده الإدارةُ ثانيةً. ثمّ قال صاحبُ المنصّة
+       في النقل: «free it, keep it inside the axis window». فما بقي داخلَ موعد
+       محوره يبقى معتمَدا ويصل متعلّميه موعدُه الجديد، وما خرج عنه يرجع إلى
+       الانتظار كما كان. والقاعدةُ وحدودُها في `application/trainer/postpone.ts`.
 
-       ولأنّه يرجع إلى الانتظار سقط بابُ «اقترح موعدا» كلُّه: من يملك النقلَ
-       لا يستأذن فيه، والاعتمادُ يقع بعدَه لا قبلَه. */
+       وسقط بابُ «اقترح موعدا» من قبل: من يملك النقلَ لا يستأذن فيه، والاعتمادُ —
+       حيث يلزم — يقع بعدَه لا قبلَه. */
     const wasApproved = session.approvalState === 'approved'
-    /* ═══ إلّا التأجيلَ القريب — يبقى معتمَدا (٣ج) ═══
-
-       «وبعد الاعتماد كلُّ تغييرٍ باعتماد — إلّا تأجيلَ لقاءٍ بعده أقلُّ من ثمانٍ
-       وأربعين ساعة». والقاعدةُ وحدودُها (تأجيلٌ لا تقديم، قبل البدء، داخلَ موعد
-       محوره) في `application/trainer/postpone.ts`. */
     const slots = ((session.cohort.plans[0]?.content ?? null) as { slots?: PlanSlot[] | null } | null)?.slots ?? []
     const axis = session.moduleIds[0] ?? session.moduleId
     const slot = axis ? slots[slotIndexOf(slots, axis)] ?? null : null
-    const postponed = keepsApprovalOnMove({
+    const kept = keepsApprovalOnMove({
       approved: wasApproved, startsAt: session.startsAt, newStartsAt: input.startsAt, newEndsAt: input.endsAt ?? null,
       now: new Date(), slot,
     })
-    const backToPending = wasApproved && !postponed
+    const backToPending = wasApproved && !kept
     const moved = await this.prisma.cohortSession.update({
       where: { id: sessionId },
       data: {
@@ -993,7 +989,7 @@ export class CohortService {
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.move', entityType: 'cohort_session', entityId: sessionId,
       meta: {
-        from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending, postponed,
+        from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending, keptApproval: kept,
         ...(zoomMoved === null ? {} : { zoomMoved }),
       },
     })
@@ -1003,10 +999,12 @@ export class CohortService {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
       await this.tellCohortScheduleChanged(session.cohortId, session,
         'نقله مدرّبُك ويُراجَع الآن عند الإدارة. ويصلك موعدُه الجديدُ حين يُعتمَد.')
-    } else if (postponed) {
-      /* والمؤجَّلُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع» */
+    } else if (kept) {
+      /* والمنقولُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع»،
+         وأنّه أُخّر أو قُدّم: التقديمُ أشدُّ على من رتّب يومَه، فلا يُسمّى تأجيلا */
+      const verb = moved.startsAt.getTime() < session.startsAt.getTime() ? 'قدّمه' : 'أجّله'
       await this.tellCohortScheduleChanged(session.cohortId, session,
-        `أجّله مدرّبُك إلى ${whenAr(moved.startsAt)} — ورابطُ الانضمام نفسُه.`)
+        `${verb} مدرّبُك إلى ${whenAr(moved.startsAt)} — ورابطُ الانضمام نفسُه.`)
     }
     return moved
   }
