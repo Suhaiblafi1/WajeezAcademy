@@ -55,6 +55,8 @@ interface OpsRow {
       placeholder?: boolean | null;
       zoom: {
         joinUrl: string; passcode: string | null;
+        /* `zoom_api` اجتماعٌ أنشأته المنصّة فيُبدأ مضيفا، و`manual` رابطٌ أُلصق */
+        provider?: string | null; meetingId?: string | null;
         /* ما وقع فعلا — يملؤه webhook زووم لا يدٌ. والمجدولُ نيّةٌ، وهذا خبر. */
         actualStartAt: string | null; durationMin: number | null; participantCount: number | null;
         syncState: string | null; syncError: string | null;
@@ -134,6 +136,31 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
     }, (r) => ((r as { approvalState?: string } | null)?.approvalState === "approved"
       ? "نُقل الموعد وبقي معتمَدا — ووصل متعلّميك موعدُه الجديد"
       : "نُقل الموعد — ويعود للاعتماد قبل أن يصل متعلّميك"));
+
+  /* ═══ يبدأ لقاءه مضيفا (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     كان الزرُّ رابطَ المشارك: الاجتماعُ مُنشأٌ بتسجيلٍ مسبق، فيفتح للمدرّب صفحةَ
+     تسجيلٍ ويُدخله مشاركا لا مضيفا. فرابطُ المضيف يُطلب من الخادم لحظةَ الضغط
+     (`trainerHostStart`) ولا يُحفظ في الشاشة.
+
+     والنافذةُ تُفتح **قبل** الطلب ثمّ تُوجَّه: المتصفّحُ يحجب نافذةً تُفتح بعد
+     انتظارِ ردٍّ، لأنّها لم تعد من ضغطة صاحبها. وإن حُجبت على كلّ حال انتقلت
+     الصفحةُ نفسُها إليه — لا يُترك المدرّبُ بلا بابٍ إلى لقائه. */
+  const startAsHost = async (sessionId: string) => {
+    if (busy) return;
+    setBusy(true);
+    const win = window.open("", "_blank");
+    try {
+      const { startUrl } = await apiPost<{ startUrl: string }>(`/api/trainer/sessions/${sessionId}/host-start`, {});
+      if (win) { win.opener = null; win.location.href = startUrl; }
+      else window.location.assign(startUrl);
+    } catch (e) {
+      win?.close();
+      toastError(e instanceof ApiError ? e.message : "تعذّر بدءُ اللقاء — أعد المحاولة");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   /* والحذفُ فعلٌ كانت الشاشةُ تأمر به ولا بابَ له — وصار له مسلكٌ محروس */
   const removeSession = (sessionId: string) =>
@@ -215,7 +242,16 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                     </p>
                   )}
                 </div>
-                {s.zoom && (
+                {/* اجتماعُ المنصّة يُبدأ مضيفا، والرابطُ الملصَقُ يُفتح كما هو.
+                    والمنتظِرُ والمنعقدُ بلا زرّ: الأوّلُ لم يُعتمَد فلا يُعقد، والثاني انتهى. */}
+                {s.zoom?.provider === "zoom_api" && s.zoom.meetingId ? (
+                  (s.approvalState ?? "approved") === "approved" && s.status !== "done" && (
+                    <Button tone="confirm" size="sm" type="button" icon={Video} disabled={busy}
+                      onClick={() => void startAsHost(s.id)} className="min-h-9">
+                      ابدأ اللقاء مضيفا
+                    </Button>
+                  )
+                ) : s.zoom && (
                   <a href={s.zoom.joinUrl} target="_blank" rel="noreferrer"
                     className="flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-fine font-black text-on-teal transition hover:bg-teal-light">
                     <Video className="h-3 w-3" /> افتح الاجتماع

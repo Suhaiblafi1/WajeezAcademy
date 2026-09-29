@@ -92,6 +92,7 @@ const PHRASES: Record<string, string> = {
   'session.reschedule.decide': 'قرارٌ على اقتراح تأجيل',
   'zoom.attach_manual': 'ربطُ رابطِ اجتماعٍ يدويّا',
   'zoom.create_api': 'إنشاءُ اجتماعِ Zoom من المنصّة',
+  'zoom.host_start': 'بدءُ المدرّب لقاءَه مضيفا من بوّابته',
   'zoom.create_failed': 'تعذّر إنشاءُ اجتماعِ Zoom — وأُلغيت جلستُه',
   'zoom.attendance_sync': 'احتُسب الحضورُ من تقرير Zoom',
   'zoom.recording_ready': 'وصل تسجيلُ اللقاء من Zoom',

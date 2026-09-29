@@ -959,6 +959,18 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return cohorts.trainerDeleteSession(req.auth!.userId, sessionId)
   })
 
+  /* ═══ يبدأ لقاءه مضيفا — والعلّةُ في رأس `trainerHostStart` ═══
+
+     POST لا GET كتذكرة الاجتماع: رابطُ المضيف سرٌّ يفتح الغرفةَ بصلاحيّته،
+     وGET يستقرّ في سجلّات الوسطاء وتاريخِ المتصفّح. */
+  app.post('/api/trainer/sessions/:sessionId/host-start', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'رابطُ بدء لقائي مضيفا — يُطلب من Zoom لحظتَه ولا يُحفظ' },
+  }, async (req) => {
+    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
+    return cohorts.trainerHostStart(req.auth!.userId, sessionId)
+  })
+
   /* والاقتراحُ باقٍ لما يقع خارجَ النافذة — لا بديلا عمّا صار داخلها */
   app.post('/api/trainer/sessions/:sessionId/reschedule', {
     preHandler: requirePermission('trainer.cohort.operate'),
