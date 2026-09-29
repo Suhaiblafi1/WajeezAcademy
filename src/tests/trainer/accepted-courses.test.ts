@@ -16,10 +16,11 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  ACCEPTED_TRAINER_STATUSES, OPEN_PROPOSAL_STATUSES, PAST_TITLE_ACTIONS, PROPOSAL_STATUS_LABELS,
-  SOURCE_LABELS, acceptedCourseRows, pastTitleFromAudit,
+  ACCEPTED_TRAINER_STATUSES, ENDED_TRAINER_STATUSES, OPEN_PROPOSAL_STATUSES, PAST_TITLE_ACTIONS,
+  PROPOSAL_STATUS_LABELS, SOURCE_LABELS, acceptedCourseRows, pastTitleFromAudit,
   type AcceptedTrainerIn, type CatalogLens, type QueueProposalIn,
 } from '../../application/trainer/accepted-courses'
+import { STATUS_LABELS } from '../../application/trainer/application-status'
 import { DECIDED_PROPOSAL, OPEN_PROPOSAL } from '../../../server/services/course-proposal.service'
 import { TRAINER_STATUSES } from '../../../server/services/trainer-application.service'
 
@@ -47,7 +48,7 @@ const proposal = (over: Partial<QueueProposalIn>): QueueProposalIn => ({
 })
 
 const trainer = (over: Partial<AcceptedTrainerIn>): AcceptedTrainerIn => ({
-  fullName: 'مدرّبٌ', reference: 'WJ-TR-2026-00001', status: 'conditionally_approved',
+  fullName: 'مدرّبٌ', reference: 'WJ-TR-2026-00001', status: 'conditionally_approved', infoRequestedFrom: null,
   teachableCourseIds: [], teachableOther: null, teachableProposals: null,
   profile: { proposals: [], qualifications: [], pastQueueTitles: [] },
   ...over,
@@ -72,6 +73,29 @@ describe('④ القوائمُ لا تفترق عن الخادم', () => {
     for (const s of ['suspended', 'rejected', 'withdrawn', 'waitlisted', 'under_review']) {
       expect((ACCEPTED_TRAINER_STATUSES as readonly string[]).includes(s), `${s} ليست قبولا`).toBe(false)
     }
+    /* وما يُخرج صاحبَ الملفّ من الجرد حالاتٌ موجودةٌ كذلك، ولا تتقاطع مع القبول */
+    for (const s of ENDED_TRAINER_STATUSES) {
+      expect((TRAINER_STATUSES as readonly string[]).includes(s), `حالةٌ لا وجودَ لها: ${s}`).toBe(true)
+      expect((ACCEPTED_TRAINER_STATUSES as readonly string[]).includes(s), `${s} قبولٌ ونهايةٌ معا`).toBe(false)
+    }
+  })
+})
+
+describe('⑤ ومقبولٌ تغيّر حالُه بعد قبوله يُقال لمَ هو في الجرد', () => {
+  it('من طُلبت منه معلوماتٌ بعد قبوله: حالُه، والحالُ التي يعود إليها', () => {
+    const [row] = acceptedCourseRows([trainer({ status: 'information_requested', infoRequestedFrom: 'onboarding' })], lens())
+    expect(row.trainerStatus.startsWith(STATUS_LABELS.information_requested)).toBe(true)
+    expect(row.trainerStatus, 'لم يُقل أين كان ولا إلى أين يعود').toContain(`«${STATUS_LABELS.onboarding}»`)
+  })
+
+  it('وحالٌ حيّةٌ أخرى وله ملفّ: يُقال إنّ ملفَّه من قبولٍ سابق — وحالُ القبول تُقرأ كما هي', () => {
+    const [moved] = acceptedCourseRows([trainer({ status: 'under_review' })], lens())
+    expect(moved.trainerStatus).toBe(`${STATUS_LABELS.under_review} — وله ملفُّ مدرّبٍ من قبولٍ سابق`)
+    /* وبلا ملفٍّ لا يُدّعى قبولٌ سابق — ولو طُلبت منه معلوماتٌ قبل أن يُقبَل */
+    const [early] = acceptedCourseRows([trainer({ status: 'information_requested', profile: null })], lens())
+    expect(early.trainerStatus).toBe(STATUS_LABELS.information_requested)
+    const [plain] = acceptedCourseRows([trainer({ status: 'active' })], lens())
+    expect(plain.trainerStatus).toBe(STATUS_LABELS.active)
   })
 })
 

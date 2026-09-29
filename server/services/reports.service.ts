@@ -7,7 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import ExcelJS from 'exceljs'
 import { NO_SHOW, interviewHeld } from '../../src/application/trainer/interview-outcome'
 import {
-  ACCEPTED_TRAINER_STATUSES, PAST_TITLE_ACTIONS, acceptedCourseRows, pastTitleFromAudit,
+  ACCEPTED_TRAINER_STATUSES, ENDED_TRAINER_STATUSES, PAST_TITLE_ACTIONS, acceptedCourseRows, pastTitleFromAudit,
 } from '../../src/application/trainer/accepted-courses'
 import { suggestCourses } from '../../src/application/trainer/proposal-match'
 import { readMatchableCourses } from './course-proposal.service'
@@ -565,12 +565,19 @@ export class ReportsService {
          في شاشتَي التصنيف والإسناد القائمتَين — ولا يُبنى لعرضه بابٌ ثالث. */
       {
         key: 'accepted-trainer-courses', titleAr: 'دوراتُ المدرّبين المقبولين',
-        methodAr: 'كلُّ طلبٍ حالتُه قبولٌ داخليٌّ فما بعده (قبولٌ داخليّ · عقدٌ قيد التوقيع · تهيئة · نشط)، والموقوفُ خارجُها. صفٌّ لكلّ دورةٍ تتّصل بالمدرّب: اقتراحُه في طابور التصنيف بحالته وما رُبط به، وأقربُ رمزٍ إليه ما لم يُبتّ فيه · واقتراحٌ في طلبه لا مقابلَ له في الطابور (لا ملفَّ له، أو أُضيف بعد إنشاء ملفّه) · والفقرةُ الحرّةُ من نموذج التقديم القديم كما كُتبت · ودوراتُ الكتالوج التي اختارها في طلبه وحالُ تأهيله لها · وكلُّ تأهيلٍ قائمٍ لم يُذكر قبله. ومن لا بندَ له صفٌّ يقول ذلك. لا بريدَ ولا هاتف، والمدى لا ينطبق: هذا جردٌ لا سلسلةٌ زمنيّة.',
+        methodAr: 'كلُّ طلبٍ حالتُه قبولٌ داخليٌّ فما بعده (قبولٌ داخليّ · عقدٌ قيد التوقيع · تهيئة · نشط) — وكلُّ من له ملفُّ مدرّبٍ وإن تغيّرت حالُه بعد قبوله، كمن طُلبت منه معلوماتٌ بعد القبول الداخليّ، وتقول خانةُ حاله أين كان ويعود. والمردودُ والمسحوبُ والموقوفُ خارجُه. صفٌّ لكلّ دورةٍ تتّصل بالمدرّب: اقتراحُه في طابور التصنيف بحالته وما رُبط به، وأقربُ رمزٍ إليه ما لم يُبتّ فيه · واقتراحٌ في طلبه لا مقابلَ له في الطابور (لا ملفَّ له، أو أُضيف بعد إنشاء ملفّه) · والفقرةُ الحرّةُ من نموذج التقديم القديم كما كُتبت · ودوراتُ الكتالوج التي اختارها في طلبه وحالُ تأهيله لها · وكلُّ تأهيلٍ قائمٍ لم يُذكر قبله. ومن لا بندَ له صفٌّ يقول ذلك. لا بريدَ ولا هاتف، والمدى لا ينطبق: هذا جردٌ لا سلسلةٌ زمنيّة.',
         run: async () => {
+          /* والحدُّ ملفُّ المدرّب لا اسمُ الحالة — والقولُ في
+             `ENDED_TRAINER_STATUSES` */
           const apps = await p.trainerApplication.findMany({
-            where: { status: { in: [...ACCEPTED_TRAINER_STATUSES] } },
+            where: {
+              OR: [
+                { status: { in: [...ACCEPTED_TRAINER_STATUSES] } },
+                { profile: { isNot: null }, status: { notIn: [...ENDED_TRAINER_STATUSES] } },
+              ],
+            },
             select: {
-              fullName: true, reference: true, status: true,
+              fullName: true, reference: true, status: true, infoRequestedFrom: true,
               teachableCourseIds: true, teachableOther: true, teachableProposals: true,
               profile: {
                 select: {
@@ -636,6 +643,7 @@ export class ReportsService {
           return acceptedCourseRows(
             apps.map((a, i) => ({
               fullName: a.fullName, reference: a.reference, status: a.status,
+              infoRequestedFrom: a.infoRequestedFrom,
               teachableCourseIds: a.teachableCourseIds, teachableOther: a.teachableOther,
               teachableProposals: a.teachableProposals,
               profile: a.profile

@@ -183,4 +183,36 @@ describe('دوراتُ المدرّبين المقبولين — من القاع
       expect(out.columnsAr[k], `عمودٌ بلا عنوانٍ عربيّ: ${k}`).not.toBe(k)
     }
   })
+
+  /* ═══ ومقبولٌ تغيّر حالُه بعد قبوله — لا يغيب (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     وقع في الإنتاج: مقبولةٌ داخليّا طُلبت منها ورقةٌ فصار حالُها «بانتظار
+     معلومات المرشح» — فغابت عن الجدول، وهي ممّن بُني الجدولُ لهم. والحدُّ
+     صار ملفَّ المدرّب لا اسمَ الحالة (`ENDED_TRAINER_STATUSES`). وكلُّ نقلةٍ
+     هنا بـ`decide` نفسِها التي تضغطها الشاشة. */
+  it('مقبولٌ طُلبت منه معلوماتٌ أو أُعيد إلى المراجعة يبقى ويُقال لمَ — والمردودُ بعد قبوله يخرج', async () => {
+    const f = await applicant('acc-f@test.local', 'فرح طُلبت منها ورقة', [{ titleAr: 'الخطابةُ للمعلّمين', summaryAr: '' }])
+    await review.decide(f.applicationId, adminId, 'conditionally_approve')
+    await review.decide(f.applicationId, adminId, 'request_info', 'ينقص ملفَّها شهادةُ الخبرة')
+    const g = await applicant('acc-g@test.local', 'غيث أُعيد إلى المراجعة', [])
+    await review.decide(g.applicationId, adminId, 'conditionally_approve')
+    await review.decide(g.applicationId, adminId, 'move_to_review', 'قراءةٌ ثانية')
+    const h = await applicant('acc-h@test.local', 'هالة رُدّت بعد قبولها', [{ titleAr: 'لا يُقرأ ٣', summaryAr: '' }])
+    await review.decide(h.applicationId, adminId, 'conditionally_approve')
+    await review.decide(h.applicationId, adminId, 'reject', 'لم تُكمل التجهيز')
+
+    /* الحالُ كما كتبتها الخدمة — لا كما يفترضها الاختبار */
+    const fApp = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: f.applicationId } })
+    expect([fApp.status, fApp.infoRequestedFrom]).toEqual(['information_requested', 'conditionally_approved'])
+
+    const rows = (await reports.run('accepted-trainer-courses')).rows as Record<string, string>[]
+    const of = (ref: string) => rows.filter((r) => r.reference === ref)
+
+    expect(of(f.reference).map((r) => r.title), 'غابت مقبولةٌ طُلبت منها معلومات').toEqual(['الخطابةُ للمعلّمين'])
+    expect(of(f.reference)[0].trainerStatus)
+      .toBe('بانتظار معلومات المرشح — طُلبت منه في «قبولٌ داخليّ — قيد التجهيز»، ويعود إليها حين يجيب')
+    expect(of(g.reference).map((r) => r.source), 'غاب مقبولٌ أُعيد إلى المراجعة').toEqual([SOURCE_LABELS.nothing])
+    expect(of(g.reference)[0].trainerStatus).toBe('قيد المراجعة — وله ملفُّ مدرّبٍ من قبولٍ سابق')
+    expect(of(h.reference), 'قُرئت مردودةٌ — والردُّ بعد القبول نهايةٌ كغيره').toHaveLength(0)
+  })
 })
