@@ -10,6 +10,7 @@ import { TrainerBankService } from '../../services/trainer-bank.service'
 import { TrainerDossierLinkService } from '../../services/trainer-dossier-link.service'
 import { TrainerChangeService } from '../../services/trainer-change.service'
 import { CourseProposalService } from '../../services/course-proposal.service'
+import { CourseDecisionsService } from '../../services/course-decisions.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { TrainerDepartureService } from '../../services/trainer-departure.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
@@ -45,6 +46,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   const links = new TrainerDossierLinkService(prisma)
   const changes = new TrainerChangeService(prisma)
   const proposals = new CourseProposalService(prisma)
+  const decisions = new CourseDecisionsService(prisma)
   const trainerPaths = new TrainerPathService(prisma)
   const departures = new TrainerDepartureService(prisma)
   const applications = new TrainerApplicationService(prisma)
@@ -1120,6 +1122,24 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const body = z.object({ noteAr: z.string().trim().min(5).max(2000) }).parse(req.body)
     return proposals.reject(req.auth!.userId, id, body.noteAr)
   })
+
+  /* ═══ ملفُّ قراراتِ دوراتِ المدرّبين — معاينةٌ ثمّ تطبيق (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     البابُ صلاحيّةُ الطابور، وما وراءها يُقاس خطوةً خطوة: التأهيلُ بصلاحيّة
+     التأهيل، والإيقافُ بصلاحيّة الإيقاف، والسحبُ بصلاحيّة قرار الطلب — فمن لا
+     يملك زرّا لا يضغطه من ملفّ. والقولُ في `course-decisions.service.ts`. */
+  const decisionsActor = (req: FastifyRequest) => ({
+    userId: req.auth!.userId, roles: req.auth!.roles, permissions: req.auth!.permissions,
+  })
+  app.post('/api/admin/course-decisions/preview', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'معاينةُ ملفِّ قراراتِ الدورات — ما سيُطبَّق وما طُبّق وما لا يُطبَّق ولماذا' },
+  }, async (req) => decisions.preview(req.body, decisionsActor(req)))
+
+  app.post('/api/admin/course-decisions/apply', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'تطبيقُ ملفِّ قراراتِ الدورات من أبواب أزرارها — كلُّه أو لا شيء' },
+  }, async (req) => decisions.apply(req.body, decisionsActor(req)))
 
   /* ── مراجعة اقتراحات تعديل الدورات من المدربين ── */
 

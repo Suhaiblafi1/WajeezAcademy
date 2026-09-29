@@ -256,6 +256,8 @@ const PHRASES: Record<string, string> = {
      ولا يستقيم تركيبُهما من المقاطع (`course_proposal` ليست كلمةً في معجم). */
   'trainer.course_proposal.ask': 'سؤالٌ عن دورةٍ اقترحها مدرّب',
   'trainer.course_proposal.answer': 'جوابُ مدرّبٍ عن دورته المقترحة',
+  /* صفٌّ يجمع خطواتِ ملفٍّ طُبّق — وكلُّ خطوةٍ منه لها صفُّها بفعل زرّها */
+  'trainer.course_decisions.apply': 'تطبيقُ ملفِّ قراراتِ دوراتِ المدرّبين',
   /* يُبنى المفتاحُ بشرطٍ في الشيفرة (`result.ok ? 'notification.sent' : …`)
      فلا يُقرأ بمسحِ نصٍّ حرفيّ — ولذلك يُكتب هنا صراحةً. */
   'notification.sent': 'إشعارٌ أُرسل',
@@ -409,7 +411,8 @@ const WORDS: Record<string, string> = {
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويضُ مدرّب',
   trainer_payout: 'مستحقُّ مدرّب', application: 'طلبُ انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّةٌ تجريبيّة', review: 'مراجعة',
-  change: 'اقتراحُ تعديل', course_proposal: 'اقتراحُ دورة', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلبُ تسجيل',
+  change: 'اقتراحُ تعديل', course_proposal: 'اقتراحُ دورة',
+  trainer_course_decisions: 'ملفُّ قراراتِ دوراتِ المدرّبين', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلبُ تسجيل',
   waitlist: 'قائمةُ انتظار', order: 'طلبُ شراء', payment: 'دفعة', refund: 'استرداد', coupon: 'كوبون',
   invoice: 'فاتورة', plan: 'خطّة', item: 'بند', module: 'وحدة', content: 'متن', material: 'مادّة',
   recording: 'تسجيلٌ مرئيّ', assessment: 'تقييم', attempt: 'محاولة', grade: 'درجة', rubric: 'روبرك',

@@ -33,6 +33,7 @@ import AdminLayout from "./AdminLayout";
 import EmptyState from "@/components/EmptyState";
 import ListToolbar from "@/components/admin/ListToolbar";
 import CoursePicker from "@/components/admin/CoursePicker";
+import CourseDecisionsUpload from "@/components/admin/CourseDecisionsUpload";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { staffAreaCls, staffControlCls, StaffField } from "@/components/FormKit";
@@ -332,6 +333,7 @@ export default function CourseProposals() {
       ) : (
         <>
           <ClusterPanel key={showDecided ? "all" : "open"} scope={showDecided ? "all" : "open"} />
+          <CourseDecisionsUpload onApplied={load} />
 
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="اقتراحا"
             placeholder="ابحث بعنوانِ الدورة أو باسم المدرّب…" />
