@@ -42,6 +42,7 @@
    ومنه ما جاء به هو بلا رابطه، وما جاء برابط مدرّبٍ آخر. والحدُّ الأدنى
    يُكمَّل من هذه الخانة، فقد تحمل مقاعدَ لا يقابلها مسجَّلٌ أصلا. */
 
+import { withCurrencyAr } from '../commerce/presentment'
 import type { ContractCompensation } from './contract-body'
 import { perSeatBreakdown } from './seat-fee'
 import { countAr } from '../text/count-ar'
@@ -169,8 +170,8 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
     /* والأعلى يُذكَر أوّلا — قرارُ ٢١ سبتمبر ٢٠٢٦. وكان العامُّ يتقدّم فيقرأ
        المدرّبُ الأصغرَ أوّلا ويثبت في ذهنه، ويأتيه سعرُ رابطه ذيلا. */
     noteAr: `الأسعارُ أعلاه هي المثبتةُ في قاعدة أتعابك (`
-      + `${referralRate === null ? '' : `${num(referralRate)} ${c.currency} للمقعد عبر رابطك، و`}`
-      + `${num(rate)}${referralRate === null ? ` ${c.currency}` : ''} للمقعد العامّ`
+      + `${referralRate === null ? '' : `${withCurrencyAr(num(referralRate), c.currency)} للمقعد عبر رابطك، و`}`
+      + `${referralRate === null ? withCurrencyAr(num(rate), c.currency) : num(rate)} للمقعد العامّ`
       + `${minSeats > 0 ? `، وحدٌّ أدنى ${minSeats} مقعدا` : ''}).${referralNote}`
       + ' وأعدادُ المسجّلين مفترضةٌ للإيضاح وحدَها: لا تعِد هذه الصفحةُ بعددِ مسجّلين،'
       + ' ولا بإسناد دورة، ولا بفتح شعبة. والذي يلزم الطرفين هو الاتفاقيةُ وملاحقُها.',
@@ -211,7 +212,10 @@ export const FEE_EXAMPLE_HEADING_AR = 'مثال حسابي توضيحي — اس
 function sourceContractAr(seats: number, referred: number): string {
   if (referred === 0) return `${seats} كلهم من الأكاديمية`
   if (referred === seats) return `${seats} كلهم عبر رابط دعوته`
-  return `${referred} منه و${seats - referred} من الأكاديمية`
+  /* و«منه» كانت تُقرأ «عشرةٌ **من الرجل**»: لفظٌ لا يوصف به متعلّمون،
+     ويفترق عن الصفّ الثالث («كلهم عبر رابط دعوته») وهو يصف المصدرَ نفسَه.
+     فصفوفُ المثال الثلاثةُ تنطق اليومَ نطقا واحدا. (الملاحظة ٢، ٢٩ سبتمبر) */
+  return `${referred} عبر رابط دعوته و${seats - referred} من الأكاديمية`
 }
 
 /** عمودُ «الحساب»: «20 × 30» أو «(10 × 45) + (10 × 30)» — من أعداد الصفّ لا من ثابت */
@@ -234,26 +238,28 @@ export function feeExampleContractAr(ex: FeeExample, c: ContractCompensation): s
   const order = ['الأولى', 'الثانية', 'الثالثة']
   const rows = ex.rows.map((r, i) => {
     if (r.seats === undefined) {
-      return `${i + 1}. الشعبة ${order[i] ?? String(i + 1)}: ${num(r.amount)} ${ex.currency}`
+      return `${i + 1}. الشعبة ${order[i] ?? String(i + 1)}: ${withCurrencyAr(num(r.amount), ex.currency)}`
     }
     const calc = calcContractAr(r, c)
     const floor = r.floorApplied ? ` (احتسبت على الحد الأدنى ${c.minSeats} مقعدا)` : ''
-    return `${i + 1}. ${sourceContractAr(r.seats, r.referred ?? 0)} — ${calc}${floor}: ${num(r.amount)} ${ex.currency}`
+    return `${i + 1}. ${sourceContractAr(r.seats, r.referred ?? 0)} — ${calc}${floor}: ${withCurrencyAr(num(r.amount), ex.currency)}`
   })
 
   /* ذيلُ الجدول: في أجر المقعد توقّعُ موسمٍ بالحالة الوسطى كما في العيّنة،
      وفي الأجر الثابت مجموعُ الشعب وهو جمعٌ صحيح. ولا ذيلَ لصفٍّ واحد. */
   const middle = ex.rows[Math.floor(ex.rows.length / 2)]
   const tail = c.type === 'fixed_per_cohort'
-    ? [`مجموع هذا المثال: ${num(ex.total)} ${ex.currency}`]
+    ? [`مجموع هذا المثال: ${withCurrencyAr(num(ex.total), ex.currency)}`]
     : ex.rows.length > 1 && middle
-      ? [`وعلى فرض ${SEASON_COURSES} دورات في الموسم بالحالة الوسطى: ${num(middle.amount * SEASON_COURSES)} ${ex.currency}`]
+      ? [`وعلى فرض ${SEASON_COURSES} دورات في الموسم بالحالة الوسطى: ${withCurrencyAr(num(middle.amount * SEASON_COURSES), ex.currency)}`]
       : []
 
   const basis = c.type === 'fixed_per_cohort'
     ? 'وأتعاب المدرب في هذا المثال مبلغ ثابت عن الشعبة، فلا تتغير بعدد المسجلين، وعدد الشعب أعلاه مفترض.'
     : `والأسعار المطبقة أعلاه هي المبينة في هذا الملحق (${
-      c.referralRate ? `${c.referralRate} ${c.currency} للمقعد عبر رابط دعوته، و${c.rate} للمقعد العام` : `${c.rate} ${c.currency} للمقعد`
+      c.referralRate
+      ? `${withCurrencyAr(c.referralRate, c.currency)} للمقعد عبر رابط دعوته، و${withCurrencyAr(c.rate, c.currency)} للمقعد العام`
+      : `${withCurrencyAr(c.rate, c.currency)} للمقعد`
     }${c.minSeats && c.minSeats > 0
       /* والتمييزُ بالمعجم لا بلفظٍ واحدٍ لكلّ عدد: كان «وحد أدنى 5 مقعدا»،
          وصوابُه «5 مقاعد» — وهو مكتوبٌ صحيحا في الملحق نفسِه قبله بأسطر،

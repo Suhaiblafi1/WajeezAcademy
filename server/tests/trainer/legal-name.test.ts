@@ -28,6 +28,7 @@ import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { contractAcks } from '../../../src/application/trainer/contract-body'
+import { LEDGER_CURRENCY, withCurrencyAr } from '../../../src/application/commerce/presentment'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -203,7 +204,10 @@ describe('البديلُ يُصحّح الاسمَ ولا يُعيد التفا�
   it('وينسخ بنودَ العقد القديم لا أتعابَ اليوم', async () => {
     const made = await candidate()
     const c = await compose(made.application.id)
-    expect(c.bodyAr ?? '', 'لم يُطبَع أساسُ الأتعاب أصلا').toContain('25 USD')
+    /* والمبلغُ يحمل رمزَ عملته منذ ٢٩ سبتمبر ٢٠٢٦ (الملاحظة ٨): «$25».
+       ورمزُه من جدول العملات لا مكتوبا هنا — فلا نسختان تفترقان. */
+    expect(c.bodyAr ?? '', 'لم يُطبَع أساسُ الأتعاب أصلا')
+      .toContain(withCurrencyAr('25', LEDGER_CURRENCY))
 
     /* ═══ وهذا مِحَكُّ الفحص ═══
 
@@ -219,8 +223,9 @@ describe('البديلُ يُصحّح الاسمَ ولا يُعيد التفا�
     /* والمقابلةُ على **جملة الأتعاب** لا على المتن كلِّه: المرجعُ مطبوعٌ في
        رأس الوثيقة وفيه أرقامُ `Date.now()`، فمسحٌ على «99» وحدَها يحمرّ على
        مرجعٍ صادف أن حمل الرقمَين. وصيغةُ الوحدة `${rate} ${currency}`. */
-    expect(next.bodyAr ?? '', 'تبدّلت أتعابُه في بديلٍ يصحّح اسما').not.toContain('99 USD')
-    expect(next.bodyAr ?? '', 'ضاع أساسُ أتعابه من البديل').toContain('25 USD')
+    expect(next.bodyAr ?? '', 'تبدّلت أتعابُه في بديلٍ يصحّح اسما').not.toContain(withCurrencyAr('99', LEDGER_CURRENCY))
+    expect(next.bodyAr ?? '', 'ضاع أساسُ أتعابه من البديل')
+      .toContain(withCurrencyAr('25', LEDGER_CURRENCY))
     expect(String(next.compensationRate ?? ''), 'تبدّل الأجرُ المحفوظُ في الصفّ').toContain('25')
   })
 

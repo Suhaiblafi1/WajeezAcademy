@@ -25,6 +25,7 @@ import {
   summaryItem, exampleRow, exampleTotal, feeRuleRows, feeRuleCells,
 } from '@/application/trainer/contract-sections'
 import { renderContractBodyAr, type ConditionalTerms } from '@/application/trainer/contract-body'
+import { PRESENTMENT_CURRENCIES } from '@/application/commerce/presentment'
 import { ACADEMY_LEGAL, academyPartyLineAr } from '@/data/academy-legal'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -250,8 +251,11 @@ describe('القراءاتُ الثانيةُ تُشتقّ من السطر', () 
     const rows = blocks.map(exampleRow).filter(Boolean)
     expect(rows.length, 'لا يُقرأ صفٌّ — فالجدولُ يرتدّ فقرات').toBe(3)
     expect(blocks.map(exampleTotal).filter(Boolean)).toHaveLength(1)
-    /* والمبلغُ من السطر لا من ثابتٍ في الشيفرة */
-    expect(rows[0]!.amountAr).toMatch(/USD$/)
+    /* والمبلغُ من السطر لا من ثابتٍ في الشيفرة. ويحمل رمزَ عملته منذ
+       ٢٩ سبتمبر ٢٠٢٦ (الملاحظة ٨): «$500» لا «500 USD» — ورمزُه من
+       جدول العملات لا مكتوبا هنا، فلا نسختان تفترقان. */
+    expect(rows[0]!.amountAr).toContain(PRESENTMENT_CURRENCIES.USD.symbol)
+    expect(rows[0]!.amountAr, 'بقي رمزُ العملة الثلاثيُّ في الخانة').not.toMatch(/USD/)
   })
 
   it('وما لا يطابق شكلَه يرتدّ ولا يُخترَع له شيء', () => {

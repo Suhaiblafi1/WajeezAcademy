@@ -44,13 +44,27 @@ export interface PresentmentInfo {
   /** كم وحدةً من هذه العملة في الدولار الواحد — سعرُ ربطٍ رسميّ ثابت */
   perUsd: number
   labelAr: string
+  /** اسمُها معرَّفا — «الدولار الأمريكي» لا «ال» + `labelAr`.
+   *
+   *  فالتعريفُ في العربيّة يدخل الموصوفَ وصفتَه معا، و«ال»+«دولار أمريكي»
+   *  تُخرج «الدولار أمريكي». ولا يُشتقّ بقاعدةٍ تُكتب هنا: يُكتب كما يُنطَق. */
+  labelDefiniteAr: string
   symbol: string
+  /** ═══ أيتقدّم الرمزُ الرقمَ؟ (٢٩ سبتمبر ٢٠٢٦) ═══
+
+      «$30» للدولار و«30 ر.س» لغيره — وهو عُرفُ كلِّ عملةٍ لا اختيارُنا.
+
+      وكان هذا الشرطُ مكتوبا في `formatPresentment` وحدَها (`code === 'USD'`)،
+      فمن أضاف عملةً يتقدّم رمزُها لم يجد له موضعا يُعلنه فيه، ومن كتب صائغا
+      ثانيا أعاد الشرطَ بيده — فينطق الموضعان بنطقَين. فصار خاصّيّةً في
+      الجدول، تقرؤها الصائغتان كلتاهما. */
+  symbolBefore: boolean
 }
 
 export const PRESENTMENT_CURRENCIES = {
-  USD: { perUsd: 1, labelAr: 'دولار أمريكي', symbol: '$' },
-  AED: { perUsd: 3.6725, labelAr: 'درهم إماراتي', symbol: 'د.إ' },
-  SAR: { perUsd: 3.75, labelAr: 'ريال سعودي', symbol: 'ر.س' },
+  USD: { perUsd: 1, labelAr: 'دولار أمريكي', labelDefiniteAr: 'الدولار الأمريكي', symbol: '$', symbolBefore: true },
+  AED: { perUsd: 3.6725, labelAr: 'درهم إماراتي', labelDefiniteAr: 'الدرهم الإماراتي', symbol: 'د.إ', symbolBefore: false },
+  SAR: { perUsd: 3.75, labelAr: 'ريال سعودي', labelDefiniteAr: 'الريال السعودي', symbol: 'ر.س', symbolBefore: false },
 } as const satisfies Record<string, PresentmentInfo>
 
 export type PresentmentCurrency = keyof typeof PRESENTMENT_CURRENCIES
@@ -74,7 +88,43 @@ export function convertFromUsd(amountUsd: number, to: PresentmentCurrency): numb
 
 /** صياغةُ المبلغ بعملته — بلا تحويلٍ ثانٍ، فالمبلغ محوَّلٌ أصلا */
 export function formatPresentment(amount: number, code: PresentmentCurrency): string {
-  const { symbol } = PRESENTMENT_CURRENCIES[code]
   const n = amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-  return code === 'USD' ? `${symbol}${n}` : `${n} ${symbol}`
+  return withCurrencyAr(n, code)
+}
+
+/* ═══ رمزُ العملة يُوضَع، والرقمُ لا يُقرأ (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «use $ sign» — في العقد والشاشات جميعا، والرمزُ قبل
+   الرقم. وكان المطبوعُ رمزَ العملة الثلاثيَّ بعده («30 USD»)، ومرّةً اسمَها
+   منثورا في بندٍ («300 دولار أمريكي»).
+
+   ─────────── ولمَ تستقبل نصّا لا رقما ───────────
+
+   متنُ العقد وحدةٌ نقيّة: يستقبل أتعابَه **منسَّقةً نصّا**
+   (`ContractCompensation.rate`) لأنّه لا يقرأ محلّيّةً ولا يحمل `Decimal`.
+   فلو أُعيد هنا تحليلُ الرقم وتنسيقُه لَدخلت المحلّيّةُ وثيقةً تُهشَّم بصمتُها
+   وتُوقَّع عليها — فيختلف نصُّ العقد باختلاف الجهاز الذي صيَّره.
+
+   فهذه تضع الرمزَ في موضعه ولا تمسّ الرقمَ: ما وصلها نصّا يخرج كما وصل.
+
+   ─────────── وما لا يُعرَف رمزُه يبقى برمزه الثلاثيّ ───────────
+
+   عملةٌ لا في الجدول تُطبَع «120 XYZ» كما كانت — فلا يُخترع لها رمزٌ، ولا
+   يسقط بيانُها من وثيقة. */
+
+/** يضع رمزَ العملة في موضعه من مبلغٍ **منسَّقٍ أصلا**: «$30» · «30 ر.س» */
+export function withCurrencyAr(formatted: string, code: string): string {
+  if (!isPresentmentCurrency(code)) return `${formatted} ${code}`
+  const { symbol, symbolBefore } = PRESENTMENT_CURRENCIES[code]
+  return symbolBefore ? `${symbol}${formatted}` : `${formatted} ${symbol}`
+}
+
+/** اسمُ العملة منثورا — لجملةٍ تسمّي العملةَ ولا تعدّ مبلغا */
+export function currencyNameAr(code: string): string {
+  return isPresentmentCurrency(code) ? PRESENTMENT_CURRENCIES[code].labelAr : code
+}
+
+/** واسمُها معرَّفا: «بعملة واحدة هي **الدولار الأمريكي**» */
+export function currencyNameDefiniteAr(code: string): string {
+  return isPresentmentCurrency(code) ? PRESENTMENT_CURRENCIES[code].labelDefiniteAr : code
 }
