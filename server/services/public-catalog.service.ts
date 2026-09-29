@@ -11,6 +11,9 @@ import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible
 import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 
+/** سقفُ ما يُعلَن من لقاءات الشعبة الواحدة — شعبةٌ تُجاوزه فصلٌ لا دورة */
+const PUBLIC_SESSIONS_CAP = 60
+
 export class PublicCatalogService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -97,6 +100,7 @@ export class PublicCatalogService {
      المحجوزَ مع المسجَّل (وأوّلُ من ينسخ ينسى)، والبوّابةُ تُطبَّق على اسم
      المدرّب. فالترشيحُ وسيطٌ والجسدُ واحد. */
   private async openCohorts(extraWhere: Record<string, unknown>) {
+    const now = new Date()
     const rows = await this.prisma.cohort.findMany({
       where: { status: { in: ['open', 'full', 'active'] }, ...openRegistrationWhere(), ...extraWhere },
       include: {
@@ -104,7 +108,22 @@ export class PublicCatalogService {
         trainers: {
           include: { profile: { select: { ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
         },
-        sessions: { where: LEARNER_SESSION_WHERE, orderBy: { startsAt: 'asc' }, select: { startsAt: true, endsAt: true, title: true } },
+        /* ═══ ومواعيدُ لقاءاتها كلُّها — حيث يقع قرارُ الشراء (٢٩ سبتمبر ٢٠٢٦) ═══
+
+           قال صاحبُ المنصّة: «these dates appears in the information of the
+           training for the user when they buy it». وكانت القائمةُ تحمل أوّلَ
+           لقاءٍ وحدَه (`nextSession`) ولا يقرؤه أحدٌ في الواجهة — فيشتري
+           المتعلّمُ شعبةً يعرف متى تبدأ وأيّامَها، ولا يعرف مواعيدَ لقاءاتها.
+
+           ولا يُعلَن منها إلّا ما يُعلَن للمسجَّل: المعتمَدُ غيرُ الملغى. ولا
+           المبدئيُّ — مثالُ الإدارة «مثالٌ فقط» ويُرفع حين يضع المدرّبُ جدولَه
+           (`clearPlaceholders`)، فعرضُه على المشتري وعدٌ بموعدٍ لم يَعِد به أحد. */
+        sessions: {
+          where: { ...LEARNER_SESSION_WHERE, status: { not: 'cancelled' }, placeholder: false },
+          orderBy: { startsAt: 'asc' },
+          take: PUBLIC_SESSIONS_CAP,
+          select: { startsAt: true, endsAt: true, title: true },
+        },
         /* المقعدُ المحجوز مقعدٌ مشغول.
 
            كان العدُّ على `enrolled` وحدَه، و`checkout` يمنع على
@@ -134,7 +153,9 @@ export class PublicCatalogService {
       trainers: c.trainers
         .filter((t) => trainerPubliclyVisible(t.profile))
         .map((t) => t.profile.application.fullName),
-      nextSession: c.sessions[0] ?? null,
+      sessions: c.sessions,
+      /* والتالي تالٍ لا أوّل: شعبةٌ جاريةٌ أوّلُ لقاءاتها مضى */
+      nextSession: c.sessions.find((s) => s.startsAt.getTime() >= now.getTime()) ?? null,
     }))
   }
 

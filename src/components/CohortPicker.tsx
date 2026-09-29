@@ -17,6 +17,7 @@ import { CalendarDays, Check, ChevronDown, Users } from "lucide-react";
 import type { CohortOption } from "@/services/cohort-prices";
 import { daysLabelAr, fmtDateAr, untilLabelAr } from "@/utils/format";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
+import LiveSessionDates from "@/components/LiveSessionDates";
 
 import Button from "@/components/ui/Button";
 /** سطرُ موعدٍ واحد — التاريخ ثمّ بُعده ثمّ أيّامه */
@@ -90,6 +91,10 @@ export default function CohortPicker({
         )}
       </div>
 
+      {/* مواعيدُ لقاءات الشعبة المختارة — تتبع الاختيار: من بدّل الموعدَ رأى
+          لقاءاتِ ما اختاره لا ما كان قبله. والمفتاحُ يُعيد حالَ الطيّ مع كلّ
+          شعبة، فلا تبقى قائمةٌ مفتوحةٌ على شعبةٍ لم يفتحها. */}
+      <LiveSessionDates key={selected.id} sessions={selected.sessions} defaultOpen={!compact} />
       {open && others.length > 0 && (
         <ul className="mt-2 grid gap-1">
           {cohorts.map((c) => (

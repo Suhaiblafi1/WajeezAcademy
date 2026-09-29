@@ -45,6 +45,7 @@ import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
 import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
+import LiveSessionDates from "@/components/LiveSessionDates";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { apiPost, ApiError } from "@/services/api";
 import { readReferral } from "@/application/commerce/referral";
@@ -442,6 +443,9 @@ export default function BuyPanel({
                         </select>
                       </label>
                     )}
+                    {/* ومواعيدُ لقاءاتها قبل الدفع لا بعده — مطويّةً، فاللوحُ قائمةُ
+                        بنودٍ ومجموع. والمستبعَدُ لا تُعرض لقاءاتُه: لن يُشترى. */}
+                    {!out && <LiveSessionDates key={picked.id} sessions={picked.sessions} />}
                   </li>
                 );
               })}
