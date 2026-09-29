@@ -10,6 +10,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { PrismaClient } from '@prisma/client'
 import { assertCatalogSourceValid } from './validate-source'
+import { COURSE_DOMAIN_FAMILIES, courseDomain } from '../../src/application/catalog/course-domain'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const readJson = (p: string) => JSON.parse(readFileSync(join(root, p), 'utf8'))
@@ -253,18 +254,33 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
 
   /* 3) الدورات + إصداراتها + أهدافها ومخرجاتها ومشاريعها + روابط المهارات */
   for (const c of courses) {
+    /* ═══ والمجالُ يُكتب عند الميلاد هنا كما يُكتب في المعالج (٢٩ سبتمبر ٢٠٢٦) ═══
+
+       `Course.domainAr` يقارنه مخطِّطُ الفصل حرفا بحرف ليمنع دورتين من مجالٍ
+       واحدٍ أن تتزاحما، وتعرضه رقاقاتُ التقويم. وكان المعالجُ وحدَه يكتبه
+       (`catalog-admin.service`) — ودوراتُ هذا الملفّ مُلئ مجالُها مرّتين
+       بترحيلٍ (٦ و١٧ سبتمبر) لما كان قائما يومَها. فكلُّ دورةٍ أُضيفت إلى
+       الملفّ بعدهما وُلدت بمجالٍ فارغ، فلا يرى المخطِّطُ تزاحمها.
+
+       والقاعدةُ قاعدةُ المعالج نفسُها: عائلةٌ مسمّاةٌ تُعطي مجالَها، وغيرُها
+       فراغٌ لا «أخرى». ويُكتب في التحديث كما في الإنشاء، فاسمٌ يتغيّر في
+       `course-domain.ts` يصل دوراتِ الملفّ مع أوّل استيرادٍ بلا ترحيل. */
+    const family = /^C-([A-Z0-9]+)-/.exec(c.course_id)?.[1] ?? ''
+    /* والمفتاحُ مكتوبٌ صريحا لا مختصَرا (`domainAr: domain`): حارسُ تكافؤ
+       الـupsert يقرأ `مفتاح:` وحدَه، فالمختصَرُ يمرّ عنه غيرَ مرئيّ */
+    const domain = COURSE_DOMAIN_FAMILIES.includes(family) ? courseDomain(c.course_id) : null
     await prisma.course.upsert({
       where: { id: c.course_id },
       /* المسار الأمّ والترتيب من المصدر مباشرةً — لا يُستنتجان من الروابط:
          للدورة روابط مساندة في مسارات أخرى، وبعضها بلا رابط أساسيّ أصلا */
       update: {
         status: 'published', homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null,
-        listPrice: c.list_price ?? null, listCurrency: c.list_currency ?? 'USD',
+        listPrice: c.list_price ?? null, listCurrency: c.list_currency ?? 'USD', domainAr: domain,
       },
       create: {
         id: c.course_id, status: 'published', currentVersion: 1,
         homePathwayId: c.pathway_id, homeSequence: toInt(c.sequence) ?? null,
-        listPrice: c.list_price ?? null, listCurrency: c.list_currency ?? 'USD',
+        listPrice: c.list_price ?? null, listCurrency: c.list_currency ?? 'USD', domainAr: domain,
       },
     })
     const cv = await prisma.courseVersion.upsert({

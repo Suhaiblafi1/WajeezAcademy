@@ -2,7 +2,7 @@
    الفجوة تقود إلى مقرر، والمقررات تُركَّب مسارا. */
 
 import { describe, it, expect } from 'vitest'
-import { catalogCourses } from '../../../domain/diagnostic/catalog'
+import { catalogCourses, launchPathways } from '../../../domain/diagnostic/catalog'
 import {
   familyIndex,
   familiesForCourses,
@@ -45,8 +45,12 @@ describe('عائلات المهارات — قياس الكل بلا سؤال ل
   })
 
   it('عائلات مسار واحد قليلة — التقييم ممكن بلا استجواب', () => {
+    /* ومقرّراتُ المسار من قائمته لا من عمود الموطن — فهي ما يسأل
+       `familiesToRate` عن عائلاته (عبر `coursesOfEntity`). والدورةُ القائمةُ
+       بنفسها موطنُها مسار، ولا يُسأل عن عائلاتها من رُشّح له ذلك المسار؛
+       فعدُّها هنا يقيس استجوابا لا يقع. (٢٩ سبتمبر ٢٠٢٦) */
     for (const pid of ['PW-FND-003', 'PW-STU-002', 'PW-EMP-003']) {
-      const ids = catalogCourses.filter((c) => c.pathway_id === pid).map((c) => c.course_id)
+      const ids = launchPathways.find((p) => p.id === pid)!.course_ids
       const fams = familiesForCourses(ids)
       expect(fams.length).toBeGreaterThan(0)
       expect(fams.length).toBeLessThanOrEqual(8)

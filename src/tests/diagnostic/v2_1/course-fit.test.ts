@@ -119,6 +119,22 @@ describe('ملاءمة المقرر — لكل مقرر مهاراته', () => {
     }
   })
 
+  it('خطّةُ المسار قائمتُه وحدَها — لا كلُّ دورةٍ موطنُها فيه', () => {
+    /* المساراتُ كلُّها لا عيّنةٌ منها: كان الحارسُ الذي قبله يقيس ثلاثةً ليس
+       فيها زائد، فبقيت خمسةُ مساراتٍ تُخطَّط بخمس دوراتٍ أو ستٍّ وهي تُعلن
+       أربعا — مساندةٌ أو دورةٌ قائمةٌ بنفسها موطنُها المسار. والموطنُ يقول
+       تحت أيّ مسارٍ تُعرض الدورة، لا أنّها من خطّته. (٢٩ سبتمبر ٢٠٢٦) */
+    const ctx = ctxOf({ career_stage: fact('fresh_graduate') })
+    for (const p of launchPathways) {
+      const plan = assessPathwayByCourses(p.id, ctx)
+      expect(plan.courses.map((c) => c.courseId).sort(), p.id).toEqual([...p.course_ids].sort())
+    }
+    /* والحارسُ يرى ما يحرسه: في الكتالوج دوراتٌ موطنُها مسارٌ وليست من قائمته،
+       وإلّا لخضرّ على كتالوجٍ لا يُفرّق فيه الموطنُ عن العضويّة شيئا. */
+    const inListOf = (pid: string) => launchPathways.find((p) => p.id === pid)?.course_ids ?? []
+    expect(catalogCourses.filter((c) => !inListOf(c.pathway_id).includes(c.course_id)).length).toBeGreaterThan(0)
+  })
+
   it('حتمي: نفس الحقائق تعطي نفس الخطة', () => {
     const mk = () => personalizePlan('PW-FND-003', ctxOf({ career_stage: fact('fresh_graduate'), need_id: fact('need_ai') }))
     expect(mk().courses.map((c) => c.courseId)).toEqual(mk().courses.map((c) => c.courseId))

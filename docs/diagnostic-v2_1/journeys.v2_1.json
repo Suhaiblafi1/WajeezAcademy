@@ -1247,16 +1247,16 @@
           "anchorDomain": "project_management",
           "courseIds": [
             "C-PM-101",
-            "C-SVC-101",
             "C-COMX-104",
+            "C-PM-106",
             "C-PM-103",
             "C-PM-104",
             "C-PM-105"
           ],
-          "totalHours": 64,
-          "inferredSkills": 30,
-          "coveredGaps": 27,
-          "uncoveredGaps": 61,
+          "totalHours": 56,
+          "inferredSkills": 27,
+          "coveredGaps": 22,
+          "uncoveredGaps": 75,
           "relaxedForMinimum": false,
           "matchesPathwayId": null
         }

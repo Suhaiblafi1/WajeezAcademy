@@ -15,7 +15,7 @@
    حتمي بالكامل: نفس الحقائق → نفس الترتيب. لا LLM ولا عشوائية.
    طبقةٌ مضافة: لا تلغي منافسة المسارات ولا تستبدلها — تُشخصِن داخل الفائز. */
 
-import { courseById, catalogCourses } from '../catalog'
+import { courseById, catalogCourses, launchPathways } from '../catalog'
 import { TARGET_LEVEL } from '../v2/skills'
 import { pathwayDomainsV2 } from '../v2/data'
 import { resolveSkillLevels, INFERRED_EVIDENCE_WEIGHT } from './skill-families'
@@ -217,10 +217,33 @@ export interface PathwayCourseFit {
   totalHours: number
 }
 
+/* ═══ مقرّراتُ المسار — من قائمته لا من عمود `pathway_id` (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   كانت تُقرأ `catalogCourses.filter((c) => c.pathway_id === pathwayId)`. و
+   `pathway_id` **موطنُ الدورة لا عضويّتُها**: يقول تحت أيّ مسارٍ تُعرض ومن أين
+   تُقرأ مجالاتُها (`domainsOfCourse`)، ولا يقول إنّها من خطّته. فمساندتا مسار
+   التصميم البصريّ موطنُهما فيه، ومثلُهما في التربية والتصميم الداخليّ
+   والهندسة، و`C-COMX-106` القائمةُ بنفسها — وسببُها المكتوب أنّها «لا تدخل
+   تسلسل مسار جاهز» — موطنُها التواصل. فخرجت الخطّةُ الشخصيّةُ لخمسة مساراتٍ
+   بخمس دوراتٍ أو ستٍّ والمسارُ يُعلن أربعا وساعاتِها.
+
+   ولم يُرَ، لأنّ حارسَ «الخطة تبقى بكامل مقررات المسار» يقيس ثلاثةَ مساراتٍ
+   ليس فيها زائد. ثمّ وُلدت دوراتُ اقتراحات المدرّبين قائمةً بنفسها ولكلٍّ
+   موطن، فبلغ الزائدُ «التحضير لأول وظيفة» فاحمرّ — ولولا ذلك لدخل إتيكيتُ
+   الأعمال خطّةَ كلِّ من رُشّح له ذلك المسار.
+
+   والقاعدةُ هنا قاعدةُ بقيّة المحرّك: `buildStandardEntity` و`pathwaySkills`
+   و`familiesToRate` تقرأ `course_ids`، والمستوردُ يربط المسارَ بدوراته منها.
+   وما ليس مسارا (قالبٌ مركّب) يعود فارغا كما كان يعود. */
+function coursesOfPathway(pathwayId: string): CatalogCourse[] {
+  const p = launchPathways.find((x) => x.id === pathwayId)
+  if (!p) return []
+  return p.course_ids.map((cid) => courseById.get(cid)).filter((c): c is CatalogCourse => c !== undefined)
+}
+
 export function assessPathwayByCourses(pathwayId: string, ctx: DecisionContext, domainScores?: Map<DomainId, number>): PathwayCourseFit {
   const scores = domainScores ?? normalizedDomains(ctx)
-  const courses = catalogCourses
-    .filter((c) => c.pathway_id === pathwayId)
+  const courses = coursesOfPathway(pathwayId)
     .map((c) => assessCourseFit(c, ctx, scores))
     .sort((a, b) => a.sequence - b.sequence)
   const meanFit = courses.length === 0 ? 0 : courses.reduce((s, c) => s + c.total, 0) / courses.length
