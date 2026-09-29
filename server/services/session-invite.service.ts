@@ -17,6 +17,8 @@
    · يُعتمَد لقاءٌ، أو تجدوله الإدارةُ باجتماعه — دعوة (`announce(…, 'new')`).
    · يُنقل وهو معتمَد، أو يصير له رابط — تحديثٌ بالمعرّف نفسِه (`'update'`).
    · يُحذف، أو يعود لانتظار الإدارة — رفعٌ من التقويم (`withdraw`).
+   · يصير لمتعلّمٍ مقعدٌ بعد أن اعتُمدت لقاءاتُ شعبته — رسالةٌ واحدةٌ بما بقي
+     منها (`welcome`). ويتركه أو ينتقل منه — تُرفع من تقويمه وحدَه (`release`).
 
    ولا يُدعى إلى ما مضى، ولا إلى المبدئيّ — مثالُ الإدارة يُرفع حين يضع المدرّبُ
    جدولَه، فدعوتُه موعدٌ في تقويم إنسانٍ يُمحى بعد أيّام.
@@ -39,7 +41,7 @@ import { enqueueMail } from './outbox.service'
 import { ACADEMY_CONTACT_EMAIL } from './integrations.service'
 import { publicSiteUrl } from './site-url'
 import { getZoomConfig, registerZoomParticipant, zoomReady } from './zoom.service'
-import { sessionInviteMail, type InviteKind } from './calendar/session-invite'
+import { sessionInviteMail, sessionScheduleMail, type InviteKind } from './calendar/session-invite'
 
 /** المدعوّان إلى كلّ لقاءٍ يُعتمَد — بقرار صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦) */
 export const SESSION_GUESTS: readonly { email: string; name: string }[] = [
@@ -48,7 +50,7 @@ export const SESSION_GUESTS: readonly { email: string; name: string }[] = [
 ]
 
 /** ما يُدعى إليه المسجَّل: مقعدٌ قائم — لا منتظرٌ في القائمة ولا من ترك */
-const SEATED = ['enrolled', 'completed']
+export const SEATED = ['enrolled', 'completed']
 
 /** لقاءٌ كما كان ساعةَ دُعي إليه — يُحفظ قبل حذفه لتُكتب رسالةُ رفعه */
 export interface InvitedSession {
@@ -98,20 +100,106 @@ export class SessionInviteService {
     return this.send(snap, 'cancel', null, whyAr, now)
   }
 
+  /* ═══ ومن التحق بعد الاعتماد — رسالةٌ واحدةٌ بما بقي (`sessionScheduleMail`) ═══
+
+     يُنادى حين يصير لمتعلّمٍ مقعد: التحاقٌ (بالشراء أو بيد الإدارة)، وترقيةٌ
+     من قائمة الانتظار، وانتقالٌ من شعبةٍ أخرى. ومن التحق قبل الاعتماد لا جدولَ
+     له بعدُ فلا يُكتب له شيء — دعوةُ كلِّ لقاءٍ تصله ساعةَ يُعتمَد.
+
+     ويُنادى بعد أن يُسجَّل في Zoom (`ensureSessionJoinLinks`)، فيحمل الجدولُ
+     رابطَه الخاصَّ لا المشترك. يعود بعدد ما كُتب — واحدٌ أو لا شيء. */
+  async welcome(enrollmentId: string, now = new Date()): Promise<number> {
+    const seat = await this.prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      select: {
+        id: true, status: true, cohortId: true,
+        cohort: { select: { title: true } },
+        user: { select: { email: true, displayName: true } },
+      },
+    })
+    if (!seat || !SEATED.includes(seat.status) || !seat.user?.email) return 0
+    const sessions = await this.upcoming(seat.cohortId, now)
+    if (sessions.length === 0) return 0
+
+    const links = await this.prisma.sessionJoinLink.findMany({
+      where: { enrollmentId: seat.id, sessionId: { in: sessions.map((s) => s.id) } },
+      select: { sessionId: true, joinUrl: true },
+    })
+    const own = new Map(links.map((l) => [l.sessionId, l.joinUrl]))
+    const mail = sessionScheduleMail({
+      cohortId: seat.cohortId, cohortTitle: seat.cohort.title,
+      to: { email: seat.user.email, name: seat.user.displayName },
+      sessions: sessions.map((s) => {
+        const mine = own.get(s.id)
+        const join = mine ? { url: mine, personal: true } : s.zoom?.joinUrl ? { url: s.zoom.joinUrl, personal: false } : null
+        return { id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, join }
+      }),
+      pageUrl: `${publicSiteUrl()}/student/learning`,
+      now,
+    })
+    await enqueueMail(this.prisma, {
+      to: seat.user.email, subject: mail.subject, text: mail.text, html: mail.html,
+      purpose: 'session.invite.schedule', batchId: seat.id,
+      ics: { content: mail.ics, method: mail.icsMethod, filename: mail.icsFilename },
+    })
+    return 1
+  }
+
+  /* ═══ ومن ترك الشعبة أو انتقل منها — تُرفع لقاءاتُها المقبلة من تقويمه ═══
+
+     دُعي إليها وهو فيها، فبقيت في تقويمه بروابطَ تعمل. ومن انتقل يرى لقاءاتِ
+     شعبتَين في أسبوعٍ واحد فيحضر ما ليس له. فيُرفع كلُّ لقاءٍ برسالته — الرفعُ
+     عن موعدٍ واحدٍ بمعرّفه كالدعوة — ولا يُكتب لأحدٍ سواه. */
+  async release(
+    to: { email: string; name?: string | null }, cohortId: string, whyAr: string, now = new Date(),
+  ): Promise<number> {
+    const pageUrl = `${publicSiteUrl()}/student/learning`
+    let queued = 0
+    for (const s of await this.upcoming(cohortId, now)) {
+      const snap: InvitedSession = {
+        id: s.id, cohortId, cohortTitle: s.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
+      }
+      await this.enqueueInvite(snap, 'cancel', to, null, pageUrl, whyAr, now)
+      queued += 1
+    }
+    return queued
+  }
+
+  /** ما بقي من لقاءات الشعبة ممّا يُدعى إليه — بقاعدة `invitable` نفسِها لا بنسخةٍ منها */
+  private async upcoming(cohortId: string, now: Date) {
+    const rows = await this.prisma.cohortSession.findMany({
+      where: { cohortId, startsAt: { gt: now } },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true, title: true, startsAt: true, endsAt: true, status: true, approvalState: true, placeholder: true,
+        cohort: { select: { title: true } },
+        zoom: { select: { joinUrl: true } },
+      },
+    })
+    return rows.filter((s) => SessionInviteService.invitable(s, now))
+  }
+
+  private async enqueueInvite(
+    snap: InvitedSession, kind: InviteKind, to: { email: string; name?: string | null },
+    join: { url: string; personal: boolean } | null, pageUrl: string, whyAr: string | undefined, now: Date,
+  ): Promise<void> {
+    const mail = sessionInviteMail({
+      kind, session: snap, cohortTitle: snap.cohortTitle, to, join, pageUrl, cancelWhyAr: whyAr, now,
+    })
+    await enqueueMail(this.prisma, {
+      to: to.email, subject: mail.subject, text: mail.text, html: mail.html,
+      purpose: `session.invite.${kind}`, batchId: snap.id,
+      ics: { content: mail.ics, method: mail.icsMethod, filename: mail.icsFilename },
+    })
+  }
+
   private async send(
     snap: InvitedSession, kind: InviteKind, zoom: MeetingRef | null, whyAr: string | undefined, now: Date,
   ): Promise<number> {
     const site = publicSiteUrl()
     let queued = 0
     const enqueue = async (to: { email: string; name?: string | null }, join: { url: string; personal: boolean } | null, pageUrl: string) => {
-      const mail = sessionInviteMail({
-        kind, session: snap, cohortTitle: snap.cohortTitle, to, join, pageUrl, cancelWhyAr: whyAr, now,
-      })
-      await enqueueMail(this.prisma, {
-        to: to.email, subject: mail.subject, text: mail.text, html: mail.html,
-        purpose: `session.invite.${kind}`, batchId: snap.id,
-        ics: { content: mail.ics, method: mail.icsMethod, filename: mail.icsFilename },
-      })
+      await this.enqueueInvite(snap, kind, to, join, pageUrl, whyAr, now)
       queued += 1
     }
 

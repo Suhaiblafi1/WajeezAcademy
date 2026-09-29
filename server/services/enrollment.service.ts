@@ -9,6 +9,7 @@ import { NotificationService, safeNotify } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
 import { CohortService } from './cohort.service'
+import { SEATED, SessionInviteService } from './session-invite.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { assessmentOpensAt, gateAssessment, learnerGate, meetingOver } from '../../src/application/learning/cohort-gate'
 
@@ -40,9 +41,11 @@ export class EnrollmentService {
     if (!this._cohorts) this._cohorts = new CohortService(this.prisma)
     return this._cohorts
   }
+  private invites: SessionInviteService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.notifications = new NotificationService(prisma)
+    this.invites = new SessionInviteService(prisma)
   }
 
   /** الرمزُ الذي يُختم على تسجيل هذه الشعبة — أو لا شيء */
@@ -166,25 +169,50 @@ export class EnrollmentService {
       })
     }
 
-    /* ── ورابطُ دخولٍ في كلّ جلسةٍ لم تُعقد بعد ──
+    /* ورابطُه في كلّ لقاءٍ لم يُعقد، ثمّ جدولُه (`seatTaken`). والملتحقُ وحدَه: من
+       في قائمة الانتظار لم يستحقّ مقعدا بعد.
 
-       الروابطُ تُنشأ حين يُنشأ الاجتماع، ومن التحق **بعد** ذلك لا رابطَ له —
-       فيدخل بالرابط المشترك ولا يُطابَق في تقرير الحضور، ويُقرأ غائبا وهو
-       حاضر. فيؤخذ له رابطُه هنا.
-
-       والملتحقُ وحدَه: من في قائمة الانتظار لم يستحقّ مقعدا بعد. والسقوطُ
-       يُبتلع — التحاقٌ يسقط لأنّ Zoom لم يردّ عطبٌ أكبرُ من غياب الرابط،
-       والسببُ مكتوبٌ في `syncState` على كلّ حال. */
-    if (status === 'enrolled') {
-      const upcoming = await this.prisma.cohortSession.findMany({
-        where: { ...LEARNER_SESSION_WHERE, cohortId, startsAt: { gte: new Date() }, zoom: { provider: 'zoom_api' } },
-        select: { id: true },
-      })
-      for (const s of upcoming) {
-        await this.cohorts.ensureSessionJoinLinks(s.id).catch(() => { /* الرابطُ رفاهيةٌ لا شرطُ التحاق */ })
-      }
-    }
+       ولا يُسكته `announce: false`: ذاك جرسُ «سُجّلت» يُغني عنه «تأكّد دفعك» على
+       مسار الشراء، والجدولُ لا يرسله أحدٌ سواه — والشراءُ أكثرُ من يلتحق بعد
+       الاعتماد. */
+    if (status === 'enrolled') await this.seatTaken(enrollment.id, cohortId)
     return enrollment
+  }
+
+  /* ─────────── مقعدٌ صار له — رابطُه في Zoom ثمّ جدولُه ───────────
+
+     الروابطُ تُنشأ حين يُنشأ الاجتماع، ومن التحق **بعد** ذلك لا رابطَ له —
+     فيدخل بالرابط المشترك ولا يُطابَق في تقرير الحضور، ويُقرأ غائبا وهو
+     حاضر. فيؤخذ له رابطُه هنا.
+
+     ثمّ رسالةٌ واحدةٌ بما بقي من لقاءات شعبته، كلٌّ برابطه وفي ملفّ تقويم
+     (`SessionInviteService.welcome`) — «or jon later directly».
+
+     وكان الرابطُ في `enroll` وحدَه: فالمرقّى من قائمة الانتظار والمنتقلُ من شعبةٍ
+     أخرى يدخلان بلا رابطٍ خاصّ، ويُقرآن غائبَين وهما حاضران.
+
+     والسقوطُ يُبتلع — مقعدٌ يسقط لأنّ Zoom أو البريدَ لم يردّ عطبٌ أكبرُ من
+     غياب الرابط أو الرسالة، والسببُ مكتوبٌ في `syncState` وفي السجلّ. */
+  private async seatTaken(enrollmentId: string, cohortId: string) {
+    const upcoming = await this.prisma.cohortSession.findMany({
+      where: { ...LEARNER_SESSION_WHERE, cohortId, startsAt: { gte: new Date() }, zoom: { provider: 'zoom_api' } },
+      select: { id: true },
+    })
+    for (const s of upcoming) {
+      await this.cohorts.ensureSessionJoinLinks(s.id).catch(() => { /* الرابطُ رفاهيةٌ لا شرطُ التحاق */ })
+    }
+    await this.invites.welcome(enrollmentId).catch((e: unknown) => {
+      console.error(`[invite] تعذّرت كتابةُ جدول الملتحق (${enrollmentId})`, e)
+    })
+  }
+
+  /** ومن ترك مقعدَه تُرفع لقاءاتُه المقبلة من تقويمه (`SessionInviteService.release`) */
+  private async seatLeft(userId: string, cohortId: string, whyAr: string) {
+    const who = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, displayName: true } })
+    if (!who?.email) return
+    await this.invites.release({ email: who.email, name: who.displayName }, cohortId, whyAr).catch((e: unknown) => {
+      console.error(`[invite] تعذّر رفعُ لقاءات الشعبة من تقويم من تركها (${cohortId})`, e)
+    })
   }
 
   /* تبديلُ الشعبة قبل أن تبدأ — الدورةُ نفسُها، والمقعدُ يُنقل لا يُشترى.
@@ -326,10 +354,16 @@ export class EnrollmentService {
         + ' تجد جلساتِها ومادّتها في «تعلُّمي».',
       data: { enrollmentId, from: from.id, to: to.id },
     })
+    /* وتقويمُه ينتقل معه: لقاءاتُ المغادَرة تُرفع — وإلّا رأى شعبتَين في أسبوعٍ
+       فحضر ما ليس له — ولقاءاتُ الوجهة تصله برابطه. */
+    await this.seatLeft(userId, from.id, `انتقل مقعدُك إلى «${to.title}» — وتصلك مواعيدُها في رسالتها.`)
+    await this.seatTaken(enrollmentId, to.id)
     return moved
   }
 
   async drop(enrollmentId: string, actorId: string | null, note?: string) {
+    /* الحالُ قبل الإسقاط: من كان في قائمة الانتظار لم يُدعَ إلى شيءٍ فلا يُرفع له شيء */
+    const before = await this.prisma.enrollment.findUnique({ where: { id: enrollmentId }, select: { status: true } })
     const e = await this.prisma.enrollment.update({ where: { id: enrollmentId }, data: { status: 'dropped' } })
     await recordAudit(this.prisma, { actorId, action: 'enrollment.drop', entityType: 'enrollment', entityId: enrollmentId, meta: { note } })
 
@@ -353,6 +387,9 @@ export class EnrollmentService {
         audience: 'learner',
       })
     } catch { /* الإشعارُ خدمةٌ مساندة — لا يُبطل إسقاطا وقع */ }
+    if (before && SEATED.includes(before.status)) {
+      await this.seatLeft(e.userId, e.cohortId, `أُسقط تسجيلُك في «${cohort?.title ?? 'شعبتك'}»، فرُفعت لقاءاتُها من تقويمك.`)
+    }
 
     const promoted = await this.fillSeatFromWaitlist(e.cohortId, actorId)
     return { ...e, promotedEnrollmentId: promoted?.id ?? null }
@@ -427,6 +464,7 @@ export class EnrollmentService {
         audience: 'learner',
       })
     } catch { /* الإشعارُ خدمةٌ مساندة — لا يُبطل ترقيةً وقعت */ }
+    await this.seatTaken(promoted.moved.id, cohortId)
 
     return promoted.moved
   }
