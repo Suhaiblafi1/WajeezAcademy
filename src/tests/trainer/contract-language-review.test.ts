@@ -192,8 +192,8 @@ describe('الملاحظة ٩ — القانونُ قانونُ الكيان، �
 })
 
 describe('وإصدارُ الصياغة رُفع — فلا يُقرأ متنٌ جديدٌ بإصدارٍ قديم', () => {
-  it('v15 في المتن وفي ترويسته', () => {
-    expect(CONTRACT_BODY_VERSION).toBe('v15-2026-09-29')
+  it('الإصدارُ الحاليُّ في المتن وفي ترويسته', () => {
+    expect(CONTRACT_BODY_VERSION).toBe('v16-2026-09-29')
     expect(body).toContain(CONTRACT_BODY_VERSION)
   })
 })

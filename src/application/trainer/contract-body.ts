@@ -199,7 +199,7 @@ import { ACADEMY_EMAILS } from '../../data/academy-email'
     يُحسم من مستحقّاته بالنسبة حتّى يقبل الصيغةَ الجديدة مرّةً واحدة
     (`CODE_TERMS_VERSION` في `trainer-code.ts`). وما أصدره بالمبلغ يبقى على
     شروطه — والبندُ نفسُه يقول ذلك في ذيله. */
-export const CONTRACT_BODY_VERSION = 'v15-2026-09-29'
+export const CONTRACT_BODY_VERSION = 'v16-2026-09-29'
 
 /* ═══ إقراراتُ التوقيع — ستّةٌ تُقرأ واحدا واحدا ═══
 
