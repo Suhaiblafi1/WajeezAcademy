@@ -26,7 +26,9 @@ export interface IcsEvent {
   location?: string
   url?: string
   organizer?: { name: string; email: string }
-  attendee?: { name?: string; email: string }
+  /** و`rsvp: false` لما لا يُنتظَر جوابُه — دعوةُ لقاءٍ لعشرين متعلّما تملأ صندوقَ
+      المنظِّم بـ«قبل: …» إن طلبت الردّ. والافتراضُ يطلبه، كما كان للمقابلة */
+  attendee?: { name?: string; email: string; rsvp?: boolean }
   /** يرتفع مع كلّ تعديلٍ على الموعد فيعرف التقويمُ أنّه تحديثٌ لا موعدٌ ثانٍ */
   sequence?: number
   cancelled?: boolean
@@ -99,7 +101,7 @@ export function buildIcs(e: IcsEvent): string {
   if (e.organizer) lines.push(`ORGANIZER;CN=${escapeIcsText(e.organizer.name)}:mailto:${e.organizer.email}`)
   if (e.attendee) {
     const cn = e.attendee.name ? `;CN=${escapeIcsText(e.attendee.name)}` : ''
-    lines.push(`ATTENDEE${cn};ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:${e.attendee.email}`)
+    lines.push(`ATTENDEE${cn};ROLE=REQ-PARTICIPANT;RSVP=${e.attendee.rsvp === false ? 'FALSE' : 'TRUE'}:mailto:${e.attendee.email}`)
   }
 
   lines.push('END:VEVENT', 'END:VCALENDAR')

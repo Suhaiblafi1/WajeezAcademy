@@ -117,11 +117,14 @@ describe('أين تُستعمل الدعوة فعلا', () => {
     expect(src, 'المعرّفُ غيرُ مشتقٍّ من الموعد — فتتكرّر النسخ').toContain('uid: `interview-${interview.id}@wajeez-academy`')
   })
 
+  /* كان الفحصُ على نصّ `mail.ts` («method=REQUEST» حرفا). ثمّ صار المنهجُ يتبع
+     الدعوة (٢٩ سبتمبر ٢٠٢٦): `REQUEST` تدعو، و`CANCEL` ترفع لقاءً من التقويم —
+     فانتقل الحارسُ من الحرف إلى ما يخرج فعلا، والافتراضُ باقٍ كما كان. */
   it('١٢) والبريدُ يحمل المرفَق بنوعه واسمه — بعضُ العملاء يقرأ هذا وبعضُهم ذاك', async () => {
-    const { readFileSync } = await import('node:fs')
-    const src = readFileSync('server/services/mail.ts', 'utf8')
-    expect(src).toContain("contentType: 'text/calendar; charset=utf-8; method=REQUEST'")
-    expect(src).toContain("filename: input.icsFilename")
+    const { attachmentsOf } = await import('../../services/mail')
+    const [att] = attachmentsOf({ to: 'a@b.co', subject: 's', text: 't', icsContent: 'BEGIN:VCALENDAR', icsFilename: 'x.ics' }) ?? []
+    expect(att?.contentType).toBe('text/calendar; charset=utf-8; method=REQUEST')
+    expect(att?.filename).toBe('x.ics')
   })
 
   it('١٣) وللمتعلّم رابطٌ يضيف جلستَه بنفسه', async () => {
