@@ -22,6 +22,13 @@ export interface CoursePrice {
   cohortId: string
 }
 
+/** لقاءٌ مباشرٌ معتمَد — موعدُه وعنوانُه كما يُعلَنان لمن يشتري */
+export interface LiveSessionDate {
+  startsAt: string
+  endsAt: string | null
+  title: string
+}
+
 interface PublicCohort {
   id: string
   courseId: string
@@ -36,6 +43,8 @@ interface PublicCohort {
   seatsLeft?: number | null
   /** أسماءُ المدرّبين المعتمَدِ نشرُهم — الخادمُ يرشّحهم ببوّابة الظهور */
   trainers?: string[] | null
+  /** لقاءاتُها المعتمَدةُ غيرُ المبدئيّة — الخادمُ يرشّحها ويرتّبها */
+  sessions?: { startsAt?: unknown; endsAt?: unknown; title?: unknown }[] | null
 }
 
 /** شعبةٌ يستطيع المتعلّم أن يختارها — بموعدها وسعرها ومقاعدها */
@@ -52,6 +61,8 @@ export interface CohortOption {
   seatsLeft: number | null
   /** من يقدّم هذه الشعبة — فارغةٌ حتّى يُعتمَد نشرُ اسمه */
   trainers: string[]
+  /** مواعيدُ لقاءاتها المباشرة — فارغةٌ حتّى يُعتمَد جدولُ مدرّبها */
+  sessions: LiveSessionDate[]
 }
 
 /* الحالات التي يستطيع المتعلّم أن يلتحق بها — وهي عينها التي تعدّها
@@ -78,37 +89,9 @@ export function useCourseCohorts(): { cohorts: Map<string, CohortOption[]>; load
     let on = true
     fetch(`${API_BASE}/api/public/cohorts`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((rows: PublicCohort[]) => {
+      .then((rows: unknown) => {
         if (!on) return
-        const map = new Map<string, CohortOption[]>()
-        for (const c of Array.isArray(rows) ? rows : []) {
-          if (c.status && !JOINABLE.has(c.status)) continue
-          const amount = Number(c.price)
-          if (!Number.isFinite(amount) || amount <= 0 || !c.currency) continue
-          /* لا مقعد = لا خيار: عرضُها يَعِد بما لا يُشترى */
-          if (typeof c.seatsLeft === 'number' && c.seatsLeft <= 0) continue
-          const list = map.get(c.courseId) ?? []
-          list.push({
-            id: c.id, courseId: c.courseId, title: c.title ?? '',
-            startsAt: c.startsAt ?? null,
-            daysOfWeek: Array.isArray(c.daysOfWeek) ? c.daysOfWeek : [],
-            startTime: c.startTime ?? null, timezone: c.timezone ?? null,
-            amount, currency: c.currency,
-            seatsLeft: typeof c.seatsLeft === 'number' ? c.seatsLeft : null,
-            /* الاسمُ كان يصل ولا يُقرأ — فشعبتان لمدرّبَين تختلفان بموعدهما وحدَه */
-            trainers: Array.isArray(c.trainers) ? c.trainers : [],
-          })
-          map.set(c.courseId, list)
-        }
-        /* الترتيب هنا لا على الخادم: الأقرب أوّلا، وما بلا تاريخٍ في الآخر */
-        for (const list of map.values()) {
-          list.sort((a, b) => {
-            if (!a.startsAt) return 1
-            if (!b.startsAt) return -1
-            return a.startsAt.localeCompare(b.startsAt)
-          })
-        }
-        setCohorts(map)
+        setCohorts(cohortOptionsFrom(rows))
       })
       .catch(() => undefined)
       .finally(() => { if (on) setLoaded(true) })
@@ -116,6 +99,54 @@ export function useCourseCohorts(): { cohorts: Map<string, CohortOption[]>; load
   }, [])
 
   return { cohorts, loaded }
+}
+
+/* مواعيدُ لقاءات الشعبة كما وصلت — وما لا لحظةَ له يسقط ولا يُختلَق.
+
+   الخادمُ يرشّح ويرتّب (`public-catalog.service.ts`)، فلا يُعاد الترتيبُ هنا
+   إلّا احتياطا: قائمةٌ خرجت عن ترتيبها تُقرأ «أوّلُها» خطأً. */
+function sessionDatesOf(raw: PublicCohort['sessions']): LiveSessionDate[] {
+  const out: LiveSessionDate[] = []
+  for (const s of Array.isArray(raw) ? raw : []) {
+    if (typeof s?.startsAt !== 'string' || Number.isNaN(new Date(s.startsAt).getTime())) continue
+    const endsAt = typeof s.endsAt === 'string' && !Number.isNaN(new Date(s.endsAt).getTime()) ? s.endsAt : null
+    out.push({ startsAt: s.startsAt, endsAt, title: typeof s.title === 'string' ? s.title : '' })
+  }
+  return out.sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
+}
+
+/** ردُّ `/api/public/cohorts` خيارا لكلّ دورة — ما يُشترى وحدَه، الأقربُ أوّلا */
+export function cohortOptionsFrom(rows: unknown): Map<string, CohortOption[]> {
+  const map = new Map<string, CohortOption[]>()
+  for (const c of (Array.isArray(rows) ? rows : []) as PublicCohort[]) {
+    if (c.status && !JOINABLE.has(c.status)) continue
+    const amount = Number(c.price)
+    if (!Number.isFinite(amount) || amount <= 0 || !c.currency) continue
+    /* لا مقعد = لا خيار: عرضُها يَعِد بما لا يُشترى */
+    if (typeof c.seatsLeft === 'number' && c.seatsLeft <= 0) continue
+    const list = map.get(c.courseId) ?? []
+    list.push({
+      id: c.id, courseId: c.courseId, title: c.title ?? '',
+      startsAt: c.startsAt ?? null,
+      daysOfWeek: Array.isArray(c.daysOfWeek) ? c.daysOfWeek : [],
+      startTime: c.startTime ?? null, timezone: c.timezone ?? null,
+      amount, currency: c.currency,
+      seatsLeft: typeof c.seatsLeft === 'number' ? c.seatsLeft : null,
+      /* الاسمُ كان يصل ولا يُقرأ — فشعبتان لمدرّبَين تختلفان بموعدهما وحدَه */
+      trainers: Array.isArray(c.trainers) ? c.trainers : [],
+      sessions: sessionDatesOf(c.sessions),
+    })
+    map.set(c.courseId, list)
+  }
+  /* الترتيب هنا لا على الخادم: الأقرب أوّلا، وما بلا تاريخٍ في الآخر */
+  for (const list of map.values()) {
+    list.sort((a, b) => {
+      if (!a.startsAt) return 1
+      if (!b.startsAt) return -1
+      return a.startsAt.localeCompare(b.startsAt)
+    })
+  }
+  return map
 }
 
 /** أقرب شعبة مفتوحة لكل دورة، بسعرها وعملتها — مشتقّة من القائمة الكاملة */
