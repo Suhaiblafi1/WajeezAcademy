@@ -137,9 +137,12 @@ describe('المساراتُ الميّتةُ حُذفت — وما تناديه
     expect(routes).not.toContain('/api/trainer/change-requests/:id/withdraw')
   })
 
-  it('و`catalog-scope` باقٍ — شاشةُ المؤهّلات تناديه', () => {
+  /* ولم تعد شاشةُ المؤهّلات تناديه (٢٩ سبتمبر ٢٠٢٦): لوحُ «نطاقُ اقتراحاتي»
+     كان يشرح بابَ «تعديلاتي على دوراتي»، فذهب بذهابه. والمسلكُ باقٍ مع
+     أبواب الاقتراح في الخادم — والعلّةُ في رأسها من `trainer-portal.routes.ts`. */
+  it('و`catalog-scope` باقٍ في الخادم — ولا تعرضه «مؤهّلاتي» بعد ذهاب بابه', () => {
     expect(routes).toContain("'/api/trainer/catalog-scope'")
-    expect(code('src/pages/trainer/Qualifications.tsx')).toContain('/api/trainer/catalog-scope')
+    expect(code('src/pages/trainer/Qualifications.tsx')).not.toContain('/api/trainer/catalog-scope')
   })
 })
 

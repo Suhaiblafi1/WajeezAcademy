@@ -44,6 +44,10 @@ import { portalDoorProblemAr } from '../../src/application/trainer/portal-access
 /** الحدُّ الأدنى لطولِ رقمِ حسابٍ يُقبَل — أقصرُ IBAN في العالم ١٥ */
 export const MIN_ACCOUNT_LEN = 15
 export const MAX_ACCOUNT_LEN = 34
+/** ورقمُ الحساب المحلّيّ في دولٍ بلا IBAN أقصرُ — الأمريكيُّ منه يبدأ من ستّ خانات */
+export const MIN_LOCAL_ACCOUNT_LEN = 6
+export const BANK_ACCOUNT_KINDS = ['iban', 'local'] as const
+export type BankAccountKind = (typeof BANK_ACCOUNT_KINDS)[number]
 /** ما يُعرض بدل الرقم — وأيُّ قيمةٍ تحمله تُردّ كتابةً */
 export const BANK_MASK = '····'
 
@@ -54,6 +58,17 @@ export interface BankAccountInput {
   bankNameAr: string
   branchAr?: string | null
   swiftBic?: string | null
+  /* ═══ ولكلّ الدول لا للأردن وحدَه (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     كانت الخانةُ IBAN وحدَه، ورمزُ الدولة يُشتقّ من حرفيه الأوّلين وإلّا
+     فـ`JO`. ومدرّبٌ في أمريكا أو كندا أو الهند لا IBAN له أصلا، فيُردّ رقمُه
+     أو يُسجَّل أردنيّا. فصار النوعُ يُختار، والدولةُ تُكتب، ورمزُ التوجيه
+     المحلّيّ (ABA · Sort code · IFSC · BSB) له خانتُه. */
+  accountKind?: BankAccountKind
+  countryCode?: string | null
+  routingCode?: string | null
+  /** «الحسابُ باسمي الشخصيّ» — شرطٌ لا يُحفظ بدونه (قرارُ صاحب المنصّة) */
+  ownNameConfirmed?: boolean
 }
 
 /** ما تراه الشاشةُ — ولا رقمَ فيه */
@@ -66,6 +81,8 @@ export interface MaskedBankAccount {
   bankNameAr: string
   branchAr: string | null
   swiftBic: string | null
+  accountKind: string
+  routingCode: string | null
   outcome: string
   outcomeScore: number
   outcomeSaidAr: string
@@ -124,6 +141,7 @@ export class TrainerBankService {
   private mask(row: {
     id: string; tail4: string; countryCode: string; holderName: string
     bankNameAr: string; branchAr: string | null; swiftBic: string | null
+    accountKind: string; routingCode: string | null
     outcome: string; outcomeScore: number; createdAt: Date; lastRevealAt: Date | null
   }): MaskedBankAccount {
     return {
@@ -135,6 +153,8 @@ export class TrainerBankService {
       bankNameAr: row.bankNameAr,
       branchAr: row.branchAr,
       swiftBic: row.swiftBic,
+      accountKind: row.accountKind,
+      routingCode: row.routingCode,
       outcome: row.outcome,
       outcomeScore: row.outcomeScore,
       outcomeSaidAr: OUTCOME_AR[row.outcome] ?? OUTCOME_AR.unverifiable,
@@ -146,6 +166,7 @@ export class TrainerBankService {
   private static readonly VIEW = {
     id: true, tail4: true, countryCode: true, holderName: true,
     bankNameAr: true, branchAr: true, swiftBic: true,
+    accountKind: true, routingCode: true,
     outcome: true, outcomeScore: true, createdAt: true, lastRevealAt: true,
   } as const
 
@@ -176,9 +197,8 @@ export class TrainerBankService {
     return c?.signerLegalName ?? null
   }
 
-  /** يكتبه المدرّبُ بنفسه — والنسخةُ السابقةُ تُزاح ولا تُمحى */
-  async setMine(userId: string, input: BankAccountInput) {
-    assertBankVaultEnabled()
+  /** ما يمنع المدرّبَ من تبديلِ وجهةِ ماله أو إلغائها — والفعلان سواءٌ فيه */
+  private async writableProfile(userId: string) {
     const profile = await this.profileForUser(userId)
     /* ويبقى مغلقا في الطور المشروط — البندُ 2-11 من عرضه: «ولا يستحق
        المدرب قبل تحقق هذا الشرط إسناد شعبة، ولا أتعابا». والقراءةُ مفتوحةٌ
@@ -199,18 +219,52 @@ export class TrainerBankService {
         409,
       )
     }
+    return profile
+  }
 
-    const iban = String(input.iban ?? '').replace(/\s+/g, '').toUpperCase()
+  /** يكتبه المدرّبُ بنفسه — والنسخةُ السابقةُ تُزاح ولا تُمحى */
+  async setMine(userId: string, input: BankAccountInput) {
+    assertBankVaultEnabled()
+    const profile = await this.writableProfile(userId)
+    if (input.ownNameConfirmed !== true) {
+      throw new AuthError(
+        'not_own_name',
+        'أقِرَّ أنّ الحسابَ باسمك الشخصيّ — لا تُحوَّل المستحقّاتُ إلى حسابِ غيرك ولا إلى حسابِ شركة',
+        422,
+      )
+    }
+    const kind: BankAccountKind = input.accountKind === 'local' ? 'local' : 'iban'
+
+    const iban = String(input.iban ?? '').replace(/[\s-]+/g, '').toUpperCase()
     if (iban.includes(BANK_MASK)) {
       /* القيمةُ المقنَّعةُ تُعاد من الشاشة — ولا تُكتب فوق السرّ الحقيقيّ */
       throw new AuthError('masked_value', 'أعِدْ كتابةَ رقم الحساب كاملا — المعروضُ مقنَّعٌ لا يصلح للحفظ', 422)
     }
-    if (iban.length < MIN_ACCOUNT_LEN || iban.length > MAX_ACCOUNT_LEN || !/^[A-Z0-9]+$/.test(iban)) {
+    const minLen = kind === 'iban' ? MIN_ACCOUNT_LEN : MIN_LOCAL_ACCOUNT_LEN
+    if (iban.length < minLen || iban.length > MAX_ACCOUNT_LEN || !/^[A-Z0-9]+$/.test(iban)) {
       throw new AuthError(
         'bad_iban',
-        `رقمُ الحساب غيرُ مقبول — يُكتب كاملا بحروفٍ وأرقامٍ بلا مسافات (بين ${MIN_ACCOUNT_LEN} و${MAX_ACCOUNT_LEN} خانة)`,
+        `رقمُ الحساب غيرُ مقبول — يُكتب كاملا بحروفٍ وأرقامٍ بلا مسافات (بين ${minLen} و${MAX_ACCOUNT_LEN} خانة)`,
         422,
       )
+    }
+    if (kind === 'iban' && !/^[A-Z]{2}[0-9]{2}/.test(iban)) {
+      throw new AuthError('bad_iban', 'الـIBAN يبدأ برمز الدولة ثمّ رقمين (مثلا JO94…) — وإن لم يكن لمصرفك IBAN فاختر «رقم حسابٍ محلّيّ»', 422)
+    }
+    /* ورمزُ الدولة: من الـIBAN نفسِه إن كان IBAN، وإلّا فممّا اختاره. ولا
+       تخمينَ بعد اليوم — كان يُفترض `JO` لكلّ ما ليس IBAN. */
+    const chosenCountry = String(input.countryCode ?? '').trim().toUpperCase()
+    const countryCode = kind === 'iban' ? iban.slice(0, 2) : chosenCountry
+    if (!/^[A-Z]{2}$/.test(countryCode)) {
+      throw new AuthError('bad_country', 'اختر دولةَ المصرف', 422)
+    }
+    const routingCode = String(input.routingCode ?? '').replace(/\s+/g, '').toUpperCase().slice(0, 34) || null
+    if (routingCode && !/^[A-Z0-9-]+$/.test(routingCode)) {
+      throw new AuthError('bad_routing', 'رمزُ التوجيه حروفٌ وأرقامٌ فقط', 422)
+    }
+    const swiftBic = String(input.swiftBic ?? '').replace(/\s+/g, '').toUpperCase() || null
+    if (swiftBic && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(swiftBic)) {
+      throw new AuthError('bad_swift', 'رمزُ SWIFT/BIC ثماني خاناتٍ أو إحدى عشرة (مثلا ARABJOAX)', 422)
     }
     const holderName = String(input.holderName ?? '').trim()
     if (holderName.length < 4) throw new AuthError('bad_holder', 'اكتب اسمَ صاحب الحساب كما يطبعه المصرف', 422)
@@ -220,9 +274,6 @@ export class TrainerBankService {
     const signer = await this.signerNameOf(profile.id)
     const score = signer ? nameScore(holderName, signer) : 0
     const outcome = !signer ? 'unverifiable' : score >= 70 ? 'matches' : 'differs'
-    /* ورمزُ الدولة من أوّل حرفين إن كانا حرفين (صيغةُ IBAN)، وإلّا `JO` —
-       فالكيانُ أردنيٌّ وأكثرُ المدرّبين فيه. */
-    const countryCode = /^[A-Z]{2}/.test(iban) ? iban.slice(0, 2) : 'JO'
 
     const row = await this.prisma.$transaction(async (tx) => {
       await tx.trainerBankAccount.updateMany({
@@ -237,7 +288,10 @@ export class TrainerBankService {
           countryCode,
           holderName, bankNameAr,
           branchAr: String(input.branchAr ?? '').trim() || null,
-          swiftBic: String(input.swiftBic ?? '').trim().toUpperCase() || null,
+          swiftBic,
+          accountKind: kind,
+          routingCode,
+          ownNameConfirmedAt: new Date(),
           outcome, outcomeScore: score,
           setBy: userId,
         },
@@ -259,6 +313,7 @@ export class TrainerBankService {
       entityType: 'trainer_profile', entityId: profile.id,
       meta: {
         accountRowId: row.id, tail4: row.tail4, countryCode: row.countryCode,
+        accountKind: row.accountKind,
         bankNameAr: row.bankNameAr, outcome: row.outcome, outcomeScore: row.outcomeScore,
       },
     })
@@ -294,6 +349,54 @@ export class TrainerBankService {
     } catch { /* البريدُ رفاهية — الحفظُ وقع، ولا يُردّ لأجل رسالة */ }
 
     return this.mask(row)
+  }
+
+  /** ═══ إلغاءُ حسابي — يُزاح ولا يُمحى ═══
+
+      قرارُ صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦): «اسمح له بإلغائه أو تبديله».
+      والإلغاءُ إزاحةٌ كالتبديل (`superseded`) لا حذف: مستحقٌّ قديمٌ رُبط
+      بهذه النسخة (`TrainerPayout.bankAccountId`) يبقى يُقرأ إليها. وبعده لا
+      حسابَ فعّالا، فلا يُصرَف شيءٌ حتّى يكتب غيرَه — وهذا يقال له قبل أن
+      يضغط. ويصله البريدُ كما في التبديل، ولعلّته نفسِها. */
+  async removeMine(userId: string) {
+    const profile = await this.writableProfile(userId)
+    const at = new Date()
+    const active = await this.prisma.trainerBankAccount.findFirst({
+      where: { profileId: profile.id, status: 'active' },
+      select: { id: true, tail4: true, countryCode: true, bankNameAr: true },
+    })
+    if (!active) return { removed: false }
+    await this.prisma.trainerBankAccount.updateMany({
+      where: { id: active.id, status: 'active' },
+      data: { status: 'superseded', supersededAt: at },
+    })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'trainer.bank.remove',
+      entityType: 'trainer_profile', entityId: profile.id,
+      meta: { accountRowId: active.id, tail4: active.tail4, countryCode: active.countryCode, bankNameAr: active.bankNameAr },
+    })
+    try {
+      await sendDirectEmail(this.prisma, {
+        to: profile.application.email,
+        subject: 'أُلغي حسابُك البنكيُّ في وجيز',
+        ...renderMail({
+          greetingName: profile.application.fullName,
+          heading: 'أُلغي الحسابُ البنكيُّ لمستحقّاتك',
+          blocks: [
+            {
+              kind: 'p',
+              text: `أُلغي بتاريخ ${fmtDateWith(at, { year: 'numeric', month: 'long', day: 'numeric' })}`
+                + ` حسابُك في «${active.bankNameAr}» المنتهي بـ${active.tail4}. ولا تُصرَف مستحقّاتٌ حتّى تُدخل حسابا جديدا.`,
+            },
+            {
+              kind: 'callout',
+              text: 'فإن لم تكن أنت من فعل هذا فراسِلْنا فورا وغيّرْ كلمةَ مرورك.',
+            },
+          ],
+        }),
+      })
+    } catch { /* البريدُ رفاهية — الإلغاءُ وقع */ }
+    return { removed: true }
   }
 
   /* ═══════════ الإدارة — مقنَّعٌ للقراءة، وصريحٌ لحظةَ الصرف ═══════════ */

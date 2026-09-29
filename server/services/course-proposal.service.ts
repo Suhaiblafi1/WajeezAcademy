@@ -41,7 +41,7 @@
    قبله**. فالقرارُ يخلق مهمّةً قائمةً على من قرّر، وتبقى في «مهامّي» حتّى
    يُغلقها بيده. */
 
-import type { PrismaClient, Prisma } from '@prisma/client'
+import { Prisma, type PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
@@ -56,6 +56,9 @@ import { domainLabelAr } from '../../src/domain/diagnostic/v2/data'
 import type { DomainId } from '../../src/domain/diagnostic/v2/types'
 import { CAREER_STAGE_LABELS_AR, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
 import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
+import {
+  cleanProposalDetails, proposalMatchText, type ProposalDetails,
+} from '../../src/application/trainer/proposal-details'
 
 /** طولُ العنوان — ما يقبله الكتالوج نفسُه، فلا يُقبل هنا ما يُردّ هناك */
 export const MIN_PROPOSAL_TITLE = 3
@@ -90,6 +93,8 @@ type Db = PrismaClient | Prisma.TransactionClient
 export interface ProposalInput {
   titleAr: string
   summaryAr?: string | null
+  /** أجوبةُ أسئلة الفورم — `undefined` يُبقي القائمَ، و`null` يمحوه */
+  details?: unknown
 }
 
 /* عنوانُ الدورة يسكن إصدارَها لا الدورةَ نفسَها: `Course` رمزٌ وحالةٌ ورقمُ
@@ -228,9 +233,12 @@ export class CourseProposalService {
       throw new AuthError('short_title', `عنوانُ الدورة ${MIN_PROPOSAL_TITLE} أحرفٍ فأكثر`, 400)
     }
     const summaryAr = (input.summaryAr ?? '').trim()
+    const details = input.details === undefined ? undefined : cleanProposalDetails(input.details)
     return {
       titleAr: titleAr.slice(0, MAX_PROPOSAL_TITLE),
       summaryAr: summaryAr ? summaryAr.slice(0, MAX_PROPOSAL_SUMMARY) : null,
+      /* و`Prisma.DbNull` لا `null`: عمودُ JSON يفرّق بين «لا قيمة» و«قيمةُ null» */
+      ...(details === undefined ? {} : { details: details === null ? Prisma.DbNull : (details as Prisma.InputJsonObject) }),
     }
   }
 
@@ -271,8 +279,8 @@ export class CourseProposalService {
     await recordAudit(this.prisma, {
       actorId: userId, action: 'trainer.course_proposal.update',
       entityType: 'trainer_course_proposal', entityId: id,
-      before: { titleAr: before.titleAr, summaryAr: before.summaryAr },
-      after: { titleAr: row.titleAr, summaryAr: row.summaryAr },
+      before: { titleAr: before.titleAr, summaryAr: before.summaryAr, details: before.details ?? null },
+      after: { titleAr: row.titleAr, summaryAr: row.summaryAr, details: row.details ?? null },
     })
     return row
   }
@@ -359,6 +367,7 @@ export class CourseProposalService {
       trainerEmail: r.profile.application.email,
       titleAr: r.titleAr,
       summaryAr: r.summaryAr,
+      details: (r.details ?? null) as ProposalDetails | null,
       status: r.status,
       courseId: r.courseId,
       courseTitleAr: currentTitle(r.course),
@@ -370,7 +379,9 @@ export class CourseProposalService {
       decidedAt: r.decidedAt,
       createdAt: r.createdAt,
       suggestedCourses: (QUEUE_VISIBLE as readonly string[]).includes(r.status)
-        ? suggestCourses({ titleAr: r.titleAr, summaryAr: r.summaryAr }, catalog)
+        /* والمحاورُ والمخرجاتُ والأقربُ بقول صاحبها تدخل المقارنة — هي ما
+           كُتبت الأسئلةُ لأجله: أن يُعرف أهي نسخةٌ من دورةٍ قائمة */
+        ? suggestCourses({ titleAr: r.titleAr, summaryAr: proposalMatchText(r.summaryAr, r.details as ProposalDetails | null) }, catalog)
           /* ولا يُرشَّح له ما هو مربوطٌ به أصلا — سطرٌ يقول «اربِطْه بما هو مربوطٌ به» */
           .filter((m) => m.courseId !== r.courseId)
         : ([] as ProposalMatch[]),

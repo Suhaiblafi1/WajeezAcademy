@@ -75,9 +75,7 @@ const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
 const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCourseProposals'))
-const TrainerMyCourseEdits = lazy(() => import('./pages/trainer/MyCourseEdits'))
 const TrainerMyPaths = lazy(() => import('./pages/trainer/MyPaths'))
-const TrainerMyOffers = lazy(() => import('./pages/trainer/MyOffers'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const CohortWorkspace = lazy(() => import('./pages/trainer/CohortWorkspace'))
@@ -270,13 +268,14 @@ export default function App() {
             <Route path="/trainer" element={<TrainerDashboard />} />
             <Route path="/trainer/account" element={<AccountPage />} />
             <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
-            {/* عروضُ الإسناد — والبندُ الثالثُ يجعل الإسنادَ عرضا يُقبَل ويُردّ،
-                فله موضعٌ يُفتح ويُجاب فيه لا جرسٌ يُقرأ ويُنسى. */}
-            <Route path="/trainer/offers" element={<TrainerMyOffers />} />
+            {/* «عروضي» دخلت «مؤهّلاتي» (٢٩ سبتمبر ٢٠٢٦) — العرضُ حالُ مؤهَّلٍ
+                يُقرَّر عنده. ويبقى المسارُ القديمُ تحويلا: إشعاراتٌ مضت تحمله. */}
+            <Route path="/trainer/offers" element={<Navigate to="/trainer/qualifications" replace />} />
             {/* ح-٢: دوراتٌ يقترحها وليست في الكتالوج — من طلبه، ثمّ بيده */}
             <Route path="/trainer/course-proposals" element={<TrainerCourseProposals />} />
-            {/* وبابُ العقد: محاورُ ما أُهِّل له ومصادرُها، اقتراحا يمرّ بالمراجعة */}
-            <Route path="/trainer/course-edits" element={<TrainerMyCourseEdits />} />
+            {/* و«تعديلاتي على دوراتي» ذهبت بقرار صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦):
+                «لا داعيَ لهذا القسم كلّيّا». والمسارُ تحويلٌ لا صفحةٌ مفقودة. */}
+            <Route path="/trainer/course-edits" element={<Navigate to="/trainer/qualifications" replace />} />
             {/* ن-١: مسارٌ يبنيه المدرّبُ من دوراته ويُعرض على الرفّ العامّ */}
             <Route path="/trainer/paths" element={<TrainerMyPaths />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />

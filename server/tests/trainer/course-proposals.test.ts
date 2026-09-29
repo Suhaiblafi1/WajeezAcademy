@@ -538,3 +538,39 @@ describe('تصحيحُ نصّ الاقتراح بيد الإدارة — وما 
       .rejects.toMatchObject({ code: 'nothing_to_change' })
   })
 })
+
+/* ═══ أسئلةُ الفورم — تُحفظ منظَّفةً، وتصل الطابورَ، وتدخل الترشيح (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   الأسئلةُ كُتبت لتسهّل الدمجَ أو الإضافة. فإن حُفظت ولم تصل الطابورَ
+   فهي خاناتٌ للزينة، وإن وصلت ولم تدخل الترشيحَ فالمحاورُ التي كتبها
+   المدرّبُ لا يُقارَن بها شيء. */
+describe('أسئلةُ الفورم — من المدرّب إلى الطابور', () => {
+  it('⚠️ تُحفظ منظَّفةً، ويُبقيها التعديلُ بلا أجوبة، وتصل الإدارةَ مع ترشيحٍ يقرأ محاورَها', async () => {
+    const t = await approvedTrainer('prop-details@test.local', 'نور المدرّبة', [])
+    const row = await proposals.add(t.userId, {
+      /* العنوانُ يشارك الكتالوجَ كلمةً واحدة («الأتمتة») — فالترشيحُ يشترطها،
+         والمحاورُ تُرتّب ما بعدها */
+      titleAr: 'الأتمتةُ قنبس',
+      summaryAr: null,
+      details: { level: 'beginner', merge: 'yes', topicsAr: 'دورةُ الأتمتة القائمة', bogus: 'x', hours: 9999 },
+    })
+    const saved = await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })
+    expect(saved.details, 'لم تُحفظ الأجوبة').toMatchObject({ level: 'beginner', merge: 'yes' })
+    expect(saved.details as Record<string, unknown>, 'مرّ مفتاحٌ مجهولٌ أو ساعاتٌ خارج الحدّ')
+      .not.toHaveProperty('bogus')
+    expect(saved.details as Record<string, unknown>).not.toHaveProperty('hours')
+
+    /* والتعديلُ بلا `details` لا يمحو ما أُجيب — الشاشاتُ القديمةُ ترسل العنوانَ وحدَه */
+    await proposals.edit(t.userId, row.id, { titleAr: 'الأتمتةُ قنبسٌ ثانٍ' })
+    const kept = await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })
+    expect(kept.details, 'محا تعديلٌ بلا أجوبةٍ ما أُجيب').toMatchObject({ level: 'beginner' })
+
+    const q = (await proposals.queue('open')).find((r) => r.id === row.id)
+    expect(q?.details?.merge, 'الأجوبةُ لم تصل الطابور').toBe('yes')
+    /* والدليلُ أنّ المحاورَ قُرئت: سببٌ معروضٌ ليس من العنوان. ولو أُهملت
+       لَما كان في أسباب الترشيح إلّا كلماتُ العنوان. */
+    const titleWords = new Set(tokensAr('الأتمتةُ قنبسٌ ثانٍ'))
+    const fromTopics = (q?.suggestedCourses ?? []).flatMap((m) => m.sharedAr).filter((w) => !titleWords.has(w))
+    expect(fromTopics.length, 'المحاورُ لم تدخل الترشيح').toBeGreaterThan(0)
+  })
+})

@@ -42,6 +42,7 @@ import Button from "@/components/ui/Button";
 import { fmtDateLong } from "@/application/text/format-ar";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
+import { proposalDetailRows, type ProposalDetails } from "@/application/trainer/proposal-details";
 
 interface Suggestion {
   courseId: string;
@@ -57,6 +58,8 @@ interface Row {
   trainerEmail: string;
   titleAr: string;
   summaryAr: string | null;
+  /** أجوبةُ أسئلة الفورم — المحاورُ والأقربُ في الكتالوج وقبولُ الدمج */
+  details: ProposalDetails | null;
   status: string;
   courseId: string | null;
   courseTitleAr: string | null;
@@ -306,7 +309,7 @@ export default function CourseProposals() {
   }
 
   const shown = useMemo(
-    () => (rows ?? []).filter((r) => matchesQuery(q, [r.titleAr, r.summaryAr ?? "", r.trainerName, r.trainerEmail])),
+    () => (rows ?? []).filter((r) => matchesQuery(q, [r.titleAr, r.summaryAr ?? "", r.trainerName, r.trainerEmail, r.details?.topicsAr, r.details?.closestCourseAr])),
     [rows, q],
   );
 
@@ -365,6 +368,17 @@ export default function CourseProposals() {
                           <div className="mt-1 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
                             {r.summaryAr}
                           </div>
+                        ) : null}
+                        {/* أجوبةُ الفورم — ما يُبنى عليه الدمجُ أو الإضافة بلا سؤالٍ ينتظر */}
+                        {proposalDetailRows(r.details).length > 0 ? (
+                          <dl className="mt-2 grid gap-x-5 gap-y-1 text-sm sm:grid-cols-2">
+                            {proposalDetailRows(r.details).map((d) => (
+                              <div key={d.labelAr} className="min-w-0">
+                                <dt className="inline font-bold text-foreground">{d.labelAr}: </dt>
+                                <dd className="inline whitespace-pre-wrap text-muted-foreground">{d.valueAr}</dd>
+                              </div>
+                            ))}
+                          </dl>
                         ) : null}
                         <div className="mt-1 text-sm text-muted-foreground">
                           اقترحها <b className="text-foreground">{r.trainerName}</b>

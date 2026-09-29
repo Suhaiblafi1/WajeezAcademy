@@ -1544,6 +1544,10 @@ model TrainerCourseProposal {
   /// المنصّة: الجمهورُ وحدَه لا يُعرِّف دورةً، ومن قرأ «للمحاسبين» لا يعرف
   /// ما فيها. والعمودُ هو هو — فما كتبه المدرّبون قبلُ باقٍ يعدّلونه.
   summaryAr      String?
+  /// أجوبةُ أسئلة الفورم — المستوى والمحاور والساعات والأقربُ في الكتالوج وقبولُ
+  /// الدمج (٢٩ سبتمبر ٢٠٢٦). كلُّها اختياريّة، ومصدرُ أسمائها وتنظيفِها واحد:
+  /// `src/application/trainer/proposal-details.ts`.
+  details        Json?
   /// draft | submitted | info_requested | linked | became_course | rejected
   ///
   /// `info_requested` — سألت الإدارةُ صاحبَها سؤالا قبل أن تقرّر، فهو عنده
@@ -2126,6 +2130,13 @@ model TrainerBankAccount {
   bankNameAr  String
   branchAr    String?
   swiftBic    String?
+  /// `iban` أو `local` — ليست كلُّ الدول على IBAN (أمريكا وكندا والهند
+  /// وأستراليا …)، فرقمُ حسابٍ محلّيٌّ ومعه رمزُ التوجيه الذي يطلبه مصرفُها.
+  accountKind String  @default("iban")
+  /// رمزُ التوجيه المحلّيّ: ABA · Sort code · IFSC · Transit · BSB — لا سرّ فيه
+  routingCode String?
+  /// أقرّ صاحبُه أنّ الحسابَ باسمه الشخصيّ لا باسم غيره ولا باسم شركة
+  ownNameConfirmedAt DateTime?
 
   /// ─────────── مطابقةُ الاسم — تُقال ولا تمنع ═══
   ///
