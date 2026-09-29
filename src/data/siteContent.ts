@@ -195,7 +195,7 @@ export const staticPages: StaticPage[] = [
       {
         heading: 'القانون الحاكم',
         paragraphs: [
-          `تخضع هذه الشروط لقوانين ${ACADEMY_LEGAL.governingLawAr} — بلد تسجيل الشركة المشغّلة — وتُحسم النزاعات وديا أولا عبر ${ACADEMY_EMAILS.legal}.`,
+          `تخضع هذه الشروط لقوانين ${ACADEMY_LEGAL.governingLawAr}، وتُحسم النزاعات وديا أولا عبر ${ACADEMY_EMAILS.legal}.`,
         ],
       },
     ],
