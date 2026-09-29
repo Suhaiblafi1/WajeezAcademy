@@ -4,7 +4,7 @@
    وهنا ما تقوله الدعوةُ نفسُها، وما يجعل التقويمَ يحدّثها لا يكرّرها. */
 
 import { describe, expect, it } from 'vitest'
-import { inviteSequence, sessionInviteMail, sessionInviteUid } from '../../services/calendar/session-invite'
+import { inviteSequence, sessionInviteMail, sessionInviteUid, sessionScheduleMail } from '../../services/calendar/session-invite'
 import { attachmentsOf } from '../../services/mail'
 import { whenAr } from '../../../src/application/learning/cohort-gate'
 
@@ -106,5 +106,59 @@ describe('التحديث والرفع', () => {
     expect(cancel?.contentType).toBe('text/calendar; charset=utf-8; method=CANCEL')
     const [plain] = attachmentsOf({ to: 'a@b.co', subject: 's', text: 't', icsContent: 'X' }) ?? []
     expect(plain?.contentType, 'دعوةُ المقابلة تغيّر نوعُها').toBe('text/calendar; charset=utf-8; method=REQUEST')
+  })
+})
+
+describe('جدولُ من التحق بعد الاعتماد — رسالةٌ واحدةٌ بما بقي', () => {
+  const s1 = { ...base.session, join: PERSONAL }
+  const s2 = {
+    id: 'sess-2', title: 'لقاءُ المحور الثاني', startsAt: new Date(AT.getTime() + 7 * 24 * 3_600_000), endsAt: null,
+    join: { url: 'https://zoom.us/w/456?tk=second', personal: true },
+  }
+  /* مقلوبةٌ عمدا: الترتيبُ بالموعد شأنُ الرسالة لا شأنُ من ناداها */
+  const sched = sessionScheduleMail({
+    cohortId: 'coh-1', cohortTitle: base.cohortTitle, to: base.to, sessions: [s2, s1], pageUrl: base.pageUrl, now: NOW,
+  })
+  const seqs = (ics: string) => [...ics.matchAll(/^SEQUENCE:(\d+)\r?$/gm)].map((m) => Number(m[1]))
+
+  it('⚠️ كلُّ لقاءٍ بموعده بساعة عمّان ورابطِه — مرتّبةً بموعدها', () => {
+    const first = sched.text.indexOf(whenAr(s1.startsAt))
+    const second = sched.text.indexOf(whenAr(s2.startsAt))
+    expect(first).toBeGreaterThan(-1)
+    expect(second).toBeGreaterThan(first)
+    expect(sched.text).toContain('بتوقيت عمّان')
+    expect(sched.text).toContain(PERSONAL.url)
+    expect(sched.html).toContain(s2.join.url)
+    expect(sched.text, 'من يقرأ النصَّ الخالصَ لا يعرف ألّا يشارك روابطَه').toContain('الروابطُ لك وحدَك')
+    expect(sched.subject).toContain(base.cohortTitle)
+  })
+
+  it('⚠️ وملفٌّ واحدٌ ينشرها كلَّها — بمعرّفاتها هي، بلا مدعوٍّ ولا طلبِ ردّ', () => {
+    expect(sched.icsMethod).toBe('PUBLISH')
+    expect(sched.ics).toContain('METHOD:PUBLISH')
+    expect(sched.ics.match(/^BEGIN:VCALENDAR\r?$/gm)).toHaveLength(1)
+    expect(uids(sched.ics), 'معرّفٌ غيرُ معرّف اللقاء — فلا يتحدّث حين يتغيّر').toEqual([sessionInviteUid('sess-1'), sessionInviteUid('sess-2')])
+    expect(unfold(sched.ics)).not.toContain('ATTENDEE')
+    expect(unfold(sched.ics)).toContain('ORGANIZER;CN=أكاديمية وجيز:mailto:Academy@wajeez.co')
+    expect(unfold(sched.ics)).toContain(`LOCATION:${PERSONAL.url}`)
+    expect(unfold(sched.ics)).toContain(`LOCATION:${s2.join.url}`)
+    expect(seqs(sched.ics)).toEqual([inviteSequence(NOW), inviteSequence(NOW)])
+    expect(sched.icsFilename).toBe('wajeez-cohort-coh-1.ics')
+  })
+
+  it('والرابطُ المشتركُ لا يُقال عنه «لك وحدَك» — وما لا رابطَ له يدلّ على صفحة رحلته', () => {
+    const m = sessionScheduleMail({
+      cohortId: 'coh-1', cohortTitle: base.cohortTitle, to: base.to, pageUrl: base.pageUrl, now: NOW,
+      sessions: [{ ...s1, join: { url: 'https://zoom.us/j/9', personal: false } }, { ...s2, join: null }],
+    })
+    expect(m.text).not.toContain('لك وحدَك')
+    expect(m.text).toContain('صفحة رحلتك')
+    expect(unfold(m.ics)).toContain('LOCATION:https://zoom.us/j/9')
+    expect(unfold(m.ics)).toContain(`URL:${base.pageUrl}`)
+  })
+
+  it('⚠️ ونوعُ المرفق يقول إنّه نشر — دعوةٌ بعشرة مواعيد يُقرأ منها الأوّل', () => {
+    const [att] = attachmentsOf({ to: 'a@b.co', subject: 's', text: 't', icsContent: sched.ics, icsMethod: sched.icsMethod }) ?? []
+    expect(att?.contentType).toBe('text/calendar; charset=utf-8; method=PUBLISH')
   })
 })
