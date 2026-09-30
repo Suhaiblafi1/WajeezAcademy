@@ -13,9 +13,10 @@ import { holdsRoleBeyondTrainer } from '../auth/permissions'
 import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
+import { changesBetween } from '../../src/application/trainer/contract-changelog'
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
-  contractRevokedMail } from './trainer-decision-mail'
+  contractRevokedMail, contractUpdatedMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -3283,6 +3284,143 @@ export class TrainerReviewService {
   }
 
   /** تجديدُ الرابط — الرمزُ القديم يموت لحظتَها، فلا يبقى بابان */
+  /* ═══ تحديثُ العروض المفتوحة في مكانها — أمرُ صاحب المنصّة (٣٠ سبتمبر) ═══
+
+     «الا يمكن ان لا يصله ايميل ويكون لنا خانه تحديث العقد ويتغير العقد
+     الموجود لكل شخص لم يوقعه بدون ان يصل له رابط جديد ويتحدث ما لديه
+     حالياً؟» ثمّ: كلاهما (المرسَلُ وما طُلب فيه تعديل)، «والايميل يجب ان
+     يقول ما هي التحديثات… في نقاط سهلة القراءة».
+
+     وكان الوحيدُ سبيلا إلى متنٍ جديدٍ عقدا جديدا: يُلغى القائمُ فيصل صاحبَه
+     رابطٌ آخرُ ورسالةُ إلغاء. وهو ثقيلٌ على من لم يفعل شيئا.
+
+     ─────────── وما يجعله سالما ───────────
+
+     ① **الرمزُ لا يُمَسّ** — فالرابطُ الذي بيده يبقى، ولا رسالةَ «رابطٌ جديد».
+     ② **ولا يُوقَّع ما لم يُقرأ**: التوقيعُ يقابل `bodyHash` بما عُرض على
+        صاحبه، فمن كانت صفحتُه مفتوحةً على القديم يُردّ بـ`body_changed`
+        ويُؤمر أن يُعيد التحميل — وهو حارسٌ قائمٌ قبل هذا كلِّه.
+     ③ **ومن أغلق الصفحةَ وعاد** لا يمسكه ذلك الحارس: فيُكتب `bodyUpdatedAt`
+        ليقرأ الشريطَ على الصفحة، وتصله الرسالةُ بالنقاط.
+     ④ **ولا يُمَسّ موقَّع**: الشرطُ `status` في الاستعلام، و`isUntouchableContract`
+        يُقرأ صفّا صفّا — فحتّى لو تسرّب صفٌّ بحالةٍ مفتوحةٍ وتاريخِ توقيع،
+        يُترَك.
+
+     ─────────── وما لا يتغيّر ───────────
+
+     تاريخُ الإصدار من `createdAt` لا من ساعة اليوم: العرضُ صدر يومَ صدر،
+     والمحدَّثُ نصُّه لا ميلادُه. ولقطتُه (دوراتُه وأتعابُه ووثائقُه) تُقرأ من
+     صفّه كما جُمّدت، فلا يُدخَل عليه ما لم يُتَّفق عليه. */
+  async refreshOpenContracts(actorId: string) {
+    const rows = await this.prisma.trainerContract.findMany({
+      where: {
+        status: { in: ['sent', CONTRACT_AMENDMENT_REQUESTED] },
+        bodyVersion: { not: CONTRACT_BODY_VERSION },
+      },
+      include: { profile: { include: { application: true } } },
+    })
+
+    const updated: { id: string; fullName: string; from: string | null }[] = []
+    const skipped: { id: string; whyAr: string }[] = []
+
+    for (const c of rows) {
+      /* والموقَّعُ لا يُمَسّ ولو تسرّب صفُّه: الحكمُ في موضعٍ واحدٍ يقرؤه
+         الحذفُ وهذا معا (`contract-untouchable.ts`). */
+      if (isUntouchableContract(c)) {
+        skipped.push({ id: c.id, whyAr: 'مسّه توقيعٌ فلا يُمَسّ متنُه' })
+        continue
+      }
+      if (!contractHasBodyAr(c.bodyAr)) {
+        skipped.push({ id: c.id, whyAr: 'عقدٌ بلا نصّ — من البابِ القديم' })
+        continue
+      }
+      const app = c.profile.application
+      const nextBody = renderContractBodyAr(this.contractBodyInput({
+        fullName: c.signerLegalName || app.fullName,
+        email: c.signerEmail ?? app.email,
+        reference: app.reference,
+        courses: readContractCourses(c.qualifiedSnapshot),
+        compensation: c.compensationType
+          ? {
+            type: c.compensationType,
+            rate: String(c.compensationRate ?? '0'),
+            currency: c.currency,
+            minSeats: c.compensationMinSeats,
+            referralRate: c.compensationReferralRate == null ? null : String(c.compensationReferralRate),
+          }
+          : null,
+        hoursNoteAr: c.hoursNoteAr,
+        rateWaivedReasonAr: c.rateWaivedReasonAr,
+        requiredDocuments: readRequiredDocuments(c.requiredDocuments),
+        /* ═══ ويومُ الإصدار يومُه لا اليوم ═══
+           العرضُ صدر يومَ صدر. ولو كُتب تاريخُ اليومَ لَقرأ صاحبُه وثيقةً
+           تقول إنّها صدرت بعد أن قرأها. */
+        issuedOn: c.createdAt,
+        gatesActivation: c.gatesActivation,
+        orientationAt: c.orientationAt,
+      }))
+      if (nextBody === c.bodyAr) {
+        skipped.push({ id: c.id, whyAr: 'نصُّه هو نفسُه — لا جديد' })
+        continue
+      }
+
+      const from = c.bodyVersion
+      const now = new Date()
+      const wrote = await this.prisma.$transaction(async (tx) => {
+        /* قارنْ واضبطْ: عرضٌ وُقّع أو أُلغي بين القراءة والكتابة لا يُكتب فوقه */
+        const done = await tx.trainerContract.updateMany({
+          where: { id: c.id, status: c.status, bodyHash: c.bodyHash },
+          data: {
+            bodyAr: nextBody,
+            bodyHash: sha256(nextBody),
+            bodyVersion: CONTRACT_BODY_VERSION,
+            bodyUpdatedAt: now,
+            bodyPrevVersion: from,
+          },
+        })
+        if (done.count === 0) return false
+        await recordAudit(tx, {
+          actorId, action: 'trainer.contract.body_refreshed',
+          entityType: 'trainer_contract', entityId: c.id,
+          meta: { fromVersion: from, toVersion: CONTRACT_BODY_VERSION, status: c.status },
+        })
+        return true
+      })
+
+      /* ═══ وما لم يُكتب لا يُقال إنّه كُتب ═══
+
+         «قارنْ واضبطْ» يمتنع عن الكتابة إن وُقّع العرضُ بين القراءة والكتابة.
+         فلو مضى العدُّ والبريدُ بعدها لَبلغ صاحبَه «حُدّث عرضُك» عن تحديثٍ
+         لم يقع — وهو أسوأُ الوجهَين: الوثيقةُ سليمةٌ وصاحبُها مُخبَرٌ بغيرها. */
+      if (!wrote) {
+        skipped.push({ id: c.id, whyAr: 'تبدّلت حالتُه بين القراءة والكتابة — لم يُكتب فوقه' })
+        continue
+      }
+
+      updated.push({ id: c.id, fullName: app.fullName, from })
+
+      /* والرسالةُ رفاهيةٌ كأخواتها: النصُّ حُدّث، والشريطُ على صفحته يقوله
+         ولو لم يصل بريد. */
+      try {
+        const mail = contractUpdatedMail({
+          fullName: app.fullName,
+          reference: app.reference,
+          title: c.title,
+          pointsAr: changesBetween(from, CONTRACT_BODY_VERSION),
+          awaitingReply: isAmendmentRequested(c.status),
+          /* ولا رابطَ يُسكّ: الذي بيده هو هو. ومن لا رمزَ له (طلبُ تعديلٍ
+             أُغلق رمزُه) يقرأ النقاطَ بلا زرٍّ يقصد لا شيء. */
+          contractUrl: null,
+        })
+        await sendDirectEmail(this.prisma, {
+          to: c.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
+        })
+      } catch { /* لا يُنقَض تحديثٌ وقع لأنّ بريدا تعثّر */ }
+    }
+
+    return { ok: true, updated: updated.length, skipped: skipped.length, rows: updated, skippedRows: skipped }
+  }
+
   async resendContract(contractId: string, actorId: string) {
     const contract = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -3411,6 +3549,15 @@ export class TrainerReviewService {
     const required = readRequiredDocuments(c.requiredDocuments)
     return {
       state: 'open' as const,
+      /* ═══ ومن حُدّث نصُّه تحته يعرف قبل أن يوقّع (٣٠ سبتمبر ٢٠٢٦) ═══
+
+         حارسُ `body_changed` يمسك من أبقى صفحتَه مفتوحةً وحدَه. ومن أغلقها
+         وعاد غدا يرى نصّا جديدا **لا شيءَ فيه يقول إنّه جديد** — فيوقّع على
+         غير ما قرأ وهو يحسبه إيّاه. فيُحمَل التاريخُ والنقاطُ إلى الشاشة. */
+      bodyUpdatedAt: c.bodyUpdatedAt,
+      bodyChangesAr: c.bodyUpdatedAt
+        ? changesBetween(c.bodyPrevVersion, c.bodyVersion ?? CONTRACT_BODY_VERSION)
+        : [],
       contractId: c.id,
       title: c.title,
       /* والمعروضُ في رأس الصفحة هو **المطبوعُ في الديباجة** لا اسمُ الحساب:

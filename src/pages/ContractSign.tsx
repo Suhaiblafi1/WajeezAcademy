@@ -44,6 +44,10 @@ interface OpenView {
   bodyAr: string | null
   bodyVersion: string | null
   bodyHash: string | null
+  /** متى حُدّث نصُّه تحته — و`null` لعرضٍ لم يُحدَّث */
+  bodyUpdatedAt: string | null
+  /** ما تغيّر فيه نقاطا — فارغةٌ لعرضٍ لم يُحدَّث */
+  bodyChangesAr: string[]
   expiresAt: string | null
   requiredDocuments: RequiredDoc[]
   uploaded: UploadedDoc[]
@@ -330,6 +334,31 @@ export default function ContractSign() {
       </p>
 
       {err && <Panel tone="danger" className="mb-4 p-3" role="alert">{err}</Panel>}
+
+      {/* ═══ ومن حُدّث نصُّه تحته يُقال له قبل أن يقرأ (٣٠ سبتمبر ٢٠٢٦) ═══
+
+          العرضُ المرسَلُ صار يُحدَّث في مكانه بالرابط نفسِه. وحارسُ
+          `body_changed` يمسك من أبقى صفحتَه مفتوحةً وحدَه — ومن أغلقها وعاد
+          غدا يرى نصّا جديدا لا شيءَ فيه يقول إنّه جديد.
+
+          فيُقال هنا، فوق النصّ لا تحته: يُقرأ قبل أن يُقرأ ما تغيّر. */}
+      {v.bodyUpdatedAt && (
+        <Panel tone="warn" className="mb-4 p-4">
+          <p className="font-black">
+            حُدّث هذا العرضُ بتاريخ {fmtDateLong(v.bodyUpdatedAt)}
+          </p>
+          {v.bodyChangesAr.length > 0
+            ? (
+              <>
+                <p className="mt-1 text-sm opacity-80">وهذا ما تغيّر فيه عمّا قرأتَه قبلُ:</p>
+                <ul className="mt-2 list-disc space-y-1 pe-5 text-read leading-6">
+                  {v.bodyChangesAr.map((t) => <li key={t}>{t}</li>)}
+                </ul>
+              </>
+            )
+            : <p className="mt-1 text-sm opacity-80">فاقرأه كاملا قبل أن توقّعه.</p>}
+        </Panel>
+      )}
 
       {/* ═══ المتن ═══ */}
       <h2 className="mb-2 text-lg font-black">نصُّ الاتفاقية</h2>

@@ -477,6 +477,18 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.resendContract(contractId, req.auth!.userId)
   })
 
+  /* ═══ تحديثُ العروض المفتوحة في مكانها (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     بابٌ واحدٌ لا لعقدٍ بعينه: الغرضُ أن يلحق الجميعَ نصٌّ تبدّل، ولو كان
+     لكلّ عقدٍ زرُّه لَنُسي منهم واحد. */
+  app.post('/api/admin/trainer-contracts/refresh-bodies', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: {
+      tags: ['admin-trainers'],
+      summary: 'تحديثُ نصِّ كلّ عرضٍ مفتوحٍ إلى الإصدار الحاليّ — بالرابط نفسِه',
+    },
+  }, async (req) => review.refreshOpenContracts(req.auth!.userId))
+
   app.post('/api/admin/trainer-contracts/:contractId/revoke', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'إلغاءُ عقدٍ مفتوح — لا يُحذف، والسببُ يُكتب' },
