@@ -863,6 +863,68 @@ export function conditionLapsedMail(input: ConditionLapsedMailInput): DecisionMa
    بفحصٍ يقرؤه كما يقرؤه هو — لا بمسحٍ على شيفرة الخدمة يخضرّ على تعليقٍ فيها.
    وهي العلّةُ نفسُها التي جُمعت لها بقيّةُ رسائل هذا الملفّ. */
 
+/* ═══ حُدّث عرضُك — وهذا ما تغيّر فيه ═══
+
+   أمرُ صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦): العرضُ المرسَلُ يُحدَّث في مكانه بلا
+   رابطٍ جديد، «والايميل يجب ان يقول ما هي التحديثات التي حدثت على الذي قرأه
+   سابقاً في نقاط سهلة القراءة».
+
+   ─────────── ولمَ نقاطٌ مكتوبةٌ لا فرقُ نصَّين ───────────
+
+   مقابلةُ المتنَين آليّا تُخرج «تغيّر البند 4-1»، وهو لا يقول لمدرّبٍ شيئا.
+   والنقاطُ في `contract-changelog.ts` تُكتب مع التغيير نفسِه، فتقول ما صار
+   في صالحه أو عليه. ويحرسها فحصٌ: إصدارٌ بلا نقاطه لا يخرج.
+
+   ─────────── ولا يُوعَد برابطٍ جديدٍ لأنّه لم يتغيّر ───────────
+
+   رابطُه هو هو. فالزرُّ يقول «اقرأ عرضَك المحدَّث» لا «رابطٌ جديد» — ومن
+   قرأ «جديد» بحث في بريده عن رسالةٍ لم تُرسَل. */
+export interface ContractUpdatedMailInput {
+  fullName: string
+  reference: string
+  title: string
+  /** ما تغيّر — نقاطا. و`[]` لا تُرسَل رسالةٌ أصلا، فالمنادي يمنعها */
+  pointsAr: readonly string[]
+  /** `true` لعرضٍ طلب صاحبُه فيه تعديلا وينتظر جوابَنا */
+  awaitingReply: boolean
+  /** رابطُ عرضه — هو رابطُه القديمُ نفسُه، لم يتبدّل */
+  contractUrl: string | null
+}
+
+export function contractUpdatedMail(input: ContractUpdatedMailInput): DecisionMail {
+  return {
+    subject: `حُدّث نصُّ عرضك — ${input.title} (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: 'حدّثنا نصَّ العرض الذي بين يديك، ورابطُك هو هو. وهذا ما تغيّر.',
+      heading: 'حدّثنا نصَّ عرضك',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'حدّثنا نصَّ العرض الذي أرسلناه إليك، وهو الآن في رابطك نفسِه —'
+            + ' لا رابطَ جديدَ ولا خطوةَ عليك. واقرأه قبل أن توقّعه، فالذي يلزمك ما فيه الآن.',
+        },
+        { kind: 'h', text: 'وهذا ما تغيّر' },
+        { kind: 'list', items: [...input.pointsAr] },
+        ...(input.awaitingReply
+          ? ([{
+              kind: 'note' as const,
+              text: 'وطلبُك بالتعديل ما زال عندنا ننظر فيه — وهذا التحديثُ غيرُ جوابنا عليه، ويصلك جوابُه منفصلا.',
+            }] as const)
+          : []),
+        ...(input.contractUrl
+          ? ([{ kind: 'cta' as const, label: 'اقرأ عرضَك المحدَّث', href: input.contractUrl }] as const)
+          : []),
+        {
+          kind: 'note',
+          /* ولا يُقال «وقّعْ» — القرارُ قرارُه، والتحديثُ لا يستعجله */
+          text: 'ولا يلزمك أن توقّع لأجل هذا التحديث: لك أن تقرأ وتوقّع، ولك أن تعتذر، ولك أن تطلب تعديلا.',
+        },
+      ],
+    },
+  }
+}
+
 export interface ContractRevokedMailInput {
   fullName: string
   reference: string

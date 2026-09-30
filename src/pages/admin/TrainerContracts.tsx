@@ -801,7 +801,29 @@ c.gatesActivation
       <Card className="p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-black">العقود ({contracts.length})</h2>
-          <Button size="sm" icon={RefreshCw} onClick={() => void load()}>حدِّثْ</Button>
+          <div className="flex items-center gap-2">
+            {/* ═══ ونصُّ العروض المفتوحة يلحق الإصدارَ الحاليَّ (٣٠ سبتمبر ٢٠٢٦) ═══
+
+                أمرُ صاحب المنصّة: من أراد أن يصل الناسَ نصٌّ محدَّثٌ كان عليه أن
+                يُلغيَ عقودَهم ويركّب غيرَها فيصلهم رابطٌ جديدٌ ورسالةُ إلغاء.
+                فصار النصُّ يُحدَّث في مكانه: الرابطُ هو هو، وتصلهم رسالةٌ تقول
+                ما تغيّر نقاطا، ويقرؤون الشريطَ على صفحتهم قبل التوقيع.
+
+                وزرٌّ واحدٌ لا لعقدٍ بعينه: الغرضُ أن يلحق الجميعَ، ولو كان لكلّ
+                عقدٍ زرُّه لَنُسي منهم واحد. */}
+            <Button size="sm" tone="confirm" icon={FileText}
+              onClick={() => void run(async () => {
+                const r = await apiPost<{ updated: number; skipped: number }>(
+                  "/api/admin/trainer-contracts/refresh-bodies", {});
+                await load();
+                return r.updated === 0
+                  ? "لا عرضَ يحتاج تحديثا — كلُّها على الإصدار الحاليّ"
+                  : `حُدّث نصُّ ${r.updated} عرضا، ووصل أصحابَها ما تغيّر`;
+              }, "حُدّثت العروضُ المفتوحة")}>
+              حدِّثْ نصَّ العروض المفتوحة
+            </Button>
+            <Button size="sm" icon={RefreshCw} onClick={() => void load()}>حدِّثْ</Button>
+          </div>
         </div>
         {contracts.length > 0 && (
           <ListToolbar q={contractQ} onQ={setContractQ} onPage={setContractPage}
