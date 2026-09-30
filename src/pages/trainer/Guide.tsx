@@ -105,8 +105,16 @@ dialog.guide-zoom::backdrop { background: rgb(10 18 18 / .78); }
 @media print {
   .guide-noprint { display: none !important; }
   body { zoom: 1 !important; }
-  .guide-section, .guide-figure, .guide-callout { break-inside: avoid; }
+  /* لا يُمنع قسمٌ كاملٌ من الانقسام: القسمُ بصوره أطولُ من ورقة، فكان يُدفع
+     كلُّه إلى الصفحة التالية ويترك خلفه صفحةً بيضاء. والصورةُ لا تُقسم، ولا
+     تطول عن ورقة — لقطةُ الخطوة الخامسة أطولُ من أربع صفحاتٍ بعرضها. */
+  .guide-figure, .guide-callout { break-inside: avoid; }
+  .guide-figure img { max-height: 225mm; width: auto; max-width: 100%; margin-inline: auto; }
   .guide-shot { box-shadow: none; border: 1px solid #ddd; }
+  /* الصورةُ داخلَ زرِّ التكبير، وفي \`index.css\` قاعدةٌ تُخفي كلَّ زرٍّ في الطباعة —
+     فخرج الدليلُ المطبوعُ نصّا بلا صورة واحدة (٣٠ سبتمبر ٢٠٢٦). والمحدِّدُ
+     أثقلُ من \`button:not([aria-expanded])\` ليغلبه أينما وقع. */
+  .guide-figure button.guide-shot { display: block !important; }
   a { color: inherit; text-decoration: none; }
 }
 `;

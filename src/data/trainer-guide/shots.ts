@@ -158,7 +158,7 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   },
   "ws-tab-project": {
     "w": 2200,
-    "h": 3596
+    "h": 3372
   },
   "ws-tab-resources": {
     "w": 2200,
@@ -166,7 +166,7 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   },
   "ws-tab-tasks": {
     "w": 2200,
-    "h": 4183
+    "h": 4099
   },
   "ws-tasks": {
     "w": 2200,
