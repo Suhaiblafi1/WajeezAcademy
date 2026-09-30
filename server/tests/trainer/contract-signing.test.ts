@@ -252,21 +252,35 @@ describe('التوقيعُ يقع مرّةً واحدة', () => {
 })
 
 describe('الاعتذارُ والإلغاءُ يغلقان البابَ كلاهما', () => {
-  it('الاعتذارُ يُسجَّل بسببه ويموت رمزُه', async () => {
+  it('الاعتذارُ يُسجَّل بسببه، ويبقى بابُه يقول إنّه اعتذار', async () => {
     const { contract } = await mkContract()
     const token = await sendAndToken(contract.id)
     await review.declineContractByToken(token, 'الأتعابُ لا تناسبني في هذا الوقت')
     const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
     expect(row.status).toBe('declined')
     expect(row.declineReasonAr).toContain('الأتعاب')
-    expect(row.tokenHash).toBeNull()
+    /* والرمزُ يبقى (٣٠ سبتمبر ٢٠٢٦): ما يمنع التوقيعَ شرطُ الحالة لا مسحُ
+       الرمز، والمسحُ كان يمنع قراءةً فيُقال «انتهى هذا الرابط» بدل تسميةِ
+       البابِ. وتفصيلُه في `closed-doors-say-which.test.ts`. */
+    expect(row.tokenHash, 'مُسح الرمزُ فصار بابُ المعتذِر صامتا').toBeTruthy()
+    const view = await review.contractByToken(token)
+    expect(view.state, 'لم يُسمَّ البابُ اعتذارا').toBe('declined')
   })
 
-  it('وعقدٌ أُلغي لا يبقى رابطُه حيّا — فلا يُوقَّع ما سُحب', async () => {
+  it('وعقدٌ أُلغي يقول «أُلغي» ولا يُوقَّع — فلا يُوقَّع ما سُحب', async () => {
     const { contract } = await mkContract()
     const token = await sendAndToken(contract.id)
     await review.revokeContract(contract.id, adminId, 'أُرسل إلى الشخص الخطأ')
-    await expect(review.contractByToken(token)).rejects.toMatchObject({ code: 'invalid_token' })
+    /* والرمزُ يبقى (٣٠ سبتمبر ٢٠٢٦): ما يمنع التوقيعَ شرطُ الحالة لا مسحُ
+       الرمز، والمسحُ كان يمنع قراءةً فيُقال «انتهى هذا الرابط» بدل تسميةِ
+       البابِ. وتفصيلُه في `closed-doors-say-which.test.ts`. */
+    const view = await review.contractByToken(token)
+    expect(view.state, 'قيل لمن سُحب عقدُه «انتهى رابطُك»').toBe('revoked')
+    /* وعلّةُ هذا الفحص بعينها — «فلا يُوقَّع ما سُحب» — تُقاس مباشرةً */
+    await expect(review.signContractByToken(token, {
+      addressAr: 'عمّان — الدوّار السابع', phone: '+962790000000',
+      legalName: 'سارة عبد الله الحربي', bodyHash: sha256(BODY), acks: [...ALL_ACKS],
+    })).rejects.toMatchObject({ code: 'bad_state' })
   })
 
   it('وسببٌ فارغٌ لا يُقبل اعتذارا — فالسجلُّ يُقرأ بعد شهر', async () => {
