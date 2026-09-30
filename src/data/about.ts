@@ -39,6 +39,8 @@ export type FeatureId = 'advisor' | 'sources' | 'training' | 'experts' | 'gradua
 
 export const FEATURE_HERO = {
   lines: ['مهارةٌ تمارسها بيدك،', 'ويشهد لها خبراءُ من سوق العمل'] as const,
+  /** ما يُلوَّن من السطرين — ويُقرأ السطرُ كاملا بلا تلوينٍ في النسخة النصّيّة */
+  highlights: ['بيدك', 'خبراءُ من سوق العمل'] as const,
   lead:
     'أكاديمية وجيز منصّةٌ عربيّةٌ للتدريب العمليّ: مصادرُ متنوّعةٌ تتعلّم منها بوتيرتك، وتطبيقاتٌ يقيّمها خبراءُ من كبرى شركات القطاع الخاصّ، ومشروعُ تخرّجٍ يثبت تمكّنك — ومستشارٌ يرافقك من أوّل سؤالٍ إلى آخر خطوة، بأسعارٍ مخفّضةٍ دعما للمجتمع المحلّي.',
 }
@@ -118,11 +120,13 @@ export const PRICE = {
 
 /** الافتتاح: الأكاديميةُ من وجيز — سطرٌ استراتيجيّ ومنتجان بموقعيهما */
 export const FAMILY_INTRO = {
-  title: 'أكاديمية وجيز جزءٌ من وجيز',
+  /** الاسمُ وحدَه — وسطرُ «جزءٌ من وجيز» حُذف بطلب صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦):
+      الانتسابُ يقوله المتنُ تحته، وبطاقتا الأخوين. */
+  title: 'أكاديمية وجيز',
   body: 'وجيز منصّةٌ عربيّةٌ للمعرفة، يعرفها الملايين بتطبيق ملخّصات الكتب المسموعة، وتعرفها المؤسسات بـ«وجيز مهارات» لتطوير فرق العمل. وأكاديمية وجيز منصّتها للأفراد: تحوّل المعرفة إلى مهارةٍ تُمارَس وتُثبَت.',
   products: [
-    { name: 'تطبيق وجيز', note: 'ملخّصات الكتب المسموعة', url: 'https://wajeez.com', host: 'wajeez.com' },
-    { name: 'وجيز مهارات', note: 'تطوير فرق العمل والمؤسسات', url: 'https://wajeez.com/business', host: 'wajeez.com/business' },
+    { id: 'app', name: 'تطبيق وجيز', latin: 'Wajeez App', note: 'ملخّصات الكتب المسموعة', pitch: 'كتابٌ عالميٌّ أو عربيٌّ في دقائق، تسمعه في طريقك.', url: 'https://wajeez.com', host: 'wajeez.com' },
+    { id: 'maharat', name: 'وجيز مهارات', latin: 'Wajeez Maharat', note: 'تطوير فرق العمل والمؤسسات', pitch: 'مسارُ تعلّمٍ لكلّ موظّفٍ نحو هدفه، بشهادة إنجازٍ لكلّ مهارة.', url: 'https://wajeez.com/business', host: 'wajeez.com/business' },
   ],
 } as const
 
@@ -178,7 +182,7 @@ export function aboutStaticPage(): StaticPage {
       {
         heading: FAMILY_INTRO.title,
         paragraphs: [FAMILY_INTRO.body],
-        bullets: FAMILY_INTRO.products.map((p) => `${p.name} — ${p.note}: ${p.url}`),
+        bullets: FAMILY_INTRO.products.map((p) => `${p.name} — ${p.note}. ${p.pitch} ${p.url}`),
       },
       { heading: FEATURE_HERO.lines.join(' '), paragraphs: [FEATURE_HERO.lead] },
       ...FEATURES.map((f) => ({

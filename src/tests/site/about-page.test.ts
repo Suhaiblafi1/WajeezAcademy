@@ -54,6 +54,15 @@ describe('الافتتاحُ: الأكاديميةُ جزءٌ من وجيز', ()
   })
 })
 
+describe('وسطرا «ما يميّزنا» يُلوَّن منهما ما سُمّي', () => {
+  it('كلُّ عبارةٍ ملوّنةٍ واردةٌ في سطرٍ بعينه — وإلّا لم يُلوَّن شيءٌ صامتا', () => {
+    expect(FEATURE_HERO.highlights.length).toBeGreaterThan(0)
+    for (const h of FEATURE_HERO.highlights) {
+      expect(FEATURE_HERO.lines.filter((l) => l.includes(h)), h).toHaveLength(1)
+    }
+  })
+})
+
 describe('ولا شيءَ من الرئيسيّة يتكرّر', () => {
   const imports = about.match(/^import[\s\S]*?from '[^']+'/gm) ?? []
   const imported = imports.join('\n')
@@ -89,7 +98,8 @@ describe('ما يميّزنا — كما سمّاه صاحبُ المنصّة', 
 describe('ولا رقمَ مكتوبٌ باليد في النثر', () => {
   const prose: string[] = [
     ABOUT_TITLE, ABOUT_DESCRIPTION, FAMILY_INTRO.title, FAMILY_INTRO.body,
-    ...FAMILY_INTRO.products.flatMap((p) => [p.name, p.note]),
+    ...FAMILY_INTRO.products.flatMap((p) => [p.name, p.note, p.pitch]),
+    ...FEATURE_HERO.highlights,
     ...FEATURE_HERO.lines, FEATURE_HERO.lead,
     ...FEATURES.flatMap((f) => [f.margin, f.station, f.stationNote, f.title, ...f.paragraphs]),
     ...SOURCE_KINDS, PRICE.margin, PRICE.title, ...PRICE.paragraphs,
