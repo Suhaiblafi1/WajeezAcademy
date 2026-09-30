@@ -156,9 +156,21 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 1478
   },
+  "ws-tab-project": {
+    "w": 2200,
+    "h": 3596
+  },
+  "ws-tab-resources": {
+    "w": 2200,
+    "h": 3096
+  },
+  "ws-tab-tasks": {
+    "w": 2200,
+    "h": 4183
+  },
   "ws-tasks": {
     "w": 2200,
-    "h": 796
+    "h": 654
   },
   "ws-workbooks": {
     "w": 2200,
