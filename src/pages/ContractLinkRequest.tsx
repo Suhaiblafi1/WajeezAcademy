@@ -110,8 +110,13 @@ export default function ContractLinkRequest() {
                 onChange={(ev) => setEmail(ev.target.value)}
                 required
               />
+              {/* ═══ ورمزٌ ينقلب بالمتغيّر لا درجةُ Tailwind ═══
+
+                  `text-rose-700` مصمَّمةٌ للمظهر الداكن، فتقيس على الورق نحوَ
+                  ١٫٣:‏١ — أي رسالةُ خطإٍ **موجودةٌ وغيرُ مرئيّة**، وصاحبُها
+                  يضغط الزرَّ ولا يدري لِمَ لا يمضي. ويحرسه `check:theme`. */}
               {state.kind === "error" && (
-                <p className="text-sm font-bold text-rose-700" role="alert">{state.message}</p>
+                <p className="text-sm font-bold text-danger-ink" role="alert">{state.message}</p>
               )}
               <button
                 type="submit"
