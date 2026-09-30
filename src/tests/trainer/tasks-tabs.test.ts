@@ -43,6 +43,17 @@ describe('① ثلاثةُ ألسنة', () => {
   })
 })
 
+describe('①ب وصندوقُ التسليمات يتبع لسانَه', () => {
+  /* «اجعل قائمةَ مهامّ الشعبة تظهر حسب التاب فقط» (٣٠ سبتمبر ٢٠٢٦) — كان يُرى
+     واجبٌ تحت «مشروع التخرّج» */
+  it('⚠️ المهامُّ العمليّةُ تحت لسانها، والمشروعُ تحت لسانه، ولا شيءَ تحت المصادر', () => {
+    expect(stage).toMatch(/\{taskTab !== "resources" && <CohortSubmissions cohortId=\{ws\.cohort\.id\} only=\{isProject \? "project" : "practical"\} \/>\}/)
+    const sub = code('src/pages/trainer/CohortSubmissions.tsx')
+    expect(sub).toMatch(/row\.cohort\.assessments\.filter\(\(a\) => \(a\.type === "project"\) === \(only === "project"\)\)/)
+    expect(sub).toMatch(/<CohortAssignments\s+items=\{items\}/)
+  })
+})
+
 describe('② المرفقُ: النوعُ أوّلا، ثمّ ما يوازيه', () => {
   const rows = stage.slice(stage.indexOf('{taskAttachments.map((att, i) => {'), stage.indexOf('+ مرفق'))
 
