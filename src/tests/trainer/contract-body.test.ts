@@ -361,10 +361,10 @@ describe('إقرارُ الأهليّة — موصولٌ بجزائه لا مع�
 
   it('وهو من البيانات الجوهريّة — فيرث جزاءَ الفقرة التي تعاقب الكذبَ الجوهريّ', () => {
     const section = clauseSection(renderContractBodyAr(base()), 15)
-    const penalty = [...section.matchAll(/^15-(\d+) وإذا ثبت أن بيانا جوهريا/gm)]
+    const penalty = [...section.matchAll(/^15-(\d+) وإذا ثبت أن معلومة جوهرية/gm)]
     expect(penalty.length, 'لم تُقرأ فقرةُ جزاء البيان الجوهريّ').toBe(1)
     expect(section, 'الإقرارُ بلا جزاء — فهو جملةٌ لا بند')
-      .toContain(`من البيانات الجوهرية في تطبيق البند 15-${penalty[0][1]}`)
+      .toContain(`من المعلومات الجوهرية في تطبيق البند 15-${penalty[0][1]}`)
   })
 })
 
@@ -1053,7 +1053,7 @@ describe('قسمُ التعريفات يُقرأ قبل أن تَرِد الكل
     const last = gloss()!.blocks.slice(-1)[0]
     const t = 'textAr' in last ? last.textAr : ''
     expect(t, 'التعريفاتُ لا تنفي عن نفسها الإلزام').toMatch(/ليس بندا/)
-    expect(t, 'لا تقول أين المُلزِم عند الخلاف').toMatch(/فما في البنود هو المعتبر/)
+    expect(t, 'لا تقول أين المُلزِم عند الخلاف').toMatch(/فالبنود هي الملزمة/)
   })
 })
 

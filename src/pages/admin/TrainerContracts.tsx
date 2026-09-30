@@ -565,7 +565,7 @@ c.gatesActivation
                       <span className="opacity-70"> — {c.reference} · {c.email}</span>
                     </span>
                     <Button size="sm" tone="primary" onClick={() => void openComposer(c)}>
-                      ركّبْ عقدا
+                      أنشئ عقدا
                     </Button>
                   </Inset>
                 </li>
@@ -602,7 +602,7 @@ c.gatesActivation
             className={`${inputCls} w-full`} />
           <p className="mb-4 mt-1 text-read leading-6 text-muted-foreground">
             {prefill.legalNameSource === "account"
-              ? "وهذا ما وصلنا من حسابه — وغالبا ليس اسما ثلاثيّا ولا يطابق جوازَه. طابِقْه بوثيقته قبل التركيب: ما يُطبَع هنا يصير اسمَ الطرف الثاني في الوثيقة، ويوقّع هو باسمه القانونيّ تحته."
+              ? "وهذا ما وصلنا من حسابه — وغالبا ليس اسما ثلاثيّا ولا يطابق جوازَه. طابِقْه بوثيقته قبل الإنشاء: ما يُطبَع هنا يصير اسمَ الطرف الثاني في الوثيقة، ويوقّع هو باسمه القانونيّ تحته."
               : "وهذا اسمُه القانونيُّ المثبَّتُ في ملفّه — يُطبَع طرفا ثانيا، ولك تعديلُه إن تغيّرت وثيقتُه."}
           </p>
 
@@ -768,8 +768,8 @@ c.gatesActivation
                 await apiPost(`/api/admin/trainer-applications/${prefill.applicationId}/contracts/compose`, composeBody);
                 setOpenFor(null); setPrefill(null); setPreview("");
                 await load();
-              }, "رُكّب العقدُ وجُمّد متنُه", COMPOSE_ERR)}>
-              ركّبْ وجمّدِ المتن
+              }, "أُنشئ العقدُ وجُمّد نصُّه", COMPOSE_ERR)}>
+              أنشئ وجمّدِ النصّ
             </Button>
           </div>
 
@@ -817,7 +817,7 @@ c.gatesActivation
                         <b>{docNameOf(c)}</b>
                         <span className="opacity-70">
                           {" "}— {STATUS_AR[c.status] ?? c.status}
-                          {c.bodyVersion ? ` · صياغة ${c.bodyVersion}` : " · بلا متن (البابُ القديم)"}
+                          {c.bodyVersion ? ` · صياغة ${c.bodyVersion}` : " · بلا نصّ (البابُ القديم)"}
                           {" · "}{fmtDateTime(c.createdAt)}
                         </span>
                       </span>
@@ -849,7 +849,7 @@ c.gatesActivation
                             onClick={() => void run(async () => {
                               const full = await apiGet<{ bodyAr: string | null }>(`/api/admin/trainer-contracts/${c.id}/body`);
                               setShownBody({ title: c.title, body: full.bodyAr ?? "" });
-                            }, "عُرض المتن")}>
+                            }, "عُرض النصّ")}>
                             المتن
                           </Button>
                         )}
@@ -975,7 +975,7 @@ c.gatesActivation
                                   { legalNameAr: fixName!.nameAr.trim() });
                                 setFixName(null);
                                 await load();
-                              }, "رُكِّب البديلُ باسمه الصحيحِ ووصلَه برابطٍ جديد", c.id)}>
+                              }, "أُنشئ العقدُ البديلُ بالاسم الصحيح، ووصله برابطٍ جديد", c.id)}>
                               صحّحِ الاسمَ وأعِدْ إرساله
                             </Button>
                           </div>
@@ -1050,8 +1050,8 @@ c.gatesActivation
                         <p className="mt-3 text-read leading-6 opacity-80">
                           اكتبْ جوابَك ثمّ اخترْ ما يترتّب عليه: <b>يبقى العرضُ كما هو</b> فيعود
                           إليه برابطٍ جديدٍ ليوقّعه أو يعتذر؛ أو <b>تقبل تعديلَه</b> فيُغلَق هذا
-                          العرضُ ويصله أنّ عقدا مصحَّحا يُعَدّ له، ثمّ تركّبه من «عقدٌ جديد» أعلاه.
-                          وفي الحالين يصله جوابُك بحرفه. ولا يُعدَّل متنُ عرضٍ أُرسل: هو مجمَّدٌ
+                          العرضُ ويصله أنّ عقدا مصحَّحا يُعَدّ له، ثمّ تنشئه من «عقدٌ جديد» أعلاه.
+                          وفي الحالين يصله جوابُك بحرفه. ولا يُعدَّل نصُّ عرضٍ أُرسل: هو مجمَّدٌ
                           مهشَّش، فالتصحيحُ عرضٌ جديدٌ لا كتابةٌ فوق القائم.
                         </p>
                         {replying?.id === c.id ? (
@@ -1105,7 +1105,7 @@ c.gatesActivation
                                     { replyAr: replying.replyAr.trim() });
                                   setReplying(null);
                                   await load();
-                                }, "وصلَه أنّ عقدا مصحَّحا يُعَدّ له — ركّبْه الآن من «عقدٌ جديد»", c.id)}>
+                                }, "وصلَه أنّ عقدا مصحَّحا يُعَدّ له — أنشئه الآن من «عقدٌ جديد»", c.id)}>
                                 قبِلتُ التعديل — سأرسل عقدا مصحَّحا
                               </Button>
                               <Button size="sm" tone="ghost" onClick={() => setReplying(null)}>صرفُ النظر</Button>
@@ -1332,7 +1332,7 @@ c.gatesActivation
                                       const full = await apiGet<{ bodyAr: string | null }>(
                                         `/api/admin/trainer-contracts/${p.id}/body`);
                                       setShownBody({ title: p.title, body: full.bodyAr ?? "" });
-                                    }, "عُرض المتن")}>
+                                    }, "عُرض النصّ")}>
                                     المتن
                                   </Button>
                                 )}

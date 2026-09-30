@@ -489,7 +489,7 @@ export default function ContractSign() {
         {!canSign && (
           <p className="mb-3 opacity-75">
             يبقى: {[
-              !hasBody && 'متنُ العقد — ولا يُوقَّع عقدٌ بلا متن',
+              !hasBody && 'نصُّ العقد — ولا يُوقَّع عقدٌ بلا نصّ',
               hasBody && !readToEnd && 'قراءةُ النصّ إلى آخره',
               legalName.trim().length < 4 && 'اسمُك القانونيّ',
               addressAr.trim().length < 5 && 'عنوانُك',

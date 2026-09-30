@@ -590,7 +590,7 @@ function ContractStep({
       setTitle(`عقد تدريب ${new Date().getFullYear()}`);
       setDocs(Object.fromEntries(p.defaultDocuments.map((d) => [d.kind, d.required])));
       setComposing(true);
-    }, "جاهزٌ للتركيب");
+    }, "جاهزٌ للإنشاء");
 
   return (
     <div className="grid gap-3">
@@ -792,7 +792,7 @@ function ContractStep({
                       setComposing(false);
                       setPrefill(null);
                       await onChanged();
-                    }, "رُكّب العقدُ وأُرسل — يوقّع من رابطه")}
+                    }, "أُنشئ العقدُ وأُرسل — يوقّع من رابطه")}
                   >
                     ركِّبْ وأرسِلْ
                   </Button>

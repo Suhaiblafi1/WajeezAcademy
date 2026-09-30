@@ -261,8 +261,17 @@ export function isExampleHeading(b: ContractBlock): boolean {
   return b.kind === 'text' && /^مثال حسابي/.test(b.textAr)
 }
 
+/* ═══ والكلمةُ المكتشَفُ بها تتبع النصَّ (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   كانت «استرشادي». وأُمر بتبسيط الكلمات، فصارت الفقرةُ تقول «وهذا إرشاد لا
+   شرط» — فكفّت الدالّةُ عن مطابقة شيء، وفقدت الفقرةُ شكلَها **بلا أن يسقط
+   فحصٌ واحد**: الرأسُ فوق يقول إنّها ترتدّ فقرةً عاديّةً «بلا نقصٍ في حرف»،
+   وهو صحيحٌ في الحرف لا في الشكل.
+
+   فيُقاس الآن أنّها تمسك فقرةً بعينها لا أن تُقرأ الكلمةُ في ملفّ —
+   `contract-plain-words.test.ts`. */
 export function isAdvisoryNote(b: ContractBlock): boolean {
-  return b.kind === 'text' && b.textAr.includes('استرشادي') && b.textAr.length > 80
+  return b.kind === 'text' && /إرشاد/.test(b.textAr) && b.textAr.length > 80
 }
 
 /* ═══ قاعدةُ الأتعاب صفوفا — تقطيعٌ لا إعادةَ صوغ ═══

@@ -70,8 +70,8 @@ const MODULE_FIELDS: readonly [keyof DiffModule, string][] = [
   ['outcomeAr', 'المخرَج'],
   ['activityAr', 'التطبيقُ العمليّ'],
   ['artifactAr', 'ما يُسلّمه المتعلّم'],
-  ['bodyAr', 'المتن'],
-  ['bodyFileKey', 'ملفُّ المتن'],
+  ['bodyAr', 'المحتوى'],
+  ['bodyFileKey', 'ملفُّ المحتوى'],
 ]
 
 function identityLines(a: DiffPlan, b: DiffPlan, fmt: PlanDiffFormat): string[] {

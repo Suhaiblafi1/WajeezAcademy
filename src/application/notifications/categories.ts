@@ -110,7 +110,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        كتم الجرسَ عن اللقاءات لم يكتمه عن مهمّةٍ فُتحت، ولا العكس. */
     key: 'cohort_timeline',
     labelAr: 'ما يُفتح في شعبتي',
-    whatAr: 'فتحُ موعدٍ بكرّاسته ومتنه · فتحُ مهامِّ محورٍ بعد لقائه · وقبل آخر موعد مهمّةٍ لم تسلّمها بيوم',
+    whatAr: 'فتحُ موعدٍ بكرّاسته ومحتواه · فتحُ مهامِّ محورٍ بعد لقائه · وقبل آخر موعد مهمّةٍ لم تسلّمها بيوم',
     silenceable: true,
     templateKeys: ['timeline.slot_opened', 'timeline.tasks_opened', 'timeline.due_soon'],
   },
