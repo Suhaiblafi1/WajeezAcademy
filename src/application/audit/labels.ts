@@ -292,6 +292,7 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',
   /* والتحديثُ في مكانه غيرُ التركيب: لا عقدَ جديد ولا رابطَ جديد — نصٌّ
      بُدّل تحت صاحبه، ويُقرأ في الأثر من أيّ إصدارٍ إلى أيّ. */
+  'trainer.contract.link_requested': 'طلبُ المدرّب رابطَ عرضه بنفسه',
   'trainer.contract.body_refreshed': 'تحديثُ نصِّ عرضٍ مفتوحٍ في مكانه',
   'trainer.contract.amendment_requested': 'طلبُ المدرّبِ تعديلا على عرضه',
   'trainer.contract.amendment_replied': 'جوابُ الإدارة على طلب التعديل',

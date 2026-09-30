@@ -72,6 +72,7 @@ const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const SharedDossier = lazy(() => import('./pages/SharedDossier'))
 const ContractSign = lazy(() => import('./pages/ContractSign'))
+const ContractLinkRequest = lazy(() => import('./pages/ContractLinkRequest'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
@@ -204,6 +205,8 @@ export default function App() {
           <Route path="/r/:token" element={<SharedDossier />} />
           {/* بابُ توقيعِ العقد — عامٌّ كأخيه، والرمزُ هو الهويّة */}
           <Route path="/c/:token" element={<ContractSign />} />
+          {/* ولا يسكن تحت `/c/` — فـ`/c/:token` يبتلع ما تحته ويقرؤه رمزا */}
+          <Route path="/contract-link" element={<ContractLinkRequest />} />
           {/* حالةُ طلب الانضمام لصاحب الحساب — بوّابةُ المتقدّم الوحيدة */}
           <Route element={<RequireRole allow={APPLICANT_ROLES} />}>
             <Route path="/join-trainer/status" element={<ApplicantStatus />} />
