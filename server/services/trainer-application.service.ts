@@ -148,7 +148,7 @@ export const PURGEABLE_STATUSES: readonly TrainerStatus[] = SHARED_PURGEABLE
    · `active` و`suspended` — صار مدرّبا له بوّابةٌ وإسنادٌ ومستحقّات، وردُّه
      إلى طابور المتقدّمين يكسر ذلك كلَّه. (اختارها صاحبُ المنصّة صراحةً حين
      عُرض عليه الحدّان، ٢٢ سبتمبر ٢٠٢٦.)
-   · `rejected` و`withdrawn` — نهاية. ومخرجُ المردود بابٌ واحدٌ موثَّقٌ أسفلَه.
+   · `rejected` و`withdrawn` — نهاية. ولكلٍّ منهما بابُ رجوعٍ واحدٌ موثَّقٌ أسفلَه.
 
    ولا تُعاد كتابةُ ما فُتح في موضعَين: `REVIEW_OPEN_STATUSES` مصدرُ الشاشة
    والخادم معا (`src/application/trainer/decisions.ts` يستوردها)، فلا تفترق
@@ -196,7 +196,21 @@ export const ALLOWED_TRANSITIONS: Record<TrainerStatus, TrainerStatus[]> = {
      ولا يُعتمد من `rejected` بنقرة: `ONE_CLICK_APPROVABLE_STATUSES` تُخرجه،
      وهي مقابَلةٌ بهذه الخريطة في `one-click-approval.test.ts`. */
   rejected: ['under_review'],
-  withdrawn: [],
+  /* ═══ والمسحوبُ يُعاد — بالباب نفسِه لا بغيره (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة: «هناك حساباتٌ مسحوبة.. أرجو إعادتها». وكان
+     `withdrawn` نهايةً بلا مخرج: من سُحب طلبُه — بيده أو بيدنا، بخطأٍ أو
+     بقرارٍ تبدّل — لا يُستعاد إلّا بطلبٍ جديدٍ يفقد رقمَه ومستنداتِه ومقابلتَه.
+
+     والمخرجُ مخرجُ المردود بعينه: «قيد المراجعة» — أوّلُ الطابور لا الحالةُ
+     التي سُحب منها، بسببٍ إلزاميٍّ يصل صاحبَه بنصّه (`decide`). ومن هناك
+     تُفتح الأبوابُ كلُّها، فالعودةُ إلى قبولٍ سابقٍ نقرةٌ واحدة. ولا يُعتمَد
+     منه بنقرة: الطريقُ خطوتان بقصد، كما في المردود.
+
+     ويبقى المسحوبُ في `TERMINAL_STATUSES` يسمح لصاحب البريد بطلبٍ جديد —
+     فإن تقدّم بعده بطلبٍ آخرَ (قائمٍ أو منتهٍ) رُدّت الإعادةُ وسُمّي الآخر:
+     لا طلبان حيّان لبريدٍ واحد، ولا عودةُ طلبٍ فُكّ عن حسابه (`decide`). */
+  withdrawn: ['under_review'],
   active: ['suspended'],
   suspended: ['active'],
 }
@@ -251,7 +265,7 @@ const PHASE2_OPEN_STATUSES: TrainerStatus[] = [
 ]
 
 /* حالات نهائية تسمح بطلب جديد لنفس البريد */
-const TERMINAL_STATUSES: TrainerStatus[] = ['rejected', 'withdrawn']
+export const TERMINAL_STATUSES: TrainerStatus[] = ['rejected', 'withdrawn']
 
 /* مهلةُ رابط التأكيد — أربعٌ وعشرون ساعةً، ومن هنا لا بيدٍ هنا.
 

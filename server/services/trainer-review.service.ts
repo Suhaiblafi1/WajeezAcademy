@@ -14,7 +14,7 @@ import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
 import {
-  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
+  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
@@ -27,7 +27,7 @@ import { OUTREACH_ACTIONS } from '../../src/application/trainer/outreach'
 import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
 import { LIVE_INTERVIEW, pendingInterview, revertWhenNoLiveInterview } from './trainer-interview-state'
 import { buildIcs } from './calendar/ics'
-import { TrainerApplicationService, transitionProblemAr, type TrainerStatus } from './trainer-application.service'
+import { TERMINAL_STATUSES, TrainerApplicationService, transitionProblemAr, type TrainerStatus } from './trainer-application.service'
 import { nextTrainerApplicationReference } from './trainer-application-reference'
 import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { sendStaffInviteEmail } from './account-mail'
@@ -165,6 +165,15 @@ const INVITATION_TTL_MS = MAIL_LINK_TTL_MS
    الخَتمُ نفسُه، وضمُّ ملحوظةِ مطابقةِ الهويّة إليها حين يأتي القرارُ من
    شاشة العقود — ونسختان منها تفترقان في أوّل تحريرٍ يلحق إحداهما. */
 const CONDITION_SEAL_NOTE_AR = 'خَتمٌ باعتماد الموادّ وتفعيل الحساب — تحقّق شرطُ البند 2-10'
+
+/* بابُ كلِّ نهاية: المردودُ لا يُفتح إلّا بالتراجع عن الرفض، والمسحوبُ إلّا
+   بالتراجع عن السحب — والقولُ في `decide`. */
+const UNDO_DOORS = { rejected: 'undo_reject', withdrawn: 'undo_withdraw' } as const
+type UndoAction = (typeof UNDO_DOORS)[keyof typeof UNDO_DOORS]
+const UNDO_DOOR_AR: Record<UndoAction, { label: string; of: string }> = {
+  undo_reject: { label: 'تراجَعْ عن الرفض', of: 'مردود' },
+  undo_withdraw: { label: 'تراجَعْ عن السحب', of: 'مسحوب' },
+}
 
 /* ═══ الناقصُ يُقبل، والمجهولُ يُرَدّ ═══
 
@@ -788,12 +797,13 @@ export class TrainerReviewService {
   async decide(applicationId: string, actorId: string, action:
     | 'approve'
     | 'move_to_review' | 'request_info' | 'academic_review'
-    | 'conditionally_approve' | 'waitlist' | 'reject' | 'undo_reject'
+    | 'conditionally_approve' | 'waitlist' | 'reject' | 'undo_reject' | 'undo_withdraw'
     | 'start_onboarding' | 'activate' | 'reinstate', note?: string,
     opts: DecideOptions = {}): Promise<{
     /* حالُ البريد حيث يكون للقرار بريدٌ يُقرأ خبرُه في الشاشة — و«تمّ» لا
        تُقال عن بريدٍ لم يخرج (`src/application/notifications/delivery.ts`).
-       وهي اليومَ للتراجع وحدَه: بقيّةُ القرارات لا تقرأ الشاشةُ حالَ بريدها. */
+       وهي اليومَ للتراجع عن الردّ ولإعادة المسحوب: بقيّةُ القرارات لا تقرأ الشاشةُ
+       حالَ بريدها. */
     emailDelivery?: DirectMailStatus
   }> {
     /* حارس التضارب: لا يجوز لأحد اتخاذ قرار في طلب بريده هو */
@@ -825,6 +835,8 @@ export class TrainerReviewService {
       reject: 'rejected',
       /* التراجعُ عن الردّ — يعود إلى الطابور من أوّله لا إلى ما رُدّ منه */
       undo_reject: 'under_review',
+      /* وإعادةُ المسحوب — البابُ نفسُه بسببه (٢٩ سبتمبر ٢٠٢٦، والعلّةُ في خريطة الانتقالات) */
+      undo_withdraw: 'under_review',
       /* ─────────── آخرُ السلسلة ───────────
 
          كانت السلسلةُ تنتهي عند «قبول مشروط»، ولا زرَّ بعده. فمن اجتاز
@@ -868,6 +880,28 @@ export class TrainerReviewService {
        نفسِها التي تمنع في `transition` — لا نسخةَ ثانية. */
     const transitionProblem = transitionProblemAr(app.status as TrainerStatus, targets[action])
     if (transitionProblem) throw new AuthError('bad_transition', transitionProblem, 409)
+
+    /* ═══ ولكلّ نهايةٍ بابُها — لا يُفتح بغيره (٢٩ سبتمبر ٢٠٢٦) ═══
+
+       الخريطةُ تسأل عن الوجهة لا عن الفعل: المردودُ والمسحوبُ يصلان «قيد
+       المراجعة» كلاهما، و`move_to_review` وجهتُه هي أيضا. فكان المردودُ يُعاد
+       بـ`move_to_review` بلا سببٍ ولا رسالة — أي من فوق الحارس الذي وُضع للتراجع
+       — وصار المسحوبُ يُعاد بـ`undo_reject` فتصله «عُدنا في قرارنا» عن قرارٍ لم
+       نتّخذه. فالفعلُ يُقابَل بالحالة هنا: النهايةُ لا تُفتح إلّا بفعلها،
+       وفعلُها لا يُستعمل على غيرها. والشاشةُ تقول هذا من `DECISIONS`
+       (`src/application/trainer/decisions.ts`)، وهذا قولُ الخادم به. */
+    const isUndo = action === 'undo_reject' || action === 'undo_withdraw'
+    const door: UndoAction | undefined = UNDO_DOORS[app.status as keyof typeof UNDO_DOORS]
+    if (door && action !== door) {
+      throw new AuthError(
+        'bad_transition',
+        `هذا الطلبُ ${UNDO_DOOR_AR[door].of} — لا يُفتح إلّا بـ«${UNDO_DOOR_AR[door].label}» وسببٍ يصل صاحبَه`,
+        409,
+      )
+    }
+    if (isUndo && !door) {
+      throw new AuthError('bad_transition', `«${UNDO_DOOR_AR[action].label}» لطلبٍ ${UNDO_DOOR_AR[action].of} وحدَه`, 409)
+    }
 
     let overrideReason: string | null = null
     if (action === 'activate' || action === 'approve') {
@@ -1002,13 +1036,53 @@ export class TrainerReviewService {
        أو بأداة)، وقرارٌ ينقلب على صاحبه مرّتين بلا سببٍ أسوأُ من قرارٍ واحد.
        والحدُّ عشرةُ أحرف: «خطأ» و«عدنا» لا تشرحان شيئا لمن يقرؤها بعد
        اعتذار. والنصُّ يُرسَل كما كُتب — فهو مكتوبٌ له لا للأثر. */
-    const undoReason = action === 'undo_reject' ? (note ?? '').trim() : ''
-    if (action === 'undo_reject' && undoReason.length < 10) {
+    const undoReason = isUndo ? (note ?? '').trim() : ''
+    if (isUndo && undoReason.length < 10) {
       throw new AuthError(
         'reason_required',
-        'اكتب سببَ التراجع عن الرفض — يصل المتقدّمَ بنصّه، ولا يُنقض قرارٌ في صمت',
+        action === 'undo_reject'
+          ? 'اكتب سببَ التراجع عن الرفض — يصل المتقدّمَ بنصّه، ولا يُنقض قرارٌ في صمت'
+          : 'اكتب سببَ إعادة الطلب — يصل صاحبَه بنصّه، ولا يُعاد طلبٌ في صمت',
         422,
       )
+    }
+
+    /* ═══ ولا يُعاد إلّا آخرُ طلبٍ لصاحبه (٢٩ سبتمبر ٢٠٢٦) ═══
+
+       المردودُ والمسحوبُ نهايتان تسمحان لصاحب البريد بطلبٍ جديد
+       (`TERMINAL_STATUSES`). فمن سحب ثمّ تقدّم ثانيةً فأمامنا حالان:
+
+       ① **طلبُه الجديدُ قائم** — وإعادةُ الأوّل تجعل له اثنين في الطابور
+          يُقرَّر في كلٍّ منهما بمعزلٍ عن أخيه. فتُردّ ويُسمّى القائم: ذاك يُكمَل.
+       ② **أو انتهى هو أيضا** — والقديمُ فُكّ عن الحساب يومَ تقدّم ثانيةً
+          (`trainer.application.reapply` في `submitPhase1`). فإعادتُه تُخرج طلبا
+          حيّا لا يراه صاحبُه في حسابه، ولا يجده الاعتمادُ حين يبحث عن حسابٍ
+          يمنحه دورَه. فتُردّ ويُسمّى الأحدث: هو الذي يُعاد.
+
+       والحارسُ للبابَين معا — فالمردودُ يتقدّم ثانيةً كما يتقدّم المسحوب. */
+    if (isUndo) {
+      const other = await this.prisma.trainerApplication.findFirst({
+        where: {
+          email: app.email, id: { not: app.id },
+          OR: [{ status: { notIn: TERMINAL_STATUSES } }, { createdAt: { gt: app.createdAt } }],
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { reference: true, status: true },
+      })
+      if (other && !TERMINAL_STATUSES.includes(other.status as TrainerStatus)) {
+        throw new AuthError(
+          'live_application_exists',
+          `لصاحب هذا البريد طلبٌ قائمٌ غيرُه (${other.reference}) — يُكمَل ذاك، ولا يُعاد هذا فيصيرَ له طلبان`,
+          409,
+        )
+      }
+      if (other) {
+        throw new AuthError(
+          'newer_application_exists',
+          `تقدّم صاحبُ هذا البريد بعده بطلبٍ أحدث (${other.reference}) — أعِدْ ذاك إن أردت: هذا فُكّ عن حسابه يومَ تقدّم ثانيةً`,
+          409,
+        )
+      }
     }
 
     /* وسببُ التجاوز يُكتب في سجلّ الحالة مع الملاحظة — فالأثرُ يُقرأ بصلاحيّة،
@@ -1144,11 +1218,14 @@ export class TrainerReviewService {
        لبقي هو على خبره الأوّل: لا يتفقّد صفحةَ حالةٍ أغلقها، ولا يحجز موعدا
        لا يعلم أنّه فُتح له. والرسالةُ تحمل السببَ بنصّه بقرار صاحب المنصّة —
        وهي الموضعُ الوحيدُ الذي يسافر فيه ما يكتبه المراجعُ في هذا المسار. */
-    if (action === 'undo_reject') {
-      const mail = rejectionUndoneMail({
+    if (isUndo) {
+      const mailInput = {
         fullName: app.fullName, reference: app.reference, noteAr: undoReason,
         statusUrl: `${publicSiteUrl()}/join-trainer`,
-      })
+      }
+      /* ولكلّ بابٍ رسالتُه: «عُدنا في قرارنا» لمن رُدّ، و«أعدنا فتحَ طلبك» لمن
+         سُحب — وفيها أنّه إن كان سحبه بيده ولا يريد المضيَّ يردّ فنغلقه. */
+      const mail = action === 'undo_reject' ? rejectionUndoneMail(mailInput) : withdrawalUndoneMail(mailInput)
       const sent = await sendDirectEmail(this.prisma, { to: app.email, subject: mail.subject, ...renderMail(mail.doc) })
       /* والحالُ يُعاد إلى الشاشة لا يُبتلع: القرارُ وقع، وما قد لا يقع خروجُ
          البريد وحدَه — فمن رُفع رفضُه ولم يبلغه الخبرُ يُبلَّغ بيد من قرّر. */

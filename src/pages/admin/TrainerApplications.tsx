@@ -127,7 +127,7 @@ const RESULT_LABEL_AR: Record<string, string> = {
    كانت ثنائيّةً (`reject` أو غيرُه) مكتوبةً في خمسة مواضعَ من الحوار. فلمّا
    صار ثالثٌ لزم أن تُقرأ كلُّها معجما: خمسةُ ثلاثيّاتٍ متداخلةٍ في JSX تُقرأ
    ولا يُعرف أيُّها لأيّ فعل. */
-const ROW_DECISION_AR: Record<"reject" | "undo_reject" | "request_info", {
+const ROW_DECISION_AR: Record<"reject" | "undo_reject" | "undo_withdraw" | "request_info", {
   titleAr: (name: string) => string;
   confirmAr: string;
   reason: { labelAr: string; minLength: number };
@@ -144,6 +144,13 @@ const ROW_DECISION_AR: Record<"reject" | "undo_reject" | "request_info", {
     confirmAr: "تراجَعْ وأبلِغه",
     reason: { labelAr: "لماذا نتراجع؟ — يصل المتقدّمَ بنصّه في رسالته", minLength: 10 },
     bodyAr: "يعود الطلبُ إلى «قيد المراجعة» بملفّه ومستنداته، ويصله بريدٌ يقول إنّنا عُدنا في قرارنا — وفيه سببُك بنصّه.",
+  },
+  /* وإعادةُ المسحوب على مقاس أختها (٢٩ سبتمبر ٢٠٢٦): السببُ يسافر بنصّه كذلك */
+  undo_withdraw: {
+    titleAr: (n) => `إعادةُ طلب «${n}» المسحوب`,
+    confirmAr: "أعِدْه وأبلِغه",
+    reason: { labelAr: "لماذا نعيده؟ — يصل صاحبَه بنصّه في رسالته", minLength: 10 },
+    bodyAr: "يعود الطلبُ من «مسحوب» إلى «قيد المراجعة» بملفّه ومستنداته، ويصله بريدٌ فيه سببُك بنصّه — ومن سحبه بيده يردّ إن لم يُرِد المضيَّ فنغلقه.",
   },
   /* والعشرةُ حدُّ البطاقة نفسُه: «نحتاج معلومات» ليست طلبا يُعمَل به */
   request_info: {
@@ -463,7 +470,7 @@ export default function TrainerApplications() {
   const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
   /* قرارٌ على صفٍّ واحدٍ من قائمة أفعاله — والسببُ يُكتب في نافذته لا في
      خانةٍ عامّة، كما في نظيرَيه داخل الملفّ. */
-  const [rowDecision, setRowDecision] = useState<{ app: AppRow; action: "reject" | "undo_reject" | "request_info" } | null>(null);
+  const [rowDecision, setRowDecision] = useState<{ app: AppRow; action: "reject" | "undo_reject" | "undo_withdraw" | "request_info" } | null>(null);
   /* ═══ مرشِّحُ «لم يحجز موعدا» ═══
 
      الطابورُ يعرض عددَ المقابلات في كلّ صفّ، ومن أراد من لم يحجز عدَّ الأصفارَ
@@ -490,6 +497,8 @@ export default function TrainerApplications() {
   /* نافذةُ التراجع عن الرفض — مفتوحةٌ أو لا. والسببُ يُكتب فيها لا في خانة
      الملاحظة: يسافر إلى المتقدّم بنصّه، والخادمُ يشترطه (٤٢٢ دونه). */
   const [undoOpen, setUndoOpen] = useState(false);
+  /* ونافذةُ إعادة المسحوب — أختُها بشرطها نفسِه (٢٩ سبتمبر ٢٠٢٦) */
+  const [withdrawUndoOpen, setWithdrawUndoOpen] = useState(false);
   /* ═══ حوارُ تجاوز بوّابة التجهيز — للمدير الأعلى وحدَه ═══
 
      ولا يُخفى الزرُّ عمّن لا يملك التجاوز: إخفاؤه يترك من ضغط لا يعرف لمَ
@@ -920,6 +929,12 @@ export default function TrainerApplications() {
         run: () => setRowDecision({ app: a, action: "undo_reject" }),
       });
     }
+    if (allows("undo_withdraw", a.status)) {
+      items.push({
+        key: "undo-withdraw", label: "تراجَعْ عن السحب", icon: RotateCcw,
+        run: () => setRowDecision({ app: a, action: "undo_withdraw" }),
+      });
+    }
     return items;
   };
 
@@ -1002,12 +1017,14 @@ export default function TrainerApplications() {
     const decisionClick = (d: Decision, decisionNote?: string) =>
       d.action === "undo_reject"
         ? setUndoOpen(true)
-        : gatedByPrep(d.action)
-          ? setOverrideOpen(true)
-          : void act(
-            () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: decisionNote || undefined }),
-            "نُفذ القرار وسُجل في الأثر",
-          );
+        : d.action === "undo_withdraw"
+          ? setWithdrawUndoOpen(true)
+          : gatedByPrep(d.action)
+            ? setOverrideOpen(true)
+            : void act(
+              () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: d.action, note: decisionNote || undefined }),
+              "نُفذ القرار وسُجل في الأثر",
+            );
     const decisionButton = (d: Decision) => (
       <Button
         key={d.action} disabled={busy || (gatedByPrep(d.action) && !canOverride)}
@@ -1015,7 +1032,7 @@ export default function TrainerApplications() {
         /* الذهبيُّ للموصى به وحدَه، وما عداه بديلٌ متاحٌ بحدّه — والأحمرُ
            يبقى أحمرَ: ما لا يُتراجَع عنه لا يُساوى ببديلٍ عاديّ. */
         tone={d.tone === "danger" ? "danger" : d.action === recommended ? "primary" : "secondary"}
-        icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
+        icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" || d.action === "undo_withdraw" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
         onClick={() => decisionClick(d, note)}
         className="w-full"
       >
@@ -1028,7 +1045,7 @@ export default function TrainerApplications() {
         key={`bar-${d.action}`} disabled={busy || (gatedByPrep(d.action) && !canOverride)}
         title={gatedByPrep(d.action) ? `لا يُعتمَد قبل التجهيز — ${missingAr.join(" · ")}` : undefined}
         tone={d.tone === "danger" ? "danger" : d.action === recommended ? "primary" : "secondary"}
-        icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
+        icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" || d.action === "undo_withdraw" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
         onClick={() => decisionClick(d, askNote || note)}
       >
         {d.label}
@@ -1672,6 +1689,39 @@ export default function TrainerApplications() {
           </ConfirmAction>
         )}
 
+        {withdrawUndoOpen && (
+          <ConfirmAction
+            titleAr={`إعادةُ طلب «${a.fullName}» المسحوب`}
+            confirmLabelAr="أعِدْه وأبلِغه"
+            tone="default"
+            busy={busy}
+            reason={{ labelAr: "لماذا نعيده؟ — يصل صاحبَه بنصّه في رسالته", minLength: 10 }}
+            onCancel={() => setWithdrawUndoOpen(false)}
+            onConfirm={(reason) => {
+              if (!reason) return;
+              setWithdrawUndoOpen(false);
+              void act(
+                () => apiPost<{ emailDelivery?: string }>(
+                  `/api/admin/trainer-applications/${a.id}/decision`, { action: "undo_withdraw", note: reason }),
+                /* والخبرُ يتبع الجواب كأخيه: «وصل السببُ» لا تُقال إن لم يخرج البريد */
+                (result) => mailOutcomeAr(
+                  "أُعيد الطلبُ المسحوبُ إلى المراجعة، ووصل السببُ صاحبَه",
+                  (result as { emailDelivery?: string } | null)?.emailDelivery,
+                ),
+              );
+            }}
+          >
+            <p className="text-read leading-6">
+              يعود الطلب <b dir="ltr">{a.reference}</b> من «مسحوب» إلى «قيد المراجعة» بملفّه ومستنداته كما هي،
+              ويصل <b>{a.email}</b> بريدٌ يقول إنّنا أعدنا فتحَه — وفيه سببُك بنصّه.
+            </p>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              ولا يعود إلى الحالة التي سُحب منها: يُقرأ من أوّل الطابور، والقبولُ بعده نقرةٌ واحدة. ومن
+              سحبه بيده ولا يريد المضيَّ يردّ على الرسالة فنغلقه.
+            </p>
+          </ConfirmAction>
+        )}
+
       {/* ═══ حوارُ المحو — يُكتب فيه رقمُ الطلب بالحرف وسببٌ يبقى ═══
 
             و«ارفضه ثمّ احذفه» لمن كان قيدَ النظر: الحذفُ لا يقع إلّا على منتهٍ
@@ -2153,7 +2203,9 @@ export default function TrainerApplications() {
                 : target.action === "request_info"
                   ? "أُرسل الطلب إليه — ونصُّه في صفحة حالته"
                   : (result) => mailOutcomeAr(
-                    "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
+                    target.action === "undo_withdraw"
+                      ? "أُعيد الطلبُ المسحوبُ إلى المراجعة، ووصل السببُ صاحبَه"
+                      : "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
                     (result as { emailDelivery?: string } | null)?.emailDelivery,
                   ),
             );

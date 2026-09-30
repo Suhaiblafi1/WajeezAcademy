@@ -113,6 +113,9 @@ describe('والشاشاتُ تقرأ الجواب لا تفترضه', () => {
     const queue = code('src/pages/admin/TrainerApplications.tsx')
     expect(near(queue, '{ action: "undo_reject", note: reason }'), 'خبرُ التراجع ثابتٌ لا يقرأ حالَ البريد')
       .toContain('mailOutcomeAr(')
+    /* وإعادةُ المسحوب تَعِد بالوعد نفسِه (٢٩ سبتمبر ٢٠٢٦) — فتقرأ الحالَ نفسَه */
+    expect(near(queue, '{ action: "undo_withdraw", note: reason }'), 'خبرُ إعادة المسحوب ثابتٌ لا يقرأ حالَ البريد')
+      .toContain('mailOutcomeAr(')
     /* والخادمُ يردّ الحالَ أصلا — وإلّا قرأت الشاشةُ غيابا وسمّته نجاحا */
     const route = code('server/http/routes/admin-trainer.routes.ts')
     expect(near(route, 'review.decide('), 'المسارُ يبتلع حالَ بريد القرار').toContain('outcome')

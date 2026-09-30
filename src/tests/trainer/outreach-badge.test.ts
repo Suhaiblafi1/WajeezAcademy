@@ -269,7 +269,7 @@ describe('⑤ وطلبُ المعلومات يُفتح من الطابور', () 
 
   it('ولكلّ قرارِ صفٍّ ألفاظُه — لا ثلاثيّاتٌ متداخلةٌ في التصيير', () => {
     const keys = /const ROW_DECISION_AR: Record<([^>]*)>/.exec(screen)?.[1] ?? ''
-    for (const k of ['reject', 'undo_reject', 'request_info']) {
+    for (const k of ['reject', 'undo_reject', 'undo_withdraw', 'request_info']) {
       expect(keys, `«${k}» ليس في معجم ألفاظ الحوار`).toContain(k)
     }
   })
