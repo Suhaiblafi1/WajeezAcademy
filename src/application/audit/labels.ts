@@ -319,6 +319,7 @@ const PHRASES: Record<string, string> = {
   'trainer.bank.reveal': 'كشفُ رقمِ حسابٍ بنكيٍّ لصرفِ مستحقّ',
   'trainer.bank.remove': 'إلغاءُ المدرّبِ حسابَه البنكيَّ',
   /* التسويق — فيديوهاتُ المدرّب وصورُه، وملصقاتٌ لا تُستعمل إلّا بموافقته */
+  'trainer.materials.save': 'حفظُ المدرّبِ موادَّ دورةٍ قيد الإعداد',
   'trainer.marketing.video.set': 'رابطُ فيديو تعريفيٍّ من المدرّب',
   'trainer.marketing.video.remove': 'حذفُ المدرّبِ فيديو تعريفيّا',
   'trainer.marketing.photo.add': 'صورةٌ للملصقات من المدرّب',

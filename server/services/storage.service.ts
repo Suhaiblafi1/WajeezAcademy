@@ -219,6 +219,8 @@ export type StorageOwnerKind =
 export interface StorageOwner {
   kind: StorageOwnerKind
   maxBytes: number
+  /** سقفُ مسار البثّ — ومن لا سقفَ بثٍّ له لا يُرفع بثّا */
+  streamMaxBytes?: number
   /* ما تعرفه القاعدةُ عنه — وثلاثةٌ من الستّة لا تعرف نوعا ولا اسما */
   mime?: string
   originalName?: string
@@ -267,13 +269,20 @@ export async function resolveStorageOwner(
      معلَنٌ لا يُوفى — وهو أسوأُ من سقفٍ صغيرٍ معلوم، بنصّ ما هو مكتوبٌ أعلاه.
 
      ورفعُ الحدّ ليس رفعَ رقم: ثلاثُمئةٍ في الذاكرة لكلّ طلبٍ متزامن تُسقط
-     الحاوية. فالطريقُ **البثُّ إلى القرص** لا مخزنٌ أكبر — وذلك بندٌ مستقلٌّ
-     يُفتح حين تُطلب محاضرةٌ كاملة، لا اليوم. والفيديو رابطٌ أصلا بقرار. */
+     الحاوية. فالطريقُ **البثُّ إلى القرص** لا مخزنٌ أكبر.
+
+     ═══ وبُني البثّ (٣٠ سبتمبر ٢٠٢٦) ═══
+     فللتسجيل سقفان لا سقف: `maxBytes` لمسار الذاكرة كما كان، و`streamMaxBytes`
+     لمسار البثّ (`PUT /api/v1/uploads/:key/stream` ← `putObjectStream`)، وإليه
+     يشير رابطُ رفع التسجيل. وما لا `streamMaxBytes` له لا يُقبل في البثّ. */
   const rec = await prisma.recording.findUnique({
     where: { storageKey }, select: { mime: true, title: true },
   })
   if (rec) {
-    return { kind: 'recording', maxBytes: MAX_UPLOAD_ANY, mime: rec.mime ?? undefined, originalName: rec.title }
+    return {
+      kind: 'recording', maxBytes: MAX_UPLOAD_ANY, streamMaxBytes: MAX_COHORT_MEDIA_BYTES,
+      mime: rec.mime ?? undefined, originalName: rec.title,
+    }
   }
 
   const mat = await prisma.learningMaterial.findUnique({

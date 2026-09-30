@@ -33,6 +33,7 @@ import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/tra
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { MAX_EXTENSIONS } from '../../src/application/trainer/conditional-offer'
+import { TRAINER_GUIDE_LINK_AR } from '../../src/application/trainer/trainer-guide'
 import {
   ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR, ORIENTATION_INVITE_AR,
 } from '../../src/application/trainer/orientation-session'
@@ -1032,6 +1033,8 @@ export interface ContractApprovedMailInput {
   title: string
   approvedOnAr: string
   portalUrl: string
+  /** دليلُ المدرّب — `TRAINER_GUIDE_PATH` على أصل الموقع */
+  guideUrl: string
   /**
    * أهذا العقدُ حابسٌ لتفعيل صاحبه؟ فإن كان، فهذه اللحظةُ تفتح بوّابتَه وتبدأ
    * مهلةَ موادّه — وإلّا فهو بندٌ يُوثَّق على مدرّبٍ نشطٍ أصلا، لا طورَ موادَّ
@@ -1053,6 +1056,25 @@ export interface ContractApprovedMailInput {
 
    والنقلُ أمينٌ: النصُّ هو هو، وإنّما زِيدت دعوةُ الجلسة. */
 export function contractApprovedMail(input: ContractApprovedMailInput): DecisionMail {
+  /* ═══ ودليلُ المدرّب — قرارُ صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦) ═══
+
+     «يجب أن يضمّ ملفّا يرشدهم لما يجب أن يفعله المدرّب داخل منصّته من الألف
+     إلى الياء». وموضعُه **قبل** الزرّ لا بعده: من يفتح بوّابتَه أوّلَ مرّةٍ
+     يحتاج أن يعرف أين يضع موادَّه قبل أن يبحث عنها.
+
+     وفي صندوقٍ مؤطَّر لا زرٍّ ثانٍ: الزرُّ واحدٌ في الرسالة (`mail-template.ts`)،
+     وزرّان متساويان يقسمان الانتباه. والرابطُ جزءُ الجملة (`MailLink`) لا
+     عنوانٌ عارٍ — فذاك يصل حرفا ميّتا لا يُنقر. */
+  const guideCallout: MailBlock = {
+    kind: 'callout',
+    text: [
+      'قبل أن تبدأ، اقرأ ',
+      { text: TRAINER_GUIDE_LINK_AR, href: input.guideUrl },
+      ' — يمشي بك في بوّابتك من الألف إلى الياء بصورٍ منها: ما تفعله في مهلة موادّك،'
+      + ' وكيف تقرّر في عروض الدورات وتقترح دمجَ دورتين متقاربتين،'
+      + ' وما يراه الناسُ من شعبك ومساراتك وكيف تعدّله.',
+    ],
+  }
   return {
     subject: `اعتُمد عقدُك — ${input.title}`,
     doc: {
@@ -1080,6 +1102,7 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
                   { textAr: 'وباعتمادها يُنشَر حسابُك رسميّا وتبدأ باستقبال الطلبات.' },
                 ],
               },
+              guideCallout,
               {
                 kind: 'cta' as const,
                 label: 'افتح بوّابتَك وضَعْ موادَّك',
@@ -1115,6 +1138,17 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
           kind: 'note',
           text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك عرضا مستقلّا تقبله أو تعتذر عنه.',
         },
+        /* وعلى من لا طورَ موادَّ له (بندٌ يُوثَّق على مدرّبٍ نشط) يبقى الدليلُ
+           مرجعا لا خطوةً أولى — فسطرٌ خافتٌ في آخر الرسالة لا صندوقٌ في صدرها. */
+        ...(input.gatesActivation
+          ? ([] as MailBlock[])
+          : ([
+              {
+                kind: 'note',
+                text: 'ودليلُ المدرّب مرجعُك لكلّ شاشةٍ في بوّابتك، بصورٍ منها:',
+                link: { label: TRAINER_GUIDE_LINK_AR, href: input.guideUrl },
+              },
+            ] as MailBlock[])),
       ],
     },
   }

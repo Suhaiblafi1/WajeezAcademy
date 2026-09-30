@@ -15,6 +15,7 @@ import { TrainerPathService } from '../../services/trainer-path.service'
 import { TrainerDepartureService } from '../../services/trainer-departure.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { EarningsService } from '../../services/earnings.service'
+import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
 import { analyzeImpact } from '../../services/impact.service'
@@ -701,6 +702,15 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const body = z.object({ courseId: z.string(), note: z.string().optional() }).parse(req.body)
     return reply.status(201).send(await review.qualifyForCourse(profileId, body.courseId, req.auth!.userId, body.note))
+  })
+
+  /* موادُّ دورات المدرّب في طور العرض المشروط — يقرؤها من يقرّر تأهيلَه */
+  app.get('/api/admin/trainers/:profileId/materials', {
+    preHandler: requirePermission('trainer.qualify'),
+    schema: { tags: ['admin-trainers'], summary: 'موادُّ دورات المدرّب قيد الإعداد والمعتمدة' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    return new TrainerMaterialsService(prisma).forProfile(profileId)
   })
 
   /* ─────────── طلبُ التأهيل من الشعبة ───────────

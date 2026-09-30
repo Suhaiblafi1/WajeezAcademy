@@ -37,7 +37,10 @@
    يُرفض بلا تفصيل. */
 
 import { createHash } from 'node:crypto'
-import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { createWriteStream } from 'node:fs'
+import { pipeline } from 'node:stream/promises'
+import { Transform, type Readable } from 'node:stream'
 import { join } from 'node:path'
 import { AuthError } from './auth.service'
 
@@ -98,6 +101,48 @@ export async function getObject(storageKey: string): Promise<Buffer | null> {
   } catch {
     return null
   }
+}
+
+/* ═══ الكتابةُ بثّا — للمحاضرة لا للوثيقة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   `putObject` تأخذ البايتاتِ كلَّها في الذاكرة، وهو صوابٌ لوثيقةٍ من أربعة
+   ميغابايت. وتسجيلُ لقاءٍ من ساعتين مئاتُ الميغابايتات: ثلاثُمئةٍ في الذاكرة
+   لكلّ رفعٍ متزامن تُسقط الحاوية. فهذه تكتب ما يصل كما يصل إلى ملفٍّ مؤقّت،
+   وتعدّ البايتاتِ وهي تمرّ: فإن جاوزت السقفَ قطعت وحذفت ما كُتب، وإن تمّت
+   نقلته إلى اسمه — فلا يُرى كائنٌ نصفُ مكتوب. */
+export async function putObjectStream(
+  storageKey: string, source: Readable, meta: { mime: string; originalName: string }, maxBytes: number,
+): Promise<number> {
+  const p = pathsFor(storageKey)
+  await mkdir(p.dir, { recursive: true })
+  const tmp = `${p.body}.part`
+  let size = 0
+  const counter = new Transform({
+    transform(chunk: Buffer, _enc, cb) {
+      size += chunk.length
+      if (size > maxBytes) cb(new AuthError('too_large', `الملف يتجاوز ${Math.floor(maxBytes / (1024 * 1024))}MB`, 413))
+      else cb(null, chunk)
+    },
+  })
+  try {
+    await pipeline(source, counter, createWriteStream(tmp))
+  } catch (e) {
+    await rm(tmp, { force: true })
+    throw e
+  }
+  if (size === 0) {
+    await rm(tmp, { force: true })
+    throw new AuthError('empty', 'الملف فارغ', 400)
+  }
+  await rename(tmp, p.body)
+  const full: ObjectMeta = {
+    mime: meta.mime || 'application/octet-stream',
+    originalName: meta.originalName || storageKey,
+    sizeBytes: size,
+    storedAt: new Date().toISOString(),
+  }
+  await writeFile(p.meta, JSON.stringify(full))
+  return size
 }
 
 /** المجاورُ، أو `null`. وكائنٌ بلا مجاورٍ يُقدَّم بنوعٍ محايد. */

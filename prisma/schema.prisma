@@ -1361,6 +1361,13 @@ model TrainerCourseQualification {
   requestedBy       String?        @db.Uuid
   requestedAt       DateTime?
   decidedAt         DateTime?
+  /**
+   * موادُّ الدورة في طور العرض المشروط (٣٠ سبتمبر ٢٠٢٦) — محاورُها ومخرجاتُها
+   * ورابطُ موادّها ومهمّتُها ومصادرُها، كما يكتبها المدرّبُ في «مؤهّلاتي».
+   * وبنيتُها في `src/application/trainer/course-materials.ts`.
+   */
+  materials         Json?
+  materialsAt       DateTime?
   createdAt         DateTime       @default(now())
   profile           TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   course            Course         @relation(fields: [courseId], references: [id])

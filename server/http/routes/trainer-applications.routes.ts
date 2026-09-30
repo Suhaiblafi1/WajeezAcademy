@@ -3,7 +3,8 @@
    وما يخصّ صاحبَ الحساب: طلبه، واستئنافه، وسحبه. */
 
 import type { FastifyInstance } from 'fastify'
-import { getObject, getObjectMeta, putObject } from '../../services/object-store'
+import { getObject, getObjectMeta, putObject, putObjectStream } from '../../services/object-store'
+import type { Readable } from 'node:stream'
 import { z } from 'zod'
 import { normalizeApplicantLink } from '../../../src/application/trainer/applicant-link'
 import type { PrismaClient } from '@prisma/client'
@@ -321,6 +322,44 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     /* ووثيقةُ المتقدّم تحفظ حجمَها في سجلّها كما كانت — تقرؤه شاشاتُ المراجعة */
     if (owner.kind === 'trainer_document') await recordDocumentSize(prisma, storageKey, buffer.length)
     return { ok: true, storageKey, sizeBytes: buffer.length }
+  })
+
+  /* ═══ الرفعُ بثّا — للتسجيل لا للوثيقة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     المسارُ أعلاه يقرأ الجسمَ كاملا في الذاكرة ويقف عند أربعة ميغابايت، فكان
+     كلُّ تسجيلِ لقاءٍ حقيقيٍّ يُردّ. وهذا يمرّر الجسمَ كما يصل إلى القرص
+     (`putObjectStream`) بسقفِ صاحبه في البثّ — ولا يقبل إلّا من له سقفُ بثٍّ،
+     فلا تصير وثيقةُ هويّةٍ ثلاثَمئة ميغابايت من هذا الباب.
+
+     وفي سياقٍ مغلَّفٍ وحدَه: محلّلُ المحتوى هنا يمرّر التيّارَ خاما، ولا يمسّ
+     محلّلاتِ بقيّة المسارات. */
+  app.register(async (sub) => {
+    sub.removeAllContentTypeParsers()
+    sub.addContentTypeParser('*', (_req, payload, done) => done(null, payload))
+    sub.put('/api/v1/uploads/:storageKey/stream', {
+      schema: { tags: ['trainer-applications'], summary: 'رفعُ تسجيلٍ كبيرٍ بثّا إلى القرص عبر رابطٍ موقَّع — داخلي' },
+    }, async (req, reply) => {
+      const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
+      const { exp, sig } = z.object({ exp: z.coerce.number(), sig: z.string() }).parse(req.query)
+      if (!verifySignature(storageKey, exp, sig, 'write')) {
+        return reply.status(403).send({ error: { code: 'bad_signature', message_ar: 'رابط الرفع غير صالح أو منتهي' } })
+      }
+      const owner = await resolveStorageOwner(prisma, storageKey)
+      if (!owner) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الملف غير مسجل' } })
+      if (!owner.streamMaxBytes) {
+        return reply.status(415).send({ error: { code: 'not_streamable', message_ar: 'هذا الملفُّ يُرفع من مساره العاديّ' } })
+      }
+      const declared = Number(req.headers['content-length'] ?? 0)
+      if (declared > owner.streamMaxBytes) {
+        const mb = Math.floor(owner.streamMaxBytes / (1024 * 1024))
+        return reply.status(413).send({ error: { code: 'too_large', message_ar: `الملف يتجاوز ${mb}MB` } })
+      }
+      const size = await putObjectStream(storageKey, req.body as Readable, {
+        mime: owner.mime || String(req.headers['content-type'] ?? '').split(';')[0].trim() || 'application/octet-stream',
+        originalName: owner.originalName || storageKey,
+      }, owner.streamMaxBytes)
+      return { ok: true, storageKey, sizeBytes: size }
+    })
   })
 
   app.get('/api/v1/documents/:storageKey', {
