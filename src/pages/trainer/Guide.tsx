@@ -123,9 +123,10 @@ html[data-theme="light"] .guide-root {
   width: .42rem; height: .42rem; border-radius: 999px; background: rgb(var(--g-coral)); }
 
 .guide-shot { display: block; width: 100%; cursor: zoom-in; border-radius: .5rem; overflow: hidden; }
-.guide-shot-tag { position: absolute; z-index: 1; top: .9rem; inset-inline-start: .9rem; padding: .1rem .55rem;
-  border-radius: .35rem; font-size: .72rem; font-weight: 800; pointer-events: none;
-  background: rgb(var(--g-deep)); color: rgb(var(--g-on-deep)); opacity: .92; }
+/* وسمُ الصورة شريطٌ فوقها لا لصيقةٌ عليها — كانت تغطّي الرقمَ «١» ونصَّ الشاشة */
+.guide-shot-tag { display: flex; align-items: center; gap: .4rem; margin: 0 .25rem .45rem;
+  font-size: .78rem; font-weight: 800; color: rgb(var(--g-ink) / .75); }
+.guide-shot-tag::before { content: ""; width: .5rem; height: .5rem; border-radius: 2px; background: rgb(var(--g-sky)); }
 .guide-shot:focus-visible { outline: 2px solid rgb(var(--g-sky)); outline-offset: 3px; }
 
 /* «انتبه» و«نصيحة»: بطاقةٌ بشريطٍ جانبيٍّ لونُه معناه */
