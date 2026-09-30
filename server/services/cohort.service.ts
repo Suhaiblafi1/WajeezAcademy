@@ -16,7 +16,7 @@ import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MA
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify, notifyRole } from './notification.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, updateZoomMeeting, zoomMissing, zoomReady, zoomStartUrl } from './zoom.service'
+import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, setZoomRegistrantStatus, updateZoomMeeting, zoomMissing, zoomReady, zoomStartUrl } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
@@ -24,7 +24,7 @@ import { meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
 import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
-import { SessionInviteService } from './session-invite.service'
+import { SEATED, SessionInviteService } from './session-invite.service'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -1881,7 +1881,18 @@ export class CohortService {
       const already = await this.prisma.sessionJoinLink.findUnique({
         where: { sessionId_enrollmentId: { sessionId, enrollmentId: e.id } },
       })
-      if (already) continue
+      if (already && !already.cancelledAt) continue
+      /* ومن أُلغي تسجيلُه يوم ترك ثمّ عاد (`releaseSessionJoinLinks`): يُعاد تسجيلُه
+         نفسُه — فرابطُه الذي في بريده يعمل من جديد. وإن أبى Zoom سُجّل من جديد
+         أدناه، وحلّ الرابطُ الجديدُ محلَّ القديم. */
+      if (already) {
+        const back = await setZoomRegistrantStatus(config, meetingId, 'approve', [already.registrantId])
+        if (back.ok) {
+          await this.prisma.sessionJoinLink.update({ where: { id: already.id }, data: { cancelledAt: null } })
+          linked += 1
+          continue
+        }
+      }
       const r = await registerZoomParticipant(config, meetingId, {
         email: e.user.email,
         firstName: e.user.displayName || e.user.email.split('@')[0],
@@ -1892,13 +1903,12 @@ export class CohortService {
         reason = r.reason
         break
       }
-      await this.prisma.sessionJoinLink.create({
-        data: {
-          sessionId, enrollmentId: e.id,
-          registrantId: r.registrant.registrantId,
-          joinUrl: r.registrant.joinUrl,
-        },
-      })
+      const fresh = { registrantId: r.registrant.registrantId, joinUrl: r.registrant.joinUrl }
+      if (already) {
+        await this.prisma.sessionJoinLink.update({ where: { id: already.id }, data: { ...fresh, cancelledAt: null } })
+      } else {
+        await this.prisma.sessionJoinLink.create({ data: { sessionId, enrollmentId: e.id, ...fresh } })
+      }
       linked += 1
     }
     await this.prisma.zoomMeeting.update({
@@ -1906,6 +1916,66 @@ export class CohortService {
       data: reason ? { syncState: 'failed', syncError: reason } : { syncState: 'synced', syncError: null },
     })
     return { linked, reason }
+  }
+
+  /* ═══ ومن ترك مقعدَه يُلغى تسجيلُه عند Zoom (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     التسجيلُ أعلاه يُعطي كلَّ متعلّمٍ رابطَه، ولم يكن شيءٌ يسحبه: من أُسقط تسجيلُه
+     أو انتقل إلى شعبةٍ أخرى اختفى اللقاءُ من «تعلُّمي» وبقي رابطُه يُدخله — وقد
+     صار الرابطُ في بريده وتقويمه منذ الدعوات. فيُلغى هنا تسجيلُ كلِّ رابطٍ قائمٍ
+     في اجتماعٍ لم يبدأ، إن لم يكن صاحبُه جالسا في شعبة ذلك اللقاء.
+
+     والقاعدةُ «جالسٌ في شعبة اللقاء» لا «أُسقط»: المنتقلُ تسجيلُه قائمٌ
+     (`enrolled`) وشعبتُه غيرُ شعبة اللقاء — فشرطُ الحالة وحدَه يتركه.
+
+     ويُنادى من موضعين: `EnrollmentService` لمن ترك الآن (`enrollmentId`)، ودورةُ
+     العامل للجميع (`revoke_left_registrants`) — لما أبى فيه Zoom ساعتَها، ولمن ترك
+     قبل أن يوجد هذا.
+
+     · **وما مضى لا يُمسّ**: صفُّه يطابق حضورَه ببريده (`zoom-events.service.ts`).
+     · **والصفُّ يبقى بتاريخ إلغائه** (`cancelledAt`) لا يُمحى: به يُعاد إن عاد.
+     · **وما أبى فيه Zoom يبقى قائما** — لا يُكتب ملغى ما لم يُلغَ، فتعيده الدورة.
+       والاجتماعُ الذي حُذف من لوحته (`notFound`) لا تسجيلَ فيه يُدخل أحدا: تمّ. */
+  async releaseSessionJoinLinks(
+    opts: { enrollmentId?: string } = {}, now = new Date(),
+  ): Promise<{ cancelled: number; failed: number; reason: string | null }> {
+    const links = await this.prisma.sessionJoinLink.findMany({
+      where: {
+        cancelledAt: null,
+        ...(opts.enrollmentId ? { enrollmentId: opts.enrollmentId } : {}),
+        meeting: { provider: 'zoom_api', meetingId: { not: null }, session: { startsAt: { gt: now } } },
+      },
+      select: {
+        id: true, registrantId: true,
+        meeting: { select: { meetingId: true, session: { select: { cohortId: true } } } },
+        enrollment: { select: { status: true, cohortId: true } },
+      },
+    })
+    const left = links.filter((l) => !(SEATED.includes(l.enrollment.status) && l.enrollment.cohortId === l.meeting.session.cohortId))
+    if (left.length === 0) return { cancelled: 0, failed: 0, reason: null }
+    const config = await getZoomConfig(this.prisma)
+    /* بلا مفاتيح لا إلغاءَ ممكنا — ولا يُعدّ إخفاقا يُكتب كلَّ ساعة: لوحةُ
+       التكاملات تقول إنّ Zoom غيرُ موصول، والدورةُ تُلغيها حين يُوصل */
+    if (!zoomReady(config)) return { cancelled: 0, failed: 0, reason: 'مفاتيحُ Zoom ناقصة' }
+    let cancelled = 0
+    let failed = 0
+    let reason: string | null = null
+    for (const l of left) {
+      try {
+        const r = await setZoomRegistrantStatus(config, l.meeting.meetingId!, 'cancel', [l.registrantId])
+        if (r.ok || r.notFound) {
+          await this.prisma.sessionJoinLink.update({ where: { id: l.id }, data: { cancelledAt: now } })
+          cancelled += 1
+        } else {
+          failed += 1
+          reason ??= r.reason
+        }
+      } catch (e) {
+        failed += 1
+        reason ??= e instanceof Error ? e.message : 'تعذّر الوصولُ إلى Zoom'
+      }
+    }
+    return { cancelled, failed, reason }
   }
 
   /* ═══ ورابطٌ أُلصق بلقاءٍ قائمٍ خبرٌ لمن يحضره (ي-٤) ═══

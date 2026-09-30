@@ -671,6 +671,25 @@ export async function syncCohortStatuses(prisma: PrismaClient, now = new Date())
   }
 }
 
+/* ═══════════ ٣أ · من ترك شعبتَه لا يبقى مسجَّلا عند Zoom ═══════════
+
+   الإسقاطُ والانتقالُ يُلغيان تسجيلَ صاحبهما في اجتماعات شعبته المقبلة ساعتَها
+   (`EnrollmentService.seatLeft`). وهذه الدورةُ لما فاتهما: Zoom لم يردّ يومها، أو
+   ترك قبل أن يوجد الإلغاءُ أصلا — فبقي رابطُه الخاصُّ في بريده يُدخله لقاءاتٍ
+   ليست له. والقاعدةُ واحدةٌ في الموضعين (`releaseSessionJoinLinks`). */
+export async function revokeLeftRegistrants(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const out = await new CohortService(prisma).releaseSessionJoinLinks({}, now)
+  const parts: string[] = []
+  if (out.cancelled > 0) parts.push(`أُلغي ${out.cancelled} تسجيلا لمن ترك شعبتَه`)
+  if (out.failed > 0) parts.push(`وأبى Zoom ${out.failed}: ${out.reason}`)
+  return {
+    job: 'revoke_left_registrants',
+    summaryAr: parts.length === 0 ? 'لا تسجيلَ قائما لمن ترك شعبتَه' : parts.join(' · '),
+    done: out.cancelled, failed: out.failed, ms: Date.now() - started,
+  }
+}
+
 /* ═══════════ ٣ب · حالاتُ الفصول بالتواريخ ═══════════
 
    كحالات الشعب سواءً، وبالتقسيم نفسِه: الفتحُ قرارٌ بشريّ، والانتهاءُ حقيقةُ
@@ -1294,6 +1313,9 @@ export const JOBS = [
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
   { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكيرُ توثيق البريد' },
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالاتُ الشعب بالتواريخ' },
+  /* كلَّ ساعة: الإسقاطُ والانتقالُ يُلغيان التسجيلَ ساعتَهما — وهذه لما أبى فيه
+     Zoom ولمن ترك قبلها. واللقاءُ بعد أيّامٍ في الغالب، فساعةٌ تسبقه */
+  { key: 'revoke_left_registrants', everyMs: HOUR, run: revokeLeftRegistrants, titleAr: 'إلغاءُ تسجيل من ترك شعبتَه عند Zoom' },
   /* والفصلُ حدُّه يومٌ لا دقيقة — فساعةٌ تكفي ولا تُثقل */
   { key: 'term_status_sync', everyMs: HOUR, run: syncTermStatuses, titleAr: 'حالاتُ الفصول بالتواريخ' },
   { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشرُ المجدول' },

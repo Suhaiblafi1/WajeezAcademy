@@ -2738,6 +2738,9 @@ model SessionJoinLink {
   registrantId String // معرّفُ المسجَّل عند Zoom
   joinUrl      String
   createdAt    DateTime    @default(now())
+  /// متى أُلغي تسجيلُه عند Zoom — ترك الشعبةَ أو انتقل منها، فرابطُه لا يُدخله بعدها.
+  /// والصفُّ يبقى ولا يُمحى: به يُطابَق حضورُ ما مضى، وبه يُعاد تسجيلُه إن عاد
+  cancelledAt  DateTime?
   meeting      ZoomMeeting @relation(fields: [sessionId], references: [sessionId], onDelete: Cascade)
   enrollment   Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
