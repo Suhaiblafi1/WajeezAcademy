@@ -26,7 +26,9 @@ export interface IcsEvent {
   location?: string
   url?: string
   organizer?: { name: string; email: string }
-  attendee?: { name?: string; email: string }
+  /** و`rsvp: false` لما لا يُنتظَر جوابُه — دعوةُ لقاءٍ لعشرين متعلّما تملأ صندوقَ
+      المنظِّم بـ«قبل: …» إن طلبت الردّ. والافتراضُ يطلبه، كما كان للمقابلة */
+  attendee?: { name?: string; email: string; rsvp?: boolean }
   /** يرتفع مع كلّ تعديلٍ على الموعد فيعرف التقويمُ أنّه تحديثٌ لا موعدٌ ثانٍ */
   sequence?: number
   cancelled?: boolean
@@ -72,16 +74,11 @@ export function foldIcsLine(line: string): string {
   return out.map((seg, i) => (i === 0 ? seg : ` ${seg}`)).join('\r\n')
 }
 
-export function buildIcs(e: IcsEvent): string {
+/** أسطرُ الحدث الواحد — بلا غلاف التقويم */
+function eventLines(e: IcsEvent, stamp: string): string[] {
   const end = new Date(e.startsAt.getTime() + e.durationMinutes * 60_000)
-  const stamp = toIcsDate(e.now ?? new Date())
 
   const lines: string[] = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Wajeez Academy//AR//',
-    'CALSCALE:GREGORIAN',
-    `METHOD:${e.cancelled ? 'CANCEL' : 'REQUEST'}`,
     'BEGIN:VEVENT',
     `UID:${e.uid}`,
     `DTSTAMP:${stamp}`,
@@ -99,9 +96,40 @@ export function buildIcs(e: IcsEvent): string {
   if (e.organizer) lines.push(`ORGANIZER;CN=${escapeIcsText(e.organizer.name)}:mailto:${e.organizer.email}`)
   if (e.attendee) {
     const cn = e.attendee.name ? `;CN=${escapeIcsText(e.attendee.name)}` : ''
-    lines.push(`ATTENDEE${cn};ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:${e.attendee.email}`)
+    lines.push(`ATTENDEE${cn};ROLE=REQ-PARTICIPANT;RSVP=${e.attendee.rsvp === false ? 'FALSE' : 'TRUE'}:mailto:${e.attendee.email}`)
   }
 
-  lines.push('END:VEVENT', 'END:VCALENDAR')
+  lines.push('END:VEVENT')
+  return lines
+}
+
+function calendar(method: 'REQUEST' | 'CANCEL' | 'PUBLISH', events: string[][]): string {
+  const lines: string[] = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Wajeez Academy//AR//',
+    'CALSCALE:GREGORIAN',
+    `METHOD:${method}`,
+    ...events.flat(),
+    'END:VCALENDAR',
+  ]
   return lines.map(foldIcsLine).join('\r\n') + '\r\n'
+}
+
+export function buildIcs(e: IcsEvent): string {
+  return calendar(e.cancelled ? 'CANCEL' : 'REQUEST', [eventLines(e, toIcsDate(e.now ?? new Date()))])
+}
+
+/* ═══ مواعيدُ كثيرةٌ في ملفٍّ واحد — نشرٌ لا دعوة (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   رسالةُ الدعوة (`REQUEST`، RFC 5546) عن موعدٍ واحدٍ بمعرّفه — وما جُمع فيها
+   من مواعيدَ شتّى لا يضمن عميلٌ أن يقرأ منها غيرَ الأوّل. والنشرُ (`PUBLISH`)
+   يُستورَد كلُّه: هو ما يحمل جدولا.
+
+   ولا مدعوَّ فيه: النشرُ إعلانُ مواعيدَ لا دعوةُ أحد، فيُسقَط `ATTENDEE` هنا
+   ولو مُرِّر. والمعرّفاتُ على حالها — فدعوةُ التحديث بعده بالمعرّف نفسِه تحرّك
+   ما استُورد ولا تكرّره. */
+export function buildIcsBundle(events: readonly IcsEvent[], now: Date = new Date()): string {
+  const stamp = toIcsDate(now)
+  return calendar('PUBLISH', events.map((e) => eventLines({ ...e, attendee: undefined, cancelled: false }, stamp)))
 }

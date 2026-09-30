@@ -3257,7 +3257,14 @@ export class TrainerReviewService {
     const c = await this.byToken(token)
     const now = new Date()
     if (c.status === 'signed') {
-      return { state: 'signed' as const, title: c.title, signedAt: c.signedAt, signerLegalName: c.signerLegalName }
+      /* والمتنُ معه: من وقّع له أن يقرأ ما وقّعه، وهذا بابُه الوحيدُ إليه
+         قبل أن يُختَم العقدُ ويُفتح حسابُه. ولا يُوسَّع بذلك ما يُرى: الرابطُ
+         نفسُه كان يعرض المتنَ كاملا قبل التوقيع. */
+      return {
+        state: 'signed' as const, title: c.title,
+        signedAt: c.signedAt, signerLegalName: c.signerLegalName,
+        bodyAr: c.bodyAr, bodyHash: c.bodyHash,
+      }
     }
     if (isAmendmentRequested(c.status)) {
       return {
@@ -3462,8 +3469,25 @@ export class TrainerReviewService {
 
              وموضعُها الآن في `countersignContract` مع فتح البوّابة ومنحِ
              الدور، ثلاثتُها في معاملةٍ واحدة. */
-          /* والرمزُ يموت بالتوقيع: وُقّع مرّةً، فلا بابَ يُفتح ثانية */
-          tokenHash: null, tokenExpiresAt: null,
+          /* ═══ والرمزُ يبقى حيّا بعد التوقيع (٢٩ سبتمبر ٢٠٢٦) ═══
+
+             كان يُمسح هنا، وتعليقُه: «وُقّع مرّةً، فلا بابَ يُفتح ثانية».
+             وشكا مدرّبٌ أنّه نقر «افتح العقد» بعد توقيعه فلم يُفتح له شيء:
+             فمسحُ الرمز يُسقط `byToken` على `invalid_token` **قبل** أن
+             يُقرأ فرعُ `signed` في `contractByToken` — فالأبوابُ الثلاثةُ
+             التي كُتبت ليعرف الواقفُ أيَّ بابٍ هو لا يُطرَق أيٌّ منها، ويُقال
+             له بدلَها «انتهى هذا الرابط».
+
+             ولا يُخشى منه توقيعٌ ثانٍ: الكتابةُ أعلاه مشروطةٌ بـ`status:
+             'sent'` داخل معاملةٍ، و`CONTRACT_OPEN_STATUSES` لا تحمل غيرَها —
+             فكلُّ مسلكٍ يكتب يدخل من `openByToken` ويُردّ بـ`bad_state`.
+             فالذي كان يحرسه المسحُ يحرسه الشرطُ، والمسحُ لم يكن يمنع توقيعا
+             بل يمنع قراءةً.
+
+             وهو بابُ نسخته الوحيدُ قبل ختمنا العقد: لا حسابَ له في المنصّة
+             حتّى الاعتماد (`profile.userId` فارغٌ حتّى الدعوة)، وبريدُ
+             التوقيع يحمل بصمةَ النصّ لا النصَّ. فلو مات الرمزُ هنا لم يبقَ
+             للموقِّع موضعٌ يقرأ فيه ما التزم به. */
         },
       })
       if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)

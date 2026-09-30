@@ -114,7 +114,7 @@ export async function sendDirectEmail(
   prisma: PrismaClient,
   input: {
     to: string; subject: string; text: string; html?: string
-    icsContent?: string; icsFilename?: string
+    icsContent?: string; icsFilename?: string; icsMethod?: 'REQUEST' | 'CANCEL' | 'PUBLISH'
     /** مرفقاتٌ تُسلَّم كما هي — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه */
     attachments?: MailAttachment[]
   },

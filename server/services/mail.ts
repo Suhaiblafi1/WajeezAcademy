@@ -18,6 +18,9 @@ export interface MailInput {
      يقرأ النوعَ وبعضُهم اللاحقة. */
   icsContent?: string
   icsFilename?: string
+  /** منهجُ الدعوة في نوع المرفق — ويطابق سطرَ `METHOD` في الملفّ نفسِه، وإلّا قرأ
+      بعضُ العملاء رفعَ لقاءٍ دعوةً إليه. `REQUEST` افتراضا كما كان */
+  icsMethod?: 'REQUEST' | 'CANCEL' | 'PUBLISH'
   /* مرفقاتٌ أخرى — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه.
 
      ولماذا حقلٌ عامٌّ بجانب `icsContent` لا بدلا عنه: الدعوةُ مرفقٌ بشروط
@@ -35,13 +38,13 @@ export interface MailAttachment {
 
 /* المرفقاتُ كلُّها في قائمةٍ واحدةٍ تُسلَّم لـResend — أو `undefined` إن
    لم يكن ثمّ مرفق: قائمةٌ فارغةٌ تُقبل، لكنّ الغيابَ أصدقُ من فراغٍ يُرسَل. */
-function attachmentsOf(input: MailInput) {
+export function attachmentsOf(input: MailInput) {
   const list = [
     ...(input.icsContent
       ? [{
           filename: input.icsFilename ?? 'wajeez-event.ics',
           content: Buffer.from(input.icsContent, 'utf-8'),
-          contentType: 'text/calendar; charset=utf-8; method=REQUEST',
+          contentType: `text/calendar; charset=utf-8; method=${input.icsMethod ?? 'REQUEST'}`,
         }]
       : []),
     ...(input.attachments ?? []),

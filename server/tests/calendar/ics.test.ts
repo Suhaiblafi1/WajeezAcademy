@@ -13,7 +13,7 @@
    في تقويم صاحبه بدل تحديث الأولى. */
 
 import { describe, expect, it } from 'vitest'
-import { buildIcs, escapeIcsText, foldIcsLine } from '../../services/calendar/ics'
+import { buildIcs, buildIcsBundle, escapeIcsText, foldIcsLine } from '../../services/calendar/ics'
 
 const AT = new Date('2026-09-08T15:00:00Z')
 
@@ -105,6 +105,22 @@ describe('دعوةُ تقويم', () => {
     expect(ics).toContain('ORGANIZER;CN=أكاديمية وجيز:mailto:Academy@wajeez.co')
     expect(ics).toContain('mailto:m@x.co')
   })
+
+  it('١٤) ومواعيدُ كثيرةٌ في ملفٍّ واحد: غلافٌ واحد، وكلٌّ بمعرّفه — نشرٌ بلا مدعوٍّ ولا إلغاء', () => {
+    const ics = buildIcsBundle([
+      { uid: 'a@w', title: 'الأوّل', startsAt: AT, durationMinutes: 60, attendee: { email: 'x@y.co' } },
+      { uid: 'b@w', title: 'الثاني', startsAt: new Date(AT.getTime() + 86_400_000), durationMinutes: 90, cancelled: true },
+    ], AT)
+    const lines = ics.split('\r\n')
+    expect(lines.filter((l) => l === 'BEGIN:VCALENDAR')).toHaveLength(1)
+    expect(lines.filter((l) => l === 'BEGIN:VEVENT')).toHaveLength(2)
+    expect(lines.filter((l) => l.startsWith('UID:'))).toEqual(['UID:a@w', 'UID:b@w'])
+    expect(lines).toContain('METHOD:PUBLISH')
+    expect(lines).toContain('DTEND:20260909T163000Z')
+    expect(ics, 'النشرُ يدعو — والدعوةُ لموعدٍ واحد').not.toContain('ATTENDEE')
+    expect(ics, 'نشرٌ يُلغي').not.toContain('STATUS:CANCELLED')
+    expect(ics.includes('\n\n'), 'سطرٌ بلا CR').toBe(false)
+  })
 })
 
 /* ── الربطُ الحقيقيّ: من الصفّ في القاعدة إلى تقويم إنسان ── */
@@ -117,11 +133,14 @@ describe('أين تُستعمل الدعوة فعلا', () => {
     expect(src, 'المعرّفُ غيرُ مشتقٍّ من الموعد — فتتكرّر النسخ').toContain('uid: `interview-${interview.id}@wajeez-academy`')
   })
 
+  /* كان الفحصُ على نصّ `mail.ts` («method=REQUEST» حرفا). ثمّ صار المنهجُ يتبع
+     الدعوة (٢٩ سبتمبر ٢٠٢٦): `REQUEST` تدعو، و`CANCEL` ترفع لقاءً من التقويم —
+     فانتقل الحارسُ من الحرف إلى ما يخرج فعلا، والافتراضُ باقٍ كما كان. */
   it('١٢) والبريدُ يحمل المرفَق بنوعه واسمه — بعضُ العملاء يقرأ هذا وبعضُهم ذاك', async () => {
-    const { readFileSync } = await import('node:fs')
-    const src = readFileSync('server/services/mail.ts', 'utf8')
-    expect(src).toContain("contentType: 'text/calendar; charset=utf-8; method=REQUEST'")
-    expect(src).toContain("filename: input.icsFilename")
+    const { attachmentsOf } = await import('../../services/mail')
+    const [att] = attachmentsOf({ to: 'a@b.co', subject: 's', text: 't', icsContent: 'BEGIN:VCALENDAR', icsFilename: 'x.ics' }) ?? []
+    expect(att?.contentType).toBe('text/calendar; charset=utf-8; method=REQUEST')
+    expect(att?.filename).toBe('x.ics')
   })
 
   it('١٣) وللمتعلّم رابطٌ يضيف جلستَه بنفسه', async () => {
