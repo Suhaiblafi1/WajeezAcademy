@@ -291,6 +291,12 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
         data: { cohortId, title: 'مهمّةُ الإرسال', type: 'assignment', maxScore: 100, moduleId: first },
       })
     }
+    /* ومشروعُ التخرّج — صار صفّا إلزاميّا (٣٠ سبتمبر ٢٠٢٦) */
+    if ((await prisma.cohortAssessment.count({ where: { cohortId, type: 'project' } })) === 0) {
+      await prisma.cohortAssessment.create({
+        data: { cohortId, title: 'مشروعُ التخرّج', type: 'project', maxScore: 100, moduleId: first },
+      })
+    }
   }
 
   it('ولا يُرسل بلا تأكيد — وبتأكيدٍ تصير بانتظار الاعتماد', async () => {

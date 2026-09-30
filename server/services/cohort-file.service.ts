@@ -21,7 +21,8 @@ import { deleteObject } from './object-store'
 import {
   fileBlockerAr, MAX_BODY_FILE_BYTES, type FilePurpose,
 } from '../../src/application/trainer/module-body'
-import { projectPlanForLearner } from '../../src/application/trainer/plan-overlay'
+import { projectPlanForLearner, readTypedLinks } from '../../src/application/trainer/plan-overlay'
+import { assessmentOpensAt } from '../../src/application/learning/cohort-gate'
 import { loadLearnerGate } from './learner-gate'
 
 export class CohortFileService {
@@ -164,13 +165,26 @@ export class CohortFileService {
     throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
   }
 
-  /** أيصل هذا المفتاحُ المتعلّمَ الآن — متنُ محورٍ فُتح، أو كرّاسةُ الشعبة أو موعدٍ فُتح، أو مصدرٌ فُتح */
+  /** أيصل هذا المفتاحُ المتعلّمَ الآن — متنُ محورٍ فُتح، أو كرّاسةُ الشعبة أو موعدٍ فُتح، أو مصدرٌ أو مرفقُ مهمّةٍ فُتح */
   private async openToLearner(cohortId: string, storageKey: string, now = new Date()): Promise<boolean> {
     const loaded = await loadLearnerGate(this.prisma, cohortId, now)
     if (!loaded || loaded.gate.access === 'ended') return false
     const view = projectPlanForLearner(loaded.plan, now, loaded.gate)
     if (!view) return false
+    /* ومرفقاتُ المهامّ المرفوعة (٣٠ سبتمبر ٢٠٢٦) — لمهمّةٍ منشورةٍ فُتحت له،
+       بالبوّابة نفسِها التي يرى بها المهمّة: قبل فتحها لا يُقرأ مرفقُها */
+    const tasks = await this.prisma.cohortAssessment.findMany({
+      where: { cohortId, status: 'published' },
+      select: { moduleId: true, attachments: true },
+    })
+    const taskKeys = tasks
+      .filter((t) => {
+        const at = assessmentOpensAt(loaded.gate, t.moduleId)
+        return at === null || at.getTime() <= now.getTime()
+      })
+      .flatMap((t) => readTypedLinks(t.attachments).map((l) => l.bodyFileKey))
     const keys = [
+      ...taskKeys,
       ...view.modules.map((m) => m.bodyFileKey),
       ...(view.slots ?? []).map((s) => s.workbook?.bodyFileKey),
       /* وكرّاسةُ الشعبة الواحدة — ومفتاحُها لا يصل الإسقاطَ قبل أوّل يومٍ فيها */

@@ -30,8 +30,10 @@ describe('المهامُّ: لائحةٌ ثمّ انسدال', () => {
   })
 
   it('وزرٌّ يفتحه — وإلّا فرايةٌ مطويّةٌ لا بابَ إليها', () => {
-    expect(stage).toMatch(/onClick=\{\(\) => setTaskFormOpen\(true\)\}/)
-    expect(stage).toContain('+ مهمّةٌ جديدة')
+    /* ولكلّ لسانٍ زرُّه (٣٠ سبتمبر ٢٠٢٦): المشروعُ يُفتح بنوعه، والمهامُّ بالواجب */
+    expect(stage).toMatch(/onClick=\{\(\) => \{ setTaskForm\(\{ \.\.\.blankTask, type: isProject \? "project" : "assignment" \}\); setTaskFormOpen\(true\); \}\}/)
+    expect(stage).toContain('"+ مهمّةٌ عمليّة"')
+    expect(stage).toContain('"+ مشروعُ التخرّج"')
   })
 
   it('و«عدّل» يفتح الانسدالَ نفسَه — لا شاشةً ثانيةً ولا حقولٌ تُكرَّر', () => {

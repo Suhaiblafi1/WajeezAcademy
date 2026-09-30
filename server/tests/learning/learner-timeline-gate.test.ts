@@ -420,3 +420,34 @@ describe('⑤ كرّاسةُ الدورة الواحدة', () => {
     await expect(files.assertCanRead(`${OLD}-open`, { userId: me.userId, permissions: [] })).rejects.toThrow()
   })
 })
+
+/* ═══ ⑥ مرفقُ المهمّة المرفوع (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   «عندما يختار ملفّا… يظهر له ما يوازيه» — فصار للمهمّة مرفقٌ يُرفع إلى مخزن
+   الشعبة لا رابطٌ وحدَه. ويُقرأ بالبوّابة التي تُرى بها مهمّتُه: قبل فتحها لا. */
+describe('⑥ مرفقُ المهمّة المرفوع', () => {
+  it('⚠️ يُقرأ لمهمّةٍ فُتحت، ولا يُقرأ لمهمّةٍ لم تُفتح', async () => {
+    const IDS = ['AM1', 'AM2', 'AM3', 'AM4']
+    const cohortId = await cohortWithPlan('مرفقُ مهمّة', {
+      startsOn: day(-10), endsOn: day(17), modules: mods(IDS),
+      slots: IDS.map((id, i) => ({ startsOn: day(-10 + i * 7), endsOn: day(-4 + i * 7), moduleIds: [id] })),
+    }, { from: -10, to: 17 })
+    await prisma.cohortSession.create({
+      data: { cohortId, title: 'لقاءُ الأوّل', startsAt: at(-9), endsAt: at(-9, 17), moduleId: 'AM1', moduleIds: ['AM1'], status: 'done' },
+    })
+    const OPEN = `k-att-open-${STAMP}`
+    const SHUT = `k-att-shut-${STAMP}`
+    for (const [moduleId, key] of [['AM1', OPEN], ['AM3', SHUT]] as const) {
+      await prisma.cohortFile.create({ data: { cohortId, purpose: 'plan_resource', refId: `task-att-${key}`, storageKey: key, originalName: 'نموذج.pdf', mime: 'application/pdf' } })
+      await prisma.cohortAssessment.create({
+        data: {
+          cohortId, moduleId, type: 'assignment', title: `مهمّةُ ${moduleId}`, maxScore: 10, status: 'published',
+          attachments: [{ title: 'نموذجُ التسليم', kind: 'file', bodyFileKey: key, bodyFileName: 'نموذج.pdf' }],
+        },
+      })
+    }
+    const me = await learner('att', cohortId)
+    await expect(files.assertCanRead(OPEN, { userId: me.userId, permissions: [] })).resolves.toBeTruthy()
+    await expect(files.assertCanRead(SHUT, { userId: me.userId, permissions: [] }), 'قُرئ مرفقُ مهمّةٍ لم تُفتح').rejects.toThrow()
+  })
+})

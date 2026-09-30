@@ -50,7 +50,7 @@ describe('التامّةُ على خطّ المحاور تُرسَل', () => {
 
   it('⚠️ وصفُّ «التسجيلات» الاختياريُّ سقط — المسجَّلُ صار جلسةً في «اللقاءات»', () => {
     expect(complete().map((c) => c.key)).not.toContain('recordings')
-    expect(complete().map((c) => c.key)).toEqual(['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'resources', 'approval'])
+    expect(complete().map((c) => c.key)).toEqual(['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'resources', 'project', 'approval'])
   })
 })
 
@@ -102,6 +102,31 @@ describe('الكرّاسة — واحدةٌ للدورة، وموضعُ كلّ �
     const perSlot = { workbook: null, slots: SLOTS.map((s) => ({ ...s, workbook: { url: 'https://x.test/old' } })) }
     expect(row(complete({}, perSlot), 'workbooks').done).toBe(false)
     expect(row(complete({ planStatus: 'approved' }, perSlot), 'workbooks').done).toBe(true)
+  })
+})
+
+/* قرارُ صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦): «ثلاثُ تابات: للمهامّ العمليّة، وللمصادر،
+   ولمشروع التخرّج… لكي لا ينسى أيّا منها لأنّها كلُّها إجباريّة». */
+describe('المهامُّ العمليّةُ ومشروعُ التخرّج — كلٌّ إلزاميّ', () => {
+  it('⚠️ بلا مشروعِ تخرّجٍ يحجب — وإن كثرت المهامّ', () => {
+    const list = complete({ assessmentTypes: ['assignment', 'quiz'] })
+    expect(row(list, 'project').done).toBe(false)
+    expect(blockingBeforeSubmit(list).map((c) => c.key)).toEqual(['project'])
+  })
+
+  it('⚠️ ومشروعُ التخرّج وحدَه لا يكفي — المهامُّ العمليّةُ صفٌّ غيرُه', () => {
+    const list = complete({ assessmentTypes: ['project', 'project'] })
+    expect(row(list, 'assignments').done).toBe(false)
+    expect(row(list, 'project').done).toBe(true)
+  })
+
+  it('وبهما معا يُرسَل', () => {
+    const list = complete({ assessmentTypes: ['assignment', 'project'] })
+    expect(blockingBeforeSubmit(list)).toEqual([])
+  })
+
+  it('وما اعتُمد قبل القرار بلا مشروعٍ يمضي كما اعتُمد', () => {
+    expect(row(complete({ assessmentTypes: ['assignment', 'quiz'], planStatus: 'approved' }), 'project').done).toBe(true)
   })
 })
 

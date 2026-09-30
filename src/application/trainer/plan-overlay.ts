@@ -117,7 +117,12 @@ export function resourceOpen(r: { category?: string | null; kind?: string | null
 /** مرفقٌ أو مصدرٌ — الشكلُ واحدٌ في خطّة الشعبة وفي التكليف */
 export interface TypedLink {
   title: string
+  /** الرابط — أو فارغٌ لمرفقٍ مرفوع (`bodyFileKey`) */
   url: string
+  /** مرفقُ مهمّةٍ مرفوعٌ في مخزن الشعبة (٣٠ سبتمبر ٢٠٢٦) — يُقرأ من المسار المحروس */
+  bodyFileKey?: string | null
+  bodyFileName?: string | null
+  bodyFileMime?: string | null
   kind?: string | null
   noteAr?: string | null
   /** صنفُ المصدر — مسجَّلٌ للمدرّب، أو كتبٌ وملفّات، أو عامٌّ للفائدة */
@@ -141,10 +146,17 @@ export function readTypedLinks(raw: unknown): TypedLink[] {
     const r = item as Record<string, unknown>
     const title = typeof r.title === 'string' ? r.title.trim() : ''
     const url = typeof r.url === 'string' ? r.url.trim() : ''
-    if (!title || !url) continue
+    /* والمرفقُ المرفوعُ بلا رابط (٣٠ سبتمبر ٢٠٢٦): «ملفٌّ» يُرفع لا يُلصق */
+    const key = typeof r.bodyFileKey === 'string' ? r.bodyFileKey.trim() : ''
+    if (!title || (!url && !key)) continue
     out.push({
       title,
-      url,
+      url: key ? '' : url,
+      ...(key ? {
+        bodyFileKey: key,
+        bodyFileName: typeof r.bodyFileName === 'string' ? r.bodyFileName : null,
+        bodyFileMime: typeof r.bodyFileMime === 'string' ? r.bodyFileMime : null,
+      } : {}),
       kind: resourceKind(typeof r.kind === 'string' ? r.kind : null),
       noteAr: typeof r.noteAr === 'string' && r.noteAr.trim() ? r.noteAr.trim() : null,
     })

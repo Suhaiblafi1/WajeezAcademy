@@ -196,6 +196,10 @@ describe('⑤ الإرسالُ على خطّ المحاور', () => {
 
     const last = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ الرابع', ...when(3), moduleIds: ['AX-M4'] })
     expect(last.statusCode, last.body).toBe(201)
+    /* ومشروعُ التخرّج صفٌّ إلزاميّ (٣٠ سبتمبر ٢٠٢٦) — يحجب حتّى يوضع */
+    await expect(plans.submit(trainerUserId, cohortId, true)).rejects.toMatchObject({ code: 'stages_incomplete', message: expect.stringContaining('مشروعَ التخرّج') })
+    const project = await post(`/api/trainer/cohorts/${cohortId}/assessments`, { title: 'مشروعُ التخرّج', type: 'project', moduleId: 'AX-M4' })
+    expect(project.statusCode, project.body).toBe(201)
     const sent = await plans.submit(trainerUserId, cohortId, true)
     expect(sent.status).toBe('submitted')
   })

@@ -49,7 +49,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, FileText, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -64,6 +64,7 @@ import type { ResourceCategory } from "@/application/trainer/plan-overlay";
 import { X } from "lucide-react";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
+import TabBar from "@/components/ui/TabBar";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import { blockingBeforeSubmit, trainerOwned } from "@/application/trainer/plan-gate";
@@ -207,13 +208,74 @@ const STAGE_KEYS: Record<Stage, readonly string[]> = {
   modules: ["modules"],
   workbooks: ["workbooks"],
   sessions: ["sessions"],
-  assignments: ["assignments", "resources"],
+  assignments: ["assignments", "resources", "project"],
   approval: ["approval"],
 };
 /** الدرجةُ التي فيها صفُّ القائمة — أو `null` لصفٍّ لا درجةَ له */
 const stageOfKey = (key: string): Stage | null =>
   (STAGES.find((s) => STAGE_KEYS[s.key].includes(key))?.key ?? null);
 const ASSESSMENT_TYPES: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع تخرج" };
+
+/* ═══ ألسنةُ «المهامّ والمصادر» وتوصياتُ كلٍّ منها (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   ولكلّ لسانٍ صفُّه في قائمة الخادم — منه حالُه على اللسان نفسِه. */
+type TaskTab = "tasks" | "resources" | "project";
+
+/** خانةُ الرابط بما يناسب نوعَ المرفق — و«ملفّ» لا رابطَ له بل رفع */
+const ATTACHMENT_LINK_HINT: Record<string, { label: string; hint: string }> = {
+  link: { label: "الرابط", hint: "صفحةٌ أو مقالٌ يبدأ رابطُه بـ https://" },
+  video: { label: "رابطُ الفيديو", hint: "يوتيوب أو فيميو أو Google Drive — بمشاركةٍ مفتوحةٍ لمن معه الرابط." },
+  book: { label: "رابطُ الكتاب", hint: "صفحةُ الكتاب أو نسختُه المفتوحة. ولرفع نسخةٍ منه اختر «ملفّ»." },
+  audiobook: { label: "رابطُ الكتاب الصوتيّ", hint: "Audible أو Storytel أو ما شابهه." },
+  social: { label: "رابطُ المنشور", hint: "منشورٌ أو حسابٌ على لينكدإن أو غيره." },
+  file: { label: "الملفّ", hint: "" },
+};
+const TASK_TABS: Record<TaskTab, { label: string; key: string; tips: readonly string[] }> = {
+  tasks: {
+    label: "المهامّ العمليّة",
+    key: "assignments",
+    tips: [
+      "مهمّةٌ لكلّ محورٍ على الأقلّ، مربوطةٌ به — تُفتح للمتعلّم بعد أوّل لقاءٍ لمحورها.",
+      "اكتب في التعليمات ما يفعله بالضبط، ومقدارَه، وما يسلّمه — العنوانُ وحدَه لا يكفي للعمل.",
+      "أرفِق نموذجا يملؤه أو مثالا محلولا: ملفّا ترفعه، أو رابطا لفيديو يشرح الطريقة.",
+      "آخرُ موعدها آخرُ يومٍ في موعد محورها ما لم تحدّد غيرَه — واجعله قبل لقاء المحور التالي.",
+    ],
+  },
+  resources: {
+    label: "المصادر",
+    key: "resources",
+    tips: [
+      "مصدرٌ أو اثنان لكلّ محورٍ يكفيان — الانتقاءُ أنفعُ للمتعلّم من القائمة الطويلة.",
+      "اكتب تحت كلّ مصدرٍ سطرا يقول لماذا يقرؤه، وما الذي يبحث عنه فيه.",
+      "اجعل ما يلزم قبل اللقاء «قراءةً مسبقة» — تُفتح مع أوّل يومٍ في موعد محوره.",
+      "الكتابُ ملفٌّ يُرفع أو رابط، والفيديو رابطٌ (يوتيوب أو فيميو أو Drive) بمشاركةٍ مفتوحة.",
+    ],
+  },
+  project: {
+    label: "مشروع التخرّج",
+    key: "project",
+    tips: [
+      "مشروعٌ واحدٌ يجمع محاورَ الدورة كلَّها في عملٍ حقيقيّ — لا اختبارٌ ولا تلخيص.",
+      "اكتب المطلوبَ خطوةً خطوة، وما يُسلَّم في آخره (ملفٌّ أو عرضٌ أو رابط)، وكيف تقيّمه.",
+      "اربطه بالمحور الأخير، واجعل موعدَه آخرَ يومٍ في الشعبة — فيبني عليه المتعلّمُ طوالَها.",
+      "أرفِق نموذجا للتسليم أو مثالا مكتملا يرى منه المتعلّمُ ما يُنتظر منه.",
+    ],
+  },
+};
+
+/** تعليماتُ اللسان المفتوح وتوصياتُه — تحته مباشرةً، قبل ما يُكتب فيه */
+function TaskTabGuide({ tab }: { tab: TaskTab }) {
+  return (
+    <Inset className="mt-4 text-read leading-7">
+      <p className="flex items-center gap-1.5 font-black text-foreground">
+        <Sparkles className="h-4 w-4 text-gold-ink" aria-hidden="true" /> تعليماتٌ وتوصيات — {TASK_TABS[tab].label}
+      </p>
+      <ul className="mt-1.5 list-disc space-y-1 ps-5 text-muted-foreground">
+        {TASK_TABS[tab].tips.map((t) => <li key={t}>{t}</li>)}
+      </ul>
+    </Inset>
+  );
+}
 
 /* ═══ ما يقوله حفظُ المهمّة — بما حكم به الخادمُ لا بما ظنّته الشاشة (٣ج-٣) ═══
 
@@ -298,7 +360,7 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
   },
   assignments: {
     title: "المهامّ والمصادر",
-    purpose: "ما يُسلّمه المتعلّمُ ويعود إليك في طابور التقييم، وما يقرؤه خارجَ اللقاء — وكلٌّ مربوطٌ بمحوره فيُفتح بعد لقائه. ومهمّةٌ واحدةٌ على الأقلّ شرطٌ للاعتماد — لا تكون المحاضرةُ إلزاميّةً والمُخرَجُ اختياريّا.",
+    purpose: "ثلاثةُ ألسنةٍ كلُّها إلزاميّة: المهامُّ العمليّة التي يسلّمها المتعلّمُ في كلّ محور، والمصادرُ التي يقرؤها خارجَ اللقاء، ومشروعُ التخرّج الذي يجمع الدورةَ في آخرها. لا تكون المحاضرةُ إلزاميّةً والمُخرَجُ اختياريّا.",
     minutes: "نحو ١٠ دقائق",
   },
   approval: {
@@ -385,6 +447,12 @@ export default function CohortWorkspace() {
      تتقدّمه قائمةٌ لا قائمةً يليها فعل. ومن جاء ليراجع مهامَّه وجد نفسَه
      في نموذجِ إنشاء. */
   const [taskFormOpen, setTaskFormOpen] = useState(false);
+  /* ═══ ثلاثةُ ألسنةٍ في «المهامّ والمصادر» (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «يجب أن يكون هناك ثلاثُ تابات: للمهامّ العمليّة،
+     وللمصادر، ولمشروع التخرّج — للسهولة ولكي لا ينسى أيّا منها لأنّها كلُّها
+     إجباريّة». واللسانُ يحمل حالَ صفّه في قائمة الخادم، فالناقصُ يُرى قبل فتحه. */
+  const [taskTab, setTaskTab] = useState<TaskTab>("tasks");
   /* التكليفُ المطلوبُ حذفُه — الحذفُ لا يقع بنقرةٍ واحدة */
   const [pendingDelete, setPendingDelete] = useState<Workspace["assessments"][number] | null>(null);
   /* والمحورُ المطلوبُ حذفُه — ومعه موضعُه، فالعناوينُ تتكرّر */
@@ -778,8 +846,10 @@ export default function CohortWorkspace() {
       moduleId: taskForm.moduleId || null,
       /* الناقصُ يُسقَط لا يُرسَل نصفَ مرفق — والمصفوفةُ الفارغةُ محوٌ مقصود */
       attachments: taskAttachments
-        .filter((r) => r.title.trim() && /^https?:\/\//.test((r.url ?? "").trim()))
-        .map((r) => ({ title: r.title.trim(), url: (r.url ?? "").trim(), kind: resourceKind(r.kind) })),
+        .filter((r) => r.title.trim() && ((r.bodyFileKey ?? "").trim() || /^https?:\/\//.test((r.url ?? "").trim())))
+        .map((r) => ((r.bodyFileKey ?? "").trim()
+          ? { title: r.title.trim(), kind: "file", bodyFileKey: (r.bodyFileKey ?? "").trim(), bodyFileName: r.bodyFileName ?? null, bodyFileMime: r.bodyFileMime ?? null }
+          : { title: r.title.trim(), url: (r.url ?? "").trim(), kind: resourceKind(r.kind) })),
     };
     const saved = editingId
       ? await apiPatch(`/api/trainer/assessments/${editingId}`, payload)
@@ -1597,15 +1667,45 @@ export default function CohortWorkspace() {
       )}
 
       {/* ─────────── ⑤ التكاليف ─────────── */}
-      {stage === "assignments" && (
+      {stage === "assignments" && (() => {
+        const isProject = taskTab === "project";
+        const shownTasks = ws.assessments.filter((a) => (a.type === "project") === isProject);
+        const tabDone = (key: string) => ws.checklist.find((c) => c.key === key)?.done ?? false;
+        const tabLabel = (t: TaskTab) => (
+          <span className="inline-flex items-center gap-2">
+            {TASK_TABS[t].label}
+            {tabDone(TASK_TABS[t].key)
+              ? <Check className="h-3.5 w-3.5 text-teal-light-ink" aria-label="تمّ" />
+              : <span className="h-2 w-2 rounded-full bg-gold" aria-label="لم يتمّ بعد" />}
+          </span>
+        );
+        return (
         <div className="space-y-5">
         <Panel as="section">
           <StageIntro stage="assignments" />
-          {ws.assessments.length === 0 ? (
-            <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.</p>
+          <TabBar
+            ariaLabel="أقسامُ المهامّ والمصادر"
+            className="mt-4"
+            items={(Object.keys(TASK_TABS) as TaskTab[]).map((t) => ({ id: t, label: tabLabel(t) }))}
+            value={taskTab}
+            onChange={(t) => { cancelEdit(); setTaskTab(t); }}
+          />
+          <TaskTabGuide tab={taskTab} />
+        </Panel>
+
+        {taskTab !== "resources" && (
+        <Panel as="section">
+          <h3 className="flex items-center gap-2 text-sm font-black">
+            {isProject ? <GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> : <ClipboardCheck className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />}
+            {TASK_TABS[taskTab].label}
+          </h3>
+          {shownTasks.length === 0 ? (
+            <p className="mt-3 text-read font-bold text-gold-ink">
+              {isProject ? "لا مشروعَ تخرّجٍ بعد — وهو إلزاميٌّ للاعتماد." : "لا مهمّةَ عمليّةً بعد — وما تؤلّفه أدناه يظهر هنا."}
+            </p>
           ) : (
             <ul className="mt-3 space-y-2">
-              {ws.assessments.map((a) => {
+              {shownTasks.map((a) => {
                 /* ما ينتظر الإدارةَ فيها بعد اعتماد خطّته، وما طلبه — بالقاعدة التي يحكم بها الخادم (٣ج-٣) */
                 const review = taskReview(a, ws.approvedOnce ?? false);
                 const asked = changeLines(taskValues(a), readTaskChange(a.pendingChange), taskFmt);
@@ -1684,8 +1784,9 @@ export default function CohortWorkspace() {
               </p>
             )}
             {!taskFormOpen ? (
-              <Button tone="secondary" disabled={locked} onClick={() => setTaskFormOpen(true)}>
-                + مهمّةٌ جديدة
+              <Button tone="secondary" disabled={locked}
+                onClick={() => { setTaskForm({ ...blankTask, type: isProject ? "project" : "assignment" }); setTaskFormOpen(true); }}>
+                {isProject ? "+ مشروعُ التخرّج" : "+ مهمّةٌ عمليّة"}
               </Button>
             ) : (
               <>
@@ -1696,7 +1797,7 @@ export default function CohortWorkspace() {
               className="flex w-full items-center justify-between gap-2 text-start"
             >
               <span className="text-read font-black text-foreground">
-                {editingId ? "تعديلُ المهمّة" : "مهمّةٌ جديدة"}
+                {editingId ? "تعديلُ المهمّة" : isProject ? "مشروعُ التخرّج" : "مهمّةٌ عمليّةٌ جديدة"}
               </span>
               <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             </button>
@@ -1717,24 +1818,57 @@ export default function CohortWorkspace() {
               {/* مرفقاتُ التكليف — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */}
               <div className="block">
                 <span className="block text-read font-bold text-foreground">المرفقات</span>
-                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">نموذجٌ يملؤه، أو مرجعٌ يقرؤه قبل التسليم. يراها المتعلّمُ تحت التعليمات بنوعِ كلٍّ منها.</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">نموذجٌ يملؤه، أو مرجعٌ يقرؤه قبل التسليم. اختر نوعَه أوّلا — فيظهر ما يوازيه: رفعُ الملفّ، أو خانةُ الرابط.</span>
+                {/* ═══ النوعُ أوّلا، ثمّ ما يوازيه (٣٠ سبتمبر ٢٠٢٦) ═══
+
+                    شكوى صاحب المنصّة: «عندما يختار ملفّا لا تظهر خانةُ رفع الملف…
+                    يجب بعد أن يختار ملفّا أو فيديو يظهر له ما يوازيه». فالنوعُ
+                    يُختار أوّلا: «ملفّ» يُظهر الرفعَ وحدَه، وما سواه يُظهر الرابطَ
+                    بتلميحٍ يناسبه. ولا يجتمع رابطٌ وملفّ في مرفقٍ واحد. */}
                 <ul className="space-y-2">
                   {taskAttachments.map((att, i) => {
                     const patch = (next: Partial<PlanResource>) =>
                       setTaskAttachments(taskAttachments.map((x, j) => (j === i ? { ...x, ...next } : x)));
+                    const kind = resourceKind(att.kind);
+                    const isFile = kind === "file";
+                    /* ولا يُقيَّد ملفُّ المرفق للحذف: المهمّةُ تُحفظ وحدَها لا مع الخطّة،
+                       ومن أزال مرفقا ثمّ ألغى التعديلَ بقي المرفقُ في المهمّة المحفوظة —
+                       فحذفُ ملفّه مع حفظ الخطّة التالي يتركه مرفقا مكسورا. */
+                    const setKind = (k: string) => {
+                      patch(k === "file"
+                        ? { kind: k, url: "" }
+                        : { kind: k, bodyFileKey: null, bodyFileName: null, bodyFileMime: null });
+                    };
                     return (
-                      <li key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto_auto]">
-                        <input value={att.title} onChange={(e) => patch({ title: e.target.value })} placeholder="اسم المرفق" aria-label={`اسم المرفق ${i + 1}`} className={controlCls} />
-                        <input dir="ltr" value={att.url ?? ""} onChange={(e) => patch({ url: e.target.value })} placeholder="https://…" aria-label={`رابط المرفق ${i + 1}`} className={`${controlCls} text-left`} />
-                        <select value={resourceKind(att.kind)} onChange={(e) => patch({ kind: e.target.value })} aria-label={`نوع المرفق ${i + 1}`} className={controlCls}>
-                          {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
-                        </select>
-                        <Button tone="ghost" size="sm" onClick={() => setTaskAttachments(taskAttachments.filter((_, j) => j !== i))}>أزل</Button>
-                      </li>
+                      <Card as="li" key={i} className="grid gap-2">
+                        <div className="grid gap-2 sm:grid-cols-[12rem_1fr_auto]">
+                          <select value={kind} onChange={(e) => setKind(e.target.value)} aria-label={`نوع المرفق ${i + 1}`} className={`${controlCls} [&>option]:bg-surface`}>
+                            {RESOURCE_KINDS.map((k) => (<option key={k} value={k}>{RESOURCE_META[k].label}</option>))}
+                          </select>
+                          <input value={att.title} onChange={(e) => patch({ title: e.target.value })} placeholder="اسم المرفق — «نموذجُ التسليم»" aria-label={`اسم المرفق ${i + 1}`} className={controlCls} />
+                          <Button tone="ghost" size="sm" onClick={() => setTaskAttachments(taskAttachments.filter((_, j) => j !== i))}>أزل</Button>
+                        </div>
+                        {isFile ? (
+                          <ModuleBodyUpload
+                            cohortId={ws.cohort.id}
+                            purpose="plan_resource"
+                            refId={`task-att-${editingId ?? "new"}-${i}`}
+                            value={att}
+                            onChange={(next) => patch({ ...next, url: "" })}
+                            disabled={locked}
+                            label="ارفع الملفّ"
+                            hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
+                          />
+                        ) : (
+                          <StaffField label={ATTACHMENT_LINK_HINT[kind].label} hint={ATTACHMENT_LINK_HINT[kind].hint}>
+                            <input dir="ltr" value={att.url ?? ""} onChange={(e) => patch({ url: e.target.value })} placeholder="https://…" aria-label={`رابط المرفق ${i + 1}`} className={`${controlCls} text-left`} />
+                          </StaffField>
+                        )}
+                      </Card>
                     );
                   })}
                 </ul>
-                <Button tone="ghost" size="sm" className="mt-2" onClick={() => setTaskAttachments([...taskAttachments, { title: "", url: "", kind: "link" }])}>+ مرفق</Button>
+                <Button tone="ghost" size="sm" className="mt-2" onClick={() => setTaskAttachments([...taskAttachments, { title: "", url: "", kind: "file" }])}>+ مرفق</Button>
               </div>
               {/* ═══ محورُ المهمّة — منه متى تُفتح وآخرُ موعدها (٢٧ سبتمبر ٢٠٢٦) ═══
                   «المهامُّ… تُربط بالمحاور لتظهر للمتعلّم بعد انتهاء كلّ جلسةٍ
@@ -1760,13 +1894,22 @@ export default function CohortWorkspace() {
                 </label>
               )}
               <div className="grid gap-3 sm:grid-cols-3">
+                {/* ولسانُ المشروع نوعُه مشروعٌ لا يُختار — ولسانُ المهامّ واجبٌ أو اختبار */}
+                {isProject ? (
+                  <div className="block">
+                    <span className="block text-read font-bold text-foreground">النوع</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">يُحتسب في إكمال الدورة، ويُسلَّم في آخرها.</span>
+                    <p className={`${controlCls} flex items-center`}>مشروعُ تخرّج</p>
+                  </div>
+                ) : (
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">النوع</span>
-                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يُسلَّم مرّة، و«اختبار» له درجة، و«مشروع تخرّج» يُحتسب في الإكمال.</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يُسلَّم مرّة، و«اختبار» له درجة.</span>
                   <select aria-label="نوع المهمّة" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
-                    {Object.entries(ASSESSMENT_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {Object.entries(ASSESSMENT_TYPES).filter(([k]) => k !== "project").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>
                 </label>
+                )}
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">الدرجة العظمى</span>
                     <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">عليها تُحسب نسبتُه. لا تُخفَض بعد رصد درجةٍ أعلى منها.</span>
@@ -1795,13 +1938,16 @@ export default function CohortWorkspace() {
             )}
           </div>
         </Panel>
+        )}
 
         {/* ═══ والمصادرُ هنا مع المهامّ (٢٧ سبتمبر ٢٠٢٦) ═══
 
             «وبعدها المهامُّ والواجباتُ وغيرُها، والتي تُربط بالمحاور». فذهبت
             خطوةُ «المصادر» على حدة: المسجَّلُ منها صار جلساتٍ في «اللقاءات»
             بمحاورها، والكتبُ والروابطُ هنا — كلٌّ بمحوره. وشعبةٌ اعتُمدت قبل
-            المواعيد تبقى أصنافُها الثلاثةُ هنا كما كانت. */}
+            المواعيد تبقى أصنافُها الثلاثةُ هنا كما كانت. وصارت لسانا ثانيا
+            (٣٠ سبتمبر ٢٠٢٦). */}
+        {taskTab === "resources" && (
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black">
             <FileText className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> المصادر
@@ -2018,12 +2164,14 @@ export default function CohortWorkspace() {
               يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ مصدرٍ ملفُّه في
               المخزن — فيُرفع ثمّ لا يُحفظ (`resourceHasSource` في `saveProblems`). */}
         </Panel>
+        )}
 
         {/* ما سُلّم وما ينتظر — انتقلت من «التشغيل» (ع-١). من كتب المهمّةَ
             يرى تحتها من استجاب لها، بالمقام الصحيح لا بعدد قائمة الانتظار. */}
-        <CohortSubmissions cohortId={ws.cohort.id} />
+        {taskTab !== "resources" && <CohortSubmissions cohortId={ws.cohort.id} />}
         </div>
-      )}
+        );
+      })()}
 
       {pendingModule && (
         <ConfirmAction

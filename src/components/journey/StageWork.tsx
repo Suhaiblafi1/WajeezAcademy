@@ -880,10 +880,12 @@ function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; hand
               <ul className="mt-3 flex flex-wrap gap-2">
                 {readTypedLinks(a.attachments).map((att, i) => {
                   const meta = RESOURCE_META[resourceKind(att.kind)];
+                  /* والمرفقُ المرفوعُ من المسار المحروس — يُقرأ بعد فتح مهمّته وحدَه */
+                  const key = (att.bodyFileKey ?? "").trim();
                   return (
-                    <li key={`${att.url}-${i}`}>
+                    <li key={`${key || att.url}-${i}`}>
                       <a
-                        href={att.url}
+                        href={key ? `/api/v1/cohort-files/${encodeURIComponent(key)}` : att.url}
                         target="_blank"
                         rel="noreferrer"
                         className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-read font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"

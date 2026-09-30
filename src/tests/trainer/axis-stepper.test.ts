@@ -33,8 +33,9 @@ describe('الدرجاتُ بترتيب المنهج', () => {
     expect(order).toEqual(['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval'])
   })
 
-  it('⚠️ و«المهامُّ والمصادر» تتمّ بصفّيها معا — لا بأحدهما', () => {
-    expect(WS).toMatch(/assignments: \["assignments", "resources"\]/)
+  /* وصارت ثلاثةَ صفوف (٣٠ سبتمبر ٢٠٢٦): المهامُّ العمليّة والمصادرُ ومشروعُ التخرّج */
+  it('⚠️ و«المهامُّ والمصادر» تتمّ بصفوفها الثلاثة معا — لا بأحدها', () => {
+    expect(WS).toMatch(/assignments: \["assignments", "resources", "project"\]/)
     /* والشريطُ يعلّم الدرجةَ بالقاعدة نفسِها — وكان يقرأ صفَّ مفتاحها وحدَه،
        فعلّم «المهامّ والمصادر» تامّةً والمصادرُ ناقصة (قِيس في المتصفّح) */
     const rail = WS.slice(WS.indexOf('{STAGES.map((s, i) => {'), WS.indexOf('</ol>', WS.indexOf('{STAGES.map((s, i) => {')))
