@@ -27,6 +27,18 @@
  * والتي تقول له اطبع العقد، وهذا لا يجوز الآن إلّا بعد أن نقوم بالتوقيع من
  * جهتنا». فالوصلةُ إلى صفحةٍ فيها زرُّ طباعةٍ وعدٌ سابقٌ لأوانه: العقدُ لا
  * ينفذ إلّا بختمنا. وموضعُها رسالةُ الاعتماد، حيث تصير صادقة.
+ *
+ * ── وبابٌ آخرُ غيرُ ذاك (٣٠ سبتمبر ٢٠٢٦) ──
+ *
+ * بأمر صاحب المنصّة صار في الرسالة زرٌّ — وليس هو الزرَّ الذي نسخه، فيُفرَّق:
+ *
+ * · المنسوخُ وصلةٌ إلى `/trainer/contract`: بوّابةٌ لا تُفتح قبل اعتمادنا،
+ *   وفيها زرُّ طباعةٍ يَعِد بنفاذٍ لم يقع.
+ * · والقائمُ وصلةٌ إلى `/c/<رمز>`: الرابطُ الذي وقّع منه، يفتح لوحا يقول
+ *   «تراجعه الأكاديميّةُ ثمّ يُفتح حسابُك» ولا طباعةَ فيه.
+ *
+ * فعلّةُ النسخ — وعدُ نفاذٍ سابقٌ لأوانه — لا تقع على الثاني. والمقيسُ هنا
+ * صار الخصلةَ لا عددَ الأزرار: **لا زرَّ إلى البوّابة**، وما كان فإلى نسخته.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -78,6 +90,9 @@ describe('بريدُ النسخة الموقَّعة يُحيل ولا يسكب'
     expect(SIGN, 'بصمةُ النصّ لا تُقرأ من الصفّ').toMatch(/bodyHash:\s*c\.bodyHash/)
     expect(SIGN, 'الاسمُ القانونيُّ لا يُسلَّم للرسالة').toMatch(/legalName,/)
     expect(SIGN, 'اشتراطُ العرض لا يُقرأ من عموده').toMatch(/conditional:\s*c\.gatesActivation/)
+    /* وبابُ نسخته من مسكّ الروابط نفسِه لا من نصٍّ يُركَّب هنا: لو رُكّب
+       بيدٍ لَانحرف عن `/c/<رمز>` في أوّل تغييرٍ للمسار. */
+    expect(SIGN, 'لم يُسلَّم للرسالة بابُ نسخته').toMatch(/contractUrl:\s*this\.signingUrl\(token\)/)
   })
 
   /* ═══ والوعدُ يُقال بشرطه ═══
@@ -94,15 +109,28 @@ describe('بريدُ النسخة الموقَّعة يُحيل ولا يسكب'
      والشرطُ معا.
 
      فيُقاس ما حلّ محلَّه: **لا زرَّ في هذه الرسالة البتّة**. */
-  it('ولا زرَّ في رسالة التوقيع — فالبوّابةُ لا تُفتح إلّا باعتمادنا', () => {
+  it('ولا زرَّ إلى البوّابة في رسالة التوقيع — والقائمُ إلى نسخته', () => {
     expect(SIGN, 'عاد يُسأل عن حسابٍ لا زرَّ له').not.toMatch(/hasPortal/)
+    const LINK = 'https://www.wajeezacademy.com/c/tok-sample-0123456789abcdef'
+    const mk = (conditional: boolean, contractUrl: string | null) => signedCopyMail({
+      legalName: 'صهيب الخوالدة', title: 'عرضٌ مشروط',
+      signedOnAr: '27 سبتمبر 2026', bodyHash: 'abc', conditional, contractUrl,
+    })
+    const hrefs = (m: ReturnType<typeof signedCopyMail>) => m.doc.blocks
+      .filter((b) => b.kind === 'cta')
+      .map((b) => (b as { href: string }).href)
+
     for (const conditional of [true, false]) {
-      const mail = signedCopyMail({
-        legalName: 'صهيب الخوالدة', title: 'عرضٌ مشروط',
-        signedOnAr: '27 سبتمبر 2026', bodyHash: 'abc', conditional,
-      })
-      expect(mail.doc.blocks.some((b) => b.kind === 'cta'),
-        `عاد زرٌّ إلى بوّابةٍ لم تُفتح (conditional=${conditional})`).toBe(false)
+      const got = hrefs(mk(conditional, LINK))
+      expect(got.length, `لا زرَّ إلى نسخته (conditional=${conditional})`).toBe(1)
+      /* والبابُ المنسوخُ يُمنَع بعينه: أيُّ وصلةٍ إلى البوّابة وعدٌ سابقٌ لأوانه */
+      expect(got[0], `زرٌّ إلى بوّابةٍ لم تُفتح (conditional=${conditional})`)
+        .not.toMatch(/\/trainer(\/|$|\?)/)
+      expect(got[0], `الزرُّ لا يفتح نسخته (conditional=${conditional})`).toContain('/c/')
+
+      /* ولا زرَّ البتّة حين لا رمزَ — فلا يُرسَم زرٌّ إلى لا شيء */
+      expect(hrefs(mk(conditional, null)).length,
+        `زرٌّ بلا رابطٍ يقصده (conditional=${conditional})`).toBe(0)
     }
   })
 })

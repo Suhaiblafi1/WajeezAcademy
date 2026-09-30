@@ -2992,9 +2992,17 @@ export class TrainerReviewService {
            كاملا — طُلب، وأُجيب، وبمَ أُجيب — ولو أُغلق الصفُّ بعده. */
         amendmentReplyAr: reply.slice(0, AMENDMENT_TEXT_MAX),
         amendmentRepliedAt: revokedAt, amendmentRepliedBy: actorId,
-        /* والرمزُ يموت: رابطٌ حيٌّ على متنٍ قبلنا تعديلَه بابٌ يوقّع منه
-           صاحبُه ما اتّفقنا على تغييره. */
-        tokenHash: null, tokenExpiresAt: null,
+        /* ═══ والرمزُ يبقى، وبابُه «أُلغي» (٣٠ سبتمبر ٢٠٢٦) ═══
+
+             حجّةُ المسح كانت «بابٌ يوقّع منه صاحبُه ما اتّفقنا على تغييره».
+             ولا يُخشى توقيعٌ بعده: `CONTRACT_OPEN_STATUSES` لا تحمل إلّا
+             `sent`، وكلُّ مسلكٍ يكتب يدخل من `openByToken` فيُردّ
+             بـ`bad_state`. فالذي كان يُحسَب أنّ المسحَ يمنعه يمنعه شرطُ
+             الحالة، والمسحُ إنّما كان يمنع قراءةً — فيُقال للواقف «انتهى هذا
+             الرابط» ولا يُعرَف أيُّ بابٍ هو.
+
+             وهذا العقدُ أزاحه عقدٌ أحدث، فنصُّ `revoked` يقول له أنّ ما بين
+             يديه سُحب وأنّ الأحدثَ هو المعتمَد — وهو أنفعُ من بابٍ صامت. */
       },
     })
     if (done.count === 0) {
@@ -3214,11 +3222,20 @@ export class TrainerReviewService {
     if (!before) throw new AuthError('not_found', 'العقد غير موجود', 404)
     const done = await this.prisma.trainerContract.updateMany({
       where: { id: contractId, status: { in: ['draft', 'sent', CONTRACT_AMENDMENT_REQUESTED] } },
-      /* والرمزُ يموت مع الإلغاء: رابطٌ حيٌّ لعقدٍ ملغًى بابٌ مفتوحٌ على
-         وثيقةٍ لم تعد قائمة — ومن يفتحه يوقّع ما سُحب من تحته. */
+      /* ═══ والرمزُ يبقى ليُقال «أُلغي» لا «انتهى» (٣٠ سبتمبر ٢٠٢٦) ═══
+
+             كان يُمسح، وحجّتُه: «ومن يفتحه يوقّع ما سُحب من تحته». ولا يقع:
+             ولا يُخشى توقيعٌ بعده: `CONTRACT_OPEN_STATUSES` لا تحمل إلّا
+             `sent`، وكلُّ مسلكٍ يكتب يدخل من `openByToken` فيُردّ
+             بـ`bad_state`. فالذي كان يُحسَب أنّ المسحَ يمنعه يمنعه شرطُ
+             الحالة، والمسحُ إنّما كان يمنع قراءةً — فيُقال للواقف «انتهى هذا
+             الرابط» ولا يُعرَف أيُّ بابٍ هو.
+
+             ولا يُسكب بالبقاء متنٌ: فرعُ `revoked` يردّ الحالَ والعنوانَ
+             وحدَهما — لا بندا ولا أتعابا ولا سببَ الإلغاء (وهو ملاحظتُنا
+             نحن، تُكتب لنا لا له). */
       data: {
         status: 'revoked', revokedAt: new Date(), revokedBy: actorId, revokeReasonAr: reasonAr.trim(),
-        tokenHash: null, tokenExpiresAt: null,
       },
     })
     if (done.count === 0) throw new AuthError('bad_state', 'العقدُ ليس مفتوحا — لا يُلغى موقَّعٌ ولا ملغًى', 409)
@@ -3534,6 +3551,10 @@ export class TrainerReviewService {
         signedOnAr: fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
         bodyHash: c.bodyHash ?? '—',
         conditional: c.gatesActivation,
+        /* وبابُ نسخته هو الرابطُ الذي وقّع منه — يبقى حيّا بعد التوقيع.
+           ولا يُسرَّب بذلك رمزٌ إلى أحد: هو الرمزُ نفسُه، إلى البريد نفسِه
+           الذي أُرسل إليه أوّلا. */
+        contractUrl: this.signingUrl(token),
       })
       await sendDirectEmail(this.prisma, {
         to: c.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
@@ -3607,7 +3628,18 @@ export class TrainerReviewService {
       where: { id: c.id, status: 'sent' },
       data: {
         status: 'declined', declinedAt, declineReasonAr: reason.slice(0, 500),
-        tokenHash: null, tokenExpiresAt: null,
+        /* ═══ والرمزُ يبقى ليُعرَف أنّه اعتذارٌ لا انتهاءُ رابط (٣٠ سبتمبر) ═══
+
+             فرعُ `declined` في `contractByToken` كان لا يُبلَغ: مسحُ الرمز
+             يُسقط `byToken` على `invalid_token` قبله. فمن اعتذر ثمّ عاد إلى
+             رابطه — أو نقره سهوا — قيل له «انتهى هذا الرابط» بدل «سُجّل
+             اعتذارُك ووصل فريقَنا. وإن كان ذلك سهوا فتواصل معنا»، وهي الجملةُ
+             التي تُصلح السهوَ إن وقع.
+             ولا يُخشى توقيعٌ بعده: `CONTRACT_OPEN_STATUSES` لا تحمل إلّا
+             `sent`، وكلُّ مسلكٍ يكتب يدخل من `openByToken` فيُردّ
+             بـ`bad_state`. فالذي كان يُحسَب أنّ المسحَ يمنعه يمنعه شرطُ
+             الحالة، والمسحُ إنّما كان يمنع قراءةً — فيُقال للواقف «انتهى هذا
+             الرابط» ولا يُعرَف أيُّ بابٍ هو. */
       },
     })
     if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
@@ -3938,7 +3970,9 @@ export class TrainerReviewService {
           data: {
             status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
             revokeReasonAr: `أُعيد تركيبُه مصحَّحا باسم الطرف الثاني: ${name}`.slice(0, 500),
-            tokenHash: null, tokenExpiresAt: null,
+            /* والرمزُ يبقى كأخواته (٣٠ سبتمبر ٢٠٢٦): أزاحه أحدثُ منه، فيُقال
+               ذلك على بابه بدل «انتهى هذا الرابط». والتوقيعُ ممنوعٌ بشرط
+               الحالة لا بمسح الرمز. */
           },
         })
       }

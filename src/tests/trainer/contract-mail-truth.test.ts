@@ -149,6 +149,7 @@ describe('③ بريدُ التوقيع لا يَعِد بطباعةٍ قبل خ
     signedOnAr: '٢٦ سبتمبر ٢٠٢٦',
     bodyHash: 'a'.repeat(64),
     portalUrl: 'https://www.wajeezacademy.com/trainer',
+    contractUrl: 'https://www.wajeezacademy.com/c/tok-sample-0123456789abcdef',
   }
   const conditional = signedCopyMail({ ...base, conditional: true })
 
@@ -184,8 +185,15 @@ describe('③ بريدُ التوقيع لا يَعِد بطباعةٍ قبل خ
     expect(t, 'عادت تدعوه إلى بوّابةٍ لا تُفتح له').not.toContain('ارفعْ موادَّ')
     expect(t, 'لم يُقَل له أنّ الدورَ علينا').toMatch(/والخطوةُ عندنا الآن/)
     expect(t, 'لم يُطمأنْ أنّه لا يلزمه شيء').toMatch(/ولا يلزمك شيءٌ الآن/)
-    expect(conditional.doc.blocks.some((b) => b.kind === 'cta'),
-      'عاد زرٌّ إلى بوّابةٍ لم تُفتح بعد').toBe(false)
+    /* ═══ والزرُّ يُقاس بوجهته لا بوجوده (٣٠ سبتمبر ٢٠٢٦) ═══
+
+       كان يُشترط ألّا يكون زرٌّ البتّة. وقد صار في الرسالة زرٌّ إلى نسخته
+       (`/c/<رمز>`) بأمر صاحب المنصّة — وهو لوحٌ يقول «تراجعه الأكاديميّةُ»
+       ولا طباعةَ فيه. والممنوعُ هو هو: وصلةٌ إلى البوّابة قبل اعتمادنا. */
+    for (const b of conditional.doc.blocks.filter((x) => x.kind === 'cta')) {
+      expect((b as { href: string }).href, 'عاد زرٌّ إلى بوّابةٍ لم تُفتح بعد')
+        .not.toMatch(/\/trainer(\/|$|\?)/)
+    }
   })
 
   it('وخارطتُه خمسُ خطوات، الثانيةُ منها دورُنا الآن', () => {
