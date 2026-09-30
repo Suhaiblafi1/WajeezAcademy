@@ -1,0 +1,106 @@
+/* ═══ تبويبُ العقود بما يُنتظَر منها لا بحالتها الخام ═══
+ *
+ * قال صاحبُ المنصّة عن شاشة العقود: «مكركبه.. اجعلها تابات او ابني فلتر
+ * لاستطيع التميز بينهم وسهوله التنقل بينهم». وكانت أربعةٌ وعشرون عقدا بسبع
+ * حالاتٍ في قائمةٍ واحدة، لا يفرز بينها إلّا بحثٌ بالنصّ.
+ *
+ * ── ولمَ التبويبُ بالعمل لا بالحالة ──
+ *
+ * الحالةُ الخامُ تسمّي ما جرى للعقد؛ والذي يفتح هذه الشاشةَ يسأل سؤالا
+ * آخرَ: **ما الذي عليّ أن أفعله؟** فـ`signed` ليست «حالةً من سبع»، هي
+ * «وقّعه صاحبُه وينتظر اعتمادَك» — ولو ضاعت بين أربعةٍ وعشرين صفّا بقي
+ * إنسانٌ ينتظر ختمَنا ولا نعلم. فالتبويبُ يُقدّم ما ينتظرك، ثمّ ما ينتظرهم،
+ * ثمّ ما يعمل، ثمّ ما سكن.
+ *
+ * ── وكلُّ حالةٍ لها تبويبٌ واحدٌ لا محالة ──
+ *
+ * حالةٌ لا تبويبَ لها تعني عقدا **لا يُرى في الشاشة أصلا** — وهو أسوأُ من
+ * الزحام الذي شكا منه: الزحامُ يُرى ويُبحث فيه، والغائبُ لا يُعلَم أنّه
+ * غاب. فالتغطيةُ شرطٌ يحرسه `contract-tabs.test.ts` على مفاتيح `STATUS_AR`
+ * نفسِها، و«الكلّ» شبكةُ أمانٍ أخيرةٌ لا يسقط منها صفّ.
+ */
+
+/** تبويبٌ واحد — والحالاتُ فيه هي مِلاكُه */
+export interface ContractTab {
+  id: ContractTabId
+  labelAr: string
+  /** `null` في «الكلّ» وحدَه: لا يقصر على حالة */
+  statuses: readonly string[] | null
+  /** ما يُقال حين يخلو — لا «لا نتائج» عارية */
+  emptyAr: string
+}
+
+export type ContractTabId =
+  | 'awaiting_you' | 'awaiting_them' | 'live' | 'drafts' | 'closed' | 'all'
+
+/* والترتيبُ ترتيبُ الإلحاح: ما ينتظرك أوّلا، والأرشيفُ آخرا قبل «الكلّ». */
+export const CONTRACT_TABS: readonly ContractTab[] = [
+  {
+    id: 'awaiting_you',
+    labelAr: 'ينتظرك',
+    /* ═══ ومن طلب تعديلا ينتظرك لا ينتظر نفسَه ═══
+
+       وُضع أوّلا في «ينتظرهم» لأنّ عرضَه مفتوحٌ لم يوقَّع — وذلك نظرٌ إلى
+       حالة الورقة لا إلى من عليه الدور. والحقُّ أنّه قرأ وطلب وسكت، والكرةُ
+       عندنا: جوابُ التعديل فعلُنا نحن. فلو سكن «ينتظرهم» لَانتظر جوابا
+       نحسبه نحن انتظارَ توقيعٍ منه. */
+    statuses: ['signed', 'amendment_requested'],
+    emptyAr: 'لا عقدَ ينتظر اعتمادك ولا طلبَ تعديلٍ ينتظر جوابَك.',
+  },
+  {
+    id: 'awaiting_them',
+    labelAr: 'ينتظرهم',
+    statuses: ['sent'],
+    emptyAr: 'لا عرضَ خارجٌ ينتظر توقيعَ صاحبه.',
+  },
+  {
+    id: 'live',
+    labelAr: 'نافذة',
+    statuses: ['countersigned'],
+    emptyAr: 'لا عقدَ نافذا بعد — النافذُ ما اعتمدته الأكاديميّةُ بعد توقيع صاحبه.',
+  },
+  {
+    id: 'drafts',
+    labelAr: 'مسودّات',
+    statuses: ['draft'],
+    emptyAr: 'لا مسودّةَ مجمَّدة.',
+  },
+  {
+    id: 'closed',
+    labelAr: 'منتهية',
+    statuses: ['declined', 'revoked', 'expired', 'terminated'],
+    emptyAr: 'لا عقدَ منتهيا — ولا اعتذارَ ولا إلغاء.',
+  },
+  {
+    id: 'all',
+    labelAr: 'الكلّ',
+    statuses: null,
+    emptyAr: 'لا عقدَ بعد. ابدأْ من «من ينتظر عقدا» أعلاه.',
+  },
+]
+
+/** أيُّ تبويبٍ يسكنه هذا العقد — و«الكلّ» ليس جوابا، فهو يسع الجميع */
+export function tabOfStatus(status: string): Exclude<ContractTabId, 'all'> {
+  for (const t of CONTRACT_TABS) {
+    if (t.statuses && t.statuses.includes(status)) return t.id as Exclude<ContractTabId, 'all'>
+  }
+  /* ═══ وما لا يُعرَف يسكن «منتهية» ولا يختفي ═══
+     حالةٌ تُضاف ولا تُبوَّب يمسكها الاختبار قبل أن تُدفَع. فإن مرّت مع ذلك
+     فالأرشيفُ يراها و«الكلّ» يراها — ولا تغيب عن الشاشة كلِّها. */
+  return 'closed'
+}
+
+/** أيقعُ هذا العقدُ في هذا التبويب؟ */
+export function inTab(tab: ContractTabId, status: string): boolean {
+  if (tab === 'all') return true
+  return tabOfStatus(status) === tab
+}
+
+/** أوّلُ تبويبٍ فيه عمل — فتقع العينُ على ما يُفعَل لا على الأرشيف */
+export function defaultTab(countOf: (tab: ContractTabId) => number): ContractTabId {
+  for (const t of CONTRACT_TABS) {
+    if (t.id === 'all') continue
+    if (countOf(t.id) > 0) return t.id
+  }
+  return 'all'
+}
