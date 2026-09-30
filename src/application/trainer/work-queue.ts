@@ -12,7 +12,6 @@ export type QueueKind =
   | 'attendance_missing'   /* جلسة انتهت ولم يُسجَّل حضورها */
   | 'grading_pending'      /* تسليمات تنتظر التقييم */
   | 'not_submitted'        /* تقييم استحق ولم يسلّم فيه أحد */
-  | 'recording_missing'    /* جلسة انتهت بلا تسجيل مرفوع */
   | 'session_rejected'     /* لقاءٌ ردّته الإدارةُ — ينتظر نقلَ موعده */
   | 'plan_returned'        /* خطّةُ شعبةٍ رُدَّت إليه بملاحظة */
   | 'plan_ready_unsent'    /* تجهيزٌ اكتمل ولم يُرسَل للاعتماد */
@@ -205,18 +204,11 @@ export function buildWorkQueue(
         })
       }
 
-      if (over && (s.recordings?.length ?? 0) === 0 && s.status === 'done') {
-        items.push({
-          kind: 'recording_missing',
-          titleAr: `تسجيل «${s.title}» لم يُرفع`,
-          detailAr: c.title,
-          actionAr: 'ارفع التسجيل',
-          href: `/trainer/cohort/${c.id}`,
-          external: false,
-          urgency: 60,
-          count: 1,
-        })
-      }
+      /* ═══ وذهب «تسجيلٌ لم يُرفع» (٣٠ سبتمبر ٢٠٢٦) ═══
+
+         كان يطلب من المدرّب رفعَ تسجيل لقاءٍ انتهى. والتسجيلُ يصل من Zoom
+         وحدَه، ولا رفعَ ولا رابطَ بيد المدرّب بقرار صاحب المنصّة — فتذكيرٌ
+         بعملٍ لا يملكه ضجيجٌ في طابوره. */
     }
 
     /* تقييم استحق ولم يسلّم فيه بعض المتعلمين */

@@ -11,7 +11,7 @@
    خارج المنصّة، وليس ذلك خطأً يُصرَخ منه. */
 
 import type { PrismaClient } from '@prisma/client'
-import { fetchZoomParticipants, getZoomConfig, zoomReady } from './zoom.service'
+import { fetchZoomParticipants, getZoomConfig, lockZoomRecordingDownload, zoomReady } from './zoom.service'
 import { pickRecording } from '../../src/application/learning/zoom-recording'
 import { recordAudit } from './audit'
 import { ProgressService } from './progress.service'
@@ -120,8 +120,13 @@ export class ZoomEventService {
         return true
       }
 
-      case 'recording.completed':
-        return this.saveRecording(meeting.sessionId, object)
+      case 'recording.completed': {
+        const saved = await this.saveRecording(meeting.sessionId, object)
+        /* ويُطفأ زرُّ التنزيل في صفحة Zoom (٣٠ سبتمبر ٢٠٢٦) — ولا يُسقط الحدث:
+           التسجيلُ كُتب، وما تعذّر يُكتب في الأثر ليُرى ويُعالَج */
+        if (saved && meeting.meetingId) await this.lockDownload(meeting.sessionId, meeting.meetingId)
+        return saved
+      }
 
       default:
         return false
@@ -160,6 +165,20 @@ export class ZoomEventService {
 
      Zoom يُعيد إرسالَ ما لم يُردَّ عليه سريعا، والرابطُ ثابتٌ لتسجيلٍ بعينه.
      فيُبحث عنه قبل الكتابة. */
+  /* زرُّ التنزيل يُطفأ لكلّ تسجيل — والفشلُ أثرٌ لا صمت */
+  private async lockDownload(sessionId: string, meetingId: string) {
+    const config = await getZoomConfig(this.prisma)
+    if (!zoomReady(config)) return
+    const out = await lockZoomRecordingDownload(config, meetingId)
+      .catch((e: unknown) => ({ ok: false, reason: e instanceof Error ? e.message : 'تعذّر الاتّصالُ بـZoom' }))
+    if (!out.ok) {
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'zoom.recording_download_lock_failed', entityType: 'cohort_session', entityId: sessionId,
+        meta: { meetingId, reason: out.reason ?? null },
+      })
+    }
+  }
+
   private async saveRecording(sessionId: string, object: ZoomEventObject): Promise<boolean> {
     /* الانتقاءُ قرارٌ خالصٌ يسكن في `src/application/learning/zoom-recording`
        ويُجرَّب نقضُه محلّيّا — وما هنا كتابتُه وحدَها */

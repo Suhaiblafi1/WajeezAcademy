@@ -15,7 +15,7 @@
    الخدمةَ وحدَها لم يختبر أنّ `recording_files` تصلها أصلا — وهو حقلٌ لم
    يكن في شكل الجسم المُعلَن في المسلك قبل هذا. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { createHmac } from 'node:crypto'
@@ -69,6 +69,26 @@ const MP4 = {
 }
 
 const recordingsOf = (id: string) => prisma.recording.findMany({ where: { sessionId: id } })
+
+/* ═══ واجهةُ Zoom مزيّفة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   بعد كتابة التسجيل يُطفأ زرُّ تنزيله بنداءٍ إلى Zoom. فلا يخرج الاختبارُ إلى
+   الشبكة: الرمزُ يُعطى، ونداءُ الإعدادات يُحفظ ليُفحص، وردُّه يُختار. */
+const calls: { url: string; method: string; body: string }[] = []
+let settingsStatus = 204
+const realFetch = globalThis.fetch
+beforeAll(() => {
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input)
+    calls.push({ url, method: init?.method ?? 'GET', body: String(init?.body ?? '') })
+    if (url.includes('oauth/token')) {
+      return new Response(JSON.stringify({ access_token: 't', expires_in: 3600 }), { status: 200 })
+    }
+    if (url.includes('/recordings/settings')) return new Response(null, { status: settingsStatus })
+    return new Response('{}', { status: 200 })
+  }) as typeof fetch
+})
+afterAll(() => { globalThis.fetch = realFetch })
 
 beforeAll(async () => {
   await setupTestDb()
@@ -204,5 +224,43 @@ describe('③ وما لا مرئيَّ فيه ولا رابطَ لا يُكتب'
     await expect(
       svc.handle('recording.completed', { id: '404040404', share_url: SHARE, recording_files: [MP4] }),
     ).resolves.toBe(false)
+  })
+})
+
+/* ═══ ④ ويُطفأ زرُّ التنزيل آليّا (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «حين ينتهي اللقاءُ يكون التسجيلُ متاحا للطلبة، ويعيد
+   المدرّبُ مشاهدتَه — بلا زرّ تنزيل». والتسجيلُ يُفتح على صفحة Zoom، وزرُّ
+   التنزيل فيها `viewer_download` — فيُطفأ لكلّ تسجيلٍ ساعةَ يصل، وما تعذّر
+   يُكتب في الأثر لا يُبلَع. */
+describe('④ زرُّ التنزيل يُطفأ آليّا', () => {
+  it('⚠️ بلاغُ التسجيل يُطفئ التنزيلَ لاجتماعه', async () => {
+    calls.length = 0
+    settingsStatus = 204
+    const { ZoomEventService } = await import('../../services/zoom-events.service')
+    const svc = new ZoomEventService(prisma)
+    await svc.handle('recording.completed', {
+      id: MEETING_ID, uuid: 'uuid-lock-1', share_url: 'https://zoom.us/rec/share/lock-one', recording_files: [MP4],
+    })
+    const lock = calls.find((c) => c.url.includes(`/meetings/${MEETING_ID}/recordings/settings`))
+    expect(lock, 'لم يُطلب من Zoom إطفاءُ التنزيل').toBeTruthy()
+    expect(lock!.method).toBe('PATCH')
+    expect(JSON.parse(lock!.body)).toEqual({ viewer_download: false })
+  })
+
+  it('⚠️ وما رفضه Zoom يُكتب في الأثر — والتسجيلُ باقٍ', async () => {
+    settingsStatus = 403
+    const { ZoomEventService } = await import('../../services/zoom-events.service')
+    const svc = new ZoomEventService(prisma)
+    await expect(svc.handle('recording.completed', {
+      id: MEETING_ID, uuid: 'uuid-lock-2', share_url: 'https://zoom.us/rec/share/lock-two', recording_files: [MP4],
+    })).resolves.toBe(true)
+    const failed = await prisma.auditEvent.findFirst({
+      where: { action: 'zoom.recording_download_lock_failed', entityId: sessionId },
+      orderBy: { createdAt: 'desc' },
+    })
+    expect(failed, 'رفضُ Zoom بُلع بلا أثر').toBeTruthy()
+    expect(JSON.stringify(failed!.meta)).toContain('403')
+    settingsStatus = 204
   })
 })

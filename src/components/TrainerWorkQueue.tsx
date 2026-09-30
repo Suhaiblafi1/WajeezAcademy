@@ -2,7 +2,7 @@
    الترتيب بالإلحاح لا بالنوع: الجلسة الجارية قبل التسجيل المنسي قبل التقييم. */
 
 import { Link } from "react-router";
-import { AlertTriangle, CalendarX2, ClipboardCheck, ClipboardList, Handshake, ListChecks, ListTodo, Radio, Send, Undo2, Video, Upload, ArrowLeft } from "lucide-react";
+import { AlertTriangle, CalendarX2, ClipboardCheck, ClipboardList, Handshake, ListChecks, ListTodo, Radio, Send, Undo2, Video, ArrowLeft } from "lucide-react";
 import type { QueueItem, QueueKind } from "@/application/trainer/work-queue";
 
 import WorkHeader from "@/components/admin/WorkHeader";
@@ -12,7 +12,6 @@ const ICON: Record<QueueKind, typeof Video> = {
   attendance_missing: ClipboardList,
   grading_pending: ClipboardCheck,
   not_submitted: AlertTriangle,
-  recording_missing: Upload,
   session_rejected: CalendarX2,
   plan_returned: Undo2,
   plan_ready_unsent: Send,
@@ -28,7 +27,6 @@ const TONE: Record<QueueKind, string> = {
   attendance_missing: "border-gold/40 bg-gold/[0.06]",
   grading_pending: "border-gold/40 bg-gold/[0.06]",
   not_submitted: "border-white/10 bg-white/[0.03]",
-  recording_missing: "border-white/10 bg-white/[0.03]",
   /* الثلاثةُ الذهبيّةُ واحدةٌ في معناها: الإدارةُ تنتظرك أو خطوةٌ واحدةٌ
      تفصلك عن التمام. والرابعُ عملٌ طويلٌ لا يُلحّ. */
   session_rejected: "border-gold/40 bg-gold/[0.06]",
