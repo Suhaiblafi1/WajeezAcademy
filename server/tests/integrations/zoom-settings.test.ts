@@ -12,7 +12,8 @@
    ② ⚠️ ولا يعود كاملا في العرض — مقنَّعا، ومعه أنّه محفوظ وعنوانُ الأحداث.
    ③ ⚠️ والمقنَّعُ العائدُ من الشاشة لا يُكتب فوقه، والأثرُ يقول إنّه تبدّل ولا يقوله.
    ④ والبيئةُ تغلبه — ويُقال ذلك في العرض.
-   ⑤ ⚠️ وفحصُ الاتصال يقول إن لم يكن للأحداث رمز. */
+   ⑤ ⚠️ وفحصُ الاتصال يقول إن لم يكن للأحداث رمز.
+   ⑥ ⚠️ وبريدُ المضيف الفارغُ يعني صاحبَ التطبيق — كما يعد عنوانُ حقله — والغائبُ يُبقي ما كان. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -144,5 +145,30 @@ describe('⑤ وفحصُ الاتصال يقول إن لم يكن للأحداث
       globalThis.fetch = realFetch
       forgetZoomToken()
     }
+  })
+})
+
+describe('⑥ وبريدُ المضيف: الفارغُ صاحبُ التطبيق، والغائبُ يُبقي ما كان', () => {
+  /* الشاشةُ تعد: «اتركه فارغا لصاحب التطبيق». وكان الفارغُ يبقي المضيفَ القديم —
+     فمن مسحه ليعود إلى صاحب التطبيق أُنشئت اجتماعاتُه باسم من مسحه. */
+  it('⚠️ الفارغُ يعيد المضيفَ صاحبَ التطبيق — لا يُبقي القديم', async () => {
+    expect((await save({ enabled: true, hostEmail: 'host-a@wajeez.test' })).statusCode).toBe(200)
+    expect((await getZoomConfig(prisma)).hostEmail).toBe('host-a@wajeez.test')
+
+    expect((await save({ enabled: true, hostEmail: '' })).statusCode).toBe(200)
+    expect((await getZoomConfig(prisma)).hostEmail, 'مُسح البريدُ وبقي المضيفُ القديم').toBe('me')
+    expect((await view()).zoom.hostEmail).toBe('me')
+  })
+
+  it('ومسافاتٌ وحدَها فارغةٌ كذلك — لا بريدٌ يردّه Zoom مستخدما لا يُعرف', async () => {
+    await save({ enabled: true, hostEmail: 'host-b@wajeez.test' })
+    await save({ enabled: true, hostEmail: '   ' })
+    expect((await getZoomConfig(prisma)).hostEmail).toBe('me')
+  })
+
+  it('والغائبُ من الطلب يُبقي ما كان — فنداءٌ لا يمسّ البريدَ لا يمحوه', async () => {
+    await save({ enabled: true, hostEmail: 'host-c@wajeez.test' })
+    expect((await save({ enabled: false })).statusCode).toBe(200)
+    expect((await getZoomConfig(prisma)).hostEmail, 'حفظٌ بلا بريدٍ محا المضيف').toBe('host-c@wajeez.test')
   })
 })

@@ -42,9 +42,12 @@ describe('مراقبُ النشر — متى يُنشَر ومن يُستدعى'
     expect(code(wt)).not.toMatch(/deploy-cloudways\.sh/)
   })
 
-  it('ويقارن نسختَه بـ`origin/main` قبل أن يفعل شيئا', () => {
-    expect(code(wt)).toMatch(/git fetch origin main/)
-    expect(code(wt)).toMatch(/rev-parse origin\/main/)
+  it('ويسأل `deploy/target.sh` عمّا اجتاز CI قبل أن يفعل شيئا — لا رأسَ main', () => {
+    /* كان يقارن نسختَه برأس main فينشر الدمجَ قبل أن تفحصه CI على main (٣٠ سبتمبر
+       ٢٠٢٦). وما يقرّره الآن يُقاس بتشغيله فعلا في `ci-green-gate.test.ts`؛ وهنا
+       أنّه لم يعد إلى رأس main من بابٍ جانبيّ. */
+    expect(code(wt)).toMatch(/deploy\/target\.sh/)
+    expect(code(wt), 'عاد المراقبُ إلى رأس main — فيُنشَر ما لم تفرغ منه CI').not.toMatch(/rev-parse origin\/main/)
   })
 
   it('ولا يَنشُر من فرعٍ غيرِ main', () => {
@@ -59,7 +62,8 @@ describe('مراقبُ النشر — متى يُنشَر ومن يُستدعى'
   })
 
   it('ولا يُغرق السجلَّ حين لا جديد', () => {
-    expect(/\$LOCAL" = "\$REMOTE"/.test(code(wt)), 'لا فرعَ لحالة «لا جديد»').toBe(true)
+    /* و«لا جديد» حين يكون المنشورُ قد حوى الهدف — لا حين يساويه وحدَه */
+    expect(/merge-base --is-ancestor "\$REMOTE" "\$LOCAL"/.test(code(wt)), 'لا فرعَ لحالة «لا جديد»').toBe(true)
   })
 
   it('ولا يبتلع الفشل — يكتبه بعلامةٍ تُبحَث', () => {
@@ -92,7 +96,7 @@ describe('مراقبُ النشر — متى يُنشَر ومن يُستدعى'
   it('⚠️ وتُرسَل في الدورة السليمة لا عند النشر وحدَه', () => {
     /* النشرُ نادر. فمهلةٌ تنتظره تُنذر كذبا كلَّ يومٍ بلا دفعة — والدورةُ
        كلَّ دقيقة هي ما تقوم عليه المهلة. */
-    const noChange = code(wt).match(/\$LOCAL" = "\$REMOTE"[\s\S]*?exit 0/)?.[0] ?? ''
+    const noChange = code(wt).match(/merge-base --is-ancestor "\$REMOTE" "\$LOCAL"[\s\S]*?exit 0/)?.[0] ?? ''
     expect(noChange, 'فرعُ «لا جديد» غير موجود').not.toBe('')
     expect(noChange, 'لا نبضةَ في الدورة السليمة — فالمهلةُ ستُنذر كذبا')
       .toMatch(/ping_monitor/)
@@ -112,7 +116,8 @@ describe('مراقبُ النشر — متى يُنشَر ومن يُستدعى'
   it('ولا تُرسَل حين يتعذّر الجلب — الصمتُ هناك هو الإشارة', () => {
     /* عطبُ شبكةٍ عابرٌ لا يستحقّ إنذارا. فإن دام، انقطع الخبرُ فأنذرت الخدمةُ
        من نفسها — وهو الترتيبُ الصحيح: لا ضجيجَ على العابر، ولا صمتَ على الدائم. */
-    const fetchFail = code(wt).match(/git fetch origin main[\s\S]*?exit 0/)?.[0] ?? ''
+    /* والجلبُ صار في `deploy/target.sh`، وتعذّرُه رقمُ خروجٍ (٢) يقرؤه المراقب */
+    const fetchFail = code(wt).match(/"\$RC" = 2[\s\S]*?exit 0/)?.[0] ?? ''
     expect(fetchFail, 'فرعُ تعذّر الجلب غير موجود').not.toBe('')
     expect(fetchFail, 'نبضةٌ على تعذّر الجلب — فالعابرُ يصير ضجيجا').not.toMatch(/ping_monitor/)
   })

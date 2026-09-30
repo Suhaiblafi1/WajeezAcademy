@@ -430,8 +430,10 @@ export default function Integrations() {
                 تفعيل إنشاء الاجتماعات من المنصّة
               </label>
               <div className="flex flex-wrap gap-2">
+                {/* والبريدُ الفارغُ يُرسَل فارغا: فيعود المضيفُ صاحبَ التطبيق كما يعد عنوانُ حقله.
+                    وكان يُحوَّل إلى لا شيء فيسقط من الطلب، والخادمُ يُبقي لما غاب قيمتَه القديمة. */}
                 <Button tone="confirm" disabled={busy}
-                  onClick={() => act(() => apiPut("/api/admin/integrations/zoom", { ...zoomForm, hostEmail: zoomForm.hostEmail.trim() || undefined }), "حُفظت إعدادات Zoom")}>
+                  onClick={() => act(() => apiPut("/api/admin/integrations/zoom", { ...zoomForm, hostEmail: zoomForm.hostEmail.trim() }), "حُفظت إعدادات Zoom")}>
                   حفظ إعدادات Zoom
                 </Button>
                 <Button tone="secondary" disabled={busy} className="text-teal-light-ink"

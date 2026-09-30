@@ -8,6 +8,8 @@
 #            المحرك · بناء. تعطي جوابا في دقائق فتُقرأ فعلا.
 #   server — بقاعدة PostgreSQL مدمجة: اختبارات الخادم بالتسلسل، لأنها تعيد بناء
 #            قاعدة الاختبار في كل ملف فتتصادم لو تُشغّل متوازية.
+#
+# وبعدهما `green` — لا فحصَ فيها: تُعلِّم على main ما اجتازهما ليُنشَر (والعلّةُ عندها).
 
 name: CI
 
@@ -216,3 +218,36 @@ jobs:
         # test:e2e يحمل --no-file-parallelism أصلا: كل ملف يعيد بناء قاعدة
         # الاختبار، فالتوازي يجعلها تتصادم. مصدر واحد للأمر لا اثنان.
         run: npm run test:e2e
+
+  # ═══ وعلامةُ الأخضر — ما يُنشَر (٣٠ سبتمبر ٢٠٢٦) ═══
+  #
+  # كان الخادمُ ينشر رأسَ main لحظةَ يتحرّك (`scripts/deploy-watch.sh`) — قبل أن
+  # تنتهي هذه البوّابةُ عليه، ولو احمرّت بعدها. فوصل #361 الإنتاجَ قبل أن يفرغ فحصُه
+  # على main، مخلوطا بـ#360 الذي دُمج قبله بثمانِ دقائق — خليطٌ لم يُفحص مجتمعا.
+  #
+  # فهذه الوظيفةُ تقول ما اجتاز: تُقدِّم فرعَ `ci-green` إلى هذا الالتزام بعد أن
+  # تنجح الوظيفتان — تقدّما لا رجوعا (`scripts/mark-ci-green.sh`). والخادمُ لا ينشر
+  # إلّا ما فيه (`deploy/target.sh`). فقاعدةُ «لا يُدمج أحمر» صارت «لا يُنشَر أحمر».
+  #
+  # ولا تُعيد فحصا: لا اعتماديّاتٍ ولا اختبار — فالوظيفتان أعلاه تبقيان اثنتين كما
+  # قُصد (`ci-single-run.test.ts`). وعلى main وحدَها: الطلبُ يُفحص نتيجةُ دمجه ولا
+  # يُنشَر منه شيء.
+  green:
+    name: علامةُ الأخضر — ما يُنشَر
+    needs: [fast, server]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # الكتابةُ هنا وحدَها — وعلى الفرع وحدَه، بواجهة GitHub لا بدفعٍ من نسخة
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/mark-ci-green.sh
+          sparse-checkout-cone-mode: false
+
+      - name: ci-green يتقدّم إلى هذا الالتزام — تقدّما لا رجوعا
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/mark-ci-green.sh "$GITHUB_REPOSITORY" "$GITHUB_SHA"
