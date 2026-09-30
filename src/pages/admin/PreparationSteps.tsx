@@ -95,6 +95,8 @@ interface Prefill {
   documentKinds: { kind: string; labelAr: string }[];
   missingLegal: string[];
   openContract: { id: string; status: string; title: string } | null;
+  /** ما يمنع التركيبَ والإرسال — موقوفٌ أو مردودٌ أو مسحوب — بمخرجه (`contractBlockedAr`) */
+  blockedAr: string | null;
 }
 
 export interface PreparationProps {
@@ -700,6 +702,16 @@ function ContractStep({
                   ناقصٌ في هويّة الأكاديميّة: {prefill.missingLegal.join(" · ")} — يُستكمَل قبل الإرسال.
                 </Inset>
               )}
+              {/* ═══ وما يمنع الإرسالَ يُقال قبل أن تُملأ خانة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+                  كان الموقوفُ يُركَّب له هنا ثمّ يُردّ إرسالُه بـ«لا يمكن الانتقال من
+                  «suspended» إلى «contract_pending»»، وتبقى المسودّةُ يتيمة. والخادمُ
+                  يردّ التركيبَ الآن بالنصّ نفسِه — وهذا قولُه قبل الضغط. */}
+              {prefill.blockedAr && (
+                <Inset as="p" tone="danger" role="alert" className="mb-3 px-3.5 py-2.5 text-read leading-6">
+                  {prefill.blockedAr}
+                </Inset>
+              )}
 
               <div className="grid gap-2">
                 <label className="grid gap-1 text-read text-muted-foreground">
@@ -776,7 +788,8 @@ function ContractStep({
                 <div className="flex flex-wrap gap-2">
                   <Button
                     tone="confirm" size="sm" icon={Send} loading={busy}
-                    disabled={title.trim().length < 3 || (!prefill.compensation && waived.trim().length < 5)}
+                    disabled={title.trim().length < 3 || (!prefill.compensation && waived.trim().length < 5)
+                      || Boolean(prefill.blockedAr)}
                     onClick={() => void run(async () => {
                       const body = {
                         title: title.trim(),

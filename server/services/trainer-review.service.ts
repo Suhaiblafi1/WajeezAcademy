@@ -42,7 +42,7 @@ import {
   offerGatesActivation,
 } from '../../src/application/trainer/conditional-offer'
 import {
-  AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, isAmendmentRequested,
+  AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, contractBlockedAr, isAmendmentRequested,
 } from '../../src/application/trainer/contract-endings'
 import { isUntouchableContract } from '../../src/application/trainer/contract-untouchable'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
@@ -2111,6 +2111,8 @@ export class TrainerReviewService {
                  به. وبلا هذا العمود تقابل الشاشةُ التوقيعَ باسم **الحساب**،
                  فتُنبّه على فرقٍ صحّحه الموظّفُ بنفسه وتسكت عن فرقٍ قائم. */
               legalNameAr: true,
+              /* وبه يقول رأسُ السلسلة المغلَقُ لماذا لا يُركَّب له عقدٌ الآن */
+              suspendedAt: true,
               application: { select: { id: true, reference: true, fullName: true, email: true, status: true } },
             },
           },
@@ -2122,7 +2124,9 @@ export class TrainerReviewService {
           /* و`countersigned` في القائمة: بدونها يعود المدرّبُ النشطُ المعتمَدُ
              عقدُه إلى طابور «ينتظر عقدا» — فحالتُه `active` وهي من
              `QUALIFIABLE_STATUSES`، وعقدُه النافذُ ليس في المستثنيات. */
-          profile: { is: { contracts: { none: { status: { in: ['draft', 'sent', 'signed', 'countersigned'] } } } } },
+          /* والموقوفُ لا ينتظر عقدا: يُرفع إيقافُه أوّلا (`contractBlockedAr`)، ولو
+             عُرض هنا لَردّ الخادمُ تركيبَه بعد أن تُملأ خاناتُه. */
+          profile: { is: { suspendedAt: null, contracts: { none: { status: { in: ['draft', 'sent', 'signed', 'countersigned'] } } } } },
         },
         orderBy: { updatedAt: 'desc' },
         select: { id: true, reference: true, fullName: true, email: true, status: true },
@@ -2256,6 +2260,9 @@ export class TrainerReviewService {
       documentKinds: CONTRACT_DOCUMENT_KINDS,
       missingLegal: missingAcademyLegalFields().map((f) => LEGAL_FIELD_LABELS_AR[f]),
       openContract: app.profile.contracts.find((c) => c.status === 'draft' || c.status === 'sent') ?? null,
+      /* ما يمنع التركيبَ والإرسالَ معا — موقوفٌ أو مردودٌ أو مسحوب — يُقال في
+         المركِّب قبل أن تُملأ خاناتُه، لا بعد الضغط (`contractBlockedAr`). */
+      blockedAr: contractBlockedAr(app.status, Boolean(app.profile.suspendedAt)),
     }
   }
 
@@ -2584,6 +2591,12 @@ export class TrainerReviewService {
       throw new AuthError('academy_identity_missing', academyLegalGapMessageAr(missing), 422)
     }
     const pre = await this.contractPrefill(applicationId)
+    /* ═══ ولا يُركَّب ما لا يُرسَل (٣٠ سبتمبر ٢٠٢٦) ═══
+
+       كان الموقوفُ تُركَّب له مسودّةٌ ثمّ يُردّ إرسالُها برموز حالتَين لا
+       يقرؤهما أحد، فتبقى يتيمة. فيُسأل هنا ما يُسأل عند الإرسال — قبل أن
+       يُكتب صفّ، وبالمخرج مسمّى. والعلّةُ في `contractBlockedAr`. */
+    if (pre.blockedAr) throw new AuthError('not_contractable', pre.blockedAr, 409)
     if (pre.openContract) {
       throw new AuthError('contract_open', 'لهذا المدرّب عقدٌ مفتوحٌ — يُلغى أوّلا ثمّ يُركَّب غيرُه', 409)
     }
@@ -2924,6 +2937,10 @@ export class TrainerReviewService {
       )
     }
     const app = contract.profile.application
+    /* والسؤالُ نفسُه عند الإرسال: مسودّةٌ رُكّبت ثمّ أُوقف صاحبُها كان يُردّ
+       إرسالُها بـ«لا يمكن الانتقال من «suspended» إلى «contract_pending»». */
+    const blocked = contractBlockedAr(app.status, Boolean(contract.profile.suspendedAt))
+    if (blocked) throw new AuthError('not_contractable', blocked, 409)
     const { token, tokenHash, expiresAt } = this.mintContractToken()
 
     await this.prisma.$transaction(async (tx) => {

@@ -34,7 +34,7 @@ import type { Readiness } from "@/application/trainer/readiness";
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS, type RequiredDocument,
 } from "@/application/trainer/contract-documents";
-import { isContractClosed } from "@/application/trainer/contract-endings";
+import { isContractClosed, recontractFor } from "@/application/trainer/contract-endings";
 import {
   ASSIGNMENT_OFFER_RESPONSE_DAYS, COURSE_PREP_DEFAULT_DAYS, COURSE_PREP_MIN_DAYS,
 } from "@/application/trainer/notice-periods";
@@ -84,7 +84,7 @@ interface ContractRow {
   orientationAt: string | null;
   documents: { id: string; kind: string; originalName: string; mime: string; uploadedAt: string }[];
   qualifiedSnapshot: { courseId: string; titleAr: string }[] | null;
-  profile: { id: string; legalNameAr: string | null; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
+  profile: { id: string; legalNameAr: string | null; suspendedAt?: string | null; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
 }
 
 /* ═══ الاسمان في صفٍّ واحد (٢٦ سبتمبر ٢٠٢٦) ═══
@@ -157,6 +157,8 @@ interface Prefill {
   compensation: { ruleId: string; type: string; rate: string; currency: string; minSeats: number | null; referralRate: string | null } | null;
   feeNotes: { reviewerName: string | null; expectation: string | null; proposal: string | null }[];
   missingLegal: string[];
+  /** ما يمنع التركيبَ والإرسال — موقوفٌ أو مردودٌ أو مسحوب — بمخرجه (`contractBlockedAr`) */
+  blockedAr: string | null;
 }
 
 interface OfferRow {
@@ -576,7 +578,7 @@ c.gatesActivation
 
       {/* ═══ شاشةُ التركيب ═══ */}
       {openFor && prefill && (
-        <Card className="mb-6 p-4">
+        <Card id="contract-composer" className="mb-6 scroll-mt-4 p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-black">تركيبُ عقدٍ لـ{prefill.fullName}</h2>
             <Button size="sm" onClick={() => { setOpenFor(null); setPrefill(null); setPreview(""); }}>
@@ -589,6 +591,11 @@ c.gatesActivation
               ? "هذا العقدُ يحبس التفعيل: يُنقل الطلبُ إلى «عقد قيد التوقيع»، ولا يُفتح حسابُه حتّى يُعتمَد توقيعُه."
               : "المدرّبُ نشطٌ أصلا — فهذا العقدُ توثيقٌ على ملفٍّ حيّ، ولا تُمسُّ حالةُ طلبه ولا وصولُه إلى بوّابته."}
           </Panel>
+
+          {/* وما يمنعه يُقال قبل أن تُملأ خانةٌ واحدة — والخادمُ يردّه بالنصّ نفسِه */}
+          {prefill.blockedAr && (
+            <Panel tone="danger" className="mb-4 p-3 text-read" role="alert">{prefill.blockedAr}</Panel>
+          )}
 
           {/* ═══ واسمُ الطرف الثاني أوّلُ ما يُملأ ═══
 
@@ -763,7 +770,7 @@ c.gatesActivation
               عايِنِ المتنَ كما يراه
             </Button>
             <Button tone="confirm" icon={FileSignature} loading={busy}
-              disabled={title.trim().length < 3}
+              disabled={title.trim().length < 3 || Boolean(prefill.blockedAr)}
               onClick={() => void run(async () => {
                 await apiPost(`/api/admin/trainer-applications/${prefill.applicationId}/contracts/compose`, composeBody);
                 setOpenFor(null); setPrefill(null); setPreview("");
@@ -809,6 +816,8 @@ c.gatesActivation
             <ul className="space-y-2">
               {contractView.rows.map((g) => {
                 const c = g.head;
+                /* الرأسُ المغلَقُ يقول ما بعده — والحكمُ في `recontractFor` */
+                const next = recontractFor(c, candidates);
                 return (
                 <li key={c.id}>
                   <Inset className="p-3">
@@ -876,6 +885,24 @@ c.gatesActivation
                             onClick={() => void closeWith(c, "depart")}>
                             أنهِ تعاقدَه
                           </Button>
+                        )}
+                        {/* ═══ وعلى الرأس المغلَق عقدٌ جديد (٣٠ سبتمبر ٢٠٢٦) ═══
+
+                            سأل صاحبُ المنصّة عند العقد المفسوخ: «ألا يمكن إعادةُ
+                            إنشاء عقدٍ آخرَ لهم؟». وكان يمكن — من «من ينتظر عقدا»
+                            في رأس الشاشة، بعيدا عن الصفّ الذي سأل عنده. فالبابُ
+                            هنا أيضا، والمركِّبُ نفسُه. ومن لا يُركَّب له بعدُ يُقال
+                            له المخرجُ مكانَ الزرّ، لا صمت. */}
+                        {next && "compose" in next && (
+                          <Button size="sm" tone="confirm" icon={FilePlus2} loading={busy}
+                            onClick={() => void openComposer(next.compose).then(() => requestAnimationFrame(
+                              () => document.getElementById("contract-composer")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+                            ))}>
+                            ركّبْ له عقدا جديدا
+                          </Button>
+                        )}
+                        {next && "blockedAr" in next && (
+                          <span className="self-center text-xs opacity-70">{next.blockedAr}</span>
                         )}
                         {/* ═══ الحذف — وما مسَّه توقيعٌ لا زرَّ له، ويُقال لماذا ═══
 
