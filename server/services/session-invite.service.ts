@@ -121,8 +121,9 @@ export class SessionInviteService {
     const sessions = await this.upcoming(seat.cohortId, now)
     if (sessions.length === 0) return 0
 
+    /* والملغى لا يُعطى: رابطٌ أُلغي تسجيلُه عند Zoom لا يُدخل صاحبَه (`releaseSessionJoinLinks`) */
     const links = await this.prisma.sessionJoinLink.findMany({
-      where: { enrollmentId: seat.id, sessionId: { in: sessions.map((s) => s.id) } },
+      where: { enrollmentId: seat.id, sessionId: { in: sessions.map((s) => s.id) }, cancelledAt: null },
       select: { sessionId: true, joinUrl: true },
     })
     const own = new Map(links.map((l) => [l.sessionId, l.joinUrl]))
@@ -208,7 +209,7 @@ export class SessionInviteService {
       select: { id: true, user: { select: { email: true, displayName: true } } },
     })
     const links = await this.prisma.sessionJoinLink.findMany({
-      where: { sessionId: snap.id }, select: { enrollmentId: true, joinUrl: true },
+      where: { sessionId: snap.id, cancelledAt: null }, select: { enrollmentId: true, joinUrl: true },
     })
     const personal = new Map(links.map((l) => [l.enrollmentId, l.joinUrl]))
     for (const seat of seats) {

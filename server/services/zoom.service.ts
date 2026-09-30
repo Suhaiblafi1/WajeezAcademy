@@ -401,6 +401,37 @@ export async function registerZoomParticipant(
   return { ok: true, registrant: { registrantId: j.registrant_id, joinUrl: j.join_url } }
 }
 
+/* ═══ إلغاءُ تسجيل من ترك الشعبة — وإعادتُه إن عاد (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   رابطُ المسجَّل أعلاه يُدخل صاحبَه ما دام تسجيلُه قائما. ومن أُسقط تسجيلُه أو
+   انتقل إلى شعبةٍ أخرى بقي رابطُه يعمل — وهو في بريده وتقويمه منذ الدعوات. فيُلغى
+   تسجيلُه (`cancel`)، ويُعاد هو نفسُه (`approve`) إن عاد: برابطه الذي في بريده.
+
+   و`notFound` يُقال ولا يُحكم فيه هنا: من يُلغي يقرأ «لا اجتماعَ ولا مسجَّل»
+   تمّا — لا تسجيلَ بقي يُدخل أحدا — ومن يُعيد يقرؤه إخفاقا فيسجّل من جديد. */
+export type RegistrantStatusResult = { ok: true } | { ok: false; notFound: boolean; reason: string }
+
+export async function setZoomRegistrantStatus(
+  c: ZoomConfig,
+  meetingId: string,
+  action: 'cancel' | 'approve',
+  registrantIds: readonly string[],
+): Promise<RegistrantStatusResult> {
+  const token = await zoomToken(c)
+  const res = await fetch(`${ZOOM_API_BASE_URL}/meetings/${encodeURIComponent(meetingId)}/registrants/status`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ action, registrants: registrantIds.map((id) => ({ id })) }),
+  })
+  if (res.ok) return { ok: true }
+  const reason = res.status === 404
+    ? 'لا اجتماعَ بهذا الرقم عند Zoom أو لا مسجَّلَ بهذا المعرّف'
+    : res.status === 401 || res.status === 403
+      ? 'رفض Zoom تغييرَ حالة المسجَّل — تأكّد من صلاحيّة `meeting:write:admin`'
+      : `ردُّ Zoom غير متوقّع عند تغيير حالة المسجَّل (HTTP ${res.status})`
+  return { ok: false, notFound: res.status === 404, reason }
+}
+
 /* ══════════ الـwebhook: ما يقوله Zoom بعد اللقاء ══════════
 
    ── ولمَ انتقل التحقّقُ إلى هنا ──

@@ -206,8 +206,20 @@ export class EnrollmentService {
     })
   }
 
-  /** ومن ترك مقعدَه تُرفع لقاءاتُه المقبلة من تقويمه (`SessionInviteService.release`) */
-  private async seatLeft(userId: string, cohortId: string, whyAr: string) {
+  /* ─────────── ومن ترك مقعدَه — رابطُه عند Zoom ثمّ تقويمُه ───────────
+
+     رابطُه الخاصُّ يُلغى عند Zoom أوّلا (`CohortService.releaseSessionJoinLinks`):
+     هو في بريده منذ الدعوات، ويُدخله لقاءاتِ شعبةٍ لم تعد شعبتَه ما بقي تسجيلُه.
+     ثمّ تُرفع لقاءاتُها المقبلة من تقويمه (`SessionInviteService.release`).
+
+     ولا يُسقط إخفاقُهما تركا وقع: ما أبى فيه Zoom تُعيده دورةُ العامل
+     (`revoke_left_registrants`)، والسببُ في السجلّ. */
+  private async seatLeft(enrollmentId: string, userId: string, cohortId: string, whyAr: string) {
+    await this.cohorts.releaseSessionJoinLinks({ enrollmentId })
+      .then((r) => {
+        if (r.failed > 0) console.error(`[zoom] بقي ${r.failed} من تسجيلات من ترك قائما (${enrollmentId}): ${r.reason}`)
+      })
+      .catch((e: unknown) => { console.error(`[zoom] تعذّر إلغاءُ تسجيل من ترك (${enrollmentId})`, e) })
     const who = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, displayName: true } })
     if (!who?.email) return
     await this.invites.release({ email: who.email, name: who.displayName }, cohortId, whyAr).catch((e: unknown) => {
@@ -356,7 +368,7 @@ export class EnrollmentService {
     })
     /* وتقويمُه ينتقل معه: لقاءاتُ المغادَرة تُرفع — وإلّا رأى شعبتَين في أسبوعٍ
        فحضر ما ليس له — ولقاءاتُ الوجهة تصله برابطه. */
-    await this.seatLeft(userId, from.id, `انتقل مقعدُك إلى «${to.title}» — وتصلك مواعيدُها في رسالتها.`)
+    await this.seatLeft(enrollmentId, userId, from.id, `انتقل مقعدُك إلى «${to.title}» — وتصلك مواعيدُها في رسالتها.`)
     await this.seatTaken(enrollmentId, to.id)
     return moved
   }
@@ -388,7 +400,7 @@ export class EnrollmentService {
       })
     } catch { /* الإشعارُ خدمةٌ مساندة — لا يُبطل إسقاطا وقع */ }
     if (before && SEATED.includes(before.status)) {
-      await this.seatLeft(e.userId, e.cohortId, `أُسقط تسجيلُك في «${cohort?.title ?? 'شعبتك'}»، فرُفعت لقاءاتُها من تقويمك.`)
+      await this.seatLeft(enrollmentId, e.userId, e.cohortId, `أُسقط تسجيلُك في «${cohort?.title ?? 'شعبتك'}»، فرُفعت لقاءاتُها من تقويمك.`)
     }
 
     const promoted = await this.fillSeatFromWaitlist(e.cohortId, actorId)
