@@ -5,7 +5,7 @@ import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import Button from '@/components/ui/Button'
 import Chip from '@/components/ui/Chip'
-import { Card, Panel } from '@/components/ui/Surface'
+import { Panel } from '@/components/ui/Surface'
 import { seoFor } from '@/application/site/public-pages'
 import { countAr } from '@/application/text/count-ar'
 import { usePublishedContent } from '@/services/public-content'
@@ -117,37 +117,74 @@ function JourneyDrawing() {
   )
 }
 
-const PRODUCT_ICON = [Headphones, Building2] as const
+/* لكلّ أخٍ لونُه: التطبيقُ فيروزيّ، ووجيز مهارات ذهبيّة — والعلامةُ واحدة */
+const PRODUCT_STYLE = {
+  app: { Icon: Headphones, badge: 'bg-teal text-on-teal', cta: 'bg-teal-deep text-white group-hover:bg-teal-darker' },
+  maharat: { Icon: Building2, badge: 'bg-gold text-on-gold', cta: 'bg-gold text-on-gold group-hover:brightness-95' },
+} as const
 
-/* الافتتاح: من نحن في سطرين، ثمّ أخوا الأكاديمية بموقعيهما — لا تاريخَ
-   انتقالٍ ولا أرقام، فالأرقامُ في الرئيسيّة ومواقعِهما. */
+/* ─────────── الافتتاح: هذا نحن ───────────
+
+   طلب صاحبُ المنصّة (٣٠ سبتمبر ٢٠٢٦) أن يُبرَز التعريفُ «هذا نحن»: لوحةٌ
+   فيروزيّةٌ بعلامة وجيز، واسمُ الأكاديمية كبيرا، والانتسابُ ذهبيّا تحته. وأن
+   يكون أخواها كالإعلان الذي نفخر به: بطاقةٌ بيضاءُ لكلٍّ منهما بعلامةٍ ولونٍ
+   واسمٍ لاتينيٍّ وزرٍّ إلى موقعه — والبطاقةُ كلُّها رابط.
+
+   والألوانُ هنا ثابتةٌ في الوضعين عمدا: اللوحةُ فيروزيٌّ عميقٌ بحبرٍ أبيض،
+   والبطاقاتُ بيضاءُ بحبر `on-teal` — فلا شيءَ فيها ينقلب فيبهت. */
 function FamilyIntro() {
   return (
-    <section aria-labelledby="about-family-title" className="grid gap-6 border-b border-white/10 pb-10 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:items-center md:gap-12 md:pb-12">
-      <div>
-        <p className="text-read font-black text-teal-light-ink">من نحن</p>
-        <h1 id="about-family-title" className="mt-2 text-xl font-black leading-snug md:text-2xl">{FAMILY_INTRO.title}</h1>
-        <p className="mt-3 max-w-2xl text-base leading-loose text-muted-foreground">{FAMILY_INTRO.body}</p>
+    <section
+      aria-labelledby="about-family-title"
+      className="relative isolate overflow-hidden rounded-[2rem] bg-teal-deep bg-gradient-to-bl from-teal-deep via-teal-darker to-teal-deep px-5 py-9 text-white md:px-12 md:py-14"
+    >
+      {/* علامةُ وجيز خلفيّةً كبيرةً باهتة — توقيعُ العائلة */}
+      <img src="/logo-mark.png" alt="" aria-hidden="true" className="pointer-events-none absolute -bottom-16 -left-16 -z-10 h-72 w-72 rotate-12 opacity-[0.12] md:h-[26rem] md:w-[26rem]" />
+
+      <div className="flex items-center gap-3">
+        <span className="grid h-12 w-12 place-items-center rounded-2xl bg-white shadow-md shadow-black/10 md:h-14 md:w-14">
+          <img src="/logo-mark.png" alt="" aria-hidden="true" className="h-8 w-8 rounded-lg md:h-10 md:w-10" />
+        </span>
+        <span className="rounded-full bg-white/15 px-3 py-1 text-read font-bold">من نحن</span>
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
-        {FAMILY_INTRO.products.map((p, i) => {
-          const Icon = PRODUCT_ICON[i]
+
+      <h1 id="about-family-title" className="mt-6">
+        <span className="block text-[2.4rem] font-black leading-[1.25] md:text-6xl">{FAMILY_INTRO.brand}</span>
+        <span className="mt-2 block text-2xl font-black leading-snug text-gold md:text-3xl">{FAMILY_INTRO.belongs}</span>
+      </h1>
+      <p className="mt-5 max-w-2xl text-base leading-loose text-white md:text-lg md:leading-loose">{FAMILY_INTRO.body}</p>
+
+      <ul className="mt-9 grid gap-4 md:grid-cols-2">
+        {FAMILY_INTRO.products.map((p) => {
+          const st = PRODUCT_STYLE[p.id]
           return (
             <li key={p.url}>
-              <Card as="a" interactive href={p.url} target="_blank" rel="noreferrer" className="flex min-h-[44px] items-center gap-3 !px-4 !py-3">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal/10 text-teal-light-ink">
-                  <Icon className="h-5 w-5" aria-hidden="true" />
+              <a
+                href={p.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group flex h-full flex-col rounded-3xl bg-white p-5 text-on-teal shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-gold md:p-6"
+              >
+                <span className="flex items-center gap-3">
+                  <span className="relative shrink-0">
+                    <img src="/logo-mark.png" alt="" aria-hidden="true" className="h-14 w-14 rounded-2xl" />
+                    <span className={`absolute -bottom-1.5 -left-1.5 grid h-7 w-7 place-items-center rounded-full ring-[3px] ring-white ${st.badge}`}>
+                      <st.Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                    </span>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xl font-black leading-tight">{p.name}</span>
+                    <span className="block text-read font-bold tracking-wide opacity-60" dir="ltr">{p.latin}</span>
+                  </span>
                 </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-black leading-snug text-foreground">{p.name}</span>
-                  <span className="block text-fine leading-snug text-muted-foreground">{p.note}</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-1 text-fine font-bold text-teal-light-ink" dir="ltr">
-                  <span className="hidden sm:inline">{p.host}</span>
-                  <ExternalLink className="h-4 w-4 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
+                <span className="mt-4 block text-base font-bold leading-relaxed">{p.note}</span>
+                <span className="mt-1 block text-read leading-relaxed opacity-75">{p.pitch}</span>
+                <span className={`mt-5 inline-flex min-h-[44px] items-center gap-2 self-start rounded-full px-4 text-read font-black transition ${st.cta}`}>
+                  <span dir="ltr">{p.host}</span>
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <span className="sr-only">(يفتح في نافذة جديدة)</span>
-              </Card>
+              </a>
             </li>
           )
         })}
@@ -156,15 +193,31 @@ function FamilyIntro() {
   )
 }
 
+/** يُلوّن من السطر ما سُمّي في `highlights` — والسطرُ نفسُه لا يتغيّر نصّا */
+function Highlighted({ line }: { line: string }) {
+  const hit = FEATURE_HERO.highlights.find((h) => line.includes(h))
+  if (!hit) return <>{line}</>
+  const [before, after] = line.split(hit)
+  const gold = hit === FEATURE_HERO.highlights[1]
+  return (
+    <>
+      {before}
+      <span className={gold ? 'bg-gold/25 px-1.5 [box-decoration-break:clone] rounded-lg text-foreground' : 'text-teal-light-ink'}>{hit}</span>
+      {after}
+    </>
+  )
+}
+
 function Hero() {
   return (
-    <div className="pb-4 pt-10 md:pt-14">
-      <h2 className="max-w-4xl text-[2.1rem] font-black leading-[1.4] md:text-5xl md:leading-[1.3]">
+    <div className="pb-4 pt-14 md:pt-20">
+      <p className="text-read font-black text-teal-light-ink">ما يميّزنا</p>
+      <h2 className="mt-3 max-w-4xl text-[1.85rem] font-black leading-[1.5] md:text-5xl md:leading-[1.35]">
         {FEATURE_HERO.lines.map((line) => (
-          <span key={line} className="block text-balance">{line}</span>
+          <span key={line} className="block text-balance"><Highlighted line={line} /></span>
         ))}
       </h2>
-      <p className="mt-6 max-w-2xl text-base leading-loose text-muted-foreground md:text-lg md:leading-loose">
+      <p className="mt-6 max-w-2xl border-s-4 border-gold ps-4 text-base leading-loose text-foreground md:text-lg md:leading-loose">
         {FEATURE_HERO.lead}
       </p>
       <JourneyDrawing />

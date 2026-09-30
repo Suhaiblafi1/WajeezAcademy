@@ -41,7 +41,9 @@ describe('الافتتاحُ: الأكاديميةُ جزءٌ من وجيز', ()
   it('وعنوانُ الصفحة الأوّلُ (`h1`) هو التعريف، والتعريفُ أوّلُ ما يُصيَّر', () => {
     const h1s = about.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/g) ?? []
     expect(h1s).toHaveLength(1)
-    expect(h1s[0]).toContain('{FAMILY_INTRO.title}')
+    expect(h1s[0]).toContain('{FAMILY_INTRO.brand}')
+    expect(h1s[0]).toContain('{FAMILY_INTRO.belongs}')
+    expect(`${FAMILY_INTRO.brand} ${FAMILY_INTRO.belongs}`).toBe(FAMILY_INTRO.title)
     const body = about.slice(about.indexOf('export default function About'))
     expect(body.indexOf('<FamilyIntro />'), 'الافتتاحُ غائب').toBeGreaterThan(-1)
     expect(body.indexOf('<FamilyIntro />')).toBeLessThan(body.indexOf('<Hero />'))
@@ -51,6 +53,15 @@ describe('الافتتاحُ: الأكاديميةُ جزءٌ من وجيز', ()
     expect(about).toMatch(/FAMILY_INTRO\.products\.map\(/)
     expect(about).toMatch(/href=\{p\.url\}/)
     expect(about).not.toMatch(/href="https:\/\/wajeez\.com/)
+  })
+})
+
+describe('وسطرا «ما يميّزنا» يُلوَّن منهما ما سُمّي', () => {
+  it('كلُّ عبارةٍ ملوّنةٍ واردةٌ في سطرٍ بعينه — وإلّا لم يُلوَّن شيءٌ صامتا', () => {
+    expect(FEATURE_HERO.highlights.length).toBeGreaterThan(0)
+    for (const h of FEATURE_HERO.highlights) {
+      expect(FEATURE_HERO.lines.filter((l) => l.includes(h)), h).toHaveLength(1)
+    }
   })
 })
 
@@ -89,7 +100,8 @@ describe('ما يميّزنا — كما سمّاه صاحبُ المنصّة', 
 describe('ولا رقمَ مكتوبٌ باليد في النثر', () => {
   const prose: string[] = [
     ABOUT_TITLE, ABOUT_DESCRIPTION, FAMILY_INTRO.title, FAMILY_INTRO.body,
-    ...FAMILY_INTRO.products.flatMap((p) => [p.name, p.note]),
+    ...FAMILY_INTRO.products.flatMap((p) => [p.name, p.note, p.pitch]),
+    ...FEATURE_HERO.highlights,
     ...FEATURE_HERO.lines, FEATURE_HERO.lead,
     ...FEATURES.flatMap((f) => [f.margin, f.station, f.stationNote, f.title, ...f.paragraphs]),
     ...SOURCE_KINDS, PRICE.margin, PRICE.title, ...PRICE.paragraphs,
