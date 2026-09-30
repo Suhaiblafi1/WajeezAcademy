@@ -18,6 +18,8 @@
    والقائمةُ هنا **مصدرُ الحقيقة الوحيد**: الخادمُ والشاشةُ يقرآنها معا، فلا
    يُكرَّر الشرطُ في موضعين ثمّ يفترقان بتعديلٍ في أحدهما. */
 
+import { REVIEW_OPEN_STATUSES } from './approval'
+
 /** الحالةُ الوحيدةُ التي يُقبل فيها ردٌّ من المدرّب على الرابط */
 export const CONTRACT_OPEN_STATUSES = ['sent'] as const
 
@@ -62,4 +64,61 @@ export const CONTRACT_CLOSED_STATUSES = [
 /** أأُغلق هذا العقدُ فلا إجراءَ عليه؟ */
 export function isContractClosed(status: string): boolean {
   return (CONTRACT_CLOSED_STATUSES as readonly string[]).includes(status)
+}
+
+/* ═══ ومن يُركَّب له عقدٌ جديد — وما يمنعه (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة عن العقود المفسوخة: «ألا يمكن إعادةُ إنشاء عقدٍ آخرَ
+   لهم؟». ويمكن: الرحيلُ يفسخ العقدَ ولا يمسّ حالةَ الطلب، فمن رحل يبقى نشطا
+   ويظهر في «من ينتظر عقدا». لكنّ البابَ كان في رأس الشاشة، والسؤالُ يُسأل
+   عند الصفّ المفسوخ نفسِه — ولا زرَّ هناك.
+
+   ومن أُوقف مع رحيله كان أسوأ: «ركِّبْ عقدا جديدا» في خطوات تجهيزه يركّب
+   مسودّةً، ثمّ يُردّ إرسالُها بـ«لا يمكن الانتقال من «suspended» إلى
+   «contract_pending»» — رموزٌ لا يقرؤها أحد، ومسودّةٌ يتيمةٌ لا تُرسَل.
+
+   فالحكمُ هنا مرّةً واحدة: الخادمُ يسأله قبل التركيب وعند الإرسال، والشاشةُ
+   تسأله لتقول المخرجَ قبل أن يُضغط شيء.
+
+   ويُرسَل العقدُ من كلّ حالةٍ حيّة — ومنها يُنقل الطلبُ إلى «عقد قيد
+   التوقيع» — ومن «نشط»، بندا يُوثَّق بلا نقل. وما سواها نهايةٌ لها بابُها
+   المسمّى، والمنعُ يسمّيه. وقائمةُ الحيّة مصدرُها `REVIEW_OPEN_STATUSES`،
+   وتُقابَل بخريطة الانتقالات في الخادم في اختبار. */
+const CONTRACT_SENDABLE: readonly string[] = [...REVIEW_OPEN_STATUSES, 'active']
+
+/** لماذا لا يُركَّب لصاحب هذا الطلب عقدٌ ولا يُرسَل — `null` إن لم يمنعه شيء */
+export function contractBlockedAr(applicationStatus: string, profileSuspended: boolean): string | null {
+  if (profileSuspended || applicationStatus === 'suspended') {
+    return 'هذا المدرّبُ موقوف — ارفعِ الإيقافَ أوّلا («ارفع الإيقاف» في طلبه)، ثمّ يُركَّب له عقدٌ ويُرسَل'
+  }
+  if (CONTRACT_SENDABLE.includes(applicationStatus)) return null
+  if (applicationStatus === 'rejected') return 'طلبُه مردود — «تراجَعْ عن الرفض» أوّلا، ثمّ يُركَّب له عقد'
+  if (applicationStatus === 'withdrawn') return 'طلبُه مسحوب — «تراجَعْ عن السحب» أوّلا، ثمّ يُركَّب له عقد'
+  if (applicationStatus === 'draft') return 'لم يُكمل طلبَه بعد — لا يُرسَل عقدٌ لمسودّة'
+  return 'طلبُه في حالةٍ لا يُرسَل منها عقد — أعِدْه إلى المراجعة أوّلا'
+}
+
+/** ما يُعرض على رأسِ سلسلةِ عقودِ مدرّبٍ **أُغلق**:
+ *
+ *  · زرُّ التركيب إن كان صاحبُه ممّن ينتظر عقدا — والخادمُ قائلُ ذلك في
+ *    `candidates`، فلا يُعاد حكمُه هنا؛
+ *  · أو سببُ المنع مسمّى المخرج؛
+ *  · أو أنّ القبولَ الداخليَّ يسبقه — حالةٌ حيّةٌ لم تبلغ طورَ العقد بعد؛
+ *  · ولا شيء لرأسٍ لم يُغلَق: ذاك له أزرارُه. */
+export function recontractFor<C extends { id: string }>(
+  head: {
+    status: string
+    profile: { suspendedAt?: string | null; application: { id: string; status: string } | null } | null
+  },
+  candidates: readonly C[],
+): { compose: C } | { blockedAr: string } | null {
+  if (!isContractClosed(head.status)) return null
+  const app = head.profile?.application
+  if (!app) return null
+  const candidate = candidates.find((c) => c.id === app.id)
+  if (candidate) return { compose: candidate }
+  const blockedAr = contractBlockedAr(app.status, Boolean(head.profile?.suspendedAt))
+  return {
+    blockedAr: blockedAr ?? 'لم يُقبَل داخليّا بعد — «اقبَلْه داخليّا» أوّلا، ثمّ يظهر في «من ينتظر عقدا»',
+  }
 }
