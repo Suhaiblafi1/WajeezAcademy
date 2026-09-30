@@ -49,11 +49,10 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, ClipboardList, FileText, Film, IdCard, Link2, Loader2, Lock, MessageSquarePlus, Send, Sparkles,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, FileText, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
-import CohortOps from "./CohortOps";
 import SessionsAndAttendance from "./SessionsAndAttendance";
 import SlotSessions from "./SlotSessions";
 import CohortSubmissions from "./CohortSubmissions";
@@ -74,7 +73,6 @@ import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import TabBar from "@/components/ui/TabBar";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
@@ -213,7 +211,6 @@ const STAGE_KEYS: Record<Stage, readonly string[]> = {
 /** الدرجةُ التي فيها صفُّ القائمة — أو `null` لصفٍّ لا درجةَ له */
 const stageOfKey = (key: string): Stage | null =>
   (STAGES.find((s) => STAGE_KEYS[s.key].includes(key))?.key ?? null);
-type Phase = "prepare" | "run";
 const ASSESSMENT_TYPES: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع تخرج" };
 
 /* ═══ ما يقوله حفظُ المهمّة — بما حكم به الخادمُ لا بما ظنّته الشاشة (٣ج-٣) ═══
@@ -355,7 +352,6 @@ export default function CohortWorkspace() {
   const { id } = useParams();
   const [ws, setWs] = useState<Workspace | null>(null);
   const [err, setErr] = useState("");
-  const [phase, setPhase] = useState<Phase>("prepare");
   const [stage, setStage] = useState<Stage>("identity");
   /* ما ينقص الخطوةَ كي تتمّ — يُقال بعد «احفظ وتابِع» حين لا تتمّ، بأسمائه لا
      بعدد، ويُمحى بأوّل محاولةٍ تالية. «لا ينتقل للتالي إلّا بعد أن يتمّ
@@ -446,10 +442,11 @@ export default function CohortWorkspace() {
         recorded: recordedKey(saved),
         resources: resourcesKey(saved),
       });
-      /* أوّلُ فتح: المعتمَدةُ تُفتح على التشغيل، وغيرُها على أوّل مرحلةٍ لم تتمّ —
+      /* أوّلُ فتح: المعتمَدةُ تُفتح على خطوة الاعتماد (كانت تُفتح على «مركز
+         التواصل» حتّى خرج إلى «طلبتي»)، وغيرُها على أوّل مرحلةٍ لم تتمّ —
          وهي أبعدُ ما يُفتح له، فكلُّ ما قبلها تامّ. */
       if (first) {
-        if (status === "approved" || status === "published") setPhase("run");
+        if (status === "approved" || status === "published") setStage("approval");
         else {
           const next = STAGES.find((s) => STAGE_KEYS[s.key].some((k) => {
             const c = w.checklist.find((x) => x.key === k);
@@ -602,7 +599,7 @@ export default function CohortWorkspace() {
   };
   dirtyRef.current = Object.values(dirty).some(Boolean);
 
-  const openStage = (s: Stage) => { setPhase("prepare"); setStage(s); };
+  const openStage = (s: Stage) => setStage(s);
   /** يحذف ملفًّا من التخزين — والسقوطُ يُبتلع: ملفٌّ يتيمٌ أهونُ من صفٍّ يبقى */
   const dropFile = async (key: string) => {
     try { await apiDelete(`/api/trainer/cohorts/${ws.cohort.id}/files/${encodeURIComponent(key)}`); }
@@ -888,7 +885,7 @@ export default function CohortWorkspace() {
                 /* تمامُ الدرجة بصفوفها كلِّها — «المهامُّ والمصادر» صفّان، ولا تُعلَّم
                    تامّةً بأحدهما (قِيس في المتصفّح: عُلّمت تامّةً والمصادرُ ناقصة) */
                 const done = doneOf(s.key);
-                const selected = phase === "prepare" && stage === s.key;
+                const selected = stage === s.key;
                 const open = canOpen(i);
                 /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
                 /* وعليها ملاحظةٌ من الإدارة — تُقال في الاسم المسموع وتُرى علامةً (٣ب) */
@@ -1001,7 +998,7 @@ export default function CohortWorkspace() {
           {/* ② وملاحظةُ الإدارة تبقى لاصقةً: يقرؤها وهو ينزل ويصعد يصحّح.
               والعامّةُ بنصّها، وملاحظاتُ الخطوات أسماءُ خطواتها — كلٌّ زرٌّ
               يفتح خطوتَه، ونصُّها في رأسها هناك (٣ب). */}
-          <ReviewNotesBanner notes={reviewNotes} current={phase === "prepare" ? stage : null} onOpen={openStage} />
+          <ReviewNotesBanner notes={reviewNotes} current={stage} onOpen={openStage} />
 
           {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
               كالملاحظة: يقرؤه وهو ينزل إلى الحقل الذي يصحّحه. */}
@@ -1025,30 +1022,20 @@ export default function CohortWorkspace() {
         </span>
       </Bar>
 
-      {/* ═══ الطوران — خرجا من الشريط إلى المتن ═══
+      {/* ═══ وذهب الطوران (٣٠ سبتمبر ٢٠٢٦) ═══
 
-          كانا لسانَين داخلَ الشريط اللاصق، فيأخذان من سقفه ثلاثين بكسلا في
-          كلّ تمرير. وليسا ملاحةً دائمة: يُنقران مرّةً في الجلسة. فنزلا إلى
-          رأس المتن حيث يُقرآن مرّةً ويُتركان. */}
-      <TabBar
-        ariaLabel="طورا الشعبة"
-        className="mb-4"
-        items={[
-          { id: "prepare", label: <span className="inline-flex items-center gap-2"><ClipboardList className="h-4 w-4" aria-hidden="true" />التجهيز</span> },
-          /* ع-١: «التشغيل» صار «مركزَ التواصل» — ولم يبقَ فيه إلّا المخاطبة. */
-          { id: "run", label: <span className="inline-flex items-center gap-2"><MessageSquarePlus className="h-4 w-4" aria-hidden="true" />مركز التواصل</span> },
-        ]}
-        value={phase}
-        onChange={setPhase}
-      />
+          كان هنا لسانان: «التجهيز» و«مركز التواصل». وقرارُ صاحب المنصّة: «انقل
+          مركزَ التواصل إلى صفحة طلبتي.. لا داعيَ له هنا في تجهيز الشعبة». فصارت
+          الشعبةُ تجهيزا وحدَه، والمخاطبةُ في «طلبتي» حيث المتعلّمون أنفسُهم
+          (`MyLearners.tsx`). */}
 
       {/* ═══ ملاحظةُ الإدارة على هذه الخطوة — في رأسها (٣ب) ═══
 
           كانت الملاحظةُ نصّا واحدا في رأس الشاشة، فينزل المدرّبُ إلى خطوةٍ وقد
           غاب عنه ما قيل فيها. فصار لكلّ خطوةٍ ملاحظتُها، تُقرأ حيث يُعدَّل. */}
-      {phase === "prepare" && stage !== "approval" && <StageReviewNote stage={stage} text={reviewNotes[stage]} />}
+      {stage !== "approval" && <StageReviewNote stage={stage} text={reviewNotes[stage]} />}
 
-      {phase === "prepare" && locked && stage !== "approval" && (
+      {locked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           خطّتك بانتظار الاعتماد — لا تُعدَّل حتّى يصل القرار. ولو أردت تعديلها الآن، اطلب من الإدارة ردَّها إليك.
@@ -1068,7 +1055,7 @@ export default function CohortWorkspace() {
           الدرجةَ الأولى وفيها قرارُها الأكبر — مدّةُ الشعبة — بلا سعر: «ولا
           داعيَ لوجود السعر هناك، وأهمُّها موعدُ الشعبة كاملا من — إلى»
           (صاحب المنصّة، ٢٧ سبتمبر ٢٠٢٦). */}
-      {phase === "prepare" && stage === "identity" && (
+      {stage === "identity" && (
         <Panel as="section">
           <StageIntro stage="identity" />
           <div className="mt-5 grid gap-5">
@@ -1146,7 +1133,7 @@ export default function CohortWorkspace() {
           بطاقةٌ لكلّ موعدٍ بتاريخيه، وفيها محورُه أو محوراه المتجاوران. وبين
           محورين في موعدٍ واحد «افصِلهما»، وبين موعدين «اجمعهما» ما بقيت
           المواعيدُ أربعةً فأكثر. والقاعدةُ في `application/trainer/axis-timeline.ts`. */}
-      {phase === "prepare" && stage === "modules" && (() => {
+      {stage === "modules" && (() => {
         const moduleCard = (m: PlanModule, i: number) => {
               const open = openModule === m.moduleId;
               const filled = m.titleAr.trim().length > 1 && (m.outcomeAr ?? "").trim().length > 1;
@@ -1371,7 +1358,7 @@ export default function CohortWorkspace() {
           المجموعان يتقاسمانها — ملفٌّ يُرفع أو رابطٌ يُلصَق، ولا يجتمعان: من
           أراد الآخرَ أزال الأوّل. وتُفتح للمتعلّم أوّلَ يومٍ في الموعد، قبل
           اللقاء. والحكمُ عليها `workbookDone` نفسُها التي يحكم بها الخادم. */}
-      {phase === "prepare" && stage === "workbooks" && (
+      {stage === "workbooks" && (
         <Panel as="section">
           <StageIntro stage="workbooks" />
           {!slotsOn ? (
@@ -1443,7 +1430,7 @@ export default function CohortWorkspace() {
       )}
 
       {/* ─────────── ④ اللقاءات المباشرة ─────────── */}
-      {phase === "prepare" && stage === "sessions" && (
+      {stage === "sessions" && (
         <div className="space-y-5">
           <Panel as="section">
             <StageIntro stage="sessions" />
@@ -1582,7 +1569,7 @@ export default function CohortWorkspace() {
       )}
 
       {/* ─────────── ⑤ التكاليف ─────────── */}
-      {phase === "prepare" && stage === "assignments" && (
+      {stage === "assignments" && (
         <div className="space-y-5">
         <Panel as="section">
           <StageIntro stage="assignments" />
@@ -2076,7 +2063,7 @@ export default function CohortWorkspace() {
       )}
 
       {/* ─────────── ⑥ الاعتماد ─────────── */}
-      {phase === "prepare" && stage === "approval" && (
+      {stage === "approval" && (
         <Panel as="section" tone={st.tone}>
           <StageIntro stage="approval" />
           <p className="mt-2 text-read leading-7 text-foreground">
@@ -2183,21 +2170,6 @@ export default function CohortWorkspace() {
         </Panel>
       )}
 
-      {/* ═══ التشغيل ═══ */}
-      {phase === "run" && (
-        <div className="space-y-5">
-          {/* ═══ ورابطُ الدعوة خرج من هنا (١٥ سبتمبر ٢٠٢٦) ═══
-
-              كان بطاقةً في رأس «مركز التواصل»، فيراها المدرّبُ في شعبةٍ
-              ولا يجد في يده روابطَ شعبه الأخرى إلّا بفتح كلِّ واحدةٍ على
-              حدة. وقرارُ صاحب المنصّة: تُجمع كلُّها في «دعوتي» خارجَ الشعب
-              — رابطُ حسابه الكاملُ ورابطُ كلّ شعبةٍ مفتوحةٍ بجانبه.
-
-              ولا يُترك مركزُ التواصل يحمل نسخةً ثانية: رابطان لشيءٍ واحدٍ
-              في شاشتين يفترقان يوما، ومن نسخ أحدَهما لا يدري أيَّهما نسخ. */}
-          <CohortOps cohortId={ws.cohort.id} />
-        </div>
-      )}
     </TrainerLayout>
   );
 }

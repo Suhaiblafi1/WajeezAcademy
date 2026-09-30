@@ -133,7 +133,7 @@ describe('وفي ورشة المدرّب', () => {
   })
 
   it('⚠️ وملاحظةُ الخطوة في رأسها — لكلّ خطوةٍ إلّا الاعتماد', () => {
-    expect(WORKSPACE).toMatch(/\{phase === "prepare" && stage !== "approval" && <StageReviewNote stage=\{stage\} text=\{reviewNotes\[stage\]\} \/>\}/)
+    expect(WORKSPACE).toMatch(/\{stage !== "approval" && <StageReviewNote stage=\{stage\} text=\{reviewNotes\[stage\]\} \/>\}/)
     expect(WORKSPACE).toMatch(/<ReviewNotesBanner notes=\{reviewNotes\} /)
   })
 

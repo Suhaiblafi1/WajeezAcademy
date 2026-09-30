@@ -77,9 +77,15 @@ describe('صفحةُ الشعبة — مراحلُ على خطّ', () => {
     expect(ws).toMatch(/aria-current=\{selected \? "step" : undefined\}/)
   })
 
-  it('والمرحلتان من `TabBar`، والتشغيلُ مكوّنٌ للشعبة بعينها', () => {
-    expect(ws).toMatch(/<TabBar[\s\S]*?id: "prepare"[\s\S]*?id: "run"/)
-    expect(ws).toMatch(/<CohortOps cohortId=\{ws\.cohort\.id\}/)
+  /* وكانت الشعبةُ طورين بلسانَين: «التجهيز» و«مركز التواصل». ونقل صاحبُ المنصّة
+     المركزَ إلى «طلبتي» (٣٠ سبتمبر ٢٠٢٦) — فالشعبةُ تجهيزٌ وحدَه، والمخاطبةُ
+     مكوّنٌ للشعبة بعينها يُعرض حيث المتعلّمون. */
+  it('الشعبةُ تجهيزٌ وحدَه، ومركزُ التواصل في «طلبتي» مكوّنا للشعبة بعينها', () => {
+    expect(ws, 'عاد لسانُ الطورين إلى صفحة الشعبة').not.toMatch(/<TabBar[\s\S]*?id: "run"/)
+    expect(ws, 'عاد مركزُ التواصل إلى صفحة الشعبة').not.toMatch(/<CohortOps\b/)
+    const learners = code('src/pages/trainer/MyLearners.tsx')
+    expect(learners, 'لا مركزَ تواصلٍ في «طلبتي»').toMatch(/<CohortOps key=\{`[^`]+`\} cohortId=\{talk\.cohortId\} initialTo=\{talk\.to\}/)
+    expect(learners, '«خاطِبه» لا يوجّه المركزَ إلى المتعلّم').toMatch(/onClick=\{\(\) => talkTo\(r\.cohortId, r\.enrollmentId\)\}/)
     expect(code(OPS)).toContain('/api/trainer/cohorts/${cohortId}/ops')
     expect(code(OPS), 'التشغيلُ يقرأ القائمةَ كلَّها لشعبةٍ واحدة').not.toContain('/api/trainer/my-cohorts')
   })
@@ -173,8 +179,8 @@ describe('الطورُ قبل خطواته', () => {
     const steps = ws.indexOf('STAGES.map')
     const before = ws.slice(Math.max(0, steps - 400), steps)
     expect(before, 'عاد الخطُّ يختفي في «مركز التواصل»').not.toContain('phase === "prepare" &&')
-    expect(ws, 'نقرةُ الخطوة لا تردّ إلى التجهيز — فسلّمٌ يُرى ولا يُصعد')
-      .toMatch(/const openStage = \(s: Stage\) => \{ setPhase\("prepare"\); setStage\(s\); \}/)
+    expect(ws, 'نقرةُ الخطوة لا تفتحها — فسلّمٌ يُرى ولا يُصعد')
+      .toMatch(/const openStage = \(s: Stage\) => setStage\(s\);/)
   })
 
   /* ═══ حدُّ المحور المفتوح ═══

@@ -56,6 +56,10 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 1409
   },
+  "learners-talk": {
+    "w": 2200,
+    "h": 1352
+  },
   "marketing-poster": {
     "w": 2200,
     "h": 1792

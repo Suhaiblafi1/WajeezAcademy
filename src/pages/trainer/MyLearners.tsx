@@ -21,12 +21,20 @@
    ── وما لا يُقاس لا يُلوَّن ──
 
    الحضورُ يُحسب على **الجلسات التي مضت وسُجِّل فيها حضورٌ لأحد**: شعبةٌ لم
-   تبدأ بعد لا يُقال عن متعلّميها «غابوا»، ولا تُلوَّن صفوفُهم بالأحمر. */
+   تبدأ بعد لا يُقال عن متعلّميها «غابوا»، ولا تُلوَّن صفوفُهم بالأحمر.
 
-import { useCallback, useEffect, useState } from "react";
+   ── ومركزُ التواصل هنا (٣٠ سبتمبر ٢٠٢٦) ──
+
+   كان لسانا في صفحة الشعبة بجانب «التجهيز»، فنقله صاحبُ المنصّة إلى هنا:
+   «انقل مركزَ التواصل إلى صفحة طلبتي.. لا داعيَ له هنا في تجهيز الشعبة».
+   فمن رأى متعلّما متعثّرا خاطبه من الصفحة نفسِها — «خاطِبه» يفتح المركزَ
+   على شعبته موجَّها إليه. والمكوّنُ هو هو (`CohortOps.tsx`). */
+
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
-import { AlertTriangle, GraduationCap, Loader2, RefreshCw, ServerOff, Users } from "lucide-react";
+import { AlertTriangle, GraduationCap, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Users } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
+import CohortOps from "./CohortOps";
 import EmptyState from "@/components/EmptyState";
 import { apiGet, ApiError } from "@/services/api";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -56,6 +64,7 @@ interface QueueItem {
 
 interface Row {
   enrollmentId: string;
+  cohortId: string;
   /* مفتاحُ طابور التصحيح هو `userId` لا معرِّفُ التسجيل — والخلطُ بينهما
      يُظهر «٠ ينتظر تصحيحك» لمن ينتظر. */
   userId: string;
@@ -109,6 +118,7 @@ function buildRows(cohorts: TrainerCohort[]): Row[] {
       }
       rows.push({
         enrollmentId: e.id,
+        cohortId: cohort.id,
         userId: e.userId,
         name: e.user.displayName,
         referredByMe: Boolean(e.referredByMe),
@@ -128,6 +138,10 @@ function buildRows(cohorts: TrainerCohort[]): Row[] {
 
 export default function TrainerMyLearners() {
   const [rows, setRows] = useState<Row[] | null>(null);
+  const [cohorts, setCohorts] = useState<{ id: string; title: string; courseTitle: string }[]>([]);
+  /* مركزُ التواصل: أيُّ شعبة، وإلى من — و`to` فارغٌ يعني الشعبةَ كلَّها */
+  const [talk, setTalk] = useState<{ cohortId: string; to: string } | null>(null);
+  const talkRef = useRef<HTMLElement>(null);
   const [pending, setPending] = useState<Record<string, number>>({});
   const [offline, setOffline] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -137,6 +151,10 @@ export default function TrainerMyLearners() {
       const cohorts = await apiGet<TrainerCohort[]>("/api/trainer/my-cohorts");
       setOffline(null);
       setRows(buildRows(cohorts));
+      setCohorts(cohorts.map(({ cohort }) => ({
+        id: cohort.id, title: cohort.title, courseTitle: cohort.course.versions[0]?.titleAr ?? cohort.title,
+      })));
+      setTalk((t) => t ?? (cohorts[0] ? { cohortId: cohorts[0].cohort.id, to: "" } : null));
       /* ما ينتظر تصحيحي لكلّ متعلّم — نداءٌ ثانٍ، وفشلُه لا يُفرِّغ الشاشة */
       const queue = await apiGet<QueueItem[]>("/api/trainer/grading-queue").catch(() => [] as QueueItem[]);
       const byUser: Record<string, number> = {};
@@ -174,6 +192,11 @@ export default function TrainerMyLearners() {
       </TrainerLayout>
     );
   }
+
+  const talkTo = (cohortId: string, to: string) => {
+    setTalk({ cohortId, to });
+    requestAnimationFrame(() => talkRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  };
 
   const shown = rows.filter((r) => matchesQuery(q, [r.name, r.cohortTitle, r.courseTitle]));
   const needing = rows.filter((r) => r.concern > 0).length;
@@ -252,9 +275,10 @@ export default function TrainerMyLearners() {
                       </p>
                     )}
                     <div className="mt-2.5 flex flex-wrap gap-2 text-fine font-bold">
-                      <Link to="/trainer/board" className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground transition hover:border-teal/50 hover:text-foreground">
-                        افتح شعبتَه وخاطبه
-                      </Link>
+                      <button type="button" onClick={() => talkTo(r.cohortId, r.enrollmentId)}
+                        className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground transition hover:border-teal/50 hover:text-foreground">
+                        خاطِبه
+                      </button>
                       {waiting > 0 && (
                         <Link to="/trainer/grading" className="rounded-full border border-gold/35 px-3 py-1 text-gold-ink transition hover:border-gold">
                           صحّح تسليماته
@@ -267,6 +291,27 @@ export default function TrainerMyLearners() {
             </ul>
           )}
         </>
+      )}
+
+      {/* ── مركزُ التواصل ── يُعرض ولو خلت الشعبُ من متعلّمين: فالمستشارون يُخاطَبون أيضا */}
+      {talk && (
+        <section ref={talkRef} aria-labelledby="talk-h" className="mt-8 scroll-mt-24">
+          <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+            <h2 id="talk-h" className="flex items-center gap-2 text-lg font-black">
+              <MessageSquarePlus className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> مركز التواصل
+            </h2>
+            {cohorts.length > 1 && (
+              <label className="flex items-center gap-2 text-sm">
+                <span className="font-bold">الشعبة</span>
+                <select value={talk.cohortId} onChange={(e) => setTalk({ cohortId: e.target.value, to: "" })}
+                  className={`${controlCls} w-auto [&>option]:bg-surface`}>
+                  {cohorts.map((c) => <option key={c.id} value={c.id}>{c.courseTitle} · {c.title}</option>)}
+                </select>
+              </label>
+            )}
+          </div>
+          <CohortOps key={`${talk.cohortId}:${talk.to}`} cohortId={talk.cohortId} initialTo={talk.to} />
+        </section>
       )}
     </TrainerLayout>
   );

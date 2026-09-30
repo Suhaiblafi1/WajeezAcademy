@@ -440,7 +440,6 @@ const ACTIVE: Shot[] = [
     async run(e) {
       const p = e.page
       await open(e, `/trainer/cohort/${await cohortId(e, 'دفعةُ أكتوبر')}`)
-      await p.getByRole('tab', { name: 'التجهيز' }).click()
       await settle(e)
       await step(e, 4)
       const host = btn(p, 'ابدأ اللقاء مضيفا')
@@ -464,6 +463,26 @@ const ACTIVE: Shot[] = [
         marks: [
           { target: p.getByRole('textbox').first(), n: 1, pad: 5 },
           { target: p.getByText('عبر رابطك').first(), n: 2, pad: 5 },
+        ],
+      })
+    },
+  },
+  {
+    name: 'learners-talk',
+    async run(e) {
+      const p = e.page
+      await open(e, '/trainer/learners')
+      await btn(p, 'خاطِبه').click()
+      await settle(e)
+      await p.getByRole('textbox', { name: 'نصّ الرسالة' }).fill('تذكيرٌ: لقاءُ الغد يبدأ في موعده، وجهّزوا مذكّرةَ التحضير.')
+      await settle(e)
+      const section = p.locator('section').filter({ has: p.getByRole('heading', { name: 'مركز التواصل' }) }).first()
+      await shoot(e, {
+        name: 'learners-talk', clip: section, clipPad: 10, maxHeight: 1400,
+        marks: [
+          { target: p.getByRole('combobox', { name: 'إلى من' }), n: 1, pad: 5 },
+          { target: p.getByRole('textbox', { name: 'نصّ الرسالة' }), n: 2, pad: 5 },
+          { target: btn(section, /أرسِل|أرسل/), n: 3, pad: 5 },
         ],
       })
     },

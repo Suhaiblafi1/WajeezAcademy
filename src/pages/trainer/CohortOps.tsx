@@ -1,4 +1,12 @@
-/* تشغيلُ الشعبة — المرحلةُ الثانية من صفحة الشعبة الواحدة.
+/* مركزُ التواصل — مخاطبةُ شعبةٍ واحدة، ويُعرض في «طلبتي» (`MyLearners.tsx`).
+
+   ═══ وخرج من صفحة الشعبة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   كان الطورَ الثاني من صفحة الشعبة، لسانا بجانب «التجهيز». وقرارُ صاحب
+   المنصّة: «انقل مركزَ التواصل إلى صفحة طلبتي.. لا داعيَ له هنا في تجهيز
+   الشعبة». فصار يُعرض حيث المتعلّمون أنفسُهم، والمكوّنُ هو هو.
+
+   وما يلي تاريخُه قبل ذلك:
 
    ═══ ما كان ═══
 
@@ -57,12 +65,16 @@ interface CohortMessage {
   enrollment: { user: { displayName: string } } | null;
 }
 
-export default function CohortOps({ cohortId }: { cohortId: string }) {
+export default function CohortOps({ cohortId, initialTo = "" }: {
+  cohortId: string;
+  /** من ضغط «خاطِبه» على متعلّمٍ في «طلبتي» — فيُفتح النموذجُ موجَّها إليه */
+  initialTo?: string;
+}) {
   const { user: me } = useRealSession();
   const [row, setRow] = useState<TrainerCohort | null>(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [msgForm, setMsgForm] = useState({ body: "", enrollmentId: "" });
+  const [msgForm, setMsgForm] = useState({ body: "", enrollmentId: initialTo });
   const [msgLog, setMsgLog] = useState<Record<string, CohortMessage[]>>({});
 
   const load = useCallback(async () => {
