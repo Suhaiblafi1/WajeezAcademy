@@ -48,6 +48,8 @@ const content: TrainerPlanContent = {
     { title: 'قراءةٌ قبل لقاء الرابع', url: 'https://x.test/pre-4', category: 'reading', moduleId: 'AX-M4', preReading: true },
   ],
   slots: SLOTS,
+  /* وكرّاسةُ الدورة الواحدة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
+  workbook: { title: 'كرّاسةُ الدورة', url: 'https://x.test/wb.pdf', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 5 + 1}` })) },
 }
 /** اليومُ الثاني من الموعد، الثامنةَ مساءً بعمّان (الخامسة بغرينتش) — ساعتان */
 const when = (slot: number) => ({
@@ -90,6 +92,7 @@ describe('① الخطّةُ تحفظ مواعيدَها', () => {
     expect(res.statusCode, res.body).toBe(200)
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.plan?.content?.slots, 'سقطت المواعيدُ في المخطّط').toEqual(SLOTS)
+    expect(ws.plan?.content?.workbook, 'سقطت كرّاسةُ الدورة أو خريطتُها في المخطّط').toEqual(content.workbook)
     const [ref, pre] = ws.plan!.content!.resources
     expect(ref.moduleId).toBe('AX-M3')
     expect(pre.preReading, 'سقطت القراءةُ المسبقة').toBe(true)
@@ -193,6 +196,10 @@ describe('⑤ الإرسالُ على خطّ المحاور', () => {
 
     const last = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ الرابع', ...when(3), moduleIds: ['AX-M4'] })
     expect(last.statusCode, last.body).toBe(201)
+    /* ومشروعُ التخرّج صفٌّ إلزاميّ (٣٠ سبتمبر ٢٠٢٦) — يحجب حتّى يوضع */
+    await expect(plans.submit(trainerUserId, cohortId, true)).rejects.toMatchObject({ code: 'stages_incomplete', message: expect.stringContaining('مشروعَ التخرّج') })
+    const project = await post(`/api/trainer/cohorts/${cohortId}/assessments`, { title: 'مشروعُ التخرّج', type: 'project', moduleId: 'AX-M4' })
+    expect(project.statusCode, project.body).toBe(201)
     const sent = await plans.submit(trainerUserId, cohortId, true)
     expect(sent.status).toBe('submitted')
   })

@@ -50,7 +50,7 @@ describe('لا «تكليف» في بوّابة المدرّب', () => {
     const row = svc.split('\n').find((l) => l.includes("key: 'assignments'"))
     expect(row, 'لا صفَّ للمهامّ في قائمة الجاهزيّة').toBeTruthy()
     expect(OLD.test(row!), `عادت «التكاليف» في صفّ القائمة: ${row!.trim().slice(0, 90)}`).toBe(false)
-    expect(row, 'الصفُّ لا يقول الحدَّ الأدنى').toContain('مهمّةً واحدةً على الأقلّ')
+    expect(row, 'الصفُّ لا يقول الحدَّ الأدنى').toContain('مهمّةً عمليّةً واحدةً على الأقلّ')
   })
 
   /* ═══ والأسماءُ في الشريط قصيرةٌ لتُرى كلُّها (٢٧ سبتمبر ٢٠٢٦) ═══

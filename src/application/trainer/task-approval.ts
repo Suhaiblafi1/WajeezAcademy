@@ -40,7 +40,7 @@ export const TASK_FIELD_LABELS: Record<TaskField, string> = {
 
 const TASK_TYPES = ['assignment', 'quiz', 'project'] as const
 
-export interface TaskAttachment { title: string; url: string; kind: string }
+export interface TaskAttachment { title: string; url: string; kind: string; bodyFileKey?: string; bodyFileName?: string | null }
 
 /** المهمّةُ قيما تُقارَن — التاريخُ لحظةً بصيغة ISO، والمرفقاتُ مقروءة */
 export interface TaskValues {
@@ -77,7 +77,10 @@ function iso(v: string | Date | null | undefined): string | null {
 const text = (v: string | null | undefined): string | null => (v && v.trim() ? v : null)
 
 function attachmentsOf(raw: unknown): TaskAttachment[] {
-  return readTypedLinks(raw).map((l) => ({ title: l.title, url: l.url, kind: l.kind ?? 'link' }))
+  return readTypedLinks(raw).map((l) => ({
+    title: l.title, url: l.url, kind: l.kind ?? 'link',
+    ...(l.bodyFileKey ? { bodyFileKey: l.bodyFileKey, bodyFileName: l.bodyFileName ?? null } : {}),
+  }))
 }
 
 /** صفُّ المهمّة كما في القاعدة أو كما وصل الشاشةَ — قيما تُقارَن */

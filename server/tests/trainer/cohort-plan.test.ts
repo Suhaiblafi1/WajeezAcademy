@@ -72,10 +72,9 @@ const content: TrainerPlanContent = {
   resources: [{ title: 'كرّاسة الوحدة الأولى', url: 'https://example.com/unit-1.pdf' }],
   /* ومنذ صار للمحاور مواعيدُ (٢٧ سبتمبر ٢٠٢٦) فالمسودّةُ المكتملةُ مكتملةٌ بها:
      محورُها الواحدُ في موعدٍ يملأ المدّةَ، وله كرّاستُه */
-  slots: [{
-    startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['C-BIZ-101-M1'],
-    workbook: { url: 'https://example.com/workbook-1.pdf' },
-  }],
+  slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['C-BIZ-101-M1'] }],
+  /* وكرّاسةُ الدورة الواحدة وموضعُ محورها فيها (٣٠ سبتمبر ٢٠٢٦) */
+  workbook: { url: 'https://example.com/workbook.pdf', parts: [{ moduleId: 'C-BIZ-101-M1', whereAr: 'ص 1' }] },
 }
 
 describe('ملكيّةُ الشعبة واعتمادُها', () => {
@@ -290,6 +289,12 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     if ((await prisma.cohortAssessment.count({ where: { cohortId } })) === 0) {
       await prisma.cohortAssessment.create({
         data: { cohortId, title: 'مهمّةُ الإرسال', type: 'assignment', maxScore: 100, moduleId: first },
+      })
+    }
+    /* ومشروعُ التخرّج — صار صفّا إلزاميّا (٣٠ سبتمبر ٢٠٢٦) */
+    if ((await prisma.cohortAssessment.count({ where: { cohortId, type: 'project' } })) === 0) {
+      await prisma.cohortAssessment.create({
+        data: { cohortId, title: 'مشروعُ التخرّج', type: 'project', maxScore: 100, moduleId: first },
       })
     }
   }

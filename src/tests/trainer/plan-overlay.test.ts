@@ -144,7 +144,7 @@ describe('④ ما يخرج إلى المتعلّم يُنتقى بأسمائه 
        لو أُضيف مفتاحٌ ثالثٌ غدا واستُنسخ كاملا. */
     /* و`slots` مفتاحٌ مسمّى (٢(ب-٢)): مواعيدُ المحاور بكرّاساتها — تُبنى من
        حقولٍ مسمّاةٍ في الإسقاط، ولا تحمل شيئا من `content` كما هو */
-    expect(Object.keys(out as object).sort()).toEqual(['modules', 'resources', 'slots', 'summaryAr'])
+    expect(Object.keys(out as object).sort()).toEqual(['modules', 'resources', 'slots', 'summaryAr', 'workbook'])
     expect(JSON.stringify(out)).not.toContain('مقترَح')
     expect(JSON.stringify(out), 'ملاحظةُ اللقاءات خرجت وهي للمدرّب').not.toContain('ملاحظةُ اللقاءات')
   })

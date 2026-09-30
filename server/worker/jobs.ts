@@ -441,7 +441,7 @@ function timelineMessage(
     return {
       templateKey: 'timeline.slot_opened',
       title: `فُتح موعدٌ جديدٌ في «${ctx.title}»`,
-      body: `${ev.moduleIds.map(ctx.label).join(' و')} — كرّاستُه ومتنُه في رحلتك الآن.`
+      body: `${ev.moduleIds.map(ctx.label).join(' و')} — متنُه وموضعُه في الكرّاسة في رحلتك الآن.`
         + (next ? ` ولقاؤه المباشر ${whenAr(next.startsAt)}، وبعده تُفتح مهامُّه.` : ''),
       data: { slotStartsOn: ev.dedupe.split(':slot:')[1] ?? '' },
     }

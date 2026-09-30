@@ -16,6 +16,11 @@
      والمسجَّلُ «ينتهي» لحظةَ يُفتح.
    ⑥ آخرُ موعدٍ للتسليم هو آخرُ الموعد ما لم يُحدَّد غيرُه.
    ⑦ لكلّ موعدٍ كرّاسةٌ واحدة — ملفٌّ أو رابط، إلزاميّة — والمجموعان يتقاسمانها.
+     ⚠️ ونُسخ (٣٠ سبتمبر ٢٠٢٦): «اجعل الكرّاسةَ واحدةً فقط وليس لكلّ محور، على
+     أن تكون الكرّاسةُ كاملةً لكلّ المحاور، وأن يتأكّد أن تكون سهلةً على
+     الطالب يتبعها محورا محورا». فللشعبة كرّاسةٌ واحدة (`CohortWorkbook`)،
+     ومعها **خريطتُها**: لكلّ محورٍ أين يبدأ فيها — وبها يتبعها المتعلّمُ
+     محورا محورا. وكرّاساتُ المواعيد تبقى تُقرأ لما أُرسل أو اعتُمد قبلها.
 
    ── ولمَ ملفٌّ واحدٌ محض ──
 
@@ -38,6 +43,20 @@ export interface SlotWorkbook {
   bodyFileName?: string | null
   bodyFileMime?: string | null
 }
+
+/** موضعُ محورٍ في كرّاسة الشعبة — «ص ٥» أو «القسم الثاني» */
+export interface WorkbookPart {
+  moduleId: string
+  whereAr: string
+}
+
+/** كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها، ومعها أين يبدأ كلُّ محورٍ فيها */
+export interface CohortWorkbook extends SlotWorkbook {
+  parts?: WorkbookPart[] | null
+}
+
+/** أقصى طولٍ لموضع المحور — «ص ١٢–١٨» أو «القسم الثاني» لا فقرة */
+export const WORKBOOK_WHERE_MAX = 80
 
 /** موعدٌ على خطّ الشعبة: من يومٍ إلى يوم، وفيه محورٌ أو محاورُ متجاورة */
 export interface PlanSlot {
@@ -259,6 +278,26 @@ export function workbookProblems(slots: readonly PlanSlot[] | null | undefined, 
     .map((s, i) => ({ s, i }))
     .filter(({ s }) => !workbookDone(s.workbook))
     .map(({ s, i }) => `الموعد ${i + 1} (${axesLabelAr(s.moduleIds, pos)}) بلا كرّاسة — ارفع ملفّا أو ألصِق رابطا`)
+}
+
+/** موضعُ المحور في الكرّاسة — مكتوبا، أو `null` */
+export function workbookWhere(wb: CohortWorkbook | null | undefined, moduleId: string): string | null {
+  const w = (wb?.parts ?? []).find((p) => p.moduleId === moduleId)?.whereAr?.trim()
+  return w ? w : null
+}
+
+/** ما ينقص كرّاسةَ الشعبة — الملفُّ أو الرابط، ثمّ موضعُ كلّ محورٍ فيها */
+export function cohortWorkbookProblems(
+  wb: CohortWorkbook | null | undefined,
+  moduleIds: readonly string[],
+): string[] {
+  const out: string[] = []
+  if (!workbookDone(wb)) out.push('ارفع كرّاسةَ الدورة — ملفّا واحدا أو رابطا يضمّ المحاورَ كلَّها')
+  const missing = moduleIds.map((id, i) => ({ id, n: i + 1 })).filter(({ id }) => !workbookWhere(wb, id))
+  if (missing.length > 0) {
+    out.push(`اكتب أين يبدأ ${missing.length === 1 ? 'المحور' : 'كلٌّ من المحاور'} ${missing.map((m) => m.n).join('، ')} في الكرّاسة — كي يتبعها المتعلّمُ محورا محورا`)
+  }
+  return out
 }
 
 /** «المحور ٣» أو «المحوران ١+٢» أو «المحاور ٤+٥+٦» */

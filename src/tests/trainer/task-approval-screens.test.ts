@@ -89,7 +89,8 @@ describe('والمنهجُ ما سيُعتمَد', () => {
 
 describe('وورشةُ المدرّب تقول ما حكم به الخادم', () => {
   it('⚠️ حالُ كلّ مهمّةٍ بالقاعدة وبحال خطّته — لا بحالها وحدَها', () => {
-    expect(WORKSPACE).toMatch(/\{ws\.assessments\.map\(\(a\) => \{\s*\/\*[^*]*\*\/\s*const review = taskReview\(a, ws\.approvedOnce \?\? false\);/)
+    /* والقائمةُ صارت قائمةَ اللسان المفتوح (٣٠ سبتمبر ٢٠٢٦) — والقاعدةُ هي هي */
+    expect(WORKSPACE).toMatch(/\{shownTasks\.map\(\(a\) => \{\s*\/\*[^*]*\*\/\s*const review = taskReview\(a, ws\.approvedOnce \?\? false\);/)
     expect(WORKSPACE).toMatch(/\{review === "remove" \? \(\s*<Button[^>]*onClick=\{\(\) => withdrawChange\(a\)\}>تراجَع عن الحذف<\/Button>/)
   })
 

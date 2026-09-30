@@ -507,10 +507,12 @@ async function seedPrepPlan(ctx: Ctx, profileId: string) {
       moduleId: m.id, titleAr: m.versions[0]?.titleAr ?? `المحور ${i + 1}`,
       outcomeAr: TEXT[i].outcome, activityAr: TEXT[i].activity, bodyAr: TEXT[i].body,
     })),
-    slots: mods.map((m, i) => ({
-      startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [m.id],
-      workbook: { title: `كرّاسةُ المحور ${i + 1}`, url: `https://drive.google.com/file/d/guide-workbook-${i + 1}` },
-    })),
+    slots: mods.map((m, i) => ({ startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [m.id] })),
+    /* كرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
+    workbook: {
+      title: 'كرّاسةُ الدورة', url: 'https://drive.google.com/file/d/guide-workbook',
+      parts: mods.map((m, i) => ({ moduleId: m.id, whereAr: `ص ${i * 6 + 1}` })),
+    },
     resources: [
       { title: 'فصلُ «البساطة» من كتاب Made to Stick', kind: 'book', category: 'reading', moduleId: mods[1]?.id ?? null, preReading: true },
       { title: 'نموذجُ خريطة الرسالة — قالبٌ فارغ', kind: 'link', category: 'public', url: 'https://drive.google.com/file/d/guide-message-map', moduleId: mods[1]?.id ?? null },
@@ -585,10 +587,11 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
         activityAr: 'تمرينٌ ثنائيٌّ على موقفٍ من عمل المتعلّم.',
         bodyAr: `${NEGOTIATION_OUTCOMES[i]} نشرح الفكرةَ بمثالٍ واحد، ثمّ يطبّقها كلُّ متعلّمٍ على موقفٍ يعيشه الآن ويعرضه في اللقاء.`,
       })),
-      slots: mods.map((m, i) => ({
-        startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [m.id],
-        workbook: { title: `كرّاسةُ المحور ${i + 1}`, url: `https://drive.google.com/file/d/guide-negotiation-${i + 1}` },
-      })),
+      slots: mods.map((m, i) => ({ startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [m.id] })),
+      workbook: {
+        title: 'كرّاسةُ التفاوض', url: 'https://drive.google.com/file/d/guide-negotiation',
+        parts: mods.map((m, i) => ({ moduleId: m.id, whereAr: `ص ${i * 5 + 1}` })),
+      },
       resources: [
         { title: 'فصلُ «افصل الناس عن المشكلة» من كتاب Getting to Yes', kind: 'book', category: 'reading', moduleId: mods[0]?.id ?? null, preReading: true },
         { title: 'نموذجُ مذكّرة التحضير — صفحةٌ واحدة', kind: 'link', category: 'public', url: 'https://drive.google.com/file/d/guide-prep-memo', moduleId: mods[3]?.id ?? null },

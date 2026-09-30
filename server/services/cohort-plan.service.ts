@@ -46,7 +46,8 @@ import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
 import {
-  joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
+  cohortWorkbookProblems, joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems,
+  type CohortWorkbook, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
 import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
@@ -103,6 +104,12 @@ export interface TrainerPlanContent {
       ومنه يُحكم متى يُفتح كلُّ شيءٍ للمتعلّم. والقاعدةُ كاملةً في
       `src/application/trainer/axis-timeline.ts`. */
   slots?: PlanSlot[] | null
+  /** ═══ كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
+
+      حلّت محلَّ كرّاسةٍ لكلّ موعد: ملفٌّ أو رابطٌ واحد، ومعه أين يبدأ كلُّ
+      محورٍ فيه — فيتبعها المتعلّمُ محورا محورا. والقاعدةُ في
+      `src/application/trainer/axis-timeline.ts` (`cohortWorkbookProblems`). */
+  workbook?: CohortWorkbook | null
   /* ── وحُذف `proposals` من هنا (د-٦ · ١٤ سبتمبر ٢٠٢٦) ──
 
      كان حقلَين — اسمٌ مقترحٌ للدورة وآخرُ للمسار — يركبان مع الخطّة،
@@ -197,6 +204,8 @@ export function buildChecklist(input: {
   assessmentsCount: number
   /** محورُ كلّ مهمّة — ومنه «كلُّ مهمّةٍ مربوطةٌ بمحور». وغيابُه لا يحكم بشيء */
   assessmentModuleIds?: readonly (string | null)[]
+  /** نوعُ كلّ مهمّة — ومنه «مهامُّ عمليّةٌ ومشروعُ تخرّج» (٣٠ سبتمبر ٢٠٢٦). وغيابُه لا يحكم بشيء */
+  assessmentTypes?: readonly string[]
   planStatus: PlanStatus
   /** اللحظةُ التي يُحكم بها — وما انعقد قبلها لا يُحاسَب (`sessionProblems`) */
   now?: Date
@@ -264,8 +273,13 @@ export function buildChecklist(input: {
   const legacy = slots.length === 0 && ['submitted', 'approved', 'published'].includes(input.planStatus)
   const slotIssues = legacy ? [] : slotProblems(slots, moduleIds, input.period)
   const modulesDone = mods.length > 0 && mods.every(moduleBodyDone) && slotIssues.length === 0
-  /* ⑦ لكلّ موعدٍ كرّاستُه — ملفٌّ أو رابط */
-  const workbooksDone = legacy || (slots.length > 0 && workbookProblems(slots, moduleIds).length === 0)
+  /* ⑦ كرّاسةٌ واحدةٌ للشعبة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦).
+     وما أُرسل أو اعتُمد بكرّاسةٍ لكلّ موعدٍ قبل ذلك يمضي كما اعتُمد — ومتى
+     عُدّل صار مسودّةً فلزمته الكرّاسةُ الواحدة. */
+  const sentBefore = ['submitted', 'approved', 'published'].includes(input.planStatus)
+  const workbooksDone = legacy
+    || cohortWorkbookProblems(input.content?.workbook, moduleIds).length === 0
+    || (sentBefore && slots.length > 0 && workbookProblems(slots, moduleIds).length === 0)
   const resources = input.content?.resources ?? []
   /* والمصدرُ المربوطُ بمحورٍ حُذف من الخطّة لا يُفتح أبدا — يُسمّى ليُصلَح */
   const orphanResources = legacy ? 0 : resources.filter((r) => r.moduleId && !moduleIds.includes(r.moduleId)).length
@@ -314,6 +328,15 @@ export function buildChecklist(input: {
   const unlinkedTasks = legacy || !input.assessmentModuleIds
     ? 0
     : input.assessmentModuleIds.filter((id) => !id || !moduleIds.includes(id)).length
+  /* ═══ ثلاثةُ ألسنةٍ كلُّها إلزاميّة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «ثلاثُ تابات: للمهامّ العمليّة، وللمصادر، ولمشروع
+     التخرّج — لكي لا ينسى أيّا منها لأنّها كلُّها إجباريّة». فالمهامُّ العمليّةُ
+     غيرُ مشروع التخرّج، ولكلٍّ صفُّه. وما أُرسل أو اعتُمد قبل القرار يمضي كما
+     اعتُمد — ومتى عُدّل صار مسودّةً فلزمه. */
+  const types = input.assessmentTypes
+  const practicalCount = types ? types.filter((t) => t !== 'project').length : input.assessmentsCount
+  const projectDone = !types || sentBefore || legacy || types.includes('project')
   const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
   /* وما ينقص الصفَّين يُقال في سطرهما — بعددِه لا بإشارة */
   const tasksNote = unlinkedTasks > 0
@@ -327,7 +350,7 @@ export function buildChecklist(input: {
       labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',
       done: modulesDone, optional: false,
     },
-    { key: 'workbooks', labelAr: 'ضع لكلّ موعدٍ كرّاستَه — ملفّا أو رابطا', done: workbooksDone, optional: false },
+    { key: 'workbooks', labelAr: 'ضع كرّاسةَ الدورة — واحدةً للمحاور كلِّها، وأين يبدأ كلُّ محورٍ فيها', done: workbooksDone, optional: false },
     {
       key: 'sessions',
       labelAr: (linked
@@ -358,10 +381,11 @@ export function buildChecklist(input: {
        ومقابلَه في القرار نفسِه: **المحورُ تامٌّ بمتنٍ من الأكاديميّة أو
        منه** — وهو قائمٌ في `moduleBodyDone`، إذ يُحمَل متنُ الكتالوج في
        `baseModules` فيُقرأ تماما بلا أن يُعيد المدرّبُ كتابتَه. */
-    { key: 'assignments', labelAr: 'ألّف مهمّةً واحدةً على الأقلّ — واجبٌ أو مشروعٌ يُسلَّم ويُقيَّم' + tasksNote, done: input.assessmentsCount > 0 && unlinkedTasks === 0, optional: false },
+    { key: 'assignments', labelAr: 'ألّف مهمّةً عمليّةً واحدةً على الأقلّ — واجبٌ أو اختبارٌ يُسلَّم ويُقيَّم' + tasksNote, done: practicalCount > 0 && unlinkedTasks === 0, optional: false },
     /* والمصادرُ في الخطوة نفسِها بعد المهامّ — «وبعدها المهامُّ والواجباتُ وغيرُها
        والتي تُربط بالمحاور» (٢٧ سبتمبر ٢٠٢٦) */
     { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم' + resourcesNote, done: resourcesDone, optional: false },
+    { key: 'project', labelAr: 'ضع مشروعَ التخرّج — عملٌ واحدٌ يجمع المحاورَ ويُقيَّم في آخر الشعبة', done: projectDone, optional: false },
     { key: 'approval', labelAr: 'أكّد أنّك توافق على كلّ ما فيها وأرسلها للاعتماد', done: approvalDone, optional: false },
   ]
 }
@@ -496,6 +520,7 @@ export class CohortPlanService {
       cohort, period, content, sessions: countableSessions(cohort.sessions),
       assessmentsCount: cohort.assessments.length,
       assessmentModuleIds: cohort.assessments.map((a) => a.moduleId),
+      assessmentTypes: cohort.assessments.map((a) => a.type),
       planStatus: status,
     })
     /* الحدودُ المعلَنةُ للمسجَّلين الآن — تُقال بجانب مدّته إن افترقتا */
@@ -579,7 +604,7 @@ export class CohortPlanService {
                 recordings: { where: { status: 'active' }, select: { id: true } },
               },
             },
-            assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true } },
+            assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true } },
             plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1 },
             _count: {
               select: {
@@ -600,7 +625,8 @@ export class CohortPlanService {
       const checklist = buildChecklist({
         cohort: c, period: resolvePeriod(planContent, c, planStatus), content: planContent,
         sessions: countableSessions(c.sessions), assessmentsCount: c._count.assessments,
-        assessmentModuleIds: c.assessments.map((a) => a.moduleId), planStatus,
+        assessmentModuleIds: c.assessments.map((a) => a.moduleId),
+        assessmentTypes: c.assessments.map((a) => a.type), planStatus,
       })
       /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» ولا «الفصلَ»
          اللذين ليسا بيده. وكانت تعدّ الاعتمادَ، فبطاقةُ شعبةٍ تامّةٍ تقول
@@ -770,7 +796,7 @@ export class CohortPlanService {
             recordings: { select: { id: true } },
           },
         },
-        assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true } },
+        assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true } },
         _count: { select: { assessments: true } },
       },
     })
@@ -781,6 +807,7 @@ export class CohortPlanService {
       sessions: countableSessions(gateCohort.sessions),
       assessmentsCount: gateCohort._count.assessments,
       assessmentModuleIds: gateCohort.assessments.map((a) => a.moduleId),
+      assessmentTypes: gateCohort.assessments.map((a) => a.type),
       planStatus: latest.status as PlanStatus,
     }))
     if (blocking.length) {

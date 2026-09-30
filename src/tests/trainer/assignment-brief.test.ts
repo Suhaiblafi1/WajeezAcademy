@@ -48,8 +48,10 @@ describe('① التعليماتُ تصل المتعلّم', () => {
 describe('② المرفقاتُ تُحفظ وتُقرأ', () => {
   it('الخادمُ يقبلها في الإنشاء والتعديل بالقائمة البيضاء نفسِها', () => {
     const r = code('server/http/routes/learning-portal.routes.ts')
-    expect((r.match(/attachments: z\.array\(/g) ?? []).length, 'المرفقاتُ في مسارٍ واحدٍ لا في الاثنين').toBe(2)
-    expect((r.match(/kind: z\.enum\(RESOURCE_KINDS\)/g) ?? []).length).toBeGreaterThanOrEqual(3)
+    /* وصار المخطّطُ واحدا يقرؤه المساران (٣٠ سبتمبر ٢٠٢٦) — رابطٌ أو ملفٌّ مرفوع —
+       فلا يفترق الإنشاءُ عن التعديل في ما يقبل */
+    expect((r.match(/attachments: TASK_ATTACHMENTS\.optional\(\)/g) ?? []).length, 'المرفقاتُ في مسارٍ واحدٍ لا في الاثنين').toBe(2)
+    expect(r).toMatch(/const TASK_ATTACHMENTS = z\.array\(z\.object\(\{[\s\S]*?kind: z\.enum\(RESOURCE_KINDS\)/)
   })
 
   it('والمصفوفةُ الفارغةُ محوٌ مقصودٌ لا إهمال', () => {

@@ -31,7 +31,7 @@ import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trai
 import { AuthError } from '../../services/auth.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
 import { requireAuth, requirePermission } from '../auth-plugin'
-import { MAX_AXES_PER_SESSION } from '../../../src/application/trainer/axis-timeline'
+import { MAX_AXES_PER_SESSION, WORKBOOK_WHERE_MAX } from '../../../src/application/trainer/axis-timeline'
 
 /** محورا اللقاء: اثنان على الأكثر بلا تكرار — «ولكلّ لقاءٍ محورٌ أو محوران» */
 const axesArray = z.array(z.string().trim().min(1).max(64))
@@ -94,6 +94,26 @@ function signCohortContent<T extends {
     })),
   }
 }
+
+
+/* ═══ مرفقُ المهمّة — رابطٌ، أو ملفٌّ مرفوع (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «عندما يختار ملفّا لا تظهر خانةُ رفع الملف… يجب بعد أن
+   يختار ملفّا أو فيديو يظهر له ما يوازيه». فالمرفقُ رابطٌ يبدأ بـhttp(s)، أو
+   مفتاحُ ملفٍّ رفعه المدرّبُ إلى مخزن الشعبة — واحدٌ منهما لا كلاهما ولا
+   لا شيء. وقراءةُ الملفّ تمرّ بحارس `cohort-file.service.ts`. */
+const TASK_ATTACHMENTS = z.array(z.object({
+  title: z.string().min(2).max(200),
+  url: z.string().max(500).nullish(),
+  kind: z.enum(RESOURCE_KINDS).nullish(),
+  bodyFileKey: z.string().trim().max(120).nullish(),
+  bodyFileName: z.string().trim().max(200).nullish(),
+  bodyFileMime: z.string().trim().max(120).nullish(),
+}).refine(
+  (a) => Boolean((a.bodyFileKey ?? '').trim()) !== /^https?:\/\/\S+$/.test((a.url ?? '').trim()),
+  { message: 'المرفقُ رابطٌ يبدأ بـ https:// أو ملفٌّ مرفوع — واحدٌ منهما' },
+/* والمرفوعُ يُحفظ برابطٍ فارغ — `TypedLink.url` نصٌّ دائما */
+).transform((a) => ({ ...a, url: (a.url ?? '').trim() }))).max(10)
 
 export function registerLearningPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const departures = new TrainerDepartureService(prisma)
@@ -592,6 +612,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
         bodyFileMime: z.string().trim().max(120).nullish(),
       }).nullish(),
     })).max(40).nullish(),
+    /* ═══ كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
+
+       ومعها `parts`: أين يبدأ كلُّ محورٍ فيها. والناقصُ يُحفظ ويُسمّى في قائمة
+       التجهيز، كالمواعيد. */
+    workbook: z.object({
+      title: z.string().max(200).nullish(),
+      url: z.string().max(500).nullish(),
+      bodyFileKey: z.string().trim().max(120).nullish(),
+      bodyFileName: z.string().trim().max(200).nullish(),
+      bodyFileMime: z.string().trim().max(120).nullish(),
+      parts: z.array(z.object({
+        moduleId: z.string().max(64),
+        whereAr: z.string().max(WORKBOOK_WHERE_MAX),
+      })).max(40).nullish(),
+    }).nullish(),
     /* وسقط `proposals` من المخطّط (د-٦): كان اسمُ الدورة يُكتب على النسخة
        القائمة من داخل خطّة شعبة فيُعيد تسميةَ الشهادات الصادرة. ثمّ مرّ
        بقناته (ح-٣)، ثمّ أُغلق بابُه كلُّه (ق٥ · ١٧ سبتمبر ٢٠٢٦). والمحفوظُ
@@ -763,11 +798,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       title: z.string().min(3), type: z.enum(['assignment', 'quiz', 'project']),
       moduleId: z.string().trim().min(1).max(64).optional(), briefAr: z.string().max(4000).optional(), maxScore: z.number().int().min(1).optional(),
       passScore: z.number().int().optional(), dueAt: z.coerce.date().optional(), rubricId: z.string().uuid().optional(),
-      /* المرفقات — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */
-      attachments: z.array(z.object({
-        title: z.string().min(2).max(200), url: z.string().url().max(500),
-        kind: z.enum(RESOURCE_KINDS).nullish(),
-      })).max(10).optional(),
+      /* المرفقات — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم: رابطٌ، أو ملفٌّ مرفوع */
+      attachments: TASK_ATTACHMENTS.optional(),
       items: z.array(z.object({ prompt: z.string().min(2), kind: z.enum(['text', 'choice', 'file']).optional(), maxScore: z.number().int().optional() })).optional(),
     }).parse(req.body)
     await enrollments.assertCohortTrainer(req.auth!.userId, id)
@@ -796,10 +828,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       /* محورُ المهمّة — منه متى تُفتح وآخرُ موعدها الافتراضيّ (٢٧ سبتمبر ٢٠٢٦) */
       moduleId: z.string().trim().min(1).max(64).nullable().optional(),
       /* المصفوفةُ الفارغةُ تعني «امحُ المرفقات» — كالنصّ الفارغ للتعليمات */
-      attachments: z.array(z.object({
-        title: z.string().min(2).max(200), url: z.string().url().max(500),
-        kind: z.enum(RESOURCE_KINDS).nullish(),
-      })).max(10).optional(),
+      attachments: TASK_ATTACHMENTS.optional(),
     }).parse(req.body)
     return assessments.updateAssessment(req.auth!.userId, assessmentId, body)
   })

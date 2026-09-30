@@ -33,7 +33,7 @@ import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks } from "@/application/content/module-checks";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { referencesByIds } from "@/data/methodology";
-import { overlayModules, readTypedLinks, resourceKind, type LearnerSlot, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
+import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkbook, type LearnerSlot, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { whenAr } from "@/application/learning/cohort-gate";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
@@ -114,6 +114,7 @@ export default function StageWork({
   /* ٢(ب-٢): وقتُه في الشعبة، ومواعيدُ محاورها إن كانت لها مواعيد */
   const access = detail.access?.state ?? "open";
   const slots = detail.cohort.trainerPlan?.slots ?? [];
+  const cohortWorkbook = detail.cohort.trainerPlan?.workbook ?? null;
   /* وما لا رابطَ له يسقط هنا: التسجيلُ يصل من بابَين — مرفوعٌ عندنا أو
      واصلٌ من Zoom — وقراءةُ أحدِهما وحدَها تُظهر سطرا يفتح على `#`. */
   const recordings = openableRecordings(detail.cohort.sessions.flatMap((s) => s.recordings));
@@ -197,8 +198,10 @@ export default function StageWork({
         </div>
 
         <div className="mt-4">
+          {tab === "lessons" && cohortWorkbook && <CohortWorkbookCard wb={cohortWorkbook} modules={modules} />}
           {tab === "lessons" && (slots.length > 0 ? (
             <Timeline
+              workbook={cohortWorkbook}
               slots={slots}
               modules={modules}
               doneModules={doneModules}
@@ -542,7 +545,7 @@ function Lessons({
    عرضُه وحدَه. */
 
 /** رابطُ الكرّاسة — الملفُّ من المسار المحروس، والرابطُ خارجيّ */
-function WorkbookLink({ wb }: { wb: LearnerWorkbook }) {
+function WorkbookLink({ wb, labelAr = "كرّاسةُ الموعد" }: { wb: LearnerWorkbook; labelAr?: string }) {
   const key = (wb.bodyFileKey ?? "").trim();
   const href = key ? `/api/v1/cohort-files/${encodeURIComponent(key)}` : wb.url ?? "";
   if (!href) return null;
@@ -553,12 +556,52 @@ function WorkbookLink({ wb }: { wb: LearnerWorkbook }) {
       className="mt-2 flex min-h-9 w-fit items-center gap-1.5 rounded-full border border-teal/40 bg-teal/[0.06] px-3 py-1.5 text-read font-bold text-teal-light-ink transition hover:border-teal"
     >
       <BookMarked className="h-3.5 w-3.5" aria-hidden="true" />
-      {wb.title?.trim() || "كرّاسةُ الموعد"}
+      {wb.title?.trim() || labelAr}
     </a>
   );
 }
 
+/* ─────────── كرّاسةُ الدورة — واحدةٌ للمحاور كلِّها (٣٠ سبتمبر ٢٠٢٦) ───────────
+
+   قرارُ صاحب المنصّة: «اجعل الكرّاسةَ واحدةً فقط… على أن تكون كاملةً لكلّ
+   المحاور، وأن يتأكّد أن تكون سهلةً على الطالب يتبعها محورا محورا». فالبطاقةُ
+   تحمل الكرّاسةَ مرّةً واحدة، وتحتها خريطتُها بترتيب المحاور: أين يبدأ كلٌّ
+   منها. وفي كلّ موعدٍ سطرٌ يقول أين محاورُه فيها — فيفتحها على موضعه. */
+function CohortWorkbookCard({ wb, modules }: { wb: LearnerCohortWorkbook; modules: LessonModule[] }) {
+  const no = new Map(modules.map((m, i) => [m.id, i + 1]));
+  const title = new Map(modules.map((m) => [m.id, m.title]));
+  return (
+    <Card tone="accent" className="mb-3 p-3">
+      <p className="flex items-center gap-1.5 text-read font-black text-foreground">
+        <BookMarked className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> كرّاسةُ الدورة
+      </p>
+      <p className="mt-0.5 text-read leading-6 text-muted-foreground">
+        كرّاسةٌ واحدةٌ فيها المحاورُ كلُّها بترتيبها — اتبعها محورا محورا مع مواعيدك.
+      </p>
+      {wb.file ? (
+        <WorkbookLink wb={wb.file} labelAr="افتح كرّاسةَ الدورة" />
+      ) : wb.locked && wb.opensAt ? (
+        <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" aria-hidden="true" /> تُفتح {whenAr(wb.opensAt)} — أوّلَ يومٍ في الشعبة
+        </p>
+      ) : null}
+      {wb.parts.length > 0 && (
+        <ol className="mt-2 grid gap-1 text-read leading-6">
+          {wb.parts.map((p) => (
+            <li key={p.moduleId} className="flex flex-wrap gap-x-1.5">
+              <span className="font-bold text-teal-light-ink tabular-nums">المحور {no.get(p.moduleId) ?? "؟"}</span>
+              <span className="text-muted-foreground">· {title.get(p.moduleId) ?? ""}</span>
+              <span className="font-bold text-foreground">— {p.whereAr}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
+  );
+}
+
 function Timeline({
+  workbook,
   slots,
   modules,
   doneModules,
@@ -570,6 +613,7 @@ function Timeline({
   now,
   onOpenWork,
 }: {
+  workbook: LearnerCohortWorkbook | null;
   slots: LearnerSlot[];
   modules: LessonModule[];
   doneModules: Set<string>;
@@ -618,6 +662,24 @@ function Timeline({
                 </p>
               ) : null}
               <ul className="mt-2 space-y-2">{s.moduleIds.map(row)}</ul>
+              {/* أين محاورُ هذا الموعد في كرّاسة الدورة — ويفتحها من هنا متى فُتحت */}
+              {workbook && s.moduleIds.some((id) => workbook.parts.some((p) => p.moduleId === id)) && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="flex items-center gap-1.5 text-read text-muted-foreground">
+                    <BookMarked className="h-3.5 w-3.5" aria-hidden="true" />
+                    في الكرّاسة:{" "}
+                    {s.moduleIds
+                      .map((id) => {
+                        const where = workbook.parts.find((p) => p.moduleId === id)?.whereAr;
+                        const n = (at.get(id) ?? -1) + 1;
+                        return where ? `المحور ${n} ${where}` : null;
+                      })
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  {!s.locked && workbook.file && <WorkbookLink wb={workbook.file} labelAr="افتح الكرّاسة" />}
+                </div>
+              )}
               {tasks.length > 0 && (
                 <div className="mt-2 border-t border-white/[0.06] pt-2">
                   <ul className="space-y-1">
@@ -818,10 +880,12 @@ function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; hand
               <ul className="mt-3 flex flex-wrap gap-2">
                 {readTypedLinks(a.attachments).map((att, i) => {
                   const meta = RESOURCE_META[resourceKind(att.kind)];
+                  /* والمرفقُ المرفوعُ من المسار المحروس — يُقرأ بعد فتح مهمّته وحدَه */
+                  const key = (att.bodyFileKey ?? "").trim();
                   return (
-                    <li key={`${att.url}-${i}`}>
+                    <li key={`${key || att.url}-${i}`}>
                       <a
-                        href={att.url}
+                        href={key ? `/api/v1/cohort-files/${encodeURIComponent(key)}` : att.url}
                         target="_blank"
                         rel="noreferrer"
                         className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-read font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
