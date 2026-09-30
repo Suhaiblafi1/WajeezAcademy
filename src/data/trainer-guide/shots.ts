@@ -56,6 +56,10 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 1409
   },
+  "learners-talk": {
+    "w": 2200,
+    "h": 1352
+  },
   "marketing-poster": {
     "w": 2200,
     "h": 1792
@@ -90,11 +94,11 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   },
   "proposal-card": {
     "w": 2200,
-    "h": 907
+    "h": 850
   },
   "proposal-form": {
     "w": 1800,
-    "h": 2163
+    "h": 2841
   },
   "qual-accepted": {
     "w": 2200,

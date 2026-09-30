@@ -27,7 +27,7 @@
    يلزم؛ ما سواه يُجاب بقدر ما يعرف. */
 
 import { useCallback, useEffect, useState } from "react";
-import { BookPlus, Check, Link2, Loader2, MessageCircleQuestion, Pencil, Trash2, X } from "lucide-react";
+import { BookPlus, Check, CheckCheck, Hourglass, Link2, Loader2, MessageCircleQuestion, Pencil, Trash2, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
@@ -38,7 +38,7 @@ import Button from "@/components/ui/Button";
 import { fmtDateLong } from "@/application/text/format-ar";
 import {
   MAX_DETAIL_LINE, MAX_DETAIL_TEXT, MAX_PROPOSAL_HOURS,
-  PROPOSAL_EXPERIENCE, PROPOSAL_FORMATS, PROPOSAL_LEVELS, PROPOSAL_MATERIALS, PROPOSAL_MERGE,
+  PROPOSAL_EXPERIENCE, PROPOSAL_FORMATS, PROPOSAL_LEVELS, PROPOSAL_MATERIALS,
   proposalDetailRows, type ProposalDetails,
 } from "@/application/trainer/proposal-details";
 
@@ -169,20 +169,11 @@ function ProposalForm({
         </div>
       </Section>
 
-      <Section n={4} title="دمجٌ أم دورةٌ جديدة؟" hint="قد تكون عندنا دورةٌ قريبة، فتصير هذه نسختَك منها بدل أن تتكرّر في الكتالوج.">
-        <StaffField label="أقربُ دورةٍ تعرفها في كتالوجنا" hint="اسمُها إن وُجدت — ولا بأس إن لم تعرف">
-          <input
-            value={d.closestCourseAr ?? ""} maxLength={MAX_DETAIL_LINE} className={staffControlCls}
-            placeholder="مثلا: دورةُ تحليل البيانات للمبتدئين"
-            onChange={(e) => set({ closestCourseAr: e.target.value })}
-          />
-        </StaffField>
-        <StaffField as="div" label="إن وجدنا دورةً قريبة">
-          <OptionGrid cols={3} name="الدمج" items={opts(PROPOSAL_MERGE)} isOn={(v) => d.merge === v} onToggle={one("merge")} />
-        </StaffField>
-      </Section>
-
-      <Section n={5} title="جاهزيّتُك" hint="بها نقدّر متى يمكن أن تنطلق.">
+      {/* وكان هنا قسمٌ رابعٌ «دمجٌ أم دورةٌ جديدة؟» يسأل المدرّبَ أقربَ دورةٍ
+          وهل يقبل الدمج. حُذف بقرار صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦): «هذا
+          نحن نقرّره لا هو». فالدمجُ حكمُ الإدارة من المحاور والمخرجات، ولا
+          يُسأل عنه صاحبُ الاقتراح. والإجاباتُ القديمة تبقى تُقرأ حيث حُفظت. */}
+      <Section n={4} title="جاهزيّتُك" hint="بها نقدّر متى يمكن أن تنطلق.">
         <StaffField as="div" label="هل درّستها من قبل؟">
           <OptionGrid cols={3} name="الخبرة" items={opts(PROPOSAL_EXPERIENCE)} isOn={(v) => d.experience === v} onToggle={one("experience")} />
         </StaffField>
@@ -293,6 +284,184 @@ export default function MyCourseProposals() {
   }
 
   const canAdd = draft.titleAr.trim().length >= MIN_TITLE;
+  const pending = (rows ?? []).filter((p) => OPEN.includes(p.status));
+  const decided = (rows ?? []).filter((p) => !OPEN.includes(p.status));
+
+  /* بطاقةُ اقتراحٍ واحد — تُعرض في القسمين: ما عند الإدارة، وما بُتّ فيه */
+  const card = (p: Proposal) => {
+    const st = stateOf(p);
+    const open = OPEN.includes(p.status);
+    const editing = editId === p.id;
+    return (
+      <Card key={p.id}>
+        {editing ? (
+          <div className="grid gap-4">
+            <ProposalForm value={edit} onChange={setEdit} />
+            <div className="flex gap-2 border-t border-white/10 pt-4">
+              <Button
+                tone="confirm" icon={Check} loading={busy}
+                disabled={edit.titleAr.trim().length < MIN_TITLE}
+                onClick={() => run(
+                  () => apiPatch(`/api/trainer/course-proposals/${p.id}`, payloadOf(edit))
+                    .then(() => setEditId(null)),
+                  "حُفظ التعديل",
+                )}
+              >
+                احفظ
+              </Button>
+              <Button tone="ghost" icon={X} onClick={() => setEditId(null)}>تراجَع</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-[14rem] flex-1">
+              <div className="text-read font-bold text-foreground">{p.titleAr}</div>
+              {p.summaryAr ? (
+                <div className="mt-1 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+                  {p.summaryAr}
+                </div>
+              ) : null}
+              {proposalDetailRows(p.details, "trainer").length > 0 ? (
+                <dl className="mt-2 grid gap-x-5 gap-y-1 text-sm sm:grid-cols-2">
+                  {proposalDetailRows(p.details, "trainer").map((r) => (
+                    <div key={r.labelAr} className="min-w-0">
+                      <dt className="inline text-muted-foreground">{r.labelAr}: </dt>
+                      <dd className="inline whitespace-pre-wrap text-foreground">{r.valueAr}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span
+                  className={
+                    "rounded-full px-2.5 py-0.5 text-xs font-bold "
+                    + (st.tone === "good"
+                      ? "bg-teal/15 text-teal"
+                      : st.tone === "bad"
+                        ? "bg-red-500/15 text-red-300"
+                        : "bg-white/10 text-muted-foreground")
+                  }
+                >
+                  {st.label}
+                </span>
+                <span className="text-xs text-muted-foreground/70">
+                  {p.decidedAt ? `بُتّ فيها ${fmtDateLong(p.decidedAt)}` : `أُرسلت ${fmtDateLong(p.createdAt)}`}
+                </span>
+              </div>
+            </div>
+            {open ? (
+              <div className="flex gap-2">
+                <Button
+                  tone="ghost" icon={Pencil} disabled={busy}
+                  onClick={() => {
+                    setEditId(p.id);
+                    setEdit({ titleAr: p.titleAr, summaryAr: p.summaryAr ?? "", details: p.details ?? {} });
+                  }}
+                >
+                  عدّل
+                </Button>
+                <Button
+                  tone="danger" icon={Trash2} disabled={busy}
+                  onClick={() => run(
+                    () => apiDelete(`/api/trainer/course-proposals/${p.id}`),
+                    "حُذف الاقتراح",
+                  )}
+                >
+                  احذف
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* جوابُ الإدارة — وهو ما جاء المدرّبُ ليقرأه */}
+        {!editing ? (
+          <Inset className="mt-3 text-sm leading-7 text-muted-foreground">
+            {st.tone === "good" && p.status === "linked" ? (
+              <Link2 className="ms-0 me-1 inline h-4 w-4 text-teal" aria-hidden />
+            ) : null}
+            {st.sayAr}
+          </Inset>
+        ) : null}
+
+        {/* ── سؤالُ الإدارة، وموضعُ جوابه ──
+
+            والسؤالُ يبقى معروضا بعد الجواب وبعد القرار: من قرأ
+            «رُفضت» بعد شهرٍ يحتاج أن يرى ما سُئل عنه وبمَ أجاب —
+            وجوابٌ بلا سؤالِه نصفُ جملة. */}
+        {!editing && p.questionAr ? (
+          <Inset className="mt-3 grid gap-3 text-sm leading-7">
+            <div>
+              <div className="flex items-center gap-1.5 font-bold text-foreground">
+                <MessageCircleQuestion className="h-4 w-4 text-teal" aria-hidden />
+                سألتك الإدارة
+                {p.questionAt ? (
+                  <span className="text-xs font-normal text-muted-foreground/70">
+                    {fmtDateLong(p.questionAt)}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{p.questionAr}</p>
+            </div>
+
+            {p.answerAr ? (
+              <div>
+                <div className="font-bold text-foreground">
+                  وأجبتَ
+                  {p.answeredAt ? (
+                    <span className="ms-1.5 text-xs font-normal text-muted-foreground/70">
+                      {fmtDateLong(p.answeredAt)}
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{p.answerAr}</p>
+              </div>
+            ) : null}
+
+            {p.status === "info_requested" ? (
+              answerFor === p.id ? (
+                <div className="grid gap-2">
+                  <StaffField label="جوابُك">
+                    <textarea
+                      value={answerText} maxLength={MAX_ANSWER} rows={4}
+                      className={staffControlCls}
+                      placeholder="أجِبْ بما يكفي لتُصنَّف دورتُك — وعدّل عنوانَها ونبذتَها إن لزم"
+                      onChange={(e) => setAnswerText(e.target.value)}
+                    />
+                  </StaffField>
+                  <div className="flex gap-2">
+                    <Button
+                      tone="confirm" icon={Check} loading={busy}
+                      disabled={answerText.trim().length < 2}
+                      onClick={() => run(
+                        () => apiPost(`/api/trainer/course-proposals/${p.id}/answer`, {
+                          answerAr: answerText.trim(),
+                        }).then(() => { setAnswerFor(null); setAnswerText(""); }),
+                        "وصل جوابُك الإدارةَ",
+                      )}
+                    >
+                      أرسِل الجواب
+                    </Button>
+                    <Button tone="ghost" icon={X} onClick={() => setAnswerFor(null)}>تراجَع</Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Button
+                    tone="confirm" icon={MessageCircleQuestion} disabled={busy}
+                    onClick={() => { setAnswerFor(p.id); setAnswerText(""); }}
+                  >
+                    أجِبْ عن السؤال
+                  </Button>
+                </div>
+              )
+            ) : null}
+          </Inset>
+        ) : null}
+      </Card>
+    );
+  };
+
 
   return (
     <TrainerLayout title="دوراتي المقترحة">
@@ -344,181 +513,34 @@ export default function MyCourseProposals() {
               reasonAr="اكتب أوّلَ دورةٍ تقدر عليها ولا تجدها في كتالوجنا — تصل الإدارةَ فتُصنَّف."
             />
           ) : (
-            <div className="grid gap-3">
-              {rows.map((p) => {
-                const st = stateOf(p);
-                const open = OPEN.includes(p.status);
-                const editing = editId === p.id;
-                return (
-                  <Card key={p.id}>
-                    {editing ? (
-                      <div className="grid gap-4">
-                        <ProposalForm value={edit} onChange={setEdit} />
-                        <div className="flex gap-2 border-t border-white/10 pt-4">
-                          <Button
-                            tone="confirm" icon={Check} loading={busy}
-                            disabled={edit.titleAr.trim().length < MIN_TITLE}
-                            onClick={() => run(
-                              () => apiPatch(`/api/trainer/course-proposals/${p.id}`, payloadOf(edit))
-                                .then(() => setEditId(null)),
-                              "حُفظ التعديل",
-                            )}
-                          >
-                            احفظ
-                          </Button>
-                          <Button tone="ghost" icon={X} onClick={() => setEditId(null)}>تراجَع</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-[14rem] flex-1">
-                          <div className="text-read font-bold text-foreground">{p.titleAr}</div>
-                          {p.summaryAr ? (
-                            <div className="mt-1 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-                              {p.summaryAr}
-                            </div>
-                          ) : null}
-                          {proposalDetailRows(p.details).length > 0 ? (
-                            <dl className="mt-2 grid gap-x-5 gap-y-1 text-sm sm:grid-cols-2">
-                              {proposalDetailRows(p.details).map((r) => (
-                                <div key={r.labelAr} className="min-w-0">
-                                  <dt className="inline text-muted-foreground">{r.labelAr}: </dt>
-                                  <dd className="inline whitespace-pre-wrap text-foreground">{r.valueAr}</dd>
-                                </div>
-                              ))}
-                            </dl>
-                          ) : null}
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span
-                              className={
-                                "rounded-full px-2.5 py-0.5 text-xs font-bold "
-                                + (st.tone === "good"
-                                  ? "bg-teal/15 text-teal"
-                                  : st.tone === "bad"
-                                    ? "bg-red-500/15 text-red-300"
-                                    : "bg-white/10 text-muted-foreground")
-                              }
-                            >
-                              {st.label}
-                            </span>
-                            <span className="text-xs text-muted-foreground/70">
-                              {p.decidedAt ? `بُتّ فيها ${fmtDateLong(p.decidedAt)}` : `أُرسلت ${fmtDateLong(p.createdAt)}`}
-                            </span>
-                          </div>
-                        </div>
-                        {open ? (
-                          <div className="flex gap-2">
-                            <Button
-                              tone="ghost" icon={Pencil} disabled={busy}
-                              onClick={() => {
-                                setEditId(p.id);
-                                setEdit({ titleAr: p.titleAr, summaryAr: p.summaryAr ?? "", details: p.details ?? {} });
-                              }}
-                            >
-                              عدّل
-                            </Button>
-                            <Button
-                              tone="danger" icon={Trash2} disabled={busy}
-                              onClick={() => run(
-                                () => apiDelete(`/api/trainer/course-proposals/${p.id}`),
-                                "حُذف الاقتراح",
-                              )}
-                            >
-                              احذف
-                            </Button>
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
+            <>
+              {/* ── قسمان لا قائمةٌ واحدة (٣٠ سبتمبر ٢٠٢٦) ──
 
-                    {/* جوابُ الإدارة — وهو ما جاء المدرّبُ ليقرأه */}
-                    {!editing ? (
-                      <Inset className="mt-3 text-sm leading-7 text-muted-foreground">
-                        {st.tone === "good" && p.status === "linked" ? (
-                          <Link2 className="ms-0 me-1 inline h-4 w-4 text-teal" aria-hidden />
-                        ) : null}
-                        {st.sayAr}
-                      </Inset>
-                    ) : null}
-
-                    {/* ── سؤالُ الإدارة، وموضعُ جوابه ──
-
-                        والسؤالُ يبقى معروضا بعد الجواب وبعد القرار: من قرأ
-                        «رُفضت» بعد شهرٍ يحتاج أن يرى ما سُئل عنه وبمَ أجاب —
-                        وجوابٌ بلا سؤالِه نصفُ جملة. */}
-                    {!editing && p.questionAr ? (
-                      <Inset className="mt-3 grid gap-3 text-sm leading-7">
-                        <div>
-                          <div className="flex items-center gap-1.5 font-bold text-foreground">
-                            <MessageCircleQuestion className="h-4 w-4 text-teal" aria-hidden />
-                            سألتك الإدارة
-                            {p.questionAt ? (
-                              <span className="text-xs font-normal text-muted-foreground/70">
-                                {fmtDateLong(p.questionAt)}
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{p.questionAr}</p>
-                        </div>
-
-                        {p.answerAr ? (
-                          <div>
-                            <div className="font-bold text-foreground">
-                              وأجبتَ
-                              {p.answeredAt ? (
-                                <span className="ms-1.5 text-xs font-normal text-muted-foreground/70">
-                                  {fmtDateLong(p.answeredAt)}
-                                </span>
-                              ) : null}
-                            </div>
-                            <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{p.answerAr}</p>
-                          </div>
-                        ) : null}
-
-                        {p.status === "info_requested" ? (
-                          answerFor === p.id ? (
-                            <div className="grid gap-2">
-                              <StaffField label="جوابُك">
-                                <textarea
-                                  value={answerText} maxLength={MAX_ANSWER} rows={4}
-                                  className={staffControlCls}
-                                  placeholder="أجِبْ بما يكفي لتُصنَّف دورتُك — وعدّل عنوانَها ونبذتَها إن لزم"
-                                  onChange={(e) => setAnswerText(e.target.value)}
-                                />
-                              </StaffField>
-                              <div className="flex gap-2">
-                                <Button
-                                  tone="confirm" icon={Check} loading={busy}
-                                  disabled={answerText.trim().length < 2}
-                                  onClick={() => run(
-                                    () => apiPost(`/api/trainer/course-proposals/${p.id}/answer`, {
-                                      answerAr: answerText.trim(),
-                                    }).then(() => { setAnswerFor(null); setAnswerText(""); }),
-                                    "وصل جوابُك الإدارةَ",
-                                  )}
-                                >
-                                  أرسِل الجواب
-                                </Button>
-                                <Button tone="ghost" icon={X} onClick={() => setAnswerFor(null)}>تراجَع</Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <Button
-                                tone="confirm" icon={MessageCircleQuestion} disabled={busy}
-                                onClick={() => { setAnswerFor(p.id); setAnswerText(""); }}
-                              >
-                                أجِبْ عن السؤال
-                              </Button>
-                            </div>
-                          )
-                        ) : null}
-                      </Inset>
-                    ) : null}
-                  </Card>
-                );
-              })}
-            </div>
+                  قرارُ صاحب المنصّة: ما بُتّ فيه — صار دورةً أو نسخةً من
+                  قائمةٍ أو لم يُقبل — قسمٌ منفصلٌ بعنوانه، فلا يختلط بما ينتظر
+                  المدرّبُ فيه جوابا أو يعدّله. */}
+              {pending.length > 0 ? (
+                <section aria-labelledby="proposals-open-h" className="mb-8">
+                  <h2 id="proposals-open-h" className="mb-3 flex items-center gap-2 text-base font-black text-foreground">
+                    <Hourglass className="h-5 w-5 text-teal" aria-hidden />
+                    اقتراحاتُك عند الإدارة
+                  </h2>
+                  <div className="grid gap-3">{pending.map(card)}</div>
+                </section>
+              ) : null}
+              {decided.length > 0 ? (
+                <section aria-labelledby="proposals-decided-h">
+                  <h2 id="proposals-decided-h" className="flex items-center gap-2 text-base font-black text-foreground">
+                    <CheckCheck className="h-5 w-5 text-teal" aria-hidden />
+                    ما بُتّ فيه من اقتراحاتك
+                  </h2>
+                  <p className="mb-3 mt-1 text-sm leading-7 text-muted-foreground">
+                    ما صار دورةً في الكتالوج، أو نسختَك من دورةٍ قائمة، أو لم يُقبل — مع ما قالته الإدارة.
+                  </p>
+                  <div className="grid gap-3">{decided.map(card)}</div>
+                </section>
+              ) : null}
+            </>
           )}
         </>
       )}

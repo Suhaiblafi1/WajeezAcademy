@@ -415,7 +415,6 @@ async function seedActiveData(ctx: Ctx, profileId: string) {
       outcomesAr: 'يكتب مذكّرةَ تحضيرٍ لعرضٍ وظيفيّ\nيحدّد أدنى ما يقبله قبل المقابلة\nيردّ على العرض الأوّل بلا ارتباك',
       topicsAr: 'قيمتُك في السوق\nالرقمُ الأوّل\nالحزمةُ لا الراتب\nالقبولُ والاعتذار',
       hours: 8, format: 'live_online', experience: 'once', materials: ['exercises', 'cases'],
-      closestCourseAr: 'التحضيرُ المنهجيّ للتفاوض', merge: 'discuss',
     },
   })
   /* والمدموجُ على دورةٍ لا عرضَ عليها: حالُ المؤهَّل يُقرأ من عرضه أوّلا،
@@ -423,7 +422,7 @@ async function seedActiveData(ctx: Ctx, profileId: string) {
   const merged = await proposals.add(userId, {
     titleAr: 'الردُّ على أسئلة الجمهور الصعبة',
     summaryAr: 'كيف تجيب بإيجازٍ وصدقٍ حين يُسأل عرضُك سؤالا لم تحضّره.',
-    details: { audienceAr: 'من يعرضون أمام الإدارة أو العملاء', level: 'intermediate', hours: 8, merge: 'yes' },
+    details: { audienceAr: 'من يعرضون أمام الإدارة أو العملاء', level: 'intermediate', hours: 8 },
   })
   await proposals.linkToCourse(staff, merged.id, GUIDE_COURSES.qa,
     'وجدناها في «إدارة الأسئلة والأجوبة» بمحاورها — فأهّلناك لها بدلَ أن تكون دورتين متشابهتين.')
