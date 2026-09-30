@@ -41,9 +41,7 @@ describe('الافتتاحُ: الأكاديميةُ جزءٌ من وجيز', ()
   it('وعنوانُ الصفحة الأوّلُ (`h1`) هو التعريف، والتعريفُ أوّلُ ما يُصيَّر', () => {
     const h1s = about.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/g) ?? []
     expect(h1s).toHaveLength(1)
-    expect(h1s[0]).toContain('{FAMILY_INTRO.brand}')
-    expect(h1s[0]).toContain('{FAMILY_INTRO.belongs}')
-    expect(`${FAMILY_INTRO.brand} ${FAMILY_INTRO.belongs}`).toBe(FAMILY_INTRO.title)
+    expect(h1s[0]).toContain('{FAMILY_INTRO.title}')
     const body = about.slice(about.indexOf('export default function About'))
     expect(body.indexOf('<FamilyIntro />'), 'الافتتاحُ غائب').toBeGreaterThan(-1)
     expect(body.indexOf('<FamilyIntro />')).toBeLessThan(body.indexOf('<Hero />'))

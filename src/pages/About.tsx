@@ -126,7 +126,7 @@ const PRODUCT_STYLE = {
 /* ─────────── الافتتاح: هذا نحن ───────────
 
    طلب صاحبُ المنصّة (٣٠ سبتمبر ٢٠٢٦) أن يُبرَز التعريفُ «هذا نحن»: لوحةٌ
-   فيروزيّةٌ بعلامة وجيز، واسمُ الأكاديمية كبيرا، والانتسابُ ذهبيّا تحته. وأن
+   فيروزيّةٌ بعلامة وجيز، واسمُ الأكاديمية كبيرا. وأن
    يكون أخواها كالإعلان الذي نفخر به: بطاقةٌ بيضاءُ لكلٍّ منهما بعلامةٍ ولونٍ
    واسمٍ لاتينيٍّ وزرٍّ إلى موقعه — والبطاقةُ كلُّها رابط.
 
@@ -148,10 +148,7 @@ function FamilyIntro() {
         <span className="rounded-full bg-white/15 px-3 py-1 text-read font-bold">من نحن</span>
       </div>
 
-      <h1 id="about-family-title" className="mt-6">
-        <span className="block text-[2.4rem] font-black leading-[1.25] md:text-6xl">{FAMILY_INTRO.brand}</span>
-        <span className="mt-2 block text-2xl font-black leading-snug text-gold md:text-3xl">{FAMILY_INTRO.belongs}</span>
-      </h1>
+      <h1 id="about-family-title" className="mt-6 text-[2.4rem] font-black leading-[1.25] md:text-6xl">{FAMILY_INTRO.title}</h1>
       <p className="mt-5 max-w-2xl text-base leading-loose text-white md:text-lg md:leading-loose">{FAMILY_INTRO.body}</p>
 
       <ul className="mt-9 grid gap-4 md:grid-cols-2">
