@@ -292,6 +292,30 @@ export async function updateZoomMeeting(
   return { ok: false, reason: `ردُّ Zoom عند النقل (HTTP ${res.status})` }
 }
 
+/* ═══ التسجيلُ يُشاهَد ولا يُنزَّل (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «حين ينتهي اللقاءُ يكون التسجيلُ متاحا للطلبة، ويعيد
+   المدرّبُ مشاهدتَه — بلا زرّ تنزيل». والتسجيلُ يُفتح على صفحة Zoom نفسِها
+   (رابطُ المشاركة)، وزرُّ التنزيل فيها إعدادٌ لكلّ تسجيل: `viewer_download`.
+   فيُطفأ آليّا ساعةَ يصل التسجيل — لا يُترك لإعداد الحساب وحدَه.
+
+   ويحتاج صلاحيّةَ `cloud_recording:update:recording_settings:admin` (أو
+   `recording:write:admin` في التطبيقات القديمة). */
+export async function lockZoomRecordingDownload(
+  c: ZoomConfig,
+  meetingId: string,
+): Promise<{ ok: boolean; reason?: string }> {
+  const token = await zoomToken(c)
+  const res = await fetch(`${ZOOM_API_BASE_URL}/meetings/${encodeURIComponent(meetingId)}/recordings/settings`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ viewer_download: false }),
+  })
+  /* ٢٠٤ أُطفئ · وما سواه لم يُطفأ — ويُقال برقمه */
+  if (res.status === 204) return { ok: true }
+  return { ok: false, reason: `ردُّ Zoom عند إطفاء تنزيل التسجيل (HTTP ${res.status})` }
+}
+
 /* ── رابطُ المضيف ساعةَ يُطلب — ولا يُحفظ ──
 
    `start_url` يفتح الاجتماعَ **بصلاحيّة المضيف**: من ملكه أدار الغرفة، يُخرج

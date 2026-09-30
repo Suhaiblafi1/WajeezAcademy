@@ -744,21 +744,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return progress.markAttendance(req.auth!.userId, sessionId, body.enrollmentId, body.status, body.note)
   })
 
-  app.post('/api/trainer/sessions/:sessionId/recordings', {
-    preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'رفع تسجيل جلسة من شعبي — ملف خاص برابط رفع موقع' },
-  }, async (req, reply) => {
-    const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
-    const body = z.object({
-      title: z.string().min(2), moduleId: z.string().optional(),
-      mime: z.string(), sizeBytes: z.number().int().positive(), durationSec: z.number().int().optional(),
-    }).parse(req.body)
-    const session = await prisma.cohortSession.findUnique({ where: { id: sessionId } })
-    if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
-    /* لا تسجيلات في شعب لا يدربها */
-    await enrollments.assertCohortTrainer(req.auth!.userId, session.cohortId)
-    return reply.status(201).send(await cohorts.registerRecording(req.auth!.userId, sessionId, body))
-  })
+  /* ═══ وسقط رفعُ ملفّ التسجيل من يد المدرّب (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     كان `POST /api/trainer/sessions/:sessionId/recordings` يسجّل ملفّا ويُعطي
+     رابطَ رفع. والتسجيلُ يصل من Zoom وحدَه (`recording.completed`)، ويُطفأ
+     تنزيلُه آليّا. وقرارُ صاحب المنصّة: آليٌّ كلُّه — لا رفعَ ولا رابطَ
+     احتياطيّ («zoom will record anyway… i need it to be automated»). */
 
   /* ── أدوات الدورة في يد مدربها ──
 

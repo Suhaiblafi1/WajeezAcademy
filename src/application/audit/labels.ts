@@ -96,6 +96,7 @@ const PHRASES: Record<string, string> = {
   'zoom.create_failed': 'تعذّر إنشاءُ اجتماعِ Zoom — وأُلغيت جلستُه',
   'zoom.attendance_sync': 'احتُسب الحضورُ من تقرير Zoom',
   'zoom.recording_ready': 'وصل تسجيلُ اللقاء من Zoom',
+  'zoom.recording_download_lock_failed': 'تعذّر إطفاءُ تنزيل تسجيل اللقاء في Zoom',
   'attendance.mark': 'تسجيلُ حضور',
   'certificate.issue': 'إصدارُ شهادة',
   'certificate.revoke': 'إلغاءُ شهادة',

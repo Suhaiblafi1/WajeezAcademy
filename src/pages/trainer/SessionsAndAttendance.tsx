@@ -20,19 +20,20 @@
 
 import { zonedAt, zonedClock, zonedDay } from "@/application/trainer/cohort-period";
 import { useCallback, useEffect, useState } from "react";
-import { CalendarDays, CalendarPlus, Loader2, Trash2, Upload, Video } from "lucide-react";
+import { CalendarDays, CalendarPlus, Loader2, Trash2, Video } from "lucide-react";
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { fmtDateTimeAr } from "@/utils/format";
-import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import ConfirmAction from "@/components/ConfirmAction";
 import Button from "@/components/ui/Button";
 import { controlCls } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { openableRecordings } from "@/application/learning/recording-href";
+import { sessionEnd } from "@/application/trainer/axis-timeline";
 
-const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
+/** آخرُ لحظةٍ في اللقاء — بالقاعدة التي يحكم بها الخادم (`sessionEnd`) */
+const sessionEndMs = (s: { startsAt: string; endsAt: string | null }) => sessionEnd(s).getTime();
 
 /** مرجعٌ ثابتٌ للحقل الفارغ — كائنٌ جديدٌ في كلّ تصيير يُعيد بناءَ الحقل */
 const EMPTY_MOVE = { date: "", from: "", to: "" };
@@ -73,7 +74,6 @@ interface OpsRow {
 }
 
 export default function SessionsAndAttendance({ cohortId }: { cohortId: string }) {
-  const { fileUploads } = usePlatformConfig();
   const [row, setRow] = useState<OpsRow | null>(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -99,18 +99,13 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
   const markAttendance = (sessionId: string, enrollmentId: string, status: string) =>
     act(() => apiPost(`/api/trainer/sessions/${sessionId}/attendance`, { enrollmentId, status }), "سُجل الحضور وأُعيد حساب التقدم");
 
-  const uploadRecording = (sessionId: string, file: File) =>
-    act(async () => {
-      const res = await apiPost<{ uploadUrl?: string }>(`/api/trainer/sessions/${sessionId}/recordings`, {
-        title: file.name.replace(/\.[^.]+$/, ""), mime: file.type || "video/mp4", sizeBytes: file.size,
-      });
-      if (res.uploadUrl) {
-        const put = await fetch(`${API_BASE}${res.uploadUrl}`, {
-          method: "PUT", credentials: "include", headers: { "content-type": "application/octet-stream" }, body: file,
-        });
-        if (!put.ok) throw new ApiError("upload_failed", "تعذر رفع الملف بعد التسجيل", put.status);
-      }
-    }, "سُجل التسجيل ورُفع — سيظهر للمسجلين في الشعبة");
+  /* ═══ وسقط «ارفع التسجيل» (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     كان على كلّ لقاءٍ ولو لم ينعقد. وقال صاحبُ المنصّة: «لماذا هنا ارفع التسجيل
+     علما أنّه لقاءُ زوم؟» ثمّ: «Zoom يسجّل على كلّ حال… أريده آليّا: حين ينتهي
+     اللقاءُ يكون التسجيلُ متاحا للطلبة، ويعيد المدرّبُ مشاهدتَه، بلا زرّ
+     تنزيل». فلا رفعَ ولا رابطَ بيد — يصل من Zoom، ويُطفأ تنزيلُه في الخادم
+     (`lockZoomRecordingDownload`). وهنا حالُه بعد اللقاء وحدَه. */
 
   /* ═══ ينقل موعدَه بنفسه — لا يستأذن فيه ═══
 
@@ -265,14 +260,6 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                     <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
                   </a>
                 )}
-                {/* الزرُّ يظهر حين يستطيع الخادمُ تخزينَ الملفّ — لا قبله */}
-                {fileUploads && (
-                  <label className="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink">
-                    <Upload className="h-3 w-3" /> ارفع التسجيل
-                    <input type="file" accept="video/*" className="hidden"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadRecording(s.id, f); e.target.value = ""; }} />
-                  </label>
-                )}
                 {s.status !== "done" && (
                   <Button tone="secondary" size="sm" type="button"
                     onClick={() => {
@@ -358,6 +345,12 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                   المرفوعُ رابطٌ موقَّعٌ (`readUrl`) والواصلُ من Zoom رابطٌ
                   خارجيّ (`externalUrl`). وقراءةُ الأوّلِ وحدَه — كما كان —
                   تجعل كلَّ تسجيلٍ يصل من Zoom سطرا يفتح على `#`. */}
+              {/* ═══ حالُ التسجيل بعد انتهاء اللقاء — وقبله لا شيء ═══ */}
+              {(s.status === "done" || sessionEndMs(s) < Date.now()) && openableRecordings(s.recordings).length === 0 && (
+                <p className="mt-3 border-t border-white/8 pt-3 text-read leading-6 text-muted-foreground">
+                  بانتظار تسجيل Zoom — يصل وحدَه بعد انتهاء اللقاء (قد يستغرق ساعة)، فيراه متعلّموك وتعيد أنت مشاهدتَه.
+                </p>
+              )}
               {openableRecordings(s.recordings).length > 0 && (
                 <div className="mt-3 border-t border-white/8 pt-3">
                   <ul className="space-y-1 text-read">
