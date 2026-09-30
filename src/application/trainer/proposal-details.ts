@@ -115,7 +115,13 @@ export function cleanProposalDetails(raw: unknown): ProposalDetails | null {
 }
 
 /** الأجوبةُ سطورا مسمّاةً — لمن يقرأ (الإدارة) ولمن يرشّح (أقربُ رمزٍ في الكتالوج) */
-export function proposalDetailRows(d: ProposalDetails | null | undefined): { labelAr: string; valueAr: string }[] {
+/* و`reader: 'trainer'` لا يعرض سؤالَي الدمج: حُذفا من فورم المدرّب (٣٠ سبتمبر
+   ٢٠٢٦ — «هذا نحن نقرّره لا هو»)، فلا يرى جوابا عن سؤالٍ لم يعد يُسأل. والإدارةُ
+   تراهما حيث أُجيب عنهما من قبل. */
+export function proposalDetailRows(
+  d: ProposalDetails | null | undefined,
+  reader: 'admin' | 'trainer' = 'admin',
+): { labelAr: string; valueAr: string }[] {
   if (!d) return []
   const rows: { labelAr: string; valueAr: string }[] = []
   const add = (labelAr: string, valueAr: string | undefined) => { if (valueAr) rows.push({ labelAr, valueAr }) }
@@ -127,6 +133,7 @@ export function proposalDetailRows(d: ProposalDetails | null | undefined): { lab
   add('ما يخرج به المتدرّب', d.outcomesAr)
   add('خبرتُه فيها', d.experience && PROPOSAL_EXPERIENCE[d.experience])
   add('الجاهز لديه', d.materials?.map((m) => PROPOSAL_MATERIALS[m]).join('، '))
+  if (reader === 'trainer') return rows
   add('أقربُ دورةٍ في الكتالوج بقوله', d.closestCourseAr)
   add('الدمج', d.merge && PROPOSAL_MERGE[d.merge])
   return rows

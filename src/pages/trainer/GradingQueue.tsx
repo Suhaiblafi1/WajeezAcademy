@@ -202,14 +202,13 @@ export default function GradingQueue() {
           {/* الفراغ فرصة توجيه لا مساحة ميتة — خطوات تالية نافعة بدل صفحة خالية */}
           <p className="text-sm text-muted-foreground">وهذه وجهاتٌ تنفع الآن:</p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {/* وكان أوّلُها «افتح شعبي وسجّل الحضور» إلى الموضع نفسِه الذي يذهب
+                إليه «جهّز شعبتك» — وجهتان باسمين لبابٍ واحد، فحُذف (٣٠ سبتمبر ٢٠٢٦). */}
             <Link to="/trainer/board" className="inline-flex min-h-11 items-center rounded-full border border-teal/40 bg-teal/10 px-5 text-sm font-bold text-teal-light transition hover:bg-teal/20">
-              افتح شعبي وسجّل الحضور
+              جهّز شعبتك من ورشتها
             </Link>
             <Link to="/trainer/learners" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30">
               تفقّد من تعثّر من متعلّميّ
-            </Link>
-            <Link to="/trainer/board" className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-5 text-sm font-bold text-foreground transition hover:border-white/30">
-              جهّز شعبتك من ورشتها
             </Link>
           </div>
         </Panel>

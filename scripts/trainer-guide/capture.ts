@@ -575,11 +575,11 @@ const ACTIVE: Shot[] = [
       await settle(e)
       const form = await panel(p.getByRole('heading', { name: 'أضِف دورةً تقترحها' }), 700)
       await shoot(e, {
-        name: 'proposal-form', clip: form, clipPad: 10, maxWidth: 1800, maxHeight: 1500,
+        name: 'proposal-form', clip: form, clipPad: 10, maxWidth: 1800, maxHeight: 2400,
         marks: [
           { target: p.getByRole('textbox', { name: /عنوانُ الدورة/ }).first(), n: 1, pad: 5 },
           { target: p.getByRole('textbox', { name: /المحاورُ الرئيسة/ }).first(), n: 2, pad: 5 },
-          { target: btn(p, /نعم — أقبل دمجَها/).locator('xpath=..'), n: 3, pad: 5 },
+          { target: p.getByText('لم أدرّسها بعد', { exact: true }).first(), n: 3, pad: 14 },
           { target: btn(p, 'أرسِلها للإدارة'), n: 4, pad: 5 },
         ],
       })
@@ -596,7 +596,8 @@ const ACTIVE: Shot[] = [
         name: 'proposal-card', clip: card, clipPad: 12, maxHeight: 900,
         marks: [
           { target: card.getByText(/^عند الإدارة/).first(), n: 1, pad: 4 },
-          { target: btn(card, 'عدّل'), n: 2, pad: 4 },
+          /* زرُّ هذه البطاقة لا أوّلُ «عدّل» في قسمها — فالبطاقاتُ صارت في قسمٍ واحد */
+          { target: btn(title.locator('xpath=ancestor::div[.//button][1]'), 'عدّل'), n: 2, pad: 4 },
         ],
       })
     },
