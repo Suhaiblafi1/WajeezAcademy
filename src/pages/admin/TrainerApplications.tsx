@@ -1071,8 +1071,16 @@ export default function TrainerApplications() {
             يكون الفعلُ في متناول اليد دائما.
 
             وسقالةُ الطباعة رُفعت من هذه الشاشة (١٤ سبتمبر ٢٠٢٦): لا زرَّ
-            يطبعها بعد أن صار لكلّ قارئٍ رابطُه. */}
-        <Card className="sticky top-0 z-20 -mx-1 mb-4 bg-paper/95 !px-4 !py-3 backdrop-blur-xl">
+            يطبعها بعد أن صار لكلّ قارئٍ رابطُه.
+
+            ═══ ولاصقٌ على الشاشة الواسعة وحدَها (٣٠ سبتمبر ٢٠٢٦) ═══
+
+            على الهاتف تنكسر أزرارُه أسطرا ومعها ما ينقص قبل الاعتماد، فكان يغطّي
+            نصفَ الشاشة ولا يتحرّك — والملفُّ تحته لا يُقرأ. قال صاحبُ المنصّة: «لا
+            تتحرك وثابته على الهاتف… لأستطيع أن أرى الصفحة كاملة». فيمضي مع التمرير
+            هناك ويبقى في رأس الصفحة، ويلصق من `lg` فما فوق حيث يسعه صفٌّ واحد.
+            وكذلك شريطُ «أقسام الملفّ» تحته. */}
+        <Card className="lg:sticky lg:top-0 z-20 -mx-1 mb-4 bg-paper/95 !px-4 !py-3 backdrop-blur-xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="truncate text-sm font-black">{a.fullName}</p>
@@ -1099,7 +1107,7 @@ export default function TrainerApplications() {
               شاشةٍ أخرى يُبحث فيها عن اسمه. */}
           {!ready && available.some((d) => d.action === "approve" || d.action === "activate") && (
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
-              <span className="text-read leading-6 text-amber-200/90">
+              <span className="text-read leading-6 text-gold-ink">
                 لا يُعتمَد اعتمادا كاملا قبل أن يتمّ تجهيزُه — <b>{missingAr.join(" · ")}</b>
               </span>
               <Button tone="secondary" size="sm" onClick={() => setTab("prep")}>
@@ -1196,7 +1204,7 @@ export default function TrainerApplications() {
 
                 ولا يُطبع: أداةُ تنقّلٍ لا محتوى. */}
             {tab === "dossier" && (
-              <nav aria-label="أقسام الملفّ" className="sticky top-20 z-10">
+              <nav aria-label="أقسام الملفّ" className="lg:sticky lg:top-20 z-10">
                 <Panel as="section" tone="solid" className="!px-3 !py-2">
                   <ul className="flex flex-wrap items-center gap-1">
                     {DOSSIER_SECTIONS.map((sc) => (

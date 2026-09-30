@@ -99,7 +99,8 @@ describe('موضعُ الحذف', () => {
   it('⚠️ مطويٌّ ولا يُجاور أزرارَ القرار — زرٌّ لا يُنقر يُنقر يوما بالخطأ', () => {
     expect(apps, 'لا طيَّ للحذف').toMatch(/purgeOpen/)
     /* وشريطُ القرار اللاصقُ لا يحمل زرَّ حذف */
-    const bar = /<Card className="sticky top-0[\s\S]*?<\/Card>/.exec(apps)?.[0] ?? ''
+    /* ويُعرف بلصوقه أيًّا كان عرضُه: صار يلصق من `lg` وحدَها (٣٠ سبتمبر ٢٠٢٦) */
+    const bar = /<Card className="(?:[^"]*\s)?(?:\w+:)?sticky\s[^"]*"[\s\S]*?<\/Card>/.exec(apps)?.[0] ?? ''
     expect(bar, 'لا شريطَ قرار').not.toBe('')
     expect(bar, 'زرُّ الحذف عاد إلى شريط القرار').not.toMatch(/setPurging/)
   })
