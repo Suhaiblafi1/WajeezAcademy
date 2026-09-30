@@ -228,7 +228,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             {/* ودليلُ المدرّب في الإطار لا في صفحةٍ واحدة (٢٩ سبتمبر ٢٠٢٦): يصله رابطُه
                 في رسالة اعتماد التوقيع مرّةً، ويحتاجه كلّما وقف عند شاشة. ونبرتُه
                 هادئة — الذهبيُّ فعلُ الصفحة، وهذا أداةٌ في الإطار. */}
-            <Button as={Link} to={TRAINER_GUIDE_PATH} tone="ghost" size="sm" icon={BookOpen} aria-label="دليلُ المدرّب">
+            {/* ويُفتح في لسانٍ آخر: الدليلُ شرحٌ يُقرأ بجانب البوّابة لا بدلا منها،
+                فلا يغادر المدرّبُ شاشتَه ليقرأ عنها (٣٠ سبتمبر ٢٠٢٦). */}
+            <Button as="a" href={TRAINER_GUIDE_PATH} target="_blank" rel="noopener" tone="ghost" size="sm" icon={BookOpen} aria-label="دليلُ المدرّب — يُفتح في لسانٍ جديد">
               <span>الدليل</span>
             </Button>
             <NotificationBell audience="trainer" />

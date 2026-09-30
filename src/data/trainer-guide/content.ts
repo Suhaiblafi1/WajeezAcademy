@@ -20,7 +20,7 @@
      واسمُ المسار ونبذتُه في «مساراتي» — أمّا العنوانُ والنبذةُ في ملفّه
      العامّ فبيد الإدارة، ويُقال ذلك صراحةً. */
 
-import type { ChecklistItem, FaqItem, GuideSection, JourneyStop } from './types'
+import type { ChecklistItem, FaqItem, GuidePart, GuideSection, JourneyStop } from './types'
 
 export const GUIDE_UPDATED_AR = '30 سبتمبر 2026'
 export const GUIDE_READ_TIME_AR = 'نحو خمسٍ وعشرين دقيقة، ولا يلزم أن يُقرأ دفعةً واحدة'
@@ -557,6 +557,18 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
 ]
+
+/* ═══ أجزاءُ الدليل — للفهرس الجانبيّ ═══
+   كلُّ قسمٍ في جزءٍ واحد، وبترتيب الدليل — ويحرسه `guide-parts.test.ts`. */
+export const GUIDE_PARTS: GuidePart[] = [
+  { title: 'البداية', ids: ['first-login', 'materials', 'home'] },
+  { title: 'دوراتُك', ids: ['qualifications', 'proposals'] },
+  { title: 'شعبُك وتدريسُك', ids: ['cohorts', 'workspace', 'teaching', 'learners', 'grading', 'schedule'] },
+  { title: 'حضورُك ومستحقّاتُك', ids: ['paths', 'marketing', 'earnings', 'contract', 'ratings', 'referral', 'account', 'notifications'] },
+]
+
+/** اسمُ القسم القصير في الفهرس: ما قبل النقطتين — «مؤهّلاتي» لا «مؤهّلاتي: عروضُ الدورات…» */
+export const shortTitle = (title: string) => title.split(':')[0].trim()
 
 export const FAQ: FaqItem[] = [
   { q: 'اعتُمد توقيعي — فهل صرتُ مدرّبا نشطا؟', a: 'ليس بعد. اعتمادُ التوقيع يفتح بوّابتك ويبدأ مهلةَ الموادّ. والتفعيلُ قرارٌ بعد أن نعتمد موادَّك، وتصلك به رسالةٌ مستقلّة.' },

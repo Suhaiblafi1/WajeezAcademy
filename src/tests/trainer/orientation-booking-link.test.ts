@@ -15,6 +15,8 @@
    فهذا الفحصُ يصيّر الرسالةَ ويسأل: أفي HTML وسمٌ يحمل الرابط؟ وأفي النصّ
    الخالص عنوانُه؟ (فمن يقرأ الرسالةَ نصّا بلا HTML يجده.) */
 
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { contractApprovedMail } from '../../../server/services/trainer-decision-mail'
 import { renderMail } from '../../../server/services/mail-template'
@@ -87,5 +89,24 @@ describe('رابطُ جلسة التهيئة في رسالة اعتماد الت
     expect(mail.subject).toContain(BASE.title)
     expect(mail.doc.heading).toContain('اعتُمد توقيعُك')
     expect(contractApprovedMail(PLAIN).doc.heading).toBe('اعتُمد عقدُك')
+  })
+})
+
+/* ═══ وفي «موادُّ دوراتك» أيضا (٣٠ سبتمبر ٢٠٢٦) ═══
+   كان الرابطُ في الرسالة والدليل وحدَهما، فمن حذف الرسالةَ لم يجده. وقرارُ
+   صاحب المنصّة: «أضِفه في موادّ دوراتك» — حيث يُكتب ما تُعين عليه الجلسة.
+   ويغيب بعد إعلان الاكتمال: لا ما يُعان عليه. */
+describe('رابطُ جلسة التهيئة في «موادُّ دوراتك»', () => {
+  const PANEL = readFileSync(join(process.cwd(), 'src/pages/trainer/CourseMaterialsPanel.tsx'), 'utf8')
+    .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+
+  it('زرٌّ يُنقر إلى الرابط نفسِه، باسمه ونصّه من موضعهما', () => {
+    expect(PANEL).toMatch(/href=\{ORIENTATION_BOOKING_URL\}[^>]*target="_blank"/)
+    expect(PANEL).toContain('{ORIENTATION_CTA_AR}')
+    expect(PANEL).toContain('{ORIENTATION_INVITE_AR}')
+  })
+
+  it('ويُعرض ما دامت الموادُّ تُكتب لا بعد إعلان اكتمالها', () => {
+    expect(PANEL).toMatch(/\{!underReview && \([\s\S]{0,300}?href=\{ORIENTATION_BOOKING_URL\}/)
   })
 })
