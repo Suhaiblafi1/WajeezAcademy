@@ -241,19 +241,23 @@ describe('③ وما أبى فيه Zoom', () => {
     expect((await linksOf(e.id))[0]!.cancelledAt).not.toBeNull()
   })
 
-  it('⚠️ ومن ترك قبل أن يوجد الإلغاءُ تُلغيه الدورة', async () => {
+  it('⚠️ ومن ترك قبل أن يوجد الإلغاءُ تُلغيه الدورة — ولا تمسّ أحدا غيرَه', async () => {
     const c = await openCohort('شعبةُ ما قبل')
     await approved(c, 30)
+    const stay = await enrollments.enroll(c, (await learner('still-here')).id, null)
     const e = await enrollments.enroll(c, (await learner('before')).id, null)
     /* إسقاطٌ كما كان يقع قبل اليوم: الحالةُ تتغيّر ولا شيءَ يُنادي Zoom */
     await prisma.enrollment.update({ where: { id: e.id }, data: { status: 'dropped' } })
     const [link] = await linksOf(e.id)
     expect(link!.cancelledAt).toBeNull()
 
+    /* والدورةُ تمرّ على الروابط كلِّها لا على تسجيلٍ بعينه — فالحكمُ «من ترك» فيها
+       وحدَها: لو أسقطته أُلغي تسجيلُ كلِّ جالسٍ في كلّ شعبة. فتُطابَق نداءاتُها كلُّها */
     const n = statusCalls.length
     await runJob(prisma, 'revoke_left_registrants')
-    expect(callsSince(n)).toContain(`cancel:${link!.meeting.meetingId}:${link!.registrantId}`)
+    expect(callsSince(n), 'ألغت الدورةُ تسجيلَ من لم يترك').toEqual([`cancel:${link!.meeting.meetingId}:${link!.registrantId}`])
     expect((await linksOf(e.id))[0]!.cancelledAt).not.toBeNull()
+    for (const l of await linksOf(stay.id)) expect(l.cancelledAt, 'أُلغي تسجيلُ جالسٍ في شعبته').toBeNull()
   })
 })
 
