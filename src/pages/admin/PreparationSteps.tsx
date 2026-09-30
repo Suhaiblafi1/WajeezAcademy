@@ -152,7 +152,7 @@ function Step({
       </header>
 
       {!done && blockerAr && (
-        <p className="mt-2.5 text-read leading-6 text-amber-200/90">{blockerAr}</p>
+        <p className="mt-2.5 text-read leading-6 text-gold-ink">{blockerAr}</p>
       )}
 
       {locked ? (
@@ -620,7 +620,7 @@ function ContractStep({
                   </p>
                 )}
                 {c.declineReasonAr && (
-                  <p className="mt-1.5 text-read leading-6 text-amber-200/90">
+                  <p className="mt-1.5 text-read leading-6 text-gold-ink">
                     اعتذر: {c.declineReasonAr}
                   </p>
                 )}
