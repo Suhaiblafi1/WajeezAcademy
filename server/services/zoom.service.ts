@@ -550,7 +550,12 @@ export async function zoomProbe(c: ZoomConfig): Promise<{ ok: boolean; message: 
   try {
     forgetZoomToken()
     await zoomToken(c)
-    return { ok: true, message: `اتّصالُ Zoom ناجح — والاجتماعاتُ تُنشأ باسم «${c.hostEmail}»` }
+    /* والمفاتيحُ السليمةُ لا تعني أنّ أحداثَه تصل: بلا رمزِها يرفض Zoom العنوانَ
+       ويُرفض كلُّ حدث — فيُقال هنا، لا يُكتشف بعد لقاءٍ لم يُسجَّل حضورُه */
+    const events = c.webhookSecret
+      ? 'وأحداثُه تُقبل برمزها المحفوظ'
+      : 'ولا رمزَ لأحداثه بعد — فالحضورُ ودخولُ المضيف والتسجيلاتُ لا تصل حتّى يُحفظ'
+    return { ok: true, message: `اتّصالُ Zoom ناجح — والاجتماعاتُ تُنشأ باسم «${c.hostEmail}» · ${events}` }
   } catch (e) {
     return { ok: false, message: e instanceof AuthError ? e.message : 'تعذّر الوصول إلى Zoom — تحقّق من الشبكة' }
   }

@@ -106,6 +106,9 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
       clientId: z.string().max(200).optional(),
       clientSecret: z.string().max(200).optional(),
       hostEmail: z.string().max(200).optional(),
+      /* رمزُ التحقّق من الأحداث — والمخطَّطُ يُسقط ما لم يُسمَّ فيه، فبلا هذا السطر
+         كان يُحذف صامتا قبل أن يبلغ الحفظ */
+      webhookSecret: z.string().max(200).optional(),
     }).parse(req.body)
     await saveZoomConfig(prisma, req.auth!.userId, body)
     /* المفاتيحُ تبدّلت فالرمزُ المحفوظُ في الذاكرة صار لحسابٍ آخر — يُنسى */

@@ -171,10 +171,21 @@ export async function saveEmailConfig(prisma: PrismaClient, actorId: string, inp
 }
 
 /* إعدادُ Zoom — كبقيّة المزوّدين: البيئةُ تغلب، والسرُّ يُكتب ولا يُقرأ.
-   وقراءتُه وفحصُه في `zoom.service.ts` كي تبقى نداءاتُ Zoom في موضعٍ واحد. */
+   وقراءتُه وفحصُه في `zoom.service.ts` كي تبقى نداءاتُ Zoom في موضعٍ واحد.
+
+   ═══ ورمزُ أحداثه من الشاشة كذلك (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   `webhookSecret` يتحقّق به المستقبِلُ من كلّ حدثٍ يصل (`/api/webhooks/zoom`)،
+   ويردّ به تحدّيَ الملكيّة ساعةَ يُحفظ العنوانُ في لوحة Zoom. وكان لا يُكتب إلّا في
+   الخادم (`ZOOM_WEBHOOK_SECRET`): فمن أعدّ Zoom من هذه الشاشة وحدَها رفض Zoom عنوانَه،
+   ولم يصل حدثٌ واحد — لا حضورٌ ولا دخولُ مضيفٍ ولا تسجيل — بلا خطأٍ يُقرأ في مكان.
+   فصار يُحفظ هنا كبقيّة المفاتيح: يُكتب ولا يُقرأ إلّا مقنَّعا. */
+/** ما يُكتب ولا يُقرأ من إعداد Zoom — والقيمةُ المقنَّعةُ العائدةُ من الشاشة لا تُكتب فوقه */
+const ZOOM_KEYS = ['accountId', 'clientId', 'clientSecret', 'webhookSecret'] as const
+
 export async function saveZoomConfig(
   prisma: PrismaClient, actorId: string,
-  input: Partial<{ enabled: boolean; accountId: string; clientId: string; clientSecret: string; hostEmail: string }>,
+  input: Partial<{ enabled: boolean; accountId: string; clientId: string; clientSecret: string; hostEmail: string; webhookSecret: string }>,
 ) {
   const current = await getRawConfig(prisma, 'zoom')
   const next: Record<string, unknown> = {
@@ -183,7 +194,7 @@ export async function saveZoomConfig(
   }
   /* المعرّفان ليسا سرّا لكنّهما يُقنَّعان في العرض، فيُعامَلان معاملتَه:
      لا يُكتب فوق المخزَّن بقيمةٍ مقنَّعةٍ عادت من الشاشة. */
-  for (const k of ['accountId', 'clientId', 'clientSecret'] as const) {
+  for (const k of ZOOM_KEYS) {
     const v = input[k]
     if (v && !MASK.test(v)) next[k] = v
   }
@@ -196,7 +207,7 @@ export async function saveZoomConfig(
     actorId, action: 'integration.zoom.save', entityType: 'integration_setting', entityId: 'zoom',
     meta: {
       enabled: row.enabled, hostEmail: next.hostEmail,
-      keysRotated: (['accountId', 'clientId', 'clientSecret'] as const).filter((k) => input[k] && !MASK.test(String(input[k]))),
+      keysRotated: ZOOM_KEYS.filter((k) => input[k] && !MASK.test(String(input[k]))),
     },
   })
   return row
@@ -490,6 +501,11 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
       accountId: mask(zoom.accountId), clientId: mask(zoom.clientId), clientSecret: mask(zoom.clientSecret),
       hostEmail: zoom.hostEmail,
       hasAccountId: !!zoom.accountId, hasClientId: !!zoom.clientId, hasClientSecret: !!zoom.clientSecret,
+      /* ورمزُ الأحداث وعنوانُها: العنوانُ يُنسخ إلى لوحة Zoom، والرمزُ منها إلى هنا.
+         والبيئةُ تغلبه وحدَه إن ضُبط فيها وحدَه — فيُقال ذلك تحت حقله لا بعد أن يُحفظ فلا يؤثّر */
+      webhookSecret: mask(zoom.webhookSecret), hasWebhookSecret: !!zoom.webhookSecret,
+      webhookSecretEnvSourced: !!process.env.ZOOM_WEBHOOK_SECRET,
+      webhookUrl: `${publicSiteUrl()}/api/webhooks/zoom`,
       /* `ready` تُقال للشاشة صراحةً: «مفعّل» بلا مفاتيحَ ليس جاهزا، وهو الفرقُ
          الذي يجعل مديرا يظنّ التكاملَ قائما ثمّ يفشل أوّلُ لقاءٍ يُنشأ. */
       ready: zoomReady(zoom), missing: zoomMissing(zoom),

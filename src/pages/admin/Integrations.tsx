@@ -31,6 +31,7 @@ interface IntegrationsView {
     enabled: boolean; envSourced: boolean; ready: boolean; missing: string[];
     accountId: string; clientId: string; clientSecret: string; hostEmail: string;
     hasAccountId: boolean; hasClientId: boolean; hasClientSecret: boolean;
+    webhookSecret: string; hasWebhookSecret: boolean; webhookSecretEnvSourced: boolean; webhookUrl: string;
   };
   calendly: {
     enabled: boolean; envSourced: boolean; polling: boolean;
@@ -61,7 +62,7 @@ export default function Integrations() {
   const [payForm, setPayForm] = useState({ enabled: false, driver: "test", publishableKey: "", secretKey: "", webhookSecret: "" });
   const [mailForm, setMailForm] = useState({ enabled: false, apiKey: "", fromName: "", fromEmail: "" });
   const [testTo, setTestTo] = useState("");
-  const [zoomForm, setZoomForm] = useState({ enabled: false, accountId: "", clientId: "", clientSecret: "", hostEmail: "" });
+  const [zoomForm, setZoomForm] = useState({ enabled: false, accountId: "", clientId: "", clientSecret: "", hostEmail: "", webhookSecret: "" });
   const [zoomProbe, setZoomProbe] = useState<{ ok: boolean; message: string } | null>(null);
   /* الرمزُ الشخصيُّ صار محفوظا مع المفتاح: المزامنةُ الدوريّةُ تسأل Calendly
      كلَّ خمس دقائق بلا إنسانٍ يلصقه. وعلّةُ النقض في `CalendlyConfig`. */
@@ -86,6 +87,7 @@ export default function Integrations() {
       setZoomForm({
         enabled: v.zoom.enabled, accountId: v.zoom.accountId, clientId: v.zoom.clientId,
         clientSecret: v.zoom.clientSecret, hostEmail: v.zoom.hostEmail === "me" ? "" : v.zoom.hostEmail,
+        webhookSecret: v.zoom.webhookSecret,
       });
       setCalForm({
         enabled: v.calendly.enabled, signingKey: v.calendly.signingKey,
@@ -404,6 +406,24 @@ export default function Integrations() {
                 <label className={labelCls}>بريدُ مضيف الاجتماعات — اتركه فارغا لصاحب التطبيق</label>
                 <input dir="ltr" value={zoomForm.hostEmail} onChange={(e) => setZoomForm({ ...zoomForm, hostEmail: e.target.value })}
                   placeholder="lessons@wajeezacademy.com" className={`${inputCls} mt-1 w-full font-mono`} />
+              </div>
+              {/* ═══ أحداثُ Zoom — العنوانُ إلى لوحته، ورمزُه منها إلى هنا ═══
+                  بلا الرمز يرفض Zoom العنوانَ ولا يصل حدث: لا حضورٌ ولا دخولُ مضيفٍ ولا تسجيل.
+                  وكان لا يُضبط إلّا في الخادم — فمن أعدّ Zoom من هنا وحدَه بقيت أحداثُه صامتة. */}
+              <div>
+                <label className={labelCls}>عنوانُ الأحداث — يُسجَّل في Zoom ‹Event Subscriptions›</label>
+                <input dir="ltr" readOnly value={view.zoom.webhookUrl}
+                  className={`${inputCls} mt-1 w-full font-mono opacity-70`} />
+              </div>
+              <div>
+                <label className={labelCls}>رمزُ التحقّق من الأحداث — Secret Token · يُخزَّن ولا يُعرض</label>
+                <input dir="ltr" type="password" value={zoomForm.webhookSecret} onChange={(e) => setZoomForm({ ...zoomForm, webhookSecret: e.target.value })}
+                  placeholder={view.zoom.hasWebhookSecret ? view.zoom.webhookSecret : "…"} className={`${inputCls} mt-1 w-full font-mono`} />
+                {view.zoom.webhookSecretEnvSourced && (
+                  <p className="mt-1 text-read leading-6 text-gold-ink">
+                    ‏ZOOM_WEBHOOK_SECRET مضبوطٌ على الخادم — وهو يغلب ما يُحفظ هنا حتّى يُزال.
+                  </p>
+                )}
               </div>
               <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-foreground">
                 <input type="checkbox" checked={zoomForm.enabled} onChange={(e) => setZoomForm({ ...zoomForm, enabled: e.target.checked })} className="accent-gold" />
