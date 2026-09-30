@@ -38,7 +38,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   BookOpen, CalendarPlus, Check, ChevronDown, FileSignature, Globe2, LayoutDashboard,
-  LifeBuoy, Mail, Maximize2, MessageCircle, Printer, X,
+  ExternalLink, Info, LifeBuoy, Mail, Maximize2, MessageCircle, Printer, X,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -50,7 +50,8 @@ import { useWhatsAppNumbers } from "@/services/whatsapp";
 import { ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR } from "@/application/trainer/orientation-session";
 import { TRAINER_GUIDE_PATH } from "@/application/trainer/trainer-guide";
 import {
-  CHECKLIST, FAQ, GUIDE_READ_TIME_AR, GUIDE_SECTIONS, GUIDE_UPDATED_AR, JOURNEY, JOURNEY_START,
+  CHECKLIST, FAQ, GUIDE_PARTS, GUIDE_READ_TIME_AR, GUIDE_SECTIONS, GUIDE_UPDATED_AR, JOURNEY, JOURNEY_START,
+  shortTitle,
 } from "@/data/trainer-guide/content";
 import { GUIDE_SHOTS } from "@/data/trainer-guide/shots";
 import type { CalloutTone, GuideBlock, GuideSection } from "@/data/trainer-guide/types";
@@ -122,6 +123,10 @@ html[data-theme="light"] .guide-root {
   width: .42rem; height: .42rem; border-radius: 999px; background: rgb(var(--g-coral)); }
 
 .guide-shot { display: block; width: 100%; cursor: zoom-in; border-radius: .5rem; overflow: hidden; }
+/* وسمُ الصورة شريطٌ فوقها لا لصيقةٌ عليها — كانت تغطّي الرقمَ «١» ونصَّ الشاشة */
+.guide-shot-tag { display: flex; align-items: center; gap: .4rem; margin: 0 .25rem .45rem;
+  font-size: .78rem; font-weight: 800; color: rgb(var(--g-ink) / .75); }
+.guide-shot-tag::before { content: ""; width: .5rem; height: .5rem; border-radius: 2px; background: rgb(var(--g-sky)); }
 .guide-shot:focus-visible { outline: 2px solid rgb(var(--g-sky)); outline-offset: 3px; }
 
 /* «انتبه» و«نصيحة»: بطاقةٌ بشريطٍ جانبيٍّ لونُه معناه */
@@ -222,9 +227,11 @@ function Rich({ text }: { text: string }) {
         const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part);
         if (link) {
           const [, label, href] = link;
-          return href.startsWith("#") || href.startsWith("http")
-            ? <a key={i} href={href} className={LINK} {...(href.startsWith("http") ? { target: "_blank", rel: "noreferrer noopener" } : {})}>{label}</a>
-            : <Link key={i} to={href} className={LINK}>{label}</Link>;
+          /* ما خرج من الدليل — إلى البوّابة أو خارج الموقع — يُفتح في لسانٍ آخر،
+             فيبقى الدليلُ بجانب ما يشرحه. والمرساةُ (#قسم) تبقى في الصفحة. */
+          return href.startsWith("#")
+            ? <a key={i} href={href} className={LINK}>{label}</a>
+            : <a key={i} href={href} className={LINK} target="_blank" rel={href.startsWith("http") ? "noreferrer noopener" : "noopener"}>{label}</a>;
         }
         return part;
       })}
@@ -273,7 +280,8 @@ function Shot({ shot, alt, caption, onZoom }: { shot: string; alt: string; capti
   const dims = GUIDE_SHOTS[shot];
   return (
     <figure className="guide-figure mt-6">
-      <div className="guide-card p-2">
+      <div className="guide-card relative p-2">
+        <span className="guide-shot-tag" aria-hidden="true">صورةٌ للتوضيح</span>
         <button type="button" className="guide-shot" onClick={() => onZoom(shot, alt)} aria-label={`كبّرِ الصورة: ${alt}`}>
           <img
             src={`${SHOT_DIR}/${shot}.webp`} alt={alt} loading="lazy" decoding="async"
@@ -416,9 +424,9 @@ function Section({ s, n, onZoom }: { s: GuideSection; n: number; onZoom: (shot: 
         <div className="mt-4 flex flex-wrap items-start gap-x-4 gap-y-2">
           <span className="guide-pill" data-hue={hue}>القسم {pad2(n)}</span>
           {s.tab && s.path && (
-            <Link to={s.path} className="guide-pill guide-card guide-noprint" style={{ color: "rgb(var(--g-ink))" }}>
-              في بوّابتك: {s.tab}
-            </Link>
+            <a href={s.path} target="_blank" rel="noopener" className="guide-pill guide-card guide-noprint" style={{ color: "rgb(var(--g-ink))" }}>
+              افتح «{s.tab}» في بوّابتك <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            </a>
           )}
         </div>
         <p className="mt-3 text-lg leading-9 text-muted-foreground"><Rich text={s.why} /></p>
@@ -442,8 +450,20 @@ function Cover() {
           دليلُ المدرّب
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-9" style={{ color: "rgb(var(--g-dark-ink))" }}>
-          أكاديمية وجيز — من اعتماد عقدك إلى أوّل كشفِ مستحقّاتك، خطوةً خطوة، بصورٍ من بوّابتك نفسِها.
+          دليلٌ يرشدك كيف تهيّئ بوّابتك وتعمل فيها — من اعتماد عقدك إلى أوّل كشفِ مستحقّاتك، خطوةً خطوة.
         </p>
+        {/* ═══ الدليلُ ليس البوّابة (٣٠ سبتمبر ٢٠٢٦) ═══
+            صاحبُ المنصّة: «أخشى أن يعتقد أنّ هذا هو المنصّةُ نفسُها». فالصفحةُ
+            مملوءةٌ بصورٍ من البوّابة، ومن يرى زرّا يضغطه. فيقولها الغلافُ صريحة،
+            ويقولها رأسُ الصفحة الثابت، وتحمل كلُّ صورةٍ وسمَها «صورةٌ للتوضيح»،
+            وكلُّ رابطٍ إلى البوّابة يُفتح في لسانٍ آخر فيبقى الدليلُ بجانبها. */}
+        <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl bg-white/85 px-5 py-4 text-base leading-8" style={{ color: "rgb(var(--g-dark-ink))" }}>
+          <Info className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <p>
+            هذه صفحةُ شرحٍ، لا بوّابتُك. الصورُ فيها للتوضيح ولا تعمل أزرارُها — والعملُ نفسُه في
+            بوّابتك: افتحها في لسانٍ بجانب هذا الدليل، واتبع الخطواتِ فيها.
+          </p>
+        </div>
         <div className="guide-noprint mt-7 flex flex-wrap items-center gap-3">
           {/* و«افتح بوّابتك» في الرأس وحدَه: ذهبيٌّ واحدٌ في الشاشة */}
           <Button icon={Printer} onClick={() => window.print()}>اطبعه أو احفظه PDF</Button>
@@ -557,26 +577,41 @@ function useActiveSection(ids: string[]) {
   return active;
 }
 
-function Toc({ items, active }: { items: { id: string; label: string; n?: number }[]; active: string }) {
+type TocItem = { id: string; label: string; n?: number };
+type TocGroup = { title: string; items: TocItem[] };
+
+/** الفهرسُ أجزاءٌ بعناوين، وتحت كلٍّ أسماءُ أقسامه قصيرةً في سطرٍ واحد —
+    لا تسعةَ عشرَ عنوانا طويلا يلتفّ كلٌّ منها على سطرين. */
+function Toc({ groups, active }: { groups: TocGroup[]; active: string }) {
   return (
     <nav aria-label="محتويات الدليل" className="guide-toc guide-noprint">
-      <p className="guide-h mb-3 flex items-center gap-2 text-sm">
+      <p className="guide-h mb-4 flex items-center gap-2 text-sm">
         <BookOpen className="h-4 w-4" aria-hidden="true" /> محتويات الدليل
       </p>
-      <ol className="space-y-0.5 text-sm">
-        {items.map((it) => (
-          <li key={it.id}>
-            <a
-              href={`#${it.id}`}
-              aria-current={active === it.id ? "true" : undefined}
-              className="flex items-baseline gap-2 border-s-2 border-transparent py-1.5 ps-3 leading-6 text-muted-foreground hover:text-foreground"
-            >
-              {it.n !== undefined && <span className="tabular-nums opacity-70">{pad2(it.n)}</span>}
-              <span>{it.label}</span>
-            </a>
-          </li>
+      <div className="space-y-5">
+        {groups.map((g, gi) => (
+          <div key={g.title}>
+            <p className="mb-1.5 flex items-center gap-2 text-sm font-black text-muted-foreground">
+              <span className="inline-block h-2.5 w-2.5 rounded-[2px]" data-hue={hueOf(gi)} aria-hidden="true" />
+              {g.title}
+            </p>
+            <ol className="text-sm">
+              {g.items.map((it) => (
+                <li key={it.id}>
+                  <a
+                    href={`#${it.id}`}
+                    aria-current={active === it.id ? "true" : undefined}
+                    className="flex items-baseline gap-2 truncate border-s-2 border-transparent py-1 ps-3 leading-6 text-muted-foreground hover:text-foreground"
+                  >
+                    {it.n !== undefined && <span className="w-5 shrink-0 text-xs tabular-nums opacity-60">{pad2(it.n)}</span>}
+                    <span className="truncate">{it.label}</span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
         ))}
-      </ol>
+      </div>
     </nav>
   );
 }
@@ -602,14 +637,15 @@ export default function TrainerGuide() {
     return () => window.removeEventListener("beforeprint", open);
   }, []);
 
-  const tocItems = useMemo(() => [
-    { id: "journey", label: "رحلتُك في المنصّة" },
-    { id: "first-week", label: "أسبوعُك الأوّل" },
-    ...GUIDE_SECTIONS.map((s, i) => ({ id: s.id, label: s.title, n: i + 1 })),
-    { id: "faq", label: "أسئلةٌ شائعة" },
-    { id: "help", label: "تحتاج مساعدة؟" },
-  ], []);
-  const ids = useMemo(() => tocItems.map((t) => t.id), [tocItems]);
+  const tocGroups = useMemo<TocGroup[]>(() => {
+    const byId = new Map(GUIDE_SECTIONS.map((s, i) => [s.id, { id: s.id, label: shortTitle(s.title), n: i + 1 }]));
+    return [
+      { title: "قبل أن تبدأ", items: [{ id: "journey", label: "رحلتُك في المنصّة" }, { id: "first-week", label: "أسبوعُك الأوّل" }] },
+      ...GUIDE_PARTS.map((p) => ({ title: p.title, items: p.ids.map((id) => byId.get(id)!).filter(Boolean) })),
+      { title: "مساعدة", items: [{ id: "faq", label: "أسئلةٌ شائعة" }, { id: "help", label: "تحتاج مساعدة؟" }] },
+    ];
+  }, []);
+  const ids = useMemo(() => tocGroups.flatMap((g) => g.items.map((t) => t.id)), [tocGroups]);
   const active = useActiveSection(ids);
 
   const help = [
@@ -632,11 +668,14 @@ export default function TrainerGuide() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-2.5">
           <Link to="/" className="flex min-w-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
-            <span className="guide-h truncate"><span className="hidden sm:inline">وجيز | </span>دليلُ المدرّب</span>
+            <span className="min-w-0">
+              <span className="guide-h block truncate leading-6"><span className="hidden sm:inline">وجيز | </span>دليلُ المدرّب</span>
+              <span className="hidden truncate text-xs leading-5 text-muted-foreground sm:block">صفحةُ شرح — العملُ في بوّابتك</span>
+            </span>
           </Link>
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
-            <Button as={Link} to="/trainer" tone="primary" icon={LayoutDashboard}>افتح بوّابتك</Button>
+            <Button as="a" href="/trainer" target="_blank" rel="noopener" tone="primary" icon={LayoutDashboard}>افتح بوّابتك</Button>
           </div>
         </div>
       </header>
@@ -647,7 +686,7 @@ export default function TrainerGuide() {
         <div className="lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-12">
           <aside className="hidden lg:block">
             <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pb-6 pt-14">
-              <Toc items={tocItems} active={active} />
+              <Toc groups={tocGroups} active={active} />
             </div>
           </aside>
 
@@ -658,7 +697,7 @@ export default function TrainerGuide() {
                 <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" aria-hidden="true" /> محتويات الدليل</span>
                 <ChevronDown className="h-4 w-4" aria-hidden="true" />
               </summary>
-              <div className="pb-3"><Toc items={tocItems} active={active} /></div>
+              <div className="pb-3"><Toc groups={tocGroups} active={active} /></div>
             </details>
 
             <Journey />

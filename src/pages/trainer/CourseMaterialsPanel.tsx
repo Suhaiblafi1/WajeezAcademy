@@ -10,7 +10,7 @@
    · وما اعتُمد يُقرأ ولا يُعدَّل هنا: تعديلُه بعدها في مساحة الشعبة. */
 
 import { useState } from "react";
-import { ChevronDown, FileStack, Plus, Trash2 } from "lucide-react";
+import { CalendarPlus, ChevronDown, FileStack, Plus, Trash2 } from "lucide-react";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
@@ -21,6 +21,9 @@ import {
   MATERIALS_LINE, MATERIALS_MAX_MODULES, MATERIALS_TEXT, MATERIALS_URL,
   cleanMaterialsUrl, materialsMissingAr, type CourseMaterials,
 } from "@/application/trainer/course-materials";
+import {
+  ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR, ORIENTATION_INVITE_AR,
+} from "@/application/trainer/orientation-session";
 
 export interface MaterialsRow {
   courseId: string;
@@ -61,6 +64,18 @@ export default function CourseMaterialsPanel({ rows, underReview, onSaved }: {
         احفظ كلَّ دورةٍ حين تكتبها، ثمّ اضغط «أعلنتُ اكتمالها» في الشريط أعلى الصفحة حين تكتمل كلُّها.
         {" "}<span className="font-bold text-foreground">اكتملت {ready} من {pending.length}.</span>
       </p>
+      {/* ═══ وجلسةُ التهيئة حيث يُكتب ما تُعين عليه (٣٠ سبتمبر ٢٠٢٦) ═══
+          كان رابطُ حجزها في رسالة اعتماد التوقيع وفي الدليل وحدَهما — فمن حذف
+          الرسالةَ ولم يفتح الدليلَ لا يجده. وقرارُ صاحب المنصّة: «أضِفه في موادّ
+          دوراتك». ويغيب بعد إعلان الاكتمال: الموادُّ عندنا، ولا ما يُعان عليه. */}
+      {!underReview && (
+        <Inset tone="accent" className="mt-3 flex flex-wrap items-center justify-between gap-3 p-3.5">
+          <p className="min-w-0 flex-1 text-sm leading-7">{ORIENTATION_INVITE_AR}</p>
+          <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" size="sm" icon={CalendarPlus}>
+            {ORIENTATION_CTA_AR}
+          </Button>
+        </Inset>
+      )}
       {underReview && (
         <Inset tone="default" className="mt-3 p-3 text-sm leading-6">
           أعلنتَ اكتمالَ موادّك، فهي عندنا للتقييم — تُقرأ هنا ولا تُعدَّل حتّى يصلك جوابُنا.
