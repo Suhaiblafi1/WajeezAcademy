@@ -590,7 +590,7 @@ function ContractStep({
       setTitle(`عقد تدريب ${new Date().getFullYear()}`);
       setDocs(Object.fromEntries(p.defaultDocuments.map((d) => [d.kind, d.required])));
       setComposing(true);
-    }, "جاهزٌ للتركيب");
+    }, "جاهزٌ للإنشاء");
 
   return (
     <div className="grid gap-3">

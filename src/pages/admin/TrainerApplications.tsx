@@ -2179,7 +2179,7 @@ export default function TrainerApplications() {
         return (
           <ConfirmAction
             titleAr={`متابعةُ غياب ${followUp.app.fullName}`}
-            confirmLabelAr={ready ? "أرسِلْ الرسالة" : `اكتب المتن — ${FOLLOWUP_BODY_MIN} حرفا على الأقلّ`}
+            confirmLabelAr={ready ? "أرسِلْ الرسالة" : `اكتب الرسالة — ${FOLLOWUP_BODY_MIN} حرفا على الأقلّ`}
             tone="default"
             busy={busy || !ready}
             onCancel={() => setFollowUp(null)}

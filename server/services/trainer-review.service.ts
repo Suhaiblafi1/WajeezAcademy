@@ -1331,7 +1331,7 @@ export class TrainerReviewService {
     if (bodyAr.length < FOLLOWUP_BODY_MIN || bodyAr.length > FOLLOWUP_BODY_MAX) {
       throw new AuthError(
         'body_out_of_range',
-        `متنُ الرسالة بين ${FOLLOWUP_BODY_MIN} و${FOLLOWUP_BODY_MAX} حرفا — والفارغُ يُنتج رسالةً بعنوانٍ بلا متن`,
+        `نصُّ الرسالة بين ${FOLLOWUP_BODY_MIN} و${FOLLOWUP_BODY_MAX} حرفا — والفارغُ يُنتج رسالةً بعنوانٍ بلا متن`,
         400,
       )
     }
@@ -2826,7 +2826,7 @@ export class TrainerReviewService {
       throw new AuthError('bad_state', 'لا يُرسَل إلّا عقدٌ مسودّة — الملغى والموقَّعُ والمرسَلُ لها أبوابُها', 409)
     }
     if (!contractHasBodyAr(contract.bodyAr)) {
-      throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. أنشئ عقدا جديدا', 409)
+      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. أنشئ عقدا جديدا', 409)
     }
     /* ═══ ولا يُرسَل عرضٌ مشروطٌ متنُه لا يحمل شرطَه (٢٣ سبتمبر ٢٠٢٦) ═══
 
@@ -2842,7 +2842,7 @@ export class TrainerReviewService {
     if (contract.gatesActivation && !bodyCarriesConditionClause(contract.bodyAr)) {
       throw new AuthError(
         'body_without_condition',
-        'هذا عرضٌ مشروطٌ ومتنُه أُعِدَّ قبل بند الشرط — فبريدُه يحدّث المتقدّمَ عن شرطٍ ومهلةٍ لا تحملهما الوثيقة. ألغِ هذا العرضَ وأنشئ غيرَه، فيخرج متنُه ببند الشرط وتاريخِ جلسة التهيئة.',
+        'هذا عرضٌ مشروطٌ ونصُّه أُعِدَّ قبل بند الشرط — فبريدُه يحدّث المتقدّمَ عن شرطٍ ومهلةٍ لا تحملهما الوثيقة. ألغِ هذا العرضَ وأنشئ غيرَه، فيخرج متنُه ببند الشرط وتاريخِ جلسة التهيئة.',
         409,
       )
     }
@@ -2918,7 +2918,7 @@ export class TrainerReviewService {
        سؤال: عقدٌ من البابِ القديم يقف في «طُلب تعديلُه» يصله رابطٌ يعمل
        على وثيقةٍ خاوية. فالقيدُ يُعاد حيث يقع الفعل. */
     if (!contractHasBodyAr(contract.bodyAr)) {
-      throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. ألغِه وأنشئ عقدا جديدا', 409)
+      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. ألغِه وأنشئ عقدا جديدا', 409)
     }
 
     const { token, tokenHash, expiresAt } = this.mintContractToken()
@@ -3441,7 +3441,7 @@ export class TrainerReviewService {
        `null` يمرّ نظيفا. ورسالةُ «تغيّر نصُّ العقد» تكذب على من لا نصَّ
        عنده أصلا: تأمره أن يعيد التحميلَ ويقرأ، ولا شيءَ يُقرأ. */
     if (!contractHasBodyAr(c.bodyAr)) {
-      throw new AuthError('no_body', 'لا متنَ لهذا العقد، فلا يُوقَّع. راسلِ الأكاديميةَ ليُرسَل إليك عقدٌ بمتنه', 409)
+      throw new AuthError('no_body', 'لا نصَّ لهذا العقد، فلا يُوقَّع. راسلِ الأكاديميةَ ليُرسَل إليك عقدٌ بنصّه', 409)
     }
     if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
       throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
@@ -3937,7 +3937,7 @@ export class TrainerReviewService {
       throw new AuthError('no_name', 'اكتب الاسمَ القانونيَّ كما في وثيقة الهويّة', 422)
     }
     if (!contractHasBodyAr(old.bodyAr)) {
-      throw new AuthError('no_body', 'عقدٌ بلا متن — من البابِ القديم. أنشئ عقدا جديدا', 409)
+      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. أنشئ عقدا جديدا', 409)
     }
     /* ولا يُعاد عن عقدٍ نافذ: ما خُتم بين الطرفين لا يُستبدَل بنقرة، وبابُه
        الفسخُ لا التصحيح. والموقَّعُ الذي لم يُرفَض توقيعُه بعدُ كذلك: يُرفَض

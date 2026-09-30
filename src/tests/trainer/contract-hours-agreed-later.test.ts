@@ -103,7 +103,7 @@ describe('② ويُقال من يحدّدها ومتى — فلا يوقّع ع
        الرقم بتحريرٍ لاحقٍ وبقي الرقمُ وحدَه يُقرأ شرطا. */
     const sentence = today.slice(at, today.indexOf('.', at) + 1)
     expect(sentence, 'رقمٌ بلا قيدٍ في جملته يُقرأ شرطا')
-      .toContain('استرشادي لا شرط')
+      .toContain('إرشاد لا شرط')
     expect(sentence, 'لم يُقَل إنّ للمدرّب أن ينقصه أو يزيده')
       .toContain('ينقص هذا العدد أو يزيده')
   })
