@@ -44,6 +44,10 @@ import { staffControlCls as inputCls, staffAreaCls as areaCls } from "@/componen
 import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
+import TabBar from "@/components/ui/TabBar";
+import {
+  CONTRACT_TABS, defaultTab, inTab, type ContractTabId,
+} from "@/application/trainer/contract-tabs";
 import MaterialsReview from "./TrainerMaterialsReview";
 import AdminLayout from "./AdminLayout";
 import { parseContractDoc } from '@/application/trainer/contract-sections'
@@ -55,6 +59,9 @@ import { isUntouchableContract } from '@/application/trainer/contract-untouchabl
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
   signed: "وقّعه صاحبُه — ينتظر اعتمادك", expired: "منتهٍ", terminated: "مفسوخ",
+  /* وكان غائبا عن هذا المعجم وحدَه، والشاشةُ تعالجه في ثلاثة مواضع — فيُقرأ
+     صفُّه «amendment_requested» بالإنجليزيّة خاما إلى جنب اسم المدرّب. */
+  amendment_requested: "طلب تعديلا — ينتظر جوابَك",
   declined: "اعتُذر عنه", countersigned: "نافذٌ — اعتمدته الأكاديميّة",
 };
 
@@ -288,6 +295,10 @@ export default function TrainerContracts() {
      حرفيّة — فهي تطبّع الهمزةَ والتاءَ المربوطة، والاسمُ يُكتب بوجهين. */
   const [contractQ, setContractQ] = useState("");
   const [contractPage, setContractPage] = useState(1);
+  /* `null` = لم يُختَرْ تبويبٌ بعد، فيُفتَح على أوّل ما فيه عمل. ولا يُحسَب
+     الافتراضيُّ في كلّ تصيير: لو حُسب لَقفزت الشاشةُ من تبويبٍ إلى آخرَ
+     كلّما اعتُمد عقدٌ تحت يد صاحبها. */
+  const [contractTab, setContractTab] = useState<ContractTabId | null>(null);
   const [offerQ, setOfferQ] = useState("");
   const [offerPage, setOfferPage] = useState(1);
 
@@ -313,6 +324,30 @@ export default function TrainerContracts() {
      **عقود**، لا عشرةَ أوراقٍ منها ثمانٍ أجيالٌ لعقدَين. */
   const lineage = useMemo(() => readLineage(contracts), [contracts]);
 
+  /* ═══ التبويبُ يقع على رأس السلسلة لا على أجيالها ═══
+
+     الصفُّ في هذه الشاشة **سلسلةٌ** لا عقد: رأسٌ وأجيالٌ مطويّةٌ تحته. فلو
+     بُوّب بأيِّ عقدٍ في السلسلة لَظهرت السلسلةُ الواحدةُ في تبويبَين، ولَعُدَّ
+     المدرّبُ مرّتين. والرأسُ هو حالُ أمره اليومَ، فهو المقيس. */
+  const groups = useMemo(
+    () => groupContracts(contracts, (c) => c.profile?.id ?? null),
+    [contracts],
+  );
+
+  const tabCounts = useMemo(() => {
+    const n = {} as Record<ContractTabId, number>;
+    for (const t of CONTRACT_TABS) n[t.id] = 0;
+    for (const g of groups) {
+      n.all += 1;
+      for (const t of CONTRACT_TABS) {
+        if (t.id !== "all" && inTab(t.id, g.head.status)) n[t.id] += 1;
+      }
+    }
+    return n;
+  }, [groups]);
+
+  const activeTab: ContractTabId = contractTab ?? defaultTab((t) => tabCounts[t] ?? 0);
+
   const contractView = useMemo(() => {
     const hit = (c: ContractRow) => matchesQuery(contractQ, [
       c.title, c.profile?.application?.fullName, c.profile?.application?.email,
@@ -321,11 +356,12 @@ export default function TrainerContracts() {
     /* والمجموعةُ تُطابق بأيِّ عقدٍ فيها: من بحث باسمٍ وُقّع به في عقدٍ مضى
        يريد ما آل إليه أمرُه، لا «لا نتائج». */
     return paginate(
-      groupContracts(contracts, (c) => c.profile?.id ?? null)
+      groups
+        .filter((g) => inTab(activeTab, g.head.status))
         .filter((g) => hit(g.head) || g.past.some(hit)),
       contractPage, 10,
     );
-  }, [contracts, contractQ, contractPage]);
+  }, [groups, activeTab, contractQ, contractPage]);
 
   const offerView = useMemo(() => paginate(
     offers.filter((o) => matchesQuery(offerQ, [
@@ -825,6 +861,35 @@ c.gatesActivation
             <Button size="sm" icon={RefreshCw} onClick={() => void load()}>حدِّثْ</Button>
           </div>
         </div>
+        {/* ═══ التبويبُ بما يُنتظَر لا بالحالة الخام ═══
+
+            أمرُ صاحب المنصّة: «مكركبه.. اجعلها تابات او ابني فلتر». والتبويبُ
+            بالعمل لا بالحالة: من يفتح هذه الشاشةَ يسأل «ما الذي عليّ أن
+            أفعله؟» لا «كم حالةً عندي». و«ينتظرك» أوّلُها لأنّ فيها إنسانا
+            ينتظر ختمَنا أو جوابَنا، وكان يضيع بين أربعةٍ وعشرين صفّا.
+
+            واللسانُ من `TabBar` لا مكتوبٌ في مكانه: فيه وقفةٌ واحدةٌ للشريط
+            كلِّه وتنقّلٌ بالأسهم يعكس في العربيّة، وأدوارُ `tablist` صريحة —
+            وكتابتُه بيدي كانت تُسقط ذلك كلَّه، وأمسكها `staff-surface`. */}
+        {contracts.length > 0 && (
+          <TabBar
+            className="mb-3"
+            ariaLabel="أطوارُ العقود"
+            value={activeTab}
+            onChange={(t) => { setContractTab(t); setContractPage(1); }}
+            items={CONTRACT_TABS.map((t) => ({
+              id: t.id,
+              /* والعددُ في اللسان: الخاليةُ تُعرَض بصفرها ولا تُخفى — فغيابُ
+                 اللسان يُقرأ «لا وجودَ لهذا الطور»، ووجودُه بصفرٍ يقول «لا
+                 شيءَ فيه الآن»، وهما خبران مختلفان. */
+              label: (
+                <>
+                  {t.labelAr}
+                  <span className="ms-1.5 text-xs opacity-70">{tabCounts[t.id] ?? 0}</span>
+                </>
+              ),
+            }))} />
+        )}
         {contracts.length > 0 && (
           <ListToolbar q={contractQ} onQ={setContractQ} onPage={setContractPage}
             view={contractView} unit="مدرّبا"
@@ -833,7 +898,14 @@ c.gatesActivation
         {contracts.length === 0
           ? <p className="text-sm opacity-70">لا عقودَ بعد.</p>
           : contractView.rows.length === 0
-            ? <p className="text-sm opacity-70">لا عقدَ يطابق بحثَك.</p>
+            /* ═══ والفراغُ يقول سببَه ═══
+               «لا عقدَ يطابق بحثَك» كذبٌ على من لم يبحث وإنّما فتح تبويبا
+               خاليا — فيظنّ بحثا عالقا ويمسح صندوقا فارغا. */
+            ? <p className="text-sm opacity-70">
+                {contractQ.trim()
+                  ? "لا عقدَ يطابق بحثَك في هذا التبويب."
+                  : CONTRACT_TABS.find((t) => t.id === activeTab)?.emptyAr ?? "لا عقدَ هنا."}
+              </p>
             : (
             <ul className="space-y-2">
               {contractView.rows.map((g) => {
