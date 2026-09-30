@@ -7,6 +7,7 @@
    · حقلٌ **سرّيٌّ** مربوطٌ بالرمز — لا يُعرض ما يُكتب فيه.
    · يُبدأ بالمقنَّع من الخادم، والحفظُ يرسله مع بقيّة الإعداد.
    · والعنوانُ الذي يُنسخ إلى Zoom يُعرض للقراءة لا للتحرير.
+   · وبريدُ المضيف الفارغُ يُرسَل فارغا — فيعود صاحبَ التطبيق كما يعد عنوانُ حقله.
 
    والفحصُ على **وسم الحقل نفسِه** لا على ورود كلمةٍ في الملفّ: يُقتطع الوسمُ الذي
    فيه الربطُ ثمّ يُسأل عن صفاته. */
@@ -43,6 +44,22 @@ describe('رمزُ أحداث Zoom في البطاقة', () => {
     const save = /apiPut\("\/api\/admin\/integrations\/zoom", \{([^}]*)\}/.exec(SRC)
     expect(save, 'لا حفظَ لإعداد Zoom').not.toBeNull()
     expect(save![1], 'الحفظُ لا يحمل ما في النموذج كلَّه').toMatch(/\.\.\.zoomForm/)
+  })
+
+  it('⚠️ والبريدُ الفارغُ يُرسَل فارغا — لا يسقط من الطلب فيبقى المضيفُ القديم', () => {
+    /* عنوانُ الحقل يعد: «اتركه فارغا لصاحب التطبيق». وكان الزرُّ يحوّل الفارغَ إلى لا شيء،
+       فيسقط المفتاحُ من الطلب والخادمُ يُبقي لما غاب قيمتَه — فيبقى المضيفُ القديم.
+
+       ويُنفَّذ تعبيرُ الحمولة نفسُه على نموذجٍ مصطنع، ثمّ يُمرَّر بـJSON كما يمرّ في الطلب
+       (ما كان `undefined` يسقط) — فيُقاس ما يُرسَل لا كيف كُتب. */
+    const save = /apiPut\("\/api\/admin\/integrations\/zoom", (\{[^}]*\})/.exec(SRC)
+    expect(save, 'لا حفظَ لإعداد Zoom بحمولةٍ مكتوبةٍ في موضعه').not.toBeNull()
+    const payload = new Function('zoomForm', `return (${save![1]})`) as (f: Record<string, unknown>) => unknown
+    const wire = (hostEmail: string) => JSON.parse(JSON.stringify(payload({
+      enabled: true, accountId: 'a', clientId: 'c', clientSecret: 's', webhookSecret: '', hostEmail,
+    }))) as Record<string, unknown>
+    expect(wire('   '), 'سقط البريدُ الفارغُ من الطلب — فيُبقي الخادمُ المضيفَ القديم').toHaveProperty('hostEmail', '')
+    expect(wire(' host@wajeez.test ').hostEmail).toBe('host@wajeez.test')
   })
 
   it('والعنوانُ الذي يُنسخ إلى Zoom يُعرض للقراءة', () => {

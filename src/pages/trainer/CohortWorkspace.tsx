@@ -2168,7 +2168,7 @@ export default function CohortWorkspace() {
 
         {/* ما سُلّم وما ينتظر — انتقلت من «التشغيل» (ع-١). من كتب المهمّةَ
             يرى تحتها من استجاب لها، بالمقام الصحيح لا بعدد قائمة الانتظار. */}
-        {taskTab !== "resources" && <CohortSubmissions cohortId={ws.cohort.id} />}
+        {taskTab !== "resources" && <CohortSubmissions cohortId={ws.cohort.id} only={isProject ? "project" : "practical"} />}
         </div>
         );
       })()}

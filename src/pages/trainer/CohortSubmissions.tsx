@@ -29,7 +29,17 @@ interface OpsRow {
   };
 }
 
-export default function CohortSubmissions({ cohortId }: { cohortId: string }) {
+/* ═══ ويتبع لسانَه (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   في «المهامّ والمصادر» ثلاثةُ ألسنة، وكان هذا الصندوقُ يعرض المهامَّ كلَّها
+   تحت كلٍّ منها — فيُرى واجبٌ تحت «مشروع التخرّج». وقرارُ صاحب المنصّة:
+   «اجعل قائمةَ مهامّ الشعبة تظهر حسب التاب فقط». فـ`only` يقصره على نصيب
+   لسانه، وبلا `only` يعرض الكلَّ كما كان. */
+export default function CohortSubmissions({ cohortId, only }: {
+  cohortId: string;
+  /** `practical` الواجباتُ والاختبارات · `project` مشروعُ التخرّج */
+  only?: "practical" | "project";
+}) {
   const [row, setRow] = useState<OpsRow | null>(null);
 
   /* القراءةُ في ردّ النداء لا في جسم الأثر: `set-state-in-effect` يمنع
@@ -47,9 +57,21 @@ export default function CohortSubmissions({ cohortId }: { cohortId: string }) {
   /* المقامُ من التحق فعلا — ومنتظرو القائمة ليسوا مطالَبين بتسليم */
   const learners = row.cohort.enrollments.filter((e) => e.status !== "waitlisted").length;
 
+  const items = only
+    ? row.cohort.assessments.filter((a) => (a.type === "project") === (only === "project"))
+    : row.cohort.assessments;
+
   return (
     <Panel as="section">
-      <CohortAssignments items={row.cohort.assessments} learners={learners} />
+      <CohortAssignments
+        items={items}
+        learners={learners}
+        {...(only === "project"
+          ? { titleAr: "تسليماتُ مشروع التخرّج", emptyAr: "لا مشروعَ تخرّجٍ بعد — وما تضعه أعلاه يظهر هنا بتسليماته." }
+          : only === "practical"
+            ? { titleAr: "تسليماتُ المهامّ العمليّة", emptyAr: "لا مهمّةَ عمليّةً بعد — وما تؤلّفه أعلاه يظهر هنا بتسليماته." }
+            : {})}
+      />
     </Panel>
   );
 }

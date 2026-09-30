@@ -105,7 +105,10 @@ describe('المؤلِّفُ يرى ما ألّف', () => {
     expect(i, 'قسمُ التكاليف ليس في المرحلة أصلا — فالمؤلِّفُ لا يرى ما ألّف').toBeGreaterThan(0)
     /* والمقياسُ ما يُمرَّر لا ورودُ الوسم: قسمٌ بلا بياناتٍ يعرض فراغا دائما */
     const props = code.slice(i, code.indexOf('/>', i))
-    expect(props, 'القسمُ مصيَّرٌ بلا تكاليف').toContain('items={row.cohort.assessments}')
+    /* وصارت تكاليفُ الشعبة تُقصَر على لسانها (٣٠ سبتمبر ٢٠٢٦) — والمصدرُ هو هو:
+       `items` مشتقّةٌ من `row.cohort.assessments`، كلُّها أو نصيبُ اللسان */
+    expect(props, 'القسمُ مصيَّرٌ بلا تكاليف').toContain('items={items}')
+    expect(code, 'التكاليفُ الممرَّرةُ لا تأتي من الشعبة').toMatch(/const items = only\s*\? row\.cohort\.assessments\.filter\([\s\S]*?\)\s*: row\.cohort\.assessments;/)
     expect(
       props,
       'مقامُ «سلّم ٣ من ١٢» غيرُ ممرَّر — فيصير «من ٠» أو عددَ قائمة الانتظار معهم.',

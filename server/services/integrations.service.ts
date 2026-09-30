@@ -188,9 +188,17 @@ export async function saveZoomConfig(
   input: Partial<{ enabled: boolean; accountId: string; clientId: string; clientSecret: string; hostEmail: string; webhookSecret: string }>,
 ) {
   const current = await getRawConfig(prisma, 'zoom')
+  /* ═══ وبريدُ المضيف: الغائبُ يُبقي ما كان، والفارغُ صاحبُ التطبيق (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     عنوانُ الحقل في الشاشة يَعِد: «اتركه فارغا لصاحب التطبيق». وكانت الشاشةُ تحوّل
+     الفارغَ إلى لا شيء فيسقط من الطلب، وهنا يُبقي الغائبُ قيمتَه — فمن مسح البريدَ
+     ليعود إلى صاحب التطبيق بقي مضيفُه القديمُ بلا كلمة. فصار الفارغُ يُرسَل فارغا،
+     ويُقرأ هنا `me`؛ والغائبُ وحدَه (نداءٌ لا يمسّ البريد) يُبقي ما كان. وتُقصّ
+     المسافاتُ قبل الحكم: بريدٌ من مسافاتٍ ليس بريدا، وZoom يردّه مستخدما لا يُعرف. */
+  const host = input.hostEmail?.trim()
   const next: Record<string, unknown> = {
     ...current,
-    hostEmail: input.hostEmail ?? current.hostEmail ?? 'me',
+    hostEmail: host === undefined ? (current.hostEmail ?? 'me') : (host || 'me'),
   }
   /* المعرّفان ليسا سرّا لكنّهما يُقنَّعان في العرض، فيُعامَلان معاملتَه:
      لا يُكتب فوق المخزَّن بقيمةٍ مقنَّعةٍ عادت من الشاشة. */
