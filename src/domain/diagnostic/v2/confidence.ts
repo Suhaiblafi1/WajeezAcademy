@@ -35,6 +35,9 @@ export function computeConfidenceV2(
   contradictions: Contradiction[],
   ctx: DecisionContext,
   candidates: V2Candidate[],
+  /** المنافسُ الحقُّ للمتصدّر إن عيّنه المحرّك (V2.1: `CompetitionResult.rival`)،
+      و`null` أن لا منافسَ حقّا. وإن غاب فالثاني في القائمة — كما كان في V2. */
+  rival?: V2Candidate | null,
 ): ConfidenceV2 {
   const persona = ctx.persona.confidence
   const goalClarity = facts['goal_clarity']?.value as string | undefined
@@ -52,10 +55,11 @@ export function computeConfidenceV2(
      ينجو منافس أصلا) يُسجَّل عدمَ يقين. وظل العيب مستترا لأن كيانا بلا جمهور
      معلن كان ينافس الجميع فيملأ المقعد الثاني؛ فلما أُغلق ذلك الباب انكشف أن
      معايرة «تطابق قوي» كانت قائمة على منافس وهمي. */
-  const uncontested = candidates.length < 2
+  const second = rival === undefined ? candidates[1] : rival
+  const uncontested = !top || !second
   const separation = uncontested
     ? 1
-    : Math.min(1, Math.max(0, (candidates[0].total - candidates[1].total) / 0.15))
+    : Math.min(1, Math.max(0, (top.total - second.total) / 0.15))
   const unresolved = contradictions.filter((c) => !c.resolved)
   const highSev = unresolved.filter((c) => c.severity === 'high').length
   const consistency = Math.max(0, 1 - (unresolved.length - highSev) * 0.15 - highSev * 0.35)

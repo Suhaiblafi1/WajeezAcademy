@@ -131,7 +131,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.6959736841355262,
+        "confidence": 0.8382352940294117,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -257,7 +257,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.704640350802193,
+        "confidence": 0.8382352940294117,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true

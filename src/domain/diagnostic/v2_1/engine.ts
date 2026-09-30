@@ -880,7 +880,7 @@ export class DiagnosticEngineV21 {
 
     /* ٢) التوجيه التكيفي */
     const { candidates, comp } = this.eligibilityAndCandidates(ctx)
-    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
+    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates, rivalV2(comp))
     const compositeAmbiguous = this.compositeAmbiguity(comp)
     const trigCtx = this.triggerContext(confidence.overall)
     trigCtx.topTwoMargin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : null
@@ -1146,7 +1146,7 @@ export class DiagnosticEngineV21 {
   private snapshot(): DeepeningSnapshot {
     const ctx = this.decisionContext()
     const { candidates, comp } = this.eligibilityAndCandidates(ctx)
-    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
+    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates, rivalV2(comp))
     /* الفائز الفعلي: مركب مستوفٍ للشروط، وإلا أفضل قياسي، وإلا دورةٌ قائمةٌ
        بنفسها — نفس قاعدة `competeEntities` حرفا بحرف، ولا نسخةَ تتخلّف عنها. */
     const winner = comp.compositeVictory?.passes && comp.bestComposite
@@ -1176,7 +1176,7 @@ export class DiagnosticEngineV21 {
     const ctx = this.decisionContext()
     const { candidates, comp } = this.eligibilityAndCandidates(ctx)
     const top = candidates[0]
-    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
+    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates, rivalV2(comp))
     const margin = candidates.length >= 2 ? candidates[0].total - candidates[1].total : 1
     const decisive = this.decisiveMap(comp, ctx)
 
@@ -1334,7 +1334,7 @@ export class DiagnosticEngineV21 {
   recommend(): RecommendationV21 {
     const ctx = this.decisionContext()
     const { eligibility, candidates, comp } = this.eligibilityAndCandidates(ctx)
-    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates)
+    const confidence = computeConfidenceV2(this.state.facts, this.state.contradictions, ctx, candidates, rivalV2(comp))
 
     if (this.state.guardrailStop) {
       return {
@@ -1684,6 +1684,12 @@ export class DiagnosticEngineV21 {
 }
 
 /* ─── محوّلات شكل V1 (جسور توافق — لا منطق فيها) ─── */
+
+/** المنافسُ الحقُّ للمتصدّر بشكل V2 — يُقاس عليه «الفارق» في الثقة وحدَها،
+    والسباقُ على الثاني في الترتيب كما هو. انظر `rivalOfTop` */
+function rivalV2(comp: CompetitionResult): V2Candidate | null {
+  return comp.rival ? toV2Candidate(comp.rival) : null
+}
 
 /** كيان المنافسة الموحدة → شكل مرشح V2 (للثقة والشرح والجسور) — pathwayId يحمل معرف الكيان أيًا كان نوعه */
 function toV2Candidate(c: EntityCandidate): V2Candidate {
