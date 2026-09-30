@@ -46,7 +46,8 @@ import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
 import {
-  joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems, type PlanSlot,
+  cohortWorkbookProblems, joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems,
+  type CohortWorkbook, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
 import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
@@ -103,6 +104,12 @@ export interface TrainerPlanContent {
       ومنه يُحكم متى يُفتح كلُّ شيءٍ للمتعلّم. والقاعدةُ كاملةً في
       `src/application/trainer/axis-timeline.ts`. */
   slots?: PlanSlot[] | null
+  /** ═══ كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
+
+      حلّت محلَّ كرّاسةٍ لكلّ موعد: ملفٌّ أو رابطٌ واحد، ومعه أين يبدأ كلُّ
+      محورٍ فيه — فيتبعها المتعلّمُ محورا محورا. والقاعدةُ في
+      `src/application/trainer/axis-timeline.ts` (`cohortWorkbookProblems`). */
+  workbook?: CohortWorkbook | null
   /* ── وحُذف `proposals` من هنا (د-٦ · ١٤ سبتمبر ٢٠٢٦) ──
 
      كان حقلَين — اسمٌ مقترحٌ للدورة وآخرُ للمسار — يركبان مع الخطّة،
@@ -264,8 +271,13 @@ export function buildChecklist(input: {
   const legacy = slots.length === 0 && ['submitted', 'approved', 'published'].includes(input.planStatus)
   const slotIssues = legacy ? [] : slotProblems(slots, moduleIds, input.period)
   const modulesDone = mods.length > 0 && mods.every(moduleBodyDone) && slotIssues.length === 0
-  /* ⑦ لكلّ موعدٍ كرّاستُه — ملفٌّ أو رابط */
-  const workbooksDone = legacy || (slots.length > 0 && workbookProblems(slots, moduleIds).length === 0)
+  /* ⑦ كرّاسةٌ واحدةٌ للشعبة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦).
+     وما أُرسل أو اعتُمد بكرّاسةٍ لكلّ موعدٍ قبل ذلك يمضي كما اعتُمد — ومتى
+     عُدّل صار مسودّةً فلزمته الكرّاسةُ الواحدة. */
+  const sentBefore = ['submitted', 'approved', 'published'].includes(input.planStatus)
+  const workbooksDone = legacy
+    || cohortWorkbookProblems(input.content?.workbook, moduleIds).length === 0
+    || (sentBefore && slots.length > 0 && workbookProblems(slots, moduleIds).length === 0)
   const resources = input.content?.resources ?? []
   /* والمصدرُ المربوطُ بمحورٍ حُذف من الخطّة لا يُفتح أبدا — يُسمّى ليُصلَح */
   const orphanResources = legacy ? 0 : resources.filter((r) => r.moduleId && !moduleIds.includes(r.moduleId)).length
@@ -327,7 +339,7 @@ export function buildChecklist(input: {
       labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',
       done: modulesDone, optional: false,
     },
-    { key: 'workbooks', labelAr: 'ضع لكلّ موعدٍ كرّاستَه — ملفّا أو رابطا', done: workbooksDone, optional: false },
+    { key: 'workbooks', labelAr: 'ضع كرّاسةَ الدورة — واحدةً للمحاور كلِّها، وأين يبدأ كلُّ محورٍ فيها', done: workbooksDone, optional: false },
     {
       key: 'sessions',
       labelAr: (linked

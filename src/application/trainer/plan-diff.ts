@@ -49,6 +49,8 @@ interface DiffPlan {
   modules?: DiffModule[] | null
   slots?: DiffSlot[] | null
   resources?: DiffResource[] | null
+  /** كرّاسةُ الشعبة الواحدة وخريطتُها (٣٠ سبتمبر ٢٠٢٦) */
+  workbook?: (NonNullable<DiffSlot['workbook']> & { parts?: { moduleId: string; whereAr?: string | null }[] | null }) | null
 }
 
 export interface PlanDiffSection { section: ReviewSection; label: string; lines: string[] }
@@ -131,8 +133,24 @@ const workbookKey = (w: DiffSlot['workbook']) => {
 
 function workbookLines(a: DiffPlan, b: DiffPlan): string[] {
   const out: string[] = []
+  /* كرّاسةُ الدورة الواحدة، ثمّ موضعُ كلّ محورٍ فيها */
+  const ca = workbookKey(a.workbook ?? null)
+  const cb = workbookKey(b.workbook ?? null)
+  if (ca !== cb) out.push(!ca ? 'أُضيفت كرّاسةُ الدورة' : !cb ? 'حُذفت كرّاسةُ الدورة' : 'تغيّرت كرّاسةُ الدورة')
+  const pos = new Map(list(b.modules).map((m, i) => [m.moduleId, i + 1]))
+  const whereOf = (p: DiffPlan) => new Map(list(p.workbook?.parts).map((x) => [x.moduleId, text(x.whereAr)]))
+  const wa = whereOf(a)
+  const wb = whereOf(b)
+  for (const m of list(b.modules)) {
+    const before = wa.get(m.moduleId) ?? null
+    const after = wb.get(m.moduleId) ?? null
+    if (before !== after && (before || after)) {
+      out.push(`موضعُ المحور ${pos.get(m.moduleId)} في الكرّاسة: ${before ?? '—'} ← ${after ?? '—'}`)
+    }
+  }
   const sa = list(a.slots)
   const sb = list(b.slots)
+  /* وكرّاساتُ المواعيد — ما دامت في المراجعة (خطّةٌ قبل الكرّاسة الواحدة) */
   for (let i = 0; i < sb.length; i += 1) {
     const before = workbookKey(sa[i]?.workbook)
     const after = workbookKey(sb[i].workbook)

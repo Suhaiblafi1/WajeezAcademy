@@ -35,7 +35,7 @@
       يبقى بمتنِ الكتالوج حتّى يصير التقدّمُ واعيا بالخطّة، وذلك تغييرٌ
       يمسّ أرقاما رآها الناسُ فلا يُركَب هنا. */
 
-import { workbookDone } from './axis-timeline'
+import { workbookDone, workbookWhere, type CohortWorkbook } from './axis-timeline'
 import type { LearnerGate } from '../learning/cohort-gate'
 
 /** أنواعُ المصدر التي يعرفها المتعلّم — وما عداها يُعرض رابطا */
@@ -190,6 +190,20 @@ export interface LearnerPlanView {
   summaryAr?: string | null
   /** مواعيدُ المحاور بكرّاساتها — فارغةٌ لما اعتُمد بلا مواعيد (٢(ب-٢)) */
   slots?: LearnerSlot[]
+  /** كرّاسةُ الشعبة الواحدة وخريطتُها — `null` لما لا كرّاسةَ شعبةٍ فيه */
+  workbook?: LearnerCohortWorkbook | null
+}
+
+/** كرّاسةُ الشعبة كما تصل المتعلّم (٣٠ سبتمبر ٢٠٢٦) */
+export interface LearnerCohortWorkbook {
+  /** لم يحن أوّلُ يومٍ في الشعبة، أو انتهى الوصول */
+  locked: boolean
+  /** متى تُفتح — أوّلُ يوم الموعد الأوّل (`null`: بلا بوّابة، أو انتهى الوصول) */
+  opensAt: string | null
+  /** الملفُّ أو الرابط — `null` حتّى تُفتح */
+  file: LearnerWorkbook | null
+  /** أين يبدأ كلُّ محورٍ فيها — يصل مع العناوين، فهو خريطةٌ لا متن */
+  parts: { moduleId: string; whereAr: string }[]
 }
 
 /** محورُ الخطّة كما يصل المتعلّم — والمحجوبُ عنوانٌ وموعدٌ بلا متن */
@@ -395,6 +409,7 @@ export function projectPlanForLearner(
         modules?: PlanModuleLike[]
         resources?: (LearnerPlanResource & { preReading?: boolean | null })[]
         summaryAr?: string | null
+        workbook?: CohortWorkbook | null
       }
     | null
   if (!c || typeof c !== 'object') return null
@@ -404,7 +419,35 @@ export function projectPlanForLearner(
   const ended = gate?.access === 'ended'
   const iso = (d: Date | null) => (d ? d.toISOString() : null)
   const notYet = (at: Date | null) => at !== null && at.getTime() > now.getTime()
+  /* ═══ كرّاسةُ الشعبة الواحدة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     تُفتح أوّلَ يوم الموعد الأوّل — وهي كاملةٌ للمحاور كلِّها، فمن فُتح له
+     محورُه الأوّلُ فُتحت له. وخريطتُها (أين يبدأ كلُّ محور) تصل قبل ذلك مع
+     العناوين: موضعٌ لا متن. ومتى وُجدت سقطت كرّاساتُ المواعيد القديمة من
+     العرض، فلا يرى المتعلّمُ كرّاستَين لشيءٍ واحد. */
+  const cohortWb = workbookDone(c.workbook) ? c.workbook! : null
+  const wbOpensAt = timeline?.slots[0]?.opensAt ?? null
+  const wbLocked = ended || notYet(wbOpensAt)
+  const workbook: LearnerCohortWorkbook | null = cohortWb
+    ? {
+        locked: wbLocked,
+        opensAt: ended ? null : iso(wbOpensAt),
+        file: wbLocked
+          ? null
+          : {
+              title: written(cohortWb.title),
+              url: httpUrl(cohortWb.url),
+              bodyFileKey: written(cohortWb.bodyFileKey),
+              bodyFileName: written(cohortWb.bodyFileName),
+              bodyFileMime: written(cohortWb.bodyFileMime),
+            },
+        parts: (Array.isArray(c.modules) ? c.modules : [])
+          .map((m) => ({ moduleId: m.moduleId, whereAr: workbookWhere(cohortWb, m.moduleId) }))
+          .filter((x): x is { moduleId: string; whereAr: string } => x.whereAr !== null),
+      }
+    : null
   return {
+    workbook,
     summaryAr: written(c.summaryAr),
     modules: Array.isArray(c.modules)
       ? c.modules.map((m) => {
@@ -437,7 +480,7 @@ export function projectPlanForLearner(
     slots: timeline
       ? timeline.slots.map((s) => {
           const open = !ended && !notYet(s.opensAt)
-          const hasWorkbook = workbookDone(s.workbook)
+          const hasWorkbook = !cohortWb && workbookDone(s.workbook)
           return {
             startsOn: s.startsOn,
             endsOn: s.endsOn,

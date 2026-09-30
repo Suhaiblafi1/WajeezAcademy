@@ -164,7 +164,7 @@ export class CohortFileService {
     throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
   }
 
-  /** أيصل هذا المفتاحُ المتعلّمَ الآن — متنُ محورٍ فُتح، أو كرّاسةُ موعدٍ فُتح، أو مصدرٌ فُتح */
+  /** أيصل هذا المفتاحُ المتعلّمَ الآن — متنُ محورٍ فُتح، أو كرّاسةُ الشعبة أو موعدٍ فُتح، أو مصدرٌ فُتح */
   private async openToLearner(cohortId: string, storageKey: string, now = new Date()): Promise<boolean> {
     const loaded = await loadLearnerGate(this.prisma, cohortId, now)
     if (!loaded || loaded.gate.access === 'ended') return false
@@ -173,6 +173,8 @@ export class CohortFileService {
     const keys = [
       ...view.modules.map((m) => m.bodyFileKey),
       ...(view.slots ?? []).map((s) => s.workbook?.bodyFileKey),
+      /* وكرّاسةُ الشعبة الواحدة — ومفتاحُها لا يصل الإسقاطَ قبل أوّل يومٍ فيها */
+      view.workbook?.file?.bodyFileKey,
       ...view.resources.map((r) => r.bodyFileKey),
     ]
     return keys.includes(storageKey)

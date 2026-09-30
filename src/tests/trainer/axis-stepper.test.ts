@@ -79,18 +79,25 @@ describe('② المحاورُ داخلَ مواعيدها', () => {
   })
 })
 
-describe('③ الكرّاسات', () => {
+/* كانت لكلّ موعدٍ كرّاسة، وصارت واحدةً للدورة ومعها موضعُ كلّ محورٍ فيها
+   (قرارُ صاحب المنصّة، ٣٠ سبتمبر ٢٠٢٦). */
+describe('③ الكرّاسة — واحدةٌ للدورة', () => {
   const block = stageBlock('workbooks', 'sessions')
 
-  it('⚠️ لكلّ موعدٍ كرّاسةٌ يُحكم عليها بقاعدة الخادم — ملفٌّ أو رابط', () => {
-    expect(block).toContain('slots.map((slot, si)')
+  it('⚠️ كرّاسةٌ واحدةٌ يُحكم عليها بقاعدة الخادم — لا بطاقةٌ لكلّ موعد', () => {
+    expect(block, 'عادت كرّاسةٌ لكلّ موعد').not.toContain('slots.map(')
     expect(block).toContain('workbookDone(wb)')
     expect(block).toMatch(/purpose="plan_resource"/)
-    expect(block).toContain('aria-label={`رابطُ كرّاسة الموعد ${si + 1}`}')
+    expect(block).toMatch(/refId="workbook-cohort"/)
+    expect(block).toContain('aria-label="رابطُ الكرّاسة"')
+  })
+
+  it('⚠️ ولكلّ محورٍ خانةُ موضعه فيها — فيتبعها المتعلّمُ محورا محورا', () => {
+    expect(block).toMatch(/content\.modules\.map\(\(m, i\) =>[\s\S]*?aria-label=\{`أين يبدأ المحور \$\{i \+ 1\} في الكرّاسة`\}[\s\S]*?onChange=\{\(e\) => setWhere\(m\.moduleId, e\.target\.value\)\}/)
   })
 
   it('⚠️ ولا يجتمع ملفٌّ ورابط — الرفعُ يمحو الرابط، والرابطُ يُخفي الرفع', () => {
-    expect(block).toContain('setWorkbook(si, { ...next, url: null })')
+    expect(block).toContain('setWorkbook({ ...next, url: null })')
     expect(block).toMatch(/!\(wb\?\.url \?\? ""\)\.trim\(\) && \(/)
   })
 })

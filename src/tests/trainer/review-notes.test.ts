@@ -119,7 +119,7 @@ describe('وما يُقرأ منها', () => {
     const html = renderToStaticMarkup(createElement(StageReviewNote, { stage: 'workbooks', text: 'كرّاسةُ الموعد الأوّل رابطُها معطوب' }))
     expect(html).toContain('ملاحظةُ الإدارة على هذه الخطوة')
     expect(html).toContain('كرّاسةُ الموعد الأوّل رابطُها معطوب')
-    expect(html).toContain('aria-label="ملاحظةُ الإدارة على «الكرّاسات»"')
+    expect(html).toContain('aria-label="ملاحظةُ الإدارة على «الكرّاسة»"')
     expect(renderToStaticMarkup(createElement(StageReviewNote, { stage: 'workbooks', text: undefined }))).toBe('')
   })
 })

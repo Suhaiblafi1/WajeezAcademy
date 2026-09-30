@@ -30,7 +30,7 @@ const INSIDE = new Date('2027-02-09T15:00:00.000Z')
 /** شعبةٌ أتمّ صاحبُها كلَّ ما يُطلب منه — ولم تُعتمَد بعد.
 
     ومنذ صار للمحاور مواعيدُ (٢٧ سبتمبر ٢٠٢٦) فالتامّةُ تامّةٌ بها: محورُها في
-    موعدٍ داخلَ المدّة وله كرّاستُه، ولقاؤه مربوطٌ به في موعده، ومهمّتُها
+    موعدٍ داخلَ المدّة وموضعُه في كرّاسة الدورة، ولقاؤه مربوطٌ به في موعده، ومهمّتُها
     مربوطةٌ به. ومحورٌ واحدٌ يكفيه موعدٌ واحد — الحدُّ «أربعةٌ أو عددُ المحاور». */
 const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => buildChecklist({
   cohort: { title: 'الدفعة الأولى' },
@@ -39,7 +39,8 @@ const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => b
     kind: 'trainer',
     modules: [{ moduleId: 'M0', titleAr: 'محور', bodyAr: body }],
     resources: [{ title: 'كرّاسة', url: 'https://x.test/a' }],
-    slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['M0'], workbook: { url: 'https://x.test/wb' } }],
+    slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['M0'] }],
+    workbook: { url: 'https://x.test/wb', parts: [{ moduleId: 'M0', whereAr: 'ص 1' }] },
   } as never,
   sessions: [{ startsAt: INSIDE, recordings: [], moduleIds: ['M0'] }],
   assessmentsCount: 1,

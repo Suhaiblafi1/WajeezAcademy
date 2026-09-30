@@ -140,7 +140,8 @@ describe('صفحةُ المنهج مرسومة', () => {
 
   it('⚠️ ويُقال ما ينقص في موضعه — كرّاسةٌ غائبة، ومهمّةٌ بلا تعليمات، ومحورٌ بلا متن', () => {
     const h = html()
-    expect(h).toContain('بلا كرّاسة.')
+    /* وكرّاسةُ الدورة الواحدة غائبةٌ في هذه الخطّة — تُقال في رأس المنهج (٣٠ سبتمبر ٢٠٢٦) */
+    expect(h).toContain('لم تُوضع بعد.')
     expect(h).toContain('بلا تعليمات')
     expect(h).toContain('بلا متنٍ نظريّ بعد.')
   })
@@ -171,5 +172,36 @@ describe('المدرّبُ يقرأ منهجَه قبل أن يُقرّ', () => 
     expect(review, 'المنهجُ بعد الإقرار لا قبله').toBeLessThan(approval.indexOf('id="plan-confirm"'))
     expect(approval).toMatch(/onEdit=\{\(s\) => openStage\(s\)\}/)
     expect(approval).toMatch(/sessions: ws\.sessions,\s*assessments: ws\.assessments/)
+  })
+})
+
+/* ═══ كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «اجعل الكرّاسةَ واحدةً فقط وليس لكلّ محور، على أن تكون
+   كاملةً لكلّ المحاور… سهلةً على الطالب يتبعها محورا محورا». فالمعتمِدُ يراها
+   مرّةً في رأس المنهج، وفي كلّ موعدٍ أين يبدأ محورُه فيها — والمحورُ الذي لم
+   يُكتب موضعُه يُقال «بلا موضع» في مكانه. */
+describe('كرّاسةُ الدورة في المنهج', () => {
+  const one = curriculumView({
+    ...input,
+    content: {
+      ...content,
+      workbook: { title: 'كرّاسةُ الأتمتة', bodyFileKey: 'k-cwb', parts: [{ moduleId: 'M1', whereAr: 'ص 3' }, { moduleId: 'M2', whereAr: 'ص 9' }] },
+    },
+  })
+
+  it('⚠️ تُقرأ مرّةً — وموضعُ كلّ محورٍ على محوره', () => {
+    expect(one.workbook).toMatchObject({ title: 'كرّاسةُ الأتمتة', fileKey: 'k-cwb' })
+    expect(one.groups[0].axes.map((a) => a.workbookWhere)).toEqual(['ص 3', 'ص 9'])
+    expect(one.groups[1].axes[0].workbookWhere).toBeNull()
+  })
+
+  it('⚠️ والرسمُ يقول موضعَ كلّ محور، ويسمّي الغائب — ولا يعرض كرّاساتِ المواعيد معها', () => {
+    const h = renderToStaticMarkup(createElement(CurriculumReview, { view: one }))
+    expect(h).toContain('/api/v1/cohort-files/k-cwb')
+    expect(h).toContain('في كرّاسة الدورة')
+    expect(h).toContain('ص 9')
+    expect(h).toContain('بلا موضع')
+    expect(h, 'كرّاسةُ موعدٍ قديمةٌ عُرضت بجانب كرّاسة الدورة').not.toContain('/api/v1/cohort-files/k-wb4')
   })
 })

@@ -344,12 +344,21 @@ const ACTIVE: Shot[] = [
       const p = e.page
       await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
       await step(e, 3)
-      const slot = p.getByRole('listitem').filter({ has: p.getByText('الموعد 1 · المحور 1', { exact: true }) }).first()
+      /* كرّاسةٌ واحدةٌ للدورة وخريطتُها (٣٠ سبتمبر ٢٠٢٦) — تُملأ في المحرّر
+         ولا تُحفظ، فالشعبةُ المزروعةُ قبل التحوّل تُصوَّر كما يراها صاحبُها */
+      const url = p.getByRole('textbox', { name: 'رابطُ الكرّاسة' })
+      if (!(await url.inputValue())) await url.fill('https://drive.google.com/file/d/guide-workbook')
+      for (let i = 1; i <= 4; i++) {
+        const where = p.getByRole('textbox', { name: `أين يبدأ المحور ${i} في الكرّاسة` })
+        if (await where.count() && !(await where.inputValue())) await where.fill(`ص ${(i - 1) * 6 + 1}`)
+      }
+      await settle(e)
+      const section = p.locator('section').filter({ has: p.getByRole('textbox', { name: 'رابطُ الكرّاسة' }) }).first()
       await shoot(e, {
-        name: 'ws-workbooks', clip: slot, clipPad: 14,
+        name: 'ws-workbooks', clip: section, clipPad: 14, maxHeight: 1500,
         marks: [
-          { target: slot.getByRole('textbox', { name: 'اسمُ كرّاسة الموعد 1' }), n: 1, pad: 5 },
-          { target: slot.getByRole('textbox', { name: 'رابطُ كرّاسة الموعد 1' }), n: 2, pad: 5 },
+          { target: p.getByRole('textbox', { name: 'رابطُ الكرّاسة' }), n: 1, pad: 5 },
+          { target: p.getByRole('textbox', { name: 'أين يبدأ المحور 1 في الكرّاسة' }), n: 2, pad: 5 },
         ],
       })
     },

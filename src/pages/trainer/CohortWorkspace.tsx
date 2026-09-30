@@ -78,8 +78,8 @@ import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
   appendToSlots, axesLabelAr, canMerge, dayLabelAr, defaultSlots, dropFromSlots, joinClosesAt, mergeSlots, reflowSlots,
-  sessionProblems, slotIndexOf, slotProblems, splitSlot, workbookDone, workbookProblems,
-  type PlanSlot, type SlotWorkbook,
+  cohortWorkbookProblems, sessionProblems, slotIndexOf, slotProblems, splitSlot, workbookDone, workbookWhere,
+  WORKBOOK_WHERE_MAX, type CohortWorkbook, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
@@ -121,6 +121,8 @@ interface PlanContent {
   startsOn?: string | null; endsOn?: string | null;
   /* مواعيدُ المحاور وكرّاساتُها — `application/trainer/axis-timeline.ts` */
   slots?: PlanSlot[] | null;
+  /* كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها، وأين يبدأ كلُّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
+  workbook?: CohortWorkbook | null;
 }
 /** مدّةٌ كما يرسلها الخادم — تاريخان `YYYY-MM-DD` */
 interface Period { startsOn: string; endsOn: string }
@@ -194,7 +196,7 @@ type Stage = "identity" | "modules" | "workbooks" | "sessions" | "assignments" |
 const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
   { key: "identity", label: "المعلومات الأساسيّة", icon: IdCard },
   { key: "modules", label: "المحاور ومواعيدها", icon: BookOpen },
-  { key: "workbooks", label: "الكرّاسات", icon: BookMarked },
+  { key: "workbooks", label: "الكرّاسة", icon: BookMarked },
   { key: "sessions", label: "اللقاءات", icon: CalendarDays },
   { key: "assignments", label: "المهامّ والمصادر", icon: ClipboardCheck },
   { key: "approval", label: "الاعتماد", icon: Send },
@@ -285,8 +287,8 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
     minutes: "نحو ١٥ دقيقة",
   },
   workbooks: {
-    title: "الكرّاسات",
-    purpose: "لكلّ موعدٍ كرّاستُه — ملفٌّ ترفعه أو رابطٌ تلصقه — تُفتح للمتعلّم أوّلَ يومٍ في الموعد، قبل اللقاء. والمحوران المجموعان يتقاسمان كرّاسةً واحدة.",
+    title: "الكرّاسة",
+    purpose: "كرّاسةٌ واحدةٌ للدورة كلِّها — ملفٌّ ترفعه أو رابطٌ تلصقه — فيها المحاورُ كلُّها بترتيبها. واكتب لكلّ محورٍ أين يبدأ فيها، فيتبعها المتعلّمُ محورا محورا. وتُفتح له أوّلَ يومٍ في الشعبة.",
     minutes: "نحو ٥ دقائق",
   },
   sessions: {
@@ -329,7 +331,7 @@ function StageIntro({ stage }: { stage: Stage }) {
    اللقاءات، والباقي مع المهامّ — كلٌّ حيث يُحرَّر (٢٧ سبتمبر ٢٠٢٦) */
 const modulesKey = (c: PlanContent) =>
   JSON.stringify({ modules: c.modules, slots: (c.slots ?? []).map((x) => ({ startsOn: x.startsOn, endsOn: x.endsOn, moduleIds: x.moduleIds })) });
-const workbooksKey = (c: PlanContent) => JSON.stringify((c.slots ?? []).map((x) => x.workbook ?? null));
+const workbooksKey = (c: PlanContent) => JSON.stringify([c.workbook ?? null, (c.slots ?? []).map((x) => x.workbook ?? null)]);
 const recordedKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) => resourceCategory(r) === "recorded"));
 const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) => resourceCategory(r) !== "recorded"));
 
@@ -676,7 +678,7 @@ export default function CohortWorkspace() {
       return out.length ? out : [label];
     }
     if (k === "workbooks") {
-      const out = workbookProblems(saved?.slots, ids);
+      const out = cohortWorkbookProblems(saved?.workbook, ids);
       return out.length ? out : [label];
     }
     if (k === "sessions") {
@@ -825,8 +827,18 @@ export default function CohortWorkspace() {
     const modules = moveModule(content.modules, i, delta);
     setContent({ ...content, modules, slots: slotsOn ? reflowSlots(slots, modules.map((m) => m.moduleId)) : content.slots });
   };
-  const setWorkbook = (si: number, patch: Partial<SlotWorkbook> | null) =>
-    setSlots(slots.map((x, j) => (j === si ? { ...x, workbook: patch === null ? null : { ...(x.workbook ?? {}), ...patch } } : x)));
+  /* كرّاسةُ الشعبة الواحدة، وموضعُ كلّ محورٍ فيها */
+  const wb = content.workbook ?? null;
+  const setWorkbook = (patch: Partial<CohortWorkbook>) =>
+    setContent({ ...content, workbook: { ...(content.workbook ?? {}), ...patch } });
+  const setWhere = (moduleId: string, whereAr: string) =>
+    setWorkbook({
+      parts: [...(wb?.parts ?? []).filter((x) => x.moduleId !== moduleId), { moduleId, whereAr }]
+        .filter((x) => moduleIds.includes(x.moduleId))
+        .sort((a, b) => moduleIds.indexOf(a.moduleId) - moduleIds.indexOf(b.moduleId)),
+    });
+  /* كرّاساتُ المواعيد القديمة — تُذكر ليجمعها في واحدة، ولا تُحذف من تحته */
+  const slotWorkbooks = slots.filter((x) => workbookDone(x.workbook)).length;
   /* المسجَّلُ من مصادر الخطّة — يُحرَّر في «اللقاءات» بموضعه في المصفوفة الواحدة */
   const patchResource = (i: number, patch: Partial<PlanResource>) =>
     setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
@@ -1351,81 +1363,97 @@ export default function CohortWorkspace() {
         );
       })()}
 
-      {/* ─────────── ③ الكرّاسات ───────────
+      {/* ─────────── ③ الكرّاسة ───────────
 
-          «وبعدها الكرّاساتُ لكلّ محورٍ التي تظهر بفترة كلّ محورٍ مثبَتٍ سابقا»
-          (صاحب المنصّة، ٢٧ سبتمبر ٢٠٢٦). ولكلّ موعدٍ كرّاسةٌ واحدة — المحوران
-          المجموعان يتقاسمانها — ملفٌّ يُرفع أو رابطٌ يُلصَق، ولا يجتمعان: من
-          أراد الآخرَ أزال الأوّل. وتُفتح للمتعلّم أوّلَ يومٍ في الموعد، قبل
-          اللقاء. والحكمُ عليها `workbookDone` نفسُها التي يحكم بها الخادم. */}
+          كانت لكلّ موعدٍ كرّاسة (٢٧ سبتمبر ٢٠٢٦). ثمّ قرارُ صاحب المنصّة (٣٠
+          سبتمبر ٢٠٢٦): «اجعل الكرّاسةَ واحدةً فقط وليس لكلّ محور، على أن تكون
+          كاملةً لكلّ المحاور، وأن يتأكّد أن تكون سهلةً على الطالب يتبعها محورا
+          محورا». فصارت واحدةً — ملفٌّ يُرفع أو رابطٌ يُلصَق، ولا يجتمعان —
+          ومعها خريطتُها: لكلّ محورٍ أين يبدأ فيها. والخريطةُ إلزاميّة، وبها
+          يصير «يتبعها محورا محورا» شرطا يُفحص لا نصيحة. والحكمُ عليها
+          `cohortWorkbookProblems` نفسُها التي يحكم بها الخادم. */}
       {stage === "workbooks" && (
         <Panel as="section">
           <StageIntro stage="workbooks" />
-          {!slotsOn ? (
-            <Inset className="mt-4 text-read leading-6 text-muted-foreground">
-              لكلّ موعدٍ كرّاستُه — وزّع المحاورَ على مواعيدها في «المحاور ومواعيدها» أوّلا.
+          {slotWorkbooks > 0 && !workbookDone(wb) && (
+            <Inset tone="accent" className="mt-4 text-read leading-6">
+              كانت لمواعيدك {slotWorkbooks === 1 ? "كرّاسةٌ" : `${slotWorkbooks} كرّاسات`} منفصلة. اجمعها في كرّاسةٍ واحدةٍ بترتيب المحاور وضعها هنا — والمنفصلةُ لا تُعرض بعد إرسال خطّتك.
             </Inset>
-          ) : (
-            <ol className="mt-4 space-y-3">
-              {slots.map((slot, si) => {
-                const wb = slot.workbook ?? null;
-                const hasFile = Boolean((wb?.bodyFileKey ?? "").trim());
-                const done = workbookDone(wb);
-                return (
-                  <Card as="li" key={`${si}-${slot.moduleIds[0] ?? "empty"}`} tone={done ? "default" : "accent"} className="grid gap-3">
-                    <div>
-                      <p className="text-read font-black text-teal-light-ink">
-                        الموعد {si + 1} <span className="font-bold text-foreground">· {axesLabelAr(slot.moduleIds, axisNo)}</span>
-                      </p>
-                      <p className="mt-0.5 text-read text-muted-foreground">
-                        تُفتح للمتعلّم {dayLabelAr(slot.startsOn)} — أوّلَ يومٍ في الموعد — وتبقى له بعده.
-                      </p>
-                    </div>
-                    <StaffField label="اسمُ الكرّاسة (اختياريّ)" hint="ما يراه المتعلّم — «كرّاسة المحور الأوّل · التحرير». وإن تركته سُمّيت بمحاورها.">
-                      <input value={wb?.title ?? ""} disabled={locked} maxLength={200}
-                        aria-label={`اسمُ كرّاسة الموعد ${si + 1}`}
-                        onChange={(e) => setWorkbook(si, { title: e.target.value || null })}
-                        className={controlCls} />
-                    </StaffField>
-                    {hasFile ? (
-                      <ModuleBodyUpload
-                        cohortId={ws.cohort.id}
-                        purpose="plan_resource"
-                        refId={`workbook-${slot.moduleIds[0] ?? si}`}
-                        value={wb ?? {}}
-                        onChange={(next) => setWorkbook(si, next)}
-                        disabled={locked}
-                        label="ارفع الكرّاسة"
-                        hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
-                      />
-                    ) : (
-                      <div className="grid gap-2">
-                        <StaffField label="رابطُ الكرّاسة" hint="رابطٌ يبدأ بـ https:// — أو ارفع ملفّا بدلا منه.">
-                          <input dir="ltr" value={wb?.url ?? ""} disabled={locked} placeholder="https://…"
-                            aria-label={`رابطُ كرّاسة الموعد ${si + 1}`}
-                            onChange={(e) => setWorkbook(si, { url: e.target.value || null })}
-                            className={`${controlCls} text-left`} />
-                        </StaffField>
-                        {!(wb?.url ?? "").trim() && (
-                          <ModuleBodyUpload
-                            cohortId={ws.cohort.id}
-                            purpose="plan_resource"
-                            refId={`workbook-${slot.moduleIds[0] ?? si}`}
-                            value={wb ?? {}}
-                            onChange={(next) => setWorkbook(si, { ...next, url: null })}
-                            disabled={locked}
-                            label="أو ارفع ملفّا"
-                            hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
-                          />
-                        )}
-                      </div>
-                    )}
-                    {!done && <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد — ملفٌّ أو رابط.</p>}
-                  </Card>
-                );
-              })}
-            </ol>
           )}
+          <Card tone={workbookDone(wb) ? "default" : "accent"} className="mt-4 grid gap-3">
+            <StaffField label="اسمُ الكرّاسة (اختياريّ)" hint="ما يراه المتعلّم — «كرّاسةُ الدورة». وإن تركته سُمّيت «كرّاسةُ الدورة».">
+              <input value={wb?.title ?? ""} disabled={locked} maxLength={200}
+                aria-label="اسمُ الكرّاسة"
+                onChange={(e) => setWorkbook({ title: e.target.value || null })}
+                className={controlCls} />
+            </StaffField>
+            {(wb?.bodyFileKey ?? "").trim() ? (
+              <ModuleBodyUpload
+                cohortId={ws.cohort.id}
+                purpose="plan_resource"
+                refId="workbook-cohort"
+                value={wb ?? {}}
+                onChange={(next) => setWorkbook(next)}
+                disabled={locked}
+                label="ارفع الكرّاسة"
+                hint="ملفٌّ واحدٌ فيه المحاورُ كلُّها بترتيبها. PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ تُنزَّل."
+              />
+            ) : (
+              <div className="grid gap-2">
+                <StaffField label="رابطُ الكرّاسة" hint="رابطٌ يبدأ بـ https:// — أو ارفع ملفّا بدلا منه.">
+                  <input dir="ltr" value={wb?.url ?? ""} disabled={locked} placeholder="https://…"
+                    aria-label="رابطُ الكرّاسة"
+                    onChange={(e) => setWorkbook({ url: e.target.value || null })}
+                    className={`${controlCls} text-left`} />
+                </StaffField>
+                {!(wb?.url ?? "").trim() && (
+                  <ModuleBodyUpload
+                    cohortId={ws.cohort.id}
+                    purpose="plan_resource"
+                    refId="workbook-cohort"
+                    value={wb ?? {}}
+                    onChange={(next) => setWorkbook({ ...next, url: null })}
+                    disabled={locked}
+                    label="أو ارفع ملفّا"
+                    hint="ملفٌّ واحدٌ فيه المحاورُ كلُّها بترتيبها. PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ تُنزَّل."
+                  />
+                )}
+              </div>
+            )}
+            {!workbookDone(wb) && <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد — ملفٌّ أو رابط.</p>}
+          </Card>
+
+          <div className="mt-5">
+            <p className="text-read font-black">أين يبدأ كلُّ محورٍ في الكرّاسة؟</p>
+            <p className="mt-0.5 text-read leading-6 text-muted-foreground">
+              يراه المتعلّمُ بجانب كلّ محورٍ في رحلته، فيفتح الكرّاسةَ على موضعه — «ص ٥» أو «ص ٥–١٢» أو «القسم الثاني».
+            </p>
+            {moduleIds.length === 0 ? (
+              <Inset className="mt-3 text-read leading-6 text-muted-foreground">
+                اكتب محاورك في «المحاور ومواعيدها» أوّلا — ثمّ ارجع إلى هنا.
+              </Inset>
+            ) : (
+              <ol className="mt-3 grid gap-2">
+                {content.modules.map((m, i) => {
+                  const where = workbookWhere(wb, m.moduleId) ?? "";
+                  const current = (wb?.parts ?? []).find((x) => x.moduleId === m.moduleId)?.whereAr ?? "";
+                  return (
+                    <li key={m.moduleId} className="grid items-center gap-2 sm:grid-cols-[1fr_14rem]">
+                      <span className="text-read leading-6">
+                        <span className="font-black text-teal-light-ink tabular-nums">المحور {i + 1}</span>
+                        <span className="text-foreground"> · {m.titleAr || "بلا عنوانٍ بعد"}</span>
+                      </span>
+                      <input value={current} disabled={locked} maxLength={WORKBOOK_WHERE_MAX}
+                        aria-label={`أين يبدأ المحور ${i + 1} في الكرّاسة`}
+                        placeholder="ص ٥"
+                        onChange={(e) => setWhere(m.moduleId, e.target.value)}
+                        className={`${controlCls} ${where ? "" : "border-gold/50"}`} />
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </div>
         </Panel>
       )}
 

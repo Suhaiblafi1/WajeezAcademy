@@ -23,7 +23,7 @@
 export const STAGE_LABELS = {
   identity: 'المعلومات الأساسيّة',
   modules: 'المحاور ومواعيدها',
-  workbooks: 'الكرّاسات',
+  workbooks: 'الكرّاسة',
   sessions: 'اللقاءات',
   assignments: 'المهامّ والمصادر',
 } as const

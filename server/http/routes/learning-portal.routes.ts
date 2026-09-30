@@ -31,7 +31,7 @@ import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trai
 import { AuthError } from '../../services/auth.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
 import { requireAuth, requirePermission } from '../auth-plugin'
-import { MAX_AXES_PER_SESSION } from '../../../src/application/trainer/axis-timeline'
+import { MAX_AXES_PER_SESSION, WORKBOOK_WHERE_MAX } from '../../../src/application/trainer/axis-timeline'
 
 /** محورا اللقاء: اثنان على الأكثر بلا تكرار — «ولكلّ لقاءٍ محورٌ أو محوران» */
 const axesArray = z.array(z.string().trim().min(1).max(64))
@@ -592,6 +592,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
         bodyFileMime: z.string().trim().max(120).nullish(),
       }).nullish(),
     })).max(40).nullish(),
+    /* ═══ كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
+
+       ومعها `parts`: أين يبدأ كلُّ محورٍ فيها. والناقصُ يُحفظ ويُسمّى في قائمة
+       التجهيز، كالمواعيد. */
+    workbook: z.object({
+      title: z.string().max(200).nullish(),
+      url: z.string().max(500).nullish(),
+      bodyFileKey: z.string().trim().max(120).nullish(),
+      bodyFileName: z.string().trim().max(200).nullish(),
+      bodyFileMime: z.string().trim().max(120).nullish(),
+      parts: z.array(z.object({
+        moduleId: z.string().max(64),
+        whereAr: z.string().max(WORKBOOK_WHERE_MAX),
+      })).max(40).nullish(),
+    }).nullish(),
     /* وسقط `proposals` من المخطّط (د-٦): كان اسمُ الدورة يُكتب على النسخة
        القائمة من داخل خطّة شعبة فيُعيد تسميةَ الشهادات الصادرة. ثمّ مرّ
        بقناته (ح-٣)، ثمّ أُغلق بابُه كلُّه (ق٥ · ١٧ سبتمبر ٢٠٢٦). والمحفوظُ

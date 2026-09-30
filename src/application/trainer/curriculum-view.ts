@@ -20,7 +20,7 @@
 
 import type { CohortPeriod } from './cohort-period'
 import { resourceCategory, displayKind } from './plan-overlay'
-import { workbookDone, type PlanSlot } from './axis-timeline'
+import { workbookDone, workbookWhere, type CohortWorkbook, type PlanSlot } from './axis-timeline'
 import { proposedTask, readTaskChange, taskReview, taskValues } from './task-approval'
 
 export interface CurriculumInput {
@@ -70,6 +70,8 @@ export interface CurriculumAxis {
   body: string | null
   bodyWords: number
   bodyFile: { key: string; name: string | null } | null
+  /** أين يبدأ في كرّاسة الشعبة — «ص ٥» (٣٠ سبتمبر ٢٠٢٦) */
+  workbookWhere: string | null
 }
 
 export interface CurriculumMeeting {
@@ -128,6 +130,8 @@ export interface CurriculumView {
   period: CohortPeriod | null
   /** على خطّ المحاور — أم محورا محورا كما اعتُمد قبله */
   bySlot: boolean
+  /** كرّاسةُ الشعبة الواحدة — `null` لما قبلها (كرّاسةٌ لكلّ موعد) أو لما لم تُوضع بعد */
+  workbook: { title: string | null; url: string | null; fileKey: string | null; fileName: string | null } | null
   groups: CurriculumGroup[]
   /** للشعبة كلِّها — ما لا محورَ له */
   general: { meetings: CurriculumMeeting[]; tasks: CurriculumTask[]; resources: CurriculumResource[] }
@@ -175,7 +179,10 @@ export function axesLabel(ns: readonly number[]): string {
 }
 
 export function curriculumView(input: CurriculumInput): CurriculumView {
-  const c = (input.content ?? {}) as { summaryAr?: string | null; modules?: PlanModule[]; slots?: PlanSlot[]; resources?: PlanResource[] }
+  const c = (input.content ?? {}) as {
+    summaryAr?: string | null; modules?: PlanModule[]; slots?: PlanSlot[]; resources?: PlanResource[]; workbook?: CohortWorkbook | null
+  }
+  const cw = c.workbook ?? null
   const modules = Array.isArray(c.modules) ? c.modules : []
   const slots = Array.isArray(c.slots) ? c.slots : []
   const resources = Array.isArray(c.resources) ? c.resources : []
@@ -195,6 +202,7 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
       body,
       bodyWords: words(body),
       bodyFile: key ? { key, name: text(m.bodyFileName) } : null,
+      workbookWhere: workbookWhere(cw, m.moduleId),
     }
   }
   const byId = new Map(modules.map((m) => [m.moduleId, m]))
@@ -297,6 +305,9 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
     summaryAr: text(c.summaryAr),
     period: input.period,
     bySlot: slots.length > 0,
+    workbook: workbookDone(cw)
+      ? { title: text(cw?.title), url: text(cw?.url), fileKey: text(cw?.bodyFileKey), fileName: text(cw?.bodyFileName) }
+      : null,
     groups,
     general,
     counts: {

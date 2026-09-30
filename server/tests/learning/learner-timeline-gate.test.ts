@@ -368,3 +368,55 @@ describe('④ الشعبةُ التي اعتُمدت قبل المواعيد: ل
     expect(sub.submission.late).toBe(true)
   })
 })
+
+/* ═══ ⑤ كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «اجعل الكرّاسةَ واحدةً فقط وليس لكلّ محور… وأن يتأكّد أن
+   تكون سهلةً على الطالب يتبعها محورا محورا». فتُفتح أوّلَ يومٍ في الموعد الأوّل
+   — وقبله لا يصل ملفُّها ولا يُقرأ من مساره المحروس — وخريطتُها (أين يبدأ كلُّ
+   محور) تصل مع العناوين. ومتى وُجدت سقطت كرّاساتُ المواعيد القديمة من العرض. */
+describe('⑤ كرّاسةُ الدورة الواحدة', () => {
+  const IDS = ['WM1', 'WM2', 'WM3', 'WM4']
+  const KEY = `k-cwb-${STAMP}`
+  const OLD = `k-old-${STAMP}`
+  const content = (from: number) => ({
+    startsOn: day(from), endsOn: day(from + 27),
+    modules: mods(IDS),
+    slots: IDS.map((id, i) => ({
+      startsOn: day(from + i * 7), endsOn: day(from + i * 7 + 6), moduleIds: [id],
+      /* كرّاسةُ موعدٍ قديمةٌ بقيت في الخطّة — لا تُعرض بجانب كرّاسة الدورة */
+      workbook: i === 0 ? { bodyFileKey: OLD, bodyFileName: 'قديمة.pdf' } : null,
+    })),
+    workbook: { title: 'كرّاسةُ الدورة', bodyFileKey: KEY, bodyFileName: 'الكرّاسة.pdf', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 6 + 1}` })) },
+  })
+
+  it('⚠️ قبل أوّل يومٍ في الشعبة: خريطتُها تصل، وملفُّها لا يصل ولا يُقرأ', async () => {
+    const cohortId = await cohortWithPlan('كرّاسةٌ لم تُفتح', content(5), { from: 5, to: 32 })
+    await prisma.cohortFile.create({ data: { cohortId, purpose: 'plan_resource', refId: 'workbook-cohort', storageKey: KEY, originalName: 'الكرّاسة.pdf', mime: 'application/pdf' } })
+    const me = await learner('cwb-early', cohortId)
+    const wb = (await enrollments.learnerCohortView(me.enrollmentId)).cohort.trainerPlan!.workbook!
+    expect(wb.locked).toBe(true)
+    expect(wb.file, 'ملفُّ الكرّاسة وصل قبل أوانه').toBeNull()
+    expect(wb.parts.map((p) => p.whereAr)).toEqual(['ص 1', 'ص 7', 'ص 13', 'ص 19'])
+    await expect(files.assertCanRead(KEY, { userId: me.userId, permissions: [] }), 'قُرئ ملفُّ الكرّاسة قبل أوانه').rejects.toThrow()
+  })
+
+  it('⚠️ ومن أوّل يوم: الملفُّ يصل ويُقرأ — وكرّاسةُ الموعد القديمة لا تُعرض معها', async () => {
+    const cohortId = await cohortWithPlan('كرّاسةٌ مفتوحة', content(-3), { from: -3, to: 24 })
+    for (const [key, refId] of [[`${KEY}-open`, 'workbook-cohort'], [`${OLD}-open`, 'wb-old']] as const) {
+      await prisma.cohortFile.create({ data: { cohortId, purpose: 'plan_resource', refId, storageKey: key, originalName: `${refId}.pdf`, mime: 'application/pdf' } })
+    }
+    await prisma.cohortDeliveryPlan.updateMany({
+      where: { cohortId },
+      data: { content: { kind: 'trainer', ...content(-3), workbook: { ...content(-3).workbook, bodyFileKey: `${KEY}-open` },
+        slots: content(-3).slots.map((s, i) => (i === 0 ? { ...s, workbook: { bodyFileKey: `${OLD}-open` } } : s)) } as never },
+    })
+    const me = await learner('cwb-open', cohortId)
+    const plan = (await enrollments.learnerCohortView(me.enrollmentId)).cohort.trainerPlan!
+    expect(plan.workbook!.locked).toBe(false)
+    expect(plan.workbook!.file?.bodyFileKey).toBe(`${KEY}-open`)
+    await expect(files.assertCanRead(`${KEY}-open`, { userId: me.userId, permissions: [] })).resolves.toBeTruthy()
+    expect(plan.slots![0].workbook, 'كرّاسةُ موعدٍ قديمةٌ عُرضت بجانب كرّاسة الدورة').toBeNull()
+    await expect(files.assertCanRead(`${OLD}-open`, { userId: me.userId, permissions: [] })).rejects.toThrow()
+  })
+})

@@ -148,6 +148,27 @@ export default function CurriculumReview({
         {view.summaryAr
           ? <p className="mt-2 whitespace-pre-line text-read leading-7 text-foreground">{view.summaryAr}</p>
           : <p className="mt-2 text-read text-gold-ink">بلا نبذة — هي أوّلُ ما يقرؤه المتعلّمُ عن الشعبة.</p>}
+        {/* كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) — تُقرأ مرّةً هنا، وموضعُ كلّ محورٍ فيها في موعده */}
+        {view.bySlot && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
+            <p className="flex items-center gap-1.5 text-read">
+              <BookMarked className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
+              <span className="font-bold">كرّاسةُ الدورة:</span>{' '}
+              {view.workbook ? (
+                <a
+                  href={view.workbook.fileKey ? fileHref(view.workbook.fileKey) : view.workbook.url ?? '#'}
+                  target="_blank" rel="noreferrer"
+                  className="font-bold text-foreground hover:underline"
+                >
+                  {view.workbook.title ?? view.workbook.fileName ?? 'كرّاسةُ الدورة'}
+                </a>
+              ) : (
+                <span className="text-gold-ink">لم تُوضع بعد.</span>
+              )}
+            </p>
+            <EditLink stage="workbooks" onEdit={onEdit} label="كرّاسة الدورة" />
+          </div>
+        )}
       </Card>
 
       {/* ── المواعيدُ بالترتيب ── */}
@@ -186,7 +207,20 @@ export default function CurriculumReview({
             </Inset>
           ))}
 
-          {view.bySlot && g.startsOn && (
+          {view.bySlot && g.startsOn && view.workbook && (
+            <Section title="في كرّاسة الدورة" icon={BookMarked}>
+              <p className="text-read leading-6">
+                {g.axes.map((a) => (
+                  <span key={a.moduleId} className="me-3 inline-block">
+                    <b>المحور {a.n}</b>{' '}
+                    {a.workbookWhere ?? <span className="text-gold-ink">بلا موضع</span>}
+                  </span>
+                ))}
+              </p>
+            </Section>
+          )}
+          {/* وكرّاسةُ الموعد — لما اعتُمد قبل الكرّاسة الواحدة */}
+          {view.bySlot && g.startsOn && !view.workbook && g.workbook && (
             <Section title="الكرّاسة" icon={BookMarked}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 {g.workbook ? (

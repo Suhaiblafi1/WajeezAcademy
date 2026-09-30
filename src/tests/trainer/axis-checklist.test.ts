@@ -15,8 +15,10 @@ const body = 'ن'.repeat(MIN_MODULE_BODY)
 const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-13' }
 const IDS = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8']
 const mods = IDS.map((moduleId, i) => ({ moduleId, titleAr: `محور ${i + 1}`, bodyAr: body }))
-/* خمسةُ أسابيع: ١+٢ · ٣ · ٤+٥ · ٦ · ٧+٨ — ولكلّ موعدٍ كرّاستُه */
-const SLOTS = defaultSlots(IDS, PERIOD).map((s) => ({ ...s, workbook: { url: 'https://x.test/wb' } }))
+/* خمسةُ أسابيع: ١+٢ · ٣ · ٤+٥ · ٦ · ٧+٨ */
+const SLOTS = defaultSlots(IDS, PERIOD)
+/* وكرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
+const WORKBOOK = { url: 'https://x.test/wb', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 4 + 1}` })) }
 /** لقاءٌ في اليوم الثاني من الموعد، مربوطٌ بمحاوره */
 const meetings = SLOTS.map((s) => ({
   title: `لقاء ${s.moduleIds.join('+')}`,
@@ -30,7 +32,7 @@ const meetings = SLOTS.map((s) => ({
 const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}, content: Record<string, unknown> = {}) => buildChecklist({
   cohort: { title: 'الدفعة الأولى' },
   period: PERIOD,
-  content: { kind: 'trainer', modules: mods, resources: [{ title: 'مرجع', url: 'https://x.test/a', moduleId: 'M3' }], slots: SLOTS, ...content } as never,
+  content: { kind: 'trainer', modules: mods, resources: [{ title: 'مرجع', url: 'https://x.test/a', moduleId: 'M3' }], slots: SLOTS, workbook: WORKBOOK, ...content } as never,
   sessions: meetings,
   assessmentsCount: 2,
   assessmentModuleIds: ['M1', 'M6'],
@@ -75,17 +77,31 @@ describe('المحاورُ ومواعيدُها', () => {
   })
 })
 
-describe('الكرّاسات — لكلّ موعدٍ واحدة', () => {
-  it('⚠️ موعدٌ بلا كرّاسةٍ يحجب', () => {
-    const bare = SLOTS.map((s, i) => (i === 2 ? { ...s, workbook: null } : s))
-    const list = complete({}, { slots: bare })
+/* كانت لكلّ موعدٍ كرّاسة. وقرارُ صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦): «اجعل الكرّاسةَ
+   واحدةً فقط… كاملةً لكلّ المحاور… سهلةً على الطالب يتبعها محورا محورا». */
+describe('الكرّاسة — واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها', () => {
+  it('⚠️ بلا كرّاسةٍ يحجب', () => {
+    const list = complete({}, { workbook: { parts: WORKBOOK.parts } })
+    expect(row(list, 'workbooks').done).toBe(false)
+    expect(blockingBeforeSubmit(list).map((c) => c.key)).toEqual(['workbooks'])
+  })
+
+  it('⚠️ ومحورٌ لا يُعرف موضعُه فيها يحجب — فلا يتبعها المتعلّمُ محورا محورا', () => {
+    const parts = WORKBOOK.parts.map((p) => (p.moduleId === 'M5' ? { ...p, whereAr: '  ' } : p))
+    const list = complete({}, { workbook: { ...WORKBOOK, parts } })
     expect(row(list, 'workbooks').done).toBe(false)
     expect(blockingBeforeSubmit(list).map((c) => c.key)).toEqual(['workbooks'])
   })
 
   it('والملفُّ المرفوعُ يكفي كالرابط', () => {
-    const file = SLOTS.map((s) => ({ ...s, workbook: { bodyFileKey: 'k-1', bodyFileName: 'wb.pdf' } }))
-    expect(row(complete({}, { slots: file }), 'workbooks').done).toBe(true)
+    const file = { bodyFileKey: 'k-1', bodyFileName: 'wb.pdf', parts: WORKBOOK.parts }
+    expect(row(complete({}, { workbook: file }), 'workbooks').done).toBe(true)
+  })
+
+  it('⚠️ وكرّاسةٌ لكلّ موعدٍ لم تعد تكفي مسودّةً — وتكفي ما أُرسل قبل القرار', () => {
+    const perSlot = { workbook: null, slots: SLOTS.map((s) => ({ ...s, workbook: { url: 'https://x.test/old' } })) }
+    expect(row(complete({}, perSlot), 'workbooks').done).toBe(false)
+    expect(row(complete({ planStatus: 'approved' }, perSlot), 'workbooks').done).toBe(true)
   })
 })
 
@@ -159,7 +175,9 @@ describe('ما سبق المواعيدَ لا يُحاسَب بها', () => {
   it('⚠️ والمسودّةُ بلا مواعيدَ لا تُعفى', () => {
     const list = complete({ assessmentModuleIds: [null, null] }, { slots: [] })
     expect(row(list, 'modules').done).toBe(false)
-    expect(row(list, 'workbooks').done).toBe(false)
+    /* والكرّاسةُ الواحدةُ لا تتعلّق بالمواعيد (٣٠ سبتمبر ٢٠٢٦) — فتمّت بنفسها،
+       والمسودّةُ محجوبةٌ بالمحاور والمهامّ */
+    expect(row(list, 'workbooks').done).toBe(true)
     expect(row(list, 'assignments').done).toBe(false)
   })
 })
