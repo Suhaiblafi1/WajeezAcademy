@@ -125,6 +125,20 @@ export function zonedDay(at: Date | string, zone = ACADEMY_ZONE): string {
   return `${get('year')}-${get('month')}-${get('day')}`
 }
 
+/** ساعةُ لحظةٍ في المنطقة — «18:30» */
+export function zonedClock(at: Date | string, zone = ACADEMY_ZONE): string {
+  const d = typeof at === 'string' ? new Date(at) : at
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(d)
+  const get = (t: string) => parts.find((x) => x.type === t)?.value ?? '00'
+  return `${get('hour')}:${get('minute')}`
+}
+
+/** لحظةُ يومٍ وساعةٍ «18:30» في المنطقة — عكسُ `zonedDay` و`zonedClock` */
+export function zonedAt(date: string, clock: string, zone = ACADEMY_ZONE): Date {
+  const [h, m] = clock.split(':').map(Number)
+  return zonedInstant(date, [h || 0, m || 0, 0, 0], zone)
+}
+
 /** أيقع هذا الموعدُ داخلَ المدّة؟ — بدايتُه ونهايتُه كلتاهما */
 export function withinPeriod(
   when: { startsAt: Date | string; endsAt?: Date | string | null },

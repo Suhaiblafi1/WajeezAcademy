@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   Award, BookOpen, CheckCircle2, FileText, Loader2, Lock, LogOut,
-  ImagePlus, Mail, MessageCircle, Route as RouteIcon, Save, ShieldAlert, User, X,
-} from "lucide-react";
+  ImagePlus, Mail, MessageCircle, Route as RouteIcon, Save, ShieldAlert, KeyRound, User, X } from "lucide-react";
 /* الإطارُ يتبع البوّابةَ التي فُتحت منها الصفحة — لا بوّابةَ المتعلّم دائما.
    والسببُ مشروحٌ في `pages/PortalFrame.tsx`. */
 import PortalFrame from "../PortalFrame";
@@ -611,19 +610,6 @@ export default function StudentAccount() {
         </div>
       </Panel>
 
-      {/* حفظ */}
-      <div className="mt-6 flex flex-col items-center gap-3">
-        {err && <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-read leading-5 font-semibold text-red-300">{err}</Inset>}
-        {savedMsg && <Inset as="p" tone="accent" role="status" className="px-4 py-2.5 text-read leading-5 font-bold text-teal-light-ink">{savedMsg}</Inset>}
-        {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
-            خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
-            عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
-        <Button tone="primary" onClick={save} disabled={busy} className="h-12 disabled:cursor-not-allowed">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          احفظ ملفي
-        </Button>
-      </div>
-
       {/* روابط بقية أقسام الملف */}
       <Panel as="section" className="mt-8 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك — في مكانها الطبيعي</h2>
@@ -658,6 +644,24 @@ export default function StudentAccount() {
       {/* الأمان والجلسات — إجراءات حقيقية على الخادم، تظهر فقط مع جلسة فعالة */}
       </>)}
 
+      {/* ═══ والحفظُ للأدوار كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
+          كان الزرُّ داخلَ كتلة المتعلّم (ج-٢) فخرج معها: المدرّبُ يرى اسمَه
+          وهاتفَه ودولتَه قابلةً للكتابة ولا زرَّ يحفظها. والحقولُ المشتركةُ
+          للجميع، فزرُّها للجميع. */}
+      {/* حفظ */}
+      <div className="mt-6 flex flex-col items-center gap-3">
+        {err && <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-read leading-5 font-semibold text-red-300">{err}</Inset>}
+        {savedMsg && <Inset as="p" tone="accent" role="status" className="px-4 py-2.5 text-read leading-5 font-bold text-teal-light-ink">{savedMsg}</Inset>}
+        {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
+            خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
+            عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
+        <Button tone="primary" onClick={save} disabled={busy} className="h-12 disabled:cursor-not-allowed">
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          احفظ ملفي
+        </Button>
+      </div>
+
+
       {mode === "server" && (
         <Panel as="section" className="mt-6 md:p-8">
           <h2 className="flex items-center gap-2 text-base font-black"><ShieldAlert className="h-4 w-4 text-teal-light-ink" /> الأمان والجلسات</h2>
@@ -672,6 +676,32 @@ export default function StudentAccount() {
             <Button tone="secondary" type="button" onClick={logoutAll} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
               {secBusy === "logoutAll" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
               إنهاء كل الجلسات
+            </Button>
+          </div>
+
+          {/* ═══ كلمةُ المرور (٣٠ سبتمبر ٢٠٢٦) ═══
+              قائمةُ الحساب تَعِد بها («الاسم وكلمة المرور والجلسات») ولم يكن
+              في الصفحة سطرٌ عنها. والتغييرُ يمرّ برابطٍ إلى البريد نفسِه —
+              مسارُ الاستعادة القائم — فلا تُغيَّر كلمةٌ من جهازٍ تُرك مفتوحا. */}
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold">كلمة المرور</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">
+                نرسل إلى بريدك رابطا تختار منه كلمةً جديدة.
+              </p>
+            </div>
+            <Button tone="secondary" type="button" disabled={!!secBusy || !email} className="shrink-0 disabled:cursor-not-allowed"
+              onClick={async () => {
+                setSecErr(""); setSecMsg("");
+                try {
+                  await apiPost("/api/auth/password/forgot", { email });
+                  setSecMsg(`أرسلنا رابطَ تغيير كلمة المرور إلى ${email}`);
+                } catch (e) {
+                  setSecErr(e instanceof ApiError ? e.message : "تعذّر الإرسال — حاول بعد قليل");
+                }
+              }}>
+              <KeyRound className="h-3.5 w-3.5" />
+              أرسِل رابطَ تغييرها
             </Button>
           </div>
 

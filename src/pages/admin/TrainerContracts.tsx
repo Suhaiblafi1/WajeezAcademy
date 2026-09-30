@@ -44,6 +44,7 @@ import { staffControlCls as inputCls, staffAreaCls as areaCls } from "@/componen
 import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
+import MaterialsReview from "./TrainerMaterialsReview";
 import AdminLayout from "./AdminLayout";
 import { parseContractDoc } from '@/application/trainer/contract-sections'
 import ContractDocument from '@/components/ContractDocument'
@@ -460,6 +461,77 @@ export default function TrainerContracts() {
       ? cur.filter((d) => d.kind !== kind)
       : [...cur, { kind, labelAr, required: true }]);
   };
+
+  /* ═══ طورُ الموادّ على العقد — يُعرض موقَّعا ومعتمَدا معا (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     كان هذا اللوحُ داخلَ كتلة «وقّعه صاحبُه» وحدَها، والمهلةُ في المسار
+     الجديد لا تُكتب إلّا **عند الاعتماد** — أي حين يصير العقدُ `countersigned`
+     ويخرج من تلك الكتلة. فلم يكن زرُّ «أعِدِ الموادَّ بملاحظات» يُرى قطّ لمن
+     يحتاجه، وبقي من أعلن اكتمالَ موادّه معلَّقا. فصار دالّةً تُنادى في الحالين. */
+  const conditionBlock = (c: ContractRow) => (
+c.gatesActivation
+                          && conditionPhase(conditionFactsOf(c)) !== "none"
+                          && conditionPhase(conditionFactsOf(c)) !== "met" ? (
+                          <Inset className="mt-3 px-4 py-3">
+                            <p className="text-read font-black text-foreground">
+                              {CONDITION_PHASE_LABELS_AR[conditionPhase(conditionFactsOf(c))]}
+                            </p>
+                            {c.profile?.id && <MaterialsReview profileId={c.profile.id} />}
+                            {c.conditionPausedAt ? (
+                              <>
+                                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                                  أعلن اكتمالَ موادّه في {fmtDateTime(c.conditionPausedAt)}، ومهلتُه
+                                  مجمّدةٌ حتّى يصله جوابُك. وبالإعادةِ تُستأنف مضافا إليها مدّةُ
+                                  التجميد بالضبط — فوقتُ مراجعتك لا يُحسب عليه.
+                                </p>
+                                {sendBack?.id === c.id ? (
+                                  <div className="mt-3 grid gap-2">
+                                    {/* ولا نصٌّ مقترَحٌ يُملأ سلفا: هذا السطرُ يصل المدرّبَ
+                                        بحرفه، وعبارةٌ عامّةٌ تُرسَل كما هي توقف حلقةَ
+                                        «يعدّل ويقدّم ثانيةً» عند أوّل دورة. فيُعرَض شكلُ
+                                        الملاحظة النافعة مثالا لا قيمة. */}
+                                    <textarea
+                                      className={areaCls} rows={3} maxLength={4000}
+                                      placeholder="ما ينقص بعينه — مثال: «ينقص محورُ التقويم في الوحدة الثالثة، ومدّةُ الجلسة الثانية غيرُ مبيّنة»"
+                                      value={sendBack.notesAr}
+                                      onChange={(e) => setSendBack({ id: c.id, notesAr: e.target.value })}
+                                    />
+                                    <p className="text-read text-muted-foreground">
+                                      يصله هذا النصُّ بحرفه — فاكتبْه له لا لنا.
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                      <Button tone="confirm" icon={Undo2} loading={busy}
+                                        disabled={sendBack.notesAr.trim().length < 5}
+                                        onClick={() => void run(async () => {
+                                          await apiPost(
+                                            `/api/admin/trainer-contracts/${c.id}/return-materials`,
+                                            { notesAr: sendBack.notesAr.trim() });
+                                          setSendBack(null);
+                                          await load();
+                                        }, "أُعيدت موادُّه بملاحظاتك — واستأنفت مهلتُه", c.id)}>
+                                        أعِدْها وأبلِغْه
+                                      </Button>
+                                      <Button tone="ghost" onClick={() => setSendBack(null)}>تراجعْ</Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Button className="mt-3" icon={Undo2}
+                                    onClick={() => setSendBack({ id: c.id, notesAr: "" })}>
+                                    أعِدِ الموادَّ بملاحظات
+                                  </Button>
+                                )}
+                              </>
+                            ) : (
+                              /* ولا زرَّ يُعرَض معطَّلا بلا سبب: الموادُّ ليست عندك بعد،
+                                 فيُقال ذلك بدل زرٍّ يُنقَر فيُردّ من الخادم. */
+                              <p className="mt-1 text-read leading-6 text-muted-foreground">
+                                ولم يُعلن اكتمالَ موادّه بعد، فلا شيءَ يُعاد إليه اليوم. وحين
+                                يُعلنه تتجمّد مهلتُه ويظهر هنا زرُّ الإعادة بملاحظاتك.
+                              </p>
+                            )}
+                          </Inset>
+                        ) : null
+  );
 
   return (
     <AdminLayout title="عقودُ المدرّبين">
@@ -1065,7 +1137,7 @@ export default function TrainerContracts() {
                           {c.signedAt ? ` بتاريخ ${fmtDateTime(c.signedAt)}` : ""}. طابِقِ الاسمَ
                           بوثيقة هويّته قبل الاعتماد — فبالاعتماد ينفذ العقدُ
                           {c.gatesActivation
-                            ? " ويصير مدرّبا نشطا، وتُفتح بوّابتُه، ويصله العقدُ مختوما منّا"
+                            ? " وتُفتح بوّابتُه ويبدأ طورُ موادّه ومهلتُه — والتفعيلُ قرارٌ بعد اعتماد موادّه"
                             : ", ولا تُمسّ حالتُه فهو نشطٌ أصلا"}.
                         </p>
                         {rowErr?.id === c.id && (
@@ -1107,67 +1179,7 @@ export default function TrainerContracts() {
                             تأخّر. فمن جمّد موادَّه بقي معلَّقا أبدا — ولا
                             مخرجَ إلّا اعتمادُ ما لم يُعتمَد، أو إلغاءُ عقدٍ
                             وقّعه. وهذا هو المخرجُ الثالثُ الصحيح. */}
-                        {c.gatesActivation
-                          && conditionPhase(conditionFactsOf(c)) !== "none"
-                          && conditionPhase(conditionFactsOf(c)) !== "met" ? (
-                          <Inset className="mt-3 px-4 py-3">
-                            <p className="text-read font-black text-foreground">
-                              {CONDITION_PHASE_LABELS_AR[conditionPhase(conditionFactsOf(c))]}
-                            </p>
-                            {c.conditionPausedAt ? (
-                              <>
-                                <p className="mt-1 text-read leading-6 text-muted-foreground">
-                                  أعلن اكتمالَ موادّه في {fmtDateTime(c.conditionPausedAt)}، ومهلتُه
-                                  مجمّدةٌ حتّى يصله جوابُك. وبالإعادةِ تُستأنف مضافا إليها مدّةُ
-                                  التجميد بالضبط — فوقتُ مراجعتك لا يُحسب عليه.
-                                </p>
-                                {sendBack?.id === c.id ? (
-                                  <div className="mt-3 grid gap-2">
-                                    {/* ولا نصٌّ مقترَحٌ يُملأ سلفا: هذا السطرُ يصل المدرّبَ
-                                        بحرفه، وعبارةٌ عامّةٌ تُرسَل كما هي توقف حلقةَ
-                                        «يعدّل ويقدّم ثانيةً» عند أوّل دورة. فيُعرَض شكلُ
-                                        الملاحظة النافعة مثالا لا قيمة. */}
-                                    <textarea
-                                      className={areaCls} rows={3} maxLength={4000}
-                                      placeholder="ما ينقص بعينه — مثال: «ينقص محورُ التقويم في الوحدة الثالثة، ومدّةُ الجلسة الثانية غيرُ مبيّنة»"
-                                      value={sendBack.notesAr}
-                                      onChange={(e) => setSendBack({ id: c.id, notesAr: e.target.value })}
-                                    />
-                                    <p className="text-read text-muted-foreground">
-                                      يصله هذا النصُّ بحرفه — فاكتبْه له لا لنا.
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                      <Button tone="confirm" icon={Undo2} loading={busy}
-                                        disabled={sendBack.notesAr.trim().length < 5}
-                                        onClick={() => void run(async () => {
-                                          await apiPost(
-                                            `/api/admin/trainer-contracts/${c.id}/return-materials`,
-                                            { notesAr: sendBack.notesAr.trim() });
-                                          setSendBack(null);
-                                          await load();
-                                        }, "أُعيدت موادُّه بملاحظاتك — واستأنفت مهلتُه", c.id)}>
-                                        أعِدْها وأبلِغْه
-                                      </Button>
-                                      <Button tone="ghost" onClick={() => setSendBack(null)}>تراجعْ</Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Button className="mt-3" icon={Undo2}
-                                    onClick={() => setSendBack({ id: c.id, notesAr: "" })}>
-                                    أعِدِ الموادَّ بملاحظات
-                                  </Button>
-                                )}
-                              </>
-                            ) : (
-                              /* ولا زرَّ يُعرَض معطَّلا بلا سبب: الموادُّ ليست عندك بعد،
-                                 فيُقال ذلك بدل زرٍّ يُنقَر فيُردّ من الخادم. */
-                              <p className="mt-1 text-read leading-6 text-muted-foreground">
-                                ولم يُعلن اكتمالَ موادّه بعد، فلا شيءَ يُعاد إليه اليوم. وحين
-                                يُعلنه تتجمّد مهلتُه ويظهر هنا زرُّ الإعادة بملاحظاتك.
-                              </p>
-                            )}
-                          </Inset>
-                        ) : null}
+                        {conditionBlock(c)}
 
                         {signOff?.id === c.id ? (
                           <div className="mt-3 grid gap-2">
@@ -1255,6 +1267,7 @@ export default function TrainerContracts() {
                       </Panel>
                     )}
 
+                    {c.status === "countersigned" && c.gatesActivation && conditionBlock(c)}
                     {c.status === "countersigned" && (
                       <p className="mt-1 text-read opacity-70">
                         اعتُمد {c.countersignedAt ? fmtDateTime(c.countersignedAt) : ""} عن الأكاديميّة

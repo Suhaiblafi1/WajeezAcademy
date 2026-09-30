@@ -18,6 +18,7 @@ import { MAX_PATH_BLURB, MAX_PATH_COURSES, MAX_PATH_TITLE } from '../../../src/a
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
 import { TrainerBankService, MAX_ACCOUNT_LEN, BANK_ACCOUNT_KINDS } from '../../services/trainer-bank.service'
+import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
@@ -45,6 +46,24 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
   const earnings = new EarningsService(prisma)
+  const materials = new TrainerMaterialsService(prisma)
+
+  /* ═══ موادُّ الدورات في طور العرض المشروط (٣٠ سبتمبر ٢٠٢٦) ═══
+
+     موضعُ ما يَعِد به البندُ 2-8: لكلّ دورةٍ اخترناها له محاورُها ومخرجاتُها
+     ورابطُ موادّها ومهمّتُها ومصادرُها. والملفُّ من حسابه لا من الطلب. */
+  app.get('/api/trainer/materials', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'موادُّ دوراتي — قيد الإعداد والمعتمدة' },
+  }, async (req) => materials.mine(req.auth!.userId))
+
+  app.put('/api/trainer/materials/:courseId', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'احفظ موادَّ دورةٍ قيد الإعداد' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string().min(1).max(64) }).parse(req.params)
+    return materials.save(req.auth!.userId, courseId, req.body)
+  })
 
   /* ═══ مهلةُ العرض المشروط — ما يفعله المدرّبُ بها ═══
 

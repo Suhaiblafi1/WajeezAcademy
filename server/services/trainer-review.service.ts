@@ -34,6 +34,7 @@ import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { TRAINER_GUIDE_PATH } from '../../src/application/trainer/trainer-guide'
+import { TrainerMaterialsService } from './trainer-materials.service'
 import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft, extensionsLeft,
   materialsGateProblemAr,
@@ -2388,6 +2389,14 @@ export class TrainerReviewService {
     if (phase !== 'running' && phase !== 'lapsed') {
       throw new AuthError('bad_phase', 'لا مهلةَ تسير على حسابك الآن', 409)
     }
+    /* ═══ ولا يُعلَن اكتمالُ ما لم يُكتب (٣٠ سبتمبر ٢٠٢٦) ═══
+       كان الإعلانُ رايةً وحدَها: يجمّد المهلةَ ولا يحمل شيئا، إذ لم يكن
+       للموادّ موضع. وصار لها لوحٌ في «مؤهّلاتي» — فيُردّ الإعلانُ بما ينقص
+       دورةً دورة، بالنصّ نفسِه الذي تقوله الشاشة (`course-materials.ts`). */
+    const gaps = await new TrainerMaterialsService(this.prisma).declareGapsAr(profile.id)
+    if (gaps.length > 0) {
+      throw new AuthError('materials_incomplete', `أكمِل موادَّ دوراتك قبل الإعلان — ${gaps.join(' · ')}`, 409)
+    }
     await this.prisma.trainerContract.update({
       where: { id: contract.id }, data: { conditionPausedAt: now },
     })
@@ -2440,7 +2449,7 @@ export class TrainerReviewService {
        إلى متى تترك صاحبَها يحسبها بنفسه. */
     await this.notifyTrainerUser(contract.profileId, {
       templateKey: 'trainer.contract.condition_extended',
-      title: `مُدّت مهلتُك ${EXTENSION_DAYS} يومين`,
+      title: `مُدّت مهلتُك ${EXTENSION_DAYS === 2 ? 'يومين' : `${EXTENSION_DAYS} أيّام`}`,
       /* وكم بقي له يُقال في الخبر نفسِه: «وهو التمديدُ الوحيد» كانت تصدُق
          يومَ كان واحدا. وصارت مرّتين، فيُقال ما بقي — لا يُترك يحسبه. */
       body: `تنتهي مهلتُك الآن في ${fmtDateWith(next, { year: 'numeric', month: 'long', day: 'numeric' })}. `

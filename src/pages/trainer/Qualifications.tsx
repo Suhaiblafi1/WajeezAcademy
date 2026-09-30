@@ -48,6 +48,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Award, CalendarClock, Check, ChevronDown, ClipboardCheck, Loader2, ServerOff, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
+import CourseMaterialsPanel, { type MaterialsRow } from "./CourseMaterialsPanel";
 import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -183,6 +184,7 @@ export default function TrainerQualifications() {
   const [quals, setQuals] = useState<Qualification[] | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [materials, setMaterials] = useState<{ courses: MaterialsRow[]; underReview: boolean }>({ courses: [], underReview: false });
   const [down, setDown] = useState(false);
   const [busy, setBusy] = useState(false);
   /* محرّرُ اعتذارٍ واحدٌ في كلّ وقت — والسببُ يُكتب قبل الإرسال لا بعده */
@@ -201,8 +203,10 @@ export default function TrainerQualifications() {
       apiGet<Qualification[]>("/api/trainer/me/qualifications"),
       apiGet<Offer[]>("/api/trainer/offers").catch(() => [] as Offer[]),
       apiGet<Proposal[]>("/api/trainer/course-proposals").catch(() => [] as Proposal[]),
+      apiGet<{ courses: MaterialsRow[]; underReview: boolean }>("/api/trainer/materials")
+        .catch(() => ({ courses: [] as MaterialsRow[], underReview: false })),
     ])
-      .then(([qs, os, ps]) => { setQuals(qs); setOffers(os); setProposals(ps); setDown(false); })
+      .then(([qs, os, ps, ms]) => { setQuals(qs); setOffers(os); setProposals(ps); setMaterials(ms); setDown(false); })
       .catch(() => setDown(true)), []);
 
   useEffect(() => { void load(); }, [load]);
@@ -269,13 +273,23 @@ export default function TrainerQualifications() {
         والاعتذارُ جوابٌ مشروعٌ لا يُحسَب عليك.
       </p>
 
+      <CourseMaterialsPanel rows={materials.courses} underReview={materials.underReview} onSaved={() => void load()} />
+
       {rows.length === 0 ? (
-        <EmptyState
-          icon={Award}
-          titleAr="لا تأهيلَ بعد"
-          reasonAr="تُؤهَّل تلقائيّا لكلّ دورةٍ ذكرتَ في طلبك أنّك تستطيع تدريسَها، وتضيف الإدارةُ فوقَها ما تراه. فإن كان طلبُك بلا دورةٍ من الكتالوج، فأخبرنا بما تُتقنه."
-          actions={[{ to: "/trainer/course-proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورةً تقدر عليها" }]}
-        />
+        /* وكانت تقول «تُؤهَّل تلقائيّا لكلّ دورةٍ ذكرتَها» — ودوراتُ طلبه قيد
+           الإعداد لا مؤهَّلة، فكان النصُّ يَعِد بما لا يراه. فصار يقول أين هي. */
+        materials.courses.some((c) => c.status === "pending") ? (
+          <p className="text-sm leading-7 text-muted-foreground">
+            تظهر دوراتُك هنا بعروضها وحالها حين نعتمد موادَّها — وحتّى ذلك الحين فهي في «موادُّ دوراتك» أعلاه.
+          </p>
+        ) : (
+          <EmptyState
+            icon={Award}
+            titleAr="لا تأهيلَ بعد"
+            reasonAr="تظهر هنا كلُّ دورةٍ نعتمد موادَّها لك. فإن كانت عندك دورةٌ تتقنها ولا تجدها في كتالوجنا، فاقترحها."
+            actions={[{ to: "/trainer/course-proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورةً تقدر عليها" }]}
+          />
+        )
       ) : (
         <>
           <TabBar

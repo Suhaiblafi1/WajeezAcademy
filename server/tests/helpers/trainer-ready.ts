@@ -96,3 +96,25 @@ export async function makeReadyForApproval(
      قرارٌ يخصّ جولةَ الاقتراحات وحدَها. */
   return { profileId }
 }
+
+/**
+ * يكتب موادَّ كاملةً لكلّ دورةٍ قيد الإعداد — كما يكتبها المدرّبُ في «مؤهّلاتي».
+ *
+ * منذ ٣٠ سبتمبر ٢٠٢٦ لا يُقبل «أعلنتُ اكتمالها» ودورةٌ `pending` بلا موادّ
+ * (`materialsMissingAr`). فجولةٌ تُعلن لتفحص ما بعد الإعلان تكتبها أوّلا،
+ * ويبقى الإعلانُ ظاهرا في الجولة نفسِها. والردُّ نفسُه مفحوصٌ في
+ * `server/tests/trainer/course-materials.test.ts` وحدَه.
+ */
+export async function fillMaterials(prisma: PrismaClient, profileId: string): Promise<void> {
+  await prisma.trainerCourseQualification.updateMany({
+    where: { profileId, status: 'pending' },
+    data: {
+      materialsAt: new Date(),
+      materials: {
+        modules: [{ titleAr: 'محورُ اختبار', outcomeAr: 'يستطيع المتعلّمُ كذا' }],
+        materialsUrl: 'https://drive.example.com/materials',
+        taskAr: 'مهمّةُ اختبار', sourcesAr: 'مصدرُ اختبار', noteAr: '',
+      },
+    },
+  })
+}

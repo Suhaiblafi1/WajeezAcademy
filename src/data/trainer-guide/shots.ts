@@ -64,6 +64,14 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 1478
   },
+  "materials-panel": {
+    "w": 2200,
+    "h": 2636
+  },
+  "materials-save": {
+    "w": 2200,
+    "h": 2356
+  },
   "mobile-portal": {
     "w": 780,
     "h": 1560

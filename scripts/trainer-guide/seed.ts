@@ -44,6 +44,7 @@ import { EarningsService } from '../../server/services/earnings.service'
 import { RatingService } from '../../server/services/rating.service'
 import { CohortPlanService, type TrainerPlanContent } from '../../server/services/cohort-plan.service'
 import { AssessmentService } from '../../server/services/assessment.service'
+import { TrainerMaterialsService } from '../../server/services/trainer-materials.service'
 import { contractAcks } from '../../src/application/trainer/contract-body'
 import { deadlineFrom } from '../../src/application/trainer/conditional-offer'
 import {
@@ -52,6 +53,18 @@ import {
 
 /** من يعتمد ويُسنِد — حسابُ الإدارة في بذر الديمو */
 const ADMIN_EMAIL = 'admin.demo@wajeez.local'
+
+/** موادُّ مثالٍ لدورة — محاورُ الكتالوج ومعها ما يُكتب عادةً */
+function sampleMaterials(catalog: { titleAr: string; outcomeAr: string }[]) {
+  return {
+    modules: (catalog.length ? catalog.slice(0, 4) : [{ titleAr: 'المحورُ الأوّل', outcomeAr: '' }])
+      .map((m) => ({ titleAr: m.titleAr, outcomeAr: m.outcomeAr || 'يطبّق المحورَ على موقفٍ من عمله.' })),
+    materialsUrl: 'https://drive.google.com/drive/folders/guide-course-materials',
+    taskAr: 'مهمّةٌ تطبيقيّة على موقفٍ من عمل المتعلّم، تُسلَّم في صفحتين وتُقيَّم من عشرين.',
+    sourcesAr: 'فصلٌ مختارٌ من كتابٍ في الموضوع\nنموذجٌ فارغٌ يملؤه المتعلّم',
+    noteAr: '',
+  }
+}
 
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex')
 
@@ -146,6 +159,14 @@ async function seedFresh(ctx: Ctx) {
       conditionPausedAt: null, conditionExtendedAt: null, conditionExtensionsUsed: 0,
     },
   })
+  /* ودورتُه الأولى كُتبت موادُّها — فيرى الدليلُ دورةً كاملةً وأخرى لم تبدأ */
+  const mats = new TrainerMaterialsService(prisma)
+  const mine = await mats.mine((await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })).userId!)
+  const first = mine.courses.find((c) => c.courseId === GUIDE_COURSES.message)
+  if (first && !first.materials) {
+    const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })
+    await mats.save(profile.userId!, first.courseId, sampleMaterials(first.catalogModules))
+  }
   return app
 }
 
@@ -166,6 +187,11 @@ async function seedActive(ctx: Ctx) {
   }
   await signAndCountersign(ctx, app.id)
   const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })
+  /* موادُّ كلِّ دورةٍ في «مؤهّلاتي» قبل الإعلان — والإعلانُ يُردّ بدونها */
+  const mats = new TrainerMaterialsService(prisma)
+  for (const row of (await mats.mine(profile.userId!)).courses) {
+    await mats.save(profile.userId!, row.courseId, sampleMaterials(row.catalogModules))
+  }
   await review.declareMaterialsComplete(profile.userId!)
   for (const c of courses) await review.qualifyForCourse(profile.id, c, ctx.adminId, 'اعتُمدت موادُّها')
   await review.decide(app.id, ctx.adminId, 'approve')

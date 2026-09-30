@@ -278,9 +278,18 @@ export default function GradingQueue() {
                   <>
                     {/* القبولُ فعلٌ مُثبِتٌ في القسم: نبرتُه `confirm` — وكان
                         ممتلئا بالفيروزيّ مكتوبا بيده، أي `confirm` بلا اسمه. */}
-                    <Button tone="confirm" size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "accept")}>
+                    {/* ═══ ولا قبولَ قبل الدرجة (٣٠ سبتمبر ٢٠٢٦) ═══
+                        المقبولُ يخرج من الطابور، ولا شاشةَ أخرى تقيّمه منها —
+                        فمن قبِل ثمّ أراد أن يضع درجته لم يجد أين. فيُطفأ «قبول»
+                        حتّى تُسجَّل درجة، ويُقال السببُ بجانبه لا يُخمَّن. */}
+                    <Button tone="confirm" size="sm" disabled={busy || !q.grades[0]}
+                      title={q.grades[0] ? undefined : "سجّل الدرجةَ أوّلا — فالمقبولُ يخرج من الطابور"}
+                      onClick={() => void reviewAction(q.id, "accept")}>
                       قبول
                     </Button>
+                    {!q.grades[0] && (
+                      <span className="text-fine text-muted-foreground">سجّل الدرجةَ أوّلا، ثمّ اقبل</span>
+                    )}
                     <Button size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}>
                       اطلب إعادة التسليم
                     </Button>

@@ -2046,7 +2046,7 @@ export class CohortService {
   }) {
     const session = await this.prisma.cohortSession.findUnique({ where: { id: sessionId } })
     if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
-    assertFileUploadsEnabled('الصق رابطَ التسجيل من Zoom أو منصّةِ الفيديو كمادّةٍ للشعبة.')
+    assertFileUploadsEnabled('أضِفِ التسجيلَ رابطا من «+ جلسةٌ مسجّلة» في خطوة «اللقاءات».')
     if (input.sizeBytes <= 0 || input.sizeBytes > MAX_COHORT_MEDIA_BYTES) {
       throw new AuthError('too_large', 'الملف يتجاوز الحد المسموح', 413)
     }
@@ -2059,7 +2059,8 @@ export class CohortService {
     })
     const exp = Date.now() + SIGNED_URL_TTL_MS
     await recordAudit(this.prisma, { actorId, action: 'recording.register', entityType: 'cohort_session', entityId: sessionId, meta: { recordingId: recording.id } })
-    return { recording, uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}` }
+    /* إلى مسار البثّ: التسجيلُ محاضرةٌ لا وثيقة، ومسارُ الذاكرة يقف عند أربعة ميغابايت */
+    return { recording, uploadUrl: `/api/v1/uploads/${storageKey}/stream?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}` }
   }
 
   /** أرشفة/تعطيل مادة أو تسجيل */

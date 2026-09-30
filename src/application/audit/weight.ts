@@ -359,6 +359,9 @@ const LOW: readonly string[] = [
   /* وفيديوهاتُ التسويق وصورُه: يكتبها صاحبُها لنفسه، ولا يُخبَر بها أحد */
   'trainer.marketing.video.set', 'trainer.marketing.video.remove',
   'trainer.marketing.photo.add', 'trainer.marketing.photo.remove',
+  /* حفظُ مسوّدة موادّ دورةٍ في طور العرض المشروط — عملُه قبل أن يُعلنه؛
+     والإعلانُ نفسُه عالٍ (`trainer.contract.materials_declared`) */
+  'trainer.materials.save',
   /* والسؤالُ عن اقتراحٍ وجوابُه: خبرُ عملٍ في الطابور لا خبرُ إنسان. ويصل
      صاحبَه إشعارا في بوّابته على كلّ حال (`trainer.course_proposal.question`
      في صنفٍ لا يُكتم) — وهذا وزنُ الأثر لا وزنُ الإشعار. */

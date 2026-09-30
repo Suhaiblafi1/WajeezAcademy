@@ -20,7 +20,7 @@ import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
-import { makeReadyForApproval } from '../helpers/trainer-ready'
+import { fillMaterials, makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { buildApp } from '../../http/app'
@@ -142,6 +142,7 @@ async function sealedTrainer(
 
      والإعلانُ باسم المدرّب لا باسم المدير: هو صاحبُ الفعل، والخدمةُ تقرأ
      ملفَّه من حسابه. */
+  await fillMaterials(prisma, profileId)
   await review.declareMaterialsComplete(user.userId)
 
   /* وبعد التوقيع تُهيَّأ البوّابة: تجد موقَّعا فلا تبني سقالةً، وتجد مؤهَّلا

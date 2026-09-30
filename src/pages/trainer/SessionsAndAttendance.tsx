@@ -18,6 +18,7 @@
 
    والمصدرُ هو المصدرُ نفسُه (`/ops`): لا مسارَ جديدٌ يُبنى لعرضٍ انتقل. */
 
+import { zonedAt, zonedClock, zonedDay } from "@/application/trainer/cohort-period";
 import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, CalendarPlus, Loader2, Trash2, Upload, Video } from "lucide-react";
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError } from "@/services/api";
@@ -127,8 +128,9 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
   const moveSession = (sessionId: string) =>
     act(async () => {
       const moved = (await apiPatch(`/api/trainer/sessions/${sessionId}`, {
-        startsAt: new Date(`${moveForm.date}T${moveForm.from}`).toISOString(),
-        endsAt: new Date(`${moveForm.date}T${moveForm.to}`).toISOString(),
+        /* بتوقيت الشعبة لا بتوقيت المتصفّح — والتهيئةُ أدناه بالتوقيت نفسِه */
+        startsAt: zonedAt(moveForm.date, moveForm.from).toISOString(),
+        endsAt: zonedAt(moveForm.date, moveForm.to).toISOString(),
       })) as { approvalState?: string };
       setMoveFor(null);
       setMoveForm(EMPTY_MOVE);
@@ -278,10 +280,14 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
                       setMoveFor(open ? null : s.id);
                       /* ويُهيَّأ بموعده الحاليّ لا فارغا: من ينقل ساعةً واحدة
                          لا يُطالَب بكتابة التاريخ كلِّه من جديد. */
+                      /* ═══ وبتوقيت عمّان (٣٠ سبتمبر ٢٠٢٦) ═══
+                         كانت تُقتطع من نصّ ISO — أي بتوقيت غرينتش — فيُهيَّأ
+                         لقاءُ السادسة مساءً على الثالثة، ومن غيّر اليومَ وحدَه
+                         نقله ثلاثَ ساعاتٍ إلى الوراء بلا أن يدري. */
                       setMoveForm(open ? EMPTY_MOVE : {
-                        date: s.startsAt.slice(0, 10),
-                        from: s.startsAt.slice(11, 16),
-                        to: (s.endsAt ?? s.startsAt).slice(11, 16),
+                        date: zonedDay(s.startsAt),
+                        from: zonedClock(s.startsAt),
+                        to: zonedClock(s.endsAt ?? s.startsAt),
                       });
                     }} className="min-h-9">
                     <CalendarDays className="h-3 w-3" /> انقل الموعد

@@ -202,6 +202,48 @@ const FRESH: Shot[] = [
   },
 ]
 
+FRESH.push({
+  name: 'materials-panel',
+  async run(e) {
+    const p = e.page
+    await open(e, '/trainer/qualifications')
+    const section = p.locator('section').filter({ has: p.getByRole('heading', { name: 'موادُّ دوراتك' }) }).first()
+    const openCard = section.locator('li').filter({ has: p.getByRole('button', { expanded: true }) }).first()
+    await shoot(e, {
+      name: 'materials-panel', clip: section, clipPad: 12, maxHeight: 1500,
+      marks: [
+        { target: section.getByText(/^اكتملت \d+ من \d+/).first(), n: 1, pad: 4 },
+        { target: section.getByText(/كاملة$/).first(), n: 2, pad: 4 },
+        { target: openCard.getByRole('textbox', { name: 'عنوانُ المحور 1' }), n: 3, pad: 5 },
+        { target: openCard.getByRole('textbox', { name: 'مخرجُ المحور 1' }), n: 4, pad: 5 },
+      ],
+    })
+  },
+})
+FRESH.push({
+  name: 'materials-save',
+  async run(e) {
+    const p = e.page
+    await open(e, '/trainer/qualifications')
+    const save = p.getByRole('button', { name: 'احفظ موادَّ هذه الدورة' }).first()
+    const card = p.locator('li').filter({ has: save }).first()
+    const url = card.locator('input[placeholder="https://…"]').first()
+    /* تُقصَّر البطاقةُ في الصورة وحدَها: يُحذف من المحرّر ثلاثةٌ من المحاور الأربعة
+       ولا يُحفظ شيء — فتُرى الحقولُ كلُّها في صورةٍ واحدة */
+    for (const n of [4, 3, 2]) await card.getByRole('button', { name: `احذف المحور ${n}` }).click()
+    await settle(e)
+    await shoot(e, {
+      name: 'materials-save', clip: card, clipPad: 12,
+      marks: [
+        { target: url, n: 1, pad: 5 },
+        { target: card.locator('textarea').nth(1), n: 2, pad: 5 },
+        { target: card.locator('textarea').nth(2), n: 3, pad: 5 },
+        { target: save, n: 4, pad: 5 },
+      ],
+    })
+  },
+})
+
 /* ═══ ② المدرّبُ النشط ═══ */
 
 const ACTIVE: Shot[] = [
