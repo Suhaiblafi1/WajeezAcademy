@@ -82,3 +82,33 @@ describe('الدليلُ المطبوعُ بصوره', () => {
     expect(avoid).toContain('.guide-figure')
   })
 })
+
+/* ═══ والمطبوعُ ملوّنٌ كالمثال (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   أعاد صاحبُ المنصّة تصميمَ الدليل على مثالٍ أرسله: ورقٌ كريميٌّ وغلافٌ
+   ملوّنٌ ومربّعاتُ أرقامٍ بألوانها. و`index.css` يُسطِّح في الطباعة كلَّ خلفيّةٍ
+   بقاعدة `*` — فخرج المطبوعُ الأوّلُ أبيضَ كلُّه، الغلافُ والأشرطةُ والمربّعات.
+   فكلُّ سطحٍ ملوّنٍ في الدليل تعيده قاعدةٌ في طباعته، بـ`!important` وخصوصيّةٍ
+   تغلب `*`. */
+describe('والمطبوعُ بألوانه', () => {
+  const flatten = sitePrint.find(([s, d]) => s === '*' && /background-color:\s*transparent\s*!important/.test(d))
+
+  it('قاعدةُ التسطيح قائمة — وإلّا فالحارسُ بلا موضوع', () => {
+    expect(flatten, 'تغيّرت قاعدةُ تسطيح الطباعة في index.css — راجع هذا الحارس').toBeDefined()
+  })
+
+  it.each(['[data-hue="amber"]', '[data-hue="coral"]', '[data-hue="sky"]', '[data-hue="blush"]', '.guide-deep', '.guide-blush'])(
+    '«%s» يُطبع بلونه',
+    (surface) => {
+      const restore = guidePrint.filter(([s, d]) => s.endsWith(surface) && /background-color:[^;]*!important/.test(d))
+      expect(restore.length, `لا قاعدةَ تعيد خلفيّةَ ${surface} في الطباعة — فيخرج أبيض`).toBeGreaterThan(0)
+      expect(restore.some(([s]) => heavier(specificity(s), specificity(flatten![0])))).toBe(true)
+    },
+  )
+
+  it('وكلُّ قسمٍ يبدأ صفحتَه', () => {
+    const page = guidePrint.find(([s]) => s === '.guide-page')
+    expect(page?.[1]).toMatch(/break-before:\s*page/)
+    expect(GUIDE).toMatch(/<section id=\{s\.id\}[^>]*className="[^"]*\bguide-page\b/)
+  })
+})
