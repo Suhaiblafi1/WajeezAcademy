@@ -720,6 +720,72 @@ export interface CompetitionResult {
   compositeVictory: CompositeVictory | null
   exploration: ExplorationDecision
   catalogGap: boolean
+  /** المنافسُ الحقُّ للمتصدّر — عليه يُقاس «الفارق» في الثقة، و`null` أن لا
+      منافسَ حقّا. وقد يكون غيرَ الثاني في `candidates`؛ انظر `rivalOfTop` */
+  rival: EntityCandidate | null
+}
+
+/** يجتاز المركّبُ البوابتين البنيويتين؟ حاجةٌ متعدّدةُ المجالات مُثبتة (مجالان
+    نشطان يغطّيهما) + مجالٌ نشطٌ يتركه أفضلُ قياسيّ (البند 4). قاعدةٌ واحدةٌ
+    يُختار بها المتحدّي المركّبُ ويُعرف بها المنافسُ الحقّ — فلا تتخلّف نسخةٌ عن أخرى. */
+function passesCompositeGates(c: EntityCandidate, activeDomains: DomainId[], bestStandardDomains: DomainId[]): boolean {
+  const covered = c.entity.domains.filter((d) => activeDomains.includes(d))
+  return covered.length >= 2 && covered.some((d) => !bestStandardDomains.includes(d))
+}
+
+/** مركّبٌ يحوي دوراتِ المسار القياسيّ كلَّها — المسارُ نفسُه ودورةٌ فوقه أو أكثر */
+export function extendsPathway(c: EntityCandidate, pathway: EntityCandidate): boolean {
+  if (pathway.entity.entity_type !== 'standard' || c.entity.entity_type !== 'composite') return false
+  const courses = pathway.entity.required_courses
+  return courses.length > 0 && courses.every((id) => c.entity.required_courses.includes(id))
+}
+
+/* ═══ المنافسُ الحقُّ للمتصدّر (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   «الفارقُ بين أوّل مرشّحَين» يسأل: أيَقلب دليلٌ ناقصٌ التوصية؟ وكان يُقاس على
+   الثاني في الترتيب أيّا كان. فلمّا دُمجت دوراتُ «التحضير لأول وظيفة» في اثنتين
+   خفّ عبءُ القالب TPL-FIRST-JOB-001 — وهو المسارُ PW-STU-002 كلُّه ودورةُ قرارٍ
+   فوقه — فصار ثانيا بفارقٍ دون النصف، وسُحبت «قوية بما قِسناه» من الخرّيج
+   القويّ. وقبِل صاحبُ المنصّة الأثرَ ليُشحن الدمجُ على أن يُصلَح بعده: «Accept
+   it, fix later».
+
+   ومُنافسٌ كهذا ليس منافسا: **امتدادٌ للمتصدّر لا يؤهَّل له المتعلّم**. فهو
+   يحوي دوراتِ المسار كلَّها — فلا يُخالفه في اتّجاه — ولا يجتاز بوابتَي المركّب
+   (مجالٌ واحدٌ في حاجته) فلا يصير هو التوصيةَ مهما اقترب. ولا يقلبه دليلُ مهارةٍ
+   ناقص: البوابتان تُفتحان بالمجالات لا بالمهارات. فيُتخطّى إلى من بعده، وإن لم
+   يبقَ أحدٌ فالسباقُ بلا منافس.
+
+   ── وما لا يُتخطّى ──
+
+   · **امتدادٌ يؤهَّل له**: من ثبت له المجالُ الثاني فـ«المسارُ وحدَه أم ومعه
+     دورة؟» خيارٌ حقيقيٌّ، والفارقُ فيه يُقاس.
+   · **ومركّبٌ لا يحوي المسار**: يخالفه في الدورات، وهو خارجُ ما قُرِّر. وقد قيس:
+     لو تُخطّي كلُّ مركّبٍ لا يؤهَّل له لتبدّل وسمُ ١٧٧ جلسةً من ٣٨٤٠ لا ٣٤.
+
+   ── وفي الوسم وحدَه لا في السباق ──
+
+   السباقُ نفسُه — متى يُسأل ومتى يُتوقّف — يبقى على الثاني في الترتيب. وقد قيس
+   البديل: لو قِيس الهامشُ في السباق على المنافس الحقّ لتوقّف الخرّيجُ القويُّ
+   عند ثمانية أسئلة بلا سؤالِ مهارةٍ واحد، فسُحبت منه «قوية» بمانع القياس بدل
+   مانع الفارق، وقصُرت ١٥٥ رحلةً من ٣٨٤٠. فأسئلةُ المهارة هناك هي الدليلُ الذي
+   تشترطه الدرجةُ العليا، لا هدرٌ يُوفَّر.
+
+   ── وعدّادُ الهدر — بقرارٍ مسمّى ──
+
+   وتلك الأسئلةُ لا يغيّر أيُّ جوابٍ لها الآن المسارَ ولا الثقة، فيعدّها
+   `audit-question-waste` ميتة: ٣٥٧ ← ٣٨٩ مقعدا من ٣٤١٥ (٤١ ماتت و٩ عادت، كلُّها
+   أسئلةُ مهارة، في ٢٤ جلسةً من ٣٠٠؛ ولا مسارَ تغيّر ولا ثقةَ انخفضت). وقيمتُها
+   في طرحها لا في جوابها — كحارس البوابة الذي ينبّه عليه التقريرُ نفسُه.
+   وعُرض ذلك على صاحب المنصّة، وبديلُه أن تُترك فتقصر الرحلةُ وتبقى «أفضل تطابق
+   حالي»، فقرّر: «Restore the label». فحُدّث خطُّ الأساس بقراره المسمّى هنا لا
+   ليمرّ الحاجز. */
+export function rivalOfTop(
+  candidates: readonly EntityCandidate[],
+  qualifies: (c: EntityCandidate) => boolean,
+): EntityCandidate | null {
+  const top = candidates[0]
+  if (!top) return null
+  return candidates.slice(1).find((c) => !(extendsPathway(c, top) && !qualifies(c))) ?? null
 }
 
 export function competeEntities(facts: FactBag, ctx: DecisionContext): CompetitionResult {
@@ -741,11 +807,7 @@ export function competeEntities(facts: FactBag, ctx: DecisionContext): Competiti
      المجالات بمستوى البوابة: قوة موزونة + تصريح وظيفة مباشر (المرحلة 4) */
   const activeDomains = gateDomainsOf(facts, ctx.domains)
   const bestStandardDomains = bestStandard?.entity.domains ?? []
-  const bestComposite =
-    compositeCandidates.find((c) => {
-      const covered = c.entity.domains.filter((d) => activeDomains.includes(d))
-      return covered.length >= 2 && covered.some((d) => !bestStandardDomains.includes(d))
-    }) ?? null
+  const bestComposite = compositeCandidates.find((c) => passesCompositeGates(c, activeDomains, bestStandardDomains)) ?? null
   const compositeVictory = bestComposite ? compositeVictoryCheck(bestComposite, bestStandard ?? undefined, facts, ctx) : null
 
   /* ═══ الفائزُ الفعليّ: مركّبٌ يستوفي الشروط، وإلّا أفضلُ قياسيّ ═══
@@ -769,7 +831,9 @@ export function competeEntities(facts: FactBag, ctx: DecisionContext): Competiti
   const goalOrNeedReal = facts['primary_goal'] !== undefined || facts['need_id'] !== undefined
   const catalogGap = goalOrNeedReal && (candidates.length === 0 || (effectiveTop?.netFit ?? 0) < CATALOG_GAP_FIT_FLOOR)
 
-  return { eligibility, candidates, bestStandard, bestCourse, bestComposite, topComposite, compositeVictory, exploration, catalogGap }
+  const rival = rivalOfTop(candidates, (c) => passesCompositeGates(c, activeDomains, bestStandardDomains))
+
+  return { eligibility, candidates, bestStandard, bestCourse, bestComposite, topComposite, compositeVictory, exploration, catalogGap, rival }
 }
 
 /** مرشح advisor_handoff منطبق على الكيان الفائز — لا يستبعده من المنافسة لكنه يُحيل التوصية لمستشار */
