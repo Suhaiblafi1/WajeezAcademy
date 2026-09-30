@@ -198,9 +198,14 @@ describe('المراقب — متى يُنشَر', () => {
 
 /* ── العلامة: `gh` مصطنعٌ يحكم كما يحكم GitHub ──
 
-   تاريخٌ خطّيٌّ c1..c5 على main. والمقارنةُ بترتيبه، والكتابةُ بلا `force` تُردّ
-   إن لم تكن تقدّما (٤٢٢ عند GitHub). و`raceTo` تشغيلٌ آخرُ يسبق إلى الفرع بين
-   المقارنة والكتابة. */
+   تاريخٌ خطّيٌّ c1..c5 على main، و`side` التزاماتٌ معروفةٌ خارجَه. والمقارنةُ
+   بترتيبه، والكتابةُ بلا `force` تُردّ إن لم تكن تقدّما (٤٢٢ عند GitHub). و`raceTo`
+   تشغيلٌ آخرُ يسبق إلى الفرع بين المقارنة والكتابة.
+
+   ⚠️ والخطأُ يُطبع كما يطبعه `gh` الحقيقيّ: **جسمُ الردّ على stdout** ثمّ خروجٌ بواحد
+   — و`--jq` لا يُطبَّق عليه. كان المصطنعُ الأوّلُ يخرج صامتا، فمرّت العلامةُ خضراءَ هنا
+   واحمرّت على main في أوّل تشغيلٍ لها (٣٠ سبتمبر ٢٠٢٦): قرأت
+   `{"message":"Not Found",…}` التزاما، فسألت GitHub المقارنةَ به. */
 const GH_STUB = `#!/usr/bin/env node
 const fs = require('fs')
 const file = process.env.GH_STUB_STATE
@@ -208,27 +213,33 @@ const st = JSON.parse(fs.readFileSync(file, 'utf8'))
 const a = process.argv.slice(2)
 const save = () => fs.writeFileSync(file, JSON.stringify(st))
 const done = (out) => { save(); if (out !== undefined) process.stdout.write(out + '\\n'); process.exit(0) }
-const refuse = () => { save(); process.exit(1) }
+const refuse = (status, message) => {
+  save()
+  process.stdout.write(JSON.stringify({ message, documentation_url: 'https://docs.github.com/rest', status: String(status) }) + '\\n')
+  process.exit(1)
+}
 const method = a.includes('-X') ? a[a.indexOf('-X') + 1] : 'GET'
 const path = a.find((x, i) => i > 0 && !x.startsWith('-') && !['-X', '-f', '-F', '--jq'].includes(a[i - 1]))
 const field = (k) => { for (let i = 0; i < a.length - 1; i++) if (['-f', '-F'].includes(a[i]) && a[i + 1].startsWith(k + '=')) return a[i + 1].slice(k.length + 1) }
 const at = (s) => st.order.indexOf(s)
-if (method === 'GET' && /\\/git\\/ref\\/heads\\/ci-green$/.test(path)) { if (!st.green) refuse(); done(st.green) }
+const known = (s) => at(s) >= 0 || (st.side || []).includes(s)
+if (method === 'GET' && /\\/git\\/ref\\/heads\\/ci-green$/.test(path)) { if (!st.green) refuse(404, 'Not Found'); done(st.green) }
 if (method === 'GET' && /\\/compare\\//.test(path)) {
   const [base, head] = path.split('/compare/')[1].split('...')
+  if (!known(base) || !known(head)) refuse(404, 'Not Found')
   done(at(base) < 0 || at(head) < 0 ? 'diverged' : at(base) === at(head) ? 'identical' : at(head) > at(base) ? 'ahead' : 'behind')
 }
-if (method === 'POST' && /\\/git\\/refs$/.test(path)) { if (st.green) refuse(); st.green = field('sha'); done() }
+if (method === 'POST' && /\\/git\\/refs$/.test(path)) { if (st.green) refuse(422, 'Reference already exists'); st.green = field('sha'); done() }
 if (method === 'PATCH' && /\\/git\\/refs\\/heads\\/ci-green$/.test(path)) {
   if (st.raceTo) { st.green = st.raceTo; delete st.raceTo }
   const sha = field('sha')
-  if (field('force') !== 'true' && at(sha) < at(st.green)) refuse()
+  if (field('force') !== 'true' && at(sha) < at(st.green)) refuse(422, 'Update is not a fast forward')
   st.green = sha; done()
 }
 process.exit(2)
 `
 
-function mark(state: { green?: string; raceTo?: string }, sha: string) {
+function mark(state: { green?: string; raceTo?: string; side?: string[] }, sha: string) {
   const dir = mkdtempSync(join(tmpdir(), 'wajeez-mark-'))
   mkdirSync(join(dir, 'bin'))
   writeFileSync(join(dir, 'bin/gh'), GH_STUB)
@@ -243,7 +254,9 @@ function mark(state: { green?: string; raceTo?: string }, sha: string) {
 }
 
 describe('scripts/mark-ci-green.sh — العلامة تتقدّم ولا ترجع', () => {
-  it('أوّلُ أخضرَ يُنشئ الفرع', () => {
+  it('⚠️ أوّلُ أخضرَ يُنشئ الفرع — وجسمُ خطإ GitHub على stdout لا يُقرأ التزاما', () => {
+    /* هذا ما أسقط أوّلَ تشغيلٍ على main: الفرعُ غائبٌ، و`gh` يطبع
+       `{"message":"Not Found",…}` ويخرج بواحد */
     expect(mark({}, 'c2')).toEqual({ code: 0, green: 'c2' })
   })
 
@@ -261,7 +274,11 @@ describe('scripts/mark-ci-green.sh — العلامة تتقدّم ولا ترج
   })
 
   it('والمتفرّقُ يُقال ولا يُكتب فوقه', () => {
-    expect(mark({ green: 'c3' }, 'x9')).toEqual({ code: 1, green: 'c3' })
+    expect(mark({ green: 'c3', side: ['x9'] }, 'x9')).toEqual({ code: 1, green: 'c3' })
+  })
+
+  it('ومقارنةٌ تعذّرت تُقال ولا يُكتب فوقها', () => {
+    expect(mark({ green: 'c3' }, 'zz')).toEqual({ code: 1, green: 'c3' })
   })
 })
 
