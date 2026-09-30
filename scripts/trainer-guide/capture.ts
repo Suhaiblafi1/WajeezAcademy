@@ -404,10 +404,10 @@ const ACTIVE: Shot[] = [
       await step(e, 5)
       const task = p.getByText('خريطةُ رسالةٍ لعرضٍ تقدّمه هذا الشهر', { exact: true }).first()
       await shoot(e, {
-        name: 'ws-tasks', clip: await panel(btn(p, /مهمّةٌ جديدة/), 600), clipPad: 12,
+        name: 'ws-tasks', clip: await panel(btn(p, /مهمّةٌ عمليّة/), 600), clipPad: 12,
         marks: [
           { target: await panel(task), n: 1, pad: 3 },
-          { target: btn(p, /مهمّةٌ جديدة/), n: 2, pad: 5 },
+          { target: btn(p, /مهمّةٌ عمليّة/), n: 2, pad: 5 },
         ],
       })
     },
@@ -418,6 +418,9 @@ const ACTIVE: Shot[] = [
       const p = e.page
       await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
       await step(e, 5)
+      /* والمصادرُ صارت لسانا ثانيا (٣٠ سبتمبر ٢٠٢٦) */
+      await p.getByRole('tablist', { name: 'أقسامُ المهامّ والمصادر' }).getByRole('tab', { name: /المصادر/ }).click()
+      await settle(e)
       const first = p.getByRole('textbox', { name: 'اسم المصدر 1' })
       await shoot(e, {
         name: 'ws-sources', clip: await panel(first, 600), clipPad: 12, maxHeight: 1000,
@@ -429,6 +432,38 @@ const ACTIVE: Shot[] = [
       })
     },
   },
+  /* ═══ ألسنةُ «المهامّ والمصادر» الثلاثة (٣٠ سبتمبر ٢٠٢٦) ═══ */
+  ...(['tasks', 'resources', 'project'] as const).map((tab): Shot => ({
+    name: `ws-tab-${tab}`,
+    async run(e) {
+      const p = e.page
+      await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
+      await step(e, 5)
+      const label = { tasks: 'المهامّ العمليّة', resources: 'المصادر', project: 'مشروع التخرّج' }[tab]
+      const bar = p.getByRole('tablist', { name: 'أقسامُ المهامّ والمصادر' })
+      await bar.getByRole('tab', { name: new RegExp(label) }).click()
+      await settle(e)
+      /* ولسانُ المهامّ يُصوَّر ونموذجُه مفتوحٌ ومرفقُه «ملفّ» — ليُرى الرفعُ حيث طُلب */
+      if (tab !== 'resources') {
+        await btn(p, tab === 'project' ? '+ مشروعُ التخرّج' : '+ مهمّةٌ عمليّة').click()
+        await settle(e)
+        if (tab === 'tasks') {
+          await btn(p, '+ مرفق').click()
+          await p.getByRole('textbox', { name: 'اسم المرفق 1' }).fill('نموذجُ التسليم')
+          await settle(e)
+        }
+      }
+      const stage = p.locator('div.space-y-5').filter({ has: bar }).first()
+      await shoot(e, {
+        name: `ws-tab-${tab}`, clip: stage, clipPad: 10, maxHeight: 3600,
+        marks: [
+          { target: bar.getByRole('tab', { name: new RegExp(label) }), n: 1, pad: 4 },
+          { target: p.locator('p', { hasText: 'تعليماتٌ وتوصيات' }).first().locator('xpath=..'), n: 2, pad: 4 },
+          ...(tab === 'tasks' ? [{ target: p.getByRole('combobox', { name: 'نوع المرفق 1' }), n: 3, pad: 4 }] : []),
+        ],
+      })
+    },
+  })),
   {
     name: 'ws-submit',
     async run(e) {
