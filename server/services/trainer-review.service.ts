@@ -33,6 +33,7 @@ import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMail
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
+import { TRAINER_GUIDE_PATH } from '../../src/application/trainer/trainer-guide'
 import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft, extensionsLeft,
   materialsGateProblemAr,
@@ -3776,6 +3777,7 @@ export class TrainerReviewService {
         title: c.title,
         approvedOnAr: fmtDateWith(countersignedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
         portalUrl: `${publicSiteUrl()}/trainer`,
+        guideUrl: `${publicSiteUrl()}${TRAINER_GUIDE_PATH}`,
         gatesActivation: c.gatesActivation,
       })
       await sendDirectEmail(this.prisma, {

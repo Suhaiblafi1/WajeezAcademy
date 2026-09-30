@@ -63,6 +63,8 @@
     "check:theme": "node scripts/check-theme-hex.mjs",
     "audit:skill-coverage": "tsx scripts/with-db.ts tsx scripts/audit-skill-coverage-matrix.ts",
     "seed:demo": "tsx scripts/with-db.ts tsx server/db/seed-demo.ts",
+    "guide:seed": "tsx scripts/with-db.ts tsx scripts/trainer-guide/seed.ts",
+    "guide:shots": "tsx scripts/trainer-guide/capture.ts",
     "promote:super-admin": "tsx scripts/with-db.ts tsx scripts/promote-super-admin.ts",
     "worker": "tsx server/worker/index.ts",
     "worker:once": "tsx scripts/with-db.ts tsx server/worker/index.ts --once",

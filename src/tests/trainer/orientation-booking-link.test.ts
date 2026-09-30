@@ -27,6 +27,7 @@ const BASE = {
   title: 'عقدُ تدريبٍ — الفصلُ الشتويّ',
   approvedOnAr: '٢٨ سبتمبر ٢٠٢٦',
   portalUrl: 'https://www.wajeezacademy.com/trainer',
+  guideUrl: 'https://www.wajeezacademy.com/trainer/guide',
 }
 
 /** العرضُ المشروطُ هو الحالُ التي تُفتح فيها البوّابةُ وتبدأ فيها المهلة */

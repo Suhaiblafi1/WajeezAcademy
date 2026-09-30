@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { Award, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, LayoutDashboard, Link2, Megaphone, Route, Star, Users, Wallet } from "lucide-react";
+import { Award, BookOpen, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, LayoutDashboard, Link2, Megaphone, Route, Star, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -12,6 +12,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
+import Button from "@/components/ui/Button";
+import { TRAINER_GUIDE_PATH } from "@/application/trainer/trainer-guide";
 
 /* ما يقرؤه الإطارُ من `/api/trainer/me` — لا الملفُّ كلُّه.
    ونداءٌ واحدٌ يخدم اثنين: عدّادَ التصحيح، وشريطَ العرض المشروط.
@@ -223,6 +225,12 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             {realTrainer && (
               <SearchChip hintAr="ابحث في شعبك وطلبتك" />
             )}
+            {/* ودليلُ المدرّب في الإطار لا في صفحةٍ واحدة (٢٩ سبتمبر ٢٠٢٦): يصله رابطُه
+                في رسالة اعتماد التوقيع مرّةً، ويحتاجه كلّما وقف عند شاشة. ونبرتُه
+                هادئة — الذهبيُّ فعلُ الصفحة، وهذا أداةٌ في الإطار. */}
+            <Button as={Link} to={TRAINER_GUIDE_PATH} tone="ghost" size="sm" icon={BookOpen} aria-label="دليلُ المدرّب">
+              <span>الدليل</span>
+            </Button>
             <NotificationBell audience="trainer" />
             <ThemeToggle />
             <StaffAccountMenu user={user} />
