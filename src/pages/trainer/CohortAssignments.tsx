@@ -33,19 +33,24 @@ export interface CohortAssessment {
   submissions: { id: string; status: string }[];
 }
 
-export default function CohortAssignments({ items, learners }: {
+export default function CohortAssignments({
+  items, learners, titleAr = "مهامُّ هذه الشعبة", emptyAr = "لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.",
+}: {
   items: CohortAssessment[];
   /** المسجَّلون فعلا — مقامُ «سلّم ٣ من ١٢»، فقائمةُ الانتظار لا تُسلّم */
   learners: number;
+  /** عنوانُ الصندوق وجملةُ فراغه — ولسانُ «المهامّ والمصادر» يسمّيه بما يعرضه */
+  titleAr?: string;
+  emptyAr?: string;
 }) {
   return (
     <div className="mt-5 border-t border-white/10 pt-4">
       <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
-        <ClipboardCheck className="h-4 w-4 text-gold-ink" /> مهامُّ هذه الشعبة
+        <ClipboardCheck className="h-4 w-4 text-gold-ink" /> {titleAr}
       </h3>
       {items.length === 0 ? (
         <p className="mt-2 text-read text-muted-foreground">
-          لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.
+          {emptyAr}
         </p>
       ) : (
         <ul className="mt-3 space-y-2">
