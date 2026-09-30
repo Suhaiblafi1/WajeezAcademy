@@ -427,10 +427,10 @@ function LessonRow({
             {m.hours ? `${m.hours} ساعة` : "من مدرّبك"}
             {m.hours && m.fromTrainer ? " · من مدرّبك" : ""}
             {!m.locked && lessons.length > 0 && ` · ${lessons.length} درسا`}
-            {!m.locked && lessons.length === 0 && hasFile && " · متنُها ملفٌّ من مدرّبك"}
+            {!m.locked && lessons.length === 0 && hasFile && " · محتواها ملفٌّ من مدرّبك"}
             {!m.locked && checks > 0 && ` · ${checks} تمرين استرجاع`}
             {!m.locked && m.scenario && " · سيناريو قرار"}
-            {!m.locked && lessons.length === 0 && !hasFile && " · متنُها يُكتب الآن"}
+            {!m.locked && lessons.length === 0 && !hasFile && " · محتواها يُكتب الآن"}
           </span>
         </span>
         {/* وحدةٌ بلا متن لا تُوسَم «ابدأ من هنا» ولا «لم تبدأ»:

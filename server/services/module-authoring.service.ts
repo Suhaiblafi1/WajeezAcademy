@@ -167,7 +167,7 @@ export class ModuleAuthoringService {
   validate(patch: ModuleContentPatch): string[] {
     const errorsAr: string[] = []
     if (patch.bodyAr !== undefined && (patch.bodyAr ?? '').length > MAX_BODY_CHARS) {
-      errorsAr.push(`المتن أطول من ${MAX_BODY_CHARS} حرفا — اقسمه على وحدتين`)
+      errorsAr.push(`المحتوى أطول من ${MAX_BODY_CHARS} حرفا — اقسمه على وحدتين`)
     }
     const checks = trimOrNull(patch.checksAr)
     if (patch.checksAr !== undefined && checks) {
@@ -203,7 +203,7 @@ export class ModuleAuthoringService {
     if (!draft) throw new AuthError('no_draft', 'لا مسوّدة مفتوحة', 409)
     if (draft.status !== DRAFT) throw new AuthError('bad_state', 'المسوّدة مرفوعة أصلا', 409)
     if (!draft.bodyAr?.trim()) {
-      throw new AuthError('empty_body', 'لا تُرفع وحدةٌ بلا متن — المتن هو الغرض', 422)
+      throw new AuthError('empty_body', 'لا تُرفع وحدةٌ بلا محتوى — المحتوى هو الغرض', 422)
     }
     const updated = await this.prisma.courseModuleVersion.update({
       where: { id: draft.id },

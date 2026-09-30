@@ -79,7 +79,7 @@ describe('المحاورُ ومواعيدها', () => {
     next.modules[0] = { ...next.modules[0], bodyAr: 'متنٌ أطول' }
     next.modules[1] = { ...next.modules[1], outcomeAr: 'يقيس الجدوى ويقارنها' }
     expect(lines(planDiff(approved, next, fmt), 'modules')).toEqual([
-      'تغيّر في «اختيارُ العمليّة»: المتن',
+      'تغيّر في «اختيارُ العمليّة»: المحتوى',
       'تغيّر في «جدوى الأتمتة»: المخرَج',
     ])
   })

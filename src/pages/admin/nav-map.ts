@@ -87,7 +87,7 @@ export const allSections: AdminNavSection[] = [
       { to: "/admin/catalog", label: "الكتالوج", icon: Layers, need: "catalog.view",
         descAr: "المسارات والدورات والمهارات والأسئلة — وإنشاءُ الجديد منها" },
       { to: "/admin/authoring", label: "تأليف المتون", icon: PenLine, need: "catalog.course.edit",
-        descAr: "متنُ كلّ وحدة: الدرسُ وتمرينُ الاسترجاع والفيديو والسيناريو" },
+        descAr: "محتوى كلّ وحدة: الدرسُ وتمرينُ الاسترجاع والفيديو والسيناريو" },
       { to: "/admin/publishing", label: "النشر والإصدارات", icon: GitBranch, need: "catalog.impact.view",
         descAr: "سيرُ الاعتماد من مسودّة إلى منشور، وأثرُ كلّ نشرةٍ قبل وقوعها" },
       /* ح-٤: طابورُ الدورات المقترحة — وصلاحيّتُه `trainer.change.review`،

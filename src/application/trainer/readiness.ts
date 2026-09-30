@@ -157,7 +157,7 @@ export function computeReadiness(input: ReadinessInput): Readiness {
       done: contractDone,
       blockerAr: contractDone
         ? null
-        : 'لا عقدَ وقّعه — ركّبِ العقدَ وأرسلْه، ويُعتمَد بعد توقيعه.',
+        : 'لا عقدَ وقّعه — أنشئِ العقدَ وأرسلْه، ويُعتمَد بعد توقيعه.',
       noticeAr: null,
     },
   ]

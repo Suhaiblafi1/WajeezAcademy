@@ -112,7 +112,8 @@ const TASK_ATTACHMENTS = z.array(z.object({
 }).refine(
   (a) => Boolean((a.bodyFileKey ?? '').trim()) !== /^https?:\/\/\S+$/.test((a.url ?? '').trim()),
   { message: 'المرفقُ رابطٌ يبدأ بـ https:// أو ملفٌّ مرفوع — واحدٌ منهما' },
-)).max(10)
+/* والمرفوعُ يُحفظ برابطٍ فارغ — `TypedLink.url` نصٌّ دائما */
+).transform((a) => ({ ...a, url: (a.url ?? '').trim() }))).max(10)
 
 export function registerLearningPortalRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const departures = new TrainerDepartureService(prisma)

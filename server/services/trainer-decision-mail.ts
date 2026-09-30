@@ -618,7 +618,7 @@ export function conditionalOfferMail(input: ConditionalOfferMailInput): Decision
         ...(input.noticeAr ? ([{ kind: 'callout' as const, text: input.noticeAr }] as const) : ([] as const)),
         {
           kind: 'p',
-          text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وضُبطت أتعابُك، ورُكِّب عرضُك. وهو عرضٌ مشروطٌ: اقرأ بنودَه كاملةً قبل أن توقّعه.',
+          text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وحدّدنا أتعابَك، وجهّزنا عرضَك. وهو عرضٌ مشروطٌ: اقرأ بنودَه كاملةً قبل أن توقّعه.',
         },
         { kind: 'h', text: 'أين أنت الآن، وما بعده' },
         {
@@ -893,7 +893,7 @@ export function contractRevokedMail(input: ContractRevokedMailInput): DecisionMa
         {
           kind: 'p',
           text: input.reissue
-            ? `قرأنا طلبَك تعديلَ «${input.title}»، وقبلناه. ولأنّ متنَ العقد لا يُعدَّل بعد إرساله، ألغينا هذا العرضَ ونعدّ لك غيرَه مصحَّحا.`
+            ? `قرأنا طلبَك تعديلَ «${input.title}»، وقبلناه. ولأنّ نصَّ العقد لا يُعدَّل بعد إرساله، ألغينا هذا العرضَ ونعدّ لك غيرَه مصحَّحا.`
             : `ألغينا «${input.title}»، ولم يعد رابطُ توقيعه يعمل.`,
         },
         /* والسببُ بحرفه في لوحٍ يُرى: من يُسأل عنه بعد شهرٍ يقرؤه هنا */
@@ -949,7 +949,7 @@ export function amendmentAnsweredMail(input: AmendmentAnsweredMailInput): Decisi
           kind: 'p',
           /* والصدقُ في وصف ما بقي: هذا البابُ يُبقي المتنَ كما هو — ومن أراد
              تغييرَه فبابُه الآخر (`contractRevokedMail` بـ`reissue`). */
-          text: 'ومتنُ الوثيقة كما قرأتَه لم يتغيّر فيه حرف. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.',
+          text: 'ونصُّ الوثيقة كما قرأتَه لم يتغيّر فيه حرف. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.',
         },
         { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: input.url },
         {

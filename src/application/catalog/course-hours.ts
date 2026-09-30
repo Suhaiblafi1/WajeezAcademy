@@ -56,6 +56,23 @@ export const HOURS_TOLERANCE_PERCENT = 20
  *  ولا يُدَّعى رقمٌ لم يُتّفق عليه. */
 export const MIN_LIVE_HOURS_GUIDE = 16
 
+/** طولُ الجلسة الاسترشاديّة، ومنه يُشتقّ عددُها — فلا يفترق الرقمان في نصّ */
+export const GUIDE_SESSION_HOURS = 2
+export const GUIDE_SESSIONS = MIN_LIVE_HOURS_GUIDE / GUIDE_SESSION_HOURS
+
+/* ═══ شكلُ الشعبة: أرقامٌ تُعين ولا تُلزم — أمرُ صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   «نعم ارشاديه فقط لا قانون… لن نرفض أكثر من ستة أسابيع ولا نرفض اقل من شهر
+   اتركها توضيحيه».
+
+   فهذه الأرقامُ نصٌّ يُقرأ لا حاجزٌ يُردّ عنده: لا تُفحَص في مسلك، ولا يُبنى
+   عليها ردُّ طلب. ومن كتبها شرطا في شيفرةٍ خالف الأمرَ ولو طابق الرقمُ. */
+export const COHORT_SPAN_GUIDE_MIN_AR = 'شهر'
+export const COHORT_SPAN_GUIDE_MAX_WEEKS = 6
+
+/** العددُ الذي نقترح ألّا ينزل عنه سقفُ المدرّب — اقتراحٌ لا حدّ */
+export const SEAT_CAP_SUGGESTED_MIN = 20
+
 export interface CourseHours {
   /** إجماليُّ ساعات الدورة كما في الكتالوج */
   totalHours: number

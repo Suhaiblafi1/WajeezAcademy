@@ -282,7 +282,7 @@ const PHRASES: Record<string, string> = {
   'trainer_compensation.set_rule': 'تعيينُ قاعدةِ تعويضِ مدرّب',
   /* العقدُ — التصميمُ في
      `docs/superpowers/specs/2026-09-19-trainer-contract-design.md` */
-  'trainer.contract.compose': 'تركيبُ عقدِ مدرّبٍ وتجميدُ متنِه',
+  'trainer.contract.compose': 'إنشاءُ عقدِ مدرّبٍ وتجميدُ نصِّه',
   'trainer.contract.revoke': 'إلغاءُ عقدِ مدرّبٍ قبل توقيعه',
   'trainer.contract.send': 'إرسالُ العقد إلى المدرّب للتوقيع',
   'trainer.contract.resend': 'تجديدُ رابط توقيع العقد',
@@ -294,7 +294,7 @@ const PHRASES: Record<string, string> = {
   /* الجوابُ الثالث: يُقبَل الطلبُ فيُغلَق العرضُ ويُعاد تركيبُه مصحَّحا.
      وفعلٌ مستقلٌّ عن `revoke` بقصد: من سأل بعد سنةٍ «لمَ أُغلق هذا العرض؟»
      يفرّق بين إلغاءٍ وبين قبولِ تعديلٍ مهّد لعقدٍ آخر. */
-  'trainer.contract.amendment_reissue': 'قبولُ طلبِ التعديل وإعادةُ تركيب العقد مصحَّحا',
+  'trainer.contract.amendment_reissue': 'قبولُ طلبِ التعديل وإنشاءُ عقدٍ مصحَّح',
   'trainer.contract.delete': 'حذفُ عقدٍ لم يمسّه توقيع',
   'trainer.contract.materials_declared': 'إعلانُ المدرّبِ اكتمالَ موادّه',
   'trainer.contract.materials_returned': 'إعادةُ موادّ المدرّبِ إليه بملاحظات',
@@ -311,7 +311,7 @@ const PHRASES: Record<string, string> = {
      فعلٌ على **الإنسان** لا على الورقة — يُسأل عنه وحدَه: «متى صار اسمي
      هكذا عندكم، ومن كتبه؟». فلو جُمعت في فعلٍ واحدٍ لَضاع السؤالُ الثالث. */
   'trainer.contract.name_correction_requested': 'طلبُ المدرّبِ تصحيحَ اسمه في عقده',
-  'trainer.contract.name_reissue': 'إعادةُ تركيب العقد مصحَّحا باسم الطرف الثاني',
+  'trainer.contract.name_reissue': 'إنشاءُ عقدٍ مصحَّحٍ باسم الطرف الثاني',
   'trainer.legal_name.set': 'تثبيتُ الاسم القانونيِّ للمدرّب كما في وثيقة هويّته',
   'trainer.contract.terminate': 'فسخُ عقدٍ نافذٍ برحيل المدرّب',
   /* الحسابُ البنكيّ — المرحلة الرابعة */
@@ -368,9 +368,9 @@ const PHRASES: Record<string, string> = {
      لإتاحةِ مادّة. */
 
   /* مراجعةُ متنِ الوحدة — `module-authoring.service.ts` */
-  'module.content.academic_approve': 'اعتمادٌ أكاديميٌّ لمتنِ وحدة',
-  'module.content.request_changes': 'طلبُ تعديلاتٍ على متنِ وحدة',
-  'module.content.return_to_academic': 'إعادةُ متنِ وحدةٍ للمراجعة الأكاديميّة',
+  'module.content.academic_approve': 'اعتمادٌ أكاديميٌّ لمحتوى وحدة',
+  'module.content.request_changes': 'طلبُ تعديلاتٍ على محتوى وحدة',
+  'module.content.return_to_academic': 'إعادةُ محتوى وحدةٍ للمراجعة الأكاديميّة',
 
   /* تسليمُ المتعلّم — `assessment.service.ts:251` */
   'submission.start_review': 'بدءُ مراجعةِ تسليم',
@@ -426,7 +426,7 @@ const WORDS: Record<string, string> = {
   change: 'اقتراحُ تعديل', course_proposal: 'اقتراحُ دورة',
   trainer_course_decisions: 'ملفُّ قراراتِ دوراتِ المدرّبين', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلبُ تسجيل',
   waitlist: 'قائمةُ انتظار', order: 'طلبُ شراء', payment: 'دفعة', refund: 'استرداد', coupon: 'كوبون',
-  invoice: 'فاتورة', plan: 'خطّة', item: 'بند', module: 'وحدة', content: 'متن', material: 'مادّة',
+  invoice: 'فاتورة', plan: 'خطّة', item: 'بند', module: 'وحدة', content: 'محتوى', material: 'مادّة',
   recording: 'تسجيلٌ مرئيّ', assessment: 'تقييم', attempt: 'محاولة', grade: 'درجة', rubric: 'روبرك',
   submission: 'تسليم', feedback: 'تغذيةٌ راجعة', attendance: 'حضور', completion_rule: 'قاعدةُ إكمال',
   diagnostic: 'تشخيص', skill: 'مهارة', rating: 'تقييم', support: 'دعم', ticket: 'تذكرة',
