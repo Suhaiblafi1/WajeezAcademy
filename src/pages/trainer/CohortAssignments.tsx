@@ -44,7 +44,7 @@ export default function CohortAssignments({
   emptyAr?: string;
 }) {
   return (
-    <div className="mt-5 border-t border-white/10 pt-4">
+    <div>
       <h3 className="flex items-center gap-2 text-sm font-black text-foreground">
         <ClipboardCheck className="h-4 w-4 text-gold-ink" /> {titleAr}
       </h3>
