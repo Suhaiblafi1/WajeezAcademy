@@ -12,6 +12,7 @@ import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { perSeatBreakdown } from '../../src/application/trainer/seat-fee'
 import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
 import { cohortLeadTrainer } from './cohort-lead'
+import { PAYOUT_OBJECTION_DAYS } from '../../src/application/trainer/notice-periods'
 
 /** القاعدةُ أو معاملةٌ مفتوحةٌ عليها — ما يُتوقَّع له يُقرأ في معاملة الطلب أيضا */
 type Db = PrismaClient | Prisma.TransactionClient
@@ -311,7 +312,37 @@ export class EarningsService {
     return updated
   }
 
-  approve(id: string, actorId: string) {
+  /** ═══ ولا يُعتمد كشفٌ قبل أن تمضيَ مهلةُ الاعتراض ═══
+
+      البند 4-11 يقول للمدرّب: «لا يعتمد الكشف قبل مضي سبعة أيّامٍ من
+      إتاحته له» — والعددُ من `PAYOUT_OBJECTION_DAYS` لا مكتوبا هنا. وهذا
+      الحارسُ هو الذي يجعل تلك الجملةَ صحيحةً، بأمرِ صاحب المنصّة «أضف
+      الحارس الآن».
+
+      ولولاه لَجاز أن يُكتب الكشفُ ويُعتمد في الجلسة نفسِها، فنخالف عقدا
+      نحن كتبناه. وليس ذلك احتمالا بعيدا: الاعتمادُ زرٌّ إلى جنب الإنشاء
+      في الشاشة نفسِها، ومن أنشأ عشرةَ كشوفٍ اعتمدها معها بلا قصدِ سوء.
+
+      **والمقيسُ `createdAt` لا انتهاءُ الشعبة**: العدُّ من يوم ظهور الكشف
+      للمدرّب لا من يوم انتهاء شعبته — فلو كُتب الكشفُ متأخّرا لم تُؤكل
+      مهلتُه. وهو ما يقوله البند بحرفه: «من إتاحته له».
+
+      ولا يضيّق هذا مهلةَ الاعتماد (البند 4-2، ١٥ يوما): سبعةٌ للاعتراض
+      وثمانيةٌ تبقى للنظر. ورأسُ `PAYOUT_OBJECTION_DAYS` يشرح لِمَ سبعة. */
+  async approve(id: string, actorId: string) {
+    const payout = await this.prisma.trainerPayout.findUnique({ where: { id } })
+    if (!payout) throw new AuthError('unknown_payout', 'الكشف غير موجود', 404)
+    const openMs = Date.now() - payout.createdAt.getTime()
+    const needMs = PAYOUT_OBJECTION_DAYS * 24 * 60 * 60 * 1000
+    if (openMs < needMs) {
+      const left = Math.max(1, Math.ceil((needMs - openMs) / (24 * 60 * 60 * 1000)))
+      throw new AuthError(
+        'objection_window_open',
+        `مهلة اعتراض المدرب على هذا الكشف لم تنقض — يبقى ${left} يوما. `
+        + `والبند 4-11 من عقده يمنع اعتماده قبل مضي ${PAYOUT_OBJECTION_DAYS} أيام من ظهوره له.`,
+        409,
+      )
+    }
     return this.transition(id, actorId, ['pending'], 'approved', 'trainer_payout.approve', { approvedBy: actorId })
   }
 
