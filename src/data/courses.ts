@@ -253,6 +253,16 @@ export function pathwaySizeAr(p: { courseCount: number; totalHours: number; dura
 /* حدّا عدد دورات المسار — بنيةٌ لا سعر */
 export const MIN_PATHWAY_COURSES = 4
 
+/* ═══ ومسارٌ أساسُه دورتان — استثناءٌ مسمّى (٣٠ سبتمبر ٢٠٢٦) ═══
+
+   «التحضير لأول وظيفة» دُمجت دوراتُه الأربع في اثنتين بقرار صاحب المنصّة:
+   «If you're talking about the path itself, will be less courses than that's
+   fine». فأساسُه دورتان، ومساندتاه تُتمّان رحلتَه
+   إلى أربع — فيبقى حدُّ المحرِّر (`MIN_PATHWAY_COURSES`) قائما عليه كغيره،
+   ولا يُحبَس متعلّمٌ فيه دون أربع. والاستثناءُ هنا بالاسم، لا شرطٌ أُرخي
+   لسبعةٍ وعشرين مسارا: الحرّاسُ تقرؤه من هنا، فلا يتّسع بصمت. */
+export const TWO_CORE_PATHWAYS: readonly string[] = ['PW-STU-002']
+
 /** مساندتان فوق الأساسيات الأربع — والمجموع ستّ */
 export const SUPPORT_PER_PATHWAY = 2
 

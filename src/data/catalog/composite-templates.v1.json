@@ -13,12 +13,12 @@
   "stats": {
     "approved_core_pathways": 20,
     "composite_templates": 16,
-    "distinct_required_courses_used": 61,
-    "distinct_all_courses_used": 69,
-    "required_course_slots": 82,
-    "conditional_course_slots": 53,
+    "distinct_required_courses_used": 59,
+    "distinct_all_courses_used": 67,
+    "required_course_slots": 80,
+    "conditional_course_slots": 52,
     "bridge_course_slots": 12,
-    "required_hours_across_templates": 896,
+    "required_hours_across_templates": 904,
     "core_pathways_covered": 20
   },
   "approved_core_pathways": [
@@ -1498,10 +1498,10 @@
           "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-JOB-101",
-          "course_title_ar": "دورة استهداف الوظائف وبناء الملفّ المهنيّ: صياغة عرض قيمة مسنَد بالأدلّة",
+          "course_title_ar": "دورة ملفّك المهنيّ: من استهداف الدور إلى سيرةٍ ومحفظةِ أعمالٍ تُثبت ما تقول",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 16,
+          "hours": 24,
           "reason_ar": "يضاف لبناء واجهة LinkedIn وملف أدلة يخدمان الاستهداف.",
           "when": {
             "fact_key": "career_assets",
@@ -1878,12 +1878,12 @@
           "sequence": 1,
           "course_type": "required",
           "course_id": "C-JOB-101",
-          "course_title_ar": "دورة استهداف الوظائف وبناء الملفّ المهنيّ: صياغة عرض قيمة مسنَد بالأدلّة",
+          "course_title_ar": "دورة ملفّك المهنيّ: من استهداف الدور إلى سيرةٍ ومحفظةِ أعمالٍ تُثبت ما تقول",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 16,
+          "hours": 24,
           "role_ar": "التموضع · ملف الأدلة",
-          "reason_ar": "ربط الهوية بسوق وجمهور ونتيجة محددة · تحويل الخبرة إلى سيرة وLinkedIn موجّهين بالأثر."
+          "reason_ar": "ربط الهوية بسوق وجمهور ونتيجة محددة · تحويل الخبرة إلى سيرة وLinkedIn موجّهين بالأثر · مشروعُ محفظةٍ يُثبت المهارة."
         },
         {
           "sequence": 2,
@@ -1934,23 +1934,6 @@
         {
           "sequence": 1,
           "course_type": "conditional",
-          "course_id": "C-JOB-103",
-          "course_title_ar": "دورة بناء ملفّ الأعمال: إنتاج قطعةٍ تحاكي مهمّة الدور المستهدف",
-          "pathway_id": "PW-STU-002",
-          "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "reason_ar": "يضاف إذا كان المتعلم يفتقر إلى مشروع إثبات مهارة.",
-          "when": {
-            "fact_key": "portfolio_evidence",
-            "operator": "lte",
-            "values": [
-              0.5
-            ]
-          }
-        },
-        {
-          "sequence": 2,
-          "course_type": "conditional",
           "course_id": "C-SAL-104",
           "course_title_ar": "دورة تصميم العروض التجارية: ربط كل بندٍ بقيمةٍ يقرّها العميل",
           "pathway_id": "PW-SAL-001",
@@ -1967,7 +1950,7 @@
           }
         },
         {
-          "sequence": 3,
+          "sequence": 2,
           "course_type": "conditional",
           "course_id": "C-DAT-104",
           "course_title_ar": "دورة تصميم لوحات المؤشّرات: اختيار الرسم الذي يخدم المقارنة",
@@ -2267,10 +2250,10 @@
         {
           "sequence": 1,
           "course_id": "C-JOB-101",
-          "course_title_ar": "دورة استهداف الوظائف وبناء الملفّ المهنيّ: صياغة عرض قيمة مسنَد بالأدلّة",
+          "course_title_ar": "دورة ملفّك المهنيّ: من استهداف الدور إلى سيرةٍ ومحفظةِ أعمالٍ تُثبت ما تقول",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 16
+          "hours": 24
         },
         {
           "sequence": 2,
@@ -2283,9 +2266,9 @@
       ],
       "plan": {
         "starter_course_count": 2,
-        "starter_hours": 32,
+        "starter_hours": 40,
         "full_required_course_count": 5,
-        "full_required_hours": 56,
+        "full_required_hours": 64,
         "recommended_duration_weeks": 10,
         "minimum_weekly_hours": 4,
         "recommended_weekly_hours": 6,
@@ -2333,45 +2316,23 @@
           "sequence": 2,
           "course_type": "required",
           "course_id": "C-JOB-101",
-          "course_title_ar": "دورة استهداف الوظائف وبناء الملفّ المهنيّ: صياغة عرض قيمة مسنَد بالأدلّة",
+          "course_title_ar": "دورة ملفّك المهنيّ: من استهداف الدور إلى سيرةٍ ومحفظةِ أعمالٍ تُثبت ما تقول",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 16,
-          "role_ar": "التموضع · السيرة وLinkedIn",
-          "reason_ar": "تحديد السوق والدور والقيمة التي يقدمها المتعلم · تقديم الأدلة بما يلائم وظيفة مستهدفة."
+          "hours": 24,
+          "role_ar": "التموضع · السيرة وLinkedIn · إثبات المهارة",
+          "reason_ar": "تحديد السوق والدور والقيمة التي يقدمها المتعلم · تقديم الأدلة بما يلائم وظيفة مستهدفة · تعويض نقص الخبرة بمشروع قابل للفحص."
         },
         {
           "sequence": 3,
           "course_type": "required",
-          "course_id": "C-JOB-103",
-          "course_title_ar": "دورة بناء ملفّ الأعمال: إنتاج قطعةٍ تحاكي مهمّة الدور المستهدف",
-          "pathway_id": "PW-STU-002",
-          "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "role_ar": "إثبات المهارة",
-          "reason_ar": "تعويض نقص الخبرة بمشروع قابل للفحص."
-        },
-        {
-          "sequence": 4,
-          "course_type": "required",
           "course_id": "C-JOB-104",
-          "course_title_ar": "دورة مهارات المقابلات الوظيفية: بناء بنك قصصٍ سلوكيّةٍ بأدلّة",
+          "course_title_ar": "دورة من البحث إلى العرض: خطّةُ فرصٍ لستّة أسابيع ومقابلةٌ بقصصٍ حقيقيّة",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "role_ar": "المقابلة",
-          "reason_ar": "الدفاع عن الأدلة والإجابة بوضوح."
-        },
-        {
-          "sequence": 5,
-          "course_type": "required",
-          "course_id": "C-JOB-105",
-          "course_title_ar": "دورة استراتيجية البحث عن عمل: موازنة القنوات والتحسين الأسبوعيّ",
-          "pathway_id": "PW-STU-002",
-          "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 8,
-          "role_ar": "نظام البحث",
-          "reason_ar": "إدارة القنوات والشبكة والمتابعة ستة أسابيع."
+          "hours": 16,
+          "role_ar": "نظام البحث · المقابلة",
+          "reason_ar": "إدارة القنوات والشبكة والمتابعة ستة أسابيع · الدفاع عن الأدلة والإجابة بوضوح."
         }
       ],
       "conditional_courses": [
@@ -2656,7 +2617,7 @@
             "target_level": 2,
             "priority": "high",
             "course_ids": [
-              "C-JOB-103"
+              "C-JOB-101"
             ]
           },
           {
@@ -2672,7 +2633,7 @@
             "target_level": 3,
             "priority": "critical",
             "course_ids": [
-              "C-JOB-105"
+              "C-JOB-104"
             ]
           }
         ],
@@ -2727,16 +2688,16 @@
         {
           "sequence": 2,
           "course_id": "C-JOB-101",
-          "course_title_ar": "دورة استهداف الوظائف وبناء الملفّ المهنيّ: صياغة عرض قيمة مسنَد بالأدلّة",
+          "course_title_ar": "دورة ملفّك المهنيّ: من استهداف الدور إلى سيرةٍ ومحفظةِ أعمالٍ تُثبت ما تقول",
           "pathway_id": "PW-STU-002",
           "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-          "hours": 16
+          "hours": 24
         }
       ],
       "plan": {
         "starter_course_count": 2,
-        "starter_hours": 24,
-        "full_required_course_count": 5,
+        "starter_hours": 32,
+        "full_required_course_count": 3,
         "full_required_hours": 48,
         "recommended_duration_weeks": 11,
         "minimum_weekly_hours": 4,
@@ -7705,10 +7666,10 @@
       {
         "pathway_id": "PW-STU-002",
         "pathway_title_ar": "التحضير لأول وظيفة: من السيرة إلى قبول العرض",
-        "required": 5,
-        "conditional": 2,
+        "required": 3,
+        "conditional": 1,
         "bridge": 0,
-        "total_mentions": 7
+        "total_mentions": 4
       },
       {
         "pathway_id": "PW-FND-003",
@@ -8093,7 +8054,7 @@
       },
       {
         "course_id": "C-JOB-101",
-        "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
+        "course_title_ar": "دورة ملفّك المهنيّ: من استهداف الدور إلى سيرةٍ ومحفظةِ أعمالٍ تُثبت ما تقول",
         "pathway_id": "PW-STU-002",
         "template_ids": [
           "TPL-FIRST-JOB-001",
@@ -8101,6 +8062,15 @@
           "TPL-PERSONAL-BRAND-001"
         ],
         "template_count": 3
+      },
+      {
+        "course_id": "C-JOB-104",
+        "course_title_ar": "دورة من البحث إلى العرض: خطّةُ فرصٍ لستّة أسابيع ومقابلةٌ بقصصٍ حقيقيّة",
+        "pathway_id": "PW-STU-002",
+        "template_ids": [
+          "TPL-FIRST-JOB-001"
+        ],
+        "template_count": 1
       },
       {
         "course_id": "C-SAL-105",
@@ -8119,16 +8089,6 @@
         "template_ids": [
           "TPL-FIRST-JOB-001",
           "TPL-FREELANCE-001"
-        ],
-        "template_count": 2
-      },
-      {
-        "course_id": "C-JOB-101",
-        "course_title_ar": "دورة استهداف الوظائف وبناء ملفّك المهني",
-        "pathway_id": "PW-STU-002",
-        "template_ids": [
-          "TPL-FIRST-JOB-001",
-          "TPL-PERSONAL-BRAND-001"
         ],
         "template_count": 2
       },
@@ -8170,16 +8130,6 @@
         "template_count": 5
       },
       {
-        "course_id": "C-JOB-103",
-        "course_title_ar": "دورة بناء ملف الأعمال المهني",
-        "pathway_id": "PW-STU-002",
-        "template_ids": [
-          "TPL-FIRST-JOB-001",
-          "TPL-PERSONAL-BRAND-001"
-        ],
-        "template_count": 2
-      },
-      {
         "course_id": "C-DAT-104",
         "course_title_ar": "دورة تصميم لوحات المعلومات وتمثيل البيانات",
         "pathway_id": "PW-EMP-004",
@@ -8191,24 +8141,6 @@
           "TPL-SMART-OPS-001"
         ],
         "template_count": 5
-      },
-      {
-        "course_id": "C-JOB-104",
-        "course_title_ar": "دورة مهارات المقابلات الوظيفية",
-        "pathway_id": "PW-STU-002",
-        "template_ids": [
-          "TPL-FIRST-JOB-001"
-        ],
-        "template_count": 1
-      },
-      {
-        "course_id": "C-JOB-105",
-        "course_title_ar": "دورة استراتيجية البحث عن عمل",
-        "pathway_id": "PW-STU-002",
-        "template_ids": [
-          "TPL-FIRST-JOB-001"
-        ],
-        "template_count": 1
       },
       {
         "course_id": "C-CAR-101",

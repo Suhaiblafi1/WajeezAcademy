@@ -21,6 +21,7 @@ import { assessEntitySkills, compositeVictoryCheck, type CompetitionResult } fro
 import { familyIndex } from '../../../domain/diagnostic/v2_1/skill-families'
 import type { SkillState } from '../../../domain/diagnostic/v2/types'
 import { questionPlanV21 } from '../../../domain/diagnostic/v2_1/data'
+import { OUTPUT_THRESHOLDS } from '../../../domain/diagnostic/v2/confidence'
 
 /* ─── جسر الرحلات (نفس نمط recommendation-universe) ─── */
 interface Journey {
@@ -245,16 +246,27 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
     })
     expect(rec.primaryPathway?.pathwayId).toBe('PW-STU-002')
     const conf = (rec as unknown as {
-      v2?: { confidence: { skillEvidenceCoverage: number; strongBlockers_ar: string[]; outputKind: string } }
+      v2?: { confidence: { overall: number; skillEvidenceCoverage: number; strongBlockers_ar: string[]; outputKind: string } }
     }).v2!.confidence
 
     /* الرقمُ المعروضُ يبقى على المسطرة الكاملة — لا يتضخّم بتغيير مقامه */
     expect(conf.skillEvidenceCoverage, 'التغطيةُ المعروضةُ تضخّمت').toBeLessThan(0.5)
-    /* والدرجةُ تُمنح لأنّ ما يمكن قياسُه قِيس */
-    expect(conf.outputKind).toBe('strong_match')
-    expect(conf.strongBlockers_ar).toEqual([])
-    /* والعبارةُ تقول أساسَها — «قوية» وحدَها ادّعاءُ علمٍ بما لم يُقَس */
-    expect(rec.confidence.band_ar).toContain('بما قِسناه')
+    /* ═══ وما يحرسه هذا الاختبار باقٍ: ما يمكن قياسُه قِيس ═══
+
+       فلا مانعَ من موانع القياس، والثقةُ فوق عتبة «قوية». */
+    expect(conf.overall, 'الثقةُ دون عتبة «قوية» — فالمانعُ ليس الفارقَ وحده').toBeGreaterThanOrEqual(OUTPUT_THRESHOLDS.strong)
+    for (const b of conf.strongBlockers_ar) {
+      expect(b, 'عاد مانعُ القياس — وهو ما يحرسه هذا الاختبار').not.toMatch(/نقس|قيس|رجّح/)
+    }
+    /* ═══ وما يمنعها اليومَ مانعُ الفارق وحدَه — بقرارٍ مسمّى (٣٠ سبتمبر ٢٠٢٦) ═══
+
+       دُمجت دوراتُ «التحضير لأول وظيفة» الأربع في اثنتين، فخفّ عبءُ القالب
+       المركّب TPL-FIRST-JOB-001 — وهو المسارُ نفسُه ودورةُ قرارٍ فوقه — فصار
+       ثانيَ المرشّحين بفارقٍ دون النصف. وقبِل صاحبُ المنصّة الأثرَ ليُشحن الدمجُ،
+       والإصلاحُ بعده: قالبٌ يحوي دوراتِ المسار المتصدّر كلَّها امتدادٌ له لا
+       منافس. فإن أُصلح عادت «قوية بما قِسناه» هنا — وسقط هذا السطرُ ليُعاد. */
+    expect(conf.strongBlockers_ar).toEqual(['الفارق بين أول مرشحين ضيق.'])
+    expect(conf.outputKind).toBe('best_current_match')
   })
 
   it('٤ج) ولا يفتحها ترجيحٌ ذاتيٌّ وحدَه — الاستدلالُ يرفع التغطية ولا يمنح المعرفة', () => {

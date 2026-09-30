@@ -102,7 +102,7 @@
         {
           "questionId": "QB-M4-027",
           "question_ar": "حين يشرح لك أحدهم مشكلة غير واضحة — ما أقرب وصف لما تفعله؟",
-          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
           "answer_ar": "أعرف أن عليّ الإنصات أولا، لكني نادرا ما أطبقه فعلا",
           "what_changed": [
             "+skill:active_listening"
@@ -131,7 +131,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.7039736841355262,
+        "confidence": 0.6959736841355262,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -139,7 +139,7 @@
     {
       "persona": "خريج حديث + باحث عن عمل",
       "stage": "fresh_graduate",
-      "questionsCount": 11,
+      "questionsCount": 12,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -237,10 +237,19 @@
         {
           "questionId": "QB-M4-029",
           "question_ar": "قبل أن تقرر أن فكرة أو منتجا أو تخصصا يستحق — من أين تأتي بمعلوماتك عن السوق؟",
-          "why_now_ar": "مهارة حاسمة لأحد مرشحي الصدارة ما زالت مجهولة في سباق حي — قياسها يسبق منح المتحدين فرصًا إضافية.",
+          "why_now_ar": "فاز أساسًا بسبب: يقيس مهارة حاسمة للمتصدر قبل أي اكتفاء.",
           "answer_ar": "أعرف أن هناك طرقا للبحث لكني لم أستخدمها",
           "what_changed": [
             "+skill:market_research"
+          ]
+        },
+        {
+          "questionId": "QB-M1-011",
+          "question_ar": "هل لديك دليل حالي على مهاراتك: مشروع، شهادة، ملف أعمال، أو نتيجة عملية؟",
+          "why_now_ar": "يكمل الصورة العامة.",
+          "answer_ar": "لا يوجد دليل",
+          "what_changed": [
+            "+evidence_strength"
           ]
         }
       ],
@@ -248,7 +257,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.712640350802193,
+        "confidence": 0.704640350802193,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
