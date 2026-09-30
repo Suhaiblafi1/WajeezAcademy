@@ -111,13 +111,27 @@ describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => 
      (`command not found`) ثمّ خرج بصفر. */
   it('⚠️ يستأنف نفسَه بعد السحب — وإلّا لم يُنفَّذ ما أُضيف في وسطه', () => {
     const c = commands(sh)
-    const pull = c.indexOf('git pull')
+    /* والسحبُ صار تقدّما إلى ما اجتاز CI (٣٠ سبتمبر ٢٠٢٦) — `git merge --ff-only`
+       إلى ما يسمّيه `deploy/target.sh`، لا `git pull` لرأس main */
+    const pull = c.indexOf('git merge --ff-only')
     const reexec = c.indexOf('exec bash')
     expect(pull, 'لا سحبَ في السكربت').toBeGreaterThan(-1)
     expect(reexec, 'لا استئنافَ بعد السحب — والتعديلُ في وسط الملفّ لا يُقرأ').toBeGreaterThan(-1)
     expect(reexec, 'الاستئنافُ يجب أن يلي السحبَ لا يسبقه').toBeGreaterThan(pull)
     /* وحارسٌ يمنع الدوران: بلا شرطٍ يستأنف أبدا */
     expect(c, 'الاستئنافُ بلا حارسٍ — دورانٌ لا ينتهي').toMatch(/DEPLOY_REEXEC/)
+  })
+
+  it('⚠️ ولا ينشر إلّا ما اجتاز CI — ويستأنف على الالتزام نفسِه', () => {
+    /* ما يقرّره `deploy/target.sh` مقيسٌ بتشغيله في `ci-green-gate.test.ts`؛ وهنا
+       أنّ الناشرَ يسأله ولا يعود إلى رأس main، وأنّ نسختَه الجديدة تُسلَّم الهدفَ
+       نفسَه فلا تتقدّم إلى غيره في الثواني بين الجلب والاستئناف. */
+    const c = commands(sh)
+    expect(c, 'لا يُسأل عمّا اجتاز CI').toMatch(/bash deploy\/target\.sh/)
+    expect(c, 'عاد الناشرُ إلى رأس main').not.toMatch(/git pull/)
+    expect(c.indexOf('export DEPLOY_TARGET="$TARGET"'), 'الاستئنافُ بلا هدفه — فيسأل من جديد')
+      .toBeGreaterThan(-1)
+    expect(c.indexOf('export DEPLOY_TARGET="$TARGET"')).toBeLessThan(c.indexOf('exec bash'))
   })
 
   it('⚠️ يفحص الترويسةَ كما أُرسلت لا كما كُتبت — وإلّا اختبأ الفرقُ بينهما', () => {
