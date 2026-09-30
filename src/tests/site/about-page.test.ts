@@ -1,26 +1,27 @@
-/* «من نحن» — حكايةٌ بأرقامٍ لها مصادر، ونسخةٌ نصّيّةٌ لا تفترق عن الصفحة.
+/* «من نحن» — تعريفٌ مختصر، ثمّ ما يميّزنا، ونسخةٌ نصّيّةٌ لا تفترق عن الصفحة.
 
-   طلب صاحبُ المنصّة (٢٣ سبتمبر ٢٠٢٦) أن تروي الصفحةُ الحكايةَ كاملةً
-   بأرقامها: التطبيق، ثمّ وجيز مهارات، ثمّ الأكاديمية. وذلك نسخٌ جزئيٌّ
-   للقاعدة ٢ في `data/trustMetrics.ts` («لا رقمَ من التطبيق العامّ») —
-   **لهذه الصفحة وحدَها**. فالذي يُحرس هنا حدودُ ذلك النسخ:
+   طلب صاحبُ المنصّة (٣٠ سبتمبر ٢٠٢٦) أن تبدأ الصفحةُ بأنّ الأكاديمية جزءٌ من
+   وجيز مع موقعَي أخويها، ثمّ تقول ما يميّزنا، ولا تكرّر ما في الرئيسيّة.
+   فالذي يُحرس هنا:
 
-   · كلُّ رقمٍ في فصلٍ من السجلّ بمصدره، ومن نطاق فصله لا غيره (القاعدة ٥).
+   · الافتتاحُ هو التعريف: عنوانُ الصفحة الأوّل فيه، وموقعا تطبيق وجيز ووجيز
+     مهارات روابطُ حقيقيّةٌ منه.
+   · ولا شيءَ من الرئيسيّة: لا شعاراتِ إعلامٍ ولا جدارَ مؤسساتٍ ولا أرقامَ
+     ثقة — والفحصُ على ما يُستورد لا على ورود كلمة.
    · ولا رقمَ يُكتب باليد في النثر — إلّا سنةً.
-   · وشريطُ الرئيسيّة باقٍ على وجيز مهارات وحدها (القاعدة ١).
-   · والنسخةُ التي يقرؤها الزاحف هي الحكايةُ نفسُها لا نسخةٌ ثانية.
-   · والصفحةُ تدلّ على ما وعد به الطلب: المنهجيّةُ من التشخيص، والتواصلُ
-     في الختام — والفحصُ على خصائص JSX لا على ورود الكلمة في تعليق. */
+   · والنسخةُ التي يقرؤها الزاحف هي الصفحةُ نفسُها لا نسخةٌ ثانية.
+   · والصفحةُ تدلّ على ما وعد به الطلب: التشخيصُ والمنهجيّة والكتالوج،
+     والتواصلُ في الختام. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
-  ABOUT_DESCRIPTION, ABOUT_HERO, ABOUT_TITLE, ACADEMY_STEPS, AUDIENCES, CHAPTERS, CHAPTER_ORDER,
-  CLOSING, HONESTY_LINE, OUTCOMES, aboutSources, aboutStaticPage, type ChapterId,
+  ABOUT_DESCRIPTION, ABOUT_TITLE, CLOSING, FAMILY_INTRO, FEATURES, FEATURE_HERO, HONESTY_LINE,
+  OUTCOMES, PRICE, SOURCE_KINDS, aboutStaticPage,
 } from '@/data/about'
-import { homeTrustMetrics, metricsFor, wajeezAppStats, type TrustScope } from '@/data/trustMetrics'
+import { homeTrustMetrics, metricsFor, wajeezAppStats } from '@/data/trustMetrics'
 import { staticPageBySlug } from '@/data/siteContent'
 import { publicPageByPath } from '@/application/site/public-pages'
 
@@ -29,113 +30,123 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (file: string) =>
   readFileSync(join(root, file), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-/** نطاقُ كلّ فصل — وما لا نطاقَ له لا رقمَ فيه */
-const SCOPE: Record<ChapterId, TrustScope | null> = {
-  app: 'wajeez_app',
-  maharat: 'wajeez_skills',
-  academy: null,
-  next: null,
-}
+const about = code('src/pages/About.tsx')
 
-describe('أرقامُ الحكاية من السجلّ الموثَّق', () => {
-  it('كلُّ فصلٍ أرقامُه من نطاقه وحدَه — لا يُنسب رقمُ التطبيق إلى غيره', () => {
-    for (const id of CHAPTER_ORDER) {
-      const scope = SCOPE[id]
-      const metrics = CHAPTERS[id].metrics
-      if (scope === null) {
-        expect(metrics, `فصلُ «${id}» لا نطاقَ له ويعرض أرقاما`).toEqual([])
-        continue
-      }
-      expect(metrics.length, `فصلُ «${id}» بلا أرقام`).toBeGreaterThan(0)
-      for (const m of metrics) {
-        expect(m.source_scope, `«${m.key}» في فصل «${id}»`).toBe(scope)
-      }
-    }
+describe('الافتتاحُ: الأكاديميةُ جزءٌ من وجيز', () => {
+  it('أخوا الأكاديمية بموقعيهما على وجيز — روابطُ https حقيقيّة', () => {
+    expect(FAMILY_INTRO.products.map((p) => p.name)).toEqual(['تطبيق وجيز', 'وجيز مهارات'])
+    for (const p of FAMILY_INTRO.products) expect(p.url, p.name).toMatch(/^https:\/\/wajeez\.com(\/|$)/)
   })
 
-  it('ولكلّ رقمٍ مصدرٌ وسياقٌ وتاريخُ تحقّق — ومعتمدٌ للعرض', () => {
-    for (const id of CHAPTER_ORDER) {
-      for (const m of CHAPTERS[id].metrics) {
-        expect(m.approved_for_display, m.key).toBe(true)
-        expect(m.source_url, m.key).toMatch(/^https:\/\//)
-        expect(m.source_context.trim().length, m.key).toBeGreaterThan(10)
-        expect(m.last_verified_at, m.key).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-      }
-    }
+  it('وعنوانُ الصفحة الأوّلُ (`h1`) هو التعريف، والتعريفُ أوّلُ ما يُصيَّر', () => {
+    const h1s = about.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/g) ?? []
+    expect(h1s).toHaveLength(1)
+    expect(h1s[0]).toContain('{FAMILY_INTRO.title}')
+    const body = about.slice(about.indexOf('export default function About'))
+    expect(body.indexOf('<FamilyIntro />'), 'الافتتاحُ غائب').toBeGreaterThan(-1)
+    expect(body.indexOf('<FamilyIntro />')).toBeLessThan(body.indexOf('<Hero />'))
   })
 
-  it('و`metricsFor` تسقط على مفتاحٍ غائبٍ أو مرفوضٍ أو من نطاقٍ آخر — لا تُسقطه صامتة', () => {
-    expect(() => metricsFor('wajeez_app', ['لا-وجود-له'])).toThrow()
-    /* مرفوضٌ في السجلّ لتضارب صياغة مصدره */
-    expect(() => metricsFor('wajeez_skills', ['user_rating'])).toThrow()
-    /* رقمُ وجيز مهارات لا يُطلب باسم التطبيق */
-    expect(() => metricsFor('wajeez_app', ['organizations'])).toThrow()
-    expect(metricsFor('wajeez_app', ['app_users']).map((m) => m.key)).toEqual(['app_users'])
+  it('والروابطُ تُصيَّر من الموقعَين نفسيهما — لا عنوانٌ مكتوبٌ باليد في الصفحة', () => {
+    expect(about).toMatch(/FAMILY_INTRO\.products\.map\(/)
+    expect(about).toMatch(/href=\{p\.url\}/)
+    expect(about).not.toMatch(/href="https:\/\/wajeez\.com/)
+  })
+})
+
+describe('ولا شيءَ من الرئيسيّة يتكرّر', () => {
+  const imports = about.match(/^import[\s\S]*?from '[^']+'/gm) ?? []
+  const imported = imports.join('\n')
+
+  it('الاستيراداتُ تُقرأ فعلا — وإلّا مرّ الحارسُ على فراغ', () => {
+    expect(imports.length).toBeGreaterThan(5)
   })
 
-  it('⚠️ وشريطُ الرئيسيّة باقٍ على وجيز مهارات — نسخُ القاعدة ٢ لـ«من نحن» وحدَها', () => {
-    const home = homeTrustMetrics()
-    expect(home.length).toBeGreaterThan(0)
-    expect(home.every((m) => m.source_scope === 'wajeez_skills')).toBe(true)
-    const appKeys = new Set(wajeezAppStats.map((m) => m.key))
-    expect(home.filter((m) => appKeys.has(m.key))).toEqual([])
-    expect(wajeezAppStats.every((m) => !m.selected_for_home)).toBe(true)
+  it('لا شعاراتِ إعلامٍ ولا جدارَ مؤسساتٍ ولا أرقامَ ثقة', () => {
+    expect(imported).not.toMatch(/\bpartnerLogos\b/)
+    expect(imported).not.toMatch(/EcosystemOrgStrip/)
+    expect(imported).not.toMatch(/data\/trustMetrics/)
+  })
+
+  it('وخطُّ الصفحة خطُّ المنصّة — لا رقعةَ فيها', () => {
+    expect(about).not.toMatch(/Aref Ruqaa/)
+  })
+})
+
+describe('ما يميّزنا — كما سمّاه صاحبُ المنصّة', () => {
+  it('المحطّاتُ الخمسُ بترتيب الرحلة، ثمّ السعر', () => {
+    expect(FEATURES.map((f) => f.id)).toEqual(['advisor', 'sources', 'training', 'experts', 'graduation'])
+    expect(PRICE.title).toMatch(/مخفّضة/)
+    expect(PRICE.title).toMatch(/مجتمع المحلّي/)
+  })
+
+  it('ولكلّ محطّةٍ شكلُها على الخطّ — لا محطّةَ بلا رسم', () => {
+    const spine = about.match(/const SPINE: Record<FeatureId, ReactNode> = \{([\s\S]*?)\n\}/)?.[1] ?? ''
+    for (const f of FEATURES) expect(spine, f.id).toMatch(new RegExp(`\\b${f.id}:`))
   })
 })
 
 describe('ولا رقمَ مكتوبٌ باليد في النثر', () => {
-  /* كلُّ ما يُقرأ من نصّ الحكاية. والرقمُ الموثَّقُ يأتي من السجلّ في صفّ
-     الأرقام؛ أمّا النثرُ فيكتب أعداده كلماتٍ («ثمانمئة ألف») ومصدرُها في
-     «من أين هذه الأرقام؟» — ولا يُسمح فيه برقمٍ إلّا سنة. */
   const prose: string[] = [
-    ...ABOUT_HERO.lines, ABOUT_HERO.lead, ABOUT_DESCRIPTION, ABOUT_TITLE,
-    ...CHAPTER_ORDER.flatMap((id) => [CHAPTERS[id].title, CHAPTERS[id].station, CHAPTERS[id].stationNote, ...CHAPTERS[id].paragraphs]),
-    ...ACADEMY_STEPS.flatMap((s) => [s.title, s.body]),
+    ABOUT_TITLE, ABOUT_DESCRIPTION, FAMILY_INTRO.title, FAMILY_INTRO.body,
+    ...FAMILY_INTRO.products.flatMap((p) => [p.name, p.note]),
+    ...FEATURE_HERO.lines, FEATURE_HERO.lead,
+    ...FEATURES.flatMap((f) => [f.margin, f.station, f.stationNote, f.title, ...f.paragraphs]),
+    ...SOURCE_KINDS, PRICE.margin, PRICE.title, ...PRICE.paragraphs,
     ...OUTCOMES.flatMap((o) => [o.title, o.body, o.link?.label ?? '']),
-    ...AUDIENCES.flatMap((a) => [a.who, a.gets]),
     HONESTY_LINE, CLOSING.title, CLOSING.body,
   ]
 
   it('النصُّ يُقرأ فعلا — وإلّا مرّ الحارسُ على فراغ', () => {
-    expect(prose.join(' ').length).toBeGreaterThan(2000)
+    expect(prose.join(' ').length).toBeGreaterThan(1500)
   })
 
   it('كلُّ رقمٍ في النثر سنةٌ من هذا القرن', () => {
     const digits = prose.flatMap((t) => t.match(/[0-9٠-٩][0-9٠-٩,.٬]*/g) ?? [])
     const notYears = digits.filter((d) => !/^20\d{2}$/.test(d))
-    expect(notYears, `رقمٌ مكتوبٌ باليد — مكانُه السجلّ: ${notYears.join('، ')}`).toEqual([])
-  })
-
-  it('وللنثر مصادرُه — روابطُ حقيقيّة، ومصادرُ الأرقام نفسُها من السجلّ', () => {
-    const sources = aboutSources()
-    for (const s of sources) {
-      expect(s.url, s.claim).toMatch(/^https:\/\//)
-      expect(s.claim.trim(), s.url).not.toBe('')
-    }
-    const metricUrls = CHAPTER_ORDER.flatMap((id) => CHAPTERS[id].metrics.map((m) => m.source_url))
-    for (const u of metricUrls) expect(sources.some((s) => s.url === u), u).toBe(true)
+    expect(notYears, `رقمٌ مكتوبٌ باليد: ${notYears.join('، ')}`).toEqual([])
   })
 })
 
-describe('النسخةُ النصّيّة هي الحكايةُ نفسُها', () => {
+describe('وشريطُ الرئيسيّة باقٍ على وجيز مهارات', () => {
+  it('لا رقمَ من التطبيق العامّ في شريط الرئيسيّة (القاعدة ١ و٢ في `trustMetrics`)', () => {
+    const home = homeTrustMetrics()
+    expect(home.length).toBeGreaterThan(0)
+    expect(home.every((m) => m.source_scope === 'wajeez_skills')).toBe(true)
+    const appKeys = new Set(wajeezAppStats.map((m) => m.key))
+    expect(home.filter((m) => appKeys.has(m.key))).toEqual([])
+  })
+
+  it('و`metricsFor` تسقط على مفتاحٍ غائبٍ أو مرفوضٍ أو من نطاقٍ آخر — لا تُسقطه صامتة', () => {
+    expect(() => metricsFor('wajeez_app', ['لا-وجود-له'])).toThrow()
+    expect(() => metricsFor('wajeez_skills', ['user_rating'])).toThrow()
+    expect(() => metricsFor('wajeez_app', ['organizations'])).toThrow()
+    expect(metricsFor('wajeez_app', ['app_users']).map((m) => m.key)).toEqual(['app_users'])
+  })
+})
+
+describe('النسخةُ النصّيّة هي الصفحةُ نفسُها', () => {
   const page = aboutStaticPage()
   const text = page.sections.flatMap((s) => [s.heading ?? '', ...(s.paragraphs ?? []), ...(s.bullets ?? [])]).join('\n')
 
-  it('صفحةُ `/p/about` في المحتوى الثابت هي المشتقّةُ من الحكاية', () => {
+  it('صفحةُ `/p/about` في المحتوى الثابت هي المشتقّة', () => {
     expect(staticPageBySlug('about')).toEqual(page)
   })
 
-  it('وفيها كلُّ فصلٍ وكلُّ محطّةٍ وكلُّ رقمٍ معروض', () => {
-    for (const id of CHAPTER_ORDER) {
-      expect(text).toContain(CHAPTERS[id].title)
-      for (const p of CHAPTERS[id].paragraphs) expect(text).toContain(p)
-      for (const m of CHAPTERS[id].metrics) expect(text).toContain(m.display_value)
+  it('وفيها التعريفُ بموقعَيه، وكلُّ محطّة، والسعرُ والختام', () => {
+    expect(text).toContain(FAMILY_INTRO.body)
+    for (const p of FAMILY_INTRO.products) expect(text).toContain(p.url)
+    for (const f of FEATURES) {
+      expect(text).toContain(f.title)
+      for (const p of f.paragraphs) expect(text).toContain(p)
     }
-    for (const s of ACADEMY_STEPS) expect(text).toContain(s.title)
     for (const o of OUTCOMES) expect(text).toContain(o.title)
+    expect(text).toContain(PRICE.title)
+    expect(text).toContain(HONESTY_LINE)
+    expect(text).toContain(CLOSING.body)
   })
 
-  it('وعنوانُ البحث ووصفُه من الحكاية — والوصفُ في حدود ما يعرضه قوقل', () => {
+  it('وعنوانُ البحث ووصفُه منها — والوصفُ في حدود ما يعرضه قوقل', () => {
     const seo = publicPageByPath('/p/about')
     expect(seo?.title).toBe(ABOUT_TITLE)
     expect(seo?.description).toBe(ABOUT_DESCRIPTION)
@@ -145,10 +156,9 @@ describe('النسخةُ النصّيّة هي الحكايةُ نفسُها', (
 })
 
 describe('والصفحةُ تدلّ على ما وعد به الطلب', () => {
-  const about = code('src/pages/About.tsx')
   const linksTo = (path: string) => new RegExp(`\\bto="${path.replace(/[?]/g, '\\?')}"`).test(about)
 
-  it('المنهجيّةُ من محطّة التشخيص، والتشخيصُ نفسُه', () => {
+  it('التشخيصُ والمنهجيّة', () => {
     expect(linksTo('/methodology'), 'لا رابطَ إلى المنهجيّة').toBe(true)
     expect(linksTo('/diagnostic'), 'لا رابطَ إلى التشخيص').toBe(true)
   })
