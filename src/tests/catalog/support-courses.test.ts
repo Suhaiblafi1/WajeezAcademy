@@ -17,7 +17,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { launchPathways, pathwaySkills, courseById } from '../../domain/diagnostic/catalog'
-import { pathwayCourses, pathwaySupportCourses, readyPathwayCourseIds, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES, SUPPORT_PER_PATHWAY } from '../../data/courses'
+import { pathwayCourses, pathwaySupportCourses, readyPathwayCourseIds, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES, SUPPORT_PER_PATHWAY, TWO_CORE_PATHWAYS } from '../../data/courses'
 
 const CORE = JSON.parse(
   readFileSync(join(process.cwd(), 'src/data/catalog/core-catalog.v2.json'), 'utf8'),
@@ -31,10 +31,21 @@ describe('الدورات المساندة — بنيتها', () => {
      المجموع سبعا — أثقل ممّا اتُّفق عليه — فحُذفت الأخيرة من كلّ مسار. */
   it('كل مسار جاهز: أربعُ أساسيات على الأقل ومساندتان بالضبط — والمجموع ستّ', () => {
     for (const p of CORE.launch_pathways) {
-      expect(p.course_ids.length, p.id).toBeGreaterThanOrEqual(MIN_PATHWAY_COURSES)
+      /* إلّا المسمّى في `TWO_CORE_PATHWAYS` (٣٠ سبتمبر ٢٠٢٦): أساسُه دورتان
+         بالضبط — لا «دورتان على الأقلّ»، فلا يتّسع الاستثناءُ لغير ما قُرّر */
+      if (TWO_CORE_PATHWAYS.includes(p.id)) expect(p.course_ids.length, p.id).toBe(2)
+      else expect(p.course_ids.length, p.id).toBeGreaterThanOrEqual(MIN_PATHWAY_COURSES)
       expect(p.support_courses?.length ?? 0, p.id).toBe(SUPPORT_PER_PATHWAY)
       expect(p.course_ids.length + (p.support_courses?.length ?? 0), p.id)
         .toBeLessThanOrEqual(MAX_PATHWAY_COURSES)
+    }
+  })
+
+  it('ورحلةُ كلّ مسارٍ جاهزٍ تبلغ حدَّ المحرِّر — ولو كان أساسُه دورتين', () => {
+    /* المحرِّرُ في صفحة المسار لا يحذف دون `MIN_PATHWAY_COURSES`. فمسارٌ
+       رحلتُه دون الحدّ يبدأ ناقصا لا يُكمَل بالحذف ولا يُفهم لمَ. */
+    for (const p of CORE.launch_pathways) {
+      expect(readyPathwayCourseIds(p.id).length, p.id).toBeGreaterThanOrEqual(MIN_PATHWAY_COURSES)
     }
   })
 

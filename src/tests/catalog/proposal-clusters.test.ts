@@ -20,6 +20,7 @@ import {
   type UniverseEntity,
 } from '@/application/catalog/proposal-clusters'
 import { recommendationUniverse } from '@/domain/diagnostic/v2_1/universe'
+import { TWO_CORE_PATHWAYS } from '@/data/courses'
 import type { MatchableCourse } from '@/application/trainer/proposal-match'
 
 /* ─────────── كتالوجٌ مصغَّرٌ وفضاءٌ مصغَّر ───────────
@@ -45,7 +46,12 @@ describe('① عددُ دورات المسار يُقابَل بالكتالوج
   it('كلُّ مسارٍ قياسيٍّ في الكتالوج يحمل العددَ نفسَه الذي يقيس به التجميع', () => {
     const std = recommendationUniverse().entities.filter((e) => e.entity_type === 'standard')
     expect(std.length, 'لا مسارَ قياسيٌّ في الفضاء — أتغيّر النوع؟').toBeGreaterThan(10)
-    const counts = [...new Set(std.map((e) => e.required_courses.length))]
+    /* والمسمّى في `TWO_CORE_PATHWAYS` خارجٌ عن العدد بقرار (٣٠ سبتمبر ٢٠٢٦):
+       دورتان بالضبط — والتجميعُ يقيس بعدد المسار القياسيّ لا بالاستثناء */
+    for (const e of std.filter((x) => TWO_CORE_PATHWAYS.includes(x.entity_id))) {
+      expect(e.required_courses.length, e.entity_id).toBe(2)
+    }
+    const counts = [...new Set(std.filter((e) => !TWO_CORE_PATHWAYS.includes(e.entity_id)).map((e) => e.required_courses.length))]
     expect(counts, `مساراتُ الكتالوج لم تعد بعددٍ واحد: ${counts.join('، ')}`).toEqual([PATH_COURSE_COUNT])
   })
 })

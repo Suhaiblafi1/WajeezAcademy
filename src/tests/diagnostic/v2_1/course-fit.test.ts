@@ -3,7 +3,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest'
 import { catalogCourses, courseById, launchPathways } from '../../../domain/diagnostic/catalog'
-import { MIN_PATHWAY_COURSES } from '../../../data/courses'
+import { MIN_PATHWAY_COURSES, TWO_CORE_PATHWAYS } from '../../../data/courses'
 import {
   assessCourseFit,
   assessPathwayByCourses,
@@ -110,7 +110,8 @@ describe('ملاءمة المقرر — لكل مقرر مهاراته', () => {
        بأرضيّةٍ صريحة تمنع انكماشه بصمت. */
     for (const pid of ['PW-FND-003', 'PW-STU-002', 'PW-EMP-003']) {
       const expected = launchPathways.find((p) => p.id === pid)!.course_ids.length
-      expect(expected).toBeGreaterThanOrEqual(MIN_PATHWAY_COURSES)
+      /* وأرضيّةُ «التحضير لأول وظيفة» دورتان بقرار (٣٠ سبتمبر ٢٠٢٦) — بالاسم */
+      expect(expected).toBeGreaterThanOrEqual(TWO_CORE_PATHWAYS.includes(pid) ? 2 : MIN_PATHWAY_COURSES)
       const ctx = ctxOf({ career_stage: fact('fresh_graduate') })
       const plan = personalizePlan(pid, ctx)
       expect(plan.courses.length, pid).toBe(expected)

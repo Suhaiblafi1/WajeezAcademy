@@ -48,8 +48,8 @@
 | المخرَج | جلسات | النسبة |
 |---|---|---|
 | `exploratory_direction` | 1226 | 31.9٪ |
-| `advisor_referral` | 73 | 1.9٪ |
-| `composite_template` | 24 | 0.6٪ |
+| `advisor_referral` | 72 | 1.9٪ |
+| `composite_template` | 25 | 0.7٪ |
 
 ## ٥) توزيع المرتبة الأولى
 

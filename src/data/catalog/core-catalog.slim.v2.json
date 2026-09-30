@@ -43,9 +43,7 @@
       "outcome_metric": "75% يجتازون مراجعة الملف؛ تحسن 20 نقطة في rubric المقابلة؛ 80% يشغلون لوحة البحث 4 أسابيع.",
       "course_ids": [
         "C-JOB-101",
-        "C-JOB-103",
-        "C-JOB-104",
-        "C-JOB-105"
+        "C-JOB-104"
       ],
       "total_hours": 40
     },
@@ -747,10 +745,10 @@
       "course_id": "C-JOB-101",
       "pathway_id": "PW-STU-002",
       "sequence": 1,
-      "title_ar": "دورة استهداف الوظائف وبناء الملفّ المهنيّ: صياغة عرض قيمة مسنَد بالأدلّة",
-      "subtitle_ar": "تحليل خمسة عشر إعلانا لاستخراج أنماطه · سيرة وLinkedIn بنقاط إنجاز لا واجبات",
+      "title_ar": "دورة ملفّك المهنيّ: من استهداف الدور إلى سيرةٍ ومحفظةِ أعمالٍ تُثبت ما تقول",
+      "subtitle_ar": "تحليل خمسة عشر إعلانا لاستخراج أنماطه · سيرة وLinkedIn بنقاط إنجاز لا واجبات · مشروعُ محفظةٍ بموجزٍ ومعاييرِ قبولٍ ودراسةِ حالة",
       "level_ar": "تأسيسي",
-      "total_hours": 16,
+      "total_hours": 24,
       "skill_slugs": [
         "career_planning",
         "market_research",
@@ -758,7 +756,11 @@
         "workplace_professionalism",
         "cv_writing",
         "linkedin_profile",
-        "arabic_business_writing"
+        "arabic_business_writing",
+        "portfolio_building",
+        "learning_transfer",
+        "project_management",
+        "feedback_receiving"
       ],
       "skill_ids": [
         "SK-CAREER-001",
@@ -767,7 +769,11 @@
         "SK-CAREER-009",
         "SK-CAREER-002",
         "SK-CAREER-003",
-        "SK-COM-003"
+        "SK-COM-003",
+        "SK-CAREER-004",
+        "SK-LEARN-008",
+        "SK-BIZ-017",
+        "SK-COM-014"
       ],
       "skill_names_ar": [
         "تخطيط المسار المهني",
@@ -776,30 +782,7 @@
         "الاحتراف في بيئة العمل",
         "كتابة السيرة الذاتية",
         "بناء ملف LinkedIn",
-        "الكتابة العربية المهنية"
-      ]
-    },
-    {
-      "course_id": "C-JOB-103",
-      "pathway_id": "PW-STU-002",
-      "sequence": 2,
-      "title_ar": "دورة بناء ملفّ الأعمال: إنتاج قطعةٍ تحاكي مهمّة الدور المستهدف",
-      "subtitle_ar": "موجزُ مشروعٍ ومعاييرُ قبولٍ قبل التنفيذ · نسختان قبلَ وبعدُ ودراسةُ حالةٍ قصيرة",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
-        "portfolio_building",
-        "learning_transfer",
-        "project_management",
-        "feedback_receiving"
-      ],
-      "skill_ids": [
-        "SK-CAREER-004",
-        "SK-LEARN-008",
-        "SK-BIZ-017",
-        "SK-COM-014"
-      ],
-      "skill_names_ar": [
+        "الكتابة العربية المهنية",
         "بناء ملف الأعمال",
         "نقل التعلم إلى التطبيق",
         "إدارة المشاريع",
@@ -809,55 +792,40 @@
     {
       "course_id": "C-JOB-104",
       "pathway_id": "PW-STU-002",
-      "sequence": 3,
-      "title_ar": "دورة مهارات المقابلات الوظيفية: بناء بنك قصصٍ سلوكيّةٍ بأدلّة",
-      "subtitle_ar": "مقابلةٌ مسجَّلةٌ في خمسٍ وعشرين دقيقة · معالجةُ سؤالِ الفجوةِ أو الفشلِ بصدق",
+      "sequence": 2,
+      "title_ar": "دورة من البحث إلى العرض: خطّةُ فرصٍ لستّة أسابيع ومقابلةٌ بقصصٍ حقيقيّة",
+      "subtitle_ar": "لوحةُ بحثٍ لستّةِ أسابيعَ وستُّ رسائلَ مخصَّصة · مقابلةٌ مسجَّلةٌ في خمسٍ وعشرين دقيقة بقصصٍ حقيقيّة",
       "level_ar": "تأسيسي",
-      "total_hours": 8,
+      "total_hours": 16,
       "skill_slugs": [
+        "job_search_strategy",
+        "networking",
+        "time_management",
+        "accountability",
         "interview_skills",
         "clear_expression",
         "active_listening",
         "voice_and_presence"
       ],
       "skill_ids": [
+        "SK-CAREER-006",
+        "SK-CAREER-007",
+        "SK-WELL-002",
+        "SK-WELL-011",
         "SK-CAREER-005",
         "SK-COM-002",
         "SK-COM-001",
         "SK-COM-019"
       ],
       "skill_names_ar": [
+        "استراتيجية البحث عن عمل",
+        "بناء العلاقات المهنية",
+        "إدارة الوقت",
+        "المساءلة الذاتية والخارجية",
         "مهارات المقابلات",
         "التعبير الواضح",
         "الإصغاء الفعال",
         "الحضور والصوت"
-      ]
-    },
-    {
-      "course_id": "C-JOB-105",
-      "pathway_id": "PW-STU-002",
-      "sequence": 4,
-      "title_ar": "دورة استراتيجية البحث عن عمل: موازنة القنوات والتحسين الأسبوعيّ",
-      "subtitle_ar": "لوحةُ بحثٍ لستّةِ أسابيعَ وستُّ رسائلَ مخصَّصة · متابعةٌ بلا انتهاكِ خصوصيّة",
-      "level_ar": "تأسيسي",
-      "total_hours": 8,
-      "skill_slugs": [
-        "job_search_strategy",
-        "networking",
-        "time_management",
-        "accountability"
-      ],
-      "skill_ids": [
-        "SK-CAREER-006",
-        "SK-CAREER-007",
-        "SK-WELL-002",
-        "SK-WELL-011"
-      ],
-      "skill_names_ar": [
-        "استراتيجية البحث عن عمل",
-        "بناء العلاقات المهنية",
-        "إدارة الوقت",
-        "المساءلة الذاتية والخارجية"
       ]
     },
     {
