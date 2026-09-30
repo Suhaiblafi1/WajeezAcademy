@@ -3408,9 +3408,15 @@ export class TrainerReviewService {
           title: c.title,
           pointsAr: changesBetween(from, CONTRACT_BODY_VERSION),
           awaitingReply: isAmendmentRequested(c.status),
-          /* ولا رابطَ يُسكّ: الذي بيده هو هو. ومن لا رمزَ له (طلبُ تعديلٍ
-             أُغلق رمزُه) يقرأ النقاطَ بلا زرٍّ يقصد لا شيء. */
-          contractUrl: null,
+          /* ═══ ولا رابطَ توقيعٍ يُسكّ هنا ═══
+
+             الذي بيده هو هو، ولا سبيلَ إلى إعادة بنائه أصلا: `tokenHash`
+             وحدَه في الجدول لا الرمزُ. فلو سُكّ رمزٌ جديدٌ ليُوضَع في هذه
+             الرسالة لَمات الذي بيده — وهو بعينه العطبُ الذي شكاه صاحبُ
+             المنصّة («ضغط على فتح العقد فلم يُفتح») وأُصلح في #351 و#353.
+
+             فالزرُّ يقصد بابَ الاستعادة: من فقد رابطَه طلبه ببريده. */
+          contractUrl: `${publicSiteUrl()}/contract-link`,
         })
         await sendDirectEmail(this.prisma, {
           to: c.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
@@ -3419,6 +3425,55 @@ export class TrainerReviewService {
     }
 
     return { ok: true, updated: updated.length, skipped: skipped.length, rows: updated, skippedRows: skipped }
+  }
+
+  /** ═══ ويستعيد المدرّبُ رابطَه بنفسه ═══
+
+      رمزُ التوقيع لا يُحفَظ نصّا — `tokenHash` وحدَه في الجدول (وهو صواب:
+      الرمزُ بطاقةُ دخولٍ لمن حملها). فما ضاع من صاحبه لا نستطيع أن نعيده
+      إليه، ولا أن نضعه في رسالةٍ تاليةٍ نرسلها — ولذلك خلت رسالةُ التحديث
+      من زرّ.
+
+      فصار له أن يطلبه بنفسه ببريده. ويُسكّ رمزٌ جديدٌ عند الطلب، **فيموت
+      القديمُ** — وهو ثمنٌ مقبولٌ لمن طلب بنفسه، ويُقال له في الرسالة.
+
+      **ولا يُكشَف بهذا الباب وجودُ عقدٍ من عدمه**: الجوابُ واحدٌ في
+      الحالَين، كأخيه `resendVerification`. ولولا ذلك لَصار بابا يُسأل به
+      «أهذا البريدُ لمدرّبٍ عندكم؟» عن ألفِ بريدٍ في دقيقة. */
+  async requestContractLink(email: string) {
+    const at = email.trim().toLowerCase()
+    /* والمرسَلُ إليه `signerEmail` إن كُتب، وإلّا بريدُ الطلب — كما يُرسَل أصلا */
+    const rows = await this.prisma.trainerContract.findMany({
+      where: {
+        status: { in: ['sent', CONTRACT_AMENDMENT_REQUESTED] },
+        OR: [
+          { signerEmail: { equals: at, mode: 'insensitive' } },
+          { profile: { application: { email: { equals: at, mode: 'insensitive' } } } },
+        ],
+      },
+      include: { profile: { include: { application: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
+    /* وأحدثُها وحدَه: من له عرضان مفتوحان (نادر) يأخذ الأخير، ولا تُرسَل رسالتان */
+    const contract = rows.find((c) => !isUntouchableContract(c))
+    if (!contract) return { ok: true as const, emailDelivery: 'skipped' as const }
+
+    const app = contract.profile.application
+    const { token, tokenHash, expiresAt } = this.mintContractToken()
+    await this.prisma.trainerContract.update({
+      where: { id: contract.id }, data: { tokenHash, tokenExpiresAt: expiresAt },
+    })
+    /* والفاعلُ هو المدرّبُ نفسُه لا موظّف — فلا `actorId` يُنسَب إليه غيرُه */
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'trainer.contract.link_requested',
+      entityType: 'trainer_contract', entityId: contract.id,
+      meta: { sentTo: contract.signerEmail ?? app.email, expiresAt, status: contract.status },
+    })
+    const mail = await this.mailContract({
+      contract, to: contract.signerEmail ?? app.email, fullName: app.fullName,
+      reference: app.reference, url: this.signingUrl(token), expiresAt, resend: true,
+    })
+    return { ok: true as const, emailDelivery: mail.status }
   }
 
   async resendContract(contractId: string, actorId: string) {

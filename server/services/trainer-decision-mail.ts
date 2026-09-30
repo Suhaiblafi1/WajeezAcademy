@@ -902,9 +902,12 @@ export function contractUpdatedMail(input: ContractUpdatedMailInput): DecisionMa
         {
           kind: 'p',
           text: 'حدّثنا نصَّ العرض الذي أرسلناه إليك، وهو الآن في رابطك نفسِه —'
-            + ' لا رابطَ جديدَ ولا خطوةَ عليك. واقرأه قبل أن توقّعه، فالذي يلزمك ما فيه الآن.',
+            + ' لا رابطَ جديدَ ولا خطوةَ عليك. افتحْه من رسالتنا السابقة واقرأه قبل أن'
+            + ' توقّعه، فالذي يلزمك ما فيه الآن. وإن لم تجد الرسالة فاطلبْ رابطك من الزرّ أدناه.',
         },
-        { kind: 'h', text: 'وهذا ما تغيّر' },
+        /* «أهمُّ ما تغيّر» لا «ما تغيّر»: النقاطُ شرحٌ مختصَرٌ بأمرِ صاحب
+           المنصّة، والملزمُ نصُّ العقد نفسُه — وقد قيل ذلك في الفقرة قبلها. */
+        { kind: 'h', text: 'وهذا أهمُّ ما تغيّر' },
         { kind: 'list', items: [...input.pointsAr] },
         ...(input.awaitingReply
           ? ([{
@@ -912,8 +915,14 @@ export function contractUpdatedMail(input: ContractUpdatedMailInput): DecisionMa
               text: 'وطلبُك بالتعديل ما زال عندنا ننظر فيه — وهذا التحديثُ غيرُ جوابنا عليه، ويصلك جوابُه منفصلا.',
             }] as const)
           : []),
+        /* والزرُّ يقول ما يفعل: هو بابُ استعادةٍ لا رابطُ العرض نفسِه —
+           فمن ظنّه العرضَ ثمّ سُئل بريدَه ظنّ أنّه أخطأ الباب. */
         ...(input.contractUrl
-          ? ([{ kind: 'cta' as const, label: 'اقرأ عرضَك المحدَّث', href: input.contractUrl }] as const)
+          ? ([{
+              kind: 'cta' as const,
+              label: 'فقدتَ رابطك؟ أرسلْه إليّ',
+              href: input.contractUrl,
+            }] as const)
           : []),
         {
           kind: 'note',

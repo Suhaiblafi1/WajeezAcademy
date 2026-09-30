@@ -38,6 +38,31 @@ export function registerContractSignRoutes(app: FastifyInstance, prisma: PrismaC
     return svc.contractByToken(token)
   })
 
+  /* ═══ ومن فقد رابطَه يطلبه ببريده ═══
+
+     الرمزُ لا يُحفَظ نصّا، فرسالةُ التحديث لا تحمله ولا نستطيع أن نعيده
+     كما هو. فهذا البابُ يسكّ غيرَه ويرسله.
+
+     ــ وحدُّه أضيقُ من حدّ التوقيع ــ
+
+     ذاك يخدم إنسانا يقرأ وثيقةً ويوقّعها فيحتاج طلباتٍ متتابعة، وهذا
+     نقرةٌ واحدةٌ في اليوم لا أكثر. ومن أطلقه بلا حدٍّ صار سلاحا يُغرِق به
+     بريدَ مدرّبٍ بعينه: كلُّ طلبٍ يرسل رسالةً **ويُميت رابطَه القائم**،
+     فيُمنَع من التوقيع ما دام المهاجمُ يضغط.
+
+     ولا يُكشَف منه وجودُ عقدٍ: الجوابُ واحدٌ لمن له عرضٌ ولمن لا عرضَ له. */
+  app.post('/api/c/request-link', {
+    config: { rateLimit: { max: 3, timeWindow: '15 minutes' } },
+    schema: { tags: ['trainer-contracts'], summary: 'طلبُ رابط العرض بالبريد — لا يكشف وجود عقد' },
+  }, async (req, reply) => {
+    const body = z.object({ email: z.string().email().max(200) }).parse(req.body)
+    reply.header('X-Robots-Tag', 'noindex, nofollow')
+    const res = await svc.requestContractLink(body.email)
+    /* والجوابُ لا يقول «وُجد» ولا «لم يوجد» — `emailDelivery` وحدَها تُعاد
+       لتعرف الواجهةُ أنّ الطلبَ تمّ، لا أنّ صاحبَه موجود. */
+    return { ok: res.ok }
+  })
+
   app.post('/api/c/:token/documents', {
     config: { rateLimit: SIGN_RATE },
     schema: { tags: ['trainer-contracts'], summary: 'وعدُ رفعِ وثيقةٍ مطلوبةٍ مع التوقيع' },
