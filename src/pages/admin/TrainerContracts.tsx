@@ -565,7 +565,7 @@ c.gatesActivation
                       <span className="opacity-70"> — {c.reference} · {c.email}</span>
                     </span>
                     <Button size="sm" tone="primary" onClick={() => void openComposer(c)}>
-                      ركّبْ عقدا
+                      أنشئ عقدا
                     </Button>
                   </Inset>
                 </li>
@@ -768,8 +768,8 @@ c.gatesActivation
                 await apiPost(`/api/admin/trainer-applications/${prefill.applicationId}/contracts/compose`, composeBody);
                 setOpenFor(null); setPrefill(null); setPreview("");
                 await load();
-              }, "رُكّب العقدُ وجُمّد متنُه", COMPOSE_ERR)}>
-              ركّبْ وجمّدِ المتن
+              }, "أُنشئ العقدُ وجُمّد متنُه", COMPOSE_ERR)}>
+              أنشئ وجمّدِ المتن
             </Button>
           </div>
 
@@ -975,7 +975,7 @@ c.gatesActivation
                                   { legalNameAr: fixName!.nameAr.trim() });
                                 setFixName(null);
                                 await load();
-                              }, "رُكِّب البديلُ باسمه الصحيحِ ووصلَه برابطٍ جديد", c.id)}>
+                              }, "أُنشئ العقدُ البديلُ بالاسم الصحيح، ووصله برابطٍ جديد", c.id)}>
                               صحّحِ الاسمَ وأعِدْ إرساله
                             </Button>
                           </div>
@@ -1050,7 +1050,7 @@ c.gatesActivation
                         <p className="mt-3 text-read leading-6 opacity-80">
                           اكتبْ جوابَك ثمّ اخترْ ما يترتّب عليه: <b>يبقى العرضُ كما هو</b> فيعود
                           إليه برابطٍ جديدٍ ليوقّعه أو يعتذر؛ أو <b>تقبل تعديلَه</b> فيُغلَق هذا
-                          العرضُ ويصله أنّ عقدا مصحَّحا يُعَدّ له، ثمّ تركّبه من «عقدٌ جديد» أعلاه.
+                          العرضُ ويصله أنّ عقدا مصحَّحا يُعَدّ له، ثمّ تنشئه من «عقدٌ جديد» أعلاه.
                           وفي الحالين يصله جوابُك بحرفه. ولا يُعدَّل متنُ عرضٍ أُرسل: هو مجمَّدٌ
                           مهشَّش، فالتصحيحُ عرضٌ جديدٌ لا كتابةٌ فوق القائم.
                         </p>
@@ -1105,7 +1105,7 @@ c.gatesActivation
                                     { replyAr: replying.replyAr.trim() });
                                   setReplying(null);
                                   await load();
-                                }, "وصلَه أنّ عقدا مصحَّحا يُعَدّ له — ركّبْه الآن من «عقدٌ جديد»", c.id)}>
+                                }, "وصلَه أنّ عقدا مصحَّحا يُعَدّ له — أنشئه الآن من «عقدٌ جديد»", c.id)}>
                                 قبِلتُ التعديل — سأرسل عقدا مصحَّحا
                               </Button>
                               <Button size="sm" tone="ghost" onClick={() => setReplying(null)}>صرفُ النظر</Button>

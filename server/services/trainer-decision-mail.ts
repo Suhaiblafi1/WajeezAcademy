@@ -573,7 +573,7 @@ export function conditionalOfferMail(input: ConditionalOfferMailInput): Decision
         ...(input.noticeAr ? ([{ kind: 'callout' as const, text: input.noticeAr }] as const) : ([] as const)),
         {
           kind: 'p',
-          text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وضُبطت أتعابُك، ورُكِّب عرضُك. وهو عرضٌ مشروطٌ: اقرأ بنودَه كاملةً قبل أن توقّعه.',
+          text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وحدّدنا أتعابَك، وجهّزنا عرضَك. وهو عرضٌ مشروطٌ: اقرأ بنودَه كاملةً قبل أن توقّعه.',
         },
         { kind: 'h', text: 'أين أنت الآن، وما بعده' },
         {

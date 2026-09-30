@@ -792,7 +792,7 @@ function ContractStep({
                       setComposing(false);
                       setPrefill(null);
                       await onChanged();
-                    }, "رُكّب العقدُ وأُرسل — يوقّع من رابطه")}
+                    }, "أُنشئ العقدُ وأُرسل — يوقّع من رابطه")}
                   >
                     ركِّبْ وأرسِلْ
                   </Button>
