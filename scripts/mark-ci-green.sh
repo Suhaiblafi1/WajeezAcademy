@@ -24,7 +24,10 @@ SHA="${2:?sha}"
 REF="heads/ci-green"
 
 for _ in 1 2 3; do
-  CUR="$(gh api "repos/$REPO/git/ref/$REF" --jq .object.sha 2>/dev/null || true)"
+  # والغائبُ يُعرف برقم الخروج لا بالمخرَج: `gh api` يطبع جسمَ الخطإ على stdout
+  # (`{"message":"Not Found",…}`) ولا يطبّق عليه `--jq`. وكان يُقرأ هنا التزاما
+  # فيُسأل GitHub المقارنةَ به — فسقط أوّلُ تشغيلٍ على main (٣٠ سبتمبر ٢٠٢٦).
+  CUR="$(gh api "repos/$REPO/git/ref/$REF" --jq .object.sha 2>/dev/null)" || CUR=""
 
   if [ -z "$CUR" ]; then
     if gh api -X POST "repos/$REPO/git/refs" -f "ref=refs/$REF" -f "sha=$SHA" >/dev/null 2>&1; then
@@ -34,7 +37,7 @@ for _ in 1 2 3; do
     continue   # أنشأه تشغيلٌ آخرُ في اللحظة نفسِها — يُعاد السؤال
   fi
 
-  STATUS="$(gh api "repos/$REPO/compare/$CUR...$SHA" --jq .status)"
+  STATUS="$(gh api "repos/$REPO/compare/$CUR...$SHA" --jq .status 2>/dev/null)" || STATUS="تعذّرت المقارنة"
   case "$STATUS" in
     identical|behind)
       echo "ci-green عند ${CUR:0:7} — وهو ${SHA:0:7} أو أحدثُ منه، فلا رجوع"
@@ -47,7 +50,7 @@ for _ in 1 2 3; do
       fi
       ;;         # تقدّم به تشغيلٌ آخرُ بين المقارنة والكتابة — يُعاد السؤال
     *)
-      echo "::error::ci-green (${CUR:0:7}) و${SHA:0:7} متفرّقان (${STATUS}) — لا يُكتب فوقه" >&2
+      echo "::error::لا يتقدّم ci-green (${CUR:0:7}) إلى ${SHA:0:7} — ${STATUS} — ولا يُكتب فوقه" >&2
       exit 1
       ;;
   esac
