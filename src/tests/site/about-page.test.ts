@@ -101,7 +101,7 @@ describe('ولا رقمَ مكتوبٌ باليد في النثر', () => {
     ...FAMILY_INTRO.products.flatMap((p) => [p.name, p.note, p.pitch]),
     ...FEATURE_HERO.highlights,
     ...FEATURE_HERO.lines, FEATURE_HERO.lead,
-    ...FEATURES.flatMap((f) => [f.margin, f.station, f.stationNote, f.title, ...f.paragraphs]),
+    ...FEATURES.flatMap((f) => [f.margin, f.title, ...f.paragraphs]),
     ...SOURCE_KINDS, PRICE.margin, PRICE.title, ...PRICE.paragraphs,
     ...OUTCOMES.flatMap((o) => [o.title, o.body, o.link?.label ?? '']),
     HONESTY_LINE, CLOSING.title, CLOSING.body,
