@@ -188,7 +188,10 @@ describe('البديلُ يُصحّح الاسمَ ولا يُعيد التفا�
 
     const oldRow = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
     expect(oldRow.status, 'بقي العرضُ الأوّلُ مفتوحا — فبابان على وثيقتَين').toBe('revoked')
-    expect(oldRow.tokenHash, 'بقي رابطٌ حيٌّ على المتن القديم').toBeNull()
+    /* والرمزُ يبقى (٣٠ سبتمبر ٢٠٢٦): ما يمنع التوقيعَ شرطُ الحالة لا مسحُ
+       الرمز، والمسحُ كان يمنع قراءةً فيُقال «انتهى هذا الرابط» بدل تسميةِ
+       البابِ. وتفصيلُه في `closed-doors-say-which.test.ts`. */
+    expect(oldRow.tokenHash, 'مُسح الرمزُ فصار بابُ المتن القديم صامتا').toBeTruthy()
 
     const next = await prisma.trainerContract.findUniqueOrThrow({ where: { id: out.contractId } })
     expect(next.bodyAr ?? '', 'لم يُصحَّح الاسمُ في متن البديل').toContain(`الطرف الثاني: ${ID_NAME}`)

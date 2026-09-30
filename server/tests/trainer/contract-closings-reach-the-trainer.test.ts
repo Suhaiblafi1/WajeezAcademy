@@ -90,7 +90,10 @@ describe('الإلغاءُ يصل صاحبَه بسببه', () => {
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
     expect(after.status).toBe('revoked')
     expect(after.revokeReasonAr, 'ضاع سببُ الإلغاء').toContain('أساس الأتعاب')
-    expect(after.tokenHash, 'بقي رابطٌ حيٌّ على عقدٍ أُلغي').toBeNull()
+    /* والرمزُ يبقى (٣٠ سبتمبر ٢٠٢٦): ما يمنع التوقيعَ شرطُ الحالة لا مسحُ
+       الرمز، والمسحُ كان يمنع قراءةً فيُقال «انتهى هذا الرابط» بدل تسميةِ
+       البابِ. وتفصيلُه في `closed-doors-say-which.test.ts`. */
+    expect(after.tokenHash, 'مُسح الرمزُ فصار بابُ الملغى صامتا').toBeTruthy()
   })
 
   it('ومسودّةٌ لم تخرج إليه: لا رسالةَ مستحقّة', async () => {
@@ -132,7 +135,10 @@ describe('الجوابُ الثالث: قبولُ التعديل وإعادةُ 
     /* والجوابُ في خانته هو كذلك: خطُّ زمنِ الطلب يُقرأ كاملا بعد الإغلاق */
     expect(after.amendmentReplyAr, 'لم يُحفَظ الجوابُ في خانته').toBe(REPLY)
     expect(after.amendmentRepliedAt).not.toBeNull()
-    expect(after.tokenHash, 'بقي رابطٌ حيٌّ على متنٍ قبلنا تعديلَه').toBeNull()
+    /* والرمزُ يبقى (٣٠ سبتمبر ٢٠٢٦): ما يمنع التوقيعَ شرطُ الحالة لا مسحُ
+       الرمز، والمسحُ كان يمنع قراءةً فيُقال «انتهى هذا الرابط» بدل تسميةِ
+       البابِ. وتفصيلُه في `closed-doors-say-which.test.ts`. */
+    expect(after.tokenHash, 'مُسح الرمزُ فلا يعرف صاحبُ الطلب أنّه أُجيب بعقدٍ أحدث').toBeTruthy()
   })
 
   it('ويُكتب فعلُه في الأثر مميَّزا عن الإلغاء المجرّد', async () => {
