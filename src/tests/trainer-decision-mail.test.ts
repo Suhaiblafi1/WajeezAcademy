@@ -21,6 +21,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   bookingReminderMail, decisionMailFor, draftReminderMail, rejectionMail, rejectionUndoneMail, waitlistMail,
+  withdrawalUndoneMail,
 } from '../../server/services/trainer-decision-mail'
 import { renderMail, type MailBlock } from '../../server/services/mail-template'
 import {
@@ -212,6 +213,50 @@ describe('رسالةُ التراجع عن الرفض', () => {
   })
 
   it('ورقمُ الطلب فيها — فيُسأل به إن سأل', () => {
+    const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
+    expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
+  })
+})
+
+/* ═══ وإعادةُ المسحوب — أختُ نقض الاعتذار (٢٩ سبتمبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «هناك حساباتٌ مسحوبة.. أرجو إعادتها». فالإعادةُ خبرٌ
+   يصل صاحبَه بسببه كأختها — ويفترقان في جملة: من سحب طلبَه بيده لا يُفرض
+   عليه ما تركه، فالرسالةُ تقول له إنّه إن لم يُرِد المضيَّ يردّ فنغلقه. */
+describe('رسالةُ إعادة الطلب المسحوب', () => {
+  const STATUS = 'https://example.test/join-trainer'
+  const WHY = 'سُحب الطلبُ بخطأٍ في تطبيق ملفّ القرارات، وهو طلبٌ نريد المضيَّ فيه'
+  const mail = withdrawalUndoneMail({ fullName: NAME, reference: REF, noteAr: WHY, statusUrl: STATUS })
+
+  it('السببُ يصل صاحبَ الطلب بنصّه — نصًّا وHTML', () => {
+    const out = rendered(mail.doc)
+    expect(out.text, 'سببُ الإعادة لم يصل في النصّ الخامّ').toContain(WHY)
+    expect(out.html, 'سببُ الإعادة لم يصل في الـHTML').toContain(WHY)
+  })
+
+  it('ولا تُقال بلا سبب — النوعُ يشترطه كأختها', () => {
+    const missing: Parameters<typeof withdrawalUndoneMail>[0] = {
+      fullName: NAME, reference: REF, statusUrl: STATUS,
+      // @ts-expect-error — بلا سببٍ لا تُبنى الرسالةُ أصلا
+      noteAr: undefined,
+    }
+    expect(missing.noteAr).toBeUndefined()
+  })
+
+  it('وتقول ما وقع — «أعدنا فتحَ طلبك» ورقمُه، لا «عُدنا في قرارنا» فذاك للمردود', () => {
+    expect(mail.subject, 'الموضوعُ لا يقول إنّ الطلبَ أُعيد').toContain('أعدنا فتحَ طلبك')
+    expect(mail.subject, 'رسالةُ المسحوب تقول ما يقوله المردود').not.toContain('عُدنا في قرارنا')
+    expect(mail.subject).toContain(REF)
+    expect(mail.doc.preheader, 'بلا سطرِ معاينةٍ يقرأ الصندوقُ التحيّةَ وحدَها').toBeTruthy()
+  })
+
+  it('ومن سحبه بيده لا يُفرض عليه — يردّ فنغلقه', () => {
+    expect(rendered(mail.doc).text, 'لا تقول لمن سحب بيده إنّه يستطيع الإغلاق').toContain('نغلقه')
+  })
+
+  it('وزرُّها إلى صفحة متابعة الطلب، ورقمُه في حقائقها', () => {
+    const cta = mail.doc.blocks.find((b: MailBlock) => b.kind === 'cta')
+    expect(cta && cta.kind === 'cta' && cta.href).toBe(STATUS)
     const facts = mail.doc.blocks.find((b: MailBlock) => b.kind === 'facts')
     expect(facts && facts.kind === 'facts' && facts.rows.some((r) => r.value === REF)).toBe(true)
   })

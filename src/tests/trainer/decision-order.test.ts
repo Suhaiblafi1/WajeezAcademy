@@ -68,6 +68,7 @@ describe('① الترتيبُ ترتيبُ رحلة الطلب', () => {
     }
     expect(at('waitlist'), 'الرفضُ قبل التعليق — والتعليقُ أهونُ منه').toBeLessThan(at('reject'))
     expect(at('reject'), 'التراجعُ عن الرفض قبل الرفض').toBeLessThan(at('undo_reject'))
+    expect(at('reject'), 'التراجعُ عن السحب قبل الرفض — وهو ممّا يعكس الإنهاء').toBeLessThan(at('undo_withdraw'))
   })
 
   it('والشاشةُ ترث الترتيبَ ولا تعيد فرزَه', () => {
@@ -124,7 +125,14 @@ describe('③④ وواحدٌ ذهبيٌّ لكلّ حالة', () => {
   })
 
   it('وحالةٌ لا فعلَ فيها لا يُخترع لها موصًى به', () => {
-    expect(recommendedFor('withdrawn'), 'اختُرع فعلٌ لطلبٍ سحبه صاحبُه').toBeNull()
+    /* كان الشاهدُ هنا `withdrawn` وحدَه — حتّى فتح صاحبُ المنصّة للمسحوب بابا
+       (٢٩ سبتمبر ٢٠٢٦: «هناك حساباتٌ مسحوبة.. أرجو إعادتها»). فالفحصُ على
+       البنية لا على اسم حالة: كلُّ حالةٍ لا قرارَ فيها لا موصًى به لها. */
+    const idle = Object.keys(STATUS_LABELS).filter((st) => !actionable.includes(st))
+    expect(idle.length, 'لا حالةَ بلا أزرار — تعطّل الفحصُ نفسُه').toBeGreaterThan(0)
+    for (const st of idle) {
+      expect(recommendedFor(st), `«${st}»: اختُرع فعلٌ لحالةٍ لا قرارَ فيها`).toBeNull()
+    }
   })
 
   it('والشاشةُ تُذهّب الموصى به وحدَه — والأحمرُ يبقى أحمر', () => {

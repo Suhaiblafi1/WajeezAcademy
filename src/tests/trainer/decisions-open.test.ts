@@ -30,11 +30,16 @@ const TARGET: Record<string, string> = {
   approve: 'active', move_to_review: 'under_review', request_info: 'information_requested',
   academic_review: 'academic_review',
   conditionally_approve: 'conditionally_approved', waitlist: 'waitlisted', reject: 'rejected',
-  undo_reject: 'under_review', start_onboarding: 'onboarding', activate: 'active', reinstate: 'active',
+  undo_reject: 'under_review', undo_withdraw: 'under_review',
+  start_onboarding: 'onboarding', activate: 'active', reinstate: 'active',
 }
 
-/** من خرج من الطابور — لا يُجَرّ إليه */
-const OUT = ['draft', 'active', 'withdrawn'] as const
+/** من خرج من الطابور — لا يُجَرّ إليه.
+
+    وكان المسحوبُ فيها حتّى قال صاحبُ المنصّة (٢٩ سبتمبر ٢٠٢٦): «هناك حساباتٌ
+    مسحوبة.. أرجو إعادتها». فخرج منها إلى جوار المردود والموقوف: لا تُعرض عليه
+    قراراتُ الطابور، وله بابٌ واحدٌ يعيده — يُفحص أسفلَه مع أخويه. */
+const OUT = ['draft', 'active'] as const
 
 describe('طلبُ المعلومات الإضافيّة مفتوحٌ في كلّ حالةٍ حيّة', () => {
   it('ومنها ما بعد القبول الداخليّ — وهو نصُّ ما طُلب', () => {
@@ -80,7 +85,7 @@ describe('وكلُّ قرارٍ متاحٌ من كلّ حالةٍ حيّة', () 
     }
     /* والعكسان بابُهما حالتُهما: لا يُتراجَع عن ردٍّ لم يقع، ولا يُرفع إيقافٌ
        عمّن ليس موقوفا. وهما خارجُ هذا الفحص بقصد. */
-    const REVERSALS = ['undo_reject', 'reinstate']
+    const REVERSALS = ['undo_reject', 'undo_withdraw', 'reinstate']
     for (const d of DECISIONS) {
       if (REVERSALS.includes(d.action)) continue
       for (const st of REVIEW_OPEN_STATUSES) {
@@ -140,13 +145,16 @@ describe('ومن خرج من الطابور لا يُجَرّ إليه', () => {
     }
   })
 
-  it('والموقوفُ بابُه رفعُ الإيقاف، والمردودُ بابُه التراجعُ — واحدٌ لكلٍّ', () => {
+  it('والموقوفُ بابُه رفعُ الإيقاف، والمردودُ والمسحوبُ بابُهما التراجعُ — واحدٌ لكلٍّ', () => {
     expect(DECISIONS.filter((d) => d.from.includes('suspended')).map((d) => d.action)).toEqual(['reinstate'])
     expect(DECISIONS.filter((d) => d.from.includes('rejected')).map((d) => d.action)).toEqual(['undo_reject'])
+    expect(DECISIONS.filter((d) => d.from.includes('withdrawn')).map((d) => d.action)).toEqual(['undo_withdraw'])
   })
 
-  it('ولا يُعتمَد المردودُ بنقرةٍ — خطوتان مقصودتان', () => {
+  it('ولا يُعتمَد المردودُ ولا المسحوبُ بنقرةٍ — خطوتان مقصودتان', () => {
     expect(ONE_CLICK_APPROVABLE_STATUSES as readonly string[]).not.toContain('rejected')
     expect(ALLOWED_TRANSITIONS.rejected, 'للمردود مخرجٌ ثانٍ').toEqual(['under_review'])
+    expect(ONE_CLICK_APPROVABLE_STATUSES as readonly string[]).not.toContain('withdrawn')
+    expect(ALLOWED_TRANSITIONS.withdrawn, 'للمسحوب مخرجٌ ثانٍ').toEqual(['under_review'])
   })
 })

@@ -320,8 +320,9 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
         'move_to_review', 'request_info', 'academic_review',
         'conditionally_approve', 'waitlist', 'reject',
         /* والتراجعُ عن الردّ — يردّ الطلبَ إلى المراجعة، وسببُه إلزاميٌّ
-           يصل المتقدّمَ بنصّه. تفصيلُه في `decide` وفي خريطة الانتقالات. */
-        'undo_reject',
+           يصل المتقدّمَ بنصّه. تفصيلُه في `decide` وفي خريطة الانتقالات.
+           وإعادةُ المسحوب بالباب نفسِه وشرطِه (٢٩ سبتمبر ٢٠٢٦). */
+        'undo_reject', 'undo_withdraw',
         'start_onboarding', 'activate', 'reinstate']),
       note: z.string().max(1000).optional(),
       /* ═══ سببُ تجاوز بوّابة التجهيز ═══

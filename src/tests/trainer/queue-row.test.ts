@@ -138,6 +138,7 @@ describe('③ قائمةُ الأفعال تتبع حالةَ الطلب', () =>
       ['تذكيرُ المسوّدة', '/draft-reminder'],
       ['الرفض', 'allows("reject", a.status)'],
       ['التراجعُ عن الرفض', 'allows("undo_reject", a.status)'],
+      ['التراجعُ عن السحب', 'allows("undo_withdraw", a.status)'],
     ] as const) {
       expect(screen, `${what}: غاب عن قائمة أفعال الصفّ`).toContain(needle)
     }
