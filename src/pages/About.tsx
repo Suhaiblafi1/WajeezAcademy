@@ -19,103 +19,30 @@ import {
 /* ═════════ «من نحن» — الرحلةُ خطٌّ واحدٌ يتغيّر شكلُه ═════════
 
    طلب صاحبُ المنصّة (٣٠ سبتمبر ٢٠٢٦) أن تبدأ الصفحةُ بتعريفٍ مختصر
-   (الأكاديميةُ جزءٌ من وجيز)، ثمّ تقول ما يميّزنا — وأن يبقى إبداعُ الرسم
-   الذي كان. والنصُّ كلُّه في `data/about.ts`، وهنا الرسمُ وحدَه.
+   (الأكاديميةُ من وجيز)، ثمّ تقول ما يميّزنا — وأن يبقى إبداعُ الرسم الذي
+   كان. والنصُّ كلُّه في `data/about.ts`، وهنا الرسمُ وحدَه.
 
    ── الفكرة ──
 
    خطٌّ في هامش الصفحة يروي الرحلةَ بشكله: **نقطةُ بداية** (التشخيص مع
    المستشار)، ثمّ **ثلاثةُ خيوطٍ** تتفرّع وتلتئم (مصادرُ متنوّعة)، ثمّ
    **طريقٌ بمحطّات** (التدريب العمليّ)، ثمّ **علامةُ اعتماد** (تقييمُ
-   الخبراء)، ثمّ **معيّنٌ ذهبيّ** (مشروعُ التخرّج)، ثمّ خطٌّ يبهت (السعر،
-   وما بعد الرحلة). وبجانبه طوال الصفحة **خطٌّ ذهبيٌّ منقَّط** لا ينقطع:
-   المستشارُ الذي يرافقك. والصدرُ يرسم ذلك كلَّه أفقيّا مصغَّرا، ومحطّاتُه
-   روابطُ إلى أقسامها.
+   الخبراء)، ثمّ **معيّنٌ ذهبيّ** (مشروعُ التخرّج)، ثمّ خطٌّ يبهت (السعر).
+   وبجانبه طوال الصفحة **خطٌّ ذهبيٌّ منقَّط** لا ينقطع: المستشارُ الذي
+   يرافقك.
+
+   وكان في الصدر رسمٌ أفقيٌّ مصغَّرٌ للرحلة بمحطّاتٍ تحته — حُذف بطلب صاحب
+   المنصّة (٣٠ سبتمبر ٢٠٢٦): «لا داعي له»، فالخطُّ في الهامش يقوله.
 
    ── وما حُرس ──
 
    · الخطُّ بخطّ المنصّة لا بالرقعة — طلبُ «خطوطٍ مناسبةٍ لنا».
-   · الحركةُ لحظةٌ واحدة عند الفتح، ولا تُكتب إلّا تحت
-     `prefers-reduced-motion: no-preference`.
    · الرسمُ زخرفةٌ `aria-hidden`؛ والمعنى كلُّه نصٌّ بعناوينه.
    · رئيسيٌّ ذهبيٌّ واحد («تواصل معنا»)، والتشخيصُ فيروزيٌّ مُثبِت
      (`src/tests/one-primary-per-screen.test.ts`).
    · لا شيءَ من الرئيسيّة يتكرّر هنا: لا شعارات ولا أرقامَ ثقة. */
 
-const CSS = `
-@media (prefers-reduced-motion: no-preference) {
-  .about-draw { stroke-dasharray: 1; stroke-dashoffset: 1;
-    animation: about-draw .7s cubic-bezier(.4,.1,.4,1) forwards; animation-delay: var(--at); }
-  .about-node { transform-box: fill-box; transform-origin: center; transform: scale(0);
-    animation: about-node .35s cubic-bezier(.2,.9,.3,1.3) forwards; animation-delay: var(--at); }
-  .about-fade-in { opacity: 0; animation: about-fade .9s ease-out forwards; animation-delay: var(--at); }
-}
-@keyframes about-draw { to { stroke-dashoffset: 0 } }
-@keyframes about-node { to { transform: scale(1) } }
-@keyframes about-fade { to { opacity: 1 } }
-`
-
 const anchorOf = (id: string) => `about-${id}`
-
-/* ─────────── الصدر: رسمُ الرحلة ─────────── */
-
-function JourneyDrawing() {
-  const at = (s: number) => ({ ['--at' as string]: `${s}s` })
-  return (
-    <div className="mt-12 md:mt-16">
-      <svg viewBox="0 0 1000 130" className="h-auto w-full overflow-visible" aria-hidden="true" focusable="false">
-        {/* المستشار: خطٌّ ذهبيٌّ منقَّطٌ تحت الرحلة كلّها */}
-        <path className="about-fade-in stroke-gold" style={at(1.9)} d="M900 104 H100" fill="none" strokeWidth={2.5} strokeDasharray="1 9" strokeLinecap="round" />
-        <circle className="about-node fill-gold" style={at(0.2)} cx={900} cy={104} r={4} />
-
-        {/* ١) البداية — نقطةٌ واحدةٌ منها يبدأ كلّ شيء */}
-        <circle className="about-node fill-teal" style={at(0.1)} cx={900} cy={52} r={11} />
-        <path className="about-draw stroke-teal" style={at(0.3)} pathLength={1} d="M889 52 H780" fill="none" strokeWidth={3.5} strokeLinecap="round" />
-
-        {/* ٢) مصادرُ متنوّعة — ثلاثةُ خيوطٍ تتفرّع ثمّ تلتئم */}
-        <g fill="none" strokeLinecap="round" strokeWidth={3} style={at(0.7)}>
-          <path className="about-draw stroke-teal" pathLength={1} d="M780 52 H620" />
-          <path className="about-draw stroke-teal/50" pathLength={1} d="M780 52 C755 52 750 26 725 26 H675 C650 26 645 52 620 52" />
-          <path className="about-draw stroke-teal/50" pathLength={1} d="M780 52 C755 52 750 78 725 78 H675 C650 78 645 78 620 52" />
-        </g>
-
-        {/* ٣) تدريبٌ عمليّ — طريقٌ بمحطّات */}
-        <path className="about-draw stroke-teal" style={at(1.1)} pathLength={1} d="M620 52 H100" fill="none" strokeWidth={3.5} strokeLinecap="round" />
-        {[560, 500, 440].map((x, i) => (
-          <circle key={x} className="about-node fill-paper stroke-teal" style={at(1.2 + i * 0.08)} cx={x} cy={52} r={7} strokeWidth={3} />
-        ))}
-
-        {/* ٤) تقييمُ الخبراء — علامةُ اعتماد */}
-        <g className="about-node" style={at(1.5)}>
-          <circle className="fill-teal" cx={300} cy={52} r={13} />
-          <path className="stroke-on-teal" d="M294 52 l4.5 4.5 l8 -9" fill="none" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-        </g>
-
-        {/* ٥) مشروعُ التخرّج — الغاية */}
-        <rect className="about-node fill-gold" style={at(1.75)} x={91} y={43} width={18} height={18} rx={3} transform="rotate(45 100 52)" />
-      </svg>
-
-      <nav aria-label="محطّات الرحلة">
-        <ol className="grid grid-cols-5 gap-x-2 text-center md:gap-x-4">
-          {FEATURES.map((f) => (
-            <li key={f.id}>
-              <a href={`#${anchorOf(f.id)}`} className="group block pt-3 md:pt-4">
-                <span className="block text-read font-black leading-snug text-foreground transition group-hover:text-teal-light-ink md:text-base">
-                  {f.station}
-                </span>
-                <span className="mt-0.5 hidden text-fine leading-snug text-muted-foreground sm:block">{f.stationNote}</span>
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
-      <p className="mt-6 flex items-center justify-center gap-2 text-read font-bold text-gold-ink">
-        <span className="inline-block w-8 border-t-2 border-dotted border-gold" aria-hidden="true" />
-        مستشارُك معك على طول الطريق
-      </p>
-    </div>
-  )
-}
 
 /* لكلّ أخٍ لونُه: التطبيقُ فيروزيّ، ووجيز مهارات ذهبيّة — والعلامةُ واحدة */
 const PRODUCT_STYLE = {
@@ -217,7 +144,6 @@ function Hero() {
       <p className="mt-6 max-w-2xl border-s-4 border-gold ps-4 text-base leading-loose text-foreground md:text-lg md:leading-loose">
         {FEATURE_HERO.lead}
       </p>
-      <JourneyDrawing />
     </div>
   )
 }
@@ -466,7 +392,6 @@ export default function About() {
   return (
     <SiteShell>
       <SeoHead {...seoFor('/p/about')} />
-      <style>{CSS}</style>
       <div className="mx-auto max-w-6xl">
         <FamilyIntro />
         <Hero />

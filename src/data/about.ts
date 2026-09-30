@@ -48,8 +48,6 @@ export const FEATURE_HERO = {
 export interface Feature {
   id: FeatureId
   margin: string
-  station: string
-  stationNote: string
   title: string
   paragraphs: string[]
 }
@@ -58,8 +56,6 @@ export const FEATURES: readonly Feature[] = [
   {
     id: 'advisor',
     margin: 'قبل أن تبدأ',
-    station: 'مستشارك',
-    stationNote: 'معك من أوّل سؤال',
     title: 'مستشارٌ يرافقك طوال الرحلة',
     paragraphs: [
       'لا تبدأ وحدك. يبدأ كلّ شيءٍ بتشخيصٍ مجّانيٍّ يفهم هدفك وواقعك ووقتك، ثمّ يقرؤه معك مستشارٌ من فريقنا ويرسم معك المسارَ الأنسب لك.',
@@ -69,8 +65,6 @@ export const FEATURES: readonly Feature[] = [
   {
     id: 'sources',
     margin: 'تتعلّم',
-    station: 'مصادر متنوّعة',
-    stationNote: 'بوتيرتك أنت',
     title: 'مصادرُ متنوّعةٌ لتعلّمك الذاتي',
     paragraphs: [
       'لكلّ دورةٍ مكتبتُها: دروسٌ مسجّلة، وكتبٌ وملفّات، ومقالاتٌ ومواقعُ يختارها مدرّبك لموضوعها، ومنهجٌ مكتوبٌ تعرف منه أين أنت. تتعلّم بالطريقة التي تناسبك، وفي الوقت الذي يناسبك.',
@@ -79,8 +73,6 @@ export const FEATURES: readonly Feature[] = [
   {
     id: 'training',
     margin: 'تتدرّب',
-    station: 'تدريب عمليّ',
-    stationNote: 'مع مدرّبٍ وزملاء',
     title: 'تدريبٌ عمليٌّ، لا محاضراتٌ فقط',
     paragraphs: [
       'تُفتح الدورات في فصول، ولكلّ دورةٍ شعبتُها ومدرّبها. تلتقي مدرّبك وزملاءك في ورشٍ مباشرة، وتمارس ما تعلّمته في محاكاةٍ أو ميدانٍ حقيقيّ — فالمهارةُ تُكتسب بالممارسة لا بالحفظ.',
@@ -89,8 +81,6 @@ export const FEATURES: readonly Feature[] = [
   {
     id: 'experts',
     margin: 'تُقيَّم',
-    station: 'تقييم الخبراء',
-    stationNote: 'من كبرى الشركات',
     title: 'تطبيقاتٌ عمليّة يقيّمها خبراءُ من كبرى الشركات',
     paragraphs: [
       'لكلّ دورةٍ تطبيقٌ عمليٌّ تسلّمه، يقيّمه خبراءُ يعملون في كبرى شركات القطاع الخاصّ بمعاييرَ مكتوبةٍ تعرفها قبل أن تبدأ. وقد يعيدونه إليك لتحسّنه — فالتقييمُ هنا خطوةٌ في تعلّمك، لا درجةٌ في آخره.',
@@ -99,8 +89,6 @@ export const FEATURES: readonly Feature[] = [
   {
     id: 'graduation',
     margin: 'تتخرّج',
-    station: 'مشروع التخرّج',
-    stationNote: 'دليلُ تمكّنك',
     title: 'مشروعُ تخرّجٍ يثبت تمكّنك',
     paragraphs: [
       'في ختام المسار تبني مشروعا حقيقيّا يجمع ما تعلّمته في عملٍ واحد، تستطيع أن تريه لأيّ أحد: لجهة عمل، أو لجامعة، أو لعميلك الأوّل.',
