@@ -55,6 +55,23 @@ export function defaultResignBodyAr(title: string, hasChanges = true): string {
 /** ما يُقال لمن لا تغييرَ بين نصّه والحاضر — في الرسالة، ومعاينتُه في الشاشة */
 export const RESIGN_NO_CHANGES_AR = 'لم يتغيّر شيءٌ في بنود عقدك منذ آخر توقيعٍ لك.'
 
+/* ═══ ومن طلب تعديلا لم يوقّع شيئا (١ أكتوبر ٢٠٢٦) ═══
+
+   صار قبولُ طلب التعديل يمرّ من باب الإعادة للتوقيع نفسِه (#400)، فورث جملتَه
+   حين لا تغيير: «منذ آخر توقيعٍ لك» — ومن طلب تعديلا لم يوقّع. رآها صاحبُ
+   المنصّة في معاينة نافذة القبول، وأمر بإصلاحها. فلكلّ بابٍ جملتُه، والتغييرُ
+   في الثاني يُقاس ممّا قرأه قبل طلبه (`versionReadByRequester`) — فجملتُه تقول
+   ذلك بعينه. */
+export const AMENDMENT_NO_CHANGES_AR = 'لم يتغيّر شيءٌ في بنود العقد عمّا قرأتَه قبل طلبك.'
+
+/** بابا النافذة: الإعادةُ للتوقيع، وقبولُ طلب التعديل */
+export type ReissueMode = 'resign' | 'amendment'
+
+/** جملةُ «لا تغيير» لكلّ باب — يقرؤها الخادمُ لما يُرسَل والشاشةُ لما تُعاينه */
+export function noChangesLineAr(mode: ReissueMode): string {
+  return mode === 'amendment' ? AMENDMENT_NO_CHANGES_AR : RESIGN_NO_CHANGES_AR
+}
+
 /** نصُّ الموظّف فقراتٍ — يفصل بينها سطرٌ فارغ، كما يُكتب في الخانة */
 export function resignParagraphs(bodyAr: string): string[] {
   return bodyAr.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)

@@ -4937,6 +4937,7 @@ export class TrainerReviewService {
         signingUrl: sent.signingUrl,
         expiresOnAr: fmtDateWith(sent.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
         contractNumber: created.number,
+        mode,
       })
       const out = await sendDirectEmail(this.prisma, {
         to: old.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),

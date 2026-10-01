@@ -33,7 +33,9 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { CONTRACT_BODY_VERSION } from '../../../src/application/trainer/contract-body'
 import { changesBetween } from '../../../src/application/trainer/contract-changelog'
-import { AMENDMENT_PLACEHOLDER_AR } from '../../../src/application/trainer/contract-resign'
+import {
+  AMENDMENT_NO_CHANGES_AR, AMENDMENT_PLACEHOLDER_AR, RESIGN_NO_CHANGES_AR,
+} from '../../../src/application/trainer/contract-resign'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -209,5 +211,24 @@ describe('وما قرأه هو — لا ما حُدّث تحته', () => {
     await prisma.trainerContract.update({ where: { id: c.id }, data: { bodyVersion: CONTRACT_BODY_VERSION } })
     await review.replyToAmendment(c.id, adminId, 'لا نستطيع تغييرَ البند الرابع')
     expect(outbox[0].text).toContain('لم يتغيّر فيه حرف')
+  })
+})
+
+/* ═══ ولا تغيير: جملةُ بابه — لا «منذ آخر توقيعٍ لك» (١ أكتوبر ٢٠٢٦) ═══
+
+   من طلب تعديلا لم يوقّع شيئا، وقبولُه يمرّ من رسالة الإعادة للتوقيع. فإن قرأ
+   الحاضرَ ولم تُمَسّ شروطُه في النافذة فلا تغيير — وكانت الرسالةُ تقول له
+   «لم يتغيّر شيءٌ في بنود عقدك منذ آخر توقيعٍ لك». رآها صاحبُ المنصّة في
+   معاينة النافذة قبل أن يرسل. */
+describe('ولا تغييرَ فيه — بجملة بابه', () => {
+  it('⚠️ قرأ الحاضرَ ولم تُغيَّر شروطُه: «عمّا قرأتَه قبل طلبك» لا «منذ آخر توقيعٍ لك»', async () => {
+    const { c } = await amendmentRequested()
+    /* قرأ الحاضرَ نفسَه — فلا تغييرَ في القالب، ولا شيءَ في شروطه */
+    await prisma.trainerContract.update({ where: { id: c.id }, data: { bodyVersion: CONTRACT_BODY_VERSION } })
+    await accept(c.id)
+    expect(outbox.length, 'لم تخرج رسالةٌ واحدة').toBe(1)
+    const text = outbox[0].text
+    expect(text, 'لم تُقَل جملةُ «لا تغيير» لبابه').toContain(AMENDMENT_NO_CHANGES_AR)
+    expect(text, 'قيل لمن لم يوقّع إنّه وقّع').not.toContain(RESIGN_NO_CHANGES_AR)
   })
 })
