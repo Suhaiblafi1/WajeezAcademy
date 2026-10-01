@@ -7,8 +7,9 @@
    ① الصامتُ لا يرسل شيئا — ويُقاس بما خرج من `sendDirectEmail` لا بقراءة
       الشيفرة. وفحصٌ يقول «لم يخرج بريد» يخضرّ على التقاطٍ لا يعمل، فيُقاس
       الوجهُ الآخر معه: المُبلِغُ يرسل، فالالتقاطُ يعمل.
-   ② والصامتُ يحدّث النصَّ ويُبقي الشريط: `bodyUpdatedAt` يُكتب ونقاطُه تُقرأ
-      من الرابط. فالتحديثُ صامتٌ لا خفيّ — يقرؤه صاحبُه فوق النصّ قبل أن يوقّع.
+   ② والصامتُ يحدّث النصَّ والرابطُ يفتح — **ولا قائمةَ تغييرٍ على صفحته**:
+      نُزع الشريطُ بقرار صاحب المنصّة في اليوم نفسِه («no need for the update
+      list on the top of the contract»). و`bodyUpdatedAt` يُكتب سجلًّا لا يُعرَض.
    ③ والأثرُ يقول أيُّهما وقع، فيُعرف بعد شهرٍ لمَ لم يصل أحدا بريد. */
 
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -31,6 +32,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { CONTRACT_BODY_VERSION } from '../../../src/application/trainer/contract-body'
+import { changesBetween } from '../../../src/application/trainer/contract-changelog'
 
 let prisma: PrismaClient
 let review: TrainerReviewService
@@ -97,16 +99,22 @@ describe('التحديثُ الصامت', () => {
     expect(outbox.filter((m) => m.to === email).length, 'لم يُلتقَط بريدُ المُبلِغ').toBe(1)
   })
 
-  it('⚠️ والنصُّ يُحدَّث والشريطُ يُكتب — صامتٌ لا خفيّ', async () => {
+  it('⚠️ والنصُّ يُحدَّث والرابطُ يفتح — ولا قائمةَ على صفحته', async () => {
     const { contractId, token, before } = await staleOffer()
     await review.refreshOpenContracts(adminId, { notify: false })
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
     expect(after.bodyVersion).toBe(CONTRACT_BODY_VERSION)
     expect(after.bodyAr, 'لم يتبدّل النصّ').not.toBe(before)
-    expect(after.bodyUpdatedAt, 'لا شريطَ على صفحته — فيوقّع على نصٍّ تبدّل بلا علامة').not.toBeNull()
-    const view = await review.contractByToken(token) as { state: string; bodyChangesAr?: readonly string[] }
-    expect(view.state, 'لم يعد رابطُه يفتح').toBe('open')
-    expect((view.bodyChangesAr ?? []).length, 'لا نقاطَ تحت الشريط').toBeGreaterThan(0)
+    expect(after.bodyUpdatedAt, 'لم يُكتب متى تبدّل نصُّه — فلا سجلَّ يُسأل عنه').not.toBeNull()
+
+    const view = await review.contractByToken(token)
+    if (view.state !== 'open') throw new Error('لم يعد رابطُه يفتح')
+    /* بالمحتوى لا بالاسم — علّتُه في `contract-body-refresh.test.ts` */
+    const points = changesBetween(OLD_VERSION, CONTRACT_BODY_VERSION)
+    expect(points.length, 'لا نقاطَ يُبحَث عنها — فالفحصُ يقيس الفراغ').toBeGreaterThan(0)
+    /* ونصُّ العقد نفسُه يُستثنى: هو ما يُقرأ، وليس شريطا فوقه */
+    const shown = JSON.stringify({ ...view, bodyAr: null })
+    for (const p of points) expect(shown, `ظهرت قائمةُ التغيير والتحديثُ صامت: ${p}`).not.toContain(p)
   })
 
   it('والأثرُ يقول إنّه لم يُبلَّغ', async () => {

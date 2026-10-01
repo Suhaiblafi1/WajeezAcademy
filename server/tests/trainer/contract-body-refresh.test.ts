@@ -12,7 +12,8 @@
  * ② **والموقَّعُ لا يُمَسّ** — وهو الأخطر: وثيقةٌ وُقّعت يُبدَّل نصُّها فتفترق
  *   عن بصمتها، فلا يُعرَف بعدها ما وُقّع عليه.
  * ③ **ولا يُوقَّع على غير ما قُرئ** — من كانت صفحتُه مفتوحةً على القديم يُردّ.
- * ④ **ويُكتب أنّه حُدّث ومن أيّ إصدار** — فالشريطُ على صفحته يُبنى منهما.
+ * ④ **ويُكتب أنّه حُدّث ومن أيّ إصدار** — سجلًّا يُسأل عنه، لا شريطا على صفحته:
+ *   نُزع الشريطُ بقرار صاحب المنصّة (١ أكتوبر ٢٠٢٦)، والحارسُ مقلوبٌ أدناه.
  * ⑤ **ولقطتُه لا تتبدّل** — دوراتُه وأتعابُه ووثائقُه وتاريخُ إصداره كما كانت:
  *   المحدَّثُ نصُّه لا ما اتُّفق عليه.
  */
@@ -24,6 +25,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { CONTRACT_BODY_VERSION, contractAcks } from '../../../src/application/trainer/contract-body'
+import { changesBetween } from '../../../src/application/trainer/contract-changelog'
 import { fmtDateWith } from '../../../src/application/text/format-ar'
 
 let prisma: PrismaClient
@@ -129,21 +131,37 @@ describe('النصُّ يُحدَّث والرمزُ لا يُمَسّ', () => {
     expect(after.bodyVersion, 'تُرك طالبُ التعديل على نصٍّ قديم').toBe(CONTRACT_BODY_VERSION)
   })
 
-  it('④ ويُكتب متى حُدّث ومن أيّ إصدار — فالشريطُ يُبنى منهما', async () => {
+  it('④ ويُكتب متى حُدّث ومن أيّ إصدار — سجلًّا لا شريطا', async () => {
     const { contractId } = await openContract('sent')
     await review.refreshOpenContracts(adminId)
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
-    expect(after.bodyUpdatedAt, 'لا تاريخَ تحديثٍ — فلا شريطَ على صفحته').toBeTruthy()
+    expect(after.bodyUpdatedAt, 'لا تاريخَ تحديثٍ — فلا يُعرَف متى تبدّل نصُّه تحته').toBeTruthy()
     expect(after.bodyPrevVersion, 'لا إصدارَ سابقٌ — فلا يُعرَف ما بينهما').toBe(OLD_VERSION)
   })
 
-  it('والصفحةُ تقرأ خبرَ التحديث ونقاطَه من الرابط', async () => {
-    const { token } = await openContract('sent')
+  /* ═══ والحارسُ مقلوب — قرارُ صاحب المنصّة (١ أكتوبر ٢٠٢٦) ═══
+
+     كان هنا «والصفحةُ تقرأ خبرَ التحديث ونقاطَه من الرابط». ونزع صاحبُ
+     المنصّة الشريط: «no need for the update list on the top of the contract,
+     because they have received an email with these changes». فلا يُحذَف
+     الحارسُ بحذف ما يحرسه، بل يُقلَب — وإلّا عاد الشريطُ بلا أن ينبّه أحد.
+
+     ويُقاس **بالمحتوى لا بالاسم**: لا تظهر نقطةٌ من نقاط التغيير في شيءٍ ممّا
+     يصل الصفحةَ عدا نصِّ العقد نفسِه — فشريطٌ يعود باسمٍ آخرَ يُمسَك كذلك. */
+  it('ولا تحمل الصفحةُ قائمةَ ما تغيّر — ولو أُرسل البريد', async () => {
+    const { token, before } = await openContract('sent')
     await review.refreshOpenContracts(adminId)
     const view = await review.contractByToken(token)
     if (view.state !== 'open') throw new Error('لم يُفتح الرابط')
-    expect(view.bodyUpdatedAt, 'لا يصل الشريطَ تاريخُه').toBeTruthy()
-    expect(view.bodyChangesAr.length, 'وصل الشريطُ بلا نقاطٍ يقولها').toBeGreaterThan(0)
+    expect(view.bodyAr, 'لم يُحدَّث النصّ — فالفحصُ يقيس صفحةً لم يتبدّل فيها شيء').not.toBe(before.bodyAr)
+
+    const points = changesBetween(OLD_VERSION, CONTRACT_BODY_VERSION)
+    expect(points.length, 'لا نقاطَ يُبحَث عنها — فالفحصُ يقيس الفراغ').toBeGreaterThan(0)
+    /* ونصُّ العقد نفسُه يُستثنى: هو ما يُقرأ، وليس شريطا فوقه */
+    const shown = JSON.stringify({ ...view, bodyAr: null })
+    for (const p of points) expect(shown, `عادت قائمةُ التغيير إلى الصفحة: ${p}`).not.toContain(p)
+    expect(Object.keys(view), 'عاد حقلُ الشريط').not.toContain('bodyChangesAr')
+    expect(Object.keys(view), 'عاد تاريخُ الشريط').not.toContain('bodyUpdatedAt')
   })
 })
 
