@@ -1069,6 +1069,9 @@ export interface AmendmentAnsweredMailInput {
   replyAr: string
   url: string
   expiresOnAr: string
+  /** ما تغيّر في نصّه **بعد** أن طلب تعديلَه — بتحديث العروض المفتوحة. و`[]`
+   *  (أو غيابُه) حين بقي نصُّه كما قرأه. */
+  changeGroups?: readonly ChangeGroup[]
 }
 
 /** جوابُنا على طلب تعديلك — ثمّ الرابط.
@@ -1085,13 +1088,23 @@ export function amendmentAnsweredMail(input: AmendmentAnsweredMailInput): Decisi
       blocks: [
         { kind: 'p', text: `نظرنا في تعديلك المطلوب على «${input.title}»، وهذا ردُّنا:` },
         { kind: 'callout', text: input.replyAr },
-        {
-          kind: 'p',
-          /* والصدقُ في وصف ما بقي: هذا البابُ يُبقي المتنَ كما هو — ومن أراد
-             تغييرَه فبابُه الآخر (`contractRevokedMail` بـ`reissue`). */
-          text: 'ونصُّ الوثيقة كما قرأتَه لم يتغيّر فيه حرف. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.',
-        },
-        { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: input.url },
+        /* ═══ والصدقُ في وصف ما بقي (١ أكتوبر ٢٠٢٦) ═══
+
+           كانت الجملةُ «لم يتغيّر فيه حرف» تُقال لكلّ من أُجيب — ولو حُدّث
+           نصُّه بعد طلبه بـ«حدِّث نصَّ العروض المفتوحة». فيقرأ أنّ شيئا لم
+           يتغيّر ثمّ يوقّع على غير ما قرأ. فإن تغيّر قيل ما تغيّر بطاقاتٍ
+           تحت بنودها، وإلّا قيلت الجملةُ كما كانت. */
+        ...(input.changeGroups && input.changeGroups.length > 0
+          ? ([
+              { kind: 'p' as const, text: 'وقد حدّثنا نصَّ الاتفاقيّة بعد طلبك، وهذا ما تغيّر فيه عمّا قرأتَه:' },
+              { kind: 'changes' as const, groups: input.changeGroups },
+              { kind: 'note' as const, text: 'هذا ملخّصٌ بأبرز ما تغيّر — والنصُّ الكاملُ في العقد نفسِه، وهو الملزِم. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.' },
+            ] as const)
+          : ([{
+              kind: 'p' as const,
+              text: 'ونصُّ الوثيقة كما قرأتَه لم يتغيّر فيه حرف. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.',
+            }] as const)),
+        { kind: 'cta', label: input.changeGroups && input.changeGroups.length > 0 ? 'اقرأ عقدك المحدَّث ووقّعه' : 'اقرأ العقدَ ووقّعه', href: input.url },
         {
           kind: 'callout',
           text: `وهذا رابطٌ جديد، والقديمُ بطل. وهو صالحٌ حتّى ${input.expiresOnAr}.`,

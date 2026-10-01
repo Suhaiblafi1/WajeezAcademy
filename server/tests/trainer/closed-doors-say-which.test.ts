@@ -105,7 +105,9 @@ describe('وبابُ ما سُحب يقول «أُلغي»', () => {
   it('وعقدٌ أزاحه أحدثُ منه يقول ذلك كذلك', async () => {
     const { contract, token } = await sentContract()
     await review.requestContractAmendment(token, 'أرجو مراجعةَ البند الرابع فالمهلةُ قصيرة')
-    await review.answerAmendmentWithNewContract(contract.id, adminId, 'قبلنا طلبَك وأعدنا تركيبَه')
+    await review.answerAmendmentWithNewContract(contract.id, adminId, {
+      subjectAr: 'قبلنا ملاحظاتِك', bodyAr: 'قبلنا طلبَك وأعدنا تركيبَه مصحَّحا.',
+    })
     const view = await review.contractByToken(token)
     expect(view.state, 'من طُلب تعديلُه فأُجيب بعقدٍ جديدٍ وجد بابا صامتا').toBe('revoked')
   })

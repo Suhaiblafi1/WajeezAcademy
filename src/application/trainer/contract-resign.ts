@@ -125,3 +125,66 @@ export function resignChangeGroups(
     ? [{ titleAr: PERSONAL_CHANGES_TITLE_AR, itemsAr: personalAr }, ...templateGroups]
     : templateGroups
 }
+
+/* ═══════════ قبولُ طلب التعديل — عقدُه المصحَّحُ في الرسالة نفسِها ═══════════
+
+   أمرُ صاحب المنصّة (١ أكتوبر ٢٠٢٦): «محمّد لم يستلم شيئا وأريدك أن تفعّل
+   الأولى» — أي أن يصل من قُبل طلبُ تعديله **جوابُنا وعقدُه المصحَّحُ معا**:
+   نصٌّ يكتبه الموظّفُ كما يشاء، ثمّ ما تغيّر بطاقاتٍ تحت بنودها، ثمّ زرُّ
+   التوقيع. وكان قبلها رسالتان: «قبلنا طلبك ويصلك عقدٌ مصحَّح» بلا رابط، ثمّ
+   بريدُ العقد العامُّ بلا قائمةٍ حين يُنشئه أحدٌ بيده — إن تذكّر.
+
+   فالبابُ هو بابُ الإعادة للتوقيع نفسُه (`requestResign`) بمسوّدةٍ أخرى. */
+
+export const DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR = 'قبلنا ملاحظاتِك — وهذا عقدُك المصحَّح'
+
+/** ما يُكتب في مسوّدة النصّ ليُستبدَل — ولا يخرج إلى مدرّبٍ وهو فيها.
+ *  فمن نسي أن يكتب ما قبله وصلت المدرّبَ جملةٌ تقول «اكتب هنا»؛ والخادمُ
+ *  والشاشةُ يردّانه بها (`hasAmendmentPlaceholder`). */
+export const AMENDMENT_PLACEHOLDER_AR = '[اكتب هنا ما قبلتَه من ملاحظاته — وما لم تقبله ولماذا]'
+
+export function hasAmendmentPlaceholder(bodyAr: string): boolean {
+  return bodyAr.includes(AMENDMENT_PLACEHOLDER_AR)
+}
+
+/** المسوّدة. و`replyAr` ما كتبه الموظّفُ في لوح الطلب قبل أن يفتح النافذة —
+ *  يحلّ محلّ السطر الذي يُستبدَل، فلا يُكتب الجوابُ مرّتين. */
+export function defaultAmendmentAcceptBodyAr(title: string, replyAr?: string | null): string {
+  const reply = (replyAr ?? '').trim()
+  return [
+    `شكرا لك على ملاحظاتك على «${title}». قرأناها كلَّها، وهذا جوابُنا:`,
+    reply.length > 0 ? reply : AMENDMENT_PLACEHOLDER_AR,
+    'وأعددنا لك العقدَ مصحَّحا بما قبلناه، ورابطُه في آخر هذه الرسالة. والنسخةُ السابقةُ أُلغيت ورابطُها بطل — فوقّع هذه وحدَها.',
+    'ولك أن توقّعه أو تعتذر عنه، ولا يترتّب على أيٍّ منهما شيءٌ عليك ولا لنا (البند 2-11).',
+  ].join('\n\n')
+}
+
+/** سببُ إغلاق العرض القديم. ويبدأ بما كان يبدأ به («قُبل طلبُ التعديل»):
+ *  هو ما تقرؤه الشاشةُ والأثرُ منذ ٢٦ سبتمبر. */
+export const AMENDMENT_ACCEPT_REVOKE_REASON_AR = 'قُبل طلبُ التعديل، وأُرسل عقدٌ مصحَّح'
+
+/* ═══ وأيَّ إصدارٍ قرأ صاحبُ الطلب؟ ═══
+
+   «حدِّث نصَّ العروض المفتوحة» يكتب المتنَ الحاضرَ فوق عرضٍ طُلب تعديلُه —
+   فبعد التحديث يقول صفُّه `bodyVersion = الحاضر`، وصاحبُه قرأ ما قبله.
+   ولو قيست التغييراتُ من `bodyVersion` لَقالت الرسالةُ «لا تغيير» عن نصٍّ
+   تغيّر تحته: وهو بعينه حالُ محمّد (١ أكتوبر ٢٠٢٦) — طلب تعديلا على v21
+   ثمّ حُدّث عرضُه إلى v22.
+
+   فما قرأه: `bodyPrevVersion` إن حُدّث بعد طلبه، وإلّا `bodyVersion`.
+   وحدُّه: تحديثان بعد الطلب يُبقيان أحدثَ السابقَين وحدَه — فتسقط نقاطُ
+   الأوّل. والتحديثُ يقع عند تغيّر الإصدار، أي نادرا؛ ويُقرأ النصُّ كاملا
+   قبل التوقيع على كلّ حال. */
+export function versionReadByRequester(row: {
+  bodyVersion: string | null
+  bodyPrevVersion?: string | null
+  bodyUpdatedAt?: Date | string | null
+  amendmentRequestedAt?: Date | string | null
+}): string | null {
+  const updated = row.bodyUpdatedAt ? new Date(row.bodyUpdatedAt).getTime() : null
+  const asked = row.amendmentRequestedAt ? new Date(row.amendmentRequestedAt).getTime() : null
+  if (updated !== null && asked !== null && updated > asked && row.bodyPrevVersion) {
+    return row.bodyPrevVersion
+  }
+  return row.bodyVersion
+}
