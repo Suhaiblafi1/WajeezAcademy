@@ -166,7 +166,8 @@
           if (!text) return false;
           return text.indexOf("dynamically imported module") !== -1
             || text.indexOf("Importing a module script failed") !== -1
-            || text.indexOf("error loading dynamically imported module") !== -1;
+            || text.indexOf("error loading dynamically imported module") !== -1
+            || text.indexOf("is not a valid JavaScript MIME type") !== -1;
         }
 
         /* ١) الحزمة الرئيسة أو ورقة نمط — طور الالتقاط: فشلُ المورد لا يصعد */
