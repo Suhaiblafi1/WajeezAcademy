@@ -287,6 +287,9 @@ export default function TrainerContracts() {
   const [resign, setResign] = useState<
     { row: ContractRow; subjectAr: string; bodyAr: string } | null
   >(null);
+  /* وتحديثُ العروض المفتوحة صامتٌ ما لم يُطلَب البريد — أمرُ صاحب المنصّة
+     (١ أكتوبر ٢٠٢٦). والشريطُ على صفحة المدرّب يقول التحديثَ في الحالَين. */
+  const [refreshNotify, setRefreshNotify] = useState(false);
   const [asking, setAsking] = useState<{
     titleAr: string; confirmLabelAr: string; labelAr: string;
     whatAr: string; okAr: string; rowId?: string;
@@ -870,14 +873,21 @@ c.gatesActivation
             <Button size="sm" tone="confirm" icon={FileText}
               onClick={() => void run(async () => {
                 const r = await apiPost<{ updated: number; skipped: number }>(
-                  "/api/admin/trainer-contracts/refresh-bodies", {});
+                  "/api/admin/trainer-contracts/refresh-bodies", { notify: refreshNotify });
                 await load();
                 return r.updated === 0
                   ? "لا عرضَ يحتاج تحديثا — كلُّها على الإصدار الحاليّ"
-                  : `حُدّث نصُّ ${r.updated} عرضا، ووصل أصحابَها ما تغيّر`;
+                  : refreshNotify
+                    ? `حُدّث نصُّ ${r.updated} عرضا، ووصل أصحابَها ما تغيّر`
+                    : `حُدّث نصُّ ${r.updated} عرضا بلا بريد — ويقرأ كلٌّ منهم ما تغيّر على صفحته`;
               }, "حُدّثت العروضُ المفتوحة")}>
               حدِّثْ نصَّ العروض المفتوحة
             </Button>
+            <label className="flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
+              <input type="checkbox" checked={refreshNotify}
+                onChange={(e) => setRefreshNotify(e.target.checked)} />
+              وأبلغْهم بالبريد
+            </label>
             <Button size="sm" icon={RefreshCw} onClick={() => void load()}>حدِّثْ</Button>
           </div>
         </div>

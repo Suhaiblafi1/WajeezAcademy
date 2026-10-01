@@ -3314,7 +3314,17 @@ export class TrainerReviewService {
      تاريخُ الإصدار من `createdAt` لا من ساعة اليوم: العرضُ صدر يومَ صدر،
      والمحدَّثُ نصُّه لا ميلادُه. ولقطتُه (دوراتُه وأتعابُه ووثائقُه) تُقرأ من
      صفّه كما جُمّدت، فلا يُدخَل عليه ما لم يُتَّفق عليه. */
-  async refreshOpenContracts(actorId: string) {
+  /* ═══ وبلا بريدٍ إن شاء (١ أكتوبر ٢٠٢٦) ═══
+
+     أمرُ صاحب المنصّة: «I want to refresh them silently». فالبريدُ يُختار
+     ولا يُفرَض: `notify: false` يحدّث النصَّ في مكانه ولا يرسل شيئا.
+
+     **والشريطُ على صفحته باقٍ في الحالَين** (`bodyUpdatedAt`): هو ما يجعل
+     التحديثَ صامتا لا خفيّا. من يفتح رابطَه يقرأ فوق النصّ «حُدّث هذا العرضُ»
+     ونقاطَه قبل أن يوقّع — ومن وقّع على نصٍّ تبدّل تحته بلا علامةٍ له أن
+     يقول بعد شهرٍ إنّه وقّع غيرَ ما قرأ. */
+  async refreshOpenContracts(actorId: string, opts: { notify?: boolean } = {}) {
+    const notify = opts.notify ?? true
     const rows = await this.prisma.trainerContract.findMany({
       where: {
         status: { in: ['sent', CONTRACT_AMENDMENT_REQUESTED] },
@@ -3385,7 +3395,7 @@ export class TrainerReviewService {
         await recordAudit(tx, {
           actorId, action: 'trainer.contract.body_refreshed',
           entityType: 'trainer_contract', entityId: c.id,
-          meta: { fromVersion: from, toVersion: CONTRACT_BODY_VERSION, status: c.status },
+          meta: { fromVersion: from, toVersion: CONTRACT_BODY_VERSION, status: c.status, notified: notify },
         })
         return true
       })
@@ -3404,6 +3414,7 @@ export class TrainerReviewService {
 
       /* والرسالةُ رفاهيةٌ كأخواتها: النصُّ حُدّث، والشريطُ على صفحته يقوله
          ولو لم يصل بريد. */
+      if (!notify) continue
       try {
         const mail = contractUpdatedMail({
           fullName: app.fullName,
