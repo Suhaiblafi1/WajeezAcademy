@@ -35,6 +35,8 @@ import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/tra
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { MAX_EXTENSIONS } from '../../src/application/trainer/conditional-offer'
+import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
+import { FINAL_REMINDER_DAYS, daysWindowAr } from '../../src/application/trainer/notice-periods'
 import { TRAINER_GUIDE_LINK_AR } from '../../src/application/trainer/trainer-guide'
 import {
   ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR, ORIENTATION_INVITE_AR,
@@ -1339,6 +1341,45 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
                 link: { label: TRAINER_GUIDE_LINK_AR, href: input.guideUrl },
               },
             ] as MailBlock[])),
+      ],
+    },
+  }
+}
+
+/* ═══ التذكيرُ الأخيرُ بالتوقيع (١ أكتوبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة: «يذكّر المدرّبَ آخرَ مرّةٍ بتوقيع الاتفاقيّة، والعقدُ صالحٌ
+   ثلاثةَ أيّام». فالرسالةُ تقول ثلاثة أشياء لا غير: أنّ العرضَ ينتظره، وأنّ هذا
+   آخرُ تذكير، **وإلى متى** — بيومٍ وساعةٍ بتوقيت عمّان، لا «بعد ثلاثة أيّام»
+   يحسبها كلٌّ من ساعة قراءته.
+
+   ولا تذكر رقمَ البند: بندُ سقوط العرض رقمُه في المتن الحاضر 16-5، وقد يختلف في
+   عرضٍ صدر بصياغةٍ أقدم — فرقمٌ في رسالةٍ يُخالف وثيقتَه أسوأُ من لا رقم. */
+export interface ContractFinalReminderMailInput {
+  fullName: string
+  reference: string
+  title: string
+  url: string
+  expiresAt: Date
+}
+
+export function contractFinalReminderMail(input: ContractFinalReminderMailInput): DecisionMail {
+  const windowAr = daysWindowAr(FINAL_REMINDER_DAYS)
+  const until = fmtDateWith(input.expiresAt, {
+    weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: ACADEMY_ZONE,
+  })
+  return {
+    subject: `تذكيرٌ أخير: عرضُك صالحٌ ${windowAr} — ${input.title} (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: `آخرُ تذكيرٍ بتوقيع «${input.title}» — والعرضُ صالحٌ حتّى ${until} بتوقيت عمّان.`,
+      heading: 'تذكيرٌ أخيرٌ بتوقيع عرضك',
+      blocks: [
+        { kind: 'p', text: `ما زال «${input.title}» بانتظار توقيعك، وهذا آخرُ تذكيرٍ نرسله به.` },
+        { kind: 'callout', text: `العرضُ صالحٌ ${windowAr}: حتّى ${until} بتوقيت عمّان. فإن لم يُوقَّع حتّى ذلك سقط العرضُ وتوقّف رابطُه، كما ينصّ عقدُك.` },
+        { kind: 'cta', label: 'اقرأ ووقّع', href: input.url },
+        { kind: 'p', text: 'وهذا رابطٌ جديد، والرابطُ السابقُ لم يعد يعمل. ولك أن تعتذر عن العرض من الصفحة نفسِها بلا حرج.' },
+        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
       ],
     },
   }

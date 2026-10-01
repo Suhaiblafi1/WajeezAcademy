@@ -20,7 +20,7 @@ import {
 } from '../../src/application/trainer/contract-resign'
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
-  contractRevokedMail, contractUpdatedMail, contractResignMail } from './trainer-decision-mail'
+  contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -74,7 +74,7 @@ import {
 import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS,
   hasRequiredIdentityDocument, readRequiredDocuments, type RequiredDocument, requiredDocumentLabelsAr } from '../../src/application/trainer/contract-documents'
-import { CONTRACT_SIGNING_LINK_DAYS } from '../../src/application/trainer/notice-periods'
+import { CONTRACT_SIGNING_LINK_DAYS, FINAL_REMINDER_DAYS } from '../../src/application/trainer/notice-periods'
 import {
   computeReadiness, overrideReasonProblemAr, readinessBlockMessageAr, type Readiness,
 } from '../../src/application/trainer/readiness'
@@ -2128,6 +2128,9 @@ export class TrainerReviewService {
           supersededAt: true, supersededByContractId: true,
           gatesActivation: true, sentAt: true, signedAt: true, revokedAt: true,
           revokeReasonAr: true, createdAt: true, qualifiedSnapshot: true,
+          /* والتذكيرُ الأخيرُ وأجلُ الرابط: به تقول الشاشةُ «أُرسل في… وصالحٌ حتّى…»
+             ولا تعرض الزرَّ ثانية. والأجلُ وحدَه لا يفتح بابا — البصمةُ لا تخرج */
+          finalReminderAt: true, tokenExpiresAt: true,
           signerLegalName: true, declinedAt: true, declineReasonAr: true,
           countersignedAt: true, academySignatoryName: true,
           academySignatoryTitle: true, countersignNoteAr: true,
@@ -2842,12 +2845,13 @@ export class TrainerReviewService {
   }
 
   /** يسكّ رمزا جديدا ويكتب هاشَه — يُستعمل للإرسال ولتجديد رابطٍ انقضى */
-  private mintContractToken(): { token: string; tokenHash: string; expiresAt: Date } {
+  /** رمزُ توقيعٍ جديد — وأجلُه نافذةُ التوقيع، إلّا أن يُعطى غيرَها (التذكيرُ الأخير) */
+  private mintContractToken(days: number = CONTRACT_SIGNING_LINK_DAYS): { token: string; tokenHash: string; expiresAt: Date } {
     const token = newToken()
     return {
       token,
       tokenHash: sha256(token),
-      expiresAt: new Date(Date.now() + CONTRACT_SIGNING_LINK_DAYS * 86_400_000),
+      expiresAt: new Date(Date.now() + days * 86_400_000),
     }
   }
 
@@ -3581,6 +3585,57 @@ export class TrainerReviewService {
       url: this.signingUrl(token), expiresAt, resend: true,
     })
     return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: mail.status }
+  }
+
+  /* ═══ التذكيرُ الأخير — مرّةً واحدة، وأجلُه ثلاثةُ أيّام (١ أكتوبر ٢٠٢٦) ═══
+
+     طلبُ صاحب المنصّة: «زرٌّ يذكّر المدرّبَ آخرَ مرّةٍ بتوقيع الاتفاقيّة، والعقدُ
+     صالحٌ ثلاثةَ أيّام». وهو «جدِّدِ الرابط» بوجهٍ آخر: رمزٌ جديدٌ — فالقديمُ لا
+     يُعرَف إلّا ببصمته، ولا يُرسَل ما لا يُعرَف — بأجل `FINAL_REMINDER_DAYS`،
+     ورسالةٌ تقول إنّه الأخير وإلى متى.
+
+     **ومرّةً واحدة**: «أخيرٌ» يُرسَل مرّتين يكذّب أوّلَه. فالشرطُ في الكتابة
+     نفسِها (`finalReminderAt: null` مع `status: 'sent'`)، فنقرتان معا لا تُخرجان
+     رسالتين، ولا يُذكَّر من وقّع بين القراءة والكتابة. ومن أراد مهلةً بعده
+     فـ«جدِّدِ الرابط» قائمٌ بيومَيه. */
+  async sendFinalReminder(contractId: string, actorId: string) {
+    const contract = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (contract.status !== 'sent') {
+      throw new AuthError('bad_state', 'لا يُذكَّر إلّا بعرضٍ مرسَلٍ لم يُوقَّع بعد', 409)
+    }
+    if (contract.finalReminderAt) {
+      throw new AuthError('already_reminded', 'أُرسل التذكيرُ الأخيرُ بهذا العرض من قبل — وجدِّدِ الرابطَ إن أردتَ مهلةً أخرى', 409)
+    }
+    const app = contract.profile.application
+    const { token, tokenHash, expiresAt } = this.mintContractToken(FINAL_REMINDER_DAYS)
+    const done = await this.prisma.trainerContract.updateMany({
+      where: { id: contractId, status: 'sent', finalReminderAt: null },
+      data: { tokenHash, tokenExpiresAt: expiresAt, finalReminderAt: new Date() },
+    })
+    if (done.count === 0) {
+      throw new AuthError('already_reminded', 'تغيّر العرضُ قبل الإرسال — أُرسل تذكيرُه أو وُقّع. حدِّثِ الصفحة', 409)
+    }
+    const to = contract.signerEmail ?? app.email
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.final_reminder_sent', entityType: 'trainer_contract', entityId: contractId,
+      /* والأجلُ نصّا: `sanitize` الأثرِ يجعل `Date` كائنا فارغا — فيضيع الأجلُ من سجلّه */
+      meta: { sentTo: to, expiresAt: expiresAt.toISOString(), days: FINAL_REMINDER_DAYS },
+    })
+    const url = this.signingUrl(token)
+    let emailDelivery: DirectMailStatus = 'failed'
+    try {
+      const mail = contractFinalReminderMail({
+        fullName: app.fullName, reference: app.reference, title: contract.title, url, expiresAt,
+      })
+      emailDelivery = (await sendDirectEmail(this.prisma, { to, subject: mail.subject, ...renderMail(mail.doc) })).status
+    } catch {
+      /* البريدُ يسقط والتذكيرُ وقع: الرابطُ الجديدُ يُعاد إلى الشاشة فيُرسَل بيد */
+    }
+    return { ok: true as const, signingUrl: url, expiresAt, emailDelivery }
   }
 
   /** الإلغاء — وما أُرسل لا يُحذف. الصفُّ يبقى دليلا على ما رُكّب ومن ألغاه */

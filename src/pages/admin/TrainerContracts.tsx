@@ -20,12 +20,13 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
+import { BadgeCheck, Ban, BellRing, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import Modal from "@/components/Modal";
 import {
   CONTRACT_BODY_VERSION, SPECIAL_TERMS_MAX_CHARS, specialTermsItemsAr, type ContractCompensation,
 } from "@/application/trainer/contract-body";
+import { FINAL_REMINDER_DAYS, daysWindowAr } from "@/application/trainer/notice-periods";
 import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
@@ -105,6 +106,8 @@ interface ContractRow {
   specialTermsAr: string | null;
   gatesActivation: boolean; sentAt: string | null; signedAt: string | null;
   revokedAt: string | null; revokeReasonAr: string | null; createdAt: string;
+  /** التذكيرُ الأخيرُ بالتوقيع وأجلُ الرابط — مرّةً واحدةً لكلّ عرض */
+  finalReminderAt: string | null; tokenExpiresAt: string | null;
   signerLegalName: string | null; declinedAt: string | null; declineReasonAr: string | null;
   countersignedAt: string | null; academySignatoryName: string | null;
   academySignatoryTitle: string | null; countersignNoteAr: string | null;
@@ -259,6 +262,8 @@ export default function TrainerContracts() {
      قد تتعثّر، ومن يملك الصلاحيّةَ يحتاج نسخةً يسلّمها بيده. ولا يُخزَّن
      الرمزُ في القاعدة، فهذه فرصتُه الوحيدة. */
   const [link, setLink] = useState<{ id: string; url: string } | null>(null);
+  /* العرضُ الذي يُسأل عن تذكيره الأخير — النافذةُ تقول ما سيقع قبل أن يقع */
+  const [reminding, setReminding] = useState<ContractRow | null>(null);
   /* ═══ الاعتمادُ ملحوظتُه معه ═══
 
      الاعتمادُ مطابقةُ اسمٍ بوثيقة، والملحوظةُ محلُّ ما طابقه المعتمِد — أو
@@ -1050,6 +1055,17 @@ c.gatesActivation
                             جدِّدِ الرابط
                           </Button>
                         )}
+                        {/* ═══ والتذكيرُ الأخير — مرّةً واحدة (١ أكتوبر ٢٠٢٦) ═══
+
+                            طلبُ صاحب المنصّة: «زرٌّ يذكّر المدرّبَ آخرَ مرّةٍ بتوقيع
+                            الاتفاقيّة، والعقدُ صالحٌ ثلاثةَ أيّام». ويغيب بعد أن يُرسَل:
+                            «أخيرٌ» يُرسَل مرّتين يكذّب أوّلَه — والخادمُ يردّ الثاني
+                            أيضا. وتحته سطرٌ يقول متى أُرسل وإلى متى العرضُ صالح. */}
+                        {c.status === "sent" && !c.finalReminderAt && (
+                          <Button size="sm" icon={BellRing} onClick={() => setReminding(c)}>
+                            تذكيرٌ أخير — {daysWindowAr(FINAL_REMINDER_DAYS)}
+                          </Button>
+                        )}
                         {c.bodyHash && (
                           <Button size="sm" icon={FileText}
                             onClick={() => void run(async () => {
@@ -1158,6 +1174,14 @@ c.gatesActivation
                               </span>
                             )}
                       </Panel>
+                    )}
+                    {c.status === "sent" && c.finalReminderAt && (
+                      <p className="mt-1 text-read opacity-80">
+                        أُرسل التذكيرُ الأخيرُ {fmtDateTime(c.finalReminderAt)}
+                        {c.tokenExpiresAt && (new Date(c.tokenExpiresAt).getTime() > Date.now()
+                          ? ` — والعرضُ صالحٌ حتّى ${fmtDateTime(c.tokenExpiresAt)}`
+                          : ` — وانقضى أجلُه ${fmtDateTime(c.tokenExpiresAt)} فسقط العرض؛ وجدِّدِ الرابطَ إن أردتَ مهلةً أخرى`)}
+                      </p>
                     )}
                     {link?.id === c.id && (
                       <Panel tone="positive" className="mt-2 p-2">
@@ -1810,6 +1834,32 @@ c.gatesActivation
             <ContractDocument doc={parseContractDoc(shownBody.body)} />
           </div>
         </Card>
+      )}
+
+      {/* ═══ التذكيرُ الأخير: ما سيقع يُقال قبل أن يقع ═══ */}
+      {reminding && (
+        <ConfirmAction
+          titleAr={`تذكيرٌ أخيرٌ بتوقيع «${reminding.title}»`}
+          confirmLabelAr="أرسِلِ التذكيرَ الأخير"
+          tone="default"
+          busy={busy}
+          onCancel={() => setReminding(null)}
+          onConfirm={() => void run(async () => {
+            const r = await apiPost<{ signingUrl: string }>(
+              `/api/admin/trainer-contracts/${reminding.id}/final-reminder`, {});
+            setLink({ id: reminding.id, url: r.signingUrl });
+            setReminding(null);
+            await load();
+          }, `أُرسل التذكيرُ الأخير — والعرضُ صالحٌ ${daysWindowAr(FINAL_REMINDER_DAYS)}`, reminding.id)}
+        >
+          <p className="text-read leading-7">
+            يصله بريدٌ يقول إنّه آخرُ تذكيرٍ بالتوقيع، برابطٍ جديدٍ صالحٍ {daysWindowAr(FINAL_REMINDER_DAYS)} بتوقيت
+            عمّان — ويتوقّف رابطُه السابق. فإن لم يوقّع حتّى ذلك سقط العرضُ كما يقول متنُه.
+          </p>
+          <p className="mt-2 text-read leading-7 opacity-80">
+            ويُرسَل مرّةً واحدة. وبعده يبقى «جدِّدِ الرابط» لمن أردتَ أن تمنحه مهلةً أخرى.
+          </p>
+        </ConfirmAction>
       )}
 
       {/* والسببُ الذي يصل إنسانا يُكتب في نافذةٍ تُقرأ، لا في سطر متصفّح */}

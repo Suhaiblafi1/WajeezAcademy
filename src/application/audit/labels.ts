@@ -287,6 +287,7 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.revoke': 'إلغاءُ عقدِ مدرّبٍ قبل توقيعه',
   'trainer.contract.send': 'إرسالُ العقد إلى المدرّب للتوقيع',
   'trainer.contract.resend': 'تجديدُ رابط توقيع العقد',
+  'trainer.contract.final_reminder_sent': 'التذكيرُ الأخيرُ بتوقيع العقد — صالحٌ ثلاثةَ أيّام',
   'trainer.contract.document_register': 'رفعُ المدرّبِ وثيقةً مع عقده',
   'trainer.contract.sign_by_trainer': 'توقيعُ المدرّبِ عقدَه بنفسه',
   'trainer.contract.decline': 'اعتذارُ المدرّبِ عن عقده',

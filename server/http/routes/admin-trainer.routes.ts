@@ -493,6 +493,15 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.resendContract(contractId, req.auth!.userId)
   })
 
+  /* التذكيرُ الأخير — رمزٌ جديدٌ صالحٌ ثلاثةَ أيّام، ومرّةً واحدةً لكلّ عرض (١ أكتوبر ٢٠٢٦) */
+  app.post('/api/admin/trainer-contracts/:contractId/final-reminder', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'التذكيرُ الأخيرُ بالتوقيع — والعرضُ صالحٌ ثلاثةَ أيّام' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    return review.sendFinalReminder(contractId, req.auth!.userId)
+  })
+
   /* ═══ تحديثُ العروض المفتوحة في مكانها (٣٠ سبتمبر ٢٠٢٦) ═══
 
      بابٌ واحدٌ لا لعقدٍ بعينه: الغرضُ أن يلحق الجميعَ نصٌّ تبدّل، ولو كان
