@@ -37,7 +37,8 @@ import { staffControlCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDateAr } from "@/utils/format";
 import {
-  MAX_TRAINER_CODE_PERCENT, MIN_TRAINER_CODE_PERCENT, codeBlockerAr,
+  MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MIN_TRAINER_CODE_PERCENT, codeBlockerAr, codeFaceAr,
+  codeQuoteFor, codeValueRows, type CodePricingCourse,
 } from "@/application/trainer/trainer-code";
 
 interface MyReferral { code: string; slug: string; url: string; publicReady: boolean; registered: number }
@@ -51,7 +52,7 @@ interface IssuedDiscount {
 interface DiscountsState { discounts: IssuedDiscount[] }
 /** كودٌ أصدره المدرّب — كما يرسله `TrainerCodeService.listFor` */
 interface TrainerCodeRow {
-  id: string; code: string; percentOff: number; labelAr: string; status: string;
+  id: string; code: string; percentOff: number | null; amountOff: number | null; labelAr: string; status: string;
   state: "live" | "paused" | "revoked" | "expired" | "exhausted"; stateAr: string;
   maxUses: number | null; usedCount: number; expiresAt: string | null; createdAt: string;
   uses: { paid: number; held: number; refunded: number };
@@ -61,8 +62,12 @@ interface TrainerCodeRow {
 interface CodeTerms { accepted: boolean; via: "contract" | "consent" | null; acceptedAt: string | null; version: string; clauseAr: string }
 /** رصيدُ أكواده — ما له عندنا ناقصا ما التزم به ولم يُحسم (`trainer-code-budget.ts`) */
 interface CodeBudget { allowance: number; committed: number; remaining: number; currency: string }
-interface CodesState { terms: CodeTerms; codes: TrainerCodeRow[]; budget: CodeBudget }
-const EMPTY_CODE_FORM = { percentOff: "", labelAr: "", maxUses: "", expiresAt: "" };
+interface CodesState { terms: CodeTerms; codes: TrainerCodeRow[]; budget: CodeBudget; pricing: CodePricingCourse[] }
+/** وجهُ الكود: نسبةٌ أو مبلغ — قرارُ ١ أكتوبر ٢٠٢٦ (البند 4-10) */
+type CodeMode = "percent" | "amount";
+const EMPTY_CODE_FORM = { mode: "percent" as CodeMode, percentOff: "", amountOff: "", labelAr: "", maxUses: "", expiresAt: "" };
+/** دورةٌ بمئةٍ للمثال — حين لا دورةَ مفتوحةً له بعدُ يُقرأ جدولُها */
+const EXAMPLE_PRICE = 100;
 const PURCHASE_FORMS = { one: "شراءٍ مدفوع", two: "شراءين مدفوعين", few: "مشترياتٍ مدفوعة", many: "شراءً مدفوعا" } as const;
 const USE_FORMS = { one: "استعمال", two: "استعمالين", few: "استعمالات", many: "استعمالا" } as const;
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
@@ -105,18 +110,27 @@ function MyCodes() {
   useEffect(() => { load(); }, [load]);
 
   if (!state) return err ? <Inset as="p" tone="danger" className="mb-6 px-4 py-3 text-read leading-6 text-red-200">{err}</Inset> : null;
-  const { terms, codes, budget } = state;
+  const { terms, codes, budget, pricing } = state;
 
-  const pct = Number(form.percentOff);
+  const byPercent = form.mode === "percent";
+  const raw = byPercent ? form.percentOff : form.amountOff;
   const input = {
-    percentOff: pct,
+    percentOff: byPercent && raw.trim() !== "" ? Number(raw) : null,
+    amountOff: !byPercent && raw.trim() !== "" ? Number(raw) : null,
     labelAr: form.labelAr,
     maxUses: form.maxUses.trim() === "" ? null : Number(form.maxUses),
     expiresAt: form.expiresAt ? new Date(`${form.expiresAt}T23:59:59`) : null,
   };
   /* الحاجزُ من القواعد نفسِها التي يردّ بها الخادم — لا نصٌّ ثانٍ هنا */
-  const blocker = form.percentOff.trim() === "" ? null : codeBlockerAr(input);
-  const ready = form.percentOff.trim() !== "" && blocker === null && form.labelAr.trim().length >= 2;
+  const blocker = raw.trim() === "" ? null : codeBlockerAr(input);
+  const ready = raw.trim() !== "" && blocker === null && form.labelAr.trim().length >= 2;
+  /* ═══ وقيمتُه بالدولار قبل أن يُصدَر (البند 4-10) ═══
+     من `codeValueRows` و`codeQuoteFor` اللتين تحسبان بالسلّة نفسِها — فالرقمُ
+     الذي يراه هو الذي يُحسم، وما يدفعه المتعلّمُ ما تقوله السلّة لا طرحٌ هنا.
+     وحين لا دورةَ مفتوحةً له يُقرأ مثالٌ بمئة. */
+  const face = { percentOff: input.percentOff, amountOff: input.amountOff };
+  const rows = blocker === null && raw.trim() !== "" ? codeValueRows(face, pricing) : [];
+  const example = blocker === null && raw.trim() !== "" ? codeQuoteFor(face, EXAMPLE_PRICE) : null;
 
   const act = async (fn: () => Promise<unknown>, fallback: string) => {
     setBusy(true); setErr("");
@@ -127,7 +141,7 @@ function MyCodes() {
 
   const create = async () => {
     const ok = await act(() => apiPost("/api/trainer/me/codes", {
-      percentOff: input.percentOff,
+      ...(input.percentOff != null ? { percentOff: input.percentOff } : { amountOff: input.amountOff }),
       labelAr: input.labelAr.trim(),
       ...(input.maxUses != null ? { maxUses: input.maxUses } : {}),
       ...(input.expiresAt ? { expiresAt: input.expiresAt.toISOString() } : {}),
@@ -149,9 +163,10 @@ function MyCodes() {
       </p>
 
       <p className="mt-2 text-read leading-7 text-muted-foreground">
-        لك أن تُصدر كودَ خصمٍ <b className="text-foreground">بنسبةٍ تحدّدها أنت حتّى {MAX_TRAINER_CODE_PERCENT}٪</b> وتنشره
+        لك أن تُصدر كودَ خصمٍ <b className="text-foreground">بنسبةٍ أو بمبلغٍ تحدّده أنت</b> وتنشره
         لمن تشاء، فيكتبه المتعلّمُ في خانة الكود حين يشتري. ويقع على <b className="text-foreground">دوراتك أنت وحدَها</b> —
-        لا على ما يشتريه معها من دوراتِ غيرك — بعد خصوم الأكاديميّة، ومرّةً واحدةً لكلّ متعلّم.
+        لا على ما يشتريه معها من دوراتِ غيرك — بعد خصوم الأكاديميّة، ومرّةً واحدةً لكلّ متعلّم. ولا يتجاوز ما يمنحه
+        بأيّ الوجهين <b className="text-foreground">{MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة</b>، وترى قيمتَه بالدولار قبل أن تُصدره.
       </p>
       <p className="mt-2 text-read leading-7 text-muted-foreground">
         وما يمنحه الكودُ <b className="text-foreground">من مستحقّاتك أنت</b>: في كلّ شراءٍ دُفع يُدرج ما مُنح فعلا بندا في أوّل
@@ -182,9 +197,15 @@ function MyCodes() {
       {!terms.accepted ? (
         <Inset className="mt-4 px-4 py-4">
           <p className="text-read font-black text-foreground">البندُ 4-10 بصيغته الجديدة — اقبله مرّةً واحدة</p>
+          {/* ═══ ولا يُفترض ما وقّع عليه (١ أكتوبر ٢٠٢٦) ═══
+              كانت الجملةُ «وقّعتَ عقدك على خصمٍ بمبلغٍ معلوم» — صادقةً حين كان
+              السائلُ من وقّع قبل الجيل الثالث عشر. وصار يُسأل كذلك من قبل
+              الصيغةَ الأولى للكود، وتلك ليست ما وقّع عليه. فتُقال الصيغةُ الجديدةُ
+              بما صار فيها، لا بما ظُنّ أنّه كان عنده. */}
           <p className="mt-1 text-read leading-7 text-muted-foreground">
-            وقّعتَ عقدك على خصمٍ <b className="text-foreground">بمبلغٍ معلوم</b>. والكودُ بالنسبة يُحسم من مستحقّاتك بصيغةٍ
-            جديدةٍ للبند نفسِه، فلا يُصدَر حتّى تقبلها. هذا نصُّها كما في العقد:
+            تغيّرت صيغةُ البند الذي يُحسم به من مستحقّاتك ما تمنحه أكوادُك: <b className="text-foreground">صار الكودُ نسبةً أو
+            مبلغا</b>، ولا يتجاوز ما يمنحه {MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة، وترى قيمتَه قبل إصداره. فلا يُصدَر كودٌ
+            حتّى تقبلها. هذا نصُّها كما في العقد:
           </p>
           <blockquote className="mt-3 border-s-2 border-gold/50 ps-3 text-read leading-7 text-foreground">{terms.clauseAr}</blockquote>
           <label className="mt-3 flex cursor-pointer items-start gap-2 text-read leading-6 text-foreground">
@@ -200,14 +221,35 @@ function MyCodes() {
         <Button tone="secondary" size="sm" className="mt-3" onClick={() => setOpen(true)}>أصدِرْ كودا</Button>
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <StaffField label="النسبة" hint={`عددٌ صحيحٌ بين ${MIN_TRAINER_CODE_PERCENT} و${MAX_TRAINER_CODE_PERCENT}.`}>
-            <input
-              type="number" inputMode="numeric" dir="ltr" min={MIN_TRAINER_CODE_PERCENT} max={MAX_TRAINER_CODE_PERCENT} step="1"
-              value={form.percentOff} disabled={busy}
-              onChange={(e) => setForm({ ...form, percentOff: e.target.value })}
-              className={`${staffControlCls} text-left`}
-            />
-          </StaffField>
+          {/* ═══ نسبةٌ أو مبلغ (١ أكتوبر ٢٠٢٦) ═══
+              قرارُ صاحب المنصّة: «يحقّ للمدرّب أن يختار إمّا نسبةً أو رقما».
+              والمبلغُ رقمٌ يقابله المدرّبُ برقم أتعابه، والنسبةُ تتبدّل بسعر كلّ دورة. */}
+          <div className="flex flex-wrap gap-2 sm:col-span-2" role="group" aria-label="وجهُ الكود">
+            <Button tone={byPercent ? "secondary" : "ghost"} size="sm" disabled={busy} aria-pressed={byPercent}
+              onClick={() => setForm({ ...form, mode: "percent" })}>بنسبة</Button>
+            <Button tone={byPercent ? "ghost" : "secondary"} size="sm" disabled={busy} aria-pressed={!byPercent}
+              onClick={() => setForm({ ...form, mode: "amount" })}>بمبلغ</Button>
+          </div>
+          {byPercent ? (
+            <StaffField label="النسبة" hint={`عددٌ صحيحٌ بين ${MIN_TRAINER_CODE_PERCENT} و${MAX_TRAINER_CODE_PERCENT}.`}>
+              <input
+                type="number" inputMode="numeric" dir="ltr" min={MIN_TRAINER_CODE_PERCENT} max={MAX_TRAINER_CODE_PERCENT} step="1"
+                value={form.percentOff} disabled={busy}
+                onChange={(e) => setForm({ ...form, percentOff: e.target.value })}
+                className={`${staffControlCls} text-left`}
+              />
+            </StaffField>
+          ) : (
+            <StaffField label="المبلغ بالدولار"
+              hint={`حتّى ${MAX_TRAINER_CODE_AMOUNT} — وما يُمنح فعلا لا يتجاوز ${MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة.`}>
+              <input
+                type="number" inputMode="decimal" dir="ltr" min={1} max={MAX_TRAINER_CODE_AMOUNT} step="0.01"
+                value={form.amountOff} disabled={busy}
+                onChange={(e) => setForm({ ...form, amountOff: e.target.value })}
+                className={`${staffControlCls} text-left`}
+              />
+            </StaffField>
+          )}
           <StaffField label="لمن أو أين تنشره؟" hint="اسمٌ تعرفه به — يُطبع في كشفك لتعرف بعد شهرين عمّ حُسم.">
             <input
               value={form.labelAr} disabled={busy} maxLength={100}
@@ -231,12 +273,39 @@ function MyCodes() {
               className={`${staffControlCls} text-left`}
             />
           </StaffField>
-          {/* مثالٌ من النسبة التي كتبها — لا رقمٌ ثابت: «ما يُحسم منك» يُقرأ قبل
-              أن يُصدَر، على أبسط شراءٍ بلا خصمٍ آخر */}
-          {blocker === null && pct > 0 && (
+          {/* ═══ ما يمنحه كودُك على كلّ دورةٍ من دوراتك — قبل أن يُصدَر (البند 4-10) ═══
+
+              شكوى المدرّب التي جاء بها هذا الجدول: «يأخذ ١٥ عن هذا الشخص ويعطيه
+              خصما بعشرين، فيخسر فيه خمسة». فيرى لكلّ دورةٍ ما يُحسم منه، ويُنبَّه حين
+              يزيد على أجر مقعده — والقرارُ له. والأرقامُ من `codeValueRows` التي
+              تحسب بها السلّةُ نفسُها، على شراء الدورة وحدَها بلا خصمٍ آخر. */}
+          {rows.length > 0 && (
+            <Inset className="px-4 py-3 text-read leading-6 text-muted-foreground sm:col-span-2">
+              <p className="font-bold text-foreground">ما يمنحه كودُك على كلّ دورة — إن اشتُريت وحدَها</p>
+              <ul className="mt-2 space-y-2">
+                {rows.map((r) => (
+                  <li key={r.cohortId}>
+                    <span className="text-foreground">{r.titleAr}</span> — بسعر{" "}
+                    <span dir="ltr" className="font-mono">{r.price} {r.currency}</span>: يدفع المتعلّم{" "}
+                    <span dir="ltr" className="font-mono text-foreground">{r.pays} {r.currency}</span>، ويُحسم منك{" "}
+                    <b dir="ltr" className="font-mono text-gold-ink">{r.value} {r.currency}</b>
+                    {r.capped && <> — سقفُه {MAX_TRAINER_CODE_PERCENT}٪ من سعرها</>}
+                    {r.exceedsSeatFee && r.seatFee !== null && (
+                      <p className="mt-1 font-bold text-danger-ink">
+                        انتبه: هذا أكثرُ من أجر المقعد العامّ هنا (<span dir="ltr" className="font-mono">{r.seatFee} {r.currency}</span>)
+                        — فكلُّ من يستعمله ولم يأتِ من رابط دعوتك يُنقص كشفَك بالفرق.
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2">وإن كان في الطلب خصمُ باقةٍ من الأكاديميّة وقع الكودُ على ما بقي بعده، فيقلّ ما يُحسم منك.</p>
+            </Inset>
+          )}
+          {rows.length === 0 && example !== null && example.value > 0 && (
             <Inset as="p" className="px-4 py-3 text-read leading-6 text-muted-foreground sm:col-span-2">
-              مثال: دورةٌ من دوراتك بمئة، بلا خصمٍ آخر — يدفع المتعلّم <b className="text-foreground">{100 - pct}</b>،
-              ويُحسم منك <b className="text-gold-ink">{pct}</b>. وإن كان في الطلب خصمُ باقةٍ من الأكاديميّة وقع الكودُ على ما بقي بعده، فيقلّ ما يُحسم منك.
+              مثال: دورةٌ بمئة، بلا خصمٍ آخر — يدفع المتعلّم <b className="text-foreground">{example.pays}</b>،
+              ويُحسم منك <b className="text-gold-ink">{example.value}</b>. ويظهر هنا جدولُ دوراتك حين تُفتح لك شعبة.
             </Inset>
           )}
           {blocker && (
@@ -261,7 +330,7 @@ function MyCodes() {
               <Inset as="li" key={c.id} className="px-4 py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="text-read font-bold text-foreground">
-                    <span dir="ltr" className="font-mono">{c.percentOff}٪</span> — {c.labelAr}
+                    <span dir="ltr" className="font-mono">{codeFaceAr(c, (a) => `${a} ${c.currency}`)}</span> — {c.labelAr}
                   </span>
                   <span className="text-read text-muted-foreground">{c.stateAr}</span>
                 </div>

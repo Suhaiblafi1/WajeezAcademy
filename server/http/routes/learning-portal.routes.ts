@@ -25,7 +25,7 @@ import { resourceSourceBlockerAr } from '../../../src/application/trainer/module
 import { ReferralService } from '../../services/referral.service'
 import { TrainerDiscountService } from '../../services/trainer-discount.service'
 import { TrainerCodeService } from '../../services/trainer-code.service'
-import { MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, MIN_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
+import { MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, MIN_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
 import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
 import { AuthError } from '../../services/auth.service'
@@ -449,11 +449,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/me/codes', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أصدِرْ كودَ خصمٍ بنسبةٍ على دوراتي، يُحسم ما يمنحه من مستحقّاتي' },
+    schema: { tags: ['trainer-ops'], summary: 'أصدِرْ كودَ خصمٍ بنسبةٍ أو بمبلغٍ على دوراتي، يُحسم ما يمنحه من مستحقّاتي' },
   }, async (req, reply) => {
     const body = z.object({
-      /* نسبةٌ لا مبلغ — والحدّان من القواعد نفسِها التي يقيّدها قيدُ القاعدة */
-      percentOff: z.number().int().min(MIN_TRAINER_CODE_PERCENT).max(MAX_TRAINER_CODE_PERCENT),
+      /* نسبةٌ **أو** مبلغ (١ أكتوبر ٢٠٢٦) — والحدّان من القواعد نفسِها التي
+         يقيّدها قيدُ القاعدة، و«أحدُهما لا كلاهما» يقوله `codeBlockerAr` بجملته */
+      percentOff: z.number().int().min(MIN_TRAINER_CODE_PERCENT).max(MAX_TRAINER_CODE_PERCENT).nullish(),
+      amountOff: z.number().min(1).max(MAX_TRAINER_CODE_AMOUNT).nullish(),
       labelAr: z.string().min(2).max(100),
       maxUses: z.number().int().min(1).max(MAX_TRAINER_CODE_USES).optional(),
       expiresAt: z.coerce.date().optional(),

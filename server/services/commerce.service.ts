@@ -983,7 +983,7 @@ export class CommerceService {
     return this.prisma.coupon.findMany({
       orderBy: { id: 'desc' },
       include: {
-        trainerCode: { select: { percentOff: true, status: true } },
+        trainerCode: { select: { percentOff: true, amountOff: true, status: true } },
         trainerDiscount: { select: { status: true } },
       },
     })

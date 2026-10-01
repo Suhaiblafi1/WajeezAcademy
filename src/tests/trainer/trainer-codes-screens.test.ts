@@ -44,8 +44,40 @@ describe('① «دعوتي»: القبولُ أوّلا، وبنصّ الخاد�
 
   it('⚠️ ورصيدُ أكواده يُقال له — رقمُ الخادم لا حسابٌ في الشاشة', () => {
     /* المشتري يرى «بلغ حدَّه الآن» بلا سبب؛ فالسببُ يُقال لصاحبه هنا */
-    expect(MY_CODES).toMatch(/const \{ terms, codes, budget \} = state/)
+    /* ومعه أسعارُ دوراته منذ ١ أكتوبر ٢٠٢٦ (جدولُ «ما يمنحه كودُك») — والمقيسُ
+       أنّ الرصيدَ من حال الخادم، لا أنّ الحالَ لا تحمل غيرَه */
+    expect(MY_CODES).toMatch(/const \{ terms, codes, budget(, \w+)* \} = state/)
     expect(MY_CODES, 'الرصيدُ غائبٌ عن اللوحة').toMatch(/\{terms\.accepted && \([\s\S]{0,300}\{budget\.remaining\} \{budget\.currency\}/)
+  })
+})
+
+/* ═══ وجهُ الكود وقيمتُه قبل أن يُصدَر — البند 4-10 بصيغته الثانية (١ أكتوبر ٢٠٢٦) ═══
+   الحسابُ مقيسٌ في `contract-v21-amendments.test.ts` وفي الخادم؛ وهنا أنّ الشاشةَ
+   تأخذ أرقامَها منه ولا تحسب بجانبه — فرقمٌ يُطرح في الشاشة يفترق يوما عمّا يُحسم. */
+describe('①ب «دعوتي»: الوجهُ واحدٌ، وقيمتُه من السلّة قبل الإصدار', () => {
+  it('⚠️ الوضعُ يحدّد الوجه — فلا يُرسَل نسبةٌ ومبلغٌ معا', () => {
+    expect(MY_CODES, 'النسبةُ تُقرأ في وضع المبلغ').toMatch(/percentOff: byPercent && /)
+    expect(MY_CODES, 'المبلغُ يُقرأ في وضع النسبة').toMatch(/amountOff: !byPercent && /)
+    expect(MY_CODES, 'الإصدارُ يُرسل الوجهين')
+      .toMatch(/\.\.\.\(input\.percentOff != null \? \{ percentOff: input\.percentOff \} : \{ amountOff: input\.amountOff \}\)/)
+  })
+
+  it('⚠️ والقيمةُ وما يدفعه المتعلّمُ من السلّة نفسِها — لا طرحٌ في الشاشة', () => {
+    expect(MY_CODES, 'جدولُ الدورات لا يحسب بالسلّة').toMatch(/const rows = [^;]*codeValueRows\(face, pricing\)/)
+    expect(MY_CODES, 'المثالُ لا يحسب بالسلّة').toMatch(/const example = [^;]*codeQuoteFor\(face, EXAMPLE_PRICE\)/)
+    expect(MY_CODES).toContain('{r.pays} {r.currency}')
+    expect(MY_CODES).toContain('{r.value} {r.currency}')
+    expect(MY_CODES).toContain('{example.pays}')
+    expect(MY_CODES, 'عاد الطرحُ في الشاشة').not.toMatch(/EXAMPLE_PRICE - /)
+  })
+
+  /* شكوى المدرّب نفسُها: «يأخذ ١٥ عن هذا الشخص ويعطيه خصما بعشرين» */
+  it('⚠️ ويُنبَّه تحت الدورة التي يزيد فيها الخصمُ على أجر مقعده — ويُقال إنّه سُقف', () => {
+    const list = MY_CODES.slice(MY_CODES.indexOf('rows.map((r) =>'), MY_CODES.indexOf('))}', MY_CODES.indexOf('rows.map((r) =>')))
+    expect(list, 'لا قائمةَ للدورات').not.toBe('')
+    expect(list, 'التنبيهُ غائبٌ عن صفّ الدورة')
+      .toMatch(/\{r\.exceedsSeatFee && r\.seatFee !== null && \(\s*<p className="[^"]*\btext-danger-ink\b/)
+    expect(list, 'لا يُقال إنّ المبلغَ سُقف').toMatch(/\{r\.capped && /)
   })
 })
 
@@ -96,6 +128,7 @@ describe('④ «مستحقّاتي» والماليّة', () => {
   it('⚠️ وكودُ المدرّب يُسمّى في قائمة الكوبونات — لا يُقرأ حملةً منّا', () => {
     const finance = code('src/pages/admin/Finance.tsx')
     expect(finance).toMatch(/\{c\.trainerCode && <Chip/)
-    expect(code('server/services/commerce.service.ts')).toMatch(/trainerCode: \{ select: \{ percentOff: true, status: true \} \}/)
+    /* ووجهُه نسبةً أو مبلغا (١ أكتوبر ٢٠٢٦) — فقائمةُ الإدارة تحمل الاثنين */
+    expect(code('server/services/commerce.service.ts')).toMatch(/trainerCode: \{ select: \{ percentOff: true, amountOff: true, status: true \} \}/)
   })
 })
