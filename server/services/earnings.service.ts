@@ -9,7 +9,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
-import { perSeatBreakdown } from '../../src/application/trainer/seat-fee'
+import { cohortStartedForFloor, perSeatBreakdown } from '../../src/application/trainer/seat-fee'
 import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
 import { cohortLeadTrainer } from './cohort-lead'
 import { PAYOUT_OBJECTION_DAYS } from '../../src/application/trainer/notice-periods'
@@ -92,6 +92,7 @@ export class EarningsService {
           general, referred, rate,
           referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
           minSeats: rule.minSeats,
+          cohortStarted: cohortStartedForFloor(ct.cohort.status),
         })
       return {
         cohortId: ct.cohort.id, title: ct.cohort.title, status: ct.cohort.status,
@@ -569,8 +570,17 @@ export class EarningsService {
         general, referred, rate: Number(rule.rate),
         referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
         minSeats: rule.minSeats,
+        cohortStarted: cohortStartedForFloor(cohort.status),
       })
-      const minNote = b.floorApplied ? ` (فعلي ${actual} — طُبق الحد الأدنى ${rule.minSeats})` : ''
+      /* ═══ والتكملةُ بندٌ يُقرأ لا مقاعدُ وهميّةٌ تُنفخ (١ أكتوبر ٢٠٢٦) ═══
+
+         كان البندُ العامُّ يحمل `generalSeats` **مكمَّلا** إلى ١٥، فيقرأ
+         المدرّبُ «١٥ متعلما عامّا» وفي شعبته خمسة — رقمٌ لا يقابله إنسان،
+         ويسأل عنه فلا يجد في الكشف ما يفسّره.
+
+         فصار ما سجّل يُقرأ بعدده، والفرقُ بندا باسمه. ومعه الرقمان اللذان
+         يُراد بهما: ما احتُسب وما ضُمن. */
+      const earned = b.generalAmount + b.referralAmount
       /* ═══ والأعلى يُذكَر أوّلا (٢١ سبتمبر ٢٠٢٦) ═══
 
          قرارُ صاحب المنصّة: «ابدأ بالأعلى وهو رابط الإحالة الخاص به وبعدها
@@ -588,11 +598,25 @@ export class EarningsService {
           sourceRef: `cohort:${cohortId}:referral`,
         })
       }
+      /* والبندُ العامُّ يُدفَع أبدا ولو بصفر: مرجعُه `cohort:<id>` هو الذي
+         يمنع كشفا ثانيا للشعبة نفسِها (`generateForCohort`)، فحذفُه حين لا
+         مقعدَ عامَّ يفتح بابَ التكرار. */
       items.push({
-        description: `تدريب «${courseTitle}» — ${b.generalSeats} متعلماً عامّا × ${Number(rule.rate)} ${rule.currency}${minNote}`,
+        description: general > 0
+          ? `تدريب «${courseTitle}» — ${general} متعلماً عامّا × ${Number(rule.rate)} ${rule.currency}`
+          : `تدريب «${courseTitle}» — لا متعلم من تسويق الأكاديمية`,
         amount: b.generalAmount,
         sourceRef: `cohort:${cohortId}`,
       })
+      /* وحين تُكمَّل الأرضيّةُ فمجموعُ الكشف هو الأرضيّةُ بعينها، فتُقرأ منه */
+      if (b.floorTopUp > 0) {
+        items.push({
+          description: `تكملة الحد الأدنى المضمون — المسجلون ${actual}،`
+            + ` والمحتسب ${earned} ${rule.currency}، والمضمون ${b.total} ${rule.currency}`,
+          amount: b.floorTopUp,
+          sourceRef: `cohort:${cohortId}:floor`,
+        })
+      }
     } else if (rule.type === 'fixed_per_cohort') {
       items.push({
         description: `أتعاب ثابتة — شعبة «${cohort.title}» (${courseTitle})`,
@@ -642,16 +666,20 @@ export class EarningsService {
      و`db` معاملةُ الطلب حين يُسأل بعد قفل المدرّب — فيُقرأ على اتّصالها لا على
      اتّصالٍ ثانٍ من المجمَّع ينتظره كلُّ شراءٍ واقفٍ على القفل نفسِه. */
   async projectCohort(profileId: string, cohortId: string, extra: { seats: number; revenue: number } = { seats: 0, revenue: 0 }, db: Db = this.prisma) {
-    const cohort = await db.cohort.findUnique({ where: { id: cohortId }, select: { courseId: true } })
+    const cohort = await db.cohort.findUnique({ where: { id: cohortId }, select: { courseId: true, status: true } })
     if (!cohort) return 0
     const rule = await this.activeRule(profileId, { cohortId, courseId: cohort.courseId }, new Date(), db)
     if (!rule) return 0
     if (rule.type === 'per_seat') {
       const { referred, general } = await this.seatsBySource(cohortId, profileId, db)
+      /* ═══ ولا أرضيّةَ على شعبةٍ لم تبدأ — وهذا المسلكُ أخطرُها ═══
+         عليه يقوم **رصيدُ أكواد** المدرّب: أرضيّةُ ٢٢٥ على شعبةٍ مفتوحةٍ لم
+         تنعقد تنفخ رصيدَه، فيُصدر أكوادا على مالٍ قد لا يأتي. */
       return perSeatBreakdown({
         general: general + extra.seats, referred, rate: Number(rule.rate),
         referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
         minSeats: rule.minSeats,
+        cohortStarted: cohortStartedForFloor(cohort.status),
       }).total
     }
     if (rule.type === 'fixed_per_cohort') return Number(rule.rate)
