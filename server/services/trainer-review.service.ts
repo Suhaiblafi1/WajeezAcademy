@@ -3511,8 +3511,9 @@ export class TrainerReviewService {
 
       updated.push({ id: c.id, fullName: app.fullName, from })
 
-      /* والرسالةُ رفاهيةٌ كأخواتها: النصُّ حُدّث، والشريطُ على صفحته يقوله
-         ولو لم يصل بريد. */
+      /* والرسالةُ رفاهيةٌ كأخواتها: النصُّ حُدّث ولو لم يصل بريد، ولا يُوقَّع
+         إلّا بقراءته إلى آخره. (وكان هنا «والشريطُ على صفحته يقوله» — نُزع
+         الشريطُ في ١ أكتوبر ٢٠٢٦، وعلّتُه عند `contractByToken`.) */
       if (!notify) continue
       try {
         const mail = contractUpdatedMail({

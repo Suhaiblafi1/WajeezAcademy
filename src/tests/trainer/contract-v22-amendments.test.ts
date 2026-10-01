@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
 import {
   renderContractBodyAr, CONTRACT_BODY_VERSION, type ContractBodyInput,
 } from '@/application/trainer/contract-body'
-import { CONTRACT_CHANGELOG } from '@/application/trainer/contract-changelog'
+import { CONTRACT_CHANGELOG, changesBetween } from '@/application/trainer/contract-changelog'
 import { ACADEMY_LEGAL, academyPartyLineAr } from '@/data/academy-legal'
 
 const BASE: ContractBodyInput = {
@@ -77,10 +77,14 @@ describe('4-5 — من يتحمّل رسومَ الحوالة', () => {
 })
 
 describe('ونقاطُ `v22` تصل المدرّب', () => {
-  it('الإصدارُ الحاليّ، ونقاطُه تقول إنّ رسومَ مصرفنا علينا', () => {
-    expect(CONTRACT_BODY_VERSION).toBe('v22-2026-10-01')
-    const v = CONTRACT_CHANGELOG.find((x) => x.version === CONTRACT_BODY_VERSION)
+  /* وكان يشترط أن يكون `v22` هو الحاليّ. ورُفع الإصدارُ بعده (`v23`)، فصار يقيس
+     ما يعنيه: نقاطُه في الجدول، وتصل من كان على ما قبله ولو حُدّث إلى ما بعده. */
+  it('نقاطُه تقول إنّ رسومَ مصرفنا علينا — وتصل من كان على `v21`', () => {
+    const v = CONTRACT_CHANGELOG.find((x) => x.version === 'v22-2026-10-01')
     expect(v, 'إصدارٌ بلا نقاط').toBeDefined()
-    expect(v!.points.map((p) => p.textAr).join(' '), 'النقاطُ لا تقول حكمَ رسوم مصرفنا').toContain('رسومُ مصرفنا')
+    const points = v!.points.map((p) => p.textAr)
+    expect(points.join(' '), 'النقاطُ لا تقول حكمَ رسوم مصرفنا').toContain('رسومُ مصرفنا')
+    const reach = changesBetween('v21-2026-10-01', CONTRACT_BODY_VERSION)
+    for (const p of points) expect(reach, 'من كان على v21 لا تصله نقاطُ v22').toContain(p)
   })
 })
