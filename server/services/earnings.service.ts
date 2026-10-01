@@ -10,6 +10,9 @@ import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { cohortStartedForFloor, perSeatBreakdown } from '../../src/application/trainer/seat-fee'
+import {
+  ATTENDED_STATUSES, FUNDING_ORDER_STATUSES, SEAT_STATUSES, seatCounts,
+} from '../../src/application/trainer/counted-seat'
 import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
 import { cohortLeadTrainer } from './cohort-lead'
 import { PAYOUT_OBJECTION_DAYS } from '../../src/application/trainer/notice-periods'
@@ -528,12 +531,11 @@ export class EarningsService {
      الذي `x` فيه فارغ — وأكثرُ المقاعد فارغةُ الإحالة، فكان العامُّ يُقرأ صفرا.
      والطرحُ يقرأ الجملةَ مرّةً ويأخذ الباقيَ، فلا يضيع صفٌّ بين الشرطين. */
   private async seatsBySource(cohortId: string, profileId: string, db: Db = this.prisma) {
-    const where = { cohortId, status: { in: ['enrolled', 'completed'] } }
-    const [total, referred] = await Promise.all([
-      db.enrollment.count({ where }),
-      db.enrollment.count({ where: { ...where, referralProfileId: profileId } }),
-    ])
-    return { referred, general: total - referred }
+    /* ═══ والمقاعدُ ما يحتسبه البند 4-15، لا كلُّ تسجيل (١ أكتوبر ٢٠٢٦) ═══
+       الحكمُ في `counted-seat.ts`، وهنا جمعُ بيّنته وحدَه. */
+    const seats = await countedSeats(db, cohortId)
+    const referred = seats.filter((r) => r.referralProfileId === profileId).length
+    return { referred, general: seats.length - referred }
   }
 
   /* ومدرّبُ الشعبة الذي تُحتسب له في `cohort-lead.ts` — يسأله كودُ المدرّب
@@ -858,4 +860,80 @@ export class EarningsService {
     }
     return { generated, skipped }
   }
+}
+
+/* ═══ بيّنةُ البند 4-15: الحضورُ في الجلسة الأولى، والطلباتُ المموِّلة ═══
+
+   ثلاثةُ أسئلةٍ لكلّ مقعد، والحكمُ عليها في `seatCounts`:
+
+   ① **الجلسةُ الأولى** أوّلُ جلسةٍ غيرِ ملغاةٍ بموعدها — فإن أُلغيت الأولى
+      فالتي بعدها هي «الأولى» التي انعقدت. وبلا جلسةٍ أصلا لا حضورَ لأحد.
+   ② **والحضورُ** ما سجّلته المنصّة (`present | late`): «ويعتد في الحضور بما
+      تسجله المنصة». والمدرّبُ يرى قائمةَ حضور شعبته فيصحّحها قبل أن تمسّ مالَه.
+   ③ **والطلبُ المموِّل** يُقرأ من طريقين: بندُ شعبةٍ في طلبٍ للمتعلّم نفسِه، أو
+      `EnrollmentRequest` يحمل `orderId` — وهو طريقُ الخطّة والمسار، فطلبُها قد
+      لا يحمل بندَ الشعبة باسمها. ومن جاء بلا طلبٍ (بيد الإدارة) يُحتسب.
+
+   والشعبُ صغيرة (بسعتها)، فتُقرأ صفوفُها مرّةً ويُحكَم عليها في الذاكرة. */
+async function countedSeats(db: Db, cohortId: string) {
+  const rows = await db.enrollment.findMany({
+    where: { cohortId, status: { in: [...SEAT_STATUSES] } },
+    select: { id: true, userId: true, status: true, referralProfileId: true },
+  })
+  if (rows.length === 0) return []
+
+  const first = await db.cohortSession.findFirst({
+    where: { cohortId, status: { not: 'cancelled' } },
+    orderBy: { startsAt: 'asc' },
+    select: { id: true },
+  })
+  const attended = new Set(first
+    ? (await db.attendance.findMany({
+      where: {
+        sessionId: first.id,
+        enrollmentId: { in: rows.map((r) => r.id) },
+        status: { in: [...ATTENDED_STATUSES] },
+      },
+      select: { enrollmentId: true },
+    })).map((a) => a.enrollmentId)
+    : [])
+
+  const userIds = [...new Set(rows.map((r) => r.userId))]
+  const [itemOrders, requests] = await Promise.all([
+    db.order.findMany({
+      where: {
+        userId: { in: userIds },
+        status: { in: [...FUNDING_ORDER_STATUSES] },
+        items: { some: { kind: 'cohort', refId: cohortId } },
+      },
+      select: { id: true, userId: true, status: true },
+    }),
+    db.enrollmentRequest.findMany({
+      where: { cohortId, userId: { in: userIds }, orderId: { not: null } },
+      select: { userId: true, orderId: true },
+    }),
+  ])
+  /* وطلبُ الطريقين واحدٌ أحيانا — فلا يُعَدّ مرّتين */
+  const seen = new Set(itemOrders.map((o) => o.id))
+  const viaRequest = requests.filter((r): r is { userId: string; orderId: string } =>
+    r.orderId !== null && !seen.has(r.orderId))
+  const requestOrders = viaRequest.length === 0 ? [] : await db.order.findMany({
+    where: { id: { in: viaRequest.map((r) => r.orderId) }, status: { in: [...FUNDING_ORDER_STATUSES] } },
+    select: { id: true, status: true },
+  })
+  const ownerOf = new Map(viaRequest.map((r) => [r.orderId, r.userId]))
+
+  const statusesOf = new Map<string, string[]>()
+  const note = (userId: string | undefined, status: string) => {
+    if (!userId) return
+    statusesOf.set(userId, [...(statusesOf.get(userId) ?? []), status])
+  }
+  for (const o of itemOrders) note(o.userId, o.status)
+  for (const o of requestOrders) note(ownerOf.get(o.id), o.status)
+
+  return rows.filter((r) => seatCounts({
+    status: r.status,
+    attendedFirstSession: attended.has(r.id),
+    fundingOrderStatuses: statusesOf.get(r.userId) ?? [],
+  }))
 }
