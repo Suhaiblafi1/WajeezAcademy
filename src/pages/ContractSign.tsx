@@ -133,6 +133,18 @@ export default function ContractSign() {
     if (view?.state === 'open') checkRead()
   }, [view, checkRead])
 
+  /* ═══ وما يُقال بعد الفعل يُرى أوّلا (١ أكتوبر ٢٠٢٦) ═══
+
+     التوقيعُ والاعتذارُ يُضغطان من أسفل صفحةٍ طويلة، ثمّ تُستبدَل الصفحةُ بلوحٍ
+     قصيرٍ في رأسها — والنافذةُ باقيةٌ حيث كان الإصبع. فيُقرأ ما تحت اللوح أو
+     لا شيء، ويُظنّ أنّ الفعلَ لم يقع. فإذا خرجت الحالُ من `open` رُفعت النافذةُ
+     إلى رأسها. */
+  const wasOpen = useRef(false)
+  useEffect(() => {
+    if (view?.state === 'open') { wasOpen.current = true; return }
+    if (view && wasOpen.current) { wasOpen.current = false; window.scrollTo({ top: 0 }) }
+  }, [view])
+
   /* والبنيةُ تُشتقّ مرّةً لا في كلّ رسم: التمريرُ يُعيد الرسمَ مرارا،
      وتحليلُ ثلاثمئة سطرٍ في كلّ إطارٍ يُثقل صفحةً يجب أن تُقرأ بسلاسة. */
   const bodyAr = view?.state === 'open' || (view && SIGNED_COPY_STATES.includes(view.state)) ? view.bodyAr : null

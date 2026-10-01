@@ -271,7 +271,15 @@ export default function ContractDocument({ doc }: { doc: ContractDoc }) {
   const meta = shownMeta(doc.meta)
 
   return (
-    <article className="contract-doc contract-prose" dir="rtl">
+    /* ═══ و`relative` لا زينة (١ أكتوبر ٢٠٢٦) ═══
+
+       في الوثيقة نحوُ أربعين `sr-only` — وهي `position: absolute`. وبلا سلفٍ
+       مموضَعٍ كان مرجعُها الصفحةَ كلَّها لا هذه الوثيقة، فتفلت من صندوق
+       التمرير الذي يحويها وتمدّ الصفحةَ إلى نحو ستّة عشر ألف بكسلٍ فارغة. فمن
+       وقّع وهو أسفلَ النموذج بقي بعد التوقيع في ذلك الفراغ — صفحةٌ بيضاء
+       والتوقيعُ قد وقع (بلاغُ صاحب المنصّة). فالوثيقةُ مرجعُ ما فيها.
+       والحارس: src/tests/trainer/contract-doc-contains-sr-only.test.ts */
+    <article className="contract-doc contract-prose relative" dir="rtl">
       <header className="cd-head">
         <p className="cd-kicker">أكاديميّة وجيز</p>
         <h2 className="cd-title">{doc.titleAr}</h2>
