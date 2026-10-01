@@ -81,8 +81,26 @@
 		# مائلةٍ يخالف `canonical` المُعلَن. والامتدادُ يتفادى التحويلَ كلَّه.
 		#
 		# والحارس: src/tests/seo/serving-prerendered.test.ts
-		try_files {path} {path}.html /index.html
-		file_server
+		#
+		# ── ولا يقع على `/assets/` (١ أكتوبر ٢٠٢٦) ──
+		#
+		# كان السقوطُ على `index.html` يعمّ كلَّ مسار، فقطعةٌ زالت بنشرٍ جديدٍ
+		# تُجاب بالصفحة الرئيسة: ٢٠٠ و`text/html` مكانَ ٤٠٤. وحارسُ القطع
+		# الزائلة (`StaleChunkBoundary` وحارسُ `index.html`) مبنيٌّ على أنّها
+		# «صارت ٤٠٤» — فلا يلتقطها، وسفاري يرمي «'text/html' is not a valid
+		# JavaScript MIME type» فتُرفَع الشجرةُ كلُّها وتبقى الصفحةُ بيضاء.
+		# وهو بلاغُ صاحب المنصّة: وقّع عقدا والصفحةُ مفتوحةٌ من قبل نشرٍ وقع
+		# في الدقيقة نفسِها، فلم تظهر صفحةُ التأكيد ووصله بريدُ التوقيع.
+		#
+		# فالأصلُ المفقودُ يُجاب ٤٠٤ صريحة، وتعود الصفحةُ إلى نفسها بإعادة
+		# تحميلٍ واحدة. والحارس: src/tests/deploy/stale-asset-404.test.ts
+		handle /assets/* {
+			file_server
+		}
+		handle {
+			try_files {path} {path}.html /index.html
+			file_server
+		}
 	}
 
 	log {

@@ -15,7 +15,10 @@ export function isStaleChunkError(error: unknown): boolean {
     text.includes('dynamically imported module') ||
     text.includes('Importing a module script failed') ||
     text.includes('error loading dynamically imported module') ||
-    text.includes('Failed to fetch')
+    text.includes('Failed to fetch') ||
+    /* سفاري حين يُجاب عن قطعةٍ زالت بصفحةٍ لا بـ٤٠٤ (١ أكتوبر ٢٠٢٦) — علّتُه
+       في `deploy/Caddyfile` عند `handle /assets/*` */
+    text.includes('is not a valid JavaScript MIME type')
   )
 }
 
