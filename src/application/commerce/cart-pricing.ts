@@ -48,6 +48,9 @@ export interface CartCoupon {
   /** الشعبُ التي يقع عليها وحدَها — كودُ المدرّب على دوراته. وبلا قيمةٍ يعمّ
       السلّةَ كما كان كلُّ كوبون. */
   cohortIds?: readonly string[] | null
+  /** أقصى ما يمنحه بالمئة من وعائه — سقفُ كود المدرّب (٣٠) على وجهَيه، نسبةً
+      ومبلغا. وبلا قيمةٍ لا سقفَ غيرُ الوعاء نفسِه، كما كان كلُّ كوبون. */
+  maxPercentOfBase?: number | null
 }
 
 export interface PricedLine extends CartLine {
@@ -126,6 +129,13 @@ export function priceCart(
     couponDiscount = coupon.percentOff
       ? money((base * coupon.percentOff) / 100)
       : money(coupon.amountOff ?? 0)
+    /* ═══ وسقفُ كود المدرّب على الوجهين (١ أكتوبر ٢٠٢٦) ═══
+       النسبةُ مقيّدةٌ بالثلاثين في قاعدتها فلا يمسّها هذا، والمبلغُ كان يتخطّاه:
+       خمسون دولارا على دورةٍ بستّين خصمُ ٨٣٪. فيُسقَف هنا — في الدالّة التي
+       يناديها العرضُ والطلبُ معا — فلا يفترق ما يُرى عمّا يُقتطع. */
+    if (coupon.maxPercentOfBase != null) {
+      couponDiscount = Math.min(couponDiscount, money((base * coupon.maxPercentOfBase) / 100))
+    }
     if (couponDiscount > money(base)) couponDiscount = money(base)
   }
 

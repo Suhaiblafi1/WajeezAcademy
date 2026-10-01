@@ -19,7 +19,7 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { TrainerCodeService } from '../../services/trainer-code.service'
 import { EarningsService } from '../../services/earnings.service'
-import { CODE_TERMS_VERSION } from '../../../src/application/trainer/trainer-code'
+import { CODE_TERMS_FIRST_BODY, CODE_TERMS_VERSION } from '../../../src/application/trainer/trainer-code'
 import { CLAUSE_4_10_AR } from '../../../src/application/trainer/contract-body'
 
 let prisma: PrismaClient
@@ -37,6 +37,12 @@ async function trainer(tag: string) {
   const profile = await prisma.trainerProfile.create({ data: { userId: user.id, applicationId: application.id } })
   return { userId: user.id, profileId: profile.id }
 }
+
+/* ═══ والجيلُ الذي يحمل البندَ بصيغته الحاليّة — من الثابت لا رقما مكتوبا ═══
+   كان `'v13-…'` حرفا، فلمّا تغيّرت الصيغةُ في الجيل الحادي والعشرين (الكودُ
+   نسبةٌ أو مبلغ) صار «من وقّع على الجيل الذي حمله» يعني جيلا آخر. والثابتُ
+   يتبع الصيغةَ حيث انتقلت، فيبقى الفحصُ يقيس ما سمّاه. */
+const CARRIES = `v${CODE_TERMS_FIRST_BODY}-2026-10-01`
 
 const signed = (profileId: string, bodyVersion: string) =>
   prisma.trainerContract.create({ data: { profileId, title: 'اتفاقيّةُ تقديم خدمات', status: 'signed', bodyVersion, signedAt: new Date() } })
@@ -81,7 +87,7 @@ describe('① لا كودَ بلا سندٍ في عقده', () => {
 
   it('⚠️ ومن وقّع على الجيل الذي حمله لا يُسأل ثانيةً', async () => {
     const t = await trainer('new')
-    await signed(t.profileId, 'v13-2026-09-27')
+    await signed(t.profileId, CARRIES)
     const { terms } = await codes.listFor(t.userId)
     expect(terms.accepted).toBe(true)
     expect(terms.via).toBe('contract')
@@ -98,7 +104,7 @@ describe('① لا كودَ بلا سندٍ في عقده', () => {
 describe('② الإصدارُ بحاجز القواعد', () => {
   it('⚠️ فوق السقف، وبلا من يُنشَر له، وبتاريخٍ مضى — يُردّ بجملة', async () => {
     const t = await trainer('guard')
-    await signed(t.profileId, 'v13-2026-09-27')
+    await signed(t.profileId, CARRIES)
     await expect(codes.create(t.userId, { percentOff: 31, labelAr: 'فوق السقف' })).rejects.toMatchObject({ code: 'bad_code' })
     await expect(codes.create(t.userId, { percentOff: 10, labelAr: ' ' })).rejects.toMatchObject({ code: 'bad_code' })
     await expect(codes.create(t.userId, { percentOff: 10, labelAr: 'أمس', expiresAt: new Date(Date.now() - 86_400_000) }))
@@ -107,7 +113,7 @@ describe('② الإصدارُ بحاجز القواعد', () => {
 
   it('⚠️ والكودُ كوبونٌ بنسبته وحدّه — وصفُّه يقول من يتحمّله', async () => {
     const t = await trainer('made')
-    await signed(t.profileId, 'v13-2026-09-27')
+    await signed(t.profileId, CARRIES)
     const made = await codes.create(t.userId, { percentOff: 25, labelAr: 'متابعو إنستغرام', maxUses: 40 })
     const row = await prisma.trainerCode.findUniqueOrThrow({ where: { id: made.id }, include: { coupon: true } })
     expect(row.profileId).toBe(t.profileId)
@@ -122,7 +128,7 @@ describe('② الإصدارُ بحاجز القواعد', () => {
 describe('③ الإيقافُ والإلغاءُ يُطفئان الكوبون', () => {
   it('⚠️ موقوفٌ لا يخصم، ومستأنَفٌ يعود، وملغىً لا يعود', async () => {
     const t = await trainer('life')
-    await signed(t.profileId, 'v13-2026-09-27')
+    await signed(t.profileId, CARRIES)
     const made = await codes.create(t.userId, { percentOff: 15, labelAr: 'نشرةُ البريد' })
     const couponActive = async () =>
       (await prisma.trainerCode.findUniqueOrThrow({ where: { id: made.id }, include: { coupon: true } })).coupon.active
@@ -157,8 +163,8 @@ describe('④ وما أصدره غيرُه لا يمسّه', () => {
   it('⚠️ لا يُوقف كودَ مدرّبٍ آخر ولا يراه', async () => {
     const owner = await trainer('owner')
     const other = await trainer('other')
-    await signed(owner.profileId, 'v13-2026-09-27')
-    await signed(other.profileId, 'v13-2026-09-27')
+    await signed(owner.profileId, CARRIES)
+    await signed(other.profileId, CARRIES)
     const made = await codes.create(owner.userId, { percentOff: 5, labelAr: 'جمهوري' })
     await expect(codes.pause(other.userId, made.id)).rejects.toMatchObject({ code: 'not_found' })
     await expect(codes.revoke(other.userId, made.id)).rejects.toMatchObject({ code: 'not_found' })
