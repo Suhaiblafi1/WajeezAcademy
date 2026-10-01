@@ -24,9 +24,9 @@ const bare = (p: string) =>
 
 const SCREEN = bare('src/pages/admin/TrainerContracts.tsx')
 
-/** الزرُّ الذي يفتح النافذة — من `<Button` السابق لـ`setResign({` إلى نصّه */
+/** الزرُّ الذي يفتح النافذة — من `<Button` السابق لـ`openResign(c)` إلى نصّه */
 function opener(): string {
-  const at = SCREEN.indexOf('setResign({\n')
+  const at = SCREEN.indexOf('openResign(c)')
   if (at < 0) return ''
   const open = SCREEN.lastIndexOf('<Button', at)
   const close = SCREEN.indexOf('</Button>', at)
@@ -57,13 +57,19 @@ describe('«أعِدْه للتوقيع» — زرُّه ونافذتُه', () =
 
   it('والنافذةُ تنادي مسارَها وتمرّر معرّفَ الصفّ', () => {
     expect(dlg).toMatch(/\/resign-request`/)
-    expect(dlg, 'عاد جوابُ الإعادة إلى رأس الصفحة').toMatch(/,\s*resign\.row\.id\)/)
+    expect(dlg, 'عاد جوابُ الإعادة إلى رأس الصفحة').toMatch(/,\s*r\.row\.id\)/)
   })
 
   it('والقائمةُ تُقرأ من الجدول وتُعرَض — ولا تُرسَل من الشاشة', () => {
-    expect(dlg).toMatch(/changesBetween\(resign\.row\.bodyVersion,\s*CONTRACT_BODY_VERSION\)/)
+    expect(dlg).toMatch(/changesBetween\(r\.row\.bodyVersion,\s*CONTRACT_BODY_VERSION\)/)
+    /* وما تغيّر في شروطه هو بالدالّة التي يحسب بها الخادم (١ أكتوبر ٢٠٢٦) —
+       فما يُعايَن هو ما يُرسَل، لا نسختان تفترقان */
+    /* والقائمةُ المعروضةُ نفسُها لا أيُّ نداءٍ للدالّة: نداءٌ آخرُ في النافذة
+       (مقارنةُ الأجر) كان يُخضِر فحصا أوسعَ من هذا وهي تُحسب بيدٍ أخرى. */
+    expect(dlg, 'شروطُه تُحسب في الشاشة بغير دالّة الخادم').toMatch(/const personal = personalChangesAr\(/)
+    expect(dlg, 'القائمةُ المعروضةُ لا تبدأ بشروطه').toMatch(/const changes = \[\.\.\.personal, \.\.\.changesBetween\(/)
     const call = dlg.slice(dlg.indexOf('/resign-request`'), dlg.indexOf('setResign(null)', dlg.indexOf('/resign-request`')))
     expect(call, 'لم تُقرأ كتلةُ النداء').toContain('subjectAr')
-    expect(call, 'حُملت القائمةُ في الطلب — فصار للمرسِل أن يقصّها').not.toMatch(/changes/)
+    expect(call, 'حُملت القائمةُ في الطلب — فصار للمرسِل أن يقصّها').not.toMatch(/\bchanges\b|changesAr|personal\b/)
   })
 })

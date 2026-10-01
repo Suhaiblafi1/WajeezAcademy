@@ -16,6 +16,7 @@ import { renderMail } from './mail-template'
 import { changesBetween } from '../../src/application/trainer/contract-changelog'
 import {
   RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_REVOKE_REASON_AR, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN,
+  personalChangesAr,
 } from '../../src/application/trainer/contract-resign'
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
@@ -67,6 +68,7 @@ import {
   CONTRACT_BODY_VERSION, bodyCarriesConditionClause, contractHasBodyAr,
   CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
   renderContractBodyAr,
+  SPECIAL_TERMS_MAX_CHARS, SPECIAL_TERMS_MAX_ITEMS, specialTermsItemsAr,
   type ContractBodyInput, type ContractCompensation, type ContractCourseRow, readContractCourses,
 } from '../../src/application/trainer/contract-body'
 import {
@@ -124,6 +126,56 @@ export interface ContractComposeInput {
     minSeats?: number
     referralRate?: number | null
   } | null
+  /** بنودٌ خاصّةٌ بهذا المدرّب — تُطبَع البندَ 21 (`specialTermsClauseAr`) */
+  specialTermsAr?: string | null
+}
+
+/** البنودُ الخاصّةُ كما تُحفَظ وتُطبَع: سطرٌ لكلّ بند، بلا علامات القائمة.
+ *
+ *  و`null` لما لا بنودَ فيه — فلا يُحفَظ نصٌّ فارغٌ يُقرأ بعد شهرٍ كأنّ شيئا
+ *  كُتب ثمّ مُحي. والسقفُ يُقال بالعربيّة هنا لا برسالة مخطّطٍ عامّة. */
+export function cleanSpecialTermsAr(text: string | null | undefined): string | null {
+  const items = specialTermsItemsAr(text)
+  if (items.length === 0) return null
+  if (items.length > SPECIAL_TERMS_MAX_ITEMS) {
+    throw new AuthError('special_terms_too_many', `البنودُ الخاصّةُ ${SPECIAL_TERMS_MAX_ITEMS} بندا على الأكثر — سطرٌ لكلّ بند`, 422)
+  }
+  const joined = items.join('\n')
+  if (joined.length > SPECIAL_TERMS_MAX_CHARS) {
+    throw new AuthError('special_terms_too_long', `البنودُ الخاصّةُ ${SPECIAL_TERMS_MAX_CHARS} حرفٍ على الأكثر`, 422)
+  }
+  return joined
+}
+
+/** الأتعابُ النافذةُ في عقدٍ يُركَّب: المضبوطةُ في الشاشة تغلب القاعدةَ القائمة.
+ *
+ *  موضعٌ واحدٌ يقرؤه التركيبُ والمعاينةُ والإعادةُ للتوقيع. وكانت المعاينةُ
+ *  تقرأ القاعدةَ القائمةَ وحدَها، فيرى الموظّفُ أجرا ويُطبَع في العقد غيرُه —
+ *  ورأسُ `contractBodyInput` يقول إنّ المعاينةَ والمحفوظَ لا يفترقان. */
+function effectiveCompensation(
+  current: { ruleId: string; type: string; rate: string; currency: string; minSeats: number | null; referralRate: string | null } | null,
+  typed: ContractComposeInput['compensation'],
+) {
+  if (typed) {
+    return {
+      ruleId: null as string | null,
+      type: typed.type,
+      rate: String(typed.rate),
+      currency: current?.currency ?? LEDGER_CURRENCY,
+      minSeats: typed.minSeats ?? null,
+      referralRate: typed.referralRate == null ? null : String(typed.referralRate),
+    }
+  }
+  return current
+    ? {
+        ruleId: current.ruleId as string | null,
+        type: current.type,
+        rate: current.rate,
+        currency: current.currency,
+        minSeats: current.minSeats,
+        referralRate: current.referralRate,
+      }
+    : null
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -2071,6 +2123,9 @@ export class TrainerReviewService {
           id: true, title: true, status: true, kind: true, revision: true,
           bodyVersion: true, bodyHash: true, signerEmail: true,
           compensationType: true, compensationRate: true, currency: true,
+          /* وبقيّةُ الأجر والبنودُ الخاصّة: نافذةُ «أعِدْه للتوقيع» تُملأ بها (١ أكتوبر ٢٠٢٦) */
+          compensationMinSeats: true, compensationReferralRate: true, specialTermsAr: true,
+          supersededAt: true, supersededByContractId: true,
           gatesActivation: true, sentAt: true, signedAt: true, revokedAt: true,
           revokeReasonAr: true, createdAt: true, qualifiedSnapshot: true,
           signerLegalName: true, declinedAt: true, declineReasonAr: true,
@@ -2264,6 +2319,9 @@ export class TrainerReviewService {
       documentKinds: CONTRACT_DOCUMENT_KINDS,
       missingLegal: missingAcademyLegalFields().map((f) => LEGAL_FIELD_LABELS_AR[f]),
       openContract: app.profile.contracts.find((c) => c.status === 'draft' || c.status === 'sent') ?? null,
+      /* وبنودُه الخاصّةُ من أحدث عقوده تُملأ بها الخانة: من أُلغي عرضُه ليُغيَّر
+         فيه شيءٌ لا تُكتب بنودُه من جديد — وتُرى في الخانة وتُحرَّر قبل أن تُطبَع. */
+      lastSpecialTermsAr: app.profile.contracts[0]?.specialTermsAr ?? null,
       /* ما يمنع التركيبَ والإرسالَ معا — موقوفٌ أو مردودٌ أو مسحوب — يُقال في
          المركِّب قبل أن تُملأ خاناتُه، لا بعد الضغط (`contractBlockedAr`). */
       blockedAr: contractBlockedAr(app.status, Boolean(app.profile.suspendedAt)),
@@ -2282,6 +2340,8 @@ export class TrainerReviewService {
     /** `true` لعرضٍ مشروط — و`false` لبندٍ يُوثَّق على مدرّبٍ نشط */
     gatesActivation: boolean
     orientationAt: Date | null
+    /** البندُ 21 — و`null` لعقدٍ بلا بنودٍ خاصّة */
+    specialTermsAr: string | null
   }): ContractBodyInput {
     return {
       academyPartyLineAr: academyPartyLineAr(),
@@ -2298,6 +2358,7 @@ export class TrainerReviewService {
       rateWaivedReasonAr: args.rateWaivedReasonAr,
       hoursNoteAr: args.hoursNoteAr,
       requiredDocuments: args.requiredDocuments,
+      specialTermsAr: args.specialTermsAr,
       /* والشرطُ يتبع `gatesActivation` لا تاريخَ الجلسة: عرضٌ بلا تاريخٍ
          مشروطٌ كذلك. وجلسةُ التهيئة موعدٌ يُبلَّغ به بعد التوقيع (٢٧ سبتمبر
          ٢٠٢٦)، فمن عُرف موعدُها وقتَ التركيب طُبع، ومن لم يُعرَف وُعد بها.
@@ -2338,13 +2399,16 @@ export class TrainerReviewService {
       courses: chosen,
       gatesActivation: pre.gatesActivation,
       orientationAt: input.orientationAt ? new Date(input.orientationAt) : null,
-      compensation: pre.compensation
-        ? { type: pre.compensation.type, rate: pre.compensation.rate, currency: pre.compensation.currency,
-            minSeats: pre.compensation.minSeats, referralRate: pre.compensation.referralRate }
-        : null,
+      compensation: (() => {
+        const e = effectiveCompensation(pre.compensation, input.compensation)
+        return e
+          ? { type: e.type, rate: e.rate, currency: e.currency, minSeats: e.minSeats, referralRate: e.referralRate }
+          : null
+      })(),
       hoursNoteAr: input.hoursNoteAr?.trim() || null,
       rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
       requiredDocuments: input.requiredDocuments,
+      specialTermsAr: cleanSpecialTermsAr(input.specialTermsAr),
       issuedOn: new Date(),
     }))
   }
@@ -2633,27 +2697,8 @@ export class TrainerReviewService {
        الاثنين، ولَخرج عقدٌ يقول رقما وتقول القاعدةُ غيرَه بعد ثوانٍ.
 
        فتُبنى هنا الصورةُ النافذةُ مرّةً، ويقرؤها المتنُ واللقطةُ معا. */
-    const effective = input.compensation
-      ? {
-          ruleId: null as string | null,
-          type: input.compensation.type,
-          rate: String(input.compensation.rate),
-          currency: pre.compensation?.currency ?? LEDGER_CURRENCY,
-          minSeats: input.compensation.minSeats ?? null,
-          referralRate: input.compensation.referralRate == null
-            ? null
-            : String(input.compensation.referralRate),
-        }
-      : pre.compensation
-        ? {
-            ruleId: pre.compensation.ruleId as string | null,
-            type: pre.compensation.type,
-            rate: pre.compensation.rate,
-            currency: pre.compensation.currency,
-            minSeats: pre.compensation.minSeats,
-            referralRate: pre.compensation.referralRate,
-          }
-        : null
+    const effective = effectiveCompensation(pre.compensation, input.compensation)
+    const specialTermsAr = cleanSpecialTermsAr(input.specialTermsAr)
 
     if (!effective && !input.rateWaivedReasonAr?.trim()) {
       throw new AuthError('no_rate', 'لا قاعدةَ أتعابٍ لهذا المدرّب — اضبطها في هذه الشاشة، أو اكتب سببَ إرساله بلا أجرٍ متّفقٍ عليه', 422)
@@ -2681,7 +2726,13 @@ export class TrainerReviewService {
        فما دخل `bodyAr` دخل البصمةَ ولا يُحرَّر بعدها. وتصحيحُه بعد الإرسال
        عقدٌ بديلٌ لا تعديلُ حقل — وهذا هو الموضعُ الوحيدُ الذي يُكتب فيه
        بلا ثمن. */
-    const legalNameAr = input.trainerLegalNameAr?.trim() || pre.legalNameAr
+    const typedName = input.trainerLegalNameAr?.trim() ?? ''
+    /* ولا يُثبَّت في الملفّ اسمٌ من حرفين: هو ما يُطبَع طرفا ثانيا في كلّ عقدٍ
+       بعده. والحدُّ حدُّ `reissueWithCorrectedName` نفسُه. */
+    if (typedName && typedName.length < 4) {
+      throw new AuthError('no_name', 'اكتب الاسمَ القانونيَّ كما في وثيقة الهويّة', 422)
+    }
+    const legalNameAr = typedName || pre.legalNameAr
 
     const issuedOn = new Date()
     const bodyAr = renderContractBodyAr(this.contractBodyInput({
@@ -2696,6 +2747,7 @@ export class TrainerReviewService {
       hoursNoteAr: input.hoursNoteAr?.trim() || null,
       rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
       requiredDocuments: input.requiredDocuments,
+      specialTermsAr,
       issuedOn,
     }))
 
@@ -2747,6 +2799,7 @@ export class TrainerReviewService {
           compensationReferralRate: effective?.referralRate ?? null,
           hoursNoteAr: input.hoursNoteAr?.trim() || null,
           rateWaivedReasonAr: input.rateWaivedReasonAr?.trim() || null,
+          specialTermsAr,
           qualifiedSnapshot: chosen as unknown as Prisma.InputJsonValue,
           requiredDocuments: input.requiredDocuments as unknown as Prisma.InputJsonValue,
           signerEmail: pre.email,
@@ -2771,6 +2824,7 @@ export class TrainerReviewService {
         meta: {
           applicationId, bodyVersion: CONTRACT_BODY_VERSION, bodyHash: contract.bodyHash,
           courseCount: chosen.length, gatesActivation: pre.gatesActivation,
+          specialTerms: specialTermsAr ? specialTermsAr.split('\n').length : 0,
         },
       })
       return contract
@@ -3378,6 +3432,8 @@ export class TrainerReviewService {
         issuedOn: c.createdAt,
         gatesActivation: c.gatesActivation,
         orientationAt: c.orientationAt,
+        /* وبنودُه الخاصّةُ من صفّه — وإلّا محاها التحديثُ وهو يحسب أنّه يُحدّث القالب */
+        specialTermsAr: c.specialTermsAr,
       }))
       if (nextBody === c.bodyAr) {
         skipped.push({ id: c.id, whyAr: 'نصُّه هو نفسُه — لا جديد' })
@@ -4104,6 +4160,35 @@ export class TrainerReviewService {
         },
       })
 
+      /* ═══ وما كان نافذا له قبلَه يُزاح — في المعاملة نفسِها (١ أكتوبر ٢٠٢٦) ═══
+
+         كان لا شيءَ يكتب `superseded` على عقد مدرّب: من اعتُمد له عقدٌ جديدٌ
+         وله عقدٌ نافذٌ بقي له عقدان نافذان بشرطَين، ولا يُعرف أيُّهما يحكم.
+         والقرّاءُ يسألون «عقدَه النافذ» بصيغة المفرد (`trainer-offer.service`
+         و`trainer-bank.service` و`trainer-application.service`) — فيأخذ كلٌّ
+         منهم ما يقع له.
+
+         فالأحدثُ اعتمادا يُزيح ما قبله لحظةَ اعتماده. ودليلُ توقيع القديم لا
+         يُمَسّ (`signedAt` والاسمُ والهاشُ والختم): ما وقع بين الطرفين وقع،
+         ونفاذُه انتهى للمستقبل وحدَه. وقارنْ واضبطْ على `countersigned`:
+         فسخٌ يقع في اللحظة نفسِها لا يُكتب فوقه. */
+      const prior = await tx.trainerContract.findMany({
+        where: { profileId: c.profileId, status: 'countersigned', id: { not: c.id } },
+        select: { id: true },
+      })
+      for (const p of prior) {
+        const moved = await tx.trainerContract.updateMany({
+          where: { id: p.id, status: 'countersigned' },
+          data: { status: 'superseded', supersededAt: countersignedAt, supersededByContractId: c.id },
+        })
+        if (moved.count === 0) continue
+        await recordAudit(tx, {
+          actorId, action: 'trainer.contract.superseded',
+          entityType: 'trainer_contract', entityId: p.id,
+          meta: { byContractId: c.id, supersededAt: countersignedAt },
+        })
+      }
+
       /* ═══ وهنا يُفتح طورُ الموادّ — ومن هنا تبدأ مهلتُه ═══
 
          ثلاثةٌ معا في المعاملة نفسِها، لأنّ واحدا منها بلا أخيه يترك المدرّبَ
@@ -4350,33 +4435,53 @@ export class TrainerReviewService {
    *
    *  مشتركٌ بين بابَين: تصحيحِ الاسم (`reissueWithCorrectedName`)، وإعادةِ
    *  الموقَّع للتوقيع على نصٍّ محدَّث (`requestResign`). والبنودُ تُنسَخ من
-   *  الصفّ القديم لا تُعاد من الحاضر — علّتُه في رأس الأوّل. */
+   *  الصفّ القديم لا تُعاد من الحاضر — علّتُه في رأس الأوّل.
+   *
+   *  ═══ إلّا ما يُطلَب تغييرُه صراحةً (١ أكتوبر ٢٠٢٦) ═══
+   *
+   *  الإعادةُ للتوقيع صارت تقبل أتعابا ودوراتٍ وبنودا خاصّةً جديدة. فما مُرِّر
+   *  في `over` يغلب، وما لم يُمرَّر يُنسَخ كما هو — فتصحيحُ الاسم لا يمسّ شيئا
+   *  غيرَ الاسم، كما كان. */
   private async composeReplacement(
     old: Prisma.TrainerContractGetPayload<{ include: { profile: { include: { application: true } } } }>,
     name: string, actorId: string, issuedOn: Date,
+    over: {
+      compensation?: ReturnType<typeof effectiveCompensation>
+      courses?: ContractCourseRow[]
+      specialTermsAr?: string | null
+    } = {},
   ): Promise<Prisma.TrainerContractUncheckedCreateInput> {
     const app = old.profile.application
     const pre = await this.contractPrefill(old.profile.applicationId)
-    const bodyAr = renderContractBodyAr(this.contractBodyInput({
-      fullName: name,
-      email: old.signerEmail ?? app.email,
-      reference: app.reference,
-      /* الملحق (أ) كما كان: لقطةُ يومِ التركيب لا مؤهّلاتُ اليوم */
-      courses: readContractCourses(old.qualifiedSnapshot),
-      gatesActivation: old.gatesActivation,
-      orientationAt: old.orientationAt,
-      compensation: old.compensationType
+    const fee = over.compensation !== undefined
+      ? over.compensation
+      : old.compensationType
         ? {
+          ruleId: old.compensationRuleId,
           type: old.compensationType,
           rate: old.compensationRate == null ? '0' : String(old.compensationRate),
           currency: old.currency ?? LEDGER_CURRENCY,
           minSeats: old.compensationMinSeats,
           referralRate: old.compensationReferralRate == null ? null : String(old.compensationReferralRate),
         }
+        : null
+    const courses = over.courses ?? readContractCourses(old.qualifiedSnapshot)
+    const specialTermsAr = over.specialTermsAr !== undefined ? over.specialTermsAr : old.specialTermsAr
+    const bodyAr = renderContractBodyAr(this.contractBodyInput({
+      fullName: name,
+      email: old.signerEmail ?? app.email,
+      reference: app.reference,
+      /* الملحق (أ) كما كان: لقطةُ يومِ التركيب لا مؤهّلاتُ اليوم — إلّا ما اختير الآن */
+      courses,
+      gatesActivation: old.gatesActivation,
+      orientationAt: old.orientationAt,
+      compensation: fee
+        ? { type: fee.type, rate: fee.rate, currency: fee.currency, minSeats: fee.minSeats, referralRate: fee.referralRate }
         : null,
       hoursNoteAr: old.hoursNoteAr,
       rateWaivedReasonAr: old.rateWaivedReasonAr,
       requiredDocuments: readRequiredDocuments(old.requiredDocuments),
+      specialTermsAr,
       issuedOn,
     }))
     /* والبديلُ يُنشأ مسودّةً، ويقول صفُّه من حلَّ محلَّه */
@@ -4390,15 +4495,16 @@ export class TrainerReviewService {
       bodyVersion: CONTRACT_BODY_VERSION,
       bodyAr,
       bodyHash: sha256(bodyAr),
-      compensationRuleId: old.compensationRuleId,
-      compensationType: old.compensationType,
-      compensationRate: old.compensationRate,
-      currency: old.currency,
-      compensationMinSeats: old.compensationMinSeats,
-      compensationReferralRate: old.compensationReferralRate,
+      compensationRuleId: fee?.ruleId ?? null,
+      compensationType: fee?.type ?? null,
+      compensationRate: fee?.rate ?? null,
+      currency: fee?.currency ?? old.currency,
+      compensationMinSeats: fee?.minSeats ?? null,
+      compensationReferralRate: fee?.referralRate ?? null,
       hoursNoteAr: old.hoursNoteAr,
       rateWaivedReasonAr: old.rateWaivedReasonAr,
-      qualifiedSnapshot: old.qualifiedSnapshot as Prisma.InputJsonValue,
+      specialTermsAr,
+      qualifiedSnapshot: (over.courses ?? old.qualifiedSnapshot) as Prisma.InputJsonValue,
       requiredDocuments: old.requiredDocuments as Prisma.InputJsonValue,
       signerEmail: old.signerEmail ?? app.email,
       /* ويُقرأ الاشتراطُ من الحاضر لا من الصفّ القديم: قد تكون موادُّه
@@ -4428,7 +4534,16 @@ export class TrainerReviewService {
       كما في `rejectSignature`: `signedAt` والاسمُ والهاشُ وعنوانُ الشبكة تبقى
       في الصفّ المغلَق — ما وقّعه وقع، والسؤالُ بعد سنةٍ يجد جوابَه فيه. */
   async requestResign(
-    contractId: string, actorId: string, input: { subjectAr: string; bodyAr: string },
+    contractId: string, actorId: string,
+    input: {
+      subjectAr: string; bodyAr: string
+      /* ═══ وشروطٌ جديدةٌ إن أُريدت (١ أكتوبر ٢٠٢٦) ═══
+         ما غاب منها يُنسَخ من العقد القديم كما هو. و`specialTermsAr: null`
+         يرفع بنودَه الخاصّة، وغيابُ المفتاح يُبقيها. */
+      compensation?: ContractComposeInput['compensation']
+      courseIds?: string[]
+      specialTermsAr?: string | null
+    },
   ) {
     const subject = (input.subjectAr ?? '').trim()
     const body = (input.bodyAr ?? '').trim()
@@ -4449,9 +4564,68 @@ export class TrainerReviewService {
     /* والاسمُ ما وقّع به صاحبُه: هو أعلمُ باسمه، وكتبه بيده في خانة التوقيع */
     const app = old.profile.application
     const name = (old.signerLegalName ?? old.profile.legalNameAr ?? app.fullName).trim()
+
+    /* ═══ ولا تُغيَّر أتعابُ مدرّبٍ نشطٍ من هنا ═══
+
+       قاعدةُ الأتعاب تُكتب لحظةَ الإعادة — كما في التركيب — والمستحقّاتُ
+       تُحسب بالقاعدة السارية ساعةَ الحساب (`activeRule(…, new Date())`). فمدرّبٌ
+       نشطٌ له شعبٌ تجري يتبدّل ما يُحسب له عنها **قبل أن يوقّع على الجديد**،
+       ولو لم يوقّعه أبدا. ومن لم يُفعَّل بعدُ لا شعبةَ له يمسّها ذلك. */
+    if (input.compensation && app.status === 'active') {
+      throw new AuthError(
+        'fee_active_trainer',
+        'مدرّبٌ نشط: تغييرُ أتعابه هنا يسري على ما يُحسب له من اليوم قبل أن يوقّع. أعِدْه بأتعابه القائمة، وغيّرْها من شاشة الأتعاب بتاريخ سريان',
+        409,
+      )
+    }
+    const typedTerms = input.specialTermsAr !== undefined
+      ? cleanSpecialTermsAr(input.specialTermsAr)
+      : undefined
+    let courses: ContractCourseRow[] | undefined
+    if (input.courseIds) {
+      const pre = await this.contractPrefill(old.profile.applicationId)
+      courses = this.chosenCourses(pre.courses, input.courseIds)
+      if (courses.length === 0) {
+        throw new AuthError('no_courses', 'اختر دورةً واحدةً على الأقلّ ممّا هو مؤهَّلٌ له — الملحق (أ) لا يُطبَع فارغا', 422)
+      }
+    }
+    const oldFee: ContractCompensation | null = old.compensationType
+      ? {
+        type: old.compensationType,
+        rate: old.compensationRate == null ? '0' : String(old.compensationRate),
+        currency: old.currency ?? LEDGER_CURRENCY,
+        minSeats: old.compensationMinSeats,
+        referralRate: old.compensationReferralRate == null ? null : String(old.compensationReferralRate),
+      }
+      : null
+    const newFee = input.compensation
+      ? effectiveCompensation(
+        oldFee && { ruleId: old.compensationRuleId ?? '', ...oldFee },
+        input.compensation,
+      )
+      : undefined
+
     const issuedOn = new Date()
-    const replacement = await this.composeReplacement(old, name, actorId, issuedOn)
-    const changesAr = changesBetween(old.bodyVersion, CONTRACT_BODY_VERSION)
+    const replacement = await this.composeReplacement(old, name, actorId, issuedOn, {
+      compensation: newFee, courses, specialTermsAr: typedTerms,
+    })
+    /* وما تغيّر فيه هو يتقدّم ما تغيّر في القالب — وكلاهما لا يُحذَف
+       (علّتُه في `personalChangesAr`) */
+    const personalAr = personalChangesAr(
+      {
+        compensation: oldFee,
+        courses: readContractCourses(old.qualifiedSnapshot),
+        specialTermsAr: old.specialTermsAr,
+      },
+      {
+        compensation: newFee
+          ? { type: newFee.type, rate: newFee.rate, currency: newFee.currency, minSeats: newFee.minSeats, referralRate: newFee.referralRate }
+          : oldFee,
+        courses: courses ?? readContractCourses(old.qualifiedSnapshot),
+        specialTermsAr: typedTerms !== undefined ? typedTerms : old.specialTermsAr,
+      },
+    )
+    const changesAr = [...personalAr, ...changesBetween(old.bodyVersion, CONTRACT_BODY_VERSION)]
 
     const created = await this.prisma.$transaction(async (tx) => {
       /* قارنْ واضبطْ: الموقَّعُ وحدَه. فالمعتمَدُ نافذٌ وبابُه رضا صاحبه لا
@@ -4472,6 +4646,18 @@ export class TrainerReviewService {
       await tx.trainerOnboardingTask.updateMany({
         where: { profileId: old.profileId, key: 'sign_contract' }, data: { doneAt: null },
       })
+      /* والأجرُ الجديدُ يُكتب قاعدةً في المعاملة نفسِها — كما في التركيب —
+         فلا يخرج عقدٌ يقول رقما والقاعدةُ تقول غيرَه */
+      if (input.compensation) {
+        const rule = await new EarningsService(tx as unknown as PrismaClient).setRule(actorId, {
+          profileId: old.profileId,
+          type: input.compensation.type,
+          rate: input.compensation.rate,
+          minSeats: input.compensation.minSeats,
+          referralRate: input.compensation.referralRate ?? undefined,
+        })
+        replacement.compensationRuleId = rule.id
+      }
       const next = await tx.trainerContract.create({ data: replacement })
       await recordAudit(tx, {
         actorId, action: 'trainer.contract.resign_requested',
@@ -4479,6 +4665,7 @@ export class TrainerReviewService {
         meta: {
           nextContractId: next.id, fromVersion: old.bodyVersion, toVersion: CONTRACT_BODY_VERSION,
           subjectAr: subject, bodyAr: body, changesAr: [...changesAr],
+          personalChangesAr: personalAr,
           signerLegalName: old.signerLegalName,
         },
       })

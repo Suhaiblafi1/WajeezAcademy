@@ -12,6 +12,8 @@
  * (`contractResignMail`)، وعلّتُها هناك.
  */
 
+import { feeBasisAr, type ContractCompensation } from './contract-body'
+
 export const RESIGN_SUBJECT_MIN = 3
 export const RESIGN_SUBJECT_MAX = 200
 export const RESIGN_BODY_MIN = 10
@@ -42,4 +44,54 @@ export function defaultResignBodyAr(title: string): string {
 /** نصُّ الموظّف فقراتٍ — يفصل بينها سطرٌ فارغ، كما يُكتب في الخانة */
 export function resignParagraphs(bodyAr: string): string[] {
   return bodyAr.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)
+}
+
+/* ═══ وما تغيّر في شروطه هو — لا في القالب وحدَه (١ أكتوبر ٢٠٢٦) ═══
+
+   صارت الإعادةُ تقبل تغييرَ أتعابه ودوراتِه وبنودِه الخاصّة. والقسمُ الذي لا
+   يُحذَف من الرسالة («ما تغيّر في نصّ عقدك») كان يعدّ تغييرَ القالب وحدَه —
+   فلو خُفّض أجرُه في الإعادة لَوصلته رسالةٌ تعدّ تحسينَ الصياغة وتسكت عن
+   أجره. وهي العلّةُ نفسُها التي جعلت القسمَ لا يُحذَف أصلا.
+
+   فيُحسب هنا ما تغيّر **فيه هو** ويتقدّم القائمة. والدالّةُ خالصةٌ يقرؤها
+   الخادمُ لما يُرسَل والشاشةُ لما تُعاينه — فما يُعايَن هو ما يُرسَل. */
+
+export interface ResignTerms {
+  compensation: ContractCompensation | null
+  courses: readonly { courseId: string; titleAr: string }[]
+  specialTermsAr: string | null
+}
+
+/* والأجرُ يُقابَل بأرقامه لا بنصّه: «25» و«25.00» أجرٌ واحد */
+function sameFee(a: ContractCompensation | null, b: ContractCompensation | null): boolean {
+  if (!a || !b) return a === b
+  return a.type === b.type
+    && Number(a.rate) === Number(b.rate)
+    && a.currency === b.currency
+    && (a.minSeats ?? 0) === (b.minSeats ?? 0)
+    && Number(a.referralRate ?? 0) === Number(b.referralRate ?? 0)
+}
+
+const NO_FEE_AR = 'بلا أجرٍ متّفقٍ عليه'
+
+/** ما تغيّر في شروطه هو — جملةً لكلّ تغيير، و`[]` لما لم يتغيّر فيه شيء */
+export function personalChangesAr(before: ResignTerms, after: ResignTerms): string[] {
+  const out: string[] = []
+  if (!sameFee(before.compensation, after.compensation)) {
+    const was = before.compensation ? feeBasisAr(before.compensation) : NO_FEE_AR
+    const now = after.compensation ? feeBasisAr(after.compensation) : NO_FEE_AR
+    out.push(`تغيّر أساسُ أتعابك (الملحق ب) — كان: ${was} وصار: ${now}`)
+  }
+  const had = new Set(before.courses.map((c) => c.courseId))
+  const has = new Set(after.courses.map((c) => c.courseId))
+  const added = after.courses.filter((c) => !had.has(c.courseId)).map((c) => c.titleAr)
+  const removed = before.courses.filter((c) => !has.has(c.courseId)).map((c) => c.titleAr)
+  if (added.length > 0) out.push(`أُضيف إلى الدورات المؤهَّل لها (الملحق أ): ${added.join('، ')}.`)
+  if (removed.length > 0) out.push(`ورُفع من الدورات المؤهَّل لها (الملحق أ): ${removed.join('، ')}.`)
+  const sb = (before.specialTermsAr ?? '').trim()
+  const sa = (after.specialTermsAr ?? '').trim()
+  if (!sb && sa) out.push('وأُضيفت إلى عقدك بنودٌ خاصّةٌ بك (البند 21) — اقرأها في العقد.')
+  else if (sb && !sa) out.push('ورُفعت من عقدك البنودُ الخاصّةُ بك (البند 21).')
+  else if (sb !== sa) out.push('وتغيّرت البنودُ الخاصّةُ بك (البند 21) — اقرأها في العقد.')
+  return out
 }

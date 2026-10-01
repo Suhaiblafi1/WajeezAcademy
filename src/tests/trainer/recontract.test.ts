@@ -70,10 +70,20 @@ describe('③ والرأسُ المغلَقُ وحدَه يُعرض عليه م�
   })
 
   it('وكلُّ نهايةٍ مغلَقةٍ كذلك — لا المفسوخُ وحدَه', () => {
-    for (const st of CONTRACT_CLOSED_STATUSES) {
+    /* إلّا المُزاحَ: أدناه */
+    for (const st of CONTRACT_CLOSED_STATUSES.filter((x) => x !== 'superseded')) {
       expect(recontractFor(head(st, 'active'), [candidate]), `«${st}»: رأسٌ مغلَقٌ بلا ما بعده`)
         .toEqual({ compose: candidate })
     }
+  })
+
+  /* ═══ والمُزاحُ لا يُعرض عليه شيء (١ أكتوبر ٢٠٢٦) ═══
+     أزاحه عقدٌ أحدثُ نافذٌ للمدرّب نفسِه، فأزرارُه على ذاك. وكان يُقال تحته
+     «لم يُقبَل داخليّا بعد» لمدرّبٍ نشطٍ بعقدٍ نافذ — ولو انتهى الأحدثُ لَظهر
+     زرُّ التركيب على رأسه هو، فزرٌّ ثانٍ هنا تكرار. */
+  it('والمُزاحُ لا زرَّ عليه ولا سببَ منعٍ — ولو كان صاحبُه ينتظر عقدا', () => {
+    expect(recontractFor(head('superseded', 'active'), []), 'قيل لمدرّبٍ نافذٍ إنّه لم يُقبَل').toBeNull()
+    expect(recontractFor(head('superseded', 'active'), [candidate]), 'زرُّ تركيبٍ ثانٍ').toBeNull()
   })
 
   it('والنافذُ والمفتوحُ لا — لهما أزرارُهما', () => {

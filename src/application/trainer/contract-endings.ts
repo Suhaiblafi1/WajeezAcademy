@@ -113,6 +113,11 @@ export function recontractFor<C extends { id: string }>(
   candidates: readonly C[],
 ): { compose: C } | { blockedAr: string } | null {
   if (!isContractClosed(head.status)) return null
+  /* ═══ والمُزاحُ لا يُعرض عليه شيء (١ أكتوبر ٢٠٢٦) ═══
+     أزاحه عقدٌ أحدثُ نافذٌ للمدرّب نفسِه (`countersignContract`) — فلا عقدَ
+     ينتظره صاحبُه، وأزرارُه على النافذ. ولولا هذا لَقيل تحته «لم يُقبَل داخليّا
+     بعد»، وهو مدرّبٌ نشطٌ بعقدٍ نافذ. */
+  if (head.status === 'superseded') return null
   const app = head.profile?.application
   if (!app) return null
   const candidate = candidates.find((c) => c.id === app.id)
