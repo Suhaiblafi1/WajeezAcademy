@@ -488,7 +488,11 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       tags: ['admin-trainers'],
       summary: 'تحديثُ نصِّ كلّ عرضٍ مفتوحٍ إلى الإصدار الحاليّ — بالرابط نفسِه',
     },
-  }, async (req) => review.refreshOpenContracts(req.auth!.userId))
+  }, async (req) => {
+    /* والبريدُ يُختار — والصامتُ يُبقي الشريطَ على صفحته (علّتُه في الخدمة) */
+    const { notify } = z.object({ notify: z.boolean().default(true) }).parse(req.body ?? {})
+    return review.refreshOpenContracts(req.auth!.userId, { notify })
+  })
 
   app.post('/api/admin/trainer-contracts/:contractId/revoke', {
     preHandler: requirePermission('trainer.contract.manage'),
