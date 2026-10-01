@@ -90,7 +90,7 @@ export interface FeeExampleRow {
   seats?: number
   /** منهم عبر رابط دعوته */
   referred?: number
-  /** والمحتسَبُ عامّا — قد يفوق الفعليَّ حين يُكمَّل الحدُّ الأدنى */
+  /** والمحتسَبُ عامّا — هو الفعليُّ بعينه منذ صارت الأرضيّةُ أرضيّةَ مال */
   generalSeats?: number
   floorApplied?: boolean
 }
@@ -144,13 +144,17 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
     const referred = referralRate === null ? 0 : s.referred
     const b = perSeatBreakdown({
       general: s.seats - referred, referred, rate, referralRate, minSeats,
+      /* وشعبةُ المثال مفترَضٌ أنّها انعقدت — وإلّا فلا أتعابَ فيها تُشرَح */
+      cohortStarted: true,
     })
     /* والأعلى أوّلا (٢١ سبتمبر ٢٠٢٦): «ابدأ بالأعلى وهو رابط الإحالة الخاص
        به وبعدها نذكر السعر الاعتيادي». والمقاعدُ بالإحالة تسبق العامّةَ هنا
        أصلا، فالقلبُ وقع في نصّ القاعدة أسفلُ لا في الصفوف. */
     const parts: string[] = []
     if (referred > 0) parts.push(`${referred} عبر رابط إحالتك`)
-    parts.push(`${b.generalSeats} مقعدا عامّا${b.floorApplied ? ` (احتُسبت على الحدّ الأدنى ${minSeats} مقعدا)` : ''}`)
+    /* ولا يُقال «احتُسبت على الحدّ الأدنى N مقعدا» بعد ١ أكتوبر ٢٠٢٦: الأرضيّةُ
+       أرضيّةُ مالٍ لا مقاعد، فلا مقعدَ يُحتسب لا مسجَّلَ له. */
+    parts.push(`${b.generalSeats} مقعدا عامّا${b.floorApplied ? ' ثمّ كُمّلت إلى الحدّ الأدنى المضمون' : ''}`)
     const sourceAr = referralRate === null ? '' : `، ${SOURCE_LABELS_AR[i]}`
     rows.push({
       labelAr: `${s.seats} مسجّلا${sourceAr}: ${parts.join('، و')}`,
@@ -241,7 +245,7 @@ export function feeExampleContractAr(ex: FeeExample, c: ContractCompensation): s
       return `${i + 1}. الشعبة ${order[i] ?? String(i + 1)}: ${withCurrencyAr(num(r.amount), ex.currency)}`
     }
     const calc = calcContractAr(r, c)
-    const floor = r.floorApplied ? ` (احتسبت على الحد الأدنى ${c.minSeats} مقعدا)` : ''
+    const floor = r.floorApplied ? ' ثم كملت إلى الحد الأدنى المضمون' : ''
     return `${i + 1}. ${sourceContractAr(r.seats, r.referred ?? 0)} — ${calc}${floor}: ${withCurrencyAr(num(r.amount), ex.currency)}`
   })
 

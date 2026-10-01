@@ -107,6 +107,12 @@ describe('الأصيلُ والحدُّ الأدنى — معادلةٌ واحد
     for (const n of [3, 4, 5]) {
       await enrollments.enroll(floorCohortId, await buyer(`b-floor-${n}@test.local`), null, {})
     }
+    /* ═══ وشعبةُ الأرضيّة تبدأ جلساتُها — وشعبةُ المساعد تبقى مفتوحة ═══
+
+       منذ ١ أكتوبر ٢٠٢٦ لا أرضيّةَ لشعبةٍ لم تبدأ، فلو بقيت هذه «مفتوحة»
+       لَقاس هذا الملفُّ غيابَ الأرضيّة ويظنّ أنّه يقيسها. والتسجيلُ يقع وهي
+       مفتوحةٌ ثمّ تُنقل — كما يجري فعلا، لا بإنشائها جاريةً من أوّلها. */
+    await prisma.cohort.update({ where: { id: floorCohortId }, data: { status: 'active' } })
   })
 
   it('الكشفُ يُحتسب بقاعدة الأصيل لا بقاعدة المساعد — ولو كُتب المساعدُ أوّلا', async () => {
@@ -122,10 +128,37 @@ describe('الأصيلُ والحدُّ الأدنى — معادلةٌ واحد
     expect(referral!.amount).toBe(60)
   })
 
-  it('والحدُّ الأدنى يُكمَّل من العامّ: خمسةُ مسجّلين تُحتسب ثمانيةَ مقاعد', async () => {
+  /* ═══ والأرضيّةُ أرضيّةُ مالٍ لا مقاعد (١ أكتوبر ٢٠٢٦) ═══
+
+     كانت تُكمِّل **العددَ** فتُحتسب خمسةُ مسجّلين ثمانيةَ مقاعد: 6×25 + 2×30
+     = ٢١٠. وصارت تُكمِّل **المال**: ما سجّل بمصدره 3×25 + 2×30 = ١٣٥، والأرضيّةُ
+     8×25 = ٢٠٠، فتُكمَّل بخمسةٍ وستّين. وقرارُ صاحب المنصّة وعلّتُه في رأس
+     `seat-fee.ts`. */
+  it('والحدُّ الأدنى أرضيّةُ مال: ما سجّل 135 فيُكمَّل إلى 200 لا إلى 210', async () => {
     const computed = await earnings.computeCohort(floorCohortId)
-    /* 6 عامّا × 25 + 2 إحالة × 30 = 210، وهي ثمانيةُ مقاعدَ لا خمسة */
-    expect(computed.total).toBe(210)
+    expect(computed.total).toBe(200)
+  })
+
+  it('⚠️ والتكملةُ بندٌ باسمه في الكشف — لا مقاعدُ وهميّةٌ في بند التدريب', async () => {
+    const computed = await earnings.computeCohort(floorCohortId)
+    const topUp = computed.items.find((i) => i.sourceRef === `cohort:${floorCohortId}:floor`)
+    expect(topUp, 'لا بندَ تكملةٍ — فيقرأ المدرّبُ مقاعدَ لا مسجَّلَ لها').toBeTruthy()
+    expect(topUp!.amount, 'التكملةُ ليست فرقَ ما سجّل والأرضيّة').toBe(65)
+    const general = computed.items.find((i) => i.sourceRef === `cohort:${floorCohortId}`)
+    expect(general!.amount, 'بندُ العامّ نُفخ بمقاعد الأرضيّة').toBe(75)
+  })
+
+  /* ═══ ولا أرضيّةَ لشعبةٍ لم تبدأ ═══
+
+     شعبةُ المساعد «مفتوحة» لم تنعقد، وقاعدةُ الأصيل فيها حدٌّ أدنى ثمانيةٌ.
+     فلو طُبّقت الأرضيّةُ لَبلغت ٢٠٠ وفيها ثلاثةُ مسجّلين بـ٨٥. وقولُ صاحب
+     المنصّة: «لو لم يسجّل أحدٌ لن نعقد الدورة… فهذا شرطٌ علينا لا داعيَ له». */
+  it('⚠️ ولا أرضيّةَ لشعبةٍ لم تبدأ جلساتُها — ولو كان لقاعدتها حدٌّ أدنى', async () => {
+    const computed = await earnings.computeCohort(cohortId)
+    expect(computed.rule.minSeats, 'القاعدةُ بلا حدٍّ أدنى — فالفحصُ على لا شيء').toBe(8)
+    expect(computed.total, 'طُبّقت الأرضيّةُ على شعبةٍ لم تنعقد').toBe(85)
+    const topUp = computed.items.find((i) => i.sourceRef === `cohort:${cohortId}:floor`)
+    expect(topUp, 'بندُ تكملةٍ في شعبةٍ لم تبدأ').toBeUndefined()
   })
 
   it('وتوقّعُ الشاشة يطابق الكشفَ في الشعبة نفسِها — وإلّا رقمان لشيءٍ واحد', async () => {
@@ -136,10 +169,10 @@ describe('الأصيلُ والحدُّ الأدنى — معادلةٌ واحد
     expect(row!.projected, 'التوقّعُ يخالف الكشفَ — معادلتان لا واحدة').toBe(computed.total)
   })
 
-  it('وتقول الشاشةُ إنّ الاحتسابَ جرى على الحدّ الأدنى — فلا يُقرأ الفرقُ خطأً', async () => {
+  it('وتقول الشاشةُ إنّ الأرضيّةَ كُمّلت، والمحتسَبُ ما سجّل لا عددُ الأرضيّة', async () => {
     const mine = await earnings.listForTrainer(leadUserId)
     const row = mine.cohorts.find((c: { cohortId: string }) => c.cohortId === floorCohortId)
-    expect(row!.floorApplied).toBe(true)
-    expect(row!.billedSeats).toBe(8)
+    expect(row!.floorApplied, 'لم يُقَل إنّ الأرضيّةَ كُمّلت').toBe(true)
+    expect(row!.billedSeats, 'المحتسَبُ عددُ الأرضيّة لا عددُ المسجّلين').toBe(5)
   })
 })

@@ -6,7 +6,7 @@
      ثمّ دفعنا غيرَه.
    · **ولا يُسمّى المقعدُ العامُّ «من تسويق الأكاديميّة»** — فالمحرّكُ لا يعرف
      ذلك: `general = total − referred`، ويدخله ما جاء به المدرّبُ نفسُه بلا
-     رابطه، وما يُكمِّله الحدُّ الأدنى ولا يقابله مسجَّلٌ أصلا.
+     رابطه، وما جاء برابط مدرّبٍ آخر.
    · **ولا مثالَ حيث لا يصحّ** — بلا قاعدةٍ، أو بنسبةٍ من الإيراد (رقمُها دالّةٌ
      في سعرٍ نملكه نحن)، أو بلا سعرِ إحالةٍ (فلا يُوعَد بقناةٍ لا تُحتسب).
    · **والعملةُ من القاعدة** لا كلمةٌ مكتوبة. */
@@ -20,35 +20,83 @@ const perSeat = (over: Partial<ContractCompensation> = {}): ContractCompensation
   type: 'per_seat', rate: '25.00', currency: 'USD', minSeats: 8, referralRate: '30.00', ...over,
 })
 
+/** وكلُّ شعبةٍ في هذه الجولة انعقدت، إلّا ما يُقال فيه خلافُ ذلك صريحا */
+const seats = (over: Omit<Parameters<typeof perSeatBreakdown>[0], 'cohortStarted'>) =>
+  perSeatBreakdown({ ...over, cohortStarted: true })
+
 describe('معادلةُ المقاعد — تطبيقٌ واحدٌ يقرؤه الكشفُ والشاشةُ والمثال', () => {
-  it('الحدُّ الأدنى يُكمَّل من العامّ ولا يُضاف إلى المجموع', () => {
-    const b = perSeatBreakdown({ general: 3, referred: 2, rate: 25, referralRate: 30, minSeats: 8 })
-    expect(b.generalSeats, 'لم يُكمَّل العامُّ إلى الحدّ').toBe(6)
-    expect(b.billedSeats, 'المحتسَبُ ليس الحدَّ الأدنى').toBe(8)
-    expect(b.total).toBe(210)
+  /* ═══ الأرضيّةُ أرضيّةُ مالٍ لا أرضيّةُ مقاعد (١ أكتوبر ٢٠٢٦) ═══
+
+     كانت `max(general, minSeats − referred) × rate + referred × referralRate`
+     فتعطي هذه الحالةَ ٢١٠، وصارت `max(ما سجّل، minSeats × rate)` فتعطي ٢٠٠.
+     وقرارُ صاحب المنصّة وعلّتُه في رأس `seat-fee.ts`. */
+  it('⚠️ الأرضيّةُ تُكمِّل المالَ ولا تنفخ عددَ المقاعد', () => {
+    const b = seats({ general: 3, referred: 2, rate: 25, referralRate: 30, minSeats: 8 })
+    expect(b.generalSeats, 'نُفخ العامُّ إلى عدد الأرضيّة').toBe(3)
+    expect(b.billedSeats, 'المحتسَبُ عددُ الأرضيّة لا عددُ المسجّلين').toBe(5)
+    expect(b.generalAmount + b.referralAmount, 'ما سجّل بمصدره').toBe(135)
+    expect(b.floorTopUp, 'التكملةُ ليست فرقَ ما سجّل والأرضيّة').toBe(65)
+    expect(b.total, 'المجموعُ ليس الأرضيّة').toBe(200)
     expect(b.floorApplied).toBe(true)
   })
 
+  /* ═══ ولا أرضيّةَ لشعبةٍ لم تبدأ ═══
+     بلا هذا تدفع الأرضيّةُ ٢٠٠ عن شعبةٍ فارغةٍ أُلغيت. */
+  it('⚠️ وشعبةٌ لم تبدأ لا أرضيّةَ لها — فلا تُدفَع عن فراغ', () => {
+    const open = perSeatBreakdown({
+      general: 3, referred: 2, rate: 25, referralRate: 30, minSeats: 8, cohortStarted: false,
+    })
+    expect(open.total, 'طُبّقت الأرضيّةُ على شعبةٍ لم تنعقد').toBe(135)
+    expect(open.floorTopUp).toBe(0)
+    expect(open.floorApplied).toBe(false)
+
+    const empty = perSeatBreakdown({
+      general: 0, referred: 0, rate: 25, referralRate: 30, minSeats: 8, cohortStarted: false,
+    })
+    expect(empty.total, 'شعبةٌ فارغةٌ لم تبدأ تُدفَع عنها الأرضيّة').toBe(0)
+  })
+
+  /* ═══ و«طُبّقت الأرضيّة» تعني أنّ مالا كُمّل، لا أنّ المسجّلين أقلُّ من العدد ═══
+
+     وكانت تعني الثانيةَ: فسبعةٌ عبر رابطه بمئتَين وعشرةٍ تُطبَع في كشفه
+     «طُبّق الحدُّ الأدنى» ولم يُكمَّل فيها دولارٌ واحد. */
+  it('⚠️ والعلامةُ على تكملةٍ وقعت لا على عددٍ قصر', () => {
+    const b = seats({ general: 0, referred: 7, rate: 25, referralRate: 30, minSeats: 8 })
+    expect(b.billedSeats, 'المسجّلون ليسوا أقلَّ من العدد — فالفحصُ على لا شيء')
+      .toBeLessThan(8)
+    expect(b.total, 'ما سجّل يفوق الأرضيّةَ فلا تُكمَّل').toBe(210)
+    expect(b.floorTopUp).toBe(0)
+    expect(b.floorApplied, 'قيلت «كُمّلت» ولم يُكمَّل شيء').toBe(false)
+  })
+
   it('ومن بلغ الحدَّ بإحالاته لا يُضاعَف له العامّ', () => {
-    const b = perSeatBreakdown({ general: 10, referred: 10, rate: 25, referralRate: 30, minSeats: 8 })
+    const b = seats({ general: 10, referred: 10, rate: 25, referralRate: 30, minSeats: 8 })
     expect(b.generalSeats).toBe(10)
     expect(b.floorApplied).toBe(false)
     expect(b.total).toBe(550)
   })
 
   it('وبلا سعرِ إحالةٍ يُحتسب المقعدُ المحال بالسعر العامّ', () => {
-    const b = perSeatBreakdown({ general: 4, referred: 2, rate: 25, referralRate: null, minSeats: 0 })
+    const b = seats({ general: 4, referred: 2, rate: 25, referralRate: null, minSeats: 0 })
     expect(b.referralAmount).toBe(50)
     expect(b.total).toBe(150)
   })
 
-  /* وهذا ما يُغري بالمبالغة في مادّةٍ تسويقيّة: تحت الحدّ الأدنى، المقعدُ
-     المحالُ **يزيح** مقعدا عامّا كان سيُحتسب — فقيمتُه الحدّيّةُ فرقُ
-     السعرَين لا سعرُه كاملا. */
-  it('وتحت الحدّ الأدنى تكون قيمةُ المقعد المحال الحدّيّةُ فرقَ السعرَين لا سعرَه', () => {
-    const before = perSeatBreakdown({ general: 3, referred: 1, rate: 25, referralRate: 30, minSeats: 8 })
-    const after = perSeatBreakdown({ general: 3, referred: 2, rate: 25, referralRate: 30, minSeats: 8 })
-    expect(after.total - before.total).toBe(5)
+  /* ═══ وتحت الأرضيّة لا يزيد مقعدُ الرابط شيئا — وقد قُرّر على بيّنة ═══
+
+     كانت قيمتُه الحدّيّةُ فرقَ السعرَين (خمسةً هنا)، فصارت صفرا حتّى يتجاوز
+     المجموعُ الأرضيّةَ. وهو أثرٌ قيل لصاحب المنصّة صريحا فأمضى القرار، ويُثبَت
+     هنا كي لا يُكتشَف في مادّةٍ تسويقيّةٍ تَعِد بما لا يقع. */
+  it('⚠️ وتحت الأرضيّة لا يزيد المقعدُ المحالُ المجموعَ شيئا', () => {
+    const before = seats({ general: 3, referred: 1, rate: 25, referralRate: 30, minSeats: 8 })
+    const after = seats({ general: 3, referred: 2, rate: 25, referralRate: 30, minSeats: 8 })
+    expect(before.total, 'الحالةُ الأولى فوق الأرضيّة — فالفحصُ ليس تحتها').toBe(200)
+    expect(after.total - before.total, 'زاد المقعدُ المحالُ المجموعَ تحت الأرضيّة').toBe(0)
+
+    /* وفوقها يزيد بسعره كاملا — فالصفرُ أعلاه حكمُ الأرضيّة لا عطبٌ في الجمع */
+    const over = seats({ general: 10, referred: 1, rate: 25, referralRate: 30, minSeats: 8 })
+    const overPlus = seats({ general: 10, referred: 2, rate: 25, referralRate: 30, minSeats: 8 })
+    expect(overPlus.total - over.total).toBe(30)
   })
 })
 
@@ -58,9 +106,9 @@ describe('المثالُ يُبنى من أرقامه هو، ولا يُبنى �
     expect(ex, 'لا مثالَ أصلا').toBeTruthy()
     expect(ex.rows).toHaveLength(3)
     const expected = [
-      perSeatBreakdown({ general: 20, referred: 0, rate: 25, referralRate: 30, minSeats: 8 }).total,
-      perSeatBreakdown({ general: 10, referred: 10, rate: 25, referralRate: 30, minSeats: 8 }).total,
-      perSeatBreakdown({ general: 0, referred: 20, rate: 25, referralRate: 30, minSeats: 8 }).total,
+      seats({ general: 20, referred: 0, rate: 25, referralRate: 30, minSeats: 8 }).total,
+      seats({ general: 10, referred: 10, rate: 25, referralRate: 30, minSeats: 8 }).total,
+      seats({ general: 0, referred: 20, rate: 25, referralRate: 30, minSeats: 8 }).total,
     ]
     expect(ex.rows.map((r) => r.amount)).toEqual(expected)
     expect(ex.total).toBe(expected.reduce((a, b) => a + b, 0))
