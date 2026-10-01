@@ -117,6 +117,21 @@ describe('التحديثُ الصامت', () => {
     for (const p of points) expect(shown, `ظهرت قائمةُ التغيير والتحديثُ صامت: ${p}`).not.toContain(p)
   })
 
+  /* ═══ وسطرٌ واحدٌ يقول إنّه حُدّث — قرارُ صاحب المنصّة (١ أكتوبر ٢٠٢٦) ═══
+     «فقط ابلغهم رساله بالاعلى يرجى اعاده قراءته… اختر جمله اقصر». علَمٌ لا
+     قائمة: والقائمةُ محروسةٌ بالغياب في الفحص أعلاه. */
+  it('ويحمل الرابطُ علَمَ التحديث — لا قبله، ونعم بعده', async () => {
+    const { token } = await staleOffer()
+    const before = await review.contractByToken(token)
+    if (before.state !== 'open') throw new Error('لم يُفتح الرابط')
+    expect(before.bodyUpdated, 'قال إنّه حُدّث ولم يُحدَّث').toBe(false)
+
+    await review.refreshOpenContracts(adminId, { notify: false })
+    const after = await review.contractByToken(token)
+    if (after.state !== 'open') throw new Error('لم يعد رابطُه يفتح')
+    expect(after.bodyUpdated, 'حُدّث صامتا ولا سطرَ يقوله على صفحته').toBe(true)
+  })
+
   it('والأثرُ يقول إنّه لم يُبلَّغ', async () => {
     const { contractId } = await staleOffer()
     await review.refreshOpenContracts(adminId, { notify: false })
