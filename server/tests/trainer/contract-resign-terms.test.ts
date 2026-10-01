@@ -142,11 +142,32 @@ describe('① و② الأجر', () => {
     expect(next.compensationRuleId, 'لا يقول الصفُّ من أيّ قاعدةٍ نُقل أجرُه').toBe(rule?.id)
     const mail = mailTo(email)
     expect(mail, 'لم تخرج رسالةُ الإعادة').toBeDefined()
-    const at = mail!.text.indexOf('تغيّر أساسُ أتعابك')
+    /* والأجرُ جملةٌ قصيرةٌ لا البندُ مرّتين (١ أكتوبر ٢٠٢٦) — علّتُها عند `feeChangesAr` */
+    const at = mail!.text.indexOf('رفعنا أجرَ المقعد: من $25 إلى $40.')
     expect(at, 'سكتت الرسالةُ عن تغيّر أجره').toBeGreaterThan(-1)
     const tpl = mail!.text.indexOf(firstPoint!)
     expect(tpl, 'سقطت نقاطُ القالب من الرسالة').toBeGreaterThan(-1)
     expect(at, 'تغيّرُ أجره بعد نقاط القالب — لا أوّلَ القسم').toBeLessThan(tpl)
+  })
+
+  /* ═══ وكلُّ رقمٍ في العقد يتبع الأجرَ الجديد (١ أكتوبر ٢٠٢٦) ═══
+     بلاغُ صاحب المنصّة: «تتغيّر الأتعاب في سطرٍ واحد ويتغافل عنه في الأسطر الأخرى».
+     والمتنُ يُصيَّر من الأجر الواحد في صفوفه ونثره ومثاله — والذي قرأه فيه رقمان
+     هو سطرُ «كان… وصار…» في البريد، وصار جملةً قصيرة. وهذا يقيس العقدَ المحفوظَ
+     نفسَه: لا يبقى الرقمُ القديمُ في موضعٍ منه. */
+  it('⚠️ وكلُّ رقمٍ في العقد يتبع الأجرَ الجديد — الصفوفُ والنثرُ والمثال', async () => {
+    const { c, email } = await signed()
+    const out = await ask(c.id, { compensation: { type: 'per_seat', rate: 15, minSeats: 15, referralRate: 28 } })
+    const body = (await prisma.trainerContract.findUniqueOrThrow({ where: { id: out.contractId } })).bodyAr ?? ''
+    expect(body, 'بقي الأجرُ القديمُ في موضعٍ من العقد').not.toMatch(/\$25(?!\d)|× 25(?!\d)/)
+    expect(body, 'سعرُ رابط الدعوة غائبٌ عن صفوف الملحق (ب)').toContain('من جاء عبر رابط دعوة المدرب — $28:')
+    expect(body, 'وعن النثر').toContain('فيستحق $28 عن كل متعلم يسجل في الشعبة من خلاله')
+    expect(body, 'والمثالُ لم يُحسب بسعر رابط الدعوة الجديد').toMatch(/× 28(?!\d)/)
+    expect(body, 'ولا بالعامّ الجديد').toMatch(/× 15(?!\d)/)
+    const text = mailTo(email)!.text
+    expect(text).toContain('صار للمقعد الذي يأتيك عبر رابط دعوتك أجرٌ خاصّ: $28.')
+    expect(text).toContain('خفّضنا أجرَ المقعد العامّ (من جاء من تسويقنا): من $25 إلى $15.')
+    expect(text, 'أُعيد البندُ كاملا في البريد').not.toContain('تحتسب أتعاب المدرب')
   })
 
   it('③ ولا يُغيَّر أجرُ مدرّبٍ نشطٍ من هنا — ولا يقع شيءٌ منه', async () => {

@@ -30,7 +30,7 @@ import { FINAL_REMINDER_DAYS, daysWindowAr } from "@/application/trainer/notice-
 import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
-  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, resignChangeGroups, noChangesLineAr,
+  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, reissueChangesView, noChangesLineAr,
   DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR, defaultAmendmentAcceptBodyAr, hasAmendmentPlaceholder, versionReadByRequester,
 } from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
@@ -1936,7 +1936,11 @@ c.gatesActivation
         const amend = r.mode === "amendment";
         /* ويُقاس ممّا قرأه هو — بالدالّة التي يقيس بها الخادم */
         const readVersion = amend ? versionReadByRequester(r.row) : r.row.bodyVersion;
-        const changes = resignChangeGroups(personal, changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION));
+        /* وما يُقال عمّا تغيّر ببابه — بالدالّة التي تبني بها الرسالةُ نفسُها: لطالب
+           التعديل سطرٌ وملخّصٌ عن القالب، ولمن وقّع بطاقاتُه كاملة (`reissueChangesView`) */
+        const view = reissueChangesView(r.mode, personal, changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION));
+        const changes = view.cards;
+        const changed = changes.length > 0 || view.templateNoteAr !== null;
         const placeholderLeft = hasAmendmentPlaceholder(body);
         const ready = !busy
           && subject.length >= RESIGN_SUBJECT_MIN && subject.length <= RESIGN_SUBJECT_MAX
@@ -2042,20 +2046,23 @@ c.gatesActivation
                   </label>
                 </Inset>
               </details>
-              {changes.length > 0 ? (
+              {changed ? (
                 <Panel tone="accent" className="mt-3 p-3 text-read leading-7">
                   <b className="block">{RESIGN_CHANGES_HEADING_AR}</b>
                   <span className="block opacity-70">يُلحَق بعد نصّك دائما — ولا يُحرَّر.</span>
-                  <div className="mt-2 grid gap-2">
-                    {changes.map((g) => (
-                      <Inset key={g.titleAr} className="border-s-4 border-teal p-2.5">
-                        <b className="block text-xs text-teal-ink">{g.titleAr}</b>
-                        <ul className="mt-1 list-disc ps-5">
-                          {g.itemsAr.map((pt) => <li key={pt}>{pt}</li>)}
-                        </ul>
-                      </Inset>
-                    ))}
-                  </div>
+                  {changes.length > 0 && (
+                    <div className="mt-2 grid gap-2">
+                      {changes.map((g) => (
+                        <Inset key={g.titleAr} className="border-s-4 border-teal p-2.5">
+                          <b className="block text-xs text-teal-ink">{g.titleAr}</b>
+                          <ul className="mt-1 list-disc ps-5">
+                            {g.itemsAr.map((pt) => <li key={pt}>{pt}</li>)}
+                          </ul>
+                        </Inset>
+                      ))}
+                    </div>
+                  )}
+                  {view.templateNoteAr && <p className="mt-2">{view.templateNoteAr}</p>}
                 </Panel>
               ) : (
                 <Panel tone="accent" className="mt-3 p-3 text-read leading-7">

@@ -71,7 +71,10 @@ describe('«أعِدْه للتوقيع» — زرُّه ونافذتُه', () =
     /* والقائمةُ المعروضةُ نفسُها لا أيُّ نداءٍ للدالّة: نداءٌ آخرُ في النافذة
        (مقارنةُ الأجر) كان يُخضِر فحصا أوسعَ من هذا وهي تُحسب بيدٍ أخرى. */
     expect(dlg, 'شروطُه تُحسب في الشاشة بغير دالّة الخادم').toMatch(/const personal = personalChangesAr\(/)
-    expect(dlg, 'القائمةُ المعروضةُ لا تبدأ بشروطه — أو تُجمَع بغير دالّة الخادم').toMatch(/const changes = resignChangeGroups\(personal, changeGroupsBetween\(/)
+    /* وما يُعرَض ببابه بالدالّة التي تبني بها الرسالةُ نفسُها (١ أكتوبر ٢٠٢٦): لمن وقّع
+       بطاقاتٌ كاملة، ولطالب التعديل سطرٌ وملخّصٌ عن القالب (`reissueChangesView`) */
+    expect(dlg, 'القائمةُ المعروضةُ تُجمَع بغير دالّة الرسالة — أو بغير بابها').toMatch(/const view = reissueChangesView\(r\.mode, personal, changeGroupsBetween\(readVersion,\s*CONTRACT_BODY_VERSION\)\)/)
+    expect(dlg, 'سطرُ القالب لطالب التعديل لا يُعايَن').toMatch(/\{view\.templateNoteAr && /)
     const at = dlg.indexOf('"resign-request"}`')
     const call = dlg.slice(at, dlg.indexOf('setResign(null)', at))
     expect(call, 'لم تُقرأ كتلةُ النداء').toContain('subjectAr')

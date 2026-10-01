@@ -21,7 +21,7 @@ const mailFor = (from: string) => {
   return contractResignMail({
     greetingName: 'منار', subjectAr: 'عقدُك عاد إليك',
     bodyAr: defaultResignBodyAr('اتفاقية', groups.length > 0), changeGroups: groups,
-    signingUrl: 'https://example.com/c/T', expiresOnAr: '١٥ أكتوبر ٢٠٢٦', mode: 'resign',
+    templateNoteAr: null, signingUrl: 'https://example.com/c/T', expiresOnAr: '١٥ أكتوبر ٢٠٢٦', mode: 'resign',
   })
 }
 
@@ -62,7 +62,7 @@ describe('ومن وقّع إصدارا أقدم — الشاهدُ المضاد�
 describe('ومن قُبل طلبُ تعديله ولم يتغيّر شيء', () => {
   const mail = contractResignMail({
     greetingName: 'منار', subjectAr: 'قبلنا ملاحظاتِك', bodyAr: 'شكرا لك على ملاحظاتك.\n\nوهذا جوابُنا.',
-    changeGroups: [], signingUrl: 'https://example.com/c/T', expiresOnAr: '١٥ أكتوبر ٢٠٢٦', mode: 'amendment',
+    changeGroups: [], templateNoteAr: null, signingUrl: 'https://example.com/c/T', expiresOnAr: '١٥ أكتوبر ٢٠٢٦', mode: 'amendment',
   })
   const callouts = mail.doc.blocks.flatMap((b) => (b.kind === 'callout' && typeof b.text === 'string' ? [b.text] : []))
 

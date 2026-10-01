@@ -16,7 +16,7 @@ import { renderMail } from './mail-template'
 import { changeGroupsBetween } from '../../src/application/trainer/contract-changelog'
 import {
   RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_REVOKE_REASON_AR, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN,
-  personalChangesAr, resignChangeGroups,
+  personalChangesAr, resignChangeGroups, reissueChangesView,
   AMENDMENT_ACCEPT_REVOKE_REASON_AR, hasAmendmentPlaceholder, versionReadByRequester,
 } from '../../src/application/trainer/contract-resign'
 import {
@@ -4856,8 +4856,11 @@ export class TrainerReviewService {
     /* ويُقاس ما تغيّر ممّا قرأه هو — لا من صفٍّ حُدّث نصُّه تحته (علّتُه
        عند `versionReadByRequester`). والموقَّعُ لا يُحدَّث، فهما سواءٌ فيه. */
     const readVersion = mode === 'amendment' ? versionReadByRequester(old) : old.bodyVersion
-    const changeGroups = resignChangeGroups(personalAr, changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION))
-    const changesAr = changeGroups.flatMap((g) => g.itemsAr)
+    const templateGroups = changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION)
+    /* والأثرُ يحفظ ما تغيّر كلَّه نقطةً نقطة — والرسالةُ تقوله بما يليق ببابها:
+       لطالب التعديل سطرٌ وملخّصٌ عن القالب (`reissueChangesView`) */
+    const changesAr = resignChangeGroups(personalAr, templateGroups).flatMap((g) => g.itemsAr)
+    const view = reissueChangesView(mode, personalAr, templateGroups)
 
     const created = await this.prisma.$transaction(async (tx) => {
       /* قارنْ واضبطْ: الموقَّعُ وحدَه. فالمعتمَدُ نافذٌ وبابُه رضا صاحبه لا
@@ -4933,7 +4936,8 @@ export class TrainerReviewService {
     let emailDelivery: DirectMailStatus = 'failed'
     try {
       const mail = contractResignMail({
-        greetingName: name, subjectAr: subject, bodyAr: body, changeGroups,
+        greetingName: name, subjectAr: subject, bodyAr: body,
+        changeGroups: view.cards, templateNoteAr: view.templateNoteAr,
         signingUrl: sent.signingUrl,
         expiresOnAr: fmtDateWith(sent.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
         contractNumber: created.number,
