@@ -19,6 +19,8 @@ describe('تمييز خطأ القطعة الزائلة', () => {
       'Failed to fetch dynamically imported module: /assets/Diagnostic-x.js',
       'Importing a module script failed.',
       'error loading dynamically imported module: /assets/Pathway-y.js',
+      /* سفاري حين تُجاب القطعةُ الزائلة بصفحة HTML (١ أكتوبر ٢٠٢٦) */
+      "'text/html' is not a valid JavaScript MIME type.",
     ]) {
       expect(isStaleChunkError(new Error(m)), m).toBe(true)
     }
