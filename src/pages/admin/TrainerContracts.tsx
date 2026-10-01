@@ -62,12 +62,19 @@ import ContractDocument from '@/components/ContractDocument'
 import { nameMatch } from '@/application/trainer/contract-names'
 import { groupContracts, readLineage } from '@/application/trainer/contract-lineage'
 import { isUntouchableContract } from '@/application/trainer/contract-untouchable'
+import { countAr } from '@/application/text/count-ar'
 
 /* حقلا رسالة «أعِدْه للتوقيع» — العنوانُ والنصُّ يُكتبان لكلّ مدرّبٍ كما يشاء
    صاحبُ المنصّة، فحقلٌ يُقرأ فيه نصٌّ طويلٌ لا سطرُ متصفّح. */
 const FIELD =
   "w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none transition focus:border-teal";
 const LABEL = "mb-1.5 block text-xs font-bold text-muted-foreground";
+
+/* عددُ الملحق (أ) بتمييزه: كان «10 دورةً» لكلّ عدد، وهو لحنٌ من الواحد إلى
+   العشرة. والضميرُ في الصيغة نفسِها لأنّه يتبع العدد: «دورتان مؤهّلا لهما». */
+const ANNEX_A_FORMS = {
+  one: "دورة مؤهّلا لها", two: "دورتان مؤهّلا لهما", few: "دورات مؤهّلا لها", many: "دورةً مؤهّلا لها",
+} as const;
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
@@ -952,7 +959,11 @@ c.gatesActivation
                         <b>{docNameOf(c)}</b>
                         <span className="opacity-70">
                           {" "}— {STATUS_AR[c.status] ?? c.status}
-                          {c.bodyVersion ? ` · صياغة ${c.bodyVersion}` : " · بلا نصّ (البابُ القديم)"}
+                          {/* وبلا رمز الإصدار (١ أكتوبر ٢٠٢٦): «no need» — والمفيدُ منه
+                              أحاضرٌ نصُّه أم سابق، فذاك ما يقرّر إعادةَ التوقيع */}
+                          {c.bodyVersion
+                            ? c.bodyVersion === CONTRACT_BODY_VERSION ? " · على النصّ الحاضر" : " · على نصٍّ سابق"
+                            : " · بلا نصّ (البابُ القديم)"}
                           {" · "}{fmtDateTime(c.createdAt)}
                         </span>
                       </span>
@@ -1447,7 +1458,7 @@ c.gatesActivation
                     {c.qualifiedSnapshot && c.qualifiedSnapshot.length > 0 && (
                       <details className="mt-1">
                         <summary className="cursor-pointer text-read opacity-70 hover:opacity-100">
-                          الملحق (أ): {c.qualifiedSnapshot.length} دورةً مؤهّلا لها
+                          الملحق (أ): {countAr(c.qualifiedSnapshot.length, ANNEX_A_FORMS)}
                         </summary>
                         <p className="mt-1 text-read leading-6 opacity-70">
                           {c.qualifiedSnapshot.map((q) => q.titleAr).join(" · ")}
@@ -1778,8 +1789,8 @@ c.gatesActivation
             <Inset dir="rtl" tone="solid" className="max-h-[86vh] overflow-y-auto text-foreground sm:p-6">
               <h2 className="text-sm font-black">إعادةُ «{resign.row.title}» للتوقيع على النصّ المحدَّث</h2>
               <p className="mt-2 text-read leading-7 opacity-80">
-                يُغلَق العقدُ الموقَّع ودليلُ توقيعه باقٍ، ويُعرَض عليه الإصدارُ الحاضر
-                ({CONTRACT_BODY_VERSION}) برابطٍ جديد. وتصله رسالتُك أوّلا، ثمّ الرابط.
+                يُغلَق العقدُ الموقَّع ودليلُ توقيعه باقٍ، ويُعرَض عليه النصُّ الحاضر
+                برابطٍ جديد. وتصله رسالتُك أوّلا، ثمّ الرابط.
               </p>
               <label className="mt-4 block">
                 <span className={LABEL}>عنوانُ الرسالة</span>
@@ -1802,7 +1813,7 @@ c.gatesActivation
                 </Panel>
               ) : (
                 <p className="mt-3 text-read opacity-70">
-                  لا نقاطَ تغييرٍ مسجّلةٌ بين {resign.row.bodyVersion ?? "—"} والحاضر — فلا قسمَ تغييراتٍ في الرسالة.
+                  لا نقاطَ تغييرٍ مسجّلةٌ بين نصّه والنصّ الحاضر — فلا قسمَ تغييراتٍ في الرسالة.
                 </p>
               )}
               <div className="mt-5 flex flex-wrap items-center gap-2">

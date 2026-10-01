@@ -45,7 +45,7 @@ import type { ContractDoc, ContractSection, ContractBlock } from '@/application/
 import {
   sectionHeadingAr, summaryItem, exampleRow, exampleTotal,
   isExampleHeading, isAdvisoryNote, feeRuleRows, feeRuleCells,
-  glossaryItem, GLOSSARY_HEAD,
+  glossaryItem, GLOSSARY_HEAD, shownMeta,
 } from '@/application/trainer/contract-sections'
 
 /** فاصلٌ يُقرأ ولا يُرى — لِما يحلّ محلَّه في العين حدُّ خانةٍ أو انتقالُ سطر */
@@ -267,15 +267,17 @@ function Blocks({ section }: { section: ContractSection }) {
 export default function ContractDocument({ doc }: { doc: ContractDoc }) {
   const summary = doc.sections.find((s) => s.kind === 'summary')
   const rest = doc.sections.filter((s) => s !== summary)
+  /* وإصدارُ الصياغة لا يُرسَم — علّتُه عند `shownMeta` */
+  const meta = shownMeta(doc.meta)
 
   return (
     <article className="contract-doc contract-prose" dir="rtl">
       <header className="cd-head">
         <p className="cd-kicker">أكاديميّة وجيز</p>
         <h2 className="cd-title">{doc.titleAr}</h2>
-        {doc.meta.length > 0 && (
+        {meta.length > 0 && (
           <div className="cd-meta">
-            {doc.meta.map((m) => (
+            {meta.map((m) => (
               <span key={m.labelAr}>{m.labelAr}: <b>{m.valueAr}</b></span>
             ))}
           </div>

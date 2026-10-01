@@ -163,6 +163,8 @@ describe('سحبُ الموقَّع وإعادتُه', () => {
     expect(after.signedAt, 'لا توقيعَ أصلا — فالفحصُ يقيس الفراغ').not.toBeNull()
     expect(after.revokeReasonAr ?? '', 'قُرئ السحبُ رفضا في شاشة العقود').not.toMatch(/^رُفض التوقيع/)
     expect(after.revokeReasonAr ?? '').toMatch(/^أُعيد للتوقيع على نصٍّ محدَّث/)
+    /* ولا يحمل رمزَي الإصدارين: السببُ يُعرَض، والإصداران في الأثر (١ أكتوبر ٢٠٢٦) */
+    expect(after.revokeReasonAr ?? '', 'سببُ الإغلاق يُظهر رمزَ إصدار').not.toMatch(/\bv\d+-\d{4}-\d{2}-\d{2}\b/)
   })
 
   it('ويُنشأ بديلٌ على الإصدار الحاضر، مُرسَلا، باسم من وقّع', async () => {
@@ -196,6 +198,9 @@ describe('سحبُ الموقَّع وإعادتُه', () => {
     })
     expect(row, 'لا أثرَ للسحب').not.toBeNull()
     expect((row!.meta as { nextContractId?: string }).nextContractId).toBe(out.contractId)
+    /* والإصداران هنا وحدَهما منذ خرجا من سبب الإغلاق المعروض — فهذا سجلُّهما */
+    expect(row!.meta, 'ضاع الإصداران من الأثر — ولا موضعَ لهما غيرُه')
+      .toMatchObject({ fromVersion: OLD_VERSION, toVersion: CONTRACT_BODY_VERSION })
   })
 })
 
