@@ -113,6 +113,8 @@ const HIGH: readonly string[] = [
      المسار كلِّه. وبرفضِ التوقيع يُغلَق عقدٌ وقّعه صاحبُه، فيقف حيث كان.
      وكلاهما يصل صاحبَه بريدا في معالجه. */
   'trainer.contract.countersign', 'trainer.contract.reject_signature',
+  /* وسحبُ الموقَّع لنصٍّ محدَّثٍ من جنسه: يُغلَق ما وقّعه صاحبُه ويُعرَض غيرُه */
+  'trainer.contract.resign_requested',
   /* والفسخُ معهما: ينهي عقدا نافذا على إنسانٍ هو طرفٌ فيه، ويصله بريدا
      في معالجه (`TrainerDepartureService.open`). */
   'trainer.contract.terminate',
