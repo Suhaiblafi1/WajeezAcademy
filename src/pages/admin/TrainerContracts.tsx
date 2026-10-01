@@ -31,6 +31,7 @@ import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
   RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, resignChangeGroups, RESIGN_NO_CHANGES_AR,
+  DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR, defaultAmendmentAcceptBodyAr, hasAmendmentPlaceholder, versionReadByRequester,
 } from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -102,6 +103,8 @@ interface ContractRow {
   /** رقمُ العقد — `WJ-CT-…`، يُبحث به ويُقال للمدرّب (١ أكتوبر ٢٠٢٦) */
   number: string;
   bodyVersion: string | null; bodyHash: string | null; signerEmail: string | null;
+  /** تحديثُ النصّ في مكانه — به يُعرف أيَّ إصدارٍ قرأ من طلب تعديلا (`versionReadByRequester`) */
+  bodyPrevVersion?: string | null; bodyUpdatedAt?: string | null;
   compensationType: string | null; compensationRate: string | null; currency: string;
   compensationMinSeats: number | null; compensationReferralRate: string | null;
   /** البند 21 — بنودُه الخاصّة كما طُبعت */
@@ -311,6 +314,10 @@ export default function TrainerContracts() {
      نصٌّ قديم. والعنوانُ والنصُّ يُملآن بمقترَحٍ ثمّ يُحرَّران لكلّ مدرّب. */
   const [resign, setResign] = useState<{
     row: ContractRow; subjectAr: string; bodyAr: string
+    /* ═══ وبابان بنافذةٍ واحدة (١ أكتوبر ٢٠٢٦) ═══
+       `resign`: موقَّعٌ على نصٍّ قديم يُعاد. و`amendment`: طلبُ تعديلٍ يُقبَل
+       فيصل صاحبَه جوابُك وعقدُه المصحَّحُ في رسالةٍ واحدة — أمرُ صاحب المنصّة. */
+    mode: "resign" | "amendment"
     /* ═══ وشروطُه إن أُريد تغييرُها (١ أكتوبر ٢٠٢٦) ═══
        تُملأ بما في عقده الموقَّع، فما لم يُمَسّ لا يُرسَل ويُنسَخ كما هو.
        و`available` دوراتُه المؤهَّلُ لها اليوم — تُقرأ من التعبئة عند الفتح. */
@@ -525,11 +532,15 @@ export default function TrainerContracts() {
      عنه نصٌّ واحدٌ يصدق في إحداهما. وما لم تردّ شيئا فنصُّ `ok`. */
   /* تُفتح النافذةُ بشروطه كما في عقده، ثمّ تُقرأ دوراتُه المؤهَّلُ لها اليوم —
      فإن تعثّرت القراءةُ بقيت دوراتُ عقده وحدَها تُختار منها، ولا تُغلق النافذة. */
-  const openResign = async (c: ContractRow) => {
+  const openResign = async (c: ContractRow, mode: "resign" | "amendment" = "resign", replyAr?: string) => {
     setResign({
-      row: c, subjectAr: DEFAULT_RESIGN_SUBJECT_AR,
-      bodyAr: defaultResignBodyAr(c.title, changeGroupsBetween(c.bodyVersion, CONTRACT_BODY_VERSION).length > 0),
-      editTerms: false,
+      row: c, mode,
+      subjectAr: mode === "amendment" ? DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR : DEFAULT_RESIGN_SUBJECT_AR,
+      bodyAr: mode === "amendment"
+        ? defaultAmendmentAcceptBodyAr(c.title, replyAr)
+        : defaultResignBodyAr(c.title, changeGroupsBetween(c.bodyVersion, CONTRACT_BODY_VERSION).length > 0),
+      /* ومن قبِل تعديلا فأغلبُ ظنّه أنّه سيغيّر شرطا — فتُفتح الشروطُ له */
+      editTerms: mode === "amendment",
       rate: c.compensationRate ?? "", minSeats: c.compensationMinSeats != null ? String(c.compensationMinSeats) : "",
       referralRate: c.compensationReferralRate ?? "",
       picked: new Set((c.qualifiedSnapshot ?? []).map((q) => q.courseId)),
@@ -1300,11 +1311,11 @@ c.gatesActivation
                             ولا يُكرَّر زرُّ الإلغاء هنا: فعلٌ لا رجعةَ فيه لا
                             يُنسَخ في موضعَين من شاشةٍ واحدة. فيُسمّى ويُدَلّ عليه. */}
                         <p className="mt-3 text-read leading-6 opacity-80">
-                          اكتبْ جوابَك ثمّ اخترْ ما يترتّب عليه: <b>يبقى العرضُ كما هو</b> فيعود
-                          إليه برابطٍ جديدٍ ليوقّعه أو يعتذر؛ أو <b>تقبل تعديلَه</b> فيُغلَق هذا
-                          العرضُ ويصله أنّ عقدا مصحَّحا يُعَدّ له، ثمّ تنشئه من «عقدٌ جديد» أعلاه.
-                          وفي الحالين يصله جوابُك بحرفه. ولا يُعدَّل نصُّ عرضٍ أُرسل: هو مجمَّدٌ
-                          مهشَّش، فالتصحيحُ عرضٌ جديدٌ لا كتابةٌ فوق القائم.
+                          جوابان: <b>يبقى العرضُ كما هو</b> فيصله ردُّك برابطٍ جديدٍ ليوقّعه أو
+                          يعتذر؛ أو <b>تقبل تعديلَه</b> فتضبط شروطَه وتكتب جوابَك، ويصله ردُّك
+                          وعقدُه المصحَّحُ برابطه في رسالةٍ واحدة. وفي الحالين يصله جوابُك
+                          بحرفه. ولا يُعدَّل نصُّ عرضٍ أُرسل: هو مجمَّدٌ مهشَّش،
+                          فالتصحيحُ عرضٌ جديدٌ لا كتابةٌ فوق القائم — يُغلَق هذا ويُرسَل غيرُه برقمٍ جديد.
                         </p>
                         {replying?.id === c.id ? (
                           <div className="mt-3">
@@ -1343,31 +1354,28 @@ c.gatesActivation
                               </Button>
                               {/* ═══ والجوابُ الثاني صار زرّا يُرى (٢٦ سبتمبر ٢٠٢٦) ═══
 
-                                  بلاغُ صاحب المنصّة: «وإذا أردت أن أردّ عليه بأنّنا
-                                  سنعدّل العقد ونرسل لك عقدا جديدا لا يوجد زرٌّ لهذا
-                                  الأمر». وكان البابُ موجودا بمعناه لا باسمه: يُلغى
-                                  بزرّ «ألغِ» ثمّ يُركَّب غيرُه — وهو ما لا يخطر لمن
-                                  يقرأ طلبَ تعديلٍ في لوحه، فضلا عن أنّ الإلغاءَ كان
-                                  لا يرسل شيئا وسببُه لا يقول إنّ طلبَه قُبل. */}
+                                  بلاغُ صاحب المنصّة: «لا يوجد زرٌّ لهذا الأمر». ثمّ
+                                  (١ أكتوبر ٢٠٢٦): «محمّد لم يستلم شيئا» — فالزرُّ كان
+                                  يُغلق ويَعِد بعقدٍ يُنشأ باليد. فصار يفتح نافذةَ
+                                  العقد المصحَّح، وما كُتب هنا يُنقل إليها. */}
                               <Button size="sm" tone="confirm" icon={FilePlus2}
-                                disabled={replying.replyAr.trim().length < 5}
-                                onClick={() => void run(async () => {
-                                  await apiPost(
-                                    `/api/admin/trainer-contracts/${c.id}/amendment-reissue`,
-                                    { replyAr: replying.replyAr.trim() });
-                                  setReplying(null);
-                                  await load();
-                                }, "وصلَه أنّ عقدا مصحَّحا يُعَدّ له — أنشئه الآن من «عقدٌ جديد»", c.id)}>
-                                قبِلتُ التعديل — سأرسل عقدا مصحَّحا
+                                onClick={() => { const t = replying.replyAr; setReplying(null); void openResign(c, "amendment", t); }}>
+                                قبِلتُ التعديل — أرسِلْ عقدا مصحَّحا
                               </Button>
                               <Button size="sm" tone="ghost" onClick={() => setReplying(null)}>صرفُ النظر</Button>
                             </div>
                           </div>
                         ) : (
-                          <Button size="sm" tone="confirm" icon={MessageSquareReply} className="mt-3"
-                            onClick={() => setReplying({ id: c.id, replyAr: "" })}>
-                            رُدَّ عليه
-                          </Button>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Button size="sm" tone="confirm" icon={MessageSquareReply}
+                              onClick={() => setReplying({ id: c.id, replyAr: "" })}>
+                              رُدَّ عليه — يبقى العرضُ كما هو
+                            </Button>
+                            <Button size="sm" tone="confirm" icon={FilePlus2}
+                              onClick={() => void openResign(c, "amendment")}>
+                              قبِلتُ التعديل — أرسِلْ عقدا مصحَّحا
+                            </Button>
+                          </div>
                         )}
                       </Panel>
                     )}
@@ -1925,35 +1933,61 @@ c.gatesActivation
             specialTermsAr: termsChanged ? norm(r.specialTermsAr) || null : r.row.specialTermsAr,
           },
         );
-        const changes = resignChangeGroups(personal, changeGroupsBetween(r.row.bodyVersion, CONTRACT_BODY_VERSION));
+        const amend = r.mode === "amendment";
+        /* ويُقاس ممّا قرأه هو — بالدالّة التي يقيس بها الخادم */
+        const readVersion = amend ? versionReadByRequester(r.row) : r.row.bodyVersion;
+        const changes = resignChangeGroups(personal, changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION));
+        const placeholderLeft = hasAmendmentPlaceholder(body);
         const ready = !busy
           && subject.length >= RESIGN_SUBJECT_MIN && subject.length <= RESIGN_SUBJECT_MAX
           && body.length >= RESIGN_BODY_MIN && body.length <= RESIGN_BODY_MAX
+          && !placeholderLeft
           && (!coursesChanged || chosen.length > 0);
         return (
-          <Modal onClose={() => setResign(null)} label={`إعادةُ «${resign.row.title}» للتوقيع`}
+          <Modal onClose={() => setResign(null)}
+            label={amend ? `قبولُ تعديل «${resign.row.title}»` : `إعادةُ «${resign.row.title}» للتوقيع`}
             panelClassName="w-full max-w-2xl">
             <Inset dir="rtl" tone="solid" className="max-h-[86vh] overflow-y-auto text-foreground sm:p-6">
-              <h2 className="text-sm font-black">إعادةُ «{resign.row.title}» للتوقيع على النصّ المحدَّث</h2>
+              <h2 className="text-sm font-black">
+                {amend
+                  ? `قبولُ تعديل «${resign.row.title}» — وإرسالُه مصحَّحا`
+                  : `إعادةُ «${resign.row.title}» للتوقيع على النصّ المحدَّث`}
+              </h2>
               <p className="mt-2 text-read leading-7 opacity-80">
-                يُغلَق العقدُ الموقَّع ودليلُ توقيعه باقٍ، ويُعرَض عليه النصُّ الحاضر
-                برابطٍ جديد — في رسالةٍ واحدة: نصُّك، ثمّ ما تغيّر، ثمّ زرُّ التوقيع.
+                {amend
+                  ? "يُغلَق العرضُ الذي طلب تعديلَه، ويُرسَل إليه عقدٌ مصحَّحٌ على النصّ الحاضر بشروطه كما تضبطها أدناه — في رسالةٍ واحدة: جوابُك، ثمّ ما تغيّر، ثمّ زرُّ التوقيع."
+                  : "يُغلَق العقدُ الموقَّع ودليلُ توقيعه باقٍ، ويُعرَض عليه النصُّ الحاضر برابطٍ جديد — في رسالةٍ واحدة: نصُّك، ثمّ ما تغيّر، ثمّ زرُّ التوقيع."}
               </p>
+              {amend && r.row.amendmentRequestAr && (
+                <Panel tone="warn" className="mt-3 p-3 text-read leading-7">
+                  <b className="block">ما طلبه:</b>
+                  <span className="block whitespace-pre-wrap">{r.row.amendmentRequestAr}</span>
+                </Panel>
+              )}
               <label className="mt-4 block">
                 <span className={LABEL}>عنوانُ الرسالة</span>
                 <input className={FIELD} value={resign.subjectAr} maxLength={RESIGN_SUBJECT_MAX}
                   onChange={(e) => setResign({ ...r, subjectAr: e.target.value })} />
               </label>
               <label className="mt-3 block">
-                <span className={LABEL}>نصُّ الرسالة — فقراتٌ يفصلها سطرٌ فارغ</span>
+                <span className={LABEL}>
+                  {amend ? "جوابُك — قبولا أو اعتذارا عمّا لم تقبله، كما تشاء. فقراتٌ يفصلها سطرٌ فارغ" : "نصُّ الرسالة — فقراتٌ يفصلها سطرٌ فارغ"}
+                </span>
                 <textarea className={`${FIELD} resize-y leading-7`} rows={10} maxLength={RESIGN_BODY_MAX}
                   value={resign.bodyAr}
                   onChange={(e) => setResign({ ...r, bodyAr: e.target.value })} />
               </label>
+              {placeholderLeft && (
+                <p className="mt-1 text-read text-danger-ink">
+                  في الرسالة سطرٌ بين معقوفَين لم يُستبدَل — اكتب جوابَك مكانه قبل الإرسال.
+                </p>
+              )}
               {/* ═══ وشروطُه — مطويّةٌ، فالإعادةُ بلا تغييرٍ هي الأصل ═══ */}
               <details className="mt-3" open={r.editTerms}
                 onToggle={(e) => setResign({ ...r, editTerms: (e.target as HTMLDetailsElement).open })}>
-                <summary className="cursor-pointer text-sm font-bold">وغيّرْ شروطَه قبل الإعادة (اختياريّ)</summary>
+                <summary className="cursor-pointer text-sm font-bold">
+                  {amend ? "شروطُه في العقد المصحَّح — غيّرْ ما قبلتَه منها" : "وغيّرْ شروطَه قبل الإعادة (اختياريّ)"}
+                </summary>
                 <Inset className="mt-2 grid gap-3 p-3">
                   {active ? (
                     <p className="text-read leading-6 opacity-80">
@@ -2033,7 +2067,7 @@ c.gatesActivation
                 <Button tone="confirm" icon={Send} loading={busy} disabled={!ready}
                   onClick={() => void run(async () => {
                     /* وما لم يُمَسّ لا يُرسَل — فيُنسَخ من عقده كما هو في الخادم */
-                    await apiPost(`/api/admin/trainer-contracts/${r.row.id}/resign-request`, {
+                    await apiPost(`/api/admin/trainer-contracts/${r.row.id}/${amend ? "amendment-reissue" : "resign-request"}`, {
                       subjectAr: subject, bodyAr: body,
                       ...(feeChanged && typedFee ? {
                         compensation: {
@@ -2047,8 +2081,10 @@ c.gatesActivation
                     });
                     setResign(null);
                     await load();
-                  }, "أُعيد العقدُ للتوقيع — وصلته رسالتُك وفيها رابطُ النسخة المحدَّثة", r.row.id)}>
-                  أعِدْه للتوقيع وأبلغْه
+                  }, amend
+                    ? "قُبل تعديلُه — وصلته رسالتُك وفيها رابطُ عقده المصحَّح"
+                    : "أُعيد العقدُ للتوقيع — وصلته رسالتُك وفيها رابطُ النسخة المحدَّثة", r.row.id)}>
+                  {amend ? "أرسِلْ جوابَك وعقدَه المصحَّح" : "أعِدْه للتوقيع وأبلغْه"}
                 </Button>
                 <Button tone="secondary" onClick={() => setResign(null)}>تراجَع</Button>
               </div>

@@ -56,19 +56,24 @@ describe('«أعِدْه للتوقيع» — زرُّه ونافذتُه', () =
   })
 
   it('والنافذةُ تنادي مسارَها وتمرّر معرّفَ الصفّ', () => {
-    expect(dlg).toMatch(/\/resign-request`/)
+    /* والنافذةُ لبابَين منذ ١ أكتوبر ٢٠٢٦ (قبولُ التعديل معها) — فالمسارُ بوجهها */
+    expect(dlg).toMatch(/\$\{amend \? "amendment-reissue" : "resign-request"\}`/)
     expect(dlg, 'عاد جوابُ الإعادة إلى رأس الصفحة').toMatch(/,\s*r\.row\.id\)/)
   })
 
   it('والقائمةُ تُقرأ من الجدول وتُعرَض — ولا تُرسَل من الشاشة', () => {
-    expect(dlg).toMatch(/changeGroupsBetween\(r\.row\.bodyVersion,\s*CONTRACT_BODY_VERSION\)/)
+    /* ويُقاس من الإصدار الذي قرأه صاحبُه: موقَّعٌ قرأ ما في صفّه، وطالبُ
+       التعديل ما قبل تحديثٍ وقع بعد طلبه (`versionReadByRequester`) */
+    expect(dlg).toMatch(/const readVersion = amend \? versionReadByRequester\(r\.row\) : r\.row\.bodyVersion/)
+    expect(dlg).toMatch(/changeGroupsBetween\(readVersion,\s*CONTRACT_BODY_VERSION\)/)
     /* وما تغيّر في شروطه هو بالدالّة التي يحسب بها الخادم (١ أكتوبر ٢٠٢٦) —
        فما يُعايَن هو ما يُرسَل، لا نسختان تفترقان */
     /* والقائمةُ المعروضةُ نفسُها لا أيُّ نداءٍ للدالّة: نداءٌ آخرُ في النافذة
        (مقارنةُ الأجر) كان يُخضِر فحصا أوسعَ من هذا وهي تُحسب بيدٍ أخرى. */
     expect(dlg, 'شروطُه تُحسب في الشاشة بغير دالّة الخادم').toMatch(/const personal = personalChangesAr\(/)
     expect(dlg, 'القائمةُ المعروضةُ لا تبدأ بشروطه — أو تُجمَع بغير دالّة الخادم').toMatch(/const changes = resignChangeGroups\(personal, changeGroupsBetween\(/)
-    const call = dlg.slice(dlg.indexOf('/resign-request`'), dlg.indexOf('setResign(null)', dlg.indexOf('/resign-request`')))
+    const at = dlg.indexOf('"resign-request"}`')
+    const call = dlg.slice(at, dlg.indexOf('setResign(null)', at))
     expect(call, 'لم تُقرأ كتلةُ النداء').toContain('subjectAr')
     expect(call, 'حُملت القائمةُ في الطلب — فصار للمرسِل أن يقصّها').not.toMatch(/\bchanges\b|changesAr|personal\b/)
   })

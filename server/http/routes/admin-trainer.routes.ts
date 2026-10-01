@@ -42,6 +42,22 @@ function actorOf(req: { auth: { userId: string; roles: string[] } | null }) {
   return { userId: req.auth!.userId, roles: req.auth!.roles }
 }
 
+/* ما يُرسَل مع العقد البديل — بابا الإعادة للتوقيع وقبولِ طلب التعديل معا.
+   وشروطٌ جديدةٌ اختياريّة (١ أكتوبر ٢٠٢٦) — ما غاب يُنسَخ من القديم.
+   والأجرُ بمخطّط التركيب نفسِه. */
+const reissueBody = z.object({
+  subjectAr: z.string().trim().min(RESIGN_SUBJECT_MIN).max(RESIGN_SUBJECT_MAX),
+  bodyAr: z.string().trim().min(RESIGN_BODY_MIN).max(RESIGN_BODY_MAX),
+  compensation: z.object({
+    type: z.enum(['per_seat', 'fixed_per_cohort', 'revenue_share']),
+    rate: z.number().positive(),
+    minSeats: z.number().int().min(0).optional(),
+    referralRate: z.number().positive().nullish(),
+  }).optional(),
+  courseIds: z.array(z.string()).min(1).max(100).optional(),
+  specialTermsAr: z.string().max(SPECIAL_TERMS_MAX_CHARS * 2).nullish(),
+})
+
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
   const offers = new TrainerOfferService(prisma)
@@ -546,11 +562,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      أن يُلغي ملك أن يُلغيَ قبولا لطلب صاحبه. */
   app.post('/api/admin/trainer-contracts/:contractId/amendment-reissue', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'قبولُ طلب التعديل — يُغلَق العرضُ ويصلُه أنّ عقدا مصحَّحا يُعَدّ له' },
+    schema: { tags: ['admin-trainers'], summary: 'قبولُ طلب التعديل — يُغلَق العرضُ ويصلُه جوابُك وعقدُه المصحَّحُ برابطه في رسالةٍ واحدة' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
-    const { replyAr } = z.object({ replyAr: z.string().trim().min(5).max(AMENDMENT_TEXT_MAX) }).parse(req.body)
-    return review.answerAmendmentWithNewContract(contractId, req.auth!.userId, replyAr)
+    /* ومخطّطُ الإعادة للتوقيع نفسُه (١ أكتوبر ٢٠٢٦): عنوانٌ ونصٌّ يكتبهما
+       الموظّف، وشروطٌ تُغيَّر إن أُريد — والعقدُ المصحَّحُ في الرسالة نفسِها */
+    return review.answerAmendmentWithNewContract(contractId, req.auth!.userId, reissueBody.parse(req.body))
   })
 
   /* ═══ الحذف — وما مسَّه توقيعٌ لا يُحذَف ═══
@@ -659,20 +676,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
        `trainer.contract.manage` وحدَها) ثمّ تركيب. وكان يردّ الماليّةَ عنها وقد
        قرّر صاحبُ المنصّة أنّها ممّن يغيّر الأجرَ فيها. */
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
-    const body = z.object({
-      subjectAr: z.string().trim().min(RESIGN_SUBJECT_MIN).max(RESIGN_SUBJECT_MAX),
-      bodyAr: z.string().trim().min(RESIGN_BODY_MIN).max(RESIGN_BODY_MAX),
-      /* وشروطٌ جديدةٌ اختياريّة (١ أكتوبر ٢٠٢٦) — ما غاب يُنسَخ من القديم.
-         والأجرُ بمخطّط التركيب نفسِه. */
-      compensation: z.object({
-        type: z.enum(['per_seat', 'fixed_per_cohort', 'revenue_share']),
-        rate: z.number().positive(),
-        minSeats: z.number().int().min(0).optional(),
-        referralRate: z.number().positive().nullish(),
-      }).optional(),
-      courseIds: z.array(z.string()).min(1).max(100).optional(),
-      specialTermsAr: z.string().max(SPECIAL_TERMS_MAX_CHARS * 2).nullish(),
-    }).parse(req.body)
+    const body = reissueBody.parse(req.body)
     /* ═══ والأجرُ يغيّره من يتعاقد — قرارُ صاحب المنصّة (١ أكتوبر ٢٠٢٦) ═══
        كان هنا شرطُ `trainer.compensation.manage`، فيردّ المديرَ الأكاديميَّ عن
        تغيير الأجر في الإعادة والمركِّبُ يقبله منه. وقولُ صاحب المنصّة: «the

@@ -17,6 +17,7 @@ import { changeGroupsBetween } from '../../src/application/trainer/contract-chan
 import {
   RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_REVOKE_REASON_AR, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN,
   personalChangesAr, resignChangeGroups,
+  AMENDMENT_ACCEPT_REVOKE_REASON_AR, hasAmendmentPlaceholder, versionReadByRequester,
 } from '../../src/application/trainer/contract-resign'
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
@@ -271,6 +272,17 @@ export function cleanRubric(scores: RubricScores): Record<string, number> {
   return Object.fromEntries(
     Object.entries(scores).filter((e): e is [string, number] => e[1] !== undefined),
   )
+}
+
+/** ما يُرسَل مع العقد البديل — في الإعادة للتوقيع وفي قبول طلب التعديل */
+export interface ReissueForSigningInput {
+  subjectAr: string; bodyAr: string
+  /* ═══ وشروطٌ جديدةٌ إن أُريدت (١ أكتوبر ٢٠٢٦) ═══
+     ما غاب منها يُنسَخ من العقد القديم كما هو. و`specialTermsAr: null`
+     يرفع بنودَه الخاصّة، وغيابُ المفتاح يُبقيها. */
+  compensation?: ContractComposeInput['compensation']
+  courseIds?: string[]
+  specialTermsAr?: string | null
 }
 
 export class TrainerReviewService {
@@ -2128,6 +2140,8 @@ export class TrainerReviewService {
         select: {
           id: true, number: true, title: true, status: true, kind: true, revision: true,
           bodyVersion: true, bodyHash: true, signerEmail: true,
+          /* وبهما تعرف نافذةُ قبول التعديل أيَّ إصدارٍ قرأ صاحبُ الطلب */
+          bodyPrevVersion: true, bodyUpdatedAt: true,
           compensationType: true, compensationRate: true, currency: true,
           /* وبقيّةُ الأجر والبنودُ الخاصّة: نافذةُ «أعِدْه للتوقيع» تُملأ بها (١ أكتوبر ٢٠٢٦) */
           compensationMinSeats: true, compensationReferralRate: true, specialTermsAr: true,
@@ -3165,6 +3179,10 @@ export class TrainerReviewService {
       contractNumber: contract.number,
       url: this.signingUrl(token),
       expiresOnAr: fmtDateWith(expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
+      /* وما تغيّر تحته بعد طلبه — علّتُه في `versionReadByRequester` */
+      changeGroups: contract.bodyVersion
+        ? changeGroupsBetween(versionReadByRequester(contract), contract.bodyVersion)
+        : [],
     })
     const mail = await sendDirectEmail(this.prisma, {
       to: app.email, subject: doc.subject, ...renderMail(doc.doc),
@@ -3186,55 +3204,17 @@ export class TrainerReviewService {
      ولمَ يُلغى ولا يُعدَّل: متنُ العقد مجمَّدٌ ومهشَّمٌ بـ`bodyHash`، وما
      عُرض للتوقيع لا يُحرَّر تحت قارئه. فالتصحيحُ عرضٌ جديدٌ بمتنٍ جديدٍ
      وبصمةٍ جديدة، والقديمُ يُغلَق بسببٍ يقول الحقيقة. */
-  async answerAmendmentWithNewContract(contractId: string, actorId: string, replyAr: string) {
-    const reply = (replyAr ?? '').trim()
-    if (reply.length < 5) {
-      throw new AuthError('no_reply', 'اكتب ما قبلتَه من تعديله — يصل صاحبَه بحرفه', 422)
-    }
-    const contract = await this.prisma.trainerContract.findUnique({
-      where: { id: contractId },
-      include: { profile: { include: { application: true } } },
-    })
-    if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
+  /* ═══ وصار العقدُ المصحَّحُ في الرسالة نفسِها (١ أكتوبر ٢٠٢٦) ═══
 
-    const revokedAt = new Date()
-    /* قارنْ واضبطْ في نداءٍ واحد: نقرتان متزامنتان لا تكتبان جوابَين */
-    const done = await this.prisma.trainerContract.updateMany({
-      where: { id: contractId, status: CONTRACT_AMENDMENT_REQUESTED },
-      data: {
-        status: 'revoked', revokedAt, revokedBy: actorId,
-        /* ═══ ولا «تركيب» في نصٍّ يقرؤه مدرّب (٣٠ سبتمبر ٢٠٢٦) ═══
-           أمرُ صاحب المنصّة. وهذا السببُ يصل صاحبَه بحرفه في لوحٍ داخل
-           `contractRevokedMail` («يصل صاحبَه لا يُلخَّص») — فيُقال بما
-           يفهمه من ليس فصيحا. */
-        revokeReasonAr: `قُبل طلبُ التعديل، ويصلك عقدٌ مصحَّح: ${reply}`.slice(0, 500),
-        /* والجوابُ يُحفَظ في خانته هو كذلك: خطُّ زمنِ طلب التعديل يُقرأ
-           كاملا — طُلب، وأُجيب، وبمَ أُجيب — ولو أُغلق الصفُّ بعده. */
-        amendmentReplyAr: reply.slice(0, AMENDMENT_TEXT_MAX),
-        amendmentRepliedAt: revokedAt, amendmentRepliedBy: actorId,
-        /* ═══ والرمزُ يبقى، وبابُه «أُلغي» (٣٠ سبتمبر ٢٠٢٦) ═══
+     كان هذا البابُ يُغلق العرضَ ويرسل «قبلنا طلبك ويصلك عقدٌ مصحَّح» بلا
+     رابط، ثمّ ينتظر من يُنشئ العقدَ بيده من «عقدٌ جديد» — فإن لم يفعل بقي
+     المدرّبُ ينتظر وعدا. وإن فعل وصله بريدُ العقد العامُّ لا يقول ما تغيّر.
 
-             حجّةُ المسح كانت «بابٌ يوقّع منه صاحبُه ما اتّفقنا على تغييره».
-             ولا يُخشى توقيعٌ بعده: `CONTRACT_OPEN_STATUSES` لا تحمل إلّا
-             `sent`، وكلُّ مسلكٍ يكتب يدخل من `openByToken` فيُردّ
-             بـ`bad_state`. فالذي كان يُحسَب أنّ المسحَ يمنعه يمنعه شرطُ
-             الحالة، والمسحُ إنّما كان يمنع قراءةً — فيُقال للواقف «انتهى هذا
-             الرابط» ولا يُعرَف أيُّ بابٍ هو.
-
-             وهذا العقدُ أزاحه عقدٌ أحدث، فنصُّ `revoked` يقول له أنّ ما بين
-             يديه سُحب وأنّ الأحدثَ هو المعتمَد — وهو أنفعُ من بابٍ صامت. */
-      },
-    })
-    if (done.count === 0) {
-      throw new AuthError('bad_state', 'لا طلبَ تعديلٍ قائمٌ على هذا العقد', 409)
-    }
-    await recordAudit(this.prisma, {
-      actorId, action: 'trainer.contract.amendment_reissue',
-      entityType: 'trainer_contract', entityId: contractId,
-      meta: { replyAr: reply.slice(0, AMENDMENT_TEXT_MAX), revokedAt },
-    })
-    const emailDelivery = await this.notifyContractRevoked(contract, reply, true)
-    return { ok: true, emailDelivery }
+     أمرُ صاحب المنصّة: أن يصله جوابُنا وعقدُه المصحَّحُ معا، بنصٍّ يكتبه
+     كما يشاء، وشروطٍ تُغيَّر قبل الإرسال. فهو بابُ الإعادة للتوقيع نفسُه
+     (`reissueForSigning`)، والمتنُ الجديدُ الإصدارُ الحاضر. */
+  async answerAmendmentWithNewContract(contractId: string, actorId: string, input: ReissueForSigningInput) {
+    return this.reissueForSigning(contractId, actorId, input, 'amendment')
   }
 
   /** يصل صاحبَ العقد أنّ عقدَه أُغلق ولماذا — ولا يُرسَل عن مسودّةٍ لم يرَها.
@@ -4775,17 +4755,19 @@ export class TrainerReviewService {
 
       كما في `rejectSignature`: `signedAt` والاسمُ والهاشُ وعنوانُ الشبكة تبقى
       في الصفّ المغلَق — ما وقّعه وقع، والسؤالُ بعد سنةٍ يجد جوابَه فيه. */
-  async requestResign(
-    contractId: string, actorId: string,
-    input: {
-      subjectAr: string; bodyAr: string
-      /* ═══ وشروطٌ جديدةٌ إن أُريدت (١ أكتوبر ٢٠٢٦) ═══
-         ما غاب منها يُنسَخ من العقد القديم كما هو. و`specialTermsAr: null`
-         يرفع بنودَه الخاصّة، وغيابُ المفتاح يُبقيها. */
-      compensation?: ContractComposeInput['compensation']
-      courseIds?: string[]
-      specialTermsAr?: string | null
-    },
+  async requestResign(contractId: string, actorId: string, input: ReissueForSigningInput) {
+    return this.reissueForSigning(contractId, actorId, input, 'resign')
+  }
+
+  /** البابان معا: الإعادةُ للتوقيع (`resign`) وقبولُ طلب التعديل (`amendment`).
+   *
+   *  والفرقُ بينهما في أربعة: الحالُ التي يُغلَق منها القديم (`signed` أو
+   *  `amendment_requested`)، وسببُ إغلاقه، وفعلُ الأثر، **وأيُّ إصدارٍ قرأه
+   *  صاحبُه** فتُقاس منه التغييرات (`versionReadByRequester`). وما سوى ذلك
+   *  واحد: بديلٌ بشروطٍ تُغيَّر إن أُريد، ورسالةٌ واحدةٌ فيها نصُّ الموظّف
+   *  وما تغيّر ورابطُ التوقيع. */
+  private async reissueForSigning(
+    contractId: string, actorId: string, input: ReissueForSigningInput, mode: 'resign' | 'amendment',
   ) {
     const subject = (input.subjectAr ?? '').trim()
     const body = (input.bodyAr ?? '').trim()
@@ -4794,6 +4776,9 @@ export class TrainerReviewService {
     }
     if (body.length < RESIGN_BODY_MIN || body.length > RESIGN_BODY_MAX) {
       throw new AuthError('no_body_text', `اكتب نصَّ الرسالة (${RESIGN_BODY_MIN}–${RESIGN_BODY_MAX} حرفا)`, 422)
+    }
+    if (hasAmendmentPlaceholder(body)) {
+      throw new AuthError('placeholder_left', 'في الرسالة سطرٌ لم يُستبدَل بعد («اكتب هنا…») — اكتب جوابَك مكانه', 422)
     }
     const old = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -4867,28 +4852,49 @@ export class TrainerReviewService {
         specialTermsAr: typedTerms !== undefined ? typedTerms : old.specialTermsAr,
       },
     )
-    const changeGroups = resignChangeGroups(personalAr, changeGroupsBetween(old.bodyVersion, CONTRACT_BODY_VERSION))
+    /* ويُقاس ما تغيّر ممّا قرأه هو — لا من صفٍّ حُدّث نصُّه تحته (علّتُه
+       عند `versionReadByRequester`). والموقَّعُ لا يُحدَّث، فهما سواءٌ فيه. */
+    const readVersion = mode === 'amendment' ? versionReadByRequester(old) : old.bodyVersion
+    const changeGroups = resignChangeGroups(personalAr, changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION))
     const changesAr = changeGroups.flatMap((g) => g.itemsAr)
 
     const created = await this.prisma.$transaction(async (tx) => {
       /* قارنْ واضبطْ: الموقَّعُ وحدَه. فالمعتمَدُ نافذٌ وبابُه رضا صاحبه لا
          نقرتُنا، والمرسَلُ لا توقيعَ عليه يُسحَب — يُحدَّث نصُّه في مكانه. */
-      const done = await tx.trainerContract.updateMany({
-        where: { id: old.id, status: 'signed' },
-        data: {
-          status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
-          /* وبادئةٌ غيرُ «رُفض التوقيع» بقصد: شاشةُ العقود تبني لوحَ الرفض
-             عليها، وهذا ليس رفضا */
-          revokeReasonAr: RESIGN_REVOKE_REASON_AR,
-        },
-      })
+      const done = mode === 'resign'
+        ? await tx.trainerContract.updateMany({
+          where: { id: old.id, status: 'signed' },
+          data: {
+            status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
+            /* وبادئةٌ غيرُ «رُفض التوقيع» بقصد: شاشةُ العقود تبني لوحَ الرفض
+               عليها، وهذا ليس رفضا */
+            revokeReasonAr: RESIGN_REVOKE_REASON_AR,
+          },
+        })
+        : await tx.trainerContract.updateMany({
+          where: { id: old.id, status: CONTRACT_AMENDMENT_REQUESTED },
+          data: {
+            status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
+            revokeReasonAr: AMENDMENT_ACCEPT_REVOKE_REASON_AR,
+            /* والجوابُ في خانته: خطُّ زمنِ الطلب يُقرأ كاملا — طُلب،
+               وأُجيب، وبمَ أُجيب — ولو أُغلق الصفُّ بعده. والرمزُ يبقى:
+               بابُه يقول «أزاحه أحدثُ منه» (علّتُه في `closed-doors-say-which`). */
+            amendmentReplyAr: body.slice(0, AMENDMENT_TEXT_MAX),
+            amendmentRepliedAt: issuedOn, amendmentRepliedBy: actorId,
+          },
+        })
       if (done.count === 0) {
-        throw new AuthError('bad_state', 'لا يُعاد للتوقيع إلّا عقدٌ موقَّعٌ لم يُعتمَد', 409)
+        throw new AuthError('bad_state', mode === 'resign'
+          ? 'لا يُعاد للتوقيع إلّا عقدٌ موقَّعٌ لم يُعتمَد'
+          : 'لا طلبَ تعديلٍ قائمٌ على هذا العقد', 409)
       }
-      /* ومهمّةُ «توقيع العقد» تُفتَح ثانيةً — علّتُه في `rejectSignature` */
-      await tx.trainerOnboardingTask.updateMany({
-        where: { profileId: old.profileId, key: 'sign_contract' }, data: { doneAt: null },
-      })
+      /* ومهمّةُ «توقيع العقد» تُفتَح ثانيةً — علّتُه في `rejectSignature`.
+         ومن طلب تعديلا لم يوقّع، فلا مهمّةَ أُغلقت تُفتَح. */
+      if (mode === 'resign') {
+        await tx.trainerOnboardingTask.updateMany({
+          where: { profileId: old.profileId, key: 'sign_contract' }, data: { doneAt: null },
+        })
+      }
       /* والأجرُ الجديدُ يُكتب قاعدةً في المعاملة نفسِها — كما في التركيب —
          فلا يخرج عقدٌ يقول رقما والقاعدةُ تقول غيرَه */
       if (input.compensation) {
@@ -4903,10 +4909,10 @@ export class TrainerReviewService {
       }
       const next = await tx.trainerContract.create({ data: replacement })
       await recordAudit(tx, {
-        actorId, action: 'trainer.contract.resign_requested',
+        actorId, action: mode === 'resign' ? 'trainer.contract.resign_requested' : 'trainer.contract.amendment_reissue',
         entityType: 'trainer_contract', entityId: old.id,
         meta: {
-          nextContractId: next.id, fromVersion: old.bodyVersion, toVersion: CONTRACT_BODY_VERSION,
+          nextContractId: next.id, fromVersion: readVersion, toVersion: CONTRACT_BODY_VERSION,
           subjectAr: subject, bodyAr: body, changesAr: [...changesAr],
           personalChangesAr: personalAr,
           signerLegalName: old.signerLegalName,

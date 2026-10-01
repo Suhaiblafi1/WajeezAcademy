@@ -111,57 +111,8 @@ describe('الإلغاءُ يصل صاحبَه بسببه', () => {
   })
 })
 
-describe('الجوابُ الثالث: قبولُ التعديل وإعادةُ التركيب', () => {
-  /** عقدٌ مرسَلٌ طلب صاحبُه تعديلَه */
-  async function amendmentRequested() {
-    const made = await sentContract()
-    await review.requestContractAmendment(made.token, 'أرجو تعديلَ البند 4-1: الأتعاب ٣٠ لا ٢٥')
-    return made
-  }
+/* ═══ والجوابُ الثالث (قبولُ التعديل) انتقل (١ أكتوبر ٢٠٢٦) ═══
 
-  it('يُغلق العرضَ، ويحفظ الجوابَ، ويميت الرمزَ، وتُطلَب رسالتُه', async () => {
-    const { contract } = await amendmentRequested()
-    const REPLY = 'قبلنا تعديلَ البند 4-1 ليصير أساسُ الأتعاب ٣٠ دولارا للمقعد'
-
-    const out = await review.answerAmendmentWithNewContract(contract.id, adminId, REPLY)
-    expect(out.emailDelivery, 'قُبل طلبُه ولم تُطلَب رسالةٌ تقول ذلك').not.toBeNull()
-
-    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
-    expect(after.status).toBe('revoked')
-    /* والسببُ يقول إنّ طلبَه قُبل — لا «أُلغي» مجرّدةً تُقرأ عكسَ ما وقع */
-    expect(after.revokeReasonAr ?? '', 'سببُ الإغلاق لا يقول إنّ التعديلَ قُبل')
-      .toContain('قُبل طلبُ التعديل')
-    expect(after.revokeReasonAr ?? '').toContain(REPLY)
-    /* والجوابُ في خانته هو كذلك: خطُّ زمنِ الطلب يُقرأ كاملا بعد الإغلاق */
-    expect(after.amendmentReplyAr, 'لم يُحفَظ الجوابُ في خانته').toBe(REPLY)
-    expect(after.amendmentRepliedAt).not.toBeNull()
-    /* والرمزُ يبقى (٣٠ سبتمبر ٢٠٢٦): ما يمنع التوقيعَ شرطُ الحالة لا مسحُ
-       الرمز، والمسحُ كان يمنع قراءةً فيُقال «انتهى هذا الرابط» بدل تسميةِ
-       البابِ. وتفصيلُه في `closed-doors-say-which.test.ts`. */
-    expect(after.tokenHash, 'مُسح الرمزُ فلا يعرف صاحبُ الطلب أنّه أُجيب بعقدٍ أحدث').toBeTruthy()
-  })
-
-  it('ويُكتب فعلُه في الأثر مميَّزا عن الإلغاء المجرّد', async () => {
-    /* فمن سأل بعد سنةٍ «لمَ أُغلق هذا العرض؟» يفرّق بين إلغاءٍ وبين قبولِ
-       تعديلٍ مهّد لعقدٍ آخر. */
-    const { contract } = await amendmentRequested()
-    await review.answerAmendmentWithNewContract(contract.id, adminId, 'قبلنا تعديلَ البند 7-2')
-
-    const rows = await prisma.auditEvent.findMany({
-      where: { entityType: 'trainer_contract', entityId: contract.id },
-      select: { action: true },
-    })
-    const actions = rows.map((r) => r.action)
-    expect(actions, 'لا أثرَ لقبول التعديل').toContain('trainer.contract.amendment_reissue')
-    expect(actions, 'كُتب إلغاءً مجرّدا فضاع تمييزُه').not.toContain('trainer.contract.revoke')
-  })
-
-  it('ولا يُقبَل تعديلٌ لا طلبَ له — والصفُّ لا يُمَسّ', async () => {
-    const { contract } = await sentContract()
-    await expect(review.answerAmendmentWithNewContract(contract.id, adminId, 'قبلنا تعديلا لم يُطلَب'))
-      .rejects.toMatchObject({ code: 'bad_state' })
-    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
-    expect(after.status, 'أُغلق عرضٌ لا طلبَ تعديلٍ عليه').toBe('sent')
-    expect(after.tokenHash, 'مات رابطُ عقدٍ لم يُمَسّ').not.toBeNull()
-  })
-})
+   صار يُرسل العقدَ المصحَّحَ في رسالة الجواب نفسِها، فلا يكفيه عرضٌ بلا
+   مؤهّلاتٍ ولا أتعاب كالذي يُصنع هنا. وحارسُه بقاعدةٍ تامّةٍ في
+   `contract-amendment-accept.test.ts`. */

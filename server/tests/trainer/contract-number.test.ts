@@ -66,12 +66,16 @@ const INPUT = {
 
 /** مرشّحٌ له حسابٌ وملفٌّ وقاعدةُ أتعاب — جاهزٌ لأن يُركَّب له عقد */
 async function candidate() {
-  seq += 1
-  const email = `contract-no-${seq}-${Date.now()}@test.local`
+  /* ═══ والعدّادُ يُقرأ مرّةً قبل أوّل انتظار ═══
+     الحالةُ ② تنادي هذه مرّتين معا. وكان `seq` يُقرأ ثانيةً في `reference`
+     بعد `await` — وقد زاده النداءُ الآخر — فيأخذ الطلبان رقما واحدا في
+     الجزء نفسِه من الثانية، ويسقط الفحصُ على قيد التفرّد لا على ما يحرسه. */
+  const n = ++seq
+  const email = `contract-no-${n}-${Date.now()}@test.local`
   const user = await auth.register(email, 'Trainer#12345', 'مدرّبٌ مرقَّم')
   const application = await prisma.trainerApplication.create({
     data: {
-      reference: `TR-NO-${Date.now()}-${seq}`, fullName: 'مدرّبٌ مرقَّم', email,
+      reference: `TR-NO-${Date.now()}-${n}`, fullName: 'مدرّبٌ مرقَّم', email,
       status: 'conditionally_approved', motivation: 'اختبار',
       privacyConsentAt: new Date(), userId: user.userId,
     },
