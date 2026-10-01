@@ -548,6 +548,10 @@ export interface ConditionalTerms {
 }
 
 export interface ContractBodyInput {
+  /** رقمُ العقد (`WJ-CT-…`) يُطبَع أوّلَ الترويسة — و`null` أو غيابُه لا يغيّر
+   *  حرفا من المتن (معاينةٌ قبل الإنشاء، أو عقدٌ صدر قبل الرقم). وعلّتُه عند
+   *  `TrainerContract.number` في المخطّط. */
+  contractNumber?: string | null
   academyPartyLineAr: string
   academyLegalNameAr: string
   academyTradingNameAr: string
@@ -850,6 +854,10 @@ function documentsListAr(docs: readonly RequiredDocument[]): string {
     .join('\n')
 }
 
+/** ما يُطبَع موضعَ رقم العقد في المعاينة — فالرقمُ يُصرف عند الحفظ لا قبله،
+ *  ولا يُصرف لمعاينةٍ قد لا يُحفَظ ما بعدها. والمعاينةُ تقول موضعَه بهذا */
+export const CONTRACT_NUMBER_PENDING_AR = 'يُسنَد عند الحفظ'
+
 /** المتنُ كاملا — ما يخرج من هنا هو المستند، وما عداه شرحُه */
 export function renderContractBodyAr(input: ContractBodyInput): string {
   const {
@@ -857,7 +865,7 @@ export function renderContractBodyAr(input: ContractBodyInput): string {
     governingLawAr, disputeVenueAr,
     trainerFullName, trainerEmail, applicationReference, issuedOnAr,
     courses, compensation, rateWaivedReasonAr, hoursNoteAr, requiredDocuments,
-    conditional, specialTermsAr,
+    conditional, specialTermsAr, contractNumber,
   } = input
   const specialClause = specialTermsClauseAr(specialTermsAr)
 
@@ -1107,9 +1115,18 @@ ${APPROVAL_ANNEX_CLAUSE} ولا يستحق المدرب قبل تحقق هذا �
 
 وهذا الشرح يعين على القراءة وليس بندا من بنود هذا العقد؛ فإن اختلف عما في البنود، فالبنود هي الملزمة.`
 
+  /* ═══ ورقمُ العقد أوّلُ الترويسة — بدل رقم الإصدار (١ أكتوبر ٢٠٢٦) ═══
+
+     قولُ صاحب المنصّة: «make a number for contract instead of version that we
+     deleted… so he knows the reference number of the contract he/she signed».
+     فيُطبَع حيث كان سطرُ «إصدار الصياغة»، بلا رفعٍ للإصدار: لا بندَ تغيّر،
+     وغيابُه لا يغيّر حرفا — فلا يُحدَّث بسببه عرضٌ قائم. و«المرجع» بعده رقمُ
+     **الطلب** لا العقد: للمدرّب الواحد طلبٌ واحدٌ وعقودٌ كثيرة. */
+  const numberLineAr = contractNumber ? `رقم العقد: ${contractNumber}\n` : ''
+
   return `${titleAr}
 
-المرجع: ${applicationReference}
+${numberLineAr}المرجع: ${applicationReference}
 تاريخ الإصدار: ${issuedOnAr}
 
 

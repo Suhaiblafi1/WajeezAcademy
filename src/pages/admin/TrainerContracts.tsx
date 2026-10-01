@@ -99,6 +99,8 @@ interface CandidateRow { id: string; reference: string; fullName: string; email:
 
 interface ContractRow {
   id: string; title: string; status: string; kind: string; revision: number;
+  /** رقمُ العقد — `WJ-CT-…`، يُبحث به ويُقال للمدرّب (١ أكتوبر ٢٠٢٦) */
+  number: string;
   bodyVersion: string | null; bodyHash: string | null; signerEmail: string | null;
   compensationType: string | null; compensationRate: string | null; currency: string;
   compensationMinSeats: number | null; compensationReferralRate: string | null;
@@ -405,7 +407,7 @@ export default function TrainerContracts() {
 
   const contractView = useMemo(() => {
     const hit = (c: ContractRow) => matchesQuery(contractQ, [
-      c.title, c.profile?.application?.fullName, c.profile?.application?.email,
+      c.number, c.title, c.profile?.application?.fullName, c.profile?.application?.email,
       c.profile?.application?.reference, c.signerLegalName, STATUS_AR[c.status] ?? c.status,
     ]);
     /* والمجموعةُ تُطابق بأيِّ عقدٍ فيها: من بحث باسمٍ وُقّع به في عقدٍ مضى
@@ -1022,6 +1024,8 @@ c.gatesActivation
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span>
                         <b>{docNameOf(c)}</b>
+                        {/* ورقمُه بجوار اسمه — المدرّبُ يسأل به، ويُبحث به فوق */}
+                        {" "}<span dir="ltr" className="text-sm opacity-80">{c.number}</span>
                         <span className="opacity-70">
                           {" "}— {STATUS_AR[c.status] ?? c.status}
                           {/* وبلا رمز الإصدار (١ أكتوبر ٢٠٢٦): «no need» — والمفيدُ منه
@@ -1569,6 +1573,7 @@ c.gatesActivation
                               <div className="flex flex-wrap items-center justify-between gap-2">
                                 <span>
                                   <b>{docNameOf(p)}</b>
+                                  {" "}<span dir="ltr" className="text-sm opacity-80">{p.number}</span>
                                   <span className="opacity-70">
                                     {" "}— {STATUS_AR[p.status] ?? p.status}
                                     {/* والجيلُ لا يُقال إلّا حيث سُجّل الأبُ فعلا

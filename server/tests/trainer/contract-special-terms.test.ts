@@ -23,7 +23,7 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
-import { SPECIAL_TERMS_MAX_CHARS, SPECIAL_TERMS_MAX_ITEMS } from '../../../src/application/trainer/contract-body'
+import { CONTRACT_NUMBER_PENDING_AR, SPECIAL_TERMS_MAX_CHARS, SPECIAL_TERMS_MAX_ITEMS } from '../../../src/application/trainer/contract-body'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -161,7 +161,12 @@ describe('③ والمعاينةُ هي المحفوظُ حرفا بحرف', () 
     const shown = await review.previewContract(application.id, input)
     const c = await review.composeContract(application.id, adminId, input)
     expect(String(c.compensationRate), 'لم يُكتب الأجرُ المكتوب — فالمقابلةُ تقيس القاعدةَ القديمة').toBe('40')
-    expect(shown, 'رأى الموظّفُ في المعاينة غيرَ ما حُفظ').toBe(c.bodyAr)
+    /* ورقمُ العقد وحدَه يُصرف عند الحفظ (١ أكتوبر ٢٠٢٦): المعاينةُ تقول موضعَه
+       والمحفوظُ يحمله. وما عداه حرفا بحرف — وهو ما يحرسه هذا الفحص */
+    const sansNumber = (b: string | null) => (b ?? '').replace(/^رقم العقد: .*$/m, 'رقم العقد: …')
+    expect(shown, 'المعاينةُ لا تقول أين يقع رقمُ العقد').toContain(`رقم العقد: ${CONTRACT_NUMBER_PENDING_AR}`)
+    expect(c.bodyAr, 'المحفوظُ بلا رقمه').toContain(`رقم العقد: ${c.number}`)
+    expect(sansNumber(shown), 'رأى الموظّفُ في المعاينة غيرَ ما حُفظ').toBe(sansNumber(c.bodyAr))
   })
 })
 

@@ -510,6 +510,8 @@ export interface ConditionalOfferMailInput {
       اسمُ الطرف الثاني. ويُقدَّم على كلّ شيء: من طلب تصحيحا ثمّ قرأ
       «بلغتَ مرحلةَ العرض المشروط» بحرفها ظنّها إرسالا بالخطأ. */
   noticeAr?: string | null
+  /** رقمُ العقد (`WJ-CT-…`) — يُقال في الوقائع. وبلا قيمةٍ يبقى رقمُ الطلب وحدَه */
+  contractNumber?: string | null
 }
 
 /* ═══ طلبُ الدرس التجريبيّ — الحالةُ وحدَها لا تُوصِل شيئا ═══
@@ -660,7 +662,7 @@ export function conditionalOfferMail(input: ConditionalOfferMailInput): Decision
           kind: 'p',
           text: 'وإن لم نعتمد موادَّك فلا إخلالَ من أحد: لك أن تؤجّل التحاقَك إلى فصل التدريب القادم، أو تطلب حذفَ حسابك. وهو مكتوبٌ في بنود عرضك لا في هذه الرسالة وحدَها.',
         },
-        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
         {
           kind: 'note',
           text: 'وردُّك على هذه الرسالة يصل فريقَنا. وإن انقضى الرابطُ قبل أن توقّع فاطلب إعادةَ إرساله.',
@@ -887,6 +889,8 @@ export interface ContractUpdatedMailInput {
   fullName: string
   reference: string
   title: string
+  /** رقمُ العقد (`WJ-CT-…`) — يُقال في الوقائع. وبلا قيمةٍ يبقى رقمُ الطلب وحدَه */
+  contractNumber?: string | null
   /** ما تغيّر — مجموعا تحت بنوده. و`[]` لا تُرسَل رسالةٌ أصلا، فالمنادي يمنعها */
   changeGroups: readonly ChangeGroup[]
   /** `true` لعرضٍ طلب صاحبُه فيه تعديلا وينتظر جوابَنا */
@@ -933,6 +937,7 @@ export function contractUpdatedMail(input: ContractUpdatedMailInput): DecisionMa
           /* ولا يُقال «وقّعْ» — القرارُ قرارُه، والتحديثُ لا يستعجله */
           text: 'ولا يلزمك أن توقّع لأجل هذا التحديث: لك أن تقرأ وتوقّع، ولك أن تعتذر، ولك أن تطلب تعديلا.',
         },
+        { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
       ],
     },
   }
@@ -951,6 +956,8 @@ export interface ContractResignMailInput {
   signingUrl: string
   /** آخرُ يومٍ يعمل فيه الرابط — مكتوبا */
   expiresOnAr: string
+  /** رقمُ العقد **الجديد** الذي يُوقَّع — فمن وقّع الأوّلَ يعرف أيَّهما بين يديه */
+  contractNumber?: string | null
 }
 
 /** «حُدّث النصُّ — أعِدْه للتوقيع»: نصُّ الموظّف، ثمّ ما تغيّر بطاقاتٍ تحت
@@ -983,6 +990,9 @@ export function contractResignMail(input: ContractResignMailInput): DecisionMail
     { kind: 'cta', label: input.changeGroups.length > 0 ? 'اقرأ عقدك المحدَّث ووقّعه' : 'اقرأ عقدك ووقّعه', href: input.signingUrl },
     { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${input.expiresOnAr}. ولك أن تعتذر عنه بلا حرج.` },
   )
+  if (input.contractNumber) {
+    blocks.push({ kind: 'facts', rows: [{ label: 'رقم العقد', value: input.contractNumber }] })
+  }
   return {
     subject: input.subjectAr.trim(),
     doc: { greetingName: input.greetingName, heading: input.subjectAr.trim(), blocks },
@@ -993,6 +1003,8 @@ export interface ContractRevokedMailInput {
   fullName: string
   reference: string
   title: string
+  /** رقمُ العقد (`WJ-CT-…`) — يُقال في الوقائع. وبلا قيمةٍ يبقى رقمُ الطلب وحدَه */
+  contractNumber?: string | null
   /** سببُ الإلغاء بحرفه كما كتبه الموظّف — يصل صاحبَه لا يُلخَّص */
   reasonAr: string
   /** `true` حين يكون الإلغاءُ قبولا لطلب تعديلٍ ويُعاد تركيبُه مصحَّحا */
@@ -1035,7 +1047,7 @@ export function contractRevokedMail(input: ContractRevokedMailInput): DecisionMa
               kind: 'p' as const,
               text: 'ولا يلزمك بموجبه شيء، ولا يلزمنا. وإن كان هذا الإلغاءُ سهوا أو كان عندك ما تقوله فيه فردَّ على هذه الرسالة.',
             }] as const)),
-        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
         {
           kind: 'note',
           text: input.reissue
@@ -1050,6 +1062,8 @@ export function contractRevokedMail(input: ContractRevokedMailInput): DecisionMa
 export interface AmendmentAnsweredMailInput {
   fullName: string
   reference: string
+  /** رقمُ العقد (`WJ-CT-…`) — يُقال في الوقائع. وبلا قيمةٍ يبقى رقمُ الطلب وحدَه */
+  contractNumber?: string | null
   title: string
   /** جوابُ الموظّف بحرفه — هو المقصودُ من الرسالة كلِّها */
   replyAr: string
@@ -1082,7 +1096,7 @@ export function amendmentAnsweredMail(input: AmendmentAnsweredMailInput): Decisi
           kind: 'callout',
           text: `وهذا رابطٌ جديد، والقديمُ بطل. وهو صالحٌ حتّى ${input.expiresOnAr}.`,
         },
-        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
         { kind: 'note', text: 'وردُّك على هذه الرسالة يصل فريقَنا.' },
       ],
     },
@@ -1101,6 +1115,8 @@ export interface SignedCopyMailInput {
   /** رابطُ نسخته — هو رابطُ التوقيع نفسُه، يبقى حيّا بعد التوقيع فيُقرأ منه
       ما وُقّع. و`null` حيث لا رمزَ (رسالةٌ تُبنى بلا رابط). */
   contractUrl: string | null
+  /** رقمُ العقد الذي وقّعه — أوّلُ ما يُحفَظ له من وقائع توقيعه */
+  contractNumber?: string | null
 }
 
 /* ═══ وسقط `portalUrl` و`hasPortal` (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -1155,6 +1171,7 @@ export function signedCopyMail(input: SignedCopyMailInput): DecisionMail {
         {
           kind: 'facts',
           rows: [
+            ...(input.contractNumber ? [{ label: 'رقمُ العقد', value: input.contractNumber }] : []),
             { label: 'الاسمُ القانونيُّ الذي وقّعتَ به', value: input.legalName },
             { label: 'تاريخُ التوقيع', value: input.signedOnAr },
             { label: 'بصمةُ النصّ الذي وقّعتَ عليه (sha256)', value: input.bodyHash },
@@ -1233,6 +1250,8 @@ export interface ContractApprovedMailInput {
    * بعده ولا جلسةَ تهيئةٍ تُعرَض عليه.
    */
   gatesActivation: boolean
+  /** رقمُ العقد الذي نفذ — به يُسأل عنه بعد اليوم */
+  contractNumber?: string | null
 }
 
 /* ═══ اعتُمد توقيعُك — وسُحبت الرسالةُ من الخدمة إلى هنا (٢٨ سبتمبر ٢٠٢٦) ═══
@@ -1277,6 +1296,9 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
           kind: 'p',
           text: `اعتمدت الأكاديميّةُ توقيعَك على «${input.title}» بتاريخ ${input.approvedOnAr}، فصار العقدُ نافذا بين الطرفين.`,
         },
+        ...(input.contractNumber
+          ? [{ kind: 'facts' as const, rows: [{ label: 'رقم العقد', value: input.contractNumber }] }]
+          : []),
         ...(input.gatesActivation
           ? ([
               {
@@ -1346,6 +1368,19 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
   }
 }
 
+/* ═══ ورقمُ العقد في وقائع كلّ رسالةٍ عن عقدٍ بعينه (١ أكتوبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة: رقمٌ للعقد بدل رقم الإصدار، «so he knows the reference
+   number of the contract he/she signed». فيُقال أوّلا ثمّ رقمُ الطلب — للمدرّب
+   طلبٌ واحدٌ وعقودٌ كثيرة، والرسالةُ عن عقدٍ منها بعينه. وبلا رقمٍ (نداءٌ لم
+   يمرّره) يبقى رقمُ الطلب وحدَه كما كان. */
+export function contractFactsRows(reference: string, contractNumber?: string | null) {
+  return [
+    ...(contractNumber ? [{ label: 'رقم العقد', value: contractNumber }] : []),
+    { label: 'رقم الطلب', value: reference },
+  ]
+}
+
 /* ═══ انقضت المهلةُ بعد التذكير الأخير — لمن طلب رابطا بعدها (١ أكتوبر ٢٠٢٦) ═══
 
    من سقط عرضُه بعد التذكير الأخير ثمّ طلب رابطا ببريده لا يُسكّ له رمز (علّتُه
@@ -1357,6 +1392,8 @@ export interface ContractLapsedMailInput {
   reference: string
   title: string
   expiredAt: Date
+  /** رقمُ العقد (`WJ-CT-…`) — يُقال في الوقائع. وبلا قيمةٍ يبقى رقمُ الطلب وحدَه */
+  contractNumber?: string | null
 }
 
 export function contractLapsedMail(input: ContractLapsedMailInput): DecisionMail {
@@ -1372,7 +1409,7 @@ export function contractLapsedMail(input: ContractLapsedMailInput): DecisionMail
       blocks: [
         { kind: 'p', text: `طلبتَ رابطا جديدا لتوقيع «${input.title}». وقد أُرسل إليك به تذكيرٌ أخير، وانقضت مهلتُه ${when} بتوقيت عمّان — فسقط العرضُ ولم يعد يُوقَّع، كما ينصّ عقدُك.` },
         { kind: 'callout', text: 'فإن كنتَ ما زلتَ تريده فردَّ على هذه الرسالة. وللأكاديمية أن تجدّد العرضَ ورابطَه بإخطارٍ جديد.' },
-        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
       ],
     },
   }
@@ -1390,6 +1427,8 @@ export function contractLapsedMail(input: ContractLapsedMailInput): DecisionMail
 export interface ContractFinalReminderMailInput {
   fullName: string
   reference: string
+  /** رقمُ العقد (`WJ-CT-…`) — يُقال في الوقائع. وبلا قيمةٍ يبقى رقمُ الطلب وحدَه */
+  contractNumber?: string | null
   title: string
   url: string
   expiresAt: Date
@@ -1411,7 +1450,7 @@ export function contractFinalReminderMail(input: ContractFinalReminderMailInput)
         { kind: 'callout', text: `العرضُ صالحٌ ${windowAr}: حتّى ${until} بتوقيت عمّان. فإن لم يُوقَّع حتّى ذلك سقط العرضُ وتوقّف رابطُه، كما ينصّ عقدُك.` },
         { kind: 'cta', label: 'اقرأ ووقّع', href: input.url },
         { kind: 'p', text: 'وهذا رابطٌ جديد، والرابطُ السابقُ لم يعد يعمل. ولك أن تعتذر عن العرض من الصفحة نفسِها بلا حرج.' },
-        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
       ],
     },
   }

@@ -41,6 +41,8 @@ import { fmtDateLong } from '@/application/text/format-ar'
 
 interface MyContract {
   id: string
+  /** رقمُ العقد — `WJ-CT-…` */
+  number: string
   title: string
   status: string
   kind: string
@@ -167,6 +169,15 @@ export default function MyContract() {
             <p className="mt-1 text-read text-muted-foreground/75">
               {KIND_AR[data.kind] ?? data.kind}
               {data.revision > 1 ? ` · النسخةُ ${data.revision}` : ''}
+            </p>
+            {/* ═══ ورقمُه — به يُسأل عنه ويُحال إليه (١ أكتوبر ٢٠٢٦) ═══
+
+                قولُ صاحب المنصّة بعد أن حُذف رقمُ الإصدار: «make a number for
+                contract… so he knows the reference number of the contract he/she
+                signed». ويُقال هنا ولو لم تحمله الوثيقةُ نفسُها: ما وُقّع قبل
+                الرقم لا يُعاد كتابتُه، ورقمُه صُرف له بعد ذلك. */}
+            <p className="mt-1 text-read font-bold text-foreground">
+              رقم العقد: <span dir="ltr">{data.number}</span>
             </p>
           </div>
           {/* والطباعةُ تحفظ PDF: حوارُ المتصفّح نفسُه فيه «حفظٌ كـPDF»،

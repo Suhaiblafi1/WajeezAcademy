@@ -22,13 +22,17 @@
    بلا رضا، وهو أسوأُ ما يُجمع في وثيقة. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { apiGet, apiPost, ApiError } from '@/services/api'
 import { Panel, Inset } from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
-import { fmtDateLong } from '@/application/text/format-ar'
-import { parseContractDoc } from '@/application/trainer/contract-sections'
+import { fmtDateLong, fmtDateWith } from '@/application/text/format-ar'
+import { parseContractDoc, type ContractDoc } from '@/application/trainer/contract-sections'
 import { contractHasBodyAr } from '@/application/trainer/contract-body'
+import { ACADEMY_ZONE } from '@/application/trainer/cohort-period'
+import {
+  SIGNED_COPY_STATES, type ContractClosedState, type ContractClosedView,
+} from '@/application/trainer/contract-link-state'
 import ContractDocument from '@/components/ContractDocument'
 
 interface RequiredDoc { kind: string; labelAr: string; required: boolean }
@@ -38,6 +42,8 @@ interface Ack { key: string; textAr: string }
 interface OpenView {
   state: 'open'
   contractId: string
+  /** رقمُ العقد — `WJ-CT-…` */
+  number: string
   title: string
   trainerName: string
   trainerEmail: string
@@ -54,16 +60,9 @@ interface OpenView {
   consentVersion: string
 }
 
-type View =
-  | OpenView
-  | {
-      state: 'signed'; title: string; signedAt: string | null; signerLegalName: string | null
-      bodyAr: string | null; bodyHash: string | null
-    }
-  | { state: 'declined'; title: string; declinedAt: string | null }
-  | { state: 'amendment_requested'; title: string; requestedAt: string | null; requestAr: string | null }
-  | { state: 'revoked'; title: string }
-  | { state: 'expired'; title: string; expiredAt: string | null }
+/* وما لا يُوقَّع منه حالٌ واحدةٌ من قائمةٍ مسمّاة، شكلُها في
+   `contract-link-state.ts` يقرؤه الخادمُ وهذه الصفحةُ معا */
+type View = OpenView | ContractClosedView
 
 /** صيغُ الوثائق المقبولة — تطابق `IDENTITY_MIMES` في الخادم */
 const ACCEPT = 'image/jpeg,image/png,image/webp,application/pdf'
@@ -136,7 +135,7 @@ export default function ContractSign() {
 
   /* والبنيةُ تُشتقّ مرّةً لا في كلّ رسم: التمريرُ يُعيد الرسمَ مرارا،
      وتحليلُ ثلاثمئة سطرٍ في كلّ إطارٍ يُثقل صفحةً يجب أن تُقرأ بسلاسة. */
-  const bodyAr = view?.state === 'open' || view?.state === 'signed' ? view.bodyAr : null
+  const bodyAr = view?.state === 'open' || (view && SIGNED_COPY_STATES.includes(view.state)) ? view.bodyAr : null
   const doc = useMemo(() => (bodyAr ? parseContractDoc(bodyAr) : null), [bodyAr])
 
   if (fatal) {
@@ -161,15 +160,25 @@ export default function ContractSign() {
                     وما يُسقط الرمزَ حقّا ثلاثة: اعتذارٌ، وسحبٌ، وعقدٌ أحدثُ
                     يُبطل ما قبله. فتُقال هي — إذ من يقف أمام بابٍ مغلقٍ
                     يحتاج أن يعرف أيَّ بابٍ هو. */}
+                {/* ═══ وصار هذا اللوحُ لما لا يُعرَف وحدَه (١ أكتوبر ٢٠٢٦) ═══
+
+                    كلُّ رابطٍ يُصرف يُحفَظ اليوم، فيقول القديمُ حالَ عقده بالاسم
+                    (`ClosedDoor`). فلا يبلغ هذا اللوحَ إلّا حرفٌ سقط في النسخ، أو
+                    رابطٌ صُرف قبل أن تُحفَظ الروابط — فتُقال احتمالاتُه، ويُدَلّ
+                    على البابين اللذين يجيبانه بيقين. */}
                 <p>
-                  هذا الرابطُ لم يبقَ صالحا: إمّا اعتُذر عن هذا العقد، أو سحبته
-                  الأكاديميّة، أو أرسلنا إليك بدلا منه عقدا أحدثَ فبطل ما قبله.
+                  لا نعرف هذا الرابط: لعلّ حرفا منه سقط في النسخ، أو يكون رابطا
+                  قديما — اعتُذر عن عقده، أو سحبته الأكاديميّة، أو أرسلنا إليك
+                  بعده أحدثَ منه فبطل.
                 </p>
                 <p className="mt-2">
-                  وإن كنتَ قد وقّعتَ فتوقيعُك مسجَّلٌ عندنا، ونسختُك تُقرأ من
-                  الرابط الذي وقّعتَ منه. وإن أردتَ رابطا جديدا فاطلبه من فريق
-                  الأكاديميّة ويصلك على بريدك.
+                  فإن كان لك عرضٌ ينتظر توقيعك فاطلب رابطه ببريدك. وإن كنتَ وقّعتَ
+                  واعتمدنا توقيعَك فعقدُك في «عقدي» في بوّابتك.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button as={Link} to="/contract-link" tone="primary" size="sm">اطلبْ رابطَ عرضك ببريدك</Button>
+                  <Button as={Link} to="/trainer/contract" size="sm">افتح «عقدي»</Button>
+                </div>
               </>
             )
             : (
@@ -186,61 +195,7 @@ export default function ContractSign() {
   }
   if (!view) return <Shell><p className="opacity-70">يُفتح العقد…</p></Shell>
 
-  if (view.state !== 'open') {
-    const HEAD: Record<string, string> = {
-      signed: 'وُقّع هذا العقد',
-      declined: 'اعتُذر عن هذا العقد',
-      amendment_requested: 'طلبُك بالتعديل عندنا',
-      revoked: 'أُلغي هذا العقد',
-      expired: 'انقضى أجلُ هذا الرابط',
-    }
-    const BODY: Record<string, string> = {
-      signed: 'سُجّل توقيعُك، ونسختُك أدناه تُقرأ وتُطبَع. تراجعه الأكاديميّةُ ثمّ يُفتح حسابُك.',
-      declined: 'سُجّل اعتذارُك ووصل فريقَنا. وإن كان ذلك سهوا فتواصل معنا.',
-      amendment_requested: 'وصل طلبُك فريقَنا وننظر فيه. ويقف التوقيعُ حتّى نجيبك: '
-        + 'فإمّا أعدنا إليك العرضَ مصحَّحا، وإمّا كتبنا لك لماذا يبقى البندُ كما هو. '
-        + 'وفي الحالين يصلك منّا خبر.',
-      /* ويقع على هذا الباب حالان: عقدٌ سُحب، وعقدٌ أزاحه أحدثُ منه —
-         فيُذكَر الثاني، إذ صاحبُه قد وصله الأحدثُ ولا يدري أيُّهما المعتمَد. */
-      revoked: 'سحبت الأكاديميّةُ هذا العقد. فإن كان قد وصلك منّا عقدٌ أحدثُ منه '
-        + 'فهو المعتمَد ويُفتح من رسالته، وإن كنتَ تنتظر عقدا فسيصلك خبرُنا.',
-      expired: 'لم يعد هذا الرابطُ صالحا. اطلب من فريق الأكاديمية إعادةَ إرساله وسيصلك رابطٌ جديد.',
-    }
-    return (
-      <Shell>
-        <Panel tone={view.state === 'signed' ? 'positive' : 'warn'} className="p-5">
-          <h1 className="mb-2 text-xl font-black">{HEAD[view.state]}</h1>
-          <p className="mb-1 opacity-80">{view.title}</p>
-          <p>{BODY[view.state]}</p>
-          {view.state === 'signed' && view.signedAt && (
-            <p className="mt-2 text-sm opacity-70">
-              وقّعه {view.signerLegalName} بتاريخ {fmtDateLong(view.signedAt)}.
-            </p>
-          )}
-        </Panel>
-        {/* ═══ ونسختُه تُعرَض له تحتَ خبرِ توقيعه (٢٩ سبتمبر ٢٠٢٦) ═══
-
-            كان اللوحُ خبرا بلا وثيقة: «سُجّل توقيعُك» ثمّ لا شيء. ومن نقر
-            «افتح العقد» أراد العقدَ لا خبرا عنه. وهذا موضعُه الوحيدُ قبل أن
-            يُختَم العقدُ ويُفتح حسابُه على المنصّة.
-
-            وخارجَ اللوح لا داخلَه: رأسُ `Surface.tsx` يقول «وتفصيلٌ داخله لا
-            يحتاج إطارا ثالثا»، ونغمةُ `positive` تصبغ أرضيَّتَها — ووثيقةٌ
-            قانونيّةٌ تُقرأ على سطحٍ محايدٍ كما تُقرأ قبل التوقيع بالصندوق
-            نفسِه. */}
-        {view.state === 'signed' && doc && (
-          <div
-            dir="rtl"
-            tabIndex={0}
-            aria-label="نصُّ الاتفاقية التي وقّعتَها"
-            className="mt-4 max-h-[70vh] overflow-auto rounded-lg border border-white/10"
-          >
-            <ContractDocument doc={doc} />
-          </div>
-        )}
-      </Shell>
-    )
-  }
+  if (view.state !== 'open') return <Shell><ClosedDoor view={view} doc={doc} /></Shell>
 
   const v = view
   const missingDocs = v.requiredDocuments
@@ -290,7 +245,8 @@ export default function ContractSign() {
         bodyHash: v.bodyHash, acks: [...acked],
       })
       setView({
-        state: 'signed', title: v.title,
+        ...closedBase(v),
+        state: 'signed',
         signedAt: r.signedAt, signerLegalName: legalName.trim(),
         /* والمتنُ يُنقل معه: لولاه لرأى من وقّع لوحا بلا وثيقةٍ حتّى يُحدّث
            الصفحة، وهو ما يردّه الخادمُ من الرابط نفسِه. */
@@ -317,7 +273,7 @@ export default function ContractSign() {
       const r = await apiPost<{ declinedAt: string }>(
         `/api/c/${encodeURIComponent(token)}/decline`, { reasonAr: declineReason.trim() },
       )
-      setView({ state: 'declined', title: v.title, declinedAt: r.declinedAt })
+      setView({ ...closedBase(v), state: 'declined', declinedAt: r.declinedAt })
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : 'تعذّر تسجيلُ الاعتذار')
     } finally { setBusy(false) }
@@ -326,6 +282,8 @@ export default function ContractSign() {
   return (
     <Shell>
       <h1 className="mb-1 text-2xl font-black">{v.title}</h1>
+      {/* ورقمُه أوّلَ ما يُقرأ — به يُسأل عنه بعد التوقيع (١ أكتوبر ٢٠٢٦) */}
+      <p className="mb-1 text-sm font-bold">رقم العقد: <span dir="ltr">{v.number}</span></p>
       <p className="mb-5 opacity-75">
         باسم {v.trainerName} · {v.trainerEmail}
         {v.expiresAt && <> · صالحٌ حتّى {fmtDateLong(v.expiresAt)}</>}
@@ -594,6 +552,173 @@ export default function ContractSign() {
 }
 
 /** إطارٌ بسيط — والصفحةُ عامّةٌ بلا بوّابةٍ ولا قائمة */
+/** حالٌ مغلقةٌ تُبنى من المفتوح بعد فعلٍ نجح فيها — وما لا يخصّها فارغ */
+function closedBase(v: OpenView): Omit<ContractClosedView, 'state'> {
+  return {
+    number: v.number, title: v.title, newerLinkAt: null, detailed: true,
+    signedAt: null, signerLegalName: null, countersignedAt: null, supersededAt: null,
+    terminatedAt: null, declinedAt: null, revokedAt: null, revokedForResign: false,
+    requestedAt: null, requestAr: null, expiredAt: null, afterFinalReminder: false,
+    successor: null, bodyAr: null, bodyHash: null,
+  }
+}
+
+/* ═══ كلُّ بابٍ مغلقٍ يقول أيُّ بابٍ هو — برقم عقده وتواريخه (١ أكتوبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة: «when someone has expired link, they know the exact
+   reason whether expired or signed… for the signed ones, they should still
+   see the contract locked for reading».
+
+   فلكلّ حالٍ من `CONTRACT_CLOSED_STATES` رأسٌ وجملةٌ هنا، ويقابلهما الحارسُ
+   بالقائمة نفسِها (`contract-link-states-page.test.ts`) — فحالٌ يضيفها الخادمُ
+   بلا جملةٍ هنا تُسقطه. والجملةُ تقول ما وقع ومتى، ورقمَ العقد، وما يفعله
+   الواقفُ الآن إن كان له ما يفعله: رابطٌ يطلبه ببريده، أو عقدُه في بوّابته.
+
+   ونسختُه تحت اللوح لا داخلَه — رأسُ `Surface.tsx`: «وتفصيلٌ داخله لا يحتاج
+   إطارا ثالثا»، ونغمةُ اللوح تصبغ أرضيّتَه، والوثيقةُ تُقرأ على سطحٍ محايد.
+   ومقفلةً: لا خانةَ ولا زرَّ توقيع. والخادمُ لا يحملها إلّا لعقدٍ وُقّع. */
+const CLOSED_HEAD: Record<ContractClosedState, string> = {
+  expired: 'انقضى أجلُ هذا العرض',
+  replaced: 'أرسلنا إليك رابطا أحدثَ من هذا',
+  signed: 'وُقّع هذا العقد',
+  countersigned: 'هذا عقدُك النافذ',
+  superseded: 'حلّ محلَّ هذا العقد عقدٌ أحدث',
+  terminated: 'انتهى هذا العقد',
+  declined: 'اعتُذر عن هذا العقد',
+  revoked: 'أُلغي هذا العقد',
+  amendment_requested: 'طلبُك بالتعديل عندنا',
+}
+
+/** رأسُ اللوح — والإلغاءُ بعد التوقيع غيرُ الإلغاء قبله */
+function closedHeadAr(v: ContractClosedView): string {
+  if (v.state === 'revoked' && v.revokedForResign) return 'أُعيد إليك هذا العقدُ على نصٍّ محدَّث'
+  if (v.state === 'revoked' && v.signedAt) return 'لم يُعتمَد توقيعُك على هذا العقد'
+  return CLOSED_HEAD[v.state]
+}
+
+/** يومٌ وساعةٌ بتوقيت عمّان — لأجلٍ يُحسب بالساعة لا باليوم */
+function atAmmanAr(d: string | null): string {
+  if (!d) return ''
+  return `${fmtDateWith(d, {
+    weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: ACADEMY_ZONE,
+  })} بتوقيت عمّان`
+}
+
+/** ما وقع ومتى — جملةٌ أو اثنتان لكلّ حال */
+function closedLinesAr(v: ContractClosedView): string[] {
+  const on = (d: string | null) => (d ? fmtDateLong(d) : '—')
+  const next = v.successor
+    ? `العقدَ رقم ${v.successor.number}${v.successor.sentAt ? ` في ${on(v.successor.sentAt)}` : ''}`
+    : null
+  switch (v.state) {
+    case 'expired':
+      return v.afterFinalReminder
+        ? [
+          `انقضت مهلةُ توقيعه ${atAmmanAr(v.expiredAt)} بعد التذكير الأخير به، فسقط العرضُ ولم يعد يُوقَّع.`,
+          'فإن كنتَ ما زلتَ تريده فراسِلْ فريقَ الأكاديمية — ولها أن تجدّد العرضَ ورابطَه بإخطارٍ جديد.',
+        ]
+        : [
+          `انقضى أجلُ هذا الرابط ${atAmmanAr(v.expiredAt)}، والعرضُ ما زال عندنا.`,
+          'اطلبْ رابطا جديدا ببريدك من الزرّ أدناه، فيصلك في دقائق.',
+        ]
+    case 'replaced':
+      return [
+        `أرسلنا إليك رابطا أحدثَ لهذا العرض${v.newerLinkAt ? ` في ${on(v.newerLinkAt)}` : ''}، فلم يعد يُوقَّع من هذا.`,
+        'افتح أحدثَ رسالةٍ منّا، أو اطلب رابطك ببريدك من الزرّ أدناه.',
+      ]
+    case 'signed':
+      return [
+        `وقّعتَه${v.signerLegalName ? ` باسم ${v.signerLegalName}` : ''} في ${on(v.signedAt)}، وتوقيعُك محفوظٌ عندنا.`,
+        'نراجعه ونطابق اسمَك بوثيقة هويّتك ثمّ نعتمده، فيصير نافذا وتُفتح لك بوّابتُك.',
+      ]
+    case 'countersigned':
+      return [
+        `وقّعتَه في ${on(v.signedAt)}، واعتمدته الأكاديميّةُ في ${on(v.countersignedAt)} — فهو نافذٌ بين الطرفين.`,
+        'وتجده كذلك في «عقدي» في بوّابتك.',
+      ]
+    case 'superseded':
+      return [
+        `كان نافذا منذ ${on(v.countersignedAt)}، ثمّ حلّ محلَّه ${next ?? 'عقدٌ أحدث'} — في ${on(v.supersededAt)}. وهو المعتمَدُ اليوم، وتجده في «عقدي».`,
+      ]
+    case 'terminated':
+      return [
+        `كان نافذا منذ ${on(v.countersignedAt)}، وانتهى في ${on(v.terminatedAt)}. فلا يُلزم بعده، وما وقع قبله باقٍ على حاله.`,
+      ]
+    case 'declined':
+      return [`اعتذرتَ عنه في ${on(v.declinedAt)}، ووصل اعتذارُك فريقَنا. وإن كان ذلك سهوا فراسِلْنا.`]
+    case 'revoked':
+      if (v.revokedForResign) {
+        return [
+          `وقّعتَه في ${on(v.signedAt)}، ثمّ أعدناه إليك للتوقيع على نصٍّ محدَّث في ${on(v.revokedAt)} — فلا يُلزم أحدا.`,
+          next ? `والذي يُوقَّع الآن ${next}، ورابطُه في رسالتنا.` : 'ورابطُ النصّ المحدَّث في رسالتنا الأخيرة.',
+        ]
+      }
+      if (v.signedAt) {
+        return [
+          `وقّعتَه في ${on(v.signedAt)}، ولم نستطع اعتمادَ توقيعك في ${on(v.revokedAt)} — ووصلك سببُه بالبريد.`,
+          next ? `وأرسلنا إليك بعده ${next}.` : 'ويصلك منّا عقدٌ مصحَّح.',
+        ]
+      }
+      return [
+        `سحبته الأكاديميّةُ في ${on(v.revokedAt)}، ووصلك سببُه بالبريد.`,
+        next ? `وأرسلنا إليك بعده ${next} — وهو المعتمَد.` : 'وإن كنتَ تنتظر عقدا فسيصلك خبرُنا.',
+      ]
+    case 'amendment_requested':
+      return [
+        'وصل طلبُك فريقَنا وننظر فيه. ويقف التوقيعُ حتّى نجيبك: فإمّا أعدنا إليك العرضَ مصحَّحا، '
+          + 'وإمّا كتبنا لك لماذا يبقى البندُ كما هو. وفي الحالين يصلك منّا خبر.',
+      ]
+  }
+}
+
+function ClosedDoor({ view, doc }: { view: ContractClosedView; doc: ContractDoc | null }) {
+  const tone = view.state === 'signed' || view.state === 'countersigned'
+    ? 'positive'
+    : view.state === 'superseded' || view.state === 'terminated' ? 'default' : 'warn'
+  /* والبابُ الذي يجيبه: رابطٌ جديدٌ لعرضٍ قائم — إلّا ما سقط بعد التذكير
+     الأخير، فذاك لا يُطلب رابطُه (`requestContractLink`) — وعقدُه في بوّابته
+     لما نفذ أو حلّ محلَّه غيرُه */
+  const askLink = view.state === 'replaced' || (view.state === 'expired' && !view.afterFinalReminder)
+  const portal = view.state === 'countersigned' || view.state === 'superseded'
+  const copy = SIGNED_COPY_STATES.includes(view.state) && doc
+  return (
+    <>
+      <Panel tone={tone} className="p-5">
+        <h1 className="mb-2 text-xl font-black">{closedHeadAr(view)}</h1>
+        <p className="mb-1 opacity-80">{view.title}</p>
+        <p className="mb-3 text-sm font-bold">رقم العقد: <span dir="ltr">{view.number}</span></p>
+        {view.newerLinkAt && view.state !== 'replaced' && (
+          <p className="mb-2 text-sm opacity-80">
+            وهذا رابطٌ قديم — أرسلنا إليك بعده رابطا أحدثَ في {fmtDateLong(view.newerLinkAt)}.
+          </p>
+        )}
+        {closedLinesAr(view).map((line) => <p key={line} className="mt-1">{line}</p>)}
+        {!view.detailed && view.signedAt && (
+          <p className="mt-2 text-sm opacity-80">
+            ولا تُعرَض نسختُه على هذا الرابط: أُرسل إلى بريدٍ غيرِ الذي يُراسَل به العقدُ اليوم.
+          </p>
+        )}
+        {(askLink || portal) && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {askLink && <Button as={Link} to="/contract-link" tone="primary" size="sm">اطلبْ رابطا جديدا ببريدك</Button>}
+            {portal && <Button as={Link} to="/trainer/contract" tone="primary" size="sm">افتح «عقدي» في بوّابتك</Button>}
+          </div>
+        )}
+      </Panel>
+      {copy && (
+        <div
+          dir="rtl"
+          tabIndex={0}
+          aria-label="نصُّ الاتفاقية التي وقّعتَها — للقراءة"
+          className="mt-4 max-h-[70vh] overflow-auto rounded-lg border border-white/10"
+        >
+          <ContractDocument doc={doc} />
+        </div>
+      )}
+    </>
+  )
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main dir="rtl" className="mx-auto w-full max-w-3xl px-4 py-10">

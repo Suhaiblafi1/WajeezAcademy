@@ -1708,6 +1708,20 @@ model SessionRescheduleRequest {
 model TrainerContract {
   id        String  @id @default(uuid()) @db.Uuid
   profileId String  @db.Uuid
+  /// ═══ رقمُ العقد — `WJ-CT-<سنة>-<خمسة أرقام>` (١ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// طلبُ صاحب المنصّة بعد أن حُذف رقمُ الإصدار من الشاشات: «make a number for
+  /// contract instead of version… so he knows the reference number of the
+  /// contract he/she signed». فلكلّ عقدٍ رقمٌ يُقال ويُبحث به ويُطبَع في
+  /// ترويسته — ورقمُ الإصدار يبقى في `bodyVersion` سجلًّا لا يُعرَض.
+  ///
+  /// ومصدرُه **تسلسلٌ في القاعدة** (`next_trainer_contract_number()`)، لا «أعلى
+  /// رقمٍ + ١»: عقدان يُركَّبان في اللحظة نفسِها لا يأخذان رقما واحدا، ولا
+  /// تكرارَ يُعاد له. والعمودُ يمتلئ به إن لم يُمرَّر — فلا صفَّ بلا رقمٍ من
+  /// أيّ بابٍ أُنشئ. ومن يحتاجه قبل الإنشاء (ليُطبَع في المتن) يأخذه من الدالّة
+  /// نفسِها. ورقمُ مسوّدةٍ حُذفت لا يُعاد: الفجوةُ أثرُ مسوّدةٍ لا عقدٍ ضاع.
+  /// والسنةُ سنةُ الإنشاء بتوقيت عمّان.
+  number    String  @unique @default(dbgenerated("next_trainer_contract_number()"))
   /// عنوانٌ يكتبه الموظّف — «عقد تدريب ٢٠٢٦». للتمييز في القوائم لا للمتن.
   title     String
   /// ⚠️ مهجورٌ للكتابة، محفوظٌ للقراءة: حقلٌ حرٌّ بلا شكلٍ ولا قارئٍ ولم
@@ -2019,6 +2033,7 @@ model TrainerContract {
   children  TrainerContract[]         @relation("ContractLineage")
   documents TrainerContractDocument[]
   offers    TrainerAssignmentOffer[]
+  links     TrainerContractLink[]
 
   @@index([profileId])
   @@index([status, sentAt])
@@ -2215,6 +2230,32 @@ model TrainerContractDocument {
   contract     TrainerContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@index([contractId])
+}
+
+/// ═══ كلُّ رابطِ توقيعٍ صُرف لعقد — ليقول القديمُ لماذا لم يعد يعمل (١ أكتوبر ٢٠٢٦) ═══
+///
+/// `TrainerContract.tokenHash` يحمل الرابطَ الحيَّ وحدَه، ويُكتب فوقه كلّما سُكّ
+/// رمزٌ جديد: تجديدٌ، وتذكيرٌ أخير، وطلبُه ببريده، وجوابُ تعديل. فكان الرابطُ
+/// القديمُ لا يُعرَف أصلا — يُردّ «غيرُ صالح» ولا يُدرى لأيّ عقدٍ كان. وطلبُ
+/// صاحب المنصّة: «when someone has expired link, they know the exact reason
+/// whether expired or signed».
+///
+/// فيُحفَظ هنا كلُّ رمزٍ صُرف — **بصمتُه لا نصُّه**، كأخيه في العقد — وإلى أين
+/// ذهب. فيقول القديمُ حالَ عقده بدقّة. وهو للقراءة وحدَها: لا يُوقَّع ولا يُرفَع
+/// ولا يُعتذَر من رابطٍ قديم، فكلُّ فعلٍ يكتب يدخل من الرابط الحيّ وحدَه.
+model TrainerContractLink {
+  id         String          @id @default(uuid()) @db.Uuid
+  contractId String          @db.Uuid
+  tokenHash  String          @unique
+  purpose    String // sent | resend | final_reminder | link_request | amendment_reply | backfill
+  /// البريدُ الذي أُرسل إليه — فلا يُعرَض متنٌ على رابطٍ قديمٍ ذهب إلى غير
+  /// البريد الذي ذهب إليه رابطُ العقد الحيّ
+  sentTo     String?
+  expiresAt  DateTime?
+  createdAt  DateTime        @default(now())
+  contract   TrainerContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId, createdAt])
 }
 
 model TrainerCompensationRule {
