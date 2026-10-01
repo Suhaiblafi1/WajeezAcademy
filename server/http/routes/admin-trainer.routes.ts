@@ -644,8 +644,11 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   app.post('/api/admin/trainer-contracts/:contractId/resign-request', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'سحبُ عقدٍ موقَّعٍ لم يُعتمَد وإعادتُه للتوقيع على النصّ المحدَّث' },
-  }, async (req, reply) => {
-    if (!requireDecideToo(req, reply)) return reply
+  }, async (req) => {
+    /* ولا `requireDecideToo` هنا (١ أكتوبر ٢٠٢٦): علّتُه أنّ الاعتمادَ يفعّل حسابا
+       ويمنح دورا، والإعادةُ لا تفعل شيئا من ذلك — هي إلغاءٌ (`revoke`، خلف
+       `trainer.contract.manage` وحدَها) ثمّ تركيب. وكان يردّ الماليّةَ عنها وقد
+       قرّر صاحبُ المنصّة أنّها ممّن يغيّر الأجرَ فيها. */
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const body = z.object({
       subjectAr: z.string().trim().min(RESIGN_SUBJECT_MIN).max(RESIGN_SUBJECT_MAX),
@@ -665,8 +668,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
        كان هنا شرطُ `trainer.compensation.manage`، فيردّ المديرَ الأكاديميَّ عن
        تغيير الأجر في الإعادة والمركِّبُ يقبله منه. وقولُ صاحب المنصّة: «the
        financial manager, academy manager and the super admin.. all can change».
-       فيبقى الحارسُ ما على المسار: `trainer.contract.manage` و`requireDecideToo`،
-       كالمركِّب. ومدرّبٌ نشطٌ لا يُغيَّر أجرُه من هنا أصلا (`requestResign`). */
+       فيبقى الحارسُ ما على المسار: `trainer.contract.manage`، كالمركِّب. ومدرّبٌ نشطٌ لا يُغيَّر أجرُه من هنا أصلا (`requestResign`). */
     return review.requestResign(contractId, req.auth!.userId, body)
   })
 

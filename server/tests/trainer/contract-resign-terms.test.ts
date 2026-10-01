@@ -46,6 +46,7 @@ let app: FastifyInstance
 let adminId = ''
 let managerCookie = ''
 let superCookie = ''
+let financeCookie = ''
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const COURSE_A = 'C-RT-A'
@@ -73,6 +74,7 @@ beforeAll(async () => {
   adminId = manager.userId
   managerCookie = manager.cookie
   superCookie = (await session('rt-super@test.local', 'super_admin')).cookie
+  financeCookie = (await session('rt-finance@test.local', 'finance')).cookie
   app = await buildApp(prisma)
   await app.ready()
   for (const [id, t] of [[COURSE_A, 'دورةُ التحليل'], [COURSE_B, 'دورةُ الإدارة']] as const) {
@@ -216,7 +218,14 @@ describe('⑤ والأجرُ يغيّره من يتعاقد — قرارُ صا�
     headers: { cookie }, payload: { subjectAr: SUBJECT, bodyAr: BODY, ...extra },
   })
 
-  for (const [who, cookie] of [['المديرُ الأكاديميّ', () => managerCookie], ['المديرُ الأعلى', () => superCookie]] as const) {
+  /* والماليّةُ منهم (١ أكتوبر ٢٠٢٦): صار لها `trainer.contract.manage`، ونُزع عن
+     الإعادة شرطُ `trainer.applications.decide` — فهي لا تفعّل حسابا. */
+  const roles = [
+    ['المديرُ الأكاديميّ', () => managerCookie],
+    ['المديرُ الأعلى', () => superCookie],
+    ['المديرُ الماليّ', () => financeCookie],
+  ] as const
+  for (const [who, cookie] of roles) {
     it(`${who} يغيّر الأجرَ في الإعادة`, async () => {
       const { c } = await signed()
       const res = await post(cookie(), c.id, { compensation: { type: 'per_seat', rate: 40 } })

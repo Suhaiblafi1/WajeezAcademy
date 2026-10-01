@@ -298,7 +298,12 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   /* `commerce.manage` هنا لا عند المديرِ الأكاديميّ: الطلباتُ والكوبوناتُ
      وخططُ الاشتراك بندٌ ماليّ، ومن يسجّل الدفعةَ هو من يملك الطلبَ الذي
      دُفع عنه. */
-  finance: ['trainer.compensation.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'finance.bank.reveal', 'reports.view', 'reports.export'],
+  /* و`trainer.contract.manage` لها أيضا — قرارُ صاحب المنصّة (١ أكتوبر ٢٠٢٦):
+     «the financial manager, academy manager and the super admin.. all can
+     change». فتركّب العقدَ وترسله وتعيده للتوقيع بأجرٍ جديد. ولا تعتمد توقيعا
+     ولا تردّه: ذاك خلف `trainer.applications.decide` وليس لها. ولا تفتح
+     شاشةَ الطلبات — `trainer.applications.view` باقيةٌ عند من يقرّر. */
+  finance: ['trainer.compensation.manage', 'trainer.contract.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'finance.bank.reveal', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
 }
