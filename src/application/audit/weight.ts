@@ -70,7 +70,7 @@ const HIGH: readonly string[] = [
      **فعلُه هو** يلتزم به بمال، والاعتذارُ يُنهي طريقَه إلى التفعيل.
      وثلاثتُها تُخبر إنسانا في معالجها: الأوّلان بريدا إلى صاحبه،
      والثالثُ إشعارا إلى من ينتظر قرارَه. */
-  'trainer.contract.send', 'trainer.contract.resend',
+  'trainer.contract.send', 'trainer.contract.resend', 'trainer.contract.final_reminder_sent',
   'trainer.contract.sign_by_trainer', 'trainer.contract.decline',
   'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
   'trainer.contract.condition_extended',
