@@ -28,6 +28,7 @@
    هنا يقود إلى بابٍ مغلق. */
 
 import type { MailBlock, MailDoc } from './mail-template'
+import { RESIGN_CHANGES_HEADING_AR, resignParagraphs } from '../../src/application/trainer/contract-resign'
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
@@ -931,6 +932,37 @@ export function contractUpdatedMail(input: ContractUpdatedMailInput): DecisionMa
         },
       ],
     },
+  }
+}
+
+export interface ContractResignMailInput {
+  /** الاسمُ الذي وقّع به */
+  greetingName: string
+  /** عنوانُ الرسالة كما كتبه الموظّف — بحرفه */
+  subjectAr: string
+  /** نصُّها كما كتبه — فقراتٌ يفصلها سطرٌ فارغ */
+  bodyAr: string
+  /** `changesBetween(القديم، الحاضر)` — لا يمرّ بيد الموظّف */
+  changesAr: readonly string[]
+}
+
+/** «حُدّث النصُّ — أعِدْه للتوقيع»: نصُّ الموظّف كما كتبه، ثمّ قائمةُ ما تغيّر.
+ *
+ *  ═══ ولمَ تُلحَق القائمةُ هنا ولا تُكتب في الخانة ═══
+ *
+ *  لصاحب المنصّة أن يكتب ما يشاء لكلّ مدرّب — والقائمةُ يجب أن تبقى كاملة:
+ *  في إحدى نقاطها نقصٌ في حدّه الأدنى المضمون (`v19`)، وقائمةٌ يستطيع المرسِلُ
+ *  أن يقصّها قائمةٌ يمكن أن تسقط منها تلك النقطة. فلا تمرّ بيده: تُقرأ من
+ *  الجدول هنا وتُلحَق بعد نصّه دائما، ولا تُحذَف إلّا وهي فارغة. */
+export function contractResignMail(input: ContractResignMailInput): DecisionMail {
+  const blocks: MailBlock[] = resignParagraphs(input.bodyAr).map((text) => ({ kind: 'p' as const, text }))
+  if (input.changesAr.length > 0) {
+    blocks.push({ kind: 'h', text: RESIGN_CHANGES_HEADING_AR })
+    blocks.push({ kind: 'list', items: [...input.changesAr] })
+  }
+  return {
+    subject: input.subjectAr.trim(),
+    doc: { greetingName: input.greetingName, heading: input.subjectAr.trim(), blocks },
   }
 }
 

@@ -15,8 +15,11 @@ import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.s
 import { renderMail } from './mail-template'
 import { changesBetween } from '../../src/application/trainer/contract-changelog'
 import {
+  RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_REVOKE_PREFIX, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN,
+} from '../../src/application/trainer/contract-resign'
+import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
-  contractRevokedMail, contractUpdatedMail } from './trainer-decision-mail'
+  contractRevokedMail, contractUpdatedMail, contractResignMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -4248,30 +4251,8 @@ export class TrainerReviewService {
     }
 
     const app = old.profile.application
-    const pre = await this.contractPrefill(old.profile.applicationId)
     const issuedOn = new Date()
-    const bodyAr = renderContractBodyAr(this.contractBodyInput({
-      fullName: name,
-      email: old.signerEmail ?? app.email,
-      reference: app.reference,
-      /* الملحق (أ) كما كان: لقطةُ يومِ التركيب لا مؤهّلاتُ اليوم */
-      courses: readContractCourses(old.qualifiedSnapshot),
-      gatesActivation: old.gatesActivation,
-      orientationAt: old.orientationAt,
-      compensation: old.compensationType
-        ? {
-          type: old.compensationType,
-          rate: old.compensationRate == null ? '0' : String(old.compensationRate),
-          currency: old.currency ?? LEDGER_CURRENCY,
-          minSeats: old.compensationMinSeats,
-          referralRate: old.compensationReferralRate == null ? null : String(old.compensationReferralRate),
-        }
-        : null,
-      hoursNoteAr: old.hoursNoteAr,
-      rateWaivedReasonAr: old.rateWaivedReasonAr,
-      requiredDocuments: readRequiredDocuments(old.requiredDocuments),
-      issuedOn,
-    }))
+    const replacement = await this.composeReplacement(old, name, actorId, issuedOn)
 
     const created = await this.prisma.$transaction(async (tx) => {
       /* ① ويُغلَق القائمُ إن كان مفتوحا — ولا يبقى بابان على وثيقتَين */
@@ -4292,37 +4273,7 @@ export class TrainerReviewService {
         where: { id: old.profileId }, data: { legalNameAr: name },
       })
       /* ③ والبديلُ يُنشأ مسودّةً، ويقول صفُّه من حلَّ محلَّه */
-      const next = await tx.trainerContract.create({
-        data: {
-          profileId: old.profileId,
-          title: old.title,
-          kind: 'replacement',
-          revision: old.revision + 1,
-          replacesContractId: old.id,
-          status: 'draft',
-          bodyVersion: CONTRACT_BODY_VERSION,
-          bodyAr,
-          bodyHash: sha256(bodyAr),
-          compensationRuleId: old.compensationRuleId,
-          compensationType: old.compensationType,
-          compensationRate: old.compensationRate,
-          currency: old.currency,
-          compensationMinSeats: old.compensationMinSeats,
-          compensationReferralRate: old.compensationReferralRate,
-          hoursNoteAr: old.hoursNoteAr,
-          rateWaivedReasonAr: old.rateWaivedReasonAr,
-          qualifiedSnapshot: old.qualifiedSnapshot as Prisma.InputJsonValue,
-          requiredDocuments: old.requiredDocuments as Prisma.InputJsonValue,
-          signerEmail: old.signerEmail ?? app.email,
-          /* ويُقرأ الاشتراطُ من الحاضر لا من الصفّ القديم: قد تكون موادُّه
-             اعتُمدت بين الإرسالَين، فيصير عقدُه نهائيّا لا عرضا مشروطا. */
-          gatesActivation: pre.gatesActivation,
-          orientationAt: pre.gatesActivation ? old.orientationAt : null,
-          orientationUrl: pre.gatesActivation ? old.orientationUrl : null,
-          conditionDeadlineAt: pre.gatesActivation ? old.conditionDeadlineAt : null,
-          createdBy: actorId,
-        },
-      })
+      const next = await tx.trainerContract.create({ data: replacement })
       await recordAudit(tx, {
         actorId, action: 'trainer.contract.name_reissue',
         entityType: 'trainer_contract', entityId: next.id,
@@ -4359,6 +4310,165 @@ export class TrainerReviewService {
       `هذا عقدُك مصحَّحا: صار اسمُك في الطرف الثاني «${name}» كما في وثيقة هويّتك. والنسخةُ السابقةُ أُلغيت ورابطُها بطل — فوقّعْ هذه وحدَها.`,
     )
     return { ...sent, ok: true as const, contractId: created.id, revision: created.revision }
+  }
+
+  /** يُركَّب بديلُ عقدٍ قائمٍ على الإصدار الحاضر من المتن — صفٌّ جاهزٌ للإنشاء.
+   *
+   *  مشتركٌ بين بابَين: تصحيحِ الاسم (`reissueWithCorrectedName`)، وإعادةِ
+   *  الموقَّع للتوقيع على نصٍّ محدَّث (`requestResign`). والبنودُ تُنسَخ من
+   *  الصفّ القديم لا تُعاد من الحاضر — علّتُه في رأس الأوّل. */
+  private async composeReplacement(
+    old: Prisma.TrainerContractGetPayload<{ include: { profile: { include: { application: true } } } }>,
+    name: string, actorId: string, issuedOn: Date,
+  ): Promise<Prisma.TrainerContractUncheckedCreateInput> {
+    const app = old.profile.application
+    const pre = await this.contractPrefill(old.profile.applicationId)
+    const bodyAr = renderContractBodyAr(this.contractBodyInput({
+      fullName: name,
+      email: old.signerEmail ?? app.email,
+      reference: app.reference,
+      /* الملحق (أ) كما كان: لقطةُ يومِ التركيب لا مؤهّلاتُ اليوم */
+      courses: readContractCourses(old.qualifiedSnapshot),
+      gatesActivation: old.gatesActivation,
+      orientationAt: old.orientationAt,
+      compensation: old.compensationType
+        ? {
+          type: old.compensationType,
+          rate: old.compensationRate == null ? '0' : String(old.compensationRate),
+          currency: old.currency ?? LEDGER_CURRENCY,
+          minSeats: old.compensationMinSeats,
+          referralRate: old.compensationReferralRate == null ? null : String(old.compensationReferralRate),
+        }
+        : null,
+      hoursNoteAr: old.hoursNoteAr,
+      rateWaivedReasonAr: old.rateWaivedReasonAr,
+      requiredDocuments: readRequiredDocuments(old.requiredDocuments),
+      issuedOn,
+    }))
+    /* والبديلُ يُنشأ مسودّةً، ويقول صفُّه من حلَّ محلَّه */
+    return {
+      profileId: old.profileId,
+      title: old.title,
+      kind: 'replacement',
+      revision: old.revision + 1,
+      replacesContractId: old.id,
+      status: 'draft',
+      bodyVersion: CONTRACT_BODY_VERSION,
+      bodyAr,
+      bodyHash: sha256(bodyAr),
+      compensationRuleId: old.compensationRuleId,
+      compensationType: old.compensationType,
+      compensationRate: old.compensationRate,
+      currency: old.currency,
+      compensationMinSeats: old.compensationMinSeats,
+      compensationReferralRate: old.compensationReferralRate,
+      hoursNoteAr: old.hoursNoteAr,
+      rateWaivedReasonAr: old.rateWaivedReasonAr,
+      qualifiedSnapshot: old.qualifiedSnapshot as Prisma.InputJsonValue,
+      requiredDocuments: old.requiredDocuments as Prisma.InputJsonValue,
+      signerEmail: old.signerEmail ?? app.email,
+      /* ويُقرأ الاشتراطُ من الحاضر لا من الصفّ القديم: قد تكون موادُّه
+         اعتُمدت بين الإرسالَين، فيصير عقدُه نهائيّا لا عرضا مشروطا. */
+      gatesActivation: pre.gatesActivation,
+      orientationAt: pre.gatesActivation ? old.orientationAt : null,
+      orientationUrl: pre.gatesActivation ? old.orientationUrl : null,
+      conditionDeadlineAt: pre.gatesActivation ? old.conditionDeadlineAt : null,
+      createdBy: actorId,
+    }
+  }
+
+  /** ═══ «حُدّث النصُّ — أعِدْه للتوقيع» (١ أكتوبر ٢٠٢٦) ═══
+
+      مدرّبٌ وقّع إصدارا سابقا من المتن، ولم تعتمده الأكاديميّةُ بعد — فهو
+      عرضٌ مشروطٌ لا يلزم إلّا بختمنا (البند 2-6)، وعدمُ تمامه ليس إخلالا من
+      أحد (البند 2-11). فلنا أن نسحبه ونعرض الإصدارَ الحاضر.
+
+      ── ولمَ لا يُستعمَل «رفضُ التوقيع» ──
+
+      ذاك بابُ **عيبٍ في التوقيع** (اسمٌ لا يطابق الوثيقة): سؤالُه «ما الذي لم
+      يطابق؟» وبريدُه «لم نستطع اعتمادَ توقيعك». ومن وقّع صحيحا ثمّ قرأ ذلك
+      ظنّ أنّا وجدنا فيه خللا. فهذا بابٌ آخر بسببٍ آخرَ وبريدٍ آخر.
+
+      ── ودليلُ التوقيع لا يُمَسّ ──
+
+      كما في `rejectSignature`: `signedAt` والاسمُ والهاشُ وعنوانُ الشبكة تبقى
+      في الصفّ المغلَق — ما وقّعه وقع، والسؤالُ بعد سنةٍ يجد جوابَه فيه. */
+  async requestResign(
+    contractId: string, actorId: string, input: { subjectAr: string; bodyAr: string },
+  ) {
+    const subject = (input.subjectAr ?? '').trim()
+    const body = (input.bodyAr ?? '').trim()
+    if (subject.length < RESIGN_SUBJECT_MIN || subject.length > RESIGN_SUBJECT_MAX) {
+      throw new AuthError('no_subject', `اكتب عنوانَ الرسالة (${RESIGN_SUBJECT_MIN}–${RESIGN_SUBJECT_MAX} حرفا)`, 422)
+    }
+    if (body.length < RESIGN_BODY_MIN || body.length > RESIGN_BODY_MAX) {
+      throw new AuthError('no_body_text', `اكتب نصَّ الرسالة (${RESIGN_BODY_MIN}–${RESIGN_BODY_MAX} حرفا)`, 422)
+    }
+    const old = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!old) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (!contractHasBodyAr(old.bodyAr)) {
+      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. أنشئ عقدا جديدا', 409)
+    }
+    /* والاسمُ ما وقّع به صاحبُه: هو أعلمُ باسمه، وكتبه بيده في خانة التوقيع */
+    const app = old.profile.application
+    const name = (old.signerLegalName ?? old.profile.legalNameAr ?? app.fullName).trim()
+    const issuedOn = new Date()
+    const replacement = await this.composeReplacement(old, name, actorId, issuedOn)
+    const changesAr = changesBetween(old.bodyVersion, CONTRACT_BODY_VERSION)
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      /* قارنْ واضبطْ: الموقَّعُ وحدَه. فالمعتمَدُ نافذٌ وبابُه رضا صاحبه لا
+         نقرتُنا، والمرسَلُ لا توقيعَ عليه يُسحَب — يُحدَّث نصُّه في مكانه. */
+      const done = await tx.trainerContract.updateMany({
+        where: { id: old.id, status: 'signed' },
+        data: {
+          status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
+          /* وبادئةٌ غيرُ «رُفض التوقيع» بقصد: شاشةُ العقود تبني لوحَ الرفض
+             عليها، وهذا ليس رفضا */
+          revokeReasonAr: `${RESIGN_REVOKE_PREFIX}${old.bodyVersion ?? '—'} ← ${CONTRACT_BODY_VERSION}`.slice(0, 500),
+        },
+      })
+      if (done.count === 0) {
+        throw new AuthError('bad_state', 'لا يُعاد للتوقيع إلّا عقدٌ موقَّعٌ لم يُعتمَد', 409)
+      }
+      /* ومهمّةُ «توقيع العقد» تُفتَح ثانيةً — علّتُه في `rejectSignature` */
+      await tx.trainerOnboardingTask.updateMany({
+        where: { profileId: old.profileId, key: 'sign_contract' }, data: { doneAt: null },
+      })
+      const next = await tx.trainerContract.create({ data: replacement })
+      await recordAudit(tx, {
+        actorId, action: 'trainer.contract.resign_requested',
+        entityType: 'trainer_contract', entityId: old.id,
+        meta: {
+          nextContractId: next.id, fromVersion: old.bodyVersion, toVersion: CONTRACT_BODY_VERSION,
+          subjectAr: subject, bodyAr: body, changesAr: [...changesAr],
+          signerLegalName: old.signerLegalName,
+        },
+      })
+      return next
+    })
+
+    /* والرسالةُ قبل الرابط: نصُّها يقول «ورابطُ النسخة الجديدة يصلك في رسالةٍ
+       تالية» — فتسبقه. */
+    let emailDelivery: DirectMailStatus = 'failed'
+    try {
+      const mail = contractResignMail({
+        greetingName: name, subjectAr: subject, bodyAr: body, changesAr,
+      })
+      const sent = await sendDirectEmail(this.prisma, {
+        to: old.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
+      })
+      emailDelivery = sent.status
+    } catch { /* البريدُ رفاهية — السحبُ وقع، والرابطُ يخرج بعده */ }
+
+    const sent = await this.sendContract(
+      created.id, actorId,
+      'هذه النسخةُ المحدَّثةُ من عقدك، وما تغيّر فيها وصلك في رسالتنا السابقة. والنسخةُ التي وقّعتَها سُحبت ورابطُها بطل — فإن شئتَ فوقّعْ هذه.',
+    )
+    return { ...sent, ok: true as const, contractId: created.id, revision: created.revision, noticeDelivery: emailDelivery }
   }
 
   /** رفضُ التوقيع — الاسمُ لا يطابق الوثيقةَ، أو الوثيقةُ ليست له.

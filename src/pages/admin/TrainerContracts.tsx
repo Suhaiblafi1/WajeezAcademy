@@ -22,6 +22,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BadgeCheck, Ban, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
+import Modal from "@/components/Modal";
+import { CONTRACT_BODY_VERSION } from "@/application/trainer/contract-body";
+import { changesBetween } from "@/application/trainer/contract-changelog";
+import {
+  DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
+  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr,
+} from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
@@ -55,6 +62,12 @@ import ContractDocument from '@/components/ContractDocument'
 import { nameMatch } from '@/application/trainer/contract-names'
 import { groupContracts, readLineage } from '@/application/trainer/contract-lineage'
 import { isUntouchableContract } from '@/application/trainer/contract-untouchable'
+
+/* حقلا رسالة «أعِدْه للتوقيع» — العنوانُ والنصُّ يُكتبان لكلّ مدرّبٍ كما يشاء
+   صاحبُ المنصّة، فحقلٌ يُقرأ فيه نصٌّ طويلٌ لا سطرُ متصفّح. */
+const FIELD =
+  "w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 outline-none transition focus:border-teal";
+const LABEL = "mb-1.5 block text-xs font-bold text-muted-foreground";
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
@@ -267,6 +280,13 @@ export default function TrainerContracts() {
 
      وحالةٌ واحدةٌ للبابَين لا نافذتان: السؤالُ واحدٌ — سببٌ مكتوبٌ يُشترَط
      ثمّ يُرسَل. والفرقُ في المسار وحدَه، فيُحمَل معه. */
+  /* ═══ «حُدّث النصُّ — أعِدْه للتوقيع» (١ أكتوبر ٢٠٢٦) ═══
+
+     بابٌ غيرُ رفض التوقيع: ذاك لعيبٍ في التوقيع، وهذا لتوقيعٍ صحيحٍ تحتَه
+     نصٌّ قديم. والعنوانُ والنصُّ يُملآن بمقترَحٍ ثمّ يُحرَّران لكلّ مدرّب. */
+  const [resign, setResign] = useState<
+    { row: ContractRow; subjectAr: string; bodyAr: string } | null
+  >(null);
   const [asking, setAsking] = useState<{
     titleAr: string; confirmLabelAr: string; labelAr: string;
     whatAr: string; okAr: string; rowId?: string;
@@ -1383,6 +1403,16 @@ c.gatesActivation
                               })}>
                               لم يطابق — ارفضْ
                             </Button>
+                            {/* وتوقيعٌ صحيحٌ على نصٍّ قديم بابُه هذا لا الرفض: بريدُ
+                                الرفض يقول له «لم نستطع اعتمادَ توقيعك» ولا عيبَ فيه. */}
+                            <Button tone="confirm" icon={RefreshCw}
+                              onClick={() => setResign({
+                                row: c,
+                                subjectAr: DEFAULT_RESIGN_SUBJECT_AR,
+                                bodyAr: defaultResignBodyAr(c.title),
+                              })}>
+                              حُدّث النصُّ — أعِدْه للتوقيع
+                            </Button>
                           </div>
                         )}
                       </Panel>
@@ -1720,6 +1750,65 @@ c.gatesActivation
           <p className="text-read leading-7">{asking.whatAr}</p>
         </ConfirmAction>
       )}
+
+      {/* والقائمةُ تُعرَض ولا تُحرَّر: الخادمُ يلحقها بعد نصّك من الجدول نفسِه،
+          فما يُرى هنا هو ما يصل — ولا سبيلَ إلى أن تسقط منها نقطة. */}
+      {resign && (() => {
+        const changes = changesBetween(resign.row.bodyVersion, CONTRACT_BODY_VERSION);
+        const subject = resign.subjectAr.trim();
+        const body = resign.bodyAr.trim();
+        const ready = !busy
+          && subject.length >= RESIGN_SUBJECT_MIN && subject.length <= RESIGN_SUBJECT_MAX
+          && body.length >= RESIGN_BODY_MIN && body.length <= RESIGN_BODY_MAX;
+        return (
+          <Modal onClose={() => setResign(null)} label={`إعادةُ «${resign.row.title}» للتوقيع`}
+            panelClassName="w-full max-w-2xl">
+            <Inset dir="rtl" tone="solid" className="max-h-[86vh] overflow-y-auto text-foreground sm:p-6">
+              <h2 className="text-sm font-black">إعادةُ «{resign.row.title}» للتوقيع على النصّ المحدَّث</h2>
+              <p className="mt-2 text-read leading-7 opacity-80">
+                يُغلَق العقدُ الموقَّع ودليلُ توقيعه باقٍ، ويُعرَض عليه الإصدارُ الحاضر
+                ({CONTRACT_BODY_VERSION}) برابطٍ جديد. وتصله رسالتُك أوّلا، ثمّ الرابط.
+              </p>
+              <label className="mt-4 block">
+                <span className={LABEL}>عنوانُ الرسالة</span>
+                <input className={FIELD} value={resign.subjectAr} maxLength={RESIGN_SUBJECT_MAX}
+                  onChange={(e) => setResign({ ...resign, subjectAr: e.target.value })} />
+              </label>
+              <label className="mt-3 block">
+                <span className={LABEL}>نصُّ الرسالة — فقراتٌ يفصلها سطرٌ فارغ</span>
+                <textarea className={`${FIELD} resize-y leading-7`} rows={10} maxLength={RESIGN_BODY_MAX}
+                  value={resign.bodyAr}
+                  onChange={(e) => setResign({ ...resign, bodyAr: e.target.value })} />
+              </label>
+              {changes.length > 0 ? (
+                <Panel tone="accent" className="mt-3 p-3 text-read leading-7">
+                  <b className="block">{RESIGN_CHANGES_HEADING_AR}</b>
+                  <span className="block opacity-70">يُلحَق بعد نصّك دائما — ولا يُحرَّر.</span>
+                  <ul className="mt-1 list-disc ps-5">
+                    {changes.map((pt) => <li key={pt}>{pt}</li>)}
+                  </ul>
+                </Panel>
+              ) : (
+                <p className="mt-3 text-read opacity-70">
+                  لا نقاطَ تغييرٍ مسجّلةٌ بين {resign.row.bodyVersion ?? "—"} والحاضر — فلا قسمَ تغييراتٍ في الرسالة.
+                </p>
+              )}
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <Button tone="confirm" icon={Send} loading={busy} disabled={!ready}
+                  onClick={() => void run(async () => {
+                    await apiPost(`/api/admin/trainer-contracts/${resign.row.id}/resign-request`,
+                      { subjectAr: subject, bodyAr: body });
+                    setResign(null);
+                    await load();
+                  }, "أُعيد العقدُ للتوقيع — وصلته رسالتُك ثمّ رابطُ النسخة المحدَّثة", resign.row.id)}>
+                  أعِدْه للتوقيع وأبلغْه
+                </Button>
+                <Button tone="secondary" onClick={() => setResign(null)}>تراجَع</Button>
+              </div>
+            </Inset>
+          </Modal>
+        );
+      })()}
 
       {/* ═══ الإغلاقُ على أرقامٍ لا على تقدير (٢٦ سبتمبر ٢٠٢٦) ═══
 

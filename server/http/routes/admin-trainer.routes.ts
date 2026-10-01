@@ -27,6 +27,7 @@ import {
 import { interviewSyncTrust } from '../../../src/application/trainer/interview-sync-trust'
 import { getCalendlyConfig, getCalendlySync } from '../../services/integrations.service'
 import { AMENDMENT_TEXT_MAX } from '../../../src/application/trainer/contract-endings'
+import { RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN } from '../../../src/application/trainer/contract-resign'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -618,6 +619,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
     return review.rejectSignature(contractId, req.auth!.userId, reasonAr)
+  })
+
+  /* وبابٌ غيرُ الرفض لتوقيعٍ صحيحٍ تحتَه نصٌّ قديم — علّتُه في `requestResign` */
+  app.post('/api/admin/trainer-contracts/:contractId/resign-request', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'سحبُ عقدٍ موقَّعٍ لم يُعتمَد وإعادتُه للتوقيع على النصّ المحدَّث' },
+  }, async (req, reply) => {
+    if (!requireDecideToo(req, reply)) return reply
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { subjectAr, bodyAr } = z.object({
+      subjectAr: z.string().trim().min(RESIGN_SUBJECT_MIN).max(RESIGN_SUBJECT_MAX),
+      bodyAr: z.string().trim().min(RESIGN_BODY_MIN).max(RESIGN_BODY_MAX),
+    }).parse(req.body)
+    return review.requestResign(contractId, req.auth!.userId, { subjectAr, bodyAr })
   })
 
   /* ═══════════ عروضُ الإسناد ═══════════
