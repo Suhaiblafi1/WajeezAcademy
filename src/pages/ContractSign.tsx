@@ -44,6 +44,8 @@ interface OpenView {
   bodyAr: string | null
   bodyVersion: string | null
   bodyHash: string | null
+  /** حُدّث نصُّه تحته بعد إرساله — فيُقال له سطرا واحدا (لا قائمة) */
+  bodyUpdated: boolean
   expiresAt: string | null
   requiredDocuments: RequiredDoc[]
   uploaded: UploadedDoc[]
@@ -338,7 +340,16 @@ export default function ContractSign() {
           contract, because they have received an email with these changes».
           فما تغيّر يحمله البريدُ وحدَه إن اختير، وما يحمي التوقيعَ باقٍ بلا
           الشريط: القراءةُ إلى آخر النصّ شرطٌ (`canSign`)، وحارسُ `body_changed`
-          في الخادم. والعلّةُ كاملةً عند `contractByToken`. */}
+          في الخادم. والعلّةُ كاملةً عند `contractByToken`.
+
+          ثمّ طلب في اليوم نفسِه سطرا واحدا بلا قائمة: «فقط ابلغهم رساله بالاعلى
+          يرجى اعاده قراءته… اختر جمله اقصر». ولا يقول «تغيّرت الصياغة»: في
+          التحديث ما يغيّر المعنى والمال، وعلّتُه هناك أيضا. */}
+      {v.bodyUpdated && (
+        <Panel tone="warn" className="mb-4 p-3 font-bold" role="note">
+          حُدّث نصُّ هذا العرض — اقرأه كاملا قبل أن توقّعه.
+        </Panel>
+      )}
 
       {/* ═══ المتن ═══ */}
       <h2 className="mb-2 text-lg font-black">نصُّ الاتفاقية</h2>
