@@ -87,7 +87,7 @@ async function signAndCountersign(contractId: string) {
     legalName: 'الاسمُ القانونيّ', addressAr: 'عمّان — بناية ١٢', phone: '+962790000000',
     bodyHash: sha256(row.bodyAr!), acks: contractAcks(row.gatesActivation).map((a) => a.key),
   })
-  await review.countersignContract(contractId, adminId)
+  await review.approveSignature(contractId, adminId)
   return prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
 }
 

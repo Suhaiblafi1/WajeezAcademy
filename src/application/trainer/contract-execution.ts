@@ -42,6 +42,8 @@ export interface ContractSeal {
   signedBodyHash?: string | null
   /** بصمةُ المتن المحفوظ — تُقابَل بالتي قبلها */
   bodyHash?: string | null
+  /** اعتمدنا توقيعَه — وفي العرض المشروط ليس توقيعَنا (١ أكتوبر ٢٠٢٦) */
+  signatureApprovedAt?: string | Date | null
   countersignedAt?: string | Date | null
   academySignatoryName?: string | null
   academySignatoryTitle?: string | null
@@ -59,7 +61,7 @@ export interface ContractSeal {
 export const SEAL_FIELDS = [
   'signedAt', 'signerLegalName', 'signerAddressAr', 'signerPhone',
   'consentTextAr', 'consentAcksAr', 'signedBodyHash', 'bodyHash',
-  'countersignedAt', 'academySignatoryName', 'academySignatoryTitle',
+  'signatureApprovedAt', 'countersignedAt', 'academySignatoryName', 'academySignatoryTitle',
 ] as const satisfies readonly (keyof ContractSeal)[]
 
 /** يقرأ عمودَ `consentAcksAr` كما هو في القاعدة — وعمودُ JSON لا نوعَ له.
@@ -85,10 +87,16 @@ export function readConsentAcks(value: unknown): ConsentAck[] {
 /** طورُ التنفيذ — والعقدُ لا ينفُذ بتوقيعٍ واحد.
 
     `signed`: أقرّ المدرّبُ وحدَه، وهو إقرارُ طرفٍ واحدٍ ينتظر قبولَ الآخر.
-    `countersigned`: اعتمدت الأكاديميّةُ توقيعَه فصار نافذا بين الطرفين.
-    و`unsigned` لعقدٍ لم يوقّعه بعد — ولا سجلَّ تنفيذٍ له فلا يُعرَض. */
-export function executionStage(seal: ContractSeal): 'unsigned' | 'signed' | 'countersigned' {
+    `approved`: عرضٌ مشروطٌ اعتمدنا توقيعَه وفتحنا بوّابتَه — **ولم نوقّعه**؛
+      نوقّعه حين تُعتمَد دوراتُه (١ أكتوبر ٢٠٢٦). فهو إقرارُ طرفٍ واحدٍ بعدُ.
+    `countersigned`: وقّعته الأكاديميّةُ من جهتها فصار نافذا بين الطرفين.
+    و`unsigned` لعقدٍ لم يوقّعه بعد — ولا سجلَّ تنفيذٍ له فلا يُعرَض.
+
+    والخَتمُ يُسأل أوّلا: صفوفُ ٢٧ سبتمبر — ١ أكتوبر خُتمت يومَ اعتُمد التوقيع
+    ولا `signatureApprovedAt` لها، وما خُتم فهو نافذٌ أيًّا كان طريقُه. */
+export function executionStage(seal: ContractSeal): 'unsigned' | 'signed' | 'approved' | 'countersigned' {
   if (seal.countersignedAt != null) return 'countersigned'
+  if (seal.signatureApprovedAt != null) return 'approved'
   if (seal.signedAt != null) return 'signed'
   return 'unsigned'
 }

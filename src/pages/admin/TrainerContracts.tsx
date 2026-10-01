@@ -40,6 +40,7 @@ import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
    يقول إنّ هذه التسمياتَ لـ«صفّ الطابور» كذلك، ولم تكن تصله. */
 import {
   conditionPhase, materialsGateProblemAr, CONDITION_PHASE_LABELS_AR,
+  RESIGN_FIRST_AR, signatureApprovalOf,
 } from "@/application/trainer/conditional-offer";
 import type { Readiness } from "@/application/trainer/readiness";
 import {
@@ -83,12 +84,16 @@ const ANNEX_A_FORMS = {
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
   signed: "وقّعه صاحبُه — ينتظر اعتمادك", expired: "منتهٍ", terminated: "مفسوخ",
-  /* أزاحه عقدٌ أحدثُ اعتُمد للمدرّب نفسِه (١ أكتوبر ٢٠٢٦) — `countersignContract` */
+  /* أزاحه عقدٌ أحدثُ خُتم للمدرّب نفسِه (١ أكتوبر ٢٠٢٦) — `supersedePriorLive` */
   superseded: "أزاحه عقدٌ أحدث",
+  /* ═══ اعتمادُ التوقيع ليس توقيعَنا (١ أكتوبر ٢٠٢٦) ═══
+     سأل صاحبُ المنصّة: «عندما أصادق على توقيعٍ هل هذا معناه أنّنا وقّعنا؟».
+     فالحالان اسمان: اعتمدتَ توقيعَه وفُتحت بوّابتُه، ثمّ وقّعنا حين اعتُمدت دوراتُه. */
+  signature_approved: "اعتمدتَ توقيعَه — نوقّعه حين تُعتمَد دوراتُه",
   /* وكان غائبا عن هذا المعجم وحدَه، والشاشةُ تعالجه في ثلاثة مواضع — فيُقرأ
      صفُّه «amendment_requested» بالإنجليزيّة خاما إلى جنب اسم المدرّب. */
   amendment_requested: "طلب تعديلا — ينتظر جوابَك",
-  declined: "اعتُذر عنه", countersigned: "نافذٌ — اعتمدته الأكاديميّة",
+  declined: "اعتُذر عنه", countersigned: "نافذٌ — وقّعته الأكاديميّة",
 };
 
 const OFFER_STATUS_AR: Record<string, string> = {
@@ -116,6 +121,8 @@ interface ContractRow {
   signerLegalName: string | null; declinedAt: string | null; declineReasonAr: string | null;
   countersignedAt: string | null; academySignatoryName: string | null;
   academySignatoryTitle: string | null; countersignNoteAr: string | null;
+  /** اعتمادُ التوقيع بلا خَتم — العرضُ المشروطُ في طور موادّه (١ أكتوبر ٢٠٢٦) */
+  signatureApprovedAt?: string | null; signatureApprovalNoteAr?: string | null;
   nameCorrectionAr: string | null; nameCorrectionAt: string | null;
   replacesContractId: string | null;
   amendmentRequestAr: string | null; amendmentRequestedAt: string | null;
@@ -538,7 +545,7 @@ export default function TrainerContracts() {
       subjectAr: mode === "amendment" ? DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR : DEFAULT_RESIGN_SUBJECT_AR,
       bodyAr: mode === "amendment"
         ? defaultAmendmentAcceptBodyAr(c.title, replyAr)
-        : defaultResignBodyAr(c.title, changeGroupsBetween(c.bodyVersion, CONTRACT_BODY_VERSION).length > 0),
+        : defaultResignBodyAr(c.title, changeGroupsBetween(c.bodyVersion, CONTRACT_BODY_VERSION, { conditional: c.gatesActivation }).length > 0),
       /* ومن قبِل تعديلا فأغلبُ ظنّه أنّه سيغيّر شرطا — فتُفتح الشروطُ له */
       editTerms: mode === "amendment",
       rate: c.compensationRate ?? "", minSeats: c.compensationMinSeats != null ? String(c.compensationMinSeats) : "",
@@ -1108,10 +1115,13 @@ c.gatesActivation
                             يفسخ العقدَ وحدَه: الرحيلُ يفسخ العقدَ **ويفتح صفّا
                             لكلّ متعلّمٍ ويسحب العروضَ المعلَّقة**. ومن فسخ العقدَ
                             وحدَه ترك شعبا بلا مدرّبٍ وعروضا تنتظر جوابَ راحل. */}
-                        {c.status === "countersigned" && c.profile?.id && (
+                        {/* ═══ ولا يُقال «تعاقد» عمّا لم نوقّعه (١ أكتوبر ٢٠٢٦) ═══
+                            العرضُ الذي اعتُمد توقيعُه ولم نوقّعه ليس عقدا نافذا
+                            يُفسَخ: يُنهى عرضا بالطريق نفسِه، ويُسمّى باسمه. */}
+                        {(c.status === "countersigned" || c.status === "signature_approved") && c.profile?.id && (
                           <Button size="sm" tone="danger" icon={UserMinus} loading={busy}
                             onClick={() => void closeWith(c, "depart")}>
-                            أنهِ تعاقدَه
+                            {c.status === "countersigned" ? "أنهِ تعاقدَه" : "أنهِ العرض"}
                           </Button>
                         )}
                         {/* ═══ وعلى الرأس المغلَق عقدٌ جديد (٣٠ سبتمبر ٢٠٢٦) ═══
@@ -1395,10 +1405,13 @@ c.gatesActivation
                         <p className="text-read leading-7">
                           وقّع باسم <b>{c.signerLegalName ?? "—"}</b>
                           {c.signedAt ? ` بتاريخ ${fmtDateTime(c.signedAt)}` : ""}. طابِقِ الاسمَ
-                          بوثيقة هويّته قبل الاعتماد — فبالاعتماد ينفذ العقدُ
-                          {c.gatesActivation
-                            ? " وتُفتح بوّابتُه ويبدأ طورُ موادّه ومهلتُه — والتفعيلُ قرارٌ بعد اعتماد موادّه"
-                            : ", ولا تُمسّ حالتُه فهو نشطٌ أصلا"}.
+                          بوثيقة هويّته قبل الاعتماد —
+                          {/* وما يقع بالاعتماد يُقال بحكم `signatureApprovalOf` نفسِه
+                              (١ أكتوبر ٢٠٢٦): كانت «فبالاعتماد ينفذ العقدُ» للبابَين،
+                              والعرضُ المشروطُ لا ينفذ إلّا يومَ تُعتمَد دوراتُه. */}
+                          {signatureApprovalOf(c) === "seal"
+                            ? " فبالاعتماد نوقّع عن الأكاديميّة وينفذ العقدُ، ولا تُمسّ حالتُه فهو نشطٌ أصلا"
+                            : " فبالاعتماد تُفتح بوّابتُه ويبدأ طورُ موادّه ومهلتُه، ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه"}.
                         </p>
                         {rowErr?.id === c.id && (
                           <Panel tone="danger" className="mt-2 p-3 text-read" role="alert">
@@ -1451,28 +1464,30 @@ c.gatesActivation
                             />
                             <div className="flex flex-wrap gap-2">
                               <Button tone="confirm" icon={BadgeCheck} loading={busy}
-                                /* ═══ والحسابُ يُفتح من هنا (٢٦ سبتمبر ٢٠٢٦) ═══
+                                /* ═══ وما يفعله الزرُّ يقوله (١ أكتوبر ٢٠٢٦) ═══
 
-                                   قرارُ صاحب المنصّة، ناسخا قرارَ ٢٠ سبتمبر: العرضُ
-                                   المشروطُ يُختَم بهذا الزرّ ويصير صاحبُه نشطا في
-                                   اللحظة نفسِها. وعلّةُ النسخ في `countersignContract`.
+                                   كان «اعتمِدْ وفعِّلْ»، ويختم العرضَ المشروطَ عنّا في
+                                   اللحظة نفسِها — فسأل صاحبُ المنصّة: «هل هذا معناه أنّنا
+                                   وقّعنا مع المدرّب؟». وصار للعرض المشروط يعتمد التوقيعَ
+                                   ويفتح البوّابةَ ولا يوقّع، ولغير المشروط يوقّع عنّا —
+                                   والحكمُ `signatureApprovalOf` يقرؤه الخادمُ وهذا الزرّ.
 
                                    وما ينقص من تجهيزه يردّه الخادمُ برسالةٍ تعدّده —
                                    وتُرسَم في هذا الصفّ لا في رأس الصفحة (`rowErr`). */
                                 onClick={() => void run(async () => {
-                                  const r = await apiPost<{ readiness?: Readiness; activated?: boolean }>(
+                                  const r = await apiPost<{ readiness?: Readiness; sealed?: boolean }>(
                                     `/api/admin/trainer-contracts/${c.id}/countersign`,
                                     { noteAr: signOff.noteAr.trim() || null });
                                   setSignOff(null);
                                   await load();
                                   const left = r.readiness?.blockersAr ?? [];
-                                  return r.activated
-                                    ? "خُتم العقدُ وصار مدرّبا نشطا — فُتحت بوّابتُه ووصله العقدُ مختوما"
+                                  return !r.sealed
+                                    ? "اعتُمد توقيعُه وفُتحت بوّابتُه — ولم نوقّع العرض: نوقّعه حين تعتمد دوراتِه"
                                     : left.length === 0
-                                      ? "اعتُمد العقدُ ونفَذ — ولم تُمسّ حالتُه، فهو نشطٌ أصلا"
-                                      : `نفَذ العقدُ. وبقي قبل اعتماده مدرّبا: ${left.join(" · ")}`;
-                                }, "اعتُمد العقدُ ونفَذ", c.id)}>
-                                {c.gatesActivation ? "اعتمِدْ وفعِّلْ" : "اعتمِدِ التوقيع"}
+                                      ? "وُقّع العقدُ عنّا ونفَذ — ولم تُمسّ حالتُه، فهو نشطٌ أصلا"
+                                      : `وُقّع العقدُ عنّا ونفَذ. وبقي قبل اعتماده مدرّبا: ${left.join(" · ")}`;
+                                }, "اعتُمد التوقيع", c.id)}>
+                                {signatureApprovalOf(c) === "seal" ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيعَ وافتحْ بوّابتَه"}
                               </Button>
                               <Button tone="ghost" onClick={() => setSignOff(null)}>تراجعْ</Button>
                             </div>
@@ -1498,12 +1513,22 @@ c.gatesActivation
                                   </span>
                                 </Panel>
                               )
-                              : (
-                                <Button tone="confirm" icon={BadgeCheck}
-                                  onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
-                                  {c.gatesActivation ? "طابقتُ الاسمَ — اعتمِدْ وفعِّلْ" : "طابقتُ الاسمَ — اعتمِدْ"}
-                                </Button>
-                              )}
+                              /* ═══ وعرضٌ وُقّع على نصٍّ يجعل الاعتمادَ توقيعا لا يُعتمَد ═══
+                                  وُقّع على v12–v23 («فتوقع من جهتها ويصير العقد نافذا»):
+                                  اعتمادُه بنصّه توقيعٌ قبل اعتماد الدورات. فيُقال لماذا
+                                  مكانَ الزرّ، والمخرجُ الزرُّ الذي تحته (أعِدْه للتوقيع). */
+                              : signatureApprovalOf(c) === "resign_first"
+                                ? (
+                                  <Panel tone="warn" className="w-full p-2 text-read leading-6">
+                                    <b>لا يُعتمَد بنصّه:</b> {RESIGN_FIRST_AR}
+                                  </Panel>
+                                )
+                                : (
+                                  <Button tone="confirm" icon={BadgeCheck}
+                                    onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
+                                    {signatureApprovalOf(c) === "seal" ? "طابقتُ الاسمَ — اعتمِدْ ووقِّعْ" : "طابقتُ الاسمَ — اعتمِدِ التوقيع"}
+                                  </Button>
+                                )}
                             {/* ورفضُ التوقيع يُغلق العقدَ ولا يمحو دليلَه: من وقّع
                                 باسمٍ غيرِ اسمه وقّع وثيقةً تسمّي طرفا آخر، ولا
                                 تُصحَّح تسميةُ طرفٍ بتعديل حقل — يُركَّب عقدٌ جديد. */}
@@ -1533,10 +1558,17 @@ c.gatesActivation
                       </Panel>
                     )}
 
-                    {c.status === "countersigned" && c.gatesActivation && conditionBlock(c)}
+                    {(c.status === "countersigned" || c.status === "signature_approved") && c.gatesActivation && conditionBlock(c)}
+                    {c.status === "signature_approved" && (
+                      <p className="mt-1 text-read opacity-70">
+                        اعتُمد توقيعُه {c.signatureApprovedAt ? fmtDateTime(c.signatureApprovedAt) : ""} وفُتحت بوّابتُه
+                        — ولم نوقّعه بعد: نوقّعه حين تعتمد دوراتِه
+                        {c.signatureApprovalNoteAr ? ` · ${c.signatureApprovalNoteAr}` : ""}
+                      </p>
+                    )}
                     {c.status === "countersigned" && (
                       <p className="mt-1 text-read opacity-70">
-                        اعتُمد {c.countersignedAt ? fmtDateTime(c.countersignedAt) : ""} عن الأكاديميّة
+                        وُقّع عن الأكاديميّة {c.countersignedAt ? fmtDateTime(c.countersignedAt) : ""}
                         {c.academySignatoryName ? ` — ${c.academySignatoryName}` : ""}
                         {c.academySignatoryTitle ? ` (${c.academySignatoryTitle})` : ""}
                         {c.countersignNoteAr ? ` · ${c.countersignNoteAr}` : ""}
@@ -1938,7 +1970,7 @@ c.gatesActivation
         const readVersion = amend ? versionReadByRequester(r.row) : r.row.bodyVersion;
         /* وما يُقال عمّا تغيّر ببابه — بالدالّة التي تبني بها الرسالةُ نفسُها: لطالب
            التعديل سطرٌ وملخّصٌ عن القالب، ولمن وقّع بطاقاتُه كاملة (`reissueChangesView`) */
-        const view = reissueChangesView(r.mode, personal, changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION));
+        const view = reissueChangesView(r.mode, personal, changeGroupsBetween(readVersion, CONTRACT_BODY_VERSION, { conditional: r.row.gatesActivation }));
         const changes = view.cards;
         const changed = changes.length > 0 || view.templateNoteAr !== null;
         const placeholderLeft = hasAmendmentPlaceholder(body);
@@ -2115,8 +2147,12 @@ c.gatesActivation
         <ConfirmAction
           titleAr={closing.mode === "revoke"
             ? `إلغاءُ «${closing.row.title}»`
-            : `إنهاءُ تعاقدِ ${docNameOf(closing.row)}`}
-          confirmLabelAr={closing.mode === "revoke" ? "ألغِ العقد" : "أنهِ التعاقدَ وافتحْ ملفَّ الرحيل"}
+            : closing.row.status === "signature_approved"
+              ? `إنهاءُ عرضِ ${docNameOf(closing.row)}`
+              : `إنهاءُ تعاقدِ ${docNameOf(closing.row)}`}
+          confirmLabelAr={closing.mode === "revoke"
+            ? "ألغِ العقد"
+            : closing.row.status === "signature_approved" ? "أنهِ العرضَ وافتحْ ملفَّ الرحيل" : "أنهِ التعاقدَ وافتحْ ملفَّ الرحيل"}
           busy={busy}
           reason={{
             labelAr: closing.mode === "revoke"
@@ -2136,12 +2172,16 @@ c.gatesActivation
             await load();
           }, closing.mode === "revoke"
             ? "أُلغي العقدُ ووصلَه سببُه"
-            : "انتهى التعاقدُ وفُتح ملفُّ الرحيل — ولكلّ متعلّمٍ صفٌّ يُختار")}
+            : closing.row.status === "signature_approved"
+              ? "انتهى العرضُ وفُتح ملفُّ الرحيل"
+              : "انتهى التعاقدُ وفُتح ملفُّ الرحيل — ولكلّ متعلّمٍ صفٌّ يُختار")}
         >
           <p className="text-read leading-7">
             {closing.mode === "revoke"
               ? "يُغلَق هذا العقدُ ولا يُحذَف: يبقى في القائمة بحالة «ملغًى» وسببُه معه، ويبطل رابطُ توقيعه. ويصل المدرّبَ أنّه أُلغي وبِمَ."
-              : "يُفسَخ هذا العقدُ للمستقبل، ويُفتح ملفُّ رحيلٍ يُعرَض فيه على كلّ متعلّمٍ صفُّه، وتُسحب العروضُ التي تنتظر جوابَه. ولا يمحو ذلك ما كان: نسختُه ودليلُ توقيعه يبقيان، وما استحقّه عن عملٍ أدّاه يبقى مستحقّا له."}
+              : closing.row.status === "signature_approved"
+                ? "يُنهى هذا العرضُ — ولم نوقّعه بعد، فلا عقدَ نافذا يُفسَخ — ويُفتح ملفُّ رحيلٍ تُسحب فيه العروضُ التي تنتظر جوابَه. ويصله أنّ العرضَ انتهى ولم يصر عقدا. ولا يمحو ذلك ما كان: نسختُه ودليلُ توقيعه يبقيان."
+                : "يُفسَخ هذا العقدُ للمستقبل، ويُفتح ملفُّ رحيلٍ يُعرَض فيه على كلّ متعلّمٍ صفُّه، وتُسحب العروضُ التي تنتظر جوابَه. ولا يمحو ذلك ما كان: نسختُه ودليلُ توقيعه يبقيان، وما استحقّه عن عملٍ أدّاه يبقى مستحقّا له."}
           </p>
           {impactBites(closing.impact)
             ? (

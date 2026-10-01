@@ -47,6 +47,7 @@ export default function ContractExecution({
   const acks = readConsentAcks(seal.consentAcksAr)
   const intact = bodyIntact(seal)
   const sealedOnAr = onAr(seal.countersignedAt)
+  const approvedOnAr = onAr(seal.signatureApprovedAt)
 
   return (
     <section className="contract-exec contract-prose" dir="rtl" aria-labelledby="ce-h">
@@ -54,9 +55,15 @@ export default function ContractExecution({
         <p className="ce-kicker">سجلُّ تنفيذٍ — لا نصُّ عقد</p>
         <h2 className="ce-title" id="ce-h">التوقيعان</h2>
         <p className="ce-lede">
+          {/* ═══ واعتمادُ التوقيع ليس توقيعَنا (١ أكتوبر ٢٠٢٦) ═══
+              سأل صاحبُ المنصّة: «هل يرى العقدَ في منصّته موقَّعا؟» — وكان يراه
+              «نافذةً بين الطرفين» يومَ اعتُمد توقيعُه. وقرارُه أن نوقّع العرضَ
+              المشروطَ حين نعتمد دوراتِه، فيُقال هذا هنا بحرفه. */}
           {stage === 'countersigned'
             ? 'وقّع الطرفان هذه الوثيقةَ إلكترونيّا، فصارت نافذةً بينهما. وهذا سجلُّ التوقيعَين كما حُفظ.'
-            : 'وقّعتَ هذه الوثيقةَ إلكترونيّا، وهذا سجلُّ توقيعك كما حُفظ. ولا تنفُذ حتّى تعتمدها الأكاديميّةُ بتوقيعها.'}
+            : stage === 'approved'
+              ? 'وقّعتَ هذه الوثيقةَ إلكترونيّا واعتمدنا توقيعَك، وهذا سجلُّ توقيعك كما حُفظ. ولا تنفُذ حتّى توقّعها الأكاديميّةُ من جهتها — وتوقّعها حين تعتمد دوراتك.'
+              : 'وقّعتَ هذه الوثيقةَ إلكترونيّا، وهذا سجلُّ توقيعك كما حُفظ. ولا تنفُذ حتّى توقّعها الأكاديميّةُ من جهتها.'}
         </p>
       </header>
 
@@ -68,13 +75,25 @@ export default function ContractExecution({
             <>
               <p className="ce-name">{seal.academySignatoryName ?? academyLegalNameAr}</p>
               <p className="ce-rule" aria-hidden="true" />
+              {/* والخَتمُ توقيعُها لا اعتمادُ توقيعه — فيُسمّى باسمه */}
               <p className="ce-how">
                 {seal.academySignatoryTitle
-                  ? `${seal.academySignatoryTitle} — اعتمد التوقيعَ عن ${academyLegalNameAr}`
-                  : `اعتمد التوقيعَ عن ${academyLegalNameAr}`}
+                  ? `${seal.academySignatoryTitle} — وقّع عن ${academyLegalNameAr}`
+                  : `وقّع عن ${academyLegalNameAr}`}
               </p>
               <dl className="ce-rows">
-                <Row labelAr="تاريخُ الاعتماد" valueAr={sealedOnAr} />
+                <Row labelAr="تاريخُ توقيعها" valueAr={sealedOnAr} />
+              </dl>
+            </>
+          ) : approvedOnAr ? (
+            <>
+              <p className="ce-name ce-pending">توقّعها حين تعتمد دوراتك</p>
+              <p className="ce-rule" aria-hidden="true" />
+              <p className="ce-how">
+                اعتمدت الأكاديميّةُ توقيعَك وفتحت لك بوّابتَك، ولا توقّع هذه الوثيقةَ من جهتها إلّا حين تعتمد دوراتك — فتصير عقدا نهائيّا غيرَ مشروط.
+              </p>
+              <dl className="ce-rows">
+                <Row labelAr="تاريخُ اعتماد توقيعك" valueAr={approvedOnAr} />
               </dl>
             </>
           ) : (

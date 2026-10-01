@@ -83,11 +83,15 @@ describe('رابطُ جلسة التهيئة في رسالة اعتماد الت
     expect(text, 'سقط زرُّ البوّابة').toContain(BASE.portalUrl)
   })
 
-  it('وعنوانُ الرسالة وترويستُها كما كانا', () => {
+  /* وعنوانُ العرض المشروط صار «اعتمدنا توقيعَك» لا «اعتُمد عقدُك» (١ أكتوبر
+     ٢٠٢٦): اعتمادُ توقيعه لا يُنفذ عرضَه — نوقّعه حين نعتمد دوراتِه. */
+  it('وعنوانُ الرسالة وترويستُها', () => {
     const mail = contractApprovedMail(CONDITIONAL)
-    expect(mail.subject).toContain('اعتُمد عقدُك')
+    expect(mail.subject).toContain('اعتمدنا توقيعَك')
+    expect(mail.subject, 'عنوانٌ يقول إنّ عقدَه اعتُمد ولم نوقّعه').not.toContain('اعتُمد عقدُك')
     expect(mail.subject).toContain(BASE.title)
     expect(mail.doc.heading).toContain('اعتُمد توقيعُك')
+    expect(contractApprovedMail(PLAIN).subject).toContain('اعتُمد عقدُك')
     expect(contractApprovedMail(PLAIN).doc.heading).toBe('اعتُمد عقدُك')
   })
 })

@@ -120,8 +120,10 @@ function hasLiveBaseRule(rules: CompensationRuleFact[], at: number): boolean {
    `signed` إقرارُ طرفٍ واحد، و`countersigned` نفاذُه بالطرفين — وكلاهما
    يُثبت أنّه وقّع، وهو المقصود هنا. وما عداهما لا: `sent` أُرسل ولم يُقرأ،
    و`declined` اعتذر — وهو جوابٌ مشروعٌ لا عطبٌ ولا تمام، و`revoked` أُلغي،
-   و`expired` انقضى، و`terminated` فُسخ بعد نفاذه فلم يعد يحكم شيئا. */
-const SIGNED_CONTRACT_STATUSES: readonly string[] = ['signed', 'countersigned']
+   و`expired` انقضى، و`terminated` فُسخ بعد نفاذه فلم يعد يحكم شيئا.
+   و`signature_approved` (١ أكتوبر ٢٠٢٦) بينهما: وقّع واعتمدنا توقيعَه، ونوقّعه
+   نحن حين تُعتمَد دوراتُه — وتوقيعُه هو قائم، وهو المقصود. */
+const SIGNED_CONTRACT_STATUSES: readonly string[] = ['signed', 'signature_approved', 'countersigned']
 
 export function computeReadiness(input: ReadinessInput): Readiness {
   const at = (input.now ?? new Date()).getTime()

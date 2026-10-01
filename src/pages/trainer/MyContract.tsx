@@ -57,6 +57,9 @@ interface MyContract {
   consentTextAr: string | null
   consentAcksAr: unknown
   signedBodyHash: string | null
+  /** اعتمدنا توقيعَه — وفي العرض المشروط ليس توقيعَنا (١ أكتوبر ٢٠٢٦) */
+  signatureApprovedAt: string | null
+  gatesActivation: boolean
   countersignedAt: string | null
   academySignatoryName: string | null
   academySignatoryTitle: string | null
@@ -160,8 +163,13 @@ export default function MyContract() {
               {data.terminatedAt
                 ? `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، وفُسِخت في ${fmtDateLong(data.terminatedAt)} — وتبقى نسختُك منها محفوظةً لك.`
                 : stage === 'countersigned'
-                  ? `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، واعتمدتها الأكاديميّةُ في ${fmtDateLong(data.countersignedAt ?? '')} — فهي نافذةٌ بين الطرفين.`
-                  : `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، وهي عند الأكاديميّةِ لاعتماد توقيعك.`}
+                  ? `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، ووقّعتها الأكاديميّةُ من جهتها في ${fmtDateLong(data.countersignedAt ?? '')} — فهي نافذةٌ بين الطرفين.`
+                  /* ═══ واعتمادُ التوقيع ليس توقيعَنا (١ أكتوبر ٢٠٢٦) ═══
+                     العرضُ المشروطُ نوقّعه حين نعتمد دوراتِه — فلا يقرأ هنا
+                     «نافذة» قبلها، ويعرف متى تصير. */
+                  : stage === 'approved'
+                    ? `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، واعتمدنا توقيعَك في ${fmtDateLong(data.signatureApprovedAt ?? '')}. ونوقّعها من جهتنا حين نعتمد دوراتك، فتصير عقدا نهائيّا غيرَ مشروط.`
+                    : `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، وهي عند الأكاديميّةِ لاعتماد توقيعك.`}
             </p>
             {/* وأرضيّةُ المتن أربعةَ عشر لا اثنا عشر (`staff-surface.test.ts`):
                 هذا سطرُ بيانٍ لا شارةَ زينة — «ملحقٌ على عقدٍ نافذ» يغيّر

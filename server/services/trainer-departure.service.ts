@@ -126,7 +126,7 @@ export class TrainerDepartureService {
        إسنادٍ لا يقع — ولو قبِله لَمرّ من `assignToCohort` وسقط عند حارسِ
        «الملفُّ نشطٌ» برسالةٍ لا ذنبَ له فيها. */
     const terminatedAt = new Date()
-    const { departure, terminated, withdrawn, openOffers } = await this.prisma.$transaction(async (tx) => {
+    const { departure, terminated, terminatedLive, withdrawn, openOffers } = await this.prisma.$transaction(async (tx) => {
       const d = await tx.trainerDeparture.create({
         data: { profileId, reasonAr: reason, openedBy: actorId },
       })
@@ -136,11 +136,17 @@ export class TrainerDepartureService {
         })
       }
       /* والموقَّعُ الذي لم يُعتمَد بعدُ يُغلَق معه: لو تُرك `signed` لَبقي
-         `countersignContract` قادرةً عليه بعد شهر — وهي تنادي
-         `decide('activate')`، فيعود من رحل «نشطا» بضغطةٍ من موظّفٍ يقرأ
-         طابورا قديما. والرحيلُ لا يمسّ حالةَ الطلب، فلا شيءَ يمنعها. */
+         `approveSignature` قادرةً عليه بعد شهر — فيُفتح لمن رحل طورُ موادَّ
+         بضغطةٍ من موظّفٍ يقرأ طابورا قديما. والرحيلُ لا يمسّ حالةَ الطلب،
+         فلا شيءَ يمنعها. وكذلك العرضُ الذي اعتُمد توقيعُه ولم نوقّعه
+         (`signature_approved`، ١ أكتوبر ٢٠٢٦): يُنهى ولا يُختَم بعده.
+
+         ويُعدّ النافذُ منها وحدَه قبل الإغلاق: رسالتُه تقول «انتهى العقدُ
+         بيننا» لمن كان له عقدٌ نافذ، ولمن لم نوقّع عرضَه «انتهى العرض» — فلا
+         يُقال لأحدٍ إنّ عقدا انتهى ولم يكن عقدٌ بعد. */
+      const live = await tx.trainerContract.count({ where: { profileId, status: 'countersigned' } })
       const t = await tx.trainerContract.updateMany({
-        where: { profileId, status: { in: ['signed', 'countersigned'] } },
+        where: { profileId, status: { in: ['signed', 'signature_approved', 'countersigned'] } },
         data: {
           status: 'terminated', terminatedAt, terminatedBy: actorId,
           terminateReasonAr: `فُسخ برحيل المدرّب: ${reason}`.slice(0, 500),
@@ -161,7 +167,7 @@ export class TrainerDepartureService {
           withdrawReasonAr: `سُحب برحيل المدرّب: ${reason}`.slice(0, 500),
         },
       })
-      return { departure: d, terminated: t.count, withdrawn: w.count, openOffers }
+      return { departure: d, terminated: t.count, terminatedLive: live, withdrawn: w.count, openOffers }
     })
 
     await recordAudit(this.prisma, {
@@ -210,7 +216,9 @@ export class TrainerDepartureService {
           subject: 'انتهاءُ التعاقد — أكاديمية وجيز',
           ...renderMail({
             greetingName: profile.application.fullName,
-            heading: terminated > 0 ? 'سُجّل رحيلُك، وانتهى التعاقد' : 'سُجّل رحيلُك',
+            heading: terminatedLive > 0
+              ? 'سُجّل رحيلُك، وانتهى التعاقد'
+              : terminated > 0 ? 'سُجّل رحيلُك، وانتهى العرض' : 'سُجّل رحيلُك',
             blocks: [
               {
                 kind: 'p',
@@ -218,7 +226,7 @@ export class TrainerDepartureService {
                   fmtDateWith(terminatedAt, { year: 'numeric', month: 'long', day: 'numeric' })
                 }.`,
               },
-              ...(terminated > 0
+              ...(terminatedLive > 0
                 ? [
                   { kind: 'p' as const, text: 'وبه انتهى العقدُ بيننا للمستقبل.' },
                   {
@@ -227,7 +235,13 @@ export class TrainerDepartureService {
                       + 'وما استحققتَه عن عملٍ أدّيتَه يبقى مستحقّا لك.',
                   },
                 ]
-                : []),
+                : terminated > 0
+                  ? [{
+                    kind: 'p' as const,
+                    text: 'وبه انتهى العرضُ الذي وقّعتَه — ولم نكن وقّعناه من جهتنا بعد، فلم يصر عقدا '
+                      + 'نافذا بيننا، ولا يُلزم أحدا. ونسختُك منه ودليلُ توقيعك محفوظان.',
+                  }]
+                  : []),
               ...(withdrawn > 0
                 ? [{ kind: 'note' as const, text: 'وسُحبت العروضُ التي كانت تنتظر جوابَك.' }]
                 : []),

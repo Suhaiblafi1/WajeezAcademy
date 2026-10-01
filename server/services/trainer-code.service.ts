@@ -61,10 +61,21 @@ export class TrainerCodeService {
     return profile
   }
 
-  /** أقَبِل البندَ 4-10 بصيغته الجديدة؟ — بعقدٍ من الجيل الذي حمله، أو بقبولٍ مرّةً واحدة */
+  /** أقَبِل البندَ 4-10 بصيغته الجديدة؟ — بعقدٍ من الجيل الذي حمله، أو بقبولٍ مرّةً واحدة.
+
+      ═══ وكلُّ عقدٍ قائمٍ عليه توقيعُه — لا `signed` وحدَها (١ أكتوبر ٢٠٢٦) ═══
+
+      كان الشرطُ `status: 'signed'`: وقّع وينتظر اعتمادَنا. فمن اعتمدنا عقدَه
+      (`countersigned`) — وهو كلُّ مدرّبٍ نشطٍ يُصدر كودا من «دعوتي» — لا يُعدّ
+      عقدُه قبولا، ويُطلب منه أن يقبل البندَ ثانيةً وهو موقَّعٌ في عقده. والسؤالُ
+      هنا «أوقّع نصّا يحمله؟»، وجوابُه في كلّ عقدٍ قائمٍ وقّعه: ينتظر اعتمادَنا،
+      أو اعتمدنا توقيعَه، أو نفذ. والمنتهي (مفسوخٌ أو أُزيح) لا يُعدّ: بابُه أُغلق. */
   async termsFor(profileId: string, userId: string) {
     const [contracts, consent] = await Promise.all([
-      this.prisma.trainerContract.findMany({ where: { profileId, status: 'signed' }, select: { bodyVersion: true } }),
+      this.prisma.trainerContract.findMany({
+        where: { profileId, status: { in: ['signed', 'signature_approved', 'countersigned'] } },
+        select: { bodyVersion: true },
+      }),
       this.prisma.consentRecord.findFirst({
         where: { userId, kind: 'terms', textVersion: CODE_TERMS_VERSION, revokedAt: null },
         orderBy: { grantedAt: 'desc' },

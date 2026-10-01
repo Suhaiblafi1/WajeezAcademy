@@ -140,17 +140,19 @@ describe('البابُ الأوّل: زرُّ شاشة الطلبات', () => {
 describe('البابُ الثاني: زرُّ شاشة العقود — يعتمد ولا ينشر', () => {
   it('الاعتمادُ يمرّ ولو لم تُعرَض موادُّه — فهو نظرٌ في توقيعه لا في موادّه', async () => {
     const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
-    await expect(review.countersignContract(t.contractId, adminId, {}))
-      .resolves.toMatchObject({ ok: true, activated: false })
+    await expect(review.approveSignature(t.contractId, adminId, {}))
+      .resolves.toMatchObject({ ok: true, activated: false, sealed: false })
     const c = await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })
-    expect(c.status).toBe('countersigned')
+    /* ولا يوقّع عنّا (١ أكتوبر ٢٠٢٦): نوقّع العرضَ حين نعتمد دوراتِه — أي عند النشر */
+    expect(c.status).toBe('signature_approved')
+    expect(c.countersignedAt, 'خُتم العرضُ قبل أن تُعتمَد دوراتُه').toBeNull()
     expect(c.conditionMetAt, 'تحقّق شرطُ موادّه باعتماد توقيعه').toBeNull()
     expect(await statusOf(t.applicationId), 'نُشر حسابُه باعتماد توقيعه').toBe('onboarding')
   })
 
   it('والنشرُ بعده يُردّ ما دامت موادُّه لم تُعرَض', async () => {
     const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
-    await review.countersignContract(t.contractId, adminId, {})
+    await review.approveSignature(t.contractId, adminId, {})
     await expect(review.decide(t.applicationId, adminId, 'activate'))
       .rejects.toMatchObject({ code: 'materials_pending' })
     expect(await statusOf(t.applicationId), 'نُشر ولم تُقرأ موادُّه').toBe('onboarding')
@@ -158,7 +160,7 @@ describe('البابُ الثاني: زرُّ شاشة العقود — يعتم
 
   it('ويمرّ النشرُ بعد إعلانها — فيُكتب تحقّقُ الشرط ويصير نشطا', async () => {
     const t = await readyButForMaterials({ deadlineDays: 5, declared: true })
-    await review.countersignContract(t.contractId, adminId, {})
+    await review.approveSignature(t.contractId, adminId, {})
     await review.decide(t.applicationId, adminId, 'activate')
     expect(await statusOf(t.applicationId)).toBe('active')
     const c = await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })

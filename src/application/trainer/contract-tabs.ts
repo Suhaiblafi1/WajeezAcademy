@@ -31,7 +31,7 @@ export interface ContractTab {
 }
 
 export type ContractTabId =
-  | 'awaiting_you' | 'awaiting_them' | 'live' | 'drafts' | 'closed' | 'all'
+  | 'awaiting_you' | 'awaiting_them' | 'materials' | 'live' | 'drafts' | 'closed' | 'all'
 
 /* والترتيبُ ترتيبُ الإلحاح: ما ينتظرك أوّلا، والأرشيفُ آخرا قبل «الكلّ». */
 export const CONTRACT_TABS: readonly ContractTab[] = [
@@ -53,11 +53,23 @@ export const CONTRACT_TABS: readonly ContractTab[] = [
     statuses: ['sent'],
     emptyAr: 'لا عرضَ خارجٌ ينتظر توقيعَ صاحبه.',
   },
+  /* ═══ وطورُ الموادّ تبويبٌ وحدَه (١ أكتوبر ٢٠٢٦) ═══
+
+     عرضٌ مشروطٌ اعتمدنا توقيعَه وفتحنا بوّابتَه ولم نوقّعه — نوقّعه حين تُعتمَد
+     دوراتُه. فلا يسكن «نافذة»: ليس عقدا نافذا، وقرارُ صاحب المنصّة أن لا
+     يتعاقد مع أحدٍ قبل اعتماد دوراته. ولا «ينتظرك»: الدورُ على المدرّب يضع
+     موادَّه، وقرارُنا التالي في الموادّ لا في العقد. */
+  {
+    id: 'materials',
+    labelAr: 'في طور الموادّ',
+    statuses: ['signature_approved'],
+    emptyAr: 'لا عرضَ اعتمدتَ توقيعَه وينتظر اعتمادَ دوراته — وباعتمادها نوقّع العقد.',
+  },
   {
     id: 'live',
     labelAr: 'نافذة',
     statuses: ['countersigned'],
-    emptyAr: 'لا عقدَ نافذا بعد — النافذُ ما اعتمدته الأكاديميّةُ بعد توقيع صاحبه.',
+    emptyAr: 'لا عقدَ نافذا بعد — النافذُ ما وقّعته الأكاديميّةُ من جهتها بعد توقيع صاحبه.',
   },
   {
     id: 'drafts',

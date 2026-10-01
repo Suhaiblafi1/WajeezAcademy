@@ -30,6 +30,9 @@ import {
   type ConditionReminderMailInput, type ConditionLapsedMailInput,
 } from '../../server/services/trainer-decision-mail'
 import { FEE_EXAMPLE_HEADING_AR } from '@/application/trainer/fee-example'
+import { noFaultClauseOf, renderContractBodyAr } from '@/application/trainer/contract-body'
+import { DEFAULT_REQUIRED_DOCUMENTS } from '@/application/trainer/contract-documents'
+import { EXTENSION_DAYS, MATERIALS_WINDOW_DAYS } from '@/application/trainer/conditional-offer'
 
 import { APPLICANT_STATUS } from '@/application/trainer/application-options'
 
@@ -425,12 +428,40 @@ describe('بريدُ الاعتماد النهائيّ', () => {
     contractUrl: null,
     portalUrl: 'https://wajeezacademy.com/trainer',
     approvedOnAr: '9 أكتوبر 2026',
+    sealed: 'now',
   }
 
   it('تقول إنّ الشرطَ تحقّق وإنّ العرضَ صار عقدا موقَّعا من الطرفَين', () => {
     const m = finalApprovalMail(APPROVED)
     expect(m.subject).toMatch(/اعتُمدتَ مدرّبا/)
     expect(JSON.stringify(m.doc)).toMatch(/موقَّعا من الطرفَين/)
+  })
+
+  /* ═══ وتقول أيَّ خَتمٍ وقع (١ أكتوبر ٢٠٢٦) ═══
+     صار توقيعُنا على العرض المشروط يقع مع اعتماد الدورات — فتقوله الرسالةُ التي
+     تُرسَل حينها. ومن خُتم عرضُه يومَ اعتُمد توقيعُه (٢٧ سبتمبر — ١ أكتوبر) لا
+     يُقال له «وقّعنا الآن». ومن لا عرضَ مشروطَ له لا يُقال له إنّ شرطَ عرضه تحقّق. */
+  /* ويُقاس على متن الرسالة (أوّلُ فقرة) والترويسة كلٌّ وحدَه: سطرُ الترويسة
+     يقولها أيضا، فقياسُ الرسالة جملةً يخضرّ عليه وإن سكت المتن — وقد وقع ذلك
+     حين نُقض المتنُ وحدَه. */
+  const firstP = (m: ReturnType<typeof finalApprovalMail>) =>
+    (m.doc.blocks.find((b) => b.kind === 'p') as { text: string }).text
+  it('⚠️ وقّعنا الآن — يُقال صريحا، ولا يُقال لمن خُتم قبلُ', () => {
+    const now = finalApprovalMail({ ...APPROVED, sealed: 'now' })
+    expect(firstP(now), 'لم يقل متنُ الرسالة إنّا وقّعنا مع اعتماد دوراته').toMatch(/ووقّعنا العقدَ من جهتنا/)
+    expect(now.doc.preheader, 'لم تقله الترويسة').toMatch(/ووقّعنا العقدَ من جهتنا/)
+    const earlier = finalApprovalMail({ ...APPROVED, sealed: 'earlier' })
+    expect(JSON.stringify(earlier.doc), 'قيل «وقّعنا» لمن وقّعنا عرضَه يومَ اعتماد توقيعه').not.toMatch(/وقّعنا العقدَ/)
+    expect(firstP(earlier)).toMatch(/تحقّق شرطُ عرضك/)
+  })
+
+  it('⚠️ ومن لا عرضَ مشروطَ له: لا شرطَ تحقّق ولا عقدَ يُدعى إليه', () => {
+    const m = finalApprovalMail({ ...APPROVED, sealed: 'none', contractUrl: 'https://x/y' })
+    const body = JSON.stringify(m.doc)
+    expect(body, 'قيل له إنّ شرطَ عرضه تحقّق ولا عرضَ له').not.toMatch(/شرطُ عرضك|موقَّعا من الطرفَين/)
+    expect(m.subject, 'عنوانٌ يَعِده بعقدٍ موقَّع').not.toMatch(/عقدُك موقَّعا/)
+    const ctas = m.doc.blocks.filter((b) => b.kind === 'cta').map((b) => (b as { label: string }).label)
+    expect(ctas, 'زرٌّ إلى عقدٍ موقَّعٍ لا وجودَ له').not.toContain('اقرأ عقدَك موقَّعا')
   })
 
   /* و«اعتُمدت موادُّك» بلا تسميةٍ تُقرأ اعتمادا لكلّ ما قدّم — ومنه ما أُعيد
@@ -519,15 +550,43 @@ describe('بريدُ انقضاء المهلة', () => {
     reference: 'WJ-TR-2026-00041',
     deadlineOnAr: '8 أكتوبر 2026',
     portalUrl: 'https://wajeezacademy.com/trainer',
+    noFaultClause: '2-11',
   }
   const flat = () => JSON.stringify(conditionLapsedMail(LAPSED).doc)
 
-  /* البندُ 2-10 يقول إنّ عدمَ تحقّق الشرط ليس إخلالا من أحد — فلا تُكتب
+  /* بندُ «لا إخلال» يقول إنّ عدمَ تحقّق الشرط ليس إخلالا من أحد — فلا تُكتب
      الرسالةُ بلغةِ مخالفةٍ ولا إنذار. */
   it('يقول إنّ لا إخلالَ من أحد — ويُحيل على البند', () => {
     const body = flat()
     expect(body).toMatch(/ولا يُعدُّ هذا إخلالا/)
-    expect(body, 'لم يُحِل على بند الشرط').toMatch(/2-10/)
+    expect(body, 'لم يُحِل على بند الشرط').toContain('البند 2-11 من عرضك')
+  })
+
+  /* ═══ ورقمُ البند هو بندُ «لا إخلال» في المتن الذي وقّعه (١ أكتوبر ٢٠٢٦) ═══
+     كانت الرسالةُ تقول «البند 2-10» حرفا، وحارسُها يقيس ورودَ «2-10» — فخضرّ
+     والبندُ 2-10 تمديدُ المهلة منذ زِيد بندُ الدورة الجديدة. فالمقيسُ هنا البنيةُ:
+     يُصيَّر المتنُ، ويُعرف فيه البندُ الذي يقول «فلا يعد ذلك إخلالا» بمحكٍّ مستقلّ،
+     ثمّ يُقابَل بما يقرؤه العاملُ وما تقوله الرسالة. */
+  it('⚠️ والرقمُ رقمُ البند الذي يقول «لا إخلال» في المتن — لا حرفٌ مكتوب', () => {
+    const body = renderContractBodyAr({
+      academyPartyLineAr: 'أكاديمية وجيز للتدريب', academyLegalNameAr: 'أكاديمية وجيز للتدريب',
+      academyTradingNameAr: 'أكاديمية وجيز', governingLawAr: 'القانون الأردني', disputeVenueAr: 'محاكم عمّان',
+      trainerFullName: 'سعادُ المدرّبة', trainerEmail: 't@example.com',
+      applicationReference: 'WJ-TR-2026-00042', issuedOnAr: '1 أكتوبر 2026',
+      courses: [{ courseId: 'C-ACC-101', titleAr: 'أساسيات المحاسبة' }],
+      compensation: { type: 'per_seat', rate: '15', referralRate: '25', minSeats: 5, currency: 'USD' },
+      rateWaivedReasonAr: null, hoursNoteAr: null, requiredDocuments: DEFAULT_REQUIRED_DOCUMENTS,
+      conditional: { orientationOnAr: null, deadlineOnAr: null, windowDays: MATERIALS_WINDOW_DAYS, extensionDays: EXTENSION_DAYS },
+    })
+    const truth = /^(2-\d+) [^\n]*فلا يعد ذلك إخلالا/m.exec(body)?.[1]
+    expect(truth, 'لا بندَ «لا إخلال» في المتن — الحارسُ يقيس الفراغ').toBeTruthy()
+    expect(noFaultClauseOf(body), 'يقرأ العاملُ رقما غيرَ رقم البند').toBe(truth)
+    const mail = JSON.stringify(conditionLapsedMail({ ...LAPSED, noFaultClause: noFaultClauseOf(body) }).doc)
+    expect(mail, `أحالت الرسالةُ على غير البند ${truth}`).toContain(`البند ${truth} من عرضك`)
+    /* ومتنٌ لا يُعرف فيه البندُ يُحال فيه على العرض بلا رقمٍ — لا رقمٌ مخمَّن */
+    const none = JSON.stringify(conditionLapsedMail({ ...LAPSED, noFaultClause: null }).doc)
+    expect(none).toContain('وهو منصوصٌ في عرضك')
+    expect(none).not.toMatch(/البند 2-\d+ من عرضك/)
   })
 
   it('ويعرض المخرجَين معا — التأجيلَ والحذف', () => {

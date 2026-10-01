@@ -65,7 +65,8 @@ describe('«أعِدْه للتوقيع» — زرُّه ونافذتُه', () =
     /* ويُقاس من الإصدار الذي قرأه صاحبُه: موقَّعٌ قرأ ما في صفّه، وطالبُ
        التعديل ما قبل تحديثٍ وقع بعد طلبه (`versionReadByRequester`) */
     expect(dlg).toMatch(/const readVersion = amend \? versionReadByRequester\(r\.row\) : r\.row\.bodyVersion/)
-    expect(dlg).toMatch(/changeGroupsBetween\(readVersion,\s*CONTRACT_BODY_VERSION\)/)
+    /* ولمن يقرأ: نقاطُ العرض المشروط لا تُعايَن لعقدٍ غيرِ مشروط (`conditionalOnly`، v24) */
+    expect(dlg).toMatch(/changeGroupsBetween\(readVersion,\s*CONTRACT_BODY_VERSION,\s*\{ conditional: r\.row\.gatesActivation \}\)/)
     /* وما تغيّر في شروطه هو بالدالّة التي يحسب بها الخادم (١ أكتوبر ٢٠٢٦) —
        فما يُعايَن هو ما يُرسَل، لا نسختان تفترقان */
     /* والقائمةُ المعروضةُ نفسُها لا أيُّ نداءٍ للدالّة: نداءٌ آخرُ في النافذة
@@ -73,7 +74,7 @@ describe('«أعِدْه للتوقيع» — زرُّه ونافذتُه', () =
     expect(dlg, 'شروطُه تُحسب في الشاشة بغير دالّة الخادم').toMatch(/const personal = personalChangesAr\(/)
     /* وما يُعرَض ببابه بالدالّة التي تبني بها الرسالةُ نفسُها (١ أكتوبر ٢٠٢٦): لمن وقّع
        بطاقاتٌ كاملة، ولطالب التعديل سطرٌ وملخّصٌ عن القالب (`reissueChangesView`) */
-    expect(dlg, 'القائمةُ المعروضةُ تُجمَع بغير دالّة الرسالة — أو بغير بابها').toMatch(/const view = reissueChangesView\(r\.mode, personal, changeGroupsBetween\(readVersion,\s*CONTRACT_BODY_VERSION\)\)/)
+    expect(dlg, 'القائمةُ المعروضةُ تُجمَع بغير دالّة الرسالة — أو بغير بابها').toMatch(/const view = reissueChangesView\(r\.mode, personal, changeGroupsBetween\(readVersion,\s*CONTRACT_BODY_VERSION,\s*\{ conditional: r\.row\.gatesActivation \}\)\)/)
     expect(dlg, 'سطرُ القالب لطالب التعديل لا يُعايَن').toMatch(/\{view\.templateNoteAr && /)
     const at = dlg.indexOf('"resign-request"}`')
     const call = dlg.slice(at, dlg.indexOf('setResign(null)', at))

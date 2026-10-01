@@ -58,6 +58,8 @@ interface OpenView {
   acks: Ack[]
   consentTextAr: string
   consentVersion: string
+  /** عرضٌ مشروط؟ — فاعتمادُ توقيعه يفتح البوّابةَ ولا يُنفذه، ونوقّعه حين تُعتمَد دوراتُه */
+  conditional: boolean
 }
 
 /* وما لا يُوقَّع منه حالٌ واحدةٌ من قائمةٍ مسمّاة، شكلُها في
@@ -571,7 +573,8 @@ export default function ContractSign() {
 function closedBase(v: OpenView): Omit<ContractClosedView, 'state'> {
   return {
     number: v.number, title: v.title, newerLinkAt: null, detailed: true,
-    signedAt: null, signerLegalName: null, countersignedAt: null, supersededAt: null,
+    signedAt: null, signerLegalName: null, conditional: v.conditional, signatureApprovedAt: null,
+    countersignedAt: null, supersededAt: null,
     terminatedAt: null, declinedAt: null, revokedAt: null, revokedForResign: false,
     requestedAt: null, requestAr: null, expiredAt: null, afterFinalReminder: false,
     successor: null, bodyAr: null, bodyHash: null,
@@ -596,6 +599,8 @@ const CLOSED_HEAD: Record<ContractClosedState, string> = {
   expired: 'انقضى أجلُ هذا العرض',
   replaced: 'أرسلنا إليك رابطا أحدثَ من هذا',
   signed: 'وُقّع هذا العقد',
+  /* عرضٌ مشروطٌ اعتمدنا توقيعَه ولم نوقّعه (١ أكتوبر ٢٠٢٦) — فلا يُقال «نافذ» */
+  signature_approved: 'اعتمدنا توقيعَك على هذا العرض',
   countersigned: 'هذا عقدُك النافذ',
   superseded: 'حلّ محلَّ هذا العقد عقدٌ أحدث',
   terminated: 'انتهى هذا العقد',
@@ -608,6 +613,8 @@ const CLOSED_HEAD: Record<ContractClosedState, string> = {
 function closedHeadAr(v: ContractClosedView): string {
   if (v.state === 'revoked' && v.revokedForResign) return 'أُعيد إليك هذا العقدُ على نصٍّ محدَّث'
   if (v.state === 'revoked' && v.signedAt) return 'لم يُعتمَد توقيعُك على هذا العقد'
+  /* وما انتهى قبل أن نوقّعه عرضٌ انتهى لا عقدٌ — لم ينفذ يوما */
+  if (v.state === 'terminated' && !v.countersignedAt) return 'انتهى هذا العرض'
   return CLOSED_HEAD[v.state]
 }
 
@@ -644,11 +651,22 @@ function closedLinesAr(v: ContractClosedView): string[] {
     case 'signed':
       return [
         `وقّعتَه${v.signerLegalName ? ` باسم ${v.signerLegalName}` : ''} في ${on(v.signedAt)}، وتوقيعُك محفوظٌ عندنا.`,
-        'نراجعه ونطابق اسمَك بوثيقة هويّتك ثمّ نعتمده، فيصير نافذا وتُفتح لك بوّابتُك.',
+        /* والعرضُ المشروطُ لا ينفذ باعتماد توقيعه (١ أكتوبر ٢٠٢٦): نفتح بوّابتَه
+           ونوقّعه حين نعتمد دوراتِه — فلا يُوعَد بنفاذٍ عند الاعتماد */
+        v.conditional
+          ? 'نراجعه ونطابق اسمَك بوثيقة هويّتك ثمّ نعتمده، فتُفتح لك بوّابتُك لتضع موادَّك — ونوقّعه من جهتنا حين نعتمد دوراتك.'
+          : 'نراجعه ونطابق اسمَك بوثيقة هويّتك ثمّ نعتمده، فيصير نافذا بين الطرفين.',
+      ]
+    case 'signature_approved':
+      return [
+        `وقّعتَه في ${on(v.signedAt)}، واعتمدنا توقيعَك في ${on(v.signatureApprovedAt)} — وبوّابتُك مفتوحةٌ لتضع موادَّك.`,
+        'ونوقّعه من جهتنا حين نعتمد دوراتك، فيصير عقدا نهائيّا غيرَ مشروط. وتجده في «عقدي» في بوّابتك.',
       ]
     case 'countersigned':
       return [
-        `وقّعتَه في ${on(v.signedAt)}، واعتمدته الأكاديميّةُ في ${on(v.countersignedAt)} — فهو نافذٌ بين الطرفين.`,
+        /* `countersignedAt` يومُ توقيعنا لا يومُ اعتمادٍ (١ أكتوبر ٢٠٢٦): كان «واعتمدته
+           الأكاديميّةُ في…»، والاعتمادُ صار اسما لغير التوقيع */
+        `وقّعتَه في ${on(v.signedAt)}، ووقّعته الأكاديميّةُ من جهتها في ${on(v.countersignedAt)} — فهو نافذٌ بين الطرفين.`,
         'وتجده كذلك في «عقدي» في بوّابتك.',
       ]
     case 'superseded':
@@ -656,6 +674,10 @@ function closedLinesAr(v: ContractClosedView): string[] {
         `كان نافذا منذ ${on(v.countersignedAt)}، ثمّ حلّ محلَّه ${next ?? 'عقدٌ أحدث'} — في ${on(v.supersededAt)}. وهو المعتمَدُ اليوم، وتجده في «عقدي».`,
       ]
     case 'terminated':
+      /* وما لم نوقّعه لم ينفذ يوما — فلا يُقال «كان نافذا منذ —» */
+      if (!v.countersignedAt) {
+        return [`وقّعتَه في ${on(v.signedAt)}، وانتهى في ${on(v.terminatedAt)} قبل أن نوقّعه من جهتنا — فلم يصر عقدا نافذا، ولا يُلزم أحدا.`]
+      }
       return [
         `كان نافذا منذ ${on(v.countersignedAt)}، وانتهى في ${on(v.terminatedAt)}. فلا يُلزم بعده، وما وقع قبله باقٍ على حاله.`,
       ]
@@ -687,14 +709,14 @@ function closedLinesAr(v: ContractClosedView): string[] {
 }
 
 function ClosedDoor({ view, doc }: { view: ContractClosedView; doc: ContractDoc | null }) {
-  const tone = view.state === 'signed' || view.state === 'countersigned'
+  const tone = view.state === 'signed' || view.state === 'signature_approved' || view.state === 'countersigned'
     ? 'positive'
     : view.state === 'superseded' || view.state === 'terminated' ? 'default' : 'warn'
   /* والبابُ الذي يجيبه: رابطٌ جديدٌ لعرضٍ قائم — إلّا ما سقط بعد التذكير
      الأخير، فذاك لا يُطلب رابطُه (`requestContractLink`) — وعقدُه في بوّابته
      لما نفذ أو حلّ محلَّه غيرُه */
   const askLink = view.state === 'replaced' || (view.state === 'expired' && !view.afterFinalReminder)
-  const portal = view.state === 'countersigned' || view.state === 'superseded'
+  const portal = view.state === 'signature_approved' || view.state === 'countersigned' || view.state === 'superseded'
   const copy = SIGNED_COPY_STATES.includes(view.state) && doc
   return (
     <>
