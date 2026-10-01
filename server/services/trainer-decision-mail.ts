@@ -29,6 +29,7 @@
 
 import type { MailBlock, MailDoc } from './mail-template'
 import { RESIGN_CHANGES_HEADING_AR, resignParagraphs } from '../../src/application/trainer/contract-resign'
+import type { ChangeGroup } from '../../src/application/trainer/contract-changelog'
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
@@ -884,8 +885,8 @@ export interface ContractUpdatedMailInput {
   fullName: string
   reference: string
   title: string
-  /** ما تغيّر — نقاطا. و`[]` لا تُرسَل رسالةٌ أصلا، فالمنادي يمنعها */
-  pointsAr: readonly string[]
+  /** ما تغيّر — مجموعا تحت بنوده. و`[]` لا تُرسَل رسالةٌ أصلا، فالمنادي يمنعها */
+  changeGroups: readonly ChangeGroup[]
   /** `true` لعرضٍ طلب صاحبُه فيه تعديلا وينتظر جوابَنا */
   awaitingReply: boolean
   /** رابطُ عرضه — هو رابطُه القديمُ نفسُه، لم يتبدّل */
@@ -909,7 +910,7 @@ export function contractUpdatedMail(input: ContractUpdatedMailInput): DecisionMa
         /* «أهمُّ ما تغيّر» لا «ما تغيّر»: النقاطُ شرحٌ مختصَرٌ بأمرِ صاحب
            المنصّة، والملزمُ نصُّ العقد نفسُه — وقد قيل ذلك في الفقرة قبلها. */
         { kind: 'h', text: 'وهذا أهمُّ ما تغيّر' },
-        { kind: 'list', items: [...input.pointsAr] },
+        { kind: 'changes', groups: input.changeGroups },
         ...(input.awaitingReply
           ? ([{
               kind: 'note' as const,
@@ -942,24 +943,40 @@ export interface ContractResignMailInput {
   subjectAr: string
   /** نصُّها كما كتبه — فقراتٌ يفصلها سطرٌ فارغ */
   bodyAr: string
-  /** `changesBetween(القديم، الحاضر)` — لا يمرّ بيد الموظّف */
-  changesAr: readonly string[]
+  /** `resignChangeGroups(شروطُه، changeGroupsBetween(القديم، الحاضر))` — لا يمرّ بيد الموظّف */
+  changeGroups: readonly ChangeGroup[]
+  /** رابطُ توقيع النسخة المحدَّثة */
+  signingUrl: string
+  /** آخرُ يومٍ يعمل فيه الرابط — مكتوبا */
+  expiresOnAr: string
 }
 
-/** «حُدّث النصُّ — أعِدْه للتوقيع»: نصُّ الموظّف كما كتبه، ثمّ قائمةُ ما تغيّر.
+/** «حُدّث النصُّ — أعِدْه للتوقيع»: نصُّ الموظّف، ثمّ ما تغيّر بطاقاتٍ تحت
+ *  بنودها، ثمّ زرُّ التوقيع — رسالةٌ واحدة.
  *
  *  ═══ ولمَ تُلحَق القائمةُ هنا ولا تُكتب في الخانة ═══
  *
  *  لصاحب المنصّة أن يكتب ما يشاء لكلّ مدرّب — والقائمةُ يجب أن تبقى كاملة:
  *  في إحدى نقاطها نقصٌ في حدّه الأدنى المضمون (`v19`)، وقائمةٌ يستطيع المرسِلُ
  *  أن يقصّها قائمةٌ يمكن أن تسقط منها تلك النقطة. فلا تمرّ بيده: تُقرأ من
- *  الجدول هنا وتُلحَق بعد نصّه دائما، ولا تُحذَف إلّا وهي فارغة. */
+ *  الجدول هنا وتُلحَق بعد نصّه دائما، ولا تُحذَف إلّا وهي فارغة.
+ *
+ *  ═══ والرابطُ فيها لا في رسالةٍ تالية (١ أكتوبر ٢٠٢٦) ═══
+ *
+ *  كانت رسالتان: هذه، ثمّ بريدُ العقد العامُّ برابطه. وسؤالُ صاحب المنصّة:
+ *  «ألا يمكن أن يكون في نفس الإيميل رابطُ العقد الجديد ليوقّعه؟». فمن قرأ ما
+ *  تغيّر يجد البابَ تحته، ولا يُطلَب منه أن ينتظر رسالةً ثانيةً أو يبحث عنها. */
 export function contractResignMail(input: ContractResignMailInput): DecisionMail {
   const blocks: MailBlock[] = resignParagraphs(input.bodyAr).map((text) => ({ kind: 'p' as const, text }))
-  if (input.changesAr.length > 0) {
+  if (input.changeGroups.length > 0) {
     blocks.push({ kind: 'h', text: RESIGN_CHANGES_HEADING_AR })
-    blocks.push({ kind: 'list', items: [...input.changesAr] })
+    blocks.push({ kind: 'changes', groups: input.changeGroups })
+    blocks.push({ kind: 'note', text: 'هذا ملخّصٌ بأبرز ما تغيّر — والنصُّ الكاملُ في العقد نفسِه، وهو الملزِم.' })
   }
+  blocks.push(
+    { kind: 'cta', label: 'اقرأ عقدك المحدَّث ووقّعه', href: input.signingUrl },
+    { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${input.expiresOnAr}. ولك أن تعتذر عنه بلا حرج.` },
+  )
   return {
     subject: input.subjectAr.trim(),
     doc: { greetingName: input.greetingName, heading: input.subjectAr.trim(), blocks },

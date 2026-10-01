@@ -220,11 +220,20 @@ describe('الرسالةُ: نصُّ صاحب المنصّة بحرفه، وال
     for (const p of points) expect(mail!.text, `سقطت نقطةٌ من القائمة: ${p}`).toContain(p)
   })
 
-  it('والرسالةُ تسبق رابطَ النسخة الجديدة — كما يعد نصُّها', async () => {
+  /* ═══ رسالةٌ واحدةٌ فيها الرابط (١ أكتوبر ٢٠٢٦) ═══
+     سؤالُ صاحب المنصّة: «ألا يمكن أن يكون في نفس الإيميل رابطُ العقد الجديد؟».
+     وكانت رسالتان: هذه ثمّ بريدُ العقد العامّ. فالرابطُ الذي يعود للموظّف هو
+     الذي في الرسالة — ولا بريدَ ثانٍ يخرج. */
+  it('⚠️ والرابطُ في الرسالة نفسِها — ولا بريدَ ثانٍ', async () => {
     const { c } = await signedOnOldVersion()
-    await ask(c.id)
-    const at = outbox.findIndex((m) => m.subject === SUBJECT)
-    expect(at, 'لم تخرج الرسالة').toBeGreaterThanOrEqual(0)
-    expect(outbox.length, 'لم يخرج بريدُ الرابط بعدها').toBeGreaterThan(at + 1)
+    const out = await ask(c.id)
+    const mails = outbox.filter((m) => m.subject === SUBJECT)
+    expect(mails.length, 'لم تخرج الرسالة').toBe(1)
+    expect(mails[0].text, 'رسالةُ الإعادة بلا رابط التوقيع').toContain(out.signingUrl)
+    expect(outbox.length, `خرج بريدٌ ثانٍ: ${outbox.map((m) => m.subject).join(' | ')}`).toBe(1)
+    /* والرابطُ يعمل: يفتح البديلَ لا المسحوب */
+    const token = decodeURIComponent(out.signingUrl.split('/c/')[1])
+    const row = await prisma.trainerContract.findUnique({ where: { id: out.contractId } })
+    expect(row!.tokenHash, 'الرابطُ في الرسالة ليس رابطَ البديل').toBe(sha256(token))
   })
 })

@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import { CONTRACT_BODY_VERSION } from '@/application/trainer/contract-body'
 import {
-  CONTRACT_CHANGELOG, changesForVersion, changesBetween,
+  CONTRACT_CHANGELOG, CHANGE_TOPICS, changesForVersion, changesBetween, changeGroupsBetween,
 } from '@/application/trainer/contract-changelog'
 
 describe('لكلّ إصدارٍ نقاطُه', () => {
@@ -25,8 +25,8 @@ describe('لكلّ إصدارٍ نقاطُه', () => {
 
   it('والنقاطُ جملٌ تُقرأ لا أرقامَ بنودٍ عارية', () => {
     for (const v of CONTRACT_CHANGELOG) {
-      expect(v.pointsAr.length, `«${v.version}» بلا نقاط`).toBeGreaterThan(0)
-      for (const p of v.pointsAr) {
+      expect(v.points.length, `«${v.version}» بلا نقاط`).toBeGreaterThan(0)
+      for (const p of v.points.map((x) => x.textAr)) {
         expect(p.trim().length, `نقطةٌ أقصرُ من جملةٍ في «${v.version}»: «${p}»`).toBeGreaterThan(25)
         /* ═══ وحدٌّ أعلى كذلك (٣٠ سبتمبر ٢٠٢٦) ═══
 
@@ -34,8 +34,9 @@ describe('لكلّ إصدارٍ نقاطُه', () => {
            تغير وليس نقل النصوص». وكانت نقاطُ v18 نقلا لنصّ البنود حرفا،
            فبلغت الرسالةُ سبعةَ عشرَ بندا لمن عرضُه قديم — ومن رأى ذلك لم
            يقرأ. فالنقطةُ شرحٌ يُقرأ في سطرٍ أو سطرَين لا بندٌ مُقتطَع. */
+        /* وشُدّ الحدُّ إلى ١٢٠ (١ أكتوبر ٢٠٢٦): «النصوص طويلة وكثيرة… اختصرها» */
         expect(p.trim().length, `نقطةٌ أطولُ من شرحٍ يُقرأ في «${v.version}»: «${p}»`)
-          .toBeLessThanOrEqual(160)
+          .toBeLessThanOrEqual(120)
         /* «تغيّر البند 4-1» وأمثالُها: رقمٌ بلا معنًى لمن يقرأ */
         expect(p, `نقطةٌ تقول رقمَ بندٍ ولا تقول ما صار: «${p}»`)
           .not.toMatch(/^(تغيّر|أُضيف|حُذف)\s+البند/)
@@ -77,8 +78,8 @@ describe('وما بين إصدارَين يُجمَع، لا الأخيرُ وح
     if (table.length < 2) return
     const [newest, before] = table
     const only = changesBetween(before.version, newest.version)
-    expect(only, 'لم تُقرأ نقاطُ الإصدار الأحدث').toEqual([...newest.pointsAr])
-    for (const p of before.pointsAr) {
+    expect([...only].sort(), 'لم تُقرأ نقاطُ الإصدار الأحدث').toEqual(newest.points.map((x) => x.textAr).sort())
+    for (const p of before.points.map((x) => x.textAr)) {
       expect(only, 'أُعيد على صاحبه ما قرأه في إصدارٍ سابق').not.toContain(p)
     }
   })
@@ -99,5 +100,52 @@ describe('وما بين إصدارَين يُجمَع، لا الأخيرُ وح
     }
     expect(between(null, 'ب'), 'لم تُجمَع نقاطُ الإصدارَين').toEqual(['نقطةُ أ', 'نقطةُ ب'])
     expect(between('أ', 'ب'), 'من كان على «أ» قُرئ له ما قرأه قبلُ').toEqual(['نقطةُ ب'])
+  })
+})
+
+/* ═══ وتُجمَع تحت بنودها، قصيرةً، بلا نقيض (١ أكتوبر ٢٠٢٦) ═══
+
+   قولُ صاحب المنصّة عن رسالة إعادة التوقيع: «النصوص طويلة وكثيرة… أن نشير له
+   بأنّا عدّلنا كذا وكذا باختصار… في بند الأتعاب تغيّر كذا». وكانت ثمانيا
+   وعشرين نقطةً لمن وقّع v17، ونقطةُ رسوم الحوالة في v20 ينقضها v22. */
+describe('أبوابُ التغيير', () => {
+  const OLDEST = [...CONTRACT_CHANGELOG].reverse()[0].version
+  const all = changeGroupsBetween(null, CONTRACT_BODY_VERSION)
+
+  it('⚠️ تُجمَع تحت بنودها بترتيب البنود — وكلُّ نقطةٍ مرّةً واحدة', () => {
+    const titles = all.map((g) => g.titleAr)
+    const order = CHANGE_TOPICS.map((t) => t.titleAr).filter((t) => titles.includes(t))
+    expect(titles, 'الأبوابُ بغير ترتيب البنود').toEqual(order)
+    const flat = all.flatMap((g) => g.itemsAr)
+    const every = CONTRACT_CHANGELOG.flatMap((v) => v.points.map((p) => p.textAr))
+    expect([...flat].sort(), 'سقطت نقطةٌ أو تكرّرت حين جُمعت').toEqual([...every].sort())
+  })
+
+  it('⚠️ ومن وقّع أقدمَ إصدارٍ يقرأ قائمةً تُقرأ — لا ثمانيا وعشرين', () => {
+    const n = changesBetween(OLDEST, CONTRACT_BODY_VERSION).length
+    expect(n, `بلغت النقاطُ ${n} لمن وقّع «${OLDEST}»`).toBeLessThanOrEqual(16)
+  })
+
+  it('⚠️ ولا تبقى في v20 رسومُ الحوالة التي نسخها v22', () => {
+    const v20 = changesForVersion('v20-2026-10-01').join(' ')
+    expect(v20, 'عادت «الرسومُ تُقتطع» في v20 — تنقضها نقطةُ v22 بعدها').not.toMatch(/رسوم/)
+    expect(changesForVersion('v22-2026-10-01').join(' ')).toContain('رسومُ مصرفنا على الحوالة صارت علينا')
+  })
+
+  /* وما قيل صريحا بأمرٍ لا يُختصَر حتّى يختفي */
+  it('والنقصُ في v19 والاستردادُ من مستحقّاته في v18 باقيان صريحَين', () => {
+    expect(changesForVersion('v19-2026-10-01').join(' ')).toContain('وهذا نقصٌ نقوله لك صريحا')
+    const v18 = changesForVersion('v18-2026-09-30').join(' ')
+    expect(v18).toContain('٣٠٠ دولار من مستحقّاتك')
+  })
+
+  it('ولا تبدأ نقطةٌ بواو العطف إلّا ما يُكمل نقطةً قبله في إصداره وبابه', () => {
+    for (const v of CONTRACT_CHANGELOG) {
+      v.points.forEach((p, i) => {
+        if (!p.textAr.startsWith('و')) return
+        const prev = v.points[i - 1]
+        expect(prev?.topic, `«${p.textAr}» تعطف على ما ليس قبلها تحت بابها`).toBe(p.topic)
+      })
+    }
   })
 })

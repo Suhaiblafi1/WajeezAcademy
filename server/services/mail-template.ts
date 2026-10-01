@@ -127,6 +127,15 @@ export type MailBlock =
    *  رابطُ التفضيلات ظهر `https://…/student/notifications` مكتوبا، فعلى
    *  قارئه أن يحدّده وينسخه ويلصقه. وما لا يُضغط في بريدٍ لا يُزار. */
   | { kind: 'note'; text: MailRich; link?: { label: string; href: string } }
+  /** ما تغيّر في وثيقةٍ — بطاقةٌ لكلّ باب، عنوانُها اسمُ البند ونقاطُها تحته.
+   *
+   *  ═══ ولمَ لا `h` ثمّ `list` لكلّ باب ═══
+   *
+   *  طلبُ صاحب المنصّة (١ أكتوبر ٢٠٢٦) في رسالة إعادة التوقيع: «اجعلها
+   *  مصمَّمةً… أكثرَ لطافة، لأنّا سنُتعبه بأن يعيد التوقيع». وسبعةُ عناوينَ
+   *  تتلوها سبعُ قوائمَ تُقرأ جدارَ نصّ؛ والبطاقةُ تفصل البابَ عن الباب
+   *  بأرضيّةٍ ناعمةٍ فيُمسَح بالعين، ومن يعنيه بابُ الأتعاب يجده وحده. */
+  | { kind: 'changes'; groups: readonly { titleAr: string; itemsAr: readonly string[] }[] }
 
 export interface MailDoc {
   /** «مرحبا فلان،» — يُبنى وحدَه فلا يُكتب في كلّ قالب */
@@ -176,6 +185,9 @@ function textOf(doc: MailDoc): string {
         break
       case 'callout': out.push(`! ${richText(b.text)}`, ''); break
       case 'note': out.push(b.link ? `${richText(b.text)} ${b.link.href}` : richText(b.text), ''); break
+      case 'changes':
+        for (const g of b.groups) out.push(`【${g.titleAr}】`, ...g.itemsAr.map((i) => `· ${i}`), '')
+        break
     }
   }
   out.push('— أكاديمية وجيز')
@@ -316,6 +328,25 @@ function htmlOf(doc: MailDoc): string {
           + (b.link ? ` ${anchor(b.link.href, b.link.label)}` : '')
           + `</p>`,
         )
+        break
+      case 'changes':
+        /* بطاقةٌ لكلّ باب: أرضيّةُ الورق وحافّةٌ ملوّنةٌ في جهة البدء (اليمين
+           في RTL)، والعنوانُ صغيرٌ بلون العلامة — والنقاطُ بخطّ المتن. */
+        for (const g of b.groups) {
+          parts.push(
+            `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 12px;">`
+            + `<tr><td bgcolor="${BRAND.paper}" style="padding:14px 18px 8px;border-radius:12px;`
+            + `border:1px solid ${BRAND.hairline};border-right:4px solid ${BRAND.teal};">`
+            + `<p style="margin:0 0 6px;font-size:13px;font-weight:700;color:${BRAND.teal};">${esc(g.titleAr)}</p>`
+            + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">`
+            + g.itemsAr.map((i) =>
+              `<tr>`
+              + `<td width="14" valign="top" style="padding:2px 0 6px 8px;font-size:14px;line-height:1.85;color:${BRAND.teal};">•</td>`
+              + `<td style="padding:2px 0 6px;font-size:14px;line-height:1.85;color:${BRAND.ink};">${esc(i)}</td>`
+              + `</tr>`).join('')
+            + `</table></td></tr></table>`,
+          )
+        }
         break
     }
   }

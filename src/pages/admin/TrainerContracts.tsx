@@ -26,10 +26,10 @@ import Modal from "@/components/Modal";
 import {
   CONTRACT_BODY_VERSION, SPECIAL_TERMS_MAX_CHARS, specialTermsItemsAr, type ContractCompensation,
 } from "@/application/trainer/contract-body";
-import { changesBetween } from "@/application/trainer/contract-changelog";
+import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
-  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr,
+  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, resignChangeGroups,
 } from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -1869,7 +1869,7 @@ c.gatesActivation
             specialTermsAr: termsChanged ? norm(r.specialTermsAr) || null : r.row.specialTermsAr,
           },
         );
-        const changes = [...personal, ...changesBetween(r.row.bodyVersion, CONTRACT_BODY_VERSION)];
+        const changes = resignChangeGroups(personal, changeGroupsBetween(r.row.bodyVersion, CONTRACT_BODY_VERSION));
         const ready = !busy
           && subject.length >= RESIGN_SUBJECT_MIN && subject.length <= RESIGN_SUBJECT_MAX
           && body.length >= RESIGN_BODY_MIN && body.length <= RESIGN_BODY_MAX
@@ -1881,7 +1881,7 @@ c.gatesActivation
               <h2 className="text-sm font-black">إعادةُ «{resign.row.title}» للتوقيع على النصّ المحدَّث</h2>
               <p className="mt-2 text-read leading-7 opacity-80">
                 يُغلَق العقدُ الموقَّع ودليلُ توقيعه باقٍ، ويُعرَض عليه النصُّ الحاضر
-                برابطٍ جديد. وتصله رسالتُك أوّلا، ثمّ الرابط.
+                برابطٍ جديد — في رسالةٍ واحدة: نصُّك، ثمّ ما تغيّر، ثمّ زرُّ التوقيع.
               </p>
               <label className="mt-4 block">
                 <span className={LABEL}>عنوانُ الرسالة</span>
@@ -1956,9 +1956,16 @@ c.gatesActivation
                 <Panel tone="accent" className="mt-3 p-3 text-read leading-7">
                   <b className="block">{RESIGN_CHANGES_HEADING_AR}</b>
                   <span className="block opacity-70">يُلحَق بعد نصّك دائما — ولا يُحرَّر.</span>
-                  <ul className="mt-1 list-disc ps-5">
-                    {changes.map((pt) => <li key={pt}>{pt}</li>)}
-                  </ul>
+                  <div className="mt-2 grid gap-2">
+                    {changes.map((g) => (
+                      <Inset key={g.titleAr} className="border-s-4 border-teal p-2.5">
+                        <b className="block text-xs text-teal-ink">{g.titleAr}</b>
+                        <ul className="mt-1 list-disc ps-5">
+                          {g.itemsAr.map((pt) => <li key={pt}>{pt}</li>)}
+                        </ul>
+                      </Inset>
+                    ))}
+                  </div>
                 </Panel>
               ) : (
                 <p className="mt-3 text-read opacity-70">
@@ -1983,7 +1990,7 @@ c.gatesActivation
                     });
                     setResign(null);
                     await load();
-                  }, "أُعيد العقدُ للتوقيع — وصلته رسالتُك ثمّ رابطُ النسخة المحدَّثة", r.row.id)}>
+                  }, "أُعيد العقدُ للتوقيع — وصلته رسالتُك وفيها رابطُ النسخة المحدَّثة", r.row.id)}>
                   أعِدْه للتوقيع وأبلغْه
                 </Button>
                 <Button tone="secondary" onClick={() => setResign(null)}>تراجَع</Button>

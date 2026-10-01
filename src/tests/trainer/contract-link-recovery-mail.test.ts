@@ -21,7 +21,7 @@ const MAIL = (over: Partial<Parameters<typeof contractUpdatedMail>[0]> = {}) =>
     fullName: 'سارة عبد الله',
     reference: 'WJ-TR-2026-00007',
     title: 'اتفاقيّةُ تدريب',
-    pointsAr: ['صار لك حقُّ الاعتراض على كشف مستحقّاتك.'],
+    changeGroups: [{ titleAr: 'الكشف والصرف — البند 4', itemsAr: ['صار لك حقُّ الاعتراض على كشف مستحقّاتك.'] }],
     awaitingReply: false,
     contractUrl: 'https://wajeezacademy.com/contract-link',
     ...over,
@@ -35,6 +35,9 @@ function flat(mail: ReturnType<typeof contractUpdatedMail>): string {
     if (typeof b.label === 'string') parts.push(b.label)
     if (typeof b.href === 'string') parts.push(b.href)
     if (Array.isArray(b.items)) parts.push(...(b.items as string[]))
+    if (Array.isArray(b.groups)) {
+      for (const g of b.groups as { titleAr: string; itemsAr: string[] }[]) parts.push(g.titleAr, ...g.itemsAr)
+    }
   }
   return parts.join('\n')
 }
@@ -79,7 +82,7 @@ describe('الرسالةُ تعطي صاحبَها ما يفتح به عرضَه
   })
 
   it('ونقاطُ التغيير تُسرَد كما سُلّمت', () => {
-    const body = flat(MAIL({ pointsAr: ['نقطةٌ أولى.', 'نقطةٌ ثانية.'] }))
+    const body = flat(MAIL({ changeGroups: [{ titleAr: 'بابٌ', itemsAr: ['نقطةٌ أولى.', 'نقطةٌ ثانية.'] }] }))
     expect(body).toContain('نقطةٌ أولى.')
     expect(body).toContain('نقطةٌ ثانية.')
   })
