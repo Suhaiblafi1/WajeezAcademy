@@ -13,7 +13,9 @@
  */
 
 import type { ChangeGroup } from './contract-changelog'
-import { feeBasisAr, type ContractCompensation } from './contract-body'
+import { guaranteedFloorUsd, type ContractCompensation } from './contract-body'
+import { RULE_TYPE_AR } from './compensation-labels'
+import { withCurrencyAr } from '../commerce/presentment'
 
 export const RESIGN_SUBJECT_MIN = 3
 export const RESIGN_SUBJECT_MAX = 200
@@ -103,16 +105,69 @@ function sameFee(a: ContractCompensation | null, b: ContractCompensation | null)
     && Number(a.referralRate ?? 0) === Number(b.referralRate ?? 0)
 }
 
-const NO_FEE_AR = 'بلا أجرٍ متّفقٍ عليه'
+/* ═══ والأجرُ بجملةٍ قصيرةٍ لا بنصّين كاملين (١ أكتوبر ٢٠٢٦) ═══
+
+   كانت النقطةُ «تغيّر أساسُ أتعابك (الملحق ب) — كان: <البندُ كاملا> وصار: <البندُ
+   كاملا>» — نحوُ ثمانمئةِ حرفٍ يتكرّر فيها البندُ مرّتين. فقرأ صاحبُ المنصّة فيها
+   «$25» ثمّ «$28» وظنّ أنّ العقدَ يقول الرقمين، والعقدُ يقول الجديدَ وحدَه في كلّ
+   موضع — في الصفوف والنثر والمثال (يحرسه `contract-resign-terms` بقاعدةٍ حقيقيّة).
+   وقولُه: «لا داعي لأن نعطيه النصَّ الجديد، فقط نكتفي بأنّا رفعنا قيمةَ المقعد
+   الذي تحصل عليه من رابطك».
+
+   فلكلّ رقمٍ تغيّر جملةٌ قصيرة: أيُّ رقمٍ هو، ومن كم إلى كم. والأعلى أوّلا كما في
+   العقد (رابطُ الدعوة ثمّ العامُّ ثمّ الحدُّ الأدنى). والنزولُ يُقال كما يُقال
+   الصعود — «خفّضنا» صريحةً، وعلّتُها عند نقاط `v19`. وما تبدّل أساسُه كلُّه (نوعا أو
+   عملةً) لا يُقابَل فيه رقمٌ برقم: يُقال أساسُه الجديدُ باسمه، وأرقامُه في الملحق (ب). */
+const amountAr = (v: number) => String(Math.round(v * 100) / 100)
+
+export function feeChangesAr(
+  before: ContractCompensation | null, after: ContractCompensation | null,
+): string[] {
+  if (sameFee(before, after)) return []
+  if (!after) return ['لم يبقَ في عقدك أساسٌ متّفقٌ عليه لأتعابك — يُتّفق عليه كتابةً قبل أوّل إسناد.']
+  const basisAr = `«${RULE_TYPE_AR[after.type] ?? after.type}»`
+  if (!before) return [`اتّفقنا على أساس أتعابك ${basisAr} — وأرقامُه في الملحق (ب).`]
+  if (before.type !== after.type || before.currency !== after.currency) {
+    return [`صار أساسُ أتعابك ${basisAr} — وأرقامُه في الملحق (ب).`]
+  }
+
+  const money = (v: number) => withCurrencyAr(amountAr(v), after.currency)
+  const moved = (whatAr: string, a: number, b: number, show: (v: number) => string = money) =>
+    `${b > a ? 'رفعنا' : 'خفّضنا'} ${whatAr}: من ${show(a)} إلى ${show(b)}.`
+  const rateA = Number(before.rate)
+  const rateB = Number(after.rate)
+
+  if (after.type === 'revenue_share') {
+    return rateA === rateB ? [] : [moved('نسبتَك من إيراد الشعبة', rateA, rateB, (v) => `${amountAr(v)}%`)]
+  }
+  if (after.type !== 'per_seat') {
+    return rateA === rateB ? [] : [moved('أجرَك عن الشعبة الواحدة', rateA, rateB)]
+  }
+
+  const out: string[] = []
+  const refA = before.referralRate == null ? null : Number(before.referralRate)
+  const refB = after.referralRate == null ? null : Number(after.referralRate)
+  if (refA !== refB) {
+    if (refA === null) out.push(`صار للمقعد الذي يأتيك عبر رابط دعوتك أجرٌ خاصّ: ${money(refB!)}.`)
+    else if (refB === null) out.push('لم يعد للمقعد الذي يأتيك عبر رابط دعوتك أجرٌ خاصّ — يُحتسب كسائر المقاعد.')
+    else out.push(moved('أجرَ المقعد الذي يأتيك عبر رابط دعوتك', refA, refB))
+  }
+  if (rateA !== rateB) {
+    out.push(moved(refB === null ? 'أجرَ المقعد' : 'أجرَ المقعد العامّ (من جاء من تسويقنا)', rateA, rateB))
+  }
+  const floorA = guaranteedFloorUsd(before)
+  const floorB = guaranteedFloorUsd(after)
+  if (floorA !== floorB) {
+    if (floorA === null) out.push(`صار لك حدٌّ أدنى مضمونٌ عن الشعبة: ${money(floorB!)}.`)
+    else if (floorB === null) out.push('لم يعد لك حدٌّ أدنى مضمونٌ عن الشعبة.')
+    else out.push(moved('حدَّك الأدنى المضمونَ عن الشعبة', floorA, floorB))
+  }
+  return out
+}
 
 /** ما تغيّر في شروطه هو — جملةً لكلّ تغيير، و`[]` لما لم يتغيّر فيه شيء */
 export function personalChangesAr(before: ResignTerms, after: ResignTerms): string[] {
-  const out: string[] = []
-  if (!sameFee(before.compensation, after.compensation)) {
-    const was = before.compensation ? feeBasisAr(before.compensation) : NO_FEE_AR
-    const now = after.compensation ? feeBasisAr(after.compensation) : NO_FEE_AR
-    out.push(`تغيّر أساسُ أتعابك (الملحق ب) — كان: ${was} وصار: ${now}`)
-  }
+  const out: string[] = [...feeChangesAr(before.compensation, after.compensation)]
   const had = new Set(before.courses.map((c) => c.courseId))
   const has = new Set(after.courses.map((c) => c.courseId))
   const added = after.courses.filter((c) => !had.has(c.courseId)).map((c) => c.titleAr)
@@ -141,6 +196,55 @@ export function resignChangeGroups(
   return personalAr.length > 0
     ? [{ titleAr: PERSONAL_CHANGES_TITLE_AR, itemsAr: personalAr }, ...templateGroups]
     : templateGroups
+}
+
+/* ═══ ومن طلب تعديلا يُقال له تحديثُ القالب سطرا لا بطاقات (١ أكتوبر ٢٠٢٦) ═══
+
+   قولُ صاحب المنصّة: من أرسل ملاحظاتٍ نتعلّم من أسئلته — ما قبلناه منها وما
+   رددناه — فنوضّح العقدَ ونعدّله ليكون أدقَّ وأوضحَ لمن يأتي بعده، «فهم يساعدوننا
+   على تعديل العقد». فيُقال له ذلك «في سطرٍ واحد… لا نريد أن نقول كلَّ شيءٍ
+   عدّلناه… مجموعةٌ من التعديلات، وإعطاؤه ملخّصا عنها بطريقةٍ مختصرة». فالسطرُ يقول
+   إنّا عدّلنا ولمَ، والملخّصُ أبوابُ التعديل بأسمائها، والنصُّ الكاملُ في العقد.
+
+   وذلك لمن طلب تعديلا وحدَه: من وقّع ثمّ أُعيد إليه عقدُه (`resign`) يقرأ النقاطَ
+   كاملةً تحت أبوابها، كما أمر صاحبُ المنصّة لها (`contract-changelog.ts`). وشروطُه
+   هو (أجرُه ودوراتُه وبنودُه الخاصّة) تبقى بطاقةً في البابين: تلك له لا للقالب. */
+
+/** اسمُ الباب بلا بنوده — «الكشف والصرف — البند 4» يُقرأ في الملخّص «الكشف والصرف» */
+const topicNameAr = (titleAr: string) => titleAr.split(' — ')[0].trim()
+
+/** «أ، وب، وج» — والواوُ قبل كلّ ما بعد الأوّل: الأبوابُ نفسُها فيها واو
+    («الكشف والصرف»)، فلو سقطت من العطف لَالتبس أين ينتهي بابٌ ويبدأ غيرُه */
+function listAr(items: readonly string[]): string {
+  return items.map((x, i) => (i === 0 ? x : `، و${x}`)).join('')
+}
+
+/** السطرُ وملخّصُه — و`null` حين لا جديدَ في القالب */
+export function amendmentTemplateNoteAr(templateGroups: readonly ChangeGroup[]): string | null {
+  if (templateGroups.length === 0) return null
+  const areas = listAr(templateGroups.map((g) => topicNameAr(g.titleAr)))
+  return 'وقد أجرينا على العقد توضيحاتٍ وتعديلاتٍ ليكون أدقَّ وأوضح — وكثيرٌ منها من أسئلةٍ كأسئلتك،'
+    + ` يجد المدرّبون الجددُ جوابَها في النصّ نفسِه. وشملت: ${areas}.`
+}
+
+/** ما يُقال عمّا تغيّر في رسالة الباب — تقرؤه الرسالةُ والمعاينةُ بالدالّة نفسِها */
+export interface ReissueChangesView {
+  /** بطاقاتٌ تحت أبوابها: شروطُه هو أوّلا، ثمّ أبوابُ القالب في الإعادة للتوقيع وحدَها */
+  cards: readonly ChangeGroup[]
+  /** سطرُ القالب وملخّصُه لمن طلب تعديلا — بدل بطاقات القالب */
+  templateNoteAr: string | null
+}
+
+export function reissueChangesView(
+  mode: ReissueMode, personalAr: readonly string[], templateGroups: readonly ChangeGroup[],
+): ReissueChangesView {
+  if (mode === 'amendment') {
+    return {
+      cards: resignChangeGroups(personalAr, []),
+      templateNoteAr: amendmentTemplateNoteAr(templateGroups),
+    }
+  }
+  return { cards: resignChangeGroups(personalAr, templateGroups), templateNoteAr: null }
 }
 
 /* ═══════════ قبولُ طلب التعديل — عقدُه المصحَّحُ في الرسالة نفسِها ═══════════

@@ -29,7 +29,7 @@
 
 import type { MailBlock, MailDoc } from './mail-template'
 import {
-  RESIGN_CHANGES_HEADING_AR, noChangesLineAr, resignParagraphs, type ReissueMode,
+  RESIGN_CHANGES_HEADING_AR, amendmentTemplateNoteAr, noChangesLineAr, resignParagraphs, type ReissueMode,
 } from '../../src/application/trainer/contract-resign'
 import type { ChangeGroup } from '../../src/application/trainer/contract-changelog'
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
@@ -952,8 +952,12 @@ export interface ContractResignMailInput {
   subjectAr: string
   /** نصُّها كما كتبه — فقراتٌ يفصلها سطرٌ فارغ */
   bodyAr: string
-  /** `resignChangeGroups(شروطُه، changeGroupsBetween(القديم، الحاضر))` — لا يمرّ بيد الموظّف */
+  /** بطاقاتُ ما تغيّر — `reissueChangesView(…).cards`، ولا تمرّ بيد الموظّف */
   changeGroups: readonly ChangeGroup[]
+  /** سطرُ تحديث القالب وملخّصُه لمن طلب تعديلا (`reissueChangesView(…).templateNoteAr`)،
+   *  و`null` في الإعادة للتوقيع — فبطاقاتُ القالب هناك في `changeGroups`. ومطلوبٌ
+   *  لا اختياريّ: لو سقط تمريرُه لَسكتت رسالةُ طالب التعديل عن تحديث عقده. */
+  templateNoteAr: string | null
   /** رابطُ توقيع النسخة المحدَّثة */
   signingUrl: string
   /** آخرُ يومٍ يعمل فيه الرابط — مكتوبا */
@@ -983,9 +987,13 @@ export interface ContractResignMailInput {
  *  تغيّر يجد البابَ تحته، ولا يُطلَب منه أن ينتظر رسالةً ثانيةً أو يبحث عنها. */
 export function contractResignMail(input: ContractResignMailInput): DecisionMail {
   const blocks: MailBlock[] = resignParagraphs(input.bodyAr).map((text) => ({ kind: 'p' as const, text }))
-  if (input.changeGroups.length > 0) {
+  const changed = input.changeGroups.length > 0 || Boolean(input.templateNoteAr)
+  if (changed) {
     blocks.push({ kind: 'h', text: RESIGN_CHANGES_HEADING_AR })
-    blocks.push({ kind: 'changes', groups: input.changeGroups })
+    if (input.changeGroups.length > 0) blocks.push({ kind: 'changes', groups: input.changeGroups })
+    /* ومن طلب تعديلا يُقال له تحديثُ القالب سطرا وملخّصا — علّتُه عند
+       `amendmentTemplateNoteAr` */
+    if (input.templateNoteAr) blocks.push({ kind: 'p', text: input.templateNoteAr })
     blocks.push({ kind: 'note', text: 'هذا ملخّصٌ بأبرز ما تغيّر — والنصُّ الكاملُ في العقد نفسِه، وهو الملزِم.' })
   } else {
     /* ومن لم يتغيّر عقدُه يُقال له ذلك صريحا — لا يُترك يبحث عن قائمة. وبجملة
@@ -994,7 +1002,7 @@ export function contractResignMail(input: ContractResignMailInput): DecisionMail
   }
   blocks.push(
     /* و«المحدَّث» لمن تغيّر عقدُه وحدَه — فمن لم يتغيّر عقدُه لا يُقال له «محدَّث» */
-    { kind: 'cta', label: input.changeGroups.length > 0 ? 'اقرأ عقدك المحدَّث ووقّعه' : 'اقرأ عقدك ووقّعه', href: input.signingUrl },
+    { kind: 'cta', label: changed ? 'اقرأ عقدك المحدَّث ووقّعه' : 'اقرأ عقدك ووقّعه', href: input.signingUrl },
     { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${input.expiresOnAr}. ولك أن تعتذر عنه بلا حرج.` },
   )
   if (input.contractNumber) {
@@ -1101,11 +1109,13 @@ export function amendmentAnsweredMail(input: AmendmentAnsweredMailInput): Decisi
            نصُّه بعد طلبه بـ«حدِّث نصَّ العروض المفتوحة». فيقرأ أنّ شيئا لم
            يتغيّر ثمّ يوقّع على غير ما قرأ. فإن تغيّر قيل ما تغيّر بطاقاتٍ
            تحت بنودها، وإلّا قيلت الجملةُ كما كانت. */
+        /* ═══ وما تغيّر بعد طلبه سطرٌ وملخّصٌ لا بطاقات (١ أكتوبر ٢٠٢٦) ═══
+           علّتُه عند `amendmentTemplateNoteAr`: من طلب تعديلا يُقال له أنّا
+           وضّحنا العقدَ وعدّلناه، وأبوابُ ذلك — لا كلُّ نقطة. */
         ...(input.changeGroups && input.changeGroups.length > 0
           ? ([
-              { kind: 'p' as const, text: 'وقد حدّثنا نصَّ الاتفاقيّة بعد طلبك، وهذا ما تغيّر فيه عمّا قرأتَه:' },
-              { kind: 'changes' as const, groups: input.changeGroups },
-              { kind: 'note' as const, text: 'هذا ملخّصٌ بأبرز ما تغيّر — والنصُّ الكاملُ في العقد نفسِه، وهو الملزِم. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.' },
+              { kind: 'p' as const, text: amendmentTemplateNoteAr(input.changeGroups)! },
+              { kind: 'note' as const, text: 'والنصُّ الكاملُ في العقد نفسِه، وهو الملزِم. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.' },
             ] as const)
           : ([{
               kind: 'p' as const,

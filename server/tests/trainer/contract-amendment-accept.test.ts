@@ -32,10 +32,15 @@ import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { CONTRACT_BODY_VERSION } from '../../../src/application/trainer/contract-body'
-import { changesBetween } from '../../../src/application/trainer/contract-changelog'
+import { changeGroupsBetween, changesBetween } from '../../../src/application/trainer/contract-changelog'
 import {
-  AMENDMENT_NO_CHANGES_AR, AMENDMENT_PLACEHOLDER_AR, RESIGN_NO_CHANGES_AR,
+  AMENDMENT_NO_CHANGES_AR, AMENDMENT_PLACEHOLDER_AR, RESIGN_NO_CHANGES_AR, amendmentTemplateNoteAr,
 } from '../../../src/application/trainer/contract-resign'
+
+/* ═══ ولطالب التعديل يُقال تحديثُ القالب سطرا وأبوابا — لا نقاطا (١ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة، وعلّتُه عند `amendmentTemplateNoteAr`. فما يُقاس هنا أنّ السطرَ
+   المحسوبَ ممّا قرأه هو خرج في الرسالة، وأنّ النقاطَ لم تخرج. */
+const noteFrom = (from: string) => amendmentTemplateNoteAr(changeGroupsBetween(from, CONTRACT_BODY_VERSION))!
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -113,8 +118,9 @@ describe('قبولُ التعديل: رسالةٌ واحدةٌ فيها الجو
     expect(mail.subject, 'العنوانُ غيرُ ما كتبه الموظّف').toBe(SUBJECT)
     for (const p of BODY.split('\n\n')) expect(mail.text, 'ضاعت فقرةٌ من جوابه').toContain(p)
     expect(mail.text, 'الرسالةُ بلا رابط العقد المصحَّح').toContain(out.signingUrl)
+    expect(mail.text, 'لم يُقل إنّا عدّلنا العقدَ وأبوابُ ذلك').toContain(noteFrom(OLD_VERSION))
     for (const pt of changesBetween(OLD_VERSION, CONTRACT_BODY_VERSION)) {
-      expect(mail.text, `سقطت نقطةُ تغيير: ${pt}`).toContain(pt)
+      expect(mail.text, `قيلت النقطةُ كاملةً لطالب التعديل: ${pt}`).not.toContain(pt)
     }
   })
 
@@ -184,9 +190,7 @@ describe('وما قرأه هو — لا ما حُدّث تحته', () => {
       data: { bodyPrevVersion: OLD_VERSION, bodyUpdatedAt: new Date(Date.now() + 1000) },
     })
     await accept(c.id)
-    for (const pt of changesBetween(OLD_VERSION, CONTRACT_BODY_VERSION)) {
-      expect(outbox[0].text, `قِيس من الصفّ المحدَّث فسقطت: ${pt}`).toContain(pt)
-    }
+    expect(outbox[0].text, 'قِيس من الصفّ المحدَّث فلم يُقل إنّا عدّلنا').toContain(noteFrom(OLD_VERSION))
   })
 
   it('⚠️ و«يبقى العرضُ كما هو» لا يقول «لم يتغيّر فيه حرف» عن نصٍّ تغيّر', async () => {
@@ -201,9 +205,7 @@ describe('وما قرأه هو — لا ما حُدّث تحته', () => {
     await review.replyToAmendment(c.id, adminId, 'لا نستطيع تغييرَ البند الرابع')
     const text = outbox[0].text
     expect(text, 'قيل له إنّ نصَّه لم يتغيّر وقد تغيّر').not.toContain('لم يتغيّر فيه حرف')
-    for (const pt of changesBetween(OLD_VERSION, CONTRACT_BODY_VERSION)) {
-      expect(text, `سقطت: ${pt}`).toContain(pt)
-    }
+    expect(text, 'لم يُقل إنّا عدّلنا العقدَ وأبوابُ ذلك').toContain(noteFrom(OLD_VERSION))
   })
 
   it('ومن لم يُحدَّث نصُّه يُقال له ذلك كما كان', async () => {

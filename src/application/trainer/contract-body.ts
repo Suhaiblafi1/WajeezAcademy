@@ -729,7 +729,9 @@ function feeRuleRowsAr(c: ContractCompensation): string[] {
 
    والتقريبُ إلى فلسَين ثمّ حذفُ الصفرَين: `25 × 12` تُقرأ «300» لا
    «300.00»، و`25.5 × 12` تُقرأ «306». */
-function guaranteedFloorUsd(c: ContractCompensation): number | null {
+/** مبلغُ الحدّ الأدنى المضمون رقما — يقرؤه نصُّ الضمان هنا وسطرُ ما تغيّر في أجره
+    (`contract-resign.ts`)، فلا يُحسب في موضعين بصيغتين */
+export function guaranteedFloorUsd(c: ContractCompensation): number | null {
   if (c.type !== 'per_seat') return null
   if (!c.minSeats || c.minSeats <= 0) return null
   return Math.round(Number(c.rate) * c.minSeats * 100) / 100
