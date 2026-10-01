@@ -489,7 +489,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       summary: 'تحديثُ نصِّ كلّ عرضٍ مفتوحٍ إلى الإصدار الحاليّ — بالرابط نفسِه',
     },
   }, async (req) => {
-    /* والبريدُ يُختار — والصامتُ يُبقي الشريطَ على صفحته (علّتُه في الخدمة) */
+    /* والبريدُ يُختار، ولا قائمةَ تغييرٍ على صفحة المدرّب في الحالَين (علّتُه في الخدمة) */
     const { notify } = z.object({ notify: z.boolean().default(true) }).parse(req.body ?? {})
     return review.refreshOpenContracts(req.auth!.userId, { notify })
   })
