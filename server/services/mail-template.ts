@@ -212,10 +212,33 @@ function anchor(href: string, label: string, style = LINK): string {
   return `<a href="${esc(href)}" style="${style}">${esc(label)}</a>`
 }
 
-/** النصُّ مرمَّزا — وكلُّ ما جاء من بشرٍ يُهرَّب، رابطا كان أو بين رابطَين */
+/** نصٌّ مهرَّبٌ بأسطره — كلُّ سطرٍ في المصدر سطرٌ في الـHTML.
+
+    ═══ وكانت الأسطرُ تذوب (١ أكتوبر ٢٠٢٦) ═══
+
+    الـHTML يطوي فاصلَ السطر مسافةً. فجوابُ الموظّف على طلب تعديلٍ — يكتبه
+    فقراتٍ وقائمةً مرقّمة، وهو المقصودُ من رسالته كلِّها — كان يصل المدرّبَ
+    كتلةً واحدةً بلا فاصل، والنصُّ الخامُّ من الوصف نفسِه يحفظ أسطرَه. وهذا
+    انحرافُ الصيغتين الذي كُتب هذا الملفُّ ليمنعه. ومثلُه كلُّ نصٍّ يكتبه
+    إنسانٌ في خانةٍ فيصل بريدا: ملاحظةُ المراجِع في رسالة قائمة الانتظار، وسببُ
+    سحب العقد، وملاحظاتُ مراجعة الخطّة. وكان من قبلُ من يقسم متنَه على السطر
+    الفارغ بنفسه (`noShowFollowupMail`)، والسطرُ المفردُ داخل الفقرة يذوب مع ذلك.
+
+    و`<br>` لا `white-space: pre-line`: Outlook يصيّر بمحرّك Word ولا يقرأ
+    الثانية. وما زاد على سطرٍ فارغٍ واحدٍ يُطوى إليه — كما في النصّ الخامّ. */
+function linesHtml(s: string): string {
+  const lines = s.replace(/\r\n?/g, '\n').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n')
+  return esc(lines).replace(/\n/g, '<br>')
+}
+
+/** النصُّ مرمَّزا — وكلُّ ما جاء من بشرٍ يُهرَّب، رابطا كان أو بين رابطَين.
+
+    والنصُّ الواحدُ يُشذَّب طرفاه: سطرٌ فارغٌ في آخر جوابٍ كُتب في خانةٍ لا
+    يصير فراغا في أسفل الصندوق. أمّا القطعُ بين رابطَين فلا تُشذَّب — المسافةُ
+    على حدّ الرابط جزءٌ من الجملة. */
 function richHtml(v: MailRich): string {
-  if (typeof v === 'string') return esc(v)
-  return v.map((part) => (typeof part === 'string' ? esc(part) : anchor(part.href, part.text))).join('')
+  if (typeof v === 'string') return linesHtml(v.trim())
+  return v.map((part) => (typeof part === 'string' ? linesHtml(part) : anchor(part.href, part.text))).join('')
 }
 
 function htmlOf(doc: MailDoc): string {
