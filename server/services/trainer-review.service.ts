@@ -13,10 +13,10 @@ import { holdsRoleBeyondTrainer } from '../auth/permissions'
 import { recordAudit } from './audit'
 import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.service'
 import { renderMail } from './mail-template'
-import { changesBetween } from '../../src/application/trainer/contract-changelog'
+import { changeGroupsBetween } from '../../src/application/trainer/contract-changelog'
 import {
   RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_REVOKE_REASON_AR, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN,
-  personalChangesAr,
+  personalChangesAr, resignChangeGroups,
 } from '../../src/application/trainer/contract-resign'
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
@@ -2964,7 +2964,9 @@ export class TrainerReviewService {
   }
 
   /** الإرسالُ — معاملةٌ واحدةٌ، والبريدُ بعدها */
-  async sendContract(contractId: string, actorId: string, noticeAr?: string | null) {
+  /** و`silent` يُرسل العقدَ ويسكّ رابطَه ولا يُخرج بريدَه العامّ — لمن يضع
+      الرابطَ في رسالته هو (إعادةُ التوقيع). و`emailDelivery` حينئذٍ `skipped`. */
+  async sendContract(contractId: string, actorId: string, noticeAr?: string | null, opts?: { silent?: boolean }) {
     const contract = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
       include: { profile: { include: { application: true } } },
@@ -3031,6 +3033,9 @@ export class TrainerReviewService {
     /* والبريدُ خارجَ المعاملة على عرف هذا الملفّ: بريدٌ يُخفق لا ينقض إرسالا
        وقع. والرابطُ يُعاد للموظّف كذلك — فقناةُ البريد قد تتعثّر، ومن يملك
        الصلاحيّةَ يحتاج نسخةً يسلّمها بيده. */
+    if (opts?.silent) {
+      return { ok: true, signingUrl: this.signingUrl(token), expiresAt, emailDelivery: 'skipped' as const }
+    }
     const mail = await this.mailContract({
       contract, to: app.email, fullName: app.fullName, reference: app.reference,
       url: this.signingUrl(token), expiresAt, resend: false, noticeAr,
@@ -3483,7 +3488,7 @@ export class TrainerReviewService {
           fullName: app.fullName,
           reference: app.reference,
           title: c.title,
-          pointsAr: changesBetween(from, CONTRACT_BODY_VERSION),
+          changeGroups: changeGroupsBetween(from, CONTRACT_BODY_VERSION),
           awaitingReply: isAmendmentRequested(c.status),
           /* ═══ ولا رابطَ توقيعٍ يُسكّ هنا ═══
 
@@ -4625,7 +4630,8 @@ export class TrainerReviewService {
         specialTermsAr: typedTerms !== undefined ? typedTerms : old.specialTermsAr,
       },
     )
-    const changesAr = [...personalAr, ...changesBetween(old.bodyVersion, CONTRACT_BODY_VERSION)]
+    const changeGroups = resignChangeGroups(personalAr, changeGroupsBetween(old.bodyVersion, CONTRACT_BODY_VERSION))
+    const changesAr = changeGroups.flatMap((g) => g.itemsAr)
 
     const created = await this.prisma.$transaction(async (tx) => {
       /* قارنْ واضبطْ: الموقَّعُ وحدَه. فالمعتمَدُ نافذٌ وبابُه رضا صاحبه لا
@@ -4672,24 +4678,28 @@ export class TrainerReviewService {
       return next
     })
 
-    /* والرسالةُ قبل الرابط: نصُّها يقول «ورابطُ النسخة الجديدة يصلك في رسالةٍ
-       تالية» — فتسبقه. */
+    /* ═══ رسالةٌ واحدةٌ فيها ما تغيّر ورابطُ التوقيع (١ أكتوبر ٢٠٢٦) ═══
+
+       كانت رسالتان: هذه، ثمّ بريدُ العقد العامُّ برابطه. وسؤالُ صاحب المنصّة:
+       «ألا يمكن أن يكون في نفس الإيميل رابطُ العقد الجديد؟». فيُرسَل البديلُ
+       **صامتا** (يُسكّ رابطُه ولا يخرج بريدُه العامّ)، ثمّ يُوضَع رابطُه في
+       رسالة الإعادة. وإن أخفق البريدُ فالرابطُ يعود إلى الموظّف كما كان
+       يعود — يسلّمه بيده. */
+    const sent = await this.sendContract(created.id, actorId, null, { silent: true })
     let emailDelivery: DirectMailStatus = 'failed'
     try {
       const mail = contractResignMail({
-        greetingName: name, subjectAr: subject, bodyAr: body, changesAr,
+        greetingName: name, subjectAr: subject, bodyAr: body, changeGroups,
+        signingUrl: sent.signingUrl,
+        expiresOnAr: fmtDateWith(sent.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
       })
-      const sent = await sendDirectEmail(this.prisma, {
+      const out = await sendDirectEmail(this.prisma, {
         to: old.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
       })
-      emailDelivery = sent.status
-    } catch { /* البريدُ رفاهية — السحبُ وقع، والرابطُ يخرج بعده */ }
+      emailDelivery = out.status
+    } catch { /* البريدُ رفاهية — السحبُ والإرسالُ وقعا، والرابطُ بيد الموظّف */ }
 
-    const sent = await this.sendContract(
-      created.id, actorId,
-      'هذه النسخةُ المحدَّثةُ من عقدك، وما تغيّر فيها وصلك في رسالتنا السابقة. والنسخةُ التي وقّعتَها سُحبت ورابطُها بطل — فإن شئتَ فوقّعْ هذه.',
-    )
-    return { ...sent, ok: true as const, contractId: created.id, revision: created.revision, noticeDelivery: emailDelivery }
+    return { ...sent, ok: true as const, contractId: created.id, revision: created.revision, emailDelivery, noticeDelivery: emailDelivery }
   }
 
   /** رفضُ التوقيع — الاسمُ لا يطابق الوثيقةَ، أو الوثيقةُ ليست له.

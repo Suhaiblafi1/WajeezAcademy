@@ -7,7 +7,7 @@
  * ② نافذتُه تنادي `/resign-request` بالعنوان والنصّ، وتمرّر معرّفَ الصفّ
  *   إلى `run` — فردُّ الخادم يُرسَم عند الصفّ (رأسُ
  *   `countersign-activates-button.test.ts`).
- * ③ وقائمةُ التغييرات تُعرَض من `changesBetween` ولا تُرسَل من الشاشة: لو
+ * ③ وقائمةُ التغييرات تُعرَض من `changeGroupsBetween` ولا تُرسَل من الشاشة: لو
  *   حُملت في جسم الطلب لَصار للمرسِل أن يقصّها، وهو ما بُني الخادمُ لمنعه.
  *
  * ويُقاس على **كتلة النافذة** بعد نزع التعليقات — لا على ورودِ حرفٍ في الملفّ.
@@ -61,13 +61,13 @@ describe('«أعِدْه للتوقيع» — زرُّه ونافذتُه', () =
   })
 
   it('والقائمةُ تُقرأ من الجدول وتُعرَض — ولا تُرسَل من الشاشة', () => {
-    expect(dlg).toMatch(/changesBetween\(r\.row\.bodyVersion,\s*CONTRACT_BODY_VERSION\)/)
+    expect(dlg).toMatch(/changeGroupsBetween\(r\.row\.bodyVersion,\s*CONTRACT_BODY_VERSION\)/)
     /* وما تغيّر في شروطه هو بالدالّة التي يحسب بها الخادم (١ أكتوبر ٢٠٢٦) —
        فما يُعايَن هو ما يُرسَل، لا نسختان تفترقان */
     /* والقائمةُ المعروضةُ نفسُها لا أيُّ نداءٍ للدالّة: نداءٌ آخرُ في النافذة
        (مقارنةُ الأجر) كان يُخضِر فحصا أوسعَ من هذا وهي تُحسب بيدٍ أخرى. */
     expect(dlg, 'شروطُه تُحسب في الشاشة بغير دالّة الخادم').toMatch(/const personal = personalChangesAr\(/)
-    expect(dlg, 'القائمةُ المعروضةُ لا تبدأ بشروطه').toMatch(/const changes = \[\.\.\.personal, \.\.\.changesBetween\(/)
+    expect(dlg, 'القائمةُ المعروضةُ لا تبدأ بشروطه — أو تُجمَع بغير دالّة الخادم').toMatch(/const changes = resignChangeGroups\(personal, changeGroupsBetween\(/)
     const call = dlg.slice(dlg.indexOf('/resign-request`'), dlg.indexOf('setResign(null)', dlg.indexOf('/resign-request`')))
     expect(call, 'لم تُقرأ كتلةُ النداء').toContain('subjectAr')
     expect(call, 'حُملت القائمةُ في الطلب — فصار للمرسِل أن يقصّها').not.toMatch(/\bchanges\b|changesAr|personal\b/)

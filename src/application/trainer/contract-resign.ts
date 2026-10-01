@@ -12,6 +12,7 @@
  * (`contractResignMail`)، وعلّتُها هناك.
  */
 
+import type { ChangeGroup } from './contract-changelog'
 import { feeBasisAr, type ContractCompensation } from './contract-body'
 
 export const RESIGN_SUBJECT_MIN = 3
@@ -37,7 +38,7 @@ export function defaultResignBodyAr(title: string): string {
   return [
     `شكرا لك على توقيع «${title}». ولم تكن الأكاديميّةُ قد اعتمدت توقيعَها بعد، فلم تصر الاتفاقيّةُ نافذةً بيننا (البند 2-6). ولا شيءَ في توقيعك: هو صحيحٌ ومسجَّلٌ عندنا بتاريخه.`,
     'وقد راجعنا نصَّ الاتفاقيّة على ملاحظاتٍ وصلتنا من مدرّبين ومن مختصّين، فحدّثناه ليكون أوضحَ للطرفين. ونعرض عليك النسخةَ المحدَّثةَ لتوقّعها، وما تغيّر فيها مبيَّنٌ أدناه.',
-    'ولك أن توقّع المحدَّثةَ أو تعتذر عنها، ولا يترتّب على أيٍّ منهما شيءٌ عليك ولا لنا (البند 2-11). ورابطُ النسخة الجديدة يصلك في رسالةٍ تالية.',
+    'ولك أن توقّع المحدَّثةَ أو تعتذر عنها، ولا يترتّب على أيٍّ منهما شيءٌ عليك ولا لنا (البند 2-11). ورابطُها في آخر هذه الرسالة.',
   ].join('\n\n')
 }
 
@@ -94,4 +95,20 @@ export function personalChangesAr(before: ResignTerms, after: ResignTerms): stri
   else if (sb && !sa) out.push('ورُفعت من عقدك البنودُ الخاصّةُ بك (البند 21).')
   else if (sb !== sa) out.push('وتغيّرت البنودُ الخاصّةُ بك (البند 21) — اقرأها في العقد.')
   return out
+}
+
+/* ═══ وشروطُه هو بطاقةٌ أولى قبل أبواب القالب ═══
+
+   ما تغيّر فيه هو (أتعابُه ودوراتُه وبنودُه الخاصّة) يتقدّم ما تغيّر في
+   القالب — علّتُه فوق `personalChangesAr`. وبعد أن صارت أبوابُ القالب
+   بطاقاتٍ تحت بنودها صار هذا بطاقةً باسمها، تُقرأ أوّلا. والدالّةُ واحدةٌ
+   للخادم والشاشة، فما يُعايَن هو ما يُرسَل. */
+export const PERSONAL_CHANGES_TITLE_AR = 'شروطُك أنت'
+
+export function resignChangeGroups(
+  personalAr: readonly string[], templateGroups: readonly ChangeGroup[],
+): readonly ChangeGroup[] {
+  return personalAr.length > 0
+    ? [{ titleAr: PERSONAL_CHANGES_TITLE_AR, itemsAr: personalAr }, ...templateGroups]
+    : templateGroups
 }

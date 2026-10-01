@@ -81,6 +81,6 @@ describe('ونقاطُ `v22` تصل المدرّب', () => {
     expect(CONTRACT_BODY_VERSION).toBe('v22-2026-10-01')
     const v = CONTRACT_CHANGELOG.find((x) => x.version === CONTRACT_BODY_VERSION)
     expect(v, 'إصدارٌ بلا نقاط').toBeDefined()
-    expect(v!.pointsAr.join(' '), 'النقاطُ لا تقول حكمَ رسوم مصرفنا').toContain('رسومُ مصرفنا')
+    expect(v!.points.map((p) => p.textAr).join(' '), 'النقاطُ لا تقول حكمَ رسوم مصرفنا').toContain('رسومُ مصرفنا')
   })
 })
