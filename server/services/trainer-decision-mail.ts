@@ -28,7 +28,7 @@
    هنا يقود إلى بابٍ مغلق. */
 
 import type { MailBlock, MailDoc } from './mail-template'
-import { RESIGN_CHANGES_HEADING_AR, resignParagraphs } from '../../src/application/trainer/contract-resign'
+import { RESIGN_CHANGES_HEADING_AR, RESIGN_NO_CHANGES_AR, resignParagraphs } from '../../src/application/trainer/contract-resign'
 import type { ChangeGroup } from '../../src/application/trainer/contract-changelog'
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
@@ -972,9 +972,13 @@ export function contractResignMail(input: ContractResignMailInput): DecisionMail
     blocks.push({ kind: 'h', text: RESIGN_CHANGES_HEADING_AR })
     blocks.push({ kind: 'changes', groups: input.changeGroups })
     blocks.push({ kind: 'note', text: 'هذا ملخّصٌ بأبرز ما تغيّر — والنصُّ الكاملُ في العقد نفسِه، وهو الملزِم.' })
+  } else {
+    /* ومن وقّع الإصدارَ الحاضرَ يُقال له ذلك صريحا — لا يُترك يبحث عن قائمة */
+    blocks.push({ kind: 'callout', text: RESIGN_NO_CHANGES_AR })
   }
   blocks.push(
-    { kind: 'cta', label: 'اقرأ عقدك المحدَّث ووقّعه', href: input.signingUrl },
+    /* و«المحدَّث» لمن تغيّر عقدُه وحدَه — فمن لم يتغيّر عقدُه لا يُقال له «محدَّث» */
+    { kind: 'cta', label: input.changeGroups.length > 0 ? 'اقرأ عقدك المحدَّث ووقّعه' : 'اقرأ عقدك ووقّعه', href: input.signingUrl },
     { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${input.expiresOnAr}. ولك أن تعتذر عنه بلا حرج.` },
   )
   return {
