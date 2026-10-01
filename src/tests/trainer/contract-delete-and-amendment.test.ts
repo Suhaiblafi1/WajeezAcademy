@@ -153,6 +153,11 @@ describe('قائمةُ العقود تُقرأ', () => {
      عقدٍ واحد — فتصير القائمةُ جدارا لا تُميَّز فيه عقدةٌ من عقدة. */
   it('الملحقُ (أ) يُطوى ويُعرَض عددُه', () => {
     expect(screen).toMatch(/<details/)
-    expect(screen).toMatch(/c\.qualifiedSnapshot\.length\} دورةً مؤهّلا لها/)
+    /* والعددُ بتمييزه (١ أكتوبر ٢٠٢٦): كان «10 دورةً» لكلّ عدد — لحنٌ من الواحد
+       إلى العشرة. فيُقاس أنّه يمرّ بـ`countAr` وأنّ صيغَه صحيحة، لا أنّ عبارةً وردت */
+    expect(screen).toMatch(/الملحق \(أ\): \{countAr\(c\.qualifiedSnapshot\.length, ANNEX_A_FORMS\)\}/)
+    const forms = /const ANNEX_A_FORMS = \{([\s\S]*?)\} as const/.exec(screen)?.[1] ?? ''
+    expect(forms).toContain('few: "دورات مؤهّلا لها"')
+    expect(forms).toContain('two: "دورتان مؤهّلا لهما"')
   })
 })

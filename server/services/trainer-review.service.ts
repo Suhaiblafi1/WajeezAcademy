@@ -15,7 +15,7 @@ import { OPEN_PROPOSAL, seedProposalsFromApplication } from './course-proposal.s
 import { renderMail } from './mail-template'
 import { changesBetween } from '../../src/application/trainer/contract-changelog'
 import {
-  RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_REVOKE_PREFIX, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN,
+  RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_REVOKE_REASON_AR, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN,
 } from '../../src/application/trainer/contract-resign'
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
@@ -4462,7 +4462,7 @@ export class TrainerReviewService {
           status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
           /* وبادئةٌ غيرُ «رُفض التوقيع» بقصد: شاشةُ العقود تبني لوحَ الرفض
              عليها، وهذا ليس رفضا */
-          revokeReasonAr: `${RESIGN_REVOKE_PREFIX}${old.bodyVersion ?? '—'} ← ${CONTRACT_BODY_VERSION}`.slice(0, 500),
+          revokeReasonAr: RESIGN_REVOKE_REASON_AR,
         },
       })
       if (done.count === 0) {

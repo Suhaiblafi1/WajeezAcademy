@@ -17,9 +17,11 @@ export const RESIGN_SUBJECT_MAX = 200
 export const RESIGN_BODY_MIN = 10
 export const RESIGN_BODY_MAX = 6000
 
-/** بادئةُ سبب الإغلاق. ولا تبدأ بـ«رُفض التوقيع» بقصد: شاشةُ العقود تبني
- *  لوحَ رفض التوقيع على تلك البادئة، وهذا سحبٌ لا رفض. */
-export const RESIGN_REVOKE_PREFIX = 'أُعيد للتوقيع على نصٍّ محدَّث: '
+/** سببُ الإغلاق. ولا يبدأ بـ«رُفض التوقيع» بقصد: شاشةُ العقود تبني لوحَ رفض
+ *  التوقيع على تلك البادئة، وهذا سحبٌ لا رفض. ولا يحمل رمزَي الإصدارين
+ *  (١ أكتوبر ٢٠٢٦: «no need») — فهو يُعرَض، والإصداران في الأثر
+ *  (`fromVersion` و`toVersion`). */
+export const RESIGN_REVOKE_REASON_AR = 'أُعيد للتوقيع على نصٍّ محدَّث'
 
 /** عنوانُ القسم الذي لا يُحذَف من الرسالة */
 export const RESIGN_CHANGES_HEADING_AR = 'ما تغيّر في نصّ عقدك'

@@ -298,9 +298,12 @@ describe('③ 9-7 — بيئةٌ آمنةٌ شاملةٌ بحرفِ صاحب ا�
 })
 
 describe('والإصدارُ رُفع — فلا يُقرأ متنٌ جديدٌ ببصمةِ قديم', () => {
-  it('الإصدارُ لا أقلَّ من الثامن عشر، وهو مكتوبٌ في المتن', () => {
+  /* وكان يُقاس أيضا أنّه «مكتوبٌ في المتن». وخرج منه في ١ أكتوبر ٢٠٢٦ بقول
+     صاحب المنصّة («dont show the version number to users.. no need!») — فيُقاس
+     الآن ضدَّه، والإصدارُ في `bodyVersion` من صفّ العقد */
+  it('الإصدارُ لا أقلَّ من الثامن عشر — ولا يُطبَع في المتن', () => {
     const major = Number(/^v(\d+)-/.exec(CONTRACT_BODY_VERSION)?.[1])
     expect(major, 'تبدّل المتنُ وبقي الإصدارُ على ما كان').toBeGreaterThanOrEqual(18)
-    expect(body, 'الإصدارُ لا يُقرأ في الوثيقة نفسِها').toContain(CONTRACT_BODY_VERSION)
+    expect(body, 'عاد رمزُ الإصدار إلى الوثيقة').not.toContain(CONTRACT_BODY_VERSION)
   })
 })

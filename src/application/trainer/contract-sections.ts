@@ -53,6 +53,23 @@ export interface ContractDoc {
 const META_KEYS = ['المرجع', 'تاريخ الإصدار', 'إصدار الصياغة'] as const
 const META_RE = new RegExp(`^(${META_KEYS.join('|')}):\\s*(.*)$`)
 
+/* ═══ وإصدارُ الصياغة يُحفَظ ولا يُرسَم (١ أكتوبر ٢٠٢٦) ═══
+
+   قولُ صاحب المنصّة: «dont show the version number to users.. no need!».
+
+   فالمتنُ لا يطبعه بعد اليوم (`renderContractBodyAr`) — فما يُوقَّع عليه هو
+   ما يُرى، بلا سطرٍ خفيّ. وما حمله من **المتون القديمة** — موقَّعةٍ أو نافذةٍ
+   أو عروضٍ لم تُحدَّث — باقٍ فيها بحرفه، فنصٌّ موقَّعٌ لا يُعاد كتابتُه، ويبقى
+   مقروءا هنا ترويسةً فلا يسقط في جسم الوثيقة سطرا شاردا. وإنّما لا يُرسَم:
+   لا للمدرّب ولا في الطباعة ولا للمدير. وإصدارُ كلّ عقدٍ معروفٌ من `bodyVersion`
+   في صفّه ومن الأثر. والعارضُ يرسم ما تردّه `shownMeta` لا `doc.meta` كلَّه. */
+const HIDDEN_META_KEYS: readonly string[] = ['إصدار الصياغة']
+
+/** ما يُرسَم من الترويسة — كلُّها إلّا ما يُحفَظ ولا يُعرَض */
+export function shownMeta(meta: readonly ContractMeta[]): ContractMeta[] {
+  return meta.filter((m) => !HIDDEN_META_KEYS.includes(m.labelAr))
+}
+
 const CLAUSE_HEAD_RE = /^البند (\d+) — (.+)$/
 const ANNEX_HEAD_RE = /^الملحق \((.)\) — (.+)$/
 const SUMMARY_HEAD = 'الخلاصة في سطور'
