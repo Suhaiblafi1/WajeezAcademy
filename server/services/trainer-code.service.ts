@@ -32,6 +32,7 @@ import {
 } from '../../src/application/trainer/trainer-code'
 import { CLAUSE_4_10_AR } from '../../src/application/trainer/contract-body'
 import { TrainerCodeBudgetService } from './trainer-code-budget'
+import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 
 /** رمزُ الكود — `WD-` كالخصم قبله: الرمزان يُنشران من «دعوتي» بجانب رابط الدعوة
     `WJ-`، وأحدُهما مالٌ من جيبه والآخرُ رابطُ تسجيل. فمن نسخ الخطأَ يراه في
@@ -104,7 +105,7 @@ export class TrainerCodeService {
   /** أكوادُه — أحدثُ أوّلا، وما استُعمل منها وما حُسم، والبندُ وقبولُه */
   async listFor(userId: string) {
     const profile = await this.activeProfile(userId)
-    const [rows, terms, budget] = await Promise.all([
+    const [rows, terms, budget, pricing] = await Promise.all([
       this.prisma.trainerCode.findMany({
         where: { profileId: profile.id },
         include: {
@@ -116,11 +117,14 @@ export class TrainerCodeService {
       this.termsFor(profile.id, userId),
       /* رصيدُه الذي تقع عليه أكوادُه — يُقرأ قبل أن يُفاجأ بكودٍ لم يقع */
       this.budgets.budgetFor(profile.id),
+      /* ودوراتُه بأسعارها وأجرِ مقعده — ليرى قيمةَ كوده قبل أن يُصدره (البند 4-10) */
+      this.budgets.pricingFor(profile.id),
     ])
     const now = new Date()
     return {
       terms,
       budget,
+      pricing,
       codes: rows.map((c) => {
         const paid = c.redemptions.filter((r) => r.status === 'paid' || r.status === 'refunded')
         const state = codeStateAr({ status: c.status, expiresAt: c.coupon.expiresAt, maxUses: c.coupon.maxUses, usedCount: c.coupon.usedCount }, now)
@@ -128,6 +132,7 @@ export class TrainerCodeService {
           id: c.id,
           code: c.coupon.code,
           percentOff: c.percentOff,
+          amountOff: c.amountOff === null ? null : num(c.amountOff),
           labelAr: c.labelAr,
           status: c.status,
           state: state.key,
@@ -144,14 +149,18 @@ export class TrainerCodeService {
           },
           owed: round2(paid.reduce((s, r) => s + num(r.owed), 0)),
           pending: round2(paid.reduce((s, r) => s + num(r.pending), 0)),
-          currency: c.redemptions[0]?.currency ?? 'USD',
+          /* وبها يُطبع وجهُ الكود حين يكون مبلغا — وهو بعملة الدفتر أبدا */
+          currency: c.redemptions[0]?.currency ?? LEDGER_CURRENCY,
         }
       }),
     }
   }
 
-  /** الإصدار — كوبونٌ يفعل الخصم، وصفٌّ يقول من يتحمّله وبأيّ نسبة */
-  async create(userId: string, input: { percentOff: number; labelAr: string; maxUses?: number | null; expiresAt?: Date | null }) {
+  /** الإصدار — كوبونٌ يفعل الخصم، وصفٌّ يقول من يتحمّله وبأيّ وجه: نسبةً أو مبلغا */
+  async create(userId: string, input: {
+    percentOff?: number | null; amountOff?: number | null
+    labelAr: string; maxUses?: number | null; expiresAt?: Date | null
+  }) {
     const profile = await this.activeProfile(userId)
     const terms = await this.termsFor(profile.id, userId)
     if (!terms.accepted) {
@@ -166,21 +175,25 @@ export class TrainerCodeService {
       const code = newCode()
       try {
         return await this.prisma.$transaction(async (tx) => {
+          /* والكوبونُ يحمل الوجهَ نفسَه كي لا يُقرأ بخلافه في شاشة الإدارة — والتسعيرُ
+             يقرأ صفَّ الكود لا الكوبون، فالسقفُ هناك. والمبلغُ بعملة الدفتر. */
+          const percentOff = input.percentOff ?? null
+          const amountOff = input.amountOff ?? null
           const coupon = await tx.coupon.create({
             data: {
-              code, percentOff: input.percentOff,
+              code, percentOff, amountOff, currency: amountOff === null ? null : LEDGER_CURRENCY,
               maxUses: input.maxUses ?? null, expiresAt: input.expiresAt ?? null, active: true,
             },
           })
           const row = await tx.trainerCode.create({
-            data: { profileId: profile.id, couponId: coupon.id, percentOff: input.percentOff, labelAr },
+            data: { profileId: profile.id, couponId: coupon.id, percentOff, amountOff, labelAr },
           })
           await recordAudit(tx, {
             actorId: userId, action: 'trainer_code.create',
             entityType: 'trainer_profile', entityId: profile.id,
-            meta: { codeId: row.id, code, percentOff: input.percentOff, maxUses: input.maxUses ?? null, labelAr },
+            meta: { codeId: row.id, code, percentOff, amountOff, maxUses: input.maxUses ?? null, labelAr },
           })
-          return { id: row.id, code, percentOff: input.percentOff }
+          return { id: row.id, code, percentOff, amountOff }
         })
       } catch (e) {
         if (attempt === 2 || !isUniqueViolation(e)) throw e

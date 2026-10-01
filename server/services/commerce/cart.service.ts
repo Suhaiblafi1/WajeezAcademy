@@ -27,7 +27,7 @@ import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-ty
 import { CODE_USE_COUNTS, CODE_USED_AR } from './coupon-ledger'
 import { cohortLeadTrainers } from '../cohort-lead'
 import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-budget'
-import { budgetCovers, CODE_UNAVAILABLE_AR } from '../../../src/application/trainer/trainer-code'
+import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
 
 export class CartService {
@@ -267,7 +267,7 @@ export class CartService {
     if (!couponCode) return null
     const coupon = await this.prisma.coupon.findUnique({
       where: { code: couponCode.trim().toUpperCase() },
-      include: { trainerCode: { select: { id: true, profileId: true, percentOff: true } } },
+      include: { trainerCode: { select: { id: true, profileId: true, percentOff: true, amountOff: true } } },
     })
     assertCouponUsable(coupon, userId)
     /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
@@ -304,9 +304,16 @@ export class CartService {
        كودُه على شعبةٍ يقبض غيرُه أتعابَها، ولا يمتنع عن شعبةٍ يقبضها هو.
        والنسبةُ من صفّ الكود لا من الكوبون: قيدُ السقف (٣٠) على ذاك العمود. */
     let scope: string[] | null = null
+    const cartCurrency = currency ?? this.cartCurrency(cohorts, cohorts)
     if (trainerCode) {
       const leads = await cohortLeadTrainers(this.prisma, cohorts.map((c) => c.id))
       scope = cohorts.filter((c) => leads.get(c.id) === trainerCode.profileId).map((c) => c.id)
+      /* ═══ والمبلغُ بعملة الدفتر — فلا يقع على سلّةٍ بغيرها ═══
+         النسبةُ لا عملةَ لها، والمبلغُ «عشرون» بلا عملته رقمٌ بلا معنى: عشرون
+         دولارا ليست عشرين ريالا. ولا يُحوَّل هنا بسعرٍ يُخترَع. */
+      if (trainerCode.amountOff !== null && cartCurrency !== LEDGER_CURRENCY) {
+        throw new AuthError('code_currency', `هذا الكودُ مبلغٌ بـ${LEDGER_CURRENCY}، والسلّةُ بعملةٍ أخرى`, 409)
+      }
     }
     const pricing = priceCart(
       cohorts.map((c) => ({
@@ -315,10 +322,16 @@ export class CartService {
       gift,
       coupon
         ? trainerCode
-          ? { percentOff: trainerCode.percentOff, amountOff: null, cohortIds: scope }
+          /* والوجهُ من صفّ الكود لا من الكوبون، والسقفُ على الوجهين (البند 4-10) */
+          ? {
+            percentOff: trainerCode.percentOff,
+            amountOff: trainerCode.amountOff === null ? null : num(trainerCode.amountOff),
+            cohortIds: scope,
+            maxPercentOfBase: MAX_TRAINER_CODE_PERCENT,
+          }
           : { percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff) }
         : null,
-      currency ?? this.cartCurrency(cohorts, cohorts),
+      cartCurrency,
     )
     /* كودٌ لا يخصّ شيئا في السلّة يُقال لصاحبه — لا يُقبَل صامتا بخصمِ صفر،
        فيظنّ أنّ الكودَ عطِب أو أنّه خُصم له ما لم يُخصم. ولا يُسمّى المدرّب:

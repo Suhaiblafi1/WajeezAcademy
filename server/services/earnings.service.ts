@@ -8,11 +8,12 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { NotificationService } from './notification.service'
-import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
+import { LEDGER_CURRENCY, withCurrencyAr } from '../../src/application/commerce/presentment'
 import { cohortStartedForFloor, perSeatBreakdown } from '../../src/application/trainer/seat-fee'
 import {
   ATTENDED_STATUSES, FUNDING_ORDER_STATUSES, SEAT_STATUSES, seatCounts,
 } from '../../src/application/trainer/counted-seat'
+import { codeFaceAr } from '../../src/application/trainer/trainer-code'
 import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
 import { cohortLeadTrainer } from './cohort-lead'
 import { PAYOUT_OBJECTION_DAYS } from '../../src/application/trainer/notice-periods'
@@ -741,7 +742,7 @@ export class EarningsService {
          كلُّه بالدولار اليوم، فالشرطُ حارسٌ لا مُرشِّح. */
       this.prisma.trainerCodeRedemption.findMany({
         where: { profileId: computed.profile.id, pending: { not: 0 }, currency: computed.rule.currency },
-        include: { code: { select: { labelAr: true, percentOff: true, coupon: { select: { code: true } } } } },
+        include: { code: { select: { labelAr: true, percentOff: true, amountOff: true, coupon: { select: { code: true } } } } },
         orderBy: { paidAt: 'asc' },
       }),
     ])
@@ -771,7 +772,11 @@ export class EarningsService {
         const r = codeById.get(t.ref)!
         const partly = Number(r.owed) < Number(r.amount) ? ' · بعد ردّ جزءٍ من الثمن' : ''
         return {
-          description: `حسم كودك ${r.code.coupon.code} (${r.code.percentOff}٪) — ${r.code.labelAr} · شراء ${day(r.paidAt)}${partly}`,
+          /* ووجهُ الكود كما أصدره — «٢٠٪» أو «$20» — لا نسبةٌ تُطبع «null٪» لكودٍ بمبلغ */
+          description: `حسم كودك ${r.code.coupon.code} (${codeFaceAr(
+            { percentOff: r.code.percentOff, amountOff: r.code.amountOff === null ? null : Number(r.code.amountOff) },
+            (a) => withCurrencyAr(String(a), r.currency),
+          )}) — ${r.code.labelAr} · شراء ${day(r.paidAt)}${partly}`,
           amount: -t.amount,
           sourceRef: t.ref,
         }

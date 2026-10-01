@@ -44,7 +44,7 @@ interface Refund { id: string; status: string; amount: string; reason: string; c
 interface Coupon {
   id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null
   /** كودُ مدرّبٍ بالنسبة، أو خصمُه القديمُ بالمبلغ — يُحسم ما يمنحه من مستحقّاته لا من إيرادنا */
-  trainerCode?: { percentOff: number; status: string } | null
+  trainerCode?: { percentOff: number | null; amountOff: string | null; status: string } | null
   trainerDiscount?: { status: string } | null
 }
 

@@ -17,7 +17,7 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { EarningsService } from './earnings.service'
 import { leadCohortsOf } from './cohort-lead'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
-import { codeBudget, type CodeBudget } from '../../src/application/trainer/trainer-code'
+import { codeBudget, type CodeBudget, type CodePricingCourse } from '../../src/application/trainer/trainer-code'
 
 /** شعبٌ يُتوقَّع أجرُها — مفتوحةٌ للبيع أو ممتلئةٌ أو جارية */
 const PROJECTED_STATUSES = ['open', 'full', 'active'] as const
@@ -39,6 +39,31 @@ export class TrainerCodeBudgetService {
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.earnings = new EarningsService(prisma)
+  }
+
+  /** دوراتُه المفتوحةُ بأسعارها وأجرِ مقعده في كلٍّ منها — ليرى قيمةَ كوده بالدولار
+      **قبل** أن يُصدره، ويقابلها بما يقبضه. وقاعدتُه لكلّ شعبةٍ بعينها
+      (`activeRule`): القاعدةُ الأدقُّ نطاقا تفوز، فلا يُقابَل خصمٌ بأجرٍ لا يسري هناك. */
+  async pricingFor(profileId: string): Promise<CodePricingCourse[]> {
+    const lead = await leadCohortsOf(this.prisma, profileId, PROJECTED_STATUSES)
+    if (lead.length === 0) return []
+    const cohorts = await this.prisma.cohort.findMany({
+      where: { id: { in: lead.map((c) => c.id) }, price: { gt: 0 } },
+      select: { id: true, title: true, courseId: true, price: true, currency: true },
+      orderBy: [{ startsAt: 'asc' }, { title: 'asc' }],
+    })
+    return Promise.all(cohorts.map(async (c) => {
+      const rule = await this.earnings.activeRule(profileId, { cohortId: c.id, courseId: c.courseId })
+      const perSeat = rule !== null && rule.type === 'per_seat'
+      return {
+        cohortId: c.id,
+        titleAr: c.title,
+        price: Number(c.price),
+        currency: c.currency ?? LEDGER_CURRENCY,
+        seatFee: perSeat ? Number(rule.rate) : null,
+        referralSeatFee: perSeat ? Number(rule.referralRate ?? rule.rate) : null,
+      }
+    }))
   }
 
   async budgetFor(profileId: string, purchase: readonly PurchaseLine[] = [], db: Db = this.prisma): Promise<CodeBudget> {
