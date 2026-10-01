@@ -111,8 +111,12 @@ describe('① رابطٌ جديدٌ صالحٌ ثلاثةَ أيّام، وال�
   it('⚠️ والرابطُ القديمُ يبطل، والجديدُ يفتح العرض', async () => {
     const { c, token: old } = await sentContract()
     const out = await review.sendFinalReminder(c.id, adminId)
-    await expect(review.contractByToken(old), 'بقي الرابطُ القديمُ يعمل')
-      .rejects.toMatchObject({ code: 'invalid_token' })
+    /* والقديمُ لا يُوقَّع منه — ويقول «أرسلنا أحدث» بدل «غيرُ صالح» (`contract-link-states`) */
+    expect((await review.contractByToken(old)).state, 'بقي الرابطُ القديمُ يفتح العرض').toBe('replaced')
+    await expect(review.signContractByToken(old, {
+      legalName: 'مدرّبٌ ينتظر توقيعا', addressAr: 'عمّان', phone: '+962790000000',
+      bodyHash: sha256(c.bodyAr ?? ''), acks: contractAcks(c.gatesActivation).map((a) => a.key),
+    }), 'وُقّع من الرابط القديم').rejects.toMatchObject({ code: 'invalid_token' })
     expect((await review.contractByToken(tokenOf(out.signingUrl))).state, 'الرابطُ الجديدُ لا يفتح العرض')
       .toBe('open')
   })
@@ -243,8 +247,8 @@ describe('⑤ وطلبُ الرابط بالبريد لا يمدّ الأجلَ 
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
     expect(after.tokenExpiresAt!.getTime(), 'تغيّر الأجلُ الموعودُ في التذكير الأخير بطلب رابط')
       .toBe(out.expiresAt.getTime())
-    await expect(review.contractByToken(tokenOf(out.signingUrl)), 'بقي رابطُ التذكير يعمل مع الجديد')
-      .rejects.toMatchObject({ code: 'invalid_token' })
+    expect((await review.contractByToken(tokenOf(out.signingUrl))).state, 'بقي رابطُ التذكير يفتح العرضَ مع الجديد')
+      .toBe('replaced')
 
     expect(outbox, 'لم يخرج الرابطُ الجديد').toHaveLength(1)
     const fresh = linkIn(outbox[0].text)

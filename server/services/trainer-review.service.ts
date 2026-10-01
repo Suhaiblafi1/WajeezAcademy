@@ -21,7 +21,7 @@ import {
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail,
-  contractLapsedMail } from './trainer-decision-mail'
+  contractLapsedMail, contractFactsRows } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -51,6 +51,10 @@ import {
   AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, contractBlockedAr, isAmendmentRequested,
 } from '../../src/application/trainer/contract-endings'
 import { isUntouchableContract } from '../../src/application/trainer/contract-untouchable'
+import {
+  SIGNED_COPY_STATES, closedStateOf, sameMailbox,
+  type ContractClosedView, type ContractLinkPurpose,
+} from '../../src/application/trainer/contract-link-state'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -66,6 +70,7 @@ import {
   academyLegalGapMessageAr, academyPartyLineAr, missingAcademyLegalFields,
 } from '../../src/data/academy-legal'
 import {
+  CONTRACT_NUMBER_PENDING_AR,
   CONTRACT_BODY_VERSION, bodyCarriesConditionClause, contractHasBodyAr,
   CONTRACT_CONSENT_AR, CONTRACT_CONSENT_VERSION, contractAcks,
   renderContractBodyAr,
@@ -2121,7 +2126,7 @@ export class TrainerReviewService {
         orderBy: { createdAt: 'desc' },
         take: 200,
         select: {
-          id: true, title: true, status: true, kind: true, revision: true,
+          id: true, number: true, title: true, status: true, kind: true, revision: true,
           bodyVersion: true, bodyHash: true, signerEmail: true,
           compensationType: true, compensationRate: true, currency: true,
           /* وبقيّةُ الأجر والبنودُ الخاصّة: نافذةُ «أعِدْه للتوقيع» تُملأ بها (١ أكتوبر ٢٠٢٦) */
@@ -2346,8 +2351,11 @@ export class TrainerReviewService {
     orientationAt: Date | null
     /** البندُ 21 — و`null` لعقدٍ بلا بنودٍ خاصّة */
     specialTermsAr: string | null
+    /** رقمُ العقد يُطبَع في ترويسته — و`null` لمعاينةٍ لم يُصرف لها رقم */
+    number: string | null
   }): ContractBodyInput {
     return {
+      contractNumber: args.number,
       academyPartyLineAr: academyPartyLineAr(),
       academyLegalNameAr: ACADEMY_LEGAL.legalNameAr,
       academyTradingNameAr: ACADEMY_LEGAL.tradingNameAr,
@@ -2396,6 +2404,9 @@ export class TrainerReviewService {
     const pre = await this.contractPrefill(applicationId)
     const chosen = this.chosenCourses(pre.courses, input.courseIds)
     return renderContractBodyAr(this.contractBodyInput({
+      /* والمعاينةُ قبل الإنشاء: لا رقمَ يُصرف لما قد لا يُنشأ — فيُقال موضعُه
+         («يُسنَد عند الحفظ»)، والمحفوظُ يحمله. وما عداه حرفا بحرف */
+      number: CONTRACT_NUMBER_PENDING_AR,
       /* والمعاينةُ تُري ما سيُطبَع: الاسمُ المكتوبُ الآن في الشاشة إن كُتب،
          وإلّا المعتمَدُ في الملفّ — فلا يُفاجأ الموظّفُ باسمٍ غيرِ الذي رأى. */
       fullName: input.trainerLegalNameAr?.trim() || pre.legalNameAr,
@@ -2504,7 +2515,7 @@ export class TrainerReviewService {
       where: { profileId: profile.id, signedAt: { not: null } },
       orderBy: { signedAt: 'desc' },
       select: {
-        id: true, title: true, status: true, kind: true, revision: true,
+        id: true, number: true, title: true, status: true, kind: true, revision: true,
         bodyAr: true, bodyVersion: true, bodyHash: true,
         signedAt: true, signerLegalName: true, signerAddressAr: true, signerPhone: true,
         consentTextAr: true, consentAcksAr: true, signedBodyHash: true,
@@ -2739,7 +2750,10 @@ export class TrainerReviewService {
     const legalNameAr = typedName || pre.legalNameAr
 
     const issuedOn = new Date()
+    /* ورقمُه قبل متنه: يُطبَع في ترويسته، فيُؤخذ من التسلسل قبل الإنشاء */
+    const number = await this.nextContractNumber()
     const bodyAr = renderContractBodyAr(this.contractBodyInput({
+      number,
       fullName: legalNameAr, email: pre.email, reference: pre.reference,
       courses: chosen,
       gatesActivation: pre.gatesActivation,
@@ -2788,6 +2802,7 @@ export class TrainerReviewService {
       }
       const contract = await tx.trainerContract.create({
         data: {
+          number,
           profileId: pre.profileId,
           title: input.title.trim(),
           kind: 'original',
@@ -2856,6 +2871,27 @@ export class TrainerReviewService {
     }
   }
 
+  /* ═══ وكلُّ رمزٍ يُصرف يُحفَظ — ليقول القديمُ حالَ عقده (١ أكتوبر ٢٠٢٦) ═══
+
+     `tokenHash` في العقد يحمل الحيَّ وحدَه، ويُكتب فوقه كلّما سُكّ غيرُه. فكان
+     الرابطُ القديمُ لا يُعرَف لأيّ عقدٍ كان، فيُقال له «غيرُ صالح» ولو كان عقدُه
+     قد وُقّع وخُتم. فيُحفَظ هنا كلُّ رمزٍ بعد أن يُكتب، وإلى أين ذهب — ومنه يقرأ
+     `contractByOldToken`. وكلُّ `mintContractToken` في هذا الملفّ يتبعه هذا
+     النداء (`server/tests/trainer/contract-link-states.test.ts`). */
+  private async rememberContractLink(
+    db: PrismaClient | Prisma.TransactionClient,
+    link: { contractId: string; tokenHash: string; expiresAt: Date; sentTo: string | null; purpose: ContractLinkPurpose },
+  ) {
+    await db.trainerContractLink.create({ data: link })
+  }
+
+  /** رقمُ العقد التالي — من الدالّة نفسِها التي تملأ العمودَ إن لم يُمرَّر
+   *  (`next_trainer_contract_number`)، فلا يفترق رقمٌ يُطبَع ورقمٌ يُحفَظ */
+  private async nextContractNumber(): Promise<string> {
+    const [row] = await this.prisma.$queryRaw<{ n: string }[]>`SELECT next_trainer_contract_number() AS n`
+    return row.n
+  }
+
   /* ═══ المثالُ الحسابيُّ يُرسَل ولا يُوقَّع ═══
 
      قرارُ صاحب المنصّة (٢٠ سبتمبر ٢٠٢٦): يُعرض على المدرّب مثالٌ بأرقامه هو
@@ -2890,6 +2926,8 @@ export class TrainerReviewService {
       orientationUrl: string | null
       conditionDeadlineAt: Date | null
       requiredDocuments: unknown
+      /** رقمُ العقد — يُقال في الوقائع */
+      number?: string
     }
     to: string; fullName: string; reference: string; url: string; expiresAt: Date; resend: boolean
     /** سطرٌ يُقدَّم على كلّ شيءٍ حين يكون لهذا الإرسالِ بعينه سببٌ يخصّه —
@@ -2919,7 +2957,7 @@ export class TrainerReviewService {
             { kind: 'p', text: 'اقرأ الوثيقة كاملة قبل التوقيع — وما فيها لم يتغيّر، الرابطُ وحدَه هو الجديد.' },
             { kind: 'cta', label: 'اقرأ ووقّع', href: args.url },
             { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
-            { kind: 'facts', rows: [{ label: 'رقم الطلب', value: args.reference }] },
+            { kind: 'facts', rows: contractFactsRows(args.reference, contract.number) },
           ],
         }),
       })
@@ -2929,6 +2967,7 @@ export class TrainerReviewService {
       const mail = conditionalOfferMail({
         fullName: args.fullName,
         reference: args.reference,
+        contractNumber: contract.number,
         url: args.url,
         noticeAr: notice ?? null,
         expiresAt: args.expiresAt,
@@ -2961,7 +3000,7 @@ export class TrainerReviewService {
           { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
           { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
           { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
-          { kind: 'facts', rows: [{ label: 'رقم الطلب', value: args.reference }] },
+          { kind: 'facts', rows: contractFactsRows(args.reference, contract.number) },
           { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
         ],
       }),
@@ -3015,6 +3054,7 @@ export class TrainerReviewService {
         data: { status: 'sent', sentAt: new Date(), tokenHash, tokenExpiresAt: expiresAt, signerEmail: app.email },
       })
       if (moved.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد مسودّة', 409)
+      await this.rememberContractLink(tx, { contractId, tokenHash, expiresAt, sentTo: app.email, purpose: 'sent' })
       /* ═══ وحالةُ الطلب تُسأل بنفسها لا بعلَم الاشتراط ═══
 
          كان الشرطُ `contract.gatesActivation`، وكان يساوي `status !== 'active'`
@@ -3098,6 +3138,9 @@ export class TrainerReviewService {
     if (done.count === 0) {
       throw new AuthError('bad_state', 'لا طلبَ تعديلٍ قائمٌ على هذا العقد', 409)
     }
+    await this.rememberContractLink(this.prisma, {
+      contractId, tokenHash, expiresAt, sentTo: contract.profile.application.email, purpose: 'amendment_reply',
+    })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.contract.amendment_replied',
       entityType: 'trainer_contract', entityId: contractId,
@@ -3119,6 +3162,7 @@ export class TrainerReviewService {
       reference: app.reference,
       title: contract.title,
       replyAr: reply.slice(0, AMENDMENT_TEXT_MAX),
+      contractNumber: contract.number,
       url: this.signingUrl(token),
       expiresOnAr: fmtDateWith(expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
     })
@@ -3199,7 +3243,7 @@ export class TrainerReviewService {
    *  في نفَسٍ واحد، وهو خبرٌ لا يعنيه ويُقلقه. */
   private async notifyContractRevoked(
     contract: {
-      status: string; title: string
+      status: string; title: string; number?: string
       signerEmail: string | null
       profile: { application: { email: string; fullName: string; reference: string } }
     },
@@ -3213,7 +3257,7 @@ export class TrainerReviewService {
     const app = contract.profile.application
     try {
       const doc = contractRevokedMail({
-        fullName: app.fullName, reference: app.reference,
+        fullName: app.fullName, reference: app.reference, contractNumber: contract.number,
         title: contract.title, reasonAr, reissue,
       })
       const sent = await sendDirectEmail(this.prisma, {
@@ -3420,6 +3464,8 @@ export class TrainerReviewService {
       }
       const app = c.profile.application
       const nextBody = renderContractBodyAr(this.contractBodyInput({
+        /* والرقمُ رقمُه: التحديثُ يُعيد الصياغةَ لا يصنع عقدا جديدا */
+        number: c.number,
         fullName: c.signerLegalName || app.fullName,
         email: c.signerEmail ?? app.email,
         reference: app.reference,
@@ -3492,6 +3538,7 @@ export class TrainerReviewService {
         const mail = contractUpdatedMail({
           fullName: app.fullName,
           reference: app.reference,
+          contractNumber: c.number,
           title: c.title,
           changeGroups: changeGroupsBetween(from, CONTRACT_BODY_VERSION),
           awaitingReply: isAmendmentRequested(c.status),
@@ -3569,6 +3616,7 @@ export class TrainerReviewService {
       try {
         const mail = contractLapsedMail({
           fullName: app.fullName, reference: app.reference, title: contract.title, expiredAt: promised,
+          contractNumber: contract.number,
         })
         emailDelivery = (await sendDirectEmail(this.prisma, { to, subject: mail.subject, ...renderMail(mail.doc) })).status
       } catch {
@@ -3581,6 +3629,9 @@ export class TrainerReviewService {
     const expiresAt = promised ?? minted.expiresAt
     await this.prisma.trainerContract.update({
       where: { id: contract.id }, data: { tokenHash: minted.tokenHash, tokenExpiresAt: expiresAt },
+    })
+    await this.rememberContractLink(this.prisma, {
+      contractId: contract.id, tokenHash: minted.tokenHash, expiresAt, sentTo: to, purpose: 'link_request',
     })
     /* والفاعلُ هو المدرّبُ نفسُه لا موظّف — فلا `actorId` يُنسَب إليه غيرُه.
        والأجلُ نصّا: `sanitize` الأثرِ يجعل `Date` كائنا فارغا */
@@ -3610,6 +3661,7 @@ export class TrainerReviewService {
     await this.prisma.trainerContract.update({
       where: { id: contractId }, data: { tokenHash, tokenExpiresAt: expiresAt },
     })
+    await this.rememberContractLink(this.prisma, { contractId, tokenHash, expiresAt, sentTo: app.email, purpose: 'resend' })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.contract.resend', entityType: 'trainer_contract', entityId: contractId,
       meta: { sentTo: app.email, expiresAt },
@@ -3654,6 +3706,7 @@ export class TrainerReviewService {
       throw new AuthError('already_reminded', 'تغيّر العرضُ قبل الإرسال — أُرسل تذكيرُه أو وُقّع. حدِّثِ الصفحة', 409)
     }
     const to = contract.signerEmail ?? app.email
+    await this.rememberContractLink(this.prisma, { contractId, tokenHash, expiresAt, sentTo: to, purpose: 'final_reminder' })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.contract.final_reminder_sent', entityType: 'trainer_contract', entityId: contractId,
       /* والأجلُ نصّا: `sanitize` الأثرِ يجعل `Date` كائنا فارغا — فيضيع الأجلُ من سجلّه */
@@ -3664,6 +3717,7 @@ export class TrainerReviewService {
     try {
       const mail = contractFinalReminderMail({
         fullName: app.fullName, reference: app.reference, title: contract.title, url, expiresAt,
+        contractNumber: contract.number,
       })
       emailDelivery = (await sendDirectEmail(this.prisma, { to, subject: mail.subject, ...renderMail(mail.doc) })).status
     } catch {
@@ -3727,44 +3781,130 @@ export class TrainerReviewService {
      فرسائلُ الردّ تفرّق بين «لم يعد صالحا» و«وُقّع» و«أُلغي»، لأنّ من يقف
      أمام بابٍ مغلقٍ يحتاج أن يعرف أيَّ بابٍ هو. */
 
-  private async byToken(token: string) {
+  /** العقدُ الذي هذا رمزُه الحيّ — أو `null` */
+  private async findByLiveToken(token: string) {
     if (!token || token.length < 16) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 400)
-    const c = await this.prisma.trainerContract.findUnique({
+    return this.prisma.trainerContract.findUnique({
       where: { tokenHash: sha256(token) },
       include: {
         documents: { orderBy: { uploadedAt: 'asc' } },
         profile: { include: { application: true } },
       },
     })
+  }
+
+  /** العقدُ برمزه الحيّ — وكلُّ فعلٍ يكتب يدخل من هنا وحدَه، لا من رابطٍ قديم */
+  private async byToken(token: string) {
+    const c = await this.findByLiveToken(token)
     if (!c) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح — تحقّقْ منه أو اطلب إعادةَ إرساله', 404)
     return c
   }
 
-  /** يُقرأ العقدُ من رابطه — ويُسجَّل أنّه فُتح */
+  /* ═══ رابطٌ ليس الحيَّ — يُقرأ من سجلّ الروابط (١ أكتوبر ٢٠٢٦) ═══
+
+     فيقول حالَ عقده كما هي اليوم، ومتى بُعث بعده الأحدث. ولا يُفتَح للتوقيع
+     أبدا: العرضُ المفتوحُ يُقال لرابطه القديم «بُعث بعدك أحدث» (`replaced`)،
+     وكلُّ فعلٍ يكتب يمرّ بـ`byToken` على الحيّ وحدَه. وما لم يُحفَظ — رابطٌ
+     صُرف قبل السجلّ أو حرفٌ مغلوط — يبقى «غيرُ صالح» كما كان. */
+  private async contractByOldToken(token: string) {
+    const link = await this.prisma.trainerContractLink.findUnique({
+      where: { tokenHash: sha256(token) },
+      include: { contract: { include: { profile: { include: { application: true } } } } },
+    })
+    if (!link) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح — تحقّقْ منه أو اطلب إعادةَ إرساله', 404)
+    const newer = await this.prisma.trainerContractLink.findFirst({
+      where: { contractId: link.contractId, createdAt: { gt: link.createdAt } },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    })
+    const view = await this.closedContractView(link.contract, { sentTo: link.sentTo, newerLinkAt: newer?.createdAt ?? null })
+    if (!view) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
+    return view
+  }
+
+  /* ═══ حالُ عقدٍ لا يُوقَّع من رابطه — بحالٍ واحدةٍ مسمّاة ورقمِه وتواريخه ═══
+
+     ① المتنُ مقفلا لعقدٍ **وُقّع** وحدَه (`SIGNED_COPY_STATES` مع `signedAt`) —
+        نافذا كان أو منتهيا أو أزاحه أحدثُ منه أو أُعيد إليه. فمن وقّع يقرأ ما
+        وقّعه من رابطه أبدا (طلبُ صاحب المنصّة). وما لم يُوقَّع لا متنَ على بابه
+        المغلق، ولا سببَ إلغاءٍ ولا اعتذار — كما كان (`closed-doors-say-which`).
+     ② والرابطُ القديمُ الذي ذهب إلى غير بريد الحيّ يُقال له الحالُ وحدَها
+        (`detailed: false`): من صُحّح بريدُه بعد خطإٍ لا يقرأ عقدَه من وصله الأوّل. */
+  private async closedContractView(
+    c: Prisma.TrainerContractGetPayload<{ include: { profile: { include: { application: true } } } }>,
+    old: { sentTo: string | null; newerLinkAt: Date | null } | null,
+  ): Promise<ContractClosedView<Date> | null> {
+    const state = closedStateOf(c, { old: old !== null, now: new Date() })
+    if (!state) return null
+    let detailed = true
+    if (old) {
+      const live = c.tokenHash
+        ? await this.prisma.trainerContractLink.findUnique({ where: { tokenHash: c.tokenHash }, select: { sentTo: true } })
+        : null
+      detailed = sameMailbox(old.sentTo, live?.sentTo ?? c.signerEmail ?? c.profile.application.email)
+    }
+    const showBody = detailed && Boolean(c.signedAt) && SIGNED_COPY_STATES.includes(state)
+    return {
+      state,
+      number: c.number,
+      title: c.title,
+      newerLinkAt: old?.newerLinkAt ?? null,
+      detailed,
+      signedAt: c.signedAt,
+      signerLegalName: detailed ? c.signerLegalName : null,
+      countersignedAt: c.countersignedAt,
+      supersededAt: c.supersededAt,
+      terminatedAt: c.terminatedAt,
+      declinedAt: c.declinedAt,
+      revokedAt: c.revokedAt,
+      revokedForResign: state === 'revoked' && c.revokeReasonAr === RESIGN_REVOKE_REASON_AR,
+      requestedAt: state === 'amendment_requested' ? c.amendmentRequestedAt : null,
+      requestAr: detailed && state === 'amendment_requested' ? c.amendmentRequestAr : null,
+      expiredAt: state === 'expired' ? c.tokenExpiresAt : null,
+      afterFinalReminder: state === 'expired' && Boolean(c.finalReminderAt),
+      successor: state === 'revoked' || state === 'superseded' ? await this.successorOf(c) : null,
+      bodyAr: showBody ? c.bodyAr : null,
+      bodyHash: showBody ? c.bodyHash : null,
+    }
+  }
+
+  /** العقدُ الذي جاء بعد هذا — ليُقال رقمُه. والمسمّى أوّلا: من أزاحه بالختم
+   *  (`supersededByContractId`) ثمّ بديلُه المصرَّحُ به (`replacesContractId`)،
+   *  ثمّ أوّلُ عقدٍ أُرسل إليه بعده (جوابُ التعديل بعقدٍ يُركَّب بيد). ولا تُذكَر
+   *  مسوّدةٌ لم تخرج إليه، ولا ملحقٌ يُضاف إلى نافذٍ فلا يحلّ محلَّ شيء. */
+  private async successorOf(c: { id: string; profileId: string; createdAt: Date; supersededByContractId: string | null }) {
+    const pick = { number: true, title: true, status: true, sentAt: true } as const
+    if (c.supersededByContractId) {
+      return this.prisma.trainerContract.findUnique({ where: { id: c.supersededByContractId }, select: pick })
+    }
+    const named = await this.prisma.trainerContract.findFirst({
+      where: { replacesContractId: c.id, status: { not: 'draft' } },
+      orderBy: { createdAt: 'asc' },
+      select: pick,
+    })
+    if (named) return named
+    return this.prisma.trainerContract.findFirst({
+      where: { profileId: c.profileId, createdAt: { gt: c.createdAt }, status: { not: 'draft' }, kind: { not: 'annex' } },
+      orderBy: { createdAt: 'asc' },
+      select: pick,
+    })
+  }
+
+  /** يُقرأ العقدُ من رابطه — الحيِّ أو القديم — ويُسجَّل أنّ الحيَّ فُتح.
+   *
+   *  وكلُّ حالٍ غيرِ «مفتوحٍ للتوقيع» تُقال باسمها من `closedContractView`:
+   *  كانت أربعٌ منها — المعتمَدُ والمُزاحُ والمنتهي والقديمُ المستبدَل — تسقط
+   *  على «غيرُ صالح» فتقرأ «انتهى هذا الرابط: إمّا اعتُذر أو سُحب أو…».
+   *  والمتنُ مع الموقَّع: من وقّع له أن يقرأ ما وقّعه، ولا يُوسَّع بذلك ما
+   *  يُرى — الرابطُ نفسُه كان يعرض المتنَ كاملا قبل التوقيع. */
   async contractByToken(token: string) {
-    const c = await this.byToken(token)
+    const c = await this.findByLiveToken(token)
+    if (!c) return this.contractByOldToken(token)
     const now = new Date()
-    if (c.status === 'signed') {
-      /* والمتنُ معه: من وقّع له أن يقرأ ما وقّعه، وهذا بابُه الوحيدُ إليه
-         قبل أن يُختَم العقدُ ويُفتح حسابُه. ولا يُوسَّع بذلك ما يُرى: الرابطُ
-         نفسُه كان يعرض المتنَ كاملا قبل التوقيع. */
-      return {
-        state: 'signed' as const, title: c.title,
-        signedAt: c.signedAt, signerLegalName: c.signerLegalName,
-        bodyAr: c.bodyAr, bodyHash: c.bodyHash,
-      }
-    }
-    if (isAmendmentRequested(c.status)) {
-      return {
-        state: 'amendment_requested' as const, title: c.title,
-        requestedAt: c.amendmentRequestedAt, requestAr: c.amendmentRequestAr,
-      }
-    }
-    if (c.status === 'declined') return { state: 'declined' as const, title: c.title, declinedAt: c.declinedAt }
-    if (c.status === 'revoked') return { state: 'revoked' as const, title: c.title }
-    if (c.status !== 'sent') throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
-    if (c.tokenExpiresAt && c.tokenExpiresAt < now) {
-      return { state: 'expired' as const, title: c.title, expiredAt: c.tokenExpiresAt }
+    if (c.status !== 'sent' || (c.tokenExpiresAt && c.tokenExpiresAt < now)) {
+      const closed = await this.closedContractView(c, null)
+      if (!closed) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
+      return closed
     }
 
     await this.prisma.trainerContract.update({
@@ -3801,6 +3941,8 @@ export class TrainerReviewService {
          يمسّ المال، وسطرٌ يقول «صياغةٌ فحسب» يُحتجّ به على الأكاديميّة. */
       bodyUpdated: Boolean(c.bodyUpdatedAt),
       contractId: c.id,
+      /* ورقمُه فوق النصّ — يُقال ويُبحث به (١ أكتوبر ٢٠٢٦) */
+      number: c.number,
       title: c.title,
       /* والمعروضُ في رأس الصفحة هو **المطبوعُ في الديباجة** لا اسمُ الحساب:
          رأسٌ يقول اسما والوثيقةُ تحته تقول آخرَ يجعل القارئَ يظنّ الفرقَ
@@ -4045,6 +4187,7 @@ export class TrainerReviewService {
       const mail = signedCopyMail({
         legalName,
         title: c.title,
+        contractNumber: c.number,
         signedOnAr: fmtDateWith(signedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
         bodyHash: c.bodyHash ?? '—',
         conditional: c.gatesActivation,
@@ -4360,6 +4503,7 @@ export class TrainerReviewService {
         portalUrl: `${publicSiteUrl()}/trainer`,
         guideUrl: `${publicSiteUrl()}${TRAINER_GUIDE_PATH}`,
         gatesActivation: c.gatesActivation,
+        contractNumber: c.number,
       })
       await sendDirectEmail(this.prisma, {
         to: c.signerEmail ?? app.email,
@@ -4561,7 +4705,10 @@ export class TrainerReviewService {
         : null
     const courses = over.courses ?? readContractCourses(old.qualifiedSnapshot)
     const specialTermsAr = over.specialTermsAr !== undefined ? over.specialTermsAr : old.specialTermsAr
+    /* والبديلُ عقدٌ آخرُ برقمٍ آخر: من وقّع الأوّلَ ثمّ أُعيد إليه يعرف أيَّهما بين يديه */
+    const number = await this.nextContractNumber()
     const bodyAr = renderContractBodyAr(this.contractBodyInput({
+      number,
       fullName: name,
       email: old.signerEmail ?? app.email,
       reference: app.reference,
@@ -4580,6 +4727,7 @@ export class TrainerReviewService {
     }))
     /* والبديلُ يُنشأ مسودّةً، ويقول صفُّه من حلَّ محلَّه */
     return {
+      number,
       profileId: old.profileId,
       title: old.title,
       kind: 'replacement',
@@ -4781,6 +4929,7 @@ export class TrainerReviewService {
         greetingName: name, subjectAr: subject, bodyAr: body, changeGroups,
         signingUrl: sent.signingUrl,
         expiresOnAr: fmtDateWith(sent.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
+        contractNumber: created.number,
       })
       const out = await sendDirectEmail(this.prisma, {
         to: old.signerEmail ?? app.email, subject: mail.subject, ...renderMail(mail.doc),
