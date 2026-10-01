@@ -30,7 +30,7 @@ import { FINAL_REMINDER_DAYS, daysWindowAr } from "@/application/trainer/notice-
 import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
-  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, resignChangeGroups, RESIGN_NO_CHANGES_AR,
+  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, resignChangeGroups, noChangesLineAr,
   DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR, defaultAmendmentAcceptBodyAr, hasAmendmentPlaceholder, versionReadByRequester,
 } from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
@@ -2060,7 +2060,7 @@ c.gatesActivation
               ) : (
                 <Panel tone="accent" className="mt-3 p-3 text-read leading-7">
                   <span className="block opacity-70">لا تغييرَ بين نصّه والنصّ الحاضر — فتقول له الرسالة:</span>
-                  <b className="block">{RESIGN_NO_CHANGES_AR}</b>
+                  <b className="block">{noChangesLineAr(r.mode)}</b>
                 </Panel>
               )}
               <div className="mt-5 flex flex-wrap items-center gap-2">

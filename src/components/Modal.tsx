@@ -21,6 +21,24 @@ export default function Modal({
   const panelRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<Element | null>(null);
 
+  /* ═══ والتهيئةُ مرّةً عند الفتح — لا مع كلّ رسم (١ أكتوبر ٢٠٢٦) ═══
+
+     كان مفعولُ التهيئة معلَّقا بـ`[onClose]`، و`onClose` يُمرَّر دالّةً جديدةً في
+     كلّ رسم (`onClose={() => setX(null)}`). فكلُّ حرفٍ في نموذجٍ داخل النافذة —
+     وحالُه عند الأب — يُعيد رسمَ الأب فيُعيد المفعول: يُرَدّ التركيزُ إلى ما
+     قبل الفتح، ثمّ يُنقَل إلى أوّل عنصرٍ في النافذة. بلاغُ صاحب المنصّة على
+     نافذة الإعادة للتوقيع وقبول التعديل: «إذا كتبتُ حرفا في النصوص أدناه
+     ينتقل المؤشّر إلى العنوان بعد كلّ حرف» — وقيس في متصفّح: «abc» في الخانة
+     الثانية صارت «a» فيها و«bc» في العنوان.
+
+     فالتهيئةُ (نقلُ التركيز، و`inert`، ومنعُ التمرير، ومستمعُ المفاتيح) مرّةً
+     عند الفتح وتُفكّ عند الإغلاق، و`onClose` يُقرأ أحدثُه من مرجعٍ ساعةَ يُضغط
+     Escape. والحارس: `src/tests/design/modal-focus-once.test.ts`. */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     returnFocusRef.current = document.activeElement;
     const root = document.getElementById("root");
@@ -37,7 +55,7 @@ export default function Modal({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !panel) return;
@@ -63,7 +81,7 @@ export default function Modal({
       document.body.style.overflow = prevOverflow;
       (returnFocusRef.current as HTMLElement | null)?.focus?.();
     };
-  }, [onClose]);
+  }, []);
 
   return createPortal(
     <div className="fixed inset-0 z-[70] overflow-y-auto bg-paper/70 backdrop-blur-sm" onClick={onClose}>

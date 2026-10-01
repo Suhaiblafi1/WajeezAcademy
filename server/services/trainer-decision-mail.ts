@@ -28,7 +28,9 @@
    هنا يقود إلى بابٍ مغلق. */
 
 import type { MailBlock, MailDoc } from './mail-template'
-import { RESIGN_CHANGES_HEADING_AR, RESIGN_NO_CHANGES_AR, resignParagraphs } from '../../src/application/trainer/contract-resign'
+import {
+  RESIGN_CHANGES_HEADING_AR, noChangesLineAr, resignParagraphs, type ReissueMode,
+} from '../../src/application/trainer/contract-resign'
 import type { ChangeGroup } from '../../src/application/trainer/contract-changelog'
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
@@ -958,6 +960,10 @@ export interface ContractResignMailInput {
   expiresOnAr: string
   /** رقمُ العقد **الجديد** الذي يُوقَّع — فمن وقّع الأوّلَ يعرف أيَّهما بين يديه */
   contractNumber?: string | null
+  /** أيُّ البابين: الإعادةُ للتوقيع أم قبولُ طلب التعديل — فجملةُ «لا تغيير»
+   *  لكلٍّ منهما (`noChangesLineAr`). ومطلوبٌ لا اختياريّ: لو كان له افتراضٌ
+   *  لَعاد بابٌ نُسي تمريرُه إلى «منذ آخر توقيعٍ لك» لمن لم يوقّع. */
+  mode: ReissueMode
 }
 
 /** «حُدّث النصُّ — أعِدْه للتوقيع»: نصُّ الموظّف، ثمّ ما تغيّر بطاقاتٍ تحت
@@ -982,8 +988,9 @@ export function contractResignMail(input: ContractResignMailInput): DecisionMail
     blocks.push({ kind: 'changes', groups: input.changeGroups })
     blocks.push({ kind: 'note', text: 'هذا ملخّصٌ بأبرز ما تغيّر — والنصُّ الكاملُ في العقد نفسِه، وهو الملزِم.' })
   } else {
-    /* ومن وقّع الإصدارَ الحاضرَ يُقال له ذلك صريحا — لا يُترك يبحث عن قائمة */
-    blocks.push({ kind: 'callout', text: RESIGN_NO_CHANGES_AR })
+    /* ومن لم يتغيّر عقدُه يُقال له ذلك صريحا — لا يُترك يبحث عن قائمة. وبجملة
+       بابه: من طلب تعديلا لم يوقّع، فلا يُقال له «منذ آخر توقيعٍ لك» */
+    blocks.push({ kind: 'callout', text: noChangesLineAr(input.mode) })
   }
   blocks.push(
     /* و«المحدَّث» لمن تغيّر عقدُه وحدَه — فمن لم يتغيّر عقدُه لا يُقال له «محدَّث» */
