@@ -38,7 +38,9 @@ export const CONTRACT_CLOSED_STATES = [
   'replaced',
   /** وقّعه، وينتظر اعتمادَنا */
   'signed',
-  /** وقّعه واعتمدناه — نافذ */
+  /** عرضٌ مشروطٌ اعتمدنا توقيعَه وفتحنا بوّابتَه — ولم نوقّعه بعد (١ أكتوبر ٢٠٢٦) */
+  'signature_approved',
+  /** وقّعه ووقّعناه — نافذ */
   'countersigned',
   /** كان نافذا فحلّ محلَّه عقدٌ أحدثُ اعتُمد */
   'superseded',
@@ -52,7 +54,7 @@ export type ContractClosedState = (typeof CONTRACT_CLOSED_STATES)[number]
 
 /** الحالاتُ التي يُعرَض فيها المتنُ مقفلا — فكلُّها عقدٌ وُقّع */
 export const SIGNED_COPY_STATES: readonly ContractClosedState[] = [
-  'signed', 'countersigned', 'superseded', 'terminated', 'revoked',
+  'signed', 'signature_approved', 'countersigned', 'superseded', 'terminated', 'revoked',
 ]
 
 /** العقدُ الذي حلّ محلَّ هذا — ليُقال رقمُه ومتى أُرسل */
@@ -75,6 +77,10 @@ export interface ContractClosedView<D = string> {
   detailed: boolean
   signedAt: D | null
   signerLegalName: string | null
+  /** عرضٌ مشروط؟ — فاعتمادُ توقيعه يفتح البوّابةَ ولا ينفذ به، ونوقّعه حين تُعتمَد دوراتُه */
+  conditional: boolean
+  /** اعتمدنا توقيعَه — وفي العرض المشروط ليس توقيعَنا */
+  signatureApprovedAt: D | null
   countersignedAt: D | null
   supersededAt: D | null
   terminatedAt: D | null
@@ -104,6 +110,7 @@ export function closedStateOf(
 ): ContractClosedState | null {
   switch (c.status) {
     case 'signed':
+    case 'signature_approved':
     case 'countersigned':
     case 'superseded':
     case 'terminated':

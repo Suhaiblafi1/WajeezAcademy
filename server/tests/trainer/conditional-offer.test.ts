@@ -81,7 +81,7 @@ async function signSent(contractId: string) {
 /** يوقّع ثمّ يُعتمَد توقيعُه — وبه تُكتب المهلةُ ويُفتح طورُ الموادّ */
 async function approveSent(contractId: string) {
   await signSent(contractId)
-  await review.countersignContract(contractId, academicId)
+  await review.approveSignature(contractId, academicId)
   return prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
 }
 
@@ -144,16 +144,18 @@ describe('المهلةُ تُكتب عند اعتماد التوقيع لا عن
      مرّ هذا الحارسُ بثلاث صياغات، وكلُّ واحدةٍ نقضُ ما قبلها: «عرضان بجلسةٍ
      واحدةٍ تنتهي مهلتُهما معا»، ثمّ «يُوقَّعان في لحظتَين فتختلف مهلتاهما»،
      وهذه: **يُعتمَدان** في لحظتَين فتختلف مهلتاهما — والفرقُ يُقاس من
-     `countersignedAt` لا من `signedAt`. */
+     `signatureApprovedAt` لا من `signedAt`. (وكان من `countersignedAt` حين كان
+     اعتمادُ التوقيع خَتما؛ وصار لا يختم العرضَ المشروط — ١ أكتوبر ٢٠٢٦.) */
   it('وعرضان بجلسةٍ واحدةٍ يُعتمَدان في لحظتَين مهلتاهما مختلفتان', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const first = await mkCandidate()
     const second = await mkCandidate()
     const ra = await signOffer(first.app.id, 'عرضٌ أوّل', SESSION.toISOString())
     const rb = await signOffer(second.app.id, 'عرضٌ ثانٍ', SESSION.toISOString())
-    expect(ra.countersignedAt!.getTime(), 'اعتُمدا في اللحظة نفسِها فلا يقيس الحارسُ شيئا')
-      .not.toBe(rb.countersignedAt!.getTime())
-    expect(ra.conditionDeadlineAt!.getTime() - ra.countersignedAt!.getTime(),
+    expect(ra.countersignedAt, 'خُتم العرضُ باعتماد توقيعه — قبل أن تُعتمَد دوراتُه').toBeNull()
+    expect(ra.signatureApprovedAt!.getTime(), 'اعتُمدا في اللحظة نفسِها فلا يقيس الحارسُ شيئا')
+      .not.toBe(rb.signatureApprovedAt!.getTime())
+    expect(ra.conditionDeadlineAt!.getTime() - ra.signatureApprovedAt!.getTime(),
       'المهلةُ لا تُقاس من الاعتماد').toBe(MATERIALS_WINDOW_DAYS * DAY)
     expect(ra.conditionDeadlineAt!.getTime(),
       'تساوت مهلتاهما — فالأصلُ ليس الاعتماد').not.toBe(rb.conditionDeadlineAt!.getTime())
@@ -183,10 +185,10 @@ describe('المهلةُ تُكتب عند اعتماد التوقيع لا عن
     const signedOnly = await signSent(made.id)
     expect(signedOnly.conditionDeadlineAt, 'جرت ساعتُه قبل أن نعتمد توقيعَه').toBeNull()
 
-    await review.countersignContract(made.id, academicId)
+    await review.approveSignature(made.id, academicId)
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
     expect(after.conditionDeadlineAt, 'اعتُمد ولا مهلةَ — فلا طورَ موادّ').not.toBeNull()
-    expect(after.conditionDeadlineAt!.getTime() - after.countersignedAt!.getTime())
+    expect(after.conditionDeadlineAt!.getTime() - after.signatureApprovedAt!.getTime())
       .toBe(MATERIALS_WINDOW_DAYS * DAY)
   })
 

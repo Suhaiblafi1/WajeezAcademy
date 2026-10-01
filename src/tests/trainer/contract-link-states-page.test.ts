@@ -110,8 +110,9 @@ describe('④ والبابُ الذي يجيب الواقف', () => {
     expect(DOOR, 'لا بابَ لطلب رابطٍ جديد').toMatch(/askLink && <Button as=\{Link\} to="\/contract-link"/)
   })
 
-  it('⚠️ و«عقدي» لما نفذ أو حلّ محلَّه غيرُه', () => {
-    expect(DOOR).toContain("const portal = view.state === 'countersigned' || view.state === 'superseded'")
+  /* ومن اعتُمد توقيعُه بوّابتُه مفتوحةٌ و«عقدي» فيها (١ أكتوبر ٢٠٢٦) */
+  it('⚠️ و«عقدي» لما اعتُمد توقيعُه أو نفذ أو حلّ محلَّه غيرُه', () => {
+    expect(DOOR).toContain("const portal = view.state === 'signature_approved' || view.state === 'countersigned' || view.state === 'superseded'")
     expect(DOOR).toMatch(/portal && <Button as=\{Link\} to="\/trainer\/contract"/)
   })
 })
@@ -126,7 +127,7 @@ describe('⑤ والقواعدُ المشتركة', () => {
     expect(closedStateOf({ status: 'sent', tokenExpiresAt: future }, { old: true, now })).toBe('replaced')
     expect(closedStateOf({ status: 'sent', tokenExpiresAt: past }, { old: false, now })).toBe('expired')
     expect(closedStateOf({ status: 'sent', tokenExpiresAt: past }, { old: true, now })).toBe('expired')
-    for (const s of ['signed', 'countersigned', 'superseded', 'terminated', 'declined', 'revoked', 'amendment_requested']) {
+    for (const s of ['signed', 'signature_approved', 'countersigned', 'superseded', 'terminated', 'declined', 'revoked', 'amendment_requested']) {
       expect(closedStateOf({ status: s, tokenExpiresAt: past }, { old: false, now }), s).toBe(s)
     }
     expect(closedStateOf({ status: 'draft', tokenExpiresAt: null }, { old: false, now })).toBeNull()

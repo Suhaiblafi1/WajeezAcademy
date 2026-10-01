@@ -145,7 +145,7 @@ describe('الاعتمادُ يفتح بابَ الموادّ — لا التو�
     await sign(token)
 
     const at = Date.now()
-    await review.countersignContract(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بهويّته' })
+    await review.approveSignature(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بهويّته' })
 
     const after = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: application.id } })
     expect(after.status, 'اعتُمد ولم يتحرّك طلبُه').toBe('onboarding')
@@ -173,7 +173,7 @@ describe('الاعتمادُ يفتح بابَ الموادّ — لا التو�
       gatesActivation: true, appStatus: 'conditionally_approved',
     })
     await sign(token)
-    await review.countersignContract(contract.id, adminId)
+    await review.approveSignature(contract.id, adminId)
 
     /* والمذكِّرُ لا يخرج إلّا قبل يومَين من الأجل، فتُقرَّب المهلةُ إلى نافذته:
        المقيسُ **أنّ العاملَ يجده**، لا مقدارُ المهلة — وذاك مقيسٌ أعلاه. */
@@ -216,7 +216,7 @@ describe('الاعتمادُ يفتح بابَ الموادّ — لا التو�
 
     /* ولا يرمي: نقلٌ غيرُ مشروعٍ يُسأل قبل أن يُطلَب، فلا يسقط توقيعٌ صحيح */
     await expect(sign(token)).resolves.toMatchObject({ ok: true })
-    await review.countersignContract(contract.id, adminId)
+    await review.approveSignature(contract.id, adminId)
 
     const after = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: application.id } })
     expect(after.status, 'وُثِّق بندٌ فعُطّل عن عمله').toBe('active')

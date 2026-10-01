@@ -642,16 +642,18 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return true
   }
 
+  /* والمسارُ `/countersign` اسمُه من قبل ١ أكتوبر ٢٠٢٦، يومَ كان الاعتمادُ خَتما في
+     كلّ حال. وصار يختم العقدَ غيرَ المشروط وحدَه، ويعتمد توقيعَ العرض المشروط
+     بلا خَتم (`approveSignature`). وبقي الاسمُ كي لا تقع نقرةٌ من صفحةٍ مفتوحةٍ
+     قبل النشر على بابٍ مغلق. */
   app.post('/api/admin/trainer-contracts/:contractId/countersign', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — ينفذ العقدُ ويُفعَّل حسابُه إن كان يحبسه' },
+    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — يفتح طورَ الموادّ في العرض المشروط بلا توقيعٍ منّا، ويختم العقدَ غيرَ المشروط' },
   }, async (req, reply) => {
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { noteAr } = z.object({ noteAr: z.string().trim().max(500).nullish() }).parse(req.body ?? {})
-    /* والرتبُ تُمرَّر لأنّ العرضَ المشروطَ يُختَم بـ`decide('activate')` —
-       وتجاوزُ بوّابة التجهيز للمدير الأعلى وحدَه، وهي تقرأ رتبتَه من هنا. */
-    return review.countersignContract(contractId, req.auth!.userId, {
+    return review.approveSignature(contractId, req.auth!.userId, {
       noteAr, actorRoles: req.auth!.roles,
     })
   })

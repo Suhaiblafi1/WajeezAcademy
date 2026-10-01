@@ -128,7 +128,7 @@ async function sealedTrainer(
      بوّابتُه وتبدأ مهلتُه، فيرفع موادَّه ويعلن اكتمالَها، فنعتمدها فيُنشَر.
      ولا تُكتب مهلةٌ قبل الاعتماد أصلا — فبلا هذا السطر يسقط المُعِدُّ على
      «لا مهلةَ قائمةً على حسابك». */
-  await review.countersignContract(contract.id, adminId)
+  await review.approveSignature(contract.id, adminId)
 
   /* ═══ ويُعلن اكتمالَ موادّه قبل النشر ═══
 

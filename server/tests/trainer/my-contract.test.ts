@@ -96,7 +96,7 @@ async function mkTrainer(opts: { sign?: boolean; countersign?: boolean } = {}) {
       ip: SIGNER.ip, userAgent: SIGNER.userAgent,
     })
     if (opts.countersign) {
-      await review.countersignContract(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بجواز السفر' })
+      await review.approveSignature(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بجواز السفر' })
     }
   }
   const cookie = (await auth.login(email, pass)).token

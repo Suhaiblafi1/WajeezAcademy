@@ -561,7 +561,10 @@ function CoursesStep({
 
 const CONTRACT_STATUS_AR: Record<string, string> = {
   draft: "مسودّة", sent: "أُرسل — بانتظار توقيعه", declined: "اعتذر عنه",
-  revoked: "أُلغي", signed: "وقّعه — بانتظار اعتمادنا", countersigned: "نافذ",
+  revoked: "أُلغي", signed: "وقّعه — بانتظار اعتمادنا",
+  /* اعتمدنا توقيعَه ولم نوقّعه — نوقّعه باعتماد دوراته (١ أكتوبر ٢٠٢٦) */
+  signature_approved: "اعتمدنا توقيعَه — نوقّعه باعتماد دوراته",
+  countersigned: "نافذ — وقّعناه",
   expired: "انقضى", terminated: "فُسخ",
 };
 
@@ -650,9 +653,13 @@ function ContractStep({
                       });
                       setSignOff(null); setSignOffNote("");
                       await onChanged();
-                    }, "نفَذ العقدُ — وتمّت الخطوةُ الثالثة")}
+                    }, awaitingCountersign.gatesActivation === false
+                      ? "وقّعنا العقدَ عن الأكاديميّة فنفَذ — وتمّت الخطوةُ الثالثة"
+                      /* والعرضُ المشروطُ لا ينفذ باعتماد توقيعه (١ أكتوبر ٢٠٢٦): كان
+                         هنا «نفَذ العقدُ» للبابَين */
+                      : "اعتُمد توقيعُه وفُتحت بوّابتُه — ونوقّع العرضَ حين تعتمد دوراتِه")}
                   >
-                    اعتمِدِ التوقيع
+                    {awaitingCountersign.gatesActivation === false ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيع"}
                   </Button>
                   <Button tone="ghost" size="sm" onClick={() => setSignOff(null)}>تراجعْ</Button>
                 </div>

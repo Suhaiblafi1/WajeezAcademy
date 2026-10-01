@@ -163,7 +163,7 @@ describe('④ وما وُقّع يُقرأ مقفلا في كلّ حالٍ بع�
 
   it('⚠️ اعتمدناه: «نافذ» ونسختُه — لا «انتهى هذا الرابط»', async () => {
     const s = await signedContract()
-    await review.countersignContract(s.contract.id, adminId)
+    await review.approveSignature(s.contract.id, adminId)
     const view = await review.contractByToken(s.token)
     expect(view.state, 'من خُتم عقدُه قيل له إنّ رابطه انتهى').toBe('countersigned')
     if (view.state !== 'countersigned') return
@@ -173,7 +173,7 @@ describe('④ وما وُقّع يُقرأ مقفلا في كلّ حالٍ بع�
 
   it('⚠️ أزاحه أحدثُ منه: يقول رقمَ الأحدث، ونسختُه باقيةٌ له', async () => {
     const s = await signedContract()
-    await review.countersignContract(s.contract.id, adminId)
+    await review.approveSignature(s.contract.id, adminId)
     const newer = await prisma.trainerContract.create({
       data: { profileId: s.profile.id, title: 'العقدُ الأحدث', status: 'countersigned', sentAt: new Date() },
     })
@@ -190,7 +190,7 @@ describe('④ وما وُقّع يُقرأ مقفلا في كلّ حالٍ بع�
 
   it('⚠️ وانتهى: يقول متى، ونسختُه باقيةٌ له', async () => {
     const s = await signedContract()
-    await review.countersignContract(s.contract.id, adminId)
+    await review.approveSignature(s.contract.id, adminId)
     const at = new Date()
     await prisma.trainerContract.update({
       where: { id: s.contract.id }, data: { status: 'terminated', terminatedAt: at },

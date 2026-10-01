@@ -59,7 +59,7 @@ async function countersigned() {
     legalName: 'الاسمُ القانونيّ', addressAr: 'عمّان — بناية ١٢', phone: '+962790000000',
     bodyHash: sha256(row.bodyAr!), acks: contractAcks(true).map((a) => a.key),
   })
-  await review.countersignContract(made.id, academicId)
+  await review.approveSignature(made.id, academicId)
   return { userId: user.userId, profileId: profile.id }
 }
 

@@ -43,6 +43,8 @@
 /** أبوابُ التغيير بترتيب البنود — وعنوانُ كلٍّ منها كما يُقرأ في الرسالة */
 export const CHANGE_TOPICS = [
   { key: 'delivery', titleAr: 'التدريب والشعبة — البندان 1 و3' },
+  /* بابُ البند 2 (١ أكتوبر ٢٠٢٦): متى نوقّع العرضَ المشروط — وكان قبله لا نقطةَ له */
+  { key: 'offer', titleAr: 'العرض المشروط وتوقيعنا — البند 2' },
   { key: 'fees', titleAr: 'الأتعاب — البند 4 والملحق (ب)' },
   { key: 'payout', titleAr: 'الكشف والصرف — البند 4' },
   { key: 'stoppage', titleAr: 'الاعتذار والإلغاء — البندان 6 و7' },
@@ -57,6 +59,9 @@ export type ChangeTopic = (typeof CHANGE_TOPICS)[number]['key']
 export interface ChangePoint {
   topic: ChangeTopic
   textAr: string
+  /** للعرض المشروط وحدَه — فلا يقرؤها من عقدُه غيرُ مشروط (اعتُمدت موادُّه أصلا)
+      نقطةً عن عرضٍ ليس له. وعلّتُه عند `changeGroupsBetween`. */
+  conditionalOnly?: true
 }
 
 /** نقاطُ إصدارٍ واحد */
@@ -74,6 +79,15 @@ export interface ChangeGroup {
 
 /* والترتيبُ من الأحدث إلى الأقدم — كما يُقرأ الجدول. */
 export const CONTRACT_CHANGELOG: readonly VersionChanges[] = [
+  /* قرارُ صاحب المنصّة: «لا أريد أن أتعاقد مع أحدٍ قبل أن أعتمد دوراته». وهي
+     للعرض المشروط وحدَه: العقدُ غيرُ المشروط يُختَم باعتماد توقيعه كما كان. */
+  {
+    version: 'v24-2026-10-01',
+    points: [
+      { topic: 'offer', conditionalOnly: true, textAr: 'لا نوقّع عرضَك إلّا يومَ نعتمد دوراتِك فيصير عقدا نهائيّا، واعتمادُ توقيعك يفتح بوّابتَك ولا يكون توقيعا منّا.' },
+      { topic: 'offer', conditionalOnly: true, textAr: 'وبنودُ طور الموادّ — مهلتُك وتمديدُها و«لا إخلال» — تسري بيننا من يوم توقيعك، قبل توقيعنا.' },
+    ],
+  },
   /* تصحيحُ إحالةٍ لا تغييرُ حقّ — فيُقال إنّه كذلك، تحت «صياغة العقد» لا
      «الاعتذار والإلغاء»: من يقرأ ذلك البابَ يبحث عمّا تبدّل في حقّه. */
   {
@@ -157,20 +171,34 @@ export function changesForVersion(version: string): readonly string[] {
 
    ولا يُفترَض أنّ القديمَ مذكورٌ في الجدول: عرضٌ من إصدارٍ سابقٍ للجدول
    يُقرأ له كلُّ ما فيه، وهو الصوابُ — إذ لا نعرف ما كان قبله. */
-export function changesBetween(fromVersion: string | null, toVersion: string): readonly string[] {
-  return changeGroupsBetween(fromVersion, toVersion).flatMap((g) => g.itemsAr)
+export function changesBetween(
+  fromVersion: string | null, toVersion: string, opts: ChangeAudience = {},
+): readonly string[] {
+  return changeGroupsBetween(fromVersion, toVersion, opts).flatMap((g) => g.itemsAr)
+}
+
+/** لمن تُقال النقاط — `conditional: false` يُسقط ما للعرض المشروط وحدَه.
+    وغيابُه يقول النقاطَ كلَّها: من لا يعرف أيَّ العقدين يقرأ لا يُحجَب عنه شيء. */
+export interface ChangeAudience {
+  conditional?: boolean
 }
 
 /** ما بين إصدارَين مجموعا تحت أبوابه بترتيب البنود — وبابٌ لا جديدَ فيه لا يُذكر.
  *
  *  وتحت الباب الواحد تبقى النقاطُ من الأقدم إلى الأحدث: الأحدثُ يُقرأ آخرا
  *  فيكون هو الحكمَ الباقي إن تكلّما في شيءٍ واحد. */
-export function changeGroupsBetween(fromVersion: string | null, toVersion: string): readonly ChangeGroup[] {
+export function changeGroupsBetween(
+  fromVersion: string | null, toVersion: string, opts: ChangeAudience = {},
+): readonly ChangeGroup[] {
   const order = [...CONTRACT_CHANGELOG].reverse()
   const toAt = order.findIndex((c) => c.version === toVersion)
   if (toAt < 0) return []
   const fromAt = fromVersion ? order.findIndex((c) => c.version === fromVersion) : -1
   const points = order.slice(fromAt + 1, toAt + 1).flatMap((c) => c.points)
+    /* ونقطةُ العرض المشروط لا تُقال لمن عقدُه غيرُ مشروط (`v24`): «لا نوقّع عرضَك
+       إلّا يومَ نعتمد دوراتك» خبرٌ كاذبٌ لمن اعتُمدت دوراتُه ويُختَم عقدُه
+       باعتماد توقيعه. */
+    .filter((p) => !(p.conditionalOnly && opts.conditional === false))
   return CHANGE_TOPICS
     .map((t) => ({ titleAr: t.titleAr, itemsAr: points.filter((p) => p.topic === t.key).map((p) => p.textAr) }))
     .filter((g) => g.itemsAr.length > 0)

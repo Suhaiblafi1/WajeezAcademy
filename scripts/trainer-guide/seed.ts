@@ -110,12 +110,13 @@ async function candidate(ctx: Ctx, email: string, reference: string, courses: st
   return app
 }
 
-/** يركّب العرضَ ويرسله، ويرفع الهويّة ويوقّع، ثمّ يُعتمَد التوقيع */
-async function signAndCountersign(ctx: Ctx, applicationId: string) {
+/** يركّب العرضَ ويرسله، ويرفع الهويّة ويوقّع، ثمّ يُعتمَد التوقيع — بلا خَتمٍ منّا:
+    العرضُ المشروطُ يُختَم يومَ تُعتمَد دوراتُه (١ أكتوبر ٢٠٢٦) */
+async function signAndApprove(ctx: Ctx, applicationId: string) {
   const { prisma, review } = ctx
   const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId } })
   const done = await prisma.trainerContract.findFirst({
-    where: { profileId: profile.id, status: 'countersigned' },
+    where: { profileId: profile.id, status: { in: ['signature_approved', 'countersigned'] } },
   })
   if (done) return done
   const made = await review.composeContract(applicationId, ctx.adminId, {
@@ -136,7 +137,7 @@ async function signAndCountersign(ctx: Ctx, applicationId: string) {
     phone: '+962790000000', bodyHash: sha256(row.bodyAr!),
     acks: contractAcks(true).map((a) => a.key),
   })
-  await review.countersignContract(made.id, ctx.adminId)
+  await review.approveSignature(made.id, ctx.adminId)
   return prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
 }
 
@@ -150,12 +151,12 @@ async function seedFresh(ctx: Ctx) {
   const app = await candidate(ctx, a.email, a.ref, [
     GUIDE_COURSES.message, GUIDE_COURSES.speaking, GUIDE_COURSES.negotiation,
   ])
-  const contract = await signAndCountersign(ctx, app.id)
+  const contract = await signAndApprove(ctx, app.id)
   const now = new Date()
   await prisma.trainerContract.update({
     where: { id: contract.id },
     data: {
-      countersignedAt: now, conditionDeadlineAt: deadlineFrom(now),
+      signatureApprovedAt: now, conditionDeadlineAt: deadlineFrom(now),
       conditionPausedAt: null, conditionExtendedAt: null, conditionExtensionsUsed: 0,
     },
   })
@@ -185,7 +186,7 @@ async function seedActive(ctx: Ctx) {
   if ((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })).status === 'active') {
     return prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })
   }
-  await signAndCountersign(ctx, app.id)
+  await signAndApprove(ctx, app.id)
   const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: app.id } })
   /* موادُّ كلِّ دورةٍ في «مؤهّلاتي» قبل الإعلان — والإعلانُ يُردّ بدونها */
   const mats = new TrainerMaterialsService(prisma)

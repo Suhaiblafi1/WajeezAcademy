@@ -69,9 +69,9 @@ describe('عقدٌ جديدٌ يُعتمَد لمن له عقدٌ نافذ', () 
   it('① القديمُ يُزاح بوقته ومن أزاحه — والجديدُ وحدَه نافذ', async () => {
     const { profile } = await trainer()
     const a = await signedFor(profile.id, 'العقدُ الأوّل')
-    await review.countersignContract(a.id, adminId, {})
+    await review.approveSignature(a.id, adminId, {})
     const b = await signedFor(profile.id, 'العقدُ الثاني')
-    await review.countersignContract(b.id, adminId, {})
+    await review.approveSignature(b.id, adminId, {})
 
     const oldRow = await prisma.trainerContract.findUniqueOrThrow({ where: { id: a.id } })
     const newRow = await prisma.trainerContract.findUniqueOrThrow({ where: { id: b.id } })
@@ -86,10 +86,10 @@ describe('عقدٌ جديدٌ يُعتمَد لمن له عقدٌ نافذ', () 
   it('② ودليلُ توقيع القديم وختمِه لا يُمَسّ', async () => {
     const { profile } = await trainer()
     const a = await signedFor(profile.id, 'العقدُ الأوّل')
-    await review.countersignContract(a.id, adminId, {})
+    await review.approveSignature(a.id, adminId, {})
     const before = await prisma.trainerContract.findUniqueOrThrow({ where: { id: a.id } })
     const b = await signedFor(profile.id, 'العقدُ الثاني')
-    await review.countersignContract(b.id, adminId, {})
+    await review.approveSignature(b.id, adminId, {})
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: a.id } })
     for (const col of [
       'signedAt', 'signerLegalName', 'signedBodyHash', 'bodyHash', 'bodyAr',
@@ -103,15 +103,15 @@ describe('عقدٌ جديدٌ يُعتمَد لمن له عقدٌ نافذ', () 
   it('③ ولا يُمَسّ عقدُ مدرّبٍ آخر — ولا يُزاح شيءٌ لمن لا نافذَ له', async () => {
     const other = await trainer()
     const theirs = await signedFor(other.profile.id, 'عقدُ غيره')
-    await review.countersignContract(theirs.id, adminId, {})
+    await review.approveSignature(theirs.id, adminId, {})
 
     const { profile } = await trainer()
     const first = await signedFor(profile.id, 'أوّلُ عقوده')
-    await review.countersignContract(first.id, adminId, {})
+    await review.approveSignature(first.id, adminId, {})
     expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: first.id } })).status).toBe('countersigned')
 
     const second = await signedFor(profile.id, 'ثانيها')
-    await review.countersignContract(second.id, adminId, {})
+    await review.approveSignature(second.id, adminId, {})
     const untouched = await prisma.trainerContract.findUniqueOrThrow({ where: { id: theirs.id } })
     expect(untouched.status, 'أُزيح عقدُ مدرّبٍ آخر').toBe('countersigned')
   })
@@ -119,9 +119,9 @@ describe('عقدٌ جديدٌ يُعتمَد لمن له عقدٌ نافذ', () 
   it('④ والأثرُ يُكتب على القديم بمن أزاحه', async () => {
     const { profile } = await trainer()
     const a = await signedFor(profile.id, 'العقدُ الأوّل')
-    await review.countersignContract(a.id, adminId, {})
+    await review.approveSignature(a.id, adminId, {})
     const b = await signedFor(profile.id, 'العقدُ الثاني')
-    await review.countersignContract(b.id, adminId, {})
+    await review.approveSignature(b.id, adminId, {})
     const row = await prisma.auditEvent.findFirst({
       where: { action: 'trainer.contract.superseded', entityId: a.id },
     })

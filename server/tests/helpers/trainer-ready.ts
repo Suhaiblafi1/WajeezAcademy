@@ -84,7 +84,7 @@ export async function makeReadyForApproval(
 
   /* ④ عقدٌ وقّعه */
   const signed = await prisma.trainerContract.findFirst({
-    where: { profileId, status: { in: ['signed', 'countersigned'] } },
+    where: { profileId, status: { in: ['signed', 'signature_approved', 'countersigned'] } },
   })
   if (!signed) {
     await prisma.trainerContract.create({

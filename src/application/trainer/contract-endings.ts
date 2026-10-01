@@ -114,7 +114,7 @@ export function recontractFor<C extends { id: string }>(
 ): { compose: C } | { blockedAr: string } | null {
   if (!isContractClosed(head.status)) return null
   /* ═══ والمُزاحُ لا يُعرض عليه شيء (١ أكتوبر ٢٠٢٦) ═══
-     أزاحه عقدٌ أحدثُ نافذٌ للمدرّب نفسِه (`countersignContract`) — فلا عقدَ
+     أزاحه عقدٌ أحدثُ نافذٌ للمدرّب نفسِه (`supersedePriorLive` ساعةَ خَتمه) — فلا عقدَ
      ينتظره صاحبُه، وأزرارُه على النافذ. ولولا هذا لَقيل تحته «لم يُقبَل داخليّا
      بعد»، وهو مدرّبٌ نشطٌ بعقدٍ نافذ. */
   if (head.status === 'superseded') return null

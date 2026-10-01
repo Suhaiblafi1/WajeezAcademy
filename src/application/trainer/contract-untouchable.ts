@@ -36,7 +36,7 @@ export interface ContractSignatureFacts {
 }
 
 /** الحالاتُ التي لا تكون إلّا بعد توقيع */
-const SIGNED_STATUSES = ['signed', 'countersigned', 'terminated', 'superseded'] as const
+const SIGNED_STATUSES = ['signed', 'signature_approved', 'countersigned', 'terminated', 'superseded'] as const
 
 export function isUntouchableContract(c: ContractSignatureFacts): boolean {
   if (c.signedAt !== null || c.countersignedAt !== null) return true

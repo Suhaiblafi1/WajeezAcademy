@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  renderContractBodyAr, CONTRACT_BODY_VERSION, type ContractBodyInput,
+  renderContractBodyAr, type ContractBodyInput,
 } from '@/application/trainer/contract-body'
 import { CONTRACT_CHANGELOG } from '@/application/trainer/contract-changelog'
 import { EXTENSION_DAYS, MATERIALS_WINDOW_DAYS } from '@/application/trainer/conditional-offer'
@@ -81,9 +81,10 @@ describe('7-2 — ملكيّةُ الموادّ في بندها', () => {
 })
 
 describe('ونقطةُ `v23` تقول إنّه تصحيحٌ لا تغييرُ حقّ', () => {
-  it('الإصدارُ الحاليّ، ونقطتُه تحت «صياغة العقد» تسمّي 7-2', () => {
-    expect(CONTRACT_BODY_VERSION).toBe('v23-2026-10-01')
-    const v = CONTRACT_CHANGELOG.find((x) => x.version === CONTRACT_BODY_VERSION)
+  /* ونقطتُه تُقرأ بإصدارها لا بالحاضر: رُفع الإصدارُ بعده (v24) فصار «الحاليُّ»
+     غيرَه، ونقطتُه هي هي. */
+  it('نقطتُه تحت «صياغة العقد» تسمّي 7-2', () => {
+    const v = CONTRACT_CHANGELOG.find((x) => x.version === 'v23-2026-10-01')
     expect(v, 'إصدارٌ بلا نقاط').toBeDefined()
     expect(v!.points.every((p) => p.topic === 'wording'), 'تصحيحُ إحالةٍ تحت بابٍ يُقرأ تغييرَ حقّ').toBe(true)
     const text = v!.points.map((p) => p.textAr).join(' ')

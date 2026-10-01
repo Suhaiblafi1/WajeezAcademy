@@ -155,7 +155,7 @@ const mkDocumented = () => mkSigned({ status: 'active', gatesActivation: false }
 describe('الاعتمادُ يُنفِذ العقدَ — ويفتح الحسابَ حيث يحبسه', () => {
   it('الموقَّعُ يصير نافذا، ويحمل اسمَ المفوَّضِ في السجلّ ومن ضغط فعلا', async () => {
     const { contract } = await mkDocumented()
-    const r = await review.countersignContract(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بالهويّة' })
+    const r = await review.approveSignature(contract.id, adminId, { noteAr: 'طابقتُ الاسمَ بالهويّة' })
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
     expect(after.status).toBe('countersigned')
     expect(after.countersignedAt).toBeTruthy()
@@ -189,10 +189,13 @@ describe('الاعتمادُ يُنفِذ العقدَ — ويفتح الحسا
   it('الاعتمادُ يمرّ ولا ينشر، والنشرُ يُردّ لمن لم تُعتمَد موادُّه', async () => {
     const { app, contract, userId } = await mkSigned()
 
-    await expect(review.countersignContract(contract.id, adminId, {}))
-      .resolves.toMatchObject({ ok: true, activated: false })
+    await expect(review.approveSignature(contract.id, adminId, {}))
+      .resolves.toMatchObject({ ok: true, activated: false, sealed: false })
     const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
-    expect(after.status).toBe('countersigned')
+    /* ④ (١ أكتوبر ٢٠٢٦) والاعتمادُ لا يوقّع عنّا: «لا أريد أن أتعاقد مع أحدٍ قبل
+       أن أعتمد دوراته». فيبقى العرضُ بلا خَتمٍ حتّى يُنشَر — والخَتمُ هناك. */
+    expect(after.status).toBe('signature_approved')
+    expect(after.countersignedAt, 'وقّعنا العرضَ باعتماد توقيعه — قبل أن نعتمد دوراته').toBeNull()
     expect(after.conditionMetAt, 'تحقّق شرطُ موادّه باعتماد توقيعه').toBeNull()
 
     /* والنشرُ — وهو موضعُ الحماية اليوم — يُردّ */
@@ -228,7 +231,7 @@ describe('الاعتمادُ يُنفِذ العقدَ — ويفتح الحسا
 
   it('ويردّ الجاهزيّةَ مع النتيجة — فيُقرأ الباقي حيث ضُغط', async () => {
     const { contract } = await mkDocumented()
-    const r = await review.countersignContract(contract.id, adminId, {})
+    const r = await review.approveSignature(contract.id, adminId, {})
     /* العقدُ صار موقَّعا، فخطوتُه خضراء — وما عداها يُقرأ من الرَّدّ نفسِه */
     expect(r.readiness.steps.find((st) => st.key === 'contract')!.done).toBe(true)
   })
@@ -236,20 +239,20 @@ describe('الاعتمادُ يُنفِذ العقدَ — ويفتح الحسا
   it('ولا يُعتمَد إلّا موقَّع — والمسودّةُ تُردّ', async () => {
     const { contract } = await mkDocumented()
     await prisma.trainerContract.update({ where: { id: contract.id }, data: { status: 'draft' } })
-    await expect(review.countersignContract(contract.id, adminId, {})).rejects.toThrow()
+    await expect(review.approveSignature(contract.id, adminId, {})).rejects.toThrow()
   })
 
   it('ولا يُعتمَد مرّتين — فالنافذُ لا يُنفَّذ ثانية', async () => {
     const { contract } = await mkDocumented()
-    await review.countersignContract(contract.id, adminId, {})
-    await expect(review.countersignContract(contract.id, adminId, {})).rejects.toThrow()
+    await review.approveSignature(contract.id, adminId, {})
+    await expect(review.approveSignature(contract.id, adminId, {})).rejects.toThrow()
   })
 
   it('⚠️ ومدرّبٌ نشطٌ أصلا يُعتمَد عقدُه ولا تُمسّ حالتُه', async () => {
     /* `gatesActivation = false`: بندٌ يُوثَّق على ملفٍّ حيّ. ونقلُه إلى
        `contract_pending` كان يطرده من بوّابته — «حسابك التدريبيّ موقوف». */
     const { app, contract } = await mkSigned({ status: 'active', gatesActivation: false })
-    await review.countersignContract(contract.id, adminId, {})
+    await review.approveSignature(contract.id, adminId, {})
     const appAfter = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: app.id } })
     expect(appAfter.status, 'مُسّت حالةُ مدرّبٍ يعمل').toBe('active')
   })
@@ -260,7 +263,7 @@ describe('الاعتمادُ يُنفِذ العقدَ — ويفتح الحسا
     const { contract, email } = await mkSigned({ withUser: false, status: 'active', gatesActivation: false })
     const self = await auth.register(email, 'Admin#12345', 'هو نفسُه')
     await auth.setRoles(self.userId, ['academic_manager'])
-    await expect(review.countersignContract(contract.id, self.userId, {})).rejects.toThrow(/بريدك/)
+    await expect(review.approveSignature(contract.id, self.userId, {})).rejects.toThrow(/بريدك/)
   })
 
   it('⚠️ ورفضُ التوقيع يُغلق العقدَ ولا يمحو دليلَه', async () => {
