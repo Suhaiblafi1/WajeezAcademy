@@ -1042,7 +1042,7 @@ export default function TrainerApplications() {
     /* زرُّ القرار في الشريط اللاصق: أضيقُ وبلا عرضٍ كامل، فالشريطُ صفٌّ لا عمود */
     const barButton = (d: Decision) => (
       <Button
-        key={`bar-${d.action}`} disabled={busy || (gatedByPrep(d.action) && !canOverride)}
+        key={`bar-${d.action}`} size="sm" disabled={busy || (gatedByPrep(d.action) && !canOverride)}
         title={gatedByPrep(d.action) ? `لا يُعتمَد قبل التجهيز — ${missingAr.join(" · ")}` : undefined}
         tone={d.tone === "danger" ? "danger" : d.action === recommended ? "primary" : "secondary"}
         icon={d.tone === "danger" ? XCircle : d.action === "undo_reject" || d.action === "undo_withdraw" ? RotateCcw : d.action === "request_demo" ? CalendarCheck : CheckCircle2}
@@ -1079,73 +1079,104 @@ export default function TrainerApplications() {
             نصفَ الشاشة ولا يتحرّك — والملفُّ تحته لا يُقرأ. قال صاحبُ المنصّة: «لا
             تتحرك وثابته على الهاتف… لأستطيع أن أرى الصفحة كاملة». فيمضي مع التمرير
             هناك ويبقى في رأس الصفحة، ويلصق من `lg` فما فوق حيث يسعه صفٌّ واحد.
-            وكذلك شريطُ «أقسام الملفّ» تحته. */}
-        <Card className="lg:sticky lg:top-0 z-20 -mx-1 mb-4 bg-paper/95 !px-4 !py-3 backdrop-blur-xl">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-black">{a.fullName}</p>
-              <p className="truncate font-mono text-read text-muted-foreground" dir="ltr">{a.reference}</p>
+            وكذلك شريطُ «أقسام الملفّ» تحته.
+
+            ═══ وعلى الحاسوب يلصق صفُّ الأزرار وحدَه — تحت الترويسة (١ أكتوبر ٢٠٢٦) ═══
+
+            ثمّ قِيس على الحاسوب فإذا العطبُ نفسُه بحجمٍ آخر. الشريطُ كلُّه كان يلصق
+            باسمه وأزراره وما ينقص: عند ١٢٨٠×٨٠٠ و١٣٦٦×٧٦٨ أكثرُ من نصف الشاشة. ولصق
+            عند `top-0` والترويسةُ لاصقةٌ هناك فوقه (`z-40`)، فغاب تحتها رأسُه — الاسمُ
+            والرقم. وغطّى شريطَ «أقسام الملفّ» (`z-10` تحت `z-20`) فلم يُرَ مع التمرير
+            قطّ. وأمر صاحبُ المنصّة بإصلاحه.
+
+            فصار قطعتَين على الحاسوب:
+            · **صفُّ الأزرار يلصق تحت الترويسة** — `lg:top-16` هو ارتفاعُها (`h-16`)،
+              والقيمتان في فضاء التكبير نفسِه (`--app-scale`) فتتطابقان بلا قياس.
+              ونغمتُه صلبة: ما يمرّ تحته متنٌ يُقرأ.
+            · **وما ينقص بطاقةٌ تحته تمضي مع التمرير.** وسببُ التعطيل لا يضيع
+              بمضيّها: الزرُّ المعطَّلُ يحمله في `title`، والتجاوزُ يفتح نافذةً تقوله.
+            وشريطُ «أقسام الملفّ» لم يعد يلصق — وسببُه في تعليقه أدناه.
+            والاسمُ يغيب عن الصفّ على الحاسوب: دربُ الوصول فوقه يحمله والعنوانُ يحمل
+            الرقم، وبقاؤه كان يكسر الصفَّ سطرَين. والأزرارُ بالمقاس الصغير: بالأوسط لا
+            يسعها صفٌّ عند ١٣٦٦ — ولا يُنزَل عن هدف اللمس، فـ٤٤ بكسلا أرضيّةُ كلّ زرّ.
+
+            ولماذا `contents`: الملتصقُ يلتصق داخلَ صندوق أبيه وحدَه، فلو بقي في
+            البطاقة لمضى معها بعد بضع مئاتٍ من البكسلات. فالبطاقةُ الخارجيّةُ بلا
+            صندوقٍ على الحاسوب (`lg:contents`) والقطعتان بطاقتان بنفسيهما، وعلى الهاتف
+            العكسُ (`max-lg:contents`): بطاقةٌ واحدةٌ كما كانت. */}
+        <Card className="-mx-1 mb-4 !px-4 !py-3 lg:contents">
+          <Card tone="solid" className="max-lg:contents lg:sticky lg:top-16 lg:z-20 lg:-mx-1 lg:mb-3 lg:!px-4 lg:!py-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 lg:hidden">
+                <p className="truncate text-sm font-black">{a.fullName}</p>
+                <p className="truncate font-mono text-read text-muted-foreground" dir="ltr">{a.reference}</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {available.length === 0
+                  ? <span className="text-read text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</span>
+                  : barActions.map((d) => barButton(d))}
+                {/* ⑦ «اطلب معلومات إضافية» يفتح خانةً تقول ما المطلوب — وكانت
+                    تُرسَل بلا سؤالٍ أصلا، فيقرأ المتقدّمُ اسمَ حالةٍ لا طلبا. */}
+                {available.some((d) => d.action === "request_info") && (
+                  <Button tone="secondary" size="sm" disabled={busy} icon={FileText} onClick={() => setAskOpen((v) => !v)}>
+                    اطلب معلومات إضافية
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {available.length === 0
-                ? <span className="text-read text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</span>
-                : barActions.map((d) => barButton(d))}
-              {/* ⑦ «اطلب معلومات إضافية» يفتح خانةً تقول ما المطلوب — وكانت
-                  تُرسَل بلا سؤالٍ أصلا، فيقرأ المتقدّمُ اسمَ حالةٍ لا طلبا. */}
-              {available.some((d) => d.action === "request_info") && (
-                <Button tone="secondary" disabled={busy} icon={FileText} onClick={() => setAskOpen((v) => !v)}>
-                  اطلب معلومات إضافية
-                </Button>
-              )}
-            </div>
-          </div>
+
+            {askOpen && (
+              <div className="mt-3 border-t border-white/10 pt-3">
+                <label htmlFor="ask-note" className="text-read font-bold text-muted-foreground">
+                  ما الذي تريده منه؟ يصله بنصّه في رسالةٍ وفي صفحة حالته.
+                </label>
+                <textarea
+                  id="ask-note" rows={3} value={askNote} onChange={(e) => setAskNote(e.target.value)}
+                  placeholder="مثال: نحتاج شهادة اعتمادك من الوكالة التونسية، وفيديو تدريبي واحد لا يقلّ عن عشر دقائق."
+                  className={`${staffAreaCls} mt-2`}
+                />
+                <div className="mt-2 flex items-center gap-2">
+                  <Button
+                    tone="secondary" disabled={busy || askNote.trim().length < 10}
+                    onClick={() => void act(
+                      () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: "request_info", note: askNote.trim() }),
+                      "أُرسل الطلب إليه — ونصُّه في صفحة حالته",
+                    ).then(() => { setAskNote(""); setAskOpen(false); })}
+                  >
+                    أرسل الطلب إليه
+                  </Button>
+                  <span className="text-read text-muted-foreground">
+                    {askNote.trim().length < 10 ? "اكتب ما تريده — عشرةُ أحرفٍ على الأقلّ." : "يصله بريدٌ بنصّه، ويبقى طلبه مفتوحا للتعديل."}
+                  </span>
+                </div>
+              </div>
+            )}
+          </Card>
 
           {/* ═══ ولا يُعطَّل زرٌّ في صمت ═══
 
               الزرُّ المعطَّلُ بلا سببٍ يجعل من ضغطه يظنّ الشاشةَ معطوبة. فسطرٌ
               تحته يقول ما ينقص بنصّه، وبابُه إلى «التجهيز» حيث يُعمل — لا إلى
               شاشةٍ أخرى يُبحث فيها عن اسمه. */}
+          {/* ولونُ الفاصل بلا بادئة، والبادئةُ على عرضه وحدَه: تجاوزُ المظهر الفاتح
+              مكتوبٌ لـ`.border-white/10` بعينه، و`max-lg:border-white/10` صنفٌ آخرُ لا
+              يبلغه — فغاب الفاصلُ على الورق (قِيس ١ أكتوبر ٢٠٢٦). */}
           {!ready && available.some((d) => d.action === "approve" || d.action === "activate") && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
-              <span className="text-read leading-6 text-gold-ink">
-                لا يُعتمَد اعتمادا كاملا قبل أن يتمّ تجهيزُه — <b>{missingAr.join(" · ")}</b>
-              </span>
-              <Button tone="secondary" size="sm" onClick={() => setTab("prep")}>
-                افتحْ «التجهيز»
-              </Button>
-              {canOverride && (
-                <span className="text-fine leading-5 text-muted-foreground">
-                  ولك — وحدَك — أن تتجاوزها بسببٍ يبقى مكتوبا.
+            <Card className="max-lg:contents lg:-mx-1 lg:mb-4 lg:!px-4 lg:!py-3">
+              <div className="flex flex-wrap items-center gap-2 border-white/10 max-lg:mt-3 max-lg:border-t max-lg:pt-3">
+                <span className="text-read leading-6 text-gold-ink">
+                  لا يُعتمَد اعتمادا كاملا قبل أن يتمّ تجهيزُه — <b>{missingAr.join(" · ")}</b>
                 </span>
-              )}
-            </div>
-          )}
-
-          {askOpen && (
-            <div className="mt-3 border-t border-white/10 pt-3">
-              <label htmlFor="ask-note" className="text-read font-bold text-muted-foreground">
-                ما الذي تريده منه؟ يصله بنصّه في رسالةٍ وفي صفحة حالته.
-              </label>
-              <textarea
-                id="ask-note" rows={3} value={askNote} onChange={(e) => setAskNote(e.target.value)}
-                placeholder="مثال: نحتاج شهادة اعتمادك من الوكالة التونسية، وفيديو تدريبي واحد لا يقلّ عن عشر دقائق."
-                className={`${staffAreaCls} mt-2`}
-              />
-              <div className="mt-2 flex items-center gap-2">
-                <Button
-                  tone="secondary" disabled={busy || askNote.trim().length < 10}
-                  onClick={() => void act(
-                    () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: "request_info", note: askNote.trim() }),
-                    "أُرسل الطلب إليه — ونصُّه في صفحة حالته",
-                  ).then(() => { setAskNote(""); setAskOpen(false); })}
-                >
-                  أرسل الطلب إليه
+                <Button tone="secondary" size="sm" onClick={() => setTab("prep")}>
+                  افتحْ «التجهيز»
                 </Button>
-                <span className="text-read text-muted-foreground">
-                  {askNote.trim().length < 10 ? "اكتب ما تريده — عشرةُ أحرفٍ على الأقلّ." : "يصله بريدٌ بنصّه، ويبقى طلبه مفتوحا للتعديل."}
-                </span>
+                {canOverride && (
+                  <span className="text-fine leading-5 text-muted-foreground">
+                    ولك — وحدَك — أن تتجاوزها بسببٍ يبقى مكتوبا.
+                  </span>
+                )}
               </div>
-            </div>
+            </Card>
           )}
         </Card>
 
@@ -1168,7 +1199,12 @@ export default function TrainerApplications() {
 
             والقراءةُ تسبق الحكمَ في العمل نفسِه: يُقرأ الملفُّ كاملا ثمّ
             يُعطى الدرجات. فترتيبُ الصفحة صار ترتيبَ الفعل. */}
-        <div className="space-y-5">
+        {/* ومن قفز من الفهرس إلى قسمٍ وقع عنوانُه تحت صفّ الأزرار اللاصق لا
+            خلفه. فعلى الحاسوب يلصق فوقه ما ارتفاعُه ١٢٧ بكسلا (الترويسةُ وصفٌّ
+            واحد) أو ١٧٩ (صفّان، تحت ١٣٦٦)، و`scroll-mt-28` الذي على كلّ قسمٍ ١١٢
+            وحدَها — فكان العنوانُ يقع تحت الشريط. والهامشُ هنا يعمّ الأقسامَ كلَّها
+            أينما كُتبت (`TrainerOps` و`InterviewQuestions` وأخواتُهما). */}
+        <div className="space-y-5 lg:[&_[id^=sec-]]:scroll-mt-48">
           <div className="space-y-4">
             {/* تبويبان لا عمودٌ طويل.
 
@@ -1202,9 +1238,18 @@ export default function TrainerApplications() {
                 بالحرف: «ما يطفو فوق غيره لا يجوز أن يكون شفّافا». فصار شريطا
                 أفقيّا صلبا: لا عرضَ يُسرق، ولا شيءَ تحته ليُقرأ من خلاله.
 
-                ولا يُطبع: أداةُ تنقّلٍ لا محتوى. */}
+                ولا يُطبع: أداةُ تنقّلٍ لا محتوى.
+
+                ═══ ولم يعد يلصق (١ أكتوبر ٢٠٢٦) ═══
+
+                كان `sticky top-20`، ولم يُرَ لاصقا على الحاسوب قطّ: شريطُ القرار
+                اللاصقُ فوقه (`z-20`) كان يغطّيه. ولمّا صار ذاك صفَّ أزرارٍ رفيعا تحت
+                الترويسة قِيس الثلاثةُ معا — الترويسةُ والصفُّ والفهرس — فإذا هي ٤٠–٥٠٪
+                من نافذة حاسوبٍ محمول (ارتفاعُها الفعليُّ ٦٥٠–٨٠٠ بعد شريط المتصفّح)،
+                وهو العطبُ الذي اشتكاه صاحبُ المنصّة على الهاتف بعينه. فيبقى في رأس
+                الملفّ فهرسا يُنقر، ويمضي مع التمرير كسائر الصفحة. */}
             {tab === "dossier" && (
-              <nav aria-label="أقسام الملفّ" className="lg:sticky lg:top-20 z-10">
+              <nav aria-label="أقسام الملفّ">
                 <Panel as="section" tone="solid" className="!px-3 !py-2">
                   <ul className="flex flex-wrap items-center gap-1">
                     {DOSSIER_SECTIONS.map((sc) => (
