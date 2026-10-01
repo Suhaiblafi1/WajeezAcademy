@@ -1346,6 +1346,38 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
   }
 }
 
+/* ═══ انقضت المهلةُ بعد التذكير الأخير — لمن طلب رابطا بعدها (١ أكتوبر ٢٠٢٦) ═══
+
+   من سقط عرضُه بعد التذكير الأخير ثمّ طلب رابطا ببريده لا يُسكّ له رمز (علّتُه
+   عند `requestContractLink`). ولا يُترك بلا جواب: يُقال له ما وقع ومتى، وأنّ
+   تجديدَ العرض بيد الأكاديمية — فيردّ إن كان ما زال يريده. ولا رابطَ فيها:
+   رابطُ توقيعٍ لعرضٍ سقط بابٌ إلى ما لا يُفتَح. */
+export interface ContractLapsedMailInput {
+  fullName: string
+  reference: string
+  title: string
+  expiredAt: Date
+}
+
+export function contractLapsedMail(input: ContractLapsedMailInput): DecisionMail {
+  const when = fmtDateWith(input.expiredAt, {
+    weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: ACADEMY_ZONE,
+  })
+  return {
+    subject: `انقضت مهلةُ عرضك — ${input.title} (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: `انقضت مهلةُ توقيع «${input.title}» ${when} بتوقيت عمّان.`,
+      heading: 'انقضت مهلةُ عرضك',
+      blocks: [
+        { kind: 'p', text: `طلبتَ رابطا جديدا لتوقيع «${input.title}». وقد أُرسل إليك به تذكيرٌ أخير، وانقضت مهلتُه ${when} بتوقيت عمّان — فسقط العرضُ ولم يعد يُوقَّع، كما ينصّ عقدُك.` },
+        { kind: 'callout', text: 'فإن كنتَ ما زلتَ تريده فردَّ على هذه الرسالة. وللأكاديمية أن تجدّد العرضَ ورابطَه بإخطارٍ جديد.' },
+        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+      ],
+    },
+  }
+}
+
 /* ═══ التذكيرُ الأخيرُ بالتوقيع (١ أكتوبر ٢٠٢٦) ═══
 
    طلبُ صاحب المنصّة: «يذكّر المدرّبَ آخرَ مرّةٍ بتوقيع الاتفاقيّة، والعقدُ صالحٌ

@@ -7,6 +7,8 @@
    ② والرسالةُ التي خرجت تقول إنّه الأخير، وإلى متى — بالرابط الجديد.
    ③ ومرّةً واحدة: الثاني يُردّ، ولا يُذكَّر إلّا عرضٌ مرسَلٌ لم يُوقَّع.
    ④ وبعد الأجل يسقط: الصفحةُ تقول «انتهى»، والتوقيعُ يُردّ.
+   ⑤ وطلبُ الرابط بالبريد (`/contract-link`) لا يمدّ الأجلَ ولا يقصّره: في
+      الأجل رابطٌ بالأجل نفسِه، وبعده لا رابطَ بل رسالةٌ تقول إنّ المهلةَ انقضت.
 
    والبريدُ يُلتقَط عند `sendDirectEmail` كأخيه `contract-resign`: ما يُقاس هو
    ما خرج من الخدمة، لا ما كان ينبغي أن يخرج. */
@@ -32,7 +34,7 @@ import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { EarningsService } from '../../services/earnings.service'
 import { contractAcks } from '../../../src/application/trainer/contract-body'
-import { FINAL_REMINDER_DAYS } from '../../../src/application/trainer/notice-periods'
+import { CONTRACT_SIGNING_LINK_DAYS, FINAL_REMINDER_DAYS } from '../../../src/application/trainer/notice-periods'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -193,5 +195,75 @@ describe('④ وبعد الأجل يسقط', () => {
       legalName: 'مدرّبٌ ينتظر توقيعا', addressAr: 'عمّان', phone: '+962790000000',
       bodyHash: sha256(c.bodyAr ?? ''), acks: contractAcks(c.gatesActivation).map((a) => a.key),
     }), 'وُقّع عرضٌ سقط').rejects.toMatchObject({ code: 'expired_token' })
+  })
+})
+
+describe('⑤ وطلبُ الرابط بالبريد لا يمدّ الأجلَ ولا يقصّره', () => {
+  /** رابطُ التوقيع من نصّ رسالةٍ خرجت — أو `null` إن لم يكن فيها */
+  const linkIn = (text: string) => {
+    const m = text.match(/\/c\/([A-Za-z0-9_%-]+)/)
+    return m ? decodeURIComponent(m[1]) : null
+  }
+
+  it('⚠️ بعد الأجل: لا رمزَ جديد — ورسالةٌ تقول إنّ المهلةَ انقضت، بلا رابط', async () => {
+    const { c, email } = await sentContract()
+    await review.sendFinalReminder(c.id, adminId)
+    const lapsedAt = new Date(Date.now() - 60_000)
+    await prisma.trainerContract.update({ where: { id: c.id }, data: { tokenExpiresAt: lapsedAt } })
+    const before = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
+    outbox.length = 0
+
+    const res = await review.requestContractLink(email)
+    expect(res.ok, 'جوابٌ يفرّق — فيكشف حالَ العرض لمن يملك البريد').toBe(true)
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
+    expect(after.tokenHash, 'سُكّ رمزٌ لعرضٍ سقط بعد التذكير الأخير — فالأجلُ كلمةٌ لا تُنفَّذ')
+      .toBe(before.tokenHash)
+    expect(after.tokenExpiresAt!.getTime(), 'مُدّ أجلُ عرضٍ سقط').toBe(lapsedAt.getTime())
+
+    expect(outbox, 'لم تُقَل له حالُه — أو خرجت رسالتان').toHaveLength(1)
+    const [mail] = outbox
+    expect(mail.to).toBe(email)
+    expect(mail.subject, 'العنوانُ لا يقول إنّ المهلةَ انقضت').toMatch(/^انقضت مهلةُ عرضك/)
+    expect(mail.text, 'لا يقول متى انقضت').toContain('بتوقيت عمّان')
+    expect(linkIn(mail.text), 'خرج رابطُ توقيعٍ لعرضٍ سقط').toBeNull()
+
+    const ev = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.contract.link_requested', entityId: c.id },
+    })
+    expect(ev, 'طلبٌ بلا أثر').not.toBeNull()
+    expect((ev!.meta as Record<string, unknown>).lapsed, 'الأثرُ لا يقول إنّه رُدّ لانقضاء المهلة').toBe(true)
+  })
+
+  it('⚠️ وفي الأجل: رابطٌ جديدٌ بالأجل نفسِه — والقديمُ يبطل', async () => {
+    const { c, email } = await sentContract()
+    const out = await review.sendFinalReminder(c.id, adminId)
+    outbox.length = 0
+
+    await review.requestContractLink(email)
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
+    expect(after.tokenExpiresAt!.getTime(), 'تغيّر الأجلُ الموعودُ في التذكير الأخير بطلب رابط')
+      .toBe(out.expiresAt.getTime())
+    await expect(review.contractByToken(tokenOf(out.signingUrl)), 'بقي رابطُ التذكير يعمل مع الجديد')
+      .rejects.toMatchObject({ code: 'invalid_token' })
+
+    expect(outbox, 'لم يخرج الرابطُ الجديد').toHaveLength(1)
+    const fresh = linkIn(outbox[0].text)
+    expect(fresh, 'الرسالةُ بلا رابط').not.toBeNull()
+    expect((await review.contractByToken(fresh!)).state, 'الرابطُ الجديدُ لا يفتح العرض').toBe('open')
+  })
+
+  /* والقيدُ للتذكير الأخير وحدَه: من لم يُذكَّر بعدُ فطلبُه يفتح له نافذةً كما كان */
+  it('ومن لم يُذكَّر بعدُ فطلبُه يفتح له يومَي النافذة كما كان', async () => {
+    const { c, email } = await sentContract()
+    await prisma.trainerContract.update({
+      where: { id: c.id }, data: { tokenExpiresAt: new Date(Date.now() - 60_000) },
+    })
+    const at = Date.now()
+    await review.requestContractLink(email)
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
+    expect(after.tokenExpiresAt!.getTime() - at, 'قُيّد طلبُ من لم يُذكَّر تذكيرَه الأخير')
+      .toBeGreaterThan(CONTRACT_SIGNING_LINK_DAYS * DAY - 60_000)
+    expect(outbox, 'لم يخرج رابطُه').toHaveLength(1)
+    expect(linkIn(outbox[0].text), 'خرجت رسالتُه بلا رابط').not.toBeNull()
   })
 })
