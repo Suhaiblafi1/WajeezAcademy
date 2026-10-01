@@ -216,8 +216,10 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
        وهي في حزمة `super_admin` بحكم أنّها تشمل الصلاحيّاتِ كلَّها. */
     'trainer.invite', 'trainer.qualify', 'trainer.assign', 'trainer.publish', 'trainer.suspend',
     'trainer.change.review',
-    /* يتعاقد ولا يسعّر: `trainer.contract.manage` هنا و`trainer.compensation.manage`
-       عند الماليّة. فيركّب العقدَ ويرسله، ويرى الأجرَ في شاشته مقروءا لا محرَّرا. */
+    /* يتعاقد ويضبط أجرَ العقد الذي يركّبه: `trainer.contract.manage` هنا يكفي لخانات
+       الأجر في المركِّب وفي «أعِدْه للتوقيع» — قرارُ صاحب المنصّة (١ أكتوبر ٢٠٢٦):
+       «the financial manager, academy manager and the super admin.. all can change».
+       و`trainer.compensation.manage` تبقى للماليّة: شاشةُ قواعد الأتعاب نفسُها. */
     'trainer.contract.manage',
     'cohort.manage', 'cohort.open', 'cohort.plan.approve', 'cohort.override_capacity', 'enrollment.manage',
     'material.manage', 'certificate.issue', 'certificate.revoke',
