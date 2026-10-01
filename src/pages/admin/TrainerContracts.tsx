@@ -23,11 +23,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BadgeCheck, Ban, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import Modal from "@/components/Modal";
-import { CONTRACT_BODY_VERSION } from "@/application/trainer/contract-body";
+import {
+  CONTRACT_BODY_VERSION, SPECIAL_TERMS_MAX_CHARS, specialTermsItemsAr, type ContractCompensation,
+} from "@/application/trainer/contract-body";
 import { changesBetween } from "@/application/trainer/contract-changelog";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
-  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr,
+  RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr,
 } from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
@@ -79,6 +81,8 @@ const ANNEX_A_FORMS = {
 const STATUS_AR: Record<string, string> = {
   draft: "مسودّة مجمَّدة", sent: "أُرسل — بانتظار التوقيع", revoked: "ملغًى",
   signed: "وقّعه صاحبُه — ينتظر اعتمادك", expired: "منتهٍ", terminated: "مفسوخ",
+  /* أزاحه عقدٌ أحدثُ اعتُمد للمدرّب نفسِه (١ أكتوبر ٢٠٢٦) — `countersignContract` */
+  superseded: "أزاحه عقدٌ أحدث",
   /* وكان غائبا عن هذا المعجم وحدَه، والشاشةُ تعالجه في ثلاثة مواضع — فيُقرأ
      صفُّه «amendment_requested» بالإنجليزيّة خاما إلى جنب اسم المدرّب. */
   amendment_requested: "طلب تعديلا — ينتظر جوابَك",
@@ -96,6 +100,9 @@ interface ContractRow {
   id: string; title: string; status: string; kind: string; revision: number;
   bodyVersion: string | null; bodyHash: string | null; signerEmail: string | null;
   compensationType: string | null; compensationRate: string | null; currency: string;
+  compensationMinSeats: number | null; compensationReferralRate: string | null;
+  /** البند 21 — بنودُه الخاصّة كما طُبعت */
+  specialTermsAr: string | null;
   gatesActivation: boolean; sentAt: string | null; signedAt: string | null;
   revokedAt: string | null; revokeReasonAr: string | null; createdAt: string;
   signerLegalName: string | null; declinedAt: string | null; declineReasonAr: string | null;
@@ -186,6 +193,8 @@ interface Prefill {
   missingLegal: string[];
   /** ما يمنع التركيبَ والإرسال — موقوفٌ أو مردودٌ أو مسحوب — بمخرجه (`contractBlockedAr`) */
   blockedAr: string | null;
+  /** بنودُه الخاصّةُ في أحدث عقوده — تُملأ بها الخانة */
+  lastSpecialTermsAr: string | null;
 }
 
 interface OfferRow {
@@ -235,6 +244,8 @@ export default function TrainerContracts() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [docs, setDocs] = useState<RequiredDocument[]>(DEFAULT_REQUIRED_DOCUMENTS);
   const [hoursNoteAr, setHoursNoteAr] = useState("");
+  /* البند 21 — بنودٌ مُلزِمةٌ لهذا المدرّب وحده (١ أكتوبر ٢٠٢٦) */
+  const [specialTermsAr, setSpecialTermsAr] = useState("");
   /* الأتعابُ وجلسةُ التهيئة في هذه الشاشة — لا شاشةَ ثانية */
   const [feeRate, setFeeRate] = useState("");
   const [feeReferralRate, setFeeReferralRate] = useState("");
@@ -291,9 +302,17 @@ export default function TrainerContracts() {
 
      بابٌ غيرُ رفض التوقيع: ذاك لعيبٍ في التوقيع، وهذا لتوقيعٍ صحيحٍ تحتَه
      نصٌّ قديم. والعنوانُ والنصُّ يُملآن بمقترَحٍ ثمّ يُحرَّران لكلّ مدرّب. */
-  const [resign, setResign] = useState<
-    { row: ContractRow; subjectAr: string; bodyAr: string } | null
-  >(null);
+  const [resign, setResign] = useState<{
+    row: ContractRow; subjectAr: string; bodyAr: string
+    /* ═══ وشروطُه إن أُريد تغييرُها (١ أكتوبر ٢٠٢٦) ═══
+       تُملأ بما في عقده الموقَّع، فما لم يُمَسّ لا يُرسَل ويُنسَخ كما هو.
+       و`available` دوراتُه المؤهَّلُ لها اليوم — تُقرأ من التعبئة عند الفتح. */
+    editTerms: boolean
+    rate: string; minSeats: string; referralRate: string
+    picked: Set<string>
+    available: { courseId: string; titleAr: string }[] | null
+    specialTermsAr: string
+  } | null>(null);
   /* وتحديثُ العروض المفتوحة صامتٌ ما لم يُطلَب البريد — أمرُ صاحب المنصّة
      (١ أكتوبر ٢٠٢٦). ولا قائمةَ تغييرٍ على صفحة المدرّب في الحالَين: البريدُ
      وحدَه يحملها إن طُلب (علّتُه عند `contractByToken`). */
@@ -432,6 +451,7 @@ export default function TrainerContracts() {
       setPicked(new Set(p.courses.map((x) => x.courseId)));
       setDocs(DEFAULT_REQUIRED_DOCUMENTS);
       setHoursNoteAr(""); setWaivedAr("");
+      setSpecialTermsAr(p.lastSpecialTermsAr ?? "");
       /* وتُملأ خاناتُ الأتعاب بالقاعدة القائمة إن كانت — فالموظّفُ يعدّل
          رقما قائما لا يكتبه من فراغٍ فينسى أحدَها. */
       setFeeRate(p.compensation?.rate ?? "");
@@ -464,9 +484,10 @@ export default function TrainerContracts() {
       compensation,
       orientationAt: orientationAt.trim() === "" ? null : new Date(orientationAt).toISOString(),
       orientationUrl: orientationUrl.trim() || null,
+      specialTermsAr: specialTermsAr.trim() || null,
     };
   }, [title, legalNameAr, picked, docs, hoursNoteAr, waivedAr, feeRate, feeReferralRate, feeMinSeats,
-      orientationAt, orientationUrl]);
+      orientationAt, orientationUrl, specialTermsAr]);
 
   /* ═══ وخطأُ الصفّ يُرسَم في الصفّ (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -495,6 +516,26 @@ export default function TrainerContracts() {
   /* و`fn` لها أن تردّ نصَّ نجاحها: فعلٌ واحدٌ يقع أثرُه على وجهَين — يُختَم
      عرضٌ فيُفتح حسابٌ، أو يُوثَّق بندٌ على نشطٍ فلا تُمسّ حالتُه — لا يُقال
      عنه نصٌّ واحدٌ يصدق في إحداهما. وما لم تردّ شيئا فنصُّ `ok`. */
+  /* تُفتح النافذةُ بشروطه كما في عقده، ثمّ تُقرأ دوراتُه المؤهَّلُ لها اليوم —
+     فإن تعثّرت القراءةُ بقيت دوراتُ عقده وحدَها تُختار منها، ولا تُغلق النافذة. */
+  const openResign = async (c: ContractRow) => {
+    setResign({
+      row: c, subjectAr: DEFAULT_RESIGN_SUBJECT_AR, bodyAr: defaultResignBodyAr(c.title),
+      editTerms: false,
+      rate: c.compensationRate ?? "", minSeats: c.compensationMinSeats != null ? String(c.compensationMinSeats) : "",
+      referralRate: c.compensationReferralRate ?? "",
+      picked: new Set((c.qualifiedSnapshot ?? []).map((q) => q.courseId)),
+      available: null,
+      specialTermsAr: c.specialTermsAr ?? "",
+    });
+    const appId = c.profile?.application?.id;
+    if (!appId) return;
+    try {
+      const p = await apiGet<Prefill>(`/api/admin/trainer-applications/${appId}/contract-prefill`);
+      setResign((r) => (r && r.row.id === c.id ? { ...r, available: p.courses } : r));
+    } catch { /* تبقى دوراتُ عقده وحدَها — والخادمُ يحكم على ما يُختار */ }
+  };
+
   const run = async (fn: () => Promise<void | string>, ok: string, rowId?: string) => {
     setBusy(true); setErr(""); setNote(""); setRowErr(null); setComposeErr("");
     try {
@@ -826,6 +867,24 @@ c.gatesActivation
           <textarea id="hours-note" value={hoursNoteAr} onChange={(e) => setHoursNoteAr(e.target.value)}
             rows={2} className={`${areaCls} mb-4 w-full`}
             placeholder="مثلا: نحو 20 ساعة تدريبيّة في الفصل، بحسب ما يُسنَد" />
+
+          {/* ═══ البند 21 — بنودٌ خاصّةٌ بهذا المدرّب (١ أكتوبر ٢٠٢٦) ═══
+
+              مُلزِمةٌ لا استرشاديّة، وتُقدَّم على البنود العامّة فيما تخالفها
+              فيه — إلّا المال: قرارُ صاحب المنصّة، وعلّتُه أنّ المنصّةَ تحسب
+              المستحقّاتِ من خانات الأتعاب أعلاه لا من هذا النصّ. فيُقال ذلك
+              هنا قبل الكتابة، لا يُكتشف بعد كشفٍ يخالف العقد. */}
+          <label className="mb-1 block text-sm font-bold" htmlFor="special-terms">
+            بنودٌ خاصّةٌ بهذا المدرّب — مُلزِمة (البند 21، اختياريّ)
+          </label>
+          <p className="mb-1 text-read leading-6 opacity-75">
+            سطرٌ لكلّ بند. تُقدَّم على البنود العامّة فيما تخالفها فيه — <b>إلّا المال</b>:
+            الأتعابُ والحدُّ الأدنى يُضبطان من خاناتهما أعلاه، فمنها تُحسب المستحقّات لا من هذا النصّ.
+          </p>
+          <textarea id="special-terms" value={specialTermsAr}
+            onChange={(e) => setSpecialTermsAr(e.target.value)}
+            rows={4} maxLength={SPECIAL_TERMS_MAX_CHARS} className={`${areaCls} mb-4 w-full`}
+            placeholder="مثلا: يقدّم المدرّبُ دوراتِه بالإنجليزيّة عند طلب الأكاديميّة" />
 
           <div className="flex flex-wrap gap-2">
             <Button tone="secondary" icon={FileText} loading={busy}
@@ -1429,11 +1488,7 @@ c.gatesActivation
                             {/* وتوقيعٌ صحيحٌ على نصٍّ قديم بابُه هذا لا الرفض: بريدُ
                                 الرفض يقول له «لم نستطع اعتمادَ توقيعك» ولا عيبَ فيه. */}
                             <Button tone="confirm" icon={RefreshCw}
-                              onClick={() => setResign({
-                                row: c,
-                                subjectAr: DEFAULT_RESIGN_SUBJECT_AR,
-                                bodyAr: defaultResignBodyAr(c.title),
-                              })}>
+                              onClick={() => void openResign(c)}>
                               حُدّث النصُّ — أعِدْه للتوقيع
                             </Button>
                           </div>
@@ -1777,12 +1832,48 @@ c.gatesActivation
       {/* والقائمةُ تُعرَض ولا تُحرَّر: الخادمُ يلحقها بعد نصّك من الجدول نفسِه،
           فما يُرى هنا هو ما يصل — ولا سبيلَ إلى أن تسقط منها نقطة. */}
       {resign && (() => {
-        const changes = changesBetween(resign.row.bodyVersion, CONTRACT_BODY_VERSION);
-        const subject = resign.subjectAr.trim();
-        const body = resign.bodyAr.trim();
+        const r = resign;
+        const subject = r.subjectAr.trim();
+        const body = r.bodyAr.trim();
+        /* ═══ ما تغيّر في شروطه — يُحسب بالدالّة التي يحسب بها الخادم ═══
+           (`personalChangesAr`)، فما يُعايَن هنا هو ما يُرسَل في الرسالة. */
+        const active = r.row.profile?.application?.status === "active";
+        const rowFee: ContractCompensation | null = r.row.compensationType
+          ? { type: r.row.compensationType, rate: r.row.compensationRate ?? "0", currency: r.row.currency,
+              minSeats: r.row.compensationMinSeats, referralRate: r.row.compensationReferralRate }
+          : null;
+        const num = (t: string) => (t.trim() === "" ? null : Number(t));
+        const typedRate = num(r.rate);
+        const typedFee: ContractCompensation | null = typedRate !== null && Number.isFinite(typedRate) && typedRate > 0
+          ? { type: r.row.compensationType ?? "per_seat", rate: String(typedRate), currency: r.row.currency,
+              minSeats: num(r.minSeats), referralRate: num(r.referralRate) === null ? null : String(num(r.referralRate)) }
+          : rowFee;
+        const feeChanged = !active && personalChangesAr(
+          { compensation: rowFee, courses: [], specialTermsAr: null },
+          { compensation: typedFee, courses: [], specialTermsAr: null },
+        ).length > 0;
+        const snapshot = r.row.qualifiedSnapshot ?? [];
+        const pool = r.available ?? snapshot;
+        const chosen = pool.filter((c) => r.picked.has(c.courseId));
+        /* والتغييرُ بما نقره الموظّف لا بما تغيّر في مؤهّلاته: دورةٌ لم يعد
+           مؤهَّلا لها لا تسقط من عقده ما لم يُغيِّر أحدٌ دوراته. */
+        const coursesChanged = r.picked.size !== snapshot.length
+          || snapshot.some((q) => !r.picked.has(q.courseId));
+        const norm = (t: string | null) => specialTermsItemsAr(t).join("\n");
+        const termsChanged = norm(r.specialTermsAr) !== norm(r.row.specialTermsAr);
+        const personal = personalChangesAr(
+          { compensation: rowFee, courses: snapshot, specialTermsAr: r.row.specialTermsAr },
+          {
+            compensation: feeChanged ? typedFee : rowFee,
+            courses: coursesChanged ? chosen : snapshot,
+            specialTermsAr: termsChanged ? norm(r.specialTermsAr) || null : r.row.specialTermsAr,
+          },
+        );
+        const changes = [...personal, ...changesBetween(r.row.bodyVersion, CONTRACT_BODY_VERSION)];
         const ready = !busy
           && subject.length >= RESIGN_SUBJECT_MIN && subject.length <= RESIGN_SUBJECT_MAX
-          && body.length >= RESIGN_BODY_MIN && body.length <= RESIGN_BODY_MAX;
+          && body.length >= RESIGN_BODY_MIN && body.length <= RESIGN_BODY_MAX
+          && (!coursesChanged || chosen.length > 0);
         return (
           <Modal onClose={() => setResign(null)} label={`إعادةُ «${resign.row.title}» للتوقيع`}
             panelClassName="w-full max-w-2xl">
@@ -1795,14 +1886,72 @@ c.gatesActivation
               <label className="mt-4 block">
                 <span className={LABEL}>عنوانُ الرسالة</span>
                 <input className={FIELD} value={resign.subjectAr} maxLength={RESIGN_SUBJECT_MAX}
-                  onChange={(e) => setResign({ ...resign, subjectAr: e.target.value })} />
+                  onChange={(e) => setResign({ ...r, subjectAr: e.target.value })} />
               </label>
               <label className="mt-3 block">
                 <span className={LABEL}>نصُّ الرسالة — فقراتٌ يفصلها سطرٌ فارغ</span>
                 <textarea className={`${FIELD} resize-y leading-7`} rows={10} maxLength={RESIGN_BODY_MAX}
                   value={resign.bodyAr}
-                  onChange={(e) => setResign({ ...resign, bodyAr: e.target.value })} />
+                  onChange={(e) => setResign({ ...r, bodyAr: e.target.value })} />
               </label>
+              {/* ═══ وشروطُه — مطويّةٌ، فالإعادةُ بلا تغييرٍ هي الأصل ═══ */}
+              <details className="mt-3" open={r.editTerms}
+                onToggle={(e) => setResign({ ...r, editTerms: (e.target as HTMLDetailsElement).open })}>
+                <summary className="cursor-pointer text-sm font-bold">وغيّرْ شروطَه قبل الإعادة (اختياريّ)</summary>
+                <Inset className="mt-2 grid gap-3 p-3">
+                  {active ? (
+                    <p className="text-read leading-6 opacity-80">
+                      <b>الأتعابُ لا تُغيَّر من هنا:</b> مدرّبٌ نشط، وتغييرُها يسري على ما يُحسب له من اليوم
+                      قبل أن يوقّع. غيّرْها من شاشة الأتعاب بتاريخ سريان.
+                    </p>
+                  ) : (
+                    <div className="grid gap-2 sm:grid-cols-3">
+                      <label className="block">
+                        <span className={LABEL}>سعرُ المقعد العامّ</span>
+                        <input inputMode="decimal" className={FIELD} value={r.rate}
+                          onChange={(e) => setResign({ ...r, rate: e.target.value })} />
+                      </label>
+                      <label className="block">
+                        <span className={LABEL}>الحدُّ الأدنى للمقاعد</span>
+                        <input inputMode="numeric" className={FIELD} value={r.minSeats}
+                          onChange={(e) => setResign({ ...r, minSeats: e.target.value })} />
+                      </label>
+                      <label className="block">
+                        <span className={LABEL}>سعرُ مقعد رابط الدعوة</span>
+                        <input inputMode="decimal" className={FIELD} value={r.referralRate}
+                          onChange={(e) => setResign({ ...r, referralRate: e.target.value })} />
+                      </label>
+                    </div>
+                  )}
+                  <fieldset>
+                    <legend className={LABEL}>الدوراتُ المؤهَّلُ لها (الملحق أ)</legend>
+                    <ul className="space-y-1 text-sm">
+                      {pool.map((c) => (
+                        <li key={c.courseId}>
+                          <label className="flex items-center gap-2">
+                            <input type="checkbox" checked={r.picked.has(c.courseId)}
+                              onChange={() => {
+                                const n = new Set(r.picked);
+                                if (n.has(c.courseId)) n.delete(c.courseId); else n.add(c.courseId);
+                                setResign({ ...r, picked: n });
+                              }} />
+                            <span>{c.titleAr}</span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                    {coursesChanged && chosen.length === 0 && (
+                      <p className="mt-1 text-read text-danger-ink">اختر دورةً واحدةً على الأقلّ — الملحق (أ) لا يُطبَع فارغا.</p>
+                    )}
+                  </fieldset>
+                  <label className="block">
+                    <span className={LABEL}>بنودٌ خاصّةٌ به — مُلزِمة (البند 21)، سطرٌ لكلّ بند، ولا تمسّ المال</span>
+                    <textarea className={`${FIELD} resize-y leading-7`} rows={3} maxLength={SPECIAL_TERMS_MAX_CHARS}
+                      value={r.specialTermsAr}
+                      onChange={(e) => setResign({ ...r, specialTermsAr: e.target.value })} />
+                  </label>
+                </Inset>
+              </details>
               {changes.length > 0 ? (
                 <Panel tone="accent" className="mt-3 p-3 text-read leading-7">
                   <b className="block">{RESIGN_CHANGES_HEADING_AR}</b>
@@ -1819,11 +1968,22 @@ c.gatesActivation
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 <Button tone="confirm" icon={Send} loading={busy} disabled={!ready}
                   onClick={() => void run(async () => {
-                    await apiPost(`/api/admin/trainer-contracts/${resign.row.id}/resign-request`,
-                      { subjectAr: subject, bodyAr: body });
+                    /* وما لم يُمَسّ لا يُرسَل — فيُنسَخ من عقده كما هو في الخادم */
+                    await apiPost(`/api/admin/trainer-contracts/${r.row.id}/resign-request`, {
+                      subjectAr: subject, bodyAr: body,
+                      ...(feeChanged && typedFee ? {
+                        compensation: {
+                          type: typedFee.type, rate: Number(typedFee.rate),
+                          ...(typedFee.minSeats != null ? { minSeats: typedFee.minSeats } : {}),
+                          referralRate: typedFee.referralRate === null ? null : Number(typedFee.referralRate),
+                        },
+                      } : {}),
+                      ...(coursesChanged ? { courseIds: chosen.map((c) => c.courseId) } : {}),
+                      ...(termsChanged ? { specialTermsAr: norm(r.specialTermsAr) || null } : {}),
+                    });
                     setResign(null);
                     await load();
-                  }, "أُعيد العقدُ للتوقيع — وصلته رسالتُك ثمّ رابطُ النسخة المحدَّثة", resign.row.id)}>
+                  }, "أُعيد العقدُ للتوقيع — وصلته رسالتُك ثمّ رابطُ النسخة المحدَّثة", r.row.id)}>
                   أعِدْه للتوقيع وأبلغْه
                 </Button>
                 <Button tone="secondary" onClick={() => setResign(null)}>تراجَع</Button>

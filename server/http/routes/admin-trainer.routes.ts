@@ -28,6 +28,7 @@ import { interviewSyncTrust } from '../../../src/application/trainer/interview-s
 import { getCalendlyConfig, getCalendlySync } from '../../services/integrations.service'
 import { AMENDMENT_TEXT_MAX } from '../../../src/application/trainer/contract-endings'
 import { RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN } from '../../../src/application/trainer/contract-resign'
+import { SPECIAL_TERMS_MAX_CHARS } from '../../../src/application/trainer/contract-body'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -395,8 +396,22 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       minSeats: z.number().int().min(0).optional(),
       referralRate: z.number().positive().nullish(),
     }).nullish(),
-    /* وتاريخُ جلسة التهيئة — ومنه تُحسب المهلة. وبلا تاريخٍ يُرسَل العرضُ
-       بلا مهلةٍ ولا يوسمه العاملُ متأخّرا. */
+    /* ═══ وثلاثُ خاناتٍ كانت تُرسلها الشاشةُ ويُسقطها هذا المخطّط (١ أكتوبر ٢٠٢٦) ═══
+
+       `z.object` يُسقط ما لا يعرفه بلا خطأ. فكان اسمُ الطرف الثاني المكتوبُ
+       في المركِّب، وتاريخُ جلسة التهيئة ورابطُها، **لا تصل الخادمَ أصلا** —
+       والخدمةُ تقرؤها وتُثبّتها، والشاشةُ ترسلها، وبينهما هذا الموضع. وكلُّ
+       اختبارٍ كان ينادي الخدمةَ مباشرةً فلا يمرّ به. ويحرسه اليومَ
+       `server/tests/trainer/contract-special-terms.test.ts` بنداءٍ على المسار.
+
+       والطولُ يُسأل في الخدمة بالعربيّة (الاسمُ أربعةُ أحرفٍ فأكثر،
+       والجلسةُ تاريخٌ مقروء)؛ وهنا سقفٌ يمنع العبث لا غير. */
+    trainerLegalNameAr: z.string().trim().max(200).nullish(),
+    orientationAt: z.string().trim().max(64).nullish(),
+    orientationUrl: z.string().trim().max(500).nullish(),
+    /* والبنودُ الخاصّةُ — البند 21. وعددُها وطولُها يُسألان في الخدمة
+       (`cleanSpecialTermsAr`) بالعربيّة. */
+    specialTermsAr: z.string().max(SPECIAL_TERMS_MAX_CHARS * 2).nullish(),
   })
 
   /* «أعِدْها بملاحظات» — تُستأنف المهلةُ مضافا إليها مدّةُ التجميد بالضبط */
@@ -632,11 +647,31 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req, reply) => {
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
-    const { subjectAr, bodyAr } = z.object({
+    const body = z.object({
       subjectAr: z.string().trim().min(RESIGN_SUBJECT_MIN).max(RESIGN_SUBJECT_MAX),
       bodyAr: z.string().trim().min(RESIGN_BODY_MIN).max(RESIGN_BODY_MAX),
+      /* وشروطٌ جديدةٌ اختياريّة (١ أكتوبر ٢٠٢٦) — ما غاب يُنسَخ من القديم.
+         والأجرُ بمخطّط التركيب نفسِه. */
+      compensation: z.object({
+        type: z.enum(['per_seat', 'fixed_per_cohort', 'revenue_share']),
+        rate: z.number().positive(),
+        minSeats: z.number().int().min(0).optional(),
+        referralRate: z.number().positive().nullish(),
+      }).optional(),
+      courseIds: z.array(z.string()).min(1).max(100).optional(),
+      specialTermsAr: z.string().max(SPECIAL_TERMS_MAX_CHARS * 2).nullish(),
     }).parse(req.body)
-    return review.requestResign(contractId, req.auth!.userId, { subjectAr, bodyAr })
+    /* ═══ والأجرُ لمن يملك ضبطَه ═══
+       رأسُ `academic_manager` في `permissions.ts`: «يتعاقد ولا يسعّر». فمن لا
+       يملك `trainer.compensation.manage` يُعيد العقدَ بأتعابه القائمة، ولا
+       يغيّرها. وما سوى الأجر يبقى له. */
+    if (body.compensation && !req.auth!.permissions.includes('trainer.compensation.manage')) {
+      reply.status(403).send({
+        error: { code: 'forbidden', message_ar: 'تغييرُ الأتعاب لمن يملك ضبطَها — أعِدْه بأتعابه القائمة، أو اطلب ذلك من الماليّة' },
+      })
+      return reply
+    }
+    return review.requestResign(contractId, req.auth!.userId, body)
   })
 
   /* ═══════════ عروضُ الإسناد ═══════════

@@ -1720,7 +1720,7 @@ model TrainerContract {
   /// يقول إنّه أُلغي ومن ألغاه ولماذا. و`declined`: المدرّبُ قرأه ولم يقبله،
   /// وهو **جوابٌ مشروعٌ لا عطب** — فالعقدُ عرضٌ يُقبَل ويُردّ.
   /// و`countersigned` و`superseded` تأتيان مع المرحلة الثالثة.
-  status    String  @default("draft") // draft | sent | amendment_requested | declined | revoked | signed | countersigned | expired | terminated
+  status    String  @default("draft") // draft | sent | amendment_requested | declined | revoked | signed | countersigned | expired | terminated | superseded
   /// رقمُ النسخة في السلسلة — ١ للأصل ثمّ ما يليه
   revision  Int     @default(1)
   /// النافذُ الذي هذا ملحقٌ له أو بديلٌ عنه
@@ -1766,6 +1766,11 @@ model TrainerContract {
   /// أُرسل بلا قاعدةِ تعويضٍ قائمة، بسببٍ مكتوب. وبلا هذا يُردّ الإرسال —
   /// فعقدٌ يُوقَّع بلا أجرٍ متّفقٍ عليه يترك «مستحقّاتي» صفرا ولا أحدَ يعلم لمَ.
   rateWaivedReasonAr       String?
+  /// بنودٌ خاصّةٌ بهذا المدرّب — سطرا لكلّ بند، كما طُبعت في البند 21 من متنه.
+  /// تُحفَظ هنا لا في المتن وحدَه: كلُّ مسلكٍ يُعيد تصييرَ المتن من الصفّ
+  /// (البديلُ والإعادةُ للتوقيع وتحديثُ العروض المفتوحة) يقرؤها فيحملها.
+  /// وهي لا تغيّر المال (البند 4-1) — علّتُه عند `specialTermsClauseAr`.
+  specialTermsAr           String?
 
   /// ─────────── لقطةُ الدورات المؤهَّل لها ───────────
 
@@ -1994,6 +1999,13 @@ model TrainerContract {
   terminatedAt      DateTime?
   terminatedBy      String?   @db.Uuid
   terminateReasonAr String?
+
+  /// ─────────── أزاحه عقدٌ أحدثُ منه (١ أكتوبر ٢٠٢٦) ───────────
+  /// حين يُعتمَد عقدٌ جديدٌ لمدرّبٍ له عقدٌ نافذ، يصير القديمُ `superseded`
+  /// في المعاملة نفسِها — فلا يكون للإنسان الواحد عقدان نافذان بشرطَين.
+  /// ودليلُ توقيعه يبقى كما هو: ما خُتم بين الطرفين وقع.
+  supersededAt           DateTime?
+  supersededByContractId String?   @db.Uuid
 
   createdBy String?                   @db.Uuid
   createdAt DateTime                  @default(now())

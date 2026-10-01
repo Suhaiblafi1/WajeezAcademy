@@ -68,7 +68,9 @@ export const CONTRACT_TABS: readonly ContractTab[] = [
   {
     id: 'closed',
     labelAr: 'منتهية',
-    statuses: ['declined', 'revoked', 'expired', 'terminated'],
+    /* و`superseded` هنا (١ أكتوبر ٢٠٢٦): عقدٌ كان نافذا ثمّ أزاحه أحدثُ منه
+       اعتُمد للإنسان نفسِه — انتهى أثرُه، ودليلُه باقٍ. */
+    statuses: ['declined', 'revoked', 'expired', 'terminated', 'superseded'],
     emptyAr: 'لا عقدَ منتهيا — ولا اعتذارَ ولا إلغاء.',
   },
   {
