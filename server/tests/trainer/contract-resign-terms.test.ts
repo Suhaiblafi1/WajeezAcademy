@@ -207,28 +207,22 @@ describe('④ وما لم يُطلَب تغييرُه يبقى', () => {
   })
 })
 
-describe('⑤ والأجرُ لمن يملك ضبطَه', () => {
+describe('⑤ والأجرُ يغيّره من يتعاقد — قرارُ صاحب المنصّة (١ أكتوبر ٢٠٢٦)', () => {
+  /* كان الحارسُ هنا يردّ المديرَ الأكاديميَّ (٤٠٣). وقولُ صاحب المنصّة: «the
+     financial manager, academy manager and the super admin.. all can change».
+     فيُقلَب ولا يُحذَف: يغيّره، والأجرُ يصل الصفَّ فعلا لا ردٌّ ناجحٌ على أجرٍ أُسقط. */
   const post = (cookie: string, id: string, extra: Record<string, unknown>) => app.inject({
     method: 'POST', url: `/api/admin/trainer-contracts/${id}/resign-request`,
     headers: { cookie }, payload: { subjectAr: SUBJECT, bodyAr: BODY, ...extra },
   })
 
-  it('المديرُ الأكاديميُّ يُعيد بأجره القائم، ولا يغيّره', async () => {
-    const { c } = await signed()
-    const denied = await post(managerCookie, c.id, { compensation: { type: 'per_seat', rate: 40 } })
-    expect(denied.statusCode, `مرّ تغييرُ الأجر بلا صلاحيّته: ${denied.body}`).toBe(403)
-    const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: c.id } })
-    expect(row.status, 'سُحب العقدُ والطلبُ مردود').toBe('signed')
-    const ok = await post(managerCookie, c.id, { courseIds: [COURSE_B] })
-    expect(ok.statusCode, `رُدّ ما سوى الأجر: ${ok.body}`).toBe(200)
-  })
-
-  it('ومن يملك ضبطَ الأجر يغيّره', async () => {
-    const { c } = await signed()
-    const res = await post(superCookie, c.id, { compensation: { type: 'per_seat', rate: 40 } })
-    expect(res.statusCode, `رُدّ تغييرُ الأجر ممّن يملكه: ${res.body}`).toBe(200)
-    /* والأجرُ وصل فعلا — لا ردٌّ ناجحٌ على أجرٍ أسقطه المسار */
-    const next = await prisma.trainerContract.findUniqueOrThrow({ where: { id: (res.json() as { contractId: string }).contractId } })
-    expect(String(next.compensationRate), 'أسقط المسارُ الأجرَ وردّ نجاحا').toBe('40')
-  })
+  for (const [who, cookie] of [['المديرُ الأكاديميّ', () => managerCookie], ['المديرُ الأعلى', () => superCookie]] as const) {
+    it(`${who} يغيّر الأجرَ في الإعادة`, async () => {
+      const { c } = await signed()
+      const res = await post(cookie(), c.id, { compensation: { type: 'per_seat', rate: 40 } })
+      expect(res.statusCode, `رُدّ تغييرُ الأجر: ${res.body}`).toBe(200)
+      const next = await prisma.trainerContract.findUniqueOrThrow({ where: { id: (res.json() as { contractId: string }).contractId } })
+      expect(String(next.compensationRate), 'أسقط المسارُ الأجرَ وردّ نجاحا').toBe('40')
+    })
+  }
 })

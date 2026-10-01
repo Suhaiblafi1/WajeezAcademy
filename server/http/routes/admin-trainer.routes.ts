@@ -661,16 +661,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       courseIds: z.array(z.string()).min(1).max(100).optional(),
       specialTermsAr: z.string().max(SPECIAL_TERMS_MAX_CHARS * 2).nullish(),
     }).parse(req.body)
-    /* ═══ والأجرُ لمن يملك ضبطَه ═══
-       رأسُ `academic_manager` في `permissions.ts`: «يتعاقد ولا يسعّر». فمن لا
-       يملك `trainer.compensation.manage` يُعيد العقدَ بأتعابه القائمة، ولا
-       يغيّرها. وما سوى الأجر يبقى له. */
-    if (body.compensation && !req.auth!.permissions.includes('trainer.compensation.manage')) {
-      reply.status(403).send({
-        error: { code: 'forbidden', message_ar: 'تغييرُ الأتعاب لمن يملك ضبطَها — أعِدْه بأتعابه القائمة، أو اطلب ذلك من الماليّة' },
-      })
-      return reply
-    }
+    /* ═══ والأجرُ يغيّره من يتعاقد — قرارُ صاحب المنصّة (١ أكتوبر ٢٠٢٦) ═══
+       كان هنا شرطُ `trainer.compensation.manage`، فيردّ المديرَ الأكاديميَّ عن
+       تغيير الأجر في الإعادة والمركِّبُ يقبله منه. وقولُ صاحب المنصّة: «the
+       financial manager, academy manager and the super admin.. all can change».
+       فيبقى الحارسُ ما على المسار: `trainer.contract.manage` و`requireDecideToo`،
+       كالمركِّب. ومدرّبٌ نشطٌ لا يُغيَّر أجرُه من هنا أصلا (`requestResign`). */
     return review.requestResign(contractId, req.auth!.userId, body)
   })
 
