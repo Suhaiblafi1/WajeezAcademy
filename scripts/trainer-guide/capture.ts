@@ -244,6 +244,26 @@ FRESH.push({
   },
 })
 
+/* ═══ «عقدي» تُصوَّر من هنا لا من النشط (١ أكتوبر ٢٠٢٦) ═══
+   قارئُ الدليل في طور الموادّ: اعتمدنا توقيعَه ولم نوقّع العرض. وكانت
+   اللقطةُ من النشط وعليها «فهي نافذةٌ بين الطرفين» — فيرى في دليله غيرَ ما
+   يراه في بوّابته، وهو بعينه ما قرّر صاحبُ المنصّة نقضَه: لا نوقّع قبل أن
+   نعتمد دوراته. */
+FRESH.push({
+  name: 'contract',
+  async run(e) {
+    const p = e.page
+    await open(e, '/trainer/contract')
+    await shoot(e, {
+      name: 'contract', clip: pageBody(p), clipPad: 6, maxHeight: 760,
+      marks: [
+        { target: p.getByText(/ونوقّعها من جهتنا حين نعتمد دوراتك/).first(), n: 1, pad: 5 },
+        { target: btn(p, /احفظ PDF/), n: 2, pad: 5 },
+      ],
+    })
+  },
+})
+
 /* ═══ ② المدرّبُ النشط ═══ */
 
 const ACTIVE: Shot[] = [
@@ -782,20 +802,6 @@ const ACTIVE: Shot[] = [
           marks: [{ target: p.getByRole('navigation', { name: 'تبويبات بوّابة المدرّب' }), n: 1, pad: 2 }],
         })
       } finally { await p.setViewportSize(before) }
-    },
-  },
-  {
-    name: 'contract',
-    async run(e) {
-      const p = e.page
-      await open(e, '/trainer/contract')
-      await shoot(e, {
-        name: 'contract', clip: pageBody(p), clipPad: 6, maxHeight: 760,
-        marks: [
-          { target: p.getByText(/فهي نافذةٌ بين الطرفين/).first(), n: 1, pad: 5 },
-          { target: btn(p, /احفظ PDF/), n: 2, pad: 5 },
-        ],
-      })
     },
   },
   {
