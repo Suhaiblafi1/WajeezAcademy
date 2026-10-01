@@ -87,7 +87,7 @@ describe('متنُ الاتفاقية يُعرض بخطِّ قراءةٍ لا ب
   })
 
   it('والوثيقةُ تحمل الصنفَ — وإلّا ارتدّت إلى خطّ المتصفّح', () => {
-    expect(read(DOCUMENT)).toMatch(/className="contract-doc contract-prose"/)
+    expect(read(DOCUMENT)).toMatch(/className="contract-doc contract-prose(?: [^"]*)?"/)
   })
 
   it('ولا يُترك للمتصفّح خطُّه: الصنفُ معرَّفٌ في ورقة النمط وأوّلُ خطوطه Avenir Arabic', () => {
