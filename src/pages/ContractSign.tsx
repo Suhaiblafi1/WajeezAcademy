@@ -175,8 +175,11 @@ export default function ContractSign() {
                   فإن كان لك عرضٌ ينتظر توقيعك فاطلب رابطه ببريدك. وإن كنتَ وقّعتَ
                   واعتمدنا توقيعَك فعقدُك في «عقدي» في بوّابتك.
                 </p>
+                {/* ولا ذهبيَّ هنا: الذهبيُّ فعلُ الصفحة، وهذان فعلا لوحٍ يدلّان على
+                    بابٍ آخر — فالمُثبِتُ لما يُرجَّح، والعاديُّ لأخيه
+                    (`one-primary-per-screen.test.ts`) */}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button as={Link} to="/contract-link" tone="primary" size="sm">اطلبْ رابطَ عرضك ببريدك</Button>
+                  <Button as={Link} to="/contract-link" tone="confirm" size="sm">اطلبْ رابطَ عرضك ببريدك</Button>
                   <Button as={Link} to="/trainer/contract" size="sm">افتح «عقدي»</Button>
                 </div>
               </>
@@ -700,8 +703,8 @@ function ClosedDoor({ view, doc }: { view: ContractClosedView; doc: ContractDoc 
         )}
         {(askLink || portal) && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {askLink && <Button as={Link} to="/contract-link" tone="primary" size="sm">اطلبْ رابطا جديدا ببريدك</Button>}
-            {portal && <Button as={Link} to="/trainer/contract" tone="primary" size="sm">افتح «عقدي» في بوّابتك</Button>}
+            {askLink && <Button as={Link} to="/contract-link" tone="confirm" size="sm">اطلبْ رابطا جديدا ببريدك</Button>}
+            {portal && <Button as={Link} to="/trainer/contract" tone="confirm" size="sm">افتح «عقدي» في بوّابتك</Button>}
           </div>
         )}
       </Panel>

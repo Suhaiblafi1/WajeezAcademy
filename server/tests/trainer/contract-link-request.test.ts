@@ -97,8 +97,14 @@ describe('① العرضُ المفتوحُ يُستعاد رابطُه', () => 
     expect(after.tokenHash, 'بقي الرمزُ القديمُ حيّا مع الجديد').not.toBe(sha256(token))
     expect(after.tokenExpiresAt, 'رمزٌ بلا أجل').toBeTruthy()
     /* ═══ والقديمُ يُجرَّب فعلا ═══
-       ثباتُ `tokenHash` لا يكفي: المقيسُ أن يُردّ حاملُ القديم. */
-    await expect(review.contractByToken(token)).rejects.toThrow()
+       ثباتُ `tokenHash` لا يكفي: المقيسُ أن يُردّ حاملُ القديم — فلا يُوقَّع منه.
+       وصار يقول حالَه بدل «غيرُ صالح» (١ أكتوبر ٢٠٢٦، `contract-link-states`):
+       «أرسلنا إليك رابطا أحدث» — للقراءة لا للتوقيع. */
+    expect((await review.contractByToken(token)).state, 'بقي الرابطُ القديمُ يفتح العرضَ للتوقيع').toBe('replaced')
+    await expect(review.signContractByToken(token, {
+      legalName: 'سارة عبد الله الحربي', addressAr: 'عمّان — الدوّار السابع', phone: '+962790000000',
+      bodyHash: after.bodyHash!, acks: [...ALL_ACKS],
+    }), 'وُقّع من الرابط القديم').rejects.toMatchObject({ code: 'invalid_token' })
   })
 
   it('ونصُّ العرض وحالتُه لا يُمَسّان — الطلبُ رابطٌ لا تعديل', async () => {
