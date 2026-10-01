@@ -20,7 +20,8 @@ import {
 } from '../../src/application/trainer/contract-resign'
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
-  contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail } from './trainer-decision-mail'
+  contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail,
+  contractLapsedMail } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -3545,19 +3546,52 @@ export class TrainerReviewService {
     if (!contract) return { ok: true as const, emailDelivery: 'skipped' as const }
 
     const app = contract.profile.application
-    const { token, tokenHash, expiresAt } = this.mintContractToken()
+    const to = contract.signerEmail ?? app.email
+
+    /* ═══ وبعد التذكير الأخير لا يمدّ الطلبُ أجلا ولا يقصّره (١ أكتوبر ٢٠٢٦) ═══
+
+       التذكيرُ الأخيرُ وعدٌ بأجلٍ مسمّى («صالحٌ ثلاثةَ أيّام»)، وهذا البابُ بلا
+       حساب. فلو سكّ بعده رمزا بيومَي النافذة لَصار الأجلُ كلمةً لا تُنفَّذ: يسقط
+       العرضُ فيُطلب رابطٌ فيُوقَّع. ولو سكّه في أثناء الأجل لَمدّه أو قصّره بحسب
+       ساعة الطلب.
+
+       فبعد التذكير: في الأجل رابطٌ جديدٌ **بالأجل نفسِه**؛ وبعده لا رابط، بل
+       رسالةٌ تقول إنّ المهلةَ انقضت ومتى — وتجديدُ العرض بيد الأكاديمية
+       («جدِّدِ الرابط» قائم). والجوابُ لطالبه واحدٌ في كلّ حالٍ كما كان. */
+    const promised = contract.status === 'sent' && contract.finalReminderAt ? contract.tokenExpiresAt : null
+    if (promised && promised < new Date()) {
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'trainer.contract.link_requested',
+        entityType: 'trainer_contract', entityId: contract.id,
+        meta: { sentTo: to, status: contract.status, lapsed: true, expiredAt: promised.toISOString() },
+      })
+      let emailDelivery: DirectMailStatus = 'failed'
+      try {
+        const mail = contractLapsedMail({
+          fullName: app.fullName, reference: app.reference, title: contract.title, expiredAt: promised,
+        })
+        emailDelivery = (await sendDirectEmail(this.prisma, { to, subject: mail.subject, ...renderMail(mail.doc) })).status
+      } catch {
+        /* البريدُ يسقط والجوابُ واحد: لا يُكشَف بالخطأ ما لا يُكشَف بالنجاح */
+      }
+      return { ok: true as const, emailDelivery }
+    }
+
+    const minted = this.mintContractToken()
+    const expiresAt = promised ?? minted.expiresAt
     await this.prisma.trainerContract.update({
-      where: { id: contract.id }, data: { tokenHash, tokenExpiresAt: expiresAt },
+      where: { id: contract.id }, data: { tokenHash: minted.tokenHash, tokenExpiresAt: expiresAt },
     })
-    /* والفاعلُ هو المدرّبُ نفسُه لا موظّف — فلا `actorId` يُنسَب إليه غيرُه */
+    /* والفاعلُ هو المدرّبُ نفسُه لا موظّف — فلا `actorId` يُنسَب إليه غيرُه.
+       والأجلُ نصّا: `sanitize` الأثرِ يجعل `Date` كائنا فارغا */
     await recordAudit(this.prisma, {
       actorId: null, action: 'trainer.contract.link_requested',
       entityType: 'trainer_contract', entityId: contract.id,
-      meta: { sentTo: contract.signerEmail ?? app.email, expiresAt, status: contract.status },
+      meta: { sentTo: to, expiresAt: expiresAt.toISOString(), status: contract.status },
     })
     const mail = await this.mailContract({
-      contract, to: contract.signerEmail ?? app.email, fullName: app.fullName,
-      reference: app.reference, url: this.signingUrl(token), expiresAt, resend: true,
+      contract, to, fullName: app.fullName,
+      reference: app.reference, url: this.signingUrl(minted.token), expiresAt, resend: true,
     })
     return { ok: true as const, emailDelivery: mail.status }
   }
