@@ -27,7 +27,7 @@ import {
 } from '@/application/trainer/notice-periods'
 import {
   CONTRACT_ACKS, CONTRACT_BODY_VERSION, CONTRACT_CONSENT_VERSION,
-  bodyCarriesConditionClause, contractAcks, renderContractBodyAr, feeBasisAr,
+  CONDITION_CLAUSE_MARK, bodyCarriesConditionClause, contractAcks, renderContractBodyAr, feeBasisAr,
   type ContractBodyInput, type ContractCompensation,
 } from '@/application/trainer/contract-body'
 import { parseContractDoc, feeRuleCells, blockLineAr } from '@/application/trainer/contract-sections'
@@ -654,8 +654,8 @@ describe('العرضُ المشروط', () => {
   const plain = () => renderContractBodyAr(base())
 
   it('عنوانُه يقول إنّه عرضٌ مشروطٌ لا اتفاقيّة', () => {
-    expect(offer().split('\n')[0]).toContain('عرض مشروط')
-    expect(plain().split('\n')[0], 'بندٌ يُوثَّق على مدرّبٍ نشطٍ صار عرضا مشروطا').not.toContain('عرض مشروط')
+    expect(offer().split('\n')[0]).toContain('اتفاقية مشروطة')
+    expect(plain().split('\n')[0], 'بندٌ يُوثَّق على مدرّبٍ نشطٍ صار عرضا مشروطا').not.toContain('مشروطة')
   })
 
   it('وبندُ الشرط ستُّ فقراتٍ في البند 2 — ولا واحدةَ منها في المطلق', () => {
@@ -725,7 +725,7 @@ describe('العرضُ المشروط', () => {
     expect(offer(), 'لا يُقال إنّ اعتمادَ التوقيع يفتح البوّابة')
       .toMatch(/إذا اعتمدت توقيعه فتحت له بوابته ليضع مواد دوراته/)
     expect(offer(), 'لا يُقال إنّا لا نوقّعه قبل تحقّق الشرط')
-      .toMatch(/ولا توقعه من جهتها ولا يصير عقدا نهائيا غير مشروط إلا بتحقق الشرط/)
+      .toMatch(/ولا توقعها من جهتها ولا تصير عقدا نهائيا غير مشروط إلا بتحقق الشرط/)
     expect(offer(), 'لا يُقال ما الذي يبقى معلَّقا')
       .toMatch(/ويبقى نشر حسابه وإسناد الشعب إليه معلقين على ذلك/)
     expect(plain()).not.toMatch(/معلقين على تحقق الشرط/)
@@ -747,13 +747,13 @@ describe('العرضُ المشروط', () => {
      على المتن كلِّه: جملةُ الإقرار والخلاصة تُذكر فيهما أيضا. */
   it('ويقول إنّ توقيعَنا في آخر الطور مع قبول الدورات — لا عند اعتماد التوقيع', () => {
     const clause = (n: string) => new RegExp(`^${n} .*$`, 'm').exec(offer())?.[0] ?? ''
-    expect(clause('2-6'), 'لا بندَ 2-6 — الحارسُ يقيس الفراغ').toContain('وهذا عرض مشروط')
+    expect(clause('2-6'), 'لا بندَ 2-6 — الحارسُ يقيس الفراغ').toContain('وهذه اتفاقية مشروطة')
     expect(clause('2-6'), 'عاد اعتمادُ التوقيع توقيعا منّا')
       .not.toMatch(/فتوقع من جهتها ويصير العقد نافذا/)
     expect(clause('2-6'), 'لا يُقال إنّ الاعتمادَ ليس توقيعا')
-      .toContain('ولا يكون اعتمادها توقيعا منها على هذا العرض')
+      .toContain('ولا يكون اعتمادها توقيعا منها على هذه الاتفاقية')
     expect(clause('2-6'), 'لا يُقال متى نوقّع')
-      .toMatch(/وتوقعه من جهتها يوم تقبل دورات المدرب .* فيصير عقدا نهائيا غير مشروط موقعا من الطرفين/)
+      .toMatch(/وتوقعها من جهتها يوم تقبل دورات المدرب .* فتصير عقدا نهائيا غير مشروط موقعا من الطرفين/)
     expect(clause('2-12'), 'لا يُقال إنّا نوقّع عند تحقّق الشرط')
       .toMatch(/فإذا تحقق وقعت الأكاديمية العقد من جهتها فصار عقدا نهائيا غير مشروط/)
     expect(clause('2-12'), 'لا يُقال ما الذي يقع عند تحقّق الشرط').toMatch(/ونشرت حسابه/)
@@ -782,7 +782,7 @@ describe('إقراراتُ التوقيع', () => {
       .not.toMatch(/يصير العقد نافذا باعتماد الأكاديمية لتوقيعي/)
     expect(ack.textAr, 'لا يُقرّ بأنّ الاعتمادَ ليس توقيعا').toMatch(/ولا يكون توقيعا منها عليه/)
     expect(ack.textAr, 'لا يُقرّ بمتى نوقّع')
-      .toMatch(/لا توقعه من جهتها فيصير عقدا نهائيا غير مشروط إلا بقبولها لمواد دوراتي/)
+      .toMatch(/لا توقعها من جهتها فتصير عقدا نهائيا غير مشروط إلا بقبولها لمواد دوراتي/)
     expect(ack.textAr, 'لا يُقرّ بما يبقى معلَّقا').toMatch(/نشر حسابي وإسناد الشعب إلي معلقين/)
     expect(ack.textAr, 'لم يُحِل على بنود الشرط').toMatch(/2-6 إلى 2-12/)
     expect(ack.textAr, 'لم يُقرّ بأنّ الاعتمادَ لكلّ دورةٍ على حدة').toMatch(/لكل دورة على حدة/)
@@ -820,6 +820,34 @@ describe('بندُ الشرط يُفحَص في المتن قبل الإرسال
     expect(bodyCarriesConditionClause(renderContractBodyAr(base()))).toBe(false)
   })
 
+  /* ═══ وصدرُ البند القديم يُعرَف كالجديد (٢ أكتوبر ٢٠٢٦) ═══
+     صار البندُ «وهذه اتفاقية مشروطة» في v25، والمتونُ قبلها مجمَّدةٌ بحروفها.
+     فلو لم يُعرَف القديمُ لَرُدّ إرسالُ مسودّةٍ سليمةٍ رُكّبت قبل الإصدار. */
+  it('⚠️ ومتنٌ قبل v25 بصدره القديم «وهذا عرض مشروط» يحمل البندَ كذلك', () => {
+    const now = renderContractBodyAr(base({ conditional: CONDITIONAL }))
+    const legacy = now.replace(CONDITION_CLAUSE_MARK, '2-6 وهذا عرض مشروط')
+    expect(legacy, 'لم يُستبدَل الصدرُ — فالفحصُ يقيس الجديد').not.toContain(CONDITION_CLAUSE_MARK)
+    expect(bodyCarriesConditionClause(legacy), 'رُدّ متنٌ سابقٌ سليمٌ لأنّ صدرَ بنده تبدّل بعده').toBe(true)
+  })
+
+  /* ═══ والمتنُ لا يسمّي نفسَه «عرضا» (٢ أكتوبر ٢٠٢٦، v25) ═══
+     قرارُ صاحب المنصّة: «غيّر عرض في نص العقد أيضاً». فالاتفاقيّةُ «اتفاقية» في
+     عنوانها وديباجتها وبند الشرط وخلاصتها وإقراراتها وبند انتهاء مدّة التوقيع.
+     و«عرضُ الإسناد» (دعوةُ تدريس شعبة، البندان 3 و5) شيءٌ آخر باقٍ باسمه —
+     فيُقاس ما كان يعني الاتفاقيّةَ بعينه، لا كلُّ «عرض». */
+  it('⚠️ لا «عرض مشروط» ولا «هذا العرض» ولا «سقوط العرض» في المتن ولا الإقرارات', () => {
+    const OFFER_AS_AGREEMENT = /عرض مشروط|هذا العرض|يسقط هذا العرض|سقوط العرض|العرض ورابطه/
+    for (const conditional of [CONDITIONAL, null] as const) {
+      const body = renderContractBodyAr(base({ conditional }))
+      expect(body, 'سمّى المتنُ الاتفاقيّةَ «عرضا»').not.toMatch(OFFER_AS_AGREEMENT)
+      for (const a of contractAcks(Boolean(conditional))) {
+        expect(a.textAr, `إقرارٌ يسمّيها «عرضا»: ${a.key}`).not.toMatch(OFFER_AS_AGREEMENT)
+      }
+    }
+    expect(renderContractBodyAr(base({ conditional: CONDITIONAL })), 'لا «عرضَ إسنادٍ» في المتن — فالحارسُ لا يميّز')
+      .toContain('عرض الإسناد')
+  })
+
   it('والمتنُ الفارغُ والمعدومُ لا يحملانها', () => {
     expect(bodyCarriesConditionClause(null)).toBe(false)
     expect(bodyCarriesConditionClause(undefined)).toBe(false)
@@ -840,7 +868,7 @@ describe('بندُ الشرط يُفحَص في المتن قبل الإرسال
     expect(source, 'صدرُ بند الشرط كُتب حرفا — فانفصل الفحصُ عن الطباعة')
       .toContain('\n${CONDITION_CLAUSE_MARK}:')
     expect(source, 'الجملةُ مكتوبةٌ حرفا في المتن إلى جانب الثابت')
-      .not.toContain('\n2-6 وهذا عرض مشروط:')
+      .not.toContain('\n2-6 وهذه اتفاقية مشروطة:')
   })
 })
 
@@ -990,7 +1018,7 @@ describe('الخلاصةُ في سطور', () => {
   it('٧) والاتفاقيّةُ المطلقةُ لا خلاصةَ شرطٍ فيها ولا مهلة', () => {
     const summary = summaryOf(renderContractBodyAr(base()))
     expect(summary, 'خلاصةُ عقدٍ مطلقٍ تتحدّث عن مهلة').not.toMatch(/والمهلة:/)
-    expect(summary, 'خلاصةُ عقدٍ مطلقٍ تقول إنّه عرضٌ مشروط').not.toMatch(/عرض مشروط/)
+    expect(summary, 'خلاصةُ عقدٍ مطلقٍ تقول إنّه عرضٌ مشروط').not.toMatch(/عرض مشروط|اتفاقية مشروطة/)
   })
 
   it('٨) وتحتها سطرٌ ينفي عنها الإلزام — وهو آخرُها', () => {
