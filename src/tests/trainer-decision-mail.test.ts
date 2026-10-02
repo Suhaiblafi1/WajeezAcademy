@@ -326,10 +326,10 @@ describe('بريدُ العرض المشروط', () => {
 
   it('عنوانُها يقول «عرضٌ مشروط» — لا «اكتمل اعتمادُك»', () => {
     const m = conditionalOfferMail(OFFER)
-    expect(m.subject).toContain('عرضُك المشروط')
+    expect(m.subject).toContain('الاتفاقيّة التدريبيّة')
     expect(m.subject, 'رقمُ الطلب لا يُقرأ في العنوان').toContain(OFFER.reference)
     expect(m.doc.heading, 'بُشِّر باعتمادٍ لم يقع').not.toMatch(/اكتمل اعتمادُك/)
-    expect(flat(m), 'قيل له «عقد» والعرضُ مشروط').toMatch(/وهو عرضٌ مشروطٌ/)
+    expect(flat(m), 'قيل له «عقد» والعرضُ مشروط').toMatch(/وهي اتفاقيّةٌ مشروطة/)
     /* ═══ ونجمتان كانتا تُطبَعان نجمتَين (٢٧ سبتمبر ٢٠٢٦) ═══
 
        كان هذا الفحصُ نفسُه يطابق `عرضٌ مشروطٌ\*\* لا عقدٌ نهائيّ` — أي أنّه
@@ -452,13 +452,13 @@ describe('بريدُ الاعتماد النهائيّ', () => {
     expect(now.doc.preheader, 'لم تقله الترويسة').toMatch(/ووقّعنا العقدَ من جهتنا/)
     const earlier = finalApprovalMail({ ...APPROVED, sealed: 'earlier' })
     expect(JSON.stringify(earlier.doc), 'قيل «وقّعنا» لمن وقّعنا عرضَه يومَ اعتماد توقيعه').not.toMatch(/وقّعنا العقدَ/)
-    expect(firstP(earlier)).toMatch(/تحقّق شرطُ عرضك/)
+    expect(firstP(earlier)).toMatch(/تحقّق شرطُ الاتفاقيّة/)
   })
 
   it('⚠️ ومن لا عرضَ مشروطَ له: لا شرطَ تحقّق ولا عقدَ يُدعى إليه', () => {
     const m = finalApprovalMail({ ...APPROVED, sealed: 'none', contractUrl: 'https://x/y' })
     const body = JSON.stringify(m.doc)
-    expect(body, 'قيل له إنّ شرطَ عرضه تحقّق ولا عرضَ له').not.toMatch(/شرطُ عرضك|موقَّعا من الطرفَين/)
+    expect(body, 'قيل له إنّ شرطَ عرضه تحقّق ولا عرضَ له').not.toMatch(/شرطُ الاتفاقيّة|موقَّعا من الطرفَين/)
     expect(m.subject, 'عنوانٌ يَعِده بعقدٍ موقَّع').not.toMatch(/عقدُك موقَّعا/)
     const ctas = m.doc.blocks.filter((b) => b.kind === 'cta').map((b) => (b as { label: string }).label)
     expect(ctas, 'زرٌّ إلى عقدٍ موقَّعٍ لا وجودَ له').not.toContain('اقرأ عقدَك موقَّعا')
@@ -559,7 +559,7 @@ describe('بريدُ انقضاء المهلة', () => {
   it('يقول إنّ لا إخلالَ من أحد — ويُحيل على البند', () => {
     const body = flat()
     expect(body).toMatch(/ولا يُعدُّ هذا إخلالا/)
-    expect(body, 'لم يُحِل على بند الشرط').toContain('البند 2-11 من عرضك')
+    expect(body, 'لم يُحِل على بند الشرط').toContain('البند 2-11 من الاتفاقيّة')
   })
 
   /* ═══ ورقمُ البند هو بندُ «لا إخلال» في المتن الذي وقّعه (١ أكتوبر ٢٠٢٦) ═══
@@ -582,11 +582,11 @@ describe('بريدُ انقضاء المهلة', () => {
     expect(truth, 'لا بندَ «لا إخلال» في المتن — الحارسُ يقيس الفراغ').toBeTruthy()
     expect(noFaultClauseOf(body), 'يقرأ العاملُ رقما غيرَ رقم البند').toBe(truth)
     const mail = JSON.stringify(conditionLapsedMail({ ...LAPSED, noFaultClause: noFaultClauseOf(body) }).doc)
-    expect(mail, `أحالت الرسالةُ على غير البند ${truth}`).toContain(`البند ${truth} من عرضك`)
+    expect(mail, `أحالت الرسالةُ على غير البند ${truth}`).toContain(`البند ${truth} من الاتفاقيّة`)
     /* ومتنٌ لا يُعرف فيه البندُ يُحال فيه على العرض بلا رقمٍ — لا رقمٌ مخمَّن */
     const none = JSON.stringify(conditionLapsedMail({ ...LAPSED, noFaultClause: null }).doc)
-    expect(none).toContain('وهو منصوصٌ في عرضك')
-    expect(none).not.toMatch(/البند 2-\d+ من عرضك/)
+    expect(none).toContain('وهو منصوصٌ في الاتفاقيّة')
+    expect(none).not.toMatch(/البند 2-\d+ من الاتفاقيّة/)
   })
 
   it('ويعرض المخرجَين معا — التأجيلَ والحذف', () => {

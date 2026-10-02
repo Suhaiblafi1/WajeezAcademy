@@ -65,7 +65,7 @@ export default function ContractLinkRequest() {
         noindex
       />
       <div className="mx-auto max-w-xl px-4 py-10">
-        <h1 className="text-2xl font-black">فقدتَ رابط عرضك؟</h1>
+        <h1 className="text-2xl font-black">فقدتَ رابط الاتفاقيّة؟</h1>
 
         {state.kind === "sent" ? (
           <Panel tone="positive" className="mt-6">
@@ -85,8 +85,8 @@ export default function ContractLinkRequest() {
         ) : (
           <>
             <p className="mt-3 text-sm leading-7">
-              اكتبْ بريدك الذي أرسلنا العرضَ إليه، ويصلك رابطٌ جديدٌ تفتح به عرضَك وتقرؤه
-              وتوقّعه.
+              اكتبْ بريدك الذي أرسلنا الاتفاقيّة إليه، ويصلك رابطٌ جديدٌ تفتح به الاتفاقيّة
+              وتقرؤها وتوقّعها.
             </p>
             {/* ═══ ويُقال الثمنُ قبل الضغط ═══
                 من ظنّها استعادةً بلا ثمنٍ فتح القديمَ بعدها فقيل له «انتهى هذا الرابط». */}

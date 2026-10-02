@@ -138,7 +138,7 @@ describe('③ والإقرارُ يتبع المتنَ الذي يُعرَض ف�
 })
 
 describe('④ ونقطةُ v24 لا تُقال لمن عقدُه غيرُ مشروط', () => {
-  it('⚠️ «لا نوقّع عرضَك إلّا يومَ نعتمد دوراتك» للعرض المشروط وحدَه', () => {
+  it('⚠️ «لا نوقّع الاتفاقيّة إلّا يومَ نعتمد دوراتك» للعرض المشروط وحدَه', () => {
     const titlesFor = (conditional: boolean) =>
       changeGroupsBetween('v23-2026-10-01', CONTRACT_BODY_VERSION, { conditional }).map((g) => g.titleAr)
     expect(titlesFor(true), 'لا نقطةَ لمن عرضُه مشروط').toContain('العرض المشروط وتوقيعنا — البند 2')
@@ -219,7 +219,7 @@ describe('⑦ وتوقيعُنا لا يُسمّى «اعتمادا» في ما 
 
   it('وملحقُ الدورات المعتمدة يقول ما يقوله البندُ 2-12: صار عقدا نهائيّا غيرَ مشروط', () => {
     const lede = between(bare('src/components/ContractApproval.tsx'), 'className="ca-lede"', '</p>')
-    expect(lede, 'لم تُقرأ فقرةُ الملحق').toContain('فتحقّق شرطُ عرضك')
+    expect(lede, 'لم تُقرأ فقرةُ الملحق').toContain('فتحقّق شرطُ الاتفاقيّة')
     expect(lede, 'قيل «صار نافذا» عن عقدٍ خُتم قبلها').not.toMatch(/نافذ/)
     expect(lede).toContain('غيرَ مشروط')
   })

@@ -340,7 +340,7 @@ describe('③ والعاملان يجدان من في طور الموادّ بح
     await review.noticeLapsedConditions()
     const mail = outbox.find((m) => m.to === t.email)
     expect(mail, 'لم يصله خبرُ الانقضاء').toBeDefined()
-    expect(mail!.text, 'أحال على غير بند «لا إخلال» في متنه').toContain('البند 2-10 من عرضك')
+    expect(mail!.text, 'أحال على غير بند «لا إخلال» في متنه').toContain('البند 2-10 من الاتفاقيّة')
   })
 })
 
