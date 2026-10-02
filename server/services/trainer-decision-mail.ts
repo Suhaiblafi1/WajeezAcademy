@@ -1548,7 +1548,11 @@ export function contractFinalReminderMail(input: ContractFinalReminderMailInput)
       blocks: [
         { kind: 'p', text: `ما زالت «${input.title}» بانتظار توقيعك، وهذا آخرُ تذكيرٍ نرسله بها.` },
         { kind: 'callout', text: `التوقيعُ متاحٌ ${windowAr}: حتّى ${until} بتوقيت عمّان. وإن لم يتيسّر لك في هذا الفصل فلا بأس — نعود إليك في الفصول القادمة باتفاقٍ جديد.` },
-        { kind: 'cta', label: 'اقرأ ووقّع', href: input.url },
+        /* ═══ والزرُّ يدلّ ولا يأمر (٢ أكتوبر ٢٠٢٦) ═══
+           «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع. وأمرُ صاحب المنصّة: يُقال إنّ
+           الرابطَ يوصله إلى الاتفاقيّة، فقط. */
+        { kind: 'p', text: 'والرابطُ أدناه يوصلك إلى الاتفاقيّة.' },
+        { kind: 'cta', label: 'افتح الاتفاقيّة', href: input.url },
         { kind: 'note', text: 'وهذا الرابطُ يحلّ محلَّ ما سبقه.' },
         { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
       ],

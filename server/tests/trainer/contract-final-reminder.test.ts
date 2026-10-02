@@ -137,6 +137,9 @@ describe('② الرسالةُ تقول إنّه الأخير — وإلى مت�
     for (const w of ['عرضك', 'عرضُك', 'سقط', 'كما ينصّ عقدُك']) {
       expect(`${mail.subject}\n${mail.text}`, `في التذكير الأخير «${w}»`).not.toContain(w)
     }
+    /* والزرُّ يدلّ على الاتفاقيّة ولا يأمر بالتوقيع (٢ أكتوبر ٢٠٢٦) */
+    expect(mail.text, 'الزرُّ يأمر بالتوقيع').not.toContain('اقرأ ووقّع')
+    expect(mail.text, 'لا يقول إنّ الرابطَ يوصله إلى الاتفاقيّة').toContain('افتح الاتفاقيّة')
     expect(mail.text, 'خرج بغير الرابط الجديد').toContain(out.signingUrl)
   })
 })
