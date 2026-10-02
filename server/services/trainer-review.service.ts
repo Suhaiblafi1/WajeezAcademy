@@ -4357,8 +4357,10 @@ export class TrainerReviewService {
        توقيعُنا (v12 إلى v23). فلا يُعتمَد إلّا خاتما — واعتمادُه بلا خَتمٍ خلافُ
        ما وقّعه. وكان يُردّ فيُعاد للتوقيع لا محالة؛ فصار المعتمِدُ يختار
        (٢ أكتوبر ٢٠٢٦، قرارُ صاحب المنصّة: «Do not force me to do any action»):
-       يعتمده كما وقّعه بطلبٍ صريح (`asSigned`) فيُختَم الآن بنصّه، أو يعيده
-       للتوقيع على النصّ الحاضر (`requestResign`).
+       يعتمده كالعقود الجديدة بطلبٍ صريح (`likeNew`) فيُفتح طورُه بلا خَتمٍ
+       كـ`approve_only` — باختياره بعد أن قيل له إنّ نصَّه يقول غيرَ ذلك — أو
+       يعتمده كما وقّعه (`asSigned`) فيُختَم الآن بنصّه، أو يعيده للتوقيع على
+       النصّ الحاضر (`requestResign`).
 
      وهو المعبرُ الوحيدُ من «وقّع» إلى «بوّابةٌ مفتوحة». */
 
@@ -4374,6 +4376,9 @@ export class TrainerReviewService {
       /** «اعتمِدْه كما وقّعه» — لما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا منّا:
           يقول المعتمِدُ إنّه يريد ذلك الخَتمَ بعينه، وقد قرأ قبله أنّه يوقّع الآن */
       asSigned?: boolean
+      /** «اعتمِدْه كالعقود الجديدة» — للنصّ نفسِه: يُعتمَد التوقيعُ ويُفتح الطورُ
+          ولا نوقّع إلّا يومَ تُعتمَد دوراتُه، وقد قرأ قبله أنّ نصَّه يقول غيرَ ذلك */
+      likeNew?: boolean
     } = {},
   ) {
     const c = await this.prisma.trainerContract.findUnique({
@@ -4427,17 +4432,27 @@ export class TrainerReviewService {
       throw new AuthError('self_decision', 'لا يجوز اعتمادُ عقدٍ مرتبطٍ ببريدك', 403)
     }
 
-    /* ═══ ونصٌّ يجعل الاعتمادَ توقيعا يُعتمَد كما وقّعه — بطلبٍ صريح (٢ أكتوبر ٢٠٢٦) ═══
+    /* ═══ ونصٌّ يجعل الاعتمادَ توقيعا يُعتمَد بما يختاره المعتمِدُ صريحا (٢ أكتوبر ٢٠٢٦) ═══
 
-       ما وُقّع على v12–v23 لا يُعتمَد إلّا خاتما: ذلك نصُّه. فلا يُختَم بنقرةٍ لم
-       تقل إنّها تريده — صفحةٌ مفتوحةٌ من قبلُ، أو شاشةُ خطوات التجهيز — بل بالزرّ
-       الذي يقول قبله إنّه يوقّع الآن (`asSigned`). وبلاه يُردّ بالخيارين معا لا
-       بأحدهما: أن يعتمده كما وقّعه، أو يعيده للتوقيع على النصّ الحاضر. */
+       ما وُقّع على v12–v23 يقول نصُّه إنّ اعتمادَه خَتم. فلا يُختَم بنقرةٍ لم تقل
+       إنّها تريده — صفحةٌ مفتوحةٌ من قبلُ، أو شاشةُ خطوات التجهيز — ولا يُعتمَد
+       بلا خَتمٍ بنقرةٍ لم تقل ذلك. بل بالزرّ الذي يقول قبله ما يقع: «كما وقّعه»
+       (`asSigned`) فيُختَم الآن، أو «كالعقود الجديدة» (`likeNew`) فيُفتح طورُه
+       ولا نوقّع إلّا يومَ تُعتمَد دوراتُه — باختيار صاحب المنصّة («Option 4»)
+       وقد قيل له إنّ ذلك يغيّر ما تقوله المنصّةُ لا ما وقّعه الرجل.
+       وبلا أحدهما يُردّ بالخيارات كلِّها لا بأحدها، ومعًا يُردّان: لا يُخمَّن
+       أيُّهما أُريد. */
+    if (input.asSigned === true && input.likeNew === true) {
+      throw new AuthError('two_choices', 'اخترْ واحدا: «كما وقّعه» أو «كالعقود الجديدة»', 400)
+    }
     const rule = signatureApprovalOf(c)
-    if (rule === 'sealed_by_text' && input.asSigned !== true) {
+    if (rule === 'sealed_by_text' && input.asSigned !== true && input.likeNew !== true) {
       throw new AuthError('sealed_by_text', SEALED_BY_TEXT_AR, 409)
     }
-    const mode: 'seal' | 'approve_only' = rule === 'approve_only' ? 'approve_only' : 'seal'
+    /* و`likeNew` لا يمسّ إلّا ما نصُّه يجعل الاعتمادَ توقيعا: العقدُ غيرُ المشروط
+       يُختَم كما كان، وv24 لا يُختَم أصلا */
+    const approvedLikeNew = rule === 'sealed_by_text' && input.likeNew === true
+    const mode: 'seal' | 'approve_only' = rule === 'approve_only' || approvedLikeNew ? 'approve_only' : 'seal'
 
     const note = (input.noteAr ?? '').trim().slice(0, 500)
     const approvedAt = new Date()
@@ -4504,6 +4519,9 @@ export class TrainerReviewService {
             signerLegalName: c.signerLegalName, signedBodyHash: c.signedBodyHash,
             bodyVersion: c.bodyVersion, gatesActivation: c.gatesActivation,
             noteAr: note.length > 0 ? note : null, signatureApprovedAt: approvedAt,
+            /* ومن قرأ السجلَّ بعد سنةٍ يعرف لمَ لم يُختَم عرضٌ نصُّه يجعل الاعتمادَ
+               توقيعا: اعتُمد كالعقود الجديدة باختيار المعتمِد */
+            approvedLikeNew,
           },
         })
       }

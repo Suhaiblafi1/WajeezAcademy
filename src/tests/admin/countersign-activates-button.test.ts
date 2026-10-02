@@ -132,6 +132,7 @@ describe('الزرُّ يقول ما سيفعل', () => {
     expect(lines.approve_only, 'لم يُقل متى نوقّع').toContain('ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه')
     expect(lines.seal, 'لم يُقل إنّ اعتمادَ غيرِ المشروط توقيعٌ منّا').toContain('نوقّع عن الأكاديميّة')
     expect(lines.sealed_by_text, 'لم يُعرض الخياران لمن وقّع نصّا سابقا').toMatch(/كما وقّعه[\s\S]*للتوقيع على النصّ الحاضر/)
+    expect(lines.sealed_by_text, 'لم يُذكر «كالعقود الجديدة» أوّلَ الخيارات').toMatch(/كالعقود الجديدة[\s\S]*كما وقّعه/)
   })
 
   /* وشاشةُ خطوات التجهيز تعتمد التوقيعَ من بابٍ ثانٍ — وكانت تقول «نفَذ العقدُ»
@@ -195,5 +196,63 @@ describe('وقّع نصّا سابقا: الفرقُ والخياراتُ — و
        لَسقط الطلبُ بأوّل حرفٍ وردّه الخادمُ بالخيارين بعد أن اختار المعتمِد. */
     expect(SCREEN, 'كتابةُ الملحوظة تُسقط «كما وقّعه»').toContain('setSignOff({ ...signOff, noteAr: e.target.value })')
     expect(SCREEN, 'زرُّ التأكيد لا يقول إنّه يوقّع الآن').toContain('"اعتمِدْه كما وقّعه — ونوقّعه الآن"')
+  })
+})
+
+/* ═══ و«اعتمِدْه كالعقود الجديدة» — خيارُ صاحب المنصّة (٢ أكتوبر ٢٠٢٦) ═══
+
+   سأل: «لماذا لا يمكن أن أجعل العقودَ الموقَّعة كالعقود الجديدة؟ كودٌ أم لأنّه
+   غيرُ مكتوبٍ بالعقد؟». فقيل له: النصّ — نصُّه يجعل الاعتمادَ توقيعا، والزرُّ
+   يغيّر ما تقوله المنصّةُ لا ما وقّعه. فاختاره («Option 4»).
+
+   فيُقاس على البنية: أنّه أوّلُ الخيارات في الصندوق وزرُّه الرئيسُ أوّلُ الأزرار،
+   وأنّ أثرَه مكتوبٌ بما يبقى (لا نوقّع الآن، ونصُّه الموقَّعُ كما هو)، وأنّه يصل
+   الخادمَ صريحا (`likeNew`) لا `asSigned`، وأنّ التأكيدَ والنجاحَ لا يقولان «وقّعنا». */
+describe('«اعتمِدْه كالعقود الجديدة»: الخيارُ الأوّلُ — وأثرُه مكتوبٌ بما يبقى', () => {
+  const BOX = block(SCREEN, 'function SignedEarlierText(', '\nfunction ')
+  const at = SCREEN.indexOf('signatureApprovalOf(c) === "sealed_by_text"')
+  const BRANCH = at < 0 ? '' : SCREEN.slice(at, SCREEN.indexOf('</>', at))
+  const LIKE_NEW = /const LIKE_NEW_AR = ([\s\S]*?);\n/.exec(SCREEN)?.[1] ?? ''
+  /** الزرُّ الذي يحمل هذا الاسم — من `<Button` قبله إلى الاسم */
+  const buttonOf = (src: string, label: string) => {
+    const end = src.indexOf(label)
+    return end < 0 ? '' : src.slice(src.lastIndexOf('<Button', end), end)
+  }
+
+  it('الكتلُ مقروءة — وإلّا فالحارسُ يقيس الفراغ', () => {
+    expect(BOX).not.toBe('')
+    expect(BRANCH).not.toBe('')
+    expect(LIKE_NEW, 'لم تُقرأ جملةُ «كالعقود الجديدة»').not.toBe('')
+  })
+
+  it('⚠️ أوّلُ الخيارات في الصندوق — وأثرُه: لا نوقّع الآن، ونصُّه الموقَّعُ كما هو', () => {
+    expect(BOX, 'لم يُعرض خيارُ «كالعقود الجديدة»').toContain('«اعتمِدْه كالعقود الجديدة»')
+    expect(BOX.indexOf('«اعتمِدْه كالعقود الجديدة»'), 'ليس أوّلَ الخيارات')
+      .toBeLessThan(BOX.indexOf('«اعتمِدْه كما وقّعه»'))
+    expect(BOX, 'لم يُقل أثرُه في الصندوق').toContain('{LIKE_NEW_AR}')
+    expect(LIKE_NEW, 'لم يُقل إنّا لا نوقّع إلّا يومَ نعتمد دوراتِه').toContain('ولا نوقّعه إلّا يومَ نعتمد دوراتِه')
+    expect(LIKE_NEW, 'لم يُقل إنّ نصَّه الموقَّعَ باقٍ يقول غيرَ ذلك')
+      .toMatch(/ونصُّه الموقَّعُ باقٍ كما هو[\s\S]*اعتمادَ توقيعه توقيعٌ منّا/)
+  })
+
+  it('⚠️ وزرُّه الرئيسُ أوّلُ الأزرار — ويقول للصندوق `likeNew` لا `asSigned`', () => {
+    const likeNew = buttonOf(BRANCH, 'طابقتُ الاسمَ — اعتمِدْه كالعقود الجديدة')
+    expect(likeNew, 'لا زرَّ يعتمده كالعقود الجديدة').not.toBe('')
+    expect(likeNew, 'ليس الزرَّ الرئيس').toContain('tone="confirm"')
+    expect(likeNew, 'الزرُّ لا يقول للصندوق إنّه «كالعقود الجديدة»').toContain('likeNew: true')
+    expect(likeNew, 'الزرُّ يطلب الخَتمَ وهو يقول «كالعقود الجديدة»').not.toContain('asSigned')
+    const asSigned = buttonOf(BRANCH, 'طابقتُ الاسمَ — اعتمِدْه كما وقّعه')
+    expect(asSigned, 'سقط خيارُ «كما وقّعه»').toContain('asSigned: true')
+    expect(BRANCH.indexOf('likeNew: true'), 'ليس أوّلَ الأزرار').toBeLessThan(BRANCH.indexOf('asSigned: true'))
+  })
+
+  it('⚠️ ويصل الخادمَ صريحا — والتأكيدُ والنجاحُ لا يقولان «وقّعنا»', () => {
+    expect(SEAL, 'لا يُرسَل اختيارُه فيردّه الخادمُ بالخيارات').toContain('likeNew ? { likeNew: true } : {}')
+    expect(SCREEN, 'نافذةُ التأكيد لا تقول أثرَه').toMatch(/signOff\.likeNew && \([\s\S]{0,160}\{LIKE_NEW_AR\}/)
+    expect(SCREEN, 'زرُّ التأكيد لا يقول إنّا لا نوقّع الآن').toContain('"اعتمِدْه كالعقود الجديدة — ولا نوقّع الآن"')
+    const ok = /if \(likeNew\) return "([^"]*)"/.exec(SEAL)?.[1] ?? ''
+    expect(ok, 'لا رسالةَ نجاحٍ له — فيقع على جملةِ غيره').not.toBe('')
+    expect(ok, 'قال النجاحُ إنّا وقّعنا').not.toMatch(/وقّعناه|نفَذ|نافذ/)
+    expect(ok, 'لم يُقل متى نوقّع').toContain('ونوقّعه حين تعتمد دوراتِه')
   })
 })

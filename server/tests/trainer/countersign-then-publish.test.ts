@@ -37,6 +37,9 @@
  * ⑤ وما خُتم يومَ اعتُمد توقيعُه (٢٧ سبتمبر — ١ أكتوبر) لا يُعاد ختمُه عند
  *   النشر: لو أُعيد لَقرأ العقدُ أنّنا وقّعناه يومَ النشر خلافَ ما جرى يومَها.
  * ⑥ وأنّ خَتمَ النشر يُزيح ما كان نافذا له قبله، ويُكتب أثرُ الإزاحة.
+ * ⑦ وما وُقّع على نصٍّ سابقٍ (v12–v23) واعتُمد «كالعقود الجديدة» — خيارُ صاحب
+ *   المنصّة (٢ أكتوبر ٢٠٢٦، «Option 4») — يُختَم عند النشر كغيره: لا يقف خَتمُه
+ *   عند إصدار نصّه.
  *
  * والبريدُ يُلتقَط عند `sendDirectEmail` — فما يُقاس هو ما خرج من الخدمة.
  */
@@ -315,6 +318,31 @@ describe('الاعتمادُ يفتح طورَ الموادّ ولا ينشر', 
     expect(old.supersededByContractId, 'لا يقول القديمُ من أزاحه').toBe(contract.id)
     expect(old.supersededAt?.getTime(), 'وقتُ الإزاحة غيرُ وقت الخَتم').toBe(sealed.countersignedAt?.getTime())
     expect(await actionsOn(prior.id), 'أُزيح العقدُ ولم يُكتب أثرُ إزاحته').toContain('trainer.contract.superseded')
+  })
+
+  /* اعتُمد كالعقود الجديدة فلم يُختَم يومئذ — فيُختَم يومَ تُعتمَد دوراتُه كما
+     يُختَم كلُّ عقدٍ جديد. ولو وقف الخَتمُ عند إصدار نصّه لَبقي «اعتُمد ولم يُوقَّع»
+     أبدا: لا يُختَم بالنشر، ولا يُعاد اعتمادُه وقد خرج من `signed`. */
+  it('⚠️ وما وُقّع على نصٍّ سابقٍ واعتُمد «كالعقود الجديدة» يُختَم عند النشر كغيره', async () => {
+    const { application, contract, email } = await signedOffer({ ready: true })
+    /* الصفُّ يُكتب بإصدار نصٍّ سابقٍ بيدٍ: المقيسُ ما يقع بعده لا طريقُه إليه */
+    await prisma.trainerContract.update({ where: { id: contract.id }, data: { bodyVersion: 'v20-2026-10-01' } })
+    const out = await review.approveSignature(contract.id, adminId, {
+      noteAr: 'طابقتُ الاسمَ بجواز سفرٍ رقم X1234567', likeNew: true,
+      actorRoles: ['academic_manager'],
+    })
+    expect(out.sealed, 'خُتم يومَ اعتُمد وقد اختير «كالعقود الجديدة»').toBe(false)
+
+    outbox.length = 0
+    await publish(application.id)
+    const after = await prisma.trainerContract.findUniqueOrThrow({ where: { id: contract.id } })
+    expect(after.status, 'نُشر ولم يُختَم عرضُه').toBe('countersigned')
+    expect(after.countersignedAt, 'نُشر ولم نوقّع').not.toBeNull()
+    expect(after.academySignatoryName, 'خُتم بلا اسم المفوَّض').toBe(ACADEMY_LEGAL.signatoryNameAr)
+    expect(after.conditionMetAt, 'نُشر ولم يُكتب تحقّقُ الشرط').not.toBeNull()
+    expect(after.countersignNoteAr ?? '', 'ضاعت ملحوظةُ المطابقة يومَ الخَتم').toContain('X1234567')
+    const mail = outbox.find((m) => m.to === email)
+    expect(mail?.text, 'لم يُقل له إنّا وقّعنا العقدَ مع اعتماد دوراته').toContain('ووقّعنا العقدَ من جهتنا')
   })
 
   it('ولا يُنشَر من لم تُعلَن موادُّه — والحمايةُ لم تسقط مع الزرّ', async () => {

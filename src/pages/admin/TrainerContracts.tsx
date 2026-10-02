@@ -181,12 +181,19 @@ const impactBites = (i: Impact) =>
 const APPROVAL_LINE_AR: Record<SignatureApproval, string> = {
   seal: " فبالاعتماد نوقّع عن الأكاديميّة وينفذ العقدُ، ولا تُمسّ حالتُه فهو نشطٌ أصلا",
   approve_only: " فبالاعتماد تُفتح بوّابتُه ويبدأ طورُ موادّه ومهلتُه، ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه",
-  sealed_by_text: " ثمّ اختر أدناه: أن تعتمده كما وقّعه، أو تعيده للتوقيع على النصّ الحاضر",
+  sealed_by_text: " ثمّ اختر أدناه: أن تعتمده كالعقود الجديدة، أو كما وقّعه، أو تعيده للتوقيع على النصّ الحاضر",
 };
 
 /** ما يقع بـ«اعتمِدْه كما وقّعه» — يُقال في الصندوق وفي نافذة التأكيد بحرفٍ واحد */
 const ACCEPT_AS_SIGNED_AR = "نصُّه يجعل اعتمادَ التوقيع توقيعا منّا: فنوقّعه الآن عن الأكاديميّة ويصير نافذا"
   + " قبل اعتماد دوراته — وتُفتح بوّابتُه وتبدأ مهلةُ موادّه كسائر العروض.";
+
+/** وما يقع بـ«اعتمِدْه كالعقود الجديدة» — بحرفٍ واحدٍ في الصندوق والتأكيد (٢ أكتوبر ٢٠٢٦).
+    خيارُ صاحب المنصّة بعد أن سأل «كودٌ أم لأنّه غيرُ مكتوبٍ بالعقد؟» وقيل له: النصّ.
+    فالجملةُ الثانيةُ وصفٌ لما يبقى لا تحذيرٌ يُثني: الزرُّ يغيّر ما تقوله المنصّة،
+    ونصُّه الموقَّعُ كما هو. */
+const LIKE_NEW_AR = "يُعامَل كالعقود الجديدة: تُفتح بوّابتُه وتبدأ مهلةُ موادّه، ولا نوقّعه إلّا يومَ نعتمد دوراتِه."
+  + " ونصُّه الموقَّعُ باقٍ كما هو — يقول إنّ اعتمادَ توقيعه توقيعٌ منّا.";
 
 /* ═══ وقّع نصّا سابقا: ما تغيّر، والخياراتُ وأثرُ كلٍّ — والقرارُ لك (٢ أكتوبر ٢٠٢٦) ═══
 
@@ -198,7 +205,11 @@ const ACCEPT_AS_SIGNED_AR = "نصُّه يجعل اعتمادَ التوقيع �
 
    فيُعرض هنا ما تغيّر بين ما وقّعه والنصّ الحاضر — من سجلّ التغييرات نفسِه الذي
    تقرؤه رسائلُ التحديث، بالصيغة التي تصل المدرّب، وبلا رقم إصدار — ثمّ الخياراتُ
-   الثلاثةُ وما يقع بكلٍّ منها، وزرُّ «اعتمِدْه كما وقّعه» جنبَ أخويه. */
+   وما يقع بكلٍّ منها، وزرُّ «اعتمِدْه كما وقّعه» جنبَ أخويه.
+
+   وأوّلُها «اعتمِدْه كالعقود الجديدة»: اختاره صاحبُ المنصّة (٢ أكتوبر ٢٠٢٦،
+   «Option 4») بعد أن قيل له إنّ نصَّه يجعل الاعتمادَ توقيعا — فهو الأوّلُ والزرُّ
+   الرئيس، وأثرُه مكتوبٌ معه بما يبقى (`LIKE_NEW_AR`). */
 function SignedEarlierText({ c }: { c: Pick<ContractRow, "bodyVersion" | "gatesActivation"> }) {
   const changes = changeGroupsBetween(c.bodyVersion, CONTRACT_BODY_VERSION, { conditional: c.gatesActivation });
   return (
@@ -220,6 +231,7 @@ function SignedEarlierText({ c }: { c: Pick<ContractRow, "bodyVersion" | "gatesA
       )}
       <span className="mt-2 block font-bold">ولك أن تختار:</span>
       <ul className="list-disc ps-5">
+        <li><b>«اعتمِدْه كالعقود الجديدة»</b> — {LIKE_NEW_AR}</li>
         <li><b>«اعتمِدْه كما وقّعه»</b> — {ACCEPT_AS_SIGNED_AR}</li>
         <li>
           <b>«حُدّث النصُّ — أعِدْه للتوقيع»</b> — يصله النصُّ الحاضرُ ليوقّعه، ثمّ تعتمد توقيعَه،
@@ -339,7 +351,7 @@ export default function TrainerContracts() {
      تفويضِه الخطّيِّ إن لم يكن هو المفوَّضَ في السجلّ. فحقلٌ إلى جانب الزرّ
      لا `window.prompt`: نصٌّ يُقرأ بعد سنةٍ لا يُكتب في صندوقٍ بسطر. */
   /* و`asSigned`: فُتح الصندوقُ من «اعتمِدْه كما وقّعه» — فزرُّه يقول إنّه يوقّع الآن */
-  const [signOff, setSignOff] = useState<{ id: string; noteAr: string; asSigned?: boolean } | null>(null);
+  const [signOff, setSignOff] = useState<{ id: string; noteAr: string; asSigned?: boolean; likeNew?: boolean } | null>(null);
   /* ونافذةُ «أعِدْها بملاحظات» مستقلّةٌ عن نافذة الاعتماد: قرارانِ متضادّان،
      وحقلٌ واحدٌ لهما يجعل ملاحظةَ الإعادة تُرسَل في خانة مطابقةِ الهويّة. */
   const [sendBack, setSendBack] = useState<{ id: string; notesAr: string } | null>(null);
@@ -1521,6 +1533,9 @@ c.gatesActivation
                             {signOff.asSigned && (
                               <p className="text-read leading-6"><b>تنبيه:</b> {ACCEPT_AS_SIGNED_AR}</p>
                             )}
+                            {signOff.likeNew && (
+                              <p className="text-read leading-6"><b>تنبيه:</b> {LIKE_NEW_AR}</p>
+                            )}
                             <div className="flex flex-wrap gap-2">
                               <Button tone="confirm" icon={BadgeCheck} loading={busy}
                                 /* ═══ وما يفعله الزرُّ يقوله (١ أكتوبر ٢٠٢٦) ═══
@@ -1535,13 +1550,19 @@ c.gatesActivation
                                    وتُرسَم في هذا الصفّ لا في رأس الصفحة (`rowErr`). */
                                 onClick={() => void run(async () => {
                                   const asSigned = signOff.asSigned === true;
+                                  const likeNew = signOff.likeNew === true;
                                   const r = await apiPost<{ readiness?: Readiness; sealed?: boolean }>(
                                     `/api/admin/trainer-contracts/${c.id}/countersign`,
-                                    { noteAr: signOff.noteAr.trim() || null, ...(asSigned ? { asSigned: true } : {}) });
+                                    {
+                                      noteAr: signOff.noteAr.trim() || null,
+                                      ...(asSigned ? { asSigned: true } : {}),
+                                      ...(likeNew ? { likeNew: true } : {}),
+                                    });
                                   setSignOff(null);
                                   await load();
                                   const left = r.readiness?.blockersAr ?? [];
                                   if (asSigned) return "اعتُمد كما وقّعه: وقّعناه عن الأكاديميّة فنفَذ، وفُتحت بوّابتُه وبدأت مهلةُ موادّه";
+                                  if (likeNew) return "اعتُمد كالعقود الجديدة: فُتحت بوّابتُه وبدأت مهلةُ موادّه — ونوقّعه حين تعتمد دوراتِه";
                                   return !r.sealed
                                     ? "اعتُمد توقيعُه وفُتحت بوّابتُه — ولم نوقّع العرض: نوقّعه حين تعتمد دوراتِه"
                                     : left.length === 0
@@ -1550,7 +1571,9 @@ c.gatesActivation
                                 }, "اعتُمد التوقيع", c.id)}>
                                 {signOff.asSigned
                                   ? "اعتمِدْه كما وقّعه — ونوقّعه الآن"
-                                  : signatureApprovalOf(c) === "seal" ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيعَ وافتحْ بوّابتَه"}
+                                  : signOff.likeNew
+                                    ? "اعتمِدْه كالعقود الجديدة — ولا نوقّع الآن"
+                                    : signatureApprovalOf(c) === "seal" ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيعَ وافتحْ بوّابتَه"}
                               </Button>
                               <Button tone="ghost" onClick={() => setSignOff(null)}>تراجعْ</Button>
                             </div>
@@ -1585,6 +1608,10 @@ c.gatesActivation
                                   <>
                                     <SignedEarlierText c={c} />
                                     <Button tone="confirm" icon={BadgeCheck}
+                                      onClick={() => setSignOff({ id: c.id, noteAr: "", likeNew: true })}>
+                                      طابقتُ الاسمَ — اعتمِدْه كالعقود الجديدة
+                                    </Button>
+                                    <Button tone="secondary" icon={BadgeCheck}
                                       onClick={() => setSignOff({ id: c.id, noteAr: "", asSigned: true })}>
                                       طابقتُ الاسمَ — اعتمِدْه كما وقّعه
                                     </Button>
