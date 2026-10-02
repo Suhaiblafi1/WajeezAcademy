@@ -648,13 +648,18 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      قبل النشر على بابٍ مغلق. */
   app.post('/api/admin/trainer-contracts/:contractId/countersign', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — يفتح طورَ الموادّ في العرض المشروط بلا توقيعٍ منّا، ويختم العقدَ غيرَ المشروط' },
+    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — يفتح طورَ الموادّ في العرض المشروط بلا توقيعٍ منّا، ويختم العقدَ غيرَ المشروط، وما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا يُختَم كما وقّعه بطلبٍ صريح (asSigned)' },
   }, async (req, reply) => {
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
-    const { noteAr } = z.object({ noteAr: z.string().trim().max(500).nullish() }).parse(req.body ?? {})
+    /* و`asSigned`: «اعتمِدْه كما وقّعه» لما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا —
+       يُطلب صريحا ولا يُفترَض (علّتُه في `approveSignature`) */
+    const { noteAr, asSigned } = z.object({
+      noteAr: z.string().trim().max(500).nullish(),
+      asSigned: z.boolean().optional(),
+    }).parse(req.body ?? {})
     return review.approveSignature(contractId, req.auth!.userId, {
-      noteAr, actorRoles: req.auth!.roles,
+      noteAr, asSigned, actorRoles: req.auth!.roles,
     })
   })
 

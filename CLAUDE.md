@@ -29,6 +29,13 @@
   يُقال في رسالة الالتزام صراحةً — لا ليُستأذَن فيه، بل ليُعرَف مصدرُه حين
   يُسأل عنه بعد شهر. والمشغّلُ اليومَ **تجريبيّ** بأمرِ صاحب المنصّة.
 
+- **لا إجبارَ على فعل: الفرقُ والخياراتُ وأثرُ كلٍّ، والقرارُ لصاحب المنصّة.**
+  قرارُه (٢ أكتوبر ٢٠٢٦): «Do not force me to do any action. Do always give me
+  options and tell me what are the differences». فحيث تقف شاشةٌ عند فعلٍ لسببٍ
+  — نصٌّ قديم، أو شرطٌ لم يتمّ — لا يُسدّ البابُ بزرٍّ واحد: يُقال ما الفرق،
+  وتُعرض الخياراتُ وما يقع بكلٍّ منها، ويختار هو. وأوّلُ ما نُسخ به صندوقُ
+  «لا يُعتمَد بنصّه» الذي كان يُلزم بإعادة التوقيع.
+
 - **Claude replies in English.** Decision of the platform owner (7 September
   2026). This governs **conversation only** — chat replies, explanations,
   questions. It does **not** change what is written into the repository:

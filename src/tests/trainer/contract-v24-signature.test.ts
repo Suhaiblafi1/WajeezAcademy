@@ -9,7 +9,8 @@
  * يُصيَّر لا كما يُكتب في ملفّه:
  *
  * ① `signatureApprovalOf`: ما يفعله الزرُّ بحسب ما وقّعه صاحبُه — والإصدارُ
- *    الحاضرُ لا يختم، وأجيالُ v12–v23 لا تُعتمَد قبل إعادتها.
+ *    الحاضرُ لا يختم، وأجيالُ v12–v23 لا تُعتمَد إلّا خاتمة: فيختار المعتمِدُ
+ *    أن يعتمدها كما وُقّعت أو يعيدها للتوقيع (٢ أكتوبر ٢٠٢٦: «لا تُجبرني»).
  * ② المتنُ الحاضرُ لا يقول في موضعٍ أنّ اعتمادَ التوقيع يُنفذ العرض — لا في البند
  *    ولا الديباجة ولا الخلاصة — والملحقُ (د) يقول متى نوقّع.
  * ③ والإقرارُ يتبع متنَه: من يوقّع متنا من v12–v23 يُقرّ بما فيه، لا بنقيضه.
@@ -23,7 +24,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import {
-  APPROVAL_SEALED_BODIES, EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, RESIGN_FIRST_AR, signatureApprovalOf,
+  APPROVAL_SEALED_BODIES, EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, SEALED_BY_TEXT_AR, signatureApprovalOf,
 } from '@/application/trainer/conditional-offer'
 import {
   CONTRACT_BODY_VERSION, contractAcks, renderContractBodyAr, type ContractBodyInput,
@@ -62,9 +63,9 @@ describe('① ما يفعله «اعتمِدِ التوقيع» بحسب ما و
     expect(conditional(CONTRACT_BODY_VERSION), 'الإصدارُ الحاضرُ يختم باعتماد التوقيع').toBe('approve_only')
   })
 
-  it('⚠️ وما وُقّع على v12–v23 لا يُعتمَد قبل إعادته — متنُه يجعل الاعتمادَ توقيعا', () => {
+  it('⚠️ وما وُقّع على v12–v23 لا يُعتمَد إلّا خاتما — متنُه يجعل الاعتمادَ توقيعا', () => {
     for (let g = APPROVAL_SEALED_BODIES.from; g < APPROVAL_SEALED_BODIES.before; g += 1) {
-      expect(conditional(`v${g}-2026-09-30`), `v${g}`).toBe('resign_first')
+      expect(conditional(`v${g}-2026-09-30`), `v${g}`).toBe('sealed_by_text')
     }
     expect(APPROVAL_SEALED_BODIES, 'تبدّل مدى الأجيال التي قال متنُها إنّ الاعتمادَ توقيع')
       .toEqual({ from: 12, before: 24 })
@@ -82,9 +83,15 @@ describe('① ما يفعله «اعتمِدِ التوقيع» بحسب ما و
     }
   })
 
-  it('والسببُ يُقال بلا رقم إصدار — والإصدارُ لا يُعرَض على أحد', () => {
-    expect(RESIGN_FIRST_AR).not.toMatch(/v\d+/)
-    expect(RESIGN_FIRST_AR).toContain('أعِدْه للتوقيع')
+  /* وردُّ الخادم حين يصله اعتمادٌ لم يقل أيَّ الخيارين أراد (صفحةٌ قديمة، أو
+     خطواتُ التجهيز): يعرض الخيارين بأثرهما ولا يأمر بأحدهما. وكان «فأعِدْه
+     للتوقيع… ثمّ اعتمِدْ توقيعَه الجديد» — بابا واحدا. */
+  it('⚠️ وردُّ الخادم يعرض الخيارين بأثرهما ولا يُلزم بأحدهما — وبلا رقم إصدار', () => {
+    expect(SEALED_BY_TEXT_AR).not.toMatch(/v\d+/)
+    expect(SEALED_BY_TEXT_AR, 'لم يُعرض الاعتمادُ كما وقّعه').toContain('أن تعتمده كما وقّعه')
+    expect(SEALED_BY_TEXT_AR, 'لم يُقل أثرُه').toContain('فيصير نافذا الآن قبل اعتماد دوراته')
+    expect(SEALED_BY_TEXT_AR, 'لم تُعرض الإعادةُ').toContain('أن تعيده للتوقيع على النصّ الحاضر')
+    expect(SEALED_BY_TEXT_AR, 'عاد الأمرُ بالإعادة بابا وحيدا').not.toMatch(/فأعِدْه|ثمّ اعتمِدْ توقيعَه الجديد/)
   })
 })
 
@@ -167,6 +174,18 @@ describe('⑥ وبريدُ اعتماد التوقيع يقول ما وقع — 
 
   it('والعقدُ غيرُ المشروط يُختَم بهذا الاعتماد — فرسالتُه تقول إنّه نفذ', () => {
     expect(textOf(false)).toContain('فصار العقدُ نافذا بين الطرفين')
+  })
+
+  /* وعرضٌ مشروطٌ اعتُمد كما وقّعه على نصٍّ يجعل الاعتمادَ توقيعا (٢ أكتوبر ٢٠٢٦):
+     خُتم الآن. فلو قالت رسالتُه «نوقّعه حين نعتمد دوراتك» لَوعدته بتوقيعٍ وقع. */
+  it('⚠️ وعرضٌ اعتُمد كما وقّعه: وقّعناه الآن ونفذ — لا «نوقّعه حين نعتمد دوراتك»', () => {
+    const mail = contractApprovedMail({ ...input, gatesActivation: true, sealedNow: true })
+    const t = renderMail(mail.doc).text
+    expect(t, 'لم يُقل له إنّا وقّعناه').toContain('ووقّعناه من جهتنا بالنصّ الذي وقّعتَه — فصار نافذا بين الطرفين')
+    expect(t, 'وُعد بتوقيعٍ وقع').not.toContain('وسنوقّع العقدَ من جهتنا')
+    expect(t, 'قيل إنّ نسختَه تصير بتوقيع الطرفين لاحقا').not.toContain('وتصير بتوقيع الطرفين حين نوقّعها')
+    expect(t, 'ضاع البابُ المفتوح').toContain('ولك الآن بوّابتُك مفتوحةً')
+    expect(mail.subject).toContain('ووقّعنا عرضَك')
   })
 })
 
