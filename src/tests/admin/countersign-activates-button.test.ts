@@ -102,8 +102,19 @@ describe('الزرُّ يقول ما سيفعل', () => {
   it('يفرّق بين اعتمادِ توقيعٍ يفتح البوّابةَ بلا توقيعٍ منّا وخَتمِ عقدٍ غيرِ مشروط', () => {
     expect(SCREEN, 'الزرُّ لا يقول إن كان يوقّع عنّا')
       .toContain('signatureApprovalOf(c) === "seal" ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيعَ وافتحْ بوّابتَه"')
-    expect(SCREEN, 'والزرُّ الأوّلُ قبل فتح الحقل لا يفرّق')
-      .toContain('signatureApprovalOf(c) === "seal" ? "طابقتُ الاسمَ — اعتمِدْ ووقِّعْ" : "طابقتُ الاسمَ — اعتمِدِ التوقيع"')
+    /* والزرُّ الأوّلُ قبل فتح الحقل يُسأل الحكمُ عنه فرعا فرعا (٢ أكتوبر ٢٠٢٦): صار لغير
+       المشروط زرّان — «كالعقود الجديدة» و«اعتمِدْ ووقِّعْ الآن» — والعرضُ المشروطُ زرُّه
+       يعتمد التوقيعَ وحدَه. فيُقاس أنّ زرَّ الخَتم في فرع `seal` لا في غيره. */
+    const at = SCREEN.indexOf('<PlainContractChoices />')
+    expect(at, 'لا فرعَ لأزرار العقد غير المشروط').toBeGreaterThan(0)
+    const asked = SCREEN.lastIndexOf('signatureApprovalOf(c) === "seal"', at)
+    expect(SCREEN.slice(asked, at), 'فرعُ الأزرار لا يُسأل فيه الحكمُ أنّه `seal`')
+      .toMatch(/^signatureApprovalOf\(c\) === "seal"\s*\?\s*\(\s*<>\s*$/)
+    const sealBranch = SCREEN.slice(at, SCREEN.indexOf('</>', at))
+    expect(sealBranch, 'لا زرَّ يوقّع الآن في فرع غير المشروط').toContain('طابقتُ الاسمَ — اعتمِدْ ووقِّعْ الآن')
+    const otherwise = SCREEN.slice(SCREEN.indexOf('</>', at), SCREEN.indexOf('</Button>', SCREEN.indexOf('</>', at)))
+    expect(otherwise, 'زرُّ العرض المشروط لا يقول إنّه يعتمد التوقيعَ وحدَه').toContain('طابقتُ الاسمَ — اعتمِدِ التوقيع')
+    expect(otherwise, 'زرُّ العرض المشروط يقول إنّه يوقّع').not.toMatch(/ووقِّعْ/)
     expect(SCREEN, 'عاد الاسمُ الذي أخفى أنّ الضغطَ توقيعٌ منّا').not.toContain('اعتمِدْ وفعِّلْ')
   })
 
@@ -248,11 +259,103 @@ describe('«اعتمِدْه كالعقود الجديدة»: الخيارُ ا�
 
   it('⚠️ ويصل الخادمَ صريحا — والتأكيدُ والنجاحُ لا يقولان «وقّعنا»', () => {
     expect(SEAL, 'لا يُرسَل اختيارُه فيردّه الخادمُ بالخيارات').toContain('likeNew ? { likeNew: true } : {}')
-    expect(SCREEN, 'نافذةُ التأكيد لا تقول أثرَه').toMatch(/signOff\.likeNew && \([\s\S]{0,160}\{LIKE_NEW_AR\}/)
+    /* والأثرُ بحكم الصفّ: `LIKE_NEW_AR` لما نصُّه يقول غيرَه، و`LIKE_NEW_PLAIN_AR` لغير
+       المشروط (٢ أكتوبر ٢٠٢٦) — وكلاهما في الفرع الذي يُفتح بـ`signOff.likeNew` */
+    expect(SCREEN, 'نافذةُ التأكيد لا تقول أثرَه')
+      .toMatch(/signOff\.likeNew && \([\s\S]{0,260}signatureApprovalOf\(c\) === "seal" \? LIKE_NEW_PLAIN_AR : LIKE_NEW_AR\}/)
     expect(SCREEN, 'زرُّ التأكيد لا يقول إنّا لا نوقّع الآن').toContain('"اعتمِدْه كالعقود الجديدة — ولا نوقّع الآن"')
     const ok = /if \(likeNew\) return "([^"]*)"/.exec(SEAL)?.[1] ?? ''
     expect(ok, 'لا رسالةَ نجاحٍ له — فيقع على جملةِ غيره').not.toBe('')
     expect(ok, 'قال النجاحُ إنّا وقّعنا').not.toMatch(/وقّعناه|نفَذ|نافذ/)
     expect(ok, 'لم يُقل متى نوقّع').toContain('ونوقّعه حين تعتمد دوراتِه')
+  })
+})
+
+/* ═══ وعقدٌ غيرُ مشروط: «كالعقود الجديدة» أو «اعتمِدْ ووقِّعْ الآن» — والقرارُ لك (٢ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة عن مدرّبَين أنهى تعاقدَهما ثمّ ركّب لهما عقدا جديدا: «لم أتمكّن من
+   اعتمادهم بالعقد الجديد ليكون تطابقُ الاسم ليس اعتمادا نهائيّا للعقد». وكان صفُّ العقد
+   غيرِ المشروط يعرض «اعتمِدْ ووقِّعْ» وحدَه. فيُقاس على البنية: أنّ الخيارين يُعرضان بأثرهما
+   والعلّةُ معهما، وأنّ «كالعقود الجديدة» أوّلُ الأزرار ويصل الخادمَ `likeNew`، وأنّ نجاحَه
+   لا يقول «وقّعنا»، وأنّ صفَّه بعد الاعتماد يحمل زرَّ «وقِّعْه الآن» إلى `/seal` بتأكيدٍ
+   يقول أثرَه — فلا يبقى العقدُ بلا توقيعنا أبدا. */
+describe('عقدٌ غيرُ مشروط: «كالعقود الجديدة» أوّلا، ثمّ «وقِّعْه الآن» من صفّه', () => {
+  const BOX = block(SCREEN, 'function PlainContractChoices(', '\nfunction ')
+  const at = SCREEN.indexOf('<PlainContractChoices />')
+  const BRANCH = at < 0 ? '' : SCREEN.slice(at, SCREEN.indexOf('</>', at))
+  const LIKE_NEW_PLAIN = /const LIKE_NEW_PLAIN_AR = ([\s\S]*?);\n/.exec(SCREEN)?.[1] ?? ''
+  const SEAL_NOW = /const SEAL_NOW_AR = ([\s\S]*?);\n/.exec(SCREEN)?.[1] ?? ''
+  /* لوحُ ما بعد الاعتماد: من شرطه إلى نهاية لوحه */
+  const headAt = SCREEN.indexOf('c.status === "signature_approved" && !c.gatesActivation')
+  const AFTER = headAt < 0 ? '' : SCREEN.slice(headAt, SCREEN.indexOf('</Panel>\n                    )}', headAt))
+  const SEAL_LATER = (() => {
+    const route = AFTER.indexOf('/seal`')
+    if (route < 0) return ''
+    return AFTER.slice(AFTER.lastIndexOf('onClick', route), AFTER.indexOf('}>', route))
+  })()
+  const buttonOf = (src: string, label: string) => {
+    const end = src.indexOf(label)
+    return end < 0 ? '' : src.slice(src.lastIndexOf('<Button', end), end)
+  }
+
+  it('الكتلُ مقروءة — وإلّا فالحارسُ يقيس الفراغ', () => {
+    expect(BOX, 'لم يُقرأ صندوقُ الخيارين').not.toBe('')
+    expect(BRANCH, 'لم يُقرأ فرعُ أزرار غير المشروط').not.toBe('')
+    expect(LIKE_NEW_PLAIN, 'لم تُقرأ جملةُ أثر «كالعقود الجديدة» لغير المشروط').not.toBe('')
+    expect(SEAL_NOW, 'لم تُقرأ جملةُ أثر التوقيع الآن').not.toBe('')
+    expect(AFTER, 'لم يُقرأ لوحُ ما بعد الاعتماد').not.toBe('')
+    expect(SEAL_LATER, 'لم تُقرأ كتلةُ «وقِّعْه الآن»').not.toBe('')
+  })
+
+  it('⚠️ الصندوقُ يقول علّةَ خروجه غيرَ مشروط، ثمّ الخيارين بأثرهما — «كالعقود الجديدة» أوّلا', () => {
+    expect(BOX, 'لم تُقل العلّة: موادُّه اعتُمدت في عقدٍ سابق ولو انتهى').toMatch(/اعتُمدت في عقدٍ سابق[\s\S]*ولو انتهى/)
+    expect(BOX).toContain('{LIKE_NEW_PLAIN_AR}')
+    expect(BOX).toContain('{SEAL_NOW_AR}')
+    expect(BOX.indexOf('«اعتمِدْه كالعقود الجديدة»'), 'ليس أوّلَ الخيارات')
+      .toBeLessThan(BOX.indexOf('«اعتمِدْ ووقِّعْ الآن»'))
+    expect(BRANCH, 'الصندوقُ لا يُعرض فوق الأزرار').not.toBe('')
+  })
+
+  it('⚠️ وأثرُ «كالعقود الجديدة»: لا نوقّع الآن، ونوقّعه من صفّه، ولا ينفذ قبلها — ولا تُمسّ حالتُه', () => {
+    expect(LIKE_NEW_PLAIN, 'لم يُقل إنّا لا نوقّعه الآن').toContain('ولا نوقّعه الآن')
+    expect(LIKE_NEW_PLAIN, 'لم يُقل أين يُوقَّع بعد').toContain('«وقِّعْه الآن» في صفّه')
+    expect(LIKE_NEW_PLAIN, 'لم يُقل إنّه لا ينفذ قبل توقيعنا').toContain('ولا ينفذ حتّى نوقّعه')
+    expect(LIKE_NEW_PLAIN, 'لم يُقل إنّ حالتَه لا تُمسّ').toContain('وحالتُه كما هي')
+    /* ونصُّه لا يقول غيرَ ذلك — فلا يُنقل إليه تنبيهُ `LIKE_NEW_AR` عن نصٍّ يخالفه */
+    expect(LIKE_NEW_PLAIN, 'قيل إنّ نصَّه يجعل الاعتمادَ توقيعا — وليس كذلك').not.toMatch(/توقيعٌ منّا/)
+    expect(SEAL_NOW, 'لم يُقل إنّ التوقيعَ الآن يُنفذه').toMatch(/نوقّعه عن الأكاديميّة الآن فينفذ/)
+  })
+
+  it('⚠️ «كالعقود الجديدة» أوّلُ الأزرار وزرُّها الرئيس، ويقول للصندوق `likeNew` — والثاني يوقّع كما كان', () => {
+    const likeNew = buttonOf(BRANCH, 'طابقتُ الاسمَ — اعتمِدْه كالعقود الجديدة')
+    expect(likeNew, 'لا زرَّ يعتمده كالعقود الجديدة').not.toBe('')
+    expect(likeNew, 'ليس الزرَّ الرئيس').toContain('tone="confirm"')
+    expect(likeNew, 'لا يقول للصندوق «كالعقود الجديدة»').toContain('likeNew: true')
+    const sealNow = buttonOf(BRANCH, 'طابقتُ الاسمَ — اعتمِدْ ووقِّعْ الآن')
+    expect(sealNow, 'سقط خيارُ التوقيع الآن').not.toBe('')
+    expect(sealNow, 'زرُّ التوقيع الآن يقول «كالعقود الجديدة»').not.toContain('likeNew')
+    expect(BRANCH.indexOf('likeNew: true'), 'ليس أوّلَ الأزرار')
+      .toBeLessThan(BRANCH.indexOf('طابقتُ الاسمَ — اعتمِدْ ووقِّعْ الآن'))
+  })
+
+  it('⚠️ ونجاحُه لا يقول «وقّعنا» ولا «فُتحت بوّابتُه» — بل أين يُوقَّع', () => {
+    const ok = /if \(likeNew && plain\) return "([^"]*)"/.exec(SEAL)?.[1] ?? ''
+    expect(ok, 'لا رسالةَ نجاحٍ لغير المشروط — فيقع على جملةِ العرض المشروط').not.toBe('')
+    expect(ok, 'قال النجاحُ إنّا وقّعنا').not.toMatch(/وقّعناه|نفَذ|نافذ/)
+    expect(ok, 'قال إنّ بوّابتَه فُتحت — وهي مفتوحةٌ أصلا').not.toContain('بوّابتُه')
+    expect(ok, 'لم يُقل أين يُوقَّع').toContain('وقِّعْه من صفّه')
+    expect(SEAL, '«plain» لا يُسأل من الحكم').toContain('const plain = signatureApprovalOf(c) === "seal"')
+  })
+
+  it('⚠️ وبعد الاعتماد: موادُّه تُقرأ، و«وقِّعْه الآن» يصل `/seal` بتأكيدٍ يقول أثرَه — وجوابُه في صفّه', () => {
+    expect(AFTER, 'موادُّ دوراته لا تُفتح فوق الزرّ').toContain('<MaterialsReview profileId={c.profile.id} />')
+    expect(AFTER, 'التأكيدُ لا يقول أثرَ التوقيع').toContain('{SEAL_NOW_AR}')
+    expect(AFTER, 'لا زرَّ يفتح نافذةَ التوقيع').toContain('setSealing({ id: c.id, noteAr: "" })')
+    expect(SEAL_LATER, 'جوابُ التوقيع لا يُرسَم في صفّه').toMatch(/,\s*c\.id\)$/)
+    expect(SEAL_LATER, 'لا تُرسَل الملحوظة').toContain('noteAr: sealing.noteAr.trim() || null')
+    expect(AFTER, 'خطأُ الصفّ لا يُرسَم في لوحه').toContain('rowErr?.id === c.id')
+    /* وسطرُ العرض المشروط («وفُتحت بوّابتُه») لا يقع على غير المشروط */
+    expect(SCREEN, 'سطرُ العرض المشروط يقع على غير المشروط')
+      .toContain('c.status === "signature_approved" && c.gatesActivation && (')
   })
 })

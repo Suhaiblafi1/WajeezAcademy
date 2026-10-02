@@ -648,13 +648,14 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      قبل النشر على بابٍ مغلق. */
   app.post('/api/admin/trainer-contracts/:contractId/countersign', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — يفتح طورَ الموادّ في العرض المشروط بلا توقيعٍ منّا، ويختم العقدَ غيرَ المشروط، وما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا يُعتمَد بطلبٍ صريح: كما وقّعه فيُختَم (asSigned)، أو كالعقود الجديدة بلا خَتم (likeNew)' },
+    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — يفتح طورَ الموادّ في العرض المشروط بلا توقيعٍ منّا، ويختم العقدَ غيرَ المشروط إلّا أن يُعتمَد كالعقود الجديدة (likeNew) فيُوقَّع بعدُ من /seal، وما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا يُعتمَد بطلبٍ صريح: كما وقّعه فيُختَم (asSigned)، أو كالعقود الجديدة بلا خَتم (likeNew)' },
   }, async (req, reply) => {
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     /* و`asSigned` («اعتمِدْه كما وقّعه») و`likeNew` («اعتمِدْه كالعقود الجديدة»)
-       لما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا — يُطلب أحدُهما صريحا ولا يُفترَض
-       (علّتُه في `approveSignature`) */
+       لما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا — يُطلب أحدُهما صريحا ولا يُفترَض.
+       و`likeNew` للعقد غير المشروط كذلك: يُعتمَد توقيعُه ولا نوقّعه الآن
+       (علّتُهما في `approveSignature`) */
     const { noteAr, asSigned, likeNew } = z.object({
       noteAr: z.string().trim().max(500).nullish(),
       asSigned: z.boolean().optional(),
@@ -663,6 +664,19 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.approveSignature(contractId, req.auth!.userId, {
       noteAr, asSigned, likeNew, actorRoles: req.auth!.roles,
     })
+  })
+
+  /* ═══ «وقِّعْه الآن» — توقيعُنا على عقدٍ غيرِ مشروطٍ اعتُمد كالعقود الجديدة (٢ أكتوبر ٢٠٢٦) ═══
+     صاحبُه نشطٌ أصلا، فلا اعتمادَ نهائيّا يُختَم فيه كما يُختَم العرضُ المشروط. فيُوقَّع
+     من صفّه حين تُعتمَد دوراتُه — وبالحارسَين نفسَيهما: صلاحيّةُ العقود وقرارُ المدرّبين. */
+  app.post('/api/admin/trainer-contracts/:contractId/seal', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'توقيعُ الأكاديميّة عقدا غيرَ مشروطٍ اعتُمد توقيعُه كالعقود الجديدة — فينفذ ويُزيح ما كان نافذا قبله' },
+  }, async (req, reply) => {
+    if (!requireDecideToo(req, reply)) return reply
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const { noteAr } = z.object({ noteAr: z.string().trim().max(500).nullish() }).parse(req.body ?? {})
+    return review.countersignApproved(contractId, req.auth!.userId, { noteAr })
   })
 
   app.post('/api/admin/trainer-contracts/:contractId/reject-signature', {

@@ -22,7 +22,7 @@ import {
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail,
-  contractLapsedMail, contractFactsRows, type FinalApprovalSeal } from './trainer-decision-mail'
+  contractLapsedMail, contractFactsRows, contractSealedLaterMail, type FinalApprovalSeal } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -4354,7 +4354,9 @@ export class TrainerReviewService {
        وتُفتح بوّابتُه وتبدأ مهلتُه، ولا يُمَسّ عمودٌ من أعمدة الخَتم. ونوقّعه في
        `completeConditionalOffer` يومَ تُعتمَد دوراتُه.
      · `seal` — العقدُ غيرُ المشروط: يُكتب لمن اعتُمدت موادُّه أصلا، فاعتمادُ
-       توقيعه خَتمُه كما كان.
+       توقيعه خَتمُه كما كان — إلّا أن يعتمده المعتمِدُ كالعقود الجديدة (`likeNew`،
+       ٢ أكتوبر ٢٠٢٦) فيُعتمَد توقيعُه بلا خَتم، ونوقّعه من صفّه يومَ يعتمد دوراتِه
+       (`countersignApproved`). ولا طورَ له في الحالَين: بوّابتُه مفتوحةٌ أصلا.
      · `sealed_by_text` — عرضٌ مشروطٌ وُقّع على متنٍ يقول إنّ اعتمادَ التوقيع
        توقيعُنا (v12 إلى v23). فلا يُعتمَد إلّا خاتما — واعتمادُه بلا خَتمٍ خلافُ
        ما وقّعه. وكان يُردّ فيُعاد للتوقيع لا محالة؛ فصار المعتمِدُ يختار
@@ -4378,8 +4380,9 @@ export class TrainerReviewService {
       /** «اعتمِدْه كما وقّعه» — لما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا منّا:
           يقول المعتمِدُ إنّه يريد ذلك الخَتمَ بعينه، وقد قرأ قبله أنّه يوقّع الآن */
       asSigned?: boolean
-      /** «اعتمِدْه كالعقود الجديدة» — للنصّ نفسِه: يُعتمَد التوقيعُ ويُفتح الطورُ
-          ولا نوقّع إلّا يومَ تُعتمَد دوراتُه، وقد قرأ قبله أنّ نصَّه يقول غيرَ ذلك */
+      /** «اعتمِدْه كالعقود الجديدة» — يُعتمَد التوقيعُ ولا نوقّع إلّا يومَ تُعتمَد
+          دوراتُه. للنصّ نفسِه: يُفتح الطورُ، وقد قرأ قبله أنّ نصَّه يقول غيرَ ذلك.
+          وللعقد غير المشروط: لا طورَ ولا مهلة، ونوقّعه من صفّه (`countersignApproved`) */
       likeNew?: boolean
     } = {},
   ) {
@@ -4451,9 +4454,21 @@ export class TrainerReviewService {
     if (rule === 'sealed_by_text' && input.asSigned !== true && input.likeNew !== true) {
       throw new AuthError('sealed_by_text', SEALED_BY_TEXT_AR, 409)
     }
-    /* و`likeNew` لا يمسّ إلّا ما نصُّه يجعل الاعتمادَ توقيعا: العقدُ غيرُ المشروط
-       يُختَم كما كان، وv24 لا يُختَم أصلا */
-    const approvedLikeNew = rule === 'sealed_by_text' && input.likeNew === true
+    /* ═══ و«كالعقود الجديدة» للعقد غير المشروط كذلك (٢ أكتوبر ٢٠٢٦) ═══
+
+       كان `likeNew` لا يمسّ إلّا ما نصُّه يجعل الاعتمادَ توقيعا، فالعقدُ غيرُ المشروط
+       يُختَم باعتماد توقيعه لا محالة. فقال صاحبُ المنصّة عن مدرّبَين أنهى تعاقدَهما ثمّ
+       ركّب لهما عقدا جديدا — فخرج غيرَ مشروطٍ لأنّ موادَّهما اعتُمدت في عقدٍ سابق
+       (`offerGatesActivation`): «لم أتمكّن من اعتمادهم بالعقد الجديد ليكون تطابقُ الاسم
+       ليس اعتمادا نهائيّا للعقد». فصار له أن يعتمده كالعقود الجديدة: يُعتمَد التوقيعُ
+       ولا نوقّع الآن، ونوقّعه يومَ يعتمد دوراتِه — من صفّه (`countersignApproved`).
+
+       ولا يخالف هذا نصَّه كما خالفه في v12–v23: متنُ غيرِ المشروط لا يجعل الاعتمادَ
+       توقيعا، ويقول «تسري هذه الاتفاقية من تاريخ توقيع الطرفين» (البند 17-1) — فهو
+       ينفذ يومَ نوقّعه، أيًّا كان. ولا طورَ موادَّ يُفتح له ولا مهلة: ذاك شرطٌ ليس
+       في متنه، وبوّابتُه مفتوحةٌ أصلا. وv24 لا يُختَم باعتماد توقيعه في كلّ حال، فلا
+       يُكتب في سجلّه أنّه اعتُمد «كالعقود الجديدة» — هو منها. */
+    const approvedLikeNew = rule !== 'approve_only' && input.likeNew === true
     const mode: 'seal' | 'approve_only' = rule === 'approve_only' || approvedLikeNew ? 'approve_only' : 'seal'
 
     const note = (input.noteAr ?? '').trim().slice(0, 500)
@@ -4629,6 +4644,109 @@ export class TrainerReviewService {
     }
   }
 
+  /* ═══ «وقِّعْه الآن» — توقيعُنا على ما اعتُمد كالعقود الجديدة (٢ أكتوبر ٢٠٢٦) ═══
+
+     العقدُ غيرُ المشروط إذا اعتُمد توقيعُه كالعقود الجديدة (`likeNew` في
+     `approveSignature`) بقي بلا خَتم: «نوقّعه يومَ تعتمد دوراتِه». والعرضُ المشروطُ
+     يُختَم يومئذ في `completeConditionalOffer` مع نشر حسابه — باعتماده النهائيّ.
+     وصاحبُ هذا نشطٌ أصلا: لا اعتمادَ نهائيّا يُنادى له ولا نشرَ ينتظره. فلو لم يكن
+     له بابٌ هنا لبقي عقدُه بلا توقيعنا أبدا — وعدٌ في بريده لا يفي به زرّ.
+
+     فهذا بابُه: يضغطه المعتمِدُ من صفّه في شاشة العقود حين يعتمد دوراتِه. وهو
+     الخَتمُ نفسُه الذي في `approveSignature` — اسمُ المفوَّض من السجلّ، و`countersignedBy`
+     من ضغط فعلا، وما كان نافذا له قبله يُزاح في المعاملة نفسِها. إلّا أنّ اعتمادَ
+     التوقيع وقع قبله فلا يُكتب ثانيةً، وملحوظةُ مطابقة الهويّة يومئذ تُضَمّ إلى
+     ملحوظة الخَتم كما في `completeConditionalOffer`: هي محلُّ الحجّة إن نُوزع في الاسم.
+
+     ولا يُختَم به عرضٌ مشروط: ذاك يُختَم حين تُعتمَد موادُّه، وزرٌّ يختمه من هنا
+     يتخطّى طورَ الموادّ كلَّه — وهو الخطأُ الذي وُلد منه `materialsGateProblemAr`. */
+  async countersignApproved(
+    contractId: string, actorId: string, input: { noteAr?: string | null } = {},
+  ) {
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    if (c.status !== 'signature_approved') {
+      throw new AuthError('bad_state', 'لا يُوقَّع من هنا إلّا عقدٌ اعتُمد توقيعُه ولم نوقّعه بعد', 409)
+    }
+    if (c.gatesActivation) {
+      throw new AuthError(
+        'conditional_offer',
+        'هذا عرضٌ مشروط: نوقّعه حين تُعتمَد موادُّه — باعتماده النهائيّ، لا من هنا',
+        409,
+      )
+    }
+    /* حارسُ التضارب نفسُه الذي في `approveSignature` و`decide` */
+    const actor = await this.prisma.user.findUnique({ where: { id: actorId } })
+    if (actor && actor.email === c.profile.application.email) {
+      throw new AuthError('self_decision', 'لا يجوز توقيعُ عقدٍ مرتبطٍ ببريدك', 403)
+    }
+
+    const note = (input.noteAr ?? '').trim().slice(0, 500)
+    const identity = c.signatureApprovalNoteAr
+    const sealNote = [note, identity ? `ومطابقةُ الهويّة: ${identity}` : '']
+      .filter((s) => s.length > 0).join(' — ').slice(0, 500)
+    const sealedAt = new Date()
+    await this.prisma.$transaction(async (tx) => {
+      /* قارنْ واضبطْ: نقرتان متزامنتان لا تكتبان خَتمَين، ولا يُختَم ما انتهى
+         برحيلٍ وقع في اللحظة نفسِها */
+      const done = await tx.trainerContract.updateMany({
+        where: { id: c.id, status: 'signature_approved', gatesActivation: false },
+        data: {
+          status: 'countersigned', countersignedAt: sealedAt, countersignedBy: actorId,
+          academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
+          academySignatoryTitle: ACADEMY_LEGAL.signatoryTitleAr,
+          countersignNoteAr: sealNote.length > 0 ? sealNote : null,
+        },
+      })
+      if (done.count === 0) throw new AuthError('bad_state', 'وُقّع العقدُ أو انتهى قبل ثوانٍ — حدّثْ الصفحة', 409)
+      await recordAudit(tx, {
+        actorId, action: 'trainer.contract.countersign',
+        entityType: 'trainer_contract', entityId: c.id,
+        meta: {
+          signerLegalName: c.signerLegalName, signedBodyHash: c.signedBodyHash,
+          bodyVersion: c.bodyVersion, gatesActivation: false,
+          academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
+          noteAr: note.length > 0 ? note : null, countersignedAt: sealedAt,
+          /* ومن قرأ السجلَّ بعد سنةٍ يعرف لمَ تأخّر خَتمُه عن اعتماد توقيعه:
+             اعتُمد كالعقود الجديدة، ثمّ وُقّع من صفّه */
+          signatureApprovedAt: c.signatureApprovedAt, sealedAfterApproval: true,
+        },
+      })
+      const moved = await this.supersedePriorLive(tx, { profileId: c.profileId, contractId: c.id, at: sealedAt })
+      for (const id of moved) {
+        await recordAudit(tx, {
+          actorId, action: 'trainer.contract.superseded',
+          entityType: 'trainer_contract', entityId: id,
+          meta: { byContractId: c.id, supersededAt: sealedAt },
+        })
+      }
+    })
+
+    /* ولا يُوقَّع عقدٌ في صمت: بريدُ اعتماد توقيعه وعده بهذا اليوم */
+    const app = c.profile.application
+    try {
+      const day = (d: Date) => fmtDateWith(d, { year: 'numeric', month: 'long', day: 'numeric' })
+      const mail = contractSealedLaterMail({
+        legalName: c.signerLegalName ?? app.fullName,
+        title: c.title,
+        sealedOnAr: day(sealedAt),
+        approvedOnAr: c.signatureApprovedAt ? day(c.signatureApprovedAt) : null,
+        contractNumber: c.number,
+        contractUrl: `${publicSiteUrl()}/trainer/contract`,
+      })
+      await sendDirectEmail(this.prisma, {
+        to: c.signerEmail ?? app.email,
+        subject: mail.subject,
+        ...renderMail(mail.doc),
+      })
+    } catch { /* البريدُ رفاهية — الخَتمُ وقع، والنسخةُ تُعاد من الإدارة */ }
+
+    return { ok: true as const, sealed: true as const, countersignedAt: sealedAt }
+  }
+
   /* ═══ وما كان نافذا له قبلَه يُزاح — في معاملة الخَتم نفسِها (١ أكتوبر ٢٠٢٦) ═══
 
      كان لا شيءَ يكتب `superseded` على عقد مدرّب: من اعتُمد له عقدٌ جديدٌ وله
@@ -4642,18 +4760,19 @@ export class TrainerReviewService {
      انتهى للمستقبل وحدَه. وقارنْ واضبطْ على `countersigned`: فسخٌ يقع في
      اللحظة نفسِها لا يُكتب فوقه.
 
-     وهي دالّةٌ لا كتلةٌ في موضعٍ واحد: الخَتمُ يقع في بابَين — اعتمادُ توقيعِ
+     وهي دالّةٌ لا كتلةٌ في موضعٍ واحد: الخَتمُ يقع في ثلاثة أبواب — اعتمادُ توقيعِ
      عقدٍ غيرِ مشروط (`approveSignature`)، واعتمادُ دوراتِ صاحب العرض المشروط
-     (`completeConditionalOffer`). وكتلةٌ في أحدهما تُنسى في الآخر.
+     (`completeConditionalOffer`)، و«وقِّعْه الآن» على ما اعتُمد كالعقود الجديدة
+     (`countersignApproved`، ٢ أكتوبر ٢٠٢٦). وكتلةٌ في أحدها تُنسى في غيره.
 
      ═══ وأثرُها يكتبه مُناديها لا هي ═══
 
      `trainer.contract.superseded` فعلٌ عالٍ: يغيّر سجلَّ إنسان. و«ما يمسّ
      إنسانا يُخبَر به إنسان» (`audit-high-reaches-person`) يقرأ **المعالِجَ**
-     الذي كُتب فيه الأثر — وهذه الدالّةُ لا تُخبر أحدا، والبابان يُخبران
+     الذي كُتب فيه الأثر — وهذه الدالّةُ لا تُخبر أحدا، والأبوابُ تُخبر
      المدرّبَ بالخَتم الذي أزاح عقدَه. فتردّ ما أزاحت، ويكتب كلُّ بابٍ أثرَه
-     حيث يُرسل بريدَه. والبابان محروسان: `contract-supersede` و
-     `countersign-then-publish`. */
+     حيث يُرسل بريدَه. والأبوابُ محروسة: `contract-supersede` و
+     `countersign-then-publish` و`signature-approval-modes`. */
   private async supersedePriorLive(
     tx: Prisma.TransactionClient,
     a: { profileId: string; contractId: string; at: Date },

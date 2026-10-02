@@ -177,9 +177,11 @@ const impactBites = (i: Impact) =>
 /* ═══ ما يقع باعتماد التوقيع — سطرٌ لكلّ حكمٍ من `signatureApprovalOf` ═══
 
    والسجلُّ مقفلٌ بالنوع: حكمٌ جديدٌ بلا سطرٍ لا يُبنى، فلا يقع صفٌّ على جملةِ
-   حكمٍ غيرِه. وكان سطرا واحدا للبابَين: «فبالاعتماد ينفذ العقدُ» (١ أكتوبر ٢٠٢٦). */
+   حكمٍ غيرِه. وكان سطرا واحدا للبابَين: «فبالاعتماد ينفذ العقدُ» (١ أكتوبر ٢٠٢٦).
+   وسطرُ `seal` كان «فبالاعتماد نوقّع عن الأكاديميّة وينفذ العقدُ» — بابا واحدا؛
+   فصار يقول الخيارين (٢ أكتوبر ٢٠٢٦، `PlainContractChoices`). */
 const APPROVAL_LINE_AR: Record<SignatureApproval, string> = {
-  seal: " فبالاعتماد نوقّع عن الأكاديميّة وينفذ العقدُ، ولا تُمسّ حالتُه فهو نشطٌ أصلا",
+  seal: " ثمّ اختر أدناه: أن تعتمده كالعقود الجديدة فلا نوقّعه إلّا يومَ تعتمد دوراتِه، أو أن تعتمده ونوقّع عن الأكاديميّة الآن فينفذ — ولا تُمسّ حالتُه في الحالَين، فهو نشطٌ أصلا",
   approve_only: " فبالاعتماد تُفتح بوّابتُه ويبدأ طورُ موادّه ومهلتُه، ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه",
   sealed_by_text: " ثمّ اختر أدناه: أن تعتمده كالعقود الجديدة، أو كما وقّعه، أو تعيده للتوقيع على النصّ الحاضر",
 };
@@ -194,6 +196,48 @@ const ACCEPT_AS_SIGNED_AR = "نصُّه يجعل اعتمادَ التوقيع �
     ونصُّه الموقَّعُ كما هو. */
 const LIKE_NEW_AR = "يُعامَل كالعقود الجديدة: تُفتح بوّابتُه وتبدأ مهلةُ موادّه، ولا نوقّعه إلّا يومَ نعتمد دوراتِه."
   + " ونصُّه الموقَّعُ باقٍ كما هو — يقول إنّ اعتمادَ توقيعه توقيعٌ منّا.";
+
+/** وما يقع بـ«اعتمِدْه كالعقود الجديدة» على عقدٍ غيرِ مشروط (٢ أكتوبر ٢٠٢٦) — بحرفٍ
+    واحدٍ في الصندوق والتأكيد. ولا جملةَ فيه عن نصٍّ يقول غيرَه كما في `LIKE_NEW_AR`:
+    متنُه يسري «من تاريخ توقيع الطرفين» (البند 17-1)، فتأخيرُ توقيعنا على نصّه. ولا
+    طورَ موادَّ ولا مهلة: ذاك شرطٌ ليس في متنه، وبوّابتُه مفتوحةٌ أصلا. */
+const LIKE_NEW_PLAIN_AR = "نعتمد توقيعَه ولا نوقّعه الآن: نوقّعه يومَ تعتمد دوراتِه، بزرّ «وقِّعْه الآن» في صفّه."
+  + " ولا ينفذ حتّى نوقّعه، وما كان نافذا له قبله يبقى إلى يومئذ. وحالتُه كما هي — فهو نشطٌ أصلا.";
+
+/** وما يقع بتوقيعنا الآن على عقدٍ غيرِ مشروط — في الصندوق، وفي التأكيد قبل الاعتماد،
+    وفي نافذة «وقِّعْه الآن» بعده: الأثرُ واحدٌ أيّانَ وقع */
+const SEAL_NOW_AR = "نوقّعه عن الأكاديميّة الآن فينفذ بين الطرفين من اليوم، ويحلّ محلَّ ما كان نافذا له قبله."
+  + " وتصله رسالةٌ بذلك، وحالتُه كما هي.";
+
+/* ═══ عقدٌ غيرُ مشروط: الخياران وأثرُ كلٍّ — والقرارُ لك (٢ أكتوبر ٢٠٢٦) ═══
+
+   كان صفُّه يعرض «طابقتُ الاسمَ — اعتمِدْ ووقِّعْ» وحدَه: الاعتمادُ خَتمٌ لا محالة.
+   فقال صاحبُ المنصّة عن مدرّبَين أنهى تعاقدَهما ثمّ ركّب لهما عقدا جديدا: «لم
+   أتمكّن من اعتمادهم بالعقد الجديد ليكون تطابقُ الاسم ليس اعتمادا نهائيّا للعقد».
+   وعلّةُ خروجه غيرَ مشروطٍ أنّ موادَّهما اعتُمدت في عقدٍ سابق (`offerGatesActivation`)
+   — والإنهاءُ لا يمحو ذلك. فتُقال العلّةُ هنا، ثمّ الخياران وأثرُ كلٍّ: «كالعقود
+   الجديدة» أوّلا وهو ما طلبه، و«اعتمِدْ ووقِّعْ الآن» كما كان. */
+function PlainContractChoices() {
+  return (
+    <Panel tone="warn" className="w-full p-3 text-read leading-7">
+      <b>عقدٌ غيرُ مشروط — والقرارُ لك.</b>
+      <span className="block">
+        خرج غيرَ مشروطٍ لأنّ موادَّ هذا المدرّب اعتُمدت في عقدٍ سابق — ولو انتهى ذلك العقد.
+        ونصُّه يقول إنّه يسري من تاريخ توقيع الطرفين، فالخياران كلاهما على نصّه.
+      </span>
+      <span className="mt-2 block font-bold">ولك أن تختار:</span>
+      <ul className="list-disc ps-5">
+        <li><b>«اعتمِدْه كالعقود الجديدة»</b> — {LIKE_NEW_PLAIN_AR}</li>
+        <li><b>«اعتمِدْ ووقِّعْ الآن»</b> — {SEAL_NOW_AR}</li>
+        <li>
+          <b>«حُدّث النصُّ — أعِدْه للتوقيع»</b> — يصله النصُّ الحاضرُ ليوقّعه ثانيةً، ثمّ تختار
+          بين هذين.
+        </li>
+        <li><b>«لم يطابق — ارفضْ»</b> — إن لم يطابق اسمُه وثيقةَ هويّته.</li>
+      </ul>
+    </Panel>
+  );
+}
 
 /* ═══ وقّع نصّا سابقا: ما تغيّر، والخياراتُ وأثرُ كلٍّ — والقرارُ لك (٢ أكتوبر ٢٠٢٦) ═══
 
@@ -355,6 +399,10 @@ export default function TrainerContracts() {
   /* ونافذةُ «أعِدْها بملاحظات» مستقلّةٌ عن نافذة الاعتماد: قرارانِ متضادّان،
      وحقلٌ واحدٌ لهما يجعل ملاحظةَ الإعادة تُرسَل في خانة مطابقةِ الهويّة. */
   const [sendBack, setSendBack] = useState<{ id: string; notesAr: string } | null>(null);
+  /* ونافذةُ «وقِّعْه الآن» لعقدٍ غيرِ مشروطٍ اعتُمد كالعقود الجديدة (٢ أكتوبر ٢٠٢٦):
+     مستقلّةٌ عن نافذة الاعتماد — تلك على `signed` وهذه على `signature_approved`،
+     وملحوظةُ هذه تُضَمّ إلى خَتمٍ لا إلى مطابقة هويّة. */
+  const [sealing, setSealing] = useState<{ id: string; noteAr: string } | null>(null);
   /* والحذفُ لا رجعةَ فيه، فلا يقع بنقرةٍ واحدة — ولا بـ`window.confirm`
      الذي يملك المتصفّحُ كتمَه فيردّ `false` صامتا (رأسُ `ConfirmAction`). */
   const [deleting, setDeleting] = useState<ContractRow | null>(null);
@@ -1533,8 +1581,15 @@ c.gatesActivation
                             {signOff.asSigned && (
                               <p className="text-read leading-6"><b>تنبيه:</b> {ACCEPT_AS_SIGNED_AR}</p>
                             )}
+                            {/* وأثرُ «كالعقود الجديدة» بحكم الصفّ: على نصٍّ سابقٍ يقول نصُّه
+                                غيرَه، وعلى غيرِ المشروط لا يخالف نصَّه (٢ أكتوبر ٢٠٢٦) */}
                             {signOff.likeNew && (
-                              <p className="text-read leading-6"><b>تنبيه:</b> {LIKE_NEW_AR}</p>
+                              <p className="text-read leading-6">
+                                <b>تنبيه:</b> {signatureApprovalOf(c) === "seal" ? LIKE_NEW_PLAIN_AR : LIKE_NEW_AR}
+                              </p>
+                            )}
+                            {!signOff.likeNew && !signOff.asSigned && signatureApprovalOf(c) === "seal" && (
+                              <p className="text-read leading-6"><b>تنبيه:</b> {SEAL_NOW_AR}</p>
                             )}
                             <div className="flex flex-wrap gap-2">
                               <Button tone="confirm" icon={BadgeCheck} loading={busy}
@@ -1551,6 +1606,7 @@ c.gatesActivation
                                 onClick={() => void run(async () => {
                                   const asSigned = signOff.asSigned === true;
                                   const likeNew = signOff.likeNew === true;
+                                  const plain = signatureApprovalOf(c) === "seal";
                                   const r = await apiPost<{ readiness?: Readiness; sealed?: boolean }>(
                                     `/api/admin/trainer-contracts/${c.id}/countersign`,
                                     {
@@ -1562,6 +1618,8 @@ c.gatesActivation
                                   await load();
                                   const left = r.readiness?.blockersAr ?? [];
                                   if (asSigned) return "اعتُمد كما وقّعه: وقّعناه عن الأكاديميّة فنفَذ، وفُتحت بوّابتُه وبدأت مهلةُ موادّه";
+                                  /* وغيرُ المشروط لا بوّابةَ تُفتح له ولا مهلة — نشطٌ أصلا */
+                                  if (likeNew && plain) return "اعتُمد كالعقود الجديدة: لم نوقّعه — وقِّعْه من صفّه حين تعتمد دوراتِه";
                                   if (likeNew) return "اعتُمد كالعقود الجديدة: فُتحت بوّابتُه وبدأت مهلةُ موادّه — ونوقّعه حين تعتمد دوراتِه";
                                   return !r.sealed
                                     ? "اعتُمد توقيعُه وفُتحت بوّابتُه — ولم نوقّع العرض: نوقّعه حين تعتمد دوراتِه"
@@ -1617,12 +1675,30 @@ c.gatesActivation
                                     </Button>
                                   </>
                                 )
-                                : (
-                                  <Button tone="confirm" icon={BadgeCheck}
-                                    onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
-                                    {signatureApprovalOf(c) === "seal" ? "طابقتُ الاسمَ — اعتمِدْ ووقِّعْ" : "طابقتُ الاسمَ — اعتمِدِ التوقيع"}
-                                  </Button>
-                                )}
+                                /* ═══ وعقدٌ غيرُ مشروط: «كالعقود الجديدة» أوّلا (٢ أكتوبر ٢٠٢٦) ═══
+                                    كان زرُّه «اعتمِدْ ووقِّعْ» وحدَه — فالاعتمادُ خَتمٌ لا محالة.
+                                    فصار له الخياران وأثرُ كلٍّ (`PlainContractChoices`): الأوّلُ
+                                    يعتمد التوقيعَ ولا يوقّع، والثاني يوقّع الآن كما كان. */
+                                : signatureApprovalOf(c) === "seal"
+                                  ? (
+                                    <>
+                                      <PlainContractChoices />
+                                      <Button tone="confirm" icon={BadgeCheck}
+                                        onClick={() => setSignOff({ id: c.id, noteAr: "", likeNew: true })}>
+                                        طابقتُ الاسمَ — اعتمِدْه كالعقود الجديدة
+                                      </Button>
+                                      <Button tone="secondary" icon={BadgeCheck}
+                                        onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
+                                        طابقتُ الاسمَ — اعتمِدْ ووقِّعْ الآن
+                                      </Button>
+                                    </>
+                                  )
+                                  : (
+                                    <Button tone="confirm" icon={BadgeCheck}
+                                      onClick={() => setSignOff({ id: c.id, noteAr: "" })}>
+                                      طابقتُ الاسمَ — اعتمِدِ التوقيع
+                                    </Button>
+                                  )}
                             {/* ورفضُ التوقيع يُغلق العقدَ ولا يمحو دليلَه: من وقّع
                                 باسمٍ غيرِ اسمه وقّع وثيقةً تسمّي طرفا آخر، ولا
                                 تُصحَّح تسميةُ طرفٍ بتعديل حقل — يُركَّب عقدٌ جديد. */}
@@ -1653,12 +1729,64 @@ c.gatesActivation
                     )}
 
                     {(c.status === "countersigned" || c.status === "signature_approved") && c.gatesActivation && conditionBlock(c)}
-                    {c.status === "signature_approved" && (
+                    {c.status === "signature_approved" && c.gatesActivation && (
                       <p className="mt-1 text-read opacity-70">
                         اعتُمد توقيعُه {c.signatureApprovedAt ? fmtDateTime(c.signatureApprovedAt) : ""} وفُتحت بوّابتُه
                         — ولم نوقّعه بعد: نوقّعه حين تعتمد دوراتِه
                         {c.signatureApprovalNoteAr ? ` · ${c.signatureApprovalNoteAr}` : ""}
                       </p>
+                    )}
+                    {/* ═══ وغيرُ المشروط المعتمَدُ كالعقود الجديدة: يُوقَّع من صفّه (٢ أكتوبر ٢٠٢٦) ═══
+
+                        العرضُ المشروطُ يُختَم باعتماده النهائيّ مع نشر حسابه. وهذا صاحبُه نشطٌ
+                        أصلا — لا اعتمادَ نهائيّا يُنادى له. فلو لم يكن زرُّه هنا لبقي بلا
+                        توقيعنا أبدا، وبريدُه وعده به. وموادُّ دوراته تُفتح فوقه: «نوقّعه يومَ
+                        تعتمد دوراتِه» — فتُقرأ قبل أن يُضغط. والتوقيعُ لا رجعةَ فيه، فنافذةٌ
+                        تقول أثرَه قبلَه (`SEAL_NOW_AR`)، كما قيل قبل الاعتماد. */}
+                    {c.status === "signature_approved" && !c.gatesActivation && (
+                      <Panel tone="warn" className="mt-3 p-3">
+                        <p className="text-read leading-7">
+                          اعتُمد توقيعُه {c.signatureApprovedAt ? fmtDateTime(c.signatureApprovedAt) : ""} كالعقود
+                          الجديدة — ولم نوقّعه بعد، فلا ينفذ حتّى نوقّعه. وقِّعْه حين تعتمد دوراتِه.
+                          {c.signatureApprovalNoteAr ? ` · ${c.signatureApprovalNoteAr}` : ""}
+                        </p>
+                        {rowErr?.id === c.id && (
+                          <Panel tone="danger" className="mt-2 p-3 text-read" role="alert">
+                            {rowErr.text}
+                          </Panel>
+                        )}
+                        {c.profile?.id && <MaterialsReview profileId={c.profile.id} />}
+                        {sealing?.id === c.id ? (
+                          <div className="mt-3 grid gap-2">
+                            <textarea
+                              className={areaCls} rows={2} maxLength={500}
+                              placeholder="ملحوظةٌ تُكتب مع توقيعنا — مثال: «اعتُمدت دوراتُه بعد مراجعة موادّها» (اختياريّة)"
+                              value={sealing.noteAr}
+                              onChange={(e) => setSealing({ ...sealing, noteAr: e.target.value })}
+                            />
+                            <p className="text-read leading-6"><b>تنبيه:</b> {SEAL_NOW_AR}</p>
+                            <div className="flex flex-wrap gap-2">
+                              <Button tone="confirm" icon={BadgeCheck} loading={busy}
+                                onClick={() => void run(async () => {
+                                  await apiPost(`/api/admin/trainer-contracts/${c.id}/seal`,
+                                    { noteAr: sealing.noteAr.trim() || null });
+                                  setSealing(null);
+                                  await load();
+                                }, "وُقّع العقدُ عنّا ونفَذ — ووصلته رسالةٌ بذلك، ولم تُمسّ حالتُه", c.id)}>
+                                وقِّعْه الآن عن الأكاديميّة
+                              </Button>
+                              <Button tone="ghost" onClick={() => setSealing(null)}>تراجعْ</Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <Button tone="confirm" icon={BadgeCheck}
+                              onClick={() => setSealing({ id: c.id, noteAr: "" })}>
+                              اعتمدتُ دوراتِه — وقِّعْه الآن
+                            </Button>
+                          </div>
+                        )}
+                      </Panel>
                     )}
                     {c.status === "countersigned" && (
                       <p className="mt-1 text-read opacity-70">
