@@ -13,7 +13,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
-import { CourseProposalService } from '../../services/course-proposal.service'
+import { CourseProposalService, seedProposalsFromApplication } from '../../services/course-proposal.service'
 import { tokensAr } from '../../../src/application/trainer/proposal-match'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
 
@@ -92,6 +92,43 @@ describe('ح-٢ — اقتراحاتُه تُبذَر من طلبه ثمّ يم�
     expect(rows.map((r) => r.titleAr)).toContain('أتمتةُ التقارير الماليّة')
     /* والنبذةُ الفارغةُ تبقى فارغةً لا نصّا فارغا */
     expect(rows.find((r) => r.titleAr.startsWith('الربطُ'))!.summaryAr).toBeNull()
+  })
+
+  /* وتُبذَر في معاملةٍ واحدة، و`now()` فيها لحظةٌ واحدة — فكان المتعادلُ يُرتَّب ترتيبَ
+     المصادفة في كلّ ما يُرتَّب بـ`createdAt`، وسقط به CI على main (٢ أكتوبر ٢٠٢٦).
+     فيُقاس الترتيبُ نفسُه كما تقرؤه القراءاتُ: بـ`createdAt` وحدَه، بلا فاصلٍ آخر. */
+  it('⚠️ وتُبذَر بترتيب طلبه: لكلّ اقتراحٍ لحظتُه بعد سابقه — فلا يتعادل اثنان', async () => {
+    const titles = ['أوّلُ ما كتبه', 'ثانيه', 'ثالثُه', 'رابعُه', 'خامسُه']
+    const t = await approvedTrainer('prop-order@test.local', 'نور المرتِّبة',
+      titles.map((titleAr) => ({ titleAr, summaryAr: '' })))
+    const rows = await prisma.trainerCourseProposal.findMany({
+      where: { profileId: t.profileId }, orderBy: [{ createdAt: 'asc' }],
+    })
+    expect(rows.map((r) => r.titleAr), 'خرجت بغير ترتيب طلبه').toEqual(titles)
+    const stamps = rows.map((r) => r.createdAt.getTime())
+    expect(new Set(stamps).size, 'تعادلت لحظتان — فترتيبُهما مصادفة').toBe(stamps.length)
+  })
+
+  /* والقاعدةُ وحدَها لا تكفي حارسا: افتراضُ `now()` يُعطي كلَّ صفٍّ لحظتَه **غالبا**،
+     ويتعادل اثنان حين يقعان في جزءٍ واحدٍ من الألف — فيخضرّ الفحصُ أعلاه على جهازٍ
+     ويسقط على آخر. فيُقرأ ما تكتبه الدالّةُ نفسُها: لحظةٌ صريحةٌ لكلّ صفٍّ، بعد سابقه. */
+  it('⚠️ والبذرُ يكتب لكلّ اقتراحٍ لحظتَه صراحةً — لا يتركها لافتراض القاعدة', async () => {
+    const written: { titleAr: string; createdAt?: Date }[] = []
+    const tx = {
+      trainerCourseProposal: {
+        count: async () => 0,
+        create: async (a: { data: { titleAr: string; createdAt?: Date } }) => { written.push(a.data); return a.data },
+      },
+      auditEvent: { create: async () => ({}) },
+    } as unknown as Parameters<typeof seedProposalsFromApplication>[0]
+    const raw = ['أ', 'ب', 'ج', 'د'].map((titleAr) => ({ titleAr, summaryAr: '' }))
+    expect(await seedProposalsFromApplication(tx, 'profile-x', raw, null)).toBe(4)
+    expect(written.map((w) => w.titleAr)).toEqual(['أ', 'ب', 'ج', 'د'])
+    const stamps = written.map((w) => w.createdAt?.getTime())
+    expect(stamps.every((x) => typeof x === 'number'), 'تُركت اللحظةُ لافتراض القاعدة').toBe(true)
+    for (let i = 1; i < stamps.length; i++) {
+      expect(stamps[i]!, 'لحظةُ اقتراحٍ ليست بعد سابقه').toBeGreaterThan(stamps[i - 1]!)
+    }
   })
 
   it('وسجلُّ ما قدّمه في طلبه يبقى كما هو — لا يُنقل ولا يُفرَّغ', async () => {
