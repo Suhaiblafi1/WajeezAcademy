@@ -19,6 +19,8 @@ import { CourseDecisionsService, type DecisionsActor } from '../../services/cour
 import { ROLE_PERMISSIONS } from '../../auth/permissions'
 import { DECISIONS_KIND, DECISIONS_VERSION } from '../../../src/application/trainer/course-decisions'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
+import { buildApp } from '../../http/app'
+import { SESSION_COOKIE } from '../../http/auth-plugin'
 
 let prisma: PrismaClient
 let apps: TrainerApplicationService
@@ -230,5 +232,73 @@ describe('والربطُ لا يفتح مهمّةَ «أهِّله» لمن هو
     expect(await openTasks(), 'فُتحت مهمّةُ «أهِّله» لمن هو مؤهَّل').toBe(before)
     await proposals.linkToCourse(assigner, g.idOf('لا يعرفها'), 'C-DEC-102')
     expect(await openTasks(), 'لم تُفتح مهمّةُ التأهيل لمن ليس مؤهَّلا').toBe(before + 1)
+  })
+})
+
+/* ═══ ورقةُ القرارات — من الطابور الحيّ إلى ملفٍّ يُطبَّق كما هو (٢ أكتوبر ٢٠٢٦) ═══
+
+   قواعدُ الورقة مفحوصةٌ في `src/tests/trainer/course-decisions-worksheet.test.ts`
+   على صفوفٍ مبنيّةٍ باليد. وهذا يفحص ما لا يُرى هناك: أنّ ما تُخرجه القاعدةُ
+   الحقيقيّةُ — مرجعٌ واسمٌ ومعرّفٌ كما هي في جداولها — يقرؤه المنفِّذُ نفسُه
+   فيقع كلُّ قرارٍ على اقتراحه، وأنّ النقطةَ لمن يرى الطابورَ وحدَه. */
+describe('ورقةُ القرارات — من الطابور الحيّ إلى ملفٍّ يُطبَّق كما هو', () => {
+  type Sheet = Awaited<ReturnType<CourseProposalService['worksheet']>>
+  const p = async (id: string) => prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id } })
+
+  it('⚠️ تُملأ ثمّ تُرفع كما هي — فيقع كلُّ قرارٍ على اقتراحه من باب زرّه', async () => {
+    const w = await accepted('dec-w@test.local', 'وفاء الورقة', ['ورقةٌ تُربط', 'ورقةٌ تُسأل', 'ورقةٌ رُدّت قبلها'])
+    await proposals.reject(adminId, w.idOf('ورقةٌ رُدّت قبلها'), 'ردٌّ قبل أن تُخرَج الورقة')
+
+    const sheet = await proposals.worksheet()
+    const mine = sheet.trainers.find((t) => t.reference === w.reference)
+    expect(mine, 'المدرّبُ ليس في الورقة').toBeDefined()
+    expect(mine!.fullName).toBe(w.fullName)
+    expect(mine!.proposals.map((x) => x.proposalId), 'المردودُ خرج في الورقة، أو غاب مفتوح')
+      .toEqual([w.idOf('ورقةٌ تُربط'), w.idOf('ورقةٌ تُسأل')])
+    expect(mine!.proposals[0].context.titleAr).toBe('ورقةٌ تُربط')
+    expect(JSON.stringify(sheet), 'بريدٌ في الورقة — والمرجعُ والاسمُ يكفيان').not.toContain('@')
+
+    /* يُملأ ما يخصّه ويُحذف غيرُه — كما يُفعل بها حقّا */
+    const filled = structuredClone({ ...sheet, trainers: [mine!] }) as Sheet
+    Object.assign(filled.trainers[0].proposals[0], { verdict: 'link', courseId: 'C-DEC-101' })
+    Object.assign(filled.trainers[0].proposals[1], { verdict: 'ask', questionAr: 'لمن هي هذه الدورة تحديدا؟' })
+
+    const pre = await decisions.preview(filled, actor)
+    expect(pre.errorsAr).toEqual([])
+    expect(pre.plan!.steps.map((s) => [s.kind, s.state, s.proposalId])).toEqual([
+      ['link', 'todo', w.idOf('ورقةٌ تُربط')],
+      ['ask', 'todo', w.idOf('ورقةٌ تُسأل')],
+    ])
+
+    const out = await decisions.apply(filled, actor)
+    expect(out.refusedAr).toBeNull()
+    expect(out.applied).toHaveLength(2)
+    expect(await p(w.idOf('ورقةٌ تُربط'))).toMatchObject({ status: 'linked', courseId: 'C-DEC-101' })
+    expect(await p(w.idOf('ورقةٌ تُسأل'))).toMatchObject({ status: 'info_requested', questionAr: 'لمن هي هذه الدورة تحديدا؟' })
+
+    /* والمبتوتُ خرج من الورقة التالية — والمسؤولُ عنه باقٍ فيها حتّى يُجيب صاحبُه */
+    const next = await proposals.worksheet()
+    expect(next.trainers.find((t) => t.reference === w.reference)?.proposals.map((x) => x.proposalId))
+      .toEqual([w.idOf('ورقةٌ تُسأل')])
+  })
+
+  it('⚠️ ونقطتُها لمن يرى الطابورَ وحدَه', async () => {
+    const app = await buildApp(prisma)
+    const auth = new AuthService(prisma)
+    await auth.register('dec-learner@test.local', 'Learner#12345', 'متعلّمٌ يطرق الباب')
+    const cookieOf = async (email: string, password: string) =>
+      `${SESSION_COOKIE}=${(await auth.login(email, password)).token}`
+    const url = '/api/admin/course-proposals/worksheet'
+
+    try {
+      expect((await app.inject({ method: 'GET', url })).statusCode, 'تُقرأ بلا دخول').toBe(401)
+      const learner = await app.inject({ method: 'GET', url, headers: { cookie: await cookieOf('dec-learner@test.local', 'Learner#12345') } })
+      expect(learner.statusCode, 'يقرؤها من لا يرى الطابور').toBe(403)
+      const staff = await app.inject({ method: 'GET', url, headers: { cookie: await cookieOf('dec-admin@test.local', 'Admin#12345') } })
+      expect(staff.statusCode).toBe(200)
+      expect(staff.json()).toMatchObject({ kind: DECISIONS_KIND, version: DECISIONS_VERSION })
+    } finally {
+      await app.close()
+    }
   })
 })
