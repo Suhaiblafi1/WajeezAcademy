@@ -84,7 +84,7 @@ export const CONTRACT_CHANGELOG: readonly VersionChanges[] = [
   {
     version: 'v24-2026-10-01',
     points: [
-      { topic: 'offer', conditionalOnly: true, textAr: 'لا نوقّع عرضَك إلّا يومَ نعتمد دوراتِك فيصير عقدا نهائيّا، واعتمادُ توقيعك يفتح بوّابتَك ولا يكون توقيعا منّا.' },
+      { topic: 'offer', conditionalOnly: true, textAr: 'لا نوقّع الاتفاقيّة إلّا يومَ نعتمد دوراتِك فتصير عقدا نهائيّا، واعتمادُ توقيعك يفتح بوّابتَك ولا يكون توقيعا منّا.' },
       { topic: 'offer', conditionalOnly: true, textAr: 'وبنودُ طور الموادّ — مهلتُك وتمديدُها و«لا إخلال» — تسري بيننا من يوم توقيعك، قبل توقيعنا.' },
     ],
   },

@@ -193,7 +193,7 @@ export default function ContractSign() {
                     بابٍ آخر — فالمُثبِتُ لما يُرجَّح، والعاديُّ لأخيه
                     (`one-primary-per-screen.test.ts`) */}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Button as={Link} to="/contract-link" tone="confirm" size="sm">اطلبْ رابطَ عرضك ببريدك</Button>
+                  <Button as={Link} to="/contract-link" tone="confirm" size="sm">اطلبْ رابطَ الاتفاقيّة ببريدك</Button>
                   <Button as={Link} to="/trainer/contract" size="sm">افتح «عقدي»</Button>
                 </div>
               </>
@@ -518,8 +518,8 @@ export default function ContractSign() {
           <h2 className="mb-1 text-lg font-black">طلبُ تعديلٍ على العرض</h2>
           <p className="mb-3">
             والعقدُ عرضٌ يُفاوَض. اكتبْ ما تريد تغييرَه بندا بندا — رقمَ البند
-            وما تقترحه فيه — فيقف التوقيعُ ويصل طلبُك فريقَنا. ولا يُلغى عرضُك
-            بهذا: إمّا أعدناه إليك مصحَّحا، وإمّا كتبنا لك لماذا يبقى كما هو.
+            وما تقترحه فيه — فيقف التوقيعُ ويصل طلبُك فريقَنا. ولا تُلغى الاتفاقيّةُ
+            بهذا: إمّا أعدناها إليك مصحَّحة، وإمّا كتبنا لك لماذا تبقى كما هي.
           </p>
           <label className="sr-only" htmlFor="amend-text">ما تريد تعديلَه</label>
           <textarea

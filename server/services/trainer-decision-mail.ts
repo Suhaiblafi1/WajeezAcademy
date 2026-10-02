@@ -617,16 +617,16 @@ export function conditionalOfferMail(input: ConditionalOfferMailInput): Decision
   const timesAr = MAX_EXTENSIONS === 2 ? 'مرّتين' : `${MAX_EXTENSIONS} مرّات`
 
   return {
-    subject: `عرضُك المشروط من أكاديمية وجيز — للقراءة والتوقيع (${input.reference})`,
+    subject: `الاتفاقيّة التدريبيّة من أكاديمية وجيز — للقراءة والتوقيع (${input.reference})`,
     doc: {
       greetingName: input.fullName,
       preheader: 'هذه خطواتُك الخمسُ حتّى تستقبل طلباتِ متعلّميك — وأنت في أوّلها.',
-      heading: input.noticeAr ? 'وهذا عرضُك مصحَّحا' : 'هذا عرضُك — وهذه خطواتُه',
+      heading: input.noticeAr ? 'وهذه الاتفاقيّةُ مصحَّحة' : 'هذه الاتفاقيّة — وهذه خطواتُها',
       blocks: [
         ...(input.noticeAr ? ([{ kind: 'callout' as const, text: input.noticeAr }] as const) : ([] as const)),
         {
           kind: 'p',
-          text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وحدّدنا أتعابَك، وجهّزنا عرضَك. وهو عرضٌ مشروطٌ: اقرأ بنودَه كاملةً قبل أن توقّعه.',
+          text: 'اجتاز ملفُّك مراجعتَنا الأكاديميّة، وحدّدنا أتعابَك، وجهّزنا الاتفاقيّة. وهي اتفاقيّةٌ مشروطة: اقرأ بنودَها كاملةً قبل أن توقّعها.',
         },
         { kind: 'h', text: 'أين أنت الآن، وما بعده' },
         {
@@ -640,7 +640,8 @@ export function conditionalOfferMail(input: ConditionalOfferMailInput): Decision
             { textAr: 'نعتمد موادَّك ونوقّع العقدَ من جهتنا، فيصير عقدا نهائيّا غيرَ مشروط — ويُنشَر حسابُك رسميّا وتبدأ باستقبال الطلبات في فصل التدريب.' },
           ],
         },
-        { kind: 'cta', label: 'اقرأ العرضَ ووقّعه', href: input.url },
+        /* والزرُّ يدلّ ولا يأمر — «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع (#405) */
+        { kind: 'cta', label: 'افتح الاتفاقيّة', href: input.url },
         { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${expiresAr}، ولك أن تعتذر عنه بلا حرج.` },
         ...(input.requiredDocumentsAr.length > 0
           ? ([{ kind: 'p' as const, text: `وما نحتاجه منك مع التوقيع: ${input.requiredDocumentsAr.join(' · ')}.` }] as const)
@@ -663,7 +664,7 @@ export function conditionalOfferMail(input: ConditionalOfferMailInput): Decision
           : []),
         {
           kind: 'p',
-          text: 'وإن لم نعتمد موادَّك فلا إخلالَ من أحد: لك أن تؤجّل التحاقَك إلى فصل التدريب القادم، أو تطلب حذفَ حسابك. وهو مكتوبٌ في بنود عرضك لا في هذه الرسالة وحدَها.',
+          text: 'وإن لم نعتمد موادَّك فلا إخلالَ من أحد: لك أن تؤجّل التحاقَك إلى فصل التدريب القادم، أو تطلب حذفَ حسابك. وهو مكتوبٌ في بنود الاتفاقيّة لا في هذه الرسالة وحدَها.',
         },
         { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
         {
@@ -719,18 +720,18 @@ export function finalApprovalMail(input: FinalApprovalMailInput): DecisionMail {
     doc: {
       greetingName: input.fullName,
       preheader: input.sealed === 'now'
-        ? 'اعتُمدت موادُّك ووقّعنا العقدَ من جهتنا — فصار عرضُك عقدا نهائيّا.'
+        ? 'اعتُمدت موادُّك ووقّعنا العقدَ من جهتنا — فصارت الاتفاقيّةُ عقدا نهائيّا.'
         : contract
-          ? 'تحقّق الشرط: اعتُمدت موادُّك، وصار عرضُك عقدا نهائيّا.'
+          ? 'تحقّق الشرط: اعتُمدت موادُّك، وصارت الاتفاقيّةُ عقدا نهائيّا.'
           : 'اعتُمدت موادُّك، وصرتَ مدرّبا نشطا.',
       heading: 'اعتُمدت موادُّك — وتمّ قبولُك',
       blocks: [
         {
           kind: 'p',
           text: input.sealed === 'now'
-            ? 'قيّمنا ما رفعتَه واعتمدناه، ووقّعنا العقدَ من جهتنا — فتحقّق شرطُ عرضك، وصار عقدا نهائيّا غيرَ مشروطٍ موقَّعا من الطرفَين.'
+            ? 'قيّمنا ما رفعتَه واعتمدناه، ووقّعنا العقدَ من جهتنا — فتحقّق شرطُ الاتفاقيّة، وصارت عقدا نهائيّا غيرَ مشروطٍ موقَّعا من الطرفَين.'
             : contract
-              ? 'قيّمنا ما رفعتَه واعتمدناه. وبهذا تحقّق شرطُ عرضك، فصار عقدا نهائيّا غيرَ مشروطٍ موقَّعا من الطرفَين.'
+              ? 'قيّمنا ما رفعتَه واعتمدناه. وبهذا تحقّق شرطُ الاتفاقيّة، فصارت عقدا نهائيّا غيرَ مشروطٍ موقَّعا من الطرفَين.'
               : 'قيّمنا ما رفعتَه واعتمدناه.',
         },
         ...(contract && input.contractUrl
@@ -819,7 +820,7 @@ export function conditionReminderMail(input: ConditionReminderMailInput): Decisi
       blocks: [
         {
           kind: 'p',
-          text: `تنتهي مهلةُ عرضك المشروط ${input.deadlineOnAr}. وما رفعتَه محفوظٌ في بوّابتك، وما بقي ترفعه ثمّ تعلن اكتمالَه.`,
+          text: `تنتهي مهلةُ موادّك ${input.deadlineOnAr}. وما رفعتَه محفوظٌ في بوّابتك، وما بقي ترفعه ثمّ تعلن اكتمالَه.`,
         },
         { kind: 'cta', label: 'افتح بوّابتَك وأكمل موادَّك', href: input.portalUrl },
         {
@@ -865,7 +866,7 @@ export function conditionLapsedMail(input: ConditionLapsedMailInput): DecisionMa
              الطور بندُ الدورة الجديدة (2-9) فانتقل «لا إخلال» إلى 2-11، وبقيت
              الرسالةُ تُحيل إلى بند تمديد المهلة. والمدرّبون على أجيالٍ شتّى،
              فيُقرأ الرقمُ من المتن الذي وقّعه كلٌّ منهم. */
-          text: `انقضت مهلةُ عرضك المشروط في ${input.deadlineOnAr} ولم تكتمل موادُّك. ولا يُعدُّ هذا إخلالا من أيٍّ من الطرفين — وهو منصوصٌ في ${input.noFaultClause ? `البند ${input.noFaultClause} من عرضك` : 'عرضك'}: الشرطُ لم يتحقّق، ولا مطالبةَ لأحدٍ على أحد.`,
+          text: `انقضت مهلةُ موادّك في ${input.deadlineOnAr} ولم تكتمل. ولا يُعدُّ هذا إخلالا من أيٍّ من الطرفين — وهو منصوصٌ في ${input.noFaultClause ? `البند ${input.noFaultClause} من الاتفاقيّة` : 'الاتفاقيّة'}: الشرطُ لم يتحقّق، ولا مطالبةَ لأحدٍ على أحد.`,
         },
         { kind: 'h', text: 'ولك مخرجان، والاختيارُ اختيارُك' },
         {
@@ -906,7 +907,7 @@ export function conditionLapsedMail(input: ConditionLapsedMailInput): DecisionMa
    بفحصٍ يقرؤه كما يقرؤه هو — لا بمسحٍ على شيفرة الخدمة يخضرّ على تعليقٍ فيها.
    وهي العلّةُ نفسُها التي جُمعت لها بقيّةُ رسائل هذا الملفّ. */
 
-/* ═══ حُدّث عرضُك — وهذا ما تغيّر فيه ═══
+/* ═══ حُدّث نصُّ الاتفاقيّة — وهذا ما تغيّر فيه ═══
 
    أمرُ صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦): العرضُ المرسَلُ يُحدَّث في مكانه بلا
    رابطٍ جديد، «والايميل يجب ان يقول ما هي التحديثات التي حدثت على الذي قرأه
@@ -920,8 +921,8 @@ export function conditionLapsedMail(input: ConditionLapsedMailInput): DecisionMa
 
    ─────────── ولا يُوعَد برابطٍ جديدٍ لأنّه لم يتغيّر ───────────
 
-   رابطُه هو هو. فالزرُّ يقول «اقرأ عرضَك المحدَّث» لا «رابطٌ جديد» — ومن
-   قرأ «جديد» بحث في بريده عن رسالةٍ لم تُرسَل. */
+   رابطُه هو هو. فلا يقول الزرُّ «رابطٌ جديد» — ومن قرأ «جديد» بحث في بريده
+   عن رسالةٍ لم تُرسَل. */
 export interface ContractUpdatedMailInput {
   fullName: string
   reference: string
@@ -938,11 +939,11 @@ export interface ContractUpdatedMailInput {
 
 export function contractUpdatedMail(input: ContractUpdatedMailInput): DecisionMail {
   return {
-    subject: `حُدّث نصُّ عرضك — ${input.title} (${input.reference})`,
+    subject: `حُدّث نصُّ الاتفاقيّة — ${input.title} (${input.reference})`,
     doc: {
       greetingName: input.fullName,
       preheader: 'حدّثنا نصَّ العرض الذي بين يديك، ورابطُك هو هو. وهذا ما تغيّر.',
-      heading: 'حدّثنا نصَّ عرضك',
+      heading: 'حدّثنا نصَّ الاتفاقيّة',
       blocks: [
         {
           kind: 'p',

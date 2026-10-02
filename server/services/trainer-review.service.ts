@@ -3011,11 +3011,12 @@ export class TrainerReviewService {
         subject: `رابطٌ جديدٌ للتوقيع — ${contract.title}`,
         ...renderMail({
           greetingName: args.fullName,
-          heading: contract.gatesActivation ? 'هذا رابطٌ جديدٌ لتوقيع عرضك' : 'هذا رابطٌ جديدٌ لتوقيع عقدك',
+          heading: contract.gatesActivation ? 'هذا رابطٌ جديدٌ لتوقيع الاتفاقيّة' : 'هذا رابطٌ جديدٌ لتوقيع عقدك',
           blocks: [
             ...lead,
             { kind: 'p', text: 'اقرأ الوثيقة كاملة قبل التوقيع — وما فيها لم يتغيّر، الرابطُ وحدَه هو الجديد.' },
-            { kind: 'cta', label: 'اقرأ ووقّع', href: args.url },
+            /* والزرُّ يدلّ ولا يأمر — «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع (#405) */
+            { kind: 'cta', label: 'افتح الاتفاقيّة', href: args.url },
             { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
             { kind: 'facts', rows: contractFactsRows(args.reference, contract.number) },
           ],

@@ -36,6 +36,11 @@
   وتُعرض الخياراتُ وما يقع بكلٍّ منها، ويختار هو. وأوّلُ ما نُسخ به صندوقُ
   «لا يُعتمَد بنصّه» الذي كان يُلزم بإعادة التوقيع.
 
+- **لا «عرضك» في نصٍّ يصل إنسانا — والبديلُ «الاتفاقيّة».** قرارُ صاحب المنصّة
+  (٢ أكتوبر ٢٠٢٦): الكلمةُ غيرُ مناسبةٍ في الثقافة الأردنيّة، تُقرأ «عِرضك». وزرُّ
+  الرابط يدلّ ولا يأمر: «افتح الاتفاقيّة» لا «اقرأ ووقّع». ويحرسها
+  `src/tests/trainer/offer-word.test.ts` على نصوص الشيفرة لا تعليقاتها.
+
 - **Claude replies in English.** Decision of the platform owner (7 September
   2026). This governs **conversation only** — chat replies, explanations,
   questions. It does **not** change what is written into the repository:
