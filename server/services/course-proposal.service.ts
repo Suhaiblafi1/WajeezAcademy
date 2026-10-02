@@ -175,13 +175,22 @@ export async function seedProposalsFromApplication(
     .filter((r) => r.titleAr.length > 0)
   if (rows.length === 0) return 0
 
-  for (const r of rows) {
+  /* ═══ وترتيبُها ترتيبُ طلبه — لكلّ صفٍّ لحظتُه (٢ أكتوبر ٢٠٢٦) ═══
+
+     تُبذَر كلُّها في معاملة `ensureProfile` الواحدة، و`createdAt` افتراضُه `now()`
+     — فتخرج بلحظةٍ واحدة. وكلُّ ما يُرتَّب بـ`createdAt` (الطابورُ، وورقةُ القرارات)
+     يُرتّب المتعادلَ ترتيبَ المصادفة: سقط به `course-decisions` على main مرّةً، ونجح
+     على الشجرة نفسِها قبلها. فلكلّ صفٍّ لحظتُه — جزءٌ من الألف من الثانية بعد سابقه
+     — فيبقى ترتيبُها ما كتبه المتقدّمُ في طلبه، في كلّ قراءة. */
+  const bornAt = Date.now()
+  for (const [i, r] of rows.entries()) {
     await tx.trainerCourseProposal.create({
       data: {
         profileId,
         titleAr: r.titleAr.slice(0, MAX_PROPOSAL_TITLE),
         summaryAr: r.summaryAr ? r.summaryAr.slice(0, MAX_PROPOSAL_SUMMARY) : null,
         status: 'submitted',
+        createdAt: new Date(bornAt + i),
       },
     })
   }
