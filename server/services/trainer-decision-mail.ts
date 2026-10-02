@@ -1038,7 +1038,8 @@ export function contractResignMail(input: ContractResignMailInput): DecisionMail
   }
   blocks.push(
     /* و«المحدَّث» لمن تغيّر عقدُه وحدَه — فمن لم يتغيّر عقدُه لا يُقال له «محدَّث» */
-    { kind: 'cta', label: changed ? 'اقرأ عقدك المحدَّث ووقّعه' : 'اقرأ عقدك ووقّعه', href: input.signingUrl },
+    /* والزرُّ يدلّ ولا يأمر — «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع (#405) */
+    { kind: 'cta', label: changed ? 'افتح الاتفاقيّة المحدَّثة' : 'افتح الاتفاقيّة', href: input.signingUrl },
     { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${input.expiresOnAr}. ولك أن تعتذر عنه بلا حرج.` },
   )
   if (input.contractNumber) {
@@ -1157,7 +1158,7 @@ export function amendmentAnsweredMail(input: AmendmentAnsweredMailInput): Decisi
               kind: 'p' as const,
               text: 'ونصُّ الوثيقة كما قرأتَه لم يتغيّر فيه حرف. فإن رضيتَ به بعد جوابنا فالرابطُ أدناه، ولك أن تعتذر عنه بلا حرج.',
             }] as const)),
-        { kind: 'cta', label: input.changeGroups && input.changeGroups.length > 0 ? 'اقرأ عقدك المحدَّث ووقّعه' : 'اقرأ العقدَ ووقّعه', href: input.url },
+        { kind: 'cta', label: input.changeGroups && input.changeGroups.length > 0 ? 'افتح الاتفاقيّة المحدَّثة' : 'افتح الاتفاقيّة', href: input.url },
         {
           kind: 'callout',
           text: `وهذا رابطٌ جديد، والقديمُ بطل. وهو صالحٌ حتّى ${input.expiresOnAr}.`,
