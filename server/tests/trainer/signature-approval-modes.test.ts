@@ -10,6 +10,10 @@
  *    فيُختَم الآن بنصّه ويُفتح طورُ موادّه — قرارُ صاحب المنصّة (٢ أكتوبر ٢٠٢٦):
  *    «Do not force me to do any action». و`asSigned` لا يختم نصّا حاضرا.
  *    ومتنُ v4–v11 يقول قولَ اليوم.
+ * ①ب ويُعتمَد كالعقود الجديدة بطلبٍ صريح (`likeNew`) — خيارُ صاحب المنصّة («Option
+ *    4»): يُفتح طورُه ولا يُختَم، والسجلُّ يقول إنّه اعتُمد كذلك ونصُّه يقول غيرَه.
+ *    ومعًا يُردّان، ولا يمسّ `likeNew` غيرَ ما نصُّه يجعل الاعتمادَ توقيعا.
+ *    وخَتمُه عند النشر مقيسٌ في `countersign-then-publish.test.ts`.
  * ② والعقدُ غيرُ المشروط يُختَم باعتماد توقيعه كما كان، ويُزيح نافذا قبله.
  * ③ والعاملان يجدان من في طور الموادّ بحاله الجديدة (`signature_approved`)،
  *    وبريدُ الانقضاء يُحيل على بند «لا إخلال» في متنه هو لا على رقمٍ مكتوب.
@@ -44,6 +48,7 @@ import { TrainerCodeService } from '../../services/trainer-code.service'
 import { ACADEMY_LEGAL } from '../../../src/data/academy-legal'
 import { CONDITION_CLAUSE_MARK, NO_FAULT_CLAUSE_OPENING } from '../../../src/application/trainer/contract-body'
 import { CODE_TERMS_FIRST_BODY } from '../../../src/application/trainer/trainer-code'
+import { MATERIALS_WINDOW_DAYS } from '../../../src/application/trainer/conditional-offer'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 
@@ -105,7 +110,7 @@ async function trainerWith(
 const rowOf = (id: string) => prisma.trainerContract.findUniqueOrThrow({ where: { id } })
 
 describe('① ما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا — يُختار فيه ولا يُختَم صامتا', () => {
-  it('⚠️ بلا طلبٍ صريح يُردّ بالخيارين — والصفُّ كما هو، ولا بريد', async () => {
+  it('⚠️ بلا طلبٍ صريح يُردّ بالخيارات — والصفُّ كما هو، ولا بريد', async () => {
     const t = await trainerWith({ status: 'signed', gatesActivation: true, bodyVersion: 'v20-2026-10-01' })
     await expect(review.approveSignature(t.contract.id, adminId, { noteAr: 'طابقتُ الاسمَ' }))
       .rejects.toMatchObject({ code: 'sealed_by_text' })
@@ -164,8 +169,8 @@ describe('① ما وُقّع على نصٍّ يجعل الاعتمادَ توق
     const plain = await app.inject({ method: 'POST', url, headers: { cookie }, payload: { noteAr: 'طابقتُ الاسمَ' } })
     expect(plain.statusCode, 'اعتُمد بلا طلبٍ صريح').toBe(409)
     expect(plain.json().error?.code).toBe('sealed_by_text')
-    expect(plain.json().error?.message_ar ?? '', 'رُدّ بغير الخيارين')
-      .toMatch(/أن تعتمده كما وقّعه[\s\S]*أن تعيده للتوقيع/)
+    expect(plain.json().error?.message_ar ?? '', 'رُدّ بغير الخيارات الثلاثة')
+      .toMatch(/أن تعتمده كالعقود الجديدة[\s\S]*أو كما وقّعه[\s\S]*أن تعيده للتوقيع/)
 
     const asSigned = await app.inject({
       method: 'POST', url, headers: { cookie }, payload: { noteAr: 'طابقتُ الاسمَ', asSigned: true },
@@ -193,6 +198,97 @@ describe('① ما وُقّع على نصٍّ يجعل الاعتمادَ توق
     const row = await rowOf(t.contract.id)
     expect(row.status).toBe('signature_approved')
     expect(row.countersignedAt).toBeNull()
+  })
+})
+
+/* ═══ ①ب «اعتمِدْه كالعقود الجديدة» — خيارُ صاحب المنصّة (٢ أكتوبر ٢٠٢٦) ═══
+
+   سأل: «كودٌ أم لأنّه غيرُ مكتوبٍ بالعقد؟». فقيل له: النصّ — والزرُّ يغيّر ما
+   تقوله المنصّةُ لا ما وقّعه الرجل. فاختاره («Option 4»). فيُقاس ما يقع: يُعتمَد
+   التوقيعُ ويُفتح الطورُ كسائر العقود الجديدة ولا يُختَم، والسجلُّ يقول ذلك، والبريدُ
+   بريدُ العقود الجديدة. */
+describe('①ب «اعتمِدْه كالعقود الجديدة» — يُفتح طورُه ولا يُختَم، والسجلُّ يقول ذلك', () => {
+  it('⚠️ بطلبٍ صريح: يُعتمَد توقيعُه ويُفتح طورُه كالعقود الجديدة — ولا نوقّعه', async () => {
+    const t = await trainerWith({ status: 'signed', gatesActivation: true, bodyVersion: 'v20-2026-10-01' })
+    const out = await review.approveSignature(t.contract.id, adminId, {
+      noteAr: 'طابقتُ الاسمَ بجواز السفر', likeNew: true,
+    })
+    expect(out.sealed, 'خُتم وقد اختير «كالعقود الجديدة»').toBe(false)
+    const row = await rowOf(t.contract.id)
+    expect(row.status, 'لم يُعتمَد كالعقود الجديدة').toBe('signature_approved')
+    expect(row.countersignedAt, 'وقّعنا وقد اختير ألّا نوقّع الآن').toBeNull()
+    expect(row.academySignatoryName, 'طُبع اسمُ المفوَّض على عقدٍ لم نوقّعه').toBeNull()
+    expect(row.signatureApprovedBy).toBe(adminId)
+    expect(row.signatureApprovalNoteAr, 'ضاعت ملحوظةُ المطابقة').toBe('طابقتُ الاسمَ بجواز السفر')
+    /* وطورُ موادّه يُفتح كسائر العروض: مهلةٌ، ودورٌ، وحالُ الطلب */
+    expect(row.conditionDeadlineAt, 'اعتُمد ولم يُفتح طورُ موادّه').not.toBeNull()
+    expect(row.conditionDeadlineAt!.getTime() - row.signatureApprovedAt!.getTime(), 'مهلتُه غيرُ مهلة العروض')
+      .toBe(MATERIALS_WINDOW_DAYS * DAY)
+    const app = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.application.id } })
+    expect(app.status, 'اعتُمد ولم يدخل طورَ الموادّ').toBe('onboarding')
+    const roles = await prisma.userRole.findMany({ where: { userId: t.userId }, select: { roleId: true } })
+    expect(roles.map((r) => r.roleId), 'لم يُمنَح بابَ بوّابته').toContain('trainer')
+
+    /* والسجلُّ يقول لمَ لم يُختَم عرضٌ نصُّه يجعل الاعتمادَ توقيعا */
+    const actions = (await prisma.auditEvent.findMany({
+      where: { entityType: 'trainer_contract', entityId: t.contract.id }, select: { action: true, meta: true },
+    }))
+    expect(actions.map((a) => a.action), 'كُتب أثرُ خَتمٍ لم يقع').not.toContain('trainer.contract.countersign')
+    const approve = actions.find((a) => a.action === 'trainer.contract.approve_signature')
+    expect((approve?.meta as { approvedLikeNew?: boolean } | null)?.approvedLikeNew,
+      'لا يقول السجلُّ إنّه اعتُمد كالعقود الجديدة').toBe(true)
+
+    /* وبريدُه بريدُ العقود الجديدة: نوقّعه حين نعتمد دوراته — لا «نافذ» */
+    const mail = outbox.find((m) => m.to === t.email)
+    expect(mail?.text ?? '', 'لم يُقل متى نوقّع').toContain('وسنوقّع العقدَ من جهتنا ونحوّله إلى عقدٍ غيرِ مشروطٍ حين نعتمد دوراتك')
+    expect(mail?.text ?? '', 'قيل له إنّه نفذ ولم نوقّعه').not.toContain('نافذا بين الطرفين')
+  })
+
+  it('⚠️ و«كما وقّعه» مع «كالعقود الجديدة» معًا يُردّان — لا يُخمَّن أيُّهما أُريد', async () => {
+    const t = await trainerWith({ status: 'signed', gatesActivation: true, bodyVersion: 'v21-2026-10-01' })
+    await expect(review.approveSignature(t.contract.id, adminId, { asSigned: true, likeNew: true }))
+      .rejects.toMatchObject({ code: 'two_choices', status: 400 })
+    const row = await rowOf(t.contract.id)
+    expect(row.status, 'اعتُمد بطلبٍ يقول الأمرين').toBe('signed')
+    expect(outbox, 'خرج بريدُ اعتمادٍ لم يقع').toHaveLength(0)
+  })
+
+  /* و`likeNew` معناه «كالعقود الجديدة» لما نصُّه يجعل الاعتمادَ توقيعا وحدَه: العقدُ
+     غيرُ المشروط لمن اعتُمدت موادُّه يُختَم كما كان، وv24 لا يُختَم أصلا — ولا يُكتب
+     في سجلّه أنّه اعتُمد على خلاف نصّه. */
+  it('⚠️ ولا يمسّ `likeNew` غيرَ ما نصُّه يجعل الاعتمادَ توقيعا', async () => {
+    const plain = await trainerWith({ status: 'signed', gatesActivation: false, bodyVersion: 'v20-2026-10-01' }, 'active')
+    const sealedOut = await review.approveSignature(plain.contract.id, adminId, { likeNew: true })
+    expect(sealedOut.sealed, 'لم يُختَم عقدٌ غيرُ مشروط').toBe(true)
+    expect((await rowOf(plain.contract.id)).status).toBe('countersigned')
+
+    const current = await trainerWith({ status: 'signed', gatesActivation: true, bodyVersion: 'v24-2026-10-01' })
+    await review.approveSignature(current.contract.id, adminId, { likeNew: true })
+    const approve = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.contract.approve_signature', entityId: current.contract.id },
+    })
+    expect((approve?.meta as { approvedLikeNew?: boolean } | null)?.approvedLikeNew,
+      'كُتب على عقدٍ جديدٍ أنّه اعتُمد على خلاف نصّه').toBe(false)
+  })
+
+  /* والاختيارُ يعبر المسارَ الذي تضغطه الشاشة: لو أسقطه المسارُ لَردّه الخادمُ
+     بالخيارات بعد أن اختار المعتمِدُ أحدَها */
+  it('⚠️ و«كالعقود الجديدة» يعبر المسارَ إلى الخدمة', async () => {
+    const app = await buildApp(prisma)
+    const suEmail = `modes-su-like-${Date.now()}@test.local`
+    const su = await auth.register(suEmail, 'Super#12345', 'المدير الأعلى')
+    await auth.setRoles(su.userId, ['super_admin'])
+    const { token } = await auth.login(suEmail, 'Super#12345')
+    const cookie = `${SESSION_COOKIE}=${token}`
+    const t = await trainerWith({ status: 'signed', gatesActivation: true, bodyVersion: 'v23-2026-10-01' })
+    const res = await app.inject({
+      method: 'POST', url: `/api/admin/trainer-contracts/${t.contract.id}/countersign`,
+      headers: { cookie }, payload: { noteAr: 'طابقتُ الاسمَ', likeNew: true },
+    })
+    expect(res.statusCode, `سقط الاختيارُ في المسار: ${res.body}`).toBe(200)
+    expect(res.json().sealed).toBe(false)
+    expect((await rowOf(t.contract.id)).status).toBe('signature_approved')
+    await app.close()
   })
 })
 
