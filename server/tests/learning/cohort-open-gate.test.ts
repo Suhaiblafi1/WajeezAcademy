@@ -124,7 +124,7 @@ describe('الزرُّ الجماعيّ يمرّ بالبوّابة نفسِها
 
   it('ولا جلسةَ قبل موعد الشعبة — الجدولُ يبدأ حيث وُضعت في الفصل', async () => {
     const opened = await prisma.cohort.findMany({
-      where: { status: 'open', title: { contains: 'الدفعة الأولى' } },
+      where: { status: 'open', title: { contains: '— شعبة ' } },
       include: { sessions: { orderBy: { startsAt: 'asc' } } },
     })
     expect(opened.length).toBeGreaterThan(0)

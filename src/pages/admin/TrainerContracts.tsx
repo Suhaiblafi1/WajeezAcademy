@@ -494,7 +494,6 @@ export default function TrainerContracts() {
      لا يُختار أحدٌ سلفا: صاحبُ المنصّة يختار واحدا واحدا — أمرُه. */
   const [prep, setPrep] = useState<PrepCandidate[]>([]);
   const [prepPicked, setPrepPicked] = useState<Set<string>>(new Set());
-  const [prepTitle, setPrepTitle] = useState("الدفعة الأولى");
   const [prepStartsAt, setPrepStartsAt] = useState("");
   const [prepResult, setPrepResult] = useState<PrepResult | null>(null);
 
@@ -1966,11 +1965,10 @@ c.gatesActivation
 
           {prep.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="grid gap-1 text-read">
-                <span className="font-bold">اسمُ الشعبة — لكلّ ما تختار</span>
-                <input className={inputCls} maxLength={120} value={prepTitle}
-                  onChange={(e) => setPrepTitle(e.target.value)} />
-              </label>
+              {/* والاسمُ لا يُكتب هنا: كلُّ شعبةٍ تُسمّى «اسمُ الدورة — شعبة N» (٢ أكتوبر ٢٠٢٦) */}
+              <p className="text-read leading-7 opacity-80">
+                تُسمّى كلُّ شعبةٍ باسم دورتها ورقمِها فيها — مثلا «اسمُ الدورة — شعبة ١».
+              </p>
               <label className="grid gap-1 text-read">
                 <span className="font-bold">تاريخُ البدء — لا يلزم، ويُضبط لاحقا</span>
                 <input type="date" className={inputCls} value={prepStartsAt}
@@ -1982,14 +1980,13 @@ c.gatesActivation
           {prep.length > 0 && (
             <div className="mt-3">
               <Button tone="confirm" icon={Handshake} loading={busy}
-                disabled={prepPicked.size === 0 || prepTitle.trim().length < 3}
+                disabled={prepPicked.size === 0}
                 onClick={() => void run(async () => {
                   const r = await apiPost<PrepResult>("/api/admin/trainer-offers/prep", {
                     items: [...prepPicked].map((k) => {
                       const [profileId, courseId] = k.split("|");
                       return { profileId, courseId };
                     }),
-                    titleAr: prepTitle.trim(),
                     startsAt: prepStartsAt || null,
                   });
                   setPrepResult(r); setPrepPicked(new Set());

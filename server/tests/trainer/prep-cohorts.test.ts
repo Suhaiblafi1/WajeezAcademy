@@ -109,17 +109,18 @@ describe('شعبُ التعبئة', () => {
 
   it('② يُنشئ شعبةً مسوّدةً وعرضا بها، ثمّ لا يعود صاحبُها مرشَّحا', async () => {
     const t = await mkActiveTrainer([COURSE])
-    const r = await offers.prepCohorts([{ profileId: t.profileId, courseId: COURSE }], { titleAr: 'الدفعة الأولى' }, adminId)
+    const r = await offers.prepCohorts([{ profileId: t.profileId, courseId: COURSE }], {}, adminId)
     expect(r).toMatchObject({ done: 1, failed: 0 })
 
     const offer = await prisma.trainerAssignmentOffer.findUniqueOrThrow({ where: { id: r.results[0].offerId! } })
     expect(offer).toMatchObject({ profileId: t.profileId, courseId: COURSE, status: 'offered', cohortId: r.results[0].cohortId })
     const cohort = await prisma.cohort.findUniqueOrThrow({ where: { id: r.results[0].cohortId! } })
-    expect(cohort).toMatchObject({ courseId: COURSE, status: 'draft', title: 'الدفعة الأولى' })
+    expect(cohort).toMatchObject({ courseId: COURSE, status: 'draft' })
+    expect(cohort.title).toMatch(/^دورةُ التعبئة — شعبة [١-٩][٠-٩]*$/)
 
     expect(await coursesOf(t.profileId)).toEqual([])
     /* والتكرارُ يُردّ بسببه، ولا شعبةَ ثانية */
-    const again = await offers.prepCohorts([{ profileId: t.profileId, courseId: COURSE }], { titleAr: 'الدفعة الأولى' }, adminId)
+    const again = await offers.prepCohorts([{ profileId: t.profileId, courseId: COURSE }], {}, adminId)
     expect(again).toMatchObject({ done: 0, failed: 1 })
     expect(await prisma.cohort.count({ where: { trainerOffers: { some: { profileId: t.profileId } } } })).toBe(1)
   })
@@ -128,7 +129,7 @@ describe('شعبُ التعبئة', () => {
     const t = await mkActiveTrainer([COURSE_B])
     const before = await prisma.cohort.count({ where: { courseId: COURSE_B } })
     const spy = vi.spyOn(offers, 'offer').mockRejectedValueOnce(new AuthError('busy', 'جدولُه ممتلئ', 409))
-    const r = await offers.prepCohorts([{ profileId: t.profileId, courseId: COURSE_B }], { titleAr: 'الدفعة الأولى' }, adminId)
+    const r = await offers.prepCohorts([{ profileId: t.profileId, courseId: COURSE_B }], {}, adminId)
     spy.mockRestore()
     expect(r).toMatchObject({ done: 0, failed: 1 })
     expect(r.results[0].errorAr).toBe('جدولُه ممتلئ')
@@ -148,7 +149,7 @@ describe('④ البابُ الإداريّ', () => {
 
     const prep = await app.inject({
       method: 'POST', url: '/api/admin/trainer-offers/prep', headers: { cookie },
-      payload: { items: [{ profileId: t.profileId, courseId: COURSE }], titleAr: 'الدفعة الأولى' },
+      payload: { items: [{ profileId: t.profileId, courseId: COURSE }] },
     })
     expect(prep.statusCode).toBe(200)
     expect(prep.json()).toMatchObject({ done: 1, failed: 0 })

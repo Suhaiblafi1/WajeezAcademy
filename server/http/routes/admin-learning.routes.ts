@@ -177,12 +177,22 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return cohorts.setDeliveryPlan(cohortId, req.auth!.userId, body)
   })
 
+  /* الاسمُ الافتراضيُّ للشعبة التالية — يملأ به المعالجُ خانتَه فيُرى قبل الإنشاء */
+  app.get('/api/admin/cohorts/next-title', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'اسمُ الشعبة التالية في الدورة: «اسمُ الدورة — شعبة N»' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string().min(2).max(64) }).parse(req.query)
+    return { title: await cohorts.nextTitle(courseId) }
+  })
+
   app.post('/api/admin/cohorts', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-learning'], summary: 'إنشاء شعبة — مسودة حتى تكتمل شروط الفتح' },
   }, async (req, reply) => {
     const body = z.object({
-      courseId: z.string(), pathwayId: z.string().optional(), title: z.string().min(3),
+      /* وبلا عنوانٍ تُسمّى «اسمُ الدورة — شعبة N» (٢ أكتوبر ٢٠٢٦) */
+      courseId: z.string(), pathwayId: z.string().optional(), title: z.string().trim().min(3).optional(),
       /* والفصلُ حقيقةٌ إداريّةٌ منذ ١٧ سبتمبر ٢٠٢٦ — تُكتب هنا لا في شاشة المدرّب */
       termId: z.string().uuid().nullish(),
       startsAt: z.coerce.date().optional(), endsAt: z.coerce.date().optional(),

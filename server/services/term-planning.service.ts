@@ -175,7 +175,7 @@ export class TermPlanningService {
       startsAt.setUTCHours(15, 0, 0, 0) /* ١٨:٠٠ بتوقيت عمّان */
       const cohort = await this.prisma.cohort.create({
         data: {
-          courseId: row.courseId, title: `${row.titleAr} — ${term.titleAr}`, status: 'draft',
+          courseId: row.courseId, title: await service.nextTitle(row.courseId), status: 'draft',
           startsAt, termId, plannedMonth: row.monthWithinTerm,
           daysOfWeek: ['tue', 'thu'], startTime: '18:00', timezone: 'Asia/Amman',
           capacity, price: row.price, currency: row.currency,
