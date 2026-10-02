@@ -500,6 +500,73 @@ export class TrainerOfferService {
     })).filter((p) => p.courses.length > 0)
   }
 
+  /* ═══════════ شعبُ التعبئة — لكلّ مدرّبٍ مؤهَّلٍ دفعةً واحدة (٢ أكتوبر ٢٠٢٦) ═══════════
+
+     قرارُ صاحب المنصّة: «جهّز لكلّ مدرّبٍ مؤهَّلٍ شعبةً، وأختار أنا واحدا واحدا».
+     فالمدرّبُ لا يعبّئ محتوى دورته إلّا في مساحة شعبةٍ قبِلها («شعبي») — والتأهيلُ
+     وحدَه لا يصنع شعبة. فكان على الإدارة لكلّ مدرّبٍ ودورةٍ خطوتان في صفحتين:
+     تُنشئ شعبةً، ثمّ تعرضها عليه. وهذه تجمعهما لما يُختار.
+
+     · **المرشَّح**: مدرّبٌ نشطٌ ودورةٌ مؤهَّلٌ لها، ولا عرضَ مفتوحا عليها عنده ولا
+       شعبةَ هو مدرّبُها. ومن قبِل عرضا بلا شعبةٍ قبل أن يُشترَط مرشَّحٌ أيضا —
+       فقبولُه لم يفتح له شيئا في «شعبي» (`acceptedWithoutCohort`).
+     · **والشعبةُ مسوّدة**: لا تُعرَض على الناس ولا يُسجَّل فيها، وتُفتح بقرارٍ
+       منفصل. والعرضُ دعوةٌ يقبلها أو يعتذر عنها كأيّ عرض.
+     · **وكلُّ واحدٍ وحدَه**: يُعاد فحصُه عند التنفيذ، ويُقال نجاحُه أو سببُ
+       سقوطه. وشعبةٌ لم يقم عرضُها تُحذَف — فلا تبقى مسوّدةٌ بلا صاحب. */
+
+  /** المرشَّحون لشعبة تعبئة — مدرّبا مدرّبا، ودوراتُ كلٍّ منهم */
+  async prepCandidates() {
+    const options = await this.offerOptions()
+    return options
+      .map((p) => ({
+        profileId: p.profileId, fullName: p.fullName, email: p.email, reference: p.reference,
+        courses: p.courses
+          .filter((c) => !c.alreadyOpen && !c.cohorts.some((h) => h.mine))
+          .map((c) => ({ courseId: c.courseId, titleAr: c.titleAr, acceptedWithoutCohort: c.alreadyAccepted })),
+      }))
+      .filter((p) => p.courses.length > 0)
+  }
+
+  /** ينشئ لكلّ مختارٍ شعبةً مسوّدةً ويعرضها عليه — ويقول ما وقع لكلّ واحد */
+  async prepCohorts(
+    items: { profileId: string; courseId: string }[],
+    opts: { titleAr: string; startsAt?: Date | null },
+    actorId: string,
+  ) {
+    const title = opts.titleAr.trim()
+    if (title.length < 3) throw new AuthError('no_title', 'اكتب اسمَ الشعبة — ثلاثةُ أحرفٍ على الأقلّ', 400)
+    const candidates = await this.prepCandidates()
+    const eligible = new Set(candidates.flatMap((p) => p.courses.map((c) => `${p.profileId}|${c.courseId}`)))
+    const seen = new Set<string>()
+    const cohorts = new CohortService(this.prisma)
+    const results: { profileId: string; courseId: string; ok: boolean; cohortId?: string; offerId?: string; errorAr?: string }[] = []
+
+    for (const it of items) {
+      const key = `${it.profileId}|${it.courseId}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      if (!eligible.has(key)) {
+        results.push({ ...it, ok: false, errorAr: 'لم يعد مرشَّحا — عنده عرضٌ مفتوحٌ أو شعبةٌ لهذه الدورة، أو لم يعد مؤهَّلا' })
+        continue
+      }
+      let cohortId: string | null = null
+      try {
+        const cohort = await cohorts.create(actorId, {
+          courseId: it.courseId, title, ...(opts.startsAt ? { startsAt: opts.startsAt } : {}),
+        })
+        cohortId = cohort.id
+        const offer = await this.offer({ profileId: it.profileId, courseId: it.courseId, cohortId }, actorId)
+        results.push({ ...it, ok: true, cohortId, offerId: offer.id })
+      } catch (e) {
+        /* شعبةٌ قامت ولم يقم عرضُها لا صاحبَ لها — تُحذَف ولا تبقى في القائمة */
+        if (cohortId) await this.prisma.cohort.delete({ where: { id: cohortId } }).catch(() => undefined)
+        results.push({ ...it, ok: false, errorAr: e instanceof AuthError ? e.message : 'تعذّر إنشاءُ الشعبة أو عرضُها' })
+      }
+    }
+    return { done: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results }
+  }
+
   /** عروضي — ما يَنتظر جوابي، وما قبِلتُه وينتظر إعدادي */
   async listForTrainer(userId: string) {
     const profile = await this.profileForUser(userId)

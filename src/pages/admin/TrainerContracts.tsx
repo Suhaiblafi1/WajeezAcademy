@@ -348,6 +348,19 @@ interface OfferOption {
   courses: OfferOptionCourse[];
 }
 
+/** مرشَّحٌ لشعبة تعبئة — علّتُه عند `TrainerOfferService.prepCandidates` */
+interface PrepCandidate {
+  profileId: string; fullName: string; email: string; reference: string;
+  courses: { courseId: string; titleAr: string; acceptedWithoutCohort: boolean }[];
+}
+interface PrepResult {
+  done: number; failed: number;
+  results: { profileId: string; courseId: string; ok: boolean; errorAr?: string }[];
+}
+const PREP_FORMS = { one: "دورة", two: "دورتان", few: "دورات", many: "دورة" };
+const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" };
+const prepKey = (profileId: string, courseId: string) => `${profileId}|${courseId}`;
+
 /** وجهةُ خطإ المركِّب — ليست معرّفَ صفٍّ، فلا يلتبس بعقدٍ في القائمة */
 const COMPOSE_ERR = "__compose__";
 
@@ -477,6 +490,14 @@ export default function TrainerContracts() {
   const [offerPrepDays, setOfferPrepDays] = useState(String(COURSE_PREP_DEFAULT_DAYS));
   const [offerResponseDays, setOfferResponseDays] = useState(String(ASSIGNMENT_OFFER_RESPONSE_DAYS));
 
+  /* ═══ شعبُ التعبئة (٢ أكتوبر ٢٠٢٦) ═══
+     لا يُختار أحدٌ سلفا: صاحبُ المنصّة يختار واحدا واحدا — أمرُه. */
+  const [prep, setPrep] = useState<PrepCandidate[]>([]);
+  const [prepPicked, setPrepPicked] = useState<Set<string>>(new Set());
+  const [prepTitle, setPrepTitle] = useState("الدفعة الأولى");
+  const [prepStartsAt, setPrepStartsAt] = useState("");
+  const [prepResult, setPrepResult] = useState<PrepResult | null>(null);
+
   /* ═══ والقائمتان تُبحثان وتُرقَّمان ═══
 
      كلتاهما تجمع الناسَ كلَّهم لا واحدا بعينه، فتنمو بنموّ العمل: من أراد
@@ -576,6 +597,10 @@ export default function TrainerContracts() {
       ]);
       setOffers(o); setOfferOptions(opts);
     } catch { setOffers([]); setOfferOptions([]); }
+    /* وشعبُ التعبئة خلف صلاحيّتين (الإسنادُ وإدارةُ الشعب) — فمن نقصته
+       إحداهما لا يرى البطاقةَ، ولا يرى خطأً مكانَها. */
+    try { setPrep(await apiGet<PrepCandidate[]>("/api/admin/trainer-offers/prep")); }
+    catch { setPrep([]); }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -1880,6 +1905,121 @@ c.gatesActivation
           )}
       </Card>
 
+      {/* ═══════════ جهّز شعبَ التعبئة (٢ أكتوبر ٢٠٢٦) ═══════════
+
+          التأهيلُ وحدَه لا يصنع شعبة، والمدرّبُ لا يعبّئ محتوى دورته إلّا في
+          شعبةٍ قبِلها. فهذه تجمع الخطوتين — إنشاءَ الشعبة مسوّدةً وعرضَها عليه —
+          لما يُختار هنا واحدا واحدا. العلّةُ عند `prepCandidates`. */}
+      {(prep.length > 0 || prepResult) && (
+        <Card className="mt-6 p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-black">جهّز شعبَ التعبئة ({countAr(prep.reduce((n, p) => n + p.courses.length, 0), PREP_FORMS)})</h2>
+            {prep.length > 0 && (
+              <Button size="sm" tone="ghost" onClick={() => setPrepPicked((s) => {
+                const all = prep.flatMap((p) => p.courses.map((c) => prepKey(p.profileId, c.courseId)));
+                return s.size === all.length ? new Set() : new Set(all);
+              })}>
+                {prepPicked.size > 0 && prepPicked.size === prep.reduce((n, p) => n + p.courses.length, 0) ? "ألغِ اختيارَ الكلّ" : "اختر الكلّ"}
+              </Button>
+            )}
+          </div>
+
+          <p className="mb-3 text-read leading-7 opacity-70">
+            مدرّبون مؤهَّلون لدوراتٍ ليس لهم فيها شعبةٌ يعبّئون محتواها. ضع علامةً على من تريد؛
+            فيُنشأ لكلٍّ منهم شعبةٌ <b>مسوّدةٌ لا تظهر للناس ولا يُسجَّل فيها</b>، ويصله عرضُها
+            يقبله أو يعتذر عنه. ومن قبِل وجدها في «شعبي» وعبّأ فيها. وفتحُ الشعبة للتسجيل قرارٌ
+            منفصلٌ في صفحة الشعب.
+          </p>
+
+          {prep.length > 0 && (
+            <ul className="mb-3 space-y-2">
+              {prep.map((p) => (
+                <li key={p.profileId}>
+                  <Inset className="p-3">
+                    <p className="mb-1 text-read"><b>{p.fullName}</b> <span className="opacity-70">— {p.reference}</span></p>
+                    <ul className="space-y-1">
+                      {p.courses.map((c) => {
+                        const k = prepKey(p.profileId, c.courseId);
+                        return (
+                          <li key={k}>
+                            <label className="flex items-center gap-2 text-read">
+                              <input type="checkbox" checked={prepPicked.has(k)}
+                                onChange={() => setPrepPicked((s) => {
+                                  const n = new Set(s);
+                                  if (n.has(k)) n.delete(k); else n.add(k);
+                                  return n;
+                                })} />
+                              <span>{c.titleAr}</span>
+                              {c.acceptedWithoutCohort && (
+                                <span className="text-sm opacity-70">— قبِل عرضا بلا شعبة، فلا يجد ما يعبّئه</span>
+                              )}
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </Inset>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {prep.length > 0 && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1 text-read">
+                <span className="font-bold">اسمُ الشعبة — لكلّ ما تختار</span>
+                <input className={inputCls} maxLength={120} value={prepTitle}
+                  onChange={(e) => setPrepTitle(e.target.value)} />
+              </label>
+              <label className="grid gap-1 text-read">
+                <span className="font-bold">تاريخُ البدء — لا يلزم، ويُضبط لاحقا</span>
+                <input type="date" className={inputCls} value={prepStartsAt}
+                  onChange={(e) => setPrepStartsAt(e.target.value)} />
+              </label>
+            </div>
+          )}
+
+          {prep.length > 0 && (
+            <div className="mt-3">
+              <Button tone="confirm" icon={Handshake} loading={busy}
+                disabled={prepPicked.size === 0 || prepTitle.trim().length < 3}
+                onClick={() => void run(async () => {
+                  const r = await apiPost<PrepResult>("/api/admin/trainer-offers/prep", {
+                    items: [...prepPicked].map((k) => {
+                      const [profileId, courseId] = k.split("|");
+                      return { profileId, courseId };
+                    }),
+                    titleAr: prepTitle.trim(),
+                    startsAt: prepStartsAt || null,
+                  });
+                  setPrepResult(r); setPrepPicked(new Set());
+                  await load();
+                  return r.failed
+                    ? `جُهّز منها ${countAr(r.done, COHORT_FORMS)}، وتعذّر ${countAr(r.failed, COHORT_FORMS)} — أسبابُها في البطاقة`
+                    : `جُهّزت ${countAr(r.done, COHORT_FORMS)}، وأُرسل لكلّ مدرّبٍ عرضُها`;
+                }, "")}>
+                أنشئ الشعب واعرضها ({prepPicked.size})
+              </Button>
+            </div>
+          )}
+
+          {prepResult && prepResult.failed > 0 && (
+            <Inset className="mt-3 p-3">
+              <p className="mb-1 font-bold">ما تعذّر:</p>
+              <ul className="space-y-1 text-read">
+                {prepResult.results.filter((r) => !r.ok).map((r) => (
+                  <li key={prepKey(r.profileId, r.courseId)}>
+                    {offerOptions.find((o) => o.profileId === r.profileId)?.fullName ?? "مدرّب"}
+                    {" — "}{offerOptions.flatMap((o) => o.courses).find((c) => c.courseId === r.courseId)?.titleAr ?? r.courseId}
+                    {": "}{r.errorAr}
+                  </li>
+                ))}
+              </ul>
+            </Inset>
+          )}
+        </Card>
+      )}
+
       {/* ═══════════ عروضُ الإسناد ═══════════
 
           «ويحقّ للإدارة إسنادُ دورةٍ واحدةٍ أو لا دورةَ أو كافّةَ الدورات
@@ -1940,10 +2080,13 @@ c.gatesActivation
 
               {offerCourseId && (
                 <label className="grid gap-1 text-read">
-                  <span className="font-bold">الشعبة — وتُترك فارغةً إن لم تُجدوَل بعد</span>
+                  {/* والشعبةُ لازمة (٢ أكتوبر ٢٠٢٦): عرضٌ بلا شعبةٍ يقبله المدرّبُ
+                      فلا يجد في «شعبي» ما يعبّئه. ومن لم يجد شعبةً أنشأها في
+                      «جهّز شعبَ التعبئة» أعلاه، أو في صفحة الشعب. */}
+                  <span className="font-bold">الشعبة — فيها يعبّئ محتوى دورته</span>
                   <select className={inputCls} value={offerCohortId}
                     onChange={(e) => setOfferCohortId(e.target.value)}>
-                    <option value="">بلا شعبةٍ بعد — الدورةُ وحدها</option>
+                    <option value="">اختر شعبة…</option>
                     {(offerFor.courses.find((c) => c.courseId === offerCourseId)?.cohorts ?? []).map((h) => (
                       <option key={h.id} value={h.id}>
                         {h.title}{h.startsAt ? ` — ${fmtDateTime(h.startsAt)}` : ""}
@@ -1951,6 +2094,12 @@ c.gatesActivation
                       </option>
                     ))}
                   </select>
+                  {(offerFor.courses.find((c) => c.courseId === offerCourseId)?.cohorts ?? []).length === 0 && (
+                    <span className="text-sm opacity-80">
+                      لا شعبةَ لهذه الدورة بعد — أنشئها من «جهّز شعبَ التعبئة» أعلاه (تُنشأ وتُعرَض عليه
+                      معا)، أو من صفحة «الشعب» ثمّ عُد إلى هنا.
+                    </span>
+                  )}
                 </label>
               )}
 
@@ -1986,12 +2135,12 @@ c.gatesActivation
               </div>
 
               <div>
-                <Button tone="confirm" icon={Handshake} loading={busy} disabled={!offerCourseId}
+                <Button tone="confirm" icon={Handshake} loading={busy} disabled={!offerCourseId || !offerCohortId}
                   onClick={() => void run(async () => {
                     await apiPost("/api/admin/trainer-offers", {
                       profileId: offerFor.profileId,
                       courseId: offerCourseId,
-                      cohortId: offerCohortId || null,
+                      cohortId: offerCohortId,
                       sessionsCount: offerSessions ? Number(offerSessions) : null,
                       feeNoteAr: offerFeeAr.trim() || null,
                       noteAr: offerNoteAr.trim() || null,
