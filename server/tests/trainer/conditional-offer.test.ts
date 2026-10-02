@@ -192,15 +192,15 @@ describe('المهلةُ تُكتب عند اعتماد التوقيع لا عن
       .toBe(MATERIALS_WINDOW_DAYS * DAY)
   })
 
-  it('ومتنُه يحمل بندَ الشرط وعنوانَ «عرض مشروط»', async () => {
+  it('ومتنُه يحمل بندَ الشرط وعنوانَ «اتفاقية مشروطة»', async () => {
     if (missingAcademyLegalFields().length > 0) return
     const { app } = await mkCandidate()
     const made = await review.composeContract(app.id, academicId, {
       title: 'عرضٌ مشروط', requiredDocuments: DOCS, orientationAt: SESSION.toISOString(),
     })
     const row = await prisma.trainerContract.findUniqueOrThrow({ where: { id: made.id } })
-    expect(row.bodyAr!.split('\n')[0]).toContain('عرض مشروط')
-    expect(row.bodyAr, 'بندُ الشرط غائبٌ عن متنٍ يُوقَّع').toMatch(/\n2-6 وهذا عرض مشروط/)
+    expect(row.bodyAr!.split('\n')[0]).toContain('اتفاقية مشروطة')
+    expect(row.bodyAr, 'بندُ الشرط غائبٌ عن متنٍ يُوقَّع').toMatch(/\n2-6 وهذه اتفاقية مشروطة/)
     /* والإصدارُ يُقرأ رقما لا مطابقةَ حرف: تثبيتُه على «v4» بعينه يجعل هذا
        الحارسَ يحمرّ عند كلّ رفعٍ مشروعٍ للإصدار فيطلب تعديلَ نفسِه. والمقيسُ
        أنّ ما خُزِّن لا ينزل عن الجيل الذي دخل فيه بندُ الشرط. */
