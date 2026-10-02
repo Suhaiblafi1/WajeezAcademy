@@ -1148,6 +1148,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return proposals.clusters(scope ?? 'open')
   })
 
+  /* ═══ ورقةُ القرارات — الطابورُ المفتوحُ بصيغة ملفّ القرارات (٢ أكتوبر ٢٠٢٦) ═══
+
+     تُملأ خارجَ الشاشة ثمّ تُرفع في «طبّق قراراتٍ من ملفّ» تحتها، فتمرّ من
+     المعاينة نفسِها. وصلاحيّتُها صلاحيّةُ الطابور: من يرى الاقتراحاتِ يُخرجها.
+     والقولُ في `src/application/trainer/course-decisions-worksheet.ts`. */
+  app.get('/api/admin/course-proposals/worksheet', {
+    preHandler: requirePermission('trainer.change.review'),
+    schema: { tags: ['admin-trainers'], summary: 'ورقةُ القرارات — الطابورُ المفتوحُ بصيغة ملفّ القرارات' },
+  }, async () => proposals.worksheet())
+
   app.post('/api/admin/course-proposals/:id/link', {
     preHandler: requirePermission('trainer.change.review'),
     schema: { tags: ['admin-trainers'], summary: 'تصنيفُ اقتراحٍ نسخةً من رمزٍ قائم — يُربط ولا يُنشأ إصدار' },
