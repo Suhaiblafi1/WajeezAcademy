@@ -1265,7 +1265,7 @@
           "totalHours": 56,
           "inferredSkills": 27,
           "coveredGaps": 22,
-          "uncoveredGaps": 75,
+          "uncoveredGaps": 78,
           "relaxedForMinimum": false,
           "matchesPathwayId": null
         }
