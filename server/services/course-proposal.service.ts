@@ -57,8 +57,9 @@ import type { DomainId } from '../../src/domain/diagnostic/v2/types'
 import { CAREER_STAGE_LABELS_AR, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
 import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 import {
-  cleanProposalDetails, proposalMatchText, type ProposalDetails,
+  cleanProposalDetails, proposalDetailRows, proposalMatchText, type ProposalDetails,
 } from '../../src/application/trainer/proposal-details'
+import { buildDecisionsWorksheet } from '../../src/application/trainer/course-decisions-worksheet'
 
 /** طولُ العنوان — ما يقبله الكتالوج نفسُه، فلا يُقبل هنا ما يُردّ هناك */
 export const MIN_PROPOSAL_TITLE = 3
@@ -386,6 +387,52 @@ export class CourseProposalService {
           .filter((m) => m.courseId !== r.courseId)
         : ([] as ProposalMatch[]),
     }))
+  }
+
+  /** ورقةُ القرارات — الطابورُ المفتوحُ بصيغة ملفّ القرارات، يُملأ خارجَ الشاشة ثمّ يُرفع.
+
+      القواعدُ في `src/application/trainer/course-decisions-worksheet.ts`؛ وهنا
+      القراءةُ وحدَها. والترشيحُ من `matchableCourses` نفسِها التي ترشّح في الطابور
+      — فلا يقرأ من يملأ الورقةَ رمزا غيرَ الذي تراه الشاشة. */
+  async worksheet(now = new Date()) {
+    const rows = await this.prisma.trainerCourseProposal.findMany({
+      where: { status: { in: [...OPEN_PROPOSAL] } },
+      orderBy: [{ createdAt: 'asc' }],
+      select: {
+        id: true, status: true, titleAr: true, summaryAr: true, details: true, createdAt: true,
+        questionAr: true, answerAr: true,
+        profile: {
+          select: {
+            suspendedAt: true,
+            application: { select: { reference: true, fullName: true, status: true } },
+            qualifications: { where: { status: 'qualified' }, select: { courseId: true } },
+          },
+        },
+      },
+    })
+    const catalog = rows.length > 0 ? await this.matchableCourses() : []
+
+    return buildDecisionsWorksheet(rows.map((r) => {
+      const details = (r.details ?? null) as ProposalDetails | null
+      return {
+        proposalId: r.id,
+        status: r.status,
+        titleAr: r.titleAr,
+        summaryAr: r.summaryAr,
+        createdAt: r.createdAt.toISOString(),
+        questionAr: r.questionAr,
+        answerAr: r.answerAr,
+        detailsAr: proposalDetailRows(details),
+        suggested: suggestCourses({ titleAr: r.titleAr, summaryAr: proposalMatchText(r.summaryAr, details) }, catalog),
+        trainer: {
+          reference: r.profile.application.reference,
+          fullName: r.profile.application.fullName,
+          applicationStatus: r.profile.application.status,
+          suspended: r.profile.suspendedAt !== null,
+          qualified: r.profile.qualifications.map((q) => q.courseId),
+        },
+      }
+    }), now)
   }
 
   /** أتتجمّع اقتراحاتُ المدرّبين في مسارات؟ — تقريرٌ يُقرأ في الشاشة.
