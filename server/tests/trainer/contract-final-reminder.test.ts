@@ -129,10 +129,14 @@ describe('② الرسالةُ تقول إنّه الأخير — وإلى مت�
     expect(outbox, 'لم تخرج رسالة — أو خرجت أكثرُ من واحدة').toHaveLength(1)
     const [mail] = outbox
     expect(mail.to).toBe(email)
-    expect(mail.subject, 'العنوانُ لا يقول إنّه تذكيرٌ أخير').toMatch(/^تذكيرٌ أخير: عرضُك صالحٌ ثلاثةَ أيّام/)
-    expect(mail.text, 'لا يقول إنّه آخرُ تذكير').toContain('وهذا آخرُ تذكيرٍ نرسله به')
+    expect(mail.subject, 'العنوانُ لا يقول إنّه تذكيرٌ أخير').toMatch(/^تذكيرٌ أخير: /)
+    expect(mail.text, 'لا يقول إنّه آخرُ تذكير').toContain('وهذا آخرُ تذكيرٍ نرسله بها')
     expect(mail.text, 'لا يقول إلى متى').toContain('بتوقيت عمّان')
-    expect(mail.text, 'لا يقول ما يقع بعد الأجل').toContain('سقط العرضُ وتوقّف رابطُه')
+    /* وما بعد الأجل يُقال بلطفٍ لا بسقوطٍ ونصّ عقد (٢ أكتوبر ٢٠٢٦) */
+    expect(mail.text, 'لا يقول إنّا نعود إليه بعد الأجل').toContain('نعود إليك في الفصول القادمة باتفاقٍ جديد')
+    for (const w of ['عرضك', 'عرضُك', 'سقط', 'كما ينصّ عقدُك']) {
+      expect(`${mail.subject}\n${mail.text}`, `في التذكير الأخير «${w}»`).not.toContain(w)
+    }
     expect(mail.text, 'خرج بغير الرابط الجديد').toContain(out.signingUrl)
   })
 })
@@ -227,7 +231,11 @@ describe('⑤ وطلبُ الرابط بالبريد لا يمدّ الأجلَ 
     expect(outbox, 'لم تُقَل له حالُه — أو خرجت رسالتان').toHaveLength(1)
     const [mail] = outbox
     expect(mail.to).toBe(email)
-    expect(mail.subject, 'العنوانُ لا يقول إنّ المهلةَ انقضت').toMatch(/^انقضت مهلةُ عرضك/)
+    expect(mail.subject, 'العنوانُ لا يقول إنّ المدّةَ انتهت').toMatch(/^انتهت مدّةُ توقيع/)
+    expect(mail.text, 'لا يقول إنّا نعود إليه').toContain('نعود إليك في الفصول القادمة باتفاقٍ جديد')
+    for (const w of ['عرضك', 'عرضُك', 'سقط', 'كما ينصّ عقدُك']) {
+      expect(`${mail.subject}\n${mail.text}`, `في رسالة انتهاء المدّة «${w}»`).not.toContain(w)
+    }
     expect(mail.text, 'لا يقول متى انقضت').toContain('بتوقيت عمّان')
     expect(linkIn(mail.text), 'خرج رابطُ توقيعٍ لعرضٍ سقط').toBeNull()
 
