@@ -734,10 +734,14 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     preHandler: requirePermission('trainer.assign'),
     schema: { tags: ['admin-trainers'], summary: 'عرضُ دورةٍ على مدرّبٍ مؤهَّلٍ لها — دعوةٌ تُقبَل وتُردّ' },
   }, async (req, reply) => {
+    /* والشعبةُ لازمةٌ هنا (٢ أكتوبر ٢٠٢٦): عرضٌ بلا شعبةٍ يقبله المدرّبُ فلا
+       يظهر له شيءٌ في «شعبي» ولا ما يعبّئه — جُرّب ورُئي. وتبقى الخدمةُ
+       تقبله لمن يناديها من داخل الخادم؛ والبابُ الإداريُّ هذا وحدَه. */
     const body = z.object({
       profileId: z.string().uuid(),
       courseId: z.string().min(2).max(64),
-      cohortId: z.string().uuid().nullish(),
+      cohortId: z.string({ error: 'اختر الشعبة — العرضُ بلا شعبةٍ لا يفتح للمدرّب شيئا في «شعبي»' })
+        .uuid('اختر الشعبة — العرضُ بلا شعبةٍ لا يفتح للمدرّب شيئا في «شعبي»'),
       sessionsCount: z.number().int().min(1).max(500).nullish(),
       startsAt: z.coerce.date().nullish(),
       feeNoteAr: z.string().trim().max(500).nullish(),
@@ -746,6 +750,27 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       responseDays: z.number().int().min(1).max(60).nullish(),
     }).parse(req.body)
     return reply.status(201).send(await offers.offer(body, req.auth!.userId))
+  })
+
+  /* ═══ شعبُ التعبئة — لكلّ مدرّبٍ مؤهَّلٍ دفعةً واحدة (٢ أكتوبر ٢٠٢٦) ═══
+     العلّةُ في `TrainerOfferService.prepCandidates`. والبابُ بصلاحيّتين: الإسنادُ
+     (العرض) وإدارةُ الشعب (الإنشاء) — فمن لا يملك إحداهما لا يفعل بهذا ما لا
+     يفعله بالخطوتين منفصلتين. */
+  app.get('/api/admin/trainer-offers/prep', {
+    preHandler: [requirePermission('trainer.assign'), requirePermission('cohort.manage')],
+    schema: { tags: ['admin-trainers'], summary: 'المرشَّحون لشعبة تعبئة: مدرّبٌ نشطٌ ودورةٌ مؤهَّلٌ لها بلا شعبةٍ له ولا عرضٍ مفتوح' },
+  }, async () => offers.prepCandidates())
+
+  app.post('/api/admin/trainer-offers/prep', {
+    preHandler: [requirePermission('trainer.assign'), requirePermission('cohort.manage')],
+    schema: { tags: ['admin-trainers'], summary: 'شعبةٌ مسوّدةٌ وعرضٌ بها لكلّ مختار — ونتيجةُ كلّ واحد' },
+  }, async (req) => {
+    const body = z.object({
+      items: z.array(z.object({ profileId: z.string().uuid(), courseId: z.string().min(2).max(64) })).min(1).max(300),
+      titleAr: z.string().trim().min(3).max(120),
+      startsAt: z.coerce.date().nullish(),
+    }).parse(req.body)
+    return offers.prepCohorts(body.items, { titleAr: body.titleAr, startsAt: body.startsAt ?? null }, req.auth!.userId)
   })
 
   app.post('/api/admin/trainer-offers/:offerId/withdraw', {
