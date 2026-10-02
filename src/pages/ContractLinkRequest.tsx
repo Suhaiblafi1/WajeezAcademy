@@ -59,8 +59,8 @@ export default function ContractLinkRequest() {
   return (
     <SiteShell>
       <SeoHead
-        title="طلب رابط عرض التعاقد"
-        description="من فقد رابط عرضه طلبه ببريده"
+        title="طلب رابط الاتفاقيّة التدريبيّة"
+        description="من فقد رابط اتفاقيّته طلبه ببريده"
         path="/contract-link"
         noindex
       />
@@ -71,7 +71,7 @@ export default function ContractLinkRequest() {
           <Panel tone="positive" className="mt-6">
             <p className="flex items-start gap-2 font-bold">
               <MailCheck className="mt-0.5 shrink-0" size={20} aria-hidden />
-              <span>إن كان لديك عرضٌ مفتوحٌ بهذا البريد، فرابطٌ جديدٌ في طريقه إليه الآن.</span>
+              <span>إن كانت لديك اتفاقيّةٌ مفتوحةٌ بهذا البريد، فرابطٌ جديدٌ في طريقه إليه الآن.</span>
             </p>
             {/* ولا يُقال «أرسلناه» قطعا: الجوابُ لا يكشف أنّ للبريد عرضا */}
             <p className="mt-3 text-sm">
@@ -132,7 +132,7 @@ export default function ContractLinkRequest() {
         )}
 
         <p className="mt-8 text-read leading-6 opacity-70">
-          ومن وقّع عرضَه فعلا فرابطُه باقٍ يفتح نسخته الموقَّعة، ولا يحتاج هذه الصفحة.
+          ومن وقّع اتفاقيّتَه فعلا فرابطُه باقٍ يفتح نسخته الموقَّعة، ولا يحتاج هذه الصفحة.
         </p>
       </div>
     </SiteShell>

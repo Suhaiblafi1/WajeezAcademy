@@ -141,12 +141,12 @@ describe('④ ونقطةُ v24 لا تُقال لمن عقدُه غيرُ مشر
   it('⚠️ «لا نوقّع الاتفاقيّة إلّا يومَ نعتمد دوراتك» للعرض المشروط وحدَه', () => {
     const titlesFor = (conditional: boolean) =>
       changeGroupsBetween('v23-2026-10-01', CONTRACT_BODY_VERSION, { conditional }).map((g) => g.titleAr)
-    expect(titlesFor(true), 'لا نقطةَ لمن عرضُه مشروط').toContain('العرض المشروط وتوقيعنا — البند 2')
+    expect(titlesFor(true), 'لا نقطةَ لمن عرضُه مشروط').toContain('الاتفاقيّة المشروطة وتوقيعنا — البند 2')
     expect(titlesFor(false), 'قيل لمن عقدُه غيرُ مشروطٍ إنّا لا نوقّعه حتّى نعتمد دوراته')
-      .not.toContain('العرض المشروط وتوقيعنا — البند 2')
+      .not.toContain('الاتفاقيّة المشروطة وتوقيعنا — البند 2')
     /* ومن لا يُعرف أيَّ العقدين يقرأ لا يُحجَب عنه شيء */
     expect(changeGroupsBetween('v23-2026-10-01', CONTRACT_BODY_VERSION).map((g) => g.titleAr))
-      .toContain('العرض المشروط وتوقيعنا — البند 2')
+      .toContain('الاتفاقيّة المشروطة وتوقيعنا — البند 2')
   })
 })
 
