@@ -820,12 +820,12 @@ export function conditionReminderMail(input: ConditionReminderMailInput): Decisi
       blocks: [
         {
           kind: 'p',
-          text: `تنتهي مهلةُ موادّك ${input.deadlineOnAr}. وما رفعتَه محفوظٌ في بوّابتك، وما بقي ترفعه ثمّ تعلن اكتمالَه.`,
+          text: `تنتهي مهلةُ موادّك ${input.deadlineOnAr}. وما عبّأتَه في شعب إعدادك محفوظٌ في «شعبي»، وما بقي تُتمّه ثمّ ترسل كلَّ شعبةٍ من خطوتها الأخيرة.`,
         },
-        { kind: 'cta', label: 'افتح بوّابتَك وأكمل موادَّك', href: input.portalUrl },
+        { kind: 'cta', label: 'افتح «شعبي» وأكمل شعبَك', href: input.portalUrl },
         {
           kind: 'callout',
-          text: 'وحين تعلن اكتمالَها تتوقّف المهلةُ عن الجريان حتّى يصلك جوابُنا — فوقتُ مراجعتنا لا يُحسب عليك.',
+          text: 'وحين ترسل آخرَ شعبةٍ تتوقّف المهلةُ عن الجريان بنفسها حتّى يصلك جوابُنا — فوقتُ مراجعتنا لا يُحسب عليك.',
         },
         { kind: 'p', text: exitsAr },
         { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
@@ -1431,7 +1431,7 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
           ? ([
               {
                 kind: 'p' as const,
-                text: 'وبذلك فُتحت لك بوّابتُك على المنصّة، وبدأت مهلتُك لوضع محاور دوراتك ومصادرها وواجباتها.',
+                text: 'وبذلك فُتحت لك بوّابتُك على المنصّة، وبدأت مهلتُك لإعداد دوراتك: تقبل كلَّ دورةٍ أو تعتذر عنها في «مؤهّلاتي»، وتُعِدّ ما قبِلتَه في شعبة إعدادٍ في «شعبي» — مرّةً واحدة.',
               },
               { kind: 'h' as const, text: 'وماذا بعد' },
               {
@@ -1439,8 +1439,9 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
                 items: [
                   { textAr: 'قرأتَ الاتفاقيّةَ ووقّعتَها.', state: 'done' as const },
                   { textAr: 'راجعنا توقيعَك وطابقنا اسمَك القانونيَّ واعتمدناه.', state: 'done' as const },
-                  { textAr: 'ادخلْ بوّابتَك وضَعْ محاورَ دوراتك ومصادرَها، ثمّ أعلِنْ اكتمالَها — والدورُ عليك الآن.', state: 'now' as const },
-                  { textAr: 'نراجع موادَّك: ما اعتمدناه تدرّسه، وما أعدناه يصلك بملاحظاتنا لتعدّله.' },
+                  /* ومنذ ٢ أكتوبر ٢٠٢٦ تُعَدّ الدوراتُ في «شعبي» (`trainer-prep.service.ts`) */
+                  { textAr: 'افتح «مؤهّلاتي» واقبل دوراتك أو اعتذر عنها، ثمّ عبّئ شعبةَ إعداد كلِّ دورةٍ في «شعبي» وأرسلها — والدورُ عليك الآن.', state: 'now' as const },
+                  { textAr: 'نراجع كلَّ شعبة: ما اعتمدناه تدرّسه، وما أعدناه يصلك بملاحظاتنا لتعدّله.' },
                   {
                     textAr: sealedOffer
                       ? 'وباعتمادها يتحقّق شرطُ العقد فيصير نهائيّا غيرَ مشروط، ويُنشَر حسابُك رسميّا وتبدأ باستقبال الطلبات.'
@@ -1451,7 +1452,7 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
               guideCallout,
               {
                 kind: 'cta' as const,
-                label: 'افتح بوّابتَك وضَعْ موادَّك',
+                label: 'افتح «مؤهّلاتي» وابدأ',
                 href: input.portalUrl,
               },
               /* ═══ ودعوةُ جلسة التهيئة — وفاءٌ بالبند 2-8 ═══

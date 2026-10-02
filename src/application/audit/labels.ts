@@ -334,6 +334,11 @@ const PHRASES: Record<string, string> = {
   'trainer.bank.remove': 'إلغاءُ المدرّبِ حسابَه البنكيَّ',
   /* التسويق — فيديوهاتُ المدرّب وصورُه، وملصقاتٌ لا تُستعمل إلّا بموافقته */
   'trainer.materials.save': 'حفظُ المدرّبِ موادَّ دورةٍ قيد الإعداد',
+  /* شعبةُ الإعداد — طورُ الموادّ في «شعبي» (٢ أكتوبر ٢٠٢٦) */
+  'trainer.prep.accept': 'قبولُ المدرّبِ دورةً وإنشاءُ شعبةِ إعدادها',
+  'trainer.prep.decline': 'اعتذارُ المدرّبِ عن دورةٍ اختيرت له',
+  'trainer.prep.materials_carried': 'نقلُ ما كتبه المدرّبُ من موادَّ إلى شعبة الإعداد',
+  'trainer.prep.auto_activate': 'تفعيلُ المدرّب تلقائيّا باعتماد دوراته كلِّها',
   'trainer.marketing.video.set': 'رابطُ فيديو تعريفيٍّ من المدرّب',
   'trainer.marketing.video.remove': 'حذفُ المدرّبِ فيديو تعريفيّا',
   'trainer.marketing.photo.add': 'صورةٌ للملصقات من المدرّب',

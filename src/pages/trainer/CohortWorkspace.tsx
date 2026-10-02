@@ -73,6 +73,7 @@ import { whenAr } from "@/application/learning/cohort-gate";
 import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
+import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCohorts";
 import Button from "@/components/ui/Button";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
@@ -415,6 +416,7 @@ const basicsKey = (c: PlanContent) => `${c.summaryAr ?? ""}|${c.startsOn ?? ""}|
 export default function CohortWorkspace() {
   const { id } = useParams();
   const [ws, setWs] = useState<Workspace | null>(null);
+  const prepIds = usePrepCohorts();
   const [err, setErr] = useState("");
   const [stage, setStage] = useState<Stage>("identity");
   /* ما ينقص الخطوةَ كي تتمّ — يُقال بعد «احفظ وتابِع» حين لا تتمّ، بأسمائه لا
@@ -925,6 +927,11 @@ export default function CohortWorkspace() {
       <Link to="/trainer/board" className="mb-4 inline-flex items-center gap-2 text-read font-bold text-teal-light-ink hover:text-foreground">
         <ArrowRight className="h-4 w-4" /> شعبي
       </Link>
+
+      {/* شعبةُ الإعداد تقول ما هي — فلا يظنّها شعبةً مفتوحةً للتسجيل (٢ أكتوبر ٢٠٢٦) */}
+      {prepIds.has(ws.cohort.id) && (
+        <Inset tone="accent" className="mb-4 p-3.5 text-read leading-7">{PREP_NOTICE_AR}</Inset>
+      )}
 
       {/* ═══ الشريطُ سلّمٌ بأسمائه، وزرٌّ مضاءٌ واحد (٢٧ سبتمبر ٢٠٢٦) ═══
 

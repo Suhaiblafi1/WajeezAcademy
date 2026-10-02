@@ -74,6 +74,9 @@ const HIGH: readonly string[] = [
   'trainer.contract.sign_by_trainer', 'trainer.contract.decline',
   'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
   'trainer.contract.condition_extended',
+  /* وشعبةُ الإعداد (٢ أكتوبر ٢٠٢٦): الاعتذارُ يُخرج دورةً من طريقه ويُخبر من
+     اختارها له، والتفعيلُ التلقائيُّ يجعله نشطا ويوقّع عقدَه من جهتنا. */
+  'trainer.prep.decline', 'trainer.prep.auto_activate',
   'trainer.contract.amendment_requested',
   /* وجوابُ الإدارة مثلُه: يُعيد العقدَ إلى التوقيع ويُجدّد رابطَه — ويصله
      نصُّ الجواب بحرفه منذ ٢٦ سبتمبر ٢٠٢٦. */
@@ -383,6 +386,9 @@ const LOW: readonly string[] = [
   /* حفظُ مسوّدة موادّ دورةٍ في طور العرض المشروط — عملُه قبل أن يُعلنه؛
      والإعلانُ نفسُه عالٍ (`trainer.contract.materials_declared`) */
   'trainer.materials.save',
+  /* وقبولُ الدورة ونقلُ موادّه إلى شعبتها: عملُه قبل أن يُرسله — والإرسالُ
+     يُخبر من يعتمد (`cohort.plan.submit`) */
+  'trainer.prep.accept', 'trainer.prep.materials_carried',
   /* والسؤالُ عن اقتراحٍ وجوابُه: خبرُ عملٍ في الطابور لا خبرُ إنسان. ويصل
      صاحبَه إشعارا في بوّابته على كلّ حال (`trainer.course_proposal.question`
      في صنفٍ لا يُكتم) — وهذا وزنُ الأثر لا وزنُ الإشعار. */

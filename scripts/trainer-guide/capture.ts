@@ -161,7 +161,7 @@ const FRESH: Shot[] = [
         name: 'first-login', clip: 'viewport',
         marks: [
           { target: p.getByRole('navigation', { name: 'تبويبات بوّابة المدرّب' }), n: 1, pad: 2 },
-          { target: around(p, /عرضٌ مشروط — أمامك/, btn(p, 'أعلنتُ اكتمالها')), n: 2, pad: 4 },
+          { target: around(p, /مشروطة — أمامك/, btn(p, /^امنحني/)), n: 2, pad: 4 },
           { target: link(p, 'دليلُ المدرّب'), n: 3, pad: 3 },
         ],
       })
@@ -174,72 +174,57 @@ const FRESH: Shot[] = [
       await narrow(e, 900, async () => {
         await open(e, '/trainer')
         await shoot(e, {
-          name: 'condition-strip', clip: await panel(p.getByText(/عرضٌ مشروط — أمامك/)), clipPad: 16,
+          name: 'condition-strip', clip: await panel(p.getByText(/مشروطة — أمامك/)), clipPad: 16,
           marks: [
-            { target: p.getByText(/عرضٌ مشروط — أمامك/).first(), n: 1, pad: 4 },
+            { target: p.getByText(/مشروطة — أمامك/).first(), n: 1, pad: 4 },
             { target: btn(p, /^امنحني/), n: 2, pad: 4 },
-            { target: btn(p, 'أعلنتُ اكتمالها'), n: 3, pad: 4 },
           ],
         })
       })
     },
   },
-  {
-    name: 'declare-confirm',
-    async run(e) {
-      const p = e.page
-      await open(e, '/trainer')
-      await btn(p, 'أعلنتُ اكتمالها').click()
-      const dialog = p.getByRole('dialog').first()
-      await dialog.waitFor()
-      await settle(e)
-      await shoot(e, {
-        name: 'declare-confirm', clip: dialog, clipPad: 14,
-        marks: [{ target: btn(dialog, 'أعلِنْ'), n: 1, pad: 4 }],
-      })
-      await p.keyboard.press('Escape')
-    },
-  },
 ]
 
+/* ═══ دوراتُك قيد الإعداد — وشعبةُ إعدادها (٢ أكتوبر ٢٠٢٦) ═══
+   حلّت محلَّ «موادُّ دوراتك» ومحرّرِها: يقبل الدورةَ فتُعَدّ في «شعبي». فتُقبَل
+   أولى دوراته هنا قبل التصوير — لتُرى دورةٌ قبِلها ودورةٌ تنتظر قرارَه معا —
+   ثمّ تُصوَّر شعبتُها. والبذرُ يُعيدها (`npm run guide:seed`). */
 FRESH.push({
-  name: 'materials-panel',
+  name: 'prep-panel',
   async run(e) {
     const p = e.page
+    const rows = await (await p.request.get(`${e.base}/api/trainer/prep`)).json() as { courseId: string; state: string }[]
+    const first = rows.find((r) => r.state === 'to_decide')
+    if (first && rows.filter((r) => r.state === 'to_decide').length > 1) {
+      await p.request.post(`${e.base}/api/trainer/prep/${encodeURIComponent(first.courseId)}/accept`, { data: {} })
+    }
     await open(e, '/trainer/qualifications')
-    const section = p.locator('section').filter({ has: p.getByRole('heading', { name: 'موادُّ دوراتك' }) }).first()
-    const openCard = section.locator('li').filter({ has: p.getByRole('button', { expanded: true }) }).first()
+    const section = p.locator('section').filter({ has: p.getByRole('heading', { name: 'دوراتُك قيد الإعداد' }) }).first()
     await shoot(e, {
-      name: 'materials-panel', clip: section, clipPad: 12, maxHeight: 1500,
+      name: 'prep-panel', clip: section, clipPad: 12, maxHeight: 1500,
       marks: [
-        { target: section.getByText(/^اكتملت \d+ من \d+/).first(), n: 1, pad: 4 },
-        { target: section.getByText(/كاملة$/).first(), n: 2, pad: 4 },
-        { target: openCard.getByRole('textbox', { name: 'عنوانُ المحور 1' }), n: 3, pad: 5 },
-        { target: openCard.getByRole('textbox', { name: 'مخرجُ المحور 1' }), n: 4, pad: 5 },
+        { target: section.getByText(/^قرّرتَ في \d+ من \d+/).first(), n: 1, pad: 4 },
+        { target: btn(section, 'اقبلها وابدأ إعدادها'), n: 2, pad: 4 },
+        { target: btn(section, 'اعتذرْ عنها'), n: 3, pad: 4 },
+        { target: link(section, /افتح شعبتَها/), n: 4, pad: 4 },
       ],
     })
   },
 })
 FRESH.push({
-  name: 'materials-save',
+  name: 'prep-notice',
   async run(e) {
     const p = e.page
-    await open(e, '/trainer/qualifications')
-    const save = p.getByRole('button', { name: 'احفظ موادَّ هذه الدورة' }).first()
-    const card = p.locator('li').filter({ has: save }).first()
-    const url = card.locator('input[placeholder="https://…"]').first()
-    /* تُقصَّر البطاقةُ في الصورة وحدَها: يُحذف من المحرّر ثلاثةٌ من المحاور الأربعة
-       ولا يُحفظ شيء — فتُرى الحقولُ كلُّها في صورةٍ واحدة */
-    for (const n of [4, 3, 2]) await card.getByRole('button', { name: `احذف المحور ${n}` }).click()
-    await settle(e)
-    await shoot(e, {
-      name: 'materials-save', clip: card, clipPad: 12,
-      marks: [
-        { target: url, n: 1, pad: 5 },
-        { target: card.locator('textarea').nth(1), n: 2, pad: 5 },
-        { target: card.locator('textarea').nth(2), n: 3, pad: 5 },
-        { target: save, n: 4, pad: 5 },
-      ],
+    const rows = await (await p.request.get(`${e.base}/api/trainer/prep`)).json() as { cohortId: string | null }[]
+    const id = rows.find((r) => r.cohortId)?.cohortId
+    if (!id) throw new Error('لا شعبةَ إعدادٍ للحساب — صوِّر «prep-panel» أوّلا')
+    await narrow(e, 1100, async () => {
+      await open(e, `/trainer/cohort/${id}`)
+      const notice = p.getByText(/^شعبةُ إعداد — /).first()
+      await shoot(e, {
+        name: 'prep-notice', clip: pageBody(p), clipPad: 6, maxHeight: 560,
+        marks: [{ target: notice, n: 1, pad: 5 }],
+      })
     })
   },
 })

@@ -170,6 +170,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.contract.signed', 'trainer.contract.declined',
       'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
       'trainer.contract.condition_extended',
+      /* وشعبةُ الإعداد (٢ أكتوبر ٢٠٢٦): اعتذارٌ عن دورة، ومدرّبٌ لم يبقَ له ما
+         ينتظر، وتفعيلٌ تلقائيٌّ مُنع — كلُّها تنتظر قرارا من الإدارة */
+      'trainer.prep.declined', 'trainer.prep.nothing_pending', 'trainer.prep.activation_blocked',
       'trainer.contract.amendment_requested',
       /* ═══ واسمُ الطرف الثاني (٢٦ سبتمبر ٢٠٢٦) ═══
 

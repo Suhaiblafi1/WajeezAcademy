@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, FileText, Loader2, Lock, Play, RefreshCw, Sparkles,
@@ -69,6 +69,7 @@ export default function AdminCohorts() {
   const [flash, setFlash] = useState<Flash>(null);
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const deepLinked = useRef(false);
   /* ــ أربعةُ ألسنةٍ بدل سبعِ طيّاتٍ متداخلة ــ
 
      كانت البطاقةُ طيًّا داخلَ طيّ: الصفحةُ قائمةُ شُعَب، والشعبةُ بطاقةٌ
@@ -120,6 +121,18 @@ export default function AdminCohorts() {
         apiGet<WizardTerm[]>("/api/admin/terms?all=true").catch(() => [] as WizardTerm[]),
       ]);
       setRows(cohortRows);
+      /* ═══ رابطٌ إلى شعبةٍ بعينها: `?cohort=<id>` (٢ أكتوبر ٢٠٢٦) ═══
+         من شاشة العقود: «افتح خطّتَها» لشعبة إعداد مدرّبٍ في طور الموادّ. فتُفتح
+         الشعبةُ على لسان محتواها — حيث تُعتمَد خطّتُها — وتُصفّى القائمةُ باسمها
+         فلا تضيع في صفحةٍ أخرى. مرّةً واحدة: ما يفعله بعدها بيده. */
+      const linked = new URLSearchParams(window.location.search).get("cohort");
+      const row = linked && !deepLinked.current ? cohortRows.find((c) => c.id === linked) : undefined;
+      if (row) {
+        deepLinked.current = true;
+        setQ(row.title);
+        setExpanded(row.id);
+        setTab("content");
+      }
       setCourses(courseRows.filter((c) => c.status === "published"));
       setReschedules(rsRows);
       setTerms(termRows);
@@ -131,6 +144,7 @@ export default function AdminCohorts() {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
 
   /* رفضُ الخادم كان يُعرض في لافتةِ النجاح نفسِها — بلونٍ أخضرَ وعلامةِ صحّ،
      وفي أعلى صفحةٍ طويلةٍ لا يراها من يعمل في بطاقةٍ سفلى. فربطُ Zoom على

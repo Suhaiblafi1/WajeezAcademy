@@ -22,15 +22,11 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   },
   "condition-strip": {
     "w": 1784,
-    "h": 232
+    "h": 288
   },
   "contract": {
     "w": 2200,
     "h": 1306
-  },
-  "declare-confirm": {
-    "w": 1386,
-    "h": 668
   },
   "decline-merge": {
     "w": 2200,
@@ -68,14 +64,6 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 1478
   },
-  "materials-panel": {
-    "w": 2200,
-    "h": 2636
-  },
-  "materials-save": {
-    "w": 2200,
-    "h": 2356
-  },
   "mobile-portal": {
     "w": 780,
     "h": 1560
@@ -91,6 +79,14 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   "portal-map": {
     "w": 2000,
     "h": 246
+  },
+  "prep-notice": {
+    "w": 2200,
+    "h": 1120
+  },
+  "prep-panel": {
+    "w": 2200,
+    "h": 1381
   },
   "proposal-card": {
     "w": 2200,
