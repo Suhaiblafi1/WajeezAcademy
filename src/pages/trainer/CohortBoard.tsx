@@ -24,6 +24,7 @@ import { fmtDateAr } from "@/utils/format";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ProgressRing from "@/components/ui/ProgressRing";
+import { usePrepCohorts } from "@/components/trainer/usePrepCohorts";
 
 interface CohortSummary {
   id: string; title: string; courseTitle: string; role: string; status: string;
@@ -47,6 +48,8 @@ export default function CohortBoard() {
   const [rows, setRows] = useState<CohortSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
+  /* شعبُ الإعداد تُوسَم — لا متعلّمين فيها ولا تُنشَر (٢ أكتوبر ٢٠٢٦) */
+  const prepIds = usePrepCohorts();
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -88,6 +91,9 @@ export default function CohortBoard() {
                     <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-read text-muted-foreground">
                       <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-foreground">{st.label}</span>
                       <span>دورك: {c.role === "lead" ? "مدرب رئيس" : "مساعد"}</span>
+                      {prepIds.has(c.id) && (
+                        <span className="rounded-full border border-gold/40 px-2 py-0.5 font-bold text-foreground">شعبةُ إعداد — بلا متعلّمين</span>
+                      )}
                     </p>
                   </div>
                 </div>

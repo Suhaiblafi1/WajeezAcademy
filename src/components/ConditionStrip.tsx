@@ -25,8 +25,10 @@
    ③ **وكلُّ زرٍّ معلَّقٌ على الشرط الذي يقبله الخادم بعينه.** زرٌّ يُعرض
       ويُردّ بـ«لا مهلةَ قائمةً على حسابك» أسوأُ من زرٍّ لا يُعرض.
 
-   والإعلانُ لا رجعةَ فيه: يجمّد المهلةَ ويوقظ الطابور، والثانيةُ تُردّ
-   بـ«موادُّك عندنا للتقييم أصلا». فله تأكيدٌ يقول ماذا سيحدث بالضبط.
+   ═══ ولا زرَّ «أعلنتُ اكتمالها» بعد ٢ أكتوبر ٢٠٢٦ ═══
+   صارت الموادُّ تُعَدّ في شعب «شعبي»، وإرسالُ آخرِ شعبةٍ يُعلن اكتمالَها
+   بنفسه (`trainer-prep.service.ts` · `afterSubmit`). فزرٌّ ثانٍ لإعلانٍ وقع
+   خطوةٌ مكرّرة — وهي ما أراد صاحبُ المنصّة رفعَه. فبقي التمديدُ وحدَه.
 
    ═══ ولمَ زرُّه مُثبِتٌ لا ذهبيّ ═══
 
@@ -37,14 +39,13 @@
 
 import { useState } from "react";
 import { AlarmClock, CircleCheck, Hourglass, TriangleAlert } from "lucide-react";
-import ConfirmAction from "@/components/ConfirmAction";
 import Button from "@/components/ui/Button";
 import { Inset } from "@/components/ui/Surface";
 import { toast, toastError } from "@/components/Toast";
 import { apiPost, permissionMessage } from "@/services/api";
 import {
   EXTENSION_DAYS,
-  canAskExtension, canDeclareMaterials, conditionLineAr, conditionPhase,
+  canAskExtension, conditionLineAr, conditionPhase,
   hasOpenCondition, type ConditionPhase,
 } from "@/application/trainer/conditional-offer";
 
@@ -89,8 +90,7 @@ export default function ConditionStrip({
   tasks?: OnboardingTask[];
   onDone: () => void;
 }) {
-  const [asking, setAsking] = useState(false);
-  const [busy, setBusy] = useState<"declare" | "extend" | null>(null);
+  const [busy, setBusy] = useState<"extend" | null>(null);
 
   /* ولا شريطَ لمن لا شرطَ قائما عليه — وهي القاعدةُ ①، وموضعُها قبل كلّ
      شيء: عقدٌ بلا أعمدةِ شرطٍ يخرج من هنا بلا أن يُقرأ منه طور. */
@@ -100,19 +100,6 @@ export default function ConditionStrip({
   const Icon = ICON[phase];
   const missing = tasks.filter((t) => !t.doneAt);
 
-  const declare = async () => {
-    setBusy("declare");
-    try {
-      await apiPost("/api/trainer/condition/declare-complete");
-      toast("وصلَنا إعلانُك — والمهلةُ متجمّدةٌ حتّى يصلك جوابُنا");
-      setAsking(false);
-      onDone();
-    } catch (e) {
-      toastError(permissionMessage(e, "تعذّر إرسالُ إعلانك — أعِد المحاولة"));
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const extend = async () => {
     setBusy("extend");
@@ -134,6 +121,11 @@ export default function ConditionStrip({
       <div className="min-w-0 flex-1">
         <p className="text-sm font-black leading-6 text-foreground">{conditionLineAr(contract)}</p>
         {/* وما ينقصه يُقرأ من مهامّه لا من ظنٍّ — والمنجَزةُ لا تُعاد عليه */}
+        {phase === "running" && (
+          <p className="mt-1 text-read leading-6 text-muted-foreground">
+            تُرسَل كلُّ شعبةٍ من خطوتها الأخيرة في «شعبي» — وحين تُرسَل آخرُها تتجمّد مهلتُك بنفسها.
+          </p>
+        )}
         {missing.length > 0 && (
           <p className="mt-1 text-read leading-6 text-muted-foreground">
             وبقي من مهامّ تهيئتك: {missing.map((t) => t.title).join(" · ")}
@@ -151,32 +143,8 @@ export default function ConditionStrip({
             امنحني {EXTENSION_DAYS === 2 ? "يومين" : `${EXTENSION_DAYS} أيّام`}
           </Button>
         )}
-        {canDeclareMaterials(contract) && (
-          <Button tone="confirm" size="sm" onClick={() => setAsking(true)}>
-            أعلنتُ اكتمالها
-          </Button>
-        )}
       </div>
 
-      {asking && (
-        <ConfirmAction
-          titleAr="أعلنتُ اكتمالَ موادّي"
-          tone="default"
-          confirmLabelAr="أعلِنْ"
-          busy={busy === "declare"}
-          onCancel={() => setAsking(false)}
-          onConfirm={() => void declare()}
-        >
-          <p className="leading-7">
-            ستتجمّد مهلتُك من هذه اللحظة، وتصل موادُّك إلى طابور التقييم. ووقتُ
-            مراجعتنا لا يُحسب عليك: ما جُمِّد يُعاد إلى مهلتك بمقداره إن رُدَّت
-            إليك بملاحظات.
-          </p>
-          <p className="mt-2 leading-7">
-            ولا يُعلَن مرّتين — فراجِعْ موادَّك قبل أن تُعلن.
-          </p>
-        </ConfirmAction>
-      )}
     </Inset>
   );
 }

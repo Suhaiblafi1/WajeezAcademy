@@ -136,10 +136,25 @@ export class TrainerMaterialsService {
   }
 
   /** ما ينقص قبل الإعلان — دورةً دورة. فارغٌ إن لا دورةَ قيد الإعداد أو اكتملت كلُّها */
+  /* ═══ ومنذ ٢ أكتوبر ٢٠٢٦ تُكتب الموادُّ في شعبة الإعداد ═══
+     فالدورةُ مكتملةٌ إن أُرسلت خطّةُ شعبتها للاعتماد — أو كانت موادُّها في
+     اللوح القديم كاملةً (من أتمّها قبل اليوم لا يُطالَب بها ثانيةً). والعلّةُ
+     في `trainer-prep.service.ts`. */
   async declareGapsAr(profileId: string): Promise<string[]> {
     const rows = await this.forProfile(profileId)
-    return rows
-      .filter((r) => r.status === 'pending' && r.missingAr.length > 0)
-      .map((r) => `«${r.titleAr}»: ${r.missingAr.join('، ')}`)
+    const gaps: string[] = []
+    for (const r of rows.filter((x) => x.status === 'pending')) {
+      if (r.missingAr.length === 0) continue
+      const plan = await this.prisma.cohortDeliveryPlan.findFirst({
+        where: {
+          trainerId: { not: null }, status: { in: ['submitted', 'approved', 'published'] },
+          cohort: { courseId: r.courseId, status: 'draft', trainers: { some: { profileId, role: 'lead' } } },
+        },
+        select: { id: true },
+      })
+      if (plan) continue
+      gaps.push(`«${r.titleAr}»: لم تُرسَل خطّةُ شعبتها للاعتماد بعد`)
+    }
+    return gaps
   }
 }

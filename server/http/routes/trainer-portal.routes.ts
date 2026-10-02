@@ -19,6 +19,7 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerOfferService } from '../../services/trainer-offer.service'
 import { TrainerBankService, MAX_ACCOUNT_LEN, BANK_ACCOUNT_KINDS } from '../../services/trainer-bank.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
+import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
@@ -47,6 +48,31 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const bank = new TrainerBankService(prisma)
   const earnings = new EarningsService(prisma)
   const materials = new TrainerMaterialsService(prisma)
+  const prep = new TrainerPrepService(prisma)
+
+  /* ═══ شعبةُ الإعداد — يقبل الدورةَ فيعبّئها في «شعبي» (٢ أكتوبر ٢٠٢٦) ═══
+     العلّةُ في `trainer-prep.service.ts`. والملفُّ من حسابه لا من الطلب. */
+  app.get('/api/trainer/prep', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'دوراتي في طور الإعداد وحالُ كلٍّ: أقبلتُها وأين شعبتُها' },
+  }, async (req) => prep.mine(req.auth!.userId))
+
+  app.post('/api/trainer/prep/:courseId/accept', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'أقبل الدورة — وتُنشأ لها شعبةُ إعدادٍ في «شعبي»' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string().min(1).max(64) }).parse(req.params)
+    return prep.accept(req.auth!.userId, courseId)
+  })
+
+  app.post('/api/trainer/prep/:courseId/decline', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'أعتذر عن الدورة — بسببٍ يصل الإدارة' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string().min(1).max(64) }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().max(1000) }).parse(req.body)
+    return prep.decline(req.auth!.userId, courseId, reasonAr)
+  })
 
   /* ═══ موادُّ الدورات في طور العرض المشروط (٣٠ سبتمبر ٢٠٢٦) ═══
 

@@ -1,11 +1,19 @@
-/* موادُّ دورات المدرّب — تُقرأ حيث يُقرَّر فيها (٣٠ سبتمبر ٢٠٢٦).
+/* دوراتُ المدرّب في طور الإعداد — تُقرأ حيث يُقرَّر فيها.
 
-   كان «أعلن اكتمالَ موادّه» خبرا بلا موادّ: لا شيءَ في المنصّة يُقرأ قبل
-   أن يُعتمَد. فصار المدرّبُ يكتبها في «مؤهّلاتي»، وتُقرأ هنا دورةً دورة،
-   و«اعتمِدْ موادَّ هذه الدورة» يؤهّله لها — وهو ما يعدّه قرارُ التفعيل. */
+   ═══ ومنذ ٢ أكتوبر ٢٠٢٦ تُقرأ في شعبها ═══
+
+   كانت هنا موادُّ كلِّ دورةٍ كما كتبها المدرّبُ في «مؤهّلاتي»، وزرُّ «اعتمِدْ
+   موادَّ هذه الدورة». ثمّ صار الطورُ كلُّه في «شعبي» (`trainer-prep.service.ts`):
+   يقبل الدورةَ فتُنشأ لها شعبةُ إعداد، يعبّئها ويرسلها، و**اعتمادُ خطّتها
+   يعتمد الدورة** — واعتمادُ آخرها يفعّله. فهذا اللوحُ يقول حالَ كلِّ دورة،
+   ويفتح خطّتَها حيث تُعتمَد (`/admin/cohorts?cohort=…`)، لا يكرّرها.
+
+   ويبقى لمن كتب موادَّه في اللوح القديم قبل هذا اليوم ولم يقبل شعبةً بعد
+   ما كان له: تُقرأ موادُّه ويُعتمَد بها — فلا يُطالَب بكتابتها ثانية. */
 
 import { useState } from "react";
-import { CheckCircle2, FileStack, Loader2 } from "lucide-react";
+import { Link } from "react-router";
+import { CheckCircle2, ExternalLink, FileStack, Loader2 } from "lucide-react";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
@@ -13,30 +21,56 @@ import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, permissionMessage } from "@/services/api";
 import type { CourseMaterials } from "@/application/trainer/course-materials";
 
-interface Row {
+type PrepState = "to_decide" | "preparing" | "submitted" | "returned" | "approved" | "declined";
+
+interface PrepRow {
+  courseId: string;
+  titleAr: string;
+  state: PrepState;
+  cohortId: string | null;
+  cohortTitle: string | null;
+  declineReasonAr: string | null;
+}
+
+interface MaterialsRow {
   courseId: string;
   titleAr: string;
   status: string;
   materials: CourseMaterials | null;
-  materialsAt: string | null;
   missingAr: string[];
 }
 
+const STATE_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" | "accent" }> = {
+  to_decide: { label: "لم يقرّر بعد", tone: "neutral" },
+  preparing: { label: "يُعِدّها في «شعبي»", tone: "info" },
+  returned: { label: "رُدّت إليه بملاحظات", tone: "warn" },
+  submitted: { label: "أُرسلت — تنتظر قرارك", tone: "accent" },
+  approved: { label: "معتمَدة", tone: "positive" },
+  declined: { label: "اعتذر عنها", tone: "neutral" },
+};
+
 export default function MaterialsReview({ profileId }: { profileId: string }) {
-  const [rows, setRows] = useState<Row[] | null>(null);
+  const [prep, setPrep] = useState<PrepRow[] | null>(null);
+  const [legacy, setLegacy] = useState<MaterialsRow[]>([]);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = async () => {
-    try { setRows(await apiGet<Row[]>(`/api/admin/trainers/${profileId}/materials`)); }
-    catch (e) { toastError(permissionMessage(e, "تعذّرت قراءةُ موادّه")); }
+    try {
+      const [p, m] = await Promise.all([
+        apiGet<PrepRow[]>(`/api/admin/trainers/${profileId}/prep`),
+        apiGet<MaterialsRow[]>(`/api/admin/trainers/${profileId}/materials`).catch(() => [] as MaterialsRow[]),
+      ]);
+      setPrep(p); setLegacy(m);
+    } catch (e) { toastError(permissionMessage(e, "تعذّرت قراءةُ دوراته")); }
   };
 
-  const approve = async (courseId: string) => {
+  /* اعتمادٌ بموادّ اللوح القديم — لمن كتبها قبل ٢ أكتوبر ٢٠٢٦ ولم يقبل شعبة */
+  const approveLegacy = async (courseId: string) => {
     setBusy(courseId);
     try {
       await apiPost(`/api/admin/trainers/${profileId}/qualifications`, { courseId, note: "اعتُمدت موادُّها" });
-      toast("اعتُمدت موادُّ الدورة — وأُهِّل لها");
+      toast("اعتُمدت الدورة — وأُهِّل لها");
       await load();
     } catch (e) {
       toastError(permissionMessage(e, "تعذّر الاعتماد"));
@@ -48,53 +82,66 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
   if (!open) {
     return (
       <Button size="sm" className="mt-2" icon={FileStack} onClick={() => { setOpen(true); void load(); }}>
-        اعرض موادَّ دوراته
+        اعرض دوراتِه وشعبَ إعدادها
       </Button>
     );
   }
-  if (!rows) return <Loader2 className="mt-2 h-5 w-5 animate-spin text-muted-foreground/60" aria-label="جارٍ التحميل" />;
-  if (rows.length === 0) {
+  if (!prep) return <Loader2 className="mt-2 h-5 w-5 animate-spin text-muted-foreground/60" aria-label="جارٍ التحميل" />;
+  const qualified = legacy.filter((r) => r.status === "qualified");
+  if (prep.length === 0 && qualified.length === 0) {
     return <p className="mt-2 text-read text-muted-foreground">لا دورةَ قيد الإعداد ولا معتمدة لهذا المدرّب.</p>;
   }
 
   return (
     <ul className="mt-3 grid gap-2">
-      {rows.map((r) => (
-        <li key={r.courseId}>
-          <Inset tone="default" className="p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
-              {r.status === "qualified"
-                ? <Chip tone="positive" srPrefixAr="الحال">معتمَدة</Chip>
-                : r.missingAr.length === 0
-                  ? <Chip tone="accent" srPrefixAr="الحال">كاملة — تنتظر قرارك</Chip>
-                  : <Chip tone="warn" srPrefixAr="الحال">ناقصة</Chip>}
-            </div>
-            {r.missingAr.length > 0 && r.status !== "qualified" && (
-              <p className="mt-1 text-read text-muted-foreground">ينقصها: {r.missingAr.join("، ")}</p>
-            )}
-            {r.materials && (
-              <div className="mt-2 grid gap-1.5 text-read leading-7">
-                <ol className="list-decimal ps-5">
-                  {r.materials.modules.map((m, i) => (
-                    <li key={i}><b>{m.titleAr}</b>{m.outcomeAr ? ` — ${m.outcomeAr}` : ""}</li>
-                  ))}
-                </ol>
-                {r.materials.materialsUrl && (
-                  <p>الموادّ: <a className="text-teal-light-ink underline" href={r.materials.materialsUrl} target="_blank" rel="noreferrer noopener" dir="ltr">{r.materials.materialsUrl}</a></p>
-                )}
-                {r.materials.taskAr && <p className="whitespace-pre-line">المهمّة: {r.materials.taskAr}</p>}
-                {r.materials.sourcesAr && <p className="whitespace-pre-line">المصادر: {r.materials.sourcesAr}</p>}
-                {r.materials.noteAr && <p className="whitespace-pre-line text-muted-foreground">ملحوظتُه: {r.materials.noteAr}</p>}
+      {prep.map((r) => {
+        const s = STATE_AR[r.state];
+        const old = legacy.find((x) => x.courseId === r.courseId && x.status === "pending");
+        const oldReady = !r.cohortId && old?.materials && old.missingAr.length === 0;
+        return (
+          <li key={r.courseId}>
+            <Inset tone="default" className="p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
+                <Chip tone={s.tone} srPrefixAr="الحال">{s.label}</Chip>
               </div>
-            )}
-            {r.status === "pending" && (
-              <Button size="sm" tone="confirm" className="mt-2" icon={CheckCircle2}
-                loading={busy === r.courseId} disabled={r.missingAr.length > 0}
-                onClick={() => void approve(r.courseId)}>
-                اعتمِدْ موادَّ هذه الدورة
-              </Button>
-            )}
+              {r.declineReasonAr && <p className="mt-1 text-read text-muted-foreground">سببُه: {r.declineReasonAr}</p>}
+              {r.cohortId && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Button as={Link} to={`/admin/cohorts?cohort=${r.cohortId}`} size="sm" icon={ExternalLink}>
+                    {r.state === "submitted" ? "افتح خطّتَها واعتمدها" : "افتح شعبتَها"}
+                  </Button>
+                  {r.cohortTitle && <span className="text-read text-muted-foreground">{r.cohortTitle}</span>}
+                </div>
+              )}
+              {oldReady && old?.materials && (
+                <div className="mt-2 grid gap-1.5 text-read leading-7">
+                  <p className="text-muted-foreground">كتب موادَّها في اللوح القديم قبل ٢ أكتوبر ٢٠٢٦ — تُعتمَد بها، أو ينقلها بقبول الدورة إلى شعبتها.</p>
+                  <ol className="list-decimal ps-5">
+                    {old.materials.modules.map((m, i) => (
+                      <li key={i}><b>{m.titleAr}</b>{m.outcomeAr ? ` — ${m.outcomeAr}` : ""}</li>
+                    ))}
+                  </ol>
+                  {old.materials.materialsUrl && (
+                    <p>الموادّ: <a className="text-teal-light-ink underline" href={old.materials.materialsUrl} target="_blank" rel="noreferrer noopener" dir="ltr">{old.materials.materialsUrl}</a></p>
+                  )}
+                  <div>
+                    <Button size="sm" tone="confirm" icon={CheckCircle2} loading={busy === r.courseId}
+                      onClick={() => void approveLegacy(r.courseId)}>
+                      اعتمِدْ هذه الدورة بموادّها
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </Inset>
+          </li>
+        );
+      })}
+      {qualified.map((r) => (
+        <li key={r.courseId}>
+          <Inset tone="default" className="flex flex-wrap items-center justify-between gap-2 p-3">
+            <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
+            <Chip tone="positive" srPrefixAr="الحال">معتمَدة</Chip>
           </Inset>
         </li>
       ))}

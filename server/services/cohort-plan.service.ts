@@ -182,6 +182,25 @@ export async function staticModulesFor(courseId: string): Promise<TrainerPlanMod
     }))
 }
 
+/** محاورُ الدورة الأساسيّة: من القاعدة، وإن خلت فمن الكتالوج الثابت — كما
+    تبنيها الورشة. وتقرؤها شعبةُ الإعداد لتنقل إليها ما كتبه المدرّبُ من قبل. */
+export async function baseModulesFor(prisma: PrismaClient, courseId: string): Promise<TrainerPlanModule[]> {
+  const modules = await prisma.courseModule.findMany({
+    where: { courseId, status: { not: 'archived' } },
+    orderBy: { createdAt: 'asc' },
+    include: { versions: { ...readableModuleVersion(), take: 1 } },
+  })
+  const fromDb: TrainerPlanModule[] = modules.map((m) => {
+    const v = m.versions[0]
+    return {
+      moduleId: m.id, titleAr: v?.titleAr ?? m.id,
+      outcomeAr: v?.outcomeAr ?? null, activityAr: v?.activityAr ?? null,
+      artifactAr: v?.artifactAr ?? null, bodyAr: v?.bodyAr ?? null,
+    }
+  })
+  return fromDb.length > 0 ? fromDb : staticModulesFor(courseId)
+}
+
 /* ═══ قائمةُ «ماذا أفعل» — تُحسب لا تُكتب ═══
 
    كلُّ بندٍ حالتُه من الواقع: العنوانُ والمواعيدُ من صفّ الشعبة، والمحاورُ
@@ -837,6 +856,9 @@ export class CohortPlanService {
       templateKey: 'cohort.plan.submitted',
       data: { cohortId, planId: plan.id },
     })
+    /* وشعبةُ الإعداد: إرسالُ آخرِ دوراته يُعلن اكتمالَ موادّه (`trainer-prep.service.ts`) */
+    const { TrainerPrepService } = await import('./trainer-prep.service')
+    await new TrainerPrepService(this.prisma).afterSubmit(cohortId).catch(() => undefined)
     return plan
   }
 
@@ -960,6 +982,9 @@ export class CohortPlanService {
         cta: 'عدّل الخطّة وأعد إرسالها',
         sections: bySection,
       }, composed)
+      /* وشعبةُ الإعداد: الردُّ يُعيد موادَّه إليه وتُستأنف مهلتُه */
+      const { TrainerPrepService } = await import('./trainer-prep.service')
+      await new TrainerPrepService(this.prisma).afterDecision(plan.cohort.id, false, actorId, composed).catch(() => undefined)
       return { status: 'changes_requested' as const }
     }
 
@@ -1040,7 +1065,14 @@ export class CohortPlanService {
       heading: 'اعتُمدت خطّةُ شعبتك — وهي جاهزةٌ الآن',
       cta: 'افتح شعبتك',
     })
-    return { status: 'approved' as const, meetings, tasks }
+    /* ═══ وشعبةُ الإعداد: اعتمادُ خطّتها يعتمد الدورة، ويُفعّل حين تكتمل دوراتُه ═══
+       والعلّةُ في `trainer-prep.service.ts`. وما يمنع التفعيلَ يُقال ولا يُسقط
+       اعتمادَ الخطّة الذي وقع. */
+    const { TrainerPrepService } = await import('./trainer-prep.service')
+    const prep: { activated: boolean; waiting?: number; blockedAr?: string } | null =
+      await new TrainerPrepService(this.prisma).afterDecision(plan.cohort.id, true, actorId, said)
+        .catch((e: unknown) => ({ activated: false, blockedAr: e instanceof AuthError ? e.message : 'تعذّر اعتمادُ الدورة' }))
+    return { status: 'approved' as const, meetings, tasks, prep }
   }
 
   /* ═══ الاعتمادُ يكتب المدّة — والفصلُ يُشتقّ منها ═══

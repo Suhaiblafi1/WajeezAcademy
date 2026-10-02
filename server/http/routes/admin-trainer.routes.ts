@@ -16,6 +16,7 @@ import { TrainerDepartureService } from '../../services/trainer-departure.servic
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
+import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
 import { analyzeImpact } from '../../services/impact.service'
@@ -827,6 +828,15 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const body = z.object({ courseId: z.string(), note: z.string().optional() }).parse(req.body)
     return reply.status(201).send(await review.qualifyForCourse(profileId, body.courseId, req.auth!.userId, body.note))
+  })
+
+  /* دوراتُ المدرّب في طور الإعداد — وشعبةُ كلٍّ وحالُ خطّتها (٢ أكتوبر ٢٠٢٦) */
+  app.get('/api/admin/trainers/:profileId/prep', {
+    preHandler: requirePermission('trainer.qualify'),
+    schema: { tags: ['admin-trainers'], summary: 'دوراتُ المدرّب في طور الإعداد: أقبِلها، وشعبتُها، وحالُ خطّتها' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    return new TrainerPrepService(prisma).coursesOf(profileId)
   })
 
   /* موادُّ دورات المدرّب في طور العرض المشروط — يقرؤها من يقرّر تأهيلَه */
