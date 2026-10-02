@@ -1390,17 +1390,29 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
      ويُسمّى فيها «العقد» كسائر هذه الرسالة، لا «عرضك»: الكلمةُ غيرُ مناسبةٍ في
      الثقافة الأردنيّة بأمر صاحب المنصّة (٢ أكتوبر ٢٠٢٦، #405). */
   const sealedOffer = input.gatesActivation && input.sealedNow === true
+  /* ═══ وعقدٌ غيرُ مشروطٍ اعتُمد كالعقود الجديدة — لم نوقّعه بعد (٢ أكتوبر ٢٠٢٦) ═══
+
+     كان العقدُ غيرُ المشروط يُختَم باعتماد توقيعه لا محالة، فرسالتُه «فصار نافذا».
+     وصار للمعتمِد أن يعتمده كالعقود الجديدة: يُعتمَد توقيعُه ونوقّعه يومَ نعتمد
+     دوراتِه. فيُقال له ذلك بحرفه — ولا يُقال «بوّابتُك مفتوحةٌ لموادّك» ولا
+     «عقدٌ غيرُ مشروط»: بوّابتُه مفتوحةٌ أصلا، ونصُّه غيرُ مشروطٍ من أوّله.
+     و`sealedNow === false` صريحةً: نداءٌ قديمٌ لا يمرّرها يبقى على «نفذ» كما كان. */
+  const pendingSeal = !input.gatesActivation && input.sealedNow === false
   return {
     subject: sealedOffer
       ? `اعتمدنا توقيعَك ووقّعنا العقدَ من جهتنا — وبوّابتُك مفتوحة — ${input.title}`
       : input.gatesActivation
         ? `اعتمدنا توقيعَك وبوّابتُك مفتوحة — ${input.title}`
-        : `اعتُمد عقدُك — ${input.title}`,
+        : pendingSeal
+          ? `اعتمدنا توقيعَك — ونوقّع العقدَ حين نعتمد دوراتك — ${input.title}`
+          : `اعتُمد عقدُك — ${input.title}`,
     doc: {
       greetingName: input.legalName,
       heading: sealedOffer
         ? 'اعتُمد توقيعُك ووقّعنا العقدَ من جهتنا — وبوّابتُك مفتوحة'
-        : input.gatesActivation ? 'اعتُمد توقيعُك — وبوّابتُك مفتوحة' : 'اعتُمد عقدُك',
+        : input.gatesActivation
+          ? 'اعتُمد توقيعُك — وبوّابتُك مفتوحة'
+          : pendingSeal ? 'اعتُمد توقيعُك — ونوقّع العقدَ حين نعتمد دوراتك' : 'اعتُمد عقدُك',
       blocks: [
         {
           kind: 'p',
@@ -1408,7 +1420,9 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
             ? `اعتمدنا توقيعَك على «${input.title}» بتاريخ ${input.approvedOnAr}، ووقّعنا العقدَ من جهتنا بالنصّ الذي وقّعتَه — فصار نافذا بين الطرفين. ولك الآن بوّابتُك مفتوحةً لتضع فيها موادَّك.`
             : input.gatesActivation
               ? `اعتمدنا توقيعَك على «${input.title}» بتاريخ ${input.approvedOnAr}. وسنوقّع العقدَ من جهتنا ونحوّله إلى عقدٍ غيرِ مشروطٍ حين نعتمد دوراتك — ولك الآن بوّابتُك مفتوحةً لتضع فيها موادَّك.`
-              : `اعتمدت الأكاديميّةُ توقيعَك على «${input.title}» بتاريخ ${input.approvedOnAr}، فصار العقدُ نافذا بين الطرفين.`,
+              : pendingSeal
+                ? `اعتمدنا توقيعَك على «${input.title}» بتاريخ ${input.approvedOnAr}. وسنوقّع العقدَ من جهتنا حين نعتمد دوراتك، فيصير نافذا بين الطرفين من يومئذ — ويصلك منّا خبرُه. ولا يتغيّر في بوّابتك شيء.`
+                : `اعتمدت الأكاديميّةُ توقيعَك على «${input.title}» بتاريخ ${input.approvedOnAr}، فصار العقدُ نافذا بين الطرفين.`,
         },
         ...(input.contractNumber
           ? [{ kind: 'facts' as const, rows: [{ label: 'رقم العقد', value: input.contractNumber }] }]
@@ -1460,11 +1474,12 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
               },
             ] as const)
           : ([] as const)),
-        /* وسجلُّ التوقيعَين يتمّ بالخَتم: في العقد غير المشروط الآن، وفي العرض
-           المشروط يومَ تُعتمَد دوراتُه — فلا يُقال له «بتوقيع الطرفين» قبلها. */
+        /* وسجلُّ التوقيعَين يتمّ بالخَتم: في العقد غير المشروط الآن — إلّا ما اعتُمد
+           كالعقود الجديدة — وفي العرض المشروط يومَ تُعتمَد دوراتُه. فلا يُقال له
+           «بتوقيع الطرفين» قبلها. */
         {
           kind: 'note',
-          text: input.gatesActivation && !sealedOffer
+          text: (input.gatesActivation && !sealedOffer) || pendingSeal
             ? 'ونسختُك في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها وتحتها سجلُّ توقيعك. وتصير بتوقيع الطرفين حين نوقّعها يومَ نعتمد دوراتك.'
             : 'ونسختُك بتوقيع الطرفين في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها وتحتها سجلُّ التوقيعَين، ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.',
         },
@@ -1483,6 +1498,56 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
                 link: { label: TRAINER_GUIDE_LINK_AR, href: input.guideUrl },
               },
             ] as MailBlock[])),
+      ],
+    },
+  }
+}
+
+/* ═══ وقّعنا العقدَ من جهتنا — بعد اعتماد توقيعه بأيّام (٢ أكتوبر ٢٠٢٦) ═══
+
+   العقدُ غيرُ المشروط إذا اعتُمد كالعقود الجديدة وعد بريدُه: «وسنوقّع العقدَ من
+   جهتنا حين نعتمد دوراتك… ويصلك منّا خبرُه». وهذا الخبر: يُرسَل حين يُضغط «وقِّعْه
+   الآن» من صفّه (`countersignApproved`). ويقول ما وقع ومتى، ومتى اعتمدنا توقيعَه —
+   فلا يقرأ «اعتمدنا توقيعَك اليوم» عن توقيعٍ اعتُمد قبل أسبوع.
+
+   وزرُّه يفتح «عقدي» بتوقيعَيها — ويدلّ ولا يأمر، على عرف أزرار الرسائل. */
+export interface ContractSealedLaterMailInput {
+  /** الاسمُ الذي وقّع به — وهو ما نطابقه بوثيقته، فهو ما يُخاطَب به */
+  legalName: string
+  title: string
+  /** يومُ توقيعنا — ومنه ينفذ (البند 17-1: «من تاريخ توقيع الطرفين») */
+  sealedOnAr: string
+  /** يومُ اعتماد توقيعه — و`null` لصفٍّ بلا تاريخٍ مكتوب */
+  approvedOnAr: string | null
+  contractNumber?: string | null
+  contractUrl: string
+}
+
+export function contractSealedLaterMail(input: ContractSealedLaterMailInput): DecisionMail {
+  return {
+    subject: `وقّعنا العقدَ من جهتنا — فصار نافذا — ${input.title}`,
+    doc: {
+      greetingName: input.legalName,
+      heading: 'وقّعنا العقدَ من جهتنا — فصار نافذا',
+      blocks: [
+        {
+          kind: 'p',
+          text: `وقّعنا «${input.title}» من جهتنا بتاريخ ${input.sealedOnAr}`
+            + (input.approvedOnAr ? `، بعد أن اعتمدنا توقيعَك بتاريخ ${input.approvedOnAr}` : '')
+            + ' — فصار نافذا بين الطرفين من هذا التاريخ.',
+        },
+        ...(input.contractNumber
+          ? [{ kind: 'facts' as const, rows: [{ label: 'رقم العقد', value: input.contractNumber }] }]
+          : []),
+        {
+          kind: 'note',
+          text: 'ونسختُك بتوقيع الطرفين في بوّابتك تحت «عقدي» — الوثيقةُ بحروفها وتحتها سجلُّ التوقيعَين، ومنها زرُّ طباعةٍ يحفظها ملفَّ PDF عندك.',
+        },
+        {
+          kind: 'note',
+          text: 'وتذكيرا بما في البند الثاني: التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها. والإسنادُ يصلك دعوةً مستقلّةً تقبلها أو تعتذر عنها.',
+        },
+        { kind: 'cta', label: 'افتح عقدَك', href: input.contractUrl },
       ],
     },
   }

@@ -12,9 +12,11 @@
  *    ومتنُ v4–v11 يقول قولَ اليوم.
  * ①ب ويُعتمَد كالعقود الجديدة بطلبٍ صريح (`likeNew`) — خيارُ صاحب المنصّة («Option
  *    4»): يُفتح طورُه ولا يُختَم، والسجلُّ يقول إنّه اعتُمد كذلك ونصُّه يقول غيرَه.
- *    ومعًا يُردّان، ولا يمسّ `likeNew` غيرَ ما نصُّه يجعل الاعتمادَ توقيعا.
+ *    ومعًا يُردّان، ولا يُكتب `likeNew` في سجلّ v24 (لا يُختَم باعتماد توقيعه أصلا).
  *    وخَتمُه عند النشر مقيسٌ في `countersign-then-publish.test.ts`.
  * ② والعقدُ غيرُ المشروط يُختَم باعتماد توقيعه كما كان، ويُزيح نافذا قبله.
+ * ②ب أو يُعتمَد كالعقود الجديدة (`likeNew`، ٢ أكتوبر ٢٠٢٦) فلا يُختَم ولا يُزيح شيئا،
+ *    ثمّ يُوقَّع من صفّه (`countersignApproved`) — ولا يختم ذلك البابُ عرضا مشروطا.
  * ③ والعاملان يجدان من في طور الموادّ بحاله الجديدة (`signature_approved`)،
  *    وبريدُ الانقضاء يُحيل على بند «لا إخلال» في متنه هو لا على رقمٍ مكتوب.
  * ④ ومن خُتم عرضُه قبل اعتماد موادّه (٢٧ سبتمبر — ١ أكتوبر) يُركَّب له عقدُه
@@ -253,15 +255,10 @@ describe('①ب «اعتمِدْه كالعقود الجديدة» — يُفت�
     expect(outbox, 'خرج بريدُ اعتمادٍ لم يقع').toHaveLength(0)
   })
 
-  /* و`likeNew` معناه «كالعقود الجديدة» لما نصُّه يجعل الاعتمادَ توقيعا وحدَه: العقدُ
-     غيرُ المشروط لمن اعتُمدت موادُّه يُختَم كما كان، وv24 لا يُختَم أصلا — ولا يُكتب
-     في سجلّه أنّه اعتُمد على خلاف نصّه. */
-  it('⚠️ ولا يمسّ `likeNew` غيرَ ما نصُّه يجعل الاعتمادَ توقيعا', async () => {
-    const plain = await trainerWith({ status: 'signed', gatesActivation: false, bodyVersion: 'v20-2026-10-01' }, 'active')
-    const sealedOut = await review.approveSignature(plain.contract.id, adminId, { likeNew: true })
-    expect(sealedOut.sealed, 'لم يُختَم عقدٌ غيرُ مشروط').toBe(true)
-    expect((await rowOf(plain.contract.id)).status).toBe('countersigned')
-
+  /* و`likeNew` على v24 لا يُكتب في سجلّه: ذاك لا يُختَم باعتماد توقيعه في كلّ حال، فهو
+     «من العقود الجديدة» لا «كالعقود الجديدة». وعلى العقد غير المشروط صار له معنى
+     (٢ أكتوبر ٢٠٢٦) — يُقاس في ②ب. */
+  it('⚠️ ولا يُكتب `likeNew` في سجلّ ما لا يُختَم باعتماد توقيعه أصلا (v24)', async () => {
     const current = await trainerWith({ status: 'signed', gatesActivation: true, bodyVersion: 'v24-2026-10-01' })
     await review.approveSignature(current.contract.id, adminId, { likeNew: true })
     const approve = await prisma.auditEvent.findFirst({
@@ -315,6 +312,171 @@ describe('② والعقدُ غيرُ المشروط يُختَم باعتماد
     const prior = await rowOf(t.contract.id)
     expect(prior.status, 'بقي للمدرّب عقدان نافذان').toBe('superseded')
     expect(outbox.find((m) => m.to === t.email)?.text ?? '').toContain('فصار العقدُ نافذا بين الطرفين')
+  })
+})
+
+/* ═══ ②ب — وغيرُ المشروط يُعتمَد كالعقود الجديدة، ثمّ يُوقَّع من صفّه (٢ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة عن مدرّبَين أنهى تعاقدَهما ثمّ ركّب لهما عقدا جديدا — فخرج غيرَ
+   مشروطٍ لأنّ موادَّهما اعتُمدت في عقدٍ سابق: «لم أتمكّن من اعتمادهم بالعقد الجديد
+   ليكون تطابقُ الاسم ليس اعتمادا نهائيّا للعقد». فيُقاس هنا حالُه بعينه: مدرّبٌ نشطٌ
+   عقدُه السابقُ مفسوخ، وعقدُه الجديدُ غيرُ مشروطٍ موقَّعٌ ينتظر.
+
+   ① يُعتمَد بـ`likeNew` فلا يُختَم، ولا طورَ له ولا مهلة، ولا تُمسّ حالتُه، والسجلُّ
+     يقول إنّه اعتُمد كالعقود الجديدة، وبريدُه يقول «نوقّعه حين نعتمد دوراتك».
+   ② ثمّ «وقِّعْه الآن» يختمه: اسمُ المفوَّض ومن ضغط، واعتمادُ توقيعه يبقى بتاريخه،
+     وملحوظةُ مطابقة الهويّة تُضَمّ إلى الخَتم، وما كان نافذا يُزاح، وخبرُه يصله.
+   ③ ولا يختم «وقِّعْه الآن» عرضا مشروطا (يتخطّى طورَ موادّه)، ولا ما لم يُعتمَد توقيعُه،
+     ولا يوقّع أحدٌ عقدا مرتبطا ببريده.
+   ④ والمساران يعبران من الشاشة إلى الخدمة. */
+describe('②ب وغيرُ المشروط يُعتمَد كالعقود الجديدة — ثمّ يُوقَّع من صفّه', () => {
+  /** حالُ صاحب البلاغ: نشطٌ، عقدُه الأوّلُ مفسوخ، وعقدُه الجديدُ غيرُ مشروطٍ موقَّع */
+  async function returningTrainer() {
+    const t = await trainerWith({
+      status: 'terminated', gatesActivation: true, bodyVersion: 'v24-2026-10-01',
+      countersignedAt: new Date(Date.now() - 20 * DAY), conditionMetAt: new Date(Date.now() - 20 * DAY),
+      terminatedAt: new Date(Date.now() - DAY),
+    }, 'active')
+    const next = await prisma.trainerContract.create({
+      data: {
+        profileId: t.profile.id, title: 'عقدٌ جديدٌ بعد الإنهاء', status: 'signed', gatesActivation: false,
+        bodyVersion: 'v24-2026-10-01', bodyAr: BODY, bodyHash: sha256(BODY), signedBodyHash: sha256(BODY),
+        signedAt: new Date(), signerLegalName: 'الاسمُ كما وقّعه', signerEmail: t.email,
+      },
+    })
+    return { ...t, next }
+  }
+
+  it('⚠️ يُعتمَد كالعقود الجديدة: لا خَتمَ ولا طورَ ولا مهلة، وحالتُه كما هي — وبريدُه يَعِد بالتوقيع', async () => {
+    const t = await returningTrainer()
+    const out = await review.approveSignature(t.next.id, adminId, {
+      noteAr: 'طابقتُ الاسمَ بالهويّة الوطنيّة', likeNew: true,
+    })
+    expect(out.sealed, 'خُتم وقد اختار المعتمِدُ «كالعقود الجديدة»').toBe(false)
+    const row = await rowOf(t.next.id)
+    expect(row.status).toBe('signature_approved')
+    expect(row.countersignedAt, 'كُتب توقيعُنا ولم نوقّع').toBeNull()
+    expect(row.academySignatoryName, 'كُتب اسمُ المفوَّض ولم نوقّع').toBeNull()
+    expect(row.signatureApprovedBy).toBe(adminId)
+    expect(row.signatureApprovalNoteAr).toBe('طابقتُ الاسمَ بالهويّة الوطنيّة')
+    expect(row.conditionDeadlineAt, 'فُتحت مهلةٌ ليست في متنه').toBeNull()
+    const app = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.application.id } })
+    expect(app.status, 'مُسّت حالةُ نشطٍ أصلا').toBe('active')
+
+    const audit = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.contract.approve_signature', entityId: t.next.id },
+    })
+    expect((audit?.meta as { approvedLikeNew?: boolean } | null)?.approvedLikeNew,
+      'لا يقول السجلُّ إنّه اعتُمد كالعقود الجديدة').toBe(true)
+    expect(await prisma.auditEvent.count({ where: { action: 'trainer.contract.countersign', entityId: t.next.id } }),
+      'كُتب في السجلّ خَتمٌ لم يقع').toBe(0)
+
+    const mail = outbox.find((m) => m.to === t.email)
+    expect(mail?.text ?? '', 'لم يُقل متى نوقّع').toContain('وسنوقّع العقدَ من جهتنا حين نعتمد دوراتك')
+    expect(mail?.text ?? '', 'قيل له إنّه نفذ ولم نوقّعه').not.toContain('فصار العقدُ نافذا')
+  })
+
+  it('⚠️ ولا يُزيح ما كان نافذا قبل أن نوقّعه — يبقى النافذُ نافذا إلى يومئذ', async () => {
+    const t = await trainerWith({
+      status: 'countersigned', gatesActivation: false, bodyVersion: 'v20-2026-10-01',
+      countersignedAt: new Date(Date.now() - 30 * DAY),
+    }, 'active')
+    const next = await prisma.trainerContract.create({
+      data: {
+        profileId: t.profile.id, title: 'عقدُ الفصل القادم', status: 'signed', gatesActivation: false,
+        bodyVersion: 'v24-2026-10-01', bodyAr: BODY, bodyHash: sha256(BODY), signedBodyHash: sha256(BODY),
+        signedAt: new Date(), signerLegalName: 'الاسمُ القانونيّ', signerEmail: t.email,
+      },
+    })
+    await review.approveSignature(next.id, adminId, { likeNew: true })
+    expect((await rowOf(t.contract.id)).status, 'أُزيح النافذُ بعقدٍ لم نوقّعه').toBe('countersigned')
+
+    await review.countersignApproved(next.id, adminId, {})
+    expect((await rowOf(next.id)).status).toBe('countersigned')
+    expect((await rowOf(t.contract.id)).status, 'بقي للمدرّب عقدان نافذان').toBe('superseded')
+  })
+
+  it('⚠️ ثمّ «وقِّعْه الآن» يختمه: المفوَّضُ ومن ضغط، واعتمادُه بتاريخه، والهويّةُ في الخَتم — وخبرُه يصله', async () => {
+    const t = await returningTrainer()
+    await review.approveSignature(t.next.id, adminId, { noteAr: 'طابقتُ الاسمَ بالهويّة الوطنيّة', likeNew: true })
+    const approvedAt = (await rowOf(t.next.id)).signatureApprovedAt
+    outbox.length = 0
+
+    const out = await review.countersignApproved(t.next.id, adminId, { noteAr: 'اعتُمدت دوراتُه بعد مراجعة موادّها' })
+    expect(out.sealed).toBe(true)
+    const row = await rowOf(t.next.id)
+    expect(row.status).toBe('countersigned')
+    expect(row.countersignedAt, 'لم يُكتب توقيعُنا').not.toBeNull()
+    expect(row.countersignedBy, 'لم يُكتب من ضغط').toBe(adminId)
+    expect(row.academySignatoryName, 'خُتم بلا اسم المفوَّض').toBe(ACADEMY_LEGAL.signatoryNameAr)
+    expect(row.signatureApprovedAt?.getTime(), 'أُعيد كتابةُ اعتماد التوقيع بتاريخ الخَتم')
+      .toBe(approvedAt?.getTime())
+    expect(row.countersignNoteAr ?? '', 'ضاعت ملحوظةُ الخَتم').toContain('اعتُمدت دوراتُه بعد مراجعة موادّها')
+    expect(row.countersignNoteAr ?? '', 'ضاعت مطابقةُ الهويّة يومَ الاعتماد')
+      .toContain('ومطابقةُ الهويّة: طابقتُ الاسمَ بالهويّة الوطنيّة')
+
+    const audit = await prisma.auditEvent.findFirst({
+      where: { action: 'trainer.contract.countersign', entityId: t.next.id },
+    })
+    expect((audit?.meta as { sealedAfterApproval?: boolean } | null)?.sealedAfterApproval,
+      'لا يقول السجلُّ لمَ تأخّر خَتمُه عن اعتماد توقيعه').toBe(true)
+
+    const mail = outbox.find((m) => m.to === t.email)
+    expect(mail, 'وُقّع ولم يصله خبرُه').toBeDefined()
+    expect(mail!.subject).toContain('وقّعنا العقدَ من جهتنا')
+    expect(mail!.text, 'لم يُقل إنّه نفذ').toContain('فصار نافذا بين الطرفين')
+  })
+
+  it('⚠️ ولا يختم «وقِّعْه الآن» عرضا مشروطا، ولا ما لم يُعتمَد توقيعُه — والصفُّ كما هو', async () => {
+    const offer = await trainerWith({
+      status: 'signature_approved', gatesActivation: true, bodyVersion: 'v24-2026-10-01',
+      signatureApprovedAt: new Date(), conditionDeadlineAt: new Date(Date.now() + 5 * DAY),
+    }, 'onboarding')
+    await expect(review.countersignApproved(offer.contract.id, adminId, {}))
+      .rejects.toMatchObject({ code: 'conditional_offer', status: 409 })
+    const kept = await rowOf(offer.contract.id)
+    expect(kept.status, 'خُتم عرضٌ مشروطٌ قبل اعتماد موادّه').toBe('signature_approved')
+    expect(kept.countersignedAt).toBeNull()
+
+    const unsigned = await trainerWith({ status: 'signed', gatesActivation: false, bodyVersion: 'v24-2026-10-01' }, 'active')
+    await expect(review.countersignApproved(unsigned.contract.id, adminId, {}))
+      .rejects.toMatchObject({ code: 'bad_state', status: 409 })
+    expect((await rowOf(unsigned.contract.id)).status, 'خُتم ما لم يُطابَق اسمُه').toBe('signed')
+    expect(outbox, 'خرج بريدُ توقيعٍ لم يقع').toHaveLength(0)
+  })
+
+  it('⚠️ ولا يوقّع أحدٌ عقدا مرتبطا ببريده', async () => {
+    const t = await returningTrainer()
+    await review.approveSignature(t.next.id, adminId, { likeNew: true })
+    await expect(review.countersignApproved(t.next.id, t.userId, {}))
+      .rejects.toMatchObject({ code: 'self_decision', status: 403 })
+    expect((await rowOf(t.next.id)).status).toBe('signature_approved')
+  })
+
+  it('⚠️ والمساران يعبران من الشاشة: `likeNew` إلى الاعتماد، ثمّ `/seal` إلى الخَتم', async () => {
+    const app = await buildApp(prisma)
+    const suEmail = `modes-su-plain-${Date.now()}@test.local`
+    const su = await auth.register(suEmail, 'Super#12345', 'المدير الأعلى')
+    await auth.setRoles(su.userId, ['super_admin'])
+    const { token } = await auth.login(suEmail, 'Super#12345')
+    const cookie = `${SESSION_COOKIE}=${token}`
+    const t = await returningTrainer()
+
+    const approve = await app.inject({
+      method: 'POST', url: `/api/admin/trainer-contracts/${t.next.id}/countersign`,
+      headers: { cookie }, payload: { noteAr: 'طابقتُ الاسمَ', likeNew: true },
+    })
+    expect(approve.statusCode, `سقط الاختيارُ في المسار: ${approve.body}`).toBe(200)
+    expect(approve.json().sealed, 'خُتم وقد اختار «كالعقود الجديدة»').toBe(false)
+
+    const seal = await app.inject({
+      method: 'POST', url: `/api/admin/trainer-contracts/${t.next.id}/seal`,
+      headers: { cookie }, payload: { noteAr: 'اعتُمدت دوراتُه' },
+    })
+    expect(seal.statusCode, `لم يعبر «وقِّعْه الآن» المسار: ${seal.body}`).toBe(200)
+    expect(seal.json().sealed).toBe(true)
+    expect((await rowOf(t.next.id)).status).toBe('countersigned')
+    await app.close()
   })
 })
 
