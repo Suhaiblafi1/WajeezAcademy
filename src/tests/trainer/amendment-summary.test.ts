@@ -53,7 +53,7 @@ describe('قبولُ طلب التعديل', () => {
     expect(text, 'سكتت عن أجره').toContain(FEE_LINE)
     for (const pt of points) expect(text, `قيلت النقطةُ كاملةً لطالب التعديل: ${pt}`).not.toContain(pt)
     expect(text, 'قيل «لم يتغيّر» وقد تغيّر').not.toContain('لم يتغيّر شيءٌ')
-    expect(text).toContain('اقرأ عقدك المحدَّث ووقّعه')
+    expect(text, 'لم يُقل إنّ الاتفاقيّةَ محدَّثة').toContain('افتح الاتفاقيّة المحدَّثة')
   })
 
   it('ولا جديدَ في القالب: لا سطر', () => {

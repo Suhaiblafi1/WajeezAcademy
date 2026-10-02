@@ -15,6 +15,15 @@
  *
  * والنطاقُ src وserver كلُّه لا ملفّاتُ المدرّب وحدَها: الكلمةُ لا تُقال لأحد،
  * وملفٌّ جديدٌ يخاطب مدرّبا لا يُنتظَر أن يُضاف إلى قائمة.
+ *
+ * ── وأزرارُ الرسائل لا تأمر بالتوقيع (٢ أكتوبر ٢٠٢٦) ──
+ *
+ * بقيت بعد #408 ثلاثةُ أزرارٍ تقول «اقرأ… ووقّعه» (بريدُ إعادة التوقيع، وجوابُ طلب
+ * التعديل، وعقدُ من لا شرطَ عليه) — فقال صاحبُ المنصّة: «Go ahead and fix the
+ * buttons». فصارت «افتح الاتفاقيّة»، ويُحرَس كلُّ زرٍّ في رسالة (`kind: 'cta'`): لا
+ * فعلَ توقيعٍ يأمر — «وقّع» و«ووقّعه» و«وقِّعْ» — أمّا ما يصف توقيعا وقع («الذي
+ * وقّعتَه»، «الموقَّع») فخبرٌ لا أمر. وأزرارُ الشاشات خارجُه: زرُّ التوقيع في صفحة
+ * التوقيع هو الفعلُ نفسُه، لا دعوةٌ إليه.
  */
 import { describe, expect, it } from 'vitest'
 import ts from 'typescript'
@@ -28,6 +37,36 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 
 /** «عرضك» بحركاتها أو بلاها — ولا تُطابَق «عرضكم» ولا ما يتّصل بها من حرف */
 const WORD = /عرض[ً-ْ]*ك(?![ء-ي])/
+
+/** فعلُ التوقيع كلمةً تامّة: «وقّع» و«ووقّعه» و«وقِّعْ» و«وقّعي» — لا «وقّعتَه»
+    (ما وقع) ولا «الموقَّع» (صفةٌ) ولا «التوقيع» (اسم) */
+const SIGN_VERB = /(?:^|[^\u0621-\u064A])و?وق[\u064B-\u0652]*ع(?:[\u064B-\u0652]*(?:ه|ها|ي))?(?![\u0621-\u064A])/
+
+/** نصوصُ أزرار الرسائل: `label` في كتلةٍ نوعُها `cta` — بكلّ فروعه إن كان شرطا */
+function ctaLabelsOf(file: string, src: string): { text: string; line: number }[] {
+  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true,
+    file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
+  const out: { text: string; line: number }[] = []
+  const unwrap = (e: ts.Expression): ts.Expression =>
+    ts.isAsExpression(e) || ts.isParenthesizedExpression(e) || ts.isSatisfiesExpression(e) ? unwrap(e.expression) : e
+  const prop = (o: ts.ObjectLiteralExpression, name: string) => o.properties.find(
+    (p): p is ts.PropertyAssignment => ts.isPropertyAssignment(p) && p.name.getText(sf) === name)
+  const visit = (n: ts.Node) => {
+    if (ts.isObjectLiteralExpression(n)) {
+      const kind = prop(n, 'kind')
+      const k = kind && unwrap(kind.initializer)
+      const label = prop(n, 'label')
+      if (k && ts.isStringLiteralLike(k) && k.text === 'cta' && label) {
+        out.push(...textsOf(file, label.initializer.getText(sf)).map((t) => ({
+          text: t.text, line: sf.getLineAndCharacterOfPosition(label.getStart()).line + 1,
+        })))
+      }
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(sf)
+  return out
+}
 
 /** نصوصُ الشيفرة — لا تعليقاتُها */
 function textsOf(file: string, src: string): { text: string; line: number }[] {
@@ -85,6 +124,35 @@ describe('لا «عرضك» في نصٍّ يصل إنسانا', () => {
       }
     }
     expect(hits, 'عادت «عرضك» إلى نصٍّ يصل إنسانا — والبديلُ «الاتفاقيّة»').toEqual([])
+  })
+
+  it('ماسحُ الأزرار يقرأ أزرارَ الرسائل وحدَها — ويفرّق الأمرَ من الخبر', () => {
+    const sample = [
+      "const a = { kind: 'cta', label: 'اقرأ ووقّع', href: u }",
+      "const b = { kind: 'cta' as const, label: x ? 'اقرأ عقدك المحدَّث ووقّعه' : 'افتح الاتفاقيّة', href: u }",
+      "const c = { kind: 'p', text: 'اقرأ ووقّع' }",
+      "const d = { kind: 'cta', label: 'اقرأ العقدَ الذي وقّعتَه', href: u }",
+      "const e = { kind: 'cta', label: 'افتح عقدك الموقَّع', href: u }",
+      "const f = { kind: 'cta', label: 'وقِّعْ الآن', href: u }",
+    ].join('\n')
+    const hits = ctaLabelsOf('sample.ts', sample).filter((t) => SIGN_VERB.test(t.text)).map((t) => t.line)
+    expect(hits, 'الماسحُ لا يرى الزرَّ، أو يرى غيرَه، أو لا يفرّق الأمرَ من الخبر').toEqual([1, 2, 6])
+  })
+
+  it('⚠️ ولا زرَّ في رسالةٍ يأمر بالتوقيع — «افتح الاتفاقيّة» لا «اقرأ ووقّع»', () => {
+    const files = [...sources(join(root, 'src')), ...sources(join(root, 'server'))]
+    let seen = 0
+    const hits: string[] = []
+    for (const file of files) {
+      const src = readFileSync(file, 'utf8')
+      if (!src.includes("'cta'")) continue
+      for (const t of ctaLabelsOf(file, src)) {
+        seen += 1
+        if (SIGN_VERB.test(t.text)) hits.push(`${relative(root, file)}:${t.line} — ${t.text}`)
+      }
+    }
+    expect(seen, 'لم يُقرأ زرٌّ — فالحارسُ يقيس الفراغ').toBeGreaterThan(10)
+    expect(hits, 'زرٌّ يأمر بالتوقيع — والبديلُ «افتح الاتفاقيّة»').toEqual([])
   })
 
   /* وما يصل المدرّبَ فعلا يُقرأ كما يقرؤه هو: أوّلُ رسالةٍ تصله — عنوانُها ورأسُها

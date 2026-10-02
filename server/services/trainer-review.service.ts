@@ -3059,7 +3059,8 @@ export class TrainerReviewService {
         blocks: [
           ...lead,
           { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
-          { kind: 'cta', label: 'اقرأ العقدَ ووقّعه', href: args.url },
+          /* والزرُّ يدلّ ولا يأمر — «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع (#405) */
+          { kind: 'cta', label: 'افتح الاتفاقيّة', href: args.url },
           { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
           { kind: 'facts', rows: contractFactsRows(args.reference, contract.number) },
           { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
