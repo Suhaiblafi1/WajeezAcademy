@@ -86,7 +86,8 @@ describe('تكرارُ شعبةٍ لفصلٍ قادم', () => {
 
     expect(copy.status).toBe('draft')
     expect(copy.registrationOpen).toBe(false)
-    expect(copy.title).toBe('شعبةُ الأصل — نسخة')
+    /* والنسخةُ شعبةٌ جديدةٌ في دورتها، فتُرقَّم كغيرها (٢ أكتوبر ٢٠٢٦) */
+    expect(copy.title).toMatch(/ — شعبة [١-٩][٠-٩]*$/)
     expect(copy.daysOfWeek).toEqual(['tue', 'thu'])
     expect(Number(copy.price)).toBe(180)
 

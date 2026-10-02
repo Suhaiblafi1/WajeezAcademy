@@ -767,10 +767,9 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const body = z.object({
       items: z.array(z.object({ profileId: z.string().uuid(), courseId: z.string().min(2).max(64) })).min(1).max(300),
-      titleAr: z.string().trim().min(3).max(120),
       startsAt: z.coerce.date().nullish(),
     }).parse(req.body)
-    return offers.prepCohorts(body.items, { titleAr: body.titleAr, startsAt: body.startsAt ?? null }, req.auth!.userId)
+    return offers.prepCohorts(body.items, { startsAt: body.startsAt ?? null }, req.auth!.userId)
   })
 
   app.post('/api/admin/trainer-offers/:offerId/withdraw', {

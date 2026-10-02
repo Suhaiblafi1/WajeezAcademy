@@ -1141,7 +1141,7 @@ export default function CohortWorkspace() {
         <Panel as="section">
           <StageIntro stage="identity" />
           <div className="mt-5 grid gap-5">
-            <StaffField wide label="اسم الشعبة" hint="ما يراه المتعلّم في الكتالوج وفي شهادته. صِفِ الدفعةَ لا الدورة — «الدفعة الثالثة · مساء الأحد».">
+            <StaffField wide label="اسم الشعبة" hint="ما يراه المتعلّم في الكتالوج وفي شهادته. يأتيك باسم الدورة ورقمِ الشعبة — «اسمُ الدورة — شعبة ١» — ولك أن تزيد عليه ما يميّزها: «… — شعبة ١ · مساء الأحد».">
               <input value={identity.title} onChange={(e) => setIdentity({ title: e.target.value })} disabled={locked} className={controlCls} />
             </StaffField>
             {/* وصفُ الشعبة موضعُه هنا لا في «المحاور»: هو تعريفُ الشعبة

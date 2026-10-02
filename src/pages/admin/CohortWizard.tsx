@@ -19,7 +19,6 @@ import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import { fmtDateWith } from "@/application/text/format-ar";
 export interface WizardCourse {
   id: string;
   title: string;
@@ -105,12 +104,23 @@ export default function CohortWizard({
     return courses.filter((c) => c.title.includes(q) || c.id.includes(q.toUpperCase())).slice(0, 60);
   }, [courses, courseFilter]);
 
-  /* العنوانُ يُقترَح من الدورة والشهر — ويبقى قابلا للتغيير */
+  /* العنوانُ يُقترَح «اسمُ الدورة — شعبة N» من الخادم — فهو وحدَه يعرف شعبَ
+     الدورة كلَّها ورقمَ التالية (٢ أكتوبر ٢٠٢٦). ويبقى قابلا للتغيير. */
+  /* وما اقترحناه يُستبدَل إن تغيّرت الدورة — وما كتبه بيده لا يُمسّ */
+  const [suggested, setSuggested] = useState("");
   useEffect(() => {
-    if (!course || title) return;
-    const month = fmtDateWith(from, { month: "long", year: "numeric" });
-    setTitle(`${course.title} — ${month}`);
-  }, [course, from, title]);
+    if (!course) return;
+    let live = true;
+    apiGet<{ title: string }>(`/api/admin/cohorts/next-title?courseId=${encodeURIComponent(course.id)}`)
+      .then((r) => {
+        if (!live) return;
+        setTitle((t) => (!t.trim() || t === suggested ? r.title : t));
+        setSuggested(r.title);
+      })
+      .catch(() => undefined);
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- يُسأل الخادمُ عند تغيّر الدورة وحدَه
+  }, [course]);
 
   /* معاينةُ الجلسات: حسابٌ محضٌ من المُدخَلات — لا تأثيرَ ولا نداءَ شبكة.
 

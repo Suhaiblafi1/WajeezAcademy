@@ -531,11 +531,9 @@ export class TrainerOfferService {
   /** ينشئ لكلّ مختارٍ شعبةً مسوّدةً ويعرضها عليه — ويقول ما وقع لكلّ واحد */
   async prepCohorts(
     items: { profileId: string; courseId: string }[],
-    opts: { titleAr: string; startsAt?: Date | null },
+    opts: { startsAt?: Date | null },
     actorId: string,
   ) {
-    const title = opts.titleAr.trim()
-    if (title.length < 3) throw new AuthError('no_title', 'اكتب اسمَ الشعبة — ثلاثةُ أحرفٍ على الأقلّ', 400)
     const candidates = await this.prepCandidates()
     const eligible = new Set(candidates.flatMap((p) => p.courses.map((c) => `${p.profileId}|${c.courseId}`)))
     const seen = new Set<string>()
@@ -552,8 +550,9 @@ export class TrainerOfferService {
       }
       let cohortId: string | null = null
       try {
+        /* بلا اسمٍ: تُسمّى «اسمُ الدورة — شعبة N» (٢ أكتوبر ٢٠٢٦) */
         const cohort = await cohorts.create(actorId, {
-          courseId: it.courseId, title, ...(opts.startsAt ? { startsAt: opts.startsAt } : {}),
+          courseId: it.courseId, ...(opts.startsAt ? { startsAt: opts.startsAt } : {}),
         })
         cohortId = cohort.id
         const offer = await this.offer({ profileId: it.profileId, courseId: it.courseId, cohortId }, actorId)

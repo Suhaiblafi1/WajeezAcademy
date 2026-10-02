@@ -305,7 +305,7 @@ export async function openAllCohorts(
     const cohort = await prisma.cohort.create({
       data: {
         /* مسوّدةٌ حتّى تستوفي شروطَها — والفتحُ أدناه بالبوّابة نفسِها */
-        courseId: c.id, title: `${titleAr} — الدفعة الأولى`, status: 'draft', startsAt,
+        courseId: c.id, title: await service.nextTitle(c.id), status: 'draft', startsAt,
         daysOfWeek: slot.daysOfWeek, startTime: slot.startTime, timezone: 'Asia/Amman',
         capacity, price, currency, language: 'العربية', deliveryMode: 'remote',
         registrationOpen: false, financialReady: true,

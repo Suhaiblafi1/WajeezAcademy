@@ -25,6 +25,7 @@ import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
 import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { SEATED, SessionInviteService } from './session-invite.service'
+import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -89,8 +90,24 @@ export class CohortService {
     }))
   }
 
+  /** الاسمُ الافتراضيُّ للشعبة التالية في الدورة: «اسمُ الدورة — شعبة ١».
+      العلّةُ في `src/application/learning/cohort-title.ts`. */
+  async nextTitle(courseId: string): Promise<string> {
+    const [course, titles] = await Promise.all([
+      this.prisma.course.findUnique({
+        where: { id: courseId },
+        select: { currentVersion: true, versions: { orderBy: { version: 'desc' }, select: { version: true, titleAr: true } } },
+      }),
+      this.prisma.cohort.findMany({ where: { courseId }, select: { title: true } }),
+    ])
+    const titleAr = course?.versions.find((v) => v.version === course.currentVersion)?.titleAr
+      ?? course?.versions[0]?.titleAr ?? courseId
+    return cohortTitleAr(titleAr, nextCohortNumber(titles.map((t) => t.title)))
+  }
+
   async create(actorId: string, input: {
-    courseId: string; pathwayId?: string; title: string; termId?: string | null
+    /** وبلا اسمٍ يُسمّى «اسمُ الدورة — شعبة N» (٢ أكتوبر ٢٠٢٦) */
+    courseId: string; pathwayId?: string; title?: string | null; termId?: string | null
     startsAt?: Date; endsAt?: Date; daysOfWeek?: string[]; startTime?: string; timezone?: string
     capacity?: number; price?: number; currency?: string; language?: string
     deliveryMode?: 'remote' | 'in_person' | 'hybrid'
@@ -107,7 +124,8 @@ export class CohortService {
     const currency = input.currency ?? course.listCurrency ?? LEDGER_CURRENCY
     const cohort = await this.prisma.cohort.create({
       data: {
-        courseId: input.courseId, pathwayId: input.pathwayId, title: input.title,
+        courseId: input.courseId, pathwayId: input.pathwayId,
+        title: input.title?.trim() || await this.nextTitle(input.courseId),
         /* والفصلُ يُكتب عند الإنشاء متى عُرف — وشعبةٌ بلا فصلٍ «لم تُفتَح بعد» */
         termId: input.termId ?? null,
         startsAt: input.startsAt, endsAt: input.endsAt,
@@ -117,7 +135,7 @@ export class CohortService {
         financialReady: price !== undefined && price !== null,
       },
     })
-    await recordAudit(this.prisma, { actorId, action: 'cohort.create', entityType: 'cohort', entityId: cohort.id, meta: { title: input.title } })
+    await recordAudit(this.prisma, { actorId, action: 'cohort.create', entityType: 'cohort', entityId: cohort.id, meta: { title: cohort.title } })
     return cohort
   }
 
@@ -1380,7 +1398,8 @@ export class CohortService {
     const created = await this.prisma.cohort.create({
       data: {
         courseId: source.courseId, pathwayId: source.pathwayId,
-        title: input.title?.trim() || `${source.title} — نسخة`,
+        /* والنسخةُ شعبةٌ جديدةٌ في الدورة نفسِها، فتُرقَّم كغيرها (٢ أكتوبر ٢٠٢٦) */
+        title: input.title?.trim() || await this.nextTitle(source.courseId),
         status: 'draft', registrationOpen: false, financialReady: false,
         daysOfWeek: source.daysOfWeek, startTime: source.startTime, timezone: source.timezone,
         capacity: source.capacity, price: source.price, currency: source.currency,
