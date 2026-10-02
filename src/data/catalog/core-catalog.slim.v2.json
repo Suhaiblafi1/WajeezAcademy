@@ -4550,6 +4550,114 @@
         "تصميم المواد التعليمية",
         "تصميم التقييم"
       ]
+    },
+    {
+      "course_id": "C-COMX-111",
+      "pathway_id": "PW-COM-001",
+      "sequence": 9,
+      "title_ar": "دورة الإنجليزية العامة، المستوى الأول: من الجملة المحفوظة إلى حديثٍ يوميٍّ يُفهَم",
+      "subtitle_ar": "تعريفٌ بنفسك ويومِك في دقيقة · رسالةٌ قصيرةٌ واضحة · فهمُ حوارٍ يوميٍّ مسموع",
+      "level_ar": "تأسيسي",
+      "total_hours": 24,
+      "skill_slugs": [
+        "english_for_work",
+        "active_listening",
+        "clear_expression",
+        "self_directed_learning"
+      ],
+      "skill_ids": [
+        "SK-COM-004",
+        "SK-COM-001",
+        "SK-COM-002",
+        "SK-LEARN-002"
+      ],
+      "skill_names_ar": [
+        "الإنجليزية للعمل والتعلم",
+        "الإصغاء الفعال",
+        "التعبير الواضح",
+        "التعلم الذاتي"
+      ]
+    },
+    {
+      "course_id": "C-COMX-112",
+      "pathway_id": "PW-COM-001",
+      "sequence": 10,
+      "title_ar": "دورة الإنجليزية العامة، المستوى الثاني: من الموقف المألوف إلى رأيٍ تشرحه وتدافع عنه",
+      "subtitle_ar": "حكايةُ تجربةٍ بالأزمنة الصحيحة · رأيٌ مبرَّرٌ في دقيقتين · بريدٌ شبهُ رسميٍّ واضح",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 24,
+      "skill_slugs": [
+        "english_for_work",
+        "clear_expression",
+        "active_listening",
+        "reading_strategies"
+      ],
+      "skill_ids": [
+        "SK-COM-004",
+        "SK-COM-002",
+        "SK-COM-001",
+        "SK-LEARN-003"
+      ],
+      "skill_names_ar": [
+        "الإنجليزية للعمل والتعلم",
+        "التعبير الواضح",
+        "الإصغاء الفعال",
+        "استراتيجيات القراءة"
+      ]
+    },
+    {
+      "course_id": "C-COMX-113",
+      "pathway_id": "PW-COM-001",
+      "sequence": 11,
+      "title_ar": "دورة التحضير لاختباري IELTS وTOEFL، المستوى الأول: فهم الاختبار وبناء مهاراته الأربع",
+      "subtitle_ar": "خريطةُ الاختبارين ودرجاتُهما · استراتيجيّةٌ لكلّ نوعِ سؤال · اختبارٌ تجريبيٌّ يقيس أين تقف",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 24,
+      "skill_slugs": [
+        "english_for_work",
+        "reading_strategies",
+        "note_taking",
+        "time_management"
+      ],
+      "skill_ids": [
+        "SK-COM-004",
+        "SK-LEARN-003",
+        "SK-LEARN-004",
+        "SK-WELL-002"
+      ],
+      "skill_names_ar": [
+        "الإنجليزية للعمل والتعلم",
+        "استراتيجيات القراءة",
+        "تدوين الملاحظات",
+        "إدارة الوقت"
+      ]
+    },
+    {
+      "course_id": "C-COMX-114",
+      "pathway_id": "PW-COM-001",
+      "sequence": 12,
+      "title_ar": "دورة التحضير لاختباري IELTS وTOEFL، المستوى الثاني: الكتابة والمحادثة بمعايير الدرجات العليا",
+      "subtitle_ar": "معاييرُ الدرجات تُقرأ وتُطبَّق · مقالُ المناقشة والمهامُّ المتكاملة · اختبارٌ تجريبيٌّ وتحليلُ أخطاء",
+      "level_ar": "تطبيقي",
+      "total_hours": 24,
+      "skill_slugs": [
+        "english_for_work",
+        "critical_thinking",
+        "note_taking",
+        "learning_plan"
+      ],
+      "skill_ids": [
+        "SK-COM-004",
+        "SK-COG-002",
+        "SK-LEARN-004",
+        "SK-LEARN-001"
+      ],
+      "skill_names_ar": [
+        "الإنجليزية للعمل والتعلم",
+        "التفكير النقدي",
+        "تدوين الملاحظات",
+        "بناء خطة تعلم"
+      ]
     }
   ],
   "skill_extensions": [
