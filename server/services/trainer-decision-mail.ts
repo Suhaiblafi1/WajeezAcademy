@@ -1485,19 +1485,24 @@ export interface ContractLapsedMailInput {
   contractNumber?: string | null
 }
 
+/* ═══ ولا «عرضك» ولا «سقط» في رسالةٍ تصل مدرّبا (٢ أكتوبر ٢٠٢٦) ═══
+
+   أمرُ صاحب المنصّة: «عرضك» غيرُ مناسبةٍ في الثقافة الأردنيّة، ولا تُساق
+   المبرّراتُ وما ينصّ عليه العقد. فمن انتهت مدّتُه يُقال له ذلك كما يُقال
+   «انتهى التسجيلُ لهذا الفصل» — ونعود إليه في الفصول القادمة باتفاقٍ جديد. */
 export function contractLapsedMail(input: ContractLapsedMailInput): DecisionMail {
   const when = fmtDateWith(input.expiredAt, {
     weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: ACADEMY_ZONE,
   })
   return {
-    subject: `انقضت مهلةُ عرضك — ${input.title} (${input.reference})`,
+    subject: `انتهت مدّةُ توقيع «${input.title}» لهذا الفصل`,
     doc: {
       greetingName: input.fullName,
-      preheader: `انقضت مهلةُ توقيع «${input.title}» ${when} بتوقيت عمّان.`,
-      heading: 'انقضت مهلةُ عرضك',
+      preheader: 'انتهت مدّةُ التوقيع لهذا الفصل — ونعود إليك في الفصول القادمة باتفاقٍ جديد.',
+      heading: 'انتهت مدّةُ التوقيع لهذا الفصل',
       blocks: [
-        { kind: 'p', text: `طلبتَ رابطا جديدا لتوقيع «${input.title}». وقد أُرسل إليك به تذكيرٌ أخير، وانقضت مهلتُه ${when} بتوقيت عمّان — فسقط العرضُ ولم يعد يُوقَّع، كما ينصّ عقدُك.` },
-        { kind: 'callout', text: 'فإن كنتَ ما زلتَ تريده فردَّ على هذه الرسالة. وللأكاديمية أن تجدّد العرضَ ورابطَه بإخطارٍ جديد.' },
+        { kind: 'p', text: `شكرا لتواصلك. انتهت مدّةُ توقيع «${input.title}» ${when} بتوقيت عمّان.` },
+        { kind: 'callout', text: 'ونسعد بالعمل معك — فنعود إليك في الفصول القادمة باتفاقٍ جديد. وإن أردتَ أن نتواصل قبل ذلك فردَّ على هذه الرسالة.' },
         { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
       ],
     },
@@ -1528,17 +1533,27 @@ export function contractFinalReminderMail(input: ContractFinalReminderMailInput)
   const until = fmtDateWith(input.expiresAt, {
     weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', timeZone: ACADEMY_ZONE,
   })
+  /* ═══ بلا «عرضك» وبلا «سقط… كما ينصّ عقدُك» (٢ أكتوبر ٢٠٢٦) ═══
+
+     أمرُ صاحب المنصّة: الكلمةُ غيرُ مناسبةٍ في الثقافة الأردنيّة، ولا تُساق
+     المبرّراتُ ولا ما يقع بعد الأجل تفصيلا. يُقال إلى متى، ثمّ إنّا نعود إليه
+     في الفصول القادمة باتفاقٍ جديد — كمن يقول «ينتهي التسجيلُ لهذا الفصل»،
+     لا تهديدا. */
   return {
-    subject: `تذكيرٌ أخير: عرضُك صالحٌ ${windowAr} — ${input.title} (${input.reference})`,
+    subject: `تذكيرٌ أخير: «${input.title}» بانتظار توقيعك`,
     doc: {
       greetingName: input.fullName,
-      preheader: `آخرُ تذكيرٍ بتوقيع «${input.title}» — والعرضُ صالحٌ حتّى ${until} بتوقيت عمّان.`,
-      heading: 'تذكيرٌ أخيرٌ بتوقيع عرضك',
+      preheader: `آخرُ تذكيرٍ بتوقيع «${input.title}» — والتوقيعُ متاحٌ حتّى ${until} بتوقيت عمّان.`,
+      heading: 'تذكيرٌ أخيرٌ بتوقيع الاتفاقيّة التدريبيّة',
       blocks: [
-        { kind: 'p', text: `ما زال «${input.title}» بانتظار توقيعك، وهذا آخرُ تذكيرٍ نرسله به.` },
-        { kind: 'callout', text: `العرضُ صالحٌ ${windowAr}: حتّى ${until} بتوقيت عمّان. فإن لم يُوقَّع حتّى ذلك سقط العرضُ وتوقّف رابطُه، كما ينصّ عقدُك.` },
-        { kind: 'cta', label: 'اقرأ ووقّع', href: input.url },
-        { kind: 'p', text: 'وهذا رابطٌ جديد، والرابطُ السابقُ لم يعد يعمل. ولك أن تعتذر عن العرض من الصفحة نفسِها بلا حرج.' },
+        { kind: 'p', text: `ما زالت «${input.title}» بانتظار توقيعك، وهذا آخرُ تذكيرٍ نرسله بها.` },
+        { kind: 'callout', text: `التوقيعُ متاحٌ ${windowAr}: حتّى ${until} بتوقيت عمّان. وإن لم يتيسّر لك في هذا الفصل فلا بأس — نعود إليك في الفصول القادمة باتفاقٍ جديد.` },
+        /* ═══ والزرُّ يدلّ ولا يأمر (٢ أكتوبر ٢٠٢٦) ═══
+           «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع. وأمرُ صاحب المنصّة: يُقال إنّ
+           الرابطَ يوصله إلى الاتفاقيّة، فقط. */
+        { kind: 'p', text: 'والرابطُ أدناه يوصلك إلى الاتفاقيّة.' },
+        { kind: 'cta', label: 'افتح الاتفاقيّة', href: input.url },
+        { kind: 'note', text: 'وهذا الرابطُ يحلّ محلَّ ما سبقه.' },
         { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
       ],
     },
