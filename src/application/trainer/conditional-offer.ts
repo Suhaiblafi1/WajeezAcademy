@@ -213,7 +213,7 @@ export function extendProblemAr(f: ConditionFacts): string | null {
     return `أُنفقت مرّاتُ التمديد (${MAX_EXTENSIONS} × ${EXTENSION_DAYS} يومين) ولا تُمنح ثالثة — وبابُه الآن التأجيلُ إلى الموسم القادم.`
   }
   if (!asDate(f.conditionDeadlineAt)) {
-    return 'لا مهلةَ لهذا العرض — وهي تبدأ بتوقيعه.'
+    return 'لا مهلةَ لهذه الاتفاقيّة — وهي تبدأ بتوقيعها.'
   }
   if (asDate(f.conditionMetAt)) return 'اعتُمدت موادُّه — لا مهلةَ تُمدَّد.'
   return null
@@ -248,8 +248,8 @@ export function canAskExtension(f: ConditionFacts): boolean {
    بشرط» لأنّ الظهورَ العامَّ يحكمه `publishApprovedAt` مستقلّا، فما يميّز
    الطورَ حقّا أنّه **لا تدريبَ فيه ولا أتعاب**. */
 export const CONDITION_PHASE_LABELS_AR: Record<ConditionPhase, string> = {
-  none: 'عرضٌ مشروط — بلا مهلة',
-  running: 'عرضٌ مشروط — قيد التجهيز',
+  none: 'اتفاقيّةٌ مشروطة — بلا مهلة',
+  running: 'اتفاقيّةٌ مشروطة — قيد التجهيز',
   under_review: 'موادُّه قيد التقييم',
   met: 'اكتمل الشرط',
   lapsed: 'لم يستوفِ الشروط بعد',
@@ -261,12 +261,12 @@ export function conditionLineAr(f: ConditionFacts): string {
   if (phase === 'running') {
     const left = daysLeft(f)!
     const days = left === 1 ? 'يومٌ واحد' : left === 2 ? 'يومان' : `${left} أيّام`
-    return `عرضٌ مشروط — أمامك ${days} لرفع موادّك`
+    return `اتفاقيّةٌ مشروطة — أمامك ${days} لرفع موادّك`
   }
   if (phase === 'under_review') return 'موادُّك قيد التقييم — والمهلةُ مجمَّدةٌ حتّى يصلك جوابُنا'
   if (phase === 'lapsed') return 'انقضت مهلتُك ولم تكتمل موادُّك — أجِّلْ إلى الموسم القادم، أو اطلب حذفَ حسابك'
   if (phase === 'met') return 'اعتُمدت موادُّك — واكتمل الشرط'
-  return 'عرضٌ مشروط — ويصلك موعدُ جلسة التهيئة ومنها تبدأ مهلتُك'
+  return 'اتفاقيّةٌ مشروطة — ويصلك موعدُ جلسة التهيئة ومنها تبدأ مهلتُك'
 }
 
 /* ═══ متى يُشترَط العقدُ أصلا — قرارُ ٢٥ سبتمبر ٢٠٢٦ ═══

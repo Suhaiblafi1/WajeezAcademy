@@ -4007,7 +4007,7 @@ export class TrainerReviewService {
        التعديل يوقف التوقيعَ بها وحدَها، في كلّ فعلٍ يُفعَل من الرابط. */
     if (!canRespondToContract(c.status)) {
       if (isAmendmentRequested(c.status)) {
-        throw new AuthError('amendment_pending', 'طلبُك بالتعديل عندنا — ننظر فيه ونعيد إليك العرضَ مصحَّحا أو نجيبك', 409)
+        throw new AuthError('amendment_pending', 'طلبُك بالتعديل عندنا — ننظر فيه ونعيد إليك الاتفاقيّةَ مصحَّحةً أو نجيبك', 409)
       }
       throw new AuthError('bad_state', 'هذا العقدُ لم يعد بانتظار التوقيع', 409)
     }

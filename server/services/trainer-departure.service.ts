@@ -218,7 +218,7 @@ export class TrainerDepartureService {
             greetingName: profile.application.fullName,
             heading: terminatedLive > 0
               ? 'سُجّل رحيلُك، وانتهى التعاقد'
-              : terminated > 0 ? 'سُجّل رحيلُك، وانتهى العرض' : 'سُجّل رحيلُك',
+              : terminated > 0 ? 'سُجّل رحيلُك، وانتهت الاتفاقيّة' : 'سُجّل رحيلُك',
             blocks: [
               {
                 kind: 'p',
@@ -238,8 +238,8 @@ export class TrainerDepartureService {
                 : terminated > 0
                   ? [{
                     kind: 'p' as const,
-                    text: 'وبه انتهى العرضُ الذي وقّعتَه — ولم نكن وقّعناه من جهتنا بعد، فلم يصر عقدا '
-                      + 'نافذا بيننا، ولا يُلزم أحدا. ونسختُك منه ودليلُ توقيعك محفوظان.',
+                    text: 'وبه انتهت الاتفاقيّةُ التي وقّعتَها — ولم نكن وقّعناها من جهتنا بعد، فلم تصر عقدا '
+                      + 'نافذا بيننا، ولا تُلزم أحدا. ونسختُك منها ودليلُ توقيعك محفوظان.',
                   }]
                   : []),
               ...(withdrawn > 0

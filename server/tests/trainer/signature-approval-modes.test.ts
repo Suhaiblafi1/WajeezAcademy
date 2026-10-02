@@ -388,6 +388,6 @@ describe('⑥ وإنهاءُ عرضٍ لم نوقّعه يُسمّى باسمه'
     const mail = outbox.find((m) => m.to === t.email)
     expect(mail, 'لم يصله أنّ العرضَ انتهى').toBeDefined()
     expect(mail!.text, 'قيل له إنّ عقدا انتهى ولم نوقّعه').not.toContain('انتهى العقدُ بيننا')
-    expect(mail!.text).toContain('انتهى العرضُ الذي وقّعتَه')
+    expect(mail!.text).toContain('انتهت الاتفاقيّةُ التي وقّعتَها')
   })
 })
