@@ -46,7 +46,8 @@
    من يتحكّم بكلّ شيء.. اللقاءاتُ بيده ضمن فترة الشعبة نفسِها». */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Award, CalendarClock, Check, ChevronDown, ClipboardCheck, Loader2, ServerOff, X } from "lucide-react";
+import { Link } from "react-router";
+import { Award, CalendarClock, Check, ChevronDown, ClipboardCheck, Loader2, PencilLine, ServerOff, Users, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import CourseMaterialsPanel, { type MaterialsRow } from "./CourseMaterialsPanel";
 import EmptyState from "@/components/EmptyState";
@@ -292,6 +293,27 @@ export default function TrainerQualifications() {
         )
       ) : (
         <>
+          {/* ═══ أين يُعدَّل محتوى الدورة بعد اعتمادها (٢ أكتوبر ٢٠٢٦) ═══
+
+              بلاغُ صاحب المنصّة: «المدرّبُ يقول لا يستطيع تعديلَ دوراته من
+              مؤهّلاتي». وكان ذلك بالتصميم ولا يقوله شيء: المحرّرُ يغيب حين
+              تُعتمَد الموادّ، وجملةُ الخادم التي تدلّ على مساحة الشعبة لا تُرى
+              لأنّ الزرَّ الذي يستدعيها غاب قبلها.
+
+              وقرارُه: لا موضعَ ثانٍ للتعبئة — «المدرّبُ يعبّئ في شعبي، وهناك
+              يتمّم الأمرَ قبل موافقة الأكاديميّة». فهذا السطرُ يقول ذلك ويدلّ
+              عليه، ولا يفتح محرّرا هنا. */}
+          <Inset tone="accent" className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5">
+            <p className="flex min-w-0 flex-1 items-start gap-2 text-read leading-7">
+              <PencilLine className="mt-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>
+                هذه القائمةُ للقراءة والقرار. ومحتوى الدورة بعد اعتمادها — محاورُها ومواعيدُها وكرّاستُها
+                ولقاءاتُها ومهامُّها ومصادرُها — تعبّئه في «شعبي» لكلّ شعبةٍ أُسندت إليك، ثمّ تُرسله
+                لاعتمادنا.
+              </span>
+            </p>
+            <Button as={Link} to="/trainer/board" size="sm" icon={Users}>افتح «شعبي»</Button>
+          </Inset>
           <TabBar
             ariaLabel="حالُ مؤهّلاتي"
             className="mb-4"
