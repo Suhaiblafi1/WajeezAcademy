@@ -515,7 +515,7 @@ const CONDITIONAL_ACK_APPROVAL_SEALS: ContractAck = {
    حُفظ — ولا موضعَ رابعٌ يُخطئ. */
 export function contractAcks(conditional: boolean, bodyVersion?: string | null): readonly ContractAck[] {
   if (!conditional) return CONTRACT_ACKS
-  const sealsOnApproval = signatureApprovalOf({ gatesActivation: true, bodyVersion: bodyVersion ?? null }) === 'resign_first'
+  const sealsOnApproval = signatureApprovalOf({ gatesActivation: true, bodyVersion: bodyVersion ?? null }) === 'sealed_by_text'
   return [...CONTRACT_ACKS, sealsOnApproval ? CONDITIONAL_ACK_APPROVAL_SEALS : CONDITIONAL_ACK]
 }
 

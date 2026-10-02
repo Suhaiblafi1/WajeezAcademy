@@ -33,6 +33,14 @@ const bare = (p: string) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\
 
 const SCREEN = bare('src/pages/admin/TrainerContracts.tsx')
 
+/** كتلةٌ من رأسها إلى الحدّ الذي يليه — فارغةٌ إن لم يوجد الرأس */
+function block(src: string, head: string, end: string): string {
+  const at = src.indexOf(head)
+  if (at < 0) return ''
+  const stop = src.indexOf(end, at + head.length)
+  return src.slice(at, stop < 0 ? undefined : stop)
+}
+
 /** كتلةُ زرٍّ بعينها — من `onClick` السابق لنداء المسار إلى إغلاق النداء.
  *
  *  ولا نافذةٌ بعددٍ من الأحرف: صفُّ الأفعال يحمل أزرارا متجاورةً تنادي
@@ -99,29 +107,31 @@ describe('الزرُّ يقول ما سيفعل', () => {
     expect(SCREEN, 'عاد الاسمُ الذي أخفى أنّ الضغطَ توقيعٌ منّا').not.toContain('اعتمِدْ وفعِّلْ')
   })
 
-  /* وعرضٌ وُقّع على v12–v23 لا زرَّ اعتمادٍ له: نصُّه يجعل الاعتمادَ توقيعا */
-  it('وما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا يُقال لماذا مكانَ الزرّ', () => {
-    expect(SCREEN, 'لا يُسأل الحكمُ عن الصفّ قبل أن يُعرض الزرّ')
-      .toContain('signatureApprovalOf(c) === "resign_first"')
-    expect(SCREEN, 'لا يُقال لماذا — بحرف الخادم').toContain('{RESIGN_FIRST_AR}')
-  })
 
   /* ═══ والسطرُ فوق الزرّ لا يَعِد بنفاذ (١ أكتوبر ٢٠٢٦) ═══
      ظهر في لقطة الشاشة بعد تغيير الزرّ: «طابِقِ الاسمَ… — فبالاعتماد ينفذ
      العقدُ» على عرضٍ مشروطٍ لا نوقّعه إلّا باعتماد دوراته. فالزرُّ صدق والسطرُ
      فوقه بقي على #308. ويُقاس فرعا الحكم كلٌّ بحرفه، لا ورودُ كلمةٍ في الملفّ:
      الملفُّ يقول «ينفذ» صادقا في فرع الخَتم. */
+  /* والسطرُ يُقرأ من سجلٍّ بحكم الخادم (`APPROVAL_LINE_AR`)، مقفلٍ بالنوع: لكلّ
+     حكمٍ جملتُه (٢ أكتوبر ٢٠٢٦ صار الحكمُ ثلاثا). فيُقاس أنّ السطرَ يسأله، ثمّ
+     كلُّ جملةٍ بحرفها. */
   it('والسطرُ فوق الزرّ يقول ما يقع بحكم الخادم — والعرضُ المشروطُ لا ينفذ باعتماد توقيعه', () => {
     const at = SCREEN.indexOf('طابِقِ الاسمَ')
     expect(at, 'لم يُقرأ سطرُ «طابِقِ الاسمَ» — فالحارسُ يقيس الفراغ').toBeGreaterThan(0)
     const line = SCREEN.slice(at, SCREEN.indexOf('</p>', at))
-    const m = /signatureApprovalOf\(c\) === "seal"\s*\?\s*"([^"]*)"\s*:\s*"([^"]*)"/.exec(line)
-    expect(m, 'السطرُ لا يسأل حكمَ الخادم — فيقول للبابَين جملةً واحدة').not.toBeNull()
-    const [, seal, approve] = m!
-    expect(line.slice(0, m!.index), 'وُعد بالنفاذ قبل أن يُسأل الحكم').not.toMatch(/ينفذ|نافذ|نفَذ/)
-    expect(approve, 'قال السطرُ إنّ العرضَ المشروطَ ينفذ باعتماد توقيعه').not.toMatch(/ينفذ|نافذ|نفَذ|نوقّع عن/)
-    expect(approve, 'لم يُقل متى نوقّع').toContain('ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه')
-    expect(seal, 'لم يُقل إنّ اعتمادَ غيرِ المشروط توقيعٌ منّا').toContain('نوقّع عن الأكاديميّة')
+    expect(line, 'السطرُ لا يسأل حكمَ الخادم — فيقول للأبواب جملةً واحدة')
+      .toContain('{APPROVAL_LINE_AR[signatureApprovalOf(c)]}')
+    expect(line.slice(0, line.indexOf('{APPROVAL_LINE_AR')), 'وُعد بالنفاذ قبل أن يُسأل الحكم')
+      .not.toMatch(/ينفذ|نافذ|نفَذ/)
+    const table = /const APPROVAL_LINE_AR: Record<SignatureApproval, string> = \{([\s\S]*?)\};/.exec(SCREEN)
+    expect(table, 'لم يُقرأ سجلُّ السطر').not.toBeNull()
+    const lines = Object.fromEntries([...table![1].matchAll(/(\w+): "([^"]*)"/g)].map((m) => [m[1], m[2]]))
+    expect(Object.keys(lines).sort()).toEqual(['approve_only', 'seal', 'sealed_by_text'])
+    expect(lines.approve_only, 'قال السطرُ إنّ العرضَ المشروطَ ينفذ باعتماد توقيعه').not.toMatch(/ينفذ|نافذ|نفَذ|نوقّع عن/)
+    expect(lines.approve_only, 'لم يُقل متى نوقّع').toContain('ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه')
+    expect(lines.seal, 'لم يُقل إنّ اعتمادَ غيرِ المشروط توقيعٌ منّا').toContain('نوقّع عن الأكاديميّة')
+    expect(lines.sealed_by_text, 'لم يُعرض الخياران لمن وقّع نصّا سابقا').toMatch(/كما وقّعه[\s\S]*للتوقيع على النصّ الحاضر/)
   })
 
   /* وشاشةُ خطوات التجهيز تعتمد التوقيعَ من بابٍ ثانٍ — وكانت تقول «نفَذ العقدُ»
@@ -142,5 +152,48 @@ describe('الزرُّ يقول ما سيفعل', () => {
        وحدَه. وشاشةٌ تقول «وُقّع» من عندها تقولها على ردٍّ لم تقرأه. */
     expect(SEAL, 'الشاشةُ تقول ما وقع من عندها').toContain('r.sealed')
     expect(SEAL, 'لا يُقال إنّا لم نوقّع العرض').toContain('ولم نوقّع العرض: نوقّعه حين تعتمد دوراتِه')
+  })
+})
+
+/* ═══ وقّع نصّا سابقا: الفرقُ والخياراتُ — والقرارُ للمعتمِد (٢ أكتوبر ٢٠٢٦) ═══
+
+   كان الصندوقُ يقول «لا يُعتمَد بنصّه… فأعِدْه للتوقيع»، فلا يبقى إلّا بابٌ
+   واحد. فقال صاحبُ المنصّة: «Do not force me to do any action. Do always give
+   me options and tell me what are the differences». فيُقاس هنا على البنية:
+   أنّ الفرقَ يُحسب من سجلّ التغييرات بإصدار الصفّ، وأنّ الخياراتِ الثلاثةَ تُعرض
+   بأثرها، وأنّ «اعتمِدْه كما وقّعه» يصل الخادمَ صريحا ولا يسقط في الطريق. */
+describe('وقّع نصّا سابقا: الفرقُ والخياراتُ — والقرارُ للمعتمِد', () => {
+  const BOX = block(SCREEN, 'function SignedEarlierText(', '\nfunction ')
+  const at = SCREEN.indexOf('signatureApprovalOf(c) === "sealed_by_text"')
+  const BRANCH = at < 0 ? '' : SCREEN.slice(at, SCREEN.indexOf('</>', at))
+
+  it('الكتلتان مقروءتان — وإلّا فالحارسُ يقيس الفراغ', () => {
+    expect(BOX, 'لم يُقرأ صندوقُ النصّ السابق').not.toBe('')
+    expect(BRANCH, 'لا يُسأل الحكمُ عن الصفّ قبل أن تُعرض الخيارات').not.toBe('')
+  })
+
+  it('⚠️ يُعرض الفرقُ بين ما وقّعه والنصّ الحاضر — من سجلّ التغييرات بإصدار صفّه', () => {
+    expect(BOX, 'لا يُحسب الفرقُ بإصدار ما وقّعه').toMatch(/changeGroupsBetween\(c\.bodyVersion, CONTRACT_BODY_VERSION/)
+    expect(BOX, 'حُسب الفرقُ ولم يُعرض بنودا').toContain('.itemsAr.map(')
+    expect(BRANCH, 'الصفُّ لا يعرض الفرقَ مكانَ الزرّ').toContain('<SignedEarlierText c={c} />')
+  })
+
+  it('⚠️ والخياراتُ الثلاثةُ تُعرض بأثرها — و«اعتمِدْه كما وقّعه» زرٌّ جنبَ أخويه', () => {
+    for (const label of ['«اعتمِدْه كما وقّعه»', '«حُدّث النصُّ — أعِدْه للتوقيع»', '«لم يطابق — ارفضْ»']) {
+      expect(BOX, `لم يُعرض خيار ${label}`).toContain(label)
+    }
+    expect(BOX, 'لم يُقل أثرُ الاعتماد كما وقّعه').toContain('{ACCEPT_AS_SIGNED_AR}')
+    const accept = /const ACCEPT_AS_SIGNED_AR = ([\s\S]*?);\n/.exec(SCREEN)?.[1] ?? ''
+    expect(accept, 'لم يُقل إنّه يوقّع الآن قبل اعتماد دوراته').toMatch(/فنوقّعه الآن[\s\S]*قبل اعتماد دوراته/)
+    expect(BRANCH, 'لا زرَّ يعتمده كما وقّعه').toContain('طابقتُ الاسمَ — اعتمِدْه كما وقّعه')
+    expect(BRANCH, 'الزرُّ لا يقول للصندوق إنّه اعتمادٌ كما وقّعه').toContain('asSigned: true')
+  })
+
+  it('⚠️ و«كما وقّعه» يصل الخادمَ صريحا — ولا يسقط بكتابة الملحوظة', () => {
+    expect(SEAL, 'لا يُرسَل الطلبُ الصريحُ فيردّه الخادم').toContain('asSigned ? { asSigned: true } : {}')
+    /* والملحوظةُ تُكتب في الصندوق نفسِه: لو بُني الصفُّ من جديدٍ بلا `asSigned`
+       لَسقط الطلبُ بأوّل حرفٍ وردّه الخادمُ بالخيارين بعد أن اختار المعتمِد. */
+    expect(SCREEN, 'كتابةُ الملحوظة تُسقط «كما وقّعه»').toContain('setSignOff({ ...signOff, noteAr: e.target.value })')
+    expect(SCREEN, 'زرُّ التأكيد لا يقول إنّه يوقّع الآن').toContain('"اعتمِدْه كما وقّعه — ونوقّعه الآن"')
   })
 })

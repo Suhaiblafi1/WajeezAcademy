@@ -46,7 +46,7 @@ import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft, extensionsLeft,
   materialsGateProblemAr,
   deadlineAfterPause, deadlineFrom, dueReminder, extendProblemAr, extendedDeadline,
-  offerGatesActivation, RESIGN_FIRST_AR, signatureApprovalOf,
+  offerGatesActivation, SEALED_BY_TEXT_AR, signatureApprovalOf,
 } from '../../src/application/trainer/conditional-offer'
 import {
   AMENDMENT_TEXT_MAX, CONTRACT_AMENDMENT_REQUESTED, canRespondToContract, contractBlockedAr, isAmendmentRequested,
@@ -4353,9 +4353,12 @@ export class TrainerReviewService {
        `completeConditionalOffer` يومَ تُعتمَد دوراتُه.
      · `seal` — العقدُ غيرُ المشروط: يُكتب لمن اعتُمدت موادُّه أصلا، فاعتمادُ
        توقيعه خَتمُه كما كان.
-     · `resign_first` — عرضٌ مشروطٌ وُقّع على متنٍ يقول إنّ اعتمادَ التوقيع
-       توقيعُنا (v12 إلى v23). فاعتمادُه بنصّه خَتمٌ لا نريده، واعتمادُه بلا
-       خَتمٍ خلافُ ما وقّعه — فيُعاد إليه للتوقيع على النصّ الحاضر أوّلا.
+     · `sealed_by_text` — عرضٌ مشروطٌ وُقّع على متنٍ يقول إنّ اعتمادَ التوقيع
+       توقيعُنا (v12 إلى v23). فلا يُعتمَد إلّا خاتما — واعتمادُه بلا خَتمٍ خلافُ
+       ما وقّعه. وكان يُردّ فيُعاد للتوقيع لا محالة؛ فصار المعتمِدُ يختار
+       (٢ أكتوبر ٢٠٢٦، قرارُ صاحب المنصّة: «Do not force me to do any action»):
+       يعتمده كما وقّعه بطلبٍ صريح (`asSigned`) فيُختَم الآن بنصّه، أو يعيده
+       للتوقيع على النصّ الحاضر (`requestResign`).
 
      وهو المعبرُ الوحيدُ من «وقّع» إلى «بوّابةٌ مفتوحة». */
 
@@ -4366,7 +4369,12 @@ export class TrainerReviewService {
       تربط حسابَه وتنشره وتختم عرضَه — وعلّةُ الفصل أدناه. */
   async approveSignature(
     contractId: string, actorId: string,
-    input: { noteAr?: string | null; actorRoles?: string[] } = {},
+    input: {
+      noteAr?: string | null; actorRoles?: string[]
+      /** «اعتمِدْه كما وقّعه» — لما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا منّا:
+          يقول المعتمِدُ إنّه يريد ذلك الخَتمَ بعينه، وقد قرأ قبله أنّه يوقّع الآن */
+      asSigned?: boolean
+    } = {},
   ) {
     const c = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -4419,8 +4427,17 @@ export class TrainerReviewService {
       throw new AuthError('self_decision', 'لا يجوز اعتمادُ عقدٍ مرتبطٍ ببريدك', 403)
     }
 
-    const mode = signatureApprovalOf(c)
-    if (mode === 'resign_first') throw new AuthError('resign_first', RESIGN_FIRST_AR, 409)
+    /* ═══ ونصٌّ يجعل الاعتمادَ توقيعا يُعتمَد كما وقّعه — بطلبٍ صريح (٢ أكتوبر ٢٠٢٦) ═══
+
+       ما وُقّع على v12–v23 لا يُعتمَد إلّا خاتما: ذلك نصُّه. فلا يُختَم بنقرةٍ لم
+       تقل إنّها تريده — صفحةٌ مفتوحةٌ من قبلُ، أو شاشةُ خطوات التجهيز — بل بالزرّ
+       الذي يقول قبله إنّه يوقّع الآن (`asSigned`). وبلاه يُردّ بالخيارين معا لا
+       بأحدهما: أن يعتمده كما وقّعه، أو يعيده للتوقيع على النصّ الحاضر. */
+    const rule = signatureApprovalOf(c)
+    if (rule === 'sealed_by_text' && input.asSigned !== true) {
+      throw new AuthError('sealed_by_text', SEALED_BY_TEXT_AR, 409)
+    }
+    const mode: 'seal' | 'approve_only' = rule === 'approve_only' ? 'approve_only' : 'seal'
 
     const note = (input.noteAr ?? '').trim().slice(0, 500)
     const approvedAt = new Date()
@@ -4453,6 +4470,9 @@ export class TrainerReviewService {
             bodyVersion: c.bodyVersion, gatesActivation: c.gatesActivation,
             academySignatoryName: ACADEMY_LEGAL.signatoryNameAr,
             noteAr: note.length > 0 ? note : null, countersignedAt: approvedAt,
+            /* ومن قرأ السجلَّ بعد سنةٍ يعرف لمَ خُتم عرضٌ مشروطٌ قبل اعتماد دوراته:
+               اعتُمد كما وقّعه، ونصُّه يجعل الاعتمادَ توقيعا */
+            acceptedAsSigned: rule === 'sealed_by_text',
           },
         })
         const moved = await this.supersedePriorLive(tx, { profileId: c.profileId, contractId: c.id, at: approvedAt })
@@ -4566,6 +4586,7 @@ export class TrainerReviewService {
         portalUrl: `${publicSiteUrl()}/trainer`,
         guideUrl: `${publicSiteUrl()}${TRAINER_GUIDE_PATH}`,
         gatesActivation: c.gatesActivation,
+        sealedNow: mode === 'seal',
         contractNumber: c.number,
       })
       await sendDirectEmail(this.prisma, {

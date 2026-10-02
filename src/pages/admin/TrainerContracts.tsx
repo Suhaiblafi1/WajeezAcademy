@@ -40,7 +40,7 @@ import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
    يقول إنّ هذه التسمياتَ لـ«صفّ الطابور» كذلك، ولم تكن تصله. */
 import {
   conditionPhase, materialsGateProblemAr, CONDITION_PHASE_LABELS_AR,
-  RESIGN_FIRST_AR, signatureApprovalOf,
+  signatureApprovalOf, type SignatureApproval,
 } from "@/application/trainer/conditional-offer";
 import type { Readiness } from "@/application/trainer/readiness";
 import {
@@ -174,6 +174,63 @@ interface Impact {
 const impactBites = (i: Impact) =>
   i.liveCohorts > 0 || i.enrolledLearners > 0 || i.openOffers > 0 || i.unpaidPayouts > 0;
 
+/* ═══ ما يقع باعتماد التوقيع — سطرٌ لكلّ حكمٍ من `signatureApprovalOf` ═══
+
+   والسجلُّ مقفلٌ بالنوع: حكمٌ جديدٌ بلا سطرٍ لا يُبنى، فلا يقع صفٌّ على جملةِ
+   حكمٍ غيرِه. وكان سطرا واحدا للبابَين: «فبالاعتماد ينفذ العقدُ» (١ أكتوبر ٢٠٢٦). */
+const APPROVAL_LINE_AR: Record<SignatureApproval, string> = {
+  seal: " فبالاعتماد نوقّع عن الأكاديميّة وينفذ العقدُ، ولا تُمسّ حالتُه فهو نشطٌ أصلا",
+  approve_only: " فبالاعتماد تُفتح بوّابتُه ويبدأ طورُ موادّه ومهلتُه، ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه",
+  sealed_by_text: " ثمّ اختر أدناه: أن تعتمده كما وقّعه، أو تعيده للتوقيع على النصّ الحاضر",
+};
+
+/** ما يقع بـ«اعتمِدْه كما وقّعه» — يُقال في الصندوق وفي نافذة التأكيد بحرفٍ واحد */
+const ACCEPT_AS_SIGNED_AR = "نصُّه يجعل اعتمادَ التوقيع توقيعا منّا: فنوقّعه الآن عن الأكاديميّة ويصير نافذا"
+  + " قبل اعتماد دوراته — وتُفتح بوّابتُه وتبدأ مهلةُ موادّه كسائر العروض.";
+
+/* ═══ وقّع نصّا سابقا: ما تغيّر، والخياراتُ وأثرُ كلٍّ — والقرارُ لك (٢ أكتوبر ٢٠٢٦) ═══
+
+   كان الصندوقُ يقول «لا يُعتمَد بنصّه… فأعِدْه للتوقيع»، فلا يبقى إلّا بابٌ واحد.
+   فقال صاحبُ المنصّة: «Instead of you force me to send this contract back for
+   re-signing, you should have given me what is the difference between this
+   contract that he has signed and the current one… Do not force me to do any
+   action. Do always give me options and tell me what are the differences».
+
+   فيُعرض هنا ما تغيّر بين ما وقّعه والنصّ الحاضر — من سجلّ التغييرات نفسِه الذي
+   تقرؤه رسائلُ التحديث، بالصيغة التي تصل المدرّب، وبلا رقم إصدار — ثمّ الخياراتُ
+   الثلاثةُ وما يقع بكلٍّ منها، وزرُّ «اعتمِدْه كما وقّعه» جنبَ أخويه. */
+function SignedEarlierText({ c }: { c: Pick<ContractRow, "bodyVersion" | "gatesActivation"> }) {
+  const changes = changeGroupsBetween(c.bodyVersion, CONTRACT_BODY_VERSION, { conditional: c.gatesActivation });
+  return (
+    <Panel tone="warn" className="w-full p-3 text-read leading-7">
+      <b>وقّع نصّا سابقا — والقرارُ لك.</b>
+      {changes.length === 0 ? (
+        <span className="block">لا يذكر سجلُّ التغييرات فرقا بين ما وقّعه والنصّ الحاضر.</span>
+      ) : (
+        <>
+          <span className="block">ما تغيّر في النصّ الحاضر عمّا وقّعه — بالصيغة التي تصل المدرّب:</span>
+          <ul className="list-disc ps-5">
+            {changes.flatMap((g) => g.itemsAr.map((item, i) => (
+              <li key={`${g.titleAr}-${i}`}>
+                <span className="opacity-70">{g.titleAr}: </span>{item}
+              </li>
+            )))}
+          </ul>
+        </>
+      )}
+      <span className="mt-2 block font-bold">ولك أن تختار:</span>
+      <ul className="list-disc ps-5">
+        <li><b>«اعتمِدْه كما وقّعه»</b> — {ACCEPT_AS_SIGNED_AR}</li>
+        <li>
+          <b>«حُدّث النصُّ — أعِدْه للتوقيع»</b> — يصله النصُّ الحاضرُ ليوقّعه، ثمّ تعتمد توقيعَه،
+          ولا نوقّعه إلّا يومَ تعتمد دوراتِه.
+        </li>
+        <li><b>«لم يطابق — ارفضْ»</b> — إن لم يطابق اسمُه وثيقةَ هويّته.</li>
+      </ul>
+    </Panel>
+  );
+}
+
 /** تنزيلُ المتن كما بُصم — نصّا لا صورةً له.
  *
  *  والاسمُ يُنقّى ممّا لا يقبله نظامُ ملفّات: عنوانُ العقد يحمل نقطتَين
@@ -281,7 +338,8 @@ export default function TrainerContracts() {
      الاعتمادُ مطابقةُ اسمٍ بوثيقة، والملحوظةُ محلُّ ما طابقه المعتمِد — أو
      تفويضِه الخطّيِّ إن لم يكن هو المفوَّضَ في السجلّ. فحقلٌ إلى جانب الزرّ
      لا `window.prompt`: نصٌّ يُقرأ بعد سنةٍ لا يُكتب في صندوقٍ بسطر. */
-  const [signOff, setSignOff] = useState<{ id: string; noteAr: string } | null>(null);
+  /* و`asSigned`: فُتح الصندوقُ من «اعتمِدْه كما وقّعه» — فزرُّه يقول إنّه يوقّع الآن */
+  const [signOff, setSignOff] = useState<{ id: string; noteAr: string; asSigned?: boolean } | null>(null);
   /* ونافذةُ «أعِدْها بملاحظات» مستقلّةٌ عن نافذة الاعتماد: قرارانِ متضادّان،
      وحقلٌ واحدٌ لهما يجعل ملاحظةَ الإعادة تُرسَل في خانة مطابقةِ الهويّة. */
   const [sendBack, setSendBack] = useState<{ id: string; notesAr: string } | null>(null);
@@ -1409,9 +1467,7 @@ c.gatesActivation
                           {/* وما يقع بالاعتماد يُقال بحكم `signatureApprovalOf` نفسِه
                               (١ أكتوبر ٢٠٢٦): كانت «فبالاعتماد ينفذ العقدُ» للبابَين،
                               والعرضُ المشروطُ لا ينفذ إلّا يومَ تُعتمَد دوراتُه. */}
-                          {signatureApprovalOf(c) === "seal"
-                            ? " فبالاعتماد نوقّع عن الأكاديميّة وينفذ العقدُ، ولا تُمسّ حالتُه فهو نشطٌ أصلا"
-                            : " فبالاعتماد تُفتح بوّابتُه ويبدأ طورُ موادّه ومهلتُه، ولا نوقّع العرضَ إلّا يومَ نعتمد دوراتِه"}.
+                          {APPROVAL_LINE_AR[signatureApprovalOf(c)]}.
                         </p>
                         {rowErr?.id === c.id && (
                           <Panel tone="danger" className="mt-2 p-3 text-read" role="alert">
@@ -1460,8 +1516,11 @@ c.gatesActivation
                               className={areaCls} rows={2} maxLength={500}
                               placeholder="ما طابقتَه بالوثيقة — أو تفويضُك الخطّيُّ إن لم تكن المفوَّضَ في السجلّ"
                               value={signOff.noteAr}
-                              onChange={(e) => setSignOff({ id: c.id, noteAr: e.target.value })}
+                              onChange={(e) => setSignOff({ ...signOff, noteAr: e.target.value })}
                             />
+                            {signOff.asSigned && (
+                              <p className="text-read leading-6"><b>تنبيه:</b> {ACCEPT_AS_SIGNED_AR}</p>
+                            )}
                             <div className="flex flex-wrap gap-2">
                               <Button tone="confirm" icon={BadgeCheck} loading={busy}
                                 /* ═══ وما يفعله الزرُّ يقوله (١ أكتوبر ٢٠٢٦) ═══
@@ -1475,19 +1534,23 @@ c.gatesActivation
                                    وما ينقص من تجهيزه يردّه الخادمُ برسالةٍ تعدّده —
                                    وتُرسَم في هذا الصفّ لا في رأس الصفحة (`rowErr`). */
                                 onClick={() => void run(async () => {
+                                  const asSigned = signOff.asSigned === true;
                                   const r = await apiPost<{ readiness?: Readiness; sealed?: boolean }>(
                                     `/api/admin/trainer-contracts/${c.id}/countersign`,
-                                    { noteAr: signOff.noteAr.trim() || null });
+                                    { noteAr: signOff.noteAr.trim() || null, ...(asSigned ? { asSigned: true } : {}) });
                                   setSignOff(null);
                                   await load();
                                   const left = r.readiness?.blockersAr ?? [];
+                                  if (asSigned) return "اعتُمد كما وقّعه: وقّعناه عن الأكاديميّة فنفَذ، وفُتحت بوّابتُه وبدأت مهلةُ موادّه";
                                   return !r.sealed
                                     ? "اعتُمد توقيعُه وفُتحت بوّابتُه — ولم نوقّع العرض: نوقّعه حين تعتمد دوراتِه"
                                     : left.length === 0
                                       ? "وُقّع العقدُ عنّا ونفَذ — ولم تُمسّ حالتُه، فهو نشطٌ أصلا"
                                       : `وُقّع العقدُ عنّا ونفَذ. وبقي قبل اعتماده مدرّبا: ${left.join(" · ")}`;
                                 }, "اعتُمد التوقيع", c.id)}>
-                                {signatureApprovalOf(c) === "seal" ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيعَ وافتحْ بوّابتَه"}
+                                {signOff.asSigned
+                                  ? "اعتمِدْه كما وقّعه — ونوقّعه الآن"
+                                  : signatureApprovalOf(c) === "seal" ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيعَ وافتحْ بوّابتَه"}
                               </Button>
                               <Button tone="ghost" onClick={() => setSignOff(null)}>تراجعْ</Button>
                             </div>
@@ -1513,15 +1576,19 @@ c.gatesActivation
                                   </span>
                                 </Panel>
                               )
-                              /* ═══ وعرضٌ وُقّع على نصٍّ يجعل الاعتمادَ توقيعا لا يُعتمَد ═══
+                              /* ═══ وعرضٌ وُقّع على نصٍّ يجعل الاعتمادَ توقيعا ═══
                                   وُقّع على v12–v23 («فتوقع من جهتها ويصير العقد نافذا»):
-                                  اعتمادُه بنصّه توقيعٌ قبل اعتماد الدورات. فيُقال لماذا
-                                  مكانَ الزرّ، والمخرجُ الزرُّ الذي تحته (أعِدْه للتوقيع). */
-                              : signatureApprovalOf(c) === "resign_first"
+                                  اعتمادُه بنصّه توقيعٌ منّا الآن. فيُعرض ما تغيّر والخياراتُ
+                                  كلُّها، ويختار المعتمِد (`SignedEarlierText`). */
+                              : signatureApprovalOf(c) === "sealed_by_text"
                                 ? (
-                                  <Panel tone="warn" className="w-full p-2 text-read leading-6">
-                                    <b>لا يُعتمَد بنصّه:</b> {RESIGN_FIRST_AR}
-                                  </Panel>
+                                  <>
+                                    <SignedEarlierText c={c} />
+                                    <Button tone="confirm" icon={BadgeCheck}
+                                      onClick={() => setSignOff({ id: c.id, noteAr: "", asSigned: true })}>
+                                      طابقتُ الاسمَ — اعتمِدْه كما وقّعه
+                                    </Button>
+                                  </>
                                 )
                                 : (
                                   <Button tone="confirm" icon={BadgeCheck}
