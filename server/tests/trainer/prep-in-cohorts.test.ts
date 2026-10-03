@@ -248,3 +248,25 @@ describe('النشطُ يقبل المعتمَدةَ بنفسه', () => {
     await expect(prep.accept(t.userId, C2)).rejects.toThrow(/لك شعبةٌ/)
   })
 })
+
+/* ═══ ⑧ ومن في الطور ودوراتُه معتمَدةٌ أصلا (٣ أكتوبر ٢٠٢٦) ═══
+   بلاغُ مدرّب: دورتاه من اقتراحاته فأُهِّل لهما (`qualified`) لا «اخترناها
+   له» (`pending`) — فلم يجد زرَّ القبول. فتُعرض له وتُقبَل، وإرسالُها يجمّد
+   مهلتَه، واعتمادُها يفعّله كما يفعّل دوراتِ الطور. */
+describe('⑧ في الطور ودوراتُه معتمَدة', () => {
+  it('يراها ويقبلها، وإرسالُها يجمّد مهلتَه، واعتمادُها يفعّله', async () => {
+    const t = await onboarding([C1])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C1, state: 'to_decide', approved: true }])
+
+    const made = await prep.accept(t.userId, C1)
+    const plan = await submitted(made.id, t.profileId)
+    await prep.afterSubmit(made.id)
+    expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })).conditionPausedAt,
+      'أرسل خطّةَ دورته المعتمَدة ولم تتجمّد مهلتُه').not.toBeNull()
+
+    const r = await plans.decide(adminId, plan.id, true)
+    expect(r).toMatchObject({ status: 'approved', prep: { activated: true } })
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status).toBe('active')
+  })
+})

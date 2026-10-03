@@ -294,10 +294,16 @@ export class TrainerPrepService {
       where: { profileId_courseId: { profileId: lead.id, courseId: cohort.courseId } },
       select: { status: true },
     })
-    if (qual?.status !== 'pending') return null
+    /* ═══ ومن في الطور ودورتُه معتمَدةٌ أصلا (٣ أكتوبر ٢٠٢٦) ═══
+       بلاغٌ من مدرّبٍ في طور الإعداد: دورتاه من اقتراحاته، أُضيفت إحداهما إلى
+       الكتالوج ودُمجت الأخرى، فأُهِّل لهما (`qualified`) لا «اخترناها له»
+       (`pending`). فلم يجد زرَّ القبول، ولا كانت شعبتُه تجمّد مهلتَه ولا
+       تفعّله. فشعبتُه شعبةُ إعدادٍ ما دام في الطور، معلّقةً دورتُها أو معتمَدة. */
+    const onboarding = lead.application.status === 'onboarding'
+    if (qual?.status !== 'pending' && !(onboarding && qual?.status === 'qualified')) return null
     return {
       cohortId, courseId: cohort.courseId, profileId: lead.id, userId: lead.userId,
-      applicationId: lead.applicationId, onboarding: lead.application.status === 'onboarding',
+      applicationId: lead.applicationId, onboarding, pending: qual?.status === 'pending',
     }
   }
 
@@ -326,7 +332,7 @@ export class TrainerPrepService {
       }
       return null
     }
-    await review.qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتُمدت خطّةُ شعبة إعدادها')
+    if (ctx.pending) await review.qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتُمدت خطّةُ شعبة إعدادها')
     if (!ctx.onboarding) return null
     return this.activateIfComplete(ctx.profileId, ctx.applicationId, actorId)
   }
