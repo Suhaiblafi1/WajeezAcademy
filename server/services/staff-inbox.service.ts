@@ -15,6 +15,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import type { TrainerStatus } from './trainer-application.service'
+import { PENDING_PLAN_WHERE } from './cohort-plan.service'
 
 /* ═══ الحالاتُ التي تنتظرك أنت في طلبات الانضمام (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -217,10 +218,15 @@ export class StaffInboxService {
     /* ── خططُ شعبٍ أرسلها مدرّبوها وأكّدوها (٣ أكتوبر ٢٠٢٦) ──
        كانت تُعتمَد من بطاقة كلّ شعبةٍ وحدَها، ولا بندَ هنا يقول إنّ أحدا
        ينتظر: لا يُفتح تسجيلُ الشعبة قبل اعتمادها، ومدرّبُ الإعداد لا يُفعَّل
-       ولا يُوقَّع عقدُه حتّى تُعتمَد خططُ دوراته. فبابُها شاشتُها الواحدة. */
+       ولا يُوقَّع عقدُه حتّى تُعتمَد خططُ دوراته. فبابُها شاشتُها الواحدة.
+
+       وعدُّه عدُّ الطابور نفسِه (`PENDING_PLAN_WHERE`) لا نسخةٌ منه: علّم #426
+       الطابورَ وشارتَه ألّا يعدّا خطّةَ مدرّبٍ حُذف أو شعبةٍ أُلغيت، وبقي هذا البندُ
+       يعدّ كلَّ `submitted` — فيقول اللوحُ «١» لخطّةٍ حُذف صاحبُها، و«افتح»
+       يُفضي إلى طابورٍ فارغ. */
     if (can('cohort.plan.approve')) {
       const plans = await this.prisma.cohortDeliveryPlan.findMany({
-        where: { status: 'submitted' },
+        where: PENDING_PLAN_WHERE,
         orderBy: { submittedAt: 'asc' },
         take: 5,
         select: { cohort: { select: { title: true } }, trainer: { select: { application: { select: { fullName: true } } } } },
@@ -229,7 +235,7 @@ export class StaffInboxService {
         key: 'cohort_plans',
         titleAr: 'خططُ شعبٍ تنتظر اعتمادك',
         whyAr: 'لا يُفتح تسجيلُ الشعبة قبلها — ومدرّبُ الإعداد لا يُفعَّل حتّى تُعتمَد خططُه',
-        count: await this.prisma.cohortDeliveryPlan.count({ where: { status: 'submitted' } }),
+        count: await this.prisma.cohortDeliveryPlan.count({ where: PENDING_PLAN_WHERE }),
         href: '/admin/pending-plans',
         severity: 'attention',
         sample: plans.map((p) => `${p.cohort.title} — ${p.trainer?.application.fullName ?? '—'}`),
