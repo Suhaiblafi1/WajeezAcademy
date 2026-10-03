@@ -1656,3 +1656,29 @@ export function contractFinalReminderMail(input: ContractFinalReminderMailInput)
     },
   }
 }
+
+export interface DeclineReplyMailInput {
+  fullName: string
+  reference: string
+  contractNumber?: string | null
+  subjectAr: string
+  /** نصُّ الإدارة بحرفه — فقراتُه بسطرٍ فارغ (`resignParagraphs`) */
+  bodyAr: string
+  /** صفحةُ الخيار: زرّان، ولا يقع شيءٌ بفتحها (`decline-reply.ts`) */
+  choiceUrl: string
+  expiresOnAr: string
+}
+
+/** ردُّنا على من اعتذر عن عقده — شكرٌ بنصّنا، وخيارُه في بياناته بزرٍّ واحد */
+export function declineReplyMail(input: DeclineReplyMailInput): DecisionMail {
+  const blocks: MailBlock[] = resignParagraphs(input.bodyAr).map((text) => ({ kind: 'p' as const, text }))
+  blocks.push(
+    { kind: 'cta', label: 'اختر ما نفعله ببياناتك', href: input.choiceUrl, caption: 'أن نُبقيها للمواسم القادمة، أو نحذفها الآن' },
+    { kind: 'note', text: `لا يقع شيءٌ بفتح الصفحة — تختار فيها ثمّ تؤكّد. والرابطُ صالحٌ حتّى ${input.expiresOnAr}، ومن لم يختر تبقى بياناتُه كما هي.` },
+    { kind: 'facts', rows: contractFactsRows(input.reference, input.contractNumber) },
+  )
+  return {
+    subject: input.subjectAr.trim(),
+    doc: { greetingName: input.fullName, heading: input.subjectAr.trim(), blocks },
+  }
+}

@@ -149,6 +149,7 @@ const STAFF: Table = {
   'trainer.public_text.submitted': { path: '/admin/trainer-run', ctaAr: 'اقرأ النبذةَ واعتمِدْها' },
   'trainer.public_text.approved': { path: '/trainer/account', ctaAr: 'افتح إعداداتِ الحساب' },
   'trainer.public_text.rejected': { path: '/trainer/account', ctaAr: 'عدّلْ نبذتَك' },
+  'trainer.data_choice.made': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقودَ المدرّبين' },
   'trainer.contract.materials_returned': { path: '/trainer', ctaAr: 'اقرأ الملاحظاتِ وعدّلْ' },
   'trainer.contract.condition_extended': { path: '/trainer', ctaAr: 'افتح بوّابتك' },
   'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديلَه' },

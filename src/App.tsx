@@ -73,6 +73,7 @@ const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
 const SharedDossier = lazy(() => import('./pages/SharedDossier'))
 const ContractSign = lazy(() => import('./pages/ContractSign'))
+const DataChoice = lazy(() => import('./pages/DataChoice'))
 const ContractLinkRequest = lazy(() => import('./pages/ContractLinkRequest'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
@@ -206,6 +207,7 @@ export default function App() {
           <Route path="/r/:token" element={<SharedDossier />} />
           {/* بابُ توقيعِ العقد — عامٌّ كأخيه، والرمزُ هو الهويّة */}
           <Route path="/c/:token" element={<ContractSign />} />
+          <Route path="/data-choice/:token" element={<DataChoice />} />
           {/* ولا يسكن تحت `/c/` — فـ`/c/:token` يبتلع ما تحته ويقرؤه رمزا */}
           <Route path="/contract-link" element={<ContractLinkRequest />} />
           {/* حالةُ طلب الانضمام لصاحب الحساب — بوّابةُ المتقدّم الوحيدة */}

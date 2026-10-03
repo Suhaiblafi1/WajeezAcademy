@@ -61,6 +61,7 @@ import {
   CONTRACT_TABS, defaultTab, inTab, type ContractTabId,
 } from "@/application/trainer/contract-tabs";
 import MaterialsReview from "./TrainerMaterialsReview";
+import DeclineReply from "@/components/admin/DeclineReply";
 import AdminLayout from "./AdminLayout";
 import { parseContractDoc } from '@/application/trainer/contract-sections'
 import ContractDocument from '@/components/ContractDocument'
@@ -126,6 +127,9 @@ interface ContractRow {
   /** اعتمادُ التوقيع بلا خَتم — العرضُ المشروطُ في طور موادّه (١ أكتوبر ٢٠٢٦) */
   signatureApprovedAt?: string | null; signatureApprovalNoteAr?: string | null;
   nameCorrectionAr: string | null; nameCorrectionAt: string | null;
+  /** ردُّنا على اعتذاره وخيارُه في بياناته (٣ أكتوبر ٢٠٢٦) */
+  declineReplyAr?: string | null; declineRepliedAt?: string | null;
+  dataChoice?: string | null; dataChoiceAt?: string | null;
   replacesContractId: string | null;
   amendmentRequestAr: string | null; amendmentRequestedAt: string | null;
   amendmentReplyAr: string | null; amendmentRepliedAt: string | null;
@@ -1436,6 +1440,10 @@ c.gatesActivation
                     )}
                     {c.declineReasonAr && (
                       <p className="mt-1 text-read opacity-70">سببُ الاعتذار: {c.declineReasonAr}</p>
+                    )}
+                    {/* وردُّنا عليه وخيارُه في بياناته (٣ أكتوبر ٢٠٢٦) — `DeclineReply` */}
+                    {c.status === "declined" && (
+                      <DeclineReply c={{ ...c, fullName: c.profile?.application?.fullName ?? docNameOf(c) }} onDone={load} />
                     )}
 
                     {/* ═══ طلبُ التعديل — يُقرأ ويُجاب ═══

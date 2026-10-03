@@ -18,6 +18,7 @@ import { EarningsService } from '../../services/earnings.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
+import { TrainerDeclineReplyService } from '../../services/trainer-decline-reply.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
 import { analyzeImpact } from '../../services/impact.service'
@@ -63,6 +64,7 @@ const reissueBody = z.object({
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
   const publicText = new TrainerPublicTextService(prisma)
+  const declineReply = new TrainerDeclineReplyService(prisma)
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
   const links = new TrainerDossierLinkService(prisma)
@@ -690,6 +692,17 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
     return review.rejectSignature(contractId, req.auth!.userId, reasonAr)
+  })
+
+  /* ═══ ردُّنا على المعتذِر — ومعه خيارُه في بياناته (٣ أكتوبر ٢٠٢٦) ═══
+     العلّةُ في `trainer-decline-reply.service.ts`. */
+  app.post('/api/admin/trainer-contracts/:contractId/decline-reply', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'شكرُ من اعتذر عن عقده — ورابطُ خياره في بياناته' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ subjectAr: z.string().max(200), bodyAr: z.string().max(6000) }).parse(req.body ?? {})
+    return declineReply.reply(contractId, req.auth!.userId, body)
   })
 
   /* وبابٌ غيرُ الرفض لتوقيعٍ صحيحٍ تحتَه نصٌّ قديم — علّتُه في `requestResign` */

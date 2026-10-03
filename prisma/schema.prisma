@@ -1990,6 +1990,16 @@ model TrainerContract {
   declinedAt           DateTime?
   /// سببُ الاعتذار بخطّه — لا قائمةَ أسبابٍ تُختار، فأسبابُ الردّ لا تُحصى
   declineReasonAr      String?
+  /// ردُّنا على اعتذاره وخيارُه في بياناته (٣ أكتوبر ٢٠٢٦) — `src/application/trainer/decline-reply.ts`.
+  /// والرمزُ مهشَّمٌ كرمز التوقيع، يفتح صفحةً فيها زرّان لا يفعل شيئا بفتحه.
+  declineReplyAr       String?
+  declineRepliedAt     DateTime?
+  declineRepliedBy     String?   @db.Uuid
+  dataChoiceTokenHash  String?   @unique
+  dataChoiceExpiresAt  DateTime?
+  /// keep | delete — و`delete` لا يبقى صفُّه ليُقرأ: يُمحى الملفُّ بعقوده، والأثرُ يحفظه
+  dataChoice           String?
+  dataChoiceAt         DateTime?
   /// ═══ النهايةُ الثالثة: يطلب تعديلا فلا يوقّع ولا يعتذر ═══
   ///
   /// وكانت النهايتان اثنتين، فمن أراد تغييرَ بندٍ واحدٍ لم يجد إلّا الاعتذارَ
