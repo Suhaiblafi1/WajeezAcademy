@@ -45,7 +45,10 @@ import type { ReactNode } from 'react'
    ويقف ١٣٦٦ على حافّتها ببكسل. والأرقامُ كاملةً في `PortalTabs`.
    والحرفُ لم يُصغَّر: شكا صاحبُ المنصّة من صغره مرّةً
    (`site-nav-size.test.ts`)، فما يُقتطَع من الفراغ لا من القراءة. */
-const PILL = 'flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition'
+/* ═══ وعلى الهاتف حشوٌ أضيق (٣ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة على صورة الهاتف: «make them appear more». فالحشوُ دون
+   `sm` ثمانيةُ بكسلاتٍ لا اثنا عشر — والحرفُ كما هو، وهدفُ اللمس كما هو. */
+const PILL = 'flex min-h-11 shrink-0 items-center gap-1 rounded-full px-2 py-1.5 text-xs font-bold transition sm:gap-1.5 sm:px-3'
 
 /* والرقاقةُ صيغةُ صفحات القسم عند المتعلّم كما كانت (`px-4` وحدٌّ)، ومعها ما
    تحتاجه لتُقاس: `shrink-0` و`min-h-11` — وهذه الأخيرةُ كانت تأتيها من

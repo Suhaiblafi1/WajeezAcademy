@@ -14,7 +14,7 @@
  * صفٌّ ثانٍ لا يُرى (`invisible` و`aria-hidden`) يحمل **كلَّ** التبويبات وزرَّ
  * «المزيد» بعرضها الطبيعيّ، ويُقرأ منه عرضُ كلِّ حبّة. والصفُّ المرئيُّ لا يصلح
  * للقياس: ما خرج منه لا عرضَ له، فلا يُعرف متى يعود إن اتّسعت الشاشة. ثمّ تقرّر
- * `fitCount` كم يُعرض (`ui/nav-fit.ts`).
+ * `fitIndices` أيَّها يُعرض (`ui/nav-fit.ts`).
  *
  * و`ResizeObserver` على الاثنين: على الفسحة لأنّ عرضَها يتبدّل بالشاشة وبمعامل
  * التكبير `--app-scale`، وعلى صفّ الأشباح لأنّ عرضَ الحبّات يتبدّل بالخطّ حين
@@ -92,7 +92,7 @@ import { useLocation } from 'react-router'
 import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { Inset } from '@/components/ui/Surface'
 import { NavPill, NavPillButton, NavPillGhost, NavPillMenuItem, type PillLook } from '@/components/ui/NavPill'
-import { fitCount, reservedCount } from '@/components/ui/nav-fit'
+import { fitIndices, reservedCount } from '@/components/ui/nav-fit'
 
 /** تبويبٌ في شريط البوّابة — وترتيبُه في القائمة أولويّتُه: ما يخرج أوّلا آخرُها */
 export interface PortalTab {
@@ -215,7 +215,8 @@ export interface PortalTabsProps {
 export function PortalTabs({ tabs, label, look = 'teal', fill = true, countLabel, className = '' }: PortalTabsProps) {
   const slotRef = useRef<HTMLDivElement>(null)
   const ghostRef = useRef<HTMLDivElement>(null)
-  const [shown, setShown] = useState(tabs.length)
+  /* مواضعُ المعروض لا عددُه — الملءُ يتخطّى العريضَ إلى ضيّقٍ بعده (`fitIndices`) */
+  const [shown, setShown] = useState<number[] | null>(null)
   const { pathname } = useLocation()
 
   useLayoutEffect(() => {
@@ -236,8 +237,8 @@ export function PortalTabs({ tabs, label, look = 'teal', fill = true, countLabel
       const all = [...rects, more]
       const span = Math.max(...all.map((r) => r.right)) - Math.min(...all.map((r) => r.left))
       const chrome = Math.max(0, ghost.getBoundingClientRect().width - span)
-      const next = fitCount(rects.map((r) => r.width), gap, more.width, slot.getBoundingClientRect().width - chrome)
-      flushSync(() => setShown(next))
+      const next = fitIndices(rects.map((r) => r.width), gap, more.width, slot.getBoundingClientRect().width - chrome)
+      flushSync(() => setShown((prev) => (prev && prev.join() === next.join() ? prev : next)))
     }
     const ro = new ResizeObserver(measure)
     ro.observe(slot)
@@ -250,18 +251,20 @@ export function PortalTabs({ tabs, label, look = 'teal', fill = true, countLabel
   const gap = chip ? 'gap-1.5' : ''
   const counted = tabs.filter((t) => t.count !== undefined)
   const waitingAll = counted.length ? counted.reduce((sum, t) => sum + (t.count ?? 0), 0) : undefined
+  const visible = shown ? shown.map((i) => tabs[i]).filter(Boolean) : tabs
+  const hidden = shown ? tabs.filter((_, i) => !shown.includes(i)) : []
 
   return (
     <div ref={slotRef} className={`relative flex min-w-0 items-center ${className}`}>
       <nav aria-label={label} className={`flex min-w-0 items-center ${gap} ${chrome} ${fill ? 'w-full' : 'max-w-full'}`}>
         <div className={`-m-1 flex min-w-0 items-center overflow-hidden p-1 ${gap} ${fill ? 'flex-1' : ''}`}>
-          {tabs.slice(0, shown).map((t) => (
+          {visible.map((t) => (
             <NavPill key={t.to} to={t.to} end={t.end} active={t.active} look={look} label={t.label}>
               <CountBadge count={t.count} label={countLabel} />
             </NavPill>
           ))}
         </div>
-        {shown < tabs.length && <MoreTabs key={pathname} items={tabs.slice(shown)} look={look} countLabel={countLabel} />}
+        {hidden.length > 0 && <MoreTabs key={pathname} items={hidden} look={look} countLabel={countLabel} />}
       </nav>
       <div aria-hidden="true" className="pointer-events-none invisible absolute inset-0 overflow-hidden">
         <div ref={ghostRef} className={`flex w-max items-center ${gap} ${chrome}`}>
