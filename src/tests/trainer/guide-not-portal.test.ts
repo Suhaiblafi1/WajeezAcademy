@@ -68,3 +68,16 @@ describe('④ الفهرسُ أجزاء', () => {
     expect(GUIDE).toMatch(/label: shortTitle\(s\.title\)/)
   })
 })
+
+/* ═══ والدليلُ يُرى أوّلا (٣ أكتوبر ٢٠٢٦) ═══
+   قولُ صاحب المنصّة: «أوضِحْ مكانَ الدليل، وغيِّر مكانَ البحث». فالدليلُ شارةٌ
+   باسمها الكامل لصقَ اسم البوّابة قبل البحث، لا زرٌّ شبحيٌّ بين الأدوات. */
+describe('مكانُ الدليل في رأس البوّابة', () => {
+  it('باسمه الكامل، قبل البحث، ولا نبرةَ شبحٍ له', () => {
+    const at = LAYOUT.indexOf('href={TRAINER_GUIDE_PATH}')
+    expect(at, 'لا رابطَ للدليل في الرأس').toBeGreaterThan(-1)
+    expect(at, 'البحثُ يسبق الدليلَ في الرأس').toBeLessThan(LAYOUT.indexOf('<SearchChip'))
+    expect(LAYOUT.slice(at, at + 900)).toContain('دليلُ المدرّب</span>')
+    expect(LAYOUT.slice(at - 200, at + 900), 'عاد الدليلُ زرّا شبحيّا').not.toMatch(/tone="ghost"/)
+  })
+})

@@ -46,7 +46,7 @@ export default function SearchChip({ hintAr, className = '' }: {
           مبتورٌ في زرٍّ هو بعينه ما شُكي منه — «شكلٌ غبيّ» يبدأ من هنا. */}
       <span className="whitespace-nowrap text-start">{hintAr}</span>
       {/* المفتاحُ في الطرف الأقصى: لا يلتصق بالكلمة فيُقرأ امتدادا لها */}
-      <kbd className="shrink-0 rounded border border-white/15 px-1.5 font-mono text-fine" dir="ltr">Ctrl K</kbd>
+      <kbd className="ms-auto shrink-0 rounded border border-white/15 px-1.5 font-mono text-fine" dir="ltr">Ctrl K</kbd>
     </button>
   )
 }

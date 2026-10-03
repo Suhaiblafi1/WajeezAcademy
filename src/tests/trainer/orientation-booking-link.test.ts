@@ -116,3 +116,16 @@ describe('رابطُ جلسة التهيئة في «موادُّ دوراتك»'
     expect(PANEL).toMatch(/\{inSetup && !underReview && \([\s\S]{0,300}?href=\{ORIENTATION_BOOKING_URL\}/)
   })
 })
+
+/* ═══ وفي الشعبة نفسِها (٣ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة («A»): التعبئةُ في «شعبي»، فرابطُ المساعدة هناك — ما دامت
+   الخطّةُ بيده (مسوّدةً أو مردودة). */
+describe('رابطُ جلسة التهيئة في الشعبة', () => {
+  const WS = readFileSync(join(process.cwd(), 'src/pages/trainer/CohortWorkspace.tsx'), 'utf8')
+    .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+
+  it('زرٌّ يُنقر إلى الرابط نفسِه ما دامت الخطّةُ تُعبَّأ', () => {
+    expect(WS).toMatch(/ws\.plan\.status === "changes_requested"\) && \([\s\S]{0,400}?href=\{ORIENTATION_BOOKING_URL\}[^>]*target="_blank"/)
+    expect(WS).toContain('{ORIENTATION_CTA_AR}')
+  })
+})
