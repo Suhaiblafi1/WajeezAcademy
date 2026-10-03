@@ -173,6 +173,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       /* وشعبةُ الإعداد (٢ أكتوبر ٢٠٢٦): اعتذارٌ عن دورة، ومدرّبٌ لم يبقَ له ما
          ينتظر، وتفعيلٌ تلقائيٌّ مُنع — كلُّها تنتظر قرارا من الإدارة */
       'trainer.prep.declined', 'trainer.prep.nothing_pending', 'trainer.prep.activation_blocked',
+      /* ونبذةُ المدرّب (٣ أكتوبر ٢٠٢٦): أرسلها فتنتظر قرارا، وقرارُنا يصله */
+      'trainer.public_text.submitted', 'trainer.public_text.approved', 'trainer.public_text.rejected',
       'trainer.contract.amendment_requested',
       /* ═══ واسمُ الطرف الثاني (٢٦ سبتمبر ٢٠٢٦) ═══
 

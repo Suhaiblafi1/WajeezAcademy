@@ -270,6 +270,10 @@ const PHRASES: Record<string, string> = {
   'trainer.photo.upload': 'رفعُ صورةِ المدرّب',
   'trainer.photo.approve': 'اعتمادُ صورةِ المدرّب للعرض العامّ',
   'trainer.photo.reject': 'ردُّ صورةِ المدرّب قبل عرضها',
+  /* عنوانُه ونبذتُه يكتبهما ونعتمدهما (٣ أكتوبر ٢٠٢٦) — `trainer-public-text.service.ts` */
+  'trainer.public_text.submit': 'إرسالُ المدرّبِ عنوانَه ونبذتَه للاعتماد',
+  'trainer.public_text.approve': 'اعتمادُ عنوانِ المدرّب ونبذتِه للعرض العامّ',
+  'trainer.public_text.reject': 'ردُّ عنوانِ المدرّب ونبذتِه قبل عرضهما',
   'account.avatar.upload': 'رفعُ صاحبِ الحسابِ صورتَه',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */

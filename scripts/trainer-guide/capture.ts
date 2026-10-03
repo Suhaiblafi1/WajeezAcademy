@@ -808,6 +808,17 @@ const ACTIVE: Shot[] = [
           { target: up, n: 2, pad: 5 },
         ],
       })
+      /* وعنوانُه ونبذتُه في «المدربون» — تحت صورته (٣ أكتوبر ٢٠٢٦) */
+      const card = p.locator('section[aria-labelledby="public-text-h"]')
+      await card.scrollIntoViewIfNeeded()
+      await shoot(e, {
+        name: 'account-bio', clip: card, clipPad: 12,
+        marks: [
+          { target: card.getByRole('textbox').nth(0), n: 1, pad: 5 },
+          { target: card.getByRole('textbox').nth(1), n: 2, pad: 5 },
+          { target: card.getByRole('button', { name: /أرسِل/ }), n: 3, pad: 5 },
+        ],
+      })
     },
   },
   {

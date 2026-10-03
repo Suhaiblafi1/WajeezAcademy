@@ -255,6 +255,7 @@ const MEDIUM: readonly string[] = [
   'trainer.path.publish', 'trainer.path.reject', 'trainer.path.retire',
   /* صورتُه ومراجعتُه */
   'trainer.photo.approve', 'trainer.photo.reject',
+  'trainer.public_text.approve', 'trainer.public_text.reject',
   'rating.approve', 'rating.reject',
   /* تذكرتُه */
   'support.ticket.assign', 'support.ticket.status',
@@ -310,7 +311,7 @@ const LOW: readonly string[] = [
   'roles.sync',
   'trainer.assign', 'trainer.create_direct', 'trainer.profile.create',
   'trainer.account.link', 'trainer.demo.evaluate', 'trainer.document.register',
-  'trainer.public_profile.save', 'trainer.photo.upload',
+  'trainer.public_profile.save', 'trainer.photo.upload', 'trainer.public_text.submit',
   'trainer.review.add', 'trainer.review.update',
   'trainer.application.submit', 'trainer.application.resume', 'trainer.application.reapply',
   'trainer.application.purge', 'trainer.application.proposals_edit',

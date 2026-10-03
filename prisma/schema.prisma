@@ -1276,6 +1276,14 @@ model TrainerProfile {
   bioPublic             String?
   photoUrl              String? // صورة المدرب — لا تُعرض إلا بصورة حقيقية يرفعها المدرب/الإدارة
   photoPendingKey       String? // صورة رفعها المدرب لنفسه، تنتظر اعتماد الإدارة — لا تُعرض للعامة
+  /// عنوانُه ونبذتُه كما كتبهما هو من حسابه — تنتظر اعتمادَ الإدارة، ولا تقرؤها
+  /// الصفحةُ العامّة. والمعتمِدُ يعدّلهما إن شاء ثمّ يكتبهما في `headline` و`bioPublic`
+  /// (`src/application/trainer/public-text.ts`).
+  headlinePending       String?
+  bioPending            String?
+  publicTextPendingAt   DateTime?
+  /// سببُ ردِّ آخرِ ما أرسله — يقرؤه في حسابه، ويُمحى بإرساله التالي
+  publicTextRejectNoteAr String?
   ratingAvg             Float? // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
   ratingCount           Int? // عدد التقييمات
   hoursTaught           Int? // ساعات التدريب الفعلية مع الأكاديمية

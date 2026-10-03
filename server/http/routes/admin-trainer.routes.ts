@@ -17,6 +17,7 @@ import { TrainerApplicationService } from '../../services/trainer-application.se
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { TrainerPrepService } from '../../services/trainer-prep.service'
+import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
 import { analyzeImpact } from '../../services/impact.service'
@@ -61,6 +62,7 @@ const reissueBody = z.object({
 
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
+  const publicText = new TrainerPublicTextService(prisma)
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
   const links = new TrainerDossierLinkService(prisma)
@@ -963,6 +965,28 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().max(300).optional() }).parse(req.body ?? {})
     return review.rejectPendingPhoto(profileId, req.auth!.userId, reasonAr)
+  })
+
+  /* ═══ عنوانُه ونبذتُه كما أرسلهما — يُعدَّلان هنا ثمّ يُعتمَدان (٣ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «let me edit it in case I want to before approval».
+     فالاعتمادُ يحمل النصَّ في جسمه — ما في الحقلين لحظةَ الضغط — لا يقرأ
+     المعلَّقَ من القاعدة. وبصلاحيّة النشر، كالصورة. */
+  app.post('/api/admin/trainers/:profileId/public-text/approve', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ عنوان المدرّب ونبذته — كما أرسلهما أو بعد تحريرهما' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ headline: z.string().max(160), bioPublic: z.string().max(1200) }).parse(req.body ?? {})
+    return publicText.approve(profileId, req.auth!.userId, body)
+  })
+
+  app.post('/api/admin/trainers/:profileId/public-text/reject', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'ردُّ عنوان المدرّب ونبذته بسببٍ يقرؤه' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { reasonAr } = z.object({ reasonAr: z.string().max(500) }).parse(req.body ?? {})
+    return publicText.reject(profileId, req.auth!.userId, reasonAr)
   })
 
   /* اقتراحاتُ الدورات يحرّرها الأدمن — بصلاحيّة مراجعة الطلبات نفسِها،
