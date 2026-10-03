@@ -9,6 +9,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { retireOrphanPrepCohorts } from './prep-cohort-cleanup'
 import { recordAudit } from './audit'
 import { LIVE_INTERVIEW } from './trainer-interview-state'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
@@ -1244,6 +1245,8 @@ export class TrainerApplicationService {
        وذاك أسوأُ من ألّا يُحذف شيء. */
     await this.prisma.$transaction(async (tx) => {
       if (app.profile) {
+        /* وشعبُ إعداده المسوّدةُ تُلغى قبل أن يُفكّ عنها — `prep-cohort-cleanup.ts` */
+        await retireOrphanPrepCohorts(tx, app.profile.id)
         await tx.cohortTrainer.deleteMany({ where: { profileId: app.profile.id } })
         await tx.trainerProfile.delete({ where: { id: app.profile.id } })
       }

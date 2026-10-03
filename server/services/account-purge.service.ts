@@ -14,6 +14,7 @@
    أو لا شيء. */
 
 import type { PrismaClient, Prisma } from '@prisma/client'
+import { retireOrphanPrepCohorts } from './prep-cohort-cleanup'
 
 export interface AccountFootprint {
   enrollments: number
@@ -74,6 +75,11 @@ export function footprintBlockersAr(f: AccountFootprint): string[] {
 /** المحوُ القسريّ: كلُّ ما يشير إلى الحساب يُزال أو يُفكّ، ثمّ الحساب. معاملةٌ واحدة. */
 export async function purgeAccountWithHistory(prisma: PrismaClient, userId: string): Promise<void> {
   await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    /* وشعبُ إعداده المسوّدةُ تُلغى قبل أن يُفكّ ملفُّه — لا يعبّئها بعده أحد،
+       وخطّتُها لا تبقى في طابور الاعتماد (`prep-cohort-cleanup.ts`) */
+    for (const p of await tx.trainerProfile.findMany({ where: { userId }, select: { id: true } })) {
+      await retireOrphanPrepCohorts(tx, p.id)
+    }
     /* ما يُفكّ لا يُمحى: سجلٌّ يبقى بلا صاحب أفضلُ من سجلٍّ يُمحى بصاحبه */
     await tx.trainerProfile.updateMany({ where: { userId }, data: { userId: null } })
     await tx.trainerApplication.updateMany({ where: { userId }, data: { userId: null } })
