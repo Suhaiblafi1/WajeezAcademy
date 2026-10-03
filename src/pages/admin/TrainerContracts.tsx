@@ -20,7 +20,7 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, BellRing, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
+import { BadgeCheck, Ban, BellRing, ChevronDown, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import Modal from "@/components/Modal";
 import {
@@ -68,6 +68,8 @@ import { nameMatch } from '@/application/trainer/contract-names'
 import { groupContracts, readLineage } from '@/application/trainer/contract-lineage'
 import { isUntouchableContract } from '@/application/trainer/contract-untouchable'
 import { countAr } from '@/application/text/count-ar'
+import { contractNextStep, type NextStepWho } from '@/application/trainer/contract-next-step'
+import Chip from '@/components/ui/Chip'
 
 /* حقلا رسالة «أعِدْه للتوقيع» — العنوانُ والنصُّ يُكتبان لكلّ مدرّبٍ كما يشاء
    صاحبُ المنصّة، فحقلٌ يُقرأ فيه نصٌّ طويلٌ لا سطرُ متصفّح. */
@@ -361,11 +363,25 @@ const PREP_FORMS = { one: "دورة", two: "دورتان", few: "دورات", ma
 const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" };
 const prepKey = (profileId: string, courseId: string) => `${profileId}|${courseId}`;
 
+/* لونُ الخطوة التالية بمن عليه الدور — ما عليك يُلفت، وما عليهم يُقرأ ولا يُلحّ */
+const NEXT_TONE: Record<NextStepWho, "warn" | "info" | "neutral"> = { you: "warn", them: "info", none: "neutral" };
+const nextStepOf = (c: ContractRow) => contractNextStep({
+  ...conditionFactsOf(c), status: c.status, gatesActivation: c.gatesActivation,
+  tokenExpiresAt: c.tokenExpiresAt, ...namesOf(c),
+});
+
 /** وجهةُ خطإ المركِّب — ليست معرّفَ صفٍّ، فلا يلتبس بعقدٍ في القائمة */
 const COMPOSE_ERR = "__compose__";
 
 export default function TrainerContracts() {
   const [contracts, setContracts] = useState<ContractRow[]>([]);
+  /* الصفوفُ المفتوحة — والمطويُّ سطرٌ: الاسمُ وما يلي (٣ أكتوبر ٢٠٢٦) */
+  const [openRows, setOpenRows] = useState<Set<string>>(new Set());
+  const toggleRow = (id: string) => setOpenRows((prev) => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  });
   const [candidates, setCandidates] = useState<CandidateRow[]>([]);
   const [missingLegal, setMissingLegal] = useState<string[]>([]);
   const [err, setErr] = useState("");
@@ -1178,8 +1194,26 @@ c.gatesActivation
                 const c = g.head;
                 /* الرأسُ المغلَقُ يقول ما بعده — والحكمُ في `recontractFor` */
                 const next = recontractFor(c, candidates);
+                const step = nextStepOf(c);
+                const isOpen = openRows.has(c.id);
                 return (
                 <li key={c.id}>
+                  {/* ═══ كلُّ مدرّبٍ شريطٌ ينسدل (٣ أكتوبر ٢٠٢٦) ═══
+
+                      طلبُ صاحب المنصّة: «اجعل كلَّ المدرّبين في خانة العقود كأنّها
+                      شريطٌ أضغط عليه ينسدل، مع ذكر ما الخطوةُ القادمةُ له بجانب
+                      اسمه — لسهولة النظر». فالمطويُّ سطرٌ: الاسمُ وخطوتُه
+                      (`contract-next-step.ts`)، والتفصيلُ كلُّه كما كان تحته. */}
+                  <Inset as="button" type="button" interactive aria-expanded={isOpen}
+                    aria-controls={`contract-row-${c.id}`}
+                    onClick={() => toggleRow(c.id)}
+                    className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-start">
+                    <ChevronDown aria-hidden="true"
+                      className={`h-4 w-4 shrink-0 opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                    <b className="min-w-0 text-read">{docNameOf(c)}</b>
+                    <Chip tone={NEXT_TONE[step.who]} srPrefixAr="الخطوةُ التالية">{step.textAr}</Chip>
+                  </Inset>
+                  {isOpen && (<div id={`contract-row-${c.id}`} className="mt-1.5">
                   <Inset className="p-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span>
@@ -1897,6 +1931,7 @@ c.gatesActivation
                       </ul>
                     </details>
                   )}
+                  </div>)}
                 </li>
                 );
               })}
