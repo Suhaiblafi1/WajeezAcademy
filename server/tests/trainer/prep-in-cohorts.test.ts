@@ -201,3 +201,91 @@ describe('شعبةُ الإعداد', () => {
     expect(contract.conditionMetAt).not.toBeNull()
   })
 })
+
+/* ═══ والمدرّبُ النشطُ يقبل دورتَه المعتمَدة بنفسه (٣ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة («B»): ما اعتُمد له ولا شعبةَ له فيه يراه في «مؤهّلاتي»
+   ويقبله فتُنشأ مسوّدتُه — لا ينتظر أن تُنشئها الإدارة. وما يُقاس:
+   ⑥ تُعرض المعتمَدةُ بلا شعبةٍ ولا عرض، وتُقبَل فتُنشأ مسوّدةٌ هو قائدُها، ثمّ
+      تخرج من القائمة حين تُعتمَد خطّتُها — ولا يُمسّ تأهيلُه ولا حالُه.
+   ⑦ ولا تُعرض ولا تُقبَل ما دام له فيها عرضٌ مفتوحٌ أو شعبةٌ قائمة. */
+describe('النشطُ يقبل المعتمَدةَ بنفسه', () => {
+  async function active(courses: string[]) {
+    const t = await onboarding(courses)
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    await prisma.trainerApplication.update({ where: { id: t.applicationId }, data: { status: 'active' } })
+    return t
+  }
+
+  it('⑥ تُعرض وتُقبَل، وتخرج حين تُعتمَد خطّتُها', async () => {
+    const t = await active([C1])
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C1, state: 'to_decide', approved: true }])
+    await expect(prep.decline(t.userId, C1, 'لا أريدها'), 'اعتذر عن دورةٍ معتمَدةٍ له').rejects.toThrow()
+
+    const made = await prep.accept(t.userId, C1)
+    const cohort = await prisma.cohort.findUniqueOrThrow({ where: { id: made.id }, include: { trainers: true } })
+    expect(cohort.status).toBe('draft')
+    expect(cohort.trainers).toMatchObject([{ profileId: t.profileId, role: 'lead' }])
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C1, state: 'preparing', cohortId: made.id }])
+
+    const plan = await submitted(made.id, t.profileId)
+    const r = await plans.decide(adminId, plan.id, true)
+    expect(r).toMatchObject({ status: 'approved', prep: null })
+    expect(await prep.mine(t.userId)).toEqual([])
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status).toBe('active')
+  })
+
+  it('⑦ ولا ما دام له فيها عرضٌ مفتوحٌ أو شعبةٌ قائمة', async () => {
+    const t = await active([C1, C2])
+    await prisma.trainerAssignmentOffer.create({
+      data: { profileId: t.profileId, courseId: C1, status: 'offered', offeredBy: adminId, expiresAt: new Date(Date.now() + 5 * 86_400_000) },
+    })
+    const open = await prisma.cohort.create({ data: { courseId: C2, title: 'شعبةٌ قائمة', status: 'open' } })
+    await prisma.cohortTrainer.create({ data: { cohortId: open.id, profileId: t.profileId, role: 'lead' } })
+
+    expect(await prep.mine(t.userId)).toEqual([])
+    await expect(prep.accept(t.userId, C1)).rejects.toThrow(/عرضٌ ينتظر/)
+    await expect(prep.accept(t.userId, C2)).rejects.toThrow(/لك شعبةٌ/)
+  })
+})
+
+/* ═══ ⑧ ومن في الطور ودوراتُه معتمَدةٌ أصلا (٣ أكتوبر ٢٠٢٦) ═══
+   بلاغُ مدرّب: دورتاه من اقتراحاته فأُهِّل لهما (`qualified`) لا «اخترناها
+   له» (`pending`) — فلم يجد زرَّ القبول. فتُعرض له وتُقبَل، وإرسالُها يجمّد
+   مهلتَه، واعتمادُها يفعّله كما يفعّل دوراتِ الطور. */
+describe('⑧ في الطور ودوراتُه معتمَدة', () => {
+  it('يراها ويقبلها، وإرسالُها يجمّد مهلتَه، واعتمادُها يفعّله', async () => {
+    const t = await onboarding([C1])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C1, state: 'to_decide', approved: true }])
+
+    const made = await prep.accept(t.userId, C1)
+    const plan = await submitted(made.id, t.profileId)
+    await prep.afterSubmit(made.id)
+    expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })).conditionPausedAt,
+      'أرسل خطّةَ دورته المعتمَدة ولم تتجمّد مهلتُه').not.toBeNull()
+
+    const r = await plans.decide(adminId, plan.id, true)
+    expect(r).toMatchObject({ status: 'approved', prep: { activated: true } })
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status).toBe('active')
+  })
+})
+
+/* ═══ ⑨ وملحقُ العقد (أ) هو المرجع (٣ أكتوبر ٢٠٢٦) ═══
+   قولُ صاحب المنصّة: «الدليلُ عقدُهم». فدورةٌ في ملحق ما وقّعه بلا صفِّ تأهيلٍ
+   تُعرض له معلّقةً، ويُكتب صفُّها حين يقبلها — فلا يغيب ما وقّع عليه. */
+describe('⑨ دوراتُ ملحق العقد', () => {
+  it('تُعرض ولو غاب صفُّ تأهيلها، وتُقبَل فيُكتب صفُّها', async () => {
+    const t = await onboarding([C1])
+    await prisma.trainerContract.update({
+      where: { id: t.contractId },
+      data: { qualifiedSnapshot: [{ courseId: C1, titleAr: 'دورةُ الإعداد' }, { courseId: C2, titleAr: 'دورةٌ ثانيةٌ للإعداد' }] },
+    })
+    const states = Object.fromEntries((await prep.mine(t.userId)).map((c) => [c.courseId, c.state]))
+    expect(states, 'غابت دورةٌ من ملحق عقده').toEqual({ [C1]: 'to_decide', [C2]: 'to_decide' })
+
+    const made = await prep.accept(t.userId, C2)
+    expect((await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C2 } })).status).toBe('pending')
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: made.id } })).courseId).toBe(C2)
+  })
+})

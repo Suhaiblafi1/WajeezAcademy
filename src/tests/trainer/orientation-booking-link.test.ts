@@ -111,6 +111,8 @@ describe('رابطُ جلسة التهيئة في «موادُّ دوراتك»'
   })
 
   it('ويُعرض ما دامت الموادُّ تُكتب لا بعد إعلان اكتمالها', () => {
-    expect(PANEL).toMatch(/\{!underReview && \([\s\S]{0,300}?href=\{ORIENTATION_BOOKING_URL\}/)
+    /* ولمن في طور الإعداد وحدَه (٣ أكتوبر ٢٠٢٦): النشطُ يرى هنا دوراتِه المعتمَدةَ
+       بلا شعبة، ولا يُدعى إلى جلسة تهيئةٍ عن طورٍ لم يعد فيه */
+    expect(PANEL).toMatch(/\{inSetup && !underReview && \([\s\S]{0,300}?href=\{ORIENTATION_BOOKING_URL\}/)
   })
 })

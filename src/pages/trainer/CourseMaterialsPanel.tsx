@@ -35,6 +35,8 @@ export interface PrepRow {
   cohortId: string | null;
   cohortTitle: string | null;
   declineReasonAr: string | null;
+  /** معتمَدةٌ له أصلا — يقبلها ولا يعتذر عنها (٣ أكتوبر ٢٠٢٦) */
+  approved?: boolean;
 }
 
 const STATE_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" }> = {
@@ -55,21 +57,32 @@ export default function CourseMaterialsPanel({ rows, onChanged }: {
   const decided = rows.filter((r) => r.state !== "to_decide").length;
   /* أُرسلت كلُّها: ما يُعان عليه انتهى، فلا تُعرض دعوةُ الجلسة */
   const underReview = live.length > 0 && live.every((r) => r.state === "submitted");
+  /* ═══ والمعتمَدةُ بلا شعبةٍ معها (٣ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة («B»): المدرّبُ النشطُ يقبل دورتَه المعتمَدةَ بنفسه هنا.
+     فمن لا دورةَ له في طور الإعداد يُقال له ما يخصّه، ولا يُدعى إلى جلسة
+     تهيئةٍ عن طورٍ لم يعد فيه، ولا يُذكَر له «لا أتعابَ قبل اعتماد دوراتك». */
+  const inSetup = live.some((r) => !r.approved);
 
   return (
     <section aria-labelledby="materials-h" className="mb-8">
       <h2 id="materials-h" className="flex items-center gap-2 text-lg font-black">
-        <FileStack className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> دوراتُك قيد الإعداد
+        <FileStack className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {inSetup ? "دوراتُك قيد الإعداد" : "دوراتُك التي تعبّئها"}
       </h2>
-      <p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-        لكلّ دورةٍ اخترناها لك: اقبلها أو اعتذر عنها. وكلُّ دورةٍ تقبلها تُنشأ لها شعبةُ إعدادٍ في «شعبي»
-        تعبّئ فيها كلَّ شيءٍ مرّةً واحدة — المحاورَ والكرّاسةَ واللقاءاتِ والمهامَّ والمصادر — ثمّ ترسلها لاعتمادنا.
-        وشعبةُ الإعداد لا متعلّمين فيها ولا تُنشَر، ولا أتعابَ قبل اعتماد دوراتك.
-        {" "}<span className="font-bold text-foreground">قرّرتَ في {decided} من {rows.length}.</span>
-      </p>
+      {inSetup ? (
+        <p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
+          لكلّ دورةٍ اخترناها لك: اقبلها أو اعتذر عنها. وكلُّ دورةٍ تقبلها تُنشأ لها شعبةُ إعدادٍ في «شعبي»
+          تعبّئ فيها كلَّ شيءٍ مرّةً واحدة — المحاورَ والكرّاسةَ واللقاءاتِ والمهامَّ والمصادر — ثمّ ترسلها لاعتمادنا.
+          وشعبةُ الإعداد لا متعلّمين فيها ولا تُنشَر، ولا أتعابَ قبل اعتماد دوراتك.
+          {" "}<span className="font-bold text-foreground">قرّرتَ في {decided} من {rows.length}.</span>
+        </p>
+      ) : (
+        <p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
+          اقبل ما تريد تدريسَه فتُنشأ له شعبةٌ في «شعبي»، تعبّئها مرّةً واحدةً وترسلها لاعتمادنا.
+        </p>
+      )}
       {/* ═══ وجلسةُ التهيئة حيث يُعَدّ ما تُعين عليه (٣٠ سبتمبر ٢٠٢٦) ═══
           قرارُ صاحب المنصّة: «أضِفه في موادّ دوراتك». ويغيب حين تُرسَل كلُّها. */}
-      {!underReview && (
+      {inSetup && !underReview && (
         <Inset tone="accent" className="mt-3 flex flex-wrap items-center justify-between gap-3 p-3.5">
           <p className="min-w-0 flex-1 text-sm leading-7">{ORIENTATION_INVITE_AR}</p>
           <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" size="sm" icon={CalendarPlus}>
@@ -77,7 +90,7 @@ export default function CourseMaterialsPanel({ rows, onChanged }: {
           </Button>
         </Inset>
       )}
-      {underReview && (
+      {inSetup && underReview && (
         <Inset tone="default" className="mt-3 p-3 text-sm leading-6">
           أرسلتَ شعبَ دوراتك كلَّها، فهي عندنا للاعتماد — وتُفعَّل مدرّبا حين نعتمدها، ويصلك خبرُ ذلك.
         </Inset>
@@ -126,9 +139,11 @@ function CourseCard({ row: r, onChanged }: { row: PrepRow; onChanged: () => void
             onClick={() => void act("accept", {}, "قبِلتَها — وشعبةُ إعدادها في «شعبي»")}>
             اقبلها وابدأ إعدادها
           </Button>
-          <Button tone="secondary" size="sm" icon={X} disabled={busy} onClick={() => setDeclining(true)}>
-            اعتذرْ عنها
-          </Button>
+          {!r.approved && (
+            <Button tone="secondary" size="sm" icon={X} disabled={busy} onClick={() => setDeclining(true)}>
+              اعتذرْ عنها
+            </Button>
+          )}
         </div>
       )}
 

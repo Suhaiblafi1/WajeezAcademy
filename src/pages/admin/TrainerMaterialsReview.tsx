@@ -30,6 +30,7 @@ interface PrepRow {
   cohortId: string | null;
   cohortTitle: string | null;
   declineReasonAr: string | null;
+  approved?: boolean;
 }
 
 interface MaterialsRow {
@@ -87,14 +88,18 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
     );
   }
   if (!prep) return <Loader2 className="mt-2 h-5 w-5 animate-spin text-muted-foreground/60" aria-label="جارٍ التحميل" />;
-  const qualified = legacy.filter((r) => r.status === "qualified");
-  if (prep.length === 0 && qualified.length === 0) {
+  /* والمعتمَدةُ بلا شعبةٍ تأتي في قائمة الإعداد منذ ٣ أكتوبر ٢٠٢٦ — فتُعرض مرّةً:
+     ما لم يقبله بعدُ يُقرأ «معتمَدة» تحت، وما قبِله يُقرأ بحال شعبته فوق */
+  const shown = prep.filter((r) => !(r.approved && r.state === "to_decide"));
+  const inPrep = new Set(shown.map((r) => r.courseId));
+  const qualified = legacy.filter((r) => r.status === "qualified" && !inPrep.has(r.courseId));
+  if (shown.length === 0 && qualified.length === 0) {
     return <p className="mt-2 text-read text-muted-foreground">لا دورةَ قيد الإعداد ولا معتمدة لهذا المدرّب.</p>;
   }
 
   return (
     <ul className="mt-3 grid gap-2">
-      {prep.map((r) => {
+      {shown.map((r) => {
         const s = STATE_AR[r.state];
         const old = legacy.find((x) => x.courseId === r.courseId && x.status === "pending");
         const oldReady = !r.cohortId && old?.materials && old.missingAr.length === 0;

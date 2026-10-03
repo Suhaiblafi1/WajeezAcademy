@@ -86,38 +86,27 @@ interface Offer {
   prepLapsedAt: string | null;
 }
 
-interface Proposal {
-  id: string;
-  titleAr: string;
-  status: string;
-  courseId: string | null;
-  decisionNoteAr: string | null;
-  decidedAt: string | null;
-  course: { id: string; status: string; titleAr: string | null } | null;
-}
-
 const fmtDate = fmtDateLong;
 
 /* ═══ الحالُ — مفتاحٌ واحدٌ لكلّ صفّ، وبه يُرشَّح ═══ */
-type StateKey = "open" | "added" | "merged" | "catalog" | "withdrawn" | "declined" | "lapsed" | "idle";
+type StateKey = "open" | "added" | "withdrawn" | "declined" | "lapsed";
 
 const STATE: Record<StateKey, { label: string; tone: ChipTone }> = {
   open: { label: "متاحةٌ لك — قرّر", tone: "warn" },
   added: { label: "أُضيفت إلى دوراتك", tone: "positive" },
-  merged: { label: "دُمجت بدورةٍ قائمة", tone: "accent" },
-  catalog: { label: "أُضيفت إلى الكتالوج", tone: "accent" },
   withdrawn: { label: "سُحبت", tone: "danger" },
   declined: { label: "اعتذرتَ عنها", tone: "neutral" },
   lapsed: { label: "انقضت مهلتُها", tone: "neutral" },
-  idle: { label: "مؤهَّلٌ — لا عرضَ بعد", tone: "neutral" },
 };
 
-type Filter = "all" | "open" | "added" | "merged" | "withdrawn";
+type Filter = "all" | "open" | "added" | "withdrawn";
 const FILTERS: { id: Filter; label: string; keys: StateKey[] }[] = [
   { id: "all", label: "الكلّ", keys: [] },
   { id: "open", label: "متاحة", keys: ["open"] },
-  { id: "added", label: "أُضيفت", keys: ["added", "catalog"] },
-  { id: "merged", label: "دُمجت", keys: ["merged"] },
+  /* ولا «دُمجت» ولا «أُضيفت إلى الكتالوج» (٣ أكتوبر ٢٠٢٦): قولُ صاحب المنصّة
+     «لا تُرِ المدرّبَ ما لا يحتاج قراءتَه». فأصلُ الدورة — اقتراحُه أم اختيارُنا —
+     لا يغيّر ما يفعله بها. */
+  { id: "added", label: "قبِلتَها", keys: ["added"] },
   { id: "withdrawn", label: "سُحبت أو اعتذرتَ", keys: ["withdrawn", "declined", "lapsed"] },
 ];
 
@@ -127,7 +116,6 @@ interface Row {
   qual: Qualification | null;
   /** الأحدثُ أوّلا */
   offers: Offer[];
-  origin: Proposal | null;
   state: StateKey;
 }
 
@@ -142,41 +130,37 @@ function remainingAr(iso: string, now: number): string {
   return `بقي ${hours} ساعة`;
 }
 
-function stateOf(offer: Offer | undefined, origin: Proposal | null, now: number): StateKey {
-  if (offer) {
-    if (offer.status === "offered") return new Date(offer.expiresAt).getTime() > now ? "open" : "lapsed";
-    if (offer.status === "accepted") return "added";
-    if (offer.status === "withdrawn") return "withdrawn";
-    if (offer.status === "declined") return "declined";
-    if (offer.status === "lapsed") return "lapsed";
-  }
-  if (origin?.status === "linked") return "merged";
-  if (origin?.status === "became_course") return "catalog";
-  return "idle";
+function stateOf(offer: Offer, now: number): StateKey {
+  if (offer.status === "offered") return new Date(offer.expiresAt).getTime() > now ? "open" : "lapsed";
+  if (offer.status === "accepted") return "added";
+  if (offer.status === "withdrawn") return "withdrawn";
+  if (offer.status === "declined") return "declined";
+  if (offer.status === "lapsed") return "lapsed";
+  return "lapsed";
 }
 
-/** صفٌّ لكلّ دورة — من المؤهَّل والعروض والاقتراحات المبتوتة معا */
-function buildRows(quals: Qualification[], offers: Offer[], proposals: Proposal[], now: number): Row[] {
+/** صفٌّ لكلّ دورةٍ فيها عرضُ شعبة — ومعه تأهيلُه إن كان */
+function buildRows(quals: Qualification[], offers: Offer[], now: number): Row[] {
   const byCourse = new Map<string, Omit<Row, "state">>();
   const touch = (courseId: string, title: string) => {
-    const r = byCourse.get(courseId) ?? { courseId, title, qual: null, offers: [], origin: null };
+    const r = byCourse.get(courseId) ?? { courseId, title, qual: null, offers: [] };
     if (!r.title && title) r.title = title;
     byCourse.set(courseId, r);
     return r;
   };
-  for (const q of quals) touch(q.courseId, q.title).qual = q;
+  /* ═══ صفٌّ لما فيه قرار — عرضُ شعبة (٣ أكتوبر ٢٠٢٦) ═══
+     كانت تُعرض هنا كلُّ دورةٍ أُهِّل لها وأصلُها (اقتراحٌ دُمج أو أُضيف).
+     وقولُ صاحب المنصّة: «يرى المدرّبُ الدورةَ التي يعبّئها، ولا يحتاج غيرَ
+     ذلك». فما يعبّئه في «دوراتُك قيد الإعداد» أعلاه، وهنا عروضُ الشعب وحدَها. */
   for (const o of offers) touch(o.courseId, o.courseTitleAr).offers.push(o);
-  for (const p of proposals) {
-    if (!p.courseId || (p.status !== "linked" && p.status !== "became_course")) continue;
-    touch(p.courseId, p.course?.titleAr ?? "").origin = p;
-  }
-  const order: Record<StateKey, number> = { open: 0, added: 1, idle: 2, merged: 3, catalog: 3, withdrawn: 4, declined: 5, lapsed: 5 };
+  for (const q of quals) if (byCourse.has(q.courseId)) byCourse.get(q.courseId)!.qual = q;
+  const order: Record<StateKey, number> = { open: 0, added: 1, withdrawn: 4, declined: 5, lapsed: 5 };
   return [...byCourse.values()]
     .map((r) => {
       r.offers.sort((a, b) => b.offeredAt.localeCompare(a.offeredAt));
       /* العرضُ المفتوحُ يحكم ولو سبقه في الترتيب عرضٌ أحدثُ بُتّ فيه */
       const lead = r.offers.find((o) => o.status === "offered" && new Date(o.expiresAt).getTime() > now) ?? r.offers[0];
-      return { ...r, state: stateOf(lead, r.origin, now) };
+      return { ...r, state: stateOf(lead, now) };
     })
     .sort((a, b) => order[a.state] - order[b.state] || a.title.localeCompare(b.title, "ar"));
 }
@@ -184,7 +168,6 @@ function buildRows(quals: Qualification[], offers: Offer[], proposals: Proposal[
 export default function TrainerQualifications() {
   const [quals, setQuals] = useState<Qualification[] | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [prep, setPrep] = useState<PrepRow[]>([]);
   const [down, setDown] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -203,16 +186,15 @@ export default function TrainerQualifications() {
     Promise.all([
       apiGet<Qualification[]>("/api/trainer/me/qualifications"),
       apiGet<Offer[]>("/api/trainer/offers").catch(() => [] as Offer[]),
-      apiGet<Proposal[]>("/api/trainer/course-proposals").catch(() => [] as Proposal[]),
       /* دوراتُ طور الإعداد — يقبلها فتُعَدّ في «شعبي» (٢ أكتوبر ٢٠٢٦) */
       apiGet<PrepRow[]>("/api/trainer/prep").catch(() => [] as PrepRow[]),
     ])
-      .then(([qs, os, ps, pr]) => { setQuals(qs); setOffers(os); setProposals(ps); setPrep(pr); setDown(false); })
+      .then(([qs, os, pr]) => { setQuals(qs); setOffers(os); setPrep(pr); setDown(false); })
       .catch(() => setDown(true)), []);
 
   useEffect(() => { void load(); }, [load]);
 
-  const rows = useMemo(() => buildRows(quals ?? [], offers, proposals, now), [quals, offers, proposals, now]);
+  const rows = useMemo(() => buildRows(quals ?? [], offers, now), [quals, offers, now]);
   const counts = useMemo(() => {
     const c = {} as Record<Filter, number>;
     for (const f of FILTERS) c[f.id] = f.keys.length === 0 ? rows.length : rows.filter((r) => f.keys.includes(r.state)).length;
@@ -269,9 +251,8 @@ export default function TrainerQualifications() {
   return (
     <TrainerLayout title="مؤهّلاتي">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        كلُّ دورةٍ أُهِّلتَ لها وحالُها: ما يُعرض عليك الآن فتقبله أو تعتذر عنه بسببٍ تكتبه، وما أُضيف إلى
-        دوراتك، وما دُمج بدورةٍ قائمةٍ أو سُحب. والتأهيلُ للدورة لا للشعبة، والعرضُ دعوةٌ لا توجيه —
-        والاعتذارُ جوابٌ مشروعٌ لا يُحسَب عليك.
+        دوراتُك التي تعبّئها في «شعبي»، وتحتها عروضُ الشعب إن عُرضت عليك: تقبلها أو تعتذر عنها بسببٍ
+        تكتبه — والاعتذارُ جوابٌ مشروعٌ لا يُحسَب عليك.
       </p>
 
       <CourseMaterialsPanel rows={prep} onChanged={() => void load()} />
@@ -279,15 +260,11 @@ export default function TrainerQualifications() {
       {rows.length === 0 ? (
         /* وكانت تقول «تُؤهَّل تلقائيّا لكلّ دورةٍ ذكرتَها» — ودوراتُ طلبه قيد
            الإعداد لا مؤهَّلة، فكان النصُّ يَعِد بما لا يراه. فصار يقول أين هي. */
-        prep.some((c) => c.state !== "declined") ? (
-          <p className="text-sm leading-7 text-muted-foreground">
-            تظهر دوراتُك هنا بعروضها وحالها حين نعتمد شعبَ إعدادها — وحتّى ذلك الحين فهي في «دوراتُك قيد الإعداد» أعلاه.
-          </p>
-        ) : (
+        prep.length > 0 ? null : (
           <EmptyState
             icon={Award}
-            titleAr="لا تأهيلَ بعد"
-            reasonAr="تظهر هنا كلُّ دورةٍ نعتمدها لك. فإن كانت عندك دورةٌ تتقنها ولا تجدها في كتالوجنا، فاقترحها."
+            titleAr="لا دورةَ بعد"
+            reasonAr="تظهر هنا كلُّ دورةٍ تعبّئها، وكلُّ شعبةٍ نعرضها عليك. فإن كانت عندك دورةٌ تتقنها ولا تجدها في كتالوجنا، فاقترحها."
             actions={[{ to: "/trainer/course-proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورةً تقدر عليها" }]}
           />
         )
@@ -306,11 +283,7 @@ export default function TrainerQualifications() {
           <Inset tone="accent" className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5">
             <p className="flex min-w-0 flex-1 items-start gap-2 text-read leading-7">
               <PencilLine className="mt-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>
-                هذه القائمةُ للقراءة والقرار. ومحتوى الدورة بعد اعتمادها — محاورُها ومواعيدُها وكرّاستُها
-                ولقاءاتُها ومهامُّها ومصادرُها — تعبّئه في «شعبي» لكلّ شعبةٍ أُسندت إليك، ثمّ تُرسله
-                لاعتمادنا.
-              </span>
+              <span>عروضُ الشعب للقرار وحدَه — ومحتوى كلِّ شعبةٍ تعبّئه في «شعبي».</span>
             </p>
             <Button as={Link} to="/trainer/board" size="sm" icon={Users}>افتح «شعبي»</Button>
           </Inset>
@@ -381,15 +354,6 @@ function CourseRow({
         {lead?.cohort ? <> · شعبةُ «{lead.cohort.title}»{lead.cohort.startsAt ? ` تبدأ ${fmtDate(lead.cohort.startsAt)}` : ""}</> : null}
       </p>
 
-      {/* ── أصلُ الدورة: اقتراحٌ دُمج أو أُضيف ── */}
-      {r.origin && !lead ? (
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          {r.origin.status === "linked"
-            ? `اقترحتَ «${r.origin.titleAr}» فدُمجت بهذه الدورة القائمة — فتصير نسختَك منها لا دورةً ثانية.`
-            : `اقترحتَ «${r.origin.titleAr}» فأُضيفت إلى الكتالوج بهذا الاسم${r.origin.course?.status === "published" ? " وهي منشورة" : " ولمّا تُنشر بعدُ"}.`}
-          {r.origin.decisionNoteAr ? ` ملحوظةُ الإدارة: ${r.origin.decisionNoteAr}` : ""}
-        </p>
-      ) : null}
 
       {lead ? <OfferBody offer={lead} now={now} /> : null}
 
