@@ -22,7 +22,7 @@ import {
 import {
   bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail,
-  contractLapsedMail, contractFactsRows, contractSealedLaterMail, type FinalApprovalSeal } from './trainer-decision-mail'
+  contractLapsedMail, contractFactsRows, contractSealedLaterMail, finalApprovalBellAr, type FinalApprovalSeal } from './trainer-decision-mail'
 import {
   FOLLOWUP_BODY_MAX, FOLLOWUP_BODY_MIN, canFollowUpNoShow, followupOf,
 } from '../../src/application/trainer/no-show-followup'
@@ -1924,6 +1924,20 @@ export class TrainerReviewService {
     const sent = await sendDirectEmail(this.prisma, {
       to: app.email, subject: mail.subject, ...renderMail(mail.doc),
     })
+    /* ═══ والجرسُ معه — لا البريدُ وحدَه (٣ أكتوبر ٢٠٢٦) ═══
+
+       أعظمُ لحظةٍ في طوره — صار مدرّبا نشطا وعقدُه نافذا — كانت لا تُرى في
+       بوّابته: يصله «اعتُمدت خطّةُ…» و«أُهِّلتَ…» جرسا، ولا شيءَ عن قبوله إلّا
+       بريدٌ قد يتأخّر أو يقع في غير صندوقه. سار صاحبُ المنصّة في المسار فاختار:
+       خبرٌ واحدٌ لكلّ قرار، وخبرٌ للتفعيل. */
+    if (profile) {
+      await this.notifyTrainerUser(profile.id, {
+        templateKey: 'trainer.activated',
+        title: 'اعتُمدت موادُّك — وتمّ قبولُك',
+        body: finalApprovalBellAr(sealed),
+        data: { contract: offer !== null },
+      })
+    }
     await recordAudit(this.prisma, {
       /* والاسمُ هو هو (`trainer.approved.notify`) ولم يُبدَّل: الفعلُ نفسُه
          — «أُشعِر مدرّبٌ باعتماده» — وصفوفُ الأثر القديمةُ تُقرأ مع الجديدة
@@ -2689,7 +2703,12 @@ export class TrainerReviewService {
   }
 
   /** «أعِدْها بملاحظات» — تُستأنف المهلةُ **مضافا إليها مدّةُ التجميد بالضبط** */
-  async returnMaterialsWithNotes(contractId: string, actorId: string, notesAr: string, now = new Date()) {
+  async returnMaterialsWithNotes(
+    contractId: string, actorId: string, notesAr: string, now = new Date(),
+    /** و`quiet`: حين تُقال في خبر ردّ الخطّة نفسِه (`TrainerPrepService.returnOnChanges`) —
+        بموعد المهلة الجديد — فلا يصله عن الردّ الواحد خبران */
+    opts: { quiet?: boolean } = {},
+  ) {
     const notes = notesAr.trim()
     if (notes.length < 5) {
       throw new AuthError('no_notes', 'اكتب ما ينقص موادَّه — سطرٌ واحدٌ يكفي، وهو ما سيقرؤه', 422)
@@ -2715,12 +2734,14 @@ export class TrainerReviewService {
        حلقةُ «يعدّل ويقدّم ثانيةً» تدور بما يقرؤه هو. فملاحظاتٌ تُكتب في
        عمودٍ لا يراه توقف الحلقةَ عند أوّل دورة: تُستأنف مهلتُه ولا يعرف ما
        ينقصه، فيعيد رفعَ ما رُدّ عليه. */
-    await this.notifyTrainerUser(c.profileId, {
-      templateKey: 'trainer.contract.materials_returned',
-      title: 'أُعيدت موادُّك بملاحظات',
-      body: `ما ينقص: ${notes.slice(0, 300)}`,
-      data: { contractId, deadlineAt: resumed?.toISOString() ?? null },
-    })
+    if (!opts.quiet) {
+      await this.notifyTrainerUser(c.profileId, {
+        templateKey: 'trainer.contract.materials_returned',
+        title: 'أُعيدت موادُّك بملاحظات',
+        body: `ما ينقص: ${notes.slice(0, 300)}`,
+        data: { contractId, deadlineAt: resumed?.toISOString() ?? null },
+      })
+    }
     return { deadlineAt: resumed }
   }
 
@@ -5510,7 +5531,9 @@ export class TrainerReviewService {
 
   /* ─────────── التأهيل والإسناد والنشر العام والإيقاف ─────────── */
 
-  async qualifyForCourse(profileId: string, courseId: string, actorId: string, note?: string) {
+  /** و`quiet`: حين يُقال التأهيلُ في خبر القرار الذي أوقعه (اعتمادُ خطّة شعبة الإعداد
+      — `TrainerPrepService.qualifyOnApproval`) فلا يصله عن القرار الواحد خبران */
+  async qualifyForCourse(profileId: string, courseId: string, actorId: string, note?: string, opts: { quiet?: boolean } = {}) {
     const profile = await this.requireLiveProfile(profileId)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة في الكتالوج')
@@ -5523,12 +5546,14 @@ export class TrainerReviewService {
       actorId, action: 'trainer.qualify', entityType: 'trainer_profile', entityId: profile.id,
       meta: { courseId },
     })
-    await this.notifyTrainerUser(profileId, {
-      templateKey: 'trainer.qualified',
-      title: 'أُهِّلتَ لتدريس دورة',
-      body: `صرتَ مؤهَّلا لتدريس «${await this.courseTitleAr(courseId)}» — وتصلك شعبُها حين تُسنَد إليك.`,
-      data: { courseId },
-    })
+    if (!opts.quiet) {
+      await this.notifyTrainerUser(profileId, {
+        templateKey: 'trainer.qualified',
+        title: 'أُهِّلتَ لتدريس دورة',
+        body: `صرتَ مؤهَّلا لتدريس «${await this.courseTitleAr(courseId)}» — وتصلك شعبُها حين تُسنَد إليك.`,
+        data: { courseId },
+      })
+    }
     return q
   }
 

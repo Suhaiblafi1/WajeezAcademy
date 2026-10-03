@@ -57,3 +57,63 @@ export const ADMIN_OWNED_KEYS: readonly string[] = [APPROVAL_KEY]
 export function trainerOwned<T extends GateItem>(checklist: readonly T[]): T[] {
   return checklist.filter((c) => !ADMIN_OWNED_KEYS.includes(c.key))
 }
+
+/* ═══ «التالي» في بطاقة «شعبي» — يتبع حالَ الخطّة (٣ أكتوبر ٢٠٢٦) ═══
+
+   سار صاحبُ المنصّة في المسار كلِّه فوجد البطاقةَ تقول الشيءَ نفسَه في ثلاث
+   لحظاتٍ لا يصدق في واحدةٍ منها: بعد الإرسال «أكّد أنّك توافق… وأرسلها»
+   وقد أُرسلت، وبعد الردّ الجملةَ نفسَها وعليها ملاحظةٌ تنتظره، وبعد الاعتماد
+   «التجهيزُ مكتمل — الشعبة في التشغيل» ولا يدخلها أحد. فكانت تقرأ قائمةَ
+   التجهيز وحدَها — والقائمةُ لا تعرف أنّ الخطّةَ عند الإدارة، ولا أنّ الشعبةَ
+   مغلقةٌ للتسجيل.
+
+   فالحكمُ بحال الخطّة أوّلا، ثمّ بالقائمة لما لا يزال في يده. و`waiting`
+   انتظارٌ لا فعل: لا يُقدَّم بـ«التالي:» — فلا يُقال للمدرّب «افعل» ما ليس
+   بيده. وما يُرجَع `null` له هو شعبةٌ مفتوحةٌ تمّ تجهيزُها. */
+export interface BoardNext {
+  key: string
+  labelAr: string
+  /** ما ينتظره لا ما يفعله */
+  waiting?: boolean
+}
+
+export function boardNextStep<T extends GateItem & { labelAr: string }>(input: {
+  planStatus: string
+  /** علمُ الشعبة — لا تقبل أحدا وهو منزول (`cohortAcceptsRegistration`) */
+  registrationOpen: boolean
+  checklist: readonly T[]
+}): BoardNext | null {
+  const { planStatus, registrationOpen, checklist } = input
+  if (planStatus === 'submitted') {
+    return { key: 'awaiting_decision', labelAr: 'أُرسلت — بانتظار قرار الإدارة، ويصلك هنا وبالبريد', waiting: true }
+  }
+  if (planStatus === 'changes_requested') {
+    return { key: 'address_notes', labelAr: 'اقرأ ملاحظةَ الإدارة في رأس كلّ خطوة، وعدّل، ثمّ أعِد الإرسال' }
+  }
+  if (planStatus === 'approved' || planStatus === 'published') {
+    return registrationOpen
+      ? null
+      : { key: 'awaiting_open', labelAr: 'اعتُمدت — وتفتحها الأكاديميةُ للتسجيل، فتراها هنا مفتوحة', waiting: true }
+  }
+  const next = blockingBeforeSubmit(checklist)[0] ?? checklist.find((i) => !i.done) ?? null
+  return next ? { key: next.key, labelAr: next.labelAr } : null
+}
+
+/* ═══ «أرسِلها» — ما يقفها قبل أن تُرسَل، بترتيبه (٣ أكتوبر ٢٠٢٦) ═══
+
+   الإرسالُ يرسل **المحفوظ**. فمن في يده تعديلٌ لم يُحفظ (أو حفظٌ ردّه الخادم)
+   وأرسل، ذهب ما قبل تعديله وطُرح تعديلُه صامتا — رآه صاحبُ المنصّة في المسار
+   فردّ الخطّةَ ثانيةً بملاحظته نفسِها. واختار («4a») أن يُسأل بخياراتٍ يُقال
+   أثرُ كلٍّ منها (`CohortWorkspace.tsx`).
+
+   والترتيبُ: الموافقةُ أوّلا (المربّعُ في الخطوة نفسِها)، ثمّ التعديلُ الذي لم
+   يُحفظ — قبل النواقص، فالنواقصُ تُحسب من المحفوظ، وقد يكون تعديلُه هو ما
+   يوفيها. ثمّ النواقص. و`null`: يُرسَل. */
+export type SendBlock = 'confirm' | 'unsaved' | 'blocking' | null
+
+export function sendBlock(input: { confirmed: boolean; unsaved: boolean; blocking: number }): SendBlock {
+  if (!input.confirmed) return 'confirm'
+  if (input.unsaved) return 'unsaved'
+  if (input.blocking > 0) return 'blocking'
+  return null
+}

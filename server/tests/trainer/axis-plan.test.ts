@@ -249,10 +249,12 @@ describe('⑦ الاعتمادُ يفتح التسجيلَ ويحدّ الالت
     const card = await plans.latestForCohort(cohortId)
     const r = await plans.decide(adminId, card!.id, true)
     expect(r.status).toBe('approved')
-    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { joinClosesAt: true } })
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { joinClosesAt: true, registrationOpen: true } })
     expect(row.joinClosesAt?.toISOString()).toBe(periodBounds(SLOTS[1]).from.toISOString())
     const after = await plans.latestForCohort(cohortId)
-    expect(after!.registration).toEqual({ awaitingPlan: false, joinClosesAt: row.joinClosesAt })
+    /* وعلمُ الشعبة معهما كما هو في صفّها (٣ أكتوبر ٢٠٢٦) — الاعتمادُ لا يرفعه، ومنه
+       تقول المراجعةُ «مفتوح» أو «مغلقٌ حتّى تفتحها» (`registration-state.ts`) */
+    expect(after!.registration).toEqual({ awaitingPlan: false, joinClosesAt: row.joinClosesAt, registrationOpen: row.registrationOpen })
     const { CohortService } = await import('../../services/cohort.service')
     expect((await new CohortService(prisma).openChecklist(cohortId)).missing).not.toContain('خطّةُ المدرّب لم تُعتمَد بعد — تُفتح الشعبةُ للتسجيل باعتمادها')
   })

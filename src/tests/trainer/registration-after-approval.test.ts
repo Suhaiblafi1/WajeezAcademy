@@ -9,6 +9,8 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { adminRegistrationLine, lineText, trainerRegistrationLine } from '@/application/learning/registration-state'
+import { whenAr } from '@/application/learning/cohort-gate'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const WORKSPACE = code('src/pages/trainer/CohortWorkspace.tsx')
@@ -18,17 +20,31 @@ const WORKSPACE = code('src/pages/trainer/CohortWorkspace.tsx')
 const PLAN_REVIEW = code('src/components/admin/TrainerPlanReview.tsx')
 const BUY_PANEL = code('src/components/BuyPanel.tsx')
 
+/* ═══ والجملتان خرجتا إلى قاعدةٍ واحدة (٣ أكتوبر ٢٠٢٦) ═══
+   سار صاحبُ المنصّة في المسار فوجد الشاشتين تقولان «تُفتح حين تُعتمَد» و«مفتوحٌ
+   حتّى…» عن شعبة إعدادٍ علمُها منزولٌ لا يرفعه الاعتماد. فصارت الجملةُ من حال
+   الشعبة كلِّها — علمِها وخطّتِها والتحاقِها — في `registration-state.ts`، يقرؤها
+   البابان. والحارسان هنا يحرسان ما كانا يحرسانه حيث صار: تاريخُ المدرّب من قاعدة
+   الاعتماد نفسِها ومكتوبٌ بتوقيت عمّان، وعلمٌ مرفوعٌ على خطّةٍ لم تُعتمَد لا يُقرأ
+   «مفتوحا». وما زاد (العلمُ المنزول) في `last-mile-screens.test.ts`. */
 describe('المدرّبُ يعرف متى يدخلها متعلّموه', () => {
   it('⚠️ آخرُ الالتحاق بالقاعدة التي يكتبه بها الاعتماد — لا بحسابٍ ثانٍ', () => {
-    expect(WORKSPACE).toMatch(/const closes = joinClosesAt\(planPeriod, content\.slots\);/)
-    expect(WORKSPACE).toMatch(/\{closes && <>، ويُقبل الملتحقون حتّى بدء موعدها الثاني — <b className="text-foreground">\{whenAr\(closes\)\}<\/b><\/>\}/)
+    expect(WORKSPACE).toMatch(/joinClosesAt: joinClosesAt\(planPeriod, content\.slots\),/)
+    const closes = new Date('2026-11-10T13:00:00Z')
+    const line = trainerRegistrationLine({ registrationOpen: true, awaitingPlan: true, joinClosesAt: closes }, new Date('2026-11-01T00:00:00Z'))
+    expect(line.lead).toContain('ويُقبل الملتحقون حتّى بدء موعدها الثاني')
+    expect(line.date).toBe(whenAr(closes))
   })
 })
 
 describe('والمعتمِدُ يُقال له ما يحكم به الخادم', () => {
   it('⚠️ علمٌ مرفوعٌ على خطّةٍ لم تُعتمَد لا يُقرأ «مفتوحا»', () => {
-    expect(PLAN_REVIEW).toMatch(/\{trainerPlan\.registration\?\.awaitingPlan \? \(/)
-    expect(PLAN_REVIEW).toMatch(/\) : trainerPlan\.registration\?\.joinClosesAt \? \(/)
+    expect(PLAN_REVIEW).toMatch(/adminRegistrationLine\(\{ \.\.\.r, registrationOpen: r\.registrationOpen \?\? true \}, new Date\(\)\)/)
+    const raised = lineText(adminRegistrationLine(
+      { registrationOpen: true, awaitingPlan: true, joinClosesAt: new Date('2026-12-01T00:00:00Z') }, new Date('2026-11-01T00:00:00Z'),
+    )!)
+    expect(raised).toContain('يُفتح باعتمادك')
+    expect(raised).not.toContain('مفتوح')
   })
 })
 

@@ -9,6 +9,7 @@ import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { areaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
+import { tabForGap } from "@/application/learning/open-gaps";
 import CohortReadiness from "./CohortReadiness";
 import CohortWizard, { type WizardTerm } from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
@@ -84,6 +85,8 @@ export default function AdminCohorts() {
      تُعمل معا ولا يعملها الشخصُ نفسُه. */
   const [tab, setTab] = useState<CohortTab>("identity");
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
+  /* وما ردّ به الفتحُ — بجانب زرّه لا أعلى الصفحة وحدَه (٣ أكتوبر ٢٠٢٦) */
+  const [openError, setOpenError] = useState<Record<string, string>>({});
   const [planDraft, setPlanDraft] = useState<Record<string, string>>({});
 
   /* نماذج — والإنشاءُ صار في المعالج (CohortWizard)، وسعرُ الدورة وعملتُها
@@ -132,6 +135,13 @@ export default function AdminCohorts() {
         setQ(row.title);
         setExpanded(row.id);
         setTab("content");
+        /* ═══ وشروطُ فتحها معها (٣ أكتوبر ٢٠٢٦) ═══
+           كان الرابطُ يبسط البطاقةَ ولا يجلب شروطَها — فبقيت «شروط الفتح» دوّامةً
+           لا تقف، و«افتح الشعبة» يُنقر فيردّ «لا سعة محددة» أعلى الصفحة. وكلُّ من
+           جاء من «خططٌ تنتظر اعتمادك» أو من العقود جاء من هذا الرابط. */
+        apiGet<Checklist>(`/api/admin/cohorts/${row.id}/open-checklist`)
+          .then((check) => setChecklist((prev) => ({ ...prev, [row.id]: check })))
+          .catch(() => undefined);
       }
       setCourses(courseRows.filter((c) => c.status === "published"));
       setReschedules(rsRows);
@@ -171,6 +181,23 @@ export default function AdminCohorts() {
       () => apiPost(`/api/admin/session-reschedules/${id}/review`, { action, comment: rsComment[id]?.trim() || undefined }),
       action === "approve" ? "اعتُمد الموعد الجديد — وأُخبر المتعلّمون" : "لم يُعتمد الاقتراح — ووصل المدرب تعليقك",
     );
+
+  /* «افتح الشعبة» — وما ردّ به يُقال بجانبه، وتُقرأ الشروطُ بعده كما صارت */
+  const openCohort = async (id: string) => {
+    if (busy) return;
+    setBusy(true); setFlash(null);
+    setOpenError((prev) => ({ ...prev, [id]: "" }));
+    try {
+      await apiPost(`/api/admin/cohorts/${id}/open`);
+      setFlash({ kind: "ok", text: "فُتحت الشعبة — التسجيل متاح الآن" });
+      await load();
+    } catch (err) {
+      setOpenError((prev) => ({ ...prev, [id]: err instanceof ApiError ? err.message : "تعذّر فتحُ الشعبة" }));
+    } finally {
+      await loadChecklist(id);
+      setBusy(false);
+    }
+  };
 
   const loadChecklist = async (id: string) => {
     try {
@@ -427,11 +454,21 @@ export default function AdminCohorts() {
                           <p className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink"><CheckCircle2 className="h-3.5 w-3.5" /> كل الشروط مستوفاة</p>
                         ) : (
                           <div className="flex flex-wrap gap-2">
-                            {check.missing.map((m) => (
-                              <span key={m} className="flex items-center gap-1.5 rounded-full border border-red-500/40 px-3 py-1 text-fine font-bold text-red-400">
-                                <XCircle className="h-3 w-3" /> {m}
-                              </span>
-                            ))}
+                            {check.missing.map((m) => {
+                              /* والنقصُ الذي يُوفى في لسانٍ آخر يفتحه — لا يُترك يُبحث عنه */
+                              const fixAt = tabForGap(m);
+                              const chip = "flex items-center gap-1.5 rounded-full border border-red-500/40 px-3 py-1 text-fine font-bold text-red-400";
+                              return fixAt ? (
+                                <button key={m} type="button" onClick={() => setTab(fixAt)} className={`${chip} hover:bg-red-500/10`}
+                                  title={`افتح «${COHORT_TABS.find((t) => t.id === fixAt)?.label}»`}>
+                                  <XCircle className="h-3 w-3" /> {m} — أكمِلها في «{COHORT_TABS.find((t) => t.id === fixAt)?.label}»
+                                </button>
+                              ) : (
+                                <span key={m} className={chip}>
+                                  <XCircle className="h-3 w-3" /> {m}
+                                </span>
+                              );
+                            })}
                           </div>
                         )
                       ) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />}
@@ -476,7 +513,7 @@ export default function AdminCohorts() {
                     {/* إجراءات الحالة */}
                     <div className="flex flex-wrap gap-2">
                       {c.status === "draft" && (
-                        <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/open`), "فُتحت الشعبة — التسجيل متاح الآن")}>
+                        <Button tone="confirm" disabled={busy} onClick={() => void openCohort(c.id)}>
                           <Play className="h-3.5 w-3.5" /> افتح الشعبة
                         </Button>
                       )}
@@ -497,6 +534,9 @@ export default function AdminCohorts() {
                       )}
                     </div>
 
+                    {c.status === "draft" && openError[c.id] && (
+                      <p className="text-read font-bold text-red-300" role="alert">{openError[c.id]}</p>
+                    )}
                     {c.status === "draft" && check && !check.ready && (
                       <p className="flex items-center gap-1.5 text-read text-red-300">
                         <Lock className="h-3.5 w-3.5" /> لا يمكن فتحها قبل استيفاء الشروط أعلاه

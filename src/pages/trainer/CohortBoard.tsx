@@ -31,7 +31,8 @@ interface CohortSummary {
   startsAt: string | null; endsAt: string | null;
   learners: number; sessions: number;
   planStatus: string; done: number; total: number;
-  next: { key: string; labelAr: string } | null;
+  /* «التالي» بحال الخطّة والشعبة — و`waiting` انتظارٌ لا فعل (`boardNextStep`) */
+  next: { key: string; labelAr: string; waiting?: boolean } | null;
 }
 
 /** حالةُ الخطّة كما تُقرأ على البطاقة — واللونُ من سلّم الأسطح */
@@ -116,7 +117,11 @@ export default function CohortBoard() {
                 {/* الخطوةُ التالية — من الخادم، لا تُخمَّن هنا */}
                 <p className="mt-4 flex items-start gap-2 text-read leading-6">
                   <ChevronLeft className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-                  {c.next ? <span><span className="font-bold text-foreground">التالي:</span> {c.next.labelAr}</span> : <span className="font-bold text-teal-light-ink">التجهيزُ مكتمل — الشعبة في التشغيل.</span>}
+                  {c.next
+                    ? c.next.waiting
+                      ? <span className="text-muted-foreground">{c.next.labelAr}</span>
+                      : <span><span className="font-bold text-foreground">التالي:</span> {c.next.labelAr}</span>
+                    : <span className="font-bold text-teal-light-ink">التجهيزُ مكتمل — الشعبة في التشغيل.</span>}
                 </p>
 
                 <Link to={`/trainer/cohort/${c.id}`} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-teal-deep px-5 text-sm font-black text-white transition hover:bg-teal-darker">

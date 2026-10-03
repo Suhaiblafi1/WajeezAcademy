@@ -24,7 +24,8 @@ import { planDiff } from "@/application/trainer/plan-diff";
 import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { PLAN_AR, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
-import { whenAr } from "@/application/learning/cohort-gate";
+import { adminRegistrationLine } from "@/application/learning/registration-state";
+import TrainerNextSteps from "@/components/admin/TrainerNextSteps";
 import { signalPlansChanged } from "@/services/plans-signal";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -39,8 +40,9 @@ interface TrainerPlan {
   period: { startsOn: string; endsOn: string } | null;
   sessions: CurriculumInput["sessions"];
   assessments: CurriculumInput["assessments"];
-  /* التسجيلُ كما يُحكَم — لا يُفتح قبل الاعتماد، والالتحاقُ حتّى الموعد الثاني (٣ج) */
-  registration?: { awaitingPlan: boolean; joinClosesAt: string | null };
+  /* التسجيلُ كما يُحكَم — لا يُفتح قبل الاعتماد، والالتحاقُ حتّى الموعد الثاني (٣ج)،
+     وعلمُ الشعبة نفسُه: شعبةُ الإعداد لا يرفعه اعتمادُها (٣ أكتوبر ٢٠٢٦) */
+  registration?: { awaitingPlan: boolean; joinClosesAt: string | null; registrationOpen?: boolean };
   /* اعتُمدت للمدرّب خطّةٌ قطّ — فما يغيّره في مهامّه بعدها ينتظر قرارَك (٣ج-٣) */
   approvedOnce?: boolean;
   /* والمعتمَدةُ التي تراجعها هذه إن كانت مراجعة — منها «ما تغيّر» (٣ج-٤) */
@@ -106,6 +108,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   const waitingTasks = trainerPlan ? awaitingTasks(trainerPlan.assessments, trainerPlan.approvedOnce ?? false) : [];
   const axisNo = new Map((trainerPlan?.content?.modules ?? []).map((m, i) => [m.moduleId, i + 1] as const));
   const [asking, setAsking] = useState(false);
+  /* وفُعِّل مدرّبُها بهذا الاعتماد — فيظهر ما بقي عليك (`TrainerNextSteps`، «3a») */
+  const [activated, setActivated] = useState(false);
   /* القضاءُ في الخطّة يُبلَّغ مرّتين: البابُ الذي فُتحت منه (الطابورُ يعلّمها)،
      والإطارُ الذي يعدّ ما ينتظر (`plans-signal.ts`) — فلا تبقى شارتُه على عددٍ مضى */
   const decided = (outcome: PlanOutcome) => { onPlanDecided?.(outcome); signalPlansChanged(); };
@@ -137,17 +141,19 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               «التسجيلُ يُفتح بعد الاعتماد، ويُغلق يومَ البدء، والالتحاقُ المتأخّرُ حتّى
               الموعد الثاني» (صاحب المنصّة). فيُقال للمعتمِد ما يحكم به الخادم: علمٌ
               مرفوعٌ على خطّةٍ لم تُعتمَد لا يُدخل أحدا — وكان يُقرأ «مفتوحا». */}
-          {trainerPlan.registration?.awaitingPlan ? (
-            <p className="mt-2 text-read leading-6 text-muted-foreground">
-              التسجيل: يُفتح باعتمادك هذه الخطّة — ولا يقبل أحدا قبلها وإن رُفع علمُه.
-            </p>
-          ) : trainerPlan.registration?.joinClosesAt ? (
-            <p className="mt-2 text-read leading-6 text-muted-foreground">
-              {new Date(trainerPlan.registration.joinClosesAt).getTime() > Date.now()
-                ? <>الالتحاقُ مفتوحٌ حتّى <b className="text-foreground">{whenAr(trainerPlan.registration.joinClosesAt)}</b> — بدءِ موعدها الثاني.</>
-                : <>أُغلق الالتحاق <b className="text-foreground">{whenAr(trainerPlan.registration.joinClosesAt)}</b> — ببدء موعدها الثاني.</>}
-            </p>
-          ) : null}
+          {/* ═══ وعلمُ الشعبة قبل الاعتماد وبعده (٣ أكتوبر ٢٠٢٦) ═══
+              كان يقول «يُفتح باعتمادك» و«الالتحاقُ مفتوح» لكلّ شعبة — وشعبةُ الإعداد
+              مسوّدةٌ علمُها منزولٌ لا يرفعه الاعتماد. فالجملةُ من حالها كما يحكم
+              الخادم (`registration-state.ts`)، وتقول أين تُفتح إن كانت مغلقة. */}
+          {(() => {
+            const r = trainerPlan.registration;
+            const line = r ? adminRegistrationLine({ ...r, registrationOpen: r.registrationOpen ?? true }, new Date()) : null;
+            return line ? (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                {line.lead}{line.date && <b className="text-foreground">{line.date}</b>}{line.tail}
+              </p>
+            ) : null;
+          })()}
           {/* ═══ المدّةُ أوّلُ ما يُقرأ — وهي ما يُعتمَد (٢٧ سبتمبر ٢٠٢٦) ═══
               صار المدرّبُ يحدّد متى تبدأ شعبتُه ومتى تنتهي، وباعتمادك تصير
               حدودَها المعلَنة ويُشتقّ فصلُها من تاريخ بدئها. */}
@@ -244,7 +250,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             <Button tone="confirm" size="sm" disabled={busy}
               onClick={() => act(
                 () => apiPost<PlanDecision>(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true })
-                  .then(async (r) => { await Promise.all([loadPlan(), loadPendingSessions()]); decided("approved"); return r; }),
+                  .then(async (r) => { await Promise.all([loadPlan(), loadPendingSessions()]); if (r.prep?.activated) setActivated(true); decided("approved"); return r; }),
                 (r) => planApprovedMsg(r as PlanDecision),
               )}>
               {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}
@@ -276,6 +282,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
       )}
       {/* وما قاله الفعلُ يُقرأ حيث نُقر — لا أعلى البطاقة بعد منهجٍ طويل */}
       {msg && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
+      {/* وما بقي بعد الاعتماد الأخير — فتحُ شعبه وظهورُه العامّ، في الموضع الذي فُعِّل فيه */}
+      {activated && <TrainerNextSteps cohortId={cohortId} />}
 
       {/* ═══ ومهامُّ ما بعد الاعتماد تنتظر قرارك (٣ج-٣) ═══
           «وبعد الاعتماد كلُّ تغييرٍ باعتماد» — جديدةٌ أو تعديلٌ أو حذف، والمتعلّمون
