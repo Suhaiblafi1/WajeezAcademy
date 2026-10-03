@@ -10,6 +10,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CohortService } from '../../services/cohort.service'
 import { StaffInboxService } from '../../services/staff-inbox.service'
+import { CohortPlanService } from '../../services/cohort-plan.service'
 import { ROLE_PERMISSIONS } from '../../auth/permissions'
 
 let prisma: PrismaClient
@@ -17,6 +18,7 @@ let inbox: StaffInboxService
 let cohorts: CohortService
 let managerId = ''
 let learnerId = ''
+let liveProfileId = ''
 const COURSE = 'C-BIZ-101'
 const permsOf = (role: string) => ROLE_PERMISSIONS[role] as readonly string[]
 
@@ -115,7 +117,10 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
         status: 'active', motivation: 'اختبار', privacyConsentAt: new Date(),
       },
     })
-    const profile = await prisma.trainerProfile.create({ data: { applicationId: app.id } })
+    /* مدرّبٌ قائمٌ بحسابٍ موصول — فالطابورُ لا يعدّ ملفّا بلا حساب (#426) */
+    const account = await new AuthService(prisma).register(`inbox-trainer-user-${Date.now()}@test.local`, 'Trainer#12345', 'مدرّبُ اللوح')
+    const profile = await prisma.trainerProfile.create({ data: { applicationId: app.id, userId: account.userId } })
+    liveProfileId = profile.id
     await prisma.cohortDeliveryPlan.create({
       data: { cohortId: c.id, trainerId: profile.id, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
     })
@@ -123,6 +128,36 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
     const plans = items.find((i) => i.key === 'cohort_plans')
     expect(plans?.count).toBe(1)
     expect(plans?.href).toBe('/admin/pending-plans')
+    expect(plans?.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح'])
+  })
+
+  /* ═══ وما لا صاحبَ له لا يُعدّ (٣ أكتوبر ٢٠٢٦) ═══
+     علّم #426 الطابورَ وشارتَه ألّا يعدّا خطّةَ مدرّبٍ حُذف أو شعبةٍ أُلغيت، وبقي
+     هذا البندُ يعدّ كلَّ `submitted`: يقول اللوحُ «٣» والطابورُ «١». فالحارسُ
+     يقيس البندَ بالطابور نفسِه، لا برقمٍ يُكتب بيد. */
+  it('⚠️ ولا يعدّ خطّةً بلا صاحبٍ يعمل — عدُّه عدُّ الطابور نفسِه', async () => {
+    /* ① خطّةُ مدرّبٍ فُكّ حسابُه بالحذف — وشعبتُها مسوّدةٌ باقية */
+    const gone = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةُ مدرّبٍ حُذف' })
+    const app = await prisma.trainerApplication.create({
+      data: {
+        reference: `TR-INBOX-GONE-${Date.now()}`, fullName: 'مدرّبٌ حُذف', email: `inbox-gone-${Date.now()}@test.local`,
+        status: 'active', motivation: 'اختبار', privacyConsentAt: new Date(),
+      },
+    })
+    const unlinked = await prisma.trainerProfile.create({ data: { applicationId: app.id } })
+    await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: gone.id, trainerId: unlinked.id, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
+    })
+    /* ② وخطّةُ مدرّبٍ قائمٍ في شعبةٍ أُلغيت */
+    const cancelled = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةٌ أُلغيت' })
+    await prisma.cohort.update({ where: { id: cancelled.id }, data: { status: 'cancelled' } })
+    await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: cancelled.id, trainerId: liveProfileId, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
+    })
+
+    const plans = (await inbox.forStaff(managerId, permsOf('academic_manager'))).find((i) => i.key === 'cohort_plans')
+    expect(plans?.count).toBe(await new CohortPlanService(prisma).pendingCount())
+    expect(plans?.count).toBe(1)
     expect(plans?.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح'])
   })
 
