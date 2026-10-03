@@ -433,6 +433,23 @@ export function countableSessions<T extends { placeholder?: boolean | null; stat
   return rows.filter((r) => !r.placeholder && r.status !== 'cancelled')
 }
 
+/* ═══ ما ينتظر الاعتمادَ حقّا — لا خطّةٌ بلا صاحب (٣ أكتوبر ٢٠٢٦) ═══
+
+   بلاغُ صاحب المنصّة: «حذفتُ مدرّبا نهائيّا ومازالت دورتُه هنا — لماذا لا
+   يمكنني حذفها؟». فالحذفُ يمحو ملفَّ المدرّب (أو يفكّ حسابَه)، وتبقى شعبةُ
+   إعداده وخطّتُها المرسَلة: `trainerId` يصير فارغا بلا تتالٍ، والطابورُ يعدّ
+   كلَّ `submitted` — فخطّةٌ لن يقرأ قرارَها أحدٌ تنتظر قرارا إلى الأبد، ولا
+   زرَّ في الطابور يُخرجها.
+
+   فالطابورُ وشارتُه يعدّان ما له صاحبٌ يعمل: مدرّبٌ قائمٌ بحسابٍ موصول، في
+   شعبةٍ لم تُلغَ. والحذفُ نفسُه يُلغي شعبَ الإعداد التي خلّفها
+   (`retireOrphanPrepCohorts`)، وترحيلٌ ألغى ما خلّفه الحذفُ قبل هذا. */
+export const PENDING_PLAN_WHERE = {
+  status: 'submitted',
+  trainer: { is: { userId: { not: null } } },
+  cohort: { status: { not: 'cancelled' } },
+} as const
+
 export class CohortPlanService {
   private prisma: PrismaClient
   private cohorts: CohortService
@@ -875,7 +892,7 @@ export class CohortPlanService {
      الذي يحكم به القرار (`prepContext`)، لا نسخةٌ منه تفترق عنه. */
   async pending() {
     const rows = await this.prisma.cohortDeliveryPlan.findMany({
-      where: { status: 'submitted' },
+      where: PENDING_PLAN_WHERE,
       orderBy: { submittedAt: 'asc' },
       include: {
         cohort: {
@@ -905,7 +922,7 @@ export class CohortPlanService {
 
   /** كم خطّةً تنتظر الاعتماد — لشارة القائمة الجانبيّة، بلا جلب الخطط نفسِها */
   async pendingCount() {
-    return this.prisma.cohortDeliveryPlan.count({ where: { status: 'submitted' } })
+    return this.prisma.cohortDeliveryPlan.count({ where: PENDING_PLAN_WHERE })
   }
 
   /** آخرُ خطّةِ مدرّبٍ لشعبةٍ — لبطاقة الشعبة عند الإدارة */
