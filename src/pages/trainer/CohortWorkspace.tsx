@@ -49,7 +49,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, Check, ChevronDown, ChevronUp, ClipboardCheck, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -74,6 +74,7 @@ import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCohorts";
+import { ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR } from "@/application/trainer/orientation-session";
 import Button from "@/components/ui/Button";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
@@ -931,6 +932,19 @@ export default function CohortWorkspace() {
       {/* شعبةُ الإعداد تقول ما هي — فلا يظنّها شعبةً مفتوحةً للتسجيل (٢ أكتوبر ٢٠٢٦) */}
       {prepIds.has(ws.cohort.id) && (
         <Inset tone="accent" className="mb-4 p-3.5 text-read leading-7">{PREP_NOTICE_AR}</Inset>
+      )}
+
+      {/* ═══ وحجزُ المساعدة حيث تُعبَّأ الشعبة (٣ أكتوبر ٢٠٢٦) ═══
+          قرارُ صاحب المنصّة («A»): كان رابطُ جلسة التهيئة في «مؤهّلاتي» والرسالة
+          والدليل — والتعبئةُ هنا، وهنا يقف المدرّبُ حين يحتاجها. فيُعرض ما دامت
+          الخطّةُ بيده (مسوّدةً أو مردودةً بملاحظات)، للنشط ومن في الطور معا. */}
+      {(!ws.plan || ws.plan.status === "draft" || ws.plan.status === "changes_requested") && (
+        <Inset className="mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-2.5">
+          <p className="text-read leading-7 text-muted-foreground">تحتاج مساعدةً في تعبئة شعبتك؟ احجز جلسةً معنا في الوقت الذي يناسبك.</p>
+          <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" size="sm" icon={CalendarPlus}>
+            {ORIENTATION_CTA_AR}
+          </Button>
+        </Inset>
       )}
 
       {/* ═══ الشريطُ سلّمٌ بأسمائه، وزرٌّ مضاءٌ واحد (٢٧ سبتمبر ٢٠٢٦) ═══

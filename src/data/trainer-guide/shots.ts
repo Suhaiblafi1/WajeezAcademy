@@ -86,7 +86,7 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   },
   "prep-panel": {
     "w": 2200,
-    "h": 1353
+    "h": 2615
   },
   "proposal-card": {
     "w": 2200,

@@ -12,7 +12,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
-import Button from "@/components/ui/Button";
 import { TRAINER_GUIDE_PATH } from "@/application/trainer/trainer-guide";
 
 /* ما يقرؤه الإطارُ من `/api/trainer/me` — لا الملفُّ كلُّه.
@@ -210,10 +209,35 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             صار الشريطُ يقيس ويعرض ما وسعه (٢٧ سبتمبر ٢٠٢٦) — وتفصيلُه في
             `ui/PortalTabs`، وهو نفسُه في بوّابتَي المستشار والمتعلّم. */}
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-5 py-2">
-          <Link to="/" className="flex shrink-0 items-center gap-2">
-            <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
-            <span className="hidden font-black sm:block">وجيز — بوابة المدرب</span>
-          </Link>
+          {/* ═══ الدليلُ جنبَ الاسم، والبحثُ في وسط الرأس (٣ أكتوبر ٢٠٢٦) ═══
+
+              قولُ صاحب المنصّة: «أوضِحْ مكانَ الدليل، وغيِّر مكانَ البحث إلى مكانٍ
+              مناسبٍ احترافيّ». كان الدليلُ زرّا شبحيّا بين البحث والجرس يُقرأ أداةً
+              من الأدوات، والبحثُ قبله يسبقه إلى العين. فصار:
+              · **الدليلُ** شارةً ملوّنةً باسمها كاملا («دليلُ المدرّب») لصقَ اسم
+                البوّابة — أوّلَ ما يُرى، وعلى الهاتف كذلك. وليست ذهبيّة: الذهبيُّ
+                فعلُ الصفحة (`one-primary-per-screen`).
+              · **والبحثُ** حقلا في وسط الرأس بين الاسم والأدوات — موضعُه في
+                المحرّرات والبوّابات التي يعرفها الناس — يتّسع لما وسعه. */}
+          <div className="flex shrink-0 items-center gap-3">
+            <Link to="/" className="flex shrink-0 items-center gap-2">
+              <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
+              <span className="hidden font-black sm:block">وجيز — بوابة المدرب</span>
+            </Link>
+            {/* ويُفتح في لسانٍ آخر: الدليلُ شرحٌ يُقرأ بجانب البوّابة لا بدلا منها،
+                فلا يغادر المدرّبُ شاشتَه ليقرأ عنها (٣٠ سبتمبر ٢٠٢٦). */}
+            <a href={TRAINER_GUIDE_PATH} target="_blank" rel="noopener" aria-label="دليلُ المدرّب — يُفتح في لسانٍ جديد"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-teal/50 bg-teal/10 px-3.5 py-1.5 text-fine font-black text-teal-light-ink transition hover:border-teal hover:bg-teal/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper">
+              <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>دليلُ المدرّب</span>
+            </a>
+          </div>
+          {/* بحث سريع Ctrl+K — لجلسة المدرب الحقيقية فقط: يضرب نقطة الخادم المقيدة بإسناداته */}
+          {realTrainer && (
+            <div className="hidden min-w-0 flex-1 justify-center px-4 md:flex">
+              <SearchChip hintAr="ابحث في شعبك وطلبتك" className="w-full max-w-sm" />
+            </div>
+          )}
           <PortalTabs
             tabs={tabs}
             label="تبويبات بوّابة المدرّب"
@@ -221,18 +245,6 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             className="order-last w-full"
           />
           <div className="flex items-center gap-3">
-            {/* بحث سريع Ctrl+K — لجلسة المدرب الحقيقية فقط: يضرب نقطة الخادم المقيدة بإسناداته */}
-            {realTrainer && (
-              <SearchChip hintAr="ابحث في شعبك وطلبتك" />
-            )}
-            {/* ودليلُ المدرّب في الإطار لا في صفحةٍ واحدة (٢٩ سبتمبر ٢٠٢٦): يصله رابطُه
-                في رسالة اعتماد التوقيع مرّةً، ويحتاجه كلّما وقف عند شاشة. ونبرتُه
-                هادئة — الذهبيُّ فعلُ الصفحة، وهذا أداةٌ في الإطار. */}
-            {/* ويُفتح في لسانٍ آخر: الدليلُ شرحٌ يُقرأ بجانب البوّابة لا بدلا منها،
-                فلا يغادر المدرّبُ شاشتَه ليقرأ عنها (٣٠ سبتمبر ٢٠٢٦). */}
-            <Button as="a" href={TRAINER_GUIDE_PATH} target="_blank" rel="noopener" tone="ghost" size="sm" icon={BookOpen} aria-label="دليلُ المدرّب — يُفتح في لسانٍ جديد">
-              <span>الدليل</span>
-            </Button>
             <NotificationBell audience="trainer" />
             <ThemeToggle />
             <StaffAccountMenu user={user} />
