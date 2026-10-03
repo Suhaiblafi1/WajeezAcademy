@@ -11,7 +11,7 @@
  * بأرقامٍ في Node (`src/tests/trainer/nav-fit.test.ts`) بلا متصفّحٍ ولا
  * جلسةِ مدرّب — وما يُحرَس فيه ثلاث: أنّ الكلَّ يُرى متى وسعه الشريط، وأنّ
  * مكانَ «المزيد» يُحجَز **قبل** أن يُقال إنّ تبويبا وسع، وأنّ الترتيبَ
- * أولويّة: ما يخرج أوّلا آخرُ القائمة.
+ * أولويّة يُملأ بها ما بقي من الفسحة (`fitIndices`).
  */
 
 /* سماحٌ لكسور البكسل: عرضٌ يُقاس ١٠٠٠٫٣ في شريطٍ ١٠٠٠ لا يُرى قَصُّه بعين،
@@ -25,20 +25,33 @@ const SLACK = 0.5
  * @param available عرضُ الشريط المتاح كلِّه
  * @returns عددُ ما يُعرض من أوّل القائمة؛ وما بعده لـ«المزيد»
  */
-export function fitCount(widths: readonly number[], gap: number, moreWidth: number, available: number): number {
+/* ═══ والفسحةُ تُملأ — لا يقف الشريطُ عند أوّل عريض (٣ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة على صورة الهاتف: الرئيسيةُ وشعبي وطلبتي ثمّ فراغٌ ثمّ
+   «المزيد» — «make them appear more and what left goes to المزيد». وكان العدُّ
+   يقف عند أوّل تبويبٍ لا يسع («طابورُ التقييم» بشارته)، فيُرمى كلُّ ما بعده
+   في «المزيد» ولو وسع الفراغُ اثنين منه.
+
+   فصار الملءُ بالترتيب **مع التخطّي**: يُعرض كلُّ تبويبٍ يسعه ما بقي، ويخرج
+   ما لا يسع وحدَه. والترتيبُ ما زال أولويّة — الأوّلُ يُعطى مكانَه قبل من
+   بعده — لكنّ عريضا لا يسع لا يحجب ضيّقا بعده. وتُعاد مواضعُ المعروض لا
+   عددُه، لأنّ المعروضَ لم يعد «أوّلَ N». */
+export function fitIndices(widths: readonly number[], gap: number, moreWidth: number, available: number): number[] {
   const room = available + SLACK
   const all = widths.reduce((sum, w) => sum + w, 0) + gap * Math.max(0, widths.length - 1)
-  if (all <= room) return widths.length
+  if (all <= room) return widths.map((_, i) => i)
 
   /* لا يسع الكلّ: فـ«المزيد» ظاهرٌ حتما، ومكانُه يُحجَز أوّلا ثمّ يُملأ ما
      بقي بالترتيب. ولو عُدّت التبويباتُ قبله لقيل «يسع عشرة» ثمّ جاء الزرُّ
      فقصَّ العاشر. */
   let used = moreWidth
-  let shown = 0
-  while (shown < widths.length && used + widths[shown] + gap <= room) {
-    used += widths[shown] + gap
-    shown++
-  }
+  const shown: number[] = []
+  widths.forEach((w, i) => {
+    if (used + w + gap <= room) {
+      used += w + gap
+      shown.push(i)
+    }
+  })
   return shown
 }
 

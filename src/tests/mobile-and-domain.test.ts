@@ -193,15 +193,18 @@ describe("شريطُ البوّابات يُقرأ لا يُخمَّن", () => {
   it("⚠️ ١٠) ولا سقفَ على ما يُرى — يُقاس، و«المزيد» لما لم يسعه وحدَه", () => {
     expect(code("src/pages/trainer/TrainerLayout.tsx"), "عاد تصنيفٌ ثابتٌ لما يُرى — فيبقى الحاسوبُ العريضُ على بعضها").not.toMatch(/\bprimary\s*:/);
     expect(comp, "عاد عددٌ مكتوبٌ لما يُرى").not.toMatch(/\.slice\(0,\s*\d+\)/);
-    /* المرئيُّ أوّلُ ما قيس، و«المزيد» يأخذ الباقي نفسَه — فلا تبويبٌ في الموضعين
-       ولا تبويبٌ في أيٍّ منهما */
-    expect(comp, "المرئيُّ ليس أوّلَ ما قيس").toMatch(/\{tabs\.slice\(0, shown\)\.map\(/);
-    expect(comp, "«المزيد» لا يأخذ ما بعد المقيس").toMatch(/<MoreTabs key=\{pathname\} items=\{tabs\.slice\(shown\)\}/);
+    /* المرئيُّ ما قيس، و«المزيد» يأخذ الباقي نفسَه — فلا تبويبٌ في الموضعين
+       ولا تبويبٌ في أيٍّ منهما. ومنذ ٣ أكتوبر ٢٠٢٦ المقيسُ مواضعُ لا عدد:
+       الملءُ يتخطّى العريضَ إلى ضيّقٍ بعده (`fitIndices`). */
+    expect(comp, "المرئيُّ ليس ما قيس").toMatch(/const visible = shown \? shown\.map\(\(i\) => tabs\[i\]\)/);
+    expect(comp, "«المزيد» لا يأخذ ما لم يُعرَض").toMatch(/const hidden = shown \? tabs\.filter\(\(_, i\) => !shown\.includes\(i\)\)/);
+    expect(comp).toMatch(/\{visible\.map\(/);
+    expect(comp).toMatch(/<MoreTabs key=\{pathname\} items=\{hidden\}/);
     /* ولا يظهر حين يسع الكلّ — وهو نصُّ القرار: «ليست داخلَ المزيد» */
-    expect(comp, "«المزيد» يظهر ولو وسع الشريطُ كلَّ التبويبات").toMatch(/\{shown < tabs\.length && <MoreTabs /);
-    /* والعددُ من القياس: من `fitCount` في مراقب الحجم، لا من غيره */
-    expect(comp, "العددُ لا يأتي من دالّة القياس").toMatch(/const next = fitCount\(/);
-    expect(comp).toMatch(/flushSync\(\(\) => setShown\(next\)\)/);
+    expect(comp, "«المزيد» يظهر ولو وسع الشريطُ كلَّ التبويبات").toMatch(/\{hidden\.length > 0 && <MoreTabs /);
+    /* والمواضعُ من القياس: من `fitIndices` في مراقب الحجم، لا من غيره */
+    expect(comp, "المواضعُ لا تأتي من دالّة القياس").toMatch(/const next = fitIndices\(/);
+    expect(comp).toMatch(/flushSync\(\(\) => setShown\(/);
   });
 
   it("⚠️ ١١) وزرُّ «المزيد» خارجَ الصفّ القاصّ — وإلّا قُصَّت قائمتُه عند الحافّة", () => {
