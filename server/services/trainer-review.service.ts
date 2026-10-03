@@ -5669,6 +5669,10 @@ export class TrainerReviewService {
       /* وصورةٌ رفعها هو وتنتظر قرارَنا — تُقرأ من مسار صور الحسابات لا من
          مسار الصور العامّة، فالعامُّ لا يخدم ما لم يُعتمد بعد. */
       pendingPhotoUrl: p.photoPendingKey ? `/api/v1/avatars/${p.photoPendingKey}` : null,
+      /* وعنوانٌ ونبذةٌ كتبهما هو وينتظران قرارَنا (`trainer-public-text.service.ts`) */
+      pendingText: p.publicTextPendingAt
+        ? { headline: p.headlinePending, bio: p.bioPending, at: p.publicTextPendingAt }
+        : null,
       qualifications: p.qualifications.map((q) => ({
         courseId: q.courseId,
         courseTitle: q.course.versions[0]?.titleAr ?? q.courseId,

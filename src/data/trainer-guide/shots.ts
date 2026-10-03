@@ -8,6 +8,10 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 785
   },
+  "account-bio": {
+    "w": 2200,
+    "h": 1214
+  },
   "bank-form": {
     "w": 1800,
     "h": 1556
