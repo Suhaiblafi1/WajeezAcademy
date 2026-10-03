@@ -201,3 +201,50 @@ describe('شعبةُ الإعداد', () => {
     expect(contract.conditionMetAt).not.toBeNull()
   })
 })
+
+/* ═══ والمدرّبُ النشطُ يقبل دورتَه المعتمَدة بنفسه (٣ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة («B»): ما اعتُمد له ولا شعبةَ له فيه يراه في «مؤهّلاتي»
+   ويقبله فتُنشأ مسوّدتُه — لا ينتظر أن تُنشئها الإدارة. وما يُقاس:
+   ⑥ تُعرض المعتمَدةُ بلا شعبةٍ ولا عرض، وتُقبَل فتُنشأ مسوّدةٌ هو قائدُها، ثمّ
+      تخرج من القائمة حين تُعتمَد خطّتُها — ولا يُمسّ تأهيلُه ولا حالُه.
+   ⑦ ولا تُعرض ولا تُقبَل ما دام له فيها عرضٌ مفتوحٌ أو شعبةٌ قائمة. */
+describe('النشطُ يقبل المعتمَدةَ بنفسه', () => {
+  async function active(courses: string[]) {
+    const t = await onboarding(courses)
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    await prisma.trainerApplication.update({ where: { id: t.applicationId }, data: { status: 'active' } })
+    return t
+  }
+
+  it('⑥ تُعرض وتُقبَل، وتخرج حين تُعتمَد خطّتُها', async () => {
+    const t = await active([C1])
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C1, state: 'to_decide', approved: true }])
+    await expect(prep.decline(t.userId, C1, 'لا أريدها'), 'اعتذر عن دورةٍ معتمَدةٍ له').rejects.toThrow()
+
+    const made = await prep.accept(t.userId, C1)
+    const cohort = await prisma.cohort.findUniqueOrThrow({ where: { id: made.id }, include: { trainers: true } })
+    expect(cohort.status).toBe('draft')
+    expect(cohort.trainers).toMatchObject([{ profileId: t.profileId, role: 'lead' }])
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C1, state: 'preparing', cohortId: made.id }])
+
+    const plan = await submitted(made.id, t.profileId)
+    const r = await plans.decide(adminId, plan.id, true)
+    expect(r).toMatchObject({ status: 'approved', prep: null })
+    expect(await prep.mine(t.userId)).toEqual([])
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status).toBe('active')
+  })
+
+  it('⑦ ولا ما دام له فيها عرضٌ مفتوحٌ أو شعبةٌ قائمة', async () => {
+    const t = await active([C1, C2])
+    await prisma.trainerAssignmentOffer.create({
+      data: { profileId: t.profileId, courseId: C1, status: 'offered', offeredBy: adminId, expiresAt: new Date(Date.now() + 5 * 86_400_000) },
+    })
+    const open = await prisma.cohort.create({ data: { courseId: C2, title: 'شعبةٌ قائمة', status: 'open' } })
+    await prisma.cohortTrainer.create({ data: { cohortId: open.id, profileId: t.profileId, role: 'lead' } })
+
+    expect(await prep.mine(t.userId)).toEqual([])
+    await expect(prep.accept(t.userId, C1)).rejects.toThrow(/عرضٌ ينتظر/)
+    await expect(prep.accept(t.userId, C2)).rejects.toThrow(/لك شعبةٌ/)
+  })
+})

@@ -47,6 +47,9 @@ export interface PrepCourse {
   cohortId: string | null
   cohortTitle: string | null
   declineReasonAr: string | null
+  /** دورةٌ معتمَدةٌ له أصلا (`qualified`) — يقبلها فتُنشأ شعبتُها، ولا يعتذر عنها:
+      الاعتذارُ عن دورةٍ اعتُمدت له ليس بابا هنا (٣ أكتوبر ٢٠٢٦) */
+  approved: boolean
 }
 
 /** نصُّ الاعتذار في ملحوظة التأهيل — ومنه يُعرف أنّ `retired` اعتذارٌ منه لا سحبٌ منّا */
@@ -90,7 +93,7 @@ export class TrainerPrepService {
       if (q.status === 'retired') {
         out.push({
           courseId: q.courseId, titleAr, state: 'declined', cohortId: null, cohortTitle: null,
-          declineReasonAr: q.note?.slice(DECLINED_NOTE_PREFIX.length) || null,
+          declineReasonAr: q.note?.slice(DECLINED_NOTE_PREFIX.length) || null, approved: false,
         })
         continue
       }
@@ -103,7 +106,51 @@ export class TrainerPrepService {
         if (plan?.status === 'submitted') state = 'submitted'
         else if (plan?.status === 'changes_requested') state = 'returned'
       }
-      out.push({ courseId: q.courseId, titleAr, state, cohortId: cohort?.id ?? null, cohortTitle: cohort?.title ?? null, declineReasonAr: null })
+      out.push({ courseId: q.courseId, titleAr, state, cohortId: cohort?.id ?? null, cohortTitle: cohort?.title ?? null, declineReasonAr: null, approved: false })
+    }
+    return [...out, ...await this.approvedWithoutCohort(profileId)]
+  }
+
+  /* ═══ والمعتمَدةُ بلا شعبة — يقبلها المدرّبُ النشطُ بنفسه (٣ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة («B»): كانت الإدارةُ تُنشئ لكلّ مدرّبٍ نشطٍ شعبةَ دورته
+     المعتمَدة وتعرضها عليه («جهّز شعبَ التعبئة»). فصار يراها في «مؤهّلاتي» كما
+     يرى دوراتِ الطور، ويقبلها فتُنشأ له مسوّدتُها. وتبقى البطاقةُ للشعب الزائدة.
+
+     · **ما يُعرض**: دورةٌ معتمَدةٌ ليس له فيها شعبةٌ قائمةٌ ولا عرضٌ مفتوح — فمن
+       عُرضت عليه شعبةٌ يجيب عرضَها، ولا تُنشأ له ثانية.
+     · **وما قبِله** يبقى هنا حتّى تُعتمَد خطّتُه، ثمّ يخرج: شعبتُه في «شعبي»
+       وتُفتح للتسجيل بقرار الإدارة.
+     · **ولا اعتذار**: الدورةُ معتمَدةٌ له، وتركُها بلا قبولٍ هو الجواب. */
+  private async approvedWithoutCohort(profileId: string): Promise<PrepCourse[]> {
+    const quals = await this.prisma.trainerCourseQualification.findMany({
+      where: { profileId, status: 'qualified' },
+      orderBy: { createdAt: 'asc' },
+      include: { course: { select: { currentVersion: true, versions: { select: { version: true, titleAr: true } } } } },
+    })
+    const out: PrepCourse[] = []
+    for (const q of quals) {
+      const titleAr = q.course.versions.find((v) => v.version === q.course.currentVersion)?.titleAr ?? q.courseId
+      const open = await this.prisma.trainerAssignmentOffer.count({
+        where: { profileId, courseId: q.courseId, status: 'offered' },
+      })
+      if (open > 0) continue
+      const draft = await this.prepCohortOf(profileId, q.courseId)
+      if (draft) {
+        const plan = await this.prisma.cohortDeliveryPlan.findFirst({
+          where: { cohortId: draft.id, trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true },
+        })
+        if (plan?.status === 'approved' || plan?.status === 'published') continue
+        const state: PrepState = plan?.status === 'submitted' ? 'submitted' : plan?.status === 'changes_requested' ? 'returned' : 'preparing'
+        out.push({ courseId: q.courseId, titleAr, state, cohortId: draft.id, cohortTitle: draft.title, declineReasonAr: null, approved: true })
+        continue
+      }
+      /* شعبةٌ قائمةٌ له في هذه الدورة (غيرُ ملغاة) — فهي في «شعبي» أصلا */
+      const live = await this.prisma.cohortTrainer.count({
+        where: { profileId, cohort: { courseId: q.courseId, status: { not: 'cancelled' } } },
+      })
+      if (live > 0) continue
+      out.push({ courseId: q.courseId, titleAr, state: 'to_decide', cohortId: null, cohortTitle: null, declineReasonAr: null, approved: true })
     }
     return out
   }
@@ -121,11 +168,23 @@ export class TrainerPrepService {
     const qual = await this.prisma.trainerCourseQualification.findUnique({
       where: { profileId_courseId: { profileId: profile.id, courseId } },
     })
-    if (!qual || qual.status !== 'pending') {
+    /* وتُقبَل المعتمَدةُ كذلك (٣ أكتوبر ٢٠٢٦) — إن لم يكن له فيها عرضٌ مفتوح:
+       من عُرضت عليه شعبةٌ يجيب عرضَها، ولا تُنشأ له ثانية */
+    if (!qual || (qual.status !== 'pending' && qual.status !== 'qualified')) {
       throw new AuthError('not_pending', 'هذه الدورةُ ليست بانتظار قرارك', 409)
     }
     const existing = await this.prepCohortOf(profile.id, courseId)
     if (existing) return existing
+    if (qual.status === 'qualified') {
+      const open = await this.prisma.trainerAssignmentOffer.count({
+        where: { profileId: profile.id, courseId, status: 'offered' },
+      })
+      if (open > 0) throw new AuthError('open_offer', 'لهذه الدورة عرضٌ ينتظر جوابَك في «مؤهّلاتي» — أجِبه بدلَ أن تُنشئ شعبةً ثانية', 409)
+      const live = await this.prisma.cohortTrainer.count({
+        where: { profileId: profile.id, cohort: { courseId, status: { not: 'cancelled' } } },
+      })
+      if (live > 0) throw new AuthError('has_cohort', 'لك شعبةٌ في هذه الدورة في «شعبي» — والشعبُ الزائدةُ تُنشئها الإدارة', 409)
+    }
 
     const cohorts = new CohortService(this.prisma)
     const cohort = await cohorts.create(userId, { courseId })
