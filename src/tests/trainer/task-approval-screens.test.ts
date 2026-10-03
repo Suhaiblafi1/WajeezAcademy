@@ -14,10 +14,14 @@ import { PendingTasks, type PendingTaskRow } from '@/components/PendingTasks'
 import { awaitingTasks } from '@/application/trainer/task-approval'
 import CurriculumReview from '@/components/CurriculumReview'
 import { curriculumView } from '@/application/trainer/curriculum-view'
+import { approvedMsg } from '@/application/trainer/plan-decision'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const WORKSPACE = code('src/pages/trainer/CohortWorkspace.tsx')
-const COHORT_OPS = code('src/pages/admin/CohortOps.tsx')
+/* ومراجعةُ الخطّة خرجت من بطاقة الشعبة إلى مكوّنٍ تعرضه البطاقةُ و«خططٌ تنتظر اعتمادك»
+   معا (٣ أكتوبر ٢٠٢٦) — فالحارسُ يقرؤها حيث صارت، وعرضُ البابين لها في
+   `src/tests/admin/pending-plans.test.ts`. */
+const PLAN_REVIEW = code('src/components/admin/TrainerPlanReview.tsx')
 
 const base = { type: 'assignment', maxScore: 100, moduleId: 'm1', dueAt: '2027-02-13T20:59:59.999Z', briefAr: 'صفحةٌ واحدة' }
 const ROWS: PendingTaskRow[] = [
@@ -115,15 +119,21 @@ describe('وورشةُ المدرّب تقول ما حكم به الخادم', (
 
 describe('وبطاقةُ المعتمِد', () => {
   it('⚠️ قائمتُه بالقاعدة التي يحكم بها الخادم، وقرارُه بمسلكه', () => {
-    expect(COHORT_OPS).toMatch(/const waitingTasks = trainerPlan \? awaitingTasks\(trainerPlan\.assessments, trainerPlan\.approvedOnce \?\? false\) : \[\];/)
-    expect(COHORT_OPS).toMatch(/<PendingTasks\s+tasks=\{waitingTasks\}/)
-    expect(COHORT_OPS).toMatch(/apiPost\(`\/api\/admin\/cohort-assessments\/\$\{id\}\/decide`, \{ approve, note \}\)/)
-    expect(COHORT_OPS).toMatch(/assessments: trainerPlan\.assessments,\s*approvedOnce: trainerPlan\.approvedOnce,/)
+    expect(PLAN_REVIEW).toMatch(/const waitingTasks = trainerPlan \? awaitingTasks\(trainerPlan\.assessments, trainerPlan\.approvedOnce \?\? false\) : \[\];/)
+    expect(PLAN_REVIEW).toMatch(/<PendingTasks\s+tasks=\{waitingTasks\}/)
+    expect(PLAN_REVIEW).toMatch(/apiPost\(`\/api\/admin\/cohort-assessments\/\$\{id\}\/decide`, \{ approve, note \}\)/)
+    expect(PLAN_REVIEW).toMatch(/assessments: trainerPlan\.assessments,\s*approvedOnce: trainerPlan\.approvedOnce,/)
   })
 
+  /* وكان يُقرأ نصُّ الدالّة في البطاقة؛ وخرجت إلى `plan-decision.ts` تقولها
+     البطاقةُ والطابورُ بنصٍّ واحد — فصار الفحصُ بمدخلاتها لا بشيفرتها */
   it('⚠️ واعتمادُ الخطّة يقول مهامَّها — وما بقي منها بسببه', () => {
-    const msg = COHORT_OPS.slice(COHORT_OPS.indexOf('function approvedMsg('), COHORT_OPS.indexOf('function taskDecisionMsg('))
-    expect(msg).toMatch(/const t = r\.tasks;/)
-    expect(msg).toMatch(/return `اعتُمدت خطّةُ المدرّب\$\{withMeetings\}\$\{withTasks\}\$\{failed\}\$\{tasksLeft\}`;/)
+    const msg = approvedMsg({
+      status: 'approved',
+      tasks: { applied: 2, failed: [{ id: 't3', title: 'مشروعُ التخرّج', reason: 'لا موعدَ له في الخطّة' }] },
+    })
+    expect(msg).toContain('مهامُّها المنتظِرة (2)')
+    expect(msg).toContain('وبقي من المهامّ «مشروعُ التخرّج»: لا موعدَ له في الخطّة')
+    expect(approvedMsg({ status: 'approved', tasks: { applied: 1, failed: [] } })).toContain('ومهمّتُها المنتظِرة')
   })
 })

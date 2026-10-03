@@ -6,7 +6,8 @@
    موادَّ هذه الدورة». ثمّ صار الطورُ كلُّه في «شعبي» (`trainer-prep.service.ts`):
    يقبل الدورةَ فتُنشأ لها شعبةُ إعداد، يعبّئها ويرسلها، و**اعتمادُ خطّتها
    يعتمد الدورة** — واعتمادُ آخرها يفعّله. فهذا اللوحُ يقول حالَ كلِّ دورة،
-   ويفتح خطّتَها حيث تُعتمَد (`/admin/cohorts?cohort=…`)، لا يكرّرها.
+   ويفتح خطّتَها حيث تُعتمَد، لا يكرّرها: المرسَلةُ في «خططٌ تنتظر اعتمادك»
+   مرشَّحةً بخططه (`/admin/pending-plans?trainer=…`)، وما سواها في بطاقة شعبتها.
 
    ويبقى لمن كتب موادَّه في اللوح القديم قبل هذا اليوم ولم يقبل شعبةً بعد
    ما كان له: تُقرأ موادُّه ويُعتمَد بها — فلا يُطالَب بكتابتها ثانية. */
@@ -20,6 +21,7 @@ import Chip from "@/components/ui/Chip";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, permissionMessage } from "@/services/api";
 import type { CourseMaterials } from "@/application/trainer/course-materials";
+import { countAr } from "@/application/text/count-ar";
 
 type PrepState = "to_decide" | "preparing" | "submitted" | "returned" | "approved" | "declined";
 
@@ -97,59 +99,79 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
     return <p className="mt-2 text-read text-muted-foreground">لا دورةَ قيد الإعداد ولا معتمدة لهذا المدرّب.</p>;
   }
 
+  /* ═══ وخططُه المرسَلةُ معا (٣ أكتوبر ٢٠٢٦) ═══
+     «كيف أعتمد كلَّ شعبةٍ أنهاها؟» — بابٌ واحدٌ لها كلِّها، مرشَّحٌ به وحدَه */
+  const sent = shown.filter((r) => r.state === "submitted" && r.cohortId).length;
+
   return (
-    <ul className="mt-3 grid gap-2">
-      {shown.map((r) => {
-        const s = STATE_AR[r.state];
-        const old = legacy.find((x) => x.courseId === r.courseId && x.status === "pending");
-        const oldReady = !r.cohortId && old?.materials && old.missingAr.length === 0;
-        return (
-          <li key={r.courseId}>
-            <Inset tone="default" className="p-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
-                <Chip tone={s.tone} srPrefixAr="الحال">{s.label}</Chip>
-              </div>
-              {r.declineReasonAr && <p className="mt-1 text-read text-muted-foreground">سببُه: {r.declineReasonAr}</p>}
-              {r.cohortId && (
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <Button as={Link} to={`/admin/cohorts?cohort=${r.cohortId}`} size="sm" icon={ExternalLink}>
-                    {r.state === "submitted" ? "افتح خطّتَها واعتمدها" : "افتح شعبتَها"}
-                  </Button>
-                  {r.cohortTitle && <span className="text-read text-muted-foreground">{r.cohortTitle}</span>}
+    <>
+      {sent > 1 && (
+        <p className="mt-3 text-read leading-6 text-muted-foreground">
+          {sent === 2 ? "خطّتان تنتظران قرارك" : `${countAr(sent, { one: "خطّةٌ تنتظر", two: "خطّتان تنتظران", few: "خطط تنتظر", many: "خطّةً تنتظر" })} قرارك`} —{" "}
+          <Link to={`/admin/pending-plans?trainer=${profileId}`} className="font-bold text-teal-light-ink underline">
+            اقرأها واعتمدها معا في «خططٌ تنتظر اعتمادك»
+          </Link>
+        </p>
+      )}
+      <ul className="mt-3 grid gap-2">
+        {shown.map((r) => {
+          const s = STATE_AR[r.state];
+          const old = legacy.find((x) => x.courseId === r.courseId && x.status === "pending");
+          const oldReady = !r.cohortId && old?.materials && old.missingAr.length === 0;
+          return (
+            <li key={r.courseId}>
+              <Inset tone="default" className="p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
+                  <Chip tone={s.tone} srPrefixAr="الحال">{s.label}</Chip>
                 </div>
-              )}
-              {oldReady && old?.materials && (
-                <div className="mt-2 grid gap-1.5 text-read leading-7">
-                  <p className="text-muted-foreground">كتب موادَّها في اللوح القديم قبل ٢ أكتوبر ٢٠٢٦ — تُعتمَد بها، أو ينقلها بقبول الدورة إلى شعبتها.</p>
-                  <ol className="list-decimal ps-5">
-                    {old.materials.modules.map((m, i) => (
-                      <li key={i}><b>{m.titleAr}</b>{m.outcomeAr ? ` — ${m.outcomeAr}` : ""}</li>
-                    ))}
-                  </ol>
-                  {old.materials.materialsUrl && (
-                    <p>الموادّ: <a className="text-teal-light-ink underline" href={old.materials.materialsUrl} target="_blank" rel="noreferrer noopener" dir="ltr">{old.materials.materialsUrl}</a></p>
-                  )}
-                  <div>
-                    <Button size="sm" tone="confirm" icon={CheckCircle2} loading={busy === r.courseId}
-                      onClick={() => void approveLegacy(r.courseId)}>
-                      اعتمِدْ هذه الدورة بموادّها
+                {r.declineReasonAr && <p className="mt-1 text-read text-muted-foreground">سببُه: {r.declineReasonAr}</p>}
+                {r.cohortId && (
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {/* المرسَلةُ تُفتح في «خططٌ تنتظر اعتمادك» مع أخواتها من خططه —
+                        وما سواها في بطاقة شعبتها حيث تُدار */}
+                    <Button as={Link}
+                      to={r.state === "submitted"
+                        ? `/admin/pending-plans?trainer=${profileId}&cohort=${r.cohortId}`
+                        : `/admin/cohorts?cohort=${r.cohortId}`}
+                      size="sm" icon={ExternalLink}>
+                      {r.state === "submitted" ? "افتح خطّتَها واعتمدها" : "افتح شعبتَها"}
                     </Button>
+                    {r.cohortTitle && <span className="text-read text-muted-foreground">{r.cohortTitle}</span>}
                   </div>
-                </div>
-              )}
+                )}
+                {oldReady && old?.materials && (
+                  <div className="mt-2 grid gap-1.5 text-read leading-7">
+                    <p className="text-muted-foreground">كتب موادَّها في اللوح القديم قبل ٢ أكتوبر ٢٠٢٦ — تُعتمَد بها، أو ينقلها بقبول الدورة إلى شعبتها.</p>
+                    <ol className="list-decimal ps-5">
+                      {old.materials.modules.map((m, i) => (
+                        <li key={i}><b>{m.titleAr}</b>{m.outcomeAr ? ` — ${m.outcomeAr}` : ""}</li>
+                      ))}
+                    </ol>
+                    {old.materials.materialsUrl && (
+                      <p>الموادّ: <a className="text-teal-light-ink underline" href={old.materials.materialsUrl} target="_blank" rel="noreferrer noopener" dir="ltr">{old.materials.materialsUrl}</a></p>
+                    )}
+                    <div>
+                      <Button size="sm" tone="confirm" icon={CheckCircle2} loading={busy === r.courseId}
+                        onClick={() => void approveLegacy(r.courseId)}>
+                        اعتمِدْ هذه الدورة بموادّها
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Inset>
+            </li>
+          );
+        })}
+        {qualified.map((r) => (
+          <li key={r.courseId}>
+            <Inset tone="default" className="flex flex-wrap items-center justify-between gap-2 p-3">
+              <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
+              <Chip tone="positive" srPrefixAr="الحال">معتمَدة</Chip>
             </Inset>
           </li>
-        );
-      })}
-      {qualified.map((r) => (
-        <li key={r.courseId}>
-          <Inset tone="default" className="flex flex-wrap items-center justify-between gap-2 p-3">
-            <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
-            <Chip tone="positive" srPrefixAr="الحال">معتمَدة</Chip>
-          </Inset>
-        </li>
-      ))}
-    </ul>
+        ))}
+      </ul>
+    </>
   );
 }

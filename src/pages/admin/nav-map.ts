@@ -5,7 +5,7 @@
  * مكوّن — فتصديرُها من `AdminLayout.tsx` يكسر التحديثَ الساخن.
  */
 
-import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
 
 /* ═══ سبعُ مجموعاتٍ لا ثلاثةُ أبواب ═══
 
@@ -50,7 +50,7 @@ export interface AdminNavItem {
 
       ولمَ مفتاحٌ لا رقم: الخريطةُ ثابتةٌ تُقرأ مرّةً، والعددُ يتغيّر مع
       كلّ توقيع. فالخريطةُ تقول **أين** تُعرض الشارة، والإطارُ يجلب **كم**. */
-  badge?: 'awaitingCountersign';
+  badge?: 'awaitingCountersign' | 'awaitingPlans';
   /** سطرٌ يقول ما تفعله الشاشة — يقرؤه دليلُ «كلّ الشاشات» في الرئيسية.
       وهو لازمٌ لا زينة: العنوانُ وحدَه لا يفرّق بين «طلبات المتعلّمين»
       و«الطلبة المسجَّلون»، ومن لا يفرّق يفتح الاثنتين ليعرف. */
@@ -123,6 +123,16 @@ export const allSections: AdminNavSection[] = [
       { to: "/admin/trainer-contracts", label: "العقود", icon: FileSignature, need: "trainer.contract.manage",
         badge: "awaitingCountersign",
         descAr: "وثيقةٌ تُركَّب من أجره ودوراته المؤهَّل لها، وتُجمَّد ثمّ تُوقَّع" },
+      /* ═══ وخططُ الشعب بعد العقد — تسلسلُ اليوم نفسُه (٣ أكتوبر ٢٠٢٦) ═══
+
+         مدرّبُ الإعداد يعبّئ شعبَ دوراته ويرسلها، واعتمادُ آخرها يفعّله ويختم
+         عقدَه. وكانت تُعتمَد من بطاقة كلّ شعبةٍ وحدَها، ولا موضعَ يقول كم ينتظر.
+         وصلاحيّتُها صلاحيّةُ الاعتماد نفسِه (`cohort.plan.approve`) — وفيها خططُ
+         المدرّبين النشطين لشعبهم كذلك، فلا تُخفى عن معتمِدٍ خطّةٌ لأنّها ليست
+         خطّةَ إعداد. */
+      { to: "/admin/pending-plans", label: "خططٌ تنتظر اعتمادك", icon: ClipboardCheck, need: "cohort.plan.approve",
+        badge: "awaitingPlans",
+        descAr: "خططُ الشعب التي أرسلها مدرّبوها — تُقرأ كاملةً وتُعتمَد أو تُردّ بملاحظات، من المدرّبين كلِّهم" },
       /* ═══ ولماذا الأتعابُ هنا لا في «التشغيل والمالية» ═══
 
          كانت هناك لأنّ صلاحيّتَها `trainer.compensation.manage` ماليّة،

@@ -289,3 +289,43 @@ describe('⑨ دوراتُ ملحق العقد', () => {
     expect((await prisma.cohort.findUniqueOrThrow({ where: { id: made.id } })).courseId).toBe(C2)
   })
 })
+
+/* ═══ ⑩ «خططٌ تنتظر اعتمادك» تقول ما يُطلقه الاعتماد — قبل النقر (٣ أكتوبر ٢٠٢٦) ═══
+   سؤالُ صاحب المنصّة: كيف أعتمد كلَّ شعبةٍ أنهاها مدرّبُها؟ فصار للخطط المرسَلة
+   شاشتُها (`src/pages/admin/PendingPlans.tsx`)، ولها يقول الطابورُ مع كلّ خطّةٍ
+   دورتَها ومدرّبَها، وأهي شعبةُ إعداد: تأهيلُه معلّقٌ فيقع باعتمادها
+   (`qualifies`)، وهو في الطور فقد يفعّله آخرُها (`onboarding`). والحكمُ هو
+   الذي يحكم به القرارُ نفسُه (`prepContext`) — لا نسخةٌ منه تفترق عنه. */
+describe('⑩ طابورُ الخطط المرسَلة', () => {
+  it('يقول دورتَها ومدرّبَها وأهي شعبةُ إعداد — وعددُه عددُ ما فيه', async () => {
+    const t = await onboarding([C1, C2])
+    const one = await prep.accept(t.userId, C1)
+    const p1 = await submitted(one.id, t.profileId)
+    /* وشعبةٌ مفتوحةٌ له — ليست شعبةَ إعدادٍ وإن كان مدرّبُها في الطور */
+    const open = await prisma.cohort.create({ data: { courseId: C2, title: 'شعبةٌ مفتوحة', status: 'open' } })
+    await prisma.cohortTrainer.create({ data: { cohortId: open.id, profileId: t.profileId, role: 'lead' } })
+    const p2 = await submitted(open.id, t.profileId)
+
+    const list = await plans.pending()
+    expect(list.find((r) => r.id === p1.id)).toMatchObject({
+      cohort: { id: one.id }, courseTitle: 'دورةُ الإعداد',
+      trainerProfileId: t.profileId, trainerName: expect.stringMatching(/^مرشّحٌ /),
+      prep: { onboarding: true, qualifies: true },
+    })
+    expect(list.find((r) => r.id === p2.id)).toMatchObject({ courseTitle: 'دورةٌ ثانيةٌ للإعداد', prep: null })
+    expect(await plans.pendingCount(), 'الشارةُ تعدّ غيرَ ما في الطابور').toBe(list.length)
+
+    await plans.decide(adminId, p1.id, true)
+    const after = await plans.pending()
+    expect(after.some((r) => r.id === p1.id), 'بقيت المعتمَدةُ في الطابور').toBe(false)
+    expect(await plans.pendingCount()).toBe(after.length)
+  })
+
+  it('ومن دورتُه معتمَدةٌ أصلا: شعبةُ إعدادٍ لا تؤهّل — ويفعّله آخرُها', async () => {
+    const t = await onboarding([C1])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    const made = await prep.accept(t.userId, C1)
+    const p = await submitted(made.id, t.profileId)
+    expect((await plans.pending()).find((r) => r.id === p.id)?.prep).toEqual({ onboarding: true, qualifies: false })
+  })
+})

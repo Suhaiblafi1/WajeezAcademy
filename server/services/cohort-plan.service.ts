@@ -864,19 +864,48 @@ export class CohortPlanService {
 
   /* ─────────── الاعتماد ─────────── */
 
+  /* ═══ «خططٌ تنتظر اعتمادك» — الطابورُ كلُّه في شاشةٍ واحدة (٣ أكتوبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة: كيف أعتمد كلَّ شعبةٍ أنهى مدرّبُها موادَّها؟ وكان
+     الجوابُ أن يفتح شعبةً شعبة. فصار لهذه القائمة شاشتُها
+     (`src/pages/admin/PendingPlans.tsx`) — ولها يُقال مع كلّ خطّةٍ اسمُ
+     دورتها، ومن مدرّبُها (`trainerProfileId` يجمع خططَه معا)، وأهي **شعبةُ
+     إعداد**: اعتمادُها يؤهّله لدورتها، وآخرُها يفعّله ويوقّع عقدَه
+     (`trainer-prep.service.ts`). يُقال قبل النقر لا بعده — والحكمُ نفسُه
+     الذي يحكم به القرار (`prepContext`)، لا نسخةٌ منه تفترق عنه. */
   async pending() {
     const rows = await this.prisma.cohortDeliveryPlan.findMany({
       where: { status: 'submitted' },
       orderBy: { submittedAt: 'asc' },
       include: {
-        cohort: { select: { id: true, title: true, courseId: true } },
+        cohort: {
+          select: {
+            id: true, title: true, courseId: true,
+            course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+          },
+        },
         trainer: { select: { id: true, application: { select: { fullName: true } } } },
       },
     })
-    return rows.map((p) => ({
-      id: p.id, cohort: p.cohort, trainerName: p.trainer?.application.fullName ?? '—',
+    const { TrainerPrepService } = await import('./trainer-prep.service')
+    const prep = new TrainerPrepService(this.prisma)
+    const contexts = await Promise.all(rows.map((p) => prep.prepContext(p.cohort.id).catch(() => null)))
+    return rows.map((p, i) => ({
+      id: p.id,
+      cohort: { id: p.cohort.id, title: p.cohort.title, courseId: p.cohort.courseId },
+      courseTitle: p.cohort.course.versions[0]?.titleAr ?? p.cohort.courseId,
+      trainerName: p.trainer?.application.fullName ?? '—',
+      trainerProfileId: p.trainer?.id ?? null,
       submittedAt: p.submittedAt, trainerConfirmedAt: p.trainerConfirmedAt,
+      /* شعبةُ إعداد؟ و`qualifies`: تأهيلُه لدورتها معلّقٌ فيقع باعتمادها،
+         و`onboarding`: مدرّبُها في الطور — فقد يفعّله اعتمادُها إن كانت آخرَ ما ينتظر */
+      prep: contexts[i] ? { onboarding: contexts[i]!.onboarding, qualifies: contexts[i]!.pending } : null,
     }))
+  }
+
+  /** كم خطّةً تنتظر الاعتماد — لشارة القائمة الجانبيّة، بلا جلب الخطط نفسِها */
+  async pendingCount() {
+    return this.prisma.cohortDeliveryPlan.count({ where: { status: 'submitted' } })
   }
 
   /** آخرُ خطّةِ مدرّبٍ لشعبةٍ — لبطاقة الشعبة عند الإدارة */

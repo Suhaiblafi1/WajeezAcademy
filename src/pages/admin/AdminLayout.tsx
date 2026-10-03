@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { Crown, Search, X } from "lucide-react";
-import { sectionsFor } from "./nav-map";
+import { sectionsFor, type AdminNavItem } from "./nav-map";
 import { matchesQuery } from "@/application/text/search-ar";
+import { countAr } from "@/application/text/count-ar";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -10,8 +11,23 @@ import StaffAccountMenu from "@/components/StaffAccountMenu";
 import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
+import { PLANS_CHANGED } from "@/services/plans-signal";
 
 import BuildStampLine from "@/components/BuildStampLine";
+
+/* ما تعدّه كلُّ شارةٍ بلسانه — «٣» إلى جانب اسمٍ لا تقول ماذا تعدّ لمن يسمعها
+   بقارئ شاشة، وشارتان بنصٍّ واحدٍ تقول إحداهما ما ليس لها. */
+const BADGE_AR: Record<NonNullable<AdminNavItem["badge"]>, (n: number) => { title: string; sr: string }> = {
+  awaitingCountersign: (n) => ({
+    title: `${n} عقدٍ موقَّعٍ ينتظر ختمَك واعتمادَ صاحبه`,
+    sr: `${n} عقدٍ موقَّعٍ ينتظر ختمَك`,
+  }),
+  awaitingPlans: (n) => {
+    const said = countAr(n, { one: "خطّةٌ تنتظر", two: "خطّتان تنتظران", few: "خطط تنتظر", many: "خطّةً تنتظر" });
+    return { title: `${said} اعتمادَك — يُفتح بها تسجيلُ شعبها ويُفعَّل مدرّبُ الإعداد`, sr: `${said} اعتمادَك` };
+  },
+};
+
 /** إطار لوحة الإدارة والعمليات — هويّة الإداريّ من جلسته وحدها.
 
     حُذفت شاشة «من أنت؟» التي كانت تعرض ثلاثة أسماء إداريّين مختلَقين
@@ -52,6 +68,24 @@ export default function AdminLayout({ children, title }: { children: React.React
       .catch(() => { /* لا صلاحيّةَ أو لا شبكة — لا شارة، ولا خطأٌ يُعرَض */ });
     return () => { alive = false; };
   }, []);
+  /* ═══ وخططٌ تنتظر اعتمادك — العلّةُ نفسُها (٣ أكتوبر ٢٠٢٦) ═══
+     جرسُ «أرسل خطّتَه» يمضي كما يمضي إشعارُ التوقيع، ومدرّبُ الإعداد لا يُفعَّل
+     حتّى تُعتمَد خططُه. ولا يُنادى إلّا لمن يملك الاعتماد: نداءٌ يُردّ في كلّ
+     شاشةٍ لمن لا يملكه حِملٌ بلا مقابل. */
+  const canApprovePlans = user?.permissions.includes("cohort.plan.approve") ?? false;
+  useEffect(() => {
+    if (!canApprovePlans) return;
+    let alive = true;
+    const load = () => {
+      void apiGet<{ count: number }>("/api/admin/cohort-plans/pending-count")
+        .then((r) => { if (alive) setBadges((b) => ({ ...b, awaitingPlans: r.count })); })
+        .catch(() => { /* لا شبكة — لا شارة، ولا خطأٌ يُعرَض */ });
+    };
+    load();
+    /* ويُعاد بعد كلّ قضاءٍ في خطّة — في الطابور أو في بطاقة الشعبة (`plans-signal.ts`) */
+    window.addEventListener(PLANS_CHANGED, load);
+    return () => { alive = false; window.removeEventListener(PLANS_CHANGED, load); };
+  }, [canApprovePlans]);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -213,10 +247,10 @@ export default function AdminLayout({ children, title }: { children: React.React
                     {!!t.badge && badges[t.badge] > 0 && (
                       <span
                         className="mr-auto grid h-5 min-w-[1.25rem] shrink-0 place-items-center rounded-full bg-[#FABC05] px-1.5 text-fine font-black tabular-nums text-[#161F1D]"
-                        title={`${badges[t.badge]} عقدٍ موقَّعٍ ينتظر ختمَك واعتمادَ صاحبه`}
+                        title={BADGE_AR[t.badge](badges[t.badge]).title}
                       >
                         <span aria-hidden="true">{badges[t.badge]}</span>
-                        <span className="sr-only">{badges[t.badge]} عقدٍ موقَّعٍ ينتظر ختمَك</span>
+                        <span className="sr-only">{BADGE_AR[t.badge](badges[t.badge]).sr}</span>
                       </span>
                     )}
                   </NavLink>

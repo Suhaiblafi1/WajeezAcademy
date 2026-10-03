@@ -54,7 +54,8 @@ describe('ورشةُ الشعبة', () => {
   })
 
   it('والإدارةُ تعتمد من بطاقة الشعبة — لمن يملك الاعتماد', () => {
-    const ops = code('src/pages/admin/CohortOps.tsx')
+    /* والاعتمادُ في مراجعة الخطّة — مكوّنٌ تعرضه البطاقةُ و«خططٌ تنتظر اعتمادك» معا */
+    const ops = code('src/components/admin/TrainerPlanReview.tsx')
     expect(ops).toContain('cohort.plan.approve')
     expect(ops).toContain('/decide')
     expect(ops).toContain('/remind-trainer')
