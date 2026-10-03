@@ -12,7 +12,10 @@ import { join } from 'node:path'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const WORKSPACE = code('src/pages/trainer/CohortWorkspace.tsx')
-const COHORT_OPS = code('src/pages/admin/CohortOps.tsx')
+/* ومراجعةُ الخطّة خرجت من بطاقة الشعبة إلى مكوّنٍ تعرضه البطاقةُ و«خططٌ تنتظر اعتمادك»
+   معا (٣ أكتوبر ٢٠٢٦) — فالحارسُ يقرؤها حيث صارت، وعرضُ البابين لها في
+   `src/tests/admin/pending-plans.test.ts`. */
+const PLAN_REVIEW = code('src/components/admin/TrainerPlanReview.tsx')
 const BUY_PANEL = code('src/components/BuyPanel.tsx')
 
 describe('المدرّبُ يعرف متى يدخلها متعلّموه', () => {
@@ -24,8 +27,8 @@ describe('المدرّبُ يعرف متى يدخلها متعلّموه', () =>
 
 describe('والمعتمِدُ يُقال له ما يحكم به الخادم', () => {
   it('⚠️ علمٌ مرفوعٌ على خطّةٍ لم تُعتمَد لا يُقرأ «مفتوحا»', () => {
-    expect(COHORT_OPS).toMatch(/\{trainerPlan\.registration\?\.awaitingPlan \? \(/)
-    expect(COHORT_OPS).toMatch(/\) : trainerPlan\.registration\?\.joinClosesAt \? \(/)
+    expect(PLAN_REVIEW).toMatch(/\{trainerPlan\.registration\?\.awaitingPlan \? \(/)
+    expect(PLAN_REVIEW).toMatch(/\) : trainerPlan\.registration\?\.joinClosesAt \? \(/)
   })
 })
 

@@ -43,6 +43,9 @@ describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضع�
   it('وشاشةُ المعتمِد لا تعرض خياراتٍ تُطبَّق مع الاعتماد', () => {
     const admin = code('src/pages/admin/CohortOps.tsx')
     expect(admin).not.toContain('applyProposals')
+    /* والاعتمادُ نفسُه في مكوّن المراجعة منذ ٣ أكتوبر ٢٠٢٦ — تعرضه البطاقةُ
+       و«خططٌ تنتظر اعتمادك» — فلو عاد الخيارُ عاد هناك */
+    expect(code('src/components/admin/TrainerPlanReview.tsx')).not.toContain('applyProposals')
     const route = code('server/http/routes/admin-learning.routes.ts')
     expect(route).not.toContain('applyProposals')
     /* والاعتمادُ يمرّر ثلاثةً لا خمسة — لا وسيطَ اقتراحاتٍ خلفه */

@@ -17,7 +17,10 @@ import {
 import { ReviewNotesBanner, ReviewNotesForm, ReviewNotesList, StageReviewNote } from '@/components/ReviewNotes'
 
 const WORKSPACE = readFileSync(join(process.cwd(), 'src/pages/trainer/CohortWorkspace.tsx'), 'utf8')
-const COHORT_OPS = readFileSync(join(process.cwd(), 'src/pages/admin/CohortOps.tsx'), 'utf8')
+/* ومراجعةُ الخطّة خرجت من بطاقة الشعبة إلى مكوّنٍ تعرضه البطاقةُ و«خططٌ تنتظر اعتمادك»
+   معا (٣ أكتوبر ٢٠٢٦) — فالحارسُ يقرؤها حيث صارت، وعرضُ البابين لها في
+   `src/tests/admin/pending-plans.test.ts`. */
+const PLAN_REVIEW = readFileSync(join(process.cwd(), 'src/components/admin/TrainerPlanReview.tsx'), 'utf8')
 
 describe('ما يُحفظ', () => {
   it('⚠️ المفاتيحُ المعروفةُ وحدَها، نصوصا مشذّبةً غيرَ فارغة', () => {
@@ -149,16 +152,16 @@ describe('وفي بطاقة المعتمِد', () => {
   it('⚠️ الردُّ من النموذج بأقسامه — لا من صندوق المتصفّح بسطرٍ واحد', () => {
     /* بابٌ واحدٌ للردّ — وهو النموذج. ولا يُفحص غيابُ «note: note»: يطابق
        «note: notes» نفسَها، اسما جزءا من اسم */
-    const declines = COHORT_OPS.match(/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false/g) ?? []
+    const declines = PLAN_REVIEW.match(/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false/g) ?? []
     expect(declines, 'للردّ على الخطّة بابٌ غيرُ النموذج').toHaveLength(1)
-    expect(COHORT_OPS).toMatch(/<ReviewNotesForm[\s\S]{0,200}onSend=\{\(notes\) => void act\(\s*\(\) => apiPost\(`\/api\/admin\/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false, note: notes \}\)/)
+    expect(PLAN_REVIEW).toMatch(/<ReviewNotesForm[\s\S]{0,200}onSend=\{\(notes\) => void act\(\s*\(\) => apiPost\(`\/api\/admin\/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false, note: notes \}\)/)
   })
 
   it('⚠️ وما يُعتمَد مع الخطّة لا يُعرض بطاقةً بطاقة — يُعدّ على زرّ اعتمادها', () => {
-    expect(COHORT_OPS).toMatch(/const riding = pendingSessions\.filter\(\(p\) => p\.withPlan\);/)
-    expect(COHORT_OPS).toMatch(/const individual = pendingSessions\.filter\(\(p\) => !p\.withPlan\);/)
-    expect(COHORT_OPS).toMatch(/\{individual\.map\(\(ps\) => \(/)
-    expect(COHORT_OPS, 'بقيت البطاقاتُ تعرض كلَّ منتظِر').not.toMatch(/\{pendingSessions\.map\(/)
-    expect(COHORT_OPS).toMatch(/riding\.length > 0 \? `اعتمدها ولقاءاتِها \(\$\{riding\.length\}\)` : "اعتمدها"/)
+    expect(PLAN_REVIEW).toMatch(/const riding = pendingSessions\.filter\(\(p\) => p\.withPlan\);/)
+    expect(PLAN_REVIEW).toMatch(/const individual = pendingSessions\.filter\(\(p\) => !p\.withPlan\);/)
+    expect(PLAN_REVIEW).toMatch(/\{individual\.map\(\(ps\) => \(/)
+    expect(PLAN_REVIEW, 'بقيت البطاقاتُ تعرض كلَّ منتظِر').not.toMatch(/\{pendingSessions\.map\(/)
+    expect(PLAN_REVIEW).toMatch(/riding\.length > 0 \? `اعتمدها ولقاءاتِها \(\$\{riding\.length\}\)` : "اعتمدها"/)
   })
 })

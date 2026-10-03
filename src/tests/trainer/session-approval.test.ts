@@ -303,7 +303,8 @@ describe('④ الشاشتان: نموذجٌ بساعتَين ونبذةٍ وم�
   })
 
   it('والقرارُ في طابور الإدارة القائم — لا شاشةٌ ثانيةٌ يُنسى فتحُها', () => {
-    const admin = code('src/pages/admin/CohortOps.tsx')
+    /* والطابورُ في مراجعة الخطّة — مكوّنٌ تعرضه بطاقةُ الشعبة و«خططٌ تنتظر اعتمادك» معا */
+    const admin = code('src/components/admin/TrainerPlanReview.tsx')
     expect(admin, 'لا طابورَ للقاءات في شاشة الشعبة').toContain('/api/admin/cohort-sessions/pending')
     expect(admin).toMatch(/cohort-sessions\/\$\{ps\.id\}\/decide/)
     /* ويُقال على الزرّ ما يُطلقه — من يعتمد يعرف أنّه يُعلن ويُرسل بريدا */

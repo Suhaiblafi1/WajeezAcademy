@@ -81,6 +81,13 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['admin-cohorts'], summary: 'خططُ المدرّبين بانتظار الاعتماد' },
   }, async () => plans.pending())
 
+  /* وعددُها وحدَه — شارةٌ إلى جانب «خططٌ تنتظر اعتمادك» تُجلب مع كلّ شاشة
+     إدارة، فلا تجلب الخططَ وسياقَ إعدادها لتعدّها (`AdminLayout.tsx`) */
+  app.get('/api/admin/cohort-plans/pending-count', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'عددُ خطط المدرّبين بانتظار الاعتماد' },
+  }, async () => ({ count: await plans.pendingCount() }))
+
   app.get('/api/admin/cohorts/:cohortId/trainer-plan', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-cohorts'], summary: 'آخرُ خطّةِ مدرّبٍ لهذه الشعبة — حالتُها ومحتواها' },

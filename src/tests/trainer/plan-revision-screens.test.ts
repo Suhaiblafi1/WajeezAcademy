@@ -13,7 +13,10 @@ import { PlanDiffList } from '@/components/PlanDiff'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const WORKSPACE = code('src/pages/trainer/CohortWorkspace.tsx')
-const COHORT_OPS = code('src/pages/admin/CohortOps.tsx')
+/* ومراجعةُ الخطّة خرجت من بطاقة الشعبة إلى مكوّنٍ تعرضه البطاقةُ و«خططٌ تنتظر اعتمادك»
+   معا (٣ أكتوبر ٢٠٢٦) — فالحارسُ يقرؤها حيث صارت، وعرضُ البابين لها في
+   `src/tests/admin/pending-plans.test.ts`. */
+const PLAN_REVIEW = code('src/components/admin/TrainerPlanReview.tsx')
 
 describe('السطورُ بخطوات المدرّب', () => {
   it('⚠️ كلُّ خطوةٍ باسمها وسطورِها — والفارغُ يُقال لا يُترك بياضا', () => {
@@ -28,8 +31,8 @@ describe('السطورُ بخطوات المدرّب', () => {
 
 describe('المعتمِدُ يقرأ ما تغيّر قبل أن يعتمد', () => {
   it('⚠️ على المرسَلة وحدَها، وبالقاعدة بين المعتمَدة والمرسَلة', () => {
-    expect(COHORT_OPS).toMatch(/\{trainerPlan\.status === "submitted" && trainerPlan\.approvedPlan && \(/)
-    expect(COHORT_OPS).toMatch(/sections=\{planDiff\(trainerPlan\.approvedPlan\.content, trainerPlan\.content, \{ date: fmtDateAr \}\)\}/)
+    expect(PLAN_REVIEW).toMatch(/\{trainerPlan\.status === "submitted" && trainerPlan\.approvedPlan && \(/)
+    expect(PLAN_REVIEW).toMatch(/sections=\{planDiff\(trainerPlan\.approvedPlan\.content, trainerPlan\.content, \{ date: fmtDateAr \}\)\}/)
   })
 })
 

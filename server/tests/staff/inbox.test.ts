@@ -104,6 +104,28 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
     expect(r?.sample[0]).toContain('شعبةُ الاقتراح')
   })
 
+  /* ═══ وخططُ الشعب المرسَلة (٣ أكتوبر ٢٠٢٦) ═══
+     كانت تُعتمَد من بطاقة كلّ شعبةٍ وحدَها، ولا بندَ يقول إنّ أحدا ينتظر: لا يُفتح
+     تسجيلُ الشعبة قبلها، ومدرّبُ الإعداد لا يُفعَّل حتّى تُعتمَد خططُه. */
+  it('ويُظهر خطّةَ شعبةٍ مرسَلةً بشعبتها ومدرّبها — وبابُها شاشتُها الواحدة', async () => {
+    const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةُ الخطّة المرسَلة' })
+    const app = await prisma.trainerApplication.create({
+      data: {
+        reference: `TR-INBOX-${Date.now()}`, fullName: 'مدرّبُ اللوح', email: `inbox-trainer-${Date.now()}@test.local`,
+        status: 'active', motivation: 'اختبار', privacyConsentAt: new Date(),
+      },
+    })
+    const profile = await prisma.trainerProfile.create({ data: { applicationId: app.id } })
+    await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: c.id, trainerId: profile.id, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
+    })
+    const items = await inbox.forStaff(managerId, permsOf('academic_manager'))
+    const plans = items.find((i) => i.key === 'cohort_plans')
+    expect(plans?.count).toBe(1)
+    expect(plans?.href).toBe('/admin/pending-plans')
+    expect(plans?.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح'])
+  })
+
   it('والأعجلُ أوّلا — ترتيبُ القائمة هو ترتيبُ العمل', async () => {
     const items = await inbox.forStaff(managerId, permsOf('academic_manager'))
     const weight = { urgent: 0, attention: 1, info: 2 } as const
@@ -127,6 +149,13 @@ describe('ولا يعرض لأحدٍ ما لا يملك صلاحيّتَه', () 
     const support = await inbox.forStaff(managerId, permsOf('support'))
     expect(support.map((i) => i.key)).not.toContain('reschedules')
     expect(support.find((i) => i.key === 'support')?.count).toBe(1)
+  })
+
+  /* المنسّقُ يدير الشعبَ ولا يعتمد خططَها (`cohort.plan.approve` ليست له) */
+  it('والمنسّقُ لا يرى الخططَ المرسَلة — يراها من يعتمدها', async () => {
+    const keys = (await inbox.forStaff(managerId, permsOf('academic_coordinator'))).map((i) => i.key)
+    expect(keys).not.toContain('cohort_plans')
+    expect((await inbox.forStaff(managerId, permsOf('academic_manager'))).map((i) => i.key)).toContain('cohort_plans')
   })
 
   it('ومن لا صلاحيّةَ له أصلا يرى مهامَّه المسندةَ وحدَها', async () => {
