@@ -30,7 +30,7 @@ import { PHOTO_OUT_MIME } from "@/lib/prepare-image";
 
 /* أصلُ الـAPI: في التطوير منفذٌ آخرُ غيرُ خادم Vite */
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
-import { controlCls } from "@/components/FormKit";
+import { controlCls, staffAreaCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -38,6 +38,8 @@ import { useRealSession } from "@/services/session";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import Chip from "@/components/ui/Chip";
+import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsAssignment {
   courseId: string; courseTitle: string
@@ -58,6 +60,8 @@ interface OpsTrainer {
   photoUrl: string | null;
   /* صورةٌ رفعها هو من حسابه وتنتظر قرارَنا — ولا تراها العامّةُ حتّى تُعتمد */
   pendingPhotoUrl: string | null;
+  /* وعنوانٌ ونبذةٌ كتبهما هو من حسابه — يُعدَّلان هنا إن شئتَ ثمّ يُعتمَدان */
+  pendingText: { headline: string | null; bio: string | null; at: string } | null;
   qualifications: OpsQualification[];
   assignments: OpsAssignment[];
 }
@@ -212,6 +216,7 @@ function PublicProfileEditor({
           className={`${controlCls} mt-1 w-full`}
         />
       </div>
+      {trainer.pendingText && <PendingTextReview trainer={trainer} onSaved={onSaved} />}
       {trainer.pendingPhotoUrl && (
         <Inset className="mt-2.5 flex flex-wrap items-center gap-3">
           <img
@@ -268,6 +273,89 @@ function PublicProfileEditor({
         />
       )}
     </div>
+  );
+}
+
+/* ═══ عنوانُه ونبذتُه كما أرسلهما — تعدّلهما ثمّ تعتمد (٣ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «let me edit it in case I want to before approval».
+   فالحقلان معبّآن بما أرسله، ويُحرَّران هنا، و«اعتمِدْ» يكتب ما فيهما لحظةَ
+   الضغط — كما أرسله أو كما عدّلتَه. والردُّ بسببٍ يقرؤه في حسابه.
+   والعلّةُ في `server/services/trainer-public-text.service.ts`. */
+function PendingTextReview({
+  trainer, onSaved,
+}: {
+  trainer: OpsTrainer
+  onSaved: () => Promise<void> | void
+}) {
+  const p = trainer.pendingText!;
+  const [headline, setHeadline] = useState(p.headline ?? "");
+  const [bio, setBio] = useState(p.bio ?? "");
+  const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const words = countWords(bio);
+  const edited = headline.trim() !== (p.headline ?? "") || bio.trim() !== (p.bio ?? "");
+
+  const decide = async (approve: boolean) => {
+    setBusy(true);
+    try {
+      if (approve) {
+        await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/approve`,
+          { headline: headline.trim(), bioPublic: bio.trim() });
+        toast(edited ? "اعتُمدت بتعديلك — ووصله خبرُها" : "اعتُمدت كما كتبها — ووصله خبرُها");
+      } else {
+        await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/reject`, { reasonAr: reason.trim() });
+        toast("رُدّت — ويقرأ سببَك في حسابه");
+      }
+      await onSaved();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذُ القرار");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Inset tone="warn" className="mt-2.5 p-3">
+      <p className="text-read font-black">
+        أرسل عنوانَه ونبذتَه {fmtDateTime(p.at)} — تنتظر اعتمادَك
+      </p>
+      <p className="mt-0.5 text-read leading-6 text-muted-foreground">
+        عدّلْ ما شئتَ في الحقلين، ثمّ اعتمِدْ: يُكتب ما فيهما في صفحة «المدربون». وما هو معتمَدٌ الآن يبقى معروضا حتّى تقرّر.
+      </p>
+      <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`phl-${trainer.profileId}`}>
+        العنوانُ المهنيّ
+      </label>
+      <input id={`phl-${trainer.profileId}`} value={headline} maxLength={160}
+        onChange={(e) => setHeadline(e.target.value)} className={`${controlCls} mt-1 w-full`} />
+      <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`pbio-${trainer.profileId}`}>
+        النبذة
+      </label>
+      <textarea id={`pbio-${trainer.profileId}`} rows={4} value={bio} maxLength={1200}
+        onChange={(e) => setBio(e.target.value)} className={`${staffAreaCls} mt-1 w-full`} />
+      <p className={`mt-1 text-read ${words > BIO_MAX_WORDS ? "text-gold-ink" : "text-muted-foreground"}`}>
+        {words} / {BIO_MAX_WORDS} كلمة{edited ? " · عدّلتَها — يُعتمَد تعديلُك" : ""}
+      </p>
+      {rejecting ? (
+        <div className="mt-2.5 grid gap-2">
+          <textarea rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
+            placeholder="سببُ الردّ — يقرؤه المدرّبُ في حسابه بحرفه"
+            className={`${controlCls} w-full`} />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" tone="danger" disabled={busy || reason.trim().length < 3}
+              onClick={() => void decide(false)}>أرسِلِ الردّ</Button>
+            <Button size="sm" tone="ghost" disabled={busy} onClick={() => setRejecting(false)}>تراجعْ</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          <Button size="sm" tone="confirm" icon={CheckCircle2} disabled={busy || headline.trim().length < 3 || bio.trim().length < 3}
+            onClick={() => void decide(true)}>
+            {edited ? "اعتمِدْها بتعديلك" : "اعتمِدْها كما كتبها"}
+          </Button>
+          <Button size="sm" tone="ghost" disabled={busy} onClick={() => setRejecting(true)}>ردَّها بسبب</Button>
+        </div>
+      )}
+    </Inset>
   );
 }
 
@@ -328,8 +416,11 @@ export default function TrainerRunOps() {
     [courses],
   );
 
+  /* وما ينتظر قرارَك في ملفّه العامّ — نبذةٌ أو صورة — يُقدَّم فلا يضيع بين الصفوف */
   const shown = useMemo(
-    () => (trainers ?? []).filter((t) => matchesQuery(q, [t.name, t.email])),
+    () => (trainers ?? [])
+      .filter((t) => matchesQuery(q, [t.name, t.email]))
+      .sort((a, b) => Number(Boolean(b.pendingText || b.pendingPhotoUrl)) - Number(Boolean(a.pendingText || a.pendingPhotoUrl))),
     [trainers, q],
   );
 
@@ -534,6 +625,12 @@ export default function TrainerRunOps() {
                       <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
                         {t.name}
                         {t.suspended && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-fine font-black text-red-300">موقوف</span>}
+                        {(t.pendingText || t.pendingPhotoUrl) && (
+                          <Chip tone="warn" srPrefixAr="ملفُّه العامّ">
+                            {t.pendingText && t.pendingPhotoUrl ? "نبذةٌ وصورةٌ تنتظرانك"
+                              : t.pendingText ? "نبذةٌ تنتظرك" : "صورةٌ تنتظرك"}
+                          </Chip>
+                        )}
                         {t.publiclyVisible && (
                           <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">
                             <BadgeCheck className="h-3 w-3" /> ظاهرٌ للعامّة

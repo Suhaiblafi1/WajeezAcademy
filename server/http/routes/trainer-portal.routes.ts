@@ -20,6 +20,7 @@ import { TrainerOfferService } from '../../services/trainer-offer.service'
 import { TrainerBankService, MAX_ACCOUNT_LEN, BANK_ACCOUNT_KINDS } from '../../services/trainer-bank.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { TrainerPrepService } from '../../services/trainer-prep.service'
+import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
@@ -49,6 +50,23 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const earnings = new EarningsService(prisma)
   const materials = new TrainerMaterialsService(prisma)
   const prep = new TrainerPrepService(prisma)
+  const publicText = new TrainerPublicTextService(prisma)
+
+  /* ═══ عنوانُه ونبذتُه في «المدربون» — يكتبهما ونعتمدهما (٣ أكتوبر ٢٠٢٦) ═══
+     العلّةُ في `trainer-public-text.service.ts`. والحدودُ هنا حدودُ الحقل
+     الخام، وحكمُ الطول في الخدمة — فلا يُقال للمدرّب حدّان. */
+  app.get('/api/trainer/public-text', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'عنواني ونبذتي — المعتمَدُ وما ينتظر الاعتماد' },
+  }, async (req) => publicText.mine(req.auth!.userId))
+
+  app.put('/api/trainer/public-text', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'أرسل عنواني ونبذتي للاعتماد — لا يظهران قبله' },
+  }, async (req) => {
+    const body = z.object({ headline: z.string().max(400), bio: z.string().max(4000) }).parse(req.body ?? {})
+    return publicText.submit(req.auth!.userId, body)
+  })
 
   /* ═══ شعبةُ الإعداد — يقبل الدورةَ فيعبّئها في «شعبي» (٢ أكتوبر ٢٠٢٦) ═══
      العلّةُ في `trainer-prep.service.ts`. والملفُّ من حسابه لا من الطلب. */

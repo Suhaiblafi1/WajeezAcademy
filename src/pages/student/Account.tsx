@@ -16,6 +16,7 @@ import ImageFramer from "@/components/ImageFramer";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DateField from "@/components/ui/DateField";
 import Button from "@/components/ui/Button";
+import PublicTextCard from "@/components/trainer/PublicTextCard";
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
    - خادم حقيقي: جلسة API فعّالة → قراءة وحفظ في قاعدة البيانات.
@@ -255,7 +256,7 @@ export default function StudentAccount() {
       setFraming(null);
       setForm((f) => ({ ...f, avatarUrl: "" }));
       setPhotoMsg({ bad: false, text: r.awaitingApproval
-        ? "رُفعت صورتُك. وتظهر في حسابك الآن — أمّا صفحتُك العامّة فتنتظر اعتمادَ الإدارة."
+        ? "رُفعت صورتُك. وتظهر في حسابك الآن — أمّا «المدربون» وصفحتُك العامّة فتنتظر اعتمادَ الإدارة."
         : "رُفعت صورتُك." });
     } catch (e) {
       setPhotoMsg({ bad: true, text: e instanceof ImageConditionError ? e.message
@@ -475,6 +476,10 @@ export default function StudentAccount() {
           </Field>
         </div>
       </Panel>
+
+      {/* ═══ وللمدرّب: عنوانُه ونبذتُه في «المدربون» (٣ أكتوبر ٢٠٢٦) ═══
+          تحت صورته لأنّهم يُعرضون معا — والعلّةُ في `PublicTextCard`. */}
+      {mode === "server" && roles?.includes("trainer") && <PublicTextCard inputCls={inputCls} />}
 
       {/* المعلومات الشخصية */}
       <Panel as="section" className="mt-6 md:p-8">
