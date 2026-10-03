@@ -25,6 +25,7 @@ import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-n
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { PLAN_AR, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
 import { whenAr } from "@/application/learning/cohort-gate";
+import { signalPlansChanged } from "@/services/plans-signal";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 
@@ -105,6 +106,9 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   const waitingTasks = trainerPlan ? awaitingTasks(trainerPlan.assessments, trainerPlan.approvedOnce ?? false) : [];
   const axisNo = new Map((trainerPlan?.content?.modules ?? []).map((m, i) => [m.moduleId, i + 1] as const));
   const [asking, setAsking] = useState(false);
+  /* القضاءُ في الخطّة يُبلَّغ مرّتين: البابُ الذي فُتحت منه (الطابورُ يعلّمها)،
+     والإطارُ الذي يعدّ ما ينتظر (`plans-signal.ts`) — فلا تبقى شارتُه على عددٍ مضى */
+  const decided = (outcome: PlanOutcome) => { onPlanDecided?.(outcome); signalPlansChanged(); };
 
   /* ويعود بنجاحه — فنموذجٌ كُتب فيه لا يُطوى على خطأ فيضيع ما كُتب. والرسالةُ
      قد تُبنى ممّا عاد (اعتمادُ الخطّة يقول لقاءاتِه) */
@@ -240,7 +244,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             <Button tone="confirm" size="sm" disabled={busy}
               onClick={() => act(
                 () => apiPost<PlanDecision>(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true })
-                  .then(async (r) => { await Promise.all([loadPlan(), loadPendingSessions()]); onPlanDecided?.("approved"); return r; }),
+                  .then(async (r) => { await Promise.all([loadPlan(), loadPendingSessions()]); decided("approved"); return r; }),
                 (r) => planApprovedMsg(r as PlanDecision),
               )}>
               {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}
@@ -267,7 +271,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           onSend={(notes) => void act(
             () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: notes }).then(loadPlan),
             "رُدّت إليه — وكلُّ ملاحظةٍ في رأس خطوتها عنده",
-          ).then((ok) => { if (ok) { setAsking(false); onPlanDecided?.("changes_requested"); } })}
+          ).then((ok) => { if (ok) { setAsking(false); decided("changes_requested"); } })}
         />
       )}
       {/* وما قاله الفعلُ يُقرأ حيث نُقر — لا أعلى البطاقة بعد منهجٍ طويل */}

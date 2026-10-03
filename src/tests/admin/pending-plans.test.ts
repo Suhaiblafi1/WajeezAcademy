@@ -56,8 +56,9 @@ describe('① المراجعةُ واحدةٌ في البابين', () => {
 
   it('والمكوّنُ يقول ما ردّه الاعتمادُ لمدرّب الإعداد — ويُخبر بابَه بما قُضي', () => {
     expect(REVIEW).toMatch(/\(r\) => planApprovedMsg\(r as PlanDecision\),/)
-    expect(REVIEW).toMatch(/onPlanDecided\?\.\("approved"\); return r;/)
-    expect(REVIEW).toMatch(/if \(ok\) \{ setAsking\(false\); onPlanDecided\?\.\("changes_requested"\); \}/)
+    expect(REVIEW).toMatch(/const decided = \(outcome: PlanOutcome\) => \{ onPlanDecided\?\.\(outcome\); signalPlansChanged\(\); \};/)
+    expect(REVIEW).toMatch(/decided\("approved"\); return r;/)
+    expect(REVIEW).toMatch(/if \(ok\) \{ setAsking\(false\); decided\("changes_requested"\); \}/)
   })
 })
 
@@ -106,6 +107,15 @@ describe('② والطابورُ يُبلَغ', () => {
     const effect = layout.slice(layout.lastIndexOf('useEffect(', at), at)
     expect(effect, 'يُنادى لمن لا يملك الاعتماد').toContain('if (!canApprovePlans) return;')
     expect(layout).toMatch(/setBadges\(\(b\) => \(\{ \.\.\.b, awaitingPlans: r\.count \}\)\)/)
+  })
+
+  /* رُئي في لقطة الطابور: رأسُ الصفحة «٢» والشارةُ «٣» حتّى تُفتح شاشةٌ أخرى */
+  it('والشارةُ تتبع القرارَ في مكانه — لا بعد إعادة التحميل', () => {
+    const layout = bare('src/pages/admin/AdminLayout.tsx')
+    expect(layout).toContain('import { PLANS_CHANGED } from "@/services/plans-signal";')
+    expect(layout).toMatch(/window\.addEventListener\(PLANS_CHANGED, load\)/)
+    expect(layout).toMatch(/window\.removeEventListener\(PLANS_CHANGED, load\)/)
+    expect(REVIEW).toContain('import { signalPlansChanged } from "@/services/plans-signal";')
   })
 
   it('ولوحُ دورات المدرّب في «العقود» يفتح المرسَلةَ في الطابور مرشَّحا بخططه', () => {

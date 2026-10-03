@@ -11,6 +11,7 @@ import StaffAccountMenu from "@/components/StaffAccountMenu";
 import SearchPalette from "@/components/SearchPalette";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
+import { PLANS_CHANGED } from "@/services/plans-signal";
 
 import BuildStampLine from "@/components/BuildStampLine";
 
@@ -75,10 +76,15 @@ export default function AdminLayout({ children, title }: { children: React.React
   useEffect(() => {
     if (!canApprovePlans) return;
     let alive = true;
-    void apiGet<{ count: number }>("/api/admin/cohort-plans/pending-count")
-      .then((r) => { if (alive) setBadges((b) => ({ ...b, awaitingPlans: r.count })); })
-      .catch(() => { /* لا شبكة — لا شارة، ولا خطأٌ يُعرَض */ });
-    return () => { alive = false; };
+    const load = () => {
+      void apiGet<{ count: number }>("/api/admin/cohort-plans/pending-count")
+        .then((r) => { if (alive) setBadges((b) => ({ ...b, awaitingPlans: r.count })); })
+        .catch(() => { /* لا شبكة — لا شارة، ولا خطأٌ يُعرَض */ });
+    };
+    load();
+    /* ويُعاد بعد كلّ قضاءٍ في خطّة — في الطابور أو في بطاقة الشعبة (`plans-signal.ts`) */
+    window.addEventListener(PLANS_CHANGED, load);
+    return () => { alive = false; window.removeEventListener(PLANS_CHANGED, load); };
   }, [canApprovePlans]);
   const location = useLocation();
   const navigate = useNavigate();

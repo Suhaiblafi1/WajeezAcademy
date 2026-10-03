@@ -59,6 +59,13 @@ interface PendingPlan {
 const PLAN_FORMS = { one: "خطّةٌ", two: "خطّتان", few: "خطط", many: "خطّةً" };
 const PAGE = 20;
 
+/** «خطّتان» لا «2 خطّتان»: المفردُ والمثنّى يُقرآن بلا رقمهما */
+function plansAr(n: number): string {
+  if (n === 1) return "خطّةٌ واحدة";
+  if (n === 2) return "خطّتان";
+  return countAr(n, PLAN_FORMS);
+}
+
 /** «من مدرّبٍ واحد» لا «من 1 مدرّب» — والعددُ يُقرأ لا يُحسب */
 function fromTrainersAr(n: number): string {
   if (n === 1) return "من مدرّبٍ واحد";
@@ -191,7 +198,7 @@ export default function PendingPlans() {
         waitingAr="تنتظر اعتمادك"
         stats={rows ? [
           fromTrainersAr(trainers),
-          ...(inPrep > 0 ? [`في طور الإعداد: ${countAr(inPrep, PLAN_FORMS)}`] : []),
+          ...(inPrep > 0 ? [`في طور الإعداد: ${plansAr(inPrep)}`] : []),
         ] : []}
         actionAr="ابدأ بأقدمها"
         /* الأقدمُ أوّلُ ما لم يُقضَ فيه في الترتيب المعروض — والبحثُ قد يُخفيه */
@@ -225,7 +232,7 @@ export default function PendingPlans() {
                     <h2 className="flex flex-wrap items-baseline gap-x-2 text-read font-black text-foreground">
                       {g.name}
                       <span className="font-normal text-muted-foreground">
-                        {left > 0 ? `— ${countAr(left, PLAN_FORMS)} تنتظر` : "— قُضي فيها كلِّها"}
+                        {left > 0 ? `— ${plansAr(left)} ${left === 2 ? "تنتظران" : "تنتظر"}` : "— قُضي فيها كلِّها"}
                       </span>
                     </h2>
                     {onboarding && (
