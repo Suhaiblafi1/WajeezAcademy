@@ -2191,6 +2191,8 @@ export class TrainerReviewService {
              ولا تعرض الزرَّ ثانية. والأجلُ وحدَه لا يفتح بابا — البصمةُ لا تخرج */
           finalReminderAt: true, tokenExpiresAt: true,
           signerLegalName: true, declinedAt: true, declineReasonAr: true,
+          /* وردُّنا على اعتذاره وخيارُه في بياناته (٣ أكتوبر ٢٠٢٦) — الهاشُ لا يخرج */
+          declineReplyAr: true, declineRepliedAt: true, dataChoice: true, dataChoiceAt: true,
           countersignedAt: true, academySignatoryName: true,
           academySignatoryTitle: true, countersignNoteAr: true,
           /* واعتمادُ التوقيع بلا خَتم (١ أكتوبر ٢٠٢٦) — يقول الصفُّ متى فُتحت

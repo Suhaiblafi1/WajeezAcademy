@@ -20,6 +20,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { TrainerDeclineReplyService } from '../../services/trainer-decline-reply.service'
 import { AMENDMENT_TEXT_MAX } from '../../../src/application/trainer/contract-endings'
 
 /** يكفي قارئا يوقّع، ويضيق على من يجرّب الرموز */
@@ -122,4 +123,28 @@ export function registerContractSignRoutes(app: FastifyInstance, prisma: PrismaC
     reply.header('X-Robots-Tag', 'noindex, nofollow')
     return svc.declineContractByToken(token, reasonAr)
   })
+
+  /* ═══ خيارُ المعتذِر في بياناته — صفحةٌ بزرّين (٣ أكتوبر ٢٠٢٦) ═══
+     القراءةُ لا تفعل شيئا (ماسحاتُ البريد تفتح الروابط)، والخيارُ بـPOST وحدَه.
+     العلّةُ في `trainer-decline-reply.service.ts`. */
+  const declineReply = new TrainerDeclineReplyService(prisma)
+  app.get('/api/data-choice/:token', {
+    config: { rateLimit: SIGN_RATE },
+    schema: { tags: ['trainer-contracts'], summary: 'صفحةُ خيار المعتذِر في بياناته — قراءةٌ لا تفعل شيئا' },
+  }, async (req, reply) => {
+    const { token } = params.parse(req.params)
+    reply.header('X-Robots-Tag', 'noindex, nofollow')
+    return declineReply.choiceByToken(token)
+  })
+
+  app.post('/api/data-choice/:token', {
+    config: { rateLimit: SIGN_RATE },
+    schema: { tags: ['trainer-contracts'], summary: 'خيارُ المعتذِر: إبقاءُ بياناته أو حذفُها في الحال' },
+  }, async (req, reply) => {
+    const { token } = params.parse(req.params)
+    const { choice } = z.object({ choice: z.enum(['keep', 'delete']) }).parse(req.body)
+    reply.header('X-Robots-Tag', 'noindex, nofollow')
+    return declineReply.chooseByToken(token, choice)
+  })
+
 }
