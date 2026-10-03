@@ -67,9 +67,9 @@ import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
-import { blockingBeforeSubmit, trainerOwned } from "@/application/trainer/plan-gate";
+import { blockingBeforeSubmit, sendBlock, trainerOwned } from "@/application/trainer/plan-gate";
 import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
-import { whenAr } from "@/application/learning/cohort-gate";
+import { trainerRegistrationLine } from "@/application/learning/registration-state";
 import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
@@ -138,7 +138,8 @@ interface Workspace {
     termId: string | null; term: Term | null;
     /* مدّتُه كما تُحكَم، والمعلَنةُ للمسجَّلين الآن — تُقالان معا إن افترقتا */
     period: Period | null; publicPeriod: Period | null;
-    readOnly: { price: number | null; currency: string; capacity: number | null };
+    /* وعلمُ التسجيل — يُقرأ ولا يُكتب؛ منه تقول خطوتُه الأخيرةُ متى تُفتح (٣ أكتوبر ٢٠٢٦) */
+    readOnly: { price: number | null; currency: string; capacity: number | null; registrationOpen?: boolean };
   };
   course: { id: string; titleAr: string; baseModules: PlanModule[] };
   plan: {
@@ -424,6 +425,8 @@ export default function CohortWorkspace() {
      بعدد، ويُمحى بأوّل محاولةٍ تالية. «لا ينتقل للتالي إلّا بعد أن يتمّ
      النقطةَ السابقة» — والمنعُ بلا سببٍ يُقال عطبٌ لا قاعدة. */
   const [gaps, setGaps] = useState<string[] | null>(null);
+  /* «أرسِلها» وفي يده تعديلٌ لم يُحفظ — يُسأل قبل أن يُرسَل المحفوظُ وحدَه (٣ أكتوبر ٢٠٢٦) */
+  const [unsavedAsk, setUnsavedAsk] = useState(false);
   const [busy, setBusy] = useState(false);
 
   /* النسخةُ التي يحرّرها — تبدأ من الخطّة إن كانت، وإلّا من محاور الكتالوج */
@@ -813,13 +816,50 @@ export default function CohortWorkspace() {
      قبل النداء — والخادمُ يردّ الشيءَ نفسَه إن وصل (`plan-gate`). */
   const submitNow = async () => {
     setGaps(null);
-    if (blocking.length) { setGaps(blocking.map((b) => b.labelAr)); return; }
-    if (!confirm) {
+    setUnsavedAsk(false);
+    /* ═══ وتعديلٌ لم يُحفظ لا يُطرح صامتا (٣ أكتوبر ٢٠٢٦) ═══
+       الإرسالُ يرسل المحفوظ — فمن في يده تعديلٌ يُسأل بخياراتٍ ثلاثةٍ يُقال أثرُ
+       كلٍّ منها، والقرارُ له («4a»). والترتيبُ وعلّتُه في `sendBlock` (`plan-gate.ts`). */
+    const stop = sendBlock({ confirmed: confirm, unsaved: Object.values(dirty).some(Boolean), blocking: blocking.length });
+    if (stop === "confirm") {
       setGaps(["أكّد موافقتك على كلّ ما في الشعبة — المربّعُ أسفلَ هذه الخطوة"]);
       document.getElementById("plan-confirm")?.focus();
       return;
     }
+    if (stop === "unsaved") { setUnsavedAsk(true); return; }
+    if (stop === "blocking") { setGaps(blocking.map((b) => b.labelAr)); return; }
     await act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
+  };
+  /** ① يحفظ ثمّ يرسل — وحفظٌ يردّه الخادمُ يُقال، ولا يُرسَل بعده شيء */
+  const saveThenSend = async () => {
+    setUnsavedAsk(false);
+    setGaps(null);
+    setBusy(true);
+    try {
+      if (!(await persist())) return;
+      const fresh = await load();
+      if (!fresh) return;
+      const left = blockingBeforeSubmit(fresh.checklist);
+      if (left.length) { setGaps(left.map((b) => b.labelAr)); return; }
+    } catch (e) {
+      toastError(`${e instanceof ApiError ? e.message : "تعذّر الحفظ"} — ولم تُرسَل`);
+      return;
+    } finally {
+      setBusy(false);
+    }
+    await act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "حُفظ تعديلُك وأُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
+  };
+  /** ② يرسل المحفوظ — ويُطرح التعديلُ الذي في يده، وهذا يُقال قبل النقر */
+  const sendSaved = async () => {
+    setUnsavedAsk(false);
+    if (blocking.length) { setGaps(blocking.map((b) => b.labelAr)); return; }
+    await act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسل المحفوظ للاعتماد — وطُرح تعديلُك الذي لم يُحفظ");
+  };
+  /** ③ يعود إلى أوّل خطوةٍ فيها تعديلٌ لم يُحفظ — ولا يُرسَل شيء */
+  const backToEdit = () => {
+    setUnsavedAsk(false);
+    const first = STAGES.find((x) => dirty[x.key]);
+    if (first) { setStage(first.key); window.scrollTo({ top: 0, behavior: "smooth" }); }
   };
   /* ── التكاليف: إنشاءٌ وتعديلٌ وحذف ──
 
@@ -1111,6 +1151,28 @@ export default function CohortWorkspace() {
               <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
                 {gaps.map((g) => <li key={g}>{g}</li>)}
               </ul>
+            </Inset>
+          )}
+
+          {/* وتعديلٌ لم يُحفظ عند «أرسِلها» — ثلاثةُ خياراتٍ بأثر كلٍّ، والقرارُ له */}
+          {unsavedAsk && (
+            <Inset tone="warn" className="mt-2" role="alertdialog" aria-label="في يدك تعديلٌ لم يُحفظ">
+              <p className="text-read font-black text-gold-ink">
+                في يدك تعديلٌ لم يُحفظ: {STAGES.filter((x) => dirty[x.key]).map((x) => `«${x.label}»`).join("، ")}
+              </p>
+              <p className="mt-1 text-read leading-6 text-foreground">
+                الإرسالُ يرسل المحفوظ وحدَه. اختر:
+              </p>
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-6 text-muted-foreground">
+                <li><b className="text-foreground">احفظ وأرسِل</b> — يُحفظ تعديلُك ثمّ تُرسَل به؛ وإن ردّ الحفظَ خطأٌ قيل لك ولم يُرسَل شيء.</li>
+                <li><b className="text-foreground">أرسِل دون تعديلي</b> — يُرسَل المحفوظُ كما هو، ويُطرح تعديلُك.</li>
+                <li><b className="text-foreground">ارجع إليه</b> — لا يُرسَل شيء، وتعود إلى خطوته لتراجعه.</li>
+              </ul>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button tone="confirm" size="sm" disabled={busy} onClick={() => void saveThenSend()}>احفظ وأرسِل</Button>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => void sendSaved()}>أرسِل دون تعديلي</Button>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={backToEdit}>ارجع إليه</Button>
+              </div>
             </Inset>
           )}
         </div>
@@ -2272,12 +2334,20 @@ export default function CohortWorkspace() {
               «التسجيلُ يُفتح بعد الاعتماد، ويُغلق يومَ البدء، والالتحاقُ المتأخّرُ
               حتّى الموعد الثاني». والتاريخُ من مواعيده بالقاعدة نفسِها التي يكتبه
               بها الاعتمادُ (`joinClosesAt`) — فلا يقرأ هنا تاريخا غيرَ ما سيُكتب. */}
+          {/* ═══ وعلمُ الشعبة كما هو (٣ أكتوبر ٢٠٢٦) ═══
+              كان «تُفتح الشعبةُ للتسجيل حين تُعتمَد» ثمّ «فُتحت باعتمادها» لكلّ شعبة —
+              وشعبةُ الإعداد يُعتمَد خطُّها ولا يُرفع علمُها: تفتحها الإدارةُ بقرارٍ
+              منفصل. فالجملةُ من حالها (`registration-state.ts`). */}
           {planPeriod && (() => {
-            const closes = joinClosesAt(planPeriod, content.slots);
+            const line = trainerRegistrationLine({
+              registrationOpen: ws.cohort.readOnly.registrationOpen ?? true,
+              /* المعتمَدةُ مرّةً تبقى تقبل المسجَّلين وإن رُوجعت بعدها (٣ج-٣) */
+              awaitingPlan: !approved && !ws.approvedOnce,
+              joinClosesAt: joinClosesAt(planPeriod, content.slots),
+            }, new Date());
             return (
               <p className="mt-2 text-read leading-6 text-muted-foreground">
-                {approved ? "فُتحت الشعبةُ للتسجيل باعتمادها" : "تُفتح الشعبةُ للتسجيل حين تُعتمَد"}
-                {closes && <>، ويُقبل الملتحقون حتّى بدء موعدها الثاني — <b className="text-foreground">{whenAr(closes)}</b></>}.
+                {line.lead}{line.date && <b className="text-foreground">{line.date}</b>}{line.tail}
               </p>
             );
           })()}

@@ -96,6 +96,18 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return plans.latestForCohort(cohortId)
   })
 
+  /* ═══ وما بقي بعد الاعتماد الأخير (٣ أكتوبر ٢٠٢٦) ═══
+     شعبُ مدرّب هذه الشعبة المعتمَدةُ التي لم تُفتح، ونواقصُ فتح كلٍّ، وظهورُه العامّ —
+     للّوح الذي يظهر حيث فُعِّل (`TrainerPlanReview`). يقرؤه من يعتمد الخطط؛ والفتحُ
+     والنشرُ بعدُ بأبوابهما وصلاحيّتيهما (`cohort.open` · `trainer.publish`). */
+  app.get('/api/admin/cohorts/:cohortId/next-steps', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'ما بقي بعد اعتماد خطط مدرّب الإعداد — فتحُ شعبه وظهورُه العامّ' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    return plans.nextStepsAfterApproval(cohortId)
+  })
+
   app.post('/api/admin/cohort-plans/:id/decide', {
     preHandler: requirePermission('cohort.plan.approve'),
     schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ ولقاءاتِها معا، أو ردُّها بملاحظةٍ لكلّ خطوة' },

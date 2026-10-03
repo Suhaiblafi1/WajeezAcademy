@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router";
 import { Bell, CheckCheck } from "lucide-react";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
+import { destinationFor, notificationHref } from "@/application/notifications/destinations";
 
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface InAppNotification {
   id: string; title: string; body: string; status: string;
   sentAt?: string | null; createdAt: string; readAt?: string | null;
+  /* ومفتاحُه وبياناتُه — منهما وجهتُه (`notificationHref`) */
+  templateKey?: string | null; data?: unknown;
 }
 
 /** بوابة الجرس — لأنّ المكوّن واحد في أربع بوابات.
@@ -22,6 +26,7 @@ export type BellAudience = "learner" | "trainer" | "staff";
    يحدّث العدّاد كل 30 ثانية، والقائمة تُجلب عند الفتح، والنقر يعلّم كمقروء. */
 export default function NotificationBell({ audience }: { audience: BellAudience }) {
   const { user } = useRealSession();
+  const navigate = useNavigate();
   const [unread, setUnread] = useState(0);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<InAppNotification[] | null>(null);
@@ -75,6 +80,17 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
     } catch { /* تبقى غير مقروءة — تُعاد المحاولة عند النقر التالي */ }
   };
 
+  /* ═══ والبندُ يفتح خبرَه (٣ أكتوبر ٢٠٢٦) ═══
+     كانت بنودُ الجرس نصّا يُعلَّم مقروءا ولا يُفتح: «خطّةُ شعبةٍ بانتظار
+     اعتمادك» ثمّ يبحث قارئُها عنها بيده. فصار البندُ الذي له وجهةٌ رابطا إليها —
+     والوجهةُ هي هي وجهةُ زرّ البريد (`destinations.ts`)، والخطّةُ تُفتح مبسوطةً
+     في طابورها. وما لا وجهةَ له يبقى كما كان: يُعلَّم مقروءا ولا يُخترَع له باب. */
+  const openItem = async (n: InAppNotification) => {
+    const href = notificationHref(n.templateKey, audience, n.data);
+    await markRead(n);
+    if (href) { setOpen(false); navigate(href); }
+  };
+
   const markAll = async () => {
     const unreadOnes = (items ?? []).filter((n) => n.status === "sent");
     for (const n of unreadOnes) {
@@ -113,7 +129,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
             {items?.map((n) => (
               <button
                 key={n.id}
-                onClick={() => void markRead(n)}
+                onClick={() => void openItem(n)}
                 className={`block w-full cursor-pointer border-b border-white/5 px-4 py-3 text-right transition hover:bg-white/[0.04] ${
                   n.status === "sent" ? "bg-teal/[0.06]" : ""
                 }`}
@@ -125,6 +141,10 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                 <p className="mt-1 text-read leading-5 text-muted-foreground">{n.body}</p>
                 <p className="mt-1 text-read text-muted-foreground">
                   {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
+                  {/* واسمُ الباب فعلٌ يقول ما سيجد — كزرّ البريد */}
+                  {destinationFor(n.templateKey, audience) && (
+                    <span className="mr-2 font-bold text-teal-light-ink">· {destinationFor(n.templateKey, audience)!.ctaAr} ←</span>
+                  )}
                 </p>
               </button>
             ))}

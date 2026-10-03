@@ -53,6 +53,9 @@ export interface PrepCourse {
   approved: boolean
 }
 
+/** شعبةُ إعدادٍ وقائدُها — كما يقرؤها `prepContext` */
+export type PrepContext = NonNullable<Awaited<ReturnType<TrainerPrepService['prepContext']>>>
+
 /** نصُّ الاعتذار في ملحوظة التأهيل — ومنه يُعرف أنّ `retired` اعتذارٌ منه لا سحبٌ منّا */
 export const DECLINED_NOTE_PREFIX = 'اعتذر عنها المدرّب: '
 
@@ -358,26 +361,51 @@ export class TrainerPrepService {
     await new TrainerReviewService(this.prisma).declareMaterialsComplete(ctx.userId).catch(() => undefined)
   }
 
-  /** بعد القرار في الخطّة: الاعتمادُ يؤهّل ويُفعّل حين يكتمل، والردُّ يُعيد موادَّه */
-  async afterDecision(cohortId: string, approved: boolean, actorId: string, noteAr: string | null) {
+  /* ═══ بعد القرار في الخطّة — ثلاثُ خطواتٍ لا نداءٌ واحد (٣ أكتوبر ٢٠٢٦) ═══
+
+     كان `afterDecision` واحدا يؤهّل ويفعّل ويعيد الموادَّ، وكلٌّ منها يكتب
+     جرسَه — فيصل المدرّبَ عن القرار الواحد خبران: «اعتُمدت خطّةُ…» و«أُهِّلتَ
+     لتدريس دورة»، أو «طُلبت تعديلات…» و«أُعيدت موادُّك بملاحظات». وسار صاحبُ
+     المنصّة في المسار فاختار: خبرٌ واحدٌ لكلّ قرار، وخبرٌ للتفعيل.
+
+     فصار القرارُ (`CohortPlanService.decide`) ينادي الخطواتِ بترتيبها: التأهيلُ
+     صامتا، ثمّ خبرُ الاعتماد بما وقع فعلا (`planApprovedTrainerMsg`)، ثمّ التفعيلُ
+     بخبره — فيقرأ المدرّبُ في جرسه التفعيلَ أعلى، والاعتمادَ تحته. و`quiet`
+     للمسلك هذا وحدَه: التأهيلُ من «التأهيلُ والإسناد» وإعادةُ الموادّ من شاشة
+     العقود يبقى لكلٍّ جرسُه، فهما قراران لا خبرَ غيرُهما عنهما. */
+
+  /** ① بعد الاعتماد: يؤهّله لدورتها إن كانت معلّقة — ويقول أوقع ذلك */
+  async qualifyOnApproval(cohortId: string, actorId: string, opts: { quiet?: boolean } = {}) {
     const ctx = await this.prepContext(cohortId)
     if (!ctx) return null
+    if (!ctx.pending) return { ctx, qualified: false }
     const { TrainerReviewService } = await import('./trainer-review.service')
-    const review = new TrainerReviewService(this.prisma)
-    if (!approved) {
-      const paused = await this.prisma.trainerContract.findFirst({
-        where: { profileId: ctx.profileId, conditionPausedAt: { not: null }, conditionMetAt: null },
-        select: { id: true },
-      })
-      if (paused) {
-        await review.returnMaterialsWithNotes(paused.id, actorId, noteAr && noteAr.length >= 5 ? noteAr : 'رُدّت خطّةُ شعبتك بملاحظاتٍ تجدها في خطواتها')
-          .catch(() => undefined)
-      }
-      return null
-    }
-    if (ctx.pending) await review.qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتُمدت خطّةُ شعبة إعدادها')
+    await new TrainerReviewService(this.prisma)
+      .qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتُمدت خطّةُ شعبة إعدادها', { quiet: opts.quiet })
+    return { ctx, qualified: true }
+  }
+
+  /** ② ثمّ التفعيلُ حين لا يبقى من دوراته ما ينتظر — لمن في الطور وحدَه */
+  async activateOnApproval(ctx: PrepContext, actorId: string) {
     if (!ctx.onboarding) return null
     return this.activateIfComplete(ctx.profileId, ctx.applicationId, actorId)
+  }
+
+  /** وبعد الردّ: تُعاد موادُّه وتُستأنف مهلتُه إن كانت موقوفةً لمراجعتنا — ويُرجَع موعدُها */
+  async returnOnChanges(cohortId: string, actorId: string, noteAr: string | null, opts: { quiet?: boolean } = {}) {
+    const ctx = await this.prepContext(cohortId)
+    if (!ctx) return null
+    const paused = await this.prisma.trainerContract.findFirst({
+      where: { profileId: ctx.profileId, conditionPausedAt: { not: null }, conditionMetAt: null },
+      select: { id: true },
+    })
+    if (!paused) return null
+    const { TrainerReviewService } = await import('./trainer-review.service')
+    return new TrainerReviewService(this.prisma).returnMaterialsWithNotes(
+      paused.id, actorId,
+      noteAr && noteAr.length >= 5 ? noteAr : 'رُدّت خطّةُ شعبتك بملاحظاتٍ تجدها في خطواتها',
+      new Date(), { quiet: opts.quiet },
+    )
   }
 
   /** دوراتُه المقبولةُ كلُّها معتمَدة؟ — فيُفعَّل. وإلّا يُقال ما يمنع */

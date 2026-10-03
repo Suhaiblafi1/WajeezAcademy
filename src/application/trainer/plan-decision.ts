@@ -13,7 +13,7 @@ export interface PlanDecision {
   meetings?: { approved: number; failed: { id: string; title: string; reason: string }[] }
   /* ومهامُّها المنتظِرةُ التي اعتُمدت معها — وما بقي منها بسببه (٣ج-٣) */
   tasks?: { applied: number; failed: { id: string; title: string; reason: string }[] }
-  /* وشعبةُ الإعداد: ما وقع لمدرّبها بالاعتماد (`trainer-prep.service.ts` ← `afterDecision`).
+  /* وشعبةُ الإعداد: ما وقع لمدرّبها بالاعتماد (`trainer-prep.service.ts` ← `qualifyOnApproval` ثمّ `activateOnApproval`).
      `null` لشعبةٍ عاديّة، أو لمدرّبٍ نشطٍ أصلا لا يُفعَّل بها */
   prep?: { activated: boolean; waiting?: number; blockedAr?: string } | null
 }
@@ -55,7 +55,7 @@ function coursesLeftAr(n: number): string {
 export function prepOutcomeAr(prep: PlanDecision['prep']): string {
   if (!prep) return ''
   if (prep.activated) {
-    return 'وبها اكتملت دوراتُه كلُّها: فُعِّل مدرّبا نشطا ووصله بريدُ اعتماده — وحالُ عقده في «العقود»'
+    return 'وبها اكتملت دوراتُه كلُّها: فُعِّل مدرّبا نشطا ووصله خبرُ اعتماده جرسا وبريدا — وحالُ عقده في «العقود»، وما بقي عليك أدناه'
   }
   if (prep.blockedAr) {
     return `واعتُمدت دوراتُه كلُّها ولم يُفعَّل: ${prep.blockedAr} — أصلِحْ ذلك ثمّ فعّله من ملفّه`
@@ -82,7 +82,7 @@ export interface PrepFlags { onboarding: boolean; qualifies: boolean }
 /* ═══ ما يُطلقه كلٌّ من الزرّين في شعبة الإعداد — قبل النقر لا بعده ═══
 
    قاعدةُ «لا إجبار» (CLAUDE.md): الخياراتُ وأثرُ كلٍّ، والقرارُ لصاحب المنصّة.
-   والجملةُ بما يحكم به الخادم في `TrainerPrepService.afterDecision` حرفا:
+   والجملةُ بما يحكم به الخادم في `TrainerPrepService` (`qualifyOnApproval` · `activateOnApproval` · `returnOnChanges`) حرفا:
    التأهيلُ إن كان معلّقا، والتفعيلُ حين لا يبقى ما ينتظر، والخَتمُ للعرض
    المشروط وحدَه — وفي الردّ تُستأنف المهلةُ إن كانت موقوفةً لمراجعتنا. */
 export function prepNoteAr(p: PrepFlags): string {
@@ -94,6 +94,51 @@ export function prepNoteAr(p: PrepFlags): string {
     : ''
   const back = p.onboarding ? '، ويُستأنف عدُّ مهلته إن كانت موقوفةً لمراجعتنا' : ''
   return `شعبةُ إعداد: ${approve}${last}. و«اطلب تعديلات» تعيدها إليه بملاحظاتك في رأس كلّ خطوة${back}.`
+}
+
+/* ═══ وما يقوله الاعتمادُ لمدرّبها — جرسا وبريدا، خبرا واحدا (٣ أكتوبر ٢٠٢٦) ═══
+
+   كان يقول «شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها، واعتُمدت معها
+   لقاءاتُك ووصلت المسجَّلين في تقاويمهم» لكلّ شعبة. وشعبةُ الإعداد لا يلتحق بها
+   أحد: علمُها منزولٌ حتّى تفتحها الإدارةُ بقرارٍ منفصل — فالخبرُ يعد بما لم يقع.
+   وكان يصله معه خبرٌ ثانٍ «أُهِّلتَ لتدريس دورة» عن القرار نفسِه. فصار خبرا
+   واحدا يقول ما وقع فعلا: التأهيلَ إن وقع بهذا الاعتماد، وحالَ التسجيل كما
+   هو (علمُ الشعبة بعد الاعتماد)، واللقاءاتِ والمهامَّ التي اعتُمدت معه. */
+export interface TrainerApprovalFacts {
+  cohortTitle: string
+  /** علمُ الشعبة بعد الاعتماد — مرفوعٌ فهي تقبل المسجَّلين */
+  registrationOpen: boolean
+  /** الدورةُ التي صار مؤهَّلا لها بهذا الاعتماد (شعبةُ الإعداد) — وإلّا `null` */
+  qualifiedCourseAr: string | null
+  meetingsApproved: number
+  meetingsFailed: number
+  tasksApplied: number
+  /** كلمةُ المعتمِد إن كتبها — تُضاف إلى الخبر ولا تحلّ محلَّه */
+  noteAr?: string | null
+}
+
+export function planApprovedTrainerMsg(f: TrainerApprovalFacts): { title: string; heading: string; body: string } {
+  const parts: string[] = []
+  if (f.qualifiedCourseAr) parts.push(`صرتَ مؤهَّلا لتدريس «${f.qualifiedCourseAr}».`)
+  parts.push(f.registrationOpen
+    ? 'شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.'
+    : `${parts.length ? 'والشعبةُ' : 'الشعبةُ'} لم تُفتح للتسجيل بعد — تفتحها الأكاديمية، وتراها مفتوحةً في «شعبي» حين تُفتح.`)
+  if (f.meetingsApproved > 0) {
+    const what = f.meetingsApproved === 1 ? 'لقاؤك' : `لقاءاتُك (${f.meetingsApproved})`
+    const verb = f.meetingsApproved === 1 ? 'اعتُمد' : 'اعتُمدت'
+    parts.push(f.registrationOpen
+      ? `و${verb} معها ${what} ووصل${f.meetingsApproved === 1 ? '' : 'ت'} المسجَّلين في تقاويمهم.`
+      : `و${verb} معها ${what}.`)
+  }
+  if (f.meetingsFailed === 1) parts.push('وبقي لقاءٌ واحدٌ عند الإدارة تُتمّ اعتمادَه.')
+  else if (f.meetingsFailed > 1) parts.push(`وبقيت لقاءاتٌ (${f.meetingsFailed}) عند الإدارة تُتمّ اعتمادَها.`)
+  if (f.tasksApplied > 0) parts.push(`واعتُمد معها ما انتظر من مهامّك (${f.tasksApplied}).`)
+  const note = f.noteAr?.trim()
+  return {
+    title: `اعتُمدت خطّةُ «${f.cohortTitle}»`,
+    heading: f.registrationOpen ? 'اعتُمدت خطّةُ شعبتك — وهي جاهزةٌ الآن' : 'اعتُمدت خطّةُ شعبتك',
+    body: `${parts.join(' ')}${note ? `\n\nوكلمةُ الإدارة: ${note}` : ''}`,
+  }
 }
 
 /** ما يقوله قرارُ المهمّة الواحدة — بما وقع فعلا */

@@ -280,7 +280,8 @@ describe('④ وسقوطُ اجتماعٍ لا يُسقط الاعتماد', () 
     const bell = await prisma.notification.findFirstOrThrow({
       where: { userId: trainerUserId, templateKey: 'cohort.plan.decision' }, orderBy: { queuedAt: 'desc' },
     })
-    expect(bell.body).toContain('لقاءاتُك (1)')
+    /* والواحدُ مفردٌ لا «لقاءاتُك (1)» (٣ أكتوبر ٢٠٢٦، `planApprovedTrainerMsg`) */
+    expect(bell.body).toContain('واعتُمد معها لقاؤك')
     expect(bell.body).toContain('وبقي لقاءٌ واحدٌ عند الإدارة')
   })
 })

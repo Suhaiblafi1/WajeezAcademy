@@ -7,6 +7,7 @@ const fmtDay = (d: Date) => d.toISOString().slice(0, 10)
    الحالات: draft | open | full | active | completed | cancelled. */
 
 import { notifyPlanWaiters } from './catalog-readiness.service'
+import { OPEN_GAP } from '../../src/application/learning/open-gaps'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
@@ -403,8 +404,8 @@ export class CohortService {
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     const missing: string[] = []
     if (cohort.course.status !== 'published') missing.push('الدورة ليست منشورة')
-    if (!cohort.sessions.length) missing.push('لا جدول جلسات')
-    if (!cohort.capacity || cohort.capacity < 1) missing.push('لا سعة محددة')
+    if (!cohort.sessions.length) missing.push(OPEN_GAP.schedule)
+    if (!cohort.capacity || cohort.capacity < 1) missing.push(OPEN_GAP.capacity)
     if (!cohort.plans.some((p) => ['approved', 'published'].includes(p.status)) && !cohort.plans.length) {
       missing.push('لا خطة تقديم للشعبة — اكتبها من بطاقة الشعبة')
     }
@@ -414,7 +415,7 @@ export class CohortService {
     if (awaitingTrainerPlan(cohort.plans.filter((p) => p.trainerId !== null))) {
       missing.push('خطّةُ المدرّب لم تُعتمَد بعد — تُفتح الشعبةُ للتسجيل باعتمادها')
     }
-    if (!cohort.financialReady || cohort.price === null) missing.push('الإعداد المالي غير مكتمل (السعر والعملة)')
+    if (!cohort.financialReady || cohort.price === null) missing.push(OPEN_GAP.financial)
     return { ready: missing.length === 0, missing }
   }
 

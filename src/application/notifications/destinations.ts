@@ -90,6 +90,8 @@ const LEARNER: Table = {
 const TRAINER: Table = {
   'trainer_payout': { path: '/trainer/earnings', ctaAr: 'افتح كشفَ مستحقّاتك' },
   'trainer.qualified': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  /* وتفعيلُه — بوّابتُه كاملةً، ومنها «عقدي» و«مستحقّاتي» (٣ أكتوبر ٢٠٢٦) */
+  'trainer.activated': { path: '/trainer', ctaAr: 'افتح بوّابتَك' },
   /* ي-٤: ملفُّه العامُّ يُحرَّر من صفحة حسابه — وهي ما يحمل الخبرَ نفسَه */
   'trainer.publish.approved': { path: '/trainer/account', ctaAr: 'راجِع ملفَّك العامّ' },
   /* والنطاقُ يُقرأ أثرُه في اقتراحاته: ما يجوز أن يمسَّه الاقتراح */
@@ -165,7 +167,10 @@ const STAFF: Table = {
   /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
   'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفِّذ ما اختاره' },
   'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },
-  'cohort.plan.submitted': { path: '/admin/cohorts', ctaAr: 'راجِع خطّةَ الشعبة' },
+  /* وخطّةٌ أُرسلت — في «خططٌ تنتظر اعتمادك» حيث تُقرأ كاملةً ويُقرَّر فيها، لا في
+     قائمة الشعب يُبحث فيها عن بطاقتها (٣ أكتوبر ٢٠٢٦). والجرسُ يفتحها مبسوطةً
+     بشعبتها (`notificationHref`) */
+  'cohort.plan.submitted': { path: '/admin/pending-plans', ctaAr: 'اقرأ الخطّةَ وقرّر' },
   /* ومهامُّ ما بعد الاعتماد تنتظر في بطاقة الشعبة نفسِها (٣ج-٣) */
   'cohort.assessment.pending': { path: '/admin/cohorts', ctaAr: 'راجِع المهامَّ واعتمِدها' },
 }
@@ -179,6 +184,31 @@ const BY_AUDIENCE: Record<MailAudience, Table> = {
 /** كلُّ ما تحمله الجداولُ من مسارات — يقابلها الحارسُ بمسارات `App.tsx` */
 export function allDestinationPaths(): string[] {
   return [...new Set(Object.values(BY_AUDIENCE).flatMap((t) => Object.values(t).map((d) => d.path)))]
+}
+
+/* ═══ والجرسُ يفتح الخبرَ نفسَه لا قائمتَه (٣ أكتوبر ٢٠٢٦) ═══
+
+   كانت بنودُ الجرس نصّا يُعلَّم مقروءا ولا يُفتح — والوجهاتُ هنا للبريد وحدَه.
+   فمن قرأ «خطّةُ شعبةٍ بانتظار اعتمادك» بحث عنها بيده. فصار البندُ رابطا إلى
+   وجهته، ولمفاتيحَ بعينها تحمل في بياناتها **أيَّ شيءٍ** هي: الخطّةُ تُفتح
+   مبسوطةً في طابورها (`?cohort=`، `PendingPlans.tsx`) لا أوّلَ الطابور.
+
+   والمسارُ هو هو من الجدول — فحارسُ «لا وجهةَ مخترَعة» يقرؤه كما كان، وما
+   يُضاف هنا معاملٌ لا مسار. */
+const QUERY_FROM_DATA: Partial<Record<MailAudience, Record<string, { param: string; field: string }>>> = {
+  staff: { 'cohort.plan.submitted': { param: 'cohort', field: 'cohortId' } },
+}
+
+export function notificationHref(
+  templateKey: string | null | undefined,
+  audience: MailAudience,
+  data: unknown,
+): string | null {
+  const dest = destinationFor(templateKey, audience)
+  if (!dest) return null
+  const q = QUERY_FROM_DATA[audience]?.[templateKey ?? '']
+  const v = q && data && typeof data === 'object' ? (data as Record<string, unknown>)[q.field] : null
+  return q && typeof v === 'string' && v ? `${dest.path}?${q.param}=${encodeURIComponent(v)}` : dest.path
 }
 
 /** وجهةُ هذا الإشعار لهذا الجمهور — أو `null` فتخرج الرسالةُ بلا زرّ.
