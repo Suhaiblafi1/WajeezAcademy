@@ -569,7 +569,7 @@ const ACTIVE: Shot[] = [
       await open(e, '/trainer/qualifications')
       const card = p.getByRole('listitem').filter({ has: p.getByRole('heading', { name: /الإقناع والتواصل/ }) }).first()
       await shoot(e, {
-        name: 'qualifications', clip: pageBody(p), clipPad: 6, maxHeight: 900,
+        name: 'qualifications', clip: pageBody(p), clipPad: 6, maxHeight: 1550,
         marks: [
           { target: p.getByRole('tablist', { name: 'حالُ مؤهّلاتي' }), n: 1, pad: 4 },
           { target: card.getByText(/متاحةٌ لك — قرّر/).first(), n: 2, pad: 4 },
@@ -600,28 +600,11 @@ const ACTIVE: Shot[] = [
     },
   },
   {
-    name: 'qual-merged',
-    async run(e) {
-      const p = e.page
-      await open(e, '/trainer/qualifications')
-      await p.getByRole('tab', { name: /^دُمجت/ }).click()
-      await settle(e)
-      const card = p.getByRole('listitem').filter({ has: p.getByRole('heading', { name: /إدارة الأسئلة/ }) }).first()
-      await shoot(e, {
-        name: 'qual-merged', clip: card, clipPad: 12,
-        marks: [
-          { target: card.getByText(/دُمجت بدورةٍ قائمة/).first(), n: 1, pad: 4 },
-          { target: card.getByText(/^اقترحتَ/).first(), n: 2, pad: 5 },
-        ],
-      })
-    },
-  },
-  {
     name: 'qual-accepted',
     async run(e) {
       const p = e.page
       await open(e, '/trainer/qualifications')
-      await p.getByRole('tab', { name: /^أُضيفت/ }).click()
+      await p.getByRole('tab', { name: /^قبِلتَها/ }).click()
       await settle(e)
       const card = p.getByRole('listitem').filter({ has: p.getByRole('heading', { name: /تصميم الرسالة/ }) }).first()
       await shoot(e, {

@@ -270,3 +270,22 @@ describe('⑧ في الطور ودوراتُه معتمَدة', () => {
     expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status).toBe('active')
   })
 })
+
+/* ═══ ⑨ وملحقُ العقد (أ) هو المرجع (٣ أكتوبر ٢٠٢٦) ═══
+   قولُ صاحب المنصّة: «الدليلُ عقدُهم». فدورةٌ في ملحق ما وقّعه بلا صفِّ تأهيلٍ
+   تُعرض له معلّقةً، ويُكتب صفُّها حين يقبلها — فلا يغيب ما وقّع عليه. */
+describe('⑨ دوراتُ ملحق العقد', () => {
+  it('تُعرض ولو غاب صفُّ تأهيلها، وتُقبَل فيُكتب صفُّها', async () => {
+    const t = await onboarding([C1])
+    await prisma.trainerContract.update({
+      where: { id: t.contractId },
+      data: { qualifiedSnapshot: [{ courseId: C1, titleAr: 'دورةُ الإعداد' }, { courseId: C2, titleAr: 'دورةٌ ثانيةٌ للإعداد' }] },
+    })
+    const states = Object.fromEntries((await prep.mine(t.userId)).map((c) => [c.courseId, c.state]))
+    expect(states, 'غابت دورةٌ من ملحق عقده').toEqual({ [C1]: 'to_decide', [C2]: 'to_decide' })
+
+    const made = await prep.accept(t.userId, C2)
+    expect((await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C2 } })).status).toBe('pending')
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: made.id } })).courseId).toBe(C2)
+  })
+})

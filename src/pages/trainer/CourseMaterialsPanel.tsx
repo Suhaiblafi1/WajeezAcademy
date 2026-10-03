@@ -66,7 +66,7 @@ export default function CourseMaterialsPanel({ rows, onChanged }: {
   return (
     <section aria-labelledby="materials-h" className="mb-8">
       <h2 id="materials-h" className="flex items-center gap-2 text-lg font-black">
-        <FileStack className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {inSetup ? "دوراتُك قيد الإعداد" : "دوراتُك المعتمَدة بلا شعبة"}
+        <FileStack className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {inSetup ? "دوراتُك قيد الإعداد" : "دوراتُك التي تعبّئها"}
       </h2>
       {inSetup ? (
         <p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
@@ -77,8 +77,7 @@ export default function CourseMaterialsPanel({ rows, onChanged }: {
         </p>
       ) : (
         <p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-          دوراتٌ اعتُمدت لك وليس لك فيها شعبة. اقبل ما تريد تدريسَه فتُنشأ له شعبةٌ في «شعبي» باسم الدورة،
-          تعبّئها مرّةً واحدةً وترسلها لاعتمادنا. ولا متعلّمين فيها حتّى نعتمدها ونفتحها للتسجيل. وما لا تريده الآن اتركه.
+          اقبل ما تريد تدريسَه فتُنشأ له شعبةٌ في «شعبي»، تعبّئها مرّةً واحدةً وترسلها لاعتمادنا.
         </p>
       )}
       {/* ═══ وجلسةُ التهيئة حيث يُعَدّ ما تُعين عليه (٣٠ سبتمبر ٢٠٢٦) ═══

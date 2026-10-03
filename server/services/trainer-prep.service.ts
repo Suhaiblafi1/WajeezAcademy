@@ -30,6 +30,7 @@ import { notifyRole } from './notification.service'
 import { CohortService } from './cohort.service'
 import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 import { cleanCourseMaterials, type CourseMaterials } from '../../src/application/trainer/course-materials'
+import { readContractCourses } from '../../src/application/trainer/contract-body'
 
 /** حالُ الدورة في طور الإعداد كما تُعرض للمدرّب وللإدارة */
 export type PrepState =
@@ -80,6 +81,22 @@ export class TrainerPrepService {
     })
   }
 
+  /* ═══ وملحقُ العقد (أ) هو المرجع (٣ أكتوبر ٢٠٢٦) ═══
+
+     قولُ صاحب المنصّة: «أهّلتُهم، والدليلُ عقدُهم: فيه أنّهم مؤهَّلون لـ١ و٢ و٣
+     و٤». والملحقُ يُبنى يومَ يُركَّب العقدُ من صفوف التأهيل — لكنّ الصفَّ قد
+     يتبدّل بعده (اقتراحٌ يُدمج، أو تأهيلٌ يُكتب بغير بابه) فيغيب عن «مؤهّلاتي»
+     ما وقّع عليه. فتُقرأ دوراتُ الملحق من آخر عقدٍ وقّعه، وما لا صفَّ له منها
+     يُعرض معلّقا، ويُكتب صفُّه حين يقبله. */
+  private async annexCourses(profileId: string) {
+    const contract = await this.prisma.trainerContract.findFirst({
+      where: { profileId, status: { in: ['signed', 'signature_approved', 'countersigned'] } },
+      orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
+      select: { qualifiedSnapshot: true },
+    })
+    return readContractCourses(contract?.qualifiedSnapshot)
+  }
+
   /** دوراتُ الطور وحالُ كلٍّ — لـ«مؤهّلاتي» ولشاشة العقود */
   async coursesOf(profileId: string): Promise<PrepCourse[]> {
     const quals = await this.prisma.trainerCourseQualification.findMany({
@@ -108,7 +125,22 @@ export class TrainerPrepService {
       }
       out.push({ courseId: q.courseId, titleAr, state, cohortId: cohort?.id ?? null, cohortTitle: cohort?.title ?? null, declineReasonAr: null, approved: false })
     }
-    return [...out, ...await this.approvedWithoutCohort(profileId)]
+    /* ودوراتُ الملحق التي لا صفَّ تأهيلٍ لها أصلا — معلّقةٌ تنتظر قرارَه */
+    const known = new Set((await this.prisma.trainerCourseQualification.findMany({
+      where: { profileId }, select: { courseId: true },
+    })).map((q) => q.courseId))
+    const fromAnnex: PrepCourse[] = []
+    for (const c of await this.annexCourses(profileId)) {
+      if (known.has(c.courseId)) continue
+      const exists = await this.prisma.course.findUnique({ where: { id: c.courseId }, select: { id: true } })
+      if (!exists) continue
+      known.add(c.courseId)
+      fromAnnex.push({
+        courseId: c.courseId, titleAr: c.titleAr, state: 'to_decide', cohortId: null, cohortTitle: null,
+        declineReasonAr: null, approved: false,
+      })
+    }
+    return [...out, ...fromAnnex, ...await this.approvedWithoutCohort(profileId)]
   }
 
   /* ═══ والمعتمَدةُ بلا شعبة — يقبلها المدرّبُ النشطُ بنفسه (٣ أكتوبر ٢٠٢٦) ═══
@@ -165,9 +197,15 @@ export class TrainerPrepService {
   /** «اقبلها وابدأ إعدادها» — تُنشأ شعبةُ الإعداد ويُنقل إليها ما كتبه من قبل */
   async accept(userId: string, courseId: string) {
     const profile = await this.profileForUser(userId)
-    const qual = await this.prisma.trainerCourseQualification.findUnique({
+    let qual = await this.prisma.trainerCourseQualification.findUnique({
       where: { profileId_courseId: { profileId: profile.id, courseId } },
     })
+    /* دورةٌ في ملحق عقده بلا صفِّ تأهيل: يُكتب صفُّها معلّقا الآن (`annexCourses`) */
+    if (!qual && (await this.annexCourses(profile.id)).some((c) => c.courseId === courseId)) {
+      qual = await this.prisma.trainerCourseQualification.create({
+        data: { profileId: profile.id, courseId, status: 'pending', note: 'من ملحق العقد (أ)' },
+      })
+    }
     /* وتُقبَل المعتمَدةُ كذلك (٣ أكتوبر ٢٠٢٦) — إن لم يكن له فيها عرضٌ مفتوح:
        من عُرضت عليه شعبةٌ يجيب عرضَها، ولا تُنشأ له ثانية */
     if (!qual || (qual.status !== 'pending' && qual.status !== 'qualified')) {
@@ -205,9 +243,14 @@ export class TrainerPrepService {
     const reason = reasonAr.trim()
     if (reason.length < 3) throw new AuthError('no_reason', 'اكتب سببا قصيرا — يقرؤه من اختار لك الدورة', 400)
     const profile = await this.profileForUser(userId)
-    const qual = await this.prisma.trainerCourseQualification.findUnique({
+    let qual = await this.prisma.trainerCourseQualification.findUnique({
       where: { profileId_courseId: { profileId: profile.id, courseId } },
     })
+    if (!qual && (await this.annexCourses(profile.id)).some((c) => c.courseId === courseId)) {
+      qual = await this.prisma.trainerCourseQualification.create({
+        data: { profileId: profile.id, courseId, status: 'pending', note: 'من ملحق العقد (أ)' },
+      })
+    }
     if (!qual || qual.status !== 'pending') {
       throw new AuthError('not_pending', 'هذه الدورةُ ليست بانتظار قرارك', 409)
     }

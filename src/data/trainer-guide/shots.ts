@@ -86,7 +86,7 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   },
   "prep-panel": {
     "w": 2200,
-    "h": 1381
+    "h": 1353
   },
   "proposal-card": {
     "w": 2200,
@@ -100,13 +100,9 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 675
   },
-  "qual-merged": {
-    "w": 2200,
-    "h": 390
-  },
   "qualifications": {
     "w": 2200,
-    "h": 1547
+    "h": 2664
   },
   "ratings": {
     "w": 1800,
