@@ -1669,7 +1669,7 @@ export class DiagnosticEngineV21 {
     }
     const recommendation: RecommendationV21 = {
       ...partial,
-      change_makers_ar: buildChangeMakers(partial),
+      change_makers_ar: buildChangeMakers(partial, confidence.evidenceBasis),
       v2: { explanation, confidence, eligibility, ...(handoff ? { advisorHandoff: handoff } : {}), versions: engineVersions() },
     }
     this.traceEntry('recommendation', `توصية V2.1: ${kind} — ${confidence.outputKind_ar} (${(confidence.overall * 100).toFixed(0)}٪)`, {
