@@ -125,7 +125,8 @@ describe('⑪ يومُ الشعبة يومُ عمّان — في كلّ موضع
     "const e = fmtDateWith(s.startsAt, { day: 'numeric', timeZone: ACADEMY_ZONE })",
     'const f = fmtDateAr(x.createdAt)',
     '/* fmtDateAr(c.startsAt) في تعليقٍ يروي العطب */',
-    "const g = new Date(c.endsAt).toLocaleDateString('ar')",
+    /* واللغةُ متغيّرٌ لا نصٌّ — فبوّابةُ `audit-locale` تمنع تسميتَها خارج `format-ar.ts` */
+    'const g = new Date(c.endsAt).toLocaleDateString(UI_LOCALE)',
     'const h = planDiff(a, b, { date: fmtDateAr })',
     'const i = planDiff(a, b, { date: cohortDayAr })',
     'const j = fmtDateTimeAr(s.startsAt)',
