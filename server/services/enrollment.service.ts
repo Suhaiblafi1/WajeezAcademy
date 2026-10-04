@@ -6,12 +6,11 @@ import { AuthError } from './auth.service'
 import { projectPlanForLearner, PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { NotificationService, safeNotify } from './notification.service'
-import { fmtDateWith } from '../../src/application/text/format-ar'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
 import { CohortService } from './cohort.service'
 import { SEATED, SessionInviteService } from './session-invite.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
-import { assessmentOpensAt, gateAssessment, learnerGate, meetingOver } from '../../src/application/learning/cohort-gate'
+import { assessmentOpensAt, cohortDayAr, gateAssessment, learnerGate, meetingOver } from '../../src/application/learning/cohort-gate'
 
 /* ═══ مدرّبُ الشعبة كما يراه متعلّمُها: اسمُه، لا ملفُّه ═══
 
@@ -362,7 +361,7 @@ export class EnrollmentService {
       templateKey: 'enrollment.switched',
       title: `نُقل مقعدُك إلى «${to.title}»`,
       body: `نُقل مقعدُك من «${from.title}» إلى «${to.title}»`
-        + (to.startsAt ? ` — وتبدأ ${fmtDateWith(to.startsAt, { day: 'numeric', month: 'long', year: 'numeric' })}.` : '.')
+        + (to.startsAt ? ` — وتبدأ ${cohortDayAr(to.startsAt)}.` : '.')
         + ' تجد جلساتِها ومادّتها في «تعلُّمي».',
       data: { enrollmentId, from: from.id, to: to.id },
     })

@@ -62,6 +62,7 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateLong } from "@/application/text/format-ar";
+import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 
 interface Qualification { courseId: string; title: string; currentVersion: number; qualifiedAt: string }
 
@@ -351,7 +352,7 @@ function CourseRow({
 
       <p className="mt-1 text-read leading-6 text-muted-foreground">
         {q ? <>النسخة {q.currentVersion} · أُهِّلت {fmtDate(q.qualifiedAt)}</> : "لا تأهيلَ قائمٌ لها الآن"}
-        {lead?.cohort ? <> · شعبةُ «{lead.cohort.title}»{lead.cohort.startsAt ? ` تبدأ ${fmtDate(lead.cohort.startsAt)}` : ""}</> : null}
+        {lead?.cohort ? <> · شعبةُ «{lead.cohort.title}»{lead.cohort.startsAt ? ` تبدأ ${cohortDayAr(lead.cohort.startsAt, DAY_NUMERIC)}` : ""}</> : null}
       </p>
 
 
@@ -455,7 +456,7 @@ function OfferBody({ offer: o, now }: { offer: Offer; now: number }) {
   const expired = open && new Date(o.expiresAt).getTime() <= now;
   const facts = [
     o.sessionsCount !== null ? { k: "الجلسات", v: String(o.sessionsCount) } : null,
-    o.startsAt ? { k: "البداية", v: fmtDate(o.startsAt) } : null,
+    o.startsAt ? { k: "البداية", v: cohortDayAr(o.startsAt, DAY_NUMERIC) } : null,
     o.feeNoteAr ? { k: "الأجر", v: o.feeNoteAr } : null,
   ].filter((x): x is { k: string; v: string } => !!x);
   return (

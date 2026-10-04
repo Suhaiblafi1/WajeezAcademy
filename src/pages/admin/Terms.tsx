@@ -32,6 +32,7 @@ import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 import { termHorizon } from "@/application/terms/season";
 import { toast, toastError } from "@/components/Toast";
 import { TERM_STATUS_AR, TERM_STATUS_EFFECT_AR, nextStatuses, type TermStatus } from "@/application/terms/lifecycle";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 interface Term {
   id: string; year: number; season: string; titleAr: string;
@@ -373,7 +374,7 @@ export default function Terms() {
                   <div className="min-w-0">
                     <h2 className="flex items-center gap-2 text-lg font-black"><CalendarRange className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {t.titleAr}</h2>
                     <p className="mt-1 text-read text-muted-foreground">
-                      {seasonLabel(t.season)} · {fmtDateAr(t.startsOn)} إلى {fmtDateAr(t.endsOn)} · {TERM_STATUS_AR[t.status as TermStatus] ?? t.status}
+                      {seasonLabel(t.season)} · {cohortDayAr(t.startsOn)} إلى {cohortDayAr(t.endsOn)} · {TERM_STATUS_AR[t.status as TermStatus] ?? t.status}
                     </p>
                     <p className="mt-1 text-read text-muted-foreground">{t._count.cohorts} شعبة</p>
                     {/* ═══ بابُ الحالة ═══
@@ -448,7 +449,7 @@ export default function Terms() {
                       {plan.rows.length > 0 && (
                         <ul className="mt-2 grid gap-1 sm:grid-cols-2">
                           {plan.rows.slice(0, 12).map((r) => (
-                            <li key={r.courseId} className="text-read text-muted-foreground">{r.titleAr} — الأسبوع {r.week + 1} · {fmtDateAr(r.startsAt)}</li>
+                            <li key={r.courseId} className="text-read text-muted-foreground">{r.titleAr} — الأسبوع {r.week + 1} · {cohortDayAr(r.startsAt)}</li>
                           ))}
                           {plan.rows.length > 12 && <li className="text-read text-muted-foreground">… و{plan.rows.length - 12} غيرها</li>}
                         </ul>

@@ -41,6 +41,7 @@
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { fmtDateLong } from '../../src/application/text/format-ar'
+import { cohortDayAr } from '../../src/application/learning/cohort-gate'
 import { AuthError } from './auth.service'
 
 /** حالةُ نافذة الفصل — تُقرأ من صفّه لا تُشتقّ من تواريخ الشعب */
@@ -116,7 +117,7 @@ export function cohortAcceptsRegistration(
   if (cohort.joinClosesAt && now >= cohort.joinClosesAt) {
     return {
       open: false, code: 'late_closed',
-      reasonAr: `أُغلق الالتحاقُ بـ${named} — بدأ موعدُها الثاني ${fmtDateLong(cohort.joinClosesAt)}، وتُعلَن شعبتُها التالية في موعدها`,
+      reasonAr: `أُغلق الالتحاقُ بـ${named} — بدأ موعدُها الثاني ${cohortDayAr(cohort.joinClosesAt)}، وتُعلَن شعبتُها التالية في موعدها`,
     }
   }
   return termWindowVerdict(cohort.term ?? null, now)

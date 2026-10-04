@@ -13,7 +13,7 @@
 
    والقاعدةُ محضةٌ هنا (`plan-diff.test.ts`). */
 
-import { STAGE_LABELS, type ReviewSection } from './review-notes'
+import { REVIEW_SECTIONS, STAGE_LABELS, type ReviewNotes, type ReviewSection } from './review-notes'
 import { resourceCategory } from './plan-overlay'
 
 interface DiffModule {
@@ -196,4 +196,36 @@ export function planDiff(approved: unknown, revision: unknown, fmt: PlanDiffForm
     ['assignments', resourceLines(a, b, false)],
   ]
   return sections.filter(([, lines]) => lines.length > 0).map(([section, lines]) => ({ section, label: STAGE_LABELS[section], lines }))
+}
+
+/* ═══ «ما تغيّر منذ ردّك» — ما طلبه المعتمِدُ بجانب ما عُدّل، خطوةً خطوة (٣ أكتوبر ٢٠٢٦، ⑦) ═══
+
+   سار صاحبُ المنصّة في المسار: ردّ خطّةً بملاحظاتٍ فأعاد المدرّبُ إرسالَها، فرأى
+   ما طلبه ولم يرَ ما تغيّر — يعيد قراءةَ المنهج كلِّه ليعرف أأُجيبت ملاحظتُه.
+   فتُقابَل المرسَلةُ بالتي رُدّت (`returnedContent`) بالقاعدة نفسِها التي تقابل
+   المراجعةَ بالمعتمَدة (`planDiff`)، وتوضَع كلُّ ملاحظةٍ في خطوتها بجانب ما تغيّر
+   فيها: فملاحظةٌ لا تغيّرَ بجانبها تُرى في مكانها — لا تُستنتَج من غيابٍ يُبحث عنه.
+
+   وما لا يحمله المحتوى — اللقاءاتُ المباشرةُ والمهامّ — له قوائمُه في البطاقة؛
+   فـ«لا تغيّر» هنا معناه في الخطّة نفسِها، والشاشةُ تقول ذلك. */
+export interface SinceReturnRow {
+  section: ReviewSection
+  label: string
+  /** ما طلبه المعتمِدُ في هذه الخطوة — أو `null` */
+  note: string | null
+  /** ما تغيّر فيها منذ الردّ */
+  lines: string[]
+}
+
+export function sinceReturn(
+  returned: unknown,
+  resent: unknown,
+  notes: ReviewNotes,
+  fmt: PlanDiffFormat,
+): { general: string | null; rows: SinceReturnRow[] } {
+  const changed = new Map(planDiff(returned, resent, fmt).map((s) => [s.section, s.lines]))
+  const rows = REVIEW_SECTIONS
+    .map(({ key, label }) => ({ section: key, label, note: notes[key] ?? null, lines: changed.get(key) ?? [] }))
+    .filter((r) => r.note !== null || r.lines.length > 0)
+  return { general: notes.general ?? null, rows }
 }

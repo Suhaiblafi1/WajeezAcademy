@@ -32,13 +32,14 @@ describe('السطورُ بخطوات المدرّب', () => {
 describe('المعتمِدُ يقرأ ما تغيّر قبل أن يعتمد', () => {
   it('⚠️ على المرسَلة وحدَها، وبالقاعدة بين المعتمَدة والمرسَلة', () => {
     expect(PLAN_REVIEW).toMatch(/\{trainerPlan\.status === "submitted" && trainerPlan\.approvedPlan && \(/)
-    expect(PLAN_REVIEW).toMatch(/sections=\{planDiff\(trainerPlan\.approvedPlan\.content, trainerPlan\.content, \{ date: fmtDateAr \}\)\}/)
+    /* ويوما المدّة بتوقيت عمّان (⑪، ٣ أكتوبر ٢٠٢٦) — والحارسُ عليه في `learning/cohort-day.test.ts` */
+    expect(PLAN_REVIEW).toMatch(/sections=\{planDiff\(trainerPlan\.approvedPlan\.content, trainerPlan\.content, \{ date: cohortDayAr \}\)\}/)
   })
 })
 
 describe('والمدرّبُ يقرؤه قبل أن يرسل', () => {
   it('⚠️ على ما في يده — لا على آخر ما حُفظ', () => {
     expect(WORKSPACE).toMatch(/\{ws\.approvedPlan && \(/)
-    expect(WORKSPACE).toMatch(/sections=\{planDiff\(ws\.approvedPlan\.content, content, \{ date: fmtDateAr \}\)\}/)
+    expect(WORKSPACE).toMatch(/sections=\{planDiff\(ws\.approvedPlan\.content, content, \{ date: cohortDayAr \}\)\}/)
   })
 })

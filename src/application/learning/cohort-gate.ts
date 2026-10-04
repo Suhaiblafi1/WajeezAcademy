@@ -150,6 +150,30 @@ export function whenAr(at: Date | string): string {
   })
 }
 
+/* ═══ يومُ الشعبة بتوقيت عمّان — في كلّ شاشةٍ ورسالة (٣ أكتوبر ٢٠٢٦، ⑪) ═══
+
+   بدءُ الشعبة منتصفُ ليل يومها **في عمّان** (`periodBounds`): شعبةُ ١ نوفمبر
+   تُخزَّن لحظةَ الحادية والعشرين من ٣١ أكتوبر بغرينتش. فمن قرأها بمنطقة جهازه
+   في القاهرة أو بمنطقة الخادم (UTC) قرأ «٣١ أكتوبر» — رآه صاحبُ المنصّة في
+   «شعبي» بجهازٍ على توقيت القاهرة، وشاشةُ المراجعة تقول ١ نوفمبر. واليومُ
+   المكتوبُ تاريخا وحدَه (`YYYY-MM-DD`، مدّةُ الخطّة والفصل) يُقرأ منتصفَ ليل
+   غرينتش، فينزلق يوما غربَها.
+
+   فاليومُ هنا يومُ الأكاديميّة: يُقرأ بمنطقة عمّان. ويصحّ به التاريخُ وحدَه
+   كذلك: منتصفُ ليل غرينتش هو الثالثةُ فجرا في عمّان، من اليوم نفسِه. وساعاتُ
+   اللقاءات على الشاشات خارجَ هذا: لحظاتٌ يقرؤها كلٌّ بساعة جهازه. */
+
+/** صيغةُ اليوم بالأرقام — «1‏/11‏/2026»، لما كان يُكتب بـ`fmtDate` */
+export const DAY_NUMERIC: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'numeric', year: 'numeric' }
+
+/** يومُ بدء الشعبة أو انتهائها (أو بدء الفصل) بتوقيت عمّان — «1 نوفمبر 2026» */
+export function cohortDayAr(
+  at: Date | string | null | undefined,
+  opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' },
+): string {
+  return at ? fmtDateWith(at, { ...opts, timeZone: ACADEMY_ZONE }) : '—'
+}
+
 export type SubmitRefusalCode = 'not_open_yet' | 'cohort_closed' | 'access_ended'
 
 export type SubmitVerdict =

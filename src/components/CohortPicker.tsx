@@ -15,7 +15,8 @@
 import { useState } from "react";
 import { CalendarDays, Check, ChevronDown, Users } from "lucide-react";
 import type { CohortOption } from "@/services/cohort-prices";
-import { daysLabelAr, fmtDateAr, untilLabelAr } from "@/utils/format";
+import { daysLabelAr, untilLabelAr } from "@/utils/format";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import LiveSessionDates from "@/components/LiveSessionDates";
 
@@ -26,7 +27,7 @@ function When({ c }: { c: CohortOption }) {
   const days = daysLabelAr(c.daysOfWeek);
   return (
     <span className="min-w-0 text-fine leading-5 text-muted-foreground">
-      <span className="font-bold text-foreground">{fmtDateAr(c.startsAt)}</span>
+      <span className="font-bold text-foreground">{cohortDayAr(c.startsAt)}</span>
       {until && <span className="text-muted-foreground"> · {until}</span>}
       {days && <span className="text-muted-foreground"> · {days}{c.startTime ? ` ${c.startTime}` : ""}</span>}
       {/* المدرّبُ جزءٌ من القرار: «أكثر من شعبة لأكثر من مدرّب وتواريخ مختلفة
@@ -102,7 +103,7 @@ export default function CohortPicker({
               <button
                 type="button"
                 onClick={() => { onSelect(c.id); setOpen(false); }}
-                aria-label={`ابدأ ${fmtDateAr(c.startsAt)}${c.title ? ` — ${c.title}` : ""}`}
+                aria-label={`ابدأ ${cohortDayAr(c.startsAt)}${c.title ? ` — ${c.title}` : ""}`}
                 className={`flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-right transition ${
                   c.id === selected.id
                     ? "border-teal/50 bg-teal/10"
