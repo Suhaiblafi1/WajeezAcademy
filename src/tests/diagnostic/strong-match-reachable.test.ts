@@ -24,6 +24,8 @@ import { assessEntitySkills } from '../../domain/diagnostic/v2_1/compete'
 import { STRONG_MEASURABLE_COVERAGE_MIN } from '../../domain/diagnostic/v2/confidence'
 import { familyIndex } from '../../domain/diagnostic/v2_1/skill-families'
 import type { SkillState } from '../../domain/diagnostic/v2/types'
+import { whyPathwayFacts } from '../../application/plan/why-pathway'
+import type { DiagResult } from '../../data/diagnostic'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -141,8 +143,15 @@ describe('٣٤ · الرقمُ شيءٌ والدرجةُ شيءٌ آخر', () =>
   it('والموانعُ تصل الشاشةَ فعلا — كانت تُحسب وتُسجَّل ولا تُعرض', () => {
     const vm = read('src/application/diagnostic/view-model.ts')
     expect(vm, 'الموانعُ لا تُوضع في نتيجة العرض').toContain('strong_blockers_ar')
+    /* ومداخلُ البطاقة صارت تُبنى في `why-pathway.ts` للشاشتين (٤ أكتوبر
+       ٢٠٢٦) — شاشةِ النتيجة وصفحةِ المسار. فالفحصُ هناك بالسلوك لا بالنصّ،
+       والشاشةُ تبنيها منه. */
+    const facts = whyPathwayFacts({
+      reasons: [], confidenceBand: '', resultJson: { strong_blockers_ar: ['مانعٌ بعينه'] },
+    } as unknown as DiagResult)
+    expect(facts.blockers, 'مداخلُ البطاقة لا تحمل الموانع').toEqual(['مانعٌ بعينه'])
     const page = read('src/pages/Diagnostic.tsx')
-    expect(page, 'الشاشةُ لا تمرّر الموانع').toContain('strong_blockers_ar')
+    expect(page, 'الشاشةُ لا تبني البطاقةَ من المداخل المشتركة').toContain('{...whyPathwayFacts(result)}')
   })
 
   it('والعبارةُ تقول أساسَها — «قوية» وحدَها ادّعاءُ علمٍ بما لم يُقَس', () => {

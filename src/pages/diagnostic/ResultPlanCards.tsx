@@ -317,6 +317,7 @@ export function WhyThisPathway({
   basis = null,
   changeMakers,
   gapNote,
+  headingLevel: Heading = "h3",
 }: {
   reasons: string[];
   confidence: ConfidenceParts | undefined;
@@ -328,6 +329,8 @@ export function WhyThisPathway({
   changeMakers: string[];
   /** أثر معايرة الجوانب حين لا تستحق قائمة مستقلة — تفسير لا تكرار */
   gapNote?: string | null;
+  /** في شاشة النتيجة بطاقةٌ تحت قسم؛ وفي صفحة المسار قسمٌ بين أقسامٍ عناوينُها h2 */
+  headingLevel?: "h2" | "h3";
 }) {
   const evidence = reasons.filter((r) => r.trim().length > 0).slice(0, 5);
   if (evidence.length === 0 && !confidence) return null;
@@ -345,10 +348,10 @@ export function WhyThisPathway({
 
   return (
     <div className="card-soft mt-8">
-      <h3 className="h-card flex items-center gap-2">
+      <Heading className="h-card flex items-center gap-2">
         <Sparkles className="h-5 w-5 text-gold-ink" />
         لماذا هذا المسار بالذات؟
-      </h3>
+      </Heading>
 
       {evidence.length > 0 && (
         <>
