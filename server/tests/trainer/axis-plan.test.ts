@@ -5,8 +5,12 @@
    قاعدةٍ حقيقيّةٍ وعبر المسالك:
 
    ① الخطّةُ تحفظ مواعيدَها وكرّاساتِها ومحاورَ مصادرها — لا يُسقطها المخطّطُ صامتا.
-   ② اللقاءُ يُنشأ بمحوره أو محوريه، والأوّلُ في العمود القديم — وثلاثةٌ تُردّ.
+   ② اللقاءُ يُنشأ بمحوره، والأوّلُ في العمود القديم — ومحاورُ من مواعيدَ مختلفةٍ تُردّ.
    ③ الربطُ لا يُسقط المعتمَدَ إلى الانتظار، ولا يمسّ المبدئيَّ ولا الملغى.
+
+   ⚠️ وسقط سقفُ «محورٍ أو محورين» (٤ أكتوبر ٢٠٢٦): اللقاءُ لمحورٍ أو أكثر، والحدُّ
+   الباقي وقتُه — محاورُه في موعدٍ واحدٍ وهو داخلَه. ولكلّ موعدٍ هنا محورٌ واحد،
+   فاللقاءُ متعدّدُ المحاور في `session-axes-time.test.ts` بمواعيدَ تحمل أكثرَ من محور.
    ④ المهمّةُ بمحورها تأخذ آخرَ موعده موعدا ما لم يُكتب غيرُه (⑥).
    ⑤ والإرسالُ يحجبه محورٌ بلا لقاءٍ مباشر — ويسمّيه.
    ⑧ وبعد الاعتماد يسري الربطُ فورا بلا اعتماد — ويصل المتعلّمَ في طلبه التالي.
@@ -104,20 +108,21 @@ describe('① الخطّةُ تحفظ مواعيدَها', () => {
   })
 })
 
-describe('② اللقاءُ بمحوره أو محوريه', () => {
-  it('⚠️ يُنشأ بمحوريه، والأوّلُ في العمود القديم', async () => {
-    const res = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ المحورين', ...when(0), moduleIds: ['AX-M1', 'AX-M2'] })
+describe('② اللقاءُ بمحوره', () => {
+  it('⚠️ يُنشأ بمحوره، والأوّلُ في العمود القديم', async () => {
+    const res = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ المحور', ...when(0), moduleIds: ['AX-M1'] })
     expect(res.statusCode, res.body).toBe(201)
     const id = (res.json() as { session: { id: string } }).session.id
     const row = await prisma.cohortSession.findUniqueOrThrow({ where: { id } })
-    expect(row.moduleIds).toEqual(['AX-M1', 'AX-M2'])
-    expect(row.moduleId, 'العمودُ القديمُ لا يحمل أوّلَهما').toBe('AX-M1')
+    expect(row.moduleIds).toEqual(['AX-M1'])
+    expect(row.moduleId, 'العمودُ القديمُ لا يحمل محورَه').toBe('AX-M1')
     await prisma.cohortSession.delete({ where: { id } })
   })
 
-  it('⚠️ وثلاثةُ محاورَ للقاءٍ واحدٍ تُردّ — والمكرّرُ كذلك', async () => {
+  it('⚠️ ومحاورُ من مواعيدَ مختلفةٍ للقاءٍ واحدٍ تُردّ — والمكرّرُ كذلك', async () => {
     const three = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'ثلاثيّ', ...when(0), moduleIds: ['AX-M1', 'AX-M2', 'AX-M3'] })
     expect(three.statusCode).toBe(422)
+    expect(three.json()).toMatchObject({ error: { message_ar: expect.stringContaining('من مواعيدَ مختلفة') } })
     const twice = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'مكرّر', ...when(0), moduleIds: ['AX-M1', 'AX-M1'] })
     expect(twice.statusCode).toBe(422)
     expect(await prisma.cohortSession.count({ where: { cohortId } }), 'حُفظ ما رُدّ').toBe(0)
@@ -126,23 +131,23 @@ describe('② اللقاءُ بمحوره أو محوريه', () => {
 
 describe('③ الربطُ بنيةُ منهجٍ لا موعدُ حضور', () => {
   it('⚠️ لا يُسقط المعتمَدَ إلى الانتظار — ويُكتب أثرُه', async () => {
-    const made = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ الأوّل', ...when(0), moduleIds: ['AX-M1'] })
+    /* لقاءٌ جُدول بلا محور (كما قبل المواعيد) ثمّ اعتُمد — وربطُه بمحور موعده */
+    const made = await post(`/api/trainer/cohorts/${cohortId}/sessions`, { title: 'لقاءُ الأوّل', ...when(0) })
     const id = (made.json() as { session: { id: string } }).session.id
     await prisma.cohortSession.update({ where: { id }, data: { approvalState: 'approved', approvedAt: new Date() } })
 
-    const res = await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1', 'AX-M2'] })
+    const res = await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1'] })
     expect(res.statusCode, res.body).toBe(200)
     const row = await prisma.cohortSession.findUniqueOrThrow({ where: { id } })
     expect(row.approvalState, 'أُسقط المعتمَدُ إلى الانتظار لأجل رقم محور').toBe('approved')
-    expect(row.moduleIds).toEqual(['AX-M1', 'AX-M2'])
+    expect(row.moduleIds).toEqual(['AX-M1'])
     const audit = await prisma.auditEvent.findFirst({ where: { action: 'cohort.session.axes', entityId: id } })
     expect(audit, 'الربطُ بلا أثر').toBeTruthy()
 
-    /* وبلا محورٍ يُردّ — «لكلّ لقاءٍ محورٌ أو محوران» — وثلاثةٌ كذلك */
+    /* وبلا محورٍ يُردّ، ومحورٌ في غير وقته يُردّ (٤ أكتوبر ٢٠٢٦) — ولا يُحفظ شيء */
     expect((await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: [] })).statusCode).toBe(422)
-    expect((await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1', 'AX-M2', 'AX-M3'] })).statusCode).toBe(422)
-    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id } })).moduleIds, 'حُفظ ربطٌ مردود').toEqual(['AX-M1', 'AX-M2'])
-    await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1'] })
+    expect((await patch(`/api/trainer/sessions/${id}/axes`, { moduleIds: ['AX-M1', 'AX-M2'] })).statusCode).toBe(422)
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id } })).moduleIds, 'حُفظ ربطٌ مردود').toEqual(['AX-M1'])
   })
 
   it('⚠️ والمبدئيُّ لا يُربط من باب المدرّب، ولا الملغى', async () => {
@@ -290,17 +295,23 @@ describe('⑧ بعد الاعتماد: الربطُ يسري فورا بلا ا�
   it('⚠️ لا يُسقط المعتمَدَ ولا يفتح مراجعة — ومهامُّ المحور تُفتح للمتعلّم بلقائه الجديد', async () => {
     const { loadLearnerGate } = await import('../../services/learner-gate')
     const { assessmentOpensAt } = await import('../../../src/application/learning/cohort-gate')
-    const session = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId, title: 'لقاءُ AX-M3' } })
-    expect(session.approvalState, 'لم يعتمد اعتمادُ الخطّة لقاءَها').toBe('approved')
     const latest = () => prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId }, orderBy: { createdAt: 'desc' } })
     expect((await latest()).status).toBe('approved')
     const plansBefore = await prisma.cohortDeliveryPlan.count({ where: { cohortId } })
+    /* لقاءٌ معتمَدٌ أوّلَ يومٍ في موعد الرابع بلا محورٍ بعد. وكان هذا الاختبارُ يربط لقاءَ
+       الثالث بالرابع، ثمّ صار الربطُ في وقت المحور وحدَه (٤ أكتوبر ٢٠٢٦، الاختبارُ التالي) */
+    const session = await prisma.cohortSession.create({
+      data: {
+        cohortId, title: 'لقاءٌ أوّلَ موعد الرابع', startsAt: new Date('2027-03-28T17:00:00.000Z'), endsAt: new Date('2027-03-28T19:00:00.000Z'),
+        approvalState: 'approved', approvedAt: new Date(), moduleIds: [],
+      },
+    })
 
     /* قبل الربط: مهامُّ الرابع بعد لقائه هو، في يومه الثاني */
     const before = (await loadLearnerGate(prisma, cohortId))!.gate
     expect(assessmentOpensAt(before, 'AX-M4')?.toISOString()).toBe(new Date(when(3).endsAt).toISOString())
 
-    const res = await patch(`/api/trainer/sessions/${session.id}/axes`, { moduleIds: ['AX-M3', 'AX-M4'] })
+    const res = await patch(`/api/trainer/sessions/${session.id}/axes`, { moduleIds: ['AX-M4'] })
     expect(res.statusCode, res.body).toBe(200)
 
     const row = await prisma.cohortSession.findUniqueOrThrow({ where: { id: session.id } })
@@ -309,10 +320,18 @@ describe('⑧ بعد الاعتماد: الربطُ يسري فورا بلا ا�
     expect(await prisma.cohortDeliveryPlan.count({ where: { cohortId } }), 'فتح الربطُ مراجعةً للخطّة').toBe(plansBefore)
     expect((await latest()).status, 'أعاد الربطُ الخطّةَ إلى الاعتماد').toBe('approved')
 
-    /* وبعده: لقاءُ الثالث يغطّي الرابعَ أيضا — فمهامُّه تُفتح أوّلَ موعده لا بعد لقائه هو */
+    /* وبعده: لقاءُ اليوم الأوّل يغطّي الرابع — فمهامُّه تُفتح بانتهائه لا بعد لقاء يومه الثاني */
     const after = (await loadLearnerGate(prisma, cohortId))!.gate
     expect(assessmentOpensAt(after, 'AX-M4')?.toISOString(), 'لم يصل الربطُ المتعلّمَ')
-      .toBe(periodBounds(SLOTS[3]).from.toISOString())
+      .toBe('2027-03-28T19:00:00.000Z')
+  })
+
+  it('⚠️ ولا يضع لقاءً في غير وقت محوره — ولو بعد الاعتماد بلا عينٍ تراه (٤ أكتوبر ٢٠٢٦)', async () => {
+    const session = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId, title: 'لقاءُ AX-M3' } })
+    const res = await patch(`/api/trainer/sessions/${session.id}/axes`, { moduleIds: ['AX-M3', 'AX-M4'] })
+    expect(res.statusCode, res.body).toBe(422)
+    expect(res.json()).toMatchObject({ error: { code: 'outside_axis_time', message_ar: expect.stringContaining('الموعد 4') } })
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id: session.id } })).moduleIds, 'حُفظ ربطٌ في غير وقته').toEqual(['AX-M3'])
   })
 })
 

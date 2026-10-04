@@ -22,7 +22,7 @@ import { DAY_CODES } from '../../src/application/schedule/days'
 import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
 import { cohortDayAr, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
-import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
+import { axisTimeProblem, sessionEnd, slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
@@ -48,9 +48,9 @@ function placeholderNotYours() {
   )
 }
 
-/* ═══ محورا اللقاء يُكتبان معا — والأوّلُ في العمود القديم ═══
+/* ═══ محاورُ اللقاء تُكتب معا — والأوّلُ في العمود القديم ═══
 
-   `moduleIds` هو الحقّ، و`moduleId` يُكتب أوّلَهما لأنّ `progress.service`
+   `moduleIds` هو الحقّ، و`moduleId` يُكتب أوّلَها لأنّ `progress.service`
    يقرؤه («أكمل المحورَ بحضور لقائه»). وعمودان يكتبهما موضعان يفترقان، فيُكتبان
    من هنا وحدَه. والمكرّرُ يُسقَط، والفارغُ لا يُحفظ محورا. */
 function sessionAxes(moduleIds: readonly string[] | undefined, moduleId?: string | null) {
@@ -920,6 +920,38 @@ export class CohortService {
     }
   }
 
+  /* ═══ واللقاءُ في وقت محاوره — هنا لا في الشاشة وحدَها (٤ أكتوبر ٢٠٢٦) ═══
+
+     رفع صاحبُ المنصّة سقفَ «محورٍ أو محورين» وقال: «لا تدعه يضع لقاءً لمحورٍ في
+     غير وقته». والشاشةُ تحدّ يومَ اللقاء بموعده، لكنّ الإضافةَ والربطَ بابان
+     يُطرقان بيدٍ أخرى — والربطُ بعد الاعتماد يسري بلا مراجعة
+     (`trainerSetSessionAxes`)، فلا عينَ بعده تراه. فيُفحص هنا بالقاعدة التي يحجب
+     بها الإرسال (`axisTimeProblem`)، على مواعيد آخر خطّةٍ كتبها مدرّبٌ للشعبة —
+     الخطّةِ التي تعرضها ورشتُه وتحكم بها قائمةُ تجهيزه.
+
+     ولا يُفحص: ما انعقد (واقعةٌ لا مسودّة، كما في `sessionProblems`)، ولا شعبةٌ
+     بلا مواعيد (اعتُمدت قبلها فتمضي كما بدأت)، ولا محورٌ ليس في الخطّة أو لا
+     موعدَ له — تقوله خطوةُ المحاور. */
+  private async assertAxesInTime(
+    cohortId: string,
+    when: { startsAt: Date; endsAt?: Date | null },
+    moduleIds: readonly string[],
+  ) {
+    if (moduleIds.length === 0) return
+    if (sessionEnd(when).getTime() < Date.now()) return
+    const plan = await this.prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId, trainerId: { not: null } },
+      orderBy: { createdAt: 'desc' },
+      select: { content: true },
+    })
+    const content = (plan?.content ?? null) as { slots?: PlanSlot[] | null; modules?: { moduleId: string }[] | null } | null
+    const slots = content?.slots ?? []
+    if (slots.length === 0) return
+    const pos = new Map((content?.modules ?? []).map((m, i) => [m.moduleId, i + 1]))
+    const problem = axisTimeProblem({ startsAt: when.startsAt, endsAt: when.endsAt ?? null, moduleIds }, slots, pos)
+    if (problem) throw new AuthError('outside_axis_time', problem, 422)
+  }
+
   /** المدرّبُ يضيف لقاءً في شعبته — بالحدّ نفسِه الذي تُفحص به إضافةُ الإدارة */
   async trainerAddSession(userId: string, cohortId: string, input: {
     title: string; startsAt: Date; endsAt?: Date; timezone?: string; moduleId?: string
@@ -1112,6 +1144,9 @@ export class CohortService {
 
   /* ═══ ربطُ لقاءٍ بمحوره — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦) ═══
 
+     ⚠️ وصار «محورٌ أو أكثر» (٤ أكتوبر ٢٠٢٦) — والحدُّ الباقي وقتُه: محاورُه كلُّها
+     في موعدٍ واحد، وهو داخلَه (`assertAxesInTime`).
+
      الربطُ بنيةُ المنهج لا موعدُ حضور: لا يغيّر متى يحضر المتعلّمُ ولا
      أين، فلا يُسقط لقاءً معتمَدا إلى الانتظار كما يُسقطه النقل — ولو أسقطه
      لغاب اللقاءُ عن تقاويم عشرين إنسانا لأجل تصحيحِ رقمِ محور. وأثرُه في
@@ -1130,7 +1165,7 @@ export class CohortService {
   async trainerSetSessionAxes(userId: string, sessionId: string, moduleIds: string[]) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
-      select: { id: true, cohortId: true, placeholder: true, status: true, moduleIds: true },
+      select: { id: true, cohortId: true, placeholder: true, status: true, moduleIds: true, startsAt: true, endsAt: true },
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
@@ -1139,6 +1174,8 @@ export class CohortService {
     if (session.placeholder) throw placeholderNotYours()
     if (session.status === 'cancelled') throw new AuthError('bad_state', 'لقاءٌ مردودٌ أو ملغًى لا يُربط', 409)
     const axes = sessionAxes(moduleIds)
+    /* والربطُ لا يضع اللقاءَ في غير وقت محاوره — ولو بعد الاعتماد (فوق) */
+    await this.assertAxesInTime(session.cohortId, session, axes.moduleIds)
     const updated = await this.prisma.cohortSession.update({ where: { id: sessionId }, data: axes })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.axes', entityType: 'cohort_session', entityId: sessionId,
@@ -1597,6 +1634,8 @@ export class CohortService {
       throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
     }
     await this.assertWithinWindow(cohortId, input, { counts: true })
+    /* وداخلَ مدّة الشعبة لا يكفي: في وقت محاوره (`assertAxesInTime`) */
+    await this.assertAxesInTime(cohortId, input, sessionAxes(input.moduleIds, input.moduleId).moduleIds)
 
     /* ═══ يُجدوَل منتظِرا، ولا يُعلَن حتّى تعتمده الإدارة ═══
 

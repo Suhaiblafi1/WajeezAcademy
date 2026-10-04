@@ -132,7 +132,9 @@ describe('«لم يُحفَظ» — لكلّ مرحلةٍ وحدَها', () => {
     const ws = code(WS)
     const fn = ws.slice(ws.indexOf('const persist'), ws.indexOf('const gapsFor'))
     expect(fn, 'لا حفظَ واحدا').toBeTruthy()
-    const guard = fn.indexOf('if (!Object.values(dirty).some(Boolean)) return true')
+    /* و`over` خطّةٌ غيرُ التي في اليد تُحفظ حالا (توزيعُ المحاور من «اللقاءات»، ٤ أكتوبر
+       ٢٠٢٦) — فهي تغييرٌ بنفسها، وبدونها يبقى الشرطُ كما كان */
+    const guard = fn.indexOf('if (!over && !Object.values(dirty).some(Boolean)) return true')
     expect(guard, 'الحفظُ يُرسل بلا تغيير').toBeGreaterThan(0)
     expect(guard, 'شرطُ التغيير بعد النداء لا قبله').toBeLessThan(fn.indexOf('apiPut('))
   })

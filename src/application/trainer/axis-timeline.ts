@@ -11,6 +11,10 @@
    ① أربعةُ مواعيدَ على الأقلّ دائما، والجمعُ لمتجاورَين وحدَهما.
    ② لكلّ محورٍ لقاءٌ مباشرٌ واحدٌ على الأقلّ — والمسجَّلُ لا يُغني عنه.
      واللقاءُ لمحورٍ أو محورين («ولكلّ لقاءٍ محورٌ أو محوران»).
+     ⚠️ ونُسخ سقفُه (٤ أكتوبر ٢٠٢٦): «يضيف ما شاء من اللقاءات المباشرة، ويربطها
+     بمحورٍ أو اثنين أو أكثر — اجعلها مرنةً سهلة… لكن لا تدعه يضع لقاءً لمحورٍ في
+     غير وقته». فاللقاءُ لمحورٍ أو أكثر بلا عدد، والحدُّ الباقي وقتُه: محاورُه كلُّها
+     في موعدٍ واحد، وهو داخلَه (`axisTimeProblem`). وما زاد على ذلك نصيحةٌ لا منع.
    ③ اللقاءُ داخلَ موعد محوره، وتنبيهٌ — لا منعٌ — إن جاء بعد يومه الثالث.
    ⑤ مهامُّ المحور ومصادرُه تُفتح حين ينتهي أوّلُ لقاءٍ له، مباشرٍ أو مسجَّل —
      والمسجَّلُ «ينتهي» لحظةَ يُفتح.
@@ -32,6 +36,7 @@
 import { periodBounds, periodDays, realDate, zonedDay, type CohortPeriod } from './cohort-period'
 import { MIN_SESSION_MS } from './session-length'
 import { fmtDateWith } from '../text/format-ar'
+import { countAr } from '../text/count-ar'
 
 /* ─────────── الشكلُ كما يُحفظ في الخطّة ─────────── */
 
@@ -68,8 +73,9 @@ export interface PlanSlot {
 
 /** أقلُّ ما تُقسَم عليه الدورة — «الدورةُ أقلُّ شيءٍ أربعةُ محاور» */
 export const MIN_SLOTS = 4
-/** «ولكلّ لقاءٍ محورٌ أو محوران» */
-export const MAX_AXES_PER_SESSION = 2
+/** أقصى ما يُربط به لقاءٌ واحد: ما تحمله الخطّةُ كلُّها من محاور. حدُّ مدخلٍ
+    لا قاعدةُ منهج — فسقفُ «محورٍ أو محورين» نُسخ (٤ أكتوبر ٢٠٢٦، ② أعلاه) */
+export const SESSION_AXES_MAX = 40
 /** بعد هذا اليوم من الموعد يُنبَّه المدرّب — «في بداية أسبوع المحور» */
 export const EARLY_DAYS = 3
 
@@ -228,7 +234,7 @@ export function splitSlot(slots: readonly PlanSlot[], i: number, at: number): Pl
 
    · **نقلُ محور** يُبقي أحجامَ المواعيد وتواريخَها، ويعيد صبَّ المحاور فيها
      بترتيبها الجديد — فمن نقل المحورَ الثالث قبل الثاني بقي «١+٢ · ٣» شكلا.
-   · **محورٌ جديد** يلحق آخرَ موعد، وللمدرّب أن يفصله.
+   · **محورٌ جديد** لا يُكدَّس في آخر موعد (`addAxisToSlots` أدناه).
    · **ومحورٌ محذوف** يخرج من موعده، ويسقط الموعدُ إن فرغ — فلا تتحرّك
      تواريخُ غيره. */
 export function reflowSlots(slots: readonly PlanSlot[], moduleIds: readonly string[]): PlanSlot[] {
@@ -259,6 +265,50 @@ export function appendToSlots(slots: readonly PlanSlot[], moduleId: string): Pla
   if (slots.length === 0) return []
   const last = slots[slots.length - 1]
   return [...slots.slice(0, -1), { ...last, moduleIds: [...last.moduleIds, moduleId] }]
+}
+
+/** أهما الترتيبُ نفسُه؟ — التواريخُ والمحاورُ موعدا موعدا، والكرّاسةُ لا تُقاس */
+export function sameSlots(a: readonly PlanSlot[], b: readonly PlanSlot[]): boolean {
+  return a.length === b.length && a.every((s, i) =>
+    s.startsOn === b[i].startsOn && s.endsOn === b[i].endsOn && s.moduleIds.join('|') === b[i].moduleIds.join('|'))
+}
+
+/** التوزيعُ الأوّلُ من جديد على المدّة — والكرّاسةُ القديمةُ تتبع أوّلَ محاور موعدها،
+    فلا يضيع ما رُفع لأجل ترتيبٍ جديد */
+export function respreadSlots(slots: readonly PlanSlot[], moduleIds: readonly string[], period: CohortPeriod): PlanSlot[] {
+  return defaultSlots(moduleIds, period).map((x) => ({
+    ...x, workbook: slots.find((o) => o.moduleIds[0] === x.moduleIds[0])?.workbook ?? null,
+  }))
+}
+
+/* ═══ «+ محور» لا يكدّس في آخر موعد (٤ أكتوبر ٢٠٢٦) ═══
+
+   كان الجديدُ يلحق آخرَ موعد (`appendToSlots`). فمدرّبٌ فتح دورةً بمحاور الكتالوج
+   الأربعة ثمّ أضاف اثني عشر وجد الموعدَ الرابعَ «المحاور 4+5+…+16» في أربعة أيّام،
+   ولقاءاتُها كلُّها داخلَها — فظنّ أنّ اللقاءاتِ لا تزيد على أربعة (رُئي في رسالةٍ
+   رفعها صاحبُ المنصّة).
+
+   فإن كانت المواعيدُ توزيعَ المنصّة الأوّلَ كما هو — لم يمسّه — وُزّعت المحاورُ
+   كلُّها من جديدٍ على المدّة. وإن رتّبها بيده لم يُمسّ ترتيبُه: يلحق الجديدُ آخرَها
+   كما كان، ويُقال له إن ازدحم موعدٌ (`crowdedSlots`) ومعه زرٌّ يوزّعها بالتساوي —
+   نصيحةٌ يختارها، لا ترتيبٌ يُمحى من تحته. */
+export function addAxisToSlots(
+  slots: readonly PlanSlot[],
+  moduleIds: readonly string[],
+  period: CohortPeriod | null,
+): PlanSlot[] {
+  if (slots.length === 0 || moduleIds.length === 0) return []
+  const before = moduleIds.slice(0, -1)
+  if (period && sameSlots(slots, defaultSlots(before, period))) return respreadSlots(slots, moduleIds, period)
+  return appendToSlots(slots, moduleIds[moduleIds.length - 1])
+}
+
+/** المواعيدُ المزدحمة: ثلاثةُ محاورَ فأكثر، وضعفُ نصيبها لو وُزّعت بالتساوي فأكثر.
+    نصيحةٌ لا مانع — المانعُ `slotProblems`، وهذا ما يُقال للمدرّب ليختار */
+export function crowdedSlots(slots: readonly PlanSlot[]): number[] {
+  if (slots.length < 2) return []
+  const fair = Math.ceil(slots.reduce((n, s) => n + s.moduleIds.length, 0) / slots.length)
+  return slots.flatMap((s, i) => (s.moduleIds.length >= 3 && s.moduleIds.length >= 2 * fair ? [i] : []))
 }
 
 /* ─────────── الكرّاسة ─────────── */
@@ -362,11 +412,45 @@ export function joinClosesAt(period: CohortPeriod, slots: readonly PlanSlot[] | 
   return periodBounds({ startsOn: dated[1].startsOn, endsOn: dated[1].endsOn }).from
 }
 
+/* ═══ اللقاءُ في وقت محاوره — الحدُّ الذي بقي من قواعده (٤ أكتوبر ٢٠٢٦) ═══
+
+   «لا تدعه يضع لقاءً لمحورٍ في غير وقته». فمحاورُ اللقاء كلُّها في موعدٍ واحد —
+   ولو كانت عشرة — وهو داخلَه بدءا ونهاية (`sessionInsideSlot`). وبه يحكم ثلاثة:
+   الإرسالُ (`sessionProblems` أدناه)، والخادمُ حين يُضاف لقاءٌ أو يُربط
+   (`cohort.service.ts`)، وبطاقةُ الموعد في الشاشة — فلا يفترق ما يُقال وما يُردّ.
+
+   و`null` حين يقع في وقته، أو حين لا يُعرف وقتُه: لقاءٌ بلا محورٍ يقوله صاحبُه،
+   ومحورٌ بلا موعدٍ تقوله خطوةُ المحاور (`slotProblems`) — لا يُقال مرّتين. */
+export function axisTimeProblem(
+  s: { startsAt: Date | string; endsAt?: Date | string | null; moduleIds: readonly string[] },
+  slots: readonly PlanSlot[],
+  pos: ReadonlyMap<string, number>,
+  label = 'اللقاء',
+): string | null {
+  const ids = s.moduleIds.filter((id) => pos.has(id))
+  const at = ids.map((id) => slotIndexOf(slots, id))
+  if (ids.length === 0 || at.includes(-1)) return null
+  const distinct = [...new Set(at)]
+  if (distinct.length > 1) {
+    const where = distinct
+      .map((si) => `${axesLabelAr(ids.filter((_, k) => at[k] === si), pos)} في الموعد ${si + 1}`)
+      .join('، و')
+    const merge = distinct.length === 2 ? 'اجمع الموعدين' : 'اجمع مواعيدَها'
+    return `${label} يجمع محاورَ من مواعيدَ مختلفة (${where}) — اللقاءُ في وقت محاوره: اربطه بمحاور موعدٍ واحد، أو ${merge} في «المحاور ومواعيدها»`
+  }
+  const slot = slots[distinct[0]]
+  if (!sessionInsideSlot(s, slot)) {
+    return `${label} خارجَ موعد ${axesLabelAr(ids, pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`
+  }
+  return null
+}
+
 /* ═══ ما يمنع خطوةَ اللقاءات — وما يُنبَّه إليه ولا يمنع ═══
 
-   المانعُ: محورٌ بلا لقاءٍ مباشر (②)، ولقاءٌ بلا محورٍ أو بأكثرَ من محورين،
-   ولقاءٌ محوراه في موعدين، ولقاءٌ خارجَ موعد محوره (③)، وجلسةٌ مسجّلةٌ بلا
-   محورٍ أو بلا لحظةِ فتحٍ أو خارجَ موعد محورها.
+   المانعُ: محورٌ بلا لقاءٍ مباشر (②)، ولقاءٌ بلا محور، ولقاءٌ في غير وقت
+   محاوره — محاورُ من مواعيدَ مختلفة، أو خارجَ موعدها (③، `axisTimeProblem`) —
+   وجلسةٌ مسجّلةٌ بلا محورٍ أو بلا لحظةِ فتحٍ أو خارجَ موعد محورها. ولا سقفَ على
+   عدد اللقاءات ولا على محاور اللقاء الواحد (٤ أكتوبر ٢٠٢٦).
 
    والمنبَّهُ إليه: لقاءٌ بعد اليوم الثالث من موعده — «في بداية أسبوع
    المحور»، فبعده تُفتح المهامّ. قرارُ المدرّب، والمنصّةُ تنصح (③). */
@@ -402,15 +486,11 @@ export function sessionProblems(input: {
     const label = `لقاء «${name(s.title, `رقم ${i + 1}`)}»`
     const ids = s.moduleIds.filter((id) => pos.has(id))
     if (ids.length === 0) { blocking.push(`${label} غيرُ مربوطٍ بمحور — اختر محورَه`); return }
-    if (ids.length > MAX_AXES_PER_SESSION) { blocking.push(`${label} مربوطٌ بأكثرَ من محورين — اللقاءُ لمحورٍ أو محورين`); return }
-    const at = new Set(ids.map((id) => slotIndexOf(slots, id)))
-    if (at.has(-1)) return /* محورٌ بلا موعد — تقوله خطوةُ المحاور، لا تُكرَّر هنا */
-    if (at.size > 1) { blocking.push(`${label} يجمع محورين من موعدين — اللقاءُ لمحاورِ موعدٍ واحد`); return }
-    const slot = slots[[...at][0]]
-    if (!sessionInsideSlot(s, slot)) {
-      blocking.push(`${label} خارجَ موعد ${axesLabelAr(ids, pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`)
-      return
-    }
+    const off = axisTimeProblem(s, slots, pos, label)
+    if (off) { blocking.push(off); return }
+    const at = ids.map((id) => slotIndexOf(slots, id))
+    if (at.includes(-1)) return /* محورٌ بلا موعد — تقوله خطوةُ المحاور، لا تُكرَّر هنا */
+    const slot = slots[at[0]]
     const day = dayInSlot(s.startsAt, slot)
     if (day > EARLY_DAYS) {
       warnings.push(`${label} في اليوم ${day} من موعده — والأصلُ في أوّل ${EARLY_DAYS} أيّام، فبعده تُفتح المهامّ`)
@@ -429,6 +509,42 @@ export function sessionProblems(input: {
     }
   })
   return { blocking, warnings }
+}
+
+/* ═══ نصائحُ لا موانع — «أعطهم نصائح» (٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «قد تعطيهم نصائح: لا تُكثر من اللقاءات، أو اجمعها — أو اترك
+   ذلك لي حين أعتمد موادَّهم». فما هنا يُقال في بطاقة الموعد بلطفٍ ولا يمنع شيئا،
+   والإدارةُ تراجعه مع الخطّة. والعددُ بصيغته (`countAr`) — «3 لقاءات» لا «3 لقاء». */
+export interface SlotTip {
+  kind: 'many' | 'same_day'
+  textAr: string
+}
+
+const SESSION_FORMS = { one: 'لقاءٌ', two: 'لقاءان', few: 'لقاءات', many: 'لقاءً' } as const
+const AXIS_FORMS = { one: 'محور', two: 'محوران', few: 'محاور', many: 'محورا' } as const
+
+export function slotSessionTips(input: {
+  /** عددُ محاور الموعد */
+  axes: number
+  /** لقاءاتُه المباشرةُ التي تُعدّ — لا الملغى ولا المبدئيّ */
+  sessions: readonly { startsAt: Date | string }[]
+}): SlotTip[] {
+  const out: SlotTip[] = []
+  const n = input.sessions.length
+  if (n >= 2 && n > input.axes) {
+    const forAxes = input.axes === 1 ? 'لمحورٍ واحد' : input.axes === 2 ? 'لمحورين' : `لـ${countAr(input.axes, AXIS_FORMS)}`
+    out.push({
+      kind: 'many',
+      textAr: `في هذا الموعد ${countAr(n, SESSION_FORMS)} ${forAxes} — لا بأس بذلك، وإن شئت فلقاءٌ واحدٌ يجمع محاورَ الموعد كلَّها، فيخفّ على المتعلّم.`,
+    })
+  }
+  const days = input.sessions.map((s) => zonedDay(s.startsAt))
+  const twice = days.find((d, i) => days.indexOf(d) !== i)
+  if (twice) {
+    out.push({ kind: 'same_day', textAr: `لقاءان في يومٍ واحد (${dayLabelAr(twice)}) — إن شئت فاجمعهما في لقاءٍ واحد.` })
+  }
+  return out
 }
 
 /** أيقع اللقاءُ المباشرُ داخلَ موعد محوره؟ — بدؤه ونهايتُه (أو أدنى مدّةٍ له إن لم

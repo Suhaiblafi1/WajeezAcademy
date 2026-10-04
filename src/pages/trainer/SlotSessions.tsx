@@ -10,8 +10,17 @@
 
    فصارت خطوةُ اللقاءات بطاقةً لكلّ موعد: محاورُه، وهل لكلٍّ منها لقاءٌ مباشر،
    ولقاءاتُه بمحاورها، وزرٌّ يضيف لقاءً داخله، وجلساتُه المسجّلة. والقاعدةُ —
-   لقاءٌ لكلّ محور، ولمحورٍ أو محورين، وداخلَ الموعد، وتنبيهٌ بعد يومه الثالث —
-   من `application/trainer/axis-timeline.ts` نفسِها التي يحكم بها الخادم.
+   لقاءٌ لكلّ محور، وداخلَ الموعد، وتنبيهٌ بعد يومه الثالث — من
+   `application/trainer/axis-timeline.ts` نفسِها التي يحكم بها الخادم.
+
+   ═══ ثمّ صارت مرنةً بلا عدد (٤ أكتوبر ٢٠٢٦) ═══
+
+   «يضيف ما شاء من اللقاءات المباشرة، ويربطها بمحورٍ أو اثنين أو أكثر — اجعلها
+   مرنةً سهلة، يختارون ما شاؤوا، وقد تعطيهم نصائح… لكن لا تدعه يضع لقاءً لمحورٍ
+   في غير وقته». فلا سقفَ على محاور اللقاء ولا على عدد اللقاءات، ويُختار للقاء
+   الجديد ما لم يُغطَّ من محاور موعده؛ ووقتُه في وقتها حدٌّ يُقال قبل الإرسال
+   ويردّه الخادمُ إن وصل (`sessionInsideSlot` و`assertAxesInTime`). وما سوى ذلك
+   نصيحةٌ تُقال بلطفٍ ولا تمنع (`slotSessionTips`).
 
    ═══ ولماذا يُكتب الموعدُ بتوقيت عمّان صراحةً ═══
 
@@ -21,7 +30,7 @@
    الشعبة، ويُقال ذلك تحت الحقل. */
 
 import { useMemo, useState } from "react";
-import { CalendarPlus, Check, Film, TriangleAlert } from "lucide-react";
+import { CalendarPlus, Check, Film, Lightbulb, TriangleAlert } from "lucide-react";
 import { apiPatch, apiPost, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { staffControlCls, StaffField } from "@/components/FormKit";
@@ -30,7 +39,7 @@ import Button from "@/components/ui/Button";
 import { fmtDateTimeAr } from "@/utils/format";
 import { ACADEMY_ZONE, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
-  EARLY_DAYS, MAX_AXES_PER_SESSION, axesLabelAr, dayInSlot, dayLabelAr, type PlanSlot,
+  EARLY_DAYS, axesLabelAr, dayInSlot, dayLabelAr, sessionInsideSlot, slotSessionTips, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
 import {
   SHORT_SESSION_AR, firstToFor, fromSlots, sessionTooShort, slotLabelAr, toMinutes, toSlotsFor,
@@ -59,7 +68,7 @@ const clockOf = (iso: string) => {
 };
 
 export default function SlotSessions({
-  cohortId, slot, index, axisNo, sessions, recorded, locked, approvedOnce, onDone,
+  cohortId, slot, index, axisNo, sessions, recorded, locked, approvedOnce, onDone, beforeWrite,
   onAddRecorded, onPatchRecorded, onRemoveRecorded,
 }: {
   cohortId: string;
@@ -75,34 +84,48 @@ export default function SlotSessions({
   /** اعتُمدت خطّتُه من قبل — فيُقال له ما يسري لحظتَه وما ينتظر الإدارة */
   approvedOnce: boolean;
   onDone: () => void;
+  /** يحفظ مواعيدَ المحاور إن عُدّلت ولم تُحفظ — فالخادمُ يحكم على وقت اللقاء بالمحفوظ */
+  beforeWrite?: () => Promise<boolean>;
   onAddRecorded: (row: RecordedRow) => void;
   onPatchRecorded: (i: number, patch: Partial<RecordedRow>) => void;
   onRemoveRecorded: (i: number) => void;
 }) {
   const axes = slot.moduleIds;
   const label = axesLabelAr(axes, axisNo);
-  const blank = useMemo(() => ({
-    title: `اللقاء المباشر · ${label}`,
+  const covered = new Set(sessions.flatMap((s) => s.moduleIds ?? []));
+  /* اللقاءُ الجديدُ لما لم يُغطَّ من محاور الموعد — كلِّها إن غُطّيت — وللمدرّب أن يغيّر */
+  const uncovered = axes.filter((id) => !covered.has(id));
+  const blank = () => ({
+    /* `null`: العنوانُ يتبع المحاورَ المختارة ما لم يكتب غيرَه */
+    title: null as string | null,
     date: slot.startsOn, from: "18:00", to: "20:00", noteAr: "",
-    moduleIds: axes.slice(0, MAX_AXES_PER_SESSION),
-  }), [label, slot.startsOn, axes]);
+    moduleIds: uncovered.length > 0 ? uncovered : [...axes],
+  });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(blank);
   const [busy, setBusy] = useState(false);
   const FROM = useMemo(() => fromSlots(), []);
   const TO = useMemo(() => toSlotsFor(form.from), [form.from]);
 
-  const covered = new Set(sessions.flatMap((s) => s.moduleIds ?? []));
+  const autoTitle = `اللقاء المباشر · ${axesLabelAr(form.moduleIds.length ? form.moduleIds : axes, axisNo)}`;
+  const title = (form.title ?? autoTitle).trim();
   const formDay = form.date ? dayInSlot(at(form.date, form.from), slot) : 1;
   const tooShort = sessionTooShort(at(form.date || slot.startsOn, form.from), at(form.date || slot.startsOn, form.to));
+  /* ═══ واللقاءُ في وقت محاوره — يُقال قبل الإرسال لا بعد ردّه (٤ أكتوبر ٢٠٢٦) ═══
+     حدودُ الحقل (`min`/`max`) تُرشد ولا تمنع: اليومُ يُكتب باليد. فيُحكم بالقاعدة
+     التي يحجب بها الإرسالُ ويردّ بها الخادم (`sessionInsideSlot`). */
+  const outside = Boolean(form.date) && !sessionInsideSlot({ startsAt: at(form.date, form.from), endsAt: at(form.date, form.to) }, slot);
+  /* نصائحُ الموعد — تُقال ولا تمنع (`slotSessionTips`) */
+  const tips = slotSessionTips({ axes: axes.length, sessions });
 
-  /* ── ربطُ لقاءٍ قائمٍ بمحاوره ── واحدٌ أو اثنان، ولا يُترك بلا محور */
+  /* ── ربطُ لقاءٍ قائمٍ بمحاوره ── محورٌ أو أكثر من موعده، ولا يُترك بلا محور */
   const relink = async (s: SlotSession, id: string, on: boolean) => {
     const cur = s.moduleIds ?? [];
     const next = on ? [...cur, id] : cur.filter((x) => x !== id);
-    if (next.length === 0 || next.length > MAX_AXES_PER_SESSION) return;
+    if (next.length === 0) return;
     setBusy(true);
     try {
+      if (beforeWrite && !(await beforeWrite())) return;
       await apiPatch(`/api/trainer/sessions/${s.id}/axes`, { moduleIds: next });
       /* ويسري فورا بلا اعتماد، ولو بعد اعتماد الخطّة (٢٨ سبتمبر ٢٠٢٦): المعتمَدُ
          يبقى معتمَدا، ومتعلّموه يرون أثرَه في «متى تُفتح المهامّ» — فيُقال له */
@@ -120,15 +143,16 @@ export default function SlotSessions({
   const add = async () => {
     setBusy(true);
     try {
+      if (beforeWrite && !(await beforeWrite())) return;
       await apiPost(`/api/trainer/cohorts/${cohortId}/sessions`, {
-        title: form.title.trim(),
+        title,
         startsAt: at(form.date, form.from),
         endsAt: at(form.date, form.to),
         moduleIds: form.moduleIds,
         noteAr: form.noteAr.trim() || null,
       });
       toast("أُرسل اللقاءُ للاعتماد — يصل المسجَّلين حين تعتمده الإدارة");
-      setForm(blank);
+      setForm(blank());
       setOpen(false);
       onDone();
     } catch (e) {
@@ -166,7 +190,8 @@ export default function SlotSessions({
         <ul className="grid gap-2">
           {sessions.map((s) => {
             const day = dayInSlot(s.startsAt, slot);
-            const outside = zonedDay(s.startsAt) < slot.startsOn || zonedDay(s.startsAt) > slot.endsOn;
+            /* بالقاعدة التي يحجب بها الإرسال — بدؤه ونهايتُه بين حدّيه بعمّان */
+            const outside = !sessionInsideSlot(s, slot);
             const pending = s.approvalState === "pending";
             const choices = [...new Set([...axes, ...(s.moduleIds ?? [])])];
             return (
@@ -180,17 +205,16 @@ export default function SlotSessions({
                     ? <p className="text-read font-bold text-gold-ink">خارجَ هذا الموعد — انقله إلى داخله من «اللقاءاتُ المجدولة» أسفلَ الصفحة.</p>
                     : day > EARLY_DAYS && <p className="text-read text-gold-ink">في اليوم {day} من موعده — والأصلُ في أوّل {EARLY_DAYS} أيّام.</p>}
                 </div>
-                {/* محورا اللقاء — يُضاف ثانٍ أو يُرفع، ولا يُترك بلا محور */}
+                {/* محاورُ اللقاء — يُضاف ما شاء من محاور موعده أو يُرفع، ولا يُترك بلا محور */}
                 {choices.length > 1 && (
                   <fieldset className="flex flex-wrap gap-2" disabled={locked || busy}>
                     <legend className="sr-only">محاورُ «{s.title}»</legend>
                     {choices.map((id) => {
                       const on = (s.moduleIds ?? []).includes(id);
-                      const full = !on && (s.moduleIds ?? []).length >= MAX_AXES_PER_SESSION;
                       const last = on && (s.moduleIds ?? []).length === 1;
                       return (
-                        <label key={id} className={`flex min-h-11 items-center gap-2 rounded-xl px-3 py-1.5 text-read ${on ? "bg-teal/15 font-black text-teal-light-ink" : "text-muted-foreground"} ${full || last ? "opacity-60" : "cursor-pointer"}`}>
-                          <input type="checkbox" checked={on} disabled={full || last}
+                        <label key={id} className={`flex min-h-11 items-center gap-2 rounded-xl px-3 py-1.5 text-read ${on ? "bg-teal/15 font-black text-teal-light-ink" : "text-muted-foreground"} ${last ? "opacity-60" : "cursor-pointer"}`}>
+                          <input type="checkbox" checked={on} disabled={last}
                             onChange={(e) => void relink(s, id, e.target.checked)}
                             className="h-4 w-4 accent-[var(--teal)]" />
                           المحور {axisNo.get(id) ?? "؟"}
@@ -205,18 +229,26 @@ export default function SlotSessions({
         </ul>
       )}
 
-      {/* ── لقاءٌ جديدٌ داخلَ الموعد ── */}
+      {/* نصائحُ الموعد — بلطفٍ ولا تمنع: الإدارةُ تراجعها مع الخطّة (٤ أكتوبر ٢٠٢٦) */}
+      {tips.map((t) => (
+        <p key={t.kind} className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
+          <Lightbulb className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+          <span>{t.textAr}</span>
+        </p>
+      ))}
+
+      {/* ── لقاءٌ جديدٌ داخلَ الموعد — ما شاء منها ── */}
       {!open ? (
         <div>
-          <Button tone="secondary" size="sm" icon={CalendarPlus} disabled={locked} onClick={() => { setForm(blank); setOpen(true); }}>
-            + لقاءٌ مباشر
+          <Button tone="secondary" size="sm" icon={CalendarPlus} disabled={locked} onClick={() => { setForm(blank()); setOpen(true); }}>
+            {sessions.length > 0 ? "+ لقاءٌ مباشرٌ آخر" : "+ لقاءٌ مباشر"}
           </Button>
         </div>
       ) : (
         <Inset tone="accent" className="grid gap-3">
-          <StaffField wide label="عنوانُ اللقاء" hint="ما يراه المتعلّم في تقويمه.">
-            <input value={form.title} aria-label={`عنوانُ اللقاء في الموعد ${index + 1}`}
-              onChange={(e) => setForm({ ...form, title: e.target.value })} className={staffControlCls} />
+          <StaffField wide label="عنوانُ اللقاء" hint="ما يراه المتعلّم في تقويمه — ويتبع المحاورَ التي تختارها ما لم تكتب غيرَه.">
+            <input value={form.title ?? autoTitle} aria-label={`عنوانُ اللقاء في الموعد ${index + 1}`}
+              onChange={(e) => setForm({ ...form, title: e.target.value || null })} className={staffControlCls} />
           </StaffField>
           <div className="grid gap-3 sm:grid-cols-3">
             <StaffField label="اليوم" hint="داخلَ هذا الموعد.">
@@ -243,14 +275,13 @@ export default function SlotSessions({
             </StaffField>
           </div>
           {axes.length > 1 && (
-            <StaffField as="div" wide label="لأيّ محور؟" hint="محورٌ أو محوران من هذا الموعد — وبعد انتهاء اللقاء تُفتح مهامُّهما.">
+            <StaffField as="div" wide label="لأيّ المحاور؟" hint="محورٌ أو أكثر من هذا الموعد، ما شئت — وبعد انتهاء اللقاء تُفتح مهامُّها.">
               <div className="flex flex-wrap gap-2">
                 {axes.map((id) => {
                   const on = form.moduleIds.includes(id);
-                  const full = !on && form.moduleIds.length >= MAX_AXES_PER_SESSION;
                   return (
-                    <label key={id} className={`flex min-h-11 items-center gap-2 rounded-xl px-3 py-1.5 text-read ${on ? "bg-teal/15 font-black text-teal-light-ink" : "text-muted-foreground"} ${full ? "opacity-60" : "cursor-pointer"}`}>
-                      <input type="checkbox" checked={on} disabled={full}
+                    <label key={id} className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-xl px-3 py-1.5 text-read ${on ? "bg-teal/15 font-black text-teal-light-ink" : "text-muted-foreground"}`}>
+                      <input type="checkbox" checked={on}
                         onChange={() => setForm({ ...form, moduleIds: on ? form.moduleIds.filter((x) => x !== id) : [...form.moduleIds, id] })}
                         className="h-4 w-4 accent-[var(--teal)]" />
                       المحور {axisNo.get(id)}
@@ -264,13 +295,17 @@ export default function SlotSessions({
             <textarea rows={2} value={form.noteAr} aria-label={`ملاحظاتُ اللقاء في الموعد ${index + 1}`}
               onChange={(e) => setForm({ ...form, noteAr: e.target.value })} className={staffControlCls} />
           </StaffField>
-          {formDay > EARLY_DAYS && (
+          {outside ? (
+            <p className="text-read font-bold text-gold-ink">
+              هذا اليومُ خارجَ موعد {label} ({dayLabelAr(slot.startsOn)} – {dayLabelAr(slot.endsOn)}) — اللقاءُ في وقت محاوره، فاختر يوما داخله.
+            </p>
+          ) : formDay > EARLY_DAYS && (
             <p className="text-read text-gold-ink">هذا اليومُ {formDay} من الموعد — والأصلُ أن يكون اللقاءُ في أوّل {EARLY_DAYS} أيّام، فبعده تُفتح المهامّ. ولك أن تُبقيه.</p>
           )}
           {tooShort && <p className="text-read font-bold text-gold-ink">{SHORT_SESSION_AR}.</p>}
           <div className="flex flex-wrap gap-2">
             <Button tone="confirm" size="sm" loading={busy}
-              disabled={busy || form.title.trim().length < 2 || !form.date || tooShort || form.moduleIds.length === 0}
+              disabled={busy || title.length < 2 || !form.date || outside || tooShort || form.moduleIds.length === 0}
               onClick={() => void add()}>
               أرسِلْه للاعتماد
             </Button>
