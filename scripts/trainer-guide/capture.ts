@@ -386,6 +386,20 @@ const ACTIVE: Shot[] = [
     },
   },
   {
+    /* نصائحُ اللقاءات في رأس الخطوة — بلطفٍ ولا تمنع (٤ أكتوبر ٢٠٢٦) */
+    name: 'ws-session-tips',
+    async run(e) {
+      const p = e.page
+      await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
+      await step(e, 4)
+      const title = p.getByText('نصائحُ للقاءاتك').first()
+      await shoot(e, {
+        name: 'ws-session-tips', clip: p.locator('section').filter({ has: title }).first(), clipPad: 14,
+        marks: [{ target: title, n: 1, pad: 5 }],
+      })
+    },
+  },
+  {
     name: 'ws-live-form',
     async run(e) {
       const p = e.page
