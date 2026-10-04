@@ -27,6 +27,7 @@ import { registerAdminLearningRoutes } from './routes/admin-learning.routes'
 import { registerLearningPortalRoutes } from './routes/learning-portal.routes'
 import { registerLearnerRoutes } from './routes/learners.routes'
 import { registerStaffTaskRoutes } from './routes/staff-tasks.routes'
+import { registerTrainerAnnouncementRoutes } from './routes/trainer-announcements.routes'
 import { registerPublicCatalogRoutes } from './routes/public.routes'
 import { registerPathDraftRoutes } from './routes/path-drafts.routes'
 import { registerFavoriteRoutes } from './routes/favorites.routes'
@@ -311,6 +312,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerCalendlyWebhookRoutes(app, prisma)
   registerLearnerRoutes(app, prisma)
   registerStaffTaskRoutes(app, prisma)
+  registerTrainerAnnouncementRoutes(app, prisma)
   registerPublicCatalogRoutes(app, prisma)
   registerPathDraftRoutes(app, prisma)
   registerFavoriteRoutes(app, prisma)

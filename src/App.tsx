@@ -68,6 +68,7 @@ const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompens
 const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
 const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
 const AdminPendingPlans = lazy(() => import('./pages/admin/PendingPlans'))
+const AdminTrainerAnnouncements = lazy(() => import('./pages/admin/TrainerAnnouncements'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
 const JoinTrainerVerify = lazy(() => import('./pages/JoinTrainerVerify'))
@@ -342,6 +343,8 @@ export default function App() {
             <Route path="/admin/trainer-contracts" element={<AdminTrainerContracts />} />
             {/* «خططٌ تنتظر اعتمادك» — كلُّ خطّةٍ أرسلها مدرّبٌ في موضعٍ واحد (٣ أكتوبر ٢٠٢٦) */}
             <Route path="/admin/pending-plans" element={<AdminPendingPlans />} />
+            {/* «إعلاناتٌ للمدرّبين» — نافذةٌ في بوّابتهم، ومن قرأها (٤ أكتوبر ٢٠٢٦) */}
+            <Route path="/admin/trainer-announcements" element={<AdminTrainerAnnouncements />} />
             <Route path="/admin/catalog" element={<CatalogAdmin />} />
             <Route path="/admin/authoring" element={<AdminAuthoring />} />
             <Route path="/admin/publishing" element={<PublishingBoard />} />

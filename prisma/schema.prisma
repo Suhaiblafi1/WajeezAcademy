@@ -64,6 +64,7 @@ model User {
   retrievalCards       RetrievalCard[]            @relation("RetrievalCardUser")
   scenarioRuns         ScenarioRun[]              @relation("ScenarioRunUser")
   favorites            Favorite[]                 @relation("FavoriteUser")
+  trainerAnnouncements TrainerAnnouncementRecipient[]
 }
 
 model Role {
@@ -3888,6 +3889,44 @@ model StaffTask {
 
   @@index([assigneeId, status])
   @@index([assignedBy, status])
+}
+
+/**
+ * ═══ إعلانُ الإدارة إلى المدرّبين — نافذةٌ تُقرأ، ويُعلَم من قرأها (٤ أكتوبر ٢٠٢٦) ═══
+ * قرارُ صاحب المنصّة: «أعطهم النصيحةَ وتأكّد أنّهم قرؤوها — ولا تمنع أحدا»، واختار من
+ * ثلاثة خياراتٍ نافذةً فيها «قرأتُه» وإشعارا في الجرس وقائمةً بمن قرأ.
+ * والمستقبِلون يُكتبون ساعةَ الإرسال (`TrainerAnnouncementRecipient`): كلُّ مدرّبٍ
+ * نشطٍ يفتح بوّابتَه يومَها — فقائمةُ «من قرأ» تقابل من أُرسل إليه فعلا، لا من
+ * صار مدرّبا بعده. والإرسالُ بيد الإدارة وحدَها (`staff.notify`)، لا تلقائيّ.
+ * والعلّةُ كاملةً في `server/services/trainer-announcement.service.ts`.
+ */
+model TrainerAnnouncement {
+  id         String                         @id @default(uuid()) @db.Uuid
+  titleAr    String
+  bodyAr     String
+  /// من أرسله — صاحبُ الصلاحيّة لا مجهول
+  sentBy     String                         @db.Uuid
+  sentAt     DateTime                       @default(now())
+  recipients TrainerAnnouncementRecipient[]
+
+  @@index([sentAt])
+}
+
+/**
+ * مدرّبٌ أُرسل إليه إعلان — ومتى رآه ومتى أكّد قراءتَه.
+ * `seenAt`: ظهرت له النافذةُ أوّلَ مرّة. `readAt`: ضغط «قرأتُه». وبينهما من أجّلها:
+ * رآها ولم يؤكّد — والتأجيلُ لا يمنعه من عمله.
+ */
+model TrainerAnnouncementRecipient {
+  announcementId String              @db.Uuid
+  userId         String              @db.Uuid
+  seenAt         DateTime?
+  readAt         DateTime?
+  announcement   TrainerAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, userId])
+  @@index([userId, readAt])
 }
 
 /**

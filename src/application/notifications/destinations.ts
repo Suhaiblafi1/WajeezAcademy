@@ -126,6 +126,9 @@ const TRAINER: Table = {
   'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقِرّ بجاهزيّتك' },
   /* والملصقُ يُوافَق عليه حيث يُرى — قسمُ التسويق */
   'trainer.poster.submitted': { path: '/trainer/marketing', ctaAr: 'راجِع الملصقَ ووافِق عليه' },
+  /* وإعلانُ الإدارة (٤ أكتوبر ٢٠٢٦) — يُفتح في نافذته فوق بوّابته، ولو قرأه من قبل
+     (`?announcement=` أدناه، و`TrainerAnnouncement.tsx`) */
+  'trainer.announcement': { path: '/trainer', ctaAr: 'اقرأ الإعلان' },
 }
 
 const STAFF: Table = {
@@ -197,6 +200,7 @@ export function allDestinationPaths(): string[] {
    يُضاف هنا معاملٌ لا مسار. */
 const QUERY_FROM_DATA: Partial<Record<MailAudience, Record<string, { param: string; field: string }>>> = {
   staff: { 'cohort.plan.submitted': { param: 'cohort', field: 'cohortId' } },
+  trainer: { 'trainer.announcement': { param: 'announcement', field: 'announcementId' } },
 }
 
 export function notificationHref(

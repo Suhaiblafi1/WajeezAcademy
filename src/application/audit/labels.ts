@@ -216,6 +216,8 @@ const PHRASES: Record<string, string> = {
   'staff.task.assign': 'تكليفُ موظّفٍ بمهمّة',
   'staff.task.complete': 'إغلاقُ مهمّة',
   'staff.notify': 'إشعارُ موظّف',
+  /* وإعلانُ الإدارة إلى المدرّبين — نافذةٌ في بوّابتهم وإشعارٌ في الجرس (٤ أكتوبر ٢٠٢٦) */
+  'trainer.announcement.send': 'إعلانٌ إلى المدرّبين',
   'cv.upload': 'رفعُ سيرةٍ ذاتيّة',
   'cv.view': 'مشاهدةُ سيرةٍ ذاتيّة',
   'cv.view_own': 'مشاهدةُ سيرته الذاتيّة',
@@ -458,6 +460,7 @@ const WORDS: Record<string, string> = {
   diagnostic: 'تشخيص', skill: 'مهارة', rating: 'تقييم', support: 'دعم', ticket: 'تذكرة',
   notification: 'إشعار', template: 'قالب', integration: 'تكامل', email: 'بريد', staff: 'موظّف',
   task: 'مهمّة', learner: 'متعلّم', cv: 'سيرةٌ ذاتيّة', zoom: 'اجتماع', message: 'رسالة',
+  trainer_announcement: 'إعلانٌ إلى المدرّبين',
   /* أفعال */
   create: 'إنشاء', update: 'تعديل', delete: 'حذف', remove: 'إزالة', replace: 'إبدال',
   add: 'إضافة', set: 'تعيين', save: 'حفظ', send: 'إرسال', submit: 'تقديم', decide: 'قرار',
