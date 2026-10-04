@@ -21,6 +21,8 @@ import { ArrowLeft, CalendarDays, ChevronLeft, Loader2, RefreshCw, ServerOff, Us
 import { apiGet, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import { trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
+import { boardStart } from "@/application/trainer/plan-gate";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ProgressRing from "@/components/ui/ProgressRing";
@@ -29,6 +31,10 @@ import { usePrepCohorts } from "@/components/trainer/usePrepCohorts";
 interface CohortSummary {
   id: string; title: string; courseTitle: string; role: string; status: string;
   startsAt: string | null; endsAt: string | null;
+  /* يومُ خطّته قبل الاعتماد — يُقال «مقترحا» (⑩) */
+  proposedStartsOn?: string | null;
+  /* ترتيبُها بين شعبه في دورتها — «شعبتك الأولى» بجانب «شعبة ٤» (⑫) */
+  trainerOrdinal?: number | null;
   learners: number; sessions: number;
   planStatus: string; done: number; total: number;
   /* «التالي» بحال الخطّة والشعبة — و`waiting` انتظارٌ لا فعل (`boardNextStep`) */
@@ -82,13 +88,18 @@ export default function CohortBoard() {
           {rows.map((c) => {
             const st = PLAN_AR[c.planStatus] ?? PLAN_AR.draft;
             const ready = c.total > 0 ? Math.round((c.done / c.total) * 100) : 0;
+            const start = boardStart(c);
+            const ordinalNote = trainerOrdinalNoteAr(c.title, c.trainerOrdinal);
             return (
               <Panel as="article" key={c.id} tone={st.tone} className="flex flex-col">
                 <div className="flex items-start gap-4">
                   <ProgressRing value={ready} label={`${c.done}/${c.total}`} caption="تجهيز" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-read font-bold text-muted-foreground">{c.courseTitle}</p>
-                    <h2 className="mt-0.5 text-lg font-black leading-snug">{c.title}</h2>
+                    <h2 className="mt-0.5 text-lg font-black leading-snug">
+                      {c.title}
+                      {ordinalNote && <span className="font-bold text-muted-foreground"> · {ordinalNote}</span>}
+                    </h2>
                     <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-read text-muted-foreground">
                       <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-foreground">{st.label}</span>
                       <span>دورك: {c.role === "lead" ? "مدرب رئيس" : "مساعد"}</span>
@@ -109,8 +120,10 @@ export default function CohortBoard() {
                     <p className="text-read text-muted-foreground">لقاء</p>
                   </Card>
                   <Card className="p-2.5">
-                    <p className="text-read font-black leading-6">{c.startsAt ? cohortDayAr(c.startsAt) : "—"}</p>
-                    <p className="text-read text-muted-foreground">تبدأ</p>
+                    <p className="text-read font-black leading-6">{start.at ? cohortDayAr(start.at) : "—"}</p>
+                    <p className="text-read text-muted-foreground">
+                      تبدأ{start.proposed && <> · <span className="font-bold text-gold-ink">مقترح</span></>}
+                    </p>
                   </Card>
                 </div>
 

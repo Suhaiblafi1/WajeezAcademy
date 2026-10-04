@@ -77,6 +77,19 @@ export interface BoardNext {
   waiting?: boolean
 }
 
+/* ═══ يومُ البدء على بطاقة «شعبي» — والمقترَحُ قبل الاعتماد (٤ أكتوبر ٢٠٢٦، ⑩) ═══
+
+   شعبةُ الإعداد بلا بدءٍ حتّى تُعتمَد خطّتُها، فكانت بطاقتُها تقول «تبدأ —»
+   وفي خطّته يومٌ مكتوب. فالمعتمَدُ من الشعبة إن كان، وإلّا يومُ خطّته موسوما
+   «مقترحا» — والخادمُ لا يعيد المقترَحَ بعد الاعتماد (`summaries`). */
+export function boardStart(c: { startsAt: string | Date | null; proposedStartsOn?: string | null }): {
+  at: string | Date | null; proposed: boolean
+} {
+  if (c.startsAt) return { at: c.startsAt, proposed: false }
+  if (c.proposedStartsOn) return { at: c.proposedStartsOn, proposed: true }
+  return { at: null, proposed: false }
+}
+
 export function boardNextStep<T extends GateItem & { labelAr: string }>(input: {
   planStatus: string
   /** علمُ الشعبة — لا تقبل أحدا وهو منزول (`cohortAcceptsRegistration`) */

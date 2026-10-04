@@ -40,7 +40,7 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import TrainerPlanReview, { type PlanOutcome } from "@/components/admin/TrainerPlanReview";
-import { prepNoteAr, type PrepFlags } from "@/application/trainer/plan-decision";
+import { courseLineNeeded, prepNoteAr, sharedPrepNote, type PrepFlags } from "@/application/trainer/plan-decision";
 
 /** خطّةٌ تنتظر — كما يردّها `CohortPlanService.pending` */
 interface PendingPlan {
@@ -227,6 +227,8 @@ export default function PendingPlans() {
                 const all = scoped.filter((r) => trainerKey(r) === g.key);
                 const left = all.filter((r) => !decided[r.id]).length;
                 const onboarding = all.some((r) => r.prep?.onboarding);
+                /* جملةُ شعبة الإعداد مرّةً في رأسه إن صدقت على بطاقاته كلِّها (⑨) */
+                const shared = sharedPrepNote(g.rows.map((r) => ({ prep: r.prep, decided: Boolean(decided[r.id]) })));
                 return (
                   <section key={g.key} aria-label={`خططُ ${g.name}`}>
                     <h2 className="flex flex-wrap items-baseline gap-x-2 text-read font-black text-foreground">
@@ -240,28 +242,30 @@ export default function PendingPlans() {
                         في طور الإعداد — التفعيلُ حين تُعتمَد دوراتُ الإعداد كلُّها، ويقول لك الاعتمادُ عند كلّ خطّةٍ كم بقي منها.
                       </p>
                     )}
+                    {shared && <p className="mt-1 text-read leading-6 text-muted-foreground">{shared}</p>}
                     <ul className="mt-3 space-y-3">
                       {g.rows.map((r) => {
                         const isOpen = open.has(r.id);
                         const done = decided[r.id];
+                        /* اسمُ الدورة حين لا يحمله اسمُ الشعبة وحدَه (⑨) */
+                        const sent = r.submittedAt ? `أرسلها ${fmtDateTimeAr(r.submittedAt)}` : "";
+                        const facts = [courseLineNeeded(r.cohort.title, r.courseTitle) ? `دورةُ «${r.courseTitle}»` : "", sent]
+                          .filter(Boolean).join(" · ")
+                          + (r.trainerConfirmedAt ? `${sent ? " و" : ""}أكّد موافقتَه على كلّ ما فيها` : "");
                         return (
                           /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
                           <Panel as="li" key={r.id} id={`plan-${r.id}`} tabIndex={-1} className="outline-none">
                             <div className="flex flex-wrap items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="text-read font-black text-foreground">{r.cohort.title}</p>
-                                <p className="mt-1 text-read leading-6 text-muted-foreground">
-                                  دورةُ «{r.courseTitle}»
-                                  {r.submittedAt && <> · أرسلها {fmtDateTimeAr(r.submittedAt)}</>}
-                                  {r.trainerConfirmedAt && <> وأكّد موافقتَه على كلّ ما فيها</>}
-                                </p>
+                                {facts && <p className="mt-1 text-read leading-6 text-muted-foreground">{facts}</p>}
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 {r.prep && <Chip tone="accent" srPrefixAr="نوعُها">شعبةُ إعداد</Chip>}
                                 {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
                               </div>
                             </div>
-                            {r.prep && !done && (
+                            {r.prep && !done && !shared && (
                               <p className="mt-2 text-read leading-6 text-muted-foreground">{prepNoteAr(r.prep)}</p>
                             )}
                             <div className="mt-3 flex flex-wrap items-center gap-2">

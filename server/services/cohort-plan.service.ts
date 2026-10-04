@@ -40,6 +40,7 @@ import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
 import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
+import { trainerOrdinals } from '../../src/application/learning/cohort-title'
 import { planApprovedTrainerMsg } from '../../src/application/trainer/plan-decision'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
@@ -566,12 +567,18 @@ export class CohortPlanService {
     const publicPeriod = cohort.startsAt && cohort.endsAt
       ? { startsOn: zonedDay(cohort.startsAt), endsOn: zonedDay(cohort.endsAt) }
       : null
+    /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫) */
+    const mine = await this.prisma.cohortTrainer.findMany({
+      where: { profileId: profile.id, cohort: { courseId: cohort.courseId } },
+      select: { cohort: { select: { id: true, courseId: true, createdAt: true } } },
+    })
+    const trainerOrdinal = trainerOrdinals(mine.map((m) => m.cohort)).get(cohort.id) ?? null
 
     return {
       role: link.role,
       trainer: { name: profile.application.fullName },
       cohort: {
-        id: cohort.id, title: cohort.title, status: cohort.status,
+        id: cohort.id, title: cohort.title, status: cohort.status, trainerOrdinal,
         startsAt: cohort.startsAt, endsAt: cohort.endsAt, daysOfWeek: cohort.daysOfWeek, startTime: cohort.startTime,
         timezone: cohort.timezone, language: cohort.language, deliveryMode: cohort.deliveryMode,
         /* الفصلُ يحكم مدى الشعبة: منه بدؤها وانتهاؤها، وفيه وحدَه تُجدوَل
@@ -660,11 +667,20 @@ export class CohortPlanService {
       },
       orderBy: { cohort: { startsAt: 'asc' } },
     })
+    /* ترتيبُ كلٍّ بين شعبه في دورتها — «شعبتك الأولى» بجانب «شعبة ٤» (⑫، `cohort-title.ts`) */
+    const ordinals = trainerOrdinals(links.map((l) => l.cohort))
     return links.map((l) => {
       const c = l.cohort
       const plan = c.plans[0] ?? null
       const planStatus = (plan?.status ?? 'draft') as PlanStatus
       const planContent = (plan?.content ?? null) as TrainerPlanContent | null
+      /* ═══ والبدءُ المقترَح قبل الاعتماد (٤ أكتوبر ٢٠٢٦، ⑩) ═══
+         شعبةُ الإعداد بلا بدءٍ حتّى تُعتمَد خطّتُها فتُكتب مدّتُها عليها
+         (`applyPeriod`) — فكانت بطاقتُها تقول «تبدأ —» وفي خطّته يومٌ مكتوب.
+         فيُعاد يومُ خطّته ليُقال «مقترحا»، وما اعتُمد يُقرأ من الشعبة وحدَها. */
+      const proposedStartsOn = !c.startsAt && !(APPROVED_PLAN_STATUSES as readonly string[]).includes(planStatus)
+        ? asPeriod(planContent)?.startsOn ?? null
+        : null
       const checklist = buildChecklist({
         cohort: c, period: resolvePeriod(planContent, c, planStatus), content: planContent,
         sessions: countableSessions(c.sessions), assessmentsCount: c._count.assessments,
@@ -680,7 +696,8 @@ export class CohortPlanService {
       const next = boardNextStep({ planStatus, registrationOpen: c.registrationOpen, checklist })
       return {
         id: c.id, title: c.title, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
-        status: c.status, startsAt: c.startsAt, endsAt: c.endsAt,
+        status: c.status, startsAt: c.startsAt, endsAt: c.endsAt, proposedStartsOn,
+        trainerOrdinal: ordinals.get(c.id) ?? null,
         learners: c._count.enrollments, sessions: countableSessions(c.sessions).length,
         planStatus, done, total: required.length,
         next,

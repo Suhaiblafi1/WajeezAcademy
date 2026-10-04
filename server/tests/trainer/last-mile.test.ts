@@ -13,6 +13,13 @@
       بجانب «طُلبت تعديلات» — ويقول موعدَ المهلة؛ والاعتمادُ لا يكتب
       «أُهِّلتَ» بجانب «اعتُمدت» — ويقول التأهيل؛ والتفعيلُ يكتب جرسَه.
 
+   ثمّ اختار البقيّة («do»، ٤ أكتوبر ٢٠٢٦)، ومنها على الخادم:
+
+   ⑩ بطاقةُ «شعبي» تقول يومَ خطّته «مقترحا» قبل الاعتماد — لا «تبدأ —» —
+      ثمّ يومَ الشعبة المعتمَد وحدَه بعده.
+   ⑫ وترتيبُ الشعبة بين شعب مدرّبها في دورتها: أولاه في دورةٍ سبقتها ثلاثٌ
+      اسمُها «شعبة ٤» وترتيبُها ١ — في البطاقة وفي صفحة الشعبة.
+
    وكلٌّ رُئي ساقطا بنقض ما يحرسه — والنقوضُ في رسالة الالتزام. */
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createHash } from 'node:crypto'
@@ -25,6 +32,8 @@ import { CohortPlanService } from '../../services/cohort-plan.service'
 import { contractAcks, CONDITION_CLAUSE_MARK } from '../../../src/application/trainer/contract-body'
 import { OPEN_GAP, tabForGap } from '../../../src/application/learning/open-gaps'
 import { adminRegistrationLine, lineText } from '../../../src/application/learning/registration-state'
+import { zonedDay } from '../../../src/application/trainer/cohort-period'
+import { cohortTitleAr, trainerOrdinalNoteAr } from '../../../src/application/learning/cohort-title'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -223,5 +232,63 @@ describe('③ ما بقي بعد الاعتماد الأخير', () => {
     /* وما فُتح يخرج من اللوح — لا يُعرض قرارا قد وقع */
     await prisma.cohort.update({ where: { id: one.id }, data: { status: 'open', registrationOpen: true } })
     expect((await plans.nextStepsAfterApproval(two.id))!.cohorts.map((c) => c.id)).toEqual([two.id])
+  })
+})
+
+describe('⑩ و⑫ بطاقةُ «شعبي»: البدءُ المقترَح، وترتيبُ الشعبة بين شعبه', () => {
+  it('⑩ يومُ خطّته «مقترحا» قبل الاعتماد — ثمّ المعتمَدُ من الشعبة وحدَها', async () => {
+    const t = await onboarding()
+    const made = await prep.accept(t.userId, C1)
+    expect(await card(t.userId, made.id), 'بلا خطّةٍ لا يومَ يُقترح').toMatchObject({ startsAt: null, proposedStartsOn: null })
+
+    const plan = await prisma.cohortDeliveryPlan.create({
+      data: {
+        cohortId: made.id, trainerId: t.profileId, status: 'submitted', submittedAt: new Date(),
+        content: { kind: 'trainer', modules: [], resources: [], startsOn: '2027-03-01', endsOn: '2027-03-28' },
+      },
+    })
+    expect(await card(t.userId, made.id), 'في خطّته يومٌ والبطاقةُ تقول «تبدأ —»')
+      .toMatchObject({ startsAt: null, proposedStartsOn: '2027-03-01' })
+
+    await plans.decide(adminId, plan.id, true)
+    const approved = await card(t.userId, made.id)
+    expect(approved.proposedStartsOn, 'اعتُمدت ويُقال يومُها مقترحا').toBeNull()
+    expect(zonedDay(approved.startsAt!), 'الاعتمادُ لم يكتب يومَ الخطّة على الشعبة').toBe('2027-03-01')
+  })
+
+  it('⑫ أولى شعبه في دورةٍ سبقتها ثلاث: «شعبة ٤» وترتيبُها ١ — والتاليةُ ٢', async () => {
+    const C3 = 'C-LASTM-303'
+    const titleAr = 'دورةٌ ثالثةٌ سبقتها شعب'
+    await prisma.course.create({ data: { id: C3, status: 'published', currentVersion: 1 } })
+    await prisma.courseVersion.create({ data: { courseId: C3, version: 1, titleAr, totalHours: 10 } })
+    await prisma.courseModule.create({ data: { id: `${C3}-M1`, courseId: C3 } })
+    await prisma.courseModuleVersion.create({
+      data: { moduleId: `${C3}-M1`, version: 1, sequence: 1, hours: 2, titleAr: 'محورٌ', outcomeAr: 'مخرجٌ' },
+    })
+    /* ثلاثُ شعبٍ قبله لغيره — فيُسمّى ما يُنشأ له «شعبة ٤» */
+    for (const n of [1, 2, 3]) await prisma.cohort.create({ data: { courseId: C3, title: cohortTitleAr(titleAr, n) } })
+
+    const t = await onboarding([C3])
+    /* وشعبةٌ له في دورةٍ أخرى قبلها — لا تُعَدّ في ترتيب شعبه في هذه */
+    const elsewhere = await prisma.cohort.create({
+      data: { courseId: C1, title: cohortTitleAr('دورةُ آخرِ المسار', 9), createdAt: new Date(Date.now() - 60_000) },
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: elsewhere.id, profileId: t.profileId, role: 'assistant' } })
+    const made = await prep.accept(t.userId, C3)
+    const first = await card(t.userId, made.id)
+    expect(first.title).toBe(cohortTitleAr(titleAr, 4))
+    expect(first.trainerOrdinal, 'أولى شعبه في الدورة لا تُعَدّ أولى').toBe(1)
+    expect(trainerOrdinalNoteAr(first.title, first.trainerOrdinal)).toBe('شعبتك الأولى')
+    expect((await plans.workspace(t.userId, made.id)).cohort.trainerOrdinal, 'صفحةُ الشعبة لا تعرف ترتيبَها').toBe(1)
+
+    /* وشعبةٌ ثانيةٌ له في الدورة نفسِها — بعدها، ولو مساعدا فيها */
+    const later = await prisma.cohort.create({
+      data: { courseId: C3, title: cohortTitleAr(titleAr, 5), createdAt: new Date(Date.now() + 60_000) },
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: later.id, profileId: t.profileId, role: 'assistant' } })
+    expect((await card(t.userId, later.id)).trainerOrdinal).toBe(2)
+    expect((await card(t.userId, made.id)).trainerOrdinal, 'الأولى تغيّر ترتيبُها بثانيةٍ بعدها').toBe(1)
+    expect(trainerOrdinalNoteAr(cohortTitleAr(titleAr, 5), 2)).toBe('شعبتك الثانية')
+    expect((await card(t.userId, elsewhere.id)).trainerOrdinal, 'شعبتُه في دورةٍ أخرى تُعَدّ مع هذه').toBe(1)
   })
 })
