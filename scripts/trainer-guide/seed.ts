@@ -598,6 +598,21 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
         { title: 'نموذجُ مذكّرة التحضير — صفحةٌ واحدة', kind: 'link', category: 'public', url: 'https://drive.google.com/file/d/guide-prep-memo', moduleId: mods[3]?.id ?? null },
       ],
     })
+    /* ═══ ومشروعُ التخرّج — لا تُرسَل خطّةٌ بلا مشروع (٤ أكتوبر ٢٠٢٦، ⑬) ═══
+
+       صار مشروعُ التخرّج شرطا في قائمة التجهيز (٣٠ سبتمبر ٢٠٢٦)، فوقف البذرُ هنا
+       بـ«بقي قبل الإرسال: ضع مشروعَ التخرّج». فيُكتب لكلّ شعبةٍ مشروعٌ واحدٌ يجمع
+       محاورَها، مربوطٌ بآخرها — والمهمّةُ بلا محورٍ تمنع الإرسالَ كذلك. */
+    if ((await prisma.cohortAssessment.count({ where: { cohortId, type: 'project', status: { not: 'closed' } } })) === 0) {
+      await prisma.cohortAssessment.create({
+        data: {
+          cohortId, title: 'مشروعُ التخرّج — مذكّرةُ تحضيرٍ كاملةٌ لتفاوضٍ حقيقيّ', type: 'project',
+          briefAr: 'اختر تفاوضا ستدخله فعلا، واكتب مذكّرةَ تحضيره كاملةً: المصالحَ خلف المواقف، وبديلَك الأفضل وحدَّك الأدنى، ومنطقةَ الاتّفاق والمعيارَ الذي تحتكم إليه.',
+          maxScore: 100, passScore: 60, dueAt: new Date(start.getTime() + 27 * DAY),
+          status: 'published', createdBy: userId, moduleId: mods[mods.length - 1]?.id ?? null,
+        },
+      })
+    }
     await plans.submit(userId, cohortId, true)
     const plan = await prisma.cohortDeliveryPlan.findFirstOrThrow({
       where: { cohortId, trainerId: { not: null }, status: 'submitted' }, orderBy: { createdAt: 'desc' },

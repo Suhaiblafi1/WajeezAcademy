@@ -85,7 +85,7 @@ export interface PrepFlags { onboarding: boolean; qualifies: boolean }
    والجملةُ بما يحكم به الخادم في `TrainerPrepService` (`qualifyOnApproval` · `activateOnApproval` · `returnOnChanges`) حرفا:
    التأهيلُ إن كان معلّقا، والتفعيلُ حين لا يبقى ما ينتظر، والخَتمُ للعرض
    المشروط وحدَه — وفي الردّ تُستأنف المهلةُ إن كانت موقوفةً لمراجعتنا. */
-export function prepNoteAr(p: PrepFlags): string {
+export function prepNoteAr(p: PrepFlags, many = false): string {
   const approve = p.qualifies
     ? '«اعتمدها» تؤهّل مدرّبَها لدورتها'
     : 'دورتُها معتمَدةٌ لمدرّبها أصلا، و«اعتمدها» تعتمد خطّتَها'
@@ -93,7 +93,31 @@ export function prepNoteAr(p: PrepFlags): string {
     ? '، وإن لم يبقَ من دوراته ما ينتظر فُعِّل — ويُختَم عقدُه المشروطُ إن كان ينتظر ختمَنا'
     : ''
   const back = p.onboarding ? '، ويُستأنف عدُّ مهلته إن كانت موقوفةً لمراجعتنا' : ''
-  return `شعبةُ إعداد: ${approve}${last}. و«اطلب تعديلات» تعيدها إليه بملاحظاتك في رأس كلّ خطوة${back}.`
+  return `${many ? 'شعبُ الإعداد' : 'شعبةُ إعداد'}: ${approve}${last}. و«اطلب تعديلات» تعيدها إليه بملاحظاتك في رأس كلّ خطوة${back}.`
+}
+
+/* ═══ الطابورُ لا يكرّر نفسَه (٤ أكتوبر ٢٠٢٦، ⑨) ═══
+
+   سار صاحبُ المنصّة في «خططٌ تنتظر اعتمادك» فرأى كلَّ بطاقةٍ تقول اسمَ دورتها
+   تحت اسمٍ فيه اسمُها — الاسمُ الافتراضيُّ «الدورة — شعبة N» (`cohort-title.ts`)
+   — وجملةَ شعبة الإعداد نفسَها في كلّ بطاقةٍ لمدرّبٍ واحد. فاسمُ الدورة يُقال
+   حين لا يحمله اسمُ الشعبة وحدَه (شعبةٌ سُمّيت باسمٍ آخر)، والجملةُ مرّةً في
+   رأس المدرّب إن قالتها بطاقتان له فأكثر حرفا — وإن اختلفت بقيت كلٌّ في
+   بطاقتها، فلا تُنسب جملةٌ إلى شعبةٍ لا تصدق عليها. والبطاقةُ الواحدةُ تبقى
+   جملتُها فيها: لا تكرارَ يُرفع، ورأسٌ يجمع بطاقةَ إعدادٍ وأخرى عاديّةً لا
+   يُسنَد إليه ما يخصّ إحداهما. */
+
+/** اسمُ الدورة سطرا تحت اسم الشعبة — إلّا إن كان فيه */
+export function courseLineNeeded(cohortTitle: string, courseTitle: string): boolean {
+  const course = courseTitle.trim()
+  return course.length > 0 && !cohortTitle.includes(course)
+}
+
+/** جملةُ شعبة الإعداد مرّةً لمجموعة المدرّب إن صدقت حرفا على بطاقتين منتظِرتين فأكثر — وإلّا `null` */
+export function sharedPrepNote(rows: readonly { prep: PrepFlags | null; decided: boolean }[]): string | null {
+  const waiting = rows.filter((r) => r.prep && !r.decided)
+  const notes = new Set(waiting.map((r) => prepNoteAr(r.prep!)))
+  return waiting.length > 1 && notes.size === 1 ? prepNoteAr(waiting[0]!.prep!, true) : null
 }
 
 /* ═══ وما يقوله الاعتمادُ لمدرّبها — جرسا وبريدا، خبرا واحدا (٣ أكتوبر ٢٠٢٦) ═══

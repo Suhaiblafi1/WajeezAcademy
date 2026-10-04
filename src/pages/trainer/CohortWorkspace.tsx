@@ -79,6 +79,7 @@ import Button from "@/components/ui/Button";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import { trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
   appendToSlots, axesLabelAr, canMerge, dayLabelAr, defaultSlots, dropFromSlots, joinClosesAt, mergeSlots, reflowSlots,
@@ -137,6 +138,8 @@ interface Workspace {
     id: string; title: string; status: string; startsAt: string | null; endsAt: string | null; daysOfWeek: string[];
     startTime: string | null; timezone: string | null; language: string; deliveryMode: string;
     termId: string | null; term: Term | null;
+    /* ترتيبُها بين شعبه في دورتها — «شعبتك الأولى» بجانب «شعبة ٤» (⑫) */
+    trainerOrdinal?: number | null;
     /* مدّتُه كما تُحكَم، والمعلَنةُ للمسجَّلين الآن — تُقالان معا إن افترقتا */
     period: Period | null; publicPeriod: Period | null;
     /* وعلمُ التسجيل — يُقرأ ولا يُكتب؛ منه تقول خطوتُه الأخيرةُ متى تُفتح (٣ أكتوبر ٢٠٢٦) */
@@ -437,6 +440,23 @@ export default function CohortWorkspace() {
   const [identity, setIdentity] = useState({ title: "" });
   /* الفصولُ التي يسعه اختيارُها — تُقرأ مرّةً عند فتح الشعبة */
   const [confirm, setConfirm] = useState(false);
+  /* ═══ الإرسالُ بلا موافقةٍ يأخذه إلى مربّعها (٤ أكتوبر ٢٠٢٦، ⑧) ═══
+
+     كان يقول «المربّعُ أسفلَ هذه الخطوة» في الشريط أعلاه ويضع التركيزَ في
+     المربّع — والمربّعُ تحت المنهج كلِّه، فيرى المدرّبُ الجملةَ ولا يرى ما تشير
+     إليه. فصار يُنزَل إليه في وسط الشاشة ويُبرَز حتّى يُعلَّم.
+
+     والإنزالُ **بعد** أن تُرسم الصفحةُ بما تغيّر: سطرُ «ما ينقص» في الشريط وإطارُ
+     المربّع يزيدان طولَها، والمربّعُ في آخرها — فإنزالٌ يُحسب ساعةَ الضغط يقف دونه،
+     وعلى الهاتف يُقصّ أسفلُه (رُئي في المتصفّح). والعدُّ لا العلَم: كلُّ ضغطةٍ
+     تُنزل إليه، ولو بقي المربّعُ بلا علامةٍ من ضغطةٍ قبلها. */
+  const [confirmNudge, setConfirmNudge] = useState(0);
+  const confirmBoxRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!confirmNudge) return;
+    confirmBoxRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    document.getElementById("plan-confirm")?.focus({ preventScroll: true });
+  }, [confirmNudge]);
   /* نموذجُ التكليف — واحدٌ للإنشاء والتعديل. `editingId` يقرّر أيَّهما:
      فارغٌ فإنشاء، وفيه معرّفٌ فتعديلُ ذاك التكليف بعينه. */
   const [taskForm, setTaskForm] = useState({ title: "", briefAr: "", type: "assignment", maxScore: 100, dueAt: "", moduleId: "" });
@@ -645,6 +665,10 @@ export default function CohortWorkspace() {
   /* موضعُ الخطوة الحاليّة — يُقال بالضمور: المضمورُ يجيب «أين أنا» */
   const here = STAGES.find((s) => s.key === stage) ?? null;
   const stepNo = STAGES.findIndex((s) => s.key === stage) + 1;
+  /* «شعبتك الأولى» بجانب «شعبة ٤» — حين يخالف الرقمُ ترتيبَها بين شعبه (⑫، `cohort-title.ts`) */
+  const ordinalNote = trainerOrdinalNoteAr(ws.cohort.title, ws.cohort.trainerOrdinal);
+  /* مربّعُ الموافقة يُبرَز ما دام لم يُعلَّم بعد ضغطةِ إرسالٍ بلا موافقة (⑧) */
+  const consentNudged = confirmNudge > 0 && !confirm;
   /* ═══ الدرجةُ تُفتح إن تمّ كلُّ ما قبلها (٢٧ سبتمبر ٢٠٢٦) ═══
 
      «لا ينتقل للتالي إلّا بعد أن يتمّ النقطةَ السابقة». والتمامُ من قائمة
@@ -824,7 +848,8 @@ export default function CohortWorkspace() {
     const stop = sendBlock({ confirmed: confirm, unsaved: Object.values(dirty).some(Boolean), blocking: blocking.length });
     if (stop === "confirm") {
       setGaps(["أكّد موافقتك على كلّ ما في الشعبة — المربّعُ أسفلَ هذه الخطوة"]);
-      document.getElementById("plan-confirm")?.focus();
+      /* والإنزالُ إليه والتركيزُ فيه بعد الرسم (`confirmNudge` أعلاه) */
+      setConfirmNudge((n) => n + 1);
       return;
     }
     if (stop === "unsaved") { setUnsavedAsk(true); return; }
@@ -1133,6 +1158,7 @@ export default function CohortWorkspace() {
           {!compact && (
             <p className="mt-1 text-read leading-6 text-muted-foreground">
               <b className="font-black text-foreground">{ws.cohort.title}</b>
+              {ordinalNote && <> · <span className="font-bold text-foreground">{ordinalNote}</span></>}
               {" "}· {doneCount} من {gated.length} · {ws.course.titleAr} · {ws.learners.length} التحقوا
               {" "}· {ws.sessions.filter((x) => !x.placeholder && x.status !== "cancelled").length} لقاء
               {approved ? <> · <span className="font-bold text-emerald-300">معتمَدة</span></> : <> · {st.label}</>}
@@ -2424,10 +2450,16 @@ export default function CohortWorkspace() {
               />
             </div>
           </div>
-          <label className="mt-4 flex cursor-pointer items-start gap-3 text-read leading-6">
-            <input id="plan-confirm" type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal" />
-            <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
-          </label>
+          {/* والإبرازُ سطحٌ من نظام الأسطح خلف المربّع لا صيغةٌ مكتوبةٌ في وسمه —
+              والوسمُ نفسُه لا يتبدّل فلا يُعاد بناءُ المربّع ويضيع التركيزُ منه */}
+          <div ref={confirmBoxRef} data-nudge={consentNudged ? "" : undefined} className="relative mt-4">
+            {consentNudged && <Card as="span" tone="warn" aria-hidden="true" className="pointer-events-none absolute -inset-x-3 -inset-y-2.5" />}
+            <label className="relative flex cursor-pointer items-start gap-3 text-read leading-6">
+              <input id="plan-confirm" type="checkbox" checked={confirm} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal"
+                onChange={(e) => { setConfirm(e.target.checked); if (e.target.checked) setConfirmNudge(0); }} />
+              <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
+            </label>
+          </div>
           {/* والإرسالُ بزرّ الشريط نفسِه — «أرسِلها للاعتماد» في هذه الدرجة: ذهبيٌّ
               واحدٌ يتبدّل اسمُه، لا ذهبيّان يتنازعان العين. */}
           {!approved && !locked && (

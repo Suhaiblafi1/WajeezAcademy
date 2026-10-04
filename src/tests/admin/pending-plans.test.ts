@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { allSections, sectionsFor } from '@/pages/admin/nav-map'
-import { approvedMsg, planApprovedMsg, prepNoteAr } from '@/application/trainer/plan-decision'
+import { approvedMsg, courseLineNeeded, planApprovedMsg, prepNoteAr, sharedPrepNote } from '@/application/trainer/plan-decision'
 import { ROLE_PERMISSIONS } from '../../../server/auth/permissions'
 
 const bare = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
@@ -167,6 +167,43 @@ describe('③ ما يُقال قبل النقر وبعده بما يحكم به 
   })
 
   it('والطابورُ يقول الجملةَ على شعبة الإعداد وحدَها، وقبل القرار لا بعده', () => {
-    expect(QUEUE).toMatch(/\{r\.prep && !done && \(\s*<p[^>]*>\{prepNoteAr\(r\.prep\)\}<\/p>/)
+    /* وفي البطاقة حين لا تُقال مرّةً في رأس مدرّبها (⑨، ٤ أكتوبر ٢٠٢٦) — والرأسُ أدناه */
+    expect(QUEUE).toMatch(/\{r\.prep && !done && !shared && \(\s*<p[^>]*>\{prepNoteAr\(r\.prep\)\}<\/p>/)
+  })
+})
+
+/* ═══ ⑨ الطابورُ لا يكرّر نفسَه (٤ أكتوبر ٢٠٢٦) ═══
+
+   رأى صاحبُ المنصّة كلَّ بطاقةٍ تقول اسمَ دورتها تحت اسمٍ فيه اسمُها، وجملةَ
+   شعبة الإعداد نفسَها في كلّ بطاقةٍ لمدرّبٍ واحد. والعلّةُ في رأس
+   `courseLineNeeded` و`sharedPrepNote` (`plan-decision.ts`). */
+describe('⑨ الطابورُ لا يكرّر نفسَه', () => {
+  it('اسمُ الدورة سطرا حين لا يحمله اسمُ الشعبة وحدَه', () => {
+    expect(courseLineNeeded('دورةُ الرسالة — شعبة ٤', 'دورةُ الرسالة'), 'يُكرَّر اسمُ الدورة تحت اسمٍ فيه').toBe(false)
+    expect(courseLineNeeded('دفعةُ أكتوبر — مسائيّة', 'دورةُ الرسالة'), 'شعبةٌ سُمّيت بغير دورتها لا يُعرف لأيّ دورة').toBe(true)
+    expect(courseLineNeeded('أيُّ اسم', '   ')).toBe(false)
+  })
+
+  it('جملةُ شعبة الإعداد مرّةً لبطاقتين فأكثر تقولانها حرفا — وإلّا في كلّ بطاقة', () => {
+    const p = { onboarding: true, qualifies: true }
+    const both = sharedPrepNote([{ prep: p, decided: false }, { prep: { ...p }, decided: false }])
+    expect(both, 'بطاقتان بالجملة نفسِها ولا تُرفع إلى الرأس').toBe(prepNoteAr(p, true))
+    expect(both).toMatch(/^شعبُ الإعداد: /)
+    /* بطاقةٌ واحدةٌ لا تكرارَ فيها، ورأسٌ يجمعها بعاديّةٍ لا يُسنَد إليه ما يخصّها */
+    expect(sharedPrepNote([{ prep: p, decided: false }, { prep: null, decided: false }])).toBeNull()
+    /* وجملتان مختلفتان لا تُنسب إحداهما إلى الأخرى */
+    expect(sharedPrepNote([{ prep: p, decided: false }, { prep: { onboarding: true, qualifies: false }, decided: false }])).toBeNull()
+    /* وما قُضي فيه لا جملةَ له */
+    expect(sharedPrepNote([{ prep: p, decided: false }, { prep: p, decided: true }])).toBeNull()
+    expect(prepNoteAr(p), 'البطاقةُ الواحدةُ تغيّرت جملتُها').toMatch(/^شعبةُ إعداد: /)
+  })
+
+  it('والطابورُ يقولها في رأس المدرّب، ويقول اسمَ الدورة بقاعدته', () => {
+    expect(QUEUE).toMatch(/const shared = sharedPrepNote\(g\.rows\.map\(\(r\) => \(\{ prep: r\.prep, decided: Boolean\(decided\[r\.id\]\) \}\)\)\);/)
+    expect(QUEUE, 'الجملةُ لا تُقال في رأس المدرّب').toMatch(/\{shared && <p[^>]*>\{shared\}<\/p>\}/)
+    /* ورأسُ المجموعة قبل بطاقاتها — لا بعدها */
+    expect(QUEUE.indexOf('{shared && <p')).toBeLessThan(QUEUE.indexOf('{g.rows.map((r) => {'))
+    expect(QUEUE).toMatch(/courseLineNeeded\(r\.cohort\.title, r\.courseTitle\) \? `دورةُ «\$\{r\.courseTitle\}»`/)
+    expect(QUEUE, 'اسمُ الدورة يُكتب بلا قاعدته').not.toContain('دورةُ «{r.courseTitle}»')
   })
 })
