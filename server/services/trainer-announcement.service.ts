@@ -9,8 +9,15 @@
 
    كلُّ من يفتح بوّابةَ المدرّب فعلا ساعةَ الإرسال: حسابٌ نشط، بدور `trainer`، وله
    ملفُّ مدرّبٍ غيرُ موقوف — وهي شروطُ `TrainerLayout` نفسُها. فلا يُكتب مستقبِلٌ لا
-   تظهر له النافذةُ أبدا فيبقى في القائمة «لم يقرأ» إلى الأبد. ويُكتبون ساعتَها لا
-   ساعةَ القراءة: «من قرأ» يقابل من أُرسل إليه، لا من صار مدرّبا بعده.
+   تظهر له النافذةُ أبدا فيبقى في القائمة «لم يقرأ» إلى الأبد. ويُكتبون ساعتَها: «من
+   قرأ» يقابل من أُرسل إليه.
+
+   ── ومن صار مدرّبا بعد الإرسال (`enrollLate`) ──
+
+   قال صاحبُ المنصّة: «اعرضه لمن ينضمّ بعدُ أيضا». فإن اختار المرسِلُ آخرَ يومٍ لذلك
+   (`lateJoinersUntil`) كُتب من صار مدرّبا — بالشروط نفسِها — أوّلَ ما يفتح بوّابتَه قبل
+   انقضائه، ومعه جرسُه كمن أُرسل إليه. فيُضاف إلى قائمة «من قرأ» حين يُكتب لا قبله. وبعد
+   انقضائه لا يُكتب أحد: نصيحةُ موسمٍ مضى تُربك ولا تنفع.
 
    ── وما يقع بالإرسال ──
 
@@ -23,13 +30,20 @@
    `readAt` في صفّه، وبندُ الجرس الذي يحمل الإعلانَ نفسَه يصير مقروءا — كي لا يبقى
    الجرسُ يعدّ ما قُرئ في النافذة. والتكرارُ لا يغيّر الوقتَ الأوّل. */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
 import {
   ANNOUNCEMENT_BELL_BODY_AR, ANNOUNCEMENT_TEMPLATE_KEY,
 } from '../../src/application/trainer/announcement'
+
+/** من تُفتح له بوّابةُ المدرّب فعلا — شروطُ `TrainerLayout` نفسُها */
+const AUDIENCE = {
+  status: 'active',
+  roles: { some: { roleId: 'trainer' } },
+  trainerProfile: { is: { suspendedAt: null } },
+} satisfies Prisma.UserWhereInput
 
 export class TrainerAnnouncementService {
   private prisma: PrismaClient
@@ -39,18 +53,21 @@ export class TrainerAnnouncementService {
 
   /** من يصله الإعلانُ لو أُرسل الآن — من تُفتح له بوّابةُ المدرّب فعلا */
   private async audienceNow(): Promise<string[]> {
-    const users = await this.prisma.user.findMany({
-      where: {
-        status: 'active',
-        roles: { some: { roleId: 'trainer' } },
-        trainerProfile: { is: { suspendedAt: null } },
-      },
-      select: { id: true },
-    })
+    const users = await this.prisma.user.findMany({ where: AUDIENCE, select: { id: true } })
     return users.map((u) => u.id)
   }
 
-  async send(actorId: string, input: { titleAr: string; bodyAr: string }) {
+  /** جرسُ مستقبِلٍ بإعلانه — لمن أُرسل إليه ولمن كُتب بعده سواء */
+  private bell(userId: string, a: { id: string; titleAr: string }) {
+    return safeNotify(this.prisma, {
+      userId, audience: 'trainer', channel: 'in_app',
+      title: a.titleAr, body: ANNOUNCEMENT_BELL_BODY_AR,
+      templateKey: ANNOUNCEMENT_TEMPLATE_KEY,
+      data: { announcementId: a.id },
+    })
+  }
+
+  async send(actorId: string, input: { titleAr: string; bodyAr: string; lateJoinersUntil?: Date | null }) {
     const userIds = await this.audienceNow()
     if (userIds.length === 0) {
       throw new AuthError('no_recipients', 'لا مدرّبَ نشطا يصله الإعلانُ الآن — لم يُرسَل شيء', 409)
@@ -58,22 +75,36 @@ export class TrainerAnnouncementService {
     const a = await this.prisma.trainerAnnouncement.create({
       data: {
         titleAr: input.titleAr, bodyAr: input.bodyAr, sentBy: actorId,
+        lateJoinersUntil: input.lateJoinersUntil ?? null,
         recipients: { createMany: { data: userIds.map((userId) => ({ userId })) } },
       },
     })
-    for (const userId of userIds) {
-      await safeNotify(this.prisma, {
-        userId, audience: 'trainer', channel: 'in_app',
-        title: input.titleAr, body: ANNOUNCEMENT_BELL_BODY_AR,
-        templateKey: ANNOUNCEMENT_TEMPLATE_KEY,
-        data: { announcementId: a.id },
-      })
-    }
+    for (const userId of userIds) await this.bell(userId, a)
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.announcement.send', entityType: 'trainer_announcement', entityId: a.id,
-      meta: { recipients: userIds.length, title: input.titleAr },
+      meta: { recipients: userIds.length, title: input.titleAr, lateJoinersUntil: a.lateJoinersUntil?.toISOString() ?? null },
     })
     return { id: a.id, recipients: userIds.length }
+  }
+
+  /** من صار مدرّبا بعد إرسال إعلانٍ مفتوحٍ للمنضمّين — يُكتب حين يفتح بوّابتَه، ومعه جرسُه */
+  private async enrollLate(userId: string) {
+    const open = await this.prisma.trainerAnnouncement.findMany({
+      where: { lateJoinersUntil: { gte: new Date() }, recipients: { none: { userId } } },
+      select: { id: true, titleAr: true },
+    })
+    if (open.length === 0) return
+    if ((await this.prisma.user.count({ where: { id: userId, ...AUDIENCE } })) === 0) return
+    for (const a of open) {
+      try {
+        await this.prisma.trainerAnnouncementRecipient.create({ data: { announcementId: a.id, userId } })
+      } catch (e) {
+        /* كتبه نداءٌ آخرُ بين قراءتنا وكتابتنا — فلا جرسَ ثانيا */
+        if ((e as { code?: string }).code === 'P2002') continue
+        throw e
+      }
+      await this.bell(userId, a)
+    }
   }
 
   /** ما أُرسل — وكم قرأ كلَّ إعلانٍ، وكم رآه ولم يؤكّد. ومعه من يصله لو أُرسل الآن */
@@ -126,6 +157,7 @@ export class TrainerAnnouncementService {
 
   /** إعلاناتُه — أحدثُها أوّلا. والنافذةُ تختار منها (`announcementToShow`) */
   async mine(userId: string) {
+    await this.enrollLate(userId)
     const rows = await this.prisma.trainerAnnouncementRecipient.findMany({
       where: { userId },
       include: { announcement: { select: { id: true, titleAr: true, bodyAr: true, sentAt: true } } },

@@ -3896,18 +3896,22 @@ model StaffTask {
  * قرارُ صاحب المنصّة: «أعطهم النصيحةَ وتأكّد أنّهم قرؤوها — ولا تمنع أحدا»، واختار من
  * ثلاثة خياراتٍ نافذةً فيها «قرأتُه» وإشعارا في الجرس وقائمةً بمن قرأ.
  * والمستقبِلون يُكتبون ساعةَ الإرسال (`TrainerAnnouncementRecipient`): كلُّ مدرّبٍ
- * نشطٍ يفتح بوّابتَه يومَها — فقائمةُ «من قرأ» تقابل من أُرسل إليه فعلا، لا من
- * صار مدرّبا بعده. والإرسالُ بيد الإدارة وحدَها (`staff.notify`)، لا تلقائيّ.
+ * نشطٍ يفتح بوّابتَه يومَها — ومن صار مدرّبا بعده يُكتب حين يفتح بوّابتَه إن اختار
+ * المرسِلُ ذلك وإلى يومٍ يسمّيه (`lateJoinersUntil`). والإرسالُ بيد الإدارة وحدَها
+ * (`staff.notify`)، لا تلقائيّ.
  * والعلّةُ كاملةً في `server/services/trainer-announcement.service.ts`.
  */
 model TrainerAnnouncement {
-  id         String                         @id @default(uuid()) @db.Uuid
-  titleAr    String
-  bodyAr     String
+  id               String                         @id @default(uuid()) @db.Uuid
+  titleAr          String
+  bodyAr           String
   /// من أرسله — صاحبُ الصلاحيّة لا مجهول
-  sentBy     String                         @db.Uuid
-  sentAt     DateTime                       @default(now())
-  recipients TrainerAnnouncementRecipient[]
+  sentBy           String                         @db.Uuid
+  sentAt           DateTime                       @default(now())
+  /// آخرُ لحظةٍ يُكتب فيها من صار مدرّبا بعد الإرسال — حين يفتح بوّابتَه. وفارغٌ: من كانوا
+  /// مدرّبين يومَ أُرسل وحدَهم. خيارُ المرسِل عند الإرسال (٤ أكتوبر ٢٠٢٦)
+  lateJoinersUntil DateTime?
+  recipients       TrainerAnnouncementRecipient[]
 
   @@index([sentAt])
 }

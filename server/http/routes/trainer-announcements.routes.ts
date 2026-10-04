@@ -8,8 +8,12 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
+import { AuthError } from '../../services/auth.service'
 import { TrainerAnnouncementService } from '../../services/trainer-announcement.service'
-import { ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_TITLE_MAX } from '../../../src/application/trainer/announcement'
+import {
+  ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_TITLE_MAX, lateUntilInstant, lateUntilProblem,
+} from '../../../src/application/trainer/announcement'
+import { zonedDay } from '../../../src/application/trainer/cohort-period'
 
 export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const svc = new TrainerAnnouncementService(prisma)
@@ -29,8 +33,17 @@ export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: 
     const body = z.object({
       titleAr: z.string().trim().min(3).max(ANNOUNCEMENT_TITLE_MAX),
       bodyAr: z.string().trim().min(10).max(ANNOUNCEMENT_BODY_MAX),
+      /* آخرُ يومٍ يُكتب فيه من صار مدرّبا بعد الإرسال (بعمّان) — أو فارغٌ: الآن وحدَهم */
+      lateJoinersUntil: z.string().nullable().optional(),
     }).parse(req.body)
-    return reply.status(201).send(await svc.send(req.auth!.userId, body))
+    const day = body.lateJoinersUntil ?? null
+    if (day) {
+      const problem = lateUntilProblem(day, zonedDay(new Date()))
+      if (problem) throw new AuthError('bad_late_until', problem, 422)
+    }
+    return reply.status(201).send(await svc.send(req.auth!.userId, {
+      titleAr: body.titleAr, bodyAr: body.bodyAr, lateJoinersUntil: day ? lateUntilInstant(day) : null,
+    }))
   })
 
   app.get('/api/admin/trainer-announcements/:id', {

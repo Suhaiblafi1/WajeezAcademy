@@ -25,10 +25,13 @@ import Button from "@/components/ui/Button";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { matchesQuery } from "@/application/text/search-ar";
-import { fmtDateTimeAr } from "@/utils/format";
+import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import { countAr } from "@/application/text/count-ar";
+import { zonedDay } from "@/application/trainer/cohort-period";
+import { addDays, dayLabelAr } from "@/application/trainer/axis-timeline";
 import {
-  ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TITLE_MAX, RECIPIENT_STATE_AR, recipientState,
+  ANNOUNCEMENT_BODY_MAX, ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TITLE_MAX, LATE_JOINERS_MAX_DAYS, RECIPIENT_STATE_AR,
+  defaultLateUntil, lateUntilProblem, recipientState,
 } from "@/application/trainer/announcement";
 
 /** ما أُرسل — كما يردّه `TrainerAnnouncementService.list` */
@@ -37,9 +40,19 @@ interface SentAnnouncement {
   titleAr: string;
   bodyAr: string;
   sentAt: string;
+  /** آخرُ لحظةٍ يُكتب فيها من صار مدرّبا بعد الإرسال — أو `null`: الآن وحدَهم */
+  lateJoinersUntil: string | null;
   total: number;
   read: number;
   seen: number;
+}
+
+/** من يصله بعد الإرسال — كما يُقرأ تحت ما أُرسل */
+function lateLineAr(until: string | null): string {
+  if (!until) return "لمن كانوا مدرّبين يومَ أُرسل وحدَهم.";
+  return new Date(until).getTime() >= Date.now()
+    ? `ومن يصير مدرّبا حتّى ${fmtDateAr(until)} يصله حين يفتح بوّابتَه، ويُضاف هنا يومَها.`
+    : `وكان يصل من صار مدرّبا حتّى ${fmtDateAr(until)}.`;
 }
 
 interface Recipient {
@@ -103,7 +116,8 @@ function SentRow({ a }: { a: SentAnnouncement }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-read font-black">{a.titleAr}</p>
-          <p className="mt-1 text-read text-muted-foreground">أُرسل في {fmtDateTimeAr(a.sentAt)} إلى {trainersAr(a.total)}</p>
+          <p className="mt-1 text-read text-muted-foreground">أُرسل في {fmtDateTimeAr(a.sentAt)}، ووصل حتّى الآن {trainersAr(a.total)}.</p>
+          <p className="mt-1 text-read text-muted-foreground">{lateLineAr(a.lateJoinersUntil)}</p>
         </div>
         <Button size="sm" tone="secondary" aria-expanded={open} onClick={() => void toggle()}
           icon={open ? ChevronUp : ChevronDown}>
@@ -160,6 +174,10 @@ export default function TrainerAnnouncements() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sent, setSent] = useState<{ title: string; recipients: number } | null>(null);
+  /* ومن يصير مدرّبا بعد الإرسال — خيارٌ بأثره، والمقترحُ: يصله حتّى يومٍ يُسمّى */
+  const today = zonedDay(new Date());
+  const [late, setLate] = useState(true);
+  const [until, setUntil] = useState(() => defaultLateUntil(today, true));
 
   const load = useCallback(async () => {
     try {
@@ -169,8 +187,10 @@ export default function TrainerAnnouncements() {
       /* والنصُّ المقترحُ لمرّةٍ واحدة: إن أُرسل بعنوانه فلا يُعرض ثانيةً كأنّه لم يُرسَل —
          ما لم يُمسّ منه حرفٌ في النموذج يُفرَغ، وما عُدّل يبقى كما كُتب */
       if (r.items.some((a) => a.titleAr === ANNOUNCEMENT_DRAFT.titleAr)) {
+        const day = zonedDay(new Date());
         setTitle((v) => (v === ANNOUNCEMENT_DRAFT.titleAr ? "" : v));
         setBody((v) => (v === ANNOUNCEMENT_DRAFT.bodyAr ? "" : v));
+        setUntil((v) => (v === defaultLateUntil(day, true) ? defaultLateUntil(day, false) : v));
       }
     } catch (e) {
       setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل");
@@ -182,7 +202,9 @@ export default function TrainerAnnouncements() {
 
   const t = title.trim();
   const b = body.trim();
-  const ready = t.length >= 3 && b.length >= 10 && t.length <= ANNOUNCEMENT_TITLE_MAX && b.length <= ANNOUNCEMENT_BODY_MAX;
+  const untilProblem = late ? lateUntilProblem(until, today) : null;
+  const ready = t.length >= 3 && b.length >= 10 && t.length <= ANNOUNCEMENT_TITLE_MAX && b.length <= ANNOUNCEMENT_BODY_MAX
+    && !untilProblem;
   const audience = data?.audience ?? null;
   const sameTitle = data?.items.find((a) => a.titleAr === t) ?? null;
 
@@ -190,11 +212,15 @@ export default function TrainerAnnouncements() {
     setSending(true);
     setSendError(null);
     try {
-      const r = await apiPost<{ id: string; recipients: number }>("/api/admin/trainer-announcements", { titleAr: t, bodyAr: b });
+      const r = await apiPost<{ id: string; recipients: number }>("/api/admin/trainer-announcements", {
+        titleAr: t, bodyAr: b, lateJoinersUntil: late ? until : null,
+      });
       setSent({ title: t, recipients: r.recipients });
       setAsking(false);
       setTitle("");
       setBody("");
+      setLate(true);
+      setUntil(defaultLateUntil(today, false));
       await load();
     } catch (e) {
       setSendError(e instanceof ApiError ? e.message : "لم يُرسَل — تحقّق من اتّصالك وأعِد المحاولة");
@@ -266,6 +292,29 @@ export default function TrainerAnnouncements() {
             </div>
           )}
 
+          {/* ═══ ومن يصير مدرّبا بعد الإرسال — خياران بأثر كلٍّ (٤ أكتوبر ٢٠٢٦) ═══
+              «اعرضه لمن ينضمّ بعدُ أيضا». والبابُ إلى يومٍ يُسمّى لا بلا حدّ: نصيحةُ موسمٍ
+              مضى تُربك من انضمّ بعده (`defaultLateUntil`). */}
+          <fieldset className="mt-4 grid gap-2">
+            <legend className="mb-1 text-read font-bold text-foreground">من يصله؟</legend>
+            <label className="flex flex-wrap items-center gap-2 text-read text-foreground">
+              <input type="radio" name="reach" className="accent-teal" checked={late} onChange={() => setLate(true)} />
+              المدرّبون الآن، ومن يصير مدرّبا حتّى
+              <input type="date" dir="ltr" value={until} min={today} max={addDays(today, LATE_JOINERS_MAX_DAYS)}
+                disabled={!late} onChange={(e) => setUntil(e.target.value)}
+                aria-label="آخرُ يومٍ يصل فيه من يصير مدرّبا بعد الإرسال" className={`${field} w-auto`} />
+            </label>
+            <p className="ms-6 text-read leading-6 text-muted-foreground">
+              من ينضمّ بعد الإرسال تظهر له النافذةُ أوّلَ ما يفتح بوّابتَه، ويصله في الجرس — حتّى آخر هذا اليوم.
+            </p>
+            <label className="flex items-center gap-2 text-read text-foreground">
+              <input type="radio" name="reach" className="accent-teal" checked={!late} onChange={() => setLate(false)} />
+              المدرّبون الآن وحدَهم
+            </label>
+            <p className="ms-6 text-read leading-6 text-muted-foreground">من ينضمّ بعد الإرسال لا يصله.</p>
+            {untilProblem && <p role="alert" className="text-read font-bold text-danger-ink">{untilProblem}</p>}
+          </fieldset>
+
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button tone="primary" icon={Send} disabled={!ready || !audience} onClick={() => { setSendError(null); setAsking(true); }}>
               أرسِل…
@@ -296,6 +345,9 @@ export default function TrainerAnnouncements() {
         <Modal onClose={() => setAsking(false)} label="أترسل الإعلانَ الآن؟" panelClassName="w-full max-w-lg">
           <Inset dir="rtl" tone="solid" className="text-foreground sm:p-6">
             <h2 className="text-sm font-black">أترسل «{t}» الآن إلى {trainersAr(audience)}؟</h2>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              {late ? `ومن يصير مدرّبا حتّى ${dayLabelAr(until)} يصله حين يفتح بوّابتَه.` : "ومن ينضمّ بعد الإرسال لا يصله."}
+            </p>
             {sameTitle && (
               <p className="mt-2 text-read leading-6 text-gold-ink">
                 أرسلتَ إعلانا بهذا العنوان في {fmtDateTimeAr(sameTitle.sentAt)}، وقرأه {sameTitle.read} من {sameTitle.total}.
