@@ -21,7 +21,7 @@ import { describe, expect, it } from 'vitest'
 import { contractApprovedMail } from '../../../server/services/trainer-decision-mail'
 import { renderMail } from '../../../server/services/mail-template'
 import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
-import { GUIDE_SECTIONS, CHECKLIST, JOURNEY } from '../../data/trainer-guide/content'
+import { GUIDE_SECTIONS, CHECKLIST, FAQ, JOURNEY } from '../../data/trainer-guide/content'
 import { GUIDE_SHOTS } from '../../data/trainer-guide/shots'
 
 const root = process.cwd()
@@ -117,5 +117,19 @@ describe('④ الدليلُ يغطّي البوّابةَ كلَّها', () => 
     for (const a of [...CHECKLIST.map((c) => c.anchor), ...JOURNEY.map((j) => j.anchor)]) {
       expect(ids.has(a), `مرساةٌ بلا قسم: #${a}`).toBe(true)
     }
+  })
+
+  /* ═══ وروابطُ النصّ كذلك (٤ أكتوبر ٢٠٢٦) ═══
+     كانت المرساةُ تُحرَس في القائمة والرحلة وحدَهما، و[نصّ](#قسم) داخلَ الأقسام
+     والأسئلة يُصيَّر رابطا لا يُسأل عنه — فقسمٌ يُعاد اسمُه يترك روابطَه تقفز إلى
+     لا شيء بلا أن يحمرّ شيء. والقراءةُ بصيغة الرابط نفسِها التي يصيّرها
+     `Guide.tsx` (`TOKEN`)، على المحتوى كلِّه لا على قسمٍ بعينه. */
+  it('وكلُّ رابطٍ داخليٍّ في نصّ الدليل يقود إلى قسمٍ موجود', () => {
+    const ids = new Set(['first-week', 'faq', 'help', ...GUIDE_SECTIONS.map((s) => s.id)])
+    const text = JSON.stringify([GUIDE_SECTIONS, FAQ, CHECKLIST])
+    const anchors = [...text.matchAll(/\[[^\]]+\]\(#([^)\s]+)\)/g)].map((m) => m[1])
+    expect(anchors.length, 'لا رابطَ داخليّا يُقرأ — والدليلُ مليءٌ بها').toBeGreaterThan(10)
+    const broken = anchors.filter((a) => !ids.has(a))
+    expect(broken, `روابطُ إلى أقسامٍ لا وجودَ لها: ${broken.map((a) => `#${a}`).join('، ')}`).toEqual([])
   })
 })
