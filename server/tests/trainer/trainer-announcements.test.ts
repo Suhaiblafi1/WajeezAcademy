@@ -11,7 +11,10 @@
    ③ **والقائمةُ تفرّق ثلاثة** — رآه، وقرأه، ولم يفتح بوّابتَه — و«قرأتُه» يُسكت
       بندَ الجرس الذي يحمله، ولا يمسّ جرسَ غيره، ولا يتغيّر وقتُه بالتكرار.
    ④ **ولا يقرأ أحدٌ إعلانا لم يُرسَل إليه.**
-   ⑤ **والمستقبِلون من أُرسل إليهم** — مدرّبٌ صار بعد الإرسال لا يُكتب فيه. */
+   ⑤ **والمرسَلُ «للمدرّبين الآن وحدَهم»** لا يُكتب فيه من صار مدرّبا بعده.
+   ⑥ **ومن صار مدرّبا بعد إعلانٍ مفتوحٍ للمنضمّين** يُكتب أوّلَ ما يفتح بوّابتَه، ومعه
+      جرسٌ واحد — حتّى اليوم الذي اختاره المرسِل، لا بعده. ولا يُكتب من لا بوّابةَ له،
+      ولا يُقبل يومٌ مضى ولا أبعدُ من سنة. («اعرضه لمن ينضمّ بعدُ أيضا» — ٤ أكتوبر ٢٠٢٦) */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -20,6 +23,8 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
+import { addDays } from '../../../src/application/trainer/axis-timeline'
+import { zonedDay } from '../../../src/application/trainer/cohort-period'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -198,13 +203,60 @@ describe('④ ولا يقرأ أحدٌ إعلانا لم يُرسَل إليه',
   })
 })
 
-describe('⑤ والمستقبِلون من أُرسل إليهم — لا من صار مدرّبا بعده', () => {
-  it('مدرّبٌ جديدٌ بعد الإرسال: يُحسب لما يُرسَل غدا، ولا يُكتب فيما أُرسل', async () => {
+describe('⑤ والمرسَلُ «للمدرّبين الآن وحدَهم» لا يُكتب فيه من صار مدرّبا بعده', () => {
+  it('⚠️ مدرّبٌ جديدٌ بعد الإرسال: يُحسب لما يُرسَل غدا، ولا يُكتب فيما أُرسل', async () => {
     const before = (await get('super', '/api/admin/trainer-announcements')).json() as { audience: number }
     await person('late', ['trainer'], { profile: 'active' })
     const after = (await get('super', '/api/admin/trainer-announcements')).json() as { audience: number }
     expect(after.audience).toBe(before.audience + 1)
     const mine = (await get('late', '/api/trainer/announcements')).json() as { id: string }[]
     expect(mine.some((x) => x.id === announcementId)).toBe(false)
+  })
+})
+
+describe('⑥ ومن صار مدرّبا بعد إعلانٍ مفتوحٍ للمنضمّين — حتّى اليوم الذي اختاره المرسِل', () => {
+  const OPEN = 'إعلانٌ مفتوحٌ لمن ينضمّ بعده'
+  let openId = ''
+  const bells = (who: string) =>
+    prisma.notification.count({ where: { userId: people[who].id, templateKey: 'trainer.announcement' } })
+
+  it('⚠️ يُكتب أوّلَ ما يفتح بوّابتَه، ومعه جرسٌ واحد — وما أُرسل «للآن وحدَهم» لا يصله', async () => {
+    const r = await post('super', '/api/admin/trainer-announcements', {
+      titleAr: OPEN, bodyAr: BODY, lateJoinersUntil: addDays(zonedDay(new Date()), 10),
+    })
+    expect(r.statusCode, r.body).toBe(201)
+    openId = r.json().id
+    await person('late2', ['trainer'], { profile: 'active' })
+    const ids = ((await get('late2', '/api/trainer/announcements')).json() as { id: string }[]).map((x) => x.id)
+    expect(ids, 'انضمّ في المدّة ولم يصله').toContain(openId)
+    expect(ids, 'وصله ما أُرسل للمدرّبين يومَها وحدَهم').not.toContain(announcementId)
+    expect(await bells('late2'), 'كُتب ولم يصل جرسَه').toBe(1)
+    await get('late2', '/api/trainer/announcements')
+    expect(await bells('late2'), 'جرسٌ ثانٍ بفتح البوّابة ثانية').toBe(1)
+    const d = (await get('super', `/api/admin/trainer-announcements/${openId}`)).json() as { recipients: { userId: string }[] }
+    expect(d.recipients.some((x) => x.userId === people.late2.id), 'لا يظهر في قائمة الإدارة').toBe(true)
+  })
+
+  it('⚠️ ومن لا بوّابةَ له لا يُكتب ولو طرق الباب', async () => {
+    await get('noprofile', '/api/trainer/announcements')
+    expect(await prisma.trainerAnnouncementRecipient.count({
+      where: { announcementId: openId, userId: people.noprofile.id },
+    })).toBe(0)
+  })
+
+  it('⚠️ وبعد انقضاء اليوم لا يُكتب أحدٌ جديد', async () => {
+    await prisma.trainerAnnouncement.update({ where: { id: openId }, data: { lateJoinersUntil: new Date(Date.now() - 60_000) } })
+    await person('late3', ['trainer'], { profile: 'active' })
+    const ids = ((await get('late3', '/api/trainer/announcements')).json() as { id: string }[]).map((x) => x.id)
+    expect(ids, 'انقضت المدّةُ ووصله').not.toContain(openId)
+  })
+
+  it('ولا يُقبل يومٌ مضى، ولا أبعدُ من سنة، ولا يومٌ لا وجودَ له', async () => {
+    const today = zonedDay(new Date())
+    for (const day of [addDays(today, -1), addDays(today, 400), '2026-13-40']) {
+      const r = await post('super', '/api/admin/trainer-announcements', { titleAr: 'إعلانٌ بيومٍ خطأ', bodyAr: BODY, lateJoinersUntil: day })
+      expect(r.statusCode, day).toBe(422)
+    }
+    expect(await prisma.trainerAnnouncement.count({ where: { titleAr: 'إعلانٌ بيومٍ خطأ' } })).toBe(0)
   })
 })

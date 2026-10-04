@@ -8,13 +8,16 @@
    ② والنافذةُ لا تمنع: إغلاقُها تأجيلٌ لا قراءة، و«ذكّرني لاحقا» جنبَ «قرأتُه».
    ③ ولا يُرسَل شيءٌ بلا سؤال: «أرسِل…» تسأل، والإرسالُ في خيارٍ من خيارَين.
    ④ والجرسُ يفتح الإعلانَ نفسَه، في صنفٍ يُكتَم — والنافذةُ باقية.
+   ⑤ ومن يصير مدرّبا بعد الإرسال: خياران بأثرهما، وإلى يومٍ يُسمّى لا بلا حدّ
+      («اعرضه لمن ينضمّ بعدُ أيضا» — ٤ أكتوبر ٢٠٢٦).
    والخادمُ في `server/tests/trainer/trainer-announcements.test.ts`. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, announcementToShow, recipientState,
+  ANNOUNCEMENT_DRAFT, ANNOUNCEMENT_TEMPLATE_KEY, LATE_JOINERS_DRAFT_UNTIL, announcementToShow, defaultLateUntil,
+  lateUntilInstant, lateUntilProblem, recipientState,
 } from '@/application/trainer/announcement'
 import { categoryForTemplate } from '@/application/notifications/categories'
 import { notificationHref } from '@/application/notifications/destinations'
@@ -133,5 +136,41 @@ describe('④ والجرسُ يفتح الإعلانَ نفسَه', () => {
     const cat = categoryForTemplate(ANNOUNCEMENT_TEMPLATE_KEY)
     expect(cat?.key).toBe('announcements')
     expect(cat?.silenceable).toBe(true)
+  })
+})
+
+describe('⑤ ومن يصير مدرّبا بعد الإرسال', () => {
+  it('⚠️ المقترحُ للنصّ المقترح آخرُ نوفمبر — ولغيره، أو بعد نوفمبر، شهرٌ من اليوم', () => {
+    expect(LATE_JOINERS_DRAFT_UNTIL).toBe('2026-11-30')
+    expect(defaultLateUntil('2026-10-04', true)).toBe('2026-11-30')
+    expect(defaultLateUntil('2026-10-04', false)).toBe('2026-11-03')
+    expect(defaultLateUntil('2026-12-02', true), 'اقتُرح يومٌ مضى').toBe('2027-01-01')
+  })
+
+  it('⚠️ ولا يُقبل يومٌ مضى، ولا أبعدُ من سنة، ولا يومٌ لا وجودَ له', () => {
+    expect(lateUntilProblem('2026-10-04', '2026-10-04')).toBeNull()
+    expect(lateUntilProblem('2026-10-03', '2026-10-04')).toMatch(/مضى/)
+    expect(lateUntilProblem('2027-12-01', '2026-10-04')).toMatch(/سنة/)
+    expect(lateUntilProblem('2026-02-30', '2026-01-01')).toMatch(/صحيحا/)
+  })
+
+  it('واليومُ يُحسب حتّى آخر ثانيةٍ منه بعمّان', () => {
+    expect(lateUntilInstant('2026-11-30').toISOString()).toBe('2026-11-30T20:59:59.999Z')
+  })
+
+  it('⚠️ وفي النموذج خياران وتحت كلٍّ أثرُه — والمرسَلُ يتبع الخيار', () => {
+    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(true\)\} \/>\s*المدرّبون الآن، ومن يصير مدرّبا حتّى[\s\S]*?<p[^>]*>\s*من ينضمّ بعد الإرسال تظهر له النافذةُ/)
+    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(false\)\} \/>\s*المدرّبون الآن وحدَهم\s*<\/label>\s*<p[^>]*>من ينضمّ بعد الإرسال لا يصله\.<\/p>/)
+    expect(fnBody(ADMIN, 'send')).toMatch(/lateJoinersUntil: late \? until : null/)
+    expect(ADMIN, 'لا يُقال في السؤال من يصله بعده').toMatch(/late \? `ومن يصير مدرّبا حتّى \$\{dayLabelAr\(until\)\} يصله حين يفتح بوّابتَه\.` : "ومن ينضمّ بعد الإرسال لا يصله\."/)
+  })
+
+  it('⚠️ وما أُرسل قبل الخيار يصل المنضمّين حتّى آخر نوفمبر — باللحظة نفسِها', () => {
+    /* على البنية لا على ورود الحرف: سطرُ SQL المعلَّقُ بـ`--` ليس ملئا */
+    const sql = readFileSync(join(process.cwd(), 'prisma/migrations/20261004140000_announcement_late_joiners/migration.sql'), 'utf8')
+      .replace(/--.*$/gm, '')
+    const at = sql.match(/^UPDATE "TrainerAnnouncement" SET "lateJoinersUntil" = '([^']+)' WHERE "lateJoinersUntil" IS NULL;$/m)
+    expect(at, 'لا ملءَ لما أُرسل قبله').not.toBeNull()
+    expect(`${at![1].replace(' ', 'T')}Z`).toBe(lateUntilInstant(LATE_JOINERS_DRAFT_UNTIL).toISOString())
   })
 })

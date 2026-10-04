@@ -14,6 +14,9 @@
    ③ **والقائمةُ تفرّق ثلاثة**: قرأه (ضغط «قرأتُه»)، ورآه ولم يؤكّد (ظهرت له النافذةُ
       فأجّلها)، ولم يفتح بوّابتَه بعد. فمن يتابع يعرف من يُكلَّم ومن ينتظر. */
 
+import { addDays } from './axis-timeline'
+import { realDate, zonedInstant } from './cohort-period'
+
 /** حدّا النصّ — يفحصهما المسلكُ، وتعدّهما الشاشة */
 export const ANNOUNCEMENT_TITLE_MAX = 160
 export const ANNOUNCEMENT_BODY_MAX = 4000
@@ -41,6 +44,38 @@ export const ANNOUNCEMENT_DRAFT = {
     'إدارةُ أكاديمية وجيز',
   ].join('\n\n'),
 } as const
+
+/* ═══ ومن يصير مدرّبا بعد الإرسال (٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «اعرضه لمن ينضمّ بعدُ أيضا». فيُختار عند الإرسال بين خيارين بأثر
+   كلٍّ: «المدرّبون الآن، ومن يصير مدرّبا حتّى يومٍ تختاره» أو «المدرّبون الآن وحدَهم».
+   ومن انضمّ في المدّة يُكتب مستقبِلا أوّلَ ما يفتح بوّابتَه، فتظهر له النافذةُ ويصله الجرس.
+
+   ولا يبقى البابُ مفتوحا بلا يوم: نصيحةُ «ابدأ أواخرَ نوفمبر» لا معنى لها لمن انضمّ في
+   يناير. فللنصّ المقترح آخرُ نوفمبر، ولغيره شهرٌ من يوم الإرسال — ويُغيَّر كلاهما. */
+export const LATE_JOINERS_DRAFT_UNTIL = '2026-11-30'
+export const LATE_JOINERS_DEFAULT_DAYS = 30
+/** أبعدُ يومٍ يُقبل — أبعدُ منه غالبا خطأُ سنة */
+export const LATE_JOINERS_MAX_DAYS = 366
+
+/** اليومُ الذي يُقترح آخرَ مدّةٍ للمنضمّين — والنصُّ المقترحُ حتّى آخر نوفمبر ما دام لم يمضِ */
+export function defaultLateUntil(today: string, isDraft: boolean): string {
+  if (isDraft && today <= LATE_JOINERS_DRAFT_UNTIL) return LATE_JOINERS_DRAFT_UNTIL
+  return addDays(today, LATE_JOINERS_DEFAULT_DAYS)
+}
+
+/** ما يمنع هذا اليومَ آخرا للمدّة — أو `null` */
+export function lateUntilProblem(day: string, today: string): string | null {
+  if (!realDate(day)) return 'اكتب يوما صحيحا لآخر مدّة المنضمّين'
+  if (day < today) return 'آخرُ مدّة المنضمّين يومٌ مضى — اختر اليومَ أو ما بعده'
+  if (day > addDays(today, LATE_JOINERS_MAX_DAYS)) return 'آخرُ مدّة المنضمّين أبعدُ من سنة — أهو خطأٌ في السنة؟'
+  return null
+}
+
+/** لحظةُ انتهاء المدّة: آخرُ ثانيةٍ من ذلك اليوم بعمّان */
+export function lateUntilInstant(day: string): Date {
+  return zonedInstant(day, [23, 59, 59, 999])
+}
 
 /** حالُ مدرّبٍ مع إعلان — كما تقرؤه قائمةُ «من قرأ» */
 export type RecipientState = 'read' | 'seen' | 'unseen'
