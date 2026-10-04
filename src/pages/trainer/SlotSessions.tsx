@@ -19,8 +19,8 @@
    مرنةً سهلة، يختارون ما شاؤوا، وقد تعطيهم نصائح… لكن لا تدعه يضع لقاءً لمحورٍ
    في غير وقته». فلا سقفَ على محاور اللقاء ولا على عدد اللقاءات، ويُختار للقاء
    الجديد ما لم يُغطَّ من محاور موعده؛ ووقتُه في وقتها حدٌّ يُقال قبل الإرسال
-   ويردّه الخادمُ إن وصل (`sessionInsideSlot` و`assertAxesInTime`). وما سوى ذلك
-   نصيحةٌ تُقال بلطفٍ ولا تمنع (`slotSessionTips`).
+   ويردّه الخادمُ إن وصل (`sessionInsideSlot` و`assertAxesInTime`). ولا نصيحةَ
+   تقلّل العدد: «ساعاتٌ أكثرُ جودةٌ أعلى» (صاحبُ المنصّة، اليومَ نفسَه).
 
    ═══ ولماذا يُكتب الموعدُ بتوقيت عمّان صراحةً ═══
 
@@ -38,8 +38,9 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { fmtDateTimeAr } from "@/utils/format";
 import { ACADEMY_ZONE, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
+import { SESSION_DAY_ADVICE_AR, sessionDayAdvice } from "@/application/trainer/start-advice";
 import {
-  EARLY_DAYS, axesLabelAr, dayInSlot, dayLabelAr, sessionInsideSlot, slotSessionTips, type PlanSlot,
+  EARLY_DAYS, axesLabelAr, dayInSlot, dayLabelAr, sessionInsideSlot, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
 import {
   SHORT_SESSION_AR, firstToFor, fromSlots, sessionTooShort, slotLabelAr, toMinutes, toSlotsFor,
@@ -115,8 +116,6 @@ export default function SlotSessions({
      حدودُ الحقل (`min`/`max`) تُرشد ولا تمنع: اليومُ يُكتب باليد. فيُحكم بالقاعدة
      التي يحجب بها الإرسالُ ويردّ بها الخادم (`sessionInsideSlot`). */
   const outside = Boolean(form.date) && !sessionInsideSlot({ startsAt: at(form.date, form.from), endsAt: at(form.date, form.to) }, slot);
-  /* نصائحُ الموعد — تُقال ولا تمنع (`slotSessionTips`) */
-  const tips = slotSessionTips({ axes: axes.length, sessions });
 
   /* ── ربطُ لقاءٍ قائمٍ بمحاوره ── محورٌ أو أكثر من موعده، ولا يُترك بلا محور */
   const relink = async (s: SlotSession, id: string, on: boolean) => {
@@ -229,14 +228,6 @@ export default function SlotSessions({
         </ul>
       )}
 
-      {/* نصائحُ الموعد — بلطفٍ ولا تمنع: الإدارةُ تراجعها مع الخطّة (٤ أكتوبر ٢٠٢٦) */}
-      {tips.map((t) => (
-        <p key={t.kind} className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
-          <Lightbulb className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-          <span>{t.textAr}</span>
-        </p>
-      ))}
-
       {/* ── لقاءٌ جديدٌ داخلَ الموعد — ما شاء منها ── */}
       {!open ? (
         <div>
@@ -303,6 +294,13 @@ export default function SlotSessions({
             <p className="text-read text-gold-ink">هذا اليومُ {formDay} من الموعد — والأصلُ أن يكون اللقاءُ في أوّل {EARLY_DAYS} أيّام، فبعده تُفتح المهامّ. ولك أن تُبقيه.</p>
           )}
           {tooShort && <p className="text-read font-bold text-gold-ink">{SHORT_SESSION_AR}.</p>}
+          {/* ونصيحةُ البدء حين يُختار يومٌ قبل أواخر نوفمبر — ودودةٌ لا تمنع (`start-advice.ts`) */}
+          {!outside && sessionDayAdvice(form.date, zonedDay(new Date())) && (
+            <p className="flex items-start gap-2 text-read leading-6 text-teal-light-ink">
+              <Lightbulb className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{SESSION_DAY_ADVICE_AR}</span>
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <Button tone="confirm" size="sm" loading={busy}
               disabled={busy || title.length < 2 || !form.date || outside || tooShort || form.moduleIds.length === 0}

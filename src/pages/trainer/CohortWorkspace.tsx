@@ -82,8 +82,9 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
-  EARLY_DAYS, addAxisToSlots, axesLabelAr, canMerge, crowdedSlots, dayLabelAr, defaultSlots, dropFromSlots, joinClosesAt,
+  EARLY_DAYS, addAxisToSlots, axesLabelAr, canMerge, crowdedSlots, dayLabelAr, defaultSlots, dropFromSlots, followPeriod, joinClosesAt,
   mergeSlots, reflowSlots, respreadSlots, sameSlots, cohortWorkbookProblems, sessionEnd, sessionInsideSlot, sessionProblems, slotIndexOf,
+  slotsOutsidePeriod, slotsSpan,
   slotProblems, splitSlot, workbookDone, workbookWhere, WORKBOOK_WHERE_MAX, type CohortWorkbook, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
 import { START_ADVICE_AR, startAdvice } from "@/application/trainer/start-advice";
@@ -1000,6 +1001,29 @@ export default function CohortWorkspace() {
   const ownPeriod = asPeriod(content);
   const planPeriod = ownPeriod && periodProblem(ownPeriod) === null ? ownPeriod : ws.cohort.period;
   const setSlots = (next: PlanSlot[]) => setContent({ ...content, slots: next });
+  /* ═══ والمواعيدُ تتبع المدّة (٤ أكتوبر ٢٠٢٦، `followPeriod`) ═══
+
+     من أخّر البدءَ إلى أواخر نوفمبر كما نُصح ومواعيدُه توزيعُ المنصّة الأوّلُ كما هو،
+     تبعته المواعيدُ بلا ضغطة؛ ومن رتّبها بيده بقي ترتيبُه ويُقال له إن خرج منه شيء
+     (`periodTip` أدناه). ولا يُتبَع إلّا مدّةً صالحة — وما بينها في اليد يُحفظ كما كُتب. */
+  const setPeriodField = (patch: { startsOn?: string | null; endsOn?: string | null }) => {
+    const next = { ...content, ...patch };
+    const p = asPeriod(next);
+    setContent(slotsOn && p && periodProblem(p) === null ? { ...next, slots: followPeriod(slots, moduleIds, p) } : next);
+  };
+  /* ومن رتّب مواعيدَه بيده ثمّ غيّر مدّتَه فخرج منها شيء — يُقال له في الدرجتين ومعه
+     زرُّ التوزيع نفسُه بالاستئذان (وكانت تُقال في «المحاور» وحدَها خطأً يمنع الإرسال) */
+  const span = slotsOn ? slotsSpan(slots) : null;
+  const periodTip = slotsOn && planPeriod && span && !locked && slotsOutsidePeriod(slots, planPeriod) ? (
+    <Inset tone="accent" className="flex flex-wrap items-center gap-3 text-read leading-6 text-foreground">
+      <Lightbulb className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        مواعيدُ محاورك مرتّبةٌ من {dayLabelAr(span.startsOn)} إلى {dayLabelAr(span.endsOn)}، ومدّةُ الشعبة الآن من{" "}
+        {dayLabelAr(planPeriod.startsOn)} إلى {dayLabelAr(planPeriod.endsOn)} — وزّعها على المدّة الجديدة، ثمّ عدّل ما شئت.
+      </span>
+      <Button tone="secondary" size="sm" disabled={busy} onClick={() => setPendingReflow(true)}>وزّعها على المدّة الجديدة</Button>
+    </Inset>
+  ) : null;
   /* ═══ موعدٌ مزدحمٌ يُقال ومعه زرٌّ يوزّع — نصيحةٌ لا مانع (٤ أكتوبر ٢٠٢٦) ═══
 
      في «المحاور ومواعيدها» وفي «اللقاءات» معا: هناك يُرتَّب، وهنا يُرى أثرُه حين
@@ -1328,7 +1352,7 @@ export default function CohortWorkspace() {
                   type="date" dir="ltr"
                   value={content.startsOn ?? ""}
                   min={today}
-                  onChange={(e) => setContent({ ...content, startsOn: e.target.value || null })}
+                  onChange={(e) => setPeriodField({ startsOn: e.target.value || null })}
                   disabled={locked}
                   aria-label="تاريخُ بدء الشعبة"
                   className={`${controlCls} text-left`}
@@ -1339,7 +1363,7 @@ export default function CohortWorkspace() {
                   type="date" dir="ltr"
                   value={content.endsOn ?? ""}
                   min={content.startsOn || today}
-                  onChange={(e) => setContent({ ...content, endsOn: e.target.value || null })}
+                  onChange={(e) => setPeriodField({ endsOn: e.target.value || null })}
                   disabled={locked}
                   aria-label="تاريخُ انتهاء الشعبة"
                   className={`${controlCls} text-left`}
@@ -1367,11 +1391,11 @@ export default function CohortWorkspace() {
 
                 «انصح كلَّ مدرّبٍ أن يبدأ في ديسمبر أو أواخرَ نوفمبر على الأقلّ —
                 نصيحةً فقط — كي يتّسع لنا الوقتُ لتسويق دوراته… واجعلها ودودةً جدّا».
-                فلونُها لونُ ما يستحقّ نظرةً لا لونُ التحذير، والقرارُ له. ولا تُقال
-                لشعبةٍ اعتُمدت من قبل: تأخيرُ بدءٍ أُعلن ليس ما تنصح به. والنصُّ
-                والموسمُ في `start-advice.ts`. */}
+                فلونُها لونُ ما يستحقّ نظرةً لا لونُ التحذير، والقرارُ له. وتُقال لكلّ
+                شعبة — «لا شيءَ معتمَدٌ بعد، فأعطهم النصيحة» (اليومَ نفسَه). والنصُّ
+                والموسمُ وحدُّه (٢٩ نوفمبر) في `start-advice.ts`. */}
             {(() => {
-              const advice = !locked && !ws.approvedOnce ? startAdvice(content.startsOn, today) : null;
+              const advice = startAdvice(content.startsOn, today);
               if (!advice) return null;
               return advice === "thanks" ? (
                 <p className="flex items-start gap-2 text-read leading-6 text-teal-light-ink">
@@ -1384,6 +1408,9 @@ export default function CohortWorkspace() {
                 </Inset>
               );
             })()}
+            {/* ومن رتّب مواعيدَ محاوره بيده فخرج منها شيءٌ عن المدّة الجديدة — يُقال هنا
+                حيث غيّرها، ومعه زرُّ التوزيع (`followPeriod`) */}
+            {periodTip && <div className="sm:col-span-2">{periodTip}</div>}
             {/* والمعلَنُ للمسجَّلين الآن يُقال إن افترق عمّا يكتبه — فلا يظنّ
                 أنّ ما كتبه وصل الناسَ قبل أن يُعتمَد */}
             {ws.cohort.publicPeriod && (ws.cohort.publicPeriod.startsOn !== content.startsOn || ws.cohort.publicPeriod.endsOn !== content.endsOn) && (
@@ -1520,6 +1547,7 @@ export default function CohortWorkspace() {
             </Inset>
           )}
           {crowdTip && <div className="mt-3">{crowdTip}</div>}
+          {periodTip && <div className="mt-3">{periodTip}</div>}
           {!slotsOn && (
             <Inset className="mt-3 flex flex-wrap items-center gap-3 text-read leading-6 text-muted-foreground">
               <span className="min-w-0 flex-1">
@@ -1741,8 +1769,8 @@ export default function CohortWorkspace() {
             )}
             {/* ═══ نصائحُ اللقاءات — بلطفٍ ولا تمنع (٤ أكتوبر ٢٠٢٦) ═══
 
-                «اجعلها مرنةً سهلة، يختارون ما شاؤوا، وقد تعطيهم نصائح: لا تُكثر
-                من اللقاءات، أو اجمعها — أو اترك ذلك لي حين أعتمد موادَّهم». فالحدُّ
+                «اجعلها مرنةً سهلة، يختارون ما شاؤوا… أو اترك ذلك لي حين أعتمد
+                موادَّهم». ثمّ: «يضيفون ما شاؤوا — ساعاتٌ أكثرُ جودةٌ أعلى». فالحدُّ
                 الوحيدُ وقتُ اللقاء (يردّه الخادمُ إن خرج)، وما سواه نصيحةٌ هنا. */}
             {slotsOn && (
               <Inset className="mt-3 grid gap-1.5 text-read leading-6 text-muted-foreground">
@@ -1752,7 +1780,7 @@ export default function CohortWorkspace() {
                 <ul className="list-inside list-disc space-y-0.5">
                   <li>أضِف ما شئت من اللقاءات، واربط كلَّ لقاءٍ بمحورٍ واحدٍ أو أكثر من محاور موعده.</li>
                   <li>اللقاءُ في وقت محاوره: يومُه داخلَ موعدها، وخيرُه في أوّل {EARLY_DAYS} أيّامٍ منه — فبعده تُفتح مهامُّها.</li>
-                  <li>لا تُكثر منها: لقاءٌ لكلّ محورٍ يكفي غالبا، ولقاءٌ واحدٌ قد يجمع محورين أو أكثر فيخفّ على المتعلّم.</li>
+                  <li>ولا حدَّ لعددها: ساعاتٌ أكثرُ جودةٌ أعلى — فأضِف ما استطعت.</li>
                   <li>وتراجع الإدارةُ لقاءاتِك مع خطّتك قبل اعتمادها، وتقترح عليك ما تراه.</li>
                 </ul>
               </Inset>

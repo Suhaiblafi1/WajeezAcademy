@@ -50,10 +50,24 @@ describe('① نصيحةُ البدء في المعلومات الأساسيّة
   const block = stageBlock('identity', 'modules')
   const ui = block.slice(block.indexOf('const advice ='), block.indexOf('})()}', block.indexOf('const advice =')))
 
-  it('⚠️ تُقال من القاعدة بتاريخ البدء الذي في يده — ولا تُقال لشعبةٍ اعتُمدت', () => {
-    expect(block).toMatch(/const advice = !locked && !ws\.approvedOnce \? startAdvice\(content\.startsOn, today\) : null;/)
+  /* وكانت لا تُقال لشعبةٍ اعتُمدت؛ ثمّ قال صاحبُ المنصّة: «لا شيءَ معتمَدٌ بعد، فأعطهم
+     النصيحة» — فتُقال لكلّ شعبة (٤ أكتوبر ٢٠٢٦) */
+  it('⚠️ تُقال من القاعدة بتاريخ البدء الذي في يده — ولكلّ شعبةٍ بلا استثناء', () => {
+    expect(block).toMatch(/const advice = startAdvice\(content\.startsOn, today\);/)
+    expect(ui, 'عادت النصيحةُ تُحجب عن بعض الشعب').not.toMatch(/approvedOnce|locked/)
     expect(ui).toContain('START_ADVICE_AR[advice]')
     expect(ui).toContain('START_ADVICE_AR.thanks')
+  })
+
+  it('⚠️ وتاريخا المدّة يمرّان بما يجعل المواعيدَ تتبعها — ويُقال لمن رتّبها بيده', () => {
+    expect(block).toContain('onChange={(e) => setPeriodField({ startsOn: e.target.value || null })}')
+    expect(block).toContain('onChange={(e) => setPeriodField({ endsOn: e.target.value || null })}')
+    const fn = WS.slice(WS.indexOf('const setPeriodField ='), WS.indexOf('const span ='))
+    expect(fn, 'المواعيدُ لا تتبع المدّة').toMatch(/followPeriod\(slots, moduleIds, p\)/)
+    expect(fn, 'تُتبَع مدّةٌ لم تصلح').toContain('periodProblem(p) === null')
+    expect(WS).toMatch(/const periodTip = slotsOn && planPeriod && span && !locked && slotsOutsidePeriod\(slots, planPeriod\) \?/)
+    expect(block, 'لا يُقال لمن رتّب مواعيدَه بيده حيث غيّر مدّتَه').toContain('{periodTip && <div className="sm:col-span-2">{periodTip}</div>}')
+    expect(stageBlock('modules', 'workbooks')).toContain('{periodTip && <div className="mt-3">{periodTip}</div>}')
   })
 
   it('⚠️ وودودةٌ لا تمنع: لا لونَ تحذير، ولا تمسّ زرَّ الحفظ', () => {
@@ -181,6 +195,22 @@ describe('④ اللقاءات — بطاقةٌ لكلّ موعد', () => {
     expect(SLOT, 'يُترك لقاءٌ قائمٌ بلا محور').toContain('if (next.length === 0) return;')
     expect(SLOT).toMatch(/const outside = Boolean\(form\.date\) && !sessionInsideSlot\(/)
     expect(SLOT, 'يُرسَل لقاءٌ في غير وقت محاوره').toMatch(/disabled=\{busy \|\| title\.length < 2 \|\| !form\.date \|\| outside \|\|/)
+  })
+
+  /* ═══ «يضيفون ما شاؤوا — ساعاتٌ أكثرُ جودةٌ أعلى» (٤ أكتوبر ٢٠٢٦) ═══ */
+  it('⚠️ والنصائحُ لا تقلّل اللقاءات — بل تقول إنّ الساعاتِ الأكثرَ جودةٌ أعلى', () => {
+    expect(block).toContain('ساعاتٌ أكثرُ جودةٌ أعلى')
+    expect(block, 'عادت نصيحةُ «لا تُكثر»').not.toContain('لا تُكثر')
+    expect(SLOT, 'عادت نصيحةُ «اجمعها» في بطاقة الموعد').not.toMatch(/slotSessionTips|اجمعهما|يجمع محاورَ الموعد كلَّها/)
+  })
+
+  it('⚠️ ونموذجُ اللقاء ينصح بأواخر نوفمبر حين يُختار يومٌ قبله — ودودا لا يمنع', () => {
+    const tip = SLOT.slice(SLOT.indexOf('sessionDayAdvice(form.date'), SLOT.indexOf('</p>', SLOT.indexOf('sessionDayAdvice(form.date')))
+    expect(SLOT).toContain('!outside && sessionDayAdvice(form.date, zonedDay(new Date()))')
+    expect(tip).toContain('SESSION_DAY_ADVICE_AR')
+    expect(tip, 'النصيحةُ بلون التحذير').not.toMatch(/gold|warn/)
+    const send = SLOT.slice(SLOT.indexOf('<Button tone="confirm"'), SLOT.indexOf('أرسِلْه للاعتماد'))
+    expect(send, 'صارت النصيحةُ مانعا للإرسال').not.toContain('sessionDayAdvice')
   })
 
   it('⚠️ والإضافةُ والربطُ يحفظان المواعيدَ أوّلا — فالخادمُ يحكم على المحفوظ', () => {

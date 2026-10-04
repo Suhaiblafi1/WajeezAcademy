@@ -116,23 +116,20 @@ beforeAll(async () => {
 afterAll(async () => { process.env = { ...SAVED }; forgetZoomToken() })
 
 describe('الفصلُ وحدَه يفتح بابَ الجدولة', () => {
-  it('⚠️ حدّان بلا سقفٍ: النافذةُ مفتوحةٌ و«الباقي» بلا سقفٍ لا صفر', async () => {
+  it('⚠️ حدّان: النافذةُ مفتوحة — ولا سقفَ يُقرأ أو يُعرض (٤ أكتوبر ٢٠٢٦)', async () => {
     const win = await cohorts.scheduleWindowFor(trainerUserId, uncappedId)
     expect(win.open, 'الفصلُ محدَّدٌ والبابُ مغلق — وهذا هو الحصار').toBe(true)
-    expect(win.maxSessions).toBeNull()
-    expect(win.remaining, 'غيابُ السقف قُرئ صفرا، فقيل لشعبةٍ فارغةٍ بلغتَ سقفَك').toBeNull()
+    expect(win, 'عاد سقفُ اللقاءات إلى ما يراه المدرّب').not.toHaveProperty('remaining')
   })
 
   it('⚠️ ويجدول فعلا — لا يُردّ بـ«لم تفتح الإدارةُ نافذةَ جدولة»', async () => {
     const first = await schedule(3)
     expect(first.session.id).toBeTruthy()
     expect(first.pending, 'اللقاءُ لا يُعتمَد بنفسه').toBe(true)
-    /* ولا سقفَ يوقفه مهما زاد: من لا سقفَ له لا يبلغه */
+    /* ولا سقفَ يوقفه مهما زاد — «يضيفون ما شاؤوا» (٤ أكتوبر ٢٠٢٦) */
     await expect(schedule(5)).resolves.toBeTruthy()
     await expect(schedule(7)).resolves.toBeTruthy()
-    const win = await cohorts.scheduleWindowFor(trainerUserId, uncappedId)
-    expect(win.used).toBeGreaterThanOrEqual(3)
-    expect(win.remaining).toBeNull()
+    expect(await prisma.cohortSession.count({ where: { cohortId: uncappedId, placeholder: false } })).toBeGreaterThanOrEqual(3)
   })
 
   it('وما خرج عن المدى يُردّ — البابُ مفتوحٌ لا مرفوع', async () => {

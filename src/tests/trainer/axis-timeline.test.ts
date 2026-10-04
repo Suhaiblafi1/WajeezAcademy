@@ -10,8 +10,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   addAxisToSlots, appendToSlots, axisTimeProblem, buildTimeline, canMerge, crowdedSlots, dayInSlot, defaultSlots,
-  dropFromSlots, joinClosesAt, mergeSlots, minSlots, reflowSlots, respreadSlots, sameSlots, sessionProblems,
-  slotProblems, slotSessionTips, splitSlot, workbookDone, workbookProblems, type PlanSlot,
+  dropFromSlots, followPeriod, joinClosesAt, mergeSlots, minSlots, reflowSlots, respreadSlots, sameSlots, sessionProblems,
+  slotProblems, slotsOutsidePeriod, splitSlot, untouchedLayout, workbookDone, workbookProblems, type PlanSlot,
 } from '@/application/trainer/axis-timeline'
 
 const EIGHT = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8']
@@ -316,28 +316,48 @@ describe('المحورُ الجديدُ لا يُكدَّس في آخر موعد
   })
 })
 
-/* ═══ نصائحُ لا موانع — «لا تُكثر من اللقاءات، أو اجمعها» (٤ أكتوبر ٢٠٢٦) ═══ */
-describe('نصائحُ الموعد', () => {
-  const at = (iso: string) => ({ startsAt: iso })
+/* ═══ ولا نصيحةَ تقلّل اللقاءات — «يضيفون ما شاؤوا: ساعاتٌ أكثرُ جودةٌ أعلى» ═══
+   كانت هنا «لقاءاتٌ أكثرُ من محاور الموعد — اجمعها» و«لقاءان في يومٍ واحد — اجمعهما»،
+   ثمّ نسخها صاحبُ المنصّة في اليوم نفسِه (٤ أكتوبر ٢٠٢٦). */
+describe('ولا نصيحةَ تقلّل اللقاءات', () => {
+  it('⚠️ القاعدةُ لا تحمل «اجمعها» — ولا عددَ لقاءاتٍ يُستكثَر', async () => {
+    const AT = await import('@/application/trainer/axis-timeline')
+    expect(AT, 'عادت نصيحةٌ تقلّل اللقاءات').not.toHaveProperty('slotSessionTips')
+  })
+})
 
-  it('لقاءٌ لكلّ محور: لا نصيحة', () => {
-    expect(slotSessionTips({ axes: 2, sessions: [at('2026-10-04T17:00:00Z'), at('2026-10-05T17:00:00Z')] })).toEqual([])
-    expect(slotSessionTips({ axes: 1, sessions: [at('2026-10-04T17:00:00Z')] })).toEqual([])
+/* ═══ والمواعيدُ تتبع مدّةَ الشعبة — من أخّر البدءَ كما نُصح (٤ أكتوبر ٢٠٢٦) ═══ */
+describe('المواعيدُ تتبع مدّةَ الشعبة', () => {
+  const NOV = { startsOn: '2026-11-01', endsOn: '2026-11-28' }
+  const LATER = { startsOn: '2026-11-29', endsOn: '2026-12-26' }
+
+  it('⚠️ توزيعُ المنصّة كما هو يتبع المدّةَ الجديدة — كلُّه داخلَها', () => {
+    const next = followPeriod(defaultSlots(EIGHT, NOV), EIGHT, LATER)
+    expect(sameSlots(next, defaultSlots(EIGHT, LATER)), 'بقيت المواعيدُ على المدّة القديمة').toBe(true)
+    expect(slotProblems(next, EIGHT, LATER)).toEqual([])
   })
 
-  it('⚠️ لقاءاتٌ أكثرُ من محاوره: تُقال بصيغة العدد، ولا تمنع', () => {
-    const tips = slotSessionTips({ axes: 1, sessions: [at('2026-10-04T17:00:00Z'), at('2026-10-06T17:00:00Z'), at('2026-10-08T17:00:00Z')] })
-    expect(tips.map((t) => t.kind)).toEqual(['many'])
-    expect(tips[0].textAr).toContain('3 لقاءات لمحورٍ واحد')
-    expect(slotSessionTips({ axes: 2, sessions: [1, 2, 3].map((d) => at(`2026-10-0${d}T17:00:00Z`)) })[0].textAr).toContain('3 لقاءات لمحورين')
+  it('⚠️ وما رتّبه المدرّبُ بيده لا يُمسّ — ويُعرف أنّه خرج عن المدّة', () => {
+    const custom = splitSlot(defaultSlots(EIGHT, NOV), 0, 1)
+    expect(untouchedLayout(custom, EIGHT)).toBe(false)
+    expect(followPeriod(custom, EIGHT, LATER), 'مُسّ ترتيبٌ رتّبه بيده').toEqual(custom)
+    expect(slotsOutsidePeriod(custom, LATER)).toBe(true)
+    expect(slotsOutsidePeriod(custom, NOV)).toBe(false)
   })
 
-  it('⚠️ ولقاءان في يومٍ واحدٍ بعمّان: يُقترح جمعُهما', () => {
-    /* الحادية عشرة ليلا بغرينتش يومَ ٤ هي الثانيةُ فجرَ ٥ بعمّان — يومٌ آخر */
-    expect(slotSessionTips({ axes: 3, sessions: [at('2026-10-04T08:00:00Z'), at('2026-10-04T23:00:00Z')] })).toEqual([])
-    const same = slotSessionTips({ axes: 3, sessions: [at('2026-10-04T08:00:00Z'), at('2026-10-04T17:00:00Z')] })
-    expect(same.map((t) => t.kind)).toEqual(['same_day'])
-    expect(same[0].textAr).toContain('4 أكتوبر')
+  it('⚠️ ومدّةٌ متعاكسةٌ في الطريق لا تُفقده ما يتبع به', () => {
+    const slots = defaultSlots(EIGHT, NOV)
+    const mid = followPeriod(slots, EIGHT, { startsOn: '2026-11-29', endsOn: '2026-11-28' })
+    expect(mid).toEqual(slots)
+    expect(untouchedLayout(mid, EIGHT)).toBe(true)
+    expect(sameSlots(followPeriod(mid, EIGHT, LATER), defaultSlots(EIGHT, LATER))).toBe(true)
+  })
+
+  it('والمدّةُ نفسُها، أو بلا مواعيد، أو بلا مدّة: كما هو', () => {
+    const slots = defaultSlots(EIGHT, NOV)
+    expect(followPeriod(slots, EIGHT, NOV)).toEqual(slots)
+    expect(followPeriod([], EIGHT, LATER)).toEqual([])
+    expect(followPeriod(slots, EIGHT, null)).toEqual(slots)
   })
 })
 

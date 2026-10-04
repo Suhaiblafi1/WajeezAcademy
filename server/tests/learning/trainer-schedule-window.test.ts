@@ -12,10 +12,13 @@
                                     بدايةٌ ونهاية. والسقفُ حدٌّ اختياريٌّ
                                     فوقه لا شرطٌ معه — ١٧ سبتمبر ٢٠٢٦)
      ② موعدٌ خارجَ المدى          → يُرَدّ ولو كانت مفتوحة
-     ③ سقفُ اللقاءات مبلوغ        → يُرَدّ ولو كان داخلَ المدى
      ④ من ليس مدرّبَ الشعبة       → يُرَدّ ولو كان مدرّبا مؤهَّلا
 
-   والخامسُ أنّ المسموحَ يقع فعلا — وإلّا كان الحارسُ يحرس بابا مسدودا. */
+   والخامسُ أنّ المسموحَ يقع فعلا — وإلّا كان الحارسُ يحرس بابا مسدودا.
+
+   وكان ③ «سقفُ اللقاءات مبلوغ → يُرَدّ ولو كان داخلَ المدى». ثمّ قال صاحبُ المنصّة
+   (٤ أكتوبر ٢٠٢٦): «لا حاجةَ لسقف الشعبة — يضيفون ما شاؤوا، وساعاتٌ أكثرُ جودةٌ
+   أعلى». فصار ③ عكسَه: ما فوق كلّ سقفٍ قديمٍ يقع، وسقفٌ محفوظٌ من قبل لا يُقرأ. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -130,7 +133,7 @@ describe('نافذةُ جدولةِ المدرّب', () => {
 
        فالبابُ حدّان، والسقفُ حدٌّ اختياريٌّ فوقه. و«نصفُ النافذة» صار
        معناه الصحيحَ الوحيد: **مدًى ناقص** — بدايةٌ بلا نهاية. */
-    await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: null, maxSessions: 5 })
+    await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: null })
     const half = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
     expect(half.open, 'مدًى ناقصٌ فتح بابا').toBe(false)
     await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
@@ -141,25 +144,26 @@ describe('نافذةُ جدولةِ المدرّب', () => {
   it('⚠️ ومدًى كاملٌ بلا سقفٍ **يفتح** — غيابُ السقف «بلا سقف» لا «مغلق»', async () => {
     /* وهذا الصفُّ بعينه ما يصنعه `setTerm` للمدرّب: حدّان من حدود الفصل،
        و`maxSessions` فارغٌ لأنّ الإدارةَ لم تضع سقفا. */
-    await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: to, maxSessions: null })
+    await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: to })
     const w = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
     expect(w.open, 'الفصلُ فتح النافذةَ والبابُ مغلق — وهذا هو الحصار').toBe(true)
-    expect(w.remaining, 'غيابُ السقف قُرئ صفرا، فقيل لشعبةٍ فارغةٍ بلغتَ سقفَك').toBeNull()
+    /* ولا سقفَ يُقرأ أو يُعرض (٤ أكتوبر ٢٠٢٦) */
+    expect(w, 'عاد سقفُ اللقاءات إلى ما يراه المدرّب').not.toHaveProperty('remaining')
+    expect(w).not.toHaveProperty('maxSessions')
 
     /* والمسموحُ يقع فعلا — وإلّا كان الحارسُ يحرس بابا مسدودا */
     const s = await cohorts.trainerAddSession(trainerUserId, cohortId, {
       title: 'لقاءٌ بلا سقف', startsAt: inside, endsAt: new Date('2026-12-03T20:00:00Z'),
     })
     expect(s.cohortId).toBe(cohortId)
-    /* ويُرفَع أثرُه: ما بعده يَعُدّ اللقاءاتِ من الصفر ويفحص السقفَ عليها */
+    /* ويُرفَع أثرُه: ما بعده يبدأ من شعبةٍ فارغة */
     await prisma.cohortSession.delete({ where: { id: s.id } })
   })
 
   it('② تُفتح النافذة — فيقع ما بداخلها، ويُرَدّ ما خارجَ مداها', async () => {
-    await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: to, maxSessions: 2 })
+    await cohorts.setScheduleWindow(managerId, cohortId, { start: from, end: to })
     const w = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
     expect(w.open).toBe(true)
-    expect(w.remaining).toBe(2)
 
     /* المسموحُ يقع فعلا — وإلّا كان الحارسُ يحرس بابا مسدودا */
     const s = await cohorts.trainerAddSession(trainerUserId, cohortId, {
@@ -176,24 +180,22 @@ describe('نافذةُ جدولةِ المدرّب', () => {
     })).rejects.toMatchObject({ code: 'forbidden' })
   })
 
-  it('③ السقفُ يُبلَغ فيُرَدّ ما بعده — ولو كان داخلَ المدى', async () => {
-    /* السقفُ اثنان، وفي الشعبة واحد. فالثاني يقع والثالثُ يُرَدّ. */
-    await cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'اللقاءُ الثاني', startsAt: new Date('2026-12-10T18:00:00Z'),
-    })
-    const w = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
-    expect(w.remaining).toBe(0)
-
-    await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
-      title: 'اللقاءُ الثالثُ فوق السقف', startsAt: new Date('2026-12-12T18:00:00Z'),
-    })).rejects.toMatchObject({ code: 'forbidden' })
+  it('⚠️ ③ ولا سقفَ لعدد اللقاءات — وسقفٌ حُفظ من قبل لا يُقرأ (٤ أكتوبر ٢٠٢٦)', async () => {
+    /* سقفٌ واحدٌ محفوظٌ في الصفّ كما كانت الإدارةُ تضعه — وفي الشعبة لقاءٌ من قبل */
+    await prisma.cohort.update({ where: { id: cohortId }, data: { maxSessions: 1 } })
+    for (const day of ['2026-12-10', '2026-12-12', '2026-12-14']) {
+      const s = await cohorts.trainerAddSession(trainerUserId, cohortId, {
+        title: `لقاءٌ يوم ${day}`, startsAt: new Date(`${day}T18:00:00Z`),
+      })
+      expect(s.cohortId, 'رُدّ لقاءٌ فوق سقفٍ لم يعد له وجود').toBe(cohortId)
+    }
+    expect(await prisma.cohortSession.count({ where: { cohortId } })).toBe(4)
   })
 
-  it('والنقلُ لا يُحسب على السقف — يبقى داخلَ المدى وحدَه', async () => {
+  it('والنقلُ يبقى داخلَ المدى وحدَه', async () => {
     const one = await prisma.cohortSession.findFirst({
       where: { cohortId }, orderBy: { startsAt: 'asc' }, select: { id: true },
     })
-    /* السقفُ مبلوغٌ، والنقلُ مع ذلك يقع: لأنّه لا يزيد العدد */
     const moved = await cohorts.trainerMoveSession(trainerUserId, one!.id, {
       startsAt: new Date('2026-12-05T18:00:00Z'),
     })
@@ -216,8 +218,8 @@ describe('نافذةُ جدولةِ المدرّب', () => {
     })).rejects.toMatchObject({ code: 'forbidden' })
   })
 
-  it('والإغلاقُ يعيد الأمرَ إلى ما كان — بإفراغ الثلاثة', async () => {
-    await cohorts.setScheduleWindow(managerId, cohortId, { start: null, end: null, maxSessions: null })
+  it('والإغلاقُ يعيد الأمرَ إلى ما كان — بإفراغ الحدّين', async () => {
+    await cohorts.setScheduleWindow(managerId, cohortId, { start: null, end: null })
     const w = await cohorts.scheduleWindowFor(trainerUserId, cohortId)
     expect(w.open).toBe(false)
     await expect(cohorts.trainerAddSession(trainerUserId, cohortId, {
@@ -227,10 +229,7 @@ describe('نافذةُ جدولةِ المدرّب', () => {
 
   it('ونهايةٌ قبل بدايةٍ تُرَدّ عند الإدارة نفسِها', async () => {
     await expect(cohorts.setScheduleWindow(managerId, cohortId, {
-      start: to, end: from, maxSessions: 4,
-    })).rejects.toMatchObject({ code: 'bad_request' })
-    await expect(cohorts.setScheduleWindow(managerId, cohortId, {
-      start: from, end: to, maxSessions: 0,
+      start: to, end: from,
     })).rejects.toMatchObject({ code: 'bad_request' })
   })
 })
