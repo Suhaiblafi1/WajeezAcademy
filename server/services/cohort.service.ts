@@ -19,7 +19,7 @@ import { safeNotify, notifyRole } from './notification.service'
 import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, setZoomRegistrantStatus, updateZoomMeeting, zoomMissing, zoomReady, zoomStartUrl } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
-import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
+import { windowOpen } from '../../src/application/trainer/schedule-window'
 import { cohortDayAr, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
 import { axisTimeProblem, sessionEnd, slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
@@ -85,7 +85,6 @@ export class CohortService {
       sessionsCount: c.sessions.length,
       /* نافذةُ جدولةِ المدرّب — تُقرأ في الشاشة لتُعرَض مفتوحةً أو مغلقة */
       scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
-      maxSessions: c.maxSessions,
       trainers: c.trainers.map((t) => ({ profileId: t.profileId, name: t.profile.application.fullName, role: t.role })),
     }))
   }
@@ -630,28 +629,25 @@ export class CohortService {
 
      **فالبابُ حدّان، والسقفُ حدٌّ اختياريٌّ فوقه.** والقاعدةُ في موضعٍ واحدٍ
      يقرؤه الخادمُ وشاشةُ المدرّب معا: `src/application/trainer/schedule-window.ts`،
-     وفي رأسه العلّةُ كاملةً. */
+     وفي رأسه العلّةُ كاملةً. ثمّ سقط السقفُ كلُّه (٤ أكتوبر ٢٠٢٦): البابُ حدّان لا غير. */
 
-  /** الإدارةُ تفتح النافذة أو تغلقها — والإغلاق بإفراغ الثلاثة */
+  /** الإدارةُ تفتح النافذة أو تغلقها — والإغلاقُ بإفراغ الحدّين. ولا سقفَ للّقاءات
+      منذ ٤ أكتوبر ٢٠٢٦ («يضيفون ما شاؤوا»)، فالعمودُ `maxSessions` لا يُكتب ولا يُقرأ */
   async setScheduleWindow(actorId: string, cohortId: string, input: {
-    start?: Date | null; end?: Date | null; maxSessions?: number | null
+    start?: Date | null; end?: Date | null
   }) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (input.start && input.end && input.start >= input.end) {
       throw new AuthError('bad_request', 'نهايةُ النافذة قبل بدايتها', 400)
     }
-    if (input.maxSessions != null && input.maxSessions < 1) {
-      throw new AuthError('bad_request', 'سقفُ اللقاءات واحدٌ فأكثر', 400)
-    }
     const updated = await this.prisma.cohort.update({
       where: { id: cohortId },
       data: {
         scheduleWindowStart: input.start ?? null,
         scheduleWindowEnd: input.end ?? null,
-        maxSessions: input.maxSessions ?? null,
       },
-      select: { scheduleWindowStart: true, scheduleWindowEnd: true, maxSessions: true },
+      select: { scheduleWindowStart: true, scheduleWindowEnd: true },
     })
     /* والسجلُّ يقول ما وقع فعلا: نافذةٌ بمدًى بلا سقفٍ **مفتوحة**، وكان
        يُكتب لها «أُغلقت» فيفترق الأثرُ عمّا يستطيعه المدرّب. */
@@ -751,7 +747,7 @@ export class CohortService {
         startsAt: term.startsOn,
         endsAt: term.endsOn,
         /* والفصلُ إذنٌ مبدئيّ: أشهرُه نافذةُ جدولة المدرّب حتّى يحدّد مدّتَه.
-           والسقفُ يبقى للإدارة إن وضعته — حدٌّ اختياريٌّ لا شرطٌ معه. */
+           ولا سقفَ لعدد اللقاءات (٤ أكتوبر ٢٠٢٦). */
         scheduleWindowStart: term.startsOn,
         scheduleWindowEnd: term.endsOn,
       },
@@ -861,9 +857,7 @@ export class CohortService {
       where: { id: cohortId },
       select: {
         id: true, status: true, scheduleWindowStart: true, scheduleWindowEnd: true,
-        maxSessions: true, trainers: { select: { profileId: true } },
-        /* والمبدئيُّ لا يأكل من السقف — ليس لقاءً جدوله */
-        _count: { select: { sessions: { where: { placeholder: false } } } },
+        trainers: { select: { profileId: true } },
       },
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
@@ -873,10 +867,6 @@ export class CohortService {
       open: windowOpen(cohort),
       start: cohort.scheduleWindowStart,
       end: cohort.scheduleWindowEnd,
-      maxSessions: cohort.maxSessions,
-      used: cohort._count.sessions,
-      /* و`null` تعني «بلا سقف» لا صفرا — وكان الصفرُ يعنيهما معا */
-      remaining: remainingSessions(cohort.maxSessions, cohort._count.sessions),
     }
   }
 
@@ -890,22 +880,20 @@ export class CohortService {
   }
 
   /* الحدُّ يُفحص في موضعٍ واحد — فلا يفترق فحصُ الإضافة عن فحص النقل */
-  private async assertWithinWindow(cohortId: string, when: { startsAt: Date; endsAt?: Date | null }, opts: { counts: boolean }) {
+  private async assertWithinWindow(cohortId: string, when: { startsAt: Date; endsAt?: Date | null }) {
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
-      select: {
-        status: true, scheduleWindowStart: true, scheduleWindowEnd: true, maxSessions: true,
-        _count: { select: { sessions: { where: { placeholder: false } } } },
-      },
+      select: { status: true, scheduleWindowStart: true, scheduleWindowEnd: true },
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (['completed', 'cancelled'].includes(cohort.status)) {
       throw new AuthError('bad_state', 'لا جدولةَ لشعبةٍ منتهية', 409)
     }
-    const { scheduleWindowStart: from, scheduleWindowEnd: to, maxSessions: cap } = cohort
-    /* البابُ يفتحه الفصلُ وحدَه؛ والسقفُ حدٌّ اختياريٌّ يُفحص بعدَه لا معه.
-       وكانا مضمومَين بـ«و» فأُغلق البابُ على من فتح فصلَه — والعلّةُ كاملةً
-       في رأس `schedule-window.ts`. */
+    const { scheduleWindowStart: from, scheduleWindowEnd: to } = cohort
+    /* البابُ يفتحه الفصلُ وحدَه — والعلّةُ كاملةً في رأس `schedule-window.ts`.
+       وكان بعده سقفُ لقاءاتٍ اختياريٌّ تضعه الإدارة («بلغتَ سقفَ اللقاءات»)؛ ثمّ
+       قال صاحبُ المنصّة (٤ أكتوبر ٢٠٢٦): «لا حاجةَ لسقف الشعبة — يضيفون ما شاؤوا،
+       وساعاتٌ أكثرُ جودةٌ أعلى». فلا عددَ يُفحص هنا: المدى وحدَه. */
     if (!windowOpen(cohort) || !from || !to) {
       throw new AuthError('forbidden', 'لم تُحدَّد مدّةُ هذه الشعبة بعد — حدّدها في خطوتها الأولى («المعلومات الأساسيّة») فتُفتح الجدولةُ داخلها', 403)
     }
@@ -914,9 +902,6 @@ export class CohortService {
     }
     if (when.endsAt && when.endsAt > to) {
       throw new AuthError('forbidden', `نهايةُ اللقاء بعد آخر يومٍ في مدّة الشعبة (${fmtDay(to)})`, 403)
-    }
-    if (opts.counts && capReached(cap, cohort._count.sessions)) {
-      throw new AuthError('forbidden', `بلغتَ سقفَ اللقاءات (${cap}) — احذف لقاءً أو راجع الإدارة`, 403)
     }
   }
 
@@ -960,7 +945,7 @@ export class CohortService {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
       throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
     }
-    await this.assertWithinWindow(cohortId, input, { counts: true })
+    await this.assertWithinWindow(cohortId, input)
     /* وفحصُ التعارض هو فحصُ الإدارة نفسُه — `addSession` تحمله */
     /* ═══ وهذا البابُ ينتظر الاعتمادَ كأخيه ═══
 
@@ -992,8 +977,8 @@ export class CohortService {
       throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
     }
     if (session.placeholder) throw placeholderNotYours()
-    /* النقلُ لا يزيد العددَ فلا يُفحص السقف — يُفحص المدى وحدَه */
-    await this.assertWithinWindow(session.cohortId, input, { counts: false })
+    /* والنقلُ يُفحص بالمدى — ولا عددَ يُفحص منذ سقط السقف (٤ أكتوبر ٢٠٢٦) */
+    await this.assertWithinWindow(session.cohortId, input)
 
     const trainers = await this.prisma.cohortTrainer.findMany({
       where: { cohortId: session.cohortId }, select: { profileId: true },
@@ -1633,7 +1618,7 @@ export class CohortService {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
       throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
     }
-    await this.assertWithinWindow(cohortId, input, { counts: true })
+    await this.assertWithinWindow(cohortId, input)
     /* وداخلَ مدّة الشعبة لا يكفي: في وقت محاوره (`assertAxesInTime`) */
     await this.assertAxesInTime(cohortId, input, sessionAxes(input.moduleIds, input.moduleId).moduleIds)
 

@@ -361,17 +361,20 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   /* ── نافذةُ جدولةِ المدرّب: تفتحها الإدارة، ويجدول المدرّبُ داخلها ──
 
-     وإفراغُ الثلاثة إغلاقٌ صريح: تعود الشعبةُ إلى أن تُجدوَل من الإدارة
-     وحدَها. ولا حالةَ ثالثة — نصفُ نافذةٍ لا يُفتح بابا. */
+     وإفراغُ الحدّين إغلاقٌ صريح: تعود الشعبةُ إلى أن تُجدوَل من الإدارة
+     وحدَها. ولا حالةَ ثالثة — نصفُ نافذةٍ لا يُفتح بابا.
+
+     وسقطُ سقفِ اللقاءات (٤ أكتوبر ٢٠٢٦): «لا حاجةَ لسقف الشعبة — يضيفون ما
+     شاؤوا، وساعاتٌ أكثرُ جودةٌ أعلى». ومن أرسله من عميلٍ قديمٍ أُسقط صامتا (`z.object`
+     يُسقط ما لا يعرف) — فلا يُردّ حفظُ النافذة لأجل حقلٍ لم يعد له معنى. */
   app.put('/api/admin/cohorts/:id/schedule-window', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'فتحُ نافذةِ جدولةٍ للمدرّب أو إغلاقُها — مدًى وسقفُ لقاءات' },
+    schema: { tags: ['admin-learning'], summary: 'فتحُ نافذةِ جدولةٍ للمدرّب أو إغلاقُها — مدًى بلا سقف' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       start: z.coerce.date().nullish(),
       end: z.coerce.date().nullish(),
-      maxSessions: z.coerce.number().int().min(1).max(200).nullish(),
     }).parse(req.body ?? {})
     return cohorts.setScheduleWindow(req.auth!.userId, id, body)
   })

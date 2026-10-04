@@ -36,7 +36,6 @@
 import { periodBounds, periodDays, realDate, zonedDay, type CohortPeriod } from './cohort-period'
 import { MIN_SESSION_MS } from './session-length'
 import { fmtDateWith } from '../text/format-ar'
-import { countAr } from '../text/count-ar'
 
 /* ─────────── الشكلُ كما يُحفظ في الخطّة ─────────── */
 
@@ -303,6 +302,50 @@ export function addAxisToSlots(
   return appendToSlots(slots, moduleIds[moduleIds.length - 1])
 }
 
+/** المدى الذي رُتّبت عليه المواعيد — من أوّل يومٍ في أوّلها إلى آخر يومٍ في آخرها */
+export function slotsSpan(slots: readonly PlanSlot[]): CohortPeriod | null {
+  const dated = slots.filter((s) => realDate(s.startsOn) && realDate(s.endsOn))
+  if (dated.length === 0) return null
+  return {
+    startsOn: dated.reduce((m, s) => (s.startsOn < m ? s.startsOn : m), dated[0].startsOn),
+    endsOn: dated.reduce((m, s) => (s.endsOn > m ? s.endsOn : m), dated[0].endsOn),
+  }
+}
+
+/** أهي توزيعُ المنصّة الأوّلُ على مداها هي — لم يمسّها المدرّبُ بجمعٍ ولا فصلٍ ولا تاريخ؟ */
+export function untouchedLayout(slots: readonly PlanSlot[], moduleIds: readonly string[]): boolean {
+  const span = slotsSpan(slots)
+  return span !== null && sameSlots(slots, defaultSlots(moduleIds, span))
+}
+
+/* ═══ والمواعيدُ تتبع مدّةَ الشعبة (٤ أكتوبر ٢٠٢٦) ═══
+
+   نصح صاحبُ المنصّة المدرّبين أن يؤخّروا البدءَ إلى أواخر نوفمبر — وبعضُهم رتّب
+   مواعيدَه على أوائله. فمن غيّر تاريخَ البدء أو الانتهاء ومواعيدُه توزيعُ المنصّة
+   الأوّلُ كما هو، تبعت المواعيدُ المدّةَ الجديدةَ وحدَها؛ ومن رتّبها بيده لم يُمسّ
+   ترتيبُه، ويُقال له إن خرج منها شيءٌ عن المدّة، ومعه زرُّ التوزيع.
+
+   والحكمُ على «لم يمسّها» بمداها هي لا بالمدّة التي كانت: من مرّ في الطريق بتاريخين
+   متعاكسين (بدءٌ بعد انتهاء) لم يُفقده ذلك ما يتبع به حين تصلح المدّة. */
+export function followPeriod(
+  slots: readonly PlanSlot[],
+  moduleIds: readonly string[],
+  period: CohortPeriod | null,
+): PlanSlot[] {
+  if (!period || slots.length === 0 || !realDate(period.startsOn) || !realDate(period.endsOn) || period.endsOn < period.startsOn) {
+    return [...slots]
+  }
+  const span = slotsSpan(slots)
+  if (!span || (span.startsOn === period.startsOn && span.endsOn === period.endsOn)) return [...slots]
+  return untouchedLayout(slots, moduleIds) ? respreadSlots(slots, moduleIds, period) : [...slots]
+}
+
+/** أخرج موعدٌ عن المدّة؟ — به يُقال لمن رتّب مواعيدَه بيده ثمّ غيّر مدّتَه */
+export function slotsOutsidePeriod(slots: readonly PlanSlot[], period: CohortPeriod | null): boolean {
+  if (!period) return false
+  return slots.some((s) => realDate(s.startsOn) && realDate(s.endsOn) && (s.startsOn < period.startsOn || s.endsOn > period.endsOn))
+}
+
 /** المواعيدُ المزدحمة: ثلاثةُ محاورَ فأكثر، وضعفُ نصيبها لو وُزّعت بالتساوي فأكثر.
     نصيحةٌ لا مانع — المانعُ `slotProblems`، وهذا ما يُقال للمدرّب ليختار */
 export function crowdedSlots(slots: readonly PlanSlot[]): number[] {
@@ -511,41 +554,12 @@ export function sessionProblems(input: {
   return { blocking, warnings }
 }
 
-/* ═══ نصائحُ لا موانع — «أعطهم نصائح» (٤ أكتوبر ٢٠٢٦) ═══
+/* ═══ ولا نصيحةَ تُقلّل اللقاءات (٤ أكتوبر ٢٠٢٦) ═══
 
-   قال صاحبُ المنصّة: «قد تعطيهم نصائح: لا تُكثر من اللقاءات، أو اجمعها — أو اترك
-   ذلك لي حين أعتمد موادَّهم». فما هنا يُقال في بطاقة الموعد بلطفٍ ولا يمنع شيئا،
-   والإدارةُ تراجعه مع الخطّة. والعددُ بصيغته (`countAr`) — «3 لقاءات» لا «3 لقاء». */
-export interface SlotTip {
-  kind: 'many' | 'same_day'
-  textAr: string
-}
-
-const SESSION_FORMS = { one: 'لقاءٌ', two: 'لقاءان', few: 'لقاءات', many: 'لقاءً' } as const
-const AXIS_FORMS = { one: 'محور', two: 'محوران', few: 'محاور', many: 'محورا' } as const
-
-export function slotSessionTips(input: {
-  /** عددُ محاور الموعد */
-  axes: number
-  /** لقاءاتُه المباشرةُ التي تُعدّ — لا الملغى ولا المبدئيّ */
-  sessions: readonly { startsAt: Date | string }[]
-}): SlotTip[] {
-  const out: SlotTip[] = []
-  const n = input.sessions.length
-  if (n >= 2 && n > input.axes) {
-    const forAxes = input.axes === 1 ? 'لمحورٍ واحد' : input.axes === 2 ? 'لمحورين' : `لـ${countAr(input.axes, AXIS_FORMS)}`
-    out.push({
-      kind: 'many',
-      textAr: `في هذا الموعد ${countAr(n, SESSION_FORMS)} ${forAxes} — لا بأس بذلك، وإن شئت فلقاءٌ واحدٌ يجمع محاورَ الموعد كلَّها، فيخفّ على المتعلّم.`,
-    })
-  }
-  const days = input.sessions.map((s) => zonedDay(s.startsAt))
-  const twice = days.find((d, i) => days.indexOf(d) !== i)
-  if (twice) {
-    out.push({ kind: 'same_day', textAr: `لقاءان في يومٍ واحد (${dayLabelAr(twice)}) — إن شئت فاجمعهما في لقاءٍ واحد.` })
-  }
-  return out
-}
+   كان هنا `slotSessionTips`: «لقاءاتٌ أكثرُ من محاور الموعد — لقاءٌ واحدٌ يجمعها»
+   و«لقاءان في يومٍ واحد — اجمعهما»، من مثالٍ ضربه صاحبُ المنصّة («لا تُكثر من
+   اللقاءات، أو اجمعها»). ثمّ قال في اليوم نفسِه: «يضيفون ما شاؤوا — ساعاتٌ أكثرُ جودةٌ
+   أعلى؛ فاتركهم يضيفون ما استطاعوا». فسقطت النصيحتان، ونصيحةُ رأس الخطوة تقول العكس. */
 
 /** أيقع اللقاءُ المباشرُ داخلَ موعد محوره؟ — بدؤه ونهايتُه (أو أدنى مدّةٍ له إن لم
     تُكتب) بين حدّيه بعمّان. به يحجب الإرسالُ ما خرج (فوق)، وبه يبقى اللقاءُ المنقولُ

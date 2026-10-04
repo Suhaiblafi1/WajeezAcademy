@@ -5,7 +5,9 @@
    جدّا». والعلّةُ كاملةً في رأس `src/application/trainer/start-advice.ts`. */
 
 import { describe, expect, it } from 'vitest'
-import { START_ADVICE, START_ADVICE_AR, startAdvice } from '@/application/trainer/start-advice'
+import {
+  SESSION_DAY_ADVICE_AR, START_ADVICE, START_ADVICE_AR, sessionDayAdvice, startAdvice,
+} from '@/application/trainer/start-advice'
 
 const TODAY = '2026-10-04'
 
@@ -15,9 +17,11 @@ describe('نصيحةُ البدء تقول ما يناسب ما اختاره', (
     expect(startAdvice('', TODAY)).toBe('ask')
   })
 
-  it('⚠️ وأبكرُ من أواخر نوفمبر: تذكّر بلطف — واليومُ الذي قبل الحدّ منه', () => {
+  it('⚠️ وأبكرُ من أواخر نوفمبر: تذكّر بلطف — والحدُّ التاسعُ والعشرون كما قاله صاحبُ المنصّة', () => {
+    expect(START_ADVICE.lateNovember).toBe('2026-11-29')
     expect(startAdvice('2026-10-18', TODAY)).toBe('early')
-    expect(startAdvice('2026-11-21', TODAY)).toBe('early')
+    expect(startAdvice('2026-11-22', TODAY)).toBe('early')
+    expect(startAdvice('2026-11-28', TODAY), 'اليومُ الذي قبل الحدّ').toBe('early')
   })
 
   it('⚠️ ومن أواخر نوفمبر فما بعد: تشكر', () => {
@@ -29,6 +33,21 @@ describe('نصيحةُ البدء تقول ما يناسب ما اختاره', (
     expect(startAdvice(null, '2026-11-30')).toBe('ask')
     expect(startAdvice(null, START_ADVICE.december)).toBeNull()
     expect(startAdvice('2026-12-10', '2026-12-05')).toBeNull()
+  })
+})
+
+describe('ونموذجُ اللقاء يقولها حين يُختار يومٌ قبل الحدّ', () => {
+  it('⚠️ قبل التاسع والعشرين: يُنصَح — ومنه فما بعد: لا', () => {
+    expect(sessionDayAdvice('2026-11-08', TODAY)).toBe(true)
+    expect(sessionDayAdvice('2026-11-28', TODAY)).toBe(true)
+    expect(sessionDayAdvice(START_ADVICE.lateNovember, TODAY)).toBe(false)
+    expect(sessionDayAdvice('2026-12-02', TODAY)).toBe(false)
+  })
+
+  it('وبلا يوم، أو بعد أن حلّ ديسمبر: لا نصيحة', () => {
+    expect(sessionDayAdvice('', TODAY)).toBe(false)
+    expect(sessionDayAdvice(null, TODAY)).toBe(false)
+    expect(sessionDayAdvice('2026-11-08', START_ADVICE.december)).toBe(false)
   })
 })
 
@@ -44,7 +63,7 @@ describe('ونصُّها ودود', () => {
   })
 
   it('ولا أمرَ فيها ولا منع', () => {
-    for (const text of Object.values(START_ADVICE_AR)) {
+    for (const text of [...Object.values(START_ADVICE_AR), SESSION_DAY_ADVICE_AR]) {
       expect(text).not.toMatch(/يجب|لا يُسمح|ممنوع|إلزاميّ|لا يمكن/)
     }
   })

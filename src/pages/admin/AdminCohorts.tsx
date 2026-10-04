@@ -47,7 +47,7 @@ interface CohortRow {
   price: string | null; currency: string; language: string; deliveryMode: string;
   registrationOpen: boolean; financialReady: boolean; sessionsCount: number;
   /* نافذةُ جدولةِ المدرّب — الثلاثةُ تُقرأ معا، وغيابُ أيٍّ منها بابٌ مغلَق */
-  scheduleWindowStart: string | null; scheduleWindowEnd: string | null; maxSessions: number | null;
+  scheduleWindowStart: string | null; scheduleWindowEnd: string | null;
   trainers: { profileId: string; name: string; role: string }[];
 }
 
@@ -721,8 +721,8 @@ export default function AdminCohorts() {
                         كانت تقول له «الإدارة تضيف الجدول» ولا تعطيه إلّا أن
                         **يقترح** تأجيلا يُرفع إلى طابور موافقات.
 
-                        فهنا تضع الإدارةُ الحدَّ — مدًى وسقفَ لقاءات — ويقرّر
-                        المدرّبُ داخله. والثلاثةُ تُفتح معا أو لا تُفتح. */}
+                        فهنا تضع الإدارةُ الحدَّ — مدًى بلا سقف (٤ أكتوبر ٢٠٢٦) —
+                        ويقرّر المدرّبُ داخله. والحدّان يُفتحان معا أو لا يُفتحان. */}
                     <ScheduleWindowCard cohort={c} busy={busy} act={act} />
 
                     {/* ربط Zoom يدوي لجلسة */}
@@ -804,10 +804,12 @@ export default function AdminCohorts() {
    كان الحقلُ الأوّلُ «معرف الجلسة (UUID)»: قيمةٌ لا تظهر على أيّ شاشةٍ في
    المنصّة، فلا سبيلَ لتعبئتها إلّا من قاعدة البيانات. وجلساتُ الشعبة معروفةٌ
    للخادم، فتُقرأ وتُعرض. ومن رُبطت جلستُه يظهر معلَّما كي لا يُربط مرّتين. */
-/* نافذةُ جدولةِ المدرّب — تُفتح بالثلاثة، وتُغلق بإفراغها.
+/* نافذةُ جدولةِ المدرّب — تُفتح بالحدّين، وتُغلق بإفراغهما.
 
    ولا حالةَ ثالثة: نصفُ نافذةٍ لا يفتح بابا، ولذلك يُعطَّل الحفظُ حتّى
-   تكتمل الثلاثةُ أو تفرغ كلُّها. */
+   يكتمل الحدّان أو يفرغا. وكان معهما «سقفُ اللقاءات» ثالثا؛ ثمّ قال صاحبُ
+   المنصّة (٤ أكتوبر ٢٠٢٦): «لا حاجةَ لسقف الشعبة — يضيفون ما شاؤوا، وساعاتٌ
+   أكثرُ جودةٌ أعلى». فسقط الحقلُ، ولا يُقرأ ما حُفظ فيه من قبل. */
 function ScheduleWindowCard({ cohort, busy, act }: {
   cohort: CohortRow;
   busy: boolean;
@@ -817,12 +819,11 @@ function ScheduleWindowCard({ cohort, busy, act }: {
   const [form, setForm] = useState({
     start: day(cohort.scheduleWindowStart),
     end: day(cohort.scheduleWindowEnd),
-    max: cohort.maxSessions?.toString() ?? "",
   });
-  const filled = [form.start, form.end, form.max].filter(Boolean).length;
-  const complete = filled === 3;
+  const filled = [form.start, form.end].filter(Boolean).length;
+  const complete = filled === 2;
   const cleared = filled === 0;
-  const isOpen = Boolean(cohort.scheduleWindowStart && cohort.scheduleWindowEnd && cohort.maxSessions);
+  const isOpen = Boolean(cohort.scheduleWindowStart && cohort.scheduleWindowEnd);
 
   return (
     <Card className="bg-paper/20">
@@ -831,10 +832,10 @@ function ScheduleWindowCard({ cohort, busy, act }: {
       </p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
         {isOpen
-          ? "مفتوحة — يضيف مدرّبُ الشعبة لقاءاتِها وينقلها داخلَ هذا الحدّ بلا طابور موافقات. وما يقع خارجَه يبقى اقتراحا يُرفع إليك."
+          ? "مفتوحة — يضيف مدرّبُ الشعبة ما شاء من لقاءاتها وينقلها داخلَ هذا الحدّ بلا طابور موافقات. وما يقع خارجَه يبقى اقتراحا يُرفع إليك."
           : "مغلقة — الجدولةُ إليك وحدَك، والمدرّبُ لا يملك إلّا اقتراحَ تأجيلٍ يُرفع إلى طابورك. افتحها ليقرّر داخلَ حدّك."}
       </p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <label className="text-fine text-muted-foreground">
           من تاريخ
           <input type="date" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })}
@@ -845,15 +846,10 @@ function ScheduleWindowCard({ cohort, busy, act }: {
           <input type="date" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })}
             className={`${staffControlCls} mt-1`} />
         </label>
-        <label className="text-fine text-muted-foreground">
-          سقفُ اللقاءات
-          <input type="number" min={1} max={200} value={form.max} onChange={(e) => setForm({ ...form, max: e.target.value })}
-            placeholder="مثال: 16" className={`${staffControlCls} mt-1`} />
-        </label>
       </div>
       {!complete && !cleared && (
         <p className="mt-2 text-read text-gold-ink">
-          الثلاثةُ تُفتح معا — املأ ما نقص، أو أفرغها كلَّها لإغلاق النافذة.
+          الحدّان يُفتحان معا — املأ ما نقص، أو أفرغهما لإغلاق النافذة.
         </p>
       )}
       <Button tone="confirm" disabled={busy || (!complete && !cleared)} className="mt-3"
@@ -861,7 +857,6 @@ function ScheduleWindowCard({ cohort, busy, act }: {
           () => apiPut(`/api/admin/cohorts/${cohort.id}/schedule-window`, {
             start: form.start ? new Date(`${form.start}T00:00:00.000Z`).toISOString() : null,
             end: form.end ? new Date(`${form.end}T23:59:59.000Z`).toISOString() : null,
-            maxSessions: form.max ? Number(form.max) : null,
           }),
           complete ? "فُتحت نافذةُ الجدولة — المدرّبُ يقرّر داخلَ حدّك" : "أُغلقت نافذةُ الجدولة — الجدولةُ إليك وحدَك",
         )}>
@@ -869,7 +864,7 @@ function ScheduleWindowCard({ cohort, busy, act }: {
       </Button>
       {isOpen && (
         <p className="mt-2 text-read text-muted-foreground">
-          استُهلك {cohort.sessionsCount} من {cohort.maxSessions} لقاءً.
+          في الشعبة {cohort.sessionsCount} لقاءً — بلا سقف.
         </p>
       )}
     </Card>

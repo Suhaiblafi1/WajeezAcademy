@@ -15,11 +15,18 @@
    وكم بقي فيه.
 
    فالحارسُ هنا على **القاعدة** و**على أنّ الموضعَين يقرآنها**. ولو فُحص
-   السلوكُ وحدَه لَعاد العطبُ من الموضع الذي لم يُفحَص — وهو بعينه ما وقع. */
+   السلوكُ وحدَه لَعاد العطبُ من الموضع الذي لم يُفحَص — وهو بعينه ما وقع.
+
+   ═══ ثمّ سقط السقفُ كلُّه (٤ أكتوبر ٢٠٢٦) ═══
+
+   «لا حاجةَ لسقف الشعبة — يضيفون ما شاؤوا، وساعاتٌ أكثرُ جودةٌ أعلى». فكان هنا
+   ما يحرس «غيابُ السقف ليس بلوغَه»، وصار ما يحرس أنّه لا سقفَ أصلا: لا قاعدةَ
+   تعدّه، ولا خادمَ يفحصه، ولا شاشةَ تعرضه أو تطلبه. */
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { windowOpen, remainingSessions, capReached } from '@/application/trainer/schedule-window'
+import * as SW from '@/application/trainer/schedule-window'
+const { windowOpen } = SW
 
 const root = process.cwd()
 /* التعليقاتُ تُنزع قبل كلّ فحصٍ بنيويّ: هذا الملفُّ نفسُه يقتبس الشيفرةَ
@@ -42,30 +49,27 @@ describe('البابُ يفتحه الفصلُ وحدَه', () => {
   })
 })
 
-describe('السقفُ حدٌّ اختياريّ — وغيابُه ليس بلوغَه', () => {
-  it('⚠️ بلا سقفٍ: الباقي «بلا سقف» لا صفر', () => {
-    expect(remainingSessions(null, 0), 'قُرئ غيابُ السقف صفرا').toBeNull()
-    expect(remainingSessions(undefined, 7)).toBeNull()
+describe('ولا سقفَ لعدد اللقاءات (٤ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ القاعدةُ لا تعدّ لقاءً: لا «كم بقي» ولا «بلغتَ السقف»', () => {
+    expect(Object.keys(SW).sort(), 'عادت قاعدةٌ تعدّ اللقاءات').toEqual(['windowOpen'])
   })
 
-  it('⚠️ ومن لا سقفَ له لا يبلغه — ولو جدول تسعين لقاءً', () => {
-    expect(capReached(null, 0), 'شعبةٌ فارغةٌ قيل لمدرّبها بلغتَ السقف').toBe(false)
-    expect(capReached(null, 90)).toBe(false)
+  it('⚠️ والخادمُ لا يقرأ السقفَ ولا يكتبه — ولا يقول «بلغتَ سقفَ اللقاءات»', () => {
+    const SVC = code('server/services/cohort.service.ts')
+    expect(SVC, 'عاد الخادمُ يقرأ سقفَ الشعبة أو يكتبه').not.toMatch(/maxSessions/)
+    expect(SVC).not.toContain('بلغتَ سقفَ اللقاءات')
+    const ROUTE = code('server/http/routes/admin-learning.routes.ts')
+    const win = ROUTE.slice(ROUTE.indexOf("'/api/admin/cohorts/:id/schedule-window'"), ROUTE.indexOf('return cohorts.setScheduleWindow('))
+    expect(win, 'لا مسلكَ للنافذة').toContain('end: z.coerce.date().nullish()')
+    expect(win, 'عاد المسلكُ يقبل سقفا').not.toMatch(/maxSessions/)
   })
 
-  it('والسقفُ الموضوعُ يُحترَم: يُعَدّ ما بقي، ويُقال إذا نفد', () => {
-    expect(remainingSessions(8, 3)).toBe(5)
-    expect(capReached(8, 3)).toBe(false)
-    expect(remainingSessions(8, 8)).toBe(0)
-    expect(capReached(8, 8)).toBe(true)
-    /* وما جاوزه لا يُعطي عددا سالبا يُطرح من غيره */
-    expect(remainingSessions(8, 11)).toBe(0)
-    expect(capReached(8, 11)).toBe(true)
-  })
-
-  it('وسقفُ الصفر سقفٌ لم يُوضَع — لا شعبةٌ بصفر لقاءات', () => {
-    expect(remainingSessions(0, 0), 'صفرٌ قُرئ سقفا فأُغلق الباب').toBeNull()
-    expect(capReached(0, 0)).toBe(false)
+  it('⚠️ والشاشتان لا تعرضانه ولا تطلبانه — المدرّبُ والإدارة', () => {
+    const TRAINER = code('src/pages/trainer/TrainerSchedule.tsx')
+    expect(TRAINER).not.toMatch(/maxSessions|remaining|بلغتَ سقفَ/)
+    const ADMIN = code('src/pages/admin/AdminCohorts.tsx')
+    expect(ADMIN, 'عاد حقلُ السقف إلى نافذة الإدارة').not.toMatch(/maxSessions|سقفُ اللقاءات/)
+    expect(ADMIN).toMatch(/const filled = \[form\.start, form\.end\]\.filter\(Boolean\)\.length;/)
   })
 })
 
@@ -86,16 +90,5 @@ describe('والموضعان يقرآن القاعدةَ نفسَها — لا �
     expect(SVC, 'الخادمُ لا يقرأ قاعدةَ النافذة المشتركة')
       .toMatch(/from ['"].*trainer\/schedule-window['"]/)
     expect(SVC).toMatch(/windowOpen\(/)
-    expect(SVC).toMatch(/capReached\(/)
-  })
-
-  it('⚠️ والشاشةُ كذلك — «بلغتَ السقف» لا تُشتقّ من رقمٍ يعني شيئَين', () => {
-    const UI = code('src/pages/trainer/TrainerSchedule.tsx')
-    /* `const full = win.remaining <= 0` هي الصيغةُ التي قالت لشعبةٍ فارغةٍ
-       إنّها بلغت سقفَها. */
-    expect(UI, 'الشاشةُ ما زالت تشتقّ بلوغَ السقف من «الباقي ≤ 0»')
-      .not.toMatch(/remaining\s*<=\s*0/)
-    expect(UI, 'الشاشةُ لا تقرأ القاعدةَ المشتركة')
-      .toMatch(/from ['"]@\/application\/trainer\/schedule-window['"]/)
   })
 })

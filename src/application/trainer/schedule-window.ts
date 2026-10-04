@@ -52,16 +52,11 @@ export function windowOpen(c: {
   return Boolean(c.scheduleWindowStart && c.scheduleWindowEnd)
 }
 
-/** كم لقاءً بقي؟ — و`null` تعني **بلا سقفٍ معلَن**، لا صفرا */
-export function remainingSessions(cap: number | null | undefined, used: number): number | null {
-  /* والسقفُ الصفريُّ أو السالبُ سقفٌ لم يُوضَع: الإدارةُ لا تفتح شعبةً
-     بصفر لقاءات، وقراءتُه سقفا تُغلق البابَ الذي فتحه الفصل. */
-  if (cap === null || cap === undefined || cap <= 0) return null
-  return Math.max(0, cap - used)
-}
+/* ═══ وسقطُ سقفِ اللقاءات كلِّه (٤ أكتوبر ٢٠٢٦) ═══
 
-/** أبلغَ السقفَ فعلا؟ — ومن لا سقفَ له لا يبلغه أبدا */
-export function capReached(cap: number | null | undefined, used: number): boolean {
-  const left = remainingSessions(cap, used)
-  return left !== null && left <= 0
-}
+   كان هنا `remainingSessions` و`capReached`: سقفٌ اختياريٌّ تضعه الإدارةُ لكلّ
+   شعبة، فيُقال لمن بلغه «بلغتَ سقفَ اللقاءات». ثمّ قال صاحبُ المنصّة: «لا حاجةَ
+   لسقف الشعبة — يضيفون ما شاؤوا، وساعاتٌ أكثرُ جودةٌ أعلى؛ فاتركهم يضيفون ما
+   استطاعوا». فلا عددَ يُفحص ولا يُعرض: البابُ حدّان (`windowOpen`) وحدَهما.
+   والعمودُ `Cohort.maxSessions` باقٍ في المخطّط بلا قارئٍ ولا كاتب — وأُفرغ
+   بترحيل `20261004100000_retire_session_cap`. */
