@@ -74,7 +74,11 @@ describe('البوّاباتُ المعرَّفةُ تعمل في CI', () => {
     /* يُقبل النداءُ باسم السكربت (`npm run ci:x`) أو بملفّه مباشرةً
        (`npx tsx scripts/x.ts`) — فبعضُ البوّابات تُستدعى بملفّها. */
     const byName = new RegExp(`npm run ${script.replace(':', ':')}(\\s|$)`).test(ALL_COMMANDS)
-    const file = pkg.scripts[script].match(/scripts\/[\w/.-]+\.ts/)?.[0]
+    /* والغلافُ ليس البوّابة (٤ أكتوبر ٢٠٢٦): `with-db.ts` يسبق سكربتَ ما يحتاج قاعدةً
+       (`ci:guide-seed`)، وكان أوّلُ ملفٍّ يُطابَق — وهو في ci.yml بخطوةٍ أخرى، فمرّت
+       البوّابةُ «موصولةً» وخطوتُها محذوفة. فيُطلب ملفُّها هي: آخرُ ما في أمرها غيرَ الغلاف. */
+    const file = [...pkg.scripts[script].matchAll(/scripts\/[\w/.-]+\.ts/g)]
+      .map((m) => m[0]).filter((f) => f !== 'scripts/with-db.ts').pop()
     const byFile = file ? ALL_COMMANDS.includes(file) : false
     expect(
       byName || byFile,
