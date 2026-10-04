@@ -115,37 +115,37 @@ function Nav() {
       <div className="shell flex h-16 items-center justify-between">
         <a href="#top" className="flex items-center gap-2.5">
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-8 w-8 object-contain md:h-10 md:w-10" />
-          <span className="text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
+          <span className="whitespace-nowrap text-base font-black leading-none md:text-lg"><span className="hidden min-[370px]:inline">أكاديمية </span><span className="text-teal-light-ink">وجيز</span></span>
         </a>
         {/* المقاسُ نفسُه في `SiteShell` — رأسان لصفحةٍ واحدةٍ في المعنى،
             ويحرس تطابقَهما `src/tests/site-nav-size.test.ts`. */}
-        <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex lg:gap-9 lg:text-base">
+        <nav className="hidden items-center gap-6 whitespace-nowrap text-sm text-muted-foreground lg:text-base min-[1360px]:flex 2xl:gap-9">
           {links.map((l) =>
             renderLink(l, 'transition hover:text-teal-light-ink')
           )}
         </nav>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-[1360px]:gap-2 2xl:gap-3">
           <ThemeToggle />
           {userName ? (
-            <Inset as={Link} tone="accent" interactive to={portalHome} className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
+            <Inset as={Link} tone="accent" interactive to={portalHome} className="hidden items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold text-teal-light-ink transition hover:bg-teal/20 md:inline-flex">
               <User className="h-4 w-4" />
               {userName}
             </Inset>
           ) : (
-            <Inset as={Link} tone="accent" interactive to="/auth" className="hidden items-center gap-2 px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex">
+            <Inset as={Link} tone="accent" interactive to="/auth" className="hidden items-center gap-2 whitespace-nowrap px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:border-teal/50 hover:text-teal-light-ink md:inline-flex">
               <User className="h-4 w-4" />
               دخول
             </Inset>
           )}
           <a
             href="#diagnostic"
-            className="btn-teal hidden px-5 py-2.5 text-sm md:inline-flex"
+            className="btn-teal hidden whitespace-nowrap px-5 py-2.5 text-sm md:inline-flex"
           >
             ابدأ مؤشر وجيز
           </a>
           <button
             ref={menuBtnRef}
-            className="md:hidden grid h-11 w-11 place-items-center text-foreground"
+            className="min-[1360px]:hidden grid h-11 w-11 place-items-center text-foreground"
             onClick={() => setOpen(!open)}
             aria-label={open ? 'إغلاق قائمة التنقل' : 'فتح قائمة التنقل'}
             aria-expanded={open}
@@ -156,7 +156,7 @@ function Nav() {
         </div>
       </div>
       {open && (
-        <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-paper px-5 py-4 md:hidden">
+        <nav id="mobile-menu" ref={mobileNavRef} aria-label="قائمة التنقل الرئيسية" className="border-t border-white/5 bg-paper px-5 py-4 min-[1360px]:hidden">
           {links.map((l) =>
             renderLink(l, 'block py-2.5 text-muted-foreground hover:text-teal-light-ink', () => setOpen(false))
           )}

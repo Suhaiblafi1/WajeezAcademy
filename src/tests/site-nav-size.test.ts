@@ -15,9 +15,9 @@ import { join } from 'node:path'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 
-/** صنفُ الشريط الأفقيّ في رأسٍ ما — الشريطُ المخفيُّ دون `md` */
+/** صنفُ الشريط الأفقيّ في رأسٍ ما — الشريطُ المخفيُّ دون حدٍّ ما (١٣٦٠ بكسلا اليوم) */
 function navClass(src: string): string {
-  const m = src.match(/<nav className="(hidden items-center[^"]*md:flex[^"]*)"/)
+  const m = src.match(/<nav className="(hidden items-center[^"]*(?:\b(?:md|lg|xl|2xl)|min-\[\d+px\]):flex\b[^"]*)"/)
   if (!m) throw new Error('لم يُعثر على شريط الرأس — تغيّرت بنيةُ الرأس')
   return m[1]
 }
@@ -78,4 +78,57 @@ describe('ورأسا الموقع على روابطَ واحدة', () => {
     expect(shellSrc, 'تذييلُ الصفحات الداخليّة فقد رابطَ المنهجيّة').toMatch(/<Link to="\/methodology"/)
     expect(homeSrc, 'تذييلُ الرئيسة فقد رابطَ المنهجيّة').toMatch(/\{ label: 'المنهجية', to: '\/methodology' \}/)
   })
+})
+
+/* ═══ ولا عرضَ بلا تنقّل، ولا تبويبَ ينكسر سطرين (٤ أكتوبر ٢٠٢٦) ═══
+
+   كانت التبويباتُ تنكسر سطرين على حاسوبٍ عرضُه ١٢٨٠: الشريطُ يُعرض من `md`
+   وتلتفّ عناصرُه حين يضيق. فصار يُعرض من حيث يتّسع: قِيس على مواضع الحروف
+   فتراكب على العلامة عند ١٢٨٠، ومن ١٣٦٠ بقي بينه وبين جارَيه ٤٣ بكسلا فأكثر
+   (`SiteShell.tsx`). وزرُّ القائمة يغطّي ما دونه.
+
+   والخطرُ في هذا النقل أن يفترق الحدّان: يُخفى الشريطُ إلى `xl` ويبقى زرُّ
+   القائمة مخفيّا من `md` — فيرى زائرُ اللوح رأسا بلا روابطَ ولا قائمة. فالفحصُ
+   على **تطابق الحدود الثلاثة** في الرأسين، من أصنافها لا من تعليقٍ فوقها. */
+const bpOf = (cls: string, what: 'flex' | 'hidden'): string | null =>
+  cls.match(new RegExp(`(?:^|\\s)(sm|md|lg|xl|2xl|min-\\[\\d+px\\]):${what}(?:\\s|$)`))?.[1] ?? null
+
+function menuButtonClass(src: string): string {
+  const at = src.indexOf('aria-controls="mobile-menu"')
+  if (at < 0) throw new Error('لم يُعثر على زرّ القائمة — تغيّرت بنيةُ الرأس')
+  const open = src.lastIndexOf('<button', at)
+  const m = src.slice(open, at).match(/className="([^"]*)"/)
+  if (!m) throw new Error('زرُّ القائمة بلا صنف')
+  return m[1]
+}
+
+function mobileNavClass(src: string): string {
+  const m = src.match(/<nav id="mobile-menu"[^>]*?className="([^"]*)"/)
+  if (!m) throw new Error('لم تُعثر على قائمة الجوال — تغيّرت بنيةُ الرأس')
+  return m[1]
+}
+
+describe('ولا عرضَ بلا تنقّل، ولا تبويبَ ينكسر سطرين', () => {
+  for (const [name, path] of [['رأس الموقع', 'src/components/SiteShell.tsx'], ['رأس الرئيسة', 'src/pages/Home.tsx']] as const) {
+    const src = read(path)
+    const nav = navClass(src)
+
+    it(`⚠️ ${name}: الشريطُ يظهر حيث يختفي زرُّ القائمة وقائمتُه — بالحدّ نفسِه`, () => {
+      const shown = bpOf(nav, 'flex')
+      expect(shown, 'الشريطُ بلا حدٍّ يظهر منه').not.toBeNull()
+      expect(bpOf(menuButtonClass(src), 'hidden'), 'زرُّ القائمة يختفي قبل أن يظهر الشريط').toBe(shown)
+      expect(bpOf(mobileNavClass(src), 'hidden'), 'قائمةُ الجوال تختفي قبل أن يظهر الشريط').toBe(shown)
+    })
+
+    it(`⚠️ ${name}: والشريطُ من ١٣٦٠ بكسلا — حيث قِيس أنّه يتّسع بلا تراكب`, () => {
+      expect(bpOf(nav, 'flex')).toBe('min-[1360px]')
+    })
+
+    it(`${name}: ولا يلتفّ تبويبٌ ولا زرُّ المؤشر سطرين`, () => {
+      expect(nav.split(/\s+/), 'تبويباتُ الشريط تلتفّ').toContain('whitespace-nowrap')
+      const cta = src.match(/className="(btn-teal hidden[^"]*md:inline-flex[^"]*)"/)
+      expect(cta, 'لم يُعثر على زرّ المؤشر في الرأس').not.toBeNull()
+      expect(cta![1].split(/\s+/), 'زرُّ «ابدأ مؤشر وجيز» يلتفّ').toContain('whitespace-nowrap')
+    })
+  }
 })

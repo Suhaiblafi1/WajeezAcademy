@@ -63,6 +63,7 @@ import {
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
 import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { NEEDS_ADVISOR_KEY } from "@/application/plan/advisor-referral";
+import { whyPathwayFacts } from "@/application/plan/why-pathway";
 import { pathwayCourses, pathwayDelivery, MAX_PATHWAY_COURSES, weeksLabel } from "@/data/courses";
 import AdvisorContact from "@/components/AdvisorContact";
 import { pathwayCategory, type Pathway } from "@/data/pathways";
@@ -74,7 +75,6 @@ import {
   ResultPriceCard,
   WhyThisPathway,
   type CompositeView,
-  type ConfidenceParts,
 } from "./diagnostic/ResultPlanCards";
 import { composedReason, templateCourseReason } from "./diagnostic/plan-reasons";
 
@@ -1706,21 +1706,10 @@ export default function Diagnostic() {
               يُعرض عليه؛ ومن لم يرَ خطته بعدُ يقرأ التبرير قبل الشيء المبرَّر.
               وبطاقة التسجيل تَعِد بستة بنود خامسها «لماذا هذا المسار» — والمحرك
               يحسب أسبابه (reasons_ar) وثبات نتيجته (change_makers_ar) وقوة أدلته
-              الخمسة، فتُعرض هنا وفاءً بالوعد كما قُطع. */}
-          <WhyThisPathway
-            reasons={result.reasons}
-            confidence={result.resultJson.confidence as ConfidenceParts | undefined}
-            bandAr={result.confidenceBand}
-            blockers={(result.resultJson.strong_blockers_ar as string[] | undefined) ?? []}
-            basis={
-              (result.resultJson.evidence_basis as
-                | { measured: number; measurable: number; unknown: number }
-                | null
-                | undefined) ?? null
-            }
-            changeMakers={(result.resultJson.change_makers_ar as string[] | undefined) ?? []}
-            gapNote={composedFold.gapNote}
-          />
+              الخمسة، فتُعرض هنا وفاءً بالوعد كما قُطع.
+              ومداخلُها من `whyPathwayFacts` — المصدرِ الذي تبنيها منه صفحةُ
+              المسار أيضا، فلا تفترق البطاقتان يومَ يُضاف إليها حقل. */}
+          <WhyThisPathway {...whyPathwayFacts(result)} gapNote={composedFold.gapNote} />
 
           {/* «مع المسار لا تأخذ دورات فقط — تأخذ منظومة كاملة» — إثبات قيمة مضغوط قبل الاعتماد،
               بنفس حجم خط القسم. حلّت محل ثلاثة أكورديونات كانت هنا بقرار المالك (2026-08-23):

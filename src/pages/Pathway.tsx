@@ -43,6 +43,10 @@ import EcosystemNote from "@/components/EcosystemNote";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
+import { whyPathwayFacts, whyResultForPathway } from "@/application/plan/why-pathway";
+import { loadLastResult } from "@/application/diagnostic/session-store";
+import type { DiagResult } from "@/data/diagnostic";
+import { WhyThisPathway } from "@/pages/diagnostic/ResultPlanCards";
 import { DISCOUNT_CATEGORIES, nextBuildStep } from "@/application/commerce/discount-policy";
 import { priceCart } from "@/application/commerce/cart-pricing";
 import { couponFieldCls } from "@/components/FormKit";
@@ -229,6 +233,12 @@ export default function PathwayPage() {
       return false;
     }
   }, []);
+
+  /* النتيجةُ التي تشرح هذا المسار — على المسار الذي هبط عليه التشخيصُ وحدَه */
+  const whyResult = useMemo(
+    () => whyResultForPathway(id ?? "", diagTopId, () => loadLastResult<DiagResult>()),
+    [id, diagTopId],
+  );
 
   if (!pathway) {
     /* البند ع-١: الكتالوج يصل بعد أول رسم، فـ«غير موجود» قبل وصوله خطأ —
@@ -566,6 +576,18 @@ export default function PathwayPage() {
               في ملفّه الذي يفتحه مستشارُه من بوابته (`LearnerPanel.tsx`) —
               مبنيّا من نتيجة تشخيصه المرفقة بحسابه فعلا، لا نصّا يزول بإغلاق
               التبويب. */}
+
+          {/* «لماذا هذا المسار» — عادت إلى هنا بطلب صاحب المنصّة (٤ أكتوبر ٢٠٢٦).
+
+              زالت شاشةُ النتيجة فزالت معها البطاقة، وبقي الموقعُ يَعِد بها:
+              «نوصي ونشرح» في الرئيسة، و«يشرح لماذا» في كتالوج المسارات. فمَن
+              أنهى التشخيصَ كان يرى خطّتَه ولا يرى على أيّ إجاباته بُنيت، ولا
+              كم قويت أدلّتها. والشرحُ في `why-pathway.ts`.
+
+              وموضعُها بعد الدورات وقبل السعر: الترتيبُ الذي يسأل به القارئ —
+              ما المسار؟ ثمّ ماذا سأتعلّم؟ ثمّ لماذا هذا بالذات؟ ثمّ بكم؟
+              وقبل إحالة المستشار أيضا: الأدلّةُ تُقرأ قبل الدعوة التي تبنى عليها. */}
+          {whyResult && <WhyThisPathway {...whyPathwayFacts(whyResult)} headingLevel="h2" />}
 
           {/* إحالة المستشار — قبل بوّابة الشراء لا بعدها.
 
