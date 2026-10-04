@@ -341,7 +341,15 @@ export function WhyThisPathway({
         { label: "اتساق إجاباتك", value: confidence.consistency },
         { label: "وضوح الفارق بين المسارات", value: confidence.separation },
         { label: "جودة الأدلة", value: confidence.evidenceQuality },
-        { label: "ثبات النتيجة", value: confidence.stability },
+        /* ── الشريطُ الخامسُ يُسمّى بما يقيسه (٤ أكتوبر ٢٠٢٦) ──
+
+           كان اسمُه «ثبات النتيجة»، ورقمُه في V2 وV2.1 **ما قِسناه من كلّ مهارات
+           المسار** (`skillEvidenceCoverage` في `toLegacyConfidence`) — رقمٌ سقفُه
+           دون النصف بالبنية، فقرأ المتعلّمُ «ثبات ٢٦٪» وتحتها «النتيجة مستقرة».
+           والرقمُ باقٍ كما قرّره المحرّك؛ الاسمُ وحدَه يتغيّر. ونتيجةُ V1 — بلا
+           أساسٍ (`basis`) — رقمُها ثباتُها هي، عددُ الإجابات على ١٢، فيبقى لها
+           اسمُها. يحرسه `why-card-skills.test.ts`. */
+        { label: basis ? "ما قِسناه من مهارات المسار" : "ثبات النتيجة", value: confidence.stability },
       ]
     : [];
   const total = Math.floor((confidence?.total ?? 0) * 100);
