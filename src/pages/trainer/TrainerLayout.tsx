@@ -13,6 +13,7 @@ import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
 import { TRAINER_GUIDE_PATH } from "@/application/trainer/trainer-guide";
+import TrainerAnnouncement from "./TrainerAnnouncement";
 
 /* ما يقرؤه الإطارُ من `/api/trainer/me` — لا الملفُّ كلُّه.
    ونداءٌ واحدٌ يخدم اثنين: عدّادَ التصحيح، وشريطَ العرض المشروط.
@@ -262,6 +263,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
         {children}
       </div>
       {realTrainer && <PortalSearchPalette kind="trainer" />}
+      {/* وإعلانُ الإدارة نافذةً في أيّ شاشةٍ يفتحها — حتّى يضغط «قرأتُه»، ولا تمنعه من
+          عمله: «ذكّرني لاحقا» يغلقها (٤ أكتوبر ٢٠٢٦، `TrainerAnnouncement.tsx`) */}
+      {realTrainer && <TrainerAnnouncement />}
     </div>
   );
 }

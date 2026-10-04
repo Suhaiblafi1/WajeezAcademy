@@ -133,6 +133,12 @@ export const allSections: AdminNavSection[] = [
       { to: "/admin/pending-plans", label: "خططٌ تنتظر اعتمادك", icon: ClipboardCheck, need: "cohort.plan.approve",
         badge: "awaitingPlans",
         descAr: "خططُ الشعب التي أرسلها مدرّبوها — تُقرأ كاملةً وتُعتمَد أو تُردّ بملاحظات، من المدرّبين كلِّهم" },
+      /* ═══ وإعلاناتٌ للمدرّبين — بعد الخطط، وفي يومها نفسِه (٤ أكتوبر ٢٠٢٦) ═══
+
+         نصيحةُ موعد البدء وُلدت من خطط الإعداد، ومن يعتمدها يرى من قرأها. وصلاحيّتُها
+         `staff.notify` — «من يبثّ الإعلانات» — لا حبّةٌ جديدة. */
+      { to: "/admin/trainer-announcements", label: "إعلاناتٌ للمدرّبين", icon: Megaphone, need: "staff.notify",
+        descAr: "إعلانٌ يظهر نافذةً في بوّابة كلِّ مدرّبٍ حتّى يضغط «قرأتُه» — ومن قرأه ومن لم يقرأ" },
       /* ═══ ولماذا الأتعابُ هنا لا في «التشغيل والمالية» ═══
 
          كانت هناك لأنّ صلاحيّتَها `trainer.compensation.manage` ماليّة،

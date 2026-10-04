@@ -119,7 +119,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     labelAr: 'إعلاناتُ الأكاديمية',
     whatAr: 'ما تُرسله الإدارةُ للعموم أو لشعبتك',
     silenceable: true,
-    templateKeys: ['staff.announce'],
+    /* وإعلانُ الإدارة إلى المدرّبين (٤ أكتوبر ٢٠٢٦) — نصيحةٌ لا واجب، فيُكتَم جرسُه.
+       ومن كتمه بقيت له النافذةُ في بوّابته حتّى يضغط «قرأتُه»: الكتمُ يُسكت الجرسَ
+       ولا يُخفي الإعلان (`trainer-announcement.service.ts`). */
+    templateKeys: ['staff.announce', 'trainer.announcement'],
   },
   {
     key: 'money',

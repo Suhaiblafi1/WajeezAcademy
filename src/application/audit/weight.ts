@@ -309,6 +309,9 @@ const LOW: readonly string[] = [
   'rating.submit', 'submission.create',
   'support.ticket.create', 'support.ticket.priority',
   'staff.task.complete',
+  /* إعلانٌ إلى المدرّبين (٤ أكتوبر ٢٠٢٦): في المنتَج وحدَه بخيار صاحب المنصّة — نافذةٌ في
+     بوّابتهم وإشعارٌ في الجرس، **بلا بريد** (اختار الأوّلَ من ثلاثة، والبريدُ في الثاني) */
+  'trainer.announcement.send',
   'roles.sync',
   'trainer.assign', 'trainer.create_direct', 'trainer.profile.create',
   'trainer.account.link', 'trainer.demo.evaluate', 'trainer.document.register',
